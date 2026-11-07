@@ -1,4 +1,3 @@
-import {currentOriginReuseStartLease,originReuseStartState} from '../executions/execution-start-origin-reuse.ts';
 import type {OriginReuseConsumptionReceiptIds} from '../access/project-command.ts';
 import {isNodeDecisionReceiptIds,type NodeDecisionReceiptIds} from '../access/project-command.ts';
 import {isExecutionStartOriginReceiptIds,type ExecutionStartOriginReceiptIds} from '../access/project-command.ts';
@@ -114,7 +113,10 @@ export class ProjectStorageQuota{
  /** 실제 같은 인증 START lease와 registrar가 봉인한 descriptor에만 소비 예약을 결박한다. */
  async reserveOriginReuseApprovalConsumption(db:PoolClient,actor:AuthenticatedIdentity,rawRequest:ProjectCommand,rawRef:RuntimeRefV1,rawRecord:unknown,policyRef:RuntimeRefV1,ids:OriginReuseConsumptionReceiptIds,rawResult:unknown,until:number):Promise<object>{
   return this.#durable(async()=>{
-   const request=cloneV1(rawRequest),ref=cloneV1(rawRef),record:any=cloneV1(rawRecord),result:any=cloneV1(rawResult),query=db.query,identity=originActor(actor),source=currentOriginReuseStartLease(db,actor,request);
+   const request=cloneV1(rawRequest),ref=cloneV1(rawRef),record:any=cloneV1(rawRecord),result:any=cloneV1(rawResult),query=db.query,identity=originActor(actor),requestHash=hash(request);
+   const {currentOriginReuseStartLease,originReuseStartState}=await import('../executions/execution-start-origin-reuse.ts');
+   if(query!==db.query||identity!==originActor(actor)||requestHash!==hash(rawRequest))unknown();
+   const source=currentOriginReuseStartLease(db,actor,request);
    if(!source||request.operation!=='queueExecutionCommand'||!isOriginReuseRequestReceiptIds(ids,db,actor,request)||!recordV1(record,['schemaVersion','purpose','queueIntent','grant','reservation','materialPlan','writerClaimId','outboxId','recordedAt'])
     ||record.schemaVersion!==1||record.purpose!=='ORIGIN_REUSE_APPROVAL_CONSUMPTION'||!refV1(ref)||ref.version!==1||hash(record.queueIntent)!==ref.contentHash
     ||record.writerClaimId!==ids.writerClaimId||record.outboxId!==ids.outboxId||!uuidV1(ids.writerClaimId)||!uuidV1(ids.outboxId)||!isoV1(record.recordedAt)

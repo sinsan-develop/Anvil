@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {artifactCalls,executionStartOriginFixture,installExecutionStartOriginMemoryFS} from './execution-start-origin-fixture.ts';
+import {H,artifactCalls,executionStartOriginFixture,installExecutionStartOriginMemoryFS} from './execution-start-origin-fixture.ts';
 await installExecutionStartOriginMemoryFS();
 const {materialRules}=await import('../../../apps/server/modules/access/project-command.ts');
 const id=(n:number)=>`b2090000-0000-4000-8000-${String(n).padStart(12,'0')}`;
@@ -1058,10 +1058,10 @@ test('원 보호관측 뒤 재사용 요청 PENDING을 같은 거래에 계상�
  assert.equal(f.active(),false);
 });
 
-async function storedOriginDecisionJourney(consuming=false){
+async function storedOriginDecisionJourney(consuming=false,call?:{expiresAt:number;signal?:AbortSignal}){
  const f=await executionStartOriginFixture({connectorEnvironment:true,richContext:true,environmentDependencies:true,constitutionContext:true,approvedContext:true,snapshotRoot:true,originRequestStorage:true,originConsumptionStorage:consuming});
  const {buildApp}=await import('../../../apps/server/app.ts'),{ProjectDocuments}=await import('../../../apps/server/modules/documents/project-documents.ts'),{ProjectInitialExecutionQueue}=await import('../../../apps/server/modules/executions/execution-commands.ts'),{createOriginReuseApprovalCapability}=await import('../../../apps/server/modules/executions/execution-start-origin-reuse.ts');
- let runtimeCalls=0;const forbidden=async()=>{runtimeCalls++;throw Error('UNEXPECTED_EXECUTION');},queue=consuming?(await(await import('./execution-start-origin-fixture.ts')).createOriginConsumptionRuntime(f)).queue:new ProjectInitialExecutionQueue(f.access,{transport:'SYNTHETIC_ONLY',basis:forbidden,current:forbidden});
+ let runtimeCalls=0;const forbidden=async()=>{runtimeCalls++;throw Error('UNEXPECTED_EXECUTION');},queue=consuming?(await(await import('./execution-start-origin-fixture.ts')).createOriginConsumptionRuntime(f,call)).queue:new ProjectInitialExecutionQueue(f.access,{transport:'SYNTHETIC_ONLY',basis:forbidden,current:forbidden});
  const cap=createOriginReuseApprovalCapability(f.access,queue,f.sessions,new ProjectDocuments(f.root,undefined,'FN09_PLAN_PROOF'));
  const config={repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root};
  const app=buildApp({},undefined,config,{transport:'SYNTHETIC_ONLY',queue,originReuseApproval:cap,stop:{command:forbidden},recovery:{command:forbidden},understanding:{command:forbidden}});
@@ -1144,5 +1144,213 @@ test('원자료 P2 APPROVE의 exact8 START는 같은 거래 소비1·원큐·실
   const queued=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:command});assert.equal(queued.statusCode,200,queued.body+' '+JSON.stringify(j.f.state.unsupported));const result=queued.json();assert.equal(result.data.status,'SYNTHETIC_QUEUE_STORED');assert.equal(result.data.executionAuthorized,false);assert.equal(result.data.dispatchPerformed,false);
   assert.equal(j.f.tables.approvalConsumptions!.length,consumptions+1);assert.equal(j.f.tables.notifications!.length,notifications);assert.deepEqual(j.f.tables.origins,original);
   const read=await j.app.inject({method:'GET',url:j.readUrl,headers:j.headers});assert.equal(read.statusCode,200,read.body);const view=read.json();assert.equal(view.currentVersion,3);assert.equal(view.storedStatus,'CONSUMED');assert.deepEqual(view.request,j.original.data.request);assert.equal(view.consumption.commandId,command.commandId);assert.deepEqual(view.originReuseOutcome,{commandId:command.commandId,requestHash:(await approvalHash())(command),queueCommandRef:result.data.ref,status:'SYNTHETIC_QUEUE_STORED',executionAuthorized:false,dispatchPerformed:false});
+ }finally{await j.app.close();}
+});
+
+
+async function approvedOriginStartJourney(call?:{expiresAt:number;signal?:AbortSignal}){
+ const j=await storedOriginDecisionJourney(true,call);
+ try{const decided=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.decide('APPROVE')});assert.equal(decided.statusCode,200,decided.body);
+  const r=j.original.data.request,command={...j.f.originCommand(),operation:'queueExecutionCommand',commandId:r.details.candidateCommandId,approvalRef:{requestId:r.id,decisionId:decided.json().targetId,scopeDigest:r.scopeDigest},payload:r.originReuseEvidence.candidatePayload};return{...j,command};
+ }catch(error){await j.app.close();throw error;}
+}
+const consumptionDomainCounts=(f:Awaited<ReturnType<typeof executionStartOriginFixture>>)=>Object.fromEntries(['executions','execution_grants','usage_reservations','writer_claims','execution_commands','delivery_outbox','execution_material_manifests','execution_materials','approvalConsumptions','reservations'].map(name=>[name,f.tables[name]!.length]));
+
+test('원자료 START는 거절·변경요청 결정 또는 교차 명령에서 소비와 새 도메인 쓰기0이다',async t=>{
+ for(const choice of ['REJECT','REQUEST_CHANGE'] as const)await t.test(choice,async()=>{
+  const j=await storedOriginDecisionJourney(true);try{const response=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.decide(choice)});assert.equal(response.statusCode,200,response.body);
+   const r=j.original.data.request,command={...j.f.originCommand(),operation:'queueExecutionCommand',commandId:r.details.candidateCommandId,approvalRef:{requestId:r.id,decisionId:response.json().targetId,scopeDigest:r.scopeDigest},payload:r.originReuseEvidence.candidatePayload},before=consumptionDomainCounts(j.f),reserves=j.f.modes.consumptionReserveCalls;
+   const denied=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:command});assert.equal(denied.statusCode,412,denied.body);assert.equal(denied.json().code,'APPROVAL_NOT_USABLE');assert.deepEqual(consumptionDomainCounts(j.f),before);assert.equal(j.f.modes.consumptionReserveCalls,reserves);assert.deepEqual(j.f.state.unsupported,[]);
+  }finally{await j.app.close();}
+ });
+ const j=await approvedOriginStartJourney();try{const before=consumptionDomainCounts(j.f);
+  for(const change of [()=>({...j.command,commandId:id(991)}),()=>({...j.command,payload:{...j.command.payload,executionGeneration:j.command.payload.executionGeneration+1}}),()=>({...j.command,approvalRef:{...j.command.approvalRef,scopeDigest:'a'.repeat(64)}})]){
+   const denied=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:change()});assert(denied.statusCode===409||denied.statusCode===412,denied.body);assert.deepEqual(consumptionDomainCounts(j.f),before);assert.equal(j.f.modes.consumptionReserveCalls,0);
+  }assert.deepEqual(j.f.state.unsupported,[]);
+ }finally{await j.app.close();}
+});
+
+test('원자료 START 정산 마지막 await의 source 교체는 rollback하고 같은 DB 다음 거래는 새 lease로만 소비한다',async()=>{
+ const j=await approvedOriginStartJourney(),source=j.queue.materials!.source,prior=Object.getOwnPropertyDescriptor(source,'readBody');let changed=false,attempts=0;
+ try{const before=consumptionDomainCounts(j.f),request=structuredClone(j.f.tables.approvalRequests!.find(r=>r.id===j.command.approvalRef.requestId));
+  j.f.modes.hook=sql=>{if(!changed&&sql.startsWith('SELECT * FROM anvil.fn09_origin_reuse_consumption_settle(')){changed=true;Object.defineProperty(source,'readBody',{configurable:true,value:async()=>{attempts++;throw Error('ALTERED_SOURCE_MUST_NOT_RUN');}});}};
+  const denied=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.command});assert(changed);assert.equal(denied.statusCode,412,denied.body);assert.equal(denied.json().code,'ORIGIN_REUSE_START_NOT_CONNECTED');assert.equal(attempts,0);assert.deepEqual(consumptionDomainCounts(j.f),before);assert.deepEqual(j.f.tables.approvalRequests!.find(r=>r.id===j.command.approvalRef.requestId),request);
+  j.f.modes.hook=null;if(prior)Object.defineProperty(source,'readBody',prior);else delete(source as any).readBody;
+  const saved=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.command});assert.equal(saved.statusCode,200,saved.body);
+  assert.equal(j.f.tables.approvalConsumptions!.length,before.approvalConsumptions!+1);assert.deepEqual(j.f.state.unsupported,[]);
+ }finally{j.f.modes.hook=null;if(prior)Object.defineProperty(source,'readBody',prior);else delete(source as any).readBody;await j.app.close();}
+});
+
+test('원자료 START COMMIT 뒤 응답 폐기 모형은 원 packet과 원 ID v3로 조정하고 자동 POST0이다',async()=>{
+ const j=await approvedOriginStartJourney();try{const packet=structuredClone(j.command),start=j.f.trace.length;let posts=0;
+  const sendOnce=async()=>{posts++;const response=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:packet});assert.equal(response.statusCode,200,response.body);assert(j.f.trace.slice(start).includes('COMMIT'));assert.equal(j.f.active(),false);throw Error('SYNTHETIC_RESPONSE_DROPPED_AFTER_COMMIT');};
+  await assert.rejects(sendOnce(),/SYNTHETIC_RESPONSE_DROPPED_AFTER_COMMIT/);assert.deepEqual(packet,j.command);assert.equal(posts,1);
+  const counts=consumptionDomainCounts(j.f),reads=await j.app.inject({method:'GET',url:j.readUrl,headers:j.headers});assert.equal(reads.statusCode,200,reads.body);const v=reads.json();assert.equal(v.currentVersion,3);assert.equal(v.storedStatus,'CONSUMED');assert.equal(v.originReuseOutcome.commandId,packet.commandId);assert.equal(v.originReuseOutcome.requestHash,(await approvalHash())(packet));assert.equal(v.consumption.commandId,packet.commandId);assert.deepEqual(consumptionDomainCounts(j.f),counts);assert.equal(posts,1);
+  const manifest=j.f.tables.execution_material_manifests![0]!,descriptor=manifest.snapshot_json,bodyStart=j.f.trace.length;
+  await assert.rejects(j.f.run(()=>j.queue.materials!.source.readBody(j.f.db,descriptor.scope,{commandRef:v.originReuseOutcome.queueCommandRef,manifestRef:{id:manifest.id,version:1,contentHash:manifest.content_hash},group:descriptor.groups[0]})),{message:'START_CONTEXT_SOURCE_UNAVAILABLE',statusCode:412});
+  assert(!j.f.trace.slice(bodyStart).some(sql=>sql.includes('FROM anvil.environment_configuration_versions')||sql.includes('FROM anvil.context_bundles')),'같은 PoolClient의 후행 Tx는 폐기된 원문 loan을 소비하지 않는다');assert.deepEqual(consumptionDomainCounts(j.f),counts);
+  const replay=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:packet});assert.equal(replay.statusCode,200,replay.body);assert.deepEqual(replay.json().data.ref,v.originReuseOutcome.queueCommandRef);assert.deepEqual(consumptionDomainCounts(j.f),counts);assert.deepEqual(j.f.state.unsupported,[]);
+ }finally{await j.app.close();}
+});
+
+
+test('원자료 APPROVE 뒤 소비 전 취소·회수·기한·xid·query 변경은 새 저장 전에 거절한다',async t=>{
+ for(const mode of ['STAGE_CANCEL','REGISTRATION_REVOKED','POLICY_READ_REVOKED','SESSION_EXPIRED','XID','QUERY'] as const)await t.test(mode,async()=>{
+  const j=await approvedOriginStartJourney(),originalQuery=j.f.db.query;let changed=false,changedAt=-1;
+  try{
+   if(mode==='STAGE_CANCEL'){const r=j.f.stage.data.ref;const cancelled:any=await j.f.run(actor=>j.f.queue.cancel(j.f.db,actor,{...j.f.originCommand(),operation:'cancelQueuedRequest',targetId:r.id,expectedVersion:r.version,payload:{requestRef:r,reason:'승인 후 단계 취소'}},j.command.payload.permissionPolicyRef));assert.equal(cancelled.data.queueState,'CANCELLED');}
+   if(mode==='REGISTRATION_REVOKED'){assert(j.f.registration);j.f.registration.row.revoked_at=new Date();}
+   if(mode==='POLICY_READ_REVOKED')j.f.modes.sourceAllowed=false;
+   if(mode==='SESSION_EXPIRED')j.f.advance(61000);
+   if(mode==='XID'||mode==='QUERY')j.f.modes.hook=sql=>{if(!changed&&sql.includes('FROM anvil.permission_policies')){changed=true;changedAt=j.f.trace.length;if(mode==='XID')j.f.modes.tx++;else j.f.db.query=(async()=>{throw Error('REPLACED_QUERY_MUST_NOT_RUN');}) as typeof originalQuery;}};
+   const before=consumptionDomainCounts(j.f),denied=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.command});if(mode==='QUERY'){assert.equal(denied.statusCode,503,denied.body);assert.equal(denied.json().code,'RUNTIME_STORAGE_FAILED');assert.equal(denied.json().retryDisposition,'reconcile-first');}else assert([401,403,409,412].includes(denied.statusCode),mode+' '+denied.body);assert.deepEqual(consumptionDomainCounts(j.f),before);assert.equal(j.f.modes.consumptionReserveCalls,0);
+   if(mode==='XID'||mode==='QUERY'){assert(changed);assert(!j.f.trace.slice(changedAt).some(sql=>sql.includes('FROM anvil.approval_requests')||sql.includes('FROM anvil.execution_start_origins')),'교체 뒤 원 승인/원자료 조회0');}
+   assert.deepEqual(j.f.state.unsupported,[]);
+  }finally{j.f.db.query=originalQuery;j.f.modes.hook=null;await j.app.close();}
+ });
+});
+
+test('원자료 START 신규 저장 각 단계 거절은 소비·예산·queue·자료·outbox와 quota를 함께 rollback한다',async t=>{
+ for(const table of ['executions','execution_grants','usage_reservations','writer_claims','execution_commands','delivery_outbox','execution_material_manifests','execution_materials'])await t.test(table,async()=>{
+  const j=await approvedOriginStartJourney();let rejected=false;try{const before=consumptionDomainCounts(j.f),used=j.f.modes.requestUsed,held=j.f.modes.requestHeld,original=structuredClone(j.f.tables.approvalRequests!.find(r=>r.id===j.command.approvalRef.requestId));
+   j.f.modes.hook=sql=>{if(!rejected&&sql.startsWith('INSERT INTO anvil.'+table+'(')){rejected=true;throw Object.assign(Error('SYNTHETIC_DOMAIN_INSERT_REJECTED'),{code:'23514'});}};
+   const denied=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.command});assert(rejected,table);assert.equal(denied.statusCode,503,denied.body);assert.deepEqual(consumptionDomainCounts(j.f),before);assert.equal(j.f.modes.requestUsed,used);assert.equal(j.f.modes.requestHeld,held);assert.deepEqual(j.f.tables.approvalRequests!.find(r=>r.id===j.command.approvalRef.requestId),original);assert.equal(j.f.modes.consumptionReserveCalls,1);assert.equal(j.f.modes.consumptionSettleCalls,0);assert.deepEqual(j.f.state.unsupported,[]);
+  }finally{j.f.modes.hook=null;await j.app.close();}
+ });
+});
+
+
+test('원자료 START의 source getter·다른 실서버 명령·재봉인 group 오염은 원문과 저장을 차단한다',async t=>{
+ for(const mode of ['SOURCE_GETTER','CREATED_COMMAND','MANIFEST_GROUP'] as const)await t.test(mode,async()=>{
+  const j=await approvedOriginStartJourney(),source=j.queue.materials!.source,original=Object.getOwnPropertyDescriptor(source,'readBody');let fault=false,getters=0;
+  try{const before=consumptionDomainCounts(j.f);
+   if(mode==='SOURCE_GETTER'){fault=true;Object.defineProperty(source,'readBody',{configurable:true,get(){getters++;throw Error('GETTER_MUST_NOT_EXECUTE');}});}
+   else j.f.modes.hook=sql=>{
+    if(!fault&&mode==='CREATED_COMMAND'&&sql==='SELECT content_hash,snapshot_json,created_command_id FROM anvil.execution_commands WHERE project_id=$1::uuid AND id=$2::uuid AND version=1 LIMIT 2'){const stored=j.f.tables.execution_commands![0];assert(stored);fault=true;stored.created_command_id=j.f.tables.approvalRequests!.find(r=>r.id===j.command.approvalRef.requestId)!.command_id;}
+    if(!fault&&mode==='MANIFEST_GROUP'&&sql.startsWith('INSERT INTO anvil.execution_materials(')){const stored=j.f.tables.execution_material_manifests![0];assert(stored);fault=true;stored.snapshot_json.groups[0].parts[0].contentHash='b'.repeat(64);stored.content_hash=H(stored.snapshot_json);}
+   };
+   const denied=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.command});assert(fault,mode);assert(denied.statusCode===412||denied.statusCode===503,denied.body);assert.equal(getters,0);assert.deepEqual(consumptionDomainCounts(j.f),before);assert.equal(j.f.modes.consumptionReserveCalls,mode==='SOURCE_GETTER'?0:1);assert.deepEqual(j.f.state.unsupported,[]);
+  }finally{j.f.modes.hook=null;if(original)Object.defineProperty(source,'readBody',original);else delete(source as any).readBody;await j.app.close();}
+ });
+});
+
+
+test('원자료의 두 명시 APPROVE도 같은 실행 ID와 미회수 writer를 중복 소비하지 않는다',async()=>{
+ const j=await approvedOriginStartJourney();try{
+  const payload=structuredClone(j.requestCommand.payload);payload.details.candidateCommandId=id(995);
+  const secondRequest=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:{...j.requestCommand,commandId:id(996),payload}});assert.equal(secondRequest.statusCode,200,secondRequest.body);const r=secondRequest.json().data.request;
+  const secondDecision=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:{...j.decide('APPROVE'),commandId:id(997),targetId:r.id,payload:{requestId:r.id,expectedVersion:1,scopeDigest:r.scopeDigest,decision:'APPROVE',reason:'별도 명시 요청 판단'}}});assert.equal(secondDecision.statusCode,200,secondDecision.body);
+  const first=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.command});assert.equal(first.statusCode,200,first.body);const before=consumptionDomainCounts(j.f),reserves=j.f.modes.consumptionReserveCalls;
+  const second={...j.command,commandId:r.details.candidateCommandId,approvalRef:{requestId:r.id,decisionId:secondDecision.json().targetId,scopeDigest:r.scopeDigest}},denied=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:second});assert.equal(denied.statusCode,409,denied.body);assert.equal(denied.json().code,'EXECUTION_WRITER_UNAVAILABLE');assert.deepEqual(consumptionDomainCounts(j.f),before);assert.equal(j.f.modes.consumptionReserveCalls,reserves);
+  const unchanged=await j.app.inject({method:'GET',url:`/api/v1/projects/${j.f.pid}/approvals/${r.id}`,headers:j.headers});assert.equal(unchanged.statusCode,200,unchanged.body);assert.equal(unchanged.json().currentVersion,2);assert.equal(unchanged.json().consumption,null);assert.deepEqual(j.f.state.unsupported,[]);
+ }finally{await j.app.close();}
+});
+
+
+test('원자료 START basis는 실제 lease가 있어도 호출 만료·내장 취소와 await 중 취소를 무시하지 않는다',async t=>{
+ for(const mode of ['EXPIRED','PREABORT_SHADOW','AWAIT_ABORT'] as const)await t.test(mode,async()=>{
+  const controller=new AbortController();let getters=0;
+  if(mode==='PREABORT_SHADOW'){controller.abort();Object.defineProperty(controller.signal,'aborted',{configurable:true,get(){getters++;return false;}});}
+  const call={expiresAt:Date.now()+(mode==='EXPIRED'?-1:30000),signal:controller.signal},j=await approvedOriginStartJourney(call),resolver=j.queue.resolver,original=resolver.basis;
+  if(mode==='AWAIT_ABORT')resolver.basis=async function(...args){const pending=original.apply(this,args);controller.abort();return pending;};
+  try{const before=consumptionDomainCounts(j.f),denied=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.command});assert.equal(denied.statusCode,412,denied.body);assert.equal(denied.json().code,'EXECUTION_START_ORIGIN_CURRENT_REQUIRED');assert.equal(getters,0);assert.deepEqual(consumptionDomainCounts(j.f),before);assert.equal(j.f.modes.consumptionReserveCalls,0);assert.deepEqual(j.f.state.unsupported,[]);
+  }finally{resolver.basis=original;await j.app.close();}
+ });
+});
+
+
+test('원자료 START producer 첫 lease clock 실패는 자체 폐기하고 같은 DB의 새 거래가 정상 소비한다',async()=>{
+ const j=await approvedOriginStartJourney();let failed=false;
+ try{const before=consumptionDomainCounts(j.f);j.f.modes.hook=sql=>{if(!failed&&sql==='SELECT txid_current()::text AS transaction_id,clock_timestamp() AS observed_at'&&new Error().stack?.includes('startLeaseClock')&&new Error().stack?.includes('observeOriginReuseStart')){failed=true;throw Error('SYNTHETIC_FIRST_PUBLISHED_LEASE_CLOCK_LOST');}};
+  const denied=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.command});assert(failed,'실제 producer의 첫 발급 후 clock 경계');assert.equal(denied.statusCode,503,denied.body);assert.deepEqual(consumptionDomainCounts(j.f),before);assert.equal(j.f.modes.consumptionReserveCalls,0);
+  j.f.modes.hook=null;const saved=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.command});assert.equal(saved.statusCode,200,saved.body);assert.equal(j.f.tables.approvalConsumptions!.length,before.approvalConsumptions!+1);assert.deepEqual(j.f.state.unsupported,[]);
+ }finally{j.f.modes.hook=null;await j.app.close();}
+});
+
+test('원자료 START quota 거절·정산 불명·상한은 저장 성공으로 반환하지 않고 원자 rollback한다',async t=>{
+ for(const mode of ['UNVERIFIED','CAP','SETTLE_LOST','OVERSIZED_SETTLE'] as const)await t.test(mode,async()=>{
+  const j=await approvedOriginStartJourney();try{
+   if(mode==='UNVERIFIED')j.f.modes.requestQuota='UNVERIFIED';if(mode==='CAP')j.f.modes.requestUsed=10737418240;if(mode==='SETTLE_LOST')j.f.modes.settle='LOST';if(mode==='OVERSIZED_SETTLE')j.f.modes.requestFault='OVERSIZED_SETTLE';
+   const before=consumptionDomainCounts(j.f),used=j.f.modes.requestUsed,held=j.f.modes.requestHeld,command=structuredClone(j.command),denied=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:command});
+   assert.equal(denied.statusCode,mode==='UNVERIFIED'?412:mode==='CAP'?429:503,denied.body);if(mode==='SETTLE_LOST'||mode==='OVERSIZED_SETTLE')assert.equal(denied.json().retryDisposition,'reconcile-first');assert.deepEqual(command,j.command);assert.deepEqual(consumptionDomainCounts(j.f),before);assert.equal(j.f.modes.requestUsed,used);assert.equal(j.f.modes.requestHeld,held);assert(j.f.trace.includes('ROLLBACK'));assert.deepEqual(j.f.state.unsupported,[]);
+  }finally{await j.app.close();}
+ });
+});
+
+test('원자료 START COMMIT 전 LOST 모형은 결과불명으로 끝나고 후행 새 인증·자동 재발행0이다',async()=>{
+ const j=await approvedOriginStartJourney();try{const packet=structuredClone(j.command),start=j.f.trace.length;j.f.modes.commit='LOST';
+  const denied=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:packet});assert.equal(denied.statusCode,503,denied.body);assert.equal(denied.json().retryDisposition,'reconcile-first');assert.deepEqual(packet,j.command);assert.equal(j.f.modes.consumptionReserveCalls,1);assert.equal(j.f.modes.consumptionSettleCalls,1);
+  const trace=j.f.trace.slice(start),at=trace.indexOf('COMMIT');assert(at>=0);assert(!trace.slice(at+1).some(sql=>sql==='BEGIN'||sql.startsWith('SELECT')||sql.startsWith('INSERT')),'불명 COMMIT 뒤 보호 조회·새 명령0');assert.deepEqual(j.f.state.unsupported,[]);
+  // 이 fixture는 raw COMMIT 전에 throw한다. 실제 저장/미저장 또는 네트워크 응답 유실의 증거가 아니다.
+ }finally{j.f.modes.commit='NORMAL';await j.app.close();}
+});
+
+test('소비 모듈은 runtime 정책을 첫 진입점으로 가져와도 원 prototype pin의 TDZ가 없다',async()=>{
+ const {spawnSync}=await import('node:child_process');
+ for(const path of ['runtime-policy','execution-commands','execution-start-origin-reuse']){
+  const url=new URL(`../../../apps/server/modules/executions/${path}.ts`,import.meta.url).href;
+  const child=spawnSync(process.execPath,['--input-type=module','--eval',`await import(${JSON.stringify(url)});console.log('IMPORT_OK')`],{encoding:'utf8',timeout:10000,killSignal:'SIGKILL',windowsHide:true});
+  assert.equal(child.error,undefined);assert.equal(child.signal,null);assert.equal(child.status,0,child.stderr);assert.equal(child.stdout.trim(),'IMPORT_OK');
+ }
+});
+
+test('소비 receipt 지연 import는 진짜 lease와 원 주체·명령·query를 다시 검산하고 복사 IDs를 거절한다',async()=>{
+ const j=await approvedOriginStartJourney(),resolver=j.queue.resolver,original=resolver.basis;
+ const roots=await import('../../../apps/server/modules/executions/execution-start-origin-reuse.ts');
+ const commands=await import('../../../apps/server/modules/access/project-command.ts');
+ let checked=false,boundaryError='NOT_ENTERED';
+ resolver.basis=async function(db,actor,request){try{boundaryError='ENTERED';
+  const result=await original.call(this,db,actor,request),lease=roots.currentOriginReuseStartLease(db,actor,request);assert(lease);
+  assert(Object.isFrozen(actor));assert(Object.isFrozen(actor.authSession));
+  for(const mode of ['actor','session'] as const){const forged={...actor,authSession:{...actor.authSession!}},at=j.f.trace.length,pending=commands.reserveOriginReuseConsumptionReceiptIds(db,forged,request,lease);if(mode==='actor')forged.actorId=id(998);else forged.authSession.id=id(997);await assert.rejects(pending);assert.equal(j.f.trace.length,at,'복사 주체 새 await 뒤 첫 조회0');}
+  for(const mode of ['xid','expiry'] as const){
+   const tx=j.f.modes.tx,at=j.f.trace.length,pending=commands.reserveOriginReuseConsumptionReceiptIds(db,actor,request,lease);
+   if(mode==='xid')j.f.modes.tx++;else j.f.advance(61000);
+   try{await assert.rejects(pending);}finally{j.f.modes.tx=tx;if(mode==='expiry')j.f.advance(-61000);}
+   assert(j.f.trace.slice(at).every(sql=>(sql==='SELECT txid_current()::text AS transaction_id'||sql==='SELECT txid_current()::text AS transaction_id,clock_timestamp() AS observed_at')),'거래/기한 변조 뒤 provenance clock 외 보호 조회0');
+  }
+  for(const mode of ['query','command','queue'] as const){
+   const query=db.query,commandId=request.commandId,materials=j.queue.materials,at=j.f.trace.length;
+   const pending=commands.reserveOriginReuseConsumptionReceiptIds(db,actor,request,lease);
+   if(mode==='query')db.query=(async()=>{throw Error('교체 query 실행 금지');}) as any;
+   if(mode==='command')request.commandId=id(996);
+   if(mode==='queue')(j.queue as any).materials={};
+   try{await assert.rejects(pending);}finally{db.query=query;request.commandId=commandId;(j.queue as any).materials=materials;}
+   assert.equal(j.f.trace.length,at,mode+' 새 await 뒤 첫 조회0');
+   assert(roots.originReuseStartMatches(lease,db,actor,request));
+   if(mode==='queue'){
+    const ids=await commands.reserveOriginReuseConsumptionReceiptIds(db,actor,request,lease);
+    assert(commands.isOriginReuseRequestReceiptIds(ids,db,actor,request));
+    assert.equal(commands.isOriginReuseRequestReceiptIds({...ids},db,actor,request),false);
+    let forged=0;assert.equal(commands.isOriginReuseRequestReceiptIds({...ids,start:{lease,matches(){forged++;return true;}}},db,actor,request),false);assert.equal(forged,0);
+    roots.releaseOriginReuseStart(lease);assert.equal(commands.isOriginReuseRequestReceiptIds(ids,db,actor,request),false);
+    const at=j.f.trace.length;await assert.rejects(commands.reserveOriginReuseConsumptionReceiptIds(db,actor,request,lease));assert.equal(j.f.trace.length,at,'폐기 lease 조회0');
+    checked=true;break;
+   }
+  }
+  throw Error('SYNTHETIC_RECEIPT_BOUNDARY_CHECKED');}catch(error){boundaryError=error instanceof Error?error.message:'UNKNOWN';throw error;}
+ };
+ try{const before=consumptionDomainCounts(j.f),response=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:j.command});assert.notEqual(response.statusCode,200);assert(checked,boundaryError+' / '+response.json().code);assert.deepEqual(consumptionDomainCounts(j.f),before);assert.equal(j.f.modes.consumptionReserveCalls,0);assert.deepEqual(j.f.state.unsupported,[]);}
+ finally{resolver.basis=original;await j.app.close();}
+});
+
+test('원자료 exact8 START 성공 뒤 명시 동일 packet POST replay는 원 결과만 반환하고 모든 추가 효과0이다',async()=>{
+ const j=await approvedOriginStartJourney();
+ try{
+  const packet=structuredClone(j.command),sq=structuredClone({s:j.f.tables.origins,q:j.f.tables.reservations!.filter(row=>row.part_kind!=='ORIGIN_REUSE_APPROVAL_CONSUMPTION')});
+  const first=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:packet});assert.equal(first.statusCode,200,first.body);const result=first.json();
+  const snapshot=()=>structuredClone({tables:j.f.tables,commands:[...j.f.commands],receipts:[...j.f.receipts],audits:[...j.f.audits],used:j.f.modes.requestUsed,held:j.f.modes.requestHeld,other:j.f.modes.requestOther});
+  const before=snapshot(),reserve=j.f.modes.consumptionReserveCalls,settle=j.f.modes.consumptionSettleCalls,start=j.f.trace.length;
+  let basisCalls=0,replayStack='';const resolver=j.queue.resolver,original=resolver.basis;
+  resolver.basis=async function(...args){basisCalls++;return original.apply(this,args);};
+  j.f.modes.hook=sql=>{if(sql==="SELECT operation,request_hash,result_ref FROM anvil.commands WHERE scope_kind='PROJECT' AND project_id=$1 AND actor_id=$2 AND command_id=$3")replayStack=new Error().stack??'';};
+  try{
+   const replay=await j.app.inject({method:'POST',url:j.url,headers:j.headers,payload:packet});assert.equal(replay.statusCode,200,replay.body);assert.deepEqual(replay.json(),result);
+   assert.equal(basisCalls,0,'originReuse 선행 projectReplay 분기는 basis/신규 관측 전에 원 저장 결과를 확인한다');assert(replayStack.includes('projectReplay')&&replayStack.includes('execution-commands.ts'));
+   const trace=j.f.trace.slice(start);assert(trace.some(sql=>sql==='SELECT content_hash,snapshot_json FROM anvil.execution_commands WHERE project_id=$1::uuid AND id=$2::uuid AND version=1 LIMIT 2'),'실제 registrar.assertReplay의 원 command/fullref 읽기');
+   assert(!trace.some(sql=>/^(INSERT|UPDATE|DELETE)\b/.test(sql)||sql.includes('fn09_origin_reuse_consumption_reserve')||sql.includes('fn09_origin_reuse_consumption_settle')),'replay 도메인 DML/예약/정산0');
+   assert.deepEqual(snapshot(),before);assert.equal(j.f.modes.consumptionReserveCalls,reserve);assert.equal(j.f.modes.consumptionSettleCalls,settle);assert.deepEqual(packet,j.command);
+   assert.deepEqual({s:j.f.tables.origins,q:j.f.tables.reservations!.filter(row=>row.part_kind!=='ORIGIN_REUSE_APPROVAL_CONSUMPTION')},sq);assert.deepEqual(j.f.state.unsupported,[]);
+  }finally{resolver.basis=original;j.f.modes.hook=null;}
  }finally{await j.app.close();}
 });
