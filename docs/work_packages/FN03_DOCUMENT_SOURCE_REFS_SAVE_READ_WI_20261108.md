@@ -9,6 +9,7 @@ WORK_PLAN FN03/UI06의 문서 원문·출처 저장/보호조회 구현이다. I
 - 신규 apps/server/modules/documents/document-source-refs.ts
 - 기존 apps/server/modules/documents/project-documents.ts
 - 기존 apps/server/modules/knowledge/conversations.ts (readMessage optional backupBudget 및 아래 원메서드 고정 한정)
+- 기존 apps/server/modules/documents/project-proposals.ts (type-only SourceRef import 및 BaseDocument.content 실제 반환형 정합화만)
 - 신규 tests/unit/FN03/document-source-refs.test.ts
 필요경로가다르면쓰기전에Main에근거를반환한다. 기존다른작업을되돌리지않는다. Main은본WI/WORK_STATUS/결과문서만소유한다.
 
@@ -35,3 +36,9 @@ ProjectConversations.readMessage는현재5인자로호출되며originalText에ba
 
 ## 순환 초기화와 원메서드 고정 보완
 실제 Conversations 선import 순서에서 Documents의top-level캡처가TDZ RED5a13c5로실패했다. 최초사용lazy pin만으로는그이전prototype교체를거절할수없으므로이를원함수증거로삼지않는다. conversations.ts 자체class정의직후lexical const로원readMessage를고정하고, constructor의선택적내부모드 DOCUMENT_SOURCE_REFS에서만그원함수를bound own data method로고정한다. undefined의기존ordinary생성과기존readMessage5인자는유지한다. 알수없는모드는거절한다. Documents는genuine생성자의해당모드객체에서고정own descriptor의함수만소비하며새export/staticproof/권한발급·HTTP필드는추가하지않는다. 이것은원메서드소비를보존하는내부조립방식이며그mode자체를권한proof로사용하지않는다. 원모듈선import/실App import와최초호출전prototype변조·getter교체/추가호출후교체음성을검산한다. 저장refs형상손상은GET의기존DOCUMENT_INTEGRITY_FAILED503으로구분하며원출처권한/hash오류는유지한다.
+
+## 읽은 기준 문서 타입 정합화
+현재Documents.version의content.sourceRefs가실제기존4종으로확장돼기존BaseDocument.content의빈배열타입과세호출점에서TS2345가발생했다. project-proposals.ts의type-only SourceRef import와BaseDocument.content를 Omit<Content,sourceRefs> 및 SourceRef[]의교차형으로맞추는정확타입보완만허용한다. proposed Content의빈배열/prepare412·함수본문·SQL·원import/proposal실행제한은변경하지않는다. 타입단언으로실제출처를빈배열로위조하지않으며새공개형상을추가하지않는다.
+
+## I1 원문 reader 후행 검산 보완
+실반례aa6383에서genuine대화원행/hash/kind가정상이어도호출자Documents.originalText getter와가짜함수가실행돼APPLIED가반환됐다. HTTP에서함수교체권한이있다는주장이아니며내부원reader보존모형의실패다. 메시지출처검산분기에서만부작용없는 new ProjectDocuments()를만들고그own originalText를lexical readProtectedPlanText.bind(원Documents receiver)로 readonly/nonconfigurable data descriptor에고정해전용genuine ProjectConversations에공급한다. 새객체의다른문서기능/빈store를권한proof로쓰지않으며실읽기는원receiver의실store/privateguard/원budget를그대로소비한다. 새root/파일/권한/키/실행생성·fake전체형단언·외부callback/export0이다. 원호출자getter/함수는호출전/원행await중교체해도실행0이며원문hash/격리/기한검산을통과한자료만수용한다. constructor무root가IO를일으키지않는것도검산한다.
