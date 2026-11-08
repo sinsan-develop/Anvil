@@ -33,3 +33,6 @@
 소스상 S06 문서편집→출처 포함 수정제안→비교/ack→명시 반영→고정 문서 재조회 경로다. 현재 서비스 배포/실사용 확인 URL은 새로 제공하지 않는다. 안전 commit/private push→PR 필수검증→main 병합→merged 한정 smoke→완료 branch 정리 뒤 UI07 변경요청/보관 재조회와 UI06 import 사용문서의 기존 SourceRef 소비 누락을 다음 단일 writer 업무로 진행한다. 후속 WI는 준비 상태이며 현재 동시 구현0이다. 회귀는 이 변경의 정상 revert로 복구하며 원문·과거 이력은 보존한다.
 
 Main 게시 전 독립 실행735985: 위 최종 집중3파일 명령 그대로20PASS/skip0/fail0/exit0,4947.881ms. 제품 변경 없이 제출 결과와 실제 검증을 대조했다.
+
+## 통합 확인
+PR69 source d40ca5c9d03a61b97d8ca500ba7abfb721d2b15d는 Broker42437364073 success/86c064 exit0로 main e9d0c132816eb54ef3554a8d2fc8071da41016d0에 병합됐다. parent339fdad9·source/merge tree164a656865ed2b49c2386f90dcd0d13e91e2a168 동일을 e53ef4로 확인했다. 정상FF 뒤 node --experimental-test-module-mocks --test tests/unit/FN03/document-proposal-content-sources.test.ts tests/unit/UI06/proposal-api.test.ts tests/unit/UI06/document-proposal-content-sources-ui.test.ts tests/unit/FN03/document-source-refs.test.ts 는 af92c2 exit0/36PASS/skip0/fail0/6968.9512ms다. 5bd3f6은 main local/private동일·clean, 완료 remote branch/tag부재·PR69복구ref d40ca5c9를 확인하고 정상-d/-dr로 완료branch를 정리했다. squash 정상경고는 tree/PR/ref 증거와 함께 보존하며 force0이다. 이후 최신main에서 다음 소비정합화 branch를 만들어 즉시 원격 게시했다.
