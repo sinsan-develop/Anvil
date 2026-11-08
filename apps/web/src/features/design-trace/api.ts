@@ -1,3 +1,4 @@
+import {readDocumentSourceRefs,documentSourcesKey,type DocumentSourceRef} from './document-source-refs.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { stageRef, sameStageRef, validStageBinding, type StageBinding, type StageNodeRef } from './stage-api.ts';
 import {documentDraftHash,type DocumentContent} from './editor-api.ts';
@@ -18,7 +19,8 @@ export interface DocumentVersion {
   formRef: { id: string; version: number; contentHash: string };
   stageNodeRef?: unknown;
   stageBinding?: StageBinding | null;
-  content: { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: unknown[] };
+  content: { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: DocumentSourceRef[] };
+  sourceRefs?:DocumentSourceRef[];
   validation: { validForConfirmation: boolean; issues: { code: string; location: string; severity: string; message: string }[] };
   statusHistory: { kind: string; reason: string; at: string;actorRef?:DocumentRecordActor }[];
   contentReviewCriteria: { criteriaVersion: number; formRef: { id: string; version: number; contentHash: string }; items: { criterionId: string; title: string; reviewCriteria: string[] }[] };
@@ -52,7 +54,10 @@ export async function readDocument(client: ApiClient, projectId: string, id: str
   if (!Array.isArray(value.content.attachments) || value.content.attachments.length > 200 || value.content.attachments.some(ref => !ref || !uuid.test(ref.artifactId) || !Number.isSafeInteger(ref.bytes) || ref.bytes < 0 || ref.bytes > 20 * 1024 * 1024 || !hash.test(ref.contentHash) || typeof ref.mediaType !== 'string') || !Array.isArray(value.content.sections) || value.content.sections.length > 200 || value.content.sections.some(section => !section || typeof section.itemId !== 'string' || typeof section.anchor !== 'string') || !Array.isArray(value.content.sourceRefs) || value.content.sourceRefs.length > 200) throw new ApiError('RESPONSE_INVALID');
   if (!criteria || criteria.criteriaVersion !== 1 || criteria.formRef?.id !== value.formRef.id || criteria.formRef?.version !== value.formRef.version || criteria.formRef?.contentHash !== value.formRef.contentHash || !Array.isArray(criteria.items) || criteria.items.length > 200 || criteria.items.some(item => !item || typeof item.criterionId !== 'string' || typeof item.title !== 'string' || !Array.isArray(item.reviewCriteria) || item.reviewCriteria.length > 200 || item.reviewCriteria.some(text => typeof text !== 'string'))
     || !Array.isArray(value.contentReviews) || value.contentReviews.length > 200 || value.contentReviews.some(review => !review || !review.ref || !uuid.test(review.ref.id) || review.ref.criteriaVersion !== criteria.criteriaVersion || review.ref.targetRef?.id !== id || review.ref.targetRef?.version !== version || review.ref.targetRef?.contentHash !== value.contentHash || !outcomes.includes(review.ref.outcome) || !review.reviewer || review.reviewer.kind !== 'HUMAN' || !uuid.test(review.reviewer.userId) || typeof review.reviewer.sameAsTargetRecorder !== 'boolean' || review.sourceKind !== 'HUMAN_REVIEW' || typeof review.reason !== 'string' || !Number.isFinite(Date.parse(review.reviewedAt)) || !integer(review.serverSequence) || !Array.isArray(review.items) || review.items.length > 200 || review.items.some(item => !item || typeof item.criterionId !== 'string' || !outcomes.includes(item.outcome) || typeof item.reason !== 'string'))) throw new ApiError('RESPONSE_INVALID');
-  if(options?.expectedContentHash!==undefined){if(value.content.sourceRefs.length!==0)throw new ApiError('DOCUMENT_REFERENCE_CHANGED');const snapshotHash=await documentDraftHash(value.title,value.formRef,value.content as DocumentContent,(value.stageNodeRef as StageNodeRef|null)??null);check();if(snapshotHash!==options.expectedContentHash)throw new ApiError('DOCUMENT_REFERENCE_CHANGED');}
+  const sources=readDocumentSourceRefs(value.content.sourceRefs);
+  if(Object.hasOwn(value,'sourceRefs')&&documentSourcesKey(value.sourceRefs)!==documentSourcesKey(sources))throw new ApiError('RESPONSE_INVALID');
+  if(!Object.hasOwn(value,'sourceRefs')&&sources.length)throw new ApiError('RESPONSE_INVALID');
+  if(options?.expectedContentHash!==undefined){const snapshotHash=await documentDraftHash(value.title,value.formRef,value.content as DocumentContent,(value.stageNodeRef as StageNodeRef|null)??null);check();if(snapshotHash!==options.expectedContentHash)throw new ApiError('DOCUMENT_REFERENCE_CHANGED');}
   check();let response: Response;
   try { response = await client.transport.call(globalThis, `${base}/files/${ref.artifactId}`, { method: 'GET', credentials: 'same-origin', redirect: 'error', cache: 'no-store', headers: { Accept: 'application/octet-stream' } }); }
   catch { throw new ApiError('CONNECTION_LOST'); }

@@ -1,3 +1,4 @@
+import {DocumentSourceRefs} from './DocumentSourceRefs.tsx';
 import type {SourceLinkBuffer,SourceLinkChange} from './source-link-command-api.ts';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
@@ -295,6 +296,7 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
         {!opened.document.confirmed && !latestAcceptedDocumentReview(opened.document) ? <p className="meta">확정하려면 필수 본문/반복 항목 검사와 정확한 최신 적합 검토가 필요합니다.</p> : null}
         <DesignAnchorOriginal body={opened.body} context={{projectId,documentRef:{id:opened.document.id,version:opened.document.version,contentHash:opened.document.contentHash},bodyHash:opened.document.content.body.contentHash}} selection={anchorSelection} onClear={()=>setAnchorSelection(null)}/>
         {!reading&&!readError&&!loading&&!listError?<DocumentMarkdownPreview key={JSON.stringify([projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash,opened.document.content.body.contentHash])} body={opened.body} mediaType={opened.document.content.body.mediaType}/>:null}
+        {bodyDownload&&!reading&&!readError&&!loading&&!listError?<DocumentSourceRefs key={JSON.stringify(['DOCUMENT_SOURCE_REFS',projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash])} client={client} projectId={projectId} session={session} value={opened.document.content.sourceRefs} onAuthenticationLost={onAuthenticationLost}/>:null}
         {!reading&&!readError&&!loading&&!listError?<StoredDocumentAttachments key={JSON.stringify(['STORED_DOCUMENT_ATTACHMENTS',projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash])} client={client} projectId={projectId} document={opened.document} onAuthenticationLost={onAuthenticationLost}/>:null}
         <h3>형식 검사</h3>{opened.document.validation.issues.length ? <ul>{opened.document.validation.issues.map((issue, index) => <li key={index}><span>{issue.message}</span><span className="meta"> · {issue.code} · {issue.location}</span></li>)}</ul> : <p>기록된 형식 문제 없음 · 내용 검토 합격을 의미하지 않습니다.</p>}
         {recordProvenance?<details key={JSON.stringify(['DOCUMENT_RECORD_PROVENANCE',projectId,session.user.id,session.clientId,recordProvenance.id,recordProvenance.version,recordProvenance.contentHash])} aria-label="보관 작성·상태 주체"><summary>보관 작성·상태 주체</summary>
