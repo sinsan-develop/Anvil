@@ -18613,3 +18613,33 @@ actualDB/PG설치/ACL/RLS/동시잠금/실principal·실키·서비스·Agent/SS
 - `tests/unit/FN08/normal-exchange-challenge.test.ts`: `cea2db5aa62bd5c604e5f0bcdf52e1b2709254b6127f543bf7d91c42673e36cb`
 - `tests/unit/FN08/normal-exchange-challenge-sql.test.ts`: `e25cdd74c5d1a6de26a271943d4d75068729b1d6784d4272cde132ac7d0085c2`
 - `tests/unit/FN08/normal-exchange-challenge-journey.test.ts`: `b1af3b372fba38f830ea672082d3843df70627f0653cdd9b7033cf20015b50ec`
+
+
+### PR78 통합 및 일회 credential 교환 source 착수 — 2026-11-08T17:51:33+09:00
+
+PR78 source45951d9442b8120aed0c36b18b5213c7597cdfc7→main dfba0f02d53907c3d0d896b904469622ed35a6a2(parent6487fdbf/tree54d7ae151c8af7af7ac2e3c556fcefe95ba62484 source동일). Broker42464184408 exit0, Mainc8137d PR실merged/head·fetch/정상FF·merged생산행/COMMIT핵심3P/0F/0S·1792.993ms·diff0,034ae7 실제원격main/PR78복구ref/완료branch/tag부재·clean검산후정상정리. 최신main에서codex/av3-normal-credential-exchange 생성·즉시private동기화했다. 소스중간완료이며실PG/기능인수미검증은유지한다.
+
+다음Primary단일writer GO는채택D071§6의기존credential-exchange path에서SPKI서명/정확nonce·원request/target·grant/독립예약세대·현재권위·보호저장준비를검산하고같은Tx nonce소비v2/세대별유일발급영수증·digest를저장하는구현이다. token원문은확정COMMIT뒤기존보호채널로1회만반환하고DB/로그/파일/대화원문보관0. 같은packet재조회는원receipt/전달불명만반환하며새token자동발급0, 기한은15분과현재권위중최단이다. 보호준비를HUMAN선언/HTTP ready입력으로승격하지않고server-owned현재근거없으면거절하며외부관측은rawDB미제공/유한대기/late차단을지킨다.
+
+소유7은신규normal-credential-exchange.ts·0085_normal_credential_exchange.sql.pending·FN08 normal-credential-exchange 동작/SQL/journey시험3과기존app.ts·execution-proof.ts필수연결이다. 기존실제품명령→예약→challenge→교환행의합성여정을포함하고actualDB/실권한/실사용키·token·서비스·Agent/SSH는0이다. QA값은RAM/합성DB한정, 후행명령조회/permit/wire는다음업무다. Main제품쓰기0·현황/검수/통합소유·추가경로필수면정확설명후조정한다. 전체작업계획미완료이며추가승인질문없이승인범위구현을계속한다.
+
+- credential 교환 구현의소유범위를8경로로확정: 기존normal-exchange-challenge.ts의readCurrent/original을export-only로재사용하는추가1경로를Main이허용했다. 본문/기존호출/응답변경0·server내부재사용이며HTTP입력/권한확대아니다. 소비v2/발급receipt추가뒤기존challenge 원응답재조회·v1발급quota계수·synthetic보호의직접영향검증을요구했다. original의기한지난원응답조회와실credential교환의만료/미소비검사는분리하며새발급에서기준완화0을유지한다. 실제키/DB/권한/서비스/Agent0·단일Primary계속구현이다.
+
+
+### normal 일회 credential 교환 source 최종 검수 — 2026-11-08T18:15:48+09:00
+
+단일Primary source8동결·Main검수: normal /credential-exchange를명시옵션에서만등록하며실제socket TLS/host·정규화헤더·등록SPKI·목적/target/body·양nonce·원request/grant/독립예약세대/주체·현재정책/등록/예산/기한을검산한다. server-owned 보호저장관측은scope복사·DB/원문token/응답채널미제공·1초유한/cancel·현재evidence와최소수명을두번대조하고없으면거절한다. 같은Tx 소비v2/세대별유일발급receipt·digest만저장하며원예약v1은보존한다. 원문은확정COMMIT응답1건에서만반환하고동시/같은packet 재조회는원receipt와delivery UNKNOWN만반환·새token0이다. 기한은15분/현재권위/보호근거중최단이다. COMMIT태그/유실/rollback은503·client폐기·원문반환0으로닫는다.
+
+증거: 최초경로404(기대403)/0085부재 RED각1, pg bigint version문자열1의412 RED→정확v1수용후GREEN. grant가120초넘는다는시험가정1회실패는실제grant만료시412/원문0으로대조했다(권위기한연장0). Primary최종집중/인접7파일27P/0F/0S·6.04초·typecheck0·소유8공백/EOF0. Maincaa4e4 신규동작/SQL/실제품여정5P/0F/0S·5110.3315ms exit0. 독립1aa024 frozen8/hash·manifest83b3045af05584f9b0779f174e338d5b03af93f32436207c4a716e94d9de6b7f C0/I0: 실제START생성rows/예약1·HUMAN3·등록SPKI·usage원장→challenge→교환, v2/receipt양방향·참조순환없음·원문비저장·UNKNOWN재발급차단·기존v1재조회/quota/synthetic보존을검토했다. Main418274 기존challenge파일은export2줄만변경·본문/호출불변을확인했다.
+
+시험에서TLS는socket표시대역이며실TLS통신/인증서검증/실보호저장provider/PG함수·trigger·ACL/RLS/동시잠금/principal·실사용키·Agent/서비스인수는NOT_RUN이다. 0085의DDL/권한은미적용소스이고실DB/권한/키/서비스/Agent/SSH변경0. QA키/nonce/token은RAM/합성DB한정이며대화·로그·파일·DB에원문보관0이다. 발급token의실제명령조회·permit·wire소비는후속/미완료다. Main은8source+현황2만게시/통합하며rollback은소유commit일반revert다. 전체계획미완료.
+
+최종8 raw SHA256:
+- `apps/server/app.ts`: `a03c4b8a09f8d7311f47c8ab02d7ad702f145c910113a0b52153b1a515e3a3c6`
+- `apps/server/modules/executions/execution-proof.ts`: `5adb5c1702ddf5a317fbfe8916811d60e0570b7685e23243dae3aa07954aab2b`
+- `apps/server/modules/executions/normal-exchange-challenge.ts`: `92a2b0c42ab78838eac571c3eed2145d7c1a4701d2fcaa5bec2a097b2d806c53`
+- `apps/server/modules/executions/normal-credential-exchange.ts`: `410ba112073b21301524157c2bc84bb3c7c8a0edaefb188355a2b2c307f2fef9`
+- `db/migrations/0085_normal_credential_exchange.sql.pending`: `7328cfffcbbff943cb681bd02883854b7bf931df87c312969d7eb84186ae63ef`
+- `tests/unit/FN08/normal-credential-exchange.test.ts`: `71e11ccd1412483ae75fddf00d248d576768ad6fac8ae1b71d5849b113c90dc4`
+- `tests/unit/FN08/normal-credential-exchange-sql.test.ts`: `5c5c3709f4388d92f80767e4640f4bd0c9d8b36218597bfef30c8da7894b3de6`
+- `tests/unit/FN08/normal-credential-exchange-journey.test.ts`: `989720723a4a795d05912bc62b0915030e1f122880a75f5e07c96f3a04944fe9`

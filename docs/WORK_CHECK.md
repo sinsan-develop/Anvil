@@ -1,17 +1,17 @@
 # Anvil 작업 점검표
 
-갱신: 2026-11-08T17:41:47+09:00 / 담당: 어울
+갱신: 2026-11-08T18:15:48+09:00 / 담당: 어울
 
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
-- 코드 집계 기준: `development/main` `6487fdbf1b26c635ae27a28644e93aabf8bfc436`.
-- 진행 branch: `codex/av3-normal-exchange-challenge`. 현재 기록을 저장한 문서 commit은 Git 최신 HEAD를 따른다.
-- 현재 우선순위: normal 최초 challenge 발급의 COMMIT 확인·UNKNOWN 연결 폐기와 실제 normal 생성행→발급 합성 여정을 보완해 검수했다(Main11 PASS/type0/최종 C0/I0). 소스 통합 후 기존 D071의 일회 credential 교환·nonce 소비 구현을 이어간다. 실제 SQL/키/권한·서비스·Agent는 미실행이고 전체 계획은 미완료다.
-- 최근 완료: PR75 기록 보완 main 통합·44행 문서 smoke, PR72 기준선 설계 선택 보완/merged12 PASS, PR73 실제 React 합성 여정/merged7 PASS, PR74 기술후보 문서 검수. 이것을 전체 기능 완료로 세지 않는다.
+- 코드 집계 기준: `development/main` `dfba0f02d53907c3d0d896b904469622ed35a6a2`.
+- 진행 branch: `codex/av3-normal-credential-exchange`. 현재 기록을 저장한 문서 commit은 Git 최신 HEAD를 따른다.
+- 현재 우선순위: normal 일회 credential 교환·nonce 소비/발급 영수증의 source 8파일 검수를 마쳤다(Primary27 PASS/type0·Main5 PASS·독립 C0/I0). 소스 통합 후 발급 credential 인증·명령 조회용 challenge/명령 조회를 이어간다. 실제 DB·TLS 통신·보호 공급자·실사용 키·서비스·Agent는 미검증이며 전체 계획은 미완료다.
+- 최근 소스 검수: PR76 duplex 부분 송수신/UNKNOWN 차단, PR77 normal grant·독립 실행 세대 예약, PR78 최초 challenge 발급. 모두 main 통합·핵심 smoke를 확인했으며 실제 Agent·DB·사용자 기능 전체 완료로 세지 않는다.
 - 현재 미확인: 실제 개발 DB 복구·served/Agent 전체 여정·실기기·Oracle 인수. 지정 SSH Connection refused를 PASS로 표시하지 않는다.
 - 결정 대기: 기존 PMO 발행 2건(e59592e3,239845d6), 직접 답변 미수신. 중복 요청하지 않는다.
 - 상세 현재 상황/오류/다음 조치: [WORK_STATUS.md](WORK_STATUS.md)의 ‘현재 상황 보완’ 절.
-- [44항목 상세 근거](https://github.com/sinsan-develop/Anvil/blob/6487fdbf1b26c635ae27a28644e93aabf8bfc436/docs/04_test_reports/AV3/WORK_PLAN_REMAINING_AUDIT_20261108.md)
+- [44항목 상세 근거](https://github.com/sinsan-develop/Anvil/blob/dfba0f02d53907c3d0d896b904469622ed35a6a2/docs/04_test_reports/AV3/WORK_PLAN_REMAINING_AUDIT_20261108.md)
 
 | 완료 | 업무 | 상태 | 남은 기능·검증 |
 |---|---|---|---|
