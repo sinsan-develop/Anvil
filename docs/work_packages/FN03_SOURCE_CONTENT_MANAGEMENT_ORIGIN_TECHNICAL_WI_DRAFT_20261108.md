@@ -220,3 +220,27 @@ PG15공식문서의[행 보안 정책](https://www.postgresql.org/docs/15/ddl-ro
 0077의 fn09_registered_reservation_fixed_point(bigint,jsonb,bigint)는 reservation_cost를 거쳐 cost_projection 및 kind=R인 registered_cost와 fn01_json을 호출한다. 첫 fixed_point만 권한을 주는 matrix는 충분하지 않다. 실제 각 함수의 security mode와 caller를 검산해 필요한 edge만 허용해야 한다. E/O/C/A/U actual은 후보대로 fn75_cost 기반이며 registered_cost에 새 O/E kind를 덧붙여 대체하면 기존 kind whitelist와 충돌한다. 기존 함수 whitelist를 완화하거나 논리행으로 물리비용을 대체하지 않는다.
 
 이 finding은 정적 기술 준비이며 코드/SQL/실DB/권한 실행 증거가 아니다. 후보 cbefc3e3·패킷239845d6의 고정 내용과 미채택 GO0는 유지한다. 구현 전 private helper 전이·finalguard·lock 및 물리 M template을 독립 검수한다.
+
+## 17. 물리 M template의 정확 열·분기 제안
+기존 reader가 실제 초기 정의와 후속 ALTER를 대조했다. 아래 O만 신규 제안이고 나머지는 기존 열 목록이다. 비용 계산/실SQL 검증은 아직 수행하지 않았다.
+
+|행|물리열 전체|정의 근거|
+|---|---|---|
+|O 9|project_id,id,version,management_command_id,policy_event_ref,request_json,request_hash,recorded_at,content_hash|후보 §2, 신규0083 정의 대상|
+|E 15|project_id,id,version,sequence,subject_user_id,disposition,snapshot_json,content_hash,previous_ref,management_command_id,recorded_at,expires_at,previous_id,previous_version,previous_hash|0040:5~13, 마지막3열은 저장 생성열|
+|C 21|id,scope_kind,scope_id,project_id,draft_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,approval_consumption_id,expected_version,control_generation,policy_ref,payload_ref,result_ref,received_at,completed_at|0011:17~26|
+|A 9|id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest,approval_decision_ref,authorized_at|0011:58~63|
+|U 16|project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,recorded_at,source_kind,correction_of|0011:71~77|
+|R 22|id,project_id,actor_id,client_id,external_command_id,operation,command_hash,part_key,part_kind,plan_json,plan_hash,reserved_bytes,settled_bytes,phase,start_fence,authorized_until,server_command_id,authorization_receipt_id,scope_digest,created_at,started_at,settled_at|0059:16~29|
+
+0077:111~123의 cost_projection은 최상위 version/generation/*_version/*_generation/server_sequence/reserved_bytes/settled_bytes/start_fence만 정수 문자열로 정규화한다. E.sequence는 숫자이고 U.server_sequence는 문자열이다. 중첩 snapshot/result/plan에는 같은 정규화가 재귀 적용되지 않는다. 따라서 숫자값을 임의 문자열로 바꿔 비용을 축소하지 않는다.
+
+UUID/hash/원wire·발급ID/정책·previous refs와 원 payload는 준비 단계 실값을 사용한다. 잠금 뒤 확정 sequence도 실값을 쓸 수 있다. 아직 확정되지 않은 E.sequence 상계는 숫자9007199254740991, U.server_sequence 상계는 정규화된 문자열9223372036854775807이며 실제 복제 위치마다 계상한다. 이 상계는 인증/권위 증거가 아니다.
+
+O.recorded_at·E.recorded_at/expires_at·C.received_at/completed_at·A.authorized_at·U.recorded_at·R.authorized_until/created_at/started_at/settled_at은 비null 물리투영을 UTC27자 형식으로 제한하고 실제 정산도 그 범위를 검사한다. 미확정 비용에만 같은27자 ASCII 상계를 사용한다. C.result_ref.serverReceivedAt 등 중첩 공개시각은 기존 공개ISO 원형 그대로이며 물리열 sentinel을 넣지 않는다.
+
+PROJECT C.draft_id·승인없는 C.approval_consumption_id/payload_ref·A.approval_decision_ref·U.approval_ref/correction_of는 명시null 키 비용을 포함한다. E.previous_ref/생성3열은 최초null 또는 실제 이전fullref의 정확 분기를 쓴다. R 금액은 0..10737418240의 실제 r/s 후보이며 RESERVED/IO_STARTED/SETTLED 각 phase/start_fence/started_at/settled_at/server_command/receipt/digest 분기로 비교한다(0077:126~147).
+
+C.result_ref는 부모CM06 외곽exact10/data exact9 전체를 투영하며 evidenceRefs/warnings=[]·권위4값false·새event/previous fullref·sequence/상태문자열도 포함한다. A.subject_ref={kind:HUMAN,userId,clientId}와 U.actor_ref={kind:HUMAN,userId}를 혼용하지 않는다. M은 이5행 상계의 합, B는 실제5행 합이고 R자기비용은 별도 고정점이다. 0075:156~165 fn75_cost에서 실제로 존재하지 않는 request_canonical/snapshot_canonical/_canonical_result_ref 열을 가상 추가하지 않는다.
+
+후속 ALTER 대조에서 이 기존 C/A/U/E/R의 추가 물리열은 확인되지 않았고 제약 확장이 주였다. 새0083 작성시 목록 밖 물리/canonical열을 추가하면 이 표로 완료라고 주장하지 말고 실제 복제비용을 다시 고정한다. 최종 M JSON 전체·고정점 함수 전이 ACL 및 동시성/기한 검수 전에는 동결 완료나 코드GO로 표시하지 않는다.
