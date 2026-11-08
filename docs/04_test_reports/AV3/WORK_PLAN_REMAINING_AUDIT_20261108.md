@@ -92,3 +92,18 @@
 - 현재TC01 후보의 소스/프로필 차이 자체를 새 사람 승인 필수로 단정했던 이전 설명은 실제 효과 대조가 필요하다. 새 native profile 키가 TC01 정상 생성에 필수라는 근거는 이번 대조에서 확인되지 않았다.
 
 읽기 감사는 시험·환경·자료 접근을 새로 수행하지 않았다. 각 항목의 상세 source/문서 근거는 기존 담당자 제출과 WORK_STATUS에 보존했다. 전체 완료 주장은 하지 않으며 Main이 다음 실행 가능한 업무를 계속 소유한다.
+
+
+## 같은날 후속 통합·의존성 대조 — 전체 재감사/완료 아님
+2026-11-08 main969cebbc4a69dda633da0b05f16fabf4c0f070c1까지의 변경분이다. 위44업무의 실제 통합·인수 미완료를 지우지 않는다. 이 기록 때문에 이미 통합한 코드를 다시 구현하거나 같은 검사를 반복하지 않는다.
+
+- PR68·69: 기존 DocumentContent 출처4종의 일반저장/고정조회·제안준비/저장/상세/명시반영/문서GET를 연결했다. PR69 merged36PASS/skip0. 새 Proposal 자체 최상위 출처상세/ImportCandidate 자체출처는 별도 미채택 A/B다.
+- PR70: UI07 변경요청/보관 출처와UI06 import사용문서가 정상비빈출처문서를 거절/빈배열로hash투영하던 소비누락을 보완했다. merged19PASS/skip0. 실부모DOM/served/DB는 이 단위에서 미검증이다.
+- PR71: UI06 정상출처 최신문서의409 비교/두명시조정,전체content hash,UNKNOWN뒤409·scope/CSRF/transport/ABA·지연parentCAS를 보완했다. 실제Editor 합성DOM 포함 merged18PASS/skip0. 실DB/served 인수는 별개다. 세PR 모두source/merge tree일치·remote완료branch/tag부재·PR복구ref/정상정리 증거를 각결과서/WORK_STATUS에 보존했다.
+- IX01 current113 준비는PR67로통합됐으나actualTC01은미실행이다. 지정 SSH의새사전검산336340은exit1 Connection refused이며근본원인/WSL고장확정이아니다. 재시작/키/권한/서비스변경이나새QA발급0이다.
+- FN03 실제관측의소비선은있으나main.ts의보호관측producer는없다. 기존CM01~08 source형상승인과별개로§13.4 관리origin exact9/10·새전용권한/현재관리근거·metadata계상은미채택이다. 후보cbefc3e3/패킷239845d6의A/B/C는PMO가신산님께1회전달중이며후속exactRPC/ACL·잠금/Mtemplate기술준비만진행한다. 임의current=true를정상관측권위로연결하지않는다.
+- 독립FN10/12/13/14 후속읽기에서즉시코드GO할기존미연결단위는추가확정하지못했다. FN10 basis GET는이미실caller가있고순수계산→실workflow facts/dispatch소비계약은미채택이다. stagequeue의WAITING/assignmentRef=null/실행false를실수행으로바꾸지않는다.
+- FN12 보완준비/보관/등록정의화면은구현됐고child HUMAN내용확정도승인된사실을보존한다. 후속불변origin/link·명령2/read2의B후보는새관계guard/정책selector·mutation잠금·비용·원writer회수뒤새실행생산선행이남아있다. 일반root의reason에ID를적는것을계보완료로대체하거나원writer행을지워정상양성을만들지않는다.
+- FN13 실제중지/회수/reconcile와FN14 확정manifest/새binding이전은관측·생산선행이남는다. 저장/조회/준비분석을그권위로승격하지않는다. 이정확의존성을이유로현재SOURCE구현전체를완료라고판정하지않는다.
+
+신규실DB/권한·키·서비스·Agent·실자료조사/운영배포0이다. 목적은전체계획완료이며현재결정·실증거선행과기능자체공백을분리해관리한다.

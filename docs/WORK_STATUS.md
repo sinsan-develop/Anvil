@@ -18395,3 +18395,9 @@ npm run typecheck
 - PMO는게시본9eedba09/패킷239845d6/후보cbefc3e3와부모13.4를전문/해시대조한뒤,새보호저장/전용조회·역할/RPC/RLS/관리metadata10GiB편입은PMO일반위임으로채택하지않고신산님께이번1회A/B/C전달하겠다고회신했다. 이는계약채택/제품GO아니다. CM01~08재승인0·기존상세sourceRefs결정과분리·중복질문0이다. Main은기존Primary에exactRPC/열ACL/DAG·기존auth/project/quota잠금순서기술읽기를계속맡겼고,기존reader에는독립FN10/12/13/14의이미채택된미연결을조사하도록분리했다. 현재codewriter0/실DB·권한·키·서비스·Agent·실자료0,부분결정대기때문에전체idle전환0이다.
 
 - FN03origin정확WI선행읽기에서기존genericreceipt의Tx-start(now()/transaction_timestamp())완료시각과새잠금뒤fresh E/O.recordedAt의E≤O≤C관계모순을확인했다. 또한FN77의현재permission_policyhead잠금은account앞이며새sourceeventhead와구분해야한다. 후보/패킷고정SHA는보존하고 TECHNICAL_WI_DRAFT_20261108.md에미해소기술finding·목적한정freshreceipt/원authorization재사용·중첩persist0/clock역행거절후보를기록했다. 구현전정확함수/DAG/ACL·잠금/시각음성검수없이는해소로표시하지않고codeGO0/실행0을유지한다.
+
+- 기존44감사에PR68~71변경분과FN03관리생산/FN10실facts/FN12후속계보·실행생산/FN13회수/FN14이전의정확선행을추가했다(전체재감사·상태완료승격0). 독립reader는기존caller이미있는basisGET를미연결로오인하지않고새권위차이만확인했다. FN12 B전체는후속실행/원writer회수·공유잠금·계상미정이남아현후보를포괄GO로바꾸지않았다. CM형상과child HUMAN내용확정승인은유지하며현재생산/이전/실행완료로과장하지않는다.
+
+- FN03origin기술WI사전읽기는C0/I0이나미동결부분합격아님이다. 필요한schemaUSAGE/전체물리행SELECT·R operation/partkind/purposeCHECK·invoker즉시guard와definer deferredguard의privateEXEC역할·기존dispatcherowner/caller보존을10절에추가했다. 11절에exact입력후보/callee·불변history(actual/complete)와현재context/finalguard의비순환분리·Rplan현재세션과과거세션구분을구체화했다. 최종시그니처/실열template·역할matrix독립검수전GO0,신산님새계약응답도미확인이다. Primary읽기도구의추측/glob오류2회는추가추측중단/정확경로만사용으로분리했고제품실패로계산하지않는다.
+
+- FN03origin WI에기존실존집계callee/signature·최종정의·전체complete순환금지와quota_account의environment문맥금지를13절에고정했다. 물리C.draft_id/received_at·A.authorized_at·E.generated·R22열비용누락금지를14절에추가했다. PG15공식RLS/SELECT문서읽기로permissive OR·FORCE/권한별도·TRUNCATE별도차단·행잠금UPDATE열필요를교차확인해15절에링크했고실PG검증으로승격하지않았다. 새계약패킷/후보고정SHA불변·제품/SQL쓰기0·허가GO0을유지한다.
