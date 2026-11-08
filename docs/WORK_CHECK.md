@@ -1,12 +1,12 @@
 # Anvil 작업 점검표
 
-갱신: 2026-11-08T19:02:29+09:00 / 담당: 어울
+갱신: 2026-11-08T19:12:29+09:00 / 담당: 어울
 
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
 - 코드 집계 기준: `development/main` `967c9a207452f5d3c9d79a1d8906e25a396dd704`.
-- 현재 제품 기준선: `main`. 완료 구현 branch는 정상 정리했다. 이 마감 기록의 문서 commit은 Git 최신 HEAD를 따른다.
-- 현재 상황: PR81 명령 조회 source를 main 통합·merged7 PASS·원격동일/clean 확인하고 완료 branch를 정리했다. 현재 현황2 마감 기록만 게시한다. 다음은 보호 START 자료 수신이며 실제 DB·키·권한·서비스·Agent는 제외한다.
+- 현재 제품 기준선: `main`(구현/마감 e194fc36). 완료 branch는 정리했다. `codex/av3-normal-start-materials`는 미검수 WIP를 보존한 PAUSED branch다.
+- 현재 상황: 신산님 ‘병합하고 대기해’ 지시로 구현 중지. 검수 완료 PR81·PR82는 main에 반영했고, 후속 시험2/미채택 후보1은 WIP로 별도 보존했다. 재개는 신산님의 명시 지시 후에만 한다.
 - 최근 소스 검수: PR76 duplex, PR77 normal grant/독립 예약, PR78 최초 challenge, PR79 일회 교환·nonce 소비, PR80 조회 challenge, PR81 명령 페이지·고정 응답. 모두 main 통합·핵심 smoke 확인, 실제 Agent·DB·전체 기능 인수는 미완료다.
 - 현재 미확인: 실제 개발 DB 복구·served/Agent 전체 여정·실기기·Oracle 인수. 지정 SSH Connection refused를 PASS로 표시하지 않는다.
 - 결정 대기: 기존 PMO 발행 2건(e59592e3,239845d6), 직접 답변 미수신. 중복 요청하지 않는다.
