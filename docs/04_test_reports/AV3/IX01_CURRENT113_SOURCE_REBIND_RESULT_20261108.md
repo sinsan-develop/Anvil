@@ -18,3 +18,8 @@
 기존 J3 횟수무제한 사용자 지시는 원시각을 유지한다. 실제 실행 시 각 Main 외피의 발급시각·단발intent·전체30분/PG10분/child90초를 새 정확소스와 결박하며 옛grant연장·UNKNOWN자원재사용을 하지 않는다. 이 결과서 자체는 실제 실행GO가 아니다.
 
 최종타입·후보문서/소스지문 검수 뒤 commit/privatepush→PR필수검증→main통합→merged한정smoke→정리 순서다. 회귀 시 해당 소스·시험·문서 변경을 정상revert하며 역사결과를 지우지 않는다.
+
+## 최종 소스 결박
+실행 소스 d7a2c5542f8feca105ebd5dc4b686b3613b01704를 private에 게시했다(79fc68 exit0). Main766819가 이 commit의 requiredSources14 Git 원바이트를 재산출했다. launcher42738B/c1efed7d51ffbfb820b3d458e241ef201fc3ce06e286aa8570e62e86f6616271, helper6478B/ae635f1f5cecc25d2adc120bd2e519c1d093a0b32b8e3a9f6c66293ba15da221이다. 후보의 기존 미결박 표시와 새 직접승인 재요구 모순을 정정했으며, 현재 실제 도구 실측·자원 부재·유한 외피는 아직 미확인이다. source 결박을 실제 실행GO로 취급하지 않는다.
+
+최종 후보19622B/SHAa45d856c7ee90f3a6246c629138d6fab753ee217f79ab6502f2b357ce05e1fa0은 독립 f8d92a→29485f/dff85c에서 시작끝동일·14Gitblob전부일치·C0/I0/M0로 검수됐다. 코드5의 앞선 검수·시험 결과는 재사용하고 문서 delta만 대조했다.
