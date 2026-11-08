@@ -52,12 +52,12 @@ function appCode(){
   });
 }
 
-async function mount(){
+async function mount(controlUnknown=false){
   const code=await appCode();
   const saved=new Map<string,PropertyDescriptor|undefined>();
   const channels:MessageChannel[]=[];
   const events=new Map<string,Set<Function>>();
-  const requests:{path:string;method:string}[]=[];
+  const requests:{path:string;method:string;body?:string}[]=[];
   const document:any=new MemoryNode('#document',9);
   document.ownerDocument=document;
   document.createElement=(name:string)=>new MemoryNode(name,1,document);
@@ -82,10 +82,12 @@ async function mount(){
   let onProject=(id:string):Response|Promise<Response>=>response(project(id));
   const fetch:typeof globalThis.fetch=async(input,init)=>{
     const path=String(input),method=init?.method??'GET';
-    requests.push({path,method});
+    requests.push({path,method,...(method==='POST'?{body:String(init?.body)}:{})});
     assert(path.startsWith('/api/v1/'));
     assert.equal(init?.credentials,'same-origin');
     if(path==='/api/v1/session')return response(session);
+    if(controlUnknown&&path===`/api/v1/projects/${projectA}/control-state`&&method==='GET')return response({schemaVersion:1,projectId:projectA,actorId:userId,clientId,observedAt:new Date().toISOString(),participation:'OWNER',control:{state:'OTHER_CLIENT',basis:{actorId:userId,clientId:projectB,generation:3,version:7}},executionAuthorized:false,controlTransferred:false});
+    if(controlUnknown&&path===`/api/v1/projects/${projectA}/control-requests`&&method==='POST'){const packet=JSON.parse(String(init?.body));assert.equal(packet.operation,'requestControl');assert.equal(packet.projectId,projectA);assert.equal(packet.clientId,clientId);throw Error('SYNTHETIC_CONTROL_REPLY_LOST');}
     if(path.startsWith('/api/v1/projects?'))return response({items:[],nextCursor:null,hasMore:false,observedAt:at,baselineVersion:null});
     const match=/^\/api\/v1\/projects\/([\da-f-]+)$/.exec(path);
     if(match)return onProject(match[1]!);
@@ -293,4 +295,23 @@ test('Session 객체 교체·동일 객체의 스칼라 교체·transport 왕복
       }
     }finally{pending.resolve(response({},401));await h.close();}
   }
+});
+
+test('실제 App UNKNOWN 제어 요청은 상단401·동일 주체 인증 재확인과 scope 왕복 뒤 원 packet만 명시 재확인한다',async()=>{
+ const h=await mount(true),controlHash='#/projects/'+projectA+'/control';
+ const posts=()=>h.requests.filter(request=>request.method==='POST');
+ const change=async(tag:string,value:string)=>{const node=h.nodes().find(node=>node.tagName===tag);assert(node,tag);const key=Object.keys(node).find(key=>key.startsWith('__reactProps'));assert(key);await h.ui.React.act(async()=>(node as any)[key].onChange({target:{value}}));};
+ const pending=()=>h.nodes().find(node=>node.getAttribute('aria-label')==='보존된 인계 명령');
+ try{
+  h.setProject(id=>{const value=project(id);if(id===projectA)value.controlState.clientId=projectB;return response(value);});
+  await openApp(h,controlHash);await h.click('현재 제어 조회',h.container);await h.wait(()=>h.container.textContent.includes('OTHER_CLIENT'));
+  const expiresAt=new Date(Date.now()+600000).toISOString();await change('TEXTAREA','인증 회복에도 유지할 원 인수 요청');await change('INPUT',expiresAt);await h.click('인수 요청 명령 보존',h.container);assert.equal(posts().length,0);assert(pending());
+  await h.click('보존한 명령 전송',h.container);await h.wait(()=>!!pending()?.textContent.includes('UNKNOWN')&&h.container.textContent.includes('CONNECTION_LOST'));
+  assert.equal(posts().length,1);const body=posts()[0]!.body;assert(body);const packet=JSON.parse(body);assert.match(packet.commandId,/^[0-9a-f-]{36}$/);assert.equal(packet.payload.reason,'인증 회복에도 유지할 원 인수 요청');assert.equal(packet.payload.expiresAt,expiresAt);
+  h.setProject(()=>response({code:'AUTH_REQUIRED'},401));await h.click(action);await h.wait(()=>h.header().textContent.includes('접근 확인 전'));assert(!pending());assert.equal(posts().length,1);
+  await h.click('접근 상태 다시 확인',h.container);await h.wait(()=>h.header().textContent.includes('합성 사용자')&&!!pending()?.textContent.includes('UNKNOWN'));assert(pending()!.textContent.includes(packet.payload.reason));assert(pending()!.textContent.includes(expiresAt));assert.equal(posts().length,1,'명시 session 재확인은 제어 POST를 자동 재송신하지 않는다');
+  await h.nav('#/projects/'+projectB+'/control');assert(!pending());assert(!h.nodes().some(node=>node.tagName==='BUTTON'&&node.textContent==='같은 명령 결과 재확인'));assert.equal(posts().length,1,'다른 project scope에서 원명령 전송0');
+  await h.nav(controlHash);await h.wait(()=>!!pending()?.textContent.includes('UNKNOWN'));assert.equal(posts().length,1);assert(pending()!.textContent.includes(packet.payload.reason));
+  await h.click('현재 제어 조회',h.container);await h.wait(()=>h.container.textContent.includes('OTHER_CLIENT'));assert.equal(posts().length,1);await h.click('같은 명령 결과 재확인',h.container);await h.wait(()=>posts().length===2&&h.container.textContent.includes('CONNECTION_LOST'));assert.deepEqual(posts().map(request=>request.body),[body,body]);assert.deepEqual(posts().map(request=>JSON.parse(request.body!).commandId),[packet.commandId,packet.commandId]);assert(pending()!.textContent.includes('UNKNOWN'));
+ }finally{await h.close();}
 });
