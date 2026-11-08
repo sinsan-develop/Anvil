@@ -111,7 +111,7 @@ export function verifyCurrentChildOutcome(value:unknown,handoffHash:string):bool
   &&[ /^1\.\.1\r?$/gm,/^ok 1 - IX01 TC01 현재 격리 저장 여정\r?$/gm,/^# tests 1\r?$/gm,/^# pass 1\r?$/gm,/^# fail 0\r?$/gm,/^# cancelled 0\r?$/gm,/^# skipped 0\r?$/gm,/^# todo 0\r?$/gm].every(pattern=>[...stdout.matchAll(pattern)].length===1)
   &&[...stdout.matchAll(/^ok [0-9]+(?: |$)/gm)].length===1
   &&exact(value.result,['schemaVersion','purpose','handoffHash','ledgerCount','status'])&&value.result.schemaVersion===1
-  &&value.result.purpose==='IX01_CURRENT_TC01_CHILD_RESULT'&&value.result.handoffHash===handoffHash&&value.result.ledgerCount===112&&value.result.status==='PASSED';
+  &&value.result.purpose==='IX01_CURRENT_TC01_CHILD_RESULT'&&value.result.handoffHash===handoffHash&&value.result.ledgerCount===113&&value.result.status==='PASSED';
 }
 export async function runCurrentJourney(input:CurrentInput,ports:CurrentPorts):Promise<CurrentResult>{
  let auth:CurrentAuthorization|null=null,stage:Stage='PREFLIGHT',containerId:string|null=null,networkId:string|null=null,schema:CurrentSchemaInstallationResult|null=null,claimed=false,claimStarted=false;
@@ -518,7 +518,7 @@ export function openCurrentChild(){
  return {
   handoff,historical,appPassword,migratorPassword,fresh,
   sourceBytes(path:string){fresh();return checkedRawFile(path,auth);},
-  finish(){createExclusive(childResultPath,canonicalJson({schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD_RESULT',handoffHash:digest,ledgerCount:112,status:'PASSED'}),fresh);},
+  finish(){createExclusive(childResultPath,canonicalJson({schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD_RESULT',handoffHash:digest,ledgerCount:113,status:'PASSED'}),fresh);},
  };
 }
 

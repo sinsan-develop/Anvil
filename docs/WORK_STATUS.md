@@ -18304,3 +18304,7 @@ npm run typecheck
 - IX01 다음 작업은 현재113SQL의 원시바이트 및 부모/자식 원장 결박 보완이다. IX01_CURRENT113_SOURCE_REBIND_WI_20261108.md에 정확 코드/시험/후보6파일을 Primary 단일writer로 고정하고 Main은 문서만 소유한다. 실제DB/키/권한/서비스/Agent/SSH·과거UNKNOWN조회0, 원J3횟수무제한 지시·각실행유한기한을 구분한다. 독립 WI 검수 뒤 구현을 진행하며 전체44업무미완료 유지다.
 
 - IX01 재결박 WI 독립 C0/I0/M0를 인수하고 Primary 정확6파일 구현 GO를 전달했다. 문서 checkpoint9039d658은 private동일이다. 새 WI의 CRLF가 cached diff에서 trailing whitespace로 검출됐는데 명령이 중단되지 않고 문서 commit까지 진행한 Main 오류를 기록한다. WI만 LF로 정정해 의미/범위 불변 SHAefb4dd22a49d98c41f4d9d2ff64349c6a4d84d8c0e2fa2286523861344904e14, 3d266f diff0이며 이후 commit 전 검사 exit를 명시 확인한다. 역사 파일과 worker 코드 변경은 건드리지 않았다.
+
+- IX01 Primary 첫 RED2ec2bc exit1/2FAIL은 실제Git113 SQL입력을 기존112helper가 IX01_CURRENT_SQL_BASELINE_INVALID로, 정상113자식결과를 기존112판독이 false로 거절함을 재현했다. 제품변경 전 증거이며 실제child/DB실행0이다. 기존105와 UNKNOWN후속차단을 유지한 최소결박 보완·마지막0082음성을 진행한다.
+
+- IX01 GREEN b44aa9/session99997→62af9d는 집중3파일24PASS/skip0/exit0다. 제품diff는0082suffix1행+부모/자식ledgerCount2상수이며 Main4f002f 직접대조/독립4f4af6·074baa 코드5시작끝지문동일C0/I0/M0다. 실제Git113원문3494304B/pathorder4cacf7fd28c8e69ecffd3f060c4a24b096ef1cc401ac453c5602c59fb0ef1db5/ledger d689e5b783caea157e3e420a8ee201f29f84bceda5127fc514d4d67493433d03를 인수했다. type67958→2309f5 exit0/diff74011→6099cd exit0·writer반환/live0, 후보최종sourceHead미결박을독립검수후실소스commit에결박한다. 실제SQL/DB/키/서비스/Agent/SSH실행0이며 전체계획미완료다.

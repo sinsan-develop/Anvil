@@ -9,7 +9,7 @@ const root=fileURLToPath(new URL('../../../',import.meta.url));
 const tsvPath='docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv';
 const suffix=[
   '0075_user_common_setup_definitions','0076_native_first_receive','0077_registered_execution_preparation_options',
-  '0078_start_execution_material_registration','0079_material_credential_namespace_binding','0080_node_decisions','0081_execution_start_origins',
+  '0078_start_execution_material_registration','0079_material_credential_namespace_binding','0080_node_decisions','0081_execution_start_origins','0082_fn09_origin_reuse_synthetic_start',
 ];
 const hash=(value:Uint8Array)=>createHash('sha256').update(value).digest('hex');
 const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd:root,input,windowsHide:true,maxBuffer:16*1024*1024});
@@ -43,11 +43,11 @@ function loadFixture(){
 const model=()=>fixture??=loadFixture();
 const replaceAt=<T,U>(rows:readonly T[],index:number,value:U)=>rows.map((row,i)=>i===index?value:row);
 
-test('IX01 적용 전 원장 없이 역사 Git 바이트 105개와 후속 7개의 정확한 순서를 검산한다',()=>{
+test('IX01 적용 전 원장 없이 역사 Git 바이트 105개와 후속 8개의 정확한 순서를 검산한다',()=>{
   const {tsv,files,historical}=model();
   const before={tsv:hash(tsv),files:files.map(row=>({id:row.id,path:row.path,sha:hash(row.bytes)}))};
   const verified=verifyCurrentSchemaSources(tsv,files);
-  assert.equal(verified.length,112);
+  assert.equal(verified.length,113);
   assert.deepEqual(verified.slice(0,105),historical.map(({id,path,checksum,size})=>({id,path,sha256:checksum,bytes:size})));
   assert.deepEqual(verified.slice(105).map(row=>row.id),suffix);
   assert.deepEqual(verified,files.map(({id,path,bytes})=>({id,path,sha256:hash(bytes),bytes:bytes.length})));
@@ -100,4 +100,22 @@ test('IX01 원장 누락·추가·중복·다른 ID·체크섬·추가 필드 �
     assert.throws(()=>verifyCurrentSchemaLedger(tsv,candidate),{message:'IX01_CURRENT_LEDGER_PROJECTION_INVALID'});
   }
   assert.equal(getterReads,0);
+});
+
+
+test('IX01 마지막 0082 Git 원문은 누락·중복·재배열·변조·CRLF를 허용하지 않는다',()=>{
+ const {tsv,files,ledger}=model(),last=files[112]!;
+ assert.equal(last.id,'0082_fn09_origin_reuse_synthetic_start');
+ assert.equal(last.bytes.length,230239);
+ assert.equal(hash(last.bytes),'4cbca6ad03aa9b4ac8b7ce485ca1dc9e34df8692cd7dc6a0b5de716101fa84b2');
+ const changed=Buffer.from(last.bytes);changed[changed.length-1]=changed[changed.length-1]!^1;
+ for(const rows of [files.slice(0,112),[...files,last],replaceAt(files,111,last),
+  [...files.slice(0,111),last,files[111]!],replaceAt(files,112,{...last,path:last.path+'.other'}),
+  replaceAt(files,112,{...last,bytes:changed}),
+  replaceAt(files,112,{...last,bytes:Buffer.from(last.bytes.toString('utf8').replace(/\n/g,'\r\n'))})]){
+  assert.throws(()=>verifyCurrentSchemaSources(tsv,rows),{message:'IX01_CURRENT_SQL_BASELINE_INVALID'});
+ }
+ for(const rows of [ledger.slice(0,112),[...ledger,ledger[112]!]]){
+  assert.throws(()=>verifyCurrentSchemaLedger(tsv,rows),{message:'IX01_CURRENT_LEDGER_PROJECTION_INVALID'});
+ }
 });

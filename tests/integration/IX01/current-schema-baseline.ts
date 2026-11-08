@@ -18,6 +18,7 @@ const suffix=[
   ['0079_material_credential_namespace_binding','db/migrations/0079_material_credential_namespace_binding.sql.pending',7776,'4297c897e32c8141b03d6c9741c7217a4cdadbda6faf39abc521e9f551592deb'],
   ['0080_node_decisions','db/migrations/0080_node_decisions.sql.pending',50319,'4cf6922374cb640cc01fc6e56858eb6b17247acab720cfdadd76b70bc6d1ad74'],
   ['0081_execution_start_origins','db/migrations/0081_execution_start_origins.sql.pending',52536,'e642d2b48565dc17e5bbb35c1996a48abcaf0c1bbd988b15cde4a5c95c0f34de'],
+['0082_fn09_origin_reuse_synthetic_start','db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',230239,'4cbca6ad03aa9b4ac8b7ce485ca1dc9e34df8692cd7dc6a0b5de716101fa84b2'],
 ] as const;
 const count=historicalCount+suffix.length;
 const sha=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
