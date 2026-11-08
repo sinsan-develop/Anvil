@@ -213,3 +213,10 @@ C.received_at의기존Tx수신시각과새목적의fresh완료시각을섞지않
 PG15공식문서의[행 보안 정책](https://www.postgresql.org/docs/15/ddl-rowsecurity.html)은RLS가SQL권한과별개로적용되고기본permissive정책들이OR로합쳐짐을설명한다. 따라서기존false정책을삭제해전체를열기보다명시purpose역할정책만추가하는후보이며,이문서인용이구현된역할/권한검산을대신하지않는다. 같은문서는TRUNCATE가RLS대상이아님도명시하므로별도권한/차단trigger를보존한다.
 
 [PG15 SELECT 권한](https://www.postgresql.org/docs/15/sql-select.html)은행잠금절에대상표의최소한열UPDATE권한도필요함을명시한다. 위열ACL은잠금조건을명시하기위한것이지임의데이터변경권한을app에주는안이아니다. 실제PostgreSQL설치·권한부여·ACL경쟁·COMMIT시험은NOT_RUN이다.
+
+## 16. 후속 ACL·비용 helper 선행 finding
+기존 Primary의 정확 원문 읽기는 0082의 quota_plan_valid/quota_settled_complete가 SECURITY DEFINER임을 확인했다. 기존 dispatcher의 owner·security mode를 바꾸지 않으며, 새 private plan/complete를 호출하는 실제 기존 owner의 EXECUTE edge까지 명시해야 한다. app/PUBLIC에 private helper를 열어 오류를 우회하지 않는다. INVOKER 즉시 trigger가 private complete를 직접 호출하는 방식도 쓰지 않는다. 정확 signature/실제 owner 확인과 전체 transitive callee ACL matrix는 아직 최종 동결 전이다.
+
+0077의 fn09_registered_reservation_fixed_point(bigint,jsonb,bigint)는 reservation_cost를 거쳐 cost_projection 및 kind=R인 registered_cost와 fn01_json을 호출한다. 첫 fixed_point만 권한을 주는 matrix는 충분하지 않다. 실제 각 함수의 security mode와 caller를 검산해 필요한 edge만 허용해야 한다. E/O/C/A/U actual은 후보대로 fn75_cost 기반이며 registered_cost에 새 O/E kind를 덧붙여 대체하면 기존 kind whitelist와 충돌한다. 기존 함수 whitelist를 완화하거나 논리행으로 물리비용을 대체하지 않는다.
+
+이 finding은 정적 기술 준비이며 코드/SQL/실DB/권한 실행 증거가 아니다. 후보 cbefc3e3·패킷239845d6의 고정 내용과 미채택 GO0는 유지한다. 구현 전 private helper 전이·finalguard·lock 및 물리 M template을 독립 검수한다.
