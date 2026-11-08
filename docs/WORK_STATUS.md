@@ -18579,3 +18579,37 @@ Main9f9cc0은9파일 stage뒤 신규producer/시험 EOF빈줄2를diff-check에�
 - `tests/unit/FN08/normal-initial-execution.test.ts`: `a9b0b6ffd7b1c1a1725d20d49073ff028e5ee8270ae0de887884b4eb1e2680a0`
 - `tests/unit/FN08/normal-initial-execution-sql.test.ts`: `dbda1192ab10b28449651f01bd97647c28d406825b28c1da72ff4f723bbcf3c2`
 - `tests/unit/FN09/execution-start-origin-fixture.ts`: `6f4ff7d38b208c68314e06236ff290ea673bbdc6b957f6db77f40e1af9b86047`
+
+
+### PR77 통합 및 normal 교환 challenge 착수 — 2026-11-08T17:08:23+09:00
+
+PR77 source36820a0a7a9963e1998d9542a6be996dd5216b1f→main6487fdbf1b26c635ae27a28644e93aabf8bfc436(parentb6b82017/treeb67bb60ac2bbf88959c4eefb59f474199b6fbd7f source동일). Broker42461309988 exit0, Mainf8b1d9 실제PRmerged/head검산·fetch/정상FF·merged핵심3PASS/skip0·2720.58ms·diff0, d67b83 원격main/PR77복구ref/완료branch/tag부재·clean검산후정상branch/tracking정리. 최신main에서codex/av3-normal-exchange-challenge 생성·즉시private동기화했다. 원묶음127P/1F와단독1P/기존미검증경계는이력대로보존한다.
+
+다음업무 Primary단일writer GO: normal CREDENTIAL_EXCHANGE challenge의기존path/서명요청을현재grant/정확실행예약·원command/보호등록SPKI·HUMAN/제어/논리binding/정책/예산에같은Tx로검산하고공개nonce를COMMIT후반환하는source구현. 허용6경로는신규normal-exchange-challenge.ts·0084_normal_exchange_challenge.sql.pending·FN08 normal-exchange-challenge 동작/SQL시험2와기존app.ts·execution-proof.ts의필수연결이다. D07198의32bytes/최대2분·grant분당5/수명10000·동일request/hash원응답/기한보존·다른hash/clientNonce409·포화429를Main6ae725/c329cb원문확인했다. 실제교환/nonce소비/token발급/wire는후속이고현재범위아니다. 미설정/권위미관측은거절하며대역default등록·synthetic승격·새공개auth의미발명0이다. actualDB/권한/키/서비스/Agent/SSH변경0, 합성RAM키/공개nonce만시험하며실사용자키/자료조사0. Main제품쓰기없이검수/기록/통합을계속한다. 전체계획미완료다.
+
+
+### normal challenge 검수 보완 — 2026-11-08T17:30:55+09:00
+
+Primary exact6 최초RED1P/2F→집중/인접25P/0F/0S·3742.6762ms·typecheck0·공백검사0로인계했다. 헤더배열TS2352시험타입1건보정·대상1P는이력으로분리한다. 독립0567ef읽기에서COMMIT query의command tag미검사로PG ROLLBACK응답에도성공nonce를반환할수있는Important1을발견했다. 기존AccessRepository거래패턴처럼정확COMMIT검사·불명client폐기/원request/hash보존·내부재시도/재발급0과ROLLBACK tag/응답유실음성을Primary에지시했다.
+
+Main1e9bc5는기존시험이수동binding/hash(grant)와SQL current의정해진반환을사용하며앞normal producer의실제생성rows를소비하지않음을확인했다. GO의예약→발급연결증거를충족하도록 신규tests/unit/FN08/normal-exchange-challenge-journey.test.ts 1경로를추가소유허용(총7). 실제제품normalCommand/POST가만든grant/예약·세대/원rows에서다음current반환을도출하고ref/query를검산하는합성여정을추가한다. SQL함수의실제PG실행/원자성증거라고주장하지않으며보호메서드성공대역·수동grant정답주입을하지않는다. user키/실자료0·RAM QA서명만, actualDB/권한/키/서비스/Agent/SSH변경0. Main제품쓰기0·commit/병합0·수용보류·단일Primary보완중이다.
+
+
+### normal 최초 challenge source 최종 검수 — 2026-11-08T17:41:47+09:00
+
+D071의기존정규화path에서CREDENTIAL_EXCHANGE 최초발급만연결했다. 등록SPKI/RAM QA P256실서명·목적/target/범위/세대/DB시각·현재normal grant와별도실행예약·HUMAN/정책/등록/예산·최단기한을대조하고32byte공개nonce를같은Tx에저장·COMMIT뒤반환한다. 같은request/hash·동시/31초뒤재조회는원nonce/기한만반환, 다른hash/clientNonce재사용409·분5/수명10000포화429·회수/변조/COMMIT실패쓰기0을검증했다. 미설정기본거절·기존synthetic함수/trigger분기는보존했다.
+
+검수I1 COMMITtag미확인RED2를보완해정확COMMIT만성공, ROLLBACK tag/응답유실은503 EXECUTION_CHALLENGE_COMMIT_UNKNOWN·nonce응답0·client1회폐기로닫고자동재시도0을확인했다. 모형상COMMIT성공뒤응답유실시명시동일request재조회는원nonce/기한·행1을회복한다. 신규journey는빈grant/credential에서기존제품POST NORMAL_QUEUE_STORED가생성한행·grantfullref/원등록SPKI/예산·HUMAN3/실행예약1을다음challenge경로가소비했다. SQL RPC반환대역은실생산rows에서만도출하며실PG함수실행이라고주장하지않는다.
+
+증거: Primary보완전신규/인접25P/0F/0S·3742.6762ms·typecheck0, I1보완뒤동작/journey10P/0F/0S·3.27초·typecheck86461 exit0·공백0. Main80b3d2 최종동작/SQL/여정11P/0F/0S·3113.1021ms exit0. 독립7808ed 변경delta최종C0/I0는정확COMMIT/불명폐기·원응답만재조회·실생산행연결·불변4파일을대조했다. 서로겹치는25/10/11을고유합계로부풀리지않는다. 이전미등록RED1P/2F·시험헤더배열TS2352보정·COMMIT누락이력은그대로보존한다.
+
+actualDB/PG설치/ACL/RLS/동시잠금/실principal·실키·서비스·Agent/SSH·사용자인수는NOT_RUN. 0084미적용이며REVOKE/GRANT EXECUTE는소스일뿐실권한변경0. 실제nonce소비/credential발급은다음단계이고현재완료로세지않는다. 전체FN06/08/IX02/계획미완료, Main제품쓰기없이source7+현황2만게시/통합하며rollback은소유commit일반revert다.
+
+최종7 raw SHA256:
+- `apps/server/app.ts`: `14153aa3b9366090286ff1457ad98506bdaad71ae5b4bfa51f5b6a431a67e0b3`
+- `apps/server/modules/executions/execution-proof.ts`: `9610940cf50e88280d8709a5d11882104eb6eab69cc3d67586bb501177d057dc`
+- `apps/server/modules/executions/normal-exchange-challenge.ts`: `d9a82f9d56041a64d3f1677d9eaec687deeb2c3a75b79d4469108384209414ce`
+- `db/migrations/0084_normal_exchange_challenge.sql.pending`: `dc273c5d904a1ad4ceebe2c065046c7754cf485105c31adbc66efe6364b9503e`
+- `tests/unit/FN08/normal-exchange-challenge.test.ts`: `cea2db5aa62bd5c604e5f0bcdf52e1b2709254b6127f543bf7d91c42673e36cb`
+- `tests/unit/FN08/normal-exchange-challenge-sql.test.ts`: `e25cdd74c5d1a6de26a271943d4d75068729b1d6784d4272cde132ac7d0085c2`
+- `tests/unit/FN08/normal-exchange-challenge-journey.test.ts`: `b1af3b372fba38f830ea672082d3843df70627f0653cdd9b7033cf20015b50ec`

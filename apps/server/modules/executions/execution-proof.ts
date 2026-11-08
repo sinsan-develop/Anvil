@@ -86,6 +86,16 @@ function exactRoute(t:any,c:any,exchange:boolean){
  const r=route(t.method,t.path);
  if(r.mode!==c.mode||r.connectorId!==c.connectorId||r.executionId!==c.executionId||(r.suffix==='/credential-exchange')!==exchange)return invalid();
 }
+/** 발급 요청만 검증한다. 보호 DB에서 읽은 현재 값과 비교하며 교환 proof나 token을 만들지 않는다. */
+export function verifyNormalExchangeRequest(spki:unknown,sig:unknown,value:unknown,binding:any,at:Date){
+ const p=challengeRequest(value);
+ if(binding.transport!=='NORMAL_PROTECTED'||binding.mode!=='EXECUTION'||p.purpose!=='CREDENTIAL_EXCHANGE'
+   ||!Number.isFinite(at.getTime())||Math.abs(Date.parse(p.issuedAt)-at.getTime())>30000
+   ||p.target.queryHash!==contentHash(canonicalJson({})))return invalid();
+ exactSubject(p,binding);exactRoute(p.target,binding,true);
+ signature(spki,sig,executionChallengeRequestBytes('EXECUTION',p),binding.publicKeyFingerprint);
+ return p;
+}
 function signature(spki:unknown,sig:unknown,bytes:Buffer,fingerprint:string){
  if(publicKeyFingerprint(spki)!==fingerprint||!verify('sha256',bytes,{key:readHostPublicKey(spki),dsaEncoding:'ieee-p1363'},canonicalBase64(sig,64)))return invalid();
 }
