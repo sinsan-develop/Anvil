@@ -105,6 +105,16 @@ export function verifyNormalCredentialExchangeProof(spki:unknown,sig:unknown,val
  signature(spki,sig,executionProofBytes('EXECUTION_CREDENTIAL_EXCHANGE',p),binding.publicKeyFingerprint);
  return verified();
 }
+/** 조회 시 실제 query를 canonicalize해 여기서 봉인한 hash와 대조한다. */
+export function verifyNormalCommandChallengeRequest(spki:unknown,sig:unknown,value:unknown,binding:any,at:Date){
+ const p=challengeRequest(value);
+ if(binding.transport!=='NORMAL_PROTECTED'||binding.mode!=='EXECUTION'||p.purpose!=='EXECUTION_REQUEST'||
+   p.target.method!=='GET'||p.target.path!=='/api/v1/connectors/'+binding.connectorId+'/executions/'+binding.executionId+'/commands'||
+   p.target.bodyHash!==contentHash(canonicalJson(null))||!Number.isFinite(at.getTime())||
+   Math.abs(Date.parse(p.issuedAt)-at.getTime())>30000)return invalid();
+ exactSubject(p,binding);
+ signature(spki,sig,executionChallengeRequestBytes('EXECUTION',p),binding.publicKeyFingerprint);
+}
 function signature(spki:unknown,sig:unknown,bytes:Buffer,fingerprint:string){
  if(publicKeyFingerprint(spki)!==fingerprint||!verify('sha256',bytes,{key:readHostPublicKey(spki),dsaEncoding:'ieee-p1363'},canonicalBase64(sig,64)))return invalid();
 }

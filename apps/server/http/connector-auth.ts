@@ -4,6 +4,16 @@ import {AuthFailure} from '../modules/access/repository.ts';
 /** HUMAN cookie에 connector Bearer를 합쳐서 자료/명령 권한을 얻을 수 없다. */
 export function enforceConnectorCredentialScope(request:FastifyRequest):void {
  const value=request.headers.authorization;
+ const headers=request.raw?.rawHeaders??[],authValues:string[]=[];
+ for(let i=0;i<headers.length;i+=2)if(headers[i]?.toLowerCase()==='authorization')authValues.push(headers[i+1]??'');
+ const values=[...authValues,...(Array.isArray(value)?value:[value])];
+ if(values.some(v=>typeof v==='string'&&/(?:^bearer\s*|(?:^|[^a-z0-9_-]))av3ex1_/i.test(v.trim()))){
+  if(authValues.length!==1||typeof value!=='string'||value!==authValues[0]||!/^Bearer av3ex1_[A-Za-z0-9_-]{43}$/.test(value)||
+    request.method!=='POST'||request.routeOptions.url!=='/api/v1/connectors/:cid/executions/:eid/challenges'||
+    request.headers.cookie!==undefined||headers.some((h,i)=>i%2===0&&h.toLowerCase()==='cookie'))
+    throw new AuthFailure('CONNECTOR_CREDENTIAL_SCOPE_DENIED',403);
+  return;
+ }
  if(typeof value!=='string')return;
  if(/^Bearer\s+av3ct1_/i.test(value.trim())){
   if(request.method!=='GET'||request.routeOptions.url!=='/api/v1/connectors/:id/registration-status')throw new AuthFailure('CONNECTOR_CREDENTIAL_SCOPE_DENIED',403);
