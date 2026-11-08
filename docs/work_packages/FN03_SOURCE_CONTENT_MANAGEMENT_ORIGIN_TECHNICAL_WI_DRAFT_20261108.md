@@ -299,3 +299,12 @@ reader가 실제 source-content-policy-definition.ts:14~28, source-content-polic
 최종 M전체JSON 전 미확정slot은 E/O·C공개완료ISO·A/U/R물리시각의실DB공급순서, R중첩 generation/part금액의정확타입, 아직모르는U순번의비용상계다. 기존예약자기비용은part금액에문자열을쓰므로최상위정규화가이를고쳐줄것이라고가정하지않는다. U19자리상계는비용용이며실evidence reader Number.isSafeInteger 허용범위를확대하지않는다.
 
 원envelope1MiB/E.snapshot1MiB/도출origin snapshot2MiB·정확공개ISO/물리27자·safe순번증가/refs/hash/null·전체slot타입상계·B≤M/s≤r중하나라도미정이면예약준비를거절한다. 비용sentinel은저장/hash/권위검산에사용하지않는다. 기술slot동결/실제SQL검증완료로판정하지않으며실행GO0다.
+
+## 20. R 중첩 타입의 내부 동결 후보
+기존 source 타입 읽기 뒤 Main의 내부 선택은 credentialGeneration/controlGeneration을 JSON 숫자로 보존하되 모두 양의 safe정수로 제한하는 것이다. callback의 Number 변환만으로 안전하다고 주장하지 않는다. 실제 DB bigint 원값과 JSON 숫자값의 정확 대조 및 현재 인증·제어 검산이 함께 성립해야 한다. 0/음수/소수/safe범위초과·숫자처럼 보이는문자열은 거절한다. q.controlGeneration 원 숫자형을 바꾸지 않는다. 이는 공개 wire/권한범위를 늘리지 않는 신규 내부 plan validator 준비이며 구현 전 독립검수 대상이다.
+
+coverageGeneration은 기존0077:304/1152~1153·0059:119 패턴대로 양의 십진문자열이고 safe53 이하·DB account generation::text와 정확히 같아야 한다. part bytes/reservedBytes/settledBytes는 기존project-storage-quota.ts의 원형대로 선행0 없는 십진문자열(0은문자열0)·10737418240이하이며 숫자/bigint 직접입력을 거절한다. quotaBytes의넓은일반변환기능으로 part형상을확대하지않는다.
+
+transactionId는 같은Tx의 txid_current()::text 원문자열이며 Number변환0이다. authorizedUntil은 기존중첩plan UTC밀리초ISO문자열, 물리R.authorized_until의비용투영UTC27자와구분한다. 인증idle/absolute수명은기존ISO문자열이고 reauthUntil Date|null을plan에암묵직렬화하지않는다. 새목적fresh시각과원C.received_at의분리·최소기한/역행거절은그대로다. 실제clock공급순서/M전체JSON·전체matrix/시그니처동결은별도남아있다.
+
+근거는 access/repository.ts:16,62,71, project-command.ts:29,127, 0077:244,304,1152~1153, 0059:12,119 및 project-storage-quota.ts:29,39의 읽기다. 실SQL/DB/권한/키/서비스/Agent실행0이며 코드GO0를 유지한다.

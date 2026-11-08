@@ -18425,3 +18425,14 @@ npm run typecheck
 - UI02 resolver정정뒤89eb7e/session65930 첫FAIL표시가나왔지만동일handle939238은종료/stack미출력인실행1개로확인됐다. 제품RED/terminalFAIL로승격0·중복재실행0·무조건kill0. setup정리try전실패로React scheduler채널잔여가능성은가설이며원인/정확PID·부모·시작지문/소유정리방안을Primary가확인한다. 실제서비스·DB변경0이다.
 
 - UI02정확test경로필터CIM조회67c798은sandbox CimException/exit1로실패했다. PID0/실행종료로해석0,원65930 handle유지/중복0이다. Primary가같은필터의승격읽기메타데이터(PID/ParentPID/CreationDate만)로소유확인중이며kill/서비스·권한변경0이다.
+
+- UI02정확소유읽기1a50ca exit0는신규test Node parent14344(부모39152/시작12:45:07.263552+09),child23904(부모14344/시작12:45:07.336206+09)2개를확인했다. Main은이자체합성시험의정확자원회수로서같은명령경로/생성시각/부모관계를직전재검산한child23904 1회종료→원65930출력/terminal회수만지시했다. parent무조건종료/다른Node·서비스·Agent0,신원불일치시보존이다. 강제회수는자연종료PASS로표시하지않고oldterminal/잔여확인전새실행0을유지한다.
+
+- UI02소유재검산뒤child23904만수동회수76c4a1 exit0,parent무조건종료0·원65930→8ee840 terminal exit1/1FAIL을회수했다. 정확원인은시험close의port.close직후hasRef=false즉시assert가실패해나머지채널/globals정리가끊긴것이며제품DOM여정RED아니다. 독립읽기c50b7c도초기화try진입전예외·unmount/정리assert뒤회수누락을확인했다. Primary가close완료await/초기화전체보호·독립finally로최소보완하고정확잔여0뒤만새실행한다. 이전출력/수동종료는보존·자연PASS소급0이다.
+
+- Main의1653a2는catalog에없는축약skill경로를추정해SilentlyContinue로읽기를시도한운영오류다. 같은추정경로원인 누적3회(앞342b0c/6f647d)를인식해그방식추가중단·실catalog정확절대경로만사용으로인수했다. 0707de에서실제제공된using-superpowers/verification-before-completion전문앞부분을정확열람했고권한변경/파일복원0이다. 이후새경로는실목록/제공catalog확인후만사용한다. 제품오류나검증PASS로계산하지않는다.
+
+- FN03기술WI20절은기존실type공급자읽기뒤R중첩 credential/control을양의safe숫자+DB원값정확대조,coverage를양의safe십진문자열,part금액을기존십진문자열/cap,txid문자열/공개밀리초ISO로내부선택했다. callback Number변환만의안전주장0·일반quotaBytes입력형상전용0. 공개wire/새권한변경없으며독립검수전/전체M·clock·matrix동결전GO0/실행0이다.
+
+- UI02정확잔류2a5ea6 exit0/OWNED_TEST_NODE_COUNT0 뒤에만새시험을실행했다. Primary는globals변경부터전체try/root nullable·독립회수/첫오류보존·port.close callback완료await를보완했고 f4eba9 exit0/실React정상여정1PASS(4종각각+묶음/선택POST0·명시POST1·strict부모저장)다. Vite bundle전native채널소유주장0·실서비스/DB0. 거절/오염/late/CAS/UNKNOWN음성은진행중이며전체새파일완료로승격0이다.
+- FN03기술WI19/20 SHA18f42419 scoped독립C0/I0/M0로E16/O도출10·원hash/result/digest·세대/금액/시각형상정합화를확인했다. 부모후보/패킷불변/clock·M전체JSON·전체ACL동결전GO0/실SQL0이다.
