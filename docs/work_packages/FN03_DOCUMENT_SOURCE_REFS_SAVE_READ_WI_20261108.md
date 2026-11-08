@@ -8,6 +8,7 @@ WORK_PLAN FN03/UI06의 문서 원문·출처 저장/보호조회 구현이다. I
 ## 정확 소유 파일
 - 신규 apps/server/modules/documents/document-source-refs.ts
 - 기존 apps/server/modules/documents/project-documents.ts
+- 기존 apps/server/modules/knowledge/conversations.ts (readMessage의 optional backupBudget 전파만)
 - 신규 tests/unit/FN03/document-source-refs.test.ts
 필요경로가다르면쓰기전에Main에근거를반환한다. 기존다른작업을되돌리지않는다. Main은본WI/WORK_STATUS/결과문서만소유한다.
 
@@ -28,3 +29,6 @@ WORK_PLAN FN03/UI06의 문서 원문·출처 저장/보호조회 구현이다. I
 - 기존본문/첨부·검토/확정·replay 및backup/protectedreader소비직접인접을선택검증. 기준/기대값완화·기존시험삭제0.
 
 집중시험은신규test1,직접인접은현재호출영향을보고최소선택한다. typecheck는Primary가담당하며Main중복실행0. 명령/exit/결과/동결SHA/정식실패횟수·미검증을반환하고writer반환을명시한다. 합성PASS를실DB/화면/전체FN03완료로올리지않는다. Main독립검수→commit/privatepush→PR→필수검증/main→mergedsmoke/정리후다음기존계약소비를진행한다.
+
+## 내부 예산 전달 보완
+ProjectConversations.readMessage는현재5인자로호출되며originalText에backupBudget를전달하지않는다. genuine reader/문서객체를유지하기위해기존5인자와외부응답은그대로두고선택적6번째 ArtifactBackupReadBudget를전파한다. budget이주어지면진입/await경계에서기존assertArtifactBackupReadBudget로확인하고originalText의기존4번째인자로넘긴다. budget없는기존caller동작은불변이다. fake문서adapter나전체ProjectDocuments형단언으로진짜reader를대체하지않는다. 추가허용은conversations.ts의해당범위뿐이며공개HTTP/권한/영속schema변경0이다. 신규시험에서대화출처의동일budget전파와만료거절을검산하고기존대화/지식·보호plan직접인접을필요범위만확인한다.
