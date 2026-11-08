@@ -204,15 +204,12 @@ test('문서 전체 출처의 실제 저장·보호조회는 메모리 DB/FS 경
    assert.ok(reads.slice(count).includes(join(root,'blobs',pid,f.sourceArtifact.artifactId)));
   }
  });
- await t.test('기존 제안 입력의 비빈 출처412는 문서 base 타입 확장과 별개로 유지된다',async()=>{
+ await t.test('기존 제안 최상위 payload.sourceRefs 비빈412와 DB0는 유지된다',async()=>{
   const {prepareDocumentProposalMaterial}=await import('../../../apps/server/modules/documents/project-proposals.ts');
   const f=fixture(),base=await f.docs.version(f.db,actor,pid,f.document.id,1),baseRef={id:base.id,version:base.version,contentHash:base.contentHash};
-  for(const field of ['sourceRefs','proposedContent'] as const){
-   const proposedContent={...base.content,sourceRefs:field==='proposedContent'?[f.document]:[]};
-   const before=f.queries.length;
-   await assert.rejects(prepareDocumentProposalMaterial(f.db,actor,pid,{baseRef,proposedContent,reason:'기존 제안 경계',sourceRefs:field==='sourceRefs'?[f.document]:[]},base,async()=>{throw Error('원문 읽기 금지');}),{message:'DOCUMENT_REFERENCE_CONNECTION_PENDING',statusCode:412});
-   assert.equal(f.queries.length,before);assert.equal(f.writes.length,0);
-  }
+  const proposedContent={...base.content,sourceRefs:[]},before=f.queries.length;
+  await assert.rejects(prepareDocumentProposalMaterial(f.db,actor,pid,{baseRef,proposedContent,reason:'기존 제안 경계',sourceRefs:[f.document]},base,async()=>{throw Error('원문 읽기 금지');}),{message:'DOCUMENT_REFERENCE_CONNECTION_PENDING',statusCode:412});
+  assert.equal(f.queries.length,before);assert.equal(f.writes.length,0);
  });
  await t.test('기존 protected plan reader도 출처와 backup 제한을 유지한다',async()=>{
   const f=fixture(),doc=f.seed(80,[f.document,f.instruction]);

@@ -11,8 +11,9 @@
 - apps/server/modules/documents/project-documents.ts
 - apps/web/src/features/design-trace/proposal-api.ts
 - apps/web/src/features/design-trace/DocumentEditor.tsx
-시험3:
+시험4:
 - 신규 tests/unit/FN03/document-proposal-content-sources.test.ts
+- 기존 tests/unit/FN03/document-source-refs.test.ts (207~215의옛양배열412사례정합화만)
 - 기존 tests/unit/UI06/proposal-api.test.ts
 - 신규 tests/unit/UI06/document-proposal-content-sources-ui.test.ts
 공통SourceRef판독기/SourceRefs선택컴포넌트는재사용하고임의수정하지않는다. 필수추가경로는쓰기전Main에근거를반환한다. 다른담당자의변경·Main문서를되돌리지않는다.
@@ -34,3 +35,6 @@ Primary는집중/선택한직접인접/typecheck·diff,Main은필요Webmemorybui
 
 ## 독립 문서 그래프 예산의 정확 배치
 base문서는기존version호출의전체200회예산으로검산하고,proposedContent는별도의전체200회예산으로검산한다. 두독립문서내용의적법한200개출처를같이썼다는이유로합계200에서거절하지않는다. 각그래프의전이/전종류는공유200회이며그래프깊이/문서마다리셋하지않는다. prepare와실제publish전재계산은각각새검산을수행하고성공/권한cache로대체하지않는다. 따라서phase당두그래프의최대합계400회로유한하고새사용자정책·quota예약목적은추가하지않는다. base200/proposed200정상과proposed전이201거절을구분해검사한다.
+
+## 기존 임시 거절 시험의 정확 정합화
+PR68의document-source-refs.test.ts207~215는현재두배열을모두412로거절하는임시단계를고정했다. 이번기존계약의proposedContent허용에따라그사례는최상위payload.sourceRefs의412/DB효과0만그대로유지하도록명칭/분기를정정한다. proposedContent의옛거절기대는신규genuine quota route의4종정상/출처만변경한제안·원문/권한음성으로대체해더강한실소비증거를남긴다. placeholder통과/다른assert삭제·모든거절해제는금지하며최종보고에원/새검수차이를명시한다. Mainb9051e가정확본문을직접대조한추가시험1경로만허용한다.

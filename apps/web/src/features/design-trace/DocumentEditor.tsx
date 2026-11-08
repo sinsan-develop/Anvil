@@ -1,3 +1,4 @@
+import {readDocumentSourceRefs} from './document-source-refs.ts';
 import {DocumentSourceRefs} from './DocumentSourceRefs.tsx';
 import type {DocumentPreparationGate} from './document-preparation-gate.ts';
 import{QuarantinedOriginalNotice}from'./QuarantinedOriginalNotice.tsx';
@@ -67,40 +68,44 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
     try { const next = adoptDocumentConflict(buffer, comparison, session, resolution === 'LATEST_METADATA' ? manualAcknowledged : acknowledged, resolution); onChange(previous => previous?.pending?.saveCommandId === comparison.rejectedCommandId && canCompareDocumentConflict(previous) ? next : previous); setComparison(null); setAcknowledged(false); setManualAcknowledged(false); }
     catch (cause) { setComparisonError(cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID')); }
   }
-  function proposalCheckpoint(value: DocumentProposalBuffer) { onChange(b => b?.ownerUserId === session.user.id && b.projectId === buffer.projectId && b.proposalState?.bindingId === value.bindingId && !b.pending && !b.importState && !b.importPreparationId ? { ...b, proposalState: value } : b); }
-  function proposalFailure(cause: unknown, mutation = true) {
-    const e = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
-    onChange(b => b?.ownerUserId === session.user.id && b.projectId === buffer.projectId && b.documentId === buffer.documentId ? { ...b, ...(b.proposalState ? { proposalState: { ...b.proposalState, uncertain: isConfirmedArtifactQuarantine(e)?false:b.proposalState.uncertain || mutation && (e.code === 'RESPONSE_INVALID' || e.status >= 500 || e.status === 0 && e.code !== 'SAVE_CONTINUATION_PAUSED'), failure: documentFailure(e) } } : { failure: documentFailure(e) }) } : b);
-    if (mounted.current && e.status === 401) onAuthenticationLost();
+  function proposalOperation(){const ticket=epoch.current,owner=context.current;
+    return()=>mounted.current&&ticket===epoch.current&&known.current.has(latest.current)&&client.transport===owner.transport&&session.user.id===owner.user&&session.clientId===owner.clientId&&session.csrfToken===owner.csrf&&latest.current.projectId===owner.projectId&&latest.current.controlGeneration===owner.generation;
   }
-  async function propose() {
-    if (running.current || buffer.pending || buffer.importState || buffer.importPreparationId || buffer.ownerUserId !== session.user.id || buffer.proposalState?.proposal) return;
+  function proposalCheckpoint(value:DocumentProposalBuffer,active:()=>boolean){managedChange(b=>active()&&b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.proposalState?.bindingId===value.bindingId&&!b.pending&&!b.importState&&!b.importPreparationId?{...b,proposalState:value}:b);}
+  function proposalFailure(cause:unknown,mutation:boolean,active:()=>boolean){
+    if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');
+    managedChange(b=>active()&&b?.ownerUserId===session.user.id&&b.projectId===buffer.projectId&&b.documentId===buffer.documentId?{...b,...(b.proposalState?{proposalState:{...b.proposalState,uncertain:isConfirmedArtifactQuarantine(e)?false:b.proposalState.uncertain||mutation&&(e.code==='RESPONSE_INVALID'||e.status>=500||e.status===0&&e.code!=='SAVE_CONTINUATION_PAUSED'),failure:documentFailure(e)}}:{failure:documentFailure(e)})}:b);
+    if(active()&&e.status===401)onAuthenticationLost();
+  }
+  async function propose(){
+    if(running.current||buffer.pending||buffer.importState||buffer.importPreparationId||buffer.ownerUserId!==session.user.id||buffer.proposalState?.proposal)return;
     const release=preparationGate?.acquire();if(preparationGate&&!release)return;
-    running.current = true; setBusy(true); setProposalAcknowledged(false);
-    try {
-      let state = buffer.proposalState;
-      if (!state) { state = await prepareDocumentProposal(buffer, session); const prepared = state; onChange(b => b?.ownerUserId === session.user.id && b.projectId === buffer.projectId && b.documentId === buffer.documentId && b.baseVersion === buffer.baseVersion && !b.pending && !b.importState && !b.importPreparationId && !b.proposalState ? { ...b, proposalState: prepared } : b); }
-      state = { ...state, failure: null }; proposalCheckpoint(state);
-      proposalCheckpoint(await continueDocumentProposal(client, state, session, proposalCheckpoint, () => mounted.current));
-    } catch (cause) { proposalFailure(cause); } finally { release?.(); running.current = false; if (mounted.current) setBusy(false); }
+    const ownerActive=proposalOperation();let state=buffer.proposalState;const active=()=>ownerActive()&&(!state||latest.current.proposalState?.bindingId===state.bindingId);
+    running.current=true;setBusy(true);setProposalAcknowledged(false);
+    try{
+      if(!state){state=await prepareDocumentProposal(buffer,session);if(!ownerActive())return;const prepared=state;managedChange(b=>ownerActive()&&b===buffer&&!b.proposalState?{...b,proposalState:prepared}:b);}
+      state={...state,failure:null};const checkpoint=(p:DocumentProposalBuffer)=>proposalCheckpoint(p,ownerActive);
+      checkpoint(state);const next=await continueDocumentProposal(client,state,session,checkpoint,active);if(active())checkpoint(next);
+    }catch(cause){proposalFailure(cause,true,ownerActive);}finally{release?.();running.current=false;if(mounted.current)setBusy(false);}
   }
-  async function compareProposal() {
-    const state = buffer.proposalState; if (!state?.proposal || running.current) return;
-    running.current = true; setBusy(true); setProposalAcknowledged(false);
-    try { const value = await compareDocumentProposal(client, state, session); proposalCheckpoint({ ...state, comparison: value, failure: null }); }
-    catch (cause) { proposalFailure(cause, false); } finally { running.current = false; if (mounted.current) setBusy(false); }
+  async function compareProposal(){
+    const state=buffer.proposalState;if(!state?.proposal||running.current)return;const ownerActive=proposalOperation(),active=()=>ownerActive()&&latest.current.proposalState?.bindingId===state.bindingId;
+    running.current=true;setBusy(true);setProposalAcknowledged(false);
+    try{const value=await compareDocumentProposal(client,state,session,active);if(active())proposalCheckpoint({...state,comparison:value,failure:null},active);}
+    catch(cause){proposalFailure(cause,false,active);}finally{running.current=false;if(mounted.current)setBusy(false);}
   }
-  async function applyProposal() {
-    let state = buffer.proposalState; if (!state?.comparison || running.current || state.savedRef || !state.applyCommand && !proposalAcknowledged) return;
-    running.current = true; setBusy(true);
-    try {
-      if (!state.applyCommand) state = { ...state, applyCommand: await prepareProposalApplication(client, state, session, proposalAcknowledged), failure: null };
-      else state = { ...state, failure: null };
-      proposalCheckpoint(state);
-      const ref = await applyDocumentProposal(client, state, session, () => mounted.current), completed = { ...state, savedRef: ref, uncertain: false, failure: null }, content = state.comparison!.proposal.proposedContent;
-      onChange(b => b?.proposalState?.bindingId === completed.bindingId ? { ...b, proposalState: completed, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: state!.comparison!.base.document.title, baseStageNodeRef: structuredClone(state!.comparison!.base.document.stageNodeRef as StageNodeRef | null), body: state!.comparison!.proposedBody, mediaType: content.body.mediaType, content: { attachments: structuredClone(content.attachments), sections: structuredClone(content.sections), sourceRefs: [] }, dirty: false, savedRef: ref } : b);
-      if (mounted.current) onSaved(ref);
-    } catch (cause) { proposalFailure(cause); } finally { running.current = false; if (mounted.current) setBusy(false); }
+  async function applyProposal(){
+    let state=buffer.proposalState;if(!state?.comparison||running.current||state.savedRef||!state.applyCommand&&!proposalAcknowledged)return;
+    const saveContext=context.current,requestEpoch=epoch.current,ownerActive=proposalOperation(),active=()=>ownerActive()&&latest.current.proposalState?.bindingId===state!.bindingId;
+    running.current=true;setBusy(true);
+    try{
+      if(!state.applyCommand){const command=await prepareProposalApplication(client,state,session,proposalAcknowledged);if(!active())return;state={...state,applyCommand:command,failure:null};}else state={...state,failure:null};
+      proposalCheckpoint(state,active);
+      const ref=await applyDocumentProposal(client,state,session,active);if(!active())return;
+      const done={...state,savedRef:ref,uncertain:false,failure:null},content=state.comparison!.proposal.proposedContent;
+      completed.current={ref,context:saveContext,epoch:requestEpoch};
+      managedChange(b=>active()&&b?.proposalState?.bindingId===done.bindingId?{...b,proposalState:done,baseVersion:ref.version,baseHash:ref.contentHash,baseTitle:state!.comparison!.base.document.title,baseStageNodeRef:structuredClone(state!.comparison!.base.document.stageNodeRef as StageNodeRef|null),body:state!.comparison!.proposedBody,mediaType:content.body.mediaType,content:{attachments:structuredClone(content.attachments),sections:structuredClone(content.sections),sourceRefs:readDocumentSourceRefs(content.sourceRefs)},dirty:false,savedRef:ref}:b);
+    }catch(cause){proposalFailure(cause,true,active);}finally{running.current=false;if(mounted.current)setBusy(false);}
   }
   const proposal = buffer.proposalState, proposalCanClose = proposal && !proposal.uncertain && (proposal.savedRef || !proposal.applyCommand && proposal.proposal || proposal.failure && [400,401,403,404,409,412,413,415,422].includes(proposal.failure.status));
   return <section className="status-card definition-editor" aria-label="문서 초안 편집">
@@ -115,7 +120,7 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
     {proposal ? <section className="status-card" aria-label="문서 수정 제안"><h3>별도 수정 제안</h3><p>이 기록만으로 현재 문서나 확정본은 바뀌지 않습니다.</p>
       <QuarantinedOriginalNotice failure={proposal.failure}/>{proposal.failure ? <p role="alert">{proposal.failure.code} · 입력과 같은 명령을 보존했습니다.</p> : null}
       {!proposal.proposal ? <button disabled={busy} onClick={() => { void propose(); }}>같은 제안 명령 결과 확인</button> : <><p role="status">수정 제안 저장 확인 · {proposal.proposal.id}</p><button disabled={busy || !!proposal.applyCommand} onClick={() => { void compareProposal(); }}>제안 차이 비교</button></>}
-      {proposal.comparison ? <><p>기준 버전 {proposal.baseRef.version} · 변경 시작 줄 {proposal.comparison.diff.startLine}</p><pre className="document-original" aria-label="제안 기준 원문">{proposal.comparison.base.body}</pre><pre className="document-original" aria-label="제안 새 원문">{proposal.comparison.proposedBody}</pre><pre aria-label="서버 생성 변경 구간">{JSON.stringify(proposal.comparison.diff, null, 2)}</pre><pre aria-label="제안 첨부와 항목 비교">{JSON.stringify({ before: { attachments: proposal.comparison.base.document.content.attachments, sections: proposal.comparison.base.document.content.sections }, after: { attachments: proposal.comparison.proposal.proposedContent.attachments, sections: proposal.comparison.proposal.proposedContent.sections } }, null, 2)}</pre>
+      {proposal.comparison ? <><p>기준 버전 {proposal.baseRef.version} · 변경 시작 줄 {proposal.comparison.diff.startLine}</p><pre className="document-original" aria-label="제안 기준 원문">{proposal.comparison.base.body}</pre><pre className="document-original" aria-label="제안 새 원문">{proposal.comparison.proposedBody}</pre><pre aria-label="서버 생성 변경 구간">{JSON.stringify(proposal.comparison.diff, null, 2)}</pre><pre aria-label="제안 첨부와 항목 비교">{JSON.stringify({ before: { attachments: proposal.comparison.base.document.content.attachments, sections: proposal.comparison.base.document.content.sections, sourceRefs:proposal.comparison.base.document.content.sourceRefs }, after: { attachments: proposal.comparison.proposal.proposedContent.attachments, sections: proposal.comparison.proposal.proposedContent.sections, sourceRefs:proposal.comparison.proposal.proposedContent.sourceRefs } }, null, 2)}</pre>
         {!proposal.savedRef ? <><label><input type="checkbox" disabled={busy || !!proposal.applyCommand} checked={proposalAcknowledged} onChange={e => setProposalAcknowledged(e.target.checked)} />원문·첨부·항목 차이를 확인했고 이 제안을 새 초안으로 반영하겠습니다</label><button disabled={busy || !proposal.applyCommand && !proposalAcknowledged || !!proposal.comparison.proposal.selections.length} onClick={() => { void applyProposal(); }}>{proposal.applyCommand ? '같은 제안 반영 명령 결과 확인' : '이 제안으로 새 초안 저장'}</button></> : <p role="status">제안 반영 버전 {proposal.savedRef.version} 저장 확인 · 별도 확정 전</p>}
       </> : null}
       {proposalCanClose ? <button disabled={busy} onClick={() => onChange(b => b?.proposalState?.bindingId === proposal.bindingId ? { ...b, proposalState: null } : b)}>제안 작업 닫기</button> : null}
