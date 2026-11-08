@@ -18421,3 +18421,7 @@ npm run typecheck
 - 기술WI17/18후속재검수는SHA0c465ebf와일치·C0/I0/M0로내부complete타입M1해소를확인했다. 전체M/권한표·함수시그니처동결/구현GO판정아님을보존한다. Main은정확기술문서/현황2경로만게시하며Primary신규화면시험소유를건드리지않는다.
 
 - UI02화면여정 Primary신규시험1파일/제품4지문확인뒤 첫실행9f269f exit1은제품도달전Vite virtual entry exact-match UNRESOLVED_ENTRY 준비오류1이다. 실제선례endsWith resolver정합화중이며제품수정/다른시험실행0·known livehandle0. 제품결함RED나합격으로세지않고같은원인반복금지후계속한다.
+
+- UI02 resolver정정뒤89eb7e/session65930 첫FAIL표시가나왔지만동일handle939238은종료/stack미출력인실행1개로확인됐다. 제품RED/terminalFAIL로승격0·중복재실행0·무조건kill0. setup정리try전실패로React scheduler채널잔여가능성은가설이며원인/정확PID·부모·시작지문/소유정리방안을Primary가확인한다. 실제서비스·DB변경0이다.
+
+- UI02정확test경로필터CIM조회67c798은sandbox CimException/exit1로실패했다. PID0/실행종료로해석0,원65930 handle유지/중복0이다. Primary가같은필터의승격읽기메타데이터(PID/ParentPID/CreationDate만)로소유확인중이며kill/서비스·권한변경0이다.

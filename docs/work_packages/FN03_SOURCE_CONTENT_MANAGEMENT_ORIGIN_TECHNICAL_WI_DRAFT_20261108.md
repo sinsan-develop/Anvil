@@ -282,3 +282,20 @@ finalguard는 E/O/R의 JOIN 성공행만 수집하지 않는다. 이번 Tx의 de
 
 ### §18 사전 M1 정합화
 독립 사전 C0/I0/M1은 11·12절 complete의 void와18절 boolean 후보 불일치다. 내부 helper는 fn03_management_complete(uuid,uuid) RETURNS boolean으로 통일한다. 기존 settled dispatcher는 해당 boolean을 반환하며 NULL은false로 닫는다. commit/read/history_bundle/current_final에서 완결성 진행조건은 반환값 IS TRUE이고 false/NULL이면 해당 거래를 거절한다. 예외를 잡아 정상false/0원/성공 bundle로 바꾸지 않는다. current_final은 신규Tx context/xid/기한 검산과 이완결 조건을 강제하며 RETURNS void, deferred final_guard는 그 호출 성공 뒤에만 trigger를 종료한다. 따라서 void 호출로 complete의 실패를 무시하는 경로를 허용하지 않는다. 이 정합화는 기존 후보의 불완결 거절 의미를 바꾸지 않는 내부 타입 선택이며 아직 전체시그니처/M/ACL 동결이나 구현 승인이 아니다.
+
+## 19. 원 envelope·snapshot·result의 정확 결합
+reader가 실제 source-content-policy-definition.ts:14~28, source-content-policy-management-evidence.ts:23~40, project-command.ts:295~302와 부모후보를 대조했다. **E.snapshot은 exact16이며 O에서 도출하는 origin snapshot만 exact10**이다. 두 형상을 혼용하지 않는다.
+
+|위치|원값 결합|계상/보호|
+|---|---|---|
+|원q|실인증callback에서 고정한 exact11 envelope 전체, requestHash=canonical 전체hash|O.request_json=q, O.request_hash=C.request_hash. payload만 보관/역생성0|
+|E.snapshot_json|기존 buildSourceContentPolicySnapshotCandidate(q.payload,{projectId,actorId,sequence,recordedAt}) 결과. definition exact12+projectId/sequence/recordedAt/reason=exact16|중첩 sequence는숫자·시각은공개ISO원형, 물리정규화재귀0|
+|eventRef|{id:ids.policyEventId,version:1,contentHash:hash(E.snapshot_json)}|previous_ref=q.payload.previousPolicyRef, 생성3열은원id/version/hash 또는SQL NULL|
+|originRef/O.content_hash|{schemaVersion:1,purpose:SOURCE_CONTENT_POLICY_MANAGEMENT_ORIGIN,id:ids.originId,version:1,projectId,managementCommandId:ids.serverCommandId,policyEventRef:eventRef,originalRequest:q,requestHash,recordedAt} exact10의hash|도출값별도저장0. 실제O.request_json복제는계상|
+|C.result_ref|외곽exact10: operationId/원commandId/projectId/status APPLIED/targetId=eventRef.id/version1/data/빈evidenceRefs/warnings/serverReceivedAt. data exact9: ref:eventRef,status CONTENT_POLICY_EVENT_RECORDED,policyRef:eventRef,previousPolicyRef,sequence+권위4값false|두eventRef복제위치모두계상, 중첩version/sequence숫자|
+|A/U.digest|hash({projectId,actorId,clientId,controlGeneration,requestHash,policyRef:basePolicyRef,targetRef:eventRef})|같은digest/원internal command·operationID. A.subject_ref clientId있음/U.actor_ref없음|
+|R.plan_json|§11 metadata+실authSession/credentialGeneration/controlGeneration/currentpolicy/originRef/eventRef/exact6ids/coverageGeneration/최소기한/원xid문자열, 단일part id/hash=originRef|원q/snapshot/result추가복제0. 중첩타입은정확원형으로R자기비용포함|
+
+최종 M전체JSON 전 미확정slot은 E/O·C공개완료ISO·A/U/R물리시각의실DB공급순서, R중첩 generation/part금액의정확타입, 아직모르는U순번의비용상계다. 기존예약자기비용은part금액에문자열을쓰므로최상위정규화가이를고쳐줄것이라고가정하지않는다. U19자리상계는비용용이며실evidence reader Number.isSafeInteger 허용범위를확대하지않는다.
+
+원envelope1MiB/E.snapshot1MiB/도출origin snapshot2MiB·정확공개ISO/물리27자·safe순번증가/refs/hash/null·전체slot타입상계·B≤M/s≤r중하나라도미정이면예약준비를거절한다. 비용sentinel은저장/hash/권위검산에사용하지않는다. 기술slot동결/실제SQL검증완료로판정하지않으며실행GO0다.
