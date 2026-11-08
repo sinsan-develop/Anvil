@@ -18518,3 +18518,64 @@ Main이 실제 agent inventory에서 실행 중 담당자 0명을 확인한 뒤 
 - 실제 Agent/DB/키/권한/서비스/SSH 실행0. idle 비동기 결과 수집·normal current/grant 공급과 실제 런타임 연결은 여전히 미구현이며 FN06/08 전체 완료 아님. 새 웹 변경이 없어 Web 전수검사는 반복하지 않는다. rollback은 이 단위 소유 commit의 일반 revert이며 기존코드는 보존한다.
 - Main Git기록 최초sandbox index.lock Permission denied는 실제 repository ACL 결함으로 단정하지 않았다. 승인된 동일2문서 commit/push를 elevated로 진행해853747da private 동기화를 확인했다. 영구 권한/ACL 변경0.
 - 다음 구현 근거: WORK_STATUS6094 D071 직접승인·채택제안§5/§9 C2가 기존Agent 실행 연결의 코드/forwardSQL/합성검증을 포함한다. 후속 SYNTHETIC패킷 제외를 전체 실행금지로 오인하지 않는다. 실제 보호 current→별도 normal grant→명령/receipt/예산/실행/outbox 원자 저장의 다음 source단위를 Primary 읽기준비로 배정했다. 미관측 OS/능력/이해 거절과 실제 실행 제외는 유지한다.
+
+
+### PR76 통합 및 다음 실제 실행 권한 source 착수 — 2026-11-08T16:14:17+09:00
+
+PR76 source20876fbc2e4f9444352713df717e744616e939e8→main b6b8201784121205e8f27d0fe1af7c5c172a5bcd(parent7cf2b13a/tree157cd1762cc021c0c521036b56f4693a48d9ff1c source동일). Broker42457781251 exit0, Main a51a57 정상FF·merged 신규24PASS/skip0/481.8016ms·diff0, c3d195 실제 원격main·PR76복구ref·완료branch/tag부재·clean 확인 후 정상 branch/tracking 정리했다. 최신main에서 codex/av3-normal-execution-grant를 생성하고 즉시 private 동기화했다.
+
+단일 Primary에게 D071 채택 의미의 normal initial execution 생산자·기존 command 진입 연결·0083 forward pending SQL·집중/SQL 합성검증을 배정했다. 기존 synthetic 모드·DB 원문·DENY·현재성·유한기한·원명령 중복·UNKNOWN 보존을 유지한다. 실제 보호 current 근거가 없으면 쓰기0이며 HTTP caller 관측을 권위로 삼지 않는다. 실제 DB 적용/권한·키·서비스·Agent·SSH는 제외한다. 구현과 미적용SQL·합성증거만 검사하며 실제실행 완료를 주장하지 않는다. Main은 제품쓰기 없이 검수·기록·통합을 담당한다.
+
+
+### normal 실행 저장 조기 검수 — 2026-11-08T16:24:28+09:00
+
+독립 읽기검수(제품 SHA9802bba453f01133c1882be463aef6f4306d01129a860ffb020167bb77311a61)에서 마지막 current 검사 뒤 graph/material 여러 await와 최종 xid/clock 확인만 남는 권위 회수 창 Important 후보1을 발견했다. Main이 단일 Primary에게 같은 request/actor/query/xid·권위 binding/최단기한 최종 보호 재검산과 마지막 material INSERT 중 회수 시 전체 rollback 음성 보완을 지시했다. 구현 중 후보이며 확정 SQL guard의 해소 근거까지 재검수한다. 현재 0회 정식 실패보고, 실제 DB/권한/키/서비스/Agent 실행0, 전체계획 미완료.
+
+- normal SQL 조기검수 SHAfc4ceeff42029fad815c9fd94c18a23c4f348ac5442af869ce3b2a71c0a37fb0은 추가 C/I후보0(최종동결 전 잠정), 기존 synthetic/자료/deferred 보호를 유지한다. 별도 새관측 port의 무한 await로 project Tx잠금이 점유될 수 있는 I2후보를 확인해 유한 deadline/취소·late callback DB사용차단·rollback과 stall 음성검증을 Primary에 지시했다. 단순 Promise.race 뒤 raw PoolClient가 살아있는 구현을 허용하지 않는다. 다른 모든 DB promise의 무관한 timeout 확장은 하지 않는다. 실제 DB/권한/키/서비스/Agent 변경0·정식 실패보고0이며 현재 구현보완중이다.
+
+- normal 동결 source/SQL/시험7의 독립 최종읽기 C0/I0(373e77→4c7fad manifest d069b129990a6d8cc5a68178c44446ad68a5be15f38fd022137da8990b588838). I1 최종 protected current/기한·예산 재검산 및 회수 rollback, I2 raw DB 미제공·2초 유한 관측·abort/late회수로 보완했다. Main829e67/19708→e5d5fe 신규17 PASS/실패·skip0/14320.2865ms, Primary typecheck0. 다만 인접handle63764의 기존 FN09 원자료 START 정산 마지막 await source교체/다음lease 시험이60.019초 실패했다. 이 결과를 PASS로 세지 않고 병합 전 exact traceback·단독 재현으로 원인을 확인한다. timeout/기대값/보호 기준을 완화하지 않는다. fixture 기본호출 순서 영향은 가설이며 Main이 원순서 대조를 지시했다. 최종수용/병합 미완료·실환경0이다.
+
+- 인접63764 최종출력 정정: 127 PASS/1 FAIL/skip0·458.862초 exit1. 실패는 원rollback 검증 통과 뒤1179행 재요청이 기대200 대신401 AUTH_REQUIRED를 반환한 assertion이다. 앞선60.019초 표시는 해당 node 소요시간이며 timeout/hook미진입으로 해석한 Main 설명은 정정한다. Primary 단독 node handle97514를 시작했고 아직결과없음/중복시작0. routes 소유파일은415 CRLF를LF로만 정규화·역변환 원bytes일치, 새SHA bb699feac11c7a2f445879dcbc2ea3ea1aa1f0804cc2681d139eb70632864df5·diff0이며 기능변경0이다. 인접미수용/병합0을유지한다.
+
+
+### normal 최초 실행 source 동결 인수 — 2026-11-08T16:49:04+09:00
+
+담당 Primary 구현·Main 관리/독립 검수. 기존 POST→보호 reader/정책/current→grant·예산·writer claim·명령/영수증/outbox·context/options 자료 명세의 동일 Tx 저장·원명령 재조회를 신규17건으로 확인했다. HTTP current/승인입력 거절, 미관측 근거거절, 마지막 저장 중6종 회수/만료/참조교체 rollback, 시각전진양성, 무응답관측 취소/late회수·DB손잡이미노출, 동시명령의동일영수증을 포함한다. 기존 synthetic 경로와SQL은 수정하지않고0083 pending만추가했다. 기존fixture의선택형 normalExecutionId만 명시적으로정책을봉인전에고정한다.
+
+검증: Primary집중17P/typecheck0/diff0, Main829e67/19708→e5d5fe 집중17P/0F/0S·14320.2865ms exit0; 동결 source 독립 C0/I0(373e77/4c7fad), routes LF만정규화 역변환원본동일(cb61de) C0/I0유지. 인접6파일63764는127P/1F/0S·458.862초 exit1이며 이를128P라고표시하지않는다. 동일실패node97514 단독1P/0F·54.681초 exit0. Main eb048f는 원fixture47~48의 실시간시작+60000ms 인증만료·AccessRepository실newDate검사·원1179행 기대200을확인했다. 묶음실패는60.019초에같은HUMAN세션이만료해401을반환했고단독에서는만료전200이다. 인증기한/시험timeout/기대값수정0, baseline교체0, 실패이력보존. 현재 같은의미검증충족여부를기존수용조건에대조중이며 원묶음exit0주장0.
+
+실제 PostgreSQL 설치/ACL/RLS/COMMIT·경합, OS 관측공급자/실SDK·wire/Agent·서비스·사용자인수는NOT_RUN이며0083미적용이다. 기본서버의 실제관측producer·실행credential/수신·정상dispatch/중지연결과전체FN06/08/09는미완료다. 실제DB/권한·키·서비스·Agent실행을추가허가로해석하지않는다. rollback은이번 소유commit의일반revert(실DB미변경). 다음단위는이 grant를기존Agent실행으로연결하는최초미구현producer/credential/명령수신의승인범위대조다. Primary는읽기준비만배정·현재source쓰기종료·다른livehandle0이다.
+
+최종7파일 SHA256:
+- `apps/server/app.ts`: `3dd2913982e389407c17ab97a08d3babd256631e51772eb6e0305bd5754ee0bf`
+- `apps/server/modules/projects/routes.ts`: `bb699feac11c7a2f445879dcbc2ea3ea1aa1f0804cc2681d139eb70632864df5`
+- `apps/server/modules/executions/normal-initial-execution.ts`: `46e3f042aa3f25af6cdfe3d06a933ed719ad18165815c1d596afc85d9a7b6977`
+- `db/migrations/0083_normal_initial_execution.sql.pending`: `87ece3bf950a6466ef4143fcdeb2cf0cde067a115a477c4148b4c126e8412c1b`
+- `tests/unit/FN08/normal-initial-execution.test.ts`: `53f0bf45d446ee1c77cc98c637f2080a627104c856b873806429176881a02415`
+- `tests/unit/FN08/normal-initial-execution-sql.test.ts`: `4f3071bc62daa0dc1621289e47c07eb7ff3001cc0fe173edf226950cfc7784a0`
+- `tests/unit/FN09/execution-start-origin-fixture.ts`: `3e4909de8ab9bc67877942ef65b921a1f61b11832f576ef5a457440f67dbfe3c`
+
+- 독립098ec1·Main eb048f 대조 후 이 source단위 검증을 수용한다: 변경17P/type0/diff0·source C0/I0, 인접 원묶음127P/1F(exit1)는그대로보존하고 유효세션의동일frozen node 단독1P(exit0)로해당동작증거를보완한다. 동일단일묶음exit0를요구하는정본조건은확인되지않았고 기대값/인증기한/소스기능변경0이다. fixture의wall-clock 민감성(60초중 단독54.681초)은잔여시험환경위험으로기록한다. 원묶음을128PASS나exit0로승격하지않는다. 실제PG/OS/Agent미검증은그대로이며 Main이source게시/통합을진행한다.
+
+
+### 게시 전 필수 실행 세대 예약 누락 발견 — 현재 단위 보완
+
+Main9f9cc0은9파일 stage뒤 신규producer/시험 EOF빈줄2를diff-check에서검출해commit전에중단했다(commit/push0). 이후 Primary의후속계약읽기에서D071§6이grant생성과같은Tx 실행credential세대예약을요구하나현재producer/0083에는예약이없고자료명세generation에HUMAN actor.credentialGeneration을사용·SQL도같게검산함을확인했다. 이는후속challenge단계로미룰수없는현재단위I3 누락이며Main이최종수용/통합을보류하고현재7경로안에서별도예약·독립세대/명세결박·예약실패전체rollback RED→GREEN을Primary에지시했다. challenge발급은후속업무로유지한다. 기존17PASS와C0/I0는당시범위의증거이력일뿐최종수용아니다. 독립검수자도앞검수에서이요구를놓친사실을인수했고새동결I3/I1/I2재검수예정이다. 실제DB/권한/키/서비스/Agent실행0·Main제품쓰기0·staged자료보존이다.
+
+
+### normal 최초 실행 I3 보완 최종 수용 — 2026-11-08T17:01:57+09:00
+
+기존D071§6의필수예약누락(I3)을현재단위에서교정했다. 실행credential 예약ID/세대1을grant binding에봉인하고같은인증Tx의0018원장에grantfullref/원command/scope/기한·RESERVED_NO_TOKEN(credentialIssuedfalse)를저장한다. HUMAN인증세대3·논리Agent binding세대·실행예약세대를분리하고자료manifest/행은실행예약에결박한다. 최종보호재조회가예약hash/세대/원grant를다시검산하고예약INSERT실패/사후불일치시graph·명령·영수증·자료전체rollback한다. challenge/token발급이나실행권위발급완료를주장하지않는다.
+
+검증: I3동작RED2/SQL RED1→Primary집중21P/0S(16.72초)/typecheck0, 기존credential인접11P(0.82초), 최종SQL row명시cast뒤정적2P(0.14초), 소유7 diff HEAD0/EOF LF1 보정. Main1f440d/83309→9b4ec6 보완최종21P/실패·skip0·13480.5484ms exit0. 최종독립89651e→efa07f C0/I0는I3의동일Tx예약/독립generation·원명령중복/해시·완결순환없음·기존I1/I2/SYNTHETIC보호/fixture기본보존을대조했다. 앞C0/I0에서예약누락을놓친사실과보완이력은삭제하지않는다.
+
+불변legacy 경로의원인접127P/1F(exit1)와단독1P(exit0)는실시간fixture60초만료의서로다른결과로보존한다. timeout/인증기한/기대값완화0이며변경없는경로증거는재사용하고I3직접영향credential11/신규21만실행했다. 이를동일묶음128PASS로표시하지않는다. 실제SQL설치/COMMIT·ACL/RLS·경합/OS관측provider·credential/challenge/Agent/served인수는NOT_RUN이다. 0083은미적용, rawCRLF와Git저장LF를구분하며정규화blob936d2d95f648290773d0189b185016b0bc816b7a다. Main은최종9경로재stage/diff0뒤commit/private게시·기존PR절차통합으로진행한다. 실제DB/권한·키·서비스·Agent변경0, rollback은소유commit일반revert다.
+
+최종7 raw SHA256:
+- `apps/server/app.ts`: `3dd2913982e389407c17ab97a08d3babd256631e51772eb6e0305bd5754ee0bf`
+- `apps/server/modules/projects/routes.ts`: `bb699feac11c7a2f445879dcbc2ea3ea1aa1f0804cc2681d139eb70632864df5`
+- `apps/server/modules/executions/normal-initial-execution.ts`: `9032c0d6f431b5510a16c8d25adee416bcc8927ac28f3fe24d927461882b0f80`
+- `db/migrations/0083_normal_initial_execution.sql.pending`: `8e7e714f0851bf1d037e013697bbd039a2dc2ab8ce7181c956ccbf047113edfb`
+- `tests/unit/FN08/normal-initial-execution.test.ts`: `a9b0b6ffd7b1c1a1725d20d49073ff028e5ee8270ae0de887884b4eb1e2680a0`
+- `tests/unit/FN08/normal-initial-execution-sql.test.ts`: `dbda1192ab10b28449651f01bd97647c28d406825b28c1da72ff4f723bbcf3c2`
+- `tests/unit/FN09/execution-start-origin-fixture.ts`: `6f4ff7d38b208c68314e06236ff290ea673bbdc6b957f6db77f40e1af9b86047`

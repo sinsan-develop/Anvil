@@ -18,12 +18,13 @@ import { registerProjectFileRoutes } from './modules/documents/project-files.ts'
 import { enforceConnectorCredentialScope } from './http/connector-auth.ts';
 import { registerConnectorRegistrationRoutes } from './modules/connections/registration-routes.ts';
 import { registerSourceReadRoutes } from './modules/connections/source-read-routes.ts';
+import type {NormalExecutionCurrentSource} from './modules/executions/normal-initial-execution.ts';
 import type {SyntheticHumanExecutionPorts} from './modules/executions/project-runtime-commands.ts';
 import {registerProviderClaimHistoryRoutes} from './modules/executions/provider-session-claim-history-routes.ts';
 import {registerUnderstandingHistoryRoutes} from './modules/executions/understanding-history-routes.ts';
 import { registerControlHandoffRoutes, type ControlHandoffRoutesOptions } from './modules/control-handoff/routes.ts';
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions) {
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource) {
   const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
   app.addHook('onRequest',async request=>enforceConnectorCredentialScope(request));
   app.addHook('onSend', async (_request, reply, payload) => {
@@ -34,7 +35,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   });
   registerDesktopRuntimeCatalogue(app,runtimeCatalogue);
   app.get('/api/v1/health', async () => ({ status: 'ok', scope: 'process', version: '0.1.0' }));
-  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
+  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation,normalExecution); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
   if(access)registerUnderstandingHistoryRoutes(app,access,syntheticExecution?.understandingHistory);
   if(nativePreparation?.enabled===true)registerNativePreparationRoutes(app,nativePreparation,access);
   if(nativeReceive?.enabled===true){if(nativeReceive.service instanceof NativeFirstReceiveService&&nativePreparation?.preparations)nativeReceive.service.connectNativeCommand(nativePreparation.preparations);registerNativeFirstReceiveRoutes(app,nativeReceive,access);}
