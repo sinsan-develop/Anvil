@@ -18493,3 +18493,6 @@ npm run typecheck
 - 사용자 요청에 따라 현재 WORK_CHECK 생성·44행 대조와 WORK_STATUS 현재 상황을 보완했다. 독립51a4ec 신규기록 C0/I0, Main39f30e 두 CHECK 동일·두 STATUS 원prefix보존을 확인했다. 앞으로 착수/완료·오류/복구·중단/인계 전에 두 문서와 사용자 열람 위치를 함께 갱신하고 저장·Git 게시를 확인한다. 이번 수정은 기록 보완이며 제품/DB/권한/서비스 변경이나 전체 완료 처리가 아니다.
 
 - 다음 미완료 독립 조사 분담: 기존 reader가 FN04의 설계항목/화면위치·계획 trace·등록 artifact→업무 caller가 이미 연결됐음을 확인했다. 항목별 SourceRef 귀속은 기존 sections/itemId/anchor·문서전체 sourceRefs와 다른 새 관계이고 실행/시험/diff 실제 증거는 후속 producer가 필요하다. 새 기존승인 caller 누락은 확정하지 못했으며 완료 모듈 재구현0이다. 기존 Primary는 FN12의 불변 보완 origin/link 보관과 후속 assignment/실행·원writer회수 선행을 분리해 첫 source 단위를 읽기 검토 중이다. 코드/실DB/권한/키/서비스/Agent 실행0이며 미완료 체크를 승격하지 않는다.
+
+- PR75 sourceb46b22f0/Broker42448549132 success→main7cf2b13a4586ec451e89c783c0dbd3bf7bb2b33f(parent7fa8f2b2/tree2ed3007d source동일)이다. Main7b5524 정상FF·문서smoke44행/준비수용2/사용자CHECK byte동일·diff0·원격main/PR75복구ref·완료branch/tag부재/clean검산후정상정리했다. 최신main에서codex/av3-fn12-origin-scope생성·즉시private동기화,WORK_CHECK의branch/기준/현재분담과이현황을사용자열람본에도함께갱신한다.
+- FN12 첫단위읽기3067e7/211961/fb856b/d7ecba/d8e649/fb90ae는기존reworkDraft보관/준비UI/childHUMAN확정을재구현대상에서제외했다. origin불변저장 producer와후속link저장은미구현이고서로분리해야한다. 원B의새draft+origin 동시생성과기존exact draft의origin만보관하는안은입력/저장순서가달라미채택차이가있다. Main이그범위·카디널리티/개정·보호조회·계상을정리하며oldwriter UNKNOWN/새실행권위를임의확정하지않는다. 현재제품GO0/실DB·권한·키·서비스·Agent실행0이다.

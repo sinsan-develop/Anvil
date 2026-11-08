@@ -1,17 +1,17 @@
 # Anvil 작업 점검표
 
-갱신: 2026-11-08T13:52:32+09:00 / 담당: 어울
+갱신: 2026-11-08T13:56:11+09:00 / 담당: 어울
 
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
-- 코드 집계 기준: `development/main` `7fa8f2b2c865bb4b7f4a4d187d913354dae19de5`.
-- 진행 branch: `codex/av3-fn06-provider-audit`. 현재 기록을 저장한 문서 commit은 Git 최신 HEAD를 따른다.
-- 현재 분담: FN04 기존 trace 호출선 대조는 완료(새 caller 누락 미확정), FN12 보완 origin/link와 실제 후속 실행 선행 분리는 기존 Primary가 읽기 중이다. 제품 writer는 0명이며 새로운 코드·권한 실행은 배정하지 않았다.
-- 최근 완료: PR72 기준선 설계 선택 보완/merged12 PASS, PR73 실제 React 합성 여정/merged7 PASS, PR74 기술후보 문서 검수. 이것을 전체 기능 완료로 세지 않는다.
+- 코드 집계 기준: `development/main` `7cf2b13a4586ec451e89c783c0dbd3bf7bb2b33f`.
+- 진행 branch: `codex/av3-fn12-origin-scope`. 현재 기록을 저장한 문서 commit은 Git 최신 HEAD를 따른다.
+- 현재 분담: FN04 기존 trace 호출선 및 FN12 첫 단위 대조는 완료했다. Main이 FN12 origin 불변 보관과 후속 link/실행의 선행을 분리해 미채택 계약 차이를 구체화한다. 제품 writer는 0명이며 새 코드·권한 실행은 배정하지 않았다.
+- 최근 완료: PR75 기록 보완 main 통합·44행 문서 smoke, PR72 기준선 설계 선택 보완/merged12 PASS, PR73 실제 React 합성 여정/merged7 PASS, PR74 기술후보 문서 검수. 이것을 전체 기능 완료로 세지 않는다.
 - 현재 미확인: 실제 개발 DB 복구·served/Agent 전체 여정·실기기·Oracle 인수. 지정 SSH Connection refused를 PASS로 표시하지 않는다.
 - 결정 대기: 기존 PMO 발행 2건(e59592e3,239845d6), 직접 답변 미수신. 중복 요청하지 않는다.
 - 상세 현재 상황/오류/다음 조치: [WORK_STATUS.md](WORK_STATUS.md)의 ‘현재 상황 보완’ 절.
-- [44항목 상세 근거](https://github.com/sinsan-develop/Anvil/blob/7fa8f2b2c865bb4b7f4a4d187d913354dae19de5/docs/04_test_reports/AV3/WORK_PLAN_REMAINING_AUDIT_20261108.md)
+- [44항목 상세 근거](https://github.com/sinsan-develop/Anvil/blob/7cf2b13a4586ec451e89c783c0dbd3bf7bb2b33f/docs/04_test_reports/AV3/WORK_PLAN_REMAINING_AUDIT_20261108.md)
 
 | 완료 | 업무 | 상태 | 남은 기능·검증 |
 |---|---|---|---|
