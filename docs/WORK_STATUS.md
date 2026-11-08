@@ -18454,3 +18454,7 @@ npm run typecheck
 - clock추가읽기3f419e/13f452 exit0는 C완료≥수신 CHECK부재와CM bundle의MS투영비교를확인했다(f1d1b4 마지막검색일치없음exit1은분리). Main은기술WI22절에C/A/U물리동일freshraw+received≤done/공개만source_read_iso24자·E/O실물ms/R단계raw/최소기한·역행거절을정리해하위1ms역전finding을해소제안했다. 기존후보/TTL/원기한변경0·독립검수전/전체M·ACL동결전GO0·실clock/SQL/환경실행0이다.
 
 - clock기술WI21/22 SHAe0c60ece 독립C0/I0/M0는E/O실물ms·C/A/Ufreshraw/공개MS·received≤done·raw비역행/R최단기한과원TTL/역사분리정합성을확인했다. 실clock/SQL/DB검증은아니다. 다음M전체물리JSON에필요한기존receipt C/A/U·R의상수/nullable정확mapping만기존Primary읽기위임하고미정상수를임의성공으로넣지않는다. 전체권한matrix/시그니처·M전체동결/직접채택전GO0/실행0이다.
+
+- M실물template완결준비를위해기존Primary c0401d/c47fc9와Main a17616/5fd2a8 원소스대조뒤기술WI23절에E/O/C/A/U모든물리키·CM상수/원ref/digest/중첩RESULT와R22/PLAN을명시했다. 실제calculation/code가아닌메타변수template이며Rpart3금액은예약r봉인·정산s로plan재작성0,실원장은sentinel0을명확히했다. 신규목적값은미채택/권한확대아님·독립검수전전체GO0이다.
+
+- 기술WI23 M전체메타변수template SHA0e56bd92는비용전용/형상범위독립검수모두C0/I0/M0다. 실물5행복제/도출O중복0·공개/물리시각·R전체자기비용·zero seed의후보r별3금액→실hash봉인/정산행s를확인했다. 실M값계산/SQLPASS아님·후보/패킷불변GO0이다. 독립reader의부수추정0011경로읽기실패1은실rg목록의0011_authorization.sql로대조했고재시도/복원0으로분리했다. 다음whole ACL/CHECK/immutable/deferred최종principal경계는기존Primary읽기만배정·실환경0이다.

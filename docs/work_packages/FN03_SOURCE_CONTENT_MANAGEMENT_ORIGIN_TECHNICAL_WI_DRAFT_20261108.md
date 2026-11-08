@@ -332,3 +332,78 @@ Main의내부기술선택은 C/A/U물리에동일한fresh raw done을저장하�
 E/O의실물ms정렬·R단계raw/물리비용27자·C.received_at의기존Tx-start·공개24자는각각유지된다. 내부관리수명의밀리초봉인은micro최소기한을내림하여보수적으로축소하고 raw now<그봉인기한을검사하되 E정의expiresAt 자체를그관리수명으로교체하지않는다. 새stamp는물리COMMIT시각의증거가아니며응답유실/후행확인불명은원ID/hash UNKNOWN으로보존한다.
 
 이는정밀도·순서의내부기술해소안이다. 독립검수·전체M JSON/권한matrix/최종시그니처동결·후보직접채택이모두갖춰지기전제품/SQL GO0다. 실clock/DB/권한/키/서비스/Agent실행0을유지한다.
+
+## 23. 5행+R의 완전 물리 template와 고정 상수 후보
+Primary c0401d/c47fc9 읽기exit0 및 Main a17616/5fd2a8 대조를 반영한다. 기존 CM/공통receipt의상수와새미채택목적값은분리한다. C/APPLIED·PROJECT, A/HUMAN, U/HUMAN_COMMAND/APPLIED/SOURCE_CONTENT_POLICY_EVENT_RECORDED는기존원형이다. R새part_key=management_origin,part_kind=SOURCE_CONTENT_POLICY_MANAGEMENT,purpose=SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE는후보값이며현재whitelist허가가아니다.
+
+다음은 **실행 불가능한 메타변수 template 표기**다. source 코드나 저장 fixture가 아니며 모든 메타변수의 실제값·타입·상계 검산이 필요하다. raw q는 exact11 원 envelope, S는 기존builder와동치인 exact16 snapshot, previous=q.payload.previousPolicyRef, P는현재관리권한basePolicyRef, er/or는정확event/origin fullref다. hq/hash/digest/ids는실값이며상수성공값을주지않는다. n은확정safe정책sequence, CG/HG는§20의양의safe숫자, G는coverage십진문자열, tx는원xid문자열, until은봉인UTCmsISO다. T27/T24는각각미확정비용용ASCII시각27자/공개24자상계표기이고저장·hash·권위검산에사용하지않는다. 공개ISO확정값/물리C수신시각은실값을사용한다.
+
+```
+E = {
+ project_id:p,id:ids.policyEventId,version:1,sequence:n,
+ subject_user_id:a,disposition:S.disposition,snapshot_json:S,content_hash:er.contentHash,
+ previous_ref:previous,management_command_id:ids.serverCommandId,
+ recorded_at:physical27(S.recordedAt),expires_at:physical27(S.expiresAt),
+ previous_id:previous?.id ?? null,previous_version:previous?.version ?? null,
+ previous_hash:previous?.contentHash ?? null
+}
+O = {
+ project_id:p,id:ids.originId,version:1,management_command_id:ids.serverCommandId,
+ policy_event_ref:er,request_json:q,request_hash:hq,
+ recorded_at:physical27(originRecordedAt),content_hash:or.contentHash
+}
+DATA = {ref:er,status:'CONTENT_POLICY_EVENT_RECORDED',policyRef:er,
+ previousPolicyRef:previous,sequence:n,executionAuthorized:false,
+ agentDispatchPerformed:false,baselineConfirmed:false,linkAuthorized:false}
+RESULT = {operationId:ids.operationId,commandId:q.commandId,projectId:p,
+ status:'APPLIED',targetId:er.id,version:1,data:DATA,evidenceRefs:[],warnings:[],
+ serverReceivedAt:T24}
+C = {
+ id:ids.serverCommandId,scope_kind:'PROJECT',scope_id:p,project_id:p,draft_id:null,
+ actor_id:a,client_id:c,operation:'defineSourceContentPolicy',command_id:q.commandId,
+ request_hash:hq,operation_id:ids.operationId,state:'APPLIED',
+ authorization_receipt_id:ids.authorizationReceiptId,approval_consumption_id:null,
+ expected_version:0,control_generation:CG,policy_ref:P,payload_ref:null,
+ result_ref:RESULT,received_at:physical27(originalReceivedAt),completed_at:T27
+}
+A = {
+ id:ids.authorizationReceiptId,scope_kind:'PROJECT',scope_id:p,
+ command_id:ids.serverCommandId,subject_ref:{kind:'HUMAN',userId:a,clientId:c},
+ policy_ref:P,scope_digest:digest,approval_decision_ref:null,authorized_at:T27
+}
+U = {
+ project_id:p,server_sequence:'9223372036854775807',event_id:ids.auditEventId,
+ actor_ref:{kind:'HUMAN',userId:a},client_ref:c,command_id:ids.serverCommandId,
+ operation_id:ids.operationId,target_ref:er,policy_ref:P,approval_ref:null,
+ outcome:'APPLIED',reason_code:'SOURCE_CONTENT_POLICY_EVENT_RECORDED',
+ scope_digest:digest,recorded_at:T27,source_kind:'HUMAN_COMMAND',correction_of:null
+}
+```
+
+각행은위모든키를포함한후기존fn09_registered_cost_projection과fn75_cost로계산한다. E/O확정시각은실물MS정렬값의27자투영이며C/A/U미확정T27와중첩T24는서로혼용하지않는다. U19자리값은비용상계일뿐이다. 실제U는원MAX(server_sequence)+1의정확값을발급해safe정수/동일project원자성을검사하고상계를실순번으로저장하지않는다. snapshot/request/result의각실제물리복제는계상하고도출origin10을별도저장행으로더하지않는다.
+
+```
+PART(r) = {key:'management_origin',kind:'SOURCE_CONTENT_POLICY_MANAGEMENT',
+ id:or.id,contentHash:or.contentHash,bytes:decimal(r),
+ reservedBytes:decimal(r),settledBytes:decimal(r)}
+PLAN(r) = {schemaVersion:1,purpose:'SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE',
+ projectId:p,actorId:a,clientId:c,authSessionId:s,credentialGeneration:HG,
+ controlGeneration:CG,operation:'defineSourceContentPolicy',externalCommandId:q.commandId,
+ requestHash:hq,permissionPolicyRef:P,originRef:or,policyEventRef:er,ids:ids,
+ coverageGeneration:G,authorizedUntil:until,transactionId:tx,parts:[PART(r)]}
+R_TEMPLATE = {
+ id:ids.serverCommandId,project_id:p,actor_id:a,client_id:c,
+ external_command_id:q.commandId,operation:'defineSourceContentPolicy',command_hash:hq,
+ part_key:'management_origin',part_kind:'SOURCE_CONTENT_POLICY_MANAGEMENT',
+ plan_json:PLAN(0),plan_hash:ZERO64_COST_ONLY,reserved_bytes:0,settled_bytes:0,
+ phase:'RESERVED',start_fence:0,authorized_until:physical27(until),
+ server_command_id:null,authorization_receipt_id:null,scope_digest:null,
+ created_at:T27,started_at:null,settled_at:null
+}
+```
+
+0077:126~164의기존reserved=NULL 고정점은ZERO64_COST_ONLY template에서후보r마다part의bytes/reservedBytes/settledBytes를모두decimal(r)로치환한다. 따라서최소r을얻은뒤 **PLAN(r)를실hash로봉인하고정산때그part3금액을s로다시쓰지않는다**. actual정산의s는R행settled_bytes에만들어간다. 최종실제R.plan_hash는봉인PLAN의진짜hash이며zero sentinel을원장에저장하지않는다. 원plan/r/기한/refs도불변이다.
+
+RESERVED는fence0/settled0/started·settled·servercid·receipt·digest null, IO_STARTED는fence1/실started/settled0·나머지후행null, SETTLED는fence1/원started/실s·실settled·원cid/receipt/digest다. 자기비용helper의고정stamp/UUID/zero digest는비용형식대체값뿐이며실원장/허가로사용하지않는다. 최상위fence/금액은비용정규화후문자열이며plan에별도startFence키를임의추가하지않는다.
+
+이template는새목적구현의입력슬롯을모두명시한내부동결후보다. 실제M/B/r/s값을계산한증거나실SQL/역완결PASS는아니다. 전체helper ACL/시그니처와독립검수·직접채택을충족하기전GO0를유지한다.
