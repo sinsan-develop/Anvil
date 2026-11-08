@@ -75,6 +75,7 @@ export class ProjectDocuments {
       if(!fixed.targetId)throw new AuthFailure('PROPOSAL_INPUT_INVALID',422);
       const base=await this.version(db,actor,fixed.projectId,fixed.targetId,fixed.expectedVersion);
       plan=await prepareDocumentProposal(db,actor,fixed,base,(client,pid,ref)=>this.#artifact(client,pid,ref),{artifactId:existing?.[0]?.id??randomUUID(),proposalId:randomUUID()});
+      await this.#verifySources(db,actor,fixed.projectId,plan.content.sourceRefs,{remaining:200,active:new Set()});
       this.#proposalPlans.add(plan);return [{key:'diff',kind:'ARTIFACT',id:plan.proposal.diffRef.artifactId,bytes:String(plan.diff.length),contentHash:contentHash(plan.diff),reservedBytes:String(plan.diff.length*2),settledBytes:String(plan.diff.length)}];
     });
     if(prepared.replay){
@@ -100,12 +101,15 @@ export class ProjectDocuments {
     if(!writing||!this.#proposalPlans.has(writing.plan))throw new AuthFailure('PROJECT_STORAGE_QUOTA_UNVERIFIED',412);
     const base = await this.version(db, actor, request.projectId, request.targetId, request.expectedVersion),old=writing.plan;
     const plan=await prepareDocumentProposal(db,actor,request,base,(client,pid,ref)=>this.#artifact(client,pid,ref),{artifactId:old.proposal.diffRef.artifactId,proposalId:old.proposal.id});
+    await this.#verifySources(db,actor,request.projectId,plan.content.sourceRefs,{remaining:200,active:new Set()});
     if(!plan.diff.equals(old.diff)||canonicalJson({proposal:plan.proposal,content:plan.content,reason:plan.reason})!==canonicalJson({proposal:old.proposal,content:old.content,reason:old.reason}))throw new AuthFailure('VERSION_CONFLICT',409);
     const key=await writing.quota.publishArtifact(db,actor,request,writing.started,plan.diff),receipt=await storeDocumentProposal(db,actor,request,policyRef,plan,key);
     await writing.quota.settleArtifact(db,actor,request,writing.started,{serverCommandId:receipt.id,authorizationReceiptId:receipt.authorizationReceiptRef.id,scopeDigest:receipt.authorizationReceiptRef.contentHash});
     return receipt.result;
   }  async proposal(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string) {
-    return readDocumentProposal(db, actor, projectId, id, (client, pid, ref) => this.#artifact(client, pid, ref));
+    const proposal=await readDocumentProposal(db, actor, projectId, id, (client, pid, ref) => this.#artifact(client, pid, ref));
+    await this.#verifySources(db,actor,projectId,proposal.proposedContent.sourceRefs,{remaining:200,active:new Set()});
+    return proposal;
   }
   async confirm(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
     if (!request.targetId) throw new AuthFailure('DOCUMENT_CONFIRMATION_INPUT_INVALID', 422);

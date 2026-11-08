@@ -1,3 +1,4 @@
+import {readDocumentSourceRefs} from './document-source-refs.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { readDocument } from './api.ts';
 import { sameStageRef, type StageNodeRef } from './stage-api.ts';
@@ -37,11 +38,13 @@ export async function continueDocumentProposal(client: ApiClient, state: Documen
   subject(state, session); const s = state.snapshot;
   if (!s) throw new ApiError('PROPOSAL_ALREADY_STORED');
   const u = s.upload, bytes = new TextEncoder().encode(s.body);
+  readDocumentSourceRefs(s.content.sourceRefs);
   if (bytes.length > 2 * 1024 * 1024 || bytes.length !== u.payload.bytes || await digest(bytes) !== u.payload.contentHash || !['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(String(u.payload.mediaType))) throw new ApiError('PROPOSAL_INPUT_INVALID');
   let next = state;
   if (!active()) throw new ApiError('SAVE_CONTINUATION_PAUSED');
   if (!next.command) {
     const r = await postDocumentCommand(client, u, session.csrfToken, bytes), artifact = r.data?.artifactRef as Artifact;
+    if(!active())throw new ApiError('SAVE_CONTINUATION_PAUSED');
     if (!validArtifact(artifact) || artifact.bytes !== bytes.length || artifact.contentHash !== u.payload.contentHash || artifact.mediaType !== u.payload.mediaType || r.targetId !== artifact.artifactId || r.version !== null || r.data.status !== 'ARTIFACT_READY') throw new ApiError('RESPONSE_INVALID');
     next = { ...next, uncertain: false, command: { ...u, commandId: s.saveCommandId, operation: 'proposeDocumentChange', targetId: state.baseRef.id, expectedVersion: state.baseRef.version, payload: { baseRef: state.baseRef, proposedContent: { body: artifact, ...s.content }, reason: s.reason, sourceRefs: [] } } }; checkpoint(next);
   }
@@ -50,36 +53,42 @@ export async function continueDocumentProposal(client: ApiClient, state: Documen
   if (!active()) throw new ApiError('SAVE_CONTINUATION_PAUSED');
   const result = await postDocumentCommand(client, c, session.csrfToken), proposal = result.data?.proposal as Proposal;
   if (!validProposal(proposal, state.baseRef, body) || result.data.status !== 'PROPOSAL_RECORDED' || !sameRef(result.data.ref, state.baseRef) || result.targetId !== state.baseRef.id || result.version !== state.baseRef.version) throw new ApiError('RESPONSE_INVALID');
+  if(!active())throw new ApiError('SAVE_CONTINUATION_PAUSED');
   return { ...next, proposal, uncertain: false, failure: null };
 }
-async function readBytes(client: ApiClient, pid: string, ref: Artifact, maximum: number) {
+async function readBytes(client: ApiClient, pid: string, ref: Artifact, maximum: number, active:()=>boolean=()=>true) {
+  const check=()=>{if(!active())throw new ApiError('DOCUMENT_READ_PAUSED');};check();
   if (!uuid.test(pid) || !validArtifact(ref) || ref.bytes > maximum) throw new ApiError('RESPONSE_INVALID');
   let r: Response; try { r = await client.transport.call(globalThis, `/api/v1/projects/${pid}/files/${ref.artifactId}`, { method: 'GET', credentials: 'same-origin', redirect: 'error', cache: 'no-store', headers: { Accept: 'application/octet-stream' } }); } catch { throw new ApiError('CONNECTION_LOST'); }
-  if (!r.ok) throw new ApiError('ARTIFACT_READ_FAILED', r.status);
+  try{check();}catch(cause){await r.body?.cancel();throw cause;}if (!r.ok) throw new ApiError('ARTIFACT_READ_FAILED', r.status);
   if (!/^application\/octet-stream\b/i.test(r.headers.get('content-type') ?? '') || !r.body) throw new ApiError('RESPONSE_INVALID');
   const reader = r.body.getReader(), chunks: Uint8Array[] = []; let size = 0;
-  try { while (true) { const v = await reader.read(); if (v.done) break; size += v.value.byteLength; if (size > ref.bytes) { await reader.cancel(); throw new ApiError('ARTIFACT_INTEGRITY_FAILED'); } chunks.push(v.value); } } catch (e) { throw e instanceof ApiError ? e : new ApiError('CONNECTION_LOST'); } finally { reader.releaseLock(); }
+  try { while (true) { const v = await reader.read();if(!active()){await reader.cancel();throw new ApiError('DOCUMENT_READ_PAUSED');} if (v.done) break; size += v.value.byteLength; if (size > ref.bytes) { await reader.cancel(); throw new ApiError('ARTIFACT_INTEGRITY_FAILED'); } chunks.push(v.value); } } catch (e) { throw e instanceof ApiError ? e : new ApiError('CONNECTION_LOST'); } finally { reader.releaseLock(); }
   const bytes = new Uint8Array(size); let n = 0; for (const chunk of chunks) { bytes.set(chunk,n); n += chunk.length; }
   if (size !== ref.bytes || await digest(bytes) !== ref.contentHash) throw new ApiError('ARTIFACT_INTEGRITY_FAILED');
-  try { return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes); } catch { throw new ApiError('DOCUMENT_UTF8_INVALID'); }
+  check();try { return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes); } catch { throw new ApiError('DOCUMENT_UTF8_INVALID'); }
 }
 export async function readPreservedDocumentText(client: ApiClient, projectId: string, ref: Artifact): Promise<string> {
   if (!['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(ref.mediaType)) throw new ApiError('DOCUMENT_TEXT_FORMAT_NOT_SUPPORTED');
   return readBytes(client, projectId, ref, 2 * 1024 * 1024);
 }
-export async function compareDocumentProposal(client: ApiClient, state: DocumentProposalBuffer, session: DocumentSession): Promise<ProposalComparison> {
+export async function compareDocumentProposal(client: ApiClient, state: DocumentProposalBuffer, session: DocumentSession, active:()=>boolean=()=>true): Promise<ProposalComparison> {
   subject(state, session); const p = state.proposal, pid = context(state).projectId;
   if (!p || !uuid.test(p.id)) throw new ApiError('PROPOSAL_RESULT_REQUIRED');
-  return compareResolvedProposal(client, pid, await client.get<ProposalDetail>(`/api/v1/projects/${pid}/proposals/${p.id}`), state);
+  if(!active())throw new ApiError('DOCUMENT_READ_PAUSED');
+  return compareResolvedProposal(client, pid, await client.get<ProposalDetail>(`/api/v1/projects/${pid}/proposals/${p.id}`), state,active);
 }
-async function compareResolvedProposal(client: ApiClient, pid: string, value: ProposalDetail, expected?: DocumentProposalBuffer): Promise<ProposalComparison> {
-  const p = expected?.proposal ?? value, content = value?.proposedContent;
+async function compareResolvedProposal(client: ApiClient, pid: string, value: ProposalDetail, expected?: DocumentProposalBuffer,active:()=>boolean=()=>true): Promise<ProposalComparison> {
+  if(!active())throw new ApiError('DOCUMENT_READ_PAUSED');
+  const p = expected?.proposal ?? value, raw=value?.proposedContent;
+  const content={...raw,sourceRefs:readDocumentSourceRefs(raw?.sourceRefs)};value={...value,proposedContent:content};
   if (!value || !validRef(value.baseRef) || !content || !validProposal(value, value.baseRef, content.body) || expected && (value.id !== p.id || !sameRef(value.baseRef,expected.baseRef) || !sameArtifact(value.diffRef,p.diffRef) || expected.command && !equal(content,expected.command.payload.proposedContent)) || typeof value.reason !== 'string' || !Number.isFinite(Date.parse(value.createdAt)) || !uuid.test(value.proposedBy) || !Array.isArray(value.selections) || value.selections.length > 1 || value.selections.some(s => !uuid.test(s.documentId) || !Number.isSafeInteger(s.version) || s.version < 1 || !uuid.test(s.selectedBy) || !Number.isFinite(Date.parse(s.at)))) throw new ApiError('RESPONSE_INVALID');
-  const [base, proposedBody, rawDiff] = await Promise.all([readDocument(client, pid, p.baseRef.id, p.baseRef.version), readBytes(client, pid, content.body, 2 * 1024 * 1024), readBytes(client, pid, value.diffRef, 20 * 1024 * 1024)]);
+  const [base, proposedBody, rawDiff] = await Promise.all([readDocument(client, pid, p.baseRef.id, p.baseRef.version,{expectedContentHash:p.baseRef.contentHash,active}), readBytes(client, pid, content.body, 2 * 1024 * 1024,active), readBytes(client, pid, value.diffRef, 20 * 1024 * 1024,active)]);
   let diff: any; try { diff = JSON.parse(rawDiff); } catch { throw new ApiError('PROPOSAL_DIFF_INVALID'); }
   if (base.document.contentHash !== p.baseRef.contentHash || await documentDraftHash(base.document.title, base.document.formRef, base.document.content as DocumentContent, base.document.stageNodeRef as StageNodeRef | null) !== p.baseRef.contentHash || diff?.format !== 'ANVIL_TEXT_DIFF_1' || !sameRef(diff.baseRef, p.baseRef) || !sameArtifact(diff.baseBodyRef, base.document.content.body) || !sameArtifact(diff.proposedBodyRef, content.body) || !equal(diff.beforeContent, base.document.content) || !equal(diff.afterContent, content) || !Array.isArray(diff.before) || !Array.isArray(diff.after) || diff.before.some((s: unknown) => typeof s !== 'string') || diff.after.some((s: unknown) => typeof s !== 'string') || !Number.isSafeInteger(diff.unchangedBefore) || diff.unchangedBefore < 0 || !Number.isSafeInteger(diff.unchangedAfter) || diff.unchangedAfter < 0 || diff.startLine !== diff.unchangedBefore + 1) throw new ApiError('PROPOSAL_DIFF_INVALID');
   const lines = base.body ? base.body.match(/[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+$/g)! : [];
   if (diff.unchangedBefore + diff.unchangedAfter > lines.length || lines.slice(diff.unchangedBefore, lines.length - diff.unchangedAfter).join('') !== diff.before.join('') || [...lines.slice(0,diff.unchangedBefore), ...diff.after, ...lines.slice(lines.length - diff.unchangedAfter)].join('') !== proposedBody) throw new ApiError('PROPOSAL_DIFF_INVALID');
+  if(!active())throw new ApiError('DOCUMENT_READ_PAUSED');
   return { proposal: value, base, proposedBody, diff };
 }
 
@@ -112,6 +121,7 @@ export async function applyDocumentProposal(client: ApiClient, state: DocumentPr
   if (!active()) throw new ApiError('SAVE_CONTINUATION_PAUSED');
   const result = await postDocumentCommand(client, c, session.csrfToken), ref = result.data?.ref;
   if (!validRef(ref) || ref.id !== state.baseRef.id || ref.version !== state.baseRef.version + 1 || ref.contentHash !== await documentDraftHash(comparison.base.document.title, comparison.base.document.formRef, comparison.proposal.proposedContent, comparison.base.document.stageNodeRef as StageNodeRef | null) || result.data.status !== 'DRAFT' || result.data.proposalRef !== state.proposal!.id || result.targetId !== ref.id || result.version !== ref.version) throw new ApiError('RESPONSE_INVALID');
+  if(!active())throw new ApiError('SAVE_CONTINUATION_PAUSED');
   return ref;
 }
 export async function resumeStoredProposal(client: ApiClient, projectId: string, proposalId: string, session: DocumentSession): Promise<DocumentBuffer> {
@@ -122,9 +132,10 @@ export async function resumeStoredProposal(client: ApiClient, projectId: string,
   subject(state, session); state.comparison = comparison;
   return { ...editDocument(projectId, state.comparison.base, session.user.id, generation), reason: value.reason, proposalState: state };
 }
-export async function readStoredProposal(client: ApiClient, projectId: string, proposalId: string): Promise<ProposalComparison> {
+export async function readStoredProposal(client: ApiClient, projectId: string, proposalId: string,active:()=>boolean=()=>true): Promise<ProposalComparison> {
+  if(!active())throw new ApiError('DOCUMENT_READ_PAUSED');
   if (!uuid.test(projectId) || !uuid.test(proposalId)) throw new ApiError('CLIENT_PATH_INVALID');
   const value = await client.get<ProposalDetail>(`/api/v1/projects/${projectId}/proposals/${proposalId}`);
   if (!value || value.id !== proposalId) throw new ApiError('RESPONSE_INVALID');
-  return compareResolvedProposal(client, projectId, value);
+  return compareResolvedProposal(client, projectId, value,undefined,active);
 }

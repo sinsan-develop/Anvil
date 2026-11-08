@@ -1,4 +1,4 @@
-import type {SourceRef} from './document-source-refs.ts';
+import {documentSourceSnapshot,readDocumentSourceRefs,type SourceRef} from './document-source-refs.ts';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
@@ -9,7 +9,7 @@ import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import { isImportArtifact, importUuid, type ImportArtifact } from './project-imports.ts';
 import { documentTextDiff } from './document-diff.ts';
 import { documentStageBinding } from './document-stage.ts';
-interface Content { body: ImportArtifact; attachments: ImportArtifact[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
+interface Content { body: ImportArtifact; attachments: ImportArtifact[]; sections: { itemId: string; anchor: string }[]; sourceRefs: SourceRef[] }
 interface BaseDocument { id: string; version: number; contentHash: string; title: string; formRef: VersionRef; stageNodeRef: unknown; content: Omit<Content,'sourceRefs'>&{sourceRefs:SourceRef[]}; contentReviewCriteria: { items: { criterionId: string }[] } }
 export interface DocumentProposal { id: string; baseRef: VersionRef; proposedContentRef: ImportArtifact; diffRef: ImportArtifact; status: 'PENDING' }
 type Read = (db: PoolClient, pid: string, ref: ImportArtifact) => Promise<Buffer>;
@@ -23,12 +23,14 @@ export async function prepareDocumentProposal(db: PoolClient, actor: Authenticat
 }
 /** 부모 명령을 만들지 않는 내부 계획 계산. 실제 저장 귀속은 원 receipt를 별도 소비한다. */
 export async function prepareDocumentProposalMaterial(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,p:Record<string,unknown>,base:BaseDocument,read:Read,fixedIds?:{artifactId:string;proposalId:string}):Promise<DocumentProposalPlan>{
+  p=documentSourceSnapshot(p);
   if (!exact(p, ['baseRef','proposedContent','reason','sourceRefs']) || !isVersionRef(p.baseRef) || p.baseRef.id !== base.id || p.baseRef.version !== base.version || typeof p.reason !== 'string' || !p.reason.trim() || p.reason.length > 20_000 || !Array.isArray(p.sourceRefs) || !exact(p.proposedContent, ['body','attachments','sections','sourceRefs']) || !isImportArtifact(p.proposedContent.body) || !Array.isArray(p.proposedContent.attachments) || p.proposedContent.attachments.length > 200 || !p.proposedContent.attachments.every(isImportArtifact) || !Array.isArray(p.proposedContent.sections) || p.proposedContent.sections.length > 200 || !Array.isArray(p.proposedContent.sourceRefs)) throw new AuthFailure('PROPOSAL_INPUT_INVALID', 422);
-  if (p.sourceRefs.length || p.proposedContent.sourceRefs.length) throw new AuthFailure('DOCUMENT_REFERENCE_CONNECTION_PENDING', 412);
+  if (p.sourceRefs.length) throw new AuthFailure('DOCUMENT_REFERENCE_CONNECTION_PENDING', 412);
   await documentStageBinding(db, projectId, base.stageNodeRef, base.formRef, false);
   const current = (await db.query('SELECT head_version FROM anvil.documents WHERE project_id=$1 AND id=$2 FOR SHARE', [projectId, base.id])).rows[0];
   if (!current || Number(current.head_version) !== base.version || base.contentHash !== p.baseRef.contentHash) throw new AuthFailure('VERSION_CONFLICT', 409);
   const content = p.proposedContent as unknown as Content;
+  content.sourceRefs=readDocumentSourceRefs(content.sourceRefs);
   if (!['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(content.body.mediaType) || content.body.bytes > 2 * 1024 * 1024) throw new AuthFailure('DOCUMENT_TEXT_FORMAT_NOT_SUPPORTED', 412);
   const proposed = text(await read(db, projectId, content.body)), original = text(await read(db, projectId, base.content.body));
   const ids = new Set([content.body.artifactId]);
@@ -65,7 +67,9 @@ export async function readDocumentProposal(db: PoolClient, actor: AuthenticatedI
   await projectMember(db, actor, pid);
   const row = (await db.query('SELECT * FROM anvil.document_proposals WHERE project_id=$1 AND id=$2', [pid, id])).rows[0];
   if (!row) throw new AuthFailure('NOT_FOUND', 404);
-  const proposal = row.proposal_json as DocumentProposal, content = row.content_json as Content;
+  const proposal = row.proposal_json as DocumentProposal;let content:Content;
+  try{content=documentSourceSnapshot(row.content_json) as Content;content.sourceRefs=readDocumentSourceRefs(content.sourceRefs);}
+  catch{throw new AuthFailure('PROPOSAL_INTEGRITY_FAILED',503);}
   if (contentHash(canonicalJson({ proposal, content, reason: row.reason })) !== row.content_hash) throw new AuthFailure('PROPOSAL_INTEGRITY_FAILED', 503);
   await read(db, pid, proposal.diffRef); await read(db, pid, content.body);
   for (const ref of content.attachments) await read(db, pid, ref);
