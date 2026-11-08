@@ -18403,3 +18403,7 @@ npm run typecheck
 - FN03origin WI에기존실존집계callee/signature·최종정의·전체complete순환금지와quota_account의environment문맥금지를13절에고정했다. 물리C.draft_id/received_at·A.authorized_at·E.generated·R22열비용누락금지를14절에추가했다. PG15공식RLS/SELECT문서읽기로permissive OR·FORCE/권한별도·TRUNCATE별도차단·행잠금UPDATE열필요를교차확인해15절에링크했고실PG검증으로승격하지않았다. 새계약패킷/후보고정SHA불변·제품/SQL쓰기0·허가GO0을유지한다.
 
 - 독립bounded검색에서UI02 readBaselineDesign의정상4종AF02/hash문서거절I1을추가확인했다(Main f36db9실본문대조). 실제callerProjectBaselinePanel→BaselineDesignPicker이며기존DocumentContent와FN01보호문서선택계약내제품1/시험1소비누락이다. 현재문서branch를StageB의미채택관리후보보존+이기존소비보완으로마무리해미종료branch를우회하지않는다. UI02_BASELINE_DOCUMENT_SOURCE_REFS_WI_20261108.md로정확두경로사전검수를요청하고기존Primary에검수후단일writer를배정한다. 새관리origin권한/계상은미채택GO0불변·실DB/키/권한/서비스/Agent/SSH/실자료0이다.
+
+- UI02 WI845195bf独립사전C0/I0·safeHEAD/privatefca1eb94뒤기존Primary정확제품1/시험1 단일writer GO했다. 실제RED248327 exit1/1FAIL은정확AF02·원문/content+분리refs/fullhash정상문서를기존21행length조건이DOCUMENT_REFERENCE_CHANGED로거절한것이다. 제품1원바이트시점이며동일조건최소보완/기존[]·오염·late·잠긴buffer음성검산을진행한다. Main제품동시쓰기0·새관리origin/SQLauthorityGO0·실DB/키/권한/서비스/Agent0이다.
+
+- UI02 최종 제품1/시험1 raw manifest c705f5ff/독립4315b9 C0/I0/M0·Primary집중12/인접3/type/diff exit0·writer반환을 인수했다. Main e479ce Web memory build520modules/507ms·집중12PASS/skip0/exit0(381.4934ms)를 별도확인했다. 과거출력유실UNKNOWN은소급PASS0,현재node0조회와분리한다. 결과 UI02_BASELINE_DOCUMENT_SOURCE_REFS_RESULT_20261108.md에범위/RED/명령/오류/복구/미검증기록. 837410 실제원격main969cebbc/branchfca1eb94는각로컬동일이며미커밋3개가로컬에만있음을구분보고했다. 기본sandbox SSH조회74be8c exit128과실권한읽기837410 exit0를분리하고권한변경0이다. 새관리원문후보는미채택GO0·실DB/권한/키/서비스/Agent0. 검수된정확변경을게시/PR/통합한다.
