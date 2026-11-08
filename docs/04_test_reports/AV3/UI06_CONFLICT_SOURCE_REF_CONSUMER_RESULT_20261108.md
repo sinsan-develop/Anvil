@@ -28,3 +28,6 @@ readDocument는 expectedContentHash가 없으면 전체 metadata hash를 재산�
 - 알려진 live검증handle0·writer반환. 읽기 rg/gitdiff 호출6e52e9는 요약에서 exit/handle 누락으로 관측불명이며 시험명령이 아니다. 별도 최종f7f4d9 diff0로 그 과거 exit를 소급하지 않는다. 강제종료/재실행0이다.
 
 구현의 source/합성 판정만 인수하며 실제 DB·권한·served 브라우저·Agent 실행은 NOT_RUN이다. 다음은 정확게시/PR필수검증/main/merged한정smoke·정리와 FN03 원관측 생산 선행의 정확한 계약 결정 지원이다. 미채택 보호관리원문·새조회/비용·현재권위를 임의 true로 연결하지 않는다.
+
+## 통합 확인
+PR71 sourcec16b160e5909de4a7398e871fdd4944a74818e4c는 Broker42439301458 success/9054e8로 main969cebbc4a69dda633da0b05f16fabf4c0f070c1에 병합됐다. parent39f159a5·source/merge tree d1967ca6a4b35b7fcb6b4744598dea7081298797 동일이다. Main64a669 정상FF 뒤 집중2파일18PASS/skip0/fail0/exit0/2338.1571ms를 확인했다. abdaef는 main local/private동일·clean·완료remotebranch/tag부재·PR71복구refc16b160e를 확인해 정상-d/-dr로 완료branch를 정리했다. squash 경고는 PR/tree/ref 근거와 보존하고 force0이다. 이후 최신main에서 후속FN03 원문생산 계약 상세 문서 branch를 생성·즉시 원격 게시했다.
