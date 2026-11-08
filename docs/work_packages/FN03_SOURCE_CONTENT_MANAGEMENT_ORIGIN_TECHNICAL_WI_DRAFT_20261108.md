@@ -120,7 +120,7 @@ Primary는정확14경로에서집중5시험과필요직접인접의보호SQL/정
 |fn03_management_actual(p,cid)→bigint|rows→기존canonical cost projection만호출. quota전체complete/currentcontext/settle호출0|
 |fn03_management_reserve(s,a,c,p,q,policy,ids,tx,until,prepared)→jsonb|이미잠근context/계정·coverage재검산→maximum→기존R 최소고정점→새R reserve/IO_STARTED. caller비용0|
 |fn03_management_settle(s,a,c,p,q,policy,ids,tx,until,reservation)→jsonb|잠금유지확인·actual→sealedR검산·s최소고정점→계정/R정착. 원r/plan/hash불변|
-|fn03_management_complete(p,cid)→void|rows/actual·정확R(plan/ids/fence/금액/원기한형식)·B≤M/s≤r/고정점/양방향완결. currentcontext·quota전체complete로재귀0|
+|fn03_management_complete(p,cid)→boolean|rows/actual·정확R(plan/ids/fence/금액/원기한형식)·B≤M/s≤r/고정점/양방향완결. currentcontext·quota전체complete로재귀0|
 |fn03_management_history_bundle(p,cid)→jsonb|complete→불변5행/R보호bundle. 현재인가RPC밖에서호출불가,현재기한/주체로과거row를재작성0|
 |fn03_management_final_guard()→trigger|새Tx의currentcontext/clock/수명·현재xid봉인→complete. 단순과거read/replay에서는이새Tx검사호출0|
 |commit RPC|currentcontext→기존순서잠금→prepare/maximum/reserve→freshC/A/U·E/O쓰기→actual/settle/complete→최종DB검사. replay는현재인가→history_bundle만,추가R/5행0|
@@ -143,7 +143,7 @@ fn03_management_rows(uuid,uuid) returns jsonb
 fn03_management_actual(uuid,uuid) returns bigint
 fn03_management_reserve(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text,timestamptz,jsonb) returns jsonb
 fn03_management_settle(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text,timestamptz,jsonb) returns jsonb
-fn03_management_complete(uuid,uuid) returns void
+fn03_management_complete(uuid,uuid) returns boolean
 fn03_management_history_bundle(uuid,uuid) returns jsonb
 fn03_management_final_guard() returns trigger
 ```
@@ -244,3 +244,41 @@ PROJECT C.draft_id·승인없는 C.approval_consumption_id/payload_ref·A.approv
 C.result_ref는 부모CM06 외곽exact10/data exact9 전체를 투영하며 evidenceRefs/warnings=[]·권위4값false·새event/previous fullref·sequence/상태문자열도 포함한다. A.subject_ref={kind:HUMAN,userId,clientId}와 U.actor_ref={kind:HUMAN,userId}를 혼용하지 않는다. M은 이5행 상계의 합, B는 실제5행 합이고 R자기비용은 별도 고정점이다. 0075:156~165 fn75_cost에서 실제로 존재하지 않는 request_canonical/snapshot_canonical/_canonical_result_ref 열을 가상 추가하지 않는다.
 
 후속 ALTER 대조에서 이 기존 C/A/U/E/R의 추가 물리열은 확인되지 않았고 제약 확장이 주였다. 새0083 작성시 목록 밖 물리/canonical열을 추가하면 이 표로 완료라고 주장하지 말고 실제 복제비용을 다시 고정한다. 최종 M JSON 전체·고정점 함수 전이 ACL 및 동시성/기한 검수 전에는 동결 완료나 코드GO로 표시하지 않는다.
+
+## 18. principal별 EXEC 전이와 finalguard 고정 제안
+Primary의 0075/0077/0082·0040 읽기 결과를 반영한다. 아래는 코드 전에 검수할 정확 호출안이며 실제 catalog/ACL/PG는 NOT_RUN이다.
+
+### 기존 dispatcher 보존
+exact regprocedure는 anvil.quota_plan_valid(jsonb), anvil.quota_settled_complete(anvil.project_storage_reservations)다. 0082의 둘 다 SECURITY DEFINER이므로 후속 설치 검산은 pg_proc의 proowner/proacl/prosecdef/provolatile/proconfig를 각각 확인·보존해야 한다. 동일 signature CREATE OR REPLACE라면 기존 owner/ACL 보존 여부를 검산한다. rename/delegate를 쓰면 rename 전 owner OID를 보존하고 새 dispatcher에 복원한다. 고정 owner 이름을 추정하지 않는다. 새 private validator/역사complete의 EXECUTE는 실제 기존 dispatcher owner에만 허용한다. 그 owner가 app 또는 예기치 않은 속성이면 app helper권한 확대로 우회하지 않고 중단한다.
+
+### 새 목적 역할의 INVOKER 전이
+다음 edge를 목적 역할의 effective principal에서 전부 검산한다. root 하나만 허용하고 하위 helper를 누락하지 않으며 app/PUBLIC에는 새 private EXECUTE0이다.
+
+```
+fn01_hash(jsonb) → fn01_json(jsonb) → 자기 재귀
+fn75_cost(jsonb) → fn01_json(jsonb)
+  → [실제 canonical 보조열이 있을 때] fn75_json_projection(text)
+    → fn75_string_end(bytea,integer)
+fn09_registered_reservation_fixed_point(bigint,jsonb,bigint)
+  → fn09_registered_reservation_cost(jsonb,text,bigint,bigint)
+    → fn09_registered_cost_projection(jsonb)
+    → fn09_registered_cost(jsonb,text,jsonb) → fn01_json(jsonb)
+```
+
+fn09_registered_cost의 kind whitelist P/C/A/U/K/R은 그대로다. E/O 비용은 fn75_cost(cost_projection(실물행))이고 R fixed-point만 kind=R/pairs=NULL이다. C/P canonical pairs를 요구하는 registered_cost에 부모5행을 억지로 넘기지 않는다. 실제 보조canonical열이 없는 원행에 가상열을 넣어 조건부 분기를 만들지도 않는다.
+
+### collector의 DEFINER 경계
+새 역할이 직접 호출할 root는 fn15_storage_actual(uuid),fn15_storage_future(uuid),fn75_project_storage_actual_bytes(uuid),fn75_project_storage_future(uuid),fn76_storage_actual(uuid),fn76_storage_future(uuid),fn09_registered_other_bytes(uuid)다. 각 root 내부는 그 함수의 실제 owner principal이며 하위 callee를 새 목적 역할에 무차별 GRANT하지 않는다. matrix의 edge마다 caller effective owner OID와 callee regprocedure·security mode·기존 ACL을 대조한다. 기존 collector 내부 권한이 부족하면 필요한 정확 edge를 반환하며 임의로 원래 정책을 확장하지 않는다.
+
+주요 내부 전이는 FN15 actual/future→fn15_control_storage_actual(uuid,uuid)/fn15_cost_bytes(jsonb)/fn15_physical_projection(jsonb)→fn15_cost_encode(jsonb,text)/fn01_json(jsonb), FN75 actual→fn75_project_storage_actual(uuid)+위cost전이, FN76 actual→fn76_l_rows(uuid)/fn76_r_rows(uuid)/fn01_json(jsonb)다. FN76 future는 fn76_aggregate_max(jsonb)/fn76_profile_future(uuid)/fn76_projection_bytes(text,jsonb)/fn76_reservation_remaining(anvil.native_receive_storage_reservations) 및 기존metadata계상을 소비한다. other_bytes는 기존6표 소계이며 다른 인증/저장 허가를 생산하지 않는다.
+
+### E CHECK의 암묵적 호출
+0040 INSERT CHECK는 source_read_canonical_json(jsonb) 재귀, source_read_hash(jsonb)→canonical, source_read_iso(timestamptz), source_read_ref(jsonb)→source_read_exact(jsonb,text[])를 호출한다. RPC 본문 밖 CHECK도 새 역할의 실효권한 matrix에 포함하며 app/PUBLIC 원권한을 넓히지 않는다.
+
+### 신규 private helper·신규 Tx 최종 검산
+최소 후보는 fn03_management_plan_valid(jsonb)→boolean,fn03_management_complete(uuid,uuid)→boolean,fn03_management_current_final(uuid,uuid,text)→void,fn03_management_final_guard()→trigger다. 새 목적 역할이 이 함수 owner이며 기존 plan dispatcher→plan_valid, 기존 settled dispatcher→역사complete, 목적RPC/read→역사complete, 목적DEFINER deferredtrigger→신규Tx current_final의 edge를 고정한다. INVOKER 즉시 rowtrigger는 private helper를 직접 호출하지 않는다.
+
+finalguard는 E/O/R의 JOIN 성공행만 수집하지 않는다. 이번 Tx의 defineSourceContentPolicy C 자체를 수집해 C만 있고 E/O/R이 없는 불완결도 거절한다. 역사complete는 현재세션·정책·기한으로 되돌아가지 않고 신규 C분기에만 sameTx/R·최소기한을 최종 강제한다. 전체matrix/시그니처·M전체JSON·동시성/시각 독립검수 전 최종동결 주장은 하지 않는다.
+
+### §18 사전 M1 정합화
+독립 사전 C0/I0/M1은 11·12절 complete의 void와18절 boolean 후보 불일치다. 내부 helper는 fn03_management_complete(uuid,uuid) RETURNS boolean으로 통일한다. 기존 settled dispatcher는 해당 boolean을 반환하며 NULL은false로 닫는다. commit/read/history_bundle/current_final에서 완결성 진행조건은 반환값 IS TRUE이고 false/NULL이면 해당 거래를 거절한다. 예외를 잡아 정상false/0원/성공 bundle로 바꾸지 않는다. current_final은 신규Tx context/xid/기한 검산과 이완결 조건을 강제하며 RETURNS void, deferred final_guard는 그 호출 성공 뒤에만 trigger를 종료한다. 따라서 void 호출로 complete의 실패를 무시하는 경로를 허용하지 않는다. 이 정합화는 기존 후보의 불완결 거절 의미를 바꾸지 않는 내부 타입 선택이며 아직 전체시그니처/M/ACL 동결이나 구현 승인이 아니다.

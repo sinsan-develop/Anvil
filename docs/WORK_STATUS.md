@@ -18413,3 +18413,9 @@ npm run typecheck
 - FN03 기술WI16절에 실제0082 SECURITY DEFINER dispatcher의기존owner→새private plan/complete EXEC edge와INVOKER guard직접호출금지·0077 fixed_point→reservation_cost→cost_projection/registered_cost(kindR)→fn01_json의전이ACL 누락위험을기록했다. E/O/C/A/U는fn75_cost이고새O/E를registered_cost whitelist에끼워넣지않는다. 전체matrix/M물리template는기존담당자읽기중이며동결/제품GO0·실행0이다. 후보cbef/패킷239845 SHA를da0967로재확인했고변경0이다.
 
 - 기존reader 실제schema대조로 origin기술WI17절에O9/E15(생성3포함)/C21/A9/U16/R22 물리열·null/최상위정규화와중첩원형·E숫자/U문자열순번·물리UTC27/공개ISO구분·복제비용/M상계분기를기록했다. 실SQL/계산PASS아님·최종M JSON/ACL동결전GO0이다. 별개UI02 실제React Panel→Picker→명시저장은신규시험1경로로의미있는미검증단위임을독립reader가확인해WI C297A0B0 사전검수요청했다. 기존제품/계약수정0·새의존/실환경0·Main문서만/다음Primary writer전환준비다.
+
+- UI02 실제React화면여정 WI C297A0B0/독립60c617 C0/I0를2c5b5158에private보존한뒤기존Primary에신규시험1경로 단일writer GO했다. 제품/기존시험/의존수정0·실환경0이며새origin미채택은별도유지한다. Main은기술WI18절에Primary읽기반환의실dispatcher OID보존·INVOKER전이/DEFINER collector경계·E CHECK암묵callee와C-only누락도거절하는finalguard후보를문서화했다. 실catalog/ACL/PG검증아님·전체matrix미동결GO0이다.
+
+- 기술WI17/18 독립검수C0/I0/M1은11/12절 complete void와18절 boolean불일치였다. complete RETURNS boolean/dispatcherNULLfalse/모든RPC·bundle·current_final의IS TRUE필수·실패거래거절로정합화하고current_final void/trigger성공뒤반환을명시했다. 기존불완결거절 의미/원후보hash불변이며재검수요청·전체M/ACL동결미완료GO0이다.
+
+- 기술WI17/18후속재검수는SHA0c465ebf와일치·C0/I0/M0로내부complete타입M1해소를확인했다. 전체M/권한표·함수시그니처동결/구현GO판정아님을보존한다. Main은정확기술문서/현황2경로만게시하며Primary신규화면시험소유를건드리지않는다.
