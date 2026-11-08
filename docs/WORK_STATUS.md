@@ -18298,3 +18298,17 @@ npm run typecheck
 - UI00M2 WI296ab8c7사전독립읽기C0/I0/M0였다. 실App에서원UNKNOWN→상단401→같은actor/client의기존세션명시재확인→프로젝트복귀/다른scope잠금/동일bodyUUID명시재확인08cb1c는1PASS/skip0/exit0,파일전체+최소CAS/controlAPI7eb0f5는17PASS/skip0/exit0(신규포함)이며제품RED/변경·준비오류0이다. type419a30/session78899→ffa0cb exit0,기존5본문/404fallback e3166c대조·diff0/live0/단일시험writer반환이다. 시험21906B/SHAd0f6147429b1fd75475ff857b1d261bd7246c085e30b42e579d28889e52bd893를독립c7fb2e/c80ba6가확인해C0/I0/M0를판정했다. 실제암호POST/새credential·receipt·실COMMIT증거아니다. WI표현을실제기존세션명시재확인으로정확히해SHA853e2ea86a1bdd9b0485f31e7409c87673b8f9647e2b1cd7166ce4fb7cc04de7로기록하고새결과서에범위를명시했다. UI00전체완료/새기능진도로확대하지않는다.
 - IX01효과대조를다시수행했다. 역사J3에이미신규격리PG/내부망/합성인증키·임시설치권한/실App고정Node자식90초가포함됐으며현재TC01은native수신기능/새profile키·신뢰등록을호출하지않는다. 실제효과확인없이sourceSHA/SQL112변경만으로새사람승인필수라던앞설명은정정한다. 사용자의J3횟수무제한직접지시는그대로보존하고새Main실행외피시각과인간승인시각/각실행30분/PG10분·child90초를분리한다. 옛만료grant의시각교체·연장/UNKNOWN재사용·조회·정리0이다.
 - 다음기존범위내소스준비는현재113SQL(0082추가)·부모/자식ledgerCount/원장·sourceFiles/고정GitSHA의정확재결박이다. 타깃0082 Gitblob230239B/SHA4cbca6ad...fa84b2와WindowsCRLFraw231883B/SHA907fd62c...99358을구분하며정규화로mismatch를통과시키지않는다. explorer가정확허용수정6/자식검산1의재결박목록을반환했고Main이범위·시각·기존J3근거를확정한뒤새WI로단일writer에배정한다. 현재기록/감사자체는실행GO가아니며실SSH/DB/키/Agent/기존자원변경0이다.
+
+
+- PR66 head bf0110d8은 Broker42428526650/job128572005983 exit0로 병합됐다. 실제 merge4b266f616c8726386c2092639007468d04f85d35/parent e3c7dd1a/source와 merge tree226718ca0503e8cb5a1fb5517be8c874cc927479 동일을175d75로 확인했다. 9e9e02 main정상FF 뒤 실제App 신규시험1PASS/skip0/exit0다. 4d8c55에서 main local/private동일·clean·완료remote branch/tag부재·PR66복구ref bf0110d8을 검산한 뒤 a08be9의 정상 -d/-dr로 정리했다. squash 경고는 PR/tree/복구ref와 보존하며 강제삭제0이다. 최신main에서 codex/av3-ix01-current113 생성·즉시private게시했다.
+- IX01 다음 작업은 현재113SQL의 원시바이트 및 부모/자식 원장 결박 보완이다. IX01_CURRENT113_SOURCE_REBIND_WI_20261108.md에 정확 코드/시험/후보6파일을 Primary 단일writer로 고정하고 Main은 문서만 소유한다. 실제DB/키/권한/서비스/Agent/SSH·과거UNKNOWN조회0, 원J3횟수무제한 지시·각실행유한기한을 구분한다. 독립 WI 검수 뒤 구현을 진행하며 전체44업무미완료 유지다.
+
+- IX01 재결박 WI 독립 C0/I0/M0를 인수하고 Primary 정확6파일 구현 GO를 전달했다. 문서 checkpoint9039d658은 private동일이다. 새 WI의 CRLF가 cached diff에서 trailing whitespace로 검출됐는데 명령이 중단되지 않고 문서 commit까지 진행한 Main 오류를 기록한다. WI만 LF로 정정해 의미/범위 불변 SHAefb4dd22a49d98c41f4d9d2ff64349c6a4d84d8c0e2fa2286523861344904e14, 3d266f diff0이며 이후 commit 전 검사 exit를 명시 확인한다. 역사 파일과 worker 코드 변경은 건드리지 않았다.
+
+- IX01 Primary 첫 RED2ec2bc exit1/2FAIL은 실제Git113 SQL입력을 기존112helper가 IX01_CURRENT_SQL_BASELINE_INVALID로, 정상113자식결과를 기존112판독이 false로 거절함을 재현했다. 제품변경 전 증거이며 실제child/DB실행0이다. 기존105와 UNKNOWN후속차단을 유지한 최소결박 보완·마지막0082음성을 진행한다.
+
+- IX01 GREEN b44aa9/session99997→62af9d는 집중3파일24PASS/skip0/exit0다. 제품diff는0082suffix1행+부모/자식ledgerCount2상수이며 Main4f002f 직접대조/독립4f4af6·074baa 코드5시작끝지문동일C0/I0/M0다. 실제Git113원문3494304B/pathorder4cacf7fd28c8e69ecffd3f060c4a24b096ef1cc401ac453c5602c59fb0ef1db5/ledger d689e5b783caea157e3e420a8ee201f29f84bceda5127fc514d4d67493433d03를 인수했다. type67958→2309f5 exit0/diff74011→6099cd exit0·writer반환/live0, 후보최종sourceHead미결박을독립검수후실소스commit에결박한다. 실제SQL/DB/키/서비스/Agent/SSH실행0이며 전체계획미완료다.
+
+- IX01 소스/시험5+결과/현황은d7a2c5542f8feca105ebd5dc4b686b3613b01704에commit/privatepush79fc68 exit0했다. Main766819가14source의실Git원문을재산출해후보에결박했으며113합계/ledger불변이다. 첫8df7ed의표regex가source14외suffix8까지포함해assert22로중단한문서도구오류1회는쓰기전중단·기존파일보존으로분리했다. §3구간14한정으로보정후exit0·현재후보SHAa45d856c7ee90f3a6246c629138d6fab753ee217f79ab6502f2b357ce05e1fa0이다. 승인원시각/유한외피구분과실행0을유지한다.
+
+- IX01 최종후보19622B/SHAa45d856c는독립f8d92a→29485f/dff85c에서불변·d7a2c554의14Gitblob전부일치/C0/I0/M0다. 이전코드5검수와집중24/type0를재사용하며실제실행0이다. 문서3을추가게시후일반PR통합/merged한정검산/정리를진행한다.

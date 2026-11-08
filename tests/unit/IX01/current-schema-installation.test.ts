@@ -8,7 +8,7 @@ import {installCurrentSchema,type CurrentSchemaInstallationPorts} from '../../in
 const root=fileURLToPath(new URL('../../../',import.meta.url));
 const suffix=[
   '0075_user_common_setup_definitions','0076_native_first_receive','0077_registered_execution_preparation_options',
-  '0078_start_execution_material_registration','0079_material_credential_namespace_binding','0080_node_decisions','0081_execution_start_origins',
+  '0078_start_execution_material_registration','0079_material_credential_namespace_binding','0080_node_decisions','0081_execution_start_origins','0082_fn09_origin_reuse_synthetic_start',
 ];
 const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd:root,input,windowsHide:true,maxBuffer:16*1024*1024});
 const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
@@ -54,14 +54,14 @@ function harness(){
 }
 const settled=(id:string)=>({id,sql:'SETTLED',ledger:'SETTLED'});
 
-test('IX01 원시 SQL 112개와 마지막 바이트를 원 순서로 전달하고 최종 원장만 수락한다',async()=>{
+test('IX01 원시 SQL 113개와 마지막 바이트를 원 순서로 전달하고 최종 원장만 수락한다',async()=>{
   const h=harness();
   const result=await installCurrentSchema(h.tsv,h.files,h.ports);
   assert.deepEqual(result,{status:'VERIFIED',progress:h.files.map(row=>settled(row.id))});
-  assert.equal(result.progress.length,112);
+  assert.equal(result.progress.length,113);
   assert.ok(Object.isFrozen(result)&&Object.isFrozen(result.progress)&&result.progress.every(Object.isFrozen));
   assert.deepEqual(h.trace,[...h.files.flatMap(row=>['SQL:'+row.id,'LEDGER:'+row.id]),'READ']);
-  assert.equal(h.checks(),112*4+2);
+  assert.equal(h.checks(),113*4+2);
 });
 
 test('IX01 0076 끝의 바이트가 달라지면 첫 설치나 원장 효과도 시작하지 않는다',async()=>{
@@ -121,7 +121,7 @@ test('IX01 최종 원장 누락과 읽기 불명은 설치 완료 후에도 성�
     assert.deepEqual(await installCurrentSchema(h.tsv,h.files,h.ports),{status:'STOPPED',
       reason:drift?'LEDGER_MISMATCH':'LEDGER_READ_UNKNOWN',progress:h.files.map(row=>settled(row.id))});
     assert.deepEqual(h.trace,[...h.files.flatMap(row=>['SQL:'+row.id,'LEDGER:'+row.id]),'READ']);
-    assert.equal(h.checks(),112*4+2);
+    assert.equal(h.checks(),113*4+2);
   }
 });
 
@@ -140,7 +140,7 @@ test('IX01 대기 중 원본 TSV·SQL 배열·바이트를 변경해도 검산�
   files.reverse();
   release();
   assert.equal((await pending).status,'VERIFIED');
-  assert.equal(h.trace.length,225);
+  assert.equal(h.trace.length,227);
 });
 
 test('IX01 각 설치·원장 효과를 기다린 사이 소유권을 잃으면 새 효과를 시작하지 않는다',async()=>{
@@ -168,4 +168,20 @@ test('IX01 각 설치·원장 효과를 기다린 사이 소유권을 잃으면 
       {status:'STOPPED',reason:expected.reason,progress:expected.progress});
     assert.deepEqual(h.trace,expected.trace);
   }
+});
+
+
+test('IX01 마지막 0082 설치 거절·불명에서는 원장 append·최종 조회가 없다',async()=>{
+ for(const state of ['DDL_REJECTED','UNKNOWN'] as const){
+  const h=harness(),install=h.ports.install,target=h.files[112]!;
+  h.ports.install=async function(raw,row){
+   if(row.id!==target.id)return install.call(this,raw,row);
+   assert.deepEqual(Buffer.from(raw),target.bytes);h.trace.push('SQL:'+row.id);return state;
+  };
+  const result=await installCurrentSchema(h.tsv,h.files,h.ports);
+  assert.equal(result.status,'STOPPED');
+  assert.equal(result.reason,state==='DDL_REJECTED'?'DDL_REJECTED':'INSTALL_UNKNOWN');
+  assert.deepEqual(h.trace,[...h.files.slice(0,112).flatMap(row=>['SQL:'+row.id,'LEDGER:'+row.id]),'SQL:'+target.id]);
+  assert.deepEqual(result.progress.at(-1),{id:target.id,sql:state==='DDL_REJECTED'?'REJECTED':'UNKNOWN',ledger:'NOT_STARTED'});
+ }
 });

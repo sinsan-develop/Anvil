@@ -33,7 +33,7 @@ const schema=()=>loaded??=fixture();
 // Node v24 TAP의 실제 inert stdout 형식. 원문·지문은 별도 child 결과에서 대조한다.
 const tap='TAP version 13\n# Subtest: IX01 TC01 현재 격리 저장 여정\nok 1 - IX01 TC01 현재 격리 저장 여정\n  ---\n  duration_ms: 0.346\n  type: \'test\'\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 1\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 7.31\n';
 function outcome(handoffHash:string){
- return {status:0,signal:null,stdout:tap,stderr:'',result:{schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD_RESULT',handoffHash,ledgerCount:112,status:'PASSED'}};
+ return {status:0,signal:null,stdout:tap,stderr:'',result:{schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD_RESULT',handoffHash,ledgerCount:113,status:'PASSED'}};
 }
 function harness(){
  const data=schema(),calls:string[]=[],ledger:{id:string;checksum:string}[]=[];
@@ -72,10 +72,10 @@ test('IX01 SQL 사전 검산과 단발 claim은 실제 효과보다 앞선다',a
  const result=await runCurrentJourney(input(),duplicate.ports);
  assert.equal(result.code,'ALREADY_CLAIMED');assert.deepEqual(duplicate.calls,['PREFLIGHT','CLAIM']);
 });
-test('IX01 현재 격리 합성 제어는 112 설치·원장→SCRAM/회수→내부망→자식→확정 정리 순서다',async()=>{
+test('IX01 현재 격리 합성 제어는 113 설치·원장→SCRAM/회수→내부망→자식→확정 정리 순서다',async()=>{
  const h=harness(),result=await runCurrentJourney(input(),h.ports);
  assert.deepEqual([result.status,result.code,result.containerId,result.networkId],['CLEANED','TC01_PASSED',containerId,networkId]);
- assert.equal(result.schema?.progress.length,112);
+ assert.equal(result.schema?.progress.length,113);
  assert.deepEqual(h.calls,['PREFLIGHT','CLAIM','RUNTIME','START',...h.data.sql.flatMap(row=>['SQL:'+row.id,'LEDGER:'+row.id]),'VERIFY_LEDGER','SECURE','NETWORK','CHILD','CLEANUP','RECORD']);
 });
 test('IX01 0076 명시 거절·0078 설치 불명·원장 불명은 후속 SQL·자식·정리를 시작하지 않는다',async()=>{
@@ -143,4 +143,26 @@ test('IX01 로컬 실행 기한은 TERM을 무시하는 직접 자식만 강제 
  assert.equal(child.stdout,'READY\n');
  assert.equal(child.status,null);
  assert.equal(child.signal,'SIGKILL');
+});
+
+
+test('IX01 현재 자식 결과의 옛 112 원장은 113 부모와 결박되지 않는다',()=>{
+ const value=outcome('a'.repeat(64));
+ assert.equal(verifyCurrentChildOutcome(value,'a'.repeat(64)),true);
+ assert.equal(verifyCurrentChildOutcome({...value,result:{...value.result,ledgerCount:112}},'a'.repeat(64)),false);
+});
+
+
+test('IX01 마지막 0082 실패·불명 뒤 네트워크·자식·정리 및 원장 조회를 호출하지 않는다',async()=>{
+ for(const state of ['DDL_REJECTED','UNKNOWN'] as const){
+  const h=harness(),install=h.ports.schema.install,target=h.data.sql[112]!;
+  h.ports.schema.install=async(raw,row)=>{
+   if(row.id!==target.id)return install(raw,row);
+   assert.deepEqual(Buffer.from(raw),target.bytes);h.calls.push('SQL:'+row.id);return state;
+  };
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.status,'UNKNOWN');
+  assert.equal(result.code,state==='DDL_REJECTED'?'DDL_REJECTED':'INSTALL_UNKNOWN');
+  assert.deepEqual(h.calls,['PREFLIGHT','CLAIM','RUNTIME','START',...h.data.sql.slice(0,112).flatMap(row=>['SQL:'+row.id,'LEDGER:'+row.id]),'SQL:'+target.id,'RECORD']);
+ }
 });
