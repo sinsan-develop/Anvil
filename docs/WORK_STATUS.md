@@ -18690,3 +18690,17 @@ GET는발급credential/정확서명/원nonce·현재권위→원START command/ou
 신산님지시대로현재명령조회구현을PR81로main에병합했다. sourcea6110cf835c126379072b941d42ac5aa15cce329→product main967c9a207452f5d3c9d79a1d8906e25a396dd704(parent3aaa16f8/treeb2193cf59d186fd56e412d2161d046180fdff756 source동일),Broker42469498572 success. Maine316f0/40077c/9f6394 PR실merged/head검산·정상fetch/FF·merged신규7P/0F/0S·4299.8992ms exit0·diff0. dd30ea 실제remote main동일·PR81원source복구ref존재·완료branch/tag부재·tracked/untracked clean확인후완료localbranch/tracking만정상-d/-dr로정리했다. squash로HEAD ancestry없는경고는동일tree/복구ref확인후정상삭제한것이며force0이다. 다른과거dirty/untracked/branch/worktree삭제0.
 
 현재main은검증된제품967c9a20이며현황2문서마감기록만codex/av3-command-pages-closeout에서일반PR로게시/통합한다. 제품/시험재수정0·불변제품시험재반복0,마감뒤로컬/원격동일·clean/main을재확인한다. 전체작업계획미완료·준비2/제품인수42잔여표시는유지한다. 0083~0087미적용·실제DB/권한/키/서비스/Agent/SSH0이다. 다음자료GET는기존선택맥락/Options내부보호읽기로가능하나,실행기가random materialId를발견할공개응답계약은검색정본에서확인되지않아PMO가별도직접결정차이로확인했다. envelope불변을유지하는최소후보준비와이미승인된materialId GET준비는구분하며임의필드추가0이다.
+
+
+### 마감 문서까지 main 동기화·다음 승인 자료GET 착수 — 2026-11-08T19:06:21+09:00
+
+PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7d91befb3135c929558e(parent967c9a20/tree5fa89bd53b811eb1c5891d0afc97d9f7d8ba4565). Broker42469748714 success,Main1c0c59 exact현황2변경만/동일tree/정상FF/diff0,c5daa5 실제remote·local/developmentmain모두e194fc36/clean·PR82복구ref·완료branch/tag부재확인후정상정리. 제품불변이라merged제품7PASS증거를재사용했다. 신산님현재작업병합·정리지시완료/PMO공유,다른dirty·역사자료삭제0.
+
+지속된전체계획완료지시에따라완료단위재작업없이다음normal START materialId 보호GET를단일Primary에GO했다. 최신maine194fc36에서codex/av3-normal-start-materials 생성·즉시private동기화073e0b. 소유10은신규normal-start-materials.ts/0088_normal_start_material_delivery.sql.pending/신규FN08동작·SQL·여정3,기존app.ts/http/connector-auth.ts/projects/routes.ts/executions/normal-initial-execution.ts/execution-proof.ts다. 원생산자START_CONTEXT_BODY_V1/Options동일bytes재구성·이미선택된지시내부읽기/보호원문권한·정정/격리·원grant/command/manifest/offset/hash·nonce소비/영수증·확정COMMIT뒤부분반환을연결한다. 실제실행기materialId발견응답은PMO가미채택공개계약차이로확인해별도제안준비만,새field/목록API몰래추가0. fixture의서버manifest ID확인을실발견완료로승격하지않는다. actualDB/키/권한/서비스/Agent/SSH/실자료0·RAM QA/합성DB·기존synthetic/SQL보존·Main제품쓰기0·전체계획미완료다.
+
+
+### 신산님 병합 후 대기 지시 — 2026-11-08T19:12:29+09:00
+
+최신직접지시‘병합하고대기해’에따라Primary즉시interrupt·추가구현/시험/재개금지통보. 검수완료PR81/마감PR82는이미main e194fc36에병합/동기화/정리완료다. 이후자료GET착수분은제품소스변경0·새시험2/미채택후보1이며검수/실행완료가아니다. 이를WIP8fb816cad5e7e0784e5f84c7f00aab33a16d23ce로보존했고main제품병합대상에서제외한다. codex/av3-normal-start-materials는PAUSED,소유Main/Primary·안전제품checkpointmaine194fc36·재개조건신산님명시재개/현재지침·실제Git재검산이다. 새자료발견/bytesHTTP계약후보c24dfb54f2d251c284552c7b1ea4885ac474723c545b74d967c1651ed35e2b31는미채택이며자동질문/적용0.
+
+이대기기록2문서만일반PR로main에반영하고,미검수WIP원격복구ref를보존한뒤main clean/원격동일에서대기한다. 전체계획미완료/준비2·제품42잔여표시는유지하고실제DB/권한/키/서비스/Agent/SSH실행0이다. 다른자료삭제·예약변경0. 신산님재개전후속구현·자동재개·새계약채택요청을하지않는다.
