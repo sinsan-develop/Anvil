@@ -1,9 +1,10 @@
+import {DocumentSourceRefs} from './DocumentSourceRefs.tsx';
 import type {DocumentPreparationGate} from './document-preparation-gate.ts';
 import{QuarantinedOriginalNotice}from'./QuarantinedOriginalNotice.tsx';
 import{isConfirmedArtifactQuarantine,documentFailure,documentMutationUncertain}from'./mutation-result.ts';
 import {DocumentUploadApprovalEditor} from './DocumentUploadApprovalEditor.tsx';
 import {matchesDocumentSaveInput} from './document-upload-approval.ts';
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { continueDocumentSave, prepareDocumentSave, type DocumentBuffer, type DocumentSession } from './editor-api.ts';
@@ -18,30 +19,36 @@ import {DocumentFormEntry} from './DocumentFormEntry.tsx';
 
 export function DocumentEditor({ createdOriginal, preparationGate, client, session, buffer, onChange, onSaved, onAuthenticationLost }: { createdOriginal?:import('../../shell/routes.ts').CreatedOriginalSelection; preparationGate?:DocumentPreparationGate; client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (ref: VersionRef) => void; onAuthenticationLost: () => void }) {
   const [busy, setBusy] = useState(false), running = useRef(false), mounted = useRef(true);
-  const [approvalBusy,setApprovalBusy]=useState(false),known=useRef(new Set([buffer])),epoch=useRef(0),latest=useRef(buffer),context=useRef({client,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken,projectId:buffer.projectId,generation:buffer.controlGeneration});
+  const [approvalBusy,setApprovalBusy]=useState(false),known=useRef(new Set([buffer])),epoch=useRef(0),latest=useRef(buffer),context=useRef({client,transport:client.transport,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken,projectId:buffer.projectId,generation:buffer.controlGeneration});
   const prior=context.current;
-  if(prior.client!==client||prior.user!==session.user.id||prior.clientId!==session.clientId||prior.csrf!==session.csrfToken||prior.projectId!==buffer.projectId||prior.generation!==buffer.controlGeneration||!known.current.has(buffer)){epoch.current++;known.current=new Set([buffer]);}
-  latest.current=buffer;context.current={client,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken,projectId:buffer.projectId,generation:buffer.controlGeneration};
+  if(prior.client!==client||prior.transport!==client.transport||prior.user!==session.user.id||prior.clientId!==session.clientId||prior.csrf!==session.csrfToken||prior.projectId!==buffer.projectId||prior.generation!==buffer.controlGeneration||!known.current.has(buffer)){epoch.current++;known.current=new Set([buffer]);}
+  latest.current=buffer;context.current={client,transport:client.transport,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken,projectId:buffer.projectId,generation:buffer.controlGeneration};
   const managedChange:Dispatch<SetStateAction<DocumentBuffer|null>>=edit=>onChange(previous=>{const next=typeof edit==='function'?edit(previous):edit;if(next)known.current.add(next);return next;});
   const [comparison, setComparison] = useState<DocumentConflictComparison | null>(null), [acknowledged, setAcknowledged] = useState(false), [comparisonError, setComparisonError] = useState<ApiError | null>(null);
   const [manualAcknowledged, setManualAcknowledged] = useState(false);
   const [proposalAcknowledged, setProposalAcknowledged] = useState(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const completed=useRef<{ref:VersionRef;epoch:number;context:typeof context.current}|null>(null);
+  useLayoutEffect(()=>{const done=completed.current;if(!done)return;const c=done.context;
+    if(done.epoch!==epoch.current||c.csrf!==session.csrfToken||c.client!==client||c.transport!==client.transport||c.user!==session.user.id||c.clientId!==session.clientId||c.projectId!==buffer.projectId||c.generation!==buffer.controlGeneration){completed.current=null;return;}
+    if(!buffer.pending&&buffer.savedRef?.id===done.ref.id&&buffer.savedRef.version===done.ref.version&&buffer.savedRef.contentHash===done.ref.contentHash){completed.current=null;onSaved(done.ref);}
+  });
   const locked = busy || !!buffer.pending || !!buffer.importState || !!buffer.importPreparationId || !!buffer.proposalState;
-  function change(patch: Partial<DocumentBuffer>) { if (!locked) onChange(previous => previous?.ownerUserId === session.user.id && previous.projectId === buffer.projectId && previous.documentId === buffer.documentId ? { ...previous, ...patch, dirty: true, savedRef: null, failure: null } : previous); }
+  function change(patch: Partial<DocumentBuffer>) { if (!locked) managedChange(previous => previous?.ownerUserId === session.user.id && previous.projectId === buffer.projectId && previous.documentId === buffer.documentId ? { ...previous, ...patch, dirty: true, savedRef: null, failure: null } : previous); }
   async function save() {
     if (running.current || approvalBusy || buffer.proposalState || buffer.importState || buffer.importPreparationId || buffer.ownerUserId !== session.user.id) return;
     const release=preparationGate?.acquire();if(preparationGate&&!release)return;
     running.current = true; setBusy(true);
     let pending = buffer.pending;
-    const requestEpoch=epoch.current,active=()=>mounted.current&&requestEpoch===epoch.current&&known.current.has(latest.current)&&latest.current.ownerUserId===session.user.id&&(!pending?latest.current===buffer:matchesDocumentSaveInput(latest.current,pending,session));
+    const saveContext=context.current,requestTransport=client.transport;
+    const requestEpoch=epoch.current,active=()=>mounted.current&&client.transport===requestTransport&&session.user.id===saveContext.user&&session.clientId===saveContext.clientId&&session.csrfToken===saveContext.csrf&&requestEpoch===epoch.current&&known.current.has(latest.current)&&latest.current.ownerUserId===session.user.id&&(!pending?latest.current===buffer:matchesDocumentSaveInput(latest.current,pending,session));
     try {
       if (!pending) { pending = await prepareDocumentSave(buffer, session); if (!active()) return; const prepared = pending; managedChange(previous => active()&&previous === buffer && !previous.designDependencyState && previous.ownerUserId === session.user.id && previous.documentId === buffer.documentId && previous.projectId === buffer.projectId && !previous.importState && !previous.importPreparationId ? { ...previous, pending: prepared, failure: null } : previous); }
       const command = pending.upload.commandId;
       const ref = await continueDocumentSave(client, pending, session, value => managedChange(previous => active()&&previous?.pending?.upload.commandId === command ? { ...previous, pending: value } : previous), active);
       if(!active())return;
+      completed.current={ref,context:saveContext,epoch:requestEpoch};
       managedChange(previous => active()&&previous?.pending?.upload.commandId === command ? { ...previous, documentId: ref.id, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: buffer.title, baseStageNodeRef: structuredClone(previous.pending!.stageNodeRef ?? null), pending: null, formEntry: undefined, dirty: false, savedRef: ref, failure: null,saveUncertain:false } : previous);
-      onSaved(ref);
     } catch (cause) {
       const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
       if(!active())return;
@@ -100,7 +107,7 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
     <h2>문서 초안 편집</h2><p className="meta">기준 버전 {buffer.baseVersion} · 원본/구버전은 보존됩니다. 이 저장은 사용자 확정이나 Agent 실행이 아닙니다.</p>
     {buffer.ownerUserId === session.user.id ? <section aria-label="문서 작성 고정 양식"><p className="meta" style={{ overflowWrap: 'anywhere' }}>양식 {buffer.formRef.id} · v{buffer.formRef.version} · {buffer.formRef.contentHash}</p><PinnedFormOriginal key={JSON.stringify([session.user.id, session.clientId, buffer.projectId, buffer.documentId, buffer.baseVersion, buffer.formRef])} client={client} formRef={buffer.formRef} onAuthenticationLost={onAuthenticationLost} /></section> : null}
     <DocumentStageSelector key={buffer.projectId + ':' + buffer.formRef.id + ':' + buffer.formRef.version + ':' + buffer.formRef.contentHash} client={client} projectId={buffer.projectId} formRef={buffer.formRef} value={buffer.stageNodeRef ?? null} disabled={locked} onChange={value => change({ stageNodeRef: value })} onAuthenticationLost={onAuthenticationLost} />
-    {!buffer.importCandidateRef ? <DocumentImport createdOriginal={createdOriginal} client={client} session={session} buffer={buffer} onChange={onChange} onAuthenticationLost={onAuthenticationLost} disabled={!!buffer.formEntry||busy||!!buffer.pending||!!buffer.proposalState} /> : null}
+    {!buffer.importCandidateRef ? <DocumentImport createdOriginal={createdOriginal} client={client} session={session} buffer={buffer} onChange={managedChange} onAuthenticationLost={onAuthenticationLost} disabled={!!buffer.formEntry||busy||!!buffer.pending||!!buffer.proposalState} /> : null}
     {buffer.importCandidateRef ? <p className="meta">가져오기 후보 {buffer.importCandidateRef} · 원본을 첨부로 보존합니다. 아직 별도 저장/확정 전이면 다음 동작을 직접 선택하세요.</p> : null}
     {buffer.savedRef ? <p role="status">초안 버전 {buffer.savedRef.version} 저장 확인</p> : null}
     <QuarantinedOriginalNotice failure={buffer.failure}/>{buffer.failure ? <p role="alert">{new ApiError(buffer.failure.code, buffer.failure.status).message} · {buffer.failure.code} · 입력과 기존 명령을 보존했습니다.</p> : null}
@@ -124,10 +131,11 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
       {!comparison.compatible && canPrepareManualConflict(comparison) ? <><p>최신 양식·첨부·본문 형식을 유지한 편집 초안을 열 수 있습니다. 내 제목·본문은 유지하고, 달라진 본문의 항목 위치는 비워 직접 다시 지정합니다. 거절된 원래 입력과 명령은 보관하며 자동 저장·합치기·확정은 하지 않습니다.</p><label><input type="checkbox" disabled={busy} checked={manualAcknowledged} onChange={e => setManualAcknowledged(e.target.checked)} />최신 양식·첨부·형식을 유지하고 내 원문을 조정하며 항목 위치를 다시 지정하겠습니다</label><button disabled={busy || !manualAcknowledged} onClick={() => adopt('LATEST_METADATA')}>최신 양식·첨부로 수동 조정 초안 준비</button></> : null}
     </section> : null}
     <label>문서 제목<input value={buffer.title} maxLength={200} readOnly={locked} onChange={event => change({ title: event.target.value })} /></label>
-    <DocumentFormEntry key={JSON.stringify([buffer.projectId,session.user.id,session.clientId,buffer.documentId,buffer.formRef])} client={client} session={session} buffer={buffer} locked={locked} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>
+    <DocumentFormEntry key={JSON.stringify([buffer.projectId,session.user.id,session.clientId,buffer.documentId,buffer.formRef])} client={client} session={session} buffer={buffer} locked={locked} onChange={managedChange} onAuthenticationLost={onAuthenticationLost}/>
     <label htmlFor={'document-body-' + buffer.documentId}>문서 본문 편집</label><textarea id={'document-body-' + buffer.documentId} value={buffer.body} rows={14} readOnly={locked||!!buffer.formEntry} onChange={event => change({ body: event.target.value })} />
     <fieldset disabled={locked||!!buffer.formEntry}><legend>양식 항목의 원문 위치</legend>{buffer.criteria.map(item => <label key={item.criterionId}>{item.title} 시작 줄<input type="number" min="1" value={buffer.content.sections.find(section => section.itemId === item.criterionId)?.anchor.slice(5) ?? ''} onChange={event => { const kept = buffer.content.sections.filter(section => section.itemId !== item.criterionId); change({ content: { ...buffer.content, sections: event.target.value ? [...kept, { itemId: item.criterionId, anchor: 'line:' + event.target.value }] : kept } }); }} /></label>)}</fieldset>
-    <DocumentAttachments key={JSON.stringify([buffer.projectId,session.user.id,session.clientId,buffer.documentId,buffer.baseVersion])} client={client} session={session} buffer={buffer} locked={locked} onChange={onChange} onAuthenticationLost={onAuthenticationLost}/>
+    <DocumentSourceRefs key={'DOCUMENT_SOURCES:'+epoch.current} client={client} projectId={buffer.projectId} session={session} generation={buffer.controlGeneration} value={buffer.content.sourceRefs} disabled={locked||approvalBusy||buffer.ownerUserId!==session.user.id} onAuthenticationLost={onAuthenticationLost} onChange={refs=>{const original=buffer,owner=context.current;managedChange(previous=>context.current===owner&&client.transport===owner.transport&&session.user.id===owner.user&&session.clientId===owner.clientId&&previous===original&&!previous.pending&&!previous.importState&&!previous.importPreparationId&&!previous.proposalState&&previous.ownerUserId===session.user.id?{...previous,content:{...previous.content,sourceRefs:refs},dirty:true,savedRef:null,failure:null}:previous);}}/>
+    <DocumentAttachments key={JSON.stringify([buffer.projectId,session.user.id,session.clientId,buffer.documentId,buffer.baseVersion])} client={client} session={session} buffer={buffer} locked={locked} onChange={managedChange} onAuthenticationLost={onAuthenticationLost}/>
     <label htmlFor={'document-reason-' + buffer.documentId}>문서 변경 이유</label><textarea id={'document-reason-' + buffer.documentId} value={buffer.reason} rows={2} maxLength={20_000} readOnly={locked} onChange={event => change({ reason: event.target.value })} />
     <DocumentUploadApprovalEditor key={epoch.current} client={client} session={session} buffer={buffer} disabled={busy} onChange={managedChange} onBusy={setApprovalBusy} onAuthenticationLost={onAuthenticationLost}/>
     <div className="project-toolbar"><button disabled={busy || approvalBusy || !!buffer.pending?.uploadApproval&&!buffer.pending.uploadApproval.commandHash || !!buffer.proposalState || !!buffer.importState || !!buffer.importPreparationId || !buffer.pending && (!buffer.dirty || !buffer.title.trim() || !buffer.reason.trim())} onClick={() => { void save(); }}>{buffer.pending?.uploadApproval?.commandHash&&!buffer.pending.save&&!buffer.saveUncertain?'승인 결박된 원문으로 같은 저장 재개':buffer.pending ? '같은 저장 명령 결과 확인' : '새 초안 버전 저장'}</button>

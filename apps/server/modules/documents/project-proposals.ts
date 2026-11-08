@@ -1,3 +1,4 @@
+import type {SourceRef} from './document-source-refs.ts';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
@@ -9,7 +10,7 @@ import { isImportArtifact, importUuid, type ImportArtifact } from './project-imp
 import { documentTextDiff } from './document-diff.ts';
 import { documentStageBinding } from './document-stage.ts';
 interface Content { body: ImportArtifact; attachments: ImportArtifact[]; sections: { itemId: string; anchor: string }[]; sourceRefs: [] }
-interface BaseDocument { id: string; version: number; contentHash: string; title: string; formRef: VersionRef; stageNodeRef: unknown; content: Content; contentReviewCriteria: { items: { criterionId: string }[] } }
+interface BaseDocument { id: string; version: number; contentHash: string; title: string; formRef: VersionRef; stageNodeRef: unknown; content: Omit<Content,'sourceRefs'>&{sourceRefs:SourceRef[]}; contentReviewCriteria: { items: { criterionId: string }[] } }
 export interface DocumentProposal { id: string; baseRef: VersionRef; proposedContentRef: ImportArtifact; diffRef: ImportArtifact; status: 'PENDING' }
 type Read = (db: PoolClient, pid: string, ref: ImportArtifact) => Promise<Buffer>;
 type Put = (pid: string, id: string, bytes: Buffer) => Promise<string>;
