@@ -407,3 +407,36 @@ R_TEMPLATE = {
 RESERVED는fence0/settled0/started·settled·servercid·receipt·digest null, IO_STARTED는fence1/실started/settled0·나머지후행null, SETTLED는fence1/원started/실s·실settled·원cid/receipt/digest다. 자기비용helper의고정stamp/UUID/zero digest는비용형식대체값뿐이며실원장/허가로사용하지않는다. 최상위fence/금액은비용정규화후문자열이며plan에별도startFence키를임의추가하지않는다.
 
 이template는새목적구현의입력슬롯을모두명시한내부동결후보다. 실제M/B/r/s값을계산한증거나실SQL/역완결PASS는아니다. 전체helper ACL/시그니처와독립검수·직접채택을충족하기전GO0를유지한다.
+
+## 24. 지연 INVOKER의 실행 principal과 early-flush 기술 후보
+Primary의 전체migration/동적배열읽기는 C/A/U/R의RLS ENABLE/FORCE를찾지못했고0073의FN15 SELECT정책존재와구분했다. 실제catalog상태미확인이므로새RLS를추가하거나tableowner/BYPASS로우회하지않는다. 후보새RLS정책은E/O한정이다. C/A/U/R은정확열ACL·원CHECK/FK/immutable 및기존완결guard를소비한다.
+
+Primary는직접부착root81종과동적추가root5종의정적목록을반환했다(d67931 compact출력;나머지읽기3da763/c89a38/a61e38/b11299/38c184/ff31a4/7407a2/c470dc/a5d294/3a49fd/4d5955/ed4203 exit0). 이것이실catalog/전체ACL실행합격은아니다. 즉시quota_immutable과fn15_empty_issuer_lock·DEFINER quota_final_guard→quota_complete·기존별도도메인finalguards는유지한다. 새operation/part CHECK와기존모든purpose_pair의한정확장/원목적차단은0083검수대상이다.
+
+### 무관 도메인 선조회의 정확 접점
+아래6개INVOKER deferred함수는현재새목적에서도다른도메인표를먼저읽는다. 역할에그SELECT를확대하는대신새purpose의정확분기를준비한다. 모두 () RETURNS trigger이며CREATE OR REPLACE로owner/ACL/INVOKER·원본문을보존한다. trigger를rename한뒤일반함수처럼wrapper호출하는방식은쓰지않는다.
+
+|원함수/최종정의|C/A/U에대한schema anvil의정확제약이름|
+|---|---|
+|fn09_prepare_complete /0055:251|fn09_prepare_commands_complete, fn09_prepare_authorization_receipts_complete, fn09_prepare_audit_events_complete|
+|fn09_understanding_complete /0056:185|fn09_understanding_commands_complete, fn09_understanding_authorization_receipts_complete, fn09_understanding_audit_events_complete|
+|guard_child_human_complete /0061:91|child_human_commands_complete, child_human_receipts_complete, child_human_audits_complete|
+|fn16_policy_complete /0063:236|fn16_policy_commands_complete, fn16_policy_authorization_receipts_complete, fn16_policy_audit_events_complete|
+|fn09_registered_binding_complete /0068:227|fn09_registered_commands_complete, fn09_registered_authorization_receipts_complete, fn09_registered_audit_events_complete|
+|material_registration_reverse /0078:194|material_registration_complete|
+
+총16이름이다. material_registration_complete는0062:203~204에서C/A/U외 execution_material_manifests/execution_materials/execution_material_proof_bindings/execution_commands/execution_receipts/execution_challenges의6표에도동명으로부착돼총9표대기이벤트에영향을준다. schema-qualified여도per-table격리가아니다. 0078의fn08_start_material_reverse는다른5개실행표전용이고이번C/A/U목록에넣지않는다. 설치시정확제약·부착표집합/deferrable속성·원root/owner/ACL을검산하고임의추가부착을정상으로인정하지않는다.
+
+### 발화 시점 문제와 근거
+[PostgreSQL 공식 변경안내](https://www.postgresql.org/message-id/E1tb0y4-0037sb-1e@gemulon.postgresql.org)는2025-01-23 master에서AFTER이벤트의발화역할을큐발생당시역할로바꿨고이전버전에그의미변경을소급하지않았다고설명한다. 따라서새버전동작을PG15에그대로상속하지않고RPC가끝나면역할이유지된다고가정하지않는다. [PG15 SET CONSTRAINTS](https://www.postgresql.org/docs/15/sql-set-constraints.html)는지정제약의IMMEDIATE전환이기존대기검사도실행하고동명이름에모두적용됨을설명한다. 이공식자료대조는실제로사용중인image/principal의검증을대신하지않는다.
+
+### 목적 한정 early-flush 순서 후보
+1. 기존진짜단일command authenticated Tx에서전용RPC가R reserve→IO_STARTED→C/A/U/E/O→settle을끝낸다. sameTx/서버cid/정확ids·plan/hash·최단기한·R=SETTLED/fence1을검사한다.
+2. 아직새목적DEFINER역할안에서위16개이름만schema-qualified SET CONSTRAINTS ... IMMEDIATE로전환한다. ALL·SET ROLE·다른역할권한확대0이다.
+3. 각root는새purpose+실제역할과C/A/U원project/internalcid·같은Tx의봉인R/ids/hash일치인경우만무관도메인선조회를건너뛴다. C는NEW.project_id/id, A는PROJECT범위의NEW.scope_id/command_id, U는NEW.project_id/command_id다. A/U에NEW.operation이있다고가정하지않고정확C행을대조한다. 이분기는일반성공/완결성증거를생산하지않으며전용DEFINER finalguard가C-only불완결까지강제한다.
+4. 성공뒤정확16개를원INITIALLY DEFERRED로복원하고fresh current/기한을재검산한다. 그뒤genericpersist나C/A/U/R추가DML을하지않는다. ProjectPolicyRepository.command의후속보호재검산:418~421, AccessRepository.#transaction callback뒤COMMIT:79의기존호출구조를유지한다.
+5. 실제COMMIT의기존/신규DEFINER finalguards는원R/5행완결과새Tx현재성을계속검사한다. early-flush오류/복원전후오류·기한초과는거래거절,COMMIT결과불명은원ID/hash UNKNOWN이다.
+
+이안의필수선행은원q외다른목적의9표대기이벤트를만들지않는genuine단일명령Tx경계다. 다른목적이있으면그검사를건너뛰거나SELECT를추가하지않고거절/rollback해야한다. 현재소스에서기존SET CONSTRAINTS사용은발견되지않았으나실제기본모드·각role/큐/복원/중복이름·후행추가DML음성은향후허용QA의필수검증이다. wholematrix의실효/동작합격으로표시하지않는다.
+
+근거읽기899e09/6964ff/c710d4 exit0·새권한/원문/비용후보의의미확대0·실SQL/DB/role관측0이다. 기술후보독립검수와전체행위/직접채택전제품GO0를유지한다.

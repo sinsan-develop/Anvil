@@ -18458,3 +18458,11 @@ npm run typecheck
 - M실물template완결준비를위해기존Primary c0401d/c47fc9와Main a17616/5fd2a8 원소스대조뒤기술WI23절에E/O/C/A/U모든물리키·CM상수/원ref/digest/중첩RESULT와R22/PLAN을명시했다. 실제calculation/code가아닌메타변수template이며Rpart3금액은예약r봉인·정산s로plan재작성0,실원장은sentinel0을명확히했다. 신규목적값은미채택/권한확대아님·독립검수전전체GO0이다.
 
 - 기술WI23 M전체메타변수template SHA0e56bd92는비용전용/형상범위독립검수모두C0/I0/M0다. 실물5행복제/도출O중복0·공개/물리시각·R전체자기비용·zero seed의후보r별3금액→실hash봉인/정산행s를확인했다. 실M값계산/SQLPASS아님·후보/패킷불변GO0이다. 독립reader의부수추정0011경로읽기실패1은실rg목록의0011_authorization.sql로대조했고재시도/복원0으로분리했다. 다음whole ACL/CHECK/immutable/deferred최종principal경계는기존Primary읽기만배정·실환경0이다.
+
+- 전체ACL후속읽기중0078 material_registration_reverse INVOKER가새C/A/U에서도다른execution manifest/material/command표를먼저읽는seam을Primary가확인했다. 실42501/SQL재현아니다. 다른실행표SELECT확대대신새purpose+실role·원cid/R/Tx한정무조회분기와전용최종역완결을기술검토한다. trigger함수는일반함수처럼rename후직접호출위임하지않고기존owner/ACL/securitymode·본문보존의CREATE OR REPLACE분기필요성을대조중이다. 전체최종guard목록미수령/해소미판정·GO0/실환경0이다.
+
+- whole guard읽기는C/A/U/R RLS활성소스부재와정책존재를분리하고6INVOKER deferred의무관표선조회를확인했다. Main공식PG변경기록/PG15 SET CONSTRAINTS 대조와Primary899e09/6964ff/c710d4로기술WI24절에16정확이름·material동명9표영향·R정산뒤전용역할안earlyflush/DEFERRED복원·단일q Tx/다른도메인쓰기0·최종DEFINER guard유지후보를기록했다. 실제principal/SQL/ACL/설치합격이나새권한/코드GO아니다. 다른reader에는FN06/FN08에서이미채택된source caller누락만독립조사하도록배정해미채택준비를전체기능진도로대체하지않는다.
+
+- Main경로추정오류가cea633에서재발했다(같은유형누적4회): reader가준파일명에contracts폴더를임의붙여읽기가실패했고후속카드읽기는실행되지않았다. 이방식은중단하며이후신규경로읽기는같은명령에서rg --files의실제매칭값을변수로받아유일성확인뒤Get-Content -LiteralPath로직접소비한다. 문자열로폴더를합성하지않는다. 28a8b6이그방식으로실work_packages후보/카드를정확열람했고복원/권한변경/제품쓰기0이다. PMO에재발·중단·교정방식을예외보고한다.
+- FN06/FN08 bounded읽기는새독립source caller누락을확정하지못했다. Main28a8b6도원START후보가API기본등록/실제current·credential·Agent공급자생성을명시제외함을확인했다. Desktop은실trust/firstreceive클라이언트를조립하지만보호profile없음null로닫고,서버START는SYNTHETIC_ONLY다. 가짜current/credential이나합성queue의운영주입으로진도를대체하지않고이미완료모듈을재구현하지않는다. 실제current생산/실행허가가다음정확경계이며기존전체FN06/FN08완료주장0이다.
+- 기술WI24 SHA30049ff 독립b3cd3d C0/I0/M0는earlyflush대안의한정범위/원본문·권한/검사유지정합성만확인했다. genuine단일q Tx/동명이름실부착·principal/복원·후행DML0과실효ACL/실PG는미검증이다. 원후보/패킷불변·제품GO0 유지다.
