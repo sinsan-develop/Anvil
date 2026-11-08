@@ -18509,3 +18509,12 @@ FN12 추가 계약 구체화는 보존하고 뒤로 둔다. 기존 Primary 한 �
 Main이 실제 agent inventory에서 실행 중 담당자 0명을 확인한 뒤 기존 developer_primary task를 재개했다. 중복 생성 시도는 기존 이름 존재로 거절됐으며 새 code writer는 만들지 않았다. 현재 담당자는 읽기 전용으로 primary wire.exchange의 부분 송수신·프레임 상관관계·불명 후 재전송 금지 구현 범위를 확정한다. 기존 codec/transport는 보존하고 실제 Agent/DB/키/권한/서비스 실행은 제외한다. Main은 검수·통합과 기록을 담당한다. 코드 미작성·검증 미실행이며 완료 상태는 올리지 않는다. 신규 경로 추측 읽기 대신 rg 실경로를 사용한다. Main 파일 목록 조회의 존재하지 않는 packages 인수 1건은 읽기 오류이며 실제 파일 부재나 제품 실패로 세지 않았다.
 
 - Main 범위 확정 GO: FN06 내부 bounded duplex 채널 신규 apps/connector/adapters/primary/duplex-wire.ts·tests/unit/FN06/duplex-wire.test.ts 정확2파일을 Primary 단독으로 구현한다. 기존 wire.exchange 서명·2MiB/최대10초·codec 소유를 유지하고 부분 송수신/알림·상관관계/EOF·취소·기한 불명/자동재송신0/잔여 정리를 검증한다. 기존 실제 START 모듈의 합성 소비까지 확인하며 새 인증·권한·process 실행이나 실제 Agent 성공으로 승격하지 않는다. Main 기록 갱신의 CRLF 변환으로 diff-check가 1회 실패해 HEAD의 LF를 대조하고 변경 파일의 줄바꿈을 복구했으며 재검사0이다.
+
+
+### FN06 부분 송수신 채널 source 검수 — 2026-11-08T16:10:48+09:00
+
+- 담당 Primary 구현/Main 검수·통합, 변경 exact2: apps/connector/adapters/primary/duplex-wire.ts·tests/unit/FN06/duplex-wire.test.ts. 기존 제품/SQL/권한 계약 변경0. 부분write/read·UTF8 분할·알림 순서/부분꼬리 보존·응답 ID·동시/중복 거절·EOF/cancel/timeout UNKNOWN 뒤 재전송0·자원 정리를 구현했다. 실제 SyntheticPrimaryStartTransport.send→wire→codec→journal 성공/거절이 합성 검증된다.
+- Primary 먼저 기능 부재 RED1 exit1 후 신규24 포함 직접 인접6파일91 PASS/실패·skip0(3.02초) 및 npm.cmd run typecheck exit0·diff/신규공백0. Main2082ea에서 신규24 PASS/실패·skip0·639.6443ms exit0. 독립검수56bdaf/7356b0 동결 C0/I0. 제품SHA256 c4367891d37f2a9126093d85d1232c29506a957ecfc2c3d55a47b03a7463c3a3, 시험94f9df0d896284b83f37843c4524562df4964db0455a61cc04c29dbd12e5ecf9.
+- 실제 Agent/DB/키/권한/서비스/SSH 실행0. idle 비동기 결과 수집·normal current/grant 공급과 실제 런타임 연결은 여전히 미구현이며 FN06/08 전체 완료 아님. 새 웹 변경이 없어 Web 전수검사는 반복하지 않는다. rollback은 이 단위 소유 commit의 일반 revert이며 기존코드는 보존한다.
+- Main Git기록 최초sandbox index.lock Permission denied는 실제 repository ACL 결함으로 단정하지 않았다. 승인된 동일2문서 commit/push를 elevated로 진행해853747da private 동기화를 확인했다. 영구 권한/ACL 변경0.
+- 다음 구현 근거: WORK_STATUS6094 D071 직접승인·채택제안§5/§9 C2가 기존Agent 실행 연결의 코드/forwardSQL/합성검증을 포함한다. 후속 SYNTHETIC패킷 제외를 전체 실행금지로 오인하지 않는다. 실제 보호 current→별도 normal grant→명령/receipt/예산/실행/outbox 원자 저장의 다음 source단위를 Primary 읽기준비로 배정했다. 미관측 OS/능력/이해 거절과 실제 실행 제외는 유지한다.

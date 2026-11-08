@@ -6,7 +6,7 @@
 
 - 코드 집계 기준: `development/main` `7cf2b13a4586ec451e89c783c0dbd3bf7bb2b33f`.
 - 진행 branch: `codex/av3-fn12-origin-scope`. 현재 기록을 저장한 문서 commit은 Git 최신 HEAD를 따른다.
-- 현재 우선순위: 첫 실제 Agent 수직 경로(P03→FN06/FN08/FN09: 임무 전달→실행→결과 저장·조회)의 최초 단절 지점과 즉시 구현 단위를 기존 Primary가 한정 대조한다. Main은 범위 확정·검수·통합을 맡는다. FN12 추가 계약 구체화는 뒤로 두며, 단일 Primary가 신규 duplex-wire.ts와 집중시험 2파일의 RPC 부분 송수신·응답/알림 결합·불명 후 자동 재송신 금지를 TDD 구현 중이다. Main은 검수·통합한다. 실제 Agent 실행은 미검증이다.
+- 현재 우선순위: 첫 실제 Agent 수직 경로(P03→FN06/FN08/FN09: 임무 전달→실행→결과 저장·조회)의 최초 단절 지점과 즉시 구현 단위를 기존 Primary가 한정 대조한다. Main은 범위 확정·검수·통합을 맡는다. FN12 추가 계약 구체화는 뒤로 두며, FN06 duplex 송수신 부품 2파일 구현·Primary 인접91/신규24 PASS·type0·독립 C0/I0·Main24 PASS로 검수해 통합 중이다. 다음은 이미 승인된 normal 실행 grant/current 근거와 원자 저장 연결이다. 실제 Agent 실행과 idle 비동기 결과 수집은 미완료다.
 - 최근 완료: PR75 기록 보완 main 통합·44행 문서 smoke, PR72 기준선 설계 선택 보완/merged12 PASS, PR73 실제 React 합성 여정/merged7 PASS, PR74 기술후보 문서 검수. 이것을 전체 기능 완료로 세지 않는다.
 - 현재 미확인: 실제 개발 DB 복구·served/Agent 전체 여정·실기기·Oracle 인수. 지정 SSH Connection refused를 PASS로 표시하지 않는다.
 - 결정 대기: 기존 PMO 발행 2건(e59592e3,239845d6), 직접 답변 미수신. 중복 요청하지 않는다.
