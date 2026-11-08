@@ -18,7 +18,7 @@ export async function readBaselineDesign(client:ApiClient,b:BaselineBuffer,s:Doc
  editable(b,s,index);const check=()=>{if(!active())throw new ApiError('BASELINE_DESIGN_PAUSED');};check();
  if(!uuid(id)||!/^\d+$/.test(version)||!Number.isSafeInteger(Number(version))||Number(version)<1)throw new ApiError('BASELINE_DESIGN_INVALID');
  const v=await readDocument(client,b.projectId,id,Number(version),{active});check();const d=v.document;
- if(d.content.sourceRefs.length||await documentDraftHash(d.title,d.formRef,d.content as DocumentContent,stageRef(d.stageNodeRef)?d.stageNodeRef:null)!==d.contentHash)throw new ApiError('DOCUMENT_REFERENCE_CHANGED');check();
+ if(await documentDraftHash(d.title,d.formRef,d.content as DocumentContent,stageRef(d.stageNodeRef)?d.stageNodeRef:null)!==d.contentHash)throw new ApiError('DOCUMENT_REFERENCE_CHANGED');check();
  const form=await getPinnedForm(client,d.formRef);check();await verifyFormVersionIntegrity(form);check();if(form.definition.formCode!=='AF02')throw new ApiError('DESIGN_DOCUMENT_KIND_INVALID');
  return{ref:{id:d.id,version:d.version,contentHash:d.contentHash},title:d.title,body:v.body,confirmed:d.confirmed};
 }

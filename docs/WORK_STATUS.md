@@ -18381,3 +18381,29 @@ npm run typecheck
 - Main다음FN03관리생산자조사342b0c에서존재하지않는connections/project-runtime-policy.ts 읽기검색1회오류가있었다. rg --files로executions/runtime-policy.ts를찾아23ea79에서정확읽기했고파일복원/권한변경/재실행0이다. 기존SOURCE §13.4는DRAFT_ONLY이며원문exact9/10·새전용조회operation/권한이명시미채택인사실을직접대조했다. 소비포트를current=true로위장연결하지않고정확차이패킷을준비한다.
 
 - UI06충돌최종집중2501ff18PASS/선택인접b3bd139PASS/type1137b2/difff7f4d9 exit0·Main0a2cc3집중18PASS/skip0/exit0(3011.246ms)·Webmemorybuildb45336 520modules/1.43s/exit0를확인했다. 제품2manifest263652f6/전체4manifeste93f745c8f01d9ec752ca8928a228106e7c319f124ceeb639fcd8c39745fbb55불변·독립9b4970→982665 C0/I0/M0·기존시험본문보존+32/-0·writer반환/live검증0이다. 읽기호출6e52e9의과거exit/handle누락은불명으로보존·현재diff0로소급하지않는다. 결과서에명령/RED/준비오류/미검증을분리하고현재검증변경을게시한다. 전체UI06/FN03·44업무완료아님,실DB/키/권한/서비스/Agent/SSH/실자료0이다.
+
+- PR71 sourcec16b160e/Broker42439301458success→main969cebbc4a69dda633da0b05f16fabf4c0f070c1(parent39f159a5/treed1967ca6 source동일),64a669 merged집중18PASS/skip0/exit0(2338.1571ms)다. abdaef main동일/clean·remote완료branch/tag부재·PR71복구ref대조후정상-d/-dr정리했다. 다음codex/av3-source-content-origin-contract는최신main에서생성·즉시private게시했다. 현재codewriter0,기존Primary는관리생산자의인증/DB guard신뢰경계읽기·기존reader는quota귀속읽기로분담했다. 이는FN03보호원문/관측생산의첫필수선행상세이며새미채택권한·비용을코드로기정사실화하지않는다.
+- 승인경계정정:WORK_STATUS2128의신산님네의견대로승인해는SOURCE §12.6~12.6.2 CM01~08 미등록source형상·합성검증채택기록이고2126은정확turn/message시각미확인을별도표기한다. CM형상을다시미채택으로되돌리지않는다. 반면§13.4 원문exact9/10·전용read·보호생산권한/새비용은미채택이다. 첫단위는관리event/origin/C/A/U·내부보호reader까지이며nonce/native서명/LINK·전체관측완료를포함하지않는다. 실제DB/권한/키/서비스/Agent/SSH/실자료조사0유지다.
+
+- FN03다음관리생산자설계읽기Main6f647d에서추측0077_runtime_quota_source_only.sql.pending 경로오류1회가추가됐다(앞342b0c와합계추측경로2회). 같은출력의실제rg목록으로0077_registered_execution_preparation_options.sql.pending를확인했으며잘못된이름재시도0/제품·권한변경0이다. 이후Shell읽기는ErrorActionPreference=Stop와실목록/LiteralPath를사용해경로실패가성공exit뒤로가려지지않도록한다. source-code제품실패·실SQL검증으로계산하지않는다.
+- FN03_SOURCE_CONTENT_MANAGEMENT_ORIGIN_PRODUCER_CANDIDATE_20261108.md를DRAFT/미채택/GO0로작성했다. 첫단위관리event/origin/C/A/U·내부보호reader와전체관측producer를구분하고exact9/10·새read/AUTO·유한상한/자동삭제OFF·O/E/C/A/U5실행합/단일예약selfcost고정점·기존10GiB분모중복0기술A를구체화했다. 실제인증/전용DB역할/RLS/RPC인자는추가검토중이므로아직최종승인패킷아니다. 기존Primary가그경계읽기를계속하며현재codewriter0/실DB·키·권한·서비스·Agent·실자료0이다.
+
+- Main c37ee2는새관리origin후보의인증/ACL·상계M기술A를구체화했다. 실제Access token/nonnull43CSRF callback·sameTx/query/xid사적결박과DB행current를분리하고새NOLOGIN/NOBYPASS역할·관리event만명시RLS/INSERTguard교체·나머지관측/LINK닫힘을명시했다. 비용M은실고정payload/ref·物理27자시각·기존schema순번상계투영과B≤M/s≤r로고정해임의여유상수0,생산증거로사용0이다. 새권한/metadata10GiB계상은아직미채택·GO0,정확SQL시그니처/ACL은코드쓰기전WI기술동결조건이며독립전체검수/비용전용검수를요청했다. codewriter0/실DB·키·권한·서비스·Agent·실자료0이다.
+
+- FN03관리origin후보 SHAcbefc3e3736301e9a49b8b26db41fcc3c0cedbb0a052c9e0cdaedde0b93c5230에서비용전용 C0/I0/M0·전체사전기술읽기C0/I0를확인했다. token소유/DBcurrent분리·RLS역할정책/정확관리trigger한개교체·O/E/C/A/U+R·유한M방법은정적일관성검수이고actual인증/SQL/비용PASS아니다. FN03_SOURCE_CONTENT_MANAGEMENT_ORIGIN_ADOPTION_PACKET_20261108.md에새13.4보호권한/원문/metadata계상만A/B/C로구체화했으며미채택/GO0이다. 승인후정확함수시그니처/열ACL·DAG/잠금/template/WI독립검수→기존Primarysource-only구현을제안하고native/nonce/LINK는이첫범위완료에포함하지않는다.
+
+- PMO는게시본9eedba09/패킷239845d6/후보cbefc3e3와부모13.4를전문/해시대조한뒤,새보호저장/전용조회·역할/RPC/RLS/관리metadata10GiB편입은PMO일반위임으로채택하지않고신산님께이번1회A/B/C전달하겠다고회신했다. 이는계약채택/제품GO아니다. CM01~08재승인0·기존상세sourceRefs결정과분리·중복질문0이다. Main은기존Primary에exactRPC/열ACL/DAG·기존auth/project/quota잠금순서기술읽기를계속맡겼고,기존reader에는독립FN10/12/13/14의이미채택된미연결을조사하도록분리했다. 현재codewriter0/실DB·권한·키·서비스·Agent·실자료0,부분결정대기때문에전체idle전환0이다.
+
+- FN03origin정확WI선행읽기에서기존genericreceipt의Tx-start(now()/transaction_timestamp())완료시각과새잠금뒤fresh E/O.recordedAt의E≤O≤C관계모순을확인했다. 또한FN77의현재permission_policyhead잠금은account앞이며새sourceeventhead와구분해야한다. 후보/패킷고정SHA는보존하고 TECHNICAL_WI_DRAFT_20261108.md에미해소기술finding·목적한정freshreceipt/원authorization재사용·중첩persist0/clock역행거절후보를기록했다. 구현전정확함수/DAG/ACL·잠금/시각음성검수없이는해소로표시하지않고codeGO0/실행0을유지한다.
+
+- 기존44감사에PR68~71변경분과FN03관리생산/FN10실facts/FN12후속계보·실행생산/FN13회수/FN14이전의정확선행을추가했다(전체재감사·상태완료승격0). 독립reader는기존caller이미있는basisGET를미연결로오인하지않고새권위차이만확인했다. FN12 B전체는후속실행/원writer회수·공유잠금·계상미정이남아현후보를포괄GO로바꾸지않았다. CM형상과child HUMAN내용확정승인은유지하며현재생산/이전/실행완료로과장하지않는다.
+
+- FN03origin기술WI사전읽기는C0/I0이나미동결부분합격아님이다. 필요한schemaUSAGE/전체물리행SELECT·R operation/partkind/purposeCHECK·invoker즉시guard와definer deferredguard의privateEXEC역할·기존dispatcherowner/caller보존을10절에추가했다. 11절에exact입력후보/callee·불변history(actual/complete)와현재context/finalguard의비순환분리·Rplan현재세션과과거세션구분을구체화했다. 최종시그니처/실열template·역할matrix독립검수전GO0,신산님새계약응답도미확인이다. Primary읽기도구의추측/glob오류2회는추가추측중단/정확경로만사용으로분리했고제품실패로계산하지않는다.
+
+- FN03origin WI에기존실존집계callee/signature·최종정의·전체complete순환금지와quota_account의environment문맥금지를13절에고정했다. 물리C.draft_id/received_at·A.authorized_at·E.generated·R22열비용누락금지를14절에추가했다. PG15공식RLS/SELECT문서읽기로permissive OR·FORCE/권한별도·TRUNCATE별도차단·행잠금UPDATE열필요를교차확인해15절에링크했고실PG검증으로승격하지않았다. 새계약패킷/후보고정SHA불변·제품/SQL쓰기0·허가GO0을유지한다.
+
+- 독립bounded검색에서UI02 readBaselineDesign의정상4종AF02/hash문서거절I1을추가확인했다(Main f36db9실본문대조). 실제callerProjectBaselinePanel→BaselineDesignPicker이며기존DocumentContent와FN01보호문서선택계약내제품1/시험1소비누락이다. 현재문서branch를StageB의미채택관리후보보존+이기존소비보완으로마무리해미종료branch를우회하지않는다. UI02_BASELINE_DOCUMENT_SOURCE_REFS_WI_20261108.md로정확두경로사전검수를요청하고기존Primary에검수후단일writer를배정한다. 새관리origin권한/계상은미채택GO0불변·실DB/키/권한/서비스/Agent/SSH/실자료0이다.
+
+- UI02 WI845195bf独립사전C0/I0·safeHEAD/privatefca1eb94뒤기존Primary정확제품1/시험1 단일writer GO했다. 실제RED248327 exit1/1FAIL은정확AF02·원문/content+분리refs/fullhash정상문서를기존21행length조건이DOCUMENT_REFERENCE_CHANGED로거절한것이다. 제품1원바이트시점이며동일조건최소보완/기존[]·오염·late·잠긴buffer음성검산을진행한다. Main제품동시쓰기0·새관리origin/SQLauthorityGO0·실DB/키/권한/서비스/Agent0이다.
+
+- UI02 최종 제품1/시험1 raw manifest c705f5ff/독립4315b9 C0/I0/M0·Primary집중12/인접3/type/diff exit0·writer반환을 인수했다. Main e479ce Web memory build520modules/507ms·집중12PASS/skip0/exit0(381.4934ms)를 별도확인했다. 과거출력유실UNKNOWN은소급PASS0,현재node0조회와분리한다. 결과 UI02_BASELINE_DOCUMENT_SOURCE_REFS_RESULT_20261108.md에범위/RED/명령/오류/복구/미검증기록. 837410 실제원격main969cebbc/branchfca1eb94는각로컬동일이며미커밋3개가로컬에만있음을구분보고했다. 기본sandbox SSH조회74be8c exit128과실권한읽기837410 exit0를분리하고권한변경0이다. 새관리원문후보는미채택GO0·실DB/권한/키/서비스/Agent0. 검수된정확변경을게시/PR/통합한다.
