@@ -21,3 +21,6 @@
 실 ApiClient와 helper를 합성 GET transport로 소비했다. active/epoch 시험을 실제 부모 DOM의 안전 증거로 승격하지 않는다. 준비 오류/동일 원인 반복 실패·추가경로쓰기0, 알려진 live handle0·writer반환이다. 실제 DB·권한·키·서비스·Agent·사용자자료 조사0. IX01 별도 승인 범위의 연결 사전검산336340 exit1(Connection refused)은 WORK_STATUS에 별도 기록했고 이 소스시험 성공과 혼합하지 않았다.
 
 기존 호출선은 DesignChangeRequest→첫helper, StoredChangeSources→보관helper, MaterialLibrary→import사용helper다. 서비스 반영/실사용가능 완료 URL은 제공하지 않는다. 정확 commit/private push→PR 필수검증→main 병합→merged 한정 smoke·정리 뒤 UI06 충돌 조정의 같은 소비 누락과 늦은 응답 보호를 다음 단일 writer로 수행한다. 후속 WI는 미배정으로 보존했다. 회귀는 이 소스 변경의 정상 revert, 원문/기존 이력 보존이다.
+
+## 통합 확인
+PR70 source c96ef375fb4dff5c8c2888f9712c4c05b07051b5는 Broker42438140141 success/da305f exit0로 main39f159a59a6dc315bcdf7c2892eb24142a42ab37에 병합됐다. parent e9d0c132·source/merge tree f2a4d3bdc2a2ccb774c04f2e7c6fbf9fde639683 동일이다. 7084ca 정상FF 뒤 집중3파일19PASS/skip0/fail0/exit0/510.5676ms를 확인했다. 5ae9f6은 main local/private동일·clean·완료remote branch/tag부재·PR70복구ref c96ef375를 확인하고 정상-d/-dr정리했다. 이후 새 목적branch만 최신main에서 생성·즉시게시했다. squash 경고는 위 PR/tree/ref 증거와 보존하고 force0이다.

@@ -1,6 +1,6 @@
 # UI06 문서 충돌 조정의 출처 소비 정합화
 
-상태: 후속 준비/미배정. 현재 UI_DOCUMENT_SOURCE_REF_CONSUMER_ALIGNMENT 업무의 검수·병합·정리를 마친 뒤 기존 Primary 단일 writer에게 순차 배정한다. 지금 새 branch/구현 GO0이다.
+상태: 구현 배정. PR70 main39f159a59a6dc315bcdf7c2892eb24142a42ab37의 merged집중19PASS/정상 정리 후 최신main에서 codex/av3-document-conflict-sources를 생성·즉시 원격 게시했다. 기존 Primary 단일 writer에게 정확제품2/시험2만 순차 배정한다.
 
 ## 근거와 기대 동작
 WORK_PLAN의 UI06/FN03, FUNCTION_WORK39·SCREEN_WORK85 및 INTERFACES의 DocumentContent.sourceRefs·문서409 충돌 비교/명시 조정 계약을 소비한다. PR68/69로 정상4종 출처 문서가 저장되지만 conflict-api.ts22/27의 빈배열 조건으로 KEEP_INPUT과 LATEST_METADATA가 모두 막힌다. Main은 DocumentEditor.compare가 현재 mounted만 확인하고 adopt가 원명령 ID만 대조하는 실제 경로도 확인했다. 새 출처가 있는 정상 문서를 비교하면서 이전 주체/선택의 늦은 원문을 표시하지 않도록 기존 epoch/현재성 검산을 이 호출선에 적용한다. 새 공개 API·SourceRef종류·SQL·권한·사용자 정책0이다.
@@ -29,4 +29,4 @@ WORK_PLAN의 UI06/FN03, FUNCTION_WORK39·SCREEN_WORK85 및 INTERFACES의 Documen
 직접집중2파일·필요기존UI06 editor-api/source/proposal·stage충돌선택회귀/typecheck·diff만실행한다. Main은필요Webmemorybuild와독립검수/통합. 실served/DB·권한·키·서비스·Agent·SSH·실자료조사는0이다. 결과서에실명령/exit·RED/GREEN·준비오류/실패횟수·raw지문·미검증·writer반환을기록한다. source/DOM합격을전체FN03/UI06·작업계획완료로표시하지않는다. 원문/역사는보존하고회귀는정상revert다.
 
 ## 사전 독립 확인
-독립 읽기 C0/I0는 기존epoch/current·UNKNOWN/뒤409 차단과 비교 성공 후 scope이탈시 보관 comparison본문 즉시 숨김을 검수 초점으로 명시했다. 최신 자기contentHash 전체검산은 Main105a94에서도 확인한 정확 내부보완이다. 미배정 상태 유지·기존제품3 writer 종료 전 후속 구현0이다.
+독립 읽기 C0/I0는 기존epoch/current·UNKNOWN/뒤409 차단과 비교 성공 후 scope이탈시 보관 comparison본문 즉시 숨김을 검수 초점으로 명시했다. 최신 자기contentHash 전체검산은 Main105a94에서도 확인한 정확 내부보완이다. 이 사전 검수 당시 미배정·기존제품3 writer와 동시 쓰기0을 유지했고, 해당 업무 통합/정리 뒤 현재 순차 배정으로 전환했다.
