@@ -15,7 +15,7 @@ WORK_PLAN FN03/UI06의 문서 원문·출처 저장/보호조회 구현이다. I
 1. 기존 SourceRef4종 exact kind/id/version/hash 형상·현재프로젝트귀속·중복·최대200을 대조한다. caller객체/getter/proxy/await중변이를 통한검산우회는거절하거나진입시불변사본으로고정한다. 새공개형상을발명하지않는다.
 2. 같은 PoolClient/actor/project에서 DOCUMENT_VERSION은정확과거version/contentHash·보호원문,ARTIFACT는같은프로젝트READY·정확hash/원문,CONVERSATION/USER_INSTRUCTION은기존 ProjectConversations 보호readMessage의원hash·실지시종류를확인한다. FN05지식저장·가짜KnowledgeEntry·새authenticated/pool/권한발급으로우회하지않는다. 기존권한/current검사를보존한다.
 3. ProjectDocuments.save의빈배열전용412를실보호검산으로대체하고 content.sourceRefs의고정사본과source_refs_json을함께저장한다. contentHash는기존 canonical content 구조를그대로사용한다. 기존본문·첨부·양식·단계·정책·receipt·expectedVersion/replay검사를유지한다. 검산실패시새domain/receipt/원문정착0이어야한다.
-4. 기존version GET은content.sourceRefs와source_refs_json의형상·동일성을확인하고정확출처의보호원문을다시검산한경우에만반환한다. 과거버전을현재head로대체하거나역사출처를숨기지않는다. 문서간연쇄는호출단위예산/방문경로로유한하게검산하고cycle·예산소진은fail-closed한다. 원권한/무결성검사를cache성공값으로대체하지않으며backupBudget과기존protectedreader지문/호출계약을보존한다. 구체내부유한검산방식이기존보호reader와충돌하면구현전근거를반환한다.
+4. 기존version GET은content.sourceRefs와source_refs_json의형상·동일성을확인하고정확출처의보호원문을다시검산한경우에만반환한다. 과거버전을현재head로대체하거나역사출처를숨기지않는다. 문서간연쇄는호출단위예산/방문경로로유한하게검산한다. 내부총검산예산은최상위호출하나당출처참조200회로고정하며모든종류와전이참조를함께계상하고새문서읽기마다초기화하지않는다. 최상위문서자체는출처참조회수에포함하지않는다. cycle·예산소진은fail-closed한다. 원권한/무결성검사를cache성공값으로대체하지않으며backupBudget과기존protectedreader지문/호출계약을보존한다. 구체내부유한검산방식이기존보호reader와충돌하면구현전근거를반환한다.
 5. 현재일반save의DBguard는비어있지않은출처를막지않는다(0003 guard_document_draft_write,0073 document_command_authorized/ordinary save분기). 기존SQL변경/미적용migration추가0. import만별도0073의빈배열조건이있으므로이번범위에서열지않는다. native0072관측의빈배열조건도보존한다.
 6. 기존quota는본문artifact업로드비용을계상하고일반document metadata JSON을새분모로세지않는다. 이번출처연결로원문bytes를중복계상하거나새예약/비용목적을추가하지않는다. metadata분모의기존범위는결과에명시한다.
 
