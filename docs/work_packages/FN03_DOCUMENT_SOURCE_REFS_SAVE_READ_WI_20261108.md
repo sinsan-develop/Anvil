@@ -8,7 +8,7 @@ WORK_PLAN FN03/UI06의 문서 원문·출처 저장/보호조회 구현이다. I
 ## 정확 소유 파일
 - 신규 apps/server/modules/documents/document-source-refs.ts
 - 기존 apps/server/modules/documents/project-documents.ts
-- 기존 apps/server/modules/knowledge/conversations.ts (readMessage의 optional backupBudget 전파만)
+- 기존 apps/server/modules/knowledge/conversations.ts (readMessage optional backupBudget 및 아래 원메서드 고정 한정)
 - 신규 tests/unit/FN03/document-source-refs.test.ts
 필요경로가다르면쓰기전에Main에근거를반환한다. 기존다른작업을되돌리지않는다. Main은본WI/WORK_STATUS/결과문서만소유한다.
 
@@ -32,3 +32,6 @@ WORK_PLAN FN03/UI06의 문서 원문·출처 저장/보호조회 구현이다. I
 
 ## 내부 예산 전달 보완
 ProjectConversations.readMessage는현재5인자로호출되며originalText에backupBudget를전달하지않는다. genuine reader/문서객체를유지하기위해기존5인자와외부응답은그대로두고선택적6번째 ArtifactBackupReadBudget를전파한다. budget이주어지면진입/await경계에서기존assertArtifactBackupReadBudget로확인하고originalText의기존4번째인자로넘긴다. budget없는기존caller동작은불변이다. fake문서adapter나전체ProjectDocuments형단언으로진짜reader를대체하지않는다. 추가허용은conversations.ts의해당범위뿐이며공개HTTP/권한/영속schema변경0이다. 신규시험에서대화출처의동일budget전파와만료거절을검산하고기존대화/지식·보호plan직접인접을필요범위만확인한다.
+
+## 순환 초기화와 원메서드 고정 보완
+실제 Conversations 선import 순서에서 Documents의top-level캡처가TDZ RED5a13c5로실패했다. 최초사용lazy pin만으로는그이전prototype교체를거절할수없으므로이를원함수증거로삼지않는다. conversations.ts 자체class정의직후lexical const로원readMessage를고정하고, constructor의선택적내부모드 DOCUMENT_SOURCE_REFS에서만그원함수를bound own data method로고정한다. undefined의기존ordinary생성과기존readMessage5인자는유지한다. 알수없는모드는거절한다. Documents는genuine생성자의해당모드객체에서고정own descriptor의함수만소비하며새export/staticproof/권한발급·HTTP필드는추가하지않는다. 이것은원메서드소비를보존하는내부조립방식이며그mode자체를권한proof로사용하지않는다. 원모듈선import/실App import와최초호출전prototype변조·getter교체/추가호출후교체음성을검산한다. 저장refs형상손상은GET의기존DOCUMENT_INTEGRITY_FAILED503으로구분하며원출처권한/hash오류는유지한다.
