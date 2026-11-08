@@ -1,3 +1,4 @@
+import {registerNormalExchangeChallenge,type NormalExchangeOptions} from './modules/executions/normal-exchange-challenge.ts';
 import {registerNativeFirstReceiveRoutes,type NativeFirstReceiveRoutesOptions} from './modules/executions/native-first-receive-routes.ts';
 import {NativeFirstReceiveService} from './modules/executions/native-first-receive-service.ts';
 import {registerCommonSetupRoutes} from './modules/user-common-setup/routes.ts';
@@ -24,7 +25,7 @@ import {registerProviderClaimHistoryRoutes} from './modules/executions/provider-
 import {registerUnderstandingHistoryRoutes} from './modules/executions/understanding-history-routes.ts';
 import { registerControlHandoffRoutes, type ControlHandoffRoutesOptions } from './modules/control-handoff/routes.ts';
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource) {
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource, normalExchange?:NormalExchangeOptions) {
   const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
   app.addHook('onRequest',async request=>enforceConnectorCredentialScope(request));
   app.addHook('onSend', async (_request, reply, payload) => {
@@ -33,6 +34,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
     reply.header('content-security-policy', "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     return payload;
   });
+  if(normalExchange)registerNormalExchangeChallenge(app,normalExchange);
   registerDesktopRuntimeCatalogue(app,runtimeCatalogue);
   app.get('/api/v1/health', async () => ({ status: 'ok', scope: 'process', version: '0.1.0' }));
   if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation,normalExecution); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
