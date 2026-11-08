@@ -1,17 +1,17 @@
 # Anvil 작업 점검표
 
-갱신: 2026-11-08T18:58:50+09:00 / 담당: 어울
+갱신: 2026-11-08T19:02:29+09:00 / 담당: 어울
 
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
-- 코드 집계 기준: `development/main` `3aaa16f8abf4bcc09201919efe1dae4dadf272ee`.
-- 진행 branch: `codex/av3-normal-command-pages`. 현재 기록을 저장한 문서 commit은 Git 최신 HEAD를 따른다.
-- 현재 우선순위: PR79 일회 credential 교환 source를 main 통합·merged5 PASS까지 마쳤다. PR80 명령 조회용 challenge를 main 통합·merged6 PASS까지 마쳤다. 명령 페이지·nonce 소비/고정 응답 source11·Main 신규7 PASS·독립 C0/I0 수용, 신산님 지시대로 현재 branch의 main 병합·정리를 진행한다. 실제 DB·키·권한·서비스·Agent는 제외한다.
-- 최근 소스 검수: PR76 duplex, PR77 normal grant/독립 예약, PR78 최초 challenge, PR79 일회 교환·nonce 소비. 모두 main 통합·핵심 smoke 확인, 실제 Agent·DB·전체 기능 인수는 미완료다.
+- 코드 집계 기준: `development/main` `967c9a207452f5d3c9d79a1d8906e25a396dd704`.
+- 현재 제품 기준선: `main`. 완료 구현 branch는 정상 정리했다. 이 마감 기록의 문서 commit은 Git 최신 HEAD를 따른다.
+- 현재 상황: PR81 명령 조회 source를 main 통합·merged7 PASS·원격동일/clean 확인하고 완료 branch를 정리했다. 현재 현황2 마감 기록만 게시한다. 다음은 보호 START 자료 수신이며 실제 DB·키·권한·서비스·Agent는 제외한다.
+- 최근 소스 검수: PR76 duplex, PR77 normal grant/독립 예약, PR78 최초 challenge, PR79 일회 교환·nonce 소비, PR80 조회 challenge, PR81 명령 페이지·고정 응답. 모두 main 통합·핵심 smoke 확인, 실제 Agent·DB·전체 기능 인수는 미완료다.
 - 현재 미확인: 실제 개발 DB 복구·served/Agent 전체 여정·실기기·Oracle 인수. 지정 SSH Connection refused를 PASS로 표시하지 않는다.
 - 결정 대기: 기존 PMO 발행 2건(e59592e3,239845d6), 직접 답변 미수신. 중복 요청하지 않는다.
 - 상세 현재 상황/오류/다음 조치: [WORK_STATUS.md](WORK_STATUS.md)의 ‘현재 상황 보완’ 절.
-- [44항목 상세 근거](https://github.com/sinsan-develop/Anvil/blob/3aaa16f8abf4bcc09201919efe1dae4dadf272ee/docs/04_test_reports/AV3/WORK_PLAN_REMAINING_AUDIT_20261108.md)
+- [44항목 상세 근거](https://github.com/sinsan-develop/Anvil/blob/967c9a207452f5d3c9d79a1d8906e25a396dd704/docs/04_test_reports/AV3/WORK_PLAN_REMAINING_AUDIT_20261108.md)
 
 | 완료 | 업무 | 상태 | 남은 기능·검증 |
 |---|---|---|---|
