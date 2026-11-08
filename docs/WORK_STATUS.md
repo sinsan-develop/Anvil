@@ -18419,3 +18419,5 @@ npm run typecheck
 - 기술WI17/18 독립검수C0/I0/M1은11/12절 complete void와18절 boolean불일치였다. complete RETURNS boolean/dispatcherNULLfalse/모든RPC·bundle·current_final의IS TRUE필수·실패거래거절로정합화하고current_final void/trigger성공뒤반환을명시했다. 기존불완결거절 의미/원후보hash불변이며재검수요청·전체M/ACL동결미완료GO0이다.
 
 - 기술WI17/18후속재검수는SHA0c465ebf와일치·C0/I0/M0로내부complete타입M1해소를확인했다. 전체M/권한표·함수시그니처동결/구현GO판정아님을보존한다. Main은정확기술문서/현황2경로만게시하며Primary신규화면시험소유를건드리지않는다.
+
+- UI02화면여정 Primary신규시험1파일/제품4지문확인뒤 첫실행9f269f exit1은제품도달전Vite virtual entry exact-match UNRESOLVED_ENTRY 준비오류1이다. 실제선례endsWith resolver정합화중이며제품수정/다른시험실행0·known livehandle0. 제품결함RED나합격으로세지않고같은원인반복금지후계속한다.
