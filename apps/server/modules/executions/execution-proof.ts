@@ -115,6 +115,12 @@ export function verifyNormalCommandChallengeRequest(spki:unknown,sig:unknown,val
  exactSubject(p,binding);
  signature(spki,sig,executionChallengeRequestBytes('EXECUTION',p),binding.publicKeyFingerprint);
 }
+export function verifyNormalCommandPageProof(spki:unknown,sig:unknown,value:unknown,binding:any,challenge:any,target:ReturnType<typeof executionTarget>){
+ const p=proof('EXECUTION_REQUEST_PROOF',value);
+ if(binding.transport!=='NORMAL_PROTECTED'||binding.mode!=='EXECUTION'||challenge.purpose!=='EXECUTION_REQUEST'||
+  !same(p,{requestId:challenge.requestId,...target,grantRef:binding.grantRef,credentialGeneration:binding.credentialGeneration,serverNonce:challenge.serverNonce}))return invalid();
+ signature(spki,sig,executionProofBytes('EXECUTION_REQUEST_PROOF',p),binding.publicKeyFingerprint);
+}
 function signature(spki:unknown,sig:unknown,bytes:Buffer,fingerprint:string){
  if(publicKeyFingerprint(spki)!==fingerprint||!verify('sha256',bytes,{key:readHostPublicKey(spki),dsaEncoding:'ieee-p1363'},canonicalBase64(sig,64)))return invalid();
 }

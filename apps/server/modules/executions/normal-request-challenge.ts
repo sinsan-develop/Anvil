@@ -7,10 +7,11 @@ import {canonicalBase64} from '../connections/registration-proof.ts';
 
 function denied():never{throw new AuthFailure('EXECUTION_CREDENTIAL_DENIED',403);}
 /** 호출자의 credential 원문은 TLS 경계에서만 해석한다. 이후 저장소에 전달되는 값은 digest다. */
-export function normalRequestBearerDigest(request:FastifyRequest,host:string){
+export function normalRequestBearerDigest(request:FastifyRequest,host:string,proofHeader=false){
  const names=request.raw.rawHeaders.filter((_,i)=>!(i%2)).map(h=>h.toLowerCase());
  if(!('encrypted' in request.raw.socket)||request.raw.socket.encrypted!==true||request.headers.host!==host||
-   names.filter(n=>n==='authorization').length!==1||names.includes('anvil-execution-auth'))denied();
+   names.filter(n=>n==='host').length!==1||names.filter(n=>n==='authorization').length!==1||
+   names.filter(n=>n==='anvil-execution-auth').length!==(proofHeader?1:0))denied();
  const value=request.headers.authorization,m=typeof value==='string'&&/^Bearer (av3ex1_([A-Za-z0-9_-]{43}))$/.exec(value);
  if(!m)denied();
  try{canonicalBase64(m[2],32);}catch{denied();}
