@@ -25,7 +25,9 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
   if(prior.client!==client||prior.transport!==client.transport||prior.user!==session.user.id||prior.clientId!==session.clientId||prior.csrf!==session.csrfToken||prior.projectId!==buffer.projectId||prior.generation!==buffer.controlGeneration||!known.current.has(buffer)){epoch.current++;known.current=new Set([buffer]);}
   latest.current=buffer;context.current={client,transport:client.transport,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken,projectId:buffer.projectId,generation:buffer.controlGeneration};
   const managedChange:Dispatch<SetStateAction<DocumentBuffer|null>>=edit=>onChange(previous=>{const next=typeof edit==='function'?edit(previous):edit;if(next)known.current.add(next);return next;});
-  const [comparison, setComparison] = useState<DocumentConflictComparison | null>(null), [acknowledged, setAcknowledged] = useState(false), [comparisonError, setComparisonError] = useState<ApiError | null>(null);
+  const conflictSequence=useRef(0);
+  const [conflictResult,setConflictResult]=useState<{active:()=>boolean;input:DocumentBuffer;value:DocumentConflictComparison|null;error:ApiError|null}|null>(null),[acknowledged,setAcknowledged]=useState(false);
+  const conflictVisible=conflictResult?.active()===true,comparison=conflictVisible?conflictResult!.value:null,comparisonError=conflictVisible?conflictResult!.error:null;
   const [manualAcknowledged, setManualAcknowledged] = useState(false);
   const [proposalAcknowledged, setProposalAcknowledged] = useState(false);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -58,15 +60,21 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
     } finally { release?.(); running.current = false; if (mounted.current) setBusy(false); }
   }
   async function compare() {
-    if (running.current) return; running.current = true; setBusy(true); setComparison(null); setAcknowledged(false); setManualAcknowledged(false); setComparisonError(null);
-    try { const value = await compareDocumentConflict(client, buffer, session); if (mounted.current) setComparison(value); }
-    catch (cause) { if (mounted.current) { const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setComparisonError(error); if (error.status === 401) onAuthenticationLost(); } }
-    finally { running.current = false; if (mounted.current) setBusy(false); }
+    if(running.current||!canCompareDocumentConflict(buffer))return;
+    const request=++conflictSequence.current,ownerActive=proposalOperation(),input=buffer,pending=buffer.pending,pendingKey=JSON.stringify(pending);
+    const active=()=>request===conflictSequence.current&&ownerActive()&&latest.current===input&&latest.current.pending===pending&&JSON.stringify(pending)===pendingKey&&canCompareDocumentConflict(latest.current);
+    running.current=true;setBusy(true);setConflictResult(null);setAcknowledged(false);setManualAcknowledged(false);
+    try{const value=await compareDocumentConflict(client,input,session,active);if(active())setConflictResult({active,input,value,error:null});}
+    catch(cause){if(active()){const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setConflictResult({active,input,value:null,error});if(error.status===401)onAuthenticationLost();}}
+    finally{running.current=false;if(mounted.current)setBusy(false);}
   }
-  function adopt(resolution: 'KEEP_INPUT' | 'LATEST_METADATA' = 'KEEP_INPUT') {
-    if (!comparison || busy) return;
-    try { const next = adoptDocumentConflict(buffer, comparison, session, resolution === 'LATEST_METADATA' ? manualAcknowledged : acknowledged, resolution); onChange(previous => previous?.pending?.saveCommandId === comparison.rejectedCommandId && canCompareDocumentConflict(previous) ? next : previous); setComparison(null); setAcknowledged(false); setManualAcknowledged(false); }
-    catch (cause) { setComparisonError(cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID')); }
+  function adopt(resolution:'KEEP_INPUT'|'LATEST_METADATA'='KEEP_INPUT') {
+    const result=conflictResult;if(!comparison||busy||!result?.active())return;
+    try{
+      // 실제 부모 buffer의 원 pending/소유권을 CAS 안에서 다시 대조한다.
+      managedChange(previous=>previous===result.input&&result.active()&&canCompareDocumentConflict(previous)?adoptDocumentConflict(previous,comparison,session,resolution==='LATEST_METADATA'?manualAcknowledged:acknowledged,resolution):previous);
+      setConflictResult(null);setAcknowledged(false);setManualAcknowledged(false);
+    }catch(cause){if(result.active())setConflictResult({...result,error:cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID')});}
   }
   function proposalOperation(){const ticket=epoch.current,owner=context.current;
     return()=>mounted.current&&ticket===epoch.current&&known.current.has(latest.current)&&client.transport===owner.transport&&session.user.id===owner.user&&session.clientId===owner.clientId&&session.csrfToken===owner.csrf&&latest.current.projectId===owner.projectId&&latest.current.controlGeneration===owner.generation;
@@ -131,7 +139,7 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
     {comparisonError ? <p role="alert">{comparisonError.message} · {comparisonError.code} · 기존 입력과 명령을 유지했습니다.</p> : null}
     {comparison ? <section className="status-card" aria-label="문서 버전 충돌 비교"><h3>기준 {comparison.baseVersion} → 서버 {comparison.latest.document.version}</h3><p>내 제목·본문·항목 위치로 새 초안을 준비합니다. 서버 최신본은 구버전으로 보존되며 자동 합치기/저장은 하지 않습니다.</p><p>서버 제목: {comparison.latest.document.title} · 내 제목: {buffer.title}</p><pre aria-label="서버 최신 원문" className="document-original">{comparison.latest.body}</pre><pre aria-label="내 미저장 원문" className="document-original">{buffer.body}</pre>
       {!comparison.compatible ? <p role="alert">양식·첨부·원문 형식 또는 연결 자료가 달라 수동 조정이 필요합니다. 자동 채택하지 않습니다.</p> : null}
-      <pre aria-label="충돌 양식·첨부·항목 비교">{JSON.stringify({ server: { formRef: comparison.latest.document.formRef, mediaType: comparison.latest.document.content.body.mediaType, attachments: comparison.latest.document.content.attachments, sections: comparison.latest.document.content.sections }, input: { formRef: buffer.formRef, mediaType: buffer.mediaType, attachments: buffer.content.attachments, sections: buffer.content.sections } }, null, 2)}</pre>
+      <pre aria-label="충돌 양식·첨부·항목 비교">{JSON.stringify({ server: { formRef: comparison.latest.document.formRef, mediaType: comparison.latest.document.content.body.mediaType, attachments: comparison.latest.document.content.attachments, sections: comparison.latest.document.content.sections, sourceRefs:comparison.latest.document.content.sourceRefs }, input: { formRef: buffer.formRef, mediaType: buffer.mediaType, attachments: buffer.content.attachments, sections: buffer.content.sections, sourceRefs:buffer.content.sourceRefs } }, null, 2)}</pre>
       <label><input type="checkbox" disabled={busy || !comparison.compatible} checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} />양쪽 내용을 비교했고 내 입력을 새 초안으로 저장하겠습니다</label><button disabled={busy || !comparison.compatible || !acknowledged} onClick={() => adopt()}>내 입력으로 새 기준 초안 준비</button>
       {!comparison.compatible && canPrepareManualConflict(comparison) ? <><p>최신 양식·첨부·본문 형식을 유지한 편집 초안을 열 수 있습니다. 내 제목·본문은 유지하고, 달라진 본문의 항목 위치는 비워 직접 다시 지정합니다. 거절된 원래 입력과 명령은 보관하며 자동 저장·합치기·확정은 하지 않습니다.</p><label><input type="checkbox" disabled={busy} checked={manualAcknowledged} onChange={e => setManualAcknowledged(e.target.checked)} />최신 양식·첨부·형식을 유지하고 내 원문을 조정하며 항목 위치를 다시 지정하겠습니다</label><button disabled={busy || !manualAcknowledged} onClick={() => adopt('LATEST_METADATA')}>최신 양식·첨부로 수동 조정 초안 준비</button></> : null}
     </section> : null}
