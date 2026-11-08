@@ -29,3 +29,6 @@
 독립1e8097/2b12f3은최종5지문동일/C0/I0/M0다. I1보완은실store원바이트읽기·호출전/원행await중getter/fakebody0을확인했다. root없는생성의IO0은기존합성FS미등록API차단/blocked[]/handle0으로검산했다. 원실store·budget·권한을새genuine객체의빈store로대체하지않는다.
 
 순환음성은위조저장행이hash검사에서거절되는증거다. hash가유효한순환을직접실행한증거는아니며수행하지않은분기커버리지를PASS로표시하지않는다. 초기최초prototype교체 RED84c52e→990d9a도TDD이력에보존한다.
+
+## main 통합 후 한정 확인
+PR68 sourcec85fee824200e4def9c0a16f5e8127425bbd9dc1는Broker42433973928 success로main339fdad926f9a0ad2593cfe75dd71758cda9d2c3에통합됐다. parentef933a87/source·merge tree5a137984c891ca29123008efb66f46fc1667e814동일,Mainc440bf정상FF후집중서버+UI29PASS/skip0/exit0(6125.7082ms)로검산했다. 2654f8에서main동일·clean/완료remote branch·tag부재/PR68복구ref확인뒤2cad00의정상-d/-dr로정리했다. 실제DB/served/전체계획완료를증명하지않는다.

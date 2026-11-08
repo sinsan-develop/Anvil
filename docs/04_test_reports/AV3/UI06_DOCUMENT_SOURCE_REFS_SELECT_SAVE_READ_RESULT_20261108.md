@@ -32,3 +32,6 @@ UI8 정렬rawmanifest8ba74061da2b64328ed8e69d02e1b23b24c594a60b4e0706224ef08f11a
 코드상S06의문서작성→문서전체출처종류/목록→원문확인/추가→새초안버전저장→고정문서출처보기순서다. 현재서비스반영/실로그인브라우저검수는하지않아실행URL이나실사용가능완료를주장하지않는다.
 
 새endpoint/공개SourceRef필드/권한·DB/migration·키·서비스·Agent·실자료조사0. 일반파일전체목록·바이너리자료·자동대화역조회·항목별attribution/evidenceRefs를지원한다고하지않는다. import/proposal의별도상세sourceRefs는미채택후보로분리돼이화면저장완료로대체하지않는다. 다음은검증된변경게시/PR필수검증/main/merged한정smoke/정리와계획의다음미완료작업이다. 회귀시이업무소스변경을정상revert하고원문·이전기록을보존한다.
+
+## main 통합 후 한정 확인
+PR68 sourcec85fee824200e4def9c0a16f5e8127425bbd9dc1는Broker42433973928 success로main339fdad926f9a0ad2593cfe75dd71758cda9d2c3에통합됐다. parentef933a87/source·merge tree5a137984c891ca29123008efb66f46fc1667e814동일,Mainc440bf정상FF후집중서버+UI29PASS/skip0/exit0(6125.7082ms)로검산했다. 2654f8에서main동일·clean/완료remote branch·tag부재/PR68복구ref확인뒤2cad00의정상-d/-dr로정리했다. 실제DB/served/전체계획완료를증명하지않는다.
