@@ -120,7 +120,7 @@ Primary는정확14경로에서집중5시험과필요직접인접의보호SQL/정
 |fn03_management_actual(p,cid)→bigint|rows→기존canonical cost projection만호출. quota전체complete/currentcontext/settle호출0|
 |fn03_management_reserve(s,a,c,p,q,policy,ids,tx,until,prepared)→jsonb|이미잠근context/계정·coverage재검산→maximum→기존R 최소고정점→새R reserve/IO_STARTED. caller비용0|
 |fn03_management_settle(s,a,c,p,q,policy,ids,tx,until,reservation)→jsonb|잠금유지확인·actual→sealedR검산·s최소고정점→계정/R정착. 원r/plan/hash불변|
-|fn03_management_complete(p,cid)→void|rows/actual·정확R(plan/ids/fence/금액/원기한형식)·B≤M/s≤r/고정점/양방향완결. currentcontext·quota전체complete로재귀0|
+|fn03_management_complete(p,cid)→boolean|rows/actual·정확R(plan/ids/fence/금액/원기한형식)·B≤M/s≤r/고정점/양방향완결. currentcontext·quota전체complete로재귀0|
 |fn03_management_history_bundle(p,cid)→jsonb|complete→불변5행/R보호bundle. 현재인가RPC밖에서호출불가,현재기한/주체로과거row를재작성0|
 |fn03_management_final_guard()→trigger|새Tx의currentcontext/clock/수명·현재xid봉인→complete. 단순과거read/replay에서는이새Tx검사호출0|
 |commit RPC|currentcontext→기존순서잠금→prepare/maximum/reserve→freshC/A/U·E/O쓰기→actual/settle/complete→최종DB검사. replay는현재인가→history_bundle만,추가R/5행0|
@@ -143,7 +143,7 @@ fn03_management_rows(uuid,uuid) returns jsonb
 fn03_management_actual(uuid,uuid) returns bigint
 fn03_management_reserve(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text,timestamptz,jsonb) returns jsonb
 fn03_management_settle(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text,timestamptz,jsonb) returns jsonb
-fn03_management_complete(uuid,uuid) returns void
+fn03_management_complete(uuid,uuid) returns boolean
 fn03_management_history_bundle(uuid,uuid) returns jsonb
 fn03_management_final_guard() returns trigger
 ```
@@ -213,3 +213,98 @@ C.received_at의기존Tx수신시각과새목적의fresh완료시각을섞지않
 PG15공식문서의[행 보안 정책](https://www.postgresql.org/docs/15/ddl-rowsecurity.html)은RLS가SQL권한과별개로적용되고기본permissive정책들이OR로합쳐짐을설명한다. 따라서기존false정책을삭제해전체를열기보다명시purpose역할정책만추가하는후보이며,이문서인용이구현된역할/권한검산을대신하지않는다. 같은문서는TRUNCATE가RLS대상이아님도명시하므로별도권한/차단trigger를보존한다.
 
 [PG15 SELECT 권한](https://www.postgresql.org/docs/15/sql-select.html)은행잠금절에대상표의최소한열UPDATE권한도필요함을명시한다. 위열ACL은잠금조건을명시하기위한것이지임의데이터변경권한을app에주는안이아니다. 실제PostgreSQL설치·권한부여·ACL경쟁·COMMIT시험은NOT_RUN이다.
+
+## 16. 후속 ACL·비용 helper 선행 finding
+기존 Primary의 정확 원문 읽기는 0082의 quota_plan_valid/quota_settled_complete가 SECURITY DEFINER임을 확인했다. 기존 dispatcher의 owner·security mode를 바꾸지 않으며, 새 private plan/complete를 호출하는 실제 기존 owner의 EXECUTE edge까지 명시해야 한다. app/PUBLIC에 private helper를 열어 오류를 우회하지 않는다. INVOKER 즉시 trigger가 private complete를 직접 호출하는 방식도 쓰지 않는다. 정확 signature/실제 owner 확인과 전체 transitive callee ACL matrix는 아직 최종 동결 전이다.
+
+0077의 fn09_registered_reservation_fixed_point(bigint,jsonb,bigint)는 reservation_cost를 거쳐 cost_projection 및 kind=R인 registered_cost와 fn01_json을 호출한다. 첫 fixed_point만 권한을 주는 matrix는 충분하지 않다. 실제 각 함수의 security mode와 caller를 검산해 필요한 edge만 허용해야 한다. E/O/C/A/U actual은 후보대로 fn75_cost 기반이며 registered_cost에 새 O/E kind를 덧붙여 대체하면 기존 kind whitelist와 충돌한다. 기존 함수 whitelist를 완화하거나 논리행으로 물리비용을 대체하지 않는다.
+
+이 finding은 정적 기술 준비이며 코드/SQL/실DB/권한 실행 증거가 아니다. 후보 cbefc3e3·패킷239845d6의 고정 내용과 미채택 GO0는 유지한다. 구현 전 private helper 전이·finalguard·lock 및 물리 M template을 독립 검수한다.
+
+## 17. 물리 M template의 정확 열·분기 제안
+기존 reader가 실제 초기 정의와 후속 ALTER를 대조했다. 아래 O만 신규 제안이고 나머지는 기존 열 목록이다. 비용 계산/실SQL 검증은 아직 수행하지 않았다.
+
+|행|물리열 전체|정의 근거|
+|---|---|---|
+|O 9|project_id,id,version,management_command_id,policy_event_ref,request_json,request_hash,recorded_at,content_hash|후보 §2, 신규0083 정의 대상|
+|E 15|project_id,id,version,sequence,subject_user_id,disposition,snapshot_json,content_hash,previous_ref,management_command_id,recorded_at,expires_at,previous_id,previous_version,previous_hash|0040:5~13, 마지막3열은 저장 생성열|
+|C 21|id,scope_kind,scope_id,project_id,draft_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,approval_consumption_id,expected_version,control_generation,policy_ref,payload_ref,result_ref,received_at,completed_at|0011:17~26|
+|A 9|id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest,approval_decision_ref,authorized_at|0011:58~63|
+|U 16|project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,recorded_at,source_kind,correction_of|0011:71~77|
+|R 22|id,project_id,actor_id,client_id,external_command_id,operation,command_hash,part_key,part_kind,plan_json,plan_hash,reserved_bytes,settled_bytes,phase,start_fence,authorized_until,server_command_id,authorization_receipt_id,scope_digest,created_at,started_at,settled_at|0059:16~29|
+
+0077:111~123의 cost_projection은 최상위 version/generation/*_version/*_generation/server_sequence/reserved_bytes/settled_bytes/start_fence만 정수 문자열로 정규화한다. E.sequence는 숫자이고 U.server_sequence는 문자열이다. 중첩 snapshot/result/plan에는 같은 정규화가 재귀 적용되지 않는다. 따라서 숫자값을 임의 문자열로 바꿔 비용을 축소하지 않는다.
+
+UUID/hash/원wire·발급ID/정책·previous refs와 원 payload는 준비 단계 실값을 사용한다. 잠금 뒤 확정 sequence도 실값을 쓸 수 있다. 아직 확정되지 않은 E.sequence 상계는 숫자9007199254740991, U.server_sequence 상계는 정규화된 문자열9223372036854775807이며 실제 복제 위치마다 계상한다. 이 상계는 인증/권위 증거가 아니다.
+
+O.recorded_at·E.recorded_at/expires_at·C.received_at/completed_at·A.authorized_at·U.recorded_at·R.authorized_until/created_at/started_at/settled_at은 비null 물리투영을 UTC27자 형식으로 제한하고 실제 정산도 그 범위를 검사한다. 미확정 비용에만 같은27자 ASCII 상계를 사용한다. C.result_ref.serverReceivedAt 등 중첩 공개시각은 기존 공개ISO 원형 그대로이며 물리열 sentinel을 넣지 않는다.
+
+PROJECT C.draft_id·승인없는 C.approval_consumption_id/payload_ref·A.approval_decision_ref·U.approval_ref/correction_of는 명시null 키 비용을 포함한다. E.previous_ref/생성3열은 최초null 또는 실제 이전fullref의 정확 분기를 쓴다. R 금액은 0..10737418240의 실제 r/s 후보이며 RESERVED/IO_STARTED/SETTLED 각 phase/start_fence/started_at/settled_at/server_command/receipt/digest 분기로 비교한다(0077:126~147).
+
+C.result_ref는 부모CM06 외곽exact10/data exact9 전체를 투영하며 evidenceRefs/warnings=[]·권위4값false·새event/previous fullref·sequence/상태문자열도 포함한다. A.subject_ref={kind:HUMAN,userId,clientId}와 U.actor_ref={kind:HUMAN,userId}를 혼용하지 않는다. M은 이5행 상계의 합, B는 실제5행 합이고 R자기비용은 별도 고정점이다. 0075:156~165 fn75_cost에서 실제로 존재하지 않는 request_canonical/snapshot_canonical/_canonical_result_ref 열을 가상 추가하지 않는다.
+
+후속 ALTER 대조에서 이 기존 C/A/U/E/R의 추가 물리열은 확인되지 않았고 제약 확장이 주였다. 새0083 작성시 목록 밖 물리/canonical열을 추가하면 이 표로 완료라고 주장하지 말고 실제 복제비용을 다시 고정한다. 최종 M JSON 전체·고정점 함수 전이 ACL 및 동시성/기한 검수 전에는 동결 완료나 코드GO로 표시하지 않는다.
+
+## 18. principal별 EXEC 전이와 finalguard 고정 제안
+Primary의 0075/0077/0082·0040 읽기 결과를 반영한다. 아래는 코드 전에 검수할 정확 호출안이며 실제 catalog/ACL/PG는 NOT_RUN이다.
+
+### 기존 dispatcher 보존
+exact regprocedure는 anvil.quota_plan_valid(jsonb), anvil.quota_settled_complete(anvil.project_storage_reservations)다. 0082의 둘 다 SECURITY DEFINER이므로 후속 설치 검산은 pg_proc의 proowner/proacl/prosecdef/provolatile/proconfig를 각각 확인·보존해야 한다. 동일 signature CREATE OR REPLACE라면 기존 owner/ACL 보존 여부를 검산한다. rename/delegate를 쓰면 rename 전 owner OID를 보존하고 새 dispatcher에 복원한다. 고정 owner 이름을 추정하지 않는다. 새 private validator/역사complete의 EXECUTE는 실제 기존 dispatcher owner에만 허용한다. 그 owner가 app 또는 예기치 않은 속성이면 app helper권한 확대로 우회하지 않고 중단한다.
+
+### 새 목적 역할의 INVOKER 전이
+다음 edge를 목적 역할의 effective principal에서 전부 검산한다. root 하나만 허용하고 하위 helper를 누락하지 않으며 app/PUBLIC에는 새 private EXECUTE0이다.
+
+```
+fn01_hash(jsonb) → fn01_json(jsonb) → 자기 재귀
+fn75_cost(jsonb) → fn01_json(jsonb)
+  → [실제 canonical 보조열이 있을 때] fn75_json_projection(text)
+    → fn75_string_end(bytea,integer)
+fn09_registered_reservation_fixed_point(bigint,jsonb,bigint)
+  → fn09_registered_reservation_cost(jsonb,text,bigint,bigint)
+    → fn09_registered_cost_projection(jsonb)
+    → fn09_registered_cost(jsonb,text,jsonb) → fn01_json(jsonb)
+```
+
+fn09_registered_cost의 kind whitelist P/C/A/U/K/R은 그대로다. E/O 비용은 fn75_cost(cost_projection(실물행))이고 R fixed-point만 kind=R/pairs=NULL이다. C/P canonical pairs를 요구하는 registered_cost에 부모5행을 억지로 넘기지 않는다. 실제 보조canonical열이 없는 원행에 가상열을 넣어 조건부 분기를 만들지도 않는다.
+
+### collector의 DEFINER 경계
+새 역할이 직접 호출할 root는 fn15_storage_actual(uuid),fn15_storage_future(uuid),fn75_project_storage_actual_bytes(uuid),fn75_project_storage_future(uuid),fn76_storage_actual(uuid),fn76_storage_future(uuid),fn09_registered_other_bytes(uuid)다. 각 root 내부는 그 함수의 실제 owner principal이며 하위 callee를 새 목적 역할에 무차별 GRANT하지 않는다. matrix의 edge마다 caller effective owner OID와 callee regprocedure·security mode·기존 ACL을 대조한다. 기존 collector 내부 권한이 부족하면 필요한 정확 edge를 반환하며 임의로 원래 정책을 확장하지 않는다.
+
+주요 내부 전이는 FN15 actual/future→fn15_control_storage_actual(uuid,uuid)/fn15_cost_bytes(jsonb)/fn15_physical_projection(jsonb)→fn15_cost_encode(jsonb,text)/fn01_json(jsonb), FN75 actual→fn75_project_storage_actual(uuid)+위cost전이, FN76 actual→fn76_l_rows(uuid)/fn76_r_rows(uuid)/fn01_json(jsonb)다. FN76 future는 fn76_aggregate_max(jsonb)/fn76_profile_future(uuid)/fn76_projection_bytes(text,jsonb)/fn76_reservation_remaining(anvil.native_receive_storage_reservations) 및 기존metadata계상을 소비한다. other_bytes는 기존6표 소계이며 다른 인증/저장 허가를 생산하지 않는다.
+
+### E CHECK의 암묵적 호출
+0040 INSERT CHECK는 source_read_canonical_json(jsonb) 재귀, source_read_hash(jsonb)→canonical, source_read_iso(timestamptz), source_read_ref(jsonb)→source_read_exact(jsonb,text[])를 호출한다. RPC 본문 밖 CHECK도 새 역할의 실효권한 matrix에 포함하며 app/PUBLIC 원권한을 넓히지 않는다.
+
+### 신규 private helper·신규 Tx 최종 검산
+최소 후보는 fn03_management_plan_valid(jsonb)→boolean,fn03_management_complete(uuid,uuid)→boolean,fn03_management_current_final(uuid,uuid,text)→void,fn03_management_final_guard()→trigger다. 새 목적 역할이 이 함수 owner이며 기존 plan dispatcher→plan_valid, 기존 settled dispatcher→역사complete, 목적RPC/read→역사complete, 목적DEFINER deferredtrigger→신규Tx current_final의 edge를 고정한다. INVOKER 즉시 rowtrigger는 private helper를 직접 호출하지 않는다.
+
+finalguard는 E/O/R의 JOIN 성공행만 수집하지 않는다. 이번 Tx의 defineSourceContentPolicy C 자체를 수집해 C만 있고 E/O/R이 없는 불완결도 거절한다. 역사complete는 현재세션·정책·기한으로 되돌아가지 않고 신규 C분기에만 sameTx/R·최소기한을 최종 강제한다. 전체matrix/시그니처·M전체JSON·동시성/시각 독립검수 전 최종동결 주장은 하지 않는다.
+
+### §18 사전 M1 정합화
+독립 사전 C0/I0/M1은 11·12절 complete의 void와18절 boolean 후보 불일치다. 내부 helper는 fn03_management_complete(uuid,uuid) RETURNS boolean으로 통일한다. 기존 settled dispatcher는 해당 boolean을 반환하며 NULL은false로 닫는다. commit/read/history_bundle/current_final에서 완결성 진행조건은 반환값 IS TRUE이고 false/NULL이면 해당 거래를 거절한다. 예외를 잡아 정상false/0원/성공 bundle로 바꾸지 않는다. current_final은 신규Tx context/xid/기한 검산과 이완결 조건을 강제하며 RETURNS void, deferred final_guard는 그 호출 성공 뒤에만 trigger를 종료한다. 따라서 void 호출로 complete의 실패를 무시하는 경로를 허용하지 않는다. 이 정합화는 기존 후보의 불완결 거절 의미를 바꾸지 않는 내부 타입 선택이며 아직 전체시그니처/M/ACL 동결이나 구현 승인이 아니다.
+
+## 19. 원 envelope·snapshot·result의 정확 결합
+reader가 실제 source-content-policy-definition.ts:14~28, source-content-policy-management-evidence.ts:23~40, project-command.ts:295~302와 부모후보를 대조했다. **E.snapshot은 exact16이며 O에서 도출하는 origin snapshot만 exact10**이다. 두 형상을 혼용하지 않는다.
+
+|위치|원값 결합|계상/보호|
+|---|---|---|
+|원q|실인증callback에서 고정한 exact11 envelope 전체, requestHash=canonical 전체hash|O.request_json=q, O.request_hash=C.request_hash. payload만 보관/역생성0|
+|E.snapshot_json|기존 buildSourceContentPolicySnapshotCandidate(q.payload,{projectId,actorId,sequence,recordedAt}) 결과. definition exact12+projectId/sequence/recordedAt/reason=exact16|중첩 sequence는숫자·시각은공개ISO원형, 물리정규화재귀0|
+|eventRef|{id:ids.policyEventId,version:1,contentHash:hash(E.snapshot_json)}|previous_ref=q.payload.previousPolicyRef, 생성3열은원id/version/hash 또는SQL NULL|
+|originRef/O.content_hash|{schemaVersion:1,purpose:SOURCE_CONTENT_POLICY_MANAGEMENT_ORIGIN,id:ids.originId,version:1,projectId,managementCommandId:ids.serverCommandId,policyEventRef:eventRef,originalRequest:q,requestHash,recordedAt} exact10의hash|도출값별도저장0. 실제O.request_json복제는계상|
+|C.result_ref|외곽exact10: operationId/원commandId/projectId/status APPLIED/targetId=eventRef.id/version1/data/빈evidenceRefs/warnings/serverReceivedAt. data exact9: ref:eventRef,status CONTENT_POLICY_EVENT_RECORDED,policyRef:eventRef,previousPolicyRef,sequence+권위4값false|두eventRef복제위치모두계상, 중첩version/sequence숫자|
+|A/U.digest|hash({projectId,actorId,clientId,controlGeneration,requestHash,policyRef:basePolicyRef,targetRef:eventRef})|같은digest/원internal command·operationID. A.subject_ref clientId있음/U.actor_ref없음|
+|R.plan_json|§11 metadata+실authSession/credentialGeneration/controlGeneration/currentpolicy/originRef/eventRef/exact6ids/coverageGeneration/최소기한/원xid문자열, 단일part id/hash=originRef|원q/snapshot/result추가복제0. 중첩타입은정확원형으로R자기비용포함|
+
+최종 M전체JSON 전 미확정slot은 E/O·C공개완료ISO·A/U/R물리시각의실DB공급순서, R중첩 generation/part금액의정확타입, 아직모르는U순번의비용상계다. 기존예약자기비용은part금액에문자열을쓰므로최상위정규화가이를고쳐줄것이라고가정하지않는다. U19자리상계는비용용이며실evidence reader Number.isSafeInteger 허용범위를확대하지않는다.
+
+원envelope1MiB/E.snapshot1MiB/도출origin snapshot2MiB·정확공개ISO/물리27자·safe순번증가/refs/hash/null·전체slot타입상계·B≤M/s≤r중하나라도미정이면예약준비를거절한다. 비용sentinel은저장/hash/권위검산에사용하지않는다. 기술slot동결/실제SQL검증완료로판정하지않으며실행GO0다.
+
+## 20. R 중첩 타입의 내부 동결 후보
+기존 source 타입 읽기 뒤 Main의 내부 선택은 credentialGeneration/controlGeneration을 JSON 숫자로 보존하되 모두 양의 safe정수로 제한하는 것이다. callback의 Number 변환만으로 안전하다고 주장하지 않는다. 실제 DB bigint 원값과 JSON 숫자값의 정확 대조 및 현재 인증·제어 검산이 함께 성립해야 한다. 0/음수/소수/safe범위초과·숫자처럼 보이는문자열은 거절한다. q.controlGeneration 원 숫자형을 바꾸지 않는다. 이는 공개 wire/권한범위를 늘리지 않는 신규 내부 plan validator 준비이며 구현 전 독립검수 대상이다.
+
+coverageGeneration은 기존0077:304/1152~1153·0059:119 패턴대로 양의 십진문자열이고 safe53 이하·DB account generation::text와 정확히 같아야 한다. part bytes/reservedBytes/settledBytes는 기존project-storage-quota.ts의 원형대로 선행0 없는 십진문자열(0은문자열0)·10737418240이하이며 숫자/bigint 직접입력을 거절한다. quotaBytes의넓은일반변환기능으로 part형상을확대하지않는다.
+
+transactionId는 같은Tx의 txid_current()::text 원문자열이며 Number변환0이다. authorizedUntil은 기존중첩plan UTC밀리초ISO문자열, 물리R.authorized_until의비용투영UTC27자와구분한다. 인증idle/absolute수명은기존ISO문자열이고 reauthUntil Date|null을plan에암묵직렬화하지않는다. 새목적fresh시각과원C.received_at의분리·최소기한/역행거절은그대로다. 실제clock공급순서/M전체JSON·전체matrix/시그니처동결은별도남아있다.
+
+근거는 access/repository.ts:16,62,71, project-command.ts:29,127, 0077:244,304,1152~1153, 0059:12,119 및 project-storage-quota.ts:29,39의 읽기다. 실SQL/DB/권한/키/서비스/Agent실행0이며 코드GO0를 유지한다.

@@ -18407,3 +18407,40 @@ npm run typecheck
 - UI02 WI845195bf独립사전C0/I0·safeHEAD/privatefca1eb94뒤기존Primary정확제품1/시험1 단일writer GO했다. 실제RED248327 exit1/1FAIL은정확AF02·원문/content+분리refs/fullhash정상문서를기존21행length조건이DOCUMENT_REFERENCE_CHANGED로거절한것이다. 제품1원바이트시점이며동일조건최소보완/기존[]·오염·late·잠긴buffer음성검산을진행한다. Main제품동시쓰기0·새관리origin/SQLauthorityGO0·실DB/키/권한/서비스/Agent0이다.
 
 - UI02 최종 제품1/시험1 raw manifest c705f5ff/독립4315b9 C0/I0/M0·Primary집중12/인접3/type/diff exit0·writer반환을 인수했다. Main e479ce Web memory build520modules/507ms·집중12PASS/skip0/exit0(381.4934ms)를 별도확인했다. 과거출력유실UNKNOWN은소급PASS0,현재node0조회와분리한다. 결과 UI02_BASELINE_DOCUMENT_SOURCE_REFS_RESULT_20261108.md에범위/RED/명령/오류/복구/미검증기록. 837410 실제원격main969cebbc/branchfca1eb94는각로컬동일이며미커밋3개가로컬에만있음을구분보고했다. 기본sandbox SSH조회74be8c exit128과실권한읽기837410 exit0를분리하고권한변경0이다. 새관리원문후보는미채택GO0·실DB/권한/키/서비스/Agent0. 검수된정확변경을게시/PR/통합한다.
+
+- UI02 source7930bde5/PR72는 Broker42443387137 c49c5b exit0 뒤 main cfb59b2a35723547058aeb20f130134d057f77a1(parent969cebbc/tree37cdc3b3853bf0016f35c403cd149aa09b4ead7d source동일)에 통합됐다. Main c2f858 정상FF·merged집중12PASS/skip0/exit0(365.7837ms)를 확인했다. 9a687b는 actual main동일·clean·remote완료branch/tag부재·PR72복구ref일치 뒤 정상-d/-dr정리하고 최신main에서 codex/av3-origin-technical-contract를 생성·즉시private동기화했다. squash경고는 정확PR/tree/ref증거와 보존하며 force0이다. 새branch는 FN03기술계약 구체화이며 미채택후보/새권한·SQL GO0·전체계획미완료다. Primary RPC/EXEC/guard-lock읽기·기존reader 물리Mtemplate읽기를 분담하고 Main만 문서를 쓴다. Main git add d2b30f의 sandbox index.lock Permission denied는 실제허가 504d51로 해결했고 ACL변경0/제품오류0이다.
+
+- FN03 기술WI16절에 실제0082 SECURITY DEFINER dispatcher의기존owner→새private plan/complete EXEC edge와INVOKER guard직접호출금지·0077 fixed_point→reservation_cost→cost_projection/registered_cost(kindR)→fn01_json의전이ACL 누락위험을기록했다. E/O/C/A/U는fn75_cost이고새O/E를registered_cost whitelist에끼워넣지않는다. 전체matrix/M물리template는기존담당자읽기중이며동결/제품GO0·실행0이다. 후보cbef/패킷239845 SHA를da0967로재확인했고변경0이다.
+
+- 기존reader 실제schema대조로 origin기술WI17절에O9/E15(생성3포함)/C21/A9/U16/R22 물리열·null/최상위정규화와중첩원형·E숫자/U문자열순번·물리UTC27/공개ISO구분·복제비용/M상계분기를기록했다. 실SQL/계산PASS아님·최종M JSON/ACL동결전GO0이다. 별개UI02 실제React Panel→Picker→명시저장은신규시험1경로로의미있는미검증단위임을독립reader가확인해WI C297A0B0 사전검수요청했다. 기존제품/계약수정0·새의존/실환경0·Main문서만/다음Primary writer전환준비다.
+
+- UI02 실제React화면여정 WI C297A0B0/독립60c617 C0/I0를2c5b5158에private보존한뒤기존Primary에신규시험1경로 단일writer GO했다. 제품/기존시험/의존수정0·실환경0이며새origin미채택은별도유지한다. Main은기술WI18절에Primary읽기반환의실dispatcher OID보존·INVOKER전이/DEFINER collector경계·E CHECK암묵callee와C-only누락도거절하는finalguard후보를문서화했다. 실catalog/ACL/PG검증아님·전체matrix미동결GO0이다.
+
+- 기술WI17/18 독립검수C0/I0/M1은11/12절 complete void와18절 boolean불일치였다. complete RETURNS boolean/dispatcherNULLfalse/모든RPC·bundle·current_final의IS TRUE필수·실패거래거절로정합화하고current_final void/trigger성공뒤반환을명시했다. 기존불완결거절 의미/원후보hash불변이며재검수요청·전체M/ACL동결미완료GO0이다.
+
+- 기술WI17/18후속재검수는SHA0c465ebf와일치·C0/I0/M0로내부complete타입M1해소를확인했다. 전체M/권한표·함수시그니처동결/구현GO판정아님을보존한다. Main은정확기술문서/현황2경로만게시하며Primary신규화면시험소유를건드리지않는다.
+
+- UI02화면여정 Primary신규시험1파일/제품4지문확인뒤 첫실행9f269f exit1은제품도달전Vite virtual entry exact-match UNRESOLVED_ENTRY 준비오류1이다. 실제선례endsWith resolver정합화중이며제품수정/다른시험실행0·known livehandle0. 제품결함RED나합격으로세지않고같은원인반복금지후계속한다.
+
+- UI02 resolver정정뒤89eb7e/session65930 첫FAIL표시가나왔지만동일handle939238은종료/stack미출력인실행1개로확인됐다. 제품RED/terminalFAIL로승격0·중복재실행0·무조건kill0. setup정리try전실패로React scheduler채널잔여가능성은가설이며원인/정확PID·부모·시작지문/소유정리방안을Primary가확인한다. 실제서비스·DB변경0이다.
+
+- UI02정확test경로필터CIM조회67c798은sandbox CimException/exit1로실패했다. PID0/실행종료로해석0,원65930 handle유지/중복0이다. Primary가같은필터의승격읽기메타데이터(PID/ParentPID/CreationDate만)로소유확인중이며kill/서비스·권한변경0이다.
+
+- UI02정확소유읽기1a50ca exit0는신규test Node parent14344(부모39152/시작12:45:07.263552+09),child23904(부모14344/시작12:45:07.336206+09)2개를확인했다. Main은이자체합성시험의정확자원회수로서같은명령경로/생성시각/부모관계를직전재검산한child23904 1회종료→원65930출력/terminal회수만지시했다. parent무조건종료/다른Node·서비스·Agent0,신원불일치시보존이다. 강제회수는자연종료PASS로표시하지않고oldterminal/잔여확인전새실행0을유지한다.
+
+- UI02소유재검산뒤child23904만수동회수76c4a1 exit0,parent무조건종료0·원65930→8ee840 terminal exit1/1FAIL을회수했다. 정확원인은시험close의port.close직후hasRef=false즉시assert가실패해나머지채널/globals정리가끊긴것이며제품DOM여정RED아니다. 독립읽기c50b7c도초기화try진입전예외·unmount/정리assert뒤회수누락을확인했다. Primary가close완료await/초기화전체보호·독립finally로최소보완하고정확잔여0뒤만새실행한다. 이전출력/수동종료는보존·자연PASS소급0이다.
+
+- Main의1653a2는catalog에없는축약skill경로를추정해SilentlyContinue로읽기를시도한운영오류다. 같은추정경로원인 누적3회(앞342b0c/6f647d)를인식해그방식추가중단·실catalog정확절대경로만사용으로인수했다. 0707de에서실제제공된using-superpowers/verification-before-completion전문앞부분을정확열람했고권한변경/파일복원0이다. 이후새경로는실목록/제공catalog확인후만사용한다. 제품오류나검증PASS로계산하지않는다.
+
+- FN03기술WI20절은기존실type공급자읽기뒤R중첩 credential/control을양의safe숫자+DB원값정확대조,coverage를양의safe십진문자열,part금액을기존십진문자열/cap,txid문자열/공개밀리초ISO로내부선택했다. callback Number변환만의안전주장0·일반quotaBytes입력형상전용0. 공개wire/새권한변경없으며독립검수전/전체M·clock·matrix동결전GO0/실행0이다.
+
+- UI02정확잔류2a5ea6 exit0/OWNED_TEST_NODE_COUNT0 뒤에만새시험을실행했다. Primary는globals변경부터전체try/root nullable·독립회수/첫오류보존·port.close callback완료await를보완했고 f4eba9 exit0/실React정상여정1PASS(4종각각+묶음/선택POST0·명시POST1·strict부모저장)다. Vite bundle전native채널소유주장0·실서비스/DB0. 거절/오염/late/CAS/UNKNOWN음성은진행중이며전체새파일완료로승격0이다.
+- FN03기술WI19/20 SHA18f42419 scoped독립C0/I0/M0로E16/O도출10·원hash/result/digest·세대/금액/시각형상정합화를확인했다. 부모후보/패킷불변/clock·M전체JSON·전체ACL동결전GO0/실SQL0이다.
+
+- UI02화면여정 c27b31 `node --test tests/unit/UI02/baseline-design-screen.test.ts`는자연terminal exit0/7PASS/skip0다. 실React Panel/Picker 정상·403·hash-valid출처/본문/양식오염·metadata/body/form중새buffer/owner/client·unmount·부모CAS거절·control세대교체POST0·UNKNOWN같은packet명시재확인·true권위표식거절을확인했다. 제품쓰기/기존helper12재실행0·knownlive0이며최종type/raw/diff/독립검수전소스단위완료주장0이다.
+
+- UI02신규시험동결22983B/SHA377842ea·manifest1d6892ef/writer반환·최종type069c34/diff00060b0을인수했다. 최종true표식1건3985e7강화후Main8877d0 최종동결7PASS/skip0/자연exit0(1320.8576ms),제품4지문불변이다. Main리뷰artifact mkdir d5133e는부모부재준비오류1로시험미실행,8877d0의전용부모생성으로보정/기존자료변경0이다. 결과 UI02_BASELINE_DESIGN_SCREEN_JOURNEY_RESULT_20261108.md에정확명령/오류/소유회수/미검증을분리했다. 독립최종branch/docs+신규시험패치검수중·실DB/served/인수/전체계획완료아니다.
+
+- UI02 실제React 최종독립10e294→e332b7 C0/I0/M0로정확시험SHA/manifest·실제호출선/strict transport/부모commit·guard/cleanup·branch전체미채택경계를확인했다. review.patch SHAd603795a도검산했고실제품/기존시험diff0·후보cbef/패킷239845불변이다. Main은이정확단일리뷰파일의지문/소유·resolved경로/link/목록을확인후1파일·leaf1dir와비어있는새parent1dir만정리했고leaf부재를확인했다. 실제자료/다른폴더변경0이다. 결과문정합성재검수뒤게시/PR/merged한정smoke로이어간다.
+
+- UI02 결과서c362f9 scoped C0/I0로실증거/정리·준비오류/과거실패/미검증정합성을확인했다. 현재source단위최종검수완료이며정확신규시험/결과/현황3경로를게시한다. 전체UI02/실served·DB·사용자인수/44업무완료주장은하지않는다.
