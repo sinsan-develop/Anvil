@@ -18643,3 +18643,22 @@ PR78 source45951d9442b8120aed0c36b18b5213c7597cdfc7→main dfba0f02d53907c3d0d89
 - `tests/unit/FN08/normal-credential-exchange.test.ts`: `71e11ccd1412483ae75fddf00d248d576768ad6fac8ae1b71d5849b113c90dc4`
 - `tests/unit/FN08/normal-credential-exchange-sql.test.ts`: `5c5c3709f4388d92f80767e4640f4bd0c9d8b36218597bfef30c8da7894b3de6`
 - `tests/unit/FN08/normal-credential-exchange-journey.test.ts`: `989720723a4a795d05912bc62b0915030e1f122880a75f5e07c96f3a04944fe9`
+
+
+### PR79 통합 및 normal 명령조회 challenge 착수 — 2026-11-08T18:28:31+09:00
+
+PR79 source6048439e7a5606d51873066b1cd5586f0b57a195→main d2b824e827731f10e5f7b0197784480070b496a3(parentdfba0f02/treeed8331b185d63481755669fb0b5d2b216a313c81 source동일). Broker42466562249 success, Maine9f685 정상fetch/FF·merged새5P/0F/0S·4581.3923ms·diff0,35bed3 원격main/PR79복구ref/완료branch/tag부재·clean확인후정상정리. 최신main에서codex/av3-normal-request-challenge 생성·즉시private동기화. SQL0085 main checkout rawSHA c51ba52ba1460e692f4c4f5fd3f261eddcc1c99bb98d3d72224634367fad15c8 / LF정규화SHA 7328cfffcbbff943cb681bd02883854b7bf931df87c312969d7eb84186ae63ef이며Git속성의줄끝변환과blob동일성을구분한다(기능변경0).
+
+다음은D071의발급credential인증→명령조회용request challenge를한논리단위로구현한다. GET/commands는새불변server순번·보호서명cursor가필요해후속단위로분리하며과거행을UUID/생성시각으로순번추정하지않는다. 현재범위는신규normal-request-challenge.ts/0086_normal_request_challenge.sql.pending/동작·SQL·실제품여정3과기존app.ts/execution-proof.ts/normal-exchange-challenge.ts의명시분기8이다. 발급receipt digest·소비v2·원예약/독립세대·주체/현재grant/등록SPKI/정책/예산/기한을같은Tx로검산해단일av3ex1_ Bearer/TLS socket·host/원문비저장·purpose/GETcommands target·원nonce재조회/포화/회수/만료/COMMITUNKNOWN을검증한다. max30초·credential분60/미소비live1·grant전체v1발급10000을보존한다.
+
+기존connector-auth.ts전역realm가av3ct1_/av3sr1_만인식해normalBearer와Cookie가다른API에서혼합/무시될수있음을Primary가확인했다. Main이추가1경로를허용해총소유9로확정: 기존정상realm보존·현재normalBearer는정확POST/challenges만·중복Authorization(rawHeaders포함)/Cookie혼합·prefix대소문자/비정규공백fallback거절을추가한다. 이는기존D071TokenPurpose격리의필수구현이고일반HUMAN/다른프로젝트권한으로승격하지않는다. requestDTO는target.queryHash만있으므로현재는GET canonical null bodyhash/정확path/서명64hex에결박하고waitMs/cursor rawquery의canonicalhash대조는후속GET에서한다(새공개필드추가0). actualDB/실키/권한/서비스/Agent/SSH0·QA RAM/합성DB만·Main제품쓰기0·단일PrimaryTDD구현중·전체계획미완료다.
+
+
+### normal 명령 조회용 challenge 제출·Main 직접 검사 — 2026-11-08T18:36:55+09:00
+
+Primary가 승인9경로를동결했다. 최초RED는실행Bearer+Cookie의/health200과0086부재2F이며, 최종신규·직접인접28P/0F/0S·5.475초·typecheck0·공백/EOF0으로제출했다. Main5de794는신규동작/SQL/실제품여정3파일6P/0F/0S·4132.9227ms exit0을직접확인했고492cd9는제출9 SHA256전부일치,2ea5bb diff-check0을확인했다. 원제품START→예약/발급행→Bearer→GETcommands대상challenge 연결, 요청충돌/nonce재사용·회수/만료·live1/분60/수명10000·COMMIT불명원응답재조회·realm혼합거절을합성범위에서검증했다. 독립검토진행중으로최종수용/통합아니다. 실제PG/trigger/잠금·TLS통신·실키/DB/권한/서비스/Agent/SSH는NOT_RUN이며0086미적용이다. 다음GETcommands의원command/outbox조회·nonce소비/고정page receipt는미완료로분리한다. 단일Primary제품writer유지·Main제품쓰기0, 정식FAILURE_REPORT0.
+
+
+### normal request challenge 독립 검수 수용 — 2026-11-08T18:37:22+09:00
+
+기존독립검수자의동결9 읽기5d4233 manifest2a895604f88f0a0d5f447274bc64ff467b3d0fd8c52b7a7cea45fe3a20b6add5 C0/I0를Main실제SHA492cd9와대조수용했다. 실제신규6PASS·수행자28PASS/type0는중복합계하지않는다. Source9+현황2로게시/통합하며전체FN06/FN08/계획완료아니다. Main기록도중sandbox가D현황append를PermissionError로차단해로컬현황1회만추가된상태였고,허가된동일D현황append/점검표동기화만elevated로수행한다. 기존자료/ACL변경0·동일내용중복append0이다. 실제환경미검증/실행제외유지.
