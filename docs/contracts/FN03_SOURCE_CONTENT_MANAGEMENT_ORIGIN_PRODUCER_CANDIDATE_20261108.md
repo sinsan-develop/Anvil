@@ -14,8 +14,12 @@
 
 신규 readSourceContentPolicyManagementOrigin은 내부 보호 reader의 목적이다. 입력 exact3(originRef,policyEventRef,managementCommandId), 로그인/프로젝트/currentclient·세대는 서버의 현재 인증 경계에서 공급한다. 현재 본인 OWNER·같은 client의 단독 제어·재인증·별도 정확 PROJECT AUTO 정책을 모두 요구한다. REQUIRE_APPROVAL은 정확 소비 계약 전 닫는다. 내부 원 envelope는 기존 관리 evidence inspector에만 제공하며 일반 응답 exact5(originRef,policyEventRef,managementCommandId,requestHash,authority=UNVERIFIED)만 허용한다. 일반 files GET/검색/Agent맥락/로그/감사로 원문을 공개하지 않는다. 자동 정책 부여0이다.
 
-## 3. 인증·DB 권위 경계 검토 상태
-현재 AccessRepository의 실제 인증 거래와 기존 목적 한정 DB guard를 재사용할 정확 입력/함수/역할·RPC를 기술 검토 중이다. 이 절은 아직 상세 확정 전이며 본 후보 전체를 실행 가능한 승인 패킷으로 제출하지 않는다. 단순 동일 PoolClient나 app역할, caller의 actor/session 주장만으로 인증/재인증/OWNER를 입증했다고 하지 않는다. 코드/미적용 SQL 작성은 정확한 신뢰 경계·목적별 실행권·원자성 검토와 직접 채택 뒤에만 배정한다.
+## 3. 인증·DB 권위 경계 A후보
+기존 AccessRepository.authenticateInTransaction/authenticated의 실제 token digest/CSRF·user/session/client 행 잠금·ACTIVE/회수·자격세대·idle/absolute검사를 재사용한다. 두 관리목적의 진입은 token/CSRF 각각 exact43 base64url non-null을 먼저 요구한다. authenticated의 null CSRF 허용 일반동작은 바꾸지 않는다. 원 actor/session 객체, actorId/clientId/credentialGeneration/authSession.id, primitive 만료·재인증시각, 원 query/PoolClient·실 xid·정확 원명령canonical hash를 실제 인증 callback 안에서만 발급하는 private same-Tx 결박으로 고정하고 callback 종료때 폐기한다. 원메서드/실제callback 밖의 DTO·사용자 GUC·공개 verified 플래그·가짜콜백/원순수inspector를 이 결박으로 바꾸지 않는다.
+
+purpose RPC는 DB의 실제 s/a/c/project·현재세대/idle/absolute·reauth_until·OWNER·단독제어 actor/client/generation/회수·최신 permissionPolicyRef와 정확 PROJECT/HUMAN 별도 AUTO·최소기한을 독립 재검산한다. fn01_active는 현재 DB세션행검사일 뿐 token 소유proof가 아니다. token/CSRF소유의 서버callback 검증과 DB현재행/목적 검증을 결합하며 RPC/GUC만으로 token 인증했다고 하지 않는다. 같은 PoolClient/xid·원명령을 각 await 뒤/반환 전 검산하고 오래된private context를 재사용하지 않는다. 서버 DB credential 탈취까지 차단한다는 주장은 하지 않는다.
+
+전용 read는 쓰기부작용 없는 current검사만 소비한다. fn01_lock_owner는 quota행 INSERT부작용이 있어 read에 사용하지 않는다. 현재 로그인주체와 원기록의 과거actor는 분리하고 과거origin 원 envelope를 현actor로 재구성하지 않는다.
 
 ## 4. 관리 행 비용 집합 A후보
 내부 원 command ID cid의5개 물리행만 기본비용으로 한 번씩 귀속한다.
@@ -35,11 +39,20 @@ B=c(O)+c(E)+c(C)+c(A)+c(U). 이 목적은 승인소비/알림/Artifact/nonce를 
 ## 5. 새 예약 목적과 유한 고정점 A후보
 신규 제안값은 part_kind=SOURCE_CONTENT_POLICY_MANAGEMENT,part_key=management_origin,purpose=SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE,operation=defineSourceContentPolicy다. 단일 project_storage_reservations R.id는 원 내부 cid와 결박하고 part.id/hash는 새 originRef를 가리킨다. 원 project/actor/client·외부 commandId/requestHash·origin/event/receipt·coverageGeneration·최소 기한을 봉인한다. 이 값은 현재 제품에 등록된 값이 아니다.
 
-미래5행의 정확 고정 입력으로 상계M을 서버가 도출한다. 가변시각·순번/정수열을 어떤 canonical projection으로 상계하는지 구현 전 확정해야 하며 임의 배수·여유 byte 상수/사용자 비용 입력을 신뢰하지 않는다. plan_json이 원문을 복제하면 R자기비용에도 포함한다. 기존0077 단일part·고정길이ID/hash·정규화시각 패턴의 다음 최소고정점을 목적 검산 뒤 재사용하는 후보이다.
+미래5행의 정확 고정 입력으로 상계M을 서버가 도출한다. wire/원payload/이미발급한UUID·관계ref·policyhead/previous·본문문자열은 최초await 전에 사본으로 고정하고, 목적별 잠금 후 원event sequence/발급ID/recordedAt 등을 확정해 실제 저장 투영을 만든다. request_json의 날짜/숫자/escaped UTF-8 문자열은 실제값 그대로 두며 가변열 상계 때문에 원payload를 바꾸지 않는다.
+
+M은 아래 정규화 투영의 canonical 비용 합이다. 고정 참조의 UUID는36문자/hash는64문자이며 실제 원필드값을 사용한다. 아직 정해지지 않은 물리 DB시각 열은 기존 projection의 UTC `YYYY-MM-DDTHH:mm:ss.ffffffZ` 정확27문자와 동일 길이인 예약용시각으로만 비용 계산한다. 실제 정산시 그 투영 형식/길이를 다시 검산하고 범위를 벗어나면 거절한다. 이 비용용 값은 저장 원문·이벤트·서명·허가 증거로 소비하거나 게시하지 않는다.
+
+- E.sequence는 기존0040 CHECK의 1..9007199254740991 상계로 비용을 잡되 실제 event/snapshot/원문은 정확 현재sequence를 보존한다. root물리 sequence와 snapshot내sequence는 각각 실제 저장위치의 비용으로 한 번씩 잡는다.
+- U.server_sequence 등 실제 bigint 순번의 decimal 길이는 schema의 양수 bigint 상계9223372036854775807의19자리로 잡는다. 실제 projection이 string으로 정규화되는 열은 string 비용, 안전정수 숫자로 유지되는 열은 숫자 비용을 사용한다. 키 전체를 무작정 변환하지 않는다.
+- nullable previous_ref/원실제policy/generated이전ID·version·hash, C/A/U의 nullable 필드는 해당 고정명령이 실제로 저장할 분기를 사용한다. 실제 물리 generated 열도 to_jsonb(row)에 포함하며 가상 snapshot 비용과 혼동하지 않는다.
+- 원문/관계/상태·결과의 미정 필드가 위 정해진 길이/범위로 상계되지 않으면 source producer는 아직 준비 불가로 거절하며 임의 배수·여유상수·caller비용값으로 채우지 않는다. 실제 B≤M을 정산과 deferred완결에서 재검산한다.
+
+plan_json에 원문을 복제하면 그 bytes를 R자기비용에 포함한다. 기존0077 단일part·고정길이ID/hash·정규화시각 패턴의 다음 최소고정점을 목적 검산 뒤 재사용하는 후보이다.
 
 - 예약 r = 최소고정점[M + max(c(R_RESERVED(r)),c(R_IO_STARTED(r)),c(R_SETTLED(r,r)))]
 - 정산 s = 최소고정점[B + c(R_SETTLED(r,s))]
-- B≤M,s≤r,안전정수·유한수렴·총상한을 검산한다. plan/planHash/coverageGeneration 봉인을 확인하고 정산값으로 과거 plan을 다시 쓰지 않는다.
+- B≤M,s≤r,안전정수·유한수렴·총상한을 검산한다. plan/planHash/coverageGeneration 봉인을 확인하고 정산값으로 과거 plan을 다시 쓰지 않는다. 정수decimal길이 고정점의 유한 수렴/상한 경계는 구현 합성시험에서 증명해야 한다.
 
 ## 6. 기존10GiB 계정식과 중복0 A후보
 기존 U=무필터SETTLED settled_bytes합+기존FN15/FN75/FN76 actual, H=RESERVED/IO_STARTED/UNKNOWN reserved_bytes합+기존future, O6=기존fn09_registered_other_bytes의6표 비용을 보존한다.
@@ -48,10 +61,18 @@ B=c(O)+c(E)+c(C)+c(A)+c(U). 이 목적은 승인소비/알림/Artifact/nonce를 
 
 같은 PoolClient/Tx에서 account FOR UPDATE→U/H/O6/coverage→R reserve/IO_STARTED→O/E/C/A/U저장→실B/settle→양방향deferred complete→COMMIT 순서다. 정산/완결이 없으면 부분성공을 게시하지 않는다. 정상replay는 현재 허가 뒤 기존 불변결과와 정산proof만 읽고 추가R/charge0,COMMIT불명은 원ID/hash의 명시 재확인만 허용하고 새명령/자동재시도·삭제0이다. 과거비용은 불변관계로 검산하며 현재정책변경으로 과거plan을 재작성하지 않는다.
 
-## 7. SQL·구현 후보와 아직 미정인 기술
-현재 migration최대0082를 확인했다. 신규0083_source_content_policy_management_origins.sql.pending은 착수 직전 부재/번호 충돌을 확인한 뒤만 예약한다. 기존0040 원문은 보존하고 전체 SOURCE_CONTENT를 개방하지 않는다. 새forward가 원 정책event DML guard와 목적 한정 producer를 어떻게 연결할지 exact함수/ACL·순환FK·deferred검사와 함께 먼저 고정한다. 일반 app/PUBLIC 직접SELECT/DML·generic reserve로 새 내부목적을 생산하는 경로를 닫는다. helper EXECUTE와고정search_path·소유역할은 아직 기술 검토 대상이며 확정됐다고 하지 않는다.
+## 7. 목적 한정 SQL·구현 경계 A후보
+현재 migration최대0082를 확인했다. 신규0083_source_content_policy_management_origins.sql.pending은 착수직전 부재/번호충돌을 확인하고 이 목적에만 예약한다. 원0040파일은 수정하지 않는다. 관리event와새origin만 새forward의 명시purpose guard로 열고 requests/observations/verifications/LINK의 권한0·false정책·차단trigger는 그대로 유지한다.
 
-기존변경후보는 access/project-command.ts·projects/routes.ts·projects/project-storage-quota.ts·Web connections/policy-editor-profile.ts다. 신규는 documents의 origin-input/origin-store/project-source-content-policy-management,0083 및 입력/service/Tx/schema/quota시험이다. 최종허용목록/WI는 기술검토와채택후해당목적에고정하며임의다른경로수정0이다.
+역할 후보는 anvil_v3_source_content_management_owner, NOLOGIN/NOINHERIT/NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOREPLICATION/NOBYPASSRLS다. 앱의 직접/간접 membership·SET ROLE 경로0, 표소유자는 되지 않고 정확purpose RPC만 소유한다. 함수 search_path=pg_catalog 고정, 소유권이전용 schema CREATE는 이전즉시회수한다. FORCE RLS/기존false정책은 유지하고 이 새역할에만 policy_events/origin SELECT·INSERT와 역할 한정 허용정책을 추가한다. 일반 app/PUBLIC의 원문 SELECT/DML/TRUNCATE0, UPDATE/DELETE 불변·TRUNCATE거절 유지다.
+
+0040의 무조건거절 함수 전체를 완화하지 않는다. policy_events의 source_content_unavailable trigger 한개만 새forward에서 명시 INSERT purposeguard로 교체한다. guard는 정확 schema/table/INSERT·실행역할·원project/current목적 및 command/event/origin 관계를 검산한다. 다른표·동작의 거절은 보존한다. 순환관계는 정확unique/FK·deferred complete로 최종5행과R의 양방향 완결을 검사하고 누락/부분COMMIT을 거절한다.
+
+내부helper PUBLIC/app EXECUTE0이며 새역할은 필요한 정확 helper만 호출한다. 기존fn01_active(uuid,uuid,uuid)의 EXECUTE를 새역할에만 허용하는 기존FN15 선례를 재사용하며 app에는 넓히지 않는다. 잠금의 FOR UPDATE에 필요한 project/control의 정확열 UPDATE권한은 새역할에만 최소로 부여하는 미적용DDL을 고정한다. SELECT권한만으로 행잠금이 된다고 가정하지 않는다. 실제 권한 부여는 하지 않는다.
+
+신규purpose RPC는 원sessionId/actorId/clientId/projectId·현재control/permissionPolicyRef·expected xid를 실제callback에서 유도받고 current검산한다. define producer에는 원ProjectCommand와 미리발급한IDs를, read에는 원 exact3선택만 추가한다. 원command.receipt/audit/event/origin·quota별 단발fence의 관계를 검사한다. 정확SQL함수시그니처/열ACL은 코드쓰기전 WI에 일관되게 동결하고 그 기술검수와 독립검토를 완료해야 한다. 이 명칭/ACL후보가 실제 설치됐다고 하지 않는다.
+
+기존변경후보는 access/project-command.ts·projects/routes.ts·projects/project-storage-quota.ts·Web connections/policy-editor-profile.ts다. 신규는 documents의 origin-input/origin-store/project-source-content-policy-management,0083 및 입력/service/Tx/schema/quota시험이다. 최종허용목록은 이 목적에 고정하며 실제관측·키목적 등 새의미를 끼워넣지 않는다. 보호조회 HTTP endpoint는 이번범위에 없으며 기존commands의관리producer와서버내부reader만 구현후보다.
 
 ## 8. 대안·검수·복구
 A권장은 위 DB보호원문+단일원명령비용 귀속이다. 원문/CAS/receipt/audit를 같은Tx로 검산하고 일반Artifact노출을 피하지만 새보호조회권한/metadata비용·SQL설계가 필요하다. B비공개ArtifactStore는 파일보호를 재사용하나 일반GET격리·DB/FS게시실패/COMMIT불명·복제비용 경계가 추가된다. C현상유지는 새계약효과가 없지만 실제관리/관측producer미완료를 해소하지 않는다. 어느안도 일반참가자에 원문을 공개하거나실파일/키를 자동허용하지 않는다.

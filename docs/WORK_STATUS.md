@@ -18387,3 +18387,7 @@ npm run typecheck
 
 - FN03다음관리생산자설계읽기Main6f647d에서추측0077_runtime_quota_source_only.sql.pending 경로오류1회가추가됐다(앞342b0c와합계추측경로2회). 같은출력의실제rg목록으로0077_registered_execution_preparation_options.sql.pending를확인했으며잘못된이름재시도0/제품·권한변경0이다. 이후Shell읽기는ErrorActionPreference=Stop와실목록/LiteralPath를사용해경로실패가성공exit뒤로가려지지않도록한다. source-code제품실패·실SQL검증으로계산하지않는다.
 - FN03_SOURCE_CONTENT_MANAGEMENT_ORIGIN_PRODUCER_CANDIDATE_20261108.md를DRAFT/미채택/GO0로작성했다. 첫단위관리event/origin/C/A/U·내부보호reader와전체관측producer를구분하고exact9/10·새read/AUTO·유한상한/자동삭제OFF·O/E/C/A/U5실행합/단일예약selfcost고정점·기존10GiB분모중복0기술A를구체화했다. 실제인증/전용DB역할/RLS/RPC인자는추가검토중이므로아직최종승인패킷아니다. 기존Primary가그경계읽기를계속하며현재codewriter0/실DB·키·권한·서비스·Agent·실자료0이다.
+
+- Main c37ee2는새관리origin후보의인증/ACL·상계M기술A를구체화했다. 실제Access token/nonnull43CSRF callback·sameTx/query/xid사적결박과DB행current를분리하고새NOLOGIN/NOBYPASS역할·관리event만명시RLS/INSERTguard교체·나머지관측/LINK닫힘을명시했다. 비용M은실고정payload/ref·物理27자시각·기존schema순번상계투영과B≤M/s≤r로고정해임의여유상수0,생산증거로사용0이다. 새권한/metadata10GiB계상은아직미채택·GO0,정확SQL시그니처/ACL은코드쓰기전WI기술동결조건이며독립전체검수/비용전용검수를요청했다. codewriter0/실DB·키·권한·서비스·Agent·실자료0이다.
+
+- FN03관리origin후보 SHAcbefc3e3736301e9a49b8b26db41fcc3c0cedbb0a052c9e0cdaedde0b93c5230에서비용전용 C0/I0/M0·전체사전기술읽기C0/I0를확인했다. token소유/DBcurrent분리·RLS역할정책/정확관리trigger한개교체·O/E/C/A/U+R·유한M방법은정적일관성검수이고actual인증/SQL/비용PASS아니다. FN03_SOURCE_CONTENT_MANAGEMENT_ORIGIN_ADOPTION_PACKET_20261108.md에새13.4보호권한/원문/metadata계상만A/B/C로구체화했으며미채택/GO0이다. 승인후정확함수시그니처/열ACL·DAG/잠금/template/WI독립검수→기존Primarysource-only구현을제안하고native/nonce/LINK는이첫범위완료에포함하지않는다.
