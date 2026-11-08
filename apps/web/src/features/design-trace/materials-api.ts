@@ -54,8 +54,8 @@ export async function readImportUsageDocument(client: ApiClient, projectId: stri
   const value = await readDocument(client, projectId, selected.documentId, selected.version, { active }); check();
   const metadata: unknown = value.document, doc = value.document;
   if (!metadata || typeof metadata !== 'object' || !('importCandidateRefs' in metadata) || !Array.isArray(metadata.importCandidateRefs) || metadata.importCandidateRefs.length > 2000 || metadata.importCandidateRefs.some((ref: unknown) => typeof ref !== 'string' || !uuid.test(ref)) || new Set(metadata.importCandidateRefs).size !== metadata.importCandidateRefs.length || !metadata.importCandidateRefs.includes(candidateId)
-    || current.candidate.intendedFormRef && !sameRef(current.candidate.intendedFormRef, doc.formRef) || ![doc.content.body, ...doc.content.attachments].some(ref => sameArtifact(original, ref)) || doc.content.sourceRefs.length !== 0 || doc.stageNodeRef !== null && doc.stageNodeRef !== undefined && !stageRef(doc.stageNodeRef)) throw new ApiError('IMPORT_USAGE_INTEGRITY_FAILED');
-  const content: DocumentContent = { body: doc.content.body, attachments: doc.content.attachments, sections: doc.content.sections, sourceRefs: [] };
+    || current.candidate.intendedFormRef && !sameRef(current.candidate.intendedFormRef, doc.formRef) || ![doc.content.body, ...doc.content.attachments].some(ref => sameArtifact(original, ref)) || doc.stageNodeRef !== null && doc.stageNodeRef !== undefined && !stageRef(doc.stageNodeRef)) throw new ApiError('IMPORT_USAGE_INTEGRITY_FAILED');
+  const content: DocumentContent = { body: doc.content.body, attachments: doc.content.attachments, sections: doc.content.sections, sourceRefs: doc.content.sourceRefs };
   const snapshot = await documentDraftHash(doc.title, doc.formRef, content, stageRef(doc.stageNodeRef) ? doc.stageNodeRef : null); check();
   if (snapshot !== doc.contentHash) throw new ApiError('IMPORT_USAGE_INTEGRITY_FAILED');
   return value;

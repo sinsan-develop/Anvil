@@ -13,7 +13,7 @@ export function changeRequestSourceBindingMatches(current:ChangeRequestBuffer|nu
 export async function readChangeRequestDocumentSource(client:ApiClient,projectId:string,id:string,version:number,active:()=>boolean){
  const check=()=>{if(!active())throw new ApiError('DESIGN_CHANGE_SOURCE_PAUSED');};check();
  const value=await readDocument(client,projectId,id,version,{active});check();const d=value.document;
- if(d.content.sourceRefs.length!==0||await documentDraftHash(d.title,d.formRef,d.content as DocumentContent,(d.stageNodeRef as StageNodeRef|null)??null)!==d.contentHash)throw new ApiError('DOCUMENT_INTEGRITY_FAILED');
+ if(await documentDraftHash(d.title,d.formRef,d.content as DocumentContent,(d.stageNodeRef as StageNodeRef|null)??null)!==d.contentHash)throw new ApiError('DOCUMENT_INTEGRITY_FAILED');
  check();return value;
 }
 export function attachChangeRequestDocumentSource(current:ChangeRequestBuffer|null,expected:ChangeRequestBuffer,session:DocumentSession,source:Extract<ChangeRequestSource,{kind:'DOCUMENT_VERSION'}>):ChangeRequestBuffer|null{
