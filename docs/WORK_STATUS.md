@@ -18372,3 +18372,12 @@ npm run typecheck
 - 소비정합화최종6manifest1be46176c3e74c05709e148105bcc48fc3618ff977342115b45f6f88fcc4b08d·제품3manifest8be899a0불변/writer반환/live0,독립4fbdb5→8e58ea C0/I0/M0를인수했다. Primary집중19PASSf66e47·인접11PASS4d2c88/type4d0f35/diffdf9b54 exit0,Main집중a526f7 19PASS/skip0/exit0(1240.2994ms)·Webmemorybuild789968 520modules/1.26s/exit0다. 준비오류0/원assert완화0·실부모DOM/served/DB미검증을결과서에명시했다. 후속충돌조정WI는기존refs소비+원epoch/current·UNKNOWN보호의제품2/시험2로사전독립C0/I0이며미배정이다. 현재정확변경게시/PR통합·정리후순차GO,실DB/키/권한/서비스/Agent/실자료0유지다.
 
 - PR70 sourcec96ef375/Broker42438140141success→main39f159a59a6dc315bcdf7c2892eb24142a42ab37(parent e9d0c132/tree f2a4d3bd source동일),7084ca merged집중19PASS/skip0/exit0(510.5676ms)다. 5ae9f6 main동일/clean·완료remotebranch/tag부재·PR70복구ref를확인해정상-d/-dr정리했다. 결과/INTERFACES현황/후속WI독립읽기C0/I0/M0이며다음codex/av3-document-conflict-sources는최신main에서생성·즉시private게시했다. 기존Primary에UI06충돌SourceRef소비·현재성제품2/시험2를배정한다. WI SHAf28376d2cfe74a2093ef5e93fce3af9ede50366108bc10daf7470fa498978916;기존[]/원거절/UNKNOWN/4종strict·hash/CAS보존,실DB/키/권한/서비스/Agent/SSH/실자료조사0이다.
+
+- UI06충돌정합화Primary 시작원2raw/WIf28376d2/HEAD5b85ef82대조뒤실API RED3ac5e4 exit1/3FAIL을확인했다. 정상4종compatible/수동조정false,최신자기contentHash오염미거절,UNKNOWN뒤409 compare허용이원제품2에서재현됐다. 새실Editor DOM의409→비교·늦은scope반례를같은시험2범위에작성중이며Main제품동시쓰기0·실DB/권한/키/서비스/Agent실행0이다.
+
+- UI06충돌 실Editor DOM RED6cfb2a exit1/2FAIL:정상4종최신비교를불필요수동조정으로막고,동일actor/client의CSRF교체뒤늦은401이auth callback1회호출됐다. f2923e의ACK전disabled잘못기대는준비오류1이며주체변경은Pageunmount로원반례가아니어서CSRF교체로정확화했다. 원실RED/준비오류를구분·동일무변경반복0이고제품2최소보완을동일Primary가진행한다.
+
+- UI06충돌 추가실RED1877d5는부모의이전채택CAS지연→동일pending새비교→옛CAS실행반례였다. 동일제품2의기존epoch에비교요청sequence를결박해a82f09 선택1PASS로보완했으며최종집중/타입검사중이다. Main86f1cc는현재제품2diff에서원refs/최신refs보존·selfhash·saveUncertain·pending/input정체성·sequence/CAS소비를읽기확인했다. UNKNOWN DOM의Page초기목록GET를비교GET로오인한준비assert1은baseline count로정정·guard완화0이다.
+- Main다음FN03관리생산자조사342b0c에서존재하지않는connections/project-runtime-policy.ts 읽기검색1회오류가있었다. rg --files로executions/runtime-policy.ts를찾아23ea79에서정확읽기했고파일복원/권한변경/재실행0이다. 기존SOURCE §13.4는DRAFT_ONLY이며원문exact9/10·새전용조회operation/권한이명시미채택인사실을직접대조했다. 소비포트를current=true로위장연결하지않고정확차이패킷을준비한다.
+
+- UI06충돌최종집중2501ff18PASS/선택인접b3bd139PASS/type1137b2/difff7f4d9 exit0·Main0a2cc3집중18PASS/skip0/exit0(3011.246ms)·Webmemorybuildb45336 520modules/1.43s/exit0를확인했다. 제품2manifest263652f6/전체4manifeste93f745c8f01d9ec752ca8928a228106e7c319f124ceeb639fcd8c39745fbb55불변·독립9b4970→982665 C0/I0/M0·기존시험본문보존+32/-0·writer반환/live검증0이다. 읽기호출6e52e9의과거exit/handle누락은불명으로보존·현재diff0로소급하지않는다. 결과서에명령/RED/준비오류/미검증을분리하고현재검증변경을게시한다. 전체UI06/FN03·44업무완료아님,실DB/키/권한/서비스/Agent/SSH/실자료0이다.
