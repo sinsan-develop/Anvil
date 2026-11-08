@@ -308,3 +308,144 @@ coverageGeneration은 기존0077:304/1152~1153·0059:119 패턴대로 양의 십
 transactionId는 같은Tx의 txid_current()::text 원문자열이며 Number변환0이다. authorizedUntil은 기존중첩plan UTC밀리초ISO문자열, 물리R.authorized_until의비용투영UTC27자와구분한다. 인증idle/absolute수명은기존ISO문자열이고 reauthUntil Date|null을plan에암묵직렬화하지않는다. 새목적fresh시각과원C.received_at의분리·최소기한/역행거절은그대로다. 실제clock공급순서/M전체JSON·전체matrix/시그니처동결은별도남아있다.
 
 근거는 access/repository.ts:16,62,71, project-command.ts:29,127, 0077:244,304,1152~1153, 0059:12,119 및 project-storage-quota.ts:29,39의 읽기다. 실SQL/DB/권한/키/서비스/Agent실행0이며 코드GO0를 유지한다.
+
+## 21. 시각 공급의 실제 원형과 남은 정밀도 검산
+기존Primary의읽기277e2e/fc919f/b8a58a exit0는 validation-v1.ts:11 공개isoV1이정확24자UTC밀리초, 0008:81~82 source_read_iso도MS3자리임을확인했다. 0040:21~25의E는단지문자열표출만ms가아니라실제recorded_at/expires_at의ms정렬과snapshot일치도요구한다. raw microclock을문자열만잘라E에저장하는안은부적합하다. 비용projection0077:120~121의최상위물리UTC27자는이와별개이며E의ms실값을6자리형식으로표현할수있다.
+
+공급의고정선행은auth/project/member/control→permissionhead→account→sourcehead/CAS잠금뒤 raw clock_timestamp 원값 관측이다. 각다음관측도원값끼리비역행을검사하고역행시거절한다. E/O공개recordedAt와그물리열은같은실ms정렬값을사용해refs/hash를먼저고정·R.plan에봉인하며예약후다시쓰지않는다. E정의자체의expiresAt는원문값이고세션/관리거래수명으로바꾸거나TTL을늘리지않는다. 내부최소기한만보수적으로축소하고final에서raw실clock<봉인기한을강제한다.
+
+논리발급 E/O→R예약→fresh완료C/A/U, 실제FK쓰기 C/A/U→E/O, 정산/최종fresh관측의구분을유지한다. C.received_at의기존DEFAULT now()/Tx-start는완료시각과별개다. snapshot builder는순수TS여서SQL에서직접실행한다고쓰지않고RPC의exact16/정규hash를원builder/inspector와동치검산한다.
+
+Main의추가미확정finding: C.received_at은micro원형인데fresh C완료까지ms절삭하면1ms미만거래에서물리완료가수신보다앞설수있다. C/A/U물리는동일fresh raw값·received≤done을검산하고공개result만source_read_iso(done)24자로하는안의실CMreader/C물리CHECK호환을추가읽기중이다. 이질문을해소하기전C/A/U정밀도를최종동결하지않으며인위max(old,now)로완료시각을만들지않는다. E/O의실물ms정렬은이질문과무관하게필수다. 실clock/DB관측·SQL작성/실행0,후보/패킷불변·새GO0다.
+
+## 22. C/A/U 정밀도 finding의 해소안과 공급 순서
+Primary 실제대조3f419e/13f452 exit0는 C에 completed_at≥received_at/MS정렬 CHECK가없음을확인했다(0011:17~30). f1d1b4 exit1은마지막검색일치없음이고출력된읽기와분리한다. 따라서 새목적 producer/finalguard가raw유한값/비역행·수신≤완료를직접검산해야한다.
+
+Main의내부기술선택은 C/A/U물리에동일한fresh raw done을저장하고 result.serverReceivedAt만 source_read_iso(done)24자로발급하는것이다. 보호bundle의 command.completedAt=source_read_iso(C.completed_at), audit.recordedAt=source_read_iso(U.recorded_at)도같은원형으로만공급한다. CM inspector는이공개투영값을비교한다(source-content-policy-management-evidence.ts:24,31,35,40). 기존 source-content-request-record.ts:43,46·0040:407의투영선례와호환되지만그다른목적의추가시간관계를복제하지않는다. 앞서제안된C/A/U물리ms절삭은철회하며§21finding을이선택으로해소한다.
+
+1. 잠금/CAS뒤 raw tE를관측하고이전raw하한/기존sourcehead 실제recorded_at과의비역행을검사한다. e=date_trunc('milliseconds',tE)를E의공개ISO와실물시각에같이쓴다. 원expiresAt는변경하지않고E의정확정의/시각CHECK를지킨다.
+2. raw tO를새로관측해tO≥tE를검사하고o=date_trunc('milliseconds',tO)를O에동일공급한다. e≤o를검사하고E/O refs/hash를확정한다. 비용용sentinel이나max(old,now)로실제시각을대체하지않는다.
+3. R.created_at/started_at는그실제단계에서raw시각을관측·비역행/현재원시시각<봉인최단기한검산후저장한다. R.plan의E/O참조·원기한/hash는고정이며예약후다시쓰지않는다.
+4. 새raw done을관측해원시비역행·C.received_at≤done·현재최소기한을검사한다. C.completed_at=A.authorized_at=U.recorded_at=done, 공개result/bundle시각은위단일MS투영이다. FK실쓰기 C/A/U→E/O와논리발급 e/o≤done을함께검산한다. genericreceipt중복persist0이다.
+5. R.settled_at와deferred final에서도fresh raw시각을관측하고직전실물stamp보다이전이거나기한이상이면거절한다. 과거저장값들의최댓값을현재시각으로만들지않는다. 현재raw와기존실측값을비교하는것만허용한다. finalguard의새Tx만current context/원xid/기한을검사하고역사complete는재귀하지않는다.
+
+E/O의실물ms정렬·R단계raw/물리비용27자·C.received_at의기존Tx-start·공개24자는각각유지된다. 내부관리수명의밀리초봉인은micro최소기한을내림하여보수적으로축소하고 raw now<그봉인기한을검사하되 E정의expiresAt 자체를그관리수명으로교체하지않는다. 새stamp는물리COMMIT시각의증거가아니며응답유실/후행확인불명은원ID/hash UNKNOWN으로보존한다.
+
+이는정밀도·순서의내부기술해소안이다. 독립검수·전체M JSON/권한matrix/최종시그니처동결·후보직접채택이모두갖춰지기전제품/SQL GO0다. 실clock/DB/권한/키/서비스/Agent실행0을유지한다.
+
+## 23. 5행+R의 완전 물리 template와 고정 상수 후보
+Primary c0401d/c47fc9 읽기exit0 및 Main a17616/5fd2a8 대조를 반영한다. 기존 CM/공통receipt의상수와새미채택목적값은분리한다. C/APPLIED·PROJECT, A/HUMAN, U/HUMAN_COMMAND/APPLIED/SOURCE_CONTENT_POLICY_EVENT_RECORDED는기존원형이다. R새part_key=management_origin,part_kind=SOURCE_CONTENT_POLICY_MANAGEMENT,purpose=SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE는후보값이며현재whitelist허가가아니다.
+
+다음은 **실행 불가능한 메타변수 template 표기**다. source 코드나 저장 fixture가 아니며 모든 메타변수의 실제값·타입·상계 검산이 필요하다. raw q는 exact11 원 envelope, S는 기존builder와동치인 exact16 snapshot, previous=q.payload.previousPolicyRef, P는현재관리권한basePolicyRef, er/or는정확event/origin fullref다. hq/hash/digest/ids는실값이며상수성공값을주지않는다. n은확정safe정책sequence, CG/HG는§20의양의safe숫자, G는coverage십진문자열, tx는원xid문자열, until은봉인UTCmsISO다. T27/T24는각각미확정비용용ASCII시각27자/공개24자상계표기이고저장·hash·권위검산에사용하지않는다. 공개ISO확정값/물리C수신시각은실값을사용한다.
+
+```
+E = {
+ project_id:p,id:ids.policyEventId,version:1,sequence:n,
+ subject_user_id:a,disposition:S.disposition,snapshot_json:S,content_hash:er.contentHash,
+ previous_ref:previous,management_command_id:ids.serverCommandId,
+ recorded_at:physical27(S.recordedAt),expires_at:physical27(S.expiresAt),
+ previous_id:previous?.id ?? null,previous_version:previous?.version ?? null,
+ previous_hash:previous?.contentHash ?? null
+}
+O = {
+ project_id:p,id:ids.originId,version:1,management_command_id:ids.serverCommandId,
+ policy_event_ref:er,request_json:q,request_hash:hq,
+ recorded_at:physical27(originRecordedAt),content_hash:or.contentHash
+}
+DATA = {ref:er,status:'CONTENT_POLICY_EVENT_RECORDED',policyRef:er,
+ previousPolicyRef:previous,sequence:n,executionAuthorized:false,
+ agentDispatchPerformed:false,baselineConfirmed:false,linkAuthorized:false}
+RESULT = {operationId:ids.operationId,commandId:q.commandId,projectId:p,
+ status:'APPLIED',targetId:er.id,version:1,data:DATA,evidenceRefs:[],warnings:[],
+ serverReceivedAt:T24}
+C = {
+ id:ids.serverCommandId,scope_kind:'PROJECT',scope_id:p,project_id:p,draft_id:null,
+ actor_id:a,client_id:c,operation:'defineSourceContentPolicy',command_id:q.commandId,
+ request_hash:hq,operation_id:ids.operationId,state:'APPLIED',
+ authorization_receipt_id:ids.authorizationReceiptId,approval_consumption_id:null,
+ expected_version:0,control_generation:CG,policy_ref:P,payload_ref:null,
+ result_ref:RESULT,received_at:physical27(originalReceivedAt),completed_at:T27
+}
+A = {
+ id:ids.authorizationReceiptId,scope_kind:'PROJECT',scope_id:p,
+ command_id:ids.serverCommandId,subject_ref:{kind:'HUMAN',userId:a,clientId:c},
+ policy_ref:P,scope_digest:digest,approval_decision_ref:null,authorized_at:T27
+}
+U = {
+ project_id:p,server_sequence:'9223372036854775807',event_id:ids.auditEventId,
+ actor_ref:{kind:'HUMAN',userId:a},client_ref:c,command_id:ids.serverCommandId,
+ operation_id:ids.operationId,target_ref:er,policy_ref:P,approval_ref:null,
+ outcome:'APPLIED',reason_code:'SOURCE_CONTENT_POLICY_EVENT_RECORDED',
+ scope_digest:digest,recorded_at:T27,source_kind:'HUMAN_COMMAND',correction_of:null
+}
+```
+
+각행은위모든키를포함한후기존fn09_registered_cost_projection과fn75_cost로계산한다. E/O확정시각은실물MS정렬값의27자투영이며C/A/U미확정T27와중첩T24는서로혼용하지않는다. U19자리값은비용상계일뿐이다. 실제U는원MAX(server_sequence)+1의정확값을발급해safe정수/동일project원자성을검사하고상계를실순번으로저장하지않는다. snapshot/request/result의각실제물리복제는계상하고도출origin10을별도저장행으로더하지않는다.
+
+```
+PART(r) = {key:'management_origin',kind:'SOURCE_CONTENT_POLICY_MANAGEMENT',
+ id:or.id,contentHash:or.contentHash,bytes:decimal(r),
+ reservedBytes:decimal(r),settledBytes:decimal(r)}
+PLAN(r) = {schemaVersion:1,purpose:'SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE',
+ projectId:p,actorId:a,clientId:c,authSessionId:s,credentialGeneration:HG,
+ controlGeneration:CG,operation:'defineSourceContentPolicy',externalCommandId:q.commandId,
+ requestHash:hq,permissionPolicyRef:P,originRef:or,policyEventRef:er,ids:ids,
+ coverageGeneration:G,authorizedUntil:until,transactionId:tx,parts:[PART(r)]}
+R_TEMPLATE = {
+ id:ids.serverCommandId,project_id:p,actor_id:a,client_id:c,
+ external_command_id:q.commandId,operation:'defineSourceContentPolicy',command_hash:hq,
+ part_key:'management_origin',part_kind:'SOURCE_CONTENT_POLICY_MANAGEMENT',
+ plan_json:PLAN(0),plan_hash:ZERO64_COST_ONLY,reserved_bytes:0,settled_bytes:0,
+ phase:'RESERVED',start_fence:0,authorized_until:physical27(until),
+ server_command_id:null,authorization_receipt_id:null,scope_digest:null,
+ created_at:T27,started_at:null,settled_at:null
+}
+```
+
+0077:126~164의기존reserved=NULL 고정점은ZERO64_COST_ONLY template에서후보r마다part의bytes/reservedBytes/settledBytes를모두decimal(r)로치환한다. 따라서최소r을얻은뒤 **PLAN(r)를실hash로봉인하고정산때그part3금액을s로다시쓰지않는다**. actual정산의s는R행settled_bytes에만들어간다. 최종실제R.plan_hash는봉인PLAN의진짜hash이며zero sentinel을원장에저장하지않는다. 원plan/r/기한/refs도불변이다.
+
+RESERVED는fence0/settled0/started·settled·servercid·receipt·digest null, IO_STARTED는fence1/실started/settled0·나머지후행null, SETTLED는fence1/원started/실s·실settled·원cid/receipt/digest다. 자기비용helper의고정stamp/UUID/zero digest는비용형식대체값뿐이며실원장/허가로사용하지않는다. 최상위fence/금액은비용정규화후문자열이며plan에별도startFence키를임의추가하지않는다.
+
+이template는새목적구현의입력슬롯을모두명시한내부동결후보다. 실제M/B/r/s값을계산한증거나실SQL/역완결PASS는아니다. 전체helper ACL/시그니처와독립검수·직접채택을충족하기전GO0를유지한다.
+
+## 24. 지연 INVOKER의 실행 principal과 early-flush 기술 후보
+Primary의 전체migration/동적배열읽기는 C/A/U/R의RLS ENABLE/FORCE를찾지못했고0073의FN15 SELECT정책존재와구분했다. 실제catalog상태미확인이므로새RLS를추가하거나tableowner/BYPASS로우회하지않는다. 후보새RLS정책은E/O한정이다. C/A/U/R은정확열ACL·원CHECK/FK/immutable 및기존완결guard를소비한다.
+
+Primary는직접부착root81종과동적추가root5종의정적목록을반환했다(d67931 compact출력;나머지읽기3da763/c89a38/a61e38/b11299/38c184/ff31a4/7407a2/c470dc/a5d294/3a49fd/4d5955/ed4203 exit0). 이것이실catalog/전체ACL실행합격은아니다. 즉시quota_immutable과fn15_empty_issuer_lock·DEFINER quota_final_guard→quota_complete·기존별도도메인finalguards는유지한다. 새operation/part CHECK와기존모든purpose_pair의한정확장/원목적차단은0083검수대상이다.
+
+### 무관 도메인 선조회의 정확 접점
+아래6개INVOKER deferred함수는현재새목적에서도다른도메인표를먼저읽는다. 역할에그SELECT를확대하는대신새purpose의정확분기를준비한다. 모두 () RETURNS trigger이며CREATE OR REPLACE로owner/ACL/INVOKER·원본문을보존한다. trigger를rename한뒤일반함수처럼wrapper호출하는방식은쓰지않는다.
+
+|원함수/최종정의|C/A/U에대한schema anvil의정확제약이름|
+|---|---|
+|fn09_prepare_complete /0055:251|fn09_prepare_commands_complete, fn09_prepare_authorization_receipts_complete, fn09_prepare_audit_events_complete|
+|fn09_understanding_complete /0056:185|fn09_understanding_commands_complete, fn09_understanding_authorization_receipts_complete, fn09_understanding_audit_events_complete|
+|guard_child_human_complete /0061:91|child_human_commands_complete, child_human_receipts_complete, child_human_audits_complete|
+|fn16_policy_complete /0063:236|fn16_policy_commands_complete, fn16_policy_authorization_receipts_complete, fn16_policy_audit_events_complete|
+|fn09_registered_binding_complete /0068:227|fn09_registered_commands_complete, fn09_registered_authorization_receipts_complete, fn09_registered_audit_events_complete|
+|material_registration_reverse /0078:194|material_registration_complete|
+
+총16이름이다. material_registration_complete는0062:203~204에서C/A/U외 execution_material_manifests/execution_materials/execution_material_proof_bindings/execution_commands/execution_receipts/execution_challenges의6표에도동명으로부착돼총9표대기이벤트에영향을준다. schema-qualified여도per-table격리가아니다. 0078의fn08_start_material_reverse는다른5개실행표전용이고이번C/A/U목록에넣지않는다. 설치시정확제약·부착표집합/deferrable속성·원root/owner/ACL을검산하고임의추가부착을정상으로인정하지않는다.
+
+### 발화 시점 문제와 근거
+[PostgreSQL 공식 변경안내](https://www.postgresql.org/message-id/E1tb0y4-0037sb-1e@gemulon.postgresql.org)는2025-01-23 master에서AFTER이벤트의발화역할을큐발생당시역할로바꿨고이전버전에그의미변경을소급하지않았다고설명한다. 따라서새버전동작을PG15에그대로상속하지않고RPC가끝나면역할이유지된다고가정하지않는다. [PG15 SET CONSTRAINTS](https://www.postgresql.org/docs/15/sql-set-constraints.html)는지정제약의IMMEDIATE전환이기존대기검사도실행하고동명이름에모두적용됨을설명한다. 이공식자료대조는실제로사용중인image/principal의검증을대신하지않는다.
+
+### 목적 한정 early-flush 순서 후보
+1. 기존진짜단일command authenticated Tx에서전용RPC가R reserve→IO_STARTED→C/A/U/E/O→settle을끝낸다. sameTx/서버cid/정확ids·plan/hash·최단기한·R=SETTLED/fence1을검사한다.
+2. 아직새목적DEFINER역할안에서위16개이름만schema-qualified SET CONSTRAINTS ... IMMEDIATE로전환한다. ALL·SET ROLE·다른역할권한확대0이다.
+3. 각root는새purpose+실제역할과C/A/U원project/internalcid·같은Tx의봉인R/ids/hash일치인경우만무관도메인선조회를건너뛴다. C는NEW.project_id/id, A는PROJECT범위의NEW.scope_id/command_id, U는NEW.project_id/command_id다. A/U에NEW.operation이있다고가정하지않고정확C행을대조한다. 이분기는일반성공/완결성증거를생산하지않으며전용DEFINER finalguard가C-only불완결까지강제한다.
+4. 성공뒤정확16개를원INITIALLY DEFERRED로복원하고fresh current/기한을재검산한다. 그뒤genericpersist나C/A/U/R추가DML을하지않는다. ProjectPolicyRepository.command의후속보호재검산:418~421, AccessRepository.#transaction callback뒤COMMIT:79의기존호출구조를유지한다.
+5. 실제COMMIT의기존/신규DEFINER finalguards는원R/5행완결과새Tx현재성을계속검사한다. early-flush오류/복원전후오류·기한초과는거래거절,COMMIT결과불명은원ID/hash UNKNOWN이다.
+
+이안의필수선행은원q외다른목적의9표대기이벤트를만들지않는genuine단일명령Tx경계다. 다른목적이있으면그검사를건너뛰거나SELECT를추가하지않고거절/rollback해야한다. 현재소스에서기존SET CONSTRAINTS사용은발견되지않았으나실제기본모드·각role/큐/복원/중복이름·후행추가DML음성은향후허용QA의필수검증이다. wholematrix의실효/동작합격으로표시하지않는다.
+
+근거읽기899e09/6964ff/c710d4 exit0·새권한/원문/비용후보의의미확대0·실SQL/DB/role관측0이다. 기술후보독립검수와전체행위/직접채택전제품GO0를유지한다.
+
+## 25. source 구현과 실제 실행의 검증 게이트 분리
+신산님의 source-only 승인 범위와 실제DB/권한/키/서비스·Agent 실행 제외를 지킨다. 이문서의미검증은아래두게이트로구분하며실PG검증이끝나야소스부터작성할수있다는순환선행을만들지않는다.
+
+- **source 구현 배정:** 새권한/원문/비용계약의직접채택, 정확허용경로·내부시그니처·역할별예상ACL/16제약·행위계약과합성/정적검수계획의동결·독립C/I해소가필요하다. 실제catalog/principal/SQL실행은이배정의선행이아니다. 이미계약이채택됐다면같은의미의내부기술상세를재승인받지않고Main이동결/기록한다. 지금은그직접채택이없어코드GO0를유지한다.
+- **source 검수:** 구현된genuine호출선에서다른q/9표DML0·정확16이름flush/복원순서·private권한/원본문보존·원clock/metadata/역완결·오류/UNKNOWN을실코드와합성/정적검사로대조한다. 아직작성하지않은구현의전체SQL호출증거를미리있다고하지않는다. mock/SQL문자열PASS는실PG실효권한이나동시성을증명하지않는다.
+- **실제QA/실행 배정 및 기능인수:** source검수/정확Git SHA·현재실행승인/자원경계·접속환경을갖춘뒤에만실catalog/역할/제약부착·실효principal·deferred/복원·기한·COMMIT/rollback을검증한다. 예상과다르면확장/우회/자동retry하지않고해당사실을기록한다. 현재실환경제외·SSH거절을무시하지않는다.
+
+앞절의‘GO전동결’은source배정전행위명세/예상권한경계를가리키고,‘실principal/ACL/SQL미검증’은후속실행/기능인수의남은조건이다. 전체계획완료/실제기능완료는둘다충족할때에만판정한다. 이구분은기존검사기준을낮추거나미검증을PASS로만드는것이아니라실행금지범위에서구현할수있는작업과후속실행증거를분리하는것이다.

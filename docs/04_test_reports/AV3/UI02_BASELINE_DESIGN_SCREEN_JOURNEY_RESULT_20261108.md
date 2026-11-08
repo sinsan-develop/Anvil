@@ -41,3 +41,6 @@ Main d5133e의 리뷰artifact mkdir은 부모경로가 없어 FileNotFoundError�
 - baseline-api.ts 96a0e5ea17fb4ad2dbb3c5f31b1d192056303f5337bea03c70208db7906141ac
 
 base cfb59b2a 대비branch 문서전체+신규시험전체 고정패치를 독립검수에 제공했다. 최종 finding은 후속현황에 남기며 미해결 C/I가 있으면 게시·병합을 완료로 판정하지 않는다. 복구는 신규시험/해당문서의 정상 revert, 기존제품·시험·원문·후보역사는 보존한다. 통합 뒤 신규7개 한정smoke/PR·tree·remote복구ref/clean을 검산하고 완료branch를 정상정리한다.
+
+## 통합 후 실제 증거
+독립 최종10e294→e332b7 C0/I0/M0 및 결과문c362f9 C0/I0를 확인했다. source c6e4c402f556b0ef192757486b23dc2235ce395c/PR73, Broker42444948164는6c1abd exit0 success. 실제merge 79aefb5a764858f2ed1880fcfa43844d8c9aad6f(parentcfb59b2a), source/merge tree d1549f23be97b107309538843d10badcf4c7500b 동일이다. Main a92e87 정상FF 뒤 신규7개 한정smoke는7PASS/skip0/자연exit0·2280.3502ms다. aedd09 실제원격main동일/완료branch·tag부재/PR73원source복구ref·clean 검산 후 정상-d/-dr정리했다. 강제정리0이며 실제서버·DB/사용자인수·전체계획 미완료는 그대로다.
