@@ -1,4 +1,4 @@
-# FN03 제안 내용出처 보존 소스 결과
+# FN03 제안 내용 출처 보존 소스 결과
 
 ## 판정과 기준
 기존 DocumentContent.sourceRefs 4종의 제안 준비·저장·상세 조회·명시 반영·문서 고정 조회를 연결한 소스/합성 검수 인수다. 실제 DB·RLS·COMMIT·served 브라우저·사용자 인수와 전체 FN03/작업계획 완료는 미검증이다. 기준 main339fdad926f9a0ad2593cfe75dd71758cda9d2c3, branch codex/av3-fn03-proposal-content-sources, 구현 전 checkpoint b51dbb77a41a97c94eecc7140e393cbf51da953e. WI FN03_PROPOSED_CONTENT_SOURCE_REFS_IMPLEMENTATION_WI_20261108.md SHA256 d5824c9a393074a42526279622fc5723a4f8abb00dc3adcf0b9b040ca28901f8. Primary 구현, Main 검수·통합, 독립 읽기 검수로 분리했다.
@@ -28,7 +28,7 @@
 정렬 raw8 manifest9efccf0c2c801107f134ea464de5e36532caa4d5ab0d821711c869ce52ec9d21, 제품4 manifest1778a2de6ce121c35cd3675b70f2b7a6f1fd59844bd4c55b23f1a4f78107351b. 독립 최종20481c→c50259와 제품 검수9abe45→571d50는 시작/끝 지문 동일 C0/I0/M0다. 독립 검토가 시험을 다시 실행했다고 하지 않는다.
 
 ## 미검증·다음과 복구
-Access/Policy/Quota/Documents/ArtifactStore 실제 클래스·Fastify와 메모리 DB/FS/DOM을 사용한 합성 검증이다. 실제 DB/RLS/OS/served 화면/Agent 실행을 증명하지 않는다. 실제 DB·권한·키·서비스·Agent·SSH·사용자 자료 조사는 수행하지 않았다. 정식 실패3회 인수 조건은 발생하지 않았으며 준비 오류와 제품 RED를 구분해 보존했다.
+실제 route/Policy/Quota/Documents/ArtifactStore 코드와 합성 Access.authenticated·DB/FS/DOM 포트를 사용한 검증이다. MemoryAccess가 AccessRepository.authenticated를 합성 구현으로 override하므로 실제 로그인·인증 검증 증거가 아니다. 실제 DB/RLS/OS/served 화면/Agent 실행을 증명하지 않는다. 실제 DB·권한·키·서비스·Agent·SSH·사용자 자료 조사는 수행하지 않았다. 정식 실패3회 인수 조건은 발생하지 않았으며 준비 오류와 제품 RED를 구분해 보존했다.
 
 소스상 S06 문서편집→출처 포함 수정제안→비교/ack→명시 반영→고정 문서 재조회 경로다. 현재 서비스 배포/실사용 확인 URL은 새로 제공하지 않는다. 안전 commit/private push→PR 필수검증→main 병합→merged 한정 smoke→완료 branch 정리 뒤 UI07 변경요청/보관 재조회와 UI06 import 사용문서의 기존 SourceRef 소비 누락을 다음 단일 writer 업무로 진행한다. 후속 WI는 준비 상태이며 현재 동시 구현0이다. 회귀는 이 변경의 정상 revert로 복구하며 원문·과거 이력은 보존한다.
 
