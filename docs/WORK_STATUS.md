@@ -18401,3 +18401,5 @@ npm run typecheck
 - FN03origin기술WI사전읽기는C0/I0이나미동결부분합격아님이다. 필요한schemaUSAGE/전체물리행SELECT·R operation/partkind/purposeCHECK·invoker즉시guard와definer deferredguard의privateEXEC역할·기존dispatcherowner/caller보존을10절에추가했다. 11절에exact입력후보/callee·불변history(actual/complete)와현재context/finalguard의비순환분리·Rplan현재세션과과거세션구분을구체화했다. 최종시그니처/실열template·역할matrix독립검수전GO0,신산님새계약응답도미확인이다. Primary읽기도구의추측/glob오류2회는추가추측중단/정확경로만사용으로분리했고제품실패로계산하지않는다.
 
 - FN03origin WI에기존실존집계callee/signature·최종정의·전체complete순환금지와quota_account의environment문맥금지를13절에고정했다. 물리C.draft_id/received_at·A.authorized_at·E.generated·R22열비용누락금지를14절에추가했다. PG15공식RLS/SELECT문서읽기로permissive OR·FORCE/권한별도·TRUNCATE별도차단·행잠금UPDATE열필요를교차확인해15절에링크했고실PG검증으로승격하지않았다. 새계약패킷/후보고정SHA불변·제품/SQL쓰기0·허가GO0을유지한다.
+
+- 독립bounded검색에서UI02 readBaselineDesign의정상4종AF02/hash문서거절I1을추가확인했다(Main f36db9실본문대조). 실제callerProjectBaselinePanel→BaselineDesignPicker이며기존DocumentContent와FN01보호문서선택계약내제품1/시험1소비누락이다. 현재문서branch를StageB의미채택관리후보보존+이기존소비보완으로마무리해미종료branch를우회하지않는다. UI02_BASELINE_DOCUMENT_SOURCE_REFS_WI_20261108.md로정확두경로사전검수를요청하고기존Primary에검수후단일writer를배정한다. 새관리origin권한/계상은미채택GO0불변·실DB/키/권한/서비스/Agent/SSH/실자료0이다.
