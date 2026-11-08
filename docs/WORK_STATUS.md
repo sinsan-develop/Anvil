@@ -18496,3 +18496,16 @@ npm run typecheck
 
 - PR75 sourceb46b22f0/Broker42448549132 success→main7cf2b13a4586ec451e89c783c0dbd3bf7bb2b33f(parent7fa8f2b2/tree2ed3007d source동일)이다. Main7b5524 정상FF·문서smoke44행/준비수용2/사용자CHECK byte동일·diff0·원격main/PR75복구ref·완료branch/tag부재/clean검산후정상정리했다. 최신main에서codex/av3-fn12-origin-scope생성·즉시private동기화,WORK_CHECK의branch/기준/현재분담과이현황을사용자열람본에도함께갱신한다.
 - FN12 첫단위읽기3067e7/211961/fb856b/d7ecba/d8e649/fb90ae는기존reworkDraft보관/준비UI/childHUMAN확정을재구현대상에서제외했다. origin불변저장 producer와후속link저장은미구현이고서로분리해야한다. 원B의새draft+origin 동시생성과기존exact draft의origin만보관하는안은입력/저장순서가달라미채택차이가있다. Main이그범위·카디널리티/개정·보호조회·계상을정리하며oldwriter UNKNOWN/새실행권위를임의확정하지않는다. 현재제품GO0/실DB·권한·키·서비스·Agent실행0이다.
+
+## 핵심 경로 우선순위 정정 — 2026-11-08T14:16:08+09:00
+
+신산님이 진도 정체·토큰 낭비 원인을 물었다. Main이 핵심 실행 경로 선행을 뒤로 미루고 소스/합성/실제 인수를 나눠 완성 책임을 관리하지 못했으며, 과도하게 작은 계약·검수·기록/게시와 기록 위치 분산을 반복한 책임을 인정했다. 최근 PR72는 기존 조건 보완, PR73은 시험, PR74/75는 문서로서 실제 Agent 통제 기능을 완성한 것이 아니다.
+
+FN12 추가 계약 구체화는 보존하고 뒤로 둔다. 기존 Primary 한 명에게 첫 Anvil API→실행서비스→connector/Codex→관측·저장/조회 호출선의 최초 미구현·차단과 기존 승인 안의 즉시 구현 단위, 실제 실행에 필요한 정확한 새 계약/환경 경계만 짧게 대조하도록 배정했다. 새 접속/DB/키/권한/서비스/Agent 실행과 코드 쓰기는 하지 않는다. 범위 확정 뒤 단일 writer로 핵심 구현을 배정하고 업무 단위의 검수·기록·게시로 묶는다. 이 우선순위를 WORK_CHECK와 사용자 열람 위치에도 함께 반영했으며 전체 계획은 미완료다.
+
+
+### 핵심 구현 재개 확인 — 2026-11-08T16:03:05+09:00
+
+Main이 실제 agent inventory에서 실행 중 담당자 0명을 확인한 뒤 기존 developer_primary task를 재개했다. 중복 생성 시도는 기존 이름 존재로 거절됐으며 새 code writer는 만들지 않았다. 현재 담당자는 읽기 전용으로 primary wire.exchange의 부분 송수신·프레임 상관관계·불명 후 재전송 금지 구현 범위를 확정한다. 기존 codec/transport는 보존하고 실제 Agent/DB/키/권한/서비스 실행은 제외한다. Main은 검수·통합과 기록을 담당한다. 코드 미작성·검증 미실행이며 완료 상태는 올리지 않는다. 신규 경로 추측 읽기 대신 rg 실경로를 사용한다. Main 파일 목록 조회의 존재하지 않는 packages 인수 1건은 읽기 오류이며 실제 파일 부재나 제품 실패로 세지 않았다.
+
+- Main 범위 확정 GO: FN06 내부 bounded duplex 채널 신규 apps/connector/adapters/primary/duplex-wire.ts·tests/unit/FN06/duplex-wire.test.ts 정확2파일을 Primary 단독으로 구현한다. 기존 wire.exchange 서명·2MiB/최대10초·codec 소유를 유지하고 부분 송수신/알림·상관관계/EOF·취소·기한 불명/자동재송신0/잔여 정리를 검증한다. 기존 실제 START 모듈의 합성 소비까지 확인하며 새 인증·권한·process 실행이나 실제 Agent 성공으로 승격하지 않는다. Main 기록 갱신의 CRLF 변환으로 diff-check가 1회 실패해 HEAD의 LF를 대조하고 변경 파일의 줄바꿈을 복구했으며 재검사0이다.
