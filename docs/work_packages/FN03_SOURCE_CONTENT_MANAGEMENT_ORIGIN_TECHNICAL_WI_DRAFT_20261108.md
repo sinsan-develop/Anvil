@@ -308,3 +308,27 @@ coverageGeneration은 기존0077:304/1152~1153·0059:119 패턴대로 양의 십
 transactionId는 같은Tx의 txid_current()::text 원문자열이며 Number변환0이다. authorizedUntil은 기존중첩plan UTC밀리초ISO문자열, 물리R.authorized_until의비용투영UTC27자와구분한다. 인증idle/absolute수명은기존ISO문자열이고 reauthUntil Date|null을plan에암묵직렬화하지않는다. 새목적fresh시각과원C.received_at의분리·최소기한/역행거절은그대로다. 실제clock공급순서/M전체JSON·전체matrix/시그니처동결은별도남아있다.
 
 근거는 access/repository.ts:16,62,71, project-command.ts:29,127, 0077:244,304,1152~1153, 0059:12,119 및 project-storage-quota.ts:29,39의 읽기다. 실SQL/DB/권한/키/서비스/Agent실행0이며 코드GO0를 유지한다.
+
+## 21. 시각 공급의 실제 원형과 남은 정밀도 검산
+기존Primary의읽기277e2e/fc919f/b8a58a exit0는 validation-v1.ts:11 공개isoV1이정확24자UTC밀리초, 0008:81~82 source_read_iso도MS3자리임을확인했다. 0040:21~25의E는단지문자열표출만ms가아니라실제recorded_at/expires_at의ms정렬과snapshot일치도요구한다. raw microclock을문자열만잘라E에저장하는안은부적합하다. 비용projection0077:120~121의최상위물리UTC27자는이와별개이며E의ms실값을6자리형식으로표현할수있다.
+
+공급의고정선행은auth/project/member/control→permissionhead→account→sourcehead/CAS잠금뒤 raw clock_timestamp 원값 관측이다. 각다음관측도원값끼리비역행을검사하고역행시거절한다. E/O공개recordedAt와그물리열은같은실ms정렬값을사용해refs/hash를먼저고정·R.plan에봉인하며예약후다시쓰지않는다. E정의자체의expiresAt는원문값이고세션/관리거래수명으로바꾸거나TTL을늘리지않는다. 내부최소기한만보수적으로축소하고final에서raw실clock<봉인기한을강제한다.
+
+논리발급 E/O→R예약→fresh완료C/A/U, 실제FK쓰기 C/A/U→E/O, 정산/최종fresh관측의구분을유지한다. C.received_at의기존DEFAULT now()/Tx-start는완료시각과별개다. snapshot builder는순수TS여서SQL에서직접실행한다고쓰지않고RPC의exact16/정규hash를원builder/inspector와동치검산한다.
+
+Main의추가미확정finding: C.received_at은micro원형인데fresh C완료까지ms절삭하면1ms미만거래에서물리완료가수신보다앞설수있다. C/A/U물리는동일fresh raw값·received≤done을검산하고공개result만source_read_iso(done)24자로하는안의실CMreader/C물리CHECK호환을추가읽기중이다. 이질문을해소하기전C/A/U정밀도를최종동결하지않으며인위max(old,now)로완료시각을만들지않는다. E/O의실물ms정렬은이질문과무관하게필수다. 실clock/DB관측·SQL작성/실행0,후보/패킷불변·새GO0다.
+
+## 22. C/A/U 정밀도 finding의 해소안과 공급 순서
+Primary 실제대조3f419e/13f452 exit0는 C에 completed_at≥received_at/MS정렬 CHECK가없음을확인했다(0011:17~30). f1d1b4 exit1은마지막검색일치없음이고출력된읽기와분리한다. 따라서 새목적 producer/finalguard가raw유한값/비역행·수신≤완료를직접검산해야한다.
+
+Main의내부기술선택은 C/A/U물리에동일한fresh raw done을저장하고 result.serverReceivedAt만 source_read_iso(done)24자로발급하는것이다. 보호bundle의 command.completedAt=source_read_iso(C.completed_at), audit.recordedAt=source_read_iso(U.recorded_at)도같은원형으로만공급한다. CM inspector는이공개투영값을비교한다(source-content-policy-management-evidence.ts:24,31,35,40). 기존 source-content-request-record.ts:43,46·0040:407의투영선례와호환되지만그다른목적의추가시간관계를복제하지않는다. 앞서제안된C/A/U물리ms절삭은철회하며§21finding을이선택으로해소한다.
+
+1. 잠금/CAS뒤 raw tE를관측하고이전raw하한/기존sourcehead 실제recorded_at과의비역행을검사한다. e=date_trunc('milliseconds',tE)를E의공개ISO와실물시각에같이쓴다. 원expiresAt는변경하지않고E의정확정의/시각CHECK를지킨다.
+2. raw tO를새로관측해tO≥tE를검사하고o=date_trunc('milliseconds',tO)를O에동일공급한다. e≤o를검사하고E/O refs/hash를확정한다. 비용용sentinel이나max(old,now)로실제시각을대체하지않는다.
+3. R.created_at/started_at는그실제단계에서raw시각을관측·비역행/현재원시시각<봉인최단기한검산후저장한다. R.plan의E/O참조·원기한/hash는고정이며예약후다시쓰지않는다.
+4. 새raw done을관측해원시비역행·C.received_at≤done·현재최소기한을검사한다. C.completed_at=A.authorized_at=U.recorded_at=done, 공개result/bundle시각은위단일MS투영이다. FK실쓰기 C/A/U→E/O와논리발급 e/o≤done을함께검산한다. genericreceipt중복persist0이다.
+5. R.settled_at와deferred final에서도fresh raw시각을관측하고직전실물stamp보다이전이거나기한이상이면거절한다. 과거저장값들의최댓값을현재시각으로만들지않는다. 현재raw와기존실측값을비교하는것만허용한다. finalguard의새Tx만current context/원xid/기한을검사하고역사complete는재귀하지않는다.
+
+E/O의실물ms정렬·R단계raw/물리비용27자·C.received_at의기존Tx-start·공개24자는각각유지된다. 내부관리수명의밀리초봉인은micro최소기한을내림하여보수적으로축소하고 raw now<그봉인기한을검사하되 E정의expiresAt 자체를그관리수명으로교체하지않는다. 새stamp는물리COMMIT시각의증거가아니며응답유실/후행확인불명은원ID/hash UNKNOWN으로보존한다.
+
+이는정밀도·순서의내부기술해소안이다. 독립검수·전체M JSON/권한matrix/최종시그니처동결·후보직접채택이모두갖춰지기전제품/SQL GO0다. 실clock/DB/권한/키/서비스/Agent실행0을유지한다.
