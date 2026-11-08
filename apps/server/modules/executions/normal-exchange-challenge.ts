@@ -25,7 +25,7 @@ function decode(body:unknown){
   return {request:JSON.parse(bytes.toString('utf8')).request,signature};
  }catch{return fail('INPUT_INVALID',400);}
 }
-async function readCurrent(db:PoolClient,project:string,connector:string,execution:string,request:any){
+export async function readCurrent(db:PoolClient,project:string,connector:string,execution:string,request:any){
  const args=[project,connector,execution,request.grantRef.id,request.grantRef.version,request.grantRef.contentHash,request.credentialGeneration];
  const rows=(await db.query('SELECT * FROM anvil.normal_exchange_current($1,$2,$3,$4,$5,$6,$7)',args)).rows;
  const c=rows[0],b=c?.binding;
@@ -49,7 +49,7 @@ async function readCurrent(db:PoolClient,project:string,connector:string,executi
  if(!(at instanceof Date)||!Number.isFinite(at.getTime())||at<c.observed_at||at>=c.deadline)return fail('EXECUTION_CHALLENGE_CURRENT_BINDING_REQUIRED',412);
  return {binding:b,spki:c.spki,now:at,deadline:c.deadline as Date};
 }
-function original(row:any,binding:unknown){
+export function original(row:any,binding:unknown){
  const s=row.snapshot_json,p=s?.publicChallenge,request=s?.request;
  if(!recordV1(s,['sequence','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption'])
   ||s.previousRef!==null||s.consumption!==null||!Number.isSafeInteger(s.sequence)||Number(s.sequence)<1

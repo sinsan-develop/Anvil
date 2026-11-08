@@ -96,6 +96,15 @@ export function verifyNormalExchangeRequest(spki:unknown,sig:unknown,value:unkno
  signature(spki,sig,executionChallengeRequestBytes('EXECUTION',p),binding.publicKeyFingerprint);
  return p;
 }
+export function verifyNormalCredentialExchangeProof(spki:unknown,sig:unknown,value:unknown,binding:any,challenge:any){
+ const p=proof('EXECUTION_CREDENTIAL_EXCHANGE',value);
+ if(binding.transport!=='NORMAL_PROTECTED'||binding.mode!=='EXECUTION'||challenge.purpose!=='CREDENTIAL_EXCHANGE')return invalid();
+ const expected={requestId:challenge.requestId,grantRef:binding.grantRef,credentialGeneration:binding.credentialGeneration,scopeDigest:binding.scopeDigest,
+  serverNonce:challenge.serverNonce,clientNonce:challenge.clientNonce,expiresAt:challenge.expiresAt};
+ if(!same(p,expected))return invalid();
+ signature(spki,sig,executionProofBytes('EXECUTION_CREDENTIAL_EXCHANGE',p),binding.publicKeyFingerprint);
+ return verified();
+}
 function signature(spki:unknown,sig:unknown,bytes:Buffer,fingerprint:string){
  if(publicKeyFingerprint(spki)!==fingerprint||!verify('sha256',bytes,{key:readHostPublicKey(spki),dsaEncoding:'ieee-p1363'},canonicalBase64(sig,64)))return invalid();
 }
