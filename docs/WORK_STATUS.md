@@ -18466,3 +18466,7 @@ npm run typecheck
 - Main경로추정오류가cea633에서재발했다(같은유형누적4회): reader가준파일명에contracts폴더를임의붙여읽기가실패했고후속카드읽기는실행되지않았다. 이방식은중단하며이후신규경로읽기는같은명령에서rg --files의실제매칭값을변수로받아유일성확인뒤Get-Content -LiteralPath로직접소비한다. 문자열로폴더를합성하지않는다. 28a8b6이그방식으로실work_packages후보/카드를정확열람했고복원/권한변경/제품쓰기0이다. PMO에재발·중단·교정방식을예외보고한다.
 - FN06/FN08 bounded읽기는새독립source caller누락을확정하지못했다. Main28a8b6도원START후보가API기본등록/실제current·credential·Agent공급자생성을명시제외함을확인했다. Desktop은실trust/firstreceive클라이언트를조립하지만보호profile없음null로닫고,서버START는SYNTHETIC_ONLY다. 가짜current/credential이나합성queue의운영주입으로진도를대체하지않고이미완료모듈을재구현하지않는다. 실제current생산/실행허가가다음정확경계이며기존전체FN06/FN08완료주장0이다.
 - 기술WI24 SHA30049ff 독립b3cd3d C0/I0/M0는earlyflush대안의한정범위/원본문·권한/검사유지정합성만확인했다. genuine단일q Tx/동명이름실부착·principal/복원·후행DML0과실효ACL/실PG는미검증이다. 원후보/패킷불변·제품GO0 유지다.
+
+- 기술WI25절은source구현배정/소스검수/실제QA·기능인수의선행을분리했다. 미실행PG검증을코드작성선행으로만드는순환중단0·실PG/권한을합성PASS로대체0이다. 현재는직접채택미수신으로source GO0이며기술명세동결뒤채택되면같은의미내부상세재승인없이기존Primary구현을배정한다. 실제QA/인수의원조건은그대로유지한다.
+
+- FN03문서Stage 전체diff독립553b9e→e43883 C0/I0/M0로patch09806cd1/WI2e24c00e/부모cbef/packet239845일치·docs4변경/제품SQL시험diff0·source/QA게이트분리와미채택GO0를검수했다. 실제principal/ACL/설치·COMMIT미검증은그대로다. Main은이리뷰자료1파일의정확hash/소유/resolved경로/link·단독목록확인뒤해당파일/leaf와빈새parent만정리·leaf부재를확인했다. 현재기술문서변경을게시/PR검수/정상통합하되새계약채택/기능완료로승격하지않는다.
