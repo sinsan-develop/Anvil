@@ -18662,3 +18662,24 @@ Primary가 승인9경로를동결했다. 최초RED는실행Bearer+Cookie의/heal
 ### normal request challenge 독립 검수 수용 — 2026-11-08T18:37:22+09:00
 
 기존독립검수자의동결9 읽기5d4233 manifest2a895604f88f0a0d5f447274bc64ff467b3d0fd8c52b7a7cea45fe3a20b6add5 C0/I0를Main실제SHA492cd9와대조수용했다. 실제신규6PASS·수행자28PASS/type0는중복합계하지않는다. Source9+현황2로게시/통합하며전체FN06/FN08/계획완료아니다. Main기록도중sandbox가D현황append를PermissionError로차단해로컬현황1회만추가된상태였고,허가된동일D현황append/점검표동기화만elevated로수행한다. 기존자료/ACL변경0·동일내용중복append0이다. 실제환경미검증/실행제외유지.
+
+
+### PR80 통합 및 normal GET 명령 페이지 착수 — 2026-11-08T18:41:12+09:00
+
+PR80 source270ea49223e60f0623fb1c09a12029b2d91b324e→main3aaa16f8abf4bcc09201919efe1dae4dadf272ee(parentd2b824e8/tree81809f08c5ed35b5ad1c8da77ab9feca7a49cc13 source동일). Broker42468031574 exit0, Mainc30e7e 정상FF·merged신규6P/0F/0S·4173.4695ms·diff0,dd9f2e 실제원격main/PR80복구ref/완료branch/tag부재·clean확인후정상정리. 최신main에서codex/av3-normal-command-pages 생성·즉시private동기화했다. 최초4514a5의PowerShell tree중괄호참조미인용으로rev-parse오류후중단했고따옴표/명령exit검사보완후동일tree를확인했다(제품변경0). 최초sandbox gh조회연결오류는elevated동일read에서정상확인했으며WSL장애와혼동하지않는다.
+
+다음Primary단일writer GO: D071기존GET /commands의실제정규path/credential·SPKI proof·query/빈본문hash·현재grant/권위·nonce소비/고정page receipt를동일Tx로연결한다. 새임의순번대신원created_command_id→commands/authorization_receipts/audit_events.server_sequence와원delivery_outbox command/grant/envelope를검산하고프로젝트순번공백허용·안전정수초과거절한다. max50·wait0..10000·2MiB·실행/세대/credential결박cursor·보호signer부재거절·대기중잠금점유0/최종회수·기한재검산·COMMIT불명재시도0/동일packet원페이지보존을구현한다. 소유9는신규normal-command-pages.ts/0087_normal_command_pages.sql.pending/FN08동작·SQL·제품여정3,기존app.ts/http/connector-auth.ts/executions/execution-proof.ts/normal-request-challenge.ts필수연결이다. 실제품START→예약→credential→challenge→원START GET합성여정과51건/위조·cursor교차/동시/회수/불명반례를검증한다. 기존synthetic/POSTguard보존,actualDB/권한/키/서비스/Agent/SSH0,Main제품쓰기0·현황검수통합소유·전체계획미완료다.
+
+- GET명령시험소유 추가: 기존 normal-request-challenge-journey.test.ts의비공개helper를새 normal-request-challenge-fixture.ts로이동·선택적adapter주입해실생산행을재사용한다. 기존3개test본문/기대값은보존하고import중복등록0을검산한다. 소유총11(제품/SQL6·시험5),Primary RED2F exit1 뒤구현중,실제DB/키/서비스/Agent0이다.
+
+
+### normal GET 명령 페이지 source 제출·Main 검사 — 2026-11-08T18:55:46+09:00
+
+Primary11경로동결·최초모듈/0087부재RED2F뒤직접신규/인접9파일33P/0F/0S·7.574초·typecheck0·공백/EOF0으로제출했다. fixture메모리FS설치순서/digestimport누락중간실패는보정이력으로보존하고정식FAILURE_REPORT0이다. Main91c009 신규동작/SQL/실제품여정3파일7P/0F/0S·6099.9951ms exit0,8b6337 제출11SHA전부일치·기존journey3본문/기대값LF동일·diff0을확인했다. 독립최종delta검토중이며아직통합판정아니다.
+
+GET는발급credential/정확서명/원nonce·현재권위→원START command/outbox/감사순번→nonce소비v2/고정page receipt동일Tx→확정COMMIT뒤페이지를연결한다. 대기는rollback/연결반환뒤최대10000ms·새거래최종검산,회수/만료시nonce소비·receipt0. 동일packet동시/응답유실은원영수증/페이지로수렴하고새명령0이다. 원제품START여정은1건이며0/50/51·순번공백/안전정수초과·cursor범위/만료는단위경계검사로구분한다. 보호signer미설정거절,기존synthetic/POSTguard보존. 실제PG함수/trigger·잠금·TLS연결·실키/DB/권한/서비스/Agent/SSH0·0087미적용·전체계획미완료다. 다음보호START자료GET읽기준비만진행하며Main제품쓰기0이다.
+
+
+### normal GET 명령 페이지 최종 source 검수 수용 — 2026-11-08T18:58:50+09:00
+
+독립최종872f6f→e6d246 11SHA불변·manifest3255a72b615134f41d8eb101d50f61d8225c30ad686a45c0c6494f175af9559d C0/I0를Main8b6337과대조수용했다. 원감사/outbox의누락·중복/서명·기한·현재등록·noncev2/고정page receipt·같은packet재조회/불명·대기연결반환·단일헤더·2MiB보호가일관된다. 수행자33P/type0·Main신규7P는중복합계하지않고실PG/권한/TLS/Agent미검증을유지한다. 신산님최신지시대로현재11source+현황2를게시·main병합·mergedsmoke·로컬원격동일성·완료branch정상정리까지수행하며다른dirty/untracked자료·역사branch는삭제하지않는다. 원문fixture가materialId를서버생성manifest에서공급한것은실행기발견계약완료아니며PMO에기존정본근거지원만요청했다. 다음제품업무추가수정0·실환경변경0·전체계획미완료다.

@@ -18,6 +18,7 @@ import { registerMethodologyRoutes } from './modules/methodologies/routes.ts';
 import { registerCommonMethodologyWrites } from './modules/methodologies/common-write.ts';
 import { registerProjectFileRoutes } from './modules/documents/project-files.ts';
 import { enforceConnectorCredentialScope } from './http/connector-auth.ts';
+import { registerNormalCommandPages, type NormalCommandPagesOptions } from './modules/executions/normal-command-pages.ts';
 import { registerConnectorRegistrationRoutes } from './modules/connections/registration-routes.ts';
 import { registerSourceReadRoutes } from './modules/connections/source-read-routes.ts';
 import type {NormalExecutionCurrentSource} from './modules/executions/normal-initial-execution.ts';
@@ -26,7 +27,7 @@ import {registerProviderClaimHistoryRoutes} from './modules/executions/provider-
 import {registerUnderstandingHistoryRoutes} from './modules/executions/understanding-history-routes.ts';
 import { registerControlHandoffRoutes, type ControlHandoffRoutesOptions } from './modules/control-handoff/routes.ts';
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource, normalExchange?:NormalExchangeOptions, normalCredentialExchange?:NormalCredentialExchangeOptions,normalRequestChallenge?:{origin:string}) {
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource, normalExchange?:NormalExchangeOptions, normalCredentialExchange?:NormalCredentialExchangeOptions,normalRequestChallenge?:{origin:string},normalPages?:NormalCommandPagesOptions) {
   const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
   app.addHook('onRequest',async request=>enforceConnectorCredentialScope(request));
   app.addHook('onSend', async (_request, reply, payload) => {
@@ -35,6 +36,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
     reply.header('content-security-policy', "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     return payload;
   });
+  if(normalPages)registerNormalCommandPages(app,normalPages);
   if(normalRequestChallenge&&!normalExchange)throw Error('EXECUTION_CHALLENGE_STORE_REQUIRED');
   if(normalExchange)registerNormalExchangeChallenge(app,normalExchange,normalRequestChallenge);
   if(normalCredentialExchange)registerNormalCredentialExchange(app,normalCredentialExchange);

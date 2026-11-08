@@ -1,0 +1,149 @@
+-- normal START의 원 프로젝트 감사 순번을 사용한다. nonce/영수증 및 기존 권한은 추가 발급하지 않는다.
+BEGIN;
+CREATE FUNCTION anvil.normal_command_page_rows(pid uuid,eid uuid,gid uuid,gv bigint,gen bigint,pos bigint,fixed uuid[])
+RETURNS TABLE(sequence text,command_ref jsonb,envelope jsonb,envelope_hash text,valid boolean)
+LANGUAGE plpgsql AS $$
+DECLARE item record; n bigint;
+BEGIN
+ IF pos IS NULL OR pos NOT BETWEEN 0 AND 9007199254740991 OR cardinality(fixed)>50 THEN RAISE EXCEPTION 'NORMAL_COMMAND_POSITION_INVALID';END IF;
+ -- 누락·중복 감사도 후보로 남긴다. INNER JOIN 또는 cursor 조건으로 손상 행을 숨기지 않는다.
+ FOR item IN
+  SELECT x.*,a.seq,a.cnt,c.id AS cid,c.result_ref->'data'->'ref' AS cr,
+   r.id AS rid,r.scope_digest AS rdigest,o.payload_ref AS payload,o.destination_ref AS destination,o.scope_digest AS odigest,
+   o.state AS outbox_state,g.snapshot_json AS gs,g.content_hash AS gh,
+   (SELECT count(*) FROM anvil.delivery_outbox z WHERE z.project_id=pid AND z.command_id=x.created_command_id) AS outboxes,
+   (SELECT count(*) FROM anvil.audit_events z WHERE z.project_id=pid AND z.command_id=x.created_command_id) AS audits
+  FROM anvil.execution_commands x
+  LEFT JOIN anvil.commands c ON c.project_id=x.project_id AND c.id=x.created_command_id AND c.operation='queueExecutionCommand'
+   AND c.state='APPLIED' AND c.approval_consumption_id IS NULL AND c.result_ref#>>'{data,status}'='NORMAL_QUEUE_STORED'
+   AND c.result_ref#>'{data,snapshot}'=x.snapshot_json-'envelope'
+  LEFT JOIN anvil.authorization_receipts r ON r.id=c.authorization_receipt_id AND r.command_id=c.id AND r.scope_kind='PROJECT' AND r.scope_id=pid
+   AND r.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id)
+   AND r.policy_ref=c.policy_ref AND r.approval_decision_ref IS NULL AND r.scope_digest=anvil.execution_json_hash(jsonb_build_object(
+    'projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref#>'{data,ref}'))
+  LEFT JOIN anvil.execution_grants g ON g.project_id=pid AND g.id=gid AND g.version=gv AND g.command_id=c.id
+  LEFT JOIN anvil.delivery_outbox o ON o.project_id=pid AND o.command_id=c.id AND o.kind='EXECUTION_NORMAL'
+  LEFT JOIN LATERAL (SELECT min(a.server_sequence) AS seq,count(*) AS cnt FROM anvil.audit_events a
+    WHERE a.project_id=pid AND a.command_id=x.created_command_id AND a.operation_id=c.operation_id AND a.source_kind='HUMAN_COMMAND'
+     AND a.outcome='APPLIED' AND a.target_ref=c.result_ref->'data'->'ref' AND a.scope_digest=r.scope_digest
+     AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND a.client_ref=c.client_id AND a.policy_ref=c.policy_ref AND a.approval_ref IS NULL) a ON true
+  WHERE x.project_id=pid AND x.execution_id=eid AND x.generation=gen AND x.grant_id=gid AND x.grant_version=gv
+   AND (fixed IS NULL OR x.id=ANY(fixed)) AND (a.seq IS NULL OR a.cnt<>1 OR a.seq>pos)
+  ORDER BY (a.cnt<>1) DESC,a.seq ASC NULLS FIRST LIMIT 51
+ LOOP
+  n=item.seq;command_ref=jsonb_build_object('id',item.id,'version',item.version,'contentHash',item.content_hash);
+  envelope=item.snapshot_json->'envelope';envelope_hash=item.envelope_hash;
+  IF n IS NULL OR n NOT BETWEEN 1 AND 9007199254740991 OR item.cnt<>1 OR item.cid IS NULL OR item.rid IS NULL
+   -- normal_initial_graph의 최초 HUMAN 명령 GUC/30초 제한은 조회 인증에 사용할 수 없다.
+   OR item.audits<>1 OR item.outboxes<>1 OR item.gh IS NULL OR item.outbox_state IS DISTINCT FROM 'PENDING'
+   OR item.content_hash IS DISTINCT FROM anvil.execution_json_hash(item.snapshot_json-'envelope')
+   OR item.authorization_ref IS DISTINCT FROM jsonb_build_object('id',item.rid,'version',1,'contentHash',item.rdigest)
+   OR envelope#>'{context,authorizationReceiptRef}' IS DISTINCT FROM item.authorization_ref
+   OR item.payload IS DISTINCT FROM jsonb_build_object('commandRef',command_ref,'grantRef',jsonb_build_object('id',gid,'version',gv,'contentHash',item.gh),'envelopeHash',envelope_hash)
+   OR envelope->'executorRegistrationRef' IS DISTINCT FROM item.gs#>'{binding,registration,ref}'
+   OR item.destination IS DISTINCT FROM jsonb_build_object('transport','NORMAL_PROTECTED','executionId',eid,'generation',gen,'registrationRef',envelope->'executorRegistrationRef')
+   OR item.cr IS DISTINCT FROM command_ref OR item.payload->'commandRef' IS DISTINCT FROM command_ref
+   OR item.payload->'envelopeHash' IS DISTINCT FROM to_jsonb(envelope_hash)
+   OR item.destination->'executionId' IS DISTINCT FROM to_jsonb(eid) OR item.destination->'generation' IS DISTINCT FROM to_jsonb(gen)
+   OR item.odigest IS DISTINCT FROM item.gs->>'scopeDigest' OR envelope->>'operation' IS DISTINCT FROM 'START_SESSION'
+   OR envelope_hash IS DISTINCT FROM anvil.execution_json_hash(envelope-'envelopeHash')
+   THEN RAISE EXCEPTION 'NORMAL_COMMAND_PAGE_SOURCE_INVALID';END IF;
+  sequence=n::text;valid=true;RETURN NEXT;
+ END LOOP;
+END;
+$$;
+
+CREATE FUNCTION anvil.normal_command_consumption_valid(v anvil.execution_challenges,deferred_check boolean)
+RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE old anvil.execution_challenges%ROWTYPE;s jsonb=v.snapshot_json;u jsonb=s->'consumption';seq bigint;
+BEGIN
+ SELECT * INTO old FROM anvil.execution_challenges WHERE project_id=v.project_id AND id=v.id AND version=1;
+ IF NOT FOUND OR v.version<>2 OR old.grant_id<>v.grant_id OR old.grant_version<>v.grant_version
+  OR old.snapshot_json#>>'{publicChallenge,purpose}' IS DISTINCT FROM 'EXECUTION_REQUEST'
+  OR old.snapshot_json#>>'{binding,transport}' IS DISTINCT FROM 'NORMAL_PROTECTED'
+  OR old.content_hash IS DISTINCT FROM anvil.execution_json_hash(old.snapshot_json) OR v.content_hash IS DISTINCT FROM anvil.execution_json_hash(s)
+  OR NOT anvil.execution_json_shape(u,ARRAY['resultRef','consumedAt','packetHash'])
+  OR NOT anvil.execution_json_shape(u->'resultRef',ARRAY['id','version','contentHash']) OR u#>'{resultRef,version}' IS DISTINCT FROM '1'::jsonb
+  OR NOT anvil.execution_iso_valid(u->'consumedAt') OR jsonb_typeof(u->'packetHash') IS DISTINCT FROM 'string' OR u->>'packetHash' !~ '^[0-9a-f]{64}$'
+  OR s IS DISTINCT FROM (old.snapshot_json || jsonb_build_object('sequence',v.server_sequence,'previousRef',
+    jsonb_build_object('id',old.id,'version',1,'contentHash',old.content_hash),'consumption',u))
+  OR (u->>'consumedAt')::timestamptz NOT BETWEEN (s#>>'{publicChallenge,issuedAt}')::timestamptz AND clock_timestamp()
+  OR clock_timestamp()>=(s#>>'{publicChallenge,expiresAt}')::timestamptz
+  OR split_part(current_setting('anvil.normal_page_verified',true),':',1) IS DISTINCT FROM txid_current()::text
+  OR split_part(current_setting('anvil.normal_page_verified',true),':',2) IS DISTINCT FROM u#>>'{resultRef,contentHash}'
+ THEN RETURN false;END IF;
+ SELECT coalesce(max(server_sequence),0)+1 INTO seq FROM anvil.execution_challenges WHERE project_id=v.project_id
+  AND grant_id=v.grant_id AND grant_version=v.grant_version AND (NOT deferred_check OR server_sequence<v.server_sequence);
+ RETURN seq=v.server_sequence AND (NOT deferred_check OR EXISTS(SELECT 1 FROM anvil.execution_receipts r
+  WHERE r.project_id=v.project_id AND r.challenge_id=v.id AND r.id=(u#>>'{resultRef,id}')::uuid AND r.content_hash=u#>>'{resultRef,contentHash}'
+   AND r.snapshot_json->>'kind'='NORMAL_COMMAND_PAGE' AND r.snapshot_json->'packetHash'=u->'packetHash'));
+END;
+$$;
+CREATE FUNCTION anvil.normal_command_page_valid(r anvil.execution_receipts)
+RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE v anvil.execution_challenges%ROWTYPE;s jsonb=r.snapshot_json;b jsonb=s->'binding';cur record;cr record;part record;
+ marker text=current_setting('anvil.normal_page_verified',true);expected jsonb='[]'::jsonb;total int=0;
+ observed timestamptz;expires timestamptz;
+BEGIN
+ SELECT * INTO v FROM anvil.execution_challenges WHERE project_id=r.project_id AND id=r.challenge_id AND version=2;
+ IF NOT FOUND OR r.grant_id<>v.grant_id OR r.grant_version<>v.grant_version OR r.version<>1 OR r.challenge_version<>1
+  OR NOT anvil.execution_json_shape(s,ARRAY['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','after','entries','hasMore','nextCursor','observedAt','expiresAt'])
+  OR s->>'kind' IS DISTINCT FROM 'NORMAL_COMMAND_PAGE' OR r.content_hash IS DISTINCT FROM anvil.execution_json_hash(s)
+  OR marker IS DISTINCT FROM txid_current()::text||':'||r.content_hash||':'||split_part(marker,':',3) OR marker IS NULL
+  OR s->'challengeRef' IS DISTINCT FROM v.snapshot_json->'previousRef' OR b IS DISTINCT FROM v.snapshot_json->'binding'
+  OR s->'target' IS DISTINCT FROM v.snapshot_json#>'{request,target}' OR s->'requestId' IS DISTINCT FROM v.snapshot_json->'request'->'requestId'
+  OR s->'credentialRef' IS DISTINCT FROM v.snapshot_json->'credentialRef'
+  OR v.snapshot_json->'consumption' IS DISTINCT FROM jsonb_build_object('resultRef',jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash),
+    'packetHash',s->'packetHash','consumedAt',s->'observedAt')
+  OR NOT anvil.execution_iso_valid(s->'observedAt') OR NOT anvil.execution_iso_valid(s->'expiresAt')
+  OR jsonb_typeof(s->'after') IS DISTINCT FROM 'number' OR s->>'after' !~ '^(0|[1-9][0-9]{0,15})$'
+  OR jsonb_typeof(s->'nextCursor') IS DISTINCT FROM 'string' OR length(s->>'nextCursor') NOT BETWEEN 1 AND 4096
+ THEN RETURN false;END IF;
+ SELECT * INTO cr FROM anvil.normal_request_credential(split_part(marker,':',3),(b->>'connectorId')::uuid,(b->>'executionId')::uuid,r.grant_id,r.grant_version,b#>>'{grantRef,contentHash}',(b->>'credentialGeneration')::bigint);
+ IF NOT FOUND OR cr.project_id<>r.project_id OR cr.credential_ref IS DISTINCT FROM s->'credentialRef' THEN RETURN false;END IF;
+ SELECT * INTO cur FROM anvil.normal_exchange_current(r.project_id,(b->>'connectorId')::uuid,(b->>'executionId')::uuid,r.grant_id,r.grant_version,b#>>'{grantRef,contentHash}',(b->>'credentialGeneration')::bigint);
+ observed=(s->>'observedAt')::timestamptz;expires=(s->>'expiresAt')::timestamptz;
+ IF NOT FOUND OR cur.binding IS DISTINCT FROM b OR observed>cur.observed_at OR expires<=observed OR expires<=clock_timestamp()
+  OR expires>least(cur.deadline,cr.expires_at,(v.snapshot_json#>>'{publicChallenge,expiresAt}')::timestamptz) THEN RETURN false;END IF;
+ FOR part IN SELECT * FROM anvil.normal_command_page_rows(r.project_id,(b->>'executionId')::uuid,r.grant_id,r.grant_version,(b->>'executionGeneration')::bigint,(s->>'after')::bigint,NULL)
+ LOOP
+  total=total+1;
+  IF total<=50 THEN
+   IF expires>(part.envelope->>'expiresAt')::timestamptz THEN RETURN false;END IF;
+   expected=expected||jsonb_build_array(jsonb_build_object('sequence',part.sequence::bigint,'commandRef',part.command_ref,'envelopeHash',part.envelope_hash));
+  END IF;
+ END LOOP;
+ RETURN s->'entries'=expected AND s->'hasMore'=to_jsonb(total>50);
+END;
+$$;
+CREATE FUNCTION anvil.guard_normal_command_page() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF TG_TABLE_NAME='execution_challenges' THEN
+  IF coalesce(anvil.normal_command_consumption_valid(NEW::anvil.execution_challenges,TG_WHEN='AFTER'),false) THEN RETURN NEW;END IF;
+ ELSIF coalesce(anvil.normal_command_page_valid(NEW::anvil.execution_receipts),false) THEN RETURN NEW;END IF;
+ RAISE EXCEPTION 'NORMAL_COMMAND_PAGE_REQUIRED' USING ERRCODE='42501';
+END;
+$$;
+DROP TRIGGER normal_credential_consumption_guard ON anvil.execution_challenges;
+DROP TRIGGER normal_credential_consumption_complete ON anvil.execution_challenges;
+CREATE TRIGGER normal_credential_consumption_guard BEFORE INSERT ON anvil.execution_challenges FOR EACH ROW
+ WHEN (NEW.version=2 AND NEW.snapshot_json#>>'{binding,transport}'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{request,purpose}' IS DISTINCT FROM 'EXECUTION_REQUEST') EXECUTE FUNCTION anvil.guard_normal_credential_exchange();
+CREATE CONSTRAINT TRIGGER normal_credential_consumption_complete AFTER INSERT ON anvil.execution_challenges DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+ WHEN (NEW.version=2 AND NEW.snapshot_json#>>'{binding,transport}'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{request,purpose}' IS DISTINCT FROM 'EXECUTION_REQUEST') EXECUTE FUNCTION anvil.guard_normal_credential_exchange();
+CREATE TRIGGER normal_page_consumption_guard BEFORE INSERT ON anvil.execution_challenges FOR EACH ROW
+ WHEN (NEW.version=2 AND NEW.snapshot_json#>>'{binding,transport}'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{request,purpose}'='EXECUTION_REQUEST') EXECUTE FUNCTION anvil.guard_normal_command_page();
+CREATE CONSTRAINT TRIGGER normal_page_consumption_complete AFTER INSERT ON anvil.execution_challenges DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+ WHEN (NEW.version=2 AND NEW.snapshot_json#>>'{binding,transport}'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{request,purpose}'='EXECUTION_REQUEST') EXECUTE FUNCTION anvil.guard_normal_command_page();
+DROP TRIGGER synthetic_execution_receipt_guard ON anvil.execution_receipts;
+DROP TRIGGER synthetic_execution_receipt_complete ON anvil.execution_receipts;
+CREATE TRIGGER synthetic_execution_receipt_guard BEFORE INSERT ON anvil.execution_receipts FOR EACH ROW
+ WHEN (NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_CREDENTIAL_ISSUED' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_COMMAND_PAGE') EXECUTE FUNCTION anvil.guard_synthetic_execution_receipt();
+CREATE CONSTRAINT TRIGGER synthetic_execution_receipt_complete AFTER INSERT ON anvil.execution_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+ WHEN (NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_CREDENTIAL_ISSUED' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_COMMAND_PAGE') EXECUTE FUNCTION anvil.guard_execution_challenge_complete();
+CREATE TRIGGER normal_command_page_guard BEFORE INSERT ON anvil.execution_receipts FOR EACH ROW
+ WHEN (NEW.snapshot_json->>'kind'='NORMAL_COMMAND_PAGE') EXECUTE FUNCTION anvil.guard_normal_command_page();
+CREATE CONSTRAINT TRIGGER normal_command_page_complete AFTER INSERT ON anvil.execution_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+ WHEN (NEW.snapshot_json->>'kind'='NORMAL_COMMAND_PAGE') EXECUTE FUNCTION anvil.guard_normal_command_page();
+REVOKE ALL ON FUNCTION anvil.normal_command_page_rows(uuid,uuid,uuid,bigint,bigint,bigint,uuid[]),anvil.normal_command_consumption_valid(anvil.execution_challenges,boolean),anvil.normal_command_page_valid(anvil.execution_receipts),anvil.guard_normal_command_page() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.normal_command_page_rows(uuid,uuid,uuid,bigint,bigint,bigint,uuid[]),anvil.normal_command_consumption_valid(anvil.execution_challenges,boolean),anvil.normal_command_page_valid(anvil.execution_receipts),anvil.guard_normal_command_page() TO anvil_v3_app;
+COMMIT;
