@@ -1,17 +1,17 @@
 # Anvil 작업 점검표
 
-갱신: 2026-11-08T14:16:08+09:00 / 담당: 어울
+갱신: 2026-11-08T17:01:57+09:00 / 담당: 어울
 
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
-- 코드 집계 기준: `development/main` `7cf2b13a4586ec451e89c783c0dbd3bf7bb2b33f`.
-- 진행 branch: `codex/av3-fn12-origin-scope`. 현재 기록을 저장한 문서 commit은 Git 최신 HEAD를 따른다.
-- 현재 우선순위: 첫 실제 Agent 수직 경로(P03→FN06/FN08/FN09: 임무 전달→실행→결과 저장·조회)의 최초 단절 지점과 즉시 구현 단위를 기존 Primary가 한정 대조한다. Main은 범위 확정·검수·통합을 맡는다. FN12 추가 계약 구체화는 뒤로 두며, FN06 duplex 송수신 부품 2파일 구현·Primary 인접91/신규24 PASS·type0·독립 C0/I0·Main24 PASS로 검수해 통합 중이다. 다음은 이미 승인된 normal 실행 grant/current 근거와 원자 저장 연결이다. 실제 Agent 실행과 idle 비동기 결과 수집은 미완료다.
+- 코드 집계 기준: `development/main` `b6b8201784121205e8f27d0fe1af7c5c172a5bcd`.
+- 진행 branch: `codex/av3-normal-execution-grant`. 현재 기록을 저장한 문서 commit은 Git 최신 HEAD를 따른다.
+- 현재 우선순위: normal 최초 실행의 grant·별도 실행 세대 예약·자료/영수증 원자 저장 source 7파일을 검수해 통합 중이다. I1/I2/I3 보완·Main21 PASS·type0·최종 독립 C0/I0. 다음은 채택 D071의 예약에 결박된 최초 challenge 발급이다. 실제 DB·OS/provider·credential 발급·Agent 실행은 미검증이며 전체 계획은 미완료다.
 - 최근 완료: PR75 기록 보완 main 통합·44행 문서 smoke, PR72 기준선 설계 선택 보완/merged12 PASS, PR73 실제 React 합성 여정/merged7 PASS, PR74 기술후보 문서 검수. 이것을 전체 기능 완료로 세지 않는다.
 - 현재 미확인: 실제 개발 DB 복구·served/Agent 전체 여정·실기기·Oracle 인수. 지정 SSH Connection refused를 PASS로 표시하지 않는다.
 - 결정 대기: 기존 PMO 발행 2건(e59592e3,239845d6), 직접 답변 미수신. 중복 요청하지 않는다.
 - 상세 현재 상황/오류/다음 조치: [WORK_STATUS.md](WORK_STATUS.md)의 ‘현재 상황 보완’ 절.
-- [44항목 상세 근거](https://github.com/sinsan-develop/Anvil/blob/7cf2b13a4586ec451e89c783c0dbd3bf7bb2b33f/docs/04_test_reports/AV3/WORK_PLAN_REMAINING_AUDIT_20261108.md)
+- [44항목 상세 근거](https://github.com/sinsan-develop/Anvil/blob/b6b8201784121205e8f27d0fe1af7c5c172a5bcd/docs/04_test_reports/AV3/WORK_PLAN_REMAINING_AUDIT_20261108.md)
 
 | 완료 | 업무 | 상태 | 남은 기능·검증 |
 |---|---|---|---|

@@ -4,7 +4,7 @@ import {nodeDecisionFixture,H,id,artifactCalls} from '../FN10/node-decision-fixt
 export {H,id,artifactCalls};
 export {installNodeDecisionMemoryFS as installExecutionStartOriginMemoryFS} from '../FN10/node-decision-fixture.ts';
 /** 기존 순수 fixture의 실제 ArtifactStore/문서·계획을 재사용한다. 성공 보호 메서드는 바꾸지 않는다. */
-export async function executionStartOriginFixture(options:{unrelatedStageBaseline?:boolean;clockOffsetMs?:number;budgetElapsedMs?:number;connectorEnvironment?:boolean;richContext?:boolean;environmentDependencies?:boolean;constitutionContext?:boolean;approvedContext?:boolean;snapshotRoot?:boolean;originRequestStorage?:boolean;originConsumptionStorage?:boolean}={}){
+export async function executionStartOriginFixture(options:{normalExecutionId?:string;unrelatedStageBaseline?:boolean;clockOffsetMs?:number;budgetElapsedMs?:number;connectorEnvironment?:boolean;richContext?:boolean;environmentDependencies?:boolean;constitutionContext?:boolean;approvedContext?:boolean;snapshotRoot?:boolean;originRequestStorage?:boolean;originConsumptionStorage?:boolean}={}){
  const f=await nodeDecisionFixture(),{db,access,documents,pid,uid,cid}=f,raw=db.query;
  if(options.clockOffsetMs)f.advance(options.clockOffsetMs);
  const {documentOperations,persistProjectReceipt,currentPolicy,ProjectPolicyRepository}=await import('../../../apps/server/modules/access/project-command.ts');
@@ -16,6 +16,7 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
  const {ProjectStorageQuota}=await import('../../../apps/server/modules/projects/project-storage-quota.ts'),{ProjectExecutionPreparations}=await import('../../../apps/server/modules/executions/project-execution-preparations.ts'),{ProjectStageQueue}=await import('../../../apps/server/modules/scheduling/stage-queue.ts'),{ProjectLimitPolicies}=await import('../../../apps/server/modules/executions/runtime-policy.ts');
  const tables:Record<string,any[]>={drafts:[],draftVersions:[],reviews:[],confirmations:[],roles:[],bindings:[],sessions:[],contexts:[],contextItems:[],preparations:[],limits:[],queue:[],origins:[],reservations:[]},receipts=new Map<string,any>(),audits=new Map<string,any>(),metadata=new Map<string,any>(),trace:string[]=[];
  if(options.originConsumptionStorage)for(const name of ['executions','execution_grants','usage_reservations','writer_claims','execution_commands','delivery_outbox','execution_material_manifests','execution_materials','execution_material_proof_bindings'])tables[name]=[];
+ if(options.normalExecutionId)tables.execution_credentials=[];
  const richContext=options.connectorEnvironment===true&&options.richContext===true;
  if(richContext)Object.assign(tables,{knowledgeHeads:[],knowledgeVersions:[],knowledgeEvents:[],knowledgeReviews:[],conversations:[],messages:[]});
  const approvedContext=richContext&&options.approvedContext===true;
@@ -100,6 +101,20 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
     // 실제 SQL 함수 실행이 아닌 원 저장행의 제한된 메모리 완결 모델이다.
     const complete=!!c&&manifests.length===1&&queued.length===1&&d.command_id===e.snapshot_json.envelope.commandId&&c.result_ref.data.ref.id===e.id&&c.result_ref.data.ref.contentHash===e.content_hash&&d.content_hash===H(d.snapshot_json)&&e.content_hash===H(Object.fromEntries(Object.entries(e.snapshot_json).filter(([key])=>key!=='envelope')))&&parts.length===d.snapshot_json.groups.reduce((n:number,g:any)=>n+g.parts.length,0)&&parts.every(m=>m.created_command_id===c.id&&m.content_hash===H(m.snapshot_json))&&(!c.approval_consumption_id||used.length===1&&used[0].id===c.approval_consumption_id);
     return rows([{complete}]);
+   }
+   if(options.normalExecutionId&&sql==='SELECT id,credential_generation,content_hash FROM anvil.execution_credentials WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND credential_generation=$4 AND anvil.normal_credential_reservation_valid($1,$2,$3) AND snapshot_json->\'grantRef\'->>\'contentHash\'=$5'){
+    const [project,grant,version,generation,hash]=a;
+    return rows(tables.execution_credentials!.filter(r=>r.project_id===project&&r.grant_id===grant&&r.grant_version===version
+     &&r.credential_generation===generation&&r.snapshot_json.grantRef.contentHash===hash&&r.content_hash===H(r.snapshot_json)));
+   }
+   if(options.normalExecutionId&&sql.startsWith('INSERT INTO anvil.execution_credentials(')){
+    const [project_id,credentialId,grant_id,credential_generation,content_hash,json]=a;
+    const g=tables.execution_grants!.find(row=>row.project_id===project_id&&row.id===grant_id&&row.version===1);
+    assert(g);const snapshot_json=JSON.parse(json);assert.equal(content_hash,H(snapshot_json));
+    assert.equal(snapshot_json.grantRef.contentHash,g.content_hash);
+    assert(!tables.execution_credentials!.some(r=>r.grant_id===grant_id&&r.credential_generation===credential_generation));
+    tables.execution_credentials!.push({project_id,id:credentialId,version:1,grant_id,grant_version:1,credential_generation,content_hash,snapshot_json});
+    return rows([]);
    }
    const domains:Record<string,string[]>={executions:['project_id','id','generation','transport','state','created_by','client_id','command_id'],execution_grants:['project_id','id','version','execution_id','generation','content_hash','snapshot_json','created_by','client_id','command_id'],usage_reservations:['project_id','reservation_id','version','server_sequence','command_id','content_hash','snapshot_json','created_command_id'],writer_claims:['project_id','id','execution_id','generation','grant_id','grant_version','scope_json','expires_at','ownership_state','created_command_id'],execution_commands:['project_id','id','version','execution_id','generation','grant_id','grant_version','content_hash','envelope_hash','snapshot_json','authorization_ref','created_command_id'],delivery_outbox:['id','project_id','command_id','kind','destination_ref','payload_ref','state','scope_digest'],execution_material_manifests:['project_id','id','version','execution_id','generation','grant_id','grant_version','credential_generation','command_id','created_command_id','content_hash','snapshot_json'],execution_materials:['project_id','id','version','manifest_id','execution_id','generation','grant_id','grant_version','credential_generation','command_id','command_record_id','created_command_id','content_hash','snapshot_json']};
    const match=/^INSERT INTO anvil\.([a-z_]+)\(([^)]+)\) VALUES\(([^)]+)\)$/.exec(sql);
@@ -231,7 +246,7 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
   }
   if(registration&&sql==='SELECT anvil.connector_basis_current($1,false) ok'){
    assert.deepEqual(a,[registration.row.id]);
-   return rows([{ok:modes.policyVersion===1&&registration.row.revoked_at===null}]);
+   return rows([{ok:modes.policyVersion===(options.normalExecutionId?2:1)&&registration.row.revoked_at===null}]);
   }
   if(sql.startsWith('SELECT p.id,p.head_version,v.rules_json'))return rows([policy()]);
   if(sql.startsWith('SELECT p.*,m.participation,pc.actor_id')){assert.deepEqual(a,[pid,uid]);return rows(f.state.member?[{id:pid,name:'원자료 프로젝트',purpose:'명시 보관',desired_outcome:'실행 없이 원자료 보관',version:1,created_at:new Date(),updated_at:new Date(),participation:f.state.participation,actor_id:uid,client_id:cid,generation:f.state.current?1:2,control_version:1,control_revoked_at:null,controller_status:'ACTIVE',controller_revoked_at:null,controller_client_revoked_at:null,policy_id:policy().id,application_id:applicationRef.id,application_version:1,snapshot_hash:applicationRef.contentHash,setup_copy_records:0,setup_copy_candidates:null}]:[]);}
@@ -416,6 +431,16 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
  const methods=new ProjectMethodologies(),plans=new ProjectWorkPlans(documents),drafts=new ProjectAssignmentDrafts(plans,methods),assignments=new ProjectAssignmentConfirmations(drafts),definitions=new ProjectConnectionDefinitions(access),environments=new ProjectEnvironments(access),candidates=new ProjectConnectionCandidates(access),limits=new ProjectLimitPolicies(),sessions=new ResponsibleSessions(methods,assignments,drafts,candidates,definitions),contexts=new ProjectContexts(new ProjectContextSources({confirmations:assignments,drafts,documents,knowledge:new ProjectKnowledge(documents),conversations:new ProjectConversations(documents)}),assignments),quota=new ProjectStorageQuota(access),preparations=new ProjectExecutionPreparations(assignments,drafts,sessions,contexts,candidates,{definitions,environments,quota}),queue=new ProjectStageQueue({applications:methods,budgets:limits});
  const policyRef={id:policy().id,version:1,contentHash:policy().content_hash},run=async(work:(a:any)=>Promise<any>)=>access.authenticated(f.token,f.csrf,(_db,a)=>work(a));
  const budget:any=await run(a=>limits.apply(db,a,command('applyLimitPolicy',{limits:{maxAttempts:3,maxElapsedMs:options.budgetElapsedMs??60000,maxCalls:10,maxConcurrentAssignments:1,maxSpoolBytes:2097152,maxOfflineMs:0},scope:{kind:'PROJECT',projectId:pid},reason:'원 한도 정책',policyBaseVersion:0}),policyRef));
+ const snapshotTemplate=options.connectorEnvironment&&options.snapshotRoot===true?(await import('../FN08/source-read-fixtures.ts')).sourceReadFixture():undefined;
+ const rootSnapshot={declaration:{hostLabel:'원 선언',displayName:'원 소스',pathHint:snapshotTemplate?.permit.root.pathHint??'source-only-placeholder',reason:'원 선언',connectorId:snapshotTemplate?id(216):null},status:'DECLARED',authority:'USER_DECLARED',readiness:'UNVERIFIED',reason:'원 선언'},rootRef={id:id(211),version:1,contentHash:H(rootSnapshot)};
+ if(options.normalExecutionId){
+  const asked=[{sourceRootRef:rootRef,mappingRef:null,observationRef:f.design.ref,baselineRef:f.design.ref,targets:[{relativePath:'src/a.ts',kind:'FILE',access:'READ',recursive:false}]}];
+  modes.runtimeRules=['authorizeExecution','queueExecutionCommand'].map(operation=>({ruleId:operation,subjectRef:{kind:'HUMAN',userId:uid},
+   operations:[operation],targetScopes:[{kind:'EXECUTION',projectId:pid,executionId:options.normalExecutionId,executionGeneration:1,sourceScopes:asked}],
+   disposition:'AUTO',limitPolicyRef:budget.data.ref,expiresAt:f.actor.authSession.idleExpiresAt}));
+  Object.assign(policyRef,{version:++modes.policyVersion,contentHash:policy().content_hash});
+ }
+
  const storeMetadata=async(kind:string,operation:string,snapshot:any,payload:any,ref:any,data:any,reason:string,evidence:any[]=[])=>{const c=command(operation,payload),receipt:any=await run(a=>persistProjectReceipt(db,a,c,ref,data,policyRef,reason)),row={project_id:pid,id:ref.id,version:1,kind,snapshot_json:snapshot,canonical_json:JSON.stringify(snapshot),canonical_bytes:String(Buffer.byteLength(JSON.stringify(snapshot))),evidence_json:evidence,evidence_bytes:String(Buffer.byteLength(JSON.stringify(evidence))),request_json:c,created_by:uid,client_id:cid,command_id:receipt.id,created_at:new Date(),content_hash:ref.contentHash};row.canonical_json=(await import('../../../contracts/canonical.ts')).canonicalJson(snapshot);row.canonical_bytes=String(Buffer.byteLength(row.canonical_json));metadata.set(kind+':'+ref.id,row);return row;};
  const connectorHost=options.connectorEnvironment?await run(async actor=>{
   const {registrationRef,connectorRef}=await import('../../../apps/server/modules/connections/project-registrations.ts');
@@ -448,8 +473,7 @@ export async function executionStartOriginFixture(options:{unrelatedStageBaselin
   await storeMetadata(kind,'saveSecretReferenceMetadata',snapshot,{definition,baseRef:null,reason:'원 선언'},ref,{status:'ENVIRONMENT_METADATA_STORED',kind,snapshot,previousRef:null},'EXPLICIT_ENVIRONMENT_CONFIGURATION',evidence);
   return {kind,ref};
  })():null;
- const snapshotTemplate=connectorHost&&options.snapshotRoot===true?(await import('../FN08/source-read-fixtures.ts')).sourceReadFixture():undefined;
- const rootSnapshot={declaration:{hostLabel:'원 선언',displayName:'원 소스',pathHint:snapshotTemplate?.permit.root.pathHint??'source-only-placeholder',reason:'원 선언',connectorId:snapshotTemplate&&connectorHost?connectorHost.connectorRef.id:null},status:'DECLARED',authority:'USER_DECLARED',readiness:'UNVERIFIED',reason:'원 선언'},rootRef={id:id(211),version:1,contentHash:H(rootSnapshot)},root=await storeMetadata('ROOT','saveSourceRoot',rootSnapshot,{declaration:rootSnapshot.declaration,baseRef:null,reason:'원 선언'},rootRef,{status:'SOURCE_ROOT_VERSION_STORED',snapshot:rootSnapshot,previousRef:null,protectedRef:'db-source-root-version:'+rootRef.id+':1'},'EXPLICIT_UNVERIFIED_SOURCE_ROOT');Object.assign(root,{root_id:rootRef.id,declaration_json:rootSnapshot.declaration,status:'DECLARED',authority:'USER_DECLARED',readiness:'UNVERIFIED',reason:'원 선언',actor_id:uid,connector_id:rootSnapshot.declaration.connectorId});
+ const root=await storeMetadata('ROOT','saveSourceRoot',rootSnapshot,{declaration:rootSnapshot.declaration,baseRef:null,reason:'원 선언'},rootRef,{status:'SOURCE_ROOT_VERSION_STORED',snapshot:rootSnapshot,previousRef:null,protectedRef:'db-source-root-version:'+rootRef.id+':1'},'EXPLICIT_UNVERIFIED_SOURCE_ROOT');Object.assign(root,{root_id:rootRef.id,declaration_json:rootSnapshot.declaration,status:'DECLARED',authority:'USER_DECLARED',readiness:'UNVERIFIED',reason:'원 선언',actor_id:uid,connector_id:rootSnapshot.declaration.connectorId});
  const snapshotRef=snapshotTemplate&&connectorHost?await run(async actor=>{
   const {rehashReport}=await import('../FN08/source-read-fixtures.ts');
   const {contentHash}=await import('../../../contracts/canonical.ts');
