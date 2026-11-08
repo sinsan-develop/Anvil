@@ -18491,3 +18491,5 @@ npm run typecheck
 전체 완료보고·UAT·운영 배포 승인으로 해석하지 않는다.
 
 - 사용자 요청에 따라 현재 WORK_CHECK 생성·44행 대조와 WORK_STATUS 현재 상황을 보완했다. 독립51a4ec 신규기록 C0/I0, Main39f30e 두 CHECK 동일·두 STATUS 원prefix보존을 확인했다. 앞으로 착수/완료·오류/복구·중단/인계 전에 두 문서와 사용자 열람 위치를 함께 갱신하고 저장·Git 게시를 확인한다. 이번 수정은 기록 보완이며 제품/DB/권한/서비스 변경이나 전체 완료 처리가 아니다.
+
+- 다음 미완료 독립 조사 분담: 기존 reader가 FN04의 설계항목/화면위치·계획 trace·등록 artifact→업무 caller가 이미 연결됐음을 확인했다. 항목별 SourceRef 귀속은 기존 sections/itemId/anchor·문서전체 sourceRefs와 다른 새 관계이고 실행/시험/diff 실제 증거는 후속 producer가 필요하다. 새 기존승인 caller 누락은 확정하지 못했으며 완료 모듈 재구현0이다. 기존 Primary는 FN12의 불변 보완 origin/link 보관과 후속 assignment/실행·원writer회수 선행을 분리해 첫 source 단위를 읽기 검토 중이다. 코드/실DB/권한/키/서비스/Agent 실행0이며 미완료 체크를 승격하지 않는다.
