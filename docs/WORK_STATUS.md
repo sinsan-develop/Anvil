@@ -18436,3 +18436,11 @@ npm run typecheck
 
 - UI02정확잔류2a5ea6 exit0/OWNED_TEST_NODE_COUNT0 뒤에만새시험을실행했다. Primary는globals변경부터전체try/root nullable·독립회수/첫오류보존·port.close callback완료await를보완했고 f4eba9 exit0/실React정상여정1PASS(4종각각+묶음/선택POST0·명시POST1·strict부모저장)다. Vite bundle전native채널소유주장0·실서비스/DB0. 거절/오염/late/CAS/UNKNOWN음성은진행중이며전체새파일완료로승격0이다.
 - FN03기술WI19/20 SHA18f42419 scoped독립C0/I0/M0로E16/O도출10·원hash/result/digest·세대/금액/시각형상정합화를확인했다. 부모후보/패킷불변/clock·M전체JSON·전체ACL동결전GO0/실SQL0이다.
+
+- UI02화면여정 c27b31 `node --test tests/unit/UI02/baseline-design-screen.test.ts`는자연terminal exit0/7PASS/skip0다. 실React Panel/Picker 정상·403·hash-valid출처/본문/양식오염·metadata/body/form중새buffer/owner/client·unmount·부모CAS거절·control세대교체POST0·UNKNOWN같은packet명시재확인·true권위표식거절을확인했다. 제품쓰기/기존helper12재실행0·knownlive0이며최종type/raw/diff/독립검수전소스단위완료주장0이다.
+
+- UI02신규시험동결22983B/SHA377842ea·manifest1d6892ef/writer반환·최종type069c34/diff00060b0을인수했다. 최종true표식1건3985e7강화후Main8877d0 최종동결7PASS/skip0/자연exit0(1320.8576ms),제품4지문불변이다. Main리뷰artifact mkdir d5133e는부모부재준비오류1로시험미실행,8877d0의전용부모생성으로보정/기존자료변경0이다. 결과 UI02_BASELINE_DESIGN_SCREEN_JOURNEY_RESULT_20261108.md에정확명령/오류/소유회수/미검증을분리했다. 독립최종branch/docs+신규시험패치검수중·실DB/served/인수/전체계획완료아니다.
+
+- UI02 실제React 최종독립10e294→e332b7 C0/I0/M0로정확시험SHA/manifest·실제호출선/strict transport/부모commit·guard/cleanup·branch전체미채택경계를확인했다. review.patch SHAd603795a도검산했고실제품/기존시험diff0·후보cbef/패킷239845불변이다. Main은이정확단일리뷰파일의지문/소유·resolved경로/link/목록을확인후1파일·leaf1dir와비어있는새parent1dir만정리했고leaf부재를확인했다. 실제자료/다른폴더변경0이다. 결과문정합성재검수뒤게시/PR/merged한정smoke로이어간다.
+
+- UI02 결과서c362f9 scoped C0/I0로실증거/정리·준비오류/과거실패/미검증정합성을확인했다. 현재source단위최종검수완료이며정확신규시험/결과/현황3경로를게시한다. 전체UI02/실served·DB·사용자인수/44업무완료주장은하지않는다.
