@@ -9,7 +9,7 @@ const digest=(v:unknown)=>contentHash(canonicalJson(v));
 async function setup(){
  let selected=0,announce!:()=>void;
  const firstRead=new Promise<void>(ok=>announce=ok);
- const opts={failReceipt:false,empty:false,onWaitRelease:undefined as (()=>void)|undefined};
+ const opts={failReceipt:false,empty:false,noManifest:false,onWaitRelease:undefined as (()=>void)|undefined};
  const sql:PageSqlAdapter=(s,a,{f,drafts,issued})=>{
   if(s==='ROLLBACK'){opts.onWaitRelease?.();return undefined;}
   if(s.startsWith('SELECT v.content_hash AS vhash')){
@@ -30,6 +30,17 @@ async function setup(){
     return [{sequence:String(sequence),valid,command_ref:ref,envelope_hash:x.envelope_hash,envelope:x.snapshot_json.envelope}];
    });
    return {rows:output};
+  }
+  if(s.startsWith('SELECT * FROM anvil.normal_start_material_rows')){
+   // 원 제품 START가 저장한 manifest/material 행만 돌려준다. ID를 시험이 따로 만들지 않는다.
+   const [pid,ids]=a;
+   return {rows:f.tables.execution_commands!.filter(x=>x.project_id===pid&&ids.includes(x.id)).flatMap(x=>{
+    const d=f.tables.execution_material_manifests!.find(m=>m.project_id===pid&&m.created_command_id===x.created_command_id);
+    if(!d||opts.noManifest)return [];
+    return [{command_record_id:x.id,manifest_ref:{id:d.id,version:1,contentHash:d.content_hash},manifest:d.snapshot_json,
+     materials:f.tables.execution_materials!.filter(m=>m.project_id===pid&&m.manifest_id===d.id&&m.command_record_id===x.id)
+      .map(m=>({ref:{id:m.id,version:1,contentHash:m.content_hash},snapshot:m.snapshot_json}))}];
+   })};
   }
   if(s.startsWith('INSERT INTO anvil.execution_receipts(')&&JSON.parse(a[6]).kind==='NORMAL_COMMAND_PAGE'){
    if(opts.failReceipt)throw Error('합성 부분 쓰기 실패');
@@ -108,5 +119,48 @@ test('빈 페이지 대기는 연결을 반환하고, 대기 중 회수되면 no
   const pending=Promise.resolve(p.get());await firstRead;await released;
   h.store.mode.revoked=true;
   const res=await pending;assert.ok(res.statusCode>=400);assert.equal(h.store.events().length,3);assert.equal(h.store.receipts().length,1);
+ }finally{await h.app.close();}
+});
+test('제품 START가 등록한 자료 ID와 범위를 명령 페이지와 고정 영수증으로 전달한다',async()=>{
+ const {h,challenge}=await setup();
+ try{
+  const p=await challenge(),res=await p.get();assert.equal(res.statusCode,200,res.body);
+  const item=res.json().items[0],row=h.f.tables.execution_commands![0]!;
+  const manifest=h.f.tables.execution_material_manifests!.find(m=>m.created_command_id===row.created_command_id)!;
+  const stored=h.f.tables.execution_materials!.filter(m=>m.manifest_id===manifest.id);
+  assert.deepEqual(item.materials.manifestRef,{id:manifest.id,version:1,contentHash:manifest.content_hash});
+  assert.deepEqual(item.materials.groups.map((g:any)=>g.kind),['CONTEXT_BUNDLE','START_OPTIONS']);
+  assert.deepEqual(item.materials.groups.map((g:any)=>g.payloadRef),[item.envelope.payload.contextBundleRef,item.envelope.payload.optionsRef]);
+  const parts=item.materials.groups.flatMap((g:any)=>g.parts);
+  assert.deepEqual(parts.map((x:any)=>x.materialId).sort(),stored.map(m=>m.id).sort());
+  for(const g of item.materials.groups){
+   assert.equal(g.mediaType,'application/json');assert.equal(g.parts.reduce((n:number,x:any)=>n+x.utf8Bytes,0),g.sourceBytes);
+   assert.deepEqual(Object.keys(g).sort(),['contentHash','kind','mediaType','parts','payloadRef','sourceBytes','sourceRef']);
+  }
+  const receipt=h.store.receipts().find(v=>v.snapshot_json.kind==='NORMAL_COMMAND_PAGE')!.snapshot_json;
+  assert.equal(receipt.materialDiscoveryVersion,1);
+  assert.deepEqual(receipt.entries[0].materialsManifestRef,item.materials.manifestRef);
+  assert.equal(receipt.entries[0].materialsDescriptorHash,digest(item.materials));
+  assert.deepEqual((await p.get()).json(),res.json());
+  assert.ok(!JSON.stringify(res.json()).includes(String(h.f.root)));
+ }finally{await h.app.close();}
+});
+test('자료 등록이 없거나 변조됐거나 결박 없는 옛 영수증이면 자료 metadata를 내지 않는다',async()=>{
+ const {h,opts,challenge}=await setup();
+ try{
+  const p=await challenge(),material=h.f.tables.execution_materials![0]!,saved=structuredClone(material.snapshot_json);
+  opts.noManifest=true;assert.equal((await p.get()).statusCode,412);opts.noManifest=false;
+  material.snapshot_json={...saved,byteOffset:1};assert.equal((await p.get()).statusCode,412);
+  material.snapshot_json={...saved,commandId:h.f.pid};assert.equal((await p.get()).statusCode,412);material.snapshot_json=saved;
+  assert.equal(h.store.receipts().length,1);
+  const ok=await p.get();assert.equal(ok.statusCode,200,ok.body);
+  // 발견 결박이 생기기 전 형식의 영수증을 재현한다. 사후에 metadata를 덧붙이지 않아야 한다.
+  const receipt=h.store.receipts().find(v=>v.snapshot_json.kind==='NORMAL_COMMAND_PAGE')!,{materialDiscoveryVersion:_,...old}=receipt.snapshot_json;
+  receipt.snapshot_json={...old,entries:old.entries.map(({materialsManifestRef:__,materialsDescriptorHash:___,...e}:any)=>e)};
+  receipt.content_hash=digest(receipt.snapshot_json);
+  const used=h.store.events().find(v=>v.version===2&&v.snapshot_json.consumption?.resultRef.id===receipt.id)!;
+  used.snapshot_json.consumption.resultRef.contentHash=receipt.content_hash;used.content_hash=digest(used.snapshot_json);
+  const again=await p.get();assert.equal(again.statusCode,412);assert.equal(again.json().code,'MATERIAL_DISCOVERY_BINDING_REQUIRED');
+  assert.equal(again.json().items,undefined);
  }finally{await h.app.close();}
 });

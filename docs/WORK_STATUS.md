@@ -18726,3 +18726,16 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 ### 자료 전달·발견 계약 후보 A안 직접 채택 — 2026-11-11T03:43:55+09:00
 
 신산님이 이 세션에서 '자료 전달·발견 계약 후보 A안을 채택할까요?'에 'A 안으로 하자'고 직접 답했다. 대상은 docs/contracts/FN08_NORMAL_MATERIAL_WIRE_DISCOVERY_CANDIDATE_20261108.md r1의 A안(§2 명령 페이지 자료 descriptor, §3 부분 bytes의 canonical unpadded base64url 표현, §4 반영·검수·복구 범위)이다. B안(별도 manifest 조회 endpoint)은 채택하지 않았다. 채택 범위는 문서 §4대로 코드·미적용 forward SQL·RAM/가짜 DB 합성 검증이며 실제 DB 적용·권한·키·서비스·Agent 실행·실사용 자료 읽기는 제외다. PMO 결정 대기 2건(e59592e3, 239845d6)은 이 채택과 무관하며 그대로 미채택이다. 구현은 claude/av3-normal-start-materials에서 단일 writer로 진행한다.
+
+
+### 자료 발견 descriptor source 구현 — 2026-11-11T03:51:34+09:00
+
+- 담당: Claude 세션 단일 writer(Main 겸임). 독립 검수자 없음 — 아래 검증은 수행자 자체 실행이며 독립 검수 C0/I0 근거가 아니다.
+- 범위: 채택 A안 §2(명령 페이지의 자료 descriptor)만. §3 부분 bytes 전달 route·nonce 소비·영수증·proof binding은 미구현이다.
+- 변경 6경로: apps/server/modules/executions/normal-command-pages.ts(items[].materials, 고정 영수증 materialDiscoveryVersion:1과 entries의 materialsManifestRef/materialsDescriptorHash, fitPage로 건수50·자료 부분200·크기 상한 앞에서 페이지 닫기, 결박 없는 옛 영수증은 MATERIAL_DISCOVERY_BINDING_REQUIRED), normal-start-materials.ts(startMaterialDescriptor: manifest/material 행의 hash·scope·commandId·payload·연속 offset·부분 합계 검산), 신규 db/migrations/0088_normal_start_material_delivery.sql.pending(normal_start_material_rows, normal_start_material_descriptor, normal_command_page_valid 교체), tests/unit/FN08/normal-command-pages-journey.test.ts·normal-command-pages.test.ts 보강, 신규 normal-start-material-discovery-sql.test.ts.
+- 검증: 구현 전 신규 여정 2건과 fitPage 단위 파일이 실패(RED)했다. 구현 뒤 node --experimental-test-module-mocks --test 로 FN08 normal 계열 직접·인접 시험 33P/0F/0S(4.8초), 신규 SQL 정적 1P, npm run typecheck exit0, diff --check 0. 제품 START가 저장한 manifest/material 행의 ID가 GET commands 응답과 영수증에 그대로 전달되는 것, 등록 누락·snapshot 변조 거절, 같은 packet 재조회 동일 응답, 옛 형식 영수증 거절을 합성 범위에서 확인했다.
+- 실패 유지: WIP 시험 tests/unit/FN08/normal-start-materials-sql.test.ts는 0088에 전달 절(execution_material_proof_bindings 등)이 아직 없어 0P/1F다. 기대값을 바꾸지 않았다.
+- 미검증: 0088은 미적용 source이며 실제 PostgreSQL에서 실행한 적이 없다(문법·trigger 상호작용 포함 NOT_RUN). 시험의 SQL 응답은 가짜 DB 대역이다. 실제 TLS·실행기 소비 codec·Agent 전부 NOT_RUN. 전체 시험 묶음은 실행하지 않았다.
+- 기존 소비자 영향: GET commands item에 materials 키가 추가됐다. exact 키를 요구하는 기존 소비자가 있으면 거절할 수 있으며(후보 문서 §2 명시) 실행기 쪽 codec은 아직 고치지 않았다.
+- 다음: A안 §3 자료 GET. START_OPTIONS 원문은 execution_preparations.snapshot_json.options.body에서 읽을 수 있음을 0083 normal_start_material_complete에서 확인했다. CONTEXT_BUNDLE 원문은 HUMAN 주체를 요구하는 context reader를 거쳐야 하며 연결 실행기 요청에서 어떤 server-owned 주체로 읽을지는 아직 정하지 못했다.
+- rollback: 이 branch 소유 commit 일반 revert. 실제 DB 미변경.

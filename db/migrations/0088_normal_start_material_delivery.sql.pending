@@ -1,0 +1,87 @@
+-- normal START 자료 발견(채택 후보 A §2). 원 START가 같은 거래에서 등록한 manifest/material 행만 사용하며
+-- 새 권한·nonce·명령을 발급하지 않는다. 부분 bytes 전달(§3)의 영수증·proof binding 완결은 이 파일의 후속 절에서 추가한다.
+BEGIN;
+-- 명령 페이지와 고정 영수증이 같은 descriptor를 재구성한다. 경로·본문·임의 문서 목록은 포함하지 않는다.
+CREATE FUNCTION anvil.normal_start_material_descriptor(d anvil.execution_material_manifests) RETURNS jsonb LANGUAGE sql STABLE AS $$
+ SELECT jsonb_build_object('manifestRef',jsonb_build_object('id',d.id,'version',d.version,'contentHash',d.content_hash),
+  'groups',(SELECT jsonb_agg(jsonb_build_object('kind',t.g->'kind','payloadRef',t.g->'payloadRef','sourceRef',t.g#>'{source,sourceRef}',
+    'sourceBytes',t.g#>'{source,sourceBytes}','contentHash',t.g#>'{source,contentHash}','mediaType',t.g#>'{source,mediaType}','parts',t.g->'parts') ORDER BY t.n)
+   FROM jsonb_array_elements(d.snapshot_json->'groups') WITH ORDINALITY AS t(g,n)))
+$$;
+CREATE FUNCTION anvil.normal_start_material_rows(pid uuid,ids uuid[])
+RETURNS TABLE(command_record_id uuid,manifest_ref jsonb,manifest jsonb,materials jsonb)
+LANGUAGE plpgsql AS $$
+DECLARE x anvil.execution_commands%ROWTYPE;d anvil.execution_material_manifests%ROWTYPE;n bigint;
+BEGIN
+ IF ids IS NULL OR cardinality(ids) NOT BETWEEN 1 AND 51 OR cardinality(ids)<>(SELECT count(DISTINCT i) FROM unnest(ids) AS i)
+  OR cardinality(ids)<>(SELECT count(*) FROM anvil.execution_commands WHERE project_id=pid AND id=ANY(ids))
+ THEN RAISE EXCEPTION 'NORMAL_START_MATERIAL_SCOPE_INVALID';END IF;
+ FOR x IN SELECT * FROM anvil.execution_commands WHERE project_id=pid AND id=ANY(ids) ORDER BY id LOOP
+  SELECT count(*) INTO n FROM anvil.execution_material_manifests WHERE project_id=pid AND created_command_id=x.created_command_id;
+  -- 등록이 없거나 원 명령 graph와 어긋난 명령을 빈 자료로 내보내지 않는다.
+  IF n<>1 OR NOT coalesce(anvil.normal_start_material_complete(pid,x.created_command_id),false) THEN RAISE EXCEPTION 'NORMAL_START_MATERIAL_SOURCE_INVALID';END IF;
+  SELECT * INTO d FROM anvil.execution_material_manifests WHERE project_id=pid AND created_command_id=x.created_command_id;
+  command_record_id=x.id;
+  manifest_ref=jsonb_build_object('id',d.id,'version',d.version,'contentHash',d.content_hash);
+  manifest=d.snapshot_json;
+  SELECT coalesce(jsonb_agg(jsonb_build_object('ref',jsonb_build_object('id',m.id,'version',m.version,'contentHash',m.content_hash),'snapshot',m.snapshot_json) ORDER BY m.id),'[]'::jsonb)
+   INTO materials FROM anvil.execution_materials m WHERE m.project_id=pid AND m.manifest_id=d.id AND m.command_record_id=x.id;
+  RETURN NEXT;
+ END LOOP;
+END;
+$$;
+-- 0087의 페이지 영수증 검산을 발견 결박 형식으로 교체한다. 옛 형식 영수증은 새로 저장할 수 없고 과거 행은 재작성하지 않는다.
+CREATE OR REPLACE FUNCTION anvil.normal_command_page_valid(r anvil.execution_receipts)
+RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE v anvil.execution_challenges%ROWTYPE;s jsonb=r.snapshot_json;b jsonb=s->'binding';cur record;cr record;part record;
+ d anvil.execution_material_manifests%ROWTYPE;descriptor jsonb;
+ marker text=current_setting('anvil.normal_page_verified',true);expected jsonb='[]'::jsonb;total int=0;taken int;parts int=0;
+ observed timestamptz;expires timestamptz;
+BEGIN
+ SELECT * INTO v FROM anvil.execution_challenges WHERE project_id=r.project_id AND id=r.challenge_id AND version=2;
+ IF NOT FOUND OR r.grant_id<>v.grant_id OR r.grant_version<>v.grant_version OR r.version<>1 OR r.challenge_version<>1
+  OR NOT anvil.execution_json_shape(s,ARRAY['kind','materialDiscoveryVersion','binding','credentialRef','challengeRef','packetHash','target','requestId','after','entries','hasMore','nextCursor','observedAt','expiresAt'])
+  OR s->>'kind' IS DISTINCT FROM 'NORMAL_COMMAND_PAGE' OR s->'materialDiscoveryVersion' IS DISTINCT FROM '1'::jsonb
+  OR r.content_hash IS DISTINCT FROM anvil.execution_json_hash(s)
+  OR marker IS DISTINCT FROM txid_current()::text||':'||r.content_hash||':'||split_part(marker,':',3) OR marker IS NULL
+  OR s->'challengeRef' IS DISTINCT FROM v.snapshot_json->'previousRef' OR b IS DISTINCT FROM v.snapshot_json->'binding'
+  OR s->'target' IS DISTINCT FROM v.snapshot_json#>'{request,target}' OR s->'requestId' IS DISTINCT FROM v.snapshot_json->'request'->'requestId'
+  OR s->'credentialRef' IS DISTINCT FROM v.snapshot_json->'credentialRef'
+  OR v.snapshot_json->'consumption' IS DISTINCT FROM jsonb_build_object('resultRef',jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash),
+    'packetHash',s->'packetHash','consumedAt',s->'observedAt')
+  OR NOT anvil.execution_iso_valid(s->'observedAt') OR NOT anvil.execution_iso_valid(s->'expiresAt')
+  OR jsonb_typeof(s->'after') IS DISTINCT FROM 'number' OR s->>'after' !~ '^(0|[1-9][0-9]{0,15})$'
+  OR jsonb_typeof(s->'nextCursor') IS DISTINCT FROM 'string' OR length(s->>'nextCursor') NOT BETWEEN 1 AND 4096
+  OR jsonb_typeof(s->'entries') IS DISTINCT FROM 'array' OR jsonb_array_length(s->'entries')>50
+ THEN RETURN false;END IF;
+ taken=jsonb_array_length(s->'entries');
+ SELECT * INTO cr FROM anvil.normal_request_credential(split_part(marker,':',3),(b->>'connectorId')::uuid,(b->>'executionId')::uuid,r.grant_id,r.grant_version,b#>>'{grantRef,contentHash}',(b->>'credentialGeneration')::bigint);
+ IF NOT FOUND OR cr.project_id<>r.project_id OR cr.credential_ref IS DISTINCT FROM s->'credentialRef' THEN RETURN false;END IF;
+ SELECT * INTO cur FROM anvil.normal_exchange_current(r.project_id,(b->>'connectorId')::uuid,(b->>'executionId')::uuid,r.grant_id,r.grant_version,b#>>'{grantRef,contentHash}',(b->>'credentialGeneration')::bigint);
+ observed=(s->>'observedAt')::timestamptz;expires=(s->>'expiresAt')::timestamptz;
+ IF NOT FOUND OR cur.binding IS DISTINCT FROM b OR observed>cur.observed_at OR expires<=observed OR expires<=clock_timestamp()
+  OR expires>least(cur.deadline,cr.expires_at,(v.snapshot_json#>>'{publicChallenge,expiresAt}')::timestamptz) THEN RETURN false;END IF;
+ FOR part IN SELECT * FROM anvil.normal_command_page_rows(r.project_id,(b->>'executionId')::uuid,r.grant_id,r.grant_version,(b->>'executionGeneration')::bigint,(s->>'after')::bigint,NULL)
+ LOOP
+  total=total+1;
+  -- 상한 때문에 앞에서 닫힌 페이지는 원 순서의 접두부만 가진다. 닫힌 뒤의 명령은 다음 페이지 몫이다.
+  IF total<=taken THEN
+   IF expires>(part.envelope->>'expiresAt')::timestamptz THEN RETURN false;END IF;
+   SELECT m.* INTO d FROM anvil.execution_material_manifests m JOIN anvil.execution_commands x ON x.project_id=m.project_id AND x.created_command_id=m.created_command_id
+    WHERE m.project_id=r.project_id AND x.id=(part.command_ref->>'id')::uuid;
+   IF NOT FOUND OR NOT coalesce(anvil.normal_start_material_complete(r.project_id,d.created_command_id),false)
+    OR d.snapshot_json->'scope' IS DISTINCT FROM jsonb_build_object('mode','EXECUTION','projectId',r.project_id,'connectorId',b->'connectorId','executionId',b->'executionId',
+     'executionGeneration',b->'executionGeneration','grantRef',b->'grantRef','credentialGeneration',b->'credentialGeneration') THEN RETURN false;END IF;
+   descriptor=anvil.normal_start_material_descriptor(d);
+   SELECT parts+coalesce(sum(jsonb_array_length(g->'parts')),0) INTO parts FROM jsonb_array_elements(descriptor->'groups') AS g;
+   expected=expected||jsonb_build_array(jsonb_build_object('sequence',part.sequence::bigint,'commandRef',part.command_ref,'envelopeHash',part.envelope_hash,
+    'materialsManifestRef',descriptor->'manifestRef','materialsDescriptorHash',anvil.execution_json_hash(descriptor)));
+  END IF;
+ END LOOP;
+ -- 명령이 있는데 하나도 담지 않은 페이지와 자료 부분 200 초과 페이지는 저장할 수 없다.
+ RETURN s->'entries'=expected AND taken<=total AND (taken>0 OR total=0) AND parts<=200 AND s->'hasMore'=to_jsonb(total>taken);
+END;
+$$;
+REVOKE ALL ON FUNCTION anvil.normal_start_material_descriptor(anvil.execution_material_manifests),anvil.normal_start_material_rows(uuid,uuid[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.normal_start_material_descriptor(anvil.execution_material_manifests),anvil.normal_start_material_rows(uuid,uuid[]) TO anvil_v3_app;
+COMMIT;

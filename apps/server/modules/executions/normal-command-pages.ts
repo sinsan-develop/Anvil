@@ -9,6 +9,7 @@ import {AuthFailure} from '../access/repository.ts';
 import {executionProofBytes,executionTarget,verifyNormalCommandPageProof} from './execution-proof.ts';
 import {original,readCurrent} from './normal-exchange-challenge.ts';
 import {normalRequestBearerDigest,requestCredential} from './normal-request-challenge.ts';
+import {maxPageMaterialParts,startMaterialDescriptor,startMaterialParts,type StartMaterialDescriptor} from './normal-start-materials.ts';
 
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
@@ -26,6 +27,20 @@ export function readPageWindow(rows:{sequence:unknown}[],after:number){
   return seq;
  });
  return {sequences,hasMore:rows.length>50};
+}
+
+/** 한 명령과 그 자료 descriptor는 한 단위다. 건수50·자료 부분200·크기 상한을 넘기는 명령 앞에서 닫으며
+ * 첫 명령조차 담지 못하면 자료를 생략하지 않고 거절한다. 응답 봉투 여유는 호출자가 상한에서 미리 뺀다. */
+export function fitPage<T extends {materials:StartMaterialDescriptor}>(items:T[],maxBytes=limit-16384):T[]{
+ let parts=0,bytes=2,count=0;
+ for(const item of items){
+  const next=Buffer.byteLength(canonicalJson(item))+(count?1:0);
+  parts+=startMaterialParts(item.materials);bytes+=next;
+  if(count>=50||parts>maxPageMaterialParts||bytes>maxBytes)break;
+  count++;
+ }
+ if(items.length&&!count)deny('EXECUTION_COMMAND_PAGE_ITEM_TOO_LARGE');
+ return items.slice(0,count);
 }
 
 export class NormalPageCursors{
@@ -71,7 +86,8 @@ function readPacket(request:FastifyRequest){
 }
 type Packet=ReturnType<typeof readPacket>;
 type Target=ReturnType<typeof executionTarget>;
-async function selectItems(db:PoolClient,keys:unknown[],generation:number,after:number,fixed:string[]|null,now:Date){
+async function selectItems(db:PoolClient,keys:unknown[],binding:any,after:number,fixed:string[]|null,now:Date){
+ const generation=binding.executionGeneration;
  const rows=(await db.query('SELECT * FROM anvil.normal_command_page_rows($1,$2,$3,$4,$5,$6,$7)',[...keys,generation,after,fixed])).rows;
  const {sequences,hasMore}=readPageWindow(rows as {sequence:unknown}[],after);
  const ids=new Set<string>();
@@ -83,11 +99,23 @@ async function selectItems(db:PoolClient,keys:unknown[],generation:number,after:
     envelope.context.executionId!==keys[1]||envelope.context.executionGeneration!==generation||r.envelope_hash!==envelope.envelopeHash)deny();
   return {sequence:sequences[i]!,commandRef:r.command_ref,envelope};
  });
- const selected=items.slice(0,50);
+ // 자료 발견 metadata는 원 START가 같은 거래에서 등록한 manifest/material 행에서만 만든다.
+ const registered=items.length?(await db.query('SELECT * FROM anvil.normal_start_material_rows($1,$2)',[keys[0],items.map(x=>x.commandRef.id)])).rows:[];
+ if(registered.length!==items.length)deny();
+ const withMaterials=items.map(x=>{
+  const own=registered.filter(r=>r.command_record_id===x.commandRef.id);
+  if(own.length!==1)deny();
+  return {...x,materials:startMaterialDescriptor(own[0],binding,x.envelope as any)};
+ });
+ // 고정 재조회는 최초 영수증의 명령만 다시 읽으므로 새로 닫지 않고 전부 검산한다.
+ const selected=fixed?withMaterials:fitPage(withMaterials);
+ if(fixed&&selected.length>50)deny();
  bounded(selected);
- return {items:selected,hasMore};
+ return {items:selected,hasMore:fixed?false:hasMore||selected.length<withMaterials.length};
 }
-const descriptors=(items:Awaited<ReturnType<typeof selectItems>>['items'])=>items.map(x=>({sequence:x.sequence,commandRef:x.commandRef,envelopeHash:x.envelope.envelopeHash}));
+const descriptors=(items:Awaited<ReturnType<typeof selectItems>>['items'])=>items.map(x=>({sequence:x.sequence,commandRef:x.commandRef,envelopeHash:x.envelope.envelopeHash,
+ materialsManifestRef:x.materials.manifestRef,materialsDescriptorHash:digest(x.materials)}));
+const receiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','after','entries','hasMore','nextCursor','observedAt','expiresAt'];
 async function attempt(o:NormalCommandPagesOptions,connector:string,execution:string,tokenDigest:string,frame:Packet,target:Target,
  cursor:string|null,wait:number,signal:AbortSignal){
  const db=await o.pool.connect(),proof=frame.proof,g=proof.grantRef,c=frame.challengeRef;
@@ -110,14 +138,17 @@ async function attempt(o:NormalCommandPagesOptions,connector:string,execution:st
   if(previous.length>1)deny();
   const prior=previous[0],s=prior?.receipt;
   if(prior){
+   // 발견 결박이 없는 옛 영수증에는 metadata를 사후에 덧붙이지 않는다.
+   if(s&&prior.content_hash===digest(s)&&recordV1(s,receiptKeys)&&s.kind==='NORMAL_COMMAND_PAGE')deny('MATERIAL_DISCOVERY_BINDING_REQUIRED');
    if(!s||!uuidV1(prior.id)||prior.content_hash!==digest(s)||prior.vhash!==digest(prior.consumed)||!same(prior.consumed,{...old.snapshot_json,sequence:prior.consumed.sequence,previousRef:c,
      consumption:{consumedAt:s.observedAt,resultRef:{id:prior.id,version:1,contentHash:prior.content_hash},packetHash:s.packetHash}})||
-    !recordV1(s,['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','after','entries','hasMore','nextCursor','observedAt','expiresAt'])||
+    !recordV1(s,[...receiptKeys,'materialDiscoveryVersion'])||s.materialDiscoveryVersion!==1||
     s.kind!=='NORMAL_COMMAND_PAGE'||!same(s.binding,b)||!same(s.credentialRef,cred.ref)||!same(s.challengeRef,c)||
-    !isoV1(s.observedAt)||!isoV1(s.expiresAt)||typeof s.hasMore!=='boolean'||!arrayV1(s.entries,50)||!s.entries.every((e:any)=>recordV1(e,['commandRef','sequence','envelopeHash'])&&refV1(e.commandRef)))deny();
+    !isoV1(s.observedAt)||!isoV1(s.expiresAt)||typeof s.hasMore!=='boolean'||!arrayV1(s.entries,50)||!s.entries.every((e:any)=>recordV1(e,['commandRef','sequence','envelopeHash','materialsManifestRef','materialsDescriptorHash'])&&refV1(e.commandRef)&&
+     refV1(e.materialsManifestRef)&&hashV1(e.materialsDescriptorHash)))deny();
    if(s.packetHash!==packetHash||!same(s.target,target)||s.after!==after||s.requestId!==proof.requestId)deny('IDEMPOTENCY_CONFLICT',409);
   }
-  const page=await selectItems(db,[pid,execution,g.id,g.version],b.executionGeneration,after,prior?s.entries.map((e:any)=>e.commandRef.id):null,current.now);
+  const page=await selectItems(db,[pid,execution,g.id,g.version],b,after,prior?s.entries.map((e:any)=>e.commandRef.id):null,current.now);
   if(!prior&&!page.items.length&&wait>0){
    // 대기 동안 프로젝트/인가 잠금과 연결을 모두 반환한다.
    await db.query('ROLLBACK');return {wait:Math.max(0,Math.min(wait,end-at-1))} as const;
@@ -125,7 +156,7 @@ async function attempt(o:NormalCommandPagesOptions,connector:string,execution:st
   const entries=descriptors(page.items),expires=Math.min(end,...page.items.map(i=>Date.parse(i.envelope.expiresAt)));
   if(prior&&(!same(entries,s.entries)||Date.parse(s.expiresAt)>expires||Date.parse(s.expiresAt)<=at||Date.parse(s.observedAt)>at||
     o.cursors.decode(s.nextCursor,scope,at)!==(entries.at(-1)?.sequence??after)))deny();
-  const snapshot=s??{kind:'NORMAL_COMMAND_PAGE',binding:b,credentialRef:cred.ref,challengeRef:c,packetHash,target,requestId:proof.requestId,after,entries,
+  const snapshot=s??{kind:'NORMAL_COMMAND_PAGE',materialDiscoveryVersion:1,binding:b,credentialRef:cred.ref,challengeRef:c,packetHash,target,requestId:proof.requestId,after,entries,
    hasMore:page.hasMore,nextCursor:o.cursors.encode(scope,entries.at(-1)?.sequence??after,at,Math.min(at+900000,cred.expiresAt,current.deadline.getTime())),
    observedAt:current.now.toISOString(),expiresAt:new Date(expires).toISOString()};
   const ref={id:prior?.id??randomUUID(),version:1,contentHash:digest(snapshot)};
