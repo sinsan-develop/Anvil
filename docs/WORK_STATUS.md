@@ -18704,3 +18704,25 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 최신직접지시‘병합하고대기해’에따라Primary즉시interrupt·추가구현/시험/재개금지통보. 검수완료PR81/마감PR82는이미main e194fc36에병합/동기화/정리완료다. 이후자료GET착수분은제품소스변경0·새시험2/미채택후보1이며검수/실행완료가아니다. 이를WIP8fb816cad5e7e0784e5f84c7f00aab33a16d23ce로보존했고main제품병합대상에서제외한다. codex/av3-normal-start-materials는PAUSED,소유Main/Primary·안전제품checkpointmaine194fc36·재개조건신산님명시재개/현재지침·실제Git재검산이다. 새자료발견/bytesHTTP계약후보c24dfb54f2d251c284552c7b1ea4885ac474723c545b74d967c1651ed35e2b31는미채택이며자동질문/적용0.
 
 이대기기록2문서만일반PR로main에반영하고,미검수WIP원격복구ref를보존한뒤main clean/원격동일에서대기한다. 전체계획미완료/준비2·제품42잔여표시는유지하고실제DB/권한/키/서비스/Agent/SSH실행0이다. 다른자료삭제·예약변경0. 신산님재개전후속구현·자동재개·새계약채택요청을하지않는다.
+
+
+### Claude 세션 인수 체크포인트 — 2026-11-11T03:41:07+09:00
+
+- 확인자: 이 Claude Code 세션(모델 claude-fable-5-2). 신산님 직접 지시 '이어서 작업을 진행 하자'와 인수 방식 선택 '최근 구간만 읽고 인수'에 따라 Main 겸 단일 writer로 인수했다. 기존 Codex Main/Primary 세션과 PMO 대화에는 이 세션이 접근할 수 없어 보고는 이 문서와 신산님 직접 응답으로 한다. 새 하위 담당자·자동화 생성 0.
+- 대상: 프로젝트 정본 저장소 sinsan-develop/Anvil, Stage C·FN08 normal START 자료 보호 GET(중지됐던 다음 업무).
+- 추가 전 WORK_STATUS: 6424932 bytes, SHA-256 82636df65dafa4c76288c526d1741f931afc0ebb3cb3c79254a4326a2dde5a41.
+- 확인 범위(전체 열람 아님, 신산님 승인 예외): PMO AGENTS §1~§9 전문(SHA 5503c08a…76c2ad6), 프로젝트 AGENTS v3 진입점 절(SHA e4338730…baa5926), WORK_STATUS의 '현재 상황 보완 — 2026-11-08T13:46:04' 절부터 끝까지, WORK_CHECK 전문(SHA 06a1abb6…2a072), docs/contracts/FN06_FN08_EXECUTION_DISPATCH_PROPOSAL.md §6~§7, FN08_NORMAL_MATERIAL_WIRE_DISCOVERY_CANDIDATE_20261108.md 전문, normal-command-pages.ts·normal-request-challenge.ts·connector-auth.ts·app.ts 전문, normal-initial-execution.ts의 자료 명세 생성부, execution-materials.ts·execution-start-context-source.ts 일부. WORK_PLAN(SHA ac6bf508…75c6)·설계서(SHA 1346f624…28e7)·DEVELOPMENT_ENVIRONMENT(SHA d6496cc2…1e00)·WORK_STATUS 앞부분은 읽지 않았다. 이 체크포인트를 전체 열람 근거로 재사용하지 않는다.
+- 실제 Git 재검산: 기록상 대기 기준 main은 2fc16e4b였으나 원격 development/main은 2e0eab21이다. PR84(11-08 19:25)가 codex/av3-normal-start-materials(fd97e081, WIP 8fb816ca 포함)를 main에 병합했고 원격 branch는 없다. 'WIP는 main 병합 대상에서 제외'라는 19:12 기록과 실제가 다르다. 그 결과 main에 미검수 시험 2개와 미채택 계약 후보 문서 1개가 들어갔고, 병합 직후 main의 두 시험은 실패 상태였다(모듈 부재, 0088 부재). 원인(Broker 자동 병합 여부)은 확인하지 못했다. 되돌리기·history 변경 0.
+- 작업 branch: 기존 branch가 병합·삭제된 상태이므로 최신 development/main 2e0eab21에서 claude/av3-normal-start-materials를 만들었다(PMO §8 접두어). 아직 push 0.
+- 할 일 근거: WORK_STATUS '마감 문서까지 main 동기화·다음 승인 자료GET 착수'(11-08T19:06:21)의 Primary GO와 D071 §6.2(명령에 결박한 자료 전달).
+- 허용 범위: 승인 계획 안의 source·미적용 forward SQL·합성 검증·작업 branch commit/push. 실제 DB/권한/키/서비스/Agent/SSH 0. 미채택 후보(자료 descriptor 발견, bytes의 HTTP JSON 표현)와 PMO 결정 대기 2건(e59592e3, 239845d6)은 적용 0.
+- 이번 변경: 신규 apps/server/modules/executions/normal-start-materials.ts에 checkedMaterialPart만 구현(원본 길이·hash, 부분 offset·길이·hash 검산). 기존 파일 변경 0.
+- 검증: 구현 전 tests/unit/FN08/normal-start-materials.test.ts 0P/1F(모듈 부재) → 구현 뒤 1P/0F/0S, npm run typecheck exit0. normal-start-materials-sql.test.ts는 0088 부재로 여전히 0P/1F다. 다른 시험은 실행하지 않았다.
+- 보류와 필요한 결정: (1) 자료 GET의 HTTP 응답에서 bytes 표현과 실행기의 materialId 발견은 미채택 후보 A에 있어 route 응답을 구현하지 않았다. (2) 연결 실행기 요청에는 HUMAN 세션이 없는데 원본 재구성 reader는 AuthenticatedIdentity를 요구한다. normal 경로에서 어떤 server-owned current가 그 주체를 공급하는지 읽은 범위에서 확정하지 못했다. 두 항목이 정해지기 전에는 0088 SQL·route·nonce 소비/영수증을 쓰지 않는다.
+- 미검증: 실제 PG·TLS·Agent·서비스 전부 NOT_RUN. 전체 계획 미완료, WORK_CHECK 44행 상태 변경 0.
+- rollback: 이 branch의 소유 commit 일반 revert.
+
+
+### 자료 전달·발견 계약 후보 A안 직접 채택 — 2026-11-11T03:43:55+09:00
+
+신산님이 이 세션에서 '자료 전달·발견 계약 후보 A안을 채택할까요?'에 'A 안으로 하자'고 직접 답했다. 대상은 docs/contracts/FN08_NORMAL_MATERIAL_WIRE_DISCOVERY_CANDIDATE_20261108.md r1의 A안(§2 명령 페이지 자료 descriptor, §3 부분 bytes의 canonical unpadded base64url 표현, §4 반영·검수·복구 범위)이다. B안(별도 manifest 조회 endpoint)은 채택하지 않았다. 채택 범위는 문서 §4대로 코드·미적용 forward SQL·RAM/가짜 DB 합성 검증이며 실제 DB 적용·권한·키·서비스·Agent 실행·실사용 자료 읽기는 제외다. PMO 결정 대기 2건(e59592e3, 239845d6)은 이 채택과 무관하며 그대로 미채택이다. 구현은 claude/av3-normal-start-materials에서 단일 writer로 진행한다.
