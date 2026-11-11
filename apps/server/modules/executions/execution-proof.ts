@@ -105,11 +105,17 @@ export function verifyNormalCredentialExchangeProof(spki:unknown,sig:unknown,val
  signature(spki,sig,executionProofBytes('EXECUTION_CREDENTIAL_EXCHANGE',p),binding.publicKeyFingerprint);
  return verified();
 }
+/** 명령 조회 또는 그 명령에 등록된 자료 한 부분만 대상이다. 자료 경로는 query를 받지 않는다. */
+function normalRequestPath(t:{path:string;queryHash:string},commands:string){
+ if(t.path===commands)return true;
+ const m=t.path.startsWith(commands+'/')&&/^([^/]+)\/materials\/([^/]+)$/.exec(t.path.slice(commands.length+1));
+ return !!m&&uuidV1(m[1])&&uuidV1(m[2])&&t.queryHash===contentHash(canonicalJson({}));
+}
 /** 조회 시 실제 query를 canonicalize해 여기서 봉인한 hash와 대조한다. */
 export function verifyNormalCommandChallengeRequest(spki:unknown,sig:unknown,value:unknown,binding:any,at:Date){
  const p=challengeRequest(value);
  if(binding.transport!=='NORMAL_PROTECTED'||binding.mode!=='EXECUTION'||p.purpose!=='EXECUTION_REQUEST'||
-   p.target.method!=='GET'||p.target.path!=='/api/v1/connectors/'+binding.connectorId+'/executions/'+binding.executionId+'/commands'||
+   p.target.method!=='GET'||!normalRequestPath(p.target,'/api/v1/connectors/'+binding.connectorId+'/executions/'+binding.executionId+'/commands')||
    p.target.bodyHash!==contentHash(canonicalJson(null))||!Number.isFinite(at.getTime())||
    Math.abs(Date.parse(p.issuedAt)-at.getTime())>30000)return invalid();
  exactSubject(p,binding);

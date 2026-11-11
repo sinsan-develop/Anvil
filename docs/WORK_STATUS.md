@@ -18704,3 +18704,60 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 최신직접지시‘병합하고대기해’에따라Primary즉시interrupt·추가구현/시험/재개금지통보. 검수완료PR81/마감PR82는이미main e194fc36에병합/동기화/정리완료다. 이후자료GET착수분은제품소스변경0·새시험2/미채택후보1이며검수/실행완료가아니다. 이를WIP8fb816cad5e7e0784e5f84c7f00aab33a16d23ce로보존했고main제품병합대상에서제외한다. codex/av3-normal-start-materials는PAUSED,소유Main/Primary·안전제품checkpointmaine194fc36·재개조건신산님명시재개/현재지침·실제Git재검산이다. 새자료발견/bytesHTTP계약후보c24dfb54f2d251c284552c7b1ea4885ac474723c545b74d967c1651ed35e2b31는미채택이며자동질문/적용0.
 
 이대기기록2문서만일반PR로main에반영하고,미검수WIP원격복구ref를보존한뒤main clean/원격동일에서대기한다. 전체계획미완료/준비2·제품42잔여표시는유지하고실제DB/권한/키/서비스/Agent/SSH실행0이다. 다른자료삭제·예약변경0. 신산님재개전후속구현·자동재개·새계약채택요청을하지않는다.
+
+
+### Claude 세션 인수 체크포인트 — 2026-11-11T03:41:07+09:00
+
+- 확인자: 이 Claude Code 세션(모델 claude-fable-5-2). 신산님 직접 지시 '이어서 작업을 진행 하자'와 인수 방식 선택 '최근 구간만 읽고 인수'에 따라 Main 겸 단일 writer로 인수했다. 기존 Codex Main/Primary 세션과 PMO 대화에는 이 세션이 접근할 수 없어 보고는 이 문서와 신산님 직접 응답으로 한다. 새 하위 담당자·자동화 생성 0.
+- 대상: 프로젝트 정본 저장소 sinsan-develop/Anvil, Stage C·FN08 normal START 자료 보호 GET(중지됐던 다음 업무).
+- 추가 전 WORK_STATUS: 6424932 bytes, SHA-256 82636df65dafa4c76288c526d1741f931afc0ebb3cb3c79254a4326a2dde5a41.
+- 확인 범위(전체 열람 아님, 신산님 승인 예외): PMO AGENTS §1~§9 전문(SHA 5503c08a…76c2ad6), 프로젝트 AGENTS v3 진입점 절(SHA e4338730…baa5926), WORK_STATUS의 '현재 상황 보완 — 2026-11-08T13:46:04' 절부터 끝까지, WORK_CHECK 전문(SHA 06a1abb6…2a072), docs/contracts/FN06_FN08_EXECUTION_DISPATCH_PROPOSAL.md §6~§7, FN08_NORMAL_MATERIAL_WIRE_DISCOVERY_CANDIDATE_20261108.md 전문, normal-command-pages.ts·normal-request-challenge.ts·connector-auth.ts·app.ts 전문, normal-initial-execution.ts의 자료 명세 생성부, execution-materials.ts·execution-start-context-source.ts 일부. WORK_PLAN(SHA ac6bf508…75c6)·설계서(SHA 1346f624…28e7)·DEVELOPMENT_ENVIRONMENT(SHA d6496cc2…1e00)·WORK_STATUS 앞부분은 읽지 않았다. 이 체크포인트를 전체 열람 근거로 재사용하지 않는다.
+- 실제 Git 재검산: 기록상 대기 기준 main은 2fc16e4b였으나 원격 development/main은 2e0eab21이다. PR84(11-08 19:25)가 codex/av3-normal-start-materials(fd97e081, WIP 8fb816ca 포함)를 main에 병합했고 원격 branch는 없다. 'WIP는 main 병합 대상에서 제외'라는 19:12 기록과 실제가 다르다. 그 결과 main에 미검수 시험 2개와 미채택 계약 후보 문서 1개가 들어갔고, 병합 직후 main의 두 시험은 실패 상태였다(모듈 부재, 0088 부재). 원인(Broker 자동 병합 여부)은 확인하지 못했다. 되돌리기·history 변경 0.
+- 작업 branch: 기존 branch가 병합·삭제된 상태이므로 최신 development/main 2e0eab21에서 claude/av3-normal-start-materials를 만들었다(PMO §8 접두어). 아직 push 0.
+- 할 일 근거: WORK_STATUS '마감 문서까지 main 동기화·다음 승인 자료GET 착수'(11-08T19:06:21)의 Primary GO와 D071 §6.2(명령에 결박한 자료 전달).
+- 허용 범위: 승인 계획 안의 source·미적용 forward SQL·합성 검증·작업 branch commit/push. 실제 DB/권한/키/서비스/Agent/SSH 0. 미채택 후보(자료 descriptor 발견, bytes의 HTTP JSON 표현)와 PMO 결정 대기 2건(e59592e3, 239845d6)은 적용 0.
+- 이번 변경: 신규 apps/server/modules/executions/normal-start-materials.ts에 checkedMaterialPart만 구현(원본 길이·hash, 부분 offset·길이·hash 검산). 기존 파일 변경 0.
+- 검증: 구현 전 tests/unit/FN08/normal-start-materials.test.ts 0P/1F(모듈 부재) → 구현 뒤 1P/0F/0S, npm run typecheck exit0. normal-start-materials-sql.test.ts는 0088 부재로 여전히 0P/1F다. 다른 시험은 실행하지 않았다.
+- 보류와 필요한 결정: (1) 자료 GET의 HTTP 응답에서 bytes 표현과 실행기의 materialId 발견은 미채택 후보 A에 있어 route 응답을 구현하지 않았다. (2) 연결 실행기 요청에는 HUMAN 세션이 없는데 원본 재구성 reader는 AuthenticatedIdentity를 요구한다. normal 경로에서 어떤 server-owned current가 그 주체를 공급하는지 읽은 범위에서 확정하지 못했다. 두 항목이 정해지기 전에는 0088 SQL·route·nonce 소비/영수증을 쓰지 않는다.
+- 미검증: 실제 PG·TLS·Agent·서비스 전부 NOT_RUN. 전체 계획 미완료, WORK_CHECK 44행 상태 변경 0.
+- rollback: 이 branch의 소유 commit 일반 revert.
+
+
+### 자료 전달·발견 계약 후보 A안 직접 채택 — 2026-11-11T03:43:55+09:00
+
+신산님이 이 세션에서 '자료 전달·발견 계약 후보 A안을 채택할까요?'에 'A 안으로 하자'고 직접 답했다. 대상은 docs/contracts/FN08_NORMAL_MATERIAL_WIRE_DISCOVERY_CANDIDATE_20261108.md r1의 A안(§2 명령 페이지 자료 descriptor, §3 부분 bytes의 canonical unpadded base64url 표현, §4 반영·검수·복구 범위)이다. B안(별도 manifest 조회 endpoint)은 채택하지 않았다. 채택 범위는 문서 §4대로 코드·미적용 forward SQL·RAM/가짜 DB 합성 검증이며 실제 DB 적용·권한·키·서비스·Agent 실행·실사용 자료 읽기는 제외다. PMO 결정 대기 2건(e59592e3, 239845d6)은 이 채택과 무관하며 그대로 미채택이다. 구현은 claude/av3-normal-start-materials에서 단일 writer로 진행한다.
+
+
+### 자료 발견 descriptor source 구현 — 2026-11-11T03:51:34+09:00
+
+- 담당: Claude 세션 단일 writer(Main 겸임). 독립 검수자 없음 — 아래 검증은 수행자 자체 실행이며 독립 검수 C0/I0 근거가 아니다.
+- 범위: 채택 A안 §2(명령 페이지의 자료 descriptor)만. §3 부분 bytes 전달 route·nonce 소비·영수증·proof binding은 미구현이다.
+- 변경 6경로: apps/server/modules/executions/normal-command-pages.ts(items[].materials, 고정 영수증 materialDiscoveryVersion:1과 entries의 materialsManifestRef/materialsDescriptorHash, fitPage로 건수50·자료 부분200·크기 상한 앞에서 페이지 닫기, 결박 없는 옛 영수증은 MATERIAL_DISCOVERY_BINDING_REQUIRED), normal-start-materials.ts(startMaterialDescriptor: manifest/material 행의 hash·scope·commandId·payload·연속 offset·부분 합계 검산), 신규 db/migrations/0088_normal_start_material_delivery.sql.pending(normal_start_material_rows, normal_start_material_descriptor, normal_command_page_valid 교체), tests/unit/FN08/normal-command-pages-journey.test.ts·normal-command-pages.test.ts 보강, 신규 normal-start-material-discovery-sql.test.ts.
+- 검증: 구현 전 신규 여정 2건과 fitPage 단위 파일이 실패(RED)했다. 구현 뒤 node --experimental-test-module-mocks --test 로 FN08 normal 계열 직접·인접 시험 33P/0F/0S(4.8초), 신규 SQL 정적 1P, npm run typecheck exit0, diff --check 0. 제품 START가 저장한 manifest/material 행의 ID가 GET commands 응답과 영수증에 그대로 전달되는 것, 등록 누락·snapshot 변조 거절, 같은 packet 재조회 동일 응답, 옛 형식 영수증 거절을 합성 범위에서 확인했다.
+- 실패 유지: WIP 시험 tests/unit/FN08/normal-start-materials-sql.test.ts는 0088에 전달 절(execution_material_proof_bindings 등)이 아직 없어 0P/1F다. 기대값을 바꾸지 않았다.
+- 미검증: 0088은 미적용 source이며 실제 PostgreSQL에서 실행한 적이 없다(문법·trigger 상호작용 포함 NOT_RUN). 시험의 SQL 응답은 가짜 DB 대역이다. 실제 TLS·실행기 소비 codec·Agent 전부 NOT_RUN. 전체 시험 묶음은 실행하지 않았다.
+- 기존 소비자 영향: GET commands item에 materials 키가 추가됐다. exact 키를 요구하는 기존 소비자가 있으면 거절할 수 있으며(후보 문서 §2 명시) 실행기 쪽 codec은 아직 고치지 않았다.
+- 다음: A안 §3 자료 GET. START_OPTIONS 원문은 execution_preparations.snapshot_json.options.body에서 읽을 수 있음을 0083 normal_start_material_complete에서 확인했다. CONTEXT_BUNDLE 원문은 HUMAN 주체를 요구하는 context reader를 거쳐야 하며 연결 실행기 요청에서 어떤 server-owned 주체로 읽을지는 아직 정하지 못했다.
+- rollback: 이 branch 소유 commit 일반 revert. 실제 DB 미변경.
+
+
+### 맥락 묶음 원문 읽기 주체 직접 결정 — 2026-11-11T03:54:33+09:00
+
+신산님이 '맥락 묶음 원문을 어떤 방식으로 읽게 할까요?'에 '서버 주입 공급자'를 직접 선택했다. 자료 GET route는 서버 조립 때 주입된 보호 공급자에게서 CONTEXT_BUNDLE 원문을 받고 등록된 길이·hash와 다르면 거절한다. 공급자가 없으면 CONTEXT_BUNDLE 부분은 거절 상태로 남으며 HTTP 입력·HUMAN 선언·fixture 값으로 대신하지 않는다. START_OPTIONS 원문은 기존 준비 기록(execution_preparations.snapshot_json.options.body)에서 읽는다. 실제 공급자의 권한·구현 주체는 이번 결정에 포함되지 않은 후속 결정이다. 'START한 사람 권한으로 재조립'과 'START 시점 원문 저장'은 채택하지 않았다.
+
+
+### 자료 부분 bytes 보호 GET source 구현 — 2026-11-11T14:39:31+09:00
+
+- 담당: Claude 세션 단일 writer(Main 겸임). 독립 검수자 없음 — 아래는 수행자 자체 검증이며 독립 검수 C0/I0가 아니다.
+- 범위: 채택 A안 §3. GET /api/v1/connectors/:cid/executions/:eid/commands/:commandId/materials/:materialId. 실행기 쪽 응답 소비 codec과 실제 보호 공급자는 미구현이다.
+- 동작: Bearer(av3ex1_)·TLS socket·host·서명 packet → 발급 credential·현재 grant/권위 → 원 EXECUTION_REQUEST challenge와 정확 target·proof 서명 → 원 START 명령/manifest/material 등록 행 재검산 → 원문 읽기 → 원본·부분 길이/hash 대조 → 같은 거래에서 nonce 소비 v2·NORMAL_START_MATERIAL 영수증·proof binding 저장 → 마지막 credential/current/등록 행 재확인 → 정확 COMMIT 뒤에만 no-store 응답. 응답 material은 materialId/sourceRef/partIndex/partCount/contentHash/bytes이고 bytes는 canonical unpadded base64url이다. 영수증·binding에는 bytes를 저장하지 않는다. 같은 packet 재조회는 원 영수증으로 수렴하고 원문은 매번 다시 읽어 대조한다. COMMIT 불명은 503 EXECUTION_MATERIAL_COMMIT_UNKNOWN·원문 반환 0·자동 재시도 0이다.
+- 원문 출처: START_OPTIONS는 execution_preparations.snapshot_json.options.body. CONTEXT_BUNDLE은 신산님 결정대로 서버 주입 공급자(NormalStartContextSource.contextBody, DB 손잡이 미제공·2초 유한·abort)이며 미주입이면 412 EXECUTION_MATERIAL_SOURCE_REQUIRED다. 공급자가 준 원문도 등록 hash와 다르면 거절한다. 최초 등록과 같은 bytes를 내도록 normal-initial-execution.ts의 본문 조립을 startContextBody로 분리·export했다(조립 결과 불변, 기존 normal-initial-execution 시험 통과).
+- 연결 변경: execution-proof.ts(요청 challenge 대상에 등록 자료 경로 허용, 자료 경로는 빈 query hash만), connector-auth.ts(실행 Bearer 허용 route에 자료 GET 추가), app.ts(normalMaterials 명시 옵션일 때만 등록), normal-command-pages.ts(readPacket export).
+- 0088 전달 절: normal_start_material_part, normal_start_material_valid(영수증·지연 시 proof binding 완결), guard_normal_start_material과 영수증 trigger 2개, 합성 영수증 trigger의 WHEN 갱신, material_binding_complete를 synthetic_material_binding_complete로 이름 변경 후 분기 함수 신설, 앞선 migration 정의를 그대로 옮기고 한 곳씩만 바꾼 CREATE OR REPLACE 3개(0086 normal_request_challenge_valid 경로 조건, 0087 normal_command_consumption_valid 영수증 종류, 0083 material_registration_guard의 NORMAL_MATERIAL_DELIVERY_NOT_CONNECTED 분기).
+- 검증: 신규 tests/unit/FN08/normal-start-materials-journey.test.ts 5P(제품 START → credential → 명령 페이지에서 자료 ID 발견 → 두 자료 GET → bytes hash 대조, 응답 유실·동시 요청 수렴, 다른 경로/query/TLS 아님/cookie/등록 변조/회수/미등록 ID/다른 명령 ID/명령 조회용 challenge 전용/공급자 불일치·무응답/공급자 미주입). node --experimental-test-module-mocks --test tests/unit/FN08/normal-*.test.ts tests/unit/FN06/duplex-wire.test.ts 85P/0F/0S(13.9초), WIP였던 normal-start-materials-sql.test.ts 포함 통과. npm run typecheck exit0, diff --check 0.
+- 인접 영향: connector-auth·execution-proof를 쓰는 다른 시험 18파일 247P/1F. 실패 1건(execution-material-credential-integration.test.ts '자료 source await 뒤 HUMAN/예약/Tx 변경…' 0!==1)은 변경 전 development/main 2e0eab21을 임시 작업 사본에서 같은 명령으로 실행해도 동일하게 실패했다. 이번 변경이 만든 실패가 아니며 원인은 조사하지 않았고 기대값도 바꾸지 않았다. 임시 작업 사본은 제거했고 잔류 0이다.
+- 미검증: 0088 전체는 미적용 source이며 실제 PostgreSQL에서 한 번도 실행하지 않았다. 함수 이름 변경·trigger 교체·지연 제약의 실제 상호작용, ACL/RLS, 동시 잠금은 NOT_RUN이다. 시험의 SQL 응답과 TLS는 대역이다. 실제 실행기·Agent·서비스·키는 0이다. 전체 시험 묶음은 실행하지 않았다.
+- 남은 것: (1) 실행기(apps/connector)의 명령 페이지 materials·자료 응답 소비 codec, (2) 실제 CONTEXT_BUNDLE 보호 공급자(어떤 권한으로 context reader를 호출할지 미결정), (3) 정정/격리 반영은 공급자 재읽기와 hash 대조에만 의존한다, (4) 0088의 실제 DB 검증, (5) 독립 검수.
+- rollback: 이 branch 소유 commit 일반 revert. 실제 DB 미변경.
+- Git 현재 상태(2026-11-11T14:39:31+09:00 기록 시점): branch claude/av3-normal-start-materials, 원격에 올라간 마지막 commit은 3e259bb7(자료 발견 descriptor)이다. 이 절의 자료 GET 변경 9경로(app.ts, connector-auth.ts, execution-proof.ts, normal-command-pages.ts, normal-initial-execution.ts, normal-start-materials.ts, 0088, normal-request-challenge-fixture.ts, 신규 normal-start-materials-journey.test.ts)와 이 현황 2문서는 아직 commit·push하지 않았다(코드는 stage 상태). 직전 commit 시도는 도구 권한 요청이 중단돼 실행되지 않았다.
+- 2026-11-11T18:09:19+09:00 신산님 지시 '커밋하고 push'에 따라 위 9경로와 현황 2문서를 한 commit으로 묶어 development의 claude/av3-normal-start-materials에 push한다.
