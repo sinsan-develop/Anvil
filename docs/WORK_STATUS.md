@@ -18777,3 +18777,12 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 검증(main 7b1e8b26 checkout, Node v24.22.1): FN08 normal-*·FN06 duplex-wire 85건 84P/1F exit1(M1 CRLF 1건), npm run typecheck exit0, execution-material-credential-integration 8건 7P/1F exit1(M5).
 - 미검증: 0088 실제 PostgreSQL 실행(문법·rename 후 재생성·trigger 교체·지연 제약 상호작용·descriptor jsonb hash와 TS hash 일치), RLS/ACL/SECURITY DEFINER, 실제 잠금·동시성, 실제 TLS·실행기 codec·공급자·Agent, credential 세대 회전 뒤 동작, 명령 취소·중지 시 자료 GET 차단 여부.
 - 다음 후보(신산님 재개 지시 후): I1 보완과 실제 공급자 권한 결정, M1 .gitattributes 보완, M5 기존 시험 정정, 실행기 codec, 0088 실제 DB 검증. 실제 DB/권한/키/서비스/Agent/SSH 변경 0.
+
+
+### PR86 병합·저장소 정리 마감 — 2026-11-11T21:00:00+09:00
+
+- PR86(source 9460de99 → main a6a853c4, Broker run 43014064181 success)으로 PR84·PR85 사후 검수 기록을 main에 반영했다. 최초 요청 tag를 작업 commit에 붙여 Broker가 "trusted main Broker revision 아님"으로 거절(run 43013907464)했고, tag를 삭제한 뒤 main(7b1e8b26)을 가리키도록 재생성해 통과했다. 제품 변경 0.
+- 로컬 main은 a6a853c4로 FF·clean·원격 동일이다. 원격 heads는 main 하나뿐이다. 완료 branch `claude/av3-review-closeout`·요청 tag·작업 사본은 원격·로컬 모두 정리했다.
+- 신산님 선택('병합 브랜치만')에 따라 development/main 조상임을 확인한 로컬 branch 3개를 삭제했다: claude/anvil-design-workplan-review-f6d522(04430432), codex/anvil-pr-broker(c5cef108), codex/av3-ix01-followup(4f5e10c2). 루트 checkout이 옛 v2 branch라 `-d`가 거절해 조상 확인 뒤 `-D`를 사용했다. 앞서 `git worktree prune`으로 디렉터리가 이미 없던 D:/tmp 작업 사본 5곳의 메타데이터도 정리됐다.
+- 의도적으로 보존: main에 없는 과거 보존/역사 branch 13개(codex/av3-stage-b·followup·ix01-tm07, c01·c09·c21 계열 등), tag 25개, 미commit 변경이 있는 작업 사본 3곳(루트 D:\Project\Anvil=옛 v2 branch codex/anvil-public-ui-preview 삭제852·미추적46, .worktrees/anvil-f18-wsl-ops 변경4181, Codex av3-stage-b 변경44). 루트의 미추적 docs/WORK_STATUS.md 등은 main 정본과 다른 사본이므로 정본으로 쓰지 않는다. 이 자료의 정리·전환은 별도 결정 사항이다.
+- 현재: 다음 구현은 신산님 재개 지시 후에만 한다. 후보는 I1 보완·실제 공급자 권한 결정, M1 .gitattributes, M5 기존 시험 정정, 실행기 codec, 0088 실제 DB 검증. 실제 DB/권한/키/서비스/Agent/SSH 변경 0.
