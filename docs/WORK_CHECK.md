@@ -1,15 +1,16 @@
 # Anvil 작업 점검표
 
-갱신: 2026-11-11T03:41:07+09:00 / 담당: Claude 세션(신산님 지시로 인수, 이전 담당 어울)
+갱신: 2026-11-11T19:30:00+09:00 / 담당: Claude 세션(신산님 지시로 인수, 이전 담당 어울)
 
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
 - 코드 집계 기준: `development/main` `967c9a207452f5d3c9d79a1d8906e25a396dd704`.
-- 현재 제품 기준선: `main`(구현/마감 e194fc36). 완료 branch는 정리했다. `codex/av3-normal-start-materials`는 미검수 WIP를 보존한 PAUSED branch다.
+- 현재 제품 기준선: `main` 7b1e8b26(PR85 병합). `claude/av3-normal-start-materials`·`codex/av3-normal-start-materials` 완료 branch와 작업 사본은 정리했다.
 - 인수 뒤 현재(2026-11-11): 원격 main은 PR84로 2e0eab21이며 대기 당시 WIP(시험2·미채택 후보 문서1)가 main에 포함돼 있다. 작업 branch `claude/av3-normal-start-materials`에서 checkedMaterialPart만 구현했다(해당 시험 1P, 0088 SQL 시험은 0088 부재로 실패 유지). 자료 GET의 route·0088·nonce 소비는 bytes 표현/자료 발견 후보 채택과 원본 재구성 주체 결정 전까지 보류다. 아래 대기 기록은 11-08 시점 이력이다.
 - 2026-11-11T03:51:34+09:00: 자료 전달·발견 후보 A안 직접 채택. §2 명령 페이지 자료 descriptor를 source·미적용 0088·합성 시험으로 구현했다(FN08 normal 계열 33P). §3 자료 bytes GET은 미구현이며 WIP SQL 시험 1건은 실패 유지다. FN08 행 상태는 그대로 부분 구현이다.
 - 2026-11-11T14:39:31+09:00: A안 §3 자료 bytes 보호 GET을 source·미적용 0088·합성 여정으로 구현했다(FN08 normal 계열 85P). 맥락 묶음 원문은 서버 주입 공급자 방식(신산님 직접 결정)이며 실제 공급자·실행기 소비 codec·실제 DB 검증·독립 검수는 남았다. FN08 행 상태는 부분 구현 그대로다.
-- 현재 상황: 신산님 ‘병합하고 대기해’ 지시로 구현 중지. 검수 완료 PR81·PR82는 main에 반영했고, 후속 시험2/미채택 후보1은 WIP로 별도 보존했다. 재개는 신산님의 명시 지시 후에만 한다.
+- 2026-11-11T19:30:00+09:00: PR84·PR85가 독립 검수 전에 main에 병합된 것을 사후 독립 정적 검수했다. C0/I1/M5, 병합 차단 사유 없음. I1(맥락 묶음 공급자를 프로젝트 행 잠금 안에서 호출)은 실제 공급자 구현 전 보완 대상이다. main 7b1e8b26 FN08 normal 계열 84P/1F(Windows CRLF 판정 1건, LF 원문은 통과), typecheck 0. 실제 DB의 0088 실행은 미검증이다.
+- 현재 상황: 신산님 지시로 이번 Claude 작업 commit·push·병합(PR85)과 로컬 정리를 마쳤다. 다음 구현은 신산님 재개 지시 후에만 한다.
 - 최근 소스 검수: PR76 duplex, PR77 normal grant/독립 예약, PR78 최초 challenge, PR79 일회 교환·nonce 소비, PR80 조회 challenge, PR81 명령 페이지·고정 응답. 모두 main 통합·핵심 smoke 확인, 실제 Agent·DB·전체 기능 인수는 미완료다.
 - 현재 미확인: 실제 개발 DB 복구·served/Agent 전체 여정·실기기·Oracle 인수. 지정 SSH Connection refused를 PASS로 표시하지 않는다.
 - 결정 대기: 기존 PMO 발행 2건(e59592e3,239845d6), 직접 답변 미수신. 중복 요청하지 않는다.

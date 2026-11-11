@@ -18761,3 +18761,19 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - rollback: 이 branch 소유 commit 일반 revert. 실제 DB 미변경.
 - Git 현재 상태(2026-11-11T14:39:31+09:00 기록 시점): branch claude/av3-normal-start-materials, 원격에 올라간 마지막 commit은 3e259bb7(자료 발견 descriptor)이다. 이 절의 자료 GET 변경 9경로(app.ts, connector-auth.ts, execution-proof.ts, normal-command-pages.ts, normal-initial-execution.ts, normal-start-materials.ts, 0088, normal-request-challenge-fixture.ts, 신규 normal-start-materials-journey.test.ts)와 이 현황 2문서는 아직 commit·push하지 않았다(코드는 stage 상태). 직전 commit 시도는 도구 권한 요청이 중단돼 실행되지 않았다.
 - 2026-11-11T18:09:19+09:00 신산님 지시 '커밋하고 push'에 따라 위 9경로와 현황 2문서를 한 commit으로 묶어 development의 claude/av3-normal-start-materials에 push한다.
+
+
+### PR84·PR85 사후 독립 검수와 로컬 정리 — 2026-11-11T19:30:00+09:00
+
+- 경위: Codex 대기 기록(11-08 19:12, main 2fc16e4b) 뒤 PR84(2e0eab21)가 미검수 WIP를 포함해 main에 병합됐고, 11-11 18:11 PR85(7b1e8b26, source 6dc52d65)도 독립 검수 전에 병합됐다. 원격 작업 branch는 병합 뒤 삭제됐다.
+- 로컬 정리: 로컬 main 2fc16e4b→7b1e8b26 FF(clean, 원격 동일). 완료 작업 사본 `.claude/worktrees/anvil-design-workplan-review-f6d522` 제거(미추적 docs/reviews 2파일은 docs/ 원본과 SHA-256 동일 확인 후 제거). 로컬 `claude/av3-normal-start-materials`(6dc52d65)·`codex/av3-normal-start-materials`(fd97e081)와 추적 ref 삭제(둘 다 7b1e8b26 조상 확인). 다른 과거 branch·worktree·dirty 자료는 건드리지 않았다.
+- 독립 검수: 수행자와 분리된 read-only 검수, 범위 2fc16e4b..7b1e8b26. 판정 C0/I1/M5, 병합 차단 사유 없음. 정확 경로 결박·challenge 교차 사용 차단·COMMIT 확정 전 bytes 미반환·영수증/binding에 bytes 미저장·원본/부분 길이·hash·UTF-8 검산·nonce v2 동일 Tx 소비와 동일 packet 재조회 수렴을 정적으로 확인했다. 0088이 옮긴 0083/0086/0087 함수 본문은 의도한 한 곳씩만 다르고, material_binding_complete 이름 변경은 0078 역방향 guard의 이름 해석으로 새 wrapper에 연결된다.
+  - I1: normal-start-materials.ts:146 CONTEXT_BUNDLE 공급자를 normal_exchange_current FOR UPDATE OF p 잠금(:117)을 쥔 열린 거래 안에서 최대 2초 호출한다. 해당 프로젝트 쓰기를 막고, 실제 공급자가 같은 행 잠금을 잡으면 항상 시간초과(503)가 된다. 실제 공급자 구현 전에 거래 밖 선읽기·hash 검산 후 거래 안 재검산으로 보완한다. 공급자 인터페이스에 actor가 없어 ProjectContexts.readStartSource의 AuthenticatedIdentity 요구와 맞지 않는 점도 그 결정에 포함한다.
+  - M1: .gitattributes `*.sql text eol=lf`가 `*.sql.pending`에 적용되지 않아 Windows autocrlf checkout에서 normal-start-material-discovery-sql.test.ts(\r 금지)가 실패한다. git LF 원문은 통과한다.
+  - M2: normal-start-materials-sql.test.ts의 guard_normal_command_page 문자열 요구가 0088 주석으로만 충족된다(동작은 0087 trigger 재사용으로 정상).
+  - M3: 소비 전 실패한 자료 GET challenge가 credential live=0 규칙으로 최대 30초 다른 보호 GET을 막는다. 실행기 codec 설계에 반영한다. SQL uuid 정규식이 TS보다 느슨하고 ids[1]::uuid 변환은 false 대신 예외가 난다(TS 선검증으로 영향 낮음).
+  - M4: COMMIT 중 지연 trigger 거절(확정 rollback)도 503 COMMIT_UNKNOWN으로 보고한다(명령 페이지와 동일).
+  - M5: execution-material-credential-integration.test.ts 1F는 PR62(7d51ce10)부터의 기존 문제다. SyntheticStartMaterialParts가 생성자에서 source 메서드를 고정한 뒤 시험이 inspect를 바꿔 concreteStartPartsMatch가 먼저 실패하며, 같은 시험의 H/RESERVATION/TX 경우도 의도와 다른 이유로 통과한다. 이번 범위와 무관하다.
+- 검증(main 7b1e8b26 checkout, Node v24.22.1): FN08 normal-*·FN06 duplex-wire 85건 84P/1F exit1(M1 CRLF 1건), npm run typecheck exit0, execution-material-credential-integration 8건 7P/1F exit1(M5).
+- 미검증: 0088 실제 PostgreSQL 실행(문법·rename 후 재생성·trigger 교체·지연 제약 상호작용·descriptor jsonb hash와 TS hash 일치), RLS/ACL/SECURITY DEFINER, 실제 잠금·동시성, 실제 TLS·실행기 codec·공급자·Agent, credential 세대 회전 뒤 동작, 명령 취소·중지 시 자료 GET 차단 여부.
+- 다음 후보(신산님 재개 지시 후): I1 보완과 실제 공급자 권한 결정, M1 .gitattributes 보완, M5 기존 시험 정정, 실행기 codec, 0088 실제 DB 검증. 실제 DB/권한/키/서비스/Agent/SSH 변경 0.
