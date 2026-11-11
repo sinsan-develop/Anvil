@@ -64,7 +64,7 @@ export class NormalPageCursors{
  }
 }
 export interface NormalCommandPagesOptions{pool:Pick<Pool,'connect'>;origin:string;cursors:NormalPageCursors}
-function readPacket(request:FastifyRequest){
+export function readPacket(request:FastifyRequest){
  const names=request.raw.rawHeaders.filter((_,i)=>i%2===0).map(h=>h.toLowerCase());
  if(['cookie','origin','x-anvil-csrf','content-encoding','transfer-encoding'].some(h=>names.includes(h))||
    names.filter(h=>h==='content-length').length>1||(request.headers['content-length']??'0')!=='0')deny('EXECUTION_PAGE_CHANNEL_INVALID',403);

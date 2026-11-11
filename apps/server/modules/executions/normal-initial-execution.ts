@@ -97,6 +97,18 @@ async function protectedBasis(db:PoolClient,actor:AuthenticatedIdentity,request:
     ||!same(def.ref,intent.connectionRef)||!same(def.definition.environmentRef,intent.environmentRef)||!def.currentStatus.configurationCurrent
     ||!same(env.ref,intent.environmentRef)||env.current.configurationCurrentness!=='MATCHED'||optionsFormat!==opt.format||!same(opt,prep.snapshot.options))return reject();
   const ctx=await readers.contexts.readStartSource(db,actor,pid,intent.contextBundleRef);
+  const body=startContextBody(ctx,intent);
+  if(Buffer.byteLength(body)+opt.utf8Bytes>2097152||opt.utf8Bytes<1)return reject();
+  const host=env.snapshot.executionHostRef;
+  if(host.kind!=='CONNECTOR_STATUS')return reject();
+  return {intent,host,stageRef:{applicationRef:task.applicationRef,nodeId:task.nodeId},sessionRef:binding.snapshot.sessionRef,bindingGeneration:binding.snapshot.generation,basisRefs:prep.snapshot.basisRefs,latestInstructionRefs:prep.snapshot.latestInstructionRefs,
+    materials:[{kind:'CONTEXT_BUNDLE',ref:ctx.ref,contentHash:contentHash(body),bytes:Buffer.byteLength(body)},
+      {kind:'START_OPTIONS',ref:prep.ref,contentHash:opt.contentHash,bytes:opt.utf8Bytes}]};
+}
+type StartContext=Awaited<ReturnType<ProjectContexts['readStartSource']>>;
+/** 보호 reader가 돌려준 맥락에서 START 자료 원문을 만든다. 최초 등록과 이후 자료 전달이 같은 bytes를 내도록 한곳에 둔다.
+ * 이 함수는 접근 권한이나 전달 허가를 만들지 않는다. */
+export function startContextBody(ctx:StartContext,intent:{contextBundleRef:Ref;assignmentRef:Ref}):string{
   if(!same(ctx.ref,intent.contextBundleRef)||!same(ctx.manifest.assignmentRef,intent.assignmentRef)||!ctx.prepared.parts.length)return reject();
   const items=ctx.manifest.items.map(item=>{
     const bound=ctx.manifest.sourceBindings.find(b=>b.itemId===item.itemId);
@@ -111,15 +123,9 @@ async function protectedBasis(db:PoolClient,actor:AuthenticatedIdentity,request:
     return {itemId:item.itemId,category:item.category,sourceRef:item.sourceRef,selection:bound.selection,bodyRef:bound.bodyRef,
       sourceState:bound.sourceState,includedState:item.includedState,reason:item.reason,parts};
   });
-  const body=canonicalJson({schemaVersion:1,purpose:'START_CONTEXT_BODY_V1',contextBundleRef:ctx.ref,assignmentRef:intent.assignmentRef,
+  return canonicalJson({schemaVersion:1,purpose:'START_CONTEXT_BODY_V1',contextBundleRef:ctx.ref,assignmentRef:intent.assignmentRef,
     budgetRef:ctx.manifest.budgetRef,baselineRefs:ctx.manifest.baselineRefs,constitutionRef:ctx.manifest.constitutionRef,items,
     ready:false,executionAuthorized:false,dispatchPerformed:false});
-  if(Buffer.byteLength(body)+opt.utf8Bytes>2097152||opt.utf8Bytes<1)return reject();
-  const host=env.snapshot.executionHostRef;
-  if(host.kind!=='CONNECTOR_STATUS')return reject();
-  return {intent,host,stageRef:{applicationRef:task.applicationRef,nodeId:task.nodeId},sessionRef:binding.snapshot.sessionRef,bindingGeneration:binding.snapshot.generation,basisRefs:prep.snapshot.basisRefs,latestInstructionRefs:prep.snapshot.latestInstructionRefs,
-    materials:[{kind:'CONTEXT_BUNDLE',ref:ctx.ref,contentHash:contentHash(body),bytes:Buffer.byteLength(body)},
-      {kind:'START_OPTIONS',ref:prep.ref,contentHash:opt.contentHash,bytes:opt.utf8Bytes}]};
 }
 const PRESENT='NORMAL_PROTECTED';
 /** 보호 source와 저장소 reader는 서버 조립 때만 받는다. 읽기 성공이나 등록 자체는 실행 정책을 발급하지 않는다. */
