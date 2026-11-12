@@ -14,3 +14,5 @@ db/migrations/0073_control_handoff_acceptance.sql.pending text eol=lf
 db/migrations/0074_project_membership_versions.sql.pending text eol=lf
 db/migrations/0075_user_common_setup_definitions.sql.pending text eol=lf
 db/migrations/0076_native_first_receive.sql.pending text eol=lf
+# 미적용 forward SQL 전체. Windows autocrlf 작업본에서도 LF를 유지해 원문 바이트·hash 검산이 같게 한다.
+db/migrations/*.sql.pending text eol=lf

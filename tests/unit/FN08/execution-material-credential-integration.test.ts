@@ -47,13 +47,14 @@ test('구체 자료 경계는 손상 E예약·현재 다른 HUMAN/Session/세대
 });
 test('자료 source await 뒤 HUMAN/예약/Tx 변경과 callback 뒤 만료는 마지막 반환을 닫는다',async()=>{
  for(const mode of ['H','RESERVATION','TX','EXPIRE']){
-  const p=await start(),q=await issue(p),source=p.f.source.inspect,query=p.f.db.query;let reads=0,swapped=false;
+  const p=await start(),q=await issue(p),query=p.f.db.query;let reads=0,swapped=false;
   if(mode==='TX')p.f.db.query=async(sql:string,args:any[]=[])=>{const value=await query.call(p.f.db,sql,args);return swapped&&sql==='SELECT txid_current()::text AS transaction_id'?{rows:[{transaction_id:'2'}]}:value;};
-  p.f.source.inspect=async(...args:any[])=>{const out=await source(...args);if(++reads===2){if(mode==='H')p.f.credential(4);if(mode==='RESERVATION'){const row=p.f.tables.execution_credentials![0]!;row.snapshot_json.executionAuthorized=true;row.content_hash=hash(row.snapshot_json);}if(mode==='TX')swapped=true;}return out;};
+  // 원 inspect 함수는 서버가 고정하므로 바꾸지 않고 fixture hook으로 두 번째 관측 뒤 변경을 주입한다.
+  p.f.onInspect(()=>{if(++reads===2){if(mode==='H')p.f.credential(4);if(mode==='RESERVATION'){const row=p.f.tables.execution_credentials![0]!;row.snapshot_json.executionAuthorized=true;row.content_hash=hash(row.snapshot_json);}if(mode==='TX')swapped=true;}});
   const from=p.f.trace.length;
   if(mode==='EXPIRE'){let callbacks=0;await assert.rejects(p.store.transaction(p.scope,async()=>{callbacks++;p.f.advance(3600000);}));assert.equal(callbacks,1);}
   else await assert.rejects(q.read());
-  p.f.db.query=query;assert.equal(p.f.tables.execution_receipts!.length,0);assert.equal(p.f.tables.execution_material_proof_bindings!.length,0);assert.equal(p.f.tables.execution_challenges!.length,1);assert(!p.f.trace.slice(from).some(sql=>sql.startsWith('INSERT INTO anvil.execution_credentials')));
+  p.f.db.query=query;p.f.onInspect(null);if(mode!=='EXPIRE')assert.ok(reads>=2,mode+' 관측 hook 도달');assert.equal(p.f.tables.execution_receipts!.length,0);assert.equal(p.f.tables.execution_material_proof_bindings!.length,0);assert.equal(p.f.tables.execution_challenges!.length,1);assert(!p.f.trace.slice(from).some(sql=>sql.startsWith('INSERT INTO anvil.execution_credentials')));
  }
 });
 test('구체 자료 COMMIT 응답 불명은 원 E와 소비결과를 보존하고 자동 새서명/예약을 만들지 않는다',async()=>{
