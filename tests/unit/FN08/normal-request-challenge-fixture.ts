@@ -213,6 +213,8 @@ export async function journey(pages?:{sql:PageSqlAdapter; cursors:import('../../
       Object.defineProperty(req.socket,'encrypted',{value:true});app.routing(req,rep);
     },{method:'POST',url,payload:JSON.stringify(payload),headers:{host:'anvil-synthetic.invalid','content-type':'application/json',authorization}});
     const signProof=(proof:unknown)=>sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key,dsaEncoding:'ieee-p1363'}).toString('base64url');
-    return {f,app,store,mk,signed,post,token,signProof,credentialRef:minted.json().receiptRef};
+    // 실행기 클라이언트 시험용: 등록 키로 임의 서명 원문을 서명하는 포트와 credential 기한
+    const signBytes=(bytes:Buffer)=>sign('sha256',bytes,{key,dsaEncoding:'ieee-p1363'}).toString('base64url');
+    return {f,app,store,mk,signed,post,token,signProof,signBytes,credentialExpiresAt:minted.json().expiresAt as string,credentialRef:minted.json().receiptRef};
   }catch(error){await app.close();throw error;}
 }
