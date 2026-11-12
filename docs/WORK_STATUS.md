@@ -18849,3 +18849,12 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 결과: native-preparation-store 57P/0F(3회 반복 통과, 그 사이 1회 실패는 시간 의존 'B issuer timeout…' 기존 시험). 이번 작업 사본 apps/desktop에서 npm ci --ignore-scripts(lock 기준 163개, Electron 설치 스크립트 미실행) 뒤 native-physical-factory-build 9P/0F. ANVIL_CAPTURE_STORE_QA_ROOT·ANVIL_CAPTURE_PREPARATION_STORE_QA_ROOT를 해당 실행에만 지정해 provider-capture-results 9P/0F, provider-capture-preparation 8P/0F. 실행 전 없던 D:/TMP/ANVIL-PROVIDER-CAPTURE-RESULTS-STORE(954)·PREPARATION-STORE(982)는 전부 이번 실행 생성분임을 확인하고 정리했다. desktop 패키지는 임시 작업 사본에만 설치했으므로 다른 사본에서 이 시험을 돌리려면 같은 설치가 필요하다.
 - 남은 FN06+FN08 실패: 0076 schema 1건(보류 결정), 부하 중 시간 의존 시험(단독 통과). OPEN 경로 current.expiresAt 호출 예산 축소 시험 보강은 내부 timer·HTTPS 경로 흉내 비용이 커 후속 후보로 보류했다.
 - 다음: P3(서버 normal 실행 허가, 실행기 credential·서명 키·polling)·맥락 묶음 공급자 권한 주체 결정안 문서 작성. 실제 DB/권한/키/서비스/Agent/SSH 변경 0.
+
+
+### P3·맥락 묶음 공급자 권한 결정안 작성 — 2026-11-13T02:40:00+09:00
+
+- 신산님 결정('결정안 문서 작성')에 따라 docs/contracts/FN06_FN08_P3_NORMAL_TRANSPORT_DECISION_PACKET_20261113.md를 작성했다. 상태는 결정 요청(미채택)이며 구현·적용·실행 승인이 아니다.
+- D1(실제 전송 활성화): 권장 A안 단계 분할 — 1) P2 0083~0088 개발 DB 적용(별도 실행 승인) 2) 서버 normal permit·receipts·observations·heartbeat source 3) 실행기 av3ex1_ 보호 저장·실행 요청 서명·교환 클라이언트·polling·수신 파일 저장소·adapter normal 경로 source 4) P3 1건 실측(별도 실행 승인). 부속 결정: credential 15분 갱신(권장 같은 grant 안 재교환), grant 수명(권장 현행 HUMAN 유휴 30분 단위), 명령 경로 표기 정리, 서버 내부 공급자 주체 원칙.
+- D2(맥락 묶음 공급자 권한): 권장 A안 실행 grant에 결박된 서버 내부 전용 읽기 — 등록된 contextBundleRef 하나만, grant·세대·등록 행·보관·격리 확인 후, 사용자 actor 흉내 없이 회원 행 잠금 없는 읽기 전용 조립. B안 서비스 주체 신설은 권한 모델 변경이라 비권장, C안은 2026-11-11 미채택안 재검토.
+- 근거 조사는 read-only 하위 조사로 했고 제안서(P1/P2/P3 l.29-35, SYNTHETIC_ONLY l.174), TECH_DECISIONS(l.161·167), 기존 FN08 계약, 서버·실행기 코드의 빈 곳을 인용했다. PMO 결정 대기 e59592e3·239845d6은 FN03 관련으로 이 결정과 무관하다.
+- 다음: 신산님·PMO 결정 대기. 그 전까지 D1 2·3단계와 D2 구현은 시작하지 않는다. 실제 DB/권한/키/서비스/Agent/SSH 변경 0.
