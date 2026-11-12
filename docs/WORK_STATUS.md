@@ -18858,3 +18858,10 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - D2(맥락 묶음 공급자 권한): 권장 A안 실행 grant에 결박된 서버 내부 전용 읽기 — 등록된 contextBundleRef 하나만, grant·세대·등록 행·보관·격리 확인 후, 사용자 actor 흉내 없이 회원 행 잠금 없는 읽기 전용 조립. B안 서비스 주체 신설은 권한 모델 변경이라 비권장, C안은 2026-11-11 미채택안 재검토.
 - 근거 조사는 read-only 하위 조사로 했고 제안서(P1/P2/P3 l.29-35, SYNTHETIC_ONLY l.174), TECH_DECISIONS(l.161·167), 기존 FN08 계약, 서버·실행기 코드의 빈 곳을 인용했다. PMO 결정 대기 e59592e3·239845d6은 FN03 관련으로 이 결정과 무관하다.
 - 다음: 신산님·PMO 결정 대기. 그 전까지 D1 2·3단계와 D2 구현은 시작하지 않는다. 실제 DB/권한/키/서비스/Agent/SSH 변경 0.
+
+
+### P3·공급자 권한 결정 채택과 D2 구현 범위 조사 — 2026-11-13T03:10:00+09:00
+
+- 신산님 '둘 다 채택'(2026-11-13): D1 A안 단계 분할, D2 A안 실행 grant에 결박된 서버 내부 전용 읽기. 부속 결정은 결정안 권장값(credential 15분 만료 시 같은 grant 안 재교환, grant 수명 현행 HUMAN 유휴 30분 단위)으로 기록했다. 결정안 문서 상태를 채택으로 갱신했다. D1 1단계(0083~0088 개발 DB 적용)와 4단계(P3 1건 실측)는 각각 별도 실행 승인 대상으로 남는다.
+- D2 구현 범위 조사: 맥락 원문 조립(ProjectContexts.readStartSource→ProjectContextSources.resolve)은 배정 확인·초안·지식·문서·대화 reader를 거치고, actor가 회원 확인(projectMember) 뒤에도 깊이 전달된다(knowledge.read→#verify 출처 검증, drafts.current→#basis, ProjectContexts.#stored→ProjectApprovals 승인 조회, confirmations.read→drafts.read). 내부 전용 읽기를 만들려면 이 경로들을 '회원·권한 확인'과 'actor 없는 내부 읽기'로 나누는 다중 모듈 권한 경로 리팩터가 필요하다. 보안 민감 범위라 바로 구현하지 않고, 모듈별 분리 지점·유지할 검사(격리·정정·확정·대체·승인 소비)·바꾸는 검사(회원→grant 현재성)·회귀 시험을 정한 D2 세부 작업지시서를 먼저 작성하기로 했다.
+- 다음: D2 세부 작업지시서 작성, 그리고 독립적인 D1 2단계(서버 normal permit·receipts·observations·heartbeat source, 합성 permit 정본 기준). 실제 DB/권한/키/서비스/Agent/SSH 변경 0.
