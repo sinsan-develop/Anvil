@@ -159,3 +159,67 @@ test('보호 공급자를 주입하지 않으면 맥락 묶음은 거절하고 �
   assert.equal(h.store.receipts().filter(v=>v.snapshot_json.kind==='NORMAL_START_MATERIAL').length,1);
  }finally{await h.app.close();}
 });
+test('실행기 codec이 실제 명령 페이지·자료 응답을 검산해 두 원본을 조립하고, 변조는 거절한다',async()=>{
+ const {h,base,signedGet,material}=await setup();
+ const consumer=await import('../../../apps/connector/runtime/normal-start-material-consumer.ts');
+ const rejects=(fn:()=>unknown,code:string)=>assert.throws(fn,(e:any)=>e instanceof consumer.NormalMaterialConsumerFailure&&e.code===code);
+ try{
+  const cmd=h.f.tables.execution_commands![0]!,now=()=>Date.now()+h.store.mode.offset;
+  const scope={projectId:h.f.pid,executionId:cmd.execution_id,executionGeneration:cmd.generation,afterSequence:0};
+  const pageResp=await (await signedGet(base+'/commands',{waitMs:0})).get();assert.equal(pageResp.statusCode,200,pageResp.body);
+  const rawPage=pageResp.json(),page=consumer.readNormalCommandPage(rawPage,scope,now());
+  assert.equal(page.items.length,1);const item=page.items[0]!;
+  // 서버 고정 receipt의 descriptor hash와 실행기가 계산한 hash가 같다
+  const receipt=h.store.receipts().find((v:any)=>v.snapshot_json.kind==='NORMAL_COMMAND_PAGE')!;
+  assert.equal(item.materialsDescriptorHash,receipt.snapshot_json.entries[0].materialsDescriptorHash);
+  // 페이지 변조·다른 범위 거절
+  const bad=(mut:(p:any)=>void)=>{const p=structuredClone(rawPage);mut(p);return p;};
+  rejects(()=>consumer.readNormalCommandPage(rawPage,{...scope,executionGeneration:scope.executionGeneration+1},now()),'COMMAND_PAGE_ITEM_INVALID');
+  rejects(()=>consumer.readNormalCommandPage(rawPage,{...scope,afterSequence:item.sequence},now()),'COMMAND_PAGE_ITEM_INVALID');
+  rejects(()=>consumer.readNormalCommandPage(bad(p=>{p.executionAuthorized=true;}),scope,now()),'COMMAND_PAGE_INVALID');
+  rejects(()=>consumer.readNormalCommandPage(bad(p=>{p.extra=1;}),scope,now()),'COMMAND_PAGE_INVALID');
+  rejects(()=>consumer.readNormalCommandPage(bad(p=>{p.items=[];p.hasMore=true;}),scope,now()),'COMMAND_PAGE_INVALID');
+  rejects(()=>consumer.readNormalCommandPage(rawPage,scope,Date.parse(rawPage.expiresAt)),'COMMAND_PAGE_INVALID');
+  rejects(()=>consumer.readNormalCommandPage(bad(p=>{p.items[0].materials.groups.reverse();}),scope,now()),'MATERIAL_DESCRIPTOR_INVALID');
+  rejects(()=>consumer.readNormalCommandPage(bad(p=>{p.items[0].materials.groups[1].parts[0].materialId=p.items[0].materials.groups[0].parts[0].materialId;}),scope,now()),'MATERIAL_DESCRIPTOR_INVALID');
+  rejects(()=>consumer.readNormalCommandPage(bad(p=>{p.items[0].materials.groups[0].sourceBytes+=1;}),scope,now()),'MATERIAL_DESCRIPTOR_INVALID');
+  rejects(()=>consumer.readNormalCommandPage(bad(p=>{p.items[0].materials.groups[0].parts[0].partIndex=2;}),scope,now()),'MATERIAL_DESCRIPTOR_INVALID');
+  rejects(()=>consumer.readNormalCommandPage(bad(p=>{delete p.items[0].materials;}),scope,now()),'COMMAND_PAGE_ITEM_INVALID');
+  rejects(()=>consumer.findNormalMaterial(item,h.f.pid),'MATERIAL_NOT_IN_DESCRIPTOR');
+  const bodies:Record<string,string>={};
+  for(const group of item.materials.groups){
+   const received:ReturnType<typeof consumer.readNormalMaterialResponse>[]=[];
+   for(const part of group.parts){
+    const path=consumer.normalMaterialPath(h.f.registration!.row.connector_id,cmd.execution_id,item.envelope.commandId,part.materialId);
+    assert.equal(path,base+'/commands/'+item.envelope.commandId+'/materials/'+part.materialId);
+    const resp=await (await material(item.envelope.commandId,part.materialId)).get();assert.equal(resp.statusCode,200,resp.body);
+    const raw=resp.json(),got=consumer.readNormalMaterialResponse(raw,item,part.materialId,now());
+    assert.equal(got.bytes.length,part.utf8Bytes);received.push(got);
+    const mut=(f:(m:any)=>void)=>{const r=structuredClone(raw);f(r);return r;};
+    const other=item.materials.groups.flatMap(g=>g.parts).find(p=>p.materialId!==part.materialId)!;
+    rejects(()=>consumer.readNormalMaterialResponse(raw,item,other.materialId,now()),'MATERIAL_RESPONSE_MISMATCH');
+    rejects(()=>consumer.readNormalMaterialResponse(mut(r=>{r.material.bytes+='=';}),item,part.materialId,now()),'MATERIAL_BYTES_INVALID');
+    rejects(()=>consumer.readNormalMaterialResponse(mut(r=>{r.material.bytes='+'+r.material.bytes.slice(1);}),item,part.materialId,now()),'MATERIAL_BYTES_INVALID');
+    if(raw.material.bytes.length%4){
+     // 마지막 문자의 남는 비트만 바꾼 비정규 표기는 같은 bytes로 디코드되지만 받지 않는다
+     const abc='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_',s=raw.material.bytes,last=abc.indexOf(s.at(-1));
+     const loose=s.slice(0,-1)+abc[last^1];
+     assert.notEqual(loose,s);assert.deepEqual(Buffer.from(loose,'base64url'),Buffer.from(s,'base64url'));
+     rejects(()=>consumer.readNormalMaterialResponse(mut(r=>{r.material.bytes=loose;}),item,part.materialId,now()),'MATERIAL_BYTES_INVALID');
+    }
+    rejects(()=>consumer.readNormalMaterialResponse(mut(r=>{const b=Buffer.from(r.material.bytes,'base64url');b[0]=b[0]!^1;r.material.bytes=b.toString('base64url');}),item,part.materialId,now()),'MATERIAL_BYTES_MISMATCH');
+    rejects(()=>consumer.readNormalMaterialResponse(mut(r=>{r.material.contentHash='0'.repeat(64);}),item,part.materialId,now()),'MATERIAL_RESPONSE_MISMATCH');
+    rejects(()=>consumer.readNormalMaterialResponse(mut(r=>{r.dispatchPerformed=true;}),item,part.materialId,now()),'MATERIAL_RESPONSE_INVALID');
+    rejects(()=>consumer.readNormalMaterialResponse(mut(r=>{r.material.encoding='base64url';}),item,part.materialId,now()),'MATERIAL_RESPONSE_INVALID');
+   }
+   rejects(()=>consumer.assembleNormalStartMaterial(group,[]),'MATERIAL_ASSEMBLY_INCOMPLETE');
+   rejects(()=>consumer.assembleNormalStartMaterial(group,[...received,...received]),'MATERIAL_ASSEMBLY_INCOMPLETE');
+   rejects(()=>consumer.assembleNormalStartMaterial({...group,contentHash:'0'.repeat(64)},received),'MATERIAL_ASSEMBLY_MISMATCH');
+   const out=consumer.assembleNormalStartMaterial(group,received);
+   assert.equal(contentHash(out.bytes),group.contentHash);bodies[group.kind]=out.text;JSON.parse(out.text);
+  }
+  // 조립한 실행 옵션 원문은 제품 준비 기록의 원문과 같다
+  assert.equal(bodies.START_OPTIONS,h.f.preparation.data.snapshot.options.body);
+  assert.ok(typeof bodies.CONTEXT_BUNDLE==='string'&&bodies.CONTEXT_BUNDLE.length>0);
+ }finally{await h.app.close();}
+});
