@@ -147,7 +147,8 @@ function challengeStore(f: Fixture, pageSql?:PageSqlAdapter) {
 
 export async function journey(pages?:{sql:PageSqlAdapter; cursors:import('../../../apps/server/modules/executions/normal-command-pages.ts').NormalPageCursors},
   materials?:{context?:(f:Fixture)=>import('../../../apps/server/modules/executions/normal-start-materials.ts').NormalStartContextSource},
-  permit?:{current?:(f:Fixture)=>import('../../../apps/server/modules/executions/normal-start-permit.ts').NormalPermitCurrentSource}){
+  permit?:{current?:(f:Fixture)=>import('../../../apps/server/modules/executions/normal-start-permit.ts').NormalPermitCurrentSource},
+  observations?:boolean){
   const executionId = randomUUID();
   const f = await executionStartOriginFixture({normalExecutionId:executionId,connectorEnvironment:true,richContext:true,constitutionContext:true,
     environmentDependencies:true,snapshotRoot:true,originConsumptionStorage:true,budgetElapsedMs:3600000});
@@ -166,7 +167,8 @@ export async function journey(pages?:{sql:PageSqlAdapter; cursors:import('../../
     undefined,undefined,undefined,undefined,null,undefined,undefined,source,{pool:store.pool} as any,{pool:store.pool,storage:store.storage,origin:'https://anvil-synthetic.invalid'} as any,{origin:'https://anvil-synthetic.invalid'},
     pages?{pool:store.pool as any,origin:'https://anvil-synthetic.invalid',cursors:pages.cursors}:undefined,
     materials?{pool:store.pool as any,origin:'https://anvil-synthetic.invalid',context:materials.context?.(f)}:undefined,
-    permit?{pool:store.pool as any,origin:'https://anvil-synthetic.invalid',current:permit.current?.(f)}:undefined);
+    permit?{pool:store.pool as any,origin:'https://anvil-synthetic.invalid',current:permit.current?.(f)}:undefined,
+    observations?{pool:store.pool as any,origin:'https://anvil-synthetic.invalid'}:undefined);
   try {
     assert.equal(f.tables.execution_grants!.length,0);
     assert.equal(f.tables.execution_credentials?.length ?? 0,0);
