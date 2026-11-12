@@ -338,3 +338,113 @@ test('challenge 발급 뒤 서명이 실패하거나 발급 응답이 5xx면 남
   mode.status=undefined;
  }finally{await h.app.close();}
 });
+/** normal START 수신기용 메모리 저장소. 실패 주입과 저장 bytes 변조를 지원한다. */
+function memoryStartStore(o:{failAt?:number}={}){
+ const journals=new Map<string,{events:any[];parts:Map<string,Uint8Array>}>();let appends=0;
+ const store={transport:'NORMAL_PROTECTED' as const,journals,get appends(){return appends;},
+  async exclusive<T>(key:any,body:(tx:any)=>Promise<T>):Promise<T>{
+   const k=canonicalJson(key),j:{events:any[];parts:Map<string,Uint8Array>}=journals.get(k)??{events:[],parts:new Map()};journals.set(k,j);
+   return body({async read(){return {complete:true,events:structuredClone(j.events)};},
+    async readPart(ref:any){return new Uint8Array(j.parts.get(ref.id)!);},
+    async appendAndSync(entry:any,bytes:Uint8Array|null){appends++;if(o.failAt===appends)throw Error('합성 저장 실패');j.events.push(structuredClone(entry));if(bytes)j.parts.set(entry.ref.id,new Uint8Array(bytes));}});
+  }};
+ return store;
+}
+async function intakeSetup(){
+ const s=await clientSetup(),{h,client,signal}=s;
+ const {NormalStartIntake,NormalStartIntakeFailure,receiveNormalStart}=await import('../../../apps/connector/runtime/normal-start-intake.ts');
+ const page=await client.send(await client.prepareCommandPage({afterSequence:0,waitMs:0},signal()),signal()),item=page.items[0]!;
+ const expected={context:item.envelope.context,executorRegistrationRef:item.envelope.executorRegistrationRef};
+ const now=()=>h.store.now().getTime();
+ const rejects=async(p:Promise<unknown>,code:string)=>assert.rejects(p,(e:any)=>e instanceof NormalStartIntakeFailure&&e.code===code);
+ return {...s,NormalStartIntake,NormalStartIntakeFailure,receiveNormalStart,page,item,expected,now,rejects};
+}
+test('normal START 수신기가 보호 GET으로 받은 두 자료를 내구 기록하고 RECEIVED에서 멈춘다',async()=>{
+ const {h,client,signal,NormalStartIntake,receiveNormalStart,page,item,expected,now}=await intakeSetup();
+ try{
+  const store=memoryStartStore(),intake=new NormalStartIntake(store,expected,now);
+  const r=await receiveNormalStart(client,intake,item,page.proofResultRef,signal());
+  assert.equal(r.state,'RECEIVED');assert.equal(r.transport,'NORMAL_PROTECTED');assert.equal(r.materialEntryRefs.length,2);
+  assert.equal(r.executionAuthorized,false);assert.equal(r.dispatchPerformed,false);assert.equal(r.completeContextVerified,false);assert.equal(store.appends,3);
+  const opts=await intake.startOptions(item.envelope);
+  assert.equal(Buffer.from(opts.bytes).toString('utf8'),h.f.preparation.data.snapshot.options.body);assert.equal(opts.executionAuthorized,false);
+  const status=await intake.readStatus(item.envelope);assert.equal(status.state,'RECEIVED');assert.equal(status.recordedParts,2);
+  // 같은 입력의 재호출은 새 기록 없이 같은 결과
+  const journal=[...store.journals.values()][0]!;
+  const received=item.materials.groups.flatMap(g=>g.parts).map(p=>({proofResultRef:page.proofResultRef,materialId:p.materialId,partIndex:p.partIndex,
+   bytes:journal.parts.get(journal.events.find((e:any)=>e.snapshot.materialId===p.materialId).ref.id)!,observedAt:page.observedAt,expiresAt:page.expiresAt}));
+  const again=await intake.receive(item,page.proofResultRef,received);
+  assert.deepEqual(again.receivedRef,r.receivedRef);assert.equal(store.appends,3);
+  // 서버 호출은 명령 페이지 1번과 자료 2번(각 challenge+GET)뿐이다
+  assert.deepEqual(h.store.receipts().map((v:any)=>v.snapshot_json.kind).filter((k:string)=>k.startsWith('NORMAL_COMMAND')||k.startsWith('NORMAL_START')).sort(),['NORMAL_COMMAND_PAGE','NORMAL_START_MATERIAL','NORMAL_START_MATERIAL']);
+ }finally{await h.app.close();}
+});
+test('기록이 중간에 끊기면 PARTIAL로 남고, 같은 입력으로 다시 호출하면 이미 쓴 부분은 건너뛰고 완성한다',async()=>{
+ const {h,client,signal,NormalStartIntake,page,item,expected,now,rejects}=await intakeSetup();
+ try{
+  const received=[];
+  for(const g of item.materials.groups)for(const p of g.parts)received.push(await client.send(await client.prepareMaterial(item,p.materialId,signal()),signal()));
+  const store=memoryStartStore({failAt:2}),intake=new NormalStartIntake(store,expected,now);
+  await assert.rejects(intake.receive(item,page.proofResultRef,received),(e:any)=>e.code==='NORMAL_INTAKE_UNAVAILABLE');
+  assert.equal((await intake.readStatus(item.envelope)).state,'PARTIAL');
+  await rejects(intake.startOptions(item.envelope),'NORMAL_INTAKE_NOT_RECEIVED');
+  const r=await intake.receive(item,page.proofResultRef,received);
+  assert.equal(r.state,'RECEIVED');assert.equal(r.materialEntryRefs.length,2);
+  const events=[...store.journals.values()][0]!.events;assert.deepEqual(events.map((e:any)=>e.snapshot.kind),['MATERIAL','MATERIAL','RECEIVED']);
+ }finally{await h.app.close();}
+});
+test('실행기 등록 불일치·누락 부분·descriptor 변조·합성 저장소·저장 bytes와 journal 변조는 거절한다',async()=>{
+ const {h,client,signal,NormalStartIntake,page,item,expected,now,rejects}=await intakeSetup();
+ try{
+  const received:any[]=[];
+  for(const g of item.materials.groups)for(const p of g.parts)received.push(await client.send(await client.prepareMaterial(item,p.materialId,signal()),signal()));
+  assert.throws(()=>new NormalStartIntake({...memoryStartStore(),transport:'SYNTHETIC_ONLY'} as any,expected,now),(e:any)=>e.code==='NORMAL_INTAKE_STORE_REQUIRED');
+  const other=new NormalStartIntake(memoryStartStore(),{...expected,executorRegistrationRef:{...expected.executorRegistrationRef,version:expected.executorRegistrationRef.version+1}},now);
+  await rejects(other.receive(item,page.proofResultRef,received),'NORMAL_INTAKE_CONTEXT_MISMATCH');
+  const intake=new NormalStartIntake(memoryStartStore(),expected,now);
+  await rejects(intake.receive(item,page.proofResultRef,received.slice(1)),'NORMAL_INTAKE_MATERIAL_INVALID');
+  await rejects(intake.receive({...item,materialsDescriptorHash:'0'.repeat(64)},page.proofResultRef,received),'NORMAL_INTAKE_INPUT_INVALID');
+  const flipped=new Uint8Array(received[1].bytes);flipped[0]=flipped[0]!^1;
+  await rejects(intake.receive(item,page.proofResultRef,[received[0],{...received[1],bytes:flipped}]),'NORMAL_INTAKE_MATERIAL_INVALID');
+  // 저장된 bytes 변조는 읽을 때 거절
+  const store=memoryStartStore(),ok=new NormalStartIntake(store,expected,now);await ok.receive(item,page.proofResultRef,received);
+  const j=[...store.journals.values()][0]!,optionsEntry=j.events[1];const saved=j.parts.get(optionsEntry.ref.id)!;
+  const bad=new Uint8Array(saved);bad[0]=bad[0]!^1;j.parts.set(optionsEntry.ref.id,bad);
+  await rejects(ok.startOptions(item.envelope),'NORMAL_INTAKE_PART_INVALID');j.parts.set(optionsEntry.ref.id,saved);
+  // 맥락 묶음 bytes 손상·유실도 읽을 때 거절(옵션만 보지 않는다)
+  const ctxEntry=j.events[0],ctxSaved=j.parts.get(ctxEntry.ref.id)!;
+  j.parts.set(ctxEntry.ref.id,new Uint8Array(0));await rejects(ok.readStatus(item.envelope),'NORMAL_INTAKE_PART_INVALID');
+  await rejects(ok.receive(item,page.proofResultRef,received),'NORMAL_INTAKE_PART_INVALID');j.parts.set(ctxEntry.ref.id,ctxSaved);
+  // journal 순서 변조
+  j.events[2].snapshot.sequence=9;await rejects(ok.readStatus(item.envelope),'NORMAL_INTAKE_LEDGER_INVALID');
+ }finally{await h.app.close();}
+});
+test('부분 기록의 bytes 유실·다른 descriptor로 이어쓰기·중복 ID descriptor·만료 봉투를 거절한다',async()=>{
+ const {h,client,signal,NormalStartIntake,page,item,expected,now,rejects}=await intakeSetup();
+ try{
+  const received:any[]=[];
+  for(const g of item.materials.groups)for(const p of g.parts)received.push(await client.send(await client.prepareMaterial(item,p.materialId,signal()),signal()));
+  // 첫 MATERIAL 뒤 끊긴 journal에서 그 bytes가 사라지면 이어쓰기 전에 거절한다(RECEIVED로 가지 않는다)
+  const store=memoryStartStore({failAt:2}),intake=new NormalStartIntake(store,expected,now);
+  await assert.rejects(intake.receive(item,page.proofResultRef,received));
+  const j=[...store.journals.values()][0]!;const firstRef=j.events[0].ref.id,saved=j.parts.get(firstRef)!;
+  j.parts.delete(firstRef);j.parts.set(firstRef,new Uint8Array(saved.length));
+  await rejects(intake.receive(item,page.proofResultRef,received),'NORMAL_INTAKE_PART_INVALID');
+  assert.deepEqual(j.events.map((e:any)=>e.snapshot.kind),['MATERIAL']);
+  j.parts.set(firstRef,saved);
+  // 같은 명령에 다른 descriptor로 이어쓰려 하면 충돌
+  const changed={...item,materials:structuredClone(item.materials)};changed.materials.manifestRef={...changed.materials.manifestRef,version:changed.materials.manifestRef.version+1};
+  const {contentHash:ch}=await import('../../../contracts/canonical.ts');(changed as any).materialsDescriptorHash=ch(canonicalJson(changed.materials));
+  await rejects(intake.receive(changed,page.proofResultRef,received),'NORMAL_INTAKE_RECORD_CONFLICT');
+  // 두 그룹에 같은 자료 ID를 둔 descriptor는 기록 전에 거절
+  const dup={...item,materials:structuredClone(item.materials)};dup.materials.groups[1]!.parts[0]!.materialId=dup.materials.groups[0]!.parts[0]!.materialId;
+  (dup as any).materialsDescriptorHash=ch(canonicalJson(dup.materials));
+  await rejects(new NormalStartIntake(memoryStartStore(),expected,now).receive(dup,page.proofResultRef,received),'NORMAL_INTAKE_DESCRIPTOR_INVALID');
+  // 정상 완성 뒤 봉투가 만료되면 receive·startOptions는 거절하고 readStatus는 이력으로 보여준다
+  assert.equal((await intake.receive(item,page.proofResultRef,received)).state,'RECEIVED');
+  h.store.mode.offset+=Date.parse(item.envelope.expiresAt)-now()+1;
+  await rejects(intake.receive(item,page.proofResultRef,received),'ENVELOPE_EXPIRED');
+  await rejects(intake.startOptions(item.envelope),'ENVELOPE_EXPIRED');
+  const st=await intake.readStatus(item.envelope);assert.equal(st.state,'RECEIVED');assert.equal(st.envelopeTimeState,'EXPIRED');
+ }finally{await h.app.close();}
+});
