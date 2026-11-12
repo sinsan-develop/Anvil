@@ -64,10 +64,11 @@ export class NormalPageCursors{
  }
 }
 export interface NormalCommandPagesOptions{pool:Pick<Pool,'connect'>;origin:string;cursors:NormalPageCursors}
-export function readPacket(request:FastifyRequest){
+/** allowBody는 본문이 있는 permit POST에서만 켠다(그때도 content-length는 하나여야 한다). */
+export function readPacket(request:FastifyRequest,allowBody=false){
  const names=request.raw.rawHeaders.filter((_,i)=>i%2===0).map(h=>h.toLowerCase());
  if(['cookie','origin','x-anvil-csrf','content-encoding','transfer-encoding'].some(h=>names.includes(h))||
-   names.filter(h=>h==='content-length').length>1||(request.headers['content-length']??'0')!=='0')deny('EXECUTION_PAGE_CHANNEL_INVALID',403);
+   names.filter(h=>h==='content-length').length>1||!allowBody&&(request.headers['content-length']??'0')!=='0')deny('EXECUTION_PAGE_CHANNEL_INVALID',403);
  const raw=request.headers['anvil-execution-auth'];
  const singleton=(name:string,value:unknown)=>typeof value==='string'&&names.filter(h=>h===name).length===1&&
   request.raw.rawHeaders[2*names.indexOf(name)+1]===value;

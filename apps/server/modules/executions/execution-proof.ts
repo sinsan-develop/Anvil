@@ -111,12 +111,17 @@ function normalRequestPath(t:{path:string;queryHash:string},commands:string){
  const m=t.path.startsWith(commands+'/')&&/^([^/]+)\/materials\/([^/]+)$/.exec(t.path.slice(commands.length+1));
  return !!m&&uuidV1(m[1])&&uuidV1(m[2])&&t.queryHash===contentHash(canonicalJson({}));
 }
+/** GET은 명령 조회·자료(본문 null), POST는 그 명령의 일회 실행 허가(permit)만 받는다. permit은 query 없이 본문 hash를 봉인한다. */
+function normalRequestTarget(t:{method:string;path:string;queryHash:string;bodyHash:string},commands:string){
+ if(t.method==='GET')return normalRequestPath(t,commands)&&t.bodyHash===contentHash(canonicalJson(null));
+ const m=t.method==='POST'&&t.path.startsWith(commands+'/')&&/^([^/]+)\/permit$/.exec(t.path.slice(commands.length+1));
+ return !!m&&uuidV1(m[1])&&t.queryHash===contentHash(canonicalJson({}))&&t.bodyHash!==contentHash(canonicalJson(null));
+}
 /** 조회 시 실제 query를 canonicalize해 여기서 봉인한 hash와 대조한다. */
 export function verifyNormalCommandChallengeRequest(spki:unknown,sig:unknown,value:unknown,binding:any,at:Date){
  const p=challengeRequest(value);
  if(binding.transport!=='NORMAL_PROTECTED'||binding.mode!=='EXECUTION'||p.purpose!=='EXECUTION_REQUEST'||
-   p.target.method!=='GET'||!normalRequestPath(p.target,'/api/v1/connectors/'+binding.connectorId+'/executions/'+binding.executionId+'/commands')||
-   p.target.bodyHash!==contentHash(canonicalJson(null))||!Number.isFinite(at.getTime())||
+   !normalRequestTarget(p.target,'/api/v1/connectors/'+binding.connectorId+'/executions/'+binding.executionId+'/commands')||!Number.isFinite(at.getTime())||
    Math.abs(Date.parse(p.issuedAt)-at.getTime())>30000)return invalid();
  exactSubject(p,binding);
  signature(spki,sig,executionChallengeRequestBytes('EXECUTION',p),binding.publicKeyFingerprint);
