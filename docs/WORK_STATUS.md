@@ -18831,3 +18831,12 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 검증: 여정 파일 14P/0F(공급자는 자료 거래 ROLLBACK 뒤에만 호출됨을 PART/ROLLBACK/PROVIDER 순서로 단언 — 변경 전 코드는 실패), execution-material-credential-integration 8P/0F, npm run typecheck exit0, git diff --check 0. FN06+FN08 전체 2070건 2001P/69F(main 기준 1988P/78F)로 새 실패 0, 고쳐진 9건(M5 1건, M1로 미적용 SQL 원문 바이트 대조 시험 7건, 0088 discovery 1건 포함). 남은 69건은 이번 범위 밖 기존 실패다.
 - 독립 검수: C0/I0/M3, 수용. 미반영: 두 거래 사이 등록 변경 거절(CURRENT_CHANGED)의 시험 없음(시험 대역에서 hash 사슬을 유지한 채 등록만 바꾸기 어려움), 공급자 동시 호출 비직렬화(의도), 첫 ROLLBACK 실패 시에만 생기는 두 번째 ROLLBACK(무해).
 - 미검증: 실제 PostgreSQL 잠금·두 거래 사이 동작, 실제 공급자·풀. 실제 맥락 묶음 공급자의 권한 주체 결정과 구현은 남았다. 실제 DB/권한/키/서비스/Agent/SSH 변경 0. rollback은 이 branch commit 일반 revert.
+
+
+### 기존 실패 시험 정리 — 2026-11-12T23:30:00+09:00
+
+- 근거: 신산님 '진행'. FN06+FN08 기존 실패 69건(main 6689c896) 정리. 담당 Claude 단일 writer, 분리된 read-only 조사·독립 검수(C0/I0/M2).
+- 원인과 조치(시험 대역 갱신 위주, 제품 1곳): ① 공통 거래가 COMMIT 응답 command를 확인(3bbff6ea)한 뒤 갱신되지 않은 FN08 5개 시험의 가짜 COMMIT → {command:'COMMIT'}(24건). ② buildApp이 NativeFirstReceiveService를 항상 만들며 installationId를 요구하는데 가짜 repository에 없던 6개 시험에 UUID 추가(32건). ③ 계약(FN06 WIRE l.274)대로 NATIVE_RECEIVE_INPUT_INVALID 기대값 갱신(4건). ④ 승인된 최초 DENIED 감사 경로(8c65821d)를 STREAM 가짜 DB에 반영(1건). ⑤ 자원 수명·호출 예산 분리(687f35fb, 통제 문서 §158)에서 누락된 기대값 3000→10000(1건). ⑥ 제품 버그: project-native-preparations.ts가 순환 import 상대 클래스의 prototype을 모듈 최상단에서 읽어 로드 순서에 따라 초기화 전 접근 오류(4642ab12)가 나던 것을 project-writer-authority.ts에서 클래스 정의 직후 고정·export하고 호출 시점에 읽도록 수정(해당 파일 21P). ⑦ 이 세션 전체 실행이 남긴 빈 QA 폴더 D:/tmp/anvil-v3-c3-instruction-source-review-qa-01 제거(파일 0, 1건).
+- 결과: FN06+FN08 2090건 2082P/8F(시험 수 증가는 로드 오류로 읽히지 않던 파일 포함). typecheck exit0, diff --check 0.
+- 남은 실패(결정·환경): native-first-receive-schema(0076 미적용 SQL이 COMMIT 뒤 DDL을 이어 씀 — 작성 중 SQL 정리 필요), native-preparation-store REPLACED(같은 preparations를 두 앱에 재사용 시 일회 binding 거절 — 지원 여부 결정 필요), native-physical-factory-build 2건(apps/desktop 개발 패키지 pe-library 미설치), provider-capture 파일 저장 2건(Main 등록 QA 환경변수 필요), 부하 중 시간 의존 2건(execution-start-context-source·관측 무응답, 단독 실행 통과).
+- 검수 미반영: OPEN 경로에서 current.expiresAt이 호출 예산을 줄이는지 검사하는 시험 없음(후속 보강 후보). 실제 DB/권한/키/서비스/Agent/SSH 변경 0.

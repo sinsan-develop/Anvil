@@ -15,7 +15,7 @@ function fixture(){
   if(sql.includes('FROM anvil.permission_policies p JOIN anvil.permission_policy_versions')){assert.deepEqual(values,[pid]);return{rows:[],rowCount:0};}
   throw Error('UNMODELED_SYNTHETIC_SQL');
  }} as unknown as PoolClient;
- const repository={
+ const repository={installationId:'ab140101-0000-4000-8000-000000009999',
   async authenticated<T>(token:string,csrf:string|null,body:(db:PoolClient,actor:any)=>Promise<T>):Promise<T>{authenticated.push({token,csrf});if(token!=='synthetic-current-session')throw new AuthFailure('AUTH_REQUIRED',401);return await body(db,actor);},
   signProjectCursor(_value:string){throw Error('UNSELECTED_CURSOR_SIGNING');},
  };
@@ -137,7 +137,7 @@ import {ApiClient} from '../../../apps/web/src/api/client.ts';
 import {newDefinitionReportFor,prepareDefinitionCapabilityReport,sendDefinitionCapabilityReport,readDefinitionCapabilityReport} from '../../../apps/web/src/features/connections/definition-capability-report-api.ts';
 import {ProjectListCodec} from '../../../apps/server/modules/projects/service.ts';
 test('실제 Web prepare→기존 recordCapabilityReport route→저장 receipt→전용 고정GET은 envelope1/payload2 hash를 함께 소비한다',async()=>{
- const f=await reportFixture();f.access.signProjectCursor=(text:string)=>H(text);const app=buildApp({},undefined,{repository:f.access,origin});const calls:{method:string;body?:string}[]=[];
+ const f=await reportFixture();f.access.signProjectCursor=(text:string)=>H(text);f.access.installationId='ab140101-0000-4000-8000-000000009999';const app=buildApp({},undefined,{repository:f.access,origin});const calls:{method:string;body?:string}[]=[];
  const session={user:{id:uid},clientId:cid,csrfToken:'c'.repeat(43)};
  const client=new ApiClient(async(url:any,init:any)=>{const method=init?.method??'GET';calls.push({method,body:init?.body});if(String(url)===`/api/v1/projects/${pid}`)return Response.json({id:pid,participation:'OWNER',controlState:{actorId:uid,clientId:cid,generation:1,status:'HELD'}});const response=await app.inject({method,url:String(url),payload:init?.body,headers:{...Object.fromEntries(new Headers(init?.headers).entries()),host:'anvil-synthetic.invalid',origin,cookie:'__Host-anvil.sid=synthetic-session'}});return new Response(response.body,{status:response.statusCode,headers:{'content-type':String(response.headers['content-type']??'')}});});
  try{let b=newDefinitionReportFor(f.definition.data,pid,session);b.draft!.tool.adapterVersion='독립 보고 버전';b.draft!.reason='실제 wire 소비';for(const cap of b.draft!.capabilities)cap.limitations='실측 없음';b=await prepareDefinitionCapabilityReport(client,b,session);assert.equal(b.pending!.schemaVersion,1);assert.equal(b.pending!.payload.schemaVersion,2);assert.equal(b.pending!.operation,'recordCapabilityReport');const expected=b.body;b=await sendDefinitionCapabilityReport(client,b,session);assert(b.receipt);const v=await readDefinitionCapabilityReport(client,pid,b.result!);assert.equal(v.snapshot.schemaVersion,2);assert.equal(v.snapshot.claimHash,H(b.draft));assert.equal(calls.filter(c=>c.method==='POST').length,1);assert.equal(calls.find(c=>c.method==='POST')!.body,expected);assert.equal(f.reports.length,1);}finally{await app.close();assert.equal(app.server.listening,false);}

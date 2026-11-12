@@ -15,7 +15,7 @@ function setup(){
  const q={...f.q,commandId:claim.commandId,kind:'TURN' as const,requestIdDigest:claim.source.requestIdDigest,claimHash:claimRef.contentHash},queries:any[]=[],dbQuery=f.db.query;
  // Parent SELECT must be distinguished from the pre-existing event-key lookup in this fake only.
  f.db.query=async(sql:string,params:any[])=>{if(sql.includes('FROM anvil.provider_session_claims')&&sql.includes('AND claim_id=')){f.calls.push({sql,params});return{rows:f.rows().filter(r=>r.claim_id===params[2])};}return dbQuery(sql,params);};
- const repository:any={signProviderClaimCursor:(v:string)=>createHmac('sha256',Buffer.alloc(32,7)).update('provider-claim-history-page:v1:'+v).digest('hex'),authenticated:async(_token:string,_csrf:unknown,body:any)=>body(f.db,f.actor)};
+ const repository:any={installationId:'ab140101-0000-4000-8000-000000009999',signProviderClaimCursor:(v:string)=>createHmac('sha256',Buffer.alloc(32,7)).update('provider-claim-history-page:v1:'+v).digest('hex'),authenticated:async(_token:string,_csrf:unknown,body:any)=>body(f.db,f.actor)};
  const app=buildApp({},undefined,{repository,origin:'https://localhost:3830'}),client=new ApiClient((async(url:string)=>{const r=await app.inject({method:'GET',url,headers:{host:'localhost:3830',cookie:'__Host-anvil.sid='+'a'.repeat(43)}});queries.push({url,status:r.statusCode});return new Response(r.body,{status:r.statusCode,headers:{'content-type':'application/json'}});}) as typeof fetch);
  return{f,q,parent,row,receipt,client,app,queries};
 }

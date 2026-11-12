@@ -26,7 +26,7 @@ test('미연결·다른 scope/권위 위조·저장 오류는 이력 성공으�
 });
 test('제품 app은 명시 이력 제공자를 연결하며 비어 있지 않은 체인도 재검사한다',async()=>{
  const f=understandingHistoryFixture(),unused={command:async()=>assert.fail('변경 명령 호출 금지')},provider:any={transport:'SYNTHETIC_ONLY',list:async(t:string,s:unknown)=>{assert.equal(t,token);assert.deepEqual(s,f.scope);return f.history;}};
- const app=buildApp({},undefined,{repository:{} as any,origin:'https://anvil.test'},{transport:'SYNTHETIC_ONLY',queue:unused,stop:unused,recovery:unused,understanding:unused,understandingHistory:provider});
+ const app=buildApp({},undefined,{repository:{installationId:'ab140101-0000-4000-8000-000000009999'} as any,origin:'https://anvil.test'},{transport:'SYNTHETIC_ONLY',queue:unused,stop:unused,recovery:unused,understanding:unused,understandingHistory:provider});
  const url=`/api/v1/projects/${f.scope.projectId}/executions/${f.scope.executionId}/understanding-reviews?generation=1`,headers={host:'anvil.test',cookie:'__Host-anvil.sid='+token};
  try{const good=await app.inject({url,headers});assert.equal(good.statusCode,200);assert.equal(good.json().items[0].snapshot.input.items.length,6);f.history.items[0]!.snapshot.input.reason='변조';const bad=await app.inject({url,headers});assert.equal(bad.statusCode,503);assert.equal(bad.body.includes('변조'),false);}finally{await app.close();}
 });
