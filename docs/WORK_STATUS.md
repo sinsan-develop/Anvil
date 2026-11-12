@@ -18840,3 +18840,12 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 결과: FN06+FN08 2090건 2082P/8F(시험 수 증가는 로드 오류로 읽히지 않던 파일 포함). typecheck exit0, diff --check 0.
 - 남은 실패(결정·환경): native-first-receive-schema(0076 미적용 SQL이 COMMIT 뒤 DDL을 이어 씀 — 작성 중 SQL 정리 필요), native-preparation-store REPLACED(같은 preparations를 두 앱에 재사용 시 일회 binding 거절 — 지원 여부 결정 필요), native-physical-factory-build 2건(apps/desktop 개발 패키지 pe-library 미설치), provider-capture 파일 저장 2건(Main 등록 QA 환경변수 필요), 부하 중 시간 의존 2건(execution-start-context-source·관측 무응답, 단독 실행 통과).
 - 검수 미반영: OPEN 경로에서 current.expiresAt이 호출 예산을 줄이는지 검사하는 시험 없음(후속 보강 후보). 실제 DB/권한/키/서비스/Agent/SSH 변경 0.
+
+
+### 남은 실패 시험 결정 반영·환경 의존 시험 실행 — 2026-11-13T02:10:00+09:00
+
+- 신산님 결정(2026-11-13): ① 0076 COMMIT 이동 → 0076 원문 크기·SHA-256이 IX01 현재 스키마 기준선(tests/integration/IX01/current-schema-baseline.ts:15, 529,020 bytes)에 고정돼 있고 IX01 설치 설계가 중간 COMMIT의 부분 반영을 전제함을 보고한 뒤 '보류하고 실패로 기록'으로 재결정. native-first-receive-schema.test.ts의 'COMMIT으로 끝남' 실패 1건은 IX01이 전제한 알려진 상태로 남긴다. ② 원 준비 객체 재사용 → '일회 binding 유지'. ③ desktop 패키지 설치·QA 환경변수 실행 허용. ④ P3·공급자 권한 → 결정안 문서 작성.
+- 변경 2경로(branch claude/av3-fn06-decided-fixes, base main df1b1a73): tests/unit/FN06/native-preparation-store.test.ts(REPLACED 경우가 이미 첫 앱에 binding된 준비 객체를 재사용하던 것을 새 준비 객체를 먼저 만든 뒤 공급자를 교체하도록 정정, 제품 일회 binding 규칙 유지), 현황 문서. 제품 코드 변경 0. 시험 한 줄 순서 변경이라 독립 검수는 생략했다.
+- 결과: native-preparation-store 57P/0F(3회 반복 통과, 그 사이 1회 실패는 시간 의존 'B issuer timeout…' 기존 시험). 이번 작업 사본 apps/desktop에서 npm ci --ignore-scripts(lock 기준 163개, Electron 설치 스크립트 미실행) 뒤 native-physical-factory-build 9P/0F. ANVIL_CAPTURE_STORE_QA_ROOT·ANVIL_CAPTURE_PREPARATION_STORE_QA_ROOT를 해당 실행에만 지정해 provider-capture-results 9P/0F, provider-capture-preparation 8P/0F. 실행 전 없던 D:/TMP/ANVIL-PROVIDER-CAPTURE-RESULTS-STORE(954)·PREPARATION-STORE(982)는 전부 이번 실행 생성분임을 확인하고 정리했다. desktop 패키지는 임시 작업 사본에만 설치했으므로 다른 사본에서 이 시험을 돌리려면 같은 설치가 필요하다.
+- 남은 FN06+FN08 실패: 0076 schema 1건(보류 결정), 부하 중 시간 의존 시험(단독 통과). OPEN 경로 current.expiresAt 호출 예산 축소 시험 보강은 내부 timer·HTTPS 경로 흉내 비용이 커 후속 후보로 보류했다.
+- 다음: P3(서버 normal 실행 허가, 실행기 credential·서명 키·polling)·맥락 묶음 공급자 권한 주체 결정안 문서 작성. 실제 DB/권한/키/서비스/Agent/SSH 변경 0.
