@@ -18819,3 +18819,15 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 독립 검수: C0/I1/M8. 반영: I1 journal 읽을 때 저장된 모든 부분 bytes 재확인(맥락 묶음 포함, 이어쓰기·RECEIVED 전 포함), descriptor 기록 전 구조 검증(M1), 쓰이지 않던 grantRef 제거(M2), 기록 순서 강제와 RECEIVED descriptor 대조(M3), readStatus 발행 전 봉투 거절(M4), 오류 코드화(M5), 같은 참조 두 개 거절(M6), 만료·불명 기록 동작 주석(M7·M8), 시험 보강.
 - 미검증: 실제 내구 저장소(파일 원자성·잠금), 실제 TLS·DB·Agent. 결과 불명 기록(complete=false)은 복구 경로 없이 멈춘다(합성 수신기와 같음). 저장소 파일 구현, credential 보관·서명 키 공급·명령 polling 루프, 서버 normal permit과 START 실행 전달은 남았다(실제 전송 활성화는 P3 승인 대상).
 - 다음 후보: I1 공급자 보완·권한 결정, M1 .gitattributes, M5 기존 시험 정정, 0088 실제 DB 검증, normal 수신 저장소 파일 구현. 실제 DB/권한/키/서비스/Agent/SSH 변경 0. rollback은 이 branch commit 일반 revert.
+
+
+### PR84·85 검수 지적 후속(I1·M1·M5) — 2026-11-12T16:30:00+09:00
+
+- 근거: 신산님 '진행'. 2026-11-11 PR84·85 사후 독립 검수의 I1·M1·M5 후속으로, 승인 범위 안의 source·시험·설정 보완이다. 담당: Claude 세션 단일 writer, 검수는 분리된 read-only 독립 검수.
+- 변경 6경로(branch claude/av3-test-hygiene, base main 81c8caf6): apps/server/modules/executions/normal-start-materials.ts, .gitattributes, tests/support/execution-material-credential-fixture.ts, tests/unit/FN08/execution-material-credential-integration.test.ts, tests/unit/FN08/normal-start-materials-journey.test.ts, 현황 2문서. SQL·계약 변경 0.
+- I1: 맥락 묶음 공급자를 프로젝트 행 잠금(normal_exchange_current FOR UPDATE OF p)을 쥔 열린 거래 안에서 부르던 것을 바꿨다. 첫 거래에서 모든 검산 뒤 CONTEXT_BUNDLE이면 ROLLBACK하고 연결을 반환한 다음, 거래 밖에서 공급자를 유한(2초) 호출하고, 두 번째 거래에서 처음부터 다시 검산해 등록 범위(payloadRef·길이·hash·세대·명령)가 같은지 확인(다르면 412 EXECUTION_MATERIAL_CURRENT_CHANGED)하고 원문을 등록 길이·hash와 대조한 뒤 소비한다. 첫 거래는 읽기만 하므로 nonce·영수증·challenge 수·rate limit 변화가 없다. START_OPTIONS는 한 번의 거래 그대로, 공급자 미주입 412는 공급자 호출 전 그대로다. 같은 packet 동시 요청은 각자 공급자를 부른 뒤 두 번째 거래가 잠금으로 직렬화되어 같은 영수증으로 수렴한다. 실제 공급자는 동시 호출을 스스로 감당해야 한다.
+- M5: execution-material-credential-integration.test.ts '자료 source await 뒤…'가 서버가 생성 시 고정한 source.inspect를 바꿔치기해 고정 불일치로 먼저 거절되던(H·RESERVATION·TX 경우가 의도와 다른 이유로 통과) 문제를 fixture onInspect hook으로 바꿨다. hook 도달(관측 2회 이상)을 단언하며, 검수 probe로 변경 없는 경우 성공·hook 변경 시 거절을 확인했다. PR62(7d51ce10) 이후 기존 실패가 통과로 바뀌었다.
+- M1: .gitattributes에 db/migrations/*.sql.pending text eol=lf를 추가했다. index는 이미 52개 모두 LF라 내용 변경은 없다. 이미 CRLF 작업본이 있는 다른 Windows 사본은 해당 파일(0077 이후)을 다시 checkout해야 적용된다.
+- 검증: 여정 파일 14P/0F(공급자는 자료 거래 ROLLBACK 뒤에만 호출됨을 PART/ROLLBACK/PROVIDER 순서로 단언 — 변경 전 코드는 실패), execution-material-credential-integration 8P/0F, npm run typecheck exit0, git diff --check 0. FN06+FN08 전체 2070건 2001P/69F(main 기준 1988P/78F)로 새 실패 0, 고쳐진 9건(M5 1건, M1로 미적용 SQL 원문 바이트 대조 시험 7건, 0088 discovery 1건 포함). 남은 69건은 이번 범위 밖 기존 실패다.
+- 독립 검수: C0/I0/M3, 수용. 미반영: 두 거래 사이 등록 변경 거절(CURRENT_CHANGED)의 시험 없음(시험 대역에서 hash 사슬을 유지한 채 등록만 바꾸기 어려움), 공급자 동시 호출 비직렬화(의도), 첫 ROLLBACK 실패 시에만 생기는 두 번째 ROLLBACK(무해).
+- 미검증: 실제 PostgreSQL 잠금·두 거래 사이 동작, 실제 공급자·풀. 실제 맥락 묶음 공급자의 권한 주체 결정과 구현은 남았다. 실제 DB/권한/키/서비스/Agent/SSH 변경 0. rollback은 이 branch commit 일반 revert.

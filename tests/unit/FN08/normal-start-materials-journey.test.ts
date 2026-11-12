@@ -9,7 +9,8 @@ const {NormalPageCursors}=await import('../../../apps/server/modules/executions/
 const {startContextBody}=await import('../../../apps/server/modules/executions/normal-initial-execution.ts');
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
 async function setup(withContext=true){
- const opts={failBinding:false,contextCalls:0,wrongContext:false,hang:false};
+ const opts={failBinding:false,contextCalls:0,wrongContext:false,hang:false,events:[] as string[]};
+ let gate:Promise<unknown>=Promise.resolve();
  const bindings:any[]=[];
  const sql:PageSqlAdapter=(s,a,{f,drafts,issued})=>{
   if(s.startsWith('SELECT v.content_hash AS vhash')){
@@ -32,7 +33,9 @@ async function setup(withContext=true){
    })};
   }
   if(s.startsWith('SELECT * FROM anvil.normal_start_material_rows'))return {rows:commandRows(a[0]).filter(x=>a[1].includes(x.id)).flatMap(x=>registered(a[0],x)??[])};
+  if(s==='ROLLBACK'){opts.events.push('ROLLBACK');return undefined;}
   if(s.startsWith('SELECT * FROM anvil.normal_start_material_part')){
+   opts.events.push('PART');
    // 원 제품 START가 저장한 명령·manifest·material 행과 준비 기록의 options 원문만 돌려준다.
    const [pid,eid,gid,gv,gen,command,material]=a;
    return {rows:commandRows(pid).filter(x=>x.execution_id===eid&&x.grant_id===gid&&x.grant_version===gv&&x.generation===gen&&x.snapshot_json.envelope.commandId===command).flatMap(x=>{
@@ -52,15 +55,19 @@ async function setup(withContext=true){
   return undefined;
  };
  const h=await journey({sql,cursors:new NormalPageCursors(randomBytes(32))},{context:withContext?f=>({async contextBody(scope,signal){
-  opts.contextCalls++;assert.ok(signal instanceof AbortSignal);assert.ok(!('query' in scope));
+  opts.contextCalls++;assert.ok(signal instanceof AbortSignal);assert.ok(!('query' in scope));opts.events.push('PROVIDER');
   if(opts.hang)await new Promise<void>(ok=>signal.addEventListener('abort',()=>ok(),{once:true}));
   // 제품 reader와 제품 조립 함수로 원문을 다시 만든다. 시험이 본문이나 hash를 따로 만들지 않는다.
-  const db=await f.access.pool.connect();
-  try{
-   await db.query('BEGIN');
-   const body=startContextBody(await f.contexts.readStartSource(db,f.actor,scope.projectId,scope.contextBundleRef as any),f.preparation.data.snapshot.intent);
-   return opts.wrongContext?body+' ':body;
-  }finally{await db.query('ROLLBACK');db.release();}
+  // 이 시험 대역의 DB 풀은 연결을 하나씩만 허용하므로 동시 호출을 순서대로 처리한다(실제 공급자는 동시 호출을 스스로 감당해야 한다).
+  const run=gate.then(async()=>{
+   const db=await f.access.pool.connect();
+   try{
+    await db.query('BEGIN');
+    const body=startContextBody(await f.contexts.readStartSource(db,f.actor,scope.projectId,scope.contextBundleRef as any),f.preparation.data.snapshot.intent);
+    return opts.wrongContext?body+' ':body;
+   }finally{await db.query('ROLLBACK');db.release();}
+  });
+  gate=run.then(()=>{},()=>{});return run;
  }}):undefined});
  async function signedGet(path:string,query:Record<string,string|number>){
   const r=h.mk();r.target.path=path;r.target.queryHash=digest(query);const resp=await h.post(h.signed(r));assert.equal(resp.statusCode,200,resp.body);
@@ -103,6 +110,8 @@ test('명령 페이지에서 발견한 두 자료를 보호 GET으로 받아 등
   }
   const receipts=h.store.receipts().filter(v=>v.snapshot_json.kind==='NORMAL_START_MATERIAL');
   assert.equal(receipts.length,2);assert.ok(opts.contextCalls>=1);
+  // 공급자는 자료 거래를 되돌린 뒤(잠금·연결 반환)에만 불린다
+  opts.events.forEach((e,i)=>{if(e==='PROVIDER')assert.ok(opts.events.slice(0,i).lastIndexOf('ROLLBACK')>opts.events.slice(0,i).lastIndexOf('PART'),'공급자 호출 직전 거래 종료');});
   for(const r of receipts){
    assert.ok(!JSON.stringify(r).includes('"bytes"'));
    assert.ok(bindings.some(b=>b.proof_result_id===r.id&&b.material_id===r.snapshot_json.materialRef.id&&b.snapshot_json.contentHash===r.snapshot_json.partContentHash));

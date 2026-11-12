@@ -78,6 +78,7 @@ export interface NormalStartContextSource{
  contextBody(scope:Readonly<{projectId:string;executionId:string;executionGeneration:number;commandId:string;contextBundleRef:Ref;sourceBytes:number;contentHash:string}>,
   signal:AbortSignal):Promise<unknown>;
 }
+type ContextScope=Parameters<NormalStartContextSource['contextBody']>[0];
 export interface NormalStartMaterialsOptions{pool:Pick<Pool,'connect'>;origin:string;context?:NormalStartContextSource}
 const maxEncoded=2796203,maxMetadata=16384,maxResponse=2812587;
 const receiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','commandRef','envelopeHash','manifestRef','materialRef','partContentHash','observedAt','expiresAt'];
@@ -108,7 +109,7 @@ async function readPart(db:PoolClient,args:unknown[],b:any,command:string,materi
   manifestExpiresAt:Date.parse(r.manifest.expiresAt),optionsBody:r.options_body as string,basis:canonicalJson(r)};
 }
 async function deliver(o:NormalStartMaterialsOptions,connector:string,execution:string,command:string,material:string,tokenDigest:string,frame:any,
- target:ReturnType<typeof executionTarget>,signal:AbortSignal){
+ target:ReturnType<typeof executionTarget>,signal:AbortSignal,pre?:{scope:ContextScope;raw:unknown}){
  const db=await o.pool.connect(),proof=frame.proof,g=proof.grantRef,c=frame.challengeRef;
  let committing=false,discard:Error|undefined;
  try{
@@ -143,8 +144,13 @@ async function deliver(o:NormalStartMaterialsOptions,connector:string,execution:
   if(m.group.kind==='START_OPTIONS')raw=m.optionsBody;
   else{
    if(typeof o.context?.contextBody!=='function')deny('EXECUTION_MATERIAL_SOURCE_REQUIRED');
-   raw=await boundedContext(o.context!,{projectId:pid,executionId:execution,executionGeneration:b.executionGeneration,commandId:command,
-    contextBundleRef:m.group.payloadRef,sourceBytes:m.group.sourceBytes,contentHash:m.group.contentHash},signal);
+   const scope:ContextScope={projectId:pid,executionId:execution,executionGeneration:b.executionGeneration,commandId:command,
+    contextBundleRef:m.group.payloadRef,sourceBytes:m.group.sourceBytes,contentHash:m.group.contentHash};
+   // 공급자는 프로젝트 행 잠금·DB 연결을 쥔 채 부르지 않는다. 첫 거래는 여기서 되돌리고 호출자가 거래 밖에서 원문을 받아 다시 들어온다.
+   if(!pre){await db.query('ROLLBACK');return {needContext:scope} as const;}
+   // 거래 사이에 등록 정보가 바뀌었으면 거절한다. 원문 자체는 아래에서 등록 길이·hash와 다시 대조한다.
+   if(!same(pre.scope,scope))deny('EXECUTION_MATERIAL_CURRENT_CHANGED');
+   raw=pre.raw;
   }
   if(typeof raw!=='string')deny();
   const bytes=checkedMaterialPart(raw as string,m.group,m.part);
@@ -178,7 +184,7 @@ async function deliver(o:NormalStartMaterialsOptions,connector:string,execution:
     last.deadline.getTime()<Date.parse(snapshot.expiresAt)||last.now.getTime()>=Date.parse(snapshot.expiresAt))deny();
   committing=true;
   if((await db.query('COMMIT')).command!=='COMMIT')throw Error();
-  committing=false;return out;
+  committing=false;return {out} as const;
  }catch(error){
   if(committing)discard=new Error('EXECUTION_MATERIAL_COMMIT_UNKNOWN');
   try{await db.query('ROLLBACK');}catch{discard??=new Error('EXECUTION_MATERIAL_ROLLBACK_UNKNOWN');}
@@ -195,6 +201,13 @@ export function registerNormalStartMaterials(app:FastifyInstance,o:NormalStartMa
   const {cid,eid,command,material}=r.params,path='/api/v1/connectors/'+cid+'/executions/'+eid+'/commands/'+command+'/materials/'+material;
   if(![cid,eid,command,material].every(uuidV1)||r.raw.method!=='GET'||r.raw.url!==path)return reply.callNotFound();
   const target=executionTarget('GET',path,[],null),token=normalRequestBearerDigest(r,origin.host,true),packet=readPacket(r);
-  return deliver(o,cid,eid,command,material,token,packet,target,r.signal);
+  const run=(pre?:{scope:ContextScope;raw:unknown})=>deliver(o,cid,eid,command,material,token,packet,target,r.signal,pre);
+  const first=await run();
+  if('out' in first)return first.out;
+  // 거래 밖(잠금·연결 없음)에서 보호 공급자를 유한 시간 호출한 뒤 처음부터 다시 검산한다.
+  const raw=await boundedContext(o.context!,first.needContext,r.signal);
+  const second=await run({scope:first.needContext,raw});
+  if(!('out' in second))deny('EXECUTION_MATERIAL_CURRENT_CHANGED');
+  return second.out;
  });
 }
