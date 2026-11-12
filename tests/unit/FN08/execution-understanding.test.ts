@@ -24,7 +24,7 @@ function fixture(sessionWindowMs=3600000){
  const rules=[{ruleId:'understanding',subjectRef:{kind:'HUMAN',userId:pid},operations:['reviewUnderstanding'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',limitPolicyRef:null,expiresAt:until}];
  const policy=()=>({rules,reason:'합성 검토 정책',reviewRefs:[]});
  const db:any={query:async(sql:string,p:any[]=[])=>{
-  if(sql==='BEGIN'){checkpoint=structuredClone({entries,commands});return{rows:[]};}if(sql==='COMMIT')return{rows:[]};if(sql==='ROLLBACK'){({entries,commands}=checkpoint);return{rows:[]};}
+  if(sql==='BEGIN'){checkpoint=structuredClone({entries,commands});return{rows:[]};}if(sql==='COMMIT')return{command:'COMMIT',rows:[]};if(sql==='ROLLBACK'){({entries,commands}=checkpoint);return{rows:[]};}
   if(sql.startsWith('SELECT s.*,u.id AS uid'))return{rows:[{id:sid,uid:pid,client_id:cid,current_generation:3,credential_generation:3,user_status:'ACTIVE',user_revoked_at:null,client_revoked_at:null,revoked_at:null,idle_expires_at:new Date(until),absolute_expires_at:new Date(until),csrf_digest:createHash('sha256').update(csrf).digest('hex'),reauth_until:null,server_owner:false}]};
   if(sql.startsWith('SELECT p.id,p.archived_at'))return{rows:[{id:pid,participation:'OWNER',archived_at:null}]};
   if(sql.startsWith('SELECT * FROM anvil.project_control'))return{rows:[{actor_id:pid,client_id:cid,generation:control,revoked_at:null}]};

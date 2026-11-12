@@ -9,7 +9,7 @@ const cookie='__Host-anvil.sid='+'a'.repeat(43);
 function setup(t:TestContext){
  t.mock.timers.enable({apis:['Date'],now:Date.parse(at)});let after=()=>{};
  const f=fixture(),auth:any[]=[];
- const repository:any={signProjectCursor:()=>'',signMethodCursor:()=>'',signProviderClaimCursor:(v:string)=>createHmac('sha256',Buffer.alloc(32,7)).update('provider-claim-history-page:v1:'+v).digest('hex'),authenticated:async(token:string,csrf:unknown,body:any)=>{auth.push({token,csrf});try{return await body(f.db,f.actor);}finally{after();}}};
+ const repository:any={installationId:'ab140101-0000-4000-8000-000000009999',signProjectCursor:()=>'',signMethodCursor:()=>'',signProviderClaimCursor:(v:string)=>createHmac('sha256',Buffer.alloc(32,7)).update('provider-claim-history-page:v1:'+v).digest('hex'),authenticated:async(token:string,csrf:unknown,body:any)=>{auth.push({token,csrf});try{return await body(f.db,f.actor);}finally{after();}}};
  const app=buildApp({},undefined,{repository,origin:'https://localhost:3830'}),url=`/api/v1/projects/${f.q.projectId}/agent-sessions/${f.q.agentSessionId}/provider-session-claim-receipt?`+new URLSearchParams({executionId:f.q.executionId,generation:'1',commandId:f.q.commandId,kind:'THREAD',requestIdDigest:f.q.requestIdDigest,claimHash:f.q.claimHash});
  return{f,app,auth,url,afterAuth:(fn:()=>void)=>after=fn};
 }
