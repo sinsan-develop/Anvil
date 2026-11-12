@@ -1,0 +1,203 @@
+-- FN08 normal 실행 관측 계약 r1(docs/contracts/FN08_NORMAL_OBSERVATIONS_CONTRACT_20261113.md) §4.
+-- 관측 행·ACK·영수증·nonce 소비를 같은 거래에서 결박한다. 합성 관측 guard 본문은 바꾸지 않는다.
+-- 이 파일은 미적용 source이며 실제 PostgreSQL에서 실행·검증하지 않았다(D1 1단계 P2 적용 대상).
+BEGIN;
+-- normal 관측 영수증. nonce 소비(v2)와 같은 거래에서만, 서버 marker와 정확히 같은 영수증과 그 시점 ACK를 받는다.
+CREATE FUNCTION anvil.normal_observation_receipt_valid(r anvil.execution_receipts) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE v anvil.execution_challenges%ROWTYPE;old anvil.execution_challenges%ROWTYPE;s jsonb=r.snapshot_json;b jsonb=s->'binding';a anvil.execution_acknowledgements%ROWTYPE;
+ marker text=current_setting('anvil.normal_observation_verified',true);
+BEGIN
+ SELECT * INTO v FROM anvil.execution_challenges WHERE project_id=r.project_id AND id=r.challenge_id AND version=2;
+ SELECT * INTO old FROM anvil.execution_challenges WHERE project_id=r.project_id AND id=r.challenge_id AND version=1;
+ IF v.id IS NULL OR old.id IS NULL OR r.version<>1 OR r.challenge_version<>1 OR r.grant_id<>v.grant_id OR r.grant_version<>v.grant_version
+  OR NOT anvil.execution_json_shape(s,ARRAY['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','bodyHash','ackRef','observedAt'])
+  OR s->>'kind' IS DISTINCT FROM 'NORMAL_OBSERVATIONS' OR r.content_hash IS DISTINCT FROM anvil.execution_json_hash(s)
+  OR marker IS NULL OR split_part(marker,':',1) IS DISTINCT FROM txid_current()::text OR split_part(marker,':',2) IS DISTINCT FROM r.content_hash OR split_part(marker,':',3) !~ '^[0-9a-f]{64}$'
+  OR b IS DISTINCT FROM old.snapshot_json->'binding' OR b->>'transport' IS DISTINCT FROM 'NORMAL_PROTECTED'
+  OR s->'credentialRef' IS DISTINCT FROM old.snapshot_json->'credentialRef'
+  OR s->'challengeRef' IS DISTINCT FROM jsonb_build_object('id',old.id,'version',1,'contentHash',old.content_hash)
+  OR s->'target' IS DISTINCT FROM old.snapshot_json#>'{request,target}' OR s->'target'->>'method' IS DISTINCT FROM 'POST'
+  OR s->'target'->>'path' !~ '/observations$' OR s->'bodyHash' IS DISTINCT FROM s->'target'->'bodyHash'
+  OR s->>'requestId' IS DISTINCT FROM old.snapshot_json#>>'{request,requestId}'
+  OR v.snapshot_json#>'{consumption,resultRef}' IS DISTINCT FROM jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash)
+  OR v.snapshot_json#>'{consumption,packetHash}' IS DISTINCT FROM s->'packetHash'
+  OR NOT anvil.execution_preparation_ref_valid(s->'ackRef') OR NOT anvil.execution_iso_valid(s->'observedAt')
+  OR v.snapshot_json#>'{consumption,consumedAt}' IS DISTINCT FROM s->'observedAt'
+ THEN RETURN false;END IF;
+ RETURN true;
+END;
+$$;
+REVOKE ALL ON FUNCTION anvil.normal_observation_receipt_valid(anvil.execution_receipts) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION anvil.normal_observation_receipt_valid(anvil.execution_receipts) TO anvil_v3_app;
+CREATE FUNCTION anvil.guard_normal_observation_receipt() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF coalesce(anvil.normal_observation_receipt_valid(NEW::anvil.execution_receipts),false) THEN RETURN NEW;END IF;
+ RAISE EXCEPTION 'NORMAL_OBSERVATION_RECEIPT_REQUIRED' USING ERRCODE='42501';
+END;
+$$;
+-- 영수증이 가리키는 ACK는 같은 거래가 끝날 때 실제로 있어야 한다(새 ACK이든 기존 ACK이든).
+CREATE FUNCTION anvil.guard_normal_observation_receipt_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE s jsonb=NEW.snapshot_json;g anvil.execution_grants%ROWTYPE;
+BEGIN
+ SELECT * INTO g FROM anvil.execution_grants WHERE project_id=NEW.project_id AND id=NEW.grant_id AND version=NEW.grant_version;
+ IF g.id IS NULL OR NOT EXISTS(SELECT 1 FROM anvil.execution_acknowledgements a WHERE a.project_id=NEW.project_id AND a.execution_id=g.execution_id AND a.generation=g.generation
+   AND a.id=(s#>>'{ackRef,id}')::uuid AND a.version=(s#>>'{ackRef,version}')::bigint AND a.content_hash=s#>>'{ackRef,contentHash}'
+   -- 같은 거래 끝에서 이 실행·세대의 최신 ACK여야 한다.
+   AND a.version=(SELECT max(l.version) FROM anvil.execution_acknowledgements l WHERE l.project_id=a.project_id AND l.execution_id=a.execution_id AND l.generation=a.generation))
+ THEN RAISE EXCEPTION 'NORMAL_OBSERVATION_ACK_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NULL;
+END;
+$$;
+-- 아래 함수는 앞선 migration의 정의를 옮기고 표시한 곳만 바꿨다.
+-- (0018) 관측 현재성에 normal grant 분기 추가
+CREATE OR REPLACE FUNCTION anvil.execution_observation_current(pid uuid,eid uuid,gen bigint,gid uuid,ver bigint) RETURNS boolean LANGUAGE sql AS $$
+ -- (0090 변경) normal grant는 normal 현재성으로 판정한다. credential 세대는 grant의 실행 credential 예약 세대다.
+ SELECT CASE WHEN EXISTS(SELECT 1 FROM anvil.execution_grants g WHERE g.project_id=pid AND g.id=gid AND g.version=ver AND g.snapshot_json->>'transport'='NORMAL_PROTECTED')
+  THEN COALESCE(EXISTS(SELECT 1 FROM anvil.execution_grants g WHERE g.project_id=pid AND g.id=gid AND g.version=ver AND g.execution_id=eid AND g.generation=gen
+   AND EXISTS(SELECT 1 FROM anvil.normal_exchange_current(pid,(g.snapshot_json#>>'{binding,registration,connectorId}')::uuid,eid,gid,ver,g.content_hash,
+    (g.snapshot_json#>>'{binding,executionCredentialReservation,generation}')::bigint))),false)
+  ELSE (
+ SELECT COALESCE(EXISTS(SELECT 1 FROM anvil.execution_grants g WHERE g.project_id=pid AND g.id=gid AND g.version=ver AND g.execution_id=eid AND g.generation=gen
+  AND anvil.synthetic_challenge_context(pid,gid,ver,jsonb_build_object('id',gid,'version',ver,'contentHash',g.content_hash))
+  AND EXISTS(SELECT 1 FROM anvil.execution_credentials c WHERE c.project_id=pid AND c.grant_id=gid AND c.grant_version=ver AND c.credential_generation=1)),false)
+  ) END;
+$$;
+-- (0018) 관측 guard의 normal 전용 복사본: transport·credential 세대·marker만 다르다
+CREATE FUNCTION anvil.guard_normal_execution_observation() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE s jsonb;e jsonb;g anvil.execution_grants%ROWTYPE;at_time timestamptz=clock_timestamp();
+BEGIN
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'EXECUTION_OBSERVATION_IMMUTABLE' USING ERRCODE='42501';END IF;
+ s=NEW.snapshot_json;e=s->'event';SELECT * INTO g FROM anvil.execution_grants WHERE project_id=NEW.project_id AND id=NEW.grant_id AND version=NEW.grant_version;
+ IF NEW.version IS DISTINCT FROM 1 OR NOT anvil.execution_observation_current(NEW.project_id,NEW.execution_id,NEW.generation,NEW.grant_id,NEW.grant_version)
+  OR NOT anvil.execution_json_shape(s,ARRAY['event','grantRef','credentialGeneration','mode','receivedAt','transport','verification'])
+  OR s->'grantRef' IS DISTINCT FROM jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.content_hash)
+  -- (0090 변경) normal: credential 세대는 grant의 실행 credential 예약 세대, 서버 관측 경로 marker가 같은 거래에 있어야 한다.
+  OR s->'credentialGeneration' IS DISTINCT FROM g.snapshot_json#>'{binding,executionCredentialReservation,generation}'
+  OR split_part(current_setting('anvil.normal_observation_verified',true),':',1) IS DISTINCT FROM txid_current()::text
+  OR s->>'mode' IS DISTINCT FROM 'EXECUTION' OR s->>'transport' IS DISTINCT FROM 'NORMAL_PROTECTED' OR s->>'verification' IS DISTINCT FROM 'PROVIDER_CLAIM_ONLY'
+  OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) OR octet_length(anvil.execution_authority_canonical(e))>65536
+  OR NOT anvil.execution_iso_valid(s->'receivedAt') OR (s->>'receivedAt')::timestamptz>at_time OR (s->>'receivedAt')::timestamptz<at_time-interval '30 seconds'
+  OR NOT anvil.execution_json_shape(e,ARRAY['projectId','executionId','executionGeneration','sequence','eventId','type','commandId','envelopeHash','localRecordRef','processRef','occurredAt','reasonCode'])
+  OR e->'projectId' IS DISTINCT FROM to_jsonb(NEW.project_id) OR e->'executionId' IS DISTINCT FROM to_jsonb(NEW.execution_id) OR e->'executionGeneration' IS DISTINCT FROM to_jsonb(NEW.generation)
+  OR e->'sequence' IS DISTINCT FROM to_jsonb(NEW.event_sequence) OR NOT anvil.execution_preparation_ref_valid(e->'localRecordRef')
+  OR (e->'processRef' IS DISTINCT FROM 'null'::jsonb AND NOT anvil.execution_preparation_ref_valid(e->'processRef'))
+  OR jsonb_typeof(e->'eventId') IS DISTINCT FROM 'string' OR e->>'eventId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  OR jsonb_typeof(e->'commandId') IS DISTINCT FROM 'string' OR e->>'commandId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  OR jsonb_typeof(e->'envelopeHash') IS DISTINCT FROM 'string' OR e->>'envelopeHash' !~ '^[0-9a-f]{64}$'
+  OR NOT EXISTS(SELECT 1 FROM anvil.execution_commands c WHERE c.project_id=NEW.project_id AND c.execution_id=NEW.execution_id AND c.generation=NEW.generation
+   AND c.envelope_hash=e->>'envelopeHash' AND c.snapshot_json->'envelope'->>'commandId'=e->>'commandId')
+  OR jsonb_typeof(e->'type') IS DISTINCT FROM 'string' OR e->>'type' NOT IN('RECEIVED','PREPARED','START_ATTEMPTED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED','STARTED','REJECTED','UNKNOWN','STOP_REQUESTED','STOPPED','STOP_UNCONFIRMED','HEARTBEAT')
+  OR jsonb_typeof(e->'reasonCode') IS DISTINCT FROM 'string' OR e->>'reasonCode' NOT IN('NONE','UNVERIFIED_PROVIDER_CLAIM','PROVIDER_RESPONSE_LOST','RECORD_UNCERTAIN','STOP_UNCONFIRMED','REJECTED_BY_PROVIDER')
+  OR NOT anvil.execution_iso_valid(e->'occurredAt') OR (e->>'occurredAt')::timestamptz>at_time+interval '30 seconds' THEN RAISE EXCEPTION 'NORMAL_EXECUTION_OBSERVATION_EXACT_CLAIM_REQUIRED' USING ERRCODE='42501';END IF;
+ IF (SELECT count(*) FROM anvil.execution_observations WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND generation=NEW.generation)>=10000
+  OR (SELECT COALESCE(sum(octet_length(anvil.execution_authority_canonical(snapshot_json))),0) FROM anvil.execution_observations WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND generation=NEW.generation)+octet_length(anvil.execution_authority_canonical(s))>16777216 THEN
+  RAISE EXCEPTION 'EXECUTION_OBSERVATION_LIMIT' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'NORMAL_EXECUTION_OBSERVATION_EXACT_CLAIM_REQUIRED' USING ERRCODE='42501';
+END;
+$$;
+-- (0089) 요청 challenge 대상에 observations POST 추가
+CREATE OR REPLACE FUNCTION anvil.normal_request_challenge_valid(n anvil.execution_challenges,deferred_check boolean) RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE s jsonb=n.snapshot_json;b jsonb=s->'binding';r jsonb=s->'request';t jsonb=r->'target';p jsonb=s->'publicChallenge';
+ ref jsonb=s->'credentialRef';receipt anvil.execution_receipts%ROWTYPE;cred record;cur record;at_time timestamptz;ends timestamptz;
+ total bigint;recent bigint;live bigint;last_seq bigint;
+BEGIN
+ IF n.version<>1 OR n.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) OR octet_length(anvil.execution_authority_canonical(s))>16384
+  OR NOT anvil.execution_json_shape(s,ARRAY['sequence','credentialRef','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption'])
+  OR s->'previousRef' IS DISTINCT FROM 'null'::jsonb OR s->'consumption' IS DISTINCT FROM 'null'::jsonb OR s->'sequence' IS DISTINCT FROM to_jsonb(n.server_sequence)
+
+  OR NOT anvil.execution_json_shape(r,ARRAY['requestId','purpose','grantRef','credentialGeneration','target','clientNonce','issuedAt'])
+  OR r->>'purpose' IS DISTINCT FROM 'EXECUTION_REQUEST' OR r->'grantRef' IS DISTINCT FROM b->'grantRef' OR r->'credentialGeneration' IS DISTINCT FROM b->'credentialGeneration'
+  OR jsonb_typeof(r->'requestId') IS DISTINCT FROM 'string' OR r->>'requestId' IS DISTINCT FROM (r->>'requestId')::uuid::text
+  OR NOT anvil.execution_json_shape(t,ARRAY['method','path','bodyHash','queryHash']) OR t->>'method' NOT IN ('GET','POST')
+  -- (0089 변경) GET: 명령 조회 또는 그 명령에 등록된 자료 한 부분(본문 null). POST: 그 명령의 일회 실행 허가(permit, query 없음·본문 hash).
+  OR NOT coalesce(t->>'method'='GET' AND t->>'bodyHash'=anvil.execution_json_hash('null'::jsonb) AND (t->>'path'='/api/v1/connectors/'||(b->>'connectorId')||'/executions/'||(b->>'executionId')||'/commands'
+    OR t->>'path' ~ ('^'||'/api/v1/connectors/'||(b->>'connectorId')||'/executions/'||(b->>'executionId')||'/commands'||'/[0-9a-f-]{36}/materials/[0-9a-f-]{36}$') AND t->>'queryHash'=anvil.execution_json_hash('{}'::jsonb))
+   OR t->>'method'='POST' AND t->>'path' ~ ('^'||'/api/v1/connectors/'||(b->>'connectorId')||'/executions/'||(b->>'executionId')||'/commands'||'/[0-9a-f-]{36}/permit$')
+    AND t->>'queryHash'=anvil.execution_json_hash('{}'::jsonb) AND t->>'bodyHash'~'^[0-9a-f]{64}$' AND t->>'bodyHash'<>anvil.execution_json_hash('null'::jsonb)
+   -- (0090 변경) 실행 관측 POST(query 없음·본문 hash)
+   OR t->>'method'='POST' AND t->>'path'='/api/v1/connectors/'||(b->>'connectorId')||'/executions/'||(b->>'executionId')||'/observations'
+    AND t->>'queryHash'=anvil.execution_json_hash('{}'::jsonb) AND t->>'bodyHash'~'^[0-9a-f]{64}$' AND t->>'bodyHash'<>anvil.execution_json_hash('null'::jsonb),false)
+  OR jsonb_typeof(t->'queryHash') IS DISTINCT FROM 'string' OR t->>'queryHash' !~ '^[0-9a-f]{64}$'
+  OR s->>'requestHash' IS DISTINCT FROM anvil.execution_json_hash(r)
+  OR s->>'signedInputHash' IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_object('purpose','EXECUTION_CHALLENGE_REQUEST','request',r))
+  OR NOT anvil.execution_nonce_valid(r->'clientNonce') OR NOT anvil.execution_nonce_valid(p->'serverNonce')
+  OR s->>'serverNonceDigest' IS DISTINCT FROM encode(sha256(decode(translate(p->>'serverNonce','-_','+/')||'=','base64')),'hex')
+  OR NOT anvil.execution_iso_valid(r->'issuedAt') OR NOT anvil.execution_iso_valid(p->'issuedAt') OR NOT anvil.execution_iso_valid(p->'expiresAt')
+  OR p IS DISTINCT FROM jsonb_build_object('id',n.id,'requestId',r->'requestId','purpose','EXECUTION_REQUEST','grantRef',b->'grantRef',
+   'credentialGeneration',r->'credentialGeneration','scopeDigest',b->'scopeDigest','serverNonce',p->'serverNonce','clientNonce',r->'clientNonce','issuedAt',p->'issuedAt','expiresAt',p->'expiresAt')
+ THEN RETURN false;END IF;
+ SELECT * INTO receipt FROM anvil.execution_receipts WHERE project_id=n.project_id AND grant_id=n.grant_id AND grant_version=n.grant_version AND id=(ref->>'id')::uuid;
+ IF NOT FOUND OR current_setting('anvil.normal_request_verified',true) IS DISTINCT FROM
+    txid_current()::text||':'||n.content_hash||':'||(ref->>'contentHash')||':'||(receipt.snapshot_json->>'tokenDigest') THEN RETURN false;END IF;
+ SELECT * INTO cred FROM anvil.normal_request_credential(receipt.snapshot_json->>'tokenDigest',(b->>'connectorId')::uuid,(b->>'executionId')::uuid,
+  n.grant_id,n.grant_version,b#>>'{grantRef,contentHash}',(r->>'credentialGeneration')::bigint);
+ IF NOT FOUND OR cred.credential_ref IS DISTINCT FROM ref OR cred.project_id<>n.project_id OR receipt.snapshot_json->'binding' IS DISTINCT FROM b THEN RETURN false;END IF;
+ SELECT * INTO cur FROM anvil.normal_exchange_current(n.project_id,(b->>'connectorId')::uuid,(b->>'executionId')::uuid,n.grant_id,n.grant_version,
+  b#>>'{grantRef,contentHash}',(r->>'credentialGeneration')::bigint);
+ IF NOT FOUND OR cur.binding IS DISTINCT FROM b THEN RETURN false;END IF;
+ at_time=(p->>'issuedAt')::timestamptz;ends=(p->>'expiresAt')::timestamptz;
+ IF at_time>cur.observed_at OR abs(extract(epoch FROM (r->>'issuedAt')::timestamptz-at_time))>30
+  OR ends<=clock_timestamp() OR ends>least(at_time+interval '30 seconds',cred.expires_at,cur.deadline) THEN RETURN false;END IF;
+ SELECT count(*) FILTER(WHERE v.version=1),coalesce(max(v.server_sequence),0),
+  count(*) FILTER(WHERE v.version=1 AND v.snapshot_json->'credentialRef'=ref AND v.snapshot_json#>>'{publicChallenge,purpose}'='EXECUTION_REQUEST'
+    AND (v.snapshot_json#>>'{publicChallenge,issuedAt}')::timestamptz>at_time-interval '1 minute'),
+  count(*) FILTER(WHERE v.version=1 AND v.snapshot_json->'credentialRef'=ref AND v.snapshot_json#>>'{publicChallenge,purpose}'='EXECUTION_REQUEST'
+    AND (v.snapshot_json#>>'{publicChallenge,expiresAt}')::timestamptz>at_time AND NOT EXISTS(SELECT 1 FROM anvil.execution_challenges used WHERE used.project_id=v.project_id AND used.id=v.id AND used.version=2))
+ INTO total,last_seq,recent,live FROM anvil.execution_challenges v WHERE v.project_id=n.project_id AND v.grant_id=n.grant_id AND v.grant_version=n.grant_version
+  AND (NOT deferred_check OR v.server_sequence<n.server_sequence);
+ RETURN total<10000 AND recent<60 AND live=0 AND n.server_sequence=last_seq+1;
+END;
+$$;
+-- (0089) nonce 소비가 가리킬 수 있는 영수증에 NORMAL_OBSERVATIONS 추가
+CREATE OR REPLACE FUNCTION anvil.normal_command_consumption_valid(v anvil.execution_challenges,deferred_check boolean)
+RETURNS boolean LANGUAGE plpgsql AS $$
+DECLARE old anvil.execution_challenges%ROWTYPE;s jsonb=v.snapshot_json;u jsonb=s->'consumption';seq bigint;
+BEGIN
+ SELECT * INTO old FROM anvil.execution_challenges WHERE project_id=v.project_id AND id=v.id AND version=1;
+ IF NOT FOUND OR v.version<>2 OR old.grant_id<>v.grant_id OR old.grant_version<>v.grant_version
+  OR old.snapshot_json#>>'{publicChallenge,purpose}' IS DISTINCT FROM 'EXECUTION_REQUEST'
+  OR old.snapshot_json#>>'{binding,transport}' IS DISTINCT FROM 'NORMAL_PROTECTED'
+  OR old.content_hash IS DISTINCT FROM anvil.execution_json_hash(old.snapshot_json) OR v.content_hash IS DISTINCT FROM anvil.execution_json_hash(s)
+  OR NOT anvil.execution_json_shape(u,ARRAY['resultRef','consumedAt','packetHash'])
+  OR NOT anvil.execution_json_shape(u->'resultRef',ARRAY['id','version','contentHash']) OR u#>'{resultRef,version}' IS DISTINCT FROM '1'::jsonb
+  OR NOT anvil.execution_iso_valid(u->'consumedAt') OR jsonb_typeof(u->'packetHash') IS DISTINCT FROM 'string' OR u->>'packetHash' !~ '^[0-9a-f]{64}$'
+  OR s IS DISTINCT FROM (old.snapshot_json || jsonb_build_object('sequence',v.server_sequence,'previousRef',
+    jsonb_build_object('id',old.id,'version',1,'contentHash',old.content_hash),'consumption',u))
+  OR (u->>'consumedAt')::timestamptz NOT BETWEEN (s#>>'{publicChallenge,issuedAt}')::timestamptz AND clock_timestamp()
+  OR clock_timestamp()>=(s#>>'{publicChallenge,expiresAt}')::timestamptz
+  OR split_part(current_setting('anvil.normal_page_verified',true),':',1) IS DISTINCT FROM txid_current()::text
+  OR split_part(current_setting('anvil.normal_page_verified',true),':',2) IS DISTINCT FROM u#>>'{resultRef,contentHash}'
+ THEN RETURN false;END IF;
+ SELECT coalesce(max(server_sequence),0)+1 INTO seq FROM anvil.execution_challenges WHERE project_id=v.project_id
+  AND grant_id=v.grant_id AND grant_version=v.grant_version AND (NOT deferred_check OR server_sequence<v.server_sequence);
+ RETURN seq=v.server_sequence AND (NOT deferred_check OR EXISTS(SELECT 1 FROM anvil.execution_receipts r
+  WHERE r.project_id=v.project_id AND r.challenge_id=v.id AND r.id=(u#>>'{resultRef,id}')::uuid AND r.content_hash=u#>>'{resultRef,contentHash}'
+   AND r.snapshot_json->>'kind' IN ('NORMAL_COMMAND_PAGE','NORMAL_START_MATERIAL','NORMAL_START_PERMIT','NORMAL_OBSERVATIONS') AND r.snapshot_json->'packetHash'=u->'packetHash'));
+END;
+$$;
+-- 관측 표 trigger를 transport로 나눈다. 합성 행은 기존 guard 본문 그대로, 수정·삭제는 기존 guard가 첫 줄에서 거절한다.
+ALTER TABLE anvil.execution_observations ADD CONSTRAINT execution_observation_transport_known
+ CHECK (coalesce(snapshot_json->>'transport','') IN ('SYNTHETIC_ONLY','NORMAL_PROTECTED'));
+DROP TRIGGER execution_observation_guard ON anvil.execution_observations;
+CREATE TRIGGER execution_observation_guard BEFORE INSERT ON anvil.execution_observations FOR EACH ROW
+ WHEN (NEW.snapshot_json->>'transport'='SYNTHETIC_ONLY') EXECUTE FUNCTION anvil.guard_execution_observation();
+CREATE TRIGGER execution_observation_immutable BEFORE UPDATE OR DELETE ON anvil.execution_observations FOR EACH ROW EXECUTE FUNCTION anvil.guard_execution_observation();
+CREATE TRIGGER normal_execution_observation_guard BEFORE INSERT ON anvil.execution_observations FOR EACH ROW
+ WHEN (NEW.snapshot_json->>'transport'='NORMAL_PROTECTED') EXECUTE FUNCTION anvil.guard_normal_execution_observation();
+-- 영수증 trigger: 합성 검사에서 NORMAL_OBSERVATIONS를 빼고 전용 검사로 보낸다.
+DROP TRIGGER synthetic_execution_receipt_guard ON anvil.execution_receipts;
+DROP TRIGGER synthetic_execution_receipt_complete ON anvil.execution_receipts;
+CREATE TRIGGER synthetic_execution_receipt_guard BEFORE INSERT ON anvil.execution_receipts FOR EACH ROW
+ WHEN (NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_CREDENTIAL_ISSUED' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_COMMAND_PAGE'
+  AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_START_MATERIAL' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_START_PERMIT'
+  AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_OBSERVATIONS') EXECUTE FUNCTION anvil.guard_synthetic_execution_receipt();
+CREATE CONSTRAINT TRIGGER synthetic_execution_receipt_complete AFTER INSERT ON anvil.execution_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+ WHEN (NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_CREDENTIAL_ISSUED' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_COMMAND_PAGE'
+  AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_START_MATERIAL' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_START_PERMIT'
+  AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_OBSERVATIONS') EXECUTE FUNCTION anvil.guard_execution_challenge_complete();
+CREATE TRIGGER normal_observation_receipt_guard BEFORE INSERT ON anvil.execution_receipts FOR EACH ROW
+ WHEN (NEW.snapshot_json->>'kind'='NORMAL_OBSERVATIONS') EXECUTE FUNCTION anvil.guard_normal_observation_receipt();
+CREATE CONSTRAINT TRIGGER normal_observation_receipt_complete AFTER INSERT ON anvil.execution_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+ WHEN (NEW.snapshot_json->>'kind'='NORMAL_OBSERVATIONS') EXECUTE FUNCTION anvil.guard_normal_observation_receipt_complete();
+COMMIT;

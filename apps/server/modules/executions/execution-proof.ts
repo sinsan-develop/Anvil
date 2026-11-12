@@ -111,9 +111,10 @@ function normalRequestPath(t:{path:string;queryHash:string},commands:string){
  const m=t.path.startsWith(commands+'/')&&/^([^/]+)\/materials\/([^/]+)$/.exec(t.path.slice(commands.length+1));
  return !!m&&uuidV1(m[1])&&uuidV1(m[2])&&t.queryHash===contentHash(canonicalJson({}));
 }
-/** GET은 명령 조회·자료(본문 null), POST는 그 명령의 일회 실행 허가(permit)만 받는다. permit은 query 없이 본문 hash를 봉인한다. */
+/** GET은 명령 조회·자료(본문 null), POST는 그 명령의 일회 실행 허가(permit) 또는 실행 관측(observations)만 받는다. POST는 query 없이 본문 hash를 봉인한다. */
 function normalRequestTarget(t:{method:string;path:string;queryHash:string;bodyHash:string},commands:string){
  if(t.method==='GET')return normalRequestPath(t,commands)&&t.bodyHash===contentHash(canonicalJson(null));
+ if(t.method==='POST'&&t.path===commands.slice(0,-'/commands'.length)+'/observations')return t.queryHash===contentHash(canonicalJson({}))&&t.bodyHash!==contentHash(canonicalJson(null));
  const m=t.method==='POST'&&t.path.startsWith(commands+'/')&&/^([^/]+)\/permit$/.exec(t.path.slice(commands.length+1));
  return !!m&&uuidV1(m[1])&&t.queryHash===contentHash(canonicalJson({}))&&t.bodyHash!==contentHash(canonicalJson(null));
 }
