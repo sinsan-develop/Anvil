@@ -5,7 +5,7 @@
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
 - 코드 집계 기준: `development/main` `967c9a207452f5d3c9d79a1d8906e25a396dd704`.
-- 현재 통합 기준선: `main` 418d70ca(PR101, D2 P-B 및 D1 START source 포함), 로컬·원격 동일 확인. 작업 branch `codex/av3-d1-credential-exchange`에서 최초 credential 교환·보호 저장/사용과 실제 owner 연결 source를 검수했다(Main29P+추가23P·typecheck, source범위). 통합 준비 중이며 실제 실행은 미검증이다. 실제 DB·Agent 여정은 미완료다. 아래 이전 시점의 PR·대기 기록은 이력이다.
+- 현재 통합 기준선: `main` 09cc58b8(PR102). 로컬·원격 동일·clean과 merged owner1P 확인 후 완료branch/tag 정리. `codex/av3-d1-credential-renewal`에서 채택된 같은grant 재교환 source·미적용SQL·합성검증을 진행한다. 실제DB/native/Agent 여정은 미완료다.
 - 인수 뒤 현재(2026-11-11): 원격 main은 PR84로 2e0eab21이며 대기 당시 WIP(시험2·미채택 후보 문서1)가 main에 포함돼 있다. 작업 branch `claude/av3-normal-start-materials`에서 checkedMaterialPart만 구현했다(해당 시험 1P, 0088 SQL 시험은 0088 부재로 실패 유지). 자료 GET의 route·0088·nonce 소비는 bytes 표현/자료 발견 후보 채택과 원본 재구성 주체 결정 전까지 보류다. 아래 대기 기록은 11-08 시점 이력이다.
 - 2026-11-11T03:51:34+09:00: 자료 전달·발견 후보 A안 직접 채택. §2 명령 페이지 자료 descriptor를 source·미적용 0088·합성 시험으로 구현했다(FN08 normal 계열 33P). §3 자료 bytes GET은 미구현이며 WIP SQL 시험 1건은 실패 유지다. FN08 행 상태는 그대로 부분 구현이다.
 - 2026-11-11T14:39:31+09:00: A안 §3 자료 bytes 보호 GET을 source·미적용 0088·합성 여정으로 구현했다(FN08 normal 계열 85P). 맥락 묶음 원문은 서버 주입 공급자 방식(신산님 직접 결정)이며 실제 공급자·실행기 소비 codec·실제 DB 검증·독립 검수는 남았다. FN08 행 상태는 부분 구현 그대로다.
@@ -81,3 +81,5 @@
 항목 착수·완료, 오류·복구, 중단·인계 전에 WORK_CHECK의 현재 상태와 WORK_STATUS의 일자별 근거를 함께 갱신한다. Main이 사용자 열람 위치의 같은 두 파일에도 반영하고 저장·Git 게시를 확인한다. 한쪽 기록만 갱신한 상태를 기록 완료로 보지 않는다. 상태 변경은 실제 증거가 있는 항목에만 적용하며 이전 이력은 보존한다.
 
 - 2026-11-14 Main 어울 재개: PR99 41790410과 원격 main 동일 확인 후 D2 P-B source·합성 범위를 착수했다. P-A는 재구현하지 않는다. 공급자/자료 여정·거절 시험은 진행 중이며 실제 DB·키·권한·서비스·Agent 실행과 전체 완료는 제외/미완료다.
+
+- 2026-11-14 D1 재교환 source 검수: 같은 grant 비중첩 발급·receipt별 보호 슬롯·명시 renew 및 새credential 관측/ACK·기존wire1 보존을 합성 확인했다. 0091 미적용, 실제 native/PG/Agent 미검증. FN06/FN08 완료 체크는 올리지 않으며 다음 polling 조합을 진행한다.

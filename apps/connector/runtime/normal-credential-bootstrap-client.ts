@@ -57,7 +57,7 @@ class Channel {
  }
 }
 export class NormalCredentialBootstrapClient {
- #channel:Channel;#started=false;
+ #channel:Channel;#started=false;#latest:NormalOwnedCredentialPort|undefined;
  constructor(config:Config,ports:Ports){this.#channel=new Channel(config,ports);}
  async bootstrap(signal:AbortSignal):Promise<NormalOwnedCredentialPort>{
   if(this.#started)fail('NORMAL_OWNED_ALREADY_STARTED');this.#started=true;const c=this.#channel;
@@ -74,7 +74,28 @@ export class NormalCredentialBootstrapClient {
     v.origin!==c.config.origin||!same(v.scope,c.config.scope)||Date.parse(v.expiresAt)<=c.now()||Date.parse(v.expiresAt)>c.now()+900000)fail();
    return cloneV1(v) as NormalOwnedMetadata;
   });
-  if(c.unknown)fail('NORMAL_OWNED_UNKNOWN');return new NormalOwnedCredentialPort(c,m,secret);
+  if(c.unknown)fail('NORMAL_OWNED_UNKNOWN');return this.#latest=new NormalOwnedCredentialPort(c,m,secret);
+ }
+ async renew(previous:NormalOwnedCredentialPort,signal:AbortSignal):Promise<NormalOwnedCredentialPort>{
+  const c=this.#channel;if(c.unknown)fail('NORMAL_OWNED_UNKNOWN');
+  if(previous!==this.#latest||!known.has(previous))fail('NORMAL_OWNED_PREDECESSOR');
+  const old=previous.metadata;if(c.now()<Date.parse(old.expiresAt))fail('NORMAL_OWNED_NOT_EXPIRED');
+  const m=await c.operation(signal,c.now()+10000,async send=>{
+   const payload={...c.config,previous:old},bytes=Buffer.from(canonicalJson(payload));let v:any;
+   try{if(bytes.length<=64000)v=await send('NORMAL_EXECUTION_RENEW',payload);
+    else{if(bytes.length>2097152)fail();const start=await send('NORMAL_EXECUTION_RENEW_BEGIN',{attemptId:c.config.attemptId,total:bytes.length,hash:digest(bytes)});
+     if(!recordV1(start,['handle'])||!uuidV1(start.handle))fail();
+     for(let offset=0;offset<bytes.length;offset+=chunkSize){const part=bytes.subarray(offset,offset+chunkSize);
+      const ack=await send('NORMAL_EXECUTION_WRITE',{handle:start.handle,offset,bytes:part.toString('base64url')});
+      if(!recordV1(ack,['handle','offset'])||ack.handle!==start.handle||ack.offset!==offset+part.length)fail();}
+     v=await send('NORMAL_EXECUTION_EXECUTE',{handle:start.handle});}
+   }finally{bytes.fill(0);}
+   if(!recordV1(v,['slotId','receiptRef','origin','scope','expiresAt','caHash'])||v.caHash!==old.caHash||!uuidV1(v.slotId)||
+    v.slotId===old.slotId||!refV1(v.receiptRef)||same(v.receiptRef,old.receiptRef)||!isoV1(v.expiresAt)||
+    v.origin!==old.origin||!same(v.scope,old.scope)||Date.parse(v.expiresAt)<=c.now()||Date.parse(v.expiresAt)>c.now()+900000)fail();
+   return cloneV1(v) as NormalOwnedMetadata;
+  });
+  return this.#latest=new NormalOwnedCredentialPort(c,m,secret);
  }
 }
 const secret=Symbol('owned credential');

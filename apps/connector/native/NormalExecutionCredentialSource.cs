@@ -17,7 +17,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  const int Limit=2812587, Chunk=48000;
  readonly DesktopTrustKeyRootSource owner;readonly Func<Dictionary<string,object>> registered;
  readonly Action current;readonly Func<int> remaining;readonly Func<DateTime> clock;
- Dictionary<string,object> upload;MemoryStream incoming;string inputHandle;byte[] output;int outputOffset;string outputHandle,outputHash;DateTime outputExpiry;bool unknown,bootstrapInput;string activeCA;
+ Dictionary<string,object> upload;MemoryStream incoming;string inputHandle;byte[] output;int outputOffset;string outputHandle,outputHash;DateTime outputExpiry;bool unknown,bootstrapInput,renewalInput;string activeCA;
  static Dictionary<string,object> Map(object o){return DesktopTrustKeyHostSource.Map(o);}
  static string S(Dictionary<string,object> d,string k){return DesktopTrustKeyHostSource.Text(d,k);}
  static string Id(Dictionary<string,object> d,string k){return DesktopTrustKeyHostSource.Id(d,k);}
@@ -38,6 +38,8 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  internal object Dispatch(string operation,Dictionary<string,object> value){
   Check();try{
    if(operation=="NORMAL_EXECUTION_BOOTSTRAP")return Bootstrap(value);
+   if(operation=="NORMAL_EXECUTION_RENEW")return Bootstrap(value,true);
+   if(operation=="NORMAL_EXECUTION_RENEW_BEGIN"){renewalInput=true;operation="NORMAL_EXECUTION_BOOTSTRAP_BEGIN";}
    if(operation=="NORMAL_EXECUTION_BOOTSTRAP_BEGIN"){Exact(value,"attemptId,total,hash");Record(Id(value,"attemptId"));if(incoming!=null||N(value["total"])<1||N(value["total"])>2097152||!DesktopTrustKeyHostSource.IsHash(value["hash"]))throw Invalid();bootstrapInput=true;upload=new Dictionary<string,object>{{"bodyLength",value["total"]},{"bodyHash",value["hash"]}};incoming=new MemoryStream();inputHandle=Guid.NewGuid().ToString("D");return new Dictionary<string,object>{{"handle",inputHandle}};}
    if(operation=="NORMAL_EXECUTION_READ"){Exact(value,"handle,offset");if(output==null||S(value,"handle")!=outputHandle||N(value["offset"])!=outputOffset)throw Invalid();return Next();}
    if(operation=="NORMAL_EXECUTION_BEGIN"){
@@ -49,7 +51,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
    }
    if(operation=="NORMAL_EXECUTION_EXECUTE"){
     Exact(value,"handle");if(incoming==null||S(value,"handle")!=inputHandle||incoming.Length!=N(upload["bodyLength"]))throw Invalid();
-    byte[] body=incoming.ToArray();var header=upload;bool bootstrap=bootstrapInput;ClearInput();try{if(H(body)!=S(header,"bodyHash"))throw Invalid();return bootstrap?(object)Bootstrap(Parse(body)):Call(header,body);}finally{Array.Clear(body,0,body.Length);}
+    byte[] body=incoming.ToArray();var header=upload;bool bootstrap=bootstrapInput;bool renewal=renewalInput;ClearInput();renewalInput=false;try{if(H(body)!=S(header,"bodyHash"))throw Invalid();return bootstrap?(object)Bootstrap(Parse(body),renewal):Call(header,body);}finally{Array.Clear(body,0,body.Length);}
    }
    if(operation=="NORMAL_EXECUTION_CALL"){
     if(incoming!=null||output!=null)throw Invalid();Header(value,true);byte[] body=value["body"]==null?new byte[0]:Encoding.UTF8.GetBytes(S(value,"body"));
@@ -62,26 +64,54 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   Id(h,"attemptId");Id(h,"slotId");if(!new[]{"PREPARE","REQUEST"}.Contains(S(h,"kind"))||N(h["bodyLength"])>2097152||!DesktopTrustKeyHostSource.IsHash(h["bodyHash"])||!(h["bodyIsNull"] is bool))throw Invalid();
   var r=Map(h["request"]);Exact(r,"method,path,query,body,auth,expiresAt");if(r["body"]!=null)throw Invalid();
  }
- Dictionary<string,object> LoadSlot(string id,Dictionary<string,object> record){
-  byte[] raw=ProtectedStore.LoadNormalOwned(owner,id,"execution",current);try{
-   var s=Parse(raw);Exact(s,"purpose,slotId,recordHash,origin,scope,scopeDigest,receiptRef,expiresAt,credential,caHash");
-   if(S(s,"purpose")!="NORMAL_EXECUTION_SLOT_V1"||Id(s,"slotId")!=id||S(s,"recordHash")!=H(record)||S(s,"origin")!=S(record,"origin")||At(s,"expiresAt")<=clock())throw Invalid();
-   Token(S(s,"credential"));return s;
-  }finally{Array.Clear(raw,0,raw.Length);}
+ Dictionary<string,object> LoadSlot(string id,Dictionary<string,object> record,bool renewal=false){
+  var slot=ReadSlotChain(id,record);if(!renewal&&At(slot,"expiresAt")<=clock())throw Invalid();return slot;
  }
+ Dictionary<string,object> ReadSlotChain(string id,Dictionary<string,object> record){
+  Dictionary<string,object> head=null,child=null;var visited=new HashSet<string>();
+  while(true){
+   if(!visited.Add(id)||visited.Count>1024)throw Invalid();
+  byte[] raw=ProtectedStore.LoadNormalOwned(owner,id,"execution",current);try{
+   var s=Parse(raw);bool linked=s.ContainsKey("previousSlotRef");
+   Exact(s,linked?"purpose,slotId,recordHash,origin,scope,scopeDigest,receiptRef,expiresAt,credential,caHash,previousSlotRef,markerId,issuedAt":"purpose,slotId,recordHash,origin,scope,scopeDigest,receiptRef,expiresAt,credential,caHash");
+   if(S(s,"purpose")!="NORMAL_EXECUTION_SLOT_V1"||Id(s,"slotId")!=id||S(s,"recordHash")!=H(record)||S(s,"origin")!=S(record,"origin"))throw Invalid();
+   DesktopTrustKeyHostSource.Ref(s["receiptRef"]);Token(S(s,"credential"));if(head==null)head=s;
+   if(child!=null){var prior=Map(child["previousSlotRef"]);Exact(prior,"slotId,receiptRef,contentHash");
+    if(Id(prior,"slotId")!=id||J(prior["receiptRef"])!=J(s["receiptRef"])||S(prior,"contentHash")!=H(s)||
+     J(s["scope"])!=J(child["scope"])||S(s,"scopeDigest")!=S(child,"scopeDigest")||S(s,"caHash")!=S(child,"caHash")||At(s,"expiresAt")>At(child,"issuedAt"))throw Invalid();}
+   if(!linked){if(id!=Id(Map(Map(s["scope"])["grantRef"]),"id"))throw Invalid();return head;}
+   var marker=Marker(Map(s["scope"]),s["previousSlotRef"]);string expected=s["previousSlotRef"]==null?Id(Map(Map(s["scope"])["grantRef"]),"id"):RenewalMarker(Map(s["scope"]),Map(s["previousSlotRef"])["receiptRef"]);
+   if(Id(s,"markerId")!=expected||Id(Map(s["receiptRef"]),"id")!=id||At(s,"issuedAt")>=At(s,"expiresAt"))throw Invalid();
+   byte[] saved=ProtectedStore.LoadNormalOwned(owner,expected,"exchange",current);try{if(J(Parse(saved))!=J(marker))throw Invalid();}finally{Array.Clear(saved,0,saved.Length);}
+   if(s["previousSlotRef"]==null)return head;child=s;id=Id(Map(s["previousSlotRef"]),"slotId");
+  }finally{Array.Clear(raw,0,raw.Length);}
+  }
+ }
+ static string RenewalMarker(Dictionary<string,object> scope,object receipt){string h=H(new Dictionary<string,object>{{"grantRef",scope["grantRef"]},{"previousReceiptRef",receipt}});return h.Substring(0,8)+"-"+h.Substring(8,4)+"-4"+h.Substring(13,3)+"-8"+h.Substring(17,3)+"-"+h.Substring(20,12);}
+ static Dictionary<string,object> Marker(Dictionary<string,object> scope,object prior){return new Dictionary<string,object>{{"grantRef",scope["grantRef"]},{"previousSlotRef",prior},{"state","STARTED"}};}
  static void Token(string token){if(!token.StartsWith("av3ex1_",StringComparison.Ordinal))throw Invalid();byte[] b=Decode(token.Substring(7),32);try{if(b.Length!=32)throw Invalid();}finally{Array.Clear(b,0,b.Length);}}
  static string Base(Dictionary<string,object> scope){return "/api/v1/connectors/"+Id(scope,"connectorId")+"/executions/"+Id(scope,"executionId");}
  static string Stamp(DateTime t){return t.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ",CultureInfo.InvariantCulture);}
  string Nonce(){byte[] b=new byte[32];using(var rng=RandomNumberGenerator.Create())rng.GetBytes(b);try{return B64(b);}finally{Array.Clear(b,0,b.Length);}}
- Dictionary<string,object> Bootstrap(Dictionary<string,object> v){
-  Exact(v,"attemptId,origin,scope,ca");var record=Record(Id(v,"attemptId"));if(S(v,"origin")!=S(record,"origin"))throw Invalid();activeCA=S(v,"ca");using(var pins=Pins(activeCA)){}
+ Dictionary<string,object> Bootstrap(Dictionary<string,object> v,bool renewal=false){
+  Exact(v,renewal?"attemptId,origin,scope,ca,previous":"attemptId,origin,scope,ca");var record=Record(Id(v,"attemptId"));if(S(v,"origin")!=S(record,"origin"))throw Invalid();activeCA=S(v,"ca");using(var pins=Pins(activeCA)){}
   var scope=Map(v["scope"]);Exact(scope,"projectId,connectorId,executionId,executionGeneration,grantRef,credentialGeneration");
   var gref=DesktopTrustKeyHostSource.Ref(scope["grantRef"]);var registration=Map(record["registration"]);
   if(Id(scope,"projectId")!=Id(record,"projectId")||Id(scope,"connectorId")!=Id(Map(registration["connectorRef"]),"id")||
    N(scope["executionGeneration"])<1||N(scope["credentialGeneration"])<1)throw Invalid();
   string slotId=Id(gref,"id"),recordHash=H(record),basePath=Base(scope);
+  object previousSlotRef=null;DateTime startedAt=clock();
+  if(renewal){
+   var previous=Map(v["previous"]);Exact(previous,"slotId,receiptRef,origin,scope,expiresAt,caHash");
+   var old=LoadSlot(Id(previous,"slotId"),record,true);
+   foreach(string k in new[]{"slotId","receiptRef","origin","scope","expiresAt","caHash"})if(J(previous[k])!=J(old[k]))throw Invalid();
+   if(J(scope)!=J(old["scope"])||S(old,"caHash")!=H(Encoding.UTF8.GetBytes(activeCA))||At(old,"expiresAt")>startedAt)throw Invalid();
+   previousSlotRef=new Dictionary<string,object>{{"slotId",old["slotId"]},{"receiptRef",old["receiptRef"]},{"contentHash",H(old)}};
+   slotId=RenewalMarker(scope,old["receiptRef"]);
+  }
+  string markerId=slotId;var marker=Marker(scope,previousSlotRef);
   // INSERT-only marker: 응답 유실/저장 실패를 재발급으로 바꾸지 않는다.
-  ProtectedStore.SaveNormalOwned(owner,slotId,"exchange",B(new Dictionary<string,object>{{"grantRef",gref},{"state","STARTED"}}),current);
+  ProtectedStore.SaveNormalOwned(owner,markerId,"exchange",B(marker),current);
   var target=new Dictionary<string,object>{{"method","POST"},{"path",basePath+"/credential-exchange"},{"queryHash",H(new Dictionary<string,object>())},{"bodyHash",H(new Dictionary<string,object>())}};
   var request=ChallengeRequest(scope,"CREDENTIAL_EXCHANGE",target);
   var challenge=Challenge(record,scope,request,null,null,120000);
@@ -93,7 +123,9 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   var answer=Http(record,"POST",basePath+"/credential-exchange","","{}",null,B64(B(auth)),16384);
   Exact(answer,"receiptRef,credential,expiresAt");DesktopTrustKeyHostSource.Ref(answer["receiptRef"]);Token(S(answer,"credential"));
   DateTime end=At(answer,"expiresAt");CheckBootstrap(record,scope,c,bootstrap);if(end<=clock()||end>clock().AddMinutes(15)||H(Record(Id(v,"attemptId")))!=recordHash)throw Invalid();
+  slotId=Id(Map(answer["receiptRef"]),"id");
   var slot=new Dictionary<string,object>{{"purpose","NORMAL_EXECUTION_SLOT_V1"},{"slotId",slotId},{"recordHash",recordHash},{"origin",record["origin"]},{"scope",scope},{"scopeDigest",bootstrap["scopeDigest"]},{"receiptRef",answer["receiptRef"]},{"expiresAt",answer["expiresAt"]},{"credential",answer["credential"]},{"caHash",H(Encoding.UTF8.GetBytes(activeCA))}};
+  slot["previousSlotRef"]=previousSlotRef;slot["markerId"]=markerId;slot["issuedAt"]=Stamp(startedAt);
   ProtectedStore.SaveNormalOwned(owner,slotId,"execution-ca",Encoding.UTF8.GetBytes(activeCA),current);
   ProtectedStore.SaveNormalOwned(owner,slotId,"execution",B(slot),current);
   var checkedSlot=LoadSlot(slotId,record);if(H(checkedSlot)!=H(slot))throw Invalid();
@@ -254,7 +286,7 @@ internal static partial class ProtectedStore {
   }
  }
  internal static byte[] LoadNormalOwned(DesktopTrustKeyRootSource owner,string id,string kind,Action current){
-  if(!new[]{"execution","execution-proof","execution-ca"}.Contains(kind))throw new Exception();
+  if(!new[]{"execution","execution-proof","execution-ca","exchange"}.Contains(kind))throw new Exception();
   lock(OwnedGate){current();owner.Check();string path=Path.Combine(owner.PathValue,id+"."+kind);CheckPath(path,false);byte[] encrypted=null;
    try{using(var file=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.None)){if(file.Length<1||file.Length>(kind=="execution-ca"?131072:16384))throw new Exception();encrypted=new byte[(int)file.Length];int off=0,n;while(off<encrypted.Length&&(n=file.Read(encrypted,off,encrypted.Length-off))>0)off+=n;if(off!=encrypted.Length)throw new Exception();}
     current();var clear=ProtectedData.Unprotect(encrypted,Utf8.GetBytes("ANVIL-V3:NORMAL:"+kind+":"+id),DataProtectionScope.CurrentUser);try{current();owner.Check();return clear;}catch{Array.Clear(clear,0,clear.Length);throw;}

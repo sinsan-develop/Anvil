@@ -53,6 +53,22 @@ test('abort 무시 host도 취소 후 불명 종료하고 늦은 결과로 다�
 });
 
 const validRequest={method:'GET' as const,path:'/api/v1/connectors/'+id(2)+'/executions/'+id(3)+'/commands',query:'?waitMs=0',body:null,auth:'a',expiresAt};
+test('명시 재교환은 만료된 같은 소유 port만 받아 새 receipt를 만들고 UNKNOWN 뒤 반복하지 않는다',async()=>{
+ let now=at,calls=0,broken=false;
+ const client=new NormalCredentialBootstrapClient({attemptId:id(8),origin:'https://example.invalid',ca:'RAM CA',scope},{
+  now:()=>now,host:{async open(){return {async send(op:string,p:any){
+   calls++;if(op==='NORMAL_EXECUTION_RENEW'){assert.equal(p.previous.slotId,id(7));assert.deepEqual(p.previous.receiptRef,ref);if(broken)throw Error('저장 불명');}
+   return {slotId:op==='NORMAL_EXECUTION_RENEW'?id(10):id(7),receiptRef:op==='NORMAL_EXECUTION_RENEW'?{...ref,id:id(11)}:ref,
+    scope,origin:'https://example.invalid',expiresAt:new Date(now+60000).toISOString(),caHash:hash('RAM CA')};
+  },async close(){return {state:'CLOSED_CONFIRMED'};}};}}});
+ const signal=new AbortController().signal,p=await client.bootstrap(signal);
+ await assert.rejects(()=>client.renew(p,signal),/NOT_EXPIRED/);assert.equal(calls,1);
+ now+=60000;const next=await client.renew(p,signal);assert.equal(calls,2);assert.notDeepEqual(next.metadata.receiptRef,p.metadata.receiptRef);
+ await assert.rejects(()=>client.renew(p,signal),/PREDECESSOR/);assert.equal(calls,2);
+ await assert.rejects(()=>p.request({...validRequest,expiresAt:new Date(now+60000).toISOString()},signal),/CANCELLED/);
+ now+=60000;broken=true;await assert.rejects(()=>client.renew(next,signal),/UNKNOWN/);const n=calls;
+ await assert.rejects(()=>client.renew(next,signal));assert.equal(calls,n);
+});
 test('encoded exact 상한은 수용하고 +1·다른 handle/hash·누락/중복 조각은 닫는다',async()=>{
  const exact=fixture(2812587-Buffer.byteLength(canonicalJson({body:''}))),port=await exact.client.bootstrap(new AbortController().signal);
  assert.equal(exact.response.length,2812587);await port.request(validRequest,new AbortController().signal);assert.ok(exact.calls.length<=60);

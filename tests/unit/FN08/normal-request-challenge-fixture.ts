@@ -30,7 +30,7 @@ function challengeStore(f: Fixture, pageSql?:PageSqlAdapter) {
   const tables = f.tables, registration = f.registration!;
   let committed: any[] = [], currentReads = 0;
   const grant = () => tables.execution_grants![0]!;
-  const mode={offset:1,revoked:false,storage:'READY',failWrite:false,badTag:false,lost:false,conns:0,discards:0,totalBase:0,recentBase:0,corruptReceipt:false,revokeAfterWrite:false};
+  const mode={offset:1,revoked:false,storage:'READY',storageTtl:Infinity,failWrite:false,badTag:false,lost:false,conns:0,discards:0,totalBase:0,recentBase:0,corruptReceipt:false,revokeAfterWrite:false};
   let receipts:any[]=[];
   const now = () => new Date(Date.parse(grant().snapshot_json.plannedAt) + mode.offset);
   const rows = (values: any[]) => ({rows:values});
@@ -110,7 +110,7 @@ function challengeStore(f: Fixture, pageSql?:PageSqlAdapter) {
         return {...r,version:String(r.version),reservation_matches};
       }));
       if(sql.includes('FROM anvil.execution_receipts r LEFT JOIN')){
-        return rows(issued.map(r=>{const c=drafts.find(v=>v.version===2&&v.id===r.challenge_id);
+        return rows(issued.filter(r=>r.snapshot_json.kind==='NORMAL_CREDENTIAL_ISSUED').map(r=>{const c=drafts.find(v=>v.version===2&&v.id===r.challenge_id);
          return {...r,consumed_hash:c?.content_hash,consumed:c?.snapshot_json};}));
       }
       if(sql.includes('FROM anvil.execution_challenges')&&sql.includes('request_id=')){
@@ -128,7 +128,7 @@ function challengeStore(f: Fixture, pageSql?:PageSqlAdapter) {
       }
       if(sql.startsWith('SELECT count(*)')){
         assert.ok(sql.includes('count(*) FILTER (WHERE version=1)'));const challenges=drafts.filter(r=>r.version===1);
-        return rows([{total:challenges.length,recent:challenges.filter(v=>Date.parse(v.snapshot_json.publicChallenge.issuedAt)>now().getTime()-60000).length,sequence:drafts.length+1}]);
+        return rows([{total:challenges.length,recent:challenges.filter(v=>v.snapshot_json.publicChallenge.purpose==='CREDENTIAL_EXCHANGE'&&Date.parse(v.snapshot_json.publicChallenge.issuedAt)>now().getTime()-60000).length,sequence:drafts.length+1}]);
       }
       if(sql.startsWith('SELECT COALESCE(max(server_sequence)'))return rows([{sequence:drafts.length+1}]);
       if(sql.startsWith('INSERT INTO anvil.execution_challenges(')){
@@ -140,7 +140,8 @@ function challengeStore(f: Fixture, pageSql?:PageSqlAdapter) {
         if(mode.failWrite)throw Error('합성 영수증 저장 실패');
         const [pid,id,gid,gv,challenge_id,hash,raw]=args,s=JSON.parse(raw);
         assert.deepEqual([pid,gid,gv,hash],[f.pid,grant().id,grant().version,digest(s)]);
-        assert.equal(issued.length,0);issued.push({id,challenge_id,content_hash:hash,snapshot_json:s});return{rows:[],rowCount:1};
+        assert.ok(issued.filter(r=>r.snapshot_json.kind==='NORMAL_CREDENTIAL_ISSUED').every(r=>Date.parse(r.snapshot_json.expiresAt)<=Date.parse(s.issuedAt)));
+        issued.push({id,challenge_id,content_hash:hash,snapshot_json:s});return{rows:[],rowCount:1};
       }
       throw Error('지원하지 않는 시험 조회 '+sql);
     }};
@@ -148,7 +149,7 @@ function challengeStore(f: Fixture, pageSql?:PageSqlAdapter) {
   const storage={async observe(scope:any,stamp:string,signal:AbortSignal){
     assert.ok(signal instanceof AbortSignal);assert.ok(!('query' in scope));assert.deepEqual(scope.evidenceRefs,grant().snapshot_json.binding.checks.storage.evidenceRefs);
     if(mode.storage==='HANG')await new Promise<void>(r=>signal.addEventListener('abort',()=>r(),{once:true}));
-    return {state:mode.storage==='READY'?'VERIFIED_CURRENT':'UNKNOWN',scope,checkedAt:stamp,expiresAt:grant().snapshot_json.expiresAt};
+    return {state:mode.storage==='READY'?'VERIFIED_CURRENT':'UNKNOWN',scope,checkedAt:stamp,expiresAt:new Date(Math.min(Date.parse(grant().snapshot_json.expiresAt),Date.parse(stamp)+mode.storageTtl)).toISOString()};
   }};
   return {sqlArgs,pool,storage,now,mode,events:()=>committed,receipts:()=>receipts};
 }
@@ -156,7 +157,7 @@ function challengeStore(f: Fixture, pageSql?:PageSqlAdapter) {
 export async function journey(pages?:{sql:PageSqlAdapter; cursors:import('../../../apps/server/modules/executions/normal-command-pages.ts').NormalPageCursors},
   materials?:{context?:(f:Fixture)=>import('../../../apps/server/modules/executions/normal-start-materials.ts').NormalStartContextSource},
   permit?:{current?:(f:Fixture)=>import('../../../apps/server/modules/executions/normal-start-permit.ts').NormalPermitCurrentSource},
-  observations?:boolean,bootstrap?:(context:{f:Fixture;app:ReturnType<typeof buildApp>;store:ReturnType<typeof challengeStore>;request:any;signBytes:(bytes:Buffer)=>string})=>Promise<{receiptRef:any;credential:string;expiresAt:string}>){
+  observations?:boolean,bootstrap?:(context:{f:Fixture;app:ReturnType<typeof buildApp>;store:ReturnType<typeof challengeStore>;request:any;signBytes:(bytes:Buffer)=>string})=>Promise<{receiptRef:any;credential:string;expiresAt:string}>,initialStorageTtl=Infinity){
   const executionId = randomUUID();
   const f = await executionStartOriginFixture({normalExecutionId:executionId,connectorEnvironment:true,richContext:true,constitutionContext:true,
     environmentDependencies:true,snapshotRoot:true,originConsumptionStorage:true,budgetElapsedMs:3600000});
@@ -171,6 +172,7 @@ export async function journey(pages?:{sql:PageSqlAdapter; cursors:import('../../
         understanding:{state:'NOT_REQUIRED',evidenceRefs:[]}}};
   }};
   const store = challengeStore(f,pages?.sql);
+  store.mode.storageTtl=initialStorageTtl;
   const app = buildApp({},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root},
     undefined,undefined,undefined,undefined,null,undefined,undefined,source,{pool:store.pool} as any,{pool:store.pool,storage:store.storage,origin:'https://anvil-synthetic.invalid'} as any,{origin:'https://anvil-synthetic.invalid'},
     pages?{pool:store.pool as any,origin:'https://anvil-synthetic.invalid',cursors:pages.cursors}:undefined,
@@ -228,6 +230,7 @@ export async function journey(pages?:{sql:PageSqlAdapter; cursors:import('../../
     const signProof=(proof:unknown)=>sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key,dsaEncoding:'ieee-p1363'}).toString('base64url');
     // 실행기 클라이언트 시험용: 등록 키로 임의 서명 원문을 서명하는 포트와 credential 기한
     const signBytes=(bytes:Buffer)=>sign('sha256',bytes,{key,dsaEncoding:'ieee-p1363'}).toString('base64url');
-    return {f,app,store,mk,signed,post,token,signProof,signBytes,credentialExpiresAt:minted.json().expiresAt as string,credentialRef:minted.json().receiptRef};
+    return {f,app,store,mk,signed,post,token,signProof,signBytes,credentialExpiresAt:minted.json().expiresAt as string,credentialRef:minted.json().receiptRef,
+      exchange,auth,newChallenge,exchangeRequest:request,first,frame};
   }catch(error){await app.close();throw error;}
 }

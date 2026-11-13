@@ -13,7 +13,7 @@ test.before(async()=>{
 const id=n=>'ce140001-0000-4000-8000-'+String(n).padStart(12,'0'),ref=n=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
 function model(f,mode='NORMAL'){
  const row=f.stored(),scope={projectId:row.projectId,connectorId:row.registration.connectorRef.id,executionId:id(1),executionGeneration:1,grantRef:ref(2),credentialGeneration:1};
- const config={origin:row.origin,ca:'TEST_ONLY_EXPLICIT_CA',scope},expiresAt=new Date(f.dependencies.now()+5000).toISOString(),calls=[],spawn=f.ports.spawn;
+ const config={origin:row.origin,ca:'TEST_ONLY_EXPLICIT_CA',scope},calls=[],spawn=f.ports.spawn;let expiresAt=new Date(f.dependencies.now()+5000).toISOString();
  let metadata,reply,offset=0;
  const chunk=()=>{const part=reply.subarray(offset,offset+48000),start=offset;offset+=part.length;return{handle:id(7),offset:start,total:reply.length,hash:contentHash(reply),expiresAt,bytes:part.toString('base64url'),done:offset===reply.length};};
  f.ports.spawn=(...args)=>{const child=spawn(...args),write=child.stdin.write;child.stdin.write=(raw,encoding,done)=>{
@@ -21,6 +21,7 @@ function model(f,mode='NORMAL'){
   assert.ok(Buffer.byteLength(raw)<=65536);assert.equal(v.sequence,calls.filter(x=>x.child===child).length+4);calls.push({...v,child});
   queueMicrotask(()=>{let data;
    if(v.operation==='NORMAL_EXECUTION_BOOTSTRAP'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.scope,scope);metadata={slotId:id(3),receiptRef:ref(4),origin:row.origin,scope,expiresAt,caHash:contentHash(config.ca)};data=metadata;}
+   else if(v.operation==='NORMAL_EXECUTION_RENEW'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.previous,metadata);assert.ok(Date.parse(metadata.expiresAt)<=f.dependencies.now());expiresAt=new Date(f.dependencies.now()+5000).toISOString();metadata={...metadata,slotId:id(11),receiptRef:ref(12),expiresAt};data=metadata;}
    else if(v.operation==='NORMAL_EXECUTION_CALL'){assert.equal(v.payload.attemptId,row.attemptId);assert.equal(v.payload.slotId,metadata.slotId);const r=v.payload.request;reply=Buffer.from(canonicalJson(v.payload.kind==='PREPARE'?{path:r.path,query:r.query,auth:'A'.repeat(20),challengeRef:ref(5),requestId:id(6),expiresAt}:mode==='MAX'?{value:'x'.repeat(2812587-12)}:{commands:[]}));offset=0;data=chunk();}
    else if(v.operation==='NORMAL_EXECUTION_READ'){assert.equal(v.payload.handle,id(7));assert.equal(v.payload.offset,offset);data=chunk();}
    else throw Error('UNEXPECTED_NORMAL_OPERATION');
@@ -39,6 +40,17 @@ test('REGISTERED 실제 owner→bundle bootstrap→제한 host client, 매 작�
  assert.equal(f.calls(),before+3);assert.equal(f.ends(),f.calls());assert.equal(f.timers(),0);
  assert.equal(m.calls.length,3);assert.equal(f.stored().state,'REGISTERED');
  for(const c of m.calls)assert.ok(c.sequence<=64);
+});
+test('동일 REGISTERED owner의 명시 갱신은 새 lease와 이전 metadata를 결박한다',async()=>{
+ const f=await fixtures.liveNativeOwner(),base=f.dependencies.now();let offset=0;
+ f.dependencies.now=()=>base+offset;f.ports.now=()=>base+offset;
+ const m=model(f),client=f.owner.createNormalCredentialBootstrap(m.config),signal=new AbortController().signal;
+ const old=await client.bootstrap(signal),count=f.calls();
+ await assert.rejects(client.renew(old,signal),/NOT_EXPIRED/);assert.equal(f.calls(),count);
+ offset=5000;const next=await client.renew(old,signal);
+ assert.equal(f.calls(),count+1);assert.notDeepEqual(next.metadata.receiptRef,old.metadata.receiptRef);
+ assert.equal(m.calls.at(-1).operation,'NORMAL_EXECUTION_RENEW');assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
+ const n=f.calls();await assert.rejects(client.renew(old,signal),/PREDECESSOR/);assert.equal(f.calls(),n);
 });
 test('미등록/다른 scope·origin·caller attempt는 host0 거절',async()=>{
  const empty=fixtures.enrollmentFixture();assert.throws(()=>empty.owner.createNormalCredentialBootstrap({}));assert.equal(empty.calls(),0);
