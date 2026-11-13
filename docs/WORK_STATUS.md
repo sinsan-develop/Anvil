@@ -18981,3 +18981,26 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 최종 owner 동결 SHA CAC577F90B02BB9B8CFEA250456A41BEC11D473B10051FF41E7DD875C2DEB2D0, 추가독립 C0/I0. 기존15파일지문불변 확인. 생성 bundle loader는기존고정경로방식과동일하며 직접2P/기존등록서명3P 구현자확인.
 - 별도 desktop tsconfig 전체는 current179/baseline179 진단, newDiagnostics[] 메모리 compilerHost 비교exit0. 기존dependency/generated모듈/CJS진단은남아있으며 desktop전체타입검사PASS가아니다. 루트타입검사는PASS. 실제native컴파일은이번승인에서제외한채source검수범위만통합한다.
 - 정확24파일stage diffcheck0, 신규C#·CJS의Git LF→CRLF정책경고는별도기록. 실제키/DB/서비스/Agent0, 전체계획미완료. 복구는이변경묶음일반revert.
+
+### PR102 통합 및 D1 같은 grant 재교환 착수 — 2026-11-14 / Main 어울
+- source5fc58318ba11783dac0ca8ecdf0801d9d7eacd51의24파일이 PR102 main09cc58b89a54006c84c27985e39b0e5202cf51e0에병합됐다. Broker43526191339 success, source/main tree diff0, 로컬·원격main동일clean. mergedowner핵심1P/0F/0SKIP838.1961ms. 원격heads main하나·요청tag부재확인.
+- 로컬branch -d는squash ancestry차이로1회거절. PR102/source이력·tree동일·clean 재검산뒤정확완료branch만-D정리, requesttag삭제. 과거worktree/WIP는보존했다. 최신main에서codex/av3-d1-credential-renewal생성.
+- 다음: 채택P3§3.2 같은grant재교환. 동일예약/generation·기존token만료후비중첩새receipt, 최대15분/current·storage기한유지. 과거receipt/nonce보존, 동일packetUNKNOWN수렴, 새cursor와기존intake중복방지연결. 공개endpoint/응답필드추가0, grant수명/oldtoken만료단축0.
+- 담당기존Primary단일writer; Main검수·통합·기록. 신규0091미적용forwardSQL·server/native/runtime/owner와직접합성시험범위. 실제DB적용·권한·키·보호파일·서비스·Agent·native컴파일0. 기준5fc원최초교환검사반복아닌갱신delta검증.
+- 검증계획: 최초발급→만료전거절→경계재교환→새Bearer조회,동시1건·서로다른token/receipt·같은예약세대·과거packet·회수/저장실패/commitUNKNOWN·oldcursor거절·wire중복0. 미실행은미검증유지. 현재코드미착수/정식실패0, 전체계획미완료.
+- 재교환사전검수: 단일발급가정은0085index와server grant전체prior조회.0086tokenDigest별receipt,0089permit/0090관측은exactcredentialRef결박유지.0091은grant직렬화·DB비중첩·동일거래복수INSERT·deferred자기행제외를검산해야한다. 기존receipt불변/digestunique/nonce소비/sequence/거래marker/최대기한보존.
+- Main읽기오류예외: 경로를추정한파일읽기실패가누적3회수준으로재발했다. 그방식을중단하고 이후파일존재는rg --files로먼저확정한다. 실제0086파일은0086_normal_request_challenge.sql.pending이며파일변경/제품영향0. 해당읽기방법만정정,승인구현은계속한다.
+
+- 재교환 중간검수: 서버 만료/동시발급/과거 packet UNKNOWN 1P, SQL 정적1P, runtime 명시 renew RED→GREEN1P는 구현자 제출이며 Main 최종검수 전이다. 독립 I1: REPEATABLE READ의 이전 snapshot에서 FOR UPDATE만으로 새 receipt 비중첩을 보장하지 못할 가능성 확인. 동일 writer에 지원 격리수준 명시 거절/음성검사 보완을 지시했다. 실제 DB 경합 시험은 제외되어 미검증이다. native deterministic predecessor marker·receipt별 보호 슬롯 구현 중.
+- Main 검색 오류: Windows rg의 위치 인수에 wildcard를 다시 사용하여 os error123 발생. 제품 파일 영향0. 해당 검색은 rg --files 목록에서 정확 경로를 고른 뒤 읽기로 정정했다. 이후 위치 인수 wildcard 사용을 중단한다.
+
+- 0091 I1 보완 재검토 C0/I0: READ COMMITTED 외 거래는 잠금 전에 거절한다. 실제 DB 기본값/동시성은 미검증. Main 직접 node --experimental-test-module-mocks --test --test-reporter=spec tests/unit/FN08/normal-credential-exchange-journey.test.ts tests/unit/FN08/normal-credential-renewal-sql.test.ts tests/unit/FN08/normal-credential-bootstrap-client.test.ts exit0/14P/0F/0SKIP/7191.3781ms. SQL은 정적검사, 서버 DB는 RAM fixture다. native/owner는 독립검수 진행 중.
+- 갱신 여정 시험의 기존 fixture tests/unit/FN08/normal-start-execution-fixture.ts 한 경로를 writer 허용목록에 추가했다. 기본 동작을 유지하는 선택형 초기 storage TTL만 합성 경계에 공급하며 실제 DB/자료/키 변경0. 기존 fixture 복제와 기존 기대값 완화0.
+
+- 재교환5제품 잠정동결 후 Main 루트 tsc --noEmit -p tsconfig.base.json exit0; node --test --test-reporter=spec tests/desktop/normal-execution-credential-owner.test.cjs tests/unit/FN06/normal-execution-credential-native.test.ts exit0/15P/0F/0SKIP/1753.1614ms. 실제 owner→bundle→합성 host와 native 정적검사이며 C#/DPAPI 실측은 아니다. native/runtime/owner 독립 중간 C0/I0, 결정적 marker·receipt chain·oldslot 호환·만료예외/UNKNOWN 경계 확인. 최종 갱신→새cursor→기존START 중복0 여정 구현 중.
+- 다음 미완료 읽기조사: P3 §3.1 단계3에서 normal polling→자료 내구 수신→START coordinator→관측 ACK 조합이 누락됐다. 기존 primary adapter SYNTHETIC_ONLY 표식은 유지하며 이를 바꾸는 우회 없이 명시 transport 포트로 조합을 먼저 연결한다. 이번 renewal 통합/정리 전 후속 동시 쓰기는 하지 않는다.
+
+- 갱신 연결 Main 직접검사: node --experimental-test-module-mocks --test --test-reporter=spec tests/unit/FN08/normal-credential-renewal-journey.test.ts tests/unit/FN08/normal-start-execution-journey.test.ts exit0/3P/0F/0SKIP/19290.7259ms. 독립 M1은 갱신 전 ACK 완료로 갱신 후 sync가 기존값만 반환해 새 credential POST를 입증하지 못한다는 시험공백이다. 같은 writer에 pending 관측의 갱신 후 실제 POST/ACK 단언 보완을 지시했다. 첫 여정 quota429는 RAM fixture가 실제SQL과 달리 purpose를 합산한 오류이며 조건을 SQL과 일치시켜 보완, 원FAIL 유지.
+- 최종 추가 Main tsc 호출 session19727은 종료결과가 장시간 반환되지 않아 본인 호출에 Ctrl-C로 중단(exit1, 미검증)했다. 앞선 동결5제품 Main typecheck exit0과 별개이며 중단을 PASS로 승격하지 않는다. 구현자 최종 tsc57510 exit0·diff42641 exit0 제출 확보. 재실행0/다른 process 종료0.
+
+- 최종 ACK delta: Main node --experimental-test-module-mocks --test --test-reporter=spec --test-name-pattern="실제 START/permit" tests/unit/FN08/normal-credential-renewal-journey.test.ts exit0/1P/0F/0SKIP/30004.7916ms. 독립 C0/I0/M0, 새credential 관측POST1·pending5·ACK1·증명receipt→ackRef 검산. 이전 단언실패와 Main tsc중단은 별도보존. 결과서 FN08_D1_CREDENTIAL_RENEWAL_SOURCE_RESULT_20261114.md 작성. 실제DB/키/서비스/Agent/native컴파일0, 전체계획미완료.

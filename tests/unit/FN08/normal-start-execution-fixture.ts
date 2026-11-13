@@ -9,7 +9,7 @@ const {NormalPageCursors}=await import('../../../apps/server/modules/executions/
 const { RegisteredStartContextSource } = await import('../../../apps/server/modules/executions/normal-start-context-source.ts');
 const { contextSourceFixture } = await import('./normal-start-context-source-fixture.ts');
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
-export async function executionFixture(withContext=true){
+export async function executionFixture(withContext=true,initialStorageTtl=Infinity){
  const opts={failBinding:false,contextCalls:0,wrongContext:false,hang:false,events:[] as string[],contextBodies:[] as string[]};
 
  const bindings:any[]=[],permits:any[]=[],observations:any[]=[],acks:any[]=[];
@@ -89,7 +89,7 @@ export async function executionFixture(withContext=true){
   assert.equal(registered.calls[0],'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
   assert.equal(registered.calls.at(-1),'ROLLBACK');assert.equal(registered.releases.length,1);
   opts.contextBodies.push(body);return opts.wrongContext?body+' ':body;
- }}):undefined},{current:f=>({async observe(_scope,signal){assert(signal instanceof AbortSignal);return {...structuredClone(f.tables.execution_grants![0]!.snapshot_json.binding),writerState:'OWNED',checkedAt:h.store.now().toISOString()};}})},true);
+ }}):undefined},{current:f=>({async observe(_scope,signal){assert(signal instanceof AbortSignal);return {...structuredClone(f.tables.execution_grants![0]!.snapshot_json.binding),writerState:'OWNED',checkedAt:h.store.now().toISOString()};}})},true,undefined,initialStorageTtl);
  async function signedGet(path:string,query:Record<string,string|number>){
   const r=h.mk();r.target.path=path;r.target.queryHash=digest(query);const resp=await h.post(h.signed(r));assert.equal(resp.statusCode,200,resp.body);
   const {challenge:c,ref}=resp.json();
@@ -140,13 +140,13 @@ export function httpsFixture(h:Awaited<ReturnType<typeof executionFixture>>['h']
 }
 
 /** 원제품 서버+RAM 저장을 재사용하는 합성 정상 실행 준비. 실제 키/DB/파일/Agent 호출0. */
-export async function preparedExecution(){
+export async function preparedExecution(initialStorageTtl=Infinity){
  const [{NormalProtectedGetClient},{NormalProtectedPostClient},{NormalStartIntake,receiveNormalStart},{NormalStartFileStore},
   {NormalObservationSpool},{NormalStartCoordinator},{root,memoryFiles}]=await Promise.all([
  import('../../../apps/connector/runtime/normal-protected-get-client.ts'),import('../../../apps/connector/runtime/normal-protected-post-client.ts'),
  import('../../../apps/connector/runtime/normal-start-intake.ts'),import('../../../apps/connector/runtime/normal-start-file-store.ts'),
  import('../../../apps/connector/runtime/normal-observation-spool.ts'),import('../../../apps/connector/runtime/normal-start-coordinator.ts'),import('./normal-start-local-fixture.ts')]);
- const q=await executionFixture(),h=q.h,http=httpsFixture(h),post=new NormalProtectedPostClient(http.options,http.ports),get=new NormalProtectedGetClient(http.options,http.ports);
+ const q=await executionFixture(true,initialStorageTtl),h=q.h,http=httpsFixture(h),post=new NormalProtectedPostClient(http.options,http.ports),get=new NormalProtectedGetClient(http.options,http.ports);
  const signal=new AbortController().signal,page=await get.send(await get.prepareCommandPage({afterSequence:0,waitMs:0},signal),signal) as any,item=page.items[0],e=item.envelope;
  const scope={projectId:e.context.projectId,executionId:e.context.executionId,executionGeneration:e.context.executionGeneration},fs=memoryFiles();
  const store=new NormalStartFileStore(root,scope,fs.fs),clock=()=>h.store.now().getTime(),intake=new NormalStartIntake(store.intake(),{context:e.context,executorRegistrationRef:e.executorRegistrationRef},clock);

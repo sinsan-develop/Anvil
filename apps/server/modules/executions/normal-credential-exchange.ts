@@ -72,19 +72,35 @@ async function exchange(options:NormalCredentialExchangeOptions,connector:string
   const reservationRef={id:res[0].id,version:1,contentHash:res[0].content_hash};
   const prior=(await db.query(`SELECT r.id,r.content_hash,r.snapshot_json,v.content_hash AS consumed_hash,v.snapshot_json AS consumed
    FROM anvil.execution_receipts r LEFT JOIN anvil.execution_challenges v ON v.project_id=r.project_id AND v.id=r.challenge_id AND v.version=2
-   WHERE r.project_id=$1 AND r.grant_id=$2 AND r.grant_version=$3 AND r.snapshot_json->>'kind'='NORMAL_CREDENTIAL_ISSUED' LIMIT 2`,keys)).rows;
+   WHERE r.project_id=$1 AND r.grant_id=$2 AND r.grant_version=$3 AND r.snapshot_json->>'kind'='NORMAL_CREDENTIAL_ISSUED' LIMIT 10001`,keys)).rows;
+  // grant의 challenge 수명 상한 안에서 전체 불변 이력을 검산한다. 최신 행으로 과거 packet을 대체하지 않는다.
+  if(prior.length>10000)deny('EXECUTION_CREDENTIAL_LEDGER_INVALID',503);
+  let repeated:any=null,lastEnd=-Infinity;
+  const intervals:{start:number;end:number}[]=[],ids=new Set<string>(),digests=new Set<string>();
   let response;
-  if(prior.length){
-   const r=prior[0],s=r.snapshot_json,ref={id:r.id,version:1,contentHash:r.content_hash};
-   if(prior.length!==1||!recordV1(s,['kind','purpose','binding','reservationRef','challengeRef','requestId','packetHash','tokenDigest','issuedAt','expiresAt','storageEvidenceRefs','storageExpiresAt'])||
+  for(const r of prior){
+   const s=r.snapshot_json,ref={id:r.id,version:1,contentHash:r.content_hash};
+   if(!refV1(ref)||!recordV1(s,['kind','purpose','binding','reservationRef','challengeRef','requestId','packetHash','tokenDigest','issuedAt','expiresAt','storageEvidenceRefs','storageExpiresAt'])||
      s.kind!=='NORMAL_CREDENTIAL_ISSUED'||s.purpose!=='EXECUTION_DISPATCH_ONLY'||digest(s)!==r.content_hash||!same(s.binding,current.binding)||
      !same(s.reservationRef,reservationRef)||!isoV1(s.issuedAt)||!isoV1(s.expiresAt)||!hashV1(s.tokenDigest)||!refV1(s.challengeRef)||
      !r.consumed||digest(r.consumed)!==r.consumed_hash||!same(r.consumed.binding,s.binding)||!same(r.consumed.previousRef,s.challengeRef)||
      !same(r.consumed.consumption?.resultRef,ref)||r.consumed.consumption.packetHash!==s.packetHash||
-     r.consumed.consumption.consumedAt!==s.issuedAt||r.consumed.request?.requestId!==s.requestId)deny('EXECUTION_CREDENTIAL_LEDGER_INVALID',503);
-   if(!same(s.challengeRef,c)||s.packetHash!==packetHash)deny('EXECUTION_CREDENTIAL_ALREADY_EXCHANGED',409);
-   response={receiptRef:ref,delivery:'UNKNOWN',expiresAt:s.expiresAt};
-  }else{
+     r.consumed.consumption.consumedAt!==s.issuedAt||r.consumed.request?.requestId!==s.requestId||!isoV1(s.storageExpiresAt)||
+     Date.parse(s.issuedAt)>=Date.parse(s.expiresAt)||Date.parse(s.expiresAt)>Math.min(Date.parse(s.issuedAt)+900000,Date.parse(s.storageExpiresAt))||
+     ids.has(r.id)||digests.has(s.tokenDigest))deny('EXECUTION_CREDENTIAL_LEDGER_INVALID',503);
+   ids.add(r.id);digests.add(s.tokenDigest);intervals.push({start:Date.parse(s.issuedAt),end:Date.parse(s.expiresAt)});
+   if(same(s.challengeRef,c)){
+    if(s.packetHash!==packetHash)deny('EXECUTION_CREDENTIAL_ALREADY_EXCHANGED',409);
+    if(repeated)deny('EXECUTION_CREDENTIAL_LEDGER_INVALID',503);
+    repeated={receiptRef:ref,delivery:'UNKNOWN',expiresAt:s.expiresAt};
+   }else if(s.packetHash===packetHash)deny('EXECUTION_CREDENTIAL_LEDGER_INVALID',503);
+  }
+  for(const interval of intervals.sort((a,b)=>a.start-b.start)){
+   if(interval.start<lastEnd)deny('EXECUTION_CREDENTIAL_LEDGER_INVALID',503);lastEnd=interval.end;
+  }
+  if(repeated)response=repeated;
+  else{
+   if(lastEnd>current.now.getTime())deny('EXECUTION_CREDENTIAL_ALREADY_EXCHANGED',409);
    const from=Date.parse(challenge.issuedAt),end=Date.parse(challenge.expiresAt);
    if(current.now.getTime()<from||current.now.getTime()>=end)deny('EXECUTION_EXCHANGE_CHALLENGE_EXPIRED');
    const evidence=fact.checks?.storage;

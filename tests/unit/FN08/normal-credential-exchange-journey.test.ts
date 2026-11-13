@@ -30,7 +30,7 @@ function challengeStore(f: Fixture) {
   const tables = f.tables, registration = f.registration!;
   let committed: any[] = [], currentReads = 0;
   const grant = () => tables.execution_grants![0]!;
-  const mode={offset:1,revoked:false,storage:'READY',failWrite:false,badTag:false,lost:false,conns:0,discards:0};
+  const mode={offset:1,revoked:false,storage:'READY',storageTtl:Infinity,failWrite:false,badTag:false,lost:false,conns:0,discards:0};
   let receipts:any[]=[];
   const now = () => new Date(Date.parse(grant().snapshot_json.plannedAt) + mode.offset);
   const rows = (values: any[]) => ({rows:values});
@@ -113,7 +113,7 @@ function challengeStore(f: Fixture) {
         if(mode.failWrite)throw Error('합성 영수증 저장 실패');
         const [pid,id,gid,gv,challenge_id,hash,raw]=args,s=JSON.parse(raw);
         assert.deepEqual([pid,gid,gv,hash],[f.pid,grant().id,grant().version,digest(s)]);
-        assert.equal(issued.length,0);issued.push({id,challenge_id,content_hash:hash,snapshot_json:s});return{rows:[],rowCount:1};
+        assert.ok(issued.every(r=>Date.parse(r.snapshot_json.expiresAt)<=Date.parse(s.issuedAt)));issued.push({id,challenge_id,content_hash:hash,snapshot_json:s});return{rows:[],rowCount:1};
       }
       throw Error('지원하지 않는 시험 조회 '+sql);
     }};
@@ -121,7 +121,7 @@ function challengeStore(f: Fixture) {
   const storage={async observe(scope:any,stamp:string,signal:AbortSignal){
     assert.ok(signal instanceof AbortSignal);assert.ok(!('query' in scope));assert.deepEqual(scope.evidenceRefs,grant().snapshot_json.binding.checks.storage.evidenceRefs);
     if(mode.storage==='HANG')await new Promise<void>(r=>signal.addEventListener('abort',()=>r(),{once:true}));
-    return {state:mode.storage==='READY'?'VERIFIED_CURRENT':'UNKNOWN',scope,checkedAt:stamp,expiresAt:grant().snapshot_json.expiresAt};
+    return {state:mode.storage==='READY'?'VERIFIED_CURRENT':'UNKNOWN',scope,checkedAt:stamp,expiresAt:new Date(Math.min(Date.parse(grant().snapshot_json.expiresAt),Date.parse(stamp)+mode.storageTtl)).toISOString()};
   }};
   return {pool,storage,now,mode,events:()=>committed,receipts:()=>receipts};
 }
@@ -224,5 +224,20 @@ test('영수증 쓰기 실패·ROLLBACK 태그·COMMIT 응답유실은 원문을
   assert.equal(h.store.mode.discards,2);assert.equal(h.store.receipts().length,1);h.store.mode.lost=false;
   const again=await h.exchange();assert.equal(again.statusCode,200);assert.equal(again.json().delivery,'UNKNOWN');assert.equal(again.json().credential,undefined);
   assert.equal(again.json().receiptRef.id,h.store.receipts()[0].id);assert.equal(h.store.events().length,2);
+ }finally{await h.app.close();}
+});
+test('같은 grant의 만료 경계 재교환은 독립 예약을 보존하고 과거 packet을 원 receipt로 조회한다',async()=>{
+ const h=await journey();try{
+  h.store.mode.storageTtl=5000;const first=await h.exchange();assert.equal(first.statusCode,200);const a=first.json(),reservation=structuredClone(h.f.tables.execution_credentials);
+  const next=async()=>h.newChallenge({...h.request,requestId:randomUUID(),clientNonce:randomBytes(32).toString('base64url'),issuedAt:h.store.now().toISOString()});
+  h.store.mode.offset+=4999;const early=await next();assert.equal((await h.exchange(h.auth(early))).statusCode,409);assert.equal(h.store.receipts().length,1);
+  h.store.mode.offset++;assert.equal(h.store.now().toISOString(),a.expiresAt);const challenge=await next(),packet=h.auth(challenge);
+  const results=await Promise.all([h.exchange(packet),h.exchange(packet)]);for(const r of results)assert.equal(r.statusCode,200,r.body);
+  const fresh=results.map(r=>r.json()).find(r=>r.credential),repeat=results.map(r=>r.json()).find(r=>r.delivery==='UNKNOWN');assert.ok(fresh&&repeat);
+  assert.notEqual(fresh.credential,a.credential);assert.notDeepEqual(fresh.receiptRef,a.receiptRef);assert.deepEqual(fresh.receiptRef,repeat.receiptRef);
+  assert.equal(h.store.receipts().length,2);assert.deepEqual(h.f.tables.execution_credentials,reservation);
+  const old=await h.exchange();assert.equal(old.statusCode,200,old.body);assert.deepEqual(old.json(),{receiptRef:a.receiptRef,delivery:'UNKNOWN',expiresAt:a.expiresAt});
+  const receipts=h.store.receipts().map(r=>r.snapshot_json);assert.equal(receipts[1].issuedAt,receipts[0].expiresAt);assert.equal(receipts[1].binding.credentialGeneration,1);
+  assert.equal(JSON.stringify([...h.store.events(),...h.store.receipts()]).includes(fresh.credential),false);
  }finally{await h.app.close();}
 });
