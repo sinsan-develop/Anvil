@@ -8,6 +8,7 @@ import { persistProjectReceipt, projectMember, type ProjectCommand } from '../ac
 import type { ProjectAssignmentDrafts } from './project-assignment-drafts.ts';
 import { assertAssignmentRoot, readAssignmentDraftInput } from './assignment-input.ts';
 import { assignmentContentCriteria, readAssignmentConfirmation, readAssignmentContentReview } from './assignment-confirmation-input.ts';
+import { assertReadAccess, grantCore, humanRead, type ReadAccess } from '../context/read-access.ts';
 
 const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
 const commandColumns = ',c.result_ref,c.operation,c.state,c.expected_version,c.actor_id command_actor,c.client_id command_client ';
@@ -18,8 +19,8 @@ const contentIssues = (issues: { code: string; location: string }[]) => issues.f
 
 /** ProjectPolicyRepository.command transaction 내에서만 쓰며, 내용 확정은 실행 허가가 아니다. */
 export class ProjectAssignmentConfirmations {
-  readonly drafts: Pick<ProjectAssignmentDrafts, 'current' | 'read'> & Partial<Pick<ProjectAssignmentDrafts, 'currentForContent'>>;
-  constructor(drafts: Pick<ProjectAssignmentDrafts, 'current' | 'read'> & Partial<Pick<ProjectAssignmentDrafts, 'currentForContent'>>) { this.drafts = drafts; }
+  readonly drafts: Pick<ProjectAssignmentDrafts, 'current' | 'read'> & Partial<Pick<ProjectAssignmentDrafts, 'currentForContent' | 'readCore' | 'currentCore'>>;
+  constructor(drafts: Pick<ProjectAssignmentDrafts, 'current' | 'read'> & Partial<Pick<ProjectAssignmentDrafts, 'currentForContent' | 'readCore' | 'currentCore'>>) { this.drafts = drafts; }
   #envelope(request: ProjectCommand, operation: string, ref: VersionRef) {
     if (request.operation !== operation || request.targetId !== ref.id || request.expectedVersion !== ref.version) throw new AuthFailure('VERSION_CONFLICT', 409);
     if (request.approvalRef !== null || request.baselineRefs.length) throw new AuthFailure('ASSIGNMENT_APPROVAL_NOT_CONNECTED', 412);
@@ -80,7 +81,15 @@ export class ProjectAssignmentConfirmations {
     return receipt.result;
   }
   async read(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number) {
-    await projectMember(db, actor, projectId);
+    return this.#readFor(db, humanRead(actor), projectId, id, version);
+  }
+  /** 접근 판별자 core(D2). HUMAN은 기존 read를 그대로 거치고, grant는 회원 조회 없이 같은 영수증·검토 무결성 검산을 한다. */
+  async readCore(db: PoolClient, access: ReadAccess, projectId: string, id: string, version: number) {
+    if (access.kind === 'HUMAN') return this.read(db, access.actor, projectId, id, version);
+    return this.#readFor(db, access, projectId, id, version);
+  }
+  async #readFor(db: PoolClient, access: ReadAccess, projectId: string, id: string, version: number) {
+    await assertReadAccess(db, access, projectId);
     if (!uuid(id) || !Number.isSafeInteger(version) || version < 1) throw new AuthFailure('INPUT_INVALID', 400);
     const row = (await db.query(versionsSelect + 'WHERE v.project_id=$1 AND v.assignment_id=$2 AND v.version=$3', [projectId, id, version])).rows[0];
     if (!row) throw new AuthFailure('NOT_FOUND', 404);
@@ -89,7 +98,7 @@ export class ProjectAssignmentConfirmations {
       assertAssignmentRoot(snapshot.definition);
       this.#receipt(row, ref, snapshot, 'confirmAssignment', 'ASSIGNMENT_CONTENT_CONFIRMED');
       readAssignmentConfirmation({ draftRef: snapshot.draftRef, reviewRefs: snapshot.reviewRefs, reason: snapshot.reason, acknowledged: true });
-      const draft = await this.drafts.read(db, actor, projectId, id, version);
+      const draft = await (access.kind === 'HUMAN' ? this.drafts.read(db, access.actor, projectId, id, version) : grantCore(this.drafts, 'readCore')(db, access, projectId, id, version));
       if (!uuid(row.confirmation_id) || row.result_ref.data.confirmationId !== row.confirmation_id || Number(row.expected_version) !== version || !same(snapshot.draftRef, draft.ref) || !same(snapshot.definition, draft.snapshot.definition) || !same(snapshot.readinessIssues, draft.snapshot.readinessIssues)
         || !same(snapshot.confirmedBy, { kind: 'HUMAN', userId: row.created_by }) || typeof snapshot.confirmedAt !== 'string' || !Number.isFinite(Date.parse(snapshot.confirmedAt))
         || snapshot.contentConfirmed !== true || snapshot.ready !== false || snapshot.executionAuthorized !== false || snapshot.dispatchPerformed !== false || Object.keys(snapshot).length !== 11) throw Error();

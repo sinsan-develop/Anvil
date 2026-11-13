@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
-import { persistProjectReceipt, projectMember, type ProjectCommand } from '../access/project-command.ts';
+import { persistProjectReceipt, type ProjectCommand } from '../access/project-command.ts';
 import { ProjectDocuments } from '../documents/project-documents.ts';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import { isVersionRef } from '../../../../contracts/references.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
+import { assertReadAccess, humanRead, type ReadAccess } from '../context/read-access.ts';
 
 const exact=(v:unknown,keys:string[]):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',');
 const code=(v:unknown):v is string=>typeof v==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(v);
@@ -25,7 +26,10 @@ export class ProjectDesignIndex {
     }
   }
   async #source(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,ref:VersionRef,formCode:string) {
-    const document=await this.#documents.version(db,actor,projectId,ref.id,ref.version);
+    return this.#sourceFor(db,humanRead(actor),projectId,ref,formCode);
+  }
+  async #sourceFor(db:PoolClient,access:ReadAccess,projectId:string,ref:VersionRef,formCode:string) {
+    const document=await (access.kind==='HUMAN'?this.#documents.version(db,access.actor,projectId,ref.id,ref.version):this.#documents.versionCore(db,access,projectId,ref.id,ref.version));
     if(document.contentHash!==ref.contentHash) throw new AuthFailure('VERSION_CONFLICT',409);
     const form=(await db.query("SELECT definition_json->>'formCode' code FROM anvil.form_versions WHERE definition_id=$1 AND version=$2 AND content_hash=$3",[document.formRef.id,document.formRef.version,document.formRef.contentHash])).rows[0];
     if(form?.code!==formCode) throw new AuthFailure('DESIGN_DOCUMENT_KIND_INVALID',422);
@@ -61,9 +65,17 @@ export class ProjectDesignIndex {
     return receipt.result;
   }
   async read(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,id:string,version:number) {
-    await projectMember(db,actor,projectId);
-    const document=await this.#documents.version(db,actor,projectId,id,version), ref={id,version,contentHash:document.contentHash};
-    const source=await this.#source(db,actor,projectId,ref,'AF02');
+    return this.#readFor(db,humanRead(actor),projectId,id,version);
+  }
+  /** 접근 판별자 core(D2). HUMAN은 기존 read를 그대로 거치고, grant는 회원 조회 없이 같은 색인·anchor 검산을 한다. */
+  async readCore(db:PoolClient,access:ReadAccess,projectId:string,id:string,version:number) {
+    if(access.kind==='HUMAN') return this.read(db,access.actor,projectId,id,version);
+    return this.#readFor(db,access,projectId,id,version);
+  }
+  async #readFor(db:PoolClient,access:ReadAccess,projectId:string,id:string,version:number) {
+    await assertReadAccess(db,access,projectId);
+    const document=await (access.kind==='HUMAN'?this.#documents.version(db,access.actor,projectId,id,version):this.#documents.versionCore(db,access,projectId,id,version)), ref={id,version,contentHash:document.contentHash};
+    const source=await this.#sourceFor(db,access,projectId,ref,'AF02');
     const rows=(await db.query('SELECT item_json FROM anvil.design_items WHERE project_id=$1 AND design_document_id=$2 AND document_version=$3 ORDER BY local_code',[projectId,id,version])).rows;
     const items=rows.map(row=>row.item_json);
     for(const i of items) {
@@ -75,7 +87,7 @@ export class ProjectDesignIndex {
     for(const s of screenRegions) {
       const data={designItemId:s.designItemId,screenCode:s.screenCode,documentRef:s.documentRef,artifactRef:s.artifactRef,anchor:s.anchor};
       if(contentHash(canonicalJson(data))!==s.regionHash||!items.some(i=>i.id===s.designItemId)) throw new AuthFailure('DESIGN_INDEX_INTEGRITY_FAILED',503);
-      const screen=await this.#source(db,actor,projectId,s.documentRef,'AF03'); if(canonicalJson(screen.document.content.body)!==canonicalJson(s.artifactRef)) throw new AuthFailure('DESIGN_INDEX_INTEGRITY_FAILED',503); anchored(screen.body,s.anchor,s.screenCode);
+      const screen=await this.#sourceFor(db,access,projectId,s.documentRef,'AF03'); if(canonicalJson(screen.document.content.body)!==canonicalJson(s.artifactRef)) throw new AuthFailure('DESIGN_INDEX_INTEGRITY_FAILED',503); anchored(screen.body,s.anchor,s.screenCode);
     }
     return {documentRef:ref,items,screenRegions,status:items.length?'INDEXED':'NOT_INDEXED',observedAt:new Date().toISOString()};
   }

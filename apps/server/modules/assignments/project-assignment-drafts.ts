@@ -12,6 +12,7 @@ import type { ProjectListCodec } from '../projects/service.ts';
 import { assertAssignmentRoot, readAssignmentDraftInput, type AssignmentDraftInput } from './assignment-input.ts';
 import { ProjectAssignmentConfirmations } from './project-assignment-confirmations.ts';
 import { inspectSourceScopeContainment } from './source-scope-containment.ts';
+import { assertReadAccess, grantCore, humanRead, type ReadAccess } from '../context/read-access.ts';
 
 const same = (one: unknown, two: unknown) => canonicalJson(one) === canonicalJson(two);
 const uuid = (id: unknown) => isVersionRef({ id, version: 1, contentHash: '0'.repeat(64) });
@@ -19,10 +20,10 @@ const select = 'SELECT v.*,d.head_version,d.updated_at,c.result_ref,c.operation,
   `to_char(d.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') cursor_at FROM anvil.assignment_draft_versions v JOIN anvil.assignment_drafts d ON d.project_id=v.project_id AND d.id=v.draft_id JOIN anvil.commands c ON c.project_id=v.project_id AND c.id=v.command_id `;
 
 export class ProjectAssignmentDrafts {
-  readonly plans: Pick<ProjectWorkPlans, 'read' | 'decision'>;
-  readonly methods: Pick<ProjectMethodologies, 'readApplication'>;
+  readonly plans: Pick<ProjectWorkPlans, 'read' | 'decision'> & Partial<Pick<ProjectWorkPlans, 'readCore' | 'decisionCore'>>;
+  readonly methods: Pick<ProjectMethodologies, 'readApplication'> & Partial<Pick<ProjectMethodologies, 'readApplicationCore'>>;
   readonly parents: Pick<ProjectAssignmentConfirmations, 'read' | 'decision'>;
-  constructor(plans: Pick<ProjectWorkPlans, 'read' | 'decision'>, methods: Pick<ProjectMethodologies, 'readApplication'> = new ProjectMethodologies(), parents?: Pick<ProjectAssignmentConfirmations, 'read' | 'decision'>) {
+  constructor(plans: Pick<ProjectWorkPlans, 'read' | 'decision'> & Partial<Pick<ProjectWorkPlans, 'readCore' | 'decisionCore'>>, methods: Pick<ProjectMethodologies, 'readApplication'> & Partial<Pick<ProjectMethodologies, 'readApplicationCore'>> = new ProjectMethodologies(), parents?: Pick<ProjectAssignmentConfirmations, 'read' | 'decision'>) {
     this.plans = plans; this.methods = methods; this.parents = parents ?? new ProjectAssignmentConfirmations(this);
   }
   async #parent(db: PoolClient, actor: AuthenticatedIdentity, request: Pick<ProjectCommand, 'projectId' | 'targetId'>, input: AssignmentDraftInput) {
@@ -52,14 +53,17 @@ export class ProjectAssignmentDrafts {
       throw new AuthFailure('ASSIGNMENT_PARENT_SCOPE_MISMATCH', 422);
   }
   async #basis(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, input: AssignmentDraftInput) {
+    return this.#basisFor(db, humanRead(actor), projectId, input);
+  }
+  async #basisFor(db: PoolClient, access: ReadAccess, projectId: string, input: AssignmentDraftInput) {
     const task = input.definition.taskRef;
-    const plan = await this.plans.read(db, actor, projectId, task.planRef.id, task.planRef.version);
+    const plan = await (access.kind === 'HUMAN' ? this.plans.read(db, access.actor, projectId, task.planRef.id, task.planRef.version) : grantCore(this.plans, 'readCore')(db, access, projectId, task.planRef.id, task.planRef.version));
     if (!same(plan.ref, task.planRef)) throw new AuthFailure('VERSION_CONFLICT', 409);
-    const decision = await this.plans.decision(db, actor, projectId, task.planRef.id, task.planRef.version);
+    const decision = await (access.kind === 'HUMAN' ? this.plans.decision(db, access.actor, projectId, task.planRef.id, task.planRef.version) : grantCore(this.plans, 'decisionCore')(db, access, projectId, task.planRef.id, task.planRef.version));
     if (!decision.currentConfirmationValid || plan.relationalProjection !== 'STORED') throw new AuthFailure('ASSIGNMENT_PLAN_NOT_CURRENT', 412);
     const card = plan.tasks.find((item: any) => item.taskCode === task.taskCode);
     if (!card) throw new AuthFailure('NOT_FOUND', 404);
-    const application = await this.methods.readApplication(db, actor, projectId);
+    const application = await (access.kind === 'HUMAN' ? this.methods.readApplication(db, access.actor, projectId) : grantCore(this.methods, 'readApplicationCore')(db, access, projectId));
     if (!same(application.applicationRef, task.applicationRef)) throw new AuthFailure('METHODOLOGY_APPLICATION_CHANGED', 409);
     const graph = application.snapshot?.graph as MethodologyGraph | undefined;
     if (!graph?.nodes.some(node => node.nodeId === task.nodeId)) throw new AuthFailure('NOT_FOUND', 404);
@@ -115,6 +119,15 @@ export class ProjectAssignmentDrafts {
   }
   async read(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number) {
     await projectMember(db, actor, projectId);
+    return this.#row(db, projectId, id, version);
+  }
+  /** 접근 판별자 core(D2). HUMAN은 기존 read를 그대로 거치고, grant는 회원 조회 없이 같은 원 초안 검산을 한다. */
+  async readCore(db: PoolClient, access: ReadAccess, projectId: string, id: string, version: number) {
+    if (access.kind === 'HUMAN') return this.read(db, access.actor, projectId, id, version);
+    await assertReadAccess(db, access, projectId);
+    return this.#row(db, projectId, id, version);
+  }
+  async #row(db: PoolClient, projectId: string, id: string, version: number) {
     if (!uuid(id) || !Number.isSafeInteger(version) || version < 1) throw new AuthFailure('INPUT_INVALID', 400);
     const row = (await db.query(select + 'WHERE v.project_id=$1 AND v.draft_id=$2 AND v.version=$3', [projectId, id, version])).rows[0];
     if (!row) throw new AuthFailure('NOT_FOUND', 404);
@@ -122,14 +135,27 @@ export class ProjectAssignmentDrafts {
   }
   /** 검토·확정의 현재성 검사. 기존 읽기 응답이나 초안 snapshot은 바꾸지 않는다. */
   async current(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, ref: VersionRef) {
-    await projectMember(db, actor, projectId);
-    const head = (await db.query('SELECT head_version FROM anvil.assignment_drafts WHERE project_id=$1 AND id=$2 FOR UPDATE', [projectId, ref.id])).rows[0];
+    return this.#currentFor(db, humanRead(actor), projectId, ref);
+  }
+  /**
+   * 접근 판별자 core(D2). HUMAN은 기존 current(head 행 FOR UPDATE)를 그대로 거친다.
+   * grant는 READ ONLY snapshot 안에서 잠금 없는 head 조회 뒤 같은 원 초안·기준(#basis) 검산을 한다.
+   */
+  async currentCore(db: PoolClient, access: ReadAccess, projectId: string, ref: VersionRef) {
+    if (access.kind === 'HUMAN') return this.current(db, access.actor, projectId, ref);
+    return this.#currentFor(db, access, projectId, ref);
+  }
+  async #currentFor(db: PoolClient, access: ReadAccess, projectId: string, ref: VersionRef) {
+    await assertReadAccess(db, access, projectId);
+    const head = (access.kind === 'HUMAN'
+      ? await db.query('SELECT head_version FROM anvil.assignment_drafts WHERE project_id=$1 AND id=$2 FOR UPDATE', [projectId, ref.id])
+      : await db.query('SELECT head_version FROM anvil.assignment_drafts WHERE project_id=$1 AND id=$2', [projectId, ref.id])).rows[0];
     if (!head) throw new AuthFailure('NOT_FOUND', 404);
     if (Number(head.head_version) !== ref.version) throw new AuthFailure('VERSION_CONFLICT', 409);
-    const draft = await this.read(db, actor, projectId, ref.id, ref.version);
+    const draft = await (access.kind === 'HUMAN' ? this.read(db, access.actor, projectId, ref.id, ref.version) : this.readCore(db, access, projectId, ref.id, ref.version));
     if (!same(draft.ref, ref)) throw new AuthFailure('VERSION_CONFLICT', 409);
     assertAssignmentRoot(draft.snapshot.definition);
-    const basis = await this.#basis(db, actor, projectId, { baseRef: draft.snapshot.previousRef, definition: draft.snapshot.definition, reason: draft.snapshot.reason });
+    const basis = await this.#basisFor(db, access, projectId, { baseRef: draft.snapshot.previousRef, definition: draft.snapshot.definition, reason: draft.snapshot.reason });
     if (!same(draft.snapshot.basis, basis)) throw new AuthFailure('ASSIGNMENT_BASIS_CHANGED', 409);
     return draft;
   }

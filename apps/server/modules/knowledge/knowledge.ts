@@ -15,6 +15,7 @@ import{knowledgeReviewCriteria,knowledgeReviews,writeKnowledgeReview,acceptedKno
 import{currentConstitutionRecord}from'./constitution-records.ts';
 import {verifyKnowledgeScope} from './knowledge-scope.ts';
 import {ProjectWorkPlans} from '../traceability/work-plans.ts';
+import {assertReadAccess,humanRead,type ReadAccess} from '../context/read-access.ts';
 
 export class ProjectKnowledge{
   #documents:ProjectDocuments;
@@ -27,12 +28,15 @@ export class ProjectKnowledge{
     this.#protectedConversation=protectedPlan?readProtectedKnowledgeConversation.bind(new ProjectConversations(documents)):null;
   }
   async #verify(db:PoolClient,actor:AuthenticatedIdentity,pid:string,entry:KnowledgeEntry){
-    await verifyKnowledgeScope(db,pid,entry.scope,ref=>(this.#protectedPlans??new ProjectWorkPlans(this.#documents)).read(db,actor,pid,ref.id,ref.version));
+    return this.#verifyFor(db,humanRead(actor),pid,entry);
+  }
+  async #verifyFor(db:PoolClient,access:ReadAccess,pid:string,entry:KnowledgeEntry){
+    await verifyKnowledgeScope(db,pid,entry.scope,ref=>access.kind==='HUMAN'?(this.#protectedPlans??new ProjectWorkPlans(this.#documents)).read(db,access.actor,pid,ref.id,ref.version):new ProjectWorkPlans(this.#documents).readCore(db,access,pid,ref.id,ref.version));
     const body=await this.#documents.originalText(db,pid,entry.contentRef);
     assertKnowledgeTextSafe(entry.title);assertKnowledgeTextSafe(entry.reason);assertKnowledgeTextSafe(body);
     for(const r of entry.sourceRefs){
       if(r.kind==='DOCUMENT_VERSION'){
-        const doc=await this.#documents.version(db,actor,pid,r.id,r.version);if(doc.contentHash!==r.contentHash)throw new AuthFailure('KNOWLEDGE_SOURCE_MISMATCH',409);
+        const doc=await (access.kind==='HUMAN'?this.#documents.version(db,access.actor,pid,r.id,r.version):this.#documents.versionCore(db,access,pid,r.id,r.version));if(doc.contentHash!==r.contentHash)throw new AuthFailure('KNOWLEDGE_SOURCE_MISMATCH',409);
         assertKnowledgeTextSafe(await this.#documents.originalText(db,pid,doc.content.body));
       }else if(r.kind==='ARTIFACT'){
         const row=(await db.query("SELECT bytes,media_type,content_hash FROM anvil.artifacts WHERE project_id=$1 AND id=$2 AND state='READY'",[pid,r.id])).rows[0];
@@ -41,8 +45,9 @@ export class ProjectKnowledge{
         assertKnowledgeTextSafe(await this.#documents.originalText(db,pid,{artifactId:r.id,bytes:Number(row.bytes),contentHash:row.content_hash,mediaType:row.media_type}));
       }else{
         const row=(await db.query('SELECT conversation_id FROM anvil.conversation_messages WHERE project_id=$1 AND id=$2',[pid,r.id])).rows[0];if(!row)throw new AuthFailure('NOT_FOUND',404);
-        const message=await (this.#protectedConversation?this.#protectedConversation(db,actor,pid,row.conversation_id,r.id)
-          :new ProjectConversations(this.#documents).readMessage(db,actor,pid,row.conversation_id,r.id));
+        const message=await (access.kind!=='HUMAN'?new ProjectConversations(this.#documents).readMessageCore(db,access,pid,row.conversation_id,r.id)
+          :this.#protectedConversation?this.#protectedConversation(db,access.actor,pid,row.conversation_id,r.id)
+          :new ProjectConversations(this.#documents).readMessage(db,access.actor,pid,row.conversation_id,r.id));
         if(message.sourceRef.contentHash!==r.contentHash)throw new AuthFailure('KNOWLEDGE_SOURCE_MISMATCH',409);
         if(r.kind==='USER_INSTRUCTION'&&message.message.kind!=='USER_INSTRUCTION')throw new AuthFailure('KNOWLEDGE_SOURCE_KIND_MISMATCH',422);
       }
@@ -60,7 +65,15 @@ export class ProjectKnowledge{
     return receipt.result;
   }
   async read(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,version:number){
-    await projectMember(db,actor,pid);
+    return this.#readFor(db,humanRead(actor),pid,id,version);
+  }
+  /** 접근 판별자 core(D2). HUMAN은 기존 read를 그대로 거치고, grant는 회원 조회 없이 같은 상태·정정·출처 검산을 한다. */
+  async readCore(db:PoolClient,access:ReadAccess,pid:string,id:string,version:number){
+    if(access.kind==='HUMAN')return this.read(db,access.actor,pid,id,version);
+    return this.#readFor(db,access,pid,id,version);
+  }
+  async #readFor(db:PoolClient,access:ReadAccess,pid:string,id:string,version:number){
+    await assertReadAccess(db,access,pid);
     const row=(await db.query('SELECT v.*,k.kind,k.head_version FROM anvil.knowledge_versions v JOIN anvil.knowledge_entries k ON k.project_id=v.project_id AND k.id=v.entry_id WHERE v.project_id=$1 AND v.entry_id=$2 AND v.version=$3',[pid,id,version])).rows[0];
     if(!row)throw new AuthFailure('NOT_FOUND',404);
     const entry=readKnowledgeEntry(row.entry_json,pid);
@@ -70,8 +83,8 @@ export class ProjectKnowledge{
     assertKnowledgeHistory(events,{id,version,contentHash:row.content_hash},entry);for(const e of events)assertKnowledgeTextSafe(e.reason);
     let supersedesRef:VersionRef|null=null;
     if(version>1){const previous=(await db.query('SELECT content_hash FROM anvil.knowledge_versions WHERE project_id=$1 AND entry_id=$2 AND version=$3',[pid,id,version-1])).rows[0];if(Number(row.supersedes_version)!==version-1||!previous)throw new AuthFailure('KNOWLEDGE_INTEGRITY_FAILED',503);supersedesRef={id,version:version-1,contentHash:previous.content_hash};if(canonicalJson(events[0].base_ref)!==canonicalJson(supersedesRef))throw new AuthFailure('KNOWLEDGE_EVENT_INTEGRITY_FAILED',503);}
-    const body=await this.#verify(db,actor,pid,entry);
-    if(version>1)await this.#verify(db,actor,pid,readKnowledgeEntry({...entry,sourceRefs:events[0].change_sources},pid));
+    const body=await this.#verifyFor(db,access,pid,entry);
+    if(version>1)await this.#verifyFor(db,access,pid,readKnowledgeEntry({...entry,sourceRefs:events[0].change_sources},pid));
     const ref={id,version,contentHash:row.content_hash},reviews=await knowledgeReviews(db,pid,ref,entry.kind,row.created_by),confirmationEvent=events.find(e=>e.kind==='CONFIRMED');let confirmation:null|{eventId:string;reviewRefs:unknown[];reason:string;actorRef:unknown;recordedAt:string}=null,currentConfirmationValid=false;
     if(confirmationEvent){const refs=confirmationEvent.review_refs;if(!Array.isArray(refs)||!refs.length||refs.length>200)throw new AuthFailure('KNOWLEDGE_EVENT_INTEGRITY_FAILED',503);const stored=refs.every(r=>reviews.some(review=>review.ref.id===r?.id))?reviews:await knowledgeReviews(db,pid,ref,entry.kind,row.created_by,refs.map(r=>r?.id));const verified=acceptedKnowledgeReviews(ref,refs,stored,false);confirmation={eventId:confirmationEvent.id,reviewRefs:verified,reason:confirmationEvent.reason,actorRef:confirmationEvent.actor_ref,recordedAt:confirmationEvent.recorded_at.toISOString()};currentConfirmationValid=state==='CONFIRMED'&&reviews[0]?.ref.outcome==='ACCEPTED'&&verified.some(r=>r.id===reviews[0]!.ref.id);}
     const applied=await currentConstitutionRecord(db,pid),application=applied&&canonicalJson(applied.application.versionRef)===canonicalJson(ref)?applied:null;

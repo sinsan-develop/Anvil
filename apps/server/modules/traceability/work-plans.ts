@@ -8,6 +8,7 @@ import {analyzeWorkPlanCards,exactKeys,planText,type PlanTraceRef} from './work-
 import {isVersionRef} from '../../../../contracts/references.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import type {VersionRef} from '../../../../contracts/generated-types.ts';
+import {assertReadAccess,humanRead,type ReadAccess} from '../context/read-access.ts';
 import type {ProjectListCodec} from '../projects/service.ts';
 import{acceptedWorkPlanReviews,workPlanReviewCriteria,workPlanReviews,writeWorkPlanReview}from'./work-plan-reviews.ts';
 
@@ -22,16 +23,19 @@ export class ProjectWorkPlans {
     plans.#protectedPlan=true;
     return Object.freeze({read:readProtectedPlan.bind(plans),decision:decideProtectedPlan.bind(plans)});
   }
-  async #source(db:PoolClient,actor:AuthenticatedIdentity,pid:string,ref:VersionRef,kind:string){
-    const document=await this.#documents.version(db,actor,pid,ref.id,ref.version);
+  async #source(db:PoolClient,access:ReadAccess,pid:string,ref:VersionRef,kind:string){
+    const document=await (access.kind==='HUMAN'?this.#documents.version(db,access.actor,pid,ref.id,ref.version):this.#documents.versionCore(db,access,pid,ref.id,ref.version));
     if(document.contentHash!==ref.contentHash) throw new AuthFailure('VERSION_CONFLICT',409);
     const form=(await db.query("SELECT definition_json->>'formCode' code FROM anvil.form_versions WHERE definition_id=$1 AND version=$2 AND content_hash=$3",[document.formRef.id,document.formRef.version,document.formRef.contentHash])).rows[0];
     if(form?.code!==kind) throw new AuthFailure('WORK_PLAN_DOCUMENT_KIND_INVALID',422);
     return document;
   }
   async #references(db:PoolClient,actor:AuthenticatedIdentity,pid:string,p:Record<string,any>){
-    const document=await this.#source(db,actor,pid,p.documentRef,'AF04'),design=await this.#source(db,actor,pid,p.designRef,'AF02');
-    const index=await this.#index.read(db,actor,pid,p.designRef.id,p.designRef.version);
+    return this.#referencesFor(db,humanRead(actor),pid,p);
+  }
+  async #referencesFor(db:PoolClient,access:ReadAccess,pid:string,p:Record<string,any>){
+    const document=await this.#source(db,access,pid,p.documentRef,'AF04'),design=await this.#source(db,access,pid,p.designRef,'AF02');
+    const index=await (access.kind==='HUMAN'?this.#index.read(db,access.actor,pid,p.designRef.id,p.designRef.version):this.#index.readCore(db,access,pid,p.designRef.id,p.designRef.version));
     const screens=new Map<string,VersionRef>();
     for(const task of p.tasks) for(const ref of [...task.designRefs,...task.screenRefs] as PlanTraceRef[]){
       const item=ref.kind==='DESIGN_ITEM'?index.items.find(i=>i.id===ref.id):index.screenRegions.find(i=>i.id===ref.id);
@@ -44,7 +48,7 @@ export class ProjectWorkPlans {
       if(!exactKeys(ref,['id','targetRef','criteriaVersion','outcome'])||!isVersionRef({id:ref.id,version:1,contentHash:'0'.repeat(64)})||!isVersionRef(ref.targetRef)||ref.criteriaVersion!==1||ref.outcome!=='ACCEPTED') throw new AuthFailure('SCREEN_REVIEW_REFERENCE_INVALID',422);
       const key=ref.targetRef.id+':'+ref.targetRef.version;
       if(!screens.has(key)||canonicalJson(screens.get(key))!==canonicalJson(ref.targetRef)||reviewed.has(key)) throw new AuthFailure('SCREEN_REVIEW_REFERENCE_INVALID',422);
-      const reviews=(await this.#documents.version(db,actor,pid,ref.targetRef.id,ref.targetRef.version)).contentReviews;
+      const reviews=(await (access.kind==='HUMAN'?this.#documents.version(db,access.actor,pid,ref.targetRef.id,ref.targetRef.version):this.#documents.versionCore(db,access,pid,ref.targetRef.id,ref.targetRef.version))).contentReviews;
       if(!reviews.some((r:any)=>canonicalJson(r.ref)===canonicalJson(ref))) throw new AuthFailure('SCREEN_REVIEW_REFERENCE_INVALID',422);
       if(reviews[0]&&canonicalJson(reviews[0].ref)===canonicalJson(ref)) reviewed.add(key);
     }
@@ -95,10 +99,14 @@ export class ProjectWorkPlans {
     const{row,view}=await this.#current(db,actor,c,ref);return writeWorkPlanReview(db,actor,c,policyRef,view.ref,row.created_by);
   }
   async #readiness(db:PoolClient,actor:AuthenticatedIdentity,pid:string,view:Record<string,any>){
-    const sources=await this.#references(db,actor,pid,view),analysis=analyzeWorkPlanCards(view.tasks),issues=[...analysis.issues];
+    return this.#readinessFor(db,humanRead(actor),pid,view);
+  }
+  async #readinessFor(db:PoolClient,access:ReadAccess,pid:string,view:Record<string,any>){
+    const sources=await this.#referencesFor(db,access,pid,view),analysis=analyzeWorkPlanCards(view.tasks),issues=[...analysis.issues];
     const issue=(code:string,location:string,message:string)=>issues.push({code,location,message});
     for(const[k,document,ref]of[['PLAN_DOCUMENT',sources.document,view.documentRef],['DESIGN',sources.design,view.designRef]]as const){
-      const head=(await db.query('SELECT head_version,confirmed_version FROM anvil.documents WHERE project_id=$1 AND id=$2 FOR SHARE',[pid,ref.id])).rows[0];
+      // grant 읽기는 READ ONLY snapshot 안에서 잠금 없이 같은 head/confirmed를 읽는다.
+      const head=(access.kind==='HUMAN'?await db.query('SELECT head_version,confirmed_version FROM anvil.documents WHERE project_id=$1 AND id=$2 FOR SHARE',[pid,ref.id]):await db.query('SELECT head_version,confirmed_version FROM anvil.documents WHERE project_id=$1 AND id=$2',[pid,ref.id])).rows[0];
       if(!document.confirmed||Number(head?.head_version)!==ref.version||Number(head?.confirmed_version)!==ref.version||!document.validation.validForConfirmation||document.contentReviews[0]?.ref.outcome!=='ACCEPTED')issue(k+'_NOT_READY',k==='DESIGN'?'designRef':'documentRef','정확한 현재 원문의 형식·내용검토·별도 확정이 필요합니다.');
     }
     for(const[key]of sources.screens)if(!sources.reviewed.has(key))issue('SCREEN_REVIEW_MISSING','screenReviewRefs','연결 화면의 최신 적합 검토를 정확히 선택해야 합니다.');
@@ -117,18 +125,34 @@ export class ProjectWorkPlans {
     await db.query('UPDATE anvil.work_plans SET confirmed_version=$3,updated_at=now() WHERE project_id=$1 AND id=$2',[c.projectId,view.ref.id,view.ref.version]);return receipt.result;
   }
   async decision(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,version:number){
-    const view=await (this.#protectedPlan?readProtectedPlan.call(this,db,actor,pid,id,version):this.read(db,actor,pid,id,version)),row=(await db.query('SELECT w.head_version,w.confirmed_version,v.created_by FROM anvil.work_plans w JOIN anvil.work_plan_versions v ON v.project_id=w.project_id AND v.plan_id=w.id AND v.version=$3 WHERE w.project_id=$1 AND w.id=$2',[pid,id,version])).rows[0],reviews=await workPlanReviews(db,pid,view.ref,row.created_by),validation=await this.#readiness(db,actor,pid,view);
+    return this.#decisionFor(db,humanRead(actor),pid,id,version);
+  }
+  /** 접근 판별자 core(D2). HUMAN은 기존 decision을 그대로 거치고, grant는 회원 조회·documents 잠금 없이 같은 현재성 판정을 한다. */
+  async decisionCore(db:PoolClient,access:ReadAccess,pid:string,id:string,version:number){
+    if(access.kind==='HUMAN')return this.decision(db,access.actor,pid,id,version);
+    return this.#decisionFor(db,access,pid,id,version);
+  }
+  async #decisionFor(db:PoolClient,access:ReadAccess,pid:string,id:string,version:number){
+    const view=await (access.kind!=='HUMAN'?this.readCore(db,access,pid,id,version):this.#protectedPlan?readProtectedPlan.call(this,db,access.actor,pid,id,version):this.read(db,access.actor,pid,id,version)),row=(await db.query('SELECT w.head_version,w.confirmed_version,v.created_by FROM anvil.work_plans w JOIN anvil.work_plan_versions v ON v.project_id=w.project_id AND v.plan_id=w.id AND v.version=$3 WHERE w.project_id=$1 AND w.id=$2',[pid,id,version])).rows[0],reviews=await workPlanReviews(db,pid,view.ref,row.created_by),validation=await this.#readinessFor(db,access,pid,view);
     const stored=(await db.query("SELECT f.*,c.result_ref,c.actor_id,c.client_id command_client,c.operation FROM anvil.work_plan_confirmations f JOIN anvil.commands c ON c.id=f.command_id AND c.project_id=f.project_id WHERE f.project_id=$1 AND f.plan_id=$2 AND f.version=$3",[pid,id,version])).rows[0];let confirmation=null;
     if(stored){const d=stored.result_ref?.data;if(stored.operation!=='confirmWorkPlan'||stored.actor_id!==stored.confirmed_by||stored.command_client!==stored.client_id||stored.result_ref?.status!=='APPLIED'||d?.status!=='CONFIRMED'||d.confirmationId!==stored.id||canonicalJson(d.ref)!==canonicalJson(view.ref)||stored.target_hash!==view.ref.contentHash||canonicalJson(d.reviewRefs)!==canonicalJson(stored.review_refs)||canonicalJson(d.validation)!==canonicalJson(stored.validation_json)||d.activatedAsBaseline!==false)throw new AuthFailure('WORK_PLAN_CONFIRMATION_INTEGRITY_FAILED',503);confirmation={id:stored.id,planRef:view.ref,reviewRefs:stored.review_refs,validation:stored.validation_json,confirmedBy:{kind:'HUMAN',userId:stored.confirmed_by},confirmedAt:stored.created_at.toISOString()};}
     return{planRef:view.ref,headVersion:Number(row.head_version),confirmedVersion:row.confirmed_version===null?null:Number(row.confirmed_version),criteria:workPlanReviewCriteria,contentReviews:reviews,confirmation,validation,currentConfirmationValid:!!confirmation&&Number(row.head_version)===version&&Number(row.confirmed_version)===version&&reviews[0]?.ref.outcome==='ACCEPTED'&&validation.validForConfirmation,activatedAsBaseline:false,observedAt:new Date().toISOString()};
   }
   async read(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,version:number){
-    await projectMember(db,actor,pid);
+    return this.#readFor(db,humanRead(actor),pid,id,version);
+  }
+  /** 접근 판별자 core(D2). HUMAN은 기존 read를 그대로 거치고, grant는 회원 조회 없이 같은 원문·관계 투영 검산을 한다. */
+  async readCore(db:PoolClient,access:ReadAccess,pid:string,id:string,version:number){
+    if(access.kind==='HUMAN')return this.read(db,access.actor,pid,id,version);
+    return this.#readFor(db,access,pid,id,version);
+  }
+  async #readFor(db:PoolClient,access:ReadAccess,pid:string,id:string,version:number){
+    await assertReadAccess(db,access,pid);
     const row=(await db.query('SELECT content_hash,version_json FROM anvil.work_plan_versions WHERE project_id=$1 AND plan_id=$2 AND version=$3',[pid,id,version])).rows[0];
     if(!row) throw new AuthFailure('NOT_FOUND',404);
     const v=row.version_json,{ref,status,...snapshot}=v;
     if(status!=='DRAFT'||canonicalJson(ref)!==canonicalJson({id,version,contentHash:row.content_hash})||contentHash(canonicalJson(snapshot))!==row.content_hash) throw new AuthFailure('WORK_PLAN_INTEGRITY_FAILED',503);
-    analyzeWorkPlanCards(v.tasks);await this.#references(db,actor,pid,v);
+    analyzeWorkPlanCards(v.tasks);await this.#referencesFor(db,access,pid,v);
     const cards=(await db.query('SELECT task_code,card_json,card_hash FROM anvil.plan_tasks WHERE project_id=$1 AND plan_id=$2 AND plan_version=$3 ORDER BY task_code',[pid,id,version])).rows;
     const deps=(await db.query('SELECT task_code,dependency_task_code,phase FROM anvil.plan_dependencies WHERE project_id=$1 AND plan_id=$2 AND plan_version=$3 ORDER BY task_code,dependency_task_code,phase',[pid,id,version])).rows.map(d=>({taskCode:d.task_code,dependencyTaskCode:d.dependency_task_code,phase:d.phase}));
     if(v.relationalProjection==='STORED'){
