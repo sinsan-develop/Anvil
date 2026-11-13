@@ -18911,3 +18911,25 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 독립 검수: C0/I0/M5(병합 가능). 반영: M4 승인 소비 시험에 기대 판정 코드(CONTEXT_SOURCE_UNAVAILABLE/412) 고정. P-B로 이월: M1 mintExecutionGrantRead를 공급자의 잠금 없는 grant 확인 뒤로 좁히기(현재 시험만 호출), M2 grant 경로가 일부 하위 reader를 grantCore 없이 직접 부르고 사용자 보호 모드의 고정 reader 대신 prototype 조회를 쓰는 점(실패는 닫힘), M3 readApplication이 private 메서드를 거치게 된 점(실사용 영향 없음), M5 grant 경로 거절 시험(격리·대체·미확정·head 변경)과 grantCore 실패 시험.
 - 미검증: 실제 DB의 REPEATABLE READ READ ONLY·잠금 부재, 통합 시험(IX01·FN02). 실제 DB/권한/키/서비스/Agent/SSH 변경 0. rollback은 이 branch commit 일반 revert.
 - 다음: D2 P-B(공급자 구현·자료 여정 시험 공급자 교체·표식 발급 축소·grant 거절 시험) 또는 D1 3단계 실행기 source. 0083~0090 개발 DB 적용은 별도 실행 승인 대상.
+
+### D2 P-B 인수·착수 — 2026-11-14 / Main 어울
+
+- 할 일: WORK_PLAN Stage C/FN08, 채택된 P3 결정안 D2 A와 FN08_D2_GRANT_BOUND_CONTEXT_READ_WI_20261113.md §6 P-B. PR99의 P-A를 다시 구현하지 않고 grant 결박 맥락 공급자·서버 조립·자료 여정 및 거절 시험을 진행한다.
+- 기준: 기존 격리 v3 작업 사본 main 41790410ea63f4a1887cda9b191eeebabfa98b26, 원격 development/main 실조회 동일, tracked clean에서 codex/av3-d2-grant-context-provider 생성. 과거 외부 worktree의 dirty/untracked는 보존한다.
+- 담당: Main 관리·검수·통합, read-only preflight/계획 대조 2명. 제품 writer는 사전 대조 후 한 명만 배정한다. 이전 담당 live handle은 현재 목록에 없다.
+- 허용: source·합성 시험, 필요 시 미적용0091. 실제 DB 적용·권한·키·서비스·Agent 실행·D1 1/4단계는 제외한다. P-A 420P/신규7P는 기존 기록이며 이번 재실행 결과가 아니다.
+- 검증: START bytes 동일성, 회수/만료/다른 세대/등록 변조·archived·격리·대체·미확정·헌법/배정 변경 거절, 사용자 회원 해지만으로 거절하지 않음, snapshot 잠금·쓰기0, 위조 표식 거절, 직접 회귀/typecheck/diff 및 독립 검수. 실제 PG와 Agent는 미검증으로 유지한다.
+- 인수 전 WORK_STATUS 6484413 bytes / SHA256 BE531ECB352CBB2C4CB874B7306AD4BEF59F1788A2812D6931F22364FF38B513. 이번은 최근 기록/관련 계약 중심 대조이며 역사 전체 열람으로 주장하지 않는다. 설계·계획의 관련 조항 대조를 read-only 담당자가 진행한다.
+- 환경 오류: 기본 PowerShell profile의 conda 출력 인코딩 오류 1회 계열은 login=false로 피했다(설정 변경0). sandbox 원격 읽기 실패1회 뒤 승인된 원격 read-only 실행에서 SHA 확인. 제품 오류·PASS로 환산하지 않는다.
+- 상태: 진행 중, 구현·시험 미실행. 전체 계획 미완료. 다음은 사전 대조를 마치고 단일 writer 구현→독립 검수→Main 검증·통합이다.
+- 사전대조 완료: d2_scope_audit가 설계1~878 전문·계획 규범1188~1481·최신현황18709~18913·D2 WI/채택결정안 전문을 읽고 범위 내 진행 가능 판정했다. 설계 SHA1346F6244A142B3A2849DA78CD742F2F6B67F8B96C5762D0F036979FD15328E7, 계획 AC6BF5087160A2FBF94A49CB959D24E6C205B6CDF6943720670BA8EA76C875C6, 환경 D6496CC210ED1A0C1F5EB08D57FFB437D5C64242294B16A5B8FA66A7DC161E00. 환경은 관련 부분 대조이며 전문열람 아님.
+- d2_preflight의 권한 경계 발견: provider 단독은 회원 해지에 의존하지 않지만 기존0084/자료GET 현재성 검산은 OWNER/control을 요구한다. 이번에는 provider 독립성만 검증하고 자료GET 기존 권한을 확대하지 않는다. 전체GET 성공으로 과장하지 않는다. read-only 검산 이전 mint·거래후 표식 재사용·abort/rollback/release·등록관계도 검수 중점이다.
+- 기존 developer_primary handle을 재사용해 정확 P-B source·시험을 배정했다(새 writer 추가0, 단일 writer). WORK_STATUS/WORK_CHECK는 Main만 수정한다. 현재 구현 결과는 아직 없으며 compile/실DB/서비스/Agent 실행0이다.
+- 중간 증거(구현자 제출, 아직 Main 최종검수 전): 신규 공급자 부재 RED1F 뒤 실제 제품 START 등록행→READ ONLY 공급자→기존 reader/조립기의 bytes 동일 여정1P. 공개 mint를 제거하고 비공개 표식을 DB·정확 묶음·거래 수명에 결박하는 작업 중이다.
+- 사전검수 I1: execution_grants.version bigint가 pg에서 문자열로 반환될 수 있는데 신규 checkedBinding은 숫자1을 요구한다. 0017:179·타입parser 미등록을 독립 확인했고 공급자 SQL exact int cast 보완을 writer에 전달했다. 실제 PG 실패를 관측한 것은 아니며 source 호환성 발견이다. 0083 helper 전이 호출은 DML·행잠금0 정적 확인, 실제 READ ONLY 실행은 미검증.
+- 다음 D1 source 조사: 현재 실행기 normal 경로는 RECEIVED까지이며 permit·관측·내구수신 연결이 다음 후보. 같은 grant credential 재교환은 채택됐으나 서버의 grant당 일회발급 제약과 아직 불일치한다. D2에 섞지 않고 후속에서 정확 상태전이·호환성을 다룬다. normal SEND/STOP·실제 공급자/adapter 전체가 완료됐다고 보고하지 않는다.
+- 구현자 중간검증: provider 집중40P/0F, 접근경계7P/0F 제출. Main 미재실행이며 아직 최종판정 아님. 자료여정은 실행출력 유실로 그 결과만 다시 확보 예정이다.
+- 독립 source 검수 d2_preflight: C0/I1/M0. bigint cast는 해결 확인. I1은 임의 Pick reader 및 생성후 options/메서드 교체로 과거 prepared bytes를 반환해 현재 격리·대체·확정 검사를 생략할 수 있는 서버내부 주입 경계 누락이다(HTTP공격 관측 아님). 실제 ProjectContexts/resolveRegistered 고정과 교체거절 시험을 같은 writer에 지시했다. I1 해소 전 병합하지 않는다.
+- Main 최종 제품 직접검증: node --experimental-test-module-mocks --test --test-reporter=spec tests/unit/FN08/normal-start-context-source.test.ts tests/unit/FN08/context-read-access.test.ts tests/unit/FN08/normal-start-materials-journey.test.ts → exit0/71P/0F/0SKIP/15226.8479ms. 절대경로 typescript/bin/tsc --noEmit -p tsconfig.base.json·diff exit0. 제품5파일 독립 재검수 최종C0/I0/M0, provider SHA461E2DD7C32CBBB8503125F28C932AF60BCC2CFE2361945D4B44706EA95DFA08.
+- 시험검수 C0/I0/M3 중 downstream core부재 실제공급자→412/rollback/release 시험을 추가하고 바뀐 접근시험만8P/0F/0SKIP로 확인(구현자 제출, 기존71과 중복합산금지). 승인소비완료 불일치의 grant 전체여정과 각변조 독립비교분기도달은 미검증으로 명시했다. 기존 요구를 완화하거나 실PG증거로 승격하지 않았다. 결과서 FN08_D2_PB_CONTEXT_PROVIDER_RESULT_20261114.md에 소스/시험/한계/복구 기록.
+- writer해제·제품동결, 최종시험delta 독립확인 후 commit/private push/PR통합 예정. GitHub CLI의 sandbox auth실패는 네트워크허용 읽기에서 기존로그인유효로 확인했으며 계정/토큰변경0이다.
