@@ -69,6 +69,13 @@ function challengeStore(f: Fixture) {
         return rows([{project_id:g.project_id}]);
       }
       if(sql.startsWith('SELECT * FROM anvil.normal_exchange_current('))return current(args);
+      if(sql.includes('FROM anvil.execution_credentials')){
+        const g=grant(),r=tables.execution_credentials![0]!;
+        assert.deepEqual(args,[g.project_id,g.id,g.version,r.credential_generation]);
+        assert.deepEqual(r.snapshot_json.registrationRef,g.snapshot_json.binding.registration.ref);
+        assert.deepEqual(g.snapshot_json.binding.executionCredentialReservation,{id:r.id,generation:r.credential_generation});
+        return rows([{...r,version:String(r.version),reservation_matches:r.content_hash===digest(r.snapshot_json)}]);
+      }
       if(sql.includes('FROM anvil.usage_reservations')){assert.deepEqual(args,[f.pid]);return rows(tables.usage_reservations!);}
       if(sql === 'SELECT clock_timestamp() AS at')return rows([{at:now()}]);
       if(sql.includes('FROM anvil.execution_challenges') && sql.includes('request_id=')){

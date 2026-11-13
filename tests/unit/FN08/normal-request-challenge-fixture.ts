@@ -100,7 +100,15 @@ function challengeStore(f: Fixture, pageSql?:PageSqlAdapter) {
       if(sql.startsWith('SELECT * FROM anvil.normal_exchange_current('))return current(args);
       if(sql.startsWith('SELECT clock_timestamp()'))return rows([{at:now()}]);
       if(sql.includes('FROM anvil.usage_reservations')){assert.deepEqual(args,[f.pid]);return rows(tables.usage_reservations!);}
-      if(sql.includes('FROM anvil.execution_credentials'))return rows(tables.execution_credentials!.filter(r=>r.project_id===args[0]&&r.grant_id===args[1]&&r.grant_version===args[2]&&r.credential_generation===args[3]).map(r=>({...r,version:String(r.version)})));
+      if(sql.includes('FROM anvil.execution_credentials'))return rows(tables.execution_credentials!.filter(r=>r.project_id===args[0]&&r.grant_id===args[1]&&r.grant_version===args[2]&&r.credential_generation===args[3]).map(r=>{
+        const g=grant(),s=r.snapshot_json;
+        const reservation_matches=r.content_hash===digest(s)&&s.scopeDigest===g.snapshot_json.scopeDigest&&
+          s.executionId===g.execution_id&&s.executionGeneration===g.generation&&
+          digest(s.grantRef)===digest({id:g.id,version:g.version,contentHash:g.content_hash})&&
+          digest(s.registrationRef)===digest(g.snapshot_json.binding.registration.ref)&&
+          digest(g.snapshot_json.binding.executionCredentialReservation)===digest({id:r.id,generation:r.credential_generation});
+        return {...r,version:String(r.version),reservation_matches};
+      }));
       if(sql.includes('FROM anvil.execution_receipts r LEFT JOIN')){
         return rows(issued.map(r=>{const c=drafts.find(v=>v.version===2&&v.id===r.challenge_id);
          return {...r,consumed_hash:c?.content_hash,consumed:c?.snapshot_json};}));
@@ -148,7 +156,7 @@ function challengeStore(f: Fixture, pageSql?:PageSqlAdapter) {
 export async function journey(pages?:{sql:PageSqlAdapter; cursors:import('../../../apps/server/modules/executions/normal-command-pages.ts').NormalPageCursors},
   materials?:{context?:(f:Fixture)=>import('../../../apps/server/modules/executions/normal-start-materials.ts').NormalStartContextSource},
   permit?:{current?:(f:Fixture)=>import('../../../apps/server/modules/executions/normal-start-permit.ts').NormalPermitCurrentSource},
-  observations?:boolean){
+  observations?:boolean,bootstrap?:(context:{f:Fixture;app:ReturnType<typeof buildApp>;store:ReturnType<typeof challengeStore>;request:any;signBytes:(bytes:Buffer)=>string})=>Promise<{receiptRef:any;credential:string;expiresAt:string}>){
   const executionId = randomUUID();
   const f = await executionStartOriginFixture({normalExecutionId:executionId,connectorEnvironment:true,richContext:true,constitutionContext:true,
     environmentDependencies:true,snapshotRoot:true,originConsumptionStorage:true,budgetElapsedMs:3600000});
@@ -195,18 +203,19 @@ export async function journey(pages?:{sql:PageSqlAdapter; cursors:import('../../
       return app.inject({method:'POST',url:path+'/challenges',payload:{...r,signature:sig}});
     };
     const newChallenge=async(r=request)=>{const a=await postChallenge(r);assert.equal(a.statusCode,200);return a.json();};
-    const first=await newChallenge();
+    const first=bootstrap?undefined:await newChallenge();
     const auth=(a=first,change:Record<string,unknown>={})=>{
       const c=a.challenge,proof={requestId:c.requestId,grantRef:c.grantRef,credentialGeneration:c.credentialGeneration,scopeDigest:c.scopeDigest,
         serverNonce:c.serverNonce,clientNonce:c.clientNonce,expiresAt:c.expiresAt,...change};
       const signature=sign('sha256',executionProofBytes('EXECUTION_CREDENTIAL_EXCHANGE',proof),{key,dsaEncoding:'ieee-p1363'}).toString('base64url');
       return {schemaVersion:1,challengeRef:a.ref,proof,signature};
     };
-    const frame=auth();
+    const frame=bootstrap?undefined:auth();
     const exchange=(value=frame,body='{}')=>inject((req,rep)=>{Object.defineProperty(req.socket,'encrypted',{value:true});app.routing(req,rep);},
       {method:'POST',url:path+'/credential-exchange',payload:body,headers:{host:'anvil-synthetic.invalid','content-type':'application/json',
         'anvil-execution-auth':Buffer.from(canonicalJson(value)).toString('base64url')}});
-    const minted=await exchange();
+    const bootstrapResult=bootstrap?await bootstrap({f,app,store,request,signBytes:bytes=>sign('sha256',bytes,{key,dsaEncoding:'ieee-p1363'}).toString('base64url')}):undefined;
+    const minted=bootstrapResult?{statusCode:200,json:()=>bootstrapResult}:await exchange();
     assert.equal(minted.statusCode,200);
     const token=minted.json().credential as string;
     assert.ok(/^av3ex1_[A-Za-z0-9_-]{43}$/.test(token));

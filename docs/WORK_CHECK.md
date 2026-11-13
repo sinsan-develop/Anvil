@@ -5,7 +5,7 @@
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
 - 코드 집계 기준: `development/main` `967c9a207452f5d3c9d79a1d8906e25a396dd704`.
-- 현재 통합 기준선: `main` 12956ce3(PR100, D2 P-B 포함), 로컬·원격 동일·clean 확인. 병합 후 접근경계8P, 이전 완료 branch/tag 정리. 작업 branch `codex/av3-d1-start-execution`에서 D1 3단계 수신→permit→wire→관측 source 연결을 진행한다. 아래 이전 시점의 PR·대기 기록은 이력이다.
+- 현재 통합 기준선: `main` 418d70ca(PR101, D2 P-B 및 D1 START source 포함), 로컬·원격 동일 확인. 작업 branch `codex/av3-d1-credential-exchange`에서 최초 credential 교환·보호 저장/사용과 실제 owner 연결 source를 검수했다(Main29P+추가23P·typecheck, source범위). 통합 준비 중이며 실제 실행은 미검증이다. 실제 DB·Agent 여정은 미완료다. 아래 이전 시점의 PR·대기 기록은 이력이다.
 - 인수 뒤 현재(2026-11-11): 원격 main은 PR84로 2e0eab21이며 대기 당시 WIP(시험2·미채택 후보 문서1)가 main에 포함돼 있다. 작업 branch `claude/av3-normal-start-materials`에서 checkedMaterialPart만 구현했다(해당 시험 1P, 0088 SQL 시험은 0088 부재로 실패 유지). 자료 GET의 route·0088·nonce 소비는 bytes 표현/자료 발견 후보 채택과 원본 재구성 주체 결정 전까지 보류다. 아래 대기 기록은 11-08 시점 이력이다.
 - 2026-11-11T03:51:34+09:00: 자료 전달·발견 후보 A안 직접 채택. §2 명령 페이지 자료 descriptor를 source·미적용 0088·합성 시험으로 구현했다(FN08 normal 계열 33P). §3 자료 bytes GET은 미구현이며 WIP SQL 시험 1건은 실패 유지다. FN08 행 상태는 그대로 부분 구현이다.
 - 2026-11-11T14:39:31+09:00: A안 §3 자료 bytes 보호 GET을 source·미적용 0088·합성 여정으로 구현했다(FN08 normal 계열 85P). 맥락 묶음 원문은 서버 주입 공급자 방식(신산님 직접 결정)이며 실제 공급자·실행기 소비 codec·실제 DB 검증·독립 검수는 남았다. FN08 행 상태는 부분 구현 그대로다.
@@ -20,7 +20,7 @@
 - 2026-11-13T07:30:00+09:00: D1 2단계 서버 normal 실행 관측(receipts·heartbeat 포함)을 계약·source·미적용 SQL 0090·합성 시험으로 구현해 D1 2단계 서버 경로를 갖췄다(독립 C1/I1/M5 반영). 다음은 D1 3단계 실행기 source와 D2 작업지시서, 0083~0090 개발 DB 적용(별도 승인).
 - 2026-11-13T08:30:00+09:00: D2 세부 작업지시서(docs/work_packages/FN08_D2_GRANT_BOUND_CONTEXT_READ_WI_20261113.md)를 작성했다. 접근 판별자로 한 구현을 유지하고 P-A 동작 불변 리팩터 → P-B 공급자 순서다.
 - 2026-11-14T09:00:00+09:00: D2 P-A 접근 판별자 도입(동작 불변 리팩터, 11개 모듈)을 마쳤다(회귀 기준선 420건 변경 없이 통과, 독립 C0/I0/M5). 다음은 D2 P-B 공급자 구현 또는 D1 3단계.
-- 현재 상황: D2 P-B는 source 독립 C0/I0·영향71P·typecheck와 시험 보완 후 PR100으로 통합했다. D1 실행기 수신→내구 시도/permit→context·options 전달→관측/ACK source는 Main22P·typecheck·독립C0/I0으로 통합 준비 중이다. 최초 credential 교환·보호 저장/사용과 실제 adapter는 남아 있다. 실제 DB·서비스·Agent 실행은 제외하며 전체 D1/FN08 완료로 표시하지 않는다.
+- 현재 상황: D2 P-B는 source 독립 C0/I0·영향71P·typecheck와 시험 보완 후 PR100으로 통합했다. D1 실행기 수신→내구 시도/permit→context·options 전달→관측/ACK source는 Main22P·typecheck·독립C0/I0으로 PR101에 통합했다. 최초 credential 교환·보호 저장/사용과 실제 adapter는 남아 있다. 실제 DB·서비스·Agent 실행은 제외하며 전체 D1/FN08 완료로 표시하지 않는다.
 - 최근 소스 검수: PR76 duplex, PR77 normal grant/독립 예약, PR78 최초 challenge, PR79 일회 교환·nonce 소비, PR80 조회 challenge, PR81 명령 페이지·고정 응답. 모두 main 통합·핵심 smoke 확인, 실제 Agent·DB·전체 기능 인수는 미완료다.
 - 현재 미확인: 실제 개발 DB 복구·served/Agent 전체 여정·실기기·Oracle 인수. 지정 SSH Connection refused를 PASS로 표시하지 않는다.
 - 결정 대기: 기존 PMO 발행 2건(e59592e3,239845d6), 직접 답변 미수신. 중복 요청하지 않는다.

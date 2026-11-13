@@ -65,6 +65,20 @@ export function original(row:any,binding:unknown,purpose:Purpose='CREDENTIAL_EXC
  if(s.signedInputHash!==signedInputHash(request)||s.serverNonceDigest!==nonceDigest(p.serverNonce))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
  return {ref:{id:row.id,version:1,contentHash:row.content_hash},challenge:p,credentialIssued:false,nonceConsumed:false,executionAuthorized:false,dispatchPerformed:false};
 }
+async function bootstrapReservation(db:PoolClient,b:any){
+ const rows=(await db.query(`SELECT ec.id,ec.version,ec.content_hash,ec.snapshot_json,
+  anvil.normal_credential_row_matches(ec) AS reservation_matches
+  FROM anvil.execution_credentials ec WHERE ec.project_id=$1 AND ec.grant_id=$2 AND ec.grant_version=$3 AND ec.credential_generation=$4 AND ec.version=1 LIMIT 2`,
+ [b.projectId,b.grantRef.id,b.grantRef.version,b.credentialGeneration])).rows;
+ const row=rows[0],s=row?.snapshot_json;
+ if(rows.length!==1||row.reservation_matches!==true||!uuidV1(row.id)||(row.version!==1&&row.version!=='1')||row.content_hash!==digest(s)
+  ||!recordV1(s,['transport','state','grantRef','executionId','executionGeneration','credentialGeneration','registrationRef','commandId','scopeDigest','reservedAt','expiresAt','credentialIssued'])
+  ||s.transport!=='NORMAL_PROTECTED'||s.state!=='RESERVED_NO_TOKEN'||s.credentialIssued!==false||!same(s.grantRef,b.grantRef)
+  ||s.executionId!==b.executionId||s.executionGeneration!==b.executionGeneration||s.credentialGeneration!==b.credentialGeneration
+  ||s.scopeDigest!==b.scopeDigest||!refV1(s.registrationRef)||!uuidV1(s.commandId)||!isoV1(s.reservedAt)||!isoV1(s.expiresAt)||s.expiresAt<=s.reservedAt)
+  return fail('EXECUTION_BOOTSTRAP_RESERVATION_INVALID',412);
+ return {registrationRef:s.registrationRef,reservationRef:{id:row.id,version:1,contentHash:row.content_hash},expiresAt:s.expiresAt};
+}
 async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string,body:unknown,bearerDigest?:string){
  const purpose:Purpose=bearerDigest?'EXECUTION_REQUEST':'CREDENTIAL_EXCHANGE';
  const {request,signature}=decode(body,purpose),ref=request.grantRef;
@@ -78,6 +92,7 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   if(scope.length!==1||!uuidV1(scope[0].project_id))return fail('NOT_FOUND',404);
   const project=scope[0].project_id,keys=[project,ref.id,ref.version];
   const current=await readCurrent(db,project,connector,execution,request);
+  const reservation=credential?null:await bootstrapReservation(db,current.binding);
   const deadline=Math.min(current.deadline.getTime(),credential?.expiresAt??Infinity);
   if(current.now.getTime()>=deadline)return fail('EXECUTION_CREDENTIAL_EXPIRED',412);
   const rows=(await db.query('SELECT id,content_hash,snapshot_json FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND version=1 AND (request_id=$4 OR client_nonce=$5) LIMIT 2',[...keys,request.requestId,request.clientNonce])).rows;
@@ -117,11 +132,21 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   if(!same(final.binding,current.binding)||final.spki!==current.spki||final.now<current.now||Math.min(final.deadline.getTime(),credential?.expiresAt??Infinity)<expiry
     ||Date.parse(result.challenge.issuedAt)>current.now.getTime()||(!checked&&final.now.getTime()>=expiry))
     return fail('EXECUTION_CHALLENGE_CURRENT_BINDING_REQUIRED',412);
+  let bootstrapBinding:unknown;
+  if(reservation){
+   const last=await bootstrapReservation(db,final.binding);
+   const end=Math.min(expiry,final.deadline.getTime(),Date.parse(last.expiresAt));
+   if(!same(last,reservation)||end<=final.now.getTime())return fail('EXECUTION_BOOTSTRAP_RESERVATION_INVALID',412);
+   const b=final.binding;
+   bootstrapBinding={projectId:b.projectId,connectorId:b.connectorId,executionId:b.executionId,executionGeneration:b.executionGeneration,
+    grantRef:b.grantRef,credentialGeneration:b.credentialGeneration,scopeDigest:b.scopeDigest,registrationRef:last.registrationRef,
+    reservationRef:last.reservationRef,publicKeyFingerprint:b.publicKeyFingerprint,checkedAt:final.now.toISOString(),expiresAt:new Date(end).toISOString()};
+  }
   committing=true;
   const completion=await db.query('COMMIT');
   if(completion?.command!=='COMMIT')throw new Error('EXECUTION_CHALLENGE_COMMIT_UNKNOWN');
   committing=false;
-  return result;
+  return reservation?{...result,bootstrapBinding}:result;
  }catch(error){
   if(committing)discard=new Error('EXECUTION_CHALLENGE_COMMIT_UNKNOWN');
   try{await db.query('ROLLBACK');}catch{discard??=new Error('EXECUTION_CHALLENGE_ROLLBACK_UNKNOWN');}

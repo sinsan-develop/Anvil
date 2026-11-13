@@ -82,7 +82,15 @@ function challengeStore(f: Fixture) {
       if(sql.startsWith('SELECT * FROM anvil.normal_exchange_current('))return current(args);
       if(sql.startsWith('SELECT clock_timestamp()'))return rows([{at:now()}]);
       if(sql.includes('FROM anvil.usage_reservations')){assert.deepEqual(args,[f.pid]);return rows(tables.usage_reservations!);}
-      if(sql.includes('FROM anvil.execution_credentials'))return rows(tables.execution_credentials!.filter(r=>r.project_id===args[0]&&r.grant_id===args[1]&&r.grant_version===args[2]&&r.credential_generation===args[3]).map(r=>({...r,version:String(r.version)})));
+      if(sql.includes('FROM anvil.execution_credentials'))return rows(tables.execution_credentials!.filter(r=>r.project_id===args[0]&&r.grant_id===args[1]&&r.grant_version===args[2]&&r.credential_generation===args[3]).map(r=>{
+        const g=grant(),s=r.snapshot_json;
+        const reservation_matches=r.content_hash===digest(s)&&s.scopeDigest===g.snapshot_json.scopeDigest&&
+          s.executionId===g.execution_id&&s.executionGeneration===g.generation&&
+          digest(s.grantRef)===digest({id:g.id,version:g.version,contentHash:g.content_hash})&&
+          digest(s.registrationRef)===digest(g.snapshot_json.binding.registration.ref)&&
+          digest(g.snapshot_json.binding.executionCredentialReservation)===digest({id:r.id,generation:r.credential_generation});
+        return {...r,version:String(r.version),reservation_matches};
+      }));
       if(sql.includes('FROM anvil.execution_receipts r LEFT JOIN')){
         return rows(issued.map(r=>{const c=drafts.find(v=>v.version===2&&v.id===r.challenge_id);
          return {...r,consumed_hash:c?.content_hash,consumed:c?.snapshot_json};}));

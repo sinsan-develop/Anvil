@@ -1,4 +1,5 @@
 import {randomBytes,randomUUID} from 'node:crypto';
+import {NormalOwnedCredentialPort} from './normal-credential-bootstrap-client.ts';
 import {request as httpsRequest,type RequestOptions} from 'node:https';
 import type {ClientRequest,IncomingMessage} from 'node:http';
 import {canonicalJson,contentHash,parseWireJson} from '../../../contracts/canonical.ts';
@@ -11,8 +12,8 @@ export type NormalSignPurpose='EXECUTION_CHALLENGE_REQUEST'|'EXECUTION_REQUEST_P
 /** 실행기 등록 키 서명자. P-256 ECDSA ieee-p1363 서명을 unpadded base64url(64 bytes)로 돌려준다. */
 export interface NormalProtectedSigner{sign(purpose:NormalSignPurpose,bytes:Buffer,signal:AbortSignal):Promise<string>}
 export interface NormalProtectedPostScope{projectId:string;connectorId:string;executionId:string;executionGeneration:number;grantRef:Ref;credentialGeneration:number}
-export interface NormalProtectedPostOptions{origin:string;ca:string;credential:string;credentialExpiresAt:string;scope:NormalProtectedPostScope}
-export interface NormalProtectedPostPorts{signer:NormalProtectedSigner;request?:NormalHttpsRequestDriver;now?:()=>number;monotonicNow?:()=>number;
+export interface NormalProtectedPostOptions{origin:string;ca?:string;credential?:string;credentialExpiresAt:string;scope:NormalProtectedPostScope}
+export interface NormalProtectedPostPorts{signer?:NormalProtectedSigner;protectedCredential?:NormalOwnedCredentialPort;request?:NormalHttpsRequestDriver;now?:()=>number;monotonicNow?:()=>number;
  setTimeout?:typeof setTimeout;clearTimeout?:typeof clearTimeout}
 export interface PreparedNormalPost {kind:'PERMIT'|'OBSERVATIONS';path:string;auth:string;challengeRef:Ref;requestId:string;expiresAt:string}
 export interface NormalPermitResult {transport:'NORMAL_PROTECTED';proofResultRef:Ref;permit:{ref:Ref;commandId:string;envelopeHash:string;issuedAt:string;expiresAt:string};cacheControl:'no-store';nonceConsumed:true;executionAuthorized:true;dispatchPerformed:false}
@@ -53,16 +54,20 @@ export class NormalProtectedPostClient{
  readonly executionAuthorized=false;readonly dispatchPerformed=false;
  #packets=new WeakMap<object,{body:string;command:string|null;envelopeHash:string|null}>();
  #origin:string;#ca:string;#credential:string;#credentialExpiry:number;#scope:NormalProtectedPostScope;#base:string;
+ #owned:NormalOwnedCredentialPort|undefined;
  #signer:NormalProtectedSigner;#request:NormalHttpsRequestDriver;#now:()=>number;#monotonic:()=>number;#set:typeof setTimeout;#clear:typeof clearTimeout;
  constructor(options:NormalProtectedPostOptions,ports:NormalProtectedPostPorts){
   this.#origin=readOrigin(options?.origin);this.#scope=readScope(options?.scope);
-  if(typeof options.ca!=='string'||!options.ca||Buffer.byteLength(options.ca)>65536||typeof options.credential!=='string'||
+  this.#owned=ports?.protectedCredential;
+  if(this.#owned!==undefined){if(!(this.#owned instanceof NormalOwnedCredentialPort)||options.credential!==undefined||ports.signer!==undefined||ports.request!==undefined||
+    !this.#owned.matches(this.#origin,this.#scope,options.credentialExpiresAt,options.ca))fail('NORMAL_POST_CONFIG_INVALID');}
+  else if(typeof options.ca!=='string'||!options.ca||Buffer.byteLength(options.ca)>65536||typeof options.credential!=='string'||
     !/^av3ex1_[A-Za-z0-9_-]{43}$/.test(options.credential)||!base64(options.credential.slice(7),32)||!isoV1(options.credentialExpiresAt))fail('NORMAL_POST_CONFIG_INVALID');
-  this.#ca=options.ca;this.#credential=options.credential;this.#credentialExpiry=Date.parse(options.credentialExpiresAt);
+  this.#ca=options.ca??'';this.#credential=options.credential??'';this.#credentialExpiry=Date.parse(options.credentialExpiresAt);
   this.#base='/api/v1/connectors/'+this.#scope.connectorId+'/executions/'+this.#scope.executionId;
   this.#signer=ports?.signer as NormalProtectedSigner;this.#request=ports?.request??httpsRequest;this.#now=ports?.now??Date.now;
   this.#monotonic=ports?.monotonicNow??(()=>performance.now());this.#set=ports?.setTimeout??setTimeout;this.#clear=ports?.clearTimeout??clearTimeout;
-  if(typeof this.#signer?.sign!=='function'||[this.#request,this.#now,this.#monotonic,this.#set,this.#clear].some(f=>typeof f!=='function'))fail('NORMAL_POST_CONFIG_INVALID');
+  if((!this.#owned&&typeof this.#signer?.sign!=='function')||[this.#request,this.#now,this.#monotonic,this.#set,this.#clear].some(f=>typeof f!=='function'))fail('NORMAL_POST_CONFIG_INVALID');
  }
  #clock(){const n=this.#now();if(!Number.isSafeInteger(n)||!Number.isFinite(new Date(n).getTime()))return fail('NORMAL_POST_CLOCK_INVALID');return n;}
  #live(){if(this.#clock()>=this.#credentialExpiry)fail('NORMAL_POST_CREDENTIAL_EXPIRED');}
@@ -86,6 +91,7 @@ export class NormalProtectedPostClient{
  /** challenge 발급 → proof 서명. 서버 challenge 기한(최대 30초)과 credential 기한 중 이른 시각까지만 packet을 쓸 수 있다. */
  async #prepare(path:string,bodyRaw:string,signal:AbortSignal){
   if(!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_POST_CANCELLED');this.#live();
+  if(this.#owned)return this.#owned.prepare({method:'POST',path,query:'',body:bodyRaw,expiresAt:new Date(this.#credentialExpiry).toISOString()},signal);
   let target:ReturnType<typeof executionTarget>;try{target=executionTarget('POST',path,[],bodyRaw);}catch{return fail('NORMAL_POST_INPUT_INVALID');}
   const s=this.#scope,request={requestId:randomUUID(),purpose:'EXECUTION_REQUEST',grantRef:cloneV1(s.grantRef),credentialGeneration:s.credentialGeneration,
    target,clientNonce:randomBytes(32).toString('base64url'),issuedAt:new Date(this.#clock()).toISOString()};
@@ -163,6 +169,8 @@ export class NormalProtectedPostClient{
  }
  /** HTTPS 한 번. 리다이렉트·200 외 상태·JSON 아닌 응답·압축·상한 초과를 거절한다. 요청을 보낸 뒤의 연결 실패는 결과 불명이다. */
  #send(method:'GET'|'POST',path:string,query:string,bodyRaw:string|null,extra:string[],limit:number,expires:number,signal:AbortSignal,stage:'CHALLENGE'|'POST'):Promise<unknown>{
+  if(this.#owned){const at=extra.indexOf('Anvil-Execution-Auth');return this.#owned.request({method,path,query,body:bodyRaw,auth:at<0?null:extra[at+1]!,expiresAt:new Date(expires).toISOString()},signal)
+   .catch(()=>fail('NORMAL_POST_OUTCOME_UNKNOWN',0,true));}
   const started=this.#tick(),startedWall=this.#clock(),budget=Math.min(20000,expires-startedWall);
   if(budget<=0)return Promise.reject(new NormalProtectedPostError('NORMAL_POST_PACKET_EXPIRED'));
   return new Promise<unknown>((resolve,reject)=>{
