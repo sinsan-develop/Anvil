@@ -29,6 +29,7 @@ import {assertSourceDetachApprovalTarget} from './source-detach-approval-target.
 import type {ProjectDocuments} from '../documents/project-documents.ts';
 import {DesignActivationApprovalCandidates} from './design-activation-approval-candidate.ts';
 import { WorkPlanApprovalCandidates } from './work-plan-approval-candidate.ts';
+import {assertExecutionGrantRead,assertReadAccess,humanRead,type ExecutionGrantRead,type ReadAccess} from '../context/read-access.ts';
 export const consumableOperations = ['saveProjectMembership','prepareNativeBoundary','establishProjectWriterBoundary','revokeProjectWriterAuthority',...environmentWriteOperations.filter(op=>op!=='saveEnvironment'),'saveBackupPolicy','reviewUnderstanding','prepareExecution','defineProjectRole','bindResponsibleSession','applyLimitPolicy','revokeLimitPolicy','startStage', 'buildTaskContext', 'saveBaselineDraft','reviewBaselineContent','confirmBaseline', 'exportProject', 'uploadArtifact', 'detachDocumentSource', 'linkDocumentSource', 'proposeDocumentSourceChange', 'saveWorkPlanDraft', 'activateDesignChange', ...candidateOperations, ...trustRegistrationOperations, 'saveBackupReference', 'revokeBackupReference', 'manageBackupResource'];
 export class ProjectApprovals{
  #documents?:ProjectDocuments;readonly #registeredQuota?:ProjectStorageQuota;constructor(documents?:ProjectDocuments,registeredAccess?:AccessRepository){this.#documents=documents;this.#registeredQuota=registeredAccess?new ProjectStorageQuota(registeredAccess):undefined;}
@@ -217,6 +218,11 @@ export class ProjectApprovals{
  async readContextConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
   const {row,...history}=await this.#history(db,actor,pid,id,['buildTaskContext']);return history;
  }
+ /** 실행 grant 결박 맥락 묶음 재조립(D2) 전용. buildTaskContext 승인 소비만 회원 조회 없이 같은 검산으로 읽는다. */
+ async readContextConsumptionForGrant(db:PoolClient,grant:ExecutionGrantRead,pid:string,id:string){
+  assertExecutionGrantRead(grant,pid);
+  const {row,...history}=await this.#historyFor(db,grant,pid,id,['buildTaskContext']);return history;
+ }
  /** 준비의 보관 소비 이력만 읽는다. 일반 승인 발급/authorize/consume allowlist는 넓히지 않는다. */
  async readOwnershipPreparationConsumption(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){
   try{
@@ -232,10 +238,18 @@ export class ProjectApprovals{
   }catch{throw new AuthFailure('OWNERSHIP_APPROVAL_HISTORY_UNAVAILABLE',412);}
  }
  async #history(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,allowedOperations:readonly string[],backupPolicyHistory=false){
-  await projectMember(db,actor,pid);const row=(await db.query('SELECT r.*,c.operation,c.actor_id,c.client_id command_client,c.result_ref FROM anvil.approval_requests r JOIN anvil.commands c ON c.id=r.command_id AND c.project_id=r.project_id WHERE r.project_id=$1 AND r.id=$2',[pid,id])).rows[0];if(!row)throw new AuthFailure('NOT_FOUND',404);
+  return this.#historyFor(db,humanRead(actor),pid,id,allowedOperations,backupPolicyHistory);
+ }
+ async #historyFor(db:PoolClient,access:ReadAccess,pid:string,id:string,allowedOperations:readonly string[],backupPolicyHistory=false){
+  // grant 읽기는 buildTaskContext 이력만 허용한다. actor 의존 분기(originReuse·후보·회원 후보)는 아래에서 그 전에 닫는다.
+  const grant=access.kind!=='HUMAN';
+  if(grant&&(allowedOperations.length!==1||allowedOperations[0]!=='buildTaskContext'||backupPolicyHistory))throw new AuthFailure('EXECUTION_GRANT_READ_DENIED',403);
+  const actor=(access.kind==='HUMAN'?access.actor:undefined) as AuthenticatedIdentity;
+  await assertReadAccess(db,access,pid);const row=(await db.query('SELECT r.*,c.operation,c.actor_id,c.client_id command_client,c.result_ref FROM anvil.approval_requests r JOIN anvil.commands c ON c.id=r.command_id AND c.project_id=r.project_id WHERE r.project_id=$1 AND r.id=$2',[pid,id])).rows[0];if(!row)throw new AuthFailure('NOT_FOUND',404);
   const request=row.request_json;if(!request||typeof request!=='object')throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
   const{id:requestId,version,status,createdAt,...snapshot}=request,ref=row.result_ref?.data?.ref;
   if(requestId!==id||version!==1||status!=='PENDING'||createdAt!==row.created_at.toISOString()||snapshot.projectId!==pid||snapshot.requestedBy?.kind!=='HUMAN'||snapshot.requestedBy.userId!==row.created_by||snapshot.requestedBy.clientId!==row.client_id||row.actor_id!==row.created_by||row.command_client!==row.client_id||!isVersionRef(ref)||ref.id!==id||ref.version!==1||ref.contentHash!==row.content_hash||contentHash(canonicalJson(snapshot))!==row.content_hash||row.operation!=='requestApproval'||row.result_ref.status!=='APPLIED'||row.result_ref.data.status!=='APPROVAL_REQUESTED'||canonicalJson(row.result_ref.data.request)!==canonicalJson(request)||canonicalJson(snapshot.policyRef)!==canonicalJson(row.policy_ref)||canonicalJson(snapshot.details)!==canonicalJson(row.details_json)||snapshot.details?.candidateCommandId!==row.candidate_command_id||canonicalJson(snapshot.details?.actionScope)!==canonicalJson(row.action_scope_json)||snapshot.scopeDigest!==row.scope_digest||contentHash(canonicalJson(row.action_scope_json))!==row.scope_digest||canonicalJson(snapshot.requiredDecider)!==canonicalJson(row.required_decider_ref)||row.expires_at.toISOString()!==snapshot.details?.expiresAt)throw new AuthFailure('APPROVAL_INTEGRITY_FAILED',503);
+  if(grant&&(snapshot.details?.actionScope?.operation!=='buildTaskContext'||snapshot.candidateKind!==undefined||Object.hasOwn(snapshot,'membershipCandidate')||Object.hasOwn(snapshot,'originReuseEvidence')))throw new AuthFailure('EXECUTION_GRANT_READ_DENIED',403);
   const originReuse=snapshot.details?.actionScope?.operation==='queueExecutionCommand';
   if(originReuse){
    if(actor.actorId!==row.created_by||actor.clientId!==row.client_id)throw new AuthFailure('NOT_FOUND',404);

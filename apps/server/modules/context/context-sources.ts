@@ -12,11 +12,12 @@ import { currentConstitutionRecord } from '../knowledge/constitution-records.ts'
 import { constitutionEligibility } from '../knowledge/knowledge-state.ts';
 import { readContextPreparationInput, type ContextSourceSelection, type ContextSlotCode } from './context-input.ts';
 import { planContextText } from './context-text-plan.ts';
+import { assertExecutionGrantRead, grantCore, humanRead, type ExecutionGrantRead, type ReadAccess } from './read-access.ts';
 
 interface ContextSourceReaders {
- confirmations: Pick<ProjectAssignmentConfirmations, 'read'>; drafts: Pick<ProjectAssignmentDrafts, 'current'>;
- documents: Pick<ProjectDocuments, 'version' | 'originalText'>; knowledge: Pick<ProjectKnowledge, 'read'>;
- conversations: Pick<ProjectConversations, 'readMessage'>; constitution?: typeof currentConstitutionRecord;
+ confirmations: Pick<ProjectAssignmentConfirmations, 'read'> & Partial<Pick<ProjectAssignmentConfirmations, 'readCore'>>; drafts: Pick<ProjectAssignmentDrafts, 'current'> & Partial<Pick<ProjectAssignmentDrafts, 'currentCore'>>;
+ documents: Pick<ProjectDocuments, 'version' | 'originalText'> & Partial<Pick<ProjectDocuments, 'versionCore'>>; knowledge: Pick<ProjectKnowledge, 'read'> & Partial<Pick<ProjectKnowledge, 'readCore'>>;
+ conversations: Pick<ProjectConversations, 'readMessage'> & Partial<Pick<ProjectConversations, 'readMessageCore'>>; constitution?: typeof currentConstitutionRecord;
 }
 const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
 const selectedRef = (selection: ContextSourceSelection) => selection.kind === 'USER_INSTRUCTION' ? selection.messageRef : selection.versionRef;
@@ -28,9 +29,21 @@ export class ProjectContextSources {
  async resolve(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, value: unknown) {
   const input = readContextPreparationInput(value);
   await projectMember(db, actor, projectId, true);
-  const assignment = await this.readers.confirmations.read(db, actor, projectId, input.assignmentRef.id, input.assignmentRef.version);
+  return this.#resolveCore(db, humanRead(actor), projectId, input);
+ }
+ /**
+  * 실행 grant 결박 재조립(D2). 회원 확인·회원/프로젝트 행 잠금 없이 resolve와 같은 core를 쓴다.
+  * 호출자는 같은 READ ONLY snapshot에서 grant 현재성을 이미 검산했어야 한다.
+  */
+ async resolveRegistered(db: PoolClient, grant: ExecutionGrantRead, projectId: string, value: unknown) {
+  const input = readContextPreparationInput(value);
+  assertExecutionGrantRead(grant, projectId);
+  return this.#resolveCore(db, grant, projectId, input);
+ }
+ async #resolveCore(db: PoolClient, access: ReadAccess, projectId: string, input: ReturnType<typeof readContextPreparationInput>) {
+  const assignment = await (access.kind === 'HUMAN' ? this.readers.confirmations.read(db, access.actor, projectId, input.assignmentRef.id, input.assignmentRef.version) : grantCore(this.readers.confirmations, 'readCore')(db, access, projectId, input.assignmentRef.id, input.assignmentRef.version));
   if (assignment.projectId !== projectId || !same(assignment.ref, input.assignmentRef) || assignment.snapshot.contentConfirmed !== true) throw new AuthFailure('CONTEXT_ASSIGNMENT_INVALID', 409);
-  await this.readers.drafts.current(db, actor, projectId, assignment.snapshot.draftRef);
+  await (access.kind === 'HUMAN' ? this.readers.drafts.current(db, access.actor, projectId, assignment.snapshot.draftRef) : grantCore(this.readers.drafts, 'currentCore')(db, access, projectId, assignment.snapshot.draftRef));
   if (!same(input.budgetRef, assignment.snapshot.definition.budgetRef)) throw new AuthFailure('CONTEXT_BUDGET_MISMATCH', 409);
   const constitution = await (this.readers.constitution ?? currentConstitutionRecord)(db, projectId);
   const originals: any[] = [], bindings: { itemId: string; selection: ContextSourceSelection | null; bodyRef: unknown; sourceState: string }[] = [];
@@ -56,7 +69,7 @@ export class ProjectContextSources {
     let state = 'AVAILABLE', sourceState = 'CURRENT_READ', body: string | null = null, bodyRef: any = null;
     try {
      if (selection.kind === 'KNOWLEDGE_VERSION') {
-      const source = await this.readers.knowledge.read(db, actor, projectId, selection.versionRef.id, selection.versionRef.version);
+      const source = await (access.kind === 'HUMAN' ? this.readers.knowledge.read(db, access.actor, projectId, selection.versionRef.id, selection.versionRef.version) : grantCore(this.readers.knowledge, 'readCore')(db, access, projectId, selection.versionRef.id, selection.versionRef.version));
       if (!same(source.ref, selection.versionRef) || source.entry.scope.projectId !== projectId || source.entry.kind !== metadata.kind) throw new AuthFailure('CONTEXT_SOURCE_MISMATCH', 409);
       sourceState = source.state;
       if (['EXCLUDED', 'SUPERSEDED'].includes(source.state)) state = 'EXCLUDED';
@@ -64,7 +77,7 @@ export class ProjectContextSources {
       else if (slot.code === 'RULES_SCOPE' && !constitutionEligibility(source).usable) state = 'MISSING';
       else { body = source.body; bodyRef = source.entry.contentRef; }
      } else if (selection.kind === 'DOCUMENT_VERSION') {
-      const source = await this.readers.documents.version(db, actor, projectId, selection.versionRef.id, selection.versionRef.version);
+      const source = await (access.kind === 'HUMAN' ? this.readers.documents.version(db, access.actor, projectId, selection.versionRef.id, selection.versionRef.version) : grantCore(this.readers.documents, 'versionCore')(db, access, projectId, selection.versionRef.id, selection.versionRef.version));
       if (!same({ id: source.id, version: source.version, contentHash: source.contentHash }, selection.versionRef)) throw new AuthFailure('CONTEXT_SOURCE_MISMATCH', 409);
       const latestReview = source.contentReviews.find(review => review.sourceKind === 'HUMAN_REVIEW' && review.ref.criteriaVersion === 1);
       const usable = source.confirmed && latestReview?.ref.outcome === 'ACCEPTED' && same(latestReview.ref.targetRef, selection.versionRef);
@@ -74,7 +87,7 @@ export class ProjectContextSources {
       if (metadata.kind !== 'USER_INSTRUCTION' || metadata.conversation_id !== selection.conversationId) throw new AuthFailure('CONTEXT_SOURCE_KIND_INVALID', 422);
       if (metadata.superseded) { state = 'EXCLUDED'; sourceState = 'SUPERSEDED_INSTRUCTION'; }
       else {
-       const source = await this.readers.conversations.readMessage(db, actor, projectId, selection.conversationId, selection.messageRef.id);
+       const source = await (access.kind === 'HUMAN' ? this.readers.conversations.readMessage(db, access.actor, projectId, selection.conversationId, selection.messageRef.id) : grantCore(this.readers.conversations, 'readMessageCore')(db, access, projectId, selection.conversationId, selection.messageRef.id));
        if (!same(source.sourceRef, selection.messageRef) || source.conversationId !== selection.conversationId || source.message.kind !== 'USER_INSTRUCTION' || source.authorRef.kind !== 'HUMAN') throw new AuthFailure('CONTEXT_SOURCE_MISMATCH', 409);
        body = source.body; bodyRef = source.message.bodyRef; sourceState = 'STORED_NOT_EFFECTIVENESS_APPROVED';
       }

@@ -12,6 +12,7 @@ import { uuid, exact } from '../knowledge/knowledge-entry.ts';
 import { readContextPreparationInput } from './context-input.ts';
 import { buildContextManifest } from './context-manifest.ts';
 import type { ProjectContextSources } from './context-sources.ts';
+import { assertExecutionGrantRead, assertReadAccess, grantCore, humanRead, type ExecutionGrantRead, type ReadAccess } from './read-access.ts';
 
 const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
 type Manifest = ReturnType<typeof buildContextManifest>['manifest'];
@@ -19,14 +20,17 @@ const select = "SELECT b.*,c.operation,c.state,c.expected_version,c.actor_id com
 
 /** 기존 ProjectPolicyRepository.command transaction에서만 저장한다. 전달·실행 허가는 생성하지 않는다. */
 export class ProjectContexts {
- readonly sources: Pick<ProjectContextSources, 'resolve'>;
+ readonly sources: Pick<ProjectContextSources, 'resolve'> & Partial<Pick<ProjectContextSources, 'resolveRegistered'>>;
  readonly assignments: Pick<ProjectAssignmentConfirmations, 'read'>;
  readonly #readContextApproval:ProjectApprovals['readContextConsumption']|null;
- constructor(sources: Pick<ProjectContextSources, 'resolve'>, assignments: Pick<ProjectAssignmentConfirmations, 'read'>) {
+ readonly #readContextApprovalForGrant:ProjectApprovals['readContextConsumptionForGrant']|null;
+ constructor(sources: Pick<ProjectContextSources, 'resolve'> & Partial<Pick<ProjectContextSources, 'resolveRegistered'>>, assignments: Pick<ProjectAssignmentConfirmations, 'read'>) {
   this.sources=sources;this.assignments=assignments;
   // 순환 import 초기화 뒤 인스턴스를 만들 때 기존 승인 소비 함수만 결박한다.
   const reader=Object.getOwnPropertyDescriptor(ProjectApprovals.prototype,'readContextConsumption');
   this.#readContextApproval=reader&&'value'in reader&&typeof reader.value==='function'?reader.value:null;
+  const grantReader=Object.getOwnPropertyDescriptor(ProjectApprovals.prototype,'readContextConsumptionForGrant');
+  this.#readContextApprovalForGrant=grantReader&&'value'in grantReader&&typeof grantReader.value==='function'?grantReader.value:null;
  }
  async save(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
   if (request.operation !== 'buildTaskContext' || request.targetId !== null || request.expectedVersion !== 0) throw new AuthFailure('VERSION_CONFLICT', 409);
@@ -41,13 +45,16 @@ export class ProjectContexts {
   for (const item of manifest.items) await db.query('INSERT INTO anvil.context_items(project_id,bundle_id,bundle_version,item_id,category,required,source_ref,source_hash,included_state,reason,delivery_parts,issue) VALUES($1,$2,1,$3,$4,true,$5,$6,$7,$8,$9,$10)', [request.projectId, id, item.itemId, item.category, JSON.stringify(item.sourceRef), item.sourceHash, item.includedState, item.reason, JSON.stringify(item.deliveryParts), item.issue]);
   return receipt.result;
  }
- async #stored(db:PoolClient,actor:AuthenticatedIdentity,row: any) {
+ async #stored(db:PoolClient,access:ReadAccess,row: any) {
   try {
    const manifest = row.manifest_json as Manifest, ref = { id: row.id, version: Number(row.version), contentHash: row.content_hash };
    let approvalRef=null;
    if(row.approval_consumption_id!==null){
-    if(!this.#readContextApproval)throw Error();
-    const a=readApprovalRef(row.audit_approval_ref),v=await this.#readContextApproval.call(new ProjectApprovals(),db,actor,row.project_id,a.requestId),used=v.consumption;
+    const a=readApprovalRef(row.audit_approval_ref);
+    let v:Awaited<ReturnType<ProjectApprovals['readContextConsumption']>>;
+    if(access.kind==='HUMAN'){if(!this.#readContextApproval)throw Error();v=await this.#readContextApproval.call(new ProjectApprovals(),db,access.actor,row.project_id,a.requestId);}
+    else{if(!this.#readContextApprovalForGrant)throw Error();v=await this.#readContextApprovalForGrant.call(new ProjectApprovals(),db,access,row.project_id,a.requestId);}
+    const used=v.consumption;
     if(!used||v.storedStatus!=='CONSUMED'||v.currentVersion!==3||v.decision?.decision!=='APPROVE'||v.decision.id!==a.decisionId||v.request.scopeDigest!==a.scopeDigest||used.id!==row.approval_consumption_id||used.serverCommandId!==row.command_id||used.commandId!==row.command_external_id||used.requestHash!==row.request_hash||!same(used.policyRef,row.policy_ref)||row.authorization_approval_decision!==a.decisionId||!same(row.payload_ref,{kind:'ONE_TIME_APPROVAL_SCOPE',payloadHash:contentHash(canonicalJson(row.request_payload)),scopeDigest:a.scopeDigest}))throw Error();
     approvalRef=a;
     assertApprovalCandidate(v.request.details,{schemaVersion:1,projectId:row.project_id,commandId:row.command_external_id,clientId:row.command_client,controlGeneration:Number(row.control_generation),operation:'buildTaskContext',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef,payload:row.request_payload},row.command_actor,row.project_id);
@@ -67,19 +74,19 @@ export class ProjectContexts {
    return { manifest: structuredClone(manifest), ref };
   } catch { throw new AuthFailure('CONTEXT_INTEGRITY_FAILED', 503); }
  }
- async #load(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number) {
-  await projectMember(db, actor, projectId);
+ async #load(db: PoolClient, access: ReadAccess, projectId: string, id: string, version: number) {
+  await assertReadAccess(db, access, projectId);
   if (!uuid(id) || version !== 1) throw new AuthFailure('INPUT_INVALID', 400);
   const rows = (await db.query(select + 'WHERE b.project_id=$1 AND b.id=$2 AND b.version=$3', [projectId, id, version])).rows;
   if (!rows.length) throw new AuthFailure('NOT_FOUND', 404);
   if (rows.length !== 1) throw new AuthFailure('CONTEXT_INTEGRITY_FAILED', 503);
-  const stored = await this.#stored(db,actor,rows[0]);
+  const stored = await this.#stored(db,access,rows[0]);
   const items = (await db.query('SELECT item_id,category,required,source_ref,source_hash,included_state,reason,delivery_parts,issue FROM anvil.context_items WHERE project_id=$1 AND bundle_id=$2 AND bundle_version=$3 ORDER BY item_id', [projectId, id, version])).rows;
   if (items.length !== stored.manifest.items.length || new Set(items.map(item => item.item_id)).size !== items.length || items.some(item => !stored.manifest.items.some(expected => same(expected, { itemId: item.item_id, category: item.category, required: item.required, sourceRef: item.source_ref, sourceHash: item.source_hash, includedState: item.included_state, reason: item.reason, deliveryParts: item.delivery_parts, issue: item.issue })))) throw new AuthFailure('CONTEXT_INTEGRITY_FAILED', 503);
   return stored;
  }
  async read(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number) {
-  const stored=await this.#load(db,actor,projectId,id,version);
+  const stored=await this.#load(db,humanRead(actor),projectId,id,version);
   let currentCheck: { state: 'MATCHED_METADATA' | 'CHANGED' | 'UNAVAILABLE'; issues: string[] };
   try {
    const current = await this.sources.resolve(db, actor, projectId, stored.manifest.preparationInput), currentManifest = buildContextManifest(id, projectId, current);
@@ -92,10 +99,21 @@ export class ProjectContexts {
  }
  /** START 내부 source 전용. 공개 read DTO는 그대로 두며 같은 재구성의 metadata/text만 돌려준다. */
  async readStartSource(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,ref:VersionRef) {
+  return this.#startSource(db,humanRead(actor),projectId,ref);
+ }
+ /**
+  * 실행 grant 결박 재조립(D2). START 사용자 actor를 흉내 내지 않고 회원·프로젝트 행 잠금 없이 readStartSource와 같은 core를 쓴다.
+  * 재구성 manifest가 저장 manifest와 정확히 같아야 하며 비INCLUDED 항목은 거절한다.
+  */
+ async readRegisteredStartSource(db:PoolClient,grant:ExecutionGrantRead,projectId:string,ref:VersionRef) {
+  assertExecutionGrantRead(grant,projectId);
+  return this.#startSource(db,grant,projectId,ref);
+ }
+ async #startSource(db:PoolClient,access:ReadAccess,projectId:string,ref:VersionRef) {
   if(!isVersionRef(ref)||ref.version!==1)throw new AuthFailure('INPUT_INVALID',400);
-  const query=db.query,stored=await this.#load(db,actor,projectId,ref.id,ref.version);
+  const query=db.query,stored=await this.#load(db,access,projectId,ref.id,ref.version);
   if(db.query!==query||!same(stored.ref,ref))throw new AuthFailure('CONTEXT_INTEGRITY_FAILED',503);
-  const prepared=await this.sources.resolve(db,actor,projectId,stored.manifest.preparationInput),rebuilt=buildContextManifest(ref.id,projectId,prepared);
+  const prepared=await (access.kind==='HUMAN'?this.sources.resolve(db,access.actor,projectId,stored.manifest.preparationInput):grantCore(this.sources,'resolveRegistered')(db,access,projectId,stored.manifest.preparationInput)),rebuilt=buildContextManifest(ref.id,projectId,prepared);
   if(db.query!==query||!same(rebuilt.ref,ref)||!same(rebuilt.manifest,stored.manifest))throw new AuthFailure('CONTEXT_SOURCE_MISMATCH',409);
   if(stored.manifest.missingRequired.length||stored.manifest.excluded.length||stored.manifest.items.some(i=>i.includedState!=='INCLUDED'||i.issue!==null))throw new AuthFailure('CONTEXT_SOURCE_UNAVAILABLE',412);
   return {projectId,ref:structuredClone(ref),manifest:stored.manifest,prepared};

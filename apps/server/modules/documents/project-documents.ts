@@ -1,6 +1,7 @@
 import {documentSourceSnapshot,readDocumentSourceRefs,type SourceRef} from './document-source-refs.ts';
 import {ProjectConversations} from '../knowledge/conversations.ts';
 import {assertKnowledgeTextSafe} from '../knowledge/knowledge-entry.ts';
+import {assertExecutionGrantRead,assertReadAccess,humanRead,type ReadAccess} from '../context/read-access.ts';
 import {ProjectDocumentSourceLinks} from './project-source-links.ts';
 import {DocumentSourceLinkRecords} from './document-source-link-records.ts';
 import {ProjectStorageQuota,type StartedQuotaBundle} from '../projects/project-storage-quota.ts';
@@ -75,7 +76,7 @@ export class ProjectDocuments {
       if(!fixed.targetId)throw new AuthFailure('PROPOSAL_INPUT_INVALID',422);
       const base=await this.version(db,actor,fixed.projectId,fixed.targetId,fixed.expectedVersion);
       plan=await prepareDocumentProposal(db,actor,fixed,base,(client,pid,ref)=>this.#artifact(client,pid,ref),{artifactId:existing?.[0]?.id??randomUUID(),proposalId:randomUUID()});
-      await this.#verifySources(db,actor,fixed.projectId,plan.content.sourceRefs,{remaining:200,active:new Set()});
+      await this.#verifySources(db,humanRead(actor),fixed.projectId,plan.content.sourceRefs,{remaining:200,active:new Set()});
       this.#proposalPlans.add(plan);return [{key:'diff',kind:'ARTIFACT',id:plan.proposal.diffRef.artifactId,bytes:String(plan.diff.length),contentHash:contentHash(plan.diff),reservedBytes:String(plan.diff.length*2),settledBytes:String(plan.diff.length)}];
     });
     if(prepared.replay){
@@ -101,14 +102,14 @@ export class ProjectDocuments {
     if(!writing||!this.#proposalPlans.has(writing.plan))throw new AuthFailure('PROJECT_STORAGE_QUOTA_UNVERIFIED',412);
     const base = await this.version(db, actor, request.projectId, request.targetId, request.expectedVersion),old=writing.plan;
     const plan=await prepareDocumentProposal(db,actor,request,base,(client,pid,ref)=>this.#artifact(client,pid,ref),{artifactId:old.proposal.diffRef.artifactId,proposalId:old.proposal.id});
-    await this.#verifySources(db,actor,request.projectId,plan.content.sourceRefs,{remaining:200,active:new Set()});
+    await this.#verifySources(db,humanRead(actor),request.projectId,plan.content.sourceRefs,{remaining:200,active:new Set()});
     if(!plan.diff.equals(old.diff)||canonicalJson({proposal:plan.proposal,content:plan.content,reason:plan.reason})!==canonicalJson({proposal:old.proposal,content:old.content,reason:old.reason}))throw new AuthFailure('VERSION_CONFLICT',409);
     const key=await writing.quota.publishArtifact(db,actor,request,writing.started,plan.diff),receipt=await storeDocumentProposal(db,actor,request,policyRef,plan,key);
     await writing.quota.settleArtifact(db,actor,request,writing.started,{serverCommandId:receipt.id,authorizationReceiptId:receipt.authorizationReceiptRef.id,scopeDigest:receipt.authorizationReceiptRef.contentHash});
     return receipt.result;
   }  async proposal(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string) {
     const proposal=await readDocumentProposal(db, actor, projectId, id, (client, pid, ref) => this.#artifact(client, pid, ref));
-    await this.#verifySources(db,actor,projectId,proposal.proposedContent.sourceRefs,{remaining:200,active:new Set()});
+    await this.#verifySources(db,humanRead(actor),projectId,proposal.proposedContent.sourceRefs,{remaining:200,active:new Set()});
     return proposal;
   }
   async confirm(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, policyRef: VersionRef) {
@@ -220,7 +221,7 @@ export class ProjectDocuments {
       if (Number(existing.head_version) !== request.expectedVersion) throw new AuthFailure('VERSION_CONFLICT', 409);
       version = request.expectedVersion + 1; if (!Number.isSafeInteger(version)) throw new AuthFailure('VERSION_CONFLICT', 409);
     }
-    await this.#verifySources(db,actor,request.projectId,sourceRefs,{remaining:200,active:new Set()});
+    await this.#verifySources(db,humanRead(actor),request.projectId,sourceRefs,{remaining:200,active:new Set()});
     const authorRef = { kind: 'HUMAN', userId: actor.actorId }, ref = { id, version, contentHash: contentHash(canonicalJson({ title: p.title, formRef: p.formRef, stageNodeRef, content })) };
     const receipt = await persistProjectReceipt(db, actor, request, ref, { status: 'DRAFT', validation, stageNodeRef, stageBinding, importCandidateRef: p.importCandidateRef, proposalRef: p.proposalRef ?? null }, policyRef, 'EXPLICIT_DOCUMENT_DRAFT');
     if (request.targetId === null) await db.query('INSERT INTO anvil.documents(id,project_id,title,head_version,created_by) VALUES($1,$2,$3,1,$4)', [id, request.projectId, p.title, actor.actorId]);
@@ -233,11 +234,17 @@ export class ProjectDocuments {
     return receipt.result;
   }
   async version(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number, backupBudget?: ArtifactBackupReadBudget) {
-    return this.#version(db,actor,projectId,id,version,{remaining:200,active:new Set()},backupBudget);
+    return this.#version(db,humanRead(actor),projectId,id,version,{remaining:200,active:new Set()},backupBudget);
   }
-  async #version(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,id:string,version:number,walk:DocumentSourceWalk,backupBudget?:ArtifactBackupReadBudget){
+  /** 접근 판별자 core(D2). HUMAN은 기존 version을 그대로 거치고, grant는 회원 조회 없이 같은 검산·출처 검증을 한다. */
+  async versionCore(db:PoolClient,access:ReadAccess,projectId:string,id:string,version:number){
+    if(access.kind==='HUMAN')return this.version(db,access.actor,projectId,id,version);
+    assertExecutionGrantRead(access,projectId);
+    return this.#version(db,access,projectId,id,version,{remaining:200,active:new Set()});
+  }
+  async #version(db:PoolClient,access:ReadAccess,projectId:string,id:string,version:number,walk:DocumentSourceWalk,backupBudget?:ArtifactBackupReadBudget){
     if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
-    await projectMember(db, actor, projectId);
+    await assertReadAccess(db, access, projectId);
     if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     const row = (await db.query('SELECT v.*,d.confirmed_version FROM anvil.document_versions v JOIN anvil.documents d ON d.id=v.document_id AND d.project_id=v.project_id WHERE v.project_id=$1 AND v.document_id=$2 AND v.version=$3', [projectId, id, version])).rows[0];
     if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
@@ -271,17 +278,17 @@ export class ProjectDocuments {
     if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     const result = { id, version, title: row.title, formRef, stageNodeRef: row.stage_ref_json, stageBinding, content, contentHash: row.content_hash, sourceRefs: row.source_refs_json, authorRef: row.author_ref_json, createdAt: row.created_at.toISOString(), confirmed: Number(row.confirmed_version) === version, validation: { ...row.validation_json, ...validateDocumentConfirmation(body, content.sections, form.definition_json) }, statusHistory: events.map(event => ({ kind: event.event_kind, actorRef: event.actor_ref, reason: event.reason, at: event.created_at.toISOString() })), contentReviewCriteria: documentReviewCriteria(formRef, form.definition_json), contentReviews: reviews, reviewRefs: reviews.map(review => review.ref), proposalRefs: proposals, sourceLinks: [], importCandidateRefs: imports };
     if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
-    await this.#verifySources(db,actor,projectId,sourceRefs,walk,backupBudget);
+    await this.#verifySources(db,access,projectId,sourceRefs,walk,backupBudget);
     if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
     return result;
     }finally{walk.active.delete(key);}
   }
-  async #verifySources(db:PoolClient,actor:AuthenticatedIdentity,pid:string,refs:SourceRef[],walk:DocumentSourceWalk,backupBudget?:ArtifactBackupReadBudget){
+  async #verifySources(db:PoolClient,access:ReadAccess,pid:string,refs:SourceRef[],walk:DocumentSourceWalk,backupBudget?:ArtifactBackupReadBudget){
     for(const ref of refs){
       if(--walk.remaining<0)throw new AuthFailure('DOCUMENT_SOURCE_BUDGET_EXCEEDED',422);
       if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
       if(ref.kind==='DOCUMENT_VERSION'){
-        const source=await this.#version(db,actor,pid,ref.id,ref.version,walk,backupBudget);
+        const source=await this.#version(db,access,pid,ref.id,ref.version,walk,backupBudget);
         if(source.contentHash!==ref.contentHash)throw new AuthFailure('DOCUMENT_SOURCE_MISMATCH',409);
         assertKnowledgeTextSafe(await this.#sourceText(db,pid,source.content.body,backupBudget));
       }else if(ref.kind==='ARTIFACT'){
@@ -300,7 +307,13 @@ export class ProjectDocuments {
         const reader=new ProjectConversations(sourceDocuments,'DOCUMENT_SOURCE_REFS');
         const method=Object.getOwnPropertyDescriptor(reader,'readMessage');
         if(!method||!('value'in method)||typeof method.value!=='function'||method.writable||method.configurable)throw new AuthFailure('DOCUMENT_SOURCE_READER_INVALID',503);
-        const source=await (method.value as ProjectConversations['readMessage']).call(reader,db,actor,pid,row.conversation_id,ref.id,backupBudget);
+        let source:Awaited<ReturnType<ProjectConversations['readMessage']>>;
+        if(access.kind==='HUMAN')source=await (method.value as ProjectConversations['readMessage']).call(reader,db,access.actor,pid,row.conversation_id,ref.id,backupBudget);
+        else{
+          const core=Object.getOwnPropertyDescriptor(reader,'readMessageCore');
+          if(backupBudget!==undefined||!core||!('value'in core)||typeof core.value!=='function'||core.writable||core.configurable)throw new AuthFailure('DOCUMENT_SOURCE_READER_INVALID',503);
+          source=await (core.value as ProjectConversations['readMessageCore']).call(reader,db,access,pid,row.conversation_id,ref.id);
+        }
         if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
         if(source.sourceRef.contentHash!==ref.contentHash)throw new AuthFailure('DOCUMENT_SOURCE_MISMATCH',409);
         if(ref.kind==='USER_INSTRUCTION'&&source.message.kind!=='USER_INSTRUCTION')throw new AuthFailure('DOCUMENT_SOURCE_KIND_MISMATCH',422);

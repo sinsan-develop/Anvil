@@ -8,6 +8,7 @@ import type{VersionRef}from'../../../../contracts/generated-types.ts';
 import{canonicalJson,contentHash}from'../../../../contracts/canonical.ts';
 import{assertKnowledgeTextSafe}from'./knowledge-entry.ts';
 import{readConversationInput,type MessageRef}from'./conversation-input.ts';
+import{assertReadAccess,type ReadAccess}from'../context/read-access.ts';
 import type{ProjectListCodec}from'../projects/service.ts';
 function pageInput(q:Record<string,unknown>){
  if(Object.keys(q).some(k=>!['limit','cursor'].includes(k))||q.limit!==undefined&&(typeof q.limit!=='string'||!/^[1-9][0-9]{0,2}$/.test(q.limit)||Number(q.limit)>200)||q.cursor!==undefined&&(typeof q.cursor!=='string'||q.cursor.length>4096))throw new AuthFailure('INPUT_INVALID',400);
@@ -20,6 +21,8 @@ export class ProjectConversations{
   this.#documents=documents;
   // 선택적 내부 조립이며 인증/권한 proof가 아니다. 일반 인스턴스의 mock 경로는 유지한다.
   if(mode==='DOCUMENT_SOURCE_REFS')Object.defineProperty(this,'readMessage',{value:readDocumentSourceMessage.bind(this),writable:false,configurable:false,enumerable:false});
+  // grant 결박 문서 출처 검증(D2)도 같은 원 core에 고정한다. prototype 교체로 대체되지 않는다.
+  if(mode==='DOCUMENT_SOURCE_REFS')Object.defineProperty(this,'readMessageCore',{value:readDocumentSourceMessageCore.bind(this),writable:false,configurable:false,enumerable:false});
  }
  async append(db:PoolClient,actor:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){
   const p=readConversationInput(c.payload,c.projectId);let conversationId=p.conversationId,sequence=1;
@@ -49,6 +52,15 @@ export class ProjectConversations{
   if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   await projectMember(db,actor,pid);
   if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
+  return this.#message(db,pid,conversationId,id,backupBudget);
+ }
+ /** 접근 판별자 core(D2). HUMAN은 기존 readMessage를 그대로 거치고, grant는 회원 조회 없이 같은 검산을 한다(backup budget 없음). */
+ async readMessageCore(db:PoolClient,access:ReadAccess,pid:string,conversationId:string,id:string){
+  if(access.kind==='HUMAN')return this.readMessage(db,access.actor,pid,conversationId,id);
+  await assertReadAccess(db,access,pid);
+  return this.#message(db,pid,conversationId,id);
+ }
+ async #message(db:PoolClient,pid:string,conversationId:string,id:string,backupBudget?:ArtifactBackupReadBudget){
   const r=(await db.query('SELECT * FROM anvil.conversation_messages WHERE project_id=$1 AND conversation_id=$2 AND id=$3',[pid,conversationId,id])).rows[0];
   if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   if(!r)throw new AuthFailure('NOT_FOUND',404);
@@ -82,3 +94,4 @@ export class ProjectConversations{
 }
 
 const readDocumentSourceMessage=ProjectConversations.prototype.readMessage;
+const readDocumentSourceMessageCore=ProjectConversations.prototype.readMessageCore;

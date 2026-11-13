@@ -11,6 +11,7 @@ import { methodContentReviewCriteria, requirePreparedForms } from './content-rev
 import { exactMethodObject, readProjectMethodInput, readProjectMethodReview } from './project-input.ts';
 import { readApplicationSnapshot } from './application-snapshot.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
+import { assertReadAccess, type ReadAccess } from '../context/read-access.ts';
 
 async function formsFor(db: PoolClient, actorId: string) {
   return (await db.query("SELECT v.definition_id AS id,v.version,v.content_hash FROM anvil.form_definitions d JOIN anvil.form_versions v ON v.definition_id=d.id WHERE d.scope='SYSTEM' OR d.scope='USER_COMMON' AND d.owner_user_id=$1", [actorId])).rows.map(r => ({ id: r.id, version: Number(r.version), contentHash: r.content_hash }));
@@ -19,6 +20,15 @@ export class ProjectMethodologies {
   async readApplication(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, raw: Record<string, unknown> = {}) {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw) || Object.keys(raw).length) throw new AuthFailure('INPUT_INVALID', 400);
     await projectMember(db, actor, projectId);
+    return this.#latestApplication(db, projectId);
+  }
+  /** 접근 판별자 core(D2). HUMAN은 기존 readApplication을 그대로 거치고, grant는 회원 조회 없이 같은 최신 적용 snapshot을 읽는다. */
+  async readApplicationCore(db: PoolClient, access: ReadAccess, projectId: string) {
+    if (access.kind === 'HUMAN') return this.readApplication(db, access.actor, projectId);
+    await assertReadAccess(db, access, projectId);
+    return this.#latestApplication(db, projectId);
+  }
+  async #latestApplication(db: PoolClient, projectId: string) {
     const rows = (await db.query('SELECT id,project_id,application_version,source_definition_id,source_version,source_hash,snapshot_json,snapshot_hash FROM anvil.project_methodologies WHERE project_id=$1 ORDER BY application_version DESC LIMIT 1', [projectId])).rows;
     return readApplicationSnapshot(projectId, rows);
   }
