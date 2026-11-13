@@ -6,11 +6,12 @@ import {EventEmitter} from 'node:events';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {journey,type PageSqlAdapter} from './normal-request-challenge-fixture.ts';
 const {NormalPageCursors}=await import('../../../apps/server/modules/executions/normal-command-pages.ts');
-const {startContextBody}=await import('../../../apps/server/modules/executions/normal-initial-execution.ts');
+const { RegisteredStartContextSource } = await import('../../../apps/server/modules/executions/normal-start-context-source.ts');
+const { contextSourceFixture } = await import('./normal-start-context-source-fixture.ts');
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
 async function setup(withContext=true){
  const opts={failBinding:false,contextCalls:0,wrongContext:false,hang:false,events:[] as string[]};
- let gate:Promise<unknown>=Promise.resolve();
+
  const bindings:any[]=[];
  const sql:PageSqlAdapter=(s,a,{f,drafts,issued})=>{
   if(s.startsWith('SELECT v.content_hash AS vhash')){
@@ -57,17 +58,13 @@ async function setup(withContext=true){
  const h=await journey({sql,cursors:new NormalPageCursors(randomBytes(32))},{context:withContext?f=>({async contextBody(scope,signal){
   opts.contextCalls++;assert.ok(signal instanceof AbortSignal);assert.ok(!('query' in scope));opts.events.push('PROVIDER');
   if(opts.hang)await new Promise<void>(ok=>signal.addEventListener('abort',()=>ok(),{once:true}));
-  // 제품 reader와 제품 조립 함수로 원문을 다시 만든다. 시험이 본문이나 hash를 따로 만들지 않는다.
-  // 이 시험 대역의 DB 풀은 연결을 하나씩만 허용하므로 동시 호출을 순서대로 처리한다(실제 공급자는 동시 호출을 스스로 감당해야 한다).
-  const run=gate.then(async()=>{
-   const db=await f.access.pool.connect();
-   try{
-    await db.query('BEGIN');
-    const body=startContextBody(await f.contexts.readStartSource(db,f.actor,scope.projectId,scope.contextBundleRef as any),f.preparation.data.snapshot.intent);
-    return opts.wrongContext?body+' ':body;
-   }finally{await db.query('ROLLBACK');db.release();}
-  });
-  gate=run.then(()=>{},()=>{});return run;
+  // 실제 START 저장행의 grant/등록묶음을 공급자 자신의 snapshot에서 검증한다.
+  const registered=contextSourceFixture(f);registered.mode.offset=h.store.mode.offset;
+  const body=await new RegisteredStartContextSource({pool:registered.pool as any,contexts:f.contexts}).contextBody(scope,signal);
+  assert.deepEqual(registered.calls.filter(s=>/project_members|FOR UPDATE|FOR SHARE|^\\s*(INSERT|UPDATE|DELETE)\\b/.test(s)),[]);
+  assert.equal(registered.calls[0],'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+  assert.equal(registered.calls.at(-1),'ROLLBACK');assert.equal(registered.releases.length,1);
+  return opts.wrongContext?body+' ':body;
  }}):undefined});
  async function signedGet(path:string,query:Record<string,string|number>){
   const r=h.mk();r.target.path=path;r.target.queryHash=digest(query);const resp=await h.post(h.signed(r));assert.equal(resp.statusCode,200,resp.body);

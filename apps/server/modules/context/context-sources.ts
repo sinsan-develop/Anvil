@@ -107,3 +107,4 @@ export class ProjectContextSources {
    unverified: ['CONTEXT_SELECTION_REVIEW_REQUIRED', 'INSTRUCTION_EFFECTIVENESS_UNVERIFIED', 'CURRENT_STATE_MEANING_UNVERIFIED', 'BUDGET_UNVERIFIED', 'DELIVERY_NOT_CONNECTED', 'UNDERSTANDING_NOT_REVIEWED', 'EXECUTION_NOT_CONNECTED'] };
  }
 }
+export const registeredContextSourceResolve = ProjectContextSources.prototype.resolveRegistered;

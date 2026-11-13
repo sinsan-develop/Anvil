@@ -20,6 +20,7 @@ import { registerProjectFileRoutes } from './modules/documents/project-files.ts'
 import { enforceConnectorCredentialScope } from './http/connector-auth.ts';
 import { readPacket, registerNormalCommandPages, type NormalCommandPagesOptions } from './modules/executions/normal-command-pages.ts';
 import { registerNormalStartMaterials, type NormalStartMaterialsOptions } from './modules/executions/normal-start-materials.ts';
+import { RegisteredStartContextSource, type RegisteredStartContextOptions } from './modules/executions/normal-start-context-source.ts';
 import { registerNormalStartPermit, type NormalStartPermitOptions } from './modules/executions/normal-start-permit.ts';
 import { registerNormalObservations, type NormalObservationsOptions } from './modules/executions/normal-observations.ts';
 import { registerConnectorRegistrationRoutes } from './modules/connections/registration-routes.ts';
@@ -30,7 +31,7 @@ import {registerProviderClaimHistoryRoutes} from './modules/executions/provider-
 import {registerUnderstandingHistoryRoutes} from './modules/executions/understanding-history-routes.ts';
 import { registerControlHandoffRoutes, type ControlHandoffRoutesOptions } from './modules/control-handoff/routes.ts';
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource, normalExchange?:NormalExchangeOptions, normalCredentialExchange?:NormalCredentialExchangeOptions,normalRequestChallenge?:{origin:string},normalPages?:NormalCommandPagesOptions,normalMaterials?:NormalStartMaterialsOptions,normalPermit?:NormalStartPermitOptions,normalObservations?:NormalObservationsOptions) {
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource, normalExchange?:NormalExchangeOptions, normalCredentialExchange?:NormalCredentialExchangeOptions,normalRequestChallenge?:{origin:string},normalPages?:NormalCommandPagesOptions,normalMaterials?:NormalStartMaterialsOptions & { registeredContext?: RegisteredStartContextOptions },normalPermit?:NormalStartPermitOptions,normalObservations?:NormalObservationsOptions) {
   const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
   app.addHook('onRequest',async request=>enforceConnectorCredentialScope(request));
   app.addHook('onSend', async (_request, reply, payload) => {
@@ -40,7 +41,11 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
     return payload;
   });
   if(normalPages)registerNormalCommandPages(app,normalPages);
-  if(normalMaterials)registerNormalStartMaterials(app,normalMaterials,readPacket);
+  if(normalMaterials){
+    if(normalMaterials.context && normalMaterials.registeredContext)throw Error('EXECUTION_CONTEXT_SOURCE_AMBIGUOUS');
+    const context=normalMaterials.registeredContext?new RegisteredStartContextSource(normalMaterials.registeredContext):normalMaterials.context;
+    registerNormalStartMaterials(app,{...normalMaterials,context},readPacket);
+  }
   if(normalPermit)registerNormalStartPermit(app,normalPermit,readPacket);
   if(normalObservations)registerNormalObservations(app,normalObservations,readPacket);
   if(normalRequestChallenge&&!normalExchange)throw Error('EXECUTION_CHALLENGE_STORE_REQUIRED');

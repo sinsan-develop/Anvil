@@ -106,7 +106,7 @@ export class ProjectContexts {
   * 재구성 manifest가 저장 manifest와 정확히 같아야 하며 비INCLUDED 항목은 거절한다.
   */
  async readRegisteredStartSource(db:PoolClient,grant:ExecutionGrantRead,projectId:string,ref:VersionRef) {
-  assertExecutionGrantRead(grant,projectId);
+  assertExecutionGrantRead(grant,projectId,db,ref);
   return this.#startSource(db,grant,projectId,ref);
  }
  async #startSource(db:PoolClient,access:ReadAccess,projectId:string,ref:VersionRef) {
@@ -132,3 +132,5 @@ export class ProjectContexts {
   return { projectId, assignmentRef: ref, items, hasMore: rows.length > limit, limit, ready: false, executionAuthorized: false, dispatchPerformed: false, observedAt: new Date().toISOString() };
  }
 }
+// 순환 import 초기화 뒤 공급자가 원 구현을 참조하도록 선언 직후 고정한다.
+export const registeredStartContextRead = ProjectContexts.prototype.readRegisteredStartSource;

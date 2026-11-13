@@ -1,5 +1,5 @@
 import type { PoolClient } from 'pg';
-import { isVersionRef } from '../../../../contracts/references.ts';
+import { registeredContextReadMatches } from '../executions/normal-start-context-source.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 import { AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
 import { projectMember } from '../access/project-command.ts';
@@ -15,30 +15,18 @@ export type ExecutionGrantRead = Readonly<{ kind: 'EXECUTION_GRANT' } & Executio
 export type HumanRead = Readonly<{ kind: 'HUMAN'; actor: AuthenticatedIdentity }>;
 export type ReadAccess = HumanRead | ExecutionGrantRead;
 
-const minted = new WeakSet<object>();
-const uuid = (id: unknown) => isVersionRef({ id, version: 1, contentHash: '0'.repeat(64) });
 const denied = () => new AuthFailure('EXECUTION_GRANT_READ_DENIED', 403);
 
-/**
- * 내부 전용 발급. P-A에서는 시험만 호출한다. P-B 공급자가 grant 결박 확인을 통과한 뒤에만 부르도록 더 좁힌다.
- */
-export function mintExecutionGrantRead(scope: ExecutionGrantScope): ExecutionGrantRead {
-  if (!scope || typeof scope !== 'object' || !uuid(scope.projectId) || !uuid(scope.executionId) || !Number.isSafeInteger(scope.executionGeneration) || scope.executionGeneration < 1 || !isVersionRef(scope.grantRef)) throw denied();
-  const value = Object.freeze({ kind: 'EXECUTION_GRANT' as const, projectId: scope.projectId, executionId: scope.executionId, executionGeneration: scope.executionGeneration, grantRef: Object.freeze({ id: scope.grantRef.id, version: scope.grantRef.version, contentHash: scope.grantRef.contentHash }) });
-  minted.add(value);
-  return value as unknown as ExecutionGrantRead;
-}
-
-/** 모듈이 발급한 원 객체만 인정한다. 같은 모양의 위조 객체·복사본은 거절된다. */
+/** 검증된 공급자 snapshot 안에서 살아 있는 원 객체만 인정한다. */
 export function isExecutionGrantRead(value: unknown): value is ExecutionGrantRead {
-  return typeof value === 'object' && value !== null && minted.has(value);
+  return registeredContextReadMatches(value);
 }
 
 export const humanRead = (actor: AuthenticatedIdentity): HumanRead => ({ kind: 'HUMAN', actor });
 
 /** grant 분기 진입 전 표식과 프로젝트 범위를 확인한다. SQL을 내지 않는다. */
-export function assertExecutionGrantRead(access: unknown, projectId: string): asserts access is ExecutionGrantRead {
-  if (!isExecutionGrantRead(access) || access.projectId !== projectId) throw denied();
+export function assertExecutionGrantRead(access: unknown, projectId: string, db?: PoolClient, ref?: VersionRef): asserts access is ExecutionGrantRead {
+  if (!registeredContextReadMatches(access, db, projectId, ref)) throw denied();
 }
 
 /**
@@ -46,7 +34,7 @@ export function assertExecutionGrantRead(access: unknown, projectId: string): as
  * EXECUTION_GRANT → 회원 조회·잠금 없음. 표식과 projectId 일치만 확인한다.
  */
 export async function assertReadAccess(db: PoolClient, access: ReadAccess, projectId: string, lock = false): Promise<void> {
-  if (isExecutionGrantRead(access)) { assertExecutionGrantRead(access, projectId); return; }
+  if (isExecutionGrantRead(access)) { assertExecutionGrantRead(access, projectId, db); return; }
   if (!access || typeof access !== 'object' || access.kind !== 'HUMAN') throw denied();
   await projectMember(db, access.actor, projectId, lock);
 }
