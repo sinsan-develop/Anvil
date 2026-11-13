@@ -8,7 +8,7 @@ import type {NormalProtectedGetClient} from './normal-protected-get-client.ts';
 
 /** normal START 수신기. 보호 GET으로 받아 codec이 검산한 명령 item과 자료 부분을 내구 journal에 기록하고 RECEIVED에서 멈춘다.
  * 합성 전용(SYNTHETIC_ONLY) 수신기와 경계를 섞지 않도록 transport는 NORMAL_PROTECTED로 둔다.
- * permit·wire·Agent 시작은 하지 않으며(서버에 normal permit 경로가 없다) 결과는 실행 허가나 전체 맥락 검증이 아니다. */
+ * 이 수신기 자체는 permit·wire·Agent 시작을 하지 않으며 결과는 실행 허가나 전체 맥락 검증이 아니다. */
 type Kind='MATERIAL'|'RECEIVED';
 export interface NormalStartEntry{ref:Ref;snapshot:{sequence:number;kind:Kind;key:ReceiptKeyV1;envelopeHash:string;descriptorHash:string;
  materialId:string|null;partContentHash:string|null;proofResultRef:Ref;materials:NormalStartMaterialDescriptor|null;recordedAt:string;previousRef:Ref|null}}
@@ -183,18 +183,23 @@ export class NormalStartIntake{
    recordedParts:events.filter(x=>x.snapshot.kind==='MATERIAL').length,envelopeTimeState:now>=Date.parse(e.expiresAt)?'EXPIRED' as const:'WITHIN_ENVELOPE_WINDOW' as const,
    readOnly:true as const,currentAuthorityVerified:false as const,executionAuthorized:false as const};
  });}
- /** RECEIVED로 기록된 START의 실행 옵션 원문을 읽는다. 봉투가 유효한 동안만 돌려주며 기본 옵션을 만들지 않는다. */
- startOptions(rawEnvelope:unknown){return this.#guard('NORMAL_INTAKE_START_UNAVAILABLE',async()=>{
+ /** 기존 옵션 조회 형상은 그대로 유지한다. */
+ async startOptions(rawEnvelope:unknown){return (await this.startMaterials(rawEnvelope)).options;}
+ /** RECEIVED의 두 원문을 같은 journal 검사에서 조립한다. 참조만으로 wire 자료를 대신하지 않는다. */
+ startMaterials(rawEnvelope:unknown){return this.#guard('NORMAL_INTAKE_START_UNAVAILABLE',async()=>{
   this.#port();const e=this.#envelope(rawEnvelope),key=receiptKeyV1(e);
   const out=await this.store.exclusive(cloneV1(key),async tx=>{
    // #journal이 저장 bytes 전부를 다시 읽고 RECEIVED descriptor로 길이·hash·조립·표식을 확인한다.
    const {received,stored}=await this.#journal(tx,key,e,null);
    if(!received)return fail('NORMAL_INTAKE_NOT_RECEIVED');
-   const group=received.snapshot.materials!.groups[1]!;
-   const bytes=Buffer.concat(group.parts.map(p=>stored.get(p.materialId)!));
+   const group=received.snapshot.materials!.groups[1]!,contextGroup=received.snapshot.materials!.groups[0]!;
+   const bytes=Buffer.concat(group.parts.map(p=>stored.get(p.materialId)!)),contextBytes=Buffer.concat(contextGroup.parts.map(p=>stored.get(p.materialId)!));
    this.#envelope(e);
-   return {transport:'NORMAL_PROTECTED' as const,key:cloneV1(key),envelopeHash:e.envelopeHash,contextBundleRef:cloneV1(e.payload.contextBundleRef),optionsRef:cloneV1(e.payload.optionsRef),
+   const options={transport:'NORMAL_PROTECTED' as const,key:cloneV1(key),envelopeHash:e.envelopeHash,contextBundleRef:cloneV1(e.payload.contextBundleRef),optionsRef:cloneV1(e.payload.optionsRef),
     receivedRef:cloneV1(received.ref),utf8Bytes:bytes.length,contentHash:contentHash(bytes),bytes:new Uint8Array(bytes),executionAuthorized:false as const};
+   const contextBundle={transport:'NORMAL_PROTECTED' as const,key:cloneV1(key),envelopeHash:e.envelopeHash,contextBundleRef:cloneV1(e.payload.contextBundleRef),
+    receivedRef:cloneV1(received.ref),utf8Bytes:contextBytes.length,contentHash:contentHash(contextBytes),bytes:new Uint8Array(contextBytes),executionAuthorized:false as const};
+   return {contextBundle,options};
   });
   this.#port();this.#envelope(e);return out;
  });}

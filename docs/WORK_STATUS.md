@@ -18933,3 +18933,21 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Main 최종 제품 직접검증: node --experimental-test-module-mocks --test --test-reporter=spec tests/unit/FN08/normal-start-context-source.test.ts tests/unit/FN08/context-read-access.test.ts tests/unit/FN08/normal-start-materials-journey.test.ts → exit0/71P/0F/0SKIP/15226.8479ms. 절대경로 typescript/bin/tsc --noEmit -p tsconfig.base.json·diff exit0. 제품5파일 독립 재검수 최종C0/I0/M0, provider SHA461E2DD7C32CBBB8503125F28C932AF60BCC2CFE2361945D4B44706EA95DFA08.
 - 시험검수 C0/I0/M3 중 downstream core부재 실제공급자→412/rollback/release 시험을 추가하고 바뀐 접근시험만8P/0F/0SKIP로 확인(구현자 제출, 기존71과 중복합산금지). 승인소비완료 불일치의 grant 전체여정과 각변조 독립비교분기도달은 미검증으로 명시했다. 기존 요구를 완화하거나 실PG증거로 승격하지 않았다. 결과서 FN08_D2_PB_CONTEXT_PROVIDER_RESULT_20261114.md에 소스/시험/한계/복구 기록.
 - writer해제·제품동결, 최종시험delta 독립확인 후 commit/private push/PR통합 예정. GitHub CLI의 sandbox auth실패는 네트워크허용 읽기에서 기존로그인유효로 확인했으며 계정/토큰변경0이다.
+### D2 P-B 통합 및 D1 실행기 source 착수 — 2026-11-14 / Main 어울
+- 직전 goal turn 판정: PR100 merged·원격 main 12956ce332ca8c97295675f41cd39bea629a97f2를 확인해 다음 조치를 확정한 증거 진전. 전체 계획 완료 아님.
+- D2 통합: source 1e21824e와 merged main tree diff0, PR100/Broker run43513166746 success. main fast-forward 후 접근경계 smoke8P/0F/0SKIP, 4876.982ms. 로컬/원격 main 동일·clean. 완료 branch와 요청 tag만 정상 삭제, 기존 공유 checkout과 과거 WIP 보존.
+- 할 일: WORK_PLAN Stage C FN06/FN08, 채택 P3 결정안 §3.1 D1 3단계. normal RECEIVED→내구 localAttempt→기존 permit→wire→관측/ACK의 실행기 source를 연결한다. D2/P-A 완료 검사를 반복하지 않는다.
+- 허용: 기존 단일 developer_primary가 source·합성 검증만 구현. 실제 DB·권한·키·보호 파일 생성·서비스·Agent·native 컴파일 및 D1 1/4단계 제외. 실제 연결 완료와 합성 증거를 구분한다.
+- 기준 branch codex/av3-d1-start-execution, base12956ce3. Main은 문서·검수·통합, writer는 runtime source/지정 FN08 시험만 소유한다.
+- 검증: 기존 서버 permit/관측 계약의 명령·세대·기한·hash와 ACK 연속prefix를 대조하고, durable 기록 실패/UNKNOWN/회수/만료/중복에서 wire 재전송0을 확인한다. fakeFS/RAM key/wire 대역만 사용하며 실제 primary adapter 통합은 미검증으로 남긴다.
+- 선행 조사: 현재 preparation Options는 CLAUDE_QUERY_DATA_V1, 기존 primary adapter는 CODEX_0161·SYNTHETIC_ONLY다. 옵션 임의변환/표식교체 금지. 이 단위는 명시 transport port까지 연결하며 실제 도구 adapter와 credential 보호·재교환은 후속이다. 이미 채택된 3단계 전체 범위를 축소하거나 완료로 간주하지 않는다.
+- 현재 오류: 신규 제품 오류0. Git CLI 직접PR 권한없음은 기존 승인 Broker로 통합 완료했고 계정/권한 변경0. 다음은 단일writer 구현·독립검수·최소회귀다.
+- 재검증: 설계1346F624…5328E7·계획AC6BF508…75C6·환경D6496CC2…161E00 지문은 직전 확인과 일치. 이번 신규 변경은 WORK_STATUS/WORK_CHECK와 D1 source/시험 단위로 한정한다. 파일명 추정으로 두 서버 파일 읽기 실패1회·PowerShell glob검색 실패1회는 실제 rg --files와 정확 경로로 정정했으며 제품 오류가 아니다.
+- D1 사전독립검수: permit은 축약DTO여서 fullsnapshot ref hash를 DTO hash로 오검산하지 않음. ACK는 fullsnapshot+로컬 연속digest 검산, 관측 seq는 실행/세대전체. START_ATTEMPTED/PERMIT_RECORDED 각각 sync후 재조회와 결과불명 재전송0을 writer에 전달했다.
+- 후속 credential 조사: 최초교환·보호저장·서명 source는 기존채택범위이나 평문export없는 보호저장과 credential평문입력 GET의 연결, REGISTERED host normal서명 dispatch가 아직 남음. samegrant 재교환은 현0085 unique/일회발급과 충돌하므로 자동retry로 대체하지 않고 generation·폐기·cursor/permit 결박 상세계약을 별도 구체화한다. 실제키/DB/서비스/Agent변경0. PMO에는 PR100 결과·현재 승인구현만 공유했고 새결정 요청0.
+
+- D1 중간 독립검수 I1: 로컬event1개에서 ACK highest0/max1/gap1..1/stored0/digest[]가 올바른 snapshot hash만 갖추면 수락·저장되는 반례를 실제 spool+RAM journal로 재현했다. 서버 maxSequence는 마지막 저장 사건이므로 불가능한 ACK다. 같은 writer에 음성시험·검산 보완 지시, 해소 전 통합 금지. 실제 DB/키/통신0. POST 입력변조와 무응답 signer 유한대기 Minor2도 보완중.
+- 구현자 중간증거: 실제제품 START·D2자료GET·normalintake·permit을 거쳐 fakewire1회 도달. 여정단언 문자열/객체형상 오류는 보완중이며 전체통과아님. I1 gap=max 음성RED 뒤 거절보완3P 제출(아직Main재검수전). 독립검수에서 RESPONSE_RECORDED 뒤 spool실패/재시작관측누락 가능성을 발견해 durableattempt 기반 관측보충과 wire재실행0 검증을 지시했다.
+- Main 변경중 영향검사: 신규POST/coordinator/store/spool/여정+기존intake 지정 실행 exit1/20P·1F·0SKIP/13075.4456ms. 실패는 새 같은길이변조 후 attempt lock보존 단언이다. 실행중 writer가 store보완을추가해 최종지문과구분하며 이실패를소급PASS하지 않는다. 정확동결후 변경경계재검증 예정.
+- 독립 ACK I2: v1 저장집합{1,3}→v2{1,4}를수락해 이미ACK한3이gap으로후퇴하는RAM반례 확인. samewriter에게 신규ACK저장집합단조/과거ACK부분집합 검산과시험지시, 해소전병합금지. POST Minor2·기존gap=max I1은보완확인. 현재전체계획미완료,실제자원변경0.
+- 최종 기능동결 후 Main 영향5파일22P/0F/0SKIP/28343.6473ms, typecheck exit0. 기존intake 인접4P는구현자제출, 같은시험중복합산0. coordinator/intake/여정과 POST/spool/store 독립최종C0/I0/M0. 이후신규파일EOF빈줄/시험공백정리만했으며 기능변경0. 실제context+options두원문전달, durable ref결박·UNKNOWN재실행0·관측복구·ACK집합보호 확인. 결과서 FN08_D1_START_EXECUTION_SOURCE_RESULT_20261114.md에 미검증/복구기록. 다음은 이단위통합후 최초credential교환·보호저장/사용source; 전체계획/D1미완료.
