@@ -5,3 +5,4 @@ export { NativePreparationProofSigner } from '../../connector/runtime/native-pre
 export { readNativeAuthority } from '../../../contracts/runtime/native-preparation-authority-v1.ts';
 
 export { NativeFirstReceiveHumanClient, NativeFirstReceiveFrameDecoder } from '../../connector/runtime/native-first-receive-client.ts';
+export { NormalCredentialBootstrapClient } from '../../connector/runtime/normal-credential-bootstrap-client.ts';

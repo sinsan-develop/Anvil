@@ -18,6 +18,10 @@ function fixture(){
  const binding={transport:'NORMAL_PROTECTED',mode:'EXECUTION',projectId:project,connectorId:connector,executionId:execution,executionGeneration:1,
   grantRef:grant,credentialGeneration:1,publicKeyFingerprint:publicKeyFingerprint(spki),scopeDigest:hash('scope')};
  const at=new Date(start).toISOString(),scope={kind:'PROJECT',projectId:project};
+ const reservationSnapshot={transport:'NORMAL_PROTECTED',state:'RESERVED_NO_TOKEN',grantRef:grant,executionId:execution,executionGeneration:1,credentialGeneration:1,
+  registrationRef:{id:randomUUID(),version:1,contentHash:hash('registration')},commandId:randomUUID(),scopeDigest:binding.scopeDigest,reservedAt:at,expiresAt:new Date(start+240000).toISOString(),credentialIssued:false};
+ const reservation={id:randomUUID(),version:'1',content_hash:hash(reservationSnapshot),snapshot_json:reservationSnapshot,reservation_matches:true};
+ let reservationRows:any[]=[reservation];
  const snapshot={scope,state:'APPLIED',limits:{maxAttempts:3,maxCalls:50,maxConcurrentAssignments:1,maxElapsedMs:7200000,maxOfflineMs:300000,maxSpoolBytes:1073741824},decidedAt:at,expiresAt:new Date(start+240000).toISOString()};
  const policy={projectId:project,ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};
  const reserve=reserveExecutionBudget([],policy as any,{projectId:project,executionId:execution,executionGeneration:1,commandId:randomUUID(),assignmentRef:grant,stageRef:{applicationRef:grant,nodeId:'개발'},policyRef:policy.ref,operation:'START_SESSION',demand:{attempts:1,calls:1,spoolBytes:1,cost:null,costStatus:'VERIFIED_NO_CHARGE'}},at);
@@ -37,6 +41,7 @@ function fixture(){
   if(sql.includes('SET LOCAL')||sql.includes("set_config('anvil.normal_challenge_verified'"))return{rows:[]};
   if(sql.includes('FROM anvil.execution_grants')&&!sql.includes('normal_exchange_current'))return{rows:state.known?[{project_id:project}]:[]};
   if(sql.includes('normal_exchange_current'))return{rows:state.current?[{binding,spki,deadline:new Date(start+240000),observed_at:new Date(state.now),budget_ref:reserve.ref,budget_policy:policy}]:[]};
+  if(sql.includes('FROM anvil.execution_credentials'))return{rows:reservationRows};
   if(sql.includes('FROM anvil.usage_reservations'))return{rows:[{project_id:project,reservation_id:reserve.ref.id,version:1,content_hash:state.budgetCorrupt?'0'.repeat(64):reserve.ref.contentHash,snapshot_json:reserve.snapshot,server_sequence:1,command_id:reserve.snapshot.claim.commandId}]};
   if(sql.includes('server_sequence')&&sql.startsWith('INSERT')){pending.push(JSON.parse(args.at(-1)));if(state.changeOnAppend)state.current=false;return{rowCount:1,rows:[]};}
   if(sql.includes('FROM anvil.execution_challenges')&&sql.includes('request_id='))return{rows:pending.filter(x=>x.request.requestId===args[3]||x.request.clientNonce===args[4]).map(s=>({id:s.publicChallenge.id,content_hash:hash(s),snapshot_json:s}))};
@@ -48,14 +53,19 @@ function fixture(){
   target:{method:'POST',path:path+'/credential-exchange',queryHash:hash({}),bodyHash:hash({hello:'교환'})},clientNonce:randomBytes(32).toString('base64url'),issuedAt:new Date(state.now).toISOString()});
  const signed=(request:any)=>({...request,signature:sign('sha256',executionChallengeRequestBytes('EXECUTION',request),{key:pair.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url')});
  const post=(value:any,headers:Record<string,string>={})=>app.inject({method:'POST',url:path+'/challenges',payload:value,headers});
- return{app,state,signed,make,post,events:()=>events,path};
+ return{app,state,signed,make,post,events:()=>events,path,reservation,replaceReservations:(rows:any[])=>{reservationRows=rows;}};
 }
 test('같은 서명 요청 동시 도착과 응답 유실 재조회는 단일 커밋 nonce와 원 기한을 반환한다',async()=>{
  const f=fixture();try{const payload=f.signed(f.make());const [a,b]=await Promise.all([f.post(payload),f.post(payload)]);
  assert.equal(a.statusCode,200,a.body);assert.equal(b.statusCode,200,b.body);assert.deepEqual(a.json(),b.json());
  const c=a.json().challenge;assert.equal(Buffer.from(c.serverNonce,'base64url').length,32);
+ assert.ok(a.json().bootstrapBinding,'최초 HTTPS 응답은 정확 예약의 bootstrapBinding을 제공해야 한다');
+ assert.deepEqual(Object.keys(a.json().bootstrapBinding).sort(),['projectId','connectorId','executionId','executionGeneration','grantRef','credentialGeneration','scopeDigest','registrationRef','reservationRef','publicKeyFingerprint','checkedAt','expiresAt'].sort());
+ assert.deepEqual(a.json().bootstrapBinding.reservationRef,{id:f.reservation.id,version:1,contentHash:f.reservation.content_hash});
+ assert.deepEqual(a.json().bootstrapBinding.registrationRef,f.reservation.snapshot_json.registrationRef);
  assert.equal(Date.parse(c.expiresAt)-Date.parse(c.issuedAt),120000);assert.equal(f.events().length,1);
- f.state.now+=31000;const replay=await f.post(payload);assert.equal(replay.statusCode,200,replay.body);assert.deepEqual(replay.json(),a.json());
+ f.state.now+=31000;const replay=await f.post(payload);assert.equal(replay.statusCode,200,replay.body);
+ assert.deepEqual(replay.json(),{...a.json(),bootstrapBinding:{...a.json().bootstrapBinding,checkedAt:new Date(f.state.now).toISOString()}});
  assert.equal(a.json().credentialIssued,false);assert.equal(a.json().nonceConsumed,false);
  const stored=f.events()[0];assert.equal(stored.signedInputHash,hash({purpose:'EXECUTION_CHALLENGE_REQUEST',request:stored.request}));
  assert.equal(stored.serverNonceDigest,createHash('sha256').update(Buffer.from(c.serverNonce,'base64url')).digest('hex'));
@@ -64,14 +74,34 @@ test('같은 서명 요청 동시 도착과 응답 유실 재조회는 단일 �
 test('등록 전 서명 요청은 default 라우트에서 거절한다',async()=>{const app=buildApp();try{
  assert.equal((await app.inject({method:'POST',url:'/api/v1/connectors/'+randomUUID()+'/executions/'+randomUUID()+'/challenges',payload:{}})).statusCode,404);
  }finally{await app.close();}});
-test('기한이 지난 원응답도 갱신되지 않으며 다른 hash·재사용 clientNonce는 409로 거절한다',async()=>{
+test('기한이 지난 bootstrap 근거는 새 nonce 없이 거절하며 다른 hash·재사용 clientNonce는 409로 거절한다',async()=>{
  const f=fixture();try{
   const r=f.make(),payload=f.signed(r),first=await f.post(payload);assert.equal(first.statusCode,200,first.body);
   for(const [change,code] of [[{clientNonce:randomBytes(32).toString('base64url')},'IDEMPOTENCY_CONFLICT'],[{requestId:randomUUID()},'EXECUTION_CHALLENGE_CLIENT_NONCE_REUSED']] as const){
    const res=await f.post(f.signed({...r,...change}));assert.equal(res.statusCode,409,res.body);assert.equal(res.json().code,code);
   }
-  f.state.now+=125000;assert.deepEqual((await f.post(payload)).json(),first.json());assert.equal(f.events().length,1);
+  f.state.now+=125000;assert.equal((await f.post(payload)).statusCode,412);assert.deepEqual(f.events()[0].publicChallenge,first.json().challenge);assert.equal(f.events().length,1);
   f.state.now+=120000;assert.equal((await f.post(payload)).statusCode,412);
+ }finally{await f.app.close();}
+});
+
+test('bootstrap은 정확 예약 한 행과 hash·세대·등록 검산만 소비한다',async()=>{
+ for(const change of ['missing','duplicate','hash','generation','registration'] as const){const f=fixture();try{
+  if(change==='missing')f.replaceReservations([]);
+  else if(change==='duplicate')f.replaceReservations([f.reservation,f.reservation]);
+  else if(change==='hash')f.reservation.content_hash=hash('wrong');
+  else if(change==='generation'){f.reservation.snapshot_json.executionGeneration=2;f.reservation.content_hash=hash(f.reservation.snapshot_json);}
+  else f.reservation.reservation_matches=false;
+  const r=await f.post(f.signed(f.make()));assert.equal(r.statusCode,412,r.body);assert.equal(r.json().bootstrapBinding,undefined);assert.equal(f.events().length,0);
+ }finally{await f.app.close();}}
+});
+
+test('동일 challenge 재조회라도 예약 원본 관계가 바뀌면 기존 nonce를 새 권위로 승격하지 않는다',async()=>{
+ const f=fixture();try{
+  const payload=f.signed(f.make()),first=await f.post(payload);assert.equal(first.statusCode,200,first.body);
+  f.reservation.reservation_matches=false;
+  const retry=await f.post(payload);assert.equal(retry.statusCode,412);assert.equal(retry.json().bootstrapBinding,undefined);
+  assert.equal(f.events().length,1);assert.deepEqual(f.events()[0].publicChallenge,first.json().challenge);
  }finally{await f.app.close();}
 });
 test('미등록·현재성 철회·잘못된 키와 scope·만료된 서명·cookie/Bearer에서 추가 행이 없다',async()=>{
