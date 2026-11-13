@@ -18891,3 +18891,12 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 독립 검수: C1/I1/M5. 반영: C1 0090 관측 현재성 ELSE 괄호 안에 원 식의 세미콜론이 남아 적용 시 거래 전체가 실패하던 문법 오류(정적 시험도 이를 고정하고 있었음) → 제거, 시험 정정. M3 영수증 검사가 최신 ACK·소비 시각을 대조하도록. M6 누적 16 MiB 상한 TS 409. M7 명령 envelope 해석 오류를 503 코드로. 남음(실제 DB 필요): I1 큰 원장에서 행마다 도는 지연 완결 검사(요약 O(N)·normal 현재성)로 COMMIT이 5초 제한을 넘을 수 있음. 관측 guard의 marker 영수증 hash 미결박·명령 grant 미결박, 새 사건 없는 batch의 SQL 현재성 미검사(TS·회수 guard가 담당), 원장의 합성 행 혼재 허용. normal_exchange_current가 QUEUED·RESERVED 상태를 요구하므로 이후 상태 전이가 생기면 관측이 거절될 수 있다.
 - 미검증: 0083~0090 실제 PostgreSQL 실행과 trigger 연쇄·COMMIT 시간, 실행기 관측 클라이언트·permit 클라이언트·adapter 연결. 실제 DB/권한/키/서비스/Agent/SSH 변경 0. rollback은 이 branch commit 일반 revert.
 - 다음: D1 2단계 서버 경로는 갖춰졌다. 남은 것은 D1 3단계(실행기 av3ex1_ 보호 저장·서명·교환 클라이언트·polling·permit·관측 클라이언트·adapter normal 경로 source), D2 세부 작업지시서, D1 1단계(0083~0090 개발 DB 적용, 별도 실행 승인).
+
+
+### D2 실행 grant 결박 맥락 묶음 내부 읽기 세부 작업지시서 — 2026-11-13T08:30:00+09:00
+
+- 근거: 신산님 'D2 작업지시서'. 채택된 D2 A안의 다중 모듈 권한 경로 분리 범위를 정했다. 문서: docs/work_packages/FN08_D2_GRANT_BOUND_CONTEXT_READ_WI_20261113.md r1(작업지시서, 구현 전).
+- 조사(read-only 하위 조사, 호출 트리 전수): 맥락 원문 조립 경로에서 호출자 actor 사용은 모두 projectMember 회원 확인이며, 결과 bytes를 바꾸는 사용은 도달 가능한 경로에 없다. 잠금은 3곳(CS:146 프로젝트·회원 FOR UPDATE, DR:126 배정 초안 head FOR UPDATE, WP:101 문서 두 행 FOR SHARE), 쓰기는 0이다. 보관 프로젝트 거절은 현재 어디에도 없어 새로 추가한다. 현재 자료 여정 시험의 공급자는 START 사용자 actor를 흉내 내므로 교체 대상이다.
+- 설계: reader를 복사하지 않고 actor 자리에 접근 판별자(HUMAN|모듈 비공개 발급 ExecutionGrantRead)를 받게 해 격리·민감·정정·대체·확정·헌법·배정·묶음 무결성 검사를 한 구현으로 유지한다. 기존 공개 메서드·SQL 문자열·prototype 고정은 바꾸지 않고, 잠금 없는 GRANT 분기 SQL만 새로 둔다. 승인 core는 buildTaskContext만 허용한다. 공급자는 별도 연결의 REPEATABLE READ READ ONLY 거래에서 잠금 없는 grant 결박 확인(현재성·회수·세대·등록 행·보관) 뒤 readRegisteredStartSource→startContextBody로 조립한다. 권위 있는 재확인은 자료 GET 두 번째 거래가 잠금 아래에서 다시 한다.
+- 단계: P-A 판별자 도입(동작 불변, 기존 회귀 시험 기대값·대역 SQL 수정 0이 완료 조건) → P-B 공급자 구현·자료 여정 시험 공급자 교체·필요 시 미적용 0091 → P-C 단계별 독립 검수. 회귀 기준선과 신규 시험 목록, 위험(바이트 불일치는 409/412로 닫힘, 표식 위조 시험)을 문서에 명시했다.
+- 다음: D2 P-A 착수 또는 D1 3단계 실행기 source. 실제 DB/권한/키/서비스/Agent/SSH 변경 0.
