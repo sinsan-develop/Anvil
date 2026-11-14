@@ -64,3 +64,6 @@ tests/desktop/settings-worker-installation.test.cjs
 대상은 같은 원 등록 attempt/epoch의 main 소유 OFFERED offer다. shell의 owned.offer를 readReceiveOffer로 다시 검산하고 원 command의 payload.nativeFactoryRef fullref를 추출한다. renderer가 factory/URL/root/경로/hash를 전달하지 않는다. offer/current가 없거나 바뀌면 설치하지 않는다. ARM 전 명시설치이며 ARM 실행 허가를 만들지 않는다. 원offer·부모·현재성·기한·중복request/내용을 끝까지 결박한다. 표시에는 준비/불가/불명/설치기록 상태만 제공하고 비밀/원command본문을 노출하지 않는다. 새 권한·계약 확장 없이 채택된 설치source의 사용자 진입을 연결하는 내부 보완이다.
 
 settings 버튼은 합성 DOM/IPC로 직접검산하며 실제Electron/OS/네트워크/설치실행0. 버튼외조회와거절시coordinator호출0, 다른창/iframe/epoch·offer교체·중복/늦은완료도검산한다. 실제상태공급자미등록인 경우 가짜설치성공을보여주지않는다.
+
+## Main 정본 검산기 재사용 보완
+Desktop client가 CJS에서 정본 bundle/head/wire 검산을 복제하지 않도록 추가 3경로를 허용한다: `apps/desktop/scripts/native-proof-runtime-entry.mts`, `apps/desktop/scripts/native-proof-runtime-build.cjs`, `tests/desktop/native-proof-runtime-build.test.cjs`. 기존 native-proof-runtime의 readWorkerDeploymentRead/readWorkerDeploymentBundle 및 parseWireJson 명시 export·고정 closure·합성 loader 검증만 보완한다. 기존 33경로에 더해 총36경로이며 새 공개응답·권한 의미는 없다. 실제 설치/외부 SDK/사용자 파일자료 조사/서비스 실행 제외는 불변이다.

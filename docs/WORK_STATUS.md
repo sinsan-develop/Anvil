@@ -19268,3 +19268,18 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 첫묶음 보완: 오래된observedAt 200→503·factoryunique부재 RED2→Primary9P0F0S3518.76ms, Mainfresh9dot/exit0(81e30b). wall/mono1초·signal·lateconnect/query반환1·후속COMMIT0, revoke제품메서드/회수후read거절 포함. 보완중중괄호문법오류 집중2F→교정2P 이력보존. roottsc0은구현자제출, 독립scoped재검수중. 실제PGcancel/동시성미검증. 다음build/publication 모듈부재RED1 확인후비충돌구현진행.
 
 - 첫7경로 scoped 독립재검수 C0/I0/M0. store74BBE4F4·routeE092F700·SQLD00E7731·unit1C06969E·SQLtestF737BE99 지문확인, I2/M1해소. Main9사례검증과함께계약/서버sourcecheckpoint로보존하며전체전달구현완료는아니다. Primary나머지26경로단일writer계속, 실제환경0.
+
+- build묶음작성중 Main은원compiler입출력포트만있는경우실제품호출연결미완료임을지적했다. Primary가동일허용compiler/package경로의concrete Node adapter·명시build→Forge호출코드를추가하겠다고확인. spawn/FS실행0·RAM rawIO/driver대역검증으로구분하고미설정기본앱자동활성화0. 기존첫묶음checkpoint c1b16ee1 private보존, 나머지미완료작성중.
+
+- Primary build 정상RAM연결2P 제출: 부모없는compiler원결과→고정resourcespayload→기존factory검산→publication원token→제품store.publish. 원rawIO/driver대역이며실compile/파일증거아님. 원package/compile/current readback이비동기라동일store의reader Promise허용·await전후함수identity/current·원budget/abort검산을Main이내부DI보완허용했다. 공개계약변경0·late후COMMIT0 유지, 기존store해당delta만재검수예정.
+
+- async publication reader 내부보완 store3F27CD53…E068E5E/unit75D12689…AC18AB 동결·scopedC0/I0/M0. Primary신규1P207.1ms(최초/후행2반례)·인접4P470.2ms/roottsc0, Main집중4dot/exit0(4f8933). 같은원1초scope·signal/identity·늦은완료후COMMIT0/release1 유지. 다른build파일작성중으로아직최종판정아님.
+
+- build 사전검수: compiler timeout 후 unwatch/kill의 원 child·output 소유기록 보존과 package create 반환 직후 stable 거절 시 handle 미대입 공백을 확인하여 기존 Primary에 보완 지시했다. package 검토 지문366014BA…6CD8D, 작성 중 사전지적이며 최종 판정 전이다. 원 handle 선소유·검산 후 양도·UNKNOWN 보존을 RAM 반례로 검증하고 실제 C#/파일/프로세스 실행은 하지 않는다. Main 제품쓰기0.
+
+- 후속 소비 읽기검토 완료: server 보호 store.read 결과→runtime 원객체 reader/current→기존 ownership-return request/accept, Desktop INSTALL_WORKER→원 OFFERED fullref→coordinator→설치기록, native ProtectedDeployment.Read/Check→기존 retained 조립을 연결한다. public GET JSON/build WeakMap 임의 승격0. C#은 실행 제외이므로 정적 연결과 RAM 모형을 별도 증거로 기록하며 전체 단일 실종단으로 주장하지 않는다. 기존 Primary에 접점 전달, 새 승인/계약 추가0.
+
+- build7경로 잠정동결 후 Main fresh publication7dot exit0(c2b8fb), roottsc0(e3d28a), diffcheck0. 독립재검수 package I1: close promise가 불명/기한초과이면 finally에서 close를 재호출할 수 있어 원 pending-close 단발 latch와 RAM 반례를 기존 Primary에 지시했다. 이전 handle 선소유 공백은 해소. 미해결 I로 최종수용하지 않는다.
+- client 정본 검산기 재사용을 위해 native-proof-runtime entry/build/직접시험 정확3경로를 내부 추가허용, WI 총36. 정본 함수 명시export와 fixed closure 연결로 검산중복을 방지한다. 새 API/권한 의미0, 실제환경실행0.
+
+- package close I1 보완: RED1F(2!=1)→Primary 직접3P0F392.3483ms, Main fresh3dot/exit0(81800d). package4384E147…BD16A6C·testC2461F6B…DB5BD4C scoped 독립 C0/I0/M0. owner.closing 최초promise를 정상/finally/늦은create가공유하고 UNKNOWN후추가대기·close재호출0. build묶음 source 검수완료, 실제FS/compiler/OS종료·내구성은미검증. 다음client/설치/UI source 계속, 전체계획미완료.

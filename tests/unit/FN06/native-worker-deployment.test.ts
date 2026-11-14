@@ -79,3 +79,11 @@ test('COMMIT 응답 유실은 UNKNOWN이며 원 request/hash 조회만 저장된
  await assert.rejects(()=>store.publish(id(8),token),/^Error: WORKER_DEPLOYMENT_COMMIT_UNKNOWN$/);assert.equal(publishes,1);assert.equal(releases.length,1);assert.ok(releases[0] instanceof Error);
  assert.equal(await store.lookup(id(8),'0'.repeat(64)),null);assert.deepEqual(await store.lookup(id(8),nativeHash(f.bundle)),f.head);assert.equal(publishes,1);
 });
+test('비동기 원 publication reader는 최초/거래중 대기 모두 원 timeout과 signal에 결박된다',async t=>{
+ const {NativeWorkerDeploymentStore}=await import('../../../apps/server/modules/executions/native-worker-deployment-store.ts');const f=deploymentFixture();
+ for(const blockAt of [1,2]){t.mock.timers.enable({apis:['setTimeout']});let reads=0,resolve!:()=>void,signal:AbortSignal|undefined;const queries:string[]=[],released:any[]=[];
+  const gate=new Promise<void>(r=>resolve=r),reader={readOriginal:async(_token:unknown,context?:{signal:AbortSignal})=>{reads++;signal=context!.signal;if(reads===blockAt)await gate;return{bundle:f.bundle};}};
+  const db={query:async(sql:string)=>{queries.push(sql);if(sql.includes('worker_deployment_publish'))return{rows:[{result:f.head}]};return{command:sql==='COMMIT'?'COMMIT':undefined,rows:[]};},release:(e:any)=>released.push(e)};
+  const store=new NativeWorkerDeploymentStore({connect:async()=>db} as any,reader),pending=store.publish(id(8),{});await new Promise(r=>setImmediate(r));assert.equal(reads,blockAt);t.mock.timers.tick(1001);await assert.rejects(()=>pending);assert.equal(signal!.aborted,true);resolve();await new Promise(r=>setImmediate(r));assert.equal(queries.includes('COMMIT'),false);assert.equal(queries.filter(q=>q.includes('worker_deployment_publish')).length,blockAt-1);assert.equal(released.length,1);assert.ok(released[0] instanceof Error);t.mock.timers.reset();
+ }
+});
