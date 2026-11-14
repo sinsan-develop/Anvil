@@ -3,8 +3,17 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const build=require('../../apps/desktop/scripts/desktop-trust-key-host-build.cjs');
 function input(){return {signerId:'11111111-1111-4111-8111-111111111111',signerVersion:1,compiler:{path:'C:\\Tools\\csc.exe'.replaceAll('\\\\','\\'),sha256:'a'.repeat(64)},references:build.REFERENCE_FILES.map(x=>({path:'C:\\Reference\\'+x,sha256:'b'.repeat(64)})),sources:build.SOURCE_FILES.map(x=>({path:x,sha256:'c'.repeat(64)})),repoRoot:'C:\\Anvil',basisPath:'C:\\Work\\ParentBasis.json',outputPath:'C:\\Work\\AnvilTrustKeyHost.exe'};}
 function basis(){return {schemaVersion:1,purpose:'DESKTOP_TRUST_SIGNER_PARENT_BASIS',namespace:'ANVIL_DESKTOP_TRUST_SIGNER_V1',signerId:'11111111-1111-4111-8111-111111111111',signerVersion:1,parentExeHash:'d'.repeat(64),parentAsarHash:'e'.repeat(64),parentHeaderHash:'f'.repeat(64)};}
-test('fixed signer closure produces exact entry and private resource input',()=>{const c=build.createCompileInput(input(),basis());assert.ok(c.arguments.includes('/main:DesktopTrustKeyHostSource'));assert.ok(c.arguments.some(x=>x.endsWith(',Anvil.Desktop.TrustKeyHost.ParentBasis.v1,private')));assert.equal(c.sources.length,21);assert.ok(c.sources.some(s=>s.path==='apps/connector/native/NormalExecutionCredentialSource.cs'));assert.equal(c.references.length,5);assert.equal(c.workingDirectory,'C:\\Anvil');});
+test('fixed signer closure produces exact entry and private resource input',()=>{const c=build.createCompileInput(input(),basis());assert.ok(c.arguments.includes('/main:DesktopTrustKeyHostSource'));assert.ok(c.arguments.some(x=>x.endsWith(',Anvil.Desktop.TrustKeyHost.ParentBasis.v1,private')));assert.equal(c.sources.length,22);assert.ok(c.sources.some(s=>s.path==='apps/connector/native/NativePreparationRetainedFactorySource.cs'));assert.ok(c.sources.some(s=>s.path==='apps/connector/native/NormalExecutionCredentialSource.cs'));assert.equal(c.references.length,5);assert.equal(c.workingDirectory,'C:\\Anvil');});
 module.exports={input,basis};
+
+test('retained 조립기는 실제 고정 build closure에 포함되며 누락·다른source·예전21개입력은 거절한다',()=>{
+ const config=input(),expected='apps/connector/native/NativePreparationRetainedFactorySource.cs';
+ const compile=build.createCompileInput(config,basis());
+ assert.equal(compile.sources.at(-1).path,expected);assert.ok(compile.arguments.some(v=>v.endsWith('NativePreparationRetainedFactorySource.cs')));
+ assert.throws(()=>build.createCompileInput({...config,sources:config.sources.slice(0,-1)},basis()));
+ const changed=config.sources.map(v=>({...v}));changed[changed.length-1].path='apps/connector/native/Other.cs';assert.throws(()=>build.createCompileInput({...config,sources:changed},basis()));
+ assert.equal(compile.compilerExecuted,false);assert.equal(compile.nativeAdmissionVerified,false);
+});
 
 test('전용 signer 입력은 owner factory 목적과 namespace를 재사용하지 않는다',()=>{const c=build.createCompileInput(input(),basis());assert.equal(c.purpose,'DESKTOP_TRUST_KEY_HOST_COMPILE_INPUT');assert.equal(c.parentBasis.namespace,'ANVIL_DESKTOP_TRUST_SIGNER_V1');assert.ok(!JSON.stringify(c).includes('NATIVE_PHYSICAL_FACTORY'));});
 test('부모가 다른 basis와 상대 compiler 경로는 거절한다',()=>{assert.throws(()=>build.createCompileInput({...input(),signerId:'22222222-2222-4222-8222-222222222222'},basis()));assert.throws(()=>build.createCompileInput({...input(),compiler:{path:'csc.exe',sha256:'a'.repeat(64)}},basis()));});

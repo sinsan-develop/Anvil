@@ -5,7 +5,14 @@ const source=(name:string)=>readFile(new URL('../../../apps/connector/native/'+n
 
 test('보호 host RETURN 연결은 원 REGISTERED/STORED·helper·부모를 유지하고 공급자 미설정은 닫힌다',async()=>{
  const host=await source('DesktopTrustKeyHostSource.cs'),signer=await source('NativePreparationOwnershipReturnSource.cs');
- assert.match(host,/retainedPort=null/);assert.match(host,/if\(retainedProvider==null\)throw Invalid\(\)/);
+ assert.match(host,/retainedPort=null/);
+ assert.match(host,/NativePreparationRetainedFactorySource\.ProtectedSource retainedInputs=null/);
+ assert.match(host,/retainedFactory=new NativePreparationRetainedFactorySource\(retainedInputs\)/);
+ assert.match(host,/else\{retainedFromFactory=true;retainedReturn=retainedFactory\.Create\(returnContext,peer\.HelperHash/);
+ const factory=await source('NativePreparationRetainedFactorySource.cs');
+ assert.match(factory,/if\(source==null\)throw Invalid\(\)/);
+ assert.ok(factory.indexOf('if(source==null)throw Invalid()')<factory.indexOf('source.Acquire('));
+ assert.ok(factory.indexOf('source.Acquire(')<factory.indexOf('CreateEmptyJobSource('));
  assert.match(host,/Text\(record,"state"\)!="REGISTERED"/);
  assert.match(host,/Text\(credential,"storageState"\)!="STORED"/);
  assert.match(host,/Id\(record,"pendingKeyId"\)!=Id\(key,"keyId"\)/);
