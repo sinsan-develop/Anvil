@@ -1,6 +1,6 @@
 # FN08 준비 결과 ownership 반환 연결 후보
 
-상태: **미채택·검토 후보 / 제품 구현 GO 아님**. 작성 developer-primary, 2026-11-14. 기준 `main 8922562ba1b63354042e3b326ebc5e40ca02e25c`, 작업 branch `codex/av3-d1-ownership-binding`. 이 문서는 Main이 지정한 문서 한 개만 작성한 결과다. 실제 DB·권한·키·보호 파일·서비스·프로세스·Agent 실행과 native 컴파일을 승인하거나 수행하지 않는다.
+상태: **채택 — 2026-11-14 신산님 직접 A안 계약·source-only 구현 승인**. 승인 대상 원문 SHA256: `CFF94F6704B91556A0DBBD21353F5F2D29A8CA0F4340E3C0413A7841B849EFA4`. 아래 후보 표현은 결정 당시 이력이며 채택 범위는 코드·미적용 SQL·합성 검증이다. 실제 DB·권한 적용·키·프로세스·서비스·Agent 실행은 제외한다. 작성 developer-primary, 2026-11-14. 기준 `main 8922562ba1b63354042e3b326ebc5e40ca02e25c`, 작업 branch `codex/av3-d1-ownership-binding`. 이 문서는 Main이 지정한 문서 한 개만 작성한 결과다. 실제 DB·권한·키·보호 파일·서비스·프로세스·Agent 실행과 native 컴파일을 승인하거나 수행하지 않는다.
 
 ## 1. 결정할 한 점과 사용자 효과
 

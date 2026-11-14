@@ -1,6 +1,7 @@
 import {canonicalJson} from '../../../contracts/canonical.ts';
 import {cloneV1,recordV1,refV1,uuidV1,isoV1,hashV1,type RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
-import {nativeHash,nativeSame,nativeBytes,readNativeAuthority} from '../../../contracts/runtime/native-preparation-authority-v1.ts';
+import {nativeHash,nativeSame,nativeBytes} from '../../../contracts/runtime/native-preparation-authority-v1.ts';
+import {readNativePreparationAuthority as readNativeAuthority} from '../../../contracts/runtime/native-preparation-ownership-return-v1.ts';
 import {readNativeLocalRecords,appendNativeLocal,type NativeLocalJournal,type NativeLocalRecord} from './native-preparation-local-attempt.ts';
 import {NativePreparationFactoryConsumer,type NativeFactoryPort} from './native-preparation-factory-consumer.ts';
 export interface NativeChannelIdentity{origin:string;channelProfileRef:RuntimeRefV1;registrationRef:RuntimeRefV1;credentialPurpose:'NATIVE_PREPARATION_ONLY';credentialGeneration:number}

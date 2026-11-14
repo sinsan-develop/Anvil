@@ -1,5 +1,6 @@
 import {recordV1,refV1,isoV1,cloneV1,type RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
-import {nativeHash,nativeSame,readNativeAuthority} from '../../../contracts/runtime/native-preparation-authority-v1.ts';
+import {nativeHash,nativeSame} from '../../../contracts/runtime/native-preparation-authority-v1.ts';
+import {readNativePreparationAuthority as readNativeAuthority} from '../../../contracts/runtime/native-preparation-ownership-return-v1.ts';
 import {NativePreparationHttpsChannel,restrictNativeProofSigningContext,type NativeHttpsBinding,type NativeHttpsMaterial} from './native-preparation-https.ts';
 import type {NativeChannelIdentity} from './native-preparation-client.ts';
 export interface NativeCredentialBaseMaterial{binding:NativeHttpsBinding;ca:string;profileExpiresAt:string;signerExpiresAt:string}

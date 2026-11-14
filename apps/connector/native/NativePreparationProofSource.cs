@@ -33,11 +33,15 @@ internal static class NativePreparationProofSource {
    var authority = Map(r["authority"]); Exact(authority,"ref,snapshot");
    var authorityRef = Ref(authority["ref"],true); var a = Map(authority["snapshot"]);
    Exact(a,"schemaVersion,purpose,authorityId,credentialId,credentialGeneration,scope,subject,parent,policyRef,channelProfileRef,allowedOperations,issuedAt,expiresAt,codingAgentExecutionAuthorized,agentDispatchPerformed");
-   One(a["schemaVersion"]); if(Text(a,"purpose") != "NATIVE_PREPARATION_AUTHORITY") throw Invalid();
+   long authorityVersion = Positive(a["schemaVersion"]);
+   if((authorityVersion != 1 && authorityVersion != 2) || Text(a,"purpose") != "NATIVE_PREPARATION_AUTHORITY") throw Invalid();
    if(Id(a,"authorityId") != Text(authorityRef,"id") || Hash(Utf8.GetBytes(Canonical(a,0))) != Text(authorityRef,"contentHash")) throw Invalid();
    Id(a,"credentialId"); long generation = Positive(a["credentialGeneration"]); False(a["codingAgentExecutionAuthorized"]); False(a["agentDispatchPerformed"]);
    Ref(a["policyRef"],false); Ref(a["channelProfileRef"],false);
-   if(Canonical(a["allowedOperations"],0) != "[\"CHECK_NATIVE_PREPARATION_CURRENT\",\"CONSUME_NATIVE_PREPARATION\"]") throw Invalid();
+   string operations = authorityVersion == 1
+    ? "[\"CHECK_NATIVE_PREPARATION_CURRENT\",\"CONSUME_NATIVE_PREPARATION\"]"
+    : "[\"CHECK_NATIVE_PREPARATION_CURRENT\",\"CONSUME_NATIVE_PREPARATION\",\"RETURN_NATIVE_PREPARATION_OWNERSHIP\"]";
+   if(Canonical(a["allowedOperations"],0) != operations) throw Invalid();
    var scope = Map(a["scope"]); Exact(scope,"installationId,projectId,executionId,executionGeneration,authorityEpoch,leaseId,registrationRef,nativeFactoryRef,sourceScopeHash,writerHeadRef,preparationRef,hostPublicKeyFingerprint");
    foreach(string k in new[]{"installationId","projectId","executionId","leaseId"}) Id(scope,k);
    Positive(scope["executionGeneration"]); Positive(scope["authorityEpoch"]);
@@ -80,27 +84,27 @@ internal static class NativePreparationProofSource {
   } catch { throw Invalid(); }
   finally { elapsed.Stop(); foreach(var bytes in new[]{copy,domain,digest,signature}) if(bytes != null) Array.Clear(bytes,0,bytes.Length); }
  }
- static Dictionary<string,object> Map(object v) { var r=v as Dictionary<string,object>; if(r==null)throw Invalid();return r; }
- static void Exact(Dictionary<string,object> v,string fields) { if(v==null || !v.Keys.OrderBy(x=>x,StringComparer.Ordinal).SequenceEqual(fields.Split(',').OrderBy(x=>x,StringComparer.Ordinal)))throw Invalid(); }
- static string Text(Dictionary<string,object> v,string k) { object x; if(!v.TryGetValue(k,out x)||!(x is string))throw Invalid();return (string)x; }
- static string Id(Dictionary<string,object> v,string k) { string x=Text(v,k); if(!Regex.IsMatch(x,@"\A[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z",RegexOptions.CultureInvariant))throw Invalid();return x; }
- static long Positive(object v) { if(!(v is int)&&!(v is long))throw Invalid();long n=Convert.ToInt64(v,CultureInfo.InvariantCulture);if(n<1||n>9007199254740991L)throw Invalid();return n; }
- static void One(object v) { if(Positive(v)!=1)throw Invalid(); }
- static void False(object v) { if(!(v is bool)||(bool)v)throw Invalid(); }
- static void RequireHash(string s) { if(!Regex.IsMatch(s,@"\A[0-9a-f]{64}\z",RegexOptions.CultureInvariant))throw Invalid(); }
- static Dictionary<string,object> Ref(object v,bool one) { var r=Map(v);Exact(r,"id,version,contentHash");Id(r,"id");long n=Positive(r["version"]);if(one&&n!=1)throw Invalid();RequireHash(Text(r,"contentHash"));return r; }
- static DateTime Time(Dictionary<string,object> v,string k) { DateTime t;string s=Text(v,k);if(!DateTime.TryParseExact(s,"yyyy-MM-dd'T'HH:mm:ss.fff'Z'",CultureInfo.InvariantCulture,DateTimeStyles.AssumeUniversal|DateTimeStyles.AdjustToUniversal,out t)||t.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'",CultureInfo.InvariantCulture)!=s)throw Invalid();return t; }
- static bool Same(object a,object b) { return Canonical(a,0)==Canonical(b,0); }
- static string Canonical(object v,int depth) {
+ internal static Dictionary<string,object> Map(object v) { var r=v as Dictionary<string,object>; if(r==null)throw Invalid();return r; }
+ internal static void Exact(Dictionary<string,object> v,string fields) { if(v==null || !v.Keys.OrderBy(x=>x,StringComparer.Ordinal).SequenceEqual(fields.Split(',').OrderBy(x=>x,StringComparer.Ordinal)))throw Invalid(); }
+ internal static string Text(Dictionary<string,object> v,string k) { object x; if(!v.TryGetValue(k,out x)||!(x is string))throw Invalid();return (string)x; }
+ internal static string Id(Dictionary<string,object> v,string k) { string x=Text(v,k); if(!Regex.IsMatch(x,@"\A[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z",RegexOptions.CultureInvariant))throw Invalid();return x; }
+ internal static long Positive(object v) { if(!(v is int)&&!(v is long))throw Invalid();long n=Convert.ToInt64(v,CultureInfo.InvariantCulture);if(n<1||n>9007199254740991L)throw Invalid();return n; }
+ internal static void One(object v) { if(Positive(v)!=1)throw Invalid(); }
+ internal static void False(object v) { if(!(v is bool)||(bool)v)throw Invalid(); }
+ internal static void RequireHash(string s) { if(!Regex.IsMatch(s,@"\A[0-9a-f]{64}\z",RegexOptions.CultureInvariant))throw Invalid(); }
+ internal static Dictionary<string,object> Ref(object v,bool one) { var r=Map(v);Exact(r,"id,version,contentHash");Id(r,"id");long n=Positive(r["version"]);if(one&&n!=1)throw Invalid();RequireHash(Text(r,"contentHash"));return r; }
+ internal static DateTime Time(Dictionary<string,object> v,string k) { DateTime t;string s=Text(v,k);if(!DateTime.TryParseExact(s,"yyyy-MM-dd'T'HH:mm:ss.fff'Z'",CultureInfo.InvariantCulture,DateTimeStyles.AssumeUniversal|DateTimeStyles.AdjustToUniversal,out t)||t.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'",CultureInfo.InvariantCulture)!=s)throw Invalid();return t; }
+ internal static bool Same(object a,object b) { return Canonical(a,0)==Canonical(b,0); }
+ internal static string Canonical(object v,int depth) {
   if(depth>16)throw Invalid();if(v==null)return "null";if(v is string)return Quote((string)v);if(v is bool)return (bool)v?"true":"false";
   if(v is int||v is long){long n=Convert.ToInt64(v,CultureInfo.InvariantCulture);if(n<0||n>9007199254740991L)throw Invalid();return n.ToString(CultureInfo.InvariantCulture);}
   var d=v as Dictionary<string,object>;if(d!=null)return "{"+String.Join(",",d.Keys.OrderBy(k=>k,StringComparer.Ordinal).Select(k=>Quote(k)+":"+Canonical(d[k],depth+1)))+"}";
   var list=v as IList;if(list!=null){var items=new List<string>();foreach(object x in list)items.Add(Canonical(x,depth+1));return "["+String.Join(",",items)+"]";}throw Invalid();
  }
  static string Quote(string s) { var b=new StringBuilder("\"");foreach(char c in s){if(c>127)throw Invalid();if(c=='"')b.Append("\\\"");else if(c=='\\')b.Append("\\\\");else if(c=='\b')b.Append("\\b");else if(c=='\f')b.Append("\\f");else if(c=='\n')b.Append("\\n");else if(c=='\r')b.Append("\\r");else if(c=='\t')b.Append("\\t");else if(c<32)b.Append("\\u"+((int)c).ToString("x4",CultureInfo.InvariantCulture));else b.Append(c);}return b.Append('"').ToString(); }
- static byte[] Digest(byte[] b) { using(var h=SHA256.Create())return h.ComputeHash(b); }
- static string Hash(byte[] b) { return BitConverter.ToString(Digest(b)).Replace("-","").ToLowerInvariant(); }
- static string B64(byte[] b) { return Convert.ToBase64String(b).TrimEnd('=').Replace('+','-').Replace('/','_'); }
- static byte[] Unbase(string s,int length) { if(!Regex.IsMatch(s,@"\A[A-Za-z0-9_-]+\z",RegexOptions.CultureInvariant))throw Invalid();byte[] b=Convert.FromBase64String(s.Replace('-','+').Replace('_','/')+new string('=',(4-s.Length%4)%4));if(b.Length!=length||B64(b)!=s)throw Invalid();return b; }
- static byte[] Hex(string s) { return Enumerable.Range(0,s.Length/2).Select(i=>Convert.ToByte(s.Substring(i*2,2),16)).ToArray(); }
+ internal static byte[] Digest(byte[] b) { using(var h=SHA256.Create())return h.ComputeHash(b); }
+ internal static string Hash(byte[] b) { return BitConverter.ToString(Digest(b)).Replace("-","").ToLowerInvariant(); }
+ internal static string B64(byte[] b) { return Convert.ToBase64String(b).TrimEnd('=').Replace('+','-').Replace('/','_'); }
+ internal static byte[] Unbase(string s,int length) { if(!Regex.IsMatch(s,@"\A[A-Za-z0-9_-]+\z",RegexOptions.CultureInvariant))throw Invalid();byte[] b=Convert.FromBase64String(s.Replace('-','+').Replace('_','/')+new string('=',(4-s.Length%4)%4));if(b.Length!=length||B64(b)!=s)throw Invalid();return b; }
+ internal static byte[] Hex(string s) { return Enumerable.Range(0,s.Length/2).Select(i=>Convert.ToByte(s.Substring(i*2,2),16)).ToArray(); }
 }

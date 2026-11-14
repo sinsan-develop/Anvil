@@ -71,6 +71,10 @@ const ticks=(v:unknown)=>typeof v==='string'&&/^[1-9][0-9]{16,19}$/.test(v);
 function process(v:unknown):v is OwnershipProcessRefV1 {
  return recordV1(v,['runId','generation','jobId','pid','startTicks','executableHash'])&&uuidV1(v.runId)&&positive(v.generation)&&uuidV1(v.jobId)&&positive(v.pid)&&ticks(v.startTicks)&&hashV1(v.executableHash);
 }
+/** 기존 process 검산의 명시 재사용. 후보의 OS 진위를 인증하지 않는다. */
+export function readOwnershipProcessRefV1(value:unknown):OwnershipProcessRefV1 {
+ if(!process(value))return invalid();return cloneV1(value) as OwnershipProcessRefV1;
+}
 /** Structural/hash binding only. This does NOT authenticate OS observations or advance head/writer authority. */
 export function matchOwnershipObservationFactsV1(reportValue:unknown,factsValue:unknown,expectedProcess:unknown):OwnershipObservationFactsV1 {
  const report=readOwnershipObservationV1(reportValue);

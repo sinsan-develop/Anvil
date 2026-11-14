@@ -19049,3 +19049,49 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 최초ownership 반환 후보 보정SHA CFF94F6704B91556A0DBBD21353F5F2D29A8CA0F4340E3C0413A7841B849EFA4, 독립재검수C0/I0/M0(I1/M3해소). 정상종단관측/head수용까지, grant/resume선행미확인. 신산님께v2제한반환operation1/target2 source-only계약채택질문1회전달. 답변전해당새권한/제품구현0. 기존실행제외유지.
 
 - 결정대기 중 독립 읽기 선행 대조: normal-initial-execution.ts49~59 최초grant는 writerState NONE 및 osFence VERIFIED_CURRENT/nonempty refs를 요구하며 CURRENT/RUNNING phase를 직접검사하지 않는다. normal-start-permit.ts64~74는후속writer OWNED와동일osOwnershipRef를요구한다. ownership-observation-v1.ts80의CURRENT RUNNING조건을최초grant직접조건으로확대하지않는다. PREPARED로최초grant충족여부는 NormalExecutionCurrentSource의보호판정생산자부재로미확인이다. windows-host.ts86~106/OwnershipHost.cs118의resume은고정QA경로이며normal권위전용근거없음. 후보CFF94F67은변경하지않고미확인표시유지. 제품/실제0.
+
+
+## 2026-11-14 최초 ownership 반환 A안 채택·구현 재개
+- 신산님 직접 답변 A안 계약·source-only 구현 채택. 승인원문CFF94F6704B91556A0DBBD21353F5F2D29A8CA0F4340E3C0413A7841B849EFA4 재검산일치, branch codex/av3-d1-ownership-binding HEAD e8ae0f81 clean. 기존Primary에게단일writer로구현재개지시, Main검수/통합.
+- 할일: 채택P3단계3의최초관측반환연결. v1보존·v2제한RETURN1/target2·원consume/request/서명/원장binding. 코드·미적용SQL·합성검증허용, 실제DB/권한/키/보호파일/process/service/Agent/nativecompile0.
+- 검수기준: 원등록/세대/scope/consume/nonce/head·같은packet멱등·UNKNOWN재실행0·v1/v2교차거절. 정상종단수용observation/head, grant/current/resume완료로승격금지. 기존완료포트재구현금지. 계약머리글만채택상태기록하고원승인hash보존.
+
+- 구현 중 원채택안 §4.3 ExistingOwnershipAnchorShape 오류 확인: 기존anchor는SYNTHETIC/session/role필수, native원부모에없음. 가짜ref/validator완화금지. 공개snapshot한정정정안 FN08_NATIVE_ANCHOR_SHAPE_CORRECTION_20261114.md SHA6BF3B5F2734F5F365674E9AC895D226B1EC3359336504F7D5A41728A7ECE95CA, 독립C0/I0. 신산님결정질문전달, 잘못된D정본링크는실제검토본링크로즉시정정. 영향없는v2계약5PASS 및구현계속, snapshot의존구현만미확정. 실제0.
+
+- Primary 중간증거: 신규계약모듈부재RED→contract직접/기존5PASS. 실제제품HUMAN prepare v2발급부재RED(NATIVE_INPUT_INVALID)→명시issuer authorityVersion opt-in(기본1)/reader dispatch→prepare/challenge/P256시험consume와v1인접2PASS. 0092미적용완결함수는0071과schemaVersion/operations차이만정적비교1PASS, 실SQL0. NativePreparationProofSource.cs의명시v1/v2직접분기허용, 원서명bytes/일반SIGN_PROOF불변·native실컴파일/키0. anchor정정응답전의존구현은분리.
+
+- 신산님 anchor 형상 정정 A안 직접채택. 원문6BF3B5F2734F5F365674E9AC895D226B1EC3359336504F7D5A41728A7ECE95CA 확인후머리글채택기록. 정상nativeparent응답연결재개가능, 실제실행제외유지. 독립v2검수I1(export operations runtime mutable)는Primary exact2파일RED→GREEN보정지시. Main최종현상직접8P/서버연결3P/0F, 이후I1수정검증별도수집.
+
+- v2 입력 보완 재검수: 기존 Primary의 I1/I2/M1 RED 2F→GREEN 7P/0F(exit0), 최종 root typecheck0/diff0 보고를 확보했다. 독립 재검토 C0/I0/M0, 보고된 4파일 hash 일치. operations freeze·root/nested Proxy reflection 전 거절/trap0·단일 snapshot·issuer own-data 검사를 확인했다. 이 판정은 후속 anchor 연결을 포함하지 않는다. 담당자는 채택된 native anchor 요청/결과/원장 연결을 이어가며 Main은 문서·검수·통합을 맡는다. 실제 DB/권한/키/서비스/Agent/native 실행0, 전체계획 미완료.
+
+- Main 보완 후 직접 검증: node --test --test-reporter=spec --test-name-pattern="v2|RETURN issuer" tests/unit/FN06/native-preparation-ownership-return-contract.test.ts tests/unit/FN06/native-preparation-store.test.ts → exit0, 7P/0F/0SKIP, 3079.6697ms. 동일 검사는 코드 변화 전 재실행하지 않는다. 후속 실제 공급자 공백: 원 native catalogue에 expected executableHash/retained run/job/observer 근거 공급이 없어 내부 보호 basis 포트 부재 시 거절한다. caller processRef를 권위 근거로 재사용하지 않고 RAM 대역과 실제 공급자 미연결을 구분한다.
+
+- 후속 최초 grant 읽기 조사: NormalExecutionCurrentSource의 내부 주입 포트는 있으나 구체 보호 생산자는 미연결이다. PREPARED retained source는 원 PID/TID/startTicks/image/Job 반복 대조와 이 source의 resume 미제공 이력만 뒷받침하며 실제 suspended 유지·외부 resume/handle 복제 배제·파일 격리·강제회수를 보장하지 않는다. fileSandboxVerified:false/killOnClose:false를 유지한다. 따라서 서명·ACTIVE head만으로 최초 grant의 osFence VERIFIED_CURRENT를 만들지 않는다. 현재 승인 반환 구현은 계속하며, 실행 전 fence와 후속 CURRENT의 성공 판정은 별도 근거 검토가 남는다. 읽기 조사 담당 d2_preflight, 실제 OS 시험0.
+
+- 후속 anchor 직접 계약 시험은 구현자 RED 2F(함수 부재)→GREEN 2P/0SKIP exit0 제출, 아직 전체 반환 검수 전이다. 0039 ownership 5표의 unconditional denial/RLS false/app REVOKE와 과거 PREPARATION_GRANTED 전용 FK를 확인했다. 채택 §6 안에서0092 native 부모 완결 분기를 구현한다. 기존 synthetic 차단·정확 부모 XOR·request 단일수용·append-only·head CAS·부분commit 차단을 보존하며 실제 SQL 적용은 하지 않는다. 독립 담당자는 기존0039 요구를 읽기 대조했으며 현재0092 합격 판정은 하지 않았다.
+
+- Main 신규 연결 직접 검사: anchor/result 이름 필터 실행에서 실제 계약2개 통과, 다른 파일은 이름 불일치로 파일 wrapper만 표시되어 기능 검증으로 계산하지 않았다. 이어 해당 순수 계획 시험 파일을 필터 없이 실행해 원 consume→request→RAM P256 검산/저장계획 및 보호 basis/변조·만료 거절 3P/0F/0SKIP, 295.9558ms exit0를 확인했다. 합계는 실제 계약2개와 계획3개이며 HTTP·원자 저장·실제 DB/native 검증은 아니다. 잠정동결4파일 독립검수 중, Primary는 별도 store/0092 구현을 계속한다.
+
+- 잠정동결 계약/순수계획4파일 독립검수 C0/I0/M2, 지문일치. M1은 변경된anchor의hash재봉인 뒤 의미검산 거절 증거, M2는 consume/basis/호출기한 각각경계·다른SPKI·재서명한 다른process·tuple교차 반례 부족이다. 같은Primary 최종store/여정시험에 흡수 지시했다. 인증/current/nonce소비/동시성/COMMIT은 아직 후속store 책임이므로 이번순수계획PASS를 실제수용으로승격하지않는다.
+
+- 서버/store 연결 진행: RAM store 저장/replay/만료거절2P 제출. 실제제품HUMAN prepare→consume→반환 합성여정은 예상UNKNOWN 대신SOURCE_UNAVAILABLE로 실패했다. 원인은 신규anchor검사에서 registrationRef.version=1을 잘못강제한 것으로, 기존Ref는양의버전이며원fixture는4다. registration/observer만기존refV1계약으로교정하고원값정확대조/재봉인cross-ref음성을추가한다. authority/consume/attempt의version1결박은유지한다. 실패는PASS로승격하지않으며0092 native부모완결/retained signer미완료. 실제자원실행0.
+
+- 서버/store 잠정동결 Main 직접검증: RETURN 실제 HUMAN 필터로 native-preparation-store.test.ts 1P/0F/0SKIP2964.2205ms exit0; native-preparation-ownership-return-store.test.ts 전체3P/0F/0SKIP266.4074ms exit0. 원제품처리코드를 사용하지만 DB/basis/프로세스는RAM대역이므로 실제DB/native수용증거가아니다. request단발/만료역사재조회/원receipt재조회/철회/latebasis쓰기0을확인했다. 독립서버검수중,0092/retained/runtime미완료.
+
+- 서버/store/route 동결5제품 독립C0/I0/M2 및hash일치. 이전anchor재봉인·최단기한·다른키/다른process 음성 보완은확인됐다. 새M1은정상인증후malformedbody가503으로분류되어계약상400과불일치; 입력형상만정확400으로교정하고DB/basis불명503은보존하도록지시했다. 새M2의v1target/혼합header/회수/중간rollback/중복 음성은최종연결검수에보완한다. 실제PG동시성·TLS·native는미검증유지.
+
+- 독립검수M1정정: reviewer가외부서비스161~162의선행parsecatch를놓치고store예외만추적한오독이었다고철회했다. 동일SHA6551B05F에서이미INPUT_INVALID400이구현돼있어제품수정0. Main추가시험delta RETURN 실제 HUMAN 1P/0F/0SKIP3290.719ms exit0, malformed request/result400·혼합Cookie/TLS거절·중간INSERT실패graphrollback 확인. 최초M1주장은오류로보존하고실제품결함으로계산하지않는다.
+
+- 0092 native부모/guard초안SHA3782174DE688B8027718EFEA57F53C02DC7DB2D61AFCFE3009FE72404038799D 독립검수시작. Main node --test --test-reporter=spec tests/unit/FN06/native-preparation-ownership-return-sql.test.ts →2P/0F/0SKIP159.7871ms exit0. 정적원문/기준guard보존검사뿐이며실제PG구문/거래/권한PASS아님. 기존RLSfalse/appREVOKE유지로현재store rawSQL의실제앱호출연결은미완료다. 임의GRANT로열지않으며retained/runtime연결은계속한다.
+
+- 0092 독립 전체403행 검수 C0/I1/M0. 공용 shape trigger가 anchors 이외의 NEW에도 native_return_binding_ref 필드를 AND 식 안에서 참조해 record 필드 해석 오류가 가능한 I1을 발견했다. 이미 확보한 to_jsonb(NEW) 기반 검사 또는 테이블 분기 중첩으로 보완하도록 같은 Primary에 전달했다. 원0039 세함수와0071의 승인 분기 외 동등 보존 확인. 현재정적2PASS를 이 I1해소나실PGPASS로승격하지않는다.
+
+- client/HTTPS/SQL 동결 Main 직접 node --test --test-reporter=spec tests/unit/FN06/native-preparation-ownership-return-client.test.ts tests/unit/FN06/native-preparation-https.test.ts tests/unit/FN06/native-preparation-ownership-return-sql.test.ts →19P/0F/0SKIP557.1111ms exit0(신규client3·기존HTTPS14·SQL정적2). SQL77A70EE2는공용trigger JSON행조회보완, 기존unavailable unconditional deny보존. 실제appDB호출/native공급자는미연결이다. 재호출rejects→기존UNKNOWN시험기대교정은원journal/결과/비currenttarget추가0/factory1반례와함께독립재검토중이며기존검사기준완화로처리하지않는다.
+
+- client 재시작 M1 해소: 새 client/channel이 동일 RAM journal을 실제 읽는 정상/LOST_RESULT 반례에서 current+1/read+1과 기존기록·비current HTTP·open/sign/close불변을 확인했다. Main 집중1P/0F/0SKIP410.1763ms exit0, 독립deltaC0/I0/M0·시험SHA4D8239335D2C7FC5F74B913D81EE01535C851C46257069E34868ED2819E27F0E. 실제파일내구성/OS재시작증거는아니다. native signer는신규source부재RED확인후Primary구현중,실컴파일/키사용0.
+
+- native source 잠정동결: 원factory retained 객체 CWT 확인과 기존 domain 제한서명을 구현했다. Main native정적+기존proof-signer 직접15P/0F/0SKIP880.1144ms exit0. 신규C#정적1+기존TS/RAM14 범위이며실제C#컴파일/CNG/host실행아님. 독립native검수중,원Sign/helper본문동등대조와최종type/diff는Primary제출예정. 실제retained+등록key 공동공급자/host활성화와앱DB보호접근은미연결로남긴다.
+
+- 최종Main root tsc --noEmit -p tsconfig.base.json exit0(9.426579s). native 독립검수C0/I1/M0: retained selection의authorizationReceiptId/Version/Hash가authority.parent.authorizationReceiptRef와대조되지않았다. CWT원객체확인만으로원HUMAN승인receipt동일성이보장되지않으므로Primary가해당fullref비교반례/보완을수행한다. 다른동결파일유지,이I1미해소상태에서commit/병합하지않는다. 실제C#/키/host/DB시험0.
+
+- native authorizationReceipt I1 보완 후 Main정적2P/0F/0SKIP173.7293ms exit0 및 독립재검수C0/I0/M0·지문일치. 결과서 FN08_D1_NATIVE_PREPARATION_OWNERSHIP_RETURN_SOURCE_RESULT_20261114.md 작성. 제품/SQL17+시험7 및 Main기록5를 정확검수/통합할 예정이며 실제DB호출/host공급자미완료·전체계획미완료를보존한다.
