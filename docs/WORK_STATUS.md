@@ -19036,3 +19036,14 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Primary 구현 분해: normal-start-wire 신규 source, normal-claude-start-wire 단위/여정 시험, 기존 secondary/start-options 순수 params 검산 추출(기존 호출 보존), claude-start-options 인접 시험 최대5경로. Main은 문서 소유. 독립 검수자는 완료 후 정상 권위 소비·synthetic 회귀·단발/UNKNOWN·합성 한계를 검토한다. 통상 TypeScript noEmit은 허용된 개발 검증이고 제외된 컴파일은 실제 native C# 실행 범위임을 명확히 전달했다.
 
 - normal Claude adapter 동결4경로 검수: Primary14P+기한delta1P/type0, Main 최종15P/0F/0SKIP15422.8778ms exit0, 독립C0/I0/M0. 신규모듈RED 및 기한timer RED→GREEN 보존. 실제current/driver/DB/파일시스템은시험대역이고 실SDK/키/DB/서비스/Agent0. 결과보고 FN08_D1_NORMAL_CLAUDE_ADAPTER_SOURCE_RESULT_20261114.md. FN06/FN08 및 전체계획완료아님.
+
+
+## 2026-11-14 PR105 통합·최초 ownership 연결 검토
+- PR105 source34cdb91460d197ab11f76b84d3def07bfac1f61c→main8922562ba1b63354042e3b326ebc5e40ca02e25c. Broker43534320469 success, tree동일/local개발원격main동일/clean·원격main만/요청tag부재. merged smoke 순수Options1PASS918.3714ms exit0. 완료local branch/tag정리.
+- 다음branch codex/av3-d1-ownership-binding. Primary는 최초ownership 반환 계약 후보1문서만작성, Main기록/검수. 제품writer없음.
+- 실제공백: normal current·permit의osOwnershipRef 생산자부재. 등록ref/holderId/profilehash대체금지. 최초grant전에는기존HUMAN prepareNativeBoundary→RESERVED→NATIVE_PREPARATION_ONLY current/consume→FACTORY_ATTEMPTED 일회capability를재사용가능. 원retained process→서명관측→원장수용반환연결미완료. 최초관측을normalcredential로요구하면순환하므로후속CURRENT와분리한다.
+- 기존OWNERSHIP_OBSERVATION namespace/SPKI/nonce/head/원장재사용가능. 미정한점은소비된준비결과의정확ownership request/report 인증전달형상이다. 기존두operation을몰래확장하지않는다. PMO지원요청전달, 구체후보준비중. 실제DB/권한/키/서비스/Agent/native0, 전체계획미완료유지.
+
+- Main 조정 오류: 완료된 Primary에게 send_message만 보내 후보 I1/M3 재작업이 실제 기동되지 않았다. 반복 대기 후 interrupt 결과 completed로 확인, followup_task로 같은 담당자 재개했다. 후보hash보존/제품변경0/정식개발실패0. 재발방지: completed 담당자의 새업무는followup_task, 실행중 전달만send_message. 후보I1은PREPARED수용을grant/current까지과장한것이며 정상종단을원장반환까지로보정한다.
+
+- 최초ownership 반환 후보 보정SHA CFF94F6704B91556A0DBBD21353F5F2D29A8CA0F4340E3C0413A7841B849EFA4, 독립재검수C0/I0/M0(I1/M3해소). 정상종단관측/head수용까지, grant/resume선행미확인. 신산님께v2제한반환operation1/target2 source-only계약채택질문1회전달. 답변전해당새권한/제품구현0. 기존실행제외유지.
