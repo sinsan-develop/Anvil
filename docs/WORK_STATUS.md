@@ -19450,3 +19450,9 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 마지막혼합50/51 실제생산시험은원upstream 호출예산 BUDGET_CALLS_EXHAUSTED로1F이며자료QUARANTINE1P. 제품예산/기준을늘리지않고페이지소비기의RAM입력한도시험과실제생산종단증거를분리하도록Primary에지시했다. 실패를50SEND실생산PASS로바꾸지않는다.
 
 - 최종21경로 Primary쓰기반환/live0/Gitmutation0. SQL CASE I1재검수·전체단위최종접점 C0/I0/M0. Main최종 SQL7+설정1=8P(1f06d1), 추가혼합page입력/QUARANTINE2P(5875a3); 기존TS불변172P/type0재사용. 결과서 FN08_NORMAL_SEND_DISPATCH_SOURCE_RESULT_20261115.md에최종지문·오류·실행명령·미검증/rollback기록. source한정검수완료이며실제PG/Agent/전체계획완료아님. 다음명시파일commit/private게시·검증된source단위통합.
+
+- 2026-11-15 PR115: source065b1e73을 private 게시하고 Broker43619186058 success로 main a93677d556f4b57147324226f5ac00365509d208에 squash 통합했다. 원격/로컬main exact·tree동등·PRhead복구ref확인. 단, merged-main 단독smoke `node --experimental-strip-types --experimental-test-module-mocks --test --test-reporter=tap --test-name-pattern="원 normal START 이후 SEND" tests/unit/FN08/normal-instruction-dispatch-journey.test.ts`는 ENOENT never-created-node-decision-memory로1F(exit1,3954be). 병합후검증PASS·branch정리완료로표시하지않는다. 마지막page경계시험추가의정적import가RAM FS설치보다제품을먼저로드했을가능성을Primary가조사한다. 기존branch에main을정상merge한76c76edb에서시험1경로만보완허용,제품/실파일/DB실행0. 이전37P는그시점증거이며최종시험파일전체PASS주장보류. 원격조회첫sandbox NtCreateDirectoryObject 0xC0000022는권한갖춘동일읽기로해소했고Git접속실패와제품오류를구분한다.
+
+- PR115 병합후시험회귀 보정: Primary가 journey1파일 static fitPage import를 경계test내 dynamic import로이동했다(3+/2-, 기대값/제품/실파일변경0). MemoryFS top-level설치후제품FS결박순서를보장한다. 최종지문5B6A8BA24BA89B8C86065F393F46346DFB75AFEDE3CF9E791ED8297EBDAA9D36. 수행자동일단독smoke1P(b30562)·직접2파일39P0F0SKIP exit0 18014.3664ms(2b6a1f), Main동일단독smoke1P0F0SKIP exit0 3379.5123ms(ae2dc8). 기존RED3954be는유지하며실제DB/Agent0. 독립재검수후보정PR통합·mergedsmoke·정리예정.
+
+- 시험초기화 최소보정 독립 d2_preflight C0/I0/M0·지문동일. 단언/입력/fixture불변과동적import의MemoryFS설치후실행을확인했다. Main diffcheck0(f4a849), 보정시험1+기록3의정확4경로만후속게시한다.
