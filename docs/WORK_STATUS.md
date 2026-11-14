@@ -19565,3 +19565,7 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 다음 UI10 지시 부분계획 명시 조회: 새 branch codex/av3-ui10-instruction-parts, WI SHA C4E199D0DC4C0AEAD9C3BB76D8079676E277B200C1318A99BB568F3317C9A644, 기존 Primary 정확4경로 단일 writer 착수. 기존 계약 GET 소비로 새 공개/권한 계약 없음. API/WebCrypto·RAM SSR 합성 범위이며 신규 DOM 모사기/종속성·실제 브라우저 프로필은 만들지 않는다. 실제 DOM 클릭·레이아웃 미검증을 보존한다. Main 관리·독립 검수·통합, 실제 제외 범위 유지.
 
 - UI10 문서 baseline stage diff 검사에서 신규 WI CRLF trailing whitespace exit2(354c8d), commit/push 미실행. 내용 불변 LF로 정규화해 지문만 재결박한다. 제품 writer 범위·기능 계약 불변.
+
+- UI10 지시 부분계획4경로 source 검수 완료: Primary8P/인접9P/type0, Main8P680.5285ms(b2588b), 독립spec/quality C0/I0/M0. UI 선택/주체/닫기 전환 검수는 소스 근거이며 실제DOM 미검증. Main SSR envDir:false 누락 발견→시험1줄 보완→SSR2P exit0(0721ef), 최종hash03A021A9…1F7449/diff0(903b93). 초기env읽기 여부 미조사·미단정, 실제키/DB/서비스/Agent0. 최종4지문·RED/시험교정·미검증은 UI10_INSTRUCTION_PARTS_SOURCE_RESULT_20261115.md 기록. Primary쓰기반환/live0, 통합 진행.
+
+- UI10 커밋 전 gitleaks2건 차단(af58c5), commit/push0. redacted 진단9a3e69에서 결과서 api 경로 뒤 정확파일SHA를 키로 감지한 것으로 확인. 파일명/명시SHA256 줄을 분리하고 검사 재수행하며 ignore/skip 우회0.
