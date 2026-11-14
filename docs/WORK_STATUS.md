@@ -19161,3 +19161,10 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Node 독립검수 C0/I1: nativeHostWrite가lease hash검사후 transaction await를거쳐packet을복사하여원객체변조가검산과전송사이에들어올수있다. Primary COMPLETED 제출을Main은미수용하고첫await전고정snapshot·동일hash검산/전송 및대기중변조RED→GREEN재작업을지시했다. 위8P는이반례를포함하지않으므로최종합격아니다. 기존TTL/SQL정책/deferred권한과다른원인1회,실제DB실행0.
 
 - TOCTOU I1 보완독립 C0/I0 해소: 첫await전 packet/expected snapshot의동일hash·SQL·응답결박, 새변조반례와proxy/accessor/trap0확인. Main 최종unit+journey9P/0F/0SKIP6304.879ms exit0, 이전실패4건집중4P/0F/0SKIP3975.0825ms exit0, 최종root tsc진단0/exit0. 과거전체59P/4F는이력보존하며전체63재실행PASS로표시하지않음. Node/fixture독립C0/I0·SQL C0/I0/M0, 실제PG0. RETURN failObservation은첫observation삽입전실패이며graph중간쓰기실패로과장하지않는다. 상세결과서작성·정확변경목록대조후통합준비.
+
+## 2026-11-14 PR108 통합·journal 재시작 식별 결정 준비
+
+- FN08 source `96abb161b594e36236957038e064a29a6f4f5c17`을 PR108/main `2c42f84b021350b8412555b4e7f4ebd40d377815`로 통합했다. Broker43555389945 success. source/main tree 동일, local/development main 동일·clean, merged 다섯 host handler RAM 여정 smoke1P/0F/0SKIP2964.7387ms exit0. refs/pull/108/head가 원 source를 보존하고 원격 완료 branch/tag 부재를 확인한 뒤 정확 로컬 branch/tag를 정리했다. 보호된 과거 WIP는 변경하지 않았다.
+- Node/fixture 독립C0/I0·SQL독립C0/I0/M0, 최종Main9P·4P·SQL5P·root typecheck0. 실제DB/권한적용/키/서비스/Agent0이며 전체44업무 중 사용자 인수 완료수를 올리지 않는다.
+- 다음 후보 `FN08_NATIVE_JOURNAL_RESTART_BINDING_CANDIDATE_20261114.md` SHA256 `6FC307D7C13435563F6E9BD99B2F8BF473E45B6584C16F401A41250169BBAC87`. 첫 검수C0/I2(최초부재/소실 구분, 생산자 간 배타·한도경합) 보완 후C0/I0. 기존r5root 아래 닫힌journal namespace·typed보호연산·존재원장/원tuple·불명보존·재시작재실행금지를 제안한다. 64MiB/10,000authority/2MiB행은 새 제안값이다. 원 권위/process/grant 복구나 실제root/ACL/key/DB실행을 포함하지 않는다.
+- 신산님께 위 delta의 A안 source-only 채택 질문1회를 전달했고 답변 대기다. 미채택 제품 코드 구현0. 완료 단위 정리 후 최신main에서 `codex/av3-d1-journal-binding`을 만들었고 Main의 현황/검수 기록만 이어간다. 기존Primary는현재쓰기반환·live handle0, 추가임무는허용범위를구분해배정한다.

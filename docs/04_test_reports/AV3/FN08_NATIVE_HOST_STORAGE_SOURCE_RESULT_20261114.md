@@ -1,6 +1,6 @@
 # FN08 native host 목적별 저장 접근 source 검수
 
-판정: 승인된 source·합성 구현 및 독립 검수 완료, Git 통합 전. 실제 DB 실행과 제품 전체 완료는 아니다.
+판정: 승인된 source·합성 구현·독립 검수 및 PR108 통합 완료. source `96abb161b594e36236957038e064a29a6f4f5c17`, main `2c42f84b021350b8412555b4e7f4ebd40d377815`, Broker43555389945 success. source/main tree와 local/private main이 같고 clean이며 merged RAM 여정 smoke1P/0F/0SKIP2964.7387ms exit0을 확인했다. 실제 DB 실행과 제품 전체 완료는 아니다.
 
 기준 main `b2df4dcff3405d5f33a52d6be20e07358fbbdea9`(PR107), branch `codex/av3-d1-native-host-storage`. 신산님 직접 채택 원문 SHA256 `A185C52DAD309718845F3DB40D2B1AC0F7E60ABB83FADACD243E9CABE750B00E`. Primary 단일 구현, Main 검수·통합, d2_preflight/d2_scope_audit 독립 읽기 검수.
 
