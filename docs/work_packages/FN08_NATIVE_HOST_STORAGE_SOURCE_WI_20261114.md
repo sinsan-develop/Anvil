@@ -8,7 +8,7 @@
 
 기존 developer_primary 한 명이 아래 코드·시험을 소유한다. Main은 문서·검수·통합을 소유하고 해당 코드 동시 쓰기를 하지 않는다. 다른 작업자의 수정은 보존한다.
 
-## 정확 구현 경로 9개
+## 정확 구현 경로 10개
 
 1. 신규 `apps/server/modules/executions/native-host-storage.ts`
 2. `apps/server/modules/executions/project-native-preparations.ts`
@@ -19,8 +19,11 @@
 7. 신규 `tests/unit/FN06/native-host-storage-sql.test.ts`
 8. 신규 `tests/unit/FN06/native-host-storage-journey.test.ts`
 9. `tests/unit/FN06/native-preparation-store.test.ts`
+10. 신규 `tests/unit/FN06/native-host-storage-fixture.ts` — 기존 시험을 import해 test가 재등록되는 것을 피하는 필수 fixture 분리. 원 함수·상수·기대값과 상태 의미를 보존하고 test 등록은 넣지 않는다.
 
 추가 경로가 필요한 경우 정확 영향과 사유를 Main에게 먼저 전달한다. 과거 SQL 0039/0071/0076/0092/0093은 수정하지 않는다.
+
+2026-11-14 내부 비의미 보완: Main이 위 시험 fixture 1경로를 추가했다. 제품·권한·공개 계약·검사 기준 확장은 없다. 기존 시험 검사수·의미와 옮긴 본문의 동등성을 검수한다.
 
 ## 구현과 완료 기준
 
