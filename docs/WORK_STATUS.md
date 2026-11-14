@@ -19388,3 +19388,5 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 
 - READ3 고정 SDK 공개 GET1회는 getaddrinfo ENOTFOUND registry.npmjs.org로 실패했다. Primary attempted:true/fetches1/state FAILED_OR_UNKNOWN/sourceAvailable:false/live0, 도구1.7초·셸exit해당없음. 재시도/파일저장/설치/SDK실행0이며 결과서 FN07_PINNED_SDK_HOOK_READ3_RESULT_20261115.md에 보존했다. READ2와 같은 DNS원인 두번째 실패이며 호스트전체장애로 단정하지 않는다.
 - SDK와 독립인 normalSEND 서버연결 후보 FN08_NORMAL_SEND_DISPATCH_CANDIDATE_20261115.md를 작성했다. 기존표/endpoint/권한재사용·원HUMAN5tuple·START UNIQUE보존·SEND별0024소비·정확원문범위다. 최초 독립C0/I0/M1의payloadRef를partsRef로보완하고Primary self-check의원mediaType/permit형상/canonical상한/conversation-message exact검산을반영했다. 최종독립C0/I0/M0·SHA DEA72C3FB14A955E02956C50898A50ED6BE9705E911A17CB651DAFE2847FFB7C. PMO는새normal표식/저장/원문제공만직접채택대상이라고확인했고정확후보source-only를비동기로질문했다. 답변전제품쓰기0·새권한/실행0.
+
+- 2026-11-15 normalSEND 후보 SHADEA72C3F…47FFB7C의 A안계약·source-only 구현을 신산님이 직접 채택했다. 동일 branch에서 FN08_NORMAL_SEND_DISPATCH_SOURCE_IMPLEMENTATION_20261115.md의 정확18경로를 기존Primary 단일writer에 배정한다. Main은문서/검수/통합, 기존reviewer는read-only. 실제DB/권한부여/키/서비스/SDK·Agent실행0을유지하고미적용0097·RAM여정만수행한다. SDK READ3실패는이서버source의차단선행이아니며분리한다.
