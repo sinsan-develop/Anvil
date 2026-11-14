@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto';
+import {isNormalInstructionWire} from '../adapters/secondary/normal-instruction-wire.ts';
 import {isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {readDispatchEnvelopeV1,type DispatchEnvelopeV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
@@ -9,13 +10,27 @@ import {NormalProtectedPostClient,type NormalPermitResult} from './normal-protec
 import type {NormalStartCurrent} from './normal-start-coordinator.ts';
 export interface NormalInstructionPreparationResult{transport:'NORMAL_PROTECTED';state:'PERMIT_RECORDED'|'UNKNOWN';key:ReturnType<typeof receiptKeyV1>;envelopeHash:string;recordRef:Ref;permit:NormalPermitResult['permit']|null;proofResultRef:Ref|null;readOnly:true;executionAuthorized:false;dispatchPerformed:false}
 type Send=Extract<DispatchEnvelopeV1,{operation:'SEND_INSTRUCTION'}>;
+export interface NormalInstructionObservation{transport:'NORMAL_PROTECTED';responseRef:Ref;processRef:Ref|null}
+export interface NormalInstructionWirePort{transport:'NORMAL_PROTECTED';send(capability:object,signal:AbortSignal):Promise<NormalInstructionObservation>}
+export interface NormalInstructionDriverInput{envelope:Send;instruction:Awaited<ReturnType<NormalInstructionIntake['instruction']>>;localAttemptRef:Ref;dispatchAttemptRef:Ref;permit:NonNullable<NormalInstructionPreparationResult['permit']>;proofResultRef:Ref;actualExecutionVerified:false;executionAuthorized:false}
+export interface NormalInstructionDispatchResult{transport:'NORMAL_PROTECTED';state:'RESPONSE_RECORDED'|'UNKNOWN';recordRef:Ref;responseRef:Ref|null;processRef:Ref|null;actualExecutionVerified:false;executionAuthorized:false;dispatchPerformed:false}
+type Fresh={material:NormalInstructionDriverInput['instruction'];end:number;monoEnd:number;current:unknown};
+type Ticket={input:NormalInstructionDriverInput;signal:AbortSignal;active:boolean;claimed:boolean;verify:()=>Promise<void>;remaining:()=>number};
+const dispatchTickets=new WeakMap<object,Ticket>();
+const copyInstruction=(v:NormalInstructionDriverInput['instruction'])=>({...captureInstructionInput({...v,bytes:null}),bytes:new Uint8Array(v.bytes)});
+/** issuer는 아래 coordinator의 private 경로뿐이다. JSON/복제 객체는 원 dispatch 소유권을 만들지 않는다. */
+export function claimNormalInstructionDispatch(capability:object,signal:AbortSignal){
+ const t=dispatchTickets.get(capability);if(!t||!t.active||t.claimed||t.signal!==signal||signal.aborted)fail('NORMAL_INSTRUCTION_DISPATCH_NOT_ELIGIBLE');t.claimed=true;
+ const input={...captureInstructionInput({...t.input,instruction:null}),instruction:copyInstruction(t.input.instruction)};
+ return{input,verify:async()=>{if(!t.active||signal.aborted)fail();await t.verify();if(!t.active||signal.aborted)fail();},remaining:()=>{if(!t.active||signal.aborted)fail();return t.remaining();}};
+}
 type Ports={intake:NormalInstructionIntake;store:NormalInstructionStore;post:NormalProtectedPostClient;current:NormalStartCurrent;grantRef:Ref;clock:()=>number;timeoutMs:number};
 const originalRead=NormalInstructionIntake.prototype.instruction,originalPrepare=NormalProtectedPostClient.prototype.preparePermit,originalSend=NormalProtectedPostClient.prototype.send;
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 function fail(code='NORMAL_INSTRUCTION_ATTEMPT_INVALID'):never{throw Error(code);}
-/** SEND 내구 시도와 허가 기록만 연결한다. wire/SDK/관측 성공/cursor 확정 권한은 없다. */
+/** prepare는 내구 허가 기록 조회를 유지한다. dispatch는 같은 owner의 새 결과를 명시 소비하며 SDK 성공/cursor 권한을 만들지 않는다. */
 export class NormalInstructionCoordinator{
- #p:Ports;#current:NormalStartCurrent['current'];#exclusive:NormalInstructionStore['exclusive'];#last=-Infinity;#busy=false;#unknown=false;
+ #p:Ports;#current:NormalStartCurrent['current'];#exclusive:NormalInstructionStore['exclusive'];#last=-Infinity;#busy=false;#unknown=false;#ready=new WeakMap<object,{envelope:Send;result:NormalInstructionPreparationResult;material:NormalInstructionDriverInput['instruction'];end:number;monoEnd:number;mintedMono:number;current:unknown}>();
  constructor(p:Ports){
   if(!p||isProxy(p)||!recordV1(p,['intake','store','post','current','grantRef','clock','timeoutMs'])||isProxy(p.intake)||Object.getPrototypeOf(p.intake)!==NormalInstructionIntake.prototype||
    isProxy(p.post)||Object.getPrototypeOf(p.post)!==NormalProtectedPostClient.prototype||!p.store||isProxy(p.store)||p.store.transport!=='NORMAL_PROTECTED'||typeof p.store.exclusive!=='function'||
@@ -26,16 +41,25 @@ export class NormalInstructionCoordinator{
  #now(){const n=this.#p.clock();if(!Number.isSafeInteger(n)||!Number.isFinite(new Date(n).getTime())||n<this.#last)fail('NORMAL_INSTRUCTION_CLOCK_INVALID');this.#last=n;return n;}
  #permit(p:any,e:Send){if(!recordV1(p,['ref','commandId','envelopeHash','issuedAt','expiresAt'])||!refV1(p.ref)||p.ref.version!==1||p.commandId!==e.commandId||p.envelopeHash!==e.envelopeHash||!isoV1(p.issuedAt)||!isoV1(p.expiresAt)||Date.parse(p.issuedAt)>this.#now()||Date.parse(p.expiresAt)<=Date.parse(p.issuedAt)||Date.parse(p.expiresAt)>Math.min(Date.parse(p.issuedAt)+30000,Date.parse(e.expiresAt)))fail('NORMAL_INSTRUCTION_PERMIT_INVALID');}
  #rows(raw:unknown,e:Send,received:Ref){
-  if(!arrayV1(raw,3)||Buffer.byteLength(canonicalJson(raw))>2097152)fail();const rows=cloneV1(raw) as any[];let at=-Infinity;const ids=new Set<string>();
-  for(const [i,r] of rows.entries()){const s=r?.snapshot,prior=rows[i-1]?.snapshot;
-   if(!recordV1(r,['ref','snapshot'])||!refV1(r.ref)||r.ref.version!==1||ids.has(r.ref.id)||r.ref.contentHash!==hash(s)||!recordV1(s,['sequence','state','key','envelopeHash','grantRef','sessionBindingRef','receivedRef','previousRef','permit','proofResultRef','recordedAt'])||
+  if(!arrayV1(raw,5)||Buffer.byteLength(canonicalJson(raw))>2097152)fail();const rows=cloneV1(raw) as any[];let at=-Infinity;const ids=new Set<string>();
+  const base=['sequence','state','key','envelopeHash','grantRef','sessionBindingRef','receivedRef','previousRef','permit','proofResultRef','recordedAt'];
+  for(const [i,r] of rows.entries()){const s=r?.snapshot,prior=rows[i-1]?.snapshot,dispatch=i>=2&&rows[2]?.snapshot.state==='SEND_DISPATCH_ATTEMPTED';
+   if(!recordV1(r,['ref','snapshot'])||!refV1(r.ref)||r.ref.version!==1||ids.has(r.ref.id)||r.ref.contentHash!==hash(s)||!recordV1(s,dispatch?[...base,'localAttemptRef','dispatchAttemptRef','responseRef','processRef']:base)||
     s.sequence!==i+1||!same(s.key,receiptKeyV1(e))||s.envelopeHash!==e.envelopeHash||!same(s.grantRef,this.#p.grantRef)||!same(s.sessionBindingRef,e.payload.sessionBindingRef)||!same(s.receivedRef,received)||!same(s.previousRef,rows[i-1]?.ref??null)||!isoV1(s.recordedAt)||Date.parse(s.recordedAt)<at||Date.parse(s.recordedAt)>this.#now())fail();
    ids.add(r.ref.id);at=Date.parse(s.recordedAt);
-   if(i===0){if(s.state!=='SEND_ATTEMPTED'||s.permit!==null||s.proofResultRef!==null)fail();}
-   else{if(prior.state==='UNKNOWN'||i===2&&s.state!=='UNKNOWN'||!['PERMIT_RECORDED','UNKNOWN'].includes(s.state)||i===2&&prior.state!=='PERMIT_RECORDED')fail();
-    if(s.permit!==null){this.#permit(s.permit,e);if(!refV1(s.proofResultRef))fail();}else if(s.proofResultRef!==null||s.state==='PERMIT_RECORDED')fail();
+   if(i===0){if(s.state!=='SEND_ATTEMPTED'||s.permit!==null||s.proofResultRef!==null)fail();continue;}
+   if(prior.state==='UNKNOWN')fail();
+   if(dispatch){
+    if(i===2&&(prior.state!=='PERMIT_RECORDED'||s.state!=='SEND_DISPATCH_ATTEMPTED'||s.dispatchAttemptRef!==null||s.responseRef!==null||s.processRef!==null)||
+     i===3&&!['RESPONSE_RECORDED','UNKNOWN'].includes(s.state)||i===4&&(prior.state!=='RESPONSE_RECORDED'||s.state!=='UNKNOWN')||
+     !same(s.localAttemptRef,rows[0].ref)||i>2&&!same(s.dispatchAttemptRef,rows[2].ref)||!same(s.permit,rows[1].snapshot.permit)||!same(s.proofResultRef,rows[1].snapshot.proofResultRef))fail();
+    if(s.state==='RESPONSE_RECORDED'&&(!refV1(s.responseRef)||s.processRef!==null&&!refV1(s.processRef))||s.state==='UNKNOWN'&&(s.responseRef!==null||s.processRef!==null))fail();
+   }else{
+    // 원 1~3행 형상과 UNKNOWN 전이는 그대로 보존한다.
+    if(i>2||i===2&&s.state!=='UNKNOWN'||!['PERMIT_RECORDED','UNKNOWN'].includes(s.state)||i===2&&prior.state!=='PERMIT_RECORDED')fail();
     if(i===2&&(!same(s.permit,prior.permit)||!same(s.proofResultRef,prior.proofResultRef)))fail();
    }
+   if(s.permit!==null){this.#permit(s.permit,e);if(!refV1(s.proofResultRef))fail();}else if(s.proofResultRef!==null||s.state!=='UNKNOWN')fail();
   }return rows;
  }
  #result(e:Send,row:any,state=row.snapshot.state){return{transport:'NORMAL_PROTECTED' as const,state,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,recordRef:cloneV1(row.ref),permit:cloneV1(row.snapshot.permit),proofResultRef:cloneV1(row.snapshot.proofResultRef),readOnly:true as const,executionAuthorized:false as const,dispatchPerformed:false as const};}
@@ -49,17 +73,17 @@ export class NormalInstructionCoordinator{
  async prepare(raw:unknown,signal:AbortSignal):Promise<NormalInstructionPreparationResult>{
   if(this.#busy)fail('NORMAL_INSTRUCTION_BUSY');if(this.#unknown)fail('NORMAL_INSTRUCTION_UNKNOWN');if(!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_INSTRUCTION_CANCELLED');
   this.#ports();const captured=captureInstructionInput(raw),e=readDispatchEnvelopeV1(captured,Date.parse((captured as any)?.issuedAt));if(e.operation!=='SEND_INSTRUCTION'||Date.parse(e.issuedAt)>this.#now())fail();
-  this.#busy=true;let attempted=false;
+  const prepareMono=performance.now(),prepareWall=this.#now();this.#busy=true;let attempted=false,eligibility:Fresh|null=null;
   try{
    const material=await this.#p.intake.instruction(e,true);this.#ports();if(signal.aborted)fail();
    const result=await this.#exclusive.call(this.#p.store,receiptKeyV1(e),async tx=>{
     let rows=this.#rows(await tx.read(),e,material.receivedRef);this.#ports();
     const append=async(state:string,permit:any=null,proofResultRef:Ref|null=null)=>{
-     const snapshot={sequence:rows.length+1,state,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,grantRef:cloneV1(this.#p.grantRef),sessionBindingRef:cloneV1(e.payload.sessionBindingRef),receivedRef:cloneV1(material.receivedRef),previousRef:rows.at(-1)?.ref??null,permit:cloneV1(permit),proofResultRef:cloneV1(proofResultRef),recordedAt:new Date(this.#now()).toISOString()};
+     const snapshot={sequence:rows.length+1,state,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,grantRef:cloneV1(this.#p.grantRef),sessionBindingRef:cloneV1(e.payload.sessionBindingRef),receivedRef:cloneV1(material.receivedRef),previousRef:rows.at(-1)?.ref??null,permit:cloneV1(permit),proofResultRef:cloneV1(proofResultRef),recordedAt:new Date(this.#now()).toISOString(),...(rows[2]?.snapshot.state==='SEND_DISPATCH_ATTEMPTED'?{localAttemptRef:rows[0].ref,dispatchAttemptRef:rows[2].ref,responseRef:null,processRef:null}:{})};
      const entry={ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};await tx.appendAndSync(entry);
      const reread=this.#rows(await tx.read(),e,material.receivedRef);if(!same(reread,[...rows,entry]))fail('NORMAL_INSTRUCTION_SYNC_UNCERTAIN');rows=reread;return entry;
     };
-    if(rows.length){if(rows.at(-1).snapshot.state==='SEND_ATTEMPTED')await append('UNKNOWN');return this.#result(e,rows.at(-1));}
+    if(rows.length){if(['SEND_ATTEMPTED','SEND_DISPATCH_ATTEMPTED'].includes(rows.at(-1).snapshot.state))await append('UNKNOWN',rows.at(-1).snapshot.permit,rows.at(-1).snapshot.proofResultRef);return this.#result(e,rows.at(-1).snapshot.state==='RESPONSE_RECORDED'?rows[1]:rows.at(-1));}
     readDispatchEnvelopeV1(e,this.#now());if(signal.aborted)fail();
     const currentMaterial=await this.#p.intake.instruction(e);if(!same({...currentMaterial,bytes:null},{...material,bytes:null})||!Buffer.from(currentMaterial.bytes).equals(Buffer.from(material.bytes)))fail();
     this.#ports();readDispatchEnvelopeV1(e,this.#now());if(signal.aborted)fail('NORMAL_INSTRUCTION_CANCELLED');
@@ -75,12 +99,67 @@ export class NormalInstructionCoordinator{
      if(!recordV1(reply,['transport','proofResultRef','permit','cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed'])||reply.transport!=='NORMAL_PROTECTED'||!refV1(reply.proofResultRef)||reply.cacheControl!=='no-store'||reply.nonceConsumed!==true||reply.executionAuthorized!==true||reply.dispatchPerformed!==false)fail('NORMAL_INSTRUCTION_PERMIT_INVALID');
      this.#permit(reply.permit,e);end=Math.min(end,Date.parse(reply.permit.expiresAt));
      const latest=await this.#p.intake.instruction(e);this.#ports();if(!same({...latest,bytes:null},{...material,bytes:null})||!Buffer.from(latest.bytes).equals(Buffer.from(material.bytes))||signal.aborted||this.#now()>=end)fail();
-     const saved=await append('PERMIT_RECORDED',reply.permit,reply.proofResultRef);this.#ports();if(signal.aborted||this.#now()>=end)fail();return this.#result(e,saved);
+     const saved=await append('PERMIT_RECORDED',reply.permit,reply.proofResultRef);this.#ports();if(signal.aborted||this.#now()>=end)fail();const {checkedAt:_,expiresAt:__,...currentBinding}=v;eligibility={material:latest,end,monoEnd:prepareMono+end-prepareWall,current:cloneV1(currentBinding)};return this.#result(e,saved);
     }catch{
      this.#unknown=true;const last=rows.at(-1);await append('UNKNOWN',last.snapshot.permit,last.snapshot.proofResultRef);return this.#result(e,rows.at(-1));
     }
    });
+   // strict-close 실패이면 이 지점에 도달하지 않는다. 역사 조회는 eligibility를 설정하지 않는다.
+   const fresh=eligibility as Fresh|null;
+   if(fresh&&!signal.aborted&&this.#now()<fresh.end&&performance.now()<fresh.monoEnd){this.#ports();this.#ready.set(result as object,{envelope:cloneV1(e),result:cloneV1(result) as NormalInstructionPreparationResult,material:copyInstruction(fresh.material),end:fresh.end,monoEnd:fresh.monoEnd,mintedMono:performance.now(),current:cloneV1(fresh.current)});}
    return result as NormalInstructionPreparationResult;
   }catch(error){if(attempted)this.#unknown=true;throw error;}finally{this.#busy=false;}
  }
+ async dispatch(raw:unknown,prepared:NormalInstructionPreparationResult,wire:NormalInstructionWirePort,signal:AbortSignal):Promise<NormalInstructionDispatchResult>{
+  if(this.#busy)fail('NORMAL_INSTRUCTION_BUSY');if(this.#unknown)fail('NORMAL_INSTRUCTION_UNKNOWN');if(!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_INSTRUCTION_CANCELLED');
+  const ready=this.#ready.get(prepared);if(!ready)fail('NORMAL_INSTRUCTION_DISPATCH_NOT_ELIGIBLE');this.#ready.delete(prepared);
+  if(performance.now()<ready.mintedMono||performance.now()>=ready.monoEnd)fail('NORMAL_INSTRUCTION_DISPATCH_EXPIRED');
+  const e=readDispatchEnvelopeV1(captureInstructionInput(raw),this.#now());if(e.operation!=='SEND_INSTRUCTION'||!same(e,ready.envelope)||!same(captureInstructionInput(prepared),ready.result)||prepared.state!=='PERMIT_RECORDED'||!prepared.permit||!prepared.proofResultRef)fail('NORMAL_INSTRUCTION_DISPATCH_NOT_ELIGIBLE');
+  prepared=cloneV1(ready.result);
+  if(!isNormalInstructionWire(wire))fail('NORMAL_INSTRUCTION_WIRE_REQUIRED');
+  const send=wire.send,started=performance.now(),wall=this.#now();let end=Math.min(ready.end,Date.parse(e.expiresAt),Date.parse(prepared.permit!.expiresAt),wall+this.#p.timeoutMs,wall+ready.monoEnd-started),ticket:Ticket|undefined,lastTick=started;
+  const live=()=>{this.#ports();const tick=performance.now();if(tick<lastTick)fail('NORMAL_INSTRUCTION_CLOCK_INVALID');lastTick=tick;if(!isNormalInstructionWire(wire)||wire.send!==send||wire.transport!=='NORMAL_PROTECTED'||signal.aborted||this.#now()>=end||performance.now()-started>=end-wall)fail('NORMAL_INSTRUCTION_DISPATCH_EXPIRED');};
+  this.#busy=true;
+  try{
+   const result=await this.#exclusive.call(this.#p.store,receiptKeyV1(e),async tx=>{
+    live();let rows=this.#rows(await tx.read(),e,ready.material.receivedRef);live();
+    if(rows.length!==2||!same(rows[1].ref,prepared.recordRef)||!same(rows[1].snapshot.permit,prepared.permit)||!same(rows[1].snapshot.proofResultRef,prepared.proofResultRef))fail('NORMAL_INSTRUCTION_DISPATCH_NOT_ELIGIBLE');
+    const append=async(state:string,observation:NormalInstructionObservation|null=null)=>{
+     const snapshot={sequence:rows.length+1,state,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,grantRef:cloneV1(this.#p.grantRef),sessionBindingRef:cloneV1(e.payload.sessionBindingRef),receivedRef:cloneV1(ready.material.receivedRef),previousRef:rows.at(-1).ref,
+      permit:cloneV1(prepared.permit),proofResultRef:cloneV1(prepared.proofResultRef),recordedAt:new Date(this.#now()).toISOString(),localAttemptRef:cloneV1(rows[0].ref),dispatchAttemptRef:rows[2]?.ref??null,responseRef:observation?.responseRef??null,processRef:observation?.processRef??null};
+     const entry={ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};await tx.appendAndSync(entry);
+     const reread=this.#rows(await tx.read(),e,ready.material.receivedRef);if(!same(reread,[...rows,entry]))fail('NORMAL_INSTRUCTION_SYNC_UNCERTAIN');rows=reread;return entry;
+    };
+    const output=(row:any):NormalInstructionDispatchResult=>({transport:'NORMAL_PROTECTED',state:row.snapshot.state,recordRef:cloneV1(row.ref),responseRef:cloneV1(row.snapshot.responseRef),processRef:cloneV1(row.snapshot.processRef),actualExecutionVerified:false,executionAuthorized:false,dispatchPerformed:false});
+    const originalCurrent=ready.current;
+    const verify=async()=>{
+     live();const saved=this.#rows(await tx.read(),e,ready.material.receivedRef);live();if(!same(saved,rows))fail();
+     const material=await originalRead.call(this.#p.intake,cloneV1(e));live();if(!same({...material,bytes:null},{...ready.material,bytes:null})||!Buffer.from(material.bytes).equals(Buffer.from(ready.material.bytes)))fail('NORMAL_INSTRUCTION_MATERIAL_CHANGED');
+     const v:any=captureInstructionInput(await this.#bounded(s=>this.#current.call(this.#p.current,cloneV1(e),cloneV1(rows[0].ref),s),signal,end));live();
+     const refs=[...new Map(e.context.sourceScopes.map(s=>[canonicalJson(s.observationRef),s.observationRef])).values()],now=this.#now();
+     if(!recordV1(v,['transport','key','envelopeHash','grantRef','localAttemptRef','sourceObservationRefs','osOwnershipRef','checkedAt','expiresAt'])||v.transport!=='NORMAL_PROTECTED'||!same(v.key,receiptKeyV1(e))||v.envelopeHash!==e.envelopeHash||!same(v.grantRef,this.#p.grantRef)||!same(v.localAttemptRef,rows[0].ref)||!same(v.sourceObservationRefs,refs)||!refV1(v.osOwnershipRef)||!isoV1(v.checkedAt)||!isoV1(v.expiresAt)||Date.parse(v.checkedAt)>now||now-Date.parse(v.checkedAt)>30000||Date.parse(v.expiresAt)<=now||Date.parse(v.expiresAt)>Date.parse(v.checkedAt)+30000)fail('NORMAL_INSTRUCTION_CURRENT_INVALID');
+     const {checkedAt:_,expiresAt:__,...binding}=v;if(!same(originalCurrent,binding))fail('NORMAL_INSTRUCTION_CURRENT_CHANGED');end=Math.min(end,Date.parse(v.expiresAt));live();
+    };
+    try{
+     await verify();live();const dispatch=await append('SEND_DISPATCH_ATTEMPTED');live();
+     const capability=Object.freeze({});
+     const observation=await this.#bounded(async child=>{
+      ticket={input:{envelope:cloneV1(e),instruction:copyInstruction(ready.material),localAttemptRef:cloneV1(rows[0].ref),dispatchAttemptRef:cloneV1(dispatch.ref),permit:cloneV1(prepared.permit!),proofResultRef:cloneV1(prepared.proofResultRef!),actualExecutionVerified:false,executionAuthorized:false},signal:child,active:true,claimed:false,
+       verify:async()=>{if(!ticket?.active||child.aborted)fail();await verify();if(!ticket.active||child.aborted)fail();},remaining:()=>{live();return Math.min(end-this.#now(),end-wall-(performance.now()-started));}};
+      dispatchTickets.set(capability,ticket);return send.call(wire,capability,child);
+     },signal,end);live();
+     const observed=captureInstructionInput(observation);if(!ticket?.claimed||!recordV1(observed,['transport','responseRef','processRef'])||observed.transport!=='NORMAL_PROTECTED'||!refV1(observed.responseRef)||observed.processRef!==null&&!refV1(observed.processRef))fail('NORMAL_INSTRUCTION_RESPONSE_INVALID');
+     const last=await append('RESPONSE_RECORDED',observed);live();return output(last);
+    }catch{
+     this.#unknown=true;if(ticket)ticket.active=false;
+     // 검사 실패도 같은 새 결과 객체를 재사용하지 않는다. dispatch 이전 UNKNOWN은 기존 닫힌 행형상을 쓴다.
+     if(rows.length===2){const snapshot={...cloneV1(rows[1].snapshot),sequence:3,state:'UNKNOWN',previousRef:rows[1].ref,recordedAt:new Date(this.#now()).toISOString()},entry={ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};await tx.appendAndSync(entry);const saved=this.#rows(await tx.read(),e,ready.material.receivedRef);if(!same(saved,[...rows,entry]))fail();return{transport:'NORMAL_PROTECTED',state:'UNKNOWN',recordRef:entry.ref,responseRef:null,processRef:null,actualExecutionVerified:false,executionAuthorized:false,dispatchPerformed:false} as NormalInstructionDispatchResult;}
+     return output(await append('UNKNOWN'));
+    }finally{if(ticket)ticket.active=false;}
+   });
+   const completed=result as NormalInstructionDispatchResult;if(completed.state==='RESPONSE_RECORDED')live();
+   return completed;
+  }catch(error){this.#unknown=true;throw error;}finally{if(ticket)ticket.active=false;this.#busy=false;}
+ }
+
 }

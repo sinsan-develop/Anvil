@@ -2,14 +2,14 @@
 
 갱신: 2026-11-15 / 담당: Main 어울(normal SEND 서버 통합·실행기 자료 소비 연결)
 
-- 현재 실행기 자료 소비: 기존 Primary 제품2/시험3 구현, 직접인접45P·Main직접24P·타입0·독립 C0/I0/M0. 혼합 START/SEND 보호GET 원문 재조립 source 검수 완료·PR117 통합. SEND 내구수신·permit·실제Agent/DB는 미완료.
-- 현재 SEND 내구 수신: 전용 수신·시도·permit 기록8경로 source 검수 완료. 독립 I1(부분 사이 만료 검사)을 보정해 최종 C0/I0/M0, Main 최종16P. 통합 전이며 실제 파일 내구성·DB·Agent·wire/cursor는 미완료.
-- 최신 통합: PR117/main `93c85d78` local/private exact·clean·merged 다부분 원문 RAM smoke1P 확인. 서버 SEND와 실행기 자료 소비 source를 통합했다. 다음 SEND 내구수신·시도 기록을 준비 중이며 실제 Agent/DB·전체계획 미완료.
+- 현재 실행기 자료 소비: 기존 Primary 제품2/시험3 구현, 직접인접45P·Main직접24P·타입0·독립 C0/I0/M0. 혼합 START/SEND 보호GET 원문 재조립 source 검수 완료·PR117 통합. 후속 SEND 내구수신·permit source는 PR118에 통합됐으며 실제 Agent/DB는 미완료.
+- 현재 SEND 내구 수신: 전용 수신·시도·permit 기록8경로 source 검수 완료. 독립 I1(부분 사이 만료 검사)을 보정해 최종 C0/I0/M0, Main 최종16P·PR118 통합. 실제 파일 내구성·DB·Agent·wire/cursor는 미완료.
+- 최신 통합: PR118/main `3ce88304` local/private exact·clean·merged 내구수신/permit RAM smoke1P 확인. 서버 SEND·실행기 자료 소비·내구 수신/시도 source를 통합했다. SEND 내부 전달 연결6경로는 독립 C0/I0/M0·최종49P/Main22P로 source 검수 완료·통합 준비 중이며 실제 Agent/DB·전체계획 미완료.
 
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
 - 이전 통합 기준선: `main` `12f4b58a7111c400bbc7a4c98f103a7ad9653831`(PR114). normal 회수 계약 직접 채택·source 검수·통합 및 local/private 동기화·merged RAM smoke 1P를 확인했다. 후속 `codex/av3-fn08-normal-stop-contract`에서 normal 중지 종단의 원 세션 권위·제어 호출선·공개 응답 형상을 구체화 중이다.
-- 2026-11-15 현재: normal SEND A안과 지시 부분계획 보완 A안 직접 채택 후 기존 Primary가21경로를 구현 중이다. 순수 부분계획3P와 보호 원문 GET→SEND저장→혼합page→자료전달/재조회 직접37P, 해당 묶음 독립 C0/I0/M0를 한정 수용했다. 최초쓰기 전용 graph 재사용 결함은 기존 역사 START 검산 함수로 교정·독립 C0/I0/M0이며 실제PG 검증은 아니다. 명령별permit 직접10P·독립 C0/I0/M0, 영향9파일172P와 타입 검사도 통과했다. 미적용0097 정적7P·최종 접점 독립 C0/I0/M0까지 source 검수를 마쳤으며 통합 전이다. 결과서는 docs/04_test_reports/AV3/FN08_NORMAL_SEND_DISPATCH_SOURCE_RESULT_20261115.md다. 고정 SDK READ3는 DNS ENOTFOUND로 실패·1회 소진했다. 실제DB/Agent 및 전체FN08·계획 완료로 표시하지 않는다.
+- 2026-11-15 PR115 이전 검수 이력: normal SEND A안과 지시 부분계획 보완 A안 직접 채택 후 기존 Primary가21경로를 구현 중이다. 순수 부분계획3P와 보호 원문 GET→SEND저장→혼합page→자료전달/재조회 직접37P, 해당 묶음 독립 C0/I0/M0를 한정 수용했다. 최초쓰기 전용 graph 재사용 결함은 기존 역사 START 검산 함수로 교정·독립 C0/I0/M0이며 실제PG 검증은 아니다. 명령별permit 직접10P·독립 C0/I0/M0, 영향9파일172P와 타입 검사도 통과했다. 미적용0097 정적7P·최종 접점 독립 C0/I0/M0까지 source 검수를 마쳤으며 통합 전이다. 결과서는 docs/04_test_reports/AV3/FN08_NORMAL_SEND_DISPATCH_SOURCE_RESULT_20261115.md다. 고정 SDK READ3는 DNS ENOTFOUND로 실패·1회 소진했다. 실제DB/Agent 및 전체FN08·계획 완료로 표시하지 않는다.
 - 2026-11-15 PR115 후속: main `a93677d5`에 source가 통합됐으나 병합 후 단독 RAM smoke가 시험 초기화 경로 ENOENT로 실패했다. 현재 기존 작업 브랜치에서 시험 독립성 보완 중이며 merged smoke·최종 정리는 미완료다. 전체 계획 완료 체크는 변경하지 않는다.
 - 아래 44행 상세 코드 집계의 과거 기준: `development/main` `967c9a207452f5d3c9d79a1d8906e25a396dd704`.
 - 최신 직접 채택: worker 배포 근거 전달 A안(source-only), SHA256 50596FFC…2FD4389. 해당 source와 명시 앱 연결은 PR112·113으로 통합됐다. 실제 설치/실행 및 전체 계획은 미완료다.
