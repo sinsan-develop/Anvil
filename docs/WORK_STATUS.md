@@ -19315,3 +19315,14 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 최종보완: 정규store.revoke2여정+publication직접8등록보존 Main10dotexit0(037800), 독립M1해소C0/I0/M0. owner/shell타입주석역치환지문이직전검수본과동일함을독립확인, 실행문불변. Desktop메모리기준174→현재169/신규0은기존169잔존으로전체PASS아님. build정확closure26시험의옛위치assertion1F를마지막5개exact+22/23누락거절로보정, Main집중1dotexit0(104cec), 독립기준완화0. 실파일QA는 ANVIL_DESKTOP_TRUST_BUILD_QA 미설정으로미등록/EXCLUDED, PASS/SKIP집계0. 최종지문/새파일공백검사정리중.
 
 - FN08 worker배포전달 source 인수: Primary쓰기반환·실행handle0, 허용37중실제36변경. 최종scoped독립C0/I0/M0·Main종단10/직접13/shell6/closure1 및원범위검증·roottsc0. MainDesktop메모리174→169/신규0(b5d5c6)은전체PASS아님. 결과서 FN08_WORKER_DEPLOYMENT_HANDOFF_SOURCE_RESULT_20261114.md에37지문·미검증고정. 실제Windows내구설치unsupported·DB/권한/키/서비스/C#/Agent0·전체계획미완료. 다음source통합/동기화후미완료연결을계속한다.
+
+## 2026-11-14 PR112 통합 및 명시 앱 소비 연결 후속
+
+- sourceced5734ea0000a918c7303043c81528a456ab9dd→PR112/main681af80db8d6d1c7d7efc00a36801a0521cda88f, Broker43601815341 success. 직접gh PR생성은collaborator권한부재1회거절되어기존승인Broker사용. source/main tree동일·local/private main동일clean·mergedRAMsmoke1P02355a. pull/112/head 원source보존·원격완료branch/tag부재확인후정확로컬branch/tag/tracking정리. 다른보호worktree보존.
+- 다음codex/av3-d1-deployment-runtime을clean최신main에서생성했다. Primary읽기조사로새basisadapter가여정직접연결되고app.ts는workerDeployment를GET에만등록함을확인했다. 보호store→basis→실host request/result의명시앱조립은남은미완료항목이다. 이전검수는제품함수RAM연결이지앱실환경전체완료가아니다. 기존명시옵션/중복연결/미등록기본을독립대조하고같은채택계약안의최소후속구현을단일Primary에지시한다. 실제DB/키/권한/설치/서비스/C#/Agent제외유지.
+
+- 앱조립누락 독립읽기확인: GET source와별도명시ownership옵션으로실store→기존adapter→preparations 단1회연결, 기본미등록/중복거절유지. WI 50CFD255A1DD89CFF14F90E54AB97E2A4F6679E113D18FC09C49ADDA7F48D8CE의제품app.ts/기존종단시험 정확2경로로기존Primary GO. native routes형추가는필요근거전제이며현재금지, Main동일제품쓰기0. 새권한/endpoint/default활성화0·이전채택소비조립내부보완으로재승인요청0.
+
+- 앱조립TDD: 수동connect제거후원여정503으로RED1P1F3476.2186ms, GET단독미등록503/추가조회0확인. 명시buildApp옵션연결후Primary3P4958.4843ms·Mainfresh3dotexit0(34690a). 제품2경로외추가0·실환경0. app descriptor.value의undefined추론TS2345신규1을누락구성거절/지역고정으로한정보완중이며최종지문재검수전.
+
+- 명시app소비연결2경로 source검수완료: appC077D874…37EE2/시험C18819AE…C9409, 독립C0/I0/M0·Mainfresh여정3P+누락보완집중1P(bd2d7e)·roottsc0(9aaa37)·diff0. Primary쓰기반환/live0. 결과서 FN08_WORKER_DEPLOYMENT_APP_WIRING_SOURCE_RESULT_20261114.md. GET단독미등록·실환경0·Windowsunsupported·전체계획미완료불변, 다음통합후승인된독립미완료조사.
