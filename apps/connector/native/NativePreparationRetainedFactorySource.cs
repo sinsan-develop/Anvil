@@ -18,6 +18,9 @@ internal sealed class NativePreparationRetainedFactorySource:IDisposable {
   // 원 image 검산이 성공해 조립기가 보유하기 전까지 image 정리 책임은 공급자에게 있다.
   internal abstract OriginalInputs Acquire(string originalContext,Func<int> remaining,Action current);
   internal abstract void Check(OriginalInputs original);
+  // 기본 포트의 기존 정리 책임은 유지한다. 새 생산자는 pending 원 image를 직접 보유한다.
+  internal virtual void Transfer(OriginalInputs original){}
+  internal virtual void Release(OriginalInputs original){}
  }
  internal sealed class OriginalInputs {
   readonly string metadata;
@@ -133,7 +136,7 @@ internal sealed class NativePreparationRetainedFactorySource:IDisposable {
     check();var basis=new Binding(binding,context,hostHash);end=basis.ExpiresAt<end?basis.ExpiresAt:end;check();
     var plan=Selection(a,basis,end);var input=OwnershipEvidenceWorkerInputSource.BuildSource(plan);
     OwnershipEvidenceImageOwnerSource.ReadOriginalSource(binding.Image,input);
-    imageOwners.Add(binding.Image,this);image=binding.Image;check();
+    imageOwners.Add(binding.Image,this);source.Transfer(binding);image=binding.Image;check();
     job=OwnershipEvidenceJobFactorySource.CreateEmptyJobSource(left());check();
     assignment=OwnershipEvidenceJobFactorySource.PrepareAtomicJobAssignmentSource(job,left());check();
     startup=OwnershipEvidenceJobFactorySource.PrepareSuspendedStartupSource(assignment,left());check();
@@ -141,7 +144,7 @@ internal sealed class NativePreparationRetainedFactorySource:IDisposable {
     process=OwnershipEvidenceJobFactorySource.CreateSuspendedProcessSource(startup,image,left());check();
     NativePreparationOwnershipReturnSource.ReadOriginalProcess(Utf8.GetBytes(contextJson),process,left());check();
     return process;
-   }catch{try{Dispose();}catch{throw new InvalidOperationException("NATIVE_RETAINED_FACTORY_CLEANUP_UNKNOWN");}throw Invalid();}
+   }catch{try{if(image==null&&binding!=null)source.Release(binding);Dispose();}catch{throw new InvalidOperationException("NATIVE_RETAINED_FACTORY_CLEANUP_UNKNOWN");}throw Invalid();}
   }
  }
  public void Dispose(){lock(gate){

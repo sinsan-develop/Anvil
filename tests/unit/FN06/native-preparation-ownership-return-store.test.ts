@@ -22,6 +22,9 @@ function fixture(){
 }
 
 import {NativeOwnershipReturnStore} from '../../../apps/server/modules/executions/native-preparation-ownership-return-store.ts';
+import {createRequire} from 'node:module';
+import {createNativeWorkerOwnershipBasisSource} from '../../../apps/server/modules/executions/native-worker-ownership-basis-source.ts';
+const {withWorkerBuild,workerPE}=createRequire(import.meta.url)('../../desktop/native-worker-build.test.cjs');
 function memory(f:ReturnType<typeof fixture>){
  const bindings:any[]=[],events:any[]=[],results:any[]=[],observations:any[]=[],heads:any[]=[];let now=Date.parse(f.at),reads=0;
  const db={async query(sql:string,args:any[]=[]):Promise<any>{
@@ -75,4 +78,26 @@ test('basis가 abort를 무시해도 거래 대기를 끝내고 늦은 관측 �
  const work=store.request({...m.context,signal:controller.signal},f.input);await ready;controller.abort();
  await assert.rejects(work,/NATIVE_OUTCOME_UNKNOWN/);resolve(f.basis);await new Promise(r=>setImmediate(r));
  assert.equal(m.bindings.length,0);assert.equal(m.events.length,0);
+});
+
+test('원 worker build reader→basis→기존 store의 요청·실서명 수용은 동일 consume와 observer에 결박된다',async()=>{
+ await withWorkerBuild(async(w:any)=>{
+  const build=await w.worker.createNativeWorkerBuild({factoryArtifact:w.artifact,configuration:w.config},w.ports),token=await build.build(async()=>workerPE());
+  const descriptor=w.worker.readNativeWorkerProduct(token).descriptor,f=fixture();
+  Object.assign(f.authority.scope.nativeFactoryRef,w.artifact.factoryRef);
+  f.input.authorityRef.contentHash=nativeHash(f.authority);
+  f.receipt.ref.contentHash=nativeHash(f.receipt.snapshot);
+  f.input.processRef.runId=f.receipt.ref.id;f.input.processRef.executableHash=descriptor.snapshot.workerHash;f.basis.workerHash=descriptor.snapshot.workerHash;
+  const m=memory(f);let revoked=false,observed=0;
+  const deployment={readCurrent:async(q:any)=>{observed++;if(revoked)throw Error('RAM_REVOKED');return{product:token,checkedAt:q.checkedAt,expiresAt:w.config.expiresAt};}};
+  const source=createNativeWorkerOwnershipBasisSource(token,deployment,{readOriginal:w.worker.readNativeWorkerProduct});let serial=300;
+  const store=new NativeOwnershipReturnStore(source,n=>Array.from({length:n},()=>id(serial++)),()=>Buffer.alloc(32,5).toString('base64url'));
+  const first=await store.request(m.context,f.input),plan=m.bindings[0].plan_json;
+  assert.equal(m.bindings.length,1);assert.equal(m.events.length,1);assert.equal(plan.response.request.observerRef.id,m.context.consumeRecordRef.id);
+  assert.notEqual(plan.response.request.observerRef.contentHash,m.context.consumeRecordRef.contentHash);
+  assert.deepEqual((await store.request(m.context,f.input)).payload,first.payload);
+  const body=f.result(plan);m.setNow(Date.parse(body.report.observedAt));
+  await store.accept(m.context,body);assert.equal(m.observations.length,1);assert.equal(m.heads.length,1);assert.equal(m.events.length,3);assert.ok(observed>=6);
+  revoked=true;await assert.rejects(store.request(m.context,f.input));assert.equal(m.events.length,3);
+ });
 });

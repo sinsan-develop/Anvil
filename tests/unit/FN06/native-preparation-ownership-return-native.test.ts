@@ -7,7 +7,9 @@ test('보호 host RETURN 연결은 원 REGISTERED/STORED·helper·부모를 유�
  const host=await source('DesktopTrustKeyHostSource.cs'),signer=await source('NativePreparationOwnershipReturnSource.cs');
  assert.match(host,/retainedPort=null/);
  assert.match(host,/NativePreparationRetainedFactorySource\.ProtectedSource retainedInputs=null/);
- assert.match(host,/retainedFactory=new NativePreparationRetainedFactorySource\(retainedInputs\)/);
+ assert.match(host,/retainedFactory=new NativePreparationRetainedFactorySource\(retainedInputs\?\?new NativePreparationWorkerProvenanceSource\(/);
+ const producer=await source('NativePreparationWorkerProvenanceSource.cs');
+ assert.match(producer,/ProtectedDeployment source=null/);assert.ok(producer.indexOf('deployment==null')<producer.indexOf('OpenSourceOnly('));
  assert.match(host,/else\{retainedFromFactory=true;retainedReturn=retainedFactory\.Create\(returnContext,peer\.HelperHash/);
  const factory=await source('NativePreparationRetainedFactorySource.cs');
  assert.match(factory,/if\(source==null\)throw Invalid\(\)/);

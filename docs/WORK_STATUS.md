@@ -19210,3 +19210,36 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - retained조립기 WI 독립C0/I0(기준WI C579E744C4113A21E884AB4E3AB09B4B48D05386F7AC7676133244225D30085E). 기존API정리소유대조: process/thread만닫는retained와부모Job/Startup/Image수명분리, process종료UNKNOWN시참조/상위자원보존, 원CWT객체대체금지. Primary첫정적RED `node --test tests/unit/FN06/native-preparation-retained-factory.test.ts` 0P/3F238.8918ms exit1→연결후3P/0F228.8927ms exit0. C#실행증거아님. 소유정리/변조/기한합성보강계속.
 
 - retained 조립 source 독립 최종 C0/I0/M0(소유권/입력·closure 분리 검수). Main 신규10P(정적8/RAM2)·PE16P·인접3P, root tsc0·diffcheck0. 기존 null 거절의 위치 변경에 맞춰 인접 시험1파일을 추가 허용하여 제품3/시험3 경로이며 합격 의미는 유지했다. 새 실제 C#·FS·키·DB·권한·서비스·Agent 실행0. 보호 mapping 생산자 미등록·Windows journal unsupported·normal grant/current 미완료로 보존한다. 결과서 FN08_NATIVE_RETAINED_FACTORY_SOURCE_RESULT_20261114.md. RED 이력은 최초 미구현3F·원 image 재소유 반례1F·낡은 인접 assertion1F로 서로 다른 보완이며 정식 FAILURE_REPORT0회다. Primary code write 반환·live handle0. Desktop 비교는 기준174/현재174/신규0이며 전체 PASS가 아니다.
+
+## 2026-11-14 PR110 통합·보호 입력 생산자 후속 조사
+
+- source9c7618ef7abc61bb925ea2dd091b9db3ca71eae3을 PR110/main7efc5111ea606242286c674ad60b62d0e3c1b5c1로 통합했다. Broker43566581500 success, 원 source/main tree동일, local/development main동일·clean. merged host 연결 smoke1P/0F/0SKIP123.3944ms exit0. refs/pull/110/head로 원 source 복구 가능하고 원격 완료 branch/tag 부재 확인 후 정확 로컬 branch/tag만 정리했다. 보호된 과거 worktree는 변경하지 않았다.
+- 최신 main에서 codex/av3-d1-producer-binding으로 후속 읽기 조사를 이어간다. 기존 Primary write 반환·live handle0. signer r5는 전용 AnvilTrustKeyHost.exe만 대상으로 worker root/image의 발급 권위를 암묵적으로 포함하지 않는다. 반환 A안은 서버 원 preparation/factory/consume에서 observer를 파생하도록 규정하므로 caller 선언이나 임의 host ID 발급으로 대체하지 않는다. 기존 계약 안의 구현 공백과 새 의미 결정 delta를 분리해 다음 단위를 구체화한다.
+- 인접 제한 읽기 검수: IssueFreshRoot는 unsupported Acquire 예외를 내부 catch/Abandon으로 처리하고 기존 host 등록·서명 dispatch에 전파하지 않는다. source 근거이며 실제 실행 검증은 아니다.
+
+- worker producer 한정 후보: FN08_NATIVE_WORKER_PROVENANCE_PRODUCER_CANDIDATE_20261114.md SHA256 A769DEC827F78A486CD7C6EC9EBD9D84308572AFD29481F10DDA73F647331250. 최초 독립 C0/I1/M1(동일 consume의 descriptor 선택 불변성·배포/등록 기한 혼재)을 보완해 C0/I0/M0. PMO는 worker descriptor 발급 권위와 run/observer 최초 의미가 기존 위임 밖 신뢰 계약 변경이므로 직접 채택 대상임을 확인했다. 새 endpoint/DB표를 추가하지 않아도 신뢰 기준은 달라진다. 후보 source 구현은 아직 하지 않았다.
+
+- 후보 최종 기술 검토: Primary도 신규 HTTP/DB 필수 없이 source 구현 가능함을 확인했다. worker는 준비용 제한 worker이며 coding Agent가 아니다. signer/helper/worker bytes를 혼동하지 않는다. 신산님께 최종 SHA A769DEC8…47331250의 직접 채택 질문1회 전달, 답변 미수신이다. 미채택 제품 코드0.
+- 별도 읽기 조사: Stage C FN08의 START 시도·permit·응답·UNKNOWN/관측 재조정은 기존 source에 연결돼 있었다. SEND/STOP 및 Stage D FN07은 승인된 START-only 계약과 원 process/SESSION 근거를 대조해야 하므로 즉시 이식 가능한 누락으로 확정하지 않았다. 이 제한 조사는 전체 계획에 작업이 없다는 판단이 아니다. 동일 완료시험 재실행·실제환경 작업0. 현재 Primary와 두 조사자는 terminal, 단일writer0·실행handle0이다. 전체목표 미완료/active를 유지하며 worker 후보 결정 전 해당 코드만 착수하지 않는다.
+
+## 2026-11-14 worker 신뢰 A안 직접 채택
+
+- 신산님이 SHA A769DEC827F78A486CD7C6EC9EBD9D84308572AFD29481F10DDA73F647331250 A안 source-only를 직접 채택했다. 원문 hash·현재branch4867a91d clean 재확인, 원 후보 보존·별도채택기록 작성. 앞선 답변대기는 해소됐다.
+- 기존 Primary에게 정확 파일분해와 의존순서, 독립 조사자에게 최소 입력/부모/회수 검수경계를 전달했다. Main WI 전 제품쓰기0. 실제 설치·자료조사·키·DB·권한·서비스·C#·Agent 실행 및 journal 제한해제 제외는 그대로다.
+
+- WI FN08_NATIVE_WORKER_PROVENANCE_SOURCE_IMPLEMENTATION_20261114.md SHA7113A5E8ACD6827C8D3B0F486DFE034D9A3ECCED500F98F015369AED4D100E56, 독립 C0/I0. 기존 Primary에 제품8/시험7 정확15경로 단일writer 구현을 배정했다. 순서는 worker build/검산→descriptor·동일consume파생/서버basis→native보호입력/host이다. Main은 동일코드쓰기0, 검수·기록·통합을 수행한다. 실제 compile/FS/권한/DB/키/서비스/Agent는 제외하며 첫 RED·단위동결 근거를 수집한다.
+
+- Primary 첫 TDD: descriptor/consume 파생기·build 생산자 부재 RED3건 exit1 확인 후 순수 계약 파생·교차참조·만료·Proxy/accessor trap0 시험2P exit0. 아직 제품동결/전체검수 전이며 build 원 closure와 worker 검산 연결 진행 중이다. 실제 실행handle0, source15경로 단일writer 유지.
+
+- Primary build 묶음 임시 검증3P exit0(387.2666ms): 기존 package검증기→factory verifyOutput 원closure→worker PE/opaque발급, raw FS만RAM대역. fixture resolver 재귀/ASAR fstat대역누락 보완은 시험구성 이력이며 실제환경 오류로 표시하지 않는다. build token은 SOURCE_ONLY_MODEL이고 보호 배포/current 부재를 대체하지 않는다. 서버 공급자 및 기한/변조 반례 구현 중·live handle0. 아직 동결/최종수용 전이다.
+
+- 작성중 사전검수 C0/I3: native Acquire→retained image소유 사이 실패정리 공백1, 서버→desktop build import 경계1, 두 current관측의 후퇴검사 누락1. Primary가 타당성을 확인했다. Main은 retained조립기·직접시험2경로를 추가허용(17경로)하고 pending원image→명시양도/실패회수 보완을 지시했다. module분리 최소경로는 추가확인 중이며 시각후퇴는 현 소유파일에서 RED→GREEN한다. 새 사용자승인 요청0·실제환경 실행0, 최종검수 미완료.
+
+- Main이 Host 기본 생산자 연결의 인접 ownership-return-native 정적 assertion 차이를 확인하고 시험1경로 추가허용(총18)했다. 미등록 거절 의미를 새 호출선 전체로 검산하며 기준을 완화하지 않는다. reader DI/시각후퇴/native handoff 보완 작성 후 제품 store 여정 검증 진행 중, 최종수용 전이다.
+
+- server basis8DE4FA26…863C9E6·unitDD502DFA…2D875AD·store시험9AB1228F…57AA8FA 잠정동결. Primary 새제품연결1P/0F/0SKIP460.9577ms: 원build reader→basis→기존store request/replay/accept→observation1/head1·회수후추가0. 독립 C0/I0/M0로 import/시각후퇴 지적해소. 실제배포/current·DB·compiler는 합성이며 실제PG/C#증거아님.
+- native producer8526B82E…84B5EC·retainedD9C7D217…6356302·직접시험1B10E053…FA8DA4 잠정동결. Primary handoff집중2P/0F/0SKIP135.4619ms, 독립 C0/I0/M0로 pending/Transfer/Release 소유권공백해소. 실제Dispose/OS회수는미검증. 나머지고정벡터/build/typecheck 계속, Main최종수용전.
+
+- Primary Desktop TS7 dist/api/sync의 HEAD 메모리FS overlay에서 기준174/현재183/신규9 확인. 새 JS 재귀return/JSDoc6·PE module해석/연쇄callback3을 해당 소유파일에서 보완 중이다. 앞선 TS5 API추정2회·Program 접근준비1회는 도구준비 오류로 분리하며 검증PASS가 아니다. dependency설치/typeignore/검산약화0. 고정벡터/native6P·build5P·roottsc0은 한정 근거로 유지한다.
+
+- 2026-11-14 worker 신뢰 A안 source18경로 동결·인수. 독립 server/native/build C0/I0/M0, Main 합성·정적55사례 exit0·roottsc0·diffcheck0. Desktop 기준174/현재174/신규0은 전체PASS 아님. 실제 deployment/current 생산자·전달매체·root결박·Windows journal은 미완료다. 실제환경 실행0·전체완료체크 불변. 근거: docs/04_test_reports/AV3/FN08_NATIVE_WORKER_PROVENANCE_SOURCE_RESULT_20261114.md. 다음은 source Git 통합과 후속 전달매체/회수 계약 구체화.
