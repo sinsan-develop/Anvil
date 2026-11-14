@@ -19456,3 +19456,5 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - PR115 병합후시험회귀 보정: Primary가 journey1파일 static fitPage import를 경계test내 dynamic import로이동했다(3+/2-, 기대값/제품/실파일변경0). MemoryFS top-level설치후제품FS결박순서를보장한다. 최종지문5B6A8BA24BA89B8C86065F393F46346DFB75AFEDE3CF9E791ED8297EBDAA9D36. 수행자동일단독smoke1P(b30562)·직접2파일39P0F0SKIP exit0 18014.3664ms(2b6a1f), Main동일단독smoke1P0F0SKIP exit0 3379.5123ms(ae2dc8). 기존RED3954be는유지하며실제DB/Agent0. 독립재검수후보정PR통합·mergedsmoke·정리예정.
 
 - 시험초기화 최소보정 독립 d2_preflight C0/I0/M0·지문동일. 단언/입력/fixture불변과동적import의MemoryFS설치후실행을확인했다. Main diffcheck0(f4a849), 보정시험1+기록3의정확4경로만후속게시한다.
+
+- PR116 통합완료: main914e5bb8529393b705f53757cd1688ceef5ca6ac와private동일·clean/tree동등, PRhead773066bf복구ref확인. merged-main smoke1P0F0SKIP exit0 2056.6373ms(19cda5), 이전실패보존. 완료branch/정확요청tag/tracking정상정리(61e107,95bf89), squash라HEAD미포함경고는tree동등+PRref보존근거로구분했다. 기존다른worktree손대지않았다. 최신main에서codex/av3-fn08-send-material-consumer생성, 기존Primary에실행기혼합page→SEND보호자료재조립5경로를할당한다. 기존승인안의소비연결이며새API/권한/DB실행0. polling/내구수신/permit/실행은이단위완료에포함하지않는다.
