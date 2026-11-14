@@ -19326,3 +19326,44 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 앱조립TDD: 수동connect제거후원여정503으로RED1P1F3476.2186ms, GET단독미등록503/추가조회0확인. 명시buildApp옵션연결후Primary3P4958.4843ms·Mainfresh3dotexit0(34690a). 제품2경로외추가0·실환경0. app descriptor.value의undefined추론TS2345신규1을누락구성거절/지역고정으로한정보완중이며최종지문재검수전.
 
 - 명시app소비연결2경로 source검수완료: appC077D874…37EE2/시험C18819AE…C9409, 독립C0/I0/M0·Mainfresh여정3P+누락보완집중1P(bd2d7e)·roottsc0(9aaa37)·diff0. Primary쓰기반환/live0. 결과서 FN08_WORKER_DEPLOYMENT_APP_WIRING_SOURCE_RESULT_20261114.md. GET단독미등록·실환경0·Windowsunsupported·전체계획미완료불변, 다음통합후승인된독립미완료조사.
+
+
+## 2026-11-14 PR113 통합 및 다음 미완료 선정
+
+- PR113 source 5050504c1bc460e285c861c1195d2952878eaa79 → main 97a2a7348df2815b491c6373e2314609a2bd3842. Broker 43602869509 success, source/main tree 동일, merged RAM smoke 1P(f58fcb), local/private main 동일·clean. pull/113/head 보존과 원격 완료 branch/tag 부재 확인 후 정확 로컬 branch/tag/tracking만 정리했다. 다른 보호 worktree는 보존했다.
+- 다음 계약 문서 branch codex/av3-fn08-revocation-contract를 위 main에서 생성했다. 기존 Primary와 독립 검토자는 revokeExecutionGrant normal 생산자 누락을 확인했다. 기존 normal 소비자는 execution_grant_revocations를 검사하지만 생산자는 synthetic 전용이다. 현재 회수자와 원 grant 주체를 분리하고 ACTIVE/EXPIRED 대상 허용·정확 명령 재확인·원자 저장·결과 불명 보존이 필요하다. 회수 기록은 OS 종료나 writer 해제 증거가 아니다.
+- 현재 제품 writer 없음. Primary는 정확 응답 계약을 읽기 전용 구체화, 별도 검토자는 독립 미완료 연결을 조사한다. Main은 PMO에 기존 승인 범위와 신규 응답 의미 결정 경계를 문의했다. 실제 DB·권한·키·자료 조사·설치·서비스·C#·Agent 실행은 0이며 전체 계획은 미완료다. 완료된 검사를 반복하지 않는다.
+
+- normal 회수 후보 독립검토의 정책범위 명시 보완 1건을 반영했다. 새 오류 없이 기존 STORAGE_FAILED/reconcile-first 유지. PMO는 공개 normal 표식 3개와 기존 합성 영수증 재조회 호환 규칙만 직접 채택 대상이며, 기존 권한/정책/불명처리는 재승인 불필요라고 회신했다. 해당 계약 종속 구현은 채택 전 착수하지 않는다. UI10 독립조사는 원문조회가 이미 구현됐고 역할매핑은 별도 닫힌 계약임을 확인했으며, 전체 미완료가 없다는 판정이 아니다.
+
+
+## 2026-11-14 목표 계속 수행·독립 미완료 경계 대조
+
+- 직전 goal turn은 PR112/113 통합과 다음 계약 후보 게시로 진전이 있었으나 전체 완료 전 final 응답을 한 것은 사용자 진행 지시 위반이다. 전체 목표 active·미완료를 유지하고 후속 조사를 계속했다. 실제 환경 실행은 하지 않았다.
+- 현재 코드 writer 0. 기존 Primary는 Windows journal의 source 정상경로 보완 가능성과 권위 경계를 읽기 조사 중이다. Main은 WORK_CHECK 머리글의 과거 통합 기준을 이력으로 구분하고 최신 PR113 및 후보 상태를 명시했다. 전체 완료 체크는 변경하지 않았다.
+- d2_scope_audit: UI10 원문 보기는 이미 연결돼 재구현 대상이 아니다. 역할 대화방은 targetRoleRef:null/명시412 계약이다. UI06/FN03 문서전체 SourceRef4종 저장·화면은 이미 구현됐고, 항목별 attribution/evidenceRefs는 기존 WI 제외·비빈 evidenceRefs412다. 보호 내용 관측 native는 존재하나 host/route/IPC 등록은 WI 제외, 관리 원문 producer 후보는 미채택이다. 이 좁힌 후보들에서 즉시 승인된 미구현을 확정하지 못했으며 전체 미완료 부재를 주장하지 않는다.
+- d2_preflight: FN10 evaluateSyntheticNext의 제품 caller/입력 생산자는 없고 시험만 호출한다. ProjectNextActionBasis의 REWORK/BLOCKED 안내는 이미 연결됐다. stage-queue는 WAITING만 저장하고 assignmentRef null/실행 false다. HUMAN 판단 저장을 COMPLETED/ACCEPTED로 승격하면 안 되며 FN10_DECISION_EVALUATION_CONSUMPTION_CANDIDATE는 SOURCE_GO0다. 회수 응답 계약과 독립이지만 새 평가·소비 계약이 필요한 후보로 보존한다.
+- Main 읽기 경로 오류 1회: apps/desktop/native는 없는 경로였다. 실제 products 경로 apps/connector/native로 정정하여 source만 읽었다. 같은 원인 반복3회 아님. 제품 수정/시험 재실행/실제 파일 조사·권한·DB·키·서비스·Agent/C# 실행0.
+
+- Primary journal 독립 조사: Kernel의 RequireDurabilitySupport가 최초 mutation 전에 차단하고 아래 concrete source는 이미 존재한다. 마지막 CLOSED가 온전히 남은 정상 종료와 flush/close/응답 불명은 새 host에서 동일 bytes로 보일 수 있으나 채택 계약은 불명 잠금의 재시작 차단을 요구한다. 파일 Flush만으로 원 호출 결과 수신이나 부모 metadata 정착을 증명하지 않는다. 정상 재시작으로 열려면 해제 확정 의미 또는 별도 인정 원천 결정이 필요하며 guard는 유지한다. 최초만 허용하는 축소안이 요구를 만족하는지도 별도 대조 중이다. 실환경/제품쓰기0.
+
+- Primary 추가 대조: 최초 exclusive root capability를 같은 owner에서 유지하면 최초 양성 알고리즘은 원리상 가능하지만, 현재 Host의 IssueFreshRoot 발급 kernel 종료 후 새로운 journal kernel 열기 때문에 첫 시도도 기존 lock에 걸린다. 원 capability의 private 소유권 인계와 REGISTERED/STORED 선행을 확인해야 한다. 이 부분의 source 보완 가능성을 단일Primary가 읽기 추적하며, 독립 검토자는 부모 metadata 정착의 공식 API 보장을 조사한다. 최초만 허용하는 방식을 전체 재시작 요구의 대체물로 제출하지 않는다. 현재 writer0/실환경0.
+
+- journal 최초 전용 보완 최종 판정: 실제 owner는 KEY_READY 후 최초 host를 닫고, 별도 ISSUE host에서 REGISTERED/STORED를 저장한 뒤 다시 닫으며 journal은 이후 새 operation/helper에서 열린다. 같은 JS owner는 원 native host/PID/10초수명과 다르다. private capability 인계만 추가하면 제품 양성경로 없이 합성 양성만 생기므로 착수하지 않는다. 원host수명변경이나 불명 해제와 구별되는 지속 인계 근거는 새 의미 결정이 필요하다.
+- 독립 공식 API 조사: 현 BACKUP_SEMANTICS|OPEN_REPARSE_POINT 및 directory FlushFileBuffers만으로 parent namespace crash 정착 보장을 확정하지 못했다. NtFlushBuffersFileEx Flags0는 후속 조사 단서지만 현 caller/handle의 보장 전체는 미확인이다. Windows에 수단 자체가 없다고 단정하지 않으며 unsupported 차단을 유지한다.
+- 이번 독립 조사 담당자 모두 결과 반환·live handle0. 제품 writer0, 실제환경 실행0. 회수 응답 계약 직접 답변은 아직 없고 반복 질문하지 않는다. 전체목표 active·미완료이며 완료 처리/범위 축소하지 않는다. 현재 검토한 독립 후보들은 기존 완료 또는 미채택 의미/권위 선행으로 즉시 제품쓰기를 시작하지 않았다.
+
+- 결정 대기 감사 3번째 goal turn: 최초 회수 후보 게시 turn, 독립 미완료 조사 turn, 이번 재확인 turn에 동일 공개 응답 계약 채택 답변이 없다. 이번 후보 SHA462D92B2…A4EFC542 불변, 작업branch41ce37e8 local/private동일clean, PMO 최신 회신도 직접채택대기를 재확인했다. 세 기존 subagent 모두 terminal/live handle0이며 실행 중 프로세스를 기다리는 상태가 아니다. UI06/FN03/FN10 및 journal의 독립 후보는 앞서 확인한 미채택 의미/권위 선행이 남아 있다. 반복 조사·검사를 진도로 만들지 않고 전체 미완료 목표를 BLOCKED(결정 대기)로 기록한다. 사용자 pause나 완료가 아니며 기존 질문 답변 시 그 범위로 재개한다. 제품·실환경·예약 변경0.
+
+
+## 2026-11-14 normal 회수 응답 계약 채택·구현 재개
+
+- 신산님이 고정 후보 SHA462D92B2…A4EFC542의 응답 계약·source-only 구현을 직접 채택했다. 이전 결정 대기 사유 해소. 기존 Primary에게 정확7경로 구현/TDD를 맡기며 Main은 검수·통합한다. 후보 원문 지문은 보존하고 별도 WI에 채택을 기록했다. 실제 DB·권한·키·서비스·Agent 등 제외는 불변이다.
+
+- Primary 최초RED: node --experimental-strip-types --test tests/unit/FN08/normal-grant-revocation.test.ts exit1, 0P/4F/0skip 218.7052ms; 새normal생산자부재로실패했다. 구현후RAM SQL fixture의set_config 명령ID인덱스/동시거래잠금모형 보정중이며session17750은fixture대기로중단exit1·live0. 기대값/제품보호완화0·실환경0. 앱은별도명시normalGrantRevocation설정시에만연결하고default/synthetic경계보존한다.
+
+- Primary unit4P/0F/0SKIP exit0 969.5653ms, SQL정적2P/0F/0SKIP exit0 223.3941ms 제출. live0·실PG0. 실제normal생산자행을사용하는HTTP RAM여정과route연결은아직작성중으로Main/독립수용전이다. 전체완료체크불변.
+
+- Main fresh SQL2P exit0(7c5eec), unit6P exit0(08d5cb). SQL/source/unit 동결 독립 C0/I0/M0. 실제PG잠금/권한은미검증. app/routes 사전검수 C0/I1: exported registerProjectRoutes가normal옵션truthy만받아buildApp의exact mode/Proxy/accessor검산우회가능. fix round1로Primary에기존허용경로내직접route구성음성RED→GREEN지시, Main제품쓰기0. 기본/synthetic/HUMAN bearerquery거절은보존.
+
+- normal회수 정확7경로 최종동결·Primary쓰기반환/live0. 독립SQL/module/unit C0I0M0, route직접구성I1 RED→GREEN 후 C0I0M0. Mainfresh unit6P/SQL2P/HTTP+기존회귀23P·roottsc0·diff0·7지문일치. 결과서 FN08_NORMAL_GRANT_REVOCATION_SOURCE_RESULT_20261114.md에오류/정확명령/미검증/rollback고정. 실제PG/권한/키/서비스/C#/Agent NOT_RUN, 전체계획미완료. 다음source통합·동기화후normal중지종단후속구체화.

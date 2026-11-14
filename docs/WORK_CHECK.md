@@ -4,10 +4,11 @@
 
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
-- 코드 집계 기준: `development/main` `967c9a207452f5d3c9d79a1d8906e25a396dd704`.
-- 최신 직접 채택: worker descriptor 발급 권위·동일 consume 식별값 파생 A안(source-only), SHA256 A769DEC8…47331250. 기존 Primary 구현 준비 중이며 실제 설치/실행 및 전체 계획은 미완료다.
+- 현재 통합 기준선: `main` `97a2a7348df2815b491c6373e2314609a2bd3842`(PR113). 로컬/private 동일 및 병합 RAM smoke 1P 확인. 후속 회수 계약 후보는 `codex/av3-fn08-revocation-contract`에 보존했고 공개 응답 표식 결정 대기이며, 독립 미완료 source를 조사 중이다.
+- 아래 44행 상세 코드 집계의 과거 기준: `development/main` `967c9a207452f5d3c9d79a1d8906e25a396dd704`.
+- 최신 직접 채택: worker 배포 근거 전달 A안(source-only), SHA256 50596FFC…2FD4389. 해당 source와 명시 앱 연결은 PR112·113으로 통합됐다. 실제 설치/실행 및 전체 계획은 미완료다.
 - PR110/main7efc5111 통합: native retained 조립 제품3/시험3을 독립 C0/I0/M0·Main29개 한정 검사·root tsc0으로 수용했다. 보호 입력 생산자가 미등록이라 기본 실행은 거절하며 Windows 실제 실행·정상 재시작은 미완료다. 상세: docs/04_test_reports/AV3/FN08_NATIVE_RETAINED_FACTORY_SOURCE_RESULT_20261114.md.
-- 현재 통합 기준선: `main` 6c4974c4(PR109). FN08 typed journal/owner/Client source 연결·RAM66검사·독립C0/I0/M0를 통합했고 local/private 동일·clean 및 merged smoke1P 후 완료branch/tag를 정리했다. Windows 구체 저장은 종료 불명 확정 근거가 없어 unsupported로 닫히며 정상 내구저장·재시작은 미완료다. 후속 source 조립은 PR110에 통합됐고 보호 입력 생산자 원천을 대조한다. 실제 파일·ACL·키·DB·서비스·Agent 실행 및 전체 계획은 미완료·제외 범위를 유지한다.
+- 과거 통합 기준선(이력): `main` 6c4974c4(PR109). FN08 typed journal/owner/Client source 연결·RAM66검사·독립C0/I0/M0를 통합했고 local/private 동일·clean 및 merged smoke1P 후 완료branch/tag를 정리했다. Windows 구체 저장은 종료 불명 확정 근거가 없어 unsupported로 닫히며 정상 내구저장·재시작은 미완료다. 후속 source 조립은 PR110에 통합됐고 보호 입력 생산자 원천을 대조한다. 실제 파일·ACL·키·DB·서비스·Agent 실행 및 전체 계획은 미완료·제외 범위를 유지한다.
 - 인수 뒤 현재(2026-11-11): 원격 main은 PR84로 2e0eab21이며 대기 당시 WIP(시험2·미채택 후보 문서1)가 main에 포함돼 있다. 작업 branch `claude/av3-normal-start-materials`에서 checkedMaterialPart만 구현했다(해당 시험 1P, 0088 SQL 시험은 0088 부재로 실패 유지). 자료 GET의 route·0088·nonce 소비는 bytes 표현/자료 발견 후보 채택과 원본 재구성 주체 결정 전까지 보류다. 아래 대기 기록은 11-08 시점 이력이다.
 - 2026-11-11T03:51:34+09:00: 자료 전달·발견 후보 A안 직접 채택. §2 명령 페이지 자료 descriptor를 source·미적용 0088·합성 시험으로 구현했다(FN08 normal 계열 33P). §3 자료 bytes GET은 미구현이며 WIP SQL 시험 1건은 실패 유지다. FN08 행 상태는 그대로 부분 구현이다.
 - 2026-11-11T14:39:31+09:00: A안 §3 자료 bytes 보호 GET을 source·미적용 0088·합성 여정으로 구현했다(FN08 normal 계열 85P). 맥락 묶음 원문은 서버 주입 공급자 방식(신산님 직접 결정)이며 실제 공급자·실행기 소비 codec·실제 DB 검증·독립 검수는 남았다. FN08 행 상태는 부분 구현 그대로다.
@@ -119,3 +120,8 @@
 - PR112/main681af80d source통합·동기화·mergedRAMsmoke확인. 남은FN08: app명시구성에서배포basisadapter를기존host반환route에연결(현재GET등록·여정직접조립). 다음작업으로선정했으며실제환경/Windows내구/전체계획미완료체크유지.
 
 - FN08 명시app소비후속: buildApp 별도옵션→보호store basis→기존반환route 연결 source검수완료(2파일, 독립C0/I0/M0). 앱설정기본값·실환경은미변경. 실제Windows/DB/Agent 및전체계획은미완료.
+
+
+- 2026-11-14 PR113/main97a2a734 명시 앱 소비 연결 통합·동기화·merged RAM smoke 1P·정확 완료 branch 정리. 실제 환경·Windows 내구성·전체 계획 완료 체크는 유지한다. 다음은 기존 HUMAN grant 회수의 normal 생산자 누락이며, 정확 응답 의미와 기존 승인 범위를 대조 중이다. 제품 writer는 아직 배정하지 않았고 독립 승인 범위의 미완료 연결도 조사한다.
+
+- 2026-11-14 normal HUMAN 허가 회수 source7경로 검수수용. 명시설정→다른OWNER 회수저장→원영수증→challenge거절 RAM여정, 독립C0I0M0·Main직접/회귀/type통과. 실제SQL/프로세스종료/writer해제/Agent 검증아님. FN08/전체완료체크유지.
