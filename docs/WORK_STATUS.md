@@ -19243,3 +19243,10 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Primary Desktop TS7 dist/api/sync의 HEAD 메모리FS overlay에서 기준174/현재183/신규9 확인. 새 JS 재귀return/JSDoc6·PE module해석/연쇄callback3을 해당 소유파일에서 보완 중이다. 앞선 TS5 API추정2회·Program 접근준비1회는 도구준비 오류로 분리하며 검증PASS가 아니다. dependency설치/typeignore/검산약화0. 고정벡터/native6P·build5P·roottsc0은 한정 근거로 유지한다.
 
 - 2026-11-14 worker 신뢰 A안 source18경로 동결·인수. 독립 server/native/build C0/I0/M0, Main 합성·정적55사례 exit0·roottsc0·diffcheck0. Desktop 기준174/현재174/신규0은 전체PASS 아님. 실제 deployment/current 생산자·전달매체·root결박·Windows journal은 미완료다. 실제환경 실행0·전체완료체크 불변. 근거: docs/04_test_reports/AV3/FN08_NATIVE_WORKER_PROVENANCE_SOURCE_RESULT_20261114.md. 다음은 source Git 통합과 후속 전달매체/회수 계약 구체화.
+
+## 2026-11-14 PR111 통합·worker 전달매체 후속
+
+- source09c0575839b496050a5a07b391bde663ee56d9c4를 PR111/main74952185aeb3c75548e7497b544bdd3ec84909a6에 통합했다. Broker43572041960 success, source/main tree동일·local/development main동일·clean. merged 원build reader→basis→store RAM smoke1P exit0. refs/pull/111/head가 원source를 보존하며 완료원격branch/tag부재 확인 후 정확 로컬branch/tag만 정리했다. 다른 보호worktree는 보존했다.
+- 다음 codex/av3-d1-deployment-contract은 최신 main에서 생성했다. 기존 Primary는 제품쓰기 반환 후 읽기 전용으로 runtime 원천 전달매체·설치root 보호·회수출처의 정확 계약을 조사한다. A769의 발급권위/descriptor/identity는 재결정하지 않는다. 새 보호저장·공개 metadata 조회·설치기록 의미는 아직 미채택이며 제품 구현하지 않는다. 실제환경실행0·전체계획미완료.
+
+- worker 전달매체 후보 FN08_WORKER_DEPLOYMENT_HANDOFF_CANDIDATE_20261114.md SHA50596FFCAD26EC0FE9F5BC9AB43A5948BE87BF549C2E989E216D297442FD4389: 독립최초 head식별충돌·DB권한/RLS·설치bundle인계·제거/한도 지적을 보완해 두 검수자 C0/I0/M0. 기존 A769 권위는불변이고 새 공개metadata·보호저장/권한·worker siblingroot source계약만 직접채택 대상이다. 제품쓰기0·실제환경0. Main Windows rg wildcard경로 오류1회는 -g 방식으로수정한읽기오류이며 제품영향0. 다음은 후보채택 후 기존Primary 구현, 미채택동안 해당제품코드0.
