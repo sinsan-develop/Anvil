@@ -19326,3 +19326,12 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 앱조립TDD: 수동connect제거후원여정503으로RED1P1F3476.2186ms, GET단독미등록503/추가조회0확인. 명시buildApp옵션연결후Primary3P4958.4843ms·Mainfresh3dotexit0(34690a). 제품2경로외추가0·실환경0. app descriptor.value의undefined추론TS2345신규1을누락구성거절/지역고정으로한정보완중이며최종지문재검수전.
 
 - 명시app소비연결2경로 source검수완료: appC077D874…37EE2/시험C18819AE…C9409, 독립C0/I0/M0·Mainfresh여정3P+누락보완집중1P(bd2d7e)·roottsc0(9aaa37)·diff0. Primary쓰기반환/live0. 결과서 FN08_WORKER_DEPLOYMENT_APP_WIRING_SOURCE_RESULT_20261114.md. GET단독미등록·실환경0·Windowsunsupported·전체계획미완료불변, 다음통합후승인된독립미완료조사.
+
+
+## 2026-11-14 PR113 통합 및 다음 미완료 선정
+
+- PR113 source 5050504c1bc460e285c861c1195d2952878eaa79 → main 97a2a7348df2815b491c6373e2314609a2bd3842. Broker 43602869509 success, source/main tree 동일, merged RAM smoke 1P(f58fcb), local/private main 동일·clean. pull/113/head 보존과 원격 완료 branch/tag 부재 확인 후 정확 로컬 branch/tag/tracking만 정리했다. 다른 보호 worktree는 보존했다.
+- 다음 계약 문서 branch codex/av3-fn08-revocation-contract를 위 main에서 생성했다. 기존 Primary와 독립 검토자는 revokeExecutionGrant normal 생산자 누락을 확인했다. 기존 normal 소비자는 execution_grant_revocations를 검사하지만 생산자는 synthetic 전용이다. 현재 회수자와 원 grant 주체를 분리하고 ACTIVE/EXPIRED 대상 허용·정확 명령 재확인·원자 저장·결과 불명 보존이 필요하다. 회수 기록은 OS 종료나 writer 해제 증거가 아니다.
+- 현재 제품 writer 없음. Primary는 정확 응답 계약을 읽기 전용 구체화, 별도 검토자는 독립 미완료 연결을 조사한다. Main은 PMO에 기존 승인 범위와 신규 응답 의미 결정 경계를 문의했다. 실제 DB·권한·키·자료 조사·설치·서비스·C#·Agent 실행은 0이며 전체 계획은 미완료다. 완료된 검사를 반복하지 않는다.
+
+- normal 회수 후보 독립검토의 정책범위 명시 보완 1건을 반영했다. 새 오류 없이 기존 STORAGE_FAILED/reconcile-first 유지. PMO는 공개 normal 표식 3개와 기존 합성 영수증 재조회 호환 규칙만 직접 채택 대상이며, 기존 권한/정책/불명처리는 재승인 불필요라고 회신했다. 해당 계약 종속 구현은 채택 전 착수하지 않는다. UI10 독립조사는 원문조회가 이미 구현됐고 역할매핑은 별도 닫힌 계약임을 확인했으며, 전체 미완료가 없다는 판정이 아니다.
