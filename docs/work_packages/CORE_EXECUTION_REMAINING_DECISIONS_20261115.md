@@ -25,3 +25,13 @@ PMO에기존후보중결정/지원경로확인을요청했다. SDK를동일실�
 ## 후속 접속 진단
 
 등록된172.27.253.53:22의TCP1회읽기에서SSH배너를25ms에수신했다. 과거Connection refused는현재장애근거가아니다. 인증/hostidentity/원격명령은수행하지않았다. 따라서서비스복구변경을우선요구하지않고R3정확효과결정후현재성검산을검토한다. 로컬WSL목록은승격읽기에서실행중이나지정서버동일성근거로사용하지않는다.
+
+## FN18 독립 후속 대조
+
+개발용Squirrel생성·검산명령은이미연결됐다. 출력폴더생성전verifyIsolation이INSTALLER_NATIVE_ISOLATION_NOT_VERIFIED로거절하며,기존26검사는합성child/메모리IO다. 실제Setup.exe/full.nupkg/RELEASES생성은미검증이다. 실제Windows NuGet/Squirrel/7z의설정탐색/하위프로세스격리확인이현재제외에해당한다. 설치/업데이트/rollback/제거는개발산출물WI에서후속으로분리됐고현재NOT_RELEASE/DO_NOT_INSTALL이다. 정식identity/적용대상/업데이트출처·서명신뢰/실패보존·복구/제거범위결정없이이를구현완료로표시하지않는다. 이범위에서새독립source단위는확인되지않았다.
+
+## SDK 대체 조회 기술안 — 미채택·실행0
+
+기존node_repl DNS3회실패환경을재시도하지않고 Windows-local node.exe stdin의1회https.get으로옮기는기술대안이있다. 기존고정URL/버전/정확bytes·SHA512/두member SHA256/절대10초·socket10초/16MiB메모리한도·TLS검증·redirect/retry0을유지한다. 기존실패기록보존·GET전시도소진표식과실제30초자식watchdog/비동기stdoutstderr회수·단일기존handle수집이필요하다. NODE_OPTIONS/NODE_PATH/추가CA/프록시·TLS우회설정을자식에상속하지않는명시환경이후보다.
+
+현재는정확실행코드/환경식별·발췌충분성미검토이므로실행질문을발행하지않는다. callback전체선언/실호출반환/argv-env조립/tooldecision연결의완전한구간만근거로삼고,제한출력으로전체가안보이면미확인으로남겨야한다. 기존SDK원문은다운로드/저장/import/eval하지않는다. 다른환경DNS/TLS도달성도미확인이다. 이는SDK생성/도구효과권위결정과실제Agent실행허가가아니다.
