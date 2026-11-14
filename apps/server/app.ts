@@ -1,3 +1,7 @@
+import {NormalInstructionSource} from './modules/executions/normal-instruction-source.ts';
+import {ProjectConversations} from './modules/knowledge/conversations.ts';
+import {ProjectDocuments} from './modules/documents/project-documents.ts';
+import {readNormalInstructionOptions,type NormalInstructionOptions} from './modules/executions/normal-instruction-command.ts';
 import type {NormalGrantRevocationOptions} from './modules/executions/normal-grant-revocation.ts';
 import {types} from 'node:util';
 import {NativeWorkerDeploymentStore} from './modules/executions/native-worker-deployment-store.ts';
@@ -41,7 +45,8 @@ import { registerControlHandoffRoutes, type ControlHandoffRoutesOptions } from '
 export interface NativeWorkerOwnershipOptions {store:NativeWorkerDeploymentStore}
 const connectOwnership=ProjectNativePreparations.prototype.connectNativeOwnershipReturn;
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource, normalExchange?:NormalExchangeOptions, normalCredentialExchange?:NormalCredentialExchangeOptions,normalRequestChallenge?:{origin:string},normalPages?:NormalCommandPagesOptions,normalMaterials?:NormalStartMaterialsOptions & { registeredContext?: RegisteredStartContextOptions },normalPermit?:NormalStartPermitOptions,normalObservations?:NormalObservationsOptions,workerDeployment:WorkerDeploymentReadSource|null=null,nativeOwnership?:NativeWorkerOwnershipOptions,normalGrantRevocation?:NormalGrantRevocationOptions) {
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource, normalExchange?:NormalExchangeOptions, normalCredentialExchange?:NormalCredentialExchangeOptions,normalRequestChallenge?:{origin:string},normalPages?:NormalCommandPagesOptions,normalMaterials?:NormalStartMaterialsOptions & { registeredContext?: RegisteredStartContextOptions },normalPermit?:NormalStartPermitOptions,normalObservations?:NormalObservationsOptions,workerDeployment:WorkerDeploymentReadSource|null=null,nativeOwnership?:NativeWorkerOwnershipOptions,normalGrantRevocation?:NormalGrantRevocationOptions,normalInstruction?:NormalInstructionOptions) {
+  if(normalInstruction!==undefined){normalInstruction=readNormalInstructionOptions(normalInstruction);if(!access||syntheticExecution)throw Error('NORMAL_INSTRUCTION_CONFIGURATION_INVALID');}
   if(normalGrantRevocation!==undefined){
     if(!normalGrantRevocation||types.isProxy(normalGrantRevocation)||![Object.prototype,null].includes(Object.getPrototypeOf(normalGrantRevocation)))throw Error('NORMAL_REVOCATION_CONFIGURATION_INVALID');
     const fields=Object.getOwnPropertyDescriptors(normalGrantRevocation);
@@ -70,9 +75,13 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   if(normalMaterials){
     if(normalMaterials.context && normalMaterials.registeredContext)throw Error('EXECUTION_CONTEXT_SOURCE_AMBIGUOUS');
     const context=normalMaterials.registeredContext?new RegisteredStartContextSource(normalMaterials.registeredContext):normalMaterials.context;
-    registerNormalStartMaterials(app,{...normalMaterials,context},readPacket);
+    const instructions=normalInstruction&&access?new NormalInstructionSource(new ProjectConversations(new ProjectDocuments(access.artifactRoot))):undefined;
+    registerNormalStartMaterials(app,{...normalMaterials,context,instructions},readPacket);
   }
-  if(normalPermit)registerNormalStartPermit(app,normalPermit,readPacket);
+  if(normalPermit){
+    const instruction=normalInstruction&&access?{current:normalInstruction.current,source:new NormalInstructionSource(new ProjectConversations(new ProjectDocuments(access.artifactRoot)))}:undefined;
+    registerNormalStartPermit(app,{...normalPermit,instruction},readPacket);
+  }
   if(normalObservations)registerNormalObservations(app,normalObservations,readPacket);
   if(normalRequestChallenge&&!normalExchange)throw Error('EXECUTION_CHALLENGE_STORE_REQUIRED');
   if(normalExchange)registerNormalExchangeChallenge(app,normalExchange,normalRequestChallenge);
@@ -80,7 +89,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   registerDesktopRuntimeCatalogue(app,runtimeCatalogue);
   registerWorkerDeploymentRoutes(app,workerDeployment);
   app.get('/api/v1/health', async () => ({ status: 'ok', scope: 'process', version: '0.1.0' }));
-  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation,normalExecution,normalGrantRevocation); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
+  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation,normalExecution,normalGrantRevocation,normalInstruction); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
   if(access)registerUnderstandingHistoryRoutes(app,access,syntheticExecution?.understandingHistory);
   if(nativePreparation?.enabled===true)registerNativePreparationRoutes(app,nativePreparation,access);
   if(nativeReceive?.enabled===true){if(nativeReceive.service instanceof NativeFirstReceiveService&&nativePreparation?.preparations)nativeReceive.service.connectNativeCommand(nativePreparation.preparations);registerNativeFirstReceiveRoutes(app,nativeReceive,access);}

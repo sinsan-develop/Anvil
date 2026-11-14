@@ -1,3 +1,6 @@
+import {types} from 'node:util';
+import {instructionMaterialDescriptor} from './normal-instruction-materials.ts';
+import {NormalInstructionSource,readRegisteredInstructionBody} from './normal-instruction-source.ts';
 import {randomUUID} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type {Pool,PoolClient} from 'pg';
@@ -79,7 +82,7 @@ export interface NormalStartContextSource{
   signal:AbortSignal):Promise<unknown>;
 }
 type ContextScope=Parameters<NormalStartContextSource['contextBody']>[0];
-export interface NormalStartMaterialsOptions{pool:Pick<Pool,'connect'>;origin:string;context?:NormalStartContextSource}
+export interface NormalStartMaterialsOptions{pool:Pick<Pool,'connect'>;origin:string;context?:NormalStartContextSource;instructions?:NormalInstructionSource}
 const maxEncoded=2796203,maxMetadata=16384,maxResponse=2812587;
 const receiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','commandRef','envelopeHash','manifestRef','materialRef','partContentHash','observedAt','expiresAt'];
 async function boundedContext(source:NormalStartContextSource,scope:Parameters<NormalStartContextSource['contextBody']>[0],outer:AbortSignal){
@@ -99,9 +102,9 @@ async function readPart(db:PoolClient,args:unknown[],b:any,command:string,materi
  if(rows.length!==1||!recordV1(r,['command_record_id','command_ref','envelope','envelope_hash','manifest_ref','manifest','materials','options_body'])||
    !refV1(r.command_ref)||r.command_ref.id!==r.command_record_id||typeof r.options_body!=='string')deny();
  const envelope=readDispatchEnvelopeV1(r.envelope,now.getTime());
- if(envelope.operation!=='START_SESSION'||envelope.commandId!==command||envelope.context.projectId!==b.projectId||envelope.context.executionId!==b.executionId||
+ if(!['START_SESSION','SEND_INSTRUCTION'].includes(envelope.operation)||envelope.commandId!==command||envelope.context.projectId!==b.projectId||envelope.context.executionId!==b.executionId||
    envelope.context.executionGeneration!==b.executionGeneration||r.envelope_hash!==envelope.envelopeHash)deny();
- const descriptor=startMaterialDescriptor({command_record_id:r.command_record_id,manifest_ref:r.manifest_ref,manifest:r.manifest,materials:r.materials},b,envelope as any);
+ const descriptor=(envelope.operation==='SEND_INSTRUCTION'?instructionMaterialDescriptor:startMaterialDescriptor)({command_record_id:r.command_record_id,manifest_ref:r.manifest_ref,manifest:r.manifest,materials:r.materials},b,envelope as any);
  const group=descriptor.groups.find(g=>g.parts.some(p=>p.materialId===material)),part=group?.parts.find(p=>p.materialId===material);
  const stored=(r.materials as any[]).find(x=>x.ref.id===material);
  if(!group||!part||!stored)deny();
@@ -132,7 +135,7 @@ async function deliver(o:NormalStartMaterialsOptions,connector:string,execution:
   if(prior){
    if(!s||!uuidV1(prior.id)||prior.content_hash!==digest(s)||prior.vhash!==digest(prior.consumed)||!same(prior.consumed,{...old.snapshot_json,sequence:prior.consumed.sequence,previousRef:c,
      consumption:{consumedAt:s.observedAt,resultRef:{id:prior.id,version:1,contentHash:prior.content_hash},packetHash:s.packetHash}})||
-    !recordV1(s,receiptKeys)||s.kind!=='NORMAL_START_MATERIAL'||!same(s.binding,b)||!same(s.credentialRef,cred.ref)||!same(s.challengeRef,c)||
+    !recordV1(s,receiptKeys)||!['NORMAL_START_MATERIAL','NORMAL_INSTRUCTION_MATERIAL'].includes(s.kind)||!same(s.binding,b)||!same(s.credentialRef,cred.ref)||!same(s.challengeRef,c)||
     !isoV1(s.observedAt)||!isoV1(s.expiresAt))deny();
    if(s.packetHash!==packetHash||!same(s.target,target)||s.requestId!==proof.requestId)deny('IDEMPOTENCY_CONFLICT',409);
   }
@@ -141,7 +144,8 @@ async function deliver(o:NormalStartMaterialsOptions,connector:string,execution:
   if(at>=expires)deny();
   // 원문은 매 요청마다 다시 읽어 등록 hash와 대조한다. 영수증에는 bytes를 저장하지 않는다.
   let raw:unknown;
-  if(m.group.kind==='START_OPTIONS')raw=m.optionsBody;
+  if(m.group.kind==='INSTRUCTION')raw=await instructionBody(o,db,tokenDigest,connector,execution,proof,command,m.descriptor.manifestRef);
+  else if(m.group.kind==='START_OPTIONS')raw=m.optionsBody;
   else{
    if(typeof o.context?.contextBody!=='function')deny('EXECUTION_MATERIAL_SOURCE_REQUIRED');
    const scope:ContextScope={projectId:pid,executionId:execution,executionGeneration:b.executionGeneration,commandId:command,
@@ -157,7 +161,7 @@ async function deliver(o:NormalStartMaterialsOptions,connector:string,execution:
   try{assertKnowledgeTextSafe(raw as string);}catch{deny('EXECUTION_MATERIAL_SENSITIVE_CONTENT');}
   const encoded=bytes.toString('base64url');
   if(encoded.length>maxEncoded||!Buffer.from(encoded,'base64url').equals(bytes))deny();
-  const fixed={kind:'NORMAL_START_MATERIAL',binding:b,credentialRef:cred.ref,challengeRef:c,packetHash,target,requestId:proof.requestId,commandRef:m.commandRef,
+  const fixed={kind:m.group.kind==='INSTRUCTION'?'NORMAL_INSTRUCTION_MATERIAL':'NORMAL_START_MATERIAL',binding:b,credentialRef:cred.ref,challengeRef:c,packetHash,target,requestId:proof.requestId,commandRef:m.commandRef,
    envelopeHash:m.envelope.envelopeHash,manifestRef:m.descriptor.manifestRef,materialRef:m.materialRef,partContentHash:m.part.contentHash};
   if(prior&&(!same({...fixed,observedAt:s.observedAt,expiresAt:s.expiresAt},s)||Date.parse(s.expiresAt)>expires||Date.parse(s.expiresAt)<=at||Date.parse(s.observedAt)>at))deny();
   const snapshot=s??{...fixed,observedAt:current.now.toISOString(),expiresAt:new Date(expires).toISOString()};
@@ -182,6 +186,8 @@ async function deliver(o:NormalStartMaterialsOptions,connector:string,execution:
   const again=await readPart(db,args,last.binding,command,material,last.now);
   if(!same(lastCred,cred)||!same(last.binding,b)||last.spki!==current.spki||last.now<current.now||signal.aborted||again.basis!==m.basis||
     last.deadline.getTime()<Date.parse(snapshot.expiresAt)||last.now.getTime()>=Date.parse(snapshot.expiresAt))deny();
+  if(m.group.kind==='INSTRUCTION'&&await instructionBody(o,db,tokenDigest,connector,execution,proof,command,m.descriptor.manifestRef)!==raw)deny('EXECUTION_MATERIAL_CURRENT_CHANGED');
+  if(m.group.kind==='INSTRUCTION'){const endAt=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;if(!(endAt instanceof Date)||!Number.isFinite(endAt.getTime())||endAt<current.now||endAt.getTime()>=Date.parse(snapshot.expiresAt)||signal.aborted)deny();}
   committing=true;
   if((await db.query('COMMIT')).command!=='COMMIT')throw Error();
   committing=false;return {out} as const;
@@ -191,6 +197,12 @@ async function deliver(o:NormalStartMaterialsOptions,connector:string,execution:
   if(committing)deny('EXECUTION_MATERIAL_COMMIT_UNKNOWN',503);
   throw error;
  }finally{db.release(discard);}
+}
+async function instructionBody(o:NormalStartMaterialsOptions,db:PoolClient,token:string,connector:string,execution:string,proof:unknown,command:string,manifest:Ref){
+ const source=o.instructions;
+ if(!source||types.isProxy(source)||Object.getPrototypeOf(source)!==NormalInstructionSource.prototype||source.readRegistered!==readRegisteredInstructionBody||NormalInstructionSource.prototype.readRegistered!==readRegisteredInstructionBody)deny('EXECUTION_MATERIAL_SOURCE_REQUIRED');
+ const body=await readRegisteredInstructionBody.call(source!,db,token,connector,execution,proof,command,manifest);
+ if(o.instructions!==source||source!.readRegistered!==readRegisteredInstructionBody||NormalInstructionSource.prototype.readRegistered!==readRegisteredInstructionBody)deny('EXECUTION_MATERIAL_SOURCE_REQUIRED');return body;
 }
 /** 명시 옵션으로만 등록한다. 원문은 검산·같은 거래의 nonce 소비/영수증·확정 COMMIT 뒤에만 no-store로 반환한다. */
 export function registerNormalStartMaterials(app:FastifyInstance,o:NormalStartMaterialsOptions,readPacket:(request:FastifyRequest)=>any){
