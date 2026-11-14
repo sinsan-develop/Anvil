@@ -19609,3 +19609,5 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - UI09 정책고정조회 source2파일 잠정검수: RED버튼부재1F→Primary43P0F0SKIP/type0, Main정확신규11P0F0SKIP exit0 2492.5296ms. 최초Main패턴선택0은증거제외. 독립C0/I0/M1은APPLIED를기록당시유효상태로과장한문구를같은Primary에게한정보완지시. 실제환경/전체체크불변·최종반환전.
 
 - UI09 M1문구보완독립재검수C0/I0/M0·제품/시험역치환원지문불변확인. 저장된정책상태로표시·양성1P만재검증. 최종제품81FA2B6A…F9A8402D/시험38A0E03B…BCD08C8·실제제외/전체미완료유지, source통합진행.
+
+- PR127/Broker43649549484 success/main50d1aed611886ca3053d336adf1c9960eff3948a local/private동일clean. UI09sourcef1808bf2 복구ref pr-127-head보존·완료branch/tag/tracking정상정리. merged고정정책양성1P0F0SKIP exit0 2383.0824ms(1f2a5d). 다음UI12제어권인수후 기존승인후속조회·화면소비누락을 같은Primary읽기조사로위임. codewrite아직0/실제제외유지·전체계획미완료.
