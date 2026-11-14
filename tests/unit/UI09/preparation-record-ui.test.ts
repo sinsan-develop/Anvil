@@ -68,8 +68,10 @@ function receipt(command:any){const payload=command.payload,observedAt=new Date(
  const record=readPreparationSnapshot({schemaVersion:1,id:id(20),projectId:pid,version:1,kind:'TRANSFER_PREPARATION_RECORD',state:'PREPARATION_ONLY',...payload,baselineRefs:[],budgetRef:null,sourceRefs:[],requiredContext:['PURPOSE_REASON','RULES_SCOPE','LATEST_INSTRUCTIONS','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'].map(code=>({code,state:hasContext?'MISSING_OR_EXCLUDED':'NOT_COLLECTED'})),gaps,observedAt,preparationStored:true,manifestStored:false,bindingFrozen:false,ready:false,resumeAuthorized:false,executionAuthorized:false,dispatchPerformed:false});
  const ref={id:record.id,version:1,contentHash:hash(record)};return readPreparationReceipt({operationId:id(21),commandId:command.commandId,projectId:pid,status:'APPLIED',targetId:record.id,version:1,data:{ref,record,preparationStored:true,manifestStored:false},evidenceRefs:[],warnings:[],serverReceivedAt:observedAt}) as any;
 }
-async function host(options:{targetDenied?:boolean;registered?:boolean;otherAssignment?:boolean;empty?:boolean;readerSession?:any;knownRecord?:any;controlDenied?:boolean}={}){const f=seed();if(options.registered){Object.assign(f.binding.snapshot,{connectionKind:'REGISTERED_DEFINITION',connectionReadiness:'REGISTERED_DEFINITION_ONLY'});f.binding.ref.contentHash=hash(f.binding.snapshot);}if(options.otherAssignment){f.binding.snapshot.assignmentRef={...f.confirmed.ref,contentHash:'f'.repeat(64)};f.binding.ref.contentHash=hash(f.binding.snapshot);}const controlDenied=options.controlDenied,targetDenied=options.targetDenied,calls:{path:string;method:string;body?:string}[]=[],modes={post:'OK',get:'OK'},waiting:{release:((r:Response)=>void)|null;fixed:(()=>void)|null}={release:null,fixed:null};let saved:any=options.knownRecord??null,lost=0;
+async function host(options:{targetDenied?:boolean;registered?:boolean;otherAssignment?:boolean;empty?:boolean;readerSession?:any;knownRecord?:any;controlDenied?:boolean;historicalGet?:(path:string)=>Promise<Response>|Response|undefined}={}){const f=seed();if(options.registered){Object.assign(f.binding.snapshot,{connectionKind:'REGISTERED_DEFINITION',connectionReadiness:'REGISTERED_DEFINITION_ONLY'});f.binding.ref.contentHash=hash(f.binding.snapshot);}if(options.otherAssignment){f.binding.snapshot.assignmentRef={...f.confirmed.ref,contentHash:'f'.repeat(64)};f.binding.ref.contentHash=hash(f.binding.snapshot);}const controlDenied=options.controlDenied,targetDenied=options.targetDenied,calls:{path:string;method:string;body?:string}[]=[],modes={post:'OK',get:'OK'},waiting:{release:((r:Response)=>void)|null;fixed:(()=>void)|null}={release:null,fixed:null};let saved:any=options.knownRecord??null,lost=0;
+ const historicalGet=options.historicalGet;
  const transport=async(url:any,options:any)=>{const path=new URL(String(url),'https://anvil.invalid').pathname,method=options?.method??'GET';calls.push({path,method,body:options?.body});if(method==='POST'){if(modes.post==='LOST')throw Error('합성 단절');if(modes.post==='409')return Response.json({code:'VERSION_CONFLICT'},{status:409});if(modes.post==='DELAY')return new Promise<Response>(r=>waiting.release=r);saved=receipt(JSON.parse(options.body));return Response.json(saved);}
+  const historical=historicalGet?.(path);if(historical)return historical;
   if(path==='/api/v1/projects/'+pid&&controlDenied)return Response.json({code:'PROJECT_CONTROL_REQUIRED'},{status:403});if(path==='/api/v1/projects/'+pid)return Response.json({id:pid,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:3,status:'HELD'}});
   if(path.includes('/transfer-preparations/')){if(['WAIT200','WAIT401'].includes(modes.get)){const observedAt=new Date().toISOString(),value=modes.get==='WAIT401'?{code:'AUTH_REQUIRED'}:readPreparationGet({projectId:pid,ref:saved.data.ref,record:saved.data.record,observedAt,currentStatus:{intentExpired:Date.parse(saved.data.record.intentExpiresAt)<=Date.parse(observedAt),usableForTransfer:false,sourceCurrentness:'NOT_REVALIDATED'},preparationStored:true,manifestStored:false}),response=Response.json(value,{status:modes.get==='WAIT401'?401:200}),native=response.json.bind(response);response.json=async()=>{await new Promise<void>(resolve=>waiting.fixed=resolve);return native();};return response;}if(modes.get!=='OK')return Response.json({code:'ACCESS_DENIED'},{status:Number(modes.get)});const observedAt=new Date().toISOString();return Response.json(readPreparationGet({projectId:pid,ref:saved.data.ref,record:saved.data.record,observedAt,currentStatus:{intentExpired:Date.parse(saved.data.record.intentExpiresAt)<=Date.parse(observedAt),usableForTransfer:false,sourceCurrentness:'NOT_REVALIDATED'},preparationStored:true,manifestStored:false}));}
   if(targetDenied&&path===`/api/v1/projects/${pid}/connections/${id(80)}/versions/1`)return Response.json({code:'ACCESS_DENIED'},{status:403});
@@ -120,6 +122,99 @@ test('빈 부모buffer·새client는 제어권 없이 알려진 fullref를 명�
 
 async function queryKnown(f:Awaited<ReturnType<typeof host>>,ref:any){await f.change('준비기록 조회 ID',ref.id);await f.change('준비기록 조회 hash',ref.contentHash);await f.click('알려진 준비기록 고정 조회');}
 const hasOriginal=(f:Awaited<ReturnType<typeof host>>)=>f.nodes().some(n=>n.getAttribute('aria-label')==='준비기록 고정 원문');
+const budgetButton='당시 저장된 한도 정책 보기';
+function historicalBudget(reason='저장 당시 한도 근거'){
+ const snapshot={limits:{maxAttempts:2,maxElapsedMs:60000,maxCalls:4,maxConcurrentAssignments:1,maxSpoolBytes:10000,maxOfflineMs:10000},
+  scope:{kind:'PROJECT',projectId:pid},reason,policyBaseVersion:0,state:'APPLIED',previousRef:null,
+  decidedBy:{kind:'HUMAN',userId:pid},decidedAt:'2026-01-01T00:00:00.000Z',expiresAt:'2026-01-01T00:01:00.000Z',executionAuthorized:false,dispatchPerformed:false};
+ return {projectId:pid,ref:{id:id(81),version:1,contentHash:hash(snapshot)},snapshot};
+}
+function recordWithBudget(budgetRef:ReturnType<typeof historicalBudget>['ref']|null,recordId=id(20)){
+ const record=readPreparationSnapshot({...historicalReceipt().data.record,id:recordId,budgetRef});
+ return {ref:{id:recordId,version:1,contentHash:hash(record)},record};
+}
+function recordResponse(data:ReturnType<typeof recordWithBudget>){
+ const observedAt=new Date().toISOString();
+ return Response.json(readPreparationGet({projectId:pid,...data,observedAt,currentStatus:{intentExpired:Date.parse(data.record.intentExpiresAt)<=Date.parse(observedAt),usableForTransfer:false,sourceCurrentness:'NOT_REVALIDATED'},preparationStored:true,manifestStored:false}));
+}
+for(const mode of ['일치','미수집','다른 해시','403','401'] as const){
+ test('과거 한도 정책 · '+mode,async()=>{
+  const policy=historicalBudget(),data=recordWithBudget(mode==='미수집'?null:policy.ref);
+  const path='/api/v1/projects/'+pid+'/limit-policies/'+policy.ref.id+'/versions/1';
+  const f=await host({empty:true,knownRecord:{data},historicalGet:pathname=>{
+   if(pathname!==path)return;
+   if(mode==='403'||mode==='401')return Response.json({code:mode==='401'?'AUTH_REQUIRED':'ACCESS_DENIED'},{status:Number(mode)});
+   return Response.json(mode==='다른 해시'?historicalBudget('다른 정책 원문'):policy);
+  }});
+  try{
+   await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));
+   assert.equal(f.calls.filter(c=>c.path.includes('/limit-policies')).length,0);
+   if(mode==='미수집'){assert.equal(f.buttons(budgetButton).length,0);assert.match(f.text(),/한도 정책 참조 없음/);}
+   else{
+    const start=f.calls.length;
+    await f.click(budgetButton);
+    const expected=mode==='일치'?policy.snapshot.reason:mode==='다른 해시'?'LIMIT_POLICY_RESPONSE_INVALID':mode==='401'?'AUTH_REQUIRED':'ACCESS_DENIED';
+    await f.settle(()=>f.text().includes(expected));
+    assert.deepEqual(f.calls.slice(start).map(c=>[c.method,c.path]),[['GET',path]]);
+    if(mode==='일치'){assert.ok(f.text().includes('저장된 정책 상태: 적용'));assert.ok(f.text().includes(policy.snapshot.expiresAt));}
+    else assert.doesNotMatch(f.text(),/저장 당시 한도 근거|다른 정책 원문/);
+    assert.equal(f.lost(),mode==='401'?1:0);
+   }
+   assert.deepEqual(Object.keys(f.buffers),[]);assert.ok(f.calls.every(c=>c.method==='GET'));
+  }finally{await f.close();}
+ });
+}
+for(const mode of ['원문 닫기','닫은 원문 다시 열기','같은 기록 재조회','기록 교체','기록 ABA','주체 교체'] as const){
+ test('과거 한도 정책 · 지연 응답 · '+mode,async()=>{
+  const policy=historicalBudget(),a=recordWithBudget(policy.ref),b=recordWithBudget(null,id(22));
+  const path='/api/v1/projects/'+pid+'/limit-policies/'+policy.ref.id+'/versions/1';
+  const expiredAuth=mode==='기록 ABA'||mode==='주체 교체'||mode==='같은 기록 재조회';
+  let resolve!:()=>void,reading=false;
+  const delayed=new Promise<void>(done=>{resolve=done;});
+  const f=await host({empty:true,knownRecord:{data:a},historicalGet:p=>{
+   if(p.endsWith('/transfer-preparations/'+b.ref.id+'/versions/1'))return recordResponse(b);
+   if(p!==path)return;
+   const response=expiredAuth?Response.json({code:'AUTH_REQUIRED'},{status:401}):Response.json(policy);
+   const parse=response.json.bind(response);
+   response.json=async()=>{reading=true;await delayed;return parse();};
+   return response;
+  }});
+  try{
+   await queryKnown(f,a.ref);await f.settle(()=>hasOriginal(f));await f.click(budgetButton);await f.settle(()=>reading);
+   if(mode==='원문 닫기'||mode==='닫은 원문 다시 열기'){
+    await f.click('준비기록 원문 닫기');
+    if(mode==='닫은 원문 다시 열기'){
+     await f.click('알려진 준비기록 고정 조회');await f.settle(()=>hasOriginal(f));
+    }
+   }else if(mode==='같은 기록 재조회'){
+    await f.click('알려진 준비기록 고정 조회');await f.settle(()=>hasOriginal(f)&&!f.button(budgetButton).disabled);
+   }
+   else if(mode==='주체 교체'){
+    const props=f.props();await f.render({...props,session:{...session,user:{id:id(99)}}});
+   }else{
+    await queryKnown(f,b.ref);await f.settle(()=>hasOriginal(f)&&f.text().includes('한도 정책 참조 없음'));
+    if(mode==='기록 ABA'){
+     await queryKnown(f,a.ref);await f.settle(()=>f.buttons(budgetButton).length===1);
+     assert.equal(f.button(budgetButton).disabled,false);
+    }
+   }
+   const subtle=globalThis.crypto.subtle,descriptor=Object.getOwnPropertyDescriptor(subtle,'digest'),original=subtle.digest;
+   let digested=false;
+   try{
+    if(!expiredAuth)Object.defineProperty(subtle,'digest',{configurable:true,value:async(...args:Parameters<SubtleCrypto['digest']>)=>{
+     const result=await original.apply(subtle,args);digested=true;return result;
+    }});
+    await ui.React.act(async()=>{resolve();await new Promise(done=>setImmediate(done));});
+    if(!expiredAuth)await f.settle(()=>digested);
+   }finally{
+    if(!expiredAuth){if(descriptor)Object.defineProperty(subtle,'digest',descriptor);else Reflect.deleteProperty(subtle,'digest');}
+   }
+   assert.equal(f.lost(),0);assert.doesNotMatch(f.text(),/저장 당시 한도 근거|AUTH_REQUIRED/);
+   assert.equal(f.calls.filter(c=>c.path.includes('/limit-policies/')).length,1);
+   assert.deepEqual(Object.keys(f.buffers),[]);assert.ok(f.calls.every(c=>c.method==='GET'));
+  }finally{resolve();await f.close();}
+ });
+}
 test('독립 조회의 현재403/401·hash/임무 불일치는 원문을 숨기고 버퍼/POST0를 유지한다',async()=>{for(const mode of['403','401','HASH','ASSIGNMENT']){const saved=historicalReceipt();if(mode==='ASSIGNMENT'){saved.data.record.assignmentRef={...saved.data.record.assignmentRef,contentHash:'f'.repeat(64)};saved.data.ref.contentHash=hash(saved.data.record);}const f=await host({empty:true,knownRecord:saved,controlDenied:true});try{const before={...f.buffers};if(mode==='403'||mode==='401')f.modes.get=mode;await queryKnown(f,{...saved.data.ref,...(mode==='HASH'?{contentHash:'f'.repeat(64)}:{})});await f.settle(()=>f.text().includes(mode==='403'||mode==='401'?'ACCESS_DENIED':'TRANSFER_PREPARATION_RESPONSE_INVALID'));assert(!hasOriginal(f));assert.equal(f.lost(),mode==='401'?1:0);assert.deepEqual(f.buffers,before);assert(!f.calls.some(c=>c.method==='POST'||c.path==='/api/v1/projects/'+pid));}finally{await f.close();}}});
 test('독립 조회 입력수정은 즉시 원문을 숨기고 A→B→A의 지연응답을 부활시키지 않는다',async()=>{const saved=historicalReceipt(),f=await host({empty:true,knownRecord:saved});try{await queryKnown(f,saved.data.ref);await f.settle(()=>hasOriginal(f));const before=f.calls.length;await f.change('준비기록 조회 hash','f'.repeat(64));assert(!hasOriginal(f));assert.equal(f.calls.length,before);await f.change('준비기록 조회 hash',saved.data.ref.contentHash);f.modes.get='WAIT200';await f.click('알려진 준비기록 고정 조회');assert(f.waiting.fixed);await f.change('준비기록 조회 ID',id(99));await f.change('준비기록 조회 ID',saved.data.ref.id);f.waiting.fixed!();await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});assert(!hasOriginal(f));assert(!f.button('알려진 준비기록 고정 조회').disabled);f.modes.get='OK';await f.click('알려진 준비기록 고정 조회');await f.settle(()=>hasOriginal(f));assert.deepEqual(Object.keys(f.buffers),[]);assert(!f.calls.some(c=>c.method==='POST'));}finally{await f.close();}});
 test('독립 조회는 owner/client/CSRF/transport/assignment 렌더 ABA 뒤 옛401·원문을 폐기한다',async()=>{for(const mode of['USER','CLIENT_ID','CLIENT','CSRF','TRANSPORT','ASSIGNMENT']){const saved=historicalReceipt(),f=await host({empty:true,knownRecord:saved});try{const props=f.props(),transport=f.client.transport;f.modes.get='WAIT401';await queryKnown(f,saved.data.ref);assert(f.waiting.fixed);if(mode==='USER')await f.render({...props,session:{...session,user:{id:id(97)}}});else if(mode==='CLIENT_ID')await f.render({...props,session:{...session,clientId:id(97)}});else if(mode==='CLIENT')await f.render({...props,client:new ui.ApiClient(transport)});else if(mode==='CSRF')await f.render({...props,session:{...session,csrfToken:'d'.repeat(43)}});else if(mode==='ASSIGNMENT')await f.render({...props,assignmentRef:{...f.f.draft.ref,contentHash:'f'.repeat(64)}});else{f.client.transport=async()=>Response.json({code:'ACCESS_DENIED'},{status:403});await f.render();}f.client.transport=transport;await f.render(props);f.waiting.fixed!();await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});assert.equal(f.lost(),0);assert(!hasOriginal(f));await f.click('기존 인계 기록 조회');await f.settle(()=>f.buttons('알려진 준비기록 고정 조회').length===1);assert.equal(f.nodes().find(n=>n.getAttribute('aria-label')==='준비기록 조회 ID')!.value,'');assert(!f.button('알려진 준비기록 고정 조회').disabled);assert.deepEqual(Object.keys(f.buffers),[]);assert(!f.calls.some(c=>c.method==='POST'));}finally{await f.close();}}});
