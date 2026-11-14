@@ -16,7 +16,10 @@ export interface NormalStartMaterialPart{materialId:string;partIndex:number;byte
 export interface NormalStartMaterialGroup{kind:NormalStartMaterialKind;payloadRef:Ref;sourceRef:Ref;sourceBytes:number;contentHash:string;
  mediaType:'application/json';parts:NormalStartMaterialPart[]}
 export interface NormalStartMaterialDescriptor{manifestRef:Ref;groups:NormalStartMaterialGroup[]}
-export interface NormalCommandPageItem{sequence:number;commandRef:Ref;envelope:DispatchEnvelopeV1;materials:NormalStartMaterialDescriptor;
+export interface NormalInstructionMaterialGroup{kind:'INSTRUCTION';payloadRef:Ref;sourceRef:Ref;sourceBytes:number;contentHash:string;
+ mediaType:'text/plain;charset=utf-8'|'text/markdown;charset=utf-8';parts:NormalStartMaterialPart[]}
+export interface NormalInstructionMaterialDescriptor{manifestRef:Ref;groups:NormalInstructionMaterialGroup[]}
+export interface NormalCommandPageItem{sequence:number;commandRef:Ref;envelope:DispatchEnvelopeV1;materials:NormalStartMaterialDescriptor|NormalInstructionMaterialDescriptor;
  /** 서버 고정 page receipt의 materialsDescriptorHash와 같은 방식(canonical JSON SHA256)으로 계산한 값 */
  materialsDescriptorHash:string}
 export interface NormalCommandPage{proofResultRef:Ref;items:NormalCommandPageItem[];nextCursor:string;hasMore:boolean;observedAt:string;expiresAt:string}
@@ -68,7 +71,32 @@ function readDescriptor(raw:unknown,envelope:DispatchEnvelopeV1,seen:Set<string>
  return {manifestRef:cloneV1(raw.manifestRef),groups};
 }
 
-/** GET .../commands 응답. 현재 normal START만 받으며 SEND/STOP 등 다른 operation을 START로 해석하지 않는다. */
+/** SEND는 원 partsRef와 instructionRef를 각각 결박하며 START descriptor 규칙을 바꾸지 않는다. */
+function readInstructionDescriptor(raw:unknown,envelope:DispatchEnvelopeV1,seen:Set<string>):NormalInstructionMaterialDescriptor{
+ if(envelope.operation!=='SEND_INSTRUCTION'||!recordV1(raw,['manifestRef','groups'])||!ref1(raw.manifestRef)||!arrayV1(raw.groups,1)||raw.groups.length!==1)fail('MATERIAL_DESCRIPTOR_INVALID');
+ return {manifestRef:cloneV1(raw.manifestRef),groups:[readInstructionGroup(raw.groups[0],envelope.payload,seen)]};
+}
+function readInstructionGroup(g:unknown,payload:{partsRef:Ref;instructionRef:Ref},seen:Set<string>):NormalInstructionMaterialGroup{
+ if(!recordV1(g,['kind','payloadRef','sourceRef','sourceBytes','contentHash','mediaType','parts'])||g.kind!=='INSTRUCTION'||
+  !refV1(g.payloadRef)||!refV1(g.sourceRef)||!same(g.payloadRef,payload.partsRef)||!same(g.sourceRef,payload.instructionRef)||!positive(g.sourceBytes)||g.sourceBytes>sourceLimit||
+  !hashV1(g.contentHash)||(g.mediaType!=='text/plain;charset=utf-8'&&g.mediaType!=='text/markdown;charset=utf-8')||!arrayV1(g.parts,maxPageParts)||!g.parts.length)fail('MATERIAL_DESCRIPTOR_INVALID');
+ let offset=0;
+ const parts=g.parts.map((p:any,n:number):NormalStartMaterialPart=>{
+  if(!recordV1(p,['materialId','partIndex','byteOffset','utf8Bytes','contentHash'])||!uuidV1(p.materialId)||seen.has(p.materialId)||p.partIndex!==n+1||p.byteOffset!==offset||!positive(p.utf8Bytes)||p.utf8Bytes>65536||!hashV1(p.contentHash))fail('MATERIAL_DESCRIPTOR_INVALID');
+  seen.add(p.materialId);offset+=p.utf8Bytes;return {materialId:p.materialId,partIndex:p.partIndex,byteOffset:p.byteOffset,utf8Bytes:p.utf8Bytes,contentHash:p.contentHash};
+ });
+ if(offset!==g.sourceBytes)fail('MATERIAL_DESCRIPTOR_INVALID');
+ return {kind:'INSTRUCTION',payloadRef:cloneV1(g.payloadRef),sourceRef:cloneV1(g.sourceRef),sourceBytes:g.sourceBytes,contentHash:g.contentHash,mediaType:g.mediaType,parts};
+}
+/** 수신 시작 전에 원 item을 다시 검산하고 호출자 변경과 분리한다. 권위를 새로 발급하지 않는다. */
+export function readNormalInstructionItem(item:unknown,now:number):NormalCommandPageItem&{materials:NormalInstructionMaterialDescriptor}{
+ if(!recordV1(item,['sequence','commandRef','envelope','materials','materialsDescriptorHash'])||!sequenceOk(item.sequence)||!refV1(item.commandRef))fail('COMMAND_PAGE_ITEM_INVALID');
+ let envelope:DispatchEnvelopeV1;try{envelope=readDispatchEnvelopeV1(item.envelope,now);}catch{return fail('COMMAND_PAGE_ITEM_INVALID');}
+ const materials=readInstructionDescriptor(item.materials,envelope,new Set());
+ if(item.materialsDescriptorHash!==digest(materials))fail('MATERIAL_DESCRIPTOR_INVALID');
+ return {sequence:item.sequence,commandRef:cloneV1(item.commandRef),envelope,materials,materialsDescriptorHash:digest(materials)};
+}
+/** GET .../commands 응답. START/SEND만 각각의 닫힌 descriptor로 검산한다. */
 export function readNormalCommandPage(raw:unknown,scope:NormalCommandPageScope,now:number):NormalCommandPage{
  if(!scopeOk(scope))fail('COMMAND_PAGE_SCOPE_INVALID');
  if(!recordV1(raw,['transport','proofResultRef','items','nextCursor','hasMore','observedAt','expiresAt','cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed'])||
@@ -82,9 +110,9 @@ export function readNormalCommandPage(raw:unknown,scope:NormalCommandPageScope,n
     records.has(x.commandRef.id))fail('COMMAND_PAGE_ITEM_INVALID');
   let envelope:DispatchEnvelopeV1;
   try{envelope=readDispatchEnvelopeV1(x.envelope,now);}catch{return fail('COMMAND_PAGE_ITEM_INVALID');}
-  if(envelope.operation!=='START_SESSION'||envelope.context.projectId!==scope.projectId||envelope.context.executionId!==scope.executionId||
+  if(!['START_SESSION','SEND_INSTRUCTION'].includes(envelope.operation)||envelope.context.projectId!==scope.projectId||envelope.context.executionId!==scope.executionId||
     envelope.context.executionGeneration!==scope.executionGeneration||commands.has(envelope.commandId))fail('COMMAND_PAGE_ITEM_INVALID');
-  const descriptor=readDescriptor(x.materials,envelope,materials);
+  const descriptor=envelope.operation==='SEND_INSTRUCTION'?readInstructionDescriptor(x.materials,envelope,materials):readDescriptor(x.materials,envelope,materials);
   parts+=descriptor.groups.reduce((n,g)=>n+g.parts.length,0);
   if(parts>maxPageParts)fail('COMMAND_PAGE_TOO_LARGE');
   previous=x.sequence;records.add(x.commandRef.id);commands.add(envelope.commandId);
@@ -129,18 +157,20 @@ export function readNormalMaterialResponse(raw:unknown,item:NormalCommandPageIte
  if(Buffer.byteLength(canonicalJson({...raw,material:metadata}))>maxMetadata)fail('MATERIAL_RESPONSE_INVALID');
  const bytes=decodeCanonical(m.bytes);
  if(bytes.length!==part.utf8Bytes||contentHash(bytes)!==part.contentHash)fail('MATERIAL_BYTES_MISMATCH');
+ if(group.kind==='INSTRUCTION'){try{new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);}catch{return fail('MATERIAL_BYTES_MISMATCH');}}
  return {proofResultRef:cloneV1(raw.proofResultRef),materialId:part.materialId,partIndex:part.partIndex,bytes:new Uint8Array(bytes),
   observedAt:raw.observedAt,expiresAt:raw.expiresAt};
 }
 
 /** 한 그룹의 모든 부분을 순서대로 이어 원본을 만든다. 누락·중복·다른 그룹 부분은 거절하고,
  * 원본 길이·SHA256·엄격 UTF-8을 검산한 뒤 텍스트를 돌려준다. 부분 하나만으로는 UTF-8 경계를 판정하지 않는다. */
-export function assembleNormalStartMaterial(group:NormalStartMaterialGroup,received:readonly NormalMaterialReceived[]):{bytes:Uint8Array;text:string}{
+function assemble(group:NormalStartMaterialGroup|NormalInstructionMaterialGroup,received:readonly NormalMaterialReceived[]):{bytes:Uint8Array;text:string}{
  if(!arrayV1(received,maxPageParts)||received.length!==group.parts.length)fail('MATERIAL_ASSEMBLY_INCOMPLETE');
  const chunks=group.parts.map(p=>{
   const own=received.filter(r=>r.materialId===p.materialId);
   if(own.length!==1||own[0]!.partIndex!==p.partIndex||!(own[0]!.bytes instanceof Uint8Array)||own[0]!.bytes.length!==p.utf8Bytes||
     contentHash(own[0]!.bytes)!==p.contentHash)fail('MATERIAL_ASSEMBLY_INCOMPLETE');
+  if(group.kind==='INSTRUCTION'){try{new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(own[0]!.bytes);}catch{return fail('MATERIAL_ASSEMBLY_MISMATCH');}}
   return own[0]!.bytes;
  });
  const bytes=Buffer.concat(chunks);
@@ -148,4 +178,13 @@ export function assembleNormalStartMaterial(group:NormalStartMaterialGroup,recei
  let text:string;
  try{text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);}catch{return fail('MATERIAL_ASSEMBLY_MISMATCH');}
  return {bytes:new Uint8Array(bytes),text};
+}
+
+/** START의 문자 중간 부분 분할 의미를 보존한다. */
+export function assembleNormalStartMaterial(group:NormalStartMaterialGroup|NormalInstructionMaterialGroup,received:readonly NormalMaterialReceived[]){
+ if(group.kind==='INSTRUCTION')fail('MATERIAL_DESCRIPTOR_INVALID');return assemble(group,received);
+}
+/** SEND는 부분마다 codepoint 경계와 원본 전체를 검산한다. */
+export function assembleNormalInstructionMaterial(group:NormalInstructionMaterialGroup,received:readonly NormalMaterialReceived[]){
+ const checked=readInstructionGroup(group,{partsRef:group?.payloadRef,instructionRef:group?.sourceRef},new Set());return assemble(checked,received);
 }

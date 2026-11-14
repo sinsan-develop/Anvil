@@ -5,9 +5,9 @@ import type {ClientRequest,IncomingMessage} from 'node:http';
 import {canonicalJson,parseWireJson} from '../../../contracts/canonical.ts';
 import {cloneV1,hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import {executionChallengeRequestBytes,executionProofBytes,executionTarget} from '../../server/modules/executions/execution-proof.ts';
-import {normalMaterialPath,readNormalCommandPage,readNormalMaterialResponse,type NormalCommandPage,type NormalCommandPageItem,type NormalMaterialReceived} from './normal-start-material-consumer.ts';
+import {readNormalInstructionItem,assembleNormalInstructionMaterial,normalMaterialPath,readNormalCommandPage,readNormalMaterialResponse,type NormalCommandPage,type NormalCommandPageItem,type NormalMaterialReceived} from './normal-start-material-consumer.ts';
 
-/** 실행기 normal 보호 GET 클라이언트(명령 페이지·START 자료).
+/** 실행기 normal 보호 GET 클라이언트(명령 페이지·START/SEND 자료).
  * 준비(prepare*)는 challenge 발급과 proof 서명까지 하고 서명된 packet을 돌려준다. 전송(send)은 그 packet으로 GET 한 번을 보내고
  * 응답을 normal-start-material-consumer codec으로 검산한다. 전송 결과가 불명이면 자동 재전송하지 않는다.
  * 같은 packet은 기한 안에 호출자가 다시 보낼 수 있고 서버는 최초 영수증으로 수렴한다.
@@ -128,6 +128,26 @@ export class NormalProtectedGetClient{
   if(!known)fail('NORMAL_GET_INPUT_INVALID');
   const path=normalMaterialPath(this.#scope.connectorId,this.#scope.executionId,item.envelope.commandId,materialId);
   return {kind:'MATERIAL',item,materialId,...await this.#prepare(path,[],signal)};
+ }
+ /** SEND 원문만 RAM에서 수신한다. cursor/내구 저장/permit/실행을 진행하지 않는다. */
+ async receiveInstruction(item:NormalCommandPageItem,signal:AbortSignal){
+  if(!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_GET_CANCELLED');this.#live();
+  let own:ReturnType<typeof readNormalInstructionItem>;
+  try{own=readNormalInstructionItem(item,this.#clock());}catch{return fail('NORMAL_GET_INPUT_INVALID');}
+  const e=own.envelope,s=this.#scope;
+  if(e.context.projectId!==s.projectId||e.context.executionId!==s.executionId||e.context.executionGeneration!==s.executionGeneration)fail('NORMAL_GET_INPUT_INVALID');
+  const group=own.materials.groups[0]!,received:NormalMaterialReceived[]=[];let sent=false;
+  const wall=this.#clock(),tick=this.#tick();let end=Math.min(Date.parse(e.expiresAt),this.#credentialExpiry),lastWall=wall,lastTick=tick;
+  const current=()=>{const now=this.#clock(),mono=this.#tick();if(now<lastWall||mono<lastTick)fail('NORMAL_GET_CLOCK_INVALID',0,sent);lastWall=now;lastTick=mono;if(signal.aborted)fail('NORMAL_GET_CANCELLED',0,sent);if(now>=end||mono-tick>=end-wall)fail('NORMAL_GET_PACKET_EXPIRED',0,sent);};
+  try{
+   for(const part of group.parts){current();const packet=await this.prepareMaterial(own,part.materialId,signal);current();sent=true;
+    const partReceived=await this.send(packet,signal);received.push(partReceived);end=Math.min(end,Date.parse(partReceived.expiresAt));current();
+   }
+   const original=assembleNormalInstructionMaterial(group,received);current();
+   return {commandRef:cloneV1(own.commandRef),envelopeHash:e.envelopeHash,manifestRef:cloneV1(own.materials.manifestRef),instructionRef:cloneV1(group.sourceRef),partsRef:cloneV1(group.payloadRef),
+    mediaType:group.mediaType,...original,executionAuthorized:false as const,dispatchPerformed:false as const};
+  }catch(error){if(error instanceof NormalProtectedGetError)throw error;return fail('NORMAL_GET_RESPONSE_INVALID',0,sent);}
+  finally{for(const part of received)part.bytes.fill(0);}
  }
  async send(prepared:PreparedCommandPage,signal:AbortSignal):Promise<NormalCommandPage>;
  async send(prepared:PreparedMaterial,signal:AbortSignal):Promise<NormalMaterialReceived>;
