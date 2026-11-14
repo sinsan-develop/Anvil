@@ -83,3 +83,7 @@
 - 2026-11-14 Main 어울 재개: PR99 41790410과 원격 main 동일 확인 후 D2 P-B source·합성 범위를 착수했다. P-A는 재구현하지 않는다. 공급자/자료 여정·거절 시험은 진행 중이며 실제 DB·키·권한·서비스·Agent 실행과 전체 완료는 제외/미완료다.
 
 - 2026-11-14 D1 재교환 source 검수: 같은 grant 비중첩 발급·receipt별 보호 슬롯·명시 renew 및 새credential 관측/ACK·기존wire1 보존을 합성 확인했다. 0091 미적용, 실제 native/PG/Agent 미검증. FN06/FN08 완료 체크는 올리지 않으며 다음 polling 조합을 진행한다.
+
+- 2026-11-14 PR103/main ab1fab01 소스 통합·동기화·완료branch 정리 확인. 다음 D1 normal polling→내구 수신→START→ACK 조합 착수. 실제 Agent/DB/키/서비스는 제외하며 FN06/FN08 부분 구현 상태 유지.
+
+- 2026-11-14 D1 normal polling 소스 조합 검수: GET→자료 내구수신→START→관측ACK, 재시작/갱신wire추가0을12개합성검사로확인. 실제adapter/current공급자·native/DB/Agent·UI는미완료이며FN06/FN08부분구현유지.
