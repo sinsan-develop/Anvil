@@ -19621,3 +19621,15 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - UI12최종제품1/시험2 동결·쓰기반환/live0. Main확정수락즉시/지연/명시조회3P0F0SKIP exit0 2425.7277ms(9c02b8). Primary직접7P/type0·인접25P1F의baseline selector1개교정후해당반례1P0F0SKIP,기준완화0. 독립최종검수중·실제제외/전체미완료유지. 결과서 UI12_CONFIRMED_ACCEPTANCE_REQUERY_RESULT_20261115.md.
 
 - UI12제품/주시험독립specquality C0/I0/M0·제출지문일치. 인접시험은Main이selector1개외변경없음diff확인,실제기준버튼과일치·disabled단언불변. Main검수수용/source통합진행.
+
+## 2026-11-15 계획 핵심 미완료 재대조
+
+- 이전진행은권위상태변경을포함한진전: UI14/09/12 각각PR126/127/128통합. 최신PR128/Broker43650781445 success/mainab400738119388a29f187fd9e62da0089daeea64 local/private동일clean·복구refpr-128-head보존·완료branch/tag/tracking정리. merged즉시503원확정유지1P0F0SKIP exit0 1649.5417ms(d920c5).
+- 전체계획미완료. 다음에는단순소비보완보다계획상앞선P03/IX01·FN07실제SDK/Query/child소유생산을우선한다. 기존Primary는원Nov6후보와후속P3채택의source허용delta를읽기대조,기존d2_preflight는P03R3/IX01현재제외·소진·승인을문서로대조한다. Main이범위·검수·통합소유,동시제품writer0.
+- 최신실제DB/권한/키/서비스/Agent제외유지·SDK추가GET0. 소진단발/과거J3승인을현재제외보다우선하지않는다. 불명콜백/argv/env·owner권위를발명하지않는다. 새승인효과가있으면정확한차이를PMO에전달하고독립승인작업은계속한다.
+
+- 핵심잔여대조결과: FN07 sourcecaller없음·미정권위/SDK기술근거, P03R3실제결정PENDING, IX01 TC01효과는최신실제제외로실행불가. 정확근거/효과는CORE_EXECUTION_REMAINING_DECISIONS_20261115.md에분리. 기존P3소비완료반복0·새포트로실연결대체0. PMO에기존후보의결정지원경로요청,아직추가SDK/SSH/실행0·목표active/전체미완료.
+
+- P03접속지원읽기진단 새근거: 로컬wsl--list--verbose sandbox Wsl/E_ACCESSDENIED(exit1)→승격동일읽기exit0 Ubuntu/Ubuntu-Ollama Running2(1c4889),WSL-server와동일시0. 기존SSH config의WSL-server HostName/Port/User만읽어172.27.253.53:22/daon확인(7f8b9f),키/비밀내용0. 등록endpoint에timeout3초TCP1회/인증없이SSH배너수신 TCP_CONNECTED/SSH_BANNER25ms(b7901d). 과거Connection refused를현재장애로단정하지않는다. SSH인증/hostidentity/원격명령·DB·서비스정상은미확인·서비스변경/SDKGET0. PMO에접속복구변경보다R3정확결정후preflight를권장전달. 전체계획미완료/목표active.
+
+- 핵심잔여문서/현황독립C0/I0/M0. P03R3 고정제안SHA40A7A65B2BFDF12CAD70EBEE65FAF6A2286905C60CC262A349ED721E913A2B6F의정확효과1건만PMO에사용자결정전달요청. 최신실제제외중등록6대상/30분/제한복제1회·신규volume1/helper3·원/부분사본보존·잔여위험4수락을묻고PG/SQL/정식전환/키·신뢰/기존서비스/Agent제외유지. 실제인증/preflight/복제0,승인답변을확인하기전실행하지않는다.
