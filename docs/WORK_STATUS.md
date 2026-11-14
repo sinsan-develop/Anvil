@@ -19260,3 +19260,11 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Primary 최초RED: node --test tests/unit/FN06/native-worker-deployment.test.ts, exit1/0P2F0S173.6ms, 신규contract/store부재 ERR_MODULE_NOT_FOUND. exact3/hash재봉인부모위조·Proxy trap0·모델게시DB0 행동시험에서시작, 계약/저장구현중. 정식FAILURE_REPORT0·실행handle0. UI 명시설치는현재 action부재를확인하여기존조회/ARM자동설치가아닌별도동작의최소경로보완을Main이정리한다.
 
 - Main 내부보완: 기존설정에명시설치 action부재지만 main의 OFFERED owned.offer→readReceiveOffer→원command.payload.nativeFactoryRef 근거는있다. WI SHA4F0308E809E727CAFE92D37C9B1C7711EF7BF41743F060A2009B432984F8CC59로settings.html/js·policy/shell·직접시험2 총6경로추가(제품23/시험10=33). 별도INSTALL_WORKER 명시클릭·원offer/attempt/epoch/기한결박, renderer경로/키/factory선택0·기존조회/ISSUE/ARM자동설치0. 채택계약의필수사용자진입내구체화라추가사용자승인요청0. Primary단일writer계속.
+
+- 계약/서버/미적용0095 첫7경로 잠정동결: Primary6P0F0S2193.45ms exit0, Main fresh6 dot/exit0(599f44). 원부재2F→route404/SQL부재2F→GREEN. COMMIT진입후불명고정오류·정확request/hash재조회 보완. root 최초3진단보정0은구현자제출(후속변경후재확인예정). 독립읽기검수착수, Primary는비충돌compile/package/publisher로진행. SQL은정적검사이며 실제PG/RLS/동시성/DDL PASS아님.
+
+- 첫7경로 독립 C0/I2/M1: route가응답observedAt을현재시각으로검산해오래된ACTIVE수용가능·전체1초봉인부재, SQL동일factoryid/version상이hash별도게시가능, 시험명revoke와실제publish/read만불일치. Primary에직접RED→GREEN 재작업지시(동일writer). 요청시작wall+mono/late폐기·SQLid/version유일성과제품revoke정상/후거절흐름을보완한다. 이는원채택기준구현미진이며계약완화/새승인0. 정식실패보고0, 실제PG/C#등제외유지.
+
+- 첫묶음 보완: 오래된observedAt 200→503·factoryunique부재 RED2→Primary9P0F0S3518.76ms, Mainfresh9dot/exit0(81e30b). wall/mono1초·signal·lateconnect/query반환1·후속COMMIT0, revoke제품메서드/회수후read거절 포함. 보완중중괄호문법오류 집중2F→교정2P 이력보존. roottsc0은구현자제출, 독립scoped재검수중. 실제PGcancel/동시성미검증. 다음build/publication 모듈부재RED1 확인후비충돌구현진행.
+
+- 첫7경로 scoped 독립재검수 C0/I0/M0. store74BBE4F4·routeE092F700·SQLD00E7731·unit1C06969E·SQLtestF737BE99 지문확인, I2/M1해소. Main9사례검증과함께계약/서버sourcecheckpoint로보존하며전체전달구현완료는아니다. Primary나머지26경로단일writer계속, 실제환경0.
