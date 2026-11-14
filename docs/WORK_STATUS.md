@@ -19204,3 +19204,9 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 
 - FN08 journal source0635a0d95e95ade5dbc025be81e0d525374390f4를 PR109/main6c4974c453cb667d93c4a8b7559ca4279b36c2d1로 통합했다. Broker43564701250 success, source/main tree동일, local/development main동일·clean. merged 실제Client→보호adapter RAM재시작 smoke1P/0F/0SKIP236.0644ms exit0. refs/pull/109/head가source보존, 완료원격branch/tag부재확인후정확로컬branch/tag정리. 다른WIP/worktree보존.
 - 전체계획과Windows정상내구저장·재시작은미완료. source-only부분연결과OSunsupported를실지원완료로승격하지않음. 다음 codex/av3-d1-runtime-followup은검증main에서생성했고Primary가읽기전용으로이번delta후다음승인source의존성을분해중. 실제환경실행0.
+
+- 다음 미완료 내부단위 착수: 기존반환A안§3·§6 안의 native retained 생성조립기. FN08_NATIVE_RETAINED_FACTORY_SOURCE_IMPLEMENTATION_20261114.md 정확제품3/시험2 경로를기존Primary단일writer에게배정했다. 원context파생selection·기존Job/Startup/Process primitive호출·부분실패정리소유를연결하며 실제mapping생산부재/defaultdeny/Windowsjournalunsupported는유지한다. 새API/권한/저장계약0·실C#/FS/키/DB/서비스/Agent실행0. 독립WI검수병행,Main제품쓰기0.
+
+- retained조립기 WI 독립C0/I0(기준WI C579E744C4113A21E884AB4E3AB09B4B48D05386F7AC7676133244225D30085E). 기존API정리소유대조: process/thread만닫는retained와부모Job/Startup/Image수명분리, process종료UNKNOWN시참조/상위자원보존, 원CWT객체대체금지. Primary첫정적RED `node --test tests/unit/FN06/native-preparation-retained-factory.test.ts` 0P/3F238.8918ms exit1→연결후3P/0F228.8927ms exit0. C#실행증거아님. 소유정리/변조/기한합성보강계속.
+
+- retained 조립 source 독립 최종 C0/I0/M0(소유권/입력·closure 분리 검수). Main 신규10P(정적8/RAM2)·PE16P·인접3P, root tsc0·diffcheck0. 기존 null 거절의 위치 변경에 맞춰 인접 시험1파일을 추가 허용하여 제품3/시험3 경로이며 합격 의미는 유지했다. 새 실제 C#·FS·키·DB·권한·서비스·Agent 실행0. 보호 mapping 생산자 미등록·Windows journal unsupported·normal grant/current 미완료로 보존한다. 결과서 FN08_NATIVE_RETAINED_FACTORY_SOURCE_RESULT_20261114.md. RED 이력은 최초 미구현3F·원 image 재소유 반례1F·낡은 인접 assertion1F로 서로 다른 보완이며 정식 FAILURE_REPORT0회다. Primary code write 반환·live handle0. Desktop 비교는 기준174/현재174/신규0이며 전체 PASS가 아니다.
