@@ -73,6 +73,7 @@ for(const fault of ['SCOPE','DESCRIPTOR','ENVELOPE_AFTER_PART','PART_AFTER_PART'
  try{
   const {receiveNormalInstruction}=await import('../../../apps/connector/runtime/normal-instruction-intake.ts');
   const page=await f.get.send(await f.get.prepareCommandPage({afterSequence:0,waitMs:0},f.signal),f.signal),start=page.items[0]!,item=page.items[1]!;
+  assert(start.materials!==null);assert.equal(start.envelope.operation,'START_SESSION');assert(item.materials!==null);assert.equal(item.envelope.operation,'SEND_INSTRUCTION');
   assert(item.materials.groups[0]!.parts.length>=2);const fs=memoryFiles(),expected={context:structuredClone(start.envelope.context),executorRegistrationRef:start.envelope.executorRegistrationRef};
   if(fault==='SCOPE')expected.context.assignmentId=randomUUID();if(fault==='DESCRIPTOR')item.materialsDescriptorHash='0'.repeat(64);
   let wall=f.clock(),mono=10,prepared=0,gets=0;

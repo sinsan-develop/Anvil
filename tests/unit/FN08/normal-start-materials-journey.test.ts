@@ -176,6 +176,7 @@ test('실행기 codec이 실제 명령 페이지·자료 응답을 검산해 두
   const pageResp=await (await signedGet(base+'/commands',{waitMs:0})).get();assert.equal(pageResp.statusCode,200,pageResp.body);
   const rawPage=pageResp.json(),page=consumer.readNormalCommandPage(rawPage,scope,now());
   assert.equal(page.items.length,1);const item=page.items[0]!;
+  assert(item.materials!==null);assert.equal(item.envelope.operation,'START_SESSION');
   // 서버 고정 receipt의 descriptor hash와 실행기가 계산한 hash가 같다
   const receipt=h.store.receipts().find((v:any)=>v.snapshot_json.kind==='NORMAL_COMMAND_PAGE')!;
   assert.equal(item.materialsDescriptorHash,receipt.snapshot_json.entries[0].materialsDescriptorHash);
@@ -267,6 +268,7 @@ test('실행기 보호 GET 클라이언트가 challenge·서명·GET으로 명�
  try{
   const page=await client.send(await client.prepareCommandPage({afterSequence:0,waitMs:0},signal()),signal());
   assert.equal(page.items.length,1);const item=page.items[0]!;
+  assert(item.materials!==null);assert.equal(item.envelope.operation,'START_SESSION');
   const bodies:Record<string,string>={};
   for(const group of item.materials.groups){
    const received=[];
@@ -308,6 +310,7 @@ test('4xx 거절·5xx 결과 불명·리다이렉트·JSON 아닌 응답·descri
  const {h,client,mode,NormalProtectedGetError,signal}=await clientSetup(false);
  try{
   const page=await client.send(await client.prepareCommandPage({afterSequence:0,waitMs:0},signal()),signal()),item=page.items[0]!;
+  assert(item.materials!==null);assert.equal(item.envelope.operation,'START_SESSION');
   const context=item.materials.groups[0]!.parts[0]!,options=item.materials.groups[1]!.parts[0]!;
   // 공급자 미주입: 서버 412 거절은 효과 없음(outcomeUnknown=false)
   const c=await client.prepareMaterial(item,context.materialId,signal());
@@ -360,6 +363,7 @@ async function intakeSetup(){
  const s=await clientSetup(),{h,client,signal}=s;
  const {NormalStartIntake,NormalStartIntakeFailure,receiveNormalStart}=await import('../../../apps/connector/runtime/normal-start-intake.ts');
  const page=await client.send(await client.prepareCommandPage({afterSequence:0,waitMs:0},signal()),signal()),item=page.items[0]!;
+  assert(item.materials!==null);assert.equal(item.envelope.operation,'START_SESSION');
  const expected={context:item.envelope.context,executorRegistrationRef:item.envelope.executorRegistrationRef};
  const now=()=>h.store.now().getTime();
  const rejects=async(p:Promise<unknown>,code:string)=>assert.rejects(p,(e:any)=>e instanceof NormalStartIntakeFailure&&e.code===code);

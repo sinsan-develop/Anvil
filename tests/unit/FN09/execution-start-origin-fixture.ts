@@ -4,7 +4,7 @@ import {nodeDecisionFixture,H,id,artifactCalls} from '../FN10/node-decision-fixt
 export {H,id,artifactCalls};
 export {installNodeDecisionMemoryFS as installExecutionStartOriginMemoryFS} from '../FN10/node-decision-fixture.ts';
 /** 기존 순수 fixture의 실제 ArtifactStore/문서·계획을 재사용한다. 성공 보호 메서드는 바꾸지 않는다. */
-export async function executionStartOriginFixture(options:{normalExecutionId?:string;unrelatedStageBaseline?:boolean;clockOffsetMs?:number;budgetElapsedMs?:number;connectorEnvironment?:boolean;richContext?:boolean;environmentDependencies?:boolean;constitutionContext?:boolean;approvedContext?:boolean;snapshotRoot?:boolean;originRequestStorage?:boolean;originConsumptionStorage?:boolean}={}){
+export async function executionStartOriginFixture(options:{normalStopPolicy?:boolean;normalExecutionId?:string;unrelatedStageBaseline?:boolean;clockOffsetMs?:number;budgetElapsedMs?:number;connectorEnvironment?:boolean;richContext?:boolean;environmentDependencies?:boolean;constitutionContext?:boolean;approvedContext?:boolean;snapshotRoot?:boolean;originRequestStorage?:boolean;originConsumptionStorage?:boolean}={}){
  const f=await nodeDecisionFixture(),{db,access,documents,pid,uid,cid}=f,raw=db.query;
  if(options.clockOffsetMs)f.advance(options.clockOffsetMs);
  const {documentOperations,persistProjectReceipt,currentPolicy,ProjectPolicyRepository}=await import('../../../apps/server/modules/access/project-command.ts');
@@ -435,7 +435,7 @@ export async function executionStartOriginFixture(options:{normalExecutionId?:st
  const rootSnapshot={declaration:{hostLabel:'원 선언',displayName:'원 소스',pathHint:snapshotTemplate?.permit.root.pathHint??'source-only-placeholder',reason:'원 선언',connectorId:snapshotTemplate?id(216):null},status:'DECLARED',authority:'USER_DECLARED',readiness:'UNVERIFIED',reason:'원 선언'},rootRef={id:id(211),version:1,contentHash:H(rootSnapshot)};
  if(options.normalExecutionId){
   const asked=[{sourceRootRef:rootRef,mappingRef:null,observationRef:f.design.ref,baselineRef:f.design.ref,targets:[{relativePath:'src/a.ts',kind:'FILE',access:'READ',recursive:false}]}];
-  modes.runtimeRules=['authorizeExecution','queueExecutionCommand'].map(operation=>({ruleId:operation,subjectRef:{kind:'HUMAN',userId:uid},
+  modes.runtimeRules=['authorizeExecution','queueExecutionCommand',...(options.normalStopPolicy===true?['requestExecutionStop']:[])].map(operation=>({ruleId:operation,subjectRef:{kind:'HUMAN',userId:uid},
    operations:[operation],targetScopes:[{kind:'EXECUTION',projectId:pid,executionId:options.normalExecutionId,executionGeneration:1,sourceScopes:asked}],
    disposition:'AUTO',limitPolicyRef:budget.data.ref,expiresAt:f.actor.authSession.idleExpiresAt}));
   Object.assign(policyRef,{version:++modes.policyVersion,contentHash:policy().content_hash});

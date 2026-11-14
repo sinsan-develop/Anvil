@@ -29,3 +29,11 @@ test('자료 부분 합계·건수·크기 상한에서 명령을 쪼개지 않�
  assert.throws(()=>fitPage([item(1,'a'.repeat(800))] as any,700));
  assert.deepEqual(fitPage([]),[]);
 });
+
+test('STOP 자료 null은 부분0이며 혼합 건수50와 원 byte한도를 그대로 적용한다',()=>{
+ const stop={materials:null,stopTarget:{kind:'NORMAL_STOP_SCOPE_V1'}},start={materials:{groups:[{parts:Array.from({length:200},()=>({}))}]}};
+ assert.equal(fitPage([start,stop] as any).length,2);
+ assert.equal(fitPage(Array.from({length:51},()=>stop)).length,50);
+ assert.equal(fitPage([stop,stop],Buffer.byteLength(JSON.stringify([stop]))).length,1);
+ assert.throws(()=>fitPage([stop],1));
+});

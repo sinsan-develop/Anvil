@@ -9,6 +9,7 @@ import {AuthFailure} from '../access/repository.ts';
 import {executionProofBytes,executionTarget,verifyNormalCommandPageProof} from './execution-proof.ts';
 import {original,readCurrent} from './normal-exchange-challenge.ts';
 import {normalRequestBearerDigest,requestCredential} from './normal-request-challenge.ts';
+import {readNormalStopRecord} from './normal-stop-command.ts';
 import {instructionMaterialDescriptor,type InstructionMaterialDescriptor} from './normal-instruction-materials.ts';
 import {maxPageMaterialParts,startMaterialDescriptor,type StartMaterialDescriptor} from './normal-start-materials.ts';
 
@@ -32,11 +33,11 @@ export function readPageWindow(rows:{sequence:unknown}[],after:number){
 
 /** 한 명령과 그 자료 descriptor는 한 단위다. 건수50·자료 부분200·크기 상한을 넘기는 명령 앞에서 닫으며
  * 첫 명령조차 담지 못하면 자료를 생략하지 않고 거절한다. 응답 봉투 여유는 호출자가 상한에서 미리 뺀다. */
-export function fitPage<T extends {materials:StartMaterialDescriptor|InstructionMaterialDescriptor}>(items:T[],maxBytes=limit-16384):T[]{
+export function fitPage<T extends {materials:StartMaterialDescriptor|InstructionMaterialDescriptor|null}>(items:T[],maxBytes=limit-16384):T[]{
  let parts=0,bytes=2,count=0;
  for(const item of items){
   const next=Buffer.byteLength(canonicalJson(item))+(count?1:0);
-  parts+=item.materials.groups.reduce((n,g)=>n+g.parts.length,0);bytes+=next;
+  parts+=item.materials===null?0:item.materials.groups.reduce((n,g)=>n+g.parts.length,0);bytes+=next;
   if(count>=50||parts>maxPageMaterialParts||bytes>maxBytes)break;
   count++;
  }
@@ -89,7 +90,8 @@ export function readPacket(request:FastifyRequest,allowBody=false){
 type Packet=ReturnType<typeof readPacket>;
 type Target=ReturnType<typeof executionTarget>;
 async function selectItems(db:PoolClient,keys:unknown[],binding:any,after:number,fixed:string[]|null,now:Date){
- const generation=binding.executionGeneration;
+ const generation=binding.executionGeneration,project=keys[0],execution=keys[1];
+ if(!uuidV1(project)||!uuidV1(execution))deny();
  const rows=(await db.query('SELECT * FROM anvil.normal_command_page_rows($1,$2,$3,$4,$5,$6,$7)',[...keys,generation,after,fixed])).rows;
  const {sequences,hasMore}=readPageWindow(rows as {sequence:unknown}[],after);
  const ids=new Set<string>();
@@ -97,14 +99,26 @@ async function selectItems(db:PoolClient,keys:unknown[],binding:any,after:number
   if(r.valid!==true||!refV1(r.command_ref)||ids.has(r.command_ref.id))deny();
   ids.add(r.command_ref.id);
   const envelope=readDispatchEnvelopeV1(r.envelope,now.getTime());
-  if(!['START_SESSION','SEND_INSTRUCTION'].includes(envelope.operation)||envelope.context.projectId!==keys[0]||
+  if(!['START_SESSION','SEND_INSTRUCTION','REQUEST_STOP'].includes(envelope.operation)||envelope.context.projectId!==keys[0]||
     envelope.context.executionId!==keys[1]||envelope.context.executionGeneration!==generation||r.envelope_hash!==envelope.envelopeHash)deny();
   return {sequence:sequences[i]!,commandRef:r.command_ref,envelope};
  });
  // 자료 발견 metadata는 원 START가 같은 거래에서 등록한 manifest/material 행에서만 만든다.
- const registered=items.length?(await db.query('SELECT * FROM anvil.normal_start_material_rows($1,$2)',[keys[0],items.map(x=>x.commandRef.id)])).rows:[];
- if(registered.length!==items.length)deny();
+ const materialItems=items.filter(x=>x.envelope.operation!=='REQUEST_STOP'),stopItems=items.filter(x=>x.envelope.operation==='REQUEST_STOP');
+ const registered=materialItems.length?(await db.query('SELECT * FROM anvil.normal_start_material_rows($1,$2)',[keys[0],materialItems.map(x=>x.commandRef.id)])).rows:[];
+ if(registered.length!==materialItems.length)deny();
+ const stops=stopItems.length?(await db.query("SELECT x.id,x.version,x.content_hash,x.snapshot_json,p.snapshot_json->'envelope' AS parent_envelope FROM anvil.execution_commands x JOIN anvil.execution_commands p ON p.project_id=x.project_id AND p.id::text=x.snapshot_json->'target'->'parentStartCommandRef'->>'id' WHERE x.project_id=$1 AND x.id=ANY($2::uuid[])",[keys[0],stopItems.map(x=>x.commandRef.id)])).rows:[];
+ if(stops.length!==stopItems.length)deny();
  const withMaterials=items.map(x=>{
+  if(x.envelope.operation==='REQUEST_STOP'){
+   const own=stops.filter(r=>r.id===x.commandRef.id);if(own.length!==1)deny();const row=own[0];
+   const parent=readDispatchEnvelopeV1(row.parent_envelope,now.getTime());if(parent.operation!=='START_SESSION')deny();
+   const record=readNormalStopRecord({ref:{id:row.id,version:Number(row.version),contentHash:row.content_hash},snapshot:row.snapshot_json},{projectId:project,executionId:execution,executionGeneration:generation},parent.commandId);
+   const target=record.snapshot.target;
+   if(!same(record.ref,x.commandRef)||!same(record.snapshot.envelope,x.envelope)||target.parentStartEnvelopeHash!==parent.envelopeHash||
+    !same({...x.envelope.context,authorizationReceiptRef:parent.context.authorizationReceiptRef},parent.context)||!same(x.envelope.executorRegistrationRef,parent.executorRegistrationRef))deny();
+   return {...x,materials:null,stopTarget:target};
+  }
   const own=registered.filter(r=>r.command_record_id===x.commandRef.id);
   if(own.length!==1)deny();
   return {...x,materials:x.envelope.operation==='SEND_INSTRUCTION'?instructionMaterialDescriptor(own[0],binding,x.envelope as any):startMaterialDescriptor(own[0],binding,x.envelope as any)};
@@ -116,7 +130,7 @@ async function selectItems(db:PoolClient,keys:unknown[],binding:any,after:number
  return {items:selected,hasMore:fixed?false:hasMore||selected.length<withMaterials.length};
 }
 const descriptors=(items:Awaited<ReturnType<typeof selectItems>>['items'])=>items.map(x=>({sequence:x.sequence,commandRef:x.commandRef,envelopeHash:x.envelope.envelopeHash,
- materialsManifestRef:x.materials.manifestRef,materialsDescriptorHash:digest(x.materials)}));
+ materialsManifestRef:x.materials===null?null:x.materials.manifestRef,materialsDescriptorHash:x.materials===null?null:digest(x.materials)}));
 const receiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','after','entries','hasMore','nextCursor','observedAt','expiresAt'];
 async function attempt(o:NormalCommandPagesOptions,connector:string,execution:string,tokenDigest:string,frame:Packet,target:Target,
  cursor:string|null,wait:number,signal:AbortSignal){
@@ -147,7 +161,7 @@ async function attempt(o:NormalCommandPagesOptions,connector:string,execution:st
     !recordV1(s,[...receiptKeys,'materialDiscoveryVersion'])||s.materialDiscoveryVersion!==1||
     s.kind!=='NORMAL_COMMAND_PAGE'||!same(s.binding,b)||!same(s.credentialRef,cred.ref)||!same(s.challengeRef,c)||
     !isoV1(s.observedAt)||!isoV1(s.expiresAt)||typeof s.hasMore!=='boolean'||!arrayV1(s.entries,50)||!s.entries.every((e:any)=>recordV1(e,['commandRef','sequence','envelopeHash','materialsManifestRef','materialsDescriptorHash'])&&refV1(e.commandRef)&&
-     refV1(e.materialsManifestRef)&&hashV1(e.materialsDescriptorHash)))deny();
+     ((e.materialsManifestRef===null&&e.materialsDescriptorHash===null)||(refV1(e.materialsManifestRef)&&hashV1(e.materialsDescriptorHash)))))deny();
    if(s.packetHash!==packetHash||!same(s.target,target)||s.after!==after||s.requestId!==proof.requestId)deny('IDEMPOTENCY_CONFLICT',409);
   }
   const page=await selectItems(db,[pid,execution,g.id,g.version],b,after,prior?s.entries.map((e:any)=>e.commandRef.id):null,current.now);

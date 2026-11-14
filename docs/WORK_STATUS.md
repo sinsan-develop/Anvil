@@ -19523,3 +19523,39 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 
 - 혼합 polling 최종 source 수용: Primary57P/0F/0SKIP·Main12P/0F/0SKIP(700df3)·type0·독립 C0/I0/M0,10경로 동결/쓰기 반환. 결과서 FN08_NORMAL_SEND_POLLING_SOURCE_RESULT_20261115.md에 실패·지문·미검증 기록. 직전 출력 유실은 PASS로 쓰지 않고 시험 프로세스0 확인 뒤 재확보. 실제DB/Agent0.
 - STOP 후보 SHA2562E6445077CDD2A02C00367EAEF08E40AE33E4DB46077EC4BC18785D1156CAC0F 독립 C0/I0/M0 후 신산님 직접 A안 source-only 채택. GET 정책 선택·현재 ownership 부재412·STOP 전용 target projection을 포함한다. 원 후보 hash 보존, 실제 권한/DB/키/서비스/Agent 제외. Primary 읽기 준비만 수행하고 SEND 통합 뒤 별도 WI 구현.
+
+- PR120 통합완료: source b9fcf52a55763f0e4b6e3a38f03a08b44acda6d1→main38388a92f186e1cd1359714e79d7f77a988975ce. Broker43628528092 success·PRhead복구ref/tree동등·clean/private exact, merged RAM혼합여정1P0F0SKIP exit0 4993.0088ms(c08e1c). 완료branch/tag/tracking 정상정리 뒤 main에서 codex/av3-fn08-normal-stop-target 생성(936ffb). 문서작성 중 CRLF 혼입 diffcheck 경고는 LF복원 후 통과했고 내용 대량변경 없이 WORK_CHECK2행만 반영했다.
+- STOP 읽기 조사 Primary·독립 동일: 현재 ownership resolver는 합성/BASIS_ONLY, native 반환 PREPARED이며 session/role결박없음. CURRENT/resume생산은 미완료. 새 WI17경로는 승인한 codec·GET거절/저장·page소비 경계만 구현하며 없는 권위를 callback으로 만들지 않는다. 정상 owner공급 없는412 유지, 내구STOP/interrupt/ACK후속분리, 실제환경0.
+
+- STOP WI 사전독립C0/I0, SHA D9252FE93A14B6412818694AA400CD630C4DEB5E5668777569BD9DAF6D7E11D0. 게시HEAD7f783204b04400a4ab2c31021572c86ba5702b1e에서 기존Primary17경로 단일writer source/RAM 구현 시작. Main동일제품미수정. 새CURRENT권위는구현범위밖이며 미연결412유지. 문서 작성중 Python기본cp949읽기오류1회는 utf-8명시로보정, 제품영향0.
+- PMO 후속결정지원(읽기) 회신: main38388a92 채택원문에 논리session결박생산·native후속CURRENT·resume선행권위의 채택근거없음. 최초PREPARED1회수용까지만승인, STOP소비경계412유지하며후속설계에 원본기록/허용주체·시점/CURRENT수용조건을함께명시해야함. PMO회신은새권한승인아님. 독립담당은순환선행을읽기대조중,Primary구현은계속한다.
+
+- STOP 구현 전 namespace 정확화: 원 execution_commands.ref.id와 원 START envelope.commandId는 서로 다름. 계약 UUIDv5 namespace는 후자이며 codec 내부 필수 인자로 원 envelope ID를 받되 공개target필드확대0. pageshape/hash만으로완전수용하지않고typed소비에서원START/fullref/namespace/context검산후사용. Main내부구현해석승인,계약원형불변.
+- CURRENT 선행 추가조사 전제정정: 초기normal START grant는 writer NONE/각 check VERIFIED_CURRENT 요구이고 CURRENT report phase를직접요구하지않는다. CURRENT를유일osFence공급자로택할때만resume순환발생. permit은OWNED를별도요구한다. 임의resume권한·PREPARED→CURRENT치환없이초기근거와실행중관측공급원검토계속,새계약채택아님.
+
+- STOP codec 첫 RED→GREEN 수행자증거: node --experimental-strip-types --test --test-reporter=tap tests/unit/FN08/normal-stop-target.test.ts 미구현import RED exit1(e2a13b)→3P0F0SKIP exit0(f4ab8b). 고정UUID/SHA·원STARTnamespace구분·닫힌형상/trap0. codec E0F5CFDB…6D4DBA6/시험5DD33CBE…9CC711 잠정동결·독립검수중. Primary GET/graph/정책/미연결412구현계속,live0·실환경0.
+- 정상공급자추가조사: 초기observe주입포트는writer NONE/VERIFIED_CURRENT와refs의형상검산이며실제생산자아님. writer_claims미회수부재/RESERVED와project-writer-authority원장은별개이며같은lease/execution원자결박미연결. 증거worker는대기후종료프로세스이며실codingAgent/후손/source쓰기경계증거아님. 이를통과근거로승격하지않으며PMO에기존정본근거지원요청.
+
+- STOP codec 독립C0/I0/M0·두지문일치, Main단독3P0F0SKIP exit0 148.5369ms(edd1b5). 문법/UUID/hash/projection기한검증만이며현재owner권위증거아님. 0098 checksum 별도repository경로추가불필요를Primary실제접점확인,기존17경로유지.
+- PMO읽기지원: P3 source연결채택/PR105시험대역증거는actual Query/child소유계약이아님. 가장가까운FN07 DRIVER_PROCESS_TOOL_BOUNDARY 후보는SOURCE_GO0. 현재worker준비와실제Agent소유증거를별도로정의하고원START시도/Query/child·후손/쓰기범위·불명보존을닫은후osFence/writer판정해야함. sourceSTOP작업계속,실행권위자동채택0.
+
+- STOP 서버시험 중1P1F(9cd2bb): 기존원fixture정책에STOP없어GET RUNTIME_OPERATION_DENIED403 정상거절. 이를CURRENT412로기대했던시험준비를보완한다. Main WI r2는 tests/unit/FN09/execution-start-origin-fixture.ts1경로추가/총18,normalStopPolicy=false기본보존·명시STOP시험의원START생성전정책만구성. 원행재해시/검사우회/실권한0. Primary나머지page진행계속.
+
+- STOP 수행자진행: 원STOP정책→실START RAMproducer→target/command412·효과0 2P(8630e4), 소비기STOPnull/target/원START UUID2+기존7=9P(783d05). 최초typecheck는STOPnullable union으로기존fixture/START자료여정의미좁힘직접진단. Main시험2경로 operation/nonnull assertion narrowing만추가해WI r3총20경로,cast/기대값완화0. 제품은기존polling에서STOP실행거절유지. live0·실환경0,최종검수전.
+
+- STOP HTTP 수행자RED404/옵션미검산→GREEN2P(541ab2). 명시등록GET/기본404·잘못된옵션/Bearer/추가query/GET본문거절,원START/정책통과후CURRENT412·효과0확인. 중간framework query prototype/GET본문미파싱문제는값복사후닫힌검산과content-length/transfer-encoding검사로보완했으며최종독립검수전. SQL/page생산작성중·live0·새승인막힘0. Main은중복header/query/accessor경계검토를기존Primary에전달.
+
+- STOP 서버4잠정동결 spec C0/I0/M0,quality C0/I1/M0. 고유I1: GETread가this.current동적호출로prototype.current교체시원grant/HUMAN/정책/최종412를우회할수있음. command는capturedidentity검사있어동일우회아님. Mainsource2f8a73직접확인·Primary동일범위fixround1/RED→GREEN지시·통합보류. 원4지문target35263EFB…D76C9B/commandD2E99514…E36F5A/appAEA99F96…34E598/routes325C7FA6…E3BBB2는보정전증거. 양성저장/replay/COMMIT미도달은그대로보존,실환경0.
+
+- STOP GET I1 round1 RED0P1F exit1(cb58f4,prototype.current교체GET성공)→GREEN7P0F0SKIP exit0 4309.9434ms(b6e765). 원메서드캡처/instance owncurrent·accessor거절/인증callback진입·반환·최종반환identity검사. prototype/instance/accessor/인증대기중교체 fake/getter0반례. target DFE5E8078907904CD0431B1162B080FB0F7B35D78DEF0D7988093B22EAAF4397/command시험39A3A380…F0BFD55 재동결,나머지서버3불변·독립재검수중. Primary page/SQL계속·live0·실환경0.
+
+- STOP client 직접10P·fitPage4P 수행자중간통과. typecheck40219에서중앙fixture외직접page재조회시험3개의nullable union미좁힘발견. Main위durable/intake/material-consumer여정시험3경로의원SEND operation/nonnull assertion만허용하여WI r4총23경로,제품형상/기대/반례불변. 최종타입검수전·실환경0.
+- 다음독립단위읽기조사: 채택instruction-parts GET은서버생산하지만 Web호출0. UI10 ConversationPanel의선택USER_INSTRUCTION에명시부분계획조회연결은기존공개GET소비이며새권한/SDK/CURRENT/실DB불필요. STOP종료후별도WI로검토예정,기존STOPwriter범위에섞지않음.
+
+- 0098 준비 중 PG SHA1extension근거없음확인. Primary의순수PL/pgSQL SHA1제안은Main미채택: 신규암호구현을추가하지않고기존Node crypto UUIDv5최종검산을정본으로유지,SQL기존SHA256/원graph검사+normal신규쓰기false로책임분리한다. Node최종검산없는page반환0·SQL독립UUID검산주장0. public.digest임시초안의존은제거후검수,extension/권한/실DB0. WI r5내부구현판단기록·공개계약불변.
+
+- STOP0098 잠정동결 SHA7839A51E021FE6D031BF44CF79128D9903C9611465C472665EF66538E82BF320/정적시험537CF8F5…B7A30CB. 정적4P0F0SKIP exit0 138.7958ms(11c85e),실PG0. 새3함수/교체4·기존synthetic본문/원check_stop rename보존,확장/자체SHA1/새표/role/SD0 수행자주장독립대조중. page혼합START+STOP RAM1P뒤null receipt변조음성추가중,직접/인접/type/diff/최종지문미완료. actualCURRENT/양성저장/replay/COMMIT미검증유지.
+
+- STOP page/client4제품잠정동결: pageB48D97C8…418AB973/consumer0D35D6DB…4D9611AF3/client6419E1B0…049828E/polling97B2CC9E…448C91E. 직접page2/consumer/START자료4시험35P0F0SKIP exit0 13962.3858ms(607c5f), HTTP중복query/header음성2P(900c72). type70556 exit1의남은keys[]unknown2진단은snapshot/UUID좁힘으로교정·최종타입재확인전. SQLspecC0/I0/M0,quality진행중; page독립검수시작. 정상저장/current/실PG0유지.
+
+- STOP23경로최종동결·Primary쓰기반환/live0,최종type0(22b856)·diff0(f45002/Mainb14fb8). 직접35P/인접65P/HTTP2P/SQL정적4P는서로다른묶음으로기록·중복합산0. Main최종서버7P4050.4495ms(fa29e4)·storedRAM혼합page1P2779.0822ms(275ba2). 서버I1해소/codec/page/SQL독립C0/I0/M0. 결과서 FN08_NORMAL_STOP_TARGET_PAGE_SOURCE_RESULT_20261115.md에23지문·실패·미검증·복구기록. 실제 정상STOP저장/current/실PG/Agent는미완료이며이source경계만통합. 다음UI10기존부분계획명시조회연결로진행한다.
