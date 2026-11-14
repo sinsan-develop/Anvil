@@ -19210,3 +19210,11 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - retained조립기 WI 독립C0/I0(기준WI C579E744C4113A21E884AB4E3AB09B4B48D05386F7AC7676133244225D30085E). 기존API정리소유대조: process/thread만닫는retained와부모Job/Startup/Image수명분리, process종료UNKNOWN시참조/상위자원보존, 원CWT객체대체금지. Primary첫정적RED `node --test tests/unit/FN06/native-preparation-retained-factory.test.ts` 0P/3F238.8918ms exit1→연결후3P/0F228.8927ms exit0. C#실행증거아님. 소유정리/변조/기한합성보강계속.
 
 - retained 조립 source 독립 최종 C0/I0/M0(소유권/입력·closure 분리 검수). Main 신규10P(정적8/RAM2)·PE16P·인접3P, root tsc0·diffcheck0. 기존 null 거절의 위치 변경에 맞춰 인접 시험1파일을 추가 허용하여 제품3/시험3 경로이며 합격 의미는 유지했다. 새 실제 C#·FS·키·DB·권한·서비스·Agent 실행0. 보호 mapping 생산자 미등록·Windows journal unsupported·normal grant/current 미완료로 보존한다. 결과서 FN08_NATIVE_RETAINED_FACTORY_SOURCE_RESULT_20261114.md. RED 이력은 최초 미구현3F·원 image 재소유 반례1F·낡은 인접 assertion1F로 서로 다른 보완이며 정식 FAILURE_REPORT0회다. Primary code write 반환·live handle0. Desktop 비교는 기준174/현재174/신규0이며 전체 PASS가 아니다.
+
+## 2026-11-14 PR110 통합·보호 입력 생산자 후속 조사
+
+- source9c7618ef7abc61bb925ea2dd091b9db3ca71eae3을 PR110/main7efc5111ea606242286c674ad60b62d0e3c1b5c1로 통합했다. Broker43566581500 success, 원 source/main tree동일, local/development main동일·clean. merged host 연결 smoke1P/0F/0SKIP123.3944ms exit0. refs/pull/110/head로 원 source 복구 가능하고 원격 완료 branch/tag 부재 확인 후 정확 로컬 branch/tag만 정리했다. 보호된 과거 worktree는 변경하지 않았다.
+- 최신 main에서 codex/av3-d1-producer-binding으로 후속 읽기 조사를 이어간다. 기존 Primary write 반환·live handle0. signer r5는 전용 AnvilTrustKeyHost.exe만 대상으로 worker root/image의 발급 권위를 암묵적으로 포함하지 않는다. 반환 A안은 서버 원 preparation/factory/consume에서 observer를 파생하도록 규정하므로 caller 선언이나 임의 host ID 발급으로 대체하지 않는다. 기존 계약 안의 구현 공백과 새 의미 결정 delta를 분리해 다음 단위를 구체화한다.
+- 인접 제한 읽기 검수: IssueFreshRoot는 unsupported Acquire 예외를 내부 catch/Abandon으로 처리하고 기존 host 등록·서명 dispatch에 전파하지 않는다. source 근거이며 실제 실행 검증은 아니다.
+
+- worker producer 한정 후보: FN08_NATIVE_WORKER_PROVENANCE_PRODUCER_CANDIDATE_20261114.md SHA256 A769DEC827F78A486CD7C6EC9EBD9D84308572AFD29481F10DDA73F647331250. 최초 독립 C0/I1/M1(동일 consume의 descriptor 선택 불변성·배포/등록 기한 혼재)을 보완해 C0/I0/M0. PMO는 worker descriptor 발급 권위와 run/observer 최초 의미가 기존 위임 밖 신뢰 계약 변경이므로 직접 채택 대상임을 확인했다. 새 endpoint/DB표를 추가하지 않아도 신뢰 기준은 달라진다. 후보 source 구현은 아직 하지 않았다.
