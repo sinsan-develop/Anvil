@@ -53,3 +53,49 @@ function pageValid(v:any){return v&&Array.isArray(v.items)&&v.items.length<=50&&
 function pageQuery(pid:string,cursor:string|null){if(!uuid.test(pid)||cursor!==null&&(typeof cursor!=='string'||cursor.length>4096))throw new ApiError('CLIENT_PATH_INVALID');const q=new URLSearchParams({limit:'50'});if(cursor)q.set('cursor',cursor);return q;}
 export async function listConversations(client:ApiClient,pid:string,cursor:string|null=null){const q=pageQuery(pid,cursor),v=await client.get<{items:ConversationSummary[];hasMore:boolean;nextCursor:string|null;observedAt:string}>(`/api/v1/projects/${pid}/conversations?${q}`);if(!pageValid(v)||v.items.some(i=>!i||!uuid.test(i.id)||!Number.isSafeInteger(i.headSequence)||i.headSequence<1||i.targetRoleRef!==null||i.integrity!=='NOT_RECHECKED'||!Number.isFinite(Date.parse(i.updatedAt))))throw new ApiError('RESPONSE_INVALID');return v;}
 export async function listConversationMessages(client:ApiClient,pid:string,cid:string,cursor:string|null=null){const q=pageQuery(pid,cursor);if(!uuid.test(cid))throw new ApiError('CLIENT_PATH_INVALID');const v=await client.get<{conversationId:string;observedHeadSequence:number;items:MessageSummary[];hasMore:boolean;nextCursor:string|null;observedAt:string}>(`/api/v1/projects/${pid}/conversations/${cid}/messages?${q}`);if(!pageValid(v)||v.conversationId!==cid||!Number.isSafeInteger(v.observedHeadSequence)||v.observedHeadSequence<1||v.items.some((i,n)=>!i||!ref(i.sourceRef)||!Number.isSafeInteger(i.serverSequence)||i.serverSequence<1||i.serverSequence>v.observedHeadSequence||n>0&&i.serverSequence>=v.items[n-1]!.serverSequence||i.authorRef?.kind!=='HUMAN'||!uuid.test(i.authorRef.userId)||!['USER_MESSAGE','USER_INSTRUCTION'].includes(i.kind)||i.deliveryState!=='STORED'||i.replyTo!==null&&!ref(i.replyTo)||i.supersedesInstructionRef!==null&&!ref(i.supersedesInstructionRef)||!Number.isFinite(Date.parse(i.recordedAt))))throw new ApiError('RESPONSE_INVALID');return v;}
+
+
+export interface InstructionPartsResult {
+ instructionRef:{id:string;version:1;contentHash:string};
+ partsRef:{id:string;version:1;contentHash:string};
+ plan:{schemaVersion:1;purpose:'INSTRUCTION_PARTS_PLAN';algorithm:'UTF8_CODEPOINT_64K_V1';bodyRef:ConversationInput['message']['bodyRef'];limits:{maxSourceBytes:2097152;maxPartBytes:65536;maxParts:200};parts:{partIndex:number;byteOffset:number;utf8Bytes:number;contentHash:string}[]};
+}
+const partsInvalid=():never=>{throw new ApiError('INSTRUCTION_PARTS_INVALID');};
+// Closed data only: capture once before awaits; getters are never used as response data.
+function partsData(value:unknown,depth=0):any{
+ if(depth>12)return partsInvalid();
+ if(value===null||typeof value==='boolean'||typeof value==='number'&&Number.isFinite(value))return value;
+ if(typeof value==='string'){if(value.length>2097152)return partsInvalid();return value;}
+ if(typeof value!=='object')return partsInvalid();
+ const array=Array.isArray(value),proto=Object.getPrototypeOf(value);
+ if(array?proto!==Array.prototype||value.length>200:proto!==Object.prototype&&proto!==null)return partsInvalid();
+ const descriptors=Object.getOwnPropertyDescriptors(value),keys=Reflect.ownKeys(descriptors);
+ if(keys.some(k=>typeof k!=='string')||keys.length>201)return partsInvalid();
+ const out:any=array?[]:{};
+ for(const k of keys as string[]){if(array&&k==='length')continue;const d=descriptors[k]!;if(!('value'in d)||!d.enumerable||array&&!/^(0|[1-9][0-9]*)$/.test(k))return partsInvalid();Object.defineProperty(out,k,{value:partsData(d.value,depth+1),enumerable:true,writable:true,configurable:true});}
+ if(array&&Object.keys(out).length!==value.length)return partsInvalid();return out;
+}
+const partsExact=(v:any,keys:string)=>v!==null&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===keys;
+/** Read-only validation, not SEND admission. active invalidates late responses; it does not cancel transport. */
+export async function readInstructionParts(client:ApiClient,pid:string,cid:string,original:ConversationView,active:()=>boolean):Promise<InstructionPartsResult>{
+ const live=()=>{if(!active())throw new ApiError('INSTRUCTION_PARTS_STALE');};live();
+ const v=partsData(original) as ConversationView,encoded=canonical(v);
+ const check=()=>{live();if(canonical(partsData(original))!==encoded)return partsInvalid();};
+ const hashed=async(bytes:Uint8Array<ArrayBuffer>)=>{check();const result=await digest(bytes);check();return result;};
+ try{
+  if(!uuid.test(pid)||!uuid.test(cid)||!v||!ref(v.sourceRef)||v.conversationId!==cid||!messageValid(v.message,pid)||v.message.kind!=='USER_INSTRUCTION'||!partsExact(v.message.bodyRef,'artifactId,bytes,contentHash,mediaType')||!Number.isSafeInteger(v.serverSequence)||v.serverSequence<1||!partsExact(v.authorRef,'kind,userId')||v.authorRef.kind!=='HUMAN'||!uuid.test(v.authorRef.userId)||typeof v.body!=='string'||!v.body.isWellFormed()||v.deliveryState!=='STORED'||v.redactionState!=='NOT_REDACTED'||v.sensitiveInspection!=='KNOWN_PATTERNS_ONLY'||!Number.isFinite(Date.parse(v.recordedAt)))return partsInvalid();
+  const bytes=new TextEncoder().encode(v.body);
+  if(bytes.length<1||bytes.length>2097152||bytes.length!==v.message.bodyRef.bytes||await hashed(bytes)!==v.message.bodyRef.contentHash)return partsInvalid();
+  const snapshot={conversationId:cid,targetRoleRef:null,message:v.message,sourceRefs:[],serverSequence:v.serverSequence,authorRef:v.authorRef};
+  if(await hashed(new TextEncoder().encode(canonical(snapshot)))!==v.sourceRef.contentHash)return partsInvalid();
+  check();const raw=await client.get<unknown>(`/api/v1/projects/${pid}/conversations/${cid}/messages/${v.sourceRef.id}/instruction-parts`);check();
+  const r=partsData(raw);
+  if(!partsExact(r,'instructionRef,partsRef,plan')||!partsExact(r.instructionRef,'contentHash,id,version')||canonical(r.instructionRef)!==canonical({id:v.sourceRef.id,version:1,contentHash:v.sourceRef.contentHash})||!partsExact(r.partsRef,'contentHash,id,version')||r.partsRef.id!==v.message.bodyRef.artifactId||r.partsRef.version!==1||!hash.test(r.partsRef.contentHash)||!partsExact(r.plan,'algorithm,bodyRef,limits,parts,purpose,schemaVersion')||r.plan.schemaVersion!==1||r.plan.purpose!=='INSTRUCTION_PARTS_PLAN'||r.plan.algorithm!=='UTF8_CODEPOINT_64K_V1'||canonical(r.plan.bodyRef)!==canonical(v.message.bodyRef)||canonical(r.plan.limits)!==canonical({maxSourceBytes:2097152,maxPartBytes:65536,maxParts:200})||!Array.isArray(r.plan.parts)||r.plan.parts.length<1||r.plan.parts.length>200)return partsInvalid();
+  let offset=0,index=0;
+  while(offset<bytes.length){
+   let end=Math.min(offset+65536,bytes.length);while(end<bytes.length&&(bytes[end]!&0xc0)===0x80)end--;
+   const part=r.plan.parts[index];if(!partsExact(part,'byteOffset,contentHash,partIndex,utf8Bytes')||part.partIndex!==index+1||part.byteOffset!==offset||part.utf8Bytes!==end-offset||part.contentHash!==await hashed(bytes.slice(offset,end)))return partsInvalid();offset=end;index++;
+  }
+  if(index!==r.plan.parts.length||await hashed(new TextEncoder().encode(canonical(r.plan)))!==r.partsRef.contentHash)return partsInvalid();check();return r as InstructionPartsResult;
+ }catch(e){check();throw e;}
+}
