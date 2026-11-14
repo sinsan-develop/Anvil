@@ -8,3 +8,4 @@ export { NativePreparationOwnershipReturn } from '../../connector/runtime/native
 
 export { NativeFirstReceiveHumanClient, NativeFirstReceiveFrameDecoder } from '../../connector/runtime/native-first-receive-client.ts';
 export { NormalCredentialBootstrapClient } from '../../connector/runtime/normal-credential-bootstrap-client.ts';
+export { NativePreparationProtectedJournal } from '../../connector/runtime/native-preparation-protected-journal.ts';
