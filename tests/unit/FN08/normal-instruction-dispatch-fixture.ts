@@ -2,6 +2,7 @@ import {journey,digest,type PageSqlAdapter} from './normal-request-challenge-fix
 import assert from 'node:assert/strict';
 import inject from 'light-my-request';
 import {randomUUID,randomBytes} from 'node:crypto';
+import {join} from 'node:path';
 import {contentHash,canonicalJson} from '../../../contracts/canonical.ts';
 const {NormalInstructionCommands}=await import('../../../apps/server/modules/executions/normal-instruction-command.ts');
 const {ProjectConversations}=await import('../../../apps/server/modules/knowledge/conversations.ts');
@@ -62,8 +63,20 @@ export async function normalInstructionFixture(pages?:Parameters<typeof journey>
 }
 
 /** DB 조회 결과만 실제 appendConversation 생성행에서 도출한다. 원 reader/원 artifact 검산은 제품 코드를 호출한다. */
-export async function instructionSourceFixture(base?:Awaited<ReturnType<typeof journey>>){
+export async function instructionSourceFixture(base?:Awaited<ReturnType<typeof journey>>,instruction?:{text:string;mediaType:'text/plain;charset=utf-8'|'text/markdown;charset=utf-8'}){
  const j=base??await journey(),f=j.f,raw=f.db.query,conversations=new ProjectConversations(f.documents),source=new NormalInstructionSource(conversations);
+ // 선택된 새 합성 본문은 RAM artifact 포트에 등록하고 원 appendConversation 제품 메서드로 새 메시지를 만든다.
+ // 기존 START에서 참조한 메시지/원문은 수정하지 않는다.
+ if(instruction){
+  const bytes=Buffer.from(instruction.text,'utf8'),bodyRef={artifactId:randomUUID(),bytes:bytes.length,contentHash:contentHash(bytes),mediaType:instruction.mediaType};
+  f.files.set(join(f.root,'blobs',f.pid,bodyRef.artifactId),bytes);
+  f.docRows.set(randomUUID(),{content_json:{body:bodyRef}});
+  const originalMessage=f.tables.messages!.find(r=>r.id===f.richSources!.messageRef.id)!.message_json.message;
+  const command={schemaVersion:1 as const,projectId:f.pid,commandId:randomUUID(),clientId:f.cid,controlGeneration:1,operation:'appendConversation',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,
+   payload:{conversationId:null,targetRoleRef:null,message:{...structuredClone(originalMessage),bodyRef,replyTo:null,supersedesInstructionRef:null},sourceRefs:[]}};
+  const result=await f.run(actor=>conversations.append(f.db,actor,command,f.policyRef));
+  Object.assign(f.richSources!,{conversationId:result.data.conversationId,messageRef:result.data.sourceRef});
+ }
  // 기존 fixture가 생략한 메시지 command/client 열만 원 append 결과의 유일 역참조로 복원한다.
  for(const row of f.tables.messages!){const parents=[...f.commands.values()].filter(c=>c.operation==='appendConversation'&&c.result_ref?.data?.ref?.id===row.id&&c.result_ref.data.ref.contentHash===row.content_hash);assert.equal(parents.length,1);row.command_id=parents[0]!.id;row.client_id=parents[0]!.client_id;}
  const selected=f.richSources!,m=f.tables.messages!.find(r=>r.id===selected.messageRef.id)!;
@@ -87,7 +100,7 @@ export async function instructionSourceFixture(base?:Awaited<ReturnType<typeof j
 }
 
 /** 모든 원 행은 START/appendConversation/SEND 제품 생산값이다. SQL 함수 실행 대신 exact RAM 관계를 검산한다. */
-export async function normalInstructionDeliveryFixture(){
+export async function normalInstructionDeliveryFixture(instruction?:{text:string;mediaType:'text/plain;charset=utf-8'|'text/markdown;charset=utf-8'}){
  const {NormalPageCursors}=await import('../../../apps/server/modules/executions/normal-command-pages.ts');
  let original:any;const bindings:any[]=[],permits:any[]=[],mode={failBinding:false,failPermit:false,busy:false};let tx=1000;
  const registered=(f:any,x:any)=>{const d=f.tables.execution_material_manifests.find((d:any)=>d.created_command_id===x.created_command_id);assert(d);return{command_record_id:x.id,manifest_ref:{id:d.id,version:1,contentHash:d.content_hash},manifest:d.snapshot_json,materials:f.tables.execution_materials.filter((m:any)=>m.manifest_id===d.id&&m.command_record_id===x.id).map((m:any)=>({ref:{id:m.id,version:1,contentHash:m.content_hash},snapshot:m.snapshot_json}))};};
@@ -112,7 +125,7 @@ export async function normalInstructionDeliveryFixture(){
   if(s.startsWith('INSERT INTO anvil.execution_material_proof_bindings(')){if(mode.failBinding)throw Error('RAM_BINDING_FAILED');const snapshot=JSON.parse(a[9]);assert.equal(digest(snapshot),a[8]);assert.equal(snapshot.materialRef.id,a[7]);assert(f.tables.execution_materials!.some(m=>m.id===a[7]));bindings.push({proof_result_id:a[1],snapshot_json:snapshot});return{rows:[],rowCount:1};}
   return undefined;
  };
- const cursors=new NormalPageCursors(randomBytes(32)),q=await normalInstructionFixture({sql,cursors}),x=await instructionSourceFixture(q.j),f=x.f,plan=await x.read(),fact=q.g.snapshot_json.binding;
+ const cursors=new NormalPageCursors(randomBytes(32)),q=await normalInstructionFixture({sql,cursors}),x=await instructionSourceFixture(q.j,instruction),f=x.f,plan=await x.read(),fact=q.g.snapshot_json.binding;
  Object.assign(q.request.payload,{instructionRef:plan.instructionRef,partsRef:plan.partsRef});
  const current={async observe(_scope:unknown,checkedAt:string){return{fact:{...structuredClone(fact),writerState:'OWNED',checkedAt},turnState:mode.busy?'BUSY':'IDLE',stageRef:f.stage.data.snapshot.input.stageRef,demand:{attempts:0,calls:1,spoolBytes:plan.plan.bodyRef.bytes,cost:null,costStatus:'VERIFIED_NO_CHARGE'},checkedAt,expiresAt:q.g.snapshot_json.expiresAt};}};
  const service=new NormalInstructionCommands(f.access,{mode:'NORMAL_PROTECTED',current},x.source,f.limits),sent=await service.command(f.token,f.csrf,q.request);

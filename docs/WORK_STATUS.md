@@ -19456,3 +19456,15 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - PR115 병합후시험회귀 보정: Primary가 journey1파일 static fitPage import를 경계test내 dynamic import로이동했다(3+/2-, 기대값/제품/실파일변경0). MemoryFS top-level설치후제품FS결박순서를보장한다. 최종지문5B6A8BA24BA89B8C86065F393F46346DFB75AFEDE3CF9E791ED8297EBDAA9D36. 수행자동일단독smoke1P(b30562)·직접2파일39P0F0SKIP exit0 18014.3664ms(2b6a1f), Main동일단독smoke1P0F0SKIP exit0 3379.5123ms(ae2dc8). 기존RED3954be는유지하며실제DB/Agent0. 독립재검수후보정PR통합·mergedsmoke·정리예정.
 
 - 시험초기화 최소보정 독립 d2_preflight C0/I0/M0·지문동일. 단언/입력/fixture불변과동적import의MemoryFS설치후실행을확인했다. Main diffcheck0(f4a849), 보정시험1+기록3의정확4경로만후속게시한다.
+
+- PR116 통합완료: main914e5bb8529393b705f53757cd1688ceef5ca6ac와private동일·clean/tree동등, PRhead773066bf복구ref확인. merged-main smoke1P0F0SKIP exit0 2056.6373ms(19cda5), 이전실패보존. 완료branch/정확요청tag/tracking정상정리(61e107,95bf89), squash라HEAD미포함경고는tree동등+PRref보존근거로구분했다. 기존다른worktree손대지않았다. 최신main에서codex/av3-fn08-send-material-consumer생성, 기존Primary에실행기혼합page→SEND보호자료재조립5경로를할당한다. 기존승인안의소비연결이며새API/권한/DB실행0. polling/내구수신/permit/실행은이단위완료에포함하지않는다.
+
+- 실행기자료소비 WI사전독립 C0/I0/M0·SHA C927AEBC50ACD986A7FFB77A19A896FAF00D73E16DB9DD747249961B0C83B245. Primary첫목적RED: 실제RAM서버challenge/GET성공후기존codec COMMAND_PAGE_ITEM_INVALID 1F exit1 2921.8422ms(118fac), normal-instruction-material-consumer-journey.test.ts. 선행fixture의challenge대상app오배선1F 및그보정script UTF8미지정실패1회는별도시험배선오류이며제품원인과구분했다. 기존challenge app/GET app를정확히분리후목적RED확인, 제품구현착수. 실환경0·live0.
+
+- consumer진행: Primary가혼합page codec 목적RED1F를GREEN1P로전환하고, 선택형RAM본문을원ProjectConversations.append로등록→보호계획/SEND/material handler→GETclient.receiveInstruction→3부분이상한글/이모지 plain/markdown 원문일치2P exit0 3730.7765ms를제출했다. 기존START원메시지·기본fixture불변, 아직음성/한도/타입/독립검수전이며Main수용전이다. actualTLS/DB/Agent0.
+
+- consumer검증중: codec7P(START4+SEND3·64KiB/정확2MiB/UTF8/50·200초과). 신규여정17건16P/1F는회수뒤다음challenge의기존NOT_FOUND404를새시험이412로예상한배선기대오류로수행자가분류했다(거절·후속GET0). Main은기존응답근거검수예정. roottsc최초exit1 6진단은partclone형1·기존START시험union인자5,허용5경로내명시필드/INSTRUCTION거절로수정중. 기존보호/제품상한완화0·실환경0·live0.
+
+- consumer5경로동결: Primary신규/직접인접6파일45P0F0SKIP exit0 24613.513ms(b668c3), typecheck0(c64755), diff0/live0. Mainfresh codec+서버→GETclient여정2파일24P0F0SKIP exit0 17039.342ms(479a2f→13689f/session36299종료), 5지문직접동일/diff0(ea6989). spec독립C0/I0/M0, quality검수중. 실제TLS/DB/Agent0·내구수신/cursor/permit제외유지. root타입6진단은INSTRUCTION의STARTassembler진입거절보존과명시part필드로해소했으며기존보호를낮추지않았다.
+
+- consumer최종spec/quality독립C0/I0/M0·5지문동일. 회수404는기존challenge NOT_FOUND이며약화아님을확인했다. 결과서FN08_NORMAL_SEND_MATERIAL_CONSUMER_SOURCE_RESULT_20261115.md에45P/24P/타입/실패/미검증/rollback을구분기록. Main한정수용, 제품2/시험3+기록3 정확8경로게시·통합진행. SDK/DB/Agent/전체계획완료아님.
