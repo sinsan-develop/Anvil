@@ -1,5 +1,6 @@
 import {readDefinition} from '../connections/connection-definition-api.ts';
-import {useEffect,useRef,useState} from 'react';
+import {readLimitPolicy,type LimitPolicyRecord} from '../connections/limit-policy-api.ts';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import type {DocumentSession} from '../design-trace/editor-api.ts';
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
@@ -9,7 +10,9 @@ import {readContextPreparation} from '../workspace/context-api.ts';
 import {newPreparation,preparationKey,preparationOwned,preparationSame as same,editPreparation,editRejectedPreparation,prepareRecord,markPreparationDispatch,sendPreparation,failPreparation,readPreparationRecord,readPreparationRole,readPreparationBinding,type PreparationBuffer,type PreparationStorage,type PreparationGet} from './preparation-record-api.ts';
 export function TransferPreparationRecordPanel({client,session,confirmed,state,contexts,storage,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;confirmed:ConfirmedAssignmentView;state:ResponsibleSessionState;contexts:PlanRef[];storage:PreparationStorage;onAuthenticationLost:()=>void}){
  const key=preparationKey(session,confirmed.projectId,confirmed.ref),owner=useRef({key,client,transport:client.transport,session,csrf:session.csrfToken});if(owner.current.key!==key||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.session!==session||owner.current.csrf!==session.csrfToken)owner.current={key,client,transport:client.transport,session,csrf:session.csrfToken};const scope=owner.current,mounted=useRef(true),seq=useRef(0),flight=useRef<object|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
- const [working,setWorking]=useState<object|null>(null),[rawView,setView]=useState<{owner:object;value:PreparationGet}|null>(null),[error,setError]=useState<{owner:object;value:string}|null>(null),[roleId,setRoleId]=useState(''),[roleVersion,setRoleVersion]=useState('1'),[bindingId,setBindingId]=useState(''),[bindingVersion,setBindingVersion]=useState('1'),[targetId,setTargetId]=useState(''),[targetVersion,setTargetVersion]=useState('1'),[targetHash,setTargetHash]=useState('');
+ const [working,setWorking]=useState<object|null>(null),[rawView,setRawView]=useState<{owner:object;value:PreparationGet}|null>(null),[error,setError]=useState<{owner:object;value:string}|null>(null),[roleId,setRoleId]=useState(''),[roleVersion,setRoleVersion]=useState('1'),[bindingId,setBindingId]=useState(''),[bindingVersion,setBindingVersion]=useState('1'),[targetId,setTargetId]=useState(''),[targetVersion,setTargetVersion]=useState('1'),[targetHash,setTargetHash]=useState('');
+ const displayed=useRef(rawView);
+ function setView(next:typeof rawView){displayed.current=next;setRawView(next);}
  const [lookup,setLookup]=useState<{owner:object;id:string;hash:string}|null>(null),[lookupWorking,setLookupWorking]=useState<object|null>(null),[lookupError,setLookupError]=useState<{owner:object;code:string}|null>(null),lookupSeq=useRef(0),lookupFlight=useRef<{owner:object;ticket:number}|null>(null);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;seq.current++;};},[]);
  const current=()=>mounted.current&&owner.current===scope&&client.transport===scope.transport&&session.csrfToken===scope.csrf;
@@ -42,6 +45,46 @@ export function TransferPreparationRecordPanel({client,session,confirmed,state,c
  </fieldset><p>선택: 맥락 {b.contextSelected?b.contextRef?.id??'명시 미수집':'미확인'} · 역할 {b.roleSelected?b.roleRef?.id??'명시 미선택':'미확인'} · 결박 {b.bindingSelected?b.oldBindingRef?.id??'명시 미수집':'미확인'} · 대상 {b.targetSelected?b.targetConnectionRef?.id??'명시 미선택':'미확인'}</p>
  {!b.pending?<button type="button" disabled={busy} onClick={()=>void prepare()}>준비기록 원명령 준비</button>:<><p>원명령 {b.pending.command.commandId} · {b.pending.state==='UNKNOWN'?'결과 미확인 · 원입력 잠금':b.pending.state}</p>{['PREPARED','UNKNOWN'].includes(b.pending.state)?<button type="button" disabled={busy} onClick={()=>void save()}>같은 준비기록 명령 저장·재확인</button>:null}{b.pending.state==='REJECTED'?<button type="button" disabled={busy} onClick={()=>replace(b,editRejectedPreparation(b))}>준비기록 거절 확인 후 수정</button>:null}{b.pending.receipt?<><p>저장 영수증 보존 {b.pending.receipt.data.ref.id} · v1 · {b.pending.receipt.data.ref.contentHash}</p><button type="button" disabled={busy} onClick={()=>void read()}>저장 준비기록 고정 조회</button></>:null}</>}
  </>}{busy?<p role="status">고정 자료 대조 중</p>:null}{error?.owner===scope?<p role="alert">{error.value}</p>:b?.failure?<p role="alert">{b.failure.code}</p>:null}
- {view?<section aria-label="준비기록 고정 원문"><p>{view.ref.id} · v1 · {view.ref.contentHash}</p><p>보관 관측 {view.record.observedAt} · 의도 기한 {view.record.intentExpiresAt} · {view.currentStatus.intentExpired?'과거 기한 경과':'조회 시 기한 이내'} · 원자료 현재성 {view.currentStatus.sourceCurrentness} · 실제 인계 불가</p><p>미확인 공백: {view.record.gaps.join(', ')}</p><pre>{JSON.stringify(view.record,null,2)}</pre><button type="button" onClick={()=>setView(null)}>준비기록 원문 닫기</button></section>:null}
+ {view?<section aria-label="준비기록 고정 원문"><p>{view.ref.id} · v1 · {view.ref.contentHash}</p><p>보관 관측 {view.record.observedAt} · 의도 기한 {view.record.intentExpiresAt} · {view.currentStatus.intentExpired?'과거 기한 경과':'조회 시 기한 이내'} · 원자료 현재성 {view.currentStatus.sourceCurrentness} · 실제 인계 불가</p><p>미확인 공백: {view.record.gaps.join(', ')}</p><pre>{JSON.stringify(view.record,null,2)}</pre>
+ {view.record.budgetRef?<HistoricalBudget key={JSON.stringify([view.ref,view.record.budgetRef])} client={client} projectId={confirmed.projectId} reference={view.record.budgetRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>한도 정책 참조 없음</p>}
+ <button type="button" onClick={()=>setView(null)}>준비기록 원문 닫기</button></section>:null}
+ </section>;
+}
+
+type BudgetRead={state:'idle'|'loading'}|{state:'loaded';policy:LimitPolicyRecord}|{state:'error';code:string};
+function HistoricalBudget({client,projectId,reference,current,onAuthenticationLost}:{
+ client:ApiClient;projectId:string;reference:PlanRef;current:()=>boolean;onAuthenticationLost:()=>void;
+}){
+ const [read,setRead]=useState<BudgetRead>({state:'idle'});
+ const sequence=useRef(0),inFlight=useRef(false);
+ useLayoutEffect(()=>()=>{sequence.current++;inFlight.current=false;},[]);
+ async function load(){
+  if(inFlight.current||!current())return;
+  const ticket=++sequence.current;
+  const active=()=>ticket===sequence.current&&current();
+  inFlight.current=true;
+  setRead({state:'loading'});
+  try{
+   const policy=await readLimitPolicy(client,projectId,reference);
+   if(active())setRead({state:'loaded',policy});
+  }catch(error){
+   if(!active())return;
+   const code=error instanceof ApiError&&/^[A-Z_]{1,80}$/.test(error.code)?error.code:'LIMIT_POLICY_RESPONSE_INVALID';
+   setRead({state:'error',code});
+   if(error instanceof ApiError&&error.status===401)onAuthenticationLost();
+  }finally{if(ticket===sequence.current)inFlight.current=false;}
+ }
+ const snapshot=read.state==='loaded'?read.policy.snapshot:null;
+ return <section aria-label="당시 저장된 한도 정책">
+  <button type="button" disabled={read.state==='loading'} onClick={()=>void load()}>당시 저장된 한도 정책 보기</button>
+  {read.state==='loading'?<p role="status">저장된 정책 조회 중</p>:null}
+  {read.state==='error'?<p role="alert">{read.code} · 저장된 정책을 확인할 수 없습니다.</p>:null}
+  {snapshot?<><h4>당시 저장된 한도 정책</h4><p>저장된 정책 상태: {snapshot.state==='APPLIED'?'적용':'회수'} · 현재 가용 예산과 실행·재개 허가는 미확인입니다.</p>
+   <p>결정 시각 {snapshot.decidedAt} · 만료 시각 {snapshot.expiresAt}</p><p>결정 이유 {snapshot.reason}</p>
+   <dl><dt>최대 시도</dt><dd>{snapshot.limits.maxAttempts}회</dd><dt>최대 경과 시간</dt><dd>{snapshot.limits.maxElapsedMs} ms</dd>
+    <dt>최대 호출</dt><dd>{snapshot.limits.maxCalls}회</dd><dt>최대 동시 임무</dt><dd>{snapshot.limits.maxConcurrentAssignments}개</dd>
+    <dt>최대 임시 보관량</dt><dd>{snapshot.limits.maxSpoolBytes} B</dd><dt>최대 오프라인 시간</dt><dd>{snapshot.limits.maxOfflineMs} ms</dd>
+    {snapshot.limits.maxCost!==undefined?<><dt>비용 한도</dt><dd>{snapshot.limits.maxCost} {snapshot.limits.currency}</dd></>:null}</dl>
+  </>:null}
  </section>;
 }

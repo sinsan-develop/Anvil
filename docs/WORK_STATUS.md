@@ -19603,3 +19603,9 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - UI14 선택참조결박 제품1/시험1 동결·쓰기반환/live0. 기존fullref검사에목록ref전달, 불일치상세/개정차단·직접입력유지. 수행자RED2P1F→GREEN18P0F0SKIP/type0/diff0, Main4P0F0SKIP exit0 1205.9811ms(bebcf9). 초기WebCrypto정착시험준비0P3F분리·기준완화0. 실제브라우저/DB/백업/Agent미검증·전체체크불변, 독립검수진행중. 결과서 UI14_BACKUP_POLICY_SELECTION_BINDING_RESULT_20261115.md.
 
 - UI14 동결2파일 독립spec/quality C0/I0/M0·제출지문일치 확인. Main 검수수용. 기존복구/실제제외 유지하며 source통합진행.
+
+- PR126/main68b1fdde UI14 선택결박 통합·local/private동일clean·복구ref pr-126-head보존·완료branch/tag/tracking정리. merged핵심반례1P0F0SKIP exit0 1195.8075ms(4ee6e0). 다음UI09 준비기록의저장budgetRef→기존정책GET 명시조회제품1/시험1을기존Primary에위임. source/RAM범위·실제제외유지, 현재예산/실행허가로승격0.
+
+- UI09 정책고정조회 source2파일 잠정검수: RED버튼부재1F→Primary43P0F0SKIP/type0, Main정확신규11P0F0SKIP exit0 2492.5296ms. 최초Main패턴선택0은증거제외. 독립C0/I0/M1은APPLIED를기록당시유효상태로과장한문구를같은Primary에게한정보완지시. 실제환경/전체체크불변·최종반환전.
+
+- UI09 M1문구보완독립재검수C0/I0/M0·제품/시험역치환원지문불변확인. 저장된정책상태로표시·양성1P만재검증. 최종제품81FA2B6A…F9A8402D/시험38A0E03B…BCD08C8·실제제외/전체미완료유지, source통합진행.
