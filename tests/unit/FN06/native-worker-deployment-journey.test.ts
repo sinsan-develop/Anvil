@@ -17,7 +17,7 @@ test('원 publisher→store/GET→client/설치조정기 및 보호 basis→원 
  await withWorkerBuild(async(f:any)=>{
   const native=await nativeFixture(false,10000,true,false,false,false,2),oldNow=Date.now;
   Date.now=()=>native.clockDate().getTime();
-  let publicApp:any;
+  let publicApp:any,ownershipApp:any;
   try{
    const publisher=require('../../../apps/desktop/scripts/native-worker-deployment-publisher.cjs');
    const product=await publisher.createWorkerPublication({compilation:f.staged.compilation,packageToken:f.staged.packageToken,factoryArtifact:f.artifact,configuration:f.config});
@@ -30,7 +30,7 @@ test('원 publisher→store/GET→client/설치조정기 및 보호 basis→원 
    },release(){}};
    const store=new NativeWorkerDeploymentStore({connect:async()=>db} as any,{readOriginal:publisher.readCurrentWorkerPublication});
    await publisher.publishWorkerDeployment(store,id(9901),product);assert.equal(publishes,1);
-   const {buildApp}=await import('../../../apps/server/app.ts'),args:any[]=Array(18).fill(undefined);args[0]={};publicApp=(buildApp as any)(...args,store);
+   const {buildApp}=await import('../../../apps/server/app.ts'),args:any[]=Array(18).fill(undefined);args[0]={};args[6]={enabled:true,preparations:native.service};publicApp=(buildApp as any)(...args,store);publicApp.addHook('onRequest',async(request:any)=>{Object.defineProperty(request.raw.socket,'encrypted',{value:true,configurable:true});});
    const runtimeBuild=require('../../../apps/desktop/scripts/native-proof-runtime-build.cjs'),built=runtimeBuild.readNativeProofRuntime(await runtimeBuild.buildNativeProofRuntime());
    const memory:any=new Module('deployment-journey.memory.cjs');memory.require=(n:string)=>{assert.ok(runtimeBuild.EXTERNALS.includes(n));return require(n);};memory._compile(built.code,'deployment-journey.memory.cjs');
    const clientPath=require.resolve('../../../apps/desktop/src/native-worker-deployment-client.cjs'),load=(Module as any)._load;
@@ -41,25 +41,27 @@ test('원 publisher→store/GET→client/설치조정기 및 보호 basis→원 
    const result=await coordinator.install(f.artifact.factoryRef,{check(){},remainingMs:()=>10000,signal:new AbortController().signal}).catch((error:unknown)=>{throw transportError??error;});assert.equal(result.state,'INSTALLED');assert.equal(installed,1);assert.equal(closed,1);
    // 원 옵션 producer가 보유한 RAM 선택 자료만 바꾼다. 보호 메서드와 판독기는 실제 제품 그대로다.
    const options=await native.nativeSource.options(native.db as any,native.actor as any,{projectId:native.pid} as any);options.items[0]!.nativeFactoryRef=f.artifact.factoryRef;native.nativeCommand.payload.nativeFactoryRef=f.artifact.factoryRef;
-   const basis=(api as any).createNativeWorkerDeploymentOwnershipBasisSource(store);native.service.connectNativeOwnershipReturn(basis);
    native.nativeApp.addHook('onRequest',async(request:any)=>{Object.defineProperty(request.raw.socket,'encrypted',{value:true,configurable:true});});
    const made=await native.nativeApp.inject({method:'POST',url:'/api/v1/projects/'+native.pid+'/native-boundary-preparations',headers:native.headers,payload:native.nativeCommand});assert.equal(made.statusCode,200,made.body);
    const row=native.data().native[0],authority=row.snapshot_json,ar={id:row.id,version:1,contentHash:row.content_hash},path='/api/v1/connector/native-preparations/'+row.id,headers={host:new URL(native.origin).host,authorization:'Bearer '+testOpaque};
-   const post=(suffix:string,payload:any,extra={})=>native.nativeApp.inject({method:'POST',url:path+suffix,headers:{...headers,...extra},payload});
+   const post=(suffix:string,payload:any,extra={})=>(ownershipApp??publicApp).inject({method:'POST',url:path+suffix,headers:{...headers,...extra},payload});
    const body={schemaVersion:1,authorityRef:ar,localAttemptRef:ref(9920)},target={method:'POST',path:path+'/consume',queryHash:nativeHash({}),bodyHash:nativeHash(body)},req={schemaVersion:1,requestId:id(9921),authorityRef:ar,localAttemptRef:body.localAttemptRef,target};
    const challenge=await post('/challenges',req);assert.equal(challenge.statusCode,200,challenge.body);const proof={requestId:req.requestId,...target,authorityRef:ar,credentialGeneration:authority.credentialGeneration,serverNonce:challenge.json().serverNonce};
    const consumed=await post('/consume',body,{'x-anvil-native-proof':Buffer.from(canonicalJson(proof)).toString('base64url'),'x-anvil-native-signature':sign('sha256',nativeRequestProofBytes(proof),{key:testPrivateKey,dsaEncoding:'ieee-p1363'}).toString('base64url')});assert.equal(consumed.statusCode,200,consumed.body);
    const receipt=consumed.json().receipt,processRef={runId:receipt.ref.id,generation:1,jobId:id(9922),pid:50,startTicks:'133000000000000000',executableHash:bundle.descriptor.snapshot.workerHash},request={schemaVersion:1,requestId:id(9923),authorityRef:ar,consumeReceiptRef:receipt.ref,localAttemptRef:body.localAttemptRef,processRef};
+   const beforeWiring=reads,unwired=await post('/ownership-requests',request);assert.equal(unwired.statusCode,503,unwired.body);assert.equal(unwired.json().code,'NATIVE_SOURCE_UNAVAILABLE');assert.equal(reads,beforeWiring);assert.equal(native.hostStorage!.state.heads.length,0);
+   ownershipApp=(buildApp as any)(...args,store,{store});ownershipApp.addHook('onRequest',async(request:any)=>{Object.defineProperty(request.raw.socket,'encrypted',{value:true,configurable:true});});
    const issued=await post('/ownership-requests',request);assert.equal(issued.statusCode,200,issued.body);
    const event=native.data().nativeEvents.find((e:any)=>e.snapshot_json.kind==='CONSUME_COMMITTED');assert.ok(event);assert.equal(issued.json().request.observerRef.id,event.id);
    const facts={processRef,state:'PREPARED',everResumed:false,active:1,processes:[{pid:50,startTicks:processRef.startTicks,inJob:true,executableHash:processRef.executableHash}],killOnClose:false,fileSandboxVerified:false},report={...issued.json().request,factsHash:nativeHash(facts),observedAt:native.clockDate().toISOString()};
    const packet={schemaVersion:1,authorityRef:ar,consumeReceiptRef:receipt.ref,localAttemptRef:body.localAttemptRef,bindingRef:issued.json().bindingRef,report,facts,signature:sign('sha256',ownershipObservationBytesV1(report),{key:testPrivateKey,dsaEncoding:'ieee-p1363'}).toString('base64url')};
    const accepted=await post('/ownership-results',packet);assert.equal(accepted.statusCode,200,accepted.body);assert.equal(accepted.json().executionAuthorized,false);assert.equal(accepted.json().dispatchPerformed,false);assert.equal(native.hostStorage!.state.heads.length,1);assert.ok(reads>=5);
+   const basis=(api as any).createNativeWorkerDeploymentOwnershipBasisSource(store);
    const input={authority,consumeReceipt:receipt,consumeRecordRef:{id:event.id,version:1,contentHash:event.content_hash},checkedAt:native.clockDate().toISOString(),signal:new AbortController().signal};
    for(const mode of ['HASH','FACTORY','EXPIRED','ABORT','LATE_REVOKE']){readMode=mode;readTick=0;readAbort=new AbortController();await assert.rejects(()=>basis.current({...input,checkedAt:native.clockDate().toISOString(),signal:readAbort!.signal}),mode);assert.equal(native.hostStorage!.state.heads.length,1);assert.equal(installed,1);if(mode==='LATE_REVOKE')assert.equal(readTick,2);}
    readMode='';const before=reads,aborted=new AbortController();aborted.abort();await assert.rejects(()=>basis.current({...input,signal:aborted.signal}));assert.equal(reads,before);
    const replay=await post('/ownership-results',packet);assert.notEqual(replay.statusCode,200);assert.equal(native.hostStorage!.state.heads.length,1);assert.equal(installed,1);
-  }finally{await publicApp?.close();await native.close();Date.now=oldNow;}
+  }finally{await ownershipApp?.close();await publicApp?.close();await native.close();Date.now=oldNow;}
  },{beforeFactory:stagedWorker});
 });
 
@@ -67,4 +69,36 @@ test('서버 basis는 일반 JSON reader·교체 메서드·Proxy를 원 목적 
  const {createNativeWorkerDeploymentOwnershipBasisSource:create}=await import('../../../apps/server/modules/executions/native-worker-ownership-basis-source.ts');let traps=0,calls=0;
  assert.throws(()=>create({read:async()=>{calls++;}} as any));assert.throws(()=>create(new Proxy({},{getPrototypeOf(){traps++;return NativeWorkerDeploymentStore.prototype;}}) as any));assert.equal(traps,0);assert.equal(calls,0);
  const store=new NativeWorkerDeploymentStore({connect:async()=>{calls++;throw Error('UNREACHABLE');}} as any);Object.defineProperty(store,'read',{value:async()=>({})});assert.throws(()=>create(store));assert.equal(calls,0);
+});
+
+
+test('명시 앱 ownership 옵션은 원 preparation/store만 단발 연결하고 GET 단독은 연결하지 않는다',async()=>{
+ const {buildApp}=await import('../../../apps/server/app.ts');
+ const native=await nativeFixture(false,10000,true,false,false,false,2);
+ const apps:ReturnType<typeof buildApp>[]=[];let queries=0,traps=0;
+ const store=new NativeWorkerDeploymentStore({connect:async()=>{queries++;throw Error('UNREACHABLE');}} as any);
+ const make=(preparation:unknown,ownership:unknown,get:unknown=null)=>{
+  const args:any[]=Array(18).fill(undefined);args[0]={};args[6]=preparation;
+  return (buildApp as any)(...args,get,ownership) as ReturnType<typeof buildApp>;
+ };
+ const prepared={enabled:true,preparations:native.service};
+ try{
+  assert.throws(()=>make(undefined,{store}),/NATIVE_OWNERSHIP_CONFIGURATION_INVALID/);
+  assert.throws(()=>make(prepared,{store:undefined}),/NATIVE_OWNERSHIP_CONFIGURATION_INVALID/);
+  assert.throws(()=>make({enabled:true},{store}),/NATIVE_OWNERSHIP_CONFIGURATION_INVALID/);
+  assert.throws(()=>make({...prepared,enabled:false},{store}),/NATIVE_OWNERSHIP_CONFIGURATION_INVALID/);
+  assert.throws(()=>make({enabled:true,preparations:{connectNativeOwnershipReturn(){traps++;}}},{store}),/NATIVE_OWNERSHIP_CONFIGURATION_INVALID/);
+  assert.throws(()=>make(prepared,{store:{read:async()=>{queries++;}}}),/NATIVE_WORKER_SOURCE_UNAVAILABLE/);
+  const changed=new NativeWorkerDeploymentStore({connect:async()=>{queries++;throw Error('UNREACHABLE');}} as any);
+  Object.defineProperty(changed,'read',{value:async()=>{queries++;}});
+  assert.throws(()=>make(prepared,{store:changed}),/NATIVE_WORKER_SOURCE_UNAVAILABLE/);
+  assert.throws(()=>make(prepared,{get store(){traps++;return store;}}),/NATIVE_OWNERSHIP_CONFIGURATION_INVALID/);
+  assert.throws(()=>make(prepared,new Proxy({store},{getPrototypeOf(){traps++;return Object.prototype;}})),/NATIVE_OWNERSHIP_CONFIGURATION_INVALID/);
+  assert.throws(()=>make(prepared,{store,extra:true}),/NATIVE_OWNERSHIP_CONFIGURATION_INVALID/);
+  // 두 생략 구성은 원 preparation을 연결하지 않는다. 이후 명시 연결이 처음으로 성공해야 한다.
+  apps.push(make(prepared,undefined));apps.push(make(prepared,undefined,store));
+  apps.push(make(prepared,{store}));
+  assert.throws(()=>make(prepared,{store}),/NATIVE_SOURCE_UNAVAILABLE/);
+  assert.equal(queries,0);assert.equal(traps,0);
+ }finally{for(const app of apps)await app.close();await native.close();}
 });

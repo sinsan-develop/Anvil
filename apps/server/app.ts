@@ -1,3 +1,7 @@
+import {types} from 'node:util';
+import {NativeWorkerDeploymentStore} from './modules/executions/native-worker-deployment-store.ts';
+import {createNativeWorkerDeploymentOwnershipBasisSource} from './modules/executions/native-worker-ownership-basis-source.ts';
+import {ProjectNativePreparations} from './modules/executions/project-native-preparations.ts';
 import {registerNormalExchangeChallenge,type NormalExchangeOptions} from './modules/executions/normal-exchange-challenge.ts';
 import {registerWorkerDeploymentRoutes,type WorkerDeploymentReadSource} from './modules/executions/native-worker-deployment-routes.ts';
 import {registerNormalCredentialExchange,type NormalCredentialExchangeOptions} from './modules/executions/normal-credential-exchange.ts';
@@ -32,7 +36,21 @@ import {registerProviderClaimHistoryRoutes} from './modules/executions/provider-
 import {registerUnderstandingHistoryRoutes} from './modules/executions/understanding-history-routes.ts';
 import { registerControlHandoffRoutes, type ControlHandoffRoutesOptions } from './modules/control-handoff/routes.ts';
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource, normalExchange?:NormalExchangeOptions, normalCredentialExchange?:NormalCredentialExchangeOptions,normalRequestChallenge?:{origin:string},normalPages?:NormalCommandPagesOptions,normalMaterials?:NormalStartMaterialsOptions & { registeredContext?: RegisteredStartContextOptions },normalPermit?:NormalStartPermitOptions,normalObservations?:NormalObservationsOptions,workerDeployment:WorkerDeploymentReadSource|null=null) {
+/** 명시 내부 ownership 조립이며 공개 GET reader는 이 권위를 대신하지 않는다. */
+export interface NativeWorkerOwnershipOptions {store:NativeWorkerDeploymentStore}
+const connectOwnership=ProjectNativePreparations.prototype.connectNativeOwnershipReturn;
+
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource, normalExchange?:NormalExchangeOptions, normalCredentialExchange?:NormalCredentialExchangeOptions,normalRequestChallenge?:{origin:string},normalPages?:NormalCommandPagesOptions,normalMaterials?:NormalStartMaterialsOptions & { registeredContext?: RegisteredStartContextOptions },normalPermit?:NormalStartPermitOptions,normalObservations?:NormalObservationsOptions,workerDeployment:WorkerDeploymentReadSource|null=null,nativeOwnership?:NativeWorkerOwnershipOptions) {
+  if(nativeOwnership!==undefined){
+    if(!nativeOwnership||types.isProxy(nativeOwnership)||![Object.prototype,null].includes(Object.getPrototypeOf(nativeOwnership)))throw Error('NATIVE_OWNERSHIP_CONFIGURATION_INVALID');
+    const fields=Object.getOwnPropertyDescriptors(nativeOwnership),preparations=nativePreparation?.preparations;
+    if(Reflect.ownKeys(fields).length!==1||!fields.store||!('value' in fields.store)||!fields.store.enumerable||nativePreparation?.enabled!==true||
+      !preparations||types.isProxy(preparations)||!(preparations instanceof ProjectNativePreparations)||
+      preparations.connectNativeOwnershipReturn!==connectOwnership||ProjectNativePreparations.prototype.connectNativeOwnershipReturn!==connectOwnership)throw Error('NATIVE_OWNERSHIP_CONFIGURATION_INVALID');
+    const store=fields.store.value;if(!store)throw Error('NATIVE_OWNERSHIP_CONFIGURATION_INVALID');
+    const basis=createNativeWorkerDeploymentOwnershipBasisSource(store);
+    connectOwnership.call(preparations,basis);
+  }
   const app = Fastify({ ...options, logger: false, bodyLimit: 2 * 1024 * 1024, ajv: { customOptions: { removeAdditional: false, coerceTypes: false, useDefaults: false } } });
   app.addHook('onRequest',async request=>enforceConnectorCredentialScope(request));
   app.addHook('onSend', async (_request, reply, payload) => {
