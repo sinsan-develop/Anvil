@@ -19359,3 +19359,11 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 ## 2026-11-14 normal 회수 응답 계약 채택·구현 재개
 
 - 신산님이 고정 후보 SHA462D92B2…A4EFC542의 응답 계약·source-only 구현을 직접 채택했다. 이전 결정 대기 사유 해소. 기존 Primary에게 정확7경로 구현/TDD를 맡기며 Main은 검수·통합한다. 후보 원문 지문은 보존하고 별도 WI에 채택을 기록했다. 실제 DB·권한·키·서비스·Agent 등 제외는 불변이다.
+
+- Primary 최초RED: node --experimental-strip-types --test tests/unit/FN08/normal-grant-revocation.test.ts exit1, 0P/4F/0skip 218.7052ms; 새normal생산자부재로실패했다. 구현후RAM SQL fixture의set_config 명령ID인덱스/동시거래잠금모형 보정중이며session17750은fixture대기로중단exit1·live0. 기대값/제품보호완화0·실환경0. 앱은별도명시normalGrantRevocation설정시에만연결하고default/synthetic경계보존한다.
+
+- Primary unit4P/0F/0SKIP exit0 969.5653ms, SQL정적2P/0F/0SKIP exit0 223.3941ms 제출. live0·실PG0. 실제normal생산자행을사용하는HTTP RAM여정과route연결은아직작성중으로Main/독립수용전이다. 전체완료체크불변.
+
+- Main fresh SQL2P exit0(7c5eec), unit6P exit0(08d5cb). SQL/source/unit 동결 독립 C0/I0/M0. 실제PG잠금/권한은미검증. app/routes 사전검수 C0/I1: exported registerProjectRoutes가normal옵션truthy만받아buildApp의exact mode/Proxy/accessor검산우회가능. fix round1로Primary에기존허용경로내직접route구성음성RED→GREEN지시, Main제품쓰기0. 기본/synthetic/HUMAN bearerquery거절은보존.
+
+- normal회수 정확7경로 최종동결·Primary쓰기반환/live0. 독립SQL/module/unit C0I0M0, route직접구성I1 RED→GREEN 후 C0I0M0. Mainfresh unit6P/SQL2P/HTTP+기존회귀23P·roottsc0·diff0·7지문일치. 결과서 FN08_NORMAL_GRANT_REVOCATION_SOURCE_RESULT_20261114.md에오류/정확명령/미검증/rollback고정. 실제PG/권한/키/서비스/C#/Agent NOT_RUN, 전체계획미완료. 다음source통합·동기화후normal중지종단후속구체화.
