@@ -11,8 +11,8 @@ using System.Web.Script.Serialization;
 using Anvil.Native.OwnershipEvidence;
 using V=NativePreparationProofSource;
 
-// 비활성 source. 원 retained 객체·현재 등록 키·인증된 서버 응답을 함께 공급하는
-// owned host 연결은 아직 없다. 이 클래스의 인수만으로 서버/OS 권위를 발급하지 않는다.
+// owned host의 원 retained 객체·현재 등록 키·인증된 서버 응답만 소비한다.
+// image/startup/selection 공급자는 기본 부재다. 이 인수만으로 서버/OS 권위를 발급하지 않는다.
 // 일반 bytes signer가 아니며 최초 PREPARED 반환만 처리한다. 키 생성/파일 읽기/실행 없음.
 internal sealed class NativePreparationOwnershipReturnSource {
  readonly OwnershipEvidenceJobFactorySource.IOriginalSuspendedProcessCandidate retained;
@@ -38,6 +38,32 @@ internal sealed class NativePreparationOwnershipReturnSource {
   context=Parse(originalContext,65536);V.Exact(context,"authority,receipt,consumeRecordRef,permit");
   // 생성자는 JSON 사본만 보관한다. 원 context/서버 관측 공급자의 신뢰를 대체하지 않는다.
   retained=originalRetained;existingKey=registeredKey;ValidateContext();
+ }
+ // 공개 JSON/PID를 원 소유자로 승격하지 않는 READ 전용 진입점.
+ private NativePreparationOwnershipReturnSource(byte[] originalContext,OwnershipEvidenceJobFactorySource.IOriginalSuspendedProcessCandidate originalRetained){
+  if(originalRetained==null)throw Invalid();context=Parse(originalContext,65536);
+  V.Exact(context,"authority,receipt,consumeRecordRef,permit");retained=originalRetained;ValidateContext();
+ }
+ internal static string ReadOriginalProcess(byte[] originalContext,OwnershipEvidenceJobFactorySource.IOriginalSuspendedProcessCandidate originalRetained,int remainingMs){
+  var source=new NativePreparationOwnershipReturnSource(originalContext,originalRetained);
+  var a=source.ValidateContext();var scope=V.Map(a["scope"]);
+  var first=OwnershipEvidenceJobFactorySource.ReadOriginalPreparedReturnSource(originalRetained,remainingMs);
+  var envelope=Parse(Utf8.GetBytes(first.EnvelopeJson),65536);var selection=V.Map(envelope["selection"]);
+  foreach(string k in new[]{"installationId","projectId","executionId"})Equal(selection[k],scope[k]);
+  if(V.Text(selection,"executionGeneration")!=V.Positive(scope["executionGeneration"]).ToString(CultureInfo.InvariantCulture)||V.Text(selection,"publicKeyFingerprint")!=V.Text(scope,"hostPublicKeyFingerprint"))throw Invalid();
+  foreach(string k in new[]{"registration","preparation"}){
+   var reference=V.Ref(scope[k+"Ref"],false);
+   if(V.Text(selection,k+"Id")!=V.Text(reference,"id")||V.Text(selection,k+"Version")!=V.Positive(reference["version"]).ToString(CultureInfo.InvariantCulture)||V.Text(selection,k+"Hash")!=V.Text(reference,"contentHash"))throw Invalid();
+  }
+  var subject=V.Map(a["subject"]);foreach(string k in new[]{"userId","clientId","humanSessionId"})Equal(selection[k],subject[k]);
+  foreach(string k in new[]{"credentialGeneration","controlGeneration"})if(V.Text(selection,k)!=V.Positive(subject[k]).ToString(CultureInfo.InvariantCulture))throw Invalid();
+  foreach(string k in new[]{"policy","authorizationReceipt"}){
+   var reference=V.Ref(k=="policy"?a["policyRef"]:V.Map(a["parent"])["authorizationReceiptRef"],false);
+   if(V.Text(selection,k+"Id")!=V.Text(reference,"id")||V.Text(selection,k+"Version")!=V.Positive(reference["version"]).ToString(CultureInfo.InvariantCulture)||V.Text(selection,k+"Hash")!=V.Text(reference,"contentHash"))throw Invalid();
+  }
+  DateTime now=DateTime.UtcNow;
+  if(now<V.Time(envelope,"observedAt")||now>=V.Time(envelope,"expiresAt")||now>=V.Time(a,"expiresAt")||now>=V.Time(Snapshot(source.context["permit"]),"expiresAt"))throw Invalid();
+  return first.ProcessRefJson;
  }
  Dictionary<string,object> ValidateContext(){
   var authority=V.Map(context["authority"]);var a=Snapshot(authority);
