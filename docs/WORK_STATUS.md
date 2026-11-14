@@ -19523,3 +19523,6 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 
 - 혼합 polling 최종 source 수용: Primary57P/0F/0SKIP·Main12P/0F/0SKIP(700df3)·type0·독립 C0/I0/M0,10경로 동결/쓰기 반환. 결과서 FN08_NORMAL_SEND_POLLING_SOURCE_RESULT_20261115.md에 실패·지문·미검증 기록. 직전 출력 유실은 PASS로 쓰지 않고 시험 프로세스0 확인 뒤 재확보. 실제DB/Agent0.
 - STOP 후보 SHA2562E6445077CDD2A02C00367EAEF08E40AE33E4DB46077EC4BC18785D1156CAC0F 독립 C0/I0/M0 후 신산님 직접 A안 source-only 채택. GET 정책 선택·현재 ownership 부재412·STOP 전용 target projection을 포함한다. 원 후보 hash 보존, 실제 권한/DB/키/서비스/Agent 제외. Primary 읽기 준비만 수행하고 SEND 통합 뒤 별도 WI 구현.
+
+- PR120 통합완료: source b9fcf52a55763f0e4b6e3a38f03a08b44acda6d1→main38388a92f186e1cd1359714e79d7f77a988975ce. Broker43628528092 success·PRhead복구ref/tree동등·clean/private exact, merged RAM혼합여정1P0F0SKIP exit0 4993.0088ms(c08e1c). 완료branch/tag/tracking 정상정리 뒤 main에서 codex/av3-fn08-normal-stop-target 생성(936ffb). 문서작성 중 CRLF 혼입 diffcheck 경고는 LF복원 후 통과했고 내용 대량변경 없이 WORK_CHECK2행만 반영했다.
+- STOP 읽기 조사 Primary·독립 동일: 현재 ownership resolver는 합성/BASIS_ONLY, native 반환 PREPARED이며 session/role결박없음. CURRENT/resume생산은 미완료. 새 WI17경로는 승인한 codec·GET거절/저장·page소비 경계만 구현하며 없는 권위를 callback으로 만들지 않는다. 정상 owner공급 없는412 유지, 내구STOP/interrupt/ACK후속분리, 실제환경0.
