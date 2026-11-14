@@ -9,6 +9,14 @@ const originalStartOptions=SyntheticMaterialReceiver.prototype.startOptions;
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const fail=():never=>{throw Error('CLAUDE_START_OPTIONS_UNAVAILABLE');};
 function freeze<T>(v:T):T{if(v&&typeof v==='object'){for(const child of Object.values(v))freeze(child);Object.freeze(v);}return v;}
+/** 두 수신 경로가 공유하는 데이터 검산. 기본값·도구·실행 환경·권위를 추가하지 않는다. */
+export function readClaudeQueryParams(value:unknown){
+ const raw=boundedSdkObject(value,maxSdkObjectBytes).value;
+ if(!recordV1(raw,['claudeQueryParams']))return fail();const p=raw.claudeQueryParams;
+ if(!p||typeof p!=='object'||Array.isArray(p)||!Object.hasOwn(p,'model')||Object.keys(p).some(k=>!['model','maxTurns','maxBudgetUsd'].includes(k))||typeof p.model!=='string'||!p.model.isWellFormed()||p.model.length<1||p.model.length>200||!p.model.trim()||/\p{Cc}/u.test(p.model))return fail();
+ if(Object.hasOwn(p,'maxTurns')&&(!Number.isSafeInteger(p.maxTurns)||p.maxTurns<1)||Object.hasOwn(p,'maxBudgetUsd')&&(typeof p.maxBudgetUsd!=='number'||!Number.isFinite(p.maxBudgetUsd)||p.maxBudgetUsd<0||p.maxBudgetUsd>Number.MAX_SAFE_INTEGER))return fail();
+ return freeze({model:p.model,...(Object.hasOwn(p,'maxTurns')?{maxTurns:p.maxTurns}:{}),...(Object.hasOwn(p,'maxBudgetUsd')?{maxBudgetUsd:p.maxBudgetUsd}:{})});
+}
 /** 등록 완료나 SDK 호출 허가가 아닌 private 데이터 후보다. 실제 receiver의 원 수신 검산만 재사용한다. */
 export async function readClaudeStartOptions(receiver:SyntheticMaterialReceiver,rawEnvelope:unknown,checks:Checks){
  let owned:Uint8Array|undefined,receivedOwned:Uint8Array|undefined;
@@ -29,10 +37,7 @@ export async function readClaudeStartOptions(receiver:SyntheticMaterialReceiver,
   if(byteLength!==metadata.utf8Bytes)return fail();owned=new Uint8Array(byteLength);Uint8Array.prototype.set.call(owned,bytes);
   if(contentHash(owned)!==metadata.contentHash||owned[0]===0xef&&owned[1]===0xbb&&owned[2]===0xbf)return fail();
   const text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(owned),raw=boundedSdkObject(parseWireJson(text),maxSdkObjectBytes).value;
-  if(!recordV1(raw,['claudeQueryParams']))return fail();const p=raw.claudeQueryParams;
-  if(!p||typeof p!=='object'||Array.isArray(p)||!Object.hasOwn(p,'model')||Object.keys(p).some(k=>!['model','maxTurns','maxBudgetUsd'].includes(k))||typeof p.model!=='string'||!p.model.isWellFormed()||p.model.length<1||p.model.length>200||!p.model.trim()||/\p{Cc}/u.test(p.model))return fail();
-  if(Object.hasOwn(p,'maxTurns')&&(!Number.isSafeInteger(p.maxTurns)||p.maxTurns<1)||Object.hasOwn(p,'maxBudgetUsd')&&(typeof p.maxBudgetUsd!=='number'||!Number.isFinite(p.maxBudgetUsd)||p.maxBudgetUsd<0||p.maxBudgetUsd>Number.MAX_SAFE_INTEGER))return fail();
-  const params={model:p.model,...(Object.hasOwn(p,'maxTurns')?{maxTurns:p.maxTurns}:{}),...(Object.hasOwn(p,'maxBudgetUsd')?{maxBudgetUsd:p.maxBudgetUsd}:{})};
+  const params=readClaudeQueryParams(raw);
   if(Reflect.apply(check,checks,[])!==true)return fail();const at=now();if(at<started)return fail();readDispatchEnvelopeV1(envelope,at);
   return freeze({kind:'CLAUDE_QUERY_DATA_CANDIDATE' as const,transport:'SYNTHETIC_ONLY' as const,key,contextBundleRef:metadata.contextBundleRef,optionsRef:metadata.optionsRef,materialReceiptRef:metadata.materialReceiptRef,envelopeHash:metadata.envelopeHash,utf8Bytes:metadata.utf8Bytes,contentHash:metadata.contentHash,params,paramsHash:contentHash(canonicalJson(params)),actualExecutionVerified:false as const,executionAuthorized:false as const,dispatched:false as const,workAccepted:false as const,modelVerified:false as const,costAuthorized:false as const,permissionVerified:false as const});
  }catch{return fail();}finally{owned?.fill(0);receivedOwned?.fill(0);}
