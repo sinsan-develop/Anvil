@@ -19221,3 +19221,10 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 
 - 후보 최종 기술 검토: Primary도 신규 HTTP/DB 필수 없이 source 구현 가능함을 확인했다. worker는 준비용 제한 worker이며 coding Agent가 아니다. signer/helper/worker bytes를 혼동하지 않는다. 신산님께 최종 SHA A769DEC8…47331250의 직접 채택 질문1회 전달, 답변 미수신이다. 미채택 제품 코드0.
 - 별도 읽기 조사: Stage C FN08의 START 시도·permit·응답·UNKNOWN/관측 재조정은 기존 source에 연결돼 있었다. SEND/STOP 및 Stage D FN07은 승인된 START-only 계약과 원 process/SESSION 근거를 대조해야 하므로 즉시 이식 가능한 누락으로 확정하지 않았다. 이 제한 조사는 전체 계획에 작업이 없다는 판단이 아니다. 동일 완료시험 재실행·실제환경 작업0. 현재 Primary와 두 조사자는 terminal, 단일writer0·실행handle0이다. 전체목표 미완료/active를 유지하며 worker 후보 결정 전 해당 코드만 착수하지 않는다.
+
+## 2026-11-14 worker 신뢰 A안 직접 채택
+
+- 신산님이 SHA A769DEC827F78A486CD7C6EC9EBD9D84308572AFD29481F10DDA73F647331250 A안 source-only를 직접 채택했다. 원문 hash·현재branch4867a91d clean 재확인, 원 후보 보존·별도채택기록 작성. 앞선 답변대기는 해소됐다.
+- 기존 Primary에게 정확 파일분해와 의존순서, 독립 조사자에게 최소 입력/부모/회수 검수경계를 전달했다. Main WI 전 제품쓰기0. 실제 설치·자료조사·키·DB·권한·서비스·C#·Agent 실행 및 journal 제한해제 제외는 그대로다.
+
+- WI FN08_NATIVE_WORKER_PROVENANCE_SOURCE_IMPLEMENTATION_20261114.md SHA7113A5E8ACD6827C8D3B0F486DFE034D9A3ECCED500F98F015369AED4D100E56, 독립 C0/I0. 기존 Primary에 제품8/시험7 정확15경로 단일writer 구현을 배정했다. 순서는 worker build/검산→descriptor·동일consume파생/서버basis→native보호입력/host이다. Main은 동일코드쓰기0, 검수·기록·통합을 수행한다. 실제 compile/FS/권한/DB/키/서비스/Agent는 제외하며 첫 RED·단위동결 근거를 수집한다.
