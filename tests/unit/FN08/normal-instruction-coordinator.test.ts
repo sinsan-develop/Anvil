@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {normalInstructionDurableFixture} from './normal-instruction-dispatch-fixture.ts';
+import {normalInstructionDurableFixture,normalInstructionWireFixture} from './normal-instruction-dispatch-fixture.ts';
 
 for(const fault of ['LOST','PERMIT_HASH_BINDING','REVOKED','EXPIRED','ABORT','CURRENT_ENVELOPE_BINDING','CURRENT_OS','ATTEMPT_SYNC','PERMIT_SYNC'] as const)test('SEND attempt '+fault+'은 추가 허가/재시작 전송 없이 닫는다',async()=>{
  const f=await normalInstructionDurableFixture();try{
@@ -63,5 +63,76 @@ test('현재 관측 await 중 기한 경과는 원 attempt UNKNOWN으로 보존�
  const f=await normalInstructionDurableFixture();try{
   await f.receive();const original=f.current.current;f.current.current=async(...args)=>{const v=await original(...args);f.mode.wall=60000;return v;};
   const before=f.calls.length,result:any=await f.make().prepare(f.item.envelope,f.signal);assert.equal(result.state,'UNKNOWN');assert.equal(f.calls.length,before);assert.equal(f.h.permits.length,0);
+ }finally{await f.h.close();}
+});
+
+for(const fault of ['DISPATCH_SYNC','DISPATCH_PARTIAL','DISPATCH_READBACK','RESPONSE_SYNC','DISPATCH_CLOSE'] as const)test('SEND '+fault+' 불명은 원 lock을 보존하고 새 owner에서 wire를 재개하지 않는다',async()=>{
+ const f=await normalInstructionWireFixture();try{
+  const open=f.fs.fs.open,command=f.item.envelope.commandId,lock=f.fs.path('attempt-'+command+'.lock');let closeCalls=0;
+  f.fs.fs.open=async(path:string,flag:any)=>{const handle=await open(path,flag);
+   if(flag==='wx'&&path.endsWith('attempt-'+command+'.000003.json')){
+    if(fault==='DISPATCH_SYNC')handle.sync=async()=>{throw Error('RAM_DISPATCH_SYNC_UNKNOWN');};
+    if(fault==='DISPATCH_PARTIAL'){const write=handle.writeFile;handle.writeFile=async(b:Buffer)=>write(b.subarray(0,3));}
+    if(fault==='DISPATCH_READBACK'){const sync=handle.sync;handle.sync=async()=>{await sync();const file=f.fs.files.get(path)!;file.bytes=Buffer.from(file.bytes.toString().replace('SEND_DISPATCH_ATTEMPTED','SEND_DISPATCH_ATTE?PTED'));};}
+   }
+   if(flag==='wx'&&path.endsWith('attempt-'+command+'.000004.json')&&fault==='RESPONSE_SYNC')handle.sync=async()=>{throw Error('RAM_RESPONSE_SYNC_UNKNOWN');};
+   if(flag==='wx'&&path===lock&&fault==='DISPATCH_CLOSE')handle.close=async()=>{closeCalls++;throw Error('RAM_CLOSE_UNKNOWN');};
+   return handle;
+  };
+  await assert.rejects(f.c.dispatch(f.item.envelope,f.prepared,f.wire,f.signal));assert(f.fs.files.has(lock));assert.equal(f.driverCalls(),['RESPONSE_SYNC','DISPATCH_CLOSE'].includes(fault)?1:0);
+  const before=f.calls.length;await assert.rejects(f.make().prepare(f.item.envelope,f.signal),/BUSY/);assert.equal(f.calls.length,before);
+  if(fault==='DISPATCH_CLOSE'){assert.equal(closeCalls,1);assert.equal(f.rows().at(-1).snapshot.state,'RESPONSE_RECORDED');}
+ }finally{await f.h.close();}
+});
+
+for(const target of ['attempt','permit','material'] as const)test('dispatch 원 '+target+' 내구 행 변조는 driver0',async()=>{
+ const f=await normalInstructionWireFixture();try{
+  const {canonicalJson,contentHash}=await import('../../../contracts/canonical.ts');
+  const path=target==='material'?[...f.fs.files.keys()].find(p=>p.includes('intake-')&&p.endsWith('.000001.json'))!:f.fs.path('attempt-'+f.item.envelope.commandId+(target==='attempt'?'.000001.json':'.000002.json'));
+  const file=f.fs.files.get(path)!,entry=JSON.parse(file.bytes.toString());
+  if(target==='material')entry.bytes='WA';else {if(target==='permit')entry.snapshot.permit.ref.id=randomUUID();else entry.snapshot.sessionBindingRef.id=randomUUID();entry.ref.contentHash=contentHash(canonicalJson(entry.snapshot));}
+  file.bytes=Buffer.from(canonicalJson(entry)+'\n');
+  const result=await f.c.dispatch(f.item.envelope,f.prepared,f.wire,f.signal).catch(()=>null);if(result)assert.equal(result.state,'UNKNOWN');assert.equal(f.driverCalls(),0);
+ }finally{await f.h.close();}
+});
+
+test('prepare strict-close 불명은 원 반환 객체 eligibility를 발급하지 않는다',async()=>{
+ const f=await normalInstructionDurableFixture();try{
+  await f.receive();const open=f.fs.fs.open,lock=f.fs.path('attempt-'+f.item.envelope.commandId+'.lock');let closes=0;
+  f.fs.fs.open=async(path:string,flag:any)=>{const h=await open(path,flag);if(flag==='wx'&&path===lock)h.close=async()=>{closes++;throw Error('RAM_CLOSE_UNKNOWN');};return h;};
+  const c=f.make();await assert.rejects(c.prepare(f.item.envelope,f.signal));assert.equal(closes,1);assert(f.fs.files.has(lock));
+  await assert.rejects(c.dispatch(f.item.envelope,{} as any,{} as any,f.signal),/UNKNOWN/);await assert.rejects(f.make().prepare(f.item.envelope,f.signal),/BUSY/);
+ }finally{await f.h.close();}
+});
+
+test('dispatch await 중 원 결과 변조는 이미 고정한 permit/proof 원본에 영향을 주지 않는다',async()=>{
+ const f=await normalInstructionWireFixture();try{
+  const original=structuredClone(f.prepared),open=f.fs.fs.open;let mutated=false;
+  f.fs.fs.open=async(path:string,flag:any)=>{const h=await open(path,flag);if(!mutated&&flag==='wx'&&path.endsWith('attempt-'+f.item.envelope.commandId+'.lock')){mutated=true;f.prepared.permit!.ref.id=randomUUID();f.prepared.proofResultRef!.id=randomUUID();}return h;};
+  const out=await f.c.dispatch(f.item.envelope,f.prepared,f.wire,f.signal);assert.equal(out.state,'RESPONSE_RECORDED');assert.equal(f.driverCalls(),1);assert.deepEqual(f.rows()[2].snapshot.permit,original.permit);assert.deepEqual(f.rows()[2].snapshot.proofResultRef,original.proofResultRef);
+ }finally{await f.h.close();}
+});
+
+test('SEND_DISPATCH_ATTEMPTED 이후 재시작은 UNKNOWN을 내구 기록하고 새 결과 권위를 만들지 않는다',async()=>{
+ const f=await normalInstructionWireFixture();try{
+  await f.c.dispatch(f.item.envelope,f.prepared,f.wire,f.signal);assert.equal(f.driverCalls(),1);
+  // 실제 OS crash가 아니라 원 3행만 보존한 RAM 재시작 상태다.
+  f.fs.files.delete(f.fs.path('attempt-'+f.item.envelope.commandId+'.000004.json'));
+  const c=f.make(),history=await c.prepare(f.item.envelope,f.signal);assert.equal(history.state,'UNKNOWN');assert.equal(f.rows().at(-1).snapshot.state,'UNKNOWN');
+  await assert.rejects(c.dispatch(f.item.envelope,history,f.wire,f.signal),/ELIGIBLE/);assert.equal(f.driverCalls(),1);
+ }finally{await f.h.close();}
+});
+
+for(const point of ['DISPATCH_SYNC','DISPATCH_CLOSE'] as const)test(point+' 동안 기한 경과는 성공 결과를 만들지 않는다',async()=>{
+ const f=await normalInstructionWireFixture();try{
+  const open=f.fs.fs.open,command=f.item.envelope.commandId;
+  f.fs.fs.open=async(path:string,flag:any)=>{const h=await open(path,flag);
+   if(flag==='wx'&&point==='DISPATCH_SYNC'&&path.endsWith('attempt-'+command+'.000003.json')){const sync=h.sync;h.sync=async()=>{await sync();f.mode.wall=60000;};}
+   if(flag==='wx'&&point==='DISPATCH_CLOSE'&&path.endsWith('attempt-'+command+'.lock')){const close=h.close;h.close=async()=>{await close();f.mode.wall=60000;};}
+   return h;
+  };
+  const out=await f.c.dispatch(f.item.envelope,f.prepared,f.wire,f.signal).catch(()=>null);if(out)assert.equal(out.state,'UNKNOWN');
+  assert.equal(f.driverCalls(),point==='DISPATCH_SYNC'?0:1);
+  const c=f.make(),history=await c.prepare(f.item.envelope,f.signal);await assert.rejects(c.dispatch(f.item.envelope,history,f.wire,f.signal),/ELIGIBLE/);assert.equal(f.driverCalls(),point==='DISPATCH_SYNC'?0:1);
  }finally{await f.h.close();}
 });

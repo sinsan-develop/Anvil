@@ -190,3 +190,16 @@ export async function normalInstructionDurableFixture(){
  const make=(override:Record<string,unknown>={})=>new NormalInstructionCoordinator({intake,store:store.instructionAttempts(),post:f.post,current:f.current,grantRef:f.scope.grantRef,clock:f.clock,timeoutMs:10000,...override});
  return{...f,page,item,fs,store,intake,expected,localScope,receive,make};
 }
+
+/** SEND wire 전용 RAM 조립. 원 서버/수신/permit 생산은 위 기본 fixture를 그대로 사용한다. */
+export async function normalInstructionWireFixture(timeoutMs=10000){
+ const f=await normalInstructionDurableFixture();await f.receive();
+ const {NormalInstructionWire}=await import('../../../apps/connector/adapters/secondary/normal-instruction-wire.ts');
+ const c=f.make({timeoutMs}),prepared=await c.prepare(f.item.envelope,f.signal);
+ assert.equal(prepared.state,'PERMIT_RECORDED');
+ const rows=()=>[...f.fs.files.entries()].filter(([p])=>p.includes('attempt-'+f.item.envelope.commandId)&&p.endsWith('.json')).sort(([a],[b])=>a.localeCompare(b)).map(([,v])=>JSON.parse(v.bytes.toString()));
+ const observed={transport:'NORMAL_PROTECTED' as const,responseRef:{id:randomUUID(),version:1,contentHash:'a'.repeat(64)},processRef:null};
+ let driverCalls=0;const driver={async send(_input:any,_signal:AbortSignal){driverCalls++;return observed;}};
+ const wire=new NormalInstructionWire({driver});
+ return{...f,c,prepared,rows,observed,driver,wire,driverCalls:()=>driverCalls,wireWith:(send:(input:any,signal:AbortSignal)=>Promise<any>)=>new NormalInstructionWire({driver:{send}})};
+}

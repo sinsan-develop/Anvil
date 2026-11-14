@@ -19492,3 +19492,15 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - PR118 통합 완료: source d42e5cce → main3ce883045554b8f56fe0d35d6e080471ff0c4d3a, Broker43623349376 success. local/private exact·clean·tree 동등과 PRhead 복구 ref 확인. merged-main 내구수신/permit RAM 종단1P/0F/0SKIP exit0 2650.7039ms(6b7093). 완료 branch/tracking/정확 요청 tag 정리(2ee273), 기존 다른 worktree 불변. 최신 main에서 codex/av3-fn08-send-wire를 생성(cd6702)했고 기존 Primary가 다음 내부 전달 연결을 읽기 준비 중이다. 실제 DB/키/파일/서비스/Agent 실행과 전체 계획 완료는 아니다.
 
 - 다음 SEND 명시 wire source6경로를 기존 Primary에게 할당한다. 기존 prepare/역사 재조회는 유지하고 새 permit strict-close 후 원 객체의 메모리 단발 결박과 내구 DISPATCH_ATTEMPTED를 함께 검산한다. driver는 명시 RAM 포트이며 실제 SDK 생성자/owner 매핑을 발명하지 않는다. wire 반환은 기존 관측 ref 수준, spool/ACK/cursor 제외. 상세 WI FN08_NORMAL_SEND_WIRE_SOURCE_20261115.md. 기존 승인 P3/SEND 내부 연결이며 새 공개/권한/실환경 실행0.
+
+- SEND wire WI 사전 검수 C0/I0/M0, SHA256 5A4CEDE8F1251DAC25C5966179C41DB809DCDB17346C6D6DAA25E6D5B4A17220. 지시 커밋 ae635f4f와 private 동일(5ffa5f). 기존 Primary에게 정확 6경로 단일 writer를 부여했다. 첫 RAM 종단 RED는 새 wire 모듈 부재 0P/1F/0SKIP exit1 2864.2797ms(51633d)이며 기능 음성 실증이 아닌 미구현 진입 확인이다. 실제 DB/파일/권한/키/서비스/Agent 실행0. Main은 검수·통합 담당, 별도 읽기 담당은 후속 receipt/spool/cursor 연결을 조사한다.
+
+- 후속 읽기 조사(d2_scope_audit): normal-start-polling.ts:90은 START만 허용하여 SEND 관측/ACK/cursor 연결이 남아 있다. 기존 normal-observation-spool의 ACK·공통 순번과 instruction-transport의 SEND_ATTEMPTED→PREPARED, RESPONSE_RECORDED→PROVIDER_RESPONSE_RECEIVED 의미를 재사용할 수 있다. 다음 논리적 단위는 혼합 page→원 SEND 기록 관측→보호 POST/ACK→cursor 확정이며 새 endpoint/표/권한 필요 근거는 없다. 현재 wire 동결·검수 전 구현 착수하지 않는다. 실제 SDK/DB 실행은 계속 제외한다.
+
+- SEND wire 첫 GREEN(수행자): normal-instruction-wire-journey.test.ts 단독1P/0F/0SKIP exit0 3212.0282ms(3db172). 원 서버 RAM→수신→permit→내구 dispatch 선기록→RAM driver1→RESPONSE 기록→재시작 추가 driver0를 확인했다. current/단조기한·부분 저장·close 불명 음성 보완 중이며 아직 동결·Main 검수 전이다. 역사 prepare는 원 permit 조회로 보존하고 eligibility를 발급하지 않는다. 실제 SDK 수락·업무 완료 증거가 아니다.
+
+- SEND wire 수행자 보완: 준비 뒤 OS 관측 ref 변경 및 wall 정지 중 단조 60초 경과 2건을 RED로 재현하고 원 current binding·mono deadline을 신규 eligibility에 고정했다. 직접 음성16P/0F/0SKIP exit0 19649.293ms(278d79). 복제/다른 명령·세대·세션/만료·유실·timeout/늦은 응답·취소를 포함한다. 내구/strict-close 종단 및 타입 검사는 진행 중이며 Main 최종 검수 전이다. 실제 환경 실행0.
+
+- SEND wire 잠정동결 독립 검수: spec C0/I2/M0, quality C0/I1/M0(동일 타이머 항목 중복, 고유 Important2). (1) 임의 wire가 공개 claim만 호출하고 정식 adapter verify 없이 RESPONSE_RECORDED 가능, 사전 prototype 교체도 같은 경로. (2) verify 후 current 기한 축소가 driver 취소 timer에 반영되지 않음. Main 코드 대조2bbcb7로 확인, commit/통합 보류하고 기존 Primary에게 동일6경로 fix round1·각 RED→GREEN 지시. 지문 coordinator F7C1D998…A35B5A3/wire3FC37771…43F823은 보정 전 증거이며 이전 PASS를 최종 수용으로 취급하지 않는다. 실제 DB/Agent 실행0.
+
+- SEND wire 고유 I2 모두 해소, 독립 재검수 C0/I0/M0. 최종 영향49P(cc2be0)·Main wire종단22P0F0SKIP exit0 28269.8232ms(d84a3a→c7c8c6), type0(cc9932), 양방향 fresh import0·diff0. Primary6경로 쓰기 반환/live0. 결과서 FN08_NORMAL_SEND_WIRE_SOURCE_RESULT_20261115.md에 시점별 실패·검증·6지문·미검증을 기록했다. 제품2/시험4+기록3을 source 한정 통합하며 실제 DB/Agent 및 전체 계획 완료는 아니다.
