@@ -8,8 +8,11 @@ import type{VersionRef}from'../../../../contracts/generated-types.ts';
 import{canonicalJson,contentHash}from'../../../../contracts/canonical.ts';
 import{assertKnowledgeTextSafe}from'./knowledge-entry.ts';
 import{readConversationInput,type MessageRef}from'./conversation-input.ts';
-import{assertReadAccess,type ReadAccess}from'../context/read-access.ts';
+import{assertReadAccess,assertInstructionGrantRead,type InstructionGrantRead,type ReadAccess}from'../context/read-access.ts';
 import type{ProjectListCodec}from'../projects/service.ts';
+import {instructionSourceMetadata} from '../context/context-sources.ts';
+import {instructionPartsPlan} from '../executions/instruction-parts-plan.ts';
+import {refV1,uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
 function pageInput(q:Record<string,unknown>){
  if(Object.keys(q).some(k=>!['limit','cursor'].includes(k))||q.limit!==undefined&&(typeof q.limit!=='string'||!/^[1-9][0-9]{0,2}$/.test(q.limit)||Number(q.limit)>200)||q.cursor!==undefined&&(typeof q.cursor!=='string'||q.cursor.length>4096))throw new AuthFailure('INPUT_INVALID',400);
  return{limit:q.limit===undefined?50:Number(q.limit),cursor:q.cursor as string|undefined};
@@ -54,8 +57,42 @@ export class ProjectConversations{
   if(backupBudget!==undefined)assertArtifactBackupReadBudget(backupBudget);
   return this.#message(db,pid,conversationId,id,backupBudget);
  }
+ /** 명시 HUMAN 읽기. 메시지 sourceRef에 버전을 덧붙이지 않고 원 append receipt의 목적 ref를 확인한다. */
+ async readInstruction(db:PoolClient,actor:AuthenticatedIdentity,pid:string,conversationId:string,id:string){
+  await projectMember(db,actor,pid);
+  return this.#instruction(db,pid,conversationId,id);
+ }
+ async instructionParts(db:PoolClient,actor:AuthenticatedIdentity,pid:string,conversationId:string,id:string){
+  const source=await this.readInstruction(db,actor,pid,conversationId,id),{partsRef,plan}=instructionPartsPlan(source.message.bodyRef,Buffer.from(source.body,'utf8'));
+  return {instructionRef:source.instructionRef,partsRef,plan};
+ }
+ async readRegisteredInstruction(db:PoolClient,access:InstructionGrantRead,pid:string,conversationId:string,id:string){
+  assertInstructionGrantRead(access,db,pid,conversationId,id);return this.#instruction(db,pid,conversationId,id,access);
+ }
+ async #instruction(db:PoolClient,pid:string,conversationId:string,id:string,access?:InstructionGrantRead){
+  const invalid=():never=>{throw new AuthFailure('CONVERSATION_INTEGRITY_FAILED',503);},same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
+  if(![pid,conversationId,id].every(uuidV1))throw new AuthFailure('INPUT_INVALID',400);
+  const before=await instructionSourceMetadata(db,pid,conversationId,id);
+  if(!before)throw new AuthFailure('NOT_FOUND',404);
+  if(before.kind!=='USER_INSTRUCTION'||before.conversation_id!==conversationId)throw new AuthFailure('CONTEXT_SOURCE_KIND_INVALID',422);
+  if(before.superseded!==false)throw new AuthFailure('INSTRUCTION_SOURCE_EXCLUDED',412);
+  const source=await (access===undefined?this.#message(db,pid,conversationId,id):readDocumentSourceMessageCore.call(this,db,access,pid,conversationId,id)),rows=(await db.query(`SELECT m.command_id,m.client_id,m.message_json,m.author_ref,m.content_hash,
+   c.command_id AS command_key,c.operation,c.operation_id,c.actor_id,c.client_id AS command_client,c.control_generation,c.request_hash,c.policy_ref,c.result_ref,c.state,
+   ar.id AS receipt_id,ar.subject_ref,ar.policy_ref AS receipt_policy,ar.scope_digest AS receipt_scope,
+   a.actor_ref AS audit_actor,a.client_ref AS audit_client,a.target_ref AS audit_target,a.policy_ref AS audit_policy,a.scope_digest AS audit_scope,a.reason_code
+   FROM anvil.conversation_messages m JOIN anvil.commands c ON c.project_id=m.project_id AND c.id=m.command_id AND c.scope_kind='PROJECT' AND c.scope_id=m.project_id
+   JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=m.project_id
+   JOIN anvil.audit_events a ON a.project_id=m.project_id AND a.command_id=c.id AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND'
+   WHERE m.project_id=$1 AND m.conversation_id=$2 AND m.id=$3 LIMIT 2`,[pid,conversationId,id])).rows;
+  if(rows.length!==1)return invalid();const r=rows[0],result=r.result_ref,ref=result?.data?.ref;
+  if(!refV1(ref)||ref.id!==id||ref.version!==1||ref.contentHash!==source.sourceRef.contentHash||r.content_hash!==ref.contentHash||!same(r.message_json,{conversationId,targetRoleRef:null,message:source.message,sourceRefs:[],serverSequence:source.serverSequence,authorRef:source.authorRef})||contentHash(canonicalJson(r.message_json))!==ref.contentHash||r.operation!=='appendConversation'||r.state!=='APPLIED'||result?.status!=='APPLIED'||result.projectId!==pid||result.commandId!==r.command_key||result.operationId!==r.operation_id||result.targetId!==ref.id||result.version!==ref.version||result.data.status!=='CONVERSATION_STORED'||result.data.deliveryState!=='STORED'||result.data.conversationId!==conversationId||result.data.serverSequence!==source.serverSequence||!same(result.data.message,r.message_json)||!same(result.data.sourceRef,source.sourceRef)||r.actor_id!==source.authorRef.userId||r.command_client!==r.client_id||!same(r.author_ref,source.authorRef)||!same(r.subject_ref,{kind:'HUMAN',userId:r.actor_id,clientId:r.client_id})||!same(r.receipt_policy,r.policy_ref)||!same(r.audit_actor,{kind:'HUMAN',userId:r.actor_id})||r.audit_client!==r.client_id||!same(r.audit_target,ref)||!same(r.audit_policy,r.policy_ref)||r.reason_code!=='EXPLICIT_HUMAN_CONVERSATION'||!uuidV1(r.receipt_id))return invalid();
+  const digest=contentHash(canonicalJson({projectId:pid,actorId:r.actor_id,clientId:r.client_id,controlGeneration:Number(r.control_generation),requestHash:r.request_hash,policyRef:r.policy_ref,targetRef:ref}));
+  if(r.receipt_scope!==digest||r.audit_scope!==digest||source.sourceRef.contentHash!==before.content_hash||!same(before,await instructionSourceMetadata(db,pid,conversationId,id)))return invalid();
+  return {...source,instructionRef:ref};
+ }
  /** 접근 판별자 core(D2). HUMAN은 기존 readMessage를 그대로 거치고, grant는 회원 조회 없이 같은 검산을 한다(backup budget 없음). */
- async readMessageCore(db:PoolClient,access:ReadAccess,pid:string,conversationId:string,id:string){
+ async readMessageCore(db:PoolClient,access:ReadAccess|InstructionGrantRead,pid:string,conversationId:string,id:string){
+  if(access.kind==='INSTRUCTION_GRANT'){assertInstructionGrantRead(access,db,pid,conversationId,id);return this.#message(db,pid,conversationId,id);}
   if(access.kind==='HUMAN')return this.readMessage(db,access.actor,pid,conversationId,id);
   await assertReadAccess(db,access,pid);
   return this.#message(db,pid,conversationId,id);
@@ -95,3 +132,6 @@ export class ProjectConversations{
 
 const readDocumentSourceMessage=ProjectConversations.prototype.readMessage;
 const readDocumentSourceMessageCore=ProjectConversations.prototype.readMessageCore;
+export const readProtectedInstruction=ProjectConversations.prototype.readInstruction;
+export const readProtectedInstructionParts=ProjectConversations.prototype.instructionParts;
+export const readRegisteredInstruction=ProjectConversations.prototype.readRegisteredInstruction;

@@ -1,3 +1,4 @@
+import {consumeNormalInstructionPermit,type NormalInstructionPermitOptions} from './normal-instruction-permit.ts';
 import {randomUUID} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
 import type {Pool,PoolClient} from 'pg';
@@ -20,7 +21,7 @@ type Request={envelopeHash:string;localAttemptRef:Ref;sourceObservationRefs:Ref[
 type FactScope={projectId:string;executionId:string;executionGeneration:number;grantRef:Ref;commandId:string;envelopeHash:string};
 /** 서버 조립 때 주입하는 현재 실행 사실 공급자. HTTP 입력으로 사실을 받지 않으며, 공급자 결과도 아래에서 다시 검산한다. */
 export interface NormalPermitCurrentSource{observe(scope:Readonly<FactScope>,signal:AbortSignal):Promise<unknown>}
-export interface NormalStartPermitOptions{pool:Pick<Pool,'connect'>;origin:string;current?:NormalPermitCurrentSource}
+export interface NormalStartPermitOptions{pool:Pick<Pool,'connect'>;origin:string;current?:NormalPermitCurrentSource;instruction?:Omit<NormalInstructionPermitOptions,'pool'>}
 const receiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','commandRef','envelopeHash','requestHash','observedAt','expiresAt'];
 const permitKeys=['scope','commandId','commandRef','request','requestHash','proofRef','bindingHash','currentFact','state','issuedAt','expiresAt','executionAuthorized','dispatchPerformed'];
 
@@ -99,6 +100,10 @@ async function issue(o:NormalStartPermitOptions,connector:string,execution:strin
   verifyNormalCommandPageProof(current.spki,frame.signature,proof,b,ch,target);
   const end=Math.min(cred.expiresAt,current.deadline.getTime(),Date.parse(ch.expiresAt));
   if(at>=end||signal.aborted)deny();
+  if(o.instruction){
+   const send=(await db.query('SELECT * FROM anvil.normal_instruction_record($1,$2,$3,$4)',[pid,execution,b.executionGeneration,command])).rows;
+   if(send.length){await db.query('ROLLBACK');return {instruction:true} as const;}
+  }
   const packetHash=digest({frame,target}),requestHash=digest(request);
   const previous=(await db.query(`SELECT v.content_hash AS vhash,v.snapshot_json AS consumed,r.id,r.content_hash,r.snapshot_json AS receipt
    FROM anvil.execution_challenges v LEFT JOIN anvil.execution_receipts r ON r.project_id=v.project_id AND r.challenge_id=v.id
@@ -194,6 +199,7 @@ export function registerNormalStartPermit(app:FastifyInstance,o:NormalStartPermi
    const run=(pre?:{scope:FactScope;fact:unknown})=>issue(o,cid,eid,command,token,packet,target,request,r.signal,pre);
    const first=await run();
    if('out' in first)return first.out;
+   if('instruction'in first)return consumeNormalInstructionPermit({...o.instruction!,pool:o.pool},cid,eid,command,token,packet,target,request,r.signal);
    const fact=await boundedFact(o.current!,first.needFact,r.signal);
    const second=await run({scope:first.needFact,fact});
    if(!('out' in second))deny('EXECUTION_PERMIT_CURRENT_CHANGED');

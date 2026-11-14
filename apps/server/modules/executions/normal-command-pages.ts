@@ -9,7 +9,8 @@ import {AuthFailure} from '../access/repository.ts';
 import {executionProofBytes,executionTarget,verifyNormalCommandPageProof} from './execution-proof.ts';
 import {original,readCurrent} from './normal-exchange-challenge.ts';
 import {normalRequestBearerDigest,requestCredential} from './normal-request-challenge.ts';
-import {maxPageMaterialParts,startMaterialDescriptor,startMaterialParts,type StartMaterialDescriptor} from './normal-start-materials.ts';
+import {instructionMaterialDescriptor,type InstructionMaterialDescriptor} from './normal-instruction-materials.ts';
+import {maxPageMaterialParts,startMaterialDescriptor,type StartMaterialDescriptor} from './normal-start-materials.ts';
 
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
@@ -31,11 +32,11 @@ export function readPageWindow(rows:{sequence:unknown}[],after:number){
 
 /** 한 명령과 그 자료 descriptor는 한 단위다. 건수50·자료 부분200·크기 상한을 넘기는 명령 앞에서 닫으며
  * 첫 명령조차 담지 못하면 자료를 생략하지 않고 거절한다. 응답 봉투 여유는 호출자가 상한에서 미리 뺀다. */
-export function fitPage<T extends {materials:StartMaterialDescriptor}>(items:T[],maxBytes=limit-16384):T[]{
+export function fitPage<T extends {materials:StartMaterialDescriptor|InstructionMaterialDescriptor}>(items:T[],maxBytes=limit-16384):T[]{
  let parts=0,bytes=2,count=0;
  for(const item of items){
   const next=Buffer.byteLength(canonicalJson(item))+(count?1:0);
-  parts+=startMaterialParts(item.materials);bytes+=next;
+  parts+=item.materials.groups.reduce((n,g)=>n+g.parts.length,0);bytes+=next;
   if(count>=50||parts>maxPageMaterialParts||bytes>maxBytes)break;
   count++;
  }
@@ -96,7 +97,7 @@ async function selectItems(db:PoolClient,keys:unknown[],binding:any,after:number
   if(r.valid!==true||!refV1(r.command_ref)||ids.has(r.command_ref.id))deny();
   ids.add(r.command_ref.id);
   const envelope=readDispatchEnvelopeV1(r.envelope,now.getTime());
-  if(envelope.operation!=='START_SESSION'||envelope.context.projectId!==keys[0]||
+  if(!['START_SESSION','SEND_INSTRUCTION'].includes(envelope.operation)||envelope.context.projectId!==keys[0]||
     envelope.context.executionId!==keys[1]||envelope.context.executionGeneration!==generation||r.envelope_hash!==envelope.envelopeHash)deny();
   return {sequence:sequences[i]!,commandRef:r.command_ref,envelope};
  });
@@ -106,7 +107,7 @@ async function selectItems(db:PoolClient,keys:unknown[],binding:any,after:number
  const withMaterials=items.map(x=>{
   const own=registered.filter(r=>r.command_record_id===x.commandRef.id);
   if(own.length!==1)deny();
-  return {...x,materials:startMaterialDescriptor(own[0],binding,x.envelope as any)};
+  return {...x,materials:x.envelope.operation==='SEND_INSTRUCTION'?instructionMaterialDescriptor(own[0],binding,x.envelope as any):startMaterialDescriptor(own[0],binding,x.envelope as any)};
  });
  // 고정 재조회는 최초 영수증의 명령만 다시 읽으므로 새로 닫지 않고 전부 검산한다.
  const selected=fixed?withMaterials:fitPage(withMaterials);

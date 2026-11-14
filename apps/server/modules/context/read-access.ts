@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { registeredInstructionReadMatches } from '../executions/normal-instruction-source.ts';
 import { registeredContextReadMatches } from '../executions/normal-start-context-source.ts';
 import type { VersionRef } from '../../../../contracts/generated-types.ts';
 import { AuthFailure, type AuthenticatedIdentity } from '../access/repository.ts';
@@ -51,4 +52,11 @@ export function grantCore<T extends object, K extends PropertyKey>(reader: T, ke
   const method = (reader as Record<PropertyKey, unknown>)[key];
   if (typeof method !== 'function') throw new AuthFailure('CONTEXT_SOURCE_READER_NOT_CONNECTED', 412);
   return method.bind(reader) as never;
+}
+
+/** SEND 전용 접근은 일반 ReadAccess/문서/대화 목록에 사용할 수 없다. */
+declare const instructionGrantBrand:unique symbol;
+export type InstructionGrantRead=Readonly<{kind:'INSTRUCTION_GRANT';projectId:string;conversationId:string;messageId:string}>&{readonly [instructionGrantBrand]:true};
+export function assertInstructionGrantRead(access:unknown,db:PoolClient,projectId:string,conversationId:string,messageId:string):asserts access is InstructionGrantRead{
+ if(!registeredInstructionReadMatches(access,db,projectId,conversationId,messageId))throw new AuthFailure('INSTRUCTION_GRANT_READ_DENIED',403);
 }

@@ -1,10 +1,11 @@
 # Anvil 작업 점검표
 
-갱신: 2026-11-14 / 담당: Main 어울(D2 P-B 통합·D1 실행기 source 진행)
+갱신: 2026-11-15 / 담당: Main 어울(normal SEND source 구현·독립 검수 진행)
 
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
 - 현재 통합 기준선: `main` `12f4b58a7111c400bbc7a4c98f103a7ad9653831`(PR114). normal 회수 계약 직접 채택·source 검수·통합 및 local/private 동기화·merged RAM smoke 1P를 확인했다. 후속 `codex/av3-fn08-normal-stop-contract`에서 normal 중지 종단의 원 세션 권위·제어 호출선·공개 응답 형상을 구체화 중이다.
+- 2026-11-15 현재: normal SEND A안과 지시 부분계획 보완 A안 직접 채택 후 기존 Primary가21경로를 구현 중이다. 순수 부분계획3P와 보호 원문 GET→SEND저장→혼합page→자료전달/재조회 직접37P, 해당 묶음 독립 C0/I0/M0를 한정 수용했다. 최초쓰기 전용 graph 재사용 결함은 기존 역사 START 검산 함수로 교정·독립 C0/I0/M0이며 실제PG 검증은 아니다. 명령별permit 직접10P·독립 C0/I0/M0, 영향9파일172P와 타입 검사도 통과했다. 미적용0097 정적7P·최종 접점 독립 C0/I0/M0까지 source 검수를 마쳤으며 통합 전이다. 결과서는 docs/04_test_reports/AV3/FN08_NORMAL_SEND_DISPATCH_SOURCE_RESULT_20261115.md다. 고정 SDK READ3는 DNS ENOTFOUND로 실패·1회 소진했다. 실제DB/Agent 및 전체FN08·계획 완료로 표시하지 않는다.
 - 아래 44행 상세 코드 집계의 과거 기준: `development/main` `967c9a207452f5d3c9d79a1d8906e25a396dd704`.
 - 최신 직접 채택: worker 배포 근거 전달 A안(source-only), SHA256 50596FFC…2FD4389. 해당 source와 명시 앱 연결은 PR112·113으로 통합됐다. 실제 설치/실행 및 전체 계획은 미완료다.
 - PR110/main7efc5111 통합: native retained 조립 제품3/시험3을 독립 C0/I0/M0·Main29개 한정 검사·root tsc0으로 수용했다. 보호 입력 생산자가 미등록이라 기본 실행은 거절하며 Windows 실제 실행·정상 재시작은 미완료다. 상세: docs/04_test_reports/AV3/FN08_NATIVE_RETAINED_FACTORY_SOURCE_RESULT_20261114.md.

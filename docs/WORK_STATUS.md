@@ -19402,3 +19402,51 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Primary normalSEND 첫행동묶음: node --experimental-test-module-mocks --test tests/unit/FN08/normal-instruction-dispatch-journey.test.ts exit0/2P/0F/0SKIP 3486.0125ms. 실제NormalInitialExecution/교환handler START·grant행에서SEND새예약/receipt/outbox/material, BUSY동일replay·부분material실패rollback검증. 앞2F는static import가RAM FS mock보다먼저적재된fixture ENOENT로dynamic import순서보정. original/parts는사전등록모형이며보호원문producer/HTTPSEND전체완료아님. live0·최종동결전. Main은동일시험반복없이독립검토대기/다음자료·permit연결관리중.
 
 - 2026-11-15 신산님이partsRef부분계획후보SHA F3243D14…53DD91DF를A안한정보완·source-only로직접채택했다. 기존Primary의WI를20경로로갱신(순수instruction-parts-plan 모듈/직접시험2추가),동일단일writer에보호원문→계획GET→SEND재생성·비교연결을배정한다. 새표/권한·실자료/DB/키/서비스/Agent실행0. 후보원문지문은보존하고별도WI에채택기록,사전등록fixture만으로전체여정완료판정하지않는다.
+
+- command잠정동결SHA FCACBECA28032127A8EA41D474FDCFCB91C3EB6DBC1FBF4C18B31C4BC44B2F88/시험journey44AB75EE…9484BC4·config60373957…13FA67E를d2_scope_audit에위임. 첫Important1: project FOR UPDATE후외부#observeCurrent를await하여잠금/관측교착가능,후보거래밖관측원칙위반. Main은동일Primary fix round1 지시(전체scoped반환후수정),첫인증거래종료→관측→두번째인증/잠금/전부재검산과동일project관측반례RED→GREEN필요. 미해소상태통합0·Main제품쓰기0·실환경0.
+
+- 동결command독립검수 추가I2: 원START envelope를현재시각으로readDispatchEnvelopeV1해과거전달기한경과시유효grant의후속SEND도거절한다. Main의좁힌검토요청후reviewer가parser now>=expires거절과후보새SEND기한차이를확인. 원START형상/hash는역사시각으로검산하고현재grant검사는유지,만료START/유효grant정상및만료grant거절반례를같은Primary fix round1에포함했다. 기존권한/최단기한을늘리는변경아니며아직미해소·통합0.
+
+- 부분계획순수2경로잠정동결: instruction-parts-plan.ts SHA83576195FE199DD8311B7E5E2F724034872C54B8FCDA2B7D544D1CCDDBCEA430,직접시험SHA153BC9F63D6C9B443AE99D517C795A94DCEC8B23278D3289A917F6402874589D. Primary RED3F→GREEN3P/0F/0SKIP exit0 749.2306ms. Mainfresh node --experimental-strip-types --test --test-reporter=dot tests/unit/FN08/instruction-parts-plan.test.ts exit0/3P(c913ec). d2_preflight독립읽기검수배정. 순수분할/hash증거이며보호원문/GET/SEND전체증거아님. command I1/I2는Primary보완중·live0·새막힘없음.
+
+- I2반증검토: Primary가0083 normal_initial_graph의원START expiresAt=grant.expiresAt exact결박을확인했고Main도실제SQL/command원graph검사를대조했다(eadf2a). 따라서START만만료/동일grant유효가원보호graph내도달불가일수있어I2수정지시보류·독립재판정요청. Primary I2제품변경0보존. 불가능한RAM상태를graph=true로통과시킨정상시험을추가하지않는다. I1은실제RED확인: 외부current패턴시험exit1/0P1F/0SKIP 3653.1915ms,포트transaction=true로실패·분리보완중live0.
+- 부분계획2경로독립최종C0/I0/M0·지문불변,Mainfresh3P로순수source범위수용. 원문GET/전체SEND는아직후속검증전이다.
+
+- command I1fix동결SHA7CC976752EEAEB8FD6AB76B8923A5BAA56812E8199E085663779B16B83982AA1/journey4E3EED3D3BD3F8FBC3BD492000E708063F2E96950591C6C96548724736D7E45E. 첫인증거래종료→외부관측1회→두번째인증/잠금·원부모/정책/원문/예약/DB current/최종HUMAN재검산. I2변경0. Primary15P2F의HUMAN user/client RAM감사fixture2건을변경주체exact검산으로보완해한정2P. Mainfresh전체 node --experimental-strip-types --experimental-test-module-mocks --test --test-reporter=dot tests/unit/FN08/normal-instruction-dispatch-journey.test.ts 17P/exit0(e81c81→44acad/session82599종료). 최종재인증·COMMITlost+원영수증재조회포함,source/PG전체증거아님. d2_scope_audit독립재검수중.
+
+- command독립재검수C0/I0/M0. I1해소:첫auth거래반환후외부observe1회,새auth거래에서전부재검산·최종HUMAN. M1실5tuple/재인증rollback/COMMITlost동일원결과시험보완. I2는reviewer가parser만추적해도달불가상태를제시한오판으로철회:0083원START기한=grant기한exact+원graph선행이있어정상반례불성립,제품수정0. 원오류/보완기록보존. command/journey지문불변·Mainfresh17P. 원문/자료/permit/SQL후속과전체계획은미완료다.
+
+- 보호 원문→명시 부분계획 GET→SEND 재생성 묶음은 Primary 직접 8P/0F/0SKIP exit0, 8451.1248ms를 제출했다. 실제 ProjectConversations/ProjectDocuments를 RAM DB/MemoryFS에서 사용하며 정정·격리·외피/감사 변조·교차 대화·회원·Bearer 거절을 포함한다. fixture의 원 생성행 command/client·SELECT 투영 보정으로 기대값 완화0. SEND snapshot 결박 보호 표식 연결 중이라 아직 동결/독립 검수 전이며 전체 완료로 승격하지 않는다. Main은 WORK_CHECK 최신 진행 상태를 갱신하고 단일 writer와 실제 환경 제외를 재확인했다.
+
+- 보호 source/GET/SEND 표식6경로 잠정 동결 후 Main fresh normal-instruction-materials.test.ts 9P/exit0(7d0a5b), 독립 d2_preflight 검수 착수. 실제DB SQL은 RAM 투영이며 미적용0097/자료 HTTP/permit 미완료. 전체 여정에서 두 test 파일의 상호 fixture import 순환을 피하기 위한 실행등록 없는 normal-instruction-dispatch-fixture.ts 추가를 Main이 기존 계약 내 내부 배치로 수용해 WI 총21경로로 갱신했다. 기존 시험·기대값 유지, 제품/공개 의미 추가0.
+
+- 보호 source/GET/SEND 표식6경로 독립 최종 C0/I0/M0·전후 지문 일치. Mainfresh9P로 이 소스 묶음을 한정 수용했다. 실제PG snapshot·동시정정/취소·거래종료 순간 무효는 실증하지 않았으며 합성 증거와 구분한다. 다음 fixture 분리와 자료 소비의 원 메서드 export-only1줄을 동일 Primary에 반환했다. Main 추가 문서의 CRLF 혼용 diff 경고는 새로 추가한 구간만 LF로 정정해 문서 diffcheck0(af2826), 기존 본문/제품 변경0.
+
+- Primary의 신규 page/material 집중 RAM 시험 출력이 context 제한으로 유실돼 PASS로 채택하지 않았다. 수행자는 현재 node 프로세스 없음과 보유 live handle0을 확인했다. 실제 환경 부작용 없는 신규 합성1건만 fresh 확인하고 자료/page/fixture 묶음을 동결하며, permit/0097은 계속 미완료다. 기존 전체 시험 반복이나 실제 실행 재시도는 하지 않는다.
+
+- Primary 새 page/material 집중: node --experimental-test-module-mocks --test --test-reporter=tap --test-name-pattern='같은 page' tests/unit/FN08/normal-instruction-dispatch-journey.test.ts, 1P/0F/0SKIP exit0 3315.4235ms·live0. 원 START→보호 parts GET→SEND→같은 명령 page→원 bytes/replay 제품 handler/RAM 연결을 확인했다. 앞 fixture 구문/앱 ready 누락 실패는 보존하며, 음성/rollback 보완·묶음동결/독립/Main검수 전이다. permit/SQL과 실제DB·Agent는 미완료·미검증으로 유지한다.
+
+- 자료/page8경로 동결을 Main이 지문 직접 대조(1bcf69)하고 독립 d2_scope_audit에 배정했다. fixture 분리 뒤 전체 직접2파일을 Mainfresh 실행: node --experimental-strip-types --experimental-test-module-mocks --test --test-reporter=tap tests/unit/FN08/normal-instruction-dispatch-journey.test.ts tests/unit/FN08/normal-instruction-materials.test.ts, 37P/0F/0SKIP exit0 18454.8242ms(6d8f9c→c429d6/session75196종료). 신규descriptor/원문·noncerollback·COMMIT불명/정정/port await변조/회수·만료·서명 반례 포함. 기존17P가 분리된fixture로 다시 연결됐으므로 이번 재검증에 포함했다. Primary의 기존START/page 인접20P는 별도 수행자 증거이며 Mainfresh로 오기하지 않는다. 후속permit/0097은비충돌 구현중, 실제DB/Agent0.
+
+- 자료/page8경로 독립 최종 C0/I0/M0·전후지문 일치. START 기존 판독/cursor/고정receipt와 50건·200부분·2MiB 유지, SEND partsRef/manifest/material exact 및 COMMIT 전 원문 재검산을 확인했다. Mainfresh37P와 대조해 source 한정 수용하고 Primary에 app/fixture 후속 연결 동결을 해제했다. 실제PG0097·혼합page최대한도·material단계격리 직접실증은 이 검수만으로 주장하지 않는다. 다음permit/SQL 및 해당 변경 영향 최소회귀 계속.
+
+- SQL 선행 대조에서 Important1 확인: normal-instruction-command.ts #grant가 normal_initial_graph를 재사용하지만0083의 normal_queue_authorized는 원START command_id=current_setting(anvil.command_id), queuedAt30초 등 최초쓰기 조건이다(96d1a3/3f8ca1). 후속SEND의새명령 거래에서 원START 검산이 거절되므로 RAMgraph=true 투영의17P/37P는실SQL호환을증명하지 못했다. Primary fix round1: 기존SQL/GUC위장·검사완화없이0097의역사원START관계검산/기존보호조회재사용으로교정,정적반례와회귀보완. 원START기한=grant기한·거래밖관측 등 기존보호 유지. source부분수용이전체통합수용은아니며미해소통합0·실DB실행0.
+
+- Primary permit 최초 제품 RAM 여정2P/0F/0SKIP exit0 4792.2116ms·live0: 원START→보호SEND→혼합page→자료GET→0024 별도permit→동일packet원응답/다른proof409 연결. 새permit음성/0097/타입과 역사graph Important1 보정은 미완료이므로 아직동결·Main수용전. 실제PG/SDK증거로승격하지 않는다.
+
+- 최초쓰기 graph I1 보정 제출: command #grant의 함수호출만 기존0083 normal_start_material_complete로교체(command SHA AA96F1D97287F27EF2D6E68E3B9249EFF6B923556CFE71A9590043A377E3FB62). 기존SQL/권한변경0, readGrantCurrent 별도유지. Main이0083:288~398을대조해역사START/원receipt/audit/예약/준비/manifest/outbox와START기한=grant기한 exact검산, GUC/30초/clock조건없음을확인(6f6561), 독립재검수배정. 수행자정적 RED1F→GREEN1P exit0 147.2748ms. roottsc fixture union진단1건은in narrowing으로보완중이며최종검사전이다.
+
+- 원START 역사검산 교체 독립 최종 C0/I0/M0, command 지문 AA96F1D9…3FB62 불변. 실제SQL미실행 한계는 유지한다. 신산님 최신 교체 AGENTS의 Codex Security 명시 호출 전용 항목을 적용·Primary에 전달했다. 해당 플러그인 사용0, 승인된source-only21경로·단일writer·실제환경제외 불변. permit 후속음성/0097구현 계속.
+
+- permit5경로 잠정동결(제품3/시험2) 독립 d2_scope_audit 검수착수. Mainfresh node --experimental-strip-types --experimental-test-module-mocks --test --test-reporter=tap tests/unit/FN08/normal-instruction-permit.test.ts 10P/0F/0SKIP exit0 17272.2114ms(84285d→e754a4/session97122종료). 원START→SEND/page/material→별도permit/replay·rollback/COMMIT불명·BUSY/OS/정정·재봉인receipt/ledger관계반례 포함. Primary의재봉인2F→GREEN이력보존. 현재0097작성중이며실제DB권한/동시성증거아님.
+
+- permit5경로 독립 C0/I0/M0·지문동일. Mainfresh 필수인접9파일 실행: node --experimental-strip-types --experimental-test-module-mocks --test --test-reporter=tap tests/unit/FN05/context-sources.test.ts tests/unit/FN08/context-read-access.test.ts tests/unit/FN08/execution-instruction-queue.test.ts tests/unit/FN08/execution-instruction-permit-schema.test.ts tests/unit/FN08/execution-instruction-material-parts.test.ts tests/unit/FN08/normal-command-pages-journey.test.ts tests/unit/FN08/normal-start-materials-journey.test.ts tests/unit/FN08/normal-start-context-source.test.ts tests/unit/FN08/normal-start-permit-journey.test.ts →172P/0F/0SKIP exit0 18983.2336ms(c5eec0→cce98e/session9016종료, 최상위130·중첩포함172). npm run typecheck exit0(a87d06→20203c/session23348종료). 최초 추정 node_modules/typescript/bin/tsc 직접경로는 MODULE_NOT_FOUND로실행실패했고설치없이기존npm script로정정했다. SDK/Agent/C#·DB실행0. 0097은작성중이며최종수용전이다.
+
+- 0097 구문검증 수단 읽기조사(d2_scope_audit): 기존package/lock/scripts/tests/node_modules에DB없는PostgreSQL전체parser사용근거를찾지못했다. 기존delimiter/CASE 시험은문자열·괄호재발방지이며전체SQL파서가아니다. qa-source-read-sql.ts는실제PG/Docker를사용해이번제외범위다. 새설치·DB실행0, 최종정적시험PASS를0097실제구문/거래PASS로승격하지않는다.
+
+- 0097/정적시험2경로 잠정동결: SQL32B8732D7A5DE85AF9B025E5657989D9C869CD71E35A02DF0895B48195667EAA·시험518C0065481DB8FC8B10D07F8BB0FCAB62A8B60BCC68DF82B28058DDC1095C4B. Mainfresh 정적6P/0F/0SKIP exit0 160.0428ms·diffcheck0(4ff97a;4개기존TS의CRLF→LF예고는경고별도). Primary처음0097부재1F와주석SECURITY DEFINER오탐1F→주석제외검사6P이력보존. d2_preflight신규graph/역완결/한도와d2_scope_audit기존분기/설치의존/권한보존으로읽기검수를분담했다. 함수25개주장은검수중이며실제PG구문/경합PASS아니다. 마지막혼합page50/51·자료격리시험은기존fixture/직접시험만추가,제품TS동결유지.
+
+- 0097신규graph/역완결독립C0/I0/M0. 호환검수C0/I1/M1:476행 IF안 CASE비교의괄호없는기존구문위험패턴을동일의미괄호로보완요청(실제parser실패확정아님), 함수25개집계는신규10/기존15(OR REPLACE10+rename wrapper5)로정정한다. 앞신규12/교체13주장은수행자초기집계오류로보존. 기존START/합성/0090OBS·서명/역완결/불변trigger·권한호환은추가C/I없음.
+- 마지막혼합50/51 실제생산시험은원upstream 호출예산 BUDGET_CALLS_EXHAUSTED로1F이며자료QUARANTINE1P. 제품예산/기준을늘리지않고페이지소비기의RAM입력한도시험과실제생산종단증거를분리하도록Primary에지시했다. 실패를50SEND실생산PASS로바꾸지않는다.
+
+- 최종21경로 Primary쓰기반환/live0/Gitmutation0. SQL CASE I1재검수·전체단위최종접점 C0/I0/M0. Main최종 SQL7+설정1=8P(1f06d1), 추가혼합page입력/QUARANTINE2P(5875a3); 기존TS불변172P/type0재사용. 결과서 FN08_NORMAL_SEND_DISPATCH_SOURCE_RESULT_20261115.md에최종지문·오류·실행명령·미검증/rollback기록. source한정검수완료이며실제PG/Agent/전체계획완료아님. 다음명시파일commit/private게시·검증된source단위통합.

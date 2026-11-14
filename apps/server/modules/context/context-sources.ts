@@ -21,6 +21,10 @@ interface ContextSourceReaders {
 }
 const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
 const selectedRef = (selection: ContextSourceSelection) => selection.kind === 'USER_INSTRUCTION' ? selection.messageRef : selection.versionRef;
+/** context 선택과 normal SEND가 같은 정정/제외 원천을 읽는다. 읽기 권한은 호출 경로에서 먼저 확인한다. */
+export async function instructionSourceMetadata(db:PoolClient,projectId:string,conversationId:string,messageId:string){
+ return (await db.query('SELECT m.content_hash,m.kind,m.conversation_id,EXISTS(SELECT 1 FROM anvil.conversation_messages newer WHERE newer.project_id=m.project_id AND newer.conversation_id=m.conversation_id AND newer.supersedes_instruction_id=m.id) superseded FROM anvil.conversation_messages m WHERE m.project_id=$1 AND m.id=$2 AND m.conversation_id=$3',[projectId,messageId,conversationId])).rows[0];
+}
 
 /** 기존 인증 transaction 안에서만 사용하며, 문법 ref가 아닌 현재 보호 reader와 불변 원문을 소비한다. */
 export class ProjectContextSources {
@@ -60,7 +64,7 @@ export class ProjectContextSources {
      ? (await db.query('SELECT v.content_hash,k.kind,k.head_version FROM anvil.knowledge_versions v JOIN anvil.knowledge_entries k ON k.project_id=v.project_id AND k.id=v.entry_id WHERE v.project_id=$1 AND v.entry_id=$2 AND v.version=$3', [projectId, sourceRef.id, (sourceRef as VersionRef).version])).rows[0]
      : selection.kind === 'DOCUMENT_VERSION'
       ? (await db.query('SELECT content_hash FROM anvil.document_versions WHERE project_id=$1 AND document_id=$2 AND version=$3', [projectId, sourceRef.id, (sourceRef as VersionRef).version])).rows[0]
-      : (await db.query('SELECT m.content_hash,m.kind,m.conversation_id,EXISTS(SELECT 1 FROM anvil.conversation_messages newer WHERE newer.project_id=m.project_id AND newer.conversation_id=m.conversation_id AND newer.supersedes_instruction_id=m.id) superseded FROM anvil.conversation_messages m WHERE m.project_id=$1 AND m.id=$2 AND m.conversation_id=$3', [projectId, sourceRef.id, selection.conversationId])).rows[0];
+      : await instructionSourceMetadata(db,projectId,selection.conversationId,sourceRef.id);
     if (!metadata) throw new AuthFailure('NOT_FOUND', 404);
     if (metadata.content_hash !== sourceRef.contentHash) throw new AuthFailure('CONTEXT_SOURCE_MISMATCH', 409);
     const expectedKind = ({ PURPOSE_REASON: 'PURPOSE', RULES_SCOPE: 'CONSTITUTION', DECISIONS_REASON: 'DECISION' } as Partial<Record<ContextSlotCode, string>>)[slot.code];
