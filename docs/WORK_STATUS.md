@@ -19250,3 +19250,5 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 다음 codex/av3-d1-deployment-contract은 최신 main에서 생성했다. 기존 Primary는 제품쓰기 반환 후 읽기 전용으로 runtime 원천 전달매체·설치root 보호·회수출처의 정확 계약을 조사한다. A769의 발급권위/descriptor/identity는 재결정하지 않는다. 새 보호저장·공개 metadata 조회·설치기록 의미는 아직 미채택이며 제품 구현하지 않는다. 실제환경실행0·전체계획미완료.
 
 - worker 전달매체 후보 FN08_WORKER_DEPLOYMENT_HANDOFF_CANDIDATE_20261114.md SHA50596FFCAD26EC0FE9F5BC9AB43A5948BE87BF549C2E989E216D297442FD4389: 독립최초 head식별충돌·DB권한/RLS·설치bundle인계·제거/한도 지적을 보완해 두 검수자 C0/I0/M0. 기존 A769 권위는불변이고 새 공개metadata·보호저장/권한·worker siblingroot source계약만 직접채택 대상이다. 제품쓰기0·실제환경0. Main Windows rg wildcard경로 오류1회는 -g 방식으로수정한읽기오류이며 제품영향0. 다음은 후보채택 후 기존Primary 구현, 미채택동안 해당제품코드0.
+
+- 후보4e48cbdf 게시·local/tracking동일clean·SHA50596FFC…2FD4389 확인 후 직접채택 질문1회 전송(응답미수신). PMO는 A769에 새공개/저장/설치root 승인근거가 없음을 재확인했다. 기존Primary 읽기분해: 계약/목적SQL→부모없는workercompile/package→publisher→sibling설치→원server/native소비 순서. 코드추가0, 실제환경0. 다음채택시 이 순서의 정확파일WI를 작성하고 단일writer를 재개한다. 기존 발급권위·run/observer 의미는재질문하지않는다. 전체계획미완료·해당새계약만 결정대기.
