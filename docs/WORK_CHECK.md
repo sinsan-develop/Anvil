@@ -87,3 +87,7 @@
 - 2026-11-14 PR103/main ab1fab01 소스 통합·동기화·완료branch 정리 확인. 다음 D1 normal polling→내구 수신→START→ACK 조합 착수. 실제 Agent/DB/키/서비스는 제외하며 FN06/FN08 부분 구현 상태 유지.
 
 - 2026-11-14 D1 normal polling 소스 조합 검수: GET→자료 내구수신→START→관측ACK, 재시작/갱신wire추가0을12개합성검사로확인. 실제adapter/current공급자·native/DB/Agent·UI는미완료이며FN06/FN08부분구현유지.
+
+- 2026-11-14 PR104/main 68b03a96 통합·동기화·완료 branch/tag 정리 및 병합 smoke1 PASS. 다음 normal adapter source는 기존 Primary에게 배정. 실제 Agent/DB/native 미검증, 완료 체크 유지.
+
+- 2026-11-14 normal Claude adapter source 검수15PASS/독립C0/I0/M0. 원 START/permit/attempt/Options 연결 및 UNKNOWN 재호출0 확인. 실제 process/tool/SID 공급자는 미완료이며 완료 체크를 올리지 않는다.

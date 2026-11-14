@@ -19021,3 +19021,18 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 사용자 goal paused 직후 active 재개가도착했다. Primary중단호출1회후최신active에따라동일담당자/동일WIP로재개지시했다. 기존검사handle결과먼저확인·중복실행금지. 현재branch변경0/자료삭제0, polling source+시험3신규·fixture1과Main문서2보존.
 
 - polling최종동결 Main 신규2파일12P/0F/0SKIP9499.545ms exit0, 구현자12P9572ms·인접permit불명1P4574ms·root type0, diff0. 독립C0/I0·aggregate I1해소. source6C8E561F/unit1988C6F0/journey7F3BE7E4/fixture5ABA4157동일. partialpage/hasMore는codec뒤fault injection이며실서버2명령증거아님. 결과서 FN08_D1_NORMAL_POLLING_SOURCE_RESULT_20261114.md 작성. 실제자원실행0/전체미완료. 다음정확7파일통합후normal adapter/current/source잔여조사.
+
+
+## 2026-11-14 D1 PR104 통합 및 normal adapter 인수
+
+- Main 어울: PR104 source e6f5d15268742a1238e4569ec73b95a0dcb8b8f4를 main 68b03a96a819498ac42e500ba56c12bdb092dfec에 통합했다. local/development main 동일, tracked clean, source/main tree diff0, 원격 heads는 main 하나, 요청 tag 부재를 확인했다. 완료 local branch/tag만 정리하고 development/main에서 codex/av3-d1-normal-adapter를 생성했다. 다른 역사 worktree/WIP는 보존했다.
+- 병합 smoke: node --test --test-reporter=spec --test-name-pattern='빈 page는 유한' tests/unit/FN08/normal-start-polling.test.ts → exit0, 1 PASS/0 FAIL/0 SKIP, 320.7726ms. 직전 출력 소실로 결과를 확인하지 못한 smoke는 PASS로 계산하지 않았으며 이 확인 결과만 기록한다.
+- 다음 단계: 채택 P3 결정안 §3.1 3단계의 normal adapter source. 기존 Primary만 code writer, Main 문서/검수/통합. 기존 START·permit·durable attempt를 재사용하고 normal Options 의미 해석 및 wire 소비 경계를 연결한다. 해시 검산 재구현·새 admission/public endpoint/서명 목적을 임의 추가하지 않는다.
+- 읽기 검토 결과: 과거 Claude 후보 SOURCE_GO0만으로 후속 P3의 adapter source 승인을 부정하지 않는다. 실제 exe/cwd/argv/env/Secret·도구 효과·SDK SID 귀속은 미확정이므로 임의 권위/default를 만들지 않는다. 해당 공급자 부재는 명시 거절하고 합성 응답을 실제 Agent 성공으로 승격하지 않는다.
+- 실제 DB·권한·키·보호 파일·서비스·Agent·native 컴파일 실행0. 전체 계획 및 FN06/FN08 부분 구현 상태 유지. PMO에 PR104와 다음 범위를 공유했다.
+
+- Main 읽기 오류: 확인 전 apps/connector/secondary/start-options.ts 및 sdk-query-factory.ts 경로를 사용해 PathNotFound2건. 이전 동일 경로 추측 오류와 합쳐 반복 기준에 도달했으므로 해당 추측 읽기 방법을 중단하고 read-only 담당자가 확인한 정확 경로만 인수한다. 제품 변경/실행 영향0, 담당자 승인 구현은 계속한다.
+
+- Primary 구현 분해: normal-start-wire 신규 source, normal-claude-start-wire 단위/여정 시험, 기존 secondary/start-options 순수 params 검산 추출(기존 호출 보존), claude-start-options 인접 시험 최대5경로. Main은 문서 소유. 독립 검수자는 완료 후 정상 권위 소비·synthetic 회귀·단발/UNKNOWN·합성 한계를 검토한다. 통상 TypeScript noEmit은 허용된 개발 검증이고 제외된 컴파일은 실제 native C# 실행 범위임을 명확히 전달했다.
+
+- normal Claude adapter 동결4경로 검수: Primary14P+기한delta1P/type0, Main 최종15P/0F/0SKIP15422.8778ms exit0, 독립C0/I0/M0. 신규모듈RED 및 기한timer RED→GREEN 보존. 실제current/driver/DB/파일시스템은시험대역이고 실SDK/키/DB/서비스/Agent0. 결과보고 FN08_D1_NORMAL_CLAUDE_ADAPTER_SOURCE_RESULT_20261114.md. FN06/FN08 및 전체계획완료아님.
