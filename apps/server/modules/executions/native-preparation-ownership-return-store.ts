@@ -7,6 +7,7 @@ import {readNativeReturnAuthority,readNativeOwnershipRequest,readNativeOwnership
 import {planNativeOwnershipRequest,planNativeOwnershipAcceptance,readNativeOwnershipBasis,type NativeOwnershipBasis,type NativeOwnershipRequestPlan} from './native-preparation-ownership-return.ts';
 import {publicKeyFingerprint} from '../connections/registration-proof.ts';
 import {AuthFailure} from '../access/repository.ts';
+import {nativeHostScope,nativeHostVerified,nativeHostWrite} from './native-host-storage.ts';
 
 function fail(code='NATIVE_CONTEXT_CHANGED',status=412):never{throw new AuthFailure(code,status);}
 type Fresh={authority:ReturnType<typeof readNativeReturnAuthority>;receipt:ReturnType<typeof readNativeConsumeReceipt>;basis:NativeOwnershipBasis;nowMs:number;expiresAt:string;spki:string};
@@ -74,8 +75,13 @@ export class NativeOwnershipReturnStore{
   const p=this.#plan(c,f,input,this.#allocate(3),this.#nonce()),scope=p.binding.snapshot.scope,args=[scope.projectId,scope.executionId,scope.executionGeneration];
   if((await this.#query(c,'SELECT * FROM anvil.execution_ownership_heads WHERE project_id=$1 AND execution_id=$2 AND execution_generation=$3 FOR UPDATE',args)).rows.length||(await this.#query(c,'SELECT * FROM anvil.execution_ownership_events WHERE project_id=$1 AND execution_id=$2 AND execution_generation=$3 ORDER BY sequence DESC LIMIT 1',args)).rows.length)fail('NATIVE_REQUEST_CONFLICT',409);
   const sequence=await this.#sequence(c,scope.projectId);
+  if(nativeHostScope(c.db)){
+   const packet={input,proposed:{bindingId:p.binding.ref.id,anchorId:p.response.candidateAnchor.ref.id,eventId:p.requestEvent.ref.id,nonce:p.response.request.nonce,basis:p.basis,at:p.binding.snapshot.at,expiresAt:p.binding.snapshot.expiresAt}};
+   await nativeHostWrite(c.db,nativeHostVerified(c.db,packet),'OWNERSHIP_REQUEST',packet,{plan:p});
+  }else{
   const inserted=await this.#query(c,'INSERT INTO anvil.native_preparation_ownership_bindings(project_id,execution_id,execution_generation,id,authority_id,consume_receipt_id,request_id,content_hash,snapshot_json,plan_json) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb)',[...args,p.binding.ref.id,p.authority.authorityId,p.input.consumeReceiptRef.id,p.input.requestId,p.binding.ref.contentHash,canonicalJson(p.binding.snapshot),canonicalJson(p)]);if(inserted.rowCount!==1)fail();
   await this.#insertEvent(c,p,p.requestEvent,sequence+1,p.response.candidateAnchor);
+  }
   const last=await this.#fresh(c);this.#sameBasis(p,last);
   if(last.nowMs>=Date.parse(p.response.request.expiresAt)||Math.min(Date.parse(last.expiresAt),Date.parse(last.basis.expiresAt))<Date.parse(p.response.request.expiresAt))fail('NATIVE_SOURCE_EXPIRED');
   return {payload:p.response,expiresAt:p.response.request.expiresAt};
@@ -97,12 +103,17 @@ export class NativeOwnershipReturnStore{
   const tail=(await this.#query(c,'SELECT * FROM anvil.execution_ownership_events WHERE project_id=$1 AND execution_id=$2 AND execution_generation=$3 ORDER BY sequence DESC LIMIT 1',args)).rows;
   if(tail.length!==1||tail[0].content_hash!==p.requestEvent.ref.contentHash||tail[0].event_id!==p.requestEvent.ref.id||!nativeSame(tail[0].snapshot_json,p.requestEvent.snapshot))fail();
   const accepted=planNativeOwnershipAcceptance({request:p,input,spki:f.spki,nowMs:f.nowMs,ids:this.#allocate(5)});let sequence=await this.#sequence(c,a.scope.projectId);
+  if(nativeHostScope(c.db)){
+   const packet={packet:input,ids:{observationId:accepted.observation.ref.id,acceptedId:accepted.events[0]!.ref.id,adoptedId:accepted.events[1]!.ref.id,headId:accepted.head.ref.id,receiptId:accepted.receipt.ref.id,at:accepted.receipt.snapshot.acceptedAt}};
+   await nativeHostWrite(c.db,nativeHostVerified(c.db,packet),'OWNERSHIP_ACCEPT',packet,accepted);
+  }else{
   const insert=async(sql:string,values:unknown[])=>{if((await this.#query(c,sql,values)).rowCount!==1)fail();};
   await insert('INSERT INTO anvil.execution_ownership_observations(project_id,execution_id,execution_generation,observation_id,request_id,content_hash,snapshot_json,accepted_event_ref,nonce_digest) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9)',[...args,accepted.observation.ref.id,p.requestEvent.ref.id,accepted.observation.ref.contentHash,canonicalJson(accepted.observation.snapshot),canonicalJson(accepted.events[0]!.ref),contentHash(Buffer.from(p.response.request.nonce,'base64url'))]);
   for(const e of accepted.events)await this.#insertEvent(c,p,e,++sequence,null);
   await insert('INSERT INTO anvil.execution_ownership_anchors(project_id,execution_id,execution_generation,anchor_id,content_hash,snapshot_json,preparation_event_ref,adoption_event_ref,native_return_binding_ref) VALUES($1,$2,$3,$4,$5,$6::jsonb,NULL,$7::jsonb,$8::jsonb)',[...args,p.response.candidateAnchor.ref.id,p.response.candidateAnchor.ref.contentHash,canonicalJson(p.response.candidateAnchor.snapshot),canonicalJson(accepted.events[1]!.ref),canonicalJson(p.binding.ref)]);
   await insert('INSERT INTO anvil.execution_ownership_heads(project_id,execution_id,execution_generation,id,head_generation,content_hash,snapshot_json) VALUES($1,$2,$3,$4,1,$5,$6::jsonb)',[...args,accepted.head.ref.id,accepted.head.ref.contentHash,canonicalJson(accepted.head.snapshot)]);
   await insert('INSERT INTO anvil.native_preparation_ownership_results(project_id,binding_id,id,packet_hash,content_hash,snapshot_json) VALUES($1,$2,$3,$4,$5,$6::jsonb)',[a.scope.projectId,p.binding.ref.id,accepted.receipt.ref.id,nativeHash(input),accepted.receipt.ref.contentHash,canonicalJson(accepted.receipt.snapshot)]);
+  }
   const last=await this.#fresh(c);this.#sameBasis(p,last);
   if(last.nowMs>=Date.parse(p.response.request.expiresAt)||Math.min(Date.parse(last.expiresAt),Date.parse(last.basis.expiresAt))<Date.parse(p.response.request.expiresAt))fail('NATIVE_SOURCE_EXPIRED');
   return {payload:accepted.response,expiresAt:p.response.request.expiresAt};

@@ -1,0 +1,294 @@
+-- 미적용: 채택된 native host 다섯 목적과 기존 receive 선행 접근만 제공한다.
+-- Node ECDSA 검증은 신뢰 구성요소다. 임의 SQL 실행 app 침해에 대한 독립 암호 방어가 아니다.
+BEGIN;
+DO $$BEGIN
+ IF current_user<>'anvil_v3_migrator' OR session_user<>'anvil_v3_migrator' THEN RAISE EXCEPTION 'NATIVE_MIGRATOR_REQUIRED';END IF;
+END;$$;
+
+-- FORCE RLS는 소유자만으로 우회하지 않는다. app 직접 접근과 PUBLIC 접근은 그대로 닫힌다.
+DO $$DECLARE t text;BEGIN
+ FOREACH t IN ARRAY ARRAY['native_preparation_authorities','native_preparation_authority_events','native_preparation_ownership_bindings','native_preparation_ownership_results','execution_ownership_events','execution_ownership_observations','execution_ownership_anchors','execution_ownership_heads'] LOOP
+  EXECUTE format('CREATE POLICY fn94_definer_read ON anvil.%I FOR SELECT TO anvil_v3_migrator USING(true)',t);
+  EXECUTE format('CREATE POLICY fn94_definer_insert ON anvil.%I FOR INSERT TO anvil_v3_migrator WITH CHECK(true)',t);
+  EXECUTE format('REVOKE ALL ON anvil.%I FROM PUBLIC,anvil_v3_app',t);
+ END LOOP;
+END;$$;
+
+CREATE FUNCTION anvil.fn94_host_scope(authority_id uuid,digest text,purpose text,expected_tx text) RETURNS anvil.native_preparation_authorities LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE n anvil.native_preparation_authorities;pid uuid;a jsonb;s jsonb;session_row record;registration_row record;head anvil.project_writer_authority_heads;policy record;rule jsonb;read_allowed boolean=false;prepare_allowed boolean=false;prepare_denied boolean=false;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR current_user<>'anvil_v3_migrator' OR expected_tx IS DISTINCT FROM txid_current()::text OR current_setting('transaction_isolation')<>'read committed'
+  OR digest IS NULL OR digest!~'^[a-f0-9]{64}$' OR purpose IS NULL OR purpose NOT IN('CURRENT','CHALLENGE','CONSUME','OWNERSHIP_REQUEST','OWNERSHIP_ACCEPT') THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ SELECT project_id INTO pid FROM anvil.native_preparation_authorities x WHERE x.id=authority_id AND x.credential_digest=digest;
+ IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_AUTH_REQUIRED' USING ERRCODE='42501';END IF;
+ PERFORM 1 FROM anvil.projects p WHERE p.id=pid AND p.archived_at IS NULL FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_AUTH_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT * INTO n FROM anvil.native_preparation_authorities x WHERE x.project_id=pid AND x.id=authority_id AND x.credential_digest=digest FOR UPDATE;
+ IF NOT FOUND OR NOT anvil.native_preparation_authority_complete(pid,authority_id) THEN RAISE EXCEPTION 'NATIVE_SOURCE_UNAVAILABLE';END IF;
+ a=n.snapshot_json;s=a->'subject';
+ IF (a->>'expiresAt')::timestamptz<=clock_timestamp() OR purpose IN('OWNERSHIP_REQUEST','OWNERSHIP_ACCEPT') AND a->'schemaVersion'<>'2'::jsonb THEN RAISE EXCEPTION 'NATIVE_AUTH_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT u.status,u.revoked_at user_revoked_at,u.credential_generation current_generation,c.revoked_at client_revoked_at,s.* INTO session_row
+ FROM anvil.auth_sessions s JOIN anvil.users u ON u.id=s.user_id JOIN anvil.clients c ON c.id=s.client_id AND c.user_id=s.user_id
+ WHERE s.id=(a->'subject'->>'humanSessionId')::uuid AND s.user_id=(a->'subject'->>'userId')::uuid AND s.client_id=(a->'subject'->>'clientId')::uuid FOR UPDATE OF u,s,c;
+ IF NOT FOUND OR session_row.status<>'ACTIVE' OR session_row.user_revoked_at IS NOT NULL OR session_row.client_revoked_at IS NOT NULL OR session_row.revoked_at IS NOT NULL
+  OR session_row.credential_generation::text<>a->'subject'->>'credentialGeneration' OR session_row.current_generation<>session_row.credential_generation
+  OR session_row.idle_expires_at<=clock_timestamp() OR session_row.absolute_expires_at<=clock_timestamp() THEN RAISE EXCEPTION 'NATIVE_AUTH_REQUIRED' USING ERRCODE='42501';END IF;
+ PERFORM 1 FROM anvil.project_members m WHERE m.project_id=pid AND m.user_id=session_row.user_id AND m.participation='OWNER' AND m.revoked_at IS NULL FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ PERFORM 1 FROM anvil.project_control c WHERE c.project_id=pid AND c.actor_id=session_row.user_id AND c.client_id=session_row.client_id AND c.generation::text=s->>'controlGeneration' AND c.revoked_at IS NULL FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ SELECT r.*,h.public_key_spki,h.revoked_at host_revoked_at,h.status host_state,h.owner_user_id,h.client_id host_client,h.credential_generation host_generation INTO registration_row
+ FROM anvil.connector_registrations r JOIN anvil.connectors h ON h.project_id=r.project_id AND h.id=r.connector_id AND h.registration_id=r.id
+ WHERE r.project_id=pid AND r.id=(a->'scope'->'registrationRef'->>'id')::uuid FOR SHARE OF r,h;
+ IF NOT FOUND OR NOT anvil.connector_basis_current(registration_row.id,false) OR registration_row.revoked_at IS NOT NULL OR registration_row.host_revoked_at IS NOT NULL
+  OR registration_row.state<>'ISSUED' OR registration_row.host_state<>'TRUSTED' OR registration_row.expires_at<=clock_timestamp()
+  OR registration_row.owner_user_id<>session_row.user_id OR registration_row.host_client<>session_row.client_id OR registration_row.host_generation<>session_row.credential_generation
+ THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ SELECT h.id,h.head_version,v.content_hash,v.rules_json,v.reason,v.review_refs INTO policy FROM anvil.permission_policies h JOIN anvil.permission_policy_versions v ON v.project_id=h.project_id AND v.policy_id=h.id AND v.version=h.head_version WHERE h.project_id=pid FOR SHARE OF h;
+ IF NOT FOUND OR policy.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('rules',policy.rules_json,'reason',policy.reason,'reviewRefs',policy.review_refs)) THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(policy.rules_json) LOOP
+  IF rule->'subjectRef'->>'kind'='HUMAN' AND rule->'subjectRef'->>'userId'=session_row.user_id::text AND (rule->>'expiresAt')::timestamptz>clock_timestamp()
+   AND EXISTS(SELECT 1 FROM jsonb_array_elements(rule->'targetScopes') t WHERE t->>'kind'='PROJECT' AND t->>'projectId'=pid::text) THEN
+   IF rule->'operations'?'readNativePreparationAuthority' THEN IF rule->>'disposition'<>'AUTO' THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED';END IF;read_allowed=true;END IF;
+   IF rule->'operations'?'prepareNativeBoundary' THEN IF rule->>'disposition' NOT IN('AUTO','REQUIRE_APPROVAL') THEN prepare_denied=true;ELSE prepare_allowed=true;END IF;END IF;
+  END IF;
+ END LOOP;
+ IF NOT read_allowed THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ -- replay에서도 공통 read 권한은 유지한다. 원 Node 서명 검산 뒤 생략하는 것은 freshHost뿐이다.
+ IF purpose='CONSUME' AND EXISTS(SELECT 1 FROM anvil.native_preparation_authority_events e WHERE e.project_id=pid AND e.authority_id=n.id AND e.kind='CONSUME_COMMITTED') THEN RETURN n;END IF;
+ SELECT * INTO head FROM anvil.project_writer_authority_heads h WHERE h.project_id=pid FOR SHARE;
+ IF NOT FOUND OR head.phase<>'RESERVED' OR head.expires_at<=clock_timestamp() OR a->'scope'->'writerHeadRef' IS DISTINCT FROM jsonb_build_object('id',head.id,'version',head.head_generation,'contentHash',head.content_hash)
+  OR session_row.reauth_until IS NULL OR session_row.reauth_until<=clock_timestamp() THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ IF NOT prepare_allowed OR prepare_denied OR a->'policyRef' IS DISTINCT FROM jsonb_build_object('id',policy.id,'version',policy.head_version,'contentHash',policy.content_hash) THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ RETURN n;
+END;$$;
+ALTER FUNCTION anvil.fn94_host_scope(uuid,text,text,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn94_host_scope(uuid,text,text,text) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.native_host_material(authority_id uuid,digest text,purpose text,expected_tx text) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE n anvil.native_preparation_authorities;a jsonb;events jsonb;b jsonb;r jsonb;heads jsonb;tail jsonb;seq bigint;used bigint;slots bigint;at_time timestamptz;until_time timestamptz;
+BEGIN
+ n=anvil.fn94_host_scope(authority_id,digest,purpose,expected_tx);a=n.snapshot_json;
+ SELECT COALESCE(jsonb_agg(to_jsonb(e) ORDER BY e.sequence),'[]'::jsonb) INTO events FROM anvil.native_preparation_authority_events e WHERE e.project_id=n.project_id AND e.authority_id=n.id;
+ IF jsonb_array_length(events) NOT BETWEEN 1 AND 16 THEN RAISE EXCEPTION 'NATIVE_SOURCE_UNAVAILABLE';END IF;
+ SELECT COALESCE(jsonb_agg(to_jsonb(x)),'[]'::jsonb) INTO b FROM anvil.native_preparation_ownership_bindings x WHERE x.project_id=n.project_id AND x.authority_id=n.id;
+ SELECT COALESCE(jsonb_agg(to_jsonb(x)),'[]'::jsonb) INTO r FROM anvil.native_preparation_ownership_results x WHERE x.project_id=n.project_id AND x.binding_id=(b->0->>'id')::uuid;
+ SELECT COALESCE(jsonb_agg(to_jsonb(x)),'[]'::jsonb) INTO heads FROM anvil.execution_ownership_heads x WHERE x.project_id=n.project_id AND x.execution_id=(a->'scope'->>'executionId')::uuid AND x.execution_generation=(a->'scope'->>'executionGeneration')::bigint;
+ SELECT COALESCE(jsonb_agg(to_jsonb(x)),'[]'::jsonb) INTO tail FROM(SELECT * FROM anvil.execution_ownership_events e WHERE e.project_id=n.project_id AND e.execution_id=(a->'scope'->>'executionId')::uuid AND e.execution_generation=(a->'scope'->>'executionGeneration')::bigint ORDER BY e.sequence DESC LIMIT 1)x;
+ SELECT COALESCE(MAX(project_sequence),0) INTO seq FROM anvil.execution_ownership_events WHERE project_id=n.project_id;
+ SELECT COALESCE(sum(canonical_bytes),0),count(*) INTO used,slots FROM(SELECT canonical_bytes FROM anvil.native_preparation_authorities WHERE project_id=n.project_id UNION ALL SELECT canonical_bytes FROM anvil.native_preparation_authority_events WHERE project_id=n.project_id)x;
+ at_time=clock_timestamp();until_time=(a->>'expiresAt')::timestamptz;
+ SELECT least(until_time,s.idle_expires_at,s.absolute_expires_at) INTO until_time FROM anvil.auth_sessions s WHERE s.id=(a->'subject'->>'humanSessionId')::uuid;
+ IF until_time IS NULL OR until_time<=at_time OR expected_tx<>txid_current()::text THEN RAISE EXCEPTION 'NATIVE_SOURCE_EXPIRED';END IF;
+ RETURN jsonb_build_object('row',to_jsonb(n)-'credential_digest','events',events,'ownership',jsonb_build_object('bindings',b,'results',r,'heads',heads,'tail',tail,'sequence',seq),'nativeUsage',jsonb_build_object('bytes',used,'slots',slots),'transactionId',expected_tx,'checkedAt',to_char(at_time AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'expiresAt',to_char(until_time AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+END;$$;
+ALTER FUNCTION anvil.native_host_material(uuid,text,text,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.native_host_material(uuid,text,text,text) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.native_host_material(uuid,text,text,text) TO anvil_v3_app;
+
+CREATE FUNCTION anvil.fn94_wrap(i uuid,s jsonb) RETURNS jsonb LANGUAGE sql IMMUTABLE STRICT SET search_path=pg_catalog AS $$
+ SELECT jsonb_build_object('ref',anvil.native_return_ref(i,anvil.ownership_content_hash(s)),'snapshot',s);
+$$;
+ALTER FUNCTION anvil.fn94_wrap(uuid,jsonb) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn94_wrap(uuid,jsonb) FROM PUBLIC,anvil_v3_app;
+
+-- 내부 구성 함수만 이 helper에 도달한다. app에는 임의 event append가 없다.
+CREATE FUNCTION anvil.fn94_native_event(n anvil.native_preparation_authorities,i uuid,k text,payload jsonb,at_text text,end_text text) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE tail anvil.native_preparation_authority_events;g jsonb=n.snapshot_json;s jsonb;e jsonb;seq bigint;
+BEGIN
+ IF current_user<>'anvil_v3_migrator' OR k NOT IN('CHALLENGE_ISSUED','REQUEST_PROOF_ACCEPTED','CONSUME_COMMITTED') OR i IS NULL
+  OR at_text::timestamptz>clock_timestamp() OR end_text::timestamptz<=clock_timestamp() OR end_text::timestamptz>(g->>'expiresAt')::timestamptz THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED';END IF;
+ SELECT * INTO tail FROM anvil.native_preparation_authority_events WHERE project_id=n.project_id AND authority_id=n.id ORDER BY sequence DESC LIMIT 1;
+ IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_SOURCE_UNAVAILABLE';END IF;
+ SELECT COALESCE(MAX(project_sequence),0)+1 INTO seq FROM anvil.native_preparation_authority_events WHERE project_id=n.project_id;
+ s=jsonb_build_object('schemaVersion',1,'purpose','NATIVE_PREPARATION_AUTHORITY_EVENT','projectId',n.project_id,'authorityRef',anvil.native_return_ref(n.id,n.content_hash),'sequence',tail.sequence+1,'previousRef',anvil.native_return_ref(tail.id,tail.content_hash),'kind',k,'actor',jsonb_build_object('kind','REGISTERED_HOST','registrationRef',g->'scope'->'registrationRef','credentialId',g->'credentialId','credentialGeneration',g->'credentialGeneration'),'payload',payload,'at',at_text,'expiresAt',end_text);
+ e=anvil.fn94_wrap(i,s);
+ INSERT INTO anvil.native_preparation_authority_events(project_id,id,version,authority_id,project_sequence,sequence,previous_ref,content_hash,snapshot_json,canonical_bytes)
+ VALUES(n.project_id,i,1,n.id,seq,tail.sequence+1,s->'previousRef',e->'ref'->>'contentHash',s,anvil.native_preparation_json_bytes(e));
+ RETURN e;
+END;$$;
+ALTER FUNCTION anvil.fn94_native_event(anvil.native_preparation_authorities,uuid,text,jsonb,text,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn94_native_event(anvil.native_preparation_authorities,uuid,text,jsonb,text,text) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.native_host_challenge(authority_id uuid,digest text,input jsonb,proposed jsonb,expected_tx text) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE n anvil.native_preparation_authorities;old anvil.native_preparation_authority_events;target jsonb;payload jsonb;event jsonb;nonce_bytes bytea;
+BEGIN
+ n=anvil.fn94_host_scope(authority_id,digest,'CHALLENGE',expected_tx);
+ IF NOT anvil.fn76_exact(input,ARRAY['schemaVersion','requestId','authorityRef','localAttemptRef','target']) OR input->'schemaVersion'<>'1'::jsonb OR input->'authorityRef' IS DISTINCT FROM anvil.native_return_ref(n.id,n.content_hash)
+  OR NOT anvil.writer_authority_ref(input->'localAttemptRef') OR NOT anvil.fn76_exact(proposed,ARRAY['eventId','serverNonce','issuedAt','expiresAt']) THEN RAISE EXCEPTION 'NATIVE_INPUT_INVALID';END IF;
+ PERFORM (input->>'requestId')::uuid;PERFORM (proposed->>'eventId')::uuid;target=input->'target';
+ IF NOT anvil.fn76_exact(target,ARRAY['method','path','queryHash','bodyHash']) OR target->>'method'<>'POST' OR target->>'path'<>'/api/v1/connector/native-preparations/'||n.id::text||'/consume'
+  OR target->>'queryHash'<>anvil.ownership_content_hash('{}'::jsonb) OR target->>'bodyHash'!~'^[a-f0-9]{64}$' THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED';END IF;
+ SELECT * INTO old FROM anvil.native_preparation_authority_events WHERE project_id=n.project_id AND authority_id=n.id AND kind='CHALLENGE_ISSUED';
+ IF FOUND THEN
+  IF old.snapshot_json->'payload'->'requestId' IS DISTINCT FROM input->'requestId' OR old.snapshot_json->'payload'->'localAttemptRef' IS DISTINCT FROM input->'localAttemptRef' OR old.snapshot_json->'payload'->'target' IS DISTINCT FROM target THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT';END IF;
+  RETURN jsonb_build_object('event',jsonb_build_object('ref',anvil.native_return_ref(old.id,old.content_hash),'snapshot',old.snapshot_json));
+ END IF;
+ nonce_bytes=decode(translate(proposed->>'serverNonce','-_','+/')||'=','base64');
+ IF octet_length(nonce_bytes)<>32 OR rtrim(translate(encode(nonce_bytes,'base64'),'+/','-_'),'=')<>proposed->>'serverNonce'
+  OR (proposed->>'issuedAt')::timestamptz<(n.snapshot_json->>'issuedAt')::timestamptz OR (proposed->>'issuedAt')::timestamptz>clock_timestamp()
+  OR (proposed->>'expiresAt')::timestamptz>(proposed->>'issuedAt')::timestamptz+interval '30 seconds' THEN RAISE EXCEPTION 'NATIVE_INPUT_INVALID';END IF;
+ payload=jsonb_build_object('requestId',input->'requestId','localAttemptRef',input->'localAttemptRef','target',target,'serverNonce',proposed->'serverNonce','nonceDigest',anvil.fn76_hash_text(proposed->>'serverNonce'),'issuedAt',proposed->'issuedAt','expiresAt',proposed->'expiresAt');
+ event=anvil.fn94_native_event(n,(proposed->>'eventId')::uuid,'CHALLENGE_ISSUED',payload,proposed->>'issuedAt',proposed->>'expiresAt');
+ PERFORM anvil.native_preparation_capacity(n.project_id);PERFORM anvil.fn94_host_scope(authority_id,digest,'CHALLENGE',expected_tx);
+ RETURN jsonb_build_object('event',event);
+END;$$;
+ALTER FUNCTION anvil.native_host_challenge(uuid,text,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.native_host_challenge(uuid,text,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.native_host_challenge(uuid,text,jsonb,jsonb,text) TO anvil_v3_app;
+
+CREATE FUNCTION anvil.native_host_consume(authority_id uuid,digest text,proof jsonb,signature text,body jsonb,ids jsonb,expected_tx text) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE n anvil.native_preparation_authorities;g jsonb;challenge anvil.native_preparation_authority_events;prior anvil.native_preparation_authority_events;c jsonb;request_hash text;pe jsonb;ce jsonb;receipt jsonb;raw_signature bytea;
+BEGIN
+ n=anvil.fn94_host_scope(authority_id,digest,'CONSUME',expected_tx);g=n.snapshot_json;
+ IF NOT anvil.fn76_exact(body,ARRAY['schemaVersion','authorityRef','localAttemptRef']) OR body->'schemaVersion'<>'1'::jsonb OR body->'authorityRef' IS DISTINCT FROM anvil.native_return_ref(n.id,n.content_hash) OR NOT anvil.writer_authority_ref(body->'localAttemptRef')
+  OR NOT anvil.fn76_exact(proof,ARRAY['requestId','method','path','queryHash','bodyHash','authorityRef','credentialGeneration','serverNonce']) OR proof->'authorityRef' IS DISTINCT FROM body->'authorityRef' OR proof->'credentialGeneration' IS DISTINCT FROM g->'credentialGeneration'
+  OR proof->>'bodyHash'<>anvil.ownership_content_hash(body) THEN RAISE EXCEPTION 'NATIVE_INPUT_INVALID';END IF;
+ SELECT * INTO challenge FROM anvil.native_preparation_authority_events WHERE project_id=n.project_id AND authority_id=n.id AND kind='CHALLENGE_ISSUED';
+ IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT';END IF;c=challenge.snapshot_json->'payload';request_hash=anvil.ownership_content_hash(proof);
+ IF proof->'requestId' IS DISTINCT FROM c->'requestId' OR proof->'serverNonce' IS DISTINCT FROM c->'serverNonce' OR body->'localAttemptRef' IS DISTINCT FROM c->'localAttemptRef'
+  OR c->'target' IS DISTINCT FROM jsonb_build_object('method',proof->'method','path',proof->'path','queryHash',proof->'queryHash','bodyHash',proof->'bodyHash') THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT';END IF;
+ raw_signature=decode(translate(signature,'-_','+/')||'==','base64');
+ IF octet_length(raw_signature)<>64 OR rtrim(translate(replace(encode(raw_signature,'base64'),E'\n',''),'+/','-_'),'=')<>signature THEN RAISE EXCEPTION 'NATIVE_INPUT_INVALID';END IF;
+ SELECT * INTO prior FROM anvil.native_preparation_authority_events WHERE project_id=n.project_id AND authority_id=n.id AND kind='CONSUME_COMMITTED';
+ IF FOUND THEN
+  IF prior.snapshot_json->'payload'->>'requestHash'<>request_hash OR prior.snapshot_json->'payload'->'localAttemptRef' IS DISTINCT FROM body->'localAttemptRef' THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT';END IF;
+  RETURN jsonb_build_object('receipt',prior.snapshot_json->'payload'->'receipt','recordRef',anvil.native_return_ref(prior.id,prior.content_hash),'disposition','REPLAY_ONLY','factoryPermit',NULL);
+ END IF;
+ IF NOT anvil.fn76_exact(ids,ARRAY['proofEventId','receiptId','consumeEventId','permitId','at','expiresAt']) OR (SELECT count(DISTINCT v) FROM unnest(ARRAY[ids->>'proofEventId',ids->>'receiptId',ids->>'consumeEventId',ids->>'permitId'])v)<>4
+  OR (ids->>'at')::timestamptz<(c->>'issuedAt')::timestamptz OR (ids->>'expiresAt')::timestamptz>(c->>'expiresAt')::timestamptz OR (ids->>'expiresAt')::timestamptz>(ids->>'at')::timestamptz+interval '30 seconds' THEN RAISE EXCEPTION 'NATIVE_INPUT_INVALID';END IF;
+ PERFORM (ids->>'permitId')::uuid;
+ pe=anvil.fn94_native_event(n,(ids->>'proofEventId')::uuid,'REQUEST_PROOF_ACCEPTED',jsonb_build_object('challengeRef',anvil.native_return_ref(challenge.id,challenge.content_hash),'requestId',proof->'requestId','requestHash',request_hash,'signatureDigest',encode(sha256(raw_signature),'hex'),'localAttemptRef',body->'localAttemptRef'),ids->>'at',ids->>'expiresAt');
+ receipt=anvil.fn94_wrap((ids->>'receiptId')::uuid,jsonb_build_object('schemaVersion',1,'purpose','NATIVE_PREPARATION_CONSUME_RECEIPT','authorityRef',body->'authorityRef','preparationRef',g->'scope'->'preparationRef','writerHeadRef',g->'scope'->'writerHeadRef','requestId',proof->'requestId','requestHash',request_hash,'challengeRef',anvil.native_return_ref(challenge.id,challenge.content_hash),'proofEventRef',pe->'ref','localAttemptRef',body->'localAttemptRef','at',ids->'at','expiresAt',ids->'expiresAt','codingAgentExecutionAuthorized',false,'agentDispatchPerformed',false));
+ ce=anvil.fn94_native_event(n,(ids->>'consumeEventId')::uuid,'CONSUME_COMMITTED',jsonb_build_object('challengeRef',anvil.native_return_ref(challenge.id,challenge.content_hash),'proofEventRef',pe->'ref','requestId',proof->'requestId','requestHash',request_hash,'localAttemptRef',body->'localAttemptRef','writerHeadRef',g->'scope'->'writerHeadRef','receipt',receipt),ids->>'at',ids->>'expiresAt');
+ IF NOT anvil.native_preparation_event_history_valid(n.project_id,n.id) THEN RAISE EXCEPTION 'NATIVE_SOURCE_UNAVAILABLE';END IF;
+ PERFORM anvil.native_preparation_capacity(n.project_id);PERFORM anvil.fn94_host_scope(authority_id,digest,'CONSUME',expected_tx);
+ RETURN jsonb_build_object('proofEvent',pe,'consumeEvent',ce,'receipt',receipt);
+END;$$;
+ALTER FUNCTION anvil.native_host_consume(uuid,text,jsonb,text,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.native_host_consume(uuid,text,jsonb,text,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.native_host_consume(uuid,text,jsonb,text,jsonb,jsonb,text) TO anvil_v3_app;
+
+-- 기존 synthetic/v1 차단은 유지한다. 원 native binding을 가진 최초 INSERT만 허용한다.
+-- deferred 링크 검사는 SD 목적 함수 반환 후 app COMMIT에서도 같은 원 표를 읽어야 한다.
+-- 0039 본문/trigger/검산 조건은 바꾸지 않고 이 trigger의 실행 문맥만 한정한다.
+ALTER FUNCTION anvil.ownership_observation_links_guard() SECURITY DEFINER;
+ALTER FUNCTION anvil.ownership_observation_links_guard() SET search_path=pg_catalog;
+ALTER FUNCTION anvil.ownership_observation_links_guard() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.ownership_observation_links_guard() FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.ownership_anchor_links_guard() SECURITY DEFINER;
+ALTER FUNCTION anvil.ownership_anchor_links_guard() SET search_path=pg_catalog;
+ALTER FUNCTION anvil.ownership_anchor_links_guard() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.ownership_anchor_links_guard() FROM PUBLIC,anvil_v3_app;
+-- 기존 shape/links/head CAS 및 deferred native_return_final은 그대로 실행된다.
+CREATE OR REPLACE FUNCTION anvil.ownership_authority_unavailable() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+DECLARE r jsonb=to_jsonb(NEW);b anvil.native_preparation_ownership_bindings;
+BEGIN
+ IF TG_OP<>'INSERT' OR session_user<>'anvil_v3_app' OR current_user<>'anvil_v3_migrator'
+  OR TG_TABLE_NAME NOT IN('execution_ownership_events','execution_ownership_observations','execution_ownership_anchors','execution_ownership_heads')
+  OR current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'OWNERSHIP_AUTHORITY_NOT_ACTIVATED' USING ERRCODE='42501';END IF;
+ SELECT * INTO b FROM anvil.native_preparation_ownership_bindings x WHERE x.project_id=(r->>'project_id')::uuid AND x.execution_id=(r->>'execution_id')::uuid AND x.execution_generation=(r->>'execution_generation')::bigint;
+ IF NOT FOUND OR NOT anvil.native_return_parent_valid(b.project_id,b.id) OR (r->>'native_return_transaction')::bigint IS DISTINCT FROM txid_current()
+  OR (b.snapshot_json->>'expiresAt')::timestamptz<=clock_timestamp()
+  OR EXISTS(SELECT 1 FROM anvil.native_preparation_ownership_results x WHERE x.project_id=b.project_id AND x.binding_id=b.id)
+ THEN RAISE EXCEPTION 'OWNERSHIP_AUTHORITY_NOT_ACTIVATED' USING ERRCODE='42501';END IF;
+ IF TG_TABLE_NAME='execution_ownership_events' AND r->'snapshot_json'->>'kind'='OBSERVATION_REQUESTED' AND b.created_transaction<>txid_current() THEN RAISE EXCEPTION 'OWNERSHIP_AUTHORITY_NOT_ACTIVATED' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END;$$;
+
+CREATE FUNCTION anvil.fn94_ownership_event(p jsonb,e jsonb,project_seq bigint,candidate jsonb) RETURNS void LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s jsonb=e->'snapshot';
+BEGIN
+ IF current_user<>'anvil_v3_migrator' OR project_seq NOT BETWEEN 1 AND 9007199254740991 OR e->'ref'->>'contentHash' IS DISTINCT FROM anvil.ownership_content_hash(s) THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED';END IF;
+ INSERT INTO anvil.execution_ownership_events(project_id,execution_id,execution_generation,event_id,sequence,project_sequence,content_hash,snapshot_json,candidate_anchor_json,request_id)
+ VALUES((s->'scope'->>'projectId')::uuid,(s->'scope'->>'executionId')::uuid,(s->'scope'->>'executionGeneration')::bigint,(e->'ref'->>'id')::uuid,(s->>'sequence')::bigint,project_seq,e->'ref'->>'contentHash',s,candidate,CASE WHEN s->>'kind'='OBSERVATION_ACCEPTED' THEN (p->'requestEvent'->'ref'->>'id')::uuid ELSE NULL END);
+END;$$;
+ALTER FUNCTION anvil.fn94_ownership_event(jsonb,jsonb,bigint,jsonb) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn94_ownership_event(jsonb,jsonb,bigint,jsonb) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.native_host_ownership_request(authority_id uuid,digest text,input jsonb,proposed jsonb,expected_tx text) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE n anvil.native_preparation_authorities;c anvil.native_preparation_authority_events;old anvil.native_preparation_ownership_bindings;
+ g jsonb;receipt jsonb;ar jsonb;scope jsonb;basis jsonb;anchor jsonb;req jsonb;ev jsonb;binding jsonb;p jsonb;at_text text;end_text text;seq bigint;nonce_bytes bytea;
+BEGIN
+ n=anvil.fn94_host_scope(authority_id,digest,'OWNERSHIP_REQUEST',expected_tx);g=n.snapshot_json;ar=anvil.native_return_ref(n.id,n.content_hash);
+ SELECT * INTO c FROM anvil.native_preparation_authority_events x WHERE x.project_id=n.project_id AND x.authority_id=n.id AND x.kind='CONSUME_COMMITTED';
+ IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED';END IF;receipt=c.snapshot_json->'payload'->'receipt';
+ IF NOT anvil.fn76_exact(input,ARRAY['schemaVersion','requestId','authorityRef','consumeReceiptRef','localAttemptRef','processRef']) OR input->'schemaVersion' IS DISTINCT FROM '1'::jsonb
+  OR input->'authorityRef' IS DISTINCT FROM ar OR input->'consumeReceiptRef' IS DISTINCT FROM receipt->'ref' OR input->'localAttemptRef' IS DISTINCT FROM receipt->'snapshot'->'localAttemptRef'
+  OR NOT anvil.ownership_process_shape(input->'processRef') THEN RAISE EXCEPTION 'NATIVE_INPUT_INVALID';END IF;
+ SELECT * INTO old FROM anvil.native_preparation_ownership_bindings x WHERE x.project_id=n.project_id AND x.authority_id=n.id;
+ IF FOUND THEN
+  IF NOT anvil.native_return_parent_valid(old.project_id,old.id) OR old.plan_json->'input' IS DISTINCT FROM input THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT';END IF;
+  RETURN jsonb_build_object('plan',old.plan_json);
+ END IF;
+ IF NOT anvil.fn76_exact(proposed,ARRAY['bindingId','anchorId','eventId','nonce','basis','at','expiresAt']) OR (SELECT count(DISTINCT v) FROM unnest(ARRAY[proposed->>'bindingId',proposed->>'anchorId',proposed->>'eventId'])v)<>3 THEN RAISE EXCEPTION 'NATIVE_INPUT_INVALID';END IF;
+ at_text=proposed->>'at';end_text=proposed->>'expiresAt';basis=proposed->'basis';
+ IF at_text::timestamptz>clock_timestamp() OR end_text::timestamptz<=clock_timestamp() OR NOT anvil.fn76_exact(basis,ARRAY['authorityRef','consumeReceiptRef','nativeFactoryRef','registrationRef','sourceScopeHash','observerRef','runId','processGeneration','workerHash','checkedAt','expiresAt']) THEN RAISE EXCEPTION 'NATIVE_SOURCE_EXPIRED';END IF;
+ nonce_bytes=decode(translate(proposed->>'nonce','-_','+/')||'=','base64');
+ IF octet_length(nonce_bytes)<>32 OR rtrim(translate(encode(nonce_bytes,'base64'),'+/','-_'),'=')<>proposed->>'nonce' THEN RAISE EXCEPTION 'NATIVE_INPUT_INVALID';END IF;
+ scope=jsonb_build_object('installationId',g->'scope'->'installationId','projectId',n.project_id,'executionId',g->'scope'->'executionId','executionGeneration',g->'scope'->'executionGeneration');
+ IF EXISTS(SELECT 1 FROM anvil.execution_ownership_heads x WHERE x.project_id=n.project_id AND x.execution_id=(scope->>'executionId')::uuid AND x.execution_generation=(scope->>'executionGeneration')::bigint)
+  OR EXISTS(SELECT 1 FROM anvil.execution_ownership_events x WHERE x.project_id=n.project_id AND x.execution_id=(scope->>'executionId')::uuid AND x.execution_generation=(scope->>'executionGeneration')::bigint) THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT';END IF;
+ anchor=anvil.fn94_wrap((proposed->>'anchorId')::uuid,jsonb_build_object('schemaVersion',2,'purpose','PROCESS_OWNERSHIP_ANCHOR','transport','NATIVE_PREPARATION_RETURN','scope',scope||jsonb_build_object('executorRegistrationRef',g->'scope'->'registrationRef'),
+  'parent',jsonb_build_object('authorityRef',ar,'consumeReceiptRef',receipt->'ref','localAttemptRef',input->'localAttemptRef'),'processRef',input->'processRef','observerRef',basis->'observerRef','recordedAt',at_text,'expiresAt',end_text,'state','BOUND','fileSandboxVerified',false,'executionAuthorized',false,'dispatchPerformed',false));
+ req=scope||jsonb_build_object('protocolVersion',1,'purpose','OWNERSHIP_OBSERVATION','registrationRef',g->'scope'->'registrationRef','publicKeyFingerprint',g->'scope'->'hostPublicKeyFingerprint','observerRef',basis->'observerRef','anchorRef',anchor->'ref','preparationRef',g->'scope'->'preparationRef','phase','BOOTSTRAP_PREPARED','expectedHeadRef',NULL,'nonce',proposed->'nonce','requestedAt',at_text,'expiresAt',end_text);
+ ev=anvil.fn94_wrap((proposed->>'eventId')::uuid,jsonb_build_object('schemaVersion',1,'purpose','OWNERSHIP_EVENT','scope',scope,'sequence',1,'previousRef',NULL,'kind','OBSERVATION_REQUESTED','subject',g->'subject','registrationRef',g->'scope'->'registrationRef','payload',jsonb_build_object('request',req,'processRef',input->'processRef'),'at',at_text,'expiresAt',end_text)||(g->'parent'));
+ binding=anvil.fn94_wrap((proposed->>'bindingId')::uuid,jsonb_build_object('schemaVersion',1,'purpose','NATIVE_PREPARATION_OWNERSHIP_BINDING','scope',scope,'authorityRef',ar,'consumeRecordRef',anvil.native_return_ref(c.id,c.content_hash),'consumeReceiptRef',receipt->'ref','localAttemptRef',input->'localAttemptRef','requestId',input->'requestId','requestInputHash',anvil.ownership_content_hash(input),'requestInput',input,'requestRef',ev->'ref','candidateAnchorRef',anchor->'ref','basis',basis,'at',at_text,'expiresAt',end_text));
+ p=jsonb_build_object('authority',g,'consumeReceipt',receipt,'consumeRecordRef',anvil.native_return_ref(c.id,c.content_hash),'input',input,'basis',basis,'requestEvent',ev,'binding',binding,'response',jsonb_build_object('bindingRef',binding->'ref','request',req||jsonb_build_object('requestRef',ev->'ref'),'candidateAnchor',anchor));
+ INSERT INTO anvil.native_preparation_ownership_bindings(project_id,execution_id,execution_generation,id,authority_id,consume_receipt_id,request_id,content_hash,snapshot_json,plan_json)
+ VALUES(n.project_id,(scope->>'executionId')::uuid,(scope->>'executionGeneration')::bigint,(proposed->>'bindingId')::uuid,n.id,(receipt->'ref'->>'id')::uuid,(input->>'requestId')::uuid,binding->'ref'->>'contentHash',binding->'snapshot',p);
+ IF NOT anvil.native_return_parent_valid(n.project_id,(proposed->>'bindingId')::uuid) THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED';END IF;
+ SELECT COALESCE(MAX(project_sequence),0)+1 INTO seq FROM anvil.execution_ownership_events WHERE project_id=n.project_id;
+ PERFORM anvil.fn94_ownership_event(p,ev,seq,anchor);
+ IF NOT anvil.native_return_graph_valid(n.project_id,(proposed->>'bindingId')::uuid) THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED';END IF;
+ PERFORM anvil.fn94_host_scope(authority_id,digest,'OWNERSHIP_REQUEST',expected_tx);
+ RETURN jsonb_build_object('plan',p);
+END;$$;
+ALTER FUNCTION anvil.native_host_ownership_request(uuid,text,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.native_host_ownership_request(uuid,text,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.native_host_ownership_request(uuid,text,jsonb,jsonb,text) TO anvil_v3_app;
+
+CREATE FUNCTION anvil.native_host_ownership_accept(authority_id uuid,digest text,packet jsonb,ids jsonb,expected_tx text) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE n anvil.native_preparation_authorities;b anvil.native_preparation_ownership_bindings;r anvil.native_preparation_ownership_results;p jsonb;scope jsonb;obs jsonb;ae jsonb;ad jsonb;head jsonb;receipt jsonb;at_text text;seq bigint;raw_signature bytea;
+BEGIN
+ n=anvil.fn94_host_scope(authority_id,digest,'OWNERSHIP_ACCEPT',expected_tx);
+ SELECT * INTO b FROM anvil.native_preparation_ownership_bindings x WHERE x.project_id=n.project_id AND x.authority_id=n.id;
+ IF NOT FOUND OR NOT anvil.native_return_graph_valid(b.project_id,b.id) THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED';END IF;p=b.plan_json;scope=b.snapshot_json->'scope';
+ IF NOT anvil.fn76_exact(packet,ARRAY['schemaVersion','authorityRef','consumeReceiptRef','localAttemptRef','bindingRef','report','facts','signature']) OR packet->'schemaVersion' IS DISTINCT FROM '1'::jsonb
+  OR packet->'authorityRef' IS DISTINCT FROM b.snapshot_json->'authorityRef' OR packet->'consumeReceiptRef' IS DISTINCT FROM b.snapshot_json->'consumeReceiptRef' OR packet->'localAttemptRef' IS DISTINCT FROM b.snapshot_json->'localAttemptRef' OR packet->'bindingRef' IS DISTINCT FROM anvil.native_return_ref(b.id,b.content_hash) THEN RAISE EXCEPTION 'NATIVE_INPUT_INVALID';END IF;
+ SELECT * INTO r FROM anvil.native_preparation_ownership_results x WHERE x.project_id=b.project_id AND x.binding_id=b.id;
+ IF FOUND THEN
+  IF r.packet_hash IS DISTINCT FROM anvil.ownership_content_hash(packet) THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT';END IF;
+  RETURN jsonb_build_object('response',jsonb_build_object('receiptRef',anvil.native_return_ref(r.id,r.content_hash),'observationRef',r.snapshot_json->'observationRef','headRef',r.snapshot_json->'headRef','acceptedAt',r.snapshot_json->'acceptedAt','executionAuthorized',false,'dispatchPerformed',false));
+ END IF;
+ IF NOT anvil.fn76_exact(ids,ARRAY['observationId','acceptedId','adoptedId','headId','receiptId','at']) OR (SELECT count(DISTINCT v) FROM unnest(ARRAY[ids->>'observationId',ids->>'acceptedId',ids->>'adoptedId',ids->>'headId',ids->>'receiptId'])v)<>5 THEN RAISE EXCEPTION 'NATIVE_INPUT_INVALID';END IF;
+ at_text=ids->>'at';
+ IF at_text::timestamptz>clock_timestamp() OR (b.snapshot_json->>'expiresAt')::timestamptz<=clock_timestamp() OR at_text::timestamptz>=(b.snapshot_json->>'expiresAt')::timestamptz
+  OR packet->'report'-'factsHash'-'observedAt' IS DISTINCT FROM p->'response'->'request' OR packet->'report'->>'factsHash' IS DISTINCT FROM anvil.ownership_content_hash(packet->'facts')
+  OR packet->'facts'->'processRef' IS DISTINCT FROM p->'input'->'processRef' OR packet->'facts'->>'state' IS DISTINCT FROM 'PREPARED' OR packet->'facts'->'everResumed' IS DISTINCT FROM 'false'::jsonb THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED';END IF;
+ raw_signature=decode(translate(packet->>'signature','-_','+/')||'==','base64');
+ IF octet_length(raw_signature)<>64 OR rtrim(translate(replace(encode(raw_signature,'base64'),E'\n',''),'+/','-_'),'=')<>packet->>'signature' THEN RAISE EXCEPTION 'NATIVE_INPUT_INVALID';END IF;
+ obs=anvil.fn94_wrap((ids->>'observationId')::uuid,jsonb_build_object('schemaVersion',1,'purpose','OWNERSHIP_OBSERVATION_RECORD','report',packet->'report','signature',packet->'signature','facts',packet->'facts'));
+ ae=anvil.fn94_wrap((ids->>'acceptedId')::uuid,(p->'requestEvent'->'snapshot')||jsonb_build_object('sequence',2,'previousRef',p->'requestEvent'->'ref','kind','OBSERVATION_ACCEPTED','at',at_text,'payload',jsonb_build_object('requestRef',p->'requestEvent'->'ref','observationRef',obs->'ref','phase','BOOTSTRAP_PREPARED','expectedHeadRef',NULL,'anchorRef',p->'response'->'candidateAnchor'->'ref','preparationRef',n.snapshot_json->'scope'->'preparationRef')));
+ ad=anvil.fn94_wrap((ids->>'adoptedId')::uuid,(ae->'snapshot')||jsonb_build_object('sequence',3,'previousRef',ae->'ref','kind','ANCHOR_ADOPTED','payload',jsonb_build_object('anchorRef',p->'response'->'candidateAnchor'->'ref','preparationRef',n.snapshot_json->'scope'->'preparationRef','observationEventRef',ae->'ref','expectedHeadRef',NULL)));
+ head=anvil.fn94_wrap((ids->>'headId')::uuid,jsonb_build_object('schemaVersion',1,'purpose','OWNERSHIP_HEAD','scope',scope,'anchorRef',p->'response'->'candidateAnchor'->'ref','generation',1,'previousHeadRef',NULL,'currentEventRef',ad->'ref','state','ACTIVE','updatedAt',at_text,'expiresAt',b.snapshot_json->'expiresAt'));
+ receipt=anvil.fn94_wrap((ids->>'receiptId')::uuid,jsonb_build_object('schemaVersion',1,'purpose','NATIVE_PREPARATION_OWNERSHIP_RECEIPT','bindingRef',packet->'bindingRef','packetHash',anvil.ownership_content_hash(packet),'observationRef',obs->'ref','headRef',head->'ref','acceptedAt',at_text,'executionAuthorized',false,'dispatchPerformed',false));
+ SELECT COALESCE(MAX(project_sequence),0) INTO seq FROM anvil.execution_ownership_events WHERE project_id=n.project_id;
+ INSERT INTO anvil.execution_ownership_observations(project_id,execution_id,execution_generation,observation_id,request_id,content_hash,snapshot_json,accepted_event_ref,nonce_digest)
+ VALUES(b.project_id,b.execution_id,b.execution_generation,(ids->>'observationId')::uuid,(p->'requestEvent'->'ref'->>'id')::uuid,obs->'ref'->>'contentHash',obs->'snapshot',ae->'ref',encode(sha256(decode(translate(p->'response'->'request'->>'nonce','-_','+/')||'=','base64')),'hex'));
+ PERFORM anvil.fn94_ownership_event(p,ae,seq+1,NULL);PERFORM anvil.fn94_ownership_event(p,ad,seq+2,NULL);
+ INSERT INTO anvil.execution_ownership_anchors(project_id,execution_id,execution_generation,anchor_id,content_hash,snapshot_json,preparation_event_ref,adoption_event_ref,native_return_binding_ref)
+ VALUES(b.project_id,b.execution_id,b.execution_generation,(p->'response'->'candidateAnchor'->'ref'->>'id')::uuid,p->'response'->'candidateAnchor'->'ref'->>'contentHash',p->'response'->'candidateAnchor'->'snapshot',NULL,ad->'ref',packet->'bindingRef');
+ INSERT INTO anvil.execution_ownership_heads(project_id,execution_id,execution_generation,id,head_generation,content_hash,snapshot_json)
+ VALUES(b.project_id,b.execution_id,b.execution_generation,(ids->>'headId')::uuid,1,head->'ref'->>'contentHash',head->'snapshot');
+ INSERT INTO anvil.native_preparation_ownership_results(project_id,binding_id,id,packet_hash,content_hash,snapshot_json)
+ VALUES(b.project_id,b.id,(ids->>'receiptId')::uuid,anvil.ownership_content_hash(packet),receipt->'ref'->>'contentHash',receipt->'snapshot');
+ IF NOT anvil.native_return_graph_valid(b.project_id,b.id) THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED';END IF;
+ PERFORM anvil.fn94_host_scope(authority_id,digest,'OWNERSHIP_ACCEPT',expected_tx);
+ RETURN jsonb_build_object('observation',obs,'events',jsonb_build_array(ae,ad),'head',head,'receipt',receipt,'response',jsonb_build_object('receiptRef',receipt->'ref','observationRef',obs->'ref','headRef',head->'ref','acceptedAt',at_text,'executionAuthorized',false,'dispatchPerformed',false));
+END;$$;
+ALTER FUNCTION anvil.native_host_ownership_accept(uuid,text,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.native_host_ownership_accept(uuid,text,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.native_host_ownership_accept(uuid,text,jsonb,jsonb,text) TO anvil_v3_app;
+
+COMMIT;

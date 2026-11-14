@@ -19126,3 +19126,38 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 다음DB접근계약 후보 독립C0/I0와경미문구보정후 SHA A185C52DAD309718845F3DB40D2B1AC0F7E60ABB83FADACD243E9CABE750B00E를신산님께source-only채택질문으로전달했다. 새EXECUTE/선행definer접근/RLS예외의계약만결정대상이며실제적용제외. 현재runtime검수·통합은답변과독립해계속한다.
 
 - Primary COMPLETED 인계: 정확20코드/시험경로·쓰기종료·live handle0. root tsc exit0, desktop 전체는기존진단174개로exit1(HEAD overlay179·신규0)이므로전체PASS로표시하지않는다. Main기존pe-library1.0.1 process-memory resolver만연결한PE합성15P/0F/0SKIP107.3365ms exit0,설치/링크/실컴파일0. 별도79P/owner11P/native정적3P/SQL정적2P/ARM인접4P/등록인접4P는중복범위라합산하지않는다. 결과서에범위·명령·미검증기록. 정확24파일stage후diff/지문최종대조및기존development동기화확인중이다.
+
+## 2026-11-14 PR107 통합·FN08 host 저장 접근 source 착수
+- source6f21296ecb7409b21b26b446646d1dd153ab7426를 PR107/main b2df4dcff3405d5f33a52d6be20e07358fbbdea9로 통합했다. Broker43550824828 success, source/main tree동일·local/development main동일clean, merged retained수명 smoke1P/0F/0SKIP1745.5898ms exit0. refs/pull/107/head가원source를보존하며원격완료branch/tag부재확인후정확로컬완료branch/tag만정리했다. 과거WIP보존.
+- 신산님이한정DB접근A안원문SHA A185C52DAD309718845F3DB40D2B1AC0F7E60ABB83FADACD243E9CABE750B00E를source-only채택했다. 최신main에서codex/av3-d1-native-host-storage생성, 신규WI정확9경로를기존Primary단일writer에게배정한다. 실제DB/권한적용/키/서비스/Agent실행제외. Main은검수/통합및기록담당이다.
+- 후속읽기조사: NativePreparationFileStore는구현됐으나제품생성자호출이없고ACL/directoryfsync/전원손실내성을보장하지않는다. retained원factory도존재하지만실image/startup/selection공급조립은없다. 이번9경로와독립된미완료로보존하며가짜공급자를등록하지않는다.
+
+- 신규 host 저장 첫 RED 확보(Primary): node --test --test-name-pattern="host 저장 접근은 직접" tests/unit/FN06/native-preparation-store.test.ts →exit1,0P/1F/0SKIP2847.8573ms. 실제HUMAN준비생성후RAM DB가직접native/ownership표SQL을거절하자실hostCurrent의#hostRun첫credential조회에서RAM_APP_DIRECT_NATIVE_TABLE_DENIED발생. 시험1경로변경·live handle0이며보호material과기존검산연결을구현한다. 실제DB실행0.
+
+- host current material 부분 잠정동결: 직접표접근거절 첫RED1F→PrimaryGREEN1P 및wrapper2P. 중간wrapper DB의budget미등록1F는원budget/state내부결박으로보완했다. Main fresh current handler1P/0F/0SKIP7100.1375ms, 기존실행handle71531종료exit0확인. material은RAM모형이며0094와write연결미완료,실제DBPASS아님. 4파일독립검수중이며Primary는동결밖SQL을작성한다.
+
+- current 부분 독립 C0/I1: material.expiresAt은저장되지만live/budget에짧은기한이반영되지않아후속source.current/options대기뒤만료material로COMMIT가능한수명누락을발견했다. 같은Primary에원checkedAt/expiresAt을기존단조budget에tighten하고await전후/COMMIT까지거절하는RED→GREEN을지시했다. 동일budget의parent/child결박·원query추적·복사·기존원문검산·일반delivery분리는확인됐다. 위집중PASS는전체합격이아니며I1미해소상태로통합하지않는다.
+
+- current I1 보완 제출: material TTL10ms+후속DB대기30ms 반례에서거절누락RED1F확보후송신시단조시간기준최단deadline을wrapper live전후와원budget.tighten에결박해GREEN1P/0F/0SKIP6612.1249ms exit0, COMMIT0. Primary실행handle모두종료. source B357A231…D6B185/project85AA676D…2D75E9/store시험1E94F28D…B19342 동결후독립재검수. 0094는material/scope/선행정책초안만있고나머지4함수/guard미완료이므로전체SQL합격아님.
+
+- current I1 독립재검수 C0/I0 해소. 송신시단조deadline·await전후live·원budget연결·재조회min기한·원authority더짧은기한보존확인. 같은3지문을확인하고나머지4목적wrapper구현재개. 0094초안1~87행은별도동결읽기검수로배정했으며전체SQL/실DB는미완료유지.
+
+- 별개SQL scope I1(권한검사순서): 0094초안consume replay조기반환이현재read정책검사까지생략함을독립C0/I1로확인. 기존Node#hostRun은재조회에도read정책검사를유지하며freshHost만후행분기다. 같은Primary에read없음/DENY/철회시material반환전거절·신규소비조건분리를지시했다. Node후속검사유지로전체HTTP노출이라고확정하지않고SQL목적함수경계차이로한정한다. 앞선current TTL I1과는다른원인이고각1회이며실SQL실행0.
+
+- SQL scope read정책I1 독립재검수 C0/I0/M0 해소. LF함수SHA266E6A69…66F9901, 현재read정책없음/DENY/만료를consume replay보다먼저확인하고공통권위/세션/등록기한·OWNER/control유지, fresh writer/reauth/prepare는이후분리. 실제SQL실행0.
+- Main 내부시험배치보완: 기존test파일import의전체시험재등록을피하기위해신규tests/unit/FN06/native-host-storage-fixture.ts정확1경로추가허용(총10). 원fixture함수/상수/기대값/상태의미·기존검사수보존을검수하며제품/권한범위확장0. Primary는5handler직접저장여정구현을계속한다.
+
+- 0094 전체 정의 잠정동결 SHA38300BDDCE67FE48A40B78799B242FFB473B95E73C8F049F6E783F19A33FF5E8, 독립읽기검수배정. 다섯목적함수·private scope/event helper·nativeparent INSERT한정기존deny교체이며과거SQL원문불변. Primary정적4P/0F/0SKIP594.0583ms exit0제출,실PG검증아님. Node/RAM전체저장여정은작성중으로미완료유지한다.
+
+- 0094 전체 독립 검수 C0/I1: 기존0039 deferred observation 링크 trigger가 INVOKER여서 보호 함수 반환 후 app COMMIT에서 표 조회가 거절될 소스 경로를 확인했다. Main은 채택 계약 §3/3.2의 기존 guard 보존·지정 접근 범위 안에서 본문 불변/고정 search_path/기존 migrator definer 문맥/직접 EXECUTE 차단의 한정 보완을 지시했다. app 표 권한은 열지 않는다. Main이 인접 anchor deferred trigger도 같은 원인인지 추가 검수를 요청했다. 실제 PG 실행0이며 같은 근본 원인 영향 범위를 함께 닫는다. 읽기 중0039 파일명 오기1회는 실제 파일목록 확인으로 정정했고 변경0이다.
+
+- deferred 링크 I1 재검수 해소: 0094 SHA A33809F4355EE44132988AA8C58BE5FB36D03241945EBBC38B5D13ACB46FCFB4, observation/anchor 두 함수 본문 불변·SECURITY DEFINER·고정 search_path·기존 migrator OWNER·PUBLIC/app EXECUTE 차단을 확인했다. 기존 전체 SQL 검수와 결합 C0/I0/M0, app 표 GRANT0/trigger 제거0/과거 SQL diff0. Main `node --test tests/unit/FN06/native-host-storage-sql.test.ts` 5P/0F/0SKIP157.6216ms exit0. source 정적 검사이며 실제 PG/COMMIT은 미검증이다.
+
+- Primary 인접 native-preparation-store 전체 시험은 session59175 종료 exit1, 59P/4F/0SKIP58083.8076ms. 정적 test 등록58과 기존 loop 생성5를 합쳐 실제63개이며 앞선58개 표현을 정정한다. 세 실패는 원 직접SQL 오류주입 경계가 목적함수 내부로 이동한 fixture 문제, 한 실패는 잘못된 digest의 RAM/SQL 오류분류 문제로 조사됐다. 원 기대값/rollback/COMMIT 단언을 유지하며 정확 실패경계와 고정 SQLSTATE/메시지 분류만 보완하도록 지시했다. 전체 PASS 아님, 우선4실패 집중검증 후 동결한다. 실제DB실행0·live handle0.
+
+- 후속 journal 읽기 조사/PMO 지원: 기존 r5는 LocalAppData/Anvil/Trust/v1·SID/KnownFolder·DACL·닫힌 binding 저장·명시 복구를 채택했으나 native slot/profile/authority 복구는 제외한다. native journal WI는 소유 확인된 전용 root 명시 주입만 허용한다. PMO는 journal의 저장 namespace·설치/등록 결박·재시작 동일기록 발견·불명 보존 delta만 별도 저장 계약안으로 구체화하는 것이 맞다고 회신했다. 기존 Trust root 전체 재승인이나 실제 실행 요청은 아니다. 현재0094 구현은 이 결정과 독립해 계속하며 보호 journal 제품 연결 완료라고 주장하지 않는다.
+
+- Primary 인접실패4건 집중보완 완료: 3P/1F 후 capacity fresh1P/0F/0SKIP2571.7768ms exit0, 고정SQL오류분류1P2701.056ms exit0. 첫전체59P/4F는이력보존하며전체재실행PASS로바꾸지않는다. 원시험이름58개보존+신규current1, top-level57→58+loop로실등록63이다. Main 보완전 동결 unit+journey8P/0F/0SKIP21141.8593ms exit0 수집.
+- Node 독립검수 C0/I1: nativeHostWrite가lease hash검사후 transaction await를거쳐packet을복사하여원객체변조가검산과전송사이에들어올수있다. Primary COMPLETED 제출을Main은미수용하고첫await전고정snapshot·동일hash검산/전송 및대기중변조RED→GREEN재작업을지시했다. 위8P는이반례를포함하지않으므로최종합격아니다. 기존TTL/SQL정책/deferred권한과다른원인1회,실제DB실행0.
+
+- TOCTOU I1 보완독립 C0/I0 해소: 첫await전 packet/expected snapshot의동일hash·SQL·응답결박, 새변조반례와proxy/accessor/trap0확인. Main 최종unit+journey9P/0F/0SKIP6304.879ms exit0, 이전실패4건집중4P/0F/0SKIP3975.0825ms exit0, 최종root tsc진단0/exit0. 과거전체59P/4F는이력보존하며전체63재실행PASS로표시하지않음. Node/fixture독립C0/I0·SQL C0/I0/M0, 실제PG0. RETURN failObservation은첫observation삽입전실패이며graph중간쓰기실패로과장하지않는다. 상세결과서작성·정확변경목록대조후통합준비.

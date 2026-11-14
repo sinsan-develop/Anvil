@@ -1,6 +1,6 @@
 # FN08 native host 저장 접근 — 한정 결정 후보
 
-상태: 미채택·독립 검토 전. 2026-11-14 Main 작성. 기준 main `34f613a03c9e6edf0e96f3096aad86e3c3d4aede`. 코드 구현·실제 권한 적용 지시가 아니다.
+상태: **채택 — 2026-11-14 신산님 직접 A안 계약·source-only 구현 승인**. 승인 대상 원문 SHA256 `A185C52DAD309718845F3DB40D2B1AC0F7E60ABB83FADACD243E9CABE750B00E`. 독립 C0/I0 및 경미 문구 보정 후 채택. 아래 후보 표현은 결정 당시 이력이다. 코드·미적용 SQL·합성 검증만 허용하며 실제 DB·권한 적용·키·프로세스·서비스·Agent 실행은 제외한다. Main 작성, 원 기준 main `34f613a03c9e6edf0e96f3096aad86e3c3d4aede`, 구현 기준 PR107/main `b2df4dcff3405d5f33a52d6be20e07358fbbdea9`.
 
 ## 1. 문제와 필요한 결정
 
