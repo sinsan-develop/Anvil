@@ -19047,3 +19047,5 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Main 조정 오류: 완료된 Primary에게 send_message만 보내 후보 I1/M3 재작업이 실제 기동되지 않았다. 반복 대기 후 interrupt 결과 completed로 확인, followup_task로 같은 담당자 재개했다. 후보hash보존/제품변경0/정식개발실패0. 재발방지: completed 담당자의 새업무는followup_task, 실행중 전달만send_message. 후보I1은PREPARED수용을grant/current까지과장한것이며 정상종단을원장반환까지로보정한다.
 
 - 최초ownership 반환 후보 보정SHA CFF94F6704B91556A0DBBD21353F5F2D29A8CA0F4340E3C0413A7841B849EFA4, 독립재검수C0/I0/M0(I1/M3해소). 정상종단관측/head수용까지, grant/resume선행미확인. 신산님께v2제한반환operation1/target2 source-only계약채택질문1회전달. 답변전해당새권한/제품구현0. 기존실행제외유지.
+
+- 결정대기 중 독립 읽기 선행 대조: normal-initial-execution.ts49~59 최초grant는 writerState NONE 및 osFence VERIFIED_CURRENT/nonempty refs를 요구하며 CURRENT/RUNNING phase를 직접검사하지 않는다. normal-start-permit.ts64~74는후속writer OWNED와동일osOwnershipRef를요구한다. ownership-observation-v1.ts80의CURRENT RUNNING조건을최초grant직접조건으로확대하지않는다. PREPARED로최초grant충족여부는 NormalExecutionCurrentSource의보호판정생산자부재로미확인이다. windows-host.ts86~106/OwnershipHost.cs118의resume은고정QA경로이며normal권위전용근거없음. 후보CFF94F67은변경하지않고미확인표시유지. 제품/실제0.
