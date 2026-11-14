@@ -2,6 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 const source=(name:string)=>readFile(new URL('../../../apps/connector/native/'+name,import.meta.url),'utf8');
+
+test('보호 host RETURN 연결은 원 REGISTERED/STORED·helper·부모를 유지하고 공급자 미설정은 닫힌다',async()=>{
+ const host=await source('DesktopTrustKeyHostSource.cs'),signer=await source('NativePreparationOwnershipReturnSource.cs');
+ assert.match(host,/retainedPort=null/);assert.match(host,/if\(retainedProvider==null\)throw Invalid\(\)/);
+ assert.match(host,/Text\(record,"state"\)!="REGISTERED"/);
+ assert.match(host,/Text\(credential,"storageState"\)!="STORED"/);
+ assert.match(host,/Id\(record,"pendingKeyId"\)!=Id\(key,"keyId"\)/);
+ assert.match(host,/Text\(key,"signerImageHash"\)!=peer\.HelperHash/);
+ assert.match(host,/Canonical\(scope\["registrationRef"\],0\)!=Canonical\(registration\["registrationRef"\],0\)/);
+ assert.match(host,/if\(returnOpened\)throw Invalid\(\);returnOpened=true/);
+ assert.match(host,/retainedReturn\.Dispose\(\)/);
+ assert.match(host,/NativePreparationOwnershipReturnSource\.ReadOriginalProcess/);
+ assert.match(host,/ProtectedStore\.SignOwnershipReturnOwned/);
+ assert.match(signer,/ReadOriginalPreparedReturnSource\(retained/);
+ // 정적 연결 증거이며 C# 실행/원 process 생존을 검증한 시험이 아니다.
+});
 test('RETURN native source는 원 factory retained 객체만 읽고 caller facts 대신 기존 관측 bytes를 서명한다',async()=>{
  const owner=await source('OwnershipEvidenceProcessOwnerSource.cs'),signer=await source('NativePreparationOwnershipReturnSource.cs');
  assert.match(owner,/ConditionalWeakTable<IOriginalSuspendedProcessCandidate,object>/);

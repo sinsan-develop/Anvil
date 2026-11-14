@@ -1,0 +1,285 @@
+-- 명시 v2 수신창의 서버 선택 version과 실제 원 권위 byte 예약을 결박한다.
+-- SOURCE ONLY / 미적용. 0076/0092 원문, 공개 HTTP, 역할/ACL, 총한도는 변경하지 않는다.
+BEGIN;
+DO $$BEGIN IF current_user<>'anvil_v3_migrator' OR session_user<>'anvil_v3_migrator' THEN RAISE EXCEPTION 'NATIVE_RECEIVE_MIGRATOR_REQUIRED' USING ERRCODE='42501';END IF;END;$$;
+ALTER TABLE anvil.native_receive_storage_reservations ADD COLUMN authority_version smallint NOT NULL DEFAULT 1 CHECK(authority_version IN(1,2));
+
+CREATE FUNCTION anvil.fn93_reservation_version_guard() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+ IF TG_OP='UPDATE' AND NEW.authority_version IS DISTINCT FROM OLD.authority_version THEN RAISE EXCEPTION 'NATIVE_RECEIVE_VERSION_CHANGED' USING ERRCODE='23514';END IF;
+ RETURN NEW;
+END;$$;
+ALTER FUNCTION anvil.fn93_reservation_version_guard() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn93_reservation_version_guard() FROM PUBLIC,anvil_v3_app;
+CREATE TRIGGER fn93_reservation_version BEFORE UPDATE ON anvil.native_receive_storage_reservations FOR EACH ROW EXECUTE FUNCTION anvil.fn93_reservation_version_guard();
+
+CREATE FUNCTION anvil.fn93_window_version(p uuid,w uuid) RETURNS smallint LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v smallint;
+BEGIN
+ SELECT authority_version INTO v FROM anvil.native_receive_storage_reservations WHERE project_id=p AND window_id=w;
+ IF NOT FOUND OR v IS NULL OR v NOT IN(1,2) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_VERSION_INVALID' USING ERRCODE='23514';END IF;
+ RETURN v;
+END;$$;
+ALTER FUNCTION anvil.fn93_window_version(uuid,uuid) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn93_window_version(uuid,uuid) FROM PUBLIC,anvil_v3_app;
+
+
+-- 0076 fn76_native_intent_bounds: version 전달 외 원 검산 본문 보존.
+CREATE FUNCTION anvil.fn93_native_intent_bounds(i jsonb,authority_version_value smallint) RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE u text:='ffffffff-ffff-4fff-bfff-ffffffffffff';h text:=repeat('f',64);r jsonb;wide jsonb;pr jsonb;a jsonb;result jsonb;slot text;
+BEGIN
+ IF authority_version_value IS NULL OR authority_version_value NOT IN(1,2) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_VERSION_INVALID' USING ERRCODE='22023';END IF;
+ IF authority_version_value=1 THEN RETURN anvil.fn76_native_intent_bounds(i);END IF;
+ IF NOT anvil.fn76_exact(i,ARRAY['schemaVersion','purpose','intentId','scope','subject','sourceScopes','expectedWriterHeadRef','policyRef','at','expiresAt','codingAgentExecutionAuthorized','agentDispatchPerformed']) OR i->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR i->>'purpose' IS DISTINCT FROM 'NATIVE_BOUNDARY_PREPARATION_INTENT' OR anvil.native_preparation_json_bytes(i)>2097152 THEN RAISE EXCEPTION 'NATIVE_RECEIVE_PLAN_INVALID' USING ERRCODE='22023';END IF;
+ r:=jsonb_build_object('id',u,'version',1,'contentHash',h);wide:=r||jsonb_build_object('version',9007199254740991::bigint);pr:=jsonb_build_object('id',i->'intentId','version',1,'contentHash',anvil.fn76_hash_text(anvil.fn01_json(i)));
+ a:=jsonb_build_object('schemaVersion',authority_version_value,'purpose','NATIVE_PREPARATION_AUTHORITY','authorityId',u,'credentialId',u,'credentialGeneration',9007199254740991::bigint,'scope',(i->'scope')||jsonb_build_object('writerHeadRef',wide,'preparationRef',pr,'hostPublicKeyFingerprint',h),'subject',i->'subject','parent',jsonb_build_object('commandRef',r,'authorizationReceiptRef',r,'auditRef',r),'policyRef',i->'policyRef','channelProfileRef',wide,'allowedOperations',jsonb_build_array('CHECK_NATIVE_PREPARATION_CURRENT','CONSUME_NATIVE_PREPARATION','RETURN_NATIVE_PREPARATION_OWNERSHIP'),'issuedAt','2026-11-04T00:00:00.000Z','expiresAt','2026-11-04T00:00:10.000Z','codingAgentExecutionAuthorized',false,'agentDispatchPerformed',false);
+ result:=jsonb_build_object('AUTHORITY',anvil.native_preparation_json_bytes(jsonb_build_object('ref',r,'snapshot',a,'preparationRef',pr,'preparationIntent',NULL))+anvil.native_preparation_json_bytes(i)-4);
+ FOREACH slot IN ARRAY ARRAY['CREATED','ATTEMPTED','TERMINAL','CHALLENGE','PROOF','CONSUME'] LOOP result:=result||jsonb_build_object(slot,anvil.fn76_native_intent_event_max(i,a,slot));END LOOP;
+ RETURN result;
+END;$$;
+ALTER FUNCTION anvil.fn93_native_intent_bounds(jsonb,smallint) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn93_native_intent_bounds(jsonb,smallint) FROM PUBLIC,anvil_v3_app;
+CREATE FUNCTION anvil.fn93_plan(w jsonb,sid uuid,authority_version_value smallint) RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE plan jsonb;items jsonb;
+BEGIN
+ IF authority_version_value IS NULL OR authority_version_value NOT IN(1,2) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_VERSION_INVALID' USING ERRCODE='22023';END IF;
+ plan:=anvil.fn76_plan(w,sid);
+ IF authority_version_value=1 THEN RETURN plan;END IF;
+ -- 닫힌 v2 operation 문자열과 배열 구분자만 증가한다. event refs/hash 폭은 같다.
+ SELECT jsonb_agg(CASE WHEN x->>'namespace'='N' AND x->>'slot'='AUTHORITY' THEN jsonb_set(x,'{maxBytes}',to_jsonb((x->>'maxBytes')::bigint+octet_length(anvil.fn01_json(to_jsonb('RETURN_NATIVE_PREPARATION_OWNERSHIP'::text)))+1)) ELSE x END ORDER BY ord) INTO items FROM jsonb_array_elements(plan->'items') WITH ORDINALITY t(x,ord);
+ RETURN jsonb_set(plan,'{items}',items);
+END;$$;
+ALTER FUNCTION anvil.fn93_plan(jsonb,uuid,smallint) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn93_plan(jsonb,uuid,smallint) FROM PUBLIC,anvil_v3_app;
+
+-- 0076 fn76_projection: version 전달 외 원 검산 본문 보존.
+CREATE OR REPLACE FUNCTION anvil.fn76_projection(kind text,v jsonb) RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE keys text[];times text[];k text;
+BEGIN
+ CASE kind
+ WHEN 'native_channel_profile_versions' THEN keys:=ARRAY['project_id','installation_id','record_kind','id','version','content_hash','profile_id','profile_version','profile_content_hash','state','generation','previous_head_id','previous_head_version','previous_head_hash','anchor_canonical','anchor_hash','package_manifest_hash','snapshot_canonical','snapshot_json','created_at'];times:=ARRAY['created_at'];
+ WHEN 'native_channel_profile_heads' THEN keys:=ARRAY['project_id','installation_id','profile_id','generation','current_profile_version','current_profile_hash','current_head_id','current_head_version','current_head_hash','minimum_profile_version','anchor_hash','package_manifest_hash','created_at','updated_at'];times:=ARRAY['created_at','updated_at'];
+ WHEN 'native_receive_heads' THEN keys:=ARRAY['project_id','window_id','original_session_id','actor_id','client_id','credential_generation','control_generation','registration_id','registration_version','registration_hash','connector_id','connector_version','connector_hash','profile_id','profile_version','profile_hash','local_attempt_id','phase','revision','broker_instance_id','operation_fence','stream_owned','session_record_id','offer_record_id','arm_record_id','binding_record_id','delivery_record_id','ack_record_id','terminal_record_id','created_at','expires_at','settled_at'];times:=ARRAY['created_at','expires_at','settled_at'];
+ WHEN 'native_receive_records' THEN keys:=ARRAY['project_id','record_id','record_kind','version','window_id','profile_id','profile_version','profile_hash','ticket_phase','ticket_occurrence','human_operation','external_command_id','request_hash','content_hash','record_canonical','record_json','receive_credential_digest','accounting_version','created_at','session_record_id','offer_record_id','arm_record_id','binding_record_id','delivery_record_id','ack_record_id','challenge_record_id','issue_evidence_record_id','proof_evidence_record_id','result_record_id','terminal_record_id','native_authority_id','native_event_id','native_event_version','native_command_id','authorization_receipt_id','audit_event_id'];times:=ARRAY['created_at'];
+ WHEN 'native_receive_tickets' THEN keys:=ARRAY['project_id','window_id','phase','occurrence','ticket_id','stage','issue_request_id','issue_request_hash','consume_request_id','consume_request_hash','challenge_record_id','issue_evidence_record_id','issue_replay_record_id','proof_evidence_record_id','consume_replay_record_id','created_at','finished_at'];times:=ARRAY['created_at','finished_at'];
+ WHEN 'native_receive_storage_reservations' THEN keys:=ARRAY['project_id','window_id','plan_version','plan_json','plan_hash','n_reserved_bytes','n_actual_bytes','n_reserved_slots','n_actual_slots','r_reserved_bytes','r_actual_bytes','r_reserved_slots','r_actual_slots','l_reserved_bytes','l_actual_bytes','l_reserved_slots','l_actual_slots','phase','created_at','settled_at'];times:=ARRAY['created_at','settled_at'];
+ WHEN 'native_receive_security_aggregates' THEN keys:=ARRAY['project_id','registration_id','actor_id','client_id','accounting_version','pre_window_denials','phase_denials','request_conflicts','ticket_exhausted','owner_unavailable','audit_capacity_failures','unknown_observations','other_denials','saturated_mask','first_seen_at','last_seen_at','first_class','last_class','created_at'];times:=ARRAY['first_seen_at','last_seen_at','created_at'];
+ ELSE RAISE EXCEPTION 'NATIVE_RECEIVE_PROJECTION_INVALID' USING ERRCODE='22023';END CASE;
+ IF kind='native_receive_storage_reservations' AND v ? 'authority_version' THEN
+  IF v->'authority_version'='1'::jsonb THEN v:=v-'authority_version';
+  ELSIF v->'authority_version'='2'::jsonb THEN keys:=array_append(keys,'authority_version');
+  ELSE RAISE EXCEPTION 'NATIVE_RECEIVE_VERSION_INVALID' USING ERRCODE='22023';END IF;
+ END IF;
+ IF NOT anvil.fn76_exact(v,keys) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_PROJECTION_INVALID' USING ERRCODE='22023';END IF;
+ FOREACH k IN ARRAY times LOOP IF v->k<>'null'::jsonb THEN v:=jsonb_set(v,ARRAY[k],to_jsonb(to_char((v->>k)::timestamptz AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')));END IF;END LOOP;RETURN v;
+END;$$;
+
+-- 0076 fn76_reservation_remaining: version 전달 외 원 검산 본문 보존.
+CREATE OR REPLACE FUNCTION anvil.fn76_reservation_remaining(r anvil.native_receive_storage_reservations) RETURNS TABLE(n_bytes bigint,n_slots bigint,r_bytes bigint,r_slots bigint,l_bytes bigint,l_slots bigint) LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE h anvil.native_receive_heads%ROWTYPE;w jsonb;expected jsonb;a record;nf record;rl record;nb bigint;ns bigint;rb bigint;rs bigint;lb bigint;ls bigint;
+BEGIN
+ SELECT * INTO h FROM anvil.native_receive_heads WHERE project_id=r.project_id AND window_id=r.window_id;IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_INVALID' USING ERRCODE='23514';END IF;
+ SELECT record_json INTO w FROM anvil.native_receive_records WHERE project_id=r.project_id AND record_id=r.window_id AND record_kind='WINDOW';expected:=anvil.fn93_plan(w,h.original_session_id,r.authority_version);
+ IF r.plan_version<>1 OR r.plan_json IS DISTINCT FROM expected OR r.plan_hash IS DISTINCT FROM anvil.fn76_hash_text(anvil.fn01_json(expected)) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_INVALID' USING ERRCODE='23514';END IF;
+ SELECT sum((x->>'maxBytes')::bigint) FILTER(WHERE x->>'namespace'='N'),sum((x->>'maxSlots')::bigint) FILTER(WHERE x->>'namespace'='N'),sum((x->>'maxBytes')::bigint) FILTER(WHERE x->>'namespace'='R'),sum((x->>'maxSlots')::bigint) FILTER(WHERE x->>'namespace'='R'),sum((x->>'maxBytes')::bigint) FILTER(WHERE x->>'namespace'='L'),sum((x->>'maxSlots')::bigint) FILTER(WHERE x->>'namespace'='L') INTO nb,ns,rb,rs,lb,ls FROM jsonb_array_elements(expected->'items') x;
+ SELECT * INTO a FROM anvil.fn76_window_actuals(r.project_id,r.window_id);
+ SELECT * INTO nf FROM anvil.fn76_native_remaining(r.project_id,r.window_id);
+ SELECT * INTO rl FROM anvil.fn76_rl_remaining(r.project_id,r.window_id,expected);
+ IF r.r_actual_bytes<>a.r_bytes OR r.r_actual_slots<>a.r_slots OR r.l_actual_bytes<>a.l_bytes OR r.l_actual_slots<>a.l_slots OR r.r_reserved_bytes<>a.r_bytes+rl.r_bytes OR r.r_reserved_slots<>a.r_slots+rl.r_slots OR r.l_reserved_bytes<>a.l_bytes+rl.l_bytes OR r.l_reserved_slots<>a.l_slots+rl.l_slots THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_INVALID' USING ERRCODE='23514';END IF;
+ IF r.n_actual_bytes<>a.n_bytes OR r.n_actual_slots<>a.n_slots OR r.n_reserved_bytes<>a.n_bytes+nf.future_bytes OR r.n_reserved_slots<>a.n_slots+nf.future_slots THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_INVALID' USING ERRCODE='23514';END IF;
+ IF a.n_bytes>nb OR a.n_slots>ns OR a.r_bytes>rb OR a.r_slots>rs OR a.l_bytes>lb OR a.l_slots>ls THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_EXCEEDED' USING ERRCODE='23514';END IF;
+ IF r.phase='SETTLED' THEN IF nf.future_slots>0 OR rl.r_bytes>0 OR rl.r_slots>0 OR rl.l_bytes>0 OR rl.l_slots>0 OR r.settled_at IS NULL THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_INVALID' USING ERRCODE='23514';END IF;RETURN QUERY SELECT 0::bigint,0::bigint,0::bigint,0::bigint,0::bigint,0::bigint;RETURN;END IF;
+ IF r.phase<>'HELD' OR r.settled_at IS NOT NULL THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_INVALID' USING ERRCODE='23514';END IF;
+ RETURN QUERY SELECT nf.future_bytes,nf.future_slots,rl.r_bytes+anvil.fn76_reservation_max(to_jsonb(r))-anvil.fn76_projection_bytes('native_receive_storage_reservations',to_jsonb(r)),rl.r_slots,rl.l_bytes,rl.l_slots;
+END;$$;
+
+-- 0076 fn76_reservation_refresh: version 전달 외 원 검산 본문 보존.
+CREATE FUNCTION anvil.fn93_reservation_refresh(p uuid,w uuid,authority_version_value smallint) RETURNS void LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE h anvil.native_receive_heads%ROWTYPE;old anvil.native_receive_storage_reservations%ROWTYPE;window_json jsonb;plan jsonb;a record;nf record;rl record;closed boolean;
+BEGIN
+ -- 목적 producer 내부에서만 호출한다. 원 잠금 아래 불변 plan을 만들고 실제 행의 차분만 정산한다.
+ PERFORM 1 FROM anvil.projects WHERE id=p FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_RECEIVE_NOT_FOUND' USING ERRCODE='23503';END IF;
+ PERFORM 1 FROM anvil.project_storage_accounts WHERE project_id=p FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_UNVERIFIED' USING ERRCODE='23514';END IF;
+ SELECT * INTO h FROM anvil.native_receive_heads WHERE project_id=p AND window_id=w FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_RECEIVE_NOT_FOUND' USING ERRCODE='23503';END IF;
+ SELECT record_json INTO window_json FROM anvil.native_receive_records WHERE project_id=p AND window_id=w AND record_kind='WINDOW' AND record_id=w;
+ plan:=anvil.fn93_plan(window_json,h.original_session_id,authority_version_value);
+ SELECT * INTO old FROM anvil.native_receive_storage_reservations WHERE project_id=p AND window_id=w FOR UPDATE;
+ IF FOUND THEN
+  IF old.authority_version IS DISTINCT FROM authority_version_value OR old.plan_version<>1 OR old.plan_json IS DISTINCT FROM plan OR old.plan_hash IS DISTINCT FROM anvil.fn76_hash_text(anvil.fn01_json(plan)) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_PLAN_CHANGED' USING ERRCODE='23514';END IF;
+ ELSE
+  INSERT INTO anvil.native_receive_storage_reservations(project_id,window_id,authority_version,plan_version,plan_json,plan_hash,n_reserved_bytes,n_actual_bytes,n_reserved_slots,n_actual_slots,r_reserved_bytes,r_actual_bytes,r_reserved_slots,r_actual_slots,l_reserved_bytes,l_actual_bytes,l_reserved_slots,l_actual_slots,phase)
+  VALUES(p,w,authority_version_value,1,plan,anvil.fn76_hash_text(anvil.fn01_json(plan)),0,0,0,0,0,0,0,0,0,0,0,0,'HELD');
+ END IF;
+ SELECT * INTO a FROM anvil.fn76_window_actuals(p,w);
+ SELECT * INTO nf FROM anvil.fn76_native_remaining(p,w);
+ SELECT * INTO rl FROM anvil.fn76_rl_remaining(p,w,plan);
+ closed:=h.phase IN('CONFIRMED','UNCONFIRMED','CLOSED') AND nf.future_slots=0 AND rl.r_slots=0 AND rl.l_slots=0 AND rl.r_bytes=0 AND rl.l_bytes=0;
+ IF old.phase='SETTLED' AND (NOT closed OR old.n_actual_bytes<>a.n_bytes OR old.n_actual_slots<>a.n_slots OR old.r_actual_bytes<>a.r_bytes OR old.r_actual_slots<>a.r_slots OR old.l_actual_bytes<>a.l_bytes OR old.l_actual_slots<>a.l_slots) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_SETTLED_CHANGED' USING ERRCODE='23514';END IF;
+ UPDATE anvil.native_receive_storage_reservations SET n_reserved_bytes=a.n_bytes+nf.future_bytes,n_actual_bytes=a.n_bytes,n_reserved_slots=a.n_slots+nf.future_slots,n_actual_slots=a.n_slots,
+ r_reserved_bytes=a.r_bytes+rl.r_bytes,r_actual_bytes=a.r_bytes,r_reserved_slots=a.r_slots+rl.r_slots,r_actual_slots=a.r_slots,
+ l_reserved_bytes=a.l_bytes+rl.l_bytes,l_actual_bytes=a.l_bytes,l_reserved_slots=a.l_slots+rl.l_slots,l_actual_slots=a.l_slots,
+ phase=CASE WHEN closed THEN 'SETTLED' ELSE 'HELD' END,settled_at=CASE WHEN closed THEN COALESCE(old.settled_at,transaction_timestamp()) ELSE NULL END
+ WHERE project_id=p AND window_id=w;
+ PERFORM 1 FROM anvil.native_receive_storage_reservations r CROSS JOIN LATERAL anvil.fn76_reservation_remaining(r) x WHERE r.project_id=p AND r.window_id=w;
+END;$$;
+ALTER FUNCTION anvil.fn93_reservation_refresh(uuid,uuid,smallint) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn93_reservation_refresh(uuid,uuid,smallint) FROM PUBLIC,anvil_v3_app;
+CREATE OR REPLACE FUNCTION anvil.fn76_reservation_refresh(p uuid,w uuid) RETURNS void LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ PERFORM anvil.fn93_reservation_refresh(p,w,anvil.fn93_window_version(p,w));
+END;$$;
+
+-- 0076 fn76_native_remaining: version 전달 외 원 검산 본문 보존.
+CREATE OR REPLACE FUNCTION anvil.fn76_native_remaining(p uuid,w uuid) RETURNS TABLE(future_bytes bigint,future_slots bigint) LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE b anvil.native_receive_records%ROWTYPE;a anvil.native_preparation_authorities%ROWTYPE;kinds text[];slots text[];item jsonb;plan jsonb;n bigint:=0;e anvil.native_preparation_authority_events%ROWTYPE;previous jsonb:='null'::jsonb;sequence_value bigint:=0;event_slot text;maximum bigint;bounds jsonb;staged anvil.native_receive_storage_reservations%ROWTYPE;head anvil.native_receive_heads%ROWTYPE;
+BEGIN
+ SELECT * INTO b FROM anvil.native_receive_records WHERE project_id=p AND window_id=w AND record_kind='BINDING';IF NOT FOUND THEN
+ SELECT * INTO staged FROM anvil.native_receive_storage_reservations WHERE project_id=p AND window_id=w;
+ IF NOT FOUND OR staged.n_reserved_slots=0 AND staged.n_reserved_bytes=0 AND staged.n_actual_slots=0 AND staged.n_actual_bytes=0 THEN RETURN QUERY SELECT 0::bigint,0::bigint;RETURN;END IF;
+ SELECT * INTO head FROM anvil.native_receive_heads WHERE project_id=p AND window_id=w;
+ IF NOT FOUND OR head.phase<>'ARMED' OR head.binding_record_id IS NOT NULL OR staged.n_actual_slots<>0 OR staged.n_actual_bytes<>0 OR staged.phase<>'HELD' THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_INVALID' USING ERRCODE='23514';END IF;
+ PERFORM anvil.fn76_arm_complete(p,w);bounds:=anvil.fn93_native_intent_bounds(anvil.fn76_native_cost_intent(p,w),staged.authority_version);SELECT sum(value::text::bigint) INTO n FROM jsonb_each(bounds);
+ IF staged.n_reserved_slots<>7 OR staged.n_reserved_bytes<>n THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_INVALID' USING ERRCODE='23514';END IF;RETURN QUERY SELECT n,7::bigint;RETURN;
+ END IF;
+ SELECT * INTO a FROM anvil.native_preparation_authorities WHERE project_id=p AND id=b.native_authority_id;
+ IF NOT FOUND OR a.version<>1 OR a.content_hash IS DISTINCT FROM anvil.ownership_content_hash(a.snapshot_json) OR a.intent_hash IS DISTINCT FROM anvil.ownership_content_hash(a.intent_json) OR a.canonical_bytes IS DISTINCT FROM anvil.native_preparation_json_bytes(jsonb_build_object('ref',jsonb_build_object('id',a.id,'version',1,'contentHash',a.content_hash),'snapshot',a.snapshot_json,'preparationRef',a.snapshot_json->'scope'->'preparationRef','preparationIntent',a.intent_json)) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_NATIVE_HISTORY_INVALID' USING ERRCODE='23514';END IF;
+ IF a.snapshot_json->'schemaVersion' IS DISTINCT FROM to_jsonb(anvil.fn93_window_version(p,w)) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_VERSION_CHANGED' USING ERRCODE='23514';END IF;
+ bounds:=anvil.fn93_native_intent_bounds(a.intent_json,anvil.fn93_window_version(p,w));
+ SELECT array_agg(e.kind ORDER BY e.sequence) INTO kinds FROM anvil.native_preparation_authority_events e WHERE e.project_id=p AND e.authority_id=a.id;
+ slots:=anvil.fn76_native_pending(kinds);
+ SELECT r.plan_json INTO plan FROM anvil.native_receive_storage_reservations r WHERE r.project_id=p AND r.window_id=w;IF plan IS NULL THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_INVALID' USING ERRCODE='23514';END IF;
+ -- 중간 PROOF/CONSUME 투영은 현재 실제 행을 계상한다. 최종 인증/완결은 deferred 원 guard가 맡는다.
+ SELECT (value->>'maxBytes')::bigint INTO maximum FROM jsonb_array_elements(plan->'items') WHERE value->>'namespace'='N' AND value->>'slot'='AUTHORITY';IF maximum IS NULL OR bounds->>'AUTHORITY' IS NULL OR a.canonical_bytes>least(maximum,(bounds->>'AUTHORITY')::bigint) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_EXCEEDED' USING ERRCODE='23514';END IF;
+ FOR e IN SELECT * FROM anvil.native_preparation_authority_events WHERE project_id=p AND authority_id=a.id ORDER BY sequence LOOP
+  sequence_value:=sequence_value+1;event_slot:=CASE e.kind WHEN 'AUTHORITY_CREATED' THEN 'CREATED' WHEN 'DELIVERY_ATTEMPTED' THEN 'ATTEMPTED' WHEN 'DELIVERY_CONFIRMED' THEN 'TERMINAL' WHEN 'DELIVERY_UNCONFIRMED' THEN 'TERMINAL' WHEN 'CHALLENGE_ISSUED' THEN 'CHALLENGE' WHEN 'REQUEST_PROOF_ACCEPTED' THEN 'PROOF' WHEN 'CONSUME_COMMITTED' THEN 'CONSUME' END;
+  SELECT (value->>'maxBytes')::bigint INTO maximum FROM jsonb_array_elements(plan->'items') WHERE value->>'namespace'='N' AND value->>'slot'=event_slot;
+  IF maximum IS NULL OR bounds->>event_slot IS NULL THEN RAISE EXCEPTION 'NATIVE_RECEIVE_NATIVE_HISTORY_INVALID' USING ERRCODE='23514';END IF;maximum:=least(maximum,(bounds->>event_slot)::bigint);
+  IF maximum IS NULL OR e.canonical_bytes>maximum OR e.sequence<>sequence_value OR e.previous_ref IS DISTINCT FROM previous OR e.snapshot_json->'authorityRef' IS DISTINCT FROM jsonb_build_object('id',a.id,'version',1,'contentHash',a.content_hash) OR e.snapshot_json->>'projectId' IS DISTINCT FROM p::text OR e.content_hash IS DISTINCT FROM anvil.ownership_content_hash(e.snapshot_json) OR e.canonical_bytes IS DISTINCT FROM anvil.native_preparation_json_bytes(jsonb_build_object('ref',jsonb_build_object('id',e.id,'version',1,'contentHash',e.content_hash),'snapshot',e.snapshot_json)) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_NATIVE_HISTORY_INVALID' USING ERRCODE='23514';END IF;
+  previous:=jsonb_build_object('id',e.id,'version',1,'contentHash',e.content_hash);
+ END LOOP;
+ FOR item IN SELECT value FROM jsonb_array_elements(plan->'items') WHERE value->>'namespace'='N' AND value->>'slot'=ANY(slots) LOOP n:=n+least((item->>'maxBytes')::bigint,(bounds->>(item->>'slot'))::bigint);END LOOP;
+ RETURN QUERY SELECT n,cardinality(slots)::bigint;
+END;$$;
+
+-- 0076 native_receive_window_store: version 전달 외 원 검산 본문 보존.
+CREATE OR REPLACE FUNCTION anvil.native_receive_window_store(p uuid,sid uuid,value jsonb,tickets jsonb) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE authority_version_value smallint:=1;context jsonb;c anvil.commands%ROWTYPE;audit_id uuid;input jsonb;expected jsonb;w jsonb;ref jsonb;t jsonb;
+BEGIN
+ -- 배열은 기존 v1만. wrapper에서 누락/null/1/unknown은 기본값으로 바꾸지 않는다.
+ IF jsonb_typeof(tickets)='object' THEN
+  IF NOT anvil.fn76_exact(tickets,ARRAY['authorityVersion','tickets']) OR tickets->'authorityVersion' IS DISTINCT FROM '2'::jsonb THEN RAISE EXCEPTION 'NATIVE_RECEIVE_INPUT_INVALID' USING ERRCODE='22023';END IF;
+  authority_version_value:=2;tickets:=tickets->'tickets';
+ END IF;
+ IF NOT anvil.fn76_exact(value,ARRAY['ref','snapshot']) OR NOT anvil.fn76_ref(value->'ref',true) OR jsonb_typeof(tickets) IS DISTINCT FROM 'array' OR jsonb_array_length(tickets)<>7 THEN RAISE EXCEPTION 'NATIVE_RECEIVE_INPUT_INVALID' USING ERRCODE='22023';END IF;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=p AND id=NULLIF(current_setting('anvil.command_id',true),'')::uuid;
+ IF NOT FOUND OR c.operation<>'prepareNativeReceiveWindow' OR c.state<>'APPLIED' OR NOT EXISTS(SELECT 1 FROM anvil.commands original WHERE original.project_id=p AND original.id=c.id AND original.xmin::text=(txid_current()%4294967296)::text) OR c.result_ref->'data'->'window' IS DISTINCT FROM value THEN RAISE EXCEPTION 'NATIVE_RECEIVE_COMMAND_INCOMPLETE' USING ERRCODE='23514';END IF;
+ context:=anvil.fn76_receive_command_context(p,sid,'prepareNativeReceiveWindow',c.request_hash);w:=value->'snapshot';ref:=value->'ref';
+ input:=jsonb_build_object('schemaVersion',1,'projectId',p,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation',c.operation,'targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('registrationRef',w->'registrationRef','localReceiveAttemptId',w->'localReceiveAttemptId','profileRef',w->'profileRef'));
+ expected:=anvil.native_receive_window_candidate(p,sid,(ref->>'id')::uuid,input);IF value IS DISTINCT FROM expected THEN RAISE EXCEPTION 'NATIVE_RECEIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ IF (SELECT count(DISTINCT x->>'id') FROM jsonb_array_elements(tickets) x)<>7 OR EXISTS(SELECT 1 FROM jsonb_array_elements(tickets) x WHERE NOT anvil.fn76_exact(x,ARRAY['id','phase','occurrence']) OR COALESCE(x->>'id' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',true)) OR (SELECT count(*) FROM (VALUES('OPEN',1),('STREAM',1),('ARM',1),('ACK',1),('STATE',1),('STATE',2),('CLOSE',1)) slot(phase,occurrence) WHERE (SELECT count(*) FROM jsonb_array_elements(tickets) x WHERE x->>'phase'=slot.phase AND x->'occurrence'=to_jsonb(slot.occurrence))=1)<>7 THEN RAISE EXCEPTION 'NATIVE_RECEIVE_TICKET_CONFLICT' USING ERRCODE='23514';END IF;
+ SELECT event_id INTO audit_id FROM anvil.audit_events WHERE project_id=p AND command_id=c.id;IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_RECEIVE_COMMAND_INCOMPLETE' USING ERRCODE='23514';END IF;
+ INSERT INTO anvil.native_receive_records(project_id,record_id,record_kind,version,window_id,profile_id,profile_version,profile_hash,content_hash,record_canonical,record_json,external_command_id,authorization_receipt_id,audit_event_id,accounting_version)
+ VALUES(p,(ref->>'id')::uuid,'WINDOW',1,(ref->>'id')::uuid,(w->'profileRef'->>'id')::uuid,(w->'profileRef'->>'version')::bigint,w->'profileRef'->>'contentHash',ref->>'contentHash',anvil.fn01_json(w),w,c.command_id,c.authorization_receipt_id,audit_id,1);
+ INSERT INTO anvil.native_receive_heads(project_id,window_id,original_session_id,actor_id,client_id,credential_generation,control_generation,registration_id,registration_version,registration_hash,connector_id,connector_version,connector_hash,profile_id,profile_version,profile_hash,local_attempt_id,phase,revision,stream_owned,expires_at)
+ VALUES(p,(ref->>'id')::uuid,sid,c.actor_id,c.client_id,(w->'human'->>'credentialGeneration')::bigint,c.control_generation,(w->'registrationRef'->>'id')::uuid,(w->'registrationRef'->>'version')::bigint,w->'registrationRef'->>'contentHash',(w->'connectorRef'->>'id')::uuid,(w->'connectorRef'->>'version')::bigint,w->'connectorRef'->>'contentHash',(w->'profileRef'->>'id')::uuid,(w->'profileRef'->>'version')::bigint,w->'profileRef'->>'contentHash',(w->>'localReceiveAttemptId')::uuid,'WINDOW_PREPARED',1,false,(w->>'expiresAt')::timestamptz);
+ FOR t IN SELECT x FROM jsonb_array_elements(tickets) x LOOP INSERT INTO anvil.native_receive_tickets(project_id,window_id,phase,occurrence,ticket_id,stage) VALUES(p,(ref->>'id')::uuid,t->>'phase',(t->>'occurrence')::smallint,(t->>'id')::uuid,'UNUSED');END LOOP;
+ IF NOT anvil.fn76_human_receipt_complete(p,c.id) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_COMMAND_INCOMPLETE' USING ERRCODE='23514';END IF;
+ PERFORM anvil.fn93_reservation_refresh(p,(ref->>'id')::uuid,authority_version_value);RETURN value;
+END;$$;
+
+-- 0076 native_receive_binding_reserve: version 전달 외 원 검산 본문 보존.
+CREATE OR REPLACE FUNCTION anvil.native_receive_binding_reserve(p uuid,sid uuid,arm_ref jsonb,input jsonb,intent jsonb,expected text) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE admission jsonb;h anvil.native_receive_heads%ROWTYPE;r anvil.native_receive_storage_reservations%ROWTYPE;shape jsonb;bounds jsonb;projected jsonb;slot text;maximum bigint;total bigint:=0;before_actual bigint;before_future bigint;expires timestamptz;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR expected IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ admission:=anvil.native_receive_binding_admission(p,sid,arm_ref,input);SELECT * INTO h FROM anvil.native_receive_heads WHERE project_id=p AND window_id=(admission->'window'->'ref'->>'id')::uuid FOR UPDATE;SELECT * INTO r FROM anvil.native_receive_storage_reservations WHERE project_id=p AND window_id=h.window_id FOR UPDATE;
+ IF NOT FOUND OR r.phase<>'HELD' OR r.n_reserved_bytes<>0 OR r.n_reserved_slots<>0 OR r.n_actual_bytes<>0 OR r.n_actual_slots<>0 OR EXISTS(SELECT 1 FROM anvil.commands c WHERE c.project_id=p AND c.command_id=(input->>'commandId')::uuid) THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT' USING ERRCODE='23514';END IF;
+ PERFORM * FROM anvil.fn76_reservation_remaining(r);IF NOT anvil.quota_complete(p) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED' USING ERRCODE='23514';END IF;
+ shape:=anvil.fn76_native_cost_intent(p,h.window_id);bounds:=anvil.fn93_native_intent_bounds(intent,r.authority_version);projected:=anvil.fn93_native_intent_bounds(shape,r.authority_version);
+ IF bounds IS DISTINCT FROM projected OR (intent-'intentId'-'scope'-'at'-'expiresAt') IS DISTINCT FROM (shape-'intentId'-'scope'-'at'-'expiresAt') OR ((intent->'scope')-'executionId'-'leaseId') IS DISTINCT FROM ((shape->'scope')-'executionId'-'leaseId') OR COALESCE(intent->>'intentId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',true) OR COALESCE(intent->'scope'->>'executionId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',true) OR COALESCE(intent->'scope'->>'leaseId' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',true) OR intent->'intentId'=intent->'scope'->'executionId' OR intent->'intentId'=intent->'scope'->'leaseId' OR intent->'scope'->'executionId'=intent->'scope'->'leaseId' THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ expires:=least((admission->>'expiresAt')::timestamptz,(intent->>'expiresAt')::timestamptz);
+ IF (intent->>'at')::timestamptz>clock_timestamp() OR expires IS NULL OR expires<=clock_timestamp() OR (intent->>'expiresAt')::timestamptz>(admission->>'expiresAt')::timestamptz OR (intent->>'expiresAt')::timestamptz<=(intent->>'at')::timestamptz OR intent->>'at' IS DISTINCT FROM to_char((intent->>'at')::timestamptz AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') OR intent->>'expiresAt' IS DISTINCT FROM to_char((intent->>'expiresAt')::timestamptz AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') THEN RAISE EXCEPTION 'NATIVE_SOURCE_EXPIRED' USING ERRCODE='23514';END IF;
+ FOREACH slot IN ARRAY ARRAY['AUTHORITY','CREATED','ATTEMPTED','TERMINAL','CHALLENGE','PROOF','CONSUME'] LOOP SELECT (value->>'maxBytes')::bigint INTO maximum FROM jsonb_array_elements(r.plan_json->'items') WHERE value->>'namespace'='N' AND value->>'slot'=slot;IF maximum IS NULL OR (bounds->>slot)::bigint NOT BETWEEN 1 AND maximum THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_EXCEEDED' USING ERRCODE='23514';END IF;total:=total+(bounds->>slot)::bigint;END LOOP;
+ before_actual:=anvil.fn76_storage_actual(p);before_future:=anvil.fn76_storage_future(p);
+ UPDATE anvil.native_receive_storage_reservations SET n_reserved_bytes=total,n_reserved_slots=7 WHERE project_id=p AND window_id=h.window_id AND phase='HELD' AND n_reserved_bytes=0 AND n_reserved_slots=0;IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT' USING ERRCODE='23514';END IF;
+ PERFORM anvil.fn76_project_quota_settle(p,before_actual,before_future);IF expected IS DISTINCT FROM txid_current()::text OR expires<=clock_timestamp() THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ RETURN jsonb_build_object('windowId',h.window_id,'transactionId',expected,'intentHash',anvil.fn76_hash_text(anvil.fn01_json(intent)),'nativeBounds',bounds,'reservedBytes',total,'reservedSlots',7,'expiresAt',to_char(expires AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+END;$$;
+
+-- 0076 fn76_binding_write_scope: version 전달 외 원 검산 본문 보존.
+CREATE OR REPLACE FUNCTION anvil.fn76_binding_write_scope(p uuid,sid uuid,arm_ref jsonb,intent jsonb,expected text) RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE h anvil.native_receive_heads%ROWTYPE;r anvil.native_receive_records%ROWTYPE;a anvil.auth_sessions%ROWTYPE;reg anvil.connector_registrations%ROWTYPE;c anvil.connectors%ROWTYPE;writer anvil.project_writer_authority_heads%ROWTYPE;profile jsonb;policy_ref jsonb;ref jsonb;cmd anvil.commands%ROWTYPE;ar anvil.native_receive_records%ROWTYPE;o anvil.native_receive_records%ROWTYPE;reservation anvil.native_receive_storage_reservations%ROWTYPE;bounds jsonb;total bigint;wid uuid;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR expected IS DISTINCT FROM txid_current()::text OR NOT anvil.fn76_ref(arm_ref,true) THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ SELECT * INTO a FROM anvil.auth_sessions WHERE id=sid;IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_AUTH_REQUIRED' USING ERRCODE='42501';END IF;
+ PERFORM anvil.fn01_active(sid,a.user_id,a.client_id);IF NOT anvil.fn76_human_scope(p,sid,'prepareNativeReceiveWindow') THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ PERFORM 1 FROM anvil.projects WHERE id=p FOR UPDATE;PERFORM 1 FROM anvil.project_storage_accounts WHERE project_id=p FOR UPDATE;
+ IF (SELECT count(*) FROM anvil.native_receive_heads WHERE project_id=p AND arm_record_id=(arm_ref->>'id')::uuid)<>1 THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT' USING ERRCODE='23514';END IF;
+ SELECT * INTO h FROM anvil.native_receive_heads WHERE project_id=p AND arm_record_id=(arm_ref->>'id')::uuid FOR UPDATE;wid:=h.window_id;
+ IF h.original_session_id<>sid OR h.actor_id<>a.user_id OR h.client_id<>a.client_id OR h.credential_generation<>a.credential_generation OR h.phase<>'ARMED' OR NOT h.stream_owned OR h.broker_instance_id IS NULL OR h.operation_fence IS NULL OR h.binding_record_id IS NOT NULL OR h.terminal_record_id IS NOT NULL OR h.expires_at<=clock_timestamp() OR a.reauth_until IS NULL OR a.reauth_until<=clock_timestamp() OR NOT EXISTS(SELECT 1 FROM anvil.project_control pc WHERE pc.project_id=p AND pc.actor_id=h.actor_id AND pc.client_id=h.client_id AND pc.generation=h.control_generation AND pc.revoked_at IS NULL) THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ SELECT * INTO r FROM anvil.native_receive_records WHERE project_id=p AND window_id=wid AND record_id=wid AND record_kind='WINDOW';ref:=anvil.fn76_receive_record_ref(p,wid,wid,'WINDOW');
+ IF r.record_json IS NULL OR r.record_canonical IS DISTINCT FROM anvil.fn01_json(r.record_json) OR r.record_json->>'authBindingHash' IS DISTINCT FROM anvil.fn76_hash_text(anvil.fn01_json(jsonb_build_object('authSessionId',sid,'window',r.record_json-'authBindingHash'))) OR r.record_json->'human' IS DISTINCT FROM jsonb_build_object('userId',a.user_id,'clientId',a.client_id,'credentialGeneration',a.credential_generation,'controlGeneration',h.control_generation) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RECORD_INCOMPLETE' USING ERRCODE='23514';END IF;
+ profile:=anvil.native_receive_profile_current(p,sid);IF profile->'profile'->'ref' IS DISTINCT FROM r.record_json->'profileRef' THEN RAISE EXCEPTION 'NATIVE_RECEIVE_PROFILE_UNAVAILABLE' USING ERRCODE='42501';END IF;
+ SELECT jsonb_build_object('id',head.id,'version',v.version,'contentHash',v.content_hash) INTO policy_ref FROM anvil.permission_policies head JOIN anvil.permission_policy_versions v ON v.project_id=head.project_id AND v.policy_id=head.id AND v.version=head.head_version WHERE head.project_id=p;IF policy_ref IS DISTINCT FROM r.record_json->'policyRef' THEN RAISE EXCEPTION 'NATIVE_RECEIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ SELECT * INTO reg FROM anvil.connector_registrations WHERE project_id=p AND id=h.registration_id AND session_id=sid FOR SHARE;
+ IF NOT FOUND OR reg.requested_by<>a.user_id OR reg.client_id<>a.client_id OR reg.credential_generation<>h.credential_generation OR reg.control_generation<>h.control_generation OR reg.state<>'ISSUED' OR reg.revoked_at IS NOT NULL OR reg.expires_at<=clock_timestamp() OR reg.scope_json->>'kind' IS DISTINCT FROM 'HOST_TRUST_REGISTRATION' OR reg.scope_json->>'credentialScope' IS DISTINCT FROM 'REGISTRATION_STATUS_ONLY' OR reg.scope_json->>'installationId' IS DISTINCT FROM r.record_json->>'installationId' OR NOT anvil.connector_basis_current(reg.id,true) OR r.record_json->'registrationRef' IS DISTINCT FROM jsonb_build_object('id',reg.id,'version',reg.version,'contentHash',anvil.fn76_hash_text(anvil.fn01_json(jsonb_build_object('registrationId',reg.id,'version',reg.version,'state',reg.state,'scopeDigest',reg.scope_digest)))) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ SELECT * INTO c FROM anvil.connectors WHERE project_id=p AND id=reg.connector_id AND registration_id=reg.id FOR SHARE;
+ IF NOT FOUND OR c.id<>h.connector_id OR c.status<>'TRUSTED' OR c.revoked_at IS NOT NULL OR c.owner_user_id<>a.user_id OR c.client_id<>a.client_id OR c.public_key_spki IS NULL OR c.host_fingerprint IS DISTINCT FROM reg.expected_host_fingerprint OR c.host_fingerprint IS DISTINCT FROM r.record_json->>'hostPublicKeyFingerprint' OR r.record_json->'connectorRef' IS DISTINCT FROM jsonb_build_object('id',c.id,'version',c.generation,'contentHash',anvil.fn76_hash_text(anvil.fn01_json(jsonb_build_object('connectorId',c.id,'registrationId',reg.id,'scopeDigest',reg.scope_digest,'generation',c.generation)))) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+
+ PERFORM anvil.fn76_arm_complete(p,wid);SELECT * INTO ar FROM anvil.native_receive_records WHERE project_id=p AND window_id=wid AND record_id=h.arm_record_id AND record_kind='ARM';SELECT * INTO o FROM anvil.native_receive_records WHERE project_id=p AND window_id=wid AND record_id=h.offer_record_id AND record_kind='OFFER';
+ SELECT * INTO cmd FROM anvil.commands WHERE project_id=p AND result_ref->'data'->'preparationIntent'->>'intentId'=intent->>'intentId';
+ IF NOT FOUND OR cmd.operation<>'prepareNativeBoundary' OR cmd.state<>'APPLIED' OR cmd.actor_id<>a.user_id OR cmd.client_id<>a.client_id OR cmd.control_generation<>h.control_generation OR cmd.result_ref->'data'->'preparationIntent' IS DISTINCT FROM intent OR cmd.result_ref->'data'->'commandSnapshot' IS DISTINCT FROM o.record_json->'command' OR cmd.request_hash IS DISTINCT FROM o.record_json->>'commandHash' OR cmd.policy_ref IS DISTINCT FROM intent->'policyRef' OR ar.record_json->'commandHash' IS DISTINCT FROM to_jsonb(cmd.request_hash) OR arm_ref IS DISTINCT FROM anvil.fn76_receive_record_ref(p,wid,ar.record_id,'ARM') OR intent->'subject' IS DISTINCT FROM jsonb_build_object('userId',a.user_id,'clientId',a.client_id,'humanSessionId',sid,'credentialGeneration',a.credential_generation,'controlGeneration',h.control_generation) OR intent->'expectedWriterHeadRef' IS DISTINCT FROM r.record_json->'writerHeadRef' THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT' USING ERRCODE='23514';END IF;
+ SELECT * INTO writer FROM anvil.project_writer_authority_heads WHERE project_id=p FOR SHARE;
+ IF NOT FOUND OR writer.phase<>'RESERVED' OR writer.expires_at<=clock_timestamp() OR writer.lease_id::text IS DISTINCT FROM intent->'scope'->>'leaseId' OR writer.execution_id::text IS DISTINCT FROM intent->'scope'->>'executionId' OR to_jsonb(writer.execution_generation) IS DISTINCT FROM intent->'scope'->'executionGeneration' OR to_jsonb(writer.authority_epoch) IS DISTINCT FROM intent->'scope'->'authorityEpoch' OR writer.registration_ref IS DISTINCT FROM intent->'scope'->'registrationRef' OR writer.scope_hash IS DISTINCT FROM intent->'scope'->>'sourceScopeHash' OR writer.content_hash IS DISTINCT FROM anvil.ownership_content_hash(anvil.writer_authority_head_snapshot(writer)) THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ SELECT * INTO reservation FROM anvil.native_receive_storage_reservations WHERE project_id=p AND window_id=wid FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;bounds:=anvil.fn93_native_intent_bounds(intent,reservation.authority_version);SELECT sum(value::bigint) INTO total FROM jsonb_each_text(bounds);
+ IF NOT FOUND OR reservation.phase<>'HELD' OR reservation.n_reserved_slots<>7 OR reservation.n_reserved_bytes<>total OR reservation.n_actual_slots<>0 OR reservation.n_actual_bytes<>0 OR (intent->>'expiresAt')::timestamptz<=clock_timestamp() OR (intent->>'at')::timestamptz>clock_timestamp() OR (ar.record_json->>'expiresAt')::timestamptz<=clock_timestamp() OR (o.record_json->>'expiresAt')::timestamptz<=clock_timestamp() OR expected IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'NATIVE_SOURCE_EXPIRED' USING ERRCODE='23514';END IF;
+ RETURN wid;
+END;$$;
+
+-- 0076 fn76_native_insert_material: version 전달 외 원 검산 본문 보존.
+CREATE OR REPLACE FUNCTION anvil.fn76_native_insert_material(p uuid,sid uuid,arm_ref jsonb,intent jsonb,proposed jsonb,expected text) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE wid uuid;v jsonb;g jsonb;e jsonb;bounds jsonb;writer anvil.project_writer_authority_heads%ROWTYPE;ac anvil.project_storage_accounts%ROWTYPE;native_slots bigint;native_bytes bigint;future_nbytes bigint;future_nslots bigint;credit bigint;extra bigint;other_bytes bigint;
+BEGIN
+ wid:=anvil.fn76_binding_write_scope(p,sid,arm_ref,intent,expected);bounds:=anvil.fn93_native_intent_bounds(intent,anvil.fn93_window_version(p,wid));
+ IF NOT anvil.fn76_exact(proposed,ARRAY['authority','event']) OR NOT anvil.fn76_exact(proposed->'authority',ARRAY['ref','snapshot','preparationRef','preparationIntent']) OR NOT anvil.fn76_exact(proposed->'event',ARRAY['ref','snapshot']) THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;v:=proposed->'authority';g:=v->'snapshot';IF g->'schemaVersion' IS DISTINCT FROM to_jsonb(anvil.fn93_window_version(p,wid)) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_VERSION_CHANGED' USING ERRCODE='23514';END IF;e:=proposed->'event'->'snapshot';
+ SELECT * INTO writer FROM anvil.project_writer_authority_heads WHERE project_id=p FOR SHARE;
+ IF NOT anvil.fn76_ref(v->'ref',true) OR NOT anvil.fn76_ref(proposed->'event'->'ref',true) OR v->'preparationIntent' IS DISTINCT FROM intent OR v->'preparationRef' IS DISTINCT FROM jsonb_build_object('id',intent->'intentId','version',1,'contentHash',anvil.ownership_content_hash(intent)) OR v->'preparationRef' IS DISTINCT FROM g->'scope'->'preparationRef' OR v->'ref' IS DISTINCT FROM jsonb_build_object('id',g->'authorityId','version',1,'contentHash',anvil.ownership_content_hash(g)) OR proposed->'event'->'ref'->>'contentHash' IS DISTINCT FROM anvil.ownership_content_hash(e) OR g->'subject' IS DISTINCT FROM intent->'subject' OR ((g->'scope')-'writerHeadRef'-'preparationRef'-'hostPublicKeyFingerprint') IS DISTINCT FROM intent->'scope' OR g->'scope'->'writerHeadRef' IS DISTINCT FROM jsonb_build_object('id',writer.id,'version',writer.head_generation,'contentHash',writer.content_hash) OR e->>'kind' IS DISTINCT FROM 'AUTHORITY_CREATED' OR e->'sequence' IS DISTINCT FROM '1'::jsonb OR e->'previousRef' IS DISTINCT FROM 'null'::jsonb OR e->'authorityRef' IS DISTINCT FROM v->'ref' OR e->>'projectId' IS DISTINCT FROM p::text OR e->'actor' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','subject',intent->'subject') OR e->'payload' IS DISTINCT FROM (jsonb_build_object('preparationRef',v->'preparationRef','writerHeadRef',g->'scope'->'writerHeadRef')||(g->'parent')) OR e->'at' IS DISTINCT FROM g->'issuedAt' OR e->'expiresAt' IS DISTINCT FROM g->'expiresAt' OR (g->>'expiresAt')::timestamptz<=clock_timestamp() OR (g->>'issuedAt')::timestamptz>clock_timestamp() OR (g->>'expiresAt')::timestamptz>(intent->>'expiresAt')::timestamptz OR anvil.native_preparation_json_bytes(v)>(bounds->>'AUTHORITY')::bigint OR anvil.native_preparation_json_bytes(proposed->'event')>(bounds->>'CREATED')::bigint OR EXISTS(SELECT 1 FROM anvil.native_preparation_authorities WHERE project_id=p AND (id=(v->'ref'->>'id')::uuid OR server_command_id=(g->'parent'->'commandRef'->>'id')::uuid OR intent_id=(intent->>'intentId')::uuid)) THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ SELECT * INTO ac FROM anvil.project_storage_accounts WHERE project_id=p FOR UPDATE;
+ IF NOT FOUND OR ac.coverage_state IS DISTINCT FROM 'VERIFIED' OR NOT anvil.quota_complete(p) THEN RAISE EXCEPTION 'NATIVE_SOURCE_UNAVAILABLE' USING ERRCODE='23514';END IF;
+ SELECT count(*),COALESCE(sum(canonical_bytes),0) INTO native_slots,native_bytes FROM(SELECT canonical_bytes FROM anvil.native_preparation_authorities WHERE project_id=p UNION ALL SELECT canonical_bytes FROM anvil.native_preparation_authority_events WHERE project_id=p) native_rows;
+ SELECT COALESCE(sum(x.n_bytes),0),COALESCE(sum(x.n_slots),0) INTO future_nbytes,future_nslots FROM anvil.native_receive_storage_reservations r CROSS JOIN LATERAL anvil.fn76_reservation_remaining(r) x WHERE r.project_id=p;
+ SELECT COALESCE((SELECT sum(canonical_bytes) FROM anvil.connection_definition_versions WHERE project_id=p),0)+COALESCE((SELECT sum(canonical_bytes) FROM anvil.definition_capability_reports WHERE project_id=p),0)+COALESCE((SELECT sum(canonical_bytes+evidence_bytes) FROM anvil.environment_configuration_versions WHERE project_id=p),0)+COALESCE((SELECT sum(canonical_bytes) FROM anvil.environment_approval_candidates WHERE project_id=p),0) INTO other_bytes;
+ credit:=(bounds->>'AUTHORITY')::bigint+(bounds->>'CREATED')::bigint;extra:=anvil.native_preparation_json_bytes(v)+anvil.native_preparation_json_bytes(proposed->'event');
+ IF credit>future_nbytes OR future_nslots<2 OR credit>ac.held_bytes OR native_slots+2+future_nslots-2>10000 OR native_bytes+extra+future_nbytes-credit>67108864 OR ac.used_bytes+ac.held_bytes+other_bytes+native_bytes+extra-credit>10737418240 THEN RAISE EXCEPTION 'NATIVE_CAPACITY_EXCEEDED' USING ERRCODE='23514';END IF;
+ IF expected IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ RETURN jsonb_build_object('transactionId',expected,'intentHash',anvil.ownership_content_hash(intent),'authorityHash',v->'ref'->'contentHash','eventHash',proposed->'event'->'ref'->'contentHash','creditBytes',(bounds->>'AUTHORITY')::bigint+(bounds->>'CREATED')::bigint,'creditSlots',2,'nativeBytes',native_bytes,'nativeSlots',native_slots);
+END;$$;
+
+-- 0076 native_receive_delivery_consume: version 전달 외 원 검산 본문 보존.
+CREATE OR REPLACE FUNCTION anvil.native_receive_delivery_consume(p uuid,sid uuid,binding_ref jsonb,proposed jsonb,digest_value text,expected text) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE a anvil.auth_sessions%ROWTYPE;b anvil.native_receive_records%ROWTYPE;h anvil.native_receive_heads%ROWTYPE;n anvil.native_preparation_authorities%ROWTYPE;created anvil.native_preparation_authority_events%ROWTYPE;writer anvil.project_writer_authority_heads%ROWTYPE;material jsonb;intent_ref jsonb;arm_ref jsonb;g jsonb;j jsonb;e jsonb;ar jsonb;ref jsonb;er jsonb;at_time timestamptz;expires timestamptz;before_actual bigint;before_future bigint;bounds jsonb;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR expected IS DISTINCT FROM txid_current()::text OR NOT anvil.fn76_ref(binding_ref,true) OR NOT anvil.fn76_exact(proposed,ARRAY['deliveryId','eventId','brokerInstanceId','operationFence','issuedAt','expiresAt']) OR COALESCE(proposed->>'deliveryId'!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',true) OR COALESCE(proposed->>'eventId'!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',true) OR proposed->'deliveryId'=proposed->'eventId' OR NOT anvil.execution_iso_valid(proposed->'issuedAt') OR NOT anvil.execution_iso_valid(proposed->'expiresAt') OR digest_value IS NULL OR digest_value!~'^[0-9a-f]{64}$' THEN RAISE EXCEPTION 'NATIVE_PURPOSE_DENIED' USING ERRCODE='42501';END IF;
+ SELECT * INTO a FROM anvil.auth_sessions WHERE id=sid;IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_AUTH_REQUIRED' USING ERRCODE='42501';END IF;PERFORM anvil.fn01_active(sid,a.user_id,a.client_id);
+ SELECT * INTO b FROM anvil.native_receive_records WHERE project_id=p AND record_id=(binding_ref->>'id')::uuid AND record_kind='BINDING';IF NOT FOUND OR binding_ref IS DISTINCT FROM anvil.fn76_receive_record_ref(p,b.window_id,b.record_id,'BINDING') THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT' USING ERRCODE='23514';END IF;
+ SELECT * INTO n FROM anvil.native_preparation_authorities WHERE project_id=p AND id=b.native_authority_id;IF NOT FOUND OR n.credential_digest IS DISTINCT FROM digest_value THEN RAISE EXCEPTION 'NATIVE_AUTH_REQUIRED' USING ERRCODE='42501';END IF;
+ intent_ref:=jsonb_build_object('id',n.intent_id,'version',1,'contentHash',n.intent_hash);arm_ref:=b.record_json->'armRef';material:=anvil.native_receive_binding_material(p,sid,arm_ref,intent_ref,expected);
+ PERFORM 1 FROM anvil.projects WHERE id=p FOR UPDATE;PERFORM 1 FROM anvil.project_storage_accounts WHERE project_id=p FOR UPDATE;SELECT * INTO h FROM anvil.native_receive_heads WHERE project_id=p AND window_id=b.window_id FOR UPDATE;
+ IF NOT FOUND OR h.phase<>'BOUND' OR h.binding_record_id IS DISTINCT FROM b.record_id OR h.delivery_record_id IS NOT NULL OR NOT h.stream_owned OR h.broker_instance_id::text IS DISTINCT FROM proposed->>'brokerInstanceId' OR h.operation_fence::text IS DISTINCT FROM proposed->>'operationFence' OR h.original_session_id<>sid OR h.actor_id<>a.user_id OR h.client_id<>a.client_id OR h.credential_generation<>a.credential_generation THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ SELECT * INTO writer FROM anvil.project_writer_authority_heads WHERE project_id=p FOR SHARE;g:=n.snapshot_json;IF g->'schemaVersion' IS DISTINCT FROM to_jsonb(anvil.fn93_window_version(p,b.window_id)) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_VERSION_CHANGED' USING ERRCODE='23514';END IF;
+ IF NOT FOUND OR writer.phase<>'RESERVED' OR writer.expires_at<=clock_timestamp() OR writer.lease_id<>n.lease_id OR writer.execution_id::text IS DISTINCT FROM g->'scope'->>'executionId' OR to_jsonb(writer.execution_generation) IS DISTINCT FROM g->'scope'->'executionGeneration' OR to_jsonb(writer.authority_epoch) IS DISTINCT FROM g->'scope'->'authorityEpoch' OR writer.registration_ref IS DISTINCT FROM g->'scope'->'registrationRef' OR writer.scope_hash IS DISTINCT FROM g->'scope'->>'sourceScopeHash' OR writer.content_hash IS DISTINCT FROM anvil.ownership_content_hash(anvil.writer_authority_head_snapshot(writer)) THEN RAISE EXCEPTION 'NATIVE_CONTEXT_CHANGED' USING ERRCODE='23514';END IF;
+ SELECT * INTO created FROM anvil.native_preparation_authority_events WHERE project_id=p AND authority_id=n.id AND id=b.native_event_id AND kind='AUTHORITY_CREATED';IF NOT FOUND OR created.sequence<>1 OR (SELECT count(*) FROM anvil.native_preparation_authority_events WHERE project_id=p AND authority_id=n.id)<>1 THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT' USING ERRCODE='23514';END IF;
+ at_time:=(proposed->>'issuedAt')::timestamptz;expires:=(proposed->>'expiresAt')::timestamptz;IF at_time>clock_timestamp() OR expires<=clock_timestamp() OR at_time<(b.record_json->>'issuedAt')::timestamptz OR expires>least((b.record_json->>'expiresAt')::timestamptz,(g->>'expiresAt')::timestamptz,h.expires_at,a.reauth_until,a.idle_expires_at,a.absolute_expires_at,writer.expires_at,at_time+interval '10 seconds') THEN RAISE EXCEPTION 'NATIVE_SOURCE_EXPIRED' USING ERRCODE='23514';END IF;
+ ar:=jsonb_build_object('id',n.id,'version',n.version,'contentHash',n.content_hash);e:=jsonb_build_object('schemaVersion',1,'purpose','NATIVE_PREPARATION_AUTHORITY_EVENT','projectId',p,'authorityRef',ar,'sequence',2,'previousRef',jsonb_build_object('id',created.id,'version',created.version,'contentHash',created.content_hash),'kind','DELIVERY_ATTEMPTED','actor',jsonb_build_object('kind','SERVER','channelProfileRef',g->'channelProfileRef'),'payload',jsonb_build_object('deliveryId',proposed->'deliveryId','channelProfileRef',g->'channelProfileRef','registrationRef',g->'scope'->'registrationRef','credentialId',g->'credentialId','credentialGeneration',g->'credentialGeneration'),'at',proposed->'issuedAt','expiresAt',proposed->'expiresAt');er:=jsonb_build_object('id',proposed->'eventId','version',1,'contentHash',anvil.ownership_content_hash(e));
+ j:=jsonb_build_object('schemaVersion',1,'purpose','NATIVE_FIRST_RECEIVE_DELIVERY','deliveryId',proposed->'deliveryId','bindingRef',binding_ref,'armRef',arm_ref,'authorityRef',ar,'authority',jsonb_build_object('ref',ar,'snapshot',g),'commandHash',b.record_json->'nativeCommandHash','metadata',jsonb_build_object('authorityRef',ar,'credentialId',g->'credentialId','credentialGeneration',g->'credentialGeneration','registrationRef',g->'scope'->'registrationRef','channelProfileRef',g->'channelProfileRef','expiresAt',proposed->'expiresAt'),'issuedAt',proposed->'issuedAt','expiresAt',proposed->'expiresAt');ref:=jsonb_build_object('id',proposed->'deliveryId','version',1,'contentHash',anvil.fn76_hash_text(anvil.fn01_json(j)));bounds:=anvil.fn93_native_intent_bounds(n.intent_json,anvil.fn93_window_version(p,b.window_id));
+ IF anvil.native_preparation_json_bytes(jsonb_build_object('ref',er,'snapshot',e))>(bounds->>'ATTEMPTED')::bigint OR octet_length(anvil.fn01_json(j))>2098694 THEN RAISE EXCEPTION 'NATIVE_RECEIVE_RESERVATION_EXCEEDED' USING ERRCODE='23514';END IF;
+ before_actual:=anvil.fn76_storage_actual(p);before_future:=anvil.fn76_storage_future(p);
+ INSERT INTO anvil.native_preparation_authority_events(project_id,id,version,authority_id,sequence,previous_ref,content_hash,snapshot_json,canonical_bytes,project_sequence) SELECT p,(proposed->>'eventId')::uuid,1,n.id,2,e->'previousRef',er->>'contentHash',e,anvil.native_preparation_json_bytes(jsonb_build_object('ref',er,'snapshot',e)),COALESCE(max(project_sequence),0)+1 FROM anvil.native_preparation_authority_events WHERE project_id=p;
+ INSERT INTO anvil.native_receive_records(project_id,record_id,record_kind,version,window_id,profile_id,profile_version,profile_hash,content_hash,record_canonical,record_json,accounting_version,created_at,session_record_id,offer_record_id,arm_record_id,binding_record_id,native_authority_id,native_event_id,native_event_version,native_command_id,authorization_receipt_id,audit_event_id) VALUES(p,(proposed->>'deliveryId')::uuid,'DELIVERY',1,h.window_id,h.profile_id,h.profile_version,h.profile_hash,ref->>'contentHash',anvil.fn01_json(j),j,1,at_time,h.session_record_id,h.offer_record_id,h.arm_record_id,b.record_id,n.id,(proposed->>'eventId')::uuid,1,b.native_command_id,b.authorization_receipt_id,b.audit_event_id);
+ UPDATE anvil.native_receive_heads SET phase='ATTEMPTED',delivery_record_id=(proposed->>'deliveryId')::uuid,revision=revision+1 WHERE project_id=p AND window_id=h.window_id AND phase='BOUND' AND revision=h.revision AND binding_record_id=b.record_id AND delivery_record_id IS NULL AND stream_owned AND broker_instance_id=h.broker_instance_id AND operation_fence=h.operation_fence;IF NOT FOUND THEN RAISE EXCEPTION 'NATIVE_REQUEST_CONFLICT' USING ERRCODE='23514';END IF;
+ PERFORM anvil.fn76_delivery_complete(p,h.window_id);PERFORM anvil.fn76_reservation_refresh(p,h.window_id);PERFORM anvil.fn76_project_quota_settle(p,before_actual,before_future);
+ PERFORM anvil.fn01_active(sid,a.user_id,a.client_id);IF expected IS DISTINCT FROM txid_current()::text OR expires<=clock_timestamp() OR a.reauth_until<=clock_timestamp() OR NOT anvil.fn76_human_scope(p,sid,'prepareNativeReceiveWindow') OR NOT anvil.connector_basis_current(h.registration_id,true) THEN RAISE EXCEPTION 'NATIVE_SOURCE_EXPIRED' USING ERRCODE='23514';END IF;
+ RETURN jsonb_build_object('delivery',jsonb_build_object('ref',ref,'snapshot',j),'attemptedEvent',jsonb_build_object('ref',er,'snapshot',e),'transactionId',expected,'brokerInstanceId',h.broker_instance_id,'operationFence',h.operation_fence);
+END;$$;
+
+COMMIT;

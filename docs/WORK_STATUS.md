@@ -19095,3 +19095,34 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 최종Main root tsc --noEmit -p tsconfig.base.json exit0(9.426579s). native 독립검수C0/I1/M0: retained selection의authorizationReceiptId/Version/Hash가authority.parent.authorizationReceiptRef와대조되지않았다. CWT원객체확인만으로원HUMAN승인receipt동일성이보장되지않으므로Primary가해당fullref비교반례/보완을수행한다. 다른동결파일유지,이I1미해소상태에서commit/병합하지않는다. 실제C#/키/host/DB시험0.
 
 - native authorizationReceipt I1 보완 후 Main정적2P/0F/0SKIP173.7293ms exit0 및 독립재검수C0/I0/M0·지문일치. 결과서 FN08_D1_NATIVE_PREPARATION_OWNERSHIP_RETURN_SOURCE_RESULT_20261114.md 작성. 제품/SQL17+시험7 및 Main기록5를 정확검수/통합할 예정이며 실제DB호출/host공급자미완료·전체계획미완료를보존한다.
+
+## 2026-11-14 PR106 통합·FN08 내부 runtime 연결 착수
+- source ee6a8064883639a766a91eb5acc4e47e62e3fb60의 승인 source 묶음을 PR106/main34f613a03c9e6edf0e96f3096aad86e3c3d4aede로 통합했다. Broker43545805712 success, source/main tree동일, local/development main동일·clean, 원격main만·요청tag부재, 완료로컬branch/tag정리. merged 새client/journal smoke1P/0F/0SKIP398.3195ms exit0.
+- 직접 gh PR 생성은 collaborator권한부족으로1회실패했다. 인증/권한설정변경없이기존승인 Request-tag Broker를사용했고반복직접생성0. PR106/source이력보존.
+- 다음읽기조사에서 신규TSreturn/C#signer의제품생성자·runtime export/build목록미연결과desktop proof owner의v1전용판독에따른v2거절을확인했다. 이는환경활성화만남은상태가아니다. 같은Primary가정확경로를확정하면기존승인A안내부source wiring을구현한다. 실제EMPTY job host와등록key host의통합신뢰경계는별도검토하며임의실행하지않는다.
+- 최신main에서codex/av3-d1-return-runtime-wiring생성. Main문서/검수/통합,기존Primary단일writer. 실제DB/권한/키/서비스/Agent/C#실행제외,원grant/current/resume미완료유지. 이전검증반복이아닌누락조립경로의직접반례를검증한다.
+
+- Primary 정확18경로 구현지도 확정: native-first-receive 계약/client, desktop runtime entry/build, trust owner/shell/typedhostclient, DesktopTrustKeyHostSource/NativePreparationOwnershipReturnSource/OwnershipEvidenceProcessOwnerSource 및trusthostbuild, 직접FN06시험3·desktop시험3·신규native-preparation-return-owner시험. 기존v1 readReceiveDelivery는보존하고신규명시dispatcher→실frame판독v2수용RED부터진행한다. Node bundle/합성검증허용, C#컴파일/실host/키/프로세스실행제외. 동일host원객체·원등록key공급미설정은거절하며다른host PID/JSON신뢰나범용signer를추가하지않는다. Main문서/검수·Primary단일writer,새경로필요시근거확인.
+
+- 명시v2 수신3경로 잠정동결: 기존v1 readReceiveDelivery본문보존, 신규dispatcher→실frame decoder연결. Primary 미구현1F→1P 후 Main node --test --test-reporter=spec --test-name-pattern="명시 v2 delivery" tests/unit/FN06/native-first-receive-client.test.ts →1P/0F/0SKIP297.863ms exit0. 독립검수중,owner정상종단/동일host연결은미완료이며별도구현계속. 실제환경실행0.
+
+- v2 전달 사전검수C0/I0/M1: 기존v1본문·원ref/credential/등록/profile/기한/window/session검사보존. 실제decoder의재해시frame음성은최종여정에보완한다. 추가정확1경로 native-first-receive-store.ts의delivery판독만dispatcher연결을허용해총19경로다.0076은authority_complete를호출하고0092가이미v1/v2분기를제공하므로현재추가SQL변경불필요. owner/typedhost/같은host CWT·등록key조립작성후합성정상여정진행중. build목록확대fixturecount실패와PE의존성누락은별도분류하며PASS승격하지않는다. 실C#실행0.
+
+- owner/native 조립 잠정동결 부분 Main 직접 node --test --test-reporter=spec tests/desktop/native-preparation-return-owner.test.cjs →7P/0F/0SKIP3106.1017ms exit0. 실제제품owner→Client/coordinator→typed RAM host→서버순수계획 observation/head 종단 및 NO_JOURNAL/NO_NATIVE_PROVIDER/ROOT/CLOSE/LOST_RESULT 추가반환0 확인. DB/OS/키/실host는대역이며실제앱사용가능판정아님. SIGN뒤마지막READ까지동일host를보유하고Clientfinallyabort전닫힘을검증,독립검수중.
+
+- 독립 owner/native 검수 C0/I1/M0: 위 7P는 host close가 retained 프로세스를 종료하는 효과를 모델링하지 못했다. 마지막 READ 뒤 host 종료로 결과 POST 전에 원 프로세스가 소멸할 수 있어 정상 완료 판정을 보류했다. Primary가 실제 합성 수명 반례 1F(exit1)를 확보했다. Main은 같은19경로 안에서 일회 HTTP/client 취소와 receiver 소유 retained 수명을 분리하도록 지시했다. 성공 POST 뒤에도 즉시 종료하지 않고 원 receiver dispose·등록/epoch 교체·원 기한에만 종료하며 기한 연장0, 실제 프로세스 실행0을 유지한다. coordinator 추가 경로 제안은 보류했다.
+- 별개 frame/build 직접검증은 Primary 79P/0F/0SKIP 및 root noEmit exit0 제출, Main 최종 대조 전이다. PE 합성검수는 pe-library 모듈 해석 부재 ERR_MODULE_NOT_FOUND를 확인하고 이미 존재하는 v1.0.1 모듈을 process-memory resolver로만 연결해15P 제출했다. 설치·링크·실PE컴파일0이며 정확 명령/기준선 및 desktop typecheck 기존·신규 진단을 최종 검수에서 대조한다.
+
+- 별개 독립 검수 capacity 결함 확인: 최대형상 v2 authority는 v1보다38바이트 크지만 TS nativeReceiveNativeBounds와0076 fn76_native_intent_bounds는v1로계산한다. 순수계산 authority2643→2681B, intent포함 AUTHORITY2100130→2100168B. SQL의원예약상한소비검사에서최대v2가거절될수있다. 기존v1상한일괄증가/과거SQL수정없이명시v2선택전달과forward계산정합설계를Primary에게요청했고현재capacity수정은보류했다. 수명보완및다른승인source연결은계속한다. 실제SQL실행0,추가공개/저장계약필요여부미확정.
+
+- 수명 I1 보완 독립 C0/I0/M0. owner지문0B4C6F81…0162D2/시험743F292F…09E47. Main fresh node --test --test-reporter=spec tests/desktop/native-preparation-return-owner.test.cjs exit0,11P/0F/0SKIP5511.1743ms. 성공 POST·Client abort뒤보유, 명시dispose/등록무효화/원idle기한종료,늦은host회수·중복효과0을확인했다. 실제C#/프로세스/키실행증거아님. capacity I2는미해결이며내부version예약결박의필수보완범위를PMO에문의했다.
+- 별개 실제app저장접근 조사로 FN08_NATIVE_HOST_STORAGE_ACCESS_CANDIDATE_20261114.md 미채택초안을작성했다. receive전용발급은기존0076을유지하고host현재성/challenge/consume/return만한정하며일반HUMAN발급/HISTORY권한은제외하는후보다. 새EXECUTE/deny예외는채택전구현하지않고현재source검수는계속한다.
+
+- PMO 실제 소스 대조 회신: 서버 #authorityVersion의 예약 전달 누락 보완은 기존 v2 채택 범위의 저장 일관성 보완이므로 재승인 없이 진행한다. 공개 요청/응답·허용 작업·정책 총한도·기존 v1 계산·0076을 보존하고 새 미적용 forward SQL에만 반영한다. DB 실행 권한/RLS는 제외한다. Primary에 project-native-preparations.ts·native-first-receive-service.ts·직접 store 시험의 추가 경로를 배정하고 새 SQL/정적 시험의 정확 목록을 요청했다. 검수는 v1 동등·v2 실제 바이트 정합·버전 불일치·총한도 초과 거절이다.
+
+- 실제 DB 접근 후보 기술 대조: 기존0076은 Node ECDSA 검산과 동일 거래의 원 material 재검산을 신뢰하며 DB가 ECDSA를 독립 검증하지 않는다. 후보도 이 경계를 명시하고 임의 SQL 권한을 가진 app 침해까지 방어한다고 주장하지 않는다. 또한 migrator OWNER만으로 FORCE RLS가 우회되지 않으며 기존 native authority/events의 receive 생성용 definer 정책을 migration 소스에서 확인하지 못했다. 실제 설치 상태는 미조회이고 선행 정책 공백도 신규 권한 결정에 포함한다. 후보 문서 패치의 잘못된 앵커 1회는 적용0 후 정확 앵커로 수정했다.
+
+- capacity 보완0093 잠정동결 SHA F91FD36E21AE28D6013669BFEB2EEE69A2A69B56867E6A1C9F2CA6E293B93D23 독립SQL source C0/I0/M0. 신규5/교체9, 기존v1위임/bytes보존·storedversion불변·wrapper닫힌입력·동일schema대조·ACL/총한도보존확인. 실제SQL미실행. Main node --test --test-reporter=spec --test-name-pattern="fixed intent|명시 v2 issuer" tests/unit/FN06/native-preparation-store.test.ts exit0,2P/0F/0SKIP5671.2291ms로원예약version양방향불일치/한도거절과issuer→ARM→deliverydecoder를확인했다. DB는RAM대역이며 실제PG검증아님. Primaryroot tsc최종exit0, TS연결독립검수진행중.
+- 다음DB접근계약 후보 독립C0/I0와경미문구보정후 SHA A185C52DAD309718845F3DB40D2B1AC0F7E60ABB83FADACD243E9CABE750B00E를신산님께source-only채택질문으로전달했다. 새EXECUTE/선행definer접근/RLS예외의계약만결정대상이며실제적용제외. 현재runtime검수·통합은답변과독립해계속한다.
+
+- Primary COMPLETED 인계: 정확20코드/시험경로·쓰기종료·live handle0. root tsc exit0, desktop 전체는기존진단174개로exit1(HEAD overlay179·신규0)이므로전체PASS로표시하지않는다. Main기존pe-library1.0.1 process-memory resolver만연결한PE합성15P/0F/0SKIP107.3365ms exit0,설치/링크/실컴파일0. 별도79P/owner11P/native정적3P/SQL정적2P/ARM인접4P/등록인접4P는중복범위라합산하지않는다. 결과서에범위·명령·미검증기록. 정확24파일stage후diff/지문최종대조및기존development동기화확인중이다.
