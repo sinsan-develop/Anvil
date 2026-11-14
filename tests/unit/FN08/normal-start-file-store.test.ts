@@ -23,3 +23,16 @@ test('완료 뒤 보관한 transaction·다른 scope intake·비정규 channel �
  await assert.rejects(store.exclusive('../outside',async()=>0));
  await assert.rejects(store.intake().exclusive({...scope,executionGeneration:2,commandId:scope.executionId},async()=>0));assert.equal(f.files.size,0);
 });
+
+for(const method of ['instructionIntake','instructionAttempts'] as const)test('SEND '+method+'는 원 root scope 외 입력을 쓰기 전에 거절한다',async()=>{
+ const f=memoryFiles(),store=new NormalStartFileStore(root,scope,f.fs);
+ await assert.rejects(store[method]().exclusive({...scope,executionGeneration:2,commandId:scope.executionId},async()=>0));assert.equal(f.files.size,0);
+});
+
+test('SEND typed 채널 close 불명은 원 lock을 보존하고 새 store 진입을 막는다',async()=>{
+ const f=memoryFiles(),open=f.fs.open,store=new NormalStartFileStore(root,scope,f.fs),key={...scope,commandId:scope.executionId};
+ let closes=0;f.fs.open=async(path:string,flag:any)=>{const h=await open(path,flag);if(path.endsWith('.lock'))h.close=async()=>{closes++;throw Error('RAM_CLOSE_UNKNOWN');};return h;};
+ await assert.rejects(store.instructionAttempts().exclusive(key,async tx=>{await tx.read();await tx.appendAndSync({original:true});}),/NORMAL_LOCAL_STORAGE_UNAVAILABLE/);
+ assert(f.files.has(f.path('attempt-'+key.commandId+'.lock')));
+ await assert.rejects(new NormalStartFileStore(root,scope,f.fs).instructionAttempts().exclusive(key,async()=>0),/NORMAL_LOCAL_BUSY/);assert.equal(closes,1);
+});

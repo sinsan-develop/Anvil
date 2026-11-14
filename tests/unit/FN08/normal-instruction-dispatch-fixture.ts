@@ -146,3 +146,47 @@ export async function normalInstructionDeliveryFixture(instruction?:{text:string
  };
  return{q,x,f,app,prefix,sent,plan,bindings,permits,mode,prepare,close:async()=>{await app.close();await x.close();}};
 }
+
+/** 실제 handler를 RAM HTTPS로 연결한다. 파일/네트워크/등록 키 I/O는 하지 않는다. */
+export async function normalInstructionRuntimeFixture(instruction?:Parameters<typeof normalInstructionDeliveryFixture>[0]){
+ const h=await normalInstructionDeliveryFixture(instruction),j=h.q.j;
+ const {EventEmitter}=await import('node:events');
+ const {NormalProtectedGetClient}=await import('../../../apps/connector/runtime/normal-protected-get-client.ts');
+ const {NormalProtectedPostClient}=await import('../../../apps/connector/runtime/normal-protected-post-client.ts');
+ const calls:{path:string;body:unknown}[]=[],mode={wall:0,losePermit:false,mutatePermit:null as null|((v:any)=>void)};
+ const request=(url:URL,options:any,callback:(r:any)=>void)=>{
+  const req:any=new EventEmitter();req.destroy=()=>{};req.end=(body?:Buffer)=>{
+   calls.push({path:url.pathname,body:body?JSON.parse(body.toString()):null});
+   inject((rq,rp)=>{Object.defineProperty(rq.socket,'encrypted',{value:true});(url.pathname.endsWith('/challenges')?j.app:h.app).routing(rq,rp);},
+    {method:options.method,url:url.pathname+url.search,headers:{host:url.host,...options.headers},...(body?{payload:body}:{})}).then(r=>{
+     if(url.pathname.endsWith('/permit')&&mode.losePermit){req.emit('error',Error('RAM_RESPONSE_LOST'));return;}
+     let payload=r.rawPayload;if(url.pathname.endsWith('/permit')&&mode.mutatePermit&&r.statusCode===200){const v=r.json();mode.mutatePermit(v);payload=Buffer.from(canonicalJson(v));}
+     const res:any=new EventEmitter();res.destroy=()=>{};res.statusCode=r.statusCode;res.rawHeaders=Object.entries(r.headers).flatMap(([k,v])=>[k,String(v)]);
+     callback(res);setImmediate(()=>{res.emit('data',payload);res.emit('end');});
+    },e=>req.emit('error',e));
+  };return req;
+ };
+ const first=h.f.tables.execution_commands![0]!,scope={projectId:h.f.pid,connectorId:h.f.registration!.row.connector_id,executionId:first.execution_id,executionGeneration:first.generation,grantRef:j.mk().grantRef,credentialGeneration:j.mk().credentialGeneration};
+ const config={origin:'https://anvil-synthetic.invalid',ca:'RAM CA',credential:j.token,credentialExpiresAt:j.credentialExpiresAt,scope};
+ const clock=()=>j.store.now().getTime()+mode.wall,ports={request:request as any,signer:{async sign(_purpose:any,bytes:Buffer){return j.signBytes(bytes);}},now:clock};
+ const get=new NormalProtectedGetClient(config,ports),post=new NormalProtectedPostClient(config,ports);
+ const current={transport:'NORMAL_PROTECTED' as const,async current(e:any,localAttemptRef:any){const fact=h.q.g.snapshot_json.binding;
+  return{transport:'NORMAL_PROTECTED',key:{projectId:e.context.projectId,executionId:e.context.executionId,executionGeneration:e.context.executionGeneration,commandId:e.commandId},envelopeHash:e.envelopeHash,grantRef:scope.grantRef,localAttemptRef,
+   sourceObservationRefs:[...new Map(e.context.sourceScopes.map((s:any)=>[canonicalJson(s.observationRef),s.observationRef])).values()],osOwnershipRef:fact.checks.osFence.evidenceRefs[0],checkedAt:new Date(clock()).toISOString(),expiresAt:new Date(Math.min(clock()+30000,Date.parse(e.expiresAt))).toISOString()};}};
+ return{h,get,post,current,scope,clock,calls,mode,signal:new AbortController().signal};
+}
+
+/** 아래는 source 합성 시험의 내부 조립이다. current 대역을 실제 OS 권위로 표시하지 않는다. */
+export async function normalInstructionDurableFixture(){
+ const f=await normalInstructionRuntimeFixture(),{root,memoryFiles}=await import('./normal-start-local-fixture.ts');
+ const {NormalStartFileStore}=await import('../../../apps/connector/runtime/normal-start-file-store.ts');
+ const {NormalInstructionIntake,receiveNormalInstruction}=await import('../../../apps/connector/runtime/normal-instruction-intake.ts');
+ const {NormalInstructionCoordinator}=await import('../../../apps/connector/runtime/normal-instruction-coordinator.ts');
+ const page=await f.get.send(await f.get.prepareCommandPage({afterSequence:0,waitMs:0},f.signal),f.signal),start=page.items[0]!,item=page.items[1]!;
+ const localScope={projectId:f.scope.projectId,executionId:f.scope.executionId,executionGeneration:f.scope.executionGeneration},fs=memoryFiles(),store=new NormalStartFileStore(root,localScope,fs.fs);
+ const expected={context:start.envelope.context,executorRegistrationRef:start.envelope.executorRegistrationRef};
+ const intake=new NormalInstructionIntake(store.instructionIntake(),expected,f.clock);
+ const receive=()=>receiveNormalInstruction(f.get,intake,item,page.proofResultRef,f.signal);
+ const make=(override:Record<string,unknown>={})=>new NormalInstructionCoordinator({intake,store:store.instructionAttempts(),post:f.post,current:f.current,grantRef:f.scope.grantRef,clock:f.clock,timeoutMs:10000,...override});
+ return{...f,page,item,fs,store,intake,expected,localScope,receive,make};
+}

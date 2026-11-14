@@ -19468,3 +19468,23 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - consumer5경로동결: Primary신규/직접인접6파일45P0F0SKIP exit0 24613.513ms(b668c3), typecheck0(c64755), diff0/live0. Mainfresh codec+서버→GETclient여정2파일24P0F0SKIP exit0 17039.342ms(479a2f→13689f/session36299종료), 5지문직접동일/diff0(ea6989). spec독립C0/I0/M0, quality검수중. 실제TLS/DB/Agent0·내구수신/cursor/permit제외유지. root타입6진단은INSTRUCTION의STARTassembler진입거절보존과명시part필드로해소했으며기존보호를낮추지않았다.
 
 - consumer최종spec/quality독립C0/I0/M0·5지문동일. 회수404는기존challenge NOT_FOUND이며약화아님을확인했다. 결과서FN08_NORMAL_SEND_MATERIAL_CONSUMER_SOURCE_RESULT_20261115.md에45P/24P/타입/실패/미검증/rollback을구분기록. Main한정수용, 제품2/시험3+기록3 정확8경로게시·통합진행. SDK/DB/Agent/전체계획완료아님.
+
+- PR117 통합: source348bea63→main93c85d78ce133d9fce19e32859c94ed8d0ca9ee5, Broker43621087712success. local/privateexact·clean·tree동등/PRhead복구ref확인. merged-main 다부분plain원문smoke1P0F0SKIP exit0 3156.8717ms(e9cc85). 완료branch/tracking/정확tag정리(6b5336), 기존다른worktree불변. 다음승인source단위codex/av3-fn08-send-durable-intake를최신main에서생성(2daccd), Primary는정확내부행/파일목록을읽기준비중이며쓰기미시작. 실제DB/키/서비스/Agent0.
+
+- 다음내구수신8경로확정: Primary읽기제안에따라SEND전용intake/coordinator+기존generic file store adapter와RAM시험을WI FN08_NORMAL_SEND_DURABLE_INTAKE_SOURCE_20261115.md로지시한다. 기존P3/SEND승인내부형상이며신규root/권한/API/실제실행0. SEND독립receipt/budget·원공통scope/세션결박·UNKNOWN보존/중복permit0, 기존START보존. wire/polling/cursor는미수정으로경계고정.
+
+- SEND내구수신WI사전scope독립 C0/I0/M0, SHA7103B8AB1CBB0C054101E8A652D65A0E153F6564F875FF8445133467A16B8CBE. P3 normal수신/permitsource범위·기존root재사용·SEND자체auth/budget·UNKNOWN추가permit0·현재권한false/wire제외를확인했다. Primary8경로구현계속,실제DB/파일/Agent0.
+
+- 내구수신첫RED: Primary `node --experimental-strip-types --experimental-test-module-mocks --test --test-reporter=tap tests/unit/FN08/normal-instruction-durable-journey.test.ts` 0P1F0S exit1 3251.1951ms(43f5d1). 실제RAM START/SEND생산뒤새intake모듈부재ERR_MODULE_NOT_FOUND를확인했다. 기능음성실증이아닌미구현진입RED로구분한다. live0, 허용8경로구현착수.
+
+- SEND내구종단첫GREEN: Primary단독durable journey1P0F0S exit0 3345.9852ms(6efb73). 원RAM START/SEND→GET부분→RAMfile-store RECEIVED→SEND_ATTEMPTED ref와서버permit localAttemptRef일치→PERMIT_RECORDED→새coordinator재조회추가HTTP0확인. fixture가local scope에credential scope전체를준정확형상1F는기존3필드로고쳤고제품검사불변. 음성/sync/재시작/타입·독립검수미완료,Main수용전. 실제파일/DB/Agent0.
+
+- 내구수신수행자중간 직접4파일23P0F0SKIP exit0 13836.9171ms(51c0cb/session89786종료). 부분sync/write/readback·abort lock보존·재시작UNKNOWN추가POST0·permit유실/변조/회수/만료/current불일치/동시BUSY를포함한다. 마지막accessor/abort경계·타입/START인접·최종독립검수전이므로동결/전체수용아님. 현재live0·동일근본원인3회없음.
+
+- 내구수신추가실패: typed SEND channel lock.close불명시험RED1F exit1(d6cfde). 기존generic exclusive는close오류를삼키고lock보존/body성공반환하므로신규SEND WI의불명성공0조건과충돌한다. 같은허용file-store의private내부실행기를분리해SENDtyped intake/attempt만strict-close를선택하고기존exclusive/START는불변으로유지하도록Main한정수용. caller공개옵션/새root/권한0,close재시도0·원lock보존. getter/마지막abort 직접RED2→GREEN2는수행자증거이며최종검증전이다.
+
+- 내구8경로동결후Mainfresh직접4파일28P0F0SKIP exit0 16443.7ms(dd4b9b→97a399/session93539종료). Primary최종type0(0abf49),6파일39P는동등helper타입정정전증거이며Main28P는최종파일이다. spec저장/attempt체인 C0/I0/M0이나quality I1발견: receiveNormalInstruction은원scope/descriptor/기한을끝intake.receive에서만검사하여부분응답후기한경과시추가challenge/GET가능. Maintail직접대조e871ad로확인,최종수용/commit보류. 기존허용8경로내진입/매await후/다음prepare전scope·최단기한검사와늦은challenge뒤GET0 반례로Primaryfix round1지시. 이미PASS한시험을전체안전PASS로승격하지않는다. 실환경0.
+
+- I1 보정 수행자 증거: 잘못된 scope/descriptor, envelope/부분 만료, 늦은 challenge, 단조시계 만료/후퇴 7건이 RED 0P/7F exit1(8715.5283ms, a28d0b)로 재현됐다. 보정 후 동일 7건 7P/0F/0SKIP exit0(7547.8164ms, b85fe1). intake.receiveProtected가 진입 scope/descriptor를 검산하고 시작 wall/monotonic 및 원 명령/packet/부분의 최단기한을 매 await·다음 요청·내구 append 전후에 재검사한다. 기존 생성자 3인자를 보존하고 선택형 네 번째 monotonic 함수를 추가했다(default performance.now). 변경 intake/직접시험 2경로는 회귀·타입·최종 동결 및 독립 재검수 전이다. 실제 환경 실행은 없다.
+
+- I1 최종 해소: quality 재검수 C0/I0/M0, 수정2지문 동일. Main fresh intake+durable journey16P/0F/0SKIP exit0 18055.1105ms(78b293→9c126f/session82016종료), diff0(f31bcf). 결과서 FN08_NORMAL_SEND_DURABLE_INTAKE_SOURCE_RESULT_20261115.md에 수행자39P·Main28P·최종16P를 시점별 구분하고 실패·보정·미검증·8지문을 기록했다. source 한정 수용, 제품3/시험5+기록3 정확11경로만 통합한다. 실제 DB/파일/Agent·전체 계획 완료는 아니다.
