@@ -19218,3 +19218,6 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 인접 제한 읽기 검수: IssueFreshRoot는 unsupported Acquire 예외를 내부 catch/Abandon으로 처리하고 기존 host 등록·서명 dispatch에 전파하지 않는다. source 근거이며 실제 실행 검증은 아니다.
 
 - worker producer 한정 후보: FN08_NATIVE_WORKER_PROVENANCE_PRODUCER_CANDIDATE_20261114.md SHA256 A769DEC827F78A486CD7C6EC9EBD9D84308572AFD29481F10DDA73F647331250. 최초 독립 C0/I1/M1(동일 consume의 descriptor 선택 불변성·배포/등록 기한 혼재)을 보완해 C0/I0/M0. PMO는 worker descriptor 발급 권위와 run/observer 최초 의미가 기존 위임 밖 신뢰 계약 변경이므로 직접 채택 대상임을 확인했다. 새 endpoint/DB표를 추가하지 않아도 신뢰 기준은 달라진다. 후보 source 구현은 아직 하지 않았다.
+
+- 후보 최종 기술 검토: Primary도 신규 HTTP/DB 필수 없이 source 구현 가능함을 확인했다. worker는 준비용 제한 worker이며 coding Agent가 아니다. signer/helper/worker bytes를 혼동하지 않는다. 신산님께 최종 SHA A769DEC8…47331250의 직접 채택 질문1회 전달, 답변 미수신이다. 미채택 제품 코드0.
+- 별도 읽기 조사: Stage C FN08의 START 시도·permit·응답·UNKNOWN/관측 재조정은 기존 source에 연결돼 있었다. SEND/STOP 및 Stage D FN07은 승인된 START-only 계약과 원 process/SESSION 근거를 대조해야 하므로 즉시 이식 가능한 누락으로 확정하지 않았다. 이 제한 조사는 전체 계획에 작업이 없다는 판단이 아니다. 동일 완료시험 재실행·실제환경 작업0. 현재 Primary와 두 조사자는 terminal, 단일writer0·실행handle0이다. 전체목표 미완료/active를 유지하며 worker 후보 결정 전 해당 코드만 착수하지 않는다.
