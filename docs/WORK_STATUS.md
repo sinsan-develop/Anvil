@@ -19335,3 +19335,16 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 현재 제품 writer 없음. Primary는 정확 응답 계약을 읽기 전용 구체화, 별도 검토자는 독립 미완료 연결을 조사한다. Main은 PMO에 기존 승인 범위와 신규 응답 의미 결정 경계를 문의했다. 실제 DB·권한·키·자료 조사·설치·서비스·C#·Agent 실행은 0이며 전체 계획은 미완료다. 완료된 검사를 반복하지 않는다.
 
 - normal 회수 후보 독립검토의 정책범위 명시 보완 1건을 반영했다. 새 오류 없이 기존 STORAGE_FAILED/reconcile-first 유지. PMO는 공개 normal 표식 3개와 기존 합성 영수증 재조회 호환 규칙만 직접 채택 대상이며, 기존 권한/정책/불명처리는 재승인 불필요라고 회신했다. 해당 계약 종속 구현은 채택 전 착수하지 않는다. UI10 독립조사는 원문조회가 이미 구현됐고 역할매핑은 별도 닫힌 계약임을 확인했으며, 전체 미완료가 없다는 판정이 아니다.
+
+
+## 2026-11-14 목표 계속 수행·독립 미완료 경계 대조
+
+- 직전 goal turn은 PR112/113 통합과 다음 계약 후보 게시로 진전이 있었으나 전체 완료 전 final 응답을 한 것은 사용자 진행 지시 위반이다. 전체 목표 active·미완료를 유지하고 후속 조사를 계속했다. 실제 환경 실행은 하지 않았다.
+- 현재 코드 writer 0. 기존 Primary는 Windows journal의 source 정상경로 보완 가능성과 권위 경계를 읽기 조사 중이다. Main은 WORK_CHECK 머리글의 과거 통합 기준을 이력으로 구분하고 최신 PR113 및 후보 상태를 명시했다. 전체 완료 체크는 변경하지 않았다.
+- d2_scope_audit: UI10 원문 보기는 이미 연결돼 재구현 대상이 아니다. 역할 대화방은 targetRoleRef:null/명시412 계약이다. UI06/FN03 문서전체 SourceRef4종 저장·화면은 이미 구현됐고, 항목별 attribution/evidenceRefs는 기존 WI 제외·비빈 evidenceRefs412다. 보호 내용 관측 native는 존재하나 host/route/IPC 등록은 WI 제외, 관리 원문 producer 후보는 미채택이다. 이 좁힌 후보들에서 즉시 승인된 미구현을 확정하지 못했으며 전체 미완료 부재를 주장하지 않는다.
+- d2_preflight: FN10 evaluateSyntheticNext의 제품 caller/입력 생산자는 없고 시험만 호출한다. ProjectNextActionBasis의 REWORK/BLOCKED 안내는 이미 연결됐다. stage-queue는 WAITING만 저장하고 assignmentRef null/실행 false다. HUMAN 판단 저장을 COMPLETED/ACCEPTED로 승격하면 안 되며 FN10_DECISION_EVALUATION_CONSUMPTION_CANDIDATE는 SOURCE_GO0다. 회수 응답 계약과 독립이지만 새 평가·소비 계약이 필요한 후보로 보존한다.
+- Main 읽기 경로 오류 1회: apps/desktop/native는 없는 경로였다. 실제 products 경로 apps/connector/native로 정정하여 source만 읽었다. 같은 원인 반복3회 아님. 제품 수정/시험 재실행/실제 파일 조사·권한·DB·키·서비스·Agent/C# 실행0.
+
+- Primary journal 독립 조사: Kernel의 RequireDurabilitySupport가 최초 mutation 전에 차단하고 아래 concrete source는 이미 존재한다. 마지막 CLOSED가 온전히 남은 정상 종료와 flush/close/응답 불명은 새 host에서 동일 bytes로 보일 수 있으나 채택 계약은 불명 잠금의 재시작 차단을 요구한다. 파일 Flush만으로 원 호출 결과 수신이나 부모 metadata 정착을 증명하지 않는다. 정상 재시작으로 열려면 해제 확정 의미 또는 별도 인정 원천 결정이 필요하며 guard는 유지한다. 최초만 허용하는 축소안이 요구를 만족하는지도 별도 대조 중이다. 실환경/제품쓰기0.
+
+- Primary 추가 대조: 최초 exclusive root capability를 같은 owner에서 유지하면 최초 양성 알고리즘은 원리상 가능하지만, 현재 Host의 IssueFreshRoot 발급 kernel 종료 후 새로운 journal kernel 열기 때문에 첫 시도도 기존 lock에 걸린다. 원 capability의 private 소유권 인계와 REGISTERED/STORED 선행을 확인해야 한다. 이 부분의 source 보완 가능성을 단일Primary가 읽기 추적하며, 독립 검토자는 부모 metadata 정착의 공식 API 보장을 조사한다. 최초만 허용하는 방식을 전체 재시작 요구의 대체물로 제출하지 않는다. 현재 writer0/실환경0.
