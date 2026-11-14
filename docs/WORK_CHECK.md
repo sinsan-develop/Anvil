@@ -4,7 +4,7 @@
 
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
-- 현재 통합 기준선: `main` `97a2a7348df2815b491c6373e2314609a2bd3842`(PR113). 로컬/private 동일 및 병합 RAM smoke 1P 확인. 후속 회수 계약 후보는 `codex/av3-fn08-revocation-contract`에 보존했고 공개 응답 표식 결정 대기이며, 독립 미완료 source를 조사 중이다.
+- 현재 통합 기준선: `main` `12f4b58a7111c400bbc7a4c98f103a7ad9653831`(PR114). normal 회수 계약 직접 채택·source 검수·통합 및 local/private 동기화·merged RAM smoke 1P를 확인했다. 후속 `codex/av3-fn08-normal-stop-contract`에서 normal 중지 종단의 원 세션 권위·제어 호출선·공개 응답 형상을 구체화 중이다.
 - 아래 44행 상세 코드 집계의 과거 기준: `development/main` `967c9a207452f5d3c9d79a1d8906e25a396dd704`.
 - 최신 직접 채택: worker 배포 근거 전달 A안(source-only), SHA256 50596FFC…2FD4389. 해당 source와 명시 앱 연결은 PR112·113으로 통합됐다. 실제 설치/실행 및 전체 계획은 미완료다.
 - PR110/main7efc5111 통합: native retained 조립 제품3/시험3을 독립 C0/I0/M0·Main29개 한정 검사·root tsc0으로 수용했다. 보호 입력 생산자가 미등록이라 기본 실행은 거절하며 Windows 실제 실행·정상 재시작은 미완료다. 상세: docs/04_test_reports/AV3/FN08_NATIVE_RETAINED_FACTORY_SOURCE_RESULT_20261114.md.
@@ -125,3 +125,7 @@
 - 2026-11-14 PR113/main97a2a734 명시 앱 소비 연결 통합·동기화·merged RAM smoke 1P·정확 완료 branch 정리. 실제 환경·Windows 내구성·전체 계획 완료 체크는 유지한다. 다음은 기존 HUMAN grant 회수의 normal 생산자 누락이며, 정확 응답 의미와 기존 승인 범위를 대조 중이다. 제품 writer는 아직 배정하지 않았고 독립 승인 범위의 미완료 연결도 조사한다.
 
 - 2026-11-14 normal HUMAN 허가 회수 source7경로 검수수용. 명시설정→다른OWNER 회수저장→원영수증→challenge거절 RAM여정, 독립C0I0M0·Main직접/회귀/type통과. 실제SQL/프로세스종료/writer해제/Agent 검증아님. FN08/전체완료체크유지.
+
+- 2026-11-15 PR114/main12f4b58a normal회수source통합·동기화·mergedRAM1P·완료branch정리. 실제DB/회수효과/Agent전체여정은미완료. 다음은normal중지종단의계약/현재성/전달선행구체화이며전체완료체크불변.
+
+- 2026-11-15 normal Query 생성 선행 대조: 기존 START permit 재사용, normal SEND 및 보호 실행 구성·SID/child 결박 미완료. 고정 SDK 추가읽기는 이전 DNS 실패 후 새 답변 대기이며 실제 실행 승인과 분리한다. 전체 완료 체크 변경 없음.

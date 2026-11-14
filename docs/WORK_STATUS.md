@@ -19367,3 +19367,19 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Main fresh SQL2P exit0(7c5eec), unit6P exit0(08d5cb). SQL/source/unit 동결 독립 C0/I0/M0. 실제PG잠금/권한은미검증. app/routes 사전검수 C0/I1: exported registerProjectRoutes가normal옵션truthy만받아buildApp의exact mode/Proxy/accessor검산우회가능. fix round1로Primary에기존허용경로내직접route구성음성RED→GREEN지시, Main제품쓰기0. 기본/synthetic/HUMAN bearerquery거절은보존.
 
 - normal회수 정확7경로 최종동결·Primary쓰기반환/live0. 독립SQL/module/unit C0I0M0, route직접구성I1 RED→GREEN 후 C0I0M0. Mainfresh unit6P/SQL2P/HTTP+기존회귀23P·roottsc0·diff0·7지문일치. 결과서 FN08_NORMAL_GRANT_REVOCATION_SOURCE_RESULT_20261114.md에오류/정확명령/미검증/rollback고정. 실제PG/권한/키/서비스/C#/Agent NOT_RUN, 전체계획미완료. 다음source통합·동기화후normal중지종단후속구체화.
+
+
+## 2026-11-15 PR114 통합·정리 및 normal 중지 후속
+
+- source920b8985a3215589860a5b845c0f7c23ba78a6e8→PR114/main12f4b58a7111c400bbc7a4c98f103a7ad9653831. Broker43607918963 success. source/main tree동일·pull/114/head 원source보존·원격완료branch/tag부재. 로컬main FF후핵심RAM1P(50f7d6), local/private동일clean확인. 정확완료branch/tag/tracking만정리하고다른보호worktree는보존했다.
+- 최신main에서codex/av3-fn08-normal-stop-contract 생성. 기존Primary는normal중지요청→명령전달→원session/stopScope 내구시도→adapter→관측ACK의미연결과기존채택/새표식·권위delta를읽기조사한다. 독립검토자는grant회수후STOP수신순환과권한·current를대조한다. 현재제품writer0·실환경0이며전체계획미완료. 허가회수기록을OS중지/writer해제로취급하지않는다.
+
+- normal STOP 조사에서기존HUMAN5tuple·유효grant·sessionBinding/stopScope/ownership선행, START전용page/polling, grant회수시page/관측도거절됨을확인했다. 회수후일반credential우회금지·D071 RECOVERY별도선행을유지한다.
+- 원세션원천추가대조: normal wire는driver.send 주입결과responseRef/processRef만받고원SDK Query생산자자체가아직없다. Query를만든뒤잃는문제가아님을명확히정정한다. 합성factory의control lane을normal권위로전용하지않으며, 기존D1내concrete Query생산자source를먼저완결가능한지Primary가읽기대조중이다. 실제SDK/Agent호출·새SDK설치·외부SDK추가읽기0. STOP표식만먼저구현해전체기능진척으로포장하지않는다.
+
+- 후속 독립 대조 완료: Nov6 별도 admission 후보를 현재 normal Query 생성의 필수 선행으로 되살리지 않는다. 채택 D1의 START→내구 attempt→permit→현재성→단발 wire를 재사용한다. 미정은 실행파일/cwd/argv/env·Secret/도구의 닫힌 구성, 저장된 첫 SEND 공급 순서, 논리 세션과 실제 Query/child/SID 소유 결박이다. 준비 worker provenance는 코딩 Agent 신뢰로 전용하지 않는다. Primary가 정확 필드·원 생산자·필수 반례와 최소 파일을 구체화하고 Main이 새 의미와 내부 구현을 분리한다.
+- SDK hook 후속 읽기 결과서(20261107)를 확인했다. 고정 공개 tarball 읽기는 DNS ENOTFOUND로 실패·시도 소진이며 callback 전체 서명/동기성·argv/env 규칙 미확인이다. 이번 재개에서 SDK 추가 조회/설치/실행0. 기존 테스트/PR114 검증은 반복하지 않았다. 읽기 경로 오기 1회(work_packages 대신 contracts)는 정본 파일 검색 후 바로잡았으며 제품 오류/권한 오류로 취급하지 않는다.
+
+- Primary 상세 반환: 원 START permit과 별도 SEND 일회 소비를 재사용하고 새 admission/endpoint를 전제하지 않는다. 현재 normal SEND 저장·자료/permit 분기는 아직 미구현이며 합성 전용 원형을 그대로 normal 권위로 바꾸지 않는다. 첫 SEND는 원 commandRef를 명시 선택하고 논리 sessionBinding을 원 START와 대조하며 START 맥락 전체를 prompt로 만들지 않는다. 계획 UUID와 실제 Query init SID를 구분하고 동일 child/Query의 private STOP 소유를 유지하는 방향을 구체화했다. source 제안은 미채택이며 native/실SDK 정상 경로를 구현됐다고 하지 않는다.
+- 정확 기술 선행: 기존 고정 읽기안 docs/work_packages/FN07_PINNED_SDK_HOOK_CONTRACT_READ_CANDIDATE_20261106.md를 재사용한 공개 읽기1회를 비동기로 요청했다. 이전 DNS 실패 소진 기록 유지, 답변 전 네트워크0. 확인될 SDK 포트에 의존하는 실행 구성/소유목록은 그 결과 후 확정한다. PMO에 선행·재사용 경계를 보고했고 응답은 현황 공유로 수신했다. 신산님에게 내부 START permit 구현을 재승인 요청하지 않았다.
+- 조사 담당자 Primary/d2_preflight 모두 결과 반환, live handle0. 이번 제품쓰기/실제환경0, 기록2파일만 Main 소유. 전체 작업계획 미완료 및 PR114 실제DB/OS 미검증 유지. 다음은 공개 SDK 기술 확인 후 최소 normal 생성·첫 SEND의 새 의미와 이미 승인된 내부 연결을 분리하여 구현 담당자에게 정확 범위 배정이다.
