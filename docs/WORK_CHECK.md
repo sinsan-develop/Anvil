@@ -103,3 +103,5 @@
 - 2026-11-14 PR106/main34f613a0 source통합·동기화·정리·merged smoke확인. 다음FN08 내부runtime/build/v2판독연결미완료를조사해착수하며, 실제host/DB/Agent미연결·전체체크불변.
 
 - 2026-11-14 FN08 내부 runtime/build/v2 판독 및 동일 host 소스 조립 검수. retained 수명 I1과 v2 예약38B 누락 I2를 보완하고 독립 C0/I0/M0 확인. Main owner11P·예약/전달2P는 RAM/소스 검증이다. 실제 DB 접근·보호 공급자·grant/current/resume·Agent 실행은 미완료, 전체 완료 체크 유지. 결과서는 FN08_D1_RETURN_RUNTIME_WIRING_SOURCE_RESULT_20261114.md.
+
+- 2026-11-14 PR107/main b2df4dcf 소스통합·동기화·완료branch/tag정리·merged smoke확인. 다음FN08 한정host저장접근A안source-only직접채택으로정확9경로착수. 실제DB/권한/Agent미실행·전체완료체크불변.

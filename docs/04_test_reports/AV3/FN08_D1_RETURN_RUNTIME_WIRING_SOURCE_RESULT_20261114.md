@@ -1,6 +1,6 @@
 # FN08 준비 관측 반환 runtime 조립 검수
 
-판정: 소스 구현·독립 검수 완료, Git 통합 준비 중. 실제 환경 완료가 아니다.
+판정: 소스 구현·독립 검수·PR107 통합 완료. 실제 환경 완료가 아니다. source `6f21296ecb7409b21b26b446646d1dd153ab7426`, merged main `b2df4dcff3405d5f33a52d6be20e07358fbbdea9`, Broker43550824828 success. source/main tree가 같고 merged retained 수명 smoke1P/0F/0SKIP1745.5898ms exit0을 확인했다.
 
 기준 main `34f613a03c9e6edf0e96f3096aad86e3c3d4aede`, 작업 branch `codex/av3-d1-return-runtime-wiring`. Primary 단일 구현, Main 검수·통합, d2_scope_audit 독립 읽기 검수.
 
@@ -45,7 +45,7 @@ Primary 추가 검증(범위가 겹치므로 합산하지 않음):
 
 ## 미검증·미완료
 
-- Git 통합·병합 후 소스 smoke는 후속 기록한다.
+- local/development main 동기화·clean, PR107 원격 source ref 보존, 정확 완료 branch/tag 정리까지 확인했다.
 - 실제 app DB 목적 접근은 기존 false RLS/app REVOKE로 막혀 있다. 별도 미채택 저장 접근 후보를 실제 권한으로 취급하지 않는다.
 - 보호 journal/retained image·startup·selection 공급자의 실제 활성화, C#/OS/키/DB 여정은 미검증이다.
 - 최초 grant의 osFence·writer OWNED, CURRENT·resume·START·실제 코딩 Agent 실행은 완료되지 않았다.

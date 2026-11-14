@@ -19126,3 +19126,8 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 다음DB접근계약 후보 독립C0/I0와경미문구보정후 SHA A185C52DAD309718845F3DB40D2B1AC0F7E60ABB83FADACD243E9CABE750B00E를신산님께source-only채택질문으로전달했다. 새EXECUTE/선행definer접근/RLS예외의계약만결정대상이며실제적용제외. 현재runtime검수·통합은답변과독립해계속한다.
 
 - Primary COMPLETED 인계: 정확20코드/시험경로·쓰기종료·live handle0. root tsc exit0, desktop 전체는기존진단174개로exit1(HEAD overlay179·신규0)이므로전체PASS로표시하지않는다. Main기존pe-library1.0.1 process-memory resolver만연결한PE합성15P/0F/0SKIP107.3365ms exit0,설치/링크/실컴파일0. 별도79P/owner11P/native정적3P/SQL정적2P/ARM인접4P/등록인접4P는중복범위라합산하지않는다. 결과서에범위·명령·미검증기록. 정확24파일stage후diff/지문최종대조및기존development동기화확인중이다.
+
+## 2026-11-14 PR107 통합·FN08 host 저장 접근 source 착수
+- source6f21296ecb7409b21b26b446646d1dd153ab7426를 PR107/main b2df4dcff3405d5f33a52d6be20e07358fbbdea9로 통합했다. Broker43550824828 success, source/main tree동일·local/development main동일clean, merged retained수명 smoke1P/0F/0SKIP1745.5898ms exit0. refs/pull/107/head가원source를보존하며원격완료branch/tag부재확인후정확로컬완료branch/tag만정리했다. 과거WIP보존.
+- 신산님이한정DB접근A안원문SHA A185C52DAD309718845F3DB40D2B1AC0F7E60ABB83FADACD243E9CABE750B00E를source-only채택했다. 최신main에서codex/av3-d1-native-host-storage생성, 신규WI정확9경로를기존Primary단일writer에게배정한다. 실제DB/권한적용/키/서비스/Agent실행제외. Main은검수/통합및기록담당이다.
+- 후속읽기조사: NativePreparationFileStore는구현됐으나제품생성자호출이없고ACL/directoryfsync/전원손실내성을보장하지않는다. retained원factory도존재하지만실image/startup/selection공급조립은없다. 이번9경로와독립된미완료로보존하며가짜공급자를등록하지않는다.
