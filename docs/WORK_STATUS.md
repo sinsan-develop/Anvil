@@ -19095,3 +19095,9 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 최종Main root tsc --noEmit -p tsconfig.base.json exit0(9.426579s). native 독립검수C0/I1/M0: retained selection의authorizationReceiptId/Version/Hash가authority.parent.authorizationReceiptRef와대조되지않았다. CWT원객체확인만으로원HUMAN승인receipt동일성이보장되지않으므로Primary가해당fullref비교반례/보완을수행한다. 다른동결파일유지,이I1미해소상태에서commit/병합하지않는다. 실제C#/키/host/DB시험0.
 
 - native authorizationReceipt I1 보완 후 Main정적2P/0F/0SKIP173.7293ms exit0 및 독립재검수C0/I0/M0·지문일치. 결과서 FN08_D1_NATIVE_PREPARATION_OWNERSHIP_RETURN_SOURCE_RESULT_20261114.md 작성. 제품/SQL17+시험7 및 Main기록5를 정확검수/통합할 예정이며 실제DB호출/host공급자미완료·전체계획미완료를보존한다.
+
+## 2026-11-14 PR106 통합·FN08 내부 runtime 연결 착수
+- source ee6a8064883639a766a91eb5acc4e47e62e3fb60의 승인 source 묶음을 PR106/main34f613a03c9e6edf0e96f3096aad86e3c3d4aede로 통합했다. Broker43545805712 success, source/main tree동일, local/development main동일·clean, 원격main만·요청tag부재, 완료로컬branch/tag정리. merged 새client/journal smoke1P/0F/0SKIP398.3195ms exit0.
+- 직접 gh PR 생성은 collaborator권한부족으로1회실패했다. 인증/권한설정변경없이기존승인 Request-tag Broker를사용했고반복직접생성0. PR106/source이력보존.
+- 다음읽기조사에서 신규TSreturn/C#signer의제품생성자·runtime export/build목록미연결과desktop proof owner의v1전용판독에따른v2거절을확인했다. 이는환경활성화만남은상태가아니다. 같은Primary가정확경로를확정하면기존승인A안내부source wiring을구현한다. 실제EMPTY job host와등록key host의통합신뢰경계는별도검토하며임의실행하지않는다.
+- 최신main에서codex/av3-d1-return-runtime-wiring생성. Main문서/검수/통합,기존Primary단일writer. 실제DB/권한/키/서비스/Agent/C#실행제외,원grant/current/resume미완료유지. 이전검증반복이아닌누락조립경로의직접반례를검증한다.
