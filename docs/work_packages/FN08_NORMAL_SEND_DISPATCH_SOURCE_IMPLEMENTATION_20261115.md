@@ -35,7 +35,17 @@
 - `tests/unit/FN08/normal-instruction-dispatch-sql.test.ts`
 - `tests/unit/FN08/normal-instruction-dispatch-journey.test.ts`
 
-총18경로다. 추가 접점이 실제로 필요하면 먼저 Main에게 정확 경로·이유·계약 영향과 함께 반환한다. Main은 기존 채택 내 내부 파일배치를 판단하고 WI를 갱신할 수 있으나 공개/권한 범위를 늘리지 않는다. 기존 동작을 삭제하거나 기대값을 낮추지 않는다. 다른 담당자의 문서·기존 dirty 작업을 되돌리지 않는다.
+초기18경로다. 아래 직접 채택한 부분계획 보완2경로를 더해 현재 총20경로로 고정한다. 추가 접점이 실제로 필요하면 먼저 Main에게 정확 경로·이유·계약 영향과 함께 반환한다. Main은 기존 채택 내 내부 파일배치를 판단하고 WI를 갱신할 수 있으나 공개/권한 범위를 늘리지 않는다. 기존 동작을 삭제하거나 기대값을 낮추지 않는다. 다른 담당자의 문서·기존 dirty 작업을 되돌리지 않는다.
+
+### 2026-11-15 부분계획 한정 보완 채택
+
+신산님이 `A안 한정 보완·source-only 구현 채택`으로 후보 `docs/contracts/FN08_INSTRUCTION_PARTS_PLAN_ADDENDUM_CANDIDATE_20261115.md` SHA256 `F3243D1411C4FF434F4548904B99A9B0BBA353EA171FAC0314F7D99353DD91DF`를 직접 채택했다. 정확 canonical plan/목적·1기반번호·64KiB/2MiB/200부분·원 receipt ref 검산·HUMAN GET 경로는 그 후보를 따른다. 새 표/일반 권한은 없다.
+
+추가 소유 경로:
+- `apps/server/modules/executions/instruction-parts-plan.ts`
+- `tests/unit/FN08/instruction-parts-plan.test.ts`
+
+기존 허용 source/routes/conversations 접점에서 보호 원문→부분계획 GET→SEND의 서버 재생성·비교를 연결한다. 사전 등록 부분계획 모형만으로 전체 여정을 완료하지 말고 실제 보호 reader와 원 메시지/명령 결과를 쓰는 RAM 여정을 보완한다. 실제 사용자 자료 조회·DB·권한·키·서비스·Agent/SDK 실행 제외는 불변이다.
 
 ## 진행 및 필수 보호
 
