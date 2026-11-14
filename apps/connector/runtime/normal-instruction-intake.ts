@@ -5,6 +5,7 @@ import {readDispatchEnvelopeV1,type AdapterContextV1,type DispatchEnvelopeV1} fr
 import {receiptKeyV1,type ReceiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 import {cloneV1,recordV1,refV1,isoV1,arrayV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import {readNormalInstructionItem,assembleNormalInstructionMaterial,type NormalMaterialReceived,type NormalCommandPageItem} from './normal-start-material-consumer.ts';
+import type {NormalLocalObservation} from './normal-observation-spool.ts';
 import type {NormalProtectedGetClient} from './normal-protected-get-client.ts';
 import type {NormalJournalTransaction} from './normal-start-file-store.ts';
 export interface NormalInstructionStore{transport:'NORMAL_PROTECTED';exclusive<T>(key:ReceiptKeyV1,body:(tx:NormalJournalTransaction)=>Promise<T>):Promise<T>}
@@ -117,6 +118,20 @@ export class NormalInstructionIntake{
    }
    current();const result=await this.#save(item,proof,received,signal,current);current();return result;
   }finally{for(const part of received)part.bytes.fill(0);}
+ }
+ /** 원 page descriptor와 기존 부분/수신 행을 함께 검산한다. 정상 미완료만 false이며 오류는 전파한다. */
+ async hasReceived(raw:unknown){
+  this.#port();const captured=captureInstructionInput(raw),e=this.#envelope((captured as any)?.envelope,true),item=readNormalInstructionItem(captured,Date.parse(e.issuedAt));
+  const result=await this.#exclusive.call(this.#store,receiptKeyV1(e),async tx=>{const v=await this.#journal(tx,e,item);return Boolean(v.received&&v.material);});
+  this.#port();this.#envelope(e,true);return result as boolean;
+ }
+ /** 역사 수신 원장을 완전 재검산한 관측 입력. 새 자료 GET/수신 권한을 발급하지 않는다. */
+ async observations(raw:unknown){
+  this.#port();const e=this.#envelope(raw,true);
+  const out=await this.#exclusive.call(this.#store,receiptKeyV1(e),async tx=>{
+   const {received,material}=await this.#journal(tx,e,null);if(!received||!material)fail('NORMAL_INSTRUCTION_NOT_RECEIVED');
+   return{type:'RECEIVED',commandId:e.commandId,envelopeHash:e.envelopeHash,localRecordRef:cloneV1(received.ref),processRef:null,occurredAt:received.snapshot.recordedAt,reasonCode:'NONE'};
+  });this.#port();this.#envelope(e,true);return out as NormalLocalObservation;
  }
  async instruction(raw:unknown,historical=false){
   this.#port();const e=this.#envelope(raw,historical);

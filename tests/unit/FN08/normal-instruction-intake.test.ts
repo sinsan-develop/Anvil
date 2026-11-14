@@ -88,3 +88,22 @@ for(const fault of ['SCOPE','DESCRIPTOR','ENVELOPE_AFTER_PART','PART_AFTER_PART'
   assert.equal(fs.files.size,0);assert.equal(f.h.permits.length,0);
  }finally{await f.h.close();}
 });
+
+
+test('역사 observations는 원 수신 ref/시각을 반환하고 만료 뒤 새 GET 없이 원문 변조를 거절한다',async()=>{
+ const f=await normalInstructionDurableFixture();try{
+  await f.receive();const a=await f.intake.observations(f.item.envelope),calls=f.calls.length;f.mode.wall+=60000;
+  assert.deepEqual(await f.intake.observations(f.item.envelope),a);assert.equal(f.calls.length,calls);assert.equal(a.type,'RECEIVED');
+  const row=[...f.fs.files.entries()].find(([p])=>p.includes('intake-')&&p.endsWith('.000001.json'))!;assert(row);row[1].bytes=Buffer.from('{}');
+  await assert.rejects(f.intake.observations(f.item.envelope));assert.equal(f.calls.length,calls);
+ }finally{await f.h.close();}
+});
+
+
+test('hasReceived는 정상 미수신만 false이며 page sequence/descriptor와 역사 수신 불일치를 거절한다',async()=>{
+ const f=await normalInstructionDurableFixture();try{
+  assert.equal(await f.intake.hasReceived(f.item),false);await f.receive();assert.equal(await f.intake.hasReceived(f.item),true);
+  const other=structuredClone(f.item);other.sequence++;await assert.rejects(f.intake.hasReceived(other));
+  assert.equal(await f.intake.hasReceived(f.item),true);
+ }finally{await f.h.close();}
+});

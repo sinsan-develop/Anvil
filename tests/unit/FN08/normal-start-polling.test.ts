@@ -59,3 +59,10 @@ test('abort를 무시한 늦은 GET은 유한 종료하고 cursor 승격·후속
  release({items:[],hasMore:false,nextCursor:'late'});await new Promise(r=>setImmediate(r));
  const n=f.inputs.length;await f.p.run(new AbortController().signal);assert.equal(f.inputs.length,n);
 });
+
+
+test('선택형 SEND 포트 미등록은 mixed item의 자료/permit 없이 cursor0으로 닫힌다',async()=>{
+ const f=setup();f.get.send=async()=>({items:[{sequence:1,envelope:{operation:'SEND_INSTRUCTION'}}],nextCursor:'opaque-send',hasMore:false}) as any;
+ const r=await f.p.run(new AbortController().signal);assert.equal(r.state,'UNKNOWN');assert.equal(r.cursor.afterSequence,0);assert.equal(r.commands,0);assert.equal(f.inputs.length,1);
+ await f.p.run(new AbortController().signal);assert.equal(f.inputs.length,1);
+});

@@ -10,8 +10,8 @@ const {NormalInstructionSource}=await import('../../../apps/server/modules/execu
 const {buildApp}=await import('../../../apps/server/app.ts');
 
 /** 실제 START/credential 생산 행을 사용한다. SQL 실행과 부분계획 발급 producer는 이 fixture의 검증 범위가 아니다. */
-export async function normalInstructionFixture(pages?:Parameters<typeof journey>[0]){
- const j=await journey(pages),f=j.f,g=f.tables.execution_grants![0]!,start=f.tables.execution_commands![0]!,originalQuery=f.db.query;
+export async function normalInstructionFixture(pages?:Parameters<typeof journey>[0],runtime?:{materials:Parameters<typeof journey>[1];permit:Parameters<typeof journey>[2];ttl:number}){
+ const j=await journey(pages,runtime?.materials,runtime?.permit,runtime?true:undefined,undefined,runtime?.ttl),f=j.f,g=f.tables.execution_grants![0]!,start=f.tables.execution_commands![0]!,originalQuery=f.db.query;
  const ref=(v:any)=>({id:v.id,version:Number(v.version),contentHash:v.content_hash}),grantRef=ref(g),fact=g.snapshot_json.binding;
  const body='명시 등록된 합성 지시 원문',bodyHash=contentHash(body),sourceRef={id:randomUUID(),version:1,contentHash:digest({bodyHash,kind:'USER_INSTRUCTION'})},bodyRef={id:randomUUID(),version:1,contentHash:bodyHash};
  const parts=[{partIndex:1,byteOffset:0,utf8Bytes:Buffer.byteLength(body),contentHash:bodyHash}],partsRef={id:randomUUID(),version:1,contentHash:digest({bodyRef,parts})};
@@ -80,10 +80,10 @@ export async function instructionSourceFixture(base?:Awaited<ReturnType<typeof j
  // 기존 fixture가 생략한 메시지 command/client 열만 원 append 결과의 유일 역참조로 복원한다.
  for(const row of f.tables.messages!){const parents=[...f.commands.values()].filter(c=>c.operation==='appendConversation'&&c.result_ref?.data?.ref?.id===row.id&&c.result_ref.data.ref.contentHash===row.content_hash);assert.equal(parents.length,1);row.command_id=parents[0]!.id;row.client_id=parents[0]!.client_id;}
  const selected=f.richSources!,m=f.tables.messages!.find(r=>r.id===selected.messageRef.id)!;
- const mode={afterReadCorrection:false,metadataReads:0};
+ const mode={afterReadCorrection:false,correctionOnlySelected:false,metadataReads:0};
  f.db.query=async(sql:string,args:any[]=[])=>{
   if(sql.startsWith('SELECT conversation_id FROM anvil.conversation_messages'))return{rows:f.tables.messages!.filter(v=>v.project_id===args[0]&&v.id===args[1]&&v.content_hash===args[2]).map(v=>({conversation_id:v.conversation_id}))};
-  if(sql.startsWith('SELECT m.content_hash,m.kind,m.conversation_id,EXISTS')){mode.metadataReads++;const result=await raw(sql,args);return{rows:result.rows.map((r:any)=>({content_hash:r.content_hash,kind:r.kind,conversation_id:r.conversation_id,superseded:mode.afterReadCorrection&&mode.metadataReads>1?true:r.superseded}))};}
+  if(sql.startsWith('SELECT m.content_hash,m.kind,m.conversation_id,EXISTS')){mode.metadataReads++;const result=await raw(sql,args);return{rows:result.rows.map((r:any)=>({content_hash:r.content_hash,kind:r.kind,conversation_id:r.conversation_id,superseded:mode.afterReadCorrection&&mode.metadataReads>1&&(!mode.correctionOnlySelected||args[1]===m.id)?true:r.superseded}))};}
   if(sql.startsWith('SELECT m.command_id,m.client_id,m.message_json')){
    const rows=f.tables.messages!.filter(v=>v.project_id===args[0]&&v.conversation_id===args[1]&&v.id===args[2]).flatMap(v=>{
     const c=f.commands.get(v.command_id),r=f.receipts.get(v.command_id),a=f.audits.get(v.command_id);
@@ -100,9 +100,9 @@ export async function instructionSourceFixture(base?:Awaited<ReturnType<typeof j
 }
 
 /** 모든 원 행은 START/appendConversation/SEND 제품 생산값이다. SQL 함수 실행 대신 exact RAM 관계를 검산한다. */
-export async function normalInstructionDeliveryFixture(instruction?:{text:string;mediaType:'text/plain;charset=utf-8'|'text/markdown;charset=utf-8'}){
+export async function normalInstructionDeliveryFixture(instruction?:{text:string;mediaType:'text/plain;charset=utf-8'|'text/markdown;charset=utf-8'},mixed=false,ttl=Infinity){
  const {NormalPageCursors}=await import('../../../apps/server/modules/executions/normal-command-pages.ts');
- let original:any;const bindings:any[]=[],permits:any[]=[],mode={failBinding:false,failPermit:false,busy:false};let tx=1000;
+ let original:any;const startPermits:any[]=[],observations:any[]=[],acks:any[]=[],bindings:any[]=[],permits:any[]=[],mode={failBinding:false,failPermit:false,busy:false};let tx=1000;
  const registered=(f:any,x:any)=>{const d=f.tables.execution_material_manifests.find((d:any)=>d.created_command_id===x.created_command_id);assert(d);return{command_record_id:x.id,manifest_ref:{id:d.id,version:1,contentHash:d.content_hash},manifest:d.snapshot_json,materials:f.tables.execution_materials.filter((m:any)=>m.manifest_id===d.id&&m.command_record_id===x.id).map((m:any)=>({ref:{id:m.id,version:1,contentHash:m.content_hash},snapshot:m.snapshot_json}))};};
  const sql:PageSqlAdapter=(s,a,{f,drafts,issued})=>{
   if(s.startsWith('SELECT v.content_hash AS vhash')){const v=drafts.find(x=>x.id===a[3]&&x.version===2),r=issued.find(x=>x.challenge_id===a[3]);return{rows:v?[{vhash:v.content_hash,consumed:v.snapshot_json,id:r?.id,content_hash:r?.content_hash,receipt:r?.snapshot_json}]:[]};}
@@ -113,6 +113,12 @@ export async function normalInstructionDeliveryFixture(instruction?:{text:string
   }).sort((x,y)=>Number(x.sequence)-Number(y.sequence))};}
   if(s.startsWith('SELECT * FROM anvil.normal_start_material_rows'))return{rows:f.tables.execution_commands!.filter(x=>x.project_id===a[0]&&a[1].includes(x.id)).map(x=>registered(f,x))};
   if(s.startsWith('SELECT * FROM anvil.normal_start_material_part')){const[pid,eid,gid,gv,gen,cmd,mid]=a;return{rows:f.tables.execution_commands!.filter(x=>x.project_id===pid&&x.execution_id===eid&&x.grant_id===gid&&x.grant_version===gv&&x.generation===gen&&x.snapshot_json.envelope.commandId===cmd).flatMap(x=>{const r=registered(f,x);return r.materials.some((m:any)=>m.ref.id===mid)?[{...r,command_ref:{id:x.id,version:1,contentHash:x.content_hash},envelope:x.snapshot_json.envelope,envelope_hash:x.envelope_hash,options_body:x.snapshot_json.envelope.operation==='START_SESSION'?f.preparation.data.snapshot.options.body:''}]:[];})};}
+  if(mixed&&s.startsWith('SELECT id,content_hash,snapshot_json,proof_result_id FROM anvil.execution_start_permits'))return{rows:startPermits.filter(p=>p.project_id===a[0]&&p.execution_id===a[1]&&p.generation===a[2])};
+  if(mixed&&s.startsWith('INSERT INTO anvil.execution_start_permits(')){const[project_id,execution_id,generation,id,proof_result_id,content_hash,raw]=a,snapshot_json=JSON.parse(raw);assert.equal(digest(snapshot_json),content_hash);assert.equal(startPermits.length,0);startPermits.push({project_id,execution_id,generation,id,proof_result_id,content_hash,snapshot_json});return{rows:[],rowCount:1};}
+  if(mixed&&s.startsWith('SELECT id,content_hash,snapshot_json FROM anvil.execution_observations'))return{rows:observations.filter(o=>o.project_id===a[0]&&o.execution_id===a[1]&&o.generation===a[2]).sort((x,y)=>x.event_sequence-y.event_sequence)};
+  if(mixed&&s.startsWith('SELECT id,version,content_hash,snapshot_json FROM anvil.execution_acknowledgements')){const own=acks.filter(o=>o.project_id===a[0]&&o.execution_id===a[1]&&o.generation===a[2]);return{rows:s.includes('AND id=$4')?own.filter(o=>o.id===a[3]&&o.version===a[4]):own.sort((x,y)=>y.version-x.version).slice(0,1)};}
+  if(mixed&&s.startsWith('INSERT INTO anvil.execution_observations(')){const[project_id,execution_id,generation,id,event_sequence,grant_id,grant_version,content_hash,raw]=a,snapshot_json=JSON.parse(raw);assert.equal(digest(snapshot_json),content_hash);assert(!observations.some(o=>o.event_sequence===event_sequence||o.snapshot_json.event.eventId===snapshot_json.event.eventId));observations.push({project_id,execution_id,generation,id,event_sequence,grant_id,grant_version,content_hash,snapshot_json});return{rows:[],rowCount:1};}
+  if(mixed&&s.startsWith('INSERT INTO anvil.execution_acknowledgements(')){const[project_id,execution_id,generation,id,version,grant_id,grant_version,content_hash,raw]=a,snapshot_json=JSON.parse(raw);assert.equal(digest(snapshot_json),content_hash);acks.push({project_id,execution_id,generation,id,version,grant_id,grant_version,content_hash,snapshot_json});return{rows:[],rowCount:1};}
   if(s.startsWith('SELECT * FROM anvil.normal_instruction_record('))return{rows:f.tables.execution_commands!.filter(x=>x.project_id===a[0]&&x.execution_id===a[1]&&x.generation===a[2]&&x.snapshot_json.request?.commandId===a[3]).map(x=>({valid:true,snapshot_json:x.snapshot_json,original,result_ref:f.commands.get(x.created_command_id)!.result_ref}))};
   if(s.startsWith('SELECT snapshot_json FROM anvil.execution_grants'))return{rows:f.tables.execution_grants!.filter(g=>g.project_id===a[0]&&g.id===a[1]&&g.version===a[2]&&g.content_hash===a[3]).map(g=>({snapshot_json:g.snapshot_json}))};
   if(s.startsWith('SELECT id,content_hash,snapshot_json,proof_result_id FROM anvil.execution_instruction_permits'))return{rows:permits.slice().sort((a,b)=>a.id.localeCompare(b.id)).slice(0,51)};
@@ -121,22 +127,24 @@ export async function normalInstructionDeliveryFixture(instruction?:{text:string
   }
   if(s==='SELECT txid_current()::text AS transaction_id')return{rows:[{transaction_id:String(tx)}]};
   if(s.startsWith('SELECT conversation_id FROM anvil.conversation_messages')||s.startsWith('SELECT m.command_id,m.client_id,m.message_json')||s.startsWith('SELECT m.content_hash,m.kind,m.conversation_id,EXISTS')||s.startsWith('SELECT * FROM anvil.conversation_messages')||s.includes('FROM anvil.artifacts')||s.includes('FROM anvil.artifact_'))return f.db.query(s,a) as any;
-  if(s.startsWith('INSERT INTO anvil.execution_receipts(')&&['NORMAL_COMMAND_PAGE','NORMAL_INSTRUCTION_MATERIAL','NORMAL_INSTRUCTION_PERMIT'].includes(JSON.parse(a[6]).kind)){issued.push({id:a[1],version:1,content_hash:a[5],challenge_id:a[4],snapshot_json:JSON.parse(a[6])});return{rows:[],rowCount:1};}
+  if(s.startsWith('INSERT INTO anvil.execution_receipts(')&&['NORMAL_COMMAND_PAGE','NORMAL_INSTRUCTION_MATERIAL','NORMAL_INSTRUCTION_PERMIT',...(mixed?['NORMAL_START_MATERIAL','NORMAL_START_PERMIT','NORMAL_OBSERVATIONS']:[])].includes(JSON.parse(a[6]).kind)){issued.push({id:a[1],version:1,content_hash:a[5],challenge_id:a[4],snapshot_json:JSON.parse(a[6])});return{rows:[],rowCount:1};}
   if(s.startsWith('INSERT INTO anvil.execution_material_proof_bindings(')){if(mode.failBinding)throw Error('RAM_BINDING_FAILED');const snapshot=JSON.parse(a[9]);assert.equal(digest(snapshot),a[8]);assert.equal(snapshot.materialRef.id,a[7]);assert(f.tables.execution_materials!.some(m=>m.id===a[7]));bindings.push({proof_result_id:a[1],snapshot_json:snapshot});return{rows:[],rowCount:1};}
   return undefined;
  };
- const cursors=new NormalPageCursors(randomBytes(32)),q=await normalInstructionFixture({sql,cursors}),x=await instructionSourceFixture(q.j,instruction),f=x.f,plan=await x.read(),fact=q.g.snapshot_json.binding;
+ const materials={context:(f:any)=>({async contextBody(scope:any,signal:AbortSignal){const {RegisteredStartContextSource}=await import('../../../apps/server/modules/executions/normal-start-context-source.ts');const {contextSourceFixture}=await import('./normal-start-context-source-fixture.ts');const own=contextSourceFixture(f);own.mode.offset=q.j.store.mode.offset;return new RegisteredStartContextSource({pool:own.pool as any,contexts:f.contexts}).contextBody(scope,signal);}})};
+ const permit={current:(f:any)=>({async observe(){return{...structuredClone(f.tables.execution_grants[0].snapshot_json.binding),writerState:'OWNED',checkedAt:q.j.store.now().toISOString()};}})};
+ const cursors=new NormalPageCursors(randomBytes(32)),q=await normalInstructionFixture({sql,cursors},mixed?{materials,permit,ttl}:undefined),x=await instructionSourceFixture(q.j,instruction),f=x.f,plan=await x.read(),fact=q.g.snapshot_json.binding;
  Object.assign(q.request.payload,{instructionRef:plan.instructionRef,partsRef:plan.partsRef});
  const current={async observe(_scope:unknown,checkedAt:string){return{fact:{...structuredClone(fact),writerState:'OWNED',checkedAt},turnState:mode.busy?'BUSY':'IDLE',stageRef:f.stage.data.snapshot.input.stageRef,demand:{attempts:0,calls:1,spoolBytes:plan.plan.bodyRef.bytes,cost:null,costStatus:'VERIFIED_NO_CHARGE'},checkedAt,expiresAt:q.g.snapshot_json.expiresAt};}};
  const service=new NormalInstructionCommands(f.access,{mode:'NORMAL_PROTECTED',current},x.source,f.limits),sent=await service.command(f.token,f.csrf,q.request);
  original=await f.access.authenticated(f.token,null,(db,actor)=>x.source.read(db,actor,q.request));
  const base=q.j.store.pool.connect;
  const pool={async connect(){const db=await base();let previous:any,committed=false;return{release:(error?:Error)=>db.release(error),async query(s:string,a:any[]=[]){
-  if(s==='BEGIN'){const result=await db.query(s,a);previous=structuredClone({bindings,permits});tx++;return result;}
-  if(s==='ROLLBACK'&&!committed&&previous){bindings.splice(0,bindings.length,...previous.bindings);permits.splice(0,permits.length,...previous.permits);}
+  if(s==='BEGIN'){const result=await db.query(s,a);previous=structuredClone({bindings,permits,startPermits,observations,acks});tx++;return result;}
+  if(s==='ROLLBACK'&&!committed&&previous){bindings.splice(0,bindings.length,...previous.bindings);permits.splice(0,permits.length,...previous.permits);startPermits.splice(0,startPermits.length,...previous.startPermits);observations.splice(0,observations.length,...previous.observations);acks.splice(0,acks.length,...previous.acks);}
   try{const result=await db.query(s,a);if(s==='COMMIT'&&'command'in result&&result.command==='COMMIT')committed=true;return result;}catch(error){if(s==='COMMIT'&&q.j.store.mode.lost)committed=true;throw error;}
  }}}};
- const args:any[]=[{},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root}];args[7]=null;args[14]={pool,origin:'https://anvil-synthetic.invalid',cursors};args[15]={pool,origin:'https://anvil-synthetic.invalid'};args[16]={pool,origin:'https://anvil-synthetic.invalid'};args[18]=null;args[21]={mode:'NORMAL_PROTECTED',current};
+ const args:any[]=[{},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root}];args[7]=null;args[14]={pool,origin:'https://anvil-synthetic.invalid',cursors};args[15]={pool,origin:'https://anvil-synthetic.invalid'};args[16]={pool,origin:'https://anvil-synthetic.invalid'};args[18]=null;args[21]={mode:'NORMAL_PROTECTED',current};if(mixed){args[15].context=materials.context(f);args[16].current=permit.current(f);args[17]={pool,origin:'https://anvil-synthetic.invalid'};}
  const app=Reflect.apply(buildApp,undefined,args),prefix=`/api/v1/connectors/${fact.registration.connectorId}/executions/${q.g.execution_id}`;
  await app.ready();
  const prepare=async(path:string,query:Record<string,unknown>={},body?:unknown)=>{
@@ -144,23 +152,26 @@ export async function normalInstructionDeliveryFixture(instruction?:{text:string
   const frame={schemaVersion:1,challengeRef:c.ref,proof,signature:q.j.signProof(proof)},search=new URLSearchParams(Object.entries(query).map(([k,v])=>[k,String(v)])).toString(),url=path+(search?'?'+search:'');
   return{frame,get:(override:any={})=>inject((req,rep)=>{Object.defineProperty(req.socket,'encrypted',{value:override.tls!==false});app.routing(req,rep);},{method:body===undefined?'GET':'POST',url,...(body===undefined?{}:{payload:canonicalJson(body)}),headers:{...(body===undefined?{}:{'content-type':'application/json'}),host:'anvil-synthetic.invalid',authorization:'Bearer '+q.j.token,'anvil-execution-auth':Buffer.from(canonicalJson(override.frame??frame)).toString('base64url')}})};
  };
- return{q,x,f,app,prefix,sent,plan,bindings,permits,mode,prepare,close:async()=>{await app.close();await x.close();}};
+ return{q,x,f,app,prefix,sent,plan,bindings,permits,startPermits,observations,acks,mode,prepare,close:async()=>{await app.close();await x.close();}};
 }
 
 /** 실제 handler를 RAM HTTPS로 연결한다. 파일/네트워크/등록 키 I/O는 하지 않는다. */
-export async function normalInstructionRuntimeFixture(instruction?:Parameters<typeof normalInstructionDeliveryFixture>[0]){
- const h=await normalInstructionDeliveryFixture(instruction),j=h.q.j;
+export async function normalInstructionRuntimeFixture(instruction?:Parameters<typeof normalInstructionDeliveryFixture>[0],mixed=false,ttl=Infinity){
+ const h=await normalInstructionDeliveryFixture(instruction,mixed,ttl),j=h.q.j;
  const {EventEmitter}=await import('node:events');
  const {NormalProtectedGetClient}=await import('../../../apps/connector/runtime/normal-protected-get-client.ts');
  const {NormalProtectedPostClient}=await import('../../../apps/connector/runtime/normal-protected-post-client.ts');
- const calls:{path:string;body:unknown}[]=[],mode={wall:0,losePermit:false,mutatePermit:null as null|((v:any)=>void)};
+ const calls:{path:string;body:unknown;status?:number;error?:string}[]=[],mode={wall:0,losePermit:false,loseObservations:false,mutateObservations:null as null|((v:any)=>void),mutatePermit:null as null|((v:any)=>void)};
  const request=(url:URL,options:any,callback:(r:any)=>void)=>{
   const req:any=new EventEmitter();req.destroy=()=>{};req.end=(body?:Buffer)=>{
-   calls.push({path:url.pathname,body:body?JSON.parse(body.toString()):null});
+   const call:{path:string;body:unknown;status?:number;error?:string}={path:url.pathname,body:body?JSON.parse(body.toString()):null};calls.push(call);
    inject((rq,rp)=>{Object.defineProperty(rq.socket,'encrypted',{value:true});(url.pathname.endsWith('/challenges')?j.app:h.app).routing(rq,rp);},
     {method:options.method,url:url.pathname+url.search,headers:{host:url.host,...options.headers},...(body?{payload:body}:{})}).then(r=>{
+     call.status=r.statusCode;if(r.statusCode!==200)call.error=r.body;
+     if(url.pathname.endsWith('/observations')&&mode.loseObservations){req.emit('error',Error('RAM_OBSERVATIONS_LOST'));return;}
      if(url.pathname.endsWith('/permit')&&mode.losePermit){req.emit('error',Error('RAM_RESPONSE_LOST'));return;}
      let payload=r.rawPayload;if(url.pathname.endsWith('/permit')&&mode.mutatePermit&&r.statusCode===200){const v=r.json();mode.mutatePermit(v);payload=Buffer.from(canonicalJson(v));}
+     if(url.pathname.endsWith('/observations')&&mode.mutateObservations&&r.statusCode===200){const v=r.json();mode.mutateObservations(v);payload=Buffer.from(canonicalJson(v));}
      const res:any=new EventEmitter();res.destroy=()=>{};res.statusCode=r.statusCode;res.rawHeaders=Object.entries(r.headers).flatMap(([k,v])=>[k,String(v)]);
      callback(res);setImmediate(()=>{res.emit('data',payload);res.emit('end');});
     },e=>req.emit('error',e));
@@ -173,12 +184,12 @@ export async function normalInstructionRuntimeFixture(instruction?:Parameters<ty
  const current={transport:'NORMAL_PROTECTED' as const,async current(e:any,localAttemptRef:any){const fact=h.q.g.snapshot_json.binding;
   return{transport:'NORMAL_PROTECTED',key:{projectId:e.context.projectId,executionId:e.context.executionId,executionGeneration:e.context.executionGeneration,commandId:e.commandId},envelopeHash:e.envelopeHash,grantRef:scope.grantRef,localAttemptRef,
    sourceObservationRefs:[...new Map(e.context.sourceScopes.map((s:any)=>[canonicalJson(s.observationRef),s.observationRef])).values()],osOwnershipRef:fact.checks.osFence.evidenceRefs[0],checkedAt:new Date(clock()).toISOString(),expiresAt:new Date(Math.min(clock()+30000,Date.parse(e.expiresAt))).toISOString()};}};
- return{h,get,post,current,scope,clock,calls,mode,signal:new AbortController().signal};
+ return{h,get,post,current,scope,clock,ports,config,calls,mode,signal:new AbortController().signal};
 }
 
 /** 아래는 source 합성 시험의 내부 조립이다. current 대역을 실제 OS 권위로 표시하지 않는다. */
-export async function normalInstructionDurableFixture(){
- const f=await normalInstructionRuntimeFixture(),{root,memoryFiles}=await import('./normal-start-local-fixture.ts');
+export async function normalInstructionDurableFixture(mixed=false,ttl=Infinity,instruction?:Parameters<typeof normalInstructionDeliveryFixture>[0]){
+ const f=await normalInstructionRuntimeFixture(instruction,mixed,ttl),{root,memoryFiles}=await import('./normal-start-local-fixture.ts');
  const {NormalStartFileStore}=await import('../../../apps/connector/runtime/normal-start-file-store.ts');
  const {NormalInstructionIntake,receiveNormalInstruction}=await import('../../../apps/connector/runtime/normal-instruction-intake.ts');
  const {NormalInstructionCoordinator}=await import('../../../apps/connector/runtime/normal-instruction-coordinator.ts');
@@ -202,4 +213,21 @@ export async function normalInstructionWireFixture(timeoutMs=10000){
  let driverCalls=0;const driver={async send(_input:any,_signal:AbortSignal){driverCalls++;return observed;}};
  const wire=new NormalInstructionWire({driver});
  return{...f,c,prepared,rows,observed,driver,wire,driverCalls:()=>driverCalls,wireWith:(send:(input:any,signal:AbortSignal)=>Promise<any>)=>new NormalInstructionWire({driver:{send}})};
+}
+
+/** 실제 START/SEND handler와 같은 실행 RAM 원장을 공유하는 혼합 polling 조립. */
+export async function normalInstructionPollingFixture(ttl=Infinity,instruction?:Parameters<typeof normalInstructionDeliveryFixture>[0]){
+ const f=await normalInstructionDurableFixture(true,ttl,instruction);
+ const {NormalStartIntake}=await import('../../../apps/connector/runtime/normal-start-intake.ts');
+ const {NormalObservationSpool}=await import('../../../apps/connector/runtime/normal-observation-spool.ts');
+ const {NormalStartPolling}=await import('../../../apps/connector/runtime/normal-start-polling.ts');
+ const {NormalInstructionWire}=await import('../../../apps/connector/adapters/secondary/normal-instruction-wire.ts');
+ const spool=new NormalObservationSpool(f.store,f.localScope,f.clock),startIntake=new NormalStartIntake(f.store.intake(),f.expected,f.clock);
+ const effects={start:0,send:0,sendFail:false},hooks={afterSend:null as null|(()=>void|Promise<void>)};
+ const response=()=>({transport:'NORMAL_PROTECTED' as const,responseRef:{id:randomUUID(),version:1,contentHash:'a'.repeat(64)},processRef:null});
+ const wire=new NormalInstructionWire({driver:{async send(input){effects.send++;assert.equal(input.envelope.commandId,f.item.envelope.commandId);if(effects.sendFail)throw Error('RAM_SEND_LOST');await hooks.afterSend?.();return response();}}});
+ const options=()=>({clients:{get:f.get,post:f.post,expiresAt:f.h.q.j.credentialExpiresAt},owner:()=> 'RAM-normal-owner',deadline:f.clock()+50000,maxPages:1,idleMs:1,
+  start:{intake:startIntake,store:f.store,spool,post:f.post,current:f.current,grantRef:f.scope.grantRef,clock:f.clock,timeoutMs:1000,wire:{transport:'NORMAL_PROTECTED' as const,async send(){effects.start++;return response();}}},
+  instruction:{intake:f.intake,store:f.store.instructionAttempts(),current:f.current,grantRef:f.scope.grantRef,clock:f.clock,timeoutMs:1000,wire}});
+ return{...f,spool,effects,hooks,options,poll:()=>new NormalStartPolling(options())};
 }

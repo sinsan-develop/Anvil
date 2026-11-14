@@ -19504,3 +19504,22 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - SEND wire 잠정동결 독립 검수: spec C0/I2/M0, quality C0/I1/M0(동일 타이머 항목 중복, 고유 Important2). (1) 임의 wire가 공개 claim만 호출하고 정식 adapter verify 없이 RESPONSE_RECORDED 가능, 사전 prototype 교체도 같은 경로. (2) verify 후 current 기한 축소가 driver 취소 timer에 반영되지 않음. Main 코드 대조2bbcb7로 확인, commit/통합 보류하고 기존 Primary에게 동일6경로 fix round1·각 RED→GREEN 지시. 지문 coordinator F7C1D998…A35B5A3/wire3FC37771…43F823은 보정 전 증거이며 이전 PASS를 최종 수용으로 취급하지 않는다. 실제 DB/Agent 실행0.
 
 - SEND wire 고유 I2 모두 해소, 독립 재검수 C0/I0/M0. 최종 영향49P(cc2be0)·Main wire종단22P0F0SKIP exit0 28269.8232ms(d84a3a→c7c8c6), type0(cc9932), 양방향 fresh import0·diff0. Primary6경로 쓰기 반환/live0. 결과서 FN08_NORMAL_SEND_WIRE_SOURCE_RESULT_20261115.md에 시점별 실패·검증·6지문·미검증을 기록했다. 제품2/시험4+기록3을 source 한정 통합하며 실제 DB/Agent 및 전체 계획 완료는 아니다.
+
+- PR119 통합: source c8f023f4→main62a0e16a0c36bf9742e00d17697770a86537d939, Broker43625693009 success. local/private exact·clean·tree 동등·PRhead 복구 ref 확인(6ee299). merged RAM SEND wire 종단1P/0F/0SKIP exit0 2528.454ms(d29c3c). 완료 branch/tracking/tag 정상 정리 후 codex/av3-fn08-send-polling 생성(7688a6). 기존 다른 worktree는 그대로다. gh pr edit119는 cyhuh428-sinsan UpdatePullRequest 권한 부족으로 거절(43c06b); 우회/재시도 없이 결과서 보존·PMO 보고했다. 다음은 혼합 polling/관측ACK/cursor 내부 연결이며 Primary 읽기 준비 중, 실제 DB/권한/키/서비스/Agent0.
+
+- 다음 혼합 polling10경로 확정: Primary 읽기 계획에 따라 원 SEND 관측 복구→보호 POST/ACK coverage→page cursor 연결을 WI FN08_NORMAL_SEND_POLLING_SOURCE_20261115.md로 고정했다. 새 공개 API/enum/표/권한0. 역사 permit/UNKNOWN 재실행0, 기존 START 보존, RAM 종단 및 ACK 유실·부분 coverage 검증. Main 문서/검수, 기존 Primary 단일 제품 writer. 실제 환경 실행 제외 유지.
+
+- 혼합 polling WI 사전 독립 C0/I0/M0, SHA2563F15D614CE0F9EE3FF595A99DC0B0961BA60979C7D18D0D128C048C73093EFF9. 기존 공개 사건/ACK 안의 내부 연결임을 확인했다. 원 역사 ref/시각 복구·추가 permit/driver0, 200건 batch 성공과 전체 ACK coverage를 구분한다. 기존 Primary 정확10경로 구현 중이며 Main은 제품 미수정.
+
+- 혼합 polling 목적 RED: node --experimental-strip-types --experimental-test-module-mocks --test --test-reporter=tap tests/unit/FN08/normal-instruction-polling-journey.test.ts →0P/1F exit1 2632.4803ms(0ae36d). 원 START RAM driver1·관측5·ACK 후 SEND 미연결에서 UNKNOWN/OPERATION_FAILED, commands1/cursor0/send0를 확인했다. fixture 기본값 보존, mixed=true만 명시 조립. Primary observations/coverage/polling 작성 중·live0·실환경0.
+
+- 혼합 정상 첫 GREEN(수행자): 신규 polling journey1P/0F/0SKIP exit0 3603.0922ms(82800c). 실제 제품 RAM START/SEND handler→자료/permit→start1/send1→관측9/ACK→cursor, 새 polling 재시작 추가 wire0. 중간 coordinator exact설정에 wire 필드를 넘겨 거절된 조립1F는 wire 분리로 해소·guard 유지. 현재 음성/복구 검증 중이며 제품 미동결, Main 수용 전. 실제 SDK/DB 성공이 아니다.
+
+- 혼합 복구 시험 수행자 중간6P/1F: 파일 create 실패로 기존 UNKNOWN lock이 보존됐는데 시험이 즉시 재시작 성공을 기대했다. 제품 guard는 유지하고 lock 획득 전의 부분 관측 실패/복구를 별도 반례로 분리해 집중1P(fc45f6); append 실패 UNKNOWN 보존은 별도 음성으로 유지한다. Main은 최종 시험 diff에서 실패조건/보존 단언을 확인 예정. coverage201건·명시 갱신·원장 검증은 진행 중, live0·실환경0.
+
+- 혼합 polling 제품4 잠정동결 spec C0/I1/M0·quality C0/I0/M0. 고유I1: polling이 역사 조회 전 항상 자료GET을 수행하여 원RESPONSE 뒤 관측 실패/자료정정·격리 시 원관측 복구가 막힘. Mainf6bae6로 확인, 같은10경로 fix round1 지시. 완전 기존 이력 먼저 검산하고 미수신만 기존GET, 손상/불명은 새실행 fallback0, 현재 POST권한 유지. 품질검수는 lock전복구와 appendUNKNOWN 분리, batch[5,200,5]/coverage205<210 cursor0를 확인했다. 최종 수행자 검사 진행 중이며 I1해소 전 수용/통합 보류. 실제SDK/DB0.
+
+- polling I1 수행자 보정: history-first, hasReceived 정확page/원장검산 및 정상미수신+attempt0일 때만 NOT_RECEIVED. 구polling블록 임시 재현 후 bytes 복원한 목적RED0P1F(9dedc9, INSTRUCTION_SOURCE_EXCLUDED)→수정GREEN1P(6fb609). 별도선행GET의미소비challenge429와 START공통message정정409는 fixture 조사 오류로 분리, 실제원제품appendConversation의독립SEND본문을 사용하고 한도/guard 유지. 재봉인/역사permit/noGET/손상·소실fallback 반례 집중3P·hasReceived1P. intake3EA92932…EB9D4D/coordinator0F70428B…9A548D/polling1786428B…16FBAF5 재동결, spool불변. 독립재검수·최종검증 전, 실환경0.
+
+- 혼합 polling 최종 source 수용: Primary57P/0F/0SKIP·Main12P/0F/0SKIP(700df3)·type0·독립 C0/I0/M0,10경로 동결/쓰기 반환. 결과서 FN08_NORMAL_SEND_POLLING_SOURCE_RESULT_20261115.md에 실패·지문·미검증 기록. 직전 출력 유실은 PASS로 쓰지 않고 시험 프로세스0 확인 뒤 재확보. 실제DB/Agent0.
+- STOP 후보 SHA2562E6445077CDD2A02C00367EAEF08E40AE33E4DB46077EC4BC18785D1156CAC0F 독립 C0/I0/M0 후 신산님 직접 A안 source-only 채택. GET 정책 선택·현재 ownership 부재412·STOP 전용 target projection을 포함한다. 원 후보 hash 보존, 실제 권한/DB/키/서비스/Agent 제외. Primary 읽기 준비만 수행하고 SEND 통합 뒤 별도 WI 구현.

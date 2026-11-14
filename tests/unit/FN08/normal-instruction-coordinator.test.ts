@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {normalInstructionDurableFixture,normalInstructionWireFixture} from './normal-instruction-dispatch-fixture.ts';
 
 for(const fault of ['LOST','PERMIT_HASH_BINDING','REVOKED','EXPIRED','ABORT','CURRENT_ENVELOPE_BINDING','CURRENT_OS','ATTEMPT_SYNC','PERMIT_SYNC'] as const)test('SEND attempt '+fault+'은 추가 허가/재시작 전송 없이 닫는다',async()=>{
@@ -135,4 +136,29 @@ for(const point of ['DISPATCH_SYNC','DISPATCH_CLOSE'] as const)test(point+' 동�
   assert.equal(f.driverCalls(),point==='DISPATCH_SYNC'?0:1);
   const c=f.make(),history=await c.prepare(f.item.envelope,f.signal);await assert.rejects(c.dispatch(f.item.envelope,history,f.wire,f.signal),/ELIGIBLE/);assert.equal(f.driverCalls(),point==='DISPATCH_SYNC'?0:1);
  }finally{await f.h.close();}
+});
+
+
+test('observations는 최신 RESPONSE 원체인만 투영하며 만료·조회가 새 dispatch 권위를 만들지 않는다',async()=>{
+ const f=await normalInstructionWireFixture();try{
+  await f.c.dispatch(f.item.envelope,f.prepared,f.wire,f.signal);const rows=f.rows(),calls=f.calls.length;f.mode.wall+=60000;
+  const v=await f.make().observations(f.item.envelope,f.signal);assert.equal(v.state,'RESPONSE_RECORDED');
+  assert.deepEqual(v.inputs.map(e=>e.type),['RECEIVED','PREPARED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED']);
+  assert.deepEqual(v.inputs.slice(1).map(e=>[e.localRecordRef,e.occurredAt]),[rows[0],rows[1],rows[3]].map(r=>[r.ref,r.snapshot.recordedAt]));
+  assert.equal(v.inputs[3]!.reasonCode,'UNVERIFIED_PROVIDER_CLAIM');assert.equal(f.calls.length,calls);assert.equal(f.driverCalls(),1);
+  const file=[...f.fs.files.entries()].find(([p])=>p.includes('attempt-'+f.item.envelope.commandId)&&p.endsWith('.000002.json'))!;file[1].bytes=Buffer.from('{}');
+  await assert.rejects(f.make().observations(f.item.envelope,f.signal));assert.equal(f.driverCalls(),1);
+ }finally{await f.h.close();}
+});
+
+
+test('역사 관측은 hash를 다시 봉인한 다른 세대/세션/원수신 ref도 거절한다',async()=>{
+ for(const change of [(v:any)=>{v.key.executionGeneration++;},(v:any)=>{v.sessionBindingRef.id=randomUUID();},(v:any)=>{v.receivedRef.id=randomUUID();}]){
+  const f=await normalInstructionWireFixture();try{
+   const file=[...f.fs.files.entries()].find(([p])=>p.includes('attempt-'+f.item.envelope.commandId)&&p.endsWith('.000001.json'))!,calls=f.calls.length;
+   const row=JSON.parse(file[1].bytes.toString());change(row.snapshot);row.ref.contentHash=contentHash(canonicalJson(row.snapshot));file[1].bytes=Buffer.from(canonicalJson(row));
+   await assert.rejects(f.make().observations(f.item.envelope,f.signal),/NORMAL_LOCAL_STORAGE_UNAVAILABLE/);assert.equal(f.calls.length,calls);assert.equal(f.driverCalls(),0);
+   assert(f.fs.files.has(f.fs.path('attempt-'+f.item.envelope.commandId+'.lock')));
+  }finally{await f.h.close();}
+ }
 });
