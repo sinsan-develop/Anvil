@@ -19581,3 +19581,6 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 다음 codex/av3-normal-owner-review 문서/읽기 단계: 기존 FN07 process-tool/admission 후보와 최신 START/SEND/STOP 소비부를 대조해 이미완료된 의미를 재승인받지 않고 실제남은 owner/SDK 경계만 좁힌다. Primary 읽기전용·제품쓰기0. SDK추가고정원문읽기 질문답변미수신/미실행, FN03기존질문중복0. UI14/FN17 좁은조회소비조사에서는 이미연결/새사건·구독계약밖으로확인했고 전체계획작업부재판정0.
 
 - normal owner 잔여대조 완료: 기존 Nov6 START/SEND부재문구는후속구현으로해소돼 재사용0. 남은profile실행구성/Query·child·논리session/privateSTOP 생산과 SDK미확인사실은 NORMAL_OWNER_REMAINING_BOUNDARY_REVIEW_20261115.md에분리기록. 새admission/endpoint를필수로가정0, 기존permit재사용우선. Primary읽기전용반환/live0, 실제/제품쓰기0. 추가고정SDK읽기답변·기존FN03결정미응답을승인으로간주하지않고중복질문0. 전체계획미완료 유지.
+
+
+- 2026-11-15 FN07 READ4: 직접 추가1회 승인에 따라 기존 Primary가 고정 SDK 원문 GET1회 수행했으나 ENOTFOUND(getaddrinfo ENOTFOUND registry.npmjs.org)로 실패. attempted=true/fetches=1/requestClosed=true/live0/sourceAvailable=false, 1회 소진. READ2/3 포함 동일 DNS 원인3회이며 재시도·환경변경0. 실제 DB·권한·키·서비스·Agent0, SDK 계약 신규 확인0·전체 완료체크 불변. 근거: docs/04_test_reports/AV3/FN07_PINNED_SDK_HOOK_READ4_RESULT_20261115.md. Main은 PMO에 제약·지원사항을 전달하며 완료된 STOP 소스 검증은 반복하지 않는다.
