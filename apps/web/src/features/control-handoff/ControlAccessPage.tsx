@@ -1,13 +1,13 @@
 import type {ControlAcceptanceChain} from '../../../../server/modules/control-handoff/control-grant.ts';
 import type {ProtectedHandoffSummary} from '../../../../server/modules/control-handoff/control-handoff-protected-summary.ts';
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {routeHref} from '../../shell/routes.ts';
 import {ProjectAccessSummary} from '../projects/ProjectAccessSummary.tsx';
 import {ControlApi,same,type ControlSession,type ControlStateResult,type ControlRequestListResult,type ControlRequestReadResult,type HandoffSummaryReadResult,type ControlRef} from './api.ts';
 import {ControlScope,emptyControlBuffer,freezeControlCommand,freezeControlAcceptance,selfRequestCommand,type ControlBuffer,type ControlTicket} from './state.ts';
 interface Props{client:ApiClient;projectId:string;session?:ControlSession;buffer?:ControlBuffer|null;onChange?:(expected:string|null,next:ControlBuffer)=>boolean;scope?:ControlScope;onAuthenticationLost:()=>void}
-interface View{state:ControlStateResult|null;list:ControlRequestListResult|null;request:ControlRequestReadResult|null;summary:HandoffSummaryReadResult|null;headNone:boolean;protectedSummary:ProtectedHandoffSummary|null;protectedHeadState:'NONE'|'UNKNOWN'|null;acceptance:ControlAcceptanceChain['result']|null;error:ApiError|null;busy:boolean}
+interface View{acceptanceOwner?:ControlBuffer['pending'];state:ControlStateResult|null;list:ControlRequestListResult|null;request:ControlRequestReadResult|null;summary:HandoffSummaryReadResult|null;headNone:boolean;protectedSummary:ProtectedHandoffSummary|null;protectedHeadState:'NONE'|'UNKNOWN'|null;acceptance:ControlAcceptanceChain['result']|null;error:ApiError|null;busy:boolean}
 const emptyView=():View=>({state:null,list:null,request:null,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null,acceptance:null,error:null,busy:false});
 const labels={activeExecutions:'진행 작업',pendingCommands:'미결 명령',pendingApprovals:'미결 승인',sourceCheckpointRefs:'원본·체크포인트 참조'};
 /** 명시 조작만 원 명령을 보존해 전송한다. 실행 시작·자동 재전송은 하지 않는다. */
@@ -24,6 +24,11 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  const currentView=visibleContext.current===context.current&&visible.current?.session===session&&visible.current?.projectId===projectId&&visible.current?.client===client?view:emptyView();
  const b=buffer&&session&&buffer.projectId===projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId?buffer:null;
  const pending=b?.pending??null,unresolved=!!pending&&pending.status!=='CONFIRMED';
+ const historyScope=useRef({context:context.current,binding:b?.bindingId,pending,revision:0});
+ if(historyScope.current.context!==context.current||historyScope.current.binding!==b?.bindingId||historyScope.current.pending!==pending){
+  historyScope.current={context:context.current,binding:b?.bindingId,pending,revision:historyScope.current.revision+1};
+ }
+ const historyOwner=historyScope.current;
  const configured=!!session&&!!onChange;
  const matches=(ticket:ControlTicket,binding:string|null)=>{
   if(!scope.current(ticket,binding)||ticketContexts.current.get(ticket)!==context.current)return false;
@@ -76,8 +81,10 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  try{
  if(command.kind==='ACCEPT'){
    const result=command.status==='UNKNOWN'?await api().acceptanceResult(command.command,command.summary):await api().accept(command.command,command.summary);if(!matches(t,binding))return;
-   const latest=live.current.buffer;if(!latest||latest.bindingId!==old.bindingId||latest.pending?.bindingId!==binding||!onChange(old.bindingId,{...latest,pending:{...command,status:'CONFIRMED'}}))return;
-   const state=await api().state();if(matches(t,binding))setView({...emptyView(),state,acceptance:result});return;
+   const latest=live.current.buffer,confirmed={...command,status:'CONFIRMED' as const};if(!latest||latest.bindingId!==old.bindingId||latest.pending?.bindingId!==binding||!onChange(old.bindingId,{...latest,pending:confirmed}))return;
+   try{const state=await api().state();if(matches(t,binding))setView({...emptyView(),state,acceptance:result,acceptanceOwner:confirmed});}
+   catch(e){fail(e,t,binding);} // 수락 CAS가 확정된 뒤의 현재 상태 조회 오류만 처리한다.
+   return;
   }
   if(command.kind==='PROTECTED_PREPARE'){
    if(command.command.operation!=='prepareControlHandoff')throw new ApiError('RESPONSE_INVALID');const summary=await api().prepareProtected(command.command);if(!matches(t,binding))return;
@@ -145,8 +152,45 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
   {currentView.protectedSummary?<section aria-label="고정 보호요약"><h3>고정 보호요약</h3><p>보호 검산 {currentView.protectedSummary.snapshot.transferState}</p><p>관측 {currentView.protectedSummary.snapshot.observedAt} · 기한 {currentView.protectedSummary.snapshot.validUntil}</p><dl>{(Object.keys(labels)as(keyof typeof labels)[]).map(key=><div key={key}><dt>{labels[key]}</dt><dd>{currentView.protectedSummary!.snapshot.collections[key].state} · 참조 {currentView.protectedSummary!.snapshot.collections[key].items.length}개</dd></div>)}</dl><p>미확인 항목: {currentView.protectedSummary.snapshot.gaps.join(', ')}</p><p>보관 원문 조회만으로 현재 수락 권한을 만들지 않습니다.</p></section>:null}
   {protectedSummary?<section aria-label="인수 수락 확인"><label>수락 이유<textarea maxLength={20000} value={b?.reason??''} disabled={!configured||unresolved} onChange={e=>edit('reason',e.target.value)}/></label><label><input type="checkbox" checked={confirmedSummary===protectedSummary.ref.contentHash} disabled={!configured||unresolved||currentView.busy} onChange={e=>setConfirmedSummary(e.target.checked?protectedSummary.ref.contentHash:null)}/>요약과 대상 기기를 확인했습니다.</label></section>:null}
    <button type="button" disabled={!canAccept} onClick={prepareAcceptance}>인수 수락 명령 보존</button>
-   {currentView.acceptance?<section aria-label="제어 전환 결과 확인"><h3>제어 전환 결과 확인</h3><p>수락 결과의 사용자·기기 {currentView.acceptance.nextControl.actorId} / {currentView.acceptance.nextControl.clientId} · 세대 {currentView.acceptance.nextControl.generation}</p><p>원 결과는 과거 사실입니다. 현재 제어와 일반 작업 허가는 서버가 별도로 검산합니다.</p></section>:null}
+   {session&&b&&pending?.kind==='ACCEPT'&&pending.status==='CONFIRMED'?
+    <ConfirmedAcceptanceHistory key={historyOwner.revision} busy={currentView.busy}
+     initial={currentView.acceptanceOwner===pending?currentView.acceptance:null}
+     current={()=>historyScope.current===historyOwner&&live.current.buffer?.pending===pending&&
+      live.current.buffer.bindingId===historyOwner.binding&&pending.status==='CONFIRMED'&&live.current.projectId===projectId&&
+      session.user.id===b.ownerUserId&&session.clientId===b.ownerClientId&&live.current.session===session&&
+      client.transport===historyOwner.context.transport&&session.csrfToken===historyOwner.context.csrf}
+     read={active=>new ControlApi((path,init)=>{
+      if(!active())throw new ApiError('REQUEST_FAILED',412);
+      return client.transport(path,init);
+     },session,projectId).acceptanceResult(pending.command,pending.summary)}
+     onAuthenticationLost={onAuthenticationLost}/>:null}
   <a href={routeHref('workspace',projectId)}>프로젝트 작업으로 돌아가기</a>
+ </section>;
+}
+
+type HistoricalResult=ControlAcceptanceChain['result'];
+function ConfirmedAcceptanceHistory({busy,initial,current,read,onAuthenticationLost}:{
+ busy:boolean;initial:HistoricalResult|null;current:()=>boolean;read:(active:()=>boolean)=>Promise<HistoricalResult>;onAuthenticationLost:()=>void;
+}){
+ const ticket=useRef(0),pending=useRef(false);
+ const [history,setHistory]=useState<{result:HistoricalResult|null;error?:ApiError;loading?:boolean}|null>(null);
+ useLayoutEffect(()=>()=>{ticket.current++;pending.current=false;},[]);
+ function close(){ticket.current++;pending.current=false;setHistory({result:null});}
+ async function query(){
+  if(busy||pending.current||!current())return;
+  const request=++ticket.current,active=()=>ticket.current===request&&current();
+  pending.current=true;setHistory({loading:true,result:null});
+  try{const result=await read(active);if(active())setHistory({result});}
+  catch(cause){if(active()){const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setHistory({result:null,error});if(error.status===401)onAuthenticationLost();}}
+  finally{if(ticket.current===request)pending.current=false;}
+ }
+ const result=history===null?initial:history.result;
+ return <section aria-label="보존한 수락 결과">
+  <button type="button" disabled={busy||history?.loading} onClick={()=>void query()}>수락 결과 다시 조회</button>
+  {history?.loading?<p role="status">수락 결과를 조회하고 있습니다.</p>:null}
+  {history?.error?<p role="alert">수락 결과를 확인할 수 없습니다. ({history.error.status||history.error.code})</p>:null}
+  {result?<section aria-label="제어 전환 결과 확인"><h3>제어 전환 결과 확인</h3><p>수락 결과의 사용자·기기 {result.nextControl.actorId} / {result.nextControl.clientId} · 세대 {result.nextControl.generation}</p><p>원 결과는 과거 사실입니다. 현재 제어와 일반 작업 허가는 서버가 별도로 검산합니다.</p></section>:null}
+  {result||history?.loading||history?.error?<button type="button" onClick={close}>수락 결과 닫기</button>:null}
  </section>;
 }
 

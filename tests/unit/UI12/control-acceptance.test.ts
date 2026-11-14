@@ -83,13 +83,18 @@ test('실제 target 화면은 고정 보호 head→원문을 명시 조회하며
 });
 
 
-test('실제 target 수락 화면은 READY를 확인해 원 명령을 먼저 보존하고 응답 유실 뒤 원 GET만 사용한다',async()=>{
+for(const followup of ['정상','즉시','지연'])test(followup!=='정상'?'확정 수락 후 현재 제어 조회 '+followup+' 실패는 수락 GET만으로 복구한다':'실제 target 수락 화면은 READY를 확인해 원 명령을 먼저 보존하고 응답 유실 뒤 원 GET만 사용한다',async()=>{
+ const followupFails=followup!=='정상',releaseState=Promise.withResolvers<void>();
  const summary=await protectedSummary(true);assert.equal(summary.snapshot.transferState,'READY');const savedNow=Date.now;Date.now=()=>Date.parse(now);
  const calls:{path:string;method:string}[]=[],target={...session,user:{id:requester,displayName:'수락 대상'},clientId:requesterClient},container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);let buffer:any={bindingId:id(80),ownerUserId:requester,ownerClientId:requesterClient,projectId,reason:'수락 원문 보존',expiresAt:'',pending:null},chain:ReturnType<typeof createControlAcceptanceChain>|null=null;
  const fixed={projectId,requestRef:request.requestRef,snapshot:request.snapshot,observedAt:now,current:{expired:false,baseControlState:'MATCHED'},executionAuthorized:false,controlTransferred:false};
  const client=new ui.ApiClient(async(path:string,init?:RequestInit)=>{const method=init?.method??'GET';calls.push({path,method});const url=new URL(path,'https://test.invalid');let value:unknown;
   if(method==='POST'&&url.pathname.endsWith('/acceptances')){const command=JSON.parse(String(init!.body));assert.equal(buffer.pending.status,'UNKNOWN');assert.deepEqual(buffer.pending.command,command);chain=createControlAcceptanceChain({projectId,command,requestRef:request.requestRef,summaryRef:summary.ref,before:baseControl,targetActorId:requester,recordedAt:now,ids:{acceptance:id(81),revocation:id(82),grant:id(83),receipt:id(84),audit:id(85)}});throw Error('COMMIT_REPLY_LOST');}
   if(url.pathname.includes('/acceptances/')){assert.ok(chain);value=chain.result;}
+  else if(followupFails&&buffer.pending?.status==='CONFIRMED'&&url.pathname.endsWith('/control-state')){
+   if(followup==='지연')await releaseState.promise;
+   return Response.json({code:'NOT_CONNECTED'},{status:503});
+  }
   else if(url.pathname.endsWith('/control-state'))value={schemaVersion:1,projectId,observedAt:now,actorId:requester,clientId:requesterClient,participation:'HANDOFF_ELIGIBLE',control:chain?{state:'HELD',basis:chain.result.nextControl}:{state:'OTHER_CLIENT',basis:baseControl},executionAuthorized:false,controlTransferred:false};
   else if(url.pathname.endsWith('/control-requests'))value={projectId,view:'OWN',limit:50,observedAt:now,items:[{requestRef:request.requestRef,createdAt:request.snapshot.createdAt,expiresAt:request.snapshot.expiresAt,storedState:'PENDING',current:fixed.current,executionAuthorized:false,controlTransferred:false}],hasMore:false,nextCursor:null,executionAuthorized:false,controlTransferred:false};
   else if(url.pathname.endsWith('/protected-handoff-summaries/head'))value={schemaVersion:2,purpose:'CONTROL_HANDOFF_PROTECTED_HEAD',projectId,requestRef:request.requestRef,observedAt:now,head:{state:'AVAILABLE',summaryRef:summary.ref},executionAuthorized:false,dispatchPerformed:false,controlTransferred:false};
@@ -100,9 +105,64 @@ test('실제 target 수락 화면은 READY를 확인해 원 명령을 먼저 보
  const render=()=>root.render(ui.React.createElement(ui.ControlAccessPage,{client,projectId,session:target,buffer,onChange:(expected:string|null,next:any)=>{if(buffer.bindingId!==expected)return false;buffer=next;render();return true;},onAuthenticationLost:()=>{throw Error('인증상실 없음');}}));
  const all=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(all)];const button=(label:string)=>all(container).find(n=>n.tagName==='BUTTON'&&n.textContent===label);
  const click=async(label:string)=>{const n=button(label);assert.ok(n,label);assert.equal(n.disabled,false,label);await ui.React.act(async()=>n.dispatchEvent({type:'click',button:0}));};
- const wait=async(text:string)=>{for(let i=0;i<40;i++){if(container.textContent.includes(text))return;await ui.React.act(async()=>{await new Promise<void>(r=>setImmediate(r));});}assert.fail('표시 정착 누락 '+text);};
+ const wait=async(text:string)=>{const deadline=performance.now()+2000;while(performance.now()<deadline){if(container.textContent.includes(text))return;await ui.React.act(async()=>{await new Promise<void>(r=>setTimeout(r,2));});}assert.fail('표시 정착 누락 '+text);};
  try{await ui.React.act(async()=>render());assert.equal(calls.length,0);await click('현재 제어 조회');await wait('OTHER_CLIENT');await click('내 요청 목록 조회');await wait('요청 1 원문 확인');await click('요청 1 원문 확인');await wait(request.snapshot.reason);await click('최신 보호요약 고정 원문 조회');await wait('보호 검산 READY');
   assert.equal(button('인수 수락 명령 보존')?.disabled,true);const checkbox=all(container).find(n=>n.tagName==='INPUT'&&Object.keys(n).some(k=>k.startsWith('__reactProps')&&(n as unknown as Record<string,{type?:string}>)[k]?.type==='checkbox'));assert.ok(checkbox);const props=(checkbox as unknown as Record<string,unknown>)[Object.keys(checkbox).find(k=>k.startsWith('__reactProps'))!]as {onChange:(e:unknown)=>void};await ui.React.act(async()=>props.onChange({target:{checked:true}}));await click('인수 수락 명령 보존');assert.equal(buffer.pending.command.operation,'acceptControl');assert.equal(calls.some(x=>x.method==='POST'),false);
-  await click('보존한 명령 전송');await wait('현재 제어를 다시 조회하세요.');assert.ok(chain);assert.equal(buffer.pending.status,'UNKNOWN');const original=structuredClone(buffer.pending.command);await click('현재 제어 조회');await wait('HELD');await click('같은 명령 결과 재확인');await wait('CONFIRMED');assert.deepEqual(buffer.pending.command,original);assert.equal(calls.filter(x=>x.method==='POST').length,1);assert.equal(calls.filter(x=>x.path.includes('/acceptances/')).length,1);assert.equal(container.textContent.includes('제어 전환 결과 확인'),true);
+  await click('보존한 명령 전송');await wait('현재 제어를 다시 조회하세요.');assert.ok(chain);assert.equal(buffer.pending.status,'UNKNOWN');const original=structuredClone(buffer.pending.command);await click('현재 제어 조회');await wait('HELD');await click('같은 명령 결과 재확인');
+  if(followup==='지연'){await wait('CONFIRMED');await ui.React.act(async()=>releaseState.resolve());}
+  if(followupFails)await wait('현재 제어를 다시 조회하세요.');else await wait('CONFIRMED');
+  assert.equal(buffer.pending.status,'CONFIRMED');assert.deepEqual(buffer.pending.command,original);assert.equal(calls.filter(x=>x.method==='POST').length,1);assert.equal(calls.filter(x=>x.path.includes('/acceptances/')).length,1);if(followupFails){
+   await wait('현재 제어를 다시 조회하세요.');
+   assert.equal(container.textContent.includes('제어 전환 결과 확인'),false);
+   const before=calls.length,confirmed=buffer;
+   await click('수락 결과 다시 조회');await wait('제어 전환 결과 확인');
+   assert.deepEqual(calls.slice(before),[calls.find(c=>c.path.includes('/acceptances/'))!]);
+   assert.equal(buffer,confirmed);assert.ok(container.textContent.includes('현재 제어는 아직 확인하지 않았습니다.'));
+  }else assert.equal(container.textContent.includes('제어 전환 결과 확인'),true);
  }finally{Date.now=savedNow;await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+});
+
+test('보존된 확정 수락의 명시 조회는 오류·다른 원명령을 거절하고 종료·주체 교체 뒤 응답을 폐기한다',async()=>{
+ const summary=await protectedSummary(true),command={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:id(88),projectId,clientId:requesterClient,payload:{requestRef:request.requestRef,summaryVersion:1,reason:'기록 확인'}};
+ const makeResult=(commandId:string)=>createControlAcceptanceChain({projectId,command:{...command,commandId},requestRef:request.requestRef,summaryRef:summary.ref,before:baseControl,targetActorId:requester,recordedAt:now,ids:{acceptance:id(90),revocation:id(91),grant:id(92),receipt:id(93),audit:id(94)}}).result;
+ const result=makeResult(command.commandId),other=makeResult(id(89)),target={...session,user:{id:requester,displayName:'원 수락자'},clientId:requesterClient};
+ const buffer={bindingId:id(95),ownerUserId:requester,ownerClientId:requesterClient,projectId,reason:command.payload.reason,expiresAt:'',pending:{bindingId:id(96),kind:'ACCEPT',status:'CONFIRMED',command,summary}},original=structuredClone(buffer);
+ const responses:Array<ReturnType<typeof Promise.withResolvers<Response>>>=[],calls:string[]=[];
+ const client=new ui.ApiClient((path:string,init:RequestInit)=>{
+  assert.equal(init.method,'GET');assert.equal(path,'/api/v1/projects/'+projectId+'/control-requests/'+request.requestRef.id+'/versions/1/acceptances/'+command.commandId+'?commandHash='+controlHash(command));
+  calls.push(path);const response=Promise.withResolvers<Response>();responses.push(response);return response.promise;
+ });
+ const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ let authLost=0,changes=0;
+ const props={client,projectId,session:target,buffer,onChange:()=>{changes++;return false;},onAuthenticationLost:()=>{authLost++;}};
+ const render=async(overrides:Record<string,unknown>={})=>ui.React.act(async()=>root.render(ui.React.createElement(ui.ControlAccessPage,{...props,...overrides})));
+ const find=(node:MemoryNode,label:string):MemoryNode|undefined=>node.tagName==='BUTTON'&&node.textContent===label?node:node.childNodes.map(n=>find(n,label)).find(Boolean);
+ const lookup='수락 결과 다시 조회',success='제어 전환 결과 확인';
+ const click=async(label:string)=>{const n=find(container,label);assert.ok(n,label);assert.equal(n.disabled,false);await ui.React.act(async()=>n.dispatchEvent({type:'click',button:0}));};
+ const begin=async()=>{const count=calls.length;await click(lookup);const end=performance.now()+2000;while(calls.length===count&&performance.now()<end)await new Promise<void>(r=>setTimeout(r,2));assert.equal(calls.length,count+1);return responses[count]!;};
+ const reply=async(response:typeof responses[number],value:unknown,status=200)=>ui.React.act(async()=>{response.resolve(Response.json(value,{status}));await response.promise;});
+ try{
+  await render();assert.equal(calls.length,0);
+  for(const overrides of [{projectId:id(97)},{session},{buffer:{...buffer,pending:{...buffer.pending,status:'UNKNOWN'}}},{buffer:{...buffer,pending:null}}]){
+   await render(overrides);assert.equal(find(container,lookup),undefined);
+  }
+  await render();assert.equal(calls.length,0);
+  await reply(await begin(),result);assert.ok(container.textContent.includes(success));
+  for(const status of [403,404,503,200,401]){
+   const pending=await begin();assert.equal(container.textContent.includes(success),false);await reply(pending,other,status);
+   assert.ok(container.textContent.includes('수락 결과를 확인할 수 없습니다.'));assert.equal(container.textContent.includes(success),false);
+  }
+  assert.equal(authLost,1);
+  for(const stale of ['닫기','다른 주체 ABA','명령 교체','재마운트']){
+   const pending=await begin();assert.equal(find(container,lookup)?.disabled,true);
+   if(stale==='닫기')await click('수락 결과 닫기');
+   else if(stale==='다른 주체 ABA'){await render({session});await render();}
+   else if(stale==='명령 교체'){await render({buffer:{...buffer,bindingId:id(98)}});await render();}
+   else{await ui.React.act(async()=>root.render(null));await render();}
+   await reply(pending,result,stale==='닫기'||stale==='명령 교체'?200:401);
+   assert.equal(authLost,1);assert.equal(container.textContent.includes(success),false);assert.equal(container.textContent.includes('수락 결과를 확인할 수 없습니다.'),false);
+  }
+  await reply(await begin(),result);assert.ok(container.textContent.includes(success));assert.ok(container.textContent.includes('현재 제어는 아직 확인하지 않았습니다.'));
+  assert.equal(changes,0);assert.deepEqual(buffer,original);
+ }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
 });
