@@ -91,3 +91,11 @@
 - 2026-11-14 PR104/main 68b03a96 통합·동기화·완료 branch/tag 정리 및 병합 smoke1 PASS. 다음 normal adapter source는 기존 Primary에게 배정. 실제 Agent/DB/native 미검증, 완료 체크 유지.
 
 - 2026-11-14 normal Claude adapter source 검수15PASS/독립C0/I0/M0. 원 START/permit/attempt/Options 연결 및 UNKNOWN 재호출0 확인. 실제 process/tool/SID 공급자는 미완료이며 완료 체크를 올리지 않는다.
+
+- 2026-11-14 PR105/main8922562b 통합·동기화·정리완료. normal adapter source 검수완료이나 최초ownership 관측반환/현재성실공급/앱조립미완료. 다음은순환없는준비결과관측계약후보검토이며실제실행0.
+
+- 2026-11-14 최초ownership 반환 A안 source-only 채택. 기존Primary 구현재개, Main검수/통합. 실제환경제외·전체완료체크불변.
+
+- 2026-11-14 FN08 native anchor 정정 채택 후 서버 반환 연결 구현 중. 원 HUMAN prepare/consume→request→RAM P256 결과→원 ledger/head→replay 합성여정1P 및 COMMIT 불명 UNKNOWN/저장0은 구현자 제출이며 Main/독립검수 전이다. 0092 native 부모 완결·retained signer는 미완료이고 실제 DB/native/Agent 검증은 제외한다. FN06/FN08 완료 체크를 올리지 않는다.
+
+- 2026-11-14 FN08 최초 ownership 반환 source 검수: v2/원부모·서명·원장계획·RAM거래/재조회·HTTPS·native 정적 경계 확인, 독립 미해결 C/I0. 실제앱 DB 저장 진입점·retained/key host·grant/current/resume는 미완료. 결과서 FN08_D1_NATIVE_PREPARATION_OWNERSHIP_RETURN_SOURCE_RESULT_20261114.md; 전체 완료 체크 불변.

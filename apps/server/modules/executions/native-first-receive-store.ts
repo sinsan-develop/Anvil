@@ -2,7 +2,8 @@ import {ProjectNativePreparations,readNativePreparationCallLease} from './projec
 import {NativePreparationStore} from './native-preparation-store.ts';
 import {verify as verifySignature} from 'node:crypto';
 import {canonicalBase64,readHostPublicKey,publicKeyFingerprint} from '../connections/registration-proof.ts';
-import {nativeLimits,nativeBytes,nativeHash,readNativeEvent,readNativeAuthority,readNativeIntent} from '../../../../contracts/runtime/native-preparation-authority-v1.ts';
+import {nativeLimits,nativeBytes,nativeHash,readNativeEvent,readNativeIntent} from '../../../../contracts/runtime/native-preparation-authority-v1.ts';
+import {readNativePreparationAuthority as readNativeAuthority} from '../../../../contracts/runtime/native-preparation-ownership-return-v1.ts';
 import {contentHash,parseWireJson} from '../../../../contracts/canonical.ts';
 import {randomUUID,randomBytes} from 'node:crypto';
 import {AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';

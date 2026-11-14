@@ -1,6 +1,7 @@
 import {recordV1,refV1,cloneV1,type RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {canonicalJson} from '../../../contracts/canonical.ts';
-import {nativeHash,nativeSame,readNativeAuthority,readNativeConsumeReceipt} from '../../../contracts/runtime/native-preparation-authority-v1.ts';
+import {nativeHash,nativeSame,readNativeConsumeReceipt} from '../../../contracts/runtime/native-preparation-authority-v1.ts';
+import {readNativePreparationAuthority as readNativeAuthority} from '../../../contracts/runtime/native-preparation-ownership-return-v1.ts';
 export interface NativeFactoryCapability{consume():Promise<Readonly<Record<string,unknown>>>}
 export interface NativeFactoryPort{transport:'SOURCE_ONLY_MODEL';ref:RuntimeRefV1;invoke(capability:NativeFactoryCapability,signal:AbortSignal):Promise<unknown>}
 export type NativeFactoryOutcome='KNOWN_NOT_CREATED'|'CREATED_OBSERVED'|'UNKNOWN';

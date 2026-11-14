@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
@@ -184,7 +185,18 @@ namespace Anvil.Native.OwnershipEvidence
                 }
             }
         }
+        private static readonly ConditionalWeakTable<IOriginalSuspendedProcessCandidate,object> originalReturnOwners=new ConditionalWeakTable<IOriginalSuspendedProcessCandidate,object>();
+        internal static OwnershipEvidencePreparedFactsSource.NativePreparedFactsSourceCandidate ReadOriginalPreparedReturnSource(IOriginalSuspendedProcessCandidate candidate,int timeoutMs)
+        {
+            object marker;Cap(timeoutMs);
+            if(candidate==null||!originalReturnOwners.TryGetValue(candidate,out marker))throw new InvalidOperationException("OWNERSHIP_ORIGINAL_PROCESS_REQUIRED");
+            return candidate.ReadPreparedFactsSource(timeoutMs);
+        }
         internal static IOriginalSuspendedProcessCandidate CreateSuspendedProcessSource(ISuspendedStartupCandidate startup,OwnershipEvidenceImageOwnerSource.IImageOwnerCandidate image,int timeoutMs=10000)
-        {Cap(timeoutMs);return OwnedEmptyJob.CreateFromStartup(startup,image,timeoutMs);}
+        {
+            Cap(timeoutMs);var candidate=OwnedEmptyJob.CreateFromStartup(startup,image,timeoutMs);
+            try{originalReturnOwners.Add(candidate,new object());return candidate;}
+            catch{candidate.Dispose();throw;}
+        }
     }
 }
