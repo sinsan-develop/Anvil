@@ -54,4 +54,16 @@ async function createNativeWorkerBuild(input,ports){
    const descriptor={ref:{id:snapshot.nativeFactoryRef.id,version:snapshot.nativeFactoryRef.version,contentHash:hash(canonical(snapshot))},snapshot},key=canonical(snapshot.nativeFactoryRef),old=descriptors.get(key);if(old&&old!==canonical(descriptor))fail();check();descriptors.set(key,canonical(descriptor));const token=Object.freeze({});products.set(token,frozen({descriptor,buildReceipt,packageRecord:c.packageRecord,compile,assurance:'SOURCE_ONLY_MODEL',compilerExecuted:false,installationVerified:false}));return token;}
  });
 }
-module.exports={createNativeWorkerBuild,readNativeWorkerProduct,SOURCE,REFERENCES};
+/** 부모 확정 전의 고정 worker 입력. 원 read/check를 전후 재검산하며 결과 발급은 compiler 모듈만 한다.
+ * @param {any} configuration @param {any} ports */
+async function prepareNativeWorkerCompile(configuration,ports){
+ const c=data(configuration);exact(c,'repoRoot,compiler,references,sourceHash,outputPath');absolute(c.repoRoot);absolute(c.outputPath);exact(c.compiler,'path,sha256');absolute(c.compiler.path);
+ if(path.win32.basename(c.outputPath)!=='OwnershipEvidenceWorker.exe'||path.win32.basename(c.compiler.path).toLowerCase()!=='csc.exe'||!sha(c.compiler.sha256)||!sha(c.sourceHash)||!Array.isArray(c.references)||c.references.length!==2)fail();
+ c.references.forEach((/** @type {any} */r,/** @type {number} */i)=>{exact(r,'path,sha256');absolute(r.path);if(path.win32.basename(r.path)!==REFERENCES[i]||!sha(r.sha256))fail();});
+ const source=path.win32.join(c.repoRoot,...SOURCE.split('/'));if(new Set([source,c.outputPath,c.compiler.path,...c.references.map((/** @type {any} */r)=>r.path)].map(p=>p.toLowerCase())).size!==5)fail();
+ const own=(/** @type {string} */k)=>{if(!ports||types.isProxy(ports))fail();const d=Object.getOwnPropertyDescriptor(ports,k);if(!d||!('value'in d)||typeof d.value!=='function')fail();return d.value;},read=own('read'),check=own('check');
+ const validate=async()=>{if(own('read')!==read||own('check')!==check)fail();check.call(ports);for(const f of [{path:source,sha256:c.sourceHash},c.compiler,...c.references]){const bytes=await read.call(ports,f.path,64*1024*1024);check.call(ports);if(own('read')!==read||own('check')!==check||types.isProxy(bytes)||!Buffer.isBuffer(bytes)||bytes.length>64*1024*1024||hash(bytes)!==f.sha256)fail();}};
+ const compile=frozen({schemaVersion:1,purpose:'NATIVE_WORKER_COMPILE_INPUT',source:{path:SOURCE,sha256:c.sourceHash},compiler:c.compiler,references:c.references,workingDirectory:c.repoRoot,outputPath:c.outputPath,arguments:['/noconfig','/nostdlib+','/nologo','/target:exe','/platform:x64','/optimize+','/debug-','/main:Anvil.Native.OwnershipEvidence.OwnershipEvidenceWorker','/out:'+c.outputPath,...c.references.map((/** @type {any} */r)=>'/reference:'+r.path),source]});
+ await validate();return Object.freeze({compile,validate});
+}
+module.exports={createNativeWorkerBuild,readNativeWorkerProduct,prepareNativeWorkerCompile,SOURCE,REFERENCES};

@@ -109,3 +109,9 @@
 - 2026-11-14 PR107/main b2df4dcf 소스통합·동기화·완료branch/tag정리·merged smoke확인. 다음FN08 한정host저장접근A안source-only직접채택으로정확9경로착수. 실제DB/권한/Agent미실행·전체완료체크불변.
 
 - 2026-11-14 worker 신뢰 A안 source18경로 동결·인수. 독립 server/native/build C0/I0/M0, Main 합성·정적55사례 exit0·roottsc0·diffcheck0. Desktop 기준174/현재174/신규0은 전체PASS 아님. 실제 deployment/current 생산자·전달매체·root결박·Windows journal은 미완료다. 실제환경 실행0·전체완료체크 불변. 근거: docs/04_test_reports/AV3/FN08_NATIVE_WORKER_PROVENANCE_SOURCE_RESULT_20261114.md. 다음은 source Git 통합과 후속 전달매체/회수 계약 구체화.
+
+- 2026-11-14 worker 배포 근거 전달 A안 SHA50596FFC…2FD4389 직접 승인 수신. Stage C FN08 후속 계약/목적SQL→compile/package→publisher→sibling설치→원소비 연결을 기존Primary 단일writer로 구현한다. 실제DB/권한/키/자료조사/설치/서비스/C#/Agent 제외 유지. Main 검수·통합, 전체완료체크 불변. 기준 e4d44b29 clean·후보hash 일치 확인, 정확WI 파일목록 확정 중.
+
+- 2026-11-14 FN08 배포 전달 부분진행: 계약/목적조회/미적용0095 및 build→package→publisher source 묶음은 독립 C0/I0/M0·Main 합성검증 후 checkpoint e8ab3ccc로 private 보존했다. client/설치기록/native/명시UI/종단RAM 연결은 구현중이다. 실제 DB·권한·키·자료조사·설치·서비스·C#·Agent 실행0, 전체 완료 체크는 올리지 않는다.
+
+- 2026-11-14 FN08 worker배포전달 한정source검수 완료: 게시/조회→설치조정→보호배포원천→원관측반환 RAM연결과명시설치UI검증, 독립C0/I0/M0. 실제Windows내구설치unsupported·실DB/TLS/C#/Agent미검증, 전체FN06/FN08 및계획완료체크불변. 결과서 FN08_WORKER_DEPLOYMENT_HANDOFF_SOURCE_RESULT_20261114.md.

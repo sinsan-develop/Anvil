@@ -38,12 +38,14 @@ internal abstract class DesktopTrustKeyKernel {
  internal abstract uint SelfPid();internal abstract IntPtr OpenProcess(uint pid);internal abstract DesktopTrustKeyProcessObservation Process(IntPtr handle);
  internal abstract IntPtr OpenFile(string path,bool directory);internal abstract DesktopTrustKeyFileObservation File(IntPtr handle);
  internal abstract DesktopTrustKeyFileHashes HashFile(IntPtr handle,bool asar,Action check);
+ internal virtual byte[] ReadWorkerBytes(IntPtr handle,Action check){throw DesktopTrustKeyParentBasisSource.Invalid();}
  internal abstract Stream Input(IntPtr handle);internal abstract Stream Output(IntPtr handle);internal abstract bool Close(IntPtr handle);
 }
 internal sealed class DesktopTrustKeyPeerSource:IDisposable {
  readonly object gate=new object();readonly DesktopTrustKeyKernel kernel;readonly DesktopTrustKeyBudget budget;readonly List<IntPtr> handles=new List<IntPtr>();
  readonly List<Tuple<IntPtr,DesktopTrustKeyFileObservation>> files=new List<Tuple<IntPtr,DesktopTrustKeyFileObservation>>();
  IntPtr input,output,parent,self;DesktopTrustKeyProcessObservation parentInstance;bool invalid,disposeRequested,settled,releaseAttempted;int pending;TaskCompletionSource<bool> drain;
+ DesktopTrustKeyParentBasisSource parentBasis;
  Stream read,write;internal string HelperHash{get;private set;}
  internal bool CleanupSettled{get{lock(gate){return settled;}}}
  DesktopTrustKeyPeerSource(DesktopTrustKeyKernel source,DesktopTrustKeyBudget clock){kernel=source;budget=clock;}
@@ -64,9 +66,17 @@ internal sealed class DesktopTrustKeyPeerSource:IDisposable {
   var exe=Retain(parentInstance.Image,false);string asar=System.IO.Path.Combine(System.IO.Path.GetDirectoryName(parentInstance.Image),"resources","app.asar");var archive=Retain(asar,false);var helper=Retain(own.Image,false);
   long total=0;foreach(var file in files)if((file.Item2.Attributes&0x10)==0)total=checked(total+file.Item2.Length);if(total>4294967296L)throw DesktopTrustKeyParentBasisSource.Invalid();
   Check();var exeHash=kernel.HashFile(exe,false,Check);Check();var asarHash=kernel.HashFile(archive,true,Check);Check();var helperHash=kernel.HashFile(helper,false,Check);Check();
-  if(exeHash.Whole!=basis.ParentExeHash||asarHash.Whole!=basis.ParentAsarHash||asarHash.Header!=basis.ParentHeaderHash||!System.Text.RegularExpressions.Regex.IsMatch(helperHash.Whole??"",@"\A[0-9a-f]{64}\z"))throw DesktopTrustKeyParentBasisSource.Invalid();HelperHash=helperHash.Whole;
+  if(exeHash.Whole!=basis.ParentExeHash||asarHash.Whole!=basis.ParentAsarHash||asarHash.Header!=basis.ParentHeaderHash||!System.Text.RegularExpressions.Regex.IsMatch(helperHash.Whole??"",@"\A[0-9a-f]{64}\z"))throw DesktopTrustKeyParentBasisSource.Invalid();HelperHash=helperHash.Whole;parentBasis=basis;
  }
  internal void Check(){if(invalid||disposeRequested)throw DesktopTrustKeyParentBasisSource.Invalid();try{budget.Check();if(ObservePipes()!=parentInstance.Pid||!Same(parentInstance,kernel.Process(parent)))throw DesktopTrustKeyParentBasisSource.Invalid();foreach(var item in files){var current=kernel.File(item.Item1);var before=item.Item2;if(current==null||current.Identity!=before.Identity||current.Length!=before.Length||current.Attributes!=before.Attributes||!String.Equals(current.Path,before.Path,StringComparison.OrdinalIgnoreCase))throw DesktopTrustKeyParentBasisSource.Invalid();}budget.Check();}catch{invalid=true;throw DesktopTrustKeyParentBasisSource.Invalid();}}
+ internal void RequireWorkerParent(string exe,string asar,string header){Check();if(parentBasis==null||exe!=parentBasis.ParentExeHash||asar!=parentBasis.ParentAsarHash||header!=parentBasis.ParentHeaderHash)throw DesktopTrustKeyParentBasisSource.Invalid();}
+ // 원 peer가 검산한 parent에서 고정 payload만 읽는다. caller path/raw handle은 받거나 반환하지 않는다.
+ internal byte[] ReadPackagedWorker(string expectedHash,Action current){
+  if(current==null||!System.Text.RegularExpressions.Regex.IsMatch(expectedHash??"",@"\A[a-f0-9]{64}\z"))throw DesktopTrustKeyParentBasisSource.Invalid();BeginIO();byte[] bytes=null;
+  try{Action check=()=>{Check();current();};check();string directory=System.IO.Path.GetDirectoryName(parentInstance.Image);var exe=Retain(parentInstance.Image,false);var asar=Retain(System.IO.Path.Combine(directory,"resources","app.asar"),false);var e=kernel.HashFile(exe,false,check);var a=kernel.HashFile(asar,true,check);RequireWorkerParent(e.Whole,a.Whole,a.Header);
+   var handle=Retain(System.IO.Path.Combine(directory,"resources","native-workers","OwnershipEvidenceWorker.exe"),false);var before=kernel.File(handle);if(before.Length<1||before.Length>20971520)throw DesktopTrustKeyParentBasisSource.Invalid();bytes=kernel.ReadWorkerBytes(handle,check);check();var after=kernel.File(handle);if(bytes==null||bytes.Length!=before.Length||before.Identity!=after.Identity||before.Length!=after.Length||before.Path!=after.Path||DesktopTrustKeyHostSource.Hash(bytes)!=expectedHash)throw DesktopTrustKeyParentBasisSource.Invalid();byte[] result=bytes;bytes=null;return result;
+  }finally{if(bytes!=null)Array.Clear(bytes,0,bytes.Length);EndIO();}
+ }
  internal void OpenStreams(){Check();if(read!=null||write!=null)throw DesktopTrustKeyParentBasisSource.Invalid();read=kernel.Input(input);write=kernel.Output(output);if(read==null||write==null||!read.CanRead||!write.CanWrite)throw DesktopTrustKeyParentBasisSource.Invalid();Check();}
  internal Stream ReadStream{get{Check();return read;}}internal Stream WriteStream{get{Check();return write;}}
  internal void BeginIO(){lock(gate){Check();if(pending==0)drain=new TaskCompletionSource<bool>();pending++;}}
@@ -101,6 +111,10 @@ internal sealed class WindowsDesktopTrustKeyKernel:DesktopTrustKeyKernel {
  internal override DesktopTrustKeyProcessObservation Process(IntPtr h){FT created,exited,kernel,user;int length=1024;var image=new StringBuilder(length);if(!GetProcessTimes(h,out created,out exited,out kernel,out user)||!QueryFullProcessImageNameW(h,0,image,ref length)||length<1||length>=1024)throw Invalid();return new DesktopTrustKeyProcessObservation(GetProcessId(h),created.Value,image.ToString(),WaitForSingleObject(h,0)==258);}
  internal override IntPtr OpenFile(string path,bool directory){var value=CreateFileW(path,directory?0x80u:0x80000000u,1,IntPtr.Zero,3,0x00200000u|(directory?0x02000000u:0),IntPtr.Zero);if(value==new IntPtr(-1))throw Invalid();return value;}
  internal override DesktopTrustKeyFileObservation File(IntPtr h){FI info;var path=new StringBuilder(2048);uint n=GetFinalPathNameByHandleW(h,path,2048,0);if(!GetFileInformationByHandle(h,out info)||n<1||n>=2048)throw Invalid();string value=path.ToString();if(value.StartsWith(@"\\?\",StringComparison.Ordinal))value=value.Substring(4);return new DesktopTrustKeyFileObservation(info.Volume+":"+info.IndexHigh+":"+info.IndexLow+":"+info.Created.Value+":"+info.Written.Value,value,((long)info.SizeHigh<<32)|info.SizeLow,info.Attributes);}
+ internal override byte[] ReadWorkerBytes(IntPtr handle,Action check){
+  FI first;if(!GetFileInformationByHandle(handle,out first)||first.Links!=1||(first.Attributes&0x410)!=0)throw Invalid();var before=File(handle);if(before.Length<1||before.Length>20971520)throw Invalid();byte[] bytes=new byte[(int)before.Length];bool success=false;
+  try{using(var alias=new SafeFileHandle(handle,false))using(var file=new FileStream(alias,FileAccess.Read,65536,false)){file.Position=0;int at=0;while(at<bytes.Length){check();int n=file.Read(bytes,at,Math.Min(65536,bytes.Length-at));if(n<=0)throw Invalid();at+=n;}check();if(file.ReadByte()!=-1)throw Invalid();}FI last;if(!GetFileInformationByHandle(handle,out last)||last.Links!=1||(last.Attributes&0x410)!=0)throw Invalid();var after=File(handle);if(before.Identity!=after.Identity||before.Path!=after.Path||before.Length!=after.Length||before.Attributes!=after.Attributes)throw Invalid();check();success=true;return bytes;}finally{if(!success)Array.Clear(bytes,0,bytes.Length);}
+ }
  internal override DesktopTrustKeyFileHashes HashFile(IntPtr h,bool asar,Action check){
   using(var alias=new SafeFileHandle(h,false))using(var file=new FileStream(alias,FileAccess.Read,65536,false))using(var hash=SHA256.Create()){
    file.Position=0;string header=null;if(asar){byte[] prefix=new byte[16];ReadExact(file,prefix,check);uint length=BitConverter.ToUInt32(prefix,4),text=BitConverter.ToUInt32(prefix,12);if(BitConverter.ToUInt32(prefix,0)!=4||length<8||length>2097152||length%4!=0||length+8L>file.Length||BitConverter.ToUInt32(prefix,8)!=length-4||((text+7L)/4)*4!=length-4||text>2097152)throw Invalid();byte[] bytes=new byte[(int)text];try{ReadExact(file,bytes,check);header=DesktopTrustKeyHostSource.Hash(bytes);}finally{Array.Clear(bytes,0,bytes.Length);}}

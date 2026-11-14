@@ -13,7 +13,7 @@ function workerPE({entry='OwnershipEvidenceWorker',ns='Anvil.Native.OwnershipEvi
 }
 function resolver(){const {registerHooks,createRequire}=require('node:module'),{pathToFileURL}=require('node:url');const deps=createRequire('C:/Users/cyhuh/.codex/worktrees/av3-stage-b/Anvil/apps/desktop/package.json'),paths=new Map(['pe-library','resedit','@electron/fuses','@electron/asar'].map(s=>[s,pathToFileURL(deps.resolve(s)).href]));return registerHooks({resolve(s,c,next){if(paths.has(s))return{url:paths.get(s),shortCircuit:true};return next(s,c);}});}
 // 기존 제품 validator는 그대로 실행한다. 대역은 가상 C:\WorkerQA 파일의 raw FS뿐이다.
-async function withWorkerBuild(body){
+async function withWorkerBuild(body,{beforeFactory=null}={}){
  const fs=require('node:fs'),path=require('node:path'),{syncBuiltinESMExports}=require('node:module'),{Readable}=require('node:stream');const hooks=resolver(),files=new Map(),root='C:\\WorkerQA',parent=root+'\\Anvil-win32-x64',repo=root+'\\Source';let fd=900000;const handles=new Map(),restore=[];
  const isVirtual=p=>typeof p==='string'&&p.startsWith(root),get=p=>{const b=files.get(p);if(!b)throw Error('RAM_FILE_MISSING '+p);return b;};
  function patch(obj,name,replacement){const old=obj[name];obj[name]=function(...args){return replacement(old.bind(obj),...args);};restore.push(()=>obj[name]=old);}
@@ -27,13 +27,14 @@ async function withWorkerBuild(body){
   const pe=res.NtExecutable.createEmpty(false,false),resource=res.NtExecutableResource.from(pe);resource.entries.push({type:'INTEGRITY',id:'ELECTRONASAR',lang:1033,codepage:1200,bin:Uint8Array.from(Buffer.from(JSON.stringify([{file:'resources\\app.asar',alg:'SHA256',value:hash(header)}]))).buffer});resource.outputResource(pe);pe.setExtraData(Buffer.concat([Buffer.from('dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX'),Buffer.from([1,9]),Buffer.from('010011000')]));files.set(parent+'\\Anvil.exe',Buffer.from(pe.generate()));
   const factory=require('../../apps/desktop/scripts/native-physical-factory-build.cjs'),worker=require('../../apps/desktop/scripts/native-worker-build.cjs');const compiler={path:root+'\\Tools\\csc.exe',sha256:hash('compiler')};files.set(compiler.path,Buffer.from('compiler'));const references=factory.REFERENCE_FILES.map(name=>{const p=root+'\\Tools\\'+name;files.set(p,Buffer.from(name));return{path:p,sha256:hash(name)};});for(const s of factory.SOURCE_FILES)files.set(path.win32.join(repo,...s.split('/')),Buffer.from(s));files.set(path.win32.join(repo,...worker.SOURCE.split('/')),Buffer.from('RAM original worker source'));
   const configuration={factoryId:'ad140002-0000-4000-8000-000000000008',factoryVersion:1,compiler,references,basisPath:root+'\\Build\\ParentBasis.json',outputPath:root+'\\Build\\NativeOwner.exe'};
+  const staged=beforeFactory?await beforeFactory({files,root,parent,repo,compiler,references,worker,now:Date.parse('2030-01-01T00:00:00.000Z')}):undefined;
   const production=await factory.produceCompileInput({repoRoot:repo,parentRoot:parent,configuration});
   // 동일 helper PE fixture 생성은 이 파일 안에서만 수행하며 원 verifier를 대체하지 않는다.
   const helper=helperPE(production.compile.parentBasis),artifact=await production.verifyOutput(helper);let now=Date.parse('2030-01-01T00:00:00.000Z'),revoked=false;
   const ps={schemaVersion:1,purpose:'NATIVE_FACTORY_PACKAGE_BASIS',parentExeHash:hash(files.get(parent+'\\Anvil.exe')),parentAsarHash:hash(asar),parentHeaderHash:hash(header),issuedAt:new Date(now).toISOString(),expiresAt:new Date(now+60000).toISOString()};
   const config={repoRoot:repo,compiler,references:references.slice(0,2),sourceHash:hash('RAM original worker source'),outputPath:root+'\\Build\\OwnershipEvidenceWorker.exe',packageRecord:{ref:{id:'ad140002-0000-4000-8000-000000000040',version:1,contentHash:hash(canonical(ps))},snapshot:ps},buildReceiptId:'ad140002-0000-4000-8000-000000000041',rootId:'ad140002-0000-4000-8000-000000000042',issuedAt:ps.issuedAt,expiresAt:ps.expiresAt};
   const ports={read:async p=>Buffer.from(get(p)),now:()=>now,check:()=>{if(revoked)throw Error('RAM_REVOKED');}};
-  return await body({factory,worker,artifact,config,ports,files,repo,advance:n=>now+=n,revoke:()=>{revoked=true;}});
+  return await body({factory,worker,artifact,config,ports,files,repo,staged,advance:n=>now+=n,revoke:()=>{revoked=true;}});
  }finally{for(const r of restore.reverse())r();syncBuiltinESMExports();hooks.deregister();}
 }
 function canonical(v){if(v===null||typeof v!=='object')return JSON.stringify(v);if(Array.isArray(v))return '['+v.map(canonical).join(',')+']';return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}';}

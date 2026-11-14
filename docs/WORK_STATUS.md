@@ -19243,3 +19243,75 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Primary Desktop TS7 dist/api/sync의 HEAD 메모리FS overlay에서 기준174/현재183/신규9 확인. 새 JS 재귀return/JSDoc6·PE module해석/연쇄callback3을 해당 소유파일에서 보완 중이다. 앞선 TS5 API추정2회·Program 접근준비1회는 도구준비 오류로 분리하며 검증PASS가 아니다. dependency설치/typeignore/검산약화0. 고정벡터/native6P·build5P·roottsc0은 한정 근거로 유지한다.
 
 - 2026-11-14 worker 신뢰 A안 source18경로 동결·인수. 독립 server/native/build C0/I0/M0, Main 합성·정적55사례 exit0·roottsc0·diffcheck0. Desktop 기준174/현재174/신규0은 전체PASS 아님. 실제 deployment/current 생산자·전달매체·root결박·Windows journal은 미완료다. 실제환경 실행0·전체완료체크 불변. 근거: docs/04_test_reports/AV3/FN08_NATIVE_WORKER_PROVENANCE_SOURCE_RESULT_20261114.md. 다음은 source Git 통합과 후속 전달매체/회수 계약 구체화.
+
+## 2026-11-14 PR111 통합·worker 전달매체 후속
+
+- source09c0575839b496050a5a07b391bde663ee56d9c4를 PR111/main74952185aeb3c75548e7497b544bdd3ec84909a6에 통합했다. Broker43572041960 success, source/main tree동일·local/development main동일·clean. merged 원build reader→basis→store RAM smoke1P exit0. refs/pull/111/head가 원source를 보존하며 완료원격branch/tag부재 확인 후 정확 로컬branch/tag만 정리했다. 다른 보호worktree는 보존했다.
+- 다음 codex/av3-d1-deployment-contract은 최신 main에서 생성했다. 기존 Primary는 제품쓰기 반환 후 읽기 전용으로 runtime 원천 전달매체·설치root 보호·회수출처의 정확 계약을 조사한다. A769의 발급권위/descriptor/identity는 재결정하지 않는다. 새 보호저장·공개 metadata 조회·설치기록 의미는 아직 미채택이며 제품 구현하지 않는다. 실제환경실행0·전체계획미완료.
+
+- worker 전달매체 후보 FN08_WORKER_DEPLOYMENT_HANDOFF_CANDIDATE_20261114.md SHA50596FFCAD26EC0FE9F5BC9AB43A5948BE87BF549C2E989E216D297442FD4389: 독립최초 head식별충돌·DB권한/RLS·설치bundle인계·제거/한도 지적을 보완해 두 검수자 C0/I0/M0. 기존 A769 권위는불변이고 새 공개metadata·보호저장/권한·worker siblingroot source계약만 직접채택 대상이다. 제품쓰기0·실제환경0. Main Windows rg wildcard경로 오류1회는 -g 방식으로수정한읽기오류이며 제품영향0. 다음은 후보채택 후 기존Primary 구현, 미채택동안 해당제품코드0.
+
+- 후보4e48cbdf 게시·local/tracking동일clean·SHA50596FFC…2FD4389 확인 후 직접채택 질문1회 전송(응답미수신). PMO는 A769에 새공개/저장/설치root 승인근거가 없음을 재확인했다. 기존Primary 읽기분해: 계약/목적SQL→부모없는workercompile/package→publisher→sibling설치→원server/native소비 순서. 코드추가0, 실제환경0. 다음채택시 이 순서의 정확파일WI를 작성하고 단일writer를 재개한다. 기존 발급권위·run/observer 의미는재질문하지않는다. 전체계획미완료·해당새계약만 결정대기.
+
+- 2026-11-14 worker 배포 근거 전달 A안 SHA50596FFC…2FD4389 직접 승인 수신. Stage C FN08 후속 계약/목적SQL→compile/package→publisher→sibling설치→원소비 연결을 기존Primary 단일writer로 구현한다. 실제DB/권한/키/자료조사/설치/서비스/C#/Agent 제외 유지. Main 검수·통합, 전체완료체크 불변. 기준 e4d44b29 clean·후보hash 일치 확인, 정확WI 파일목록 확정 중.
+
+- 구현 WI D436B21A8DB73F90B422E0AC8A614F32DE4FEF303DA9EB413004017CDE5BFF47 독립선행 C0/I0. 정확27경로 Primary 단일writer GO, Main동일제품쓰기0. 앞선 완료 검증을 반복하지 않고 신규계약/저장 RED부터 진행한다. 명시 설치 진입점은 현재 UI/owner callsite를 별도 읽기검토해 자동설치·미사용adapter로 남는 위험을 확인한다. 승인/지시서4문서 checkpoint7a341f6d private게시, 제품실환경 실행0.
+
+- Primary 최초RED: node --test tests/unit/FN06/native-worker-deployment.test.ts, exit1/0P2F0S173.6ms, 신규contract/store부재 ERR_MODULE_NOT_FOUND. exact3/hash재봉인부모위조·Proxy trap0·모델게시DB0 행동시험에서시작, 계약/저장구현중. 정식FAILURE_REPORT0·실행handle0. UI 명시설치는현재 action부재를확인하여기존조회/ARM자동설치가아닌별도동작의최소경로보완을Main이정리한다.
+
+- Main 내부보완: 기존설정에명시설치 action부재지만 main의 OFFERED owned.offer→readReceiveOffer→원command.payload.nativeFactoryRef 근거는있다. WI SHA4F0308E809E727CAFE92D37C9B1C7711EF7BF41743F060A2009B432984F8CC59로settings.html/js·policy/shell·직접시험2 총6경로추가(제품23/시험10=33). 별도INSTALL_WORKER 명시클릭·원offer/attempt/epoch/기한결박, renderer경로/키/factory선택0·기존조회/ISSUE/ARM자동설치0. 채택계약의필수사용자진입내구체화라추가사용자승인요청0. Primary단일writer계속.
+
+- 계약/서버/미적용0095 첫7경로 잠정동결: Primary6P0F0S2193.45ms exit0, Main fresh6 dot/exit0(599f44). 원부재2F→route404/SQL부재2F→GREEN. COMMIT진입후불명고정오류·정확request/hash재조회 보완. root 최초3진단보정0은구현자제출(후속변경후재확인예정). 독립읽기검수착수, Primary는비충돌compile/package/publisher로진행. SQL은정적검사이며 실제PG/RLS/동시성/DDL PASS아님.
+
+- 첫7경로 독립 C0/I2/M1: route가응답observedAt을현재시각으로검산해오래된ACTIVE수용가능·전체1초봉인부재, SQL동일factoryid/version상이hash별도게시가능, 시험명revoke와실제publish/read만불일치. Primary에직접RED→GREEN 재작업지시(동일writer). 요청시작wall+mono/late폐기·SQLid/version유일성과제품revoke정상/후거절흐름을보완한다. 이는원채택기준구현미진이며계약완화/새승인0. 정식실패보고0, 실제PG/C#등제외유지.
+
+- 첫묶음 보완: 오래된observedAt 200→503·factoryunique부재 RED2→Primary9P0F0S3518.76ms, Mainfresh9dot/exit0(81e30b). wall/mono1초·signal·lateconnect/query반환1·후속COMMIT0, revoke제품메서드/회수후read거절 포함. 보완중중괄호문법오류 집중2F→교정2P 이력보존. roottsc0은구현자제출, 독립scoped재검수중. 실제PGcancel/동시성미검증. 다음build/publication 모듈부재RED1 확인후비충돌구현진행.
+
+- 첫7경로 scoped 독립재검수 C0/I0/M0. store74BBE4F4·routeE092F700·SQLD00E7731·unit1C06969E·SQLtestF737BE99 지문확인, I2/M1해소. Main9사례검증과함께계약/서버sourcecheckpoint로보존하며전체전달구현완료는아니다. Primary나머지26경로단일writer계속, 실제환경0.
+
+- build묶음작성중 Main은원compiler입출력포트만있는경우실제품호출연결미완료임을지적했다. Primary가동일허용compiler/package경로의concrete Node adapter·명시build→Forge호출코드를추가하겠다고확인. spawn/FS실행0·RAM rawIO/driver대역검증으로구분하고미설정기본앱자동활성화0. 기존첫묶음checkpoint c1b16ee1 private보존, 나머지미완료작성중.
+
+- Primary build 정상RAM연결2P 제출: 부모없는compiler원결과→고정resourcespayload→기존factory검산→publication원token→제품store.publish. 원rawIO/driver대역이며실compile/파일증거아님. 원package/compile/current readback이비동기라동일store의reader Promise허용·await전후함수identity/current·원budget/abort검산을Main이내부DI보완허용했다. 공개계약변경0·late후COMMIT0 유지, 기존store해당delta만재검수예정.
+
+- async publication reader 내부보완 store3F27CD53…E068E5E/unit75D12689…AC18AB 동결·scopedC0/I0/M0. Primary신규1P207.1ms(최초/후행2반례)·인접4P470.2ms/roottsc0, Main집중4dot/exit0(4f8933). 같은원1초scope·signal/identity·늦은완료후COMMIT0/release1 유지. 다른build파일작성중으로아직최종판정아님.
+
+- build 사전검수: compiler timeout 후 unwatch/kill의 원 child·output 소유기록 보존과 package create 반환 직후 stable 거절 시 handle 미대입 공백을 확인하여 기존 Primary에 보완 지시했다. package 검토 지문366014BA…6CD8D, 작성 중 사전지적이며 최종 판정 전이다. 원 handle 선소유·검산 후 양도·UNKNOWN 보존을 RAM 반례로 검증하고 실제 C#/파일/프로세스 실행은 하지 않는다. Main 제품쓰기0.
+
+- 후속 소비 읽기검토 완료: server 보호 store.read 결과→runtime 원객체 reader/current→기존 ownership-return request/accept, Desktop INSTALL_WORKER→원 OFFERED fullref→coordinator→설치기록, native ProtectedDeployment.Read/Check→기존 retained 조립을 연결한다. public GET JSON/build WeakMap 임의 승격0. C#은 실행 제외이므로 정적 연결과 RAM 모형을 별도 증거로 기록하며 전체 단일 실종단으로 주장하지 않는다. 기존 Primary에 접점 전달, 새 승인/계약 추가0.
+
+- build7경로 잠정동결 후 Main fresh publication7dot exit0(c2b8fb), roottsc0(e3d28a), diffcheck0. 독립재검수 package I1: close promise가 불명/기한초과이면 finally에서 close를 재호출할 수 있어 원 pending-close 단발 latch와 RAM 반례를 기존 Primary에 지시했다. 이전 handle 선소유 공백은 해소. 미해결 I로 최종수용하지 않는다.
+- client 정본 검산기 재사용을 위해 native-proof-runtime entry/build/직접시험 정확3경로를 내부 추가허용, WI 총36. 정본 함수 명시export와 fixed closure 연결로 검산중복을 방지한다. 새 API/권한 의미0, 실제환경실행0.
+
+- package close I1 보완: RED1F(2!=1)→Primary 직접3P0F392.3483ms, Main fresh3dot/exit0(81800d). package4384E147…BD16A6C·testC2461F6B…DB5BD4C scoped 독립 C0/I0/M0. owner.closing 최초promise를 정상/finally/늦은create가공유하고 UNKNOWN후추가대기·close재호출0. build묶음 source 검수완료, 실제FS/compiler/OS종료·내구성은미검증. 다음client/설치/UI source 계속, 전체계획미완료.
+
+- 검수완료9제품/시험+기록2 총11경로를 e8ab3ccc로 commit/private push, PMO 중간보고 전달. 일반 sandbox git add가 공용index.lock Permission denied1회였으며 승인범위 공용Git쓰기 escalation으로해소했다(ACL변경0). 작성중client/bundle은 staging하지않고보존했다. stageddiffcheck0, LF/CRLF경고는Git변환안내로기록.
+
+- client/bundle5 잠정동결: Primary client5P0F564.5545ms·bundle집중2P1703.2593ms, Main fresh 두파일 직접/인접17dot exit0(e9bb05). Vite는메모리bundle·copyIO는RAM이며 실제HTTPS/설치0. client68115471…CBA789E 및 정본closure21/exports15에독립검수착수. Desktop 필터새진단0은전체PASS아니며최종기준대조예정. Primary native3source와명시설치연결계속.
+
+- client/bundle5 독립C0/I0/M0; Main17사례와함께source수용, 실제TLS아님. 원request1초를coordinator까지유지하도록전달했다. parentworker접점조사: 기존peer private retained정보에접근불가하여 exact DesktopTrustKeyPeerSource.cs1경로만내부추가허용(WI37), caller경로0·원handle/current검산·고정worker bytes reader로제한한다. 실제파일/C#0. publication시험은본문불변main guard로여정import 중복등록만제거하도록허용.
+
+- native root 작성중 사전I: 최초missing 관측을 Created로고정하면 후속중간등장root를 이번독점생성으로오인가능(첫ABSENT→후속Exists/create0/Createdtrue). 기존 Primary에 실제exclusive생성receipt/identity로만fresh판정·경합UNKNOWN 보완지시. 미동결사전검수이며 최종source수용전, 실제파일조사/실행0.
+
+- native root 기존I source보정확인(8782098D…563F9A), store작성본83CC9A1C…0614E7 사전I: packages/hash 중간부모retainedidentity/reparse검산부재 및 예상밖파일/하위dir총량누락. 같은SID다른위치junction반례이며다른SID허용주장은아니다. 기존 Primary에 ancestry검산·예상밖잔여계수/거절보완지시. Windows RequireDurability거절상태를유지하므로현재실행우회판정아님. peer원handle고정reader는추가확정finding0, 전체미동결/실환경0.
+
+- native root/store2 잠정동결root8782098D…563F9A/storeC2BD4568…946C5EC. ancestry정적RED1F→Primary직접3P137.8392ms, Mainfresh정적3dot/exit0(167704). packages/hashdir retained/nonlink/currentSID/private 및 예상밖잔여거절·RESERVED한도/재진입보완. 독립scoped재검수중. C#미컴파일/미실행·Windows첫mutation전내구unsupported 유지하며정상설치완료아님. Primarynative deployment/host→owner/UI계속.
+
+- root/store 동결제품2 scoped C0/I0/M0로기존I해소확인. 정적시험파일은후속native추가로변경중이므로앞선3P의지문범위와구분한다. Primarynative deployment/Host typed연결정적RED1F→1P130.787ms·buildclosure23→26 직접1P130.5141ms 제출, Main최종확인전. Python편집기cp949읽기오류1회는UTF8명시로복구한도구오류이며제품동작실패와분리. owner/UI/전체RAM여정미완료·실행handle0.
+
+- native후속4 잠정동결후Main정적5dot exit0(c296bc). 독립I1: Observe의원요청1초/current가return뒤소실되어Install/Read/Check 후속parent/worker/store IO가Live만검산함. 관측900ms+읽기200ms반례의source위험이며Windowsunsupported실제mutation차단과구분. 원관측closure/최소기한을후속IO전후/첫mutation까지전파하도록Primary재작업지시, 이후Observe로새예산부여금지. 정적PASS가논리결함없음을증명하지않으며최종수용전.
+
+- nativeI1 보완DeploymentSource648B2CD2…170F9CC: 정적RED1F→Primary1P160.7512ms, Mainfresh1dotexit0(2b6b5e), 독립scopedC0/I0/M0. Observation최초wall/mono·부모만료/value불변을Bound로후속store/worker IO에전파, 후행관측도선행Check유지하여예산재발행0. 실제C#/HTTPS/설치미검증이며Windowsunsupported불변. 남은owner/UI/coordinator·제품RAM여정구현진행.
+
+- UI명시설치버튼/닫힌입력 RED2F→PrimaryDOM/IPC2P116.2361ms 제출. 작성중사전I: shell후행check가owner OUTCOME_UNKNOWN을throw/INPUT_INVALID로덮으면UI불명잠금이빠져재클릭가능. Primary에effect전거절/effect후불명구분·불명단조보존·재클릭차단반례보완지시. 실제Electron/키/서버/설치0, 기존fixture재사용은제품보호함수대체없이RAM으로만제한.
+
+- UI UNKNOWN봉인보완작성후 shell→owner→typedhost RAM정상여정1건이 INSTALL1 뒤 UNSUPPORTED예상/UNKNOWN실제로exit1(1103.8348ms). fixtureclock·내부포트판독 선행원인해소후 현재원인미확정, 단일시험진단중·실행handle0. d2_preflight 읽기원인지원배정, Primary단일writer유지. 기대값/기한/거절기준완화0·실환경0.
+
+- 위RAM여정실패원인확정: 신규hostfixture JSON.stringify 응답이기존hostclient canonicalJson(reply)===text에어긋나제품이정확거절했다. fixture만정본canonical로교정해집중1P0F0S1261.6462ms exit0, 독립읽기원인일치확인. 제품검산/기대결과완화0. 정상UNSUPPORTED와효과불명후새requestId재진입0 두분기근거이며후행current/UI봉인·server제품여정은진행중.
+
+- UI/owner/coordinator동결9경로 독립C0/I0/M0로UNKNOWN매핑/owner봉인I해소. Mainfresh settings-worker-installation+native-worker-installation 총13dot exit0(b1398d). 원OFFERED재조회/attempt/epoch/current·같은owner새request효과0·원관측900+준비200거절·close불명포함, 실제Electron/Windows설치아님. client9A3B9D13…4D3DE/coordinator2DE0879C…840EC/owner6AA354B2…74EA8/shell4EB8192C…C964C. Primaryserverbasis/종단RAM여정계속.
+
+- serveradapter/종단 source38A44FF1…BBE56·journey319BB19B…3A59C 잠정동결: Primary2P4150.7494ms, Mainfresh2dotexit0(eb1d84), roottsc0(3e0ff7), diffcheck0. 독립C0/I0/M1: LATE_REVOKE는seq1state변조라정규회수2단계반례아님. 마지막원store.revoke검증은정확하므로제품결함아니며중간회수fixture를정규head2로보강지시했다. 실제DB/TLS/nativeRAM·C#실행0.
+
+- 최종보완: 정규store.revoke2여정+publication직접8등록보존 Main10dotexit0(037800), 독립M1해소C0/I0/M0. owner/shell타입주석역치환지문이직전검수본과동일함을독립확인, 실행문불변. Desktop메모리기준174→현재169/신규0은기존169잔존으로전체PASS아님. build정확closure26시험의옛위치assertion1F를마지막5개exact+22/23누락거절로보정, Main집중1dotexit0(104cec), 독립기준완화0. 실파일QA는 ANVIL_DESKTOP_TRUST_BUILD_QA 미설정으로미등록/EXCLUDED, PASS/SKIP집계0. 최종지문/새파일공백검사정리중.
+
+- FN08 worker배포전달 source 인수: Primary쓰기반환·실행handle0, 허용37중실제36변경. 최종scoped독립C0/I0/M0·Main종단10/직접13/shell6/closure1 및원범위검증·roottsc0. MainDesktop메모리174→169/신규0(b5d5c6)은전체PASS아님. 결과서 FN08_WORKER_DEPLOYMENT_HANDOFF_SOURCE_RESULT_20261114.md에37지문·미검증고정. 실제Windows내구설치unsupported·DB/권한/키/서비스/C#/Agent0·전체계획미완료. 다음source통합/동기화후미완료연결을계속한다.

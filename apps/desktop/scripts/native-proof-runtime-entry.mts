@@ -9,3 +9,6 @@ export { NativePreparationOwnershipReturn } from '../../connector/runtime/native
 export { NativeFirstReceiveHumanClient, NativeFirstReceiveFrameDecoder } from '../../connector/runtime/native-first-receive-client.ts';
 export { NormalCredentialBootstrapClient } from '../../connector/runtime/normal-credential-bootstrap-client.ts';
 export { NativePreparationProtectedJournal } from '../../connector/runtime/native-preparation-protected-journal.ts';
+
+export { readWorkerDeploymentRead, readWorkerDeploymentBundle } from '../../../contracts/runtime/native-worker-deployment-v1.ts';
+export { parseWireJson } from '../../../contracts/canonical.ts';

@@ -6,4 +6,6 @@ const config={packagerConfig:{name:'Anvil',executableName:'Anvil',asar:true,prun
 
 // 보호 profile이 기본 부재여도 실제 Forge copy 접점은 고정한다.
 config.hooks=require('./scripts/desktop-runtime-profile.cjs').fixedDesktopTrustForgeHooks(config.hooks);
+// 보호 worker build producer의 명시 조립 접점. 설정 부재를 임의 compile/설치로 채우지 않는다.
+config.hooks=require('./scripts/native-worker-package.cjs').fixedNativeWorkerForgeHooks(config.hooks);
 module.exports=config;
