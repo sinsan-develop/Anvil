@@ -66,3 +66,9 @@ test('선택형 SEND 포트 미등록은 mixed item의 자료/permit 없이 curs
  const r=await f.p.run(new AbortController().signal);assert.equal(r.state,'UNKNOWN');assert.equal(r.cursor.afterSequence,0);assert.equal(r.commands,0);assert.equal(f.inputs.length,1);
  await f.p.run(new AbortController().signal);assert.equal(f.inputs.length,1);
 });
+
+
+test('STOP 미등록은 기존 거절을 보존하고 자료/관측·cursor 추가0이다',async()=>{
+ const f=setup();f.get.send=async()=>({items:[{sequence:1,envelope:{operation:'REQUEST_STOP'},materials:null}],nextCursor:'opaque-stop',hasMore:false}) as any;
+ const r=await f.p.run(new AbortController().signal);assert.equal(r.state,'UNKNOWN');assert.equal(r.reason,'OPERATION_FAILED');assert.equal(r.cursor.afterSequence,0);assert.equal(r.commands,0);await f.p.run(new AbortController().signal);assert.equal(f.inputs.length,1);
+});
