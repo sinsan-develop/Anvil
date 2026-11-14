@@ -19569,3 +19569,8 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - UI10 지시 부분계획4경로 source 검수 완료: Primary8P/인접9P/type0, Main8P680.5285ms(b2588b), 독립spec/quality C0/I0/M0. UI 선택/주체/닫기 전환 검수는 소스 근거이며 실제DOM 미검증. Main SSR envDir:false 누락 발견→시험1줄 보완→SSR2P exit0(0721ef), 최종hash03A021A9…1F7449/diff0(903b93). 초기env읽기 여부 미조사·미단정, 실제키/DB/서비스/Agent0. 최종4지문·RED/시험교정·미검증은 UI10_INSTRUCTION_PARTS_SOURCE_RESULT_20261115.md 기록. Primary쓰기반환/live0, 통합 진행.
 
 - UI10 커밋 전 gitleaks2건 차단(af58c5), commit/push0. redacted 진단9a3e69에서 결과서 api 경로 뒤 정확파일SHA를 키로 감지한 것으로 확인. 파일명/명시SHA256 줄을 분리하고 검사 재수행하며 ignore/skip 우회0.
+
+- PR122/main f37d4e9673f5a4ab51f7d49461ec3efbfdb69734 통합: broker43633447066 success, sourceb7565810 동일tree·local/private exact·clean·원격작업branch없음(f35a86). merged RAM SSR1P0F0SKIP exit0 493.2614ms(7d409e). 원 PRhead 복구ref 보존, 완료branch/tag/tracking 정상정리(e05630). 실제DOM/DB/Agent 미검증 유지.
+- 다음 조사: FN03 import/proposal optional sourceRefs는 PMO가 과거질문 발행/직접답변 미수신으로 확인했으므로 중복질문·구현0. UI05/UI08·UI03/UI06의 좁은 소비누락 조사에서는 이미연결 또는 미채택원천부족으로 해당 후보만 제외했으며 전체작업없음판정0. 승인된 STOP A §4/5의 내구시도→협조중지1회→미확인관측ACK 실행기 소비가 PR121뒤 미완료이므로 Primary·독립읽기담당이 기존원owner/privateidentity 경계와 정확허용목록을 조사한다. 새로운CURRENT생산/실제Agent실행은 하지 않는다.
+
+- STOP 이력 소비 착수: codex/av3-fn08-stop-history/mainf37d4e96, WI E593961B252658B770B0922112B9827BE2E12CDDB03199532F386EAC26649CFE, 기존Primary 제품3/시험4 단일writer. 승인A §4/5의 원START/target 검산·내구 역사복구·기존관측ACK/cursor 연결만 수행하며 새요청 owner부재 거절/interrupt0 유지. 실제중지생산자/Query소유발급 미완료이며 합성이력을 실제중지양성으로 승격하지 않는다. Main문서/독립검수/통합, 실제제외범위 유지.
