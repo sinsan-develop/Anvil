@@ -143,3 +143,6 @@
 - 2026-11-15 normal Query 생성 선행 대조: 기존 START permit 재사용, normal SEND 및 보호 실행 구성·SID/child 결박 미완료. 고정 SDK 추가읽기는 이전 DNS 실패 후 새 답변 대기이며 실제 실행 승인과 분리한다. 전체 완료 체크 변경 없음.
 
 - 2026-11-15 SDK READ3은DNS실패·승인1회소진,신규SDK계약미확인. normalSEND서버후보는독립C0/I0/M0·직접채택답변대기,아직제품구현아님. 전체완료체크불변.
+
+
+- 2026-11-15 FN07 READ4: 직접 추가1회 승인에 따라 기존 Primary가 고정 SDK 원문 GET1회 수행했으나 ENOTFOUND(getaddrinfo ENOTFOUND registry.npmjs.org)로 실패. attempted=true/fetches=1/requestClosed=true/live0/sourceAvailable=false, 1회 소진. READ2/3 포함 동일 DNS 원인3회이며 재시도·환경변경0. 실제 DB·권한·키·서비스·Agent0, SDK 계약 신규 확인0·전체 완료체크 불변. 근거: docs/04_test_reports/AV3/FN07_PINNED_SDK_HOOK_READ4_RESULT_20261115.md. Main은 PMO에 제약·지원사항을 전달하며 완료된 STOP 소스 검증은 반복하지 않는다.
