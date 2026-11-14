@@ -19168,3 +19168,8 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Node/fixture 독립C0/I0·SQL독립C0/I0/M0, 최종Main9P·4P·SQL5P·root typecheck0. 실제DB/권한적용/키/서비스/Agent0이며 전체44업무 중 사용자 인수 완료수를 올리지 않는다.
 - 다음 후보 `FN08_NATIVE_JOURNAL_RESTART_BINDING_CANDIDATE_20261114.md` SHA256 `6FC307D7C13435563F6E9BD99B2F8BF473E45B6584C16F401A41250169BBAC87`. 첫 검수C0/I2(최초부재/소실 구분, 생산자 간 배타·한도경합) 보완 후C0/I0. 기존r5root 아래 닫힌journal namespace·typed보호연산·존재원장/원tuple·불명보존·재시작재실행금지를 제안한다. 64MiB/10,000authority/2MiB행은 새 제안값이다. 원 권위/process/grant 복구나 실제root/ACL/key/DB실행을 포함하지 않는다.
 - 신산님께 위 delta의 A안 source-only 채택 질문1회를 전달했고 답변 대기다. 미채택 제품 코드 구현0. 완료 단위 정리 후 최신main에서 `codex/av3-d1-journal-binding`을 만들었고 Main의 현황/검수 기록만 이어간다. 기존Primary는현재쓰기반환·live handle0, 추가임무는허용범위를구분해배정한다.
+
+- 후속 독립 조사: D1 polling/current/Claude driver의 실제 제품 공급자 공백은 journal·OS 현재성 근거에 의존한다. FN10 대기열 저장/조회는 이미 연결돼 있고 완료→다음 단계 실제 전이 및 USER 조건평가는 새 의미 계약/원 근거가 필요하다. FN15/UI12는 기존 UI→API→수락 source 연결이 존재하며 기본OFF가명시돼있어임의활성화하지않는다. 이조사는해당범위한정이며전체44업무에독립작업이전혀없다는판정이아니다. 완료합성시험을반복해진척으로계상하지않았다.
+- 인접 FN03 격리저장/0072 READY-only 충돌후보는철회했다. 0005의 project_artifact_guard WHEN inspection_json IS NULL을초기조사에서누락했으며현재업로드는inspection_json을항상제공하고별도uploaded_artifact_inspection_guard가상태/원inspection/receipt를검산한다. 따라서0072조건완화수정0. 실제PG검증아님. Main읽기명령의추정경로/Windows glob오류는rg --files의실제경로확인으로정정했고파일변경0이었다.
+
+- 위정정의과거표현위치: FN15_UPLOAD_APPROVAL_SQL_FORWARD_SOURCE_20261103.md:22와FN15_UPLOAD_APPROVAL_SOURCE_RESULT_20261103.md:51. 별개HE 업로드는0005 inspection guard의OWNER 조건으로거절되는source 경로이나, 기존WI의operation별특수OWNER보존경계에해당할수있어임의완화하지않는다. 이조사로새권한을부여하거나실DB실행하지않았다. 후속journal결정질문은기존1건을유지한다.
