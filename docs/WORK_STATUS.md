@@ -19161,3 +19161,41 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Node 독립검수 C0/I1: nativeHostWrite가lease hash검사후 transaction await를거쳐packet을복사하여원객체변조가검산과전송사이에들어올수있다. Primary COMPLETED 제출을Main은미수용하고첫await전고정snapshot·동일hash검산/전송 및대기중변조RED→GREEN재작업을지시했다. 위8P는이반례를포함하지않으므로최종합격아니다. 기존TTL/SQL정책/deferred권한과다른원인1회,실제DB실행0.
 
 - TOCTOU I1 보완독립 C0/I0 해소: 첫await전 packet/expected snapshot의동일hash·SQL·응답결박, 새변조반례와proxy/accessor/trap0확인. Main 최종unit+journey9P/0F/0SKIP6304.879ms exit0, 이전실패4건집중4P/0F/0SKIP3975.0825ms exit0, 최종root tsc진단0/exit0. 과거전체59P/4F는이력보존하며전체63재실행PASS로표시하지않음. Node/fixture독립C0/I0·SQL C0/I0/M0, 실제PG0. RETURN failObservation은첫observation삽입전실패이며graph중간쓰기실패로과장하지않는다. 상세결과서작성·정확변경목록대조후통합준비.
+
+## 2026-11-14 PR108 통합·journal 재시작 식별 결정 준비
+
+- FN08 source `96abb161b594e36236957038e064a29a6f4f5c17`을 PR108/main `2c42f84b021350b8412555b4e7f4ebd40d377815`로 통합했다. Broker43555389945 success. source/main tree 동일, local/development main 동일·clean, merged 다섯 host handler RAM 여정 smoke1P/0F/0SKIP2964.7387ms exit0. refs/pull/108/head가 원 source를 보존하고 원격 완료 branch/tag 부재를 확인한 뒤 정확 로컬 branch/tag를 정리했다. 보호된 과거 WIP는 변경하지 않았다.
+- Node/fixture 독립C0/I0·SQL독립C0/I0/M0, 최종Main9P·4P·SQL5P·root typecheck0. 실제DB/권한적용/키/서비스/Agent0이며 전체44업무 중 사용자 인수 완료수를 올리지 않는다.
+- 다음 후보 `FN08_NATIVE_JOURNAL_RESTART_BINDING_CANDIDATE_20261114.md` SHA256 `6FC307D7C13435563F6E9BD99B2F8BF473E45B6584C16F401A41250169BBAC87`. 첫 검수C0/I2(최초부재/소실 구분, 생산자 간 배타·한도경합) 보완 후C0/I0. 기존r5root 아래 닫힌journal namespace·typed보호연산·존재원장/원tuple·불명보존·재시작재실행금지를 제안한다. 64MiB/10,000authority/2MiB행은 새 제안값이다. 원 권위/process/grant 복구나 실제root/ACL/key/DB실행을 포함하지 않는다.
+- 신산님께 위 delta의 A안 source-only 채택 질문1회를 전달했고 답변 대기다. 미채택 제품 코드 구현0. 완료 단위 정리 후 최신main에서 `codex/av3-d1-journal-binding`을 만들었고 Main의 현황/검수 기록만 이어간다. 기존Primary는현재쓰기반환·live handle0, 추가임무는허용범위를구분해배정한다.
+
+- 후속 독립 조사: D1 polling/current/Claude driver의 실제 제품 공급자 공백은 journal·OS 현재성 근거에 의존한다. FN10 대기열 저장/조회는 이미 연결돼 있고 완료→다음 단계 실제 전이 및 USER 조건평가는 새 의미 계약/원 근거가 필요하다. FN15/UI12는 기존 UI→API→수락 source 연결이 존재하며 기본OFF가명시돼있어임의활성화하지않는다. 이조사는해당범위한정이며전체44업무에독립작업이전혀없다는판정이아니다. 완료합성시험을반복해진척으로계상하지않았다.
+- 인접 FN03 격리저장/0072 READY-only 충돌후보는철회했다. 0005의 project_artifact_guard WHEN inspection_json IS NULL을초기조사에서누락했으며현재업로드는inspection_json을항상제공하고별도uploaded_artifact_inspection_guard가상태/원inspection/receipt를검산한다. 따라서0072조건완화수정0. 실제PG검증아님. Main읽기명령의추정경로/Windows glob오류는rg --files의실제경로확인으로정정했고파일변경0이었다.
+
+- 위정정의과거표현위치: FN15_UPLOAD_APPROVAL_SQL_FORWARD_SOURCE_20261103.md:22와FN15_UPLOAD_APPROVAL_SOURCE_RESULT_20261103.md:51. 별개HE 업로드는0005 inspection guard의OWNER 조건으로거절되는source 경로이나, 기존WI의operation별특수OWNER보존경계에해당할수있어임의완화하지않는다. 이조사로새권한을부여하거나실DB실행하지않았다. 후속journal결정질문은기존1건을유지한다.
+
+- 목표 자동계속 점검: 직전 turn은 PR108 통합 및 후속 증거 확보로 progress였다. 현재 HEAD adcc354f clean을 재확인했고 journal 계약 답변은 아직 없다. PMO도 동일 결정 대기를 확인했다. 추가 FN17 조사에서 notification-input·0052 SQL·producer·보호조회가 APPROVAL_REQUESTED/승인요청 ref에 고정되어 있고 기존 호출은 연결돼 있음을 확인했다. 채택 계약 §10은 일반 오류/완료 사건을 제외하므로 단순 호출 누락으로 임의 확대하지 않는다. 실제DB·권한·키·서비스·Agent 실행0, 완료검사 반복0. 기존 질문을 중복 발송하지 않으며 전체 목표는 미완료/active로 보존한다.
+
+- 결정대기 감사 3번째 goal turn: 최초 PR108 통합 turn부터 동일 journal 저장 계약 채택 답변이 없고 PMO 최신 회신도 변경0이다. candidate SHA6FC307D7…69BBAC87 미채택·현재branch f730db39 local/private동일clean을 확인했다. 세 subagent 모두terminal이며 live실행대기가 아니다. D1·FN10·FN15/UI12·FN17에서 확인한 다음 단위는 새 의미/권한 계약 또는 현재 제외된 실제 실행 선행을 요구한다. 일반 격리 결함후보는철회했으므로수정하지않는다. 기존 질문을 중복하지 않고 전체미완료 목표를 BLOCKED(결정대기)로전환한다. 완료/인수/예약삭제아님. 재개조건은 기존journal 질문의채택답변 또는 정확한별도범위지시이며 Primary단일writer로이어간다. 현재소스/기록브랜치와원격checkpoint는보존한다.
+
+## 2026-11-14 보호 journal A안 직접 채택·작업 재개
+
+- 신산님이 후보 SHA6FC307D7C13435563F6E9BD99B2F8BF473E45B6584C16F401A41250169BBAC87 A안 source-only를 직접 채택했고 목표 상태가 active로 재개됐다. 실제 Git HEAD05e070dd clean·후보원문지문동일확인. 후보본문은승인원문으로보존하며별도채택기록을작성했다.
+- 할일: WORK_PLAN/FUNCTION_WORK의 Stage C FN08 실행중복방지 및 D1 실행기 source의 보호journal제품연결. 이전 PR108의host저장은반복하지않는다. 허용: 기존Trustroot생산자재사용·닫힌journal namespace/목적연산·원tuple/존재표식·배타/CAS/한도·불명보존·owner/runtime 연결의코드·합성검증. 실제파일/ACL/key/DB/서비스/Agent/C#실행제외.
+- 기존Primary에게정확경로/기술분해읽기임무, d2_preflight에게독립보호경계조사를배정했다. Main WI전제품쓰기0·동시writer0. 검증은실제품owner/Client+RAM보호포트로정상저장·재시작factory0·손상/소실/동시OPEN/한도/기한/lateIO의차단, source정적/타입/인접회귀이며실OS보장미검증을유지한다.
+
+- Main WI 발행·단일 writer 착수: FN08_NATIVE_JOURNAL_RESTART_SOURCE_IMPLEMENTATION_20261114.md의 제품11/시험6 경로. 독립 WI 검수 C0/I0. 최초 발급은 root.Created 대신 실제 배타 생성+보유 identity에서 생산하고 namespace 밖 보호표식으로 소실을 검산한다. 발급 근거 없는 기존 root는 지원 완료가 아닌 거절 제한으로 보존한다. 기존 64KiB/64frame을 유지하며 유효 원형 크기는 별도 합성시험한다. PMO에 직접 채택·구현 배정·실행 제외 범위를 전달했다. 실제 환경 실행0.
+
+- Primary 첫 RED 제출: node --test --test-name-pattern=별도모델journal tests/desktop/native-preparation-return-owner.test.cjs (실제 pattern은 "별도 모델 journal"), 0P/1F/exit1, 1401.9376ms. 기존 owner의 journal 주입 부재 PROTECTION_UNAVAILABLE를 재현했다. 이는 예정된 TDD RED이며 제품 완료/실환경 실패 판정이 아니다. 보호 공급자 구현 계속.
+
+- Main 사전 연결 검수: 현재 HUMAN/등록 검사는 기존 factory open 시점이어서 journal 첫 기록 전에 별도 선행 검산해야 함을 담당자에게 전달. Client가 current/challenge/receipt로 좁힌 live deadline을 journal 후속 연산에도 반영하고 retained host와 journal 종료 수명을 분리한다. 기존 helper 통신은 65536-byte/64frame 상한을 유지한다. 읽기 도구에서 추정한 trust-key-channel.cjs 경로 부재 1회는 rg --files로 실제 trust-key-host-client.cjs를 확인해 정정, 파일 변경 없음.
+
+- runtime 잠정 동결: protected-journal C45DC166B3077FF61B2F05CDEEBB7975C5A6EAF9DEC472E75D09FBE87A6AA2CA, local-attempt A6AA2CE3D7168159B4C73E497675CCCB1F2648E4EF15152484A04FF061BDC030, client 0A35E464A789881F5585A80D86D0F4D11767FDC217CB33CEDE0AD21158EA06E5. Main `node --test tests/unit/FN06/native-preparation-protected-journal.test.ts tests/unit/FN06/native-preparation-client.test.ts` fresh20P/0F/0SKIP462.3475ms exit0(신규6+기존14). 전체완료아님.
+- native 스냅샷 독립 I1: 경로 FileInfo만 검사하여 보유 FileStream identity/hardlink 및 자기 lock 신원이 결박되지 않는 경계를 발견. 같은 Primary에 기존 BindingKernel handle검산 대조·보완을 지시했다. 작성중source 검수이며 실제FS실행0.
+
+- native 종료 정착 기술 예외: CLOSED flush가 오류지만 완전 bytes가 남은 상태와 성공 후 응답 유실은 다음 host의 파일 상태만으로 구분할 수 없다. 추가 확인표식도 마지막쓰기에서 같은 불명이 생긴다는 독립 검토를 받았다. Main은 채택A안의 OS보장미지원 조항에 따라 Windows 구체공급자를 최초 journal mutation/성공/factory 전에 unsupported로 닫도록 지시했다. 정상 CLOSED만으로 과거UNKNOWN을 성공 승격하지 않는다. typed포트/tuple/RAM상태기계/owner source 연결은 진행하되 Windows 내구저장·정상 재시작 기능은 미완료/미검증이다. 별도 실제권한/실행0, PMO 기술지원 공유. 전체source구현을실기능완료로표시하지않는다.
+
+- PMO 기술지원 회신: 같은 CLOSED bytes의 재조회/해시는 무결성만 증명하며 이전 Flush 결과·잠금 해제 권위를 증명하지 않는다. 별도 확정 근거 없이 재시작 UNKNOWN 유지와 기존A안 unsupported 처리를 적용할 수 있다고 확인했다. 두 불명 시나리오(Flush오류+완전CLOSED잔존/종료후응답유실)를 같은 관측이면 같은 UNKNOWN으로 시험하도록 전달했다. 계약완화·새승인요청 없음.
+
+- 최종 source 독립 검수 native7·runtime/owner10 모두 C0/I0/M0. Main fresh5시험묶음51P/0F/0SKIP7210.3174ms exit0, 정확 기존 pe-library 메모리resolver15P/0F/0SKIP76.2615ms exit0, roottsc진단0/exit0, diffcheck0. Desktop기존174진단은전체PASS아님. Primary최종INCOMPLETE의Windows정상내구저장/재시작미완료를유지하고source한정검수수용. 최종지문·실패·제외·rollback을 FN08_NATIVE_JOURNAL_RESTART_SOURCE_RESULT_20261114.md에 기록.
+- Git 원격조회 첫 시도는 sandbox SSH NtCreateDirectoryObject 0xC0000022로 실패했으며 동일읽기승격조회로해소: development 작업branch05e070dd, main2c42f84b. 원격변경0. Main 문서의 CRLF추가분은원정본LF로본문불변정규화했다.

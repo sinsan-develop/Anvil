@@ -1,7 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {NativePreparationClient} from '../../../apps/connector/runtime/native-preparation-client.ts';
+import {NativePreparationProtectedJournal} from '../../../apps/connector/runtime/native-preparation-protected-journal.ts';
 test('기본 미등록 client는 channel journal factory를 호출하지 않는다',async()=>{let calls=0;const client=new NativePreparationClient(null,null,null);await assert.rejects(()=>client.run({},'missing'));assert.equal(calls,0);});
+
+test('실제 Client→보호 adapter의 RAM typed journal 재시작은 원 두행을 읽고 factory를 다시 부르지 않는다',async()=>{
+ const f=fixture();let locked=false,unknown=false;const controller=new AbortController(),port={open:async()=>({send:async(op:string,p:any)=>{
+  if(op==='OPEN'){assert.equal(locked,false);assert.equal(unknown,false);locked=true;return{handle:id(900),authorityRef:f.authority.ref};}
+  assert.equal(locked,true);assert.equal(p.handle,id(900));
+  if(op==='READ')return{handle:p.handle,complete:true,records:structuredClone(f.records())};
+  if(op==='APPEND_SYNC'){assert.equal(p.expectedHash,nativeHash(f.records()));f.records().push(structuredClone(p.record));return{handle:p.handle,recordsHash:nativeHash(f.records())};}
+  if(op==='CLOSE'){locked=false;return{handle:p.handle,state:'CLOSED_CONFIRMED'};}throw Error('OP');
+ },close:async()=>{if(locked)unknown=true;return{state:'CLOSED_CONFIRMED'};}})};
+ const make=()=>new NativePreparationClient(f.channel,new NativePreparationProtectedJournal(f.authority,port,f.clock,controller.signal),f.factory,f.clock);
+ assert.equal((await make().run(f.authority,id(30))).state,'CREATED_OBSERVED');const records=structuredClone(f.records()),before=[...f.calls];
+ assert.equal((await make().run(f.authority,id(30))).state,'UNKNOWN');assert.deepEqual(f.records(),records);assert.equal(f.calls.filter(x=>x==='factory').length,1);assert.equal(f.calls.filter(x=>x==='consume').length,before.filter(x=>x==='consume').length);assert.equal(locked,true);
+});
 
 import {canonicalJson} from '../../../contracts/canonical.ts';
 import {nativeHash} from '../../../contracts/runtime/native-preparation-authority-v1.ts';

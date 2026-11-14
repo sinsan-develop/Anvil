@@ -21,17 +21,26 @@ async function journey(mode='OK'){
  let offset=0;const baseNow=f.dependencies.now(),schedule=f.dependencies.schedule,deadlines=new Set();f.dependencies.now=()=>baseNow+offset;f.ports.now=f.dependencies.now;f.dependencies.schedule=(callback,delay)=>{deadlines.add(callback);const cancel=schedule(callback,delay);return()=>{deadlines.delete(callback);cancel();};};
  const now=f.dependencies.now(),at=a.issuedAt,end=a.expiresAt,records=[],calls=[],hostCalls=[];let locked=false,challenge,receipt,plan,returnChild,alive=false;
  const journal={transport:'SOURCE_ONLY_MODEL',exclusive:async(_ref,work)=>{assert.equal(locked,false);locked=true;try{return await work({read:async()=>({complete:true,records:structuredClone(records)}),appendAndSync:async record=>{records.push(structuredClone(record));}});}finally{locked=false;}}};
- if(mode!=='NO_JOURNAL')f.dependencies.nativePreparationJournal=journal;
+ if(!['NO_JOURNAL','PROTECTED'].includes(mode))f.dependencies.nativePreparationJournal=journal;
  const processRef={runId:id(50),generation:1,jobId:id(51),pid:50,startTicks:'133000000000000000',executableHash:'e'.repeat(64)};
  const {planNativeOwnershipRequest,planNativeOwnershipAcceptance}=await import('../../apps/server/modules/executions/native-preparation-ownership-return.ts');
  const {ownershipObservationBytesV1}=await import('../../contracts/runtime/ownership-observation-v1.ts');
  const b64=h=>Buffer.from(h,'hex').toString('base64url'),privateKey=crypto.createPrivateKey({key:{kty:'EC',crv:'P-256',x:b64('60FED4BA255A9D31C961EB74C6356D68C049B8923B61FA6CE669622E60F29FB6'),y:b64('7903FE1008B8BC99A41AE9E95628BC64F2F1B20C2D7E9F5177A3C294D4462299'),d:b64('C9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721')},format:'jwk'});
  const spawn=f.ports.spawn;
  f.ports.spawn=(...args)=>{const child=spawn(...args),write=child.stdin.write;child.stdin.write=(raw,encoding,done)=>{
-  const v=JSON.parse(Buffer.from(raw).toString());if(!v.operation.startsWith('NATIVE_OWNERSHIP_RETURN_'))return write(raw,encoding,done);
+  const v=JSON.parse(Buffer.from(raw).toString());if(!v.operation.startsWith('NATIVE_OWNERSHIP_RETURN_')&&!v.operation.startsWith('NATIVE_JOURNAL_'))return write(raw,encoding,done);
   assert.ok(Buffer.byteLength(raw)<=65536);assert.ok(v.sequence<=64);assert.equal(v.payload.attemptId,f.stored().attemptId);hostCalls.push(v.operation);
   queueMicrotask(()=>{let data;
-   if(v.operation==='NATIVE_OWNERSHIP_RETURN_OPEN'){assert.equal(records.length,2);assert.equal(records[1].snapshot.state,'FACTORY_ATTEMPTED');assert.deepEqual(v.payload.context.authority,authority);assert.deepEqual(v.payload.context.receipt,receipt);returnChild=child;alive=true;data={opened:mode!=='NO_NATIVE_PROVIDER'};}
+   if(v.operation.startsWith('NATIVE_JOURNAL_')&&mode==='NO_JOURNAL')data={state:'UNKNOWN',problem:'NATIVE_JOURNAL_DURABILITY_UNSUPPORTED'};
+   else if(v.operation.startsWith('NATIVE_JOURNAL_')){
+    const handle=id(91);assert.equal(mode,'PROTECTED');
+    if(v.operation==='NATIVE_JOURNAL_OPEN'){assert.equal(locked,false);locked=true;assert.deepEqual(v.payload.authority,authority);data={handle,authorityRef:authority.ref};}
+    else{assert.equal(locked,true);assert.equal(v.payload.handle,handle);
+     if(v.operation==='NATIVE_JOURNAL_READ')data={handle,complete:true,records:structuredClone(records)};
+     else if(v.operation==='NATIVE_JOURNAL_APPEND_SYNC'){assert.equal(v.payload.expectedHash,hash(records));records.push(structuredClone(v.payload.record));data={handle,recordsHash:hash(records)};}
+     else if(v.operation==='NATIVE_JOURNAL_CLOSE'){locked=false;data={handle,state:'CLOSED_CONFIRMED'};}else throw Error('JOURNAL_OP');}
+   }
+   else if(v.operation==='NATIVE_OWNERSHIP_RETURN_OPEN'){assert.equal(records.length,2);assert.equal(records[1].snapshot.state,'FACTORY_ATTEMPTED');assert.deepEqual(v.payload.context.authority,authority);assert.deepEqual(v.payload.context.receipt,receipt);returnChild=child;alive=true;data={opened:mode!=='NO_NATIVE_PROVIDER'};}
    else {assert.equal(child,returnChild,'원 retained 객체는 같은 host에서만 사용한다');
     if(v.operation==='NATIVE_OWNERSHIP_RETURN_READ')data=processRef;
     else if(v.operation==='NATIVE_OWNERSHIP_RETURN_SIGN'){
@@ -64,6 +73,14 @@ async function journey(mode='OK'){
 }
 test('v2 보호 delivery→실제 owner/client/coordinator→동일 host→서버 계획 관측/head 종단',async()=>{
  const v=await journey();try{const outcome=await v.f.owner.returnNativePreparationOwnership(v.receiver);assert.equal(outcome.state,'OWNERSHIP_RETURNED',JSON.stringify({calls:v.calls,host:v.hostCalls,records:v.records.map(r=>r.snapshot.state)}));assert.equal(outcome.codingAgentExecutionAuthorized,false);assert.equal(outcome.agentDispatchPerformed,false);assert.equal(v.records.length,2);assert.deepEqual(v.hostCalls,['NATIVE_OWNERSHIP_RETURN_OPEN','NATIVE_OWNERSHIP_RETURN_READ','NATIVE_OWNERSHIP_RETURN_SIGN','NATIVE_OWNERSHIP_RETURN_READ']);assert.equal(v.calls.filter(p=>p.endsWith('/ownership-results')).length,1);const before=v.f.calls();await assert.rejects(v.f.owner.returnNativePreparationOwnership(v.receiver));assert.equal(v.f.calls(),before);assert.equal(v.f.ends(),v.f.calls()-1);}finally{v.close();}
+});
+
+test('별도 모델 journal 주입 없이 REGISTERED owner가 typed 보호 journal을 조립해 Client 앞뒤 기록을 남긴다',async()=>{
+ const v=await journey('PROTECTED');try{
+  assert.equal((await v.f.owner.returnNativePreparationOwnership(v.receiver)).state,'OWNERSHIP_RETURNED');
+  assert.deepEqual(v.records.map(r=>r.snapshot.state),['PREPARED','FACTORY_ATTEMPTED']);
+  assert.ok(v.hostCalls.includes('NATIVE_JOURNAL_OPEN'));assert.ok(v.hostCalls.includes('NATIVE_JOURNAL_APPEND_SYNC'));
+ }finally{v.close();}
 });
 test('원 retained 수명은 일회 HTTP 종료와 분리되고 명시 receiver 종료까지 보유한다',async()=>{
  const v=await journey();try{
@@ -105,5 +122,5 @@ test('retained open 대기중 중복은 효과0이고 receiver 취소 뒤 늦은
  }finally{v.lateRelease();await work?.catch(()=>{});v.close();}
 });
 for(const mode of ['NO_JOURNAL','NO_NATIVE_PROVIDER','ROOT','LOST_RESULT'])test('v2 owner '+mode+'는 추가 반환/재전송 없이 닫힌다',async()=>{
- const v=await journey(mode);try{let outcome;try{outcome=await v.f.owner.returnNativePreparationOwnership(v.receiver);}catch{}assert.notEqual(outcome?.state,'OWNERSHIP_RETURNED');const before=v.f.calls();await assert.rejects(v.f.owner.returnNativePreparationOwnership(v.receiver));assert.equal(v.f.calls(),before);if(mode==='NO_JOURNAL')assert.equal(v.calls.length,0);}finally{v.close();}
+ const v=await journey(mode);try{let outcome;try{outcome=await v.f.owner.returnNativePreparationOwnership(v.receiver);}catch{}assert.notEqual(outcome?.state,'OWNERSHIP_RETURNED');const before=v.f.calls();await assert.rejects(v.f.owner.returnNativePreparationOwnership(v.receiver));assert.equal(v.f.calls(),before);if(mode==='NO_JOURNAL'){assert.deepEqual(v.hostCalls,['NATIVE_JOURNAL_OPEN']);assert.equal(v.records.length,0);assert.equal(v.alive(),false);assert.equal(v.calls.filter(p=>!p.endsWith('/current')).length,0);assert(!JSON.stringify(outcome).includes('DURABILITY'));}}finally{v.close();}
 });
