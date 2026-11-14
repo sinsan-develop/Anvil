@@ -6,7 +6,7 @@
 - 실제DB·권한·키·사용자/백업 파일조사·설치·서비스·C# compile/load·OS/Agent 실행0. 제품/시험 source 읽기와 RAM 합성만 실행한다. 컴파일·복사·SQL 등 기능 코드를 작성하되 실제 실행은 하지 않는다. 기존 파일QA/forge 실제 build를 자동 실행하지 않는다.
 - 이전 A769 구현·실제 미검증 및 journal unsupported를 보존한다. SOURCE_ONLY_MODEL을 실배포 원천으로 승격하지 않는다. 새 의존성 설치/공개계약/권한 확장0.
 
-## 허용 제품19·시험8 경로
+## 허용 제품23·시험10 경로
 ```
 contracts/runtime/native-worker-deployment-v1.ts
 apps/server/modules/executions/native-worker-deployment-store.ts
@@ -35,6 +35,12 @@ tests/desktop/native-worker-installation.test.cjs
 tests/unit/FN06/native-worker-installation-native.test.ts
 tests/desktop/native-worker-build.test.cjs
 tests/desktop/desktop-trust-key-host-build.test.cjs
+apps/desktop/src/settings.html
+apps/desktop/src/settings.js
+apps/desktop/src/policy.cjs
+apps/desktop/src/shell.cjs
+tests/desktop/shell-policy.test.cjs
+tests/desktop/settings-worker-installation.test.cjs
 ```
 추가 경로는 이유/직접 영향 제출 후 Main이 의미불변 여부를 판단한다. 원 계약 의미 변경은 임의 수행하지 않는다. Primary Git mutation/문서쓰기0.
 
@@ -50,4 +56,11 @@ tests/desktop/desktop-trust-key-host-build.test.cjs
 - 직접/인접 합성·정적 검사, roottsc, Desktop 기존174와 신규차이 분리, diffcheck. 불변한 과거 전체시험 반복0. SKIP/미실행 PASS승격0.
 - 부정사례만으로 완료하지 말고 원publisher→저장→GET→설치RAM→원소비 정상경로와 회수/UNKNOWN을 검산한다. 원 SQL 실행은 미검증으로 남긴다.
 - 실제 OS 내구성·원 compile/실배포 생산·Agent 동작 미완료를 구체적으로 기록할 수 있는 결과를 반환한다. source지원과 실환경지원 분리.
-- 최종 정확27hash·diff·시험·오류이력·미검증·rollback 제출 후 write 반환. 같은 근본 정식 실패3회 규칙은 유지한다.
+- 최종 정확33hash·diff·시험·오류이력·미검증·rollback 제출 후 write 반환. 같은 근본 정식 실패3회 규칙은 유지한다.
+
+## Main 명시 설치 호출선 보완
+채택 계약 §5/§6의 명시 설치는 기존 설정에 action이 없어 6경로를 추가한다. settings의 별도 worker 설치 버튼→기존 trustAct bridge의 INSTALL_WORKER→policy/shell 검산→owner/coordinator다. preload 형식은 재사용한다. 기존 CHECK_CURRENT/ISSUE/ARM/조회/시작 행동에 설치를 넣지 않는다.
+
+대상은 같은 원 등록 attempt/epoch의 main 소유 OFFERED offer다. shell의 owned.offer를 readReceiveOffer로 다시 검산하고 원 command의 payload.nativeFactoryRef fullref를 추출한다. renderer가 factory/URL/root/경로/hash를 전달하지 않는다. offer/current가 없거나 바뀌면 설치하지 않는다. ARM 전 명시설치이며 ARM 실행 허가를 만들지 않는다. 원offer·부모·현재성·기한·중복request/내용을 끝까지 결박한다. 표시에는 준비/불가/불명/설치기록 상태만 제공하고 비밀/원command본문을 노출하지 않는다. 새 권한·계약 확장 없이 채택된 설치source의 사용자 진입을 연결하는 내부 보완이다.
+
+settings 버튼은 합성 DOM/IPC로 직접검산하며 실제Electron/OS/네트워크/설치실행0. 버튼외조회와거절시coordinator호출0, 다른창/iframe/epoch·offer교체·중복/늦은완료도검산한다. 실제상태공급자미등록인 경우 가짜설치성공을보여주지않는다.

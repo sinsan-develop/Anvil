@@ -19254,3 +19254,9 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 후보4e48cbdf 게시·local/tracking동일clean·SHA50596FFC…2FD4389 확인 후 직접채택 질문1회 전송(응답미수신). PMO는 A769에 새공개/저장/설치root 승인근거가 없음을 재확인했다. 기존Primary 읽기분해: 계약/목적SQL→부모없는workercompile/package→publisher→sibling설치→원server/native소비 순서. 코드추가0, 실제환경0. 다음채택시 이 순서의 정확파일WI를 작성하고 단일writer를 재개한다. 기존 발급권위·run/observer 의미는재질문하지않는다. 전체계획미완료·해당새계약만 결정대기.
 
 - 2026-11-14 worker 배포 근거 전달 A안 SHA50596FFC…2FD4389 직접 승인 수신. Stage C FN08 후속 계약/목적SQL→compile/package→publisher→sibling설치→원소비 연결을 기존Primary 단일writer로 구현한다. 실제DB/권한/키/자료조사/설치/서비스/C#/Agent 제외 유지. Main 검수·통합, 전체완료체크 불변. 기준 e4d44b29 clean·후보hash 일치 확인, 정확WI 파일목록 확정 중.
+
+- 구현 WI D436B21A8DB73F90B422E0AC8A614F32DE4FEF303DA9EB413004017CDE5BFF47 독립선행 C0/I0. 정확27경로 Primary 단일writer GO, Main동일제품쓰기0. 앞선 완료 검증을 반복하지 않고 신규계약/저장 RED부터 진행한다. 명시 설치 진입점은 현재 UI/owner callsite를 별도 읽기검토해 자동설치·미사용adapter로 남는 위험을 확인한다. 승인/지시서4문서 checkpoint7a341f6d private게시, 제품실환경 실행0.
+
+- Primary 최초RED: node --test tests/unit/FN06/native-worker-deployment.test.ts, exit1/0P2F0S173.6ms, 신규contract/store부재 ERR_MODULE_NOT_FOUND. exact3/hash재봉인부모위조·Proxy trap0·모델게시DB0 행동시험에서시작, 계약/저장구현중. 정식FAILURE_REPORT0·실행handle0. UI 명시설치는현재 action부재를확인하여기존조회/ARM자동설치가아닌별도동작의최소경로보완을Main이정리한다.
+
+- Main 내부보완: 기존설정에명시설치 action부재지만 main의 OFFERED owned.offer→readReceiveOffer→원command.payload.nativeFactoryRef 근거는있다. WI SHA4F0308E809E727CAFE92D37C9B1C7711EF7BF41743F060A2009B432984F8CC59로settings.html/js·policy/shell·직접시험2 총6경로추가(제품23/시험10=33). 별도INSTALL_WORKER 명시클릭·원offer/attempt/epoch/기한결박, renderer경로/키/factory선택0·기존조회/ISSUE/ARM자동설치0. 채택계약의필수사용자진입내구체화라추가사용자승인요청0. Primary단일writer계속.
