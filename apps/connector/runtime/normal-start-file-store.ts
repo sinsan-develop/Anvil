@@ -4,6 +4,7 @@ import {resolve,isAbsolute,parse,join} from 'node:path';
 import {canonicalJson,parseWireJson} from '../../../contracts/canonical.ts';
 import {cloneV1,recordV1,uuidV1} from '../../../contracts/runtime/validation-v1.ts';
 import type {NormalStartStore,NormalStartEntry} from './normal-start-intake.ts';
+import type {NormalInstructionStore} from './normal-instruction-intake.ts';
 import type {ReceiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 export type NormalLocalScope={projectId:string;executionId:string;executionGeneration:number};
 export interface NormalJournalTransaction{read():Promise<unknown[]>;appendAndSync(value:unknown):Promise<void>}
@@ -44,7 +45,23 @@ export class NormalStartFileStore implements NormalJournalStore{
    });
   }};
  }
- async exclusive<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>):Promise<T>{
+ /** SEND 전용 포트: START 행형상을 재사용하지 않고 원 root scope를 검산한다. */
+ instructionIntake():NormalInstructionStore{
+  return{transport:'NORMAL_PROTECTED',exclusive:async<T>(key:ReceiptKeyV1,body:Parameters<NormalInstructionStore['exclusive']>[1]):Promise<T>=>{
+   if(!recordV1(key,['projectId','executionId','executionGeneration','commandId'])||!uuidV1(key.commandId)||
+    !Object.entries(this.#scope).every(([k,v])=>(key as any)[k]===v))fail();
+   return this.#run('intake-'+key.commandId,body,true) as Promise<T>;
+  }};
+ }
+ instructionAttempts():NormalInstructionStore{
+  return{transport:'NORMAL_PROTECTED',exclusive:async<T>(key:ReceiptKeyV1,body:Parameters<NormalInstructionStore['exclusive']>[1]):Promise<T>=>{
+   if(!recordV1(key,['projectId','executionId','executionGeneration','commandId'])||!uuidV1(key.commandId)||
+    !Object.entries(this.#scope).every(([k,v])=>(key as any)[k]===v))fail();
+   return this.#run('attempt-'+key.commandId,body,true) as Promise<T>;
+  }};
+ }
+ async exclusive<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>):Promise<T>{return this.#run(channel,body,false);}
+ async #run<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>,strictClose:boolean):Promise<T>{
   if(typeof channel!=='string'||!channelOK(channel))fail();
   const fs=this.#fs,root=this.#root,lockPath=join(root,channel+'.lock');let identity:any,lock:any,lockId:any,closed=false,operating=false,uncertain=false,poisoned=false,wrote=false;
   const check=async()=>{const st=await fs.lstat(root);if(!st.isDirectory()||st.isSymbolicLink()||!same(st,identity)||!pathSame(await fs.realpath(root),root))fail();};
@@ -86,6 +103,7 @@ export class NormalStartFileStore implements NormalJournalStore{
    if(lock){try{await lock.close();}catch{uncertain=true;}
     if(!uncertain&&!poisoned){await check();const st=await fs.lstat(lockPath);if(!st.isFile()||st.isSymbolicLink()||!same(st,lockId))fail();await fs.unlink(lockPath);}
    }
+   if(strictClose&&uncertain)fail();
   }
  }
 }
