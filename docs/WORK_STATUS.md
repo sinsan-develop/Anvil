@@ -19584,3 +19584,22 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 
 
 - 2026-11-15 FN07 READ4: 직접 추가1회 승인에 따라 기존 Primary가 고정 SDK 원문 GET1회 수행했으나 ENOTFOUND(getaddrinfo ENOTFOUND registry.npmjs.org)로 실패. attempted=true/fetches=1/requestClosed=true/live0/sourceAvailable=false, 1회 소진. READ2/3 포함 동일 DNS 원인3회이며 재시도·환경변경0. 실제 DB·권한·키·서비스·Agent0, SDK 계약 신규 확인0·전체 완료체크 불변. 근거: docs/04_test_reports/AV3/FN07_PINNED_SDK_HOOK_READ4_RESULT_20261115.md. Main은 PMO에 제약·지원사항을 전달하며 완료된 STOP 소스 검증은 반복하지 않는다.
+
+
+## 2026-11-15 재개 인수 — 정본·Git 대조
+
+- 신산님 최신 직접 지시: 정본/이전 기록 확인을 마무리하고 기존 승인 범위의 다음 미완료 업무를 기존 subagent에게 위임, Main 검수·통합으로 계획 완료까지 진행. 실제 DB·권한·키·서비스·Agent 실행 제외는 유지한다.
+- 확인자 Main 어울, 기존 d2_preflight/d2_scope_audit 및 developer_primary. 경로는 현재 후속 worktree이며 main bc87761bddc5f3905fd463df1eae7cb77a3ddb12에서 codex/av3-plan-resume-20261115 생성. 시작 clean·local/private main 동일. 과거 outer dirty는 보존했다.
+- 이 기록 추가 전 WORK_STATUS: 6659083바이트, SHA256 06D1335D56DF58382371A596A06DF9233725BF58DC31C7B5AA5B7C5688D0B0A6. 기존18922행 체크포인트의 원prefix6484413바이트/BE531ECB352CBB2C4CB874B7306AD4BEF59F1788A2812D6931F22364FF38B513 일치. 추가18914~19586행 전체 확인. 앞선1~18708행 개별 사건은 재검수하지 않았으며 바이트 불변 대조만 했다.
+- 설계1~878행 SHA1346F6244A142B3A2849DA78CD742F2F6B67F8B96C5762D0F036979FD15328E7, 계획1~1952행 SHAAC6BF5087160A2FBF94A49CB959D24E6C205B6CDF6943720670BA8EA76C875C6 전수 열람/원41790410 blob동일. 근거 설계§1·7/계획§2·업무등록부·FN09/10 카드. 환경1~477행은12구간으로읽고구간별요약및전체SHAD6496CC210ED1A0C1F5EB08D57FFB437D5C64242294B16A5B8FA66A7DC161E00을대조. 현재 runtime은 재실행/변경하지 않았다.
+- 이전 로컬 세션 목록은 확인했으나 대형 Codex 기록은64MiB 상한에 걸려 truncated이므로 전체 대화 복구 근거로 사용하지 않는다. 최신 작업은 Git/정본/결과서 및 현재 담당자 증거로 대조했다.
+- READ4 문서PR125/Broker43647823290 success, 원83fc9eea와 mainbc87761b tree동일·독립C0/I0/M0. 로컬FF중 STATUS unlink Invalid argument1회로 부분반영 발생, 이전/목표 Git원문과3문서만검산한 뒤 in-place일치화·index결박·FF완료/clean. 신규코드손실0/복구ref pr-125-head보존. 불필요한 제품시험 반복0.
+- PMO지원회신의 기존SDK RAM을 네트워크없이 확인: Main/Primary 알려진 binding 모두undefined. 원문재사용확인0/새GET0/환경변경0. 과거 무결성 검산을 미확인 SDK callback/argv/env 확인으로 승격하지 않는다.
+- 다음 할 일: FN09/10 승인 연결 누락을 Primary 읽기로 대조. FN09 원stage/prep/Options 소비는 이미존재하고, FN10 current/선행ACCEPTED 생산은미완료라 자동실행연결을 억지구현하지 않는다. 기존 채택 GET/저장/조회 화면의 실제 누락을 좁혀 정확WI 후 같은Primary 단일writer에 맡긴다. Main동일코드수정0.
+- 검증 기준: 구분 가능한 사용자행동의 정상/핵심거절·영향회귀·필요타입/빌드와 독립검수. 합성은실DB/브라우저/Agent인수아님. 전체계획미완료/체크상향0, 일부선행부족을전체작업부재판정으로확대0.
+
+- 다음 UI14 백업정책 목록선택→고정상세 fullref검산 누락을 Main/Primary 소스로 확인. 기존 readBackupPolicy want재사용·정확제품1/시험1을 기존Primary 단일writer에 위임한다. 새API/DB/권한의미0, RED→GREEN/직접입력조회보존/POST0·영향회귀/type/diff/독립검수 뒤 통합. WI UI14_BACKUP_POLICY_SELECTION_BINDING_WI_20261115.md.
+
+- UI14 선택참조결박 제품1/시험1 동결·쓰기반환/live0. 기존fullref검사에목록ref전달, 불일치상세/개정차단·직접입력유지. 수행자RED2P1F→GREEN18P0F0SKIP/type0/diff0, Main4P0F0SKIP exit0 1205.9811ms(bebcf9). 초기WebCrypto정착시험준비0P3F분리·기준완화0. 실제브라우저/DB/백업/Agent미검증·전체체크불변, 독립검수진행중. 결과서 UI14_BACKUP_POLICY_SELECTION_BINDING_RESULT_20261115.md.
+
+- UI14 동결2파일 독립spec/quality C0/I0/M0·제출지문일치 확인. Main 검수수용. 기존복구/실제제외 유지하며 source통합진행.
