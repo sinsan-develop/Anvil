@@ -45,3 +45,27 @@ test('ACK 저장 집합은 신규에서 줄지 않고 과거 ACK는 최신 저�
  const s2=new m.NormalObservationSpool(j2,scope,()=>now);await s2.acceptAck(bad);
  await assert.rejects(s2.acceptAck(a));assert.deepEqual(await s2.latestAck(),bad);
 });
+
+
+test('sync 한 번의 200건 ACK는 원 201번째 ref coverage가 아니며 다음 한 번만 나머지를 보낸다',async()=>{
+ const j=ramJournal(),s=new m.NormalObservationSpool(j,scope,()=>now);let last:any;
+ for(let i=0;i<201;i++)last=await s.record(event());
+ const fixed=await s.coverage(last);assert.equal(fixed.sequence,201);assert.equal(fixed.covered,false);
+ const all=[...(await s.batch()).events,...(await s.batch(200)).events],aid=randomUUID();let calls=0,digest=hash([]),through=0;
+ const client={async prepareObservations(body:any){return body;},async send(body:any){calls++;assert.equal(body.events.length,calls===1?200:1);
+  for(const e of body.events){assert.equal(e.sequence,++through);digest=hash({previous:digest,eventHash:hash(e)});}
+  const snapshot={execution:scope,highestContiguous:through,maxSequence:through,contiguousDigest:digest,gaps:[],storedCount:through,writerReleaseVerified:false,executionAuthorized:false,dispatchPerformed:false,recordedAt:new Date(now).toISOString()};
+  return{executionAuthorized:false,ack:{ref:{id:aid,version:calls,contentHash:hash(snapshot)},snapshot}};
+ }};
+ await s.sync(client as any,new AbortController().signal);assert.equal(calls,1);assert.equal((await s.coverage(last)).covered,false);
+ await s.sync(client as any,new AbortController().signal);assert.equal(calls,2);assert.equal((await s.coverage(last)).covered,true);assert.equal(all.length,201);
+ await assert.rejects(s.coverage({...last,contentHash:'b'.repeat(64)}));
+});
+
+
+test('coverage의 getter/proxy ref는 실행하지 않고 거절한다',async()=>{
+ const s=new m.NormalObservationSpool(ramJournal(),scope,()=>now);let reads=0;
+ await assert.rejects(s.coverage(Object.defineProperty({...ref},'id',{enumerable:true,get(){reads++;return id;}})));
+ await assert.rejects(s.coverage(new Proxy({...ref},{getPrototypeOf(){reads++;return Object.prototype;}})));
+ assert.equal(reads,0);
+});

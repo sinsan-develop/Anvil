@@ -6,6 +6,8 @@
 - 현재 SEND 내구 수신: 전용 수신·시도·permit 기록8경로 source 검수 완료. 독립 I1(부분 사이 만료 검사)을 보정해 최종 C0/I0/M0, Main 최종16P·PR118 통합. 실제 파일 내구성·DB·Agent·wire/cursor는 미완료.
 - 최신 통합: PR119/main `62a0e16a` local/private exact·clean·merged SEND wire RAM smoke1P 확인. 서버 SEND·실행기 자료 소비·내구 수신/시도 source를 통합했다. SEND 내부 전달 연결6경로는 독립 C0/I0/M0·최종49P/Main22P로 source 검수 완료·PR119 통합이며 실제 Agent/DB·전체계획 미완료.
 
+- 혼합 SEND polling·관측 ACK·cursor: source10경로 검수 완료(Primary57P·Main12P·독립 C0/I0/M0), 통합 준비. 실제 DB/Agent 및 전체 인수 미완료. STOP A안은 직접 채택됐으며 다음 별도 구현이다.
+
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
 - 이전 통합 기준선: `main` `12f4b58a7111c400bbc7a4c98f103a7ad9653831`(PR114). normal 회수 계약 직접 채택·source 검수·통합 및 local/private 동기화·merged RAM smoke 1P를 확인했다. 후속 `codex/av3-fn08-normal-stop-contract`에서 normal 중지 종단의 원 세션 권위·제어 호출선·공개 응답 형상을 구체화 중이다.

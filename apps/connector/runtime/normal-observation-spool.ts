@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto';
+import {isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {cloneV1,recordV1,refV1,hashV1,isoV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import type {NormalJournalStore,NormalLocalScope} from './normal-start-file-store.ts';
@@ -96,6 +97,18 @@ export class NormalObservationSpool{
   return this.#withEvents(events=>this.#store.exclusive('acks',async tx=>{
    const rows=await tx.read();return rows.length?this.#ack(rows.at(-1),events):null;
   }));
+ }
+ /** 현재 원장 끝을 고정하거나 이미 고정한 원 관측 ref까지의 연속 ACK를 확인한다. 전송/권한 발급은 없다. */
+ async coverage(required?:Ref){
+  if(required!==undefined&&(isProxy(required)||!refV1(required)))fail();
+  const ref=required===undefined?undefined:cloneV1(required);
+  return this.#store.exclusive('observations',async tx=>{
+   const rows=this.#rows(await tx.read()),events=rows.map(r=>r.snapshot.event),target=ref===undefined?rows.at(-1):rows.find(r=>same(r.ref,ref));
+   if(ref!==undefined&&!target)fail();
+   const latest=await this.#store.exclusive('acks',async a=>{const saved=await a.read();return saved.length?this.#ack(saved.at(-1),events):null;});
+   const sequence=target?.snapshot.sequence??0,highestContiguous=latest?.snapshot.highestContiguous??0;
+   return{ref:target?cloneV1(target.ref):null,sequence,highestContiguous,covered:highestContiguous>=sequence,executionAuthorized:false as const,dispatchPerformed:false as const};
+  });
  }
  /** 명시 호출 1회당 POST 1회. 불명은 자동 재송신하지 않고 같은 로컬 events를 보존한다. */
  async sync(client:NormalProtectedPostClient,signal:AbortSignal){

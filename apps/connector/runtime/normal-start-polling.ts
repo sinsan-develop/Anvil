@@ -1,3 +1,5 @@
+import {NormalInstructionCoordinator,type NormalInstructionWirePort} from './normal-instruction-coordinator.ts';
+import {receiveNormalInstruction} from './normal-instruction-intake.ts';
 import {NormalStartCoordinator,type NormalStartPorts} from './normal-start-coordinator.ts';
 import {receiveNormalStart} from './normal-start-intake.ts';
 import type {NormalProtectedGetClient} from './normal-protected-get-client.ts';
@@ -7,6 +9,7 @@ import type {NormalCommandPage} from './normal-start-material-consumer.ts';
 export interface NormalPollingClients{get:NormalProtectedGetClient;post:NormalProtectedPostClient;expiresAt:string}
 export interface NormalStartPollingOptions{
  clients:NormalPollingClients;start:Omit<NormalStartPorts,'post'>;
+ instruction?:Omit<ConstructorParameters<typeof NormalInstructionCoordinator>[0],'post'>&{wire:NormalInstructionWirePort};
  /** 로컬 소유자 변경 감지용. 서버 grant/current 검사를 대신하지 않는다. */
  owner:()=>string;deadline:number;maxPages:number;idleMs:number;
  /** 호출자가 명시 renew를 호출할 때만 사용한다. 불명 자동 복구 포트가 아니다. */
@@ -25,7 +28,7 @@ export class NormalStartPolling{
   if(typeof p?.owner!=='function'||typeof p.start?.clock!=='function'||!Number.isSafeInteger(p.start.timeoutMs)||p.start.timeoutMs<1||p.start.timeoutMs>10000||!Number.isSafeInteger(p.deadline)||
    !Number.isSafeInteger(p.maxPages)||p.maxPages<1||p.maxPages>10000||!Number.isSafeInteger(p.idleMs)||p.idleMs<1||p.idleMs>10000||
    p.renew!==undefined&&typeof p.renew!=='function')throw Error('NORMAL_POLL_CONFIG_INVALID');
-  this.#p={...p,start:{...p.start}};this.#clients=this.#validate(p.clients);this.#owner=p.owner();
+  this.#p={...p,start:{...p.start},...(p.instruction?{instruction:{...p.instruction}}:{})};this.#clients=this.#validate(p.clients);this.#owner=p.owner();
   if(typeof this.#owner!=='string'||!this.#owner||this.#owner.length>256)throw Error('NORMAL_POLL_OWNER_REQUIRED');
  }
  #validate(c:NormalPollingClients){
@@ -74,6 +77,16 @@ export class NormalStartPolling{
  #result(state:State,pages:number,commands:number,reason:State|string=state){return{state,reason,pages,commands,cursor:{...this.#cursor},
   // NEEDS_RENEWAL은 새 operation의 여유 부족도 포함한다. renew는 이 실제 만료 시각 전에는 거절한다.
   renewalNotBefore:this.#clients.expiresAt,executionAuthorized:false as const,agentSuccessVerified:false as const};}
+ /** 각 POST는 기존 sync의 1회 계약을 지킨다. 고정한 원 관측 끝까지 단조 진전한 ACK만 받는다. */
+ async #syncThrough(client:NormalProtectedPostClient,signal:AbortSignal){
+  const spool=this.#p.start.spool,target=await this.#call(()=>spool.coverage(),signal,true,true);let current=target;
+  for(let batches=0;!current.covered;batches++){
+   if(batches>=10000||!target.ref)throw Error('OBSERVATION_NO_PROGRESS');
+   await this.#call(s=>spool.sync(client,s),signal,true,true);
+   const next=await this.#call(()=>spool.coverage(target.ref!),signal,true,true);
+   if(next.sequence!==target.sequence||next.highestContiguous<=current.highestContiguous)throw Error('OBSERVATION_NO_PROGRESS');current=next;
+  }
+ }
  async run(signal:AbortSignal){
   if(this.#busy)throw Error('NORMAL_POLL_BUSY');if(!(signal instanceof AbortSignal))throw Error('NORMAL_POLL_SIGNAL_REQUIRED');
   if(this.#unknown)return this.#result('UNKNOWN',0,0);
@@ -87,13 +100,29 @@ export class NormalStartPolling{
     if(!Array.isArray(page.items)||page.items.length>50||typeof page.hasMore!=='boolean'||typeof page.nextCursor!=='string'||!page.nextCursor||page.nextCursor.length>4096)throw Error('PAGE_INVALID');
     let sequence=this.#cursor.afterSequence;
     for(const item of page.items){
-     if(!Number.isSafeInteger(item.sequence)||item.sequence<=sequence||item.envelope.operation!=='START_SESSION')throw Error('PAGE_INVALID');
-     await this.#call(s=>receiveNormalStart(clients.get,this.#p.start.intake,item,page.proofResultRef,s),signal,true,true);
-     const coordinator=new NormalStartCoordinator({...this.#p.start,post:clients.post});
-     const result=await this.#call(s=>coordinator.start(item.envelope,s),signal,true,true);
-     if(result.state!=='RESPONSE_RECORDED')this.#unknown=true;
-     await this.#call(s=>this.#p.start.spool.sync(clients.post,s),signal,true,true);
-     if(result.state!=='RESPONSE_RECORDED'){this.#unknown=true;return this.#result('UNKNOWN',pages,commands,'START_UNKNOWN');}
+     if(!Number.isSafeInteger(item.sequence)||item.sequence<=sequence)throw Error('PAGE_INVALID');
+     let state:string;
+     if(item.envelope.operation==='START_SESSION'){
+      await this.#call(s=>receiveNormalStart(clients.get,this.#p.start.intake,item,page.proofResultRef,s),signal,true,true);
+      const coordinator=new NormalStartCoordinator({...this.#p.start,post:clients.post});
+      state=(await this.#call(s=>coordinator.start(item.envelope,s),signal,true,true)).state;
+     }else if(item.envelope.operation==='SEND_INSTRUCTION'&&this.#p.instruction){
+      const ports=this.#p.instruction,{wire,...configuration}=ports,coordinator=new NormalInstructionCoordinator({...configuration,post:clients.post});
+      let history=await this.#call(s=>coordinator.history(item,s),signal,true,true);
+      if(history.state==='NOT_RECEIVED'){
+       await this.#call(s=>receiveNormalInstruction(clients.get,ports.intake,item,page.proofResultRef,s),signal,true,true);
+       history=await this.#call(s=>coordinator.observations(item.envelope,s),signal,true,true);
+      }
+      state=history.state;
+      if(state==='NOT_PREPARED'){
+       const prepared=await this.#call(s=>coordinator.prepare(item.envelope,s),signal,true,true);state=prepared.state;
+       if(state==='PERMIT_RECORDED')state=(await this.#call(s=>coordinator.dispatch(item.envelope,prepared,ports.wire,s),signal,true,true)).state;
+      }
+      const collected=await this.#call(s=>coordinator.recordObservations(item.envelope,this.#p.start.spool,s),signal,true,true);state=collected.state;
+     }else throw Error('PAGE_INVALID');
+     if(state!=='RESPONSE_RECORDED')this.#unknown=true;
+     await this.#syncThrough(clients.post,signal);
+     if(state!=='RESPONSE_RECORDED'){this.#unknown=true;return this.#result('UNKNOWN',pages,commands,item.envelope.operation==='START_SESSION'?'START_UNKNOWN':'SEND_UNKNOWN');}
      commands++;sequence=item.sequence;
     }
     if(!page.items.length)await this.#call(s=>this.#p.start.spool.sync(clients.post,s),signal,true,true);
