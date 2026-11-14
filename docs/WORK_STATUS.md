@@ -19609,3 +19609,15 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - UI09 정책고정조회 source2파일 잠정검수: RED버튼부재1F→Primary43P0F0SKIP/type0, Main정확신규11P0F0SKIP exit0 2492.5296ms. 최초Main패턴선택0은증거제외. 독립C0/I0/M1은APPLIED를기록당시유효상태로과장한문구를같은Primary에게한정보완지시. 실제환경/전체체크불변·최종반환전.
 
 - UI09 M1문구보완독립재검수C0/I0/M0·제품/시험역치환원지문불변확인. 저장된정책상태로표시·양성1P만재검증. 최종제품81FA2B6A…F9A8402D/시험38A0E03B…BCD08C8·실제제외/전체미완료유지, source통합진행.
+
+- PR127/Broker43649549484 success/main50d1aed611886ca3053d336adf1c9960eff3948a local/private동일clean. UI09sourcef1808bf2 복구ref pr-127-head보존·완료branch/tag/tracking정상정리. merged고정정책양성1P0F0SKIP exit0 2383.0824ms(1f2a5d). 다음UI12제어권인수후 기존승인후속조회·화면소비누락을 같은Primary읽기조사로위임. codewrite아직0/실제제외유지·전체계획미완료.
+
+- UI12 확정수락후별도현재GET실패시역사수락결과재조회누락을Main/Primary대조. 기존acceptanceResult GET를보존CONFIRMED/ACCEPT원명령·요약에결박하는제품1/시험1을기존Primary단일writer위임. 재POST/CAS/현재제어갱신0·실제제외유지. WI UI12_CONFIRMED_ACCEPTANCE_REQUERY_WI_20261115.md.
+
+- UI12 재현중동일빠른state503내부관측3회로추가무목적반복중지. Main79~95확인·Primary traceRED0ba0e2: CONFIRMED CAS뒤stateGET오류가이전livebuffer로UNKNOWN재CAS가능. 원확정보존/재POST0기존목표내WI r2로후속읽기오류분리같은Primary지시. 정식FAILURE_REPORT3회/인수trigger아님·제품/시험2경로·실제제외불변.
+
+- UI12직접/기존7P/type0뒤필수인접4파일25P1F. 유일실패는기준main부터실제이름과다른pagination미구현버튼selector로Main확인. WI r3에시험1경로추가/selector1개만교정·disabled원단언불변을Primary허용. 제품지문고정/추가제품쓰기0·실제제외유지.
+
+- UI12최종제품1/시험2 동결·쓰기반환/live0. Main확정수락즉시/지연/명시조회3P0F0SKIP exit0 2425.7277ms(9c02b8). Primary직접7P/type0·인접25P1F의baseline selector1개교정후해당반례1P0F0SKIP,기준완화0. 독립최종검수중·실제제외/전체미완료유지. 결과서 UI12_CONFIRMED_ACCEPTANCE_REQUERY_RESULT_20261115.md.
+
+- UI12제품/주시험독립specquality C0/I0/M0·제출지문일치. 인접시험은Main이selector1개외변경없음diff확인,실제기준버튼과일치·disabled단언불변. Main검수수용/source통합진행.
