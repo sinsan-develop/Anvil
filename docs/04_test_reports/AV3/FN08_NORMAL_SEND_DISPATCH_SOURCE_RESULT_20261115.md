@@ -77,3 +77,7 @@
 | `apps/server/modules/executions/instruction-parts-plan.ts` | `83576195FE199DD8311B7E5E2F724034872C54B8FCDA2B7D544D1CCDDBCEA430` |
 | `tests/unit/FN08/instruction-parts-plan.test.ts` | `153BC9F63D6C9B443AE99D517C795A94DCEC8B23278D3289A917F6402874589D` |
 | `tests/unit/FN08/normal-instruction-dispatch-fixture.ts` | `74737A512879B22D7059071BD4A80045020C41DD8C05744E7FB1386C3AE87423` |
+
+## PR115 병합 후 시험 초기화 보정
+
+최종 page 경계시험 추가 시 static import가 RAM FS 설치보다 ArtifactStore를 먼저 평가한 회귀가 있었다. 병합 후 단독 smoke는 ENOENT로 실패했다(3954be). 위 37P는 해당 추가 전 증거이며 최종 파일 전체의 통과로 해석하지 않는다. 제품과 기대값을 유지하고 해당 import를 경계시험 내부 dynamic import로 이동했다. 보정 후 수행자 직접2파일39P/0F/0SKIP(2b6a1f), Main 단독smoke1P/0F/0SKIP(ae2dc8)를 확인했다. journey 최종 working-byte SHA256은 5B6A8BA24BA89B8C86065F393F46346DFB75AFEDE3CF9E791ED8297EBDAA9D36로 앞 지문표의 해당 행을 대체한다. 실제 파일 생성·DB·Agent 실행은 없다.

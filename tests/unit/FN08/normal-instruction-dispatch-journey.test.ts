@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {fitPage,readPageWindow} from '../../../apps/server/modules/executions/normal-command-pages.ts';
 import {pathToFileURL} from 'node:url';
 import {normalInstructionFixture,normalInstructionDeliveryFixture} from './normal-instruction-dispatch-fixture.ts';
 
@@ -55,7 +54,9 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   }finally{await h.close();}
  });
 
- test('혼합 50/51 page 입력의 순수 건수 경계는 고유 항목과 순번 공백을 보존한다',()=>{
+ test('혼합 50/51 page 입력의 순수 건수 경계는 고유 항목과 순번 공백을 보존한다',async()=>{
+  // fixture의 MemoryFS 설치가 끝난 뒤 제품 의존성을 평가한다. static import는 원 fs를 먼저 결박할 수 있다.
+  const {fitPage,readPageWindow}=await import('../../../apps/server/modules/executions/normal-command-pages.ts');
   // 이 입력은 fitPage의 크기/건수 계산용 RAM 모형이다. DB graph·실제 50 SEND 생산·cursor 인증 증거가 아니다.
   const rows=Array.from({length:51},(_,i)=>({id:randomUUID(),sequence:String(i*3+1),materials:{groups:[{kind:i===0?'CONTEXT_BUNDLE':'INSTRUCTION',parts:[{materialId:randomUUID()}]}]}}));
   assert.equal(new Set(rows.map(r=>r.id)).size,51);assert.equal(new Set(rows.map(r=>r.materials.groups[0]!.parts[0]!.materialId)).size,51);
