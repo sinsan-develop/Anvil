@@ -19348,3 +19348,7 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Primary journal 독립 조사: Kernel의 RequireDurabilitySupport가 최초 mutation 전에 차단하고 아래 concrete source는 이미 존재한다. 마지막 CLOSED가 온전히 남은 정상 종료와 flush/close/응답 불명은 새 host에서 동일 bytes로 보일 수 있으나 채택 계약은 불명 잠금의 재시작 차단을 요구한다. 파일 Flush만으로 원 호출 결과 수신이나 부모 metadata 정착을 증명하지 않는다. 정상 재시작으로 열려면 해제 확정 의미 또는 별도 인정 원천 결정이 필요하며 guard는 유지한다. 최초만 허용하는 축소안이 요구를 만족하는지도 별도 대조 중이다. 실환경/제품쓰기0.
 
 - Primary 추가 대조: 최초 exclusive root capability를 같은 owner에서 유지하면 최초 양성 알고리즘은 원리상 가능하지만, 현재 Host의 IssueFreshRoot 발급 kernel 종료 후 새로운 journal kernel 열기 때문에 첫 시도도 기존 lock에 걸린다. 원 capability의 private 소유권 인계와 REGISTERED/STORED 선행을 확인해야 한다. 이 부분의 source 보완 가능성을 단일Primary가 읽기 추적하며, 독립 검토자는 부모 metadata 정착의 공식 API 보장을 조사한다. 최초만 허용하는 방식을 전체 재시작 요구의 대체물로 제출하지 않는다. 현재 writer0/실환경0.
+
+- journal 최초 전용 보완 최종 판정: 실제 owner는 KEY_READY 후 최초 host를 닫고, 별도 ISSUE host에서 REGISTERED/STORED를 저장한 뒤 다시 닫으며 journal은 이후 새 operation/helper에서 열린다. 같은 JS owner는 원 native host/PID/10초수명과 다르다. private capability 인계만 추가하면 제품 양성경로 없이 합성 양성만 생기므로 착수하지 않는다. 원host수명변경이나 불명 해제와 구별되는 지속 인계 근거는 새 의미 결정이 필요하다.
+- 독립 공식 API 조사: 현 BACKUP_SEMANTICS|OPEN_REPARSE_POINT 및 directory FlushFileBuffers만으로 parent namespace crash 정착 보장을 확정하지 못했다. NtFlushBuffersFileEx Flags0는 후속 조사 단서지만 현 caller/handle의 보장 전체는 미확인이다. Windows에 수단 자체가 없다고 단정하지 않으며 unsupported 차단을 유지한다.
+- 이번 독립 조사 담당자 모두 결과 반환·live handle0. 제품 writer0, 실제환경 실행0. 회수 응답 계약 직접 답변은 아직 없고 반복 질문하지 않는다. 전체목표 active·미완료이며 완료 처리/범위 축소하지 않는다. 현재 검토한 독립 후보들은 기존 완료 또는 미채택 의미/권위 선행으로 즉시 제품쓰기를 시작하지 않았다.
