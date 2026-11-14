@@ -146,3 +146,5 @@
 
 
 - 2026-11-15 FN07 READ4: 직접 추가1회 승인에 따라 기존 Primary가 고정 SDK 원문 GET1회 수행했으나 ENOTFOUND(getaddrinfo ENOTFOUND registry.npmjs.org)로 실패. attempted=true/fetches=1/requestClosed=true/live0/sourceAvailable=false, 1회 소진. READ2/3 포함 동일 DNS 원인3회이며 재시도·환경변경0. 실제 DB·권한·키·서비스·Agent0, SDK 계약 신규 확인0·전체 완료체크 불변. 근거: docs/04_test_reports/AV3/FN07_PINNED_SDK_HOOK_READ4_RESULT_20261115.md. Main은 PMO에 제약·지원사항을 전달하며 완료된 STOP 소스 검증은 반복하지 않는다.
+
+- 2026-11-15 UI14 수동 백업정책 목록선택의fullref누락 보완: 다른유효본문차단/개정불가·직접입력보존. Primary18P/type0·Main4P·독립C0/I0/M0. 소스/RAM행동검수이며 실제브라우저/DB/백업미검증·전체체크불변.

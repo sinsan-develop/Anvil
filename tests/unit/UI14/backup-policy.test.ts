@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import type {ApiClient} from '../../../apps/web/src/api/client.ts';
 
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
 class MemoryNode{
@@ -43,7 +44,8 @@ async function fixture(){
  props.onChange=(expected:any,next:any)=>{if(buffer!==expected)return false;buffer=next;props={...props,buffer:next};root.render(ui.React.createElement(ui.BackupPolicyPanel,props));return true;};
  const click=async(label:string)=>{const n=button(label);assert(!n.disabled,label);await ui.React.act(async()=>n.dispatchEvent({type:'click',button:0,bubbles:true}));};
  const change=async(label:string,value:string|boolean)=>{const n=nodes().find(n=>n.getAttribute('aria-label')===label)!;assert(n,label);const key=Object.keys(n).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>((n as any)[key].onChange({target:{value,checked:value}})));};
- await render();return{root,api,calls,responses,lost:()=>lost,render,seed:async(value:any)=>{buffer=value;await render({...props,buffer:value});},props:()=>props,button,click,change,buffer:()=>buffer,text:()=>container.textContent,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ const submitFixed=async()=>{const form=nodes().find(n=>n.tagName==='FORM');assert(form);await ui.React.act(async()=>form.dispatchEvent({type:'submit',bubbles:true}));};
+ await render();return{root,api,calls,responses,lost:()=>lost,render,seed:async(value:any)=>{buffer=value;await render({...props,buffer:value});},props:()=>props,button,click,change,submitFixed,buffer:()=>buffer,text:()=>container.textContent,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 test('실제 React 패널은 별도 정책 초안과 미완성 입력을 보존하며 명시 조회 전 GET/POST0',async()=>{const f=await fixture();try{assert.equal(f.calls.length,0);await f.click('새 수동 정책 작성');await f.change('수동 정책 이유','[');await f.change('수동 정책 한도 bytes','x');assert.equal(f.buffer().draft.reason,'[');assert.equal(f.buffer().draft.maxBytes,'x');assert.equal(f.calls.length,0);await f.click('수동 정책 목록 조회');assert.equal(f.calls.length,1);assert(f.calls.every(c=>c.method==='GET'));assert.equal(f.buffer().draft.reason,'[');}finally{await f.close();}});
 test('느린 목록 JSON은 실제client/transport 교체와 닫힌 owner 이후 버리며 새 명시 조회를 회복한다',async()=>{for(const mode of ['CLIENT','TRANSPORT','ABA']){const f=await fixture();let resolve!:(v:any)=>void,started=false;const gate=new Promise(r=>resolve=r);try{f.responses.next=async()=>{const r=Response.json({});r.json=()=>{started=true;return gate;};return r;};await f.click('수동 정책 목록 조회');assert(started);const props=f.props(),old=f.api.transport,newTransport=async()=>Response.json({items:[],hasMore:false,nextCursor:null,observedAt:new Date().toISOString()});if(mode==='CLIENT')await f.render({...props,client:new ui.ApiClient(newTransport)});else{f.api.transport=newTransport;await f.render();if(mode==='ABA'){f.api.transport=old;await f.render();}}resolve({items:[],hasMore:false,nextCursor:null,observedAt:new Date().toISOString()});await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});assert(!f.button('수동 정책 목록 조회').disabled);assert(f.calls.every(c=>c.method==='GET'));}finally{resolve?.({});await f.close();}}});
@@ -51,6 +53,58 @@ test('느린 목록 JSON은 실제client/transport 교체와 닫힌 owner 이후
 function policyPending(api:any){const p={policy:{targetProtectedRef:{id:id(10),version:1,contentHash:'a'.repeat(64)},encryptionKeyRef:{id:id(11),version:1,contentHash:'a'.repeat(64)},retentionPolicyRef:{id:id(12),version:1,contentHash:'a'.repeat(64)},verificationPolicyRef:{id:id(13),version:1,contentHash:'a'.repeat(64)},include:{documents:true,conversations:false,knowledge:false,decisions:false,plans:false,results:false,artifacts:false,sourceSelection:{kind:'NONE'}},schedule:'MANUAL',maxBytes:1024},previousRef:null,reason:'정확 합성 정책 원명령'},b=ui.policyApi.newBackupPolicyBuffer(api,pid,session),command={schemaVersion:1,projectId:pid,commandId:id(30),clientId:session.clientId,controlGeneration:1,operation:'saveBackupPolicy',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:p};b.pending={command,body:canonicalJson(command),state:'PREPARED',receipt:null,wasUnknown:false,approvalEligible:false};return b;}
 test('실POST 도달 후 문맥전환은 부모 buffer UNKNOWN/원명령을 유지하고 복귀시 자동POST0·동일명령 재확인만 허용한다',async()=>{const f=await fixture();let release!:(r:Response)=>void,post=0;try{f.api.transport=async(path:any,options:any)=>{if(options?.method==='POST'){post++;return new Promise<Response>(r=>release=r);}return Response.json({id:pid,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:1,status:'HELD'}});};await f.seed(policyPending(f.api));const body=f.buffer().pending.body;await f.click('같은 수동 정책 명령 저장·재확인');assert.equal(post,1);assert.equal(f.buffer().pending.state,'UNKNOWN');assert.equal(f.buffer().uncertain,true);const props=f.props();await f.render({...props,session:{...session,user:{id:id(99)}}});release(Response.json({code:'VERSION_CONFLICT'},{status:409}));await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});await f.render({...props,buffer:f.buffer()});assert.equal(post,1);assert.equal(f.buffer().pending.body,body);assert.match(f.text(),/결과 미확인/);assert(!f.button('같은 수동 정책 명령 저장·재확인').disabled);}finally{release?.(Response.json({code:'VERSION_CONFLICT'},{status:409}));await f.close();}});
 test('실POST 명확거절은 원명령 보존·명시 수정만 허용하고 수정 전후 자동POST0',async()=>{const f=await fixture();let post=0;try{f.api.transport=async(_path:any,options:any)=>{if(options?.method==='POST'){post++;return Response.json({code:'VERSION_CONFLICT'},{status:409});}return Response.json({id:pid,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:1,status:'HELD'}});};await f.seed(policyPending(f.api));await f.click('같은 수동 정책 명령 저장·재확인');assert.equal(post,1);assert.equal(f.buffer().pending.state,'REJECTED');assert.equal(f.buffer().uncertain,false);await f.click('정책 거절 확인 후 수정');assert.equal(f.buffer().pending,null);assert.equal(post,1);}finally{await f.close();}});
+
+function policyDetail(api:ApiClient, reason:string){
+ const policy=policyPending(api).pending.command.payload.policy;
+ const snapshot={policy,reason}, policyId=id(45), version=1, observedAt='2026-11-15T01:00:00.000Z';
+ const ref={id:policyId,version,contentHash:contentHash(canonicalJson({projectId:pid,id:policyId,version,snapshot,previousRef:null}))};
+ return {ref,snapshot,previousRef:null,createdAt:observedAt,commandRecordId:id(46),clientCommandId:id(47),
+  current:{eligible:true,reasonCodes:[],observedAt},
+  preview:{includedGroups:['documents'],excludedGroups:ui.policyApi.policyGroups.filter((g:string)=>g!=='documents'),sourceIncluded:false,backupCreated:false,executionAuthorized:false}};
+}
+
+for(const scenario of ['목록 일치','목록 불일치','직접 입력'] as const){
+ test('정책 고정 조회 · '+scenario,async()=>{
+  const f=await fixture();
+  try{
+   const listed=policyDetail(f.api,'목록에서 선택한 정책');
+   const detail=scenario==='목록 일치'?listed:policyDetail(f.api,'다른 내용의 정책');
+   const path='/api/v1/projects/'+pid+'/backup-policies';
+   const settled=async()=>{
+    const deadline=performance.now()+3000;
+    while(f.button('수동 정책 목록 조회').disabled){
+     assert.ok(performance.now()<deadline,'정책 조회 응답 대기');
+     await ui.React.act(async()=>{await new Promise(resolve=>setImmediate(resolve));});
+    }
+   };
+   if(scenario==='직접 입력'){
+    await f.change('정책 ID',detail.ref.id);
+    f.responses.next=async()=>Response.json(detail);
+    await f.submitFixed();
+   }else{
+    f.responses.next=async()=>Response.json({items:[listed],hasMore:false,nextCursor:null,observedAt:listed.createdAt});
+    await f.click('수동 정책 목록 조회');
+    await settled();
+    f.responses.next=async()=>Response.json(detail);
+    await f.click(listed.ref.id+' · v1');
+   }
+   await settled();
+   const detailGet={path:path+'/'+listed.ref.id+'/versions/1',method:'GET'};
+   assert.deepEqual(f.calls,scenario==='직접 입력'?[detailGet]:[{path:path+'?limit=50',method:'GET'},detailGet]);
+   if(scenario==='목록 불일치'){
+    assert.notEqual(listed.ref.contentHash,detail.ref.contentHash);
+    assert.match(f.text(),/RESPONSE_INVALID/);
+    assert.doesNotMatch(f.text(),/다른 내용의 정책|보관 정책 개정 작성/);
+    assert.equal(f.buffer(),null);
+   }else{
+    assert.ok(f.text().includes(detail.snapshot.reason));
+    await f.click('보관 정책 개정 작성');
+    assert.deepEqual(f.buffer().draft.previousRef,detail.ref);
+   }
+   assert.ok(f.calls.every(c=>c.method==='GET'));
+  }finally{await f.close();}
+ });
+}
 
 test('UI08 실제 요청저장→전체원문표시→별도결정은 정책 명령을 자동 소비하지 않는다',async()=>{
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container),calls:{operation:string;body:any}[]=[];
