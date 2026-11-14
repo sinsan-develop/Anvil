@@ -129,3 +129,5 @@
 - 2026-11-15 PR114/main12f4b58a normal회수source통합·동기화·mergedRAM1P·완료branch정리. 실제DB/회수효과/Agent전체여정은미완료. 다음은normal중지종단의계약/현재성/전달선행구체화이며전체완료체크불변.
 
 - 2026-11-15 normal Query 생성 선행 대조: 기존 START permit 재사용, normal SEND 및 보호 실행 구성·SID/child 결박 미완료. 고정 SDK 추가읽기는 이전 DNS 실패 후 새 답변 대기이며 실제 실행 승인과 분리한다. 전체 완료 체크 변경 없음.
+
+- 2026-11-15 SDK READ3은DNS실패·승인1회소진,신규SDK계약미확인. normalSEND서버후보는독립C0/I0/M0·직접채택답변대기,아직제품구현아님. 전체완료체크불변.
