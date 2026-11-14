@@ -194,6 +194,7 @@ export async function normalInstructionDurableFixture(mixed=false,ttl=Infinity,i
  const {NormalInstructionIntake,receiveNormalInstruction}=await import('../../../apps/connector/runtime/normal-instruction-intake.ts');
  const {NormalInstructionCoordinator}=await import('../../../apps/connector/runtime/normal-instruction-coordinator.ts');
  const page=await f.get.send(await f.get.prepareCommandPage({afterSequence:0,waitMs:0},f.signal),f.signal),start=page.items[0]!,item=page.items[1]!;
+ assert.equal(start.envelope.operation,'START_SESSION');assert.notEqual(start.materials,null);assert(item.materials!==null);assert.equal(item.envelope.operation,'SEND_INSTRUCTION');
  const localScope={projectId:f.scope.projectId,executionId:f.scope.executionId,executionGeneration:f.scope.executionGeneration},fs=memoryFiles(),store=new NormalStartFileStore(root,localScope,fs.fs);
  const expected={context:start.envelope.context,executorRegistrationRef:start.envelope.executorRegistrationRef};
  const intake=new NormalInstructionIntake(store.instructionIntake(),expected,f.clock);

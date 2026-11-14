@@ -8,6 +8,8 @@
 
 - 혼합 SEND polling·관측 ACK·cursor: source10경로 검수 완료(Primary57P·Main12P·독립 C0/I0/M0), PR120/main38388a92 통합·merged RAM1P. 실제 DB/Agent 및 전체 인수 미완료. STOP A안은 직접 채택됐으며 다음 별도 구현이다.
 
+- normal STOP: 대상 codec·GET/명령 보호거절·역사 저장 형상·STOP 전용 페이지/소비 source23경로 검수. 실제 CURRENT 생산자가 없어 GET/신규 저장412·SQL 신규쓰기false이며 정상 중지 기능은 미완료. 독립C0/I0/M0·Main서버7P/저장형상RAM page1P, 0098 미적용.
+
 **전체 작업계획 미완료.** 아래 체크는 준비 문서 수용 2건만 완료이며, 제품/실환경 인수는 42건이 남아 있다. 각 행은 기존 44항목 대조 결과와 PR72~74 변경분을 기준으로 한다. 코드·합성 검증과 실제 실행·사용자 인수를 구분한다.
 
 - 이전 통합 기준선: `main` `12f4b58a7111c400bbc7a4c98f103a7ad9653831`(PR114). normal 회수 계약 직접 채택·source 검수·통합 및 local/private 동기화·merged RAM smoke 1P를 확인했다. 후속 `codex/av3-fn08-normal-stop-contract`에서 normal 중지 종단의 원 세션 권위·제어 호출선·공개 응답 형상을 구체화 중이다.

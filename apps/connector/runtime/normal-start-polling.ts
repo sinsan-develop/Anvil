@@ -101,6 +101,8 @@ export class NormalStartPolling{
     let sequence=this.#cursor.afterSequence;
     for(const item of page.items){
      if(!Number.isSafeInteger(item.sequence)||item.sequence<=sequence)throw Error('PAGE_INVALID');
+     // STOP 소비는 별도 owner/내구시도 단위다. 자료 없는 projection으로 cursor나 실행을 진행하지 않는다.
+     if(item.materials===null)throw Error('PAGE_INVALID');
      let state:string;
      if(item.envelope.operation==='START_SESSION'){
       await this.#call(s=>receiveNormalStart(clients.get,this.#p.start.intake,item,page.proofResultRef,s),signal,true,true);

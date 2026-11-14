@@ -38,6 +38,7 @@ const longText='가'.repeat(21845)+'🙂'+('명시 지시🙂\n'.repeat(10000));
 for(const mediaType of ['text/plain;charset=utf-8','text/markdown;charset=utf-8'] as const)test('보호 GET 다부분 '+mediaType+' 원문과 UTF8 경계를 정확히 보존한다',async()=>{
  const f=await setup({text:longText,mediaType});try{
   const page=await f.client.send(await f.client.prepareCommandPage({afterSequence:0,waitMs:0},f.signal),f.signal),item=page.items[1]!;
+  assert(item.materials!==null);assert.equal(item.envelope.operation,'SEND_INSTRUCTION');
   assert(item.materials.groups[0]!.parts.length>=3);assert(item.materials.groups[0]!.parts.every(p=>p.utf8Bytes<=65536));
   assert.notDeepEqual(item.materials.groups[0]!.payloadRef,item.materials.groups[0]!.sourceRef);
   const result=await f.client.receiveInstruction(item,f.signal);assert.equal(result.text,longText);assert.deepEqual(Buffer.from(result.bytes),Buffer.from(longText));assert.equal(contentHash(result.bytes),item.materials.groups[0]!.contentHash);
@@ -49,6 +50,7 @@ for(const mediaType of ['text/plain;charset=utf-8','text/markdown;charset=utf-8'
 for(const fault of ['LOST','REVOKED','CORRECTION','QUARANTINE','EXPIRED','ABORT','WALL_BACK','MONO_BACK','MATERIAL_ID','SOURCE_REF','HASH','ENCODING'] as const)test('SEND 수신 '+fault+'은 원문 성공과 자동 후속 GET을 막는다',async()=>{
  const f=await setup({text:longText,mediaType:'text/plain;charset=utf-8'});try{
   const item=(await f.client.send(await f.client.prepareCommandPage({afterSequence:0,waitMs:0},f.signal),f.signal)).items[1]!;
+  assert(item.materials!==null);assert.equal(item.envelope.operation,'SEND_INSTRUCTION');
   const controller=new AbortController();f.mode.mono=10;
   if(fault==='LOST')f.mode.loseAt=2;
   if(['MATERIAL_ID','SOURCE_REF','HASH','ENCODING'].includes(fault))f.mode.mutate=value=>{if(value.material){if(fault==='MATERIAL_ID')value.material.materialId=item.envelope.commandId;if(fault==='SOURCE_REF')value.material.sourceRef=item.commandRef;if(fault==='HASH')value.material.contentHash='a'.repeat(64);if(fault==='ENCODING')value.material.bytes+='=';}};
@@ -73,6 +75,7 @@ for(const fault of ['LOST','REVOKED','CORRECTION','QUARANTINE','EXPIRED','ABORT'
 test('await 중 caller item 변조는 캡처한 원 명령/자료를 교체하지 못한다',async()=>{
  const f=await setup({text:longText,mediaType:'text/plain;charset=utf-8'});try{
   const item=(await f.client.send(await f.client.prepareCommandPage({afterSequence:0,waitMs:0},f.signal),f.signal)).items[1]!,original=structuredClone(item),calls=f.calls.length;
+  assert(item.materials!==null);assert.equal(item.envelope.operation,'SEND_INSTRUCTION');
   f.mode.afterPart=()=>{item.envelope.commandId='00000000-0000-4000-8000-000000000001';item.materials.groups[0]!.parts[1]!.materialId='00000000-0000-4000-8000-000000000002';};
   const received=await f.client.receiveInstruction(item,f.signal);assert.equal(received.text,longText);assert.equal(received.envelopeHash,original.envelope.envelopeHash);
   for(const call of f.calls.slice(calls).filter(c=>c.method==='GET'))assert(call.path.includes('/commands/'+original.envelope.commandId+'/materials/'));
@@ -81,8 +84,9 @@ test('await 중 caller item 변조는 캡처한 원 명령/자료를 교체하�
 test('START item 또는 다른 실행 item은 INSTRUCTION 수신을 시작하지 않는다',async()=>{
  const f=await setup();try{
   const page=await f.client.send(await f.client.prepareCommandPage({afterSequence:0,waitMs:0},f.signal),f.signal),before=f.calls.length;
-  await assert.rejects(f.client.receiveInstruction(page.items[0]!,f.signal),/NORMAL_GET_INPUT_INVALID/);
-  const cross=structuredClone(page.items[1]!);cross.envelope.context.executionGeneration++;const {envelopeHash,...unsigned}=cross.envelope;cross.envelope.envelopeHash=contentHash(canonicalJson(unsigned));
+  const start=page.items[0]!;assert(start.materials!==null);assert.equal(start.envelope.operation,'START_SESSION');
+  await assert.rejects(f.client.receiveInstruction(start,f.signal),/NORMAL_GET_INPUT_INVALID/);
+  const cross=structuredClone(page.items[1]!);assert(cross.materials!==null);assert.equal(cross.envelope.operation,'SEND_INSTRUCTION');cross.envelope.context.executionGeneration++;const {envelopeHash,...unsigned}=cross.envelope;cross.envelope.envelopeHash=contentHash(canonicalJson(unsigned));
   await assert.rejects(f.client.receiveInstruction(cross,f.signal),/NORMAL_GET_INPUT_INVALID/);assert.equal(f.calls.length,before);
  }finally{await f.h.close();}
 });

@@ -1,3 +1,5 @@
+import {types} from 'node:util';
+import {readNormalStopTargetV1,normalStopScopeRefV1,type NormalStopTargetV1} from '../../../contracts/runtime/normal-stop-target-v1.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {readDispatchEnvelopeV1,type DispatchEnvelopeV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
 import {arrayV1,cloneV1,hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
@@ -22,7 +24,9 @@ export interface NormalInstructionMaterialDescriptor{manifestRef:Ref;groups:Norm
 export interface NormalCommandPageItem{sequence:number;commandRef:Ref;envelope:DispatchEnvelopeV1;materials:NormalStartMaterialDescriptor|NormalInstructionMaterialDescriptor;
  /** 서버 고정 page receipt의 materialsDescriptorHash와 같은 방식(canonical JSON SHA256)으로 계산한 값 */
  materialsDescriptorHash:string}
-export interface NormalCommandPage{proofResultRef:Ref;items:NormalCommandPageItem[];nextCursor:string;hasMore:boolean;observedAt:string;expiresAt:string}
+export interface NormalStopCommandPageItem{sequence:number;commandRef:Ref;envelope:Extract<DispatchEnvelopeV1,{operation:'REQUEST_STOP'}>;materials:null;stopTarget:NormalStopTargetV1;materialsDescriptorHash:null}
+export type NormalPageItem=NormalCommandPageItem|NormalStopCommandPageItem;
+export interface NormalCommandPage{proofResultRef:Ref;items:NormalPageItem[];nextCursor:string;hasMore:boolean;observedAt:string;expiresAt:string}
 export interface NormalCommandPageScope{projectId:string;executionId:string;executionGeneration:number;afterSequence:number}
 export interface NormalMaterialReceived{proofResultRef:Ref;materialId:string;partIndex:number;bytes:Uint8Array;observedAt:string;expiresAt:string}
 
@@ -96,7 +100,7 @@ export function readNormalInstructionItem(item:unknown,now:number):NormalCommand
  if(item.materialsDescriptorHash!==digest(materials))fail('MATERIAL_DESCRIPTOR_INVALID');
  return {sequence:item.sequence,commandRef:cloneV1(item.commandRef),envelope,materials,materialsDescriptorHash:digest(materials)};
 }
-/** GET .../commands 응답. START/SEND만 각각의 닫힌 descriptor로 검산한다. */
+/** page projection 검산. STOP의 UUID namespace/로컬 부모 결박은 readNormalStopItem에서 추가 검산해야 한다. */
 export function readNormalCommandPage(raw:unknown,scope:NormalCommandPageScope,now:number):NormalCommandPage{
  if(!scopeOk(scope))fail('COMMAND_PAGE_SCOPE_INVALID');
  if(!recordV1(raw,['transport','proofResultRef','items','nextCursor','hasMore','observedAt','expiresAt','cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed'])||
@@ -105,13 +109,20 @@ export function readNormalCommandPage(raw:unknown,scope:NormalCommandPageScope,n
  if(Buffer.byteLength(canonicalJson(raw))>pageLimit)fail('COMMAND_PAGE_TOO_LARGE');
  let previous=scope.afterSequence,parts=0;
  const commands=new Set<string>(),records=new Set<string>(),materials=new Set<string>();
- const items=(raw.items as unknown[]).map((x):NormalCommandPageItem=>{
-  if(!recordV1(x,['sequence','commandRef','envelope','materials'])||!sequenceOk(x.sequence)||x.sequence<=previous||!refV1(x.commandRef)||
+ const items=(raw.items as unknown[]).map((x):NormalPageItem=>{
+  if(!x||typeof x!=='object'||types.isProxy(x)||!recordV1(x,['sequence','commandRef','envelope','materials',...(Object.hasOwn(x,'stopTarget')?['stopTarget']:[])])||!sequenceOk(x.sequence)||x.sequence<=previous||!refV1(x.commandRef)||
     records.has(x.commandRef.id))fail('COMMAND_PAGE_ITEM_INVALID');
   let envelope:DispatchEnvelopeV1;
   try{envelope=readDispatchEnvelopeV1(x.envelope,now);}catch{return fail('COMMAND_PAGE_ITEM_INVALID');}
-  if(!['START_SESSION','SEND_INSTRUCTION'].includes(envelope.operation)||envelope.context.projectId!==scope.projectId||envelope.context.executionId!==scope.executionId||
+  if(!['START_SESSION','SEND_INSTRUCTION','REQUEST_STOP'].includes(envelope.operation)||envelope.context.projectId!==scope.projectId||envelope.context.executionId!==scope.executionId||
     envelope.context.executionGeneration!==scope.executionGeneration||commands.has(envelope.commandId))fail('COMMAND_PAGE_ITEM_INVALID');
+  if(envelope.operation==='REQUEST_STOP'){
+   if(x.materials!==null||!Object.hasOwn(x,'stopTarget'))fail('COMMAND_PAGE_ITEM_INVALID');
+   const stopTarget=readStopTargetEnvelope(x.stopTarget,envelope);
+   previous=x.sequence;records.add(x.commandRef.id);commands.add(envelope.commandId);
+   return {sequence:x.sequence,commandRef:cloneV1(x.commandRef),envelope,materials:null,stopTarget,materialsDescriptorHash:null};
+  }
+  if(Object.hasOwn(x,'stopTarget'))fail('COMMAND_PAGE_ITEM_INVALID');
   const descriptor=envelope.operation==='SEND_INSTRUCTION'?readInstructionDescriptor(x.materials,envelope,materials):readDescriptor(x.materials,envelope,materials);
   parts+=descriptor.groups.reduce((n,g)=>n+g.parts.length,0);
   if(parts>maxPageParts)fail('COMMAND_PAGE_TOO_LARGE');
@@ -128,7 +139,8 @@ export function normalMaterialPath(connectorId:string,executionId:string,command
 }
 
 /** 자료 하나를 페이지 descriptor에서 찾는다. 같은 명령의 descriptor에 없는 ID는 요청하지 않는다. */
-export function findNormalMaterial(item:NormalCommandPageItem,materialId:string){
+export function findNormalMaterial(item:NormalPageItem,materialId:string){
+ if(item.materials===null)fail('MATERIAL_NOT_IN_DESCRIPTOR');
  for(const group of item.materials.groups){
   const part=group.parts.find(p=>p.materialId===materialId);
   if(part)return {group,part};
@@ -187,4 +199,23 @@ export function assembleNormalStartMaterial(group:NormalStartMaterialGroup|Norma
 /** SEND는 부분마다 codepoint 경계와 원본 전체를 검산한다. */
 export function assembleNormalInstructionMaterial(group:NormalInstructionMaterialGroup,received:readonly NormalMaterialReceived[]){
  const checked=readInstructionGroup(group,{partsRef:group?.payloadRef,instructionRef:group?.sourceRef},new Set());return assemble(checked,received);
+}
+
+function readStopTargetEnvelope(raw:unknown,envelope:DispatchEnvelopeV1):NormalStopTargetV1 {
+ try{
+  const target=readNormalStopTargetV1(raw),scope=envelope.context;
+  if(envelope.operation!=='REQUEST_STOP'||target.projectId!==scope.projectId||target.executionId!==scope.executionId||target.executionGeneration!==scope.executionGeneration||!same(target.executorRegistrationRef,envelope.executorRegistrationRef)||!same(target.sessionBindingRef,envelope.payload.sessionBindingRef)||envelope.payload.stopScopeRef.version!==1||digest(target)!==envelope.payload.stopScopeRef.contentHash)throw Error();
+  return target;
+ }catch{return fail('STOP_TARGET_INVALID');}
+}
+export interface NormalStopOriginal {startCommandRef:Ref;startEnvelope:unknown;grantRef:Ref;sessionBindingRef:Ref;roleBindingRef:Ref;bindingGeneration:number;ownershipRef:Ref}
+/** 원 로컬 START/참조와의 순수 대조다. owner 객체 권위를 발급하거나 interrupt하지 않는다. */
+export function readNormalStopItem(raw:unknown,original:NormalStopOriginal,now:number):NormalStopCommandPageItem {
+ if(!raw||typeof raw!=='object'||types.isProxy(raw)||!recordV1(raw,['sequence','commandRef','envelope','materials','stopTarget','materialsDescriptorHash'])||raw.materials!==null||raw.materialsDescriptorHash!==null||!sequenceOk(raw.sequence)||!refV1(raw.commandRef)||
+  !original||types.isProxy(original)||!recordV1(original,['startCommandRef','startEnvelope','grantRef','sessionBindingRef','roleBindingRef','bindingGeneration','ownershipRef'])||!(['startCommandRef','grantRef','sessionBindingRef','roleBindingRef','ownershipRef'] as const).every(k=>!types.isProxy(original[k])&&refV1(original[k]))||!positive(original.bindingGeneration))fail('STOP_TARGET_INVALID');
+ const envelope=readDispatchEnvelopeV1(raw.envelope,now),start=readDispatchEnvelopeV1(original.startEnvelope,now),target=readStopTargetEnvelope(raw.stopTarget,envelope);
+ if(envelope.operation!=='REQUEST_STOP'||start.operation!=='START_SESSION')fail('STOP_TARGET_INVALID');
+ const {authorizationReceiptRef:_,...context}=envelope.context,{authorizationReceiptRef:__,...startContext}=start.context;
+ if(!same(context,startContext)||!same(target.parentStartCommandRef,original.startCommandRef)||target.parentStartEnvelopeHash!==start.envelopeHash||!same(target.executorRegistrationRef,start.executorRegistrationRef)||!same(target.grantRef,original.grantRef)||!same(target.sessionBindingRef,original.sessionBindingRef)||!same(target.roleBindingRef,original.roleBindingRef)||target.bindingGeneration!==original.bindingGeneration||!same(target.ownershipRef,original.ownershipRef)||!same(normalStopScopeRefV1(target,start.commandId),envelope.payload.stopScopeRef))fail('STOP_TARGET_INVALID');
+ return {sequence:raw.sequence,commandRef:cloneV1(raw.commandRef),envelope,materials:null,stopTarget:target,materialsDescriptorHash:null};
 }

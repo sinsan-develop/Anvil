@@ -5,7 +5,7 @@ import type {ClientRequest,IncomingMessage} from 'node:http';
 import {canonicalJson,parseWireJson} from '../../../contracts/canonical.ts';
 import {cloneV1,hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import {executionChallengeRequestBytes,executionProofBytes,executionTarget} from '../../server/modules/executions/execution-proof.ts';
-import {readNormalInstructionItem,assembleNormalInstructionMaterial,normalMaterialPath,readNormalCommandPage,readNormalMaterialResponse,type NormalCommandPage,type NormalCommandPageItem,type NormalMaterialReceived} from './normal-start-material-consumer.ts';
+import {readNormalStopItem,type NormalStopOriginal,type NormalPageItem,readNormalInstructionItem,assembleNormalInstructionMaterial,normalMaterialPath,readNormalCommandPage,readNormalMaterialResponse,type NormalCommandPage,type NormalCommandPageItem,type NormalMaterialReceived} from './normal-start-material-consumer.ts';
 
 /** 실행기 normal 보호 GET 클라이언트(명령 페이지·START/SEND 자료).
  * 준비(prepare*)는 challenge 발급과 proof 서명까지 하고 서명된 packet을 돌려준다. 전송(send)은 그 packet으로 GET 한 번을 보내고
@@ -122,12 +122,21 @@ export class NormalProtectedGetClient{
   return {kind:'COMMANDS',afterSequence:input.afterSequence,...await this.#prepare(this.#base+'/commands',query,signal)};
  }
  /** 자료 ID는 직전에 검산한 명령 페이지 item의 descriptor에 있는 것만 받는다. */
- async prepareMaterial(item:NormalCommandPageItem,materialId:string,signal:AbortSignal):Promise<PreparedMaterial>{
+ async prepareMaterial(item:NormalPageItem,materialId:string,signal:AbortSignal):Promise<PreparedMaterial>{
+  if(item.materials===null)fail('NORMAL_GET_INPUT_INVALID');
   let known=false;
   try{known=item.materials.groups.some(g=>g.parts.some(p=>p.materialId===materialId));}catch{known=false;}
   if(!known)fail('NORMAL_GET_INPUT_INVALID');
   const path=normalMaterialPath(this.#scope.connectorId,this.#scope.executionId,item.envelope.commandId,materialId);
   return {kind:'MATERIAL',item,materialId,...await this.#prepare(path,[],signal)};
+ }
+ /** 자료 없는 STOP projection만 검산한다. original은 호출자가 보유한 원 START/owner 결박이며,
+  * 이 값 비교는 실제 OS ownership/current 증명이 아니다. 자료 GET/permit/interrupt/cursor 진행은 없다. */
+ readStopTarget(item:NormalPageItem,original:NormalStopOriginal,signal:AbortSignal){
+  if(!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_GET_CANCELLED');this.#live();
+  const checked=readNormalStopItem(item,original,this.#clock()),e=checked.envelope,s=this.#scope;
+  if(e.context.projectId!==s.projectId||e.context.executionId!==s.executionId||e.context.executionGeneration!==s.executionGeneration||!same(checked.stopTarget.grantRef,s.grantRef))fail('NORMAL_GET_INPUT_INVALID');
+  return checked;
  }
  /** SEND 원문만 RAM에서 수신한다. cursor/내구 저장/permit/실행을 진행하지 않는다. */
  async receiveInstruction(item:NormalCommandPageItem,signal:AbortSignal){

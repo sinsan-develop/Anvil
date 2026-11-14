@@ -58,7 +58,7 @@ function instruction(text='가나다🙂',cuts:number[]=[]){
  return{...b,group,item,page,scope,at};
 }
 test('SEND descriptor는 partsRef와 instructionRef를 각각 대조하고 닫힌 단일 그룹만 받는다',()=>{
- const f=instruction();assert.notDeepEqual(f.group.payloadRef,f.group.sourceRef);assert.equal(consumer.readNormalCommandPage(f.page,f.scope,f.at).items[0]!.materials.groups[0]!.kind,'INSTRUCTION');
+ const f=instruction();assert.notDeepEqual(f.group.payloadRef,f.group.sourceRef);const item=consumer.readNormalCommandPage(f.page,f.scope,f.at).items[0]!;assert(item.materials!==null);assert.equal(item.materials.groups[0]!.kind,'INSTRUCTION');
  for(const mutate of [(g:any)=>g.payloadRef=ref(),(g:any)=>g.sourceRef=ref(),(g:any)=>g.kind='START_OPTIONS',(g:any)=>g.mediaType='application/json',(g:any)=>g.parts[0].byteOffset=1,(g:any)=>g.parts[0].partIndex=0,(g:any)=>g.extra=true]){
   const page=structuredClone(f.page);mutate(page.items[0]!.materials.groups[0]);rejects(()=>consumer.readNormalCommandPage(page,f.scope,f.at),'MATERIAL_DESCRIPTOR_INVALID');
  }
@@ -66,7 +66,7 @@ test('SEND descriptor는 partsRef와 instructionRef를 각각 대조하고 닫�
 });
 test('SEND 64KiB와 원문2MiB 경계를 지키며 200부분/50항목 초과를 거절한다',()=>{
  const text='a'.repeat(2097152),cuts=Array.from({length:31},(_,i)=>(i+1)*65536),f=instruction(text,cuts);
- const parsed=consumer.readNormalCommandPage(f.page,f.scope,f.at);assert.equal(parsed.items[0]!.materials.groups[0]!.parts.length,32);assert.equal(consumer.assembleNormalInstructionMaterial(f.group,f.received).bytes.length,2097152);
+ const parsed=consumer.readNormalCommandPage(f.page,f.scope,f.at);assert(parsed.items[0]!.materials!==null);assert.equal(parsed.items[0]!.materials.groups[0]!.parts.length,32);assert.equal(consumer.assembleNormalInstructionMaterial(f.group,f.received).bytes.length,2097152);
  const oversize=instruction('a'.repeat(65537));rejects(()=>consumer.readNormalCommandPage(oversize.page,oversize.scope,oversize.at),'MATERIAL_DESCRIPTOR_INVALID');
  const tooLarge=instruction(text+'a',[...cuts,2097152]);rejects(()=>consumer.readNormalCommandPage(tooLarge.page,tooLarge.scope,tooLarge.at),'MATERIAL_DESCRIPTOR_INVALID');
  const many=instruction('a'.repeat(201),Array.from({length:200},(_,i)=>i+1));rejects(()=>consumer.readNormalCommandPage(many.page,many.scope,many.at),'MATERIAL_DESCRIPTOR_INVALID');
@@ -79,6 +79,44 @@ test('SEND 부분 UTF8 경계·누락·중복·hash변조는 조립하지 않고
  const bad=structuredClone(f.received);bad[0]!.bytes[0]=0;rejects(()=>consumer.assembleNormalInstructionMaterial(f.group,bad),'MATERIAL_ASSEMBLY_INCOMPLETE');
  const broken=instruction('🙂',[2]);rejects(()=>consumer.assembleNormalInstructionMaterial(broken.group,broken.received),'MATERIAL_ASSEMBLY_MISMATCH');
  const parsed=consumer.readNormalCommandPage(broken.page,broken.scope,broken.at).items[0]!,part=broken.group.parts[0]!;
+ assert(parsed.materials!==null);
  const raw={transport:'NORMAL_PROTECTED',proofResultRef:ref(),material:{materialId:part.materialId,sourceRef:broken.group.sourceRef,partIndex:1,partCount:2,contentHash:part.contentHash,bytes:Buffer.from(broken.received[0]!.bytes).toString('base64url')},observedAt:broken.page.observedAt,expiresAt:broken.page.expiresAt,cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
  rejects(()=>consumer.readNormalMaterialResponse(raw,parsed,part.materialId,broken.at),'MATERIAL_BYTES_MISMATCH');
+});
+
+const stopCodec=await import('../../../contracts/runtime/normal-stop-target-v1.ts');
+function stopPage(){
+ const f=instruction(),{envelopeHash:_,...base}=f.item.envelope;
+ const startUnsigned={...base,commandId:randomUUID(),operation:'START_SESSION',payload:{contextBundleRef:ref(),optionsRef:ref()}},startEnvelope={...startUnsigned,envelopeHash:hash(startUnsigned)},startCommandRef=ref();
+ const target={kind:'NORMAL_STOP_SCOPE_V1',projectId:f.scope.projectId,executionId:f.scope.executionId,executionGeneration:1,grantRef:ref(),parentStartCommandRef:startCommandRef,parentStartEnvelopeHash:startEnvelope.envelopeHash,executorRegistrationRef:base.executorRegistrationRef,sessionBindingRef:f.item.envelope.payload.sessionBindingRef,roleBindingRef:ref(),bindingGeneration:3,ownershipRef:ref(),mode:'COOPERATIVE_REQUEST_ONLY',forceKillAllowed:false};
+ const stopUnsigned={...base,operation:'REQUEST_STOP',payload:{sessionBindingRef:target.sessionBindingRef,stopScopeRef:stopCodec.normalStopScopeRefV1(target,startEnvelope.commandId)}},item={sequence:8,commandRef:ref(),envelope:{...stopUnsigned,envelopeHash:hash(stopUnsigned)},materials:null,stopTarget:target};
+ return{...f,item,page:{...f.page,items:[item]},original:{startCommandRef,startEnvelope,grantRef:target.grantRef,sessionBindingRef:target.sessionBindingRef,roleBindingRef:target.roleBindingRef,bindingGeneration:target.bindingGeneration,ownershipRef:target.ownershipRef}};
+}
+test('STOP만 자료 null과 target을 받고 원 START namespace·전체tuple 비교 전에 실행 권위를 반환하지 않는다',()=>{
+ const f=stopPage(),parsed=consumer.readNormalCommandPage(f.page,f.scope,f.at),item=parsed.items[0]!;
+ assert.equal(item.materials,null);assert.equal(item.materialsDescriptorHash,null);
+ const checked=consumer.readNormalStopItem(item,f.original,f.at);assert.deepEqual(checked.stopTarget,f.item.stopTarget);
+ for(const key of ['startCommandRef','grantRef','sessionBindingRef','roleBindingRef','ownershipRef'])assert.throws(()=>consumer.readNormalStopItem(item,{...f.original,[key]:ref()},f.at));
+ assert.throws(()=>consumer.readNormalStopItem(item,{...f.original,bindingGeneration:4},f.at));
+ assert.throws(()=>consumer.findNormalMaterial(item,randomUUID()),/MATERIAL_NOT_IN_DESCRIPTOR/);
+});
+test('STOP의 재해시 target·잘못된 namespace·START null·SEND stopTarget 혼합은 거절한다',()=>{
+ const f=stopPage();for(const mutate of [(p:any)=>p.items[0].stopTarget.executionGeneration=2,(p:any)=>p.items[0].materials={manifestRef:ref(),groups:[]},(p:any)=>delete p.items[0].stopTarget]){const p=structuredClone(f.page);mutate(p);assert.throws(()=>consumer.readNormalCommandPage(p,f.scope,f.at));}
+ const wrong=structuredClone(f.page),x=wrong.items[0]!;x.envelope.payload.stopScopeRef=stopCodec.normalStopScopeRefV1(x.stopTarget,x.stopTarget.parentStartCommandRef.id);const{envelopeHash:_,...u}=x.envelope;x.envelope.envelopeHash=hash(u);
+ const shape=consumer.readNormalCommandPage(wrong,f.scope,f.at);assert.throws(()=>consumer.readNormalStopItem(shape.items[0]!,f.original,f.at));
+ const i=instruction(),nullSend={...i.page,items:[{...i.item,materials:null}]};assert.throws(()=>consumer.readNormalCommandPage(nullSend,i.scope,i.at));assert.throws(()=>consumer.readNormalCommandPage({...i.page,items:[{...i.item,stopTarget:f.item.stopTarget}]},i.scope,i.at));
+});
+
+test('보호 GET client STOP 검산은 원 grant/credential/취소를 대조하고 자료 challenge/GET은0이다',async()=>{
+ const {NormalProtectedGetClient}=await import('../../../apps/connector/runtime/normal-protected-get-client.ts');
+ const f=stopPage(),item=consumer.readNormalCommandPage(f.page,f.scope,f.at).items[0]!;let now=f.at,calls=0;
+ const options={origin:'https://normal.invalid',ca:'RAM',credential:'av3ex1_'+Buffer.alloc(32).toString('base64url'),credentialExpiresAt:new Date(f.at+60000).toISOString(),scope:{projectId:f.scope.projectId,executionId:f.scope.executionId,executionGeneration:1,connectorId:randomUUID(),grantRef:f.original.grantRef,credentialGeneration:1}};
+ const client=new NormalProtectedGetClient(options,{now:()=>now,signer:{async sign(){calls++;throw Error('unexpected');}},request:()=>{calls++;throw Error('unexpected');}});
+ const signal=new AbortController().signal;
+ assert.deepEqual(client.readStopTarget(item,f.original,signal).stopTarget,f.item.stopTarget);
+ assert.throws(()=>client.readStopTarget(item,{...f.original,grantRef:ref()},signal));
+ await assert.rejects(client.prepareMaterial(item,randomUUID(),signal),/NORMAL_GET_INPUT_INVALID/);
+ const cancelled=new AbortController();cancelled.abort();assert.throws(()=>client.readStopTarget(item,f.original,cancelled.signal),/NORMAL_GET_CANCELLED/);
+ now=f.at+30000;assert.throws(()=>client.readStopTarget(item,f.original,signal));
+ now=f.at+60000;assert.throws(()=>client.readStopTarget(item,f.original,signal),/NORMAL_GET_CREDENTIAL_EXPIRED/);assert.equal(calls,0);
 });

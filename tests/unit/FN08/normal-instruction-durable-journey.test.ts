@@ -10,6 +10,7 @@ test('원 START SEND 보호 GET에서 내구 RECEIVED와 명령별 permit 한 �
   const {NormalInstructionIntake,receiveNormalInstruction}=await import('../../../apps/connector/runtime/normal-instruction-intake.ts');
   const {NormalInstructionCoordinator}=await import('../../../apps/connector/runtime/normal-instruction-coordinator.ts');
   const page=await f.get.send(await f.get.prepareCommandPage({afterSequence:0,waitMs:0},f.signal),f.signal),start=page.items[0]!,item=page.items[1]!;
+  assert(start.materials!==null);assert.equal(start.envelope.operation,'START_SESSION');assert(item.materials!==null);assert.equal(item.envelope.operation,'SEND_INSTRUCTION');
   assert.notDeepEqual(item.envelope.context.budgetRef,start.envelope.context.budgetRef);assert.notDeepEqual(item.envelope.context.authorizationReceiptRef,start.envelope.context.authorizationReceiptRef);
   const fs=memoryFiles(),store=new NormalStartFileStore(root,{projectId:f.scope.projectId,executionId:f.scope.executionId,executionGeneration:f.scope.executionGeneration},fs.fs),expected={context:start.envelope.context,executorRegistrationRef:start.envelope.executorRegistrationRef};
   const intake=new NormalInstructionIntake(store.instructionIntake(),expected,f.clock);

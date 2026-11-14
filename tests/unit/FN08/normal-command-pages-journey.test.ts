@@ -9,7 +9,7 @@ const digest=(v:unknown)=>contentHash(canonicalJson(v));
 async function setup(){
  let selected=0,announce!:()=>void;
  const firstRead=new Promise<void>(ok=>announce=ok);
- const opts={failReceipt:false,empty:false,noManifest:false,onWaitRelease:undefined as (()=>void)|undefined};
+ const opts={stop:null as null|{record:any;parent:any;sequence:number},failReceipt:false,empty:false,noManifest:false,onWaitRelease:undefined as (()=>void)|undefined};
  const sql:PageSqlAdapter=(s,a,{f,drafts,issued})=>{
   if(s==='ROLLBACK'){opts.onWaitRelease?.();return undefined;}
   if(s.startsWith('SELECT v.content_hash AS vhash')){
@@ -29,7 +29,15 @@ async function setup(){
      o.payload_ref.envelopeHash===x.envelope_hash&&o.payload_ref.grantRef.id===gid&&o.destination_ref.executionId===eid;
     return [{sequence:String(sequence),valid,command_ref:ref,envelope_hash:x.envelope_hash,envelope:x.snapshot_json.envelope}];
    });
+   if(opts.stop&&!opts.empty&&opts.stop.sequence>after&&(!ids||ids.includes(opts.stop.record.ref.id))){
+    // 원 CURRENT producer/DB 정상저장이 아닌, 역사 저장 형상 소비 전용 RAM 입력이다.
+    const r=opts.stop.record;output.push({sequence:String(opts.stop.sequence),valid:true,command_ref:r.ref,envelope_hash:r.snapshot.envelope.envelopeHash,envelope:r.snapshot.envelope});
+   }
    return {rows:output};
+  }
+  if(s.startsWith('SELECT x.id,x.version,x.content_hash,x.snapshot_json,p.snapshot_json')){
+   const r=opts.stop?.record;assert(r);assert.deepEqual(a,[f.pid,[r.ref.id]]);
+   return {rows:[{id:r.ref.id,version:r.ref.version,content_hash:r.ref.contentHash,snapshot_json:r.snapshot,parent_envelope:opts.stop!.parent}]};
   }
   if(s.startsWith('SELECT * FROM anvil.normal_start_material_rows')){
    // 원 제품 START가 저장한 manifest/material 행만 돌려준다. ID를 시험이 따로 만들지 않는다.
@@ -162,5 +170,38 @@ test('자료 등록이 없거나 변조됐거나 결박 없는 옛 영수증이�
   used.snapshot_json.consumption.resultRef.contentHash=receipt.content_hash;used.content_hash=digest(used.snapshot_json);
   const again=await p.get();assert.equal(again.statusCode,412);assert.equal(again.json().code,'MATERIAL_DISCOVERY_BINDING_REQUIRED');
   assert.equal(again.json().items,undefined);
+ }finally{await h.app.close();}
+});
+
+test('저장형상 RAM STOP은 원 START와 혼합 page·GETclient로 소비하고 material 영수증null·UUID namespace를 보존한다(정상 저장권위 아님)',async()=>{
+ const {h,opts}=await setup();
+ try{
+  const {stopRecord}=await import('./normal-stop-command.test.ts'),{httpsFixture}=await import('./normal-start-execution-fixture.ts');
+  const {NormalProtectedGetClient}=await import('../../../apps/connector/runtime/normal-protected-get-client.ts');
+  const {normalStopScopeRefV1}=await import('../../../contracts/runtime/normal-stop-target-v1.ts');
+  const start=h.f.tables.execution_commands![0]!,g=h.f.tables.execution_grants![0]!,b=g.snapshot_json.binding;
+  const request={...h.f.originCommand(),operation:'requestExecutionStop',targetId:g.execution_id,expectedVersion:g.generation,payload:{grantRef:{id:g.id,version:g.version,contentHash:g.content_hash},sessionBindingRef:b.agentSession.sessionRef,permissionPolicyRef:b.permissionPolicyRef,budgetPolicyRef:b.intent.budgetPolicyRef,reason:'형상 소비 시험'}};
+  const record=stopRecord({f:h.f,g,start,request} as any),before=h.f.tables.execution_commands!.length;
+  opts.stop={record,parent:start.snapshot_json.envelope,sequence:h.f.audits.get(start.created_command_id)!.server_sequence+1};
+  const http=httpsFixture(h),client=new NormalProtectedGetClient(http.options,http.ports),signal=new AbortController().signal;
+  const packet=await client.prepareCommandPage({afterSequence:0,waitMs:0},signal),page=await client.send(packet,signal);
+  assert.deepEqual(page.items.map(x=>x.envelope.operation),['START_SESSION','REQUEST_STOP']);assert(page.items[0]!.materials!==null);
+  const item=page.items[1]!,t=record.snapshot.target;
+  const original={startCommandRef:t.parentStartCommandRef,startEnvelope:start.snapshot_json.envelope,grantRef:t.grantRef,sessionBindingRef:t.sessionBindingRef,roleBindingRef:t.roleBindingRef,bindingGeneration:t.bindingGeneration,ownershipRef:t.ownershipRef};
+  assert.deepEqual(client.readStopTarget(item,original,signal).stopTarget,t);const count=http.calls.length;
+  await assert.rejects(client.prepareMaterial(item,record.ref.id,signal),/NORMAL_GET_INPUT_INVALID/);assert.equal(http.calls.length,count);
+  const receipt=h.store.receipts().find(v=>v.snapshot_json.kind==='NORMAL_COMMAND_PAGE')!;
+  assert.equal(receipt.snapshot_json.entries[1].materialsManifestRef,null);assert.equal(receipt.snapshot_json.entries[1].materialsDescriptorHash,null);assert.notEqual(receipt.snapshot_json.entries[0].materialsManifestRef,null);
+  assert.deepEqual(await client.send(packet,signal),page);assert.equal(h.store.receipts().filter(v=>v.snapshot_json.kind==='NORMAL_COMMAND_PAGE').length,1);
+  const consumed=h.store.events().find(v=>v.version===2&&v.snapshot_json.consumption?.resultRef.id===receipt.id)!,oldReceipt=structuredClone(receipt),oldConsumed=structuredClone(consumed);
+  for(const change of [(s:any)=>{s.entries[0].materialsManifestRef=null;s.entries[0].materialsDescriptorHash=null;},(s:any)=>s.entries[1].materialsManifestRef=structuredClone(s.entries[0].materialsManifestRef)]){
+   change(receipt.snapshot_json);receipt.content_hash=digest(receipt.snapshot_json);consumed.snapshot_json.consumption.resultRef.contentHash=receipt.content_hash;consumed.content_hash=digest(consumed.snapshot_json);
+   await assert.rejects(client.send(packet,signal));Object.assign(receipt,structuredClone(oldReceipt));Object.assign(consumed,structuredClone(oldConsumed));
+  }
+  // SHA256를 모두 재봉인해도 잘못된 원 START record-id namespace는 Node 최종검산에서 거절한다.
+  const saved=structuredClone(record),scope=normalStopScopeRefV1(t,t.parentStartCommandRef.id);record.snapshot.request.payload.stopScopeRef=scope;record.snapshot.requestHash=digest(record.snapshot.request);record.snapshot.envelope.payload.stopScopeRef=scope;
+  const{envelopeHash:_,...env}=record.snapshot.envelope;record.snapshot.envelope.envelopeHash=digest(env);const{request:__,envelope:___,...intent}=record.snapshot;record.ref.contentHash=digest(intent);
+  await assert.rejects(client.send(packet,signal));opts.stop.record=saved;
+  assert.equal(h.f.tables.execution_commands!.length,before);assert.equal(h.f.tables.execution_commands!.filter(x=>x.snapshot_json.state==='STOP_REQUEST_STORED').length,0);
  }finally{await h.app.close();}
 });
