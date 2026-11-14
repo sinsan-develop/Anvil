@@ -13,6 +13,8 @@ async function stagedWorker(f,forge=false,exercise=null){
  if(forge){const producer=packager.createWorkerPackageProducer(input,{compiler:ports,package:io});let baseCalls=0;const hooks=packager.fixedNativeWorkerForgeHooks({postPackage:async()=>{baseCalls++;assert.ok(f.files.has(f.parent+'\\resources\\native-workers\\OwnershipEvidenceWorker.exe'));}},producer);await hooks.postPackage({}, {platform:'win32',arch:'x64',outputPaths:[f.parent]});assert.equal(started,1);assert.equal(closed,1);assert.equal(baseCalls,1);return{producer,ports,io,output,hooks};}
  const compilation=await compiler.runNativeWorkerCompiler(input,ports);assert.equal(started,1);assert.equal(closed,1);const packageToken=await packager.packageNativeWorker(compilation,f.parent,io);return{compilation,packageToken,ports,io,output,input};
 }
+module.exports={stagedWorker};
+if(require.main===module){
 test('게시 producer는 기존 SOURCE_ONLY_MODEL과 복제 compiler token을 거절한다',async()=>{
  const c=require('../../apps/desktop/scripts/native-worker-compiler.cjs'),p=require('../../apps/desktop/scripts/native-worker-deployment-publisher.cjs');
  assert.throws(()=>c.readWorkerCompilation({compilerExecuted:true}),/WORKER/);
@@ -45,8 +47,6 @@ test('compiler 원 output/source 또는 package bytes 변경은 같은 원 token
   await assert.rejects(()=>publisher.createWorkerPublication({compilation:f.staged.compilation,packageToken:f.staged.packageToken,factoryArtifact:f.artifact,configuration:f.config}));
  },{beforeFactory:stagedWorker});
 });
-module.exports={stagedWorker};
-
 test('compiler 종료 불명은 늦은 close 뒤에도 같은 원 driver 재진입을 차단한다',async()=>withWorkerBuild(async()=>{}, {beforeFactory:f=>stagedWorker(f,false,async({compiler,input,ports})=>{
  let stop,late,calls=0,unwatched=0;ports.schedule=cb=>{stop=cb;return()=>{};};ports.driver=()=>{calls++;return{watch:sink=>{late=sink;queueMicrotask(()=>stop());return()=>{unwatched++;};}};};
  await assert.rejects(()=>compiler.runNativeWorkerCompiler(input,ports),/UNKNOWN/);assert.equal(calls,1);assert.equal(unwatched,1);late.close(0,null);
@@ -73,3 +73,4 @@ test('package close 불명은 finally와 늦은 회수에서도 동일 close를 
  const run=packager.packageNativeWorker(token,f.parent,io),rejected=assert.rejects(run,/UNKNOWN/);await begun;t.mock.timers.tick(60001);await new Promise(r=>setImmediate(r));assert.equal(calls,1);finish();await rejected;assert.equal(calls,1);
  })});
 });
+}

@@ -67,3 +67,6 @@ settings 버튼은 합성 DOM/IPC로 직접검산하며 실제Electron/OS/네트
 
 ## Main 정본 검산기 재사용 보완
 Desktop client가 CJS에서 정본 bundle/head/wire 검산을 복제하지 않도록 추가 3경로를 허용한다: `apps/desktop/scripts/native-proof-runtime-entry.mts`, `apps/desktop/scripts/native-proof-runtime-build.cjs`, `tests/desktop/native-proof-runtime-build.test.cjs`. 기존 native-proof-runtime의 readWorkerDeploymentRead/readWorkerDeploymentBundle 및 parseWireJson 명시 export·고정 closure·합성 loader 검증만 보완한다. 기존 33경로에 더해 총36경로이며 새 공개응답·권한 의미는 없다. 실제 설치/외부 SDK/사용자 파일자료 조사/서비스 실행 제외는 불변이다.
+
+## Main 고정 parent worker reader 접점
+기존 peer의 parent image/retained handle이 private이고 원 bytes reader가 없어 `apps/connector/native/DesktopTrustKeyPeerSource.cs` 1경로를 추가허용한다(총37). 경로 인자 없는 고정 packaged-worker reader로 private parent에서 resources/native-workers/OwnershipEvidenceWorker.exe만 도출한다. 원 Retain/동일handle identity·nonlink·single hardlink·20MiB·길이/EOF/hash·원peer Check/current/budget/IO수명을 전후검산하며 bytes만 반환한다. path/rawhandle 공개와 caller경로선택은 없다. Kernel 기본 unsupported 및 Windows concrete source만 작성하고 실제파일/C#실행은 하지 않는다. 직접시험은 기존 허용 native시험 안에서 수행한다.
