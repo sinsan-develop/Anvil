@@ -19004,3 +19004,20 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 최종 추가 Main tsc 호출 session19727은 종료결과가 장시간 반환되지 않아 본인 호출에 Ctrl-C로 중단(exit1, 미검증)했다. 앞선 동결5제품 Main typecheck exit0과 별개이며 중단을 PASS로 승격하지 않는다. 구현자 최종 tsc57510 exit0·diff42641 exit0 제출 확보. 재실행0/다른 process 종료0.
 
 - 최종 ACK delta: Main node --experimental-test-module-mocks --test --test-reporter=spec --test-name-pattern="실제 START/permit" tests/unit/FN08/normal-credential-renewal-journey.test.ts exit0/1P/0F/0SKIP/30004.7916ms. 독립 C0/I0/M0, 새credential 관측POST1·pending5·ACK1·증명receipt→ackRef 검산. 이전 단언실패와 Main tsc중단은 별도보존. 결과서 FN08_D1_CREDENTIAL_RENEWAL_SOURCE_RESULT_20261114.md 작성. 실제DB/키/서비스/Agent/native컴파일0, 전체계획미완료.
+
+### PR103 통합 및 D1 normal polling 연결 착수 — 2026-11-14 / Main 어울
+- source61f70ceef0d9c6e9a569c1b23bd9fa49e00cb424 정확16파일은 PR103 main ab1fab0165446fbbadf067f4ac2be0e68a0229ac에 병합됐다. Broker43529923377 success, source/main tree diff0, merged owner 갱신 smoke1P/0F/0SKIP6326.7534ms. local/development main 동일·clean, 원격 heads main하나·요청tag부재 확인.
+- squash source 이력은 PR103에 보존하고 tree동일/clean 확인 뒤 완료 로컬branch만-D정리, 정확requesttag삭제. 과거outer29modified/15untracked 등 기존WIP는 변경0. 공유 작업공간/의존성 보존. 최신main에서 codex/av3-d1-normal-polling 생성.
+- 할 일: 채택P3 §3.1 단계3 normal polling→자료 내구수신→기존START coordinator→관측ACK 조합. 같은Primary 단일writer, Main검수·통합. 신규runtime normal-start-polling.ts/직접시험2와 기존execution-fixture 선택형 시험범위. 기존제품 추가변경은 정확영향 확인 후 허용한다.
+- 기준: 단일loop/abort·기한/owner변경, empty/hasMore 유한대기, 중간실패cursor건너뜀0, 중복/재시작wire추가0, credential만료시명시renew·새client/cursor, UNKNOWN재전송0, ACK연결. 실제DB·권한·키·보호파일·서비스·Agent/nativecompile0. 실제adapter는명시포트이며 SYNTHETIC_ONLY표식변경으로완료하지않는다.
+- 전체계획/D1미완료. 앞선완료시험반복없이 신규조합과직접인접을검증한다. 현재신규제품오류0, 다음Primary설계대조→TDD→독립검수.
+
+- polling 사전검수: waitMs=0+owned host 밖 취소가능 대기로 총10초와 longpoll10초의 충돌을 피한다. 페이지 전체·관측ACK 성공 뒤 sequence/cursor를 함께 승격, 최초빈page는0/no-cursor. 갱신은 명시호출만이며 새GET/POST/coordinator로 교체하되 intake/journal/spool/ACK는 보존한다. UNKNOWN은성공으로진행하지않고만료한packet자동재전송0. 기존Primary 설계대조후TDD진행, 실제자원실행0.
+
+- polling 누락모듈 RED 뒤 기본4P 구현자제출. Node strip-only에서 parameter-property 사용으로 구문오류1회 발생해 일반필드선언으로정정(제품의미불변). 중간독립C0/I0, 페이지중간실패/재시작과갱신ACK·run/renew경합시험은보완중. 기한여유부족 NEEDS_RENEWAL과 실제만료전renew거절을구분하며 자동갱신0. 기존제품파일변경0.
+
+- polling 중간여정6P 제출후 검수: 자료/coordinator/관측sync 묶음에별도10초를추가하면 정상개별요청합계가넘어UNKNOWN될수있다. 단일요청/host/current/wire기존한도는유지하고묶음은run/credential잔여기한으로제한하도록보완중. 독립 I1은두spool.sync에남은aggregate설정누락이며같은writer에지시했다. deadline/late-return·UNKNOWN·새POSTcoordinator교체는읽기확인. 실제자원변경0.
+
+- 사용자 goal paused 직후 active 재개가도착했다. Primary중단호출1회후최신active에따라동일담당자/동일WIP로재개지시했다. 기존검사handle결과먼저확인·중복실행금지. 현재branch변경0/자료삭제0, polling source+시험3신규·fixture1과Main문서2보존.
+
+- polling최종동결 Main 신규2파일12P/0F/0SKIP9499.545ms exit0, 구현자12P9572ms·인접permit불명1P4574ms·root type0, diff0. 독립C0/I0·aggregate I1해소. source6C8E561F/unit1988C6F0/journey7F3BE7E4/fixture5ABA4157동일. partialpage/hasMore는codec뒤fault injection이며실서버2명령증거아님. 결과서 FN08_D1_NORMAL_POLLING_SOURCE_RESULT_20261114.md 작성. 실제자원실행0/전체미완료. 다음정확7파일통합후normal adapter/current/source잔여조사.

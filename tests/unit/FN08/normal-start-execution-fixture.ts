@@ -140,7 +140,7 @@ export function httpsFixture(h:Awaited<ReturnType<typeof executionFixture>>['h']
 }
 
 /** 원제품 서버+RAM 저장을 재사용하는 합성 정상 실행 준비. 실제 키/DB/파일/Agent 호출0. */
-export async function preparedExecution(initialStorageTtl=Infinity){
+export async function preparedExecution(initialStorageTtl=Infinity,receive=true){
  const [{NormalProtectedGetClient},{NormalProtectedPostClient},{NormalStartIntake,receiveNormalStart},{NormalStartFileStore},
   {NormalObservationSpool},{NormalStartCoordinator},{root,memoryFiles}]=await Promise.all([
  import('../../../apps/connector/runtime/normal-protected-get-client.ts'),import('../../../apps/connector/runtime/normal-protected-post-client.ts'),
@@ -150,7 +150,7 @@ export async function preparedExecution(initialStorageTtl=Infinity){
  const signal=new AbortController().signal,page=await get.send(await get.prepareCommandPage({afterSequence:0,waitMs:0},signal),signal) as any,item=page.items[0],e=item.envelope;
  const scope={projectId:e.context.projectId,executionId:e.context.executionId,executionGeneration:e.context.executionGeneration},fs=memoryFiles();
  const store=new NormalStartFileStore(root,scope,fs.fs),clock=()=>h.store.now().getTime(),intake=new NormalStartIntake(store.intake(),{context:e.context,executorRegistrationRef:e.executorRegistrationRef},clock);
- await receiveNormalStart(get,intake,item,page.proofResultRef,signal);
+ if(receive)await receiveNormalStart(get,intake,item,page.proofResultRef,signal);
  const grantRef=http.options.scope.grantRef,binding=h.f.tables.execution_grants![0]!.snapshot_json.binding;
  const mode={wires:0,currents:0,currentHook:async()=>{},wireHook:async()=>{},timeoutMs:1000};
  const current={transport:'NORMAL_PROTECTED' as const,async current(envelope:any,attempt:any,_signal:AbortSignal){
@@ -166,5 +166,6 @@ export async function preparedExecution(initialStorageTtl=Infinity){
   return{spool,coordinator:new NormalStartCoordinator({intake:new NormalStartIntake(fresh.intake(),{context:e.context,executorRegistrationRef:e.executorRegistrationRef},clock),
    store:fresh,post,current,wire,spool,grantRef,clock,timeoutMs:mode.timeoutMs})};
  };
- return{q,h,http,post,get,signal,e,item,scope,fs,store,intake,grantRef,binding,clock,mode,make};
+ const startPorts=()=>({intake,store,current,wire,spool:new NormalObservationSpool(store,scope,clock),grantRef,clock,timeoutMs:mode.timeoutMs});
+ return{q,h,http,post,get,signal,e,item,scope,fs,store,intake,grantRef,binding,clock,mode,make,startPorts};
 }
