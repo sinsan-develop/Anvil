@@ -11,8 +11,8 @@ Stage C FN08/D1에서 승인된 worker descriptor 생산·동일 consume 식별�
 - 시작 기준: codex/av3-d1-producer-binding / 4867a91d23053f7fdf6b9fb040e494f7358d1a22, main7efc5111(PR110).
 - Main 문서 변경은 보존한다. 다른 writer는 없다. Primary commit/push/병합 금지.
 
-## 정확 허용 경로 15개
-제품8:
+## 정확 허용 경로 18개
+제품9:
 ```
 apps/desktop/scripts/native-worker-build.cjs
 apps/desktop/scripts/verify-native-worker.cjs
@@ -20,15 +20,18 @@ apps/desktop/scripts/native-physical-factory-build.cjs
 contracts/runtime/native-worker-provenance-v1.ts
 apps/server/modules/executions/native-worker-ownership-basis-source.ts
 apps/connector/native/NativePreparationWorkerProvenanceSource.cs
+apps/connector/native/NativePreparationRetainedFactorySource.cs
 apps/connector/native/DesktopTrustKeyHostSource.cs
 apps/desktop/scripts/desktop-trust-key-host-build.cjs
 ```
-시험7:
+시험9:
 ```
 tests/desktop/native-worker-build.test.cjs
 tests/unit/FN06/native-worker-provenance-contract.test.ts
 tests/unit/FN06/native-worker-ownership-basis-source.test.ts
 tests/unit/FN06/native-preparation-worker-provenance-native.test.ts
+tests/unit/FN06/native-preparation-retained-factory.test.ts
+tests/unit/FN06/native-preparation-ownership-return-native.test.ts
 tests/unit/FN06/native-physical-factory-build.test.ts
 tests/unit/FN06/native-preparation-ownership-return-store.test.ts
 tests/desktop/desktop-trust-key-host-build.test.cjs
@@ -63,7 +66,7 @@ tests/desktop/desktop-trust-key-host-build.test.cjs
 
 ### 4. 반환·독립 검수
 - [ ] root typecheck·필요 직접 Node/TS 시험·diffcheck. 기존 Desktop174 진단은 baseline/current/new 구분하고 전체PASS로 쓰지 않는다.
-- [ ] 최종 15경로 hash·정확 명령/exit/개수·RED/GREEN·미실행·원천 생성/소비 표를 Main에 반환한다.
+- [ ] 최종 18경로 hash·정확 명령/exit/개수·RED/GREEN·미실행·원천 생성/소비 표를 Main에 반환한다.
 - [ ] 검수 중 파일을 동결하고 수정 필요 시 먼저 알린다. Main이 독립 C/I 검토와 직접검증 후 기록·통합한다.
 
 ## 리뷰 집중점
@@ -74,3 +77,9 @@ tests/desktop/desktop-trust-key-host-build.test.cjs
 5. 미등록 보호 설치 공급자를 합성 fixture로 대신하고 기본 동작 완료라 주장하는 경로.
 
 전체 계획 및 실환경 완료가 아니다. 업무 단위 source 결과만 수용하며 후속 실제 supplier/OS 검증의 미완료를 구체적으로 남긴다.
+
+## Main 내부 보완 기록
+- 사전 검수에서 Acquire 반환→factory 원 image 소유확보 사이 실패 시 image 정리책임 공백을 발견했다. 기존 retained 조립기와 직접 시험 2경로를 추가 허용한다. producer pending 원 image 보유→검산 성공 시 단발 양도→중간 실패 본인 자원 정리, UNKNOWN/가짜 interface Dispose 금지 유지가 목적이며 새 권한·공개 계약은 없다.
+- 서버 build 전용 module 직접 import는 기존 runtime 분리 경계에 맞게 보완한다. 추가파일 없이 original-product reader를 필수 내부 DI로 전달하고 default/null·함수교체를 거절하는 안을 Main이 허용했다. 원 build WeakMap mint/read는 build에 유지하고 서버는 build 모듈을 import하지 않는다. 합성 검증은 실제 build reader→server basis→기존 store를 연결하며 실제 runtime 배포 reader 공급자 미연결을 명시한다. 후속 current 시각의 후퇴 거절은 기존 server/test 소유 범위에서 보완한다.
+
+- Host 기본 source가 null에서 새 producer로 연결되어 기존 ownership-return-native 정적 단언의 직접 호출 형상이 달라졌다. 해당 시험1경로를 추가 허용해 default→producer→deployment 미등록 거절 전체를 검산하고 등록/서명/단발 기준을 보존한다. 제품·공개 의미 변경은 없다.

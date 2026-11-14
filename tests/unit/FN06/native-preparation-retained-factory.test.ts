@@ -3,6 +3,15 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=(name:string)=>readFileSync(new URL('../../../apps/connector/native/'+name,import.meta.url),'utf8');
 
+test('정적: Acquire 이후 검산 실패는 producer pending 원 image를 회수하고 검산 성공 이후만 양도한다',()=>{
+ const factory=read('NativePreparationRetainedFactorySource.cs'),producer=read('NativePreparationWorkerProvenanceSource.cs');
+ const verify=factory.indexOf('ReadOriginalSource(binding.Image,input)'),claim=factory.indexOf('imageOwners.Add(binding.Image,this)'),transfer=factory.indexOf('source.Transfer(binding)'),own=factory.indexOf('image=binding.Image');assert.ok(verify<claim&&claim<transfer&&transfer<own);
+ assert.match(factory,/if\(image==null&&binding!=null\)source\.Release\(binding\)/);
+ assert.match(producer,/pending\.Add\(result\)/);assert.match(producer,/pending\.Remove\(input\)/);
+ const release=producer.slice(producer.indexOf('internal override void Release'),producer.indexOf('internal override void Check'));
+ assert.ok(release.indexOf('input.Image.Dispose()')<release.indexOf('pending.Remove(input)'));assert.ok(release.includes('originals.ContainsKey(input)'));assert.doesNotMatch(release,/finally/);
+});
+
 test('정적: host 기본 retained 경로는 제한 조립기를 호출하고 원 객체와 부모 정리 수명을 보유한다',()=>{
  const host=read('DesktopTrustKeyHostSource.cs');
  assert.match(host,/retainedFactory\.Create\(/);
@@ -78,7 +87,7 @@ test('정적: 모든 primitive 뒤 current검산·필드보유가 먼저이며 U
  for(const line of ['job=OwnershipEvidenceJobFactorySource.CreateEmptyJobSource(left());check();','assignment=OwnershipEvidenceJobFactorySource.PrepareAtomicJobAssignmentSource(job,left());check();','startup=OwnershipEvidenceJobFactorySource.PrepareSuspendedStartupSource(assignment,left());check();','startup.BindWorkerPlanSource(plan,left());check();','process=OwnershipEvidenceJobFactorySource.CreateSuspendedProcessSource(startup,image,left());check();'])assert.ok(s.includes(line),line);
  assert.match(s,/job\.Dispose\(\);job=null;assignment=null;startup=null;process=null/);
  assert.ok(s.indexOf('job.Dispose();job=null')<s.indexOf('image.Dispose();image=null'));
- assert.match(s,/catch\{try\{Dispose\(\);\}catch\{throw new InvalidOperationException\("NATIVE_RETAINED_FACTORY_CLEANUP_UNKNOWN"\)/);
+ assert.match(s,/catch\{try\{if\(image==null&&binding!=null\)source\.Release\(binding\);Dispose\(\);\}catch\{throw new InvalidOperationException\("NATIVE_RETAINED_FACTORY_CLEANUP_UNKNOWN"\)/);
  assert.match(host,/if\(retainedFromFactory\)\{try\{retainedFactory\.Dispose\(\);retainedReturn=null;\}catch\{unknown=true;exit=1;\}\}else if\(retainedReturn!=null\)/);
 });
 

@@ -5,6 +5,14 @@ const {snapshot,nativeIO}=require('./verify-installer-development.cjs');
 const {readBasis,canonical,verifyNativePhysicalFactory}=require('./verify-native-physical-factory.cjs');
 const SOURCE_FILES=Object.freeze(['OwnershipEvidenceJobFactorySource.cs','OwnershipEvidenceJobAssignmentSource.cs','OwnershipEvidenceProcessStartupSource.cs','OwnershipEvidenceProcessOwnerSource.cs','OwnershipEvidenceWorkerInputSource.cs','OwnershipEvidencePreparedFactsSource.cs','OwnershipEvidenceImageOwnerSource.cs','OwnershipEvidenceImageBindingSource.cs','OwnershipEvidenceRootSource.cs','OwnershipEvidenceHost.cs','NativePreparationOwnerBridgeSource.cs','NativePreparationOwnerParentBasisSource.cs','NativePreparationOwnerPeerSource.cs','NativePreparationOwnerHostSource.cs'].map(p=>'apps/connector/native/'+p));
 const REFERENCE_FILES=Object.freeze(['mscorlib.dll','System.dll','System.Core.dll','System.Web.Extensions.dll']);
+/** 원 출력 객체에만 부착하는 내부 build 계보. artifact 공개 형상/기존 검산은 불변이다.
+ * @type {WeakMap<object,{value:any,check:()=>Promise<void>}>} */
+const provenance=new WeakMap();
+/** @param {unknown} artifact */
+async function readNativeFactoryProvenance(artifact){
+ if(!artifact||typeof artifact!=='object')fail();const original=provenance.get(artifact);if(!original)fail();
+ await original.check();return JSON.parse(canonical(original.value));
+}
 /** @typedef {{path:string,sha256:string}} FileBinding */
 /** @typedef {{factoryId:string,factoryVersion:number,compiler:FileBinding,references:FileBinding[],sources:FileBinding[],repoRoot:string,basisPath:string,outputPath:string}} CompileConfiguration */
 /** @returns {never} */function fail(){throw Error('NATIVE_FACTORY_BUILD_INVALID');}
@@ -69,7 +77,9 @@ async function produceCompileInput(input,ports={}){
  verifyOutput:async(/** @type {Buffer} */ bytes)=>{
   if(busy)fail();busy=true;try{check();await checkInputs();if(canonical(await snapshot(root,parentIO))!==expected)fail();check();const output=await verifyNativePhysicalFactory(bytes,compile.parentBasis);check();await checkInputs();if(canonical(await snapshot(root,parentIO))!==expected)fail();check();
   if(issuedHash!==null&&issuedHash!==output.helperHash)fail();issuedHash=output.helperHash;
-  return immutable({schemaVersion:1,purpose:'NATIVE_PHYSICAL_FACTORY_ARTIFACT',physicalNamespace:'ANVIL_NATIVE_OWNER_FACTORY_V1',factoryRef:{id:compile.factoryId,version:compile.factoryVersion,contentHash:output.helperHash},parentBasis:compile.parentBasis,helperBytes:output.helperBytes,buildInputHash:compile.inputHash});}finally{busy=false;}
+  const artifact=immutable({schemaVersion:1,purpose:'NATIVE_PHYSICAL_FACTORY_ARTIFACT',physicalNamespace:'ANVIL_NATIVE_OWNER_FACTORY_V1',factoryRef:{id:compile.factoryId,version:compile.factoryVersion,contentHash:output.helperHash},parentBasis:compile.parentBasis,helperBytes:output.helperBytes,buildInputHash:compile.inputHash});
+  provenance.set(artifact,{value:immutable({artifact,compile,parentSnapshot:final}),check:async()=>{check();await checkInputs();if(canonical(await snapshot(root,parentIO))!==expected)fail();check();}});
+  return artifact;}finally{busy=false;}
  }});
 }
-module.exports={SOURCE_FILES,REFERENCE_FILES,createCompileInput,produceCompileInput};
+module.exports={SOURCE_FILES,REFERENCE_FILES,createCompileInput,produceCompileInput,readNativeFactoryProvenance};

@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {createHash} from 'node:crypto';
+
+test('원 artifact provenance reader는 JSON복제·prototype·Proxy를 발행된 객체로 인정하지 않는다',async()=>{
+ const {readNativeFactoryProvenance}=createRequire(import.meta.url)('../../../apps/desktop/scripts/native-physical-factory-build.cjs');
+ let traps=0;for(const v of [{},Object.create({factoryRef:{}}),new Proxy({},{get(){traps++;throw Error('trap');}})])await assert.rejects(()=>readNativeFactoryProvenance(v));assert.equal(traps,0);
+});
 import {EventEmitter} from 'node:events';
 import {PassThrough,Writable} from 'node:stream';
 import {NativePreparationClient} from '../../../apps/connector/runtime/native-preparation-client.ts';
