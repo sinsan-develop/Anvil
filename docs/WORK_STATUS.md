@@ -19390,3 +19390,11 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - SDK와 독립인 normalSEND 서버연결 후보 FN08_NORMAL_SEND_DISPATCH_CANDIDATE_20261115.md를 작성했다. 기존표/endpoint/권한재사용·원HUMAN5tuple·START UNIQUE보존·SEND별0024소비·정확원문범위다. 최초 독립C0/I0/M1의payloadRef를partsRef로보완하고Primary self-check의원mediaType/permit형상/canonical상한/conversation-message exact검산을반영했다. 최종독립C0/I0/M0·SHA DEA72C3FB14A955E02956C50898A50ED6BE9705E911A17CB651DAFE2847FFB7C. PMO는새normal표식/저장/원문제공만직접채택대상이라고확인했고정확후보source-only를비동기로질문했다. 답변전제품쓰기0·새권한/실행0.
 
 - 2026-11-15 normalSEND 후보 SHADEA72C3F…47FFB7C의 A안계약·source-only 구현을 신산님이 직접 채택했다. 동일 branch에서 FN08_NORMAL_SEND_DISPATCH_SOURCE_IMPLEMENTATION_20261115.md의 정확18경로를 기존Primary 단일writer에 배정한다. Main은문서/검수/통합, 기존reviewer는read-only. 실제DB/권한부여/키/서비스/SDK·Agent실행0을유지하고미적용0097·RAM여정만수행한다. SDK READ3실패는이서버source의차단선행이아니며분리한다.
+
+- normalSEND Primary 첫RED: node --test tests/unit/FN08/normal-instruction-command.test.ts exit1/1F/0P, exact opt-in 검산 부재(Missing expected exception). 선행 --import tsx는미설치 ERR_MODULE_NOT_FOUND 명령오류로별도구분하고설치없이Node24직접TS로정정했다. live0. Main제품쓰기0, Primary허용범위구현계속. 독립검수는원문exact scope·예약/nonce원자성·역완결·기존normal/synthetic회귀로준비했다.
+
+- 구현중선행누락 발견: Primary와독립d2_preflight 모두 USER_INSTRUCTION→partsRef 제품생산자를확인하지못했다. conversations는body/sourceRef만,queue는주입partsRef동등성만,material descriptor는기존partsRef검산후manifestRef만생산한다. 부재부분은partsRef canonical본문/ID-version-hash/원body결박/SEND전사용자가ref얻는경로다. caller선언·synthetic ref·bodyRef전용·manifest순환으로대체하지않는다. Main이정확보완안을구체화하며기존승인내normal저장/permit/보호조회구현은Primary가계속한다. 이누락을제품정상여정완료로숨기지않고실환경0유지.
+
+- partsRef 한정후보 FN08_INSTRUCTION_PARTS_PLAN_ADDENDUM_CANDIDATE_20261115.md: 새표없이불변bodyRef+고정UTF8부분계획파생·명시GET1개. 독립초기C0/I2(부분번호/메시지참조형상)를1기반과원명령결과참조로보정했고reviewer의targetRef표현오기1건도실제 commands.result_ref.data.ref/targetId/version과원message/receipt/audit대조로정정했다. Main은access/project-command.ts 실제result구조를추가확인했다. 최종독립C0/I0/M0 SHA F3243D1411C4FF434F4548904B99A9B0BBA353EA171FAC0314F7D99353DD91DF. exact새공개조회/파생규칙만비동기직접채택질문,제품반영0.
+- Main읽기에서경로를추정한실패가반복돼추정경로읽기를중단하고rg --files로확인한경로만열도록교정했다. 이번project-command는projects아닌access소속이었다. 파일/권한변경0·실환경0이며제품구현중단사유로확대하지않았다.
+- normalSEND Primary exactopt-in 최초RED→GREEN: node --test tests/unit/FN08/normal-instruction-command.test.ts exit0/1P/0F/0SKIP 2028.6764ms. command/app/routes초안작성후원START행→예약/receipt/replay 행동시험진행중. 아직제품동결/전체여정검수전,Main제품쓰기0.
