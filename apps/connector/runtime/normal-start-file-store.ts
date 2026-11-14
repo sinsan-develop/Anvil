@@ -4,6 +4,7 @@ import {resolve,isAbsolute,parse,join} from 'node:path';
 import {canonicalJson,parseWireJson} from '../../../contracts/canonical.ts';
 import {cloneV1,recordV1,uuidV1} from '../../../contracts/runtime/validation-v1.ts';
 import type {NormalStartStore,NormalStartEntry} from './normal-start-intake.ts';
+import type {NormalStopStore} from './normal-stop-coordinator.ts';
 import type {NormalInstructionStore} from './normal-instruction-intake.ts';
 import type {ReceiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 export type NormalLocalScope={projectId:string;executionId:string;executionGeneration:number};
@@ -51,6 +52,14 @@ export class NormalStartFileStore implements NormalJournalStore{
    if(!recordV1(key,['projectId','executionId','executionGeneration','commandId'])||!uuidV1(key.commandId)||
     !Object.entries(this.#scope).every(([k,v])=>(key as any)[k]===v))fail();
    return this.#run('intake-'+key.commandId,body,true) as Promise<T>;
+  }};
+ }
+ /** STOP 역사 전용 strict-close 포트. 기존 START exclusive 의미는 바꾸지 않는다. */
+ stopAttempts():NormalStopStore{
+  return{transport:'NORMAL_PROTECTED',exclusive:async<T>(key:ReceiptKeyV1,body:Parameters<NormalStopStore['exclusive']>[1]):Promise<T>=>{
+   if(!recordV1(key,['projectId','executionId','executionGeneration','commandId'])||!uuidV1(key.commandId)||
+    !Object.entries(this.#scope).every(([k,v])=>(key as any)[k]===v))fail();
+   return this.#run('attempt-'+key.commandId,body,true) as Promise<T>;
   }};
  }
  instructionAttempts():NormalInstructionStore{

@@ -1,3 +1,4 @@
+import {NormalStopCoordinator,type NormalStopHistoryPorts} from './normal-stop-coordinator.ts';
 import {NormalInstructionCoordinator,type NormalInstructionWirePort} from './normal-instruction-coordinator.ts';
 import {receiveNormalInstruction} from './normal-instruction-intake.ts';
 import {NormalStartCoordinator,type NormalStartPorts} from './normal-start-coordinator.ts';
@@ -9,6 +10,8 @@ import type {NormalCommandPage} from './normal-start-material-consumer.ts';
 export interface NormalPollingClients{get:NormalProtectedGetClient;post:NormalProtectedPostClient;expiresAt:string}
 export interface NormalStartPollingOptions{
  clients:NormalPollingClients;start:Omit<NormalStartPorts,'post'>;
+ /** 선택형 역사 복구만. 실제 owner/interrupt 포트는 존재하지 않는다. */
+ stop?:NormalStopHistoryPorts;
  instruction?:Omit<ConstructorParameters<typeof NormalInstructionCoordinator>[0],'post'>&{wire:NormalInstructionWirePort};
  /** 로컬 소유자 변경 감지용. 서버 grant/current 검사를 대신하지 않는다. */
  owner:()=>string;deadline:number;maxPages:number;idleMs:number;
@@ -28,7 +31,8 @@ export class NormalStartPolling{
   if(typeof p?.owner!=='function'||typeof p.start?.clock!=='function'||!Number.isSafeInteger(p.start.timeoutMs)||p.start.timeoutMs<1||p.start.timeoutMs>10000||!Number.isSafeInteger(p.deadline)||
    !Number.isSafeInteger(p.maxPages)||p.maxPages<1||p.maxPages>10000||!Number.isSafeInteger(p.idleMs)||p.idleMs<1||p.idleMs>10000||
    p.renew!==undefined&&typeof p.renew!=='function')throw Error('NORMAL_POLL_CONFIG_INVALID');
-  this.#p={...p,start:{...p.start},...(p.instruction?{instruction:{...p.instruction}}:{})};this.#clients=this.#validate(p.clients);this.#owner=p.owner();
+  if(p.stop&&(p.stop.intake!==p.start.intake||p.stop.clock!==p.start.clock))throw Error('NORMAL_POLL_STOP_PARENT_INVALID');
+  this.#p={...p,...(p.stop?{stop:{...p.stop}}:{}),start:{...p.start},...(p.instruction?{instruction:{...p.instruction}}:{})};this.#clients=this.#validate(p.clients);this.#owner=p.owner();
   if(typeof this.#owner!=='string'||!this.#owner||this.#owner.length>256)throw Error('NORMAL_POLL_OWNER_REQUIRED');
  }
  #validate(c:NormalPollingClients){
@@ -101,14 +105,13 @@ export class NormalStartPolling{
     let sequence=this.#cursor.afterSequence;
     for(const item of page.items){
      if(!Number.isSafeInteger(item.sequence)||item.sequence<=sequence)throw Error('PAGE_INVALID');
-     // STOP 소비는 별도 owner/내구시도 단위다. 자료 없는 projection으로 cursor나 실행을 진행하지 않는다.
-     if(item.materials===null)throw Error('PAGE_INVALID');
+     if(item.materials===null&&!(item.envelope.operation==='REQUEST_STOP'&&this.#p.stop))throw Error('PAGE_INVALID');
      let state:string;
-     if(item.envelope.operation==='START_SESSION'){
+     if(item.envelope.operation==='START_SESSION'&&item.materials!==null){
       await this.#call(s=>receiveNormalStart(clients.get,this.#p.start.intake,item,page.proofResultRef,s),signal,true,true);
       const coordinator=new NormalStartCoordinator({...this.#p.start,post:clients.post});
       state=(await this.#call(s=>coordinator.start(item.envelope,s),signal,true,true)).state;
-     }else if(item.envelope.operation==='SEND_INSTRUCTION'&&this.#p.instruction){
+     }else if(item.envelope.operation==='SEND_INSTRUCTION'&&item.materials!==null&&this.#p.instruction){
       const ports=this.#p.instruction,{wire,...configuration}=ports,coordinator=new NormalInstructionCoordinator({...configuration,post:clients.post});
       let history=await this.#call(s=>coordinator.history(item,s),signal,true,true);
       if(history.state==='NOT_RECEIVED'){
@@ -121,10 +124,13 @@ export class NormalStartPolling{
        if(state==='PERMIT_RECORDED')state=(await this.#call(s=>coordinator.dispatch(item.envelope,prepared,ports.wire,s),signal,true,true)).state;
       }
       const collected=await this.#call(s=>coordinator.recordObservations(item.envelope,this.#p.start.spool,s),signal,true,true);state=collected.state;
+     }else if(item.envelope.operation==='REQUEST_STOP'&&this.#p.stop){
+      const coordinator=new NormalStopCoordinator(this.#p.stop);
+      state=(await this.#call(s=>coordinator.recordObservations(item,this.#p.start.spool,s),signal,true,true)).state;
      }else throw Error('PAGE_INVALID');
      if(state!=='RESPONSE_RECORDED')this.#unknown=true;
      await this.#syncThrough(clients.post,signal);
-     if(state!=='RESPONSE_RECORDED'){this.#unknown=true;return this.#result('UNKNOWN',pages,commands,item.envelope.operation==='START_SESSION'?'START_UNKNOWN':'SEND_UNKNOWN');}
+     if(state!=='RESPONSE_RECORDED'){this.#unknown=true;return this.#result('UNKNOWN',pages,commands,item.envelope.operation==='REQUEST_STOP'?'STOP_UNCONFIRMED':item.envelope.operation==='START_SESSION'?'START_UNKNOWN':'SEND_UNKNOWN');}
      commands++;sequence=item.sequence;
     }
     if(!page.items.length)await this.#call(s=>this.#p.start.spool.sync(clients.post,s),signal,true,true);

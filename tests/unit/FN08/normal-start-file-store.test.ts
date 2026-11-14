@@ -36,3 +36,12 @@ test('SEND typed 채널 close 불명은 원 lock을 보존하고 새 store 진�
  assert(f.files.has(f.path('attempt-'+key.commandId+'.lock')));
  await assert.rejects(new NormalStartFileStore(root,scope,f.fs).instructionAttempts().exclusive(key,async()=>0),/NORMAL_LOCAL_BUSY/);assert.equal(closes,1);
 });
+
+
+test('STOP 전용 attempt는 root scope를 검산하고 정상 body 뒤 CLOSE 불명도 반환하지 않는다',async()=>{
+ const f=memoryFiles(),open=f.fs.open,store=new NormalStartFileStore(root,scope,f.fs),key={...scope,commandId:scope.executionId};let closes=0;
+ await assert.rejects(store.stopAttempts().exclusive({...key,executionGeneration:2},async()=>0));assert.equal(f.files.size,0);
+ f.fs.open=async(path:string,flag:any)=>{const h=await open(path,flag);if(path.endsWith('.lock'))h.close=async()=>{closes++;throw Error('RAM_STOP_CLOSE_UNKNOWN');};return h;};
+ await assert.rejects(store.stopAttempts().exclusive(key,async tx=>{await tx.read();return 'HISTORY';}),/NORMAL_LOCAL_STORAGE_UNAVAILABLE/);
+ assert(f.files.has(f.path('attempt-'+key.commandId+'.lock')));await assert.rejects(new NormalStartFileStore(root,scope,f.fs).stopAttempts().exclusive(key,async()=>0),/NORMAL_LOCAL_BUSY/);assert.equal(closes,1);
+});
