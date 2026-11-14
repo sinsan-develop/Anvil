@@ -19468,3 +19468,7 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - consumer5경로동결: Primary신규/직접인접6파일45P0F0SKIP exit0 24613.513ms(b668c3), typecheck0(c64755), diff0/live0. Mainfresh codec+서버→GETclient여정2파일24P0F0SKIP exit0 17039.342ms(479a2f→13689f/session36299종료), 5지문직접동일/diff0(ea6989). spec독립C0/I0/M0, quality검수중. 실제TLS/DB/Agent0·내구수신/cursor/permit제외유지. root타입6진단은INSTRUCTION의STARTassembler진입거절보존과명시part필드로해소했으며기존보호를낮추지않았다.
 
 - consumer최종spec/quality독립C0/I0/M0·5지문동일. 회수404는기존challenge NOT_FOUND이며약화아님을확인했다. 결과서FN08_NORMAL_SEND_MATERIAL_CONSUMER_SOURCE_RESULT_20261115.md에45P/24P/타입/실패/미검증/rollback을구분기록. Main한정수용, 제품2/시험3+기록3 정확8경로게시·통합진행. SDK/DB/Agent/전체계획완료아님.
+
+- PR117 통합: source348bea63→main93c85d78ce133d9fce19e32859c94ed8d0ca9ee5, Broker43621087712success. local/privateexact·clean·tree동등/PRhead복구ref확인. merged-main 다부분plain원문smoke1P0F0SKIP exit0 3156.8717ms(e9cc85). 완료branch/tracking/정확tag정리(6b5336), 기존다른worktree불변. 다음승인source단위codex/av3-fn08-send-durable-intake를최신main에서생성(2daccd), Primary는정확내부행/파일목록을읽기준비중이며쓰기미시작. 실제DB/키/서비스/Agent0.
+
+- 다음내구수신8경로확정: Primary읽기제안에따라SEND전용intake/coordinator+기존generic file store adapter와RAM시험을WI FN08_NORMAL_SEND_DURABLE_INTAKE_SOURCE_20261115.md로지시한다. 기존P3/SEND승인내부형상이며신규root/권한/API/실제실행0. SEND독립receipt/budget·원공통scope/세션결박·UNKNOWN보존/중복permit0, 기존START보존. wire/polling/cursor는미수정으로경계고정.
