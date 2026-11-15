@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {randomUUID,randomBytes} from 'node:crypto';
 import {preparedExecution,httpsFixture} from './normal-start-execution-fixture.ts';
+import {NormalStartCoordinator} from '../../../apps/connector/runtime/normal-start-coordinator.ts';
 import {NormalStartPolling} from '../../../apps/connector/runtime/normal-start-polling.ts';
 import {NormalProtectedGetClient} from '../../../apps/connector/runtime/normal-protected-get-client.ts';
 import {NormalProtectedPostClient} from '../../../apps/connector/runtime/normal-protected-post-client.ts';
@@ -84,17 +86,119 @@ test('wire 뒤 여유 부족의 pending 관측은 명시 갱신의 새 POST로 A
 test('부분 page fault injection은 첫 durable 처리 뒤 둘째 실패에서도 cursor0과 재시작 wire1을 보존한다',async()=>{
  const f=await preparedExecution(Infinity,false);try{
   // controller의 중간 실패 경계만 주입한다. 실제 서버가 중복 START page를 만들었다는 증거가 아니다.
-  const original=f.get.send.bind(f.get);let material=0;
+  const original=f.get.send.bind(f.get);
   f.get.send=async(packet:any,signal:AbortSignal)=>{
    const value:any=await original(packet,signal);
-   if(packet.kind==='COMMANDS')return {...value,items:[value.items[0],{...value.items[0],sequence:value.items[0].sequence+10}],hasMore:true};
-   if(++material>f.item.materials.groups.flatMap((g:any)=>g.parts).length)throw Error('합성 둘째 item 자료 실패');
-   return value;
+   if(packet.kind!=='COMMANDS')return value;
+   const second=structuredClone(value.items[0]);
+   second.sequence+=10;second.materials.manifestRef.id=randomUUID();
+   second.materialsDescriptorHash=contentHash(canonicalJson(second.materials));
+   return {...value,items:[value.items[0],second],hasMore:true};
   };
   const result=await new NormalStartPolling(options(f)).run(f.signal);
   assert.equal(result.state,'UNKNOWN');assert.equal(result.commands,1);assert.equal(result.cursor.afterSequence,0);
   assert.equal(f.mode.wires,1);assert.equal(f.q.permits.length,1);assert.equal(f.q.acks.length,1);
   f.get.send=original;const replay=await new NormalStartPolling(options(f)).run(f.signal);
   assert.equal(replay.state,'LIMIT_REACHED');assert.equal(f.mode.wires,1);assert.equal(f.q.permits.length,1);
+ }finally{await f.h.app.close();}
+});
+test('서버 관측 저장 뒤 ACK 응답 유실: 자료 GET이 차단돼도 원 START 관측을 복구한다',async()=>{
+ const f=await preparedExecution(Infinity,false);try{
+  let lost=0;
+  f.http.mode.alter=(path,value)=>{
+   if(path.endsWith('/observations')){lost++;throw Error('서버 저장 뒤 ACK 응답 유실');}
+   return value;
+  };
+  const first=await new NormalStartPolling(options(f)).run(f.signal);
+  assert.equal(first.state,'UNKNOWN');assert.equal(first.cursor.afterSequence,0);assert.equal(lost,1);
+  assert.equal(f.q.acks.length,1);assert.equal(f.mode.wires,1);assert.equal(f.q.permits.length,1);
+  const events=structuredClone(f.q.observations.map(r=>r.snapshot_json.event)),pending=await f.startPorts().spool.coverage();
+  assert.equal(events.length,5);assert.equal(pending.covered,false);assert.ok(pending.ref);
+  const before=f.http.calls.length;const currents=f.mode.currents;
+  f.http.mode.alter=(path,value)=>{if(path.includes('/materials/'))throw Error('자료 접근 거절');return value;};
+  const replay=await new NormalStartPolling(options(f)).run(f.signal);
+  assert.equal(replay.state,'LIMIT_REACHED');assert.equal(replay.commands,1);assert.ok(replay.cursor.afterSequence>0);assert.ok(replay.cursor.afterCursor);
+  const calls=f.http.calls.slice(before);
+  assert.equal(calls.filter(c=>c.path.includes('/materials/')).length,0);
+  assert.equal(calls.filter(c=>c.method==='POST'&&c.path.endsWith('/observations')).length,1);
+  assert.equal(f.mode.currents,currents);assert.equal(f.mode.wires,1);assert.equal(f.q.permits.length,1);
+  assert.deepEqual(f.q.observations.map(r=>r.snapshot_json.event),events);
+  assert.equal((await f.startPorts().spool.coverage(pending.ref)).covered,true);
+ }finally{await f.h.app.close();}
+});
+test('완전 수신과 정상 부분 수신만 있는 첫 START는 각각 기존 원문 검산 후 한 번 실행한다',async()=>{
+ for(const partial of [false,true]){
+  const f=await preparedExecution();try{
+   const intake=[...f.fs.files.keys()].filter(p=>p.includes('intake-')&&p.endsWith('.json')).sort();
+   const kept=Buffer.from(f.fs.files.get(intake[0]!)!.bytes);
+   if(partial){assert.equal(JSON.parse(f.fs.files.get(intake.at(-1)!)!.bytes.toString()).entry.snapshot.kind,'RECEIVED');f.fs.files.delete(intake.at(-1)!);}
+   const before=f.http.calls.length;
+   const result=await new NormalStartPolling(options(f)).run(f.signal);
+   assert.equal(result.state,'LIMIT_REACHED');assert.equal(result.commands,1);assert.ok(result.cursor.afterSequence>0);
+   assert.equal(f.mode.wires,1);assert.equal(f.q.permits.length,1);assert.ok(f.mode.currents>0);
+   assert.equal(f.http.calls.slice(before).filter(c=>c.path.includes('/materials/')).length,partial?intake.length-1:0);
+   assert.deepEqual(f.fs.files.get(intake[0]!)!.bytes,kept);
+  }finally{await f.h.app.close();}
+ }
+});
+test('시도 이력이 있는데 수신이 없거나 불완전·손상·다른 fullref이면 새 호출 없이 UNKNOWN을 보존한다',async()=>{
+ for(const fault of ['missing','partial','corrupt','other-received-id']){
+  const f=await preparedExecution();try{
+   const run=await f.make().coordinator.start(f.e,f.signal);assert.equal(run.state,'RESPONSE_RECORDED');
+   const intake=[...f.fs.files.keys()].filter(p=>p.includes('intake-')&&p.endsWith('.json')).sort();
+   const terminal=f.fs.files.get(intake.at(-1)!)!;
+   if(fault==='missing'){for(const path of intake)f.fs.files.delete(path);}
+   else if(fault==='partial')f.fs.files.delete(intake.at(-1)!);
+   else if(fault==='corrupt'){
+    const first=f.fs.files.get(intake[0]!)!,record=JSON.parse(first.bytes.toString());record.bytes='eA';first.bytes=Buffer.from(canonicalJson(record)+'\n');
+   }else{
+    const record=JSON.parse(terminal.bytes.toString()),original=structuredClone(record.entry.ref);record.entry.ref.id=randomUUID();terminal.bytes=Buffer.from(canonicalJson(record)+'\n');
+    f.intake.receivedForPage=async()=>original; // 외부 메서드 교체로 원장 검산을 가장할 수 없다.
+   }
+   const before=f.http.calls.length,currents=f.mode.currents,local=await f.startPorts().spool.batch();
+   const result=await new NormalStartPolling(options(f)).run(f.signal);
+   assert.equal(result.state,'UNKNOWN',fault);assert.equal(result.commands,0);assert.deepEqual(result.cursor,{afterSequence:0});
+   assert.equal(f.http.calls.slice(before).filter(c=>/\/materials\/|\/observations$|\/permits$/.test(c.path)).length,0);
+   assert.deepEqual(await f.startPorts().spool.batch(),local);assert.equal(f.q.observations.length,0);
+   assert.equal(f.mode.currents,currents);assert.equal(f.q.permits.length,1);assert.equal(f.mode.wires,1);
+  }finally{await f.h.app.close();}
+ }
+});
+test('이전 RESPONSE가 있어도 만료되거나 회수된 credential은 관측 POST와 cursor를 열지 않는다',async()=>{
+ for(const fault of ['expiry','revocation']){
+  const f=await preparedExecution(5000);try{
+   assert.equal((await f.make().coordinator.start(f.e,f.signal)).state,'RESPONSE_RECORDED');
+   const before=f.http.calls.length;
+   if(fault==='expiry')f.h.store.mode.offset+=5000;else f.h.store.mode.revoked=true;
+   const result=await new NormalStartPolling(options(f)).run(f.signal);
+   assert.equal(result.state,fault==='expiry'?'NEEDS_RENEWAL':'UNKNOWN');
+   assert.deepEqual(result.cursor,{afterSequence:0});assert.equal(result.commands,0);
+   assert.equal(f.http.calls.slice(before).filter(c=>c.path.includes('/materials/')||c.path.endsWith('/observations')).length,0);
+   assert.equal(f.q.acks.length,0);assert.equal(f.mode.wires,1);assert.equal(f.q.permits.length,1);
+  }finally{await f.h.app.close();}
+ }
+});
+test('완전 수신과 PERMIT_RECORDED에서 중단된 원 시도는 UNKNOWN 관측을 ACK해도 cursor를 유지한다',async()=>{
+ const f=await preparedExecution();try{
+  const channel='attempt-'+f.e.commandId,exclusive=f.store.exclusive.bind(f.store),ports=f.startPorts();
+  const coordinator=new NormalStartCoordinator({...ports,post:f.post,store:{
+   transport:'NORMAL_PROTECTED',exclusive:(name,body)=>exclusive(name,tx=>body({...tx,appendAndSync(value){
+    if(name===channel&&(value as {snapshot:{state:string}}).snapshot.state==='UNKNOWN')throw Error('UNKNOWN 쓰기 진입 전 합성 거절');
+    return tx.appendAndSync(value);
+   }}))
+  }});
+  f.mode.currentHook=async()=>{if(f.mode.currents===2)throw Error('permit 내구화 이후 현재성 거절');};
+  assert.equal((await coordinator.start(f.e,f.signal)).state,'UNKNOWN');
+  const states=()=>exclusive(channel,async tx=>(await tx.read()).map(v=>(v as {snapshot:{state:string}}).snapshot.state));
+  assert.deepEqual(await states(),['START_ATTEMPTED','PERMIT_RECORDED']);
+  assert.equal(f.q.permits.length,1);assert.equal(f.mode.wires,0);
+  const before=f.http.calls.length,currents=f.mode.currents;
+  const replay=await new NormalStartPolling(options(f)).run(f.signal);
+  assert.equal(replay.state,'UNKNOWN');assert.equal(replay.commands,0);assert.deepEqual(replay.cursor,{afterSequence:0});
+  assert.deepEqual(await states(),['START_ATTEMPTED','PERMIT_RECORDED','UNKNOWN']);
+  assert.equal(f.http.calls.slice(before).filter(c=>c.path.includes('/materials/')||c.path.endsWith('/permit')).length,0);
+  assert.equal(f.mode.currents,currents);assert.equal(f.q.permits.length,1);assert.equal(f.mode.wires,0);
+  assert.equal(f.q.observations.at(-1).snapshot_json.event.type,'UNKNOWN');assert.equal(f.q.acks.length,1);
+  const coverage=await f.startPorts().spool.coverage();assert.ok(coverage.ref);assert.equal(coverage.covered,true);
  }finally{await f.h.app.close();}
 });

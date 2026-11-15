@@ -1,3 +1,4 @@
+import {cloneV1,refV1} from '../../../contracts/runtime/validation-v1.ts';
 import {NormalStopCoordinator,type NormalStopHistoryPorts} from './normal-stop-coordinator.ts';
 import {NormalInstructionCoordinator,type NormalInstructionWirePort} from './normal-instruction-coordinator.ts';
 import {receiveNormalInstruction} from './normal-instruction-intake.ts';
@@ -108,9 +109,16 @@ export class NormalStartPolling{
      if(item.materials===null&&!(item.envelope.operation==='REQUEST_STOP'&&this.#p.stop))throw Error('PAGE_INVALID');
      let state:string;
      if(item.envelope.operation==='START_SESSION'&&item.materials!==null){
-      await this.#call(s=>receiveNormalStart(clients.get,this.#p.start.intake,item,page.proofResultRef,s),signal,true,true);
+      if(!refV1(page.proofResultRef))throw Error('PAGE_INVALID');
+      const startItem=cloneV1(item),proof=cloneV1(page.proofResultRef);
       const coordinator=new NormalStartCoordinator({...this.#p.start,post:clients.post});
-      state=(await this.#call(s=>coordinator.start(item.envelope,s),signal,true,true)).state;
+      let result=await this.#call(s=>coordinator.startPage(startItem,s),signal,true,true);
+      if(!result){
+       const intake=await this.#call(s=>receiveNormalStart(clients.get,this.#p.start.intake,startItem,proof,s),signal,true,true);
+       result=await this.#call(s=>coordinator.startPage(startItem,s,intake.receivedRef),signal,true,true);
+      }
+      if(!result)throw Error('NORMAL_START_RECEIPT_CONFLICT');
+      state=result.state;
      }else if(item.envelope.operation==='SEND_INSTRUCTION'&&item.materials!==null&&this.#p.instruction){
       const ports=this.#p.instruction,{wire,...configuration}=ports,coordinator=new NormalInstructionCoordinator({...configuration,post:clients.post});
       let history=await this.#call(s=>coordinator.history(item,s),signal,true,true);

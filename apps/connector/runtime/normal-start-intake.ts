@@ -183,6 +183,17 @@ export class NormalStartIntake{
    recordedParts:events.filter(x=>x.snapshot.kind==='MATERIAL').length,envelopeTimeState:now>=Date.parse(e.expiresAt)?'EXPIRED' as const:'WITHIN_ENVELOPE_WINDOW' as const,
    readOnly:true as const,currentAuthorityVerified:false as const,executionAuthorized:false as const};
  });}
+ /** 현재 페이지의 두 자료 그룹과 저장된 부분 전체를 대조한다. 비어 있거나 정상 부분 수신일 때만 null이다. */
+ receivedForPage(raw:NormalCommandPageItem){return this.#guard('NORMAL_INTAKE_STATUS_UNAVAILABLE',async()=>{
+  this.#port();
+  const item=cloneV1(raw);
+  if(!recordV1(item,['sequence','commandRef','envelope','materials','materialsDescriptorHash'])||!Number.isSafeInteger(item.sequence)||item.sequence<1||!refV1(item.commandRef))fail('NORMAL_INTAKE_INPUT_INVALID');
+  const envelope=this.#envelope(item.envelope),descriptor=this.#descriptor(item.materials,envelope),key=receiptKeyV1(envelope);
+  if(hash(descriptor)!==item.materialsDescriptorHash)fail('NORMAL_INTAKE_RECORD_CONFLICT');
+  const {received}=await this.store.exclusive(key,tx=>this.#journal(tx,key,envelope,descriptor));
+  this.#port();this.#envelope(envelope);
+  return received?cloneV1(received.ref):null;
+ });}
  /** 기존 옵션 조회 형상은 그대로 유지한다. */
  async startOptions(rawEnvelope:unknown){return (await this.startMaterials(rawEnvelope)).options;}
  /** RECEIVED의 두 원문을 같은 journal 검사에서 조립한다. 참조만으로 wire 자료를 대신하지 않는다. */

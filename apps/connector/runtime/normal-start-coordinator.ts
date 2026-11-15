@@ -3,6 +3,7 @@ import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {readDispatchEnvelopeV1,type DispatchEnvelopeV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
 import {receiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 import {cloneV1,recordV1,refV1,isoV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
+import type {NormalCommandPageItem} from './normal-start-material-consumer.ts';
 import {NormalStartIntake} from './normal-start-intake.ts';
 import {NormalProtectedPostClient,type NormalPermitResult} from './normal-protected-post-client.ts';
 import {NormalObservationSpool} from './normal-observation-spool.ts';
@@ -16,6 +17,7 @@ export interface NormalStartPorts{intake:NormalStartIntake;store:NormalJournalSt
 type State='START_ATTEMPTED'|'PERMIT_RECORDED'|'RESPONSE_RECORDED'|'UNKNOWN';
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const fail=(code:string):never=>{throw Error(code);};
+const readPageReceipt=NormalStartIntake.prototype.receivedForPage;
 /** 정상 source 연결기. 원문 옵션을 변환하거나 SYNTHETIC/CODEX 표식을 정상 실행 권위로 승격하지 않는다.
  * 명시 wire 공급자의 응답도 관측 주장일 뿐 실제 Agent 성공·writer 해제를 뜻하지 않는다. */
 export class NormalStartCoordinator{
@@ -70,14 +72,32 @@ export class NormalStartCoordinator{
  #result(e:DispatchEnvelopeV1,r:any,state?:State){return{transport:'NORMAL_PROTECTED' as const,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,
   state:state??r.snapshot.state,recordRef:cloneV1(r.ref),executionAuthorized:false as const,agentSuccessVerified:false as const};}
  async start(raw:unknown,signal:AbortSignal){
+  const result=await this.#run(raw,signal);
+  if(!result)return fail('NORMAL_START_RECORD_UNCERTAIN');
+  return result;
+ }
+ /** 같은 시도 잠금에서 수신 fullref와 시도 원장을 대조한다. null은 자료 GET으로 진행할 수 있는 미수신이다. */
+ startPage(raw:NormalCommandPageItem,signal:AbortSignal,expectedReceived?:Ref){
+  const item=cloneV1(raw);
+  return this.#run(item.envelope,signal,item,expectedReceived===undefined?undefined:cloneV1(expectedReceived));
+ }
+ async #run(raw:unknown,signal:AbortSignal,item?:NormalCommandPageItem,expectedReceived?:Ref){
   if(!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_START_CANCELLED');
   const e=readDispatchEnvelopeV1(cloneV1(raw),Date.parse((raw as any)?.issuedAt));
   if(e.operation!=='START_SESSION'||Date.parse(e.issuedAt)>this.#now())fail('NORMAL_START_ENVELOPE_INVALID');
   const p=this.#p;
   return p.store.exclusive('attempt-'+e.commandId,async tx=>{
    let rows=this.#rows(await tx.read(),e);
+   const pageReceipt=item?await readPageReceipt.call(p.intake,item):null;
+   if(signal.aborted)fail('NORMAL_START_CANCELLED');
+   if(item){
+    if((expectedReceived!==undefined&&!same(expectedReceived,pageReceipt))||(rows.length&&!same(rows[0].snapshot.receivedRef,pageReceipt)))fail('NORMAL_START_RECEIPT_CONFLICT');
+    if(!pageReceipt)return null;
+   }
    // 새 실행 전에는 readStatus가 아니라 자료 bytes·원문·descriptor 전체를 재검산한다.
    const materials=rows.length?null:await p.intake.startMaterials(e),options=materials?.options,received=rows[0]?.snapshot.receivedRef??options!.receivedRef;
+   if(pageReceipt&&!same(pageReceipt,received))fail('NORMAL_START_RECEIPT_CONFLICT');
+   if(signal.aborted)fail('NORMAL_START_CANCELLED');
    const observe=async(type:string,ref:Ref,at:string,processRef:Ref|null=null,reasonCode='NONE')=>p.spool.record({type,commandId:e.commandId,envelopeHash:e.envelopeHash,
     localRecordRef:cloneV1(ref),processRef,occurredAt:at,reasonCode});
    // 원 durable record의 시각/ref로 복구하므로 다른 occurrence나 새 wire를 만들지 않는다.
