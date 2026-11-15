@@ -19706,3 +19706,13 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 소스보완 독립검수 C0/I0/M0. 제품2조건·기존시험단언불변과지문일치확인. 실제복제NOT_COMPLETE/부분자원보존유지.
 
 - Main직접 CapAdd4시나리오 재확인 ffb039 exit0/4P/0F/0SKIP·diff검사0. 실제실행결과JSON은승인ID-result.json에분리보존. 원1회소진/새실제실행GO0/SDK추가조회0.
+
+## 2026-11-16 R3 후속 선행 관측안과 독립 구현 확인
+
+- 이전 goal 턴은 실제 실패 증거 확보, 원인 predicate 보완, 독립 검수와 안전 checkpoint 3858e225의 private push로 진전이 있었다. 전체 계획 완료는 아니다. 해당 시점 local/private exact·clean을 확인했다.
+- 다음 미완료는 Stage A/P03의 복구 선행이다. 실제 단1회는 소진됐고 원격 고정8d·부분자원 보존 및 재시도/자동삭제 금지를 유지한다. mount 전체 JSON 부재를 추정으로 대체하지 않는다. 기존 Primary에게 보존 init의 목적제한 metadata 관측 후보 한 문서 작성을 맡겼으며 실제 SSH/Docker/DB/권한/키/서비스/Agent/SDK/정리 GO는 없다.
+- 별도 read-only 담당자가 다른 계획 미완료의 기존 승인 안 독립 구현 누락을 대조한다. 새 계약을 임의 채택하거나 완료된 기능의 재검증을 진도로 대체하지 않는다. Main은 판단·검수·통합을 맡고 동시 code writer는 없다.
+- PMO snapshot cursor 3f08205c-12dc-4cbf-98ee-17132424341d:15에서 R3 실패·부분자원 보존·후속 별도 결정 경계의 수신을 확인했다. 새 실행 승인은 없으며 PMO 다음 업무 배정을 기다리는 상태로 해석하지 않는다.
+
+- 다음 독립 구현은 UI05/FN13 확정 저장 영수증 뒤 GET 실패가 원명령 결과불명으로 역행하는 누락이다. 현재 CheckpointEditor.save의 applied후catch가검산storedRef를잃는것을Main/독립담당자가확인했다. 기존FN13 r2 A 승인과고정GET계약안의보완이며새API/권한/DB변경0. 현branch소스단위통합후새branch에서Primary단일writer로이어간다.
+- P03 추가관측후보1문서를Primary가작성했고독립C0/I0/M1의기한모호성을Main이새관측승인시각+30분과요청시작+30초중이른값으로정정했다. 최종SHA0ED884E382AB328B6280658485EFACE6EEAABF9E7DD9BDBFC4574CFDE7613C75. 실제관측/복제/정리/SDK반복0. 후보는실행승인이아니다.
