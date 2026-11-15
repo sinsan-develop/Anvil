@@ -156,3 +156,5 @@
 - 2026-11-15 직접승인실행: P03R3고정수거ref부재로진입전STOP·새6대상0/독립부재·원volume보존확인,복제NOT_RUN/P03미완료유지. Windows-localSDK0.3.224단발GET/해시검산성공·hook동기성/일부argv/env/PermissionResult선언확인·실Agent효과0/전체FN07체크불변.
 
 - 2026-11-16 UI05/FN13 확정 저장 후 GET실패 복구: source2경로·직접/인접21P/type0/메모리빌드0·Main1P·독립C0/I0/M0. fullref 확정 유지→명시GET복구는 RAM React에서 확인했고 저장POST1·POST응답유실재확인·늦은응답차단을 보존했다. 실제브라우저/DB/전체업무는미완료이며 완료체크상향0.
+
+- 2026-11-16 UI03/FN03 공통양식 저장확정 뒤 조회복구: source3경로·직접/인접22P/type0/메모리build0·Main1P·독립C0/I0/M0. 신규양식발급fullref를화면왕복버퍼에보존→명시GET복구·POST1/다른hash거절을확인. 실제DB/브라우저·전체업무미완료이며완료체크상향0.

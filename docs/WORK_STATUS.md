@@ -19727,3 +19727,14 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - UI05 Primary 제품1/시험1 동결: 영수증검산뒤GET오류가저장확정을역행시키지않도록POST catch분리·고정ref명시GET을연결했다. 직접/인접21P0F0SKIP(50e48a), type0(0f09ec), 원Vite config메모리빌드520모듈0(f50c65), diff0. Main핵심반례1P0F0SKIP(58c195). 제품SHA67CBC776…7B3AF82D/시험SHAA853B255…2285E228, 쓰기반환/live0·독립검수중. 실제브라우저/서버/DB/전체업무는미완료다.
 
 - UI05 동결 독립 C0/I0/M0로 소스 범위 수용. 저장확정 후 GET실패의 fullref 보존·POST1·명시GET복구·주체변경 늦은200/401폐기·baseRef 자동변경0을 확인했다. 검수결과서는 UI05_CHECKPOINT_CONFIRMED_READ_RECOVERY_SOURCE_RESULT_20261116.md. 전체UI05/FN13·실DB/served인수와전체계획미완료는유지한다.
+
+## 2026-11-16 UI03/FN03 공통 양식 저장 후 조회 복구 착수
+
+- UI05 PR130/head1f29704f→main95ff9039 통합·Broker43733783371 success·tree동일/localprivate exactclean·merged핵심1P0F0SKIP(12fd53)을확인했다. pr-130-head복구tag를원격보존하고완료branch/요청tag만정상정리했다.
+- 다음독립미완료는UI03/FN03 공통양식의검산영수증fullref가후속GET실패뒤지역변수에서소실되는화면연결이다. 기존Primary읽기분해/Main소스대조로확인했다. 신규양식targetId=null이며원명령재전송대신fullref고정GET복구가필요하다. 최신main에서codex/av3-ui03-form-read-recovery를생성했고WI정확제품2/시험1에Primary단일writer를배정한다. 새API/DB/권한계약0·실제환경/SDK/P03조작0.
+
+- UI03 실제 React RAM 반례 a0470b exit1/1F: 새양식 targetId=null의유효APPLIED/DRAFT→GET503뒤pending에원request/name/formCode만남고서버발급fullref가없음을재현했다. 정확제품2경로보완중이다. 테스트 Vite 환경차단옵션은기존지원되지않는envFile:false를envDir:false로정정해새환경파일조회를차단한다. 기존기능기대값이나권한기준은낮추지않는다.
+
+- UI03 소스3경로 동결: 발급fullref를원request와화면pending에보존→GET만명시복구, 원문검산후만formBuffer/onSaved반영. 직접·인접22P0F0SKIP(c2659e)/type0(1ed83b)/메모리빌드520모듈0(913e78)/diff0. Main핵심1P0F0SKIP(7c09a6), 다른hash·주체client/화면종료늦은200/401·원POST유실·복사원본교체반례포함. 독립검수중/live0. 실제DB/served/전체UI03·FN03·계획미완료를유지한다.
+
+- UI03 동결 독립 C0/I0/M0·원request/fullref/검토입력보존·GET검산전onSaved0·주체교체늦은응답폐기를소스범위로수용했다. 복사원본교체신규직접증거는보존된기존복사명령의진행중GET폐기까지이며최초복사전체흐름완료로확대0.
