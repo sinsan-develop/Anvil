@@ -170,3 +170,5 @@
 - 2026-11-16 FN06/FN08 데스크톱 owner의 보호 GET/POST 쌍: source5경로·직접30P/추가갱신2P/등록인접2P·루트/entry타입0·Main1P·독립C0/I0/M0. 데스크톱 전체 타입169진단은 기준과동일·추가0/소실0이나 FAIL 유지. 실제TLS/키/host/DB/Agent·전체업무 미완료·완료체크 상향0. FN08_DESKTOP_NORMAL_CLIENT_PAIR_SOURCE_RESULT_20261116 참조.
 
 - 2026-11-16 FN10/UI04 판단이력 페이지연속성: source2경로·최종UI18P·기존서버12P별도재사용/type0/메모리build0/Main1P·독립I2해소C0/I0/M0. 동일cursor GET1·거절뒤원문숨김/영수증보존·첫페이지명시복구와늦은응답폐기를확인했다. 실제DB/브라우저/전체업무미완료·체크상향0. FN10_NODE_DECISION_HISTORY_CONTINUITY_SOURCE_RESULT_20261116 참조.
+
+- 2026-11-16 FN08 같은번들 START polling 조립: source6경로·직접36P/등록인접2P·루트/entry타입0·Main1P·독립C0/I0/M0. REGISTERED owner의CJS pair→조립I/O0→첫 non-empty START RAM permit/wire1·원관측5ACK/cursor1을확인했다. 데스크톱169진단은전후동일·FAIL유지, 실제OS/DB/SDK/Agent·root/CURRENT공급/전체업무미완료·체크상향0. FN08_SAME_BUNDLE_START_POLLING_SOURCE_RESULT_20261116 참조.

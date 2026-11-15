@@ -109,10 +109,11 @@ function normalCredentialSource(input,paired){
  const runtime=require('./'+'native-proof-runtime.cjs'),Bootstrap=own(runtime,'NormalCredentialBootstrapClient'),bootstrapMethod=Bootstrap?.prototype?.bootstrap,renewMethod=Bootstrap?.prototype?.renew;
  if(typeof Bootstrap!=='function'||typeof bootstrapMethod!=='function'||typeof renewMethod!=='function')return fail('PROTECTION_UNAVAILABLE');
  const assemble=paired?own(runtime,'createNormalProtectedClientPair'):null,disposal=paired?new AbortController():null;
- if(paired&&typeof assemble!=='function')return fail('PROTECTION_UNAVAILABLE');
+ const polling=paired?own(runtime,'createNormalStartPolling'):null;
+ if(paired&&(typeof assemble!=='function'||typeof polling!=='function'))return fail('PROTECTION_UNAVAILABLE');
  let poisoned=false,lastWall=-Infinity,lastMono=-Infinity;
  const ownerGuard=()=>{
-  if(disposal?.signal.aborted||(paired&&own(runtime,'createNormalProtectedClientPair')!==assemble)||poisoned||epoch!==ownerEpoch||state.phase!=='REGISTERED'||!bindingRecord||canonicalJson(bindingRecord)!==canonicalJson(original)||canonicalJson(context())!==ownerContext||names.some((k,i)=>own(dependencies,k)!==functions[i])||own(runtime,'NormalCredentialBootstrapClient')!==Bootstrap||Bootstrap.prototype.bootstrap!==bootstrapMethod||Bootstrap.prototype.renew!==renewMethod)return fail('CONTEXT_CHANGED');
+  if(disposal?.signal.aborted||(paired&&(own(runtime,'createNormalProtectedClientPair')!==assemble||own(runtime,'createNormalStartPolling')!==polling))||poisoned||epoch!==ownerEpoch||state.phase!=='REGISTERED'||!bindingRecord||canonicalJson(bindingRecord)!==canonicalJson(original)||canonicalJson(context())!==ownerContext||names.some((k,i)=>own(dependencies,k)!==functions[i])||own(runtime,'NormalCredentialBootstrapClient')!==Bootstrap||Bootstrap.prototype.bootstrap!==bootstrapMethod||Bootstrap.prototype.renew!==renewMethod)return fail('CONTEXT_CHANGED');
   const wall=functions[2](),mono=functions[3]();
   if(!Number.isSafeInteger(wall)||!Number.isFinite(mono)||wall<lastWall||mono<lastMono||wall>=Math.min(Date.parse(original.registration.registrationExpiresAt),Date.parse(original.credential.expiresAt)))return fail('DEADLINE');
   lastWall=wall;lastMono=mono;return{wall,mono};
@@ -166,11 +167,21 @@ function normalCredentialSource(input,paired){
   const pair=assemble(options,port,()=>{if(latest?.port!==port)return fail('CONTEXT_CHANGED');return now();});
   latest={pair,port};return pair;
  };
+ const renew=async(/** @type {any} */previous,/** @type {AbortSignal} */signal)=>{
+  ownerGuard();if(!latest||previous!==latest.pair)return fail('NORMAL_OWNED_PREDECESSOR');
+  return bind(await renewMethod.call(issuer,latest.port,signal));
+ };
  return Object.freeze({
   bootstrap:async(/** @type {AbortSignal} */signal)=>{ownerGuard();return bind(await bootstrapMethod.call(issuer,signal));},
-  renew:async(/** @type {any} */previous,/** @type {AbortSignal} */signal)=>{
-   ownerGuard();if(!latest||previous!==latest.pair)return fail('NORMAL_OWNED_PREDECESSOR');
-   return bind(await renewMethod.call(issuer,latest.port,signal));
+  renew,
+  createStartPolling:(/** @type {any} */pair,/** @type {any} */input)=>{
+   ownerGuard();if(!latest||pair!==latest.pair)return fail('NORMAL_OWNED_PREDECESSOR');
+   let activePair=pair;
+   const current=()=>{if(!latest||latest.pair!==activePair)return fail('NORMAL_OWNED_PREDECESSOR');return now();};
+   return polling(pair,latest.port,copy(original.registration.registrationRef),input,current,async(/** @type {any} */previous,/** @type {AbortSignal} */signal)=>{
+    current();if(previous!==activePair)return fail('NORMAL_OWNED_PREDECESSOR');
+    activePair=await renew(previous,signal);return activePair;
+   });
   },
   dispose:()=>{disposal.abort();latest=null;}
  });

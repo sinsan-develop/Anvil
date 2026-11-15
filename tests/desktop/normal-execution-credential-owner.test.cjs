@@ -14,7 +14,7 @@ const id=n=>'ce140001-0000-4000-8000-'+String(n).padStart(12,'0'),ref=n=>({id:id
 function model(f,mode='NORMAL'){
  const row=f.stored(),scope={projectId:row.projectId,connectorId:row.registration.connectorRef.id,executionId:id(1),executionGeneration:1,grantRef:ref(2),credentialGeneration:1};
  const config={origin:row.origin,ca:'TEST_ONLY_EXPLICIT_CA',scope},calls=[],spawn=f.ports.spawn;let expiresAt=new Date(f.dependencies.now()+5000).toISOString();
- let metadata,reply,offset=0,onFrame=()=>{};
+ let metadata,reply,offset=0,onFrame=()=>{},respond;
  const typedReply=request=>{
   const recordedAt=new Date(f.dependencies.now()).toISOString(),result={transport:'NORMAL_PROTECTED',proofResultRef:ref(20),cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
   if(request.method==='GET')return {...result,items:[],nextCursor:'cursor1',hasMore:false,observedAt:recordedAt,expiresAt};
@@ -30,13 +30,13 @@ function model(f,mode='NORMAL'){
   queueMicrotask(()=>{let data;onFrame(v);
    if(v.operation==='NORMAL_EXECUTION_BOOTSTRAP'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.scope,scope);metadata={slotId:id(3),receiptRef:ref(4),origin:row.origin,scope,expiresAt,caHash:contentHash(config.ca)};data=metadata;}
    else if(v.operation==='NORMAL_EXECUTION_RENEW'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.previous,metadata);assert.ok(Date.parse(metadata.expiresAt)<=f.dependencies.now());expiresAt=new Date(f.dependencies.now()+5000).toISOString();metadata={...metadata,slotId:id(11),receiptRef:ref(12),expiresAt};data=mode==='RENEW_UNKNOWN'?{...metadata,caHash:'b'.repeat(64)}:metadata;}
-   else if(v.operation==='NORMAL_EXECUTION_CALL'){assert.equal(v.payload.attemptId,row.attemptId);assert.equal(v.payload.slotId,metadata.slotId);const r=v.payload.request;reply=Buffer.from(canonicalJson(v.payload.kind==='PREPARE'?{path:r.path,query:r.query,auth:'A'.repeat(20),challengeRef:ref(5),requestId:id(6),expiresAt}:mode==='PAIR'?typedReply(r):mode==='MAX'?{value:'x'.repeat(2812587-12)}:{commands:[]}));offset=0;data=chunk();}
+   else if(v.operation==='NORMAL_EXECUTION_CALL'){assert.equal(v.payload.attemptId,row.attemptId);assert.equal(v.payload.slotId,metadata.slotId);const r=v.payload.request;reply=Buffer.from(canonicalJson(v.payload.kind==='PREPARE'?{path:r.path,query:r.query,auth:'A'.repeat(20),challengeRef:ref(5),requestId:id(6),expiresAt}:respond?respond(r,v.payload.body):mode==='PAIR'?typedReply(r):mode==='MAX'?{value:'x'.repeat(2812587-12)}:{commands:[]}));offset=0;data=chunk();}
    else if(v.operation==='NORMAL_EXECUTION_READ'){assert.equal(v.payload.handle,id(7));assert.equal(v.payload.offset,offset);data=chunk();}
    else throw Error('UNEXPECTED_NORMAL_OPERATION');
    child.stdout.emit('data',Buffer.from(canonicalJson({schemaVersion:1,purpose:'DESKTOP_TRUST_KEY_RESULT_V1',requestId:v.requestId,sequence:v.sequence,rootIdentity:mode==='ROOT'?'OTHER_ROOT':'TEST_ONLY_ROOT',data})+'\n'));done();
   });return true;
  };if(mode==='CLOSE'){child.stdin.end=(_a,_b,done)=>{queueMicrotask(()=>{child.stdout.emit('end');child.emit('close',1);done?.();});};}return child;};
- return{config,calls,expiresAt,onFrame(fn){onFrame=fn;},request:{method:'GET',path:'/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/commands',query:'',body:null,expiresAt}};
+ return{config,calls,expiresAt,respond(fn){respond=fn;},onFrame(fn){onFrame=fn;},request:{method:'GET',path:'/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/commands',query:'',body:null,expiresAt}};
 }
 test('REGISTERED 실제 owner→bundle bootstrap→제한 host client, 매 작업 새 lease/root 검산',async()=>{
  const f=await fixtures.liveNativeOwner(),m=model(f),before=f.calls(),client=f.owner.createNormalCredentialBootstrap(m.config);
@@ -171,4 +171,89 @@ test('이미 발송한 GET 도중 dispose는 늦은 응답을 성공으로 바�
  const count=f.calls();await assert.rejects(pair.get.send(packet,signal),error=>error.outcomeUnknown===true);
  assert.equal(f.calls(),count+1);await assert.rejects(pair.get.send(packet,signal));assert.equal(f.calls(),count+1);
  assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
+});
+
+async function pollingFixture(){
+ const f=await fixtures.liveNativeOwner(),base=f.dependencies.now();let offset=0;
+ f.dependencies.now=()=>base+offset;f.ports.now=()=>base+offset;
+ const m=model(f,'PAIR'),scope=m.config.scope,clock=f.dependencies.now,signal=new AbortController().signal;
+ const {root,memoryFiles}=await import('../unit/FN08/normal-start-local-fixture.ts');
+ const {NormalStartFileStore}=await import('../../apps/connector/runtime/normal-start-file-store.ts');
+ const local={projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration};
+ const memory=memoryFiles(),store=new NormalStartFileStore(root,local,memory.fs);
+ const expected={context:{...local,assignmentId:id(40),connectionRef:f.stored().registration.connectorRef,environmentRef:ref(42),authorizationReceiptRef:ref(43),capabilityRef:ref(44),budgetRef:ref(45),sourceScopes:[{sourceRootRef:ref(46),mappingRef:null,observationRef:ref(47),baselineRef:ref(48),targets:[{relativePath:'sample.txt',kind:'FILE',access:'READ',recursive:false}]}]},executorRegistrationRef:f.stored().registration.registrationRef};
+ const bodies=['{"context":1}','{"options":1}'],hash=x=>contentHash(canonicalJson(x));
+ const groups=bodies.map((body,i)=>({kind:i?'START_OPTIONS':'CONTEXT_BUNDLE',payloadRef:ref(50+i),sourceRef:ref(52+i),sourceBytes:Buffer.byteLength(body),contentHash:contentHash(body),mediaType:'application/json',parts:[{materialId:id(54+i),partIndex:1,byteOffset:0,utf8Bytes:Buffer.byteLength(body),contentHash:contentHash(body)}]}));
+ const issuedAt=new Date(clock()).toISOString(),unsigned={schemaVersion:1,commandId:id(56),issuedAt,expiresAt:new Date(clock()+30000).toISOString(),...expected,operation:'START_SESSION',payload:{contextBundleRef:groups[0].payloadRef,optionsRef:groups[1].payloadRef}};
+ const envelope={...unsigned,envelopeHash:hash(unsigned)},item={sequence:1,commandRef:ref(57),envelope,materials:{manifestRef:ref(58),groups}};
+ const seen={permits:0,wires:0,events:[],loseAck:false};
+ m.respond((r,body)=>{
+  const result={transport:'NORMAL_PROTECTED',proofResultRef:ref(59),cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
+  const observedAt=new Date(clock()).toISOString(),expiresAt=new Date(clock()+5000).toISOString();
+  if(r.path.endsWith('/commands'))return {...result,items:[item],nextCursor:'cursor1',hasMore:false,observedAt,expiresAt};
+  const i=groups.findIndex(g=>r.path.endsWith('/materials/'+g.parts[0].materialId));
+  if(i>=0){const g=groups[i],p=g.parts[0];return {...result,observedAt,expiresAt,material:{materialId:p.materialId,sourceRef:g.sourceRef,partIndex:1,partCount:1,contentHash:p.contentHash,bytes:Buffer.from(bodies[i]).toString('base64url')}};}
+  if(r.path.endsWith('/permit')){seen.permits++;return {...result,executionAuthorized:true,permit:{ref:ref(60),commandId:envelope.commandId,envelopeHash:envelope.envelopeHash,issuedAt:observedAt,expiresAt}};}
+  assert.ok(r.path.endsWith('/observations'));const {events}=JSON.parse(body);seen.events=events;
+  const snapshot={execution:local,highestContiguous:events.length,maxSequence:events.length,contiguousDigest:events.reduce((previous,e)=>hash({previous,eventHash:hash(e)}),hash([])),gaps:[],storedCount:events.length,writerReleaseVerified:false,executionAuthorized:false,dispatchPerformed:false,recordedAt:observedAt};
+  return {...result,ack:seen.loseAck?null:{ref:{...ref(61),contentHash:hash(snapshot)},snapshot}};
+ });
+ const current={transport:'NORMAL_PROTECTED',async current(e,attempt){return {transport:'NORMAL_PROTECTED',key:{...local,commandId:e.commandId},envelopeHash:e.envelopeHash,grantRef:scope.grantRef,localAttemptRef:attempt,sourceObservationRefs:[ref(47)],osOwnershipRef:ref(62),checkedAt:new Date(clock()).toISOString(),expiresAt:new Date(clock()+5000).toISOString()};}};
+ const wire={transport:'NORMAL_PROTECTED',async send(value){seen.wires++;assert.equal(Buffer.from(value.options.bytes).toString(),bodies[1]);return {transport:'NORMAL_PROTECTED',responseRef:ref(63),processRef:null};}};
+ const input={expected,intakeStore:store.intake(),journalStore:store,current,wire,timeoutMs:1000,deadline:clock()+30000,maxPages:1,idleMs:1};
+ const source=f.owner.createNormalExecutionClients(m.config),pair=await source.bootstrap(signal);
+ return {f,m,local,clock,signal,memory,input,source,pair,seen,advance(ms){offset+=ms;}};
+}
+test('외부 TS coordinator는 실제 CJS pair의 첫 START를 거절하고 같은 번들 조립은 ACK까지 처리한다',async()=>{
+ const x=await pollingFixture(),p=x.input;
+ const {NormalStartIntake}=await import('../../apps/connector/runtime/normal-start-intake.ts');
+ const {NormalObservationSpool}=await import('../../apps/connector/runtime/normal-observation-spool.ts');
+ const {NormalStartPolling}=await import('../../apps/connector/runtime/normal-start-polling.ts');
+ const {NormalStartCoordinator}=await import('../../apps/connector/runtime/normal-start-coordinator.ts');
+ const start={intake:new NormalStartIntake(p.intakeStore,p.expected,x.clock),spool:new NormalObservationSpool(p.journalStore,x.local,x.clock),store:p.journalStore,current:p.current,wire:p.wire,grantRef:x.m.config.scope.grantRef,clock:x.clock,timeoutMs:p.timeoutMs};
+ assert.throws(()=>new NormalStartCoordinator({...start,post:x.pair.post}),/NORMAL_START_PORTS_REQUIRED/);
+ const cross=new NormalStartPolling({clients:x.pair,start,owner:()=>'RAM',deadline:p.deadline,maxPages:1,idleMs:1});
+ assert.equal((await cross.run(x.signal)).state,'UNKNOWN');assert.equal(x.m.calls.length,3);assert.equal(x.memory.files.size,0);
+ const before=x.m.calls.length,poller=x.source.createStartPolling(x.pair,p);
+ assert.equal(x.m.calls.length,before);assert.equal(x.memory.files.size,0);
+ const result=await poller.run(x.signal);
+ assert.equal(result.state,'LIMIT_REACHED');assert.deepEqual(result.cursor,{afterSequence:1,afterCursor:'cursor1'});
+ assert.equal(x.seen.permits,1);assert.equal(x.seen.wires,1);assert.equal(x.seen.events.length,5);assert.equal(result.agentSuccessVerified,false);
+ x.source.dispose();
+});
+
+test('조립은 원 쌍·등록·실행세대와 포트를 확인하고 GET 전송 전에 거절한다',async()=>{
+ const x=await pollingFixture(),p=x.input,before=x.m.calls.length;
+ const foreign=x.f.owner.createNormalExecutionClients(x.m.config);
+ assert.throws(()=>foreign.createStartPolling(x.pair,p),/PREDECESSOR/);
+ assert.throws(()=>x.source.createStartPolling({...x.pair},p),/PREDECESSOR/);
+ for(const field of ['intakeStore','journalStore','wire','current']){
+  assert.throws(()=>x.source.createStartPolling(x.pair,{...p,[field]:undefined}));
+ }
+ for(const changed of [{projectId:id(90)},{executionId:id(91)},{executionGeneration:2}]){
+  assert.throws(()=>x.source.createStartPolling(x.pair,{...p,expected:{...p.expected,context:{...p.expected.context,...changed}}}),/SCOPE/);
+ }
+ assert.throws(()=>x.source.createStartPolling(x.pair,{...p,expected:{...p.expected,executorRegistrationRef:{...p.expected.executorRegistrationRef,contentHash:'f'.repeat(64)}}}),/SCOPE/);
+ Object.defineProperty(x.pair.get,'send',{get(){assert.fail('변경된 accessor 호출');}});
+ assert.throws(()=>x.source.createStartPolling(x.pair,p),/CLIENTS_CHANGED/);
+ assert.equal(x.m.calls.length,before);assert.equal(x.memory.files.size,0);foreign.dispose();x.source.dispose();
+});
+test('동일 owner의 명시 갱신 뒤 구 poller 전송0, 새 쌍으로만 첫 START를 처리한다',async()=>{
+ const x=await pollingFixture(),poller=x.source.createStartPolling(x.pair,x.input),old=x.source.createStartPolling(x.pair,x.input);
+ const before=x.m.calls.length;
+ await assert.rejects(poller.renew(x.signal),/NOT_EXPIRED/);x.advance(5000);
+ assert.equal((await poller.run(x.signal)).state,'NEEDS_RENEWAL');assert.equal(x.m.calls.length,before);
+ await poller.renew(x.signal);assert.equal(x.m.calls.length,before+1);
+ assert.equal((await old.run(x.signal)).reason,'OWNER_CHANGED');assert.equal(x.m.calls.length,before+1);
+ assert.throws(()=>x.source.createStartPolling(x.pair,x.input),/PREDECESSOR/);
+ const result=await poller.run(x.signal);assert.equal(result.state,'LIMIT_REACHED');assert.equal(x.seen.wires,1);assert.equal(x.seen.permits,1);
+ x.source.dispose();const count=x.m.calls.length;
+ assert.equal((await poller.run(x.signal)).reason,'OWNER_CHANGED');assert.equal(x.m.calls.length,count);
+});
+test('ACK 결과 불명은 원 cursor를 유지하고 같은 poller 재호출로 permit·wire를 반복하지 않는다',async()=>{
+ const x=await pollingFixture(),poller=x.source.createStartPolling(x.pair,x.input);x.seen.loseAck=true;
+ const result=await poller.run(x.signal);assert.equal(result.state,'UNKNOWN');assert.deepEqual(result.cursor,{afterSequence:0});
+ assert.equal(x.seen.events.length,5);assert.equal(x.seen.wires,1);assert.equal(x.seen.permits,1);
+ const before=x.m.calls.length;assert.equal((await poller.run(x.signal)).state,'UNKNOWN');await assert.rejects(poller.renew(x.signal),/UNKNOWN/);
+ assert.equal(x.m.calls.length,before);x.source.dispose();
 });
