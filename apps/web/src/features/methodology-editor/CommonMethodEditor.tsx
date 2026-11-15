@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, useRef, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useId, useMemo, useState, useRef, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { getMethod, type MethodVersion } from './api.ts';
 import { emptyMethodBuffer, methodBuffer, writeCommonMethod, type MethodBuffer, type MethodCommand, type MethodGateway } from './common-api.ts';
@@ -22,6 +22,12 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
 }) {
   const fieldId = useId();
   const latestBuffer=useRef(buffer);latestBuffer.current=buffer;
+  const commonSending=useRef(false);
+  const context=useMemo(()=>({userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken,transport:client.transport}),
+    [session,session.user.id,session.clientId,session.csrfToken,client,client.transport,source,copySelection?.source,!!gateway]);
+  const commonContext=useRef(context);commonContext.current=context;
+  const commonCurrent=()=>active.current && commonContext.current===context && session.user.id===context.userId &&
+    session.clientId===context.clientId && session.csrfToken===context.csrf && client.transport===context.transport;
   const [importing,setImporting]=useState(false),[importError,setImportError]=useState<string|null>(null);
   const importingNow=useRef(false);
   const active=useRef(true),preparing=useRef<string|null>(null),latestChange=useRef(onChange);latestChange.current=onChange;
@@ -78,27 +84,53 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
     });setSavedVersion(null);
   }
   async function submit(command: MethodCommand, name: string, purpose: string,copyCurrent?:()=>boolean) {
+    const common = !gateway && command.payload.scope === 'USER_COMMON'
+      && (command.operation === 'saveMethodologyDraft' || command.operation === 'copyMethodology');
     if (pending || command.clientId !== session.clientId || copyCurrent&&!copyCurrent()) return;
+    if (!gateway && (!common || commonSending.current || !commonCurrent() || latestBuffer.current.pending !== buffer.pending ||
+        (buffer.pending && buffer.pending.request !== command))) return;
+    if (common && command.operation === 'copyMethodology') {
+      const selected = (copySelection?.source ?? source)?.ref, original = command.payload.sourceRef;
+      if (selected && (!original || typeof original !== 'object' ||
+          !('id' in original) || original.id !== selected.id || !('version' in original) || original.version !== selected.version ||
+          !('contentHash' in original) || original.contentHash !== selected.contentHash)) return;
+    }
+    if (common) commonSending.current = true;
     setPending(true); setError(null); setSavedVersion(null);
-    const preparationId=crypto.randomUUID();preparing.current=preparationId;onChange(previous=>({...previous,preparationId}));
-    let applied = false;
+    let ref = common ? buffer.pending?.storedRef : undefined;
+    const preparationId = ref ? null : crypto.randomUUID();
+    if (preparationId) { preparing.current=preparationId;onChange(previous=>({...previous,preparationId})); }
+    const current = () => active.current && (!common || commonCurrent()) && (!copyCurrent || copyCurrent());
+    let applied = !!ref;
     try {
-      command = gateway ? await gateway.prepare(command) : command;
-      if(!active.current||copyCurrent&&!copyCurrent())return;
-      onChange(previous => previous.preparationId===preparationId?({ ...previous,preparationId:null, ownerUserId: session.user.id, pending: { request: command, name, purpose } }):previous);
-      const ref = gateway ? (await gateway.write(command)).data.ref : await writeCommonMethod(client, command, session.csrfToken, session.user.id);
-      applied = true;
+      if (!ref) {
+        command = gateway ? await gateway.prepare(command) : command;
+        if(!current())return;
+        onChange(previous => previous.preparationId===preparationId?({ ...previous,preparationId:null, ownerUserId: session.user.id, pending: { request: command, name, purpose } }):previous);
+        const storedRef = gateway ? (await gateway.write(command)).data.ref : await writeCommonMethod(client, command, session.csrfToken, session.user.id);
+        applied = true;
+        if (common) {
+          if (!current()) return;
+          onChange(previous => current() && previous.pending?.request === command
+            ? { ...previous, pending: {...previous.pending, storedRef} } : previous);
+        }
+        ref = storedRef;
+      }
       if(copyCurrent&&!copyCurrent())return;
       const value = gateway ? await gateway.read(ref, name, purpose) : await getMethod(client, { ref, name, purpose, scope: 'USER_COMMON', systemCode: null, status: 'DRAFT', sourceAvailable: false });
-      if(!active.current||copyCurrent&&!copyCurrent())return;
-      onChange(previous => previous.pending?.request.commandId === command.commandId&&!previous.preparationId&&!previous.application?.pending&&!previous.application?.preparationId ? {...methodBuffer(value, session.user.id),application:previous.application} : previous);
+      if(!current())return;
+      onChange(previous => (!common || current()) && previous.pending?.request.commandId === command.commandId&&!previous.preparationId&&!previous.application?.pending&&!previous.application?.preparationId ? {...methodBuffer(value, session.user.id),...(common ? {review:previous.review} : {}),application:previous.application} : previous);
       setSavedVersion(ref.version); onSaved();
     } catch (cause: unknown) {
-      if(!active.current||copyCurrent&&!copyCurrent())return;
+      if(!current())return;
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
       if (!applied && !(gateway && buffer.pending) && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => ({ ...previous, pending: null }));
       if (failure.status === 401) onAuthenticationLost();
-    } finally { onChange(previous=>previous.preparationId===preparationId?{...previous,preparationId:null}:previous);preparing.current=null;if(active.current)setPending(false); }
+    } finally {
+      if (preparationId) { onChange(previous=>previous.preparationId===preparationId?{...previous,preparationId:null}:previous);preparing.current=null; }
+      if (common) commonSending.current=false;
+      if(active.current)setPending(false);
+    }
   }
   function copy() {
     const copySource=copySelection?.source??source,guard=copySelection?copySelection.current:undefined;
@@ -155,7 +187,7 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
       {buffer.validation ? <div aria-label="저장한 그래프 구조 검사"><p>{buffer.validation.validForConfirmation ? '저장본 구조 오류 없음 · 내용 검토/양식 확정/실행 연결은 별도' : '저장본 구조 보완 필요'}</p><ul>{buffer.validation.issues.map((issue, index) => { const targets = methodIssueNodeTargets(buffer.graph, issue.location); return <li key={index}>{issue.severity} · {issue.code} · {issue.location}: {issue.message}{targets.length ? targets.map(target => <button key={target.nodeId} disabled={locked} onClick={() => onChange(previous => previous.graph !== buffer.graph || previous.validation !== buffer.validation || previous.pending || previous.review?.pending ? previous : ({ ...previous, nodeId: target.nodeId }))}>문제 단계 선택 {target.nodeId}: {target.name}</button>) : <span> 연결할 단계 미확인 · 원 오류는 유지합니다.</span>}</li>; })}</ul></div> : <p className="meta">현재 입력은 검사 전입니다. 초안 저장 후 서버의 구조 검사 결과와 오류 위치를 확인하세요.</p>}
     </section> : null}
     {pending ? <p role="status">서버 저장·재조회를 확인하고 있습니다.</p> : null}
-    {buffer.pending && !pending ? <><p role="alert">저장 결과가 아직 확인되지 않았습니다. 새 명령을 만들지 않고 같은 명령으로 결과를 확인하세요.</p><button disabled={buffer.pending.request.clientId !== session.clientId} onClick={() => { const work = buffer.pending!; void submit(work.request, work.name, work.purpose); }}>같은 명령 결과 다시 확인</button></> : null}
+    {buffer.pending && !pending ? <><p role="alert">{!gateway && buffer.pending.storedRef ? '방법론 저장 확인 · 원문 조회 미확인' : '저장 결과가 아직 확인되지 않았습니다. 새 명령을 만들지 않고 같은 명령으로 결과를 확인하세요.'}</p><button disabled={buffer.pending.request.clientId !== session.clientId} onClick={() => { const work = buffer.pending!; void submit(work.request, work.name, work.purpose,!gateway && work.request.operation==='copyMethodology'?copySelection?.current:undefined); }}>{!gateway && buffer.pending.storedRef ? '저장된 방법론 원문 조회' : '같은 명령 결과 다시 확인'}</button></> : null}
     {error ? <p role="alert">{error.message} 입력은 보존했습니다.</p> : null}
     {savedVersion ? <p role="status">서버 저장·재조회 확인 · 버전 {savedVersion}</p> : null}
   </section>;

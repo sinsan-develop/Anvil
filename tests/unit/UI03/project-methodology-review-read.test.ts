@@ -26,7 +26,7 @@ const saved=new Map<string,PropertyDescriptor|undefined>();let ui:any;
 const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class OwnedChannel extends NativeChannel{constructor(){super();channels.push(this);}}
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/ProjectMethodologyPage.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:review-overflow',name:'ReviewOverflowTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'review-overflow-memory-entry',resolveId(id){if(id.endsWith('virtual:review-overflow'))return '\0review-overflow';},load(id){if(id==='\0review-overflow')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{ProjectMethodologyPage}from${JSON.stringify(entry)};import{StoredNodeDefinition}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/StoredNodeDefinition.tsx',import.meta.url)))};import{emptyMethodBuffer}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/common-api.ts',import.meta.url)))};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as reviewApi from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/project-methodology-review-api.ts',import.meta.url)))};import{CommonFormEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodologies/CommonFormEditor.tsx',import.meta.url)))};export{React,createRoot,ProjectMethodologyPage,emptyMethodBuffer,ApiClient,reviewApi,CommonFormEditor};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:review-overflow',name:'ReviewOverflowTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'review-overflow-memory-entry',resolveId(id){if(id.endsWith('virtual:review-overflow'))return '\0review-overflow';},load(id){if(id==='\0review-overflow')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{ProjectMethodologyPage}from${JSON.stringify(entry)};import{StoredNodeDefinition}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/StoredNodeDefinition.tsx',import.meta.url)))};import{emptyMethodBuffer}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/common-api.ts',import.meta.url)))};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as reviewApi from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/project-methodology-review-api.ts',import.meta.url)))};import{CommonFormEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodologies/CommonFormEditor.tsx',import.meta.url)))};import{CommonMethodEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/CommonMethodEditor.tsx',import.meta.url)))};export{React,createRoot,ProjectMethodologyPage,emptyMethodBuffer,ApiClient,reviewApi,CommonFormEditor,CommonMethodEditor};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const [key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return ReviewOverflowTest;')();
@@ -138,4 +138,61 @@ test('복사 원본을 교체하면 진행 중인 저장 양식 원문 조회를
   await ui.React.act(async()=>x.held.resolve(Response.json(x.version)));
   assert.deepEqual(x.buffer(),before);assert.deepEqual(x.buffer().review,x.review);assert.deepEqual(x.count(),{saved:0,lost:0});assert.equal(x.posts.length,1);assert.equal(x.gets.length,2);
  }finally{await x.close();}
+});
+
+async function methodEditorSave(mode:'save'|'copy'|'project'='save') {
+ const name='새 방법론',purpose='검산할 목적',graph=ui.emptyMethodBuffer().graph;
+ const ref={id:id(81),version:1,contentHash:hash(graph)},version={ref,name,purpose,graph,scope:'USER_COMMON',systemCode:null,confirmation:null,validation:{validForConfirmation:false,issues:[]},runtimeReadiness:'PROJECT_BINDINGS_REQUIRED'};
+ let read:()=>Promise<Response>=async()=>Response.json({code:'STORAGE_FAILED'},{status:503});
+ let userSession={user:{id:id(82)},clientId:id(83),csrfToken:'x'.repeat(43)},visible=true,saved=0,lost=0,losePost=false;
+ let source={...version,ref:{...ref,id:id(84)}};
+ const posts:string[]=[],gets:string[]=[],projectCalls:string[]=[];
+ const transport:typeof fetch=async(path,options)=>{
+  if(path==='/api/v1/forms')return Response.json({items:[],hasMore:false,nextCursor:null,baselineVersion:null,observedAt:at});
+  if(options?.method==='POST'){
+   assert.equal(path,'/api/v1/user-common/commands');const body=String(options.body);posts.push(body);const request=JSON.parse(body);
+   if(losePost){losePost=false;throw Error('응답 유실');}
+   assert.equal(request.targetId,null);assert.equal(request.operation,mode==='copy'?'copyMethodology':'saveMethodologyDraft');
+   return Response.json({scopeKind:'USER_COMMON',ownerUserId:id(82),commandId:request.commandId,status:'APPLIED',operationId:id(85),targetId:ref.id,version:1,data:{status:'DRAFT',ref},serverReceivedAt:at});
+  }
+  assert.equal(options?.method,'GET');assert.equal(path,'/api/v1/methodologies/'+ref.id+'/versions/1');gets.push(String(path));return read();
+ };
+ let client=new ui.ApiClient(transport),buffer={...ui.emptyMethodBuffer(),ownerUserId:userSession.user.id,name,purpose,reason:'작업 입력',dirty:mode!=='copy'};
+ const review={ref,criteriaVersion:1,criteria:[],items:[],outcome:'NOT_EXECUTED',reason:'기존 검토',dirty:mode!=='copy',pending:null};buffer.review=review;
+ if(mode==='project')buffer.pending={request:{schemaVersion:1,commandId:id(90),operation:'saveMethodologyDraft',clientId:userSession.clientId,targetId:null,expectedVersion:0,payload:{scope:'PROJECT'}},name,purpose,storedRef:ref};
+ const gateway={prepare:async(request:any)=>{projectCalls.push('prepare');return {...request,projectId:pid};},write:async(request:any)=>{assert.equal(request.projectId,pid);projectCalls.push('write');return {data:{ref}};},read:async()=>{projectCalls.push('read');return {...version,scope:'PROJECT'};}};
+ const container:MemoryNode=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ function Host(){const [value,setValue]=ui.React.useState(buffer);buffer=value;const originalSource=source;
+  return visible?ui.React.createElement(ui.CommonMethodEditor,{client,session:userSession,source:mode==='copy'?source:null,copySelection:mode==='copy'?{source,current:()=>originalSource===source,clear:()=>{}}:undefined,buffer:value,onChange:setValue,onSaved:()=>saved++,onAuthenticationLost:()=>lost++,gateway:mode==='project'?gateway:undefined}):null;}
+ async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(Host)));}
+ function find(predicate:(node:MemoryNode)=>boolean,node=container):MemoryNode|undefined{if(predicate(node))return node;for(const child of node.childNodes){const match=find(predicate,child);if(match)return match;}}
+ async function click(label:string){const button=find(n=>n.tagName==='BUTTON'&&n.textContent===label);assert(button,label);assert(!button.disabled);await ui.React.act(async()=>button.dispatchEvent({type:'click',button:0,bubbles:true}));}
+ async function start(){if(mode==='copy'){const input=find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent==='복사본 이름');assert(input);const prop=Object.getOwnPropertyNames(input).find(k=>k.startsWith('__reactProps'));assert(prop);await ui.React.act(async()=>(input as any)[prop].onChange({target:{value:name}}));await click('내 공통본으로 복사');}else await click(mode==='project'?'전용본 새 버전 저장':'공통본 새 버전 저장');}
+ await render();return {start,click,posts,gets,ref,version,projectCalls,buffer:()=>buffer,count:()=>({saved,lost}),setRead(fn:typeof read){read=fn;},lose(){losePost=true;},
+  async show(next:boolean){visible=next;await render();},async change(which:string){if(which==='client')client=new ui.ApiClient(transport);else if(which==='user')userSession={...userSession,user:{id:id(86)}};else if(which==='copy')source={...source,ref:{...source.ref,id:id(87)}};else visible=false;await render();},
+  async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+ };
+}
+test('공통 방법론 저장·복사 영수증은 화면 왕복 후 원문 GET만 복구한다',async()=>{
+ for(const mode of ['save','copy'] as const){const x=await methodEditorSave(mode);try{
+  await x.start();assert.equal(x.gets.length,1);assert.equal(x.posts.length,1);
+  assert.deepEqual(x.buffer().pending?.storedRef,x.ref);assert.deepEqual(x.buffer().pending.request,JSON.parse(x.posts[0]!));assert.equal(x.buffer().targetId,null);assert.equal(x.buffer().review.reason,'기존 검토');
+  await x.show(false);await x.show(true);assert.equal(x.gets.length,1);assert.equal(x.posts.length,1);
+  x.setRead(async()=>Response.json({...x.version,ref:{...x.ref,contentHash:'f'.repeat(64)}}));await x.click('저장된 방법론 원문 조회');assert.deepEqual(x.count(),{saved:0,lost:0});assert.deepEqual(x.buffer().pending.storedRef,x.ref);
+  x.setRead(async()=>Response.json(x.version));await x.click('저장된 방법론 원문 조회');assert.equal(x.posts.length,1);assert.equal(x.gets.length,3);assert.equal(x.buffer().pending,null);assert.equal(x.buffer().targetId,x.ref.id);assert.equal(x.buffer().review.reason,'기존 검토');assert.deepEqual(x.count(),{saved:1,lost:0});
+ }finally{await x.close();}}
+});
+test('공통 방법론 POST 유실은 원 명령만 재확인하고 프로젝트 저장은 준비·쓰기·조회 순서를 보존한다',async()=>{
+ const x=await methodEditorSave();try{x.lose();await x.start();assert.equal(x.buffer().pending?.storedRef,undefined);assert.deepEqual(x.buffer().pending.request,JSON.parse(x.posts[0]!));assert.equal(x.gets.length,0);x.setRead(async()=>Response.json(x.version));await x.click('같은 명령 결과 다시 확인');assert.equal(x.posts.length,2);assert.equal(x.posts[0],x.posts[1]);assert.deepEqual(x.count(),{saved:1,lost:0});}finally{await x.close();}
+ const p=await methodEditorSave('project');try{await p.click('같은 명령 결과 다시 확인');assert.deepEqual(p.projectCalls,['prepare','write','read']);assert.equal(p.posts.length+p.gets.length,0);assert.deepEqual(p.count(),{saved:1,lost:0});}finally{await p.close();}
+});
+test('공통 방법론 지연 원문·401은 주체·클라이언트·복사원본 교체와 화면 종료 뒤 폐기한다',async()=>{
+ for(const change of ['user','client','copy','unmount'])for(const ok of [true,false]){
+  const x=await methodEditorSave(change==='copy'?'copy':'save'),held=deferred<Response>();try{
+   await x.start();x.setRead(()=>held.promise);await x.click('저장된 방법론 원문 조회');assert.equal(x.gets.length,2);
+   await x.change(change);const before=structuredClone(x.buffer());await ui.React.act(async()=>held.resolve(ok?Response.json(x.version):Response.json({code:'AUTH_REQUIRED'},{status:401})));
+   if(change==='copy'){await x.click('저장된 방법론 원문 조회');assert.equal(x.gets.length,2);}
+   assert.deepEqual(x.buffer(),before);assert.equal(x.posts.length,1);assert.deepEqual(x.count(),{saved:0,lost:0});
+  }finally{await x.close();}
+ }
 });

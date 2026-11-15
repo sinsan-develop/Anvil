@@ -19738,3 +19738,16 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - UI03 소스3경로 동결: 발급fullref를원request와화면pending에보존→GET만명시복구, 원문검산후만formBuffer/onSaved반영. 직접·인접22P0F0SKIP(c2659e)/type0(1ed83b)/메모리빌드520모듈0(913e78)/diff0. Main핵심1P0F0SKIP(7c09a6), 다른hash·주체client/화면종료늦은200/401·원POST유실·복사원본교체반례포함. 독립검수중/live0. 실제DB/served/전체UI03·FN03·계획미완료를유지한다.
 
 - UI03 동결 독립 C0/I0/M0·원request/fullref/검토입력보존·GET검산전onSaved0·주체교체늦은응답폐기를소스범위로수용했다. 복사원본교체신규직접증거는보존된기존복사명령의진행중GET폐기까지이며최초복사전체흐름완료로확대0.
+
+## 2026-11-16 UI03/FN02 공통 방법론 저장 후 조회 복구 착수
+
+- UI03 양식 PR131/headfd41b05a→mainbda73f03 통합·Broker43734856478 success·tree동일/localmain동기화·merged핵심1P0F0SKIP(c885dc)을확인했다. pr-131-head원격복구tag보존·완료branch/요청tag정리후기존inner를재사용해codex/av3-ui03-method-read-recovery를최신main에서생성했다.
+- 다음UI03/FN02 공통방법론저장/복사도검산ref가후속GET실패뒤소실되는명확누락을기존Primary가읽기대조로확인했다. 새공개/권한계약없이공통분기화면buffer만보완하고PROJECT gateway는기존순서를보존하는WI정확3경로에단일writer배정. 실제환경/SDK/P03조작0·전체계획미완료유지.
+
+- FN02 실제React RAM RED3f01fd exit1/0P1F: 신규공통방법론POST1→GET503뒤pending.storedRef가undefined이고서버발급fullref기대와불일치했다. Primary가공통분기만보완중이며PROJECT gateway에공통storedRef가남더라도기존prepare/write/read순서를건너뛰지않는회귀를포함한다. 새권한/실제환경효과0.
+
+- FN02 공통저장/복사3경로동결·직접/인접23P0F0SKIP(179f6c)/type0(7905a4)/메모리build520모듈0(9a601e)/diff0. Main저장·복사핵심1P0F0SKIP(8b4e7c). PROJECT는공통storedRef가남아도prepare/write/read를유지하는반례를포함했다. late200/401·다른hash·copy원본교체보호·POST유실동일원명령재확인보존, 독립검수중/live0·전체업무와실환경미완료유지.
+
+- FN02 동결 독립 C0/I0/M0로 소스범위수용. 공통영수증확정/GET복구와PROJECT gateway분기를구분했으며실제권한·DB·Agent검증으로승격0. 결과서는UI03_COMMON_METHOD_CONFIRMED_READ_RECOVERY_SOURCE_RESULT_20261116.md에보존한다.
+
+- FN02 커밋전 gitleaks hook가generic-api-key1건으로차단했다(530b87). 원문을출력하지않는redact100 진단001907에서결과서13행의공통명령모듈파일지문표기임을확인했고실제Get-FileHash와동일한SHA256이다. 실제Secret이아닌문서hash오탐으로판단해API파일명과hash가키대입처럼이어진표제만한국어모듈지문으로정정했다. ignore추가/SKIP/--no-verify/제품hash변경0이며동일원검사를통과시킨뒤커밋한다.

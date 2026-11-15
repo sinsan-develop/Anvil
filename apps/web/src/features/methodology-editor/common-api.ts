@@ -17,7 +17,7 @@ export interface MethodBuffer {
   targetId: string | null; version: number; name: string; purpose: string; reason: string;
   graph: MethodologyGraph; nodeId: string; dirty: boolean;
   validation: MethodVersion['validation'] | null;
-  pending: { request: MethodCommand; name: string; purpose: string } | null;
+  pending: { request: MethodCommand; name: string; purpose: string; storedRef?: VersionRef } | null;
   review: FormReviewWork | null;
   application?:MethodApplicationWork;
   preparationId?:string|null;
