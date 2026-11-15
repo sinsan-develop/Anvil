@@ -1,8 +1,8 @@
-import { useId, useState, type Dispatch, type SetStateAction } from 'react';
+import { useId, useState, useMemo, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { writeCommonCommand, type MethodCommand } from '../methodology-editor/common-api.ts';
-import { getForm, reviewRefFor, type FormVersion, type ReviewOutcome } from './forms-api.ts';
-import type { FormBuffer, FormReviewWork } from './form-editor-state.ts';
+import { getForm, type FormVersion, type ReviewOutcome } from './forms-api.ts';
+import {matchesReviewReceipt, reviewReceiptEvent, verifyReviewEvent, type FormReviewWork, type FormBuffer} from './form-editor-state.ts';
 
 const labels: Record<ReviewOutcome, string> = { ACCEPTED: '적합', REWORK: '보완 필요', BLOCKED: '판단 보류', NOT_EXECUTED: '미검토' };
 export function FormReviewPanel({ client, session, source, buffer, onChange, onVerified, onAuthenticationLost }: {
@@ -10,34 +10,63 @@ export function FormReviewPanel({ client, session, source, buffer, onChange, onV
   buffer: FormBuffer; onChange: Dispatch<SetStateAction<FormBuffer>>; onVerified: (value: FormVersion) => void; onAuthenticationLost: () => void;
 }) {
   const fieldId = useId();
-  const [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [recorded, setRecorded] = useState(false);
+  const active=useRef(true);useEffect(()=>{active.current=true;return()=>{active.current=false;};},[]);
+  const [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [recorded, setRecorded] = useState<object|null>(null);
   const work = buffer.review, criteria = source.contentReviewCriteria, confirmation = source.confirmation;
   const matches = !!work && work.ref.id === source.ref.id && work.ref.version === source.ref.version && work.ref.contentHash === source.ref.contentHash && work.criteriaVersion === criteria?.criteriaVersion;
+  const running=useRef(false), latestPending=useRef(work?.pending);latestPending.current=work?.pending;
+  const project=null;
+  const targetKey=JSON.stringify([source.ref.id,source.ref.version,source.ref.contentHash,criteria?.criteriaVersion,criteria?.items]);
+  const context=useMemo(()=>({userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken,transport:client.transport,targetKey}),
+    [session,session.user.id,session.clientId,session.csrfToken,client,client.transport,targetKey,project,buffer.ownerUserId]);
+  const lastContext=useRef(context);lastContext.current=context;
+  const current=()=>active.current && lastContext.current===context && session.user.id===context.userId &&
+    session.clientId===context.clientId && session.csrfToken===context.csrf && client.transport===context.transport &&
+    JSON.stringify([source.ref.id,source.ref.version,source.ref.contentHash,source.contentReviewCriteria?.criteriaVersion,source.contentReviewCriteria?.items])===context.targetKey;
   const locked = pending || !!work?.pending || !!buffer.pending;
   const latest = source.contentReviews?.[0];
-  function update(patch: Partial<FormReviewWork>) { onChange(previous => previous.review ? { ...previous, review: { ...previous.review, ...patch, dirty: true } } : previous); setRecorded(false); }
+  function update(patch: Partial<FormReviewWork>) { onChange(previous => previous.review ? { ...previous, review: { ...previous.review, ...patch, dirty: true } } : previous); setRecorded(null); }
   function start() {
     if (!criteria || locked || work?.dirty && !confirm('현재 미저장 검토 입력을 이 버전의 새 검토로 바꿀까요?')) return;
     onChange(previous => ({ ...previous, ownerUserId: session.user.id, review: { ref: source.ref, criteriaVersion: criteria.criteriaVersion, criteria: structuredClone(criteria.items),
       items: criteria.items.map(item => ({ criterionId: item.criterionId, outcome: 'NOT_EXECUTED', evidenceRefs: [], reason: '' })), outcome: 'NOT_EXECUTED', reason: '', dirty: false, pending: null } }));
-    setError(null); setRecorded(false);
+    setError(null); setRecorded(null);
   }
   async function execute(request: MethodCommand) {
-    if (pending || request.clientId !== session.clientId || !matches) return;
-    onChange(previous => previous.review ? { ...previous, review: { ...previous.review, pending: request } } : previous);
-    setPending(true); setError(null); let applied = false;
+    if (running.current || !matches || !current() || request.clientId!==session.clientId ||
+        work.pending && work.pending!==request) return;
+    if (request.operation==='recordContentReview' ? request.payload.targetKind!=='FORM' : request.operation!=='confirmForm') return;
+    let event=work.receiptEvent;
+    if (event && !matchesReviewReceipt(event,request,source.ref,work.criteriaVersion,session.user.id,project)) return;
+    const stillCurrent=()=>current() && (!latestPending.current || latestPending.current.commandId===request.commandId);
+    running.current=true;setPending(true);setError(null);setRecorded(null);
+    let applied=!!event;
     try {
-      const receipt = await writeCommonCommand(client, request, session.csrfToken, session.user.id); applied = true;
-      if (receipt.data.ref.contentHash !== source.ref.contentHash || request.operation === 'recordContentReview' && (!reviewRefFor(receipt.data.reviewRef, source.ref) || receipt.data.reviewRef.outcome !== request.payload.outcome)
-        || request.operation === 'confirmForm' && !/^[0-9a-f-]{36}$/.test(receipt.data.confirmationId ?? '')) throw new ApiError('RESPONSE_INVALID');
-      const value = await getForm(client, { ref: source.ref, name: source.definition.name, formCode: source.definition.formCode, scope: 'USER_COMMON' });
-      onChange(previous => previous.review?.pending?.commandId === request.commandId ? { ...previous, review: { ...previous.review, dirty: false, pending: null } } : previous);
-      onVerified(value); setRecorded(request.operation === 'recordContentReview');
-    } catch (cause: unknown) {
-      const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
-      if (!applied && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => previous.review ? { ...previous, review: { ...previous.review, pending: null } } : previous);
-      if (failure.status === 401) onAuthenticationLost();
-    } finally { setPending(false); }
+      if (!event) {
+        onChange(previous => previous.review ? {...previous,review:{...previous.review,pending:request}} : previous);
+        const receipt=await writeCommonCommand(client,request,session.csrfToken,session.user.id);
+        applied=true;
+        if (!stillCurrent()) return;
+        const verified=reviewReceiptEvent(request,receipt,source.ref,work.criteriaVersion,session.user.id,project);
+        onChange(previous => current() && previous.review?.pending===request ?
+          {...previous,review:{...previous.review,receiptEvent:verified}} : previous);
+        event=verified;
+      }
+      const value=await getForm(client, { ref: source.ref, name: source.definition.name, formCode: source.definition.formCode, scope: 'USER_COMMON' });
+      if (!stillCurrent()) return;
+      verifyReviewEvent(event,request,value);
+      onChange(previous => current() && previous.review?.pending===request ?
+        {...previous,review:{...previous.review,dirty:false,pending:null,receiptEvent:undefined}} : previous);
+      onVerified(value);setRecorded(request.operation==='recordContentReview' ? context : null);
+    } catch (cause:unknown) {
+      if (!stillCurrent()) return;
+      const failure=cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');setError(failure);
+      if(!applied && failure.status>=400 && failure.status<500 && failure.code!=='RESPONSE_INVALID')
+        onChange(previous=>current() && previous.review?.pending===request ? {...previous,review:{...previous.review,pending:null}} : previous);
+      if(failure.status===401)onAuthenticationLost();
+    } finally {
+      running.current=false;if(active.current)setPending(false);
+    }
   }
   function record() {
     if (!work || !matches || locked || !work.reason.trim() || work.items.some(item => !item.reason.trim())) return;
@@ -93,8 +122,8 @@ export function FormReviewPanel({ client, session, source, buffer, onChange, onV
       <p className="meta">이 확정 이력은 현재 실행 권한이나 Agent 허가를 부여하지 않습니다.</p>
     </> : <p>이 버전의 사용자 확정 이력 없음</p>}
     {pending ? <p role="status">검토·확정 저장과 재조회를 확인하고 있습니다.</p> : null}
-    {work?.pending && !pending ? <><p role="alert">검토·확정 결과 미확인 · 같은 명령만 다시 확인하세요.</p><button disabled={!matches || work.pending.clientId !== session.clientId} onClick={() => { void execute(work.pending!); }}>같은 검토·확정 명령 결과 확인</button></> : null}
+    {work?.pending && !pending ? <><p role="alert">{work.receiptEvent?'검토·확정 저장 확인 · 원문 사건 조회 미확인':'검토·확정 결과 미확인 · 같은 명령만 다시 확인하세요.'}</p><button disabled={!matches || work.pending.clientId !== session.clientId || !!work.receiptEvent && !matchesReviewReceipt(work.receiptEvent,work.pending,source.ref,work.criteriaVersion,session.user.id,project)} onClick={() => { void execute(work.pending!); }}>{work.receiptEvent?'저장된 검토·확정 사건 다시 조회':'같은 검토·확정 명령 결과 확인'}</button></> : null}
     {error ? <p role="alert">{error.message} 검토 입력과 미확인 명령은 유지했습니다.</p> : null}
-    {recorded ? <p role="status">서버 내용 검토 기록 확인</p> : null}
+    {recorded===context ? <p role="status">서버 내용 검토 기록 확인</p> : null}
   </section>;
 }

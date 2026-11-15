@@ -19771,3 +19771,14 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - R3 관측결과 기록 독립C0/I0/M0. 실제f520eb/창/코드지문/0행UNKNOWN/원격도달·Docker횟수미확인/소진·보존이결과서·JSON·체크표와일치하며P03완료체크0을확인했다. 관측실패를기능완료로병합하는것이아니라실패·보존증거의정본기록을통합한다. 이후독립승인제품단위를계속한다.
 
 - Main기록JSON의CRLF혼입오류누적3회를PMO에예외보고하고같은생성방식을중단했다. Primary가정확attempt.json의CRLF11개만LF로정정, 원SHAEEDF7A485C74FF2B420E643CCEC597522168B08C69DD329334FD895485287653→최종AA41A7391861D7CF89DF6CA8BA68D4E872BF749E494BD46C436B4D042D5EA636. 키정렬JSON내용SHA8A1CAFD598652E47F5797878593100EAC9AFC1C4E85FA168DAD06177B2673E71전후동일·시각/상태/단발성불변, 삭제/재발행0. 이후ConvertTo-Json결과는UTF8기록전LF를명시적보장하며검사우회/설정완화0.
+
+## 2026-11-16 UI03 검토·확정 사건 확인 복구 착수
+
+- 관측실패기록 PR133/head24ff4fc7→main7b4d6036 통합·Broker43738752137 success·tree동일/localmain동기화·결과/승인/code지문무결성확인(cd5811)을마쳤다. pr-133-head원격복구tag보존·완료branch정리후codex/av3-ui03-review-receipt-read를최신main에서생성했다. 추가R3원격조회/삭제0.
+- 다음UI03/FN02·FN03은검토/확정영수증과GET실제사건을대조하지않고onVerified할수있는기존화면오류다. Primary읽기근거로공통과PROJECT모두기존응답필드가있음을확인했고정확5경로로선정했다. 다섯번째ProjectMethodologyPage는현재projectId의내부prop전달한곳만보완해다른project의gateway/사건혼동을막는필수연결이다. 새API/DB/권한계약0, Main관리검수통합·Primary단일writer·실제환경/SDK/R3추가조회0.
+
+- P03 후속읽기검토는실행본316E965F를수정하지않고로컬SSH의선택적고정오류분류만최소차이로제안했다. 첫수거조각안의완결고정문구만SSH_REPORTED_*로표시/부분·애매한문구UNCLASSIFIED, spawn전error.code whitelist, 수거bytes와폐쇄상태만요약하며원stderr출력저장0·추가조회0·14행완료판정불변이권장안이다. f520eb stderr를소급분류할수없으며아직코드작성/새실행승인0이다. Primary제품writer와병렬코드쓰기를하지않는다.
+
+- 검토사건 실제FormReviewPanel RED028ea8 exit1/0P1F: 동일target버전의정상GET본문에검토사건0인데onVerified가1회호출돼기대0과불일치했다. Primary가공통/PROJECT사건결박과원명령/GET명시복구를구현중이며별도확정의최신검토조건을유지한다. 실제환경/추가R3조회0.
+
+- UI03 검토사건5경로동결·직접/인접43P0F0SKIP(2cf075)/type0(12bc1d)/메모리build520모듈0(7c0fda)/diff0(348ced), Main핵심1P0F0SKIP(29a708)·독립C0/I0/M0. 원사건없는GET의false확인차단·영수증/명령/내용/actor대조후만pending해제·GET명시복구·POSTunknown동일명령재확인·PROJECT원순서/pid/ABA와최신별도확정조건을보존했다. 결과서는UI03_REVIEW_RECEIPT_EVENT_READ_RECOVERY_SOURCE_RESULT_20261116.md. 실제DB/브라우저/권한·전체업무미완료,SDK/R3추가조회0.
