@@ -14,7 +14,7 @@ export interface FormReviewWork {
 export interface FormBuffer {
   ownerUserId: string | null; targetId: string | null; version: number; definition: FormDefinition | null;
   itemId: string; reason: string; dirty: boolean;
-  pending: { request: MethodCommand; name: string; formCode: string } | null;
+  pending: { request: MethodCommand; name: string; formCode: string; storedRef?: VersionRef } | null;
   review: FormReviewWork | null;
 }
 export function emptyFormBuffer(): FormBuffer { return { ownerUserId: null, targetId: null, version: 0, definition: null, itemId: '', reason: '', dirty: false, pending: null, review: null }; }

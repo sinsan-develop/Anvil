@@ -1,3 +1,4 @@
+import {emptyFormBuffer,type FormBuffer} from '../../../apps/web/src/features/methodologies/form-editor-state.ts';
 import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'vite';
@@ -25,7 +26,7 @@ const saved=new Map<string,PropertyDescriptor|undefined>();let ui:any;
 const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class OwnedChannel extends NativeChannel{constructor(){super();channels.push(this);}}
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/ProjectMethodologyPage.tsx',import.meta.url));
- const result:any=await build({configFile:false,envFile:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:review-overflow',name:'ReviewOverflowTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'review-overflow-memory-entry',resolveId(id){if(id.endsWith('virtual:review-overflow'))return '\0review-overflow';},load(id){if(id==='\0review-overflow')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{ProjectMethodologyPage}from${JSON.stringify(entry)};import{StoredNodeDefinition}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/StoredNodeDefinition.tsx',import.meta.url)))};import{emptyMethodBuffer}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/common-api.ts',import.meta.url)))};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as reviewApi from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/project-methodology-review-api.ts',import.meta.url)))};export{React,createRoot,ProjectMethodologyPage,emptyMethodBuffer,ApiClient,reviewApi};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:review-overflow',name:'ReviewOverflowTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'review-overflow-memory-entry',resolveId(id){if(id.endsWith('virtual:review-overflow'))return '\0review-overflow';},load(id){if(id==='\0review-overflow')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{ProjectMethodologyPage}from${JSON.stringify(entry)};import{StoredNodeDefinition}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/StoredNodeDefinition.tsx',import.meta.url)))};import{emptyMethodBuffer}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/common-api.ts',import.meta.url)))};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as reviewApi from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/project-methodology-review-api.ts',import.meta.url)))};import{CommonFormEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodologies/CommonFormEditor.tsx',import.meta.url)))};export{React,createRoot,ProjectMethodologyPage,emptyMethodBuffer,ApiClient,reviewApi,CommonFormEditor};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const [key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return ReviewOverflowTest;')();
@@ -54,3 +55,87 @@ test('실패한 이전 이동은 성공 이력을 pop하지 않고 같은 대상
 test('페이지 JSON 중 닫기후 목록 재조회·프로젝트·transport 전환은 옛 페이지·401을 복구하지 않는다',async()=>{for(const change of['PROJECT','REFRESH','TRANSPORT']){const f=await fixture(),gate=deferred<any>();let started=false;try{await f.open();await f.click('분리된 방법론 원본 조회');await f.waitFor(()=>f.text().includes('보관 단계'));f.controls.history=async()=>{const r=Response.json({code:'AUTH_REQUIRED'},{status:401});r.json=()=>{started=true;return gate.promise;};return r;};await f.click('검토 이력 첫 페이지 조회');assert(started);if(change==='PROJECT')await f.render({...f.props(),projectId:id(90)});if(change==='TRANSPORT')f.client.transport=async()=>Response.json(page());if(change==='REFRESH'){await f.click('분리 조회 닫기');await f.click('전용 방법론 목록 갱신');}gate.resolve({code:'AUTH_REQUIRED'});await f.settle();assert.equal(f.lost(),0);assert(!f.text().includes('검토 순번 201'));f.unchanged();}finally{gate.resolve({code:'AUTH_REQUIRED'});await f.close();}}});
 test('페이지 실패 뒤 원본 재조회 실패의 동일 재시도는 옛 page가 아닌 overview를 다시 호출한다',async()=>{const f=await fixture();try{await f.open();await f.click('분리된 방법론 원본 조회');await f.waitFor(()=>f.text().includes('보관 단계'));f.controls.history=async()=>Response.json({code:'STORAGE_FAILED'},{status:500});await f.click('검토 이력 첫 페이지 조회');await f.waitFor(()=>f.text().includes('보관 자료 미확인'));f.controls.overview=async()=>Response.json({code:'STORAGE_FAILED'},{status:500});await f.click('보관 원본 다시 조회');await f.waitFor(()=>f.text().includes('보관 자료 미확인')&&!f.button('동일 조회 다시 시도').disabled);const n=f.calls.filter(c=>c.path.includes('/overview')).length;f.controls.overview=async()=>Response.json(original());await f.click('동일 조회 다시 시도');await f.waitFor(()=>f.calls.filter(c=>c.path.includes('/overview')).length===n+1);await f.waitFor(()=>f.text().includes('보관 단계'));}finally{await f.close();}});
 test('큰20건 거절 뒤 사용자 명시 limit1 선택만 새페이지를 읽고 이력을 초기화한다',async()=>{const f=await fixture();try{await f.open();await f.click('분리된 방법론 원본 조회');await f.waitFor(()=>f.text().includes('보관 단계'));f.controls.history=async()=>Response.json({code:'METHOD_REVIEW_PAGE_TOO_LARGE'},{status:503});await f.click('검토 이력 첫 페이지 조회');await f.waitFor(()=>f.text().includes('보관 자료 미확인'));const n=f.calls.filter(c=>c.path.includes('/content-reviews')).length,select=f.nodes().find(n=>n.tagName==='SELECT'&&n.options.some(o=>o.textContent==='20개'))!;assert(select);assert(select.options.some(o=>o.value==='1'||o.attributes.get('value')==='1'||o.textContent==='1개'),'명시적인 limit1 선택');await ui.React.act(async()=>{const props=Object.getOwnPropertyNames(select).find(k=>k.startsWith('__reactProps'));assert(props);(select as any)[props].onChange({target:{value:'1'}});});assert.equal(f.calls.filter(c=>c.path.includes('/content-reviews')).length,n,'자동축소 GET0');f.controls.history=async()=>Response.json(page(201,1,true));await f.click('검토 이력 첫 페이지 조회');await f.waitFor(()=>f.text().includes('검토 순번 201'));assert(f.calls.at(-1)!.path.endsWith('limit=1'));assert(f.button('검토 이전 페이지').disabled);f.unchanged();assert.equal(f.changes(),0);}finally{await f.close();}});
+
+async function mountFormSave(replies: ('APPLIED'|'LOST'|'503'|'WRONG_HASH'|'OK'|'HOLD')[],copy=false) {
+ const standard={id:id(71),version:1,contentHash:'a'.repeat(64)};
+ const definition={formCode:'TEST',name:'새 공통 양식',scope:'USER_COMMON' as const,purpose:'',authorRole:'',reviewerRole:'',confirmerRole:'',requiredInputs:[],items:[],authoringStandardRef:standard};
+ const ref={id:id(72),version:1,contentHash:hash(definition)},version={ref,definition,authoringStandard:{ref:standard,content:'공통 작성 기준'},validation:{formatOnly:true,contentReview:'NOT_PERFORMED',userAcceptance:'NOT_PERFORMED'}};
+ const posts:string[]=[],gets:string[]=[],held=deferred<Response>();let saved=0,lost=0;
+ let session={user:{id:id(73)},clientId:id(74),csrfToken:'c'.repeat(43)},visible=true;
+ const transport:typeof fetch=async(url,options)=>{
+  const reply=replies.shift();
+  if(options?.method==='POST'){
+   assert.equal(url,'/api/v1/user-common/commands');const body=String(options.body);posts.push(body);
+   const request=JSON.parse(body);assert.equal(request.operation,copy?'copyForm':'saveFormDraft');assert.equal(request.targetId,null);
+   if(reply==='LOST')throw Error('응답 유실');
+   assert.equal(reply,'APPLIED');
+   return Response.json({scopeKind:'USER_COMMON',ownerUserId:id(73),commandId:request.commandId,status:'APPLIED',operationId:id(75),targetId:ref.id,version:1,data:{status:'DRAFT',ref},serverReceivedAt:at});
+  }
+  assert.equal(options?.method,'GET');assert.equal(url,'/api/v1/forms/'+ref.id+'/versions/1');gets.push(String(url));
+  if(reply==='503')return Response.json({code:'FORM_READ_UNAVAILABLE'},{status:503});
+  if(reply==='HOLD')return held.promise;
+  if(reply==='WRONG_HASH')return Response.json({...version,ref:{...ref,contentHash:'f'.repeat(64)}});
+  assert.equal(reply,'OK');return Response.json(version);
+ };
+ let client=new ui.ApiClient(transport),buffer:FormBuffer={...emptyFormBuffer(),ownerUserId:session.user.id,definition,reason:'새 내용',dirty:true};
+ const review={ref:standard,criteriaVersion:1,criteria:[],items:[],outcome:'NOT_EXECUTED' as const,reason:'보존할 검토 입력',dirty:true,pending:null};
+ buffer.review=review;
+ const source={...version,ref:{...ref,id:id(77),contentHash:'b'.repeat(64)}};
+ let selection=source;
+ if(copy)buffer.pending={name:definition.name,formCode:definition.formCode,request:{schemaVersion:1,commandId:id(78),operation:'copyForm',targetId:null,expectedVersion:0,clientId:session.clientId,payload:{sourceRef:source.ref,name:definition.name,scope:'USER_COMMON',reason:'복사'}}};
+ const container:MemoryNode=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ function Host(){const [value,setValue]=ui.React.useState(buffer);buffer=value;const captured=selection;
+  return visible?ui.React.createElement(ui.CommonFormEditor,{client,session,source:null,copySelection:copy?{source:captured,current:()=>selection===captured,clear:()=>{}}:undefined,buffer:value,onChange:setValue,onSaved:()=>saved++,onAuthenticationLost:()=>lost++}):null;}
+ async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(Host)));}
+ function button(label:string,node=container):MemoryNode|undefined{if(node.tagName==='BUTTON'&&node.textContent===label)return node;for(const child of node.childNodes){const match=button(label,child);if(match)return match;}}
+ async function click(label:string){const found=button(label);assert(found,label);assert(!found.disabled,label);await ui.React.act(async()=>{found.dispatchEvent({type:'click',button:0,bubbles:true});});}
+ await render();
+ return {posts,gets,ref,version,review,held,click,button,async replaceCopy(){selection={...source,ref:{...source.ref,id:id(79)}};await render();},buffer:()=>buffer,count:()=>({saved,lost}),text:()=>container.textContent,
+  async show(value:boolean){visible=value;await render();},async change(which:'user'|'client'){if(which==='user')session={...session,user:{id:id(76)}};else client=new ui.ApiClient(transport);await render();},
+  async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+ };
+}
+
+test('공통 양식 새 저장 영수증은 GET503 뒤에도 원버퍼에 남아 왕복 후 GET만 복구한다',async()=>{
+ const x=await mountFormSave(['APPLIED','503','WRONG_HASH','OK']);try{
+  await x.click('공통 양식 새 버전 저장');
+  const request=JSON.parse(x.posts[0]!);
+  assert.deepEqual(x.buffer().pending,{request,name:'새 공통 양식',formCode:'TEST',storedRef:x.ref});
+  assert(x.buffer().dirty);assert.equal(x.buffer().targetId,null);assert.deepEqual(x.count(),{saved:0,lost:0});
+  assert(!x.button('같은 양식 명령 결과 확인'));await x.show(false);await x.show(true);assert.equal(x.gets.length,1);
+  await x.click('저장된 양식 원문 조회');assert.deepEqual(x.count(),{saved:0,lost:0});assert.deepEqual(x.buffer().pending?.storedRef,x.ref);
+  await x.click('저장된 양식 원문 조회');assert.equal(x.posts.length,1);assert.equal(x.gets.length,3);
+  assert.equal(x.buffer().pending,null);assert.equal(x.buffer().targetId,x.ref.id);assert.equal(x.buffer().version,1);assert(!x.buffer().dirty);assert.deepEqual(x.buffer().review,x.review);assert.deepEqual(x.count(),{saved:1,lost:0});
+ }finally{await x.close();}
+});
+
+test('공통 양식 원문 조회 중 사용자·클라이언트 교체나 닫기 후 늦은 성공·401은 폐기한다',async()=>{
+ for(const change of ['user','client','unmount'] as const)for(const ok of [true,false]){
+  const x=await mountFormSave(['APPLIED','503','HOLD']);try{
+   await x.click('공통 양식 새 버전 저장');await x.click('저장된 양식 원문 조회');assert.equal(x.gets.length,2);
+   if(change==='unmount')await x.show(false);else await x.change(change);
+   const before=structuredClone(x.buffer());
+   await ui.React.act(async()=>x.held.resolve(ok?Response.json(x.version):Response.json({code:'AUTH_REQUIRED'},{status:401})));
+   assert.deepEqual(x.buffer(),before);assert.deepEqual(x.count(),{saved:0,lost:0});assert.equal(x.posts.length,1);
+  }finally{await x.close();}
+ }
+});
+
+test('공통 양식 POST 응답 유실은 같은 명령의 명시적 재확인으로만 복구한다',async()=>{
+ const x=await mountFormSave(['LOST','APPLIED','OK']);try{
+  await x.click('공통 양식 새 버전 저장');
+  assert.deepEqual(x.buffer().pending?.request,JSON.parse(x.posts[0]!));assert.equal(x.buffer().pending?.storedRef,undefined);
+  assert(!x.button('저장된 양식 원문 조회'));await x.show(false);await x.show(true);
+  assert.equal(x.posts.length,1);assert.equal(x.gets.length,0);await x.click('같은 양식 명령 결과 확인');
+  assert.equal(x.posts.length,2);assert.equal(x.posts[0],x.posts[1]);assert.equal(x.gets.length,1);assert.deepEqual(x.count(),{saved:1,lost:0});
+ }finally{await x.close();}
+});
+
+test('복사 원본을 교체하면 진행 중인 저장 양식 원문 조회를 편집 버퍼에 반영하지 않는다',async()=>{
+ const x=await mountFormSave(['APPLIED','503','HOLD'],true);try{
+  await x.click('같은 양식 명령 결과 확인');assert.deepEqual(x.buffer().pending?.storedRef,x.ref);
+  await x.click('저장된 양식 원문 조회');await x.replaceCopy();const before=structuredClone(x.buffer());
+  await ui.React.act(async()=>x.held.resolve(Response.json(x.version)));
+  assert.deepEqual(x.buffer(),before);assert.deepEqual(x.buffer().review,x.review);assert.deepEqual(x.count(),{saved:0,lost:0});assert.equal(x.posts.length,1);assert.equal(x.gets.length,2);
+ }finally{await x.close();}
+});

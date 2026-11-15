@@ -16,9 +16,9 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
   const latest=useRef({buffer,locked,client,userId:session.user.id,clientId:session.clientId,csrfToken:session.csrfToken,source,onChange});
   latest.current={buffer,locked,client,userId:session.user.id,clientId:session.clientId,csrfToken:session.csrfToken,source,onChange};
-  const executionScope=useRef<{session:typeof session;userId:string;clientId:string;csrf:string;client:ApiClient;transport:typeof fetch;source:FormVersion|null;sourceRef:string}|null>(null),sending=useRef(false);
+  const executionScope=useRef<{session:typeof session;userId:string;clientId:string;csrf:string;client:ApiClient;transport:typeof fetch;source:FormVersion|null;copySource:FormVersion|undefined;sourceRef:string}|null>(null),sending=useRef(false);
   const observed=executionScope.current,sourceRef=JSON.stringify(source?.ref);
-  if(!observed||observed.session!==session||observed.userId!==session.user.id||observed.clientId!==session.clientId||observed.csrf!==session.csrfToken||observed.client!==client||observed.transport!==client.transport||observed.source!==source||observed.sourceRef!==sourceRef)executionScope.current={session,userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken,client,transport:client.transport,source,sourceRef};
+  if(!observed||observed.session!==session||observed.userId!==session.user.id||observed.clientId!==session.clientId||observed.csrf!==session.csrfToken||observed.client!==client||observed.transport!==client.transport||observed.source!==source||observed.copySource!==copySelection?.source||observed.sourceRef!==sourceRef)executionScope.current={session,userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken,client,transport:client.transport,source,copySource:copySelection?.source,sourceRef};
   const scope=executionScope.current!;
   const executionCurrent=()=>alive.current&&executionScope.current===scope&&client.transport===scope.transport&&session.user.id===scope.userId&&session.clientId===scope.clientId&&session.csrfToken===scope.csrf&&JSON.stringify(source?.ref)===scope.sourceRef;
   const duplicateFields=item?.fields.flatMap((field,index)=>item.fields.filter(value=>value.fieldId===field.fieldId).length>1?[{field,index}]:[])??[];
@@ -40,13 +40,19 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
   function changeItem(patch: Partial<FormItem>) { if (definition) change({ items: definition.items.map(value => value.itemId === buffer.itemId ? { ...value, ...patch } : value) }); }
   async function submit(request: MethodCommand, name: string, formCode: string,copyCurrent?:()=>boolean) {
     if (sending.current || pending || request.clientId !== session.clientId || !executionCurrent() || copyCurrent&&!copyCurrent()) return;
-    const work = { request, name, formCode };sending.current=true;
-    onChange(previous => ({ ...previous, ownerUserId: session.user.id, pending: work })); setPending(true); setError(null); setSaved(null);
+    if(latest.current.buffer.pending!==buffer.pending || buffer.pending && buffer.pending.request!==request)return;
+    const work = buffer.pending ?? { request, name, formCode };sending.current=true;
+    if(!buffer.pending)onChange(previous => ({ ...previous, ownerUserId: session.user.id, pending: work })); setPending(true); setError(null); setSaved(null);
     const current=()=>executionCurrent()&&(!copyCurrent||copyCurrent());
-    let applied = false;
+    let ref = work.storedRef;
     try {
-      const ref = await writeCommonFormDraft(client, request, session.csrfToken, session.user.id); applied = true;
-      if(!current())return;
+      if(!ref){
+        const storedRef = await writeCommonFormDraft(client, request, session.csrfToken, session.user.id);
+        if(!current())return;
+        onChange(previous => current() && previous.pending?.request===request
+          ? {...previous,pending:{...previous.pending,storedRef}} : previous);
+        ref = storedRef;
+      }
       const value = await getForm(client, { ref, name, formCode, scope: 'USER_COMMON' });
       if(!current())return;
       onChange(previous => current()&&previous.pending?.request.commandId === request.commandId&&!previous.review?.pending ? { ...formBuffer(value, session.user.id), review: previous.review } : previous);
@@ -54,7 +60,7 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
     } catch (cause: unknown) {
       if(!current())return;
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
-      if (!applied && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => current()&&previous.pending?.request.commandId===request.commandId ? { ...previous, pending: null } : previous);
+      if (!ref && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => current()&&previous.pending?.request.commandId===request.commandId ? { ...previous, pending: null } : previous);
       if (failure.status === 401) onAuthenticationLost();
     } finally { sending.current=false;if(alive.current)setPending(false); }
   }
@@ -125,8 +131,8 @@ export function CommonFormEditor({ client, session, source, buffer, onChange, on
       <button disabled={!buffer.dirty || !definition.name.trim() || !definition.formCode.trim() || !buffer.reason.trim()} onClick={save}>공통 양식 새 버전 저장</button>
     </fieldset></section> : null}
     {pending ? <p role="status">양식 저장·재조회를 확인하고 있습니다.</p> : null}
-    {buffer.pending && !pending ? <><p role="alert">양식 저장 결과 미확인 · 새 명령 대신 같은 명령을 확인하세요.</p><button disabled={buffer.pending.request.clientId !== session.clientId} onClick={() => { const work = buffer.pending!; void submit(work.request, work.name, work.formCode); }}>같은 양식 명령 결과 확인</button></> : null}
-    {error ? <p role="alert">{error.message} 입력과 미확인 명령은 보존했습니다.</p> : null}
+    {buffer.pending && !pending ? <><p role="alert">{buffer.pending.storedRef?'양식 저장 확인 · 원문 조회 미확인':'양식 저장 결과 미확인 · 새 명령 대신 같은 명령을 확인하세요.'}</p><button disabled={buffer.pending.request.clientId !== session.clientId} onClick={() => { const work = buffer.pending!; void submit(work.request, work.name, work.formCode,work.request.operation==='copyForm'?copySelection?.current:undefined); }}>{buffer.pending.storedRef?'저장된 양식 원문 조회':'같은 양식 명령 결과 확인'}</button></> : null}
+    {error ? <p role="alert">{error.message} {buffer.pending?.storedRef?'저장된 참조를 보존했습니다.':'입력과 미확인 명령은 보존했습니다.'}</p> : null}
     {saved ? <p role="status">양식 서버 저장·재조회 확인 · 버전 {saved}</p> : null}
   </section>;
 }
