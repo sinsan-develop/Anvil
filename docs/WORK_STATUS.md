@@ -19658,3 +19658,19 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 신산님다음작업재개이후세goal진행에서동일실행결정미수신을확인했다. 첫회Windows-local조회후보를기존Primary가완성·Main구문/독립C0/I0/M0검수후38ca82d0으로보존했고PMO가별도단발질문을전달했다. 둘째는PMOcursor…:8의질문전달확인뿐으로구현진전없음,셋째현재cursor…:8 unchanged/idle로SDK/P03직접답변없음을재확인. 이전차단상태를횟수로이월하지않은새감사다.
 - 현재branch38ca82d0까지local/private동일clean·정확SDK후보SHA921FEFEBE76A7FA7F1D4103CCF377C91A27DDE07CC6ABC62C95F5DE2039E5D23일치,subagent3명completed/제품writer0·새검사/후보본문/GET/원격실행0. 실행중job이있다고표시하거나같은시험/문서조사로진도를대체하지않는다.
 - 다음핵심진행은PMO가전달한P03R3제한복제또는고정SDKWindows-local추가1회실행의정확한직접결정이필요하다. 일반재개지시로최신실제제외/소진단발을해제하지않는다. 별도권위·실제QA/설치형경계도기존대조그대로다. 확인된선행경로에서다른안전한실행은없고결정/외부상태변경없이는의미있는진행이불가하여goal blocked전환감사를충족했다. 전체계획미완료이며완료처리/예약삭제/사용자pause아님. 전환결과는goal도구를정본으로한다.
+
+## 2026-11-15 P03 R3·Windows-local SDK 단발 직접 승인 수신
+
+- 신산님이P03R3제한복제1회와Windows-localSDK원문추가조회1회모두직접승인했다. 기존DB/키/서비스변경·실제Agent실행제외,결과불명시재시도/자동삭제없이보존. 첫시각확인06:59:13UTC(15:59:13KST),R3는안전여유1분을둔07:28:13UTC까지준비/진입하며원실행안한도/잔여검사를유지한다. 이기록으로기존소진READ2~4/R2를재사용하지않는다.
+- 현재HEAD8636c8fd clean·고정P03제안SHA40A7A65B2BFDF12CAD70EBEE65FAF6A2286905C60CC262A349ED721E913A2B6F/SDK후보SHA921FEFEBE76A7FA7F1D4103CCF377C91A27DDE07CC6ABC62C95F5DE2039E5D23실측일치. Main문서/검수·통합,기존Primary단일실행담당. P03를먼저실행후정확종단을판정하고SDK1회순차위임한다. 실제PG기동/SQL/기존서비스/Agent0.
+
+- 승인기록 docs/approvals/anvil-r3-sdk-539e7e7fbe7c4d22805103692a80af6e.json SHA dc930b60ed4331e259a70d57c8105183bf95db250a01c75132f894a814436e7b·run74466555366341f6b27ff0674b9abf4c. Primary strict SSH기존host/auth읽기7fbcc8 exit0 07:01:21.499Z에서SINSAN/daon1000:1000·고정도구/Node소유·새source/ledger부재확인. 준비/consume/entry0이며daemon/image/원본/관련이름·strictGit전제를읽기대조중. 인증/경로읽기만으로복제/DBready PASS승격0.
+
+- P03R3실제preflight STOP: b9b52b strictSSH exit2/live0. daemon/image/원volumeinstance·CreatedAt·labels/consumer0·고정Docker4이름부재·새source/ledger부재·가용467350781952B확인후원remote refs/heads/codex/av3-stage-b ls-remote --exit-code가출력0/stderr0/exit2(광고ref없음). 승인고정clone --branch선행불충족으로준비/entry/소진/새volume/helper/checkout/ledger/grant모두0. 다른ref복원/fetch/clone대체·재시도/삭제0. 직접승인1회복제를성공으로승격하지않고기한연장0.
+- R3종단은known READONLY_PRECONDITION_STOP이며UNKNOWN후추가조회가아니다. 별도SDK1회에는영향없음. SDKdispatch키 anvil-r3-sdk-539e7e7fbe7c4d22805103692a80af6e/sdk-dispatch를Main functions store에먼저단발발행,고정후보SHA921FEF…039E5D23로기존Primary에게정확1회실행위임. 같은키재발행/별도MainGET0.
+
+- SDKWindows-local直接승인1회45123a exit0/1.3452562초/session없음. attemptedtrue/getCalls1/requestClosedtrue/WINDOWS_READ_VERIFIED_SOURCE·stdoutJSON34635UTF8B완전파싱/원문6구간31345B/omitted0·live0. packed1110841B SHA512/해제4056576B/dts333809B·mjs1145192B원SHA일치. hook동기반환/일부argv-env/PermissionResult선언확인,CanUseTool전체서명·실응답소비/환경필수전체미확인. 원문파일저장/추가GET/SDK·Agent실행0. Main근거인수/검토중.
+- R3독립종료읽기담당0d4bcd는지정alias WSL-server가아닌원격hostname daon@SINSAN으로잘못호출해banner전255/원격스크립트0. 지정서버장애/독립부재확인PASS로표시하지않는다. 담당자원인오류1·Main정확성공접속argv확인후한정관측을지시할예정,강제정리/재시도0.
+- R3 main수거ref최소대안읽기: 고정8d200333이localdevelopment/mainancestor(c56822),controller는최종로컬branch/commit/remote/clean/2원문을검산하고remote trackingref/refspec요구없음을독립확인. 다만원안의clone수거이력범위변경이므로원remote옛branch복원/즉시우회0,clone인자1곳main대체허용만PMO에질문전달. 원safeexpiry07:28:13UTC/entry최후07:18:13UTC그대로·전체복제재승인요청아님.
+
+- R3독립관측정정af1c13 exit0/0.9832122초: 고정새6대상ABSENT·원volumeidentity/CreatedAt/labels일치·정지포함consumer0확인/live0. 원격wrongalias오류1(0d4bcd/원격0)과분리해종료관측만성공,복제NOT_RUN유지. SDK보고서독립C0/I0/M0·원6구간31345B합계/전달근거일치,독립SDK재해시/실행0. 두실행결과는승인ID-result.json과각결과서에분리보존. 추가GET/키/기존DB·서비스변경/Agent0.

@@ -152,3 +152,5 @@
 - 2026-11-15 UI09 준비기록에서저장한도정책명시고정조회 source연결. 참조없음GET0·다른hash거절·닫기/교체/ABA/주체전환늦은응답폐기·POST0. Primary43P/type0·Main11P·독립M1문구보완후C0/I0/M0. 실제DB/브라우저/이전/예산권위미확인·전체완료체크불변.
 
 - 2026-11-15 UI12 확정수락결과 GET재조회연결과후속현재GET실패의UNKNOWN역행race보완. 확정/원버퍼보존·추가POST0·현재권위불변. Primary직접7/type0·인접25P1F중stale선택자1개교정/해당1P,Main3P·독립C0/I0/M0. 실제DB/브라우저/제어권인수전체미검증·체크상향0.
+
+- 2026-11-15 직접승인실행: P03R3고정수거ref부재로진입전STOP·새6대상0/독립부재·원volume보존확인,복제NOT_RUN/P03미완료유지. Windows-localSDK0.3.224단발GET/해시검산성공·hook동기성/일부argv/env/PermissionResult선언확인·실Agent효과0/전체FN07체크불변.

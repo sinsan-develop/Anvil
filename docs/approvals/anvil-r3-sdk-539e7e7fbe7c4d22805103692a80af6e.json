@@ -1,0 +1,32 @@
+{
+  "approvalId": "anvil-r3-sdk-539e7e7fbe7c4d22805103692a80af6e",
+  "authority": "USER_DIRECT",
+  "userText": "P03 R3 제한 복제 1회와 Windows-local SDK 원문 추가 조회 1회 둘 다 승인해. 고정 실행안과 한도대로 기존 subagent에게 맡기고 너는 검수·통합해. 기존 DB·키·서비스 변경과 실제 Agent 실행은 제외하고, 결과 불명이면 재시도·자동 삭제 없이 보존해.",
+  "firstObservedAt": "2026-11-15T06:59:13.000Z",
+  "r3SafeExpiresAt": "2026-11-15T07:28:13.000Z",
+  "r3Source": "8d200333239f1bd7a7e8b6736a1492eb482e2de2",
+  "r3PlanSha256": "40A7A65B2BFDF12CAD70EBEE65FAF6A2286905C60CC262A349ED721E913A2B6F",
+  "r3RunInstance": "74466555366341f6b27ff0674b9abf4c",
+  "r3Targets": [
+    "/home/daon/anvil-v3-pgcopy-20261028-r3-src",
+    "/home/daon/.local/share/anvil-v3-pgcopy-20261028-r3",
+    "anvil-v3-pgdata-recovery-20261028-r3",
+    "anvil-v3-pgcopy-tools-20261028-r3",
+    "anvil-v3-pgcopy-init-20261028-r3",
+    "anvil-v3-pgcopy-20261028-r3"
+  ],
+  "r3AcceptedRiskSection": "## 5. 사람이 판단할 잔여 위험4와 유한 한도\n1. **복사 중 다른 writer가 없다는 보장은 없다.** Docker consumer0·원본RO·복사 전후 bytes/metadata 일치도 모든 외부 writer 부재나 같은 시점의 정상 DB snapshot을 증명하지 않는다. 복사 성공 후에도 DB 정합성은 미확인이다.\n2. **디스크를 강제로 제한한 quota가 아니다.** 검사 사이 증가·공유 공간 고갈·중단 지연이 가능하다. 새/부분 R3 사본이 원/R1/R2 보존 공간에 추가된다. 관측 상한을 강제격리나 0손실 보장으로 표시하지 않는다.\n3. **ACL/xattr를 못 보는 경우를 제한 수락한다.** 도구 미설치/필요기능 미지원일 때만 미확인을 수락한다. 존재하는 속성·조회 오류·부분출력·stderr·보존 실패는 계속 거절하며 복사 성공으로 덮지 않는다.\n4. **Node 소유자1001·loader 경합이 남는다.** owner/hash/실행파일 전후검사를 해도 검증과 실행 사이 바뀔 가능성을 완전히 제거하지 못한다. 옛 run의 수락을 새 실행에 자동 승계하지 않는다.\n불수락이면 실행0이며 writer 통제·격리/quota·신뢰 loader 등의 필요한 대안을 별도 결정한다. 현재 검증됐다고 가정하지 않는다.\n기존 한도는 전체 monotonic600초/source500초/회수reserve25초·copy 시작 잔여525초 이상, 논리256MiB/할당관측512MiB guard/entries100000, 예상 max(logical,allocated)+32MiB 및 free reserve128MiB/inodes entries+100이다. audit tmpfs32MiB/stdout16KiB/control256KiB·최대10초 관측간격을 같은 최초 deadline에서 유지한다. 위반/불명 시 정확 원cp identity만 확인해 TERM최대1·유한wait/회수, 부분보존이다. SIGKILL/force/무제한 retry0이며 OS/daemon/IO 불명을600초 내 강제회수한다고 보장하지 않는다.\n\n",
+  "sdkPlanSha256": "921FEFEBE76A7FA7F1D4103CCF377C91A27DDE07CC6ABC62C95F5DE2039E5D23",
+  "r3Attempts": 1,
+  "sdkAttempts": 1,
+  "executionOwner": "developer_primary",
+  "independentEndObserver": "d2_preflight",
+  "excluded": [
+    "existing DB/key/service changes",
+    "actual Agent execution",
+    "PG start",
+    "SQL",
+    "production transition"
+  ],
+  "unknownOutcome": "preserve; no retry or automatic deletion"
+}
