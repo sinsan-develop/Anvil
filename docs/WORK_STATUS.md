@@ -19827,3 +19827,20 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - root 기술검토문서는 d2_preflight 읽기 C0/I0/M0·SHA256 69C37866861DDF3E6983758D62C23A3271FEB6EF9C14BC5C23E5EB94EE9869EC로확인했다. 미채택/미확인/제품GO0구분을유지하며새저장권한승인요청으로사용하지않는다.
 
 - FN10 최종2경로 쓰기반환/live0. I1 실제RED52a5f4·I2 실제RED99261f→최종UI8b1ab4 18P/0F/0SKIP·루트type4c32bc0/메모리build5eded60·Main cfa8ba1P/diff0·최종독립C0/I0/M0. 기존서버12P는직전b26583증거로분리재사용했다. 제품8FD01DBF/시험33E145CE동결·원packet/receipt/phase보존·본문숨김/첫쪽ticket을결과서FN10_NODE_DECISION_HISTORY_CONTINUITY_SOURCE_RESULT_20261116에기록했다. 실제DB/브라우저/Agent/권한/키/서비스/P03추가실행0·전체미완료 유지.
+
+## 2026-11-16 normal root 계약 후보 구체화
+
+- PR139/head7c121458→main394fab9b, Broker43747997609 success·tree동일·병합후587e7a핵심1P·복구pr-139-head·완료branch/요청tag 정리·main exact clean 확인 뒤 codex/av3-normal-root-contract-candidate로 문서 작업을 이어간다. 제품writer GO0·실제파일/DB/키/권한/서비스/Agent/SDK/P03추가실행0.
+- preflight의채택조건재대조에서 Windows부모metadata완전정착은 기존normal필수조건이아니고별도native준비원장에서전용한추론임을확인했다. SEND내구WI§3/§5의file.sync/재조회·UNKNOWN/잠금보존과directory fsync/전원손실한계를유지하며새gate를추가하지않는다. 서버일회permit의재발급차단과로컬소실/wire판별한계도기술검토문서에정정했다.
+- 기존Primary에게 제품/시험읽기만으로 native배정/표식·owner수명handle/quota와같은owner Node I/O를잇는 후보의실현가능성/정확범위를대조하도록했다. 종료관측후새IO차단·inflight UNKNOWN/예약보존은명시하되커널원자취소·전원손실완전보장으로과장하지않는다. 승인질문은최대유효입력·기존보장/새위험·전체quota생산자까지구체화후보낸다. StageE읽기에서는기존승인만으로바로이을독립source단위를확인못했고새계약/실제검증의존을구분했다.
+
+- A안 후보는 docs/contracts/FN08_NORMAL_OWNED_SPOOL_PROFILE_CANDIDATE_20261116.md r2로구체화했다. 현재root배타생성+Keep뒤별도purpose증표·등록lineage·normal slot후배정, profile내모든project/세대writer의normal256/비권위receipt512/native준비64/관리64MiB·미배정128(총1GiB안)을제안한다. 현재SID/활성profile범위이며물리장치/기존미관리root/타SID합산주장0·기존API소급변경0이다. 새보호저장목적/표식/host제어와writer예약거절조건은직접채택사항이다.
+- r1 SHA6B4ABD80의독립I1은attempt잠금중host보유와기존permit open의BUSY충돌이었다. owner전용ALS/원ticket·slot/grant의한host대여·외부callback마스킹·내부close disposition·전체10초/64frame합산검증을r2에명시했다. prepared/receipt의slot선행을분리하고SETTLE확정사실과Node응답관측/UNKNOWN을구분했다. 실제정산입증없는차액반환0·완전ACK탐지주장0이다. 초기M1과기술문구는목적별최초발급/OPEN검사·normal최초배정한정으로보완했다.
+- 최종후보 SHA256 9E98D4EAA162B2E12498DCC3742D7E33921EB688B794ACA8CFF8187C0FCE9C4C, 독립문서검수C0/I0/M0. 명시제품13/시험8경로·새builtin async_hooks/util/types와파일모듈·같은번들정상구성·C#source목록27을고정했고실제compiler/PInvoke/파일/권한/키/DB/서비스/Agent/P03는제외한다. 최초양성64frame/2MiB번들·실OS는아직미검증이며native준비UNSUPPORTED/실보호관측412유지. 아직직접채택0/제품GO0/코드변경0이고기존담당Primary가채택후구현하도록준비했다. P03후속관측질문은별개미답변·추가SSH0다.
+
+- 후보문서/정정/기록을052a7c504230ea5233332106e4d6244be4a1ed3b에commit/private push했고원격동일/clean을확인했다. 해당게시본과9E98후보지문을직접연결한‘r2 계약·source-only 구현 채택’질문1회를신산님께보냈다. 답변전구현/추가권위발급0, 질문반복0·P03후속질문과구분한다. PMO에는필요결정/현재제외범위만보고했다.
+- 기존Primary의추가읽기대조는StageB UI01~03/UI06/UI10·FN01~05, 앞선StageC/D FN09~14·StageE FN15~18/UI12~14에한정했다. 기존승인/현재자료만으로새로연결할독립미구현단위는더확인하지못했고, 실DB/권한/다기기여정·원관측/공유전달/복원/설치·새공개/저장계약의존을구분했다. 완료단위재검사/무관한범위확장0이다. 실행중subagent/제품writer/QA세션0, 실제파일/키/DB/권한/서비스/SDK/Agent/추가SSH0. 전체계획미완료·완료체크상향0이다.
+- 현재문서branch는목적codex/av3-normal-root-contract-candidate·담당Main어울·검토본안전commit052a7c50/원격복구ref동일이다. source채택전해당spool제품stage를열지않고후보를보존한다. 재개조건은9E98후보의명시source-only채택이며그때동일기존Primary에게13제품/8시험WI를발행해단일writer구현→독립검수→통합한다. P03새진단은별도b3645a한정1회승인답변후에만새30분/소진원장과검토지문을결박한다. 두답변을서로대신해사용하지않는다.
+
+- 추가 독립 호출선은 Main의현재원문대조와Primary의한정재확인으로FN08 same-bundle polling 조립에서확인했다. CJS owner pair.post를별도TS NormalStartCoordinator에넘기면첫non-empty START에서instanceof불일치로NORMAL_START_PORTS_REQUIRED이고빈page는생성자검산을지나지않는다. 기존P3§3.1/normalpolling WI/통신쌍 WI의내부소비연결이며새root·spoolpurpose/ALS/프레임정책/권한/자동start/새CURRENT·wire생산을추가하지않는제품3/시험3단위로분리할수있다. 아직제품GO0. 문서후보준비단계는독립검수/게시까지완료했으므로미채택상태그대로문서PR로보존·정리한뒤승인된기존호출선의다음branch를열계획이다. spool구현을승인전개시하거나미완료codebranch를버리는재포장아님.
+- PR135~139의Broker기본설명에는목적/영향/검증/미검증/rollback이부족해정확한기존증거로메타데이터설명을보완했다. source/검증재실행/이력변경0이며이후PR은생성시이항목을먼저기록한뒤Broker에서재사용하도록한다.
