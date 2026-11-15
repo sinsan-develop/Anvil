@@ -26,7 +26,7 @@ const saved=new Map<string,PropertyDescriptor|undefined>();let ui:any;
 const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class OwnedChannel extends NativeChannel{constructor(){super();channels.push(this);}}
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/ProjectMethodologyPage.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:review-overflow',name:'ReviewOverflowTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'review-overflow-memory-entry',resolveId(id){if(id.endsWith('virtual:review-overflow'))return '\0review-overflow';},load(id){if(id==='\0review-overflow')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{ProjectMethodologyPage}from${JSON.stringify(entry)};import{StoredNodeDefinition}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/StoredNodeDefinition.tsx',import.meta.url)))};import{emptyMethodBuffer}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/common-api.ts',import.meta.url)))};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as reviewApi from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/project-methodology-review-api.ts',import.meta.url)))};import{CommonFormEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodologies/CommonFormEditor.tsx',import.meta.url)))};import{CommonMethodEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/CommonMethodEditor.tsx',import.meta.url)))};export{React,createRoot,ProjectMethodologyPage,emptyMethodBuffer,ApiClient,reviewApi,CommonFormEditor,CommonMethodEditor};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:review-overflow',name:'ReviewOverflowTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'review-overflow-memory-entry',resolveId(id){if(id.endsWith('virtual:review-overflow'))return '\0review-overflow';},load(id){if(id==='\0review-overflow')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{ProjectMethodologyPage}from${JSON.stringify(entry)};import{StoredNodeDefinition}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/StoredNodeDefinition.tsx',import.meta.url)))};import{emptyMethodBuffer}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/common-api.ts',import.meta.url)))};import{ApiClient,ApiError}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as reviewApi from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/project-methodology-review-api.ts',import.meta.url)))};import{CommonFormEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodologies/CommonFormEditor.tsx',import.meta.url)))};import{CommonMethodEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/CommonMethodEditor.tsx',import.meta.url)))};import{FormReviewPanel}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodologies/FormReviewPanel.tsx',import.meta.url)))};import{MethodReviewPanel}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/methodology-editor/MethodReviewPanel.tsx',import.meta.url)))};export{React,createRoot,ProjectMethodologyPage,emptyMethodBuffer,ApiClient,ApiError,reviewApi,CommonFormEditor,CommonMethodEditor,FormReviewPanel,MethodReviewPanel};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const [key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return ReviewOverflowTest;')();
@@ -194,5 +194,88 @@ test('공통 방법론 지연 원문·401은 주체·클라이언트·복사원�
    if(change==='copy'){await x.click('저장된 방법론 원문 조회');assert.equal(x.gets.length,2);}
    assert.deepEqual(x.buffer(),before);assert.equal(x.posts.length,1);assert.deepEqual(x.count(),{saved:0,lost:0});
   }finally{await x.close();}
+ }
+});
+
+type ReviewPanelKind='form'|'method'|'project';
+async function mountReviewEvent(kind:ReviewPanelKind,confirmEvent=false) {
+ const target={id:id(101),version:2,contentHash:'a'.repeat(64)},author=id(102),cid=id(103),cid2=id(104),confirmationId=id(105);
+ const reviewRef={id:id(106),targetRef:target,criteriaVersion:1,outcome:'ACCEPTED'},items=[{criterionId:'CHECK',outcome:'ACCEPTED',reason:'원 항목 이유',evidenceRefs:[]}];
+ const contentReviewCriteria={criteriaVersion:1,items:[{criterionId:'CHECK',title:'원 검토 기준'}]};
+ const entry={ref:reviewRef,items,reason:'원 종합 이유',sourceKind:'HUMAN_REVIEW',reviewer:{kind:'HUMAN',userId:author,sameAsTargetRecorder:true},reviewedAt:at,serverSequence:1};
+ const confirmation={id:confirmationId,decidedBy:author,decidedAt:at,decided_at:at,decision:'CONFIRMED',reviewRefs:[reviewRef]};
+ const form=kind==='form',std={id:id(107),version:1,contentHash:'b'.repeat(64)};
+ const source=form?{ref:target,contentReviewCriteria,definition:{formCode:'TEST',name:'문서',scope:'USER_COMMON',purpose:'',authorRole:'',reviewerRole:'',confirmerRole:'',requiredInputs:[],items:[],authoringStandardRef:std},authoringStandard:{ref:std,content:'기준'},validation:{formatOnly:true,contentReview:'RECORDED',userAcceptance:'NOT_PERFORMED'},confirmation:null,contentReviews:confirmEvent?[entry]:[]}:
+  {ref:target,contentReviewCriteria,name:'절차',purpose:'목적',systemCode:null,scope:kind==='project'?'PROJECT':'USER_COMMON',graph:ui.emptyMethodBuffer().graph,validation:{validForConfirmation:true,issues:[]},runtimeReadiness:'PROJECT_BINDINGS_REQUIRED',confirmation:null,contentReviews:confirmEvent?[entry]:[]};
+ function correct(){return structuredClone({...source,contentReviews:[{...entry,ref:{...reviewRef,id:id(109),outcome:'REWORK'},serverSequence:2},entry],...(confirmEvent?{confirmation,...(form?{validation:{...source.validation,userAcceptance:'CONFIRMED'}}:{})}:{})});}
+ let read:()=>Promise<Response>=async()=>Response.json(source),writeReply='ok',visible=true,project=pid;
+ let session={user:{id:author},clientId:cid,csrfToken:'s'.repeat(43)},verified=0,lost=0;
+ const calls:string[]=[],posts:string[]=[];
+ function receipt(request:any){const data=confirmEvent?{ref:target,status:'CONFIRMED',confirmationId}:{ref:target,status:'REVIEW_RECORDED',reviewRef};return {projectId:project,scopeKind:'USER_COMMON',ownerUserId:author,commandId:request.commandId,status:'APPLIED',operationId:id(110),targetId:target.id,version:target.version,serverReceivedAt:at,data:writeReply==='bad'?{...data,reviewRef:{...reviewRef,criteriaVersion:2},confirmationId:'-'.repeat(36)}:data};}
+ function write(request:any){calls.push('write');posts.push(JSON.stringify(request));if(writeReply==='lost')throw Error('응답 유실');return receipt(request);}
+ const transport:typeof fetch=async(path,options)=>{
+  if(options?.method==='POST'){assert.equal(path,'/api/v1/user-common/commands');return Response.json(write(JSON.parse(String(options.body))));}
+  assert.equal(options?.method,'GET');assert.equal(path,'/api/v1/'+(form?'forms':'methodologies')+'/'+target.id+'/versions/'+target.version);calls.push('read');return read();
+ };
+ let client=new ui.ApiClient(transport);
+ let buffer={...(form?emptyFormBuffer():ui.emptyMethodBuffer()),ownerUserId:author,review:{ref:target,criteriaVersion:1,criteria:contentReviewCriteria.items,items,outcome:'ACCEPTED',reason:entry.reason,dirty:!confirmEvent,pending:null}};
+ const container:MemoryNode=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ function Host(){const [value,setValue]=ui.React.useState(buffer);buffer=value;
+  const [displayed,setDisplayed]=ui.React.useState(source);
+  const gateway=kind==='project'?{prepare:async(r:any)=>{calls.push('prepare');return r.projectId?r:{...r,projectId:project,controlGeneration:1};},write:async(r:any)=>write(r),read:async(ref:any)=>{assert.deepEqual(ref,target);calls.push('read');const response=await read();if(!response.ok)throw new ui.ApiError((await response.json()).code,response.status);return response.json();}}:undefined;
+  return visible?ui.React.createElement(form?ui.FormReviewPanel:ui.MethodReviewPanel,{session,client,source:displayed,buffer:value,onChange:setValue,onAuthenticationLost:()=>lost++,onVerified:(v:any)=>{verified++;setDisplayed(v);},projectId:kind==='project'?project:undefined,gateway}):null;}
+ async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(Host)));}
+ function button(label:string,n=container):MemoryNode|undefined{if(n.tagName==='BUTTON'&&n.textContent===label)return n;for(const child of n.childNodes){const found=button(label,child);if(found)return found;}}
+ async function click(label:string){const found=button(label);assert(found,label);assert(!found.disabled,label);await ui.React.act(async()=>found.dispatchEvent({type:'click',button:0,bubbles:true}));}
+ await render();return {posts,calls,correct,source,buffer:()=>buffer,counts:()=>({verified,lost}),setRead(fn:typeof read){read=fn;},writeReply(v:string){writeReply=v;},button,click,
+  start:()=>click(confirmEvent?(form?'이 양식 버전 확정':'이 방법론 버전 확정'):'내용 검토 기록'), async show(v:boolean){visible=v;await render();},
+  async change(key:string){if(key==='project')project=id(115);else if(key==='user')session={...session,user:{id:id(116)}};else if(key==='client')client=new ui.ApiClient(transport);else if(key==='clientId')session={...session,clientId:cid2};else if(key==='csrf')session={...session,csrfToken:'z'.repeat(43)};else if(key==='transport')client.transport=(...args:Parameters<typeof fetch>)=>transport(...args);else if(key==='unmount')visible=false;else if(key==='criteria')contentReviewCriteria.criteriaVersion++;await render();},
+  async aba(){project=id(115);await render();project=pid;await render();},async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+ };
+}
+test('검토·확정 사건이 없는 같은 버전 GET은 완료되지 않고 정확 사건을 GET만으로 복구한다',async()=>{
+ for(const kind of ['form','method','project'] as const)for(const confirmEvent of [false,true]){
+  const f=await mountReviewEvent(kind,confirmEvent);try{await f.start();assert.equal(f.posts.length,1);assert.equal(f.counts().verified,0);const work=f.buffer().review;assert(work.pending);assert.equal(work.dirty,!confirmEvent);
+   await f.show(false);await f.show(true);assert.equal(f.calls.filter(k=>k==='read').length,1);
+   for(const fault of ['503','wrongHash','actor',...(confirmEvent?['confirmationId','reviewRefs']:['reviewId','criteria','items','reason'])]){
+    const value:any=f.correct();const row=value.contentReviews[1];
+    if(fault==='wrongHash')value.ref={...value.ref,contentHash:'f'.repeat(64)};
+    if(fault==='actor'){if(confirmEvent)value.confirmation={...value.confirmation,decidedBy:id(120)};else row.reviewer={...row.reviewer,userId:id(120)};}
+    if(fault==='confirmationId')value.confirmation={...value.confirmation,id:id(120)};
+    if(fault==='reviewRefs')value.confirmation={...value.confirmation,reviewRefs:[{...row.ref,id:id(120)}]};
+    if(fault==='reviewId')row.ref={...row.ref,id:id(120)};
+    if(fault==='criteria')row.ref={...row.ref,criteriaVersion:2};
+    if(fault==='items')row.items=[{...row.items[0],reason:'다른 항목 이유'}];
+    if(fault==='reason')row.reason='다른 종합 이유';
+    f.setRead(async()=>fault==='503'?Response.json({code:'STORAGE_FAILED'},{status:503}):Response.json(value));await f.click('저장된 검토·확정 사건 다시 조회');
+    assert.deepEqual(f.counts(),{verified:0,lost:0},fault);assert.deepEqual(f.buffer().review,work);assert.equal(f.posts.length,1);
+   }
+   f.setRead(async()=>Response.json(f.correct()));await f.click('저장된 검토·확정 사건 다시 조회');
+   assert.deepEqual(f.counts(),{verified:1,lost:0});assert.equal(f.buffer().review.pending,null);assert.equal(f.buffer().review.dirty,false);assert.equal(f.posts.length,1);
+   assert(f.button(kind==='form'?'이 양식 버전 확정':'이 방법론 버전 확정')?.disabled,'최신 검토 REWORK 또는 이미 확정된 사건');
+   if(kind==='project'){assert.deepEqual(f.calls.slice(0,3),['prepare','write','read']);assert(f.calls.slice(3).every(call=>call==='read'));}
+  }finally{await f.close();}
+ }
+});
+
+test('사건 영수증 부정형·POST 유실은 검토·확정 원명령 재확인만 허용한다',async()=>{
+ for(const kind of ['form','method','project'] as const)for(const fault of ['lost','bad'])for(const confirmEvent of [false,true]){
+  const f=await mountReviewEvent(kind,confirmEvent);try{
+   f.writeReply(fault);await f.start();assert(f.buffer().review.pending);assert.equal(f.buffer().review.receiptEvent,undefined);assert.equal(f.calls.filter(k=>k==='read').length,0);
+   assert(!f.button('저장된 검토·확정 사건 다시 조회'));await f.show(false);await f.show(true);assert.equal(f.posts.length,1);
+   f.writeReply('ok');f.setRead(async()=>Response.json(f.correct()));await f.click('같은 검토·확정 명령 결과 확인');
+   assert.equal(f.posts.length,2);assert.equal(f.posts[1],f.posts[0]);assert.deepEqual(f.counts(),{verified:1,lost:0});
+  }finally{await f.close();}
+ }
+});
+test('사건 GET의 늦은 200·401은 주체·기준·전송·프로젝트 변경·ABA·종료 뒤 폐기한다',async()=>{
+ for(const [kind,change] of [['form','user'],['form','unmount'],['form','criteria'],['method','client'],['method','csrf'],['method','transport'],['project','project'],['project','aba'],['project','clientId']] as const)for(const success of [false,true]){
+  const f=await mountReviewEvent(kind),hold=deferred<Response>();try{
+   await f.start();f.setRead(()=>hold.promise);await f.click('저장된 검토·확정 사건 다시 조회');assert.equal(f.calls.filter(k=>k==='read').length,2);
+   if(change==='aba')await f.aba();else await f.change(change);const before=structuredClone(f.buffer());
+   await ui.React.act(async()=>hold.resolve(success?Response.json(f.correct()):Response.json({code:'AUTH_REQUIRED'},{status:401})));
+   assert.deepEqual(f.buffer(),before);assert.deepEqual(f.counts(),{verified:0,lost:0});assert.equal(f.posts.length,1);
+   if(change==='project'){const button=f.button('저장된 검토·확정 사건 다시 조회');assert(button);if(!button.disabled)await f.click(button.textContent);assert.equal(f.calls.filter(k=>k==='read').length,2);}
+  }finally{await f.close();}
  }
 });

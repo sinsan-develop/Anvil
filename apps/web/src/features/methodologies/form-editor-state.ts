@@ -1,15 +1,64 @@
 import type { FormDefinition, FormField } from '../../../../server/modules/documents/forms.ts';
-import type { MethodCommand } from '../methodology-editor/common-api.ts';
+import type { CommonCommandReceipt, MethodCommand } from '../methodology-editor/common-api.ts';
 import type { FormVersion } from './forms-api.ts';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
-import type { ReviewOutcome } from './forms-api.ts';
+import {reviewRefFor, type ContentReviewRef, type ReviewOutcome} from './forms-api.ts';
+import {ordered} from '../knowledge/review-view.ts';
 import {ApiError} from '../../api/client.ts';
 
 export interface FormReviewWork {
   ref: VersionRef; criteriaVersion: number; criteria: { criterionId: string; title: string }[];
   items: { criterionId: string; outcome: ReviewOutcome; evidenceRefs: []; reason: string }[];
-  outcome: ReviewOutcome; reason: string; dirty: boolean; pending: MethodCommand | null;
+  outcome: ReviewOutcome; reason: string; dirty: boolean; pending: MethodCommand | null; receiptEvent?: ReviewReceiptEvent;
 }
+type ReviewRead = Pick<FormVersion,'ref'|'contentReviews'|'contentReviewCriteria'> & {
+  confirmation?: {id:string;decidedBy:string;reviewRefs:ContentReviewRef[]}|null;
+};
+type ReviewReceiptEvent = { command: string; userId:string; projectId:string|null; target:VersionRef; criteriaVersion:number } &
+  ({kind:'review';reviewRef:ContentReviewRef}|{kind:'confirmation';confirmationId:string});
+
+export function reviewReceiptEvent(request:MethodCommand, receipt:CommonCommandReceipt, target:VersionRef,
+    criteriaVersion:number, userId:string, projectId:string|null):ReviewReceiptEvent {
+  const invalid=()=>new ApiError('RESPONSE_INVALID');
+  if ((request.projectId??null)!==projectId || request.targetId!==target.id || request.expectedVersion!==target.version ||
+      ordered(receipt.data.ref)!==ordered(target)) throw invalid();
+  const base={command:ordered(request),userId,projectId,target:{...target},criteriaVersion};
+  if (request.operation==='recordContentReview') {
+    const ref=receipt.data.reviewRef;
+    if (receipt.data.status!=='REVIEW_RECORDED' || ordered(request.payload.targetRef)!==ordered(target) ||
+        !reviewRefFor(ref,target) || ref.criteriaVersion!==criteriaVersion || ref.criteriaVersion!==request.payload.criteriaVersion ||
+        ref.outcome!==request.payload.outcome) throw invalid();
+    return {...base,kind:'review',reviewRef:structuredClone(ref)};
+  }
+  const id=receipt.data.confirmationId;
+  if (!['confirmForm','confirmMethodology'].includes(request.operation) || receipt.data.status!=='CONFIRMED' ||
+      ordered(request.payload.versionRef)!==ordered(target) || !Array.isArray(request.payload.reviewRefs) || !request.payload.reviewRefs.length ||
+      !request.payload.reviewRefs.every(ref=>reviewRefFor(ref,target)&&ref.outcome==='ACCEPTED') ||
+      !id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) throw invalid();
+  return {...base,kind:'confirmation',confirmationId:id};
+}
+
+export function matchesReviewReceipt(event:ReviewReceiptEvent, request:MethodCommand, target:VersionRef, criteriaVersion:number,
+    userId:string, projectId:string|null):boolean {
+  return event.command===ordered(request) && event.userId===userId && event.projectId===projectId &&
+    (request.projectId??null)===projectId && ordered(event.target)===ordered(target) && event.criteriaVersion===criteriaVersion;
+}
+
+export function verifyReviewEvent(event:ReviewReceiptEvent, request:MethodCommand, value:ReviewRead) {
+  if (event.command!==ordered(request) || ordered(value.ref)!==ordered(event.target) ||
+      value.contentReviewCriteria?.criteriaVersion!==event.criteriaVersion) throw new ApiError('RESPONSE_INVALID');
+  if (event.kind==='review') {
+    const rows=value.contentReviews?.filter(row=>row.ref.id===event.reviewRef.id), row=rows?.[0];
+    if (rows?.length!==1 || !row || ordered(row.ref)!==ordered(event.reviewRef) || row.reviewer.kind!=='HUMAN' ||
+        row.reviewer.userId!==event.userId || row.sourceKind!=='HUMAN_REVIEW' || row.reason!==request.payload.reason ||
+        ordered(row.items)!==ordered(request.payload.items)) throw new ApiError('RESPONSE_INVALID');
+  } else {
+    const confirmation=value.confirmation;
+    if (confirmation?.id!==event.confirmationId || confirmation.decidedBy!==event.userId ||
+        ordered(confirmation.reviewRefs)!==ordered(request.payload.reviewRefs)) throw new ApiError('RESPONSE_INVALID');
+  }
+}
+
 
 export interface FormBuffer {
   ownerUserId: string | null; targetId: string | null; version: number; definition: FormDefinition | null;

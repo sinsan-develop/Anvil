@@ -1,52 +1,81 @@
-import { useId, useState, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
+import { useId, useState, useMemo, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { writeCommonCommand, type MethodCommand, type MethodGateway } from './common-api.ts';
 import { getMethod, type MethodVersion } from './api.ts';
-import { reviewRefFor, type ReviewOutcome } from '../methodologies/forms-api.ts';
+import { type ReviewOutcome } from '../methodologies/forms-api.ts';
 import type { MethodBuffer } from './common-api.ts';
-import type { FormReviewWork } from '../methodologies/form-editor-state.ts';
+import {matchesReviewReceipt, reviewReceiptEvent, verifyReviewEvent, type FormReviewWork} from '../methodologies/form-editor-state.ts';
 
 const labels: Record<ReviewOutcome, string> = { ACCEPTED: '적합', REWORK: '보완 필요', BLOCKED: '판단 보류', NOT_EXECUTED: '미검토' };
-export function MethodReviewPanel({ client, session, source, buffer, onChange, onVerified, onAuthenticationLost, gateway }: {
+export function MethodReviewPanel({ client, session, source, buffer, onChange, onVerified, onAuthenticationLost, gateway, projectId }: {
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; source: MethodVersion;
-  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onVerified: (value: MethodVersion) => void; onAuthenticationLost: () => void; gateway?: MethodGateway;
+  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onVerified: (value: MethodVersion) => void; onAuthenticationLost: () => void; gateway?: MethodGateway; projectId?:string;
 }) {
   const fieldId = useId();
   const active=useRef(true),preparing=useRef<string|null>(null),latestChange=useRef(onChange);latestChange.current=onChange;
-  useEffect(()=>()=>{active.current=false;const id=preparing.current;if(id)latestChange.current(previous=>previous.preparationId===id?{...previous,preparationId:null}:previous);},[]);
-  const [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [recorded, setRecorded] = useState(false);
+  useEffect(()=>{active.current=true;return ()=>{active.current=false;const id=preparing.current;if(id)latestChange.current(previous=>previous.preparationId===id?{...previous,preparationId:null}:previous);};},[]);
+  const [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [recorded, setRecorded] = useState<object|null>(null);
   const work = buffer.review, criteria = source.contentReviewCriteria;
   const matches = !!work && work.ref.id === source.ref.id && work.ref.version === source.ref.version && work.ref.contentHash === source.ref.contentHash && work.criteriaVersion === criteria?.criteriaVersion;
+  const running=useRef(false), latestPending=useRef(work?.pending);latestPending.current=work?.pending;
+  const project=gateway ? projectId??null : null;
+  const targetKey=JSON.stringify([source.ref.id,source.ref.version,source.ref.contentHash,criteria?.criteriaVersion,criteria?.items]);
+  const context=useMemo(()=>({userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken,transport:client.transport,targetKey}),
+    [session,session.user.id,session.clientId,session.csrfToken,client,client.transport,targetKey,project,buffer.ownerUserId,!!gateway]);
+  const lastContext=useRef(context);lastContext.current=context;
+  const current=()=>active.current && lastContext.current===context && session.user.id===context.userId &&
+    session.clientId===context.clientId && session.csrfToken===context.csrf && client.transport===context.transport &&
+    JSON.stringify([source.ref.id,source.ref.version,source.ref.contentHash,source.contentReviewCriteria?.criteriaVersion,source.contentReviewCriteria?.items])===context.targetKey;
   const locked = pending || !!buffer.preparationId || !!work?.pending || !!buffer.pending || buffer.dirty || !!buffer.application?.pending || !!buffer.application?.preparationId;
   const latest = source.contentReviews?.[0];
-  function update(patch: Partial<FormReviewWork>) { onChange(previous => previous.review ? { ...previous, review: { ...previous.review, ...patch, dirty: true } } : previous); setRecorded(false); }
+  function update(patch: Partial<FormReviewWork>) { onChange(previous => previous.review ? { ...previous, review: { ...previous.review, ...patch, dirty: true } } : previous); setRecorded(null); }
   function start() {
     if (!criteria || locked || work?.dirty && !confirm('현재 미저장 검토 입력을 이 버전의 새 검토로 바꿀까요?')) return;
     onChange(previous => ({ ...previous, ownerUserId: session.user.id, review: { ref: source.ref, criteriaVersion: criteria.criteriaVersion, criteria: structuredClone(criteria.items),
       items: criteria.items.map(item => ({ criterionId: item.criterionId, outcome: 'NOT_EXECUTED', evidenceRefs: [], reason: '' })), outcome: 'NOT_EXECUTED', reason: '', dirty: false, pending: null } }));
-    setError(null); setRecorded(false);
+    setError(null); setRecorded(null);
   }
   async function execute(request: MethodCommand) {
-    if (pending || request.clientId !== session.clientId || !matches) return;
-    setPending(true); setError(null); let applied = false;
-    const preparationId=crypto.randomUUID();preparing.current=preparationId;onChange(previous=>({...previous,preparationId}));
+    if (running.current || !matches || !current() || request.clientId!==session.clientId ||
+        work.pending && work.pending!==request || gateway && (!project || work.pending && request.projectId!==project)) return;
+    if (request.operation==='recordContentReview' ? request.payload.targetKind!=='METHODOLOGY' : request.operation!=='confirmMethodology') return;
+    let event=work.receiptEvent;
+    if (event && !matchesReviewReceipt(event,request,source.ref,work.criteriaVersion,session.user.id,project)) return;
+    const stillCurrent=()=>current() && (!latestPending.current || latestPending.current.commandId===request.commandId);
+    running.current=true;setPending(true);setError(null);setRecorded(null);
+    let applied=!!event;
+    const preparationId=event ? null : crypto.randomUUID();
+    if(preparationId){preparing.current=preparationId;onChange(previous=>({...previous,preparationId}));}
     try {
-      request = gateway ? await gateway.prepare(request) : request;
-      if(!active.current)return;
-      onChange(previous => previous.preparationId===preparationId&&previous.review ? { ...previous,preparationId:null, review: { ...previous.review, pending: request } } : previous);
-      const receipt = gateway ? await gateway.write(request) : await writeCommonCommand(client, request, session.csrfToken, session.user.id); applied = true;
-      if (receipt.data.ref.contentHash !== source.ref.contentHash || request.operation === 'recordContentReview' && (!reviewRefFor(receipt.data.reviewRef, source.ref) || receipt.data.reviewRef.outcome !== request.payload.outcome)
-        || request.operation === 'confirmMethodology' && !/^[0-9a-f-]{36}$/.test(receipt.data.confirmationId ?? '')) throw new ApiError('RESPONSE_INVALID');
-      const value = gateway ? await gateway.read(source.ref, source.name, source.purpose) : await getMethod(client, { ref: source.ref, name: source.name, purpose: source.purpose, systemCode: null, status: 'DRAFT', sourceAvailable: false, scope: 'USER_COMMON' });
-      if(!active.current)return;
-      onChange(previous => previous.review?.pending?.commandId === request.commandId ? { ...previous, review: { ...previous.review, dirty: false, pending: null } } : previous);
-      onVerified(value); setRecorded(request.operation === 'recordContentReview');
-    } catch (cause: unknown) {
-      if(!active.current)return;
-      const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
-      if (!applied && !(gateway && work?.pending) && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => previous.review ? { ...previous, review: { ...previous.review, pending: null } } : previous);
-      if (failure.status === 401) onAuthenticationLost();
-    } finally { onChange(previous=>previous.preparationId===preparationId?{...previous,preparationId:null}:previous);preparing.current=null;if(active.current)setPending(false); }
+      if (!event) {
+        request = gateway ? await gateway.prepare(request) : request;
+        if (!stillCurrent()) return;
+        if ((request.projectId??null)!==project) throw new ApiError('RESPONSE_INVALID');
+        onChange(previous => previous.preparationId===preparationId && previous.review ? {...previous,preparationId:null,review:{...previous.review,pending:request}} : previous);
+        const receipt=gateway ? await gateway.write(request) : await writeCommonCommand(client,request,session.csrfToken,session.user.id);
+        applied=true;
+        if (!stillCurrent()) return;
+        const verified=reviewReceiptEvent(request,receipt,source.ref,work.criteriaVersion,session.user.id,project);
+        onChange(previous => current() && previous.review?.pending===request ?
+          {...previous,review:{...previous.review,receiptEvent:verified}} : previous);
+        event=verified;
+      }
+      const value=gateway ? await gateway.read(source.ref, source.name, source.purpose) : await getMethod(client, { ref: source.ref, name: source.name, purpose: source.purpose, systemCode: null, status: 'DRAFT', sourceAvailable: false, scope: 'USER_COMMON' });
+      if (!stillCurrent()) return;
+      verifyReviewEvent(event,request,value);
+      onChange(previous => current() && previous.review?.pending===request ?
+        {...previous,review:{...previous.review,dirty:false,pending:null,receiptEvent:undefined}} : previous);
+      onVerified(value);setRecorded(request.operation==='recordContentReview' ? context : null);
+    } catch (cause:unknown) {
+      if (!stillCurrent()) return;
+      const failure=cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');setError(failure);
+      if(!applied && !(gateway && work.pending) && failure.status>=400 && failure.status<500 && failure.code!=='RESPONSE_INVALID')
+        onChange(previous=>current() && previous.review?.pending===request ? {...previous,review:{...previous.review,pending:null}} : previous);
+      if(failure.status===401)onAuthenticationLost();
+    } finally {
+      if(preparationId){onChange(previous=>previous.preparationId===preparationId?{...previous,preparationId:null}:previous);preparing.current=null;}
+      running.current=false;if(active.current)setPending(false);
+    }
   }
   function record() {
     if (!work || !matches || locked || !work.reason.trim() || work.items.some(item => !item.reason.trim())) return;
@@ -92,8 +121,8 @@ export function MethodReviewPanel({ client, session, source, buffer, onChange, o
         <ul aria-label="확정 당시 검토 참조">{source.confirmation.reviewRefs.map((review,index)=><li key={JSON.stringify([index,review.id,review.targetRef])}><p>검토 ID {review.id}</p><p>기준 버전 {review.criteriaVersion} · 저장 판정 {review.outcome}</p><p>대상 ID {review.targetRef.id} · 대상 버전 {review.targetRef.version}</p><p>대상 내용 지문 {review.targetRef.contentHash}</p></li>)}</ul>
       </details></> : <p>이 버전의 사용자 확정 이력 없음</p>}
     {pending ? <p role="status">검토·확정 저장과 재조회를 확인하고 있습니다.</p> : null}
-    {work?.pending && !pending ? <><p role="alert">검토·확정 결과 미확인 · 같은 명령만 다시 확인하세요.</p><button disabled={!matches || work.pending.clientId !== session.clientId} onClick={() => { void execute(work.pending!); }}>같은 검토·확정 명령 결과 확인</button></> : null}
+    {work?.pending && !pending ? <><p role="alert">{work.receiptEvent?'검토·확정 저장 확인 · 원문 사건 조회 미확인':'검토·확정 결과 미확인 · 같은 명령만 다시 확인하세요.'}</p><button disabled={!matches || work.pending.clientId !== session.clientId || gateway && work.pending.projectId!==project || !!work.receiptEvent && !matchesReviewReceipt(work.receiptEvent,work.pending,source.ref,work.criteriaVersion,session.user.id,project)} onClick={() => { void execute(work.pending!); }}>{work.receiptEvent?'저장된 검토·확정 사건 다시 조회':'같은 검토·확정 명령 결과 확인'}</button></> : null}
     {error ? <p role="alert">{error.message} 검토 입력과 미확인 명령은 유지했습니다.</p> : null}
-    {recorded ? <p role="status">서버 내용 검토 기록 확인</p> : null}
+    {recorded===context ? <p role="status">서버 내용 검토 기록 확인</p> : null}
   </section>;
 }
