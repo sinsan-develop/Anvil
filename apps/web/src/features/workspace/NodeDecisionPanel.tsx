@@ -16,15 +16,21 @@ export function NodeDecisionPanel(p:NodeDecisionPanelProps){
  const [declaration,setDeclaration]=useState<Awaited<ReturnType<typeof previewNodeDecision>>|null>(null),[documents,setDocuments]=useState<DocumentSummary[]>([]),[plans,setPlans]=useState<WorkPlanSummary[]>([]),[history,setHistory]=useState<DecisionView[]>([]),[cursor,setCursor]=useState<string|null>(null),[docCursor,setDocCursor]=useState<string|null>(null),[planCursor,setPlanCursor]=useState<string|null>(null);
  const [design,setDesign]=useState<VersionRef|null>(null),[plan,setPlan]=useState<VersionRef|null>(null),[sources,setSources]=useState<VersionRef[]>([]),[value,setValue]=useState(''),[reason,setReason]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[supported,setSupported]=useState(true);
  const [dataKey,setDataKey]=useState<string|null>(null),[knownHead,setKnownHead]=useState<{key:string;ref:VersionRef;status:'ACTIVE'|'REVOKED'}|null>(null);
+ const historyPage=useRef<{cursor:string|null;loading:boolean}>({cursor:null,loading:false});
+ function replaceHistoryCursor(next:string|null){
+  if(historyPage.current.loading)setBusy(false);
+  historyPage.current={cursor:next,loading:false};
+  setCursor(next);
+ }
  const ready=dataKey===key,currentHead=knownHead?.key===key?knownHead.ref:null;
  const rememberHead=async(items:DecisionView[],check:()=>boolean)=>{const head=items[0]?.headRef;if(head&&items.some(v=>JSON.stringify(v.headRef)!==JSON.stringify(head)))throw new ApiError('NODE_DECISION_SOURCE_CONFLICT');if(!head){if(check())setKnownHead(null);return;}const current=items.find(v=>v.ref.id===head.id&&v.ref.version===head.version&&v.ref.contentHash===head.contentHash)??await readNodeDecision(context,head,check);if(!check())return;setKnownHead({key,ref:{...head},status:current.snapshot.status});};
  const b=p.storage.buffers[key],visible=b?.key===key?b:null,allowed=p.participation==='OWNER'&&p.controlState.status==='HELD'&&p.controlState.actorId===p.session.user.id&&p.controlState.clientId===p.session.clientId;
  const live=(epoch:number)=>()=>scope.current===epoch&&owner.current.key===key&&owner.current.client===p.client&&owner.current.transport===p.client.transport&&owner.current.csrf===p.session.csrfToken;
  const failure=(e:unknown)=>{const a=e instanceof ApiError?e:new ApiError('NODE_DECISION_READ_UNAVAILABLE');setError(a.code);if(a.status===401)p.onAuthenticationLost();};
  const empty=():NodeDecisionBuffer=>({key,packet:null,receipt:null,view:null,phase:'DRAFT',error:null});
- const invalidateSelection=()=>{selectionRevision.current++;setHistory([]);setCursor(null);if(visible?.view)p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:null}));return selectionRevision.current;};
- useEffect(()=>{const epoch=++scope.current,check=live(epoch);setDataKey(null);setKnownHead(null);if(visible?.view)p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:null}));setDeclaration(null);setHistory([]);setDocuments([]);setPlans([]);setDesign(null);setPlan(null);setSources([]);setValue('');setReason('');setError(null);setSupported(true);setBusy(true);
-  (async()=>{const method=await readWorkspaceMethodology(p.client,p.projectId,p.applicationRef);if(!check())return;const found=method.snapshot?.graph.nodes.find(n=>n.nodeId===p.nodeId);if(!found||!['HUMAN','DECISION'].includes(found.kind)||found.role!=='USER'){setSupported(false);return;}const d=await previewNodeDecision(method,p.nodeId,check);if(!check())return;setDeclaration(d);const [docs,ps,page]=await Promise.all([listDocuments(p.client,p.projectId,null),listWorkPlans(p.client,p.projectId,null),listNodeDecisions(context,null,check)]);if(!check())return;setDocuments(docs.items);setDocCursor(docs.nextCursor);setPlans(ps.items);setPlanCursor(ps.nextCursor);setHistory(page.items);await rememberHead(page.items,check);if(!check())return;if(visible?.receipt&&visible.packet){const observed=await readNodeDecision(context,visible.receipt.data.ref,check);if(!check())return;p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:observed,phase:'SAVED',error:null}));}setDataKey(key);setCursor(page.nextCursor);})().catch(e=>{if(check()){setDataKey(null);setHistory([]);if(visible?.packet)p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:null,phase:old?.receipt?'READ_UNAVAILABLE':old?.phase??'DRAFT',error:'NODE_DECISION_READ_UNAVAILABLE'}));failure(e);}}).finally(()=>{if(check())setBusy(false);});return()=>{if(scope.current===epoch)scope.current++;};
+ const invalidateSelection=()=>{selectionRevision.current++;setHistory([]);replaceHistoryCursor(null);if(visible?.view)p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:null}));return selectionRevision.current;};
+ useEffect(()=>{const epoch=++scope.current,check=live(epoch);replaceHistoryCursor(null);setDataKey(null);setKnownHead(null);if(visible?.view)p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:null}));setDeclaration(null);setHistory([]);setDocuments([]);setPlans([]);setDesign(null);setPlan(null);setSources([]);setValue('');setReason('');setError(null);setSupported(true);setBusy(true);
+  (async()=>{const method=await readWorkspaceMethodology(p.client,p.projectId,p.applicationRef);if(!check())return;const found=method.snapshot?.graph.nodes.find(n=>n.nodeId===p.nodeId);if(!found||!['HUMAN','DECISION'].includes(found.kind)||found.role!=='USER'){setSupported(false);return;}const d=await previewNodeDecision(method,p.nodeId,check);if(!check())return;setDeclaration(d);const [docs,ps,page]=await Promise.all([listDocuments(p.client,p.projectId,null),listWorkPlans(p.client,p.projectId,null),listNodeDecisions(context,null,check)]);if(!check())return;setDocuments(docs.items);setDocCursor(docs.nextCursor);setPlans(ps.items);setPlanCursor(ps.nextCursor);setHistory(page.items);await rememberHead(page.items,check);if(!check())return;if(visible?.receipt&&visible.packet){const observed=await readNodeDecision(context,visible.receipt.data.ref,check);if(!check())return;p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:observed,phase:'SAVED',error:null}));}setDataKey(key);replaceHistoryCursor(page.nextCursor);})().catch(e=>{if(check()){setDataKey(null);setHistory([]);if(visible?.packet)p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:null,phase:old?.receipt?'READ_UNAVAILABLE':old?.phase??'DRAFT',error:'NODE_DECISION_READ_UNAVAILABLE'}));failure(e);}}).finally(()=>{if(check())setBusy(false);});return()=>{if(scope.current===epoch)scope.current++;};
  },[key,p.client,p.session.csrfToken,p.client.transport]);
  async function selectDesign(id:string){const epoch=scope.current,revision=invalidateSelection(),check=()=>live(epoch)()&&selectionRevision.current===revision;setDesign(null);setError(null);if(!id)return;setBusy(true);try{const entry=documents.find(d=>d.id===id);if(!entry)throw new ApiError('NODE_DECISION_SOURCE_REQUIRED');const d=await readDocument(p.client,p.projectId,id,entry.headVersion);if(!check())return;const form=await getPinnedForm(p.client,d.document.formRef);if(!check())return;if(form.definition.formCode!=='AF02'||!d.document.confirmed||!d.document.validation.validForConfirmation||d.document.contentReviews[0]?.ref.outcome!=='ACCEPTED')throw new ApiError('NODE_DECISION_SOURCE_CONFLICT');setDesign({id,version:d.document.version,contentHash:d.document.contentHash});}catch(e){if(check())failure(e);}finally{if(check())setBusy(false);}}
  async function selectPlan(id:string){const epoch=scope.current,revision=invalidateSelection(),check=()=>live(epoch)()&&selectionRevision.current===revision;setPlan(null);setError(null);if(!id)return;setBusy(true);try{const selected=plans.find(v=>v.ref.id===id);if(!selected)throw new ApiError('NODE_DECISION_SOURCE_REQUIRED');const v=await readWorkPlan(p.client,p.projectId,selected.ref),decision=await readWorkPlanDecision(p.client,p.projectId,v);if(!check())return;if(!decision.currentConfirmationValid)throw new ApiError('NODE_DECISION_SOURCE_CONFLICT');setPlan(v.ref);}catch(e){if(check())failure(e);}finally{if(check())setBusy(false);}}
@@ -34,7 +40,45 @@ export function NodeDecisionPanel(p:NodeDecisionPanelProps){
    const result=await sendNodeDecision(context,owned,check,state=>p.storage.onChange(key,owned,old=>({...old??empty(),packet:owned,receipt:state.receipt,phase:state.sent?'SENDING':'DRAFT'})));
    if(!check())return;p.storage.onChange(key,owned,old=>({...old??empty(),packet:owned,receipt:result.receipt,view:result.view,phase:'SAVED',error:null}));setKnownHead({key,ref:{...result.view.headRef},status:result.view.snapshot.status});setHistory(prev=>[...prev.filter(v=>v.ref.id!==result.view.ref.id||v.ref.version!==result.view.ref.version),result.view]);
   }catch(e){if(packet){const state=nodeDecisionPacketState(packet),owned=packet;p.storage.onChange(key,owned,old=>({...old??empty(),packet:owned,receipt:state.receipt,view:null,phase:state.receipt?'READ_UNAVAILABLE':state.sent?'UNKNOWN':'DRAFT',error:e instanceof ApiError?e.code:'NODE_DECISION_OUTCOME_UNKNOWN'}));}if(check())failure(e);}finally{operation.current=false;if(check())setBusy(false);}}
- async function refresh(){const epoch=scope.current,check=live(epoch);setBusy(true);setError(null);setDataKey(null);if(visible?.view)p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:null}));try{const page=await listNodeDecisions(context,null,check);if(!check())return;setHistory(page.items);await rememberHead(page.items,check);if(!check())return;setDataKey(key);setCursor(page.nextCursor);if(visible?.receipt&&visible.packet){const view=await readNodeDecision(context,visible.receipt.data.ref,check);if(check())p.storage.onChange(key,visible.packet,old=>({...old??empty(),view,phase:'SAVED',error:null}));}}catch(e){if(check()){setHistory([]);setKnownHead(null);if(visible?.packet)p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:null,phase:old?.receipt?'READ_UNAVAILABLE':old?.phase??'DRAFT',error:'NODE_DECISION_READ_UNAVAILABLE'}));failure(e);}}finally{if(check())setBusy(false);}}
+ async function refresh(){
+  if(busy||historyPage.current.loading)return;
+  const active=live(scope.current);
+  replaceHistoryCursor(null);
+  const request=historyPage.current,check=()=>active()&&historyPage.current===request;
+  request.loading=true;setBusy(true);setError(null);setDataKey(null);
+  if(visible?.view)p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:null}));
+  try{
+   const page=await listNodeDecisions(context,null,check);if(!check())return;
+   await rememberHead(page.items,check);if(!check())return;
+   if(visible?.receipt&&visible.packet){
+    const view=await readNodeDecision(context,visible.receipt.data.ref,check);if(!check())return;
+    p.storage.onChange(key,visible.packet,old=>({...old??empty(),view,phase:'SAVED',error:null}));
+   }
+   setHistory(page.items);setDataKey(key);replaceHistoryCursor(page.nextCursor);
+  }catch(e){
+   if(!check())return;
+   setHistory([]);setKnownHead(null);replaceHistoryCursor(null);
+   if(visible?.packet)p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:null,phase:old?.receipt?'READ_UNAVAILABLE':old?.phase??'DRAFT',error:'NODE_DECISION_READ_UNAVAILABLE'}));
+   failure(e);
+  }
+ }
+ async function moreHistory(){
+  const page=historyPage.current;
+  if(!ready||busy||!cursor||page.cursor!==cursor||page.loading)return;
+  const current=live(scope.current),check=()=>current()&&historyPage.current===page;
+  page.loading=true;setBusy(true);
+  try{
+   const next=await listNodeDecisions(context,cursor,check);
+   if(!check())return;
+   setHistory(previous=>[...previous,...next.items]);
+   replaceHistoryCursor(next.nextCursor);
+  }catch(e){
+   if(!check())return;
+   setHistory([]);replaceHistoryCursor(null);
+   if(visible?.view)p.storage.onChange(key,visible.packet,old=>({...old??empty(),view:null}));
+   failure(e);
+  }
+ }
  async function fixed(r:VersionRef){const epoch=scope.current,check=live(epoch);setBusy(true);try{const v=await readNodeDecision(context,r,check);await rememberHead([v],check);if(check())p.storage.onChange(key,visible?.packet??null,old=>({...old??empty(),view:v}));}catch(e){if(check()){p.storage.onChange(key,visible?.packet??null,old=>({...old??empty(),view:null,error:'NODE_DECISION_READ_UNAVAILABLE'}));failure(e);}}finally{if(check())setBusy(false);}}
  if(!supported)return null;
  const held=!!visible?.packet&&visible.phase!=='SAVED';
@@ -53,7 +97,7 @@ export function NodeDecisionPanel(p:NodeDecisionPanelProps){
   {visible?.phase==='DRAFT'&&visible.packet?<button type="button" disabled={busy} onClick={()=>{if(!nodeDecisionPacketState(visible.packet!).sent)p.storage.onChange(key,visible.packet,()=>empty());}}>전송 전 입력 다시 편집</button>:null}
   {visible?.phase==='UNKNOWN'?<p role="status">원 명령의 결과가 불명입니다. 원 입력을 보존하며 새 명령을 만들지 않습니다.</p>:null}{visible?.phase==='READ_UNAVAILABLE'?<p role="status">원 저장 응답을 보존했습니다. 같은 참조만 재조회합니다.</p>:null}
   {(ready?history:[]).map(v=><p key={v.ref.id+':'+v.ref.version}><button type="button" disabled={busy} onClick={()=>void fixed(v.ref)}>고정 이력 {v.ref.version}</button> · {v.snapshot.status} · {v.snapshot.value}</p>)}
-  {cursor?<button type="button" disabled={busy} onClick={()=>{const check=live(scope.current);void listNodeDecisions(context,cursor,check).then(v=>{if(check()){setHistory(x=>[...x,...v.items]);setCursor(v.nextCursor);}}).catch(e=>{if(check()){setHistory([]);failure(e);}});}}>이력 더 보기</button>:null}
+  {ready&&cursor?<button type="button" disabled={busy} onClick={()=>void moreHistory()}>이력 더 보기</button>:null}
   {ready&&visible?.view?<div aria-label="보호 판단 원문"><p>보관 버전 {visible.view.ref.version} · {visible.view.snapshot.status} · {visible.view.snapshot.value}</p><p>{visible.view.snapshot.reason}</p><p className="meta">판단 저장 사실 · 완료·자동 분기·실행 허가 없음</p></div>:null}
  </section>;
 }
