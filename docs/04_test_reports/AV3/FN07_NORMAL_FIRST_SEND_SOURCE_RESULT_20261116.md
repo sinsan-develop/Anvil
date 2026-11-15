@@ -59,3 +59,9 @@
 RAM의 create/current/classify/예약/정산 포트는 실제 등록 owner, 내구 파일 또는 실제 SDK 서명의 근거가 될 수 없다. Query·iterator·지시 제공·init 확인에 관한 결과는 명시한 제품 코드와 합성 포트 범위다. 실행계의 SDK module/query/hook, native 등록·배정 및 보호 spool 9E98, 제5 채널·공유 총량, 실제 SDK 입력 수락·응답·업무 완료·OS child 소유는 미검증이다. 후속 SEND를 같은 live Query에 제공하는 전용 소비와 원 STOP 협력 interrupt는 후속 연결이다. 실제 SDK 추가 조회·설치·실행, 사용자/백업 파일 조사, DB·권한·키·서비스·Agent·C#·P03 작업 0.
 
 복구 단위는 위 12개 소스/시험 및 이 결과서다. 통합 후 Main이 해당 변경 commit의 정상 revert로 복구할 수 있다. 기존 START/출력 소비자 체크포인트 및 다른 작성자의 변경은 보존한다. WORK_STATUS, Git, 검수·통합은 Main 소유다.
+
+## Main 통합 검사 보완
+
+PR144의 Broker43769022402는 신규 시험 끝의 빈 줄 때문에 exit2였다. Primary가 `normal-first-send-owner.test.ts`의 마지막 LF 1바이트만 제거하고 마지막 개행 하나는 유지했다. 나머지13,012바이트는 수정 전과 같다. 위 표의 시험056F1073은 보완 전 동결본이며 현재 시험 지문은072EE27BE413114E535EDD25EBD946E78479A6F412D804FDA52F94361DA61059다. 제품7과 시험 본문·기대값·CI 기준은 바꾸지 않았다.
+
+main 대비 전체 `git diff --check development/main`은 수정 전9dd0bb에서171행 오류 exit2, 수정 후23230d에서진단0·exit0이었다. 당시 미추적 신규 파일을 포함하지 않았던 working diff 검사와 구분한다. 공백만 바뀌었으므로 Node·타입·빌드를 반복하지 않았고 앞 절의 실행 결과를 재사용한다. 원격 CI 재검증은 이 보완을 게시한 뒤 별도로 확인한다.
