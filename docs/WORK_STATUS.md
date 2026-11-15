@@ -19827,3 +19827,13 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - root 기술검토문서는 d2_preflight 읽기 C0/I0/M0·SHA256 69C37866861DDF3E6983758D62C23A3271FEB6EF9C14BC5C23E5EB94EE9869EC로확인했다. 미채택/미확인/제품GO0구분을유지하며새저장권한승인요청으로사용하지않는다.
 
 - FN10 최종2경로 쓰기반환/live0. I1 실제RED52a5f4·I2 실제RED99261f→최종UI8b1ab4 18P/0F/0SKIP·루트type4c32bc0/메모리build5eded60·Main cfa8ba1P/diff0·최종독립C0/I0/M0. 기존서버12P는직전b26583증거로분리재사용했다. 제품8FD01DBF/시험33E145CE동결·원packet/receipt/phase보존·본문숨김/첫쪽ticket을결과서FN10_NODE_DECISION_HISTORY_CONTINUITY_SOURCE_RESULT_20261116에기록했다. 실제DB/브라우저/Agent/권한/키/서비스/P03추가실행0·전체미완료 유지.
+
+## 2026-11-16 normal root 계약 후보 구체화
+
+- PR139/head7c121458→main394fab9b, Broker43747997609 success·tree동일·병합후587e7a핵심1P·복구pr-139-head·완료branch/요청tag 정리·main exact clean 확인 뒤 codex/av3-normal-root-contract-candidate로 문서 작업을 이어간다. 제품writer GO0·실제파일/DB/키/권한/서비스/Agent/SDK/P03추가실행0.
+- preflight의채택조건재대조에서 Windows부모metadata완전정착은 기존normal필수조건이아니고별도native준비원장에서전용한추론임을확인했다. SEND내구WI§3/§5의file.sync/재조회·UNKNOWN/잠금보존과directory fsync/전원손실한계를유지하며새gate를추가하지않는다. 서버일회permit의재발급차단과로컬소실/wire판별한계도기술검토문서에정정했다.
+- 기존Primary에게 제품/시험읽기만으로 native배정/표식·owner수명handle/quota와같은owner Node I/O를잇는 후보의실현가능성/정확범위를대조하도록했다. 종료관측후새IO차단·inflight UNKNOWN/예약보존은명시하되커널원자취소·전원손실완전보장으로과장하지않는다. 승인질문은최대유효입력·기존보장/새위험·전체quota생산자까지구체화후보낸다. StageE읽기에서는기존승인만으로바로이을독립source단위를확인못했고새계약/실제검증의존을구분했다.
+
+- A안 후보는 docs/contracts/FN08_NORMAL_OWNED_SPOOL_PROFILE_CANDIDATE_20261116.md r2로구체화했다. 현재root배타생성+Keep뒤별도purpose증표·등록lineage·normal slot후배정, profile내모든project/세대writer의normal256/비권위receipt512/native준비64/관리64MiB·미배정128(총1GiB안)을제안한다. 현재SID/활성profile범위이며물리장치/기존미관리root/타SID합산주장0·기존API소급변경0이다. 새보호저장목적/표식/host제어와writer예약거절조건은직접채택사항이다.
+- r1 SHA6B4ABD80의독립I1은attempt잠금중host보유와기존permit open의BUSY충돌이었다. owner전용ALS/원ticket·slot/grant의한host대여·외부callback마스킹·내부close disposition·전체10초/64frame합산검증을r2에명시했다. prepared/receipt의slot선행을분리하고SETTLE확정사실과Node응답관측/UNKNOWN을구분했다. 실제정산입증없는차액반환0·완전ACK탐지주장0이다. 초기M1과기술문구는목적별최초발급/OPEN검사·normal최초배정한정으로보완했다.
+- 최종후보 SHA256 9E98D4EAA162B2E12498DCC3742D7E33921EB688B794ACA8CFF8187C0FCE9C4C, 독립문서검수C0/I0/M0. 명시제품13/시험8경로·새builtin async_hooks/util/types와파일모듈·같은번들정상구성·C#source목록27을고정했고실제compiler/PInvoke/파일/권한/키/DB/서비스/Agent/P03는제외한다. 최초양성64frame/2MiB번들·실OS는아직미검증이며native준비UNSUPPORTED/실보호관측412유지. 아직직접채택0/제품GO0/코드변경0이고기존담당Primary가채택후구현하도록준비했다. P03후속관측질문은별개미답변·추가SSH0다.

@@ -16,3 +16,11 @@
 native Retain은 삭제 공유 없이 부모/root handle을 보유할 근거가 있으나 host 종료 때 해제된다. Node의 이미 시작한 write/sync가 그 뒤 정착할 수 있으므로 사후 owner 검사만으로 전체 수명을 설명할 수 없다. 기존 store는 거래 최초 lstat(root)를 기준으로 삼고 원 native 배정 identity와 직접 대조하지 않는다. 읽기는 lstat/open/fstat·사후검산, 쓰기는 wx/fstat/write/sync지만 nlink 검사는 없고 O_NOFOLLOW 미지원 시0이며 lock 해제는 최종검산 후 경로 unlink다. 부모 보유만으로 자식 교체와 검사/삭제 사이 변경까지 막는다고 주장하지 않는다. 기존 store가 제외한 동일 OS 사용자 공격 보호를 새로 충족했다고 주장하지도 않는다. 이 차이는 기존 위협모델과 새 권위 보장의 정확한 범위를 먼저 정해야 한다는 뜻이며, 새로운 전면 방어를 임의 필수조건으로 추가할 근거는 아니다.
 
 quota 예약은 첫 lock 생성 전에 필요하고 거래 콜백의 최종 append량은 그 뒤 결정될 수 있다. 최초 예약 단위/최악 크기, 모든 등록 writer의 참여, 실제 점유/신원 검산 뒤 정산, host 사망·부분쓰기/삭제 불명 시 예약 보존을 정해야 한다. 같은 owner의 Node I/O 방식은 IPC 용량 문제를 줄이지만 원 배정 identity·수명·미정착 예약을 결박하는 구체 프로토콜은 아직 확인되지 않았다. 추가 검토는 제품/시험 읽기뿐이며 실제 파일/ACL/컴파일/실환경 실행0이다.
+
+## 채택 조건과 추론의 정정
+
+추가 대조한 FN08_NORMAL_SEND_DURABLE_INTAKE_SOURCE_20261115 §3·§5는 file.sync·재조회와 불명/잠금 보존·자동 재실행 금지를 요구하면서 directory fsync와 전원손실 내구성의 한계를 유지한다. 완전한 Windows 부모 metadata 정착을 최초 normal 배정의 전제라고 한 것은 별도 native 준비 원장 요건에서 가져온 기술적 추론이다. 이를 normal의 새 필수 gate로 적용하지 않는다. 기존 한계를 정밀하게 명시하는 방식으로 후보를 구체화한다.
+
+서버의 normal START permit은 실행 세대당1개, SEND는 명령당1개여서 로컬 행 소실 후 새 localAttemptRef/proof의 두번째 발급은409이고 같은 nonce의 변경 packet도 거절된다. 유효한 원 packet 재조회는 기존 permit을 반환한다. 하지만 최초 permit 전의 소실은 서버에 흔적이 없을 수 있고 서버의 dispatchPerformed:false는 실제 wire 여부를 판별하지 않는다. credential storage.observe에는 grant/등록/예약/credential세대/evidence가 결박되지만 normal allocationId/디렉터리 identity 대조 필드는 없다. 이 안전망을 root 최초사용·소실 판별과 wire 복구를 대신하는 보장으로 과장하지 않는다.
+
+따라서 새 결정은 owner의 저장 배정 목적과 최소 원 배정 근거·재개/격리, 관측된 host 종료 뒤 새 I/O 차단, 이미 시작한 I/O 불명과 예약 보존, 전체 용량 예약의 주체다. 원자적 커널 취소·완전 전원손실 보증·동일 OS 사용자 공격 방어를 추가했다고 주장하지 않는다. 이번 정정은 승인 완화가 아니라 기존 normal 계약과 새 제안의 범위를 구분한 것이다. 제품 쓰기/실제 실행은 여전히0이다.
