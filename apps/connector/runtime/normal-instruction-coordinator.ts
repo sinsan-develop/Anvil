@@ -1,6 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {NormalObservationSpool,type NormalLocalObservation} from './normal-observation-spool.ts';
-import {isNormalInstructionWire} from '../adapters/secondary/normal-instruction-wire.ts';
+import {isNormalInstructionWire,isNormalFirstSendWire,consumeNormalFirstSendResult,abandonNormalFirstSendResult} from '../adapters/secondary/normal-instruction-wire.ts';
+import type {FirstSendSummary,FirstSendCompletion} from './normal-first-send-owner.ts';
 import {isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {readDispatchEnvelopeV1,type DispatchEnvelopeV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
@@ -12,18 +13,24 @@ import type {NormalStartCurrent} from './normal-start-coordinator.ts';
 export interface NormalInstructionPreparationResult{transport:'NORMAL_PROTECTED';state:'PERMIT_RECORDED'|'UNKNOWN';key:ReturnType<typeof receiptKeyV1>;envelopeHash:string;recordRef:Ref;permit:NormalPermitResult['permit']|null;proofResultRef:Ref|null;readOnly:true;executionAuthorized:false;dispatchPerformed:false}
 type Send=Extract<DispatchEnvelopeV1,{operation:'SEND_INSTRUCTION'}>;
 export interface NormalInstructionObservation{transport:'NORMAL_PROTECTED';responseRef:Ref;processRef:Ref|null}
-export interface NormalInstructionWirePort{transport:'NORMAL_PROTECTED';send(capability:object,signal:AbortSignal):Promise<NormalInstructionObservation>}
+export interface NormalInstructionWirePort{transport:'NORMAL_PROTECTED';send(capability:object,signal:AbortSignal):Promise<unknown>}
 export interface NormalInstructionDriverInput{envelope:Send;instruction:Awaited<ReturnType<NormalInstructionIntake['instruction']>>;localAttemptRef:Ref;dispatchAttemptRef:Ref;permit:NonNullable<NormalInstructionPreparationResult['permit']>;proofResultRef:Ref;actualExecutionVerified:false;executionAuthorized:false}
-export interface NormalInstructionDispatchResult{transport:'NORMAL_PROTECTED';state:'RESPONSE_RECORDED'|'UNKNOWN';recordRef:Ref;responseRef:Ref|null;processRef:Ref|null;actualExecutionVerified:false;executionAuthorized:false;dispatchPerformed:false}
+export interface NormalInstructionDispatchResult{transport:'NORMAL_PROTECTED';state:'RESPONSE_RECORDED'|'FIRST_SEND_INPUT_AND_INIT_RECORDED'|'UNKNOWN';recordRef:Ref;responseRef:Ref|null;processRef:Ref|null;actualExecutionVerified:false;executionAuthorized:false;dispatchPerformed:false}
 type Fresh={material:NormalInstructionDriverInput['instruction'];end:number;monoEnd:number;current:unknown};
-type Ticket={input:NormalInstructionDriverInput;signal:AbortSignal;active:boolean;claimed:boolean;verify:()=>Promise<void>;remaining:()=>number};
+type Ticket={grantRef:Ref;input:NormalInstructionDriverInput;signal:AbortSignal;active:boolean;claimed:boolean;verify:()=>Promise<void>;remaining:()=>number};
+const claimedDispatches=new WeakMap<object,Ticket>();
+export type NormalDispatchClaim=ReturnType<typeof claimNormalInstructionDispatch>;
+export function originalNormalDispatchGrant(claim:NormalDispatchClaim){
+ const ticket=claimedDispatches.get(claim);return ticket?.active&&ticket.claimed&&!ticket.signal.aborted?cloneV1(ticket.grantRef):null;
+}
 const dispatchTickets=new WeakMap<object,Ticket>();
 const copyInstruction=(v:NormalInstructionDriverInput['instruction'])=>({...captureInstructionInput({...v,bytes:null}),bytes:new Uint8Array(v.bytes)});
 /** issuer는 아래 coordinator의 private 경로뿐이다. JSON/복제 객체는 원 dispatch 소유권을 만들지 않는다. */
 export function claimNormalInstructionDispatch(capability:object,signal:AbortSignal){
  const t=dispatchTickets.get(capability);if(!t||!t.active||t.claimed||t.signal!==signal||signal.aborted)fail('NORMAL_INSTRUCTION_DISPATCH_NOT_ELIGIBLE');t.claimed=true;
  const input={...captureInstructionInput({...t.input,instruction:null}),instruction:copyInstruction(t.input.instruction)};
- return{input,verify:async()=>{if(!t.active||signal.aborted)fail();await t.verify();if(!t.active||signal.aborted)fail();},remaining:()=>{if(!t.active||signal.aborted)fail();return t.remaining();}};
+ const claim={input,verify:async()=>{if(!t.active||signal.aborted)fail();await t.verify();if(!t.active||signal.aborted)fail();},remaining:()=>{if(!t.active||signal.aborted)fail();return t.remaining();}};
+ claimedDispatches.set(claim,t);return claim;
 }
 type Ports={intake:NormalInstructionIntake;store:NormalInstructionStore;post:NormalProtectedPostClient;current:NormalStartCurrent;grantRef:Ref;clock:()=>number;timeoutMs:number};
 const originalHasReceived=NormalInstructionIntake.prototype.hasReceived;
@@ -47,15 +54,21 @@ export class NormalInstructionCoordinator{
   if(!arrayV1(raw,5)||Buffer.byteLength(canonicalJson(raw))>2097152)fail();const rows=cloneV1(raw) as any[];let at=-Infinity;const ids=new Set<string>();
   const base=['sequence','state','key','envelopeHash','grantRef','sessionBindingRef','receivedRef','previousRef','permit','proofResultRef','recordedAt'];
   for(const [i,r] of rows.entries()){const s=r?.snapshot,prior=rows[i-1]?.snapshot,dispatch=i>=2&&rows[2]?.snapshot.state==='SEND_DISPATCH_ATTEMPTED';
-   if(!recordV1(r,['ref','snapshot'])||!refV1(r.ref)||r.ref.version!==1||ids.has(r.ref.id)||r.ref.contentHash!==hash(s)||!recordV1(s,dispatch?[...base,'localAttemptRef','dispatchAttemptRef','responseRef','processRef']:base)||
+   if(!recordV1(r,['ref','snapshot'])||!refV1(r.ref)||r.ref.version!==1||ids.has(r.ref.id)||r.ref.contentHash!==hash(s)||!recordV1(s,dispatch?[...base,'localAttemptRef','dispatchAttemptRef','responseRef','processRef',...(i===3&&s?.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'?['startReadyRef','inputEvidence','initConfirmationRef']:[])]:base)||
     s.sequence!==i+1||!same(s.key,receiptKeyV1(e))||s.envelopeHash!==e.envelopeHash||!same(s.grantRef,this.#p.grantRef)||!same(s.sessionBindingRef,e.payload.sessionBindingRef)||!same(s.receivedRef,received)||!same(s.previousRef,rows[i-1]?.ref??null)||!isoV1(s.recordedAt)||Date.parse(s.recordedAt)<at||Date.parse(s.recordedAt)>this.#now())fail();
    ids.add(r.ref.id);at=Date.parse(s.recordedAt);
    if(i===0){if(s.state!=='SEND_ATTEMPTED'||s.permit!==null||s.proofResultRef!==null)fail();continue;}
    if(prior.state==='UNKNOWN')fail();
    if(dispatch){
     if(i===2&&(prior.state!=='PERMIT_RECORDED'||s.state!=='SEND_DISPATCH_ATTEMPTED'||s.dispatchAttemptRef!==null||s.responseRef!==null||s.processRef!==null)||
-     i===3&&!['RESPONSE_RECORDED','UNKNOWN'].includes(s.state)||i===4&&(prior.state!=='RESPONSE_RECORDED'||s.state!=='UNKNOWN')||
+     i===3&&!['RESPONSE_RECORDED','FIRST_SEND_INPUT_AND_INIT_RECORDED','UNKNOWN'].includes(s.state)||i===4&&(!['FIRST_SEND_INPUT_AND_INIT_RECORDED','RESPONSE_RECORDED'].includes(prior.state)||s.state!=='UNKNOWN')||
      !same(s.localAttemptRef,rows[0].ref)||i>2&&!same(s.dispatchAttemptRef,rows[2].ref)||!same(s.permit,rows[1].snapshot.permit)||!same(s.proofResultRef,rows[1].snapshot.proofResultRef))fail();
+    if(s.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'){
+     const v=s.inputEvidence;
+     if(i!==3||s.responseRef!==null||s.processRef!==null||!refV1(s.startReadyRef)||s.startReadyRef.version!==1||!refV1(s.initConfirmationRef)||s.initConfirmationRef.version!==1||
+      !recordV1(v,['dispatchAttemptRef','instructionRef','partsRef','instructionDigest','messageDigest'])||!same(v.dispatchAttemptRef,s.dispatchAttemptRef)||
+      !same(v.instructionRef,e.payload.instructionRef)||!same(v.partsRef,e.payload.partsRef)||![v.instructionDigest,v.messageDigest].every(h=>typeof h==='string'&&/^[0-9a-f]{64}$/.test(h)))fail();
+    }
     if(s.state==='RESPONSE_RECORDED'&&(!refV1(s.responseRef)||s.processRef!==null&&!refV1(s.processRef))||s.state==='UNKNOWN'&&(s.responseRef!==null||s.processRef!==null))fail();
    }else{
     // 원 1~3행 형상과 UNKNOWN 전이는 그대로 보존한다.
@@ -96,8 +109,12 @@ export class NormalInstructionCoordinator{
    const received=await originalObservations.call(this.#p.intake,e);this.#ports();if(signal.aborted)fail();
    const value=await this.#exclusive.call(this.#p.store,receiptKeyV1(e),async tx=>{
     const rows=this.#rows(await tx.read(),e,received.localRecordRef);this.#ports();if(signal.aborted)fail();
+    if(rows[3]?.snapshot.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'){
+     const material=await originalRead.call(this.#p.intake,cloneV1(e),true);this.#ports();
+     if(signal.aborted||rows[3].snapshot.inputEvidence.instructionDigest!==contentHash(material.bytes))fail('NORMAL_INSTRUCTION_HISTORY_CONFLICT');
+    }
     const inputs:NormalLocalObservation[]=[received];
-    for(const r of rows){const v=r.snapshot;if(v.state==='SEND_DISPATCH_ATTEMPTED')continue;
+    for(const r of rows){const v=r.snapshot;if(v.state==='SEND_DISPATCH_ATTEMPTED'||v.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED')continue;
      inputs.push({type:v.state==='SEND_ATTEMPTED'?'PREPARED':v.state==='RESPONSE_RECORDED'?'PROVIDER_RESPONSE_RECEIVED':v.state,
       commandId:e.commandId,envelopeHash:e.envelopeHash,localRecordRef:cloneV1(r.ref),processRef:v.processRef??null,occurredAt:v.recordedAt,
       reasonCode:v.state==='RESPONSE_RECORDED'?'UNVERIFIED_PROVIDER_CLAIM':v.state==='UNKNOWN'?'RECORD_UNCERTAIN':'NONE'});
@@ -110,7 +127,9 @@ export class NormalInstructionCoordinator{
   const check=()=>{this.#ports();if(signal.aborted||isProxy(spool)||Object.getPrototypeOf(spool)!==NormalObservationSpool.prototype||spool.record!==originalRecord||NormalObservationSpool.prototype.record!==originalRecord)fail('NORMAL_INSTRUCTION_OBSERVATION_PORT_INVALID');};
   check();const source=await this.observations(raw,signal),recordedRefs:Ref[]=[];check();
   for(const input of source.inputs){check();const ref=await originalRecord.call(spool,input);check();recordedRefs.push(cloneV1(ref));}
-  return{state:source.state,recordedRefs,executionAuthorized:false as const,dispatchPerformed:false as const,actualExecutionVerified:false as const};
+  const first=source.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED';
+  if(first&&source.inputs.at(-1)?.type!=='PERMIT_RECORDED')fail();
+  return{state:source.state,recordedRefs,...(first?{requiredAckRef:recordedRefs.at(-1)}:{}),executionAuthorized:false as const,dispatchPerformed:false as const,actualExecutionVerified:false as const};
  }
  async prepare(raw:unknown,signal:AbortSignal):Promise<NormalInstructionPreparationResult>{
   if(this.#busy)fail('NORMAL_INSTRUCTION_BUSY');if(this.#unknown)fail('NORMAL_INSTRUCTION_UNKNOWN');if(!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_INSTRUCTION_CANCELLED');
@@ -161,14 +180,15 @@ export class NormalInstructionCoordinator{
   if(!isNormalInstructionWire(wire))fail('NORMAL_INSTRUCTION_WIRE_REQUIRED');
   const send=wire.send,started=performance.now(),wall=this.#now();let end=Math.min(ready.end,Date.parse(e.expiresAt),Date.parse(prepared.permit!.expiresAt),wall+this.#p.timeoutMs,wall+ready.monoEnd-started),ticket:Ticket|undefined,lastTick=started;
   const live=()=>{this.#ports();const tick=performance.now();if(tick<lastTick)fail('NORMAL_INSTRUCTION_CLOCK_INVALID');lastTick=tick;if(!isNormalInstructionWire(wire)||wire.send!==send||wire.transport!=='NORMAL_PROTECTED'||signal.aborted||this.#now()>=end||performance.now()-started>=end-wall)fail('NORMAL_INSTRUCTION_DISPATCH_EXPIRED');};
+  let capability:object|undefined,completion:FirstSendCompletion|undefined,committed=false;
   this.#busy=true;
   try{
    const result=await this.#exclusive.call(this.#p.store,receiptKeyV1(e),async tx=>{
     live();let rows=this.#rows(await tx.read(),e,ready.material.receivedRef);live();
     if(rows.length!==2||!same(rows[1].ref,prepared.recordRef)||!same(rows[1].snapshot.permit,prepared.permit)||!same(rows[1].snapshot.proofResultRef,prepared.proofResultRef))fail('NORMAL_INSTRUCTION_DISPATCH_NOT_ELIGIBLE');
-    const append=async(state:string,observation:NormalInstructionObservation|null=null)=>{
+    const append=async(state:string,observation:NormalInstructionObservation|null=null,first?:FirstSendSummary)=>{
      const snapshot={sequence:rows.length+1,state,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,grantRef:cloneV1(this.#p.grantRef),sessionBindingRef:cloneV1(e.payload.sessionBindingRef),receivedRef:cloneV1(ready.material.receivedRef),previousRef:rows.at(-1).ref,
-      permit:cloneV1(prepared.permit),proofResultRef:cloneV1(prepared.proofResultRef),recordedAt:new Date(this.#now()).toISOString(),localAttemptRef:cloneV1(rows[0].ref),dispatchAttemptRef:rows[2]?.ref??null,responseRef:observation?.responseRef??null,processRef:observation?.processRef??null};
+      permit:cloneV1(prepared.permit),proofResultRef:cloneV1(prepared.proofResultRef),recordedAt:new Date(this.#now()).toISOString(),localAttemptRef:cloneV1(rows[0].ref),dispatchAttemptRef:rows[2]?.ref??null,responseRef:observation?.responseRef??null,processRef:observation?.processRef??null,...(first??{})};
      const entry={ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};await tx.appendAndSync(entry);
      const reread=this.#rows(await tx.read(),e,ready.material.receivedRef);if(!same(reread,[...rows,entry]))fail('NORMAL_INSTRUCTION_SYNC_UNCERTAIN');rows=reread;return entry;
     };
@@ -184,14 +204,19 @@ export class NormalInstructionCoordinator{
     };
     try{
      await verify();live();const dispatch=await append('SEND_DISPATCH_ATTEMPTED');live();
-     const capability=Object.freeze({});
+     const issued=Object.freeze({});capability=issued;
      const observation=await this.#bounded(async child=>{
-      ticket={input:{envelope:cloneV1(e),instruction:copyInstruction(ready.material),localAttemptRef:cloneV1(rows[0].ref),dispatchAttemptRef:cloneV1(dispatch.ref),permit:cloneV1(prepared.permit!),proofResultRef:cloneV1(prepared.proofResultRef!),actualExecutionVerified:false,executionAuthorized:false},signal:child,active:true,claimed:false,
+      ticket={grantRef:cloneV1(this.#p.grantRef),input:{envelope:cloneV1(e),instruction:copyInstruction(ready.material),localAttemptRef:cloneV1(rows[0].ref),dispatchAttemptRef:cloneV1(dispatch.ref),permit:cloneV1(prepared.permit!),proofResultRef:cloneV1(prepared.proofResultRef!),actualExecutionVerified:false,executionAuthorized:false},signal:child,active:true,claimed:false,
        verify:async()=>{if(!ticket?.active||child.aborted)fail();await verify();if(!ticket.active||child.aborted)fail();},remaining:()=>{live();return Math.min(end-this.#now(),end-wall-(performance.now()-started));}};
-      dispatchTickets.set(capability,ticket);return send.call(wire,capability,child);
+      dispatchTickets.set(issued,ticket);return send.call(wire,issued,child);
      },signal,end);live();
+     if(isNormalFirstSendWire(wire)){
+      if(!ticket?.claimed)fail();completion=consumeNormalFirstSendResult(wire,issued,observation);
+      signal.addEventListener('abort',completion.abandon,{once:true});live();
+      const last=await append('FIRST_SEND_INPUT_AND_INIT_RECORDED',null,completion.summary);live();return output(last);
+     }
      const observed=captureInstructionInput(observation);if(!ticket?.claimed||!recordV1(observed,['transport','responseRef','processRef'])||observed.transport!=='NORMAL_PROTECTED'||!refV1(observed.responseRef)||observed.processRef!==null&&!refV1(observed.processRef))fail('NORMAL_INSTRUCTION_RESPONSE_INVALID');
-     const last=await append('RESPONSE_RECORDED',observed);live();return output(last);
+     const last=await append('RESPONSE_RECORDED',{transport:'NORMAL_PROTECTED',responseRef:observed.responseRef,processRef:observed.processRef});live();return output(last);
     }catch{
      this.#unknown=true;if(ticket)ticket.active=false;
      // 검사 실패도 같은 새 결과 객체를 재사용하지 않는다. dispatch 이전 UNKNOWN은 기존 닫힌 행형상을 쓴다.
@@ -200,8 +225,9 @@ export class NormalInstructionCoordinator{
     }finally{if(ticket)ticket.active=false;}
    });
    const completed=result as NormalInstructionDispatchResult;if(completed.state==='RESPONSE_RECORDED')live();
+   if(completed.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'){live();if(!completion)return fail();completion.commit();live();committed=true;}
    return completed;
-  }catch(error){this.#unknown=true;throw error;}finally{if(ticket)ticket.active=false;this.#busy=false;}
+  }catch(error){this.#unknown=true;throw error;}finally{if(completion)signal.removeEventListener('abort',completion.abandon);if(!committed)completion?.abandon();if(capability)abandonNormalFirstSendResult(capability);if(ticket)ticket.active=false;this.#busy=false;}
  }
 
 }

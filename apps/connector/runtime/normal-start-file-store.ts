@@ -8,7 +8,7 @@ import type {NormalStopStore} from './normal-stop-coordinator.ts';
 import type {NormalInstructionStore} from './normal-instruction-intake.ts';
 import type {ReceiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 export type NormalLocalScope={projectId:string;executionId:string;executionGeneration:number};
-export interface NormalJournalTransaction{read():Promise<unknown[]>;appendAndSync(value:unknown):Promise<void>}
+export interface NormalJournalTransaction{requireStartReadyClose?(key:ReceiptKeyV1):void;read():Promise<unknown[]>;appendAndSync(value:unknown):Promise<void>}
 export interface NormalJournalStore{readonly transport:'NORMAL_PROTECTED';exclusive<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>):Promise<T>}
 /** 실제 FS는 명시한 기존 전용 root만 쓴다. 시험 포트는 RAM fakeFS이며 권한의 증거가 아니다. */
 export type NormalFilePorts=Pick<typeof disk,'lstat'|'realpath'|'open'|'readdir'|'unlink'>;
@@ -80,6 +80,11 @@ export class NormalStartFileStore implements NormalJournalStore{
    let loaded=false,count=0,total=0;
    const serial=async<R>(fn:()=>Promise<R>)=>{if(closed||operating||poisoned)fail();operating=true;try{return await fn();}catch(e){poisoned=true;uncertain=true;throw e;}finally{operating=false;}};
    const tx:NormalJournalTransaction={
+    requireStartReadyClose:key=>{
+     if(closed||poisoned||!recordV1(key,['projectId','executionId','executionGeneration','commandId'])||!uuidV1(key.commandId)||
+      channel!=='attempt-'+key.commandId||!Object.entries(this.#scope).every(([k,v])=>(key as any)[k]===v))fail();
+     strictClose=true;
+    },
     read:()=>serial(async()=>{
      await check();const all=await fs.readdir(root);
      // 같은 root의 다른 채널은 건드리지 않지만 정체불명의 파일은 거절한다.

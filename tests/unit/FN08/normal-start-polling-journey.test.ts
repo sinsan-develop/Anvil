@@ -202,3 +202,48 @@ test('완전 수신과 PERMIT_RECORDED에서 중단된 원 시도는 UNKNOWN 관
   const coverage=await f.startPorts().spool.coverage();assert.ok(coverage.ref);assert.equal(coverage.covered,true);
  }finally{await f.h.app.close();}
 });
+
+test('원 worker START 준비 인수는 네 필수 관측 ACK 뒤에만 cursor를 진행한다',async()=>{
+ const f=await preparedExecution(Infinity,false);
+ try{
+  const {NormalClaudeStartWire}=await import('../../../apps/connector/adapters/secondary/normal-start-wire.ts');
+  const start=f.startPorts(),wire=NormalClaudeStartWire.forWorker({intake:start.intake,current:start.current,grantRef:start.grantRef,clock:start.clock,timeoutMs:start.timeoutMs});
+  const result=await new NormalStartPolling({...options(f),start:{...start,wire}}).run(f.signal);
+  assert.equal(result.state,'LIMIT_REACHED');assert.equal(result.commands,1);assert.ok(result.cursor.afterSequence>0);
+  assert.deepEqual(f.q.observations.map(row=>row.snapshot_json.event.type),['RECEIVED','PREPARED','START_ATTEMPTED','PERMIT_RECORDED']);
+  assert.equal(f.q.acks.at(-1)?.snapshot_json.highestContiguous,4);
+  const rows=[...f.fs.files].filter(([key])=>key.includes('attempt-')&&key.endsWith('.json')).map(([,v])=>JSON.parse(v.bytes.toString()));
+  assert.deepEqual(rows.map(row=>row.snapshot.state),['START_ATTEMPTED','PERMIT_RECORDED','START_READY_RECORDED']);
+  assert.equal(rows[2].snapshot.responseRef,null);assert.equal(rows[2].snapshot.processRef,null);
+  const before=f.http.calls.filter(x=>x.path.includes('/materials/')).length;
+  const replay=await new NormalStartPolling(options(f)).run(f.signal);
+  assert.equal(replay.state,'LIMIT_REACHED');assert.deepEqual(replay.cursor,result.cursor);
+  assert.equal(f.mode.wires,0);assert.equal(f.q.permits.length,1);
+  assert.equal(f.http.calls.filter(x=>x.path.includes('/materials/')).length,before);assert.equal(f.q.observations.length,4);
+ }finally{await f.h.app.close();}
+});
+
+test('준비 permit 사건이 201번째이면 첫 200 ACK와 마지막 ACK 응답 유실에서 cursor 0을 보존한다',async()=>{
+ const f=await preparedExecution();try{
+  const {NormalClaudeStartWire}=await import('../../../apps/connector/adapters/secondary/normal-start-wire.ts');
+  const p=f.startPorts();
+  for(let i=0;i<197;i++)await p.spool.record({type:'HEARTBEAT',commandId:f.e.commandId,envelopeHash:f.e.envelopeHash,
+   localRecordRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},processRef:null,occurredAt:new Date(f.clock()).toISOString(),reasonCode:'NONE'});
+  const owner=NormalClaudeStartWire.forWorker({intake:f.intake,current:p.current,grantRef:f.grantRef,clock:f.clock,timeoutMs:1000});
+  let posts=0;
+  f.http.mode.alter=(path,value)=>{if(path.endsWith('/observations')&&++posts===2)throw Error('두 번째 저장 완료 후 ACK 응답 유실');return value;};
+  const first=await new NormalStartPolling({...options(f),start:{...p,wire:owner}}).run(f.signal);
+  assert.equal(first.state,'UNKNOWN');assert.equal(first.commands,0);assert.equal(first.cursor.afterSequence,0);
+  assert.equal(posts,2);assert.deepEqual(f.q.acks.map(v=>v.snapshot_json.highestContiguous),[200,201]);
+  const local=await p.spool.coverage();assert.equal(local.highestContiguous,200);assert.equal(local.sequence,201);assert.equal(local.covered,false);
+  assert.equal(f.q.observations[200].snapshot_json.event.type,'PERMIT_RECORDED');
+  const savedEvents=f.q.observations.map(row=>row.snapshot_json.event.eventId),currents=f.mode.currents,count=f.http.calls.length;
+  f.http.mode.alter=(path,value)=>{if(path.includes('/materials/'))throw Error('과거 자료 접근 거절');return value;};
+  const replay=await new NormalStartPolling(options(f)).run(f.signal);
+  assert.equal(replay.state,'LIMIT_REACHED');assert.equal(replay.commands,1);assert.ok(replay.cursor.afterSequence>0);
+  assert.ok(local.ref);assert.equal((await p.spool.coverage(local.ref)).covered,true);
+  assert.deepEqual(f.q.observations.map(row=>row.snapshot_json.event.eventId),savedEvents);
+  assert.equal(f.mode.currents,currents);assert.equal(f.mode.wires,0);assert.equal(f.q.permits.length,1);
+  assert.equal(f.http.calls.slice(count).filter(v=>v.path.includes('/materials/')).length,0);
+ }finally{await f.h.app.close();}
+});

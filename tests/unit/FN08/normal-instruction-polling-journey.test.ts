@@ -134,3 +134,25 @@ test('기존 attempt와 수신행 소실 또는 손상은 신규 GET으로 fallb
   }finally{await f.h.close();}
  }
 });
+
+test('첫 SEND 로컬 4행은 마지막 permit의 두 번째 batch ACK 뒤에만 cursor를 확정한다',async()=>{
+ const {firstSendFixture}=await import('../FN07/normal-first-send-owner.test.ts');const f=await firstSendFixture();
+ try{
+  const create=f.source.create.bind(f.source);f.source.create=async(...args)=>{
+   for(let i=0;i<201;i++)await f.spool.record({type:'HEARTBEAT',commandId:f.item.envelope.commandId,envelopeHash:f.item.envelope.envelopeHash,
+    localRecordRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},processRef:null,occurredAt:new Date(f.clock()).toISOString(),reasonCode:'NONE'});
+   return create(...args);
+  };
+  const {NormalStartPolling}=await import('../../../apps/connector/runtime/normal-start-polling.ts'),opts=f.options();opts.instruction.timeoutMs=10000;
+  let replies=0;f.mode.mutateObservations=v=>{if(++replies===3)v.ack.ref.contentHash='b'.repeat(64);};
+  const first=await new NormalStartPolling(opts).run(f.signal);assert.equal(first.state,'UNKNOWN');assert.equal(first.cursor.afterSequence,0);
+  const history=await f.make().observations(f.item.envelope,f.signal);assert.equal(history.state,'FIRST_SEND_INPUT_AND_INIT_RECORDED');assert.equal(history.inputs.at(-1)?.type,'PERMIT_RECORDED');
+  const wanted=history.inputs.at(-1)!.localRecordRef;
+  const posts=f.calls.filter(c=>c.path.endsWith('/observations')).map(c=>c.body as any);
+  assert.equal(posts.length,3);assert.equal(posts[1].events.length,200);assert(!posts[1].events.some((e:any)=>e.localRecordRef.id===wanted.id));
+  assert(posts[2].events.some((e:any)=>e.localRecordRef.id===wanted.id));assert.equal((await f.spool.coverage()).covered,false);
+  f.mode.mutateObservations=null;const replay=await new NormalStartPolling(opts).run(f.signal);
+  assert.equal(replay.state,'LIMIT_REACHED');assert.equal(replay.cursor.afterSequence,f.item.sequence);
+  assert.equal(f.effects.create,1);assert.equal(f.effects.inputs.length,1);assert.equal(f.effects.iterate,1);
+ }finally{f.authority.abort();await f.h.close();}
+});
