@@ -19861,3 +19861,13 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 실제 SDK 출력의 보호 Sink/fullref 생산자도 없다. WORK_CHECK에 normal root와 SDK driver·소유·Sink를 명시적으로 미구현으로 분리했다. 실제 DB 여정 미검증과 미구현을 섞지 않으며44업무 완료 체크는 올리지 않는다. 후보9E98의 source-only 채택 질문과 P03 추가 관측 질문은 별개로 미답변 상태다. 질문을 반복하거나 권한을 발급하거나 실행하지 않았다.
 
 - 기술검토 문서의 최종 SHA256은37C6AECFBA7BC42748A4596117ED8B2E41E597B7A39BA5BF6BC2C618E7DBCDAA다. 독립 문구 검수는 C0/I0/M0이며 I1의 합성/normal 범위 확대해석을 해소했다. 이 문서는 미채택 기술 검토로만 보존하며 SDK 코드의 지시서나 새 실행 승인으로 사용하지 않는다. source 변경과 실환경 시험은 없고 모든 담당자의 제품 쓰기와 실행 세션은 종료 상태다.
+
+## 2026-11-16 FN07 준비 관측·실제 출력 보관의 상세 후보 작성
+
+- Main 어울은 문서 전용 PR142의 head fa230006을 main 6b3cb086b988b4b519fb249a9728c2e138598349에 통합했다. Broker 43758539260 성공, 병합 전후 tree 일치, 기술 검토 지문 37C6 및 보호 spool 후보 지문 9E98 유지, 복구 tag pr-142-head 보존을 확인했다. 완료 branch와 요청 tag를 정상 정리한 뒤 로컬·원격 main 동일·clean을 확인했다. 문서 변경이라 제품 시험을 반복하지 않았다.
+- 다음 업무는 WORK_PLAN FN07의 실제 SDK 연결 중 미정인 소유·관측·출력 보관 계약 구체화다. 위 main에서 codex/av3-fn07-observation-contract를 만들고 기존 developer_primary에게 후보 문서 한 파일만 배정했다. Main은 이 작업현황을 관리하며 제품 코드 writer는 없다. 후보는 아직 미채택이고 제품 구현·실행 지시가 아니다.
+- 추가 원문 대조에서 PREPARED와 localRecordRef만으로 서버·화면이 자료 수신과 worker 준비 수락을 구분하지 못함을 확인했다. 기존 PREPARED/NONE을 그대로 재사용하는 제안은 철회했다. 또한 SDK init과 첫 입력 yield는 초기화 관측과 SDK 호출 경계 제공까지만 증명한다. init 영수증을 지시 답변 ref로 대입하지 않으며 일반 assistant/result의 보호 보관·재판독·세션 귀속을 별도 미구현 접점으로 유지한다. codec의 동기 메모리 capture를 실제 비동기 저장 완료라고 표시하지 않는다.
+- 실제 SDK·Agent·DB·권한·키·서비스·C#·사용자 파일 조사·추가 SSH는 실행하지 않았다. 보호 spool 9E98의 source-only 채택과 P03 E1CD의 한정 진단 질문은 기존 질문 그대로 미답변이다. 이 질문들을 서로의 실행 허가로 사용하지 않는다. 전체 44업무의 완료 체크를 올리지 않는다.
+- Main의 경로 검색 1회는 존재하지 않는 server/contracts 경로를 지정해 실패했고 rg --files로 실제 경로를 찾은 뒤 제품 원문만 읽었다. 사용자 자료나 권한을 변경하지 않았다. 한국어가 아닌 안내 문장이 한 번 출력되어 바로 한국어로 정정·사과했으며 계약 문서에는 같은 혼입이 없는지 검수한다.
+- Primary가 작성한 후보의 첫 지문 002F552A는 독립 검수 C0/I3/M0였다. init만으로 SEND cursor가 진행될 여지, init 전 출력 저장의 순환, 출력 보관 주체·권한·총량의 미정이 지적됐다. 첫 입력과 init의 별도 증거를 함께 요구하는 로컬 종단, 원행을 덮어쓰지 않는 세션 미확인 출력과 후행 확인행, 원 등록 worker 전용 SDK_SESSION_OUTPUT 및 기존 256MiB 안의 공동 예약으로 보완했다. init이나 공급자 result를 지시 수락·작업 완료로 승격하지 않는다.
+- 최종 후보는 docs/contracts/FN07_NORMAL_QUERY_OUTPUT_OWNERSHIP_CANDIDATE_20261116.md, 21,433바이트, SHA256 86A46140DADB38CB31C9B94957E5C836532ACE8093B10A062622B3FE93E7EC9E다. 독립 재검수 C0/I0/M0는 이 미채택 후보 문서에만 적용한다. 제품·시험·미적용 SQL 변경은 없고 실제 SDK/보호 저장 시험은 수행하지 않았다. diff 검사는 통과했다. 후보9E98의 지문은 바꾸지 않았으며 그 채택만으로 새 SDK 출력 채널이 허가됐다고 해석하지 않는다. 다음 구현은 해당 저장 의미의 채택과 선행 보호 배정을 대조한 뒤 기존 Primary에게 위임하며, 그전 제품 GO는 없다.
