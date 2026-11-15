@@ -19807,3 +19807,12 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 수신/시도 원장 fullref·전체descriptor·현재credential/기한을 유지하고 원 관측만 복구한다. 과거permit은 실행권위가 아니다. 정상/ACK유실·원장불일치/불완전·만료회수/부분page·cursor를 RAM검증하며 실제 Agent/OS/DB/전체계획은 미완료다. P03 새한정진단 질문은 미답변·소진 원승인 재사용0.
 
 - Primary4경로 완료 인수: 최초RED0e2e0e1F→최종직접bc8e3f10P/0F/0SKIP·인접dd3110 34P/0F/0SKIP·type6d817d0/diff30f3c8 0·Main ae706d핵심1P. Main680ba5 사전1F는mockmodule 옵션누락으로시험진입전실패였고정확옵션으로해소했다. 독립 M1은수신partial과중간attempt의근거구분으로PERMIT_RECORDED→새polling UNKNOWN/ACK·cursor0시험추가후C0/I0/M0. 원intake메서드캡처후최종직접교체반례도통과.4지문/fixture변경의미/미검증은결과서FN08_START_REPLAY_RECOVERY_SOURCE_RESULT_20261116. writer반환/live0, 실제DB/권한/키/실자료/서비스/SDK/Agent/P03실행0·전체미완료다.
+
+## 2026-11-16 데스크톱 owner의 정상 통신 쌍 연결 착수
+
+- PR137/head0aa24f41→main094ff18e, Broker43744608311 success·tree동일·병합후2aa300 ACK복구핵심1P·원격복구pr-137-head·완료branch/요청tag 정리·main exact clean을 확인한 뒤 codex/av3-normal-owner-client-pair를 만들었다.
+- 할 일: WORK_PLAN FN06/FN08·P3§3.1의 기존 보호credential 교환/갱신→GET/POST쌍 제품 조립. 기존 d2_preflight와 Primary가 읽기 대조했고 같은 번들 class identity 때문에 단순 다른 모듈 import는 정상 port도 거절함을 확인했다. 제품3/시험2경로를 WI FN08_DESKTOP_NORMAL_CLIENT_PAIR_SOURCE_WI_20261116에 고정하고 Primary 단독 writer로 배정한다.
+- 기존 bootstrap·권한·host 현재성·상한은 유지하고 owner 원 발급만 소비한다. 새 IPC/API/권한/저장형상/자동polling/CURRENT/SDK 호출은 없다. 실제 DB/권한/키/파일실자료/서비스/설치/C#/SDK/Agent/P03는 제외한다. 최종5지문·실제메모리번들/RAM여정·거절/갱신/폐기후무전송·type/diff와독립검수를 확인한다. 전체계획/실제Agent 연결은 미완료다.
+
+- Primary5경로 완료 인수: RED faacf1 1F→직접f047ba30P/추가갱신f6d997 2P/등록인접fa2f2f 2P·루트type19c3ee0/entry strict65153c0/diff0·Main66d20a1P·독립C0/I0/M0. 데스크톱 전체 d03329는169진단/exit1이며동일컴파일러HEAD/현재RAM비교944a44 169/169·추가0/소실0이다. PASS 승격0·기존진단보존. 최초CLI상대경로부재1회는설치된동일TS resolve로해소·설치변경0.5지문/행동/미검증은결과서FN08_DESKTOP_NORMAL_CLIENT_PAIR_SOURCE_RESULT_20261116. writer반환/live0·실제TLS/키/host/파일/DB/서비스/SDK/Agent/P03실행0.
+- 다음 root조사: P3§3.1 파일저장소source와SEND내구WI의private root재사용은확인했으나normal실행세대별최초배정·보호표식·재시작동일배정생산자는미확인이다. native-journal.v1은준비authority전용이며normal로전용하지않는다. 보호저장목적/표식/내부native연산/namespace전체quota는새결정후보로분리, 실제root/ACL/파일변경0. PMO에기존채택근거지원만요청했다. P03분류관측의새승인질문은미답변·옛승인소진유지다.

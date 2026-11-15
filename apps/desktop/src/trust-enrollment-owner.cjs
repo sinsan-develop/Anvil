@@ -96,7 +96,11 @@ const promise=Promise.race([work,new Promise((_resolve,reject)=>{const abort=()=
  * @param {any} bindingInput @param {any} [currentSource] */
 /** REGISTERED owner 내부 전용. renderer/일반 signer/token getter에 노출하지 않는다.
  * @param {any} input */
-function createNormalCredentialBootstrap(input){
+function createNormalCredentialBootstrap(input){return normalCredentialSource(input,false);}
+/** @param {any} input */
+function createNormalExecutionClients(input){return normalCredentialSource(input,true);}
+/** @param {any} input @param {boolean} paired */
+function normalCredentialSource(input,paired){
  if(state.phase!=='REGISTERED'||!bindingRecord||bindingRecord.state!=='REGISTERED'||active||!dependencies)return fail('PROTECTION_UNAVAILABLE');
  const config=firstReceiveSnapshot(catalogueExact(input,'origin,ca,scope')),original=copy(bindingRecord),ownerEpoch=epoch,ownerContext=canonicalJson(context());
  if(config.origin!==original.origin||config.origin!==normalizeOrigin(context().origin)||config.scope?.projectId!==original.projectId||config.scope?.connectorId!==original.registration.connectorRef.id)return fail('CONTEXT_CHANGED');
@@ -104,15 +108,18 @@ function createNormalCredentialBootstrap(input){
  if(functions.some(f=>typeof f!=='function'))return fail('PROTECTION_UNAVAILABLE');
  const runtime=require('./'+'native-proof-runtime.cjs'),Bootstrap=own(runtime,'NormalCredentialBootstrapClient'),bootstrapMethod=Bootstrap?.prototype?.bootstrap,renewMethod=Bootstrap?.prototype?.renew;
  if(typeof Bootstrap!=='function'||typeof bootstrapMethod!=='function'||typeof renewMethod!=='function')return fail('PROTECTION_UNAVAILABLE');
+ const assemble=paired?own(runtime,'createNormalProtectedClientPair'):null,disposal=paired?new AbortController():null;
+ if(paired&&typeof assemble!=='function')return fail('PROTECTION_UNAVAILABLE');
  let poisoned=false,lastWall=-Infinity,lastMono=-Infinity;
  const ownerGuard=()=>{
-  if(poisoned||epoch!==ownerEpoch||state.phase!=='REGISTERED'||!bindingRecord||canonicalJson(bindingRecord)!==canonicalJson(original)||canonicalJson(context())!==ownerContext||names.some((k,i)=>own(dependencies,k)!==functions[i])||own(runtime,'NormalCredentialBootstrapClient')!==Bootstrap||Bootstrap.prototype.bootstrap!==bootstrapMethod||Bootstrap.prototype.renew!==renewMethod)return fail('CONTEXT_CHANGED');
+  if(disposal?.signal.aborted||(paired&&own(runtime,'createNormalProtectedClientPair')!==assemble)||poisoned||epoch!==ownerEpoch||state.phase!=='REGISTERED'||!bindingRecord||canonicalJson(bindingRecord)!==canonicalJson(original)||canonicalJson(context())!==ownerContext||names.some((k,i)=>own(dependencies,k)!==functions[i])||own(runtime,'NormalCredentialBootstrapClient')!==Bootstrap||Bootstrap.prototype.bootstrap!==bootstrapMethod||Bootstrap.prototype.renew!==renewMethod)return fail('CONTEXT_CHANGED');
   const wall=functions[2](),mono=functions[3]();
   if(!Number.isSafeInteger(wall)||!Number.isFinite(mono)||wall<lastWall||mono<lastMono||wall>=Math.min(Date.parse(original.registration.registrationExpiresAt),Date.parse(original.credential.expiresAt)))return fail('DEADLINE');
   lastWall=wall;lastMono=mono;return{wall,mono};
  };
  const factory=Object.freeze({open:async(/** @type {AbortSignal} */signal)=>{
   const start=ownerGuard();if(active)return fail('BUSY');if(!(signal instanceof AbortSignal)||signal.aborted)return fail('CONTEXT_CHANGED');
+  if(disposal)signal=AbortSignal.any([signal,disposal.signal]);
   const controller=new AbortController(),ticket={controller,epoch:ownerEpoch,context:ownerContext,effect:false};active=ticket;
   let end=Math.min(start.wall+10000,Date.parse(original.registration.registrationExpiresAt),Date.parse(original.credential.expiresAt)),monoEnd=start.mono+(end-start.wall),effective=start.wall,previousMono=start.mono;
   let ready=false,inFlight=false;
@@ -149,7 +156,24 @@ function createNormalCredentialBootstrap(input){
   return Promise.race([work,stopped]);
  }});
  ownerGuard();
- return new Bootstrap({...config,attemptId:original.attemptId},{host:factory,now:()=>ownerGuard().wall});
+ const now=()=>ownerGuard().wall;
+ const issuer=new Bootstrap({...config,attemptId:original.attemptId},{host:factory,now});
+ if(!disposal)return issuer;
+ /** @type {{pair:any,port:any}|null} */let latest=null;
+ /** @param {any} port */
+ const bind=port=>{
+  ownerGuard();const options={...config,credentialExpiresAt:port.metadata.expiresAt};
+  const pair=assemble(options,port,()=>{if(latest?.port!==port)return fail('CONTEXT_CHANGED');return now();});
+  latest={pair,port};return pair;
+ };
+ return Object.freeze({
+  bootstrap:async(/** @type {AbortSignal} */signal)=>{ownerGuard();return bind(await bootstrapMethod.call(issuer,signal));},
+  renew:async(/** @type {any} */previous,/** @type {AbortSignal} */signal)=>{
+   ownerGuard();if(!latest||previous!==latest.pair)return fail('NORMAL_OWNED_PREDECESSOR');
+   return bind(await renewMethod.call(issuer,latest.port,signal));
+  },
+  dispose:()=>{disposal.abort();latest=null;}
+ });
 }
 
 
@@ -336,7 +360,7 @@ async function installWorker(raw,offered){
 }
 
 /** @param {string} action @param {any} input @param {any} [offered] */async function handle(action,input,offered=null){try{if(action==='trust-status'){const v=catalogueExact(input,'attemptId,epoch');if(v.attemptId!==null&&v.attemptId!==state.attemptId||v.epoch!==null&&v.epoch!==epoch)return fail('CONTEXT_CHANGED');return{ok:true,state:getState()};}if(action==='trust-begin')return{ok:true,state:await begin(input)};if(action==='trust-pair')return{ok:true,state:await registration('PAIR',input)};if(action==='trust-act'){const v=catalogueExact(input,'requestId,attemptId,epoch,action');if(!uuid(v.requestId)||v.epoch!==epoch||v.attemptId!==state.attemptId)return fail('CONTEXT_CHANGED');if(v.action==='INSTALL_WORKER')return await installWorker(v,offered);if(v.action==='CHECK_CURRENT'||v.action==='ISSUE')return{ok:true,state:await registration(v.action,input)};if(v.action!=='CLOSE')return fail('RESTORE_UNAVAILABLE');disposeFirstReceiveReceivers();hostProofBasis=null;if(active){const possibleEffect=active.effect||['KEY_PENDING','PAIR_PENDING','PROOF_PENDING'].includes(state.phase);active.controller.abort();active=null;if(possibleEffect)update({phase:'UNKNOWN',problem:'OUTCOME_UNKNOWN'});}if(!['UNKNOWN','KEY_PENDING'].includes(state.phase))update({phase:'CLOSED',label:null,publicFingerprint:null,problem:null});return{ok:true,state:getState()};}return fail('INPUT_INVALID');}catch(error){const allowed=['INPUT_INVALID','CONTEXT_CHANGED','BUSY','PROTECTION_UNAVAILABLE','SERVER_REJECTED','DEADLINE','OUTCOME_UNKNOWN','RESTORE_UNAVAILABLE'];const code=error instanceof Error&&allowed.includes(error.message)?error.message:'PROTECTION_UNAVAILABLE';return{ok:false,error:{code}};}}
-return Object.freeze({returnNativePreparationOwnership,createNormalCredentialBootstrap,handle,getState,invalidate,createNativeFirstReceiveController,createNativeProofSource,createNativeFirstReceiveProofSource,createNativeFirstReceivePhaseProofSource,createNativeFirstReceiveReceiver,isBusy:()=>active!==null||returning});}
+return Object.freeze({returnNativePreparationOwnership,createNormalCredentialBootstrap,createNormalExecutionClients,handle,getState,invalidate,createNativeFirstReceiveController,createNativeProofSource,createNativeFirstReceiveProofSource,createNativeFirstReceivePhaseProofSource,createNativeFirstReceiveReceiver,isBusy:()=>active!==null||returning});}
 
 
 /** catalogue→실제 key-host client→보호 pending/원키/ready의 source 조립이다.

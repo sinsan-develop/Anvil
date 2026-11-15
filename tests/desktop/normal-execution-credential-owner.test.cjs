@@ -7,28 +7,36 @@ test.before(async()=>{
  const file=require.resolve('./desktop-trust-registration.test.cjs'),m=new Module(file,module),before=[];
  const register=()=>{};register.before=fn=>before.push(fn);const original=Module.createRequire(file);
  m.filename=file;m.paths=module.paths;m.require=name=>name==='node:test'?register:original(name);
- m._compile(fs.readFileSync(file,'utf8')+'\nmodule.exports={liveNativeOwner,enrollmentFixture};',file);
+ m._compile(fs.readFileSync(file,'utf8')+'\nmodule.exports={liveNativeOwner,enrollmentFixture,get runtime(){return nativeRuntime;},get other(){return nativeRuntimeOther;}};',file);
  assert.equal(before.length,1);await before[0]();fixtures=m.exports;
 });
 const id=n=>'ce140001-0000-4000-8000-'+String(n).padStart(12,'0'),ref=n=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
 function model(f,mode='NORMAL'){
  const row=f.stored(),scope={projectId:row.projectId,connectorId:row.registration.connectorRef.id,executionId:id(1),executionGeneration:1,grantRef:ref(2),credentialGeneration:1};
  const config={origin:row.origin,ca:'TEST_ONLY_EXPLICIT_CA',scope},calls=[],spawn=f.ports.spawn;let expiresAt=new Date(f.dependencies.now()+5000).toISOString();
- let metadata,reply,offset=0;
+ let metadata,reply,offset=0,onFrame=()=>{};
+ const typedReply=request=>{
+  const recordedAt=new Date(f.dependencies.now()).toISOString(),result={transport:'NORMAL_PROTECTED',proofResultRef:ref(20),cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
+  if(request.method==='GET')return {...result,items:[],nextCursor:'cursor1',hasMore:false,observedAt:recordedAt,expiresAt};
+  assert.equal(request.path.endsWith('/observations'),true);
+  const execution={projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration};
+  const snapshot={execution,highestContiguous:1,maxSequence:1,contiguousDigest:'b'.repeat(64),gaps:[],storedCount:1,writerReleaseVerified:false,executionAuthorized:false,dispatchPerformed:false,recordedAt};
+  return {...result,ack:{ref:{...ref(21),contentHash:contentHash(canonicalJson(snapshot))},snapshot}};
+ };
  const chunk=()=>{const part=reply.subarray(offset,offset+48000),start=offset;offset+=part.length;return{handle:id(7),offset:start,total:reply.length,hash:contentHash(reply),expiresAt,bytes:part.toString('base64url'),done:offset===reply.length};};
  f.ports.spawn=(...args)=>{const child=spawn(...args),write=child.stdin.write;child.stdin.write=(raw,encoding,done)=>{
   const v=JSON.parse(Buffer.from(raw).toString());if(!v.operation.startsWith('NORMAL_EXECUTION_'))return write(raw,encoding,done);
   assert.ok(Buffer.byteLength(raw)<=65536);assert.equal(v.sequence,calls.filter(x=>x.child===child).length+4);calls.push({...v,child});
-  queueMicrotask(()=>{let data;
+  queueMicrotask(()=>{let data;onFrame(v);
    if(v.operation==='NORMAL_EXECUTION_BOOTSTRAP'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.scope,scope);metadata={slotId:id(3),receiptRef:ref(4),origin:row.origin,scope,expiresAt,caHash:contentHash(config.ca)};data=metadata;}
-   else if(v.operation==='NORMAL_EXECUTION_RENEW'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.previous,metadata);assert.ok(Date.parse(metadata.expiresAt)<=f.dependencies.now());expiresAt=new Date(f.dependencies.now()+5000).toISOString();metadata={...metadata,slotId:id(11),receiptRef:ref(12),expiresAt};data=metadata;}
-   else if(v.operation==='NORMAL_EXECUTION_CALL'){assert.equal(v.payload.attemptId,row.attemptId);assert.equal(v.payload.slotId,metadata.slotId);const r=v.payload.request;reply=Buffer.from(canonicalJson(v.payload.kind==='PREPARE'?{path:r.path,query:r.query,auth:'A'.repeat(20),challengeRef:ref(5),requestId:id(6),expiresAt}:mode==='MAX'?{value:'x'.repeat(2812587-12)}:{commands:[]}));offset=0;data=chunk();}
+   else if(v.operation==='NORMAL_EXECUTION_RENEW'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.previous,metadata);assert.ok(Date.parse(metadata.expiresAt)<=f.dependencies.now());expiresAt=new Date(f.dependencies.now()+5000).toISOString();metadata={...metadata,slotId:id(11),receiptRef:ref(12),expiresAt};data=mode==='RENEW_UNKNOWN'?{...metadata,caHash:'b'.repeat(64)}:metadata;}
+   else if(v.operation==='NORMAL_EXECUTION_CALL'){assert.equal(v.payload.attemptId,row.attemptId);assert.equal(v.payload.slotId,metadata.slotId);const r=v.payload.request;reply=Buffer.from(canonicalJson(v.payload.kind==='PREPARE'?{path:r.path,query:r.query,auth:'A'.repeat(20),challengeRef:ref(5),requestId:id(6),expiresAt}:mode==='PAIR'?typedReply(r):mode==='MAX'?{value:'x'.repeat(2812587-12)}:{commands:[]}));offset=0;data=chunk();}
    else if(v.operation==='NORMAL_EXECUTION_READ'){assert.equal(v.payload.handle,id(7));assert.equal(v.payload.offset,offset);data=chunk();}
    else throw Error('UNEXPECTED_NORMAL_OPERATION');
    child.stdout.emit('data',Buffer.from(canonicalJson({schemaVersion:1,purpose:'DESKTOP_TRUST_KEY_RESULT_V1',requestId:v.requestId,sequence:v.sequence,rootIdentity:mode==='ROOT'?'OTHER_ROOT':'TEST_ONLY_ROOT',data})+'\n'));done();
   });return true;
  };if(mode==='CLOSE'){child.stdin.end=(_a,_b,done)=>{queueMicrotask(()=>{child.stdout.emit('end');child.emit('close',1);done?.();});};}return child;};
- return{config,calls,expiresAt,request:{method:'GET',path:'/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/commands',query:'',body:null,expiresAt}};
+ return{config,calls,expiresAt,onFrame(fn){onFrame=fn;},request:{method:'GET',path:'/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/commands',query:'',body:null,expiresAt}};
 }
 test('REGISTERED 실제 owner→bundle bootstrap→제한 host client, 매 작업 새 lease/root 검산',async()=>{
  const f=await fixtures.liveNativeOwner(),m=model(f),before=f.calls(),client=f.owner.createNormalCredentialBootstrap(m.config);
@@ -84,5 +92,83 @@ for(const mode of ['ABORT_LATE','DEADLINE','BUSY'])test('owner '+mode+'의 늦�
  const pending=a.bootstrap(signal.signal);const rejected=mode==='BUSY'?null:assert.rejects(pending);for(let i=0;i<100&&!entered;i++)await Promise.resolve();assert.equal(entered,true);
  if(mode==='BUSY'){await assert.rejects(b.bootstrap(new AbortController().signal));release();assert.ok((await pending).metadata);assert.equal(m.calls.length,1);}
  else{if(mode==='ABORT_LATE')signal.abort();else f.fireDeadline();await rejected;release();for(let i=0;i<100&&closes===0;i++)await Promise.resolve();assert.equal(closes,1);assert.equal(m.calls.length,0);await assert.rejects(a.bootstrap(new AbortController().signal));}
+ assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
+});
+test('REGISTERED owner가 같은 번들의 보호 GET과 POST를 조립해 준비·전송한다',async()=>{
+ const f=await fixtures.liveNativeOwner(),m=model(f,'PAIR'),signal=new AbortController().signal;
+ const source=f.owner.createNormalExecutionClients(m.config),pair=await source.bootstrap(signal);
+ assert.deepEqual(Object.keys(pair).sort(),['expiresAt','get','post']);assert.equal(pair.expiresAt,m.expiresAt);
+ const pagePacket=await pair.get.prepareCommandPage({afterSequence:0,waitMs:0},signal);
+ const page=await pair.get.send(pagePacket,signal);assert.deepEqual(page.items,[]);assert.equal(page.nextCursor,'cursor1');
+ const s=m.config.scope,scope={projectId:s.projectId,executionId:s.executionId,executionGeneration:s.executionGeneration};
+ const events=[{...scope,sequence:1,eventId:id(30),type:'RECEIVED',commandId:id(31),envelopeHash:'b'.repeat(64),localRecordRef:ref(32),processRef:null,occurredAt:new Date(f.dependencies.now()).toISOString(),reasonCode:'NONE'}];
+ const batch={events,batchHash:contentHash(canonicalJson(events))};
+ const observationPacket=await pair.post.prepareObservations(batch,signal),result=await pair.post.send(observationPacket,signal);
+ assert.equal(result.ack.snapshot.highestContiguous,1);assert.equal(result.executionAuthorized,false);
+ assert.deepEqual(m.calls.map(c=>c.operation==='NORMAL_EXECUTION_BOOTSTRAP'?'BOOTSTRAP':[c.payload.kind,c.payload.request.method]),['BOOTSTRAP',['PREPARE','GET'],['REQUEST','GET'],['PREPARE','POST'],['REQUEST','POST']]);
+ assert.equal(m.calls.at(-1).payload.body,canonicalJson(batch));assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
+});
+test('명시 갱신은 같은 owner의 직전 쌍만 받고 구쌍·dispose 뒤 두 클라이언트의 host 전송은 0이다',async()=>{
+ const f=await fixtures.liveNativeOwner(),base=f.dependencies.now();let offset=0;
+ f.dependencies.now=()=>base+offset;f.ports.now=()=>base+offset;
+ const m=model(f,'PAIR'),source=f.owner.createNormalExecutionClients(m.config),signal=new AbortController().signal;
+ const pair=await source.bootstrap(signal),input={afterSequence:0,waitMs:0},events=[{sequence:1}],batch={events,batchHash:contentHash(canonicalJson(events))};
+ const getPacket=await pair.get.prepareCommandPage(input,signal),postPacket=await pair.post.prepareObservations(batch,signal);
+ const foreign=f.owner.createNormalExecutionClients(m.config),before=f.calls();
+ await assert.rejects(source.renew({...pair},signal),/PREDECESSOR/);await assert.rejects(foreign.renew(pair,signal),/PREDECESSOR/);
+ await assert.rejects(source.renew(pair,signal),/NOT_EXPIRED/);assert.equal(f.calls(),before);
+ offset=5000;const next=await source.renew(pair,signal);assert.equal(f.calls(),before+1);assert.notEqual(next.expiresAt,pair.expiresAt);
+ assert.equal(m.calls.at(-1).operation,'NORMAL_EXECUTION_RENEW');
+ const after=f.calls();await assert.rejects(source.renew(pair,signal),/PREDECESSOR/);
+ await assert.rejects(pair.get.send(getPacket,signal));await assert.rejects(pair.post.send(postPacket,signal));assert.equal(f.calls(),after);
+ const nextGet=await next.get.prepareCommandPage(input,signal),nextPost=await next.post.prepareObservations(batch,signal);
+ const final=f.calls(),frames=m.calls.length;source.dispose();source.dispose();
+ await assert.rejects(next.get.send(nextGet,signal));await assert.rejects(next.post.send(nextPost,signal));
+ await assert.rejects(next.get.prepareCommandPage(input,signal));await assert.rejects(next.post.prepareObservations(batch,signal));
+ await assert.rejects(source.renew(next,signal));assert.equal(f.calls(),final);assert.equal(m.calls.length,frames);
+ assert.equal(f.timers(),0);assert.equal(f.owner.isBusy(),false);foreign.dispose();
+});
+test('갱신 요청 전 거절 뒤 유효한 원 쌍으로 GET을 보낼 수 있다',async()=>{
+ const f=await fixtures.liveNativeOwner(),m=model(f,'PAIR'),signal=new AbortController().signal,source=f.owner.createNormalExecutionClients(m.config);
+ const pair=await source.bootstrap(signal),packet=await pair.get.prepareCommandPage({afterSequence:0,waitMs:0},signal),before=m.calls.length;
+ await assert.rejects(source.renew(pair,signal),/NOT_EXPIRED/);assert.equal(m.calls.length,before);
+ assert.equal((await pair.get.send(packet,signal)).nextCursor,'cursor1');assert.equal(m.calls.length,before+1);
+ source.dispose();assert.equal(f.timers(),0);
+});
+test('갱신 전송 후 반환 CA 불일치는 불명을 유지하고 추가 host 요청을 차단한다',async()=>{
+ const f=await fixtures.liveNativeOwner(),base=f.dependencies.now();let offset=0;
+ f.dependencies.now=()=>base+offset;f.ports.now=()=>base+offset;
+ const m=model(f,'RENEW_UNKNOWN'),source=f.owner.createNormalExecutionClients(m.config),signal=new AbortController().signal;
+ const pair=await source.bootstrap(signal),packet=await pair.get.prepareCommandPage({afterSequence:0,waitMs:0},signal);
+ offset=5000;await assert.rejects(source.renew(pair,signal),/NORMAL_OWNED_UNKNOWN/);
+ const after=m.calls.length,hosts=f.calls();assert.equal(m.calls.filter(c=>c.operation==='NORMAL_EXECUTION_RENEW').length,1);
+ await assert.rejects(source.renew(pair,signal),/NORMAL_OWNED_UNKNOWN/);await assert.rejects(pair.get.send(packet,signal));
+ assert.equal(m.calls.length,after);assert.equal(f.calls(),hosts);assert.equal(f.timers(),0);assert.equal(f.owner.isBusy(),false);source.dispose();
+});
+test('bundle factory는 다른 grant·CA·세대·기한·번들·caller credential을 효과 전에 거절한다',async()=>{
+ const f=await fixtures.liveNativeOwner(),m=model(f,'PAIR'),signal=new AbortController().signal;
+ const port=await f.owner.createNormalCredentialBootstrap(m.config).bootstrap(signal),options={...m.config,credentialExpiresAt:port.metadata.expiresAt},runtime=fixtures.runtime;
+ const before=f.calls(),clock=()=>f.dependencies.now(),scope=options.scope;
+ for(const bad of [{...options,credential:'caller'},{...options,signer:{}},{...options,ca:'DIFFERENT'},{...options,origin:'https://other.invalid'},
+  {...options,credentialExpiresAt:new Date(Date.parse(options.credentialExpiresAt)+1).toISOString()},{...options,scope:{...scope,executionId:id(33)}},
+  {...options,scope:{...scope,executionGeneration:2}},{...options,scope:{...scope,credentialGeneration:2}},
+  {...options,scope:{...scope,grantRef:{...scope.grantRef,contentHash:'b'.repeat(64)}}}]){
+  assert.throws(()=>runtime.createNormalProtectedClientPair(bad,port,clock));
+ }
+ assert.throws(()=>fixtures.other.createNormalProtectedClientPair(options,port,clock));assert.throws(()=>runtime.createNormalProtectedClientPair(options,{matches:()=>true},clock));
+ assert.equal(f.calls(),before);for(const key of ['NormalOwnedCredentialPort','NormalProtectedGetClient','NormalProtectedPostClient'])assert(!Object.hasOwn(runtime,key));
+});
+test('owner invalidate 뒤 준비된 GET·POST를 사용해도 host 요청이 추가되지 않는다',async()=>{
+ const f=await fixtures.liveNativeOwner(),m=model(f,'PAIR'),signal=new AbortController().signal,source=f.owner.createNormalExecutionClients(m.config);
+ const pair=await source.bootstrap(signal),g=await pair.get.prepareCommandPage({afterSequence:0,waitMs:0},signal),events=[{sequence:1}];
+ const p=await pair.post.prepareObservations({events,batchHash:contentHash(canonicalJson(events))},signal),count=f.calls();
+ f.owner.invalidate();await assert.rejects(pair.get.send(g,signal));await assert.rejects(pair.post.send(p,signal));assert.equal(f.calls(),count);source.dispose();
+});
+test('이미 발송한 GET 도중 dispose는 늦은 응답을 성공으로 바꾸지 않는다',async()=>{
+ const f=await fixtures.liveNativeOwner(),m=model(f,'PAIR'),signal=new AbortController().signal,source=f.owner.createNormalExecutionClients(m.config);
+ const pair=await source.bootstrap(signal),packet=await pair.get.prepareCommandPage({afterSequence:0,waitMs:0},signal);
+ m.onFrame(v=>{if(v.payload.kind==='REQUEST')source.dispose();});
+ const count=f.calls();await assert.rejects(pair.get.send(packet,signal),error=>error.outcomeUnknown===true);
+ assert.equal(f.calls(),count+1);await assert.rejects(pair.get.send(packet,signal));assert.equal(f.calls(),count+1);
  assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
 });

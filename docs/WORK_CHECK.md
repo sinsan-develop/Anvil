@@ -166,3 +166,5 @@
 - 2026-11-16 UI06/FN03 문서 내용검토 사건 재조회: source3경로·직접/인접21P/type0/메모리build520모듈0·Main핵심1P. 저장확인/원영수증 유지와 명시GET의 유일한 원사건 일치를 분리했다. 실제DB/브라우저/전체업무 미완료·완료체크 상향0. UI06_DOCUMENT_REVIEW_RECEIPT_READ_SOURCE_RESULT_20261116 참조.
 
 - 2026-11-16 FN08 START 역사 재수신: source4경로/직접10P·인접34P/type0/diff0·Main핵심1P·독립C0/I0/M0. 원 수신/시도 fullref 검산→추가GET/permit/wire0→원 관측ACK/coverage 뒤 cursor를 연결했다. 중간시도 UNKNOWN은 ACK돼도 cursor0. 실제OS/DB/SDK/Agent·전체업무 미완료, 완료체크 상향0. FN08_START_REPLAY_RECOVERY_SOURCE_RESULT_20261116 참조.
+
+- 2026-11-16 FN06/FN08 데스크톱 owner의 보호 GET/POST 쌍: source5경로·직접30P/추가갱신2P/등록인접2P·루트/entry타입0·Main1P·독립C0/I0/M0. 데스크톱 전체 타입169진단은 기준과동일·추가0/소실0이나 FAIL 유지. 실제TLS/키/host/DB/Agent·전체업무 미완료·완료체크 상향0. FN08_DESKTOP_NORMAL_CLIENT_PAIR_SOURCE_RESULT_20261116 참조.
