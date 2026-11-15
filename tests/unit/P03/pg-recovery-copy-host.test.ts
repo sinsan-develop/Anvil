@@ -142,6 +142,35 @@ function stageFailure(x:any,r:any,role:string,stage:'created'|'started',code='ID
  assert.equal(x.state.calls.filter((c:any)=>c.kind==='term'&&c.role===role).length,0);assert.equal(x.state.calls.filter((c:any)=>c.kind==='remove'&&c.role===role).length,0);assert.equal(r.sourcePreservationRequired,true);assert.equal(r.copyPreservationRequired,true);
 }
 
+for (const mode of ['strict', 'limited'] as const) {
+ test(`init CapAdd 두 단일 표기는 같은 권한이다 (${mode})`, async () => {
+  for (const cap of ['CHOWN', 'CAP_CHOWN']) {
+   const x = await createdStageFixture(mode);
+   x.containers.init.HostConfig.CapAdd = [cap];
+   const result = await x.run();
+   assert.equal(result.complete, true, JSON.stringify({cap, phase: result.phase, error: result.error}));
+   assert.deepEqual(x.state.started, ['tools', 'init', 'copy']);
+   assert.deepEqual(x.state.removed, ['tools', 'init', 'copy']);
+  }
+ });
+
+ test(`init CapAdd 개수·이름·역할을 검산한다 (${mode})`, async () => {
+  for (const caps of [null, [], 'CAP_CHOWN', ['CAP_CHOWN', 'SYS_ADMIN'], ['CAP_CHOWN', 'CAP_CHOWN'],
+   ['CHOWN', 'CAP_CHOWN'], ['CAP_SYS_ADMIN'], ['cap_chown'], ['chown']]) {
+   const x = await createdStageFixture(mode);
+   x.containers.init.HostConfig.CapAdd = caps;
+   stageFailure(x, await x.run(), 'init', 'created');
+  }
+  for (const role of ['tools', 'copy'] as const) {
+   for (const cap of ['CHOWN', 'CAP_CHOWN']) {
+    const x = await createdStageFixture(mode);
+    x.containers[role].HostConfig.CapAdd = [cap];
+    stageFailure(x, await x.run(), role, 'created');
+   }
+  }
+ });
+}
+
 test('created 관측 tools HostConfig Mounts부재/[]·runtime[]와 init/copy volume-only는 strict/limited 실제진입에서 start전 검증한다',async()=>{for(const mode of ['strict','limited'] as const)for(const shape of ['absent','empty'] as const){const x=await createdStageFixture(mode,shape);assert.deepEqual(x.containers.tools.Mounts,[]);assert.equal(x.containers.init.Mounts.length,1);assert.equal(x.containers.copy.Mounts.length,2);const r=await x.run();assert.equal(r.complete,true,JSON.stringify({error:r.error,phase:r.phase}));assert.deepEqual(x.state.created,['tools','init','copy']);assert.deepEqual(x.state.started,['tools','init','copy']);assert.deepEqual(x.state.removed,['tools','init','copy']);for(const helper of Object.values(r.helpers))assert.equal(Object.hasOwn(helper as object,'stage'),false,'내부단계는기존helpers결과형식에추가하지않는다');for(const role of roles){const creates=x.state.calls.findIndex((c:any)=>c.kind==='create'&&c.role===role),inspect=x.state.calls.findIndex((c:any,i:number)=>i>creates&&c.kind==='inspect'&&c.role===role),start=x.state.calls.findIndex((c:any)=>c.kind==='start'&&c.role===role);assert.ok(creates>=0&&inspect>creates&&start>inspect);}}});
 
 test('created tools의 null/다른HostMounts·추가runtime·잘못된Tmpfs는 start/TERM/rm0로 거절한다',async()=>{for(const mode of ['strict','limited'] as const)for(const bad of ['null','object','unexpectedHost','unexpectedRuntime','tmpfs']){const x=await createdStageFixture(mode,'empty'),v=x.containers.tools;if(bad==='null')v.HostConfig.Mounts=null;if(bad==='object')v.HostConfig.Mounts={};if(bad==='unexpectedHost')v.HostConfig.Mounts=[{Type:'volume',Source:fixed.sourceVolume,Target:fixed.sourceMount,ReadOnly:true,VolumeOptions:{NoCopy:true}}];if(bad==='unexpectedRuntime')v.Mounts=[{Type:'tmpfs',Source:'',Destination:fixed.sourceMount,RW:true,Mode:'',Propagation:''}];if(bad==='tmpfs')v.HostConfig.Tmpfs[fixed.sourceMount]='rw,size=33554432,uid=0,gid=0,mode=0700';stageFailure(x,await x.run(),'tools','created');}});
