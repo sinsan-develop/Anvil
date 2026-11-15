@@ -19782,3 +19782,11 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 검토사건 실제FormReviewPanel RED028ea8 exit1/0P1F: 동일target버전의정상GET본문에검토사건0인데onVerified가1회호출돼기대0과불일치했다. Primary가공통/PROJECT사건결박과원명령/GET명시복구를구현중이며별도확정의최신검토조건을유지한다. 실제환경/추가R3조회0.
 
 - UI03 검토사건5경로동결·직접/인접43P0F0SKIP(2cf075)/type0(12bc1d)/메모리build520모듈0(7c0fda)/diff0(348ced), Main핵심1P0F0SKIP(29a708)·독립C0/I0/M0. 원사건없는GET의false확인차단·영수증/명령/내용/actor대조후만pending해제·GET명시복구·POSTunknown동일명령재확인·PROJECT원순서/pid/ABA와최신별도확정조건을보존했다. 결과서는UI03_REVIEW_RECEIPT_EVENT_READ_RECOVERY_SOURCE_RESULT_20261116.md. 실제DB/브라우저/권한·전체업무미완료,SDK/R3추가조회0.
+
+## 2026-11-16 P03 SSH 오류 안전 분류 후속 후보 준비
+
+- UI03 검토사건 PR134/head555d740e→main ddefdca4 통합·Broker43740332983 success·tree동일/localmain동기화·merged핵심1P0F0SKIP(bba051)/복구tag pr-134-head·완료branch정리를확인했다. 최신main에서codex/av3-p03-ssh-diagnostic-candidate를생성했다.
+- P03은SSH255 원stderr비보존으로원인미확인이라다음진단을구체화한다. 기존d2_preflight만후속후보문서1경로의코드를작성하며현재실제실행/조회0. 새예정ID b3645a193d704fa38c61a12b44d1f74b의승인JSON은아직없고옛승인/시각/소진을재사용하지않는다. 원격4조회·대상·14행·한도를유지하고로컬SSH의reported고정오류범주/spawn오류화이트리스트·수거bytes만추가한다. 원stderr/키/실경로출력저장0, 새실제시도는후속직접승인전0.
+- Primary는제품쓰기반환뒤UI06/FN03의기존문서검토·확정연결을읽기만조사한다. 동시code writer0중복·Main문서/검수/Git담당, 전체계획미완료와기존DB/권한/키/서비스/Agent/SDK·실자료제외를유지한다.
+
+- P03 후속진단후보1문서 최종SHA E1CD69F64D1DCAC75DFFC1EE110EBBC26D41DA283274FB5B40A5649613A4F447/25515B. 원remoteobserve본문과316E965F원본은불변이며Main도ordinal동등확인했다. 첫완결SSH문구5범주·spawn전코드whitelist·수거bytes만추가, 가변정보원문출력0·부분/멀티/변조UNCLASSIFIED. 오프라인양성5/음성11·기존진단15/승인RAM정상1음성4·JS/PS구문0, 승인부재NOT_RUN_NO_APPROVAL를확인했다. Main syntax/승인부재확인e13ad9와최종독립C0/I0/M0까지인수했다. 새b3645a예정승인JSON은생성0·실제SSH/Docker0·옛소진재사용0, 새로운직접답변후새30분데이터/지문/단발dispatch를결박해야한다.
