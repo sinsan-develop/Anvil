@@ -19799,3 +19799,11 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 검증: 저장 영수증 성공은 유지하고 GET 오류/사건불일치에는 조회 미확인으로 남긴다. 동일 명령 replay·문맥변경/늦은응답 회귀와 직접 영향 검사·type/build를 확인한다. 전체 UI06/FN03/계획·실서비스 완료 아님.
 
 - Primary3경로 구현 인수: RED d1a234 0P1F → 직접/인접3fa2bd 21P0F0SKIP, type6e118e exit0·메모리build ef9565 520모듈0·Main c293a5 핵심1P/diff0. 시험 TS7022 카운터1곳 명시 number로 해소했고 기대값 변경0. 기록 append CR개행 경고1은 해당 추가 절만 LF로 정리했다. 최종 제품/시험 지문·동작·미검증은 결과서 UI06_DOCUMENT_REVIEW_RECEIPT_READ_SOURCE_RESULT_20261116에 기록했다. 제품 writer반환/live0, 실제DB/브라우저/서비스/Agent0·전체미완료 유지. 다음은 FN08 START 재수신에서 원 응답 관측/ACK를 복구하는4경로 내부 연결이며 현재권한/기한·원장검산은 유지한다.
+
+## 2026-11-16 FN08 START 재수신 원 관측·ACK 복구 착수
+
+- UI06 최종 독립 C0/I0/M0·시험 최종6D8923A0 지문 검산을 인수했다. PR136/head2318120a → main2e64c062, Broker43743545717 success·tree 동일·merged핵심7730b9 1P/0F/0SKIP·원격복구pr-136-head·완료branch/요청tag 정리·main exact clean 확인 뒤 codex/av3-fn08-start-replay-recovery를 만들었다.
+- 할 일은 WORK_PLAN Stage C FN08의 START 재시작 내구 원응답 관측/ACK 연결이다. 기존 Primary·독립 검수의 읽기 대조로 역사 RESPONSE 전 불필요 자료GET이 복구를 막음을 확인했다. Main이 WI FN08_START_REPLAY_RECOVERY_SOURCE_WI_20261116의4경로를 단일 writer에게 배정한다. 실제DB/권한/키/파일실자료/서비스/SDK/Agent·P03 추가실행은 제외한다.
+- 수신/시도 원장 fullref·전체descriptor·현재credential/기한을 유지하고 원 관측만 복구한다. 과거permit은 실행권위가 아니다. 정상/ACK유실·원장불일치/불완전·만료회수/부분page·cursor를 RAM검증하며 실제 Agent/OS/DB/전체계획은 미완료다. P03 새한정진단 질문은 미답변·소진 원승인 재사용0.
+
+- Primary4경로 완료 인수: 최초RED0e2e0e1F→최종직접bc8e3f10P/0F/0SKIP·인접dd3110 34P/0F/0SKIP·type6d817d0/diff30f3c8 0·Main ae706d핵심1P. Main680ba5 사전1F는mockmodule 옵션누락으로시험진입전실패였고정확옵션으로해소했다. 독립 M1은수신partial과중간attempt의근거구분으로PERMIT_RECORDED→새polling UNKNOWN/ACK·cursor0시험추가후C0/I0/M0. 원intake메서드캡처후최종직접교체반례도통과.4지문/fixture변경의미/미검증은결과서FN08_START_REPLAY_RECOVERY_SOURCE_RESULT_20261116. writer반환/live0, 실제DB/권한/키/실자료/서비스/SDK/Agent/P03실행0·전체미완료다.
