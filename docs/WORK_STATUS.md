@@ -19923,3 +19923,13 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 출력 수집 I1은 bc110d 0PASS/6FAIL 후 원 함수 callable·Proxy 검산과 Reflect.apply 복원으로34c098 6PASS였다. 독립 최종 C0/I0/M0이며 최종 제품4지문은 결과서 목록을 따른다. owner0DB76A2D·outputC911C158이 최종 소스다. 수정 후 직접63PASS/FAIL·SKIP0(360e9c), 타입 진단0(916638), 메모리46 source 빌드12PASS(6db6fd), main 대비 diff0(7f6f58)이다. 인접43PASS(2a8456)는 I1 수정 전 실행한 이력으로 명시하며 최종 지문 전체 회귀로 표시하지 않는다.
 - Main은 최종 지문에서 중간행 변조 반례 a6fece와 own.call 우회 반례159a3c를 각각1PASS/FAIL·SKIP0·exit0으로 확인했다. 초기 공유잠금1PASS와 중복 합산하지 않는다. 최종 결과서 FN07_POST_INIT_OUTPUT_DRAIN_SOURCE_RESULT_20261116 지문은 E693EFCF0DB42B8874DB26A3B3BFA66F2E9864B49BEAD017C7A2BA53A5229612다. 기존 담당자는 쓰기를 반환했고 실행 세션0이다. 실제 SDK/보호 배정/OS·DB 실행과 신규 권한 부여0이며 후속 SEND 후보는 계속 미채택이다.
 - STOP·출력 수집을 같은 live 제어·검증·복구 범위의 소스 단위로 묶어 통합한다. 미채택 후보는 문서로만 보존한다. 통합은 전체 FN07/FN08·Stage·작업계획 완료를 뜻하지 않는다. 원격 CI·병합 main smoke·원격 복구 ref 대조 후에만 완료 branch를 정리한다.
+
+## 2026-11-16 PR145 통합과 후속 연결 대조
+
+- STOP·출력 수집 소스 head7871776782e273666164e207391982f609edf88b를 PR145로 게시했다. Broker43774225002는 success였고 main d439de9d9b2d3c711ac280923f597f5e0db4dd00로 병합됐다. 두 tree는37dff2b20dcd416a38005f0d046fc5e82e745630으로 일치한다. 원격 복구 tag pr-145-head가 원 소스 head를 가리킴을 확인했다.
+- Main은 merged main에서 공유잠금 출력대기·STOP 반례67dc2b 1PASS/FAIL·SKIP0·exit0을 확인했다. 실제SDK/OS 시험이 아닌 RAM smoke다. clean·로컬/원격 main 동일을 대조한 뒤 완료branch와 소비된 로컬 요청tag를 정상 명령으로 정리했다. squash 병합으로 원 source commit의 HEAD 조상관계 대신 tree동일·원격복구tag를 확인했으며 force/history변경은 없다. 다른 worktree는 보존했다.
+- 첫 tree 읽기 명령은 PowerShell에서 따옴표 없는 HEAD^{tree}를 잘못 파싱해 실패했다. 인용한 읽기 명령91b6f5에서 정확한 두 tree를 확인했고 데이터·권한을 변경하지 않았다. 통합의 실제 결과는 이 후속 대조를 근거로 한다.
+- 최신 main에서 codex/av3-normal-query-followup을 만들었다. 기존 Primary는 이미 확인한 고정SDK 원문6구간과 새 소비자 접점을 읽기 전용으로 대조해 실제 module/hook 생산자의 독립 구현 가능 범위를 확인한다. 미확인 SDK 서명·미채택 root9E98·후속SEND 긍정행·실제권위 생산을 기존 승인으로 채우지 않는다. 제품 GO는 아직 없다. 기존SDK 추가조회·실행·실제DB/권한/키/서비스/Agent/P03 실행0이다. 전체 계획은 미완료다.
+- 후속 읽기 결과: 실제 SDK module/query·child 생산자 범위에서 기존 확인6구간만으로 완결할 독립 구현 단위를 찾지 못했다. normal-instruction-wire의 forFirstSend와 normal-first-send-owner의 source.create는 Anvil 주입 포트다. sdk-query-factory의 driver.create도 합성 경계다. 이번에 통합한 출력/STOP 소비자가 실제 SDK 생산자를 추가한 것은 아니다.
+- 고정 SDK0.3.224의 동기 spawn hook과 stdin/stdout 사용 일부는 확인됐지만 전체 CanUseTool 서명·응답 소비·완전한 argv/env와 고정 실행구성/원 child 보호 결박은 미확인이다. 기본 spawn·추측한 hook·반복 wrapper로 대체하지 않는다. Primary는 읽기만 수행했고 제품·시험·추가 SDK 조회/실행0, 실행 세션0·쓰기0을 반환했다. 이 확인은 현재의 실제 생산자 접점에 한정하며 전체 계획의 구현 완료를 의미하지 않는다.
+- 현재 직접 결정 대기는 보호 spool9E98, P03 한정 진단E1CD, 후속 SEND 로컬 종단23BF다. 질문을 반복하거나 서로 다른 승인을 대신 사용하지 않는다. SDK 추가 조회 금지와 실제 DB·권한·키·서비스·Agent 제외는 그대로 적용한다. 이 경계와 source/actual 구분을 PMO에 전달하고 문서 checkpoint를 기존 branch에 보존한다.
