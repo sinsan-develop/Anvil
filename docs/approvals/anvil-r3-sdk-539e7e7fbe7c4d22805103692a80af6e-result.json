@@ -1,0 +1,52 @@
+{
+  "approvalId": "anvil-r3-sdk-539e7e7fbe7c4d22805103692a80af6e",
+  "r3": {
+    "state": "READONLY_PRECONDITION_STOP",
+    "tool": "b9b52b",
+    "exitCode": 2,
+    "reason": "FIXED_REMOTE_BRANCH_NOT_ADVERTISED",
+    "prepare": 0,
+    "entry": 0,
+    "consumed": false,
+    "createdTargets": 0,
+    "independentTool": "af1c13",
+    "independentExitCode": 0,
+    "sixTargetsAbsent": true,
+    "sourceConsumers": 0,
+    "sourceIdentityMatched": true,
+    "wrongAliasObserverError": "0d4bcd/exit255/remote0",
+    "retry": 0,
+    "automaticDeletion": 0
+  },
+  "sdk": {
+    "state": "WINDOWS_READ_VERIFIED_SOURCE",
+    "tool": "45123a",
+    "exitCode": 0,
+    "getCalls": 1,
+    "requestClosed": true,
+    "durationSeconds": 1.3452562,
+    "packedBytes": 1110841,
+    "unpackedBytes": 4056576,
+    "dtsBytes": 333809,
+    "mjsBytes": 1145192,
+    "allPinnedHashesMatched": true,
+    "stdoutJsonBytes": 34635,
+    "excerptBytes": 31345,
+    "omittedWindows": 0,
+    "liveHandles": 0,
+    "sdkExecution": 0,
+    "extraGet": 0,
+    "sourceFileSaved": false
+  },
+  "incomplete": [
+    "R3 copy",
+    "PG startup",
+    "DB recovery",
+    "full CanUseTool signature",
+    "actual tool response consumption",
+    "all required argv/env branches",
+    "actual Query/child/SID ownership",
+    "actual Agent execution"
+  ],
+  "existingDbKeysServicesChanged": false
+}

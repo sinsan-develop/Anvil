@@ -1,0 +1,26 @@
+{
+  "approvalId": "anvil-r3-mainref-bb225b1405704a3280b1cf6e360435b2",
+  "authority": "USER_DIRECT",
+  "userText": "R3 수거 ref를 main으로 바꾸고 새 30분 실행창도 승인해. 실행 소스는 기존 8d200333에 고정하고 나머지 한도는 유지해. 기존 subagent에게 맡겨 진행하고 너는 검수·통합해. 기존 DB·키·서비스 변경과 Agent 실행은 제외하고, 결과 불명이면 재시도·자동 삭제 없이 보존해. SDK 조회는 반복하지 마.",
+  "parentApproval": "anvil-r3-sdk-539e7e7fbe7c4d22805103692a80af6e",
+  "parentApprovalSha256": "dc930b60ed4331e259a70d57c8105183bf95db250a01c75132f894a814436e7b",
+  "firstObservedAt": "2026-11-15T15:34:24.000Z",
+  "safeExpiresAt": "2026-11-15T16:03:24.000Z",
+  "latestEntryAt": "2026-11-15T15:53:24.000Z",
+  "runInstance": "52e1a5269d3943269a1a340ce4da54a5",
+  "fixedSource": "8d200333239f1bd7a7e8b6736a1492eb482e2de2",
+  "fetchRef": "main",
+  "checkoutBranch": "codex/av3-stage-b",
+  "originalPlanSha256": "40A7A65B2BFDF12CAD70EBEE65FAF6A2286905C60CC262A349ED721E913A2B6F",
+  "addendumSha256": "57D352F3595DC6ADFA22FE6353BBB8CF17D5D20368105AEB7624BC3E53109DF2",
+  "delta": [
+    "fetchRef main only",
+    "new explicit window max30min; safety margin1min"
+  ],
+  "unchanged": "original targets6/risk4/source and file hashes/limits/min600sec remaining/preserve original and partial copies/no PG or SQL/existing DB keys services and actual Agent excluded",
+  "attempts": 1,
+  "unknown": "preserve/no retry/no automatic deletion",
+  "sdk": "ALREADY_SPENT_DO_NOT_REPEAT",
+  "executor": "developer_primary",
+  "independentObserver": "d2_preflight"
+}

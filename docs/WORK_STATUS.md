@@ -19621,3 +19621,98 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - UI12최종제품1/시험2 동결·쓰기반환/live0. Main확정수락즉시/지연/명시조회3P0F0SKIP exit0 2425.7277ms(9c02b8). Primary직접7P/type0·인접25P1F의baseline selector1개교정후해당반례1P0F0SKIP,기준완화0. 독립최종검수중·실제제외/전체미완료유지. 결과서 UI12_CONFIRMED_ACCEPTANCE_REQUERY_RESULT_20261115.md.
 
 - UI12제품/주시험독립specquality C0/I0/M0·제출지문일치. 인접시험은Main이selector1개외변경없음diff확인,실제기준버튼과일치·disabled단언불변. Main검수수용/source통합진행.
+
+## 2026-11-15 계획 핵심 미완료 재대조
+
+- 이전진행은권위상태변경을포함한진전: UI14/09/12 각각PR126/127/128통합. 최신PR128/Broker43650781445 success/mainab400738119388a29f187fd9e62da0089daeea64 local/private동일clean·복구refpr-128-head보존·완료branch/tag/tracking정리. merged즉시503원확정유지1P0F0SKIP exit0 1649.5417ms(d920c5).
+- 전체계획미완료. 다음에는단순소비보완보다계획상앞선P03/IX01·FN07실제SDK/Query/child소유생산을우선한다. 기존Primary는원Nov6후보와후속P3채택의source허용delta를읽기대조,기존d2_preflight는P03R3/IX01현재제외·소진·승인을문서로대조한다. Main이범위·검수·통합소유,동시제품writer0.
+- 최신실제DB/권한/키/서비스/Agent제외유지·SDK추가GET0. 소진단발/과거J3승인을현재제외보다우선하지않는다. 불명콜백/argv/env·owner권위를발명하지않는다. 새승인효과가있으면정확한차이를PMO에전달하고독립승인작업은계속한다.
+
+- 핵심잔여대조결과: FN07 sourcecaller없음·미정권위/SDK기술근거, P03R3실제결정PENDING, IX01 TC01효과는최신실제제외로실행불가. 정확근거/효과는CORE_EXECUTION_REMAINING_DECISIONS_20261115.md에분리. 기존P3소비완료반복0·새포트로실연결대체0. PMO에기존후보의결정지원경로요청,아직추가SDK/SSH/실행0·목표active/전체미완료.
+
+- P03접속지원읽기진단 새근거: 로컬wsl--list--verbose sandbox Wsl/E_ACCESSDENIED(exit1)→승격동일읽기exit0 Ubuntu/Ubuntu-Ollama Running2(1c4889),WSL-server와동일시0. 기존SSH config의WSL-server HostName/Port/User만읽어172.27.253.53:22/daon확인(7f8b9f),키/비밀내용0. 등록endpoint에timeout3초TCP1회/인증없이SSH배너수신 TCP_CONNECTED/SSH_BANNER25ms(b7901d). 과거Connection refused를현재장애로단정하지않는다. SSH인증/hostidentity/원격명령·DB·서비스정상은미확인·서비스변경/SDKGET0. PMO에접속복구변경보다R3정확결정후preflight를권장전달. 전체계획미완료/목표active.
+
+- 핵심잔여문서/현황독립C0/I0/M0. P03R3 고정제안SHA40A7A65B2BFDF12CAD70EBEE65FAF6A2286905C60CC262A349ED721E913A2B6F의정확효과1건만PMO에사용자결정전달요청. 최신실제제외중등록6대상/30분/제한복제1회·신규volume1/helper3·원/부분사본보존·잔여위험4수락을묻고PG/SQL/정식전환/키·신뢰/기존서비스/Agent제외유지. 실제인증/preflight/복제0,승인답변을확인하기전실행하지않는다.
+
+- 후속goal대조: PMO cursor3f08205c…:5 unchanged/idle, P03R3직접질문답변미수신. FN18읽기대조에서개발패키징source는이미있고실제격리/정식설치생명주기결정이남음확인. SDK대체Windows-local1회조회는설계만반환·정확코드/환경/발췌충분성미검토로질문/실행0. 영향없는핵심source추가단위는현재두조사범위에서확인못했으며전체44업무부재주장0. 실제제외/소진승인보존·중복승인질문0/목표active.
+
+## 2026-11-15 결정 대기 차단 감사
+
+- 재개후연속3goal진행에서동일한실제실행/미정권위승인경계가유지됨을대조했다. 첫회는TCP/SSH배너의새증거로접속지원순서를정정하고P03R3정확질문을PMO전달,두번째는FN18/SDK독립후속을대조했으나바로실행할제품단위없음확인,세번째현재PMO cursor3f08205c…:5 unchanged/idle·직접답변미수신을재확인했다. 단순대기시간/프로세스생존으로진행중이라하지않는다.
+- 현재전문담당3명모두completed·제품writer0·검사/원격실행handle0. branch cf79fa93까지local/private동일clean으로보존됐고이감사기록도동일branch에보존한다. 사용자dirty/과거worktree/부분사본정리0.
+- 작업계획순서의P03제한복제는명시실행승인이필요하고,IX01실QA는최신DB/역할/키/network효과제외,실SDK/owner생산은미정보호계약/추가공개읽기,설치형은실제격리/정식설치생명주기결정이남아있다. 이미완료한소스/시험을반복하거나새unsupported포트로목표를대체하지않는다. 현재확인된다음핵심경로에서승인없이실행할안전한행동은소진됐다.
+- P03R3제안SHA40A7A65B2BFDF12CAD70EBEE65FAF6A2286905C60CC262A349ED721E913A2B6F에대한PMO직접질문답변이재개조건이다. 신산님의다른정확범위허용/결정이오면그범위와영향없는미완료를재대조해진행한다. 기존계획전체미완료/인수주장0. 목표는자동반복대신blocked전환감사를충족했으며전환결과는goal도구기록을정본으로한다. 사용자요청pause/완료/예약삭제아님.
+
+## 2026-11-15 직접 다음작업 지시 재개
+
+- 신산님다음작업진행지시로goalactive. mainab400738·현재branch8e5be1d7까지local/private동일clean확인. PMOcursor…:6은기존질문답변대기보고이며새R3승인답변없음. 실제제외를일반계속지시로해제하지않는다.
+- 다음안전한미완료기술선행: 기존Primary에게Windows-local고정SDK1회읽기기술안을정확실행코드포함후보문서1경로로완성하도록위임. 제품아닌실행전검토자료,네트워크/실제자식/SDK/키/DB/서비스/Agent실행0. Main은정적독립검수·통합과실행결정전달을맡는다. 새조회를한것으로진도승격0.
+
+- SDK Windows-local읽기후보문서1경로완성/Primary쓰기반환/live0. 최종18848B SHA3434CF16C6AF3E8B40773A8E98D2A55AE2BE06E9FEF67F1B02E85ED51917EFB0. JS7684B/A4E32FFBCC58ACD5FD4A4F068D1809874033AAE5AFF56EE01D67FF4CEF94BBED,PS5135B/DD0A70905342A7F2B79DE0E8851F017ACCB97DFE55127DE5F74FA75A00FAE77E. Main JS node--check exit0/PS Parser오류0(016308),I1종료대기상한보완후PS재파싱0/0·1000·27000·29999·30001ms→3000·3000·3000·1·0산술확인(fef8b7),JS불변재검사반복0. 독립처음C0/I1/M0→보완C0/I0/M0.
+- 실행대상은Main읽기메타데이터bf5db2의C:\Program Files\nodejs\node.exe FileVersion24.22.1/SHAD702DAA815EABBFF763C7D3808E235CF031CF2CA70211B56847BC72F51E240E5로결박. 코드본문/Process.Start/HTTPS/SDK실행은0,구문용Node--check와환경메타데이터읽기만수행. 이는조회성공/실제종료시험/제품Agent연결완료아님. 기존공개URL/무결성/10초/16MiB·단발한도유지,Windows환경/감시/총64KiB발췌로변경된정확안은실행채택별도.
+
+- 커밋전diff검사EOF추가빈줄exit2·commit/push0. Main은EOF추가LF1개만제거했고본문/두코드블록불변이다. 최종후보SHA921FEFEBE76A7FA7F1D4103CCF377C91A27DDE07CC6ABC62C95F5DE2039E5D23/18847B를실행결정대상으로사용하며이전3434…는검토이력이다.
+
+## 2026-11-15 재개 후 결정 대기 재감사
+
+- 신산님다음작업재개이후세goal진행에서동일실행결정미수신을확인했다. 첫회Windows-local조회후보를기존Primary가완성·Main구문/독립C0/I0/M0검수후38ca82d0으로보존했고PMO가별도단발질문을전달했다. 둘째는PMOcursor…:8의질문전달확인뿐으로구현진전없음,셋째현재cursor…:8 unchanged/idle로SDK/P03직접답변없음을재확인. 이전차단상태를횟수로이월하지않은새감사다.
+- 현재branch38ca82d0까지local/private동일clean·정확SDK후보SHA921FEFEBE76A7FA7F1D4103CCF377C91A27DDE07CC6ABC62C95F5DE2039E5D23일치,subagent3명completed/제품writer0·새검사/후보본문/GET/원격실행0. 실행중job이있다고표시하거나같은시험/문서조사로진도를대체하지않는다.
+- 다음핵심진행은PMO가전달한P03R3제한복제또는고정SDKWindows-local추가1회실행의정확한직접결정이필요하다. 일반재개지시로최신실제제외/소진단발을해제하지않는다. 별도권위·실제QA/설치형경계도기존대조그대로다. 확인된선행경로에서다른안전한실행은없고결정/외부상태변경없이는의미있는진행이불가하여goal blocked전환감사를충족했다. 전체계획미완료이며완료처리/예약삭제/사용자pause아님. 전환결과는goal도구를정본으로한다.
+
+## 2026-11-15 P03 R3·Windows-local SDK 단발 직접 승인 수신
+
+- 신산님이P03R3제한복제1회와Windows-localSDK원문추가조회1회모두직접승인했다. 기존DB/키/서비스변경·실제Agent실행제외,결과불명시재시도/자동삭제없이보존. 첫시각확인06:59:13UTC(15:59:13KST),R3는안전여유1분을둔07:28:13UTC까지준비/진입하며원실행안한도/잔여검사를유지한다. 이기록으로기존소진READ2~4/R2를재사용하지않는다.
+- 현재HEAD8636c8fd clean·고정P03제안SHA40A7A65B2BFDF12CAD70EBEE65FAF6A2286905C60CC262A349ED721E913A2B6F/SDK후보SHA921FEFEBE76A7FA7F1D4103CCF377C91A27DDE07CC6ABC62C95F5DE2039E5D23실측일치. Main문서/검수·통합,기존Primary단일실행담당. P03를먼저실행후정확종단을판정하고SDK1회순차위임한다. 실제PG기동/SQL/기존서비스/Agent0.
+
+- 승인기록 docs/approvals/anvil-r3-sdk-539e7e7fbe7c4d22805103692a80af6e.json SHA dc930b60ed4331e259a70d57c8105183bf95db250a01c75132f894a814436e7b·run74466555366341f6b27ff0674b9abf4c. Primary strict SSH기존host/auth읽기7fbcc8 exit0 07:01:21.499Z에서SINSAN/daon1000:1000·고정도구/Node소유·새source/ledger부재확인. 준비/consume/entry0이며daemon/image/원본/관련이름·strictGit전제를읽기대조중. 인증/경로읽기만으로복제/DBready PASS승격0.
+
+- P03R3실제preflight STOP: b9b52b strictSSH exit2/live0. daemon/image/원volumeinstance·CreatedAt·labels/consumer0·고정Docker4이름부재·새source/ledger부재·가용467350781952B확인후원remote refs/heads/codex/av3-stage-b ls-remote --exit-code가출력0/stderr0/exit2(광고ref없음). 승인고정clone --branch선행불충족으로준비/entry/소진/새volume/helper/checkout/ledger/grant모두0. 다른ref복원/fetch/clone대체·재시도/삭제0. 직접승인1회복제를성공으로승격하지않고기한연장0.
+- R3종단은known READONLY_PRECONDITION_STOP이며UNKNOWN후추가조회가아니다. 별도SDK1회에는영향없음. SDKdispatch키 anvil-r3-sdk-539e7e7fbe7c4d22805103692a80af6e/sdk-dispatch를Main functions store에먼저단발발행,고정후보SHA921FEF…039E5D23로기존Primary에게정확1회실행위임. 같은키재발행/별도MainGET0.
+
+- SDKWindows-local直接승인1회45123a exit0/1.3452562초/session없음. attemptedtrue/getCalls1/requestClosedtrue/WINDOWS_READ_VERIFIED_SOURCE·stdoutJSON34635UTF8B완전파싱/원문6구간31345B/omitted0·live0. packed1110841B SHA512/해제4056576B/dts333809B·mjs1145192B원SHA일치. hook동기반환/일부argv-env/PermissionResult선언확인,CanUseTool전체서명·실응답소비/환경필수전체미확인. 원문파일저장/추가GET/SDK·Agent실행0. Main근거인수/검토중.
+- R3독립종료읽기담당0d4bcd는지정alias WSL-server가아닌원격hostname daon@SINSAN으로잘못호출해banner전255/원격스크립트0. 지정서버장애/독립부재확인PASS로표시하지않는다. 담당자원인오류1·Main정확성공접속argv확인후한정관측을지시할예정,강제정리/재시도0.
+- R3 main수거ref최소대안읽기: 고정8d200333이localdevelopment/mainancestor(c56822),controller는최종로컬branch/commit/remote/clean/2원문을검산하고remote trackingref/refspec요구없음을독립확인. 다만원안의clone수거이력범위변경이므로원remote옛branch복원/즉시우회0,clone인자1곳main대체허용만PMO에질문전달. 원safeexpiry07:28:13UTC/entry최후07:18:13UTC그대로·전체복제재승인요청아님.
+
+- R3독립관측정정af1c13 exit0/0.9832122초: 고정새6대상ABSENT·원volumeidentity/CreatedAt/labels일치·정지포함consumer0확인/live0. 원격wrongalias오류1(0d4bcd/원격0)과분리해종료관측만성공,복제NOT_RUN유지. SDK보고서독립C0/I0/M0·원6구간31345B합계/전달근거일치,독립SDK재해시/실행0. 두실행결과는승인ID-result.json과각결과서에분리보존. 추가GET/키/기존DB·서비스변경/Agent0.
+
+- Mainclock07:18:15UTC에서이번R3의safeentry최후07:18:13UTC경과확인. 수거ref변경직접답변미수신으로신규준비/진입0·기존STOP유지,기한자동연장0. Main이승인요청전이미정리된수거branch의현원격대조를누락한준비오류를인정·기록한다. 다음실행은main수거ref1곳변경과새명시30분창의한정결정이필요하며원복제효과/위험/고정소스유지·SDK재조회포함0. 보완후보P03_R3_MAIN_REF_WINDOW_ADDENDUM_20261115.md작성.
+- FN07미채택후보1문서의기술정정완료: §3stderr별도소유와§3.2SDK신규확인근거추가뿐,원2B59C107…83DC4559에서최종0393839510A2E9EAF2636FD27FE6906690E82655DFA8FEC982E5DD8D7285EE27/14831B. 두변경역치환원지문동일·diff0·독립C0/I0/M0. SOURCE_GO0/ACTUAL_EXECUTION0유지·추가GET/제품쓰기0.
+
+- R3한정보완후보독립C0/I0/M1(수거범위차이에따른시간/디스크설명)을Main문장1개로보완. 최종SHA57D352F3595DC6ADFA22FE6353BBB8CF17D5D20368105AEB7624BC3E53109DF2. 기존SDK새GET/창자동연장0. SDK사실정정후보와보완문서를같은branch에보존하고PMO에는기존질문을기한경과로정정한두변경만전달한다.
+
+## 2026-11-15 R3 수거 ref·실행창 결정 대기 감사
+
+- 직접두건승인후연속3goal진행에서R3고정수거ref부재에따른변경결정경계를확인했다. 첫회SDK승인단발성공/종료와R3선행STOP·독립미생성을확보,둘째SDK기술정정및ref/새창한정보완을검토·보존,셋째현재PMOcursor…:14의정확두변경질문전달이후답변없음/idle을재확인했다. 기존승인미수신차단과달리새실행후발견된수거선행실패를감사했다.
+- Mainclock07:22:52UTC에서기존entry최후07:18:13경과. 현재7153f144까지local/private동일clean·보완안SHA57D352F3595DC6ADFA22FE6353BBB8CF17D5D20368105AEB7624BC3E53109DF2일치. 담당3명completed·제품writer/실행job0. 추가SDK요청/현장조회/clone/소진/복제/정리0.
+- SDK단발은소진성공이라반복하지않고,R3다음행동은main수거ref한곳대체와새명시30분창의직접결정이필요하다. 원source8d/지문/대상6/위험4/600초잔여/원·부분사본보존·기존DB키서비스/PGSQLAgent제외유지. 답변없이허용범위안에서실행할다음핵심행동은없어goal blocked전환감사충족. 전체계획미완료·완료/예약삭제/사용자pause아님. 전환결과는goal도구를정본으로한다.
+
+## 2026-11-16 R3 main 수거·새 실행창 직접 승인 수신
+
+- 직접원문/부모위험수락/수거ref와새창두변경을 docs/approvals/anvil-r3-mainref-bb225b1405704a3280b1cf6e360435b2.json SHA98bef6c1f0d3f0ef87ef4efb59a6962df05bf101003105edfb14cad20bc98c36에결박. 첫수신직후clock2026-11-15T15:34:24Z(11-16 00:34:24KST),안전여유1분의만료16:03:24UTC/entry최후15:53:24UTC·원600초잔여유지. source8d/원2파일/대상6·한도·위험4유지,SDK재조회0/기존DB키서비스·Agent제외/불명재시도삭제0.
+- HEAD12cbf0ad clean·원안40A7…A2B6F/보완57D3…109DF2일치확인. 기존Primary만원격준비/고정entry1회를맡고Main문서/검수·통합,독립종료d2_preflight. 이전R3/SDK소진기록재사용0·새runInstance별도발급.
+
+- Primary새읽기preflight출력이문맥에서누락됐으나원call_0e849034e7264d9a99cefaa6a0526306/chunk36c5a7 exit0/15:36:18.936Z를로컬기록에서회수. strictWSL-server/SINSAN·daon1000:1000/고정4도구·daemon/image/원volumeconsumer0/새6부재/가용467294617600B/mainab400738→R3_MAINREF_PRECHECK_OK. 재SSH0·원격mutation/prepare/entry/consume0. 회수전용local95859기존handle종단확인뒤고정prepare→성공마커/기한·전제검산→entry1회까지같은Primary MAIN_GO. 출력누락을현장실패나새시도근거로쓰지않았다.
+
+- R3고정prepare단1회: 원cell g5:143→PTY76319/159b71,issuedAt15:40:57.178Z/실치환LF SHA2A646EB4054FAA09639510DEF5FABC3462D6767152F79649E194EFD947AB3141. 같은session만관측해565c36 exit0/R3_PREPARATION_CONFIRMED_ENTRY_NOT_RUN. 새전용sourcecheckout·ledger/grant create-new/원branch·remote·고정8d·2지문·clean검산성공. 15:41:52UTC잔여1292초로기한/입력/전제재대조후기존entry1회 g5:148발행. entry종단/consume/Docker생성아직미관측·추가진입0.
+
+- R3고정entry실제단1회g5:148→5909d3 exit1/2.77995초/live0. NOT_COMPLETE/phase=create-init/errorIDENTITY_UNKNOWN/consumedtrue·consumeAttemptedtrue/pendingIOfalse/copyCreatedtrue/receiptFailedfalse/copyResultnull/PGstartedfalse. tools b02baca78aee4694ffcacb7d9d94c9c8c79c0c705aa5b685771f39c0050a175b(15:42:18.035171728Z)는controllerclosed/removedtrue,init99cc99d63c6283d8dc9dc3a3dab36be35d25a3e2009b373e2a8c7dff04ed6097은closed/removedfalse·term/removeAttemptfalse보존. copyhelperID발급없음·복제성공0. 원본/새사본volume·checkout·grant/consume/receipt보존,추가실행/조회/삭제0으로Main인계. Main고정§4.5한정독립종료읽기1회만d2_preflight에GO,정리/PGSQL/기존키서비스/Agent0.
+
+- 독립e76e5f exit0/0.93635초에서tools/name+ID부재/copyhelper부재·init created/notrunning/시간0/고정image·runlabels·UID0:0/CapAdd[CAP_CHOWN]/CapDrop[ALL]/새사본만RW·원본consumer0/원및사본identity/ledger0600run일치를확인. 복사/PG미도달·부분자원보존·추가실행/정리0.
+- 원8d코드strict/limited의same(CapAdd,[CHOWN])가실관측[CAP_CHOWN]과불일치함을Primary/Main읽기로확인. 실패predicate하나는확정이나유일원인/전체검산일치는미확인. PGDATA tmpfs누락가설은원argv/전제와맞지않아기각. 현재로컬코드의정확singleton별칭2개만동등판독하는소스1/시험1을기존Primary에위임,나머지권한·검산/한도·실행argv불변. 원8d원격/소진실행은수정·재실행0.
+
+- 기존Primary 소스보완 완료: strict/limited 두 predicate만 정확 singleton CHOWN/CAP_CHOWN을 동등 판독. RED2P/2F→GREEN74P/0F/0SKIP, typecheck0/diff0/live0. 실제argv/권한/나머지guard불변. 제품SHA57BADDB919102B9AC8C0CEF39ED361D2146021C340FC905BA6D53B329536A112/시험SHA03AC391DF923FB22397A9AA28D046357A071F4BDEE45A31C9F7EB1B288F9DD77. 독립검수중·원격8d수정/재실행0.
+- 독립원출력의mount전체JSON은NOT_COLLECTED. 수집투영Type/Name/Destination/RW만으로NoCopy/ReadOnly/Source/Mode/Propagation을추정하지않는다. CAP_CHOWN은실패조건하나이며유일원인확정0. 실제결과·정확보존자원·오류·미검증·다음경계를 P03_R3_MAIN_REF_WINDOW_RESULT_20261116.md에분리기록. 다음실제시도/정리는소진승인으로실행하지않는다.
+
+- 소스보완 독립검수 C0/I0/M0. 제품2조건·기존시험단언불변과지문일치확인. 실제복제NOT_COMPLETE/부분자원보존유지.
+
+- Main직접 CapAdd4시나리오 재확인 ffb039 exit0/4P/0F/0SKIP·diff검사0. 실제실행결과JSON은승인ID-result.json에분리보존. 원1회소진/새실제실행GO0/SDK추가조회0.
+
+## 2026-11-16 R3 후속 선행 관측안과 독립 구현 확인
+
+- 이전 goal 턴은 실제 실패 증거 확보, 원인 predicate 보완, 독립 검수와 안전 checkpoint 3858e225의 private push로 진전이 있었다. 전체 계획 완료는 아니다. 해당 시점 local/private exact·clean을 확인했다.
+- 다음 미완료는 Stage A/P03의 복구 선행이다. 실제 단1회는 소진됐고 원격 고정8d·부분자원 보존 및 재시도/자동삭제 금지를 유지한다. mount 전체 JSON 부재를 추정으로 대체하지 않는다. 기존 Primary에게 보존 init의 목적제한 metadata 관측 후보 한 문서 작성을 맡겼으며 실제 SSH/Docker/DB/권한/키/서비스/Agent/SDK/정리 GO는 없다.
+- 별도 read-only 담당자가 다른 계획 미완료의 기존 승인 안 독립 구현 누락을 대조한다. 새 계약을 임의 채택하거나 완료된 기능의 재검증을 진도로 대체하지 않는다. Main은 판단·검수·통합을 맡고 동시 code writer는 없다.
+- PMO snapshot cursor 3f08205c-12dc-4cbf-98ee-17132424341d:15에서 R3 실패·부분자원 보존·후속 별도 결정 경계의 수신을 확인했다. 새 실행 승인은 없으며 PMO 다음 업무 배정을 기다리는 상태로 해석하지 않는다.
+
+- 다음 독립 구현은 UI05/FN13 확정 저장 영수증 뒤 GET 실패가 원명령 결과불명으로 역행하는 누락이다. 현재 CheckpointEditor.save의 applied후catch가검산storedRef를잃는것을Main/독립담당자가확인했다. 기존FN13 r2 A 승인과고정GET계약안의보완이며새API/권한/DB변경0. 현branch소스단위통합후새branch에서Primary단일writer로이어간다.
+- P03 추가관측후보1문서를Primary가작성했고독립C0/I0/M1의기한모호성을Main이새관측승인시각+30분과요청시작+30초중이른값으로정정했다. 최종SHA0ED884E382AB328B6280658485EFACE6EEAABF9E7DD9BDBFC4574CFDE7613C75. 실제관측/복제/정리/SDK반복0. 후보는실행승인이아니다.

@@ -27,7 +27,7 @@
 
 process-profile 자료에는 선택된 원 profileRef/버전과 연결·환경·host/sourceRoot, 실행파일 정체성/버전/hash, 실제 cwd와 원 mapping/관측 근거, 허용 argv/env의 닫힌 변환 결과 및 현재성/기한이 필요하다. 이 자료를 어느 기존 보호 producer가 만들고 검산할지는 아직 미확정이다. caller 선언만으로 적합하게 만들지 않는다.
 
-실제 driver는 고정 SDK의 공식 spawn hook을 사용해 같은 원 child의 stdin/stdout/stderr·exit/error·종료 요청을 하나의 소유 단위로 연결해야 한다. 생성 시도 이후 결과 불명은 새 child를 만들지 않고 원 시도/늦은 handle을 보존한다. SDK가 반환한 SID를 원 기대 SID 대신 자동 채택하지 않는다.
+실제 driver는 고정 SDK의 spawn hook을 통해 같은 원 child의 stdin/stdout·exit/error·종료 요청을 연결해야 한다. stderr는 원 child 소유자가 별도로 수집하고 종결을 확인한다. 생성 시도 이후 결과 불명은 새 child를 만들지 않고 원 시도/늦은 handle을 보존한다. SDK가 반환한 SID를 원 기대 SID 대신 자동 채택하지 않는다.
 
 이 후보는 새로운 실행 permit을 임의 발급하는 안이 아니다. 실제 생성 시도의 원 허가/비용·process source 근거가 없는 경우 실행 연결은 거절한다. SDK default spawn·준비 helper·고정 QA launcher로 우회하지 않는다. 소스 검증에서는 명시 메모리 공급자를 쓸 수 있지만 그 결과는 false/UNVERIFIED이며 실제 process가 아니다.
 
@@ -40,6 +40,16 @@ process-profile 자료에는 선택된 원 profileRef/버전과 연결·환경·
 hook signal은즉시caller취소와같지않고stdin EOF·약2초정상종료유예뒤전달된다는주석을확인했다. 원caller취소/기한도달시입력차단·외부약속정착, SDK정상종료요청, 늦은child소유보존·실제exit확인을분리해야한다. 이확인으로Anvil의기존기한을늘리거나즉시kill/회수성공으로간주하지않는다.
 
 원child의stderr는SDK반환포트에없는별도소유접점에서수집상한/비밀제거/종결을처리해야하며exit만으로수집완료를추정하지않는다. 실제child와Query/iterator/원시도의같은소유를검산하는producer는미연결이다. profile선언→실행파일/cwd/argv/env·Secret의현재성/허가생산도여전히미정이다. 이번형상확인만으로코드GO/실행권위/SESSION claim을만들지않고SDK원문을추가조회하지않는다.
+
+### 3.2 Windows-local 1회 읽기에서 확인한 SDK 0.3.224의 호출 경계 — 2026-11-15
+
+정정 전 이 후보의 SHA-256은 `2B59C1075747F536CBB6A56C95D31DCE6162DF2FB69E81CDA030A80E83DC4559`다. §3의 stderr 소유 경계를 §3.1과 일치시키고, 새로 확인한 선언과 호출부를 기록한다. 공개 GET 1회의 결과 `45123a`에서 고정 tarball과 두 원문 해시가 일치했다. 아래 위치는 검산된 원문의 UTF-8 바이트 범위 `[시작, 끝)`다. [Windows-local 원문 조회 결과](../04_test_reports/AV3/FN07_WINDOWS_LOCAL_PINNED_SOURCE_READ_RESULT_20261115.md)
+
+- **생성 hook.** `sdk.d.ts[85298,85365)`의 전체 선언은 `spawnClaudeCodeProcess?: (options: SpawnOptions) => SpawnedProcess;`이다. `sdk.mjs[778920,779367)`에서 SDK는 command·args·cwd·env·전달용 signal을 묶어 등록된 hook을 호출한다. 반환값을 await 없이 `this.process`에 대입하고 즉시 stdin/stdout을 읽는다. hook 미등록 분기에서는 기본 spawn을 호출한다. 실제 child를 생성하거나 종료 동작을 시험한 기록은 없다.
+- **argv와 env.** `sdk.mjs[775682,775765)`의 초기 인자는 `--output-format stream-json --verbose --input-format stream-json`이다. 조건부 turns·budget·model과 session ID 처리도 확인했다(`[776169,776336)`, `[778360,778435)`). `[1130411,1130577)`은 환경 객체 선택 직후 빠진 `CLAUDE_CODE_ENTRYPOINT`와 SDK 버전을 채운다. `[778771,778920)`에서는 `NODE_OPTIONS`를 삭제하고 debug 조건에 따라 `DEBUG`를 설정하거나 삭제한다. 실행파일 선택·인자 변환 별칭과 모든 분기의 필수 env 및 값 출처는 미확인이다.
+- **도구 결정.** `sdk.d.ts[87981,88396)`에서 `PermissionResult`는 `allow` 또는 `deny`다. 허용에는 수정 입력·권한 갱신이 선택 필드로 있고 거절에는 message가 필수이며 interrupt는 선택이다. 두 분기에 toolUseID와 decisionClassification이 선택 필드로 있다. `sdk.mjs[776667,776879)`에서 canUseTool과 별도 permissionPromptToolName의 동시 지정을 거절하고 callback 분기에 stdio 인자를 넣는다. `CanUseTool` 전체 서명과 allow/deny 응답의 실제 소비는 수신한 구간에서 확인되지 않았다.
+
+기존 normal START/SEND permit과 검산된 Options·지시 원문은 후속 설계의 입력이다. 보호 실행 구성, 저장된 첫 SEND의 명시 선택·단발 소비와 실제 Query 생성 순서, 원 child·Query·init SID와 논리 세션의 소유 결박, 도구 효과 허용은 여전히 미정이다. 후보 상태는 `SOURCE_GO0 / ACTUAL_EXECUTION0`이다.
 
 ## 4. 도구 요청과 Anvil 결정의 미정 대응
 
