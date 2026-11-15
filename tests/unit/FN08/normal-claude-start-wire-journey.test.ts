@@ -141,3 +141,16 @@ test('다른 모듈 인스턴스의 준비 증표는 일반 공급자 응답으�
   assert.equal(f.q.permits.length,1);
  }finally{await f.h.app.close();}
 });
+
+test('다른 worker의 START 준비 이력은 첫 SEND의 live 슬롯을 만들지 않는다',async()=>{
+ const {firstSendFixture}=await import('../FN07/normal-first-send-owner.test.ts');
+ const f=await firstSendFixture();try{
+  const options=f.options(),{NormalStartPolling}=await import('../../../apps/connector/runtime/normal-start-polling.ts');
+  const {NormalClaudeStartWire}=await import('../../../apps/connector/adapters/secondary/normal-start-wire.ts');
+  const {intake,current,grantRef,clock,timeoutMs}=options.start;
+  const other=NormalClaudeStartWire.forWorker({intake,current,grantRef,clock,timeoutMs});
+  const out=await new NormalStartPolling({...options,start:{...options.start,wire:other}}).run(f.signal);
+  assert.equal(out.state,'UNKNOWN');assert.equal(out.commands,1);assert.equal(out.cursor.afterSequence,0);assert.equal(f.effects.create,0);
+  const replay=await f.run();assert.equal(replay.state,'UNKNOWN');assert.equal(f.effects.create,0);assert.equal(f.h.startPermits.length,1);
+ }finally{await f.h.close();}
+});

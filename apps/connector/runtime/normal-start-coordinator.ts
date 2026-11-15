@@ -4,11 +4,12 @@ import {readDispatchEnvelopeV1,type DispatchEnvelopeV1} from '../../../contracts
 import {receiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 import {cloneV1,recordV1,refV1,isoV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import type {NormalCommandPageItem} from './normal-start-material-consumer.ts';
-import {isNormalStartReadyWire,consumeNormalStartReady} from '../adapters/secondary/normal-start-wire.ts';
+import {isNormalStartReadyWire,consumeNormalStartReady,copyNormalWorkerStart} from '../adapters/secondary/normal-start-wire.ts';
 import {NormalStartIntake} from './normal-start-intake.ts';
 import {NormalProtectedPostClient,type NormalPermitResult} from './normal-protected-post-client.ts';
 import {NormalObservationSpool} from './normal-observation-spool.ts';
 import type {NormalJournalStore,NormalJournalTransaction} from './normal-start-file-store.ts';
+import {originalNormalDispatchGrant,type NormalDispatchClaim} from './normal-instruction-coordinator.ts';
 type Materials=Awaited<ReturnType<NormalStartIntake['startMaterials']>>;
 type Options=Materials['options'];
 export interface NormalStartCurrent{transport:'NORMAL_PROTECTED';current(envelope:DispatchEnvelopeV1,localAttemptRef:Ref,signal:AbortSignal):Promise<unknown>}
@@ -20,6 +21,16 @@ const hash=(v:unknown)=>contentHash(canonicalJson(v)),same=(a:unknown,b:unknown)
 const fail=(code:string):never=>{throw Error(code);};
 const readPageReceipt=NormalStartIntake.prototype.receivedForPage;
 type StartInput=Parameters<NormalStartWire['send']>[0];
+type SettledStart={start:StartInput;startReadyRef:Ref;grantRef:Ref};
+const settledStarts=new WeakMap<NormalStartWire,SettledStart>();
+export function takeNormalFirstStart(worker:NormalStartWire,claim:NormalDispatchClaim){
+ const parent=settledStarts.get(worker),grant=originalNormalDispatchGrant(claim);
+ if(!parent||!grant||!same(parent.grantRef,grant))return fail('NORMAL_START_NOT_OWNED');
+ const start=parent.start.envelope,send=claim.input.envelope;
+ const common=({authorizationReceiptRef:_,budgetRef:__,...context}:DispatchEnvelopeV1['context'])=>context;
+ if(!same(start.executorRegistrationRef,send.executorRegistrationRef)||!same(common(start.context),common(send.context)))return fail('NORMAL_START_PARENT_CHANGED');
+ settledStarts.delete(worker);return parent;
+}
 /** 정상 source 연결기. 원문 옵션을 변환하거나 SYNTHETIC/CODEX 표식을 정상 실행 권위로 승격하지 않는다.
  * 명시 wire 공급자의 응답도 관측 주장일 뿐 실제 Agent 성공·writer 해제를 뜻하지 않는다. */
 export class NormalStartCoordinator{
@@ -89,7 +100,7 @@ export class NormalStartCoordinator{
   const e=readDispatchEnvelopeV1(cloneV1(raw),Date.parse((raw as any)?.issuedAt));
   if(e.operation!=='START_SESSION'||Date.parse(e.issuedAt)>this.#now())fail('NORMAL_START_ENVELOPE_INVALID');
   const p=this.#p;
-  let freshReadyDeadline:number|undefined,unconfirmedReady:Ref|undefined;
+  let freshReadyDeadline:number|undefined,unconfirmedReady:Ref|undefined,freshParent:SettledStart|undefined;
   const run=async(tx:NormalJournalTransaction)=>{
    let rows=this.#rows(await tx.read(),e);
    const historicalReady=rows.at(-1)?.snapshot.state==='START_READY_RECORDED';
@@ -162,6 +173,7 @@ export class NormalStartCoordinator{
      freshReadyDeadline=Math.min(readyEnd,deadline);
      const out=await append('START_READY_RECORDED',permit);
      const permitEventRef=await reconcile();if(!permitEventRef)fail('NORMAL_START_READY_ACK_REQUIRED');
+     freshParent={start:copyNormalWorkerStart(input),startReadyRef:cloneV1(out.ref),grantRef:cloneV1(p.grantRef)};
      unconfirmedReady=out.ref;return this.#result(e,out,undefined,permitEventRef);
     }
     const wireValue:any=await this.#bounded(s=>p.wire.send(input,s),signal,deadline);
@@ -186,6 +198,7 @@ export class NormalStartCoordinator{
   if(result?.state==='START_READY_RECORDED'&&(signal.aborted||(freshReadyDeadline!==undefined&&this.#now()>=freshReadyDeadline))){
    return {...result,state:'UNKNOWN',requiredAckRef:undefined};
   }
+  if(result?.state==='START_READY_RECORDED'&&freshParent&&same(freshParent.startReadyRef,result.recordRef))settledStarts.set(p.wire,freshParent);
   return result;
  }
 }

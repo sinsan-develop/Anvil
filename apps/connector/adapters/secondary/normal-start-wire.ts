@@ -33,6 +33,10 @@ export function consumeNormalStartReady(wire:NormalStartWire,input:Input,result:
  }
  return slot.deadline;
 }
+export function copyNormalWorkerStart(input:Input):Input{
+ return{envelope:cloneV1(input.envelope),localAttemptRef:cloneV1(input.localAttemptRef),permit:cloneV1(input.permit),
+  contextBundle:material(input.contextBundle),options:material(input.options)};
+}
 const originalMaterials=NormalStartIntake.prototype.startMaterials;
 const fail=(code='NORMAL_CLAUDE_START_UNAVAILABLE'):never=>{throw Error(code);};
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
