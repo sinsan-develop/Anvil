@@ -19751,3 +19751,23 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - FN02 동결 독립 C0/I0/M0로 소스범위수용. 공통영수증확정/GET복구와PROJECT gateway분기를구분했으며실제권한·DB·Agent검증으로승격0. 결과서는UI03_COMMON_METHOD_CONFIRMED_READ_RECOVERY_SOURCE_RESULT_20261116.md에보존한다.
 
 - FN02 커밋전 gitleaks hook가generic-api-key1건으로차단했다(530b87). 원문을출력하지않는redact100 진단001907에서결과서13행의공통명령모듈파일지문표기임을확인했고실제Get-FileHash와동일한SHA256이다. 실제Secret이아닌문서hash오탐으로판단해API파일명과hash가키대입처럼이어진표제만한국어모듈지문으로정정했다. ignore추가/SKIP/--no-verify/제품hash변경0이며동일원검사를통과시킨뒤커밋한다.
+
+## 2026-11-16 R3 보존 자원 한정 메타데이터 관측 직접 승인
+
+- 신산님이 후보SHA0ED884E3…7613C75의한정메타데이터관측1회를직접승인했다. 최초확인clock2026-11-15T16:33:44Z/기한17:03:44Z,새관측runf1957b3dc03d4f869dd4ddd5e0a11680. SSH1회/Docker읽기최대4회/실요청30초/수거32KiB·반환4KiB/재시도0. 내용·키조회/변경/삭제/복제/DB·서비스·Agent/SDK실행제외·불명보존은유지한다.
+- PR132/headbd56eca0→maind9a1a004 통합·Broker43735832275 success·tree동일/localprivate exactclean·merged저장복사핵심1P0F0SKIP(2e026c)/복구tag pr-132-head·완료branch정리를확인했다. 미착수clean후속branch는최신직접지시에맞춰codex/av3-p03-r3-metadata-observation으로이름만정리했다. 다른worktree/실행소스8d/기존부분자원변경0.
+- 기존d2_preflight한명만이번추가관측실행을맡고Primary/Main중복조회0. Primary의UI03검토사건조사는읽기결론까지만수집하며제품GO0, 기존소진R3승인을재사용하지않는다. 실제관측전정본·승인기록hash/정확대상/한도를검수한다.
+
+- 추가관측 준비에서필요한기존Docker실행파일지문은Primary의원관측기록에서회수했다: SHA256 7ed12b00293d64742419a6601ae97960a367a0ce97c88b06e3278cc0a409557b. 회수를위한새원격조회/원ledger읽기0. 코드검수전실제SSH/Docker시도0, 만료17:03:44UTC그대로이며기한을자동연장하지않는다.
+
+- R3 관측코드문서의원안0EB48124를Main/독립검수했고I1(SSH정상+finished한행만으로불완전결과완료가능)을실행전에보완했다. Windows/SSH최소8환경전달·Docker HOME재정의제거·wrapper유한입력/종료대기와소유Node회수도고정했다. 최종코드문서SHA316E965F46B4DCDC7F00AFD6ACBF744D1CDEB535DAD9EFE6CA6211B3FC98F0B5/20149B. 순수parser정상1(조건MISMATCH포함)수용·불완전7거절,JS/PS구문0. 최초VM검사Buffer미주입오류1은시험환경정정으로해소했으며실제관측재시도가아니다. 최종독립delta검수중·실제SSH/Docker0·승인만료17:03:44UTC유지.
+
+- R3 관측 최종독립 C0/I0/M0·Main동일지문3건검산 완료(16:52:16UTC). 승인만료17:03:44UTC내이며코드316E965F/승인72AFBA08/후보0ED884E3를정확결박했다. 단발dispatch키와create-new attempt.json을발행했고같은실행재발행0. 기존d2_preflight에정확wrapper1회MAIN_GO, Main/Primary중복조회0. 실행결과는원handle만수거하며타임아웃/출력누락시SSH를다시띄우지않는다.
+
+- 추가관측 실제단1회 f520eb require_escalated·wrapper1/Node1/SSH1,0.7076843초/wrapperexit2/SSH255/closedtrue/session없음/live0. stdout은run/closed/exit/UNKNOWN_PRESERVE 요약뿐·필수행0/14. 원격도달/Docker실호출수UNKNOWN·원stderrNOT_RETAINED여서원인단정0. 승인1회소진·추가조회/재연결/정리0, 원복제NOT_COMPLETE와부분자원보존유지. 결과JSON/관측결과서에분리기록했다. 관측오류를분류할근거가남지않은실행코드의한계를기록하고독립제품작업은계속한다.
+
+- 로컬운영진단2a7b93은현재Main프로세스의SSH_AUTH_SOCK/SSH_AGENT_PID/SSH_ASKPASS/HOME/NODE_OPTIONS/NODE_PATH존재여부만false로반환했다. 값/키/설정파일은읽어출력하지않았고네트워크0이다. 이것으로원시도환경동일성이나SSH255원인을증명하지않는다. 해당결과를인증/네트워크정상으로승격하지않는다.
+
+- R3 관측결과 기록 독립C0/I0/M0. 실제f520eb/창/코드지문/0행UNKNOWN/원격도달·Docker횟수미확인/소진·보존이결과서·JSON·체크표와일치하며P03완료체크0을확인했다. 관측실패를기능완료로병합하는것이아니라실패·보존증거의정본기록을통합한다. 이후독립승인제품단위를계속한다.
+
+- Main기록JSON의CRLF혼입오류누적3회를PMO에예외보고하고같은생성방식을중단했다. Primary가정확attempt.json의CRLF11개만LF로정정, 원SHAEEDF7A485C74FF2B420E643CCEC597522168B08C69DD329334FD895485287653→최종AA41A7391861D7CF89DF6CA8BA68D4E872BF749E494BD46C436B4D042D5EA636. 키정렬JSON내용SHA8A1CAFD598652E47F5797878593100EAC9AFC1C4E85FA168DAD06177B2673E71전후동일·시각/상태/단발성불변, 삭제/재발행0. 이후ConvertTo-Json결과는UTF8기록전LF를명시적보장하며검사우회/설정완화0.

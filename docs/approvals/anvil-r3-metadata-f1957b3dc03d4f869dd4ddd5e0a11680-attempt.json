@@ -1,0 +1,12 @@
+{
+  "approvalId": "anvil-r3-metadata-f1957b3dc03d4f869dd4ddd5e0a11680",
+  "runInstance": "f1957b3dc03d4f869dd4ddd5e0a11680",
+  "dispatchAllocatedAt": "2026-11-15T16:52:34.2771421+00:00",
+  "codeSha256": "316E965F46B4DCDC7F00AFD6ACBF744D1CDEB535DAD9EFE6CA6211B3FC98F0B5",
+  "expiresAt": "2026-11-15T17:03:44Z",
+  "executor": "d2_preflight",
+  "status": "DISPATCH_ALLOCATED_DO_NOT_REPEAT",
+  "maxAttempts": 1,
+  "retry": false,
+  "automaticDeletion": false
+}

@@ -1,0 +1,23 @@
+{
+  "approvalId": "anvil-r3-metadata-f1957b3dc03d4f869dd4ddd5e0a11680",
+  "runInstance": "f1957b3dc03d4f869dd4ddd5e0a11680",
+  "codeSha256": "316E965F46B4DCDC7F00AFD6ACBF744D1CDEB535DAD9EFE6CA6211B3FC98F0B5",
+  "toolEvidence": "f520eb",
+  "sandboxPermissions": "require_escalated",
+  "wrapperExit": 2,
+  "sshExit": 255,
+  "sshClosed": true,
+  "elapsedSeconds": 0.7076843,
+  "result": "UNKNOWN_PRESERVE",
+  "observedRows": 0,
+  "requiredRows": 14,
+  "sshAttempts": 1,
+  "dockerReadCalls": "UNKNOWN",
+  "remoteReached": "UNKNOWN",
+  "stderr": "NOT_RETAINED",
+  "localLiveHandles": 0,
+  "retry": false,
+  "followupRemoteRead": false,
+  "cleanup": false,
+  "originalCopyStatus": "NOT_COMPLETE"
+}
