@@ -1,5 +1,6 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
-import type { DocumentVersion } from './api.ts';
+import { readDocument, type DocumentVersion } from './api.ts';
+import { ordered } from '../knowledge/review-view.ts';
 import type { DocumentSession } from './editor-api.ts';
 import { isKnownDocumentRejection } from './mutation-result.ts';
 
@@ -11,7 +12,9 @@ export interface DocumentReviewCommand {
   operation: 'recordContentReview'; targetId: string; expectedVersion: number; baselineRefs: []; approvalRef: null;
   payload: { targetKind: 'DOCUMENT'; targetRef: VersionRef; criteriaVersion: 1; items: Item[]; outcome: Outcome; reason: string };
 }
+type StoredReviewRef = { id: string; criteriaVersion: 1; targetRef: VersionRef; outcome: Outcome };
 export interface DocumentReviewBuffer {
+  savedReview?: { ownerUserId: string; command: DocumentReviewCommand; reviewRef: StoredReviewRef };
   ownerUserId: string; projectId: string; title: string; ref: VersionRef; controlGeneration: number;
   criteria: DocumentVersion['contentReviewCriteria']['items']; items: Item[]; outcome: Outcome; reason: string;
   dirty: boolean; pending: DocumentReviewCommand | null; saved: boolean; failure: { code: string; status: number } | null;
@@ -42,9 +45,13 @@ export function retireRejectedDocumentReview(buffer: DocumentReviewBuffer, sessi
   if (buffer.uncertain || buffer.saved || !c || !isKnownDocumentRejection(buffer.failure) || c.projectId !== buffer.projectId || c.clientId !== session.clientId || c.operation !== 'recordContentReview' || c.targetId !== buffer.ref.id || c.payload.targetRef.contentHash !== buffer.ref.contentHash || c.expectedVersion !== buffer.ref.version) throw new ApiError('REVIEW_REJECTION_NOT_CONFIRMED');
   return { ...buffer, pending: null, dirty: true, saved: false, failure: null, uncertain: false, rejectedAttempts: [...(buffer.rejectedAttempts ?? []), { title: buffer.title, command: structuredClone(c), failure: { ...buffer.failure! } }] };
 }
-export async function sendDocumentReview(client: ApiClient, buffer: DocumentReviewBuffer, session: DocumentSession, active: () => boolean) {
-  validate(buffer, session); const c = buffer.pending;
+function checkCommand(buffer: DocumentReviewBuffer, session: DocumentSession, c: DocumentReviewCommand | null) {
+  validate(buffer, session);
   if (!c || !exact(c, ['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']) || c.schemaVersion !== 1 || !uuid.test(c.commandId) || c.operation !== 'recordContentReview' || c.projectId !== buffer.projectId || c.clientId !== session.clientId || c.controlGeneration !== buffer.controlGeneration || c.targetId !== buffer.ref.id || c.expectedVersion !== buffer.ref.version || !Array.isArray(c.baselineRefs) || c.baselineRefs.length || c.approvalRef !== null || !exact(c.payload, ['targetKind','targetRef','criteriaVersion','items','outcome','reason']) || c.payload.targetKind !== 'DOCUMENT' || c.payload.criteriaVersion !== 1 || !reference(c.payload.targetRef) || c.payload.targetRef.id !== buffer.ref.id || c.payload.targetRef.version !== buffer.ref.version || c.payload.targetRef.contentHash !== buffer.ref.contentHash || JSON.stringify(c.payload.items) !== JSON.stringify(buffer.items) || c.payload.outcome !== buffer.outcome || c.payload.reason !== buffer.reason) throw new ApiError('CLIENT_PATH_INVALID');
+  return c;
+}
+export async function sendDocumentReview(client: ApiClient, buffer: DocumentReviewBuffer, session: DocumentSession, active: () => boolean) {
+  const c = checkCommand(buffer, session, buffer.pending);
   const body = JSON.stringify(c); if (new TextEncoder().encode(body).length > 2 * 1024 * 1024) throw new ApiError('REVIEW_INPUT_TOO_LARGE');
   if (!active()) throw new ApiError('REVIEW_CONTINUATION_PAUSED');
   let response: Response;
@@ -54,5 +61,20 @@ export async function sendDocumentReview(client: ApiClient, buffer: DocumentRevi
   if (!response.ok) throw new ApiError(typeof value?.code === 'string' && /^[A-Z_]{1,64}$/.test(value.code) ? value.code : 'REQUEST_FAILED', response.status);
   const r = value?.data?.reviewRef;
   if (!value || value.commandId !== c.commandId || value.projectId !== c.projectId || value.targetId !== c.targetId || value.version !== c.expectedVersion || value.status !== 'APPLIED' || !uuid.test(value.operationId) || !Number.isFinite(Date.parse(value.serverReceivedAt)) || value.data?.status !== 'REVIEW_RECORDED' || !r || !uuid.test(r.id) || r.criteriaVersion !== 1 || !reference(r.targetRef) || r.targetRef.id !== buffer.ref.id || r.targetRef.version !== buffer.ref.version || r.targetRef.contentHash !== buffer.ref.contentHash || r.outcome !== buffer.outcome) throw new ApiError('RESPONSE_INVALID');
-  return r as { id: string; criteriaVersion: 1; targetRef: VersionRef; outcome: Outcome };
+  return r as StoredReviewRef;
+}
+
+export async function verifySavedDocumentReview(client: ApiClient, buffer: DocumentReviewBuffer, session: DocumentSession, active: () => boolean) {
+  const saved = buffer.savedReview;
+  if (!saved || !buffer.saved || buffer.dirty || buffer.pending || saved.ownerUserId !== session.user.id) throw new ApiError('CLIENT_PATH_INVALID');
+  const command = checkCommand(buffer, session, saved.command);
+  const { reviewRef } = saved;
+  if (!uuid.test(reviewRef.id) || reviewRef.criteriaVersion !== command.payload.criteriaVersion || reviewRef.outcome !== command.payload.outcome || ordered(reviewRef.targetRef) !== ordered(command.payload.targetRef)) throw new ApiError('RESPONSE_INVALID');
+  const { document } = await readDocument(client, command.projectId, command.targetId, command.expectedVersion, { expectedContentHash: command.payload.targetRef.contentHash, active });
+  if (!active()) throw new ApiError('REVIEW_CONTINUATION_PAUSED');
+  const matches = document.contentReviews.filter(review => review.ref.id === reviewRef.id);
+  const review = matches[0];
+  if (matches.length !== 1 || !review || ordered(review.ref) !== ordered(reviewRef) ||
+      review.reviewer.userId !== saved.ownerUserId || ordered(review.items) !== ordered(command.payload.items) ||
+      review.reason !== command.payload.reason) throw new ApiError('DOCUMENT_REVIEW_EVENT_MISMATCH');
 }
