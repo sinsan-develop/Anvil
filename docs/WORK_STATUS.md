@@ -19674,3 +19674,8 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - R3 main수거ref최소대안읽기: 고정8d200333이localdevelopment/mainancestor(c56822),controller는최종로컬branch/commit/remote/clean/2원문을검산하고remote trackingref/refspec요구없음을독립확인. 다만원안의clone수거이력범위변경이므로원remote옛branch복원/즉시우회0,clone인자1곳main대체허용만PMO에질문전달. 원safeexpiry07:28:13UTC/entry최후07:18:13UTC그대로·전체복제재승인요청아님.
 
 - R3독립관측정정af1c13 exit0/0.9832122초: 고정새6대상ABSENT·원volumeidentity/CreatedAt/labels일치·정지포함consumer0확인/live0. 원격wrongalias오류1(0d4bcd/원격0)과분리해종료관측만성공,복제NOT_RUN유지. SDK보고서독립C0/I0/M0·원6구간31345B합계/전달근거일치,독립SDK재해시/실행0. 두실행결과는승인ID-result.json과각결과서에분리보존. 추가GET/키/기존DB·서비스변경/Agent0.
+
+- Mainclock07:18:15UTC에서이번R3의safeentry최후07:18:13UTC경과확인. 수거ref변경직접답변미수신으로신규준비/진입0·기존STOP유지,기한자동연장0. Main이승인요청전이미정리된수거branch의현원격대조를누락한준비오류를인정·기록한다. 다음실행은main수거ref1곳변경과새명시30분창의한정결정이필요하며원복제효과/위험/고정소스유지·SDK재조회포함0. 보완후보P03_R3_MAIN_REF_WINDOW_ADDENDUM_20261115.md작성.
+- FN07미채택후보1문서의기술정정완료: §3stderr별도소유와§3.2SDK신규확인근거추가뿐,원2B59C107…83DC4559에서최종0393839510A2E9EAF2636FD27FE6906690E82655DFA8FEC982E5DD8D7285EE27/14831B. 두변경역치환원지문동일·diff0·독립C0/I0/M0. SOURCE_GO0/ACTUAL_EXECUTION0유지·추가GET/제품쓰기0.
+
+- R3한정보완후보독립C0/I0/M1(수거범위차이에따른시간/디스크설명)을Main문장1개로보완. 최종SHA57D352F3595DC6ADFA22FE6353BBB8CF17D5D20368105AEB7624BC3E53109DF2. 기존SDK새GET/창자동연장0. SDK사실정정후보와보완문서를같은branch에보존하고PMO에는기존질문을기한경과로정정한두변경만전달한다.
