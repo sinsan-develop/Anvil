@@ -19816,3 +19816,14 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 
 - Primary5경로 완료 인수: RED faacf1 1F→직접f047ba30P/추가갱신f6d997 2P/등록인접fa2f2f 2P·루트type19c3ee0/entry strict65153c0/diff0·Main66d20a1P·독립C0/I0/M0. 데스크톱 전체 d03329는169진단/exit1이며동일컴파일러HEAD/현재RAM비교944a44 169/169·추가0/소실0이다. PASS 승격0·기존진단보존. 최초CLI상대경로부재1회는설치된동일TS resolve로해소·설치변경0.5지문/행동/미검증은결과서FN08_DESKTOP_NORMAL_CLIENT_PAIR_SOURCE_RESULT_20261116. writer반환/live0·실제TLS/키/host/파일/DB/서비스/SDK/Agent/P03실행0.
 - 다음 root조사: P3§3.1 파일저장소source와SEND내구WI의private root재사용은확인했으나normal실행세대별최초배정·보호표식·재시작동일배정생산자는미확인이다. native-journal.v1은준비authority전용이며normal로전용하지않는다. 보호저장목적/표식/내부native연산/namespace전체quota는새결정후보로분리, 실제root/ACL/파일변경0. PMO에기존채택근거지원만요청했다. P03분류관측의새승인질문은미답변·옛승인소진유지다.
+
+## 2026-11-16 FN10/UI04 사람 판단 이력 페이지 연속성 착수
+
+- PR138/headc444a847→maincd999654, Broker43746096591 success·tree동일·병합후cdcae0핵심1P·복구pr-138-head·완료branch/요청tag정리·main exact clean 확인. 새 root 계약용 clean branch에는 제품/문서 쓰기 없이 조사만 진행했고, 독립 승인 단위가 확인되어 같은 clean branch를 codex/av3-ui04-decision-history-continuity로 이름 정리했다. 복수 미완료 branch 생성0.
+- 할 일은 WORK_PLAN FN10/UI04의 사람 판단 이력 연속성이다. 기존 목록계약은 중복/누락0·마지막반환행 cursor를 규정하지만 현재 더보기는 중복요청을 잠그지 않고 오류 뒤 cursor를 남긴다. WI FN10_NODE_DECISION_HISTORY_CONTINUITY_SOURCE_WI_20261116의제품1/시험1을 기존 Primary 단독 writer에게 배정한다. source/RAM·type/build/diff·독립검수, 실제DB/권한/키/서비스/Agent/P03제외 유지.
+- normal root는 PMO도 미채택을확인했으나 실제I/O·최대전송/배타·정착·전체quota 공백이남아 승인질문을조기에보내지않는다. 기술검토 FN08_NORMAL_ROOT_STORAGE_TECHNICAL_REVIEW_20261116에 사실/대안/미확인을기록했고 제품GO0이다. P03새한정진단질문미답변·실제추가SSH0·소진기록보존을유지한다.
+
+- FN10 최초RED949c6c는2P/2F: 같은cursor연속클릭에서첫쪽포함GET3(기대2), 다음쪽403후더보기잔존을재현했다. 먼저DOM객체전체단언의실패출력이길어원세션93674를종료했고Boolean존재단언으로동일반례를수거했다. 제품잠정보완후직접/인접b26583 27P·루트type db6e540·메모리build fca5e90/live0이다. 독립 C0/I2/M0에서 I1(더보기403후고정원문잔존), I2(첫페이지refresh의동기잠금/원요청식별없음)을발견해기존Primary동일2경로에재작업했다. 원receipt/입력보존·본문숨김·첫페이지단일ticket을실제RAM반례로해소하기전통합하지않는다. 동일근본원인정식실패3회조건아님·Main직접제품인수0.
+- root 기술검토문서는 d2_preflight 읽기 C0/I0/M0·SHA256 69C37866861DDF3E6983758D62C23A3271FEB6EF9C14BC5C23E5EB94EE9869EC로확인했다. 미채택/미확인/제품GO0구분을유지하며새저장권한승인요청으로사용하지않는다.
+
+- FN10 최종2경로 쓰기반환/live0. I1 실제RED52a5f4·I2 실제RED99261f→최종UI8b1ab4 18P/0F/0SKIP·루트type4c32bc0/메모리build5eded60·Main cfa8ba1P/diff0·최종독립C0/I0/M0. 기존서버12P는직전b26583증거로분리재사용했다. 제품8FD01DBF/시험33E145CE동결·원packet/receipt/phase보존·본문숨김/첫쪽ticket을결과서FN10_NODE_DECISION_HISTORY_CONTINUITY_SOURCE_RESULT_20261116에기록했다. 실제DB/브라우저/Agent/권한/키/서비스/P03추가실행0·전체미완료 유지.

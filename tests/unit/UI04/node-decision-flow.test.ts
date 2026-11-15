@@ -48,6 +48,89 @@ async function mount(realApp=false,existing=false){
  const select=async()=>{await wait(()=>!!node('확정 설계')?.options.find(v=>v.value===f.design.ref.id),container);await change('확정 설계',f.design.ref.id);await wait(()=>node('확정 설계')?.value===f.design.ref.id,container);await change('확정 계획',f.plan.ref.id);await wait(()=>node('확정 계획')?.value===f.plan.ref.id,container);await change('근거 AF02',true);await wait(()=>!node('판단값')?.disabled,container);await change('판단값','GO');await change('판단 이유','사용자가 명시한 판단');};
  await render();return{f,q,container,props,render,node,click,change,select,buffers,authLost:()=>authLost,close:async()=>{q.release();q.releaseRead();await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
+async function pagedHistory(){
+ const h=await mount();await wait(()=>!h.node('확정 설계')?.disabled,h.container);
+ let base:{id:string;version:number;contentHash:string}|null=null;
+ for(let i=0;i<3;i++){
+  await h.q.service.command(h.f.token,h.f.csrf,h.f.command('recordNodeDecision',base));
+  const row=h.f.versions.at(-1)!;base={id:row.stream_id,version:row.version,contentHash:row.content_hash};
+ }
+ const cursors:(string|null)[]=[];
+ const gate=(kind:'FIRST'|'NEXT')=>({kind,release:Promise.withResolvers<number>(),returned:Promise.withResolvers<void>()});
+ let pending:ReturnType<typeof gate>|null=null;
+ const paged:typeof fetch=async(input,init)=>{
+  const u=new URL(String(input),'https://anvil-synthetic.invalid');
+  if(!u.pathname.endsWith('/node-decisions'))return h.q.transport(input,init);
+  const cursor=u.searchParams.get('cursor');cursors.push(cursor);
+  const delayed=pending?.kind===(cursor?'NEXT':'FIRST')?pending:null;
+  if(delayed){const status=await delayed.release.promise;if(status!==200){delayed.returned.resolve();return Response.json({code:'PROJECT_READ_DENIED'},{status});}}
+  // 같은 서버 목록·서명 cursor를 사용하되 DOM 경계 시험에서는 페이지당 한 버전을 반환한다.
+  u.searchParams.set('limit','1');const page=await h.q.transport(u.pathname+u.search,init);delayed?.returned.resolve();return page;
+ };
+ h.props.client=new ui.ApiClient(paged);await h.render();await wait(()=>!!h.node('이력 더 보기')&&!h.node('이력 더 보기')?.disabled,h.container);
+ const rows=()=>all(h.container).filter(n=>n.tagName==='BUTTON'&&n.textContent.startsWith('고정 이력 ')).map(n=>n.textContent);
+ let returned=Promise.resolve();
+ return {...h,cursors,rows,get returned(){return returned;},hold(kind:'FIRST'|'NEXT'='NEXT'){pending=gate(kind);returned=pending.returned.promise;},release(code=200){pending?.release.resolve(code);pending=null;}};
+}
+test('이력 더 보기의 같은 cursor를 연달아 눌러도 한 페이지씩 한번만 반영한다',async()=>{
+ const h=await pagedHistory();try{
+  const first=h.rows();assert.equal(first.length,1);h.hold();
+  const more=h.node('이력 더 보기')!;
+  await ui.React.act(async()=>{more.dispatchEvent({type:'click',button:0});more.dispatchEvent({type:'click',button:0});await tick();});
+  assert.equal(h.cursors.length,2);assert.equal(h.cursors[0],null);assert.ok(h.cursors[1]);
+  h.release();await wait(()=>h.rows().length===2,h.container);
+  await h.click('이력 더 보기');await wait(()=>h.rows().length===3&&!h.node('이력 더 보기'),h.container);
+  assert.deepEqual(h.rows().slice(0,1),first);assert.equal(new Set(h.rows()).size,3);assert.equal(h.cursors.length,3);assert.notEqual(h.cursors[2],h.cursors[1]);
+  assert.equal(h.q.calls.filter(v=>v.method==='POST').length,0);
+ }finally{h.release();await h.close();}
+});
+test('이력 다음쪽 거절 후 옛 cursor를 버리고 명시 재조회가 첫 페이지를 복원한다',async()=>{
+ const h=await pagedHistory();try{
+  const first=h.rows();h.hold();await h.click('이력 더 보기');h.release(403);
+  await wait(()=>h.container.textContent.includes('PROJECT_READ_DENIED'),h.container);
+  assert.deepEqual(h.rows(),[]);assert.equal(Boolean(h.node('이력 더 보기')),false);assert.equal(h.cursors.length,2);
+  await h.click('이력 보호 재조회');await wait(()=>h.rows().length===1&&!!h.node('이력 더 보기'),h.container);
+  assert.equal(h.cursors[2],null);assert.deepEqual(h.rows(),first);
+  await h.click('이력 더 보기');await wait(()=>h.rows().length===2,h.container);assert.equal(new Set(h.rows()).size,2);
+  assert.equal(h.q.calls.filter(v=>v.method==='POST').length,0);
+ }finally{h.release();await h.close();}
+});
+for(const code of [200,401])test('노드 왕복 후 지연된 이력 다음쪽 '+code+'는 새 목록과 인증에 반영되지 않는다',async()=>{
+ const h=await pagedHistory();try{
+  const first=h.rows();h.hold();await h.click('이력 더 보기');
+  h.props.nodeId='other';await h.render();await wait(()=>!h.node('사람 판단 기록'),h.container);
+  h.props.nodeId='choose';await h.render();await wait(()=>h.rows().length===1&&!!h.node('이력 더 보기'),h.container);
+  h.release(code);await ui.React.act(async()=>{await h.returned;await tick();});
+  assert.deepEqual(h.rows(),first);assert.equal(h.authLost(),0);assert.deepEqual(Object.keys(h.buffers),[]);
+  assert.equal(h.cursors.length,3);assert.equal(h.cursors[2],null);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,0);
+ }finally{h.release();await h.close();}
+});
+test('고정 이력 원문 조회 뒤 다음쪽 403은 원 저장 영수증을 보존하고 원문을 숨긴다',async()=>{
+ const h=await pagedHistory();try{
+  await h.select();await h.click('판단 기록');
+  await wait(()=>Object.values(h.buffers).some(v=>v.phase==='SAVED'),h.container);
+  const key=Object.keys(h.buffers)[0]!,{packet,receipt,phase}=h.buffers[key];
+  await h.click('이력 보호 재조회');await wait(()=>h.rows().length===1&&h.node('이력 더 보기')?.disabled===false,h.container);
+  const version=Number(h.rows()[0]!.split(' ').at(-1)),row=h.f.versions.find(v=>v.version===version)!;
+  await h.click(h.rows()[0]!);await wait(()=>h.node('이력 더 보기')?.disabled===false&&h.node('보호 판단 원문')?.textContent.includes(row.snapshot_json.reason)===true,h.container);
+  const posts=h.q.calls.filter(v=>v.method==='POST').length;assert.equal(posts,1);
+  h.hold();await h.click('이력 더 보기');h.release(403);await wait(()=>h.container.textContent.includes('PROJECT_READ_DENIED'),h.container);
+  assert.equal(Boolean(h.node('보호 판단 원문')),false);assert.deepEqual(h.rows(),[]);assert.equal(Boolean(h.node('이력 더 보기')),false);
+  assert.equal(h.buffers[key].packet,packet);assert.equal(h.buffers[key].receipt,receipt);assert.equal(h.buffers[key].phase,phase);
+  await h.click('이력 보호 재조회');await wait(()=>h.rows().length===1&&!!h.node('보호 판단 원문'),h.container);
+  assert.equal(h.cursors.at(-1),null);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,posts);
+ }finally{h.release();await h.close();}
+});
+for(const code of [200,401])test('다음쪽 거절 뒤 첫 페이지 재조회 연속 클릭은 지연 '+code+' 원응답 하나만 수용한다',async()=>{
+ const h=await pagedHistory();try{
+  const first=h.rows();h.hold();await h.click('이력 더 보기');h.release(403);await wait(()=>h.container.textContent.includes('PROJECT_READ_DENIED'),h.container);
+  h.hold('FIRST');const before=h.cursors.length,button=h.node('이력 보호 재조회')!;
+  await ui.React.act(async()=>{button.dispatchEvent({type:'click',button:0});button.dispatchEvent({type:'click',button:0});await tick();});
+  assert.deepEqual(h.cursors.slice(before),[null]);h.release(code);
+  await wait(()=>!h.node('이력 보호 재조회')?.disabled,h.container);
+  assert.deepEqual(h.rows(),code===200?first:[]);assert.equal(h.authLost(),code===401?1:0);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,0);
+ }finally{h.release();await h.close();}
+});
 test('실제 browser 선언은 서버 원 선언과 hash·C1/Cf·무변형 값을 동일하게 보존한다',async()=>{const f=await nodeDecisionFixture(),q=await nodeDecisionTransport(f),method={projectId:f.pid,applicationRef:f.applicationRef,snapshot:f.applicationSnapshot,observedAt:new Date().toISOString(),executionState:'NOT_CONNECTED'};assert.deepEqual(await ui.api.previewNodeDecision(method,'choose'),f.declaration);f.applicationSnapshot.graph.edges[0]!.condition.value=['A\u0085B'];await assert.rejects(ui.api.previewNodeDecision(method,'choose'));f.applicationSnapshot.graph.edges[0]!.condition.value=['A\u200dB'];assert.deepEqual((await ui.api.previewNodeDecision(method,'choose')).values,['A\u200dB']);assert.equal(q.calls.length,0);});
 test('실제 Panel→원 보호reader→record·정정·철회·고정이력은 source-only 저장 여정을 완성한다',async()=>{const h=await mount();try{await h.select();await h.click('판단 기록');await wait(()=>h.f.versions.length===1&&h.container.textContent.includes('보관 버전 1'),h.container);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,1);await h.change('판단 이유','명시 정정');await h.click('판단 기록');await wait(()=>h.f.versions.length===2&&h.container.textContent.includes('보관 버전 2'),h.container);await h.change('판단 이유','명시 철회');await h.click('판단 철회');await wait(()=>h.f.versions.length===3&&h.container.textContent.includes('REVOKED'),h.container);await h.click('고정 이력 1');await wait(()=>h.container.textContent.includes('보관 버전 1'),h.container);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,3);assert.equal(h.f.versions[2].snapshot_json.status,'REVOKED');assert.equal(h.f.active(),false);}finally{await h.close();}});
 test('실제 App의 확정 임무 없는 USER 단계 선택은 같은 App buffer로 명시 판단을 저장한다',async()=>{const h=await mount(true);try{await wait(()=>!!h.node('적용 절차 조회'),h.container);await h.click('적용 절차 조회');await wait(()=>!!h.node('절차 정의: 사람 판단'),h.container);await h.click('절차 정의: 사람 판단');await h.select();await h.click('판단 기록');await wait(()=>h.f.versions.length===1&&h.container.textContent.includes('보관 버전 1'),h.container);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,1);assert.equal(h.f.versions[0].snapshot_json.actor.credentialGeneration,3);assert.equal(h.f.active(),false);}finally{await h.close();}});
