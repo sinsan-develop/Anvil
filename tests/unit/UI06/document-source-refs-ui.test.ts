@@ -25,8 +25,8 @@ const id=(n:number)=>'a6f30000-0000-4000-8000-'+String(n).padStart(12,'0'),pid=i
 const session={user:{id:uid},clientId:cid,csrfToken:'a'.repeat(43)};
 let bundled:Promise<any>;
 function bundle(){return bundled??=Promise.resolve().then(async()=>{
- const entry=['DocumentEditor.tsx','DocumentsPage.tsx','DocumentSourceRefs.tsx','editor-api.ts'].map(p=>fileURLToPath(new URL('../../../apps/web/src/features/design-trace/'+p,import.meta.url))),api=fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,publicDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:document-sources',name:'DocumentSourcesTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'document-source-memory-entry',resolveId(id){if(id.endsWith('virtual:document-sources'))return '\0document-sources';},load(id){if(id==='\0document-sources')return "import * as React from 'react';import{createRoot}from'react-dom/client';export{React,createRoot};export{DocumentEditor}from"+JSON.stringify(entry[0])+";export{DocumentsPage}from"+JSON.stringify(entry[1])+";export{DocumentSourceRefs}from"+JSON.stringify(entry[2])+";export*from"+JSON.stringify(entry[3])+";export{ApiClient}from"+JSON.stringify(api)+";";}}]});
+ const entry=['DocumentEditor.tsx','DocumentsPage.tsx','DocumentSourceRefs.tsx','editor-api.ts','DocumentReviewEditor.tsx'].map(p=>fileURLToPath(new URL('../../../apps/web/src/features/design-trace/'+p,import.meta.url))),api=fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url));
+ const result:any=await build({configFile:false,envDir:false,publicDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:document-sources',name:'DocumentSourcesTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'document-source-memory-entry',resolveId(id){if(id.endsWith('virtual:document-sources'))return '\0document-sources';},load(id){if(id==='\0document-sources')return "import * as React from 'react';import{createRoot}from'react-dom/client';export{React,createRoot};export{DocumentEditor}from"+JSON.stringify(entry[0])+";export{DocumentsPage}from"+JSON.stringify(entry[1])+";export{DocumentSourceRefs}from"+JSON.stringify(entry[2])+";export*from"+JSON.stringify(entry[3])+";export{DocumentReviewEditor}from"+JSON.stringify(entry[4])+";export{ApiClient}from"+JSON.stringify(api)+";";}}]});
  const code=(Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code;
  return code+';return DocumentSourcesTest;';
 });}
@@ -51,7 +51,7 @@ function data(){
  const imported={id:id(40),originalRef:importBody,extractedContentRef:importBody,intendedFormRef:null,parserVersion:'UTF8_IDENTITY_1',status:'READY',losses:[],issues:[],createdAt:at,selections:[]};
  return {form,formRef,artifacts,artifact,document,source,room,messages,imported};
 }
-async function mount(mode:'page'|'picker'='page',failRead=false,loseReply=false,rejectCompletion=false){
+async function mount(mode:'page'|'picker'|'review'='page',failRead=false,loseReply=false,rejectCompletion=false){
  const code=await bundle(),saved=new Map<string,PropertyDescriptor|undefined>(),channels:MessageChannel[]=[];
  const document:any=new MemoryNode('#document',9);document.ownerDocument=document;
  document.createElement=(name:string)=>new MemoryNode(name,1,document);document.createElementNS=(_n:string,name:string)=>document.createElement(name);document.createTextNode=(text:string)=>{const n=new MemoryNode('#text',3,document);n.data=text;return n;};
@@ -61,6 +61,7 @@ async function mount(mode:'page'|'picker'='page',failRead=false,loseReply=false,
  for(const[k,v]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,MessageChannel:OwnedChannel,IS_REACT_ACT_ENVIRONMENT:true})){saved.set(k,Object.getOwnPropertyDescriptor(globalThis,k));Object.defineProperty(globalThis,k,{value:v,writable:true,configurable:true});}
  const ui=new Function(code)(),container=document.createElement('main');document.body.appendChild(container);const root=ui.createRoot(container);
  const d=data(),calls:{path:string;method:string;packet?:any}[]=[],nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
+ let recorded=0;
  let latest:any,external:any,settings={projectId:pid,session:{...session,user:{...session.user}},disabled:false},auth=0,stored:any=null,handler:((p:string,i:any)=>Response|Promise<Response>|null)|null=null;
  const transport=async(path:any,init:any)=>{
   const p=String(path),method=init?.method??'GET';assert.ok(p.startsWith('/api/v1/'));assert.equal(init?.credentials,'same-origin');
@@ -89,7 +90,8 @@ async function mount(mode:'page'|'picker'='page',failRead=false,loseReply=false,
   throw Error('UNMODELED_UI_SOURCE_REQUEST:'+p);
  };
  const client=new ui.ApiClient(transport);
- function Harness(){const[b,setB]=ui.React.useState(()=>({...ui.newDocument(pid,d.form,uid,1),title:'새 출처 문서',body:'내 초안',mediaType:'text/plain;charset=utf-8',reason:'출처 보존',dirty:true}));const[view,setView]=ui.React.useState(settings);latest=b;external={setB,setView};
+ function Harness(){const[b,setB]=ui.React.useState(()=>mode==='review'?{ownerUserId:uid,projectId:pid,title:d.source.title,ref:{id:d.source.id,version:d.source.version,contentHash:d.source.contentHash},controlGeneration:1,criteria:[{criterionId:'R',title:'내용',reviewCriteria:['원문']}],items:[{criterionId:'R',outcome:'REWORK',evidenceRefs:[],reason:'항목 근거'}],outcome:'REWORK',reason:'종합 근거',dirty:true,pending:null,saved:false,failure:null}:({...ui.newDocument(pid,d.form,uid,1),title:'새 출처 문서',body:'내 초안',mediaType:'text/plain;charset=utf-8',reason:'출처 보존',dirty:true}));const[view,setView]=ui.React.useState(settings);latest=b;external={setB,setView};
+  if(mode==='review')return view.disabled?null:ui.React.createElement(ui.DocumentReviewEditor,{client,session:view.session,buffer:b,onChange:setB,onRecorded:()=>{recorded++;},onAuthenticationLost:()=>{auth++;}});
   return mode==='page'?ui.React.createElement(ui.DocumentsPage,{client,projectId:view.projectId,session:view.session,buffer:b,onChange:(edit:any)=>setB((previous:any)=>{const next=typeof edit==='function'?edit(previous):edit;return rejectCompletion&&next?.savedRef&&!previous?.savedRef?previous:next;}),review:null,onReviewChange:()=>{},confirmation:null,onConfirmationChange:()=>{},onAuthenticationLost:()=>{auth++;}}):ui.React.createElement(ui.DocumentSourceRefs,{client,projectId:view.projectId,session:view.session,generation:1,value:b.content.sourceRefs,disabled:view.disabled,onChange:(refs:any)=>setB((p:any)=>({...p,content:{...p.content,sourceRefs:refs}})),onAuthenticationLost:()=>{auth++;}});
  }
  const flush=()=>ui.React.act(async()=>{await new Promise(resolve=>setImmediate(resolve));});
@@ -98,7 +100,7 @@ async function mount(mode:'page'|'picker'='page',failRead=false,loseReply=false,
  const click=async(text:string)=>{const target=button(text);assert.ok(target,'버튼 없음: '+text);assert.equal(target.disabled,false,text);await ui.React.act(async()=>target.dispatchEvent({type:'click',button:0,bubbles:true}));};
  const change=async(label:string,value:string)=>{const target=nodes().find(n=>n.getAttribute('aria-label')===label);assert.ok(target,label);await ui.React.act(async()=>{target.value=value;target.dispatchEvent({type:'change',bubbles:true});});};
  await ui.React.act(async()=>root.render(ui.React.createElement(Harness)));
- return {ui,client,container,calls,d,click,change,wait,flush,nodes,button,get buffer(){return latest;},get auth(){return auth;},get stored(){return stored;},setHandler:(h:typeof handler)=>{handler=h;},rerender:async(p:Partial<typeof settings>)=>{settings={...settings,...p};await ui.React.act(async()=>external.setView(settings));},setBuffer:async(fn:any)=>ui.React.act(async()=>external.setB(fn)),close:async()=>{await ui.React.act(async()=>root.unmount());for(const c of channels){c.port1.close();c.port2.close();}for(const[k,v]of saved)if(v)Object.defineProperty(globalThis,k,v);else Reflect.deleteProperty(globalThis,k);}};
+ return {ui,client,container,calls,d,click,change,wait,flush,nodes,button,get buffer(){return latest;},get auth(){return auth;},get recorded(){return recorded;},get stored(){return stored;},setHandler:(h:typeof handler)=>{handler=h;},rerender:async(p:Partial<typeof settings>)=>{settings={...settings,...p};await ui.React.act(async()=>external.setView(settings));},setBuffer:async(fn:any)=>ui.React.act(async()=>external.setB(fn)),close:async()=>{await ui.React.act(async()=>root.unmount());for(const c of channels){c.port1.close();c.port2.close();}for(const[k,v]of saved)if(v)Object.defineProperty(globalThis,k,v);else Reflect.deleteProperty(globalThis,k);}};
 }
 async function selectFour(h:Awaited<ReturnType<typeof mount>>){
  await h.click('출처 목록 조회');await h.click('출처 문서: 출처 문서');await h.click('출처 버전 원문 확인');await h.wait(()=>!!h.button('확인한 출처 추가'));await h.click('확인한 출처 추가');
@@ -177,5 +179,75 @@ test('부모가 완료 CAS를 거절한 뒤 외부buffer A→B→A가 복귀해�
   await h.setBuffer((b:any)=>({...b,documentId:id(95),baseVersion:1,body:'다른 buffer',pending:null,savedRef:null}));
   await h.setBuffer(()=>({...original,pending:null,savedRef:ref,documentId:ref.id,baseVersion:1}));await h.flush();
   assert.equal(h.calls.filter(c=>c.path.includes('/documents/'+ref.id+'/versions/')).length,0);assert.deepEqual(original.pending.save,packet);assert.equal(h.calls.filter(c=>c.method==='POST').length,2);
+ }finally{await h.close();}
+});
+
+async function reviewPanel(){
+ const h=await mount('review');const target={...h.buffer.ref},eventRef={id:id(140),targetRef:target,criteriaVersion:1,outcome:'REWORK'};
+ const row={ref:eventRef,reviewer:{kind:'HUMAN',userId:uid,sameAsTargetRecorder:true},sourceKind:'HUMAN_REVIEW',reviewedAt:at,serverSequence:1,items:structuredClone(h.buffer.items),reason:h.buffer.reason};
+ const versionPath='/api/v1/projects/'+pid+'/documents/'+target.id+'/versions/'+target.version,filePath='/api/v1/projects/'+pid+'/files/'+h.d.source.content.body.artifactId;
+ const version=()=>structuredClone({...h.d.source,contentReviewCriteria:{...h.d.source.contentReviewCriteria,items:h.buffer.criteria},contentReviews:[{...row,ref:{...row.ref,id:id(141)},serverSequence:2},row]});
+ let meta:()=>Response|Promise<Response>=()=>reply(version()),file:(()=>Response|Promise<Response>)|undefined,lost=false;
+ h.setHandler((path,init)=>{
+  if(init.method==='POST'){assert.equal(path,'/api/v1/projects/'+pid+'/commands');if(lost){lost=false;throw Error('유실');}
+   const command=JSON.parse(init.body);return reply({commandId:command.commandId,operationId:id(142),projectId:pid,targetId:target.id,version:target.version,status:'APPLIED',data:{status:'REVIEW_RECORDED',reviewRef:eventRef},serverReceivedAt:at});}
+  if(path===versionPath)return meta();if(path===filePath&&file)return file();return null;
+ });
+ return {h,eventRef,version,versionPath,filePath,setMeta(fn:typeof meta){meta=fn;},setFile(fn:typeof file){file=fn;},losePost(){lost=true;}};
+}
+test('문서 검토 저장 영수증을 보존하고 사용자가 조회한 정확한 원 사건만 표시한다',async()=>{
+ const {h,eventRef,version,setMeta,versionPath,filePath}=await reviewPanel();try{
+  await h.click('내용 검토 기록 저장');assert.equal(h.buffer.saved,true);assert.deepEqual(h.buffer.savedReview?.reviewRef,eventRef);
+  assert.deepEqual(h.buffer.savedReview.command,h.calls[0]!.packet);assert.equal(h.buffer.savedReview.ownerUserId,uid);assert.equal(h.recorded,1);assert.equal(h.calls.length,1);
+  await h.rerender({disabled:true});await h.rerender({disabled:false});assert.equal(h.calls.length,1);
+  for(const fault of ['503','hash','missing','duplicate','reviewRef','actor','outcome','items','evidence','reason']){
+   const v=version(),row=v.contentReviews[1]!;
+   if(fault==='hash')v.contentHash='f'.repeat(64);if(fault==='missing')v.contentReviews=[];if(fault==='duplicate')v.contentReviews.push(row);
+   if(fault==='reviewRef')row.ref.id=id(143);if(fault==='actor')row.reviewer.userId=id(144);if(fault==='outcome')row.ref.outcome='ACCEPTED';
+   if(fault==='items')row.items[0].reason='다른 항목 근거';if(fault==='evidence')row.items[0].evidenceRefs=['다른 근거'];if(fault==='reason')row.reason='다른 종합 판단';
+   setMeta(()=>fault==='503'?reply({code:'READ_FAILED'},503):reply(v));const before:number=h.calls.length;
+   await h.click('저장된 검토 사건 조회');await h.wait(()=>h.container.textContent.includes('검토 사건 조회 미확인'));
+   assert.deepEqual(h.calls.slice(before).map(c=>c.path),['503','hash'].includes(fault)?[versionPath]:[versionPath,filePath]);
+   assert(!h.container.textContent.includes('검토 사건 원문 일치'));assert(h.buffer.saved);assert.equal(h.buffer.pending,null);assert.equal(h.buffer.failure,null);assert.equal(h.buffer.uncertain,false);
+  }
+  setMeta(()=>reply(version()));await h.click('저장된 검토 사건 조회');await h.wait(()=>h.container.textContent.includes('검토 사건 원문 일치'));
+  assert.equal(h.calls.filter(c=>c.method==='POST').length,1);assert.equal(h.recorded,1);assert.equal(h.auth,0);
+ }finally{await h.close();}
+});
+test('원 검토 POST 응답 유실은 동일 명령으로만 재확인하고 저장 후 사건 조회는 GET만 보낸다',async()=>{
+ const {h,losePost}=await reviewPanel();try{
+  losePost();await h.click('내용 검토 기록 저장');
+  const first=h.calls[0]!.packet;
+  assert.equal(h.buffer.uncertain,true);assert(!h.buffer.saved);assert.deepEqual(h.buffer.pending,first);assert(!h.button('저장된 검토 사건 조회'));
+  await h.rerender({disabled:true});await h.rerender({disabled:false});assert.equal(h.calls.length,1);
+  await h.click('같은 검토 명령 결과 확인');assert.deepEqual(h.calls[1]!.packet,first);assert(h.buffer.saved);assert.equal(h.buffer.pending,null);
+  await h.click('저장된 검토 사건 조회');await h.wait(()=>h.container.textContent.includes('검토 사건 원문 일치'));
+  assert.deepEqual(h.calls.map(c=>c.method),['POST','POST','GET','GET']);assert.equal(h.recorded,1);
+ }finally{await h.close();}
+});
+test('검토 조회 중 문맥 교체·왕복·이탈 후 늦은 200·401은 원 사건 또는 인증 상태를 갱신하지 않는다',async()=>{
+ const {h,setMeta,setFile,version}=await reviewPanel();try{
+  await h.click('내용 검토 기록 저장');const original=h.buffer;
+  for(const stage of ['generation','project','user','clientId','transport','edit','hash','close','file']){
+   const response=version();let release!:(r:Response)=>void;
+   const delayed=()=>new Promise<Response>(resolve=>{release=resolve;});
+   setMeta(stage==='file'?()=>reply(response):delayed);setFile(stage==='file'?delayed:undefined);
+   const before=h.calls.length;await h.click('저장된 검토 사건 조회');await h.wait(()=>typeof release==='function');
+   if(stage==='user'||stage==='clientId'){
+    await h.rerender({session:stage==='user'?{...session,user:{id:id(145)}}:{...session,clientId:id(146)}});await h.rerender({session});
+   }else if(stage==='close'||stage==='file'){
+    await h.rerender({disabled:true});await h.rerender({disabled:false});
+   }else if(stage==='transport'){
+    const transport=h.client.transport;h.client.transport=async()=>{throw Error('보낸 요청 없음');};await h.rerender({});
+    h.client.transport=transport;await h.rerender({});
+   }else{
+    const patch=stage==='generation'?{controlGeneration:2}:stage==='project'?{projectId:id(147)}:stage==='edit'?{saved:false,dirty:true,reason:'수정한 검토'}:{ref:{...original.ref,contentHash:'d'.repeat(64)}};
+    await h.setBuffer((b:any)=>({...b,...patch}));await h.setBuffer(()=>original);
+   }
+   await h.ui.React.act(async()=>release(['generation','transport','edit','hash'].includes(stage)?reply(response):reply({code:'AUTH_REQUIRED'},401)));await h.flush();
+   assert.equal(h.calls.length-before,stage==='file'?2:1,stage);assert(!h.container.textContent.includes('검토 사건 원문 일치'),stage);assert(!h.container.textContent.includes('검토 사건 조회 미확인'),stage);
+   assert.equal(h.auth,0);assert.equal(h.buffer,original);assert.equal(h.recorded,1);
+  }
+  assert.equal(h.calls.filter(c=>c.method==='POST').length,1);
  }finally{await h.close();}
 });

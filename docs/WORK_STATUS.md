@@ -19790,3 +19790,12 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - Primary는제품쓰기반환뒤UI06/FN03의기존문서검토·확정연결을읽기만조사한다. 동시code writer0중복·Main문서/검수/Git담당, 전체계획미완료와기존DB/권한/키/서비스/Agent/SDK·실자료제외를유지한다.
 
 - P03 후속진단후보1문서 최종SHA E1CD69F64D1DCAC75DFFC1EE110EBBC26D41DA283274FB5B40A5649613A4F447/25515B. 원remoteobserve본문과316E965F원본은불변이며Main도ordinal동등확인했다. 첫완결SSH문구5범주·spawn전코드whitelist·수거bytes만추가, 가변정보원문출력0·부분/멀티/변조UNCLASSIFIED. 오프라인양성5/음성11·기존진단15/승인RAM정상1음성4·JS/PS구문0, 승인부재NOT_RUN_NO_APPROVAL를확인했다. Main syntax/승인부재확인e13ad9와최종독립C0/I0/M0까지인수했다. 새b3645a예정승인JSON은생성0·실제SSH/Docker0·옛소진재사용0, 새로운직접답변후새30분데이터/지문/단발dispatch를결박해야한다.
+
+## 2026-11-16 UI06 문서 내용검토 사건 재조회 착수
+
+- 할 일: WORK_PLAN Stage B UI06/FN03의 버전·검토 이력 연결. 기존 영수증 reviewRef를 화면에서 보존하고, 원 저장 사실과 명시 재조회 일치를 분리한다. WI UI06_DOCUMENT_REVIEW_RECEIPT_READ_SOURCE_WI_20261116.md의 제품 3경로만 기존 Primary에게 배정한다. Main은 검수·기록·통합하며 동시 제품 writer는 1명이다.
+- 기준: PR135/head ac01b1dd → main64aba39f 통합·tree 동일·private/main 동기화, 원격 복구 pr-135-head와 완료 branch 정리 확인. 병합 후 후보 hash E1CD69F6 일치·JS/PS 구문·승인 파일 부재 guard NOT_RUN_NO_APPROVAL(exit2 예상)만 확인했고 실제 SSH/Docker0이다.
+- 허용: 기존 API/응답/권한 안의 화면·source·합성검증. 실제 DB/권한/키/서비스/Agent/SDK·추가 R3 관측은 제외한다. 원 R3 한정 관측은 소진·UNKNOWN 보존이며 후속 분류 관측의 새 질문은 미답변이다.
+- 검증: 저장 영수증 성공은 유지하고 GET 오류/사건불일치에는 조회 미확인으로 남긴다. 동일 명령 replay·문맥변경/늦은응답 회귀와 직접 영향 검사·type/build를 확인한다. 전체 UI06/FN03/계획·실서비스 완료 아님.
+
+- Primary3경로 구현 인수: RED d1a234 0P1F → 직접/인접3fa2bd 21P0F0SKIP, type6e118e exit0·메모리build ef9565 520모듈0·Main c293a5 핵심1P/diff0. 시험 TS7022 카운터1곳 명시 number로 해소했고 기대값 변경0. 기록 append CR개행 경고1은 해당 추가 절만 LF로 정리했다. 최종 제품/시험 지문·동작·미검증은 결과서 UI06_DOCUMENT_REVIEW_RECEIPT_READ_SOURCE_RESULT_20261116에 기록했다. 제품 writer반환/live0, 실제DB/브라우저/서비스/Agent0·전체미완료 유지. 다음은 FN08 START 재수신에서 원 응답 관측/ACK를 복구하는4경로 내부 연결이며 현재권한/기한·원장검산은 유지한다.
