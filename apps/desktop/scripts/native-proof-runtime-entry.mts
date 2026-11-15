@@ -1,3 +1,18 @@
+import { NormalProtectedGetClient, type NormalProtectedGetOptions } from '../../connector/runtime/normal-protected-get-client.ts';
+import { NormalProtectedPostClient } from '../../connector/runtime/normal-protected-post-client.ts';
+import { NormalOwnedCredentialPort } from '../../connector/runtime/normal-credential-bootstrap-client.ts';
+import { recordV1 } from '../../../contracts/runtime/validation-v1.ts';
+
+const matches = NormalOwnedCredentialPort.prototype.matches;
+export function createNormalProtectedClientPair(options: Omit<NormalProtectedGetOptions, 'credential'>, port: NormalOwnedCredentialPort, now: () => number) {
+  if (!recordV1(options, ['origin','ca','scope','credentialExpiresAt']) || typeof now !== 'function' ||
+      !(port instanceof NormalOwnedCredentialPort) || !matches.call(port, options.origin, options.scope, options.credentialExpiresAt, options.ca)) {
+    throw Error('NORMAL_CLIENT_PAIR_INVALID');
+  }
+  const ports = { protectedCredential: port, now };
+  return Object.freeze({ get: new NormalProtectedGetClient(options, ports), post: new NormalProtectedPostClient(options, ports), expiresAt: options.credentialExpiresAt });
+}
+
 export { NativePreparationClient } from '../../connector/runtime/native-preparation-client.ts';
 export { NativePreparationCredentialSlot } from '../../connector/runtime/native-preparation-credential-slot.ts';
 export { NativePreparationHttpsChannel, restrictNativeProofSigningContext } from '../../connector/runtime/native-preparation-https.ts';
