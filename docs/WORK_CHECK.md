@@ -176,5 +176,7 @@
 ### 코드 미구현과 실제 검증 미완료의 구분
 
 - normal 실행세대 root 배정/재개·공통 spool 예약 producer: **미구현**. 후보9E98은 게시·검수만 완료했고 직접 source-only 채택 답변 대기다.
-- normal Claude SDK Query 호출·원 Query/child 소유 대응·보호 SDK 출력 Sink/fullref producer: **미구현**. 기존 driver.send/합성 factory 연결을 실제 SDK 구현으로 계산하지 않는다. 준비 ACK/SDK 관측 의미의 미채택 부분은 FN07_NORMAL_SDK_QUERY_OWNER_TECHNICAL_REVIEW_20261116에 분리했다.
+- normal Claude SDK Query 호출·원 Query/child 소유 대응·보호 SDK 출력 Sink/fullref producer: **구현 중**. 2026-11-16 직접 채택된 FN07 후보86A461을 기준으로 기존 Primary가 START 준비·원장·ACK의 첫 소스 단위를 진행한다. 실제 Query 호출·일반 출력 보호 저장·OS 소유는 아직 미구현이며 기존 driver.send/합성 factory를 실제 SDK 구현으로 계산하지 않는다. 보호 spool9E98의 별도 채택·배정도 남아 있다. 구현 시작은 완료 체크의 근거가 아니다.
 - 기존 프로젝트/방법론/문서/지식의 연결된 API/UI source는 위 항목과 달리 실제 DB 재시작/권한별·다프로젝트 여정이 미확인인 부분이 있다. 이를 모두 미구현으로 합산하거나 source/RAM 통과를 실제 인수로 승격하지 않는다. 전체44업무 완료 체크는 상향하지 않는다.
+
+- 2026-11-16 FN07/FN08 START 준비 소스 단위: 제품5·시험5, 직접41/인접3/메모리 번들12=56PASS·FAIL/SKIP0, 루트 타입0·Main 핵심1PASS·독립C0/I0/M0. 원 로컬 준비 종단과 마지막 필수 관측의 연속 ACK를 연결하고 실제 SDK 응답과 구분했다. 실제 SDK·OS·등록 owner 조립·보호 저장은 미검증이며 출력 소비자/첫 SEND 결합은 후속이다. 결과서 FN07_NORMAL_START_READY_SOURCE_RESULT_20261116 참조. 전체 완료 체크 상향0.

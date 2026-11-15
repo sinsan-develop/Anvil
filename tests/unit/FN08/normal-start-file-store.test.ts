@@ -45,3 +45,15 @@ test('STOP 전용 attempt는 root scope를 검산하고 정상 body 뒤 CLOSE �
  await assert.rejects(store.stopAttempts().exclusive(key,async tx=>{await tx.read();return 'HISTORY';}),/NORMAL_LOCAL_STORAGE_UNAVAILABLE/);
  assert(f.files.has(f.path('attempt-'+key.commandId+'.lock')));await assert.rejects(new NormalStartFileStore(root,scope,f.fs).stopAttempts().exclusive(key,async()=>0),/NORMAL_LOCAL_BUSY/);assert.equal(closes,1);
 });
+
+test('START 준비 거래만 원 scope·채널을 검산하고 close 불명의 원 잠금을 남긴다',async()=>{
+ const f=memoryFiles(),store=new NormalStartFileStore(root,scope,f.fs),key={...scope,commandId:scope.executionId},channel='attempt-'+key.commandId;
+ await assert.rejects(store.exclusive('observations',async tx=>tx.requireStartReadyClose!(key)));
+ await assert.rejects(store.exclusive(channel,async tx=>tx.requireStartReadyClose!({...key,executionGeneration:key.executionGeneration+1})));
+ const open=f.fs.open;let closeCount=0;
+ f.fs.open=async(path:string,flags:any)=>{const h=await open(path,flags);if(path.endsWith('.lock'))h.close=async()=>{closeCount++;throw Error('RAM_CLOSE_UNKNOWN');};return h;};
+ await assert.rejects(store.exclusive(channel,async tx=>{tx.requireStartReadyClose!(key);await tx.read();await tx.appendAndSync({original:true});return 'READY';}),/STORAGE_UNAVAILABLE/);
+ assert.ok(f.files.has(f.path(channel+'.lock')));assert.equal(closeCount,1);
+ await assert.rejects(store.exclusive(channel,async()=>0),/BUSY/);
+ assert.equal(await store.exclusive('observations',async()=>17),17);
+});

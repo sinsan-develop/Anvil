@@ -92,3 +92,40 @@ test('현재성 공급자의 stall/늦은 결과는 유한 UNKNOWN이며 permit/
   assert.equal((await f.make().coordinator.start(f.e,f.signal)).state,'UNKNOWN');assert.equal(f.mode.wires,0);
  }finally{await f.h.app.close();}
 });
+
+for(const phase of ['fresh','history','no-strict'] as const)test('START 준비 '+phase+'의 닫힘 보장이 없으면 긍정 반환을 막는다',async()=>{
+ const f=await preparedExecution();
+ try{
+  const {NormalClaudeStartWire}=await import('../../../apps/connector/adapters/secondary/normal-start-wire.ts');
+  const p=f.startPorts(),wire=NormalClaudeStartWire.forWorker({intake:f.intake,current:p.current,grantRef:f.grantRef,clock:f.clock,timeoutMs:p.timeoutMs});
+  const coordinator=new (await import('../../../apps/connector/runtime/normal-start-coordinator.ts')).NormalStartCoordinator({...p,post:f.post,wire});
+  if(phase==='no-strict'){
+   const {NormalStartCoordinator}=await import('../../../apps/connector/runtime/normal-start-coordinator.ts');
+   const store:import('../../../apps/connector/runtime/normal-start-file-store.ts').NormalJournalStore={
+    transport:'NORMAL_PROTECTED',exclusive:(name,body)=>p.store.exclusive(name,tx=>body({read:tx.read,appendAndSync:tx.appendAndSync}))};
+   await assert.rejects(new NormalStartCoordinator({...p,post:f.post,wire,store}).start(f.e,f.signal),/READY_CLOSE_REQUIRED/);
+   assert.equal(f.q.permits.length,0);return;
+  }
+  if(phase==='history')assert.equal((await coordinator.start(f.e,f.signal)).state,'START_READY_RECORDED');
+  const open=f.fs.fs.open,channel='attempt-'+f.e.commandId;let closes=0;
+  f.fs.fs.open=async(path:string,flags:any)=>{const h=await open(path,flags);if(path.endsWith(channel+'.lock'))h.close=async()=>{closes++;throw Error('RAM_CLOSE_UNKNOWN');};return h;};
+  const result=await coordinator.start(f.e,f.signal);assert.equal(result.state,'UNKNOWN');assert.equal(result.requiredAckRef,undefined);
+  assert.ok(f.fs.files.has(f.fs.path(channel+'.lock')));assert.equal(closes,1);assert.equal(f.q.permits.length,1);
+  await assert.rejects(coordinator.start(f.e,f.signal),/BUSY/);assert.equal(closes,1);
+ }finally{await f.h.app.close();}
+});
+
+test('준비행 뒤 거래 닫힘 중 원 기한이 지나면 새 인수 결과는 UNKNOWN이다',async()=>{
+ const f=await preparedExecution();try{
+  const {NormalClaudeStartWire}=await import('../../../apps/connector/adapters/secondary/normal-start-wire.ts');
+  const {NormalStartCoordinator}=await import('../../../apps/connector/runtime/normal-start-coordinator.ts');
+  const p=f.startPorts(),open=f.fs.fs.open,channel='attempt-'+f.e.commandId;
+  f.fs.fs.open=async(path:string,flags:any)=>{const h=await open(path,flags);if(path.endsWith(channel+'.lock')){
+   const close=h.close.bind(h);h.close=async()=>{f.h.store.mode.offset+=1001;await close();};
+  }return h;};
+  const wire=NormalClaudeStartWire.forWorker({intake:f.intake,current:p.current,grantRef:f.grantRef,clock:f.clock,timeoutMs:1000});
+  const result=await new NormalStartCoordinator({...p,post:f.post,wire}).start(f.e,f.signal);
+  assert.equal(result.state,'UNKNOWN');assert.equal(result.requiredAckRef,undefined);assert.equal(f.q.permits.length,1);
+  assert.equal(f.mode.wires,0);assert.equal(f.q.observations.length,0);assert.equal(f.q.acks.length,0);
+ }finally{await f.h.app.close();}
+});

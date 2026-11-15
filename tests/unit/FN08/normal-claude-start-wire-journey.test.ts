@@ -98,3 +98,46 @@ test('최신 current의 더 짧은 기한이 driver signal/timer를 줄이고 �
   assert.equal(out.state,'UNKNOWN');await assert.rejects(adapter.send(captured,f.signal),/UNKNOWN/);
  }finally{await f.h.app.close();}
 });
+
+test('준비 인수의 원 증표는 같은 wire·입력·자료·grant·기한에서 한 번만 소비한다',async()=>{
+ const f=await preparedExecution();
+ try{
+  const {NormalClaudeStartWire,consumeNormalStartReady}=await import('../../../apps/connector/adapters/secondary/normal-start-wire.ts');
+  const p={intake:f.intake,current:f.startPorts().current,grantRef:f.grantRef,clock:f.clock,timeoutMs:1000};
+  assert.throws(()=>NormalClaudeStartWire.forWorker({...p,driver:{send:async()=>true}} as any));
+  const owner=NormalClaudeStartWire.forWorker(p),other=NormalClaudeStartWire.forWorker(p);let checked=false;
+  const ports=f.startPorts();
+  const wrapper={transport:'NORMAL_PROTECTED' as const,async send(input:any,s:AbortSignal){
+   const token=await owner.send(input,s);
+   assert.equal(consumeNormalStartReady(other,input,token,f.grantRef),null);
+   assert.equal(consumeNormalStartReady(owner,structuredClone(input),token,f.grantRef),null);
+   assert.equal(consumeNormalStartReady(owner,input,structuredClone(token),f.grantRef),null);
+   assert.equal(consumeNormalStartReady(owner,input,true,f.grantRef),null);
+   assert.ok(consumeNormalStartReady(owner,input,token,f.grantRef)!>f.clock());
+   assert.equal(consumeNormalStartReady(owner,input,token,f.grantRef),null);
+   await assert.rejects(owner.send(input,s),/ALREADY_OWNED/);
+   for(const change of ['bytes','attempt','expiry'] as const){
+    const otherOwner=NormalClaudeStartWire.forWorker(p),copy=structuredClone(input);
+    const bound=await otherOwner.send(copy,s);
+    if(change==='bytes')copy.options.bytes[0]^=1;
+    if(change==='attempt')copy.localAttemptRef=f.grantRef;
+    if(change==='expiry')f.h.store.mode.offset+=1001;
+    assert.equal(consumeNormalStartReady(otherOwner,copy,bound,f.grantRef),null,change);
+   }
+   checked=true;return token;
+  }};
+  assert.equal((await new NormalStartCoordinator({...ports,post:f.post,wire:wrapper}).start(f.e,f.signal)).state,'UNKNOWN');
+  assert.equal(checked,true);assert.equal(f.q.permits.length,1);assert.equal(f.mode.wires,0);
+ }finally{await f.h.app.close();}
+});
+test('다른 모듈 인스턴스의 준비 증표는 일반 공급자 응답으로 승인되지 않는다',async()=>{
+ const f=await preparedExecution();
+ try{
+  const url=new URL('../../../apps/connector/adapters/secondary/normal-start-wire.ts',import.meta.url);url.search='foreign-ready';
+  const foreign=await import(url.href),p=f.startPorts();
+  const wire=foreign.NormalClaudeStartWire.forWorker({intake:f.intake,current:p.current,grantRef:f.grantRef,clock:f.clock,timeoutMs:p.timeoutMs});
+  assert.equal((await new NormalStartCoordinator({...p,wire,post:f.post}).start(f.e,f.signal)).state,'UNKNOWN');
+  assert.deepEqual((await p.spool.batch()).events.map(e=>e.type),['RECEIVED','PREPARED','START_ATTEMPTED','PERMIT_RECORDED','UNKNOWN']);
+  assert.equal(f.q.permits.length,1);
+ }finally{await f.h.app.close();}
+});

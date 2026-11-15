@@ -1,4 +1,4 @@
-import {cloneV1,refV1} from '../../../contracts/runtime/validation-v1.ts';
+import {cloneV1,refV1,type RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {NormalStopCoordinator,type NormalStopHistoryPorts} from './normal-stop-coordinator.ts';
 import {NormalInstructionCoordinator,type NormalInstructionWirePort} from './normal-instruction-coordinator.ts';
 import {receiveNormalInstruction} from './normal-instruction-intake.ts';
@@ -83,8 +83,8 @@ export class NormalStartPolling{
   // NEEDS_RENEWAL은 새 operation의 여유 부족도 포함한다. renew는 이 실제 만료 시각 전에는 거절한다.
   renewalNotBefore:this.#clients.expiresAt,executionAuthorized:false as const,agentSuccessVerified:false as const};}
  /** 각 POST는 기존 sync의 1회 계약을 지킨다. 고정한 원 관측 끝까지 단조 진전한 ACK만 받는다. */
- async #syncThrough(client:NormalProtectedPostClient,signal:AbortSignal){
-  const spool=this.#p.start.spool,target=await this.#call(()=>spool.coverage(),signal,true,true);let current=target;
+ async #syncThrough(client:NormalProtectedPostClient,signal:AbortSignal,required?:RuntimeRefV1){
+  const spool=this.#p.start.spool,target=await this.#call(()=>spool.coverage(required),signal,true,true);let current=target;
   for(let batches=0;!current.covered;batches++){
    if(batches>=10000||!target.ref)throw Error('OBSERVATION_NO_PROGRESS');
    await this.#call(s=>spool.sync(client,s),signal,true,true);
@@ -107,7 +107,7 @@ export class NormalStartPolling{
     for(const item of page.items){
      if(!Number.isSafeInteger(item.sequence)||item.sequence<=sequence)throw Error('PAGE_INVALID');
      if(item.materials===null&&!(item.envelope.operation==='REQUEST_STOP'&&this.#p.stop))throw Error('PAGE_INVALID');
-     let state:string;
+     let state:string,readyAck:RuntimeRefV1|undefined;
      if(item.envelope.operation==='START_SESSION'&&item.materials!==null){
       if(!refV1(page.proofResultRef))throw Error('PAGE_INVALID');
       const startItem=cloneV1(item),proof=cloneV1(page.proofResultRef);
@@ -119,6 +119,10 @@ export class NormalStartPolling{
       }
       if(!result)throw Error('NORMAL_START_RECEIPT_CONFLICT');
       state=result.state;
+      if(state==='START_READY_RECORDED'){
+       if(!refV1(result.requiredAckRef))throw Error('NORMAL_START_READY_ACK_REQUIRED');
+       readyAck=result.requiredAckRef;
+      }
      }else if(item.envelope.operation==='SEND_INSTRUCTION'&&item.materials!==null&&this.#p.instruction){
       const ports=this.#p.instruction,{wire,...configuration}=ports,coordinator=new NormalInstructionCoordinator({...configuration,post:clients.post});
       let history=await this.#call(s=>coordinator.history(item,s),signal,true,true);
@@ -136,9 +140,10 @@ export class NormalStartPolling{
       const coordinator=new NormalStopCoordinator(this.#p.stop);
       state=(await this.#call(s=>coordinator.recordObservations(item,this.#p.start.spool,s),signal,true,true)).state;
      }else throw Error('PAGE_INVALID');
-     if(state!=='RESPONSE_RECORDED')this.#unknown=true;
-     await this.#syncThrough(clients.post,signal);
-     if(state!=='RESPONSE_RECORDED'){this.#unknown=true;return this.#result('UNKNOWN',pages,commands,item.envelope.operation==='REQUEST_STOP'?'STOP_UNCONFIRMED':item.envelope.operation==='START_SESSION'?'START_UNKNOWN':'SEND_UNKNOWN');}
+     const terminal=state==='RESPONSE_RECORDED'||(item.envelope.operation==='START_SESSION'&&readyAck!==undefined);
+     if(!terminal)this.#unknown=true;
+     await this.#syncThrough(clients.post,signal,readyAck);
+     if(!terminal){this.#unknown=true;return this.#result('UNKNOWN',pages,commands,item.envelope.operation==='REQUEST_STOP'?'STOP_UNCONFIRMED':item.envelope.operation==='START_SESSION'?'START_UNKNOWN':'SEND_UNKNOWN');}
      commands++;sequence=item.sequence;
     }
     if(!page.items.length)await this.#call(s=>this.#p.start.spool.sync(clients.post,s),signal,true,true);

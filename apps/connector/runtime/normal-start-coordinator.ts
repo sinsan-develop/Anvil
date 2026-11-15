@@ -4,6 +4,7 @@ import {readDispatchEnvelopeV1,type DispatchEnvelopeV1} from '../../../contracts
 import {receiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 import {cloneV1,recordV1,refV1,isoV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import type {NormalCommandPageItem} from './normal-start-material-consumer.ts';
+import {isNormalStartReadyWire,consumeNormalStartReady} from '../adapters/secondary/normal-start-wire.ts';
 import {NormalStartIntake} from './normal-start-intake.ts';
 import {NormalProtectedPostClient,type NormalPermitResult} from './normal-protected-post-client.ts';
 import {NormalObservationSpool} from './normal-observation-spool.ts';
@@ -14,10 +15,11 @@ export interface NormalStartCurrent{transport:'NORMAL_PROTECTED';current(envelop
 export interface NormalStartWire{transport:'NORMAL_PROTECTED';send(value:{envelope:DispatchEnvelopeV1;contextBundle:Materials['contextBundle'];options:Options;localAttemptRef:Ref;permit:NormalPermitResult['permit']},signal:AbortSignal):Promise<unknown>}
 export interface NormalStartPorts{intake:NormalStartIntake;store:NormalJournalStore;post:NormalProtectedPostClient;current:NormalStartCurrent;wire:NormalStartWire;
  spool:NormalObservationSpool;grantRef:Ref;clock:()=>number;timeoutMs:number}
-type State='START_ATTEMPTED'|'PERMIT_RECORDED'|'RESPONSE_RECORDED'|'UNKNOWN';
+type State='START_READY_RECORDED'|'START_ATTEMPTED'|'PERMIT_RECORDED'|'RESPONSE_RECORDED'|'UNKNOWN';
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const fail=(code:string):never=>{throw Error(code);};
 const readPageReceipt=NormalStartIntake.prototype.receivedForPage;
+type StartInput=Parameters<NormalStartWire['send']>[0];
 /** 정상 source 연결기. 원문 옵션을 변환하거나 SYNTHETIC/CODEX 표식을 정상 실행 권위로 승격하지 않는다.
  * 명시 wire 공급자의 응답도 관측 주장일 뿐 실제 Agent 성공·writer 해제를 뜻하지 않는다. */
 export class NormalStartCoordinator{
@@ -56,9 +58,9 @@ export class NormalStartCoordinator{
     !recordV1(r.snapshot,['sequence','state','key','envelopeHash','grantRef','receivedRef','previousRef','permit','responseRef','processRef','recordedAt'])||
     r.snapshot.sequence!==i+1||!same(r.snapshot.key,receiptKeyV1(e))||r.snapshot.envelopeHash!==e.envelopeHash||
     !same(r.snapshot.grantRef,this.#p.grantRef)||!refV1(r.snapshot.receivedRef)||!same(r.snapshot.previousRef,i?raw[i-1].ref:null)||
-    !isoV1(r.snapshot.recordedAt)||Date.parse(r.snapshot.recordedAt)>this.#now()||!['START_ATTEMPTED','PERMIT_RECORDED','RESPONSE_RECORDED','UNKNOWN'].includes(r.snapshot.state))fail('NORMAL_START_RECORD_INVALID');
+    !isoV1(r.snapshot.recordedAt)||Date.parse(r.snapshot.recordedAt)>this.#now()||!['START_ATTEMPTED','PERMIT_RECORDED','RESPONSE_RECORDED','START_READY_RECORDED','UNKNOWN'].includes(r.snapshot.state))fail('NORMAL_START_RECORD_INVALID');
    const v=r.snapshot;
-   if(i===0&&v.state!=='START_ATTEMPTED'||i===1&&!['PERMIT_RECORDED','UNKNOWN'].includes(v.state)||i===2&&!['RESPONSE_RECORDED','UNKNOWN'].includes(v.state))fail('NORMAL_START_RECORD_INVALID');
+   if(i===0&&v.state!=='START_ATTEMPTED'||i===1&&!['PERMIT_RECORDED','UNKNOWN'].includes(v.state)||i===2&&!['RESPONSE_RECORDED','START_READY_RECORDED','UNKNOWN'].includes(v.state))fail('NORMAL_START_RECORD_INVALID');
    if(i&&(!same(v.receivedRef,raw[0].snapshot.receivedRef)||raw[i-1].snapshot.state==='UNKNOWN'))fail('NORMAL_START_RECORD_INVALID');
    if(v.state==='START_ATTEMPTED'&&(v.permit!==null||v.responseRef!==null||v.processRef!==null))fail('NORMAL_START_RECORD_INVALID');
    if(v.permit!==null&&(!recordV1(v.permit,['ref','commandId','envelopeHash','issuedAt','expiresAt'])||!refV1(v.permit.ref)||
@@ -66,11 +68,12 @@ export class NormalStartCoordinator{
     Date.parse(v.permit.expiresAt)<=Date.parse(v.permit.issuedAt)||Date.parse(v.permit.expiresAt)>Date.parse(v.permit.issuedAt)+30000))fail('NORMAL_START_RECORD_INVALID');
    if(v.state==='PERMIT_RECORDED'&&(v.permit===null||v.responseRef!==null||v.processRef!==null)||
     v.state==='RESPONSE_RECORDED'&&(!refV1(v.responseRef)||v.permit===null)||v.processRef!==null&&!refV1(v.processRef))fail('NORMAL_START_RECORD_INVALID');
+   if(v.state==='START_READY_RECORDED'&&(v.permit===null||v.responseRef!==null||v.processRef!==null))fail('NORMAL_START_RECORD_INVALID');
    if(i===2&&!same(v.permit,raw[1].snapshot.permit))fail('NORMAL_START_RECORD_INVALID');
   });return raw;
  }
- #result(e:DispatchEnvelopeV1,r:any,state?:State){return{transport:'NORMAL_PROTECTED' as const,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,
-  state:state??r.snapshot.state,recordRef:cloneV1(r.ref),executionAuthorized:false as const,agentSuccessVerified:false as const};}
+ #result(e:DispatchEnvelopeV1,r:any,state?:State,requiredAckRef?:Ref){return{transport:'NORMAL_PROTECTED' as const,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,
+  state:state??r.snapshot.state,recordRef:cloneV1(r.ref),...(requiredAckRef?{requiredAckRef:cloneV1(requiredAckRef)}:{}),executionAuthorized:false as const,agentSuccessVerified:false as const};}
  async start(raw:unknown,signal:AbortSignal){
   const result=await this.#run(raw,signal);
   if(!result)return fail('NORMAL_START_RECORD_UNCERTAIN');
@@ -86,8 +89,15 @@ export class NormalStartCoordinator{
   const e=readDispatchEnvelopeV1(cloneV1(raw),Date.parse((raw as any)?.issuedAt));
   if(e.operation!=='START_SESSION'||Date.parse(e.issuedAt)>this.#now())fail('NORMAL_START_ENVELOPE_INVALID');
   const p=this.#p;
-  return p.store.exclusive('attempt-'+e.commandId,async tx=>{
+  let freshReadyDeadline:number|undefined,unconfirmedReady:Ref|undefined;
+  const run=async(tx:NormalJournalTransaction)=>{
    let rows=this.#rows(await tx.read(),e);
+   const historicalReady=rows.at(-1)?.snapshot.state==='START_READY_RECORDED';
+   const worker=isNormalStartReadyWire(p.wire,p.grantRef);
+   if(historicalReady||(!rows.length&&worker)){
+    if(!tx.requireStartReadyClose)fail('NORMAL_START_READY_CLOSE_REQUIRED');
+    tx.requireStartReadyClose!(receiptKeyV1(e));
+   }
    const pageReceipt=item?await readPageReceipt.call(p.intake,item):null;
    if(signal.aborted)fail('NORMAL_START_CANCELLED');
    if(item){
@@ -104,8 +114,11 @@ export class NormalStartCoordinator{
    const reconcile=async()=>{
     if(!rows.length)return;
     await observe('RECEIVED',received,rows[0].snapshot.recordedAt);await observe('PREPARED',received,rows[0].snapshot.recordedAt);
-    for(const r of rows){const v=r.snapshot;await observe(v.state==='RESPONSE_RECORDED'?'PROVIDER_RESPONSE_RECEIVED':v.state,r.ref,v.recordedAt,v.processRef,
-     v.state==='RESPONSE_RECORDED'?'UNVERIFIED_PROVIDER_CLAIM':v.state==='UNKNOWN'?'RECORD_UNCERTAIN':'NONE');}
+    let permitEventRef:Ref|undefined;
+    for(const r of rows){const v=r.snapshot;if(v.state==='START_READY_RECORDED')continue;
+     const eventRef=await observe(v.state==='RESPONSE_RECORDED'?'PROVIDER_RESPONSE_RECEIVED':v.state,r.ref,v.recordedAt,v.processRef,
+     v.state==='RESPONSE_RECORDED'?'UNVERIFIED_PROVIDER_CLAIM':v.state==='UNKNOWN'?'RECORD_UNCERTAIN':'NONE');if(v.state==='PERMIT_RECORDED')permitEventRef=eventRef;}
+    return permitEventRef;
    };
    const append=async(state:State,permit:NormalPermitResult['permit']|null,responseRef:Ref|null=null,processRef:Ref|null=null)=>{
     const snapshot={sequence:rows.length+1,state,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,grantRef:cloneV1(p.grantRef),receivedRef:cloneV1(received),
@@ -115,8 +128,10 @@ export class NormalStartCoordinator{
    };
    if(rows.length){
     try{
-     if(!['RESPONSE_RECORDED','UNKNOWN'].includes(rows.at(-1).snapshot.state))await append('UNKNOWN',rows.at(-1).snapshot.permit);
-     await reconcile();return this.#result(e,rows.at(-1));
+     if(!['RESPONSE_RECORDED','START_READY_RECORDED','UNKNOWN'].includes(rows.at(-1).snapshot.state))await append('UNKNOWN',rows.at(-1).snapshot.permit);
+     const permitEventRef=await reconcile();
+     if(historicalReady){if(!permitEventRef)return fail('NORMAL_START_READY_ACK_REQUIRED');unconfirmedReady=rows.at(-1).ref;}
+     return this.#result(e,rows.at(-1),undefined,historicalReady?permitEventRef:undefined);
     }catch{return this.#result(e,rows.at(-1),'UNKNOWN');}
    }
    let permit:NormalPermitResult['permit']|null=null,attempt:any;
@@ -139,7 +154,17 @@ export class NormalStartCoordinator{
     const final=await this.#current(e,attempt.ref,signal,Math.min(ceiling,latest.deadline));
     if(!same(first.binding,final.binding))fail('NORMAL_START_CURRENT_CHANGED');
     const deadline=Math.min(ceiling,latest.deadline,final.deadline);if(this.#now()>=deadline||signal.aborted)fail('NORMAL_START_EXPIRED');
-    const wireValue:any=await this.#bounded(s=>p.wire.send({envelope:cloneV1(e),contextBundle:{...cloneV1({...currentMaterials.contextBundle,bytes:null}),bytes:new Uint8Array(currentMaterials.contextBundle.bytes)},options:{...cloneV1({...reread,bytes:null}),bytes:new Uint8Array(reread.bytes)},localAttemptRef:cloneV1(attempt.ref),permit:cloneV1(permit!)},s),signal,deadline);
+    const input:StartInput={envelope:cloneV1(e),contextBundle:{...cloneV1({...currentMaterials.contextBundle,bytes:null}),bytes:new Uint8Array(currentMaterials.contextBundle.bytes)},options:{...cloneV1({...reread,bytes:null}),bytes:new Uint8Array(reread.bytes)},localAttemptRef:cloneV1(attempt.ref),permit:cloneV1(permit!)};
+    if(worker){
+     const value=await this.#bounded(s=>p.wire.send(input,s),signal,deadline);
+     const readyEnd=consumeNormalStartReady(p.wire,input,value,p.grantRef);
+     if(readyEnd===null||signal.aborted||this.#now()>=deadline) return fail('NORMAL_START_HANDOFF_INVALID');
+     freshReadyDeadline=Math.min(readyEnd,deadline);
+     const out=await append('START_READY_RECORDED',permit);
+     const permitEventRef=await reconcile();if(!permitEventRef)fail('NORMAL_START_READY_ACK_REQUIRED');
+     unconfirmedReady=out.ref;return this.#result(e,out,undefined,permitEventRef);
+    }
+    const wireValue:any=await this.#bounded(s=>p.wire.send(input,s),signal,deadline);
     if(!recordV1(wireValue,['transport','responseRef','processRef'])||wireValue.transport!=='NORMAL_PROTECTED'||!refV1(wireValue.responseRef)||wireValue.processRef!==null&&!refV1(wireValue.processRef))fail('NORMAL_START_RESPONSE_INVALID');
     const out=await append('RESPONSE_RECORDED',permit,cloneV1(wireValue.responseRef),cloneV1(wireValue.processRef));
     await reconcile();
@@ -152,6 +177,15 @@ export class NormalStartCoordinator{
     const last=rows.at(-1)??attempt;if(last)return this.#result(e,last,'UNKNOWN');
     return fail('NORMAL_START_RECORD_UNCERTAIN');
    }
-  });
+  };
+  let result:Awaited<ReturnType<typeof run>>;
+  try{result=await p.store.exclusive('attempt-'+e.commandId,run);}catch(error){
+   if(unconfirmedReady)return this.#result(e,{ref:unconfirmedReady},'UNKNOWN');
+   throw error;
+  }
+  if(result?.state==='START_READY_RECORDED'&&(signal.aborted||(freshReadyDeadline!==undefined&&this.#now()>=freshReadyDeadline))){
+   return {...result,state:'UNKNOWN',requiredAckRef:undefined};
+  }
+  return result;
  }
 }
