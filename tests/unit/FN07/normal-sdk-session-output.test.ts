@@ -28,7 +28,7 @@ function fixture(messages:unknown[],pool={used:0,held:0}){
   async strictExclusive(hold:any,body:any){mode.open++;await body({
    async read(){mode.reads++;if(mode.fault==='readback'&&rows.length)throw Error('read');return structuredClone(rows);},
    async appendAndSync(row:any){if(mode.fault==='append')throw Error('append');rows.push(structuredClone(row));if(mode.fault==='sync')throw Error('sync');}
-  });if(mode.fault==='close')throw Error('close');return {holdId:hold.id,tailRef:rows.at(-1)?.ref??null,rows:rows.length};},
+  });if(mode.fault==='close'&&mode.open%2===0)throw Error('write-close');return {holdId:hold.id,tailRef:rows.at(-1)?.ref??null,rows:rows.length};},
   async settle(hold:any,actual:number){if(mode.fault==='settle')throw Error('unknown');mode.settled++;mode.held-=charges.at(-1)!;mode.used+=actual+mode.overhead;tailBytes+=actual;return{holdId:hold.id,dataBytes:actual,managementBytes:mode.overhead};}
  };
  const config={origin,scope,context,plannedSid:sid,expiresAt:deadline,ports};
@@ -168,4 +168,87 @@ test('생성자 origin과 iterator.next 접근자는 호출하지 않는다',()=
  Object.defineProperty(f.iterator,'next',{get(){calls++;return next;},configurable:true});
  assert.throws(()=>f.open());assert.equal(calls,0);
  Object.defineProperty(f.iterator,'next',{value:next,configurable:true});assert.throws(()=>f.open());assert.equal(f.mode.nexts,0);
+});
+
+test('출력 대기 중 최악 예약은 남고 저장 잠금은 반환된다',async()=>{
+ const f=fixture([init()]),entered=Promise.withResolvers<void>(),release=Promise.withResolvers<void>();
+ const strict=f.ports.strictExclusive.bind(f.ports),next=f.iterator.next.bind(f.iterator);
+ let locked=false;
+ f.ports.strictExclusive=async(hold,body)=>{assert.equal(locked,false);locked=true;try{return await strict(hold,body);}finally{locked=false;}};
+ f.iterator.next=async()=>{entered.resolve();await release.promise;return next();};
+ const pending=f.open().next(f.signal);
+ try{await entered.promise;assert.equal(locked,false);assert.ok(f.mode.held>0);}
+ finally{release.resolve();await pending;}
+});
+
+test('잠금 밖 대기 중 중간행 변경은 행수와 tail이 같아도 정산·추가 읽기 없이 봉인한다',async()=>{
+ const f=fixture([init(),assistant('late','output')]),gate=Promise.withResolvers<void>(),enter=Promise.withResolvers<void>();
+ const take=f.iterator.next.bind(f.iterator);let n=0;
+ f.iterator.next=async()=>{if(++n===2){enter.resolve();await gate.promise;}return take();};
+ const reader=f.open();assert.equal((await reader.next(f.signal)).state,'SESSION_CONFIRMED');
+ const tail=canonicalJson(f.rows[1]),settled=f.mode.settled,pending=reader.next(f.signal);
+ await enter.promise;f.rows[0].snapshot.body='YQ==';f.rows[0].ref.contentHash=digest(f.rows[0].snapshot);
+ gate.resolve();assert.equal((await pending).state,'UNKNOWN');assert.equal(f.rows.length,2);assert.equal(canonicalJson(f.rows[1]),tail);
+ assert.equal(f.mode.settled,settled);assert.ok(f.mode.held>0);assert.equal((await reader.next(f.signal)).state,'UNKNOWN');assert.equal(n,2);
+});
+
+for(const phase of [1,2])for(const fault of ['body','hold','rows','tail','close'])test('출력 거래 '+phase+'의 '+fault+' 검산 실패는 원 예약을 유지한다',async()=>{
+ const f=fixture([init()]),strict=f.ports.strictExclusive.bind(f.ports);let phaseNumber=0;
+ f.ports.strictExclusive=async(hold,body)=>{
+  if(++phaseNumber!==phase)return strict(hold,body);
+  if(fault==='body')return{holdId:hold.id,tailRef:null,rows:0};
+  const reply=await strict(hold,body);if(fault==='close')throw Error('unconfirmed close');
+  if(fault==='hold')reply.holdId=randomUUID();else if(fault==='rows')reply.rows++;else reply.tailRef=ref();
+  return reply;
+ };
+ const r=f.open();assert.equal((await r.next(f.signal)).state,'UNKNOWN');
+ assert.equal(f.mode.nexts,phase-1);assert.equal(f.mode.settled,0);assert.ok(f.mode.held>0);
+ assert.equal((await r.next(f.signal)).state,'UNKNOWN');assert.equal(f.mode.nexts,phase-1);
+});
+
+test('잠금 밖에서 받은 원문은 쓰기 거래 포트 호출 전에 고정한다',async()=>{
+ const msg=assistant('original','원본'),f=fixture([msg]),r=f.ports.strictExclusive.bind(f.ports);
+ const bytes=canonicalJson(msg);let n=0;
+ f.ports.strictExclusive=(hold,body)=>{if(++n===2)msg.message.content[0]!.text='교체';return r(hold,body);};
+ assert.equal((await f.open().next(f.signal)).state,'PENDING_SESSION');
+ assert.equal(msg.message.content[0]!.text,'교체');assert.equal(Buffer.from(f.rows[0].snapshot.body,'base64').toString(),bytes);
+});
+
+test('거래 read 함수의 own.call은 변경된 중간행을 숨길 수 없다',async()=>{
+ const f=fixture([init(),assistant('next','after')]),originalStrict=f.ports.strictExclusive.bind(f.ports),take=f.iterator.next.bind(f.iterator);
+ let originalRow:any,corrupted=false,realReads=0,forgedReads=0;
+ f.iterator.next=async()=>{if(originalRow){f.rows[0].snapshot.body='YQ==';corrupted=true;}return take();};
+ f.ports.strictExclusive=(hold,body)=>originalStrict(hold,async(tx:any)=>{
+  const read=tx.read;
+  tx.read=Object.assign(async()=>{realReads++;return Reflect.apply(read,tx,[]);},{
+   async call(){forgedReads++;const rows=await read();if(corrupted)rows[0]=structuredClone(originalRow);return rows;}
+  });
+  await body(tx);
+ });
+ const reader=f.open();assert.equal((await reader.next(f.signal)).state,'SESSION_CONFIRMED');originalRow=structuredClone(f.rows[0]);
+ const prior=realReads;assert.equal((await reader.next(f.signal)).state,'UNKNOWN');
+ assert(realReads>prior);assert.equal(forgedReads,0);assert.equal(f.rows.length,2);assert.equal(f.mode.settled,1);assert.ok(f.mode.held>0);
+ assert.equal((await reader.next(f.signal)).state,'UNKNOWN');assert.equal(f.mode.nexts,2);
+});
+
+test('거래 append 함수의 own.call 대신 원 메서드가 원 tx로 실행된다',async()=>{
+ const f=fixture([init()]),strict=f.ports.strictExclusive.bind(f.ports);let real=0,forged=0;
+ f.ports.strictExclusive=(hold,body)=>strict(hold,async(tx:any)=>{
+  const append=tx.appendAndSync;
+  tx.appendAndSync=Object.assign(async function(this:unknown,value:unknown){assert.equal(this,tx);real++;return Reflect.apply(append,tx,[value]);},{
+   async call(){forged++;}
+  });
+  await body(tx);
+ });
+ assert.equal((await f.open().next(f.signal)).state,'SESSION_CONFIRMED');assert.equal(real,2);assert.equal(forged,0);
+});
+
+for(const key of ['read','appendAndSync'])for(const kind of ['object','proxy'])test('거래의 비정규 메서드를 SDK 읽기 전 거절 '+key+' '+kind,async()=>{
+ const f=fixture([init()]),strict=f.ports.strictExclusive.bind(f.ports);let calls=0;
+ f.ports.strictExclusive=(hold,body)=>strict(hold,async(tx:any)=>{
+  const original=tx[key];tx[key]=kind==='object'?{call(){calls++;return [];}}:new Proxy(original,{apply(){calls++;return [];}});
+  await body(tx);
+ });
+ assert.equal((await f.open().next(f.signal)).state,'UNKNOWN');assert.equal(calls,0);assert.equal(f.mode.nexts,0);
+ assert.equal(f.mode.settled,0);assert.ok(f.mode.held>0);
 });

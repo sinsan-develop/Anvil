@@ -1,4 +1,10 @@
 import {isPromise,isProxy} from 'node:util/types';
+import {randomUUID} from 'node:crypto';
+import {readNormalStopProjectionV1} from '../../../contracts/runtime/normal-stop-target-v1.ts';
+import {receiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
+import {readNormalStopItem,type NormalStopOriginal,type NormalStopCommandPageItem} from './normal-start-material-consumer.ts';
+import {captureInstructionInput} from './normal-instruction-intake.ts';
+import type {NormalStopStore} from './normal-stop-coordinator.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {cloneV1,recordV1,refV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import {boundedSdkObject,maxSdkObjectBytes,sdkOpaqueId,supportedSdkUser} from '../adapters/secondary/schemas.ts';
@@ -20,8 +26,10 @@ export interface NormalFirstSendSource{
  storage:Pick<OutputOptions['ports'],'classify'|'reserve'|'strictExclusive'|'settle'>;
  create(request:{start:Parent['start'];send:NormalInstructionDriverInput;scope:Scope;plannedSid:string},prompt:AsyncIterable<unknown>,lifetime:AbortSignal):Promise<Query>;
  close(query:Query):Promise<void>;
+ /** 원 owner에 조립되는 독립 보호 기록 판독 포트. 서명·현 head의 실제 생산/검증은 배포 공급자의 책임이다. */
+ stop?:{store:NormalStopStore;readCurrent(signal:AbortSignal):Promise<unknown>};
 }
-type Lease={raw?:unknown;query?:Query;iterate?:Query[typeof Symbol.asyncIterator];iterator?:AsyncIterator<unknown>;output?:NormalSdkSessionOutput;state:'PENDING'|'LIVE'|'UNKNOWN';life:AbortController;closeStarted:boolean};
+type Lease={raw?:unknown;query?:Query;iterate?:Query[typeof Symbol.asyncIterator];iterator?:AsyncIterator<unknown>;output?:NormalSdkSessionOutput;state:'PENDING'|'COMMITTING'|'LIVE'|'UNKNOWN';life:AbortController;closeStarted:boolean};
 const issuedHandles=new WeakSet<object>();
 const leases=new WeakMap<NormalStartWire,Lease>();
 const normalizeNext=NormalSdkSessionOutput.prototype.next,consumeInit=NormalSdkSessionOutput.prototype.consumeInit;
@@ -40,9 +48,13 @@ function queryIterator(query:Query):Query[typeof Symbol.asyncIterator]{
 }
 export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDispatchClaim,source:NormalFirstSendSource,signal:AbortSignal):Promise<FirstSendCompletion>{
  const parent=takeNormalFirstStart(worker,claim);
- if(leases.has(worker)||!shape(source,sourceKeys))return fail();
+ const keys=source&&!isProxy(source)&&Object.hasOwn(source,'stop')?[...sourceKeys,'stop']:sourceKeys;
+ if(leases.has(worker)||!shape(source,keys))return fail();
  const lease:Lease={state:'PENDING',life:new AbortController(),closeStarted:false};leases.set(worker,lease);
- const pinned={...source},store=source.storage;if(!shape(store,[...storageKeys]))return fail();const methods={...store};
+ const pinned={...source},stop=pinned.stop;
+ if(stop&&(!shape(stop,['store','readCurrent'])||typeof stop.readCurrent!=='function'||!shape(stop.store,['transport','exclusive'])||stop.store.transport!=='NORMAL_PROTECTED'||typeof stop.store.exclusive!=='function'))return fail();
+ const stopRead=stop?.readCurrent,stopStore=stop?.store,stopExclusive=stopStore?.exclusive;
+ const store=source.storage;if(!shape(store,[...storageKeys]))return fail();const methods={...store};
  if(![pinned.profileRef,pinned.assignmentRef,pinned.slotRef].every(v=>!isProxy(v)&&refV1(v))||!sdkOpaqueId(pinned.plannedSid)||
   !(pinned.ownerSignal instanceof AbortSignal)||pinned.ownerSignal.aborted||!Number.isSafeInteger(pinned.expiresAt)||[pinned.clock,pinned.check,pinned.create,pinned.close,...Object.values(methods)].some(fn=>typeof fn!=='function'))return fail();
  const {input}=claim,e=input.envelope,plannedSid=pinned.plannedSid,scope:Scope=cloneV1({projectId:e.context.projectId,executionId:e.context.executionId,generation:e.context.executionGeneration,
@@ -56,8 +68,8 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
   if(lease.query&&!lease.closeStarted){lease.closeStarted=true;try{void native(pinned.close.call(source,lease.query)).catch(()=>undefined);}catch{}}
  };
  const current=()=>{
-  if(lease.state==='UNKNOWN'||!shape(source,sourceKeys)||source.create!==pinned.create||source.close!==pinned.close||source.check!==pinned.check||source.clock!==pinned.clock||
-   source.ownerSignal!==pinned.ownerSignal||pinned.ownerSignal.aborted||!Number.isSafeInteger(source.expiresAt)||source.plannedSid!==plannedSid||source.storage!==store||!shape(store,[...storageKeys])||storageKeys.some(k=>store[k]!==methods[k])||
+  if(lease.state==='UNKNOWN'||!shape(source,keys)||source.create!==pinned.create||source.close!==pinned.close||source.check!==pinned.check||source.clock!==pinned.clock||
+   source.stop!==stop||stop&&(!shape(stop,['store','readCurrent'])||stop.readCurrent!==stopRead||stop.store!==stopStore||!shape(stopStore,['transport','exclusive'])||stopStore!.exclusive!==stopExclusive)||source.ownerSignal!==pinned.ownerSignal||pinned.ownerSignal.aborted||!Number.isSafeInteger(source.expiresAt)||source.plannedSid!==plannedSid||source.storage!==store||!shape(store,[...storageKeys])||storageKeys.some(k=>store[k]!==methods[k])||
    digest(source.profileRef)!==digest(scope.profileRef)||digest(source.slotRef)!==digest(scope.slotRef)||digest(source.assignmentRef)!==digest(scope.assignmentRef))return fail();
   const c=pinned.check.call(source,cloneV1(scope)),now=pinned.clock.call(source);
   if(!shape(c,['scopeDigest','expiresAt'])||!c||c.scopeDigest!==scopeDigest||!Number.isSafeInteger(c.expiresAt)||!Number.isSafeInteger(now)||now<last)return fail();
@@ -91,6 +103,10 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
    issuedHandles.add(query);lease.raw=query;lease.iterate=queryIterator(query);lease.query=query;if(lease.state==='UNKNOWN'){abandon();return fail();}return query;
   });
   const query=await Promise.race([created,interrupted]);arm();
+  const interrupt=stop?interruptMethod(query):undefined;
+  if(stop&&stopStore&&stopRead&&stopExclusive&&interrupt){
+   stopOwners.set(worker,{lease,query,interrupt,scope,parent,port:stop,store:stopStore,exclusive:stopExclusive,read:stopRead,check:current,now:()=>last,stopToken:null});
+  }
   const iterate=lease.iterate;if(!iterate||queryIterator(query)!==iterate)return fail();
   const iterator=iterate.call(query);
   if(!iterator||typeof iterator!=='object'||isProxy(iterator)||(!Object.is(iterator,query)&&issuedHandles.has(iterator))){
@@ -114,10 +130,106 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
   await Promise.race([provided,interrupted]);arm();if(!yielded)return fail();
   const handoffEnd=performance.now()+Math.min(claim.remaining(),monoEnd-performance.now());
   ownerTimer=setTimeout(abandon,Math.max(0,handoffEnd-performance.now()));ownerTimer.unref();readyToCommit=true;
+  const drain=async()=>{
+   try{
+    while(lease.state==='LIVE'){
+     if(leases.get(worker)!==lease||lease.output!==output||lease.query!==query||lease.iterator!==iterator||output.next!==normalizeNext)return fail();
+     current();
+     const step=await Reflect.apply(normalizeNext,output,[lease.life.signal]);
+     if(step.state==='DONE')return;
+     if(step.state!=='OUTPUT_RECORDED')return fail();
+     await new Promise<void>(resolve=>setImmediate(resolve));
+    }
+   }catch{abandon();}
+  };
   return{summary:{startReadyRef:cloneV1(parent.startReadyRef),inputEvidence,initConfirmationRef:cloneV1(confirmed)},abandon,
-   commit(){if(lease.state!=='PENDING'||performance.now()>=handoffEnd)return fail();current();clearTimeout(ownerTimer);lease.state='LIVE';ownerTimer=setTimeout(abandon,Math.max(0,Math.min(monoEnd-performance.now(),expiresAt-last,2147483647)));ownerTimer.unref();}};
+   commit(){
+    if(lease.state!=='PENDING'||performance.now()>=handoffEnd)return fail();
+    // current 포트의 동기 재진입보다 먼저 단발 commit을 선점한다.
+    lease.state='COMMITTING';current();if(lease.state!=='COMMITTING'||lease.life.signal.aborted)return fail();
+    clearTimeout(ownerTimer);lease.state='LIVE';
+    ownerTimer=setTimeout(abandon,Math.max(0,Math.min(monoEnd-performance.now(),expiresAt-last,2147483647)));ownerTimer.unref();
+    queueMicrotask(()=>void drain());
+   }};
  }finally{
   if(!readyToCommit)abandon();
   clearTimeout(timer);signal.removeEventListener('abort',cancel);pinned.ownerSignal.removeEventListener('abort',cancel);boundedSignal.signal.removeEventListener('abort',rejectWait);
  }
+}
+
+
+function interruptMethod(query:Query):((this:Query)=>Promise<void>)|undefined{
+ for(let object:object|null=query;object;object=Object.getPrototypeOf(object)){
+  if(isProxy(object))return undefined;
+  const method=Object.getOwnPropertyDescriptor(object,'interrupt');
+  if(method)return 'value' in method&&typeof method.value==='function'&&!isProxy(method.value)?method.value:undefined;
+ }
+ return undefined;
+}
+
+type StopPort=NonNullable<NormalFirstSendSource['stop']>;
+type StopOwner={lease:Lease;query:Query;interrupt:NonNullable<ReturnType<typeof interruptMethod>>;scope:Scope;parent:Parent;port:StopPort;store:NormalStopStore;
+ exclusive:NormalStopStore['exclusive'];read:StopPort['readCurrent'];check():void;now():number;stopToken:object|null};
+const stopOwners=new WeakMap<NormalStartWire,StopOwner>();
+const unavailable=():never=>{throw Error('NORMAL_STOP_OWNER_UNAVAILABLE');};
+const equal=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
+
+/** 원 owner가 보유한 저장/판독 포트에서만 선기록·엄격 닫힘 후 단발 전달한다. 이 함수는 CURRENT를 발급하지 않는다. */
+export async function requestNormalLiveStop(worker:NormalStartWire,item:NormalStopCommandPageItem,original:NormalStopOriginal,store:NormalStopStore,signal:AbortSignal,outerCheck:()=>void){
+ const owner=stopOwners.get(worker);
+ if(!owner||owner.lease.state!=='LIVE'||owner.stopToken!==null||store!==owner.store)return unavailable();
+ const token={};owner.stopToken=token;
+ let attempted=false;
+ try{
+  const {lease,query,scope,parent}=owner;
+  let monoEnd=performance.now()+10000,end=Infinity,checkedAt=-Infinity;
+  item=captureInstructionInput(item);original=captureInstructionInput(original);
+  const check=()=>{
+   outerCheck();owner.check();
+   const now=owner.now();
+   if(owner.stopToken!==token||signal.aborted||lease.state!=='LIVE'||lease.life.signal.aborted||lease.query!==query||leases.get(worker)!==lease||
+    interruptMethod(query)!==owner.interrupt||owner.port.readCurrent!==owner.read||owner.port.store!==store||store.exclusive!==owner.exclusive||now>=end||performance.now()>=monoEnd)return unavailable();
+   monoEnd=Math.min(monoEnd,performance.now()+end-now);return now;
+  };
+  const now=check();item=readNormalStopItem(item,original,now);end=Date.parse(item.envelope.expiresAt);
+  const target=item.stopTarget;
+  if(!equal(original.startEnvelope,parent.start.envelope)||!equal(target.grantRef,parent.grantRef)||!equal(target.sessionBindingRef,scope.sessionBindingRef)||
+   !equal(target.executorRegistrationRef,scope.registrationRef)||target.projectId!==scope.projectId||target.executionId!==scope.executionId||target.executionGeneration!==scope.generation)return unavailable();
+  const witness=async()=>{
+   check();const raw=await native(owner.read.call(owner.port,signal));const at=check();
+   if(isProxy(raw)||!recordV1(raw,['owner','query','scopeDigest','commandRef','envelopeHash','projection'])||raw.owner!==worker||raw.query!==query||
+    raw.scopeDigest!==digest(scope)||isProxy(raw.commandRef)||!refV1(raw.commandRef)||!equal(raw.commandRef,item.commandRef)||raw.envelopeHash!==item.envelope.envelopeHash)return unavailable();
+   const projection=readNormalStopProjectionV1(raw.projection,parent.start.envelope.commandId,at);
+   if(!equal(projection.target,target)||!equal(projection.stopScopeRef,item.envelope.payload.stopScopeRef)||Date.parse(projection.checkedAt)<checkedAt)return unavailable();
+   checkedAt=Date.parse(projection.checkedAt);end=Math.min(end,Date.parse(projection.expiresAt));check();
+  };
+  const key=receiptKeyV1(item.envelope);
+  const makeRow=(sequence:1|2,state:'STOP_ATTEMPTED'|'STOP_UNCONFIRMED',previousRef:Ref|null)=>{
+   const snapshot={sequence,state,key,commandRef:item.commandRef,envelopeHash:item.envelope.envelopeHash,stopScopeRef:item.envelope.payload.stopScopeRef,target,previousRef,recordedAt:new Date(check()).toISOString()};
+   return{ref:{id:randomUUID(),version:1,contentHash:digest(snapshot)},snapshot};
+  };
+  const append=async(previous:ReturnType<typeof makeRow>|null)=>{
+   const expected=previous?[previous]:[],row=makeRow(previous?2:1,previous?'STOP_UNCONFIRMED':'STOP_ATTEMPTED',previous?.ref??null);
+   let entered=false,readBack=false,closed=false;
+   const active=()=>{if(closed)return unavailable();check();};
+   try{
+    await owner.exclusive.call(store,key,async tx=>{
+     active();if(entered||typeof tx.requireStartReadyClose!=='function')return unavailable();
+     entered=true;tx.requireStartReadyClose(key);
+     const rows=await tx.read();active();if(!equal(rows,expected))return unavailable();
+     if(!previous)attempted=true;
+     await tx.appendAndSync(cloneV1(row));active();
+     const written=await tx.read();active();if(!equal(written,[...expected,row]))return unavailable();
+     readBack=true;
+    });
+   }finally{closed=true;}
+   check();if(!readBack)return unavailable();return row;
+  };
+  await witness();const first=await append(null);
+  await witness();check();
+  const occurredAt=new Date(owner.now()).toISOString();
+  try{await native(Reflect.apply(owner.interrupt,query,[]));}catch{/* 호출 경계를 통과했다. 실제 종료는 여전히 미확인이다. */}
+  check();const second=await append(first);
+  return{rows:[first,second],requestedAt:occurredAt};
+ }finally{if(!attempted&&owner.stopToken===token)owner.stopToken=null;}
 }
