@@ -19840,4 +19840,7 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 
 - 후보문서/정정/기록을052a7c504230ea5233332106e4d6244be4a1ed3b에commit/private push했고원격동일/clean을확인했다. 해당게시본과9E98후보지문을직접연결한‘r2 계약·source-only 구현 채택’질문1회를신산님께보냈다. 답변전구현/추가권위발급0, 질문반복0·P03후속질문과구분한다. PMO에는필요결정/현재제외범위만보고했다.
 - 기존Primary의추가읽기대조는StageB UI01~03/UI06/UI10·FN01~05, 앞선StageC/D FN09~14·StageE FN15~18/UI12~14에한정했다. 기존승인/현재자료만으로새로연결할독립미구현단위는더확인하지못했고, 실DB/권한/다기기여정·원관측/공유전달/복원/설치·새공개/저장계약의존을구분했다. 완료단위재검사/무관한범위확장0이다. 실행중subagent/제품writer/QA세션0, 실제파일/키/DB/권한/서비스/SDK/Agent/추가SSH0. 전체계획미완료·완료체크상향0이다.
-- 현재문서branch는목적codex/av3-normal-root-contract-candidate·담당Main어울·검토본안전commit052a7c50/원격복구ref동일이다. source채택전제품stage를열지않고후보를보존한다. 재개조건은9E98후보의명시source-only채택이며그때동일기존Primary에게13제품/8시험WI를발행해단일writer구현→독립검수→통합한다. P03새진단은별도b3645a한정1회승인답변후에만새30분/소진원장과검토지문을결박한다. 두답변을서로대신해사용하지않는다.
+- 현재문서branch는목적codex/av3-normal-root-contract-candidate·담당Main어울·검토본안전commit052a7c50/원격복구ref동일이다. source채택전해당spool제품stage를열지않고후보를보존한다. 재개조건은9E98후보의명시source-only채택이며그때동일기존Primary에게13제품/8시험WI를발행해단일writer구현→독립검수→통합한다. P03새진단은별도b3645a한정1회승인답변후에만새30분/소진원장과검토지문을결박한다. 두답변을서로대신해사용하지않는다.
+
+- 추가 독립 호출선은 Main의현재원문대조와Primary의한정재확인으로FN08 same-bundle polling 조립에서확인했다. CJS owner pair.post를별도TS NormalStartCoordinator에넘기면첫non-empty START에서instanceof불일치로NORMAL_START_PORTS_REQUIRED이고빈page는생성자검산을지나지않는다. 기존P3§3.1/normalpolling WI/통신쌍 WI의내부소비연결이며새root·spoolpurpose/ALS/프레임정책/권한/자동start/새CURRENT·wire생산을추가하지않는제품3/시험3단위로분리할수있다. 아직제품GO0. 문서후보준비단계는독립검수/게시까지완료했으므로미채택상태그대로문서PR로보존·정리한뒤승인된기존호출선의다음branch를열계획이다. spool구현을승인전개시하거나미완료codebranch를버리는재포장아님.
+- PR135~139의Broker기본설명에는목적/영향/검증/미검증/rollback이부족해정확한기존증거로메타데이터설명을보완했다. source/검증재실행/이력변경0이며이후PR은생성시이항목을먼저기록한뒤Broker에서재사용하도록한다.
