@@ -1,0 +1,22 @@
+{
+  "approvalId": "anvil-r3-metadata-f1957b3dc03d4f869dd4ddd5e0a11680",
+  "authority": "USER_DIRECT",
+  "userAnswer": "한정 메타데이터 관측 1회 승인",
+  "firstObservedAt": "2026-11-15T16:33:44.000Z",
+  "expiresAt": "2026-11-15T17:03:44.000Z",
+  "candidate": "docs/work_packages/P03_R3_PRESERVED_RESOURCE_NEXT_ACTION_CANDIDATE_20261116.md",
+  "candidateSha256": "0ED884E382AB328B6280658485EFACE6EEAABF9E7DD9BDBFC4574CFDE7613C75",
+  "runInstance": "f1957b3dc03d4f869dd4ddd5e0a11680",
+  "sshAlias": "WSL-server",
+  "sshConnectionsMax": 1,
+  "dockerReadCallsMax": 4,
+  "requestSecondsMax": 30,
+  "captureBytesMax": 32768,
+  "resultBytesMax": 4096,
+  "initId": "99cc99d63c6283d8dc9dc3a3dab36be35d25a3e2009b373e2a8c7dff04ed6097",
+  "sourceVolume": "anvil-v3-development-pgdata",
+  "copyVolume": "anvil-v3-pgdata-recovery-20261028-r3",
+  "executor": "d2_preflight",
+  "excluded": "changes/deletion/copy retry/content and keys/database/services/Agent/SDK",
+  "unknown": "preserve/no reconnect or retry/no automatic deletion"
+}
