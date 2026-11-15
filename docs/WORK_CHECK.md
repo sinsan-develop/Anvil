@@ -172,3 +172,9 @@
 - 2026-11-16 FN10/UI04 판단이력 페이지연속성: source2경로·최종UI18P·기존서버12P별도재사용/type0/메모리build0/Main1P·독립I2해소C0/I0/M0. 동일cursor GET1·거절뒤원문숨김/영수증보존·첫페이지명시복구와늦은응답폐기를확인했다. 실제DB/브라우저/전체업무미완료·체크상향0. FN10_NODE_DECISION_HISTORY_CONTINUITY_SOURCE_RESULT_20261116 참조.
 
 - 2026-11-16 FN08 같은번들 START polling 조립: source6경로·직접36P/등록인접2P·루트/entry타입0·Main1P·독립C0/I0/M0. REGISTERED owner의CJS pair→조립I/O0→첫 non-empty START RAM permit/wire1·원관측5ACK/cursor1을확인했다. 데스크톱169진단은전후동일·FAIL유지, 실제OS/DB/SDK/Agent·root/CURRENT공급/전체업무미완료·체크상향0. FN08_SAME_BUNDLE_START_POLLING_SOURCE_RESULT_20261116 참조.
+
+### 코드 미구현과 실제 검증 미완료의 구분
+
+- normal 실행세대 root 배정/재개·공통 spool 예약 producer: **미구현**. 후보9E98은 게시·검수만 완료했고 직접 source-only 채택 답변 대기다.
+- normal Claude SDK Query 호출·원 Query/child 소유 대응·보호 SDK 출력 Sink/fullref producer: **미구현**. 기존 driver.send/합성 factory 연결을 실제 SDK 구현으로 계산하지 않는다. 준비 ACK/SDK 관측 의미의 미채택 부분은 FN07_NORMAL_SDK_QUERY_OWNER_TECHNICAL_REVIEW_20261116에 분리했다.
+- 기존 프로젝트/방법론/문서/지식의 연결된 API/UI source는 위 항목과 달리 실제 DB 재시작/권한별·다프로젝트 여정이 미확인인 부분이 있다. 이를 모두 미구현으로 합산하거나 source/RAM 통과를 실제 인수로 승격하지 않는다. 전체44업무 완료 체크는 상향하지 않는다.
