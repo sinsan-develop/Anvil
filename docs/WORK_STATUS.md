@@ -19844,3 +19844,12 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 
 - 추가 독립 호출선은 Main의현재원문대조와Primary의한정재확인으로FN08 same-bundle polling 조립에서확인했다. CJS owner pair.post를별도TS NormalStartCoordinator에넘기면첫non-empty START에서instanceof불일치로NORMAL_START_PORTS_REQUIRED이고빈page는생성자검산을지나지않는다. 기존P3§3.1/normalpolling WI/통신쌍 WI의내부소비연결이며새root·spoolpurpose/ALS/프레임정책/권한/자동start/새CURRENT·wire생산을추가하지않는제품3/시험3단위로분리할수있다. 아직제품GO0. 문서후보준비단계는독립검수/게시까지완료했으므로미채택상태그대로문서PR로보존·정리한뒤승인된기존호출선의다음branch를열계획이다. spool구현을승인전개시하거나미완료codebranch를버리는재포장아님.
 - PR135~139의Broker기본설명에는목적/영향/검증/미검증/rollback이부족해정확한기존증거로메타데이터설명을보완했다. source/검증재실행/이력변경0이며이후PR은생성시이항목을먼저기록한뒤Broker에서재사용하도록한다.
+
+## 2026-11-16 FN08 같은 번들 START polling 조립 착수
+
+- 문서후보준비 PR140은 fcb1a39c→main19b20dbc로보존했다. 후보는미채택·권한/제품활성화0라는설명을PR생성전에기록하고Broker재사용/병합을확인했다. Main5de294 tree동일·후보9E98지문동일·원격복구pr-140-head·완료branch/요청tag정리·main exact clean, 원session20102 exit0을확인한뒤후속branch codex/av3-normal-same-bundle-polling을열었다. 새spool채택질문과P03질문은계속미답변·제품spool GO0/추가SSH0다.
+- 할 일: 기존P3§3.1/normalpolling·통신쌍WI의동일CJS브랜드내부조립. Main이CJSpost/TScoordinator의instanceof불일치를확인했고Primary가첫non-empty START에서NORMAL_START_PORTS_REQUIRED인호출선을대조했다. WI FN08_SAME_BUNDLE_START_POLLING_SOURCE_WI_20261116의제품3/시험3을기존Primary에게단일writer로맡긴다. 기존store/current/wire는필수이며새root/ALS/프레임정책/자동실행/새공급자를추가하지않는다.
+- 검증은실제RAM CJS owner→조립GET0→첫START permit/wire1/관측ACK/cursor와현재성/명시renew/거절·타입/build/diff로한정한다. 실제파일/DB/권한/키/서비스/SDK/Agent/P03실행0, 후보미채택상태/기존가드를유지하며전체계획미완료다. source13/8범위를승인전에열지않고기존승인6경로단위만진행한다.
+
+- Primary6경로완료인수: RED b01a45 1F→핵심71c1ab2P·직접d7eff336P/등록인접756ad62P·루트type49fae80/entry fd721d0/메모리bundle39sources17exports4builtins·diff0·Mainbe66e01P. accessor선호출1F는guard선행으로해소, 최종facade는run/renew만노출한다. 독립C0/I0/M0·6지문은결과서FN08_SAME_BUNDLE_START_POLLING_SOURCE_RESULT_20261116에기록했다. 데스크톱169진단exit1은동일TS7 RAM HEAD/현재d5eaa4169/169·추가0/소실0으로확인했으나PASS승격0. writer반환/live0·실제파일/DB/키/권한/서비스/SDK/Agent/추가SSH0·전체계획미완료다.
+- SDK의남은제품접점도별도대조했다. NormalClaudeStartWire는명시driver.send까지연결되지만SDK query()를생성하는실제NormalClaudeDriver구현은없다. 기존FN07은첫SEND의Query단발생성/동일iterator인계·UNKNOWN후재생성금지와normalSTOP협력interrupt원칙을채택했다. 실제driver/SDK SID·child의소유인수및responseRef/processRef발급근거는후속으로남겨단순실행만으로완성되지않는다. SDKWindow조회6구간/CanUseTool전체미확인한계를유지했고새조회/설치/실행0이다. 새권위의미를구체화하기전임의정상driver를만들지않는다.
