@@ -19642,3 +19642,13 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 현재전문담당3명모두completed·제품writer0·검사/원격실행handle0. branch cf79fa93까지local/private동일clean으로보존됐고이감사기록도동일branch에보존한다. 사용자dirty/과거worktree/부분사본정리0.
 - 작업계획순서의P03제한복제는명시실행승인이필요하고,IX01실QA는최신DB/역할/키/network효과제외,실SDK/owner생산은미정보호계약/추가공개읽기,설치형은실제격리/정식설치생명주기결정이남아있다. 이미완료한소스/시험을반복하거나새unsupported포트로목표를대체하지않는다. 현재확인된다음핵심경로에서승인없이실행할안전한행동은소진됐다.
 - P03R3제안SHA40A7A65B2BFDF12CAD70EBEE65FAF6A2286905C60CC262A349ED721E913A2B6F에대한PMO직접질문답변이재개조건이다. 신산님의다른정확범위허용/결정이오면그범위와영향없는미완료를재대조해진행한다. 기존계획전체미완료/인수주장0. 목표는자동반복대신blocked전환감사를충족했으며전환결과는goal도구기록을정본으로한다. 사용자요청pause/완료/예약삭제아님.
+
+## 2026-11-15 직접 다음작업 지시 재개
+
+- 신산님다음작업진행지시로goalactive. mainab400738·현재branch8e5be1d7까지local/private동일clean확인. PMOcursor…:6은기존질문답변대기보고이며새R3승인답변없음. 실제제외를일반계속지시로해제하지않는다.
+- 다음안전한미완료기술선행: 기존Primary에게Windows-local고정SDK1회읽기기술안을정확실행코드포함후보문서1경로로완성하도록위임. 제품아닌실행전검토자료,네트워크/실제자식/SDK/키/DB/서비스/Agent실행0. Main은정적독립검수·통합과실행결정전달을맡는다. 새조회를한것으로진도승격0.
+
+- SDK Windows-local읽기후보문서1경로완성/Primary쓰기반환/live0. 최종18848B SHA3434CF16C6AF3E8B40773A8E98D2A55AE2BE06E9FEF67F1B02E85ED51917EFB0. JS7684B/A4E32FFBCC58ACD5FD4A4F068D1809874033AAE5AFF56EE01D67FF4CEF94BBED,PS5135B/DD0A70905342A7F2B79DE0E8851F017ACCB97DFE55127DE5F74FA75A00FAE77E. Main JS node--check exit0/PS Parser오류0(016308),I1종료대기상한보완후PS재파싱0/0·1000·27000·29999·30001ms→3000·3000·3000·1·0산술확인(fef8b7),JS불변재검사반복0. 독립처음C0/I1/M0→보완C0/I0/M0.
+- 실행대상은Main읽기메타데이터bf5db2의C:\Program Files\nodejs\node.exe FileVersion24.22.1/SHAD702DAA815EABBFF763C7D3808E235CF031CF2CA70211B56847BC72F51E240E5로결박. 코드본문/Process.Start/HTTPS/SDK실행은0,구문용Node--check와환경메타데이터읽기만수행. 이는조회성공/실제종료시험/제품Agent연결완료아님. 기존공개URL/무결성/10초/16MiB·단발한도유지,Windows환경/감시/총64KiB발췌로변경된정확안은실행채택별도.
+
+- 커밋전diff검사EOF추가빈줄exit2·commit/push0. Main은EOF추가LF1개만제거했고본문/두코드블록불변이다. 최종후보SHA921FEFEBE76A7FA7F1D4103CCF377C91A27DDE07CC6ABC62C95F5DE2039E5D23/18847B를실행결정대상으로사용하며이전3434…는검토이력이다.
