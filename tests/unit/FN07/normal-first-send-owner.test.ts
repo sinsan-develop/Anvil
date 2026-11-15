@@ -138,7 +138,10 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
    const query=await makeA(...args);
    return{[Symbol.asyncIterator](){
     const sourceIterator=query[Symbol.asyncIterator]();
-    original=(async function*(){try{const init=await sourceIterator.next();if(!init.done)yield init.value;}finally{finalized++;}})();
+    original=(async function*(){try{
+     const init=await sourceIterator.next();if(!init.done)yield init.value;
+     if(!a.authority.signal.aborted)await new Promise<void>(resolve=>a.authority.signal.addEventListener('abort',()=>resolve(),{once:true}));
+    }finally{finalized++;}})();
     return original;
    }};
   };
@@ -163,8 +166,107 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
    return self;
   };
   try{
-   assert.equal((await f.run()).state,'LIMIT_REACHED');assert.equal(acquired,1);assert.equal(f.effects.next,1);
+   assert.equal((await f.run()).state,'LIMIT_REACHED');assert.equal(acquired,1);assert.equal(f.effects.next,2);
    assert.equal(f.effects.close,0);f.authority.abort();assert.equal(f.effects.close,1);
+  }finally{f.authority.abort();await f.h.close();}
+ });
+}
+
+
+/** STOP page와 독립 CURRENT reader는 RAM 자료다. 이 fixture의 정상 첫 SEND만 실제 제품 상태기계가 만든다. */
+export async function liveStopFixture(){
+ const f=await firstSendFixture(),start=f.page.items[0]!,e=start.envelope;
+ assert.equal(f.item.envelope.operation,'SEND_INSTRUCTION');const session=f.item.envelope.payload.sessionBindingRef;
+ const {normalStopScopeRefV1}=await import('../../../contracts/runtime/normal-stop-target-v1.ts');
+ const target={kind:'NORMAL_STOP_SCOPE_V1' as const,projectId:e.context.projectId,executionId:e.context.executionId,executionGeneration:e.context.executionGeneration,
+  grantRef:f.scope.grantRef,parentStartCommandRef:start.commandRef,parentStartEnvelopeHash:e.envelopeHash,executorRegistrationRef:e.executorRegistrationRef,
+  sessionBindingRef:session,roleBindingRef:ref(),bindingGeneration:1,ownershipRef:ref(),mode:'COOPERATIVE_REQUEST_ONLY' as const,forceKillAllowed:false as const};
+ const scopeRef=normalStopScopeRefV1(target,e.commandId),{envelopeHash:_,...startBody}=e;
+ const unsigned={...startBody,commandId:randomUUID(),operation:'REQUEST_STOP' as const,payload:{sessionBindingRef:session,stopScopeRef:scopeRef}};
+ const item={commandRef:ref(),sequence:f.item.sequence+1,envelope:{...unsigned,envelopeHash:digest(unsigned)},stopTarget:target,materials:null,materialsDescriptorHash:null};
+ const original={startCommandRef:start.commandRef,startEnvelope:e,grantRef:f.scope.grantRef,sessionBindingRef:session,roleBindingRef:target.roleBindingRef,bindingGeneration:1,ownershipRef:target.ownershipRef};
+ const store=f.store.stopAttempts(),calls={interrupt:0,current:0},hooks:{interrupt?:()=>Promise<void>;current?:(w:any)=>any}={};
+ let checkedScope='',query:any;
+ const make=f.source.create.bind(f.source);
+ f.source.create=async(...args)=>{checkedScope=digest(args[0].scope);const result=await make(...args);query=Object.assign(result,{async interrupt(){assert.equal(this,query);calls.interrupt++;await hooks.interrupt?.();}});return query;};
+ const stop={store,async readCurrent(){
+  calls.current++;const value={owner:f.worker,query,scopeDigest:checkedScope,commandRef:structuredClone(item.commandRef),envelopeHash:item.envelope.envelopeHash,
+   projection:{transport:'NORMAL_PROTECTED',grantRef:f.scope.grantRef,sessionBindingRef:session,stopScopeRef:scopeRef,target:structuredClone(target),
+   checkedAt:new Date(f.clock()).toISOString(),expiresAt:new Date(f.clock()+30000).toISOString(),executionAuthorized:false,dispatchPerformed:false,writerReleaseVerified:false}};
+  return hooks.current?hooks.current(value):value;
+ }};
+ Object.assign(f.source,{stop});
+ const ports=()=>({intake:f.options().start.intake,store,original,clock:f.clock,timeoutMs:1000});
+ const rows=()=>f.store.exclusive('attempt-'+item.envelope.commandId,tx=>tx.read()) as Promise<any[]>;
+ return{...f,original,target,stopItem:item,stop,stopPorts:ports,stopCalls:calls,stopHooks:hooks,stopQuery:()=>query,stopRows:rows};
+}
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('정착한 첫 SEND 뒤 원 출력 대기와 협력 STOP은 같은 RAM 잠금을 공유한다',async()=>{
+ const {NormalStopCoordinator}=await import('../../../apps/connector/runtime/normal-stop-coordinator.ts');
+ const {NormalSdkSessionOutput}=await import('../../../apps/connector/runtime/normal-sdk-session-output.ts');
+ const outputNext=NormalSdkSessionOutput.prototype.next;
+ const f=await liveStopFixture(),release=Promise.withResolvers<void>();
+ const result={type:'result',subtype:'success',uuid:'ok',session_id:'ram-session',duration_ms:1,duration_api_ms:1,is_error:false,num_turns:1,stop_reason:null,total_cost_usd:0,usage:{},modelUsage:{},permission_denials:[],result:'원 결과'};
+ const assistant={type:'assistant',uuid:'reply',session_id:'ram-session',parent_tool_use_id:null,message:{content:[{type:'text',text:'원 답변'}]}};
+ const make=f.source.create.bind(f.source),strict=f.source.storage.strictExclusive.bind(f.source.storage),exclusive=f.stop.store.exclusive.bind(f.stop.store);
+ let locked=false,waiting=false,active=0,maxActive=0,reads=0,settled=0;
+ async function lock<T>(work:()=>Promise<T>){assert.equal(locked,false);locked=true;try{return await work();}finally{locked=false;}}
+ f.source.storage.strictExclusive=(hold,body)=>lock(()=>strict(hold,body));
+ f.stop.store.exclusive=(key,body)=>lock(()=>exclusive(key,body));
+ const settle=f.source.storage.settle.bind(f.source.storage);
+ f.source.storage.settle=async(...args)=>{const value=await settle(...args);settled++;return value;};
+ f.source.create=async(...args)=>{
+  const query=await make(...args),iterate=query[Symbol.asyncIterator].bind(query);
+  query[Symbol.asyncIterator]=()=>{const iterator=iterate();return{async next(){
+   maxActive=Math.max(maxActive,++active);
+   try{switch(++reads){
+    case 1:return await iterator.next();
+    case 2:assert.equal(settled,1);waiting=true;await release.promise;return{value:assistant,done:false};
+    case 3:assert.equal(settled,2);return{value:result,done:false};
+    default:assert.equal(settled,3);return{value:undefined,done:true};
+   }}finally{active--;}
+  }};};
+  return query;
+ };
+ try{
+  assert.equal((await f.run()).state,'LIMIT_REACHED');await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(waiting,true);assert.equal(locked,false);
+  let activeAtInterrupt=0;let rowsAtInterrupt:string[]=[];
+  f.stopHooks.interrupt=async()=>{activeAtInterrupt=active;rowsAtInterrupt=(await f.stopRows()).map(r=>r.snapshot.state);};
+  const stop=await new NormalStopCoordinator(f.stopPorts()).recordObservations(f.stopItem,f.spool,f.signal,f.worker);
+  assert.equal(stop.state,'STOP_UNCONFIRMED');assert.equal(f.stopCalls.interrupt,1);assert.equal(reads,2);
+  assert.equal(activeAtInterrupt,1);assert.deepEqual(rowsAtInterrupt,['STOP_ATTEMPTED']);
+  assert.equal(Object.hasOwn(outputNext,'call'),false);let shadowCalls=0;
+  Object.defineProperty(outputNext,'call',{configurable:true,value(){shadowCalls++;throw Error('own.call');}});
+  release.resolve();for(let i=0;i<8&&settled<4;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(shadowCalls,0);assert.equal(settled,4);assert.equal(reads,4);assert.equal(maxActive,1);assert.equal(f.effects.create,1);assert.equal(f.effects.iterate,1);
+  assert.deepEqual(f.effects.rows.slice(2).map(r=>Buffer.from(r.snapshot.body,'base64').toString()),[canonicalJson(assistant),canonicalJson(result)]);
+  assert.equal(f.effects.close,0);assert.equal(f.lifetime()?.aborted,false);
+  await f.run();assert.equal(reads,4);assert.equal(f.effects.create,1);
+ }finally{Reflect.deleteProperty(outputNext,'call');release.resolve();f.authority.abort();await f.h.close();}
+});
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
+ for(const mode of ['strict-close','post-commit-live'])test('첫 SEND 정착/후행 검사 실패는 예약된 출력 수집을 시작하지 않는다 '+mode,async()=>{
+  const {NormalStartPolling}=await import('../../../apps/connector/runtime/normal-start-polling.ts');
+  const f=await firstSendFixture(),channel='attempt-'+f.item.envelope.commandId;
+  const written=()=>[...f.fs.files].some(([p,v])=>p.includes(channel)&&p.endsWith('.json')&&JSON.parse(v.bytes.toString()).snapshot.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED');
+  const open=f.fs.fs.open.bind(f.fs.fs);let failedClose=0,afterCommit=0;
+  f.fs.fs.open=async(p:string,flags:any)=>{const file=await open(p,flags);if(mode==='strict-close'&&p.endsWith(channel+'.lock')&&flags==='wx'){
+   const close=file.close.bind(file);file.close=async()=>{if(written()){failedClose++;throw Error('uncertain');}await close();};
+  }return file;};
+  const check=f.source.check.bind(f.source);let finalClock=false;
+  f.source.check=scope=>{const current=check(scope);
+   if(mode==='post-commit-live'&&written()&&![...f.fs.files.keys()].some(p=>p.endsWith(channel+'.lock')))finalClock=true;
+   return current;
+  };
+  const options=f.options();options.instruction.clock=()=>{if(finalClock){afterCommit++;return f.clock()+60000;}return f.clock();};
+  try{
+   const outcome=await new NormalStartPolling(options).run(f.signal);await new Promise(resolve=>setImmediate(resolve));
+   assert.equal(outcome.state,'UNKNOWN');assert.equal(outcome.cursor.afterSequence,0);assert(written());
+   if(mode==='strict-close'){assert.equal(failedClose,1);assert.equal(afterCommit,0);}else{assert(afterCommit>0);assert.equal(failedClose,0);}
+   assert.equal(f.effects.next,1);assert.equal(f.effects.close,1);assert.equal(f.effects.create,1);
+   await f.run();assert.equal(f.effects.next,1);assert.equal(f.effects.create,1);
   }finally{f.authority.abort();await f.h.close();}
  });
 }

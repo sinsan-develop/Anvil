@@ -176,9 +176,12 @@
 ### 코드 미구현과 실제 검증 미완료의 구분
 
 - normal 실행세대 root 배정/재개·공통 spool 예약 producer: **미구현**. 후보9E98은 게시·검수만 완료했고 직접 source-only 채택 답변 대기다.
-- normal Claude SDK Query 호출·원 Query/child 소유 대응·보호 SDK 출력 Sink/fullref producer: **구현 중**. 2026-11-16 직접 채택된 FN07 후보86A461을 기준으로 기존 Primary가 START 준비·원장·ACK의 첫 소스 단위를 진행한다. 실제 Query 호출·일반 출력 보호 저장·OS 소유는 아직 미구현이며 기존 driver.send/합성 factory를 실제 SDK 구현으로 계산하지 않는다. 보호 spool9E98의 별도 채택·배정도 남아 있다. 구현 시작은 완료 체크의 근거가 아니다.
+- normal Claude SDK Query 호출·원 Query/child 소유 대응·보호 SDK 출력 Sink/fullref producer: **부분 구현·진행 중**. 채택 FN07 후보86A461의 START 준비·출력 소비자·첫 SEND 소스는 PR144/main a86705e5로 통합했다. 원 Query STOP 소비 r2는 소스 검수됐고 첫 SEND 정착 후 출력 수집 연결을 진행한다. 실제 SDK/module/hook·CURRENT·OS 소유·보호 spool9E98의 채택/배정은 미완료다. RAM 합성 factory를 실제 SDK 구현으로 계산하지 않으며 전체 완료 체크는 올리지 않는다.
 - 기존 프로젝트/방법론/문서/지식의 연결된 API/UI source는 위 항목과 달리 실제 DB 재시작/권한별·다프로젝트 여정이 미확인인 부분이 있다. 이를 모두 미구현으로 합산하거나 source/RAM 통과를 실제 인수로 승격하지 않는다. 전체44업무 완료 체크는 상향하지 않는다.
 
 - 2026-11-16 FN07/FN08 START 준비 소스 단위: 제품5·시험5, 직접41/인접3/메모리 번들12=56PASS·FAIL/SKIP0, 루트 타입0·Main 핵심1PASS·독립C0/I0/M0. 원 로컬 준비 종단과 마지막 필수 관측의 연속 ACK를 연결하고 실제 SDK 응답과 구분했다. 실제 SDK·OS·등록 owner 조립·보호 저장은 미검증이며 출력 소비자/첫 SEND 결합은 후속이다. 결과서 FN07_NORMAL_START_READY_SOURCE_RESULT_20261116 참조. 전체 완료 체크 상향0.
 - 2026-11-16 FN07 세션 출력 소비자: 신규 제품1/시험1, 최종 직접29PASS·FAIL/SKIP0·타입0·Main 재진입1PASS·독립I1 해소 C0/I0/M0. 전체 원문·init 전 불변행/후행 확인·격리·공동 예약·단발 증거를 RAM에서 확인했다. 기존 codec17PASS는 앞 회차 재사용이다. 실제 보호 배정·SDK 생산자와 첫 SEND 결합은 미완료이며 결과서 FN07_NORMAL_SDK_OUTPUT_CONSUMER_SOURCE_RESULT_20261116 참조. 전체 완료 체크 상향0.
 - 2026-11-16 FN07 첫 SEND 소스: 제품7·시험5, 교차 역할 소유 I1 보완 뒤 최종 owner 직접12PASS·메모리 빌드12PASS·타입0·Main 반례1PASS·독립C0/I0/M0. 앞선 직접35/인접24/빌드12는 보완 전 실행 이력으로 구분한다. 원 입력 제공과 init 정착의 새 로컬 종단·필수 ACK를 연결했고 실제 응답/업무 완료로 승격하지 않았다. 실제 SDK·배정 공급자와 후속 SEND/STOP은 미완료, FN07_NORMAL_FIRST_SEND_SOURCE_RESULT_20261116 참조. 전체 완료 체크 상향0.
+
+- 2026-11-16 원 Query STOP 소비 소스 r2: 직접30건·메모리 빌드12건·타입·독립 C0/I0/M0 및 Main 재진입1건 확인. 실제 SDK/OS 중지·회수는 미검증이며 FN07/FN08 완료 체크는 유지한다. 다음은 첫 SEND 정착 후 출력 수집 연결이다.
+- 2026-11-16 첫 SEND 정착 후 출력 수집 소스 검수: 수정 후 직접63건·빌드12건·타입·독립 C0/I0/M0 및 Main 변조 반례 각1건 확인. 실제 SDK·보호 저장·OS 종료는 미검증이다. STOP과 같은 소스 통합 단위로 진행하며 완료 체크는 올리지 않는다.

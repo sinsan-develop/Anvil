@@ -11,7 +11,7 @@ import type {NormalCommandPage} from './normal-start-material-consumer.ts';
 export interface NormalPollingClients{get:NormalProtectedGetClient;post:NormalProtectedPostClient;expiresAt:string}
 export interface NormalStartPollingOptions{
  clients:NormalPollingClients;start:Omit<NormalStartPorts,'post'>;
- /** 선택형 역사 복구만. 실제 owner/interrupt 포트는 존재하지 않는다. */
+ /** 원 STOP 이력 복구와 이미 결박된 live worker 소비. 기본 CURRENT 공급자는 없다. */
  stop?:NormalStopHistoryPorts;
  instruction?:Omit<ConstructorParameters<typeof NormalInstructionCoordinator>[0],'post'>&{wire:NormalInstructionWirePort};
  /** 로컬 소유자 변경 감지용. 서버 grant/current 검사를 대신하지 않는다. */
@@ -139,7 +139,9 @@ export class NormalStartPolling{
       if(state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'){if(!refV1(collected.requiredAckRef))throw Error('SEND_PERMIT_ACK_REQUIRED');readyAck=collected.requiredAckRef;}
      }else if(item.envelope.operation==='REQUEST_STOP'&&this.#p.stop){
       const coordinator=new NormalStopCoordinator(this.#p.stop);
-      state=(await this.#call(s=>coordinator.recordObservations(item,this.#p.start.spool,s),signal,true,true)).state;
+      const observed=await this.#call(s=>coordinator.recordObservations(item,this.#p.start.spool,s,this.#p.start.wire),signal,true,true);
+      // 역사 관측의 마지막 ref보다 늦게 정착한 STOP_REQUESTED도 포함하도록 spool 끝까지 ACK한다.
+      state=observed.state;
      }else throw Error('PAGE_INVALID');
      const terminal=state==='RESPONSE_RECORDED'||((state==='START_READY_RECORDED'||state==='FIRST_SEND_INPUT_AND_INIT_RECORDED')&&readyAck!==undefined);
      if(!terminal)this.#unknown=true;

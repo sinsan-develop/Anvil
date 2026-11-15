@@ -120,17 +120,22 @@ export class NormalSdkSessionOutput{
   const expired=new Promise<never>((_,reject)=>{abort=()=>{open=false;reject(Error('NORMAL_SDK_OUTPUT_UNCERTAIN'));};});
   void expired.catch(()=>undefined);
   const guard=()=>{if(!open||!(signal instanceof AbortSignal)||signal.aborted)fail();this.#guard();};
-  const wait=async<T>(call:()=>Promise<T>)=>{
+  const remaining=()=>Math.max(0,Math.min(this.#end-this.#last,this.#monoEnd-performance.now(),2147483647));
+  function wait<T>(call:()=>Promise<T>):Promise<T>;
+  function wait<T,R>(call:()=>Promise<T>,capture:(value:T)=>R):Promise<R>;
+  async function wait<T,R>(call:()=>Promise<T>,capture?:(value:T)=>R):Promise<T|R>{
    guard();if(timer!==undefined)clearTimeout(timer);
-   timer=setTimeout(abort,Math.max(0,Math.min(this.#end-this.#last,this.#monoEnd-performance.now(),2147483647)));
+   timer=setTimeout(abort,remaining());
    const pending=call();if(!isPromise(pending)||isProxy(pending))fail();
-   const observed=new Promise<T>((yes,no)=>Reflect.apply(nativeThen,pending,[yes,no]));
+   const observed=new Promise<T|R>((yes,no)=>Reflect.apply(nativeThen,pending,[(value:T)=>{
+    try{if(!open||signal.aborted)fail();yes(capture?capture(value):value);}catch(error){no(error);}
+   },no]));
    const value=await Promise.race([observed,expired]);guard();return value;
-  };
+  }
   try{
    guard();signal.addEventListener('abort',abort,{once:true});
    const index=this.#index.slice(),initial=index.length,at=new Date(this.#last).toISOString();
-   let confirmed=this.#confirmation,added=0,hasInit=false,done=false,completed=false,entered=false;
+   let confirmed=this.#confirmation,added=0,hasInit=false,done=false;
    let wanted:Stored[]=[];
    const allowRows=confirmed?1:2;
    const confirmMax=size({ref:widestRef,snapshot:confirmation(this.#scope,maxRows,widestRef,at,widestRef.contentHash)});
@@ -146,16 +151,34 @@ export class NormalSdkSessionOutput{
      !count(held.normalUsed)||held.normalUsed<this.#bytes||!count(held.normalHeldBefore)||!count(held.managementBytes)||held.managementBytes<1||
      held.normalUsed+held.normalHeldBefore+held.managementBytes+dataBytes>normalLimit)fail();
    const hold=Object.freeze(cloneV1(held));
-   const closed=await wait(()=>this.#ports.strictExclusive(hold,async tx=>{
-    guard();if(entered||!shape(tx,['read','appendAndSync']))fail();entered=true;
-    const read=tx.read,append=tx.appendAndSync;const stable=()=>{guard();if(tx.read!==read||tx.appendAndSync!==append)fail();};
-    const verify=async()=>{stable();this.#verify(await wait(()=>Reflect.apply(read,tx,[]) as Promise<unknown[]>),index);stable();};
-    await verify();
-    const next=this.#next;if(!next||iteratorNext(this.#origin.iterator)!==next)return fail();
-    const item=await wait(()=>Reflect.apply(next,this.#origin.iterator,[]) as Promise<IteratorResult<unknown>>);
-    if(!shape(item,['value','done'])||typeof item.done!=='boolean')fail();
-    if(item.done){if(!confirmed)fail();done=true;completed=true;return;}
-    const parsed=boundedSdkObject(item.value,maxSdkObjectBytes),message=parsed.value;
+   // 같은 예약으로 읽기와 쓰기를 각각 닫는다. iterator를 기다리는 동안 예약만 보유한다.
+   type Phase={append(value:Row):Promise<void>;verify():Promise<void>;stable():void};
+   const transaction=async(write?:(phase:Phase)=>Promise<void>)=>{
+    let active=true,entered=false,finished=false;
+    try{
+     const closed=await wait(()=>this.#ports.strictExclusive(hold,async tx=>{
+      guard();if(!active||entered||!shape(tx,['read','appendAndSync'])){active=false;return fail();}entered=true;
+      const {read,appendAndSync}=tx;
+      if(typeof read!=='function'||isProxy(read)||typeof appendAndSync!=='function'||isProxy(appendAndSync))return fail();
+      const stable=()=>{guard();if(!active||!shape(tx,['read','appendAndSync'])||tx.read!==read||tx.appendAndSync!==appendAndSync)fail();};
+      const verify=async()=>{stable();const rows=await wait(()=>Reflect.apply(read,tx,[]));stable();this.#verify(rows,index);};
+      await verify();stable();
+      if(write)await write({stable,verify,append:async value=>{stable();await wait(()=>Reflect.apply(appendAndSync,tx,[cloneV1(value)]));stable();}});
+      stable();finished=true;
+     }));
+     if(!active||!finished||!shape(closed,['holdId','tailRef','rows'])||closed.holdId!==hold.id||
+        closed.rows!==index.length||!equal(closed.tailRef,index.at(-1)?.ref??null))fail();
+    }finally{active=false;}
+   };
+   await transaction();
+   const next=this.#next;if(!next||iteratorNext(this.#origin.iterator)!==next)return fail();
+   const parsed=await wait(()=>Reflect.apply(next,this.#origin.iterator,[]) as Promise<IteratorResult<unknown>>,item=>{
+    if(!shape(item,['value','done'])||typeof item.done!=='boolean')return fail();
+    return item.done?null:boundedSdkObject(item.value,maxSdkObjectBytes);
+   });
+   await transaction(async({stable,verify,append})=>{
+    if(!parsed){if(!confirmed)fail();done=true;return;}
+    const message=parsed.value;
     this.#captured=null;const observation=this.#codec.normalize(message),type=sdkMessageShape(message);
     if(type.state!=='SUPPORTED'||observation.kind!=='OBSERVED'||observation.payloadDigest!==parsed.digest||
        observation.sessionDigest!==this.#scope.plannedSidDigest||type.family!==observation.family)return fail();
@@ -165,7 +188,7 @@ export class NormalSdkSessionOutput{
     if(observation.duplicate){
      if(!prior||prior.payload!==parsed.digest||this.#captured!==null)fail();
      if(prior!.ordinary&&!ordinary)fail();
-     wanted=prior!.ordinary?[prior!]:[];completed=true;return;
+     wanted=prior!.ordinary?[prior!]:[];return;
     }
     const captured=this.#captured as Readonly<Record<string,unknown>>|null;
     if(prior||!captured||captured.messageId!==type.uuid||captured.sessionId!==type.sessionId||captured.payloadDigest!==parsed.digest||
@@ -174,7 +197,7 @@ export class NormalSdkSessionOutput{
     const appendChecked=async(snapshot:Record<string,unknown>,familyId:string|null,payload:string|null,visible:boolean)=>{
      const entry=row(snapshot),bytes=size(entry);if(bytes>fileBytes||index.length>=maxRows||added+bytes>dataBytes||this.#bytes+added+bytes>channelLimit)fail();
      const stored:Stored={ref:entry.ref,bytes,identity:familyId,payload,ordinary:visible};
-     stable();await wait(()=>Reflect.apply(append,tx,[cloneV1(entry)]) as Promise<void>);
+     await append(entry);
      index.push(stored);added+=bytes;await verify();return stored;
     };
     const saved=await appendChecked({schemaVersion:1,state:confirmed?'SESSION_OUTPUT':'OUTPUT_PENDING_SESSION',scope:this.#scope,
@@ -187,10 +210,7 @@ export class NormalSdkSessionOutput{
      const mark=await appendChecked(confirmation(this.#scope,index.length+1,saved.ref,new Date(this.#last).toISOString(),prefixDigest),null,null,false);
      confirmed=mark.ref;hasInit=true;wanted=index.filter(v=>v.ordinary);
     }
-    completed=true;
-   }));
-   if(!completed||!shape(closed,['holdId','tailRef','rows'])||closed.holdId!==hold.id||
-      closed.rows!==index.length||!equal(closed.tailRef,index.at(-1)?.ref??null))fail();
+   });
    const settled=await wait(()=>this.#ports.settle(hold,added));
    if(!shape(settled,['holdId','dataBytes','managementBytes'])||settled.holdId!==hold.id||
      settled.dataBytes!==added||settled.managementBytes!==hold.managementBytes)fail();
