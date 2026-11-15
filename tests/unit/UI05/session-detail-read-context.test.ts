@@ -5,7 +5,9 @@ import {fileURLToPath} from 'node:url';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
 import {contentCriteria} from '../../../apps/web/src/features/workspace/assignment-confirmation-api.ts';
-import {checkpointBufferKey} from '../../../apps/web/src/features/session-detail/checkpoint-api.ts';
+import {checkpointFixture} from '../FN13/checkpoint-fixture.ts';
+import {createCheckpointRecord} from '../../../apps/server/modules/checkpoints/checkpoint-record.ts';
+import {freezeCheckpointSave,checkpointBufferKey} from '../../../apps/web/src/features/session-detail/checkpoint-api.ts';
 import {emptyCheckpointForm} from '../../../apps/web/src/features/session-detail/checkpoint-form-restore.ts';
 import {capabilityNames} from '../../../apps/web/src/features/connections/api.ts';
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
@@ -48,7 +50,7 @@ export function fixture(tools=false){
 
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/SessionDetailPage.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};export{React,createRoot,SessionDetailPage,ApiClient};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{CheckpointEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointEditor.tsx',import.meta.url)))};export{React,createRoot,SessionDetailPage,CheckpointEditor,ApiClient};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return SessionContextTest;')();
@@ -102,4 +104,89 @@ test('정상 확정 child 표시·부모 buffer 참조와 bytes는 조회 세대
 
 test('원문 JSON 대기 중 CSRF 교체와 unmount는 옛 원문·후속 GET·인증 해제를 채택하지 않는다',async()=>{
  for(const mode of['CSRF','UNMOUNT']){const f=await mount();let closed=false;try{f.holdJson();await f.click('상세 원본 새로고침');const end=Date.now()+2000;while(!f.jsonRelease&&Date.now()<end)await f.flush();const release=f.jsonRelease;assert(release);if(mode==='CSRF'){f.props.criteria={...f.props.criteria,session:{...f.props.criteria.session,csrfToken:'d'.repeat(43)}};await f.render();await f.waitFor('등록된 임무 조회');}else{await f.close();closed=true;}const before=f.calls.length;await ui.React.act(async()=>release());await f.flush();assert.equal(f.calls.length,before);assert.equal(f.lost(),0);assert.equal(f.mutations(),0);}finally{if(!closed)await f.close();}}
+});
+
+async function mountCheckpoint(replies: ('APPLIED'|'LOST'|'503'|'OK'|'HOLD')[]) {
+ const f=checkpointFixture(), session={user:{id:f.by.userId},clientId:f.by.clientId,csrfToken:'c'.repeat(43)};
+ const key=checkpointBufferKey(session,f.assignment.projectId,f.assignment.ref);
+ const control=new ApiClient(async()=>Response.json({id:f.assignment.projectId,participation:'OWNER',controlState:{actorId:f.by.userId,clientId:f.by.clientId,generation:1,status:'HELD'}}));
+ const pending=await freezeCheckpointSave(control,f.assignment,f.input,session,()=>true);
+ assert(pending);
+ const record=createCheckpointRecord(f.prepared,f.by,f.at);
+ const ref={id:aid,version:1,contentHash:hash(record.snapshot)};
+ const data={status:'CHECKPOINT_RECORDED',ref,snapshot:record.snapshot,checkpointStored:true,recordFileStored:false,
+  currentFactsVerified:false,writerReleaseVerified:false,resumeAuthorized:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false};
+ const detail={projectId:f.assignment.projectId,ref,...record,serverSequence:1,observedAt:f.at};
+ const base='/api/v1/projects/'+f.assignment.projectId,posts:string[]=[],gets:string[]=[],lost:string[]=[];
+ let release:((r:Response)=>void)|undefined;
+ const transport:typeof fetch=async(url,options)=>{
+  const reply=replies.shift();
+  if(options?.method==='POST'){
+   assert.equal(url,base+'/commands');posts.push(String(options.body));
+   assert.equal(new Headers(options.headers).get('Idempotency-Key'),pending.command.commandId);
+   if(reply==='LOST')throw Error('synthetic response lost');
+   assert.equal(reply,'APPLIED');
+   return Response.json({status:'APPLIED',commandId:pending.command.commandId,projectId:f.assignment.projectId,operationId:pid,
+    targetId:ref.id,version:1,data,evidenceRefs:[],warnings:[],serverReceivedAt:f.at});
+  }
+  assert.equal(url,base+'/checkpoints/'+ref.id);gets.push(String(url));
+  if(reply==='HOLD')return new Promise<Response>(resolve=>{release=resolve;});
+  if(reply==='503')return Response.json({code:'CHECKPOINT_SOURCE_UNAVAILABLE'},{status:503});
+  assert.equal(reply,'OK');return Response.json(detail);
+ };
+ let client=new ui.ApiClient(transport),currentSession=session,visible=true;
+ const container:MemoryNode=document.createElement('div');document.body.appendChild(container);
+ const root=ui.createRoot(container),seed={...emptyCheckpointForm(),position:'원 입력 보존',serverWork:{pending,uncertain:false,rejected:null,storedRef:null}};
+ let buffers:Record<string,any>={[key]:seed};
+ function Host(){
+  const [saved,setSaved]=ui.React.useState(buffers);buffers=saved;
+  const storage={buffers:saved,onChange:(k:string,fn:Function)=>setSaved((prev:Record<string,any>)=>({...prev,[k]:fn(prev[k]??null)}))};
+  return visible?ui.React.createElement(ui.CheckpointEditor,{client,session:currentSession,assignment:f.assignment,storage,onUnavailable:(code:string)=>lost.push(code)}):null;
+ }
+ async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(Host)));}
+ async function waitFor(check:()=>boolean){const until=Date.now()+2500;while(!check()&&Date.now()<until)await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});assert(check(),container.textContent);}
+ function button(label:string,node=container):MemoryNode|undefined{if(node.tagName==='BUTTON'&&node.textContent===label)return node;for(const child of node.childNodes){const hit=button(label,child);if(hit)return hit;}}
+ async function click(label:string){const b=button(label);assert(b,label);assert(!b.disabled,label);await ui.React.act(async()=>{b.dispatchEvent({type:'click',button:0,bubbles:true});});}
+ await render();
+ return {posts,gets,lost,pending,ref,record,container,button,click,waitFor,work:()=>buffers[key].serverWork,buffers:()=>buffers,
+  async show(value:boolean){visible=value;await render();},
+  async replace(subject:'user'|'client'){if(subject==='user')currentSession={...session,user:{id:pid}};else client=new ui.ApiClient(transport);await render();},
+  held:()=>!!release,async finish(ok:boolean){assert(release);await ui.React.act(async()=>release!(ok?Response.json(detail):Response.json({code:'AUTH_REQUIRED'},{status:401})));},
+  async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+ };
+}
+
+test('체크포인트 저장 영수증 후 GET503과 화면 왕복에도 원 참조 GET만 재조회한다',async()=>{
+ const x=await mountCheckpoint(['APPLIED','503','OK']);try{
+  await x.click('서버 기록 명시 저장');await x.waitFor(()=>x.container.textContent.includes('CHECKPOINT_SOURCE_UNAVAILABLE'));
+  assert.deepEqual(x.work(),{pending:null,uncertain:false,rejected:null,storedRef:x.ref});assert(!x.button('같은 기록 저장 명령 재확인'));
+  await x.show(false);await x.show(true);assert.equal(x.gets.length,1);assert.equal(x.posts.length,1);
+  await x.click('저장된 체크포인트 원문 조회');await x.waitFor(()=>x.container.textContent.includes(x.record.recordText));
+  assert.equal(x.gets.length,2);assert.equal(x.gets[0],x.gets[1]);assert.equal(x.posts.length,1);
+  assert.deepEqual(x.work(),{pending:null,uncertain:false,rejected:null,storedRef:x.ref});
+ }finally{await x.close();}
+});
+
+test('체크포인트 지연 GET은 사용자·클라이언트 교체 및 화면 종료 후 원문·인증 상태를 변경하지 않는다',async()=>{
+ for(const mode of ['user','client','unmount'] as const)for(const ok of [true,false]){
+  const x=await mountCheckpoint(['APPLIED','HOLD']);try{
+   await x.click('서버 기록 명시 저장');await x.waitFor(x.held);
+   assert.deepEqual(x.work().storedRef,x.ref);
+   if(mode==='unmount')await x.show(false);else await x.replace(mode);
+   const before=structuredClone(x.buffers());await x.finish(ok);
+   assert.deepEqual(x.buffers(),before);assert.deepEqual(x.lost,[]);
+   assert(!x.container.textContent.includes(x.record.recordText));assert(!x.container.textContent.includes('AUTH_REQUIRED'));
+   assert.equal(x.posts.length,1);assert.equal(x.gets.length,1);
+  }finally{await x.close();}
+ }
+});
+
+test('체크포인트 POST 응답 유실은 고정 원명령과 해시를 보존하고 명시 재확인만 허용한다',async()=>{
+ const x=await mountCheckpoint(['LOST','APPLIED','OK']);try{
+  await x.click('서버 기록 명시 저장');await x.waitFor(()=>x.container.textContent.includes('CONNECTION_LOST'));
+  assert.deepEqual(x.work(),{pending:x.pending,uncertain:true,rejected:null,storedRef:null});
+  await x.show(false);await x.show(true);assert.equal(x.posts.length,1);assert.equal(x.gets.length,0);
+  await x.click('같은 기록 저장 명령 재확인');await x.waitFor(()=>x.container.textContent.includes(x.record.recordText));
+  assert.deepEqual(x.posts,[JSON.stringify(x.pending.command),JSON.stringify(x.pending.command)]);assert.equal(x.gets.length,1);
+ }finally{await x.close();}
 });

@@ -19716,3 +19716,14 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 
 - 다음 독립 구현은 UI05/FN13 확정 저장 영수증 뒤 GET 실패가 원명령 결과불명으로 역행하는 누락이다. 현재 CheckpointEditor.save의 applied후catch가검산storedRef를잃는것을Main/독립담당자가확인했다. 기존FN13 r2 A 승인과고정GET계약안의보완이며새API/권한/DB변경0. 현branch소스단위통합후새branch에서Primary단일writer로이어간다.
 - P03 추가관측후보1문서를Primary가작성했고독립C0/I0/M1의기한모호성을Main이새관측승인시각+30분과요청시작+30초중이른값으로정정했다. 최종SHA0ED884E382AB328B6280658485EFACE6EEAABF9E7DD9BDBFC4574CFDE7613C75. 실제관측/복제/정리/SDK반복0. 후보는실행승인이아니다.
+
+## 2026-11-16 UI05/FN13 확정 저장 후 원문 조회 복구 착수
+
+- P03 소스보완·기록 Stage는 PR129/head302c4180→mainf3478666에 통합했다. Broker43732996043 success, tree동일/localmain동기화·merged RAM limited양성1P0F0SKIP(61c8dd), pr-129-head원격복구tag보존. 완료branch/요청tag만정상정리했고다른worktree는보존했다. 원격에서이미삭제된trackingref는fetch prune으로현황동기화했으며원격자료삭제0.
+- 최신main에서기존innerworktree를재사용해codex/av3-ui05-checkpoint-read-recovery를만들었다. 다음계획업무UI05/FN13은기존서버저장계약의확정영수증후GET실패복구누락이다. Primary읽기분해/Main확인후WI의정확제품1/시험1에단일writer를배정한다. 실제DB/키/권한/서비스/Agent·SDK반복·P03조작0. 검증은실컴포넌트RAM DOM의POST1→GET실패→왕복→명시GET복구와기존POST응답유실분리를포함한다.
+
+- UI05 실제 React RAM 반례 RED 2c920d exit1/1F: 유효 저장 영수증→GET503 뒤 actual pending=원command/uncertain=true/storedRef=null로 역행했다. 기대는 pending=null/uncertain=false/원fullref 보존이다. 원 API 영수증 검산 성공과 후속 원문 조회 실패를 구분하는 최소 제품 보완을 Primary가 진행 중이다. 기존 POST 자체 응답유실 경계는 유지한다.
+
+- UI05 Primary 제품1/시험1 동결: 영수증검산뒤GET오류가저장확정을역행시키지않도록POST catch분리·고정ref명시GET을연결했다. 직접/인접21P0F0SKIP(50e48a), type0(0f09ec), 원Vite config메모리빌드520모듈0(f50c65), diff0. Main핵심반례1P0F0SKIP(58c195). 제품SHA67CBC776…7B3AF82D/시험SHAA853B255…2285E228, 쓰기반환/live0·독립검수중. 실제브라우저/서버/DB/전체업무는미완료다.
+
+- UI05 동결 독립 C0/I0/M0로 소스 범위 수용. 저장확정 후 GET실패의 fullref 보존·POST1·명시GET복구·주체변경 늦은200/401폐기·baseRef 자동변경0을 확인했다. 검수결과서는 UI05_CHECKPOINT_CONFIRMED_READ_RECOVERY_SOURCE_RESULT_20261116.md. 전체UI05/FN13·실DB/served인수와전체계획미완료는유지한다.

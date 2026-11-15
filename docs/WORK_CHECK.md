@@ -154,3 +154,5 @@
 - 2026-11-15 UI12 확정수락결과 GET재조회연결과후속현재GET실패의UNKNOWN역행race보완. 확정/원버퍼보존·추가POST0·현재권위불변. Primary직접7/type0·인접25P1F중stale선택자1개교정/해당1P,Main3P·독립C0/I0/M0. 실제DB/브라우저/제어권인수전체미검증·체크상향0.
 
 - 2026-11-15 직접승인실행: P03R3고정수거ref부재로진입전STOP·새6대상0/독립부재·원volume보존확인,복제NOT_RUN/P03미완료유지. Windows-localSDK0.3.224단발GET/해시검산성공·hook동기성/일부argv/env/PermissionResult선언확인·실Agent효과0/전체FN07체크불변.
+
+- 2026-11-16 UI05/FN13 확정 저장 후 GET실패 복구: source2경로·직접/인접21P/type0/메모리빌드0·Main1P·독립C0/I0/M0. fullref 확정 유지→명시GET복구는 RAM React에서 확인했고 저장POST1·POST응답유실재확인·늦은응답차단을 보존했다. 실제브라우저/DB/전체업무는미완료이며 완료체크상향0.
