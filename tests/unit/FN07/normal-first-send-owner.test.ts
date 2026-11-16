@@ -7,7 +7,7 @@ import {normalInstructionPollingFixture} from '../FN08/normal-instruction-dispat
 
 const ref=()=>({id:randomUUID(),version:1,contentHash:'a'.repeat(64)});
 const digest=(x:unknown)=>contentHash(canonicalJson(x));
-export async function firstSendFixture(order='yield-first'){
+export async function firstSendFixture(order='yield-first',followup?:{provide(query:AsyncIterable<unknown>,input:AsyncIterable<unknown>,signal:AbortSignal):Promise<void>}){
  const f=await normalInstructionPollingFixture(Infinity,{text:'원문 🙂\n두 번째 줄',mediaType:'text/plain;charset=utf-8'});
  const {NormalClaudeStartWire}=await import('../../../apps/connector/adapters/secondary/normal-start-wire.ts');
  const {NormalInstructionWire}=await import('../../../apps/connector/adapters/secondary/normal-instruction-wire.ts');
@@ -47,7 +47,7 @@ export async function firstSendFixture(order='yield-first'){
   },
   async close(){effects.close++;}
  };
- const wire=NormalInstructionWire.forFirstSend(worker,source);
+ const wire=Reflect.apply(NormalInstructionWire.forFirstSend,NormalInstructionWire,[worker,source,followup]);
  const options=()=>({...o,start:{...o.start,wire:worker},instruction:{...o.instruction,wire}});
  return{...f,worker,wire,source,effects,hooks,options,authority,lifetime:()=>lifetime,run:()=>new NormalStartPolling(options()).run(f.signal)};
 }
@@ -174,8 +174,8 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
 
 
 /** STOP page와 독립 CURRENT reader는 RAM 자료다. 이 fixture의 정상 첫 SEND만 실제 제품 상태기계가 만든다. */
-export async function liveStopFixture(){
- const f=await firstSendFixture(),start=f.page.items[0]!,e=start.envelope;
+export async function liveStopFixture(followup?:Parameters<typeof firstSendFixture>[1]){
+ const f=await firstSendFixture('yield-first',followup),start=f.page.items[0]!,e=start.envelope;
  assert.equal(f.item.envelope.operation,'SEND_INSTRUCTION');const session=f.item.envelope.payload.sessionBindingRef;
  const {normalStopScopeRefV1}=await import('../../../contracts/runtime/normal-stop-target-v1.ts');
  const target={kind:'NORMAL_STOP_SCOPE_V1' as const,projectId:e.context.projectId,executionId:e.context.executionId,executionGeneration:e.context.executionGeneration,
@@ -270,3 +270,38 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
   }finally{f.authority.abort();await f.h.close();}
  });
 }
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)for(const when of ['stop-first','stop-after-yield'] as const)test('후속 입력과 원 STOP의 선점 '+when,async()=>{
+ const {prepareLiveFollowup}=await import('../FN08/normal-instruction-dispatch-fixture.ts');
+ const {requestNormalLiveStop}=await import('../../../apps/connector/runtime/normal-first-send-owner.ts');
+ let effect=0,delivered=0;
+ const f=await liveStopFixture({async provide(query,input){effect++;assert.equal(query,f.stopQuery());const step=await input[Symbol.asyncIterator]().next();assert.equal(step.done,false);delivered++;await stop();}});
+ const stop=()=>requestNormalLiveStop(f.worker,f.stopItem,f.original,f.stop.store,f.signal,()=>{});
+ try{
+  assert.equal((await f.run()).state,'LIMIT_REACHED');
+  const {item,c,prepared}=await prepareLiveFollowup(f,'STOP 경합 입력');
+  if(when==='stop-first')await stop();
+  await assert.rejects(c.dispatch(item.envelope,prepared,f.wire,f.signal));
+  assert.equal(effect,when==='stop-first'?0:1);assert.equal(delivered,effect);
+  assert.equal(f.stopCalls.interrupt,1);assert.deepEqual((await f.stopRows()).map(r=>r.snapshot.state),['STOP_ATTEMPTED','STOP_UNCONFIRMED']);
+  assert.notEqual((await f.make().history(item,f.signal)).state,'LIVE_SEND_INPUT_YIELDED');assert.equal(f.effects.create,1);
+ }finally{f.authority.abort();await f.h.close();}
+});
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('두 후속 명령의 경합은 먼저 점유한 같은 Query만 한 번 제공한다',async()=>{
+ const {prepareLiveFollowup}=await import('../FN08/normal-instruction-dispatch-fixture.ts');
+ let concurrent:()=>Promise<void>,calls=0;const messages:unknown[]=[];
+ const f=await firstSendFixture('yield-first',{async provide(_query,input){
+  calls++;await concurrent();const iter=input[Symbol.asyncIterator]();
+  const steps=await Promise.all([iter.next(),iter.next(),iter.next()]);assert.equal(steps.filter(s=>s.done).length,2);
+  for(const s of steps)if(!s.done)messages.push((s.value as any).message.content);
+ }});
+ try{
+  assert.equal((await f.run()).state,'LIMIT_REACHED');
+  const a=await prepareLiveFollowup(f,'선점한 원문'),b=await prepareLiveFollowup(f,'경합하는 다른 원문');
+  concurrent=async()=>{await assert.rejects(b.c.dispatch(b.item.envelope,b.prepared,f.wire,f.signal),/BUSY/);};
+  const result=await a.c.dispatch(a.item.envelope,a.prepared,f.wire,f.signal);
+  assert.equal(result.state,'LIVE_SEND_INPUT_YIELDED');assert.deepEqual(messages,['선점한 원문']);assert.equal(calls,1);
+  assert.notEqual((await f.make().history(b.item,f.signal)).state,'LIVE_SEND_INPUT_YIELDED');assert.equal(f.effects.create,1);assert.equal(f.effects.iterate,1);
+ }finally{f.authority.abort();await f.h.close();}
+});

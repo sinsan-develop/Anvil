@@ -10,7 +10,7 @@ import {cloneV1,recordV1,refV1,type RuntimeRefV1 as Ref} from '../../../contract
 import {boundedSdkObject,maxSdkObjectBytes,sdkOpaqueId,supportedSdkUser} from '../adapters/secondary/schemas.ts';
 import {copyNormalWorkerStart} from '../adapters/secondary/normal-start-wire.ts';
 import {takeNormalFirstStart,type NormalStartWire} from './normal-start-coordinator.ts';
-import type {NormalDispatchClaim,NormalInstructionDriverInput} from './normal-instruction-coordinator.ts';
+import {originalNormalLiveDispatch,type NormalDispatchClaim,type NormalInstructionDriverInput} from './normal-instruction-coordinator.ts';
 import {NormalSdkSessionOutput} from './normal-sdk-session-output.ts';
 
 type OutputOptions=ConstructorParameters<typeof NormalSdkSessionOutput>[0];
@@ -18,7 +18,10 @@ type Scope=OutputOptions['scope'];
 type Query=AsyncIterable<unknown>;
 type Parent=ReturnType<typeof takeNormalFirstStart>;
 export type FirstSendSummary={startReadyRef:Ref;inputEvidence:{dispatchAttemptRef:Ref;instructionRef:Ref;partsRef:Ref;instructionDigest:string;messageDigest:string};initConfirmationRef:Ref};
-export type FirstSendCompletion={summary:FirstSendSummary;commit():void;abandon():void};
+export type LiveSendParent={registrationRef:Ref;startReadyRef:Ref;firstSendKey:ReturnType<typeof receiptKeyV1>;firstEnvelopeHash:string;firstTerminalRef:Ref;initConfirmationRef:Ref};
+export type LiveInputPort={provide(query:Query,input:AsyncIterable<unknown>,signal:AbortSignal):Promise<void>};
+export type FirstSendCompletion={kind:'FIRST';summary:FirstSendSummary;commit(terminal:Ref):void;abandon():void};
+export type LiveSendCompletion={kind:'LIVE';summary:LiveSendParent & Pick<FirstSendSummary,'inputEvidence'>;check():void;commit(terminal:Ref):void;abandon():void};
 /** 명시 source 의존성. 이 포트에 SDK 서명·등록 권한·보호 배정의 기본 구현은 없다. */
 export interface NormalFirstSendSource{
  profileRef:Ref;assignmentRef:Ref;slotRef:Ref;plannedSid:string;expiresAt:number;ownerSignal:AbortSignal;clock():number;
@@ -30,6 +33,8 @@ export interface NormalFirstSendSource{
  stop?:{store:NormalStopStore;readCurrent(signal:AbortSignal):Promise<unknown>};
 }
 type Lease={raw?:unknown;query?:Query;iterate?:Query[typeof Symbol.asyncIterator];iterator?:AsyncIterator<unknown>;output?:NormalSdkSessionOutput;state:'PENDING'|'COMMITTING'|'LIVE'|'UNKNOWN';life:AbortController;closeStarted:boolean};
+type InputOwner={wire:object;lease:Lease;parent:LiveSendParent;scope:Scope;sid:string;port:LiveInputPort|undefined;provide:LiveInputPort['provide']|undefined;check():void;token:object|null;stopEpoch:number;uncertain:boolean};
+const inputOwners=new WeakMap<NormalStartWire,InputOwner>();
 const issuedHandles=new WeakSet<object>();
 const leases=new WeakMap<NormalStartWire,Lease>();
 const normalizeNext=NormalSdkSessionOutput.prototype.next,consumeInit=NormalSdkSessionOutput.prototype.consumeInit;
@@ -46,11 +51,13 @@ function queryIterator(query:Query):Query[typeof Symbol.asyncIterator]{
  }
  return fail();
 }
-export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDispatchClaim,source:NormalFirstSendSource,signal:AbortSignal):Promise<FirstSendCompletion>{
+export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDispatchClaim,source:NormalFirstSendSource,signal:AbortSignal,wire:object,port?:LiveInputPort):Promise<FirstSendCompletion>{
  const parent=takeNormalFirstStart(worker,claim);
  const keys=source&&!isProxy(source)&&Object.hasOwn(source,'stop')?[...sourceKeys,'stop']:sourceKeys;
  if(leases.has(worker)||!shape(source,keys))return fail();
  const lease:Lease={state:'PENDING',life:new AbortController(),closeStarted:false};leases.set(worker,lease);
+ const provide=port&&!isProxy(port)?Object.getOwnPropertyDescriptor(port,'provide')?.value:undefined;
+ if(port&&(!shape(port,['provide'])||typeof provide!=='function'||isProxy(provide)))return fail();
  const pinned={...source},stop=pinned.stop;
  if(stop&&(!shape(stop,['store','readCurrent'])||typeof stop.readCurrent!=='function'||!shape(stop.store,['transport','exclusive'])||stop.store.transport!=='NORMAL_PROTECTED'||typeof stop.store.exclusive!=='function'))return fail();
  const stopRead=stop?.readCurrent,stopStore=stop?.store,stopExclusive=stopStore?.exclusive;
@@ -142,12 +149,15 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
     }
    }catch{abandon();}
   };
-  return{summary:{startReadyRef:cloneV1(parent.startReadyRef),inputEvidence,initConfirmationRef:cloneV1(confirmed)},abandon,
-   commit(){
+  return{kind:'FIRST',summary:{startReadyRef:cloneV1(parent.startReadyRef),inputEvidence,initConfirmationRef:cloneV1(confirmed)},abandon,
+   commit(terminal){
+    if(!refV1(terminal)||terminal.version!==1)return fail();
     if(lease.state!=='PENDING'||performance.now()>=handoffEnd)return fail();
     // current 포트의 동기 재진입보다 먼저 단발 commit을 선점한다.
     lease.state='COMMITTING';current();if(lease.state!=='COMMITTING'||lease.life.signal.aborted)return fail();
     clearTimeout(ownerTimer);lease.state='LIVE';
+    inputOwners.set(worker,{wire,lease,scope,sid:plannedSid,port,provide,check:current,token:null,stopEpoch:0,uncertain:false,
+     parent:cloneV1({registrationRef:e.executorRegistrationRef,startReadyRef:parent.startReadyRef,firstSendKey:receiptKeyV1(e),firstEnvelopeHash:e.envelopeHash,firstTerminalRef:terminal,initConfirmationRef:confirmed!})});
     ownerTimer=setTimeout(abandon,Math.max(0,Math.min(monoEnd-performance.now(),expiresAt-last,2147483647)));ownerTimer.unref();
     queueMicrotask(()=>void drain());
    }};
@@ -179,6 +189,7 @@ export async function requestNormalLiveStop(worker:NormalStartWire,item:NormalSt
  const owner=stopOwners.get(worker);
  if(!owner||owner.lease.state!=='LIVE'||owner.stopToken!==null||store!==owner.store)return unavailable();
  const token={};owner.stopToken=token;
+ const inputOwner=inputOwners.get(worker);if(inputOwner)inputOwner.stopEpoch++;
  let attempted=false;
  try{
   const {lease,query,scope,parent}=owner;
@@ -232,4 +243,56 @@ export async function requestNormalLiveStop(worker:NormalStartWire,item:NormalSt
   check();const second=await append(first);
   return{rows:[first,second],requestedAt:occurredAt};
  }finally{if(!attempted&&owner.stopToken===token)owner.stopToken=null;}
+}
+
+export function liveSendParent(worker:NormalStartWire,wire:object):LiveSendParent|null{
+ const owner=inputOwners.get(worker);
+ if(!owner)return null;
+ if(owner.wire!==wire||owner.lease.state!=='LIVE'||owner.uncertain)return fail();
+ return cloneV1(owner.parent);
+}
+
+/** 원 coordinator의 dispatch 증표와 첫 strict-close의 lease를 함께 소비한다. */
+export async function runNormalLiveSend(worker:NormalStartWire,wire:object,claim:NormalDispatchClaim,signal:AbortSignal):Promise<LiveSendCompletion>{
+ const owner=inputOwners.get(worker);
+ if(!owner||owner.wire!==wire||owner.lease.state!=='LIVE'||owner.uncertain||owner.token||stopOwners.get(worker)?.stopToken)return fail();
+ const token={};owner.token=token;const epoch=owner.stopEpoch;
+ let yielded=false,returned=false,handed=false,invalid=false;
+ const release=()=>{if(owner.token===token)owner.token=null;};
+ const abandon=()=>{if(owner.token===token){if(yielded)owner.uncertain=true;invalid=true;release();}};
+ try{
+  const {lease,port,provide,parent,scope}=owner,query=lease.query,iterator=lease.iterator;
+  if(!port||!provide||!query||!iterator)return fail();
+  const binding=originalNormalLiveDispatch(claim),{input}=claim,e=input.envelope;
+  if(!binding||!equal(binding.parent,parent)||!equal(binding.grant,scope.grantRef)||e.commandId===parent.firstSendKey.commandId||
+   !equal(e.executorRegistrationRef,parent.registrationRef)||!equal(e.payload.sessionBindingRef,scope.sessionBindingRef)||
+   e.context.projectId!==scope.projectId||e.context.executionId!==scope.executionId||e.context.executionGeneration!==scope.generation)return fail();
+  const checkOwner=()=>{
+   if(invalid||owner.token!==token||owner.stopEpoch!==epoch||stopOwners.get(worker)?.stopToken||owner.uncertain||leases.get(worker)!==lease||lease.state!=='LIVE'||
+    lease.life.signal.aborted||lease.query!==query||lease.iterator!==iterator||Object.getOwnPropertyDescriptor(port,'provide')?.value!==provide)return fail();
+  };
+  const check=()=>{checkOwner();owner.check();checkOwner();};
+  const active=()=>{check();if(signal.aborted||claim.remaining()<=0)return fail();};
+  const bytes=new Uint8Array(input.instruction.bytes),text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);
+  if(text!==input.instruction.text||!Buffer.from(text).equals(bytes)||!text.trim())return fail();
+  const message=boundedSdkObject({type:'user',message:{role:'user',content:text},parent_tool_use_id:null,session_id:owner.sid},maxSdkObjectBytes);
+  if(supportedSdkUser(message.value)!=='SUPPORTED')return fail();
+  let iterated=false,pulled=false;
+  const prompt=Object.freeze({[Symbol.asyncIterator](){
+   active();if(iterated){invalid=true;return fail();}iterated=true;
+   return Object.freeze({async next(){
+    active();if(pulled)return{done:true as const,value:undefined};pulled=true;
+    await claim.verify();active();if(returned)return fail();yielded=true;return{done:false as const,value:cloneV1(message.value)};
+   }});
+  }});
+  let reject!:()=>void;
+  const interrupted=new Promise<never>((_,stop)=>{reject=()=>stop(Error('NORMAL_LIVE_SEND_UNKNOWN'));});
+  const cancel=()=>{abandon();reject();};signal.addEventListener('abort',cancel,{once:true});lease.life.signal.addEventListener('abort',cancel,{once:true});
+  try{active();await Promise.race([native(Reflect.apply(provide,port,[query,prompt,signal])),interrupted]);returned=true;active();}
+  finally{signal.removeEventListener('abort',cancel);lease.life.signal.removeEventListener('abort',cancel);}
+  if(!yielded)return fail();await claim.verify();active();
+  const inputEvidence={dispatchAttemptRef:cloneV1(input.dispatchAttemptRef),instructionRef:cloneV1(e.payload.instructionRef),partsRef:cloneV1(e.payload.partsRef),instructionDigest:contentHash(bytes),messageDigest:message.digest};
+  handed=true;
+  return{kind:'LIVE',summary:{...cloneV1(parent),inputEvidence},check,abandon,commit(){release();}};
+ }finally{if(!handed)abandon();}
 }

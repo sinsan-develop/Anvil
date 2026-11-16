@@ -1,4 +1,5 @@
-import {constants} from 'node:fs';
+import {constants,unlinkSync} from 'node:fs';
+import {isAsyncFunction,isPromise,isProxy} from 'node:util/types';
 import * as disk from 'node:fs/promises';
 import {resolve,isAbsolute,parse,join} from 'node:path';
 import {canonicalJson,parseWireJson} from '../../../contracts/canonical.ts';
@@ -8,11 +9,11 @@ import type {NormalStopStore} from './normal-stop-coordinator.ts';
 import type {NormalInstructionStore} from './normal-instruction-intake.ts';
 import type {ReceiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 export type NormalLocalScope={projectId:string;executionId:string;executionGeneration:number};
-export interface NormalJournalTransaction{requireStartReadyClose?(key:ReceiptKeyV1):void;read():Promise<unknown[]>;appendAndSync(value:unknown):Promise<void>}
+export interface NormalJournalTransaction{requireStartReadyClose?(key:ReceiptKeyV1):void;requireLiveInputClose?(key:ReceiptKeyV1,finalCheck:()=>void):void;read():Promise<unknown[]>;appendAndSync(value:unknown):Promise<void>}
 export interface NormalJournalStore{readonly transport:'NORMAL_PROTECTED';exclusive<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>):Promise<T>}
 /** 실제 FS는 명시한 기존 전용 root만 쓴다. 시험 포트는 RAM fakeFS이며 권한의 증거가 아니다. */
-export type NormalFilePorts=Pick<typeof disk,'lstat'|'realpath'|'open'|'readdir'|'unlink'>;
-const fail=():never=>{throw Error('NORMAL_LOCAL_STORAGE_UNAVAILABLE');};
+export type NormalFilePorts=Pick<typeof disk,'lstat'|'realpath'|'open'|'readdir'|'unlink'>&{unlinkSync?:(path:string)=>void};
+const fail:()=>never=()=>{throw Error('NORMAL_LOCAL_STORAGE_UNAVAILABLE');};
 const same=(a:any,b:any)=>a.dev===b.dev&&a.ino===b.ino;
 const pathSame=(a:string,b:string)=>process.platform==='win32'?a.toUpperCase()===b.toUpperCase():a===b;
 const channelOK=(s:string)=>/^(observations|acks|attempt-[0-9a-f-]{36}|intake-[0-9a-f-]{36})$/.test(s);
@@ -21,12 +22,14 @@ const perFile=3*1024*1024,totalLimit=64*1024*1024;
  * directory fsync/전원손실 내성과 다른 동일 OS 사용자의 악의적 변경은 별도 검증 범위다. */
 export class NormalStartFileStore implements NormalJournalStore{
  readonly transport='NORMAL_PROTECTED' as const;
- #root:string;#scope:NormalLocalScope;#fs:NormalFilePorts;
+ #root:string;#scope:NormalLocalScope;#fs:NormalFilePorts;#syncRelease?:NormalFilePorts['unlinkSync'];
  constructor(root:string,scope:NormalLocalScope,ports:NormalFilePorts=disk){
   if(!isAbsolute(root)||root.includes('\0')||pathSame(resolve(root),parse(resolve(root)).root)||
    !recordV1(scope,['projectId','executionId','executionGeneration'])||!uuidV1(scope.projectId)||!uuidV1(scope.executionId)||
    !Number.isSafeInteger(scope.executionGeneration)||scope.executionGeneration<1)fail();
   this.#root=resolve(root);this.#scope=cloneV1(scope);this.#fs=ports;
+  const sync=ports===disk?unlinkSync:!isProxy(ports)?Object.getOwnPropertyDescriptor(ports,'unlinkSync')?.value:undefined;
+  if(typeof sync==='function'&&!isProxy(sync)&&!isAsyncFunction(sync))this.#syncRelease=sync;
  }
  intake():NormalStartStore{
   return{transport:'NORMAL_PROTECTED',exclusive:async<T>(key:ReceiptKeyV1,body:Parameters<NormalStartStore['exclusive']>[1]):Promise<T>=>{
@@ -72,7 +75,9 @@ export class NormalStartFileStore implements NormalJournalStore{
  async exclusive<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>):Promise<T>{return this.#run(channel,body,false);}
  async #run<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>,strictClose:boolean):Promise<T>{
   if(typeof channel!=='string'||!channelOK(channel))fail();
-  const fs=this.#fs,root=this.#root,lockPath=join(root,channel+'.lock');let identity:any,lock:any,lockId:any,closed=false,operating=false,uncertain=false,poisoned=false,wrote=false;
+  const fs=this.#fs,root=this.#root,lockPath=join(root,channel+'.lock');
+  const syncRelease=this.#syncRelease;let liveCheck:(()=>void)|undefined;
+  const sameRelease=()=>syncRelease&&(fs===disk||!isProxy(fs)&&Object.getOwnPropertyDescriptor(fs,'unlinkSync')?.value===syncRelease);let identity:any,lock:any,lockId:any,closed=false,operating=false,uncertain=false,poisoned=false,wrote=false;
   const check=async()=>{const st=await fs.lstat(root);if(!st.isDirectory()||st.isSymbolicLink()||!same(st,identity)||!pathSame(await fs.realpath(root),root))fail();};
   try{
    identity=await fs.lstat(root);await check();
@@ -84,6 +89,11 @@ export class NormalStartFileStore implements NormalJournalStore{
      if(closed||poisoned||!recordV1(key,['projectId','executionId','executionGeneration','commandId'])||!uuidV1(key.commandId)||
       channel!=='attempt-'+key.commandId||!Object.entries(this.#scope).every(([k,v])=>(key as any)[k]===v))fail();
      strictClose=true;
+    },
+    requireLiveInputClose:(key,verify)=>{
+     if(liveCheck||closed||poisoned||!strictClose||!recordV1(key,['projectId','executionId','executionGeneration','commandId'])||!uuidV1(key.commandId)||channel!=='attempt-'+key.commandId||
+      !Object.entries(this.#scope).every(([k,v])=>(key as any)[k]===v)||typeof verify!=='function'||isProxy(verify)||!sameRelease())fail();
+     liveCheck=verify;
     },
     read:()=>serial(async()=>{
      await check();const all=await fs.readdir(root);
@@ -103,7 +113,16 @@ export class NormalStartFileStore implements NormalJournalStore{
      loaded=true;count=rows.length;return rows;
     }),
     appendAndSync:value=>serial(async()=>{
-     if(!loaded||count>=10000)fail();const bytes=Buffer.from(canonicalJson(value)+'\n');if(bytes.length>perFile||total+bytes.length>totalLimit)fail();
+     if(!loaded||count>=10000)fail();
+     const attempt=channel.startsWith('attempt-');
+     if(attempt&&value&&typeof value==='object'){
+      if(isProxy(value)||isProxy(Object.getOwnPropertyDescriptor(value,'snapshot')?.value))fail();
+     }
+     const encoded=canonicalJson(value),bytes=Buffer.from(encoded+'\n');if(bytes.length>perFile||total+bytes.length>totalLimit)fail();
+     if(attempt){
+      const live=JSON.parse(encoded)?.snapshot?.state==='LIVE_SEND_INPUT_YIELDED';
+      if((live&&!liveCheck)||(liveCheck&&(!live||count!==3)))fail();
+     }
      await check();const path=join(root,channel+'.'+String(count+1).padStart(6,'0')+'.json');uncertain=true;wrote=true;const f=await fs.open(path,'wx',0o600);
      try{const id=await f.stat();await f.writeFile(bytes);await f.sync();await check();const st=await fs.lstat(path);
       if(!st.isFile()||st.isSymbolicLink()||!same(id,st)||st.size!==bytes.length)fail();
@@ -115,7 +134,18 @@ export class NormalStartFileStore implements NormalJournalStore{
   }catch(error){if(wrote)uncertain=true;throw error;}finally{
    closed=true;if(operating)uncertain=true;
    if(lock){try{await lock.close();}catch{uncertain=true;}
-    if(!uncertain&&!poisoned){await check();const st=await fs.lstat(lockPath);if(!st.isFile()||st.isSymbolicLink()||!same(st,lockId))fail();await fs.unlink(lockPath);}
+    if(!uncertain&&!poisoned){await check();const st=await fs.lstat(lockPath);if(!st.isFile()||st.isSymbolicLink()||!same(st,lockId))fail();
+     if(liveCheck){
+      if(!syncRelease||!sameRelease())fail();
+      liveCheck();
+      const released:unknown=Reflect.apply(syncRelease,fs,[lockPath]);
+      if(released!==undefined){
+       if(!isProxy(released)&&isPromise(released)&&Object.getPrototypeOf(released)===Promise.prototype&&!Object.hasOwn(released,'constructor')){
+        Reflect.apply(Promise.prototype.then,released,[undefined,()=>undefined]);
+       }
+       fail();
+      }
+     }else await fs.unlink(lockPath);}
    }
    if(strictClose&&uncertain)fail();
   }

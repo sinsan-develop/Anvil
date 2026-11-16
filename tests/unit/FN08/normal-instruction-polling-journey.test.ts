@@ -156,3 +156,77 @@ test('첫 SEND 로컬 4행은 마지막 permit의 두 번째 batch ACK 뒤에만
   assert.equal(f.effects.create,1);assert.equal(f.effects.inputs.length,1);assert.equal(f.effects.iterate,1);
  }finally{f.authority.abort();await f.h.close();}
 });
+
+test('별도 원문 후속 SEND는 같은 Query에 한 번 yield하고 세 관측 ACK로 이력을 복구한다',async()=>{
+ const {firstSendFixture}=await import('../FN07/normal-first-send-owner.test.ts');
+ const messages:any[]=[],f=await firstSendFixture('yield-first',{async provide(_query,input){for await(const message of input)messages.push(message);}});
+ try{
+  const first=await f.run();assert.equal(first.state,'LIMIT_REACHED',JSON.stringify(first));
+  const second=await f.h.queueFollowup('서로 다른 두 번째 지시 🙂');
+  const next=await f.run();assert.equal(next.state,'LIMIT_REACHED',JSON.stringify({next,status:f.calls.slice(-6).map(c=>[c.path.split('/').at(-1),c.status]),permit:f.h.permits.length}));
+  assert.deepEqual(messages.map(m=>m.message.content),['서로 다른 두 번째 지시 🙂']);
+  const rows=[...f.fs.files.entries()].filter(([p])=>p.includes('attempt-'+second.commandId)&&p.endsWith('.json')).sort().map(([,v])=>JSON.parse(v.bytes.toString()));
+  assert.equal(rows.length,4);assert.equal(rows[3].snapshot.state,'LIVE_SEND_INPUT_YIELDED');
+  assert.equal(rows[3].snapshot.firstSendKey.commandId,f.item.envelope.commandId);
+  assert.deepEqual(rows[3].snapshot.inputEvidence.instructionRef,second.plan.instructionRef);
+  assert.deepEqual(f.h.observations.filter(v=>v.snapshot_json.event.commandId===second.commandId).map(v=>v.snapshot_json.event.type),['RECEIVED','PREPARED','PERMIT_RECORDED']);
+  assert.equal((await f.run()).state,'LIMIT_REACHED');assert.equal(messages.length,1);assert.equal(f.effects.create,1);assert.equal(f.effects.iterate,1);
+ }finally{f.authority.abort();await f.h.close();}
+});
+
+test('후속 SEND의 201번째 permit 관측은 첫 200 ACK와 구분하고 마지막 ACK 유실 뒤 같은 기록을 복구한다',async()=>{
+ const {firstSendFixture}=await import('../FN07/normal-first-send-owner.test.ts');
+ const {NormalStartPolling}=await import('../../../apps/connector/runtime/normal-start-polling.ts');
+ let yields=0,id='',hash='';const f=await firstSendFixture('yield-first',{async provide(_query,input){
+  for await(const _ of input)yields++;
+  for(let i=0;i<198;i++)await f.spool.record({type:'HEARTBEAT',commandId:id,envelopeHash:hash,localRecordRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},processRef:null,occurredAt:new Date(f.clock()).toISOString(),reasonCode:'NONE'});
+ }});
+ try{
+  const opts=f.options();opts.instruction.timeoutMs=10000;
+  assert.equal((await new NormalStartPolling(opts).run(f.signal)).state,'LIMIT_REACHED');
+  const second=await f.h.queueFollowup('201번째 필수 관측');id=second.commandId;
+  const envelope=f.h.f.tables.execution_commands!.find(c=>c.snapshot_json.request?.commandId===id)!.snapshot_json.envelope;hash=envelope.envelopeHash;
+  const before=f.calls.length;f.mode.mutateObservations=()=>{f.mode.loseObservations=true;};
+  const interrupted=await new NormalStartPolling(opts).run(f.signal);assert.equal(interrupted.state,'UNKNOWN');assert.equal(interrupted.cursor.afterSequence,0);assert.equal(yields,1);
+  const history=await f.make().observations(envelope,f.signal);assert.equal(history.state,'LIVE_SEND_INPUT_YIELDED');const required=history.inputs.at(-1)!.localRecordRef;
+  const posts=f.calls.slice(before).filter(c=>c.path.endsWith('/observations')).map(c=>c.body as any);
+  assert.deepEqual(posts.map(v=>v.events.length),[200,1]);assert(!posts[0].events.some((e:any)=>e.localRecordRef.id===required.id));
+  assert.deepEqual(posts[1].events[0].localRecordRef,required);assert.equal((await f.spool.coverage()).covered,false);
+  f.mode.mutateObservations=null;f.mode.loseObservations=false;
+  const recovered=await new NormalStartPolling(opts).run(f.signal);assert.equal(recovered.state,'LIMIT_REACHED');assert.equal(yields,1);assert.equal(f.effects.create,1);assert.equal(f.effects.iterate,1);
+ }finally{f.authority.abort();await f.h.close();}
+});
+
+test('후속 정상 이력은 부모 전체와 현재 자료·등록·init fullref를 역사 재판독한다',async()=>{
+ const {firstSendFixture}=await import('../FN07/normal-first-send-owner.test.ts');
+ const {prepareLiveFollowup}=await import('./normal-instruction-dispatch-fixture.ts');
+ const {canonicalJson,contentHash}=await import('../../../contracts/canonical.ts');
+ let yields=0;const f=await firstSendFixture('yield-first',{async provide(_query,input){for await(const _ of input)yields++;}});
+ try{
+  assert.equal((await f.run()).state,'LIMIT_REACHED');const {item,c,prepared}=await prepareLiveFollowup(f,'다른 자료 검산');
+  assert.equal((await c.dispatch(item.envelope,prepared,f.wire,f.signal)).state,'LIVE_SEND_INPUT_YIELDED');
+  const path=(id:string,n:number)=>f.fs.path('attempt-'+id+'.'+String(n).padStart(6,'0')+'.json');
+  const latest=f.fs.files.get(path(item.envelope.commandId,4))!,original=Buffer.from(latest.bytes);
+  const first=JSON.parse(f.fs.files.get(path(f.item.envelope.commandId,4))!.bytes.toString());
+  for(const key of ['firstTerminalRef','startReadyRef','initConfirmationRef','registrationRef','instructionRef','instructionDigest']){
+   const r=JSON.parse(original.toString());
+   if(key==='instructionRef')r.snapshot.inputEvidence.instructionRef=first.snapshot.inputEvidence.instructionRef;
+   else if(key==='instructionDigest')r.snapshot.inputEvidence.instructionDigest=first.snapshot.inputEvidence.instructionDigest;
+   else r.snapshot[key].contentHash='1'.repeat(64);
+   r.ref.contentHash=contentHash(canonicalJson(r.snapshot));latest.bytes=Buffer.from(canonicalJson(r)+'\n');
+   await assert.rejects(f.make().history(item,f.signal),key);latest.bytes=Buffer.from(original);
+  }
+  const t=f.item.envelope.commandId,third=JSON.parse(f.fs.files.get(path(t,3))!.bytes.toString());
+  const u={...third.snapshot,sequence:5,state:'UNKNOWN',previousRef:first.ref,dispatchAttemptRef:third.ref,recordedAt:first.snapshot.recordedAt};
+  f.fs.files.set(path(t,5),{bytes:Buffer.from(canonicalJson({snapshot:u,ref:{id:randomUUID(),version:1,contentHash:contentHash(canonicalJson(u))}})+'\n'),ino:99999,link:false});
+  await assert.rejects(f.make().history(item,f.signal));assert.equal((await f.run()).cursor.afterSequence,0);assert.equal(yields,1);
+  const attempts=f.store.instructionAttempts();let forged=0;
+  const substituted=f.make({store:{...attempts,exclusive:async(key:any,body:any)=>{
+   const r:any=await attempts.exclusive(key,body);
+   if(r?.state==='LIVE_SEND_INPUT_YIELDED'){forged++;return{...r,state:'RESPONSE_RECORDED'};}return r;
+  }}});
+  await assert.rejects(substituted.history(item,f.signal));assert.equal(forged,1);
+  f.fs.files.delete(path(t,5));const store=f.store.instructionAttempts(),legacy=f.make({store:{...store,exclusive:(key:any,body:any)=>store.exclusive(key,tx=>body({read:()=>tx.read(),appendAndSync:(v:unknown)=>tx.appendAndSync(v)}))}});
+  await assert.rejects(legacy.history(item,f.signal));
+ }finally{f.authority.abort();await f.h.close();}
+});

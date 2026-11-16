@@ -1,27 +1,31 @@
 import {randomUUID} from 'node:crypto';
 import {NormalObservationSpool,type NormalLocalObservation} from './normal-observation-spool.ts';
-import {isNormalInstructionWire,isNormalFirstSendWire,consumeNormalFirstSendResult,abandonNormalFirstSendResult} from '../adapters/secondary/normal-instruction-wire.ts';
-import type {FirstSendSummary,FirstSendCompletion} from './normal-first-send-owner.ts';
+import {isNormalInstructionWire,isNormalFirstSendWire,consumeNormalFirstSendResult,abandonNormalFirstSendResult,normalWireLiveParent} from '../adapters/secondary/normal-instruction-wire.ts';
+import type {FirstSendSummary,FirstSendCompletion,LiveSendCompletion,LiveSendParent} from './normal-first-send-owner.ts';
 import {isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {readDispatchEnvelopeV1,type DispatchEnvelopeV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
 import {receiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
-import {cloneV1,recordV1,refV1,isoV1,arrayV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
+import {cloneV1,recordV1,refV1,isoV1,arrayV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import {NormalInstructionIntake,captureInstructionInput,type NormalInstructionStore} from './normal-instruction-intake.ts';
 import {NormalProtectedPostClient,type NormalPermitResult} from './normal-protected-post-client.ts';
+import type {NormalJournalTransaction} from './normal-start-file-store.ts';
 import type {NormalStartCurrent} from './normal-start-coordinator.ts';
 export interface NormalInstructionPreparationResult{transport:'NORMAL_PROTECTED';state:'PERMIT_RECORDED'|'UNKNOWN';key:ReturnType<typeof receiptKeyV1>;envelopeHash:string;recordRef:Ref;permit:NormalPermitResult['permit']|null;proofResultRef:Ref|null;readOnly:true;executionAuthorized:false;dispatchPerformed:false}
 type Send=Extract<DispatchEnvelopeV1,{operation:'SEND_INSTRUCTION'}>;
 export interface NormalInstructionObservation{transport:'NORMAL_PROTECTED';responseRef:Ref;processRef:Ref|null}
 export interface NormalInstructionWirePort{transport:'NORMAL_PROTECTED';send(capability:object,signal:AbortSignal):Promise<unknown>}
 export interface NormalInstructionDriverInput{envelope:Send;instruction:Awaited<ReturnType<NormalInstructionIntake['instruction']>>;localAttemptRef:Ref;dispatchAttemptRef:Ref;permit:NonNullable<NormalInstructionPreparationResult['permit']>;proofResultRef:Ref;actualExecutionVerified:false;executionAuthorized:false}
-export interface NormalInstructionDispatchResult{transport:'NORMAL_PROTECTED';state:'RESPONSE_RECORDED'|'FIRST_SEND_INPUT_AND_INIT_RECORDED'|'UNKNOWN';recordRef:Ref;responseRef:Ref|null;processRef:Ref|null;actualExecutionVerified:false;executionAuthorized:false;dispatchPerformed:false}
+export interface NormalInstructionDispatchResult{transport:'NORMAL_PROTECTED';state:'RESPONSE_RECORDED'|'FIRST_SEND_INPUT_AND_INIT_RECORDED'|'LIVE_SEND_INPUT_YIELDED'|'UNKNOWN';recordRef:Ref;responseRef:Ref|null;processRef:Ref|null;actualExecutionVerified:false;executionAuthorized:false;dispatchPerformed:false}
 type Fresh={material:NormalInstructionDriverInput['instruction'];end:number;monoEnd:number;current:unknown};
-type Ticket={grantRef:Ref;input:NormalInstructionDriverInput;signal:AbortSignal;active:boolean;claimed:boolean;verify:()=>Promise<void>;remaining:()=>number};
+type Ticket={parent?:LiveSendParent;grantRef:Ref;input:NormalInstructionDriverInput;signal:AbortSignal;active:boolean;claimed:boolean;verify:()=>Promise<void>;remaining:()=>number};
 const claimedDispatches=new WeakMap<object,Ticket>();
 export type NormalDispatchClaim=ReturnType<typeof claimNormalInstructionDispatch>;
 export function originalNormalDispatchGrant(claim:NormalDispatchClaim){
  const ticket=claimedDispatches.get(claim);return ticket?.active&&ticket.claimed&&!ticket.signal.aborted?cloneV1(ticket.grantRef):null;
+}
+export function originalNormalLiveDispatch(claim:NormalDispatchClaim){
+ const t=claimedDispatches.get(claim);return t?.parent&&t.active&&t.claimed&&!t.signal.aborted?{parent:cloneV1(t.parent),grant:cloneV1(t.grantRef)}:null;
 }
 const dispatchTickets=new WeakMap<object,Ticket>();
 const copyInstruction=(v:NormalInstructionDriverInput['instruction'])=>({...captureInstructionInput({...v,bytes:null}),bytes:new Uint8Array(v.bytes)});
@@ -33,6 +37,7 @@ export function claimNormalInstructionDispatch(capability:object,signal:AbortSig
  claimedDispatches.set(claim,t);return claim;
 }
 type Ports={intake:NormalInstructionIntake;store:NormalInstructionStore;post:NormalProtectedPostClient;current:NormalStartCurrent;grantRef:Ref;clock:()=>number;timeoutMs:number};
+const originalFirstMaterial=NormalInstructionIntake.prototype.firstMaterial;
 const originalHasReceived=NormalInstructionIntake.prototype.hasReceived;
 const originalObservations=NormalInstructionIntake.prototype.observations,originalRecord=NormalObservationSpool.prototype.record;
 const originalRead=NormalInstructionIntake.prototype.instruction,originalPrepare=NormalProtectedPostClient.prototype.preparePermit,originalSend=NormalProtectedPostClient.prototype.send;
@@ -44,26 +49,27 @@ export class NormalInstructionCoordinator{
  constructor(p:Ports){
   if(!p||isProxy(p)||!recordV1(p,['intake','store','post','current','grantRef','clock','timeoutMs'])||isProxy(p.intake)||Object.getPrototypeOf(p.intake)!==NormalInstructionIntake.prototype||
    isProxy(p.post)||Object.getPrototypeOf(p.post)!==NormalProtectedPostClient.prototype||!p.store||isProxy(p.store)||p.store.transport!=='NORMAL_PROTECTED'||typeof p.store.exclusive!=='function'||
-   !p.current||isProxy(p.current)||p.current.transport!=='NORMAL_PROTECTED'||typeof p.current.current!=='function'||!refV1(p.grantRef)||typeof p.clock!=='function'||!Number.isSafeInteger(p.timeoutMs)||p.timeoutMs<1||p.timeoutMs>10000)fail();
+   !p.current||isProxy(p.current)||p.current.transport!=='NORMAL_PROTECTED'||typeof p.current.current!=='function'||!refV1(p.grantRef)||typeof p.clock!=='function'||isProxy(p.clock)||isProxy(p.current.current)||isProxy(p.store.exclusive)||!Number.isSafeInteger(p.timeoutMs)||p.timeoutMs<1||p.timeoutMs>10000)fail();
   this.#p={...p,grantRef:cloneV1(p.grantRef)};this.#current=p.current.current;this.#exclusive=p.store.exclusive;this.#ports();
  }
- #ports(){const p=this.#p;if(p.intake.hasReceived!==originalHasReceived||NormalInstructionIntake.prototype.hasReceived!==originalHasReceived||p.intake.observations!==originalObservations||NormalInstructionIntake.prototype.observations!==originalObservations||p.intake.instruction!==originalRead||NormalInstructionIntake.prototype.instruction!==originalRead||p.post.preparePermit!==originalPrepare||p.post.send!==originalSend||NormalProtectedPostClient.prototype.preparePermit!==originalPrepare||NormalProtectedPostClient.prototype.send!==originalSend||p.current.current!==this.#current||p.store.exclusive!==this.#exclusive||p.store.transport!=='NORMAL_PROTECTED')fail('NORMAL_INSTRUCTION_PORT_CHANGED');}
+ #ports(){const p=this.#p;if(p.intake.firstMaterial!==originalFirstMaterial||NormalInstructionIntake.prototype.firstMaterial!==originalFirstMaterial||p.intake.hasReceived!==originalHasReceived||NormalInstructionIntake.prototype.hasReceived!==originalHasReceived||p.intake.observations!==originalObservations||NormalInstructionIntake.prototype.observations!==originalObservations||p.intake.instruction!==originalRead||NormalInstructionIntake.prototype.instruction!==originalRead||p.post.preparePermit!==originalPrepare||p.post.send!==originalSend||NormalProtectedPostClient.prototype.preparePermit!==originalPrepare||NormalProtectedPostClient.prototype.send!==originalSend||p.current.current!==this.#current||p.store.exclusive!==this.#exclusive||p.store.transport!=='NORMAL_PROTECTED')fail('NORMAL_INSTRUCTION_PORT_CHANGED');}
  #now(){const n=this.#p.clock();if(!Number.isSafeInteger(n)||!Number.isFinite(new Date(n).getTime())||n<this.#last)fail('NORMAL_INSTRUCTION_CLOCK_INVALID');this.#last=n;return n;}
  #permit(p:any,e:Send){if(!recordV1(p,['ref','commandId','envelopeHash','issuedAt','expiresAt'])||!refV1(p.ref)||p.ref.version!==1||p.commandId!==e.commandId||p.envelopeHash!==e.envelopeHash||!isoV1(p.issuedAt)||!isoV1(p.expiresAt)||Date.parse(p.issuedAt)>this.#now()||Date.parse(p.expiresAt)<=Date.parse(p.issuedAt)||Date.parse(p.expiresAt)>Math.min(Date.parse(p.issuedAt)+30000,Date.parse(e.expiresAt)))fail('NORMAL_INSTRUCTION_PERMIT_INVALID');}
  #rows(raw:unknown,e:Send,received:Ref){
   if(!arrayV1(raw,5)||Buffer.byteLength(canonicalJson(raw))>2097152)fail();const rows=cloneV1(raw) as any[];let at=-Infinity;const ids=new Set<string>();
   const base=['sequence','state','key','envelopeHash','grantRef','sessionBindingRef','receivedRef','previousRef','permit','proofResultRef','recordedAt'];
   for(const [i,r] of rows.entries()){const s=r?.snapshot,prior=rows[i-1]?.snapshot,dispatch=i>=2&&rows[2]?.snapshot.state==='SEND_DISPATCH_ATTEMPTED';
-   if(!recordV1(r,['ref','snapshot'])||!refV1(r.ref)||r.ref.version!==1||ids.has(r.ref.id)||r.ref.contentHash!==hash(s)||!recordV1(s,dispatch?[...base,'localAttemptRef','dispatchAttemptRef','responseRef','processRef',...(i===3&&s?.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'?['startReadyRef','inputEvidence','initConfirmationRef']:[])]:base)||
+   if(!recordV1(r,['ref','snapshot'])||!refV1(r.ref)||r.ref.version!==1||ids.has(r.ref.id)||r.ref.contentHash!==hash(s)||!recordV1(s,dispatch?[...base,'localAttemptRef','dispatchAttemptRef','responseRef','processRef',...(i===3&&s?.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'?['startReadyRef','inputEvidence','initConfirmationRef']:i===3&&s?.state==='LIVE_SEND_INPUT_YIELDED'?['registrationRef','startReadyRef','firstSendKey','firstEnvelopeHash','firstTerminalRef','initConfirmationRef','inputEvidence']:[])]:base)||
     s.sequence!==i+1||!same(s.key,receiptKeyV1(e))||s.envelopeHash!==e.envelopeHash||!same(s.grantRef,this.#p.grantRef)||!same(s.sessionBindingRef,e.payload.sessionBindingRef)||!same(s.receivedRef,received)||!same(s.previousRef,rows[i-1]?.ref??null)||!isoV1(s.recordedAt)||Date.parse(s.recordedAt)<at||Date.parse(s.recordedAt)>this.#now())fail();
    ids.add(r.ref.id);at=Date.parse(s.recordedAt);
    if(i===0){if(s.state!=='SEND_ATTEMPTED'||s.permit!==null||s.proofResultRef!==null)fail();continue;}
    if(prior.state==='UNKNOWN')fail();
    if(dispatch){
     if(i===2&&(prior.state!=='PERMIT_RECORDED'||s.state!=='SEND_DISPATCH_ATTEMPTED'||s.dispatchAttemptRef!==null||s.responseRef!==null||s.processRef!==null)||
-     i===3&&!['RESPONSE_RECORDED','FIRST_SEND_INPUT_AND_INIT_RECORDED','UNKNOWN'].includes(s.state)||i===4&&(!['FIRST_SEND_INPUT_AND_INIT_RECORDED','RESPONSE_RECORDED'].includes(prior.state)||s.state!=='UNKNOWN')||
+     i===3&&!['RESPONSE_RECORDED','FIRST_SEND_INPUT_AND_INIT_RECORDED','LIVE_SEND_INPUT_YIELDED','UNKNOWN'].includes(s.state)||i===4&&(!['FIRST_SEND_INPUT_AND_INIT_RECORDED','RESPONSE_RECORDED','LIVE_SEND_INPUT_YIELDED'].includes(prior.state)||s.state!=='UNKNOWN')||
      !same(s.localAttemptRef,rows[0].ref)||i>2&&!same(s.dispatchAttemptRef,rows[2].ref)||!same(s.permit,rows[1].snapshot.permit)||!same(s.proofResultRef,rows[1].snapshot.proofResultRef))fail();
-    if(s.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'){
+    if(s.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'||s.state==='LIVE_SEND_INPUT_YIELDED'){
+     if(s.state==='LIVE_SEND_INPUT_YIELDED')this.#parentShape(s,e);
      const v=s.inputEvidence;
      if(i!==3||s.responseRef!==null||s.processRef!==null||!refV1(s.startReadyRef)||s.startReadyRef.version!==1||!refV1(s.initConfirmationRef)||s.initConfirmationRef.version!==1||
       !recordV1(v,['dispatchAttemptRef','instructionRef','partsRef','instructionDigest','messageDigest'])||!same(v.dispatchAttemptRef,s.dispatchAttemptRef)||
@@ -77,6 +83,42 @@ export class NormalInstructionCoordinator{
    }
    if(s.permit!==null){this.#permit(s.permit,e);if(!refV1(s.proofResultRef))fail();}else if(s.proofResultRef!==null||s.state!=='UNKNOWN')fail();
   }return rows;
+ }
+ #parentShape(p:Record<string,any>,e:Send){
+  const k=p.firstSendKey;
+  if(!recordV1(k,['projectId','executionId','executionGeneration','commandId'])||!uuidV1(k.commandId)||k.commandId===e.commandId||
+   !same(k,{...receiptKeyV1(e),commandId:k.commandId})||!same(p.registrationRef,e.executorRegistrationRef)||
+   ![p.firstTerminalRef,p.startReadyRef,p.initConfirmationRef].every(r=>refV1(r)&&r.version===1)||typeof p.firstEnvelopeHash!=='string'||!/^[0-9a-f]{64}$/.test(p.firstEnvelopeHash))fail();
+ }
+ async #strict<T>(e:Send,check:()=>void,body:(tx:NormalJournalTransaction)=>Promise<T>,terminalClose=false){
+  const key=receiptKeyV1(e);let entered=false,finished=false,closed=false,finalCalls=0,releaseChecked=false,result:T|undefined;
+  const guard=()=>{if(closed)fail();check();};
+  try{await Reflect.apply(this.#exclusive,this.#p.store,[key,async(tx:NormalJournalTransaction)=>{
+   if(entered||closed||!tx||isProxy(tx))fail();entered=true;guard();
+   const methods=['requireStartReadyClose','read','appendAndSync'].map(k=>Object.getOwnPropertyDescriptor(tx,k)?.value);
+   if(methods.some(fn=>typeof fn!=='function'||isProxy(fn)))fail();
+   const invoke=(i:number,args:unknown[])=>{guard();const key=['requireStartReadyClose','read','appendAndSync'][i]!;if(Object.getOwnPropertyDescriptor(tx,key)?.value!==methods[i])fail();return Reflect.apply(methods[i],tx,args);};
+   invoke(0,[key]);
+   if(terminalClose){
+    const arm=Object.getOwnPropertyDescriptor(tx,'requireLiveInputClose')?.value;
+    if(typeof arm!=='function'||isProxy(arm))fail();
+    Reflect.apply(arm,tx,[key,()=>{
+     if(++finalCalls!==1||!finished||closed)fail('NORMAL_INSTRUCTION_CLOSE_ORDER');guard();releaseChecked=true;
+    }]);
+   }
+   result=await body({read:async()=>captureInstructionInput(await invoke(1,[])) as unknown[],appendAndSync:async value=>{await invoke(2,[value]);guard();}});guard();finished=true;
+  }]);}finally{closed=true;}
+  if(!finished||terminalClose&&(!releaseChecked||finalCalls!==1))fail('NORMAL_INSTRUCTION_SYNC_UNCERTAIN');if(!terminalClose)check();return result as T;
+ }
+ async #parent(p:LiveSendParent,e:Send,check:()=>void){
+  this.#parentShape(p,e);check();
+  const first=await Reflect.apply(originalFirstMaterial,this.#p.intake,[p.firstSendKey,p.firstEnvelopeHash]);check();
+  if(!same(first.envelope.executorRegistrationRef,p.registrationRef)||!same(first.envelope.payload.sessionBindingRef,e.payload.sessionBindingRef))fail();
+  await this.#strict(first.envelope,check,async tx=>{
+   const rows=this.#rows(await tx.read(),first.envelope,first.receivedRef),last=rows.at(-1);
+   if(rows.length!==4||last.snapshot.state!=='FIRST_SEND_INPUT_AND_INIT_RECORDED'||!same(last.ref,p.firstTerminalRef)||
+    !same(last.snapshot.startReadyRef,p.startReadyRef)||!same(last.snapshot.initConfirmationRef,p.initConfirmationRef)||last.snapshot.inputEvidence.instructionDigest!==first.instructionDigest)fail('NORMAL_INSTRUCTION_HISTORY_CONFLICT');
+  });
  }
  #result(e:Send,row:any,state=row.snapshot.state){return{transport:'NORMAL_PROTECTED' as const,state,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,recordRef:cloneV1(row.ref),permit:cloneV1(row.snapshot.permit),proofResultRef:cloneV1(row.snapshot.proofResultRef),readOnly:true as const,executionAuthorized:false as const,dispatchPerformed:false as const};}
  async #bounded<T>(fn:(signal:AbortSignal)=>Promise<T>,outer:AbortSignal,end:number){
@@ -107,28 +149,40 @@ export class NormalInstructionCoordinator{
   this.#busy=true;
   try{
    const received=await originalObservations.call(this.#p.intake,e);this.#ports();if(signal.aborted)fail();
-   const value=await this.#exclusive.call(this.#p.store,receiptKeyV1(e),async tx=>{
-    const rows=this.#rows(await tx.read(),e,received.localRecordRef);this.#ports();if(signal.aborted)fail();
+   let historyRows:any[]=[];
+   const historyCheck=()=>{this.#ports();if(signal.aborted)fail();};
+   const captured:{value?:{state:string;inputs:NormalLocalObservation[]}}={};let entered=false,closed=false;
+   try{await Reflect.apply(this.#exclusive,this.#p.store,[receiptKeyV1(e),async(tx:NormalJournalTransaction)=>{
+    if(entered||closed)fail();entered=true;
+    const rows=this.#rows(await tx.read(),e,received.localRecordRef);historyRows=rows;this.#ports();if(signal.aborted)fail();
     if(rows[3]?.snapshot.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'){
      const material=await originalRead.call(this.#p.intake,cloneV1(e),true);this.#ports();
      if(signal.aborted||rows[3].snapshot.inputEvidence.instructionDigest!==contentHash(material.bytes))fail('NORMAL_INSTRUCTION_HISTORY_CONFLICT');
     }
     const inputs:NormalLocalObservation[]=[received];
-    for(const r of rows){const v=r.snapshot;if(v.state==='SEND_DISPATCH_ATTEMPTED'||v.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED')continue;
+    for(const r of rows){const v=r.snapshot;if(v.state==='SEND_DISPATCH_ATTEMPTED'||v.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'||v.state==='LIVE_SEND_INPUT_YIELDED')continue;
      inputs.push({type:v.state==='SEND_ATTEMPTED'?'PREPARED':v.state==='RESPONSE_RECORDED'?'PROVIDER_RESPONSE_RECEIVED':v.state,
       commandId:e.commandId,envelopeHash:e.envelopeHash,localRecordRef:cloneV1(r.ref),processRef:v.processRef??null,occurredAt:v.recordedAt,
       reasonCode:v.state==='RESPONSE_RECORDED'?'UNVERIFIED_PROVIDER_CLAIM':v.state==='UNKNOWN'?'RECORD_UNCERTAIN':'NONE'});
     }
-    return{state:rows.at(-1)?.snapshot.state??'NOT_PREPARED',inputs};
-   });this.#ports();if(signal.aborted)fail();return value as {state:string;inputs:NormalLocalObservation[]};
+    if(closed)fail();captured.value={state:rows.at(-1)?.snapshot.state??'NOT_PREPARED',inputs};return cloneV1(captured.value);
+   }]);}finally{closed=true;}
+   historyCheck();const value=captured.value;if(!value)fail();
+   if(value.state==='LIVE_SEND_INPUT_YIELDED'){
+    const snapshot=historyRows[3].snapshot,material=await Reflect.apply(originalRead,this.#p.intake,[e,true]);historyCheck();
+    if(contentHash(material.bytes)!==snapshot.inputEvidence.instructionDigest)fail();
+    await this.#parent(snapshot,e,historyCheck);
+    await this.#strict(e,historyCheck,async tx=>{if(!same(this.#rows(await tx.read(),e,received.localRecordRef),historyRows))fail();});
+   }
+   return value as {state:string;inputs:NormalLocalObservation[]};
   }finally{this.#busy=false;}
  }
  async recordObservations(raw:unknown,spool:NormalObservationSpool,signal:AbortSignal){
   const check=()=>{this.#ports();if(signal.aborted||isProxy(spool)||Object.getPrototypeOf(spool)!==NormalObservationSpool.prototype||spool.record!==originalRecord||NormalObservationSpool.prototype.record!==originalRecord)fail('NORMAL_INSTRUCTION_OBSERVATION_PORT_INVALID');};
   check();const source=await this.observations(raw,signal),recordedRefs:Ref[]=[];check();
   for(const input of source.inputs){check();const ref=await originalRecord.call(spool,input);check();recordedRefs.push(cloneV1(ref));}
-  const first=source.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED';
-  if(first&&source.inputs.at(-1)?.type!=='PERMIT_RECORDED')fail();
+  const first=source.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'||source.state==='LIVE_SEND_INPUT_YIELDED';
+  if(first&&!same(source.inputs.map(v=>v.type),['RECEIVED','PREPARED','PERMIT_RECORDED']))fail();
   return{state:source.state,recordedRefs,...(first?{requiredAckRef:recordedRefs.at(-1)}:{}),executionAuthorized:false as const,dispatchPerformed:false as const,actualExecutionVerified:false as const};
  }
  async prepare(raw:unknown,signal:AbortSignal):Promise<NormalInstructionPreparationResult>{
@@ -180,9 +234,51 @@ export class NormalInstructionCoordinator{
   if(!isNormalInstructionWire(wire))fail('NORMAL_INSTRUCTION_WIRE_REQUIRED');
   const send=wire.send,started=performance.now(),wall=this.#now();let end=Math.min(ready.end,Date.parse(e.expiresAt),Date.parse(prepared.permit!.expiresAt),wall+this.#p.timeoutMs,wall+ready.monoEnd-started),ticket:Ticket|undefined,lastTick=started;
   const live=()=>{this.#ports();const tick=performance.now();if(tick<lastTick)fail('NORMAL_INSTRUCTION_CLOCK_INVALID');lastTick=tick;if(!isNormalInstructionWire(wire)||wire.send!==send||wire.transport!=='NORMAL_PROTECTED'||signal.aborted||this.#now()>=end||performance.now()-started>=end-wall)fail('NORMAL_INSTRUCTION_DISPATCH_EXPIRED');};
-  let capability:object|undefined,completion:FirstSendCompletion|undefined,committed=false;
+  const verifyCurrent=async(attemptRef:Ref)=>{
+     const material=await Reflect.apply(originalRead,this.#p.intake,[cloneV1(e)]);live();if(!same({...material,bytes:null},{...ready.material,bytes:null})||!Buffer.from(material.bytes).equals(Buffer.from(ready.material.bytes)))fail('NORMAL_INSTRUCTION_MATERIAL_CHANGED');
+     const v:any=captureInstructionInput(await this.#bounded(s=>Reflect.apply(this.#current,this.#p.current,[cloneV1(e),cloneV1(attemptRef),s]),signal,end));live();
+     const refs=[...new Map(e.context.sourceScopes.map(s=>[canonicalJson(s.observationRef),s.observationRef])).values()],now=this.#now();
+     if(!recordV1(v,['transport','key','envelopeHash','grantRef','localAttemptRef','sourceObservationRefs','osOwnershipRef','checkedAt','expiresAt'])||v.transport!=='NORMAL_PROTECTED'||!same(v.key,receiptKeyV1(e))||v.envelopeHash!==e.envelopeHash||!same(v.grantRef,this.#p.grantRef)||!same(v.localAttemptRef,attemptRef)||!same(v.sourceObservationRefs,refs)||!refV1(v.osOwnershipRef)||!isoV1(v.checkedAt)||!isoV1(v.expiresAt)||Date.parse(v.checkedAt)>now||now-Date.parse(v.checkedAt)>30000||Date.parse(v.expiresAt)<=now||Date.parse(v.expiresAt)>Date.parse(v.checkedAt)+30000)fail('NORMAL_INSTRUCTION_CURRENT_INVALID');
+     const {checkedAt:_,expiresAt:__,...binding}=v;if(!same(ready.current,binding))fail('NORMAL_INSTRUCTION_CURRENT_CHANGED');end=Math.min(end,Date.parse(v.expiresAt));live();
+  };
+  let capability:object|undefined,completion:FirstSendCompletion|LiveSendCompletion|undefined,committed=false;
   this.#busy=true;
   try{
+   const parent=normalWireLiveParent(wire);
+   if(parent){
+    let chain:any[]=[];
+    const checkParent=()=>{live();if(!same(normalWireLiveParent(wire),parent))fail();};
+    const readChain=async(tx:NormalJournalTransaction)=>this.#rows(await tx.read(),e,ready.material.receivedRef);
+    const compare=async(tx:NormalJournalTransaction)=>{if(!same(await readChain(tx),chain))fail('NORMAL_INSTRUCTION_HISTORY_CONFLICT');};
+    const append=async(tx:NormalJournalTransaction,state:string,summary?:LiveSendCompletion['summary'])=>{
+     const snapshot={...cloneV1(chain[1].snapshot),sequence:chain.length+1,state,previousRef:cloneV1(chain.at(-1).ref),recordedAt:new Date(this.#now()).toISOString(),
+      localAttemptRef:cloneV1(chain[0].ref),dispatchAttemptRef:chain[2]?.ref??null,responseRef:null,processRef:null,...(summary??{})};
+     const entry={ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};
+     await tx.appendAndSync(entry);const saved=await readChain(tx);if(!same(saved,[...chain,entry]))fail('NORMAL_INSTRUCTION_SYNC_UNCERTAIN');chain=saved;return entry;
+    };
+    await this.#strict(e,checkParent,async tx=>{
+     chain=await readChain(tx);if(chain.length!==2||!same(chain[1].ref,prepared.recordRef)||!same(chain[1].snapshot.permit,prepared.permit)||!same(chain[1].snapshot.proofResultRef,prepared.proofResultRef))fail();
+     await append(tx,'SEND_DISPATCH_ATTEMPTED');
+    });
+    const verify=async()=>{
+     checkParent();await this.#parent(parent,e,checkParent);checkParent();
+     await verifyCurrent(chain[0].ref);checkParent();await this.#strict(e,checkParent,compare);
+    };
+    const issued=Object.freeze({});capability=issued;
+    const value=await this.#bounded(async child=>{
+     ticket={parent:cloneV1(parent),grantRef:cloneV1(this.#p.grantRef),input:{envelope:cloneV1(e),instruction:copyInstruction(ready.material),localAttemptRef:cloneV1(chain[0].ref),dispatchAttemptRef:cloneV1(chain[2].ref),permit:cloneV1(prepared.permit!),proofResultRef:cloneV1(prepared.proofResultRef!),actualExecutionVerified:false,executionAuthorized:false},signal:child,active:true,claimed:false,
+      verify:async()=>{if(child.aborted||!ticket?.active)fail();await verify();if(child.aborted||!ticket.active)fail();},remaining:()=>{checkParent();return Math.min(end-this.#now(),end-wall-(performance.now()-started));}};
+     dispatchTickets.set(issued,ticket);return Reflect.apply(send,wire,[issued,child]);
+    },signal,end);
+    completion=consumeNormalFirstSendResult(wire,issued,value);if(!ticket?.claimed||completion.kind!=='LIVE')fail();
+    const delivery=completion;signal.addEventListener('abort',delivery.abandon,{once:true});
+    const active=()=>{checkParent();delivery.check();};
+    active();await verify();active();
+    // 마지막 본문 검산과 strict close가 모두 정상인 입력 제공 사실은 후행 취소로 역행하지 않는다.
+    const last=await this.#strict(e,active,async tx=>{await compare(tx);active();return append(tx,'LIVE_SEND_INPUT_YIELDED',delivery.summary);},true);
+    delivery.commit(last.ref);committed=true;
+    return{transport:'NORMAL_PROTECTED',state:'LIVE_SEND_INPUT_YIELDED',recordRef:cloneV1(last.ref),responseRef:null,processRef:null,actualExecutionVerified:false,executionAuthorized:false,dispatchPerformed:false};
+   }
    const result=await this.#exclusive.call(this.#p.store,receiptKeyV1(e),async tx=>{
     live();let rows=this.#rows(await tx.read(),e,ready.material.receivedRef);live();
     if(rows.length!==2||!same(rows[1].ref,prepared.recordRef)||!same(rows[1].snapshot.permit,prepared.permit)||!same(rows[1].snapshot.proofResultRef,prepared.proofResultRef))fail('NORMAL_INSTRUCTION_DISPATCH_NOT_ELIGIBLE');
@@ -193,14 +289,9 @@ export class NormalInstructionCoordinator{
      const reread=this.#rows(await tx.read(),e,ready.material.receivedRef);if(!same(reread,[...rows,entry]))fail('NORMAL_INSTRUCTION_SYNC_UNCERTAIN');rows=reread;return entry;
     };
     const output=(row:any):NormalInstructionDispatchResult=>({transport:'NORMAL_PROTECTED',state:row.snapshot.state,recordRef:cloneV1(row.ref),responseRef:cloneV1(row.snapshot.responseRef),processRef:cloneV1(row.snapshot.processRef),actualExecutionVerified:false,executionAuthorized:false,dispatchPerformed:false});
-    const originalCurrent=ready.current;
     const verify=async()=>{
      live();const saved=this.#rows(await tx.read(),e,ready.material.receivedRef);live();if(!same(saved,rows))fail();
-     const material=await originalRead.call(this.#p.intake,cloneV1(e));live();if(!same({...material,bytes:null},{...ready.material,bytes:null})||!Buffer.from(material.bytes).equals(Buffer.from(ready.material.bytes)))fail('NORMAL_INSTRUCTION_MATERIAL_CHANGED');
-     const v:any=captureInstructionInput(await this.#bounded(s=>this.#current.call(this.#p.current,cloneV1(e),cloneV1(rows[0].ref),s),signal,end));live();
-     const refs=[...new Map(e.context.sourceScopes.map(s=>[canonicalJson(s.observationRef),s.observationRef])).values()],now=this.#now();
-     if(!recordV1(v,['transport','key','envelopeHash','grantRef','localAttemptRef','sourceObservationRefs','osOwnershipRef','checkedAt','expiresAt'])||v.transport!=='NORMAL_PROTECTED'||!same(v.key,receiptKeyV1(e))||v.envelopeHash!==e.envelopeHash||!same(v.grantRef,this.#p.grantRef)||!same(v.localAttemptRef,rows[0].ref)||!same(v.sourceObservationRefs,refs)||!refV1(v.osOwnershipRef)||!isoV1(v.checkedAt)||!isoV1(v.expiresAt)||Date.parse(v.checkedAt)>now||now-Date.parse(v.checkedAt)>30000||Date.parse(v.expiresAt)<=now||Date.parse(v.expiresAt)>Date.parse(v.checkedAt)+30000)fail('NORMAL_INSTRUCTION_CURRENT_INVALID');
-     const {checkedAt:_,expiresAt:__,...binding}=v;if(!same(originalCurrent,binding))fail('NORMAL_INSTRUCTION_CURRENT_CHANGED');end=Math.min(end,Date.parse(v.expiresAt));live();
+     await verifyCurrent(rows[0].ref);
     };
     try{
      await verify();live();const dispatch=await append('SEND_DISPATCH_ATTEMPTED');live();
@@ -211,7 +302,7 @@ export class NormalInstructionCoordinator{
       dispatchTickets.set(issued,ticket);return send.call(wire,issued,child);
      },signal,end);live();
      if(isNormalFirstSendWire(wire)){
-      if(!ticket?.claimed)fail();completion=consumeNormalFirstSendResult(wire,issued,observation);
+      if(!ticket?.claimed)fail();completion=consumeNormalFirstSendResult(wire,issued,observation);if(completion.kind!=='FIRST')fail();
       signal.addEventListener('abort',completion.abandon,{once:true});live();
       const last=await append('FIRST_SEND_INPUT_AND_INIT_RECORDED',null,completion.summary);live();return output(last);
      }
@@ -225,7 +316,7 @@ export class NormalInstructionCoordinator{
     }finally{if(ticket)ticket.active=false;}
    });
    const completed=result as NormalInstructionDispatchResult;if(completed.state==='RESPONSE_RECORDED')live();
-   if(completed.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'){live();if(!completion)return fail();completion.commit();live();committed=true;}
+   if(completed.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'){live();if(!completion)return fail();completion.commit(completed.recordRef);live();committed=true;}
    return completed;
   }catch(error){this.#unknown=true;throw error;}finally{if(completion)signal.removeEventListener('abort',completion.abandon);if(!committed)completion?.abandon();if(capability)abandonNormalFirstSendResult(capability);if(ticket)ticket.active=false;this.#busy=false;}
  }

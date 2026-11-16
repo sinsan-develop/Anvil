@@ -1,4 +1,4 @@
-import {runNormalFirstSend,type NormalFirstSendSource,type FirstSendCompletion} from '../../runtime/normal-first-send-owner.ts';
+import {runNormalFirstSend,runNormalLiveSend,liveSendParent,type LiveInputPort,type NormalFirstSendSource,type FirstSendCompletion,type LiveSendCompletion} from '../../runtime/normal-first-send-owner.ts';
 import type {NormalStartWire} from '../../runtime/normal-start-coordinator.ts';
 import {isProxy} from 'node:util/types';
 import {recordV1,refV1} from '../../../../contracts/runtime/validation-v1.ts';
@@ -7,9 +7,10 @@ import {captureInstructionInput} from '../../runtime/normal-instruction-intake.t
 import {claimNormalInstructionDispatch,type NormalInstructionDriverInput,type NormalInstructionObservation,type NormalInstructionWirePort} from '../../runtime/normal-instruction-coordinator.ts';
 export interface NormalInstructionDriver{send(input:NormalInstructionDriverInput,signal:AbortSignal):Promise<NormalInstructionObservation>}
 const firstMode=Symbol('first-send');
-const firstWires=new WeakMap<object,{worker:NormalStartWire;source:NormalFirstSendSource}>();
-const firstResults=new WeakMap<object,{wire:object;token:object;completion:FirstSendCompletion}>();
+const firstWires=new WeakMap<object,{worker:NormalStartWire;source:NormalFirstSendSource;port?:LiveInputPort}>();
+const firstResults=new WeakMap<object,{wire:object;token:object;completion:FirstSendCompletion|LiveSendCompletion}>();
 export const isNormalFirstSendWire=(wire:object)=>firstWires.has(wire);
+export function normalWireLiveParent(wire:object){const first=firstWires.get(wire);return first?liveSendParent(first.worker,wire):null;}
 export function consumeNormalFirstSendResult(wire:object,capability:object,value:unknown){
  const stored=firstResults.get(capability);
  if(!stored||stored.wire!==wire||stored.token!==value)return fail();
@@ -24,13 +25,13 @@ function fail(code='NORMAL_INSTRUCTION_WIRE_UNAVAILABLE'):never{throw Error(code
 export class NormalInstructionWire implements NormalInstructionWirePort{
  readonly transport='NORMAL_PROTECTED' as const;
  #driver?:NormalInstructionDriver;#send?:NormalInstructionDriver['send'];#busy=false;#unknown=false;
- static forFirstSend(worker:NormalStartWire,source:NormalFirstSendSource){
-  return new NormalInstructionWire({worker,source},firstMode);
+ static forFirstSend(worker:NormalStartWire,source:NormalFirstSendSource,port?:LiveInputPort){
+  return new NormalInstructionWire({worker,source,port},firstMode);
  }
  constructor(ports:{driver:NormalInstructionDriver});
- constructor(ports:{worker:NormalStartWire;source:NormalFirstSendSource},mode:typeof firstMode);
- constructor(ports:{driver:NormalInstructionDriver}|{worker:NormalStartWire;source:NormalFirstSendSource},mode?:typeof firstMode){
-  if(mode===firstMode&&'worker' in ports){firstWires.set(this,{worker:ports.worker,source:ports.source});issuedWires.add(this);return;}
+ constructor(ports:{worker:NormalStartWire;source:NormalFirstSendSource;port?:LiveInputPort},mode:typeof firstMode);
+ constructor(ports:{driver:NormalInstructionDriver}|{worker:NormalStartWire;source:NormalFirstSendSource;port?:LiveInputPort},mode?:typeof firstMode){
+  if(mode===firstMode&&'worker' in ports){firstWires.set(this,{worker:ports.worker,source:ports.source,port:ports.port});issuedWires.add(this);return;}
   if(!ports||isProxy(ports)||!recordV1(ports,['driver'])||!('driver' in ports)||!ports.driver||isProxy(ports.driver)||!recordV1(ports.driver,['send'])||typeof ports.driver.send!=='function')fail('NORMAL_INSTRUCTION_DRIVER_REQUIRED');
   this.#driver=ports.driver;this.#send=ports.driver.send;issuedWires.add(this);
  }
@@ -50,7 +51,7 @@ export class NormalInstructionWire implements NormalInstructionWirePort{
    const first=firstWires.get(this);
    if(first){
     entered=true;
-    const completion=await runNormalFirstSend(first.worker,original,first.source,child.signal);
+    const completion=normalWireLiveParent(this)?await runNormalLiveSend(first.worker,this,original,child.signal):await runNormalFirstSend(first.worker,original,first.source,child.signal,this,first.port);
     try{check();const token=Object.freeze(Object.create(null) as object);firstResults.set(capability,{wire:this,token,completion});return token;}
     catch(error){completion.abandon();throw error;}
    }
