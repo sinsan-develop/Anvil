@@ -4,10 +4,10 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-16 직접 승인 후 구현 재개
 
-- **현재 상태: 전체 계획 미완료 · UI00 모바일 메뉴 초점 소스 검수 완료·통합 중.** 실제 브라우저 인수와 구분한다.
+- **현재 상태: 전체 계획 미완료 · FN07 관측 진단 소스 검수 완료·통합 중.** 실제 추가 관측은 미승인이다.
 - **현재 승인·결과:** 서버 항목 귀속 계약5039D14A의 source/RAM·미적용0099는 직접 채택됐다. CLI 한정 관측1회도 승인·소진됐고 결과는 UNKNOWN이다. 설치 여부·원인은 미확정이며 재조회0, 부모 exit0·잔여 수거 핸들0이다.
-- **담당·실행:** Primary가 UI00 제품·시험 쓰기를 반환했다. Main이 검수·현황·Git 통합을 맡고 실행 핸들은 0이다. 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
-- **Git 제품 기준:** 최신 검증된 제품 main fedf6631e37c745c6e2534e0a3e3554f85bf11ff(PR156). source e86414ec와 tree 동일·병합본 RAM3PASS·복구tag pr-156-head 및 완료branch 정리 확인. 다음 branch codex/av3-shell-menu-focus에서 기존 승인 UI00을 진행한다.
+- **담당·실행:** Primary가 진단 소스·시험 쓰기를 반환했다. Main이 검수·현황·Git 통합을 맡고 실행 핸들은 0이다. 실제 관측·DB·권한·키·서비스·Agent 실행은 제외한다.
+- **Git 제품 기준:** 최신 검증 main188b506712a1ad65658a633465b2852e50c95365(PR157). source1a470851와 tree 동일·병합본RAM4PASS·복구tag pr-157-head와 완료branch 정리 확인. 다음 branch codex/av3-cli-observation-diagnostics에서 내부 소스 보완을 진행한다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
 - **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
 - **현재 구현 검증:** UI06 서버 항목 귀속은 직접87PASS·인접43PASS·루트타입0·독립 C0/I0/M0·27개 지문 일치·병합본 RAM3PASS로 PR156에 통합됐다. 구형 미기록·B/본문section A 구별·원receipt/audit·적용본 교체후 과거읽기/개정409를 확인했다. 실제 PG/served UI·Agent 실행 증거는 아니다.
@@ -15,7 +15,7 @@
 - **P03·SSH:** R3 복구는 복사·PG 기동·전환에 도달하지 못했고 원 자원을 보존한다. 자동 wrapper의 SSH255/UNKNOWN과 일반 SSH를 구분한다. 사용자 Windows PowerShell 로그인 성공 증거(11-16 18:04:45 KST)가 있으며 서버/로그인 불능으로 일반화하지 않는다. 새 부수 진단·재복제·정리는 하지 않는다.
 - **기록 기준:** 소스/RAM 합격, 실제 동작 확인, 사용자 인수를 구분한다. 기존 서로 다른 이력은 아래 보관 영역에 남긴다. 사용자 열람본의 기존 미추적 원본은 `D:\Project\Anvil\.av3-data\status-view-backup-20261116-184648`에 원본 해시 그대로 보존했다.
 
-최신 상세 근거: [작업 branch WORK_STATUS](https://github.com/sinsan-develop/Anvil/blob/codex/av3-shell-menu-focus/docs/WORK_STATUS.md), [WORK_CHECK](https://github.com/sinsan-develop/Anvil/blob/codex/av3-shell-menu-focus/docs/WORK_CHECK.md).
+최신 상세 근거: [작업 branch WORK_STATUS](https://github.com/sinsan-develop/Anvil/blob/codex/av3-cli-observation-diagnostics/docs/WORK_STATUS.md), [WORK_CHECK](https://github.com/sinsan-develop/Anvil/blob/codex/av3-cli-observation-diagnostics/docs/WORK_CHECK.md).
 <!-- CURRENT_WORK_ENTRY_END -->
 
 ## 이전 요약·누적 이력 — 당시 기록 보존(현재 판정 아님)
@@ -20258,3 +20258,22 @@ UI00최초동결21PASS/type0 뒤독립C0/I1에서다른링크선택→경로전�
 ## 2026-11-16 UI00 I1 해소·최종 소스 인수
 
 Primary의5b842b RED2FAIL→동일범위보완후063543 최종직접/인접3파일24PASS/FAIL0/SKIP0·3290.4326ms, 루트타입e54837→67382d/session44116종료 exit0·공백d69d77 exit0·핸들0을확인했다. 보완중TS2367 1건은Object.is 비교후해소했고이전21/24PASS와최종실행을구분했다. 독립C0/I0/M0·I1해소, Main902c3c에서제품/시험/결과서3개정확SHA일치를확인했다. 최종제품431B00C67CBF03FD3D9AE3D771BAEF3EE925FEFFFC56BCE04CDA2813B4FC6B44/시험CF8935B987967BBD42F3CAD6A58CAEC948EA0A58D20BEC672FE3ABF04F25F79D, 결과서UI00_MOBILE_MENU_FOCUS_RESULT_20261116.md SHA6EF107D055765A84F19C217AFD5559FD2E90635DEBE10919BF4795C2AAD1DCAD. 수동메뉴재열기·셸내다른focusin은대기선택취소, 원링크/숨김뒤body는정상본문focus를허용한다. 실제브라우저Enter·기본링크/CSS/뒤로가기·DB/서비스/Agent는미검증/제외이며전체UI00완료체크는올리지않는다. Primary쓰기반환후Main이정확Git/PR/Broker·병합본영향smoke·정리를맡는다.
+
+
+## 2026-11-16 PR157 병합·정리와 FN07 진단 소스 착수
+
+정상기존GitHub연결로PR157을생성/첨부했다. source1a470851592fba5e2fce4369830eaf2ed233425e→main188b506712a1ad65658a633465b2852e50c95365, Broker43878228705 success·source/main tree3b4810cc5aa57f0d3e2d6b023b4a21125b7fd591동일. Main57078→534004 병합본RAM4PASS/FAIL0/SKIP0·1680.5027ms. 경로반영전2경합시험에서React합성key중복경고2건이있어콘솔경고0으로표시하지않고읽기원인대조를맡겼다. 실제브라우저PASS가아니다. local/remote main exact clean·pr-157-head복구tag확인후완료branch/requesttag를정상정리했다.
+
+기존Primary의읽기대조는UNKNOWN20670a에서자식원인/종료코드복원불가를확인했다. 최신main에서codex/av3-cli-observation-diagnostics를만들고WI F8255DB0DAD268B4B73DAFF3FCE9D389AAC4D6ECD1CD402F540470682E1D5447의새script-v2/진단후보/순수시험/결과서4경로만source-only로배정했다. 원script2A7E/후보EEAA/소진기록은보존, 성공형상·조회본문·한도불변, 실패고정분류와자식종단을분리한다. 현재Observe/Start/설치파일·PATH재조회/프로세스회수/SDK·Agent/SSH/실제DB/키/권한/서비스실행0. 새관측후보는NOT_APPROVED_EXECUTION이며실행허가/시간창을만들지않는다. Main은검수·통합및필요한정확다음결정안을마련한다.
+
+
+## 2026-11-16 PR157 smoke 경고 한정 원인·후속 수정 항목
+
+기존preflight의읽기대조는global #/settings에서projectId부재로backupReferenceKey/installationResourceKey가모두빈문자열이고App.tsx의두형제패널이같은접미사/CSRF를붙여동일React key가됨을확인했다. 합성행중복이필수조건이아닌기존제품key공식의충돌이다. PR157은이key를변경하지않았고2경합시험이기존경고를노출했다. 초점단언4PASS와경고2건을구분하며실제브라우저영향은미검증이다. Main은현재FN07진단단위통합뒤이기존설정패널key충돌을기존계획범위최소수정항목으로이어간다. 새API/권한/DB/키/서비스/Agent실행및전체사용자인수는확대하지않는다.
+
+
+## 2026-11-16 FN07 진단 소스 최종 검수·통합 준비
+
+Primary27b30c AST/원조회역치환/순수RAM3PASS/FAIL0/SKIP0·1929.6495ms, 신규4경로공백5cc6ac exit0·핸들0·쓰기반환. 독립C0/I0/M0·4파일전후지문일치, Main298d8e에서신규4+원본3 SHA일치를확인했다. 결과서FN07_LOCAL_CLI_IDENTITY_DIAGNOSTIC_SOURCE_RESULT_20261116.md SHAE8250C63EF0EA18B21EE0F6760E27A9B97466ECA9A01EBD1D1507CF9D7502D9D. 시험용PowerShell은원문AST와추출한순수분류함수2개만호출했고실제관측감독/Observe/Start/PATH·설치file/SDK·CLI조회0이다.
+
+새script0FD03A3F62C508F1E7343FBD80DC03DED0AFE30251C1D2356450E271F5B28120·후보DB9265A3EECADBAE4DC76E8A55EDB7881D6CE195401DFEF89C3509AAFA0102E9는원한도/본문/성공형상보존·고정실패와자식종단분리를명시한다. 새후보는NOT_APPROVED_EXECUTION/추가실행미승인이다. 원20670a의UNKNOWN·부모exit0/자식미확정과단발소진을유지한다. 앱TS/권한/DB·기존제품/실자료/키/서비스/Agent변경0이므로관련없는전체제품검사를반복하지않는다. Main은현재소스만PR통합하고실제추가관측은별도정확결정전실행하지않는다.
