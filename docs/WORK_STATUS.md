@@ -19960,3 +19960,11 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 후속 SEND r3 최종 직접 영향3파일은b3779f 61PASS/FAIL·SKIP·취소0·exit0(76463.2298ms)이며36205가종료됐다. I5/I6 선택7건은이61건에포함한다. 최종타입c7526e 진단0·exit0, 메모리CJS1c735c 1PASS/FAIL·SKIP0·exit0, main공백6d40aa exit0이다. 원46source/17exports/builtin4/2MiB와미수행실제범위를유지했다. 전체174건은초기지문이력으로구분하며최종전체회귀건수로합산하지않는다.
 - 최종결과서FN08_LIVE_SEND_INPUT_SOURCE_RESULT_20261116 지문B22E9CC6DD0A98BF758856F7E604A8BCEFB8CFD5E754255DCFBCA54607053D91과제품6/시험4목록을대조해인수했다. 독립최종C0/I0/M0·Main최종반례2PASS를확인했고Primary는쓰기반환/실행세션0이다. 비정상DI late삭제의실제RAM한계와실제FS/SDK/DB미검증은결과서에명시했다. 사용자확인화면이나실제SDK사용완료를제공한것이아니다.
 - 원격main은fetch로d439de9d를확인해현재기준선과같았다. 승인된후속SEND 소스단위를같은branch에서정확stage·cached mainbase공백검사·commit/push·PR검사로통합한다. 전체FN08/Stage/작업계획완료체크는올리지않는다.
+
+## 2026-11-16 PR146 통합과 실제 연결 잔여 경계
+
+- 후속 SEND 소스 head24a08a37876d3a6193c83c15603f79f12cada3d3의 PR146은 Broker43784929929 success 뒤 main584a705986d2eb6e4fa5ab945f09e18ead556c12로 병합됐다. 두 tree는ffdad26f2802f0bbceb7c8c05a12c8fc9338a0eb로 같았다. 원격 복구tag pr-146-head가 원head를 가리키며 원격 완료branch 부재를 확인했다.
+- 병합main의8912a6은 서로다른원문후속SEND·동일Query입력1회·세관측ACK·재시작추가전송0 RAM여정1PASS/FAIL·SKIP0·exit0이다. clean·로컬/원격main동일을대조하고완료로컬branch와소비된요청tag만정리했다. squash의원head조상관계대신tree동일/원격복구ref를검산했고force/history변경0·다른작업보존이다.
+- source-only 채택은 새 로컬 LIVE_SEND_INPUT_YIELDED 의미의 추가를 포함한다. 기존 FIRST/generic/STOP 원형을 보존한 것이며 모든 원장 형식이 전혀 추가되지 않았다는 뜻은 아니다. 새 공개 서버API/SQL/권한/실제서비스변경은 없다.
+- 실제 앱의 forFirstSend 호출 생산자를 검색한51d1e2에서 제품에는 아직 정의와내부호출만있고 source.create 및 LiveInputPort를공급할 실제SDK 조립은없음을확인했다. 이번행·소비자완성은 그주입포트를 실제SDK로 바꾸지 않는다. 고정SDK 원문의미확인서명·실행구성/원child 보호결박은남아있고 추가SDK조회·실행은하지않는다.
+- 최신main에서codex/av3-native-connection-followup을만들어통합근거를보존한다. 담당Main어울, 제품writer반환/실행세션0이다. 후속구현재개조건은미채택보호spool9E98·P03한정진단E1CD의기존질문답변또는현재제외된SDK연결근거범위의명시변경이다. 후속SEND23BF는채택/소스통합완료이므로승인대기목록에서뺀다. 같은질문/검사/추측wrapper를반복하지않으며전체계획완료로표시하지않는다.
