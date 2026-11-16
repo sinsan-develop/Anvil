@@ -2,12 +2,12 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
-## 현재 작업 요약 — 2026-11-16 19:49:42 KST
+## 현재 작업 요약 — 2026-11-16 20:19:59 KST
 
 - **현재 상태: 개발 진행 중.** 과거 ‘병합하고 대기’는 당시 이력이며 현재 중지 지시가 아니다. 1단계 로컬·WSL-server 기능 구현을 계속한다.
-- **현재 업무:** Stage C/D · FN07 실제 SDK/CLI 생산자 준비. Windows CLI 첫 후보의 한정 관측안·조회 script는 AST0/독립 C0/I0/M0으로 고정했고 사용자 결정을 요청할 범위다. 실제 PATH/설치파일 조회·조회프로세스 실행은 0회다. 이 결정과 별개로 UI06의 산출물 itemId 소실을 RAM으로 재현했고, 같은 Primary가 버전별 귀속 계약 후보를 구체화한다. 제품/DB는 아직 변경하지 않는다. 실제 SDK·CLI/child·DB/권한/키/서비스 실행은 제외한다.
+- **현재 업무:** UI06 저장 전 로컬 산출물 선택 보존·표시. WI UI06_LOCAL_STAGE_OUTPUT_SELECTION_WI_20261116.md(22A61669)의 제품5·시험4를 기존 Primary가 단일 writer로 구현한다. serverpayload/GET/본문 hash·영수증·SQL·버전별 서버 귀속은 변경하지 않는다. 실제 CLI 관측 질문은 답변 전이며 조회0, 새 항목귀속 계약5039D14A도 미채택이다.
 - **담당:** `developer_primary` 구현·기본 검증, Main 어울 작업관리·필수 테스트·독립 검수·통합. 진행 중인 구현은 중단·회수·중복 배정하지 않았다.
-- **Git:** 최신 통합 main `8776fe90764887012c73409a50a0a3882df813dc`(PR151), 소스 `6e468b03`과 tree 동일. 현재 작업 branch `codex/av3-sdk-producer-preparation`는 그 main에서 시작했다. 완료 branch/request tag는 정상 정리했고 원격 `pr-150-head`·`pr-151-head`를 보존했다.
+- **Git:** 최신 통합 main `0c9ab78a7c0684a9e4158a60084b707d1c03e59c`(PR152의 미채택 후보·수동 조회 source 보존), 소스 `9ac1f77e`과 tree 동일·제품 diff0. 현재 branch `codex/av3-ui06-local-selection`는 그 main에서 시작했다. PR150~152의 원격 head 복구 tag를 보존했고 완료 branch/request tag만 정상 정리했다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
 - **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
 - **현재 구현 검증:** PR150 제5 출력 채널의 병합본 RAM2건에 이어, 동일 Query 후속 입력의 등록 CJS44건·인접4건·메모리1건·root/desktop 타입0·독립 C0/I0/M0을 확인했다. 서로다른 원문2건·Query/출력iterator 각1·후속 LIVE_SEND_INPUT_YIELDED/ACK cursor3을 RAM에서 관측했다. 최종 전달 직전 원 current/기한/STOP epoch 거절을 보완했고 PR151 병합본 후속입력/현재성상실 RAM2건도 PASS다. 실제 SDK·Windows PASS가 아니다.
