@@ -21,7 +21,25 @@ export function BackupPolicyPanel({client,session,projectId,buffer,approvalReque
  function begin(value?:BackupPolicyView){const b=ensure();if(!b||loading||unresolved)return;if(b.dirty&&!confirm('전송되지 않은 수동 정책 초안을 바꿀까요?'))return;try{commit(b,beginBackupPolicy(b,value));}catch(e){const t=start();if(t){fail(e,t);finish(t);}}}
  async function refs(next=false){const t=start();if(!t)return;setChoices(null);try{const kind=['TARGET','ENCRYPTION_KEY','RETENTION','VERIFICATION'][policyFields.indexOf(field)]as any,p=await listBackupReferences(client,projectId!,kind,next?options?.cursor??null:null,()=>current(t));if(current(t))setChoices({ticket:t,items:p.items,cursor:p.nextCursor});}catch(e){fail(e,t);}finally{finish(t);}}
  async function choose(v:BackupReferenceView){const b=ensure(),t=start();if(!b||!t)return;try{const exact=await readBackupReference(client,projectId!,v.ref.id,v.ref.version,v.ref,()=>current(t)&&live.current.buffer===b);if(current(t)&&live.current.buffer===b)commit(b,editBackupPolicy(b,{refs:{...b.draft.refs,[field]:exact.ref},acknowledged:false}));}catch(e){fail(e,t);}finally{finish(t);}}
- async function list(next=false){const t=start();if(!t)return;setPage(null);setSelected(null);try{const v=await listBackupPolicies(client,projectId!,next?listed?.nextCursor??null:null,()=>current(t));if(current(t))setPage({ticket:t,value:v});}catch(e){fail(e,t);}finally{finish(t);}}
+ async function list(next=false){
+  const previous=next&&page&&current(page.ticket)?page.value:null;
+  if(next&&!previous?.nextCursor)return;
+  const t=start();if(!t)return;
+  setPage(null);setSelected(null);
+  try{
+   const value=await listBackupPolicies(client,projectId!,previous?.nextCursor??null,()=>current(t));
+   if(current(t))setPage({ticket:t,value});
+  }catch(e){
+   if(previous&&current(t)&&e instanceof ApiError){
+    const disconnected=e.status===0&&e.code==='CONNECTION_LOST';
+    const terminal=['CONNECTION_LOST','REQUEST_FAILED','RESPONSE_INVALID','BACKUP_POLICY_INTEGRITY_FAILED',
+     'BACKUP_POLICY_CONTEXT_CHANGED','AUTH_REQUIRED','FORBIDDEN','NOT_FOUND','PROJECT_OPERATION_DENIED','CURSOR_INVALID'];
+    const temporary=[502,503,504].includes(e.status)&&!terminal.includes(e.code);
+    if(disconnected||temporary)setPage({ticket:t,value:previous});
+   }
+   fail(e,t);
+  }finally{finish(t);}
+ }
  async function fixed(ref?:BackupPolicyView['ref']){const t=start();if(!t)return;setSelected(null);try{const v=await readBackupPolicy(client,projectId!,ref?.id??fixedId,ref?.version??Number(fixedVersion),ref,()=>current(t));if(current(t))setSelected({ticket:t,value:v});}catch(e){fail(e,t);}finally{finish(t);}}
  async function prepare(){const b=ensure(),t=start();if(!b||!t)return;try{const next=await prepareBackupPolicy(client,b,session,()=>current(t)&&live.current.buffer===b);if(current(t))commit(b,next);}catch(e){fail(e,t);}finally{finish(t);}}
  async function send(){const b=work,t=start();if(!b||!t)return;let sent:BackupPolicyBuffer|null=null;try{sent=markBackupPolicyDispatch(b);if(!commit(b,sent))return;const original=sent,next=await sendBackupPolicy(client,original,session,()=>current(t)&&live.current.buffer===original);if(current(t))commit(original,next);}catch(e){if(sent&&current(t)&&live.current.buffer===sent)commit(sent,failBackupPolicy(sent,e instanceof ApiError?e:new ApiError('RESPONSE_INVALID')));fail(e,t);}finally{finish(t);}}

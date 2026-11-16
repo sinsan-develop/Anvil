@@ -176,3 +176,97 @@ test('실Panel APPLIED 뒤 fixed403/401은 UNKNOWN·원body·재확인만 남기
  assert.equal(posts,1);assert.equal(f.buffer().pending.state,'UNKNOWN');assert.equal(f.buffer().uncertain,true);assert.equal(f.buffer().pending.body,original);assert.equal(f.lost(),mode==='401'?1:0);
  if(mode!=='OLD401'){assert(!f.button('같은 수동 정책 명령 저장·재확인').disabled);assert(!f.text().includes('정책 거절 확인 후 수정'));}
  }finally{release?.(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.close();}}});
+
+const policyListLabel='수동 정책 목록 조회',policyNextLabel='다음 수동 정책 목록',policyCursor='cursor+page/2=';
+type PolicyFixture=Awaited<ReturnType<typeof fixture>>;
+async function firstPolicyPage(f:PolicyFixture){
+ const item=policyDetail(f.api,'첫 페이지 정책');
+ f.responses.next=async()=>Response.json({items:[item],hasMore:true,nextCursor:policyCursor,observedAt:item.createdAt});
+ await f.click(policyListLabel);
+ const deadline=performance.now()+3000;
+ while(f.button(policyListLabel).disabled){
+  assert.ok(performance.now()<deadline);
+  await ui.React.act(async()=>{await new Promise(resolve=>setImmediate(resolve));});
+ }
+ assert.ok(!f.button(policyNextLabel).disabled);
+ return item.ref.id+' · v1';
+}
+
+test('다음 정책 페이지 503 뒤 같은 커서로 명시 재조회한다',async()=>{
+ const f=await fixture();
+ try{
+  const itemLabel=await firstPolicyPage(f);
+  f.responses.next=async()=>Response.json({code:'TEMPORARILY_UNAVAILABLE'},{status:503});
+  await f.click(policyNextLabel);
+  assert.match(f.text(),/TEMPORARILY_UNAVAILABLE/);
+  assert.ok(f.text().includes(itemLabel),'실패 후 기존 페이지');
+  assert.equal(f.calls.length,2);
+  f.responses.next=async()=>Response.json({items:[],hasMore:false,nextCursor:null,observedAt:new Date().toISOString()});
+  await f.click(policyNextLabel);
+  assert.ok(!f.text().includes(itemLabel)&&!f.text().includes(policyNextLabel));
+  const path='/api/v1/projects/'+pid+'/backup-policies?limit=50';
+  const next=path+'&cursor='+encodeURIComponent(policyCursor);
+  assert.deepEqual(f.calls,[path,next,next].map(path=>({path,method:'GET'})));
+ }finally{await f.close();}
+});
+
+for(const [label,status,code,retry] of [
+ ['연결 손실',0,'CONNECTION_LOST',true],['502',502,'BAD_GATEWAY',true],['504',504,'GATEWAY_TIMEOUT',true],
+ ['인증',401,'AUTH_REQUIRED',false],['권한',403,'FORBIDDEN',false],['부재',404,'NOT_FOUND',false],
+ ['HTML',503,'RESPONSE_INVALID',false],['불완전 JSON',503,'REQUEST_FAILED',false],
+ ['내용 변조',200,'RESPONSE_INVALID',false],['503 연결손실 코드',503,'CONNECTION_LOST',false],
+ ['503 인증 코드',503,'AUTH_REQUIRED',false],['503 문맥 코드',503,'BACKUP_POLICY_CONTEXT_CHANGED',false],
+ ['503 무결성 코드',503,'BACKUP_POLICY_INTEGRITY_FAILED',false]
+] as const)test('다음 정책 페이지 오류 분류 · '+label,async()=>{
+ const f=await fixture();
+ try{
+  const itemLabel=await firstPolicyPage(f);
+  f.responses.next=async()=>{
+   if(!status)throw new TypeError('offline');
+   if(label==='HTML')return new Response('<html></html>',{status});
+   if(label==='불완전 JSON')return Response.json(null,{status});
+   if(label==='내용 변조')return Response.json({items:[{}],hasMore:false,nextCursor:null,observedAt:new Date().toISOString()});
+   return Response.json({code},{status});
+  };
+  await f.click(policyNextLabel);
+  assert.ok(f.text().includes(code));
+  assert.equal(f.text().includes(itemLabel),retry);
+  assert.equal(f.text().includes(policyNextLabel),retry);
+  assert.equal(f.lost(),status===401?1:0);
+  assert.deepEqual(f.calls.map(c=>c.method),['GET','GET']);
+ }finally{await f.close();}
+});
+
+for(const [scope,late] of [
+ ['project',503],['user',200],['clientId',401],['csrf',503],['api',401],['transport',200]
+] as const)test('다음 정책 페이지 ABA의 지연 응답 폐기 · '+scope,async()=>{
+ const f=await fixture(),pending=Promise.withResolvers<Response>();
+ try{
+  const itemLabel=await firstPolicyPage(f),original=f.props(),transport=f.api.transport;
+  f.responses.next=()=>pending.promise;
+  await f.click(policyNextLabel);
+  const changed={...original};
+  if(scope==='project')changed.projectId=id(67);
+  else if(scope==='user')changed.session={...session,user:{id:id(68)}};
+  else if(scope==='clientId')changed.session={...session,clientId:id(69)};
+  else if(scope==='csrf')changed.session={...session,csrfToken:'j'.repeat(43)};
+  else if(scope==='api')changed.client=new ui.ApiClient(transport);
+  else f.api.transport=async()=>{throw Error('다른 전송 포트 호출');};
+  await f.render(changed);
+  f.api.transport=transport;
+  await f.render(original);
+  assert.ok(!f.text().includes(itemLabel)&&!f.text().includes(policyNextLabel));
+  f.responses.next=async()=>Response.json({items:[],hasMore:false,nextCursor:null,observedAt:new Date().toISOString()});
+  await f.click(policyListLabel);
+  await ui.React.act(async()=>{
+   pending.resolve(late===200?
+    Response.json({items:[],hasMore:true,nextCursor:'stale',observedAt:new Date().toISOString()}):
+    Response.json({code:'STALE_RESPONSE'},{status:late}));
+   await new Promise(resolve=>setImmediate(resolve));
+  });
+  assert.ok(!f.text().includes(policyNextLabel)&&!f.text().includes(itemLabel)&&!f.text().includes('STALE_RESPONSE'));
+  assert.equal(f.lost(),0);
+  assert.deepEqual(f.calls.map(c=>[c.method,new URL('https://anvil.invalid'+c.path).searchParams.get('cursor')]),
+   [['GET',null],['GET',policyCursor],['GET',null]]);
+ }finally{pending.resolve(Response.json({}));await f.close();}
+});

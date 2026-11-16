@@ -2,10 +2,15 @@
 const {contextBridge,ipcRenderer}=require('electron');
 contextBridge.exposeInMainWorld('anvilDesktop',Object.freeze({
  getState:()=>ipcRenderer.invoke('anvil:get-state',null),
+ /** @param {string} requestId @param {string} attemptId @param {number} epoch */
  nativeReceiveBegin:(requestId,attemptId,epoch)=>ipcRenderer.invoke('anvil:native-receive-begin',{requestId,attemptId,epoch}),
+ /** @param {string} attemptId @param {number} epoch */
  nativeReceiveStatus:(attemptId,epoch)=>ipcRenderer.invoke('anvil:native-receive-status',{attemptId,epoch}),
+ /** @param {string} requestId @param {string} attemptId @param {number} epoch */
  nativeReceiveRefresh:(requestId,attemptId,epoch)=>ipcRenderer.invoke('anvil:native-receive-refresh',{requestId,attemptId,epoch}),
+ /** @param {string} requestId @param {string} attemptId @param {number} epoch @param {{id:string,version:1,contentHash:string}} offerRef @param {true} confirmed */
  nativeReceiveArm:(requestId,attemptId,epoch,offerRef,confirmed)=>ipcRenderer.invoke('anvil:native-receive-arm',{requestId,attemptId,epoch,offerRef,confirmed}),
+ /** @param {string} requestId @param {string} attemptId @param {number} epoch @param {true} confirmed */
  nativeReceiveClose:(requestId,attemptId,epoch,confirmed)=>ipcRenderer.invoke('anvil:native-receive-close',{requestId,attemptId,epoch,confirmed}),
  /** @param {string|null} attemptId @param {number|null} epoch */
  trustStatus:(attemptId,epoch)=>ipcRenderer.invoke('anvil:trust-status',{attemptId,epoch}),
@@ -17,6 +22,6 @@ contextBridge.exposeInMainWorld('anvilDesktop',Object.freeze({
  trustAct:(requestId,attemptId,epoch,action)=>ipcRenderer.invoke('anvil:trust-act',{requestId,attemptId,epoch,action}),
  /** @param {string} serverOrigin @param {boolean} replaceInvalidConfig */connect:(serverOrigin,replaceInvalidConfig)=>ipcRenderer.invoke('anvil:connect',{serverOrigin,replaceInvalidConfig}),
  quit:()=>ipcRenderer.invoke('anvil:client-quit',{ackUnverifiedRuntime:true}),
- /** @param {(state:unknown)=>void} callback */onState:callback=>{ipcRenderer.on('anvil:state',(_event,state)=>callback(state));},
+ /** @param {(state:unknown)=>void} callback */onState:callback=>{ipcRenderer.on('anvil:state',/** @param {unknown} _event @param {unknown} state */ (_event,state)=>callback(state));},
  /** @param {()=>void} callback */onQuitRequest:callback=>{ipcRenderer.on('anvil:quit-request',()=>callback());}
 }));
