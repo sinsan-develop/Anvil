@@ -12,7 +12,7 @@
 
 1. d.ts의 공개 query 선언, mjs의 query export와 정확 local 이름(기존 Qwt 추정 포함), 그 모듈 선언, prompt/options가 전달된 호출, 같은 생성 함수의 구조분해와 반환 노드를 UTF-8 [lo,hi)로 대조한다. 근접 문자열이나 같은 이름만으로 연결하지 않는다.
 2. 생성 함수는 실제 new 식의 spawnClaudeCodeProcess 옵션 전달로 식별한다. 선언·전체 함수·개별 반환은 구분한다. 리뷰에서 module binding의 shadow/재대입·호출 인자·반환 경로, queryInstance와 같은 transport/Query 연결까지 실제 원문으로 추적한다. 동적/간접 export, 여러 선언이나 경로, 미지원 문법·scope·출력 한도로 연결을 못 읽은 항목은 미확인이다. 노드 행이 커서 제외되면 잘라서 성공 처리하지 않는다.
-3. SHA/UTF-8 원문 검증 성공과 체인 검증 성공을 따로 기록한다. 이 조회가 실제 프로세스 소유자·허용 프로그램/cwd/Secret/도구 정책을 승인하지 않는다.
+3. 전체 구현 AST에서 선택한 진입·중간·생성 함수 이름의 대입, update, 반복문 대입, 선언·인자 가림 및 일부 동적 scope 후보를 32위치까지 반환한다. 이름이 같은 다른 scope도 포함한다. 위치가 없어도 어휘 결박·동적 코드 부재를 증명하지 않는다. bindingIdentity는 항상 UNCONFIRMED다. 출력한 원문만으로 가림이나 다른 대입을 배제할 수 없으면 최종 연결도 미확인이다. 고정 해시 또는 로컬 parser ABI 검산 실패가 child exit 1·PREPARED·GET 0·requestClosed false와 모두 일치한 경우만 GET 0을 확정한다. 다른 비정상 조합은 UNKNOWN이며 단발 발행은 계속 소진된다.
 4. 승인 후에만 inner worktree에서 아래 PowerShell의 `__APPROVED_DOCUMENT_SHA256__` 자리를 결정된 후보 지문으로 치환한다. Main과 수행자는 새 시도 키 `FN07-PUBLIC-QUERY-CHAIN-20261116`를 선기록한 뒤 login:false/tty:false/require_escalated, 영속 prefix 없이 단 한 번 발행한다. GET 최대 1, redirect/retry 0, 요청 10초, 감독 27초+원 자식 회수 잔여 3초, 해제 최대 16 MiB, stdout 64 KiB/stderr 2 KiB, 도구 반환 예산 32000토큰이다. 세션이 생기면 같은 핸들만 수거한다. 불명·잘림·승인 거절·부분 실패 시 재발행하지 않는다.
 
 ```javascript
@@ -147,7 +147,8 @@ function evidence(entries) {
     return {name:ex.local,...hits[0]};
   }
   const decl=findExport(d,dt);if(decl)row(d,'query_complete_declaration',decl.node);
-  const entry=findExport(j,js);if(entry)row(j,'query_entry_complete',entry.node);
+  const chainNames=new Set();
+  const entry=findExport(j,js);if(entry){chainNames.add(entry.name);row(j,'query_entry_complete',entry.node);}
   function each(root,visit){
     const stack=[root];
     while(stack.length){
@@ -178,6 +179,7 @@ function evidence(entries) {
   if(target.length!==1){problem('TRANSPORT_FACTORY_UNRESOLVED');}
   else {
     const factory=target[0];
+    chainNames.add(factory.name);
     row(j,'transport_factory_complete',factory.node);
     // Also retain the whole binding declaration(s), return and hook origin if a whole parent exceeds the budget.
     for(const p of factory.fn.params||[])row(j,'factory_parameter',p);
@@ -207,21 +209,60 @@ function evidence(entries) {
         }
         seek(entry.name,entry.fn,[],3);
         if(paths.length===1)for(const hop of paths[0]){
+          chainNames.add(hop.name);
           row(j,'candidate_factory_hop',hop.call);
           if(hop.name!==factory.name)row(j,'intermediate_complete',hop.def.node);
         }else problem('UNIQUE_CALL_PATH_UNRESOLVED');
       }
     }else problem('ENTRY_NOT_DIRECT_FUNCTION');
   }
-  return {...receipt,state:'WINDOWS_READ_VERIFIED_SOURCE',hashes:expected,review:'MANUAL_SCOPE_AND_DATAFLOW_REQUIRED',issues,ranges:rows};
+  // A spelling match is intentionally not resolved to its lexical binding. Report possible
+  // writes, redeclarations and shadowing even in unrelated scopes; never certify their absence.
+  const findings=[],seenSpans=new Set();
+  let overflow=false;
+  function mark(kind,n,name){
+    const key=[kind,name,n.start,n.end].join(':');
+    if(seenSpans.has(key))return;
+    if(findings.length>=32){overflow=true;return;}
+    seenSpans.add(key);
+    findings.push({kind,name,lo:Buffer.byteLength(source[j].slice(0,n.start)),
+      hi:Buffer.byteLength(source[j].slice(0,n.end))});
+  }
+  function bindings(pattern,kind){
+    if(!pattern)return;
+    switch(pattern.type){
+      case 'Identifier': if(chainNames.has(pattern.name))mark(kind,pattern,pattern.name);return;
+      case 'VariableDeclaration': for(const v of pattern.declarations)bindings(v.id,kind);return;
+      case 'RestElement': bindings(pattern.argument,kind);return;
+      case 'AssignmentPattern': bindings(pattern.left,kind);return;
+      case 'ArrayPattern': for(const item of pattern.elements)bindings(item,kind);return;
+      case 'ObjectPattern': for(const p of pattern.properties)bindings(p.type==='RestElement'?p.argument:p.value,kind);return;
+    }
+  }
+  for(const statement of program[j])each(statement,n=>{
+    if(n.type==='AssignmentExpression')bindings(n.left,'POSSIBLE_WRITE');
+    if(n.type==='UpdateExpression')bindings(n.argument,'POSSIBLE_UPDATE');
+    if(n.type==='ForOfStatement'||n.type==='ForInStatement')bindings(n.left,'POSSIBLE_LOOP_WRITE');
+    if(n.type==='VariableDeclarator'||/^(Function|Class)(Declaration|Expression)$/.test(n.type))bindings(n.id,'DECLARATION_OR_SHADOW');
+    if(n.params)for(const p of n.params)bindings(p,'PARAMETER_OR_SHADOW');
+    if(n.type==='CatchClause')bindings(n.param,'CATCH_OR_SHADOW');
+    if(/^Import(Default|Namespace)?Specifier$/.test(n.type))bindings(n.local,'IMPORT_OR_SHADOW');
+    if(n.type==='WithStatement'||(n.type==='CallExpression'&&n.callee?.name==='eval'))mark('DYNAMIC_SCOPE',n,null);
+  });
+  if(overflow)problem('SCOPE_POSITION_BUDGET');
+  return {...receipt,state:'WINDOWS_READ_VERIFIED_SOURCE',hashes:expected,review:'MANUAL_SCOPE_AND_DATAFLOW_REQUIRED',
+    bindingIdentity:'UNCONFIRMED',scopeScan:'SYNTACTIC_POSSIBILITIES_ONLY',positionsIncomplete:overflow,
+    possibleBindingSites:findings,issues,ranges:rows};
 }
 
 let parser;
 (async()=>{
   try{
     const parserPath="C:\\Users\\cyhuh\\.codex\\worktrees\\av3-stage-b\\Anvil\\node_modules\\prettier\\plugins\\babel.js";
-    if(digest(require('node:fs').readFileSync(parserPath),'sha256','hex')!=='5249a89653aae718f7a0fb94577a09768f18b865df832cfe68d8158c8207af5c')stop('PARSER_HASH');
-    parser=require(parserPath).parsers;
+    let parserDigest;
+    try{parserDigest=digest(require('node:fs').readFileSync(parserPath),'sha256','hex');}catch{stop('PARSER_HASH');}
+    if(parserDigest!=='5249a89653aae718f7a0fb94577a09768f18b865df832cfe68d8158c8207af5c')stop('PARSER_HASH');
+    try{parser=require(parserPath).parsers;}catch{stop('PARSER_ABI');}
     if(typeof parser?.babel?.parse!=='function'||typeof parser['babel-ts']?.parse!=='function')stop('PARSER_ABI');
     const result=evidence(unpack(await readOnce()));
     const line=JSON.stringify(result)+'\n';
@@ -269,6 +310,18 @@ function New-Capture($stream,[int]$cap) {
     $c = @{ stream=$stream; bytes=[byte[]]::new($cap+1); used=0; cap=$cap; eof=$false; task=$null }
     $c.task=$stream.ReadAsync($c.bytes,0,$c.bytes.Length)
     return $c
+}
+function Test-ParserPreGetFailure($record,$childExit) {
+    if ($childExit -ne 1 -or $null -eq $record) { return $false }
+    $keys=@($record.PSObject.Properties.Name | Sort-Object)
+    if (($keys -join ',') -cne 'approvalId,attempted,code,getCalls,requestClosed,stage,state') { return $false }
+    return ($record.approvalId -is [string] -and $record.approvalId -ceq 'FN07-PUBLIC-QUERY-CHAIN-20261116' -and
+        $record.attempted -is [bool] -and $record.attempted -and
+        ($record.getCalls -is [int] -or $record.getCalls -is [long]) -and $record.getCalls -eq 0 -and
+        $record.requestClosed -is [bool] -and -not $record.requestClosed -and
+        $record.state -is [string] -and $record.state -ceq 'FAILED_OR_UNKNOWN' -and
+        $record.stage -is [string] -and $record.stage -ceq 'PREPARED' -and
+        $record.code -is [string] -and $record.code -cin @('PARSER_HASH','PARSER_ABI'))
 }
 function Receive-Ready($c) {
     if ($c.eof -or -not $c.task.IsCompleted) { return }
@@ -333,7 +386,14 @@ try {
     if (-not $line.EndsWith([char]10) -or $line.TrimEnd([char]10).Contains([char]10)) { throw 'MISSING_RECORD' }
     $result=ConvertFrom-Json -InputObject $line -ErrorAction Stop
     if ($result.approvalId -cne 'FN07-PUBLIC-QUERY-CHAIN-20261116') { throw 'BAD_RECORD' }
-    if ($result.attempted -ne $true -or $result.getCalls -ne 1) { throw 'BAD_RECORD' }
+    if (Test-ParserPreGetFailure $result $child.ExitCode) {
+        [Console]::OpenStandardOutput().Write($out.bytes,0,$out.used)
+        exit 1
+    }
+    if ($result.attempted -isnot [bool] -or -not $result.attempted -or
+        ($result.getCalls -isnot [int] -and $result.getCalls -isnot [long]) -or $result.getCalls -ne 1 -or
+        $result.requestClosed -isnot [bool] -or $result.stage -ceq 'PREPARED' -or
+        $result.code -cin @('PARSER_HASH','PARSER_ABI')) { throw 'BAD_RECORD' }
     if ($child.ExitCode -eq 0 -and $result.state -eq 'WINDOWS_READ_VERIFIED_SOURCE' -and $result.requestClosed -eq $true) {
         [Console]::OpenStandardOutput().Write($out.bytes,0,$out.used)
         exit 0
