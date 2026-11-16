@@ -32,6 +32,20 @@ test('profile native 원문에서 등록/slot·원 grant와 별도 head를 검�
   'used=checked(used+N(DesktopTrustKeyHostSource.Map(row["summary"])["bytes"]))','checked(used+worst)>Cap(writer)','log.Length+4+cipher.Length+activeAnchor.Length+32+ManagementHold(rows)'])assert.ok(p.includes(evidence),evidence);
  assert.doesNotMatch(p,/File\.Delete|Directory\.Delete|TakeJournalCreationPermit/);
 });
+test('SDK 출력 예약은 정상 읽기 인계만 원 slot 및 일회 challenge로 재개하고 일반 정산을 거절한다',()=>{
+ const p=source('NormalExecutionSpoolProfileSource.cs');
+ for(const binding of ['SDK_READ_CLOSED','SDK_WRITE_CLAIMED','OutputManagementWorst','H(slot)','challengeHash','Stopwatch.GetTimestamp()','OutputScope','OutputResume','OutputHandoff'])assert.ok(p.includes(binding),binding);
+ assert.ok(p.includes('!owned.TryGetValue(reservation,out held)'));
+ const handoff=p.slice(p.indexOf('Row OutputHandoff('),p.indexOf('Row OutputResume('));
+ const resume=p.slice(p.indexOf('Row OutputResume('),p.indexOf('internal Row Control('));
+ for(const [body,phase,completion] of [[handoff,'SDK_READ_CLOSED','owned.Remove(res)'],[resume,'SDK_WRITE_CLAIMED','owned.Add(res,id)']] as const){
+  const scan=body.indexOf('Inspect(rows,Normal,id,dir,Output,before)'),append=body.indexOf('Append(log,rows,R("kind","'+phase+'"');
+  assert.ok(scan>=0&&append>scan&&body.slice(scan,append).includes('OutputTime(details)'));
+  const finish=body.indexOf(completion,append);assert.ok(finish>append&&body.slice(append,finish).includes('OutputTime(details)'));
+ }
+ assert.match(p,/OutputTime\(details\);var h=Reserve\([^\n]+\);OutputTime\(details\);/);
+ assert.match(p,/\}\);if\(timing!=null\)OutputTime\(timing\);return answer/);
+});
 test('journal source는 actual handle identity·단일 link·삭제 없는 닫힘 체인 및 부모 정착 실패를 보존한다',()=>{
  const k=source('NativePreparationJournalKernel.cs');
  assert.match(k,/GetFileInformationByHandle/);assert.match(k,/Links!=1/);assert.match(k,/AssertIdentity\(held,PathFor\(Lock\)\)/);assert.match(k,/"ACTIVE"/);assert.match(k,/"CLOSED"/);

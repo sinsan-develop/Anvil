@@ -70,6 +70,16 @@ function fixture(shared?:{remaining:number},generation=1){
   setPhysicalCurrent:(callback:()=>void)=>{onPhysicalCurrent=callback;},noResume:()=>{resumable=false;},onOpen:(v:()=>void|Promise<void>)=>{afterOpen=v;}};
 }
 
+test('보호 SDK 출력행은 같은 배정의 ACK 읽기와 공존하고 범용 채널 이름으로 열리지 않는다',async()=>{
+ const f=fixture();
+ f.ram.files.set(f.ram.path('sdk-session-output.000001.json'),{bytes:Buffer.from('{"private":true}\n'),ino:500,link:false});
+ const rows=await f.store.exclusive('acks',tx=>tx.read());
+ assert.deepEqual(rows,[]);
+ const opens=f.opens();
+ await assert.rejects(f.store.exclusive('sdk-session-output',tx=>tx.read()),/NORMAL_LOCAL_STORAGE_UNAVAILABLE/);
+ assert.equal(f.opens(),opens);
+});
+
 test('비권위 receipt writer는 normal slot 없이 등록 범위의 원 봉투를 읽고 동일 영수증만 재판독한다',async()=>{
  const f=fixture();f.setSlot(null);
  const context={...scope,assignmentId:id(10),connectionRef:ref(11),environmentRef:ref(12),authorizationReceiptRef:ref(13),capabilityRef:ref(14),budgetRef:ref(15),

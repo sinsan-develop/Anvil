@@ -10,7 +10,7 @@
 - **Git:** 최신 통합 main `e0c152e4b00df2da74e87578a748dd795c8fe6f7`(PR148 소스·PR149 기록). 현재 작업 branch `codex/av3-sdk-output-storage`, 제품·시험 미커밋 변경이 진행 중이다. 작업지시서는 `docs/work_packages/FN07_SDK_OUTPUT_PROTECTED_STORAGE_WI_20261116.md`다.
 - **완료한 소스 단위:** normal START 준비, 첫·후속 SEND, 원 Query 출력 수집과 협력 STOP 소비, profile/예산·원 READY 연결은 PR144~149에 source로 통합됐다. 이를 현재 ‘SEND/STOP 소스 미구현’으로 표시하지 않는다. 실제 SDK·Agent 실행 완료를 뜻하지도 않는다.
 - **최근 확정 검증:** PR148 spool 단위 직접64건·선택6건 PASS, root/desktop 타입0, 독립 C0/I0/M0. 병합본 READY/ACK/cursor RAM smoke1건 PASS. 현재 제5 출력 채널은 별도 구현·검수 중이며 아직 최종 PASS가 아니다.
-- **현재 구현 검증:** 후행 ACK 경합 `2004f5`를 보완해 같은 번들의 REGISTERED→START READY→첫 SEND→제5 채널→FIRST 영수증/ACK cursor2 RAM 양성 `ba3136` 1건을 확인했다. SDK 대기 중 같은 등록·세대의 독립 START/ACK도 완료했다. 현재 실패·재사용·기한·변조 반례와 최종 타입/메모리 검사를 진행 중이며 아직 신규 단위의 최종 PASS는 아니다.
+- **현재 구현 검증:** 제5 출력 채널의 원 Query/예약 연결을 구현하고 직접 TS70건·등록 CJS35건 및 독립 START/ACK→원 출력 정산 양성을 확인했다. 독립 검수의 원 callable I1·거절 후 자기 Query 정리 I2를 보완하고 최종 영향 선택2건/소유권4건·메모리 closure1건·root/desktop 타입0을 확인했다. native/연결 최종 독립 C0/I0/M0, 소스 통합 준비이며 실제 SDK·Windows PASS가 아니다.
 - **미확인·남은 기능:** 실제 SDK/CLI·OS 프로세스·도구 권한 집행, C# 컴파일·Windows 파일/ACL·보호 저장, 실제 DB·서비스·브라우저 통합 및 사용자 인수는 미검증이다. 실제 Agent 생산자와 전체 작업계획은 미완료다.
 - **P03·SSH:** R3 복구는 복사·PG 기동·전환에 도달하지 못했고 원 자원을 보존한다. 자동 wrapper의 SSH255/UNKNOWN과 일반 SSH를 구분한다. 사용자 Windows PowerShell 로그인 성공 증거(11-16 18:04:45 KST)가 있으며 서버/로그인 불능으로 일반화하지 않는다. 새 부수 진단·재복제·정리는 하지 않는다.
 - **기록 기준:** 소스/RAM 합격, 실제 동작 확인, 사용자 인수를 구분한다. 기존 서로 다른 이력은 아래 보관 영역에 남긴다. 사용자 열람본의 기존 미추적 원본은 `D:\Project\Anvil\.av3-data\status-view-backup-20261116-184648`에 원본 해시 그대로 보존했다.
@@ -20101,3 +20101,15 @@ WORK_CHECK.md current-summary SHA256 DAD8CDE328E1A83C3169A89CA66403AA53EC6CF8271
 WORK_STATUS.md current-summary SHA256 FF8CEC87B183B19328F601ED7FB29C650A49A06AF74EBA2E9F17E429D13D62D8
 
 다음 정상 기록에서도 현재 요약과 두 열람본을 함께 갱신한다. 제품 변경·검사 재실행·새 진단/설계/환경 변경은 하지 않았다.
+
+## 2026-11-16 FN07 출력 원천 독립 검수 I1 보완
+
+동결 제품의 read-only 검수에서 C0/I1/M0을 확인했다. normal-first-send-owner.ts의 iterate.call(query)는 검산한 원 함수 대신 함수의 자체 call 속성/getter를 호출할 수 있어 새 보호 저장의 원 iterator 결박에 영향을 준다. 지문 DF03C4C2…3F6628 기준 첫 확인1회이며 동일 원인 반복 실패0이다. Main은 기존 Primary에게 Reflect.apply로 원 함수 직접 호출·Proxy 정책 대조와 own call getter0/원 메서드1 반례를 한정 배정했다. 다른 제품 변경·실제 SDK/Agent/C#/DB/권한/키/서비스 실행은 허용하지 않았다. 원 native 기한 I1은 지문1A26C1C5…BD5A4의 독립 C0/I0/M0으로 해소됐고 이와 구분한다. 새 I1 해소·시험·변경 지문 재검수 전 최종 PASS/병합하지 않는다.
+
+## 2026-11-16 FN07 거절 후 자기 Query 정리 보완
+
+기존 own call I1은 RED9b21dd에서 등록 CJS35PASS(118892)·인접18PASS(588092)·메모리8528ff·root/desktop 타입0으로 보완됐다. 독립 재검수에서 연계 I2 1회를 새로 확인했다. 자기 Query를 선점한 뒤 iterator 검산이 거절되면 lease.query 등록 전 예외로 source.close가 누락될 수 있다. Main은 같은 Primary에게 이미 타 owner 소유인 Query는 건드리지 않고 자기 Query의 단발 정리만 보존하도록 한정 재배정했다. exact 자기 Query close1·Proxytrap0·다른ownerclose0을 관측하고 결과서 갱신/재검수를 거친다. 이전 검증과 오류 이력을 삭제하지 않으며 현재 C0/I1/M0·병합 전이다. 실제 SDK·프로세스·파일자료·DB·권한·키·서비스·C# 실행0 유지.
+
+## 2026-11-16 FN07 출력 보호 저장 검수 완료·통합 준비
+
+Main이 제품6/시험4의 실제 SHA256을 최종 결과서와 10개 모두 대조했다. native 1A26C1C5 및 first-send-owner 0E8B67C9의 독립 검수는 C0/I0/M0이다. 자기 Query 정리 I2 RED edbc4e를 보존하고 최종 양성/Proxy2건·소유권회귀4건·메모리1건과 root/desktop 타입0을 확인했다. 최종 결과서 SHA256 7185D0F1B4FD737D6B56FE6E800E858AB460C2D9B216AD224051C8FC53327DEB. 전체44업무/실제SDK/Windows/DB 검증은 미완료다. 단일 writer 쓰기반환/live0을 확인했고 Main이 정확 변경만 commit/push·PR·trusted Broker·병합본 smoke·정리를 수행한다. WORK_CHECK/STATUS 현재요약과 사용자열람본 현재블록을 함께 갱신했으며 서로다른 과거이력은 보존했다.

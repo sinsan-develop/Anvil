@@ -17,6 +17,15 @@ internal sealed class NormalExecutionSpoolProfileSource {
  internal sealed class SpoolCapacityException:InvalidOperationException {}
  const string Purpose="ANVIL_OWNED_SPOOL_PROFILE_V1", Normal="NORMAL_EXECUTION", Receipt="UNVERIFIED_RECEIPT_INBOX", Preparation="NATIVE_PREPARATION";
  const int MaxEntry=32768;
+ const string Output="sdk-session-output";
+ const long OutputManagementWorst=4*(MaxEntry+36L)+AdminHold;
+ readonly Dictionary<string,long> outputCosts=new Dictionary<string,long>();
+ readonly HashSet<string> outputWrite=new HashSet<string>();
+ static bool IsOutput(Row r){return r.ContainsKey("channel")&&Object.Equals(r["channel"],Output);}
+ void Account(Row row,int cipherLength){
+  if(!IsOutput(row))return;string id=S(row,"id");long used;outputCosts.TryGetValue(id,out used);
+  outputCosts[id]=checked(used+4+cipherLength+32);if(outputCosts[id]>OutputManagementWorst)throw Invalid();
+ }
  FileStream activeAnchor;
  static readonly byte[] Entropy=Encoding.UTF8.GetBytes(Purpose);
  readonly DesktopTrustKeyRootSource root;
@@ -73,12 +82,12 @@ internal sealed class NormalExecutionSpoolProfileSource {
   using(var anchor=new FileStream(anchorPath,create?FileMode.CreateNew:FileMode.Open,FileAccess.ReadWrite,FileShare.None)){
    string file=FileIdentity(log,path),head=FileIdentity(anchor,anchorPath);
    if(activeAnchor!=null||checked(log.Length+anchor.Length)>AdminCap||anchor.Length%32!=0)throw Invalid();
-   var rows=new List<Row>();string previous=null;using(var reader=new BinaryReader(log,Encoding.UTF8,true)){
+   outputCosts.Clear();var rows=new List<Row>();string previous=null;using(var reader=new BinaryReader(log,Encoding.UTF8,true)){
     while(log.Position<log.Length){Check();int n=reader.ReadInt32();if(n<1||n>MaxEntry||n>log.Length-log.Position)throw Invalid();var encrypted=reader.ReadBytes(n);
      byte[] plain=ProtectedData.Unprotect(encrypted,Entropy,DataProtectionScope.CurrentUser);
      try{var wrap=DesktopTrustKeyHostSource.Parse(plain,false);DesktopTrustKeyHostSource.Exact(wrap,"purpose,sid,root,namespaceId,fileId,headId,sequence,previous,event");
       if(S(wrap,"purpose")!=Purpose||S(wrap,"sid")!=root.UserSid||S(wrap,"root")!=root.Identity||S(wrap,"namespaceId")!=directory.Identity||S(wrap,"fileId")!=file||S(wrap,"headId")!=head||N(wrap["sequence"])!=rows.Count+1||!Object.Equals(wrap["previous"],previous))throw Invalid();
-      var row=DesktopTrustKeyHostSource.Map(wrap["event"]);rows.Add(row);previous=H(row);
+      var row=DesktopTrustKeyHostSource.Map(wrap["event"]);rows.Add(row);Account(row,n);previous=H(row);
       var attested=new byte[32];using(var sha=SHA256.Create()){if(anchor.Read(attested,0,32)!=32||!sha.ComputeHash(encrypted).SequenceEqual(attested))throw Invalid();}
      }finally{Array.Clear(plain,0,plain.Length);}
     }
@@ -88,16 +97,16 @@ internal sealed class NormalExecutionSpoolProfileSource {
    try{var result=act(log,rows);Check();return result;}finally{activeAnchor=null;}
   }
  }
- static long ManagementHold(List<Row> rows){var holds=new HashSet<string>();long dirs=4096;
+ long ManagementHold(List<Row> rows){var holds=new HashSet<string>();long dirs=4096;
   foreach(var r in rows){string k=S(r,"kind");if(k=="RESERVED")holds.Add(S(r,"id"));if(k=="SETTLED"&&!holds.Remove(S(r,"id")))throw Invalid();if(k=="ALLOCATING")dirs=checked(dirs+4096);}
-  return checked(dirs+holds.Count*AdminHold);
+  foreach(string id in holds){long spent;dirs=checked(dirs+(outputCosts.TryGetValue(id,out spent)?OutputManagementWorst-spent:AdminHold));}return dirs;
  }
  void Append(FileStream log,List<Row> rows,Row row){
   Check();string path=Path.Combine(directory.Path,"management.v1");var wrap=R("purpose",Purpose,"sid",root.UserSid,"root",root.Identity,"namespaceId",directory.Identity,
    "fileId",FileIdentity(log,path),"headId",FileIdentity(activeAnchor,AnchorPath()),"sequence",rows.Count+1,"previous",rows.Count==0?null:H(rows[rows.Count-1]),"event",row);
   var plain=Encoding.UTF8.GetBytes(J(wrap));byte[] cipher=null;
   try{cipher=ProtectedData.Protect(plain,Entropy,DataProtectionScope.CurrentUser);if(cipher.Length>MaxEntry)throw Invalid();
-   rows.Add(row);if(checked(log.Length+4+cipher.Length+activeAnchor.Length+32+ManagementHold(rows))>AdminCap)throw new SpoolCapacityException();
+   rows.Add(row);Account(row,cipher.Length);if(checked(log.Length+4+cipher.Length+activeAnchor.Length+32+ManagementHold(rows))>AdminCap)throw new SpoolCapacityException();
    long before=log.Length;log.Position=before;using(var writer=new BinaryWriter(log,Encoding.UTF8,true)){writer.Write(cipher.Length);writer.Write(cipher);}
    log.Flush(true);Check();log.Position=before;using(var reader=new BinaryReader(log,Encoding.UTF8,true)){if(reader.ReadInt32()!=cipher.Length||!reader.ReadBytes(cipher.Length).SequenceEqual(cipher)||log.Position!=log.Length)throw Invalid();}
    using(var sha=SHA256.Create()){
@@ -136,17 +145,19 @@ internal sealed class NormalExecutionSpoolProfileSource {
  }
  static Row Empty(){return R("count",0,"bytes",0,"tail",null);}
  static string Channel(Row value,string writer){
-  string c=S(value,"channel");if(writer==Receipt?c!="inbox":!Regex.IsMatch(c,@"\A(?:observations|acks|(?:intake|attempt)-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\z"))throw Invalid();return c;
+  string c=S(value,"channel");if(writer==Receipt?c!="inbox":c!=Output&&!Regex.IsMatch(c,@"\A(?:observations|acks|(?:intake|attempt)-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\z"))throw Invalid();return c;
  }
  Dictionary<string,Row> Unsettled(List<Row> rows){
   var pending=new Dictionary<string,Row>();foreach(var row in rows){string k=S(row,"kind");if(k=="RESERVED")pending.Add(S(row,"id"),row);if(k=="SETTLED"&&!pending.Remove(S(row,"id")))throw Invalid();}return pending;
  }
- Row Reserve(List<Row> rows,FileStream log,string writer,string allocation,string channel,long worst,Row summary){
+ Row Reserve(List<Row> rows,FileStream log,string writer,string allocation,string channel,long worst,Row summary,Row output=null){
   long used=0;var pending=Unsettled(rows);foreach(var row in pending.Values){if(S(row,"writer")==writer)used=checked(used+N(row["worst"]));if(S(row,"allocation")==allocation&&S(row,"channel")==channel)throw Invalid();}
+  long heldBefore=used;used=0;if(writer==Normal)foreach(var cost in outputCosts)if(!pending.ContainsKey(cost.Key))used=checked(used+cost.Value);
   var latest=new Dictionary<string,Row>();foreach(var row in rows)if(S(row,"kind")=="SETTLED"&&S(row,"writer")==writer)latest[S(row,"allocation")+"/"+S(row,"channel")]=row;
   foreach(var row in latest.Values)used=checked(used+N(DesktopTrustKeyHostSource.Map(row["summary"])["bytes"]));
-  if(checked(used+worst)>Cap(writer))throw new SpoolCapacityException();
+  long occupied=used;used=checked(used+heldBefore);if(checked(used+worst)>Cap(writer))throw new SpoolCapacityException();
   string id=Id();var reserved=R("kind","RESERVED","writer",writer,"allocation",allocation,"channel",channel,"id",id,"worst",worst,"before",summary);
+  if(output!=null){reserved.Add("output",output);reserved.Add("normalUsed",occupied);reserved.Add("normalHeldBefore",heldBefore);}
   Append(log,rows,reserved);owned.Add(id,allocation);return reserved;
  }
  // 정상 channel은 순번 파일의 크기와 마지막 원 bytes를 확인한다. receipt는 이름·크기·내용 digest 전체를 고정한다.
@@ -187,14 +198,63 @@ internal sealed class NormalExecutionSpoolProfileSource {
    Append(log,rows,R("kind","SETTLED","writer",Preparation,"allocation",profileId,"channel","journal","id",reservation,"summary",R("bytes",used,"count",N(before["count"])+1,"tail",reservation)));owned.Remove(reservation);return true;
   });
  }
+ static Row EvidenceRef(string id,Row fact){return R("id",id,"version",1,"contentHash",H(fact));}
+ static Row OutputScope(Row raw,List<Row> rows,Row alloc,Row record,Row slot){
+  DesktopTrustKeyHostSource.Exact(raw,"projectId,executionId,generation,registrationRef,profileRef,assignmentRef,slotRef,grantRef,startReadyRef,dispatchAttemptRef,sessionBindingRef,plannedSidDigest");
+  var scope=DesktopTrustKeyHostSource.Map(slot["scope"]);var reg=DesktopTrustKeyHostSource.Map(record["registration"]);
+  if(J(raw["registrationRef"])!=J(reg["registrationRef"])||J(raw["profileRef"])!=J(EvidenceRef(S(rows[0],"profileId"),rows[0]))||
+   J(raw["assignmentRef"])!=J(EvidenceRef(S(alloc,"id"),alloc))||J(raw["slotRef"])!=J(slot["receiptRef"])||J(raw["grantRef"])!=J(scope["grantRef"])||
+   J(raw["generation"])!=J(scope["executionGeneration"])||S(raw,"projectId")!=S(scope,"projectId")||S(raw,"executionId")!=S(scope,"executionId")||
+   !DesktopTrustKeyHostSource.IsHash(raw["plannedSidDigest"]))throw Invalid();
+  foreach(string k in new[]{"startReadyRef","dispatchAttemptRef","sessionBindingRef"})DesktopTrustKeyHostSource.Ref(raw[k]);
+  return raw;
+ }
+ static Row LastOutputPhase(List<Row> rows,string reservation){return rows.LastOrDefault(r=>IsOutput(r)&&S(r,"id")==reservation);}
+ static void OutputTime(Row o){
+  long now=System.Diagnostics.Stopwatch.GetTimestamp(),start=N(o["startTick"]),end=N(o["endTick"]);
+  if(now<start||now>=end||DateTime.UtcNow>=DesktopTrustKeyHostSource.Time(o,"expiresAt"))throw Invalid();
+ }
+ Row OutputHandoff(List<Row> rows,FileStream log,Row value,string id,DesktopTrustKeyDirectoryFact dir,out Row timing){
+  timing=null;
+  string res=DesktopTrustKeyHostSource.Id(value,"reservation"),held;
+  if(!owned.TryGetValue(res,out held)||held!=id||outputWrite.Contains(res))throw Invalid();
+  var saved=LastOutputPhase(rows,res);if(saved==null||S(saved,"kind")!="RESERVED")throw Invalid();
+  var details=DesktopTrustKeyHostSource.Map(saved["output"]);timing=details;OutputTime(details);
+  var before=DesktopTrustKeyHostSource.Map(saved["before"]);
+  if(J(Inspect(rows,Normal,id,dir,Output,before))!=J(before))throw Invalid();
+  string challenge=Id()+Id();OutputTime(details);Append(log,rows,R("kind","SDK_READ_CLOSED","writer",Normal,"allocation",id,"channel",Output,"id",res,
+   "challengeHash",H(challenge),"reservationHash",H(saved)));
+  OutputTime(details);owned.Remove(res);opened.Remove(id);return R("state","SDK_READ_CLOSED","challenge",challenge);
+ }
+ Row OutputResume(List<Row> rows,FileStream log,Row value,Row record,Row slot,string id,DesktopTrustKeyDirectoryFact dir){
+  string res=DesktopTrustKeyHostSource.Id(value,"reservation");Row saved;
+  if(!Unsettled(rows).TryGetValue(res,out saved)||!IsOutput(saved)||S(saved,"allocation")!=id)throw Invalid();
+  var details=DesktopTrustKeyHostSource.Map(saved["output"]);OutputTime(details);
+  var phase=LastOutputPhase(rows,res);
+  if(phase==null||S(phase,"kind")!="SDK_READ_CLOSED"||S(phase,"reservationHash")!=H(saved)||S(phase,"challengeHash")!=H(S(value,"challenge"))||
+    S(details,"recordHash")!=H(record)||S(details,"slotHash")!=H(slot)||S(details,"attemptId")!=S(value,"attemptId")||
+    S(details,"scopeDigest")!=S(value,"scopeDigest")||S(details,"requestDigest")!=S(value,"requestDigest"))throw Invalid();
+  var before=DesktopTrustKeyHostSource.Map(saved["before"]);
+  if(J(Inspect(rows,Normal,id,dir,Output,before))!=J(before))throw Invalid();
+  OutputTime(details);Append(log,rows,R("kind","SDK_WRITE_CLAIMED","writer",Normal,"allocation",id,"channel",Output,"id",res,"handoffHash",H(phase)));
+  OutputTime(details);owned.Add(res,id);outputWrite.Add(res);return details;
+ }
  internal Row Control(string operation,Row value,Row record,Row slot){
   string writer=S(value,"writer");if(writer!=Normal&&writer!=Receipt)throw Invalid();var auth=writer==Normal?"attemptId,writer,slotId":"attemptId,writer";
-  if(operation=="NORMAL_SPOOL_PROFILE_STATE"||operation=="NORMAL_SPOOL_ALLOCATE"||operation=="NORMAL_SPOOL_RESUME")DesktopTrustKeyHostSource.Exact(value,auth);
+  bool outputReserve=writer==Normal&&operation=="NORMAL_SPOOL_RESERVE"&&Object.Equals(value.ContainsKey("channel")?value["channel"]:null,Output);
+  bool resumeOutput=writer==Normal&&operation=="NORMAL_SPOOL_RESUME"&&value.ContainsKey("challenge");
+  bool closeOutput=writer==Normal&&operation=="NORMAL_SPOOL_CLOSE"&&value.ContainsKey("reservation");
+  bool binding=writer==Normal&&(operation=="NORMAL_SPOOL_RESUME"||operation=="NORMAL_SPOOL_ALLOCATE")&&value.ContainsKey("outputBinding");
+  if(resumeOutput)DesktopTrustKeyHostSource.Exact(value,auth+",reservation,challenge,scopeDigest,requestDigest");
+  else if(binding){DesktopTrustKeyHostSource.Exact(value,auth+",outputBinding");if(!Object.Equals(value["outputBinding"],true))throw Invalid();}
+  else if(outputReserve)DesktopTrustKeyHostSource.Exact(value,auth+",allocation,channel,nodeStamp,request,scope,expiresAt");
+  else if(closeOutput)DesktopTrustKeyHostSource.Exact(value,auth+",allocation,reservation");
+  else if(operation=="NORMAL_SPOOL_PROFILE_STATE"||operation=="NORMAL_SPOOL_ALLOCATE"||operation=="NORMAL_SPOOL_RESUME")DesktopTrustKeyHostSource.Exact(value,auth);
   else if(operation=="NORMAL_SPOOL_RESERVE")DesktopTrustKeyHostSource.Exact(value,auth+",allocation,channel,nodeStamp");
   else if(operation=="NORMAL_SPOOL_SETTLE")DesktopTrustKeyHostSource.Exact(value,auth+",allocation,channel,reservation");
   else if(operation=="NORMAL_SPOOL_CLOSE")DesktopTrustKeyHostSource.Exact(value,auth+",allocation");else throw Invalid();
-  string tuple=Tuple(writer,record,slot);
-  return Log(false,(log,rows)=>{
+  string tuple=Tuple(writer,record,slot);Row timing=null;
+  var answer=Log(false,(log,rows)=>{
    if(!Has(rows,"REGISTERED",H(record)))throw Invalid();
    if(writer==Normal&&!rows.Any(r=>S(r,"kind")=="SLOT_ID"&&S(r,"key")==S(slot,"slotId")&&S(r,"slotHash")==H(slot)))throw Invalid();
    var started=rows.LastOrDefault(r=>S(r,"kind")=="ALLOCATING"&&S(r,"key")==tuple);
@@ -202,23 +262,51 @@ internal sealed class NormalExecutionSpoolProfileSource {
    bool creating=operation=="NORMAL_SPOOL_ALLOCATE",resuming=operation=="NORMAL_SPOOL_RESUME";
    var allocation=Allocate(rows,log,writer,tuple,!creating);string id=S(allocation,"id");var dir=root.RetainSpoolNamespace(id,false);
    if(dir.Identity!=S(allocation,"directoryIdentity"))throw Invalid();
-   if(creating||resuming){if(Unsettled(rows).Values.Any(r=>S(r,"allocation")==id))throw Invalid();
+   if(creating||resuming){if(Unsettled(rows).Values.Any(r=>S(r,"allocation")==id&&(!IsOutput(r)||S(LastOutputPhase(rows,S(r,"id")),"kind")!="SDK_READ_CLOSED")))throw Invalid();
     if(writer==Normal){var sr=DesktopTrustKeyHostSource.Map(slot["scope"]);string grant=H(sr["grantRef"]);if(creating)Append(log,rows,R("kind","GRANT","key",id,"grant",grant));
      else if(!rows.Any(r=>S(r,"kind")=="GRANT"&&S(r,"key")==id&&S(r,"grant")==grant))throw Invalid();}
-    if(!opened.Add(id))throw Invalid();return R("state",creating?"ALLOCATED":"RESUMED","profileId",profileId,"allocation",id,"root",dir.Path,"directoryIdentity",dir.Identity);}
+    if(!opened.Add(id))throw Invalid();
+    if(resumeOutput)timing=OutputResume(rows,log,value,record,slot,id,dir);
+    var result=R("state",creating?"ALLOCATED":"RESUMED","profileId",profileId,"allocation",id,"root",dir.Path,"directoryIdentity",dir.Identity);
+    if(binding){result.Add("profileRef",EvidenceRef(profileId,rows[0]));result.Add("assignmentRef",EvidenceRef(id,allocation));}return result;}
    if(!opened.Contains(id)||!ownedAllocation(id,value))throw Invalid();
+   if(closeOutput)return OutputHandoff(rows,log,value,id,dir,out timing);
    if(operation=="NORMAL_SPOOL_CLOSE"){if(owned.Values.Contains(id))throw Invalid();opened.Remove(id);return R("state","CLOSED_CONFIRMED");}
    string channel=Channel(value,writer);var prior=rows.LastOrDefault(r=>S(r,"kind")=="SETTLED"&&S(r,"allocation")==id&&S(r,"channel")==channel);
    var before=prior==null?Empty():DesktopTrustKeyHostSource.Map(prior["summary"]);
    if(operation=="NORMAL_SPOOL_RESERVE"){string stamp=S(value,"nodeStamp");if(!Regex.IsMatch(stamp,@"\A[0-9]{1,20}:[0-9]{1,20}\z"))throw Invalid();var bound=rows.SingleOrDefault(r=>S(r,"kind")=="NODE_STAMP"&&S(r,"key")==id);if(bound==null)Append(log,rows,R("kind","NODE_STAMP","key",id,"stamp",stamp));else if(S(bound,"stamp")!=stamp)throw Invalid();var files=writer==Receipt?new Dictionary<string,string>():null;var observed=Inspect(rows,writer,id,dir,channel,null,files);if(J(observed)!=J(before))throw Invalid();
     long worst=writer==Normal?64*MiB-N(before["bytes"]):4096;
+    if(outputReserve){
+     var requested=DesktopTrustKeyHostSource.Map(value["request"]);DesktopTrustKeyHostSource.Exact(requested,"channel,pool,id,scopeDigest,dataBytes,rows,tailRef");
+     var outputScope=OutputScope(DesktopTrustKeyHostSource.Map(value["scope"]),rows,allocation,record,slot);
+     string sd=H(outputScope);long count=N(requested["rows"]),bytes=N(requested["dataBytes"]);
+     if(S(requested,"channel")!="SDK_SESSION_OUTPUT"||S(requested,"pool")!=Normal||S(requested,"scopeDigest")!=sd||
+        count<1||count>2||bytes<3*MiB||bytes>6*MiB||N(before["count"])+count>10000||N(before["bytes"])+bytes>64*MiB||
+        rows.Any(r=>IsOutput(r)&&S(r,"kind")=="RESERVED"&&(S(DesktopTrustKeyHostSource.Map(r["output"]),"requestId")==S(requested,"id")||
+          S(r,"allocation")==id&&S(DesktopTrustKeyHostSource.Map(r["output"]),"scopeDigest")!=sd)))throw Invalid();
+     if((requested["tailRef"]==null)!=(N(before["count"])==0))throw Invalid();
+     if(requested["tailRef"]!=null)DesktopTrustKeyHostSource.Ref(requested["tailRef"]);
+     DateTime now=DateTime.UtcNow,end=DesktopTrustKeyHostSource.Time(value,"expiresAt");
+     if(end<=now||end>DesktopTrustKeyHostSource.Time(slot,"expiresAt"))throw Invalid();
+     long tick=System.Diagnostics.Stopwatch.GetTimestamp();var details=R("recordHash",H(record),"slotHash",H(slot),"attemptId",S(value,"attemptId"),
+      "scopeDigest",sd,"requestDigest",H(requested),"requestId",DesktopTrustKeyHostSource.Id(requested,"id"),"expiresAt",value["expiresAt"],
+      "startTick",tick,"endTick",checked(tick+(long)((end-now).TotalSeconds*System.Diagnostics.Stopwatch.Frequency)),"rows",count,"bytes",bytes);
+     timing=details;OutputTime(details);var h=Reserve(rows,log,Normal,id,Output,checked(bytes+OutputManagementWorst),before,details);OutputTime(details);
+     return R("id",h["id"],"requestDigest",details["requestDigest"],"normalUsed",h["normalUsed"],"normalHeldBefore",h["normalHeldBefore"],
+       "channelRows",before["count"],"channelBytes",before["bytes"],"channelHeldBytes",0,"channelHeldRows",0,"managementBytes",OutputManagementWorst);
+    }
     var hold=Reserve(rows,log,writer,id,channel,worst,before);if(files!=null)receiptPrefixes.Add(S(hold,"id"),files);return R("reservation",hold["id"],"before",before);}
    string reservation=DesktopTrustKeyHostSource.Id(value,"reservation");string held;if(!owned.TryGetValue(reservation,out held)||held!=id)throw Invalid();
    var active=Unsettled(rows);Row saved;if(!active.TryGetValue(reservation,out saved)||S(saved,"channel")!=channel)throw Invalid();
    var checkedFiles=writer==Receipt?new Dictionary<string,string>():null;var after=Inspect(rows,writer,id,dir,channel,before,checkedFiles);
+   if(channel==Output){
+    if(!outputWrite.Contains(reservation)||!IsOutput(saved)||S(LastOutputPhase(rows,reservation),"kind")!="SDK_WRITE_CLAIMED")throw Invalid();
+    var o=DesktopTrustKeyHostSource.Map(saved["output"]);timing=o;OutputTime(o);
+    if(N(after["count"])-N(before["count"])>N(o["rows"])||N(after["bytes"])-N(before["bytes"])>N(o["bytes"]))throw Invalid();outputWrite.Remove(reservation);
+   }
    if(checkedFiles!=null){var original=receiptPrefixes[reservation];if(checkedFiles.Count>original.Count+1||original.Any(p=>!checkedFiles.ContainsKey(p.Key)||checkedFiles[p.Key]!=p.Value))throw Invalid();}if(N(after["count"])<N(before["count"])||N(after["bytes"])<N(before["bytes"])||N(after["bytes"])-N(before["bytes"])>N(saved["worst"]))throw Invalid();
    Append(log,rows,R("kind","SETTLED","writer",writer,"allocation",id,"channel",channel,"id",reservation,"summary",after));owned.Remove(reservation);receiptPrefixes.Remove(reservation);return R("state","SETTLED","summary",after);
-  });
+  });if(timing!=null)OutputTime(timing);return answer;
  }
  static bool ownedAllocation(string id,Row payload){return id==DesktopTrustKeyHostSource.Id(payload,"allocation");}
 }

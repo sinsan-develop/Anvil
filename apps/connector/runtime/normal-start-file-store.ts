@@ -1,4 +1,4 @@
-import {isProfileJournal} from './normal-owned-spool-profile.ts';
+import {isProfileJournal,isProfileOutputJournal} from './normal-owned-spool-profile.ts';
 import {constants,unlinkSync} from 'node:fs';
 import {isAsyncFunction,isPromise,isProxy} from 'node:util/types';
 import * as disk from 'node:fs/promises';
@@ -30,12 +30,12 @@ const perFile=3*1024*1024,totalLimit=64*1024*1024;
  * directory fsync/전원손실 내성과 다른 동일 OS 사용자의 악의적 변경은 별도 검증 범위다. */
 export class NormalStartFileStore implements NormalJournalStore{
  readonly transport='NORMAL_PROTECTED' as const;
- #root:string;#access?:ProfileJournalAccess;#scope:NormalLocalScope;#fs:NormalFilePorts;#syncRelease?:NormalFilePorts['unlinkSync'];
+ #managed:boolean;#root:string;#access?:ProfileJournalAccess;#scope:NormalLocalScope;#fs:NormalFilePorts;#syncRelease?:NormalFilePorts['unlinkSync'];
  constructor(root:string|ProfileJournalAccess,scope:NormalLocalScope,ports:NormalFilePorts=disk,proof?:typeof managedRoot){
   if((typeof root==='string'?(!isAbsolute(root)||root.includes('\0')||pathSame(resolve(root),parse(resolve(root)).root)||(isOwnedSpoolPath(root)&&proof!==managedRoot)):(!root||!isProfileJournal(root)))||
    !recordV1(scope,['projectId','executionId','executionGeneration'])||!uuidV1(scope.projectId)||!uuidV1(scope.executionId)||
    !Number.isSafeInteger(scope.executionGeneration)||scope.executionGeneration<1)fail();
-  this.#root=typeof root==='string'?resolve(root):'';if(typeof root!=='string')this.#access=root;this.#scope=cloneV1(scope);this.#fs=ports;
+  this.#managed=proof===managedRoot;this.#root=typeof root==='string'?resolve(root):'';if(typeof root!=='string')this.#access=root;this.#scope=cloneV1(scope);this.#fs=ports;
   const sync=ports===disk?unlinkSync:!isProxy(ports)?Object.getOwnPropertyDescriptor(ports,'unlinkSync')?.value:undefined;
   if(typeof sync==='function'&&!isProxy(sync)&&!isAsyncFunction(sync))this.#syncRelease=sync;
  }
@@ -80,9 +80,14 @@ export class NormalStartFileStore implements NormalJournalStore{
    return this.#run('attempt-'+key.commandId,body,true) as Promise<T>;
   }};
  }
+ /** Only the private, bound profile output access can open this channel. */
+ async outputExclusive<T>(body:(tx:NormalJournalTransaction)=>Promise<T>):Promise<T>{
+  const access=this.#access;if(!access||!isProfileOutputJournal(access))return fail();
+  return access.transaction('sdk-session-output',(path,ports)=>new NormalStartFileStore(path,this.#scope,ports,managedRoot).#run('sdk-session-output',body,true,true));
+ }
  async exclusive<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>):Promise<T>{return this.#run(channel,body,false);}
- async #run<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>,strictClose:boolean):Promise<T>{
-  if(typeof channel!=='string'||!channelOK(channel))fail();
+ async #run<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>,strictClose:boolean,output=false):Promise<T>{
+  if(typeof channel!=='string'||!(output?this.#managed&&channel==='sdk-session-output':channelOK(channel)))fail();
   if(this.#access)return this.#access.transaction(channel,(path,ports)=>new NormalStartFileStore(path,this.#scope,ports,managedRoot).#run(channel,body,true));
   const fs=this.#fs,root=this.#root,lockPath=join(root,channel+'.lock');
   const syncRelease=this.#syncRelease;let liveCheck:(()=>void)|undefined;
@@ -107,7 +112,7 @@ export class NormalStartFileStore implements NormalJournalStore{
     read:()=>serial(async()=>{
      await check();const all=await fs.readdir(root);
      // 같은 root의 다른 채널은 건드리지 않지만 정체불명의 파일은 거절한다.
-     if(all.some(n=>!/^((observations|acks|attempt-[0-9a-f-]{36}|intake-[0-9a-f-]{36})\.(lock|[0-9]{6}\.json))$/.test(n)))fail();
+     if(all.some(n=>!(this.#managed&&/^sdk-session-output\.(?:lock|[0-9]{6}\.json)$/.test(n))&&!/^((observations|acks|attempt-[0-9a-f-]{36}|intake-[0-9a-f-]{36})\.(lock|[0-9]{6}\.json))$/.test(n)))fail();
      const names=all.filter(n=>n.startsWith(channel+'.')&&n!==channel+'.lock').sort();if(names.length>10000)fail();
      const rows:unknown[]=[];total=0;
      for(let i=0;i<names.length;i++){

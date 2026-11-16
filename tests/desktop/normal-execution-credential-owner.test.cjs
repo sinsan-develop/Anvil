@@ -174,7 +174,7 @@ test('이미 발송한 GET 도중 dispose는 늦은 응답을 성공으로 바�
  assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
 });
 
-async function pollingFixture(profile=null,workerOptions=false){
+async function pollingFixture(profile=null,workerOptions=false,mixed=false){
  const f=await fixtures.liveNativeOwner(),base=f.dependencies.now();let offset=0;
  f.dependencies.now=()=>base+offset;f.ports.now=()=>base+offset;
  const m=model(f,'PAIR',profile),scope=m.config.scope,clock=f.dependencies.now,signal=new AbortController().signal;
@@ -187,17 +187,23 @@ async function pollingFixture(profile=null,workerOptions=false){
  const groups=bodies.map((body,i)=>({kind:i?'START_OPTIONS':'CONTEXT_BUNDLE',payloadRef:ref(50+i),sourceRef:ref(52+i),sourceBytes:Buffer.byteLength(body),contentHash:contentHash(body),mediaType:'application/json',parts:[{materialId:id(54+i),partIndex:1,byteOffset:0,utf8Bytes:Buffer.byteLength(body),contentHash:contentHash(body)}]}));
  const issuedAt=new Date(clock()).toISOString(),unsigned={schemaVersion:1,commandId:id(56),issuedAt,expiresAt:new Date(clock()+30000).toISOString(),...expected,operation:'START_SESSION',payload:{contextBundleRef:groups[0].payloadRef,optionsRef:groups[1].payloadRef}};
  const envelope={...unsigned,envelopeHash:hash(unsigned)},item={sequence:1,commandRef:ref(57),envelope,materials:{manifestRef:ref(58),groups}};
+ const instruction='보호 출력 시험 입력',partsRef=ref(94),instructionRef=ref(95),bodyHash=contentHash(instruction);
+ const sendBase={...unsigned,commandId:id(90),operation:'SEND_INSTRUCTION',payload:{sessionBindingRef:ref(92),partsRef,instructionRef}};
+ const send={...sendBase,envelopeHash:hash(sendBase)};
+ const extra={kind:'INSTRUCTION',payloadRef:partsRef,sourceRef:instructionRef,sourceBytes:Buffer.byteLength(instruction),contentHash:bodyHash,
+  mediaType:'text/plain;charset=utf-8',parts:[{materialId:id(97),partIndex:1,byteOffset:0,utf8Bytes:Buffer.byteLength(instruction),contentHash:bodyHash}]};
+ const items=mixed?[item,{sequence:2,commandRef:ref(98),envelope:send,materials:{manifestRef:ref(99),groups:[extra]}}]:[item];
  const seen={permits:0,wires:0,events:[],loseAck:false};
  m.respond((r,body)=>{
   const result={transport:'NORMAL_PROTECTED',proofResultRef:ref(59),cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
   const observedAt=new Date(clock()).toISOString(),expiresAt=new Date(clock()+5000).toISOString();
-  if(r.path.endsWith('/commands'))return {...result,items:[item],nextCursor:'cursor1',hasMore:false,observedAt,expiresAt};
-  const i=groups.findIndex(g=>r.path.endsWith('/materials/'+g.parts[0].materialId));
-  if(i>=0){const g=groups[i],p=g.parts[0];return {...result,observedAt,expiresAt,material:{materialId:p.materialId,sourceRef:g.sourceRef,partIndex:1,partCount:1,contentHash:p.contentHash,bytes:Buffer.from(bodies[i]).toString('base64url')}};}
-  if(r.path.endsWith('/permit')){seen.permits++;return {...result,...(seen.largePermit?{padding:'x'.repeat(2700000)}:{}),executionAuthorized:true,permit:{ref:ref(60),commandId:envelope.commandId,envelopeHash:envelope.envelopeHash,issuedAt:observedAt,expiresAt}};}
-  assert.ok(r.path.endsWith('/observations'));const {events}=JSON.parse(body);seen.events=events;
+  if(r.path.endsWith('/commands'))return {...result,items:seen.startOnly?[item]:items,nextCursor:'cursor1',hasMore:false,observedAt,expiresAt};
+  const all=mixed?[...groups,extra]:groups,i=all.findIndex(g=>r.path.endsWith('/materials/'+g.parts[0].materialId));
+  if(i>=0){const g=all[i],p=g.parts[0];return {...result,observedAt,expiresAt,material:{materialId:p.materialId,sourceRef:g.sourceRef,partIndex:1,partCount:1,contentHash:p.contentHash,bytes:Buffer.from(i===2?instruction:bodies[i]).toString('base64url')}};}
+  if(r.path.endsWith('/permit')){const cmd=mixed&&r.path.includes(send.commandId)?send:envelope;seen.permits++;return {...result,...(seen.largePermit?{padding:'x'.repeat(2700000)}:{}),executionAuthorized:true,permit:{ref:ref(cmd===send?96:60),commandId:cmd.commandId,envelopeHash:cmd.envelopeHash,issuedAt:observedAt,expiresAt}};}
+  assert.ok(r.path.endsWith('/observations'));const batch=JSON.parse(body).events,events=mixed?[...seen.events,...batch]:batch;seen.events=events;
   const snapshot={execution:local,highestContiguous:events.length,maxSequence:events.length,contiguousDigest:events.reduce((previous,e)=>hash({previous,eventHash:hash(e)}),hash([])),gaps:[],storedCount:events.length,writerReleaseVerified:false,executionAuthorized:false,dispatchPerformed:false,recordedAt:observedAt};
-  return {...result,ack:seen.loseAck?null:{ref:{...ref(61),contentHash:hash(snapshot)},snapshot}};
+  return {...result,ack:seen.loseAck?null:{ref:{...ref(61),version:mixed?events.length:1,contentHash:hash(snapshot)},snapshot}};
  });
  const current={transport:'NORMAL_PROTECTED',async current(e,attempt){return {transport:'NORMAL_PROTECTED',key:{...local,commandId:e.commandId},envelopeHash:e.envelopeHash,grantRef:scope.grantRef,localAttemptRef:attempt,sourceObservationRefs:[ref(47)],osOwnershipRef:ref(62),checkedAt:new Date(clock()).toISOString(),expiresAt:new Date(clock()+5000).toISOString()};}};
  const wire={transport:'NORMAL_PROTECTED',async send(value){seen.wires++;assert.equal(Buffer.from(value.options.bytes).toString(),bodies[1]);return {transport:'NORMAL_PROTECTED',responseRef:ref(63),processRef:null};}};
@@ -293,6 +299,116 @@ test('등록 원owner의 profile START가 원 permit·wire·ACK를 처리하며 
   assert.equal(full.m.calls.filter(c=>c.payload.kind==='REQUEST'&&c.payload.request?.path.endsWith('/permit')).length,1);
   full.source.dispose();
  }finally{fixtures.setFiles(undefined);}
+});
+
+// 기존 REGISTERED owner/원 CJS 제어 및 파일 저장 코드에 합성 native metadata/SDK만 공급한다.
+async function outputProfile(){
+ const {root,memoryFiles}=await import('../unit/FN08/normal-start-local-fixture.ts');
+ const local=memoryFiles(),allocation=id(81),folder=path.resolve('Anvil','Trust','v1','owned-spool-profile.v1','data-'+allocation);
+ const convert=p=>{assert.ok(p===folder||p.startsWith(folder+path.sep));return path.join(root,path.relative(folder,p));};
+ fixtures.setFiles({lstat:p=>local.fs.lstat(convert(p)),realpath:async p=>{convert(p);return p;},open:(p,...a)=>local.fs.open(convert(p),...a),
+  readdir:p=>local.fs.readdir(convert(p)),unlink:p=>local.fs.unlink(convert(p)),unlinkSync:p=>{assert.ok(local.files.delete(convert(p)));}});
+ const state={allocated:false,seq:500,holds:new Map(),parked:null,claimed:0,settlements:0,denials:[],mode:'OK',room:256*1024**2};
+ const output='sdk-session-output',summary=c=>{
+  const rows=[...local.files].filter(([p])=>path.basename(p).startsWith(c+'.')&&p.endsWith('.json')).sort(([a],[b])=>a.localeCompare(b));
+  return {count:rows.length,bytes:rows.reduce((n,[,v])=>n+v.bytes.length,0),tail:rows.length?contentHash(rows.at(-1)[1].bytes):null};
+ };
+ const handle=(v,child,slot)=>{
+  const p=v.payload;assert.equal(p.slotId,slot.slotId);
+  if(v.operation==='NORMAL_SPOOL_PROFILE_STATE')return {profileId:id(80),allocated:state.allocated};
+  if(v.operation==='NORMAL_SPOOL_ALLOCATE'||v.operation==='NORMAL_SPOOL_RESUME'){
+   if(p.challenge){const h=state.parked;assert.ok(h&&h.challenge===p.challenge&&h.id===p.reservation&&p.scopeDigest===h.scopeDigest&&p.requestDigest===h.requestDigest);
+    assert.notEqual(h.child,child);h.child=child;state.parked=null;state.claimed++;}
+   const result={state:state.allocated?'RESUMED':'ALLOCATED',profileId:id(80),allocation,root:folder,directoryIdentity:'RAM'};
+   if(p.outputBinding)Object.assign(result,{profileRef:ref(80),assignmentRef:ref(81)});
+   state.allocated=true;return result;
+  }
+  if(v.operation==='NORMAL_SPOOL_RESERVE'){
+   assert.equal(p.nodeStamp,'1:1');const before=summary(p.channel),key=id(++state.seq);
+   assert.ok(!state.holds.has(p.channel));if(p.channel!==output){state.holds.set(p.channel,{id:key,child});return {reservation:key,before};}
+   assert.deepEqual(p.scope.registrationRef,f.stored().registration.registrationRef);assert.deepEqual(p.scope.slotRef,slot.receiptRef);
+   assert.deepEqual(p.scope.profileRef,ref(80));assert.deepEqual(p.scope.assignmentRef,ref(81));assert.deepEqual(p.scope.grantRef,slot.scope.grantRef);
+   const digest=contentHash(canonicalJson(p.request));
+   const used=[...local.files].filter(([name])=>name.endsWith('.json')).reduce((n,[,file])=>n+file.bytes.length,0);
+   if(state.room-used<p.request.dataBytes+8192)return {state:'CAPACITY_EXCEEDED'};
+   state.holds.set(output,{id:key,child,scopeDigest:p.request.scopeDigest,requestDigest:digest});return {id:key,requestDigest:digest,
+    normalUsed:used,normalHeldBefore:0,channelBytes:before.bytes,channelRows:before.count,channelHeldRows:0,channelHeldBytes:0,managementBytes:8192};
+  }
+  if(v.operation==='NORMAL_SPOOL_CLOSE'&&p.reservation){
+   const h=state.holds.get(output);assert.ok(h&&h.id===p.reservation&&h.child===child);
+   h.challenge=id(++state.seq)+id(++state.seq);state.parked=h;return {state:'SDK_READ_CLOSED',challenge:h.challenge};
+  }
+  if(v.operation==='NORMAL_SPOOL_SETTLE'){
+   const h=state.holds.get(p.channel);assert.ok(h&&h.child===child&&h.id===p.reservation);
+   state.holds.delete(p.channel);if(p.channel===output){state.settlements++;if(state.mode==='LOSE')return {state:'UNKNOWN'};}
+   return {state:'SETTLED',summary:summary(p.channel)};
+  }
+  assert.equal(v.operation,'NORMAL_SPOOL_CLOSE');return {state:'CLOSED_CONFIRMED'};
+ };
+ let f;return {local,state,profile:{handle:(...args)=>{try{return handle(...args);}catch(e){state.denials.push(String(e));return{state:'UNKNOWN'};}}},bind(x){f=x.f;}};
+}
+for(const scenario of ['OK','CAPACITY','WRONG_PROOF','LOST_SETTLE','OWNER_LOST','EXPIRED','MIDDLE_CHANGED','TAIL_LOST','ITERATOR_PROXY'])test(
+ scenario==='OK'?'등록 owner 원 Query의 SDK 대기 중 독립 START ACK가 끝나고 같은 보호 예약에 출력이 정착한다':'보호 SDK 출력 거절 '+scenario,async()=>{
+ const q=await outputProfile(),x=await pollingFixture(q.profile,true,true);q.bind(x);
+ const {wire:unused,...input}=x.input;input.timeoutMs=2000;
+ const sid='ram-session',message={type:'assistant',uuid:'private',session_id:sid,parent_tool_use_id:null,message:{content:[{type:'text',text:'합성 격리 본문'}]}};
+ const init={type:'system',subtype:'init',uuid:'init',session_id:sid,apiKeySource:'none',claude_code_version:'2.1.224',cwd:'fixture',tools:[],mcp_servers:[],model:'fixture',permissionMode:'default',slash_commands:[],output_style:'fixture',skills:[],plugins:[]};
+ let created=0,reads=0,independent,asked=0,valid=true,iteratorCalls=0,callGetter=0,proxyCalls=0,alternativeReads=0,ownQuery;const closed=[];
+ if(scenario==='CAPACITY')q.state.room=0;if(scenario==='LOST_SETTLE')q.state.mode='LOSE';
+ const sdk={plannedSid:sid,expiresAt:x.clock()+(scenario==='EXPIRED'?200:4000),check:scope=>valid?{scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000}:null,
+  classify:v=>v.uuid==='private'?'SENSITIVE':'ORDINARY',close:async query=>{closed.push(query);},
+  async create(_,prompt){
+   created++;const user=await prompt[Symbol.asyncIterator]().next();assert.equal(user.value.message.content,'보호 출력 시험 입력');
+   const query={};ownQuery=query;const acquire=function(){assert.equal(this,query);iteratorCalls++;return {async next(){
+    const n=reads++;assert.ok(q.state.parked);
+    if(n===0&&scenario==='OK'){
+     x.seen.startOnly=true;
+     independent=await x.source.createWorkerStartPolling(x.pair,input).run(x.signal);x.seen.startOnly=false;asked++;
+    }
+    if(n===0&&scenario==='WRONG_PROOF')q.state.parked.challenge='discarded';
+    if(n===0&&scenario==='OWNER_LOST')valid=false;
+    if(n===0&&scenario==='EXPIRED')x.advance(300);
+    if(scenario==='MIDDLE_CHANGED'||scenario==='TAIL_LOST'){
+     if(n===1)return {done:false,value:{...message,uuid:'private-second'}};
+     if(n===2){
+      const files=[...q.local.files].filter(([key])=>path.basename(key).startsWith('sdk-session-output.')&&key.endsWith('.json')).sort(([a],[b])=>a.localeCompare(b));
+      assert.equal(files.length,2);
+      if(scenario==='TAIL_LOST')q.local.files.delete(files[1][0]);
+      else{const file=files[0][1],old=file.bytes.toString();file.bytes=Buffer.from(old.replace('QUARANTINED','QUARANTINEX'));assert.equal(file.bytes.length,Buffer.byteLength(old));assert.notEqual(file.bytes.toString(),old);}
+      return {done:false,value:init};
+     }
+    }
+    return n<2?{done:false,value:n===0?message:init}:{done:true,value:undefined};
+   }};};
+   Object.defineProperty(acquire,'call',{get(){callGetter++;return ()=>({async next(){alternativeReads++;return {done:true};}});}});
+   query[Symbol.asyncIterator]=scenario==='ITERATOR_PROXY'?new Proxy(acquire,{apply(){proxyCalls++;throw Error('proxy');}}):acquire;
+   return query;
+  }};
+ try{
+  const done=await x.source.createWorkerStartPolling(x.pair,input,sdk).run(x.signal);
+  assert.equal(callGetter,0);assert.equal(alternativeReads,0);assert.equal(proxyCalls,0);assert.equal(iteratorCalls,scenario==='ITERATOR_PROXY'?0:1);
+  if(scenario!=='OK'){
+   assert.equal(done.state,'UNKNOWN',JSON.stringify(done));assert.ok(done.cursor.afterSequence<2);assert.equal(created,1);
+   const states=[...q.local.files].filter(([key])=>key.endsWith('.json')).map(([,file])=>JSON.parse(file.bytes).snapshot?.state);
+   assert.ok(!states.includes('FIRST_SEND_INPUT_AND_INIT_RECORDED'));assert.ok(!states.includes('SESSION_INIT_CONFIRMED'));
+   assert.equal(reads,scenario==='CAPACITY'||scenario==='ITERATOR_PROXY'?0:scenario==='MIDDLE_CHANGED'||scenario==='TAIL_LOST'?3:1);
+   if(scenario==='ITERATOR_PROXY'){assert.equal(closed.length,1);assert.equal(closed[0],ownQuery);assert.equal(closed.filter(q=>q!==ownQuery).length,0);}
+   if(scenario==='LOST_SETTLE')assert.equal(q.state.settlements,1);
+   else if(scenario==='MIDDLE_CHANGED'||scenario==='TAIL_LOST')assert.equal(q.state.settlements,2);
+   else assert.equal(q.state.settlements,0);
+   if(scenario==='WRONG_PROOF')assert.equal(q.state.denials.length,1);
+   if(scenario==='WRONG_PROOF'||scenario==='OWNER_LOST'||scenario==='EXPIRED')assert.ok(q.state.holds.has('sdk-session-output'));
+   return;
+  }
+  assert.equal(done.state,'LIMIT_REACHED',JSON.stringify({done,independent,created,reads,denials:q.state.denials,rows:[...q.local.files.entries()].filter(([k])=>k.endsWith('.json')).map(([k,r])=>[path.basename(k),JSON.parse(r.bytes).snapshot?.state]),frames:x.m.calls.slice(-12).map(v=>[v.operation,v.payload.channel])}));
+  assert.equal(done.cursor.afterSequence,2);assert.equal(independent.state,'LIMIT_REACHED');assert.equal(independent.cursor.afterSequence,1);
+  assert.equal(created,1);assert.equal(asked,1);assert.equal(x.seen.permits,2);
+  const rows=[...q.local.files.entries()].filter(([p])=>path.basename(p).startsWith('sdk-session-output.')&&p.endsWith('.json')).sort().map(([,f])=>JSON.parse(f.bytes));
+  assert.deepEqual(rows.map(r=>r.snapshot.state),['OUTPUT_PENDING_SESSION','OUTPUT_PENDING_SESSION','SESSION_INIT_CONFIRMED']);
+  assert.equal(rows[0].snapshot.classification,'QUARANTINED');assert.deepEqual(JSON.parse(Buffer.from(rows[0].snapshot.body,'base64')),message);
+  assert.deepEqual(rows[2].snapshot.scope,rows[0].snapshot.scope);
+  assert.ok(q.state.claimed>=2&&q.state.settlements>=2);assert.deepEqual(q.state.denials,[]);
+ }finally{x.source.dispose();fixtures.setFiles(undefined);}
 });
 
 test('등록 receipt 목적 입구는 connector의 등록 fullref/프로젝트를 벗어나면 slot 발급이나 host open 전에 거절한다',async()=>{

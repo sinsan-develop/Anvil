@@ -3,13 +3,14 @@ import * as fs from 'node:fs/promises';
 import {unlinkSync} from 'node:fs';
 import {basename,resolve,isAbsolute} from 'node:path';
 import {isProxy} from 'node:util/types';
-import {canonicalJson} from '../../../contracts/canonical.ts';
-import {recordV1,uuidV1,hashV1} from '../../../contracts/runtime/validation-v1.ts';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {cloneV1,refV1,recordV1,uuidV1,hashV1} from '../../../contracts/runtime/validation-v1.ts';
 import type {NormalOwnedHostFactory,NormalOwnedHostSession,NormalOwnedMetadata,HostCloseDisposition} from './normal-credential-bootstrap-client.ts';
 import {isOwnedSpoolPath,NormalStartFileStore,type NormalFilePorts,type NormalLocalScope,type ProfileJournalAccess} from './normal-start-file-store.ts';
 import {NormalStartIntake,type NormalStartStore} from './normal-start-intake.ts';
 import {NormalClaudeStartWire} from '../adapters/secondary/normal-start-wire.ts';
-import type {NormalStartCurrent} from './normal-start-coordinator.ts';
+import {takeFirstOutputOrigin,type NormalFirstSendSource} from './normal-first-send-owner.ts';
+import type {NormalStartWire,NormalStartCurrent} from './normal-start-coordinator.ts';
 import type {RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {receiveProfiledEnvelope,type InboxFilePorts,type InboxLimits} from './receipt-inbox.ts';
 
@@ -25,18 +26,37 @@ const capacity=Object.freeze(new Error('NORMAL_SPOOL_CAPACITY_EXCEEDED'));
 const defaultIO:IO={lstat:fs.lstat,realpath:fs.realpath,open:fs.open,opendir:fs.opendir,readdir:fs.readdir,unlink:fs.unlink,unlinkSync};
 const byRef=(value:unknown)=>canonicalJson(value);
 const tickets=new AsyncLocalStorage<Ticket>();
+const outside=new AsyncLocalStorage<boolean>();
 const profileJournals=new WeakSet<ProfileJournalAccess>();
+type OutputPorts=NormalFirstSendSource['storage'];
+export type WorkerSdkPorts=Pick<NormalFirstSendSource,'plannedSid'|'expiresAt'|'create'|'close'|'check'>&{classify:OutputPorts['classify']};
+type Hold=Awaited<ReturnType<OutputPorts['reserve']>>;
+type OutputTx=Parameters<OutputPorts['strictExclusive']>[1];
+type Handoff={reservation:string;challenge:string;scopeDigest:string;requestDigest:string};
+type PhaseControls={resume?:Handoff;closeReservation?:string;challenge?:string;guard:()=>void};
+const outputBinders=new WeakMap<OutputPorts,(ticket:object)=>void>();
+const outputJournals=new WeakSet<ProfileJournalAccess>();
+export function isProfileOutputJournal(access:ProfileJournalAccess){return outputJournals.has(access);}
+export function bindProfileOutput(store:OutputPorts,ticket:object){outputBinders.get(store)?.(ticket);}
+function gate<T>(){
+ let resolve!:(value:T)=>void,reject!:(error:unknown)=>void;
+ const promise=new Promise<T>((r,j)=>{resolve=r;reject=j;});void promise.catch(()=>{});
+ return {promise,resolve,reject};
+}
 const profileReceipts=new WeakMap<InboxFilePorts,string>();
 export function isProfileJournal(access:ProfileJournalAccess){return profileJournals.has(access);}
 export function isProfileReceipt(ports:InboxFilePorts,path:string){return profileReceipts.get(ports)===path;}
-export function outsideOwnedSpoolCallback<T>(call:()=>T):T{return tickets.exit(call);}
+export function outsideOwnedSpoolCallback<T>(call:()=>T):T{return tickets.exit(()=>outside.run(true,call));}
 function summary(value:unknown){return recordV1(value,['count','bytes','tail'])&&Number.isSafeInteger(value.count)&&Number.isSafeInteger(value.bytes)&&value.count>=0&&value.count<=10000&&value.bytes>=0&&(value.count===0?value.bytes===0&&value.tail===null:value.bytes>0&&hashV1(value.tail));}
 const pathEqual=(a:string,b:string)=>process.platform==='win32'?a.toLowerCase()===b.toLowerCase():a===b;
 
 // Only application source uses this class. The desktop bundle exports a purpose factory, not this store or its host.
 export class OwnedSpoolRuntime {
  readonly #als=tickets;
+ readonly #workers=new WeakMap<NormalStartWire,{journal:NormalStartFileStore;scope:NormalLocalScope;registration:RuntimeRefV1;grant:RuntimeRefV1}>();
  readonly #workerReads=new WeakMap<NormalStartFileStore,NormalStartStore>();
+ #foreground?:AbortSignal;#turn?:ReturnType<typeof gate<void>>;
+ #binding?:{update:(profile:RuntimeRefV1,allocation:RuntimeRefV1)=>void};
  #session?:Session;#opening=false;#unknown=false;
  readonly #host:NormalOwnedHostFactory;readonly #open:NormalOwnedHostFactory['open'];readonly #io:IO;
  readonly #attempt:string;readonly #now:()=>number;readonly #owner:AbortSignal;
@@ -45,7 +65,16 @@ export class OwnedSpoolRuntime {
   if(!host||typeof host.open!=='function'||!uuidV1(attempt)||!(owner instanceof AbortSignal))invalid('NORMAL_SPOOL_UNSUPPORTED');
   this.#host=host;this.#open=host.open;this.#attempt=attempt;this.#now=now;this.#owner=owner;this.#slot=slot;this.#io=io??defaultIO;
  }
- external<T>(call:()=>T):T{return this.#als.exit(call);}
+ external<T>(call:()=>T):T{return outsideOwnedSpoolCallback(call);}
+ async #enterTurn(eligible:boolean,signal:AbortSignal){
+  if(!this.#binding)return ()=>{};
+  if(this.#turn&&(!eligible||outside.getStore()))invalid('NORMAL_OWNED_BUSY');
+  const prior=this.#turn,next=gate<void>();this.#turn=next;
+  const release=()=>{if(this.#turn===next)this.#turn=undefined;next.resolve();};
+  if(prior)await prior.promise;
+  if(this.#unknown||signal.aborted||this.#owner.aborted){release();invalid();}
+  return release;
+ }
  #clock(){return this.external(this.#now);}
  #check(s:Session,physical=true){
   this.external(()=>{
@@ -79,7 +108,18 @@ export class OwnedSpoolRuntime {
  credentialHost():NormalOwnedHostFactory{
   return {open:async(signal,request)=>{
    const t=this.#als.getStore();
-   if(!t){if(this.#unknown||this.#owner.aborted||this.#opening||this.#session)invalid('NORMAL_OWNED_BUSY');return this.external(()=>Reflect.apply(this.#open,this.#host,[signal]));}
+   if(!t){
+    if(!this.#binding){if(this.#unknown||this.#owner.aborted||this.#opening||this.#session)invalid('NORMAL_OWNED_BUSY');return this.external(()=>Reflect.apply(this.#open,this.#host,[signal]));}
+    const eligible=!!request&&byRef(request)===byRef(this.external(this.#slot));
+    const release=await this.#enterTurn(eligible,signal);
+    try{
+     if(this.#opening||this.#session||eligible&&byRef(request)!==byRef(this.external(this.#slot)))invalid('NORMAL_OWNED_BUSY');
+     const raw=await this.external(()=>Reflect.apply(this.#open,this.#host,[signal]));
+     const send=raw.send,close=raw.close;let returned=false;
+     return {send:(op:string,p:unknown)=>{if(returned||raw.send!==send)invalid();return this.external(()=>Reflect.apply(send,raw,[op,p]));},
+      close:async(d:HostCloseDisposition)=>{if(returned)invalid();returned=true;try{return await this.external(()=>Reflect.apply(close,raw,[d]));}finally{release();}}};
+    }catch(error){release();throw error;}
+   }
    const s=t.session;this.#check(s);
    if(!t.live||t.child||!request||s.writer!=='NORMAL_EXECUTION'||s.borrowed||s.scope!==byRef(request)||signal.aborted)invalid('NORMAL_OWNED_BUSY');
    s.borrowed=true;let returned=false,began=false;
@@ -98,10 +138,15 @@ export class OwnedSpoolRuntime {
   }};
  }
  #auth(s:Session){return s.slot?{writer:s.writer,attemptId:this.#attempt,slotId:s.slot.slotId}:{writer:s.writer,attemptId:this.#attempt};}
- async #root<T>(writer:Writer,signal:AbortSignal,body:(t:Ticket)=>Promise<T>):Promise<T>{
+ async #root<T>(writer:Writer,signal:AbortSignal,body:(t:Ticket)=>Promise<T>,phase?:PhaseControls):Promise<T>{
+  if(this.#als.getStore()||!this.#binding)return this.#openRoot(writer,signal,body,phase);
+  const release=await this.#enterTurn(signal===this.#foreground||!!phase,signal);
+  try{phase?.guard();return await this.#openRoot(writer,signal,body,phase);}finally{release();}
+ }
+ async #openRoot<T>(writer:Writer,signal:AbortSignal,body:(t:Ticket)=>Promise<T>,phase?:PhaseControls):Promise<T>{
   const parent=this.#als.getStore();
   if(parent){
-   this.#check(parent.session);if(!parent.live||parent.child||parent.session.borrowed||parent.session.writer!==writer||parent.session.signal!==signal)invalid('NORMAL_OWNED_BUSY');
+   if(phase)invalid();this.#check(parent.session);if(!parent.live||parent.child||parent.session.borrowed||parent.session.writer!==writer||parent.session.signal!==signal)invalid('NORMAL_OWNED_BUSY');
    parent.child=true;const t={session:parent.session,live:true,child:false};
    try{return await this.#als.run(t,()=>body(t));}finally{t.live=false;parent.child=false;}
   }
@@ -120,10 +165,17 @@ export class OwnedSpoolRuntime {
    const state=await this.#frame(s,'NORMAL_SPOOL_PROFILE_STATE',auth);
    if(recordV1(state,['state'])&&state.state==='UNSUPPORTED'){success=true;invalid('NORMAL_SPOOL_UNSUPPORTED');}
    if(!recordV1(state,['profileId','allocated'])||!uuidV1(state.profileId)||typeof state.allocated!=='boolean')invalid('NORMAL_SPOOL_UNSUPPORTED');
-   const a=await this.#frame(s,state.allocated?'NORMAL_SPOOL_RESUME':'NORMAL_SPOOL_ALLOCATE',auth);
-   if(!recordV1(a,['state','profileId','allocation','root','directoryIdentity'])||a.state!==(state.allocated?'RESUMED':'ALLOCATED')||
+   const binding=writer==='NORMAL_EXECUTION'&&!!this.#binding&&!phase?.resume;
+   if(phase?.resume&&!state.allocated)invalid();phase?.guard();
+   const a=await this.#frame(s,state.allocated?'NORMAL_SPOOL_RESUME':'NORMAL_SPOOL_ALLOCATE',
+    phase?.resume?{...auth,...phase.resume}:binding?{...auth,outputBinding:true}:auth);
+   if(!recordV1(a,['state','profileId','allocation','root','directoryIdentity',...(binding?['profileRef','assignmentRef']:[])])||a.state!==(state.allocated?'RESUMED':'ALLOCATED')||
       a.profileId!==state.profileId||!uuidV1(a.allocation)||typeof a.directoryIdentity!=='string'||!a.directoryIdentity||
       typeof a.root!=='string'||!isAbsolute(a.root)||!pathEqual(a.root,resolve(a.root))||!isOwnedSpoolPath(a.root)||basename(a.root)!=='data-'+a.allocation)invalid();
+   if(binding){
+    if(!refV1(a.profileRef)||a.profileRef.version!==1||a.profileRef.id!==a.profileId||!refV1(a.assignmentRef)||a.assignmentRef.version!==1||a.assignmentRef.id!==a.allocation)invalid();
+    this.#binding!.update(cloneV1(a.profileRef),cloneV1(a.assignmentRef));
+   }
    s.profile=a.profileId;s.allocation=a.allocation;s.path=a.root;
    const path=s.path,st=await this.#bounded(s,()=>this.#io.lstat(path));this.#check(s);
    if(!st.isDirectory()||st.isSymbolicLink()||!pathEqual(await this.#bounded(s,()=>this.#io.realpath(path)),path))invalid();
@@ -131,8 +183,12 @@ export class OwnedSpoolRuntime {
    const t={session:s,live:true,child:false};let result:T;
    let denied=false;
    try{result=await this.#bounded(s,()=>this.#als.run(t,()=>body(t)));this.#check(s);if(t.child||s.borrowed)invalid();}catch(error){if(error!==capacity)throw error;denied=true;}finally{t.live=false;}
-   const closed=await this.#frame(s,'NORMAL_SPOOL_CLOSE',{...auth,allocation:s.allocation});
-   if(!recordV1(closed,['state'])||closed.state!=='CLOSED_CONFIRMED')invalid();
+   phase?.guard();
+   const closed=await this.#frame(s,'NORMAL_SPOOL_CLOSE',{...auth,allocation:s.allocation,...(phase?.closeReservation?{reservation:phase.closeReservation}:{})});
+   if(phase?.closeReservation){
+    if(!recordV1(closed,['state','challenge'])||closed.state!=='SDK_READ_CLOSED'||typeof closed.challenge!=='string'||!uuidV1(closed.challenge.slice(0,36))||!uuidV1(closed.challenge.slice(36)))invalid();
+    phase.challenge=closed.challenge;
+   }else if(!recordV1(closed,['state'])||closed.state!=='CLOSED_CONFIRMED')invalid();
    success=true;if(denied)throw capacity;return result!;
   }finally{
    if(host){
@@ -212,7 +268,135 @@ export class OwnedSpoolRuntime {
   const reader=this.#workerReads.get(journal);if(!reader)invalid('NORMAL_SPOOL_SCOPE_INVALID');
   this.#workerReads.delete(journal);
   const intake=new NormalStartIntake(reader,expected,clock);
-  return NormalClaudeStartWire.forWorker({intake,current,grantRef,clock,timeoutMs});
+  const worker=NormalClaudeStartWire.forWorker({intake,current,grantRef,clock,timeoutMs});
+  const {projectId,executionId,executionGeneration}=expected.context;
+  this.#workers.set(worker,{journal,scope:{projectId,executionId,executionGeneration},registration:cloneV1(expected.executorRegistrationRef),grant:cloneV1(grantRef)});
+  return worker;
+ }
+ #outputPorts(local:NormalLocalScope,origin:()=>{scope:ReturnType<typeof takeFirstOutputOrigin>['scope'];signal:AbortSignal;end:number;profile:string;allocation:string},classify:OutputPorts['classify']):OutputPorts{
+  type Request=Parameters<OutputPorts['reserve']>[0];
+  type Closed={holdId:string;tailRef:RuntimeRefV1|null;rows:number};
+  const make=(req:Request)=>({req,ready:gate<Hold>(),pre:gate<OutputTx>(),post:gate<number>(),written:gate<Closed>(),
+   held:undefined as Hold|undefined,seal:undefined as Handoff|undefined,stage:'RESERVING',read:undefined as Promise<Closed>|undefined,
+   write:undefined as Promise<{holdId:string;dataBytes:number;managementBytes:number}>|undefined});
+  let ongoing:ReturnType<typeof make>|undefined,unknown=false;
+  function check(){if(unknown)return invalid();return origin();}
+  function sameHold(hold:Hold){
+   check();const op=ongoing;if(!op?.held||isProxy(hold)||byRef(hold)!==byRef(op.held))return invalid();return op;
+  }
+  const inspect=async(t:Ticket,body:OutputTx,readOnly:boolean):Promise<{tailRef:RuntimeRefV1|null;tail:string|null;rows:number;bytes:number}>=>{
+   const s=t.session;let active=true,pending=0,open=false;
+   const guard=()=>{const b=check();this.#check(s);if(!active||!t.live||s.profile!==b.profile||s.allocation!==b.allocation)invalid();};
+   const io=guardFiles(this.#io,guard,()=>{pending++;},()=>{pending--;},s.path,s.stamp);
+   const access:ProfileJournalAccess={transaction:async(channel,run)=>{
+    guard();if(open||channel!=='sdk-session-output')invalid();open=true;return run(s.path,io);
+   }};
+   profileJournals.add(access);outputJournals.add(access);
+   try{
+    const store=new NormalStartFileStore(access,local);
+    const end=await store.outputExclusive(async tx=>{
+     guard();
+     let verified:string[]|undefined;
+     const result={read:async()=>{guard();const v=await tx.read();guard();verified=v.map(row=>contentHash(byRef(row)));return v;},
+      appendAndSync:async(value:unknown)=>{guard();if(readOnly)invalid();await tx.appendAndSync(value);guard();}};
+     await this.external(()=>body(Object.freeze(result)));guard();
+     const rows=await tx.read();guard();if(!verified||verified.length!==rows.length)invalid();
+     const scope=byRef(check().scope);let bytes=0,tailRef:RuntimeRefV1|null=null,index=0,tail:string|null=null;
+     for(const row of rows){
+      if(!recordV1(row,['ref','snapshot'])||!refV1(row.ref)||row.ref.contentHash!==contentHash(byRef(row.snapshot))||
+       byRef(row.snapshot.scope)!==scope)invalid();
+      const encoded=byRef(row);if(contentHash(encoded)!==verified![index++])invalid();
+      bytes+=Buffer.byteLength(encoded)+1;tailRef=cloneV1(row.ref);tail=contentHash(encoded+'\n');
+     }
+     return {tailRef,tail,rows:rows.length,bytes};
+    });
+    guard();if(!open||pending||t.child||s.borrowed)invalid();return end;
+   }finally{active=false;outputJournals.delete(access);profileJournals.delete(access);}
+  };
+  return Object.freeze({classify,
+   reserve:async(request:Request)=>{
+    const b=check(),sd=contentHash(byRef(b.scope));if(ongoing||this.#als.getStore()||request.scopeDigest!==sd||request.channel!=='SDK_SESSION_OUTPUT'||request.pool!=='NORMAL_EXECUTION')invalid();
+    const op=make(cloneV1(request));ongoing=op;
+    const phase:PhaseControls={guard:()=>{check();}};
+    op.read=this.#root('NORMAL_EXECUTION',b.signal,async t=>{
+     const s=t.session;if(s.profile!==b.profile||s.allocation!==b.allocation)invalid();
+     const result=await this.#frame(s,'NORMAL_SPOOL_RESERVE',{...this.#auth(s),allocation:s.allocation,channel:'sdk-session-output',nodeStamp:s.stamp,
+      request:op.req,scope:b.scope,expiresAt:new Date(Math.min(check().end,Date.parse(s.slot!.expiresAt))).toISOString()});
+     if(recordV1(result,['state'])&&result.state==='CAPACITY_EXCEEDED')throw capacity;
+     if(!recordV1(result,['id','requestDigest','normalUsed','normalHeldBefore','channelRows','channelBytes','channelHeldBytes','channelHeldRows','managementBytes'])||
+        !uuidV1(result.id)||result.requestDigest!==contentHash(byRef(request)))invalid();
+     const h=cloneV1(result) as Hold;op.held=h;op.stage='PRE';op.ready.resolve(cloneV1(h));
+     const read=await op.pre.promise;check();
+     const end=await inspect(t,read,true);
+     if(end.bytes!==h.channelBytes||end.rows!==h.channelRows||byRef(end.tailRef)!==byRef(op.req.tailRef))invalid();
+     phase.closeReservation=h.id;return {holdId:h.id,tailRef:end.tailRef,rows:end.rows};
+    },phase).then(result=>{
+     if(!phase.challenge||!op.held) return invalid();check();
+     op.seal={reservation:op.held.id,challenge:phase.challenge,scopeDigest:sd,requestDigest:op.held.requestDigest};
+     op.stage='WRITE';return result;
+    }).catch(error=>{unknown=true;op.ready.reject(error);op.pre.reject(error);throw error;});
+    void op.read.catch(()=>{});return op.ready.promise;
+   },
+   strictExclusive:async(hold:Hold,body:OutputTx)=>{
+    const op=sameHold(hold);
+    if(typeof body!=='function'||isProxy(body))return invalid();
+    if(op.stage==='PRE'&&op.read){op.stage='READING';op.pre.resolve(body);return op.read;}
+    if(op.stage!=='WRITE'||!op.seal)return invalid();op.stage='WRITING';
+    const b=check(),resume=op.seal;op.seal=undefined;
+    op.write=this.#root('NORMAL_EXECUTION',b.signal,async t=>{
+     const s=t.session;if(s.profile!==b.profile||s.allocation!==b.allocation)invalid();
+     const end=await inspect(t,body,false);check();
+     op.stage='SETTLE';op.written.resolve({holdId:hold.id,tailRef:end.tailRef,rows:end.rows});
+     const added=await op.post.promise;check();if(added!==end.bytes-hold.channelBytes||added<0||added>op.req.dataBytes||
+       end.rows<hold.channelRows||end.rows-hold.channelRows>op.req.rows)invalid();
+     const answer=await this.#frame(s,'NORMAL_SPOOL_SETTLE',{...this.#auth(s),allocation:s.allocation,channel:'sdk-session-output',reservation:hold.id});
+     if(!recordV1(answer,['state','summary'])||answer.state!=='SETTLED'||!summary(answer.summary)||answer.summary.bytes!==end.bytes||answer.summary.count!==end.rows||answer.summary.tail!==end.tail)invalid();
+     return {holdId:hold.id,dataBytes:added,managementBytes:hold.managementBytes};
+    },{guard:()=>{check();},resume}).catch(error=>{unknown=true;op.post.reject(error);op.written.reject(error);throw error;});
+    void op.write.catch(()=>{});return op.written.promise;
+   },
+   settle:async(hold:Hold,dataBytes:number)=>{
+    const op=sameHold(hold);if(op.stage!=='SETTLE'||!op.write)return invalid();op.stage='SETTLING';op.post.resolve(dataBytes);
+    const closed=await op.write;check();ongoing=undefined;return closed;
+   }
+  });
+ }
+ outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):NormalFirstSendSource{
+  const saved=this.#workers.get(worker),slot=this.external(this.#slot);
+  if(this.#binding||!saved||saved.journal!==journal||!slot||!refV1(slot.receiptRef)||this.#owner.aborted||signal.aborted||
+   isProxy(sdk)||!recordV1(sdk,['plannedSid','expiresAt','check','create','close','classify'])||
+   [sdk.check,sdk.create,sdk.close,sdk.classify].some(fn=>typeof fn!=='function'||isProxy(fn)))return invalid();
+  const fixed={...sdk},slotKey=byRef(slot),lifetime=AbortSignal.any([signal,this.#owner]);
+  let binding:{profile:RuntimeRefV1;allocation:RuntimeRefV1}|undefined,origin:ReturnType<typeof takeFirstOutputOrigin>|undefined;
+  const verify=()=>{
+   if(lifetime.aborted||byRef(this.external(this.#slot))!==slotKey||sdk.check!==fixed.check||sdk.create!==fixed.create||
+      sdk.close!==fixed.close||sdk.classify!==fixed.classify||sdk.plannedSid!==fixed.plannedSid||sdk.expiresAt!==fixed.expiresAt)invalid();
+  };
+  const storage=this.#outputPorts(saved.scope,()=>{
+   verify();if(!origin||!binding||origin.signal.aborted)return invalid();
+   const end=this.external(origin.check);
+   return {scope:origin.scope,signal:origin.signal,end,profile:binding.profile.id,allocation:binding.allocation.id};
+  },raw=>this.external(()=>Reflect.apply(fixed.classify,sdk,[raw])));
+  // These two fields are populated only by the verified native allocation, before the first protected START completes.
+  const core={storage,plannedSid:sdk.plannedSid,expiresAt:sdk.expiresAt,ownerSignal:lifetime,slotRef:cloneV1(slot.receiptRef),
+   clock:()=>{verify();return this.#clock();},
+   check:(scope:Parameters<NormalFirstSendSource['check']>[0])=>{verify();return this.external(()=>Reflect.apply(fixed.check,sdk,[scope]));},
+   create:(...args:Parameters<NormalFirstSendSource['create']>)=>{verify();return this.external(()=>Reflect.apply(fixed.create,sdk,args));},
+   close:(...args:Parameters<NormalFirstSendSource['close']>)=>this.external(()=>Reflect.apply(fixed.close,sdk,args))};
+  const source=core as NormalFirstSendSource;this.#foreground=signal;
+  this.#binding={update:(profile,allocation)=>{
+   verify();if(binding){if(byRef(profile)!==byRef(binding.profile)||byRef(allocation)!==byRef(binding.allocation))invalid();return;}
+   binding={profile,allocation};source.profileRef=cloneV1(profile);source.assignmentRef=cloneV1(allocation);Object.freeze(source);
+  }};
+  outputBinders.set(storage,proof=>{
+   outputBinders.delete(storage);
+   verify();const original=takeFirstOutputOrigin(proof,storage,worker),s=original.scope;
+   if(!binding||byRef(s.registrationRef)!==byRef(saved.registration)||byRef(s.grantRef)!==byRef(saved.grant)||byRef(s.slotRef)!==byRef(slot.receiptRef)||
+    byRef(s.profileRef)!==byRef(binding.profile)||byRef(s.assignmentRef)!==byRef(binding.allocation)||s.projectId!==saved.scope.projectId||
+    s.executionId!==saved.scope.executionId||s.generation!==saved.scope.executionGeneration)invalid();
+   origin=original;
+  });
+  return source;
  }
  receive(limits:InboxLimits,input:unknown,expected:Parameters<typeof receiveProfiledEnvelope>[3],signal:AbortSignal){
   return this.#transaction('UNVERIFIED_RECEIPT_INBOX','inbox',signal,async(path,io)=>{
