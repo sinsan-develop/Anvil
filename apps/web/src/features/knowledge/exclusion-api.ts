@@ -2,6 +2,8 @@ import{ApiClient,ApiError}from'../../api/client.ts';
 import{postDocumentCommand,type DocumentSession,type DocumentWrite}from'../design-trace/editor-api.ts';
 import{validateKnowledgeView,type KnowledgeView}from'./api.ts';
 export interface KnowledgeExclusionBuffer{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;target:KnowledgeView;reason:string;pending:DocumentWrite|null;savedEventId:string|null;uncertain:boolean;dirty:boolean;failure:{code:string;status:number}|null}
+/** true만 CAS 수락이다. 읽기 전용 호스트의 void 콜백은 수락으로 해석하지 않는다. */
+export type KnowledgeExclusionChange=(expected:KnowledgeExclusionBuffer|null,next:KnowledgeExclusionBuffer|null)=>boolean|void;
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 function bound(b:KnowledgeExclusionBuffer,s:DocumentSession){if(!uuid.test(b.projectId)||b.ownerUserId!==s.user.id||b.ownerClientId!==s.clientId||!uuid.test(s.clientId)||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken)||!Number.isSafeInteger(b.controlGeneration)||b.controlGeneration<1||b.target?.entry.scope.projectId!==b.projectId||!['PROPOSED','CONFIRMED','SUPERSEDED'].includes(b.target.state))throw new ApiError('KNOWLEDGE_EXCLUSION_BINDING_INVALID');}
 export function newKnowledgeExclusion(pid:string,view:KnowledgeView,s:DocumentSession,generation:number):KnowledgeExclusionBuffer{
