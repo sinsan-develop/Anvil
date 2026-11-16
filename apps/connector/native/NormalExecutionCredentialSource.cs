@@ -95,6 +95,27 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   }finally{Array.Clear(raw,0,raw.Length);}
   }
  }
+ // 별도 목적의 읽기 전용 선행. 원 credential·원 패키지를 재검산해도 cwd/env 실행권은 발급하지 않는다.
+ internal object InspectSdkFirst(RowRequest request,DesktopTrustKeyPeerSource peer){
+  Check();var record=Record(request.AttemptId);var slot=LoadSlot(request.SlotId,record);
+  if(spoolProfile==null)throw Invalid();
+  string digest=spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId);
+  using(var package=NormalSdkWorkerPackageSource.Acquire(peer)){
+   Check();if(H(Record(request.AttemptId))!=H(record)||H(LoadSlot(request.SlotId,record))!=H(slot))throw Invalid();
+   if(spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId)!=digest)throw Invalid();
+   package.Check();Check();
+   return new Dictionary<string,object>{{"state","SDK_CONFIGURATION_UNAVAILABLE"}};
+  }
+ }
+ internal sealed class RowRequest{
+  internal readonly string AttemptId,SlotId,StartId,SendId;
+  internal readonly Dictionary<string,object> Scope;
+  internal RowRequest(Dictionary<string,object> value){
+   Exact(value,"attemptId,slotId,startCommandId,sendCommandId,scope");
+   AttemptId=Id(value,"attemptId");SlotId=Id(value,"slotId");StartId=Id(value,"startCommandId");SendId=Id(value,"sendCommandId");
+   Scope=Map(value["scope"]);
+  }
+ }
  static string RenewalMarker(Dictionary<string,object> scope,object receipt){string h=H(new Dictionary<string,object>{{"grantRef",scope["grantRef"]},{"previousReceiptRef",receipt}});return h.Substring(0,8)+"-"+h.Substring(8,4)+"-4"+h.Substring(13,3)+"-8"+h.Substring(17,3)+"-"+h.Substring(20,12);}
  static Dictionary<string,object> Marker(Dictionary<string,object> scope,object prior){return new Dictionary<string,object>{{"grantRef",scope["grantRef"]},{"previousSlotRef",prior},{"state","STARTED"}};}
  static void Token(string token){if(!token.StartsWith("av3ex1_",StringComparison.Ordinal))throw Invalid();byte[] b=Decode(token.Substring(7),32);try{if(b.Length!=32)throw Invalid();}finally{Array.Clear(b,0,b.Length);}}

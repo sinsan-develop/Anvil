@@ -131,6 +131,13 @@ internal sealed class DesktopTrustKeyHostSource {
    var answer=journal.Dispatch(op,payload);Check();return answer;
   }
   if(operation.StartsWith("NATIVE_OWNERSHIP_RETURN_",StringComparison.Ordinal))return ReturnOwnership(operation,value);
+  if(operation=="NORMAL_SDK_FIRST_INSPECT"){
+   var request=new NormalExecutionCredentialSource.RowRequest(value);
+   if(normalAttempt!=null&&normalAttempt!=request.AttemptId)throw Invalid();
+   normalAttempt=request.AttemptId;
+   if(normalExecution==null)normalExecution=new NormalExecutionCredentialSource(root,NormalRecord,Check,()=>budget.Remaining(),wall,spoolProfile);
+   return normalExecution.InspectSdkFirst(request,peer);
+  }
   if(operation.StartsWith("NORMAL_SPOOL_",StringComparison.Ordinal)){
    if(spoolProfile==null)return new Dictionary<string,object>{{"state","UNSUPPORTED"}};
    string attempt=Id(value,"attemptId");if(normalAttempt!=null&&normalAttempt!=attempt)throw Invalid();normalAttempt=attempt;

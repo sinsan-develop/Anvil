@@ -162,7 +162,7 @@ internal sealed class NormalExecutionSpoolProfileSource {
  }
  // 정상 channel은 순번 파일의 크기와 마지막 원 bytes를 확인한다. receipt는 이름·크기·내용 digest 전체를 고정한다.
  Row Inspect(List<Row> rows,string writer,string allocation,DesktopTrustKeyDirectoryFact dir,string channel,Row prefix,Dictionary<string,string> receiptFiles=null){
-  Check();var names=new List<string>();var known=new HashSet<string>(),busy=new HashSet<string>();known.Add(channel);
+  Check();var names=new List<string>();var known=new HashSet<string>();var busy=new HashSet<string>();known.Add(channel);
   foreach(var row in rows){string kind=S(row,"kind");if((kind=="RESERVED"||kind=="SETTLED")&&S(row,"allocation")==allocation){string c=S(row,"channel");known.Add(c);if(kind=="RESERVED")busy.Add(c);else busy.Remove(c);}}
   foreach(string path in Directory.EnumerateFileSystemEntries(dir.Path)){
    Check();string name=Path.GetFileName(path);var attr=File.GetAttributes(path);if((attr&(FileAttributes.Directory|FileAttributes.ReparsePoint))!=0)throw Invalid();
@@ -208,6 +208,73 @@ internal sealed class NormalExecutionSpoolProfileSource {
    !DesktopTrustKeyHostSource.IsHash(raw["plannedSidDigest"]))throw Invalid();
   foreach(string k in new[]{"startReadyRef","dispatchAttemptRef","sessionBindingRef"})DesktopTrustKeyHostSource.Ref(raw[k]);
   return raw;
+ }
+ // 이 함수는 현재 열린 할당의 원본 3행만 확인한다. 경로/행·실행 권한을 외부에 내주지 않는다.
+ internal string ReadSdkFirstAttempt(Row record,Row slot,Row scope,string startCommand,string sendCommand){
+  if(startCommand==sendCommand||DesktopTrustKeyHostSource.Time(slot,"expiresAt")<=DateTime.UtcNow)throw Invalid();
+  string tuple=Tuple(Normal,record,slot);
+  return Log(false,(log,rows)=>{
+   if(!Has(rows,"REGISTERED",H(record))||!rows.Any(r=>S(r,"kind")=="SLOT_ID"&&S(r,"key")==S(slot,"slotId")&&S(r,"slotHash")==H(slot)))throw Invalid();
+   Row allocation=Allocate(rows,log,Normal,tuple,true);
+   string id=S(allocation,"id");
+   if(!rows.Any(r=>S(r,"kind")=="GRANT"&&S(r,"key")==id&&S(r,"grant")==H(scope["grantRef"])))throw Invalid();
+   var dir=root.RetainSpoolNamespace(id,false);
+   if(dir.Identity!=S(allocation,"directoryIdentity"))throw Invalid();
+   OutputScope(scope,rows,allocation,record,slot);
+   string start=ReadSdkAttemptChain(rows,id,dir,scope,startCommand,true);
+   string send=ReadSdkAttemptChain(rows,id,dir,scope,sendCommand,false);
+   Check();if(DesktopTrustKeyHostSource.Time(slot,"expiresAt")<=DateTime.UtcNow)throw Invalid();
+   return H(new object[]{scope,start,send});
+  });
+ }
+ string ReadSdkAttemptChain(List<Row> rows,string allocation,DesktopTrustKeyDirectoryFact dir,Row scope,string command,bool start){
+  string id=DesktopTrustKeyHostSource.Id(R("id",command),"id");
+  string channel="attempt-"+id;
+  if(Unsettled(rows).Values.Any(r=>S(r,"allocation")==allocation&&S(r,"channel")==channel))throw Invalid();
+  var settled=rows.LastOrDefault(r=>S(r,"kind")=="SETTLED"&&S(r,"allocation")==allocation&&S(r,"channel")==channel);
+  if(settled==null)throw Invalid();
+  var summary=DesktopTrustKeyHostSource.Map(settled["summary"]);
+  if(N(summary["count"])!=3||J(Inspect(rows,Normal,allocation,dir,channel,summary))!=J(summary))throw Invalid();
+  object previous=null,first=null,permit=null,proof=null,received=null;
+  string envelope=null;DateTime last=DateTime.MinValue;
+  var ids=new HashSet<string>();var hashes=new List<string>();
+  for(int i=1;i<=3;i++){
+   Check();string path=Path.Combine(dir.Path,channel+"."+i.ToString("D6")+".json");
+   using(var f=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.Read)){
+    string identity=FileIdentity(f,path);
+    if(f.Length<1||f.Length>2*MiB)throw Invalid();
+    byte[] bytes=new byte[checked((int)f.Length)];
+    try{
+     int offset=0;while(offset<bytes.Length){Check();int n=f.Read(bytes,offset,bytes.Length-offset);if(n<=0)throw Invalid();offset+=n;}
+     if(f.ReadByte()!=-1||identity!=FileIdentity(f,path))throw Invalid();
+     Row row=DesktopTrustKeyHostSource.Parse(bytes,true);DesktopTrustKeyHostSource.Exact(row,"ref,snapshot");
+     Row snapshot=DesktopTrustKeyHostSource.Map(row["snapshot"]),reference=DesktopTrustKeyHostSource.ReceiveRef(row["ref"],true);
+     string baseKeys="sequence,state,key,envelopeHash,grantRef,receivedRef,previousRef,permit,recordedAt";
+     DesktopTrustKeyHostSource.Exact(snapshot,baseKeys+(start?",responseRef,processRef":",sessionBindingRef,proofResultRef"+(i==3?",localAttemptRef,dispatchAttemptRef,responseRef,processRef":"")));
+     if(!ids.Add(S(reference,"id"))||S(reference,"contentHash")!=H(snapshot)||N(snapshot["sequence"])!=i||J(snapshot["previousRef"])!=J(previous))throw Invalid();
+     var key=R("projectId",scope["projectId"],"executionId",scope["executionId"],"executionGeneration",scope["generation"],"commandId",id);
+     if(J(snapshot["key"])!=J(key)||J(snapshot["grantRef"])!=J(scope["grantRef"])||!DesktopTrustKeyHostSource.IsHash(snapshot["envelopeHash"]))throw Invalid();
+     string state=i==1?(start?"START_ATTEMPTED":"SEND_ATTEMPTED"):i==2?"PERMIT_RECORDED":(start?"START_READY_RECORDED":"SEND_DISPATCH_ATTEMPTED");
+     var time=DesktopTrustKeyHostSource.Time(snapshot,"recordedAt");
+     if(S(snapshot,"state")!=state||time<last||time>DateTime.UtcNow)throw Invalid();last=time;
+     if(i==1){first=reference;envelope=S(snapshot,"envelopeHash");received=DesktopTrustKeyHostSource.Ref(snapshot["receivedRef"]);}
+     if(J(received)!=J(snapshot["receivedRef"])||envelope!=S(snapshot,"envelopeHash"))throw Invalid();
+     if(!start&&J(snapshot["sessionBindingRef"])!=J(scope["sessionBindingRef"]))throw Invalid();
+     if((start||i==3)&&(snapshot["processRef"]!=null||snapshot["responseRef"]!=null))throw Invalid();
+     if(i==1&&(snapshot["permit"]!=null||!start&&snapshot["proofResultRef"]!=null))throw Invalid();
+     if(i==2){
+      var p=DesktopTrustKeyHostSource.Map(snapshot["permit"]);DesktopTrustKeyHostSource.Exact(p,"ref,commandId,envelopeHash,issuedAt,expiresAt");
+      DesktopTrustKeyHostSource.Ref(p["ref"]);var issued=DesktopTrustKeyHostSource.Time(p,"issuedAt");var expires=DesktopTrustKeyHostSource.Time(p,"expiresAt");
+      if(S(p,"commandId")!=id||S(p,"envelopeHash")!=envelope||expires<=issued||expires>issued.AddSeconds(30)||!start&&expires<=DateTime.UtcNow)throw Invalid();
+      permit=p;if(!start)proof=DesktopTrustKeyHostSource.Ref(snapshot["proofResultRef"]);
+     }
+     if(i==3&&(J(snapshot["permit"])!=J(permit)||!start&&(J(snapshot["proofResultRef"])!=J(proof)||J(snapshot["localAttemptRef"])!=J(first)||snapshot["dispatchAttemptRef"]!=null)))throw Invalid();
+     previous=reference;hashes.Add(DesktopTrustKeyHostSource.Hash(bytes));
+    }finally{Array.Clear(bytes,0,bytes.Length);}
+   }
+  }
+  if(J(previous)!=J(scope[start?"startReadyRef":"dispatchAttemptRef"])||hashes[2]!=S(summary,"tail"))throw Invalid();
+  return H(hashes.ToArray());
  }
  static Row LastOutputPhase(List<Row> rows,string reservation){return rows.LastOrDefault(r=>IsOutput(r)&&S(r,"id")==reservation);}
  static void OutputTime(Row o){

@@ -4,9 +4,9 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-17 00:19:50 KST
 
-- **현재 상태: 전체 계획 미완료 · PR159 설정 수정 통합 완료·FN07 실제 SDK 생산자 구현 중.** 고정 package/원 worker/단발 child bridge/query factory를 한 경로로 닫으며 실제 실행은 제외한다.
+- **현재 상태: 전체 계획 미완료 · PR159 통합 완료·FN07 패키지/원행/브리지 부분 소스 검수 완료·핵심 생산자 미완료.** 고정 package/원 worker/단발 child bridge/query factory를 한 경로로 닫으며 실제 실행은 제외한다.
 - **현재 승인·결과:** 서버 항목 귀속5039D14A는 PR156 통합됐다. CLI 보완은 기존 승인 목적이라는 최신 PMO 명확화로 수행했으며 새승인 질문은 철회했다. 770175 결과 IMAGE_SIZE·자식/감독exit0·핸들0, 원20670a UNKNOWN/소진도 보존한다. 한도 확대·실제Agent 실행은 하지 않는다.
-- **담당·실행:** 기존 Primary 한 명이 검수 보완 명세의 제품12·시험3 경로에서 실제 SDK 생산자 A→D를 구현한다. Main은 범위·인터페이스 검수와 통합을 맡는다. 기존 관측/실행 핸들은 0이며 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
+- **담당·실행:** 기존 Primary가 부분 소스 쓰기를 반환했고 Main이 안전 checkpoint·검수·통합을 맡는다. 실행구성 새 보호 계약1건은 응답 대기이며 preflight가 독립 UI04 누락 여부를 읽기 대조한다. Main은 범위·인터페이스 검수와 통합을 맡는다. 기존 관측/실행 핸들은 0이며 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
 - **Git 제품 기준:** 최신 검증 main19e0430705f667593972524ed7c1c1c4e3cf1b66(PR159). sourceff3504fe와 tree 동일·병합본설정RAM1PASS/중복경고0·복구tag pr-159-head와 완료branch 정리 확인. 현재 codex/av3-normal-sdk-producer에서 다음 기존 승인 source 구현을 준비한다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
 - **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
@@ -385,3 +385,25 @@ Primary의 bridge052B8395/시험4FFB8525는 RED493753→GREEN2256e4 exit0·2PASS
 실행구성 차이를 현재 계약으로 좁혔다. SDK 배포물의 설치 지문 부재는 현재 환경 미확인(a)이다. 반면 process-tool 계약§3과 86A§5의 보호 실행구성/argv/env 생산자 미정, environment-configuration의 선언/메타와 native slot.scope의 제한은 원 프로젝트 cwd/env·명령 귀속 발급 계약 자체가 없는(b) 경계다. 원 파일 존재/hash만으로 당해 프로젝트의 실행 허가를 증명하지 않는다. 이 정확한 새 권위만 다음 최소 source-only 결정안으로 준비하며, 실제 Secret 공급은 제외한다. Primary의 독립 패키지/bridge/FIRST3 원행 검산 구현은 계속한다. 전체 작업 대기나 새 실제 실행 승인은 만들지 않는다.
 
 STOP CURRENT 후보1BA2559B는 주기 head 교체의 준비/소비 경합과 관측 상한에 따른 STOP 가용성 손실을 Main이 지적해 보완했다. 수정 후보53CF77F7도 아직 미채택이며 실제 제품/SQL 적용0이다. cwd/env 선행 결정과 혼합하지 않고 새 권한·공개 계약의 정확 범위를 검수한 뒤 한 건씩 제시한다. 같은 승인 세 건의 관측/실행을 반복하지 않는다.
+## 2026-11-17 실행구성 새 보호 계약 한 건 직접 결정 요청·독립 구현 지속
+
+기존 preflight의 후보 FN07_NATIVE_EXECUTION_CONFIGURATION_BINDING_CANDIDATE_20261117.md SHA2564091F8260A05C4E836EEA771CC3C6C95DF651559B240A7AC2531D411386C0610을 Main이 전체 판독하고 실제 environment DTO·설정창·기존 HUMAN GET 경로와 대조했다. 준비/확정은 각각 원10초 호출 내 종단, 등록당pending1·5분/원기한중최단, 원 UI/등록/epoch·물리 FileId 재대조·불명 재시도0을 보완했다. 기존 선언/메타에 없던 신규보호목적 FN07_NORMAL_EXEC_CONFIG_V1의 저장과 설정창 준비·확인·회수·원grant/환경/시도 결박 권위만 추가하는 결정이다. 제품18·시험4 source/RAM, 등록당128개정/16MiB·회수표식 확보, 최초 CONTEXT_REVIEW exact·도구deny·Secret0이다. 실제 DB·권한·키·폴더 조사/선택 실행·설치·서비스·SDK/Agent 실행은 제외한다. 정확한 SDK recipe 근거 없는 조합은 unavailable이며 실제 코딩/OS sandbox 지원으로 승격하지 않는다.
+
+PMO에 정확 delta와 후보를 전달했고 직접 결정 질문1건을 비동기 발행했다. 답변을 추정하거나 후보 제품을 미리 구현하지 않는다. 다음 STOP CURRENT 후보53CF77F7는 별도 미채택이며 이번 질문과 합치지 않는다. Primary는 기존 승인 A/package·FIRST3 원행검산·bounded bridge를 계속하고 전체 작업은 대기하지 않는다.
+
+Primary의 stream 추가경계는 RED92e286→GREEN0cebd3 6PASS/0FAIL, desktop 타입177bbe exit0·실행session0이다. A선행 패키지는 bb593c 3PASS/0FAIL/0SKIP·140.52ms이며 형상/접근자와실제원함수의정적호출선만검증했다. Main은 고정4파일을 읽고 보유 package Dispose후 재사용을 막는 원객체 Check/폐쇄검산 보완을 지시했다. 패키지1GiB/합4GiB는 기존 installer 상한 재사용이며 CLI관측256MiB·수송256MiB와 별개다. 기존 catalogueExact가 깊은 Proxy/descriptor검산을 한다는 사실을 확인해 앞선 조건부 getter우려는 기존제품 finding으로 세지 않는다. 보완 중 소스/RAM 결과를 실제 Windows/SDK 성공이나 전체 A~D 완료로 보고하지 않는다.
+
+## 2026-11-17 A/B 독립검수 C0/I2와 동일 담당 최소 보완
+
+동결9경로의 독립 읽기 검수는 C0/I2/M0였다. 신규 package Dispose의 kernel.Close false 무시·중간 예외에 따른 잔여 수거 누락과, 기존 spool Inspect의 var 복수선언 CS0819를 분리했다. Main은 실제 source를 대조하고 같은 Primary에게 정확 수명/문법 보완만 배정했다. 보완 전후를 실제 OS 실패·실제 컴파일 결과로 표시하지 않는다.
+
+Primary는 원 handle 전부 역순1회 수거·true만 목록 제거·false/예외는 원객체와 미확정 handle 보존·재호출 없이 SDK_PACKAGE_CLEANUP_UNKNOWN 전파와 기존 host catch exit1로 연결했다. 정적 RED a1e715→87e61d 5PASS/FAIL0/SKIP0, packageCS6986DD763B336E52625263323455BD39FE5A0812D87AD80EE69EB3DF6457D179/시험0EEF1B7BE07738B1F47BD1799BF8337F12788DDC6CC877BA37AFB482A58BBBFA. spool165행은 두 var로 분리했고 de1c69 정적확인exit0, SHA58D2CE34B16AE196E4AA246DFC5AC0BDCC73F3CD4B9AEF2EDFB2751FBCF4A36D다. 독립 재검수는 변경 세 파일의 실제 종단만 읽어 해소 판정한다. 신규 시험 재실행·실제 C#/OS/SDK·DB·키·서비스·Agent 실행0이다.
+
+A의 기존 Forge 호출·ASAR manifest/보유 파일 검산과 B의 원 START/SEND3행 재판독은 source 부분 구현이며, 최종 응답은 여전히 SDK_CONFIGURATION_UNAVAILABLE이다. 실제 Query·장기 native child·STOP 연결은 미완료다. C bounded bridge의 추가 RAM9PASS는 별도 부분근거이며 최종제품/전체계획 완료가 아니다. 새 실행구성 후보4091F826과 STOP 후보53CF77F7는 미채택 상태로 보존한다.
+## 2026-11-17 00:58:42 KST FN07 부분 소스 최종 검수·안전 checkpoint 준비
+
+기존 Primary가 제품8·시험3·명세·결과서 쓰기를 반환했다. A/B 중요2건과 C 중요3건은 각각 같은 담당자 보완 뒤 독립읽기 C0/I0/M0로 해소됐다. C는 위조 TypedArray크기·AbortSignal/리스너의호출자접근자·큰backing을공유한chunk의ACK전tail전달을 실제원인별로 보완했다. RED64e4ea 4FAIL→bdaf61 13PASS/FAIL0/SKIP0, desktop타입41ebca exit0. A87e61d5PASS/B8c2c4e정적2PASS와 합산하거나 실제 SDK/C# 실행으로 승격하지 않는다. root타입4834a1 exit0은 tsconfig.base의 *.ts/*.tsx 대상이며 이후수정CJS는별도desktop타입으로확인했다. 미변경루트타입을반복하지않았다.
+
+Main이 결과서 DF2DEA7D135C46F4BC0F87F09950FB24EA22256B36D58E951857B335465E4597 전체를읽고그표의11개개별SHA와현재제품/시험바이트전부일치함을확인했다. 전체A~D중 실제SDK로더·원Query/최초owner·native장기감독·실제STOP은미구현/미완료다. 현재원행검산의최종상태SDK_CONFIGURATION_UNAVAILABLE는그대로다. source부분검수와기능전체완료/병합Gate통과를구분하며전체계획완료체크는올리지않는다.
+
+새실행구성후보4091F826은직접응답대기1건이고아직채택하지않았다. 실제효과/키/권한/DB/서비스/SDK·Agent/C#실행및추가SDK/SSH조회0·소유시험세션0이다. Main은부분소스/결과/미채택후보를같은작업branch에안전commit/push하며A~D전체완료로main에병합하지않는다. 기존preflight는별도UI04의이미채택API만으로가능한사용자기능누락1건여부를읽기대조한다. 새로운검사나문서할일로진도를대체하지않고완료된기능을반복구현하지않는다.

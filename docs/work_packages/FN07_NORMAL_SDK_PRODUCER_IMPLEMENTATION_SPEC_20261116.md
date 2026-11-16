@@ -25,6 +25,7 @@
 |A|신규 `apps/desktop/scripts/normal-sdk-worker-build.cjs`, 기존 `apps/desktop/scripts/desktop-runtime-profile.cjs`|고정 릴리스 입력만 받는 `buildSdkWorkerPackage`와 package 생성 접점. 승인된 정본이 없으면 선택 기능을 패키징하지 않고 그 사실을 구분한다. 기존 SDK/Node·CLI 설치나 npm 다운로드를 수행하지 않는다.|
 |A/B|신규 `apps/connector/native/NormalSdkWorkerPackageSource.cs`, `NormalSdkChildHostSource.cs`(같은 디렉터리), 기존 `apps/desktop/scripts/desktop-trust-key-host-build.cjs`|동일 보호 host의 명시 compile closure에 두 source를 포함한다. 기존 preparation worker manifest/컴파일 입력의 목적 검사는 그대로 둔다.|
 |B|기존 `apps/connector/native/DesktopTrustKeyHostSource.cs`, `NormalExecutionCredentialSource.cs`(같은 디렉터리)|등록된 원 peer와 현재 slot/record를 검사하는 별도 목적의 단발 인계. 일반 NORMAL_SPOOL/SIGN_PREPARATION 프레임에는 새 효과가 없다.|
+|B|기존 `apps/connector/native/NormalExecutionSpoolProfileSource.cs`|원 할당의 관리행과 FIRST3 파일을 내부에서 재판독한다. scope의 참조 형상만 맞는 경우, 실제 행 없는 경우, 미정산·내용 변조 시 발급 0을 검사한다. 기존 외부 Control opcode·지속 형상은 그대로다. 제품은 총 13경로다.|
 |A/D|기존 `apps/desktop/src/shell.cjs`, `trust-enrollment-owner.cjs`(같은 디렉터리)|기존 등록 시작점과 createProfileExecutionClients에 연결. 제품 옵션/renderer가 원 worker 파일·검사 함수·native port를 선택할 수 없다.|
 |C/D|신규 `apps/desktop/src/normal-sdk-worker-entry.cjs`, `normal-sdk-child-bridge.cjs`(같은 디렉터리), 기존 `apps/desktop/scripts/native-proof-runtime-entry.mts`|격리 bootstrap, 실제 SDK 로더·동기 hook·원 stdio broker, 등록 bundle의 assemble. WorkerSdkPorts 외부 주입 경로를 제품 normal 생산자로 선택하지 않는다. 기존 main bundle export 및 합성 시험 entry는 보존한다.|
 |시험|신규 `tests/desktop/normal-sdk-worker-package.test.cjs`, `normal-sdk-child-bridge.test.cjs`, `normal-sdk-worker-journey.test.cjs`(같은 디렉터리)|각각 A 계보·패키지, B/C 프로토콜·C# 정적 순서, D 동일 owner·전체 여정. 같은 파일에서 RAM/정적 성격을 명시한다.|
@@ -67,7 +68,9 @@
 
 내부 수송 한도는 chunk 64KiB, 방향별 미확인 DATA 1개, stdin/stdout 각 1 credit(ACK/소비 전 다음 chunk 0), 단일 SDK 내용은 기존 2MiB, stderr 총 64KiB 후 초과 중단이다. CLI 송수신 누계는 **양방향 실제 데이터 합 256MiB/원 child 생애**에서 멈춘다. 이 수치는 신규 private transport의 독립 상한이다. 보호 저장 실잔량·최악예약은 별도로 기존 normal 256MiB 안에서 검산한다. 누계 한도가 아직 유효한 세션의 입력/출력을 제한하는 효과도 검수 대상이다. 장기 대기는 원 grant/worker의 남은 기한까지이고 짧은 native 제어창은 각 기존 10초/64frame을 유지한다. credit을 얻기 전 생산자의 다음 `read`나 무제한 JS postMessage를 실행하지 않는다. stream EOF·exit 순서는 별도 기록하고 포화된 SDK worker와 독립적으로 취소/종료를 수거한다. SDK에 노출한 Writable.write는 분할·복사·super.write 전에 바이트 길이와 미전송 큐를 예약한다. 대기/미확인 stdin 합은 기존 본문 상한 2MiB 안으로 닫고, 초과/미지원 입력은 원 시도를 회수한다. false를 무시한 반복 호출도 이 진입 검사를 거치며 ACK 대기 중 추가 DATA는 0이다.
 
-- [ ] RED: `node --test --test-name-pattern="동기 hook|한도|늦은" tests/desktop/normal-sdk-child-bridge.test.cjs`. Promise 반환·65KiB 분할·동시 DATA·총량/credit·취소와 늦은 READY·없는 stderr 필드를 검사한다.
+초과·취소 시 이미 수락한 각 write와 그 예약을 단 한 번 오류로 종결하고, 미전송 바이트를 더 내보내지 않는다. 늦은 ACK는 이미 종결한 callback·예약을 다시 처리할 수 없다.
+
+- [ ] RED: `node --test --test-name-pattern="동기 hook|한도|늦은" tests/desktop/normal-sdk-child-bridge.test.cjs`. Promise 반환·65KiB 분할·동시 DATA·총량/credit·취소와 늦은 READY·없는 stderr 필드 및 이미 수락한 여러 write의 callback/예약 단발 종료를 검사한다.
 - [ ] 실제 고정 import와 원 child 북마크를 가진 C 구현 후 같은 명령. 시험에서는 고정 소스 및 RAM module/stream만 대조한다. 실제 SDK import/CLI/native spawn은 0.
 
 원 prompt는 `normal-first-send-owner.ts`가 첫 입력과 후속 입력에 각각 발급하는 `type:user`, `message.role:user`, 원 전체 `message.content`, `parent_tool_use_id:null`, 계획 `session_id` 형상을 그대로 전달한다. 입력을 미리 읽어 새 iterable로 복사하면 원 yield 시점·현재성 검산을 잃으므로 수용하지 않는다.
@@ -80,6 +83,8 @@ worker의 원 `createProfileExecutionClients→createWorkerStartPolling` 경로�
 - [ ] GREEN/회귀: 위 신규 3시험을 함께 실행하고 기존 `node --experimental-strip-types --experimental-test-module-mocks --test tests/unit/FN07/normal-first-send-owner.test.ts tests/unit/FN07/normal-sdk-session-output.test.ts`, `node --test tests/desktop/native-proof-runtime-build.test.cjs`, `npm run typecheck`, `git diff --check development/main` 결과를 단위별 기록한다. 실제 OS/native가 없는 RAM에서 생산자 실행 성공으로 보고하지 않는다.
 
 ## 자기검토·경계 및 복구
+
+현재 environment-configuration-v1의 workingDirectory는 선언 sourceRootRef와 상대경로, secretSlots는 참조다. 원 native 등록이 당해 프로젝트에서 보유할 디렉터리의 물리 신원 및 허용 argv/env로 그 선언을 변환하는 생산자 계약은 미채택이다. 실제 설치 바이트의 관측 부재와 구분한다. 이 선행이 없을 때 SDK import/CLI 생성은 0이며 비밀 전달을 범위에 더하지 않는다.
 
 A에서 원 package/registration, B에서 native lease/child, C에서 실제 SDK 원 Query, D에서 기존 원장/ACK를 발급한다. 코드에 동일한 이름의 검증 콜백을 추가해 이 사슬을 대신할 수 없다. 기존 same-process peer 표식만으로 어느 JS isolate/어느 CLI 파일인지 증명할 수 없으므로 원 bootstrap private channel·보호 package·native 원등록 검산 세 가지를 결합한다. 기존 auth·spool 목적을 그대로 쓰며 별도 SDK child용 인계·수명은 실제로 **새 native 실행 효과**다. 배포에 신뢰할 수 있는 manifest·CLI·승인 cwd/env가 없으면 미지원 상태이며, 새 signing root나 실행허가 DB행을 받는 것으로 가정하지 않는다. 이 조건이 source 설계로 표현되는 것과 사용자의 실제 실행·외부비용·설치 승인은 별개다.
 
