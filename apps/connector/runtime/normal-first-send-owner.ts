@@ -268,6 +268,13 @@ export function liveSendParent(worker:NormalStartWire,wire:object):LiveSendParen
 }
 
 /** 원 coordinator의 dispatch 증표와 첫 strict-close의 lease를 함께 소비한다. */
+const liveInputDeliveries=new WeakMap<AsyncIterable<unknown>,{worker:NormalStartWire;query:Query;port:LiveInputPort;active():void}>();
+export function confirmNormalLiveInputDelivery(prompt:AsyncIterable<unknown>,worker:NormalStartWire,query:Query,port:LiveInputPort){
+ const original=liveInputDeliveries.get(prompt);
+ if(!original||original.worker!==worker||original.query!==query||original.port!==port)return fail();
+ liveInputDeliveries.delete(prompt);
+ original.active();
+}
 export async function runNormalLiveSend(worker:NormalStartWire,wire:object,claim:NormalDispatchClaim,signal:AbortSignal):Promise<LiveSendCompletion>{
  const owner=inputOwners.get(worker);
  if(!owner||owner.wire!==wire||owner.lease.state!=='LIVE'||owner.uncertain||owner.token||stopOwners.get(worker)?.stopToken)return fail();
@@ -303,8 +310,12 @@ export async function runNormalLiveSend(worker:NormalStartWire,wire:object,claim
   let reject!:()=>void;
   const interrupted=new Promise<never>((_,stop)=>{reject=()=>stop(Error('NORMAL_LIVE_SEND_UNKNOWN'));});
   const cancel=()=>{abandon();reject();};signal.addEventListener('abort',cancel,{once:true});lease.life.signal.addEventListener('abort',cancel,{once:true});
+  liveInputDeliveries.set(prompt,{worker,query,port,active:()=>{
+   if(!yielded||returned)return fail();
+   active();checkOwner();if(signal.aborted)return fail();
+  }});
   try{active();await Promise.race([native(Reflect.apply(provide,port,[query,prompt,signal])),interrupted]);returned=true;active();}
-  finally{signal.removeEventListener('abort',cancel);lease.life.signal.removeEventListener('abort',cancel);}
+  finally{liveInputDeliveries.delete(prompt);signal.removeEventListener('abort',cancel);lease.life.signal.removeEventListener('abort',cancel);}
   if(!yielded)return fail();await claim.verify();active();
   const inputEvidence={dispatchAttemptRef:cloneV1(input.dispatchAttemptRef),instructionRef:cloneV1(e.payload.instructionRef),partsRef:cloneV1(e.payload.partsRef),instructionDigest:contentHash(bytes),messageDigest:message.digest};
   handed=true;

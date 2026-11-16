@@ -129,11 +129,12 @@ export function createOwnedSpoolController(host: NormalOwnedHostFactory, attempt
     const checkedClock=()=>service.external(()=>{
       if(wire.send!==send)throw Error('NORMAL_WIRE_CHANGED');return clock();
     });
-    const instruction=sdk&&worker?{
+    const sdkWorker=sdk&&worker?service.outputSource(wire,store,sdk,signal):undefined;
+    const instruction=sdkWorker?{
       intake:new NormalInstructionIntake(store.instructionIntake(),input.expected,checkedClock),
       store:store.instructionAttempts(),current:{transport:'NORMAL_PROTECTED' as const,current:(...args:Parameters<typeof currentMethod>)=>
        service.external(()=>{checkedClock();return Reflect.apply(currentMethod,current,args);})},grantRef:config.scope.grantRef,clock:checkedClock,timeoutMs:input.timeoutMs,
-      wire:NormalInstructionWire.forFirstSend(wire,service.outputSource(wire,store,sdk,signal))
+      wire:NormalInstructionWire.forFirstSend(wire,sdkWorker.source,sdkWorker.port)
     }:undefined;
     const poll=assembleStartPolling(pair,latest.port,registration,{...input,intakeStore:store.intake(),journalStore:store,current,wire},checkedClock,
       async(previous,signal)=>active=await renew(previous,signal),instruction);
