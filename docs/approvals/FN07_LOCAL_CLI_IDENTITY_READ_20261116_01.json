@@ -1,0 +1,39 @@
+{
+  "expiresAt": "2026-11-16T13:00:14.0000000+00:00",
+  "scriptSha256": "2A7E89112023DDB2F40631ABD098529B47AF1A2B6CF87317C7113F56C636F511",
+  "evidence": {
+    "quote": "CLI 설치 정보 한정 조회와 서버 항목 귀속 계약 변경 승인하니, 불필요한 승인 요청 반복하지 말고 실제로 쓸 수 있게 개발 계속해.",
+    "turnId": "01a1e456-2b1f-7271-a11f-d0587432157b",
+    "userMessageId": "01a1e456-2c67-7af1-b2f8-6af5d404ce5c",
+    "threadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+    "approvedAt": "2026-11-16T12:30:14Z"
+  },
+  "limits": {
+    "totalSeconds": 30,
+    "maxCandidates": 1,
+    "stopSeconds": 3,
+    "maxOutputBytes": 4096,
+    "workSeconds": 27,
+    "maxExeBytes": 268435456
+  },
+  "planSha256": "EEAFFF15D288F5721F00C235A3A1FB1D2806CD0E8F0080010CF1B8685F47F620",
+  "script": "scripts/fn07-local-cli-identity-read.ps1",
+  "status": "DISPATCH_CONSUMED_BEFORE_PATH",
+  "consumedAt": "2026-11-16T12:37:13.1945644+00:00",
+  "plan": "docs/work_packages/FN07_LOCAL_SDK_CLI_IDENTITY_READ_CANDIDATE_20261116.md",
+  "id": "FN07-LOCAL-CLI-IDENTITY-20261116-01",
+  "maxDispatches": 1,
+  "sourceCommit": "ed7bba5acdf3b2e8810ffb672d8e645f8d8c22bc",
+  "schemaVersion": 1,
+  "executionBase": "c53d8619255055c78d9f3a7463ae118a8475fb1a",
+  "excluded": [
+    "CLI/SDK/Agent execution",
+    "Node execution",
+    "credentials/home/config contents",
+    "DB/rights/keys/services changes",
+    "network requests",
+    "automatic retry",
+    "other PID termination"
+  ],
+  "dispatchCount": 1
+}
