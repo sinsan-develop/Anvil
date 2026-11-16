@@ -90,18 +90,26 @@ export async function readStoredCriteriaList(client:ApiClient,assignment:Confirm
 }
 /** 읽기는 서버의 다중 source 매핑/이전 버전도 지원한다. 작성 UI의 1원조건=1행 제한을 강제하지 않는다. */
 export async function readStoredCriteria(client:ApiClient,assignment:ConfirmedAssignmentView,item:StoredCriteriaSummary,active:()=>boolean):Promise<RegisteredCriteria|null>{
- const a=structuredClone(assignment),selected=structuredClone(item);await storedAssignment(a);if(!summary(selected))fail('RESULT_CRITERIA_RESPONSE_INVALID');if(!active())return null;
- const v=await client.get<RegisteredCriteria>(`/api/v1/projects/${a.projectId}/result-criteria/${selected.ref.id}/versions/${selected.ref.version}`);if(!active())return null;
+ const selected=structuredClone(item);if(!summary(selected))fail('RESULT_CRITERIA_RESPONSE_INVALID');
+ return readCriteriaVersion(client,assignment,selected.ref,active,selected);
+}
+/** 보관 검수의 fullref는 최근 목록 metadata 없이 동일 원문·원조건 검산을 수행한다. */
+export async function readStoredCriteriaRef(client:ApiClient,assignment:ConfirmedAssignmentView,criteriaRef:PlanRef,active:()=>boolean):Promise<RegisteredCriteria|null>{
+ return readCriteriaVersion(client,assignment,criteriaRef,active);
+}
+async function readCriteriaVersion(client:ApiClient,assignment:ConfirmedAssignmentView,criteriaRef:PlanRef,active:()=>boolean,selected?:StoredCriteriaSummary):Promise<RegisteredCriteria|null>{
+ const a=structuredClone(assignment),expectedRef=structuredClone(criteriaRef),transport=client.transport,current=()=>active()&&client.transport===transport;await storedAssignment(a);if(!ref(expectedRef))fail('RESULT_CRITERIA_RESPONSE_INVALID');if(!current())return null;
+ const v=await client.get<RegisteredCriteria>(`/api/v1/projects/${a.projectId}/result-criteria/${expectedRef.id}/versions/${expectedRef.version}`);if(!current())return null;
  try{
   const d=a.snapshot.definition,input=v?.input;
-  if(!exact(v,['projectId','ref','snapshot','input','sourceBindings','createdBy','registeredAt','registryStored','reviewStored','completionAccepted','executionAuthorized','dispatchPerformed','observedAt'])||v.projectId!==a.projectId||!same(v.ref,selected.ref)||v.createdBy!==selected.createdBy||v.registeredAt!==selected.registeredAt||!date(v.observedAt)||Date.parse(v.observedAt)<Date.parse(v.registeredAt)||v.registryStored!==true||v.reviewStored!==false||v.completionAccepted!==false||v.executionAuthorized!==false||v.dispatchPerformed!==false||!exact(input,['assignmentRef','baseRef','items','reason'])||!same(input.assignmentRef,a.ref)||!Array.isArray(input.items)||input.items.length!==selected.conditionCount||typeof input.reason!=='string'||!input.reason.trim()||input.reason.length>20000||!ref(d.environmentRef)||!Array.isArray(d.baselineRefs)||!d.baselineRefs.length||!d.baselineRefs.every(ref)||new TextEncoder().encode(ordered({assignment:a,input})).length>2*1024*1024)fail('RESULT_CRITERIA_RESPONSE_INVALID');
+  if(!exact(v,['projectId','ref','snapshot','input','sourceBindings','createdBy','registeredAt','registryStored','reviewStored','completionAccepted','executionAuthorized','dispatchPerformed','observedAt'])||v.projectId!==a.projectId||!same(v.ref,expectedRef)||!uuid(v.createdBy)||!date(v.registeredAt)||!!selected&&(v.createdBy!==selected.createdBy||v.registeredAt!==selected.registeredAt)||!date(v.observedAt)||Date.parse(v.observedAt)<Date.parse(v.registeredAt)||v.registryStored!==true||v.reviewStored!==false||v.completionAccepted!==false||v.executionAuthorized!==false||v.dispatchPerformed!==false||!exact(input,['assignmentRef','baseRef','items','reason'])||!same(input.assignmentRef,a.ref)||!Array.isArray(input.items)||input.items.length<1||input.items.length>100||!!selected&&input.items.length!==selected.conditionCount||typeof input.reason!=='string'||!input.reason.trim()||input.reason.length>20000||!ref(d.environmentRef)||!Array.isArray(d.baselineRefs)||!d.baselineRefs.length||!d.baselineRefs.every(ref)||new TextEncoder().encode(ordered({assignment:a,input})).length>2*1024*1024)fail('RESULT_CRITERIA_RESPONSE_INVALID');
   if(v.ref.version===1?input.baseRef!==null:!ref(input.baseRef)||input.baseRef.id!==v.ref.id||input.baseRef.version!==v.ref.version-1)fail('RESULT_CRITERIA_RESPONSE_INVALID');
   const ids=new Set<string>(),covered=new Set<string>();
   for(const i of input.items){if(!exact(i,['criterionId','testId','kind','environmentRef','sources'])||!code(i.criterionId)||ids.has(i.criterionId)||!code(i.testId)||!resultTestKinds.includes(i.kind as any)||!same(i.environmentRef,d.environmentRef)||!Array.isArray(i.sources)||!i.sources.length||i.sources.length>20)fail('RESULT_CRITERIA_RESPONSE_INVALID');ids.add(i.criterionId);const local=new Set<string>();
    for(const source of i.sources){if(!exact(source,['field','index','contentHash'])||!['acceptanceCriteria','verificationRequirements'].includes(source.field)||!Number.isSafeInteger(source.index)||source.index<0)fail('RESULT_CRITERIA_RESPONSE_INVALID');const key=source.field+':'+source.index,text=d[source.field]?.[source.index];if(local.has(key)||typeof text!=='string'||!text.trim()||text.length>20000||await hash(text)!==source.contentHash)fail('RESULT_CRITERIA_RESPONSE_INVALID');local.add(key);covered.add(key);}
   }
   for(const field of ['acceptanceCriteria','verificationRequirements'] as const){if(!Array.isArray(d[field])||!d[field].length)fail('RESULT_CRITERIA_RESPONSE_INVALID');for(let index=0;index<d[field].length;index++)if(!covered.has(field+':'+index))fail('RESULT_CRITERIA_RESPONSE_INVALID');}
-  const expected=projection(a,input);if(!same(v.snapshot,expected.snapshot)||!same(v.sourceBindings,expected.sourceBindings)||await hash(v.snapshot)!==selected.ref.contentHash)fail('RESULT_CRITERIA_RESPONSE_INVALID');
+  const expected=projection(a,input);if(!same(v.snapshot,expected.snapshot)||!same(v.sourceBindings,expected.sourceBindings)||await hash(v.snapshot)!==expectedRef.contentHash)fail('RESULT_CRITERIA_RESPONSE_INVALID');
  }catch(cause){if(cause instanceof ApiError)throw cause;fail('RESULT_CRITERIA_RESPONSE_INVALID');}
- return active()?structuredClone(v):null;
+ return current()?structuredClone(v):null;
 }

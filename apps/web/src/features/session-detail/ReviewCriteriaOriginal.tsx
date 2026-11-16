@@ -8,16 +8,24 @@ import type {SubmittedResultView} from './result-api.ts';
 import {ReviewReportedCoverage} from './ReviewReportedCoverage.tsx';
 
 /** 보관 판정에서 고정 원조건으로 이동하는 읽기 전용 소비자. 현재 합격·실제 시험 판정은 하지 않는다. */
-export function ReviewCriteriaOriginal({client,assignment,review,result,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;review:RecordedResultReview;result?:SubmittedResultView;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
+type Props={client:ApiClient;assignment:ConfirmedAssignmentView;review:RecordedResultReview;result?:SubmittedResultView;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void};
+export function ReviewCriteriaOriginal(props:Props){
+ const {client,assignment,review,result}=props,binding=JSON.stringify([assignment,review.ref,review.snapshot.input.criteriaRef,result?.ref]);
+ const scope=useRef({client,transport:client.transport,binding,serial:0});
+ if(scope.current.client!==client||scope.current.transport!==client.transport||scope.current.binding!==binding)scope.current={client,transport:client.transport,binding,serial:scope.current.serial+1};
+ const context=scope.current;
+ return <ReviewCriteriaScope key={context.serial} {...props} scopeCurrent={()=>scope.current===context&&client.transport===context.transport}/>;
+}
+function ReviewCriteriaScope({client,assignment,review,result,onAuthenticationLost,onAccessUnavailable,scopeCurrent}:Props&{scopeCurrent:()=>boolean}){
  const [open,setOpen]=useState(false),[attempt,setAttempt]=useState(0),[loaded,setLoaded]=useState<{attempt:number;value:RegisteredCriteria|null;error:string|null}|null>(null),epoch=useRef(0),lost=useRef(onAuthenticationLost),unavailable=useRef(onAccessUnavailable);lost.current=onAuthenticationLost;unavailable.current=onAccessUnavailable;
  const shown=open&&loaded?.attempt===attempt?loaded:null;
- useEffect(()=>{if(!open)return;let active=true;const generation=epoch.current,valid=()=>active&&epoch.current===generation;
+ useEffect(()=>{if(!open)return;let active=true;const generation=epoch.current,valid=()=>active&&epoch.current===generation&&scopeCurrent();
   readReviewCriteriaOriginal(client,assignment,review.snapshot.input.criteriaRef,valid).then(value=>{if(valid()&&value)setLoaded({attempt,value,error:null});}).catch(cause=>{if(!valid())return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_CRITERIA_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_CRITERIA_RESPONSE_INVALID';setLoaded({attempt,value:null,error:code});if([401,403,404].includes(e.status))unavailable.current(code);if(e.status===401)lost.current();});
   return()=>{active=false;};
- },[client,assignment,review,attempt,open]);
+ },[attempt,open]);
  return <section className="status-card" aria-label="검수에 사용한 기준 원문"><h6>이 검수에 사용한 기준·원조건</h6>
   <button type="button" onClick={()=>{epoch.current++;setLoaded(null);setAttempt(v=>v+1);setOpen(v=>!v);}}>{open?'검수 기준·원조건 닫기':'검수 기준·원조건 열기'}</button>
-  <p>고정 참조만 조회합니다. 최근20개 목록 밖 기준은 미확인으로 남기며 최신 기준으로 대체하지 않습니다.</p>
+  <p>검수에 기록된 정확한 버전과 hash를 조회합니다. 최근 목록이나 최신 기준으로 대체하지 않습니다.</p>
   {open&&!shown?<p role="status">정확한 기준·원조건 대조 중</p>:null}{shown?.error?<p role="alert">{shown.error} · 기준 원문 미확인</p>:null}
   {shown?.value?<article aria-label="검수의 고정 기준·원조건"><p>{shown.value.ref.id} · v{shown.value.ref.version} · {shown.value.ref.contentHash}</p><p>{shown.value.input.reason}</p>
    <ul>{shown.value.input.items.map(i=>{const decision=review.snapshot.input.items.find(d=>d.criterionId===i.criterionId);return <li key={i.criterionId}><p>{i.criterionId} · {i.testId} · {i.kind}</p>
