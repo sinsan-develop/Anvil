@@ -2,14 +2,14 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
-## 현재 작업 요약 — 2026-11-16 19:32:05 KST
+## 현재 작업 요약 — 2026-11-16 19:49:42 KST
 
 - **현재 상태: 개발 진행 중.** 과거 ‘병합하고 대기’는 당시 이력이며 현재 중지 지시가 아니다. 1단계 로컬·WSL-server 기능 구현을 계속한다.
-- **현재 업무:** Stage C/D · FN07 실제 SDK/CLI 생산자 준비와 FN08 STOP 미연결 source의 독립 착수 가능성 확인. 동일 Query 첫·후속 SEND 입력과 보호 출력은 PR150·151에 source/RAM 단위로 통합했다. 기존 Primary는 설치 신원 한정 읽기 후보 문서만 준비하며 아직 실제 조사는 하지 않는다. 실제 SDK·CLI/child 실행·DB/권한/키/서비스는 제외한다.
+- **현재 업무:** Stage C/D · FN07 실제 SDK/CLI 생산자 준비. Windows CLI 첫 후보의 한정 관측안·조회 script는 AST0/독립 C0/I0/M0으로 고정했고 사용자 결정을 요청할 범위다. 실제 PATH/설치파일 조회·조회프로세스 실행은 0회다. 이 결정과 별개인 기존 FN03 D2 P-B 미완료 source를 같은 Primary가 읽기 대조해 다음 내부 구현 단위를 확인한다. 실제 SDK·CLI/child·DB/권한/키/서비스 실행은 제외한다.
 - **담당:** `developer_primary` 구현·기본 검증, Main 어울 작업관리·필수 테스트·독립 검수·통합. 진행 중인 구현은 중단·회수·중복 배정하지 않았다.
 - **Git:** 최신 통합 main `8776fe90764887012c73409a50a0a3882df813dc`(PR151), 소스 `6e468b03`과 tree 동일. 현재 작업 branch `codex/av3-sdk-producer-preparation`는 그 main에서 시작했다. 완료 branch/request tag는 정상 정리했고 원격 `pr-150-head`·`pr-151-head`를 보존했다.
-- **완료한 소스 단위:** normal START 준비, 첫·후속 SEND, 원 Query 출력 수집과 협력 STOP 소비, profile/예산·원 READY 연결은 PR144~149에 source로 통합됐다. 이를 현재 ‘SEND/STOP 소스 미구현’으로 표시하지 않는다. 실제 SDK·Agent 실행 완료를 뜻하지도 않는다.
-- **최근 확정 검증:** PR148 spool 단위 직접64건·선택6건 PASS, root/desktop 타입0, 독립 C0/I0/M0. 병합본 READY/ACK/cursor RAM smoke1건 PASS. 현재 제5 출력 채널은 별도 구현·검수 중이며 아직 최종 PASS가 아니다.
+- **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
+- **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
 - **현재 구현 검증:** PR150 제5 출력 채널의 병합본 RAM2건에 이어, 동일 Query 후속 입력의 등록 CJS44건·인접4건·메모리1건·root/desktop 타입0·독립 C0/I0/M0을 확인했다. 서로다른 원문2건·Query/출력iterator 각1·후속 LIVE_SEND_INPUT_YIELDED/ACK cursor3을 RAM에서 관측했다. 최종 전달 직전 원 current/기한/STOP epoch 거절을 보완했고 PR151 병합본 후속입력/현재성상실 RAM2건도 PASS다. 실제 SDK·Windows PASS가 아니다.
 - **미확인·남은 기능:** 실제 SDK/CLI·OS 프로세스·도구 권한 집행, C# 컴파일·Windows 파일/ACL·보호 저장, 실제 DB·서비스·브라우저 통합 및 사용자 인수는 미검증이다. 실제 Agent 생산자와 전체 작업계획은 미완료다.
 - **P03·SSH:** R3 복구는 복사·PG 기동·전환에 도달하지 못했고 원 자원을 보존한다. 자동 wrapper의 SSH255/UNKNOWN과 일반 SSH를 구분한다. 사용자 Windows PowerShell 로그인 성공 증거(11-16 18:04:45 KST)가 있으며 서버/로그인 불능으로 일반화하지 않는다. 새 부수 진단·재복제·정리는 하지 않는다.
@@ -20137,3 +20137,13 @@ Primary 쓰기반환/live0을 확인하고 제품3·시험1의4지문을 결과�
 PR151 exact source6e468b030e1930a6339865e568fb9e15bd59bc7d→main8776fe90764887012c73409a50a0a3882df813dc, trusted Broker43849202256 success. source/main tree c4387d8e7e02f802033c085eef069f0574c8a46f 일치·원격pr-151-head 확인. localmain FF 뒤 후속입력PULL/전달직전CURRENT_LOST RAM2PASS/0FAIL/0SKIP(a404aa,8266.4261ms), clean/원격main동일·완료branch/request tag 정상정리 후 새codex/av3-sdk-producer-preparation를 만들었다. 원장/불명/미정산자료 정리는 하지 않았다.
 
 다음 결정은 실제SDK/CLI 생산자의 설치신원 근거다. 기존worker manifest는 SDK/CLI 권위가 아니고, 이미채택된SameQuery 내부연결은 재승인대상이 아니다. 기존Primary가 현재소스/정본으로 재사용가능한 지문을 먼저 확인하고, 부족한경우 Windows 설치소프트웨어의 공개metadata/한정hash만 읽는 단발후보 문서 하나를 준비한다. 실행·실제파일조사는 아직0이다. 별도read-only담당자는 승인된normalSTOP의 source 미연결을 기존권위로 구현가능한지 좁혀 확인한다. 영향없는기존구현은결정과별개로진행하며새권위·실행범위를임의발급하지않는다. 현재요약과두사용자열람본을함께갱신했다.
+
+## 2026-11-16 다음 결정안 사전 검수 보완
+
+CLI 조회 후보8CBE8F4A의 독립 C0/I1/M1을 확인했다. 실제실행본이없는 동일handle 최종물리신원·단일링크 약속을 승인대상으로넘기지않는다. Main은 원writer에게 관측metadata/hash의정확한한계·NO_ELIGIBLE_SCOPE·NOT_FOUND/UNKNOWN 구분과 고정무프로필조회script source를 준비하도록배정했다. 아직PATH/실제소프트웨어조회·조회프로세스/CLI실행0이며승인전실행하지않는다. Node/공개SDK기존지문은재사용한다. STOP은 기존권위의독립CURRENT reader가없어 과거snapshot/slot을최신근거로대체하지않았고새조회권위후보는선행원천미확정이므로아직채택요청하지않는다. CHECK current의최근검증/FN07/FN08행도PR150/151완료source로정합화하고42미체크의인수조건을임의승격하지않았다.
+
+## 2026-11-16 CLI 한정 관측안 동결·한건 직접 결정 준비
+
+후보 문서 EEAFFF15D288F5721F00C235A3A1FB1D2806CD0E8F0080010CF1B8685F47F620와 조회script2A7E89112023DDB2F40631ABD098529B47AF1A2B6CF87317C7113F56C636F511를 동결했다. 기존I1/M1 및 Main의Start예외시원객체보존조건을보완해 독립C0/I0/M0, 감독블록/조회소스AST구문0(e0bb6e,c4edc4)이다. 실제PATH/설치파일관측·조회프로세스/CLI/SDK/Node실행은0이다. stdout은선택경로hash·이름·크기·시각·적격exe의관측hash만받고 실제물리파일ID·동시교체·공급자진위·Agent실행권위를증명하지않는다. 메모리소진표식과별도로Main이직접승인ID/유효창/단발소진을발행전에기록한다. UNKNOWN은재시도하지않고원조회객체/감사보존이며다른프로세스/자료는건드리지않는다. 사용자에게예외경계인PATH선별/CLI한정읽기1회만질문하고기존Node/공개SDK는재조회하지않는다.
+
+검수담당의기본셸프로필이읽기명령에로드돼conda초기화오류1회가있었고무프로필지문대조로정정했다. 제품/후보실행오류로합산하지않는다. 같은Primary에는결정과별개의FN03 D2 P-B 기존공급자미완료source에서새권위없이구현가능한업무를읽기대조하도록배정했다. 진행가능한구현을임의로전체대기로전환하지않는다.
