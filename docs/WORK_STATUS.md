@@ -5,7 +5,7 @@
 ## 현재 작업 요약 — 2026-11-16 18:54:00 KST
 
 - **현재 상태: 개발 진행 중.** 과거 ‘병합하고 대기’는 당시 이력이며 현재 중지 지시가 아니다. 1단계 로컬·WSL-server 기능 구현을 계속한다.
-- **현재 업무:** Stage C/D · FN07/FN08의 동일 Query 첫·후속 SEND 입력 스트림 연결. 기존 source.create에 원 입력을 한 번 공급하고 forFirstSend의 LiveInputPort를 연결한다. WI FN07_SAME_QUERY_LIVE_INPUT_WI_20261116.md(A7353F10), Primary 단일 writer의 제품2·시험1 source/RAM 구현 중이다. 실제 SDK 모듈·CLI/child 생산자와 실제 실행은 미완료·제외한다.
+- **현재 업무:** Stage C/D · FN07/FN08의 동일 Query 첫·후속 SEND 입력 스트림 연결. 기존 source.create에 원 입력을 한 번 공급하고 forFirstSend의 LiveInputPort를 연결한다. WI FN07_SAME_QUERY_LIVE_INPUT_WI_20261116.md r2(9BBC89D5), Primary 단일 writer의 제품3·시험1 source/RAM 구현 중이다. 실제 SDK 모듈·CLI/child 생산자와 실제 실행은 미완료·제외한다.
 - **담당:** `developer_primary` 구현·기본 검증, Main 어울 작업관리·필수 테스트·독립 검수·통합. 진행 중인 구현은 중단·회수·중복 배정하지 않았다.
 - **Git:** 최신 통합 main `9013faefc2779aa6b012a555c3f4afbf0a5dfe12`(PR150), 소스 `7ac51ff1`과 tree 동일. 현재 작업 branch `codex/av3-query-producer`는 그 main에서 시작했다. 완료 source branch/request tag는 정상 정리했고 원격 `pr-150-head`를 보존했다.
 - **완료한 소스 단위:** normal START 준비, 첫·후속 SEND, 원 Query 출력 수집과 협력 STOP 소비, profile/예산·원 READY 연결은 PR144~149에 source로 통합됐다. 이를 현재 ‘SEND/STOP 소스 미구현’으로 표시하지 않는다. 실제 SDK·Agent 실행 완료를 뜻하지도 않는다.
@@ -20123,3 +20123,7 @@ PR150 exact source7ac51ff188f626b8edd7120444e6e6478b0024b0을 main9013faefc2779a
 ## 2026-11-16 FN07 동일 Query 첫·후속 입력 연결 시작
 
 승인86A461/FN08 LIVE_SEND_INPUT_YIELDED 기존계약을 잇는 내부포트 보완을 WI A7353F1082997B1A890116975C5C673B0BDDC3417A58ABAE25A8F8B6BACCA621로 구체화했다. 같은 Primary에게 제품2·등록CJS시험1·결과서를 배정하고 Main은 검수·현황·통합한다. 실제 query module/CLI/child 신원·실행권위를 새 callback으로 가정하지 않는다. 첫 입력과 후속입력을 같은 AsyncIterable/Query에 연결해 원 실제yield/종단/ACK를 확인한다. 소스/RAM 검증만 수행하고 실제 SDK/Agent/C#/파일자료/DB·권한·키·서비스·추가SDK/SSH조회는 제외한다. 기존 출력보호소스는 PR150으로 완료된 단위이며 재구현하지 않는다.
+
+## 2026-11-16 동일 Query 입력의 최종 전달 경계 보완
+
+등록 CJS 중간 양성3건 e77e26에서 Query/출력iterator 각1·서로다른 원문2건·후속 종단/ACK cursor3과 미소비/dispose거절을 확인했다. 독립 검수의 잠정 I1은 원 prompt.next 후 SDK pull resolve 직전의 current/기한 재검산 누락이었다. Main은 원 후속 owner의 token·stopEpoch·claim 기한 검사를 private prompt 결박으로 재사용하도록 WI r2 9BBC89D5를 발행하고 normal-first-send-owner.ts를 필수 내부 경로로 추가 배정했다. 제품3·시험1 단일 writer를 유지하며 새 공개API/권위·실제 실행을 허용하지 않았다. 실제 STOP 공급자는 아직 미연결이며 RAM latepull 보호와 구분한다. 보완 및 동결 재검수 전 최종PASS가 아니다.
