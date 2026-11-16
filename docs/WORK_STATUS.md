@@ -20515,3 +20515,8 @@ UI06의 보관 계획 개정 준비는 당시 documentRef를 그대로 사용한
 ## UI10/FN05 헌법 적용 영수증의 화면 왕복 보존
 
 기준 1ec084b7. developer_primary가 App·KnowledgeDecisionForm·KnowledgePage·decision-api와 시험을 보완했다. 적용 영수증 fullref를 같은 인증 문맥의 프로젝트별 App 메모리에 보존한다. 닫기와 화면 왕복 후 현재 조회에서 낮은 세대와 같은 세대 다른 hash를 거절하고, 늦은 응답이 다른 적용 시도를 덮지 않도록 한다. 기존 서버 계약과 원명령 재확인을 유지했다. 최초 RED ba97d6 1실패, f055bf 직접14·인접16 통과, 실패·건너뜀0, 타입4663bd 종료0. 독립 C0/I0/M0와 Main 지문5개 일치. 실제 브라우저·DB·재로그인·Agent 전달은 미검증이다.
+
+
+## FN17 읽음 저장 영수증과 원알림 재조회
+
+기준 4fb4c0fb. developer_primary가 ProjectNotificationsPanel과 직접 시험을 수정했다. 읽음 저장이 확정된 원영수증을 보존하고 후속 GET 오류 시 같은 알림의 고정 참조와 읽음 시각을 명시 GET으로 재확인한다. 추가 POST 없이 일치할 때만 확인하고 늦은 응답·401을 폐기한다. 최초 RED693f28 1실패, 직접 ba984c 21통과/실패·건너뜀0, 인접76f935 15통과, 타입6fd06e 종료0. 독립 d2_preflight C0/I0/M0와 동결 지문2개 일치. 실제 브라우저·DB·서비스와 모바일 push 미검증이다.

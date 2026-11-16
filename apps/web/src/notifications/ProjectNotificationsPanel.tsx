@@ -20,6 +20,7 @@ function errorText(e:ApiError){
 }
 export function ProjectNotificationsPanel({client,session,projectId,buffer,scope:ownerScope,onChange,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;projectId:string|null;buffer:NotificationPending|null;scope:NotificationScope;onChange:(expected:string|null,next:NotificationPending|null)=>boolean;onAuthenticationLost:()=>void}){
  const local=useRef(new NotificationScope());local.current.bind(session,client,projectId);
+ const bufferEpoch=useRef({buffer,revision:0});if(bufferEpoch.current.buffer!==buffer)bufferEpoch.current={buffer,revision:bufferEpoch.current.revision+1};
  const live=useRef({client,session,projectId,buffer});live.current={client,session,projectId,buffer};
  const [view,setView]=useState<View>(empty),[filter,setFilter]=useState<ReadState>('ALL');const lock=useRef<Ticket|null>(null);
  useEffect(()=>()=>local.current.dispose(),[]);
@@ -39,17 +40,26 @@ export function ProjectNotificationsPanel({client,session,projectId,buffer,scope
  function fail(cause:unknown,t:Ticket,followupFailed=false){if(!matches(t))return;const e=asError(cause);setView(v=>({...v,ticket:t,page:null,selected:null,busy:false,error:e,followupFailed}));if([403,404].includes(e.status)){const p=live.current.buffer;if(p)onChange(p.bindingId,{...p,accessLost:true});}if(e.status===401)onAuthenticationLost();}
  async function list(cursor:string|null=null){if(unresolved||rendered.current.filter!==filter)return;const t=begin();if(!t)return;if(work?.receipt&&!onChange(work.bindingId,null)){finish(t);return;}setView({...empty(),ticket:t,busy:true});try{const page=await listNotifications(client,projectId!,session.user.id,filter,cursor);if(matches(t))setView({...empty(),ticket:t,page});}catch(e){fail(e,t);}finally{finish(t);}}
  async function inspect(item:NotificationView){if(unresolved||rendered.current.page!==shown.page||!shown.page?.items.includes(item))return;const t=begin();if(!t)return;if(work?.receipt&&!onChange(work.bindingId,null)){finish(t);return;}setView({...shown,ticket:t,selected:null,busy:true,error:null,followupFailed:false});try{const value=await readNotification(client,projectId!,session.user.id,item.ref);if(matches(t))setView(v=>({...v,selected:value}));}catch(e){fail(e,t);}finally{finish(t);}}
- async function access(){if(!work||!bound)return;const t=begin();if(!t)return;try{const value=await readNotification(client,projectId!,session.user.id,work.view.ref);if(matches(t)&&onChange(work.bindingId,{...work,accessLost:false}))setView({...empty(),ticket:t,selected:value});}catch(e){fail(e,t);}finally{finish(t);}}
+ async function access(){
+  if(!work||!bound)return;const t=begin();if(!t)return;
+  const revision=bufferEpoch.current.revision,active=()=>matches(t)&&live.current.buffer===work&&bufferEpoch.current.revision===revision;
+  setView({...empty(),ticket:t,busy:true});
+  try{
+   const value=await readNotification(client,projectId!,session.user.id,work.view.ref);if(!active())return;
+   if(work.receipt&&value.notification.readAt!==work.receipt.readAt)throw new ApiError('RESPONSE_INVALID');
+   if(onChange(work.bindingId,{...work,accessLost:false}))setView({...empty(),ticket:t,selected:value});
+  }catch(e){if(active())fail(e,t,!!work.receipt);}finally{finish(t);}
+ }
  async function mark(){
   if(!selected||work?.receipt||work?.accessLost||work&&!bound||!!selected.notification.readAt&&!unresolved)return;
-  const t=begin();if(!t)return;const active=()=>matches(t);let p=work;
+  const t=begin();if(!t)return;const owned=new Set<NotificationPending|null>([buffer]),revision=bufferEpoch.current.revision;const active=()=>matches(t)&&owned.has(live.current.buffer)&&(live.current.buffer!==buffer||bufferEpoch.current.revision===revision);let p=work;
   try{
-   if(!p){p=await prepareNotificationRead(client,projectId!,session,selected,active);if(!active()||!onChange(null,p))return;}
+   if(!p){p=await prepareNotificationRead(client,projectId!,session,selected,active);if(!active())return;owned.add(p);if(!onChange(null,p))return;}
    // The App owns the original immutable command before any POST, including lost responses.
    const receipt=await sendNotificationRead(client,p,session,active);if(!active())return;
-   const confirmed={...p,receipt};if(!onChange(p.bindingId,confirmed))return;
-   try{const value=await readNotification(client,projectId!,session.user.id,p.view.ref);if(value.notification.readAt!==receipt.readAt)throw new ApiError('RESPONSE_INVALID');if(active())setView(v=>({...v,ticket:t,selected:value,error:null,followupFailed:false}));}catch(e){fail(e,t,true);}
-  }catch(e){fail(e,t);}finally{finish(t);}
+   const confirmed={...p,receipt};owned.add(confirmed);if(!onChange(p.bindingId,confirmed))return;
+   try{const value=await readNotification(client,projectId!,session.user.id,p.view.ref);if(value.notification.readAt!==receipt.readAt)throw new ApiError('RESPONSE_INVALID');if(active())setView(v=>({...v,ticket:t,selected:value,error:null,followupFailed:false}));}catch(e){if(active())fail(e,t,true);}
+  }catch(e){if(active())fail(e,t);}finally{finish(t);}
  }
  const frozen=shown.busy||unresolved;
  return<section className="status-card" aria-label="본인 프로젝트 승인 알림"><h2>본인 프로젝트 승인 알림</h2>
@@ -62,6 +72,7 @@ export function ProjectNotificationsPanel({client,session,projectId,buffer,scope
    {shown.busy?<p role="status">알림 조회·결과 확인 중</p>:null}
    {shown.error?<p role="alert">{shown.followupFailed?'후속 조회 실패. ':''}{errorText(shown.error)}</p>:null}
    {work?.receipt?<p role="status">읽음 처리 확인 · <time dateTime={work.receipt.readAt}>{work.receipt.readAt}</time>{shown.followupFailed?' · 후속 조회는 확인하지 못했습니다.':''}</p>:null}
+   {bound&&work?.receipt&&!work.accessLost?<button type="button" disabled={shown.busy} onClick={()=>void access()}>읽음 원알림 다시 확인</button>:null}
    {unresolved?<p role="status">처리 결과 미확인 · 원래 명령을 보존했습니다. 다른 읽음이나 대상 변경 전 같은 명령 결과를 재확인하세요.</p>:null}
    {work&&!bound?<p role="alert">로그인 또는 접속 조건이 변경되어 보존한 명령을 재전송할 수 없습니다. 새 명령을 만들지 않았습니다.</p>:null}
    {bound&&work?.accessLost?<><p>현재 접근을 다시 확인하기 전 과거 상세는 숨깁니다. 원래 명령은 유지합니다.</p><button type="button" disabled={shown.busy} onClick={()=>void access()}>원알림 접근 다시 확인</button></>:null}
