@@ -2,14 +2,14 @@ import {AsyncLocalStorage} from 'node:async_hooks';
 import * as fs from 'node:fs/promises';
 import {unlinkSync} from 'node:fs';
 import {basename,resolve,isAbsolute} from 'node:path';
-import {isProxy} from 'node:util/types';
+import {isPromise,isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {cloneV1,refV1,recordV1,uuidV1,hashV1} from '../../../contracts/runtime/validation-v1.ts';
 import type {NormalOwnedHostFactory,NormalOwnedHostSession,NormalOwnedMetadata,HostCloseDisposition} from './normal-credential-bootstrap-client.ts';
 import {isOwnedSpoolPath,NormalStartFileStore,type NormalFilePorts,type NormalLocalScope,type ProfileJournalAccess} from './normal-start-file-store.ts';
 import {NormalStartIntake,type NormalStartStore} from './normal-start-intake.ts';
 import {NormalClaudeStartWire} from '../adapters/secondary/normal-start-wire.ts';
-import {takeFirstOutputOrigin,type NormalFirstSendSource} from './normal-first-send-owner.ts';
+import {confirmNormalLiveInputDelivery,takeFirstOutputOrigin,type LiveInputPort,type NormalFirstSendSource} from './normal-first-send-owner.ts';
 import type {NormalStartWire,NormalStartCurrent} from './normal-start-coordinator.ts';
 import type {RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {receiveProfiledEnvelope,type InboxFilePorts,type InboxLimits} from './receipt-inbox.ts';
@@ -42,6 +42,48 @@ function gate<T>(){
  let resolve!:(value:T)=>void,reject!:(error:unknown)=>void;
  const promise=new Promise<T>((r,j)=>{resolve=r;reject=j;});void promise.catch(()=>{});
  return {promise,resolve,reject};
+}
+// SDK 입력에는 첫 명령 한 개와 다음 명령을 기다리는 pull 한 개만 둔다.
+function workerInput(first:AsyncIterable<unknown>,life:AbortSignal,check:Guard){
+ type Step=IteratorResult<unknown>;
+ let taken=false,firstUsed=false,pulling=false,offered=false,closed=false;
+ let demand=gate<void>(),request:ReturnType<typeof gate<Step>>|undefined;
+ const error=()=>Error('NORMAL_WORKER_INPUT_UNAVAILABLE');
+ const close=()=>{closed=true;life.removeEventListener('abort',close);demand.reject(error());request?.reject(error());};
+ const live=()=>{if(closed||life.aborted)throw error();check();if(closed||life.aborted)throw error();};
+ life.addEventListener('abort',close,{once:true});if(life.aborted)close();
+ const stream=Object.freeze({[Symbol.asyncIterator](){
+  if(taken)throw error();taken=true;live();
+  return Object.freeze({
+   next():Promise<Step>{
+    if(pulling)return Promise.reject(error());pulling=true;
+    try{
+     live();
+     if(!firstUsed){
+      firstUsed=true;
+      return (async()=>{try{const value=await first[Symbol.asyncIterator]().next();live();if(value.done)throw error();return value;}
+       catch(cause){close();throw cause;}finally{pulling=false;}})();
+     }
+     request=gate<Step>();demand.resolve();return request.promise;
+    }catch(cause){close();return Promise.reject(cause);}
+   },
+   async return(){close();return {done:true as const,value:undefined};}
+  });
+ }});
+ const provide=async(input:AsyncIterable<unknown>,signal:AbortSignal,confirm:Guard)=>{
+  if(offered||closed||!firstUsed||signal.aborted)throw error();
+  offered=true;signal.addEventListener('abort',close,{once:true});
+  try{
+   live();await demand.promise;live();const next=request;if(!next||signal.aborted)throw error();
+   // 이 명령의 진짜 iterable이 current/원장 재검산을 마친 뒤에만 대기한 SDK pull에 제공한다.
+   const value=await input[Symbol.asyncIterator]().next();live();
+   if(value.done)throw error();const upcoming=gate<void>();
+   confirm();
+   if(closed||life.aborted||signal.aborted||request!==next)throw error();
+   request=undefined;pulling=false;demand=upcoming;next.resolve(value);
+  }catch(cause){close();throw cause;}finally{offered=false;signal.removeEventListener('abort',close);}
+ };
+ return {stream,provide,close};
 }
 const profileReceipts=new WeakMap<InboxFilePorts,string>();
 export function isProfileJournal(access:ProfileJournalAccess){return profileJournals.has(access);}
@@ -361,7 +403,7 @@ export class OwnedSpoolRuntime {
    }
   });
  }
- outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):NormalFirstSendSource{
+ outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort}{
   const saved=this.#workers.get(worker),slot=this.external(this.#slot);
   if(this.#binding||!saved||saved.journal!==journal||!slot||!refV1(slot.receiptRef)||this.#owner.aborted||signal.aborted||
    isProxy(sdk)||!recordV1(sdk,['plannedSid','expiresAt','check','create','close','classify'])||
@@ -378,10 +420,22 @@ export class OwnedSpoolRuntime {
    return {scope:origin.scope,signal:origin.signal,end,profile:binding.profile.id,allocation:binding.allocation.id};
   },raw=>this.external(()=>Reflect.apply(fixed.classify,sdk,[raw])));
   // These two fields are populated only by the verified native allocation, before the first protected START completes.
+  let inputStream:ReturnType<typeof workerInput>|undefined,query:AsyncIterable<unknown>|undefined;
   const core={storage,plannedSid:sdk.plannedSid,expiresAt:sdk.expiresAt,ownerSignal:lifetime,slotRef:cloneV1(slot.receiptRef),
    clock:()=>{verify();return this.#clock();},
    check:(scope:Parameters<NormalFirstSendSource['check']>[0])=>{verify();return this.external(()=>Reflect.apply(fixed.check,sdk,[scope]));},
-   create:(...args:Parameters<NormalFirstSendSource['create']>)=>{verify();return this.external(()=>Reflect.apply(fixed.create,sdk,args));},
+   create:(...args:Parameters<NormalFirstSendSource['create']>)=>{
+    verify();if(inputStream)invalid();
+    const [request,first,life]=args;
+    const active=workerInput(first,life,()=>{verify();if(origin)this.external(origin.check);});inputStream=active;
+    try{
+     const result=this.external(()=>Reflect.apply(fixed.create,sdk,[request,active.stream,life]));
+     if(isProxy(result)||!isPromise(result))invalid();
+     return new Promise<AsyncIterable<unknown>>((accept,reject)=>Reflect.apply(Promise.prototype.then,result,[
+      (original:AsyncIterable<unknown>)=>{query=original;accept(original);},(error:unknown)=>{active.close();reject(error);}
+     ]));
+    }catch(error){active.close();throw error;}
+   },
    close:(...args:Parameters<NormalFirstSendSource['close']>)=>this.external(()=>Reflect.apply(fixed.close,sdk,args))};
   const source=core as NormalFirstSendSource;this.#foreground=signal;
   this.#binding={update:(profile,allocation)=>{
@@ -396,7 +450,11 @@ export class OwnedSpoolRuntime {
     s.executionId!==saved.scope.executionId||s.generation!==saved.scope.executionGeneration)invalid();
    origin=original;
   });
-  return source;
+  const port:LiveInputPort=Object.freeze({provide:(original,input,signal)=>{
+   if(!inputStream||!query||original!==query||!origin||origin.signal.aborted)return Promise.reject(Error('NORMAL_WORKER_INPUT_UNAVAILABLE'));
+   return inputStream.provide(input,signal,()=>confirmNormalLiveInputDelivery(input,worker,original,port));
+  }});
+  return {source,port};
  }
  receive(limits:InboxLimits,input:unknown,expected:Parameters<typeof receiveProfiledEnvelope>[3],signal:AbortSignal){
   return this.#transaction('UNVERIFIED_RECEIPT_INBOX','inbox',signal,async(path,io)=>{

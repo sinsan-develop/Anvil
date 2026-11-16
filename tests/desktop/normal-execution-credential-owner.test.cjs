@@ -193,14 +193,19 @@ async function pollingFixture(profile=null,workerOptions=false,mixed=false){
  const extra={kind:'INSTRUCTION',payloadRef:partsRef,sourceRef:instructionRef,sourceBytes:Buffer.byteLength(instruction),contentHash:bodyHash,
   mediaType:'text/plain;charset=utf-8',parts:[{materialId:id(97),partIndex:1,byteOffset:0,utf8Bytes:Buffer.byteLength(instruction),contentHash:bodyHash}]};
  const items=mixed?[item,{sequence:2,commandRef:ref(98),envelope:send,materials:{manifestRef:ref(99),groups:[extra]}}]:[item];
+ const nextText='다음 명령 🙂',nextBase={...sendBase,commandId:id(130),payload:{sessionBindingRef:send.payload.sessionBindingRef,partsRef:ref(131),instructionRef:ref(132)}};
+ const nextEnvelope={...nextBase,envelopeHash:hash(nextBase)},nextHash=contentHash(nextText),nextBytes=Buffer.byteLength(nextText);
+ const nextGroup={...extra,payloadRef:ref(131),sourceRef:ref(132),sourceBytes:nextBytes,contentHash:nextHash,
+  parts:[{materialId:id(133),partIndex:1,byteOffset:0,utf8Bytes:nextBytes,contentHash:nextHash}]};
+ if(mixed==='FOLLOW')items.push({sequence:3,commandRef:ref(134),envelope:nextEnvelope,materials:{manifestRef:ref(135),groups:[nextGroup]}});
  const seen={permits:0,wires:0,events:[],loseAck:false};
  m.respond((r,body)=>{
   const result={transport:'NORMAL_PROTECTED',proofResultRef:ref(59),cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
   const observedAt=new Date(clock()).toISOString(),expiresAt=new Date(clock()+5000).toISOString();
   if(r.path.endsWith('/commands'))return {...result,items:seen.startOnly?[item]:items,nextCursor:'cursor1',hasMore:false,observedAt,expiresAt};
-  const all=mixed?[...groups,extra]:groups,i=all.findIndex(g=>r.path.endsWith('/materials/'+g.parts[0].materialId));
-  if(i>=0){const g=all[i],p=g.parts[0];return {...result,observedAt,expiresAt,material:{materialId:p.materialId,sourceRef:g.sourceRef,partIndex:1,partCount:1,contentHash:p.contentHash,bytes:Buffer.from(i===2?instruction:bodies[i]).toString('base64url')}};}
-  if(r.path.endsWith('/permit')){const cmd=mixed&&r.path.includes(send.commandId)?send:envelope;seen.permits++;return {...result,...(seen.largePermit?{padding:'x'.repeat(2700000)}:{}),executionAuthorized:true,permit:{ref:ref(cmd===send?96:60),commandId:cmd.commandId,envelopeHash:cmd.envelopeHash,issuedAt:observedAt,expiresAt}};}
+  const all=mixed==='FOLLOW'?[...groups,extra,nextGroup]:mixed?[...groups,extra]:groups,i=all.findIndex(g=>r.path.endsWith('/materials/'+g.parts[0].materialId));
+  if(i>=0){const g=all[i],p=g.parts[0];return {...result,observedAt,expiresAt,material:{materialId:p.materialId,sourceRef:g.sourceRef,partIndex:1,partCount:1,contentHash:p.contentHash,bytes:Buffer.from(i===3?nextText:i===2?instruction:bodies[i]).toString('base64url')}};}
+  if(r.path.endsWith('/permit')){const cmd=mixed==='FOLLOW'&&r.path.includes(nextEnvelope.commandId)?nextEnvelope:mixed&&r.path.includes(send.commandId)?send:envelope;seen.permits++;return {...result,...(seen.largePermit?{padding:'x'.repeat(2700000)}:{}),executionAuthorized:true,permit:{ref:ref(cmd===nextEnvelope?136:cmd===send?96:60),commandId:cmd.commandId,envelopeHash:cmd.envelopeHash,issuedAt:observedAt,expiresAt}};}
   assert.ok(r.path.endsWith('/observations'));const batch=JSON.parse(body).events,events=mixed?[...seen.events,...batch]:batch;seen.events=events;
   const snapshot={execution:local,highestContiguous:events.length,maxSequence:events.length,contiguousDigest:events.reduce((previous,e)=>hash({previous,eventHash:hash(e)}),hash([])),gaps:[],storedCount:events.length,writerReleaseVerified:false,executionAuthorized:false,dispatchPerformed:false,recordedAt:observedAt};
   return {...result,ack:seen.loseAck?null:{ref:{...ref(61),version:mixed?events.length:1,contentHash:hash(snapshot)},snapshot}};
@@ -409,6 +414,70 @@ for(const scenario of ['OK','CAPACITY','WRONG_PROOF','LOST_SETTLE','OWNER_LOST',
   assert.deepEqual(rows[2].snapshot.scope,rows[0].snapshot.scope);
   assert.ok(q.state.claimed>=2&&q.state.settlements>=2);assert.deepEqual(q.state.denials,[]);
  }finally{x.source.dispose();fixtures.setFiles(undefined);}
+});
+
+for(const mode of ['PULL','NO_PULL','DISPOSE','CURRENT_LOST','EARLY_RETURN'])test('동일 등록 Query가 실제 소비한 후속 입력만 정착한다 '+mode,async()=>{
+ const q=await outputProfile(),x=await pollingFixture(q.profile,true,'FOLLOW');q.bind(x);
+ const {wire:unused,...input}=x.input;input.timeoutMs=1200;
+ let queryCount=0,iterators=0,reader,pull,outputs=0,duplicate,valid=true;
+ const delivered=[],sid='ram-session';
+ const init={type:'system',subtype:'init',uuid:'init',session_id:sid,apiKeySource:'none',claude_code_version:'2.1.224',cwd:'fixture',tools:[],mcp_servers:[],model:'fixture',permissionMode:'default',slash_commands:[],output_style:'fixture',skills:[],plugins:[]};
+ const sdk={plannedSid:sid,expiresAt:x.clock()+4000,check:scope=>valid?{scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000}:null,
+  classify:()=> 'ORDINARY',close:async()=>{},async create(_,prompt){
+   queryCount++;reader=prompt[Symbol.asyncIterator]();const first=await reader.next();delivered.push(first.value.message.content);
+   if(mode!=='NO_PULL'){
+    pull=reader.next().then(r=>{if(!r.done)delivered.push(r.value.message.content);},()=>{});
+    duplicate=reader.next().then(()=>false,()=>true);
+   }
+   return {[Symbol.asyncIterator](){iterators++;return {async next(){return outputs++?{done:true,value:undefined}:{done:false,value:init};}};}};
+  }};
+ try{
+  x.m.onFrame(v=>{if(v.operation==='NORMAL_EXECUTION_CALL'&&v.payload.kind==='REQUEST'&&v.payload.request.path.includes(id(130))&&v.payload.request.path.endsWith('/permit')){
+   if(mode==='DISPOSE')x.source.dispose();else if(mode==='CURRENT_LOST')valid=false;else if(mode==='EARLY_RETURN')void reader.return();
+  }});
+  const result=await x.source.createWorkerStartPolling(x.pair,input,sdk).run(x.signal);
+  if(mode==='PULL')assert.equal(result.state,'LIMIT_REACHED',JSON.stringify({result,delivered,denials:q.state.denials,permits:x.seen.permits,
+   states:[...q.local.files].filter(([p])=>p.endsWith('.json')&&p.includes('attempt-')).map(([,v])=>JSON.parse(v.bytes).snapshot.state),
+   requests:x.m.calls.filter(c=>c.payload.kind==='REQUEST').slice(-8).map(c=>c.payload.request.path),frames:x.m.calls.slice(-6).map(c=>[c.operation,c.payload.channel])}));
+  else assert.notEqual(result.state,'LIMIT_REACHED');
+  assert.equal(queryCount,1);assert.equal(iterators,1);
+  const rows=[...q.local.files].filter(([key])=>key.endsWith('.json')).map(([,file])=>JSON.parse(file.bytes));
+  const terminal=rows.filter(r=>r.snapshot?.state==='LIVE_SEND_INPUT_YIELDED');
+  assert.equal(rows.filter(r=>r.snapshot?.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED').length,1);
+  if(mode==='PULL'){
+   await pull;assert.equal(await duplicate,true);assert.deepEqual(delivered,['보호 출력 시험 입력','다음 명령 🙂']);
+   assert.equal(result.cursor.afterSequence,3);assert.equal(x.seen.permits,3);assert.equal(terminal.length,1);
+   assert.equal(terminal[0].snapshot.inputEvidence.instructionDigest,contentHash('다음 명령 🙂'));
+   assert.ok(x.seen.events.some(e=>e.commandId===id(130)));
+  }else{assert.equal(terminal.length,0);assert.ok(result.cursor.afterSequence<3);assert.deepEqual(delivered,['보호 출력 시험 입력']);}
+ }finally{x.source.dispose();fixtures.setFiles(undefined);}
+ if(pull)await pull;await assert.rejects(reader.next());assert.equal(delivered.length,mode==='PULL'?2:1);
+});
+
+for(const mode of ['VALID','CURRENT_LOST','COMMAND_EXPIRED','STOP'])test('원 후속 yield와 마지막 SDK 전달 사이의 동기 검산 '+mode,async()=>{
+ const {liveStopFixture}=await import('../unit/FN07/normal-first-send-owner.test.ts');
+ const {prepareLiveFollowup}=await import('../unit/FN08/normal-instruction-dispatch-fixture.ts');
+ const {confirmNormalLiveInputDelivery,requestNormalLiveStop}=await import('../../apps/connector/runtime/normal-first-send-owner.ts');
+ let f,saved,delivered=0,originalYield=0;
+ const port={async provide(query,input){
+  const step=await input[Symbol.asyncIterator]().next();assert.equal(step.done,false);originalYield++;
+  saved={input,query};await Promise.resolve();
+  for(const args of [[{},f.worker,query,port],[input,{},query,port],[input,f.worker,{},port],[input,f.worker,query,{}]])
+   assert.throws(()=>confirmNormalLiveInputDelivery(...args));
+  if(mode==='CURRENT_LOST')f.effects.current=false;
+  if(mode==='COMMAND_EXPIRED')f.mode.wall+=12000;
+  if(mode==='STOP')await requestNormalLiveStop(f.worker,f.stopItem,f.original,f.stop.store,f.signal,()=>{});
+  confirmNormalLiveInputDelivery(input,f.worker,query,port);delivered++;
+  assert.throws(()=>confirmNormalLiveInputDelivery(input,f.worker,query,port));
+ }};
+ f=await liveStopFixture(port);
+ try{
+  assert.equal((await f.run()).state,'LIMIT_REACHED');const {item,c,prepared}=await prepareLiveFollowup(f,'마지막 경계 원문');
+  const result=c.dispatch(item.envelope,prepared,f.wire,f.signal);
+  if(mode==='VALID')assert.equal((await result).state,'LIVE_SEND_INPUT_YIELDED');else await assert.rejects(result);
+  assert.equal(originalYield,1);assert.equal(delivered,mode==='VALID'?1:0);assert.equal(f.effects.create,1);
+  assert.throws(()=>confirmNormalLiveInputDelivery(saved.input,f.worker,saved.query,port));
+ }finally{f.authority.abort();await f.h.close();}
 });
 
 test('등록 receipt 목적 입구는 connector의 등록 fullref/프로젝트를 벗어나면 slot 발급이나 host open 전에 거절한다',async()=>{

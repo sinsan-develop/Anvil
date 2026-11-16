@@ -5,12 +5,12 @@
 ## 현재 작업 요약 — 2026-11-16 18:54:00 KST
 
 - **현재 상태: 개발 진행 중.** 과거 ‘병합하고 대기’는 당시 이력이며 현재 중지 지시가 아니다. 1단계 로컬·WSL-server 기능 구현을 계속한다.
-- **현재 업무:** Stage C/D · FN07/FN08의 동일 Query 첫·후속 SEND 입력 스트림 연결. 기존 source.create에 원 입력을 한 번 공급하고 forFirstSend의 LiveInputPort를 연결한다. WI FN07_SAME_QUERY_LIVE_INPUT_WI_20261116.md r2(9BBC89D5), Primary 단일 writer의 제품3·시험1 source/RAM 구현 중이다. 실제 SDK 모듈·CLI/child 생산자와 실제 실행은 미완료·제외한다.
+- **현재 업무:** Stage C/D · FN07/FN08의 동일 Query 첫·후속 SEND 입력 스트림 연결. 기존 source.create에 원 입력을 한 번 공급하고 forFirstSend의 LiveInputPort를 연결한다. WI FN07_SAME_QUERY_LIVE_INPUT_WI_20261116.md r2(9BBC89D5), Primary 단일 writer의 제품3·시험1 source/RAM 구현·독립 검수가 끝나 Main 통합 중이다. 실제 SDK 모듈·CLI/child 생산자와 실제 실행은 미완료·제외한다.
 - **담당:** `developer_primary` 구현·기본 검증, Main 어울 작업관리·필수 테스트·독립 검수·통합. 진행 중인 구현은 중단·회수·중복 배정하지 않았다.
 - **Git:** 최신 통합 main `9013faefc2779aa6b012a555c3f4afbf0a5dfe12`(PR150), 소스 `7ac51ff1`과 tree 동일. 현재 작업 branch `codex/av3-query-producer`는 그 main에서 시작했다. 완료 source branch/request tag는 정상 정리했고 원격 `pr-150-head`를 보존했다.
 - **완료한 소스 단위:** normal START 준비, 첫·후속 SEND, 원 Query 출력 수집과 협력 STOP 소비, profile/예산·원 READY 연결은 PR144~149에 source로 통합됐다. 이를 현재 ‘SEND/STOP 소스 미구현’으로 표시하지 않는다. 실제 SDK·Agent 실행 완료를 뜻하지도 않는다.
 - **최근 확정 검증:** PR148 spool 단위 직접64건·선택6건 PASS, root/desktop 타입0, 독립 C0/I0/M0. 병합본 READY/ACK/cursor RAM smoke1건 PASS. 현재 제5 출력 채널은 별도 구현·검수 중이며 아직 최종 PASS가 아니다.
-- **현재 구현 검증:** 제5 출력 채널의 원 Query/예약 연결을 구현하고 직접 TS70건·등록 CJS35건 및 독립 START/ACK→원 출력 정산 양성을 확인했다. 독립 검수의 원 callable I1·거절 후 자기 Query 정리 I2를 보완하고 최종 영향 선택2건/소유권4건·메모리 closure1건·root/desktop 타입0을 확인했다. native/연결 최종 독립 C0/I0/M0, PR150 병합본 RAM smoke2건도 통과했으며 실제 SDK·Windows PASS가 아니다.
+- **현재 구현 검증:** PR150 제5 출력 채널의 병합본 RAM2건에 이어, 동일 Query 후속 입력의 등록 CJS44건·인접4건·메모리1건·root/desktop 타입0·독립 C0/I0/M0을 확인했다. 서로다른 원문2건·Query/출력iterator 각1·후속 LIVE_SEND_INPUT_YIELDED/ACK cursor3을 RAM에서 관측했다. 최종 전달 직전 원 current/기한/STOP epoch 거절을 보완했으며 실제 SDK·Windows PASS가 아니다.
 - **미확인·남은 기능:** 실제 SDK/CLI·OS 프로세스·도구 권한 집행, C# 컴파일·Windows 파일/ACL·보호 저장, 실제 DB·서비스·브라우저 통합 및 사용자 인수는 미검증이다. 실제 Agent 생산자와 전체 작업계획은 미완료다.
 - **P03·SSH:** R3 복구는 복사·PG 기동·전환에 도달하지 못했고 원 자원을 보존한다. 자동 wrapper의 SSH255/UNKNOWN과 일반 SSH를 구분한다. 사용자 Windows PowerShell 로그인 성공 증거(11-16 18:04:45 KST)가 있으며 서버/로그인 불능으로 일반화하지 않는다. 새 부수 진단·재복제·정리는 하지 않는다.
 - **기록 기준:** 소스/RAM 합격, 실제 동작 확인, 사용자 인수를 구분한다. 기존 서로 다른 이력은 아래 보관 영역에 남긴다. 사용자 열람본의 기존 미추적 원본은 `D:\Project\Anvil\.av3-data\status-view-backup-20261116-184648`에 원본 해시 그대로 보존했다.
@@ -20127,3 +20127,7 @@ PR150 exact source7ac51ff188f626b8edd7120444e6e6478b0024b0을 main9013faefc2779a
 ## 2026-11-16 동일 Query 입력의 최종 전달 경계 보완
 
 등록 CJS 중간 양성3건 e77e26에서 Query/출력iterator 각1·서로다른 원문2건·후속 종단/ACK cursor3과 미소비/dispose거절을 확인했다. 독립 검수의 잠정 I1은 원 prompt.next 후 SDK pull resolve 직전의 current/기한 재검산 누락이었다. Main은 원 후속 owner의 token·stopEpoch·claim 기한 검사를 private prompt 결박으로 재사용하도록 WI r2 9BBC89D5를 발행하고 normal-first-send-owner.ts를 필수 내부 경로로 추가 배정했다. 제품3·시험1 단일 writer를 유지하며 새 공개API/권위·실제 실행을 허용하지 않았다. 실제 STOP 공급자는 아직 미연결이며 RAM latepull 보호와 구분한다. 보완 및 동결 재검수 전 최종PASS가 아니다.
+
+## 2026-11-16 동일 Query 입력 검수 완료·통합 준비
+
+Primary 쓰기반환/live0을 확인하고 제품3·시험1의4지문을 결과서와 모두 대조했다. 독립 검수 C0/I0/M0: 원 prompt/worker/Query/port 단발결박, 최종 resolve 직전 current·명령기한·token·STOP epoch, abandon의 원수명 abort에 따른 demand/request 정리를 확인했다. 직접44PASS(7c48a8)·인접4PASS(1081af)·메모리1PASS(18b850)·root8b3faf/desktop7d6a2e 타입exit0. 검사건수 중복합산없음. 원port제거RED6ed0d6·기한경계RED70bd95와 fixture오류이력을 보존했다. 결과서 SHA256 B94A1FB150A8C93F8CD7D0F9072D0721995770114C711A3B78FA5D9CFAC4B1C9. 실제SDK/CLI/child/OS STOP·파일자료/DB·권한·키·서비스는 미확인·미실행이며 전체계획 미완료다. 정확 변경만 PR·Broker·병합본 smoke·복구 ref·정리를 진행한다. 현재요약을 두 사용자열람본과 함께 갱신했다.
