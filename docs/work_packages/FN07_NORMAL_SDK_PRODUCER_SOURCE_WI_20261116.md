@@ -20,4 +20,6 @@
 
 ## 단계 2 — 다음 배정에 필요한 내용
 
+2026-11-17 Main 배정 보완: 검수된 명세의 제품12/시험3에 `apps/connector/native/NormalExecutionSpoolProfileSource.cs` 한 제품 경로를 추가한다. 기존 관리행과 배정의 실제 FIRST3 정착·record/slot·현재 원 scope를 목적 한정 internal 함수로 재판독하는 범위다. 일반 Control opcode·외부 파일 경로·기존 저장 형상·권한을 넓히지 않는다. 원 행을 검산할 수 없으면 lease/생성은 0이다. 기존 Primary 단일 writer가 제품13/시험3을 소유하고 Main이 검수·통합한다. 이는 기존 보호 자료의 내부 검산 보완이며 새 공개·저장·실행 승인을 뜻하지 않는다.
+
 하나의 실제 생산자 흐름을 A(고정package/최초owner)→B(native 원child/pipe/lifetime)→C(격리SDK loader/동기hook/같은Query)→D(기존bootstrap/SEND/collector/STOP 통합) 순서로 작성한다. 의미 있는 검수 가능한 단위로 나누고 단순 scaffold/helper만으로 종료하지 않는다. 각 단계의 정확 경로·함수서명·기존 타입 재사용/정당한 내부확장·구체적 RED/PASS 명령과 다음 단계 인터페이스를 적는다. 신뢰근거 누락/교차등록·오래된slot/부정package/argv/env/cwd는 load/spawn0, suspended 후/Resume 직전 만료는 Resume0·자기handle만회수, Query/iterator각1과후속/보호저장/STOP·late/backpressure/서로다른owner정리0을 소유 시험에 매핑한다. 미확인 값에 임의 필수 파일명/서명/키/검증성공을 채우지 않는다. Main은 이 문서와 경계 판정을 확인해 실제 구현을 계속 배정한다.

@@ -368,3 +368,20 @@ Main이 명세 BC6BFC11 전체와 WI EBA7836B 및 기존 Forge source를 대조�
 기존 Primary에게 명세의 닫힌 제품12/시험3 경로를 단독 배정하고 A package/최초owner→B 목적한정 native child→C 격리 Query/동기 hook→D 기존 SEND/출력/STOP 구현을 연속 수행하도록 지시했다. Main은 제품 쓰기 없이 문서·검수·Git 통합을 맡는다. 독립 preflight는 두 사전문제 해소를 읽기 확인한다. 다른 담당자의 변경을 되돌리지 않으며 실제 DB·권한·키·서비스·설치·SDK/CLI/Agent/C# 실행·추가 SDK/SSH 조회·실자료 조사는 제외한다. 새로운 source/RAM 합격이나 실제 동작 완료는 아직 선언하지 않는다. 명세 단계 오류2건, 실제 새 실행0·소유 관측핸들0이다.
 
 승인 세 건의 결과 기록을 다시 대조했다. SDK 출력 저장 source는 기존 PR150 검수/통합 이력을 재사용하고, 공개 원문 단발 8aa1c8은 getCalls1·1.351176초·고정해시일치·요청종료/핸들0이다. WSL 보존 자원 관측76192f는 SSH255·0/14행·UNKNOWN_PRESERVE, 원인/자원상태는 미확인이고 재실행/자동삭제0이다. 이후 CLI 보완관측770175의 IMAGE_SIZE/정상종단은 별도 결과이며 앞선 WSL 또는 SDK 조회 성공으로 혼동하지 않는다. 추가 CLI크기한도 확대·SDK재조회·SSH재접속을 요청하거나 수행하지 않는다. 필요한 보고는 PMO에 전달했다.
+
+## 2026-11-17 FN07 명세 I2 최종 보완·제품 RED 착수
+
+Primary는 이미 수락한 write별 callback과 예약의 정상/오류 단발 종결·대기열 폐기·늦은 ACK 재처리0을 추가했다. 명세 최종 SHA256 96049869844F97707ED36C5EF027FFFCA87D2F97D1A6AC6AB1AFD96694E7571D, Main은 실제 diff의 해당 두 문단만 변경됨을 확인했다. 신규 패키지 시험 RED 8a83dd exit1은 아직 없는 생산자 모듈을 요구하는 구현 전 근거이며 제품 회귀나 실제 SDK 실패가 아니다. Primary는 패키지/Forge 호출선 구현을 계속하고 Main은 source/RAM·미검증 판정을 분리한다. 실행 권한 확대·추가 관측·실제 Agent 호출0이다. 관리 checkpoint7f7abdfd는 development/codex/av3-normal-sdk-producer와 동기화됐다.
+
+
+## 2026-11-17 FN07 내부 원행 검산 경로 한정 배정
+
+Primary는 credential slot.scope가 cwd/env 권위를 담지 않고 기존 OutputScope가 FIRST3 원행을 읽지 않는 실제 경계를 보고했다. Main은 source의 private Log/Allocate/Inspect와 OutputScope를 읽고 NormalExecutionSpoolProfileSource.cs 한 제품 경로를 목적 한정 internal 원 배정/관리행/FIRST3 정착 재판독에 배정했다. 기존 공개 Control opcode·외부경로·저장형상·권한은 그대로이며 원 근거가 없으면 lease/생성0이다. 제품13/시험3 단일writer, Main WI 최신 SHA256 F6777B530E167C042595F8E0FC8EB0F0B8527805B6257325C0F94811CECB9FF2. 실제 cwd/env가 사용자 선언뿐인 경우를 신뢰 가능한 물리 설정으로 승격하지 않고 필요한 정확한 차이를 별도 검토한다. 이는 제품 소스 읽기/내부 검산 구현 범위이며 실제 파일 조사·DB/키/권한/서비스/Agent 실행0이다.
+
+## 2026-11-17 FN07 입력 큐 부분 검수·실행구성 권위의 정확 경계
+
+Primary의 bridge052B8395/시험4FFB8525는 RED493753→GREEN2256e4 exit0·2PASS·102.3616ms다. Main은 두 파일의 바이트 지문과 전체 코드를 읽고 1MiB 입력2건+초과1B의 callback 단발 종료/늦은 ACK 추가DATA0 및 65537B 분할 부분만 확인했다. 실제 동기 hook·native 송수신·종료 소유·Query 통합은 미완료다. 같은 Primary에게 두 경로 동결 해제와 abort 중 복수 write 단발 종결, stdout credit/EOF·EXIT·peer 소실 반례 및 kill 수락 boolean 검산을 전달했다. 이 RAM 대역의 callback은 실제 실행 권위를 발급하지 않는다.
+
+실행구성 차이를 현재 계약으로 좁혔다. SDK 배포물의 설치 지문 부재는 현재 환경 미확인(a)이다. 반면 process-tool 계약§3과 86A§5의 보호 실행구성/argv/env 생산자 미정, environment-configuration의 선언/메타와 native slot.scope의 제한은 원 프로젝트 cwd/env·명령 귀속 발급 계약 자체가 없는(b) 경계다. 원 파일 존재/hash만으로 당해 프로젝트의 실행 허가를 증명하지 않는다. 이 정확한 새 권위만 다음 최소 source-only 결정안으로 준비하며, 실제 Secret 공급은 제외한다. Primary의 독립 패키지/bridge/FIRST3 원행 검산 구현은 계속한다. 전체 작업 대기나 새 실제 실행 승인은 만들지 않는다.
+
+STOP CURRENT 후보1BA2559B는 주기 head 교체의 준비/소비 경합과 관측 상한에 따른 STOP 가용성 손실을 Main이 지적해 보완했다. 수정 후보53CF77F7도 아직 미채택이며 실제 제품/SQL 적용0이다. cwd/env 선행 결정과 혼합하지 않고 새 권한·공개 계약의 정확 범위를 검수한 뒤 한 건씩 제시한다. 같은 승인 세 건의 관측/실행을 반복하지 않는다.
