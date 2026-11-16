@@ -20055,3 +20055,10 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 기존SDK query기술공백일부가해소돼원SDK로더/query·동기hook·원child/Query/SID까지연결할완결source업무의제품정책결정안을기존Primary에게문서초안만맡겼다. 기존normal permit/첫선택SEND·spool/UNKNOWN을재사용하고실제SDK/키DB권한서비스Agent실행은제외한다. 단순비교helper나raw주입포트를실제producer로표시하지않는다.
 - 신산님은PMO에일반WindowsPowerShell의ssh WSL-server로그인성공·Ubuntu daon@SINSAN셸·2026-11-16 18:04:45KST화면증거를제공했다. 자동wrapper의SSH255/UNKNOWN은그실행경로의결과이며일반SSH접속불능으로일반화하지않는다. 서비스/DB상태도이증거로추정하지않는다.
 - 신산님최신직접지시에따라SSH부수진단과후속설계초안작업을중단했고현재승인개발단위의필수검수·PR통합·merged-main확인·정리를우선한다. d2_scope_audit의추가비교조사와Primary의다음producer초안은interrupt했으며현재spool제품/시험은이미동결/쓰기반환된상태다. 새SSH/SDK조회·설정/키변경·실제Agent실행은없다. 모호했던내부구현판정은project AGENTS§5의같은범위내기술보완/Main판단조항을재대조했다. 문서전수반복이나추가승인질문을현재단위의선행으로만들지않는다.
+
+## 2026-11-16 승인 spool 개발 단위 통합 완료
+
+- PR148은source55135717eccc847ba1bc61d596f85e50538a0ba1에서main74b3e499c96d28185235e43b6012b3533699c9df로병합됐다. Broker43837487631은success이며source/main tree9559cc4a8d0f3156371a4591e7a8703fb12e84e7이같다. 원격pr-148-head가source를보존한다.
+- merged-main smoke c7e0f8은등록owner의generic/원READY를각같은물리host40/64frame,준비행1·필수4관측ACK/cursor1로확인한1PASS/FAIL·SKIP0·exit0이다. desktop타입128e39는진단0/exit0이다. 기존직접64·선택6·독립C0/I0/M0결과는원결과서대로유지하고중복합산하지않는다.
+- 로컬/원격main exact SHA와clean을확인했고완료branch와소비된request tag만정상삭제했다. squash특성상upstream-merged경고가있었으나동일tree와원격복구ref를먼저검산했고force/history변경은없다. 기존보호작업사본/공유모듈은보존했다.
+- 실제C#컴파일·Windows보호저장/ACL·SDK/Agent·DB/서비스동작은미검증이며전체작업계획/FN08인수는미완료다. 사용자18:04:45KST일반SSH성공과자동wrapper결과를구분했고최신지시대로부수진단/후속설계준비는중단했다. 현재기록마감은제품/시험변경0이다.
