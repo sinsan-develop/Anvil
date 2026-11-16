@@ -5,7 +5,7 @@
 ## 현재 작업 요약 — 2026-11-16 19:49:42 KST
 
 - **현재 상태: 개발 진행 중.** 과거 ‘병합하고 대기’는 당시 이력이며 현재 중지 지시가 아니다. 1단계 로컬·WSL-server 기능 구현을 계속한다.
-- **현재 업무:** Stage C/D · FN07 실제 SDK/CLI 생산자 준비. Windows CLI 첫 후보의 한정 관측안·조회 script는 AST0/독립 C0/I0/M0으로 고정했고 사용자 결정을 요청할 범위다. 실제 PATH/설치파일 조회·조회프로세스 실행은 0회다. 이 결정과 별개인 기존 FN03 D2 P-B 미완료 source를 같은 Primary가 읽기 대조해 다음 내부 구현 단위를 확인한다. 실제 SDK·CLI/child·DB/권한/키/서비스 실행은 제외한다.
+- **현재 업무:** Stage C/D · FN07 실제 SDK/CLI 생산자 준비. Windows CLI 첫 후보의 한정 관측안·조회 script는 AST0/독립 C0/I0/M0으로 고정했고 사용자 결정을 요청할 범위다. 실제 PATH/설치파일 조회·조회프로세스 실행은 0회다. 이 결정과 별개로 UI06의 산출물 itemId 소실을 RAM으로 재현했고, 같은 Primary가 버전별 귀속 계약 후보를 구체화한다. 제품/DB는 아직 변경하지 않는다. 실제 SDK·CLI/child·DB/권한/키/서비스 실행은 제외한다.
 - **담당:** `developer_primary` 구현·기본 검증, Main 어울 작업관리·필수 테스트·독립 검수·통합. 진행 중인 구현은 중단·회수·중복 배정하지 않았다.
 - **Git:** 최신 통합 main `8776fe90764887012c73409a50a0a3882df813dc`(PR151), 소스 `6e468b03`과 tree 동일. 현재 작업 branch `codex/av3-sdk-producer-preparation`는 그 main에서 시작했다. 완료 branch/request tag는 정상 정리했고 원격 `pr-150-head`·`pr-151-head`를 보존했다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
@@ -20153,3 +20153,9 @@ CLI 조회 후보8CBE8F4A의 독립 C0/I1/M1을 확인했다. 실제실행본이
 Main은 게시본ed7bba5a의 후보EEAFFF15…F620·script2A7E8911…F511를 결박해 PATH메모리선별/첫로컬claude1개 관측의 예외승인 질문을 비동기로 한 번 발행했다. 승인 후30분 내 단1회·조회30초·원조회PS객체만정리·UNKNOWN재시도0, 실제CLI/SDK/Agent·사용자자료/키/설정·DB/권한/서비스변경 제외를 명시했다. 답변확인전에는PATH/실제파일조사·조회프로세스시작·승인소진0이다. 자동시간경과를승인으로간주하지않고질문을반복하지않는다.
 
 독립진행가능성을확인한FN03/D2 두호출선에서는 D2P-B가FN08실행grant맥락읽기이며PR100완료인점을재사용했다. FN03관측공급은CM원문보호저장·목적권한·관리quota의기존A/B/C미채택선행이있다. 이두호출선에한정된결과이며전체계획의업무부재로일반화하지않고새권위를만들어412를풀지않는다. 실제실행과반복검사는0이다.
+
+## 2026-11-16 UI01·UI06 독립 미완료 대조와 UI06 RAM 재현
+
+직전목표turn은PR150/151제품통합·실행증거를바꾼진전이다. 이번재개에서branch4dea2114 clean·main8776fe90을확인하고CLI직접답변미확인으로실제조회0을유지했다. Primary의UI01한정대조에서projects목록5필드는프로젝트정의이며updatedAt을실작업으로표시할수없고대표실행/단계선택·복수/부재/종료응답계약이없는점을확인했다. next-action-basis는선택검수귀속이므로전역다음행동으로전용하지않는다.
+
+별도UI06대조는prepareStageDocumentDraft가선택application/node/output-item/template를검산하고도반환시itemId를버리는구체누락을확인했다. Main 44b42a exit0·1.8927초의순수RAM관측에서같은양식A/B서로다른선택의반환stage/form이같고선택ID모두없음을재현했다. mockGET10/실network0/write0, 기능합격아닌누락재현이다. 제품·기존테스트·DB를바꾸지않았고기존stageDocumentFixture/공식양식2문서만재사용했다. 기존section.itemId나다른ref를대체하면의미가바뀌므로Primary에게불변문서버전별정확선택귀속·저장/조회·기존UNKNOWN·hash/승인/감사/quota호환의한정후보문서1개를배정했다. 새데이터계약채택전제품/SQL쓰기0이며CLI질문을반복하지않고전체목표미완료를유지한다. 현재UI06행과사용자열람본현재요약을동시에갱신했다.
