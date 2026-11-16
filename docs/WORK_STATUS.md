@@ -2,11 +2,11 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
-## 현재 작업 요약 — 2026-11-17 00:19:50 KST
+## 현재 작업 요약 — 2026-11-17 01:08:25 KST
 
 - **현재 상태: 전체 계획 미완료 · PR159 통합 완료·FN07 패키지/원행/브리지 부분 소스 검수 완료·핵심 생산자 미완료.** 고정 package/원 worker/단발 child bridge/query factory를 한 경로로 닫으며 실제 실행은 제외한다.
 - **현재 승인·결과:** 서버 항목 귀속5039D14A는 PR156 통합됐다. CLI 보완은 기존 승인 목적이라는 최신 PMO 명확화로 수행했으며 새승인 질문은 철회했다. 770175 결과 IMAGE_SIZE·자식/감독exit0·핸들0, 원20670a UNKNOWN/소진도 보존한다. 한도 확대·실제Agent 실행은 하지 않는다.
-- **담당·실행:** 기존 Primary가 부분 소스 쓰기를 반환했고 Main이 안전 checkpoint·검수·통합을 맡는다. 실행구성 새 보호 계약1건은 응답 대기이며 preflight가 독립 UI04 누락 여부를 읽기 대조한다. Main은 범위·인터페이스 검수와 통합을 맡는다. 기존 관측/실행 핸들은 0이며 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
+- **담당·실행:** UI04 답글의 원 발언 명시 조회는 소스/RAM 검수 완료·Primary 쓰기 반환이다. Main은 안전 저장·검수·통합을 맡고 preflight가 UI05 근거 원문 열기의 기존 계약 연결을 읽기 대조한다. SDK 부분소스 checkpoint bf324138은 원격 동기화됐고 새 실행구성 보호 계약1건은 응답 대기다. Main은 범위·인터페이스 검수와 통합을 맡는다. 기존 관측/실행 핸들은 0이며 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
 - **Git 제품 기준:** 최신 검증 main19e0430705f667593972524ed7c1c1c4e3cf1b66(PR159). sourceff3504fe와 tree 동일·병합본설정RAM1PASS/중복경고0·복구tag pr-159-head와 완료branch 정리 확인. 현재 codex/av3-normal-sdk-producer에서 다음 기존 승인 source 구현을 준비한다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
 - **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
@@ -20350,3 +20350,17 @@ A의 기존 Forge 호출·ASAR manifest/보유 파일 검산과 B의 원 START/S
 Main이 결과서 DF2DEA7D135C46F4BC0F87F09950FB24EA22256B36D58E951857B335465E4597 전체를읽고그표의11개개별SHA와현재제품/시험바이트전부일치함을확인했다. 전체A~D중 실제SDK로더·원Query/최초owner·native장기감독·실제STOP은미구현/미완료다. 현재원행검산의최종상태SDK_CONFIGURATION_UNAVAILABLE는그대로다. source부분검수와기능전체완료/병합Gate통과를구분하며전체계획완료체크는올리지않는다.
 
 새실행구성후보4091F826은직접응답대기1건이고아직채택하지않았다. 실제효과/키/권한/DB/서비스/SDK·Agent/C#실행및추가SDK/SSH조회0·소유시험세션0이다. Main은부분소스/결과/미채택후보를같은작업branch에안전commit/push하며A~D전체완료로main에병합하지않는다. 기존preflight는별도UI04의이미채택API만으로가능한사용자기능누락1건여부를읽기대조한다. 새로운검사나문서할일로진도를대체하지않고완료된기능을반복구현하지않는다.
+## 2026-11-17 01:02:06 KST 부분 소스 원격 보존·UI04 다음 독립 구현 착수
+
+검수된 부분 소스8·시험3와 명세·결과/미채택후보/현황 총17파일을 bf324138ecb6e5903b2b64244edfe50aef63d775로 commit/push했다. local HEAD와 development/codex/av3-normal-sdk-producer exact·clean을확인했으며 main은19e04307그대로다. Git의LF→CRLF경고는후속checkout의개행안내이며이시점소유11파일의검수해시/실제bytes대조와clean판정은유효하다. 이를WSL의별도바이트/실행검산으로승격하지않고개행설정을변경하지않았다. 전체SDK생산자A~D미완료로main병합/완료Gate는수행하지않는다.
+
+독립preflight는WORK_PLAN UI04/FN09와실제작성/읽기패널을대조해답글의원발언을목록페이지밖에서도명시조회하는기능누락1건을확인했다. Main이WorkspaceConversationSources/reader·기존ConversationPanel·API/시험을직접읽었다. 같은Stage C의기존채택계약안에서새API/권한/SQL없이구현가능하다. WI UI04_REPLY_ORIGINAL_SOURCE_WI_20261117.md SHA1B90D66DAAD234FAC6B6477E31C475E47582CE7ACCA77E1EB491409B3AACC69F의3제품/시험+결과서1경로를기존Primary에게단독배정했다. 정확replyTo/같은대화/앞순번·원문/hash검산과버튼명시GET1, reply없음GET0·권한/해제뒤응답무표시를검증한다. 기존일반조회/페이지/정정전지시·이스케이프는유지한다. Main은검수·Git·현황을맡고새보호계약응답과독립적으로계속한다.
+
+현재진행은UI04 source구현이며실제DB/서비스/사용자브라우저/키/권한/SDK·Agent/C#실행및SDK/SSH추가관측0이다. 새실행구성4091F826질문1건은아직응답없음·미채택, STOP53CF77F7도미채택이다. 답변이없다는이유로다른승인구현전체를대기시키지않는다. PMO에정확commit/부분검증/다음배정/제외범위를전달했다.
+## 2026-11-17 01:08:25 KST UI04 답글 원 발언 조회 소스 검수 완료
+
+기존 Primary가 UI04 제품2·시험1·결과서1 쓰기를 반환했다. RED1f1ce9 1FAIL(메서드부재)→d61d7e 직접9PASS/FAIL0/SKIP0, 인접e0f1b7 3PASS, root타입05bc58→1ce3d1 exit0·공백0·소유시험session0이다. 실제 RAM ReactDOM에서목록조회→답글선택→명시버튼클릭→목록밖원발언본문을표시했고 추가GET은1회였다. 무참조GET0·정확대화/ref/hash·앞순번·권한/네트워크·dispose뒤늦은200/401의무표시/콜백0도확인했다. 독립읽기C0/I0/M0와Main의실제diff판독·제품/시험/결과4개정확SHA일치를확인했다. 기존일반조회·정정이전지시·페이지·HTMLescape를보존하며새API/저장/권한/자동요청은0이다.
+
+결과서UI04_REPLY_ORIGINAL_SOURCE_RESULT_20261117.md SHA36D28729F1C174D768CF995AA7390418A5A55D7C4F4E3C0789441667E6D78D90. 확인흐름은Workbench의프로젝트자료→사용자발언·지시원문조회→대화/답글선택→답글의원발언열기다. 이것은source/RAM검수이며현재실제서버에반영·운영브라우저·DB왕복·현재유효지시/실제Agent전달·UI04전체인수는미검증/미완료다. 전체계획체크를올리지않는다.
+
+Main은같은Stage C작업branch에정확변경만안전commit/push하고SDK생산자전체미완료와새실행구성4091F826응답대기를유지한다. 독립preflight는다음UI05/FN12의기존artifactRefs·보호조회API만으로완성할수있는원본근거열기누락여부를읽기대조한다. 실제자료·DB·권한·키·서비스·SDK/Agent·C#실행및추가SDK/SSH조회0이다.
