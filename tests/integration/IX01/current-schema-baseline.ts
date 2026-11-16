@@ -19,6 +19,23 @@ const suffix=[
   ['0080_node_decisions','db/migrations/0080_node_decisions.sql.pending',50319,'4cf6922374cb640cc01fc6e56858eb6b17247acab720cfdadd76b70bc6d1ad74'],
   ['0081_execution_start_origins','db/migrations/0081_execution_start_origins.sql.pending',52536,'e642d2b48565dc17e5bbb35c1996a48abcaf0c1bbd988b15cde4a5c95c0f34de'],
 ['0082_fn09_origin_reuse_synthetic_start','db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',230239,'4cbca6ad03aa9b4ac8b7ce485ca1dc9e34df8692cd7dc6a0b5de716101fa84b2'],
+  ["0083_normal_initial_execution","db/migrations/0083_normal_initial_execution.sql.pending",57847,"01794abbaf55fecc97b4f7c1709a1aabde748f4ee1fbd1e5f1d632cf912ad5e8"],
+  ["0084_normal_exchange_challenge","db/migrations/0084_normal_exchange_challenge.sql.pending",18740,"46763ae904087c1fdb5fb755b19ff07b4a25280f1dc28752c5d12b183fee2afb"],
+  ["0085_normal_credential_exchange","db/migrations/0085_normal_credential_exchange.sql.pending",10243,"7328cfffcbbff943cb681bd02883854b7bf931df87c312969d7eb84186ae63ef"],
+  ["0086_normal_request_challenge","db/migrations/0086_normal_request_challenge.sql.pending",11882,"94488b0ac116f0ca1b61faae184d6dc96bcfa0c851fc75d5c6fbf7c54e1eac30"],
+  ["0087_normal_command_pages","db/migrations/0087_normal_command_pages.sql.pending",14778,"cd4d228192179a29f59181bd9fb96c6c01bfba65168480333cac4ade1b8c6e1c"],
+  ["0088_normal_start_material_delivery","db/migrations/0088_normal_start_material_delivery.sql.pending",32980,"a1635c4365c4652f32ad250f758d1a253c8d774167a1c2ff35815bcea297afd2"],
+  ["0089_normal_start_permit","db/migrations/0089_normal_start_permit.sql.pending",23736,"4a73591c3fb7675deca589f7d91994157b673f26bd07a552b1b555a03d771acf"],
+  ["0090_normal_observations","db/migrations/0090_normal_observations.sql.pending",22258,"230612c862be0901ef3f5765eae5ef0ea0d774ce1693cd999940a5229e47f73c"],
+  ["0091_normal_credential_reexchange","db/migrations/0091_normal_credential_reexchange.sql.pending",3552,"d9c2c8c08669695a73c700c03674bb09c92fe05d0c008cc6f8d1a712fa40c355"],
+  ["0092_native_preparation_ownership_return","db/migrations/0092_native_preparation_ownership_return.sql.pending",51040,"77a70ee24096f526a95f4e1f24e6bbe92c5d94d5ccd770b47c63a5e0f17582e5"],
+  ["0093_native_receive_authority_version","db/migrations/0093_native_receive_authority_version.sql.pending",56967,"f91fd36e21ae28d6013669bfeb2eee69a2a69b56867e6a1c9f2ca6e293b93d23"],
+  ["0094_native_host_storage_access","db/migrations/0094_native_host_storage_access.sql.pending",40771,"a33809f4355ee44132988aa8c58be5fb36d03241945ebbc38b5d13acb46fcfb4"],
+  ["0095_native_worker_deployment","db/migrations/0095_native_worker_deployment.sql.pending",16780,"d00e773103e2fc961dd36e0c6ca6457c626274cf8c45f7eb90ee94d99cac683f"],
+  ["0096_normal_grant_revocation","db/migrations/0096_normal_grant_revocation.sql.pending",15174,"2c217bb9fc5f7415dbbdd02c9dba17a2fbc02ecccc5a5ece089d49d7c5d5ac9c"],
+  ["0097_normal_instruction_dispatch","db/migrations/0097_normal_instruction_dispatch.sql.pending",98817,"2cfa7393922f5d91664345b2c63c764d7540cebcbfdbce7ec29a7cfbbb9ee025"],
+  ["0098_normal_stop_target_page","db/migrations/0098_normal_stop_target_page.sql.pending",29231,"7839a51e021fe6d031bf44cf79128d9903c9611465c472665ef66538e82bf320"],
+  ["0099_document_stage_output_item","db/migrations/0099_document_stage_output_item.sql.pending",5420,"6155f65510c1785e75af4ae155603ddbbd4f1631e39302236692c71ec152341c"],
 ] as const;
 const count=historicalCount+suffix.length;
 const sha=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');

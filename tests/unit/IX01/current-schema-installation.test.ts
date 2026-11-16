@@ -9,6 +9,7 @@ const root=fileURLToPath(new URL('../../../',import.meta.url));
 const suffix=[
   '0075_user_common_setup_definitions','0076_native_first_receive','0077_registered_execution_preparation_options',
   '0078_start_execution_material_registration','0079_material_credential_namespace_binding','0080_node_decisions','0081_execution_start_origins','0082_fn09_origin_reuse_synthetic_start',
+  '0083_normal_initial_execution','0084_normal_exchange_challenge','0085_normal_credential_exchange','0086_normal_request_challenge','0087_normal_command_pages','0088_normal_start_material_delivery','0089_normal_start_permit','0090_normal_observations','0091_normal_credential_reexchange','0092_native_preparation_ownership_return','0093_native_receive_authority_version','0094_native_host_storage_access','0095_native_worker_deployment','0096_normal_grant_revocation','0097_normal_instruction_dispatch','0098_normal_stop_target_page','0099_document_stage_output_item',
 ];
 const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd:root,input,windowsHide:true,maxBuffer:16*1024*1024});
 const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
@@ -54,14 +55,14 @@ function harness(){
 }
 const settled=(id:string)=>({id,sql:'SETTLED',ledger:'SETTLED'});
 
-test('IX01 원시 SQL 113개와 마지막 바이트를 원 순서로 전달하고 최종 원장만 수락한다',async()=>{
+test('IX01 원시 SQL 130개와 마지막 바이트를 원 순서로 전달하고 최종 원장만 수락한다',async()=>{
   const h=harness();
   const result=await installCurrentSchema(h.tsv,h.files,h.ports);
   assert.deepEqual(result,{status:'VERIFIED',progress:h.files.map(row=>settled(row.id))});
-  assert.equal(result.progress.length,113);
+  assert.equal(result.progress.length,130);
   assert.ok(Object.isFrozen(result)&&Object.isFrozen(result.progress)&&result.progress.every(Object.isFrozen));
   assert.deepEqual(h.trace,[...h.files.flatMap(row=>['SQL:'+row.id,'LEDGER:'+row.id]),'READ']);
-  assert.equal(h.checks(),113*4+2);
+  assert.equal(h.checks(),130*4+2);
 });
 
 test('IX01 0076 끝의 바이트가 달라지면 첫 설치나 원장 효과도 시작하지 않는다',async()=>{
@@ -121,7 +122,7 @@ test('IX01 최종 원장 누락과 읽기 불명은 설치 완료 후에도 성�
     assert.deepEqual(await installCurrentSchema(h.tsv,h.files,h.ports),{status:'STOPPED',
       reason:drift?'LEDGER_MISMATCH':'LEDGER_READ_UNKNOWN',progress:h.files.map(row=>settled(row.id))});
     assert.deepEqual(h.trace,[...h.files.flatMap(row=>['SQL:'+row.id,'LEDGER:'+row.id]),'READ']);
-    assert.equal(h.checks(),113*4+2);
+    assert.equal(h.checks(),130*4+2);
   }
 });
 
@@ -140,7 +141,7 @@ test('IX01 대기 중 원본 TSV·SQL 배열·바이트를 변경해도 검산�
   files.reverse();
   release();
   assert.equal((await pending).status,'VERIFIED');
-  assert.equal(h.trace.length,227);
+  assert.equal(h.trace.length,261);
 });
 
 test('IX01 각 설치·원장 효과를 기다린 사이 소유권을 잃으면 새 효과를 시작하지 않는다',async()=>{
@@ -171,7 +172,7 @@ test('IX01 각 설치·원장 효과를 기다린 사이 소유권을 잃으면 
 });
 
 
-test('IX01 마지막 0082 설치 거절·불명에서는 원장 append·최종 조회가 없다',async()=>{
+test('IX01 역사 0082 설치 거절·불명에서는 원장 append·최종 조회가 없다',async()=>{
  for(const state of ['DDL_REJECTED','UNKNOWN'] as const){
   const h=harness(),install=h.ports.install,target=h.files[112]!;
   h.ports.install=async function(raw,row){

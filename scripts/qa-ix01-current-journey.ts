@@ -111,7 +111,7 @@ export function verifyCurrentChildOutcome(value:unknown,handoffHash:string):bool
   &&[ /^1\.\.1\r?$/gm,/^ok 1 - IX01 TC01 현재 격리 저장 여정\r?$/gm,/^# tests 1\r?$/gm,/^# pass 1\r?$/gm,/^# fail 0\r?$/gm,/^# cancelled 0\r?$/gm,/^# skipped 0\r?$/gm,/^# todo 0\r?$/gm].every(pattern=>[...stdout.matchAll(pattern)].length===1)
   &&[...stdout.matchAll(/^ok [0-9]+(?: |$)/gm)].length===1
   &&exact(value.result,['schemaVersion','purpose','handoffHash','ledgerCount','status'])&&value.result.schemaVersion===1
-  &&value.result.purpose==='IX01_CURRENT_TC01_CHILD_RESULT'&&value.result.handoffHash===handoffHash&&value.result.ledgerCount===113&&value.result.status==='PASSED';
+  &&value.result.purpose==='IX01_CURRENT_TC01_CHILD_RESULT'&&value.result.handoffHash===handoffHash&&value.result.ledgerCount===130&&value.result.status==='PASSED';
 }
 export async function runCurrentJourney(input:CurrentInput,ports:CurrentPorts):Promise<CurrentResult>{
  let auth:CurrentAuthorization|null=null,stage:Stage='PREFLIGHT',containerId:string|null=null,networkId:string|null=null,schema:CurrentSchemaInstallationResult|null=null,claimed=false,claimStarted=false;
@@ -266,6 +266,45 @@ interface LegacyR9{
  revokeSql(readers:string[],selected:string[]):string;
  finalServerArgs(id:string):string[];parseFinalServer(raw:string):boolean;
 }
+const workerMigration='db/migrations/0095_native_worker_deployment.sql.pending';
+const workerRoles=['worker_owner','worker_publisher'] as const;
+/** 0095의 두 역할만 먼저 검산한다. 나머지 역할/멤버십은 변경하지 않은 R9가 검산한다. */
+export function verifyCurrentRoleMetadata(legacy:Pick<LegacyR9,'verifyRoleMetadata'>,raw:string,phase:string,attempted:string[],completed:string[],selected:string[]){
+ const reject=():never=>fail('IX01_CURRENT_ROLE_METADATA');
+ if(typeof raw!=='string'||Buffer.byteLength(raw)>16384||!['PRISTINE','INSTALLER','SETTLED','REVOKED'].includes(phase))return reject();
+ let value:unknown;try{value=JSON.parse(raw);}catch{return reject();}
+ if(!exact(value,['sessionUser','currentUser','roles','memberships'])||raw.replace(/\s/g,'')!==JSON.stringify(value)
+  ||!Array.isArray(value.roles)||!Array.isArray(value.memberships)||value.roles.length>20||value.memberships.length>7)return reject();
+ const selectedWorker=selected.filter(p=>p===workerMigration).length,attemptedWorker=attempted.filter(p=>p===workerMigration).length,completedWorker=completed.filter(p=>p===workerMigration).length;
+ if(selectedWorker>1||attemptedWorker>1||completedWorker>1||completedWorker>attemptedWorker||attemptedWorker>selectedWorker
+  ||(['PRISTINE','INSTALLER'].includes(phase)&&(attemptedWorker||completedWorker))
+  ||(['SETTLED','REVOKED'].includes(phase)&&completedWorker!==selectedWorker))return reject();
+ const expected=completedWorker===1,seen=new Set<string>(),otherRoles:unknown[]=[],otherMemberships:unknown[]=[],memberships:{role:string}[]=[];
+ for(const row of value.roles){
+  if(!exact(row,['name','superuser','inherit','createRole','createDb','replication','bypassRls','login','validUntil'])||typeof row.name!=='string')return reject();
+  if(!workerRoles.some(name=>name===row.name)){otherRoles.push(row);continue;}
+  if(!expected||seen.has(row.name)||row.validUntil!==null||['superuser','inherit','createRole','createDb','replication','bypassRls','login'].some(key=>row[key]!==false))return reject();
+  seen.add(row.name);
+ }
+ if(seen.size!==(expected?2:0))return reject();
+ for(const row of value.memberships){
+  if(!exact(row,['role','member','grantor','adminOption']))return reject();
+  if(![row.role,row.member,row.grantor].some(name=>workerRoles.some(worker=>worker===name))){otherMemberships.push(row);continue;}
+  if(!expected||phase!=='SETTLED'||row.role!=='worker_owner'||row.member!=='anvil_v3_migrator'||row.grantor!=='anvil_v3_migrator'||row.adminOption!==true||memberships.length)return reject();
+  memberships.push(Object.freeze({role:'worker_owner'}));
+ }
+ if(memberships.length!==(expected&&phase==='SETTLED'?1:0))return reject();
+ const prior=legacy.verifyRoleMetadata(JSON.stringify({...value,roles:otherRoles,memberships:otherMemberships}),phase,attempted,completed,selected);
+ return Object.freeze({rawHash:contentHash(raw),systemHash:prior.systemHash,memberships:Object.freeze([...prior.memberships,...memberships])});
+}
+/** 원 R9 회수와 0095의 임시 ADMIN membership 회수를 같은 거래에 둔다. 실행하지 않는다. */
+export function currentRevokeSql(legacy:Pick<LegacyR9,'revokeSql'>,readers:string[],selected:string[]){
+ const workerCount=readers.filter(name=>name==='worker_owner').length;
+ if(workerCount!==(selected.includes(workerMigration)?1:0))return fail('IX01_CURRENT_ROLE_METADATA');
+ const original=legacy.revokeSql(readers.filter(name=>name!=='worker_owner'),selected);
+ if(!original.endsWith('COMMIT;'))return fail('IX01_CURRENT_ROLE_METADATA');
+ return workerCount?original.slice(0,-7)+'REVOKE worker_owner FROM anvil_v3_migrator;COMMIT;':original;
+}
 const r9Entry="if(process.argv[1]==='-')main(process.argv.slice(2),process.env).catch(error=>{console.error(JSON.stringify(safeFailure(error)));process.exitCode=1;});";
 export function currentLegacyModuleSource(bytes:Uint8Array,expectedSha:string){
  if(expectedSha!==f.legacyHash||bytes.length!==35588||contentHash(bytes)!==expectedSha)fail('IX01_CURRENT_LEGACY_HASH');
@@ -359,7 +398,7 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
  const bootstrap='anvil_v3_bootstrap',migrator='anvil_v3_migrator',app='anvil_v3_app';
  const paths=()=>expected.map(row=>row.path);
  const roles=(phase:'PRISTINE'|'INSTALLER'|'SETTLED'|'REVOKED')=>{
-  const v=legacy!.verifyRoleMetadata(sql(bootstrap,legacy!.roleMetadataSql(),10_000).trim(),phase,installed,installed,paths());
+  const v=verifyCurrentRoleMetadata(legacy!,sql(bootstrap,legacy!.roleMetadataSql(),10_000).trim(),phase,installed,installed,paths());
   if(!hex(v.systemHash,64)||systemHash&&v.systemHash!==systemHash)fail('IX01_CURRENT_ROLE');
   systemHash=v.systemHash;return v;
  };
@@ -448,7 +487,7 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
    if(docker(['exec','--user','999:999',containerId,'cat','/var/lib/postgresql/data/pg_hba.conf'])!==hba)fail('IX01_CURRENT_SCRAM');
    const verified=facts(sql(bootstrap,"SELECT json_build_object('reload',pg_reload_conf(),'passwords',(SELECT count(*)=3 FROM pg_authid WHERE rolname IN('anvil_v3_bootstrap','anvil_v3_app','anvil_v3_migrator') AND rolpassword LIKE 'SCRAM-SHA-256$%'),'rules',(SELECT count(*)=3 AND bool_and(error IS NULL) FROM pg_hba_file_rules))::text;").trim());
    if(!same(verified,{reload:true,passwords:true,rules:true}))fail('IX01_CURRENT_SCRAM');
-   sql(bootstrap,legacy!.revokeSql(before.memberships.map(row=>row.role),paths()));roles('REVOKED');
+   sql(bootstrap,currentRevokeSql(legacy!,before.memberships.map(row=>row.role),paths()));roles('REVOKED');
   },
   async connect(id){
    if(id!==containerId)fail('IX01_CURRENT_CONTAINER_ID');onlyNone();
@@ -518,7 +557,7 @@ export function openCurrentChild(){
  return {
   handoff,historical,appPassword,migratorPassword,fresh,
   sourceBytes(path:string){fresh();return checkedRawFile(path,auth);},
-  finish(){createExclusive(childResultPath,canonicalJson({schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD_RESULT',handoffHash:digest,ledgerCount:113,status:'PASSED'}),fresh);},
+  finish(){createExclusive(childResultPath,canonicalJson({schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD_RESULT',handoffHash:digest,ledgerCount:130,status:'PASSED'}),fresh);},
  };
 }
 

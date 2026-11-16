@@ -33,7 +33,7 @@ const schema=()=>loaded??=fixture();
 // Node v24 TAP의 실제 inert stdout 형식. 원문·지문은 별도 child 결과에서 대조한다.
 const tap='TAP version 13\n# Subtest: IX01 TC01 현재 격리 저장 여정\nok 1 - IX01 TC01 현재 격리 저장 여정\n  ---\n  duration_ms: 0.346\n  type: \'test\'\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 1\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 7.31\n';
 function outcome(handoffHash:string){
- return {status:0,signal:null,stdout:tap,stderr:'',result:{schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD_RESULT',handoffHash,ledgerCount:113,status:'PASSED'}};
+ return {status:0,signal:null,stdout:tap,stderr:'',result:{schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD_RESULT',handoffHash,ledgerCount:130,status:'PASSED'}};
 }
 function harness(){
  const data=schema(),calls:string[]=[],ledger:{id:string;checksum:string}[]=[];
@@ -72,10 +72,10 @@ test('IX01 SQL 사전 검산과 단발 claim은 실제 효과보다 앞선다',a
  const result=await runCurrentJourney(input(),duplicate.ports);
  assert.equal(result.code,'ALREADY_CLAIMED');assert.deepEqual(duplicate.calls,['PREFLIGHT','CLAIM']);
 });
-test('IX01 현재 격리 합성 제어는 113 설치·원장→SCRAM/회수→내부망→자식→확정 정리 순서다',async()=>{
+test('IX01 현재 격리 합성 제어는 130 설치·원장→SCRAM/회수→내부망→자식→확정 정리 순서다',async()=>{
  const h=harness(),result=await runCurrentJourney(input(),h.ports);
  assert.deepEqual([result.status,result.code,result.containerId,result.networkId],['CLEANED','TC01_PASSED',containerId,networkId]);
- assert.equal(result.schema?.progress.length,113);
+ assert.equal(result.schema?.progress.length,130);
  assert.deepEqual(h.calls,['PREFLIGHT','CLAIM','RUNTIME','START',...h.data.sql.flatMap(row=>['SQL:'+row.id,'LEDGER:'+row.id]),'VERIFY_LEDGER','SECURE','NETWORK','CHILD','CLEANUP','RECORD']);
 });
 test('IX01 0076 명시 거절·0078 설치 불명·원장 불명은 후속 SQL·자식·정리를 시작하지 않는다',async()=>{
@@ -146,14 +146,14 @@ test('IX01 로컬 실행 기한은 TERM을 무시하는 직접 자식만 강제 
 });
 
 
-test('IX01 현재 자식 결과의 옛 112 원장은 113 부모와 결박되지 않는다',()=>{
+test('IX01 현재 자식 결과의 옛 113 원장은 130 부모와 결박되지 않는다',()=>{
  const value=outcome('a'.repeat(64));
  assert.equal(verifyCurrentChildOutcome(value,'a'.repeat(64)),true);
- assert.equal(verifyCurrentChildOutcome({...value,result:{...value.result,ledgerCount:112}},'a'.repeat(64)),false);
+ for(const ledgerCount of [112,113,129,131])assert.equal(verifyCurrentChildOutcome({...value,result:{...value.result,ledgerCount}},'a'.repeat(64)),false);
 });
 
 
-test('IX01 마지막 0082 실패·불명 뒤 네트워크·자식·정리 및 원장 조회를 호출하지 않는다',async()=>{
+test('IX01 역사 0082 실패·불명 뒤 네트워크·자식·정리 및 원장 조회를 호출하지 않는다',async()=>{
  for(const state of ['DDL_REJECTED','UNKNOWN'] as const){
   const h=harness(),install=h.ports.schema.install,target=h.data.sql[112]!;
   h.ports.schema.install=async(raw,row)=>{
@@ -164,5 +164,115 @@ test('IX01 마지막 0082 실패·불명 뒤 네트워크·자식·정리 및 �
   assert.equal(result.status,'UNKNOWN');
   assert.equal(result.code,state==='DDL_REJECTED'?'DDL_REJECTED':'INSTALL_UNKNOWN');
   assert.deepEqual(h.calls,['PREFLIGHT','CLAIM','RUNTIME','START',...h.data.sql.slice(0,112).flatMap(row=>['SQL:'+row.id,'LEDGER:'+row.id]),'SQL:'+target.id,'RECORD']);
+ }
+});
+
+const workerPath='db/migrations/0095_native_worker_deployment.sql.pending';
+const roleSystem=['pg_database_owner','pg_read_all_data','pg_write_all_data','pg_monitor','pg_read_all_settings','pg_read_all_stats','pg_stat_scan_tables','pg_read_server_files','pg_write_server_files','pg_execute_server_program','pg_signal_backend','pg_checkpoint'];
+function roleFixture(phase:string,workers=true){
+ const readerNames=['anvil_v3_fn16_export_reader_owner','anvil_v3_fn15_reader_owner'],provider='anvil_v3_provider_claim_writer';
+ const extra=phase==='PRISTINE'?[]:['anvil_v3_migrator','anvil_v3_app',provider,...(phase==='INSTALLER'?[]:readerNames),...(workers?['worker_owner','worker_publisher']:[])];
+ const roles=[...roleSystem,'anvil_v3_bootstrap',...extra].map(name=>{
+  const boot=name==='anvil_v3_bootstrap',installer=name==='anvil_v3_migrator',restricted=readerNames.includes(name)||name===provider||name.startsWith('worker_');
+  return{name,superuser:boot,inherit:!restricted,createRole:boot||installer&&phase!=='REVOKED',createDb:boot,replication:boot,bypassRls:boot,login:boot||installer||name==='anvil_v3_app',validUntil:null};
+ });
+ const memberships=[...['pg_read_all_settings','pg_read_all_stats','pg_stat_scan_tables'].map(role=>({role,member:'pg_monitor',grantor:'anvil_v3_bootstrap',adminOption:false})),
+ ...(phase==='SETTLED'?[...readerNames,...(workers?['worker_owner']:[])].map(role=>({role,member:'anvil_v3_migrator',grantor:'anvil_v3_migrator',adminOption:true})):[]),
+ ...(phase==='INSTALLER'?[{role:provider,member:'anvil_v3_migrator',grantor:'anvil_v3_bootstrap',adminOption:true}]:[])];
+ return{sessionUser:'anvil_v3_bootstrap',currentUser:'anvil_v3_bootstrap',roles,memberships};
+}
+async function roleHarness(){
+ const raw=git(['cat-file','blob','HEAD:'+currentProfile.legacy]);
+ const legacy=await import('data:text/javascript;base64,'+Buffer.from(currentLegacyModuleSource(raw,currentProfile.legacyHash)).toString('base64'));
+ const current=await import('../../../scripts/qa-ix01-current-journey.ts');
+ const selected=schema().sql.map(row=>row.path);
+ return {legacy,current,selected};
+}
+test('IX01 0095 역할은 원R9에서 거절되며 current 검산만 정확 두 역할과 단일 ADMIN 회수를 인정한다',async()=>{
+ const {legacy,current,selected}=await roleHarness(),raw=JSON.stringify(roleFixture('SETTLED'));
+ assert.throws(()=>legacy.verifyRoleMetadata(raw,'SETTLED',selected,selected,selected),/ROLE_METADATA/);
+ const verify=current.verifyCurrentRoleMetadata;
+ assert.equal(typeof verify,'function');
+ const before=verify(legacy,raw,'SETTLED',selected,selected,selected);
+ assert.deepEqual(before.memberships.map((v:{role:string})=>v.role).sort(),['anvil_v3_fn15_reader_owner','anvil_v3_fn16_export_reader_owner','worker_owner']);
+});
+
+test('IX01 0095 정상 SETTLED/REVOKED와 원 R9 상태·회수 계약을 함께 검산한다',async()=>{
+ const {legacy,current,selected}=await roleHarness();
+ const before=current.verifyCurrentRoleMetadata(legacy,JSON.stringify(roleFixture('SETTLED')),'SETTLED',selected,selected,selected);
+ const sql=current.currentRevokeSql(legacy,before.memberships.map(v=>v.role),selected);
+ assert.equal(sql,'BEGIN;ALTER ROLE anvil_v3_migrator NOCREATEROLE;REVOKE anvil_v3_fn15_reader_owner FROM anvil_v3_migrator;REVOKE anvil_v3_fn16_export_reader_owner FROM anvil_v3_migrator;REVOKE worker_owner FROM anvil_v3_migrator;COMMIT;');
+ const after=current.verifyCurrentRoleMetadata(legacy,JSON.stringify(roleFixture('REVOKED')),'REVOKED',selected,selected,selected);
+ assert.deepEqual(after.memberships,[]);assert.equal(after.systemHash,before.systemHash);
+ for(const phase of ['PRISTINE','INSTALLER']){
+  const value=roleFixture(phase,false),raw=JSON.stringify(value);
+  assert.deepEqual(current.verifyCurrentRoleMetadata(legacy,raw,phase,[],[],selected).memberships,legacy.verifyRoleMetadata(raw,phase,[],[],selected).memberships);
+ }
+ const oldSelected=selected.filter(p=>p!==workerPath),old=JSON.stringify(roleFixture('SETTLED',false));
+ const oldBefore=current.verifyCurrentRoleMetadata(legacy,old,'SETTLED',oldSelected,oldSelected,oldSelected);
+ assert.equal(current.currentRevokeSql(legacy,oldBefore.memberships.map(v=>v.role),oldSelected),legacy.revokeSql(oldBefore.memberships.map(v=>v.role),oldSelected));
+});
+test('IX01 0095 exact 이름·속성·grantor·단일 ADMIN·회수후 부재 외에는 승인하지 않는다',async()=>{
+ const {legacy,current,selected}=await roleHarness();
+ const verify=(v:ReturnType<typeof roleFixture>,phase='SETTLED',attempted=selected,completed=selected,chosen=selected)=>current.verifyCurrentRoleMetadata(legacy,JSON.stringify(v),phase,attempted,completed,chosen);
+ const mutations:((v:ReturnType<typeof roleFixture>)=>void)[]=[
+  v=>{v.roles.find(r=>r.name==='worker_owner')!.name='worker_owner_other';},
+  v=>{v.roles=v.roles.filter(r=>r.name!=='worker_publisher');},
+  v=>{v.roles.push({...v.roles.find(r=>r.name==='worker_owner')!});},
+  v=>{v.roles.push({...v.roles[0]!,name:'unapproved'});},
+  v=>{v.memberships=v.memberships.filter(r=>r.role!=='worker_owner');},
+  v=>{v.memberships.push({...v.memberships.find(r=>r.role==='worker_owner')!});},
+  v=>{v.memberships.find(r=>r.role==='worker_owner')!.grantor='anvil_v3_bootstrap';},
+  v=>{v.memberships.find(r=>r.role==='worker_owner')!.member='anvil_v3_app';},
+  v=>{v.memberships.find(r=>r.role==='worker_owner')!.adminOption=false;},
+  v=>{v.memberships.push({role:'worker_publisher',member:'anvil_v3_migrator',grantor:'anvil_v3_migrator',adminOption:true});},
+  v=>{v.memberships.push({role:'anvil_v3_app',member:'worker_owner',grantor:'anvil_v3_bootstrap',adminOption:false});},
+  v=>{v.memberships[0]!.adminOption=true;},
+ ];
+ for(const mutate of mutations){const v=roleFixture('SETTLED');mutate(v);assert.throws(()=>verify(v),/ROLE_METADATA/);}
+ for(const name of ['worker_owner','worker_publisher'])for(const key of ['superuser','inherit','createRole','createDb','replication','bypassRls','login'] as const){
+  const v=roleFixture('SETTLED');v.roles.find(r=>r.name===name)![key]=true;assert.throws(()=>verify(v),/ROLE_METADATA/);
+ }
+ const expiry=JSON.parse(JSON.stringify(roleFixture('SETTLED')));expiry.roles.find((r:{name:string})=>r.name==='worker_owner').validUntil='2099-01-01';assert.throws(()=>verify(expiry),/ROLE_METADATA/);
+ for(const phase of ['PRISTINE','INSTALLER'])assert.throws(()=>verify(roleFixture('SETTLED'),phase,[],[]),/ROLE_METADATA/);
+ const revoked=roleFixture('REVOKED');revoked.memberships.push({role:'worker_owner',member:'anvil_v3_migrator',grantor:'anvil_v3_migrator',adminOption:true});assert.throws(()=>verify(revoked,'REVOKED'),/ROLE_METADATA/);
+ const without=selected.filter(p=>p!==workerPath);
+ assert.throws(()=>verify(roleFixture('SETTLED'),'SETTLED',without,selected),/ROLE_METADATA/);
+ assert.throws(()=>verify(roleFixture('SETTLED'),'SETTLED',selected,without),/ROLE_METADATA/);
+ assert.throws(()=>verify(roleFixture('SETTLED'),'SETTLED',selected,selected,without),/ROLE_METADATA/);
+ assert.throws(()=>verify(roleFixture('SETTLED'),'SETTLED',selected,selected,[...selected,workerPath]),/ROLE_METADATA/);
+ for(const readers of [[],['worker_owner','worker_owner'],['worker_publisher'],['worker_owner','unapproved']])assert.throws(()=>current.currentRevokeSql(legacy,readers,selected),/ROLE_METADATA/);
+ assert.throws(()=>current.currentRevokeSql(legacy,['worker_owner'],without),/ROLE_METADATA/);
+});
+test('IX01 0095·0099 실패/불명은 보안·망·자식·정리 없이 원부분이력을 남긴다',async()=>{
+ for(const index of [125,129])for(const mode of ['DDL_REJECTED','UNKNOWN','LEDGER'] as const){
+  const h=harness(),target=h.data.sql[index]!,{install,appendLedger}=h.ports.schema;
+  assert.equal(target.id,index===125?'0095_native_worker_deployment':'0099_document_stage_output_item');
+  h.ports.schema.install=async(raw,row)=>{if(row.id!==target.id||mode==='LEDGER')return install(raw,row);assert.deepEqual(Buffer.from(raw),target.bytes);h.calls.push('SQL:'+row.id);return mode;};
+  h.ports.schema.appendLedger=async row=>{if(row.id!==target.id)return appendLedger(row);h.calls.push('LEDGER:'+row.id);return 'UNKNOWN';};
+  const result=await runCurrentJourney(input(),h.ports);assert.equal(result.status,'UNKNOWN');
+  assert.equal(result.code,mode==='DDL_REJECTED'?'DDL_REJECTED':mode==='UNKNOWN'?'INSTALL_UNKNOWN':'LEDGER_APPEND_UNKNOWN');
+  assert.deepEqual(h.calls,['PREFLIGHT','CLAIM','RUNTIME','START',...h.data.sql.slice(0,index).flatMap(row=>['SQL:'+row.id,'LEDGER:'+row.id]),'SQL:'+target.id,...(mode==='LEDGER'?['LEDGER:'+target.id]:[]),'RECORD']);
+ }
+});
+
+test('IX01 0095 검산/회수 불명은 실제 current 제어선에서도 네트워크·자식·정리를 열지 않는다',async()=>{
+ const {legacy,current,selected}=await roleHarness();
+ for(const mode of ['INVALID_ROLE','REVOKE_UNKNOWN','REVOKED_MEMBERSHIP']){
+  const h=harness();
+  h.ports.secure=async()=>{
+   h.calls.push('SECURE');const value=roleFixture('SETTLED');
+   if(mode==='INVALID_ROLE')value.roles.find(r=>r.name==='worker_publisher')!.login=true;
+   const verified=current.verifyCurrentRoleMetadata(legacy,JSON.stringify(value),'SETTLED',selected,selected,selected);
+   const revoke=current.currentRevokeSql(legacy,verified.memberships.map(row=>row.role),selected);
+   assert(revoke.includes('REVOKE worker_owner FROM anvil_v3_migrator;'));h.calls.push('REVOKE_MODEL');
+   if(mode==='REVOKE_UNKNOWN')throw Error('UNKNOWN');
+   const after=roleFixture('REVOKED');after.memberships.push({role:'worker_owner',member:'anvil_v3_migrator',grantor:'anvil_v3_migrator',adminOption:true});
+   current.verifyCurrentRoleMetadata(legacy,JSON.stringify(after),'REVOKED',selected,selected,selected);
+  };
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.status,'UNKNOWN');assert.equal(result.code,'STOPPED_SECURE');
+  assert.deepEqual(h.calls.slice(-(mode==='INVALID_ROLE'?2:3)),mode==='INVALID_ROLE'?['SECURE','RECORD']:['SECURE','REVOKE_MODEL','RECORD']);
+  assert(!h.calls.some(c=>['NETWORK','CHILD','CLEANUP'].includes(c)));
  }
 });
