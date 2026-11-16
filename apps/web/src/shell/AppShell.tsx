@@ -76,12 +76,39 @@ function ProjectShellAccess({projectId,client,session,onAuthenticationLost}:Proj
 }
 export function AppShell({ route, displayName, onLogout, endingSession, projectAccess, children }: { route: Route; displayName?: string; onLogout?: () => void; endingSession?: boolean; projectAccess?: ProjectAccess; children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuLink = (screen: Screen) => <a key={screen} href={routeHref(screen, route.projectId)} aria-current={route.screen === screen ? 'page' : undefined} onClick={() => setMenuOpen(false)}>{screenTitles[screen]}</a>;
-  return <div className="app-shell">
+  const mainRef = useRef<HTMLElement>(null);
+  const menuSelection = useRef<{ href: string; link: HTMLAnchorElement; waitForRouteChangeFrom: Route | null } | null>(null);
+  useLayoutEffect(() => {
+    const selection = menuSelection.current;
+    if (menuOpen || !selection || selection.waitForRouteChangeFrom === route) return;
+    menuSelection.current = null;
+    const doc = selection.link.ownerDocument;
+    if ((doc.activeElement === selection.link || doc.activeElement === doc.body) &&
+        location.hash === selection.href && routeHref(route.screen, route.projectId) === selection.href) {
+      mainRef.current?.focus();
+    }
+  }, [menuOpen, route]);
+  const menuLink = (screen: Screen) => {
+    const href = routeHref(screen, route.projectId);
+    return <a key={screen} href={href} aria-current={route.screen === screen ? 'page' : undefined} onClick={event => {
+      menuSelection.current = null;
+      if (menuOpen && window.matchMedia('(max-width: 650px)').matches &&
+          event.button === 0 && !event.defaultPrevented && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+        menuSelection.current = { href, link: event.currentTarget, waitForRouteChangeFrom: location.hash === href ? null : route };
+      }
+      setMenuOpen(false);
+    }}>{screenTitles[screen]}</a>;
+  };
+  return <div className="app-shell" onFocusCapture={event => {
+    if (menuSelection.current && !Object.is(event.target, menuSelection.current.link)) menuSelection.current = null;
+  }}>
     <a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>본문으로 이동</a>
     <aside className="sidebar">
       <div className="brand">ANVIL</div><p className="tagline">프로젝트는 남고, 도구는 바뀐다</p>
-      <button className="menu-toggle" aria-label="탐색 메뉴" aria-expanded={menuOpen} aria-controls="main-navigation" onClick={() => setMenuOpen(v => !v)}>메뉴</button>
+      <button className="menu-toggle" aria-label="탐색 메뉴" aria-expanded={menuOpen} aria-controls="main-navigation" onClick={() => {
+        menuSelection.current = null;
+        setMenuOpen(v => !v);
+      }}>메뉴</button>
       <nav id="main-navigation" aria-label="주 탐색" className={menuOpen ? 'is-open' : ''}>
         {menuLink('projects')}
         {route.projectId ? <><p className="nav-heading">현재 프로젝트</p>{projectScreens.map(menuLink)}</> : menuLink('methodologies')}
@@ -90,7 +117,7 @@ export function AppShell({ route, displayName, onLogout, endingSession, projectA
     </aside>
     <div className="main-frame">
       <header className="topbar"><span>{screenTitles[route.screen]}</span><div className="identity"><span>{displayName ?? '접근 확인 전'}</span>{route.projectId&&projectAccess?<ProjectShellAccess projectId={route.projectId} {...projectAccess}/>:<span className="badge">제어권 미확인 · 실행 불가</span>}{onLogout ? <button onClick={onLogout} disabled={endingSession}>로그아웃</button> : null}</div></header>
-      <main id="main-content" className={route.screen==='mobile'?'mobile-content':undefined} tabIndex={-1}><div className="page-heading"><div><p className="eyebrow">개발 절차와 작업 공간</p><h1>{screenTitles[route.screen]}</h1></div><details className="help"><summary aria-label="화면 도움말">i</summary><p>Anvil이 프로젝트와 기준·지식을 보관하고 기존 코딩 Agent에 작업을 맡깁니다. 화면 이동은 실행을 시작하지 않습니다.</p></details></div>{children}</main>
+      <main ref={mainRef} id="main-content" className={route.screen==='mobile'?'mobile-content':undefined} tabIndex={-1}><div className="page-heading"><div><p className="eyebrow">개발 절차와 작업 공간</p><h1>{screenTitles[route.screen]}</h1></div><details className="help"><summary aria-label="화면 도움말">i</summary><p>Anvil이 프로젝트와 기준·지식을 보관하고 기존 코딩 Agent에 작업을 맡깁니다. 화면 이동은 실행을 시작하지 않습니다.</p></details></div>{children}</main>
     </div>
   </div>;
 }
