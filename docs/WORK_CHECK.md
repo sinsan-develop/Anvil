@@ -5,7 +5,7 @@
 ## 현재 작업 요약 — 2026-11-16 18:54:00 KST
 
 - **현재 상태: 개발 진행 중.** 과거 ‘병합하고 대기’는 당시 이력이며 현재 중지 지시가 아니다. 1단계 로컬·WSL-server 기능 구현을 계속한다.
-- **현재 업무:** Stage C/D · FN07/FN08의 실제 Query 공급·후속 SEND 입력 source 연결. 제5 보호 출력 채널 소스는 PR150에 통합했고, 기존 Primary가 다음 내부 연결의 정확 변경범위·원 권위·검증안을 확인한다. 실제 SDK/Agent 호출·파일자료 조사·DB/권한/키/서비스/C# 실행은 제외한다.
+- **현재 업무:** Stage C/D · FN07/FN08의 동일 Query 첫·후속 SEND 입력 스트림 연결. 기존 source.create에 원 입력을 한 번 공급하고 forFirstSend의 LiveInputPort를 연결한다. WI FN07_SAME_QUERY_LIVE_INPUT_WI_20261116.md(A7353F10), Primary 단일 writer의 제품2·시험1 source/RAM 구현 중이다. 실제 SDK 모듈·CLI/child 생산자와 실제 실행은 미완료·제외한다.
 - **담당:** `developer_primary` 구현·기본 검증, Main 어울 작업관리·필수 테스트·독립 검수·통합. 진행 중인 구현은 중단·회수·중복 배정하지 않았다.
 - **Git:** 최신 통합 main `9013faefc2779aa6b012a555c3f4afbf0a5dfe12`(PR150), 소스 `7ac51ff1`과 tree 동일. 현재 작업 branch `codex/av3-query-producer`는 그 main에서 시작했다. 완료 source branch/request tag는 정상 정리했고 원격 `pr-150-head`를 보존했다.
 - **완료한 소스 단위:** normal START 준비, 첫·후속 SEND, 원 Query 출력 수집과 협력 STOP 소비, profile/예산·원 READY 연결은 PR144~149에 source로 통합됐다. 이를 현재 ‘SEND/STOP 소스 미구현’으로 표시하지 않는다. 실제 SDK·Agent 실행 완료를 뜻하지도 않는다.
