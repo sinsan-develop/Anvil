@@ -20159,3 +20159,7 @@ Main은 게시본ed7bba5a의 후보EEAFFF15…F620·script2A7E8911…F511를 결
 직전목표turn은PR150/151제품통합·실행증거를바꾼진전이다. 이번재개에서branch4dea2114 clean·main8776fe90을확인하고CLI직접답변미확인으로실제조회0을유지했다. Primary의UI01한정대조에서projects목록5필드는프로젝트정의이며updatedAt을실작업으로표시할수없고대표실행/단계선택·복수/부재/종료응답계약이없는점을확인했다. next-action-basis는선택검수귀속이므로전역다음행동으로전용하지않는다.
 
 별도UI06대조는prepareStageDocumentDraft가선택application/node/output-item/template를검산하고도반환시itemId를버리는구체누락을확인했다. Main 44b42a exit0·1.8927초의순수RAM관측에서같은양식A/B서로다른선택의반환stage/form이같고선택ID모두없음을재현했다. mockGET10/실network0/write0, 기능합격아닌누락재현이다. 제품·기존테스트·DB를바꾸지않았고기존stageDocumentFixture/공식양식2문서만재사용했다. 기존section.itemId나다른ref를대체하면의미가바뀌므로Primary에게불변문서버전별정확선택귀속·저장/조회·기존UNKNOWN·hash/승인/감사/quota호환의한정후보문서1개를배정했다. 새데이터계약채택전제품/SQL쓰기0이며CLI질문을반복하지않고전체목표미완료를유지한다. 현재UI06행과사용자열람본현재요약을동시에갱신했다.
+
+## 2026-11-16 UI06 항목귀속 후보 검수·보존
+
+Primary가후보1문서를반환했고독립검수17620048 기준C0/I0/M1을받았다. M1은B저장후방법론교체시과거조회가능/개정·제안409/입력보존이라는도달가능효과를명시하라는내용이다. 권장결정1단락·수용사례5만추가하고두단락역제거로원지문재현(e216e8)을확인했다. 최종후보5039D14A2D5E2B6BE0E48172FE1FBACF9ECA98B4F18CF618C33AC3FC3C29A75B. 새stageOutputItem·버전의원save영수증귀속·원request/audit역검산·감사reason추가·미적용0099 guard는아직미채택이다. 기존본문hash·section.itemId·기존행은유지하고과거귀속자동추정0·영수증없는백업inventory는UNKNOWN이다. 코드/SQL/DB/권한·서비스/실자료/CLI실행0,독립가용source를가짜신뢰콜백으로열지않는다. 이후보의기존채택근거·위임가능결정여부를PMO에정확지원요청하고이미발행한CLI질문은반복하지않는다. 전체계획과UI06최종인수는미완료다.
