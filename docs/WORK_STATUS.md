@@ -2,11 +2,11 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
-## 현재 작업 요약 — 2026-11-16 21:00:10 KST
+## 현재 작업 요약 — 2026-11-16 직접 승인 후 구현 재개
 
-- **현재 상태: 전체 계획 미완료 · 직접 결정 대기.** 과거 완료/대기 이력과 현재 판정을 구분한다. 완료 보고가 아니며, 새 프로젝트 금지나 다른 담당자 중지 지시도 아니다. 앱 목표는 같은 승인 경계의 반복 확인 후 BLOCKED로 표시할 대상이다.
-- **현재 재개 조건:** 이미 발행한 CLI 한정 관측 1회 질문의 직접 답변을 확인한 뒤 그 범위만 진행한다. 후보 EEAFFF15/조회source2A7E8911은 불변이며 승인 전 PATH·설치파일·조회프로세스 실행0이다. UI06 버전별 서버 귀속5039D14A 등 새 계약은 미채택으로 유지한다. 승인된 로컬 준비 부분은 PR153에 구현·검수·통합됐다.
-- **담당·실행:** Main 어울이 계획 완료 책임을 유지한다. 현재 코드 writer·subagent 실행·검증 세션은 0이며 관측 timeout을 실제 실행으로 취급하지 않는다. 완료 코드·검사는 반복하지 않고, 새 직접 결정이나 승인된 독립 작업 근거가 생기면 해당 범위부터 재개한다.
+- **현재 상태: 전체 계획 미완료 · 승인된 FN03/UI06 구현 진행.** 직접 승인 기록을 확인했으며 이전 결정 대기 판정은 당시 이력으로 보존한다. 전체 계획 완료보고가 아니다.
+- **현재 승인·결과:** 서버 항목 귀속 계약5039D14A의 source/RAM·미적용0099는 직접 채택됐다. CLI 한정 관측1회도 승인·소진됐고 결과는 UNKNOWN이다. 설치 여부·원인은 미확정이며 재조회0, 부모 exit0·잔여 수거 핸들0이다.
+- **담당·실행:** 기존 developer_primary 한 명에게 버전별 산출물 항목 귀속의 저장·정확 재조회·호환/충돌 구현과 시험을 배정했다. Main 어울은 검수·통합·현황/Git을 맡는다. 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
 - **Git 제품 기준:** 최근 검증된 제품 통합 main `6167f7361028fa2b043cc7ca5e4c1d48fbc27c43`(PR153), 소스 `69c0f6c0`과 tree 동일. 이후 현황 전용 commit은 제품을 변경하지 않으며 실제 HEAD·branch는 Git 값을 따른다. PR150~153의 원격 head 복구 tag를 보존했고 완료 제품 branch/request tag만 정상 정리했다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
 - **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
@@ -15,7 +15,7 @@
 - **P03·SSH:** R3 복구는 복사·PG 기동·전환에 도달하지 못했고 원 자원을 보존한다. 자동 wrapper의 SSH255/UNKNOWN과 일반 SSH를 구분한다. 사용자 Windows PowerShell 로그인 성공 증거(11-16 18:04:45 KST)가 있으며 서버/로그인 불능으로 일반화하지 않는다. 새 부수 진단·재복제·정리는 하지 않는다.
 - **기록 기준:** 소스/RAM 합격, 실제 동작 확인, 사용자 인수를 구분한다. 기존 서로 다른 이력은 아래 보관 영역에 남긴다. 사용자 열람본의 기존 미추적 원본은 `D:\Project\Anvil\.av3-data\status-view-backup-20261116-184648`에 원본 해시 그대로 보존했다.
 
-최신 상세 근거: [작업 branch WORK_STATUS](https://github.com/sinsan-develop/Anvil/blob/codex/av3-sdk-output-storage/docs/WORK_STATUS.md), [WORK_CHECK](https://github.com/sinsan-develop/Anvil/blob/codex/av3-sdk-output-storage/docs/WORK_CHECK.md).
+최신 상세 근거: [작업 branch WORK_STATUS](https://github.com/sinsan-develop/Anvil/blob/codex/av3-stage-output-binding/docs/WORK_STATUS.md), [WORK_CHECK](https://github.com/sinsan-develop/Anvil/blob/codex/av3-stage-output-binding/docs/WORK_CHECK.md).
 <!-- CURRENT_WORK_ENTRY_END -->
 
 ## 이전 요약·누적 이력 — 당시 기록 보존(현재 판정 아님)
@@ -20207,3 +20207,8 @@ PR153 exact source69c0f6c0382c0cef664886aa161ca3c522896b0a→main6167f7361028fa2
 PMO의신산님원문 userMessage01a1e456-2c67-7af1-b2f8-6af5d404ce5c/turn01a1e456-2b1f-7271-a11f-d0587432157b(2026-11-16T12:30:14Z)을원문으로확인했다. CLI후보EEAFFF15/source2A7E8911 한정관측1회와서버항목귀속5039D14A source/RAM·미적용0099를직접채택했다. 목표앱status active도확인했다. 같은승인을다시질문하지않고실제Agent작은업무/저장조회/중지재접속목표를유지한다. 실제DB/권한·키·서비스/Agent·유료호출·운영배포포괄승인은아니다.
 
 local/remote mainc53d8619 clean·3고정지문일치를확인하고codex/av3-stage-output-binding을생성했다. CLI단발FN07-LOCAL-CLI-IDENTITY-20261116-01은PATH/프로세스시작전에dispatch1을소진했다. 실제승인시각기준만료2026-11-16T13:00:14Z를사용하며검증시각으로창을다시시작하지않는다. 권한기록2개는docs/approvals에보존한다. 조회/정리는정확고정감독블록과source만사용하고UNKNOWN/timeout에서재발행0·원객체/감사보존이다. 아직이기록시점실CLI조회0이며이후기존담당자를한번배정한다. UI00모바일동일화면메뉴focus누락은기존범위의후속수정후보로확인했으나이번새승인두건을먼저진행하고제품writer를중복배정하지않는다.
+
+
+## 2026-11-16 승인 후 FN03 구현 배정·CLI 단발 관측 종결
+
+기존 Primary에 WI1CBC87356EE8AB9E816B1EF8113B4FC3E0D592B1ED9A27768422B21672759E36의 제품12·시험10 및 결과서1을 배정했다. 같은 승인 재질문0, UI00 발견은 이번 구현과 분리했다. CLI20670a는 12:39:06.7612572Z~12:39:08.7501796Z에 UNKNOWN/부모exit0으로 종결했고 잔여 핸들0·추가 관측0이다. 원 수거물에 자식exit/오류/도달단계가 없어 설치 부재나 원인을 단정하지 않는다. 결과서 SHA854E62DECC567602562618A56E162AA78767130653526B72B330EFB7CEE9CB46을 보존한다. 직접 승인된 서버 항목 귀속 구현은 이 UNKNOWN과 독립적으로 계속한다. 실제 DB·권한·키·서비스·Agent/SDK 실행은 여전히 제외하며 구현·실행·인수 판정을 구분한다.
