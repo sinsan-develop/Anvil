@@ -102,7 +102,7 @@ export async function instructionSourceFixture(base?:Awaited<ReturnType<typeof j
 /** 모든 원 행은 START/appendConversation/SEND 제품 생산값이다. SQL 함수 실행 대신 exact RAM 관계를 검산한다. */
 export async function normalInstructionDeliveryFixture(instruction?:{text:string;mediaType:'text/plain;charset=utf-8'|'text/markdown;charset=utf-8'},mixed=false,ttl=Infinity){
  const {NormalPageCursors}=await import('../../../apps/server/modules/executions/normal-command-pages.ts');
- let original:any;const startPermits:any[]=[],observations:any[]=[],acks:any[]=[],bindings:any[]=[],permits:any[]=[],mode={failBinding:false,failPermit:false,busy:false};let tx=1000;
+ const originals=new Map<string,unknown>(),sourcePlans=new Map<string,unknown>();const startPermits:any[]=[],observations:any[]=[],acks:any[]=[],bindings:any[]=[],permits:any[]=[],mode={failBinding:false,failPermit:false,busy:false};let tx=1000;
  const registered=(f:any,x:any)=>{const d=f.tables.execution_material_manifests.find((d:any)=>d.created_command_id===x.created_command_id);assert(d);return{command_record_id:x.id,manifest_ref:{id:d.id,version:1,contentHash:d.content_hash},manifest:d.snapshot_json,materials:f.tables.execution_materials.filter((m:any)=>m.manifest_id===d.id&&m.command_record_id===x.id).map((m:any)=>({ref:{id:m.id,version:1,contentHash:m.content_hash},snapshot:m.snapshot_json}))};};
  const sql:PageSqlAdapter=(s,a,{f,drafts,issued})=>{
   if(s.startsWith('SELECT v.content_hash AS vhash')){const v=drafts.find(x=>x.id===a[3]&&x.version===2),r=issued.find(x=>x.challenge_id===a[3]);return{rows:v?[{vhash:v.content_hash,consumed:v.snapshot_json,id:r?.id,content_hash:r?.content_hash,receipt:r?.snapshot_json}]:[]};}
@@ -119,7 +119,7 @@ export async function normalInstructionDeliveryFixture(instruction?:{text:string
   if(mixed&&s.startsWith('SELECT id,version,content_hash,snapshot_json FROM anvil.execution_acknowledgements')){const own=acks.filter(o=>o.project_id===a[0]&&o.execution_id===a[1]&&o.generation===a[2]);return{rows:s.includes('AND id=$4')?own.filter(o=>o.id===a[3]&&o.version===a[4]):own.sort((x,y)=>y.version-x.version).slice(0,1)};}
   if(mixed&&s.startsWith('INSERT INTO anvil.execution_observations(')){const[project_id,execution_id,generation,id,event_sequence,grant_id,grant_version,content_hash,raw]=a,snapshot_json=JSON.parse(raw);assert.equal(digest(snapshot_json),content_hash);assert(!observations.some(o=>o.event_sequence===event_sequence||o.snapshot_json.event.eventId===snapshot_json.event.eventId));observations.push({project_id,execution_id,generation,id,event_sequence,grant_id,grant_version,content_hash,snapshot_json});return{rows:[],rowCount:1};}
   if(mixed&&s.startsWith('INSERT INTO anvil.execution_acknowledgements(')){const[project_id,execution_id,generation,id,version,grant_id,grant_version,content_hash,raw]=a,snapshot_json=JSON.parse(raw);assert.equal(digest(snapshot_json),content_hash);acks.push({project_id,execution_id,generation,id,version,grant_id,grant_version,content_hash,snapshot_json});return{rows:[],rowCount:1};}
-  if(s.startsWith('SELECT * FROM anvil.normal_instruction_record('))return{rows:f.tables.execution_commands!.filter(x=>x.project_id===a[0]&&x.execution_id===a[1]&&x.generation===a[2]&&x.snapshot_json.request?.commandId===a[3]).map(x=>({valid:true,snapshot_json:x.snapshot_json,original,result_ref:f.commands.get(x.created_command_id)!.result_ref}))};
+  if(s.startsWith('SELECT * FROM anvil.normal_instruction_record('))return{rows:f.tables.execution_commands!.filter(x=>x.project_id===a[0]&&x.execution_id===a[1]&&x.generation===a[2]&&x.snapshot_json.request?.commandId===a[3]).map(x=>({valid:true,snapshot_json:x.snapshot_json,original:originals.get(x.snapshot_json.request.commandId)??sourcePlans.get(canonicalJson([x.snapshot_json.request.payload.instructionRef,x.snapshot_json.request.payload.partsRef])),result_ref:f.commands.get(x.created_command_id)!.result_ref}))};
   if(s.startsWith('SELECT snapshot_json FROM anvil.execution_grants'))return{rows:f.tables.execution_grants!.filter(g=>g.project_id===a[0]&&g.id===a[1]&&g.version===a[2]&&g.content_hash===a[3]).map(g=>({snapshot_json:g.snapshot_json}))};
   if(s.startsWith('SELECT id,content_hash,snapshot_json,proof_result_id FROM anvil.execution_instruction_permits'))return{rows:permits.slice().sort((a,b)=>a.id.localeCompare(b.id)).slice(0,51)};
   if(s.startsWith('INSERT INTO anvil.execution_instruction_permits(')){
@@ -135,9 +135,23 @@ export async function normalInstructionDeliveryFixture(instruction?:{text:string
  const permit={current:(f:any)=>({async observe(){return{...structuredClone(f.tables.execution_grants[0].snapshot_json.binding),writerState:'OWNED',checkedAt:q.j.store.now().toISOString()};}})};
  const cursors=new NormalPageCursors(randomBytes(32)),q=await normalInstructionFixture({sql,cursors},mixed?{materials,permit,ttl}:undefined),x=await instructionSourceFixture(q.j,instruction),f=x.f,plan=await x.read(),fact=q.g.snapshot_json.binding;
  Object.assign(q.request.payload,{instructionRef:plan.instructionRef,partsRef:plan.partsRef});
- const current={async observe(_scope:unknown,checkedAt:string){return{fact:{...structuredClone(fact),writerState:'OWNED',checkedAt},turnState:mode.busy?'BUSY':'IDLE',stageRef:f.stage.data.snapshot.input.stageRef,demand:{attempts:0,calls:1,spoolBytes:plan.plan.bodyRef.bytes,cost:null,costStatus:'VERIFIED_NO_CHARGE'},checkedAt,expiresAt:q.g.snapshot_json.expiresAt};}};
+ const sizes=new Map([[canonicalJson(plan.instructionRef),plan.plan.bodyRef.bytes]]);
+ const current={async observe(scope:any,checkedAt:string){const size=sizes.get(canonicalJson(scope.instructionRef));assert.ok(size!==undefined);return{fact:{...structuredClone(fact),writerState:'OWNED',checkedAt},turnState:mode.busy?'BUSY':'IDLE',stageRef:f.stage.data.snapshot.input.stageRef,demand:{attempts:0,calls:1,spoolBytes:size,cost:null,costStatus:'VERIFIED_NO_CHARGE'},checkedAt,expiresAt:q.g.snapshot_json.expiresAt};}};
  const service=new NormalInstructionCommands(f.access,{mode:'NORMAL_PROTECTED',current},x.source,f.limits),sent=await service.command(f.token,f.csrf,q.request);
- original=await f.access.authenticated(f.token,null,(db,actor)=>x.source.read(db,actor,q.request));
+ originals.set(q.request.commandId,await f.access.authenticated(f.token,null,(db,actor)=>x.source.read(db,actor,q.request)));
+ sourcePlans.set(canonicalJson([plan.instructionRef,plan.partsRef]),originals.get(q.request.commandId));
+ const queueFollowup=async(text:string)=>{
+  const second=await instructionSourceFixture(q.j,{text,mediaType:'text/plain;charset=utf-8'}),saved=structuredClone(q.request),nextPlan=await second.read();
+  try{
+   q.request.commandId=randomUUID();Object.assign(q.request.payload,{instructionRef:nextPlan.instructionRef,partsRef:nextPlan.partsRef});
+   sizes.set(canonicalJson(nextPlan.instructionRef),nextPlan.plan.bodyRef.bytes);
+   const commands=new NormalInstructionCommands(f.access,{mode:'NORMAL_PROTECTED',current},second.source,f.limits);
+   const receipt=await commands.command(f.token,f.csrf,q.request);
+   originals.set(q.request.commandId,await f.access.authenticated(f.token,null,(db,actor)=>second.source.read(db,actor,q.request)));
+   sourcePlans.set(canonicalJson([nextPlan.instructionRef,nextPlan.partsRef]),originals.get(q.request.commandId));
+   return{commandId:q.request.commandId,receipt,plan:nextPlan};
+  }finally{Object.assign(q.request,saved);await second.app.close();}
+ };
  const base=q.j.store.pool.connect;
  const pool={async connect(){const db=await base();let previous:any,committed=false;return{release:(error?:Error)=>db.release(error),async query(s:string,a:any[]=[]){
   if(s==='BEGIN'){const result=await db.query(s,a);previous=structuredClone({bindings,permits,startPermits,observations,acks});tx++;return result;}
@@ -152,7 +166,7 @@ export async function normalInstructionDeliveryFixture(instruction?:{text:string
   const frame={schemaVersion:1,challengeRef:c.ref,proof,signature:q.j.signProof(proof)},search=new URLSearchParams(Object.entries(query).map(([k,v])=>[k,String(v)])).toString(),url=path+(search?'?'+search:'');
   return{frame,get:(override:any={})=>inject((req,rep)=>{Object.defineProperty(req.socket,'encrypted',{value:override.tls!==false});app.routing(req,rep);},{method:body===undefined?'GET':'POST',url,...(body===undefined?{}:{payload:canonicalJson(body)}),headers:{...(body===undefined?{}:{'content-type':'application/json'}),host:'anvil-synthetic.invalid',authorization:'Bearer '+q.j.token,'anvil-execution-auth':Buffer.from(canonicalJson(override.frame??frame)).toString('base64url')}})};
  };
- return{q,x,f,app,prefix,sent,plan,bindings,permits,startPermits,observations,acks,mode,prepare,close:async()=>{await app.close();await x.close();}};
+ return{q,x,f,app,prefix,sent,plan,queueFollowup,bindings,permits,startPermits,observations,acks,mode,prepare,close:async()=>{await app.close();await x.close();}};
 }
 
 /** 실제 handler를 RAM HTTPS로 연결한다. 파일/네트워크/등록 키 I/O는 하지 않는다. */
@@ -195,7 +209,9 @@ export async function normalInstructionDurableFixture(mixed=false,ttl=Infinity,i
  const {NormalInstructionCoordinator}=await import('../../../apps/connector/runtime/normal-instruction-coordinator.ts');
  const page=await f.get.send(await f.get.prepareCommandPage({afterSequence:0,waitMs:0},f.signal),f.signal),start=page.items[0]!,item=page.items[1]!;
  assert.equal(start.envelope.operation,'START_SESSION');assert.notEqual(start.materials,null);assert(item.materials!==null);assert.equal(item.envelope.operation,'SEND_INSTRUCTION');
- const localScope={projectId:f.scope.projectId,executionId:f.scope.executionId,executionGeneration:f.scope.executionGeneration},fs=memoryFiles(),store=new NormalStartFileStore(root,localScope,fs.fs);
+ const localScope={projectId:f.scope.projectId,executionId:f.scope.executionId,executionGeneration:f.scope.executionGeneration},fs=memoryFiles();
+ fs.fs.unlinkSync=(path:string)=>{if(!fs.files.delete(path))throw Error('RAM_LOCK_MISSING');};
+ const store=new NormalStartFileStore(root,localScope,fs.fs);
  const expected={context:start.envelope.context,executorRegistrationRef:start.envelope.executorRegistrationRef};
  const intake=new NormalInstructionIntake(store.instructionIntake(),expected,f.clock);
  const receive=()=>receiveNormalInstruction(f.get,intake,item,page.proofResultRef,f.signal);
@@ -231,4 +247,16 @@ export async function normalInstructionPollingFixture(ttl=Infinity,instruction?:
   start:{intake:startIntake,store:f.store,spool,post:f.post,current:f.current,grantRef:f.scope.grantRef,clock:f.clock,timeoutMs:1000,wire:{transport:'NORMAL_PROTECTED' as const,async send(){effects.start++;return response();}}},
   instruction:{intake:f.intake,store:f.store.instructionAttempts(),current:f.current,grantRef:f.scope.grantRef,clock:f.clock,timeoutMs:1000,wire}});
  return{...f,spool,effects,hooks,options,poll:()=>new NormalStartPolling(options())};
+}
+
+/** 별도 command의 실제 보호 자료와 permit을 준비한다. 부모/현재 원장 훼손 반례는 이 뒤에만 주입한다. */
+export async function prepareLiveFollowup(f:Awaited<ReturnType<typeof normalInstructionDurableFixture>>,text:string,override:Record<string,unknown>={}){
+ const second=await f.h.queueFollowup(text);
+ const page=await f.get.send(await f.get.prepareCommandPage({afterSequence:0,waitMs:0},f.signal),f.signal);
+ const item=page.items.find(x=>x.envelope.commandId===second.commandId);
+ assert.ok(item?.materials&&item.envelope.operation==='SEND_INSTRUCTION');assert.deepEqual(item.envelope.payload.instructionRef,second.plan.instructionRef);
+ const {receiveNormalInstruction}=await import('../../../apps/connector/runtime/normal-instruction-intake.ts');
+ await receiveNormalInstruction(f.get,f.intake,item,page.proofResultRef,f.signal);
+ const c=f.make(override),prepared=await c.prepare(item.envelope,f.signal);assert.equal(prepared.state,'PERMIT_RECORDED');
+ return{item,prepared,c};
 }

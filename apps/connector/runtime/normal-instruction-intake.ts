@@ -3,7 +3,7 @@ import {isProxy,isUint8Array} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {readDispatchEnvelopeV1,type AdapterContextV1,type DispatchEnvelopeV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
 import {receiptKeyV1,type ReceiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
-import {cloneV1,recordV1,refV1,isoV1,arrayV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
+import {cloneV1,recordV1,refV1,isoV1,uuidV1,arrayV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import {readNormalInstructionItem,assembleNormalInstructionMaterial,type NormalMaterialReceived,type NormalCommandPageItem} from './normal-start-material-consumer.ts';
 import type {NormalLocalObservation} from './normal-observation-spool.ts';
 import type {NormalProtectedGetClient} from './normal-protected-get-client.ts';
@@ -124,6 +124,24 @@ export class NormalInstructionIntake{
   this.#port();const captured=captureInstructionInput(raw),e=this.#envelope((captured as any)?.envelope,true),item=readNormalInstructionItem(captured,Date.parse(e.issuedAt));
   const result=await this.#exclusive.call(this.#store,receiptKeyV1(e),async tx=>{const v=await this.#journal(tx,e,item);return Boolean(v.received&&v.material);});
   this.#port();this.#envelope(e,true);return result as boolean;
+ }
+ /** 첫 SEND 키로 보호 수신행의 원 envelope와 완전한 부분 자료를 재검산한다. */
+ async firstMaterial(key:ReceiptKeyV1,envelopeHash:string){
+  const k=captureInstructionInput(key),ctx=this.#expected.context;
+  if(!recordV1(k,['projectId','executionId','executionGeneration','commandId'])||k.projectId!==ctx.projectId||k.executionId!==ctx.executionId||k.executionGeneration!==ctx.executionGeneration||!uuidV1(k.commandId)||!/^[0-9a-f]{64}$/.test(envelopeHash))fail();
+  this.#port();let found:{envelope:Send;receivedRef:Ref;instructionDigest:string}|undefined,entered=false,closed=false;
+  try{await Reflect.apply(this.#exclusive,this.#store,[k,async(tx:NormalJournalTransaction)=>{
+   if(entered||closed||!tx||isProxy(tx))fail();entered=true;
+   const read=Object.getOwnPropertyDescriptor(tx,'read')?.value;
+   if(typeof read!=='function'||isProxy(read))fail();
+   const raw=captureInstructionInput(await Reflect.apply(read,tx,[]));this.#port();
+   if(closed||!arrayV1(raw,201)||!raw.length||Buffer.byteLength(canonicalJson(raw))>3*1024*1024)fail();
+   const e=this.#envelope((raw.at(-1) as NormalInstructionEntry)?.snapshot?.item?.envelope,true);
+   if(!same(receiptKeyV1(e),k)||e.envelopeHash!==envelopeHash)fail();
+   const {received,material}=await this.#journal({read:async()=>raw,appendAndSync:async()=>fail()},e,null);if(closed||!received||!material)fail();
+   found={envelope:e,receivedRef:cloneV1(received.ref),instructionDigest:contentHash(material.bytes)};
+  }]);}finally{closed=true;}
+  this.#port();if(!found)fail();return found;
  }
  /** 역사 수신 원장을 완전 재검산한 관측 입력. 새 자료 GET/수신 권한을 발급하지 않는다. */
  async observations(raw:unknown){

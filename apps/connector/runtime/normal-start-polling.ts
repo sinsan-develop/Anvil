@@ -136,14 +136,14 @@ export class NormalStartPolling{
        if(state==='PERMIT_RECORDED')state=(await this.#call(s=>coordinator.dispatch(item.envelope,prepared,ports.wire,s),signal,true,true)).state;
       }
       const collected=await this.#call(s=>coordinator.recordObservations(item.envelope,this.#p.start.spool,s),signal,true,true);state=collected.state;
-      if(state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'){if(!refV1(collected.requiredAckRef))throw Error('SEND_PERMIT_ACK_REQUIRED');readyAck=collected.requiredAckRef;}
+      if(state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'||state==='LIVE_SEND_INPUT_YIELDED'){if(!refV1(collected.requiredAckRef))throw Error('SEND_PERMIT_ACK_REQUIRED');readyAck=collected.requiredAckRef;}
      }else if(item.envelope.operation==='REQUEST_STOP'&&this.#p.stop){
       const coordinator=new NormalStopCoordinator(this.#p.stop);
       const observed=await this.#call(s=>coordinator.recordObservations(item,this.#p.start.spool,s,this.#p.start.wire),signal,true,true);
       // 역사 관측의 마지막 ref보다 늦게 정착한 STOP_REQUESTED도 포함하도록 spool 끝까지 ACK한다.
       state=observed.state;
      }else throw Error('PAGE_INVALID');
-     const terminal=state==='RESPONSE_RECORDED'||((state==='START_READY_RECORDED'||state==='FIRST_SEND_INPUT_AND_INIT_RECORDED')&&readyAck!==undefined);
+     const terminal=state==='RESPONSE_RECORDED'||((state==='START_READY_RECORDED'||state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'||state==='LIVE_SEND_INPUT_YIELDED')&&readyAck!==undefined);
      if(!terminal)this.#unknown=true;
      await this.#syncThrough(clients.post,signal,readyAck);
      if(!terminal){this.#unknown=true;return this.#result('UNKNOWN',pages,commands,item.envelope.operation==='REQUEST_STOP'?'STOP_UNCONFIRMED':item.envelope.operation==='START_SESSION'?'START_UNKNOWN':'SEND_UNKNOWN');}
