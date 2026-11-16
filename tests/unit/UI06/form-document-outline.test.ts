@@ -1,7 +1,19 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';import {buildOfficialForms} from '../../../apps/server/modules/documents/forms.ts';
 import {stageDocumentFixture} from './stage-document-fixture.ts';
+import {contentHash,canonicalJson} from '../../../contracts/canonical.ts';
 const m:any=await import('../../../apps/web/src/features/design-trace/form-document-outline.ts').catch((e:any)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
+test('작성틀의 산출물 B와 원 양식의 section은 각자 보존된다',async()=>{
+ const f=stageDocumentFixture(),node=f.application.snapshot.graph.nodes[0]!;
+ node.outputs[0]!.itemId=f.form.definition.items[0]!.itemId;
+ node.outputs.push({...node.outputs[0]!,itemId:'B'});
+ f.application.snapshot.sourceRef.contentHash=contentHash(canonicalJson(f.application.snapshot.graph));
+ f.choice.applicationRef.contentHash=contentHash(canonicalJson(f.application.snapshot));
+ const client=new ApiClient(async p=>{const path=String(p);return Response.json(path.includes('/methodology-application')?f.application:path.includes('/stage-options')?f.options:path.includes('/forms/')?f.form:f.project);});
+ const v=await m.prepareStageFormOutline(client,{...f.choice,itemId:'B'},f.session,()=>true);
+ assert.equal(v.preparedStageOutput.itemId,'B');
+ assert.equal(v.content.sections[0].itemId,node.outputs[0]!.itemId);
+});
 const pid='10000000-0000-4000-8000-000000000001',uid='20000000-0000-4000-8000-000000000002',session={user:{id:uid},clientId:uid,csrfToken:'C'.repeat(43)};
 const catalog=buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md',import.meta.url)),await readFile(new URL('../../../docs/design/문서작성_공통기준.md',import.meta.url)));
 const form=(i=0)=>({...catalog.forms[i]!,authoringStandard:{ref:catalog.standard.ref,content:catalog.standard.body.toString('utf8')},validation:{formatOnly:true,contentReview:'NOT_PERFORMED',userAcceptance:'NOT_PERFORMED'}});

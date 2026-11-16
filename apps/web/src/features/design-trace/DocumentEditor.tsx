@@ -17,14 +17,57 @@ import { applyDocumentProposal, compareDocumentProposal, continueDocumentProposa
 import { PinnedFormOriginal } from '../methodologies/PinnedFormOriginal.tsx';
 import {DocumentAttachments} from './DocumentAttachments.tsx';
 import {DocumentFormEntry} from './DocumentFormEntry.tsx';
+import {preparedOnClient,discardPreparedOutput} from './stage-document-draft.ts';
+
+// 편집기의 원 상태 갱신으로 만들어진 버퍼만 최초 준비 객체를 계승한다.
+const editedDrafts=new WeakMap<DocumentBuffer,DocumentBuffer>();
+function selectionMatches(buffer:DocumentBuffer,session:DocumentSession,client:ApiClient,origin=editedDrafts.get(buffer)??buffer){
+  const s=buffer.preparedStageOutput;
+  return !!s&&preparedOnClient(origin,s,client,session)&&buffer.documentId===null&&buffer.baseVersion===0&&
+    !buffer.savedRef&&!buffer.reconciliation&&!buffer.saveUncertain&&!buffer.proposalState&&
+    !buffer.failure&&s.projectId===buffer.projectId&&s.userId===buffer.ownerUserId&&
+    s.userId===session.user.id&&s.clientId===session.clientId&&s.controlGeneration===buffer.controlGeneration&&
+    s.applicationRef.id===buffer.stageNodeRef?.applicationId&&s.nodeId===buffer.stageNodeRef.nodeId&&
+    s.formRef.id===buffer.formRef.id&&s.formRef.version===buffer.formRef.version&&s.formRef.contentHash===buffer.formRef.contentHash;
+}
 
 export function DocumentEditor({ createdOriginal, preparationGate, client, session, buffer, onChange, onSaved, onAuthenticationLost }: { createdOriginal?:import('../../shell/routes.ts').CreatedOriginalSelection; preparationGate?:DocumentPreparationGate; client: ApiClient; session: DocumentSession; buffer: DocumentBuffer; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; onSaved: (ref: VersionRef) => void; onAuthenticationLost: () => void }) {
   const [busy, setBusy] = useState(false), running = useRef(false), mounted = useRef(true);
   const [approvalBusy,setApprovalBusy]=useState(false),known=useRef(new Set([buffer])),epoch=useRef(0),latest=useRef(buffer),context=useRef({client,transport:client.transport,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken,projectId:buffer.projectId,generation:buffer.controlGeneration});
   const prior=context.current;
-  if(prior.client!==client||prior.transport!==client.transport||prior.user!==session.user.id||prior.clientId!==session.clientId||prior.csrf!==session.csrfToken||prior.projectId!==buffer.projectId||prior.generation!==buffer.controlGeneration||!known.current.has(buffer)){epoch.current++;known.current=new Set([buffer]);}
+  const previousBuffer=latest.current;
+  const contextChanged=prior.client!==client||prior.transport!==client.transport||prior.user!==session.user.id||prior.clientId!==session.clientId||prior.csrf!==session.csrfToken||prior.projectId!==buffer.projectId||prior.generation!==buffer.controlGeneration;
+  const external=!known.current.has(buffer);
+  if(contextChanged||external){epoch.current++;known.current=new Set([buffer]);}
   latest.current=buffer;context.current={client,transport:client.transport,user:session.user.id,clientId:session.clientId,csrf:session.csrfToken,projectId:buffer.projectId,generation:buffer.controlGeneration};
-  const managedChange:Dispatch<SetStateAction<DocumentBuffer|null>>=edit=>onChange(previous=>{const next=typeof edit==='function'?edit(previous):edit;if(next)known.current.add(next);return next;});
+  const marker=buffer.preparedStageOutput;
+  const lastMarker=useRef(marker);
+  const priorMarker=lastMarker.current;
+  const transferable=marker!==priorMarker||(!contextChanged&&!external);
+  const showSelection=!!marker&&transferable&&selectionMatches(buffer,session,client);
+  const managedChange:Dispatch<SetStateAction<DocumentBuffer|null>>=edit=>onChange(previous=>{
+    let next=typeof edit==='function'?edit(previous):edit;
+    if(next?.preparedStageOutput&&previous){
+      const origin=editedDrafts.get(previous)??previous;
+      if(next.preparedStageOutput===previous.preparedStageOutput&&selectionMatches(next,session,client,origin)){
+        if(next!==previous)editedDrafts.set(next,origin);
+      }else{
+        next={...next};delete next.preparedStageOutput;
+      }
+    }
+    if(next)known.current.add(next);return next;
+  });
+  useLayoutEffect(()=>{
+    if(priorMarker&&(priorMarker!==marker||!showSelection))discardPreparedOutput(editedDrafts.get(previousBuffer)??previousBuffer);
+    lastMarker.current=marker;
+    if(marker&&!showSelection){
+      discardPreparedOutput(editedDrafts.get(buffer)??buffer);
+      managedChange(previous=>{
+        if(previous!==buffer)return previous;
+        const next={...previous};delete next.preparedStageOutput;return next;
+      });
+    }
+  });
   const conflictSequence=useRef(0);
   const [conflictResult,setConflictResult]=useState<{active:()=>boolean;input:DocumentBuffer;value:DocumentConflictComparison|null;error:ApiError|null}|null>(null),[acknowledged,setAcknowledged]=useState(false);
   const conflictVisible=conflictResult?.active()===true,comparison=conflictVisible?conflictResult!.value:null,comparisonError=conflictVisible?conflictResult!.error:null;
@@ -118,6 +161,7 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
   const proposal = buffer.proposalState, proposalCanClose = proposal && !proposal.uncertain && (proposal.savedRef || !proposal.applyCommand && proposal.proposal || proposal.failure && [400,401,403,404,409,412,413,415,422].includes(proposal.failure.status));
   return <section className="status-card definition-editor" aria-label="문서 초안 편집">
     <h2>문서 초안 편집</h2><p className="meta">기준 버전 {buffer.baseVersion} · 원본/구버전은 보존됩니다. 이 저장은 사용자 확정이나 Agent 실행이 아닙니다.</p>
+    {showSelection?<p className="meta">저장 전 선택한 산출물 {marker.itemId} · 서버 귀속 미확인</p>:null}
     {buffer.ownerUserId === session.user.id ? <section aria-label="문서 작성 고정 양식"><p className="meta" style={{ overflowWrap: 'anywhere' }}>양식 {buffer.formRef.id} · v{buffer.formRef.version} · {buffer.formRef.contentHash}</p><PinnedFormOriginal key={JSON.stringify([session.user.id, session.clientId, buffer.projectId, buffer.documentId, buffer.baseVersion, buffer.formRef])} client={client} formRef={buffer.formRef} onAuthenticationLost={onAuthenticationLost} /></section> : null}
     <DocumentStageSelector key={buffer.projectId + ':' + buffer.formRef.id + ':' + buffer.formRef.version + ':' + buffer.formRef.contentHash} client={client} projectId={buffer.projectId} formRef={buffer.formRef} value={buffer.stageNodeRef ?? null} disabled={locked} onChange={value => change({ stageNodeRef: value })} onAuthenticationLost={onAuthenticationLost} />
     {!buffer.importCandidateRef ? <DocumentImport createdOriginal={createdOriginal} client={client} session={session} buffer={buffer} onChange={managedChange} onAuthenticationLost={onAuthenticationLost} disabled={!!buffer.formEntry||busy||!!buffer.pending||!!buffer.proposalState} /> : null}

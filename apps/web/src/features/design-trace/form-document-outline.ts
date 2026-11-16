@@ -3,7 +3,7 @@ import {getPinnedForm} from '../methodologies/forms-api.ts';
 import {verifyFormVersionIntegrity} from '../methodologies/form-version-read.ts';
 import {documentControl,newDocument,type DocumentSession} from './editor-api.ts';
 import type {VersionRef} from '../../../../../contracts/generated-types.ts';
-import {prepareStageDocumentDraft,type StageDocumentChoice} from './stage-document-draft.ts';
+import {prepareStageDocumentDraft,preparedOnClient,type StageDocumentChoice} from './stage-document-draft.ts';
 function label(value:string){if(typeof value!=='string'||!value.trim()||!value.isWellFormed()||/[\u0000-\u001f\u007f]/.test(value))throw new ApiError('FORM_OUTLINE_UNSUPPORTED');return value.replace(/[\\|[\]_*#`<>]/g,'\\$&');}
 /** 정확 양식의 빈 항목만 로컬에 만든다. 내용 작성·저장·내용검토/확정·Agent 호출이 아니다. */
 export async function prepareFormDocumentOutline(client:ApiClient,projectId:string,ref:VersionRef,session:DocumentSession,active:()=>boolean){
@@ -30,9 +30,10 @@ export async function prepareFormDocumentOutline(client:ApiClient,projectId:stri
 export async function prepareStageFormOutline(client:ApiClient,selection:StageDocumentChoice,session:DocumentSession,active:()=>boolean){
  if(!active())return null;const choice=structuredClone(selection),actor=structuredClone(session);
  try{
-  const stage=await prepareStageDocumentDraft(client,choice,actor,active);if(!active())return null;
-  const draft=await prepareFormDocumentOutline(client,choice.projectId,stage.formRef,actor,active);if(!active()||!draft)return null;
+  const stage=await prepareStageDocumentDraft(client,choice,session,active);if(!active())return null;
+  const current=()=>active()&&preparedOnClient(stage,stage.preparedStageOutput,client,session)&&session.user.id===actor.user.id&&session.clientId===actor.clientId;
+  const draft=await prepareFormDocumentOutline(client,choice.projectId,stage.formRef,actor,current);if(!current()||!draft)return null;
   if(draft.controlGeneration!==stage.controlGeneration)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
-  return{...draft,stageNodeRef:structuredClone(stage.stageNodeRef)};
+  return Object.assign(stage,{title:draft.title,body:draft.body,content:draft.content});
  }catch(cause){if(!active())return null;throw cause;}
 }

@@ -1,7 +1,31 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {ApiClient,ApiError} from '../../../apps/web/src/api/client.ts';import {stageDocumentFixture} from './stage-document-fixture.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+test('같은 양식의 A와 B 중 선택한 B를 저장 전 로컬 선택에 보존한다',async()=>{
+ const f=stageDocumentFixture(), node=f.application.snapshot.graph.nodes[0]!;
+ node.outputs.push({...node.outputs[0]!,itemId:'B'});
+ f.application.snapshot.sourceRef.contentHash=contentHash(canonicalJson(f.application.snapshot.graph));
+ f.choice.applicationRef.contentHash=contentHash(canonicalJson(f.application.snapshot));
+ const choice={...f.choice,itemId:'B'},a=transport(f);
+ const {prepareStageDocumentDraft}=await import('../../../apps/web/src/features/design-trace/stage-document-draft.ts');
+ const draft=await prepareStageDocumentDraft(a.client,choice,f.session,()=>true);
+ assert.deepEqual(draft.preparedStageOutput,{...choice,controlGeneration:7});
+ choice.formRef.version++;assert.notEqual(draft.preparedStageOutput.formRef.version,choice.formRef.version);
+});
 const m=await import(new URL('../../../apps/web/src/features/design-trace/stage-document-draft.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});
 const prepare=()=>{assert.equal(typeof m.prepareStageDocumentDraft,'function');return m.prepareStageDocumentDraft;};
+test('첫 프로젝트 GET 뒤 원 주체 또는 transport가 바뀌면 적용본 GET을 시작하지 않는다',async()=>{
+ for(const mode of ['user','transport']){
+  const f=stageDocumentFixture(),calls:string[]=[];
+  const client=new ApiClient(async path=>{
+   calls.push(String(path));
+   if(mode==='user')f.session.user.id=f.projectId;
+   else Object.defineProperty(client,'transport',{value:async()=>{throw Error('다른 포트 호출');}});
+   return Response.json(f.project);
+  });
+  await assert.rejects(prepare()(client,f.choice,f.session,()=>true),{code:'STAGE_DOCUMENT_PREPARATION_PAUSED'});
+  assert.equal(calls.length,1);
+ }
+});
 test('주 작업 선택 단계의 적용버전·노드가 다르면 산출물 목록을 채택하지 않는다',async()=>{for(const expected of [{applicationRef:{...stageDocumentFixture().choice.applicationRef,version:3},nodeId:'DESIGN'},{applicationRef:stageDocumentFixture().choice.applicationRef,nodeId:'MISSING'}]){const f=stageDocumentFixture(),a=transport(f);await assert.rejects(m.readStageDocumentApplication(a.client,f.projectId,()=>true,expected),ApiError);}const f=stageDocumentFixture(),a=transport(f),v=await m.readStageDocumentApplication(a.client,f.projectId,()=>true,{applicationRef:f.choice.applicationRef,nodeId:'DESIGN'});assert.equal(v.snapshot.graph.nodes[0].nodeId,'DESIGN');assert.equal(a.calls.length,2);});
 test('목록 대기 중 선택 적용 ref를 바꿔 최초 불일치 선택을 합격시키지 않는다',async()=>{const f=stageDocumentFixture(),a=transport(f),scope={applicationRef:{...f.choice.applicationRef,version:3},nodeId:'DESIGN'},request=m.readStageDocumentApplication(a.client,f.projectId,()=>true,scope);scope.applicationRef.version=2;await assert.rejects(request,ApiError);});
 function transport(f:ReturnType<typeof stageDocumentFixture>,alter:(kind:string,v:any)=>any=(_k,v)=>v){const calls:string[]=[];return{calls,client:new ApiClient(async(url,init)=>{assert.equal(init?.method,'GET');const path=String(url);calls.push(path);const kind=path.includes('/methodology-application')?'application':path.includes('/stage-options')?'options':path.includes('/forms/')?'form':'project';return Response.json(alter(kind,f[kind]));})};}
