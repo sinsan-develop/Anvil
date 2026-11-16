@@ -40,6 +40,13 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
   const liveRead = useRef<DraftReadIdentity>({ client, key: readKey, attempt: 0, mounted: true });
   if (liveRead.current.client !== client || liveRead.current.key !== readKey) liveRead.current = { client, key: readKey, attempt: 0, mounted: true };
   const readIdentity = liveRead.current;
+  const latestBuffer = useRef(buffer); latestBuffer.current = buffer;
+  function ownsMutation(kind: 'pendingCommand' | 'pendingAction', commandId: unknown, dispatchId: string, transport: ApiClient['transport']) {
+    const value = latestBuffer.current, command = value[kind];
+    return liveRead.current === readIdentity && readIdentity.mounted && client.transport === transport
+      && value.ownerUserId === session.user.id && command?.body.clientId === session.clientId
+      && command.body.commandId === commandId && command.dispatchId === dispatchId;
+  }
   const [artifactObservation, setArtifactObservation] = useState<{ draftId: string; identity: DraftReadIdentity; attempt: number; records: DraftStoredArtifact[] } | null>(null);
   const protectedArtifactRecords = artifactObservation?.identity === readIdentity && artifactObservation.attempt === readIdentity.attempt && artifactObservation.draftId === buffer.draftId ? artifactObservation.records : null;
   function acceptArtifactMetadata(targetDraftId: string, records: DraftStoredArtifact[] | null, currentEditable?: boolean) {
@@ -82,7 +89,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
         ? { schemaVersion: 1, commandId: crypto.randomUUID(), clientId: session.clientId, expectedVersion: buffer.version, step: editorStep, input: buffer.input }
         : { schemaVersion: 1, commandId: crypto.randomUUID(), clientId: session.clientId, expectedVersion: 0, targetId: null, ...buffer.input },
     };
-    const dispatchId=crypto.randomUUID();
+    const dispatchId=crypto.randomUUID(),transport=client.transport;
     onChange(previous => ({ ...previous, ownerUserId: session.user.id, pendingCommand: {...command,dispatchId} }));
     setPending(true); setError(null);
     try {
@@ -93,6 +100,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
       if (location.hash === '#/projects/new') { const url = new URL(location.href); url.searchParams.set('draftId', result.draftId); history.replaceState(history.state, '', url); }
     } catch (cause: unknown) {
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+      if (failure.status === 401 && !ownsMutation('pendingCommand', command.body.commandId, dispatchId, transport)) return;
       setError(failure);
       if (!previouslyPending && isKnownDocumentRejection(failure)) onChange(previous => previous.ownerUserId===session.user.id&&previous.pendingCommand?.body.commandId===command.body.commandId&&previous.pendingCommand?.dispatchId===dispatchId?({ ...previous, pendingCommand: null }):previous);
       if (!previouslyPending && isKnownDocumentRejection(failure) && failure.status === 403) setEditable(false);
@@ -114,7 +122,7 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
     if (!buffer.pendingAction && (!editable || buffer.dirty || buffer.pendingCommand)) return;
     await mutation.run(async () => {
     const previouslyPending=!!buffer.pendingAction;
-    const dispatchId=crypto.randomUUID();
+    const dispatchId=crypto.randomUUID(),transport=client.transport;
     onChange(previous => ({ ...previous, ownerUserId: session.user.id, pendingAction: {...command,dispatchId} }));
     setPending(true); setError(null); let applied = false;
     try {
@@ -124,7 +132,9 @@ export function ProjectCreatePage({ client, session, buffer, onChange, onAuthent
       onChange(previous => previous.ownerUserId === session.user.id && previous.pendingAction?.body.commandId === command.body.commandId ? { ...previous, pendingAction: null, createdProject: created, methodologyState: result?.methodologyState ?? previous.methodologyState, review: previous.review ? { ...previous.review, dirty: false } : null } : previous);
       if (created) setEditable(false);
     } catch (cause: unknown) {
-      const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
+      const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+      if (failure.status === 401 && !ownsMutation('pendingAction', command.body.commandId, dispatchId, transport)) return;
+      setError(failure);
       if (!applied && !previouslyPending && isKnownDocumentRejection(failure)) onChange(previous => previous.ownerUserId===session.user.id&&previous.pendingAction?.body.commandId===command.body.commandId&&previous.pendingAction?.dispatchId===dispatchId?({ ...previous, pendingAction: null }):previous);
       if (failure.status === 401) onAuthenticationLost();
     } finally { setPending(false); }
