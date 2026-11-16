@@ -1,4 +1,4 @@
-import {readDefinition} from '../connections/connection-definition-api.ts';
+import {readDefinition,type DefinitionView} from '../connections/connection-definition-api.ts';
 import {readLimitPolicy,type LimitPolicyRecord} from '../connections/limit-policy-api.ts';
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
@@ -11,8 +11,8 @@ import {newPreparation,preparationKey,preparationOwned,preparationSame as same,e
 export function TransferPreparationRecordPanel({client,session,confirmed,state,contexts,storage,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;confirmed:ConfirmedAssignmentView;state:ResponsibleSessionState;contexts:PlanRef[];storage:PreparationStorage;onAuthenticationLost:()=>void}){
  const key=preparationKey(session,confirmed.projectId,confirmed.ref),owner=useRef({key,client,transport:client.transport,session,csrf:session.csrfToken});if(owner.current.key!==key||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.session!==session||owner.current.csrf!==session.csrfToken)owner.current={key,client,transport:client.transport,session,csrf:session.csrfToken};const scope=owner.current,mounted=useRef(true),seq=useRef(0),flight=useRef<object|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
  const [working,setWorking]=useState<object|null>(null),[rawView,setRawView]=useState<{owner:object;value:PreparationGet}|null>(null),[error,setError]=useState<{owner:object;value:string}|null>(null),[roleId,setRoleId]=useState(''),[roleVersion,setRoleVersion]=useState('1'),[bindingId,setBindingId]=useState(''),[bindingVersion,setBindingVersion]=useState('1'),[targetId,setTargetId]=useState(''),[targetVersion,setTargetVersion]=useState('1'),[targetHash,setTargetHash]=useState('');
- const displayed=useRef(rawView);
- function setView(next:typeof rawView){displayed.current=next;setRawView(next);}
+ const displayed=useRef(rawView),displayedGeneration=useRef(0);
+ function setView(next:typeof rawView){displayedGeneration.current++;displayed.current=next;setRawView(next);}
  const [lookup,setLookup]=useState<{owner:object;id:string;hash:string}|null>(null),[lookupWorking,setLookupWorking]=useState<object|null>(null),[lookupError,setLookupError]=useState<{owner:object;code:string}|null>(null),lookupSeq=useRef(0),lookupFlight=useRef<{owner:object;ticket:number}|null>(null);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;seq.current++;};},[]);
  const current=()=>mounted.current&&owner.current===scope&&client.transport===scope.transport&&session.csrfToken===scope.csrf;
@@ -47,7 +47,40 @@ export function TransferPreparationRecordPanel({client,session,confirmed,state,c
  </>}{busy?<p role="status">고정 자료 대조 중</p>:null}{error?.owner===scope?<p role="alert">{error.value}</p>:b?.failure?<p role="alert">{b.failure.code}</p>:null}
  {view?<section aria-label="준비기록 고정 원문"><p>{view.ref.id} · v1 · {view.ref.contentHash}</p><p>보관 관측 {view.record.observedAt} · 의도 기한 {view.record.intentExpiresAt} · {view.currentStatus.intentExpired?'과거 기한 경과':'조회 시 기한 이내'} · 원자료 현재성 {view.currentStatus.sourceCurrentness} · 실제 인계 불가</p><p>미확인 공백: {view.record.gaps.join(', ')}</p><pre>{JSON.stringify(view.record,null,2)}</pre>
  {view.record.budgetRef?<HistoricalBudget key={JSON.stringify([view.ref,view.record.budgetRef])} client={client} projectId={confirmed.projectId} reference={view.record.budgetRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>한도 정책 참조 없음</p>}
+ {view.record.targetConnectionRef?<HistoricalTarget key={JSON.stringify([displayedGeneration.current,view.ref,view.record.targetConnectionRef])} client={client} projectId={confirmed.projectId} reference={view.record.targetConnectionRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>대상 연결 참조 없음</p>}
  <button type="button" onClick={()=>setView(null)}>준비기록 원문 닫기</button></section>:null}
+ </section>;
+}
+
+type TargetRead={state:'idle'|'loading'}|{state:'loaded';value:DefinitionView}|{state:'error';code:string};
+function HistoricalTarget({client,projectId,reference,current,onAuthenticationLost}:{
+ client:ApiClient;projectId:string;reference:PlanRef;current:()=>boolean;onAuthenticationLost:()=>void;
+}){
+ const [read,setRead]=useState<TargetRead>({state:'idle'});
+ const sequence=useRef(0),inFlight=useRef(false);
+ useLayoutEffect(()=>()=>{sequence.current++;inFlight.current=false;},[]);
+ async function load(){
+  if(inFlight.current||!current())return;
+  const ticket=++sequence.current,active=()=>ticket===sequence.current&&current();
+  inFlight.current=true;setRead({state:'loading'});
+  try{
+   const value=await readDefinition(client,projectId,reference,active);
+   if(active())setRead({state:'loaded',value});
+  }catch(error){
+   if(!active())return;
+   setRead({state:'error',code:error instanceof ApiError&&/^[A-Z_]{1,80}$/.test(error.code)?error.code:'CONNECTION_RESPONSE_INVALID'});
+   if(error instanceof ApiError&&error.status===401)onAuthenticationLost();
+  }finally{if(ticket===sequence.current)inFlight.current=false;}
+ }
+ return <section aria-label="당시 대상 연결 정의">
+  <button type="button" disabled={read.state==='loading'} onClick={()=>void load()}>당시 대상 연결 정의 열기</button>
+  {read.state==='loading'?<p role="status">저장된 대상 연결 조회 중</p>:null}
+  {read.state==='error'?<p role="alert">{read.code} · 저장된 대상 연결을 확인할 수 없습니다.</p>:null}
+  {read.state==='loaded'?<><h4>{read.value.definition.label}</h4>
+   <p>저장된 대상 연결 {read.value.ref.id} · v{read.value.ref.version} · {read.value.ref.contentHash}</p>
+   <p>정의 상태 {read.value.definition.status} · 지원 상태 {read.value.currentStatus.support} · 실행 권한 없음</p>
+   <pre>{JSON.stringify(read.value.definition,null,2)}</pre>
+  </>:null}
  </section>;
 }
 

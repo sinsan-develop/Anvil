@@ -1,6 +1,109 @@
 import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'vite';
+
+const targetButton='당시 대상 연결 정의 열기';
+test('과거 대상 연결 · 같은 참조 재조회가 배치되어도 이전 표시를 폐기한다',async()=>{
+ const target=historicalTarget(),data=recordWithTarget(target.ref),path='/api/v1/projects/'+pid+'/connections/'+target.ref.id+'/versions/2';
+ const f=await host({empty:true,knownRecord:{data},historicalGet:p=>p===path?Response.json(target):undefined});
+ try{
+  await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));await f.click(targetButton);
+  await f.settle(()=>f.text().includes(target.definition.label));
+  const button=f.button('알려진 준비기록 고정 조회'),propsKey=Object.keys(button).find(k=>k.startsWith('__reactProps'))!;
+  await ui.React.act(async()=>{(button as any)[propsKey].onClick();await new Promise(resolve=>setTimeout(resolve,30));});
+  assert.ok(hasOriginal(f));assert.doesNotMatch(f.text(),/저장된 원 대상 정의/);
+  assert.equal(f.calls.filter(c=>c.path===path).length,1);
+  await f.click(targetButton);await f.settle(()=>f.text().includes(target.definition.label));
+  assert.equal(f.calls.filter(c=>c.path===path).length,2);assert.ok(f.calls.every(c=>c.method==='GET'));assert.deepEqual(f.buffers,{});
+ }finally{await f.close();}
+});
+
+for(const mode of ['hash','body','project','state','403','401'] as const){
+ test('과거 대상 연결 · '+mode+' 거절은 정의 본문·POST를 만들지 않는다',async()=>{
+  const target=historicalTarget(),data=recordWithTarget(target.ref),path='/api/v1/projects/'+pid+'/connections/'+target.ref.id+'/versions/2';
+  const f=await host({empty:true,knownRecord:{data},historicalGet:p=>{
+   if(p!==path)return;
+   if(mode==='401'||mode==='403')return Response.json({code:'ACCESS_DENIED'},{status:Number(mode)});
+   const response=structuredClone(target);
+   if(mode==='hash')response.ref.contentHash='a'.repeat(64);
+   if(mode==='body')response.definition.label='변조된 대상 정의';
+   if(mode==='project')response.projectId=id(98);
+   if(mode==='state')Object.assign(response.currentStatus,{support:'READY',executionAuthorized:true});
+   return Response.json(response);
+  }});
+  try{
+   await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));await f.click(targetButton);
+   await f.settle(()=>f.text().includes(mode==='401'||mode==='403'?'ACCESS_DENIED':'CONNECTION_RESPONSE_INVALID'));
+   assert.doesNotMatch(f.text(),/저장된 원 대상 정의|변조된 대상 정의/);
+   assert.equal(f.calls.filter(c=>c.path===path).length,1);assert.equal(f.lost(),mode==='401'?1:0);
+   assert.ok(f.calls.every(c=>c.method==='GET'));assert.deepEqual(f.buffers,{});
+  }finally{await f.close();}
+ });
+}
+for(const mode of ['닫기','재조회','기록교체','기록ABA','주체교체'] as const){
+ test('과거 대상 연결 · '+mode+' 후 늦은 응답과 인증 콜백을 폐기한다',async()=>{
+  const target=historicalTarget(),a=recordWithTarget(target.ref),b=recordWithTarget(null,id(22));
+  const path='/api/v1/projects/'+pid+'/connections/'+target.ref.id+'/versions/2';
+  let release!:()=>void,reading=false;const gate=new Promise<void>(done=>release=done);
+  const lateAuth=mode==='기록ABA'||mode==='주체교체';
+  const f=await host({empty:true,knownRecord:{data:a},historicalGet:p=>{
+   if(p.endsWith('/transfer-preparations/'+b.ref.id+'/versions/1'))return recordResponse(b);
+   if(p!==path)return;
+   const response=Response.json(lateAuth?{code:'AUTH_REQUIRED'}:target,{status:lateAuth?401:200}),parse=response.json.bind(response);
+   response.json=async()=>{reading=true;await gate;return parse();};return response;
+  }});
+  try{
+   await queryKnown(f,a.ref);await f.settle(()=>hasOriginal(f));
+   const button=f.button(targetButton);
+   const propsKey=Object.keys(button).find(k=>k.startsWith('__reactProps'))!;
+   await ui.React.act(async()=>{(button as any)[propsKey].onClick();(button as any)[propsKey].onClick();});
+   await f.settle(()=>reading);assert.equal(f.button(targetButton).disabled,true);
+   if(mode==='닫기')await f.click('준비기록 원문 닫기');
+   else if(mode==='재조회'){
+    await f.click('알려진 준비기록 고정 조회');await f.settle(()=>hasOriginal(f)&&!f.button(targetButton).disabled);
+   }else if(mode==='주체교체'){
+    const props=f.props();await f.render({...props,session:{...session,user:{id:id(99)}}});await f.render(props);
+   }else{
+    await queryKnown(f,b.ref);await f.settle(()=>hasOriginal(f)&&f.text().includes('대상 연결 참조 없음'));
+    if(mode==='기록ABA'){await queryKnown(f,a.ref);await f.settle(()=>f.buttons(targetButton).length===1);}
+   }
+   await ui.React.act(async()=>{release();await new Promise(resolve=>setImmediate(resolve));});
+   assert.doesNotMatch(f.text(),/저장된 원 대상 정의|AUTH_REQUIRED/);assert.equal(f.lost(),0);
+   assert.equal(f.calls.filter(c=>c.path===path).length,1);assert.ok(f.calls.every(c=>c.method==='GET'));assert.deepEqual(f.buffers,{});
+  }finally{release();await f.close();}
+ });
+}
+
+function historicalTarget(label='저장된 원 대상 정의'){
+ const definition={id:id(81),version:2,status:'NOT_READY',label,toolProduct:'Claude',toolVersion:'0.3.224',adapterKind:'SDK',
+  connectorId:null,accountRef:null,modelOptions:{model:'saved-model'},environmentRef:null,policyRef:{id:id(82),version:1,contentHash:'e'.repeat(64)},capabilityReportRef:null};
+ return{projectId:pid,ref:{id:definition.id,version:definition.version,contentHash:hash(definition)},definition,observedAt:at,
+  currentStatus:{headVersion:3,configurationCurrent:false,support:'UNVERIFIED',executionAuthorized:false}};
+}
+function recordWithTarget(targetConnectionRef:ReturnType<typeof historicalTarget>['ref']|null,recordId=id(20)){
+ const initial=recordWithBudget(null,recordId).record;
+ const record=readPreparationSnapshot({...initial,targetConnectionRef,gaps:targetConnectionRef?initial.gaps.filter(g=>g!=='TARGET_NOT_SELECTED'):initial.gaps});
+ return{ref:{id:recordId,version:1,contentHash:hash(record)},record};
+}
+test('과거 대상 연결 · 명시 클릭 1GET과 참조 부재 GET0',async()=>{
+ for(const missing of [false,true]){
+  const target=historicalTarget(),data=recordWithTarget(missing?null:target.ref);
+  const path='/api/v1/projects/'+pid+'/connections/'+target.ref.id+'/versions/2';
+  const f=await host({empty:true,knownRecord:{data},historicalGet:p=>p===path?Response.json(target):undefined});
+  try{
+   await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));
+   assert.equal(f.calls.filter(c=>c.path.includes('/connections/')).length,0);
+   if(missing)assert.equal(f.buttons(targetButton).length,0);
+   else{
+    await f.click(targetButton);await f.settle(()=>f.text().includes(target.definition.label));
+    assert.deepEqual(f.calls.filter(c=>c.path.includes('/connections/')).map(c=>[c.method,c.path]),[['GET',path]]);
+    assert.ok(f.text().includes('NOT_READY'));assert.ok(f.text().includes('UNVERIFIED'));assert.ok(f.text().includes(target.ref.contentHash));
+   }
+   assert.deepEqual(f.buffers,{});assert.ok(f.calls.every(c=>c.method==='GET'));
+  }finally{await f.close();}
+ }
+});
+
 import {fileURLToPath} from 'node:url';
 import {transferFixture,pid,at} from './transfer-fixture.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
