@@ -4,6 +4,18 @@ import {randomUUID} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {NormalSdkSessionOutput} from '../../../apps/connector/runtime/normal-sdk-session-output.ts';
 
+test('최초 Query 호출 전 SEND 3행 잠금이 닫혀 다른 coordinator가 원 시도행을 읽는다',async()=>{
+ const {firstSendFixture}=await import('./normal-first-send-owner.test.ts');
+ const f=await firstSendFixture();let observed:string|undefined,replayed:string|undefined;
+ f.hooks.inCreate=async()=>{observed=(await f.make().observations(f.item.envelope,f.signal)).state;replayed=(await f.run()).state;};
+ try{
+  const result=await f.run();
+  assert.equal(observed,'SEND_DISPATCH_ATTEMPTED');assert.equal(replayed,'UNKNOWN');
+  assert.equal(result.state,'LIMIT_REACHED');
+  assert.equal(f.effects.create,1);assert.equal(f.h.permits.length,1);assert.equal(f.h.startPermits.length,1);
+ }finally{f.authority.abort();await f.h.close();}
+});
+
 const ref=()=>({id:randomUUID(),version:1,contentHash:'a'.repeat(64)});
 const sid='planned-session';
 const assistant=(id:string,text:string)=>({type:'assistant',uuid:id,session_id:sid,parent_tool_use_id:null,message:{content:[{type:'text',text}]}});

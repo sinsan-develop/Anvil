@@ -245,12 +245,12 @@ export class NormalInstructionCoordinator{
   this.#busy=true;
   try{
    const parent=normalWireLiveParent(wire);
-   if(parent){
+   if(isNormalFirstSendWire(wire)){
     let chain:any[]=[];
     const checkParent=()=>{live();if(!same(normalWireLiveParent(wire),parent))fail();};
     const readChain=async(tx:NormalJournalTransaction)=>this.#rows(await tx.read(),e,ready.material.receivedRef);
     const compare=async(tx:NormalJournalTransaction)=>{if(!same(await readChain(tx),chain))fail('NORMAL_INSTRUCTION_HISTORY_CONFLICT');};
-    const append=async(tx:NormalJournalTransaction,state:string,summary?:LiveSendCompletion['summary'])=>{
+    const append=async(tx:NormalJournalTransaction,state:string,summary?:LiveSendCompletion['summary']|FirstSendSummary)=>{
      const snapshot={...cloneV1(chain[1].snapshot),sequence:chain.length+1,state,previousRef:cloneV1(chain.at(-1).ref),recordedAt:new Date(this.#now()).toISOString(),
       localAttemptRef:cloneV1(chain[0].ref),dispatchAttemptRef:chain[2]?.ref??null,responseRef:null,processRef:null,...(summary??{})};
      const entry={ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};
@@ -261,16 +261,32 @@ export class NormalInstructionCoordinator{
      await append(tx,'SEND_DISPATCH_ATTEMPTED');
     });
     const verify=async()=>{
-     checkParent();await this.#parent(parent,e,checkParent);checkParent();
+     checkParent();if(parent)await this.#parent(parent,e,checkParent);checkParent();
      await verifyCurrent(chain[0].ref);checkParent();await this.#strict(e,checkParent,compare);
     };
     const issued=Object.freeze({});capability=issued;
-    const value=await this.#bounded(async child=>{
-     ticket={parent:cloneV1(parent),grantRef:cloneV1(this.#p.grantRef),input:{envelope:cloneV1(e),instruction:copyInstruction(ready.material),localAttemptRef:cloneV1(chain[0].ref),dispatchAttemptRef:cloneV1(chain[2].ref),permit:cloneV1(prepared.permit!),proofResultRef:cloneV1(prepared.proofResultRef!),actualExecutionVerified:false,executionAuthorized:false},signal:child,active:true,claimed:false,
+    let value:unknown;
+    try{value=await this.#bounded(async child=>{
+     ticket={...(parent?{parent:cloneV1(parent)}:{}),grantRef:cloneV1(this.#p.grantRef),input:{envelope:cloneV1(e),instruction:copyInstruction(ready.material),localAttemptRef:cloneV1(chain[0].ref),dispatchAttemptRef:cloneV1(chain[2].ref),permit:cloneV1(prepared.permit!),proofResultRef:cloneV1(prepared.proofResultRef!),actualExecutionVerified:false,executionAuthorized:false},signal:child,active:true,claimed:false,
       verify:async()=>{if(child.aborted||!ticket?.active)fail();await verify();if(child.aborted||!ticket.active)fail();},remaining:()=>{checkParent();return Math.min(end-this.#now(),end-wall-(performance.now()-started));}};
      dispatchTickets.set(issued,ticket);return Reflect.apply(send,wire,[issued,child]);
-    },signal,end);
-    completion=consumeNormalFirstSendResult(wire,issued,value);if(!ticket?.claimed||completion.kind!=='LIVE')fail();
+    },signal,end);}catch(error){
+     if(parent)throw error;
+     this.#unknown=true;if(ticket)ticket.active=false;
+     const checked=()=>{this.#ports();if(this.#p.store.exclusive!==this.#exclusive)fail();};
+     const last=await this.#strict(e,checked,async tx=>{await compare(tx);return append(tx,'UNKNOWN');});
+     return{transport:'NORMAL_PROTECTED',state:'UNKNOWN',recordRef:cloneV1(last.ref),responseRef:null,processRef:null,actualExecutionVerified:false,executionAuthorized:false,dispatchPerformed:false};
+    }
+    completion=consumeNormalFirstSendResult(wire,issued,value);if(!ticket?.claimed)fail();
+    if(!parent){
+     if(completion.kind!=='FIRST')fail();
+     const first=completion;signal.addEventListener('abort',first.abandon,{once:true});
+     await verify();checkParent();
+     const last=await this.#strict(e,checkParent,async tx=>{await compare(tx);checkParent();return append(tx,'FIRST_SEND_INPUT_AND_INIT_RECORDED',first.summary);});
+     live();first.commit(last.ref);live();committed=true;
+     return{transport:'NORMAL_PROTECTED',state:'FIRST_SEND_INPUT_AND_INIT_RECORDED',recordRef:cloneV1(last.ref),responseRef:null,processRef:null,actualExecutionVerified:false,executionAuthorized:false,dispatchPerformed:false};
+    }
+    if(completion.kind!=='LIVE')fail();
     const delivery=completion;signal.addEventListener('abort',delivery.abandon,{once:true});
     const active=()=>{checkParent();delivery.check();};
     active();await verify();active();
@@ -282,9 +298,9 @@ export class NormalInstructionCoordinator{
    const result=await this.#exclusive.call(this.#p.store,receiptKeyV1(e),async tx=>{
     live();let rows=this.#rows(await tx.read(),e,ready.material.receivedRef);live();
     if(rows.length!==2||!same(rows[1].ref,prepared.recordRef)||!same(rows[1].snapshot.permit,prepared.permit)||!same(rows[1].snapshot.proofResultRef,prepared.proofResultRef))fail('NORMAL_INSTRUCTION_DISPATCH_NOT_ELIGIBLE');
-    const append=async(state:string,observation:NormalInstructionObservation|null=null,first?:FirstSendSummary)=>{
+    const append=async(state:string,observation:NormalInstructionObservation|null=null)=>{
      const snapshot={sequence:rows.length+1,state,key:receiptKeyV1(e),envelopeHash:e.envelopeHash,grantRef:cloneV1(this.#p.grantRef),sessionBindingRef:cloneV1(e.payload.sessionBindingRef),receivedRef:cloneV1(ready.material.receivedRef),previousRef:rows.at(-1).ref,
-      permit:cloneV1(prepared.permit),proofResultRef:cloneV1(prepared.proofResultRef),recordedAt:new Date(this.#now()).toISOString(),localAttemptRef:cloneV1(rows[0].ref),dispatchAttemptRef:rows[2]?.ref??null,responseRef:observation?.responseRef??null,processRef:observation?.processRef??null,...(first??{})};
+      permit:cloneV1(prepared.permit),proofResultRef:cloneV1(prepared.proofResultRef),recordedAt:new Date(this.#now()).toISOString(),localAttemptRef:cloneV1(rows[0].ref),dispatchAttemptRef:rows[2]?.ref??null,responseRef:observation?.responseRef??null,processRef:observation?.processRef??null};
      const entry={ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot};await tx.appendAndSync(entry);
      const reread=this.#rows(await tx.read(),e,ready.material.receivedRef);if(!same(reread,[...rows,entry]))fail('NORMAL_INSTRUCTION_SYNC_UNCERTAIN');rows=reread;return entry;
     };
@@ -301,11 +317,6 @@ export class NormalInstructionCoordinator{
        verify:async()=>{if(!ticket?.active||child.aborted)fail();await verify();if(!ticket.active||child.aborted)fail();},remaining:()=>{live();return Math.min(end-this.#now(),end-wall-(performance.now()-started));}};
       dispatchTickets.set(issued,ticket);return send.call(wire,issued,child);
      },signal,end);live();
-     if(isNormalFirstSendWire(wire)){
-      if(!ticket?.claimed)fail();completion=consumeNormalFirstSendResult(wire,issued,observation);if(completion.kind!=='FIRST')fail();
-      signal.addEventListener('abort',completion.abandon,{once:true});live();
-      const last=await append('FIRST_SEND_INPUT_AND_INIT_RECORDED',null,completion.summary);live();return output(last);
-     }
      const observed=captureInstructionInput(observation);if(!ticket?.claimed||!recordV1(observed,['transport','responseRef','processRef'])||observed.transport!=='NORMAL_PROTECTED'||!refV1(observed.responseRef)||observed.processRef!==null&&!refV1(observed.processRef))fail('NORMAL_INSTRUCTION_RESPONSE_INVALID');
      const last=await append('RESPONSE_RECORDED',{transport:'NORMAL_PROTECTED',responseRef:observed.responseRef,processRef:observed.processRef});live();return output(last);
     }catch{
@@ -316,7 +327,6 @@ export class NormalInstructionCoordinator{
     }finally{if(ticket)ticket.active=false;}
    });
    const completed=result as NormalInstructionDispatchResult;if(completed.state==='RESPONSE_RECORDED')live();
-   if(completed.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'){live();if(!completion)return fail();completion.commit(completed.recordRef);live();committed=true;}
    return completed;
   }catch(error){this.#unknown=true;throw error;}finally{if(completion)signal.removeEventListener('abort',completion.abandon);if(!committed)completion?.abandon();if(capability)abandonNormalFirstSendResult(capability);if(ticket)ticket.active=false;this.#busy=false;}
  }

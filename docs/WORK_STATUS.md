@@ -1,6 +1,27 @@
 # Anvil 재설계 작업현황
 
 <!-- CURRENT_WORK_ENTRY_START -->
+<!-- ANVIL_CURRENT_SUMMARY_V2 -->
+## 현재 작업 요약 — 2026-11-16 18:54:00 KST
+
+- **현재 상태: 개발 진행 중.** 과거 ‘병합하고 대기’는 당시 이력이며 현재 중지 지시가 아니다. 1단계 로컬·WSL-server 기능 구현을 계속한다.
+- **현재 업무:** Stage C/D · FN07/FN08의 `SDK_SESSION_OUTPUT` 제5 보호 채널 연결. 기존 256MiB/전체 1GiB 안에서 원 worker·Query·프로필·slot·grant·실행 세대를 결박하고 원 출력 저장·재판독·정산을 연결한다. 허용 제품6개·시험4개를 기존 Primary가 단일 writer로 구현한다.
+- **담당:** `developer_primary` 구현·기본 검증, Main 어울 작업관리·필수 테스트·독립 검수·통합. 진행 중인 구현은 중단·회수·중복 배정하지 않았다.
+- **Git:** 최신 통합 main `e0c152e4b00df2da74e87578a748dd795c8fe6f7`(PR148 소스·PR149 기록). 현재 작업 branch `codex/av3-sdk-output-storage`, 제품·시험 미커밋 변경이 진행 중이다. 작업지시서는 `docs/work_packages/FN07_SDK_OUTPUT_PROTECTED_STORAGE_WI_20261116.md`다.
+- **완료한 소스 단위:** normal START 준비, 첫·후속 SEND, 원 Query 출력 수집과 협력 STOP 소비, profile/예산·원 READY 연결은 PR144~149에 source로 통합됐다. 이를 현재 ‘SEND/STOP 소스 미구현’으로 표시하지 않는다. 실제 SDK·Agent 실행 완료를 뜻하지도 않는다.
+- **최근 확정 검증:** PR148 spool 단위 직접64건·선택6건 PASS, root/desktop 타입0, 독립 C0/I0/M0. 병합본 READY/ACK/cursor RAM smoke1건 PASS. 현재 제5 출력 채널은 별도 구현·검수 중이며 아직 최종 PASS가 아니다.
+- **현재 구현 검증:** 제5 출력 채널의 원 Query/예약 연결을 구현하고 직접 TS70건·등록 CJS35건 및 독립 START/ACK→원 출력 정산 양성을 확인했다. 독립 검수의 원 callable I1·거절 후 자기 Query 정리 I2를 보완하고 최종 영향 선택2건/소유권4건·메모리 closure1건·root/desktop 타입0을 확인했다. native/연결 최종 독립 C0/I0/M0, 소스 통합 준비이며 실제 SDK·Windows PASS가 아니다.
+- **미확인·남은 기능:** 실제 SDK/CLI·OS 프로세스·도구 권한 집행, C# 컴파일·Windows 파일/ACL·보호 저장, 실제 DB·서비스·브라우저 통합 및 사용자 인수는 미검증이다. 실제 Agent 생산자와 전체 작업계획은 미완료다.
+- **P03·SSH:** R3 복구는 복사·PG 기동·전환에 도달하지 못했고 원 자원을 보존한다. 자동 wrapper의 SSH255/UNKNOWN과 일반 SSH를 구분한다. 사용자 Windows PowerShell 로그인 성공 증거(11-16 18:04:45 KST)가 있으며 서버/로그인 불능으로 일반화하지 않는다. 새 부수 진단·재복제·정리는 하지 않는다.
+- **기록 기준:** 소스/RAM 합격, 실제 동작 확인, 사용자 인수를 구분한다. 기존 서로 다른 이력은 아래 보관 영역에 남긴다. 사용자 열람본의 기존 미추적 원본은 `D:\Project\Anvil\.av3-data\status-view-backup-20261116-184648`에 원본 해시 그대로 보존했다.
+
+최신 상세 근거: [작업 branch WORK_STATUS](https://github.com/sinsan-develop/Anvil/blob/codex/av3-sdk-output-storage/docs/WORK_STATUS.md), [WORK_CHECK](https://github.com/sinsan-develop/Anvil/blob/codex/av3-sdk-output-storage/docs/WORK_CHECK.md).
+<!-- CURRENT_WORK_ENTRY_END -->
+
+## 이전 요약·누적 이력 — 당시 기록 보존(현재 판정 아님)
+
+
+<!-- ARCHIVED_CURRENT_WORK_ENTRY_START -->
 ## 현재 작업 진입점 — 2026-11-07
 
 - 전체 목표: docs/WORK_PLAN.md의 모든 미완료 업무와 검증 완료. 전체 계획은 미완료이며 최신 직접 승인으로 목표 active·FN09 구현과 SDK 추가 읽기를 재개했다(§377). 과거 WAIT/BLOCKED/PASS를 현재 근거 없이 상속하지 않는다.
@@ -22,7 +43,7 @@
 | Git 보존 | 마지막 제품 checkpoint fc45abea98fedf12d4b56d7be1cbd43a67b4ac07·branch codex/av3-stage-b다. 사후 제품/시험 지문과 보호3 불변을 확인했다. Main 후속 현황/통제와 후보문서를 보존한다. private 동일성/PR/병합 미확인·인증 복구/push 재시도0·main 변경0이다 |
 
 최신 증거는 아래 일자별 이력과 docs/work_packages/FN06_IMPLEMENTATION_CONTROL_20261104.md를 함께 확인한다. 부분 인수는 전체 기능·계획 완료가 아니다.
-<!-- CURRENT_WORK_ENTRY_END -->
+<!-- ARCHIVED_CURRENT_WORK_ENTRY_END -->
 ## 2026-10-31 FN16 수동 백업 정책 저장 r2 A 직접승인 재개
 - UI7部分동결 AppEE1DE470/decisionsapi3A7C2E34/ApprovalsPageE8A2A64D/policyprofile0EB31A56/policyapi13977B96/Panel3CB48C3A/approvalapiA1CF5B67를기존Reviewer에독립검수배정했다. 1bada9 신규UI3시험14PASS/type0·a08a12원생성보호GET8/명시4선택→전체profile412/POST0·95dffd UI08별도결정/복귀·자동소비0는메모리증거다.
 - 자체tuple반례9dfec1은잘못된operation에도IO1을재현해5571d1에서operation/project/client/target/expected+body동반변경IO0/type0로보완했다. API A4130B4AB6CBC487F8B0C161BDF5B1EF61E22172693A4C1DCE5FA3285A69235D의tuple보완은독립Addressed다. UI나머지6/23번째기존operation시험78CE371C도추가C/I없음이나POST APPLIED후fixedGET403/404/412를REJECTED로분류해원명령수정이가능한Important1이남아동일API/시험에phase분리·UNKNOWN보존반례보정을지시했다.
@@ -20062,3 +20083,33 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - merged-main smoke c7e0f8은등록owner의generic/원READY를각같은물리host40/64frame,준비행1·필수4관측ACK/cursor1로확인한1PASS/FAIL·SKIP0·exit0이다. desktop타입128e39는진단0/exit0이다. 기존직접64·선택6·독립C0/I0/M0결과는원결과서대로유지하고중복합산하지않는다.
 - 로컬/원격main exact SHA와clean을확인했고완료branch와소비된request tag만정상삭제했다. squash특성상upstream-merged경고가있었으나동일tree와원격복구ref를먼저검산했고force/history변경은없다. 기존보호작업사본/공유모듈은보존했다.
 - 실제C#컴파일·Windows보호저장/ACL·SDK/Agent·DB/서비스동작은미검증이며전체작업계획/FN08인수는미완료다. 사용자18:04:45KST일반SSH성공과자동wrapper결과를구분했고최신지시대로부수진단/후속설계준비는중단했다. 현재기록마감은제품/시험변경0이다.
+
+- 다음승인미완료업무는SDK_SESSION_OUTPUT 보호저장이다. 86A461 §4/§64는기존9E98의네채널에같은256MiB의제5채널을명시했고두계약이모두채택됐지만native/filestore는아직네채널만수용한다. Main은최신main e0c152e4에서codex/av3-sdk-output-storage를생성해기존Primary에4제품/4시험/결과서의원worker·profile 결박저장연결을맡긴다. 상한/서버권한/API변경·새조회·실제SDK/OS실행은없다. 단순SDK비교helper/미확인실행권위를진도로대체하지않으며실제생산자활성화와분리한다.
+
+- 출력저장구현사전대조에서기존FIRST가wire호출동안journal잠금을점유하고원origin은first-send-owner에만함께있음을확인했다. Main은채택86A의원origin결박/두strict거래를실현할내부배치보완으로first-send-owner와instruction-coordinator 2제품경로만추가한다. FIRST3행정착/닫힘→잠금밖원owner→원3행검산/4행정착과원일회ticket/재생생성0을보존한다. native의정상닫힌SDK출력읽기전용보호인계근거만다음거래에쓰고UNKNOWN일반RESUME/holdId정산은계속거절한다. 실제원권한/데이터의미미채택변경이필요하면그부분만다시대조한다.
+
+- 출력native사전검수의첫I1(LOGICAL_HOLD_EXPIRY_AFTER_INSPECT)은OutputTime검사뒤최대10000파일Inspect·append/fsync동안원논리기한이만료돼도인계권위반환가능한순서다. Main은동일허용파일에서전이기록직전/응답직전재검산·기록후만료/불명시불변행/최악예약보존과권위반환0을Primary에게맡겼다. 실제C#실행으로재현한것은아니며작성중지문1EE80F2D…E09DA5의정적순서검수1회다. 기존source/검사기준·원기한연장은바꾸지않는다.
+
+- 출력저장후행ACK의원인은최초종단직후collector drain과SEND관측저장의동시물리host open BUSY였다. 검산된foreground/내부출력/credential거래의물리admission만직렬화하고외부ticket대여거절/SDKnext admission점유0을유지해ba3136 RAM1PASS/FAIL0을확인했다. 최종반례/타입/메모리/독립검수는진행중이므로현재요약도중간양성으로만갱신한다. 현재summary/44행표와과거이력을분리해정리중이며사용자열람본의기존미추적원본2개는각원해시로별도보존했다.
+
+## 2026-11-16 현재 요약·사용자 열람본 정합화 완료
+
+진행 중 Primary 구현은 중단/회수하지 않았다. 현재 Stage C/D·FN07/FN08, Main/Primary 역할, main e0c152e4와 작업branch, source/RAM 검증과 실제 SDK/Windows/DB 미검증, P03 보존 및 일반 SSH 성공/자동wrapper 실패를 현재 요약에 반영했다. CHECK의44행 인수 기준은 source 완료와 실제 실행 미확인을 분리했고 과거 현재/대기 요약은 이력으로 보존했다.
+
+사용자 D:\Project\Anvil\docs의 기존 두 미추적 원본은 새 .av3-data/status-view-backup-20261116-184648에 원해시 그대로 보존했다. 두 열람본의 고유 이력 본문은 유지하고 현재 요약/표만 정본과 일치시켰다. 파일 전체를 다른 이력으로 덮어쓰지 않았다. 현재 요약 지문:
+WORK_CHECK.md current-summary SHA256 DAD8CDE328E1A83C3169A89CA66403AA53EC6CF827135E143B89175EFC0A294A
+WORK_STATUS.md current-summary SHA256 FF8CEC87B183B19328F601ED7FB29C650A49A06AF74EBA2E9F17E429D13D62D8
+
+다음 정상 기록에서도 현재 요약과 두 열람본을 함께 갱신한다. 제품 변경·검사 재실행·새 진단/설계/환경 변경은 하지 않았다.
+
+## 2026-11-16 FN07 출력 원천 독립 검수 I1 보완
+
+동결 제품의 read-only 검수에서 C0/I1/M0을 확인했다. normal-first-send-owner.ts의 iterate.call(query)는 검산한 원 함수 대신 함수의 자체 call 속성/getter를 호출할 수 있어 새 보호 저장의 원 iterator 결박에 영향을 준다. 지문 DF03C4C2…3F6628 기준 첫 확인1회이며 동일 원인 반복 실패0이다. Main은 기존 Primary에게 Reflect.apply로 원 함수 직접 호출·Proxy 정책 대조와 own call getter0/원 메서드1 반례를 한정 배정했다. 다른 제품 변경·실제 SDK/Agent/C#/DB/권한/키/서비스 실행은 허용하지 않았다. 원 native 기한 I1은 지문1A26C1C5…BD5A4의 독립 C0/I0/M0으로 해소됐고 이와 구분한다. 새 I1 해소·시험·변경 지문 재검수 전 최종 PASS/병합하지 않는다.
+
+## 2026-11-16 FN07 거절 후 자기 Query 정리 보완
+
+기존 own call I1은 RED9b21dd에서 등록 CJS35PASS(118892)·인접18PASS(588092)·메모리8528ff·root/desktop 타입0으로 보완됐다. 독립 재검수에서 연계 I2 1회를 새로 확인했다. 자기 Query를 선점한 뒤 iterator 검산이 거절되면 lease.query 등록 전 예외로 source.close가 누락될 수 있다. Main은 같은 Primary에게 이미 타 owner 소유인 Query는 건드리지 않고 자기 Query의 단발 정리만 보존하도록 한정 재배정했다. exact 자기 Query close1·Proxytrap0·다른ownerclose0을 관측하고 결과서 갱신/재검수를 거친다. 이전 검증과 오류 이력을 삭제하지 않으며 현재 C0/I1/M0·병합 전이다. 실제 SDK·프로세스·파일자료·DB·권한·키·서비스·C# 실행0 유지.
+
+## 2026-11-16 FN07 출력 보호 저장 검수 완료·통합 준비
+
+Main이 제품6/시험4의 실제 SHA256을 최종 결과서와 10개 모두 대조했다. native 1A26C1C5 및 first-send-owner 0E8B67C9의 독립 검수는 C0/I0/M0이다. 자기 Query 정리 I2 RED edbc4e를 보존하고 최종 양성/Proxy2건·소유권회귀4건·메모리1건과 root/desktop 타입0을 확인했다. 최종 결과서 SHA256 7185D0F1B4FD737D6B56FE6E800E858AB460C2D9B216AD224051C8FC53327DEB. 전체44업무/실제SDK/Windows/DB 검증은 미완료다. 단일 writer 쓰기반환/live0을 확인했고 Main이 정확 변경만 commit/push·PR·trusted Broker·병합본 smoke·정리를 수행한다. WORK_CHECK/STATUS 현재요약과 사용자열람본 현재블록을 함께 갱신했으며 서로다른 과거이력은 보존했다.

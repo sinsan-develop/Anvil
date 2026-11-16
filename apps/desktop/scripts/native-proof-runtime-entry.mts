@@ -1,13 +1,15 @@
 import { NormalProtectedGetClient, type NormalProtectedGetOptions } from '../../connector/runtime/normal-protected-get-client.ts';
 import { NormalProtectedPostClient } from '../../connector/runtime/normal-protected-post-client.ts';
-import { OwnedSpoolRuntime } from '../../connector/runtime/normal-owned-spool-profile.ts';
+import { NormalInstructionWire } from '../../connector/adapters/secondary/normal-instruction-wire.ts';
+import { NormalInstructionIntake } from '../../connector/runtime/normal-instruction-intake.ts';
+import { OwnedSpoolRuntime,type WorkerSdkPorts } from '../../connector/runtime/normal-owned-spool-profile.ts';
 import { NormalCredentialBootstrapClient, type NormalOwnedHostFactory, NormalOwnedCredentialPort } from '../../connector/runtime/normal-credential-bootstrap-client.ts';
 import { cloneV1, recordV1, refV1, type RuntimeRefV1 } from '../../../contracts/runtime/validation-v1.ts';
 import { canonicalJson } from '../../../contracts/canonical.ts';
 import { NormalStartCoordinator, type NormalStartPorts } from '../../connector/runtime/normal-start-coordinator.ts';
 import { NormalStartIntake, type NormalStartStore } from '../../connector/runtime/normal-start-intake.ts';
 import { NormalObservationSpool } from '../../connector/runtime/normal-observation-spool.ts';
-import { NormalStartPolling, type NormalPollingClients } from '../../connector/runtime/normal-start-polling.ts';
+import { NormalStartPolling, type NormalPollingClients,type NormalStartPollingOptions } from '../../connector/runtime/normal-start-polling.ts';
 import { isProxy } from 'node:util/types';
 
 const pairs = new WeakMap<NormalPollingClients, { port: NormalOwnedCredentialPort; scope: NormalProtectedGetOptions['scope'] }>();
@@ -45,6 +47,10 @@ interface StartPollingInput {
 
 export function createNormalStartPolling(pair: NormalPollingClients, port: NormalOwnedCredentialPort, registration: RuntimeRefV1,
   input: StartPollingInput, now: () => number, renew: (previous: NormalPollingClients, signal: AbortSignal) => Promise<NormalPollingClients>) {
+  return assembleStartPolling(pair,port,registration,input,now,renew);
+}
+function assembleStartPolling(pair:NormalPollingClients,port:NormalOwnedCredentialPort,registration:RuntimeRefV1,input:StartPollingInput,now:()=>number,
+  renew:(previous:NormalPollingClients,signal:AbortSignal)=>Promise<NormalPollingClients>,instruction?:NormalStartPollingOptions['instruction']){
   const saved = pairs.get(pair);
   if (!saved || saved.port !== port || typeof now !== 'function' || typeof renew !== 'function' || !refV1(registration) ||
       isProxy(input) || !recordV1(input,['intakeStore','journalStore','expected','current','wire','timeoutMs','deadline','maxPages','idleMs'])) throw Error('NORMAL_POLL_CONFIG_INVALID');
@@ -61,7 +67,7 @@ export function createNormalStartPolling(pair: NormalPollingClients, port: Norma
   // 최초 page 전에 기존 생성자의 포트 검사를 적용한다. 생성자는 I/O를 시작하지 않는다.
   new NormalStartCoordinator({...start,post:pair.post});
   checkClients(pair);
-  const polling = new NormalStartPolling({clients:pair,start,deadline:input.deadline,maxPages:input.maxPages,idleMs:input.idleMs,
+  const polling = new NormalStartPolling({clients:pair,start,...(instruction?{instruction}:{}),deadline:input.deadline,maxPages:input.maxPages,idleMs:input.idleMs,
     owner:() => { clock(); return registration.id; },
     renew:async (previous,signal) => {
       if (previous.get !== active.get || previous.post !== active.post || previous.expiresAt !== active.expiresAt) throw Error('NORMAL_OWNED_PREDECESSOR');
@@ -103,7 +109,7 @@ export function createOwnedSpoolController(host: NormalOwnedHostFactory, attempt
   };
   type WorkerInput=Omit<StartPollingInput,'intakeStore'|'journalStore'|'wire'>;
   type WireInput=WorkerInput&Pick<StartPollingInput,'wire'>;
-  const assemble=(pair:NormalPollingClients,input:WorkerInput&Partial<Pick<StartPollingInput,'wire'>>,worker:boolean)=>{
+  const assemble=(pair:NormalPollingClients,input:WorkerInput&Partial<Pick<StartPollingInput,'wire'>>,worker:boolean,sdk?:WorkerSdkPorts)=>{
     const fields=['expected','current','timeoutMs','deadline','maxPages','idleMs'];
     if(!latest||latest.pair!==pair||isProxy(input)||!recordV1(input,worker?fields:[...fields,'wire']))
       throw Error('NORMAL_POLL_CONFIG_INVALID');
@@ -123,8 +129,14 @@ export function createOwnedSpoolController(host: NormalOwnedHostFactory, attempt
     const checkedClock=()=>service.external(()=>{
       if(wire.send!==send)throw Error('NORMAL_WIRE_CHANGED');return clock();
     });
-    const poll=createNormalStartPolling(pair,latest.port,registration,{...input,intakeStore:store.intake(),journalStore:store,current,wire},checkedClock,
-      async(previous,signal)=>active=await renew(previous,signal));
+    const instruction=sdk&&worker?{
+      intake:new NormalInstructionIntake(store.instructionIntake(),input.expected,checkedClock),
+      store:store.instructionAttempts(),current:{transport:'NORMAL_PROTECTED' as const,current:(...args:Parameters<typeof currentMethod>)=>
+       service.external(()=>{checkedClock();return Reflect.apply(currentMethod,current,args);})},grantRef:config.scope.grantRef,clock:checkedClock,timeoutMs:input.timeoutMs,
+      wire:NormalInstructionWire.forFirstSend(wire,service.outputSource(wire,store,sdk,signal))
+    }:undefined;
+    const poll=assembleStartPolling(pair,latest.port,registration,{...input,intakeStore:store.intake(),journalStore:store,current,wire},checkedClock,
+      async(previous,signal)=>active=await renew(previous,signal),instruction);
     return Object.freeze({run:async(signal:AbortSignal)=>{
       if(running||signal.aborted||lifetime.signal.aborted)throw Error('NORMAL_POLL_UNAVAILABLE');running=true;
       const cancel=()=>lifetime.abort();signal.addEventListener('abort',cancel,{once:true});
@@ -134,7 +146,7 @@ export function createOwnedSpoolController(host: NormalOwnedHostFactory, attempt
   return Object.freeze({
     bootstrap:async(signal:AbortSignal)=>bind(await issuer.bootstrap(signal)),renew,
     createStartPolling:(pair:NormalPollingClients,input:WireInput)=>assemble(pair,input,false),
-    createWorkerStartPolling:(pair:NormalPollingClients,input:WorkerInput)=>assemble(pair,input,true)
+    createWorkerStartPolling:(pair:NormalPollingClients,input:WorkerInput,sdk?:WorkerSdkPorts)=>assemble(pair,input,true,sdk)
   });
 }
 

@@ -12,6 +12,7 @@ import {copyNormalWorkerStart} from '../adapters/secondary/normal-start-wire.ts'
 import {takeNormalFirstStart,type NormalStartWire} from './normal-start-coordinator.ts';
 import {originalNormalLiveDispatch,type NormalDispatchClaim,type NormalInstructionDriverInput} from './normal-instruction-coordinator.ts';
 import {NormalSdkSessionOutput} from './normal-sdk-session-output.ts';
+import {bindProfileOutput} from './normal-owned-spool-profile.ts';
 
 type OutputOptions=ConstructorParameters<typeof NormalSdkSessionOutput>[0];
 type Scope=OutputOptions['scope'];
@@ -41,13 +42,19 @@ const normalizeNext=NormalSdkSessionOutput.prototype.next,consumeInit=NormalSdkS
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
 const fail=():never=>{throw Error('NORMAL_FIRST_SEND_UNKNOWN');};
 const shape=(v:unknown,keys:string[])=>!isProxy(v)&&recordV1(v,keys);
+type OutputOrigin={worker:NormalStartWire;scope:Scope;signal:AbortSignal;check:()=>number};
+const bindingOrigins=new WeakMap<object,{storage:NormalFirstSendSource['storage'];origin:OutputOrigin}>();
+export function takeFirstOutputOrigin(ticket:object,storage:NormalFirstSendSource['storage'],worker:NormalStartWire){
+ const saved=bindingOrigins.get(ticket);if(!saved||saved.storage!==storage||saved.origin.worker!==worker)return fail();
+ bindingOrigins.delete(ticket);saved.origin.check();return saved.origin;
+}
 const sourceKeys=['profileRef','assignmentRef','slotRef','plannedSid','expiresAt','ownerSignal','clock','check','storage','create','close'];
 const storageKeys=['classify','reserve','strictExclusive','settle'] as const;
 function native<T>(p:Promise<T>){if(!isPromise(p)||isProxy(p))return fail();return new Promise<T>((resolve,reject)=>Reflect.apply(Promise.prototype.then,p,[resolve,reject]));}
 function queryIterator(query:Query):Query[typeof Symbol.asyncIterator]{
  for(let object:object|null=query;object;object=Object.getPrototypeOf(object)){
   if(isProxy(object))return fail();const d=Object.getOwnPropertyDescriptor(object,Symbol.asyncIterator);
-  if(d)return 'value' in d&&typeof d.value==='function'?d.value:fail();
+  if(d)return 'value' in d&&typeof d.value==='function'&&!isProxy(d.value)?d.value:fail();
  }
  return fail();
 }
@@ -107,7 +114,9 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
   if(NormalSdkSessionOutput.prototype.next!==normalizeNext||NormalSdkSessionOutput.prototype.consumeInit!==consumeInit)return fail();
   const created=native(pinned.create.call(source,{start:copyNormalWorkerStart(parent.start),send,scope:cloneV1(scope),plannedSid},prompt,lease.life.signal)).then(query=>{
    if(!query||typeof query!=='object'||isProxy(query)||issuedHandles.has(query))return fail();
-   issuedHandles.add(query);lease.raw=query;lease.iterate=queryIterator(query);lease.query=query;if(lease.state==='UNKNOWN'){abandon();return fail();}return query;
+   issuedHandles.add(query);lease.raw=query;lease.query=query;
+   if(lease.state==='UNKNOWN'){abandon();return fail();}
+   lease.iterate=queryIterator(query);return query;
   });
   const query=await Promise.race([created,interrupted]);arm();
   const interrupt=stop?interruptMethod(query):undefined;
@@ -115,13 +124,19 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
    stopOwners.set(worker,{lease,query,interrupt,scope,parent,port:stop,store:stopStore,exclusive:stopExclusive,read:stopRead,check:current,now:()=>last,stopToken:null});
   }
   const iterate=lease.iterate;if(!iterate||queryIterator(query)!==iterate)return fail();
-  const iterator=iterate.call(query);
+  const iterator=Reflect.apply(iterate,query,[]);
   if(!iterator||typeof iterator!=='object'||isProxy(iterator)||(!Object.is(iterator,query)&&issuedHandles.has(iterator))){
    // 같은 iterator를 이미 가진 다른 owner에 대한 close 권위를 추론하지 않는다.
    lease.closeStarted=true;return fail();
   }
   issuedHandles.add(iterator);lease.iterator=iterator;arm();
   const origin={owner:worker,attempt:claim,query,iterator};
+  const binding=Object.freeze({});
+  bindingOrigins.set(binding,{storage:store,origin:{worker,scope:cloneV1(scope),signal:lease.life.signal,check:()=>{
+   if(leases.get(worker)!==lease||lease.query!==query||lease.iterator!==iterator||origin.attempt!==claim)return fail();
+   current();return expiresAt;
+  }}});
+  try{bindProfileOutput(store,binding);}finally{bindingOrigins.delete(binding);}
   const output=new NormalSdkSessionOutput({origin,scope,context:e.context,plannedSid,expiresAt,ports:{
    clock:()=>pinned.clock.call(source),current:()=>{current();return{...origin,scopeDigest,expiresAt};},
    classify:raw=>methods.classify.call(store,raw),reserve:req=>methods.reserve.call(store,req),
