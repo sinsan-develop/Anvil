@@ -20062,3 +20062,5 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - merged-main smoke c7e0f8은등록owner의generic/원READY를각같은물리host40/64frame,준비행1·필수4관측ACK/cursor1로확인한1PASS/FAIL·SKIP0·exit0이다. desktop타입128e39는진단0/exit0이다. 기존직접64·선택6·독립C0/I0/M0결과는원결과서대로유지하고중복합산하지않는다.
 - 로컬/원격main exact SHA와clean을확인했고완료branch와소비된request tag만정상삭제했다. squash특성상upstream-merged경고가있었으나동일tree와원격복구ref를먼저검산했고force/history변경은없다. 기존보호작업사본/공유모듈은보존했다.
 - 실제C#컴파일·Windows보호저장/ACL·SDK/Agent·DB/서비스동작은미검증이며전체작업계획/FN08인수는미완료다. 사용자18:04:45KST일반SSH성공과자동wrapper결과를구분했고최신지시대로부수진단/후속설계준비는중단했다. 현재기록마감은제품/시험변경0이다.
+
+- 다음승인미완료업무는SDK_SESSION_OUTPUT 보호저장이다. 86A461 §4/§64는기존9E98의네채널에같은256MiB의제5채널을명시했고두계약이모두채택됐지만native/filestore는아직네채널만수용한다. Main은최신main e0c152e4에서codex/av3-sdk-output-storage를생성해기존Primary에4제품/4시험/결과서의원worker·profile 결박저장연결을맡긴다. 상한/서버권한/API변경·새조회·실제SDK/OS실행은없다. 단순SDK비교helper/미확인실행권위를진도로대체하지않으며실제생산자활성화와분리한다.
