@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "FN07-LOCAL-CLI-DIAGNOSTIC-20261116-02",
+  "authorizationKind": "EXISTING_USER_SCOPE_PMO_CLARIFIED",
+  "status": "DISPATCH_CONSUMED_FOR_CURRENT_BOUNDED_OBSERVATION",
+  "dispatchCount": 1,
+  "maxCurrentDispatch": 1,
+  "recordedAt": "2026-11-16T14:07:13.7546516+00:00",
+  "newHumanApprovalRequested": false,
+  "originalUserEvidence": {
+    "quote": "CLI 설치 정보 한정 조회와 서버 항목 귀속 계약 변경 승인하니, 불필요한 승인 요청 반복하지 말고 실제로 쓸 수 있게 개발 계속해.",
+    "userMessageId": "01a1e456-2c67-7af1-b2f8-6af5d404ce5c",
+    "threadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642"
+  },
+  "scopeClarification": {
+    "instruction": "동일 설치정보 조회의 실패분류/종단수거 보완은 기존 승인 목적 안에서 수행하고 새 직접승인/30분창을 요구하지 않는다. 플랫폼 거절은 우회하지 않는다.",
+    "toolCallId": "exec-d200d6bb-7079-459d-9540-9e42a6658851",
+    "turnId": "01a1e4a7-6c0a-7fa2-8867-91c6cb444001",
+    "threadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642"
+  },
+  "candidate": "docs/work_packages/FN07_LOCAL_CLI_IDENTITY_DIAGNOSTIC_CANDIDATE_20261116.md",
+  "candidateSha256": "DB9265A3EECADBAE4DC76E8A55EDB7881D6CE195401DFEF89C3509AAFA0102E9",
+  "source": "scripts/fn07-local-cli-identity-read-v2.ps1",
+  "sourceSha256": "0FD03A3F62C508F1E7343FBD80DC03DED0AFE30251C1D2356450E271F5B28120",
+  "sourceMain": "ab8b2a2ea94dbac2ecaaaf710a64df4ddd2c6332",
+  "internalCandidateApprovalClause": "SUPERSEDED_ONLY_BY_LATEST_PMO_SCOPE_CLARIFICATION_NO_SCOPE_EXPANSION",
+  "previousAttempt": "20670a UNKNOWN, original dispatch remains consumed",
+  "limits": {
+    "childStarts": 1,
+    "literalProbes": 192,
+    "capturedBytes": 4096,
+    "stopConfirmMs": 3000,
+    "eligibleDirectories": 64,
+    "workMs": 27000,
+    "wrapperBodyBytes": 0,
+    "candidateCount": 1,
+    "imageBytes": 268435456,
+    "bufferBytes": 65536
+  },
+  "purpose": "미완료 FN07 실제 SDK spawn 구성에서 설치 CLI가 exe인지 wrapper인지 및 고정 바이트 근거를 식별하는 선행 관측. 실행 권위·서명·물리 신원 확인으로 승격하지 않는다.",
+  "excluded": [
+    "actual CLI/SDK/Agent/C# execution",
+    "DB/rights/key/service/install changes",
+    "additional SDK/SSH read",
+    "user material or backup contents"
+  ],
+  "onUnknown": "No redispatch. Preserve original unconfirmed Process and owning supervisor session; report exact result."
+}
