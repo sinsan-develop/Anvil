@@ -4,9 +4,9 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-16 직접 승인 후 구현 재개
 
-- **현재 상태: 전체 계획 미완료 · PR156 소스 통합 완료·다음 UI00 구현 진행.** 실제 서비스/DB/Agent 인수와 구분한다.
+- **현재 상태: 전체 계획 미완료 · UI00 모바일 메뉴 초점 소스 검수 완료·통합 중.** 실제 브라우저 인수와 구분한다.
 - **현재 승인·결과:** 서버 항목 귀속 계약5039D14A의 source/RAM·미적용0099는 직접 채택됐다. CLI 한정 관측1회도 승인·소진됐고 결과는 UNKNOWN이다. 설치 여부·원인은 미확정이며 재조회0, 부모 exit0·잔여 수거 핸들0이다.
-- **담당·실행:** 기존 Primary 한 명이 UI00 모바일 메뉴 선택 후 본문 초점 복귀를 구현한다. Main은 검수·현황·Git 통합을 맡는다. 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
+- **담당·실행:** Primary가 UI00 제품·시험 쓰기를 반환했다. Main이 검수·현황·Git 통합을 맡고 실행 핸들은 0이다. 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
 - **Git 제품 기준:** 최신 검증된 제품 main fedf6631e37c745c6e2534e0a3e3554f85bf11ff(PR156). source e86414ec와 tree 동일·병합본 RAM3PASS·복구tag pr-156-head 및 완료branch 정리 확인. 다음 branch codex/av3-shell-menu-focus에서 기존 승인 UI00을 진행한다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
 - **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
@@ -20241,3 +20241,20 @@ PR156은 source e86414ec90ac02da08318ebc0ef1201b9514adcb/merge fedf6631e37c745c6
 GitHub MCP Unknown tool/gh create must be a collaborator는권한이나credential을바꾸지않고기존로그인브라우저에서전체본문PR156을생성해해소했다. PR제출중복0·전용브라우저작업정상종료. 검수묶음74102213은PowerShell기본경로정렬·대문자SHA+공백1·LF행간/최종LF없음이고, Main/검수자/결과서의27개개별지문모두일치했다. 단발CLI UNKNOWN은재관측하지않았다.
 
 다음기존UI00 keyboard_focus_and_labels를WI C017EF163743F5B6EEAFC97EFFCD3A2E524ABDC7330C3F9081D85838E7AC9628로기존Primary에배정했다. 최신main에서codex/av3-shell-menu-focus 사용, AppShell/test2경로의동일·다른모바일메뉴선택후본문초점복귀와초기렌더입력초점보존을구현/검증한다. 새승인요청0·단일writer, Main은검수·통합이다. 실제DB/권한/키/서비스/CLI·SDK·Agent/실자료조사와전체계획인수는여전히제외/미완료다.
+
+
+## 2026-11-16 UI00 모바일 메뉴 초점 RED 재현
+
+Primary06a1b3 exit1에서동일화면/다른화면메뉴선택후activeElement===main 2건실패, 메뉴닫힘/제목정상과초기렌더·입력편집초점유지1건통과를확인했다. 실제브라우저아닌기존ReactRAM재현이며사용자입력·서비스·DB변경0이다. 기존hashchange/본문요소를재사용한선택한정수정을같은Primary가진행한다. 관리checkpoint4eca78002467f6a74dc8abfa0ce2504ad2c46f6c 원격동기화완료, Main코드쓰기0·재승인0.
+
+
+## 2026-11-16 Main GitHub 호출 정정·UI00 사전 I1 보완
+
+Main은최초GitHub create_pull_request에잘못된link_id를전달했다. 올바른기존연결link_6ac086be8c1881919e5b9d06c9432c04의get_pr_info는PR156 merged/source e86414ec/main fedf6631을정상반환했다. 연결도구전체장애로일반화한설명은정정하며불필요한CLI/브라우저경로추가는Main실수다. 계정/credential/권한변경0·PR중복0, 다음PR은정상연결을사용한다.
+
+UI00최초동결21PASS/type0 뒤독립C0/I1에서다른링크선택→경로전메뉴재열기→경로반영→토글닫기의낡은focus요청과대기중별도입력초점보호누락을확인했다. 같은2파일로수동토글pending취소·선택후명시초점이동보호를보완하도록Primary에게배정했다. 21PASS는이보완전근거이며최종합격으로승격하지않는다. 실제브라우저/DB/키/권한/서비스/Agent실행0이다.
+
+
+## 2026-11-16 UI00 I1 해소·최종 소스 인수
+
+Primary의5b842b RED2FAIL→동일범위보완후063543 최종직접/인접3파일24PASS/FAIL0/SKIP0·3290.4326ms, 루트타입e54837→67382d/session44116종료 exit0·공백d69d77 exit0·핸들0을확인했다. 보완중TS2367 1건은Object.is 비교후해소했고이전21/24PASS와최종실행을구분했다. 독립C0/I0/M0·I1해소, Main902c3c에서제품/시험/결과서3개정확SHA일치를확인했다. 최종제품431B00C67CBF03FD3D9AE3D771BAEF3EE925FEFFFC56BCE04CDA2813B4FC6B44/시험CF8935B987967BBD42F3CAD6A58CAEC948EA0A58D20BEC672FE3ABF04F25F79D, 결과서UI00_MOBILE_MENU_FOCUS_RESULT_20261116.md SHA6EF107D055765A84F19C217AFD5559FD2E90635DEBE10919BF4795C2AAD1DCAD. 수동메뉴재열기·셸내다른focusin은대기선택취소, 원링크/숨김뒤body는정상본문focus를허용한다. 실제브라우저Enter·기본링크/CSS/뒤로가기·DB/서비스/Agent는미검증/제외이며전체UI00완료체크는올리지않는다. Primary쓰기반환후Main이정확Git/PR/Broker·병합본영향smoke·정리를맡는다.

@@ -52,7 +52,7 @@ function appCode(){
   });
 }
 
-async function mount(controlUnknown=false){
+async function mount(controlUnknown=false,mobile=false){
   const code=await appCode();
   const saved=new Map<string,PropertyDescriptor|undefined>();
   const channels:MessageChannel[]=[];
@@ -75,7 +75,7 @@ async function mount(controlUnknown=false){
     events.set(name,handlers);
   };
   const removeEventListener=(name:string,handler:Function)=>events.get(name)?.delete(handler);
-  const window={document,location,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener,removeEventListener,getComputedStyle:()=>({})};
+  const window={document,location,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener,removeEventListener,getComputedStyle:()=>({}),matchMedia:(query:string)=>({matches:mobile&&query==='(max-width: 650px)'})};
   document.defaultView=window;
   const NativeChannel=globalThis.MessageChannel;
   class OwnedChannel extends NativeChannel{constructor(){super();channels.push(this);}}
@@ -160,6 +160,112 @@ async function openApp(h:Awaited<ReturnType<typeof mount>>,hash='#/projects/'+pr
   await h.wait(()=>h.header().textContent.includes('합성 사용자'));
   await h.nav(hash);
 }
+
+for(const [screen,title] of [['control','작업 권한 인계'],['session','단계책임자·실행']] as const){
+  test('모바일 메뉴 선택 후 본문 초점 · '+title,async()=>{
+    const h=await mount(false,true);
+    try{
+      await openApp(h);
+      const toggle=h.nodes().find(n=>n.getAttribute('aria-label')==='탐색 메뉴')!;
+      toggle.focus();
+      await h.click('메뉴',h.container);
+      assert.equal(toggle.getAttribute('aria-expanded'),'true');
+      assert(toggle.ownerDocument.activeElement===toggle);
+      const href='#/projects/'+projectA+'/'+screen;
+      const link=h.nodes().find(n=>n.tagName==='A'&&n.getAttribute('href')===href)!;
+      link.focus();
+      // Enter의 기본 링크 활성화가 보내는 click과 이어지는 hashchange를 구분한다.
+      await h.ui.React.act(async()=>link.dispatchEvent({type:'click',button:0,bubbles:true,detail:0}));
+      assert.equal(toggle.getAttribute('aria-expanded'),'false');
+      if(screen!=='control'){
+        assert(link.ownerDocument.activeElement===link,'이전 화면의 본문에 초점을 주지 않는다');
+        await h.nav(href);
+      }
+      const main=h.nodes().find(n=>n.getAttribute('id')==='main-content')!;
+      assert.equal(h.nodes(main).find(n=>n.tagName==='H1')?.textContent,title);
+      assert(main.ownerDocument.activeElement===main,'선택한 화면의 본문에 초점');
+    }finally{await h.close();}
+  });
+}
+
+test('초기 렌더와 프로젝트 이름 편집은 입력 초점을 유지한다',async()=>{
+  const h=await mount(false,true);
+  try{
+    await openApp(h,'#/projects/new');
+    assert(document.activeElement===document.body);
+    const input=h.nodes().find(n=>n.tagName==='INPUT'&&n.getAttribute('id')?.endsWith('-name'))!;
+    input.focus();
+    const key=Object.keys(input).find(k=>k.startsWith('__reactProps$'))!;
+    await h.ui.React.act(async()=>(input as any)[key].onChange({target:{value:'편집 중'}}));
+    assert.equal(input.value,'편집 중');
+    assert(input.ownerDocument.activeElement===input);
+  }finally{await h.close();}
+});
+
+for(const mode of ['메뉴 다시 열기','입력으로 이동'] as const){
+  test('경로 반영 전 '+mode+' 뒤에는 이전 메뉴 선택이 초점을 가져가지 않는다',async()=>{
+    const h=await mount(false,true);
+    try{
+      await openApp(h,'#/projects/new');
+      const input=h.nodes().find(n=>n.tagName==='INPUT'&&n.getAttribute('id')?.endsWith('-name'))!;
+      const toggle=h.nodes().find(n=>n.getAttribute('aria-label')==='탐색 메뉴')!;
+      await h.click('메뉴',h.container);
+      const href='#/settings';
+      const link=h.nodes().find(n=>n.tagName==='A'&&n.getAttribute('href')===href)!;
+      link.focus();
+      await h.ui.React.act(async()=>link.dispatchEvent({type:'click',button:0,bubbles:true,detail:0}));
+      if(mode==='메뉴 다시 열기'){
+        toggle.focus();
+        await h.click('메뉴',h.container);
+        assert.equal(toggle.getAttribute('aria-expanded'),'true');
+      }else{
+        input.focus();
+        await h.ui.React.act(async()=>input.dispatchEvent({type:'focusin',bubbles:true}));
+      }
+      // 현재 화면의 입력/링크가 비활성화되어 body로 돌아가도 취소된 선택은 다시 살아나지 않는다.
+      input.ownerDocument.body.focus();
+      await h.nav(href);
+      if(mode==='메뉴 다시 열기'){
+        await h.click('메뉴',h.container);
+        assert.equal(toggle.getAttribute('aria-expanded'),'false');
+        assert(toggle.ownerDocument.activeElement===toggle.ownerDocument.body,'수동 토글 뒤 선택 재실행 금지');
+      }else{
+        assert(input.ownerDocument.activeElement===input.ownerDocument.body,'입력 이동 뒤 예약 초점 취소');
+      }
+    }finally{await h.close();}
+  });
+}
+
+test('메뉴 숨김으로 원 링크 초점이 body에 돌아간 뒤에도 선택한 본문으로 이동한다',async()=>{
+  const h=await mount(false,true);
+  try{
+    await openApp(h);
+    await h.click('메뉴',h.container);
+    const href='#/projects/'+projectA+'/session';
+    const link=h.nodes().find(n=>n.tagName==='A'&&n.getAttribute('href')===href)!;
+    link.focus();
+    await h.ui.React.act(async()=>link.dispatchEvent({type:'click',button:0,bubbles:true,detail:0}));
+    link.ownerDocument.body.focus();
+    await h.nav(href);
+    assert(link.ownerDocument.activeElement===h.nodes().find(n=>n.getAttribute('id')==='main-content'));
+  }finally{await h.close();}
+});
+
+test('데스크톱 탐색과 모바일의 새 탭 선택은 현재 본문으로 초점을 옮기지 않는다',async()=>{
+  for(const mobile of [false,true]){
+    const h=await mount(false,mobile);
+    try{
+      await openApp(h);
+      if(mobile)await h.click('메뉴',h.container);
+      const href='#/projects/'+projectA+'/session';
+      const link=h.nodes().find(n=>n.tagName==='A'&&n.getAttribute('href')===href)!;
+      link.focus();
+      await h.ui.React.act(async()=>link.dispatchEvent({type:'click',button:0,bubbles:true,ctrlKey:mobile}));
+      if(!mobile)await h.nav(href);
+      assert(link.ownerDocument.activeElement===link);
+    }finally{await h.close();}
+  }
+});
 
 test('재조회는 이전 결과를 숨기고 403과 연결 오류 뒤 명시 재조회로 복구한다',async()=>{
   const h=await mount();
