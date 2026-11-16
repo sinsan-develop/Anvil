@@ -4,8 +4,20 @@ import{validateKnowledgeView,type KnowledgeView}from'./api.ts';
 import{ordered,knowledgeReason,knowledgeOutcomes,type KnowledgeOutcome,type KnowledgeStoredReview,type KnowledgeReviewRef}from'./review-view.ts';
 import{constitutionHash,constitutionRef}from'./constitution-proof.ts';
 import{isKnownDocumentRejection}from'../design-trace/mutation-result.ts';
-export interface KnowledgeDecisionBuffer{projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;kind:'REVIEW'|'CONFIRM'|'APPLY';applicationBaseRef?:KnowledgeView['ref']|null;target:KnowledgeView;items:KnowledgeStoredReview['items'];outcome:KnowledgeOutcome;reason:string;acknowledged:boolean;pending:DocumentWrite|null;savedId:string|null;failure:{code:string;status:number}|null;dirty:boolean;uncertain:boolean;rejectedAttempts?:{title:string;command:DocumentWrite;failure:{code:string;status:number}}[]}
+export interface KnowledgeApplicationReceipt{ref:KnowledgeView['ref'];commandId:string;ownerUserId:string;ownerClientId:string;csrfToken:string}
+export interface KnowledgeDecisionBuffer{applicationReceipt?:KnowledgeApplicationReceipt;projectId:string;ownerUserId:string;ownerClientId:string;controlGeneration:number;kind:'REVIEW'|'CONFIRM'|'APPLY';applicationBaseRef?:KnowledgeView['ref']|null;target:KnowledgeView;items:KnowledgeStoredReview['items'];outcome:KnowledgeOutcome;reason:string;acknowledged:boolean;pending:DocumentWrite|null;savedId:string|null;failure:{code:string;status:number}|null;dirty:boolean;uncertain:boolean;rejectedAttempts?:{title:string;command:DocumentWrite;failure:{code:string;status:number}}[]}
 export type KnowledgeDecisionChange=KnowledgeDecisionBuffer|null|((current:KnowledgeDecisionBuffer|null)=>KnowledgeDecisionBuffer|null);
+// App가 소유하는 세션 한정 메모리. 닫기는 입력만 비우고 검산 영수증은 보존한다.
+export interface KnowledgeDecisionStore{buffers:Record<string,KnowledgeDecisionBuffer|null>;applications:Record<string,KnowledgeView['ref']>;scope:object|null}
+export function knowledgeApplicationReceipt(b:KnowledgeDecisionBuffer|null,pid:string,s:DocumentSession){
+ const r=b?.applicationReceipt;
+ return b?.kind==='APPLY'&&b.projectId===pid&&b.savedId===pid&&!b.pending&&!b.uncertain&&r&&b.ownerUserId===s.user.id&&b.ownerClientId===s.clientId&&r.ownerUserId===s.user.id&&r.ownerClientId===s.clientId&&r.csrfToken===s.csrfToken&&uuid.test(r.commandId)&&constitutionRef(r.ref)&&r.ref.id===pid&&r.ref.version===(b.applicationBaseRef?.version??0)+1?r.ref:undefined;
+}
+export function changeKnowledgeDecisionStore(store:KnowledgeDecisionStore,pid:string,s:DocumentSession,scope:object,change:KnowledgeDecisionChange):KnowledgeDecisionStore{
+ const previous=store.buffers[pid]??null,next=typeof change==='function'?change(previous):change;
+ const applications=store.scope===scope?store.applications:{},ref=knowledgeApplicationReceipt(next,pid,s),old=applications[pid];
+ return{scope,buffers:{...store.buffers,[pid]:next},applications:ref&&(!old||ref.version>old.version)?{...applications,[pid]:{...ref}}:applications};
+}
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 function bound(b:KnowledgeDecisionBuffer,s:DocumentSession){if(!uuid.test(b.projectId)||b.ownerUserId!==s.user.id||b.ownerClientId!==s.clientId||!uuid.test(s.clientId)||!/^[A-Za-z0-9_-]{43}$/.test(s.csrfToken)||!Number.isSafeInteger(b.controlGeneration)||b.controlGeneration<1||b.target?.entry.scope.projectId!==b.projectId||!['PROPOSED','CONFIRMED'].includes(b.target.state)||b.target.ref.version!==b.target.headVersion||!['REVIEW','CONFIRM','APPLY'].includes(b.kind))throw new ApiError('KNOWLEDGE_DECISION_BINDING_INVALID');}
 export function newKnowledgeDecision(pid:string,target:KnowledgeView,s:DocumentSession,generation:number,kind:'REVIEW'|'CONFIRM'|'APPLY'):KnowledgeDecisionBuffer{

@@ -5,7 +5,22 @@ export function KnowledgeDecisionForm({client,session,buffer,onChange,onSaved,on
  const[reopenError,setReopenError]=useState<string|null>(null),reopening=useRef(false),current=useRef({client,session,buffer,onChange,working});current.current={client,session,buffer,onChange,working};
  if(buffer.ownerUserId!==session.user.id||buffer.ownerClientId!==session.clientId)return<p role="alert">다른 사용자·기기의 판단 요청은 열거나 전송하지 않습니다.</p>;
  function edit(p:Partial<KnowledgeDecisionBuffer>){if(working||buffer.pending||buffer.savedId)return;onChange({...buffer,...p,dirty:true,failure:null});}
- async function save(){if(locked.current||buffer.savedId)return;locked.current=true;setWorking(true);let b=buffer;try{if(!b.pending){b={...b,pending:await prepareKnowledgeDecision(b,session)};onChange(b);}const result=await sendKnowledgeDecision(client,b,session,()=>alive.current);b={...b,pending:null,savedId:result.id,dirty:false,uncertain:false,failure:null};onChange(b);if(alive.current)onSaved(result);}catch(e){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');onChange({...b,failure:{code:a.code,status:a.status},uncertain:b.uncertain||a.code!=='KNOWLEDGE_DECISION_PAUSED'&&!isKnownDocumentRejection(a)});if(a.status===401&&alive.current)onAuthenticationLost();}finally{locked.current=false;if(alive.current)setWorking(false);}}
+ async function save(){
+  if(locked.current||buffer.savedId)return;locked.current=true;setWorking(true);let b=buffer;
+  const owned=new Set([buffer]),transport=client.transport,identity=JSON.stringify([session.user.id,session.clientId,session.csrfToken]);
+  const active=()=>alive.current&&current.current.client===client&&client.transport===transport&&JSON.stringify([current.current.session.user.id,current.current.session.clientId,current.current.session.csrfToken])===identity&&owned.has(current.current.buffer);
+  const publish=(next:KnowledgeDecisionBuffer)=>{owned.add(next);onChange(previous=>previous&&owned.has(previous)?next:previous);};
+  try{
+   if(!b.pending){const pending=await prepareKnowledgeDecision(b,session);if(!active())return;b={...b,pending};publish(b);}
+   // 같은 명령 재확인도 이번 dispatch의 버퍼 객체로 결박한다.
+   if(!active())return;b={...b};publish(b);
+   const result=await sendKnowledgeDecision(client,b,session,active);
+   const applicationReceipt=result.kind==='APPLY'?{ref:{...result.applicationRef},commandId:b.pending!.commandId,ownerUserId:session.user.id,ownerClientId:session.clientId,csrfToken:session.csrfToken}:undefined;
+   b={...b,pending:null,savedId:result.id,dirty:false,uncertain:false,failure:null,...(applicationReceipt?{applicationReceipt}:{})};publish(b);
+   if(active())onSaved(result);
+  }catch(e){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');publish({...b,failure:{code:a.code,status:a.status},uncertain:b.uncertain||a.code!=='KNOWLEDGE_DECISION_PAUSED'&&!isKnownDocumentRejection(a)});if(a.status===401&&active())onAuthenticationLost();}
+  finally{locked.current=false;if(alive.current)setWorking(false);}
+ }
  async function reopenRejectedReview(){
   if(reopening.current||!alive.current||locked.current||working||buffer.kind!=='REVIEW'||buffer.uncertain||buffer.savedId||!buffer.pending||!isKnownDocumentRejection(buffer.failure))return;
   const fingerprint=ordered(buffer),sessionFingerprint=ordered(session);

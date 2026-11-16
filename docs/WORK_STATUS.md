@@ -20510,3 +20510,8 @@ UI06의 보관 계획 개정 준비는 당시 documentRef를 그대로 사용한
 ## UI05 보관 검수의 정확 기준 원문 조회
 
 기준 cafb7cec. developer_primary가 기준 API·보관 조회 helper·ReviewCriteriaOriginal과 집중시험을 보완했다. 최근20 탐색 목록에 없는 원 criteriaRef도 기존 고정 버전 GET으로 읽고 프로젝트·임무·버전/hash·원조건을 검산한다. 늦은 응답/401은 폐기하고 참조 변경 후 명시 조회를 요구한다. 목록 밖 거절 RED dfbc27 1실패, 최종 503c31 직접20 및 cb909a 인접16 통과, 실패·건너뜀0, 타입248a92 종료0. d2_preflight 최종 C0/I0/M0, Main 지문4개 일치. 실제 서버·DB·브라우저와 전체 UI05 인수는 미검증이다.
+
+
+## UI10/FN05 헌법 적용 영수증의 화면 왕복 보존
+
+기준 1ec084b7. developer_primary가 App·KnowledgeDecisionForm·KnowledgePage·decision-api와 시험을 보완했다. 적용 영수증 fullref를 같은 인증 문맥의 프로젝트별 App 메모리에 보존한다. 닫기와 화면 왕복 후 현재 조회에서 낮은 세대와 같은 세대 다른 hash를 거절하고, 늦은 응답이 다른 적용 시도를 덮지 않도록 한다. 기존 서버 계약과 원명령 재확인을 유지했다. 최초 RED ba97d6 1실패, f055bf 직접14·인접16 통과, 실패·건너뜀0, 타입4663bd 종료0. 독립 C0/I0/M0와 Main 지문5개 일치. 실제 브라우저·DB·재로그인·Agent 전달은 미검증이다.
