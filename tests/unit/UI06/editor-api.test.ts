@@ -33,7 +33,11 @@ test('기존 일반 텍스트 문서를 편집해도 원문 형식을 Markdown�
 
 test('단계에 연결된 문서 저장은 선택 참조를 pending·본문 hash·재확인 명령에 고정한다', async () => {
   const stageNodeRef = { applicationId: project, nodeId: 'ANALYSIS-01' }, work = Object.assign(buffer(), { stageNodeRef });
+  work.preparedStageOutput={projectId:project,userId:id,clientId:id,controlGeneration:4,
+    applicationRef:{id:project,version:1,contentHash:'b'.repeat(64)},nodeId:stageNodeRef.nodeId,itemId:'LOCAL_ONLY_B',formRef:work.formRef};
   let pending = await prepareDocumentSave(work, session);
+  assert.equal(JSON.stringify(pending).includes('LOCAL_ONLY_B'),false);
+  assert.deepEqual(Object.keys(pending.upload.payload).sort(),['bytes','contentHash','mediaType']);
   assert.deepEqual((pending as any).stageNodeRef, stageNodeRef);
   const bytes = Buffer.from(work.body), artifact = { artifactId: id, bytes: bytes.length, contentHash: createHash('sha256').update(bytes).digest('hex'), mediaType: work.mediaType };
   const content = { body: artifact, ...work.content }, expectedHash = contentHash(canonicalJson({ title: work.title, formRef: work.formRef, stageNodeRef, content }));
@@ -47,6 +51,8 @@ test('단계에 연결된 문서 저장은 선택 참조를 pending·본문 hash
   await assert.rejects(continueDocumentSave(client, pending, session, value => { pending = value; }, () => true), (e: unknown) => e instanceof ApiError && e.code === 'CONNECTION_LOST');
   const result = await continueDocumentSave(client, pending, session, () => {}, () => true);
   assert.equal(result.contentHash, expectedHash); assert.deepEqual(commands[0], commands[1]); assert.deepEqual(commands[0].payload.stageNodeRef, stageNodeRef);
+  assert.deepEqual(Object.keys(commands[0].payload).sort(),['content','formRef','importCandidateRef','reason','stageNodeRef','title']);
+  assert.equal(JSON.stringify(commands).includes('LOCAL_ONLY_B'),false);
   assert.notEqual(await documentDraftHash(work.title, work.formRef, content), expectedHash, '미연결 hash와 연결 hash를 혼동하지 않는다');
 });
 

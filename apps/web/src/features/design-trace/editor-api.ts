@@ -29,6 +29,7 @@ reason: string; controlGeneration: number; dirty: boolean; pending: PendingDocum
   workPlanState?:WorkPlanBuffer|null;
   stageNodeRef?: StageNodeRef | null;
   baseStageNodeRef?: StageNodeRef | null;
+  preparedStageOutput?: import('./stage-document-draft.ts').StageDocumentChoice & { controlGeneration: number };
 }
 export interface DocumentSession { user: { id: string }; clientId: string; csrfToken: string }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/, hash = /^[0-9a-f]{64}$/;
