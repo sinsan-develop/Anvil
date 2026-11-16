@@ -20009,3 +20009,10 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 
 - 생성타입 I1은079bb8 1FAIL로재현하고aabbbb15PASS/FAIL·SKIP0·exit0으로보완했다. module.require의고정ts/결합mts/가변거절·정상cjs와기존exact17/non-any/skipLibCheck:false음성진단2개를유지했다. 독립최종C0/I0/M0·시험47DD5EE7…FB0A2·결과BBD31A97…0EE3B를검산했고Primary는쓰기반환/실행세션0이다. 제품3불변·desktop1d0305진단0, Main루트28288a·웹메모리66c386 exit0이다. 실제앱/설치/SDK/Agent/DB/권한/키/서비스미검증은보존한다.
 - 최신원격확인81ef07에서development/main은584a705986d2eb6e4fa5ab945f09e18ead556c12로기준선과같고현재branch와0behind/2ahead였다. UI14 명시재시도와 FN18 소스 타입계약 보완을 같은Stage E내부소스통합단위로정확stage·공백검사·commit/push·PR로진행한다. 실제사용자인수/release/설치완료가아니며전체작업계획은미완료다.
+
+## 2026-11-16 PR147 통합과 다음 핵심 연결
+
+- Main 어울은 UI14 정책 페이지의 동일 cursor 명시 재시도와 FN18 수신 타입·생성 런타임 타입 연결 소스 단위를 PR147로 통합했다. source bdb5f106698ef02ad770e29991a36dbafe32c69e, merged main 8ec924fa2cc7b5c54d7d8dfc7b8b18c93dcf6459이며 Broker43819408294는 success다. source/main tree bde55825d38b07cb9ce11f6f567cbc45f31bd4a2 일치를 검산했다.
+- 원격 복구 tag pr-147-head는 원 source를 보존한다. merged-main desktop 타입8fc3ee는 진단0/exit0, UI14 동일 cursor smoke279c2c와 원17export 타입연결 smoke e95b1c는 각각1PASS/FAIL·SKIP0·exit0이다. 원격 main과 로컬 main의 exact SHA·clean을 확인한 뒤 완료 branch와 단발 요청 tag만 정상 정리했다. squash 이력 때문에 branch 삭제에 upstream-merged 경고가 있었으나 동일 tree와 원격 복구 ref를 먼저 검산했으며 force 삭제는 하지 않았다.
+- 실제 Electron 앱·설치·SDK/Agent·DB·권한·키·서비스 및 사용자 자료 검증은 수행하지 않았다. FN18/Stage/전체 계획은 미완료다. 고정 개발 의존성과 전용 cache는 후속 개발용으로 유지하며 기존 공유 모듈은 보존한다.
+- 다음 작업 branch codex/av3-connection-integration-next는 검증된 main에서 생성했다. 다음 우선순위는 FN07/FN08의 실제 도구 연결에 필요한 아직 미연결인 생산자 경로와 채택된 계약을 대조하는 것이다. 기존 담당자에게 source-only 구현 가능 단위를 좁혀 확인하며, 미채택 spool 보호 root·P03 관측 및 추가 SDK 조회를 승인된 것으로 간주하지 않는다. Main은 검수·통합·진행 책임을 유지한다.
