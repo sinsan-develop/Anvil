@@ -6,6 +6,14 @@ const origins=new WeakMap<object,{choice:StageDocumentChoice;client:ApiClient;tr
 export function preparedOnClient(draft:object,choice:StageDocumentChoice,client:ApiClient,session:DocumentSession){
  const origin=origins.get(draft);return origin?.choice===choice&&origin.client===client&&origin.transport===client.transport&&origin.csrf===session.csrfToken;
 }
+export function preparedSaveOutput(buffer:import('./editor-api.ts').DocumentBuffer,session:DocumentSession,original:object=buffer){
+ const selected=buffer.preparedStageOutput,origin=origins.get(original);
+ if(!selected||!origin||!preparedOnClient(original,selected,origin.client,session)||buffer.documentId!==null||buffer.baseVersion!==0||
+   buffer.ownerUserId!==selected.userId||session.user.id!==selected.userId||session.clientId!==selected.clientId||
+   buffer.projectId!==selected.projectId||buffer.controlGeneration!==selected.controlGeneration||
+   buffer.stageNodeRef?.applicationId!==selected.applicationRef.id||buffer.stageNodeRef.nodeId!==selected.nodeId||!same(buffer.formRef,selected.formRef))return undefined;
+ return {applicationRef:{...selected.applicationRef},itemId:selected.itemId};
+}
 export function discardPreparedOutput(draft:object){origins.delete(draft);}
 const uuid=(v:unknown)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const ref=(v:PlanRef)=>v&&Object.keys(v).sort().join(',')==='contentHash,id,version'&&uuid(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&typeof v.contentHash==='string'&&/^[0-9a-f]{64}$/.test(v.contentHash);

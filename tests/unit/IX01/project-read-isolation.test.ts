@@ -69,12 +69,16 @@ const documentDefinition={formCode:'SOURCE_MEMORY_FORM',name:'합성 양식',pur
   items:[{itemId:'intro',title:'내용',required:true,valueType:'TEXT',repeated:false,fields:[],authoringRules:[],reviewCriteria:['내용 확인']}],
   authoringStandardRef:{id:id(82),version:1,contentHash:sha256(Buffer.from('합성 작성 기준'))}};
 const documentFormRef={id:id(83),version:1,contentHash:sha256(Buffer.from(canonicalJson(documentDefinition)))};
+import {documentReceiptRows,seedDocumentReceipt,stageProofQuery} from '../FN03/document-stage-receipt-fixture.ts';
+const receiptSeeds:{sql:string;args:unknown[]}[]=[];
 const documentRows=owners.map((owner,index)=>{
   const file=attachmentFiles[index]!,title='합성 정식 문서 '+(index+1),authorRef={kind:'HUMAN',userId:owner.userId};
   const content={body:{artifactId:file.id,bytes:file.bytes.length,contentHash:sha256(file.bytes),mediaType:'text/plain;charset=utf-8'},
     attachments:[],sections:[{itemId:'intro',anchor:'line:1'}],sourceRefs:[]};
   const ref={id:id(84+index),version:1,contentHash:sha256(Buffer.from(canonicalJson({title,formRef:documentFormRef,stageNodeRef:null,content})))};
-  return {owner,ref,title,content,authorRef,eventId:id(86+index),reviewId:id(88+index),confirmed:index===0};
+  const stored={document_id:ref.id,version:1,title,form_definition_id:documentFormRef.id,form_version:1,form_hash:documentFormRef.contentHash,content_json:content,content_hash:ref.contentHash,stage_ref_json:null,author_ref_json:authorRef,validation_json:{formatOnly:true}};
+  seedDocumentReceipt(stored,owner.projectId,owner.userId,owner.clientId,receiptSeeds);
+  return {stored,owner,ref,title,content,authorRef,eventId:id(86+index),reviewId:id(88+index),confirmed:index===0};
 });
 
 async function fixture(artifactRoot?:string,mode?:'knowledge'|'document'){
@@ -190,6 +194,7 @@ async function fixture(artifactRoot?:string,mode?:'knowledge'|'document'){
           if(mode==='document'){
             const [pid,docId,version]=args;
             const row=documentRows.find(candidate=>candidate.owner===owner)!;
+            if(stageProofQuery(text)){assert.deepEqual(args,[owner.projectId,row.ref.id,1]);return {rows:documentReceiptRows(row.stored,args,receiptSeeds)};}
             const expectVersion=()=>assert.deepEqual(args,[owner.projectId,row.ref.id,1]);
             const part=(name:string)=>calls.push({kind:'DOCUMENT_PART',actorId:owner.userId,value:name});
             if(text==='SELECT v.*,d.confirmed_version FROM anvil.document_versions v JOIN anvil.documents d ON d.id=v.document_id AND d.project_id=v.project_id WHERE v.project_id=$1 AND v.document_id=$2 AND v.version=$3'){

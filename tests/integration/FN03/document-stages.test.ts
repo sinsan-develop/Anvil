@@ -60,6 +60,11 @@ test('문서는 실제 고정 적용 단계·정확 양식에만 연결되고 �
     const stageNodeRef = { applicationId: applications[0], nodeId: node.nodeId }, payload = { title: '단계 문서', formRef, stageNodeRef, content, importCandidateRef: null, reason: '정확 적용 단계에 연결' };
     assert.equal((await send(command('saveDocumentDraft', { ...payload, stageNodeRef: { ...stageNodeRef, applicationId: applications[1] } }))).statusCode, 404);
     assert.equal((await send(command('saveDocumentDraft', { ...payload, stageNodeRef: { ...stageNodeRef, nodeId: 'NOT_A_REAL_NODE' } }))).statusCode, 422);
+    const stageOutputItem={applicationRef:initialOptions.json().applicationRef,itemId:node.outputs[0].itemId},boundCommand=command('saveDocumentDraft',{...payload,stageOutputItem});
+    const bound=await send(boundCommand);assert.equal(bound.statusCode,200,bound.body);assert.deepEqual(bound.json().data.stageOutputItem,stageOutputItem);
+    assert.deepEqual((await send(boundCommand)).json(),bound.json());
+    const boundPath=path+'/documents/'+bound.json().targetId+'/versions/1';
+    assert.deepEqual((await app.inject({method:'GET',url:boundPath,headers:headers()})).json().stageOutputItem,stageOutputItem);
     const savedCommand = command('saveDocumentDraft', payload), savedResponses = await Promise.all([send(savedCommand), send(savedCommand)]);
     for (const response of savedResponses) assert.equal(response.statusCode, 200, response.body);
     assert.deepEqual(savedResponses[0]!.json(), savedResponses[1]!.json());
@@ -98,6 +103,8 @@ test('문서는 실제 고정 적용 단계·정확 양식에만 연결되고 �
     const newApplication = randomUUID(); await admin.query('INSERT INTO anvil.project_methodologies(id,project_id,application_version,source_definition_id,source_version,source_hash,snapshot_json,snapshot_hash,created_by) VALUES($1,$2,2,$3,2,$4,$5,$6,$7)', [newApplication, projects[0], sourceRef.id, sourceRef.contentHash, JSON.stringify(snapshot), snapshotHash, users[0]]);
     assert.equal((await send(command('saveDocumentDraft', payload, ref.id, 1))).statusCode, 409, '현재 적용이 바뀌면 옛 기준으로 새 변경 금지');
     read = await app.inject({ method: 'GET', url: versionPath, headers: headers() }); assert.equal(read.statusCode, 200); assert.deepEqual(read.json().stageNodeRef, stageNodeRef, '과거 문서/고정 단계는 그대로 조회');
+    assert.deepEqual((await app.inject({method:'GET',url:boundPath,headers:headers()})).json().stageOutputItem,stageOutputItem);
+    assert.equal((await send(command('saveDocumentDraft',{...payload,stageOutputItem},bound.json().targetId,1))).statusCode,409);
     const unlinked = await send(command('saveDocumentDraft', { ...payload, stageNodeRef: null, reason: '새 버전에서 명시적으로 단계 분리' }, ref.id, 1)); assert.equal(unlinked.statusCode, 200, unlinked.body); assert.equal(unlinked.json().data.ref.version, 2);
     assert.equal((await app.inject({ method: 'GET', url: path + '/documents/' + ref.id + '/versions/2', headers: headers() })).json().stageNodeRef, null);
     await assert.rejects(pool.query('UPDATE anvil.document_versions SET stage_ref_json=NULL WHERE project_id=$1', [projects[0]]), (e: unknown) => (e as { code: string }).code === '42501');

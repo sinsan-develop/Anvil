@@ -1,6 +1,7 @@
 import {readDocumentSourceRefs,documentSourcesKey,type DocumentSourceRef} from './document-source-refs.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
-import type { DocumentVersion } from './api.ts';
+import {sameOutputItem,validOutputItem,type StageOutputItem,type DocumentVersion} from './api.ts';
+import {preparedSaveOutput} from './stage-document-draft.ts';
 import type { FormVersion } from '../methodologies/forms-api.ts';
 import type {FormContentEntry} from './form-content-entry.ts';
 import type { DocumentImportBuffer } from './import-api.ts';
@@ -14,7 +15,7 @@ type VersionRef = { id: string; version: number; contentHash: string };
 type ArtifactRef = { artifactId: string; bytes: number; contentHash: string; mediaType: string };
 export interface DocumentContent { body: ArtifactRef; attachments: ArtifactRef[]; sections: { itemId: string; anchor: string }[]; sourceRefs: DocumentSourceRef[] }
 export interface DocumentWrite { schemaVersion: 1; projectId: string; commandId: string; clientId: string; controlGeneration: number; operation: 'reviewUnderstanding' | 'startStage' | 'cancelQueuedRequest' | 'submitResult' | 'defineProjectRole' | 'bindResponsibleSession' | 'prepareExecution' | 'saveBaselineDraft' | 'reviewBaselineContent' | 'confirmBaseline' | 'uploadArtifact' | 'saveDocumentDraft' | 'detachDocumentSource' | 'linkDocumentSource' | 'proposeDocumentSourceChange' | 'importDocument' | 'proposeDocumentChange' | 'proposeDesignChange' | 'reviewChangeImpact' | 'indexDesignDocument' | 'saveWorkPlanDraft' | 'prepareAssignment' | 'reviewAssignmentContent' | 'confirmAssignment' | 'buildTaskContext' | 'linkTrace' | 'saveKnowledge' | 'appendConversation' | 'excludeKnowledge' | 'correctKnowledge' | 'recordContentReview' | 'confirmKnowledge' | 'confirmWorkPlan' | 'applyConstitution'; targetId: string | null; expectedVersion: number; baselineRefs: []; approvalRef: null | {requestId:string;decisionId:string;scopeDigest:string}; payload: Record<string, unknown> }
-export interface PendingDocumentSave { uploadApproval?:DocumentUploadApproval; body: string; upload: DocumentWrite; save: DocumentWrite | null; saveCommandId: string; title: string; formRef: VersionRef; documentId: string | null; baseVersion: number; content: Omit<DocumentContent, 'body'>; reason: string; importCandidateRef?: string | null; stageNodeRef?: StageNodeRef | null }
+export interface PendingDocumentSave { stageOutputItem?:StageOutputItem; uploadApproval?:DocumentUploadApproval; body: string; upload: DocumentWrite; save: DocumentWrite | null; saveCommandId: string; title: string; formRef: VersionRef; documentId: string | null; baseVersion: number; content: Omit<DocumentContent, 'body'>; reason: string; importCandidateRef?: string | null; stageNodeRef?: StageNodeRef | null }
 export interface DocumentBuffer {
   saveUncertain?:boolean;
   designDependencyState?:import('./design-dependency.ts').DesignDependency|null;
@@ -29,6 +30,7 @@ reason: string; controlGeneration: number; dirty: boolean; pending: PendingDocum
   workPlanState?:WorkPlanBuffer|null;
   stageNodeRef?: StageNodeRef | null;
   baseStageNodeRef?: StageNodeRef | null;
+  stageOutputItem?:StageOutputItem;
   preparedStageOutput?: import('./stage-document-draft.ts').StageDocumentChoice & { controlGeneration: number };
 }
 export interface DocumentSession { user: { id: string }; clientId: string; csrfToken: string }
@@ -54,23 +56,26 @@ export async function documentControl(client: ApiClient, projectId: string, sess
 export function editDocument(projectId: string, value: { document: DocumentVersion; body: string }, ownerUserId: string, controlGeneration: number): DocumentBuffer {
   const d = value.document;
   if (!nullableStageRef(d.stageNodeRef) || d.stageNodeRef !== null && !validStageBinding(d.stageBinding!, d.stageNodeRef)) throw new ApiError('DOCUMENT_REFERENCE_CONNECTION_PENDING', 412);
-  return { ownerUserId, projectId, stageNodeRef: structuredClone(d.stageNodeRef as StageNodeRef | null), documentId: d.id, baseVersion: d.version, baseHash: d.contentHash, baseTitle: d.title, baseStageNodeRef: structuredClone(d.stageNodeRef as StageNodeRef | null), formRef: { ...d.formRef }, title: d.title, body: value.body, mediaType: d.content.body.mediaType, content: { attachments: structuredClone(d.content.attachments), sections: structuredClone(d.content.sections), sourceRefs: readDocumentSourceRefs(d.content.sourceRefs) }, criteria: structuredClone(d.contentReviewCriteria.items), reason: '', controlGeneration, dirty: false, pending: null, savedRef: null, failure: null };
+  return { ownerUserId, projectId,...(d.stageOutputItem?{stageOutputItem:structuredClone(d.stageOutputItem)}:{}), stageNodeRef: structuredClone(d.stageNodeRef as StageNodeRef | null), documentId: d.id, baseVersion: d.version, baseHash: d.contentHash, baseTitle: d.title, baseStageNodeRef: structuredClone(d.stageNodeRef as StageNodeRef | null), formRef: { ...d.formRef }, title: d.title, body: value.body, mediaType: d.content.body.mediaType, content: { attachments: structuredClone(d.content.attachments), sections: structuredClone(d.content.sections), sourceRefs: readDocumentSourceRefs(d.content.sourceRefs) }, criteria: structuredClone(d.contentReviewCriteria.items), reason: '', controlGeneration, dirty: false, pending: null, savedRef: null, failure: null };
 }
 export function newDocument(projectId: string, form: FormVersion, ownerUserId: string, controlGeneration: number): DocumentBuffer {
   return { ownerUserId, projectId, stageNodeRef: null, documentId: null, baseVersion: 0, formRef: { ...form.ref }, title: '', body: '', mediaType: 'text/markdown;charset=utf-8', content: { attachments: [], sections: [], sourceRefs: [] }, criteria: form.definition.items.map(item => ({ criterionId: item.itemId, title: item.title, reviewCriteria: [...item.reviewCriteria] })), reason: '', controlGeneration, dirty: false, pending: null, savedRef: null, failure: null };
 }
-export async function prepareDocumentSave(buffer: DocumentBuffer, session: DocumentSession): Promise<PendingDocumentSave> {
+export async function prepareDocumentSave(buffer: DocumentBuffer, session: DocumentSession,original:object=buffer): Promise<PendingDocumentSave> {
   if (!nullableStageRef(buffer.stageNodeRef ?? null)) throw new ApiError('DOCUMENT_STAGE_INPUT_INVALID');
   if(buffer.designIndexState||buffer.workPlanState||buffer.designDependencyState) throw new ApiError('DOCUMENT_PENDING_RESULT');
   if (buffer.proposalState) throw new ApiError('PROPOSAL_PENDING_RESULT');
   if (buffer.importPreparationId || buffer.importState || buffer.importCandidateRef != null && !uuid.test(buffer.importCandidateRef)) throw new ApiError('IMPORT_SELECTION_REQUIRED');
   if (buffer.ownerUserId !== session.user.id || !uuid.test(buffer.projectId) || buffer.documentId !== null && !uuid.test(buffer.documentId) || buffer.documentId === null && buffer.baseVersion !== 0 || buffer.documentId !== null && buffer.baseVersion < 1 || !uuid.test(session.clientId) || !versionRef(buffer.formRef) || !Number.isSafeInteger(buffer.baseVersion) || !Number.isSafeInteger(buffer.baseVersion + 1) || !Number.isSafeInteger(buffer.controlGeneration) || buffer.controlGeneration < 1) throw new ApiError('CLIENT_PATH_INVALID');
   if (!buffer.title.trim() || buffer.title.length > 200 || !buffer.title.isWellFormed() || !buffer.body.isWellFormed() || !buffer.reason.trim() || buffer.reason.length > 20_000 || !['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(buffer.mediaType)) throw new ApiError('DOCUMENT_INPUT_INVALID');
+  const item=buffer.documentId===null?preparedSaveOutput(buffer,session,original):buffer.stageOutputItem;
+  if(item&&(!validOutputItem(item)||buffer.stageNodeRef?.applicationId!==item.applicationRef.id||buffer.documentId!==null&&!sameStageRef(buffer.baseStageNodeRef,buffer.stageNodeRef)))throw new ApiError('DOCUMENT_STAGE_OUTPUT_CONFLICT',409);
   const sourceRefs=readDocumentSourceRefs(buffer.content.sourceRefs);
   if (!Array.isArray(buffer.content.attachments) || buffer.content.attachments.length > 200 || !buffer.content.attachments.every(artifact) || !Array.isArray(buffer.content.sections) || buffer.content.sections.length > 200 || new Set(buffer.content.sections.map(item => item.itemId)).size !== buffer.content.sections.length || buffer.content.sections.some(item => !exact(item, ['itemId','anchor']) || typeof item.itemId !== 'string' || typeof item.anchor !== 'string' || !/^line:[1-9][0-9]{0,7}$/.test(item.anchor))) throw new ApiError('DOCUMENT_INPUT_INVALID');
   const bytes = new TextEncoder().encode(buffer.body); if (bytes.length > 2 * 1024 * 1024) throw new ApiError('DOCUMENT_BODY_TOO_LARGE');
   const upload: DocumentWrite = { schemaVersion: 1, projectId: buffer.projectId, commandId: crypto.randomUUID(), clientId: session.clientId, controlGeneration: buffer.controlGeneration, operation: 'uploadArtifact', targetId: null, expectedVersion: 0, baselineRefs: [], approvalRef: null, payload: { mediaType: buffer.mediaType, bytes: bytes.length, contentHash: await digest(bytes) } };
-  return { stageNodeRef: structuredClone(buffer.stageNodeRef ?? null), body: buffer.body, upload, save: null, saveCommandId: crypto.randomUUID(), title: buffer.title, formRef: { ...buffer.formRef }, documentId: buffer.documentId, baseVersion: buffer.baseVersion, content: {...structuredClone(buffer.content),sourceRefs}, reason: buffer.reason, importCandidateRef: buffer.importCandidateRef ?? null };
+  if(buffer.documentId===null&&!sameOutputItem(item,preparedSaveOutput(buffer,session,original)))throw new ApiError('SAVE_CONTINUATION_PAUSED');
+  return { ...(item?{stageOutputItem:structuredClone(item)}:{}),stageNodeRef: structuredClone(buffer.stageNodeRef ?? null), body: buffer.body, upload, save: null, saveCommandId: crypto.randomUUID(), title: buffer.title, formRef: { ...buffer.formRef }, documentId: buffer.documentId, baseVersion: buffer.baseVersion, content: {...structuredClone(buffer.content),sourceRefs}, reason: buffer.reason, importCandidateRef: buffer.importCandidateRef ?? null };
 }
 export async function postDocumentCommand(client: ApiClient, command: DocumentWrite, csrf: string, bytes?: Uint8Array<ArrayBuffer>) {
   let response: Response;
@@ -87,6 +92,9 @@ export async function postDocumentCommand(client: ApiClient, command: DocumentWr
   return value;
 }
 export async function continueDocumentSave(client: ApiClient, pending: PendingDocumentSave, session: DocumentSession, checkpoint: (value: PendingDocumentSave) => void, active: () => boolean): Promise<VersionRef> {
+  const item=pending.stageOutputItem;
+  if(Object.hasOwn(pending,'stageOutputItem')&&(!validOutputItem(item)||pending.stageNodeRef?.applicationId!==item.applicationRef.id))throw new ApiError('DOCUMENT_STAGE_INPUT_INVALID');
+  const expectedItem=item?structuredClone(item):undefined;
   const sources=documentSourcesKey(pending.content.sourceRefs);
   const u = pending.upload;
   if (!nullableStageRef(pending.stageNodeRef ?? null)) throw new ApiError('DOCUMENT_STAGE_INPUT_INVALID');
@@ -102,17 +110,17 @@ export async function continueDocumentSave(client: ApiClient, pending: PendingDo
     const response = await postDocumentCommand(client, u, session.csrfToken, bytes), ref = response.data?.artifactRef as ArtifactRef;
     if(!active())throw new ApiError('SAVE_CONTINUATION_PAUSED');
     if (!artifact(ref) || ref.bytes !== u.payload.bytes || ref.contentHash !== u.payload.contentHash || ref.mediaType !== u.payload.mediaType || response.targetId !== ref.artifactId || response.version !== null || response.data.status !== 'ARTIFACT_READY') throw new ApiError('RESPONSE_INVALID');
-    const save: DocumentWrite = { ...u, approvalRef:null, commandId: pending.saveCommandId, operation: 'saveDocumentDraft', targetId: pending.documentId, expectedVersion: pending.baseVersion, payload: { title: pending.title, formRef: pending.formRef, stageNodeRef: pending.stageNodeRef ?? null, content: { body: ref, ...pending.content }, importCandidateRef: pending.importCandidateRef ?? null, reason: pending.reason } };
+    const save: DocumentWrite = { ...u, approvalRef:null, commandId: pending.saveCommandId, operation: 'saveDocumentDraft', targetId: pending.documentId, expectedVersion: pending.baseVersion, payload: { ...(expectedItem?{stageOutputItem:structuredClone(expectedItem)}:{}),title: pending.title, formRef: pending.formRef, stageNodeRef: pending.stageNodeRef ?? null, content: { body: ref, ...pending.content }, importCandidateRef: pending.importCandidateRef ?? null, reason: pending.reason } };
     next = { ...pending, save }; checkpoint(next);
   }
   if (!active()) throw new ApiError('SAVE_CONTINUATION_PAUSED');
   if(documentSourcesKey(pending.content.sourceRefs)!==sources)throw new ApiError('DOCUMENT_INPUT_INVALID');
   const s = next.save!;
-  if (!exact(s, ['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']) || s.schemaVersion !== 1 || !Array.isArray(s.baselineRefs) || s.baselineRefs.length || s.approvalRef !== null || s.projectId !== u.projectId || s.clientId !== u.clientId || s.controlGeneration !== u.controlGeneration || s.operation !== 'saveDocumentDraft' || s.commandId !== pending.saveCommandId || s.targetId !== pending.documentId || s.expectedVersion !== pending.baseVersion || !exact(s.payload, ['title','formRef','stageNodeRef','content','importCandidateRef','reason']) || s.payload.title !== pending.title || s.payload.reason !== pending.reason || JSON.stringify(s.payload.formRef) !== JSON.stringify(pending.formRef) || !sameStageRef(s.payload.stageNodeRef, pending.stageNodeRef ?? null) || s.payload.importCandidateRef !== (pending.importCandidateRef ?? null) || pending.importCandidateRef != null && !uuid.test(pending.importCandidateRef)) throw new ApiError('CLIENT_PATH_INVALID');
+  if (!exact(s, ['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']) || s.schemaVersion !== 1 || !Array.isArray(s.baselineRefs) || s.baselineRefs.length || s.approvalRef !== null || s.projectId !== u.projectId || s.clientId !== u.clientId || s.controlGeneration !== u.controlGeneration || s.operation !== 'saveDocumentDraft' || s.commandId !== pending.saveCommandId || s.targetId !== pending.documentId || s.expectedVersion !== pending.baseVersion || !exact(s.payload, ['title','formRef','stageNodeRef','content','importCandidateRef','reason',...(expectedItem?['stageOutputItem']:[])])||!sameOutputItem(s.payload.stageOutputItem,expectedItem)||!sameOutputItem(pending.stageOutputItem,expectedItem) || s.payload.title !== pending.title || s.payload.reason !== pending.reason || JSON.stringify(s.payload.formRef) !== JSON.stringify(pending.formRef) || !sameStageRef(s.payload.stageNodeRef, pending.stageNodeRef ?? null) || s.payload.importCandidateRef !== (pending.importCandidateRef ?? null) || pending.importCandidateRef != null && !uuid.test(pending.importCandidateRef)) throw new ApiError('CLIENT_PATH_INVALID');
   const content = s.payload.content as DocumentContent;
   if (!artifact(content?.body) || content.body.contentHash !== u.payload.contentHash || content.body.bytes !== bytes.length || content.body.mediaType !== u.payload.mediaType || JSON.stringify({ attachments: content.attachments, sections: content.sections, sourceRefs: content.sourceRefs }) !== JSON.stringify(pending.content)) throw new ApiError('DOCUMENT_INPUT_INVALID');
   const response = await postDocumentCommand(client, s, session.csrfToken), ref = response.data?.ref;
-  if (!versionRef(ref) || pending.documentId !== null && ref.id !== pending.documentId || ref.version !== pending.baseVersion + 1 || ref.contentHash !== await documentDraftHash(pending.title, pending.formRef, content, pending.stageNodeRef ?? null) || response.targetId !== ref.id || response.version !== ref.version || response.data.status !== 'DRAFT') throw new ApiError('RESPONSE_INVALID');
+  if (!versionRef(ref) || pending.documentId !== null && ref.id !== pending.documentId || ref.version !== pending.baseVersion + 1 || ref.contentHash !== await documentDraftHash(pending.title, pending.formRef, content, pending.stageNodeRef ?? null) || response.targetId !== ref.id || response.version !== ref.version || response.data.status !== 'DRAFT'||!sameOutputItem(response.data.stageOutputItem,expectedItem)) throw new ApiError('RESPONSE_INVALID');
   if(!active())throw new ApiError('SAVE_CONTINUATION_PAUSED');
   return ref;
 }

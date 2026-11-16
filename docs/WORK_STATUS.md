@@ -2,11 +2,11 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
-## 현재 작업 요약 — 2026-11-16 21:00:10 KST
+## 현재 작업 요약 — 2026-11-16 직접 승인 후 구현 재개
 
-- **현재 상태: 전체 계획 미완료 · 직접 결정 대기.** 과거 완료/대기 이력과 현재 판정을 구분한다. 완료 보고가 아니며, 새 프로젝트 금지나 다른 담당자 중지 지시도 아니다. 앱 목표는 같은 승인 경계의 반복 확인 후 BLOCKED로 표시할 대상이다.
-- **현재 재개 조건:** 이미 발행한 CLI 한정 관측 1회 질문의 직접 답변을 확인한 뒤 그 범위만 진행한다. 후보 EEAFFF15/조회source2A7E8911은 불변이며 승인 전 PATH·설치파일·조회프로세스 실행0이다. UI06 버전별 서버 귀속5039D14A 등 새 계약은 미채택으로 유지한다. 승인된 로컬 준비 부분은 PR153에 구현·검수·통합됐다.
-- **담당·실행:** Main 어울이 계획 완료 책임을 유지한다. 현재 코드 writer·subagent 실행·검증 세션은 0이며 관측 timeout을 실제 실행으로 취급하지 않는다. 완료 코드·검사는 반복하지 않고, 새 직접 결정이나 승인된 독립 작업 근거가 생기면 해당 범위부터 재개한다.
+- **현재 상태: 전체 계획 미완료 · FN03/UI06 승인 소스 검수 완료·Git 통합 중.** 실제 사용/DB 인수와 구분한다.
+- **현재 승인·결과:** 서버 항목 귀속 계약5039D14A의 source/RAM·미적용0099는 직접 채택됐다. CLI 한정 관측1회도 승인·소진됐고 결과는 UNKNOWN이다. 설치 여부·원인은 미확정이며 재조회0, 부모 exit0·잔여 수거 핸들0이다.
+- **담당·실행:** 기존 Primary가 제품·시험 쓰기를 반환했다. Main이 검수·Git 통합을 맡고 실행 핸들은 0이다. 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
 - **Git 제품 기준:** 최근 검증된 제품 통합 main `6167f7361028fa2b043cc7ca5e4c1d48fbc27c43`(PR153), 소스 `69c0f6c0`과 tree 동일. 이후 현황 전용 commit은 제품을 변경하지 않으며 실제 HEAD·branch는 Git 값을 따른다. PR150~153의 원격 head 복구 tag를 보존했고 완료 제품 branch/request tag만 정상 정리했다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
 - **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
@@ -15,7 +15,7 @@
 - **P03·SSH:** R3 복구는 복사·PG 기동·전환에 도달하지 못했고 원 자원을 보존한다. 자동 wrapper의 SSH255/UNKNOWN과 일반 SSH를 구분한다. 사용자 Windows PowerShell 로그인 성공 증거(11-16 18:04:45 KST)가 있으며 서버/로그인 불능으로 일반화하지 않는다. 새 부수 진단·재복제·정리는 하지 않는다.
 - **기록 기준:** 소스/RAM 합격, 실제 동작 확인, 사용자 인수를 구분한다. 기존 서로 다른 이력은 아래 보관 영역에 남긴다. 사용자 열람본의 기존 미추적 원본은 `D:\Project\Anvil\.av3-data\status-view-backup-20261116-184648`에 원본 해시 그대로 보존했다.
 
-최신 상세 근거: [작업 branch WORK_STATUS](https://github.com/sinsan-develop/Anvil/blob/codex/av3-sdk-output-storage/docs/WORK_STATUS.md), [WORK_CHECK](https://github.com/sinsan-develop/Anvil/blob/codex/av3-sdk-output-storage/docs/WORK_CHECK.md).
+최신 상세 근거: [작업 branch WORK_STATUS](https://github.com/sinsan-develop/Anvil/blob/codex/av3-stage-output-binding/docs/WORK_STATUS.md), [WORK_CHECK](https://github.com/sinsan-develop/Anvil/blob/codex/av3-stage-output-binding/docs/WORK_CHECK.md).
 <!-- CURRENT_WORK_ENTRY_END -->
 
 ## 이전 요약·누적 이력 — 당시 기록 보존(현재 판정 아님)
@@ -20201,3 +20201,34 @@ PR153 exact source69c0f6c0382c0cef664886aa161ca3c522896b0a→main6167f7361028fa2
 필요한 현재 직접 응답은 이미 발행한 CLI 한정 관측1회 질문이다. 직접 파일 조사 제외의 예외이며 후보EEAFFF15D288F5721F00C235A3A1FB1D2806CD0E8F0080010CF1B8685F47F620·source2A7E89112023DDB2F40631ABD098529B47AF1A2B6CF87317C7113F56C636F511에 한정한다. 사용자 응답 전 PATH/CLI/조회process·승인소진0, 자동시간경과를승인으로간주하지않고재질문/재시도0이다. 새UI06서버귀속계약5039D14A도미채택이며PMO가원표시목표와새공개/저장/감사/호환의미를구분했다. 별도UI01/FN03/STOP/FN16/FN17의한정검토에서발견한미정의권위·계약을자기선언/callback으로대체하지않는다. 이사실은42미체크전체가같은이유로미구현이거나완료라는뜻이아니다.
 
 목표의전체범위/완료기준은유지하고,동일차단조건반복과현재독립소스단위종료를근거로앱목표를미완료·결정대기(BLOCKED)로표시할대상이다. 상태표시는신산님의새대기지시나프로젝트전체금지규칙을만드는것이아니다. 실제DB/권한·키·서비스/사용자자료/CLI·SDK·Agent/C#실행을허용하지않고현재소스/미채택후보/원격복구ref/소유자료를보존한다. 기록/동기화후실제앱목표상태를도구결과로확인하며완료보고를하지않는다.
+
+## 2026-11-16 신산님 두 직접 승인 수신·재개 및 CLI 단발 소진
+
+PMO의신산님원문 userMessage01a1e456-2c67-7af1-b2f8-6af5d404ce5c/turn01a1e456-2b1f-7271-a11f-d0587432157b(2026-11-16T12:30:14Z)을원문으로확인했다. CLI후보EEAFFF15/source2A7E8911 한정관측1회와서버항목귀속5039D14A source/RAM·미적용0099를직접채택했다. 목표앱status active도확인했다. 같은승인을다시질문하지않고실제Agent작은업무/저장조회/중지재접속목표를유지한다. 실제DB/권한·키·서비스/Agent·유료호출·운영배포포괄승인은아니다.
+
+local/remote mainc53d8619 clean·3고정지문일치를확인하고codex/av3-stage-output-binding을생성했다. CLI단발FN07-LOCAL-CLI-IDENTITY-20261116-01은PATH/프로세스시작전에dispatch1을소진했다. 실제승인시각기준만료2026-11-16T13:00:14Z를사용하며검증시각으로창을다시시작하지않는다. 권한기록2개는docs/approvals에보존한다. 조회/정리는정확고정감독블록과source만사용하고UNKNOWN/timeout에서재발행0·원객체/감사보존이다. 아직이기록시점실CLI조회0이며이후기존담당자를한번배정한다. UI00모바일동일화면메뉴focus누락은기존범위의후속수정후보로확인했으나이번새승인두건을먼저진행하고제품writer를중복배정하지않는다.
+
+
+## 2026-11-16 승인 후 FN03 구현 배정·CLI 단발 관측 종결
+
+기존 Primary에 WI1CBC87356EE8AB9E816B1EF8113B4FC3E0D592B1ED9A27768422B21672759E36의 제품12·시험10 및 결과서1을 배정했다. 같은 승인 재질문0, UI00 발견은 이번 구현과 분리했다. CLI20670a는 12:39:06.7612572Z~12:39:08.7501796Z에 UNKNOWN/부모exit0으로 종결했고 잔여 핸들0·추가 관측0이다. 원 수거물에 자식exit/오류/도달단계가 없어 설치 부재나 원인을 단정하지 않는다. 결과서 SHA854E62DECC567602562618A56E162AA78767130653526B72B330EFB7CEE9CB46을 보존한다. 직접 승인된 서버 항목 귀속 구현은 이 UNKNOWN과 독립적으로 계속한다. 실제 DB·권한·키·서비스·Agent/SDK 실행은 여전히 제외하며 구현·실행·인수 판정을 구분한다.
+
+
+## 2026-11-16 FN03 영향 fixture 경로 r2 보완
+
+원버전 GET의 원 command/auth/audit 검산이 기존 RAM의 영수증 없는 seed에 영향을 주는 것을 수행자가 확인했다. Main은 제품·계약 의미를 바꾸지 않고 필요한5시험 fixture만 WI r2에 추가했다(SHA DCFB1BF5FF30A8196741355FBBBDE61B89662B94CF1EC6B011355D6E5FEC9B45). 누락 영수증을 구형 미기록으로 취급하거나 기대값을 낮추지 않고 실제 원 관계를 구성하도록 지시했다. 독립 사전검수는 receipt가 version INSERT 전에 존재하고 import/proposal 선택행과 DRAFT_SAVED는 뒤에 생기는 순서를 확인했으며 즉시 guard의 잘못된 선행 요구를 피하도록 전달했다. 실제DB/키/권한/서비스/Agent 실행0·같은 승인 재요청0이다.
+
+
+## 2026-11-16 FN03 사전 독립검수 C0/I2·보완 지시
+
+기존 preflight는 서버3경로의 전후 동일지문에서 legacy 조기반환의 원 request_hash→scopeDigest 공통검산 누락과 결박 원 적용본 소실의404 오분류를 잠정 I2로 확인했다. Main은 기존 Primary에 공통 원인 검산과 역사 결박의503 한정처리·각 반례 보완을 전달했다. 구현중 사전판정이며 합격/동결/실제PG 증거가 아니다. 테스트 반복seed를 피하는 RAM helper1경로만 WI r3 F85D1CBEE9BD10B775CC7BD8A794642109CF7392B67156FDF2B09F5D02513078에 추가했다. 실제DB/권한/키/서비스/Agent 실행0, 검증기준완화0, 단일writer 유지.
+
+
+## 2026-11-16 FN03 직접 제품 경로 26PASS·후속 검증 중
+
+Primary의279029 exit0에서26PASS/FAIL0/SKIP0을 확인했다. 원 save/영수증·감사/정확버전 GET과v2, 적용본교체후과거읽기·개정/제안409, A/B손상·감사/원application 소실503을 검증했다. 사전I2의 공통scopeDigest/역사503 보완을 포함한다. 앞선4인접fixture61PASS/1FAIL은 budget200 seed본문/hash와 원receipt가 서로다른 시험준비오류였고 실제원 seed를 구성해 해당파일을279029로 재검증했다. 0099 지문6155F65510C1785E75AF4AE155603DDBBD4F1631E39302236692C71EC152341C 정적 C0/I0이며 설치·실행0이다. 승인·replay·화면/타입·동결 독립검수는 아직 진행중이므로 통합/전체완료PASS로 승격하지 않는다.
+
+
+## 2026-11-16 FN03/UI06 산출물 귀속 소스 인수·통합 준비
+
+Primary는 제품12·시험/fixture15 쓰기를 반환했다. 최종직접10파일87PASS/FAIL0/SKIP0(d04116), 인접3파일43PASS/FAIL0/SKIP0(e6ac69→ecc810/91103종료), 루트타입0(52915d→1d0e5f/38164종료), 실행handle0이다. 독립읽기검수 C0/I0/M0·앞선I2해소, Main56368f에서결과서27개개별SHA/현재bytes일치와diff공백0을확인했다. 결과서 FN03_STAGE_ARTIFACT_ITEM_BINDING_SOURCE_RESULT_20261116.md SHA4D954CC6C32545ED884110444EE3E21767AE63E906F59D4B0336D931347CB922. 0099미적용·실제DB/RLS/동시거래·served브라우저/사용자인수·Agent실행은미검증/제외다. 같은양식B와본문sectionA구별·원receipt/감사·같은명령replay·다른item409·과거조회/적용교체후개정409를소스/RAM으로만인수한다. Main은정확Git/PR/Broker·병합본선택smoke·정리를진행하며전체계획/UI06전체완료체크를올리지않는다.

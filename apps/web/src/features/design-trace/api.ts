@@ -13,7 +13,16 @@ interface ContentReview { ref: ReviewRef; items: { criterionId: string; outcome:
 interface DocumentRecordActor { kind:'HUMAN';userId:string }
 const recordActor=(v:unknown):v is DocumentRecordActor=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')==='kind,userId'&&(v as DocumentRecordActor).kind==='HUMAN'&&typeof (v as DocumentRecordActor).userId==='string'&&uuid.test((v as DocumentRecordActor).userId);
 const recordTime=(v:unknown):v is string=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v;
+export type StageOutputItem=import('../../../../../apps/server/modules/documents/document-stage.ts').StageOutputItem;
+export function validOutputItem(x:unknown):x is StageOutputItem{
+ const item=x as StageOutputItem|null,r=item?.applicationRef;
+ return !!item&&Object.keys(item).sort().join(',')==='applicationRef,itemId'&&!!r&&Object.keys(r).sort().join(',')==='contentHash,id,version'&&typeof r.id==='string'&&uuid.test(r.id)&&integer(r.version)&&typeof r.contentHash==='string'&&hash.test(r.contentHash)&&typeof item.itemId==='string'&&!!item.itemId.trim()&&item.itemId.length<=200&&item.itemId.isWellFormed()&&!/[\u0000-\u001f\u007f]/.test(item.itemId);
+}
+export function sameOutputItem(a:unknown,b:unknown){
+ return a===undefined&&b===undefined||validOutputItem(a)&&validOutputItem(b)&&a.itemId===b.itemId&&a.applicationRef.id===b.applicationRef.id&&a.applicationRef.version===b.applicationRef.version&&a.applicationRef.contentHash===b.applicationRef.contentHash;
+}
 export interface DocumentVersion {
+  stageOutputItem?:StageOutputItem;
   id: string; version: number; title: string; confirmed: boolean; contentHash: string;
   authorRef?:DocumentRecordActor;createdAt?:string;
   formRef: { id: string; version: number; contentHash: string };
@@ -54,6 +63,10 @@ export async function readDocument(client: ApiClient, projectId: string, id: str
   if (!Array.isArray(value.content.attachments) || value.content.attachments.length > 200 || value.content.attachments.some(ref => !ref || !uuid.test(ref.artifactId) || !Number.isSafeInteger(ref.bytes) || ref.bytes < 0 || ref.bytes > 20 * 1024 * 1024 || !hash.test(ref.contentHash) || typeof ref.mediaType !== 'string') || !Array.isArray(value.content.sections) || value.content.sections.length > 200 || value.content.sections.some(section => !section || typeof section.itemId !== 'string' || typeof section.anchor !== 'string') || !Array.isArray(value.content.sourceRefs) || value.content.sourceRefs.length > 200) throw new ApiError('RESPONSE_INVALID');
   if (!criteria || criteria.criteriaVersion !== 1 || criteria.formRef?.id !== value.formRef.id || criteria.formRef?.version !== value.formRef.version || criteria.formRef?.contentHash !== value.formRef.contentHash || !Array.isArray(criteria.items) || criteria.items.length > 200 || criteria.items.some(item => !item || typeof item.criterionId !== 'string' || typeof item.title !== 'string' || !Array.isArray(item.reviewCriteria) || item.reviewCriteria.length > 200 || item.reviewCriteria.some(text => typeof text !== 'string'))
     || !Array.isArray(value.contentReviews) || value.contentReviews.length > 200 || value.contentReviews.some(review => !review || !review.ref || !uuid.test(review.ref.id) || review.ref.criteriaVersion !== criteria.criteriaVersion || review.ref.targetRef?.id !== id || review.ref.targetRef?.version !== version || review.ref.targetRef?.contentHash !== value.contentHash || !outcomes.includes(review.ref.outcome) || !review.reviewer || review.reviewer.kind !== 'HUMAN' || !uuid.test(review.reviewer.userId) || typeof review.reviewer.sameAsTargetRecorder !== 'boolean' || review.sourceKind !== 'HUMAN_REVIEW' || typeof review.reason !== 'string' || !Number.isFinite(Date.parse(review.reviewedAt)) || !integer(review.serverSequence) || !Array.isArray(review.items) || review.items.length > 200 || review.items.some(item => !item || typeof item.criterionId !== 'string' || !outcomes.includes(item.outcome) || typeof item.reason !== 'string'))) throw new ApiError('RESPONSE_INVALID');
+  if(Object.hasOwn(value,'stageOutputItem')){
+    const item=value.stageOutputItem,b=value.stageBinding;
+    if(!validOutputItem(item)||!b?.uses.includes('OUTPUT')||!stageRef(value.stageNodeRef)||!sameOutputItem(item,{itemId:item.itemId,applicationRef:b.applicationRef}))throw new ApiError('RESPONSE_INVALID');
+  }
   const sources=readDocumentSourceRefs(value.content.sourceRefs);
   if(Object.hasOwn(value,'sourceRefs')&&documentSourcesKey(value.sourceRefs)!==documentSourcesKey(sources))throw new ApiError('RESPONSE_INVALID');
   if(!Object.hasOwn(value,'sourceRefs')&&sources.length)throw new ApiError('RESPONSE_INVALID');

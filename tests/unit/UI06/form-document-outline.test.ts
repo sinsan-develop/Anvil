@@ -12,7 +12,9 @@ test('작성틀의 산출물 B와 원 양식의 section은 각자 보존된다',
  const client=new ApiClient(async p=>{const path=String(p);return Response.json(path.includes('/methodology-application')?f.application:path.includes('/stage-options')?f.options:path.includes('/forms/')?f.form:f.project);});
  const v=await m.prepareStageFormOutline(client,{...f.choice,itemId:'B'},f.session,()=>true);
  assert.equal(v.preparedStageOutput.itemId,'B');
- assert.equal(v.content.sections[0].itemId,node.outputs[0]!.itemId);
+ assert.equal(v.content.sections[0].itemId,node.outputs[0]!.itemId);v.reason='작성틀 저장';
+ const {prepareDocumentSave}=await import('../../../apps/web/src/features/design-trace/editor-api.ts'),p=await prepareDocumentSave(v,f.session);
+ assert.deepEqual(p.stageOutputItem,{applicationRef:f.choice.applicationRef,itemId:'B'});assert.equal(p.content.sections[0]?.itemId,node.outputs[0]!.itemId);
 });
 const pid='10000000-0000-4000-8000-000000000001',uid='20000000-0000-4000-8000-000000000002',session={user:{id:uid},clientId:uid,csrfToken:'C'.repeat(43)};
 const catalog=buildOfficialForms(await readFile(new URL('../../../docs/design/공식산출물_양식정의.md',import.meta.url)),await readFile(new URL('../../../docs/design/문서작성_공통기준.md',import.meta.url)));

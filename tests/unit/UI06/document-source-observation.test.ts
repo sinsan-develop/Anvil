@@ -177,7 +177,9 @@ import {registrationRef,connectorRef} from '../../../apps/server/modules/connect
 import {sourceEventQuotaAccounting} from '../../../apps/server/modules/projects/project-storage-quota.ts';
 /** 인증 Tx·SQL 저장은 메모리 모델이다. 제품 App/원 source command/quota/receipt/고정reader를 그대로 소비한다.
  * SQL trigger/PG COMMIT·OS 관측의 실행 증거가 아니다. 허용하지 않은 query는 즉시 실패한다. */
+import {documentReceiptRows,seedDocumentReceipt,stageProofQuery} from '../FN03/document-stage-receipt-fixture.ts';
 class SourceCommandMemoryAccess extends SourceOptionsMemoryAccess{
+ receiptSeeds:{sql:string;args:unknown[]}[]=[];
  state:{quota:Record<string,any>[];commands:Record<string,any>[];receipts:Record<string,any>[];audit:Record<string,any>[];links:Record<string,any>[];legacy:Record<string,any>[];events:Record<string,any>[];heads:Record<string,any>[];imports:Record<string,any>[];proposals:Record<string,any>[];artifacts:Record<string,any>[]}={quota:[],commands:[],receipts:[],audit:[],links:[],legacy:[],events:[],heads:[],imports:[],proposals:[],artifacts:[]};
  used=0n;held=0n;tx=0;reads=0;currents=0;loseCommitReply=false;lastFailure:string|null=null;failures:string[]=[];
  documentRef={...doc};documentRow:any=null;formDefinition:any=null;lastAccounting:any=null;root:any;registration:any;observation:any;rootQueries=0;registrationQueries=0;afterRoot:((count:number)=>void)|null=null;afterPolicy:((tx:number)=>void)|null=null;onQuery:((sql:string)=>void)|null=null;clockHold:(()=>Promise<void>)|null=null;activeCallbacks=0;onAuthSettled:(()=>void)|null=null;
@@ -206,6 +208,7 @@ class SourceCommandMemoryAccess extends SourceOptionsMemoryAccess{
   this.onQuery?.(sql);const json=(n:number)=>JSON.parse(String(args[n]));
   if(sql.includes('clock_timestamp()')&&this.clockHold)await this.clockHold();
   if(sql.startsWith('SELECT * FROM anvil.artifacts WHERE id=')){const row=this.state.artifacts.find(a=>a.id===args[0]&&a.project_id===args[1]&&a.content_hash===args[2]&&a.bytes===args[3]&&a.media_type===args[4]);return{rows:row?[structuredClone(row)]:[]};}
+  if(stageProofQuery(sql))return {rows:documentReceiptRows(this.documentRow,args,this.receiptSeeds)};
   if(sql.startsWith('SELECT v.*,d.confirmed_version FROM anvil.document_versions'))return{rows:this.documentRow?[structuredClone(this.documentRow)]:[]};
   if(sql.startsWith('SELECT definition_json FROM anvil.form_versions'))return{rows:[{definition_json:structuredClone(this.formDefinition)}]};
   if(sql.startsWith('SELECT head_version FROM anvil.documents'))return{rows:[{head_version:this.documentRef.version}]};
@@ -322,6 +325,7 @@ function collectCommandFixture(){
  const definition={formCode:'SOURCE_MEMORY_FORM',name:'합성 양식',purpose:'원문 보존 검사',scope:'PROJECT',authorRole:'작성',reviewerRole:'검토',confirmerRole:'확정',requiredInputs:[],items:[{itemId:'intro',title:'내용',required:true,valueType:'TEXT',repeated:false,fields:[],authoringRules:[],reviewCriteria:['내용 확인']}],authoringStandardRef:{...doc,id:id(303)}},formRef={id:id(304),version:1,contentHash:contentHash(canonicalJson(definition))};
  const attachments=Array.from({length:200},(_,i)=>{const bytes=Buffer.from([137,80,78,71,13,10,26,10]),ref={artifactId:id(400+i),bytes:bytes.length,contentHash:contentHash(bytes),mediaType:'image/png'};store.data.set(ref.artifactId,bytes);return ref;}),content={body:original,attachments,sections:[{itemId:'intro',anchor:'line:1'}],sourceRefs:[]},documentRef={...doc,contentHash:contentHash(canonicalJson({title:'확정 서버 문서',formRef,stageNodeRef:null,content}))};
  const repository=new SourceCommandMemoryAccess(documentRef);repository.formDefinition=definition;repository.documentRow={document_id:documentRef.id,project_id:pid,version:1,title:'확정 서버 문서',form_definition_id:formRef.id,form_version:1,form_hash:formRef.contentHash,stage_ref_json:null,content_json:content,content_hash:documentRef.contentHash,source_refs_json:[],author_ref_json:{kind:'HUMAN',userId:actor.actorId},created_at:new Date('2026-11-03T00:00:00.000Z'),confirmed_version:1,validation_json:{formatOnly:true}};
+ seedDocumentReceipt(repository.documentRow,pid,actor.actorId,actor.clientId,repository.receiptSeeds);
  for(const ref of [original,changed,...attachments])repository.state.artifacts.push({id:ref.artifactId,project_id:pid,bytes:ref.bytes,content_hash:ref.contentHash,media_type:ref.mediaType,storage_key:`blobs/${pid}/${ref.artifactId}`,state:'READY',inspection_json:null,command_id:id(700)});
  const observation={...repository.observation.snapshot,blobHash:original.contentHash,artifactRef:original};repository.observation={ref:{id:id(305),version:1,contentHash:contentHash(canonicalJson(observation))},snapshot:observation};
  const documents=new ProjectDocuments(undefined,store),policies=new ProjectPolicyRepository(repository,documents),service=new ProjectDocumentSourceLinks(repository.port());

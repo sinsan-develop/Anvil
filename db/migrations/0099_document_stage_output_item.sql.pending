@@ -1,0 +1,82 @@
+-- FN03. 원 영수증과 버전을 같은 거래에서 결박한다. 기존 단계 guard도 함께 적용한다.
+CREATE FUNCTION anvil.guard_document_stage_output_item() RETURNS trigger
+LANGUAGE plpgsql SECURITY INVOKER AS $$
+DECLARE
+  cmd anvil.commands%ROWTYPE;
+  applied anvil.project_methodologies%ROWTYPE;
+  prior anvil.document_versions%ROWTYPE;
+  prior_data jsonb;
+  data jsonb;
+  item jsonb;
+  form_ref jsonb;
+  node jsonb;
+  audit_reason text;
+BEGIN
+  IF current_user <> 'anvil_v3_app' THEN RETURN NEW; END IF;
+  SELECT * INTO STRICT cmd FROM anvil.commands
+    WHERE id=NEW.command_id AND id::text=current_setting('anvil.command_id',true)
+      AND scope_kind='PROJECT' AND scope_id=NEW.project_id AND project_id=NEW.project_id
+      AND state='APPLIED' AND operation='saveDocumentDraft' AND expected_version=NEW.version-1
+      AND client_id=NEW.client_id AND actor_id::text=NEW.author_ref_json->>'userId';
+  data := cmd.result_ref->'data';
+  IF data->'ref' IS DISTINCT FROM jsonb_build_object('id',NEW.document_id,'version',NEW.version,'contentHash',NEW.content_hash)
+     OR data->>'status' IS DISTINCT FROM 'DRAFT' THEN
+    RAISE EXCEPTION 'DOCUMENT_OUTPUT_COMMAND_REQUIRED' USING ERRCODE='42501';
+  END IF;
+  SELECT a.reason_code INTO STRICT audit_reason
+    FROM anvil.authorization_receipts ar JOIN anvil.audit_events a ON a.command_id=ar.command_id
+    WHERE ar.id=cmd.authorization_receipt_id AND ar.command_id=cmd.id
+      AND ar.scope_kind='PROJECT' AND ar.scope_id=NEW.project_id
+      AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',cmd.actor_id,'clientId',cmd.client_id)
+      AND ar.policy_ref IS NOT DISTINCT FROM cmd.policy_ref AND a.policy_ref IS NOT DISTINCT FROM cmd.policy_ref
+      AND a.project_id=NEW.project_id AND a.operation_id=cmd.operation_id AND a.actor_ref=NEW.author_ref_json
+      AND a.client_ref=cmd.client_id AND a.target_ref=data->'ref' AND a.scope_digest=ar.scope_digest
+      AND a.source_kind='HUMAN_COMMAND' AND a.outcome='APPLIED';
+  IF NEW.version>1 THEN
+    SELECT * INTO STRICT prior FROM anvil.document_versions
+      WHERE project_id=NEW.project_id AND document_id=NEW.document_id AND version=NEW.version-1;
+    SELECT c.result_ref->'data' INTO STRICT prior_data FROM anvil.commands c
+      JOIN anvil.audit_events a ON a.command_id=c.id AND a.operation_id=c.operation_id AND a.project_id=c.project_id
+      WHERE c.id=prior.command_id AND c.project_id=prior.project_id AND c.state='APPLIED' AND c.operation='saveDocumentDraft'
+        AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND'
+        AND a.target_ref=jsonb_build_object('id',prior.document_id,'version',prior.version,'contentHash',prior.content_hash)
+        AND a.reason_code=(CASE WHEN (c.result_ref->'data') ? 'stageOutputItem' THEN 'EXPLICIT_DOCUMENT_DRAFT_STAGE_OUTPUT' ELSE 'EXPLICIT_DOCUMENT_DRAFT' END);
+    IF prior_data->'stageOutputItem' IS DISTINCT FROM data->'stageOutputItem' OR
+       ((prior_data ? 'stageOutputItem') AND
+       (prior.stage_ref_json IS DISTINCT FROM NEW.stage_ref_json OR
+        (prior.form_definition_id,prior.form_version,prior.form_hash) IS DISTINCT FROM (NEW.form_definition_id,NEW.form_version,NEW.form_hash))) THEN
+      RAISE EXCEPTION 'DOCUMENT_STAGE_OUTPUT_CONFLICT' USING ERRCODE='42501';
+    END IF;
+  END IF;
+  IF NOT (data ? 'stageOutputItem') THEN
+    IF audit_reason IS DISTINCT FROM 'EXPLICIT_DOCUMENT_DRAFT' THEN
+      RAISE EXCEPTION 'DOCUMENT_OUTPUT_AUDIT_REQUIRED' USING ERRCODE='42501';
+    END IF;
+    RETURN NEW;
+  END IF;
+  item := data->'stageOutputItem';
+  IF audit_reason IS DISTINCT FROM 'EXPLICIT_DOCUMENT_DRAFT_STAGE_OUTPUT' OR NEW.stage_ref_json IS NULL
+     OR jsonb_typeof(item) IS DISTINCT FROM 'object' OR NOT (item ?& ARRAY['applicationRef','itemId'])
+     OR (item-'applicationRef'-'itemId') <> '{}'::jsonb OR jsonb_typeof(item->'itemId') IS DISTINCT FROM 'string'
+     OR length(trim(item->>'itemId'))=0 OR length(item->>'itemId')>200 OR item->>'itemId' ~ '[[:cntrl:]]' THEN
+    RAISE EXCEPTION 'DOCUMENT_STAGE_OUTPUT_INVALID' USING ERRCODE='42501';
+  END IF;
+  SELECT * INTO STRICT applied FROM anvil.project_methodologies
+    WHERE project_id=NEW.project_id ORDER BY application_version DESC LIMIT 1;
+  IF item->'applicationRef' IS DISTINCT FROM jsonb_build_object('id',applied.id,'version',applied.application_version,'contentHash',applied.snapshot_hash)
+     OR NEW.stage_ref_json->>'applicationId' IS DISTINCT FROM applied.id::text
+     OR data->'stageBinding'->'applicationRef' IS DISTINCT FROM item->'applicationRef' THEN
+    RAISE EXCEPTION 'DOCUMENT_CURRENT_APPLICATION_REQUIRED' USING ERRCODE='42501';
+  END IF;
+  form_ref := jsonb_build_object('id',NEW.form_definition_id,'version',NEW.form_version,'contentHash',NEW.form_hash);
+  SELECT n INTO STRICT node FROM jsonb_array_elements(applied.snapshot_json->'graph'->'nodes') n
+    WHERE n->>'nodeId'=NEW.stage_ref_json->>'nodeId';
+  IF (SELECT count(*) FROM jsonb_array_elements(node->'outputs') o WHERE o->>'itemId'=item->>'itemId')<>1 OR
+     NOT EXISTS (SELECT 1 FROM jsonb_array_elements(node->'outputs') o WHERE o->>'itemId'=item->>'itemId' AND o->'formRef'=form_ref) THEN
+    RAISE EXCEPTION 'DOCUMENT_STAGE_OUTPUT_INVALID' USING ERRCODE='42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+CREATE TRIGGER document_stage_output_item_guard BEFORE INSERT ON anvil.document_versions
+FOR EACH ROW EXECUTE FUNCTION anvil.guard_document_stage_output_item();

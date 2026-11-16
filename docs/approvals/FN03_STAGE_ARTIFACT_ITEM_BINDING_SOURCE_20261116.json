@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "scope": [
+    "stageOutputItem save payload and exact version GET",
+    "original receipt version binding and request/audit verification",
+    "new audit reason",
+    "compatibility and post-application-change revision conflict",
+    "unapplied forward 0099 guard and source/RAM verification"
+  ],
+  "excluded": [
+    "actual DB migration or rights application",
+    "keys and services changes",
+    "actual SDK/Agent/paid call",
+    "production deployment"
+  ],
+  "contract": "docs/contracts/FN03_STAGE_ARTIFACT_ITEM_BINDING_CANDIDATE_20261116.md",
+  "id": "FN03-STAGE-ARTIFACT-ITEM-BINDING-SOURCE-20261116",
+  "status": "ADOPTED_SOURCE_RAM_PENDING_SQL",
+  "sha256": "5039D14A2D5E2B6BE0E48172FE1FBACF9ECA98B4F18CF618C33AC3FC3C29A75B",
+  "evidence": {
+    "quote": "CLI 설치 정보 한정 조회와 서버 항목 귀속 계약 변경 승인하니, 불필요한 승인 요청 반복하지 말고 실제로 쓸 수 있게 개발 계속해.",
+    "turnId": "01a1e456-2b1f-7271-a11f-d0587432157b",
+    "userMessageId": "01a1e456-2c67-7af1-b2f8-6af5d404ce5c",
+    "threadId": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+    "approvedAt": "2026-11-16T12:30:14Z"
+  }
+}

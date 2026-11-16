@@ -25,6 +25,12 @@ test('저장 클라이언트의 제한된 문서 hash는 서버 canonical 계약
   await assert.rejects(continueDocumentSave(client, { ...pending, upload: { ...pending.upload, clientId: project } }, session, () => {}, () => true), ApiError);
   assert.equal(calls, 0);
 });
+test('기저 문서의 B 귀속은 개정 대기 명령에 복사되고 원문 업로드에서 제외된다',async()=>{
+ const b=buffer(),applicationRef={id:project,version:3,contentHash:'a'.repeat(64)};
+ b.stageNodeRef={applicationId:project,nodeId:'stage'};b.baseStageNodeRef={...b.stageNodeRef};b.stageOutputItem={applicationRef,itemId:'B'};
+ const pending=await prepareDocumentSave(b,session);assert.deepEqual(pending.stageOutputItem,b.stageOutputItem);assert.notEqual(pending.stageOutputItem,b.stageOutputItem);
+ assert.deepEqual(Object.keys(pending.upload.payload).sort(),['bytes','contentHash','mediaType']);
+});
 test('기존 일반 텍스트 문서를 편집해도 원문 형식을 Markdown으로 암묵 변경하지 않는다', async () => {
   const work = Object.assign(buffer(), { mediaType: 'text/plain;charset=utf-8' });
   const pending = await prepareDocumentSave(work, session);

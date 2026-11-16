@@ -89,12 +89,12 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
     const saveContext=context.current,requestTransport=client.transport;
     const requestEpoch=epoch.current,active=()=>mounted.current&&client.transport===requestTransport&&session.user.id===saveContext.user&&session.clientId===saveContext.clientId&&session.csrfToken===saveContext.csrf&&requestEpoch===epoch.current&&known.current.has(latest.current)&&latest.current.ownerUserId===session.user.id&&(!pending?latest.current===buffer:matchesDocumentSaveInput(latest.current,pending,session));
     try {
-      if (!pending) { pending = await prepareDocumentSave(buffer, session); if (!active()) return; const prepared = pending; managedChange(previous => active()&&previous === buffer && !previous.designDependencyState && previous.ownerUserId === session.user.id && previous.documentId === buffer.documentId && previous.projectId === buffer.projectId && !previous.importState && !previous.importPreparationId ? { ...previous, pending: prepared, failure: null } : previous); }
+      if (!pending) { pending = await prepareDocumentSave(buffer, session,editedDrafts.get(buffer)??buffer); if (!active()) return; const prepared = pending; managedChange(previous => active()&&previous === buffer && !previous.designDependencyState && previous.ownerUserId === session.user.id && previous.documentId === buffer.documentId && previous.projectId === buffer.projectId && !previous.importState && !previous.importPreparationId ? { ...previous, pending: prepared, failure: null } : previous); }
       const command = pending.upload.commandId;
       const ref = await continueDocumentSave(client, pending, session, value => managedChange(previous => active()&&previous?.pending?.upload.commandId === command ? { ...previous, pending: value } : previous), active);
       if(!active())return;
       completed.current={ref,context:saveContext,epoch:requestEpoch};
-      managedChange(previous => active()&&previous?.pending?.upload.commandId === command ? { ...previous, documentId: ref.id, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: buffer.title, baseStageNodeRef: structuredClone(previous.pending!.stageNodeRef ?? null), pending: null, formEntry: undefined, dirty: false, savedRef: ref, failure: null,saveUncertain:false } : previous);
+      managedChange(previous => active()&&previous?.pending?.upload.commandId === command ? { ...previous, ...(pending?.stageOutputItem?{stageOutputItem:structuredClone(pending.stageOutputItem)}:{}), documentId: ref.id, baseVersion: ref.version, baseHash: ref.contentHash, baseTitle: buffer.title, baseStageNodeRef: structuredClone(previous.pending!.stageNodeRef ?? null), pending: null, formEntry: undefined, dirty: false, savedRef: ref, failure: null,saveUncertain:false } : previous);
     } catch (cause) {
       const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
       if(!active())return;

@@ -1,3 +1,4 @@
+import {sameOutputItem} from './api.ts';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,type DocumentBuffer,type DocumentSession,type PendingDocumentSave,type DocumentWrite} from './editor-api.ts';
 import {readCandidatePermissionPolicy} from '../connections/candidate-policy-api.ts';
@@ -16,7 +17,8 @@ function fail(code='DOCUMENT_UPLOAD_APPROVAL_MISMATCH',status=409):never{throw n
 function check(active:()=>boolean){if(!active())fail('SAVE_CONTINUATION_PAUSED',412);}
 async function sourceHash(p:PendingDocumentSave){const{uploadApproval:_approval,save:_save,upload,...rest}=p;return digest({...rest,upload:{...upload,approvalRef:null}});}
 export function matchesDocumentSaveInput(b:DocumentBuffer,p:PendingDocumentSave,s:DocumentSession){
- return b.ownerUserId===s.user.id&&b.projectId===p.upload.projectId&&b.controlGeneration===p.upload.controlGeneration&&s.clientId===p.upload.clientId&&b.documentId===p.documentId&&b.baseVersion===p.baseVersion&&b.title===p.title&&b.body===p.body&&b.mediaType===p.upload.payload.mediaType&&b.reason===p.reason&&same(b.formRef,p.formRef)&&same(b.content,p.content)&&same(b.stageNodeRef??null,p.stageNodeRef??null)&&(b.importCandidateRef??null)===(p.importCandidateRef??null)&&!b.proposalState&&!b.importState&&!b.importPreparationId&&!b.designDependencyState&&!b.designIndexState&&!b.workPlanState;
+ const source=b.preparedStageOutput,selected=b.documentId!==null?b.stageOutputItem:source?{applicationRef:source.applicationRef,itemId:source.itemId}:b.pending?.saveCommandId===p.saveCommandId?b.pending.stageOutputItem:undefined;
+ return sameOutputItem(selected,p.stageOutputItem)&&b.ownerUserId===s.user.id&&b.projectId===p.upload.projectId&&b.controlGeneration===p.upload.controlGeneration&&s.clientId===p.upload.clientId&&b.documentId===p.documentId&&b.baseVersion===p.baseVersion&&b.title===p.title&&b.body===p.body&&b.mediaType===p.upload.payload.mediaType&&b.reason===p.reason&&same(b.formRef,p.formRef)&&same(b.content,p.content)&&same(b.stageNodeRef??null,p.stageNodeRef??null)&&(b.importCandidateRef??null)===(p.importCandidateRef??null)&&!b.proposalState&&!b.importState&&!b.importPreparationId&&!b.designDependencyState&&!b.designIndexState&&!b.workPlanState;
 }
 async function frozen(b:DocumentBuffer,s:DocumentSession){
  const p=b.pending,c=p?.upload;
