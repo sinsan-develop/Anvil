@@ -2,15 +2,15 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
-## 현재 작업 요약 — 2026-11-16 18:54:00 KST
+## 현재 작업 요약 — 2026-11-16 19:49:42 KST
 
 - **현재 상태: 개발 진행 중.** 과거 ‘병합하고 대기’는 당시 이력이며 현재 중지 지시가 아니다. 1단계 로컬·WSL-server 기능 구현을 계속한다.
-- **현재 업무:** Stage C/D · FN07/FN08의 동일 Query 첫·후속 SEND 입력 스트림 연결. 기존 source.create에 원 입력을 한 번 공급하고 forFirstSend의 LiveInputPort를 연결한다. WI FN07_SAME_QUERY_LIVE_INPUT_WI_20261116.md r2(9BBC89D5), Primary 단일 writer의 제품3·시험1 source/RAM 구현·독립 검수가 끝나 Main 통합 중이다. 실제 SDK 모듈·CLI/child 생산자와 실제 실행은 미완료·제외한다.
+- **현재 업무:** Stage C/D · FN07 실제 SDK/CLI 생산자 준비. Windows CLI 첫 후보의 한정 관측안·조회 script는 AST0/독립 C0/I0/M0으로 고정했고 사용자 결정을 요청할 범위다. 실제 PATH/설치파일 조회·조회프로세스 실행은 0회다. 이 결정과 별개로 UI06의 산출물 itemId 소실을 RAM으로 재현했고, 같은 Primary가 버전별 귀속 계약 후보를 구체화한다. 제품/DB는 아직 변경하지 않는다. 실제 SDK·CLI/child·DB/권한/키/서비스 실행은 제외한다.
 - **담당:** `developer_primary` 구현·기본 검증, Main 어울 작업관리·필수 테스트·독립 검수·통합. 진행 중인 구현은 중단·회수·중복 배정하지 않았다.
-- **Git:** 최신 통합 main `9013faefc2779aa6b012a555c3f4afbf0a5dfe12`(PR150), 소스 `7ac51ff1`과 tree 동일. 현재 작업 branch `codex/av3-query-producer`는 그 main에서 시작했다. 완료 source branch/request tag는 정상 정리했고 원격 `pr-150-head`를 보존했다.
-- **완료한 소스 단위:** normal START 준비, 첫·후속 SEND, 원 Query 출력 수집과 협력 STOP 소비, profile/예산·원 READY 연결은 PR144~149에 source로 통합됐다. 이를 현재 ‘SEND/STOP 소스 미구현’으로 표시하지 않는다. 실제 SDK·Agent 실행 완료를 뜻하지도 않는다.
-- **최근 확정 검증:** PR148 spool 단위 직접64건·선택6건 PASS, root/desktop 타입0, 독립 C0/I0/M0. 병합본 READY/ACK/cursor RAM smoke1건 PASS. 현재 제5 출력 채널은 별도 구현·검수 중이며 아직 최종 PASS가 아니다.
-- **현재 구현 검증:** PR150 제5 출력 채널의 병합본 RAM2건에 이어, 동일 Query 후속 입력의 등록 CJS44건·인접4건·메모리1건·root/desktop 타입0·독립 C0/I0/M0을 확인했다. 서로다른 원문2건·Query/출력iterator 각1·후속 LIVE_SEND_INPUT_YIELDED/ACK cursor3을 RAM에서 관측했다. 최종 전달 직전 원 current/기한/STOP epoch 거절을 보완했으며 실제 SDK·Windows PASS가 아니다.
+- **Git:** 최신 통합 main `8776fe90764887012c73409a50a0a3882df813dc`(PR151), 소스 `6e468b03`과 tree 동일. 현재 작업 branch `codex/av3-sdk-producer-preparation`는 그 main에서 시작했다. 완료 branch/request tag는 정상 정리했고 원격 `pr-150-head`·`pr-151-head`를 보존했다.
+- **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
+- **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
+- **현재 구현 검증:** PR150 제5 출력 채널의 병합본 RAM2건에 이어, 동일 Query 후속 입력의 등록 CJS44건·인접4건·메모리1건·root/desktop 타입0·독립 C0/I0/M0을 확인했다. 서로다른 원문2건·Query/출력iterator 각1·후속 LIVE_SEND_INPUT_YIELDED/ACK cursor3을 RAM에서 관측했다. 최종 전달 직전 원 current/기한/STOP epoch 거절을 보완했고 PR151 병합본 후속입력/현재성상실 RAM2건도 PASS다. 실제 SDK·Windows PASS가 아니다.
 - **미확인·남은 기능:** 실제 SDK/CLI·OS 프로세스·도구 권한 집행, C# 컴파일·Windows 파일/ACL·보호 저장, 실제 DB·서비스·브라우저 통합 및 사용자 인수는 미검증이다. 실제 Agent 생산자와 전체 작업계획은 미완료다.
 - **P03·SSH:** R3 복구는 복사·PG 기동·전환에 도달하지 못했고 원 자원을 보존한다. 자동 wrapper의 SSH255/UNKNOWN과 일반 SSH를 구분한다. 사용자 Windows PowerShell 로그인 성공 증거(11-16 18:04:45 KST)가 있으며 서버/로그인 불능으로 일반화하지 않는다. 새 부수 진단·재복제·정리는 하지 않는다.
 - **기록 기준:** 소스/RAM 합격, 실제 동작 확인, 사용자 인수를 구분한다. 기존 서로 다른 이력은 아래 보관 영역에 남긴다. 사용자 열람본의 기존 미추적 원본은 `D:\Project\Anvil\.av3-data\status-view-backup-20261116-184648`에 원본 해시 그대로 보존했다.
@@ -30,7 +30,7 @@
 | [ ] | UI03 | 부분 구현 | 실제 총괄 제안·실행 중 영향 근거·served 저장왕복 |
 | [ ] | UI04 | 부분 구현 | 실제 총괄/책임 Agent 세션·지시/수행·중지/재개. 비활성 버튼을 임의 활성화하지 않음 |
 | [ ] | UI05 | 부분 구현 | 실제 증거 진위/완료 수용·실제 쓰기 회수·후속 보완 임무 |
-| [ ] | UI06 | 부분 구현 | 문서 항목별 귀속 ref 저장·실파일/시험/diff의 실제 연결 |
+| [ ] | UI06 | 부분 구현 | 동일 단계·동일 양식의 산출물 A/B 선택 itemId가 초안에서 소실됨을 Main RAM44b42a로 확인. 불변 버전별 귀속 저장/조회 계약이 필요하며 기존 문서 추정0, 실제 파일/시험/diff 연결도 미완료 |
 | [ ] | UI07 | 부분 구현 | 보호 영향/OS writer 근거 부재로 실제 적용412. 기준 전환→계획 개정→영향 업무 재개 |
 | [ ] | UI08 | 부분 구현 | 실제 관측 기반 문제 분류/회수/교체·실행 효과와 승인 연결 |
 | [ ] | UI09 | 부분 구현 | 실제 새 대상/세션·6항목 이해 대조/이전 확정/안전재개 |
@@ -45,8 +45,8 @@
 | [ ] | FN04 | 부분 구현 | 실제 영향 완전성/OS writer 회수 공급자 부재로 실제 적용 차단, 영향 업무 재개 |
 | [ ] | FN05 | 부분 구현 | 실제 공유/대상 반영·Agent 맥락 전달→새 세션 이해 대조 |
 | [ ] | FN06 | 부분 구현 | 등록·준비·보호 연결 source는 구현·검수됨. 실제 기존 Agent의 파일·시험·결과·중지/회수 여정은 미확인 |
-| [ ] | FN07 | 부분 구현·출력 저장 연결 중 | normal START/첫·후속 SEND·출력 수집/STOP 소비 source 통합 완료. SDK_SESSION_OUTPUT 제5 보호 채널 연결은 현재 구현·검수 중. 실제 SDK/CLI 생산자·둘째 도구/계정 교체는 미완료 |
-| [ ] | FN08 | 부분 구현 | PR148/149의 profile 예산·같은 host·원 READY source와 RAM 검수 완료. SDK 출력 보호 저장은 현재 구현 중. 실제 Windows 프로세스/도구 승인·중지/회수·재접속 인수는 미완료 |
+| [ ] | FN07 | 부분 구현 | PR150 보호 출력·PR151 같은 Query 첫/후속 입력 source/RAM·독립 검수·병합본 smoke 완료. 실제 SDK/CLI 생산자·독립 STOP CURRENT·둘째 도구/계정 교체는 미완료 |
+| [ ] | FN08 | 부분 구현 | PR148~151 profile/예산·원 READY·제5 출력 보호·같은 Query 입력 source/RAM 검수 완료. 실제 Windows 프로세스/도구 승인·중지/회수·재접속 인수는 미완료 |
 | [ ] | FN09 | 부분 구현 | 실제 총괄/단계/하위 Agent 운영 연결. queue/material/outbox 합성 저장은 실제 실행이 아님 |
 | [ ] | FN10 | 부분 구현 | 실제 scheduler/dispatch·완료→다음 단계 실행. 과거 실제 PG 대기열 증거는 별도 유지 |
 | [ ] | FN11 | 구현했지만 동작 미확인 | 현 전체SQL의 실제 ACL/RLS/경쟁/회수/만료·부작용1회 통합 |

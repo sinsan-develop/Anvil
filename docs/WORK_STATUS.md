@@ -2,15 +2,15 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
-## 현재 작업 요약 — 2026-11-16 18:54:00 KST
+## 현재 작업 요약 — 2026-11-16 19:49:42 KST
 
 - **현재 상태: 개발 진행 중.** 과거 ‘병합하고 대기’는 당시 이력이며 현재 중지 지시가 아니다. 1단계 로컬·WSL-server 기능 구현을 계속한다.
-- **현재 업무:** Stage C/D · FN07/FN08의 동일 Query 첫·후속 SEND 입력 스트림 연결. 기존 source.create에 원 입력을 한 번 공급하고 forFirstSend의 LiveInputPort를 연결한다. WI FN07_SAME_QUERY_LIVE_INPUT_WI_20261116.md r2(9BBC89D5), Primary 단일 writer의 제품3·시험1 source/RAM 구현·독립 검수가 끝나 Main 통합 중이다. 실제 SDK 모듈·CLI/child 생산자와 실제 실행은 미완료·제외한다.
+- **현재 업무:** Stage C/D · FN07 실제 SDK/CLI 생산자 준비. Windows CLI 첫 후보의 한정 관측안·조회 script는 AST0/독립 C0/I0/M0으로 고정했고 사용자 결정을 요청할 범위다. 실제 PATH/설치파일 조회·조회프로세스 실행은 0회다. 이 결정과 별개로 UI06의 산출물 itemId 소실을 RAM으로 재현했고, 같은 Primary가 버전별 귀속 계약 후보를 구체화한다. 제품/DB는 아직 변경하지 않는다. 실제 SDK·CLI/child·DB/권한/키/서비스 실행은 제외한다.
 - **담당:** `developer_primary` 구현·기본 검증, Main 어울 작업관리·필수 테스트·독립 검수·통합. 진행 중인 구현은 중단·회수·중복 배정하지 않았다.
-- **Git:** 최신 통합 main `9013faefc2779aa6b012a555c3f4afbf0a5dfe12`(PR150), 소스 `7ac51ff1`과 tree 동일. 현재 작업 branch `codex/av3-query-producer`는 그 main에서 시작했다. 완료 source branch/request tag는 정상 정리했고 원격 `pr-150-head`를 보존했다.
-- **완료한 소스 단위:** normal START 준비, 첫·후속 SEND, 원 Query 출력 수집과 협력 STOP 소비, profile/예산·원 READY 연결은 PR144~149에 source로 통합됐다. 이를 현재 ‘SEND/STOP 소스 미구현’으로 표시하지 않는다. 실제 SDK·Agent 실행 완료를 뜻하지도 않는다.
-- **최근 확정 검증:** PR148 spool 단위 직접64건·선택6건 PASS, root/desktop 타입0, 독립 C0/I0/M0. 병합본 READY/ACK/cursor RAM smoke1건 PASS. 현재 제5 출력 채널은 별도 구현·검수 중이며 아직 최종 PASS가 아니다.
-- **현재 구현 검증:** PR150 제5 출력 채널의 병합본 RAM2건에 이어, 동일 Query 후속 입력의 등록 CJS44건·인접4건·메모리1건·root/desktop 타입0·독립 C0/I0/M0을 확인했다. 서로다른 원문2건·Query/출력iterator 각1·후속 LIVE_SEND_INPUT_YIELDED/ACK cursor3을 RAM에서 관측했다. 최종 전달 직전 원 current/기한/STOP epoch 거절을 보완했으며 실제 SDK·Windows PASS가 아니다.
+- **Git:** 최신 통합 main `8776fe90764887012c73409a50a0a3882df813dc`(PR151), 소스 `6e468b03`과 tree 동일. 현재 작업 branch `codex/av3-sdk-producer-preparation`는 그 main에서 시작했다. 완료 branch/request tag는 정상 정리했고 원격 `pr-150-head`·`pr-151-head`를 보존했다.
+- **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
+- **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
+- **현재 구현 검증:** PR150 제5 출력 채널의 병합본 RAM2건에 이어, 동일 Query 후속 입력의 등록 CJS44건·인접4건·메모리1건·root/desktop 타입0·독립 C0/I0/M0을 확인했다. 서로다른 원문2건·Query/출력iterator 각1·후속 LIVE_SEND_INPUT_YIELDED/ACK cursor3을 RAM에서 관측했다. 최종 전달 직전 원 current/기한/STOP epoch 거절을 보완했고 PR151 병합본 후속입력/현재성상실 RAM2건도 PASS다. 실제 SDK·Windows PASS가 아니다.
 - **미확인·남은 기능:** 실제 SDK/CLI·OS 프로세스·도구 권한 집행, C# 컴파일·Windows 파일/ACL·보호 저장, 실제 DB·서비스·브라우저 통합 및 사용자 인수는 미검증이다. 실제 Agent 생산자와 전체 작업계획은 미완료다.
 - **P03·SSH:** R3 복구는 복사·PG 기동·전환에 도달하지 못했고 원 자원을 보존한다. 자동 wrapper의 SSH255/UNKNOWN과 일반 SSH를 구분한다. 사용자 Windows PowerShell 로그인 성공 증거(11-16 18:04:45 KST)가 있으며 서버/로그인 불능으로 일반화하지 않는다. 새 부수 진단·재복제·정리는 하지 않는다.
 - **기록 기준:** 소스/RAM 합격, 실제 동작 확인, 사용자 인수를 구분한다. 기존 서로 다른 이력은 아래 보관 영역에 남긴다. 사용자 열람본의 기존 미추적 원본은 `D:\Project\Anvil\.av3-data\status-view-backup-20261116-184648`에 원본 해시 그대로 보존했다.
@@ -20131,3 +20131,41 @@ PR150 exact source7ac51ff188f626b8edd7120444e6e6478b0024b0을 main9013faefc2779a
 ## 2026-11-16 동일 Query 입력 검수 완료·통합 준비
 
 Primary 쓰기반환/live0을 확인하고 제품3·시험1의4지문을 결과서와 모두 대조했다. 독립 검수 C0/I0/M0: 원 prompt/worker/Query/port 단발결박, 최종 resolve 직전 current·명령기한·token·STOP epoch, abandon의 원수명 abort에 따른 demand/request 정리를 확인했다. 직접44PASS(7c48a8)·인접4PASS(1081af)·메모리1PASS(18b850)·root8b3faf/desktop7d6a2e 타입exit0. 검사건수 중복합산없음. 원port제거RED6ed0d6·기한경계RED70bd95와 fixture오류이력을 보존했다. 결과서 SHA256 B94A1FB150A8C93F8CD7D0F9072D0721995770114C711A3B78FA5D9CFAC4B1C9. 실제SDK/CLI/child/OS STOP·파일자료/DB·권한·키·서비스는 미확인·미실행이며 전체계획 미완료다. 정확 변경만 PR·Broker·병합본 smoke·복구 ref·정리를 진행한다. 현재요약을 두 사용자열람본과 함께 갱신했다.
+
+## 2026-11-16 PR151 병합·정리·다음 결정안 준비
+
+PR151 exact source6e468b030e1930a6339865e568fb9e15bd59bc7d→main8776fe90764887012c73409a50a0a3882df813dc, trusted Broker43849202256 success. source/main tree c4387d8e7e02f802033c085eef069f0574c8a46f 일치·원격pr-151-head 확인. localmain FF 뒤 후속입력PULL/전달직전CURRENT_LOST RAM2PASS/0FAIL/0SKIP(a404aa,8266.4261ms), clean/원격main동일·완료branch/request tag 정상정리 후 새codex/av3-sdk-producer-preparation를 만들었다. 원장/불명/미정산자료 정리는 하지 않았다.
+
+다음 결정은 실제SDK/CLI 생산자의 설치신원 근거다. 기존worker manifest는 SDK/CLI 권위가 아니고, 이미채택된SameQuery 내부연결은 재승인대상이 아니다. 기존Primary가 현재소스/정본으로 재사용가능한 지문을 먼저 확인하고, 부족한경우 Windows 설치소프트웨어의 공개metadata/한정hash만 읽는 단발후보 문서 하나를 준비한다. 실행·실제파일조사는 아직0이다. 별도read-only담당자는 승인된normalSTOP의 source 미연결을 기존권위로 구현가능한지 좁혀 확인한다. 영향없는기존구현은결정과별개로진행하며새권위·실행범위를임의발급하지않는다. 현재요약과두사용자열람본을함께갱신했다.
+
+## 2026-11-16 다음 결정안 사전 검수 보완
+
+CLI 조회 후보8CBE8F4A의 독립 C0/I1/M1을 확인했다. 실제실행본이없는 동일handle 최종물리신원·단일링크 약속을 승인대상으로넘기지않는다. Main은 원writer에게 관측metadata/hash의정확한한계·NO_ELIGIBLE_SCOPE·NOT_FOUND/UNKNOWN 구분과 고정무프로필조회script source를 준비하도록배정했다. 아직PATH/실제소프트웨어조회·조회프로세스/CLI실행0이며승인전실행하지않는다. Node/공개SDK기존지문은재사용한다. STOP은 기존권위의독립CURRENT reader가없어 과거snapshot/slot을최신근거로대체하지않았고새조회권위후보는선행원천미확정이므로아직채택요청하지않는다. CHECK current의최근검증/FN07/FN08행도PR150/151완료source로정합화하고42미체크의인수조건을임의승격하지않았다.
+
+## 2026-11-16 CLI 한정 관측안 동결·한건 직접 결정 준비
+
+후보 문서 EEAFFF15D288F5721F00C235A3A1FB1D2806CD0E8F0080010CF1B8685F47F620와 조회script2A7E89112023DDB2F40631ABD098529B47AF1A2B6CF87317C7113F56C636F511를 동결했다. 기존I1/M1 및 Main의Start예외시원객체보존조건을보완해 독립C0/I0/M0, 감독블록/조회소스AST구문0(e0bb6e,c4edc4)이다. 실제PATH/설치파일관측·조회프로세스/CLI/SDK/Node실행은0이다. stdout은선택경로hash·이름·크기·시각·적격exe의관측hash만받고 실제물리파일ID·동시교체·공급자진위·Agent실행권위를증명하지않는다. 메모리소진표식과별도로Main이직접승인ID/유효창/단발소진을발행전에기록한다. UNKNOWN은재시도하지않고원조회객체/감사보존이며다른프로세스/자료는건드리지않는다. 사용자에게예외경계인PATH선별/CLI한정읽기1회만질문하고기존Node/공개SDK는재조회하지않는다.
+
+검수담당의기본셸프로필이읽기명령에로드돼conda초기화오류1회가있었고무프로필지문대조로정정했다. 제품/후보실행오류로합산하지않는다. 같은Primary에는결정과별개의FN03 D2 P-B 기존공급자미완료source에서새권위없이구현가능한업무를읽기대조하도록배정했다. 진행가능한구현을임의로전체대기로전환하지않는다.
+
+## 2026-11-16 CLI 관측 한건 직접 결정 질문 발행
+
+Main은 게시본ed7bba5a의 후보EEAFFF15…F620·script2A7E8911…F511를 결박해 PATH메모리선별/첫로컬claude1개 관측의 예외승인 질문을 비동기로 한 번 발행했다. 승인 후30분 내 단1회·조회30초·원조회PS객체만정리·UNKNOWN재시도0, 실제CLI/SDK/Agent·사용자자료/키/설정·DB/권한/서비스변경 제외를 명시했다. 답변확인전에는PATH/실제파일조사·조회프로세스시작·승인소진0이다. 자동시간경과를승인으로간주하지않고질문을반복하지않는다.
+
+독립진행가능성을확인한FN03/D2 두호출선에서는 D2P-B가FN08실행grant맥락읽기이며PR100완료인점을재사용했다. FN03관측공급은CM원문보호저장·목적권한·관리quota의기존A/B/C미채택선행이있다. 이두호출선에한정된결과이며전체계획의업무부재로일반화하지않고새권위를만들어412를풀지않는다. 실제실행과반복검사는0이다.
+
+## 2026-11-16 UI01·UI06 독립 미완료 대조와 UI06 RAM 재현
+
+직전목표turn은PR150/151제품통합·실행증거를바꾼진전이다. 이번재개에서branch4dea2114 clean·main8776fe90을확인하고CLI직접답변미확인으로실제조회0을유지했다. Primary의UI01한정대조에서projects목록5필드는프로젝트정의이며updatedAt을실작업으로표시할수없고대표실행/단계선택·복수/부재/종료응답계약이없는점을확인했다. next-action-basis는선택검수귀속이므로전역다음행동으로전용하지않는다.
+
+별도UI06대조는prepareStageDocumentDraft가선택application/node/output-item/template를검산하고도반환시itemId를버리는구체누락을확인했다. Main 44b42a exit0·1.8927초의순수RAM관측에서같은양식A/B서로다른선택의반환stage/form이같고선택ID모두없음을재현했다. mockGET10/실network0/write0, 기능합격아닌누락재현이다. 제품·기존테스트·DB를바꾸지않았고기존stageDocumentFixture/공식양식2문서만재사용했다. 기존section.itemId나다른ref를대체하면의미가바뀌므로Primary에게불변문서버전별정확선택귀속·저장/조회·기존UNKNOWN·hash/승인/감사/quota호환의한정후보문서1개를배정했다. 새데이터계약채택전제품/SQL쓰기0이며CLI질문을반복하지않고전체목표미완료를유지한다. 현재UI06행과사용자열람본현재요약을동시에갱신했다.
+
+## 2026-11-16 UI06 항목귀속 후보 검수·보존
+
+Primary가후보1문서를반환했고독립검수17620048 기준C0/I0/M1을받았다. M1은B저장후방법론교체시과거조회가능/개정·제안409/입력보존이라는도달가능효과를명시하라는내용이다. 권장결정1단락·수용사례5만추가하고두단락역제거로원지문재현(e216e8)을확인했다. 최종후보5039D14A2D5E2B6BE0E48172FE1FBACF9ECA98B4F18CF618C33AC3FC3C29A75B. 새stageOutputItem·버전의원save영수증귀속·원request/audit역검산·감사reason추가·미적용0099 guard는아직미채택이다. 기존본문hash·section.itemId·기존행은유지하고과거귀속자동추정0·영수증없는백업inventory는UNKNOWN이다. 코드/SQL/DB/권한·서비스/실자료/CLI실행0,독립가용source를가짜신뢰콜백으로열지않는다. 이후보의기존채택근거·위임가능결정여부를PMO에정확지원요청하고이미발행한CLI질문은반복하지않는다. 전체계획과UI06최종인수는미완료다.
+
+## 2026-11-16 PMO 계약 경계 확인·기존 로컬 선택 보존 분리
+
+PMO가0d422825후보전문/PMO지침§6을대조해이번정확계약의직접채택기록을확인하지못했다고회신했다. 기록부재단정은아니다. 새stageOutputItem 공개형상·auditreason·적용본교체후개정409·원요청역검산/backupUNKNOWN·0099 guard는별도직접채택경계이며일반위임/sourceRAM제한만으로채택을대신하지않는다고확인했다. 승인된UI06항목표시목표자체를재승인받으라는지시도새전체중단지시도아니다.
+
+Main은새저장계약을미채택유지하고기존계약내로컬선택보존/표시를먼저완결하도록Primary에정확대조를배정했다. 원prepare의선택을저장전컨텍스트로만보존하며serverpayload/GET/본문hash·영수증·SQL은바꾸지않는다. 저장후고정문서의B귀속으로표시하지않고주체/project/stage/form·늦은응답/충돌의stale선택을분리한다. 제품쓰기전정확파일/WI와최신main의독립branch를발행할예정이다. 현재preparation의5파일은미채택후보/수동조회source/현황만이며AST/독립검수외실행0·CLI직접답변미확인이다. script Git속성text/eolLF와후보md-text를확인해고정지문이checkout후임의변환되지않는점도대조했다.
