@@ -32,3 +32,18 @@ WORK_PLAN FN07/FN08, 사용자 채택86A46140DADB38CB31C9B94957E5C836532ACE8093B
 - 실제 사용자/백업/SDK파일 조사·쓰기, 실제C#컴파일·PInvoke·키·DB·권한·서비스·SDK/Agent 실행·추가SSH/SDK조회는하지않는다. 소스·시험 읽기/쓰기와RAM 검증만허용한다.
 
 정확지문·변경파일·명령/exit/결과·오류이력·미검증·복구를기록하고쓰기반환한다. Main이동결지문독립검수·commit/push/PR/병합·smoke·정리를수행한다.
+
+## r2 — 원 origin 결박과 FIRST 원장 거래 위치
+
+기존 동작 대조에서 원 worker/claim/query/iterator는 normal-first-send-owner.ts의 최초 출력 생성 시점에만 함께 있고, 기존 FIRST coordinator는 wire 호출 전체를 journal 잠금 안에서 수행한다. 채택86A의 원 origin 결박·두 짧은 출력 거래와 SDK next의 잠금 밖 대기를 구현하기 위해 다음 두 내부 제품 경로만 추가 배정한다.
+
+5. apps/connector/runtime/normal-first-send-owner.ts
+6. apps/connector/runtime/normal-instruction-coordinator.ts
+
+- 등록 owner가 미리 만든 private 저장 핸들을 원 worker/claim/원 Query/iterator·실제scope에 일회 결박한다. 복제 요청/ref/digest만으로 발급하지 않는다.
+- FIRST만 3행 dispatch 시도의 strict 정착·정상닫힘 → 잠금 밖 원 owner 호출 → 원3행 재검산과4행 strict 정착으로 분리한다. 같은 stack의원 ticket/worker만 진행하고 history의3행·재시작/다른 coordinator는 Query를생성하지않는다. 원 current 검사마다 같은3행을짧게재판독하며 중간변경/동시실행/close불명은UNKNOWN·새Query/permit0으로끝낸다. 일반 RESPONSE/LIVE/STOP 이력과기존dispatch 소비는유지한다.
+- native SDK 출력 전용 정상읽기 완료가 증명된 때만 scope/slot/원grant/allocation/request digest/원원장 before와 단계별 일회 challenge를 보호 기록해 다음 짧은 거래로 인계할 수 있다. UNKNOWN/진행중/응답유실 예약의 일반 RESUME 거절은 유지한다. 원 단발증표·owner·기한·재판독을 모두 검산하고 새 host의 임의 holdId 정산은 거절한다. 다른 채널의 STOP/독립 작업은정상닫힌SDK읽기예약때문에막히지않되잔액은계속최악예약으로차감한다.
+- 물리 host의각10초/64frame과 원 logical owner/collector·grant의절대기한을구분하고 어느기한도새host로연장하지않는다. SDK next 대기를임의로10초이하로축소해양성만맞추지않는다. 원 collector 기한 안에서 물리host를해제하고나중의두번째거래를검산하는근거를정확히기록한다. 미채택권한/새공개API·상한을추가하지않는다.
+- 원 FIRST3행 정착 뒤 동시조작/별도coordinator 재진입·이력재생은 추가생성0, 원 SDK next 미해결 중같은등록/세대의독립작업/STOP완료, 원native증표재사용/위조·교차owner/phase·정산유실의거절을관측반례로검증한다. 기존4시험외추가시험경로가필수면Main에게정확히반환한다.
+
+이는 이미 채택된 원 출력·첫 SEND 종단을 연결할 내부 코드 배치/거래 순서 보완이며 새 기능·권한을 승인한 것이 아니다. 실제 C#/FS/SDK·Agent 실행은 계속 제외한다.

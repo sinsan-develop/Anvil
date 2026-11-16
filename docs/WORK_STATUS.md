@@ -20064,3 +20064,5 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 실제C#컴파일·Windows보호저장/ACL·SDK/Agent·DB/서비스동작은미검증이며전체작업계획/FN08인수는미완료다. 사용자18:04:45KST일반SSH성공과자동wrapper결과를구분했고최신지시대로부수진단/후속설계준비는중단했다. 현재기록마감은제품/시험변경0이다.
 
 - 다음승인미완료업무는SDK_SESSION_OUTPUT 보호저장이다. 86A461 §4/§64는기존9E98의네채널에같은256MiB의제5채널을명시했고두계약이모두채택됐지만native/filestore는아직네채널만수용한다. Main은최신main e0c152e4에서codex/av3-sdk-output-storage를생성해기존Primary에4제품/4시험/결과서의원worker·profile 결박저장연결을맡긴다. 상한/서버권한/API변경·새조회·실제SDK/OS실행은없다. 단순SDK비교helper/미확인실행권위를진도로대체하지않으며실제생산자활성화와분리한다.
+
+- 출력저장구현사전대조에서기존FIRST가wire호출동안journal잠금을점유하고원origin은first-send-owner에만함께있음을확인했다. Main은채택86A의원origin결박/두strict거래를실현할내부배치보완으로first-send-owner와instruction-coordinator 2제품경로만추가한다. FIRST3행정착/닫힘→잠금밖원owner→원3행검산/4행정착과원일회ticket/재생생성0을보존한다. native의정상닫힌SDK출력읽기전용보호인계근거만다음거래에쓰고UNKNOWN일반RESUME/holdId정산은계속거절한다. 실제원권한/데이터의미미채택변경이필요하면그부분만다시대조한다.
