@@ -2,15 +2,15 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
-## 현재 작업 요약 — 2026-11-16 20:19:59 KST
+## 현재 작업 요약 — 2026-11-16 20:46:07 KST
 
 - **현재 상태: 개발 진행 중.** 과거 ‘병합하고 대기’는 당시 이력이며 현재 중지 지시가 아니다. 1단계 로컬·WSL-server 기능 구현을 계속한다.
-- **현재 업무:** UI06 저장 전 로컬 산출물 선택 보존·표시. WI UI06_LOCAL_STAGE_OUTPUT_SELECTION_WI_20261116.md(22A61669)의 제품5·시험4 구현·독립 검수가 끝나 Main이 통합한다. serverpayload/GET/본문 hash·영수증·SQL·버전별 서버 귀속은 변경하지 않는다. 실제 CLI 관측 질문은 답변 전이며 조회0, 새 항목귀속 계약5039D14A도 미채택이다.
-- **담당:** `developer_primary` 구현·기본 검증, Main 어울 작업관리·필수 테스트·독립 검수·통합. 진행 중인 구현은 중단·회수·중복 배정하지 않았다.
-- **Git:** 최신 통합 main `0c9ab78a7c0684a9e4158a60084b707d1c03e59c`(PR152의 미채택 후보·수동 조회 source 보존), 소스 `9ac1f77e`과 tree 동일·제품 diff0. 현재 branch `codex/av3-ui06-local-selection`는 그 main에서 시작했다. PR150~152의 원격 head 복구 tag를 보존했고 완료 branch/request tag만 정상 정리했다.
+- **현재 업무:** UI06 저장 전 로컬 산출물 선택 보존·표시 단위는 PR153에 통합했다. 버전별 서버 귀속은5039D14A 미채택이며 전체 UI06/계획은 미완료다. CLI 한정 관측 질문은 답변 전·조회0이다. 독립 FN16/FN17 대조에서는 기존 file bundle/승인 알림을 재사용했고, 전체 백업 포맷·한도 도달 원사건의 새 의미는 미채택으로 분리했다.
+- **담당:** Primary의 해당 단위 쓰기 반환·실행 세션0을 확인했다. Main 어울이 검수·통합·기록을 마쳤으며, 새 구현 단위는 기존 승인·선행과 실제 증거를 대조해 배정한다. 일부 결정 대기를 전체 계획 완료로 처리하지 않는다.
+- **Git 제품 기준:** 최근 검증된 제품 통합 main `6167f7361028fa2b043cc7ca5e4c1d48fbc27c43`(PR153), 소스 `69c0f6c0`과 tree 동일. 이후 현황 전용 commit은 제품을 변경하지 않으며 실제 HEAD·branch는 Git 값을 따른다. PR150~153의 원격 head 복구 tag를 보존했고 완료 제품 branch/request tag만 정상 정리했다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
 - **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
-- **현재 구현 검증:** UI06 로컬 준비 직접31건·인접24건·root타입0·메모리 React/Vite 검증과 독립 C0/I0/M0을 확인했다. 원 준비 버퍼·불변 선택 결박, 다른 초안 표식 복사·변조·ABA·401/늦은 응답 차단, 저장200/409/503 뒤 표식 폐기·원pending/본문/stageRef 보존과 기존wire/hash 불변을 관측했다. 실제 browser·DB·서비스·CLI 검증이 아니다.
+- **현재 구현 검증:** UI06 로컬 준비 직접31건·인접24건·root타입0·메모리 React/Vite 검증과 독립 C0/I0/M0을 확인했다. 원 준비 버퍼·불변 선택 결박, 다른 초안 표식 복사·변조·ABA·401/늦은 응답 차단, 저장200/409/503 뒤 표식 폐기·원pending/본문/stageRef 보존과 기존wire/hash 불변을 관측했다. 병합본 빈초안B/409 RAM smoke2건도 통과했다. 실제 browser·DB·서비스·CLI 검증이 아니다.
 - **미확인·남은 기능:** 실제 SDK/CLI·OS 프로세스·도구 권한 집행, C# 컴파일·Windows 파일/ACL·보호 저장, 실제 DB·서비스·브라우저 통합 및 사용자 인수는 미검증이다. 실제 Agent 생산자와 전체 작업계획은 미완료다.
 - **P03·SSH:** R3 복구는 복사·PG 기동·전환에 도달하지 못했고 원 자원을 보존한다. 자동 wrapper의 SSH255/UNKNOWN과 일반 SSH를 구분한다. 사용자 Windows PowerShell 로그인 성공 증거(11-16 18:04:45 KST)가 있으며 서버/로그인 불능으로 일반화하지 않는다. 새 부수 진단·재복제·정리는 하지 않는다.
 - **기록 기준:** 소스/RAM 합격, 실제 동작 확인, 사용자 인수를 구분한다. 기존 서로 다른 이력은 아래 보관 영역에 남긴다. 사용자 열람본의 기존 미추적 원본은 `D:\Project\Anvil\.av3-data\status-view-backup-20261116-184648`에 원본 해시 그대로 보존했다.
@@ -20187,3 +20187,9 @@ Primary가같은양식A/B의B선택값undefined를직접RED685691에서재현했
 Primary의제품5/시험4/결과서쓰기반환·live0을확인했고Main이9지문을결과서와모두대조했다. 최종직접31PASS/0FAIL/0SKIP(2eb243)·인접24PASS(2d87ea)·roottypeexit0(3564ba→5a9fae)·메모리Vite/React(RAM DOM)·공백01be17이며중간건수누적0. configFile:false/envDir:false/publicDir:false/write:false의실제메모리편집기build를사용했고실제서비스/파일산출0이다. 사전I1은다른초안이식/변조RED b5b39a 2F·원객체삭제복귀e9c218 1F를보존한뒤원buffer/불변snapshot·검산된편집파생결박으로해소됐다. 최종독립C0/I0/M0,읽기전후9지문동일. wire/hash/영수증/stageRef/pending/성공·불명·충돌상태는원기준을유지했다.
 
 결과서UI06_LOCAL_STAGE_OUTPUT_SELECTION_RESULT_20261116.md SHA719D710853789D9D53E459B71C3F44CC70901547F7F085B0CB029252DE0E55BF. 같은양식A/B중B는저장전로컬선택으로만표시되고저장/충돌/불명·고정문서/외부buffer·주체/전송/단계변경후서버귀속처럼되살리지않는다. 실제browser/DB/권한·키·서비스/사용자자료/CLI/SDK/Agent/C#실행0. 새stageOutputItem/GET/audit/0099는여전히미채택이므로UI06전체/버전별영속귀속은완료아니다. Main이정확source만commit/push·PR/Broker·병합본선택smoke·복구ref/정리를수행한다. 현재요약/사용자열람본현재블록을함께갱신했다.
+
+## 2026-11-16 PR153 통합·병합본 검증·완료 자원 정리
+
+PR153 exact source69c0f6c0382c0cef664886aa161ca3c522896b0a→main6167f7361028fa2b043cc7ca5e4c1d48fbc27c43, trustedBroker43859635879 success. source/main tree d618089986217945ca91c2a855390bbbdb700a0d 일치·원격pr-153-head확인·localmain FF·clean/원격exact을검산했다. 병합본RAM의빈초안B보존/clientABA폐기·저장409원상태보존2PASS/0FAIL/0SKIP(4b8b93,1367.2317ms)이며실제browser/DB/서비스/CLI실행은0이다. 완료source branch/request tag만정상Git으로정리하고제품변경없는현황기록branch를생성했다. 이후문서commit과제품검증기준SHA를구분해자기참조형기록루프를만들지않는다. 현재요약/사용자열람본블록을함께갱신했다.
+
+독립FN16대조에서선택파일createFileBundle/validateFileRestore·부분실패정리는이미존재함을재사용했다. 전체수동백업r2는NOT_ADOPTED/SOURCE_GO0이며DB관계snapshot·암호화포맷·nonce/불명publish의새의미가선행이라가짜키callback으로대체하지않았다. FN17한도대조에서는기존APPROVAL_REQUESTED/FK/수신자·10k atomic규칙은승인요청한정이며slotReserved=false/reservedBudgetRef=null·정책기한만료를한도도달원사건으로오인하지않았다. 새원사건/수신자/재도달·원사건과알림실패거래의의미는기존미채택후보와분리한다. 두호출선의한정결과이며전체42미체크를미구현/업무부재로일반화하지않는다. CLI정확질문과UI06새계약은직접결정경계로남고실제실행/중복질문0이다.
