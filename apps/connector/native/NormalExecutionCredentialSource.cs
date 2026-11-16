@@ -15,6 +15,7 @@ using System.Web.Script.Serialization;
 // caller scope는 선택자다. 직접 HTTPS challenge의 bootstrapBinding 검산 전에는 권위가 아니다.
 internal sealed class NormalExecutionCredentialSource : IDisposable {
  const int Limit=2812587, Chunk=48000;
+ readonly NormalExecutionSpoolProfileSource spoolProfile;
  readonly DesktopTrustKeyRootSource owner;readonly Func<Dictionary<string,object>> registered;
  readonly Action current;readonly Func<int> remaining;readonly Func<DateTime> clock;
  Dictionary<string,object> upload;MemoryStream incoming;string inputHandle;byte[] output;int outputOffset;string outputHandle,outputHash;DateTime outputExpiry;bool unknown,bootstrapInput,renewalInput;string activeCA;
@@ -31,10 +32,17 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  static Exception Invalid(){return new Exception("NORMAL_EXECUTION_UNAVAILABLE");}
  static string B64(byte[] b){return Convert.ToBase64String(b).TrimEnd('=').Replace('+','-').Replace('/','_');}
  static byte[] Decode(string s,int max){if(s.Length<1||s.Length>max*4/3+4||s.Any(c=>!Char.IsLetterOrDigit(c)&&c!='_'&&c!='-'))throw Invalid();string x=s.Replace('-','+').Replace('_','/');byte[] b=Convert.FromBase64String(x.PadRight((x.Length+3)/4*4,'='));if(b.Length>max||B64(b)!=s)throw Invalid();return b;}
- internal NormalExecutionCredentialSource(DesktopTrustKeyRootSource root,Func<Dictionary<string,object>> record,Action check,Func<int> left,Func<DateTime> now){owner=root;registered=record;current=check;remaining=left;clock=now;}
+ internal NormalExecutionCredentialSource(DesktopTrustKeyRootSource root,Func<Dictionary<string,object>> record,Action check,Func<int> left,Func<DateTime> now,NormalExecutionSpoolProfileSource profile=null){spoolProfile=profile;owner=root;registered=record;current=check;remaining=left;clock=now;}
  void Check(){current();owner.Check();if(unknown||remaining()<1)throw Invalid();}
  Dictionary<string,object> Record(string attempt){Check();var r=registered();if(r==null||S(r,"state")!="REGISTERED"||Id(r,"attemptId")!=attempt)throw Invalid();
   var c=Map(r["credential"]);var g=Map(r["registration"]);if(S(c,"storageState")!="STORED"||At(c,"expiresAt")<=clock()||At(g,"registrationExpiresAt")<=clock())throw Invalid();return r;}
+ internal object Spool(string operation,Dictionary<string,object> value){
+  Check();if(spoolProfile==null)throw Invalid();string attempt=Id(value,"attemptId");var record=Record(attempt);
+  var slot=S(value,"writer")=="NORMAL_EXECUTION"?LoadSlot(Id(value,"slotId"),record):null;
+  Dictionary<string,object> answer;try{answer=spoolProfile.Control(operation,value,record,slot);}
+  catch(NormalExecutionSpoolProfileSource.SpoolCapacityException){if(operation!="NORMAL_SPOOL_RESERVE")throw;answer=new Dictionary<string,object>{{"state","CAPACITY_EXCEEDED"}};}
+  Check();if(H(Record(attempt))!=H(record)||(slot!=null&&At(slot,"expiresAt")<=clock()))throw Invalid();return answer;
+ }
  internal object Dispatch(string operation,Dictionary<string,object> value){
   Check();try{
    if(operation=="NORMAL_EXECUTION_BOOTSTRAP")return Bootstrap(value);
@@ -128,7 +136,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   slot["previousSlotRef"]=previousSlotRef;slot["markerId"]=markerId;slot["issuedAt"]=Stamp(startedAt);
   ProtectedStore.SaveNormalOwned(owner,slotId,"execution-ca",Encoding.UTF8.GetBytes(activeCA),current);
   ProtectedStore.SaveNormalOwned(owner,slotId,"execution",B(slot),current);
-  var checkedSlot=LoadSlot(slotId,record);if(H(checkedSlot)!=H(slot))throw Invalid();
+  var checkedSlot=LoadSlot(slotId,record);if(H(checkedSlot)!=H(slot))throw Invalid();if(spoolProfile!=null)spoolProfile.BindSlot(record,checkedSlot);
   return new Dictionary<string,object>{{"slotId",slotId},{"receiptRef",answer["receiptRef"]},{"origin",record["origin"]},{"scope",scope},{"expiresAt",answer["expiresAt"]},{"caHash",slot["caHash"]}};
  }
  void CheckBootstrap(Dictionary<string,object> record,Dictionary<string,object> scope,Dictionary<string,object> challenge,Dictionary<string,object> b){

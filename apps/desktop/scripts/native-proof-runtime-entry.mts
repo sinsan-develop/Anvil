@@ -1,6 +1,7 @@
 import { NormalProtectedGetClient, type NormalProtectedGetOptions } from '../../connector/runtime/normal-protected-get-client.ts';
 import { NormalProtectedPostClient } from '../../connector/runtime/normal-protected-post-client.ts';
-import { NormalOwnedCredentialPort } from '../../connector/runtime/normal-credential-bootstrap-client.ts';
+import { OwnedSpoolRuntime } from '../../connector/runtime/normal-owned-spool-profile.ts';
+import { NormalCredentialBootstrapClient, type NormalOwnedHostFactory, NormalOwnedCredentialPort } from '../../connector/runtime/normal-credential-bootstrap-client.ts';
 import { cloneV1, recordV1, refV1, type RuntimeRefV1 } from '../../../contracts/runtime/validation-v1.ts';
 import { canonicalJson } from '../../../contracts/canonical.ts';
 import { NormalStartCoordinator, type NormalStartPorts } from '../../connector/runtime/normal-start-coordinator.ts';
@@ -69,6 +70,72 @@ export function createNormalStartPolling(pair: NormalPollingClients, port: Norma
       checkClients(next); active = next; return next;
     }});
   return Object.freeze({run:(signal: AbortSignal) => polling.run(signal),renew:(signal: AbortSignal) => polling.renew(signal)});
+}
+
+/** Trusted desktop owner hands in the original REGISTERED host. No path, file store or lease escapes this assembly. */
+export function createOwnedSpoolController(host: NormalOwnedHostFactory, attempt: string, ownerSignal: AbortSignal,
+  registration: RuntimeRefV1, projectId: string, now: () => number,
+  options: Omit<NormalProtectedGetOptions, 'credential'|'credentialExpiresAt'> | null) {
+  let latest: {port: NormalOwnedCredentialPort; pair: NormalPollingClients} | null = null;
+  const service = new OwnedSpoolRuntime(host,attempt,now,ownerSignal,()=>latest?.port.metadata ?? null);
+  if (!options) {
+    return Object.freeze({receive:(...args: Parameters<OwnedSpoolRuntime['receive']>) => {
+      const [limits,input,expected,signal]=args,context=cloneV1(expected);
+      if(context?.context.projectId!==projectId||canonicalJson(context.executorRegistrationRef)!==canonicalJson(registration)||ownerSignal.aborted)
+        throw Error('NORMAL_SPOOL_SCOPE_INVALID');
+      return service.receive(cloneV1(limits),cloneV1(input),context,signal);
+    }});
+  }
+  const config=cloneV1(options);
+  if (!config.ca || config.scope.projectId!==projectId || !refV1(registration)) throw Error('NORMAL_SPOOL_SCOPE_INVALID');
+  const issuer=new NormalCredentialBootstrapClient({...config,ca:config.ca,attemptId:attempt},{host:service.credentialHost(),now});
+  const bind=(port:NormalOwnedCredentialPort)=>{
+    if(ownerSignal.aborted)throw Error('NORMAL_OWNED_PREDECESSOR');
+    const pair=createNormalProtectedClientPair({...config,credentialExpiresAt:port.metadata.expiresAt},port,()=>{
+      if(latest?.port!==port||ownerSignal.aborted)throw Error('NORMAL_OWNED_PREDECESSOR');
+      return now();
+    });
+    latest={port,pair};return pair;
+  };
+  const renew=async(previous:NormalPollingClients,signal:AbortSignal)=>{
+    if(ownerSignal.aborted||!latest||previous!==latest.pair)throw Error('NORMAL_OWNED_PREDECESSOR');
+    return bind(await issuer.renew(latest.port,signal));
+  };
+  type WorkerInput=Omit<StartPollingInput,'intakeStore'|'journalStore'|'wire'>;
+  type WireInput=WorkerInput&Pick<StartPollingInput,'wire'>;
+  const assemble=(pair:NormalPollingClients,input:WorkerInput&Partial<Pick<StartPollingInput,'wire'>>,worker:boolean)=>{
+    const fields=['expected','current','timeoutMs','deadline','maxPages','idleMs'];
+    if(!latest||latest.pair!==pair||isProxy(input)||!recordV1(input,worker?fields:[...fields,'wire']))
+      throw Error('NORMAL_POLL_CONFIG_INVALID');
+    const {projectId,executionId,executionGeneration}=config.scope;
+    const lifetime=new AbortController(),signal=AbortSignal.any([ownerSignal,lifetime.signal]);
+    const store=service.journal({projectId,executionId,executionGeneration},signal);
+    const current=input.current,currentMethod=current?.current;
+    if(current?.transport!=='NORMAL_PROTECTED'||typeof currentMethod!=='function')throw Error('NORMAL_START_PORTS_REQUIRED');
+    let active=pair,running=false;
+    const clock=()=>service.external(()=>{
+      if(latest?.pair!==active||signal.aborted||current.current!==currentMethod)throw Error('NORMAL_OWNED_PREDECESSOR');
+      return now();
+    });
+    const wire=worker?service.workerWire(store,input.expected,current,config.scope.grantRef,clock,input.timeoutMs):input.wire;
+    const send=wire?.send;
+    if(wire?.transport!=='NORMAL_PROTECTED'||typeof send!=='function')throw Error('NORMAL_START_PORTS_REQUIRED');
+    const checkedClock=()=>service.external(()=>{
+      if(wire.send!==send)throw Error('NORMAL_WIRE_CHANGED');return clock();
+    });
+    const poll=createNormalStartPolling(pair,latest.port,registration,{...input,intakeStore:store.intake(),journalStore:store,current,wire},checkedClock,
+      async(previous,signal)=>active=await renew(previous,signal));
+    return Object.freeze({run:async(signal:AbortSignal)=>{
+      if(running||signal.aborted||lifetime.signal.aborted)throw Error('NORMAL_POLL_UNAVAILABLE');running=true;
+      const cancel=()=>lifetime.abort();signal.addEventListener('abort',cancel,{once:true});
+      try{return await poll.run(signal);}finally{signal.removeEventListener('abort',cancel);running=false;}
+    },renew:poll.renew});
+  };
+  return Object.freeze({
+    bootstrap:async(signal:AbortSignal)=>bind(await issuer.bootstrap(signal)),renew,
+    createStartPolling:(pair:NormalPollingClients,input:WireInput)=>assemble(pair,input,false),
+    createWorkerStartPolling:(pair:NormalPollingClients,input:WorkerInput)=>assemble(pair,input,true)
+  });
 }
 
 export { NativePreparationClient } from '../../connector/runtime/native-preparation-client.ts';

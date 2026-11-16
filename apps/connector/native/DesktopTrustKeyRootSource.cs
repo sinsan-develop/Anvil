@@ -21,7 +21,27 @@ internal abstract class DesktopTrustKeyRootKernel {
 internal sealed class DesktopTrustKeyRootSource:IDisposable {
  readonly DesktopTrustKeyRootKernel kernel;readonly DesktopTrustKeyBudget budget;readonly string sid,path;readonly List<Tuple<IntPtr,DesktopTrustKeyDirectoryFact>> retained=new List<Tuple<IntPtr,DesktopTrustKeyDirectoryFact>>();
  bool disposed;internal readonly bool Created;internal bool CleanupSettled{get;private set;}
+ object spoolCreation,expectedSpoolCreation;
+ readonly Dictionary<string,Tuple<IntPtr,DesktopTrustKeyDirectoryFact>> spoolDirectories=new Dictionary<string,Tuple<IntPtr,DesktopTrustKeyDirectoryFact>>(StringComparer.OrdinalIgnoreCase);
  object journalCreation;bool journalPermitTaken;IntPtr journalHandle;DesktopTrustKeyDirectoryFact journalFact;
+ internal object TakeSpoolCreationPermit(){Check();object permit=spoolCreation;spoolCreation=null;return permit;}
+ internal void ConsumeSpoolCreationPermit(object permit){Check();if(permit==null||!Object.ReferenceEquals(permit,expectedSpoolCreation))throw Invalid();expectedSpoolCreation=null;}
+ internal DesktopTrustKeyDirectoryFact RetainSpoolNamespace(string allocation,bool create){
+  Check();string location=System.IO.Path.Combine(path,"owned-spool-profile.v1");
+  if(allocation!=null){
+   Guid id;if(!Guid.TryParseExact(allocation,"D",out id)||id.ToString("D")!=allocation||!spoolDirectories.ContainsKey(location))throw Invalid();
+   location=System.IO.Path.Combine(location,"data-"+allocation);
+  }
+  Tuple<IntPtr,DesktopTrustKeyDirectoryFact> pinned;
+  if(spoolDirectories.TryGetValue(location,out pinned)){if(create)throw Invalid();CheckSpoolNamespace(pinned);return pinned.Item2;}
+  if(create&&!kernel.CreatePrivateExclusive(location,sid))throw Invalid();
+  var fact=kernel.Inspect(location);if(fact==null||!fact.Exists||fact.Link||fact.Owner!=sid||!fact.Private)throw Invalid();
+  var handle=kernel.Retain(location);if(handle==IntPtr.Zero||handle==new IntPtr(-1))throw Invalid();
+  pinned=Tuple.Create(handle,fact);spoolDirectories.Add(location,pinned);CheckSpoolNamespace(pinned);return fact;
+ }
+ void CheckSpoolNamespace(Tuple<IntPtr,DesktopTrustKeyDirectoryFact> pinned){
+  Check();if(!Same(pinned.Item2,kernel.Observe(pinned.Item1))||!Same(pinned.Item2,kernel.Inspect(pinned.Item2.Path)))throw Invalid();
+ }
  internal string UserSid{get{Check();return sid;}}
  internal string JournalIdentity{get{CheckJournalNamespace();return journalFact.Identity;}}
  internal object TakeJournalCreationPermit(){Check();if(journalPermitTaken)return null;journalPermitTaken=true;return journalCreation;}
@@ -34,7 +54,7 @@ internal sealed class DesktopTrustKeyRootSource:IDisposable {
  internal static DesktopTrustKeyRootSource Open(DesktopTrustKeyRootKernel kernel,DesktopTrustKeyBudget budget){
   if(kernel==null||budget==null)throw Invalid();budget.Check();string sid=kernel.CurrentSid(),known=kernel.KnownFolder();Shape(known);if(String.IsNullOrEmpty(sid))throw Invalid();string root=System.IO.Path.Combine(known,"Anvil","Trust","v1");var result=new DesktopTrustKeyRootSource(kernel,budget,sid,root,!kernel.Inspect(root).Exists);
   try{var ancestry=new List<string>();string next=known;while(next!=null){ancestry.Add(next);string parent=System.IO.Path.GetDirectoryName(next);if(parent==next)break;next=parent;if(ancestry.Count>64)throw Invalid();}ancestry.Reverse();foreach(string item in ancestry)result.Keep(item,item==known,false);
-   string cursor=known;foreach(string name in new[]{"Anvil","Trust","v1"}){cursor=System.IO.Path.Combine(cursor,name);budget.Check();var fact=kernel.Inspect(cursor);if(fact==null)throw Invalid();bool exclusive=false;if(!fact.Exists){if(cursor==root)exclusive=kernel.CreatePrivateExclusive(cursor,sid);else kernel.CreatePrivate(cursor,sid);budget.Check();}result.Keep(cursor,true,cursor==root);if(exclusive)result.journalCreation=new object();}result.Check();return result;
+   string cursor=known;foreach(string name in new[]{"Anvil","Trust","v1"}){cursor=System.IO.Path.Combine(cursor,name);budget.Check();var fact=kernel.Inspect(cursor);if(fact==null)throw Invalid();bool exclusive=false;if(!fact.Exists){if(cursor==root)exclusive=kernel.CreatePrivateExclusive(cursor,sid);else kernel.CreatePrivate(cursor,sid);budget.Check();}result.Keep(cursor,true,cursor==root);if(exclusive)result.journalCreation=new object();if(exclusive)result.spoolCreation=result.expectedSpoolCreation=new object();}result.Check();return result;
   }catch{result.Dispose();throw Invalid();}
  }
  static Exception Invalid(){return DesktopTrustKeyParentBasisSource.Invalid();}
@@ -42,7 +62,7 @@ internal sealed class DesktopTrustKeyRootSource:IDisposable {
  void Keep(string location,bool requireUser,bool requirePrivate){Shape(location);budget.Check();var before=kernel.Inspect(location);if(before==null||!before.Exists||before.Link||requireUser&&before.Owner!=sid||requirePrivate&&!before.Private)throw Invalid();IntPtr handle=kernel.Retain(location);if(handle==IntPtr.Zero||handle==new IntPtr(-1)||retained.Any(x=>x.Item1==handle))throw Invalid();retained.Add(Tuple.Create(handle,before));var after=kernel.Observe(handle);if(!Same(before,after))throw Invalid();budget.Check();}
  static bool Same(DesktopTrustKeyDirectoryFact a,DesktopTrustKeyDirectoryFact b){return a!=null&&b!=null&&a.Exists&&b.Exists&&!a.Link&&!b.Link&&String.Equals(a.Path,b.Path,StringComparison.OrdinalIgnoreCase)&&a.Identity==b.Identity&&a.Owner==b.Owner&&a.Private==b.Private;}
  internal void Check(){if(disposed)throw Invalid();budget.Check();if(kernel.CurrentSid()!=sid)throw Invalid();foreach(var item in retained)if(!Same(item.Item2,kernel.Observe(item.Item1)))throw Invalid();budget.Check();}
- public void Dispose(){if(disposed)return;disposed=true;bool good=true;if(journalHandle!=IntPtr.Zero){try{if(!kernel.Close(journalHandle))good=false;}catch{good=false;}journalHandle=IntPtr.Zero;}for(int i=retained.Count-1;i>=0;i--){try{if(!kernel.Close(retained[i].Item1))good=false;}catch{good=false;}}CleanupSettled=good;}
+ public void Dispose(){if(disposed)return;disposed=true;bool good=true;foreach(var pinned in spoolDirectories.Values){try{if(!kernel.Close(pinned.Item1))good=false;}catch{good=false;}}spoolDirectories.Clear();if(journalHandle!=IntPtr.Zero){try{if(!kernel.Close(journalHandle))good=false;}catch{good=false;}journalHandle=IntPtr.Zero;}for(int i=retained.Count-1;i>=0;i--){try{if(!kernel.Close(retained[i].Item1))good=false;}catch{good=false;}}CleanupSettled=good;}
 }
 internal sealed class WindowsDesktopTrustKeyRootKernel:DesktopTrustKeyRootKernel {
  [StructLayout(LayoutKind.Sequential)]struct SA{internal int Length;internal IntPtr Descriptor;internal int Inherit;}

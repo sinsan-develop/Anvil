@@ -1,3 +1,4 @@
+import {isProfileJournal} from './normal-owned-spool-profile.ts';
 import {constants,unlinkSync} from 'node:fs';
 import {isAsyncFunction,isPromise,isProxy} from 'node:util/types';
 import * as disk from 'node:fs/promises';
@@ -13,6 +14,13 @@ export interface NormalJournalTransaction{requireStartReadyClose?(key:ReceiptKey
 export interface NormalJournalStore{readonly transport:'NORMAL_PROTECTED';exclusive<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>):Promise<T>}
 /** 실제 FS는 명시한 기존 전용 root만 쓴다. 시험 포트는 RAM fakeFS이며 권한의 증거가 아니다. */
 export type NormalFilePorts=Pick<typeof disk,'lstat'|'realpath'|'open'|'readdir'|'unlink'>&{unlinkSync?:(path:string)=>void};
+export interface ProfileJournalAccess {
+ transaction<T>(channel:string, run:(path:string, ports:NormalFilePorts)=>Promise<T>):Promise<T>;
+}
+const managedRoot = Symbol('owner allocation');
+export function isOwnedSpoolPath(path:string){
+ return /(?:^|\/)anvil\/trust\/v1\/owned-spool-profile\.v1(?:\/|$)/i.test(resolve(path).replaceAll('\\','/'));
+}
 const fail:()=>never=()=>{throw Error('NORMAL_LOCAL_STORAGE_UNAVAILABLE');};
 const same=(a:any,b:any)=>a.dev===b.dev&&a.ino===b.ino;
 const pathSame=(a:string,b:string)=>process.platform==='win32'?a.toUpperCase()===b.toUpperCase():a===b;
@@ -22,12 +30,12 @@ const perFile=3*1024*1024,totalLimit=64*1024*1024;
  * directory fsync/전원손실 내성과 다른 동일 OS 사용자의 악의적 변경은 별도 검증 범위다. */
 export class NormalStartFileStore implements NormalJournalStore{
  readonly transport='NORMAL_PROTECTED' as const;
- #root:string;#scope:NormalLocalScope;#fs:NormalFilePorts;#syncRelease?:NormalFilePorts['unlinkSync'];
- constructor(root:string,scope:NormalLocalScope,ports:NormalFilePorts=disk){
-  if(!isAbsolute(root)||root.includes('\0')||pathSame(resolve(root),parse(resolve(root)).root)||
+ #root:string;#access?:ProfileJournalAccess;#scope:NormalLocalScope;#fs:NormalFilePorts;#syncRelease?:NormalFilePorts['unlinkSync'];
+ constructor(root:string|ProfileJournalAccess,scope:NormalLocalScope,ports:NormalFilePorts=disk,proof?:typeof managedRoot){
+  if((typeof root==='string'?(!isAbsolute(root)||root.includes('\0')||pathSame(resolve(root),parse(resolve(root)).root)||(isOwnedSpoolPath(root)&&proof!==managedRoot)):(!root||!isProfileJournal(root)))||
    !recordV1(scope,['projectId','executionId','executionGeneration'])||!uuidV1(scope.projectId)||!uuidV1(scope.executionId)||
    !Number.isSafeInteger(scope.executionGeneration)||scope.executionGeneration<1)fail();
-  this.#root=resolve(root);this.#scope=cloneV1(scope);this.#fs=ports;
+  this.#root=typeof root==='string'?resolve(root):'';if(typeof root!=='string')this.#access=root;this.#scope=cloneV1(scope);this.#fs=ports;
   const sync=ports===disk?unlinkSync:!isProxy(ports)?Object.getOwnPropertyDescriptor(ports,'unlinkSync')?.value:undefined;
   if(typeof sync==='function'&&!isProxy(sync)&&!isAsyncFunction(sync))this.#syncRelease=sync;
  }
@@ -75,6 +83,7 @@ export class NormalStartFileStore implements NormalJournalStore{
  async exclusive<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>):Promise<T>{return this.#run(channel,body,false);}
  async #run<T>(channel:string,body:(tx:NormalJournalTransaction)=>Promise<T>,strictClose:boolean):Promise<T>{
   if(typeof channel!=='string'||!channelOK(channel))fail();
+  if(this.#access)return this.#access.transaction(channel,(path,ports)=>new NormalStartFileStore(path,this.#scope,ports,managedRoot).#run(channel,body,true));
   const fs=this.#fs,root=this.#root,lockPath=join(root,channel+'.lock');
   const syncRelease=this.#syncRelease;let liveCheck:(()=>void)|undefined;
   const sameRelease=()=>syncRelease&&(fs===disk||!isProxy(fs)&&Object.getOwnPropertyDescriptor(fs,'unlinkSync')?.value===syncRelease);let identity:any,lock:any,lockId:any,closed=false,operating=false,uncertain=false,poisoned=false,wrote=false;

@@ -1,11 +1,15 @@
 import {constants} from 'node:fs';
-import {open,lstat,realpath,opendir,unlink,type FileHandle} from 'node:fs/promises';
+import * as disk from 'node:fs/promises';
+import type {FileHandle} from 'node:fs/promises';
+import {isProfileReceipt} from './normal-owned-spool-profile.ts';
+import {isOwnedSpoolPath} from './normal-start-file-store.ts';
 import {isAbsolute,resolve,parse,join} from 'node:path';
 import {canonicalJson,contentHash,parseWireJson} from '../../../contracts/canonical.ts';
 import {readDispatchEnvelopeV1,type AdapterContextV1} from '../../../contracts/runtime/dispatch-envelope-v1.ts';
 import {receiptKeyV1,readDispatchReceiptV1,type DispatchReceiptV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 import type {RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 
+export type InboxFilePorts=Pick<typeof disk,'open'|'lstat'|'realpath'|'opendir'|'unlink'>;
 export interface InboxLimits{maxBytes:number;maxEntries:number}
 type Identity={dev:number;ino:number};
 const same=(a:Identity,b:Identity)=>a.dev===b.dev&&a.ino===b.ino;
@@ -20,11 +24,20 @@ const recordLimit=4096;
  * file.sync 증거는 directory metadata/전원손실·악의적 같은 OS 사용자·OS 보호/실행 허가 증명이 아니다.
  */
 export async function receiveUnverifiedEnvelope(root:string,limits:InboxLimits,input:unknown,expected:{context:AdapterContextV1;executorRegistrationRef:RuntimeRefV1},nowMs:number):Promise<DispatchReceiptV1>{
+ return receive(root,limits,input,expected,nowMs,disk,false);
+}
+export function receiveProfiledEnvelope(root:string,limits:InboxLimits,input:unknown,expected:{context:AdapterContextV1;executorRegistrationRef:RuntimeRefV1},nowMs:number,ports:InboxFilePorts){
+ if(!isProfileReceipt(ports,root))throw Error('NORMAL_SPOOL_UNSUPPORTED');
+ return receive(root,limits,input,expected,nowMs,ports,true);
+}
+async function receive(root:string,limits:InboxLimits,input:unknown,expected:{context:AdapterContextV1;executorRegistrationRef:RuntimeRefV1},nowMs:number,ports:InboxFilePorts,owned:boolean):Promise<DispatchReceiptV1>{
+ const {open,lstat,realpath,opendir,unlink}=ports;
  const e=readDispatchEnvelopeV1(input,nowMs),key=receiptKeyV1(e),at=new Date(nowMs).toISOString();
  const result=(state:DispatchReceiptV1['state'],reasonCode:DispatchReceiptV1['reasonCode'],duplicate=false,recordedAt=at):DispatchReceiptV1=>({schemaVersion:1,key,envelopeHash:e.envelopeHash,state,reasonCode,duplicate,recordedAt,executionAuthorized:false,dispatchPerformed:false});
  try{if(canonicalJson(expected)!==canonicalJson({context:e.context,executorRegistrationRef:e.executorRegistrationRef}))return result('REJECTED','CONTEXT_MISMATCH');}catch{return result('REJECTED','CONTEXT_MISMATCH');}
  if(!limits||!Number.isSafeInteger(limits.maxBytes)||limits.maxBytes<1||limits.maxBytes>1024**3||!Number.isSafeInteger(limits.maxEntries)||limits.maxEntries<1||limits.maxEntries>1024)throw Error('INBOX_LIMITS_INVALID');
  if(typeof root!=='string'||!isAbsolute(root)||root.includes('\0')||samePath(resolve(root),parse(resolve(root)).root))return result('UNKNOWN','STORAGE_UNAVAILABLE');
+ if(isOwnedSpoolPath(root)!==owned)return result('UNKNOWN','STORAGE_UNAVAILABLE');
  const directory=resolve(root),lockPath=join(directory,'receive.lock'),path=join(directory,contentHash(canonicalJson(key))+'.json');
  let rootIdentity:Identity,lock:FileHandle|undefined,lockIdentity:Identity|undefined,recordAttempted=false,durableCompleted=false,response:DispatchReceiptV1=result('UNKNOWN','STORAGE_UNAVAILABLE');
  const checkRoot=async()=>{const st=await lstat(directory);if(!st.isDirectory()||st.isSymbolicLink()||!same(st,rootIdentity)||!samePath(await realpath(directory),directory))throw Error('STORAGE_UNAVAILABLE');};

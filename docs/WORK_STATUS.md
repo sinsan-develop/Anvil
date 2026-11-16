@@ -20020,3 +20020,28 @@ PR82 sourcec1b87247c9ed0b79f7c7f9e45b203fa8b9f4a326→main e194fc36bd8078fddeab7
 - 기존 Primary의 읽기 결과는 제품/시험/Git 변경0·추가 SDK 조회/실행0·살아 있는 실행0이다. 기존 확인 streamInput 서명만으로 실제 생성·권한 hook·child 인계 근거를 추측하지 않는다. 다음 정확 지원은 고정 SDK의 미확인 CanUseTool 전체 서명/응답 소비와 argv/env, 보호 실행구성 및 같은 child의 spawn hook 인계·회수 기준이다. 미채택 9E98 보호 spool 배정과 P03 메타데이터 추가 관측도 별도 선행으로 남긴다. 기존 질문은 반복하지 않는다.
 
 - PMO 지원 회신(cursor33)을 확인했다. 고정 SDK0.3.224의 기존 6구간은 동기 spawn 반환과 일부 stdio/인자만 증명하며, CanUseTool 전체 서명·응답 소비·완전한 argv/env·보호 실행구성·동일 child 인계/회수는 확정할 수 없다고 답했다. 이미 채택된 단발 생성·동일 Query 인계·UNKNOWN 후 재생성 금지는 재사용하되 추가 SDK 조회/실행 승인도 부여하지 않았다. 현 근거로 실제 생산자 구현을 완성할 수 없으므로 해당 작업은 결정·근거 대기다. 기존 미채택 항목을 우회하거나 합성 포트를 실제 연결로 보고하지 않는다. 이번 재확인은 새 제품 진도나 완료가 아니다.
+
+## 2026-11-16 신산님 spool A안 source-only 직접 승인
+
+- 신산님은 FN08_NORMAL_OWNED_SPOOL_PROFILE_CANDIDATE_20261116.md r2의 첫 번째 A안 소스 구현을 직접 승인했다. 대상 SHA256은 9E98D4EAA162B2E12498DCC3742D7E33921EB688B794ACA8CFF8187C0FCE9C4C다. 지정13제품/8시험의 코드·합성검증과 필수 작업기록만 수행한다. 실제 파일·권한·키·DB·서비스·Agent 실행은 제외한다. 실제 root/ACL/설치/C#/SDK 실행·기존 차단 해제도 후보의 제외대로 유지한다.
+- 현재 기준선은 main8ec924fa, 작업 branch codex/av3-connection-integration-next의 efa7a563이다. 기존 Primary를 단일 writer로 유지하고 원 후보와 현재 소스의 차이를 먼저 대조해 구현한다. 후보의 오래된 source 개수는 현재 정확 폐쇄성 검산을 생략하는 근거가 아니며, 허용목록 밖 의존이 필요하면 Main에게 영향과 범위를 먼저 반환한다. 실제 OS/Agent 성공이나 전체 작업계획 완료로 보고하지 않는다.
+- 신산님은 두 번째 SDK 공개 원문 조회1회를 직접 승인했다. FN07_REMAINING_SDK_SOURCE_READ_CANDIDATE_20261116.md SHA256 D2E41B784F6AB8A842BB543221DFCBC4EA60396F62397F177A5545C229A3EB7F의 고정0.3.224 URL/해시·GET1회·요청10초/전체30초·메모리16MiB·출력상한·실패재시도0을 적용한다. 실제 파일·권한·키·DB·서비스 변경과 Agent 실행은 제외한다. 기존 읽기 승인을 재사용하지 않으며 새 미확인 구간의 전체 근거를 추출하는 실행코드를 먼저 검수한다. 이 기록 시점 GET발행0이다.
+- 신산님은 세 번째 WSL 보존 자원 메타데이터 관측1회를 직접 승인했다. 고정 후보 E1CD69F64D1DCAC75DFFC1EE110EBBC26D41DA283274FB5B40A5649613A4F447, run b3645a193d704fa38c61a12b44d1f74b, 최초승인관측2026-11-16T07:20:41.000Z/만료07:50:41.000Z를 새 승인JSON에 결박했다. SSH1회·Docker읽기최대4·요청30초·수거32KiB/결과4KiB 한도를 유지한다. 실패/불명은 재접속·추가조회·자동정리 없이 보존한다. 실제DB접속·데이터내용·복제/삭제/권한/키/서비스/Agent실행은 제외한다. 이전 소진된 승인을 재사용하지 않으며 아직 이 새 관측의 dispatch는 발행 전이다.
+
+- Main은 승인JSON SHA256 935BB04D2B9F3C122D65FEEE324F5D58CD4AC9FDA82991CB96645169371ADFAC와 후보E1CD69F6…A4F447에 결박한 P03 메타데이터 단발 dispatch를 기존 d2_preflight에게 한 번 발행한다. 해당 발행은 소진하며 도구 거절/유실/실패/불명에도 재발행하지 않는다. 기존 실행handle이 생기면 그 handle만 관측한다. 제품 writer와 별개이며 DB/파일내용/변경은 실행하지 않는다.
+
+- P03 승인단발76192f는 SSH닫힘/exit255·수거0바이트/0행·감독exit2/1.348초로 UNKNOWN_PRESERVE다. spawnError=NONE/stderrClass=NONE이므로 원인·Docker도달/호출수·원격현재상태는 미확인이다. 승인소진·실행handle0·재접속/추가조회/정리0을 확인했다. 실패를복제결과나DB상태로해석하지않고보존한다.
+- spool21파일 부분동결은 등록owner의RAM40frame·65번째발송0까지확인했으나 READY 원wire를효과전에UNSUPPORTED로닫는미완료가남았다. Main은원§6외부callback분리계약을원신원유지하며구현할내부호출위치보완으로coordinator1경로추가를판단했다. 별도권한/공개API/데이터계약변경이아니며정확3호출의ALS.exit·기존검산유지를지시서에고정하고기존Primary에게구현을맡긴다.
+
+- SDK 실행본의M1은한줄검색식보완만역치환한지문으로해소됐고독립최종C0/I0/M0다. 실행본1FF47992464E32B69C00BDA1AEFB761848634EAD4D4EB65837B646521820F529·후보D2E41B78…A3EB7F·신산님두번째승인에결박한FN07-REMAINING-SOURCE-20261116-D2E41B78 단발dispatch를기존d2_preflight에게한번발행한다. Main store/이기록으로소진을선기록하며도구거절/유실/실패/불명에도재발행0이다. SDK파일디스크저장/import/eval/실행0·실제사용자파일/권한/키/DB/서비스변경/Agent실행0을유지한다.
+- 두 번째 승인 SDK조회8aa1c8은exit0/1.351176초·GET1·requestClosed=true·잔여handle0으로종료했다. 고정압축/두원문hash를검산했고8연속구간32351바이트에서CanUseTool/PermissionResult전체선언·control response전달·hookcommand/args/cwd/env/signal과반환child소비를확인했다. 결과서2ABE77AA960A3EA5058C1CF2BC87D026EACC5781CF0C3DD7B82C865B3A03DA5B다. 공개옵션일부별칭전체·CLI최종집행·실제OS/Agent는미확인이다. 원문저장/import/eval/SDK실행0·추가GET0으로승인을소진했다.
+- 기존Primary는spool원READY의첫목적GREEN6e654b1PASS와루트타입d534a3진단0을반환했다. 등록owner→명시worker polling→원forWorker/CURRENT→START_READY_RECORDED→필수4관측ACK/cursor1을같은물리host40frame으로확인했고SDK/genericwire실행0·역사재조회추가permit0이다. 반례와동결/독립검수는진행중이므로전체source완료로표시하지않는다.
+- 기존d2_scope_audit에게spool보호원장/예산/모든writer와ALS격리의읽기전용사전검수를맡겼다. d2_preflight는확인된SDK결과와현재normal permit/첫SEND를재사용해다음실행구성결정안만구체화한다. Nov6별도admission을현재필수선행으로되살리지않고새공개권한·정책과내부기술보완을분리한다. 추가SDK조회/실제파일조사/키DB권한서비스Agent실행은없다.
+
+- spool독립사전I1은host.current/send가활성ALS에서주입clock/context/operation을통해외부재진입을허용할위험이었다. Main은기존허용profile/owner범위에서물리host접근을exit밖호출로분리하고동일publicpair대여/추가frame전거절의RAM반례를Primary에게맡겼다. 작성중최종합격판정은하지않는다.
+- 다음구성후보8B2AD4F2…F64AC는현재Main채택안이아니다. 실행구성비교도우미만추가하고실제Query/child생산자를산출물에서빼면핵심미완료가남으므로그대로승인요청하지않는다. 고정deny콜백을실제도구집행보증이나전체기능대신제시하지않는다. 추가GET없이기존확보근거에서공개진입/옵션별칭의완결가능성과정확미확인을대조하도록돌려보냈다. 제품정책결정과기술근거공백을분리한다.
+- spool최종동결14제품/8시험지문목록3802FD9217E549B09BBE07C29DA58C2787AB66FE70569DDFCA91B829E7CEC8E7과결과서925DFC74F934935CC15FECFF037D1CBBE822FED1767A01636FC5EB8BDF8CF854를독립검수자가직접재계산해일치확인했다. 최종C0/I0/M0이며I1물리host current/send/open/close의exit분리·원READY private1회readonly·현재성/교차owner/취소/늦은자손거절을확인했다. 직접5파일86e72964PASS/FAIL·SKIP0, 선택3파일0fdb1f6PASS/FAIL·SKIP0, root915816/desktop50d543/diffb33217 exit0·Primary실행handle0/쓰기반환이다.
+- Main93b16b는최종동결지문에서등록owner의generic/원READY를같은물리host각40/64frame,원permit/wire1회,준비행1·필수4ACK/cursor1로직접확인했다. 전체1PASS/FAIL·SKIP0·exit0이다. 앞선다른시험건수와합산하지않는다. C#정적소스/메모리포트검증을실제컴파일·Windows ACL/키·OS내구성·DB/서비스·SDK/Agent동작으로승격하지않는다.
+- SDK후속기술대조는일부공개query별칭/옵션구조분해앞부분이선택된고정창밖이었다는한계를확인했다. 이전선택창뒷부분의원도구출력도현재접근되지않았다. 두조회의omitted0이고64KiB출력잘림으로분류할근거는없다. Main은원query→생성함수의연속선언을구조적으로추출하는다음후보만준비하며승인전새GET0이다. 검산helper만늘리는후속안은채택하지않는다.
+
+- 실행승인JSON의Main작성CRLF가cached공백검사51c39d에서검출돼commit을멈췄다. 실행당시승인지문935BB04D2B9F3C122D65FEEE324F5D58CD4AC9FDA82991CB96645169371ADFAC는이력으로유지한다. 실행종료후보관본만LF로정규화한지문은55B1C352CD53BC3BFACB0AD34DB3D10BDCBB65EF97EDD0EB104A992B7A4B2A3E 이며모든JSON값동일·역치환문자열원본동일을메모리에서검산했다. 원본의내부개행은CRLF/마지막개행은LF였고이를역치환하면원승인바이트를재구성할수있다. 이는MAIN_RECONFIRMED_NON_SEMANTIC 보관변환이며원승인은소진·재실행0, 새승인효력을발급하지않는다. 기존Git공백검사기준을변경하지않았다.

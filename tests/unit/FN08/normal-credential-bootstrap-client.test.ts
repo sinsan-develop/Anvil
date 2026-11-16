@@ -21,6 +21,18 @@ function fixture(size=2800000){const calls:any[]=[],response=Buffer.from(canonic
  const factory={async open(){return {send:(op:string,p:any)=>host.send(op,p),async close(){return {state:mode==='CLOSE_UNKNOWN'?'UNKNOWN':'CLOSED_CONFIRMED'};}};}};
  const client=new NormalCredentialBootstrapClient({attemptId:id(8),origin:'https://example.invalid',ca:'RAM CA',scope},{host:factory,now:()=>at});
  return {client,calls,host,response,mode:(v:string)=>{mode=v;}};}
+test('host 요청 종료 disposition은 finally abort와 원 요청 실패를 구별한다',async()=>{
+ for(const broken of [false,true]){
+  const f=fixture(12),closes:string[]=[],signals:boolean[]=[];
+  const owner=new NormalCredentialBootstrapClient({attemptId:id(8),origin:'https://example.invalid',ca:'RAM CA',scope},{
+   now:()=>at,host:{async open(signal){return {send:async(op,p)=>{if(broken)throw Error('RAM 미완료');return f.host.send(op,p);},
+    async close(disposition?:string){signals.push(signal.aborted);closes.push(String(disposition));return {state:'CLOSED_CONFIRMED'};}};}}});
+  const run=owner.bootstrap(new AbortController().signal);
+  if(broken)await assert.rejects(run,/UNKNOWN/);else assert.deepEqual((await run).metadata.scope,scope);
+  assert.deepEqual(signals,[true]);assert.deepEqual(closes,[broken?'OPERATION_UNKNOWN':'HOST_REQUEST_VALIDATED']);
+ }
+});
+
 test('최초 보호 저장 metadata만 반환하고 encoded 한도 자료를 64-frame 안에서 검산한다',async()=>{
  const f=fixture(),p=await f.client.bootstrap(new AbortController().signal);
  assert.deepEqual(p.metadata.scope,scope);assert.equal('credential' in p.metadata,false);
