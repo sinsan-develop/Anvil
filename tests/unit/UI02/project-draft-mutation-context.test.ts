@@ -6,20 +6,22 @@ import {emptyDraft} from '../../../apps/web/src/features/project-create/api.ts';
 const id=(n:number)=>'a6f20082-0000-4000-8000-'+String(n).padStart(12,'0'),uid=id(1),cid=id(2),did=id(3),pid=id(4);
 const nodes=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(nodes)];
 async function settle(check:()=>boolean){for(let i=0;i<80;i++){if(check())return;await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});}assert.fail('RAM 정착 실패');}
-async function fixture(creating:boolean){
+async function fixture(creating:boolean,patch=false){
  const session={user:{id:uid},clientId:cid,csrfToken:'C'.repeat(43)},calls:{path:string;method:string;body?:string}[]=[];
  const input={...emptyDraft().input,name:'원 프로젝트',purpose:'원 목적',desiredOutcome:'원 결과',methodologySelection:{kind:'CONFIRMED_REFERENCE',versionRef:{id:id(5),version:1,contentHash:'a'.repeat(64)}}};
- let buffer:any={...emptyDraft(),ownerUserId:uid,input,draftId:creating?did:null,version:creating?1:0,wizardStep:creating?4:1,dirty:!creating};
+ let buffer:any={...emptyDraft(),ownerUserId:uid,input,draftId:creating||patch?did:null,version:creating||patch?1:0,wizardStep:creating?4:1,dirty:!creating};
  let status=401,waiting=false,lost=0,release=()=>{},mounted=true,immediate=false;
- Object.defineProperty(globalThis,'location',{configurable:true,value:new URL('https://anvil.invalid/'+(creating?'?draftId='+did:'')+'#/projects/new')});
+ const releases:(()=>void)[]=[],urls:string[]=[];
+ Object.defineProperty(globalThis,'location',{configurable:true,value:new URL('https://anvil.invalid/'+(creating||patch?'?draftId='+did:'')+'#/projects/new')});
+ Object.defineProperty(globalThis,'history',{configurable:true,value:{state:null,replaceState(_state:unknown,_title:string,url:URL){urls.push(String(url));Object.defineProperty(globalThis,'location',{configurable:true,value:new URL(String(url))});}}});
  const api=new ui.ApiClient(async(path:string,options?:RequestInit)=>{
   const method=options?.method??'GET';calls.push({path,method,body:options?.body as string|undefined});
-  if(method==='GET'){assert.equal(path,'/api/v1/project-drafts/'+did);return Response.json({draftId:did,version:1,step:4,input,editable:true,consumedProjectId:null,methodologyState:null,storedArtifacts:[]});}
-  assert.equal(method,'POST');assert.equal(path,creating?'/api/v1/projects':'/api/v1/project-drafts');
-  const selected=status;waiting=true;if(!immediate)await new Promise<void>(r=>release=r);
+  if(method==='GET'){assert.equal(path,'/api/v1/project-drafts/'+did);return Response.json({draftId:did,version:1,step:creating?4:1,input,editable:true,consumedProjectId:null,methodologyState:null,storedArtifacts:[]});}
+  assert.equal(method,patch?'PATCH':'POST');assert.equal(path,creating?'/api/v1/projects':'/api/v1/project-drafts'+(patch?'/'+did:''));
+  const selected=status;waiting=true;if(!immediate)await new Promise<void>(r=>{release=r;releases.push(r);});
   if(selected===0)throw Error('합성 유실');
   if(selected!==200)return Response.json({code:'AUTH_REQUIRED'},{status:selected});
-  return Response.json(creating?{id:pid,...input,version:1,currentMethodologyRef:{id:id(6),version:1,contentHash:'b'.repeat(64)},baselineRef:null,readinessIssues:[],participation:'OWNER',controlState:{actorId:uid,clientId:cid,generation:1,status:'HELD'}}:{draftId:did,version:1,step:1,input,methodologyState:null});
+  return Response.json(creating?{id:pid,...input,version:1,currentMethodologyRef:{id:id(6),version:1,contentHash:'b'.repeat(64)},baselineRef:null,readinessIssues:[],participation:'OWNER',controlState:{actorId:uid,clientId:cid,generation:1,status:'HELD'}}:{draftId:did,version:patch?2:1,step:1,input,methodologyState:null});
  });
  const container=document.createElement('div');document.body.appendChild(container);let root=ui.createRoot(container);
  let props:any={client:api,session,buffer,onAuthenticationLost:()=>{lost++;}};
@@ -32,13 +34,15 @@ async function fixture(creating:boolean){
   else {const form=nodes(container).find(n=>n.tagName==='FORM');assert(form);const p=Object.entries(form).find(([k])=>k.startsWith('__reactProps$'))?.[1] as any;assert(p?.onSubmit);await ui.React.act(async()=>{p.onSubmit({preventDefault(){}});});}
   await settle(()=>waiting);
  };
- await render();if(creating)await settle(()=>!container.textContent.includes('처리 확인 중'));
- return{api,calls,begin,props:()=>props,render,buffer:()=>buffer,lost:()=>lost,setStatus:(n:number)=>status=n,immediate:()=>{immediate=true;},pending:()=>creating?buffer.pendingAction:buffer.pendingCommand,
+ await render();if(creating||patch)await settle(()=>!container.textContent.includes('처리 확인 중'));
+ return{api,calls,urls,begin,props:()=>props,render,buffer:()=>buffer,lost:()=>lost,setStatus:(n:number)=>status=n,immediate:()=>{immediate=true;},pending:()=>creating?buffer.pendingAction:buffer.pendingCommand,
   release:async()=>{await ui.React.act(async()=>{release();await new Promise(r=>setImmediate(r));});},
+  releaseAt:async(index:number)=>{await ui.React.act(async()=>{releases[index]!();await new Promise(r=>setImmediate(r));});},
+  replaceBuffer:async(next:any,silent=false)=>{buffer=next;props={...props,buffer};if(mounted&&!silent)await render();},
   replace:async()=>{const k=creating?'pendingAction':'pendingCommand';buffer={...buffer,[k]:{...buffer[k],dispatchId:id(99)}};await render({...props,buffer});},
   unmount:async()=>{await ui.React.act(async()=>root.unmount());mounted=false;},
   remount:async()=>{await ui.React.act(async()=>root.unmount());root=ui.createRoot(container);await render();},
-  close:async()=>{release();if(mounted)await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+  close:async()=>{for(const r of releases)r();if(mounted)await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
  };
 }
 for(const creating of [false,true])for(const mode of ['CURRENT','UNMOUNT','REMOUNT','USER','DEVICE','CSRF','CLIENT','TRANSPORT','REQUEST','CSRF_ABA']){
@@ -72,6 +76,43 @@ for(const creating of [false,true])test((creating?'생성':'저장')+' 유실 �
  }finally{await f.close();}
 });
 
+for(const creating of [false,true])test((creating?'생성':'저장')+' 이전 dispatch 성공은 재진입한 동일 명령의 새 dispatch를 확정하지 않는다',async()=>{
+ const f=await fixture(creating);try{
+  f.setStatus(200);await f.begin();const first=f.pending();await f.remount();f.setStatus(0);await f.begin();const second=f.pending();
+  assert.equal(first.body.commandId,second.body.commandId);assert.notEqual(first.dispatchId,second.dispatchId);
+  await f.releaseAt(0);assert.equal(f.pending(),second);assert.equal(f.buffer().createdProject??null,null);assert.equal(f.urls.length,0);
+  await f.releaseAt(1);assert.equal(f.pending(),second);f.setStatus(200);await f.begin();await f.releaseAt(2);assert.equal(f.pending(),null);
+  const posts=f.calls.filter(c=>c.method==='POST');assert.equal(posts.length,3);assert(posts.every(p=>p.body===posts[0]!.body));
+ }finally{await f.close();}
+});
+for(const creating of [false,true])test((creating?'생성':'저장')+' 이탈 후 동일 원 dispatch 성공은 원 버퍼에만 보존한다',async()=>{
+ const f=await fixture(creating);try{
+  f.setStatus(200);await f.begin();await f.unmount();await f.release();assert.equal(f.pending(),null);assert.equal(f.urls.length,0);
+  if(creating)assert.equal(f.buffer().createdProject.id,pid);else assert.equal(f.buffer().draftId,did);
+ }finally{await f.close();}
+});
+for(const mode of ['NEW_DRAFT','CAS'])test('늦은 저장 성공 '+mode+'는 새 초안 버퍼와 URL을 덮지 않는다',async()=>{
+ const f=await fixture(false);try{
+  f.setStatus(200);await f.begin();if(mode==='NEW_DRAFT')await f.unmount();
+  const fresh={...emptyDraft(),ownerUserId:uid,input:{...emptyDraft().input,name:'새 초안'}};await f.replaceBuffer(fresh,true);
+  const href='https://anvil.invalid/?draftId='+id(90)+'#/projects/new';Object.defineProperty(globalThis,'location',{configurable:true,value:new URL(href)});
+  await f.release();assert.equal(f.buffer(),fresh);assert.equal(location.href,href);assert.equal(f.urls.length,0);
+ }finally{await f.close();}
+});
+test('현재 저장 성공은 원 버퍼와 draftId URL을 한 번 반영한다',async()=>{
+ const f=await fixture(false);try{f.setStatus(200);await f.begin();await f.release();assert.equal(f.pending(),null);assert.equal(f.buffer().draftId,did);assert.equal(new URL(location.href).searchParams.get('draftId'),did);assert.equal(f.urls.length,1);}finally{await f.close();}
+});
+test('PATCH 이전 dispatch 성공도 재진입한 새 dispatch를 확정하지 않는다',async()=>{
+ const f=await fixture(false,true);try{
+  f.setStatus(200);await f.begin();const first=f.pending();await f.remount();f.setStatus(0);await f.begin();const second=f.pending();
+  assert.equal(first.body.commandId,second.body.commandId);await f.releaseAt(0);assert.equal(f.pending(),second);assert.equal(f.buffer().version,1);assert.equal(f.urls.length,0);
+  await f.releaseAt(1);f.setStatus(200);await f.begin();await f.releaseAt(2);assert.equal(f.pending(),null);assert.equal(f.buffer().version,2);
+  const writes=f.calls.filter(c=>c.method==='PATCH');assert.equal(writes.length,3);assert(writes.every(p=>p.body===writes[0]!.body));
+ }finally{await f.close();}
+});
+for(const creating of [false,true])test((creating?'생성':'저장')+' 즉시 성공과 원 버퍼 확정은 유지한다',async()=>{
+ const f=await fixture(creating);try{f.setStatus(200);f.immediate();await f.begin();assert.equal(f.pending(),null);if(creating)assert.equal(f.buffer().createdProject.id,pid);else{assert.equal(f.buffer().draftId,did);assert.equal(f.urls.length,1);}}finally{await f.close();}
+});
 class MemoryNode{
  nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
  constructor(name:string,type=1,owner?:any){this.nodeType=type;this.nodeName=type===1?name.toUpperCase():name;this.tagName=this.nodeName;this.localName=name;this.ownerDocument=owner;}
