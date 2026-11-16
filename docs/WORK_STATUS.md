@@ -20175,3 +20175,9 @@ Main은새저장계약을미채택유지하고기존계약내로컬선택보존/
 PR152 source9ac1f77e7a06ce3c51af83948b4ae5d5518cbdae→main0c9ab78a7c0684a9e4158a60084b707d1c03e59c, trustedBroker43855948446 success. tree f934cc09dcc594316826db2a1256301c2a4c9ad7 일치·원격pr-152-head/완료branch부재·localmain/remote exact·clean 확인. 병합본source/후보지문일치·조회/감독AST0·앱/계약/DB/package diff0·제품호출선0을확인했다(fcba5b). 실제CLI조회·관측프로세스는실행하지않았다. 미채택 후보가main에보존됐다고실행/데이터계약채택으로해석하지않는다. 완료branch/request tag만정상정리하고기존checkout의최신main에서codex/av3-ui06-local-selection을생성했다.
 
 기존승인내로컬선택보존·표시를WI22A61669339DAD90948BD8E63F04879E50CF09B5EFF2DD599BE42CB060553BC0로구체화해Primary제품5·시험4·결과서1만배정했다. 새미저장초안에서만원검산선택을보존하고저장전/서버귀속미확인으로표시,문맥변경/충돌/성공/고정문서후폐기하며원pending/stageRef/본문/승인은보존한다. wire/hash/receipt/GET/SQL은불변,5039D14A새저장계약은미채택이다. 기존Primary는제품을쓰고Main은현황·검수·통합만한다. 실제DB/권한/키/서비스/실자료/CLI/SDK/Agent/C#실행0·CLI질문반복0을유지한다. 전체계획/버전별서버귀속/UI06사용자인수는미완료다. 현재요약과두사용자열람본을동시에갱신했다.
+
+## 2026-11-16 UI06 로컬 준비 구현 중간 검증·사전 I1
+
+Primary가같은양식A/B의B선택값undefined를직접RED685691에서재현했다. 첫비동기import초기화19e628은목적RED가아닌시험준비오류1회로분리했다. 빈초안/작성틀에로컬선택보존source를반영한중간직접3파일19PASS(1e765f),RAMcomponent표시/편집/clientABA2PASS·지연401/주체ABA1PASS(36611e)는작성중지문근거이며최종합격이아니다. 추가409/503/200검사는메모리transport의실제편집기callback이며실DB/서비스쓰기가아님을Primary에게확인했다. CLI조회도0이다.
+
+독립read-only사전검수는C0/I1/M0으로외부동일문맥초안X에B marker만붙인경우와marker.itemId변조의오표시경로를찾았다. 서버요청/hash/영수증변경은없었다. Main은동일제품5범위에서원준비buffer·불변선택snapshot결박/편집기가만든검산파생만계승·외부복사/변조/ABA반례를Primary에게배정했다. 새server귀속/API/SQL은미채택유지,실제자료/DB/권한·키·서비스/SDK·Agent/C#실행0이다. 동일원인정식실패3회에해당하지않으며제품writer는교체하지않았다. 최종동결지문/직접·인접/RAM·root타입과독립재검수전PASS승격/병합하지않는다.
