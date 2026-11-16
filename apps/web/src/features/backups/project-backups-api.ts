@@ -2,6 +2,7 @@ import type {ApprovalRequestWork} from '../decisions/api.ts';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {exact,iso,wireHash,browserCanonical} from '../control-handoff/api.ts';
 import {documentControl,documentDraftHash,type DocumentSession,type DocumentContent} from '../design-trace/editor-api.ts';
+import {readDocumentSourceRefs,documentSourcesKey} from '../design-trace/document-source-refs.ts';
 import {NotificationScope} from '../../notifications/project-notifications-api.ts';
 import type {ExportJob,ExportSelection,ExportArtifactRef} from '../../../../server/modules/backups/project-backups-input.ts';
 import type {ProjectCommand} from '../../../../server/modules/access/project-command.ts';
@@ -29,7 +30,15 @@ export async function readExport(api:ApiClient,projectId:string,want:VersionRef)
 /** 명령 직후의 조회만 원선택/작성자에 결박한다. 일반 이력 조회 권한은 바꾸지 않는다. */
 export async function readCommandExport(api:ApiClient,p:ExportPending){if(!p.receipt)throw new ApiError('EXPORT_RECEIPT_SCOPE_MISMATCH');const job=await readExport(api,p.projectId,p.receipt);if(!same(job.manifest.selection,p.command.payload.selection)||job.manifest.createdBy.userId!==p.ownerUserId)throw new ApiError('EXPORT_RECEIPT_SCOPE_MISMATCH');return job;}
 export function exportFileHref(projectId:string,j:ExportJob){if(j.manifest.projectId!==projectId||!uuid(j.ref.id)||j.sourceAvailability!=='READY')throw new ApiError('EXPORT_SOURCE_BLOCKED');return pid(projectId)+'/backups/'+j.ref.id+'/file';}
-export async function exportDocument(api:ApiClient,projectId:string,id:string,version:number){if(!uuid(id)||!Number.isSafeInteger(version)||version<1)throw new ApiError('CLIENT_PATH_INVALID');const d=await api.get<Record<string,any>>(pid(projectId)+'/documents/'+id+'/versions/'+version);if(d.id!==id||d.version!==version||!ref(d.formRef)||!hash(d.contentHash)||typeof d.title!=='string'||!d.content||!artifact(d.content.body)||!Array.isArray(d.content.attachments)||!d.content.attachments.every(artifact)||!Array.isArray(d.content.sections)||!Array.isArray(d.content.sourceRefs)||d.content.sourceRefs.length||await documentDraftHash(d.title,d.formRef,d.content as DocumentContent,d.stageNodeRef??null)!==d.contentHash)return invalid();return{ref:{id,version,contentHash:d.contentHash} as VersionRef,artifacts:[{label:'본문 BODY',ref:d.content.body as ExportArtifactRef},...d.content.attachments.map((r:ExportArtifactRef,index:number)=>({label:'첨부 '+(index+1),ref:r}))]};}
+export async function exportDocument(api:ApiClient,projectId:string,id:string,version:number){
+ if(!uuid(id)||!Number.isSafeInteger(version)||version<1)throw new ApiError('CLIENT_PATH_INVALID');
+ const d=await api.get<Record<string,any>>(pid(projectId)+'/documents/'+id+'/versions/'+version);
+ if(d.id!==id||d.version!==version||!ref(d.formRef)||!hash(d.contentHash)||typeof d.title!=='string'||!d.content||!artifact(d.content.body)||!Array.isArray(d.content.attachments)||!d.content.attachments.every(artifact)||!Array.isArray(d.content.sections))return invalid();
+ const sources=readDocumentSourceRefs(d.content.sourceRefs);
+ if(Object.hasOwn(d,'sourceRefs')&&documentSourcesKey(d.sourceRefs)!==documentSourcesKey(sources))return invalid();
+ if(await documentDraftHash(d.title,d.formRef,d.content as DocumentContent,d.stageNodeRef??null)!==d.contentHash)return invalid();
+ return{ref:{id,version,contentHash:d.contentHash} as VersionRef,artifacts:[{label:'본문 BODY',ref:d.content.body as ExportArtifactRef},...d.content.attachments.map((r:ExportArtifactRef,index:number)=>({label:'첨부 '+(index+1),ref:r}))]};
+}
 export function exportPendingMatches(p:ExportPending,api:ApiClient,s:DocumentSession,projectId:string){return p.ownerUserId===s.user.id&&p.ownerClientId===s.clientId&&p.projectId===projectId&&p.csrfToken===s.csrfToken&&p.api===api&&p.transport===api.transport;}
 export async function prepareExport(api:ApiClient,projectId:string,s:DocumentSession,selection:ExportSelection,reason:string,current:()=>boolean):Promise<ExportPending>{
  if(!selectionValid(selection)||!reason.trim()||reason.length>20000)throw new ApiError('EXPORT_INPUT_INVALID');const userId=s.user.id,clientId=s.clientId,csrf=s.csrfToken,transport=api.transport;

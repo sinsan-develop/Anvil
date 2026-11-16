@@ -4,6 +4,7 @@ import {ApiClient,ApiError} from '../../../apps/web/src/api/client.ts';
 import * as exportsApi from '../../../apps/web/src/features/backups/project-backups-api.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import type {DocumentSession} from '../../../apps/web/src/features/design-trace/editor-api.ts';
+import type {DocumentSourceRef} from '../../../apps/web/src/features/design-trace/document-source-refs.ts';
 const {prepareExport,mergeExportPending,markExportDispatch,markExportApprovalRequired,ExportScope}=exportsApi;
 type Pending=exportsApi.ExportPending;
 type Selection=exportsApi.ExportSelection;
@@ -11,14 +12,52 @@ type EditInput={selection:Selection;reason:string};
 const id=(n:number)=>`a6160000-0000-4000-8000-${String(n).padStart(12,'0')}`,pid=id(1),uid=id(2),cid=id(3),did=id(4),aid=id(5);
 function release(){const candidate=(exportsApi as unknown as {prepareUnsentExportRelease?:unknown}).prepareUnsentExportRelease;assert.equal(typeof candidate,'function','실제 발급 미전송 객체의 명시 단발 해제 접점이 필요하다');return candidate as(api:ApiClient,p:Pending,session:DocumentSession,current:()=>boolean)=>EditInput;}
 const denied=(e:unknown)=>e instanceof ApiError&&e.code==='EXPORT_CONTEXT_CHANGED';
-function fixture(){
+function fixture(sources:DocumentSourceRef[]=[]){
  const session:DocumentSession={user:{id:uid},clientId:cid,csrfToken:'C'.repeat(43)},gets:string[]=[],posts:string[]=[],unexpected:string[]=[];
- const artifact={artifactId:aid,bytes:8,contentHash:contentHash('ordinary'),mediaType:'application/octet-stream'},formRef={id:id(7),version:1,contentHash:'a'.repeat(64)},content={body:artifact,attachments:[],sections:[],sourceRefs:[]},basis={title:'합성 문서',formRef,stageNodeRef:null,content},document={id:did,version:1,...basis,contentHash:contentHash(canonicalJson(basis))};
+ const artifact={artifactId:aid,bytes:8,contentHash:contentHash('ordinary'),mediaType:'application/octet-stream'},formRef={id:id(7),version:1,contentHash:'a'.repeat(64)},content={body:artifact,attachments:[] as typeof artifact[],sections:[],sourceRefs:sources},basis={title:'합성 문서',formRef,stageNodeRef:null,content},document={id:did,version:1,...basis,contentHash:contentHash(canonicalJson(basis))};
  const selection:Selection={kind:'DOCUMENT_ARTIFACT',documentRef:{id:did,version:1,contentHash:document.contentHash},artifactRef:artifact},reason='  원선택 이유 원문\n유지  ';
  let jsonWait:{path:string;started:()=>void;barrier:Promise<void>}|null=null,postWait:{started:()=>void;barrier:Promise<void>}|null=null;
  const api=new ApiClient(async(path,options)=>{const p=String(path);if(options?.method==='POST'){posts.push(String(options.body));if(postWait){postWait.started();await postWait.barrier;}throw Error('POST_FORBIDDEN');}gets.push(p);let value:unknown;if(p===`/api/v1/projects/${pid}/documents/${did}/versions/1`)value=document;else if(p===`/api/v1/projects/${pid}`)value={id:pid,participation:'OWNER',controlState:{status:'HELD',actorId:uid,clientId:cid,generation:1}};else{unexpected.push(p);throw Error('UNEXPECTED_GET:'+p);}const response=Response.json(value);if(jsonWait?.path===p){const wait=jsonWait;response.json=async()=>{wait.started();await wait.barrier;return value;};}return response;});
  const scope=new ExportScope();scope.bind(session,api,pid);let current:Pending|null=null,busy=false;
- return{api,session,selection,reason,gets,posts,unexpected,scope,waitPost:(started:()=>void,barrier:Promise<void>)=>{postWait={started,barrier};},get current(){return current;},setCurrent:(p:Pending|null)=>{current=p;},setBusy:(v:boolean)=>{busy=v;},waitJson:(path:string,started:()=>void,barrier:Promise<void>)=>{jsonWait={path,started,barrier};},prepare:async()=>{const p=await prepareExport(api,pid,session,selection,reason,()=>true);current=p;return p;},active:(p:Pending)=>{const t=scope.ticket();return()=>scope.current(t)&&current===p&&!busy;}};
+ return{api,session,selection,reason,gets,posts,unexpected,scope,document,waitPost:(started:()=>void,barrier:Promise<void>)=>{postWait={started,barrier};},get current(){return current;},setCurrent:(p:Pending|null)=>{current=p;},setBusy:(v:boolean)=>{busy=v;},waitJson:(path:string,started:()=>void,barrier:Promise<void>)=>{jsonWait={path,started,barrier};},prepare:async()=>{const p=await prepareExport(api,pid,session,selection,reason,()=>true);current=p;return p;},active:(p:Pending)=>{const t=scope.ticket();return()=>scope.current(t)&&current===p&&!busy;}};
+}
+const documentSources:DocumentSourceRef[]=[
+ {kind:'DOCUMENT_VERSION',id:id(40),version:2,contentHash:'b'.repeat(64)},
+ {kind:'ARTIFACT',id:id(41),contentHash:'c'.repeat(64)},
+ {kind:'CONVERSATION',id:id(42),contentHash:'d'.repeat(64)},
+ {kind:'USER_INSTRUCTION',id:id(43),contentHash:'e'.repeat(64)},
+];
+function rehashDocument(f:ReturnType<typeof fixture>){const {title,formRef,stageNodeRef,content}=f.document;f.document.contentHash=contentHash(canonicalJson({title,formRef,stageNodeRef,content}));f.selection.documentRef.contentHash=f.document.contentHash;}
+test('비빈 문서 출처의 BODY·첨부 선택은 정확 원명령을 준비하며 별도 출처 없는 구형 응답도 호환한다',async()=>{
+ for(const separate of [false,true])for(const attachment of [false,true]){
+  const f=fixture(structuredClone(documentSources));
+  if(separate)Object.assign(f.document,{sourceRefs:structuredClone(documentSources)});
+  const extra={...f.document.content.body,artifactId:id(8)};f.document.content.attachments.push(extra);rehashDocument(f);
+  if(attachment)f.selection.artifactRef=extra;
+  const view=await exportsApi.exportDocument(f.api,pid,did,1);assert.deepEqual(view.ref,f.selection.documentRef);assert.deepEqual(view.artifacts.map(a=>a.label),['본문 BODY','첨부 1']);
+  const p=await f.prepare();assert.deepEqual(p.command.payload.selection,f.selection);assert.equal(p.command.operation,'exportProject');assert.equal(p.command.approvalRef,null);assert.equal(p.command.payload.includeSource,false);assert.equal(p.body,canonicalJson(p.command));
+  assert.equal(f.gets.length,3);noPost(f);
+ }
+});
+for(const mode of ['shape','duplicate','limit','source-hash','separate-mismatch','separate-null','separate-extra','document-hash','artifact-binding','version-hash'] as const){
+ test('반출 문서 출처 거절 · '+mode+'는 원선택을 보존하고 control GET·POST0이다',async()=>{
+  const f=fixture(structuredClone(documentSources));
+  let expected='RESPONSE_INVALID';
+  if(mode==='shape'){Object.assign(f.document.content.sourceRefs[0]!,{version:0});rehashDocument(f);expected='DOCUMENT_SOURCE_INVALID';}
+  if(mode==='duplicate'){f.document.content.sourceRefs.push({...documentSources[0]!});rehashDocument(f);expected='DOCUMENT_SOURCE_DUPLICATED';}
+  if(mode==='limit'){f.document.content.sourceRefs=Array.from({length:201},(_,n)=>({kind:'ARTIFACT',id:id(100+n),contentHash:'b'.repeat(64)}));rehashDocument(f);expected='DOCUMENT_SOURCE_INVALID';}
+  if(mode==='source-hash')f.document.content.sourceRefs[0]!.contentHash='f'.repeat(64);
+  if(mode==='separate-mismatch')Object.assign(f.document,{sourceRefs:[]});
+  if(mode==='separate-null'){Object.assign(f.document,{sourceRefs:null});expected='DOCUMENT_SOURCE_INVALID';}
+  if(mode==='separate-extra'){Object.assign(f.document,{sourceRefs:[{...documentSources[0],extra:true}]});expected='DOCUMENT_SOURCE_INVALID';}
+  if(mode==='document-hash')f.document.contentHash='f'.repeat(64);
+  if(mode==='artifact-binding'){f.selection.artifactRef={...f.selection.artifactRef,artifactId:id(99)};expected='EXPORT_CONTEXT_CHANGED';}
+  if(mode==='version-hash'){f.selection.documentRef.contentHash='f'.repeat(64);expected='EXPORT_CONTEXT_CHANGED';}
+  const selected=structuredClone(f.selection);
+  await assert.rejects(()=>f.prepare(),(e:unknown)=>e instanceof ApiError&&e.code===expected);
+  assert.deepEqual(f.selection,selected);assert.equal(f.current,null);
+  assert.deepEqual(f.gets,[`/api/v1/projects/${pid}/documents/${did}/versions/1`]);noPost(f);
+ });
 }
 function pristine(p:Pending){return{bindingId:p.bindingId,command:p.command,body:p.body,receipt:p.receipt,dispatchState:p.dispatchState,approvalRequest:p.approvalRequest,accessLost:p.accessLost};}
 function noPost(f:ReturnType<typeof fixture>){assert.deepEqual(f.posts,[]);assert.deepEqual(f.unexpected,[]);}
