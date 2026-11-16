@@ -7,7 +7,7 @@ import type { MethodApplicationCommand } from './project-api.ts';
 
 export interface MethodApplicationWork {
   ownerUserId:string;clientId:string;reason:string;preparationId:string|null;
-  pending:{request:MethodApplicationCommand;previous:VersionRef|null;uncertain:boolean}|null;verifiedRef:VersionRef|null;
+  pending:{request:MethodApplicationCommand;previous:VersionRef|null;uncertain:boolean;receiptRef?:VersionRef}|null;verifiedRef:VersionRef|null;
 }
 
 export interface MethodCommand { schemaVersion: 1; commandId: string; operation: 'copyMethodology' | 'saveMethodologyDraft' | 'copyForm' | 'saveFormDraft' | 'recordContentReview' | 'confirmForm' | 'confirmMethodology'; targetId: string | null; expectedVersion: number; clientId: string; payload: Record<string, unknown>; projectId?: string; controlGeneration?: number; baselineRefs?: []; approvalRef?: null }

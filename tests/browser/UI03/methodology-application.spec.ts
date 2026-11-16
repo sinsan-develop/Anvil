@@ -122,9 +122,9 @@ test('적용 준비 GET 대기 중 화면을 떠나면 늦은 응답으로 POST�
  const s=await setup(page);s.holdPrepare=true;await begin(page);await expect.poll(()=>s.held).toBe(true);await page.evaluate(()=>{location.hash='#/projects';});await expect(page.getByRole('heading',{name:'프로젝트',exact:true})).toBeVisible();const consumed=await page.evaluate(()=>(window as any).__fn02ProjectBodies??0);await s.release!();await page.waitForFunction(before=>((window as any).__fn02ProjectBodies??0)>before,consumed);
  await page.evaluate(()=>{location.hash='#/projects/a6f20000-0000-4000-8000-000000000090/methodologies';});await expect(page.getByRole('button',{name:method.name+' v1 열기',exact:true})).toBeVisible();expect(s.requests).toHaveLength(0);expect(s.unexpected).toEqual([]);expect(s.errors).toEqual([]);
 });
-test('적용 receipt를 받아도 재조회503이면 성공 표시 없이 원 명령을 보존한다',async({page})=>{
- const s=await setup(page);s.failReadback=true;await begin(page);await expect(page.getByText('적용 결과 미확인 · 같은 명령만 다시 확인하세요.',{exact:true})).toBeVisible();await expect(page.getByText('서버 적용·재조회 확인 · 적용 세대 1',{exact:true})).toHaveCount(0);expect(s.requests).toHaveLength(1);
- await page.getByRole('button',{name:'같은 적용 명령 결과 확인',exact:true}).click();await expect(page.getByText('서버 적용·재조회 확인 · 적용 세대 1',{exact:true})).toBeVisible();expect(s.requests).toHaveLength(2);expect(s.requests[0]).toEqual(s.requests[1]);expect(s.unexpected).toEqual([]);expect(s.errors).toEqual([]);
+test('적용 receipt 뒤 재조회503은 원 영수증을 보존하고 GET만 명시 복구한다',async({page})=>{
+ const s=await setup(page);s.failReadback=true;await begin(page);await expect(page.getByText('적용 저장 확인 · 현재 적용본 재조회가 필요합니다.',{exact:true})).toBeVisible();await expect(page.getByText('서버 적용·재조회 확인 · 적용 세대 1',{exact:true})).toHaveCount(0);expect(s.requests).toHaveLength(1);
+ await page.getByRole('button',{name:'확정 적용 결과 다시 조회',exact:true}).click();await expect(page.getByText('서버 적용·재조회 확인 · 적용 세대 1',{exact:true})).toBeVisible();expect(s.requests).toHaveLength(1);expect(s.unexpected).toEqual([]);expect(s.errors).toEqual([]);
 });
 test('확정의 검토ref JSON 키 순서가 달라도 같은 적합 검토를 인식한다',async({page})=>{
  const original=method.confirmation.reviewRefs;method.confirmation.reviewRefs=[{outcome:'ACCEPTED',targetRef:ref,criteriaVersion:1,id:rid}];
