@@ -176,7 +176,7 @@
 ### 코드 미구현과 실제 검증 미완료의 구분
 
 - normal 실행세대 root 배정/재개·공통 spool 예약 producer: **미구현**. 후보9E98은 게시·검수만 완료했고 직접 source-only 채택 답변 대기다.
-- normal Claude SDK Query 호출·원 Query/child 소유 대응·보호 SDK 출력 Sink/fullref producer: **부분 구현·진행 중**. 채택 FN07 후보86A461의 START 준비·출력 소비자·첫 SEND 소스는 PR144/main a86705e5로 통합했다. 원 Query STOP 소비 r2는 소스 검수됐고 첫 SEND 정착 후 출력 수집 연결을 진행한다. 실제 SDK/module/hook·CURRENT·OS 소유·보호 spool9E98의 채택/배정은 미완료다. RAM 합성 factory를 실제 SDK 구현으로 계산하지 않으며 전체 완료 체크는 올리지 않는다.
+- normal Claude SDK Query 호출·원 Query/child 소유 대응·보호 SDK 출력 Sink/fullref producer: **부분 구현·진행 중**. 채택 FN07 후보86A461의 START 준비·출력 소비자·첫 SEND 소스는 PR144/main a86705e5로 통합했다. 원 Query STOP·첫 SEND 이후 출력 수집은 PR145, 같은 Query 후속 SEND는 PR146/main584a7059로 소스 통합했다. 실제 SDK/module/hook·CURRENT·OS 소유·보호 spool9E98의 채택/배정은 미완료다. RAM 합성 factory를 실제 SDK 구현으로 계산하지 않으며 전체 완료 체크는 올리지 않는다.
 - 기존 프로젝트/방법론/문서/지식의 연결된 API/UI source는 위 항목과 달리 실제 DB 재시작/권한별·다프로젝트 여정이 미확인인 부분이 있다. 이를 모두 미구현으로 합산하거나 source/RAM 통과를 실제 인수로 승격하지 않는다. 전체44업무 완료 체크는 상향하지 않는다.
 
 - 2026-11-16 FN07/FN08 START 준비 소스 단위: 제품5·시험5, 직접41/인접3/메모리 번들12=56PASS·FAIL/SKIP0, 루트 타입0·Main 핵심1PASS·독립C0/I0/M0. 원 로컬 준비 종단과 마지막 필수 관측의 연속 ACK를 연결하고 실제 SDK 응답과 구분했다. 실제 SDK·OS·등록 owner 조립·보호 저장은 미검증이며 출력 소비자/첫 SEND 결합은 후속이다. 결과서 FN07_NORMAL_START_READY_SOURCE_RESULT_20261116 참조. 전체 완료 체크 상향0.
@@ -187,3 +187,8 @@
 - 2026-11-16 첫 SEND 정착 후 출력 수집 소스 검수: 수정 후 직접63건·빌드12건·타입·독립 C0/I0/M0 및 Main 변조 반례 각1건 확인. 실제 SDK·보호 저장·OS 종료는 미검증이다. STOP과 같은 소스 통합 단위로 진행하며 완료 체크는 올리지 않는다.
 - 2026-11-16 후속 SEND r2 계약23BF 직접 채택. 같은 원 Query에 입력을 한 번 제공하고 정확 부모4행·현 시도/종단 정상닫힘·기존 연속ACK를 검산하는 소스를 기존 Primary에게 맡겼다. 실제 SDK/DB/권한/키/서비스 실행은 제외하며 FN08 부분 구현 체크를 유지한다.
 - 2026-11-16 후속 SEND r3 소스: 최종 직접영향61건·타입·메모리번들·독립 C0/I0/M0와 Main 반례2건 확인. 원부모/현시도/종단·연속ACK 및 종료경합을 RAM으로 검산했다. 실제 SDK/보호저장·비정상DI late삭제 재시작 봉인은 미검증이며 FN08 전체 체크는 유지한다.
+- 2026-11-16 UI14정책페이지동일cursor명시재조회는38건·루트타입·독립검수확인. FN18기존수신IPC정적선언24건을해소했으나전체desktop타입145건/exit1·미완료이며필수개발의존성/생성물해석을준비한다. source checkpoint이고Stage/FN18전체PASS가아니다.
+
+- 2026-11-16 FN18 후속: 고정 개발 의존성만 복원하고 기존 수신 client·owner·shell/policy의 실제 계약과 nullable 선언을 보완했다. 현재 desktop 타입은 생성 runtime 참조4건/exit1이다. 수신 client5·owner6·shell선택5·미지원phase2 RAM 결과는 서로 다른 영향범위의 근거이며 전체 실제 검증으로 합산하지 않는다. 생성 타입 연결을 구현 중이고 실제 앱/설치·SDK/Agent·DB·서비스는 미검증이다. FN18/Stage 완료 체크를 올리지 않는다.
+
+- 2026-11-16 FN18 생성타입 연결 최종: desktop0·루트타입0·웹메모리빌드통과, 생성타입/번들15PASS·독립C0/I0/M0. 앞선4건FAIL 기록은 보완 전 이력이다. 배포JS 값로딩 금지와 원17export 엄격검산을 유지한다. 실제앱/설치/DB/SDK는 제외·미검증이므로 FN18전체 체크는 올리지 않는다.

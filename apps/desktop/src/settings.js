@@ -11,7 +11,30 @@ async function requestQuit(){if(!window.confirm('클라이언트 종료는 Agent
 element('connect-form').addEventListener('submit',async event=>{event.preventDefault();submit.disabled=true;try{render(await api.connect(originInput.value,replaceInput.checked));}catch(error){failure(error);}finally{submit.disabled=false;}});quit.addEventListener('click',()=>{void requestQuit();});element('info').addEventListener('click',()=>info.showModal());element('close-info').addEventListener('click',()=>info.close());api.onState(state=>{render(state);resetTrustView();});api.onQuitRequest(()=>{void requestQuit();});api.getState().then(render).catch(failure);
 
 // 등록 준비는 이 로컬 화면의 명시 동작만 소비한다. 연결 URL을 catalogue publisher로 쓰지 않는다.
-/** @type {{trustStatus:(attemptId:string|null,epoch:number|null)=>Promise<any>,trustPair:(requestId:string,attemptId:string,epoch:number,pid:string,rid:string,code:string)=>Promise<any>,trustBegin:(requestId:string,epoch:number,label:string,confirm:boolean)=>Promise<any>,trustAct:(requestId:string,attemptId:string,epoch:number,action:string)=>Promise<any>}} */
+/** @typedef {{id:string,version:1,contentHash:string}} NativeReceiveRef */
+/**
+ * @typedef {object} NativeReceiveView
+ * @property {string} attemptId
+ * @property {number} epoch
+ * @property {keyof typeof receivePhases} phase
+ * @property {NativeReceiveRef|null} windowRef
+ * @property {NativeReceiveRef|null} offerRef
+ * @property {NativeReceiveRef|null} armRef
+ * @property {string|null} commandId
+ * @property {string|null} commandHash
+ * @property {string|null} expiresAt
+ * @property {'NONE'|'CONFIRMED'|'UNCONFIRMED'|'UNKNOWN'} outcome
+ */
+/** @typedef {{ok:true,value:NativeReceiveView}|{ok:false,error:{code:keyof typeof receiveErrors}}} NativeReceiveReply */
+/**
+ * @typedef {object} NativeReceiveBridge
+ * @property {(attemptId:string,epoch:number)=>Promise<NativeReceiveReply>} nativeReceiveStatus
+ * @property {(requestId:string,attemptId:string,epoch:number)=>Promise<NativeReceiveReply>} nativeReceiveBegin
+ * @property {(requestId:string,attemptId:string,epoch:number)=>Promise<NativeReceiveReply>} nativeReceiveRefresh
+ * @property {(requestId:string,attemptId:string,epoch:number,offerRef:NativeReceiveRef,confirmed:true)=>Promise<NativeReceiveReply>} nativeReceiveArm
+ * @property {(requestId:string,attemptId:string,epoch:number,confirmed:true)=>Promise<NativeReceiveReply>} nativeReceiveClose
+ */
+/** @type {{trustStatus:(attemptId:string|null,epoch:number|null)=>Promise<any>,trustPair:(requestId:string,attemptId:string,epoch:number,pid:string,rid:string,code:string)=>Promise<any>,trustBegin:(requestId:string,epoch:number,label:string,confirm:boolean)=>Promise<any>,trustAct:(requestId:string,attemptId:string,epoch:number,action:string)=>Promise<any>} & NativeReceiveBridge} */
 const trustApi=/** @type {any} */(api);
 const trustPanel=element('trust-panel'),trustLabel=/** @type {HTMLInputElement} */(element('trust-label')),trustConfirm=/** @type {HTMLInputElement} */(element('trust-confirm')),trustBegin=/** @type {HTMLButtonElement} */(element('trust-begin'));
 /** @type {any} */let trustView=null;
