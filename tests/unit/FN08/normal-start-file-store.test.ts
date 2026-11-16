@@ -2,6 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {NormalStartFileStore} from '../../../apps/connector/runtime/normal-start-file-store.ts';
 import {root,memoryFiles,scope} from './normal-start-local-fixture.ts';
+test('기존 raw normal API에서 관리 namespace의 절대 경로를 열면 RAM I/O 전에 거절한다',()=>{
+ const f=memoryFiles(),reserved=root+'/Anvil/Trust/v1/owned-spool-profile.v1/data-'+scope.projectId;
+ assert.throws(()=>new NormalStartFileStore(reserved,scope,f.fs),/STORAGE_UNAVAILABLE/);
+ let calls=0;
+ assert.throws(()=>new NormalStartFileStore({transaction:async()=>{calls++;throw Error('UNREACHABLE');}},scope,f.fs),/STORAGE_UNAVAILABLE/);
+ assert.equal(calls,0);assert.equal(f.mode.opens,0);
+});
 test('normal file store는 sync 후 재열기하고 caller bytes를 변경하지 않는다',async()=>{
  const f=memoryFiles(),store=new NormalStartFileStore(root,scope,f.fs),value={x:'한글'};
  await store.exclusive('observations',async tx=>{assert.deepEqual(await tx.read(),[]);await tx.appendAndSync(value);});

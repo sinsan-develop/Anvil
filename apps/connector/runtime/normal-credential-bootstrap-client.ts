@@ -4,8 +4,9 @@ import {cloneV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../.
 
 /** 새 private owned-host protocol. 일반 token getter/임의 bytes signer가 아니다. */
 export interface NormalOwnedScope {projectId:string;connectorId:string;executionId:string;executionGeneration:number;grantRef:Ref;credentialGeneration:number}
-export interface NormalOwnedHostSession {send(operation:string,payload:unknown):Promise<unknown>;close():Promise<{state:string}>}
-export interface NormalOwnedHostFactory {open(signal:AbortSignal):Promise<NormalOwnedHostSession>}
+export type HostCloseDisposition = 'HOST_REQUEST_VALIDATED' | 'OPERATION_UNKNOWN';
+export interface NormalOwnedHostSession {readonly invalidated?:AbortSignal;current?():void;send(operation:string,payload:unknown):Promise<unknown>;close(disposition:HostCloseDisposition):Promise<{state:string}>}
+export interface NormalOwnedHostFactory {open(signal:AbortSignal,request?:Readonly<NormalOwnedMetadata>):Promise<NormalOwnedHostSession>}
 export interface NormalOwnedMetadata {slotId:string;receiptRef:Ref;origin:string;scope:NormalOwnedScope;expiresAt:string;caHash:string}
 export interface NormalOwnedRequest {method:'GET'|'POST';path:string;query:string;body:string|null;auth:string|null;expiresAt:string}
 export interface NormalOwnedPrepared {path:string;query:string;auth:string;challengeRef:Ref;requestId:string;expiresAt:string}
@@ -25,12 +26,13 @@ class Channel {
  constructor(config:Config,ports:Ports){if(!uuidV1(config?.attemptId)||!scopeValid(config?.scope)||typeof ports?.host?.open!=='function')fail();
   if(!recordV1(config,['attemptId','origin','ca','scope'])||typeof config.ca!=='string'||!config.ca||Buffer.byteLength(config.ca)>65536)fail();
   this.config=cloneV1(config);origin(config.origin);this.now=ports.now??Date.now;this.factory=ports.host;this.open=ports.host.open;}
- async operation<T>(signal:AbortSignal,expires:number,run:(send:(op:string,p:unknown)=>Promise<any>)=>Promise<T>):Promise<T>{
+ async operation<T>(signal:AbortSignal,expires:number,run:(send:(op:string,p:unknown)=>Promise<any>)=>Promise<T>,request?:Readonly<NormalOwnedMetadata>):Promise<T>{
   if(this.unknown)fail('NORMAL_OWNED_UNKNOWN');if(this.busy)fail('NORMAL_OWNED_BUSY');
   if(!(signal instanceof AbortSignal)||signal.aborted||expires<=this.now())fail('NORMAL_OWNED_CANCELLED');
   this.busy=true;let session:NormalOwnedHostSession|undefined,sent=false,done=false,count=0,timer:ReturnType<typeof setTimeout>|undefined;
   let closing:Promise<{state:string}>|undefined;
-  const closeOnce=(s:NormalOwnedHostSession)=>closing??=(Promise.resolve().then(()=>s.close()));
+  let disposition:HostCloseDisposition='OPERATION_UNKNOWN';
+  const closeOnce=(s:NormalOwnedHostSession)=>closing??=(Promise.resolve().then(()=>s.close(disposition)));
   const local=new AbortController(),end=Math.min(Date.now()+10000,Date.now()+expires-this.now());
   let rejectAbort:(e:Error)=>void=()=>{};
   const cancelled=new Promise<never>((_,reject)=>{rejectAbort=reject;});
@@ -39,13 +41,13 @@ class Channel {
   const check=()=>{if(done||local.signal.aborted||signal.aborted||Date.now()>=end||this.now()>=expires)fail(sent?'NORMAL_OWNED_UNKNOWN':'NORMAL_OWNED_CANCELLED');};
   try{
    if(this.factory.open!==this.open)fail();
-   const opening=Promise.resolve(this.open.call(this.factory,local.signal));
+   const opening=Promise.resolve(this.open.call(this.factory,local.signal,request?cloneV1(request):undefined));
    opening.then(s=>{if(done||local.signal.aborted){this.unknown=true;void closeOnce(s).catch(()=>{});}},()=>{});
    session=await Promise.race([opening,cancelled]);check();const send=session.send;
    const answer=await Promise.race([run(async(op,p)=>{
     check();if(++count>64||Buffer.byteLength(canonicalJson(p))>64500||session!.send!==send)fail();
     sent=true;const result=await Promise.race([Promise.resolve(send.call(session,op,p)),cancelled]);check();return result;
-   }),cancelled]);check();return answer;
+   }),cancelled]);check();disposition='HOST_REQUEST_VALIDATED';return answer;
   }catch(e){if(sent)this.unknown=true;throw e;}
   finally{done=true;if(timer!==undefined)clearTimeout(timer);signal.removeEventListener('abort',stop);local.abort();
    if(session){let closeTimer:ReturnType<typeof setTimeout>|undefined;try{
@@ -149,6 +151,6 @@ export class NormalOwnedCredentialPort {
    }
    const all=Buffer.concat(buffers);try{if(digest(all)!==hash)fail();return parseWireJson(new TextDecoder('utf-8',{fatal:true}).decode(all));}finally{all.fill(0);}
    }finally{for(const b of buffers)b.fill(0);}
-  });}finally{bytes.fill(0);}
+  },m);}finally{bytes.fill(0);}
  }
 }

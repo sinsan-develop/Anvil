@@ -4,6 +4,7 @@ import {readDispatchEnvelopeV1,type DispatchEnvelopeV1} from '../../../contracts
 import {receiptKeyV1} from '../../../contracts/runtime/dispatch-receipt-v1.ts';
 import {cloneV1,recordV1,refV1,isoV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import type {NormalCommandPageItem} from './normal-start-material-consumer.ts';
+import {outsideOwnedSpoolCallback} from './normal-owned-spool-profile.ts';
 import {isNormalStartReadyWire,consumeNormalStartReady,copyNormalWorkerStart} from '../adapters/secondary/normal-start-wire.ts';
 import {NormalStartIntake} from './normal-start-intake.ts';
 import {NormalProtectedPostClient,type NormalPermitResult} from './normal-protected-post-client.ts';
@@ -53,7 +54,7 @@ export class NormalStartCoordinator{
   }finally{if(timer!==undefined)clearTimeout(timer);signal.removeEventListener('abort',listener);controller.abort();}
  }
  async #current(e:DispatchEnvelopeV1,attempt:Ref,signal:AbortSignal,ceiling:number){
-  const v:any=cloneV1(await this.#bounded(s=>this.#p.current.current(cloneV1(e),cloneV1(attempt),s),signal,ceiling)),now=this.#now();
+  const v:any=cloneV1(await this.#bounded(s=>outsideOwnedSpoolCallback(()=>this.#p.current.current(cloneV1(e),cloneV1(attempt),s)),signal,ceiling)),now=this.#now();
   const refs=[...new Map(e.context.sourceScopes.map(s=>[canonicalJson(s.observationRef),s.observationRef])).values()];
   if(!recordV1(v,['transport','key','envelopeHash','grantRef','localAttemptRef','sourceObservationRefs','osOwnershipRef','checkedAt','expiresAt'])||
    v.transport!=='NORMAL_PROTECTED'||!same(v.key,receiptKeyV1(e))||v.envelopeHash!==e.envelopeHash||!same(v.grantRef,this.#p.grantRef)||!same(v.localAttemptRef,attempt)||
@@ -167,7 +168,7 @@ export class NormalStartCoordinator{
     const deadline=Math.min(ceiling,latest.deadline,final.deadline);if(this.#now()>=deadline||signal.aborted)fail('NORMAL_START_EXPIRED');
     const input:StartInput={envelope:cloneV1(e),contextBundle:{...cloneV1({...currentMaterials.contextBundle,bytes:null}),bytes:new Uint8Array(currentMaterials.contextBundle.bytes)},options:{...cloneV1({...reread,bytes:null}),bytes:new Uint8Array(reread.bytes)},localAttemptRef:cloneV1(attempt.ref),permit:cloneV1(permit!)};
     if(worker){
-     const value=await this.#bounded(s=>p.wire.send(input,s),signal,deadline);
+     const value=await this.#bounded(s=>outsideOwnedSpoolCallback(()=>p.wire.send(input,s)),signal,deadline);
      const readyEnd=consumeNormalStartReady(p.wire,input,value,p.grantRef);
      if(readyEnd===null||signal.aborted||this.#now()>=deadline) return fail('NORMAL_START_HANDOFF_INVALID');
      freshReadyDeadline=Math.min(readyEnd,deadline);
@@ -176,7 +177,7 @@ export class NormalStartCoordinator{
      freshParent={start:copyNormalWorkerStart(input),startReadyRef:cloneV1(out.ref),grantRef:cloneV1(p.grantRef)};
      unconfirmedReady=out.ref;return this.#result(e,out,undefined,permitEventRef);
     }
-    const wireValue:any=await this.#bounded(s=>p.wire.send(input,s),signal,deadline);
+    const wireValue:any=await this.#bounded(s=>outsideOwnedSpoolCallback(()=>p.wire.send(input,s)),signal,deadline);
     if(!recordV1(wireValue,['transport','responseRef','processRef'])||wireValue.transport!=='NORMAL_PROTECTED'||!refV1(wireValue.responseRef)||wireValue.processRef!==null&&!refV1(wireValue.processRef))fail('NORMAL_START_RESPONSE_INVALID');
     const out=await append('RESPONSE_RECORDED',permit,cloneV1(wireValue.responseRef),cloneV1(wireValue.processRef));
     await reconcile();

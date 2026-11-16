@@ -7,11 +7,11 @@ test.before(async()=>{
  const file=require.resolve('./desktop-trust-registration.test.cjs'),m=new Module(file,module),before=[];
  const register=()=>{};register.before=fn=>before.push(fn);const original=Module.createRequire(file);
  m.filename=file;m.paths=module.paths;m.require=name=>name==='node:test'?register:original(name);
- m._compile(fs.readFileSync(file,'utf8')+'\nmodule.exports={liveNativeOwner,enrollmentFixture,get runtime(){return nativeRuntime;},get other(){return nativeRuntimeOther;}};',file);
+ m._compile(fs.readFileSync(file,'utf8')+'\nmodule.exports={liveNativeOwner,enrollmentFixture,setFiles(io){profileRamFiles=io;},get runtime(){return nativeRuntime;},get other(){return nativeRuntimeOther;}};',file);
  assert.equal(before.length,1);await before[0]();fixtures=m.exports;
 });
 const id=n=>'ce140001-0000-4000-8000-'+String(n).padStart(12,'0'),ref=n=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
-function model(f,mode='NORMAL'){
+function model(f,mode='NORMAL',profile=null){
  const row=f.stored(),scope={projectId:row.projectId,connectorId:row.registration.connectorRef.id,executionId:id(1),executionGeneration:1,grantRef:ref(2),credentialGeneration:1};
  const config={origin:row.origin,ca:'TEST_ONLY_EXPLICIT_CA',scope},calls=[],spawn=f.ports.spawn;let expiresAt=new Date(f.dependencies.now()+5000).toISOString();
  let metadata,reply,offset=0,onFrame=()=>{},respond;
@@ -25,10 +25,11 @@ function model(f,mode='NORMAL'){
  };
  const chunk=()=>{const part=reply.subarray(offset,offset+48000),start=offset;offset+=part.length;return{handle:id(7),offset:start,total:reply.length,hash:contentHash(reply),expiresAt,bytes:part.toString('base64url'),done:offset===reply.length};};
  f.ports.spawn=(...args)=>{const child=spawn(...args),write=child.stdin.write;child.stdin.write=(raw,encoding,done)=>{
-  const v=JSON.parse(Buffer.from(raw).toString());if(!v.operation.startsWith('NORMAL_EXECUTION_'))return write(raw,encoding,done);
+  const v=JSON.parse(Buffer.from(raw).toString());if(!v.operation.startsWith('NORMAL_EXECUTION_')&&!(profile&&v.operation.startsWith('NORMAL_SPOOL_')))return write(raw,encoding,done);
   assert.ok(Buffer.byteLength(raw)<=65536);assert.equal(v.sequence,calls.filter(x=>x.child===child).length+4);calls.push({...v,child});
   queueMicrotask(()=>{let data;onFrame(v);
-   if(v.operation==='NORMAL_EXECUTION_BOOTSTRAP'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.scope,scope);metadata={slotId:id(3),receiptRef:ref(4),origin:row.origin,scope,expiresAt,caHash:contentHash(config.ca)};data=metadata;}
+   if(profile&&v.operation.startsWith('NORMAL_SPOOL_'))data=profile.handle(v,child,metadata);
+   else if(v.operation==='NORMAL_EXECUTION_BOOTSTRAP'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.scope,scope);metadata={slotId:id(3),receiptRef:ref(4),origin:row.origin,scope,expiresAt,caHash:contentHash(config.ca)};data=metadata;}
    else if(v.operation==='NORMAL_EXECUTION_RENEW'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.previous,metadata);assert.ok(Date.parse(metadata.expiresAt)<=f.dependencies.now());expiresAt=new Date(f.dependencies.now()+5000).toISOString();metadata={...metadata,slotId:id(11),receiptRef:ref(12),expiresAt};data=mode==='RENEW_UNKNOWN'?{...metadata,caHash:'b'.repeat(64)}:metadata;}
    else if(v.operation==='NORMAL_EXECUTION_CALL'){assert.equal(v.payload.attemptId,row.attemptId);assert.equal(v.payload.slotId,metadata.slotId);const r=v.payload.request;reply=Buffer.from(canonicalJson(v.payload.kind==='PREPARE'?{path:r.path,query:r.query,auth:'A'.repeat(20),challengeRef:ref(5),requestId:id(6),expiresAt}:respond?respond(r,v.payload.body):mode==='PAIR'?typedReply(r):mode==='MAX'?{value:'x'.repeat(2812587-12)}:{commands:[]}));offset=0;data=chunk();}
    else if(v.operation==='NORMAL_EXECUTION_READ'){assert.equal(v.payload.handle,id(7));assert.equal(v.payload.offset,offset);data=chunk();}
@@ -173,16 +174,16 @@ test('이미 발송한 GET 도중 dispose는 늦은 응답을 성공으로 바�
  assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
 });
 
-async function pollingFixture(){
+async function pollingFixture(profile=null,workerOptions=false){
  const f=await fixtures.liveNativeOwner(),base=f.dependencies.now();let offset=0;
  f.dependencies.now=()=>base+offset;f.ports.now=()=>base+offset;
- const m=model(f,'PAIR'),scope=m.config.scope,clock=f.dependencies.now,signal=new AbortController().signal;
+ const m=model(f,'PAIR',profile),scope=m.config.scope,clock=f.dependencies.now,signal=new AbortController().signal;
  const {root,memoryFiles}=await import('../unit/FN08/normal-start-local-fixture.ts');
  const {NormalStartFileStore}=await import('../../apps/connector/runtime/normal-start-file-store.ts');
  const local={projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration};
  const memory=memoryFiles(),store=new NormalStartFileStore(root,local,memory.fs);
  const expected={context:{...local,assignmentId:id(40),connectionRef:f.stored().registration.connectorRef,environmentRef:ref(42),authorizationReceiptRef:ref(43),capabilityRef:ref(44),budgetRef:ref(45),sourceScopes:[{sourceRootRef:ref(46),mappingRef:null,observationRef:ref(47),baselineRef:ref(48),targets:[{relativePath:'sample.txt',kind:'FILE',access:'READ',recursive:false}]}]},executorRegistrationRef:f.stored().registration.registrationRef};
- const bodies=['{"context":1}','{"options":1}'],hash=x=>contentHash(canonicalJson(x));
+ const bodies=['{"context":1}',workerOptions?'{"claudeQueryParams":{"model":"ram-model"}}':'{"options":1}'],hash=x=>contentHash(canonicalJson(x));
  const groups=bodies.map((body,i)=>({kind:i?'START_OPTIONS':'CONTEXT_BUNDLE',payloadRef:ref(50+i),sourceRef:ref(52+i),sourceBytes:Buffer.byteLength(body),contentHash:contentHash(body),mediaType:'application/json',parts:[{materialId:id(54+i),partIndex:1,byteOffset:0,utf8Bytes:Buffer.byteLength(body),contentHash:contentHash(body)}]}));
  const issuedAt=new Date(clock()).toISOString(),unsigned={schemaVersion:1,commandId:id(56),issuedAt,expiresAt:new Date(clock()+30000).toISOString(),...expected,operation:'START_SESSION',payload:{contextBundleRef:groups[0].payloadRef,optionsRef:groups[1].payloadRef}};
  const envelope={...unsigned,envelopeHash:hash(unsigned)},item={sequence:1,commandRef:ref(57),envelope,materials:{manifestRef:ref(58),groups}};
@@ -193,7 +194,7 @@ async function pollingFixture(){
   if(r.path.endsWith('/commands'))return {...result,items:[item],nextCursor:'cursor1',hasMore:false,observedAt,expiresAt};
   const i=groups.findIndex(g=>r.path.endsWith('/materials/'+g.parts[0].materialId));
   if(i>=0){const g=groups[i],p=g.parts[0];return {...result,observedAt,expiresAt,material:{materialId:p.materialId,sourceRef:g.sourceRef,partIndex:1,partCount:1,contentHash:p.contentHash,bytes:Buffer.from(bodies[i]).toString('base64url')}};}
-  if(r.path.endsWith('/permit')){seen.permits++;return {...result,executionAuthorized:true,permit:{ref:ref(60),commandId:envelope.commandId,envelopeHash:envelope.envelopeHash,issuedAt:observedAt,expiresAt}};}
+  if(r.path.endsWith('/permit')){seen.permits++;return {...result,...(seen.largePermit?{padding:'x'.repeat(2700000)}:{}),executionAuthorized:true,permit:{ref:ref(60),commandId:envelope.commandId,envelopeHash:envelope.envelopeHash,issuedAt:observedAt,expiresAt}};}
   assert.ok(r.path.endsWith('/observations'));const {events}=JSON.parse(body);seen.events=events;
   const snapshot={execution:local,highestContiguous:events.length,maxSequence:events.length,contiguousDigest:events.reduce((previous,e)=>hash({previous,eventHash:hash(e)}),hash([])),gaps:[],storedCount:events.length,writerReleaseVerified:false,executionAuthorized:false,dispatchPerformed:false,recordedAt:observedAt};
   return {...result,ack:seen.loseAck?null:{ref:{...ref(61),contentHash:hash(snapshot)},snapshot}};
@@ -201,9 +202,110 @@ async function pollingFixture(){
  const current={transport:'NORMAL_PROTECTED',async current(e,attempt){return {transport:'NORMAL_PROTECTED',key:{...local,commandId:e.commandId},envelopeHash:e.envelopeHash,grantRef:scope.grantRef,localAttemptRef:attempt,sourceObservationRefs:[ref(47)],osOwnershipRef:ref(62),checkedAt:new Date(clock()).toISOString(),expiresAt:new Date(clock()+5000).toISOString()};}};
  const wire={transport:'NORMAL_PROTECTED',async send(value){seen.wires++;assert.equal(Buffer.from(value.options.bytes).toString(),bodies[1]);return {transport:'NORMAL_PROTECTED',responseRef:ref(63),processRef:null};}};
  const input={expected,intakeStore:store.intake(),journalStore:store,current,wire,timeoutMs:1000,deadline:clock()+30000,maxPages:1,idleMs:1};
- const source=f.owner.createNormalExecutionClients(m.config),pair=await source.bootstrap(signal);
+ const source=profile?f.owner.createProfileExecutionClients(m.config):f.owner.createNormalExecutionClients(m.config),pair=await source.bootstrap(signal);
+ if(profile){delete input.intakeStore;delete input.journalStore;}
  return {f,m,local,clock,signal,memory,input,source,pair,seen,advance(ms){offset+=ms;}};
 }
+test('등록 원owner의 profile START가 원 permit·wire·ACK를 처리하며 중첩 permit은 같은 물리 host에 남는다',async t=>{
+ const {root,memoryFiles}=await import('../unit/FN08/normal-start-local-fixture.ts');
+ const local=memoryFiles(),allocation=id(81),folder=path.resolve('Anvil','Trust','v1','owned-spool-profile.v1','data-'+allocation);
+ const localPath=p=>{assert.ok(p===folder||p.startsWith(folder+path.sep));return path.join(root,path.relative(folder,p));};
+ const io={lstat:p=>local.fs.lstat(localPath(p)),realpath:async p=>{localPath(p);return p;},open:(p,...a)=>local.fs.open(localPath(p),...a),
+   readdir:p=>local.fs.readdir(localPath(p)),unlink:p=>local.fs.unlink(localPath(p)),unlinkSync:p=>{assert.ok(local.files.delete(localPath(p)));}};
+ fixtures.setFiles(io);
+ let allocated=false;
+ const holds=new Map(),committed=[],physical=new Map();
+ const profile={handle(v,child,metadata){
+  assert.equal(v.payload.slotId,metadata.slotId);assert.equal(v.payload.writer,'NORMAL_EXECUTION');
+  (physical.get(child)??physical.set(child,[]).get(child)).push(v.operation);
+  if(v.operation==='NORMAL_SPOOL_PROFILE_STATE')return {allocated,profileId:id(80)};
+  if(v.operation==='NORMAL_SPOOL_RESUME'||v.operation==='NORMAL_SPOOL_ALLOCATE'){
+   const old=allocated;allocated=true;return {state:old?'RESUMED':'ALLOCATED',profileId:id(80),allocation,root:folder,directoryIdentity:'NATIVE-RAM-DIR'};}
+  assert.equal(v.payload.allocation,allocation);
+  if(v.operation==='NORMAL_SPOOL_RESERVE'){assert.equal(v.payload.nodeStamp,'1:1');assert.ok(!holds.has(v.payload.channel));const reservation=id(100+committed.length+holds.size);holds.set(v.payload.channel,reservation);return {reservation,before:{count:0,bytes:0,tail:null}};}
+  if(v.operation==='NORMAL_SPOOL_SETTLE'){assert.equal(v.payload.reservation,holds.get(v.payload.channel));holds.delete(v.payload.channel);committed.push(v.payload.channel);return {state:'SETTLED',summary:{count:0,bytes:0,tail:null}};}
+  assert.equal(v.operation,'NORMAL_SPOOL_CLOSE');assert.equal(holds.size,0);return {state:'CLOSED_CONFIRMED'};
+ }};
+ try{
+  const x=await pollingFixture(profile),wire=x.input.wire.send;
+  // 실제 host 프레임 전송 경로에서 이어진 비동기 작업은 부모 permit 거래에 참여할 수 없다.
+  let release,descendant,leaked=0,scheduled=0;
+  x.m.onFrame(v=>{
+   if(v.operation==='NORMAL_SPOOL_RESERVE'&&v.payload.channel.startsWith('attempt-')){
+    scheduled++;const gate=new Promise(r=>{release=r;});descendant=gate.then(async()=>{
+     try{await x.pair.get.prepareCommandPage({afterSequence:0,waitMs:0},x.signal);leaked++;}catch{}
+    });
+   }
+  });
+  let attempted=false,borrowed=false;
+  x.input.wire.send=async(...args)=>{
+   attempted=true;release();await descendant;
+   try{await x.pair.get.prepareCommandPage({afterSequence:0,waitMs:0},x.signal);borrowed=true;}catch{}
+   return Reflect.apply(wire,x.input.wire,args);
+  };
+  const poll=x.source.createStartPolling(x.pair,x.input),result=await poll.run(x.signal);
+  assert.ok(scheduled>0);assert.equal(leaked,0,'물리 host send의 늦은 자손에게 ticket을 전달하지 않는다');
+  assert.equal(attempted,true);assert.equal(borrowed,false,'외부 wire의 TLS challenge는 원 transaction을 빌릴 수 없다');
+  assert.equal(result.state,'LIMIT_REACHED');assert.deepEqual(result.cursor,{afterSequence:1,afterCursor:'cursor1'});
+  assert.equal(x.seen.permits,1);assert.equal(x.seen.wires,1);assert.ok(committed.includes('observations')&&committed.includes('acks'));
+  const calls=x.m.calls,permit=calls.find(c=>c.payload.request?.path.endsWith('/permit')&&c.payload.kind==='REQUEST');
+  assert.ok(permit);const same=calls.filter(c=>c.child===permit.child);
+  assert.ok(same.some(c=>c.operation==='NORMAL_SPOOL_RESERVE'&&c.payload.channel.startsWith('attempt-')));
+  assert.ok(same.some(c=>c.operation==='NORMAL_SPOOL_SETTLE'&&c.payload.channel.startsWith('attempt-')));
+  for(const child of physical.keys()){const rows=calls.filter(c=>c.child===child);assert.ok(rows.at(-1).sequence<=64);assert.equal(rows[0].sequence,4);}
+  t.diagnostic('RAM 핵심 permit 물리 host의 수신 sequence 1..'+same.at(-1).sequence+' / 상한64, wire1, ACK cursor1');
+  x.source.dispose();
+  local.files.clear();allocated=false;holds.clear();committed.length=0;physical.clear();
+  const ready=await pollingFixture(profile,true),{wire:unusedWire,...readyInput}=ready.input;
+  const originalCurrent=readyInput.current.current;let checks=0;
+  readyInput.current={transport:'NORMAL_PROTECTED',async current(...args){
+   checks++;
+   if(checks===1){
+    const count=ready.m.calls.length;
+    const nested=await ready.source.createWorkerStartPolling(ready.pair,readyInput).run(ready.signal);
+    assert.equal(nested.state,'UNKNOWN');assert.equal(nested.cursor.afterSequence,0);assert.equal(ready.m.calls.length,count);
+   }
+   await assert.rejects(ready.pair.get.prepareCommandPage({afterSequence:0,waitMs:0},ready.signal));
+   return Reflect.apply(originalCurrent,ready.input.current,args);
+  }};
+  const readyResult=await ready.source.createWorkerStartPolling(ready.pair,readyInput).run(ready.signal);
+  assert.equal(readyResult.state,'LIMIT_REACHED',readyResult.reason);assert.deepEqual(readyResult.cursor,{afterSequence:1,afterCursor:'cursor1'});
+  assert.equal(checks,4);assert.equal(ready.seen.permits,1);assert.equal(ready.seen.wires,0);
+  assert.deepEqual(ready.seen.events.map(e=>e.type),['RECEIVED','PREPARED','START_ATTEMPTED','PERMIT_RECORDED']);
+  const attempts=[...local.files].filter(([name])=>name.includes('attempt-')&&name.endsWith('.json')).map(([,file])=>JSON.parse(file.bytes).snapshot);
+  assert.deepEqual(attempts.map(row=>row.state),['START_ATTEMPTED','PERMIT_RECORDED','START_READY_RECORDED']);
+  assert.equal(attempts[2].responseRef,null);assert.equal(attempts[2].processRef,null);
+  const readyPermit=ready.m.calls.find(c=>c.payload.request?.path.endsWith('/permit')&&c.payload.kind==='REQUEST');
+  const readyFrames=ready.m.calls.filter(c=>c.child===readyPermit.child);
+  assert.ok(readyFrames.some(c=>c.operation==='NORMAL_SPOOL_RESERVE'&&c.payload.channel.startsWith('intake-')));assert.ok(readyFrames.at(-1).sequence<=64);
+  t.diagnostic('READY 원 permit host의 sequence 1..'+readyFrames.at(-1).sequence+' / 상한64, 준비행1, 필수 관측4 ACK');
+  const replay=await ready.source.createWorkerStartPolling(ready.pair,readyInput).run(ready.signal);
+  assert.deepEqual(replay.cursor,readyResult.cursor);assert.equal(ready.seen.permits,1);assert.equal(checks,4);
+  ready.source.dispose();
+  // A second isolated RAM owner exhausts the physical child budget during its permit read.
+  local.files.clear();allocated=false;holds.clear();committed.length=0;physical.clear();
+  const full=await pollingFixture(profile);full.seen.largePermit=true;
+  const failed=await full.source.createStartPolling(full.pair,full.input).run(full.signal);
+  assert.equal(failed.state,'UNKNOWN');assert.equal(full.seen.wires,0);
+  const issued=full.m.calls.find(c=>c.payload.kind==='REQUEST'&&c.payload.request?.path.endsWith('/permit'));
+  assert.ok(issued);const capped=full.m.calls.filter(c=>c.child===issued.child);
+  assert.equal(capped.at(-1).sequence,64);assert.ok(holds.size>0);
+  assert.equal(full.m.calls.filter(c=>c.payload.kind==='REQUEST'&&c.payload.request?.path.endsWith('/permit')).length,1);
+  full.source.dispose();
+ }finally{fixtures.setFiles(undefined);}
+});
+
+test('등록 receipt 목적 입구는 connector의 등록 fullref/프로젝트를 벗어나면 slot 발급이나 host open 전에 거절한다',async()=>{
+ const f=await fixtures.liveNativeOwner(),m=model(f,'NORMAL'),inbox=f.owner.createProfileReceiptInbox(),count=f.calls();
+ assert.deepEqual(Object.keys(inbox).sort(),['dispose','receive']);
+ const signal=new AbortController().signal;
+ for(const expected of [{context:{projectId:id(99)},executorRegistrationRef:f.stored().registration.registrationRef},
+  {context:{projectId:f.stored().projectId},executorRegistrationRef:ref(99)}]){
+  assert.throws(()=>inbox.receive({maxBytes:4096,maxEntries:10},{},expected,signal),/SCOPE_INVALID/);
+ }
+ assert.equal(f.calls(),count);assert.equal(m.calls.length,0);inbox.dispose();
+});
+
 test('외부 TS coordinator는 실제 CJS pair의 첫 START를 거절하고 같은 번들 조립은 ACK까지 처리한다',async()=>{
  const x=await pollingFixture(),p=x.input;
  const {NormalStartIntake}=await import('../../apps/connector/runtime/normal-start-intake.ts');

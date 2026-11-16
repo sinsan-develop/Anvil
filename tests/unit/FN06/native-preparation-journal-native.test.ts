@@ -5,8 +5,32 @@ const source=(name:string)=>readFileSync(new URL('../../../apps/connector/native
 test('native source는 원 root exclusive 발급→보호 marker 정착을 host 최초 root 생산에 연결한다',()=>{
  const r=source('DesktopTrustKeyRootSource.cs'),h=source('DesktopTrustKeyHostSource.cs'),k=source('NativePreparationJournalKernel.cs');
  assert.match(r,/if\(exclusive\)result\.journalCreation=new object\(\)/);assert.match(r,/CreatePrivate\(path,sid\);return false/);assert.match(r,/if\(!CreateDirectoryW/);
- assert.match(h,/IssueFreshRoot\(root,Check\)/);assert.match(k,/ConsumeJournalCreationPermit\(permit\)/);assert.match(k,/kernel\.Settle\(\);kernel\.Release\(\)/);
+ assert.match(h,/IssueFreshRoot\(root,Check,spoolProfile\)/);assert.match(k,/ConsumeJournalCreationPermit\(permit\)/);assert.match(k,/kernel\.Settle\(\);kernel\.Release\(\)/);
  assert.doesNotMatch(k,/root\.Created|DeleteOnClose/);
+});
+test('profile 발급은 root의 배타 생성·Keep 뒤 별도 일회 증표를 사용한다',()=>{
+ const r=source('DesktopTrustKeyRootSource.cs'), h=source('DesktopTrustKeyHostSource.cs'), p=source('NormalExecutionSpoolProfileSource.cs');
+ assert.match(r,/result\.Keep\(cursor,true,cursor==root\);[^}]*if\(exclusive\)result\.spoolCreation=result\.expectedSpoolCreation=new object\(\)/);
+ assert.match(r,/object permit=spoolCreation;spoolCreation=null;return permit/);
+ assert.match(r,/ReferenceEquals\(permit,expectedSpoolCreation\)/);
+ assert.match(p,/root\.ConsumeSpoolCreationPermit\(permit\)/);
+ assert.doesNotMatch(p,/TakeJournalCreationPermit|root\.Created/);
+ const kernel=source('NativePreparationJournalKernel.cs');
+ assert.match(kernel,/RequireDurabilitySupport\(\);Check\(\);if\(held!=null\)throw Invalid\(\);try\{if\(profile!=null\)profileReservation=profile\.ReservePreparation/);
+ assert.match(kernel,/AppendLock\("CLOSED"\);held\.Dispose\(\);held=null;if\(profile!=null\)\{profile\.SettlePreparation/);
+ assert.match(h,/NormalExecutionSpoolProfileSource\.Open\(root,Check\)/);
+});
+
+test('profile native 원문에서 등록/slot·원 grant와 별도 head를 검산하고 writer별 점유와 미정산액을 합산한다',()=>{
+ const p=source('NormalExecutionSpoolProfileSource.cs'),h=source('DesktopTrustKeyHostSource.cs'),credential=source('NormalExecutionCredentialSource.cs');
+ assert.match(h,/store\.Append[\s\S]+?row=Map\(\(\(object\[\]\)saved\["rows"\]\)\.Last\(\)\)[\s\S]+?spoolProfile\.BindRegistration\(row\)/);
+ assert.match(credential,/checkedSlot=LoadSlot\(slotId,record\);if\(H\(checkedSlot\)!=H\(slot\)\)throw Invalid\(\);if\(spoolProfile!=null\)spoolProfile\.BindSlot/);
+ for(const evidence of ['FileShare.None','ProtectedData.Unprotect','owned-spool-profile.v1.head','!sha.ComputeHash(encrypted).SequenceEqual(attested)',
+  'if(anchor.Position!=anchor.Length)throw Invalid()','if(!Has(rows,"REGISTERED",H(record)))','S(r,"slotHash")==H(slot)','S(r,"grant")==grant',
+  'dir.Identity!=S(allocation,"directoryIdentity")','!Object.Equals(tail,prefix["tail"])','S(bound,"stamp")!=stamp','Unsettled(rows).Values.Any',
+  'NormalCap=256*MiB','ReceiptCap=512*MiB','PreparationCap=64*MiB','AdminCap=64*MiB','used=checked(used+N(row["worst"]))',
+  'used=checked(used+N(DesktopTrustKeyHostSource.Map(row["summary"])["bytes"]))','checked(used+worst)>Cap(writer)','log.Length+4+cipher.Length+activeAnchor.Length+32+ManagementHold(rows)'])assert.ok(p.includes(evidence),evidence);
+ assert.doesNotMatch(p,/File\.Delete|Directory\.Delete|TakeJournalCreationPermit/);
 });
 test('journal source는 actual handle identity·단일 link·삭제 없는 닫힘 체인 및 부모 정착 실패를 보존한다',()=>{
  const k=source('NativePreparationJournalKernel.cs');

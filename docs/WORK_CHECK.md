@@ -192,3 +192,5 @@
 - 2026-11-16 FN18 후속: 고정 개발 의존성만 복원하고 기존 수신 client·owner·shell/policy의 실제 계약과 nullable 선언을 보완했다. 현재 desktop 타입은 생성 runtime 참조4건/exit1이다. 수신 client5·owner6·shell선택5·미지원phase2 RAM 결과는 서로 다른 영향범위의 근거이며 전체 실제 검증으로 합산하지 않는다. 생성 타입 연결을 구현 중이고 실제 앱/설치·SDK/Agent·DB·서비스는 미검증이다. FN18/Stage 완료 체크를 올리지 않는다.
 
 - 2026-11-16 FN18 생성타입 연결 최종: desktop0·루트타입0·웹메모리빌드통과, 생성타입/번들15PASS·독립C0/I0/M0. 앞선4건FAIL 기록은 보완 전 이력이다. 배포JS 값로딩 금지와 원17export 엄격검산을 유지한다. 실제앱/설치/DB/SDK는 제외·미검증이므로 FN18전체 체크는 올리지 않는다.
+
+- 2026-11-16 spool9E98 A안 source: profile최초발급·등록결박·writer별예약·미정산보존·원READY/단발/4ACK/cursor 연결을14제품/8시험으로구현했다. 직접64PASS와선택6PASS·타입0·독립C0/I0/M0는소스/RAM범위다. 실제C#/파일보호·DB·SDK/Agent는미검증이며FN08/전체완료체크는올리지않는다. SDK단발조회는확인/미확인분리, P03단발관측은SSH255·0행UNKNOWN_PRESERVE로보존했다.

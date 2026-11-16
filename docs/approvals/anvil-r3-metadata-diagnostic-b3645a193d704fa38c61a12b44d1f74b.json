@@ -1,0 +1,19 @@
+{
+  "authority": "USER_DIRECT",
+  "approvalId": "anvil-r3-metadata-diagnostic-b3645a193d704fa38c61a12b44d1f74b",
+  "runInstance": "b3645a193d704fa38c61a12b44d1f74b",
+  "candidate": "docs/work_packages/P03_R3_METADATA_DIAGNOSTIC_FOLLOWUP_CANDIDATE_20261116.md",
+  "candidateSha256": "E1CD69F64D1DCAC75DFFC1EE110EBBC26D41DA283274FB5B40A5649613A4F447",
+  "sshAlias": "WSL-server",
+  "executor": "d2_preflight",
+  "initId": "99cc99d63c6283d8dc9dc3a3dab36be35d25a3e2009b373e2a8c7dff04ed6097",
+  "sourceVolume": "anvil-v3-development-pgdata",
+  "copyVolume": "anvil-v3-pgdata-recovery-20261028-r3",
+  "sshConnectionsMax": 1,
+  "dockerReadCallsMax": 4,
+  "requestSecondsMax": 30,
+  "captureBytesMax": 32768,
+  "resultBytesMax": 4096,
+  "firstObservedAt": "2026-11-16T07:20:41.000Z",
+  "expiresAt": "2026-11-16T07:50:41.000Z"
+}

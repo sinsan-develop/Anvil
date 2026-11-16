@@ -483,3 +483,5 @@ Main fb282e/c149a7/9e02f1: WSL-server Linux x86_64, glibc2.39, /home/daon mount 
 
 ### 2026-10-31 후속 UI 확인·02 QA 정리
 현재지시후속검수에서local초기화면/invalidHTTP차단·입력보존/설정미생성을확인했고신산님이직접확인을수락해app37448 exit0·stdio/잔여0을수집했다. 감독기exit1/원만료UNKNOWN은별도다. 정확02QA는정리됐고Main51e31c에서QA부재/대상0·r3전지문불변을확인했다. 취소동작·전체시각검수/실서버/설치/회수는미확인/미완료이며실DB키서비스Agent·source/SDK변경0이다.
+
+- 2026-11-16 18:04:45 KST 사용자 화면 증거로 일반 PowerShell의 ssh WSL-server 로그인과 Ubuntu daon@SINSAN 셸 도달이 확인됐다. 자동 관측 wrapper의 SSH255/UNKNOWN은 그 실행 경로의 결과이며 서버/일반 로그인 불능 근거가 아니다. DB·사본·서비스 준비 상태는 별도 미확인으로 유지한다. 최신 지시에 따라 부수 SSH 진단은 중단하고 승인 개발 단위의 통합을 우선한다.
