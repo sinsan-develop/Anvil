@@ -4,9 +4,9 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-16 직접 승인 후 구현 재개
 
-- **현재 상태: 전체 계획 미완료 · PR156/157 소스 통합 완료·FN07 관측 진단 소스 보완 중.** 실제 사용·DB·Agent 인수와 구분한다.
+- **현재 상태: 전체 계획 미완료 · FN07 관측 진단 소스 검수 완료·통합 중.** 실제 추가 관측은 미승인이다.
 - **현재 승인·결과:** 서버 항목 귀속 계약5039D14A의 source/RAM·미적용0099는 직접 채택됐다. CLI 한정 관측1회도 승인·소진됐고 결과는 UNKNOWN이다. 설치 여부·원인은 미확정이며 재조회0, 부모 exit0·잔여 수거 핸들0이다.
-- **담당·실행:** 기존 Primary 한 명이 CLI 실패의 고정 분류·자식 종료확인 진단 소스를 보완한다. Main은 검수·현황·Git 통합을 맡는다. 실제 관측·DB·권한·키·서비스·Agent 실행은 제외한다.
+- **담당·실행:** Primary가 진단 소스·시험 쓰기를 반환했다. Main이 검수·현황·Git 통합을 맡고 실행 핸들은 0이다. 실제 관측·DB·권한·키·서비스·Agent 실행은 제외한다.
 - **Git 제품 기준:** 최신 검증 main188b506712a1ad65658a633465b2852e50c95365(PR157). source1a470851와 tree 동일·병합본RAM4PASS·복구tag pr-157-head와 완료branch 정리 확인. 다음 branch codex/av3-cli-observation-diagnostics에서 내부 소스 보완을 진행한다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
 - **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
@@ -20270,3 +20270,10 @@ Primary의5b842b RED2FAIL→동일범위보완후063543 최종직접/인접3파�
 ## 2026-11-16 PR157 smoke 경고 한정 원인·후속 수정 항목
 
 기존preflight의읽기대조는global #/settings에서projectId부재로backupReferenceKey/installationResourceKey가모두빈문자열이고App.tsx의두형제패널이같은접미사/CSRF를붙여동일React key가됨을확인했다. 합성행중복이필수조건이아닌기존제품key공식의충돌이다. PR157은이key를변경하지않았고2경합시험이기존경고를노출했다. 초점단언4PASS와경고2건을구분하며실제브라우저영향은미검증이다. Main은현재FN07진단단위통합뒤이기존설정패널key충돌을기존계획범위최소수정항목으로이어간다. 새API/권한/DB/키/서비스/Agent실행및전체사용자인수는확대하지않는다.
+
+
+## 2026-11-16 FN07 진단 소스 최종 검수·통합 준비
+
+Primary27b30c AST/원조회역치환/순수RAM3PASS/FAIL0/SKIP0·1929.6495ms, 신규4경로공백5cc6ac exit0·핸들0·쓰기반환. 독립C0/I0/M0·4파일전후지문일치, Main298d8e에서신규4+원본3 SHA일치를확인했다. 결과서FN07_LOCAL_CLI_IDENTITY_DIAGNOSTIC_SOURCE_RESULT_20261116.md SHAE8250C63EF0EA18B21EE0F6760E27A9B97466ECA9A01EBD1D1507CF9D7502D9D. 시험용PowerShell은원문AST와추출한순수분류함수2개만호출했고실제관측감독/Observe/Start/PATH·설치file/SDK·CLI조회0이다.
+
+새script0FD03A3F62C508F1E7343FBD80DC03DED0AFE30251C1D2356450E271F5B28120·후보DB9265A3EECADBAE4DC76E8A55EDB7881D6CE195401DFEF89C3509AAFA0102E9는원한도/본문/성공형상보존·고정실패와자식종단분리를명시한다. 새후보는NOT_APPROVED_EXECUTION/추가실행미승인이다. 원20670a의UNKNOWN·부모exit0/자식미확정과단발소진을유지한다. 앱TS/권한/DB·기존제품/실자료/키/서비스/Agent변경0이므로관련없는전체제품검사를반복하지않는다. Main은현재소스만PR통합하고실제추가관측은별도정확결정전실행하지않는다.
