@@ -4,6 +4,7 @@ import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {createControlHandoffSummary} from '../../../apps/server/modules/control-handoff/control-handoff-summary.ts';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 class MemoryNode{
  nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
  constructor(name:string,type=1,owner?:any){this.nodeType=type;this.nodeName=type===1?name.toUpperCase():name;this.tagName=this.nodeName;this.localName=name;this.ownerDocument=owner;}
@@ -66,12 +67,97 @@ test('요약 30초 기한 경과와 원요청 20분 기한 내를 서버 관측�
 const allNodes=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(allNodes)];
 async function settleUi(check:()=>boolean){for(let i=0;i<40;i++){if(check())return;await ui.React.act(async()=>{await new Promise<void>(r=>setImmediate(r));});}assert.fail('유한 React 정착 누락');}
 const fixedIds={project:'11111111-1111-4111-8111-111111111111',actor:'44444444-4444-4444-8444-444444444444',client:'55555555-5555-4555-8555-555555555555'};
-async function followupFixture(options:{role:string;state?:string;expired?:boolean;wrongActor?:boolean;wrongBasis?:boolean}){
+/** 검산 가능한 합성 wire이며 실제 보호 관측/권한 생산의 증거가 아니다. */
+async function protectedDisplayWire(){
+ const facts=await import('../FN15/control-handoff-summary-fixture.ts'),request=facts.requestBundle().request;
+ const hash=(v:unknown)=>contentHash(canonicalJson(v)),scope={projectId:facts.projectId,requestRef:request.requestRef,baseControl:facts.baseControl};
+ const keys=['activeExecutions','pendingCommands','pendingApprovals','sourceCheckpointRefs'] as const;
+ const collections=Object.fromEntries(keys.map((key,index)=>[key,{
+  state:index===0||index===2?'UNKNOWN':index===1?'WAITING':'VERIFIED_CURRENT',scope,observedAt:facts.now,expiresAt:facts.requestExpiresAt,
+  coverage:{profile:'FN15_KNOWN_SOURCE_SET_V1',sources:[key],scopeHash:hash(scope),watermarkHash:'b'.repeat(64)},
+  items:index===0||index===1?[{kind:key,ref:{id:facts.evidenceRef.id,version:2,contentHash:index===0?'c'.repeat(64):'d'.repeat(64)},observedAt:facts.now,expiresAt:facts.requestExpiresAt,
+   provenance:index===0?'HISTORICAL_CLAIM':'SERVER_LEDGER',handoffDisposition:index===0?'UNKNOWN':'PRESERVE_BLOCKED_INPUT',reasonCode:index===0?'<script>보관된 차단 이유</script>':'ORIGINAL_INPUT_PRESERVED'}]:[],
+  gaps:index===0?['CURRENT_PROOF_UNAVAILABLE']:[],
+ }]));
+ const snapshot={schemaVersion:2,purpose:'CONTROL_HANDOFF_PROTECTED_SUMMARY',projectId:facts.projectId,requestRef:request.requestRef,summaryVersion:1,baseControl:facts.baseControl,targetActorRef:request.snapshot.targetActorRef,targetClientRef:request.snapshot.targetClientRef,observedAt:facts.now,validUntil:facts.requestExpiresAt,collections,gaps:['RUNTIME_UNVERIFIED'],transferState:'UNKNOWN',executionAuthorized:false,dispatchPerformed:false,controlTransferred:false};
+ const summary={ref:{id:request.requestRef.id,version:1,contentHash:hash(snapshot)},snapshot};
+ const head={schemaVersion:2,purpose:'CONTROL_HANDOFF_PROTECTED_HEAD',projectId:facts.projectId,requestRef:request.requestRef,observedAt:facts.now,head:{state:'AVAILABLE',summaryRef:summary.ref},executionAuthorized:false,dispatchPerformed:false,controlTransferred:false};
+ return{summary,head};
+}
+async function selectProtectedRequest(f:Awaited<ReturnType<typeof followupFixture>>){
+ await f.click('현재 제어 조회');await settleUi(()=>f.container.textContent.includes('HELD'));
+ await f.click('현재 제어자 요청 목록 조회');await settleUi(()=>f.container.textContent.includes('요청 1 원문 확인'));
+ await f.click('요청 1 원문 확인');await settleUi(()=>f.container.textContent.includes('선택한 고정 요청'));
+}
+test('보호요약 항목 판정은 명시 펼침만으로 원참조·근거·기한을 표시하고 추가 요청0이다',async()=>{
+ const wire=await protectedDisplayWire(),f=await followupFixture({role:'OWNER',protectedRead:path=>Response.json(path.includes('/head?')?wire.head:wire.summary)});
+ try{
+  await selectProtectedRequest(f);await f.click('최신 보호요약 고정 원문 조회');await settleUi(()=>f.container.textContent.includes('고정 보호요약'));
+  assert.doesNotMatch(f.container.textContent,/보관된 차단 이유/);const count=f.calls.length,buffer=f.getBuffer();
+  await f.click('항목별 인계 판정 펼치기');
+  for(const text of ['저장 당시 관측','CURRENT_PROOF_UNAVAILABLE','HISTORICAL_CLAIM','PRESERVE_BLOCKED_INPUT','ORIGINAL_INPUT_PRESERVED',wire.summary.snapshot.validUntil,'c'.repeat(64),'d'.repeat(64),'확인된 빈 목록','보관 항목 0개 · 부재 확인 아님','UNKNOWN'])
+   assert.ok(f.container.textContent.includes(text),text);
+  assert.equal(allNodes(f.container).filter(n=>n.tagName==='SCRIPT').length,0);
+  assert.ok(f.container.textContent.includes('<script>보관된 차단 이유</script>'));
+  assert.equal(f.calls.length,count);assert.equal(f.getBuffer(),buffer);assert.equal(f.button('인수 수락 명령 보존').disabled,true);
+  await f.click('항목별 인계 판정 접기');assert.doesNotMatch(f.container.textContent,/보관된 차단 이유/);assert.equal(f.calls.length,count);
+ }finally{await f.close();}
+});
+for(const mode of ['403','401','hash'] as const){
+ test('보호요약 상세 · 재조회 '+mode+' 실패는 과거 상세를 숨기고 원입력을 보존한다',async()=>{
+  const wire=await protectedDisplayWire();let fail=false,release!:()=>void,waiting=false;
+  const gate=new Promise<void>(resolve=>release=resolve);
+  const f=await followupFixture({role:'OWNER',protectedRead:async path=>{
+   if(path.includes('/head?'))return Response.json(wire.head);
+   if(!fail)return Response.json(wire.summary);
+   waiting=true;await gate;
+   return mode==='hash'?Response.json({...wire.summary,ref:{...wire.summary.ref,contentHash:'f'.repeat(64)}}):Response.json({code:'ACCESS_DENIED'},{status:Number(mode)});
+  }});
+  try{
+   await selectProtectedRequest(f);await f.click('최신 보호요약 고정 원문 조회');await settleUi(()=>f.container.textContent.includes('고정 보호요약'));
+   await f.click('항목별 인계 판정 펼치기');const buffer=f.getBuffer();fail=true;
+   await f.click('최신 보호요약 고정 원문 조회');await settleUi(()=>waiting);
+   assert.doesNotMatch(f.container.textContent,/보관된 차단 이유|항목별 인계 판정/);
+   await ui.React.act(async()=>{release();await new Promise(r=>setImmediate(r));});
+   await settleUi(()=>f.container.textContent.includes(mode==='hash'?'RESPONSE_INVALID':'('+mode+')'));
+   assert.doesNotMatch(f.container.textContent,/보관된 차단 이유|항목별 인계 판정/);
+   assert.equal(f.getBuffer(),buffer);assert.equal(f.lost(),mode==='401'?1:0);
+  }finally{release();await f.close();}
+ });
+}
+for(const mode of ['요청재선택200','주체전환200','주체ABA401'] as const){
+ test('보호요약 상세 · '+mode+' 뒤 늦은 응답은 표시·인증콜백0이다',async()=>{
+  const wire=await protectedDisplayWire();let release!:()=>void,waiting=false;
+  const gate=new Promise<void>(resolve=>release=resolve);
+  const f=await followupFixture({role:'OWNER',protectedRead:async path=>{
+   if(path.includes('/head?'))return Response.json(wire.head);
+   waiting=true;await gate;
+   return mode==='주체ABA401'?Response.json({code:'AUTH_REQUIRED'},{status:401}):Response.json(wire.summary);
+  }});
+  try{
+   await selectProtectedRequest(f);const buffer=f.getBuffer();
+   await f.click('최신 보호요약 고정 원문 조회');await settleUi(()=>waiting);
+   if(mode==='요청재선택200'){
+    // 진행 중 UI 버튼은 잠기지만 이미 발행된 이전 조작도 ticket 검사로 폐기된다.
+    const button=f.button('요청 1 원문 확인'),propsKey=Object.keys(button).find(k=>k.startsWith('__reactProps'))!;
+    await ui.React.act(async()=>{(button as any)[propsKey].onClick();});
+   }else{
+    const session=f.props.session;f.props.session={...session,user:{...session.user,id:fixedIds.project}};await f.render();
+    if(mode==='주체ABA401'){f.props.session=session;await f.render();}
+   }
+   await ui.React.act(async()=>{release();await new Promise(r=>setImmediate(r));});
+   assert.doesNotMatch(f.container.textContent,/고정 보호요약|항목별 인계 판정|보관된 차단 이유|AUTH_REQUIRED/);
+   assert.equal(f.lost(),0);assert.equal(f.getBuffer(),buffer);
+  }finally{release();await f.close();}
+ });
+}
+async function followupFixture(options:{role:string;state?:string;expired?:boolean;wrongActor?:boolean;wrongBasis?:boolean;protectedRead?:(path:string)=>Response|Promise<Response>}){
  const facts=await import('../FN15/control-handoff-summary-fixture.ts'),bundle=facts.requestBundle(),request=bundle.request,projectId=facts.projectId,targetSession={user:{id:facts.controller,displayName:'현재 제어 사용자'},clientId:facts.controllerClient,csrfToken:'c'.repeat(43)};
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container),calls:string[]=[];let buffer:any={bindingId:'99999999-9999-4999-8999-000000000090',ownerUserId:targetSession.user.id,ownerClientId:targetSession.clientId,projectId,reason:'원 입력',expiresAt:'',pending:null},lost=0;
  const state={schemaVersion:1,projectId,observedAt:facts.now,actorId:options.wrongActor?facts.requester:facts.controller,clientId:facts.controllerClient,participation:options.role,control:{state:options.state??'HELD',basis:options.wrongBasis?{...facts.baseControl,clientId:facts.requesterClient}:facts.baseControl},executionAuthorized:false,controlTransferred:false};
  const current={expired:options.expired??false,baseControlState:'MATCHED'},read={projectId,requestRef:request.requestRef,snapshot:request.snapshot,observedAt:facts.now,current,executionAuthorized:false,controlTransferred:false};
  const client=new ui.ApiClient(async(path:string,init?:RequestInit)=>{calls.push(path);assert.notEqual(init?.method,'POST','명령 보존 전후 자동 POST0');const url=new URL(path,'https://test.invalid');
+  if(url.pathname.includes('/protected-handoff-summaries')&&options.protectedRead)return options.protectedRead(path);
   if(url.pathname.endsWith('/control-state'))return Response.json(state);
   if(url.pathname.endsWith('/control-requests'))return Response.json({projectId,view:'CONTROLLER',limit:50,observedAt:facts.now,items:[{requestRef:request.requestRef,createdAt:request.snapshot.createdAt,expiresAt:request.snapshot.expiresAt,storedState:'PENDING',current,executionAuthorized:false,controlTransferred:false}],hasMore:false,nextCursor:null,executionAuthorized:false,controlTransferred:false});
   if(url.pathname.endsWith('/versions/1'))return Response.json(read);throw Error('예상 밖 IO '+path);

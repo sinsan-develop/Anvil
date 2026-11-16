@@ -149,7 +149,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
    {currentView.headNone?<p>서버 관측에서 이 요청의 요약이 없음을 확인했습니다. 미연결 상태와 다릅니다.</p>:null}
   </section>:null}
   {summary&&request?<ControlSummaryView summary={summary} requestExpiresAt={request.snapshot.expiresAt}/>:null}
-  {currentView.protectedSummary?<section aria-label="고정 보호요약"><h3>고정 보호요약</h3><p>보호 검산 {currentView.protectedSummary.snapshot.transferState}</p><p>관측 {currentView.protectedSummary.snapshot.observedAt} · 기한 {currentView.protectedSummary.snapshot.validUntil}</p><dl>{(Object.keys(labels)as(keyof typeof labels)[]).map(key=><div key={key}><dt>{labels[key]}</dt><dd>{currentView.protectedSummary!.snapshot.collections[key].state} · 참조 {currentView.protectedSummary!.snapshot.collections[key].items.length}개</dd></div>)}</dl><p>미확인 항목: {currentView.protectedSummary.snapshot.gaps.join(', ')}</p><p>보관 원문 조회만으로 현재 수락 권한을 만들지 않습니다.</p></section>:null}
+  {currentView.protectedSummary?<section aria-label="고정 보호요약"><h3>고정 보호요약</h3><p>보호 검산 {currentView.protectedSummary.snapshot.transferState}</p><p>관측 {currentView.protectedSummary.snapshot.observedAt} · 기한 {currentView.protectedSummary.snapshot.validUntil}</p><dl>{(Object.keys(labels)as(keyof typeof labels)[]).map(key=><div key={key}><dt>{labels[key]}</dt><dd>{currentView.protectedSummary!.snapshot.collections[key].state} · 참조 {currentView.protectedSummary!.snapshot.collections[key].items.length}개</dd></div>)}</dl><p>미확인 항목: {currentView.protectedSummary.snapshot.gaps.join(', ')}</p>{!currentView.busy?<ProtectedSummaryDetails key={ticketRevision} summary={currentView.protectedSummary}/>:null}<p>보관 원문 조회만으로 현재 수락 권한을 만들지 않습니다.</p></section>:null}
   {protectedSummary?<section aria-label="인수 수락 확인"><label>수락 이유<textarea maxLength={20000} value={b?.reason??''} disabled={!configured||unresolved} onChange={e=>edit('reason',e.target.value)}/></label><label><input type="checkbox" checked={confirmedSummary===protectedSummary.ref.contentHash} disabled={!configured||unresolved||currentView.busy} onChange={e=>setConfirmedSummary(e.target.checked?protectedSummary.ref.contentHash:null)}/>요약과 대상 기기를 확인했습니다.</label></section>:null}
    <button type="button" disabled={!canAccept} onClick={prepareAcceptance}>인수 수락 명령 보존</button>
    {session&&b&&pending?.kind==='ACCEPT'&&pending.status==='CONFIRMED'?
@@ -195,6 +195,28 @@ function ConfirmedAcceptanceHistory({busy,initial,current,read,onAuthenticationL
 }
 
 /** 요약 TTL과 원요청 만료는 별도 서버 관측 사실이다. */
+function ProtectedSummaryDetails({summary}:{summary:ProtectedHandoffSummary}){
+ const [expanded,setExpanded]=useState(false);
+ return <div>
+  <button type="button" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>항목별 인계 판정 {expanded?'접기':'펼치기'}</button>
+  {expanded?<section aria-label="보호요약 항목별 인계 판정">
+   <p>저장 당시 관측입니다. 현재 진행·정지 확인이나 새로운 수락 조건을 뜻하지 않습니다.</p>
+   {(Object.keys(labels)as(keyof typeof labels)[]).map(key=>{
+    const collection=summary.snapshot.collections[key];
+    return <section key={key} aria-label={labels[key]+' 인계 근거'}><h4>{labels[key]}</h4>
+     <p>보관 판정 {collection.state} · 관측 {collection.observedAt} · 기한 {collection.expiresAt}</p>
+     <p>범주별 미확인: {collection.gaps.length?collection.gaps.join(', '):'기록된 공백 없음 · 현재 안전 판정 아님'}</p>
+     {collection.items.length?<ul>{collection.items.map((item,index)=><li key={index}>
+      <p>원참조 {item.ref.id} · v{item.ref.version} · {item.ref.contentHash}</p>
+      <p>근거 {item.provenance} · 인계 판정 {item.handoffDisposition}</p>
+      <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>판정 이유 {item.reasonCode}</p>
+      <p>항목 관측 {item.observedAt} · 기한 {item.expiresAt}</p>
+     </li>)}</ul>:<p>{collection.state==='VERIFIED_CURRENT'&&collection.gaps.length===0?'저장 당시 확인된 빈 목록':'보관 항목 0개 · 부재 확인 아님'}</p>}
+    </section>;
+   })}
+  </section>:null}
+ </div>;
+}
 export function ControlSummaryView({summary,requestExpiresAt}:{summary:HandoffSummaryReadResult;requestExpiresAt:string}){
  return <section aria-label="미확인 인계 요약"><h3>미확인 인계 요약</h3><p>{summary.body.safetyState} · {summary.body.sourceMode}</p><p>요약 관측 {summary.body.observedAt} · 요약 유효 시각 {summary.body.validUntil} (최대 30초) · 요청 만료 {requestExpiresAt}</p><p>조회 서버 관측 {summary.observedAt} · {Date.parse(summary.body.validUntil)<=Date.parse(summary.observedAt)?'요약 기한 경과':'서버 관측 시점 요약 기한 내'} · {summary.current.expired?'원요청 기한 경과':'원요청은 관측 시점 기한 내'} · 기준 {summary.current.baseControlState}</p><dl>{(Object.keys(labels) as (keyof typeof labels)[]).map(key=><div key={key}><dt>{labels[key]}</dt><dd>{summary.body[key].status} · {summary.body[key].reasonCode} · 관측 {summary.body[key].observedAt} · 참조 {summary.body[key].refs.length}개</dd></div>)}</dl><p>미확인 항목: {summary.body.gaps.join(', ')}</p><p>실제 수집 연결 false · 수락 가능 false · 실행 허가 false · 제어 이전 false</p></section>;
 }
