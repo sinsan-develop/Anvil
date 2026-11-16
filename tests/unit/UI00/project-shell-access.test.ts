@@ -161,6 +161,60 @@ async function openApp(h:Awaited<ReturnType<typeof mount>>,hash='#/projects/'+pr
   await h.nav(hash);
 }
 
+test('전역 설정 패널의 key는 구분되고 두 선택은 각 프로젝트에서만 유지된다',async()=>{
+  const h=await mount();
+  const original=console.error;
+  let duplicateWarnings=0;
+  console.error=(...args:unknown[])=>{
+    if(typeof args[0]==='string'&&args[0].includes('Encountered two children with the same key'))duplicateWarnings++;
+    Reflect.apply(original,console,args);
+  };
+  const panel=(label:string)=>{
+    const matches=h.nodes().filter(n=>n.tagName==='SECTION'&&n.getAttribute('aria-label')===label);
+    assert.equal(matches.length,1,label);
+    return matches[0]!;
+  };
+  const select=(label:string)=>h.nodes().find(n=>n.tagName==='SELECT'&&n.getAttribute('aria-label')===label)!;
+  const selectValue=(node:MemoryNode)=>{
+    const key=Object.keys(node).find(k=>k.startsWith('__reactProps$'));
+    assert(key);
+    return Reflect.get(node,key).value;
+  };
+  const chooseKey=async(node:MemoryNode)=>{
+    node.value='ENCRYPTION_KEY';
+    await h.ui.React.act(async()=>node.dispatchEvent({type:'change',bubbles:true}));
+  };
+  try{
+    await openApp(h,'#/settings');
+    panel('보호참조 등록·조회');
+    panel('설치 자원·이식키 관리');
+    assert.equal(duplicateWarnings,0,'전역 설정의 중복 key 경고');
+    const settingsA='#/projects/'+projectA+'/settings';
+    await h.nav(settingsA);
+    const reference=select('설치 자원 종류'),resource=select('관리 자원 종류');
+    assert.equal(selectValue(reference),'TARGET');
+    assert.equal(selectValue(resource),'TARGET');
+    await chooseKey(reference);
+    assert.equal(selectValue(reference),'ENCRYPTION_KEY');
+    assert.equal(selectValue(resource),'TARGET');
+    await chooseKey(resource);
+    await h.nav(settingsA);
+    assert(select('설치 자원 종류')===reference&&select('관리 자원 종류')===resource);
+    assert.equal(selectValue(reference),'ENCRYPTION_KEY');
+    assert.equal(selectValue(resource),'ENCRYPTION_KEY');
+    await h.nav('#/projects/'+projectB+'/settings');
+    const newReference=select('설치 자원 종류'),newResource=select('관리 자원 종류');
+    assert(newReference!==reference&&newResource!==resource);
+    assert.equal(selectValue(newReference),'TARGET');
+    assert.equal(selectValue(newResource),'TARGET');
+    assert.equal(duplicateWarnings,0);
+    assert(h.requests.every(request=>request.method==='GET'));
+  }finally{
+    console.error=original;
+    await h.close();
+  }
+});
+
 for(const [screen,title] of [['control','작업 권한 인계'],['session','단계책임자·실행']] as const){
   test('모바일 메뉴 선택 후 본문 초점 · '+title,async()=>{
     const h=await mount(false,true);

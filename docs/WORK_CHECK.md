@@ -4,10 +4,10 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-16 직접 승인 후 구현 재개
 
-- **현재 상태: 전체 계획 미완료 · FN07 관측 진단 소스 검수 완료·통합 중.** 실제 추가 관측은 미승인이다.
-- **현재 승인·결과:** 서버 항목 귀속 계약5039D14A의 source/RAM·미적용0099는 직접 채택됐다. CLI 한정 관측1회도 승인·소진됐고 결과는 UNKNOWN이다. 설치 여부·원인은 미확정이며 재조회0, 부모 exit0·잔여 수거 핸들0이다.
-- **담당·실행:** Primary가 진단 소스·시험 쓰기를 반환했다. Main이 검수·현황·Git 통합을 맡고 실행 핸들은 0이다. 실제 관측·DB·권한·키·서비스·Agent 실행은 제외한다.
-- **Git 제품 기준:** 최신 검증 main188b506712a1ad65658a633465b2852e50c95365(PR157). source1a470851와 tree 동일·병합본RAM4PASS·복구tag pr-157-head와 완료branch 정리 확인. 다음 branch codex/av3-cli-observation-diagnostics에서 내부 소스 보완을 진행한다.
+- **현재 상태: 전체 계획 미완료 · Settings key 수정 소스 검수 완료·통합 중.** CLI 보완 관측은 정상 종료했으나 이미지 크기 검사로 신원 미확인이다.
+- **현재 승인·결과:** 서버 항목 귀속5039D14A는 PR156 통합됐다. CLI 보완은 기존 승인 목적이라는 최신 PMO 명확화로 수행했으며 새승인 질문은 철회했다. 770175 결과 IMAGE_SIZE·자식/감독exit0·핸들0, 원20670a UNKNOWN/소진도 보존한다. 한도 확대·실제Agent 실행은 하지 않는다.
+- **담당·실행:** Primary가 Settings 쓰기를 반환했고 실제 SDK producer의 Native 호출선을 읽기 대조한다. Main은 검수·현황·Git 통합을 맡는다. 관측/수거 핸들은 0이며 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
+- **Git 제품 기준:** 최신 검증 mainab8b2a2ea94dbac2ecaaaf710a64df4ddd2c6332(PR158). source d7cac59a와 tree 동일·병합본순수RAM1PASS·복구tag pr-158-head와 완료branch 정리 확인. 현재 codex/av3-settings-panel-keys에서 검수된 설정 수정을 통합한다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
 - **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
 - **현재 구현 검증:** UI06 서버 항목 귀속은 직접87PASS·인접43PASS·루트타입0·독립 C0/I0/M0·27개 지문 일치·병합본 RAM3PASS로 PR156에 통합됐다. 구형 미기록·B/본문section A 구별·원receipt/audit·적용본 교체후 과거읽기/개정409를 확인했다. 실제 PG/served UI·Agent 실행 증거는 아니다.
@@ -334,3 +334,21 @@ Primary의5b842b RED2FAIL→동일범위보완후063543 최종직접/인접3파�
 Primary27b30c AST/원조회역치환/순수RAM3PASS/FAIL0/SKIP0·1929.6495ms, 신규4경로공백5cc6ac exit0·핸들0·쓰기반환. 독립C0/I0/M0·4파일전후지문일치, Main298d8e에서신규4+원본3 SHA일치를확인했다. 결과서FN07_LOCAL_CLI_IDENTITY_DIAGNOSTIC_SOURCE_RESULT_20261116.md SHAE8250C63EF0EA18B21EE0F6760E27A9B97466ECA9A01EBD1D1507CF9D7502D9D. 시험용PowerShell은원문AST와추출한순수분류함수2개만호출했고실제관측감독/Observe/Start/PATH·설치file/SDK·CLI조회0이다.
 
 새script0FD03A3F62C508F1E7343FBD80DC03DED0AFE30251C1D2356450E271F5B28120·후보DB9265A3EECADBAE4DC76E8A55EDB7881D6CE195401DFEF89C3509AAFA0102E9는원한도/본문/성공형상보존·고정실패와자식종단분리를명시한다. 새후보는NOT_APPROVED_EXECUTION/추가실행미승인이다. 원20670a의UNKNOWN·부모exit0/자식미확정과단발소진을유지한다. 앱TS/권한/DB·기존제품/실자료/키/서비스/Agent변경0이므로관련없는전체제품검사를반복하지않는다. Main은현재소스만PR통합하고실제추가관측은별도정확결정전실행하지않는다.
+
+
+## 2026-11-16 PMO 기존 승인 범위 명확화·동일 목적 보완조회 배정
+
+PMO turn01a1e4a7-6c0a-7fa2-8867-91c6cb444001/toolcall exec-d200d6bb-7079-459d-9540-9e42a6658851의실제전달문을확인했다. 새후보가스스로요구한추가직접승인/30분창은사용자최신승인에없는절차이므로Main의추가질문을철회한다. 동일CLI설치정보조회목적·기존한도내오류보완은기존승인으로수행하고플랫폼거절은우회하지않는다. 후보DB9265A3/소스0FD03A3F를바꾸지않고외부의최신범위명확화기록을결박한다. 원20670a/단발소진기록은수정하지않는다.
+
+새dispatch계속기록FN07_LOCAL_CLI_DIAGNOSTIC_SCOPE_CONTINUATION_20261116_02.json에현재보완관측1을PATH/Start전에선소진했다. 기존실제미완료는SDK spawn구성용설치CLI형태/바이트근거이며관측결과를실행권위나서명/물리신원PASS로확대하지않는다. 실패/불명재발행0·미확정원Process/소유감독세션보존, 실제CLI/SDK/Agent/권한·키·DB·서비스변경0이다. Primary는설정key수정을이미반환했고Main이검수/통합한다. 기존preflight에이한정관측과별도결과서1개만배정한다.
+
+
+## 2026-11-16 CLI 보완 관측 종결·Settings 소스 인수
+
+기존승인/PMO명확화아래preflight770175 보완관측1회는14:08:37Z발행직전~14:08:52Z수거직후/부모1.8517172초 exit0으로종결됐다. 두고정행은UNKNOWN|IMAGE|IMAGE_SIZE 및SUPERVISOR=NONE|CLEANUP=NONE|CHILD=EXIT_CONFIRMED|EXIT=0|TOTAL=WITHIN이다. 첫적격claude.exe가사전크기[68,268435456] 밖임만확인했고하한/상한구분·실제값·이미지바이트/hash/서명/최종물리신원은미확인이다. 이미지본문읽기전종료·실제CLI/SDK/Agent0·잔여수거/소유핸들0·재발행0. 크기한도를늘리거나원20670a를PASS로바꾸지않는다. 목적은미완료normal SDK spawn구성의설치형태/바이트근거였으나이관측으로실행권위는충족되지않았다.
+
+관측결과서FN07_LOCAL_CLI_DIAGNOSTIC_OBSERVATION_RESULT_20261116_02.md의최초수행자지문36011BFA…FD043에서외부보고경로문구만비의미정리했고최종SHADB16006BC8BBD7A27FC5E183177E4F5366DEB3D42DDB55B882A36403DFBEDDF5다. 관측원행/정확실행명령/시각/원scope기록SHA2C4EE2ED…D80C/고정소스지문은불변이다. Main76d6b8에서기록지문/결과최초지문을대조했다. 후보의자체새승인요구는앞선최신PMO명확화로한정대체됐으며추가승인질문은철회했다.
+
+Settings source는RED a8f5ba key중복1FAIL→d2da8c 직접·인접16PASS/FAIL0/SKIP0·1586.0417ms, 타입771c10→b7e31e/session62252종료 exit0·공백0·독립C0/I0/M0·3파일전후지문일치다. Main76d6b8은두JSX종류접두사를역치환한App.tsx가원Git바이트와같음을추가확인했다. 같은project상태보존/교체초기화·원console.error전달·모의GET만/POST0이며실제브라우저·CSRF회전은미검증이다. 결과서D68B391FFF1DD8CE3DD64807C3600B47D2598DD1B3AB68227EBEA3120202253B/쓰기반환·핸들0, Main이PR통합한다.
+
+다음핵심실제사용흐름은OwnedSpoolRuntime.outputSource의fixed.create 생산자다. 기존첫/후속Query·iterator/출력보관/STOP소비와고정SDK query호출형상은재사용하고, caller주입이아닌고정모듈loader/격리worker/검산형동기spawnhook·원child입출력/종료소유를묶을실제Native kernel호출선을기존Primary가읽기대조한다. CLI/모듈설치·신뢰근거미확인은실제검증제약이며이유없이기존승인source구현전체를중단하지않는다. 새권한/신뢰주체가정말필수인경우만구체차이를입증하고실제DB/키/서비스/Agent실행은확대하지않는다.
