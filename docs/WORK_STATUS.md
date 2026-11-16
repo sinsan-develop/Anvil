@@ -20163,3 +20163,9 @@ Main은 게시본ed7bba5a의 후보EEAFFF15…F620·script2A7E8911…F511를 결
 ## 2026-11-16 UI06 항목귀속 후보 검수·보존
 
 Primary가후보1문서를반환했고독립검수17620048 기준C0/I0/M1을받았다. M1은B저장후방법론교체시과거조회가능/개정·제안409/입력보존이라는도달가능효과를명시하라는내용이다. 권장결정1단락·수용사례5만추가하고두단락역제거로원지문재현(e216e8)을확인했다. 최종후보5039D14A2D5E2B6BE0E48172FE1FBACF9ECA98B4F18CF618C33AC3FC3C29A75B. 새stageOutputItem·버전의원save영수증귀속·원request/audit역검산·감사reason추가·미적용0099 guard는아직미채택이다. 기존본문hash·section.itemId·기존행은유지하고과거귀속자동추정0·영수증없는백업inventory는UNKNOWN이다. 코드/SQL/DB/권한·서비스/실자료/CLI실행0,독립가용source를가짜신뢰콜백으로열지않는다. 이후보의기존채택근거·위임가능결정여부를PMO에정확지원요청하고이미발행한CLI질문은반복하지않는다. 전체계획과UI06최종인수는미완료다.
+
+## 2026-11-16 PMO 계약 경계 확인·기존 로컬 선택 보존 분리
+
+PMO가0d422825후보전문/PMO지침§6을대조해이번정확계약의직접채택기록을확인하지못했다고회신했다. 기록부재단정은아니다. 새stageOutputItem 공개형상·auditreason·적용본교체후개정409·원요청역검산/backupUNKNOWN·0099 guard는별도직접채택경계이며일반위임/sourceRAM제한만으로채택을대신하지않는다고확인했다. 승인된UI06항목표시목표자체를재승인받으라는지시도새전체중단지시도아니다.
+
+Main은새저장계약을미채택유지하고기존계약내로컬선택보존/표시를먼저완결하도록Primary에정확대조를배정했다. 원prepare의선택을저장전컨텍스트로만보존하며serverpayload/GET/본문hash·영수증·SQL은바꾸지않는다. 저장후고정문서의B귀속으로표시하지않고주체/project/stage/form·늦은응답/충돌의stale선택을분리한다. 제품쓰기전정확파일/WI와최신main의독립branch를발행할예정이다. 현재preparation의5파일은미채택후보/수동조회source/현황만이며AST/독립검수외실행0·CLI직접답변미확인이다. script Git속성text/eolLF와후보md-text를확인해고정지문이checkout후임의변환되지않는점도대조했다.
