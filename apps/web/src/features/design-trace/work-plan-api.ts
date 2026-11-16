@@ -1,8 +1,9 @@
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {postDocumentCommand,type DocumentBuffer,type DocumentSession,type DocumentWrite} from './editor-api.ts';
 import type {TaskCard} from '../../../../server/modules/traceability/work-plan-card.ts';
-import {documentControl,editDocument} from './editor-api.ts';
-import {readDocument} from './api.ts';
+import {documentControl,documentDraftHash,editDocument} from './editor-api.ts';
+import {listDocuments,readDocument} from './api.ts';
+import type {StageNodeRef} from './stage-api.ts';
 import {getPinnedForm} from '../methodologies/forms-api.ts';
 import {readDesignIndex} from './design-index-api.ts';
 export type PlanRef={id:string;version:number;contentHash:string};
@@ -53,13 +54,32 @@ export async function listWorkPlans(client:ApiClient,projectId:string,cursor:str
   const v=await client.get<WorkPlanPage>(`/api/v1/projects/${projectId}/work-plans?${query}`);
   if(!v||!Array.isArray(v.items)||v.items.length>50||typeof v.hasMore!=='boolean'||v.hasMore!==(typeof v.nextCursor==='string'&&v.nextCursor.length>0&&v.nextCursor.length<=4096)||!v.hasMore&&v.nextCursor!==null||!Number.isFinite(Date.parse(v.observedAt))||new Set(v.items.map(i=>i.ref?.id)).size!==v.items.length||v.items.some(i=>!i||!ref(i.ref)||i.status!=='DRAFT'||typeof i.title!=='string'||!ref(i.documentRef)||!ref(i.designRef)||!Number.isSafeInteger(i.issueCount)||i.issueCount<0||!Number.isFinite(Date.parse(i.updatedAt))||i.integrity!=='NOT_RECHECKED'||documentId!==null&&i.documentRef.id!==documentId))throw new ApiError('RESPONSE_INVALID');return v;
 }
-export async function prepareStoredWorkPlan(client:ApiClient,projectId:string,planRef:PlanRef,session:DocumentSession,mode:'REVISION'|'TRACE'='REVISION'):Promise<DocumentBuffer>{
-  const view=await readWorkPlan(client,projectId,planRef),document=await readDocument(client,projectId,view.documentRef.id,view.documentRef.version);
-  if(document.document.contentHash!==view.documentRef.contentHash)throw new ApiError('WORK_PLAN_INTEGRITY_FAILED');
+export async function prepareStoredWorkPlan(client:ApiClient,projectId:string,planRef:PlanRef,session:DocumentSession,mode:'REVISION'|'TRACE'='REVISION',options:{documentVersion?:number;active?:()=>boolean}={}):Promise<DocumentBuffer>{
+  const selectedVersion=options.documentVersion,transport=client.transport,actor=structuredClone(session);
+  const current=()=>client.transport===transport&&session.user.id===actor.user.id&&session.clientId===actor.clientId&&session.csrfToken===actor.csrfToken&&(!options.active||options.active());
+  const check=()=>{if(!current())throw new ApiError('WORK_PLAN_CONTINUATION_PAUSED');};check();
+  if(selectedVersion!==undefined&&(mode!=='REVISION'||!Number.isSafeInteger(selectedVersion)||selectedVersion<1))throw new ApiError('WORK_PLAN_INPUT_INVALID');
+  const view=await readWorkPlan(client,projectId,planRef);check();
+  const document=await readDocument(client,projectId,view.documentRef.id,selectedVersion??view.documentRef.version,{active:current});check();
+  const selectedRef={id:document.document.id,version:document.document.version,contentHash:document.document.contentHash};
+  if(selectedVersion===undefined||selectedVersion===view.documentRef.version){if(!same(selectedRef,view.documentRef))throw new ApiError('WORK_PLAN_INTEGRITY_FAILED');}
+  if(selectedVersion!==undefined){
+    const d=document.document,verified=await documentDraftHash(d.title,d.formRef,d.content,(d.stageNodeRef as StageNodeRef|null)??null);check();
+    if(verified!==d.contentHash)throw new ApiError('WORK_PLAN_INTEGRITY_FAILED');
+  }
   const [form,control,index]=await Promise.all([getPinnedForm(client,document.document.formRef),documentControl(client,projectId,session),readDesignIndex(client,projectId,view.designRef)]);
+  check();
   if(form.definition.formCode!=='AF04')throw new ApiError('WORK_PLAN_DOCUMENT_KIND_INVALID');
+  if(selectedVersion!==undefined){
+    // 기존 문서 충돌 조회와 같은 최대 200건 범위. 최신 버전을 자동 채택하지 않는다.
+    let page=await listDocuments(client,projectId,null);check();let found=page.items.find(d=>d.id===view.documentRef.id);
+    for(let n=1;!found&&page.hasMore&&n<4;n++){page=await listDocuments(client,projectId,page.nextCursor);check();found=page.items.find(d=>d.id===view.documentRef.id);}
+    if(!found)throw new ApiError('DOCUMENT_COMPARISON_WINDOW_EXCEEDED');
+    if(found.headVersion!==selectedVersion)throw new ApiError('VERSION_CONFLICT',409);
+  }
+  check();
   const buffer=editDocument(projectId,document,session.user.id,control),state=newWorkPlan(buffer);
-  state.planRef={...view.ref};state.input=structuredClone({documentRef:view.documentRef,designRef:view.designRef,screenReviewRefs:view.screenReviewRefs,tasks:view.tasks,reason:view.reason});state.designDocumentId=view.designRef.id;state.designVersion=String(view.designRef.version);state.designIndex=index;if(mode==='TRACE')state.result=view;buffer.workPlanState=state;return buffer;
+  state.planRef={...view.ref};state.input=structuredClone({documentRef:selectedRef,designRef:view.designRef,screenReviewRefs:view.screenReviewRefs,tasks:view.tasks,reason:view.reason});state.designDocumentId=view.designRef.id;state.designVersion=String(view.designRef.version);state.designIndex=index;if(mode==='TRACE')state.result=view;buffer.workPlanState=state;return buffer;
 }
 export function newWorkPlan(buffer:DocumentBuffer):WorkPlanBuffer{
   const documentRef={id:buffer.documentId,version:buffer.baseVersion,contentHash:buffer.baseHash};if(!ref(documentRef)) throw new ApiError('WORK_PLAN_INPUT_INVALID');
