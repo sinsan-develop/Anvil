@@ -20496,3 +20496,7 @@ UI06의 보관 계획 개정 준비는 당시 documentRef를 그대로 사용한
 ## UI06 등록 산출물의 보호 원문 조회
 
 기준 0d8962f2. developer_primary가 TraceViewer, trace-artifact-original 및 집중 시험을 구현했고 d2_preflight가 독립 검수했다. 추적 화면에서 선택한 등록 산출물의 기존 보호 GET을 명시 클릭으로 호출하고, 정확 참조·2MiB·SHA256·UTF-8을 검산해 텍스트로 표시한다. 선택 교체·닫기·세션 변경 뒤 늦은 결과는 폐기한다. 신규 API·권한·저장 변경 0. 최초 버튼 부재 RED 1건, 독립 C0/I0/M1은 서버가 허용하는 IMPLEMENTS 관계로 시험 자료만 정정했다. 최종 7dc3b1 38통과·실패/건너뜀0, 인접 ae858a 18통과, 타입 fe1d1f 종료0, Main 동결 지문 3개 일치 및 diff 검사 종료0. 실제 저장소·DB·브라우저와 실파일 귀속·시험/DIFF 원천 검증은 미완료다. 다음은 기존 승인 범위에서 추적 원천 연결과 통합 선행을 대조한다.
+
+## UI06/FN04 문서제안 diff를 계획 업무에 연결
+
+기준 dc830377. developer_primary가 MaterialLibrary·DocumentEditor·proposal-api 및 신규 전용 편집기·helper·시험을 수정했다. 저장 제안의 diff 원문과 원 버전을 다시 검산하고, 선택한 고정 계획 업무에 기존 ARTIFACT → PLAN_TASK / IMPLEMENTS 명령으로 명시 저장한다. 응답 유실은 동일 명령으로 재확인하고, 저장한 연결은 기존 추적 GET에서 원 edge와 해시를 대조한다. 최초 목적 RED는 버튼 부재, 시험 준비 실패 2건과 타입 좁힘 1건은 보완했다. 독립 C0/I0/M1의 재조회 시험 누락은 실제 버튼 GET과 변조 거절로 보완했다. 직접 260cab 46통과, 인접 8ea5a1 17통과, 실패·건너뜀0, 타입 7e146b 정상, 공백 fa9e26 정상. Main 동결 지문 6개 일치. 실제 DB·보호 저장소·브라우저 미검증. 실제 파일·시험·Git diff의 생산자 연결은 미완료이며 기존 보호 조회와 별개다.

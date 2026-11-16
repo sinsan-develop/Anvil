@@ -1,3 +1,4 @@
+import {ProposalDiffTraceEditor} from './ProposalDiffTraceEditor.tsx';
 import {readDocumentSourceRefs} from './document-source-refs.ts';
 import {DocumentSourceRefs} from './DocumentSourceRefs.tsx';
 import type {DocumentPreparationGate} from './document-preparation-gate.ts';
@@ -159,6 +160,7 @@ export function DocumentEditor({ createdOriginal, preparationGate, client, sessi
     }catch(cause){proposalFailure(cause,true,active);}finally{running.current=false;if(mounted.current)setBusy(false);}
   }
   const proposal = buffer.proposalState, proposalCanClose = proposal && !proposal.uncertain && (proposal.savedRef || !proposal.applyCommand && proposal.proposal || proposal.failure && [400,401,403,404,409,412,413,415,422].includes(proposal.failure.status));
+  if(proposal?.diffTrace)return <ProposalDiffTraceEditor key={'DIFF_TRACE:'+epoch.current} client={client} session={session} buffer={buffer} onChange={managedChange} onAuthenticationLost={onAuthenticationLost}/>;
   return <section className="status-card definition-editor" aria-label="문서 초안 편집">
     <h2>문서 초안 편집</h2><p className="meta">기준 버전 {buffer.baseVersion} · 원본/구버전은 보존됩니다. 이 저장은 사용자 확정이나 Agent 실행이 아닙니다.</p>
     {showSelection?<p className="meta">저장 전 선택한 산출물 {marker.itemId} · 서버 귀속 미확인</p>:null}

@@ -3,7 +3,7 @@ import { ApiClient, ApiError } from '../../api/client.ts';
 import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
 import type { DocumentBuffer, DocumentSession } from './editor-api.ts';
 import { listDocumentMaterials, prepareStoredImport, readImportUsageDocument, storedImportSelections, readStoredImport, type ImportUsageSelection, type ImportSummary, type MaterialPage, type ProposalSummary, type StoredImportView } from './materials-api.ts';
-import { readSelectedProposalDocument, readStoredProposal, resumeStoredProposal, selectedProposalVersion, type ProposalComparison } from './proposal-api.ts';
+import { prepareStoredProposalDiffTrace, readSelectedProposalDocument, readStoredProposal, resumeStoredProposal, selectedProposalVersion, type ProposalComparison } from './proposal-api.ts';
 
 export function MaterialLibrary({ client, projectId, session, canPrepare, onPrepared, onBusy, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; canPrepare: boolean; onPrepared: (buffer: DocumentBuffer) => void; onBusy: (busy: boolean) => void; onAuthenticationLost: () => void }) {
   const [imports, setImports] = useState<MaterialPage<ImportSummary> | null>(null), [proposals, setProposals] = useState<MaterialPage<ProposalSummary> | null>(null);
@@ -11,9 +11,9 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
   const [importLoading, setImportLoading] = useState(true), [proposalLoading, setProposalLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState<ApiError | null>(null);
   const [importView, setImportView] = useState<StoredImportView | null>(null), [proposalView, setProposalView] = useState<ProposalComparison | null>(null), [acknowledged, setAcknowledged] = useState(false);
   const [forms, setForms] = useState<FormSummary[]>([]), [selectedForm, setSelectedForm] = useState('');
-  type Scope = { client: ApiClient; transport: ApiClient['transport']; projectId: string; userId: string; clientId: string };
-  const scopeRef = useRef<Scope>({ client, transport: client.transport, projectId, userId: session.user.id, clientId: session.clientId });
-  if (scopeRef.current.client !== client || scopeRef.current.transport !== client.transport || scopeRef.current.projectId !== projectId || scopeRef.current.userId !== session.user.id || scopeRef.current.clientId !== session.clientId) scopeRef.current = { client, transport: client.transport, projectId, userId: session.user.id, clientId: session.clientId };
+  type Scope = { client: ApiClient; transport: ApiClient['transport']; projectId: string; userId: string; clientId: string; csrf:string };
+  const scopeRef = useRef<Scope>({ client, transport: client.transport, projectId, userId: session.user.id, clientId: session.clientId,csrf:session.csrfToken });
+  if (scopeRef.current.client !== client || scopeRef.current.transport !== client.transport || scopeRef.current.projectId !== projectId || scopeRef.current.userId !== session.user.id || scopeRef.current.clientId !== session.clientId || scopeRef.current.csrf !== session.csrfToken) scopeRef.current = { client, transport: client.transport, projectId, userId: session.user.id, clientId: session.clientId,csrf:session.csrfToken };
   const scope = scopeRef.current;
   const [importScope, setImportScope] = useState<Scope | null>(null);
   const shownImport = importScope === scope ? importView : null;
@@ -119,13 +119,14 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
       setUsage({ ...binding, value: null, loading: false, error });
     }
   }
-  async function prepare(kind: 'IMPORT' | 'PROPOSAL') {
+  async function prepare(kind: 'IMPORT' | 'PROPOSAL' | 'PROPOSAL_TRACE') {
     const accessCurrent = observeAccess();
-    if (!canPrepare || !acknowledged || running.current || !accessCurrent()) return;
+    if (!canPrepare || kind!=='PROPOSAL_TRACE'&&!acknowledged || running.current || !accessCurrent()) return;
     running.current = true; setBusy(true); onBusy(true); setError(null);
     try {
       let value: DocumentBuffer;
-      if (kind === 'IMPORT' && shownImport) value = await prepareStoredImport(client,projectId,shownImport,session,forms.find(f => f.ref.id === selectedForm)?.ref ?? null);
+      if(kind==='PROPOSAL_TRACE'&&shownProposal)value=await prepareStoredProposalDiffTrace(client,projectId,shownProposal,session,accessCurrent);
+      else if (kind === 'IMPORT' && shownImport) value = await prepareStoredImport(client,projectId,shownImport,session,forms.find(f => f.ref.id === selectedForm)?.ref ?? null);
       else if (kind === 'PROPOSAL' && shownProposal && !shownProposal.proposal.selections.length) value = await resumeStoredProposal(client,projectId,shownProposal.proposal.id,session);
       else throw new ApiError('MATERIAL_SELECTION_REQUIRED');
       if (accessCurrent()) onPrepared(value);
@@ -148,6 +149,7 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
       {shownImport.body !== null ? <><pre className="document-original" aria-label="보관 후보 원문">{shownImport.body}</pre>{!shownImport.candidate.intendedFormRef ? <><label htmlFor="stored-import-form">보관 후보 적용 양식</label><select id="stored-import-form" disabled={busy} value={selectedForm} onChange={e => setSelectedForm(e.target.value)}><option value="">양식 선택</option>{forms.map(f => <option value={f.ref.id} key={f.ref.id}>{f.name} · v{f.ref.version}</option>)}</select></> : <p>가져올 때 지정한 양식 v{shownImport.candidate.intendedFormRef.version}을 유지합니다.</p>}<label><input type="checkbox" disabled={busy || !canPrepare} checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} />보관 원문을 확인했고 새 문서 초안으로 준비하겠습니다</label><button disabled={busy || !canPrepare || !acknowledged || !shownImport.candidate.intendedFormRef && !selectedForm} onClick={() => { void prepare('IMPORT'); }}>보관 후보로 새 문서 준비</button></> : <p>미지원/확인 실패 원본은 보존하지만 본문으로 반영하지 않습니다.</p>}
     </section> : null}
     {shownProposal ? <section aria-label="보관 제안 원문 비교"><h3>{shownProposal.base.document.title} · 기준 {shownProposal.proposal.baseRef.version}</h3><pre className="document-original" aria-label="보관 제안 기준 원문">{shownProposal.base.body}</pre><pre className="document-original" aria-label="보관 제안 새 원문">{shownProposal.proposedBody}</pre><pre aria-label="보관 제안 변경 구간">{JSON.stringify(shownProposal.diff,null,2)}</pre><p>{shownProposal.proposal.selections.length ? `이미 반영한 버전 ${shownProposal.proposal.selections[0]!.version}` : '아직 반영하지 않은 제안입니다. 실제 반영 시 현재 기준을 다시 검사합니다.'}</p>
+      <button disabled={busy||!canPrepare} onClick={()=>{void prepare('PROPOSAL_TRACE');}}>서버 생성 diff를 고정 업무에 연결</button>
       {selectedVersion ? <button disabled={visibleResult?.loading === true} onClick={() => { void readSelected(); }}>반영 결과 원문 보기</button> : null}
       {visibleResult?.loading ? <p role="status">반영 결과 원문 조회 중</p> : null}
       {visibleResult?.error ? <p role="alert">{visibleResult.error.message} · {visibleResult.error.code}</p> : null}

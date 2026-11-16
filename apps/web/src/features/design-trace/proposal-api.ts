@@ -1,3 +1,4 @@
+import {newProposalDiffTrace,type ProposalDiffTraceBuffer} from './proposal-diff-trace.ts';
 import {readDocumentSourceRefs} from './document-source-refs.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { readDocument } from './api.ts';
@@ -9,7 +10,7 @@ type Artifact = DocumentContent['body'];
 export interface Proposal { id: string; baseRef: Ref; proposedContentRef: Artifact; diffRef: Artifact; status: 'PENDING' }
 interface ProposalDetail extends Proposal { proposedContent: DocumentContent; reason: string; createdAt: string; proposedBy: string; selections: { documentId: string; version: number; selectedBy: string; at: string }[] }
 export interface ProposalComparison { proposal: ProposalDetail; base: Awaited<ReturnType<typeof readDocument>>; proposedBody: string; diff: { startLine: number; before: string[]; after: string[]; unchangedBefore: number; unchangedAfter: number } }
-export interface DocumentProposalBuffer { ownerUserId: string; bindingId: string; baseRef: Ref; snapshot: PendingDocumentSave | null; restored?: { kind: 'STORED_PROPOSAL'; projectId: string; clientId: string; controlGeneration: number; proposalId: string; reason: string }; command: DocumentWrite | null; proposal: Proposal | null; comparison: ProposalComparison | null; applyCommand: DocumentWrite | null; savedRef: Ref | null; uncertain: boolean; failure: { code: string; status: number; quarantinedArtifactId?:string } | null }
+export interface DocumentProposalBuffer { diffTrace?:ProposalDiffTraceBuffer; ownerUserId: string; bindingId: string; baseRef: Ref; snapshot: PendingDocumentSave | null; restored?: { kind: 'STORED_PROPOSAL'; projectId: string; clientId: string; controlGeneration: number; proposalId: string; reason: string }; command: DocumentWrite | null; proposal: Proposal | null; comparison: ProposalComparison | null; applyCommand: DocumentWrite | null; savedRef: Ref | null; uncertain: boolean; failure: { code: string; status: number; quarantinedArtifactId?:string } | null }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/, hash = /^[0-9a-f]{64}$/;
 const sameRef = (a: Ref, b: Ref) => a?.id === b?.id && a?.version === b?.version && a?.contentHash === b?.contentHash;
 const validRef = (r: Ref) => r && uuid.test(r.id) && Number.isSafeInteger(r.version) && r.version > 0 && hash.test(r.contentHash);
@@ -127,9 +128,11 @@ export async function applyDocumentProposal(client: ApiClient, state: DocumentPr
   if(!active())throw new ApiError('SAVE_CONTINUATION_PAUSED');
   return ref;
 }
-export async function resumeStoredProposal(client: ApiClient, projectId: string, proposalId: string, session: DocumentSession): Promise<DocumentBuffer> {
+export async function resumeStoredProposal(client: ApiClient, projectId: string, proposalId: string, session: DocumentSession, active:()=>boolean=()=>true): Promise<DocumentBuffer> {
   if (!uuid.test(projectId) || !uuid.test(proposalId)) throw new ApiError('CLIENT_PATH_INVALID');
-  const [comparison, generation] = await Promise.all([readStoredProposal(client,projectId,proposalId), documentControl(client, projectId, session)]), value = comparison.proposal;
+  if(!active())throw new ApiError('DOCUMENT_READ_PAUSED');
+  const [comparison, generation] = await Promise.all([readStoredProposal(client,projectId,proposalId,active), documentControl(client, projectId, session)]), value = comparison.proposal;
+  if(!active())throw new ApiError('DOCUMENT_READ_PAUSED');
   // 저장 완료 자료를 여는 읽기 binding이다. 과거 업로드/제안 명령을 새로 만들거나 위장하지 않는다.
   const state: DocumentProposalBuffer = { ownerUserId: session.user.id, bindingId: crypto.randomUUID(), baseRef: value.baseRef, snapshot: null, restored: { kind: 'STORED_PROPOSAL', projectId, clientId: session.clientId, controlGeneration: generation, proposalId, reason: value.reason }, command: null, proposal: value, comparison: null, applyCommand: null, savedRef: null, uncertain: false, failure: null };
   subject(state, session); state.comparison = comparison;
@@ -141,4 +144,12 @@ export async function readStoredProposal(client: ApiClient, projectId: string, p
   const value = await client.get<ProposalDetail>(`/api/v1/projects/${projectId}/proposals/${proposalId}`);
   if (!value || value.id !== proposalId) throw new ApiError('RESPONSE_INVALID');
   return compareResolvedProposal(client, projectId, value,undefined,active);
+}
+
+export async function prepareStoredProposalDiffTrace(client:ApiClient,projectId:string,selected:ProposalComparison,session:DocumentSession,active:()=>boolean):Promise<DocumentBuffer>{
+ const expected=newProposalDiffTrace(selected).source,transport=client.transport,actor=structuredClone(session),current=()=>active()&&client.transport===transport&&session.user.id===actor.user.id&&session.clientId===actor.clientId&&session.csrfToken===actor.csrfToken;
+ const buffer=await resumeStoredProposal(client,projectId,expected.proposalId,session,current),p=buffer.proposalState!;
+ if(!current())throw new ApiError('DOCUMENT_READ_PAUSED');
+ const diffTrace=newProposalDiffTrace(p.comparison!);if(!equal(diffTrace.source,expected))throw new ApiError('PROPOSAL_TRACE_SOURCE_CHANGED');
+ return{...buffer,proposalState:{...p,diffTrace}};
 }
