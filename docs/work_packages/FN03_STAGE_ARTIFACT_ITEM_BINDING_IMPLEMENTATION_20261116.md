@@ -39,3 +39,11 @@ docs/approvals/FN03_STAGE_ARTIFACT_ITEM_BINDING_SOURCE_20261116.json은 신산�
 직접 순수/RAM·실제 제품 경로의 정상 저장→정확 재조회와 중요 거절, 기존 로컬 선택/본문·승인·제안 회귀, root 타입·필요 메모리 web 빌드·SQL 정적 검사를 선택한다. 실제 PG/RLS/경쟁/served UI 검증은 이번 실행 범위가 아니다. env/config/public 디렉터리 읽기·파일출력/새서비스 없이 가능한 기존 RAM 검증을 사용한다. 미적용 SQL을 실행하지 않는다.
 
 실제 DB/권한 적용·키·서비스/설치·CLI/SDK/Agent/유료호출·C# 및 사용자 원문/백업 조사·추가 SSH/SDK 조회는 제외한다. 같은 승인 질문 반복0. 결과에 파일별 SHA·정확 명령/exit·실패와 보완·미실행·rollback을 기록하고 동결/쓰기 반환한다. Main은 독립 검수·정확 commit/push/PR·trusted Broker·병합본 영향 검사·정리를 수행한다. source/RAM 통합을 실제 사용·DB 인수/전체 계획 완료로 승격하지 않는다.
+
+## r2 내부 시험 경로 보완 — 의미·실행 범위 불변
+
+원 버전 GET이 정상 구형도 실제 원 command/auth/audit를 검산하므로 원 영수증을 전혀 구성하지 않던 기존 RAM fixture의 영향이 확인됐다. 실제 영향시험에 필요한 경우에만 다음 시험 경로를 추가 허용한다: tests/unit/FN03/document-source-refs.test.ts, tests/unit/FN03/document-proposal-content-sources.test.ts, tests/unit/FN10/node-decision-fixture.ts, tests/unit/IX01/project-read-isolation.test.ts, tests/unit/UI06/document-source-observation.test.ts. 원 command·인증·감사의 실제 관계를 구성하며 일반 SQL 무조건 성공이나 누락 영수증의 legacy 채택으로 기대값을 낮추지 않는다. 제품·공개·권한 계약은 기존 직접 채택5039D14A 그대로이고 추가 실제 실행은 없다. Main 내부 검증 경로 보완이며 동일 승인 재요청 대상이 아니다. 최초 WI1CBC8735는 이전 배정 지문으로 보존한다.
+
+## r3 내부 RAM fixture 배치 보완
+
+동일5시험에 원 command/auth/audit 제작을 반복하지 않도록 tests/unit/FN03/document-stage-receipt-fixture.ts 한 경로를 추가 허용한다. 실제 save의 세 INSERT 인자를 보존하고 원키로 조회하는 RAM 보조함수와 명시 legacy seed만 담당한다. 제품 검산을 대신하거나 임의 SQL에 정상행을 반환하지 않는다. 새 프레임워크·제품·권한·실행 범위는 추가하지 않는다. r2 DCFB1BF5는 당시 내부 배정 지문이다.

@@ -1,5 +1,5 @@
 import { ApiClient, ApiError } from '../../api/client.ts';
-import { listDocuments, readDocument } from './api.ts';
+import { sameOutputItem,listDocuments, readDocument } from './api.ts';
 import { documentControl, documentDraftHash, editDocument, type DocumentContent, type DocumentBuffer, type DocumentSession } from './editor-api.ts';
 import { nullableStageRef, sameStageRef, validStageBinding, type StageNodeRef } from './stage-api.ts';
 
@@ -23,6 +23,7 @@ export async function compareDocumentConflict(client: ApiClient, b: DocumentBuff
   const latest = await readDocument(client, b.projectId, found.id, found.headVersion,{active}), d = latest.document;check();
   const snapshot=await documentDraftHash(d.title,d.formRef,d.content as DocumentContent,(d.stageNodeRef as StageNodeRef|null)??null);check();
   if(snapshot!==d.contentHash)throw new ApiError('DOCUMENT_INTEGRITY_FAILED');
+  if(!sameOutputItem(d.stageOutputItem,b.pending?.stageOutputItem))throw new ApiError('DOCUMENT_STAGE_OUTPUT_CONFLICT',409);
   const compatible = nullableStageRef(d.stageNodeRef) && sameStageRef(d.stageNodeRef, b.stageNodeRef ?? null) && (d.stageNodeRef === null || validStageBinding(d.stageBinding!, d.stageNodeRef)) && d.formRef.id === b.formRef.id && d.formRef.version === b.formRef.version && d.formRef.contentHash === b.formRef.contentHash && d.content.body.mediaType === b.mediaType && JSON.stringify(d.content.attachments) === JSON.stringify(b.content.attachments);
   return { ownerUserId: session.user.id, projectId: b.projectId, rejectedCommandId: b.pending!.saveCommandId, baseVersion: b.baseVersion, latest, controlGeneration: generation, compatible };
 }
@@ -31,7 +32,7 @@ export function canPrepareManualConflict(comparison: DocumentConflictComparison)
   return nullableStageRef(d.stageNodeRef) && (d.stageNodeRef === null || validStageBinding(d.stageBinding!, d.stageNodeRef)) && ['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(d.content.body.mediaType);
 }
 export function adoptDocumentConflict(b: DocumentBuffer, comparison: DocumentConflictComparison, session: DocumentSession, acknowledged: boolean, resolution: 'KEEP_INPUT' | 'LATEST_METADATA' = 'KEEP_INPUT'): DocumentBuffer {
-  if (!acknowledged || b.ownerUserId !== session.user.id || !canCompareDocumentConflict(b) || !(resolution === 'KEEP_INPUT' && comparison.compatible || resolution === 'LATEST_METADATA' && canPrepareManualConflict(comparison)) || comparison.ownerUserId !== session.user.id || comparison.projectId !== b.projectId || comparison.rejectedCommandId !== b.pending!.saveCommandId || comparison.baseVersion !== b.baseVersion || comparison.latest.document.id !== b.documentId || comparison.latest.document.version <= b.baseVersion) throw new ApiError('DOCUMENT_CONFLICT_COMPARISON_NOT_READY');
+  if (!sameOutputItem(b.pending?.stageOutputItem,comparison.latest.document.stageOutputItem)||!acknowledged || b.ownerUserId !== session.user.id || !canCompareDocumentConflict(b) || !(resolution === 'KEEP_INPUT' && comparison.compatible || resolution === 'LATEST_METADATA' && canPrepareManualConflict(comparison)) || comparison.ownerUserId !== session.user.id || comparison.projectId !== b.projectId || comparison.rejectedCommandId !== b.pending!.saveCommandId || comparison.baseVersion !== b.baseVersion || comparison.latest.document.id !== b.documentId || comparison.latest.document.version <= b.baseVersion) throw new ApiError('DOCUMENT_CONFLICT_COMPARISON_NOT_READY');
   const next = editDocument(b.projectId, comparison.latest, session.user.id, comparison.controlGeneration);
   const content = resolution === 'LATEST_METADATA' ? { ...next.content, sections: [] } : structuredClone(b.content);
   return { ...next, title: b.title, body: b.body, reason: b.reason, content, dirty: true, reconciliation: { rejectedCommandId: comparison.rejectedCommandId, fromVersion: b.baseVersion, toVersion: comparison.latest.document.version, resolution, rejectedSnapshot: structuredClone(b.pending!) } };

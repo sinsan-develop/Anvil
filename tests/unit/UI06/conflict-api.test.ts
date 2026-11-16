@@ -17,6 +17,8 @@ test('미확인 전송·다른 주체·제어 충돌은 버전 충돌로 바꿔 
   const comparison = { ownerUserId: id, projectId: project, rejectedCommandId: b.pending!.saveCommandId, baseVersion: 2, latest, controlGeneration: 4, compatible: true };
   assert.throws(() => adoptDocumentConflict(b, comparison, session, false), ApiError);
   assert.throws(() => adoptDocumentConflict(b, { ...comparison, compatible: false }, session, true), ApiError);
+  const changed={...comparison,latest:{...latest,document:{...latest.document,stageOutputItem:{applicationRef:b.formRef,itemId:'B'}}}};
+  assert.throws(()=>adoptDocumentConflict(b,changed,session,true),ApiError);assert.equal(b.pending!.save!.expectedVersion,2);
   const adopted = adoptDocumentConflict(b, comparison, session, true); assert.equal(adopted.body, b.body); assert.equal(adopted.baseVersion, 3); assert.equal(adopted.pending, null); assert.equal(adopted.dirty, true); assert.equal(b.pending!.save!.expectedVersion, 2);
 });
 test('비교 읽기는 최대4페이지에서 멈추고 찾지 못한 문서의 버전을 추측하지 않는다', async () => {

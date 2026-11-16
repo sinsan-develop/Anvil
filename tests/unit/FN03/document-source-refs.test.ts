@@ -1,3 +1,4 @@
+import {documentReceiptRows,seedDocumentReceipt,stageProofQuery} from './document-stage-receipt-fixture.ts';
 import {spawnSync} from 'node:child_process';
 import assert from 'node:assert/strict';
 import {mock,test} from 'node:test';
@@ -34,8 +35,17 @@ test('문서 전체 출처의 실제 저장·보호조회는 메모리 DB/FS 경
  const {ProjectConversations}=await import('../../../apps/server/modules/knowledge/conversations.ts');
  const {readDocumentSourceRefs}=await import('../../../apps/server/modules/documents/document-source-refs.ts');
  const {ProjectDocuments}=await import('../../../apps/server/modules/documents/project-documents.ts');
- const fixture=()=>{
+ const fixture=(withOutputs=false)=>{
+  const form={items:withOutputs?[{itemId:'A',title:'양식 A',required:true,fields:[],valueType:'TEXT',repeated:false,authoringRules:[],reviewCriteria:['본문 확인']}]:[]};
+  const formRef={id:id(5),version:1,contentHash:contentHash(canonicalJson(form))};
+  const graph={nodes:[{nodeId:'stage',name:'원 단계',inputs:[],outputs:['A','B'].map(itemId=>({itemId,formRef}))}],edges:[]};
+  const sourceRef={id:id(7),version:1,contentHash:contentHash(canonicalJson(graph))};
+  const snapshot={name:'원 방법론',purpose:'귀속 검산',graph,sourceRef};
+  const app={id:id(8),application_version:1,source_definition_id:sourceRef.id,source_version:1,source_hash:sourceRef.contentHash,snapshot_json:snapshot,snapshot_hash:contentHash(canonicalJson(snapshot))};
+  const appRef={id:app.id,version:1,contentHash:app.snapshot_hash};
+  let latest=app,originalPresent=true;
   const artifacts=new Map<string,any>(),versions=new Map<string,any>(),messages=new Map<string,any>(),writes:{sql:string;args:any[]}[]=[],queries:string[]=[];
+  const seeds:{sql:string;args:unknown[]}[]=[];
   let hook:((sql:string)=>void|Promise<void>)|undefined;
   const artifact=(n:number,text='검산할 보관 원문',project=pid)=>{
    const bytes=Buffer.from(text),ref={artifactId:id(n),bytes:bytes.length,contentHash:contentHash(bytes),mediaType:'text/plain;charset=utf-8'};
@@ -47,6 +57,7 @@ test('문서 전체 출처의 실제 저장·보호조회는 메모리 DB/FS 경
    const content={body,attachments:[],sections:[],sourceRefs:structuredClone(refs)},title='고정 문서 '+n;
    const hash=contentHash(canonicalJson({title,formRef,stageNodeRef:null,content}));
    versions.set(id(n)+':'+version,{project_id:pid,document_id:id(n),version,confirmed_version:null,title,form_definition_id:formRef.id,form_version:1,form_hash:formRef.contentHash,content_json:content,source_refs_json:structuredClone(refs),content_hash:hash,stage_ref_json:null,sections_json:[],author_ref_json:{kind:'HUMAN',userId:uid},validation_json:{},created_at:new Date('2026-11-08T00:00:00Z')});
+   seedDocumentReceipt(versions.get(id(n)+':'+version),pid,uid,actor.clientId,seeds);
    return {kind:'DOCUMENT_VERSION',id:id(n),version,contentHash:hash};
   };
   const document=seed(20);
@@ -60,6 +71,9 @@ test('문서 전체 출처의 실제 저장·보호조회는 메모리 DB/FS 경
   const query=async(sql:string,args:any[]=[])=>{
    queries.push(sql);await hook?.(sql);
    if(sql.includes('JOIN anvil.project_members')){assert.deepEqual(args,[pid,uid]);return {rows:[{id:pid,participation:'OWNER',archived_at:null}]};}
+   if(sql.startsWith('SELECT * FROM anvil.project_methodologies WHERE project_id=')){assert.equal(args[0],pid);return {rows:args[1]===null?[latest]:args[1]===app.id&&originalPresent?[app]:[]};}
+   if(sql.startsWith('SELECT operation,request_hash,result_ref FROM anvil.commands WHERE scope_kind='))return {rows:writes.filter(w=>w.sql.startsWith('INSERT INTO anvil.commands(')&&w.args[1]===args[0]&&w.args[2]===args[1]&&w.args[5]===args[2]).map(w=>({operation:w.args[4],request_hash:w.args[6],result_ref:JSON.parse(w.args[14])}))};
+   if(stageProofQuery(sql))return {rows:documentReceiptRows(versions.get(args[1]+':'+args[2]),args,[...seeds,...writes])};
    if(sql.startsWith('SELECT v.*,d.confirmed_version')){assert.equal(args[0],pid);const row=versions.get(args[1]+':'+args[2]);return {rows:row&&row.project_id===args[0]?[structuredClone(row)]:[]};}
    if(sql.startsWith('SELECT v.definition_json')){assert.deepEqual(args,[formRef.id,1,uid]);return {rows:[{definition_json:form,content_hash:formRef.contentHash}]};}
    if(sql.startsWith('SELECT definition_json FROM anvil.form_versions')){assert.deepEqual(args,[formRef.id,1,formRef.contentHash]);return {rows:[{definition_json:form}]};}
@@ -71,15 +85,50 @@ test('문서 전체 출처의 실제 저장·보호조회는 메모리 DB/FS 경
    if(sql==='SELECT transaction_timestamp() AS at')return {rows:[{at:new Date('2026-11-08T00:00:00Z')}]};
    if(sql.startsWith('SELECT * FROM anvil.documents WHERE id=$1 AND project_id=$2 FOR UPDATE')){assert.equal(args[1],pid);const row=[...versions.values()].filter(v=>v.document_id===args[0]).sort((a,b)=>b.version-a.version)[0];return {rows:row?[{head_version:row.version}]:[]};}
    if(sql.startsWith('INSERT INTO anvil.document_versions(')){
-    assert.equal(args.length,18);const content=JSON.parse(args[9]);versions.set(args[1]+':'+args[2],{project_id:args[0],document_id:args[1],version:args[2],form_definition_id:args[3],form_version:args[4],form_hash:args[5],title:args[7],source_refs_json:JSON.parse(args[8]),content_json:content,content_hash:args[10],sections_json:JSON.parse(args[11]),author_ref_json:JSON.parse(args[12]),validation_json:JSON.parse(args[13]),stage_ref_json:args[17]===null?null:JSON.parse(args[17]),confirmed_version:null,created_at:new Date('2026-11-08T00:00:00Z')});
+    assert.equal(args.length,18);const content=JSON.parse(args[9]);versions.set(args[1]+':'+args[2],{project_id:args[0],document_id:args[1],version:args[2],form_definition_id:args[3],form_version:args[4],form_hash:args[5],title:args[7],source_refs_json:JSON.parse(args[8]),content_json:content,content_hash:args[10],sections_json:JSON.parse(args[11]),reason:args[14],client_id:args[15],command_id:args[16],author_ref_json:JSON.parse(args[12]),validation_json:JSON.parse(args[13]),stage_ref_json:args[17]===null?null:JSON.parse(args[17]),confirmed_version:null,created_at:new Date('2026-11-08T00:00:00Z')});
    }else if(!/^(INSERT INTO anvil\.(commands|authorization_receipts|audit_events|documents|document_artifact_links|document_version_events)\b|UPDATE anvil.documents SET title=|SELECT set_config\('anvil.actor_id')/.test(sql))throw Error('UNSUPPORTED_DOCUMENT_SOURCE_SQL');
    writes.push({sql,args:structuredClone(args)});return {rows:[]};
   };
   const db={query} as unknown as PoolClient,docs=new ProjectDocuments(root);
   const request=(refs:Ref[]=[],targetId:string|null=null,expectedVersion=0):ProjectCommand=>({schemaVersion:1,projectId:pid,commandId:id(40),clientId:actor.clientId,controlGeneration:1,operation:'saveDocumentDraft',targetId,expectedVersion,baselineRefs:[],approvalRef:null,payload:{title:'출처 문서',formRef,stageNodeRef:null,content:{body,attachments:[],sections:[],sourceRefs:refs},importCandidateRef:null,reason:'보관 출처 연결'}});
   const save=(c:ProjectCommand)=>docs.save(db,actor,c,formRef);
-  return {db,docs,request,save,versions,artifacts,messages,writes,queries,seed,artifact,document,sourceArtifact,conversation,instruction,setHook:(h:typeof hook)=>{hook=h;}};
+  return {db,docs,request,save,appRef,seeds,replaceApplication:()=>{latest={...app,id:id(9),application_version:2};},removeOriginal:()=>{originalPresent=false;},versions,artifacts,messages,writes,queries,seed,artifact,document,sourceArtifact,conversation,instruction,setHook:(h:typeof hook)=>{hook=h;}};
  };
+ await t.test('같은 양식의 B 저장·원 버전 GET·개정·적용 교체·손상 검산',async()=>{
+  const f=fixture(true),request=f.request(),item={applicationRef:f.appRef,itemId:'B'};
+  request.payload.stageNodeRef={applicationId:f.appRef.id,nodeId:'stage'};request.payload.stageOutputItem=item;
+  (request.payload.content as {sections:unknown[]}).sections=[{itemId:'A',anchor:'line:1'}];
+  const first=await f.save(request),doc=first.targetId!,read=()=>f.docs.version(f.db,actor,pid,doc,1);
+  assert.ok('stageOutputItem' in first.data);assert.deepEqual(first.data.stageOutputItem,item);assert.deepEqual((await read()).stageOutputItem,item);
+  assert.equal((await read()).content.sections[0]?.itemId,'A');
+  const {projectReplay}=await import('../../../apps/server/modules/access/project-command.ts');const beforeReplay=f.writes.length;
+  assert.deepEqual(await projectReplay(f.db,actor,request),first);
+  await assert.rejects(projectReplay(f.db,actor,{...request,payload:{...request.payload,stageOutputItem:{...item,itemId:'A'}}}),{statusCode:409});
+  assert.equal(f.writes.length,beforeReplay);
+  const rev={...request,targetId:doc,expectedVersion:1,commandId:id(90)};
+  for(const value of [undefined,{...item,itemId:'A'}]){
+    const other=structuredClone(rev);if(value)other.payload.stageOutputItem=value;else delete other.payload.stageOutputItem;
+    const count=f.writes.length;await assert.rejects(f.save(other),{statusCode:409});assert.equal(f.writes.length,count);
+  }
+  const second=await f.save(rev);assert.equal(second.version,2);assert.deepEqual((await f.docs.version(f.db,actor,pid,doc,2)).stageOutputItem,item);
+  f.replaceApplication();assert.deepEqual((await read()).stageOutputItem,item);const count=f.writes.length;
+  const third={...rev,commandId:id(91),expectedVersion:2};await assert.rejects(f.save(third),{statusCode:409});
+  await assert.rejects(f.save({...third,payload:{...third.payload,proposalRef:id(92)}}),{statusCode:409});assert.equal(f.writes.length,count);
+  const original=f.writes.find(w=>w.sql.startsWith('INSERT INTO anvil.commands('))!,bytes=original.args[14];
+  for(const replacement of [undefined,null,{...item,itemId:'A'}]){
+    const result=JSON.parse(bytes);if(replacement===undefined)delete result.data.stageOutputItem;else result.data.stageOutputItem=replacement;
+    original.args[14]=JSON.stringify(result);await assert.rejects(read(),{message:'DOCUMENT_INTEGRITY_FAILED',statusCode:503});
+  }
+  original.args[14]=bytes;f.removeOriginal();await assert.rejects(read(),{message:'DOCUMENT_INTEGRITY_FAILED',statusCode:503});
+ });
+ await t.test('미기록 원 명령 hash 손상과 원 감사 부재는 상세 무결성 오류다',async()=>{
+  const f=fixture(),saved=await f.save(f.request()),read=()=>f.docs.version(f.db,actor,pid,saved.targetId!,1);
+  assert.equal(Object.hasOwn(await read(),'stageOutputItem'),false);
+  const c=f.writes.find(w=>w.sql.startsWith('INSERT INTO anvil.commands('))!,hash=c.args[6];
+  c.args[6]='a'.repeat(64);await assert.rejects(read(),{statusCode:503});c.args[6]=hash;
+  const audit=f.writes.findIndex(w=>w.sql.startsWith('INSERT INTO anvil.audit_events('));assert.notEqual(audit,-1);f.writes.splice(audit,1);
+  await assert.rejects(read(),{statusCode:503});
+ });
  await t.test('4종 저장과 정확 GET은 과거 문서버전·원문·분리 출처열을 보존한다',async()=>{
   const f=fixture();f.seed(20,[],2);
   const refs=[f.document,{kind:'ARTIFACT',id:f.sourceArtifact.artifactId,contentHash:f.sourceArtifact.contentHash},f.conversation,f.instruction];

@@ -71,7 +71,9 @@ class MemoryAccess extends AccessRepository{
 }
 
 /** 인증/SQL/물리파일은 메모리 대역, handler·원 receipt producer·quota class는 실제 구현을 호출한다. */
+import {documentReceiptRows,seedDocumentReceipt,stageProofQuery} from './document-stage-receipt-fixture.ts';
 class WriterAccess extends MemoryAccess{
+ proofWrites:{sql:string;args:unknown[]}[]=[];
  replayGapHook:(()=>void)|null=null;replayGapArmed=false;replayGapMutations=0;onExisting:(()=>void)|null=null;requireApproval=false;requests:Row[]=[];decisions:Row[]=[];consumptions:Row[]=[];checkpointRows:Row[]=[];headVersion=1;afterStartCommit:(()=>void|Promise<void>)|null=null;documentRow:Row|null=null;form:Row|null=null;commands:Row[]=[];receipts:Row[]=[];audits:Row[]=[];artifacts:Row[]=[];proposals:Row[]=[];failArtifactInsert=false;failSettle=false;
  override async authenticated<T>(token:string,csrf:string|null,body:(db:PoolClient,a:AuthenticatedIdentity)=>Promise<T>){
   if(this.replayGapArmed){this.replayGapArmed=false;this.replayGapMutations++;this.replayGapHook?.();}
@@ -114,6 +116,7 @@ class WriterAccess extends MemoryAccess{
   }
   if(sql.startsWith('SELECT * FROM anvil.document_proposals')){this.trace.push(sql);return {rows:this.proposals.filter(r=>r.project_id===args[0]&&r.id===args[1])};}
   if(sql.includes('FROM anvil.document_proposal_selections'))return {rows:[]};
+  if(stageProofQuery(sql))return {rows:documentReceiptRows(this.documentRow??undefined,args,this.proofWrites)};
   if(sql.includes('FROM anvil.document_versions v JOIN anvil.documents'))return {rows:this.documentRow?[structuredClone(this.documentRow)]:[]};
   if(sql.includes('SELECT head_version FROM anvil.documents'))return {rows:this.documentRow?[{head_version:this.headVersion}]:[]};
   if(sql.includes('SELECT definition_json FROM anvil.form_versions'))return {rows:this.form?[{definition_json:structuredClone(this.form)}]:[]};
@@ -159,6 +162,7 @@ async function diffFixture(t:TestContext){
  const form={formCode:'SYNTHETIC',name:'합성 양식',purpose:'검증',scope:'SYSTEM',authorRole:'작성자',reviewerRole:'검토자',confirmerRole:'확정자',requiredInputs:[],items:[],authoringStandardRef:{id:id(50),version:1,contentHash:h('표준')}};
  f.access.form=form;const formRef={id:id(51),version:1,contentHash:h(form)},content={body:oldRef,attachments:[],sections:[],sourceRefs:[]},documentId=id(52),baseHash=h({title:'원문',formRef,stageNodeRef:null,content});
  f.access.documentRow={document_id:documentId,version:1,title:'원문',form_definition_id:formRef.id,form_version:1,form_hash:formRef.contentHash,content_json:content,content_hash:baseHash,stage_ref_json:null,source_refs_json:[],author_ref_json:{kind:'HUMAN',userId:actor.actorId},created_at:new Date('2026-01-01Z'),confirmed_version:null,validation_json:{}};
+ seedDocumentReceipt(f.access.documentRow!,id(1),actor.actorId,actor.clientId,f.access.proofWrites);
  const c=request();c.commandId=id(53);c.operation='proposeDocumentChange';c.targetId=documentId;c.expectedVersion=1;c.payload={baseRef:{id:documentId,version:1,contentHash:baseHash},proposedContent:{body:newRef,attachments:[],sections:[],sourceRefs:[]},reason:'실제 diff 생성',sourceRefs:[]};
  const propose=()=>f.app.inject({method:'POST',url:`/api/v1/projects/${id(1)}/commands`,headers:{host:'anvil.synthetic.invalid',origin:'https://anvil.synthetic.invalid','content-type':'application/json','x-anvil-csrf':'c'.repeat(43),cookie:'__Host-anvil.sid='+'t'.repeat(43)},payload:c});return {...f,c,propose};
 }
@@ -170,6 +174,8 @@ class SourceWriterAccess extends WriterAccess{
   try{return await super.authenticated(token,csrf,body);}catch(e){if(this.commits===commits){this.sourceDocuments=new Map(before.documents);this.sourceMessages=new Map(before.messages);this.selections=before.selections;this.headVersion=before.head;}throw e;}
  }
  override db(){const parent=super.db();return {query:async(sql:string,args:unknown[]=[])=>{
+  if(stageProofQuery(sql)){const row=this.sourceDocuments.get(String(args[1])+':'+args[2])??this.documentRow;return {rows:documentReceiptRows(row??undefined,args,this.proofWrites)};}
+  if(sql.startsWith('INSERT INTO anvil.commands(')||sql.startsWith('INSERT INTO anvil.authorization_receipts(')||sql.startsWith('INSERT INTO anvil.audit_events(')||sql.startsWith('INSERT INTO anvil.document_proposal_selections('))this.proofWrites.push({sql,args:structuredClone(args)});
   if(sql.startsWith('SELECT v.definition_json,v.content_hash FROM anvil.form_definitions')){assert.deepEqual(args,[this.documentRow!.form_definition_id,1,actor.actorId]);return {rows:[{definition_json:this.form,content_hash:this.documentRow!.form_hash}]};}
   if(sql.startsWith('SELECT v.*,d.confirmed_version')){assert.equal(args.length,3);assert.equal(args[0],id(1));const row=this.sourceDocuments.get(String(args[1])+':'+args[2])??(args[1]===this.documentRow?.document_id&&Number(args[2])===Number(this.documentRow?.version)?this.documentRow:null);return {rows:row&&row.project_id===args[0]?[structuredClone(row)]:[]};}
   if(sql==="SELECT bytes,media_type,content_hash FROM anvil.artifacts WHERE project_id=$1 AND id=$2 AND state='READY'"){assert.equal(args.length,2);const row=this.artifacts.find(r=>r.id===args[1]&&r.project_id===args[0]&&r.state==='READY');this.trace.push(sql);return {rows:row?[structuredClone(row)]:[]};}
@@ -178,7 +184,7 @@ class SourceWriterAccess extends WriterAccess{
   if(sql==='SELECT * FROM anvil.documents WHERE id=$1 AND project_id=$2 FOR UPDATE'){assert.deepEqual(args,[this.documentRow!.document_id,id(1)]);return {rows:[{head_version:this.headVersion}]};}
   if(sql.startsWith('SELECT title,form_definition_id,form_version,form_hash,content_hash,stage_ref_json FROM anvil.document_versions')){assert.deepEqual(args,[id(1),this.documentRow!.document_id,1]);return {rows:[structuredClone(this.documentRow)]};}
   if(sql.startsWith('INSERT INTO anvil.document_versions(')){
-   assert.equal(args.length,18);assert.equal(args[0],id(1));this.trace.push(sql);const content=JSON.parse(args[9] as string);this.sourceDocuments.set(String(args[1])+':'+args[2],{project_id:args[0],document_id:args[1],version:args[2],form_definition_id:args[3],form_version:args[4],form_hash:args[5],title:args[7],source_refs_json:JSON.parse(args[8] as string),content_json:content,content_hash:args[10],sections_json:JSON.parse(args[11] as string),author_ref_json:JSON.parse(args[12] as string),validation_json:JSON.parse(args[13] as string),stage_ref_json:args[17]===null?null:JSON.parse(args[17] as string),created_at:new Date(this.now),confirmed_version:null});return {rows:[],rowCount:1};
+   assert.equal(args.length,18);assert.equal(args[0],id(1));this.trace.push(sql);const content=JSON.parse(args[9] as string);this.sourceDocuments.set(String(args[1])+':'+args[2],{project_id:args[0],document_id:args[1],version:args[2],form_definition_id:args[3],form_version:args[4],form_hash:args[5],title:args[7],source_refs_json:JSON.parse(args[8] as string),content_json:content,content_hash:args[10],sections_json:JSON.parse(args[11] as string),author_ref_json:JSON.parse(args[12] as string),validation_json:JSON.parse(args[13] as string),reason:args[14],client_id:args[15],command_id:args[16],stage_ref_json:args[17]===null?null:JSON.parse(args[17] as string),created_at:new Date(this.now),confirmed_version:null});return {rows:[],rowCount:1};
   }
   if(sql.startsWith('UPDATE anvil.documents SET title=')){this.headVersion=Number(args[2]);this.trace.push(sql);return {rows:[],rowCount:1};}
   if(sql.startsWith('INSERT INTO anvil.document_artifact_links')||sql.startsWith('INSERT INTO anvil.document_version_events')){assert.equal(args[sql.includes('document_version_events')?1:0],id(1));this.trace.push(sql);return {rows:[],rowCount:1};}
@@ -189,7 +195,7 @@ class SourceWriterAccess extends WriterAccess{
 }
 async function sourceFixture(t:TestContext){
  const f=await diffFixture(t),row=f.access.documentRow!;row.project_id=id(1);
- const oldRef=row.content_json.body,sourceRow=structuredClone(row);sourceRow.document_id=id(61);sourceRow.title='정확 과거 출처';sourceRow.content_hash=h({title:sourceRow.title,formRef:{id:row.form_definition_id,version:1,contentHash:row.form_hash},stageNodeRef:null,content:sourceRow.content_json});f.access.sourceDocuments.set(id(61)+':1',sourceRow);
+ const oldRef=row.content_json.body,sourceRow=structuredClone(row);sourceRow.document_id=id(61);sourceRow.title='정확 과거 출처';sourceRow.content_hash=h({title:sourceRow.title,formRef:{id:row.form_definition_id,version:1,contentHash:row.form_hash},stageNodeRef:null,content:sourceRow.content_json});seedDocumentReceipt(sourceRow,id(1),actor.actorId,actor.clientId,f.access.proofWrites);f.access.sourceDocuments.set(id(61)+':1',sourceRow);
  const message=(n:number,kind:string)=>{const snapshot={conversationId:id(62),targetRoleRef:null,message:{kind,bodyRef:oldRef,attachmentRefs:[],replyTo:null,supersedesInstructionRef:null,effectiveScope:{projectId:id(1),stageRefs:[],taskRefs:[]}},sourceRefs:[],serverSequence:n,authorRef:{kind:'HUMAN',userId:actor.actorId}},hash=h(snapshot);
   f.access.sourceMessages.set(id(n),{project_id:id(1),conversation_id:id(62),sequence:n,message_json:snapshot,author_ref:snapshot.authorRef,kind,body_artifact_id:oldRef.artifactId,reply_to:null,supersedes_instruction_id:null,effective_scope:snapshot.message.effectiveScope,source_refs:[],content_hash:hash,redaction_state:'NOT_REDACTED',recorded_at:new Date(f.access.now)});return {kind:kind==='USER_INSTRUCTION'?'USER_INSTRUCTION':'CONVERSATION',id:id(n),contentHash:hash};};
  const refs=[{kind:'DOCUMENT_VERSION',id:id(61),version:1,contentHash:sourceRow.content_hash},{kind:'ARTIFACT',id:oldRef.artifactId,contentHash:oldRef.contentHash},message(63,'USER_MESSAGE'),message(64,'USER_INSTRUCTION')];
@@ -257,14 +263,27 @@ function seedBudgetSources(f:Awaited<ReturnType<typeof sourceFixture>>){
  const old=f.access.documentRow!.content_json.body,stored=f.access.artifacts.find(a=>a.id===old.artifactId)!,bytes=f.files.bodies.get(old.artifactId)!;
  return Array.from({length:200},(_,n)=>{const aid=id(1000+n);f.access.artifacts.push({...stored,id:aid,storage_key:`blobs/${id(1)}/${aid}`});f.files.bodies.set(aid,Buffer.from(bytes));f.access.state.account!.used_bytes=(BigInt(f.access.state.account!.used_bytes)+BigInt(bytes.length)).toString();return {kind:'ARTIFACT',id:aid,contentHash:old.contentHash};});
 }
+test('A 저장 payload에 결박된 일회 승인으로 동일 명령 B를 허가하지 않는다',async t=>{
+ const f=await sourceFixture(t),row=f.access.documentRow!,projectId=id(1),applicationRef={id:id(183),version:1,contentHash:h({graph:'고정'})};
+ const c:ProjectCommand={schemaVersion:1,projectId,commandId:id(185),clientId:actor.clientId,controlGeneration:1,operation:'saveDocumentDraft',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{title:row.title,formRef:{id:row.form_definition_id,version:row.form_version,contentHash:row.form_hash},stageNodeRef:{applicationId:applicationRef.id,nodeId:'n'},content:row.content_json,importCandidateRef:null,reason:'정확한 저장 승인',stageOutputItem:{applicationRef,itemId:'A'}}};
+ c.approvalRef=f.access.seedApproval(c);const rule=f.access.requests[0]!.policy_ref,changed={...c,payload:{...c.payload,stageOutputItem:{applicationRef,itemId:'B'}}};
+ const {ProjectApprovals}=await import('../../../apps/server/modules/approvals/project-approvals.ts');
+ const {assertApprovalCandidate}=await import('../../../apps/server/modules/approvals/approval-input.ts'),details=f.access.requests[0]!.details_json;
+ assert.doesNotThrow(()=>assertApprovalCandidate(details,c,actor.actorId,projectId));
+ assert.throws(()=>assertApprovalCandidate(details,changed,actor.actorId,projectId),{message:'APPROVAL_CANDIDATE_MISMATCH',statusCode:409});
+ for(const candidate of [c,changed])await assert.rejects(new ProjectApprovals().authorize(f.access.db(),actor,candidate,rule),{message:'APPROVAL_INPUT_INVALID',statusCode:422});
+ assert.equal(f.access.consumptions.length,0);assert.equal(f.access.commands.filter(x=>x.operation==='saveDocumentDraft').length,0);
+});
 test('base200과 proposed200은 phase당400으로 독립 검산하며 proposed 전이201은 예약0이다',async t=>{
  const good=await sourceFixture(t),refs=seedBudgetSources(good),row=good.access.documentRow!;
  row.content_json.sourceRefs=structuredClone(refs);row.source_refs_json=structuredClone(refs);row.content_hash=h({title:row.title,formRef:{id:row.form_definition_id,version:1,contentHash:row.form_hash},stageNodeRef:null,content:row.content_json});(good.c.payload.baseRef as Row).contentHash=row.content_hash;(good.c.payload.proposedContent as Row).sourceRefs=structuredClone(refs);
+ seedDocumentReceipt(row,id(1),actor.actorId,actor.clientId,good.access.proofWrites);
  const start=good.access.trace.length,result=await good.propose();assert.equal(result.statusCode,200,result.body);
  const reads=good.access.trace.slice(start).filter(q=>q==="SELECT bytes,media_type,content_hash FROM anvil.artifacts WHERE project_id=$1 AND id=$2 AND state='READY'").length;
  assert.equal(reads,800,'두 phase에서 각각 base200/proposed200을 실제 다시 읽는다');
  const bad=await sourceFixture(t),many=seedBudgetSources(bad),child=bad.access.sourceDocuments.get(id(61)+':1')!;
  child.content_json.sourceRefs=many;child.source_refs_json=many;child.content_hash=h({title:child.title,formRef:{id:child.form_definition_id,version:1,contentHash:child.form_hash},stageNodeRef:null,content:child.content_json});(bad.c.payload.proposedContent as Row).sourceRefs=[{kind:'DOCUMENT_VERSION',id:id(61),version:1,contentHash:child.content_hash}];
+ seedDocumentReceipt(child,id(1),actor.actorId,actor.clientId,bad.access.proofWrites);
  const reservations=bad.access.state.rows.length,puts=bad.files.putCount,denied=await bad.propose();assert.equal(denied.statusCode,422,denied.body);assert.match(denied.body,/DOCUMENT_SOURCE_BUDGET_EXCEEDED/);assert.equal(bad.access.state.rows.length,reservations);assert.equal(bad.files.putCount,puts);
 });
 test('await 중 원입력변이는 원 sources/hash를 바꾸지 않고 reserve 응답불명은 같은packet으로만 재개한다',async t=>{

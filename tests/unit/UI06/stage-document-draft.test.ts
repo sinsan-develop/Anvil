@@ -9,6 +9,9 @@ test('같은 양식의 A와 B 중 선택한 B를 저장 전 로컬 선택에 보
  const {prepareStageDocumentDraft}=await import('../../../apps/web/src/features/design-trace/stage-document-draft.ts');
  const draft=await prepareStageDocumentDraft(a.client,choice,f.session,()=>true);
  assert.deepEqual(draft.preparedStageOutput,{...choice,controlGeneration:7});
+ Object.assign(draft,{title:'선택 검증',body:'본문',reason:'원 선택'});
+ const {prepareDocumentSave}=await import('../../../apps/web/src/features/design-trace/editor-api.ts'),pending=await prepareDocumentSave(draft,f.session);
+ assert.deepEqual(pending.stageOutputItem,{applicationRef:choice.applicationRef,itemId:'B'});assert.equal(Object.hasOwn(pending.upload.payload,'stageOutputItem'),false);
  choice.formRef.version++;assert.notEqual(draft.preparedStageOutput.formRef.version,choice.formRef.version);
 });
 const m=await import(new URL('../../../apps/web/src/features/design-trace/stage-document-draft.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return {};throw e;});

@@ -2,6 +2,7 @@ import {readDocumentSourceRefs} from './document-source-refs.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { readDocument } from './api.ts';
 import { sameStageRef, type StageNodeRef } from './stage-api.ts';
+import {sameOutputItem} from './api.ts';
 import { documentControl, documentDraftHash, editDocument, postDocumentCommand, prepareDocumentSave, type DocumentBuffer, type DocumentContent, type DocumentSession, type DocumentWrite, type PendingDocumentSave } from './editor-api.ts';
 type Ref = { id: string; version: number; contentHash: string };
 type Artifact = DocumentContent['body'];
@@ -107,20 +108,22 @@ export async function readSelectedProposalDocument(client: ApiClient, projectId:
   const base = comparison.base.document, content = structuredClone(comparison.proposal.proposedContent);
   const expectedContentHash = await documentDraftHash(base.title, structuredClone(base.formRef), content, structuredClone((base.stageNodeRef as StageNodeRef | null) ?? null));
   if (!active()) throw new ApiError('DOCUMENT_READ_PAUSED');
-  return readDocument(client, projectId, ref.id, ref.version, { expectedContentHash, active });
+  const selected=await readDocument(client, projectId, ref.id, ref.version, { expectedContentHash, active });
+  if(!active()||!sameOutputItem(selected.document.stageOutputItem,base.stageOutputItem))throw new ApiError('PROPOSAL_SELECTION_INVALID');
+  return selected;
 }
 export async function prepareProposalApplication(client: ApiClient, state: DocumentProposalBuffer, session: DocumentSession, acknowledged: boolean): Promise<DocumentWrite> {
   subject(state, session); const c = state.comparison, scope = context(state);
   if (!acknowledged || !c || c.proposal.id !== state.proposal?.id || c.proposal.selections.length || state.savedRef || state.applyCommand) throw new ApiError('PROPOSAL_SELECTION_REQUIRED');
   const generation = await documentControl(client, scope.projectId, session);
-  return { schemaVersion: 1, projectId: scope.projectId, commandId: crypto.randomUUID(), clientId: session.clientId, controlGeneration: generation, operation: 'saveDocumentDraft', targetId: state.baseRef.id, expectedVersion: state.baseRef.version, baselineRefs: [], approvalRef: null, payload: { title: c.base.document.title, formRef: c.base.document.formRef, stageNodeRef: structuredClone(c.base.document.stageNodeRef), content: c.proposal.proposedContent, importCandidateRef: null, proposalRef: c.proposal.id, reason: scope.reason } };
+  return { schemaVersion: 1, projectId: scope.projectId, commandId: crypto.randomUUID(), clientId: session.clientId, controlGeneration: generation, operation: 'saveDocumentDraft', targetId: state.baseRef.id, expectedVersion: state.baseRef.version, baselineRefs: [], approvalRef: null, payload: { ...(c.base.document.stageOutputItem?{stageOutputItem:structuredClone(c.base.document.stageOutputItem)}:{}),title: c.base.document.title, formRef: c.base.document.formRef, stageNodeRef: structuredClone(c.base.document.stageNodeRef), content: c.proposal.proposedContent, importCandidateRef: null, proposalRef: c.proposal.id, reason: scope.reason } };
 }
 export async function applyDocumentProposal(client: ApiClient, state: DocumentProposalBuffer, session: DocumentSession, active: () => boolean): Promise<Ref> {
   subject(state, session); const c = state.applyCommand, comparison = state.comparison, scope = context(state);
-  if (!c || !comparison || c.clientId !== session.clientId || c.operation !== 'saveDocumentDraft' || !uuid.test(c.commandId) || c.projectId !== scope.projectId || c.targetId !== state.baseRef.id || c.expectedVersion !== state.baseRef.version || c.payload.proposalRef !== state.proposal?.id || c.payload.title !== comparison.base.document.title || !sameRef(c.payload.formRef as Ref, comparison.base.document.formRef) || !sameStageRef(c.payload.stageNodeRef, comparison.base.document.stageNodeRef) || c.payload.importCandidateRef !== null || !equal(c.payload.content, comparison.proposal.proposedContent) || c.payload.reason !== scope.reason) throw new ApiError('PROPOSAL_SELECTION_REQUIRED');
+  if (!c || !comparison || c.clientId !== session.clientId || c.operation !== 'saveDocumentDraft' || !uuid.test(c.commandId) || c.projectId !== scope.projectId || c.targetId !== state.baseRef.id || c.expectedVersion !== state.baseRef.version || !sameOutputItem(c.payload.stageOutputItem,comparison.base.document.stageOutputItem)||c.payload.proposalRef !== state.proposal?.id || c.payload.title !== comparison.base.document.title || !sameRef(c.payload.formRef as Ref, comparison.base.document.formRef) || !sameStageRef(c.payload.stageNodeRef, comparison.base.document.stageNodeRef) || c.payload.importCandidateRef !== null || !equal(c.payload.content, comparison.proposal.proposedContent) || c.payload.reason !== scope.reason) throw new ApiError('PROPOSAL_SELECTION_REQUIRED');
   if (!active()) throw new ApiError('SAVE_CONTINUATION_PAUSED');
   const result = await postDocumentCommand(client, c, session.csrfToken), ref = result.data?.ref;
-  if (!validRef(ref) || ref.id !== state.baseRef.id || ref.version !== state.baseRef.version + 1 || ref.contentHash !== await documentDraftHash(comparison.base.document.title, comparison.base.document.formRef, comparison.proposal.proposedContent, comparison.base.document.stageNodeRef as StageNodeRef | null) || result.data.status !== 'DRAFT' || result.data.proposalRef !== state.proposal!.id || result.targetId !== ref.id || result.version !== ref.version) throw new ApiError('RESPONSE_INVALID');
+  if (!validRef(ref) || ref.id !== state.baseRef.id || ref.version !== state.baseRef.version + 1 || ref.contentHash !== await documentDraftHash(comparison.base.document.title, comparison.base.document.formRef, comparison.proposal.proposedContent, comparison.base.document.stageNodeRef as StageNodeRef | null) || result.data.status !== 'DRAFT'||!sameOutputItem(result.data.stageOutputItem,comparison.base.document.stageOutputItem) || result.data.proposalRef !== state.proposal!.id || result.targetId !== ref.id || result.version !== ref.version) throw new ApiError('RESPONSE_INVALID');
   if(!active())throw new ApiError('SAVE_CONTINUATION_PAUSED');
   return ref;
 }

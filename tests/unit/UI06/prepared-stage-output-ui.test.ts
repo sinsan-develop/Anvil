@@ -152,7 +152,7 @@ async function waitFor(h:Awaited<ReturnType<typeof mount>>,predicate:()=>boolean
  while(!predicate()&&Date.now()<deadline)await h.ui.React.act(async()=>new Promise<void>(r=>setImmediate(r)));
  assert.ok(predicate(),h.container.textContent);
 }
-for(const status of [409,503,200])test('저장 응답 '+status+' 뒤 로컬 선택만 폐기하고 원 저장 상태를 보존한다',async()=>{
+for(const status of [409,503,200,'OTHER_ITEM'] as const)test('저장 결과 '+status+' 뒤 준비 표식을 폐기하고 영수증을 검산한다',async()=>{
  const h=await mount();try{
   const b=await h.ui.prepareStageDocumentDraft(h.client,h.choice,h.f.session,()=>true);
   Object.assign(b,{title:'입력 제목',body:'입력 본문',reason:'저장 사유'});h.initial(b);await h.render();assert.ok(h.marker());
@@ -163,18 +163,19 @@ for(const status of [409,503,200])test('저장 응답 '+status+' 뒤 로컬 선�
    const packet=JSON.parse(headers.get('X-Anvil-Command')??String(init.body));sent.push(packet.operation);
    const reply={operationId:h.f.userId,commandId:packet.commandId,projectId:h.f.projectId,status:'APPLIED',serverReceivedAt:'2026-11-16T00:00:00Z'};
    if(packet.operation==='uploadArtifact')return Response.json({...reply,targetId:h.f.clientId,version:null,data:{status:'ARTIFACT_READY',artifactRef:{artifactId:h.f.clientId,...packet.payload}}});
-   assert.equal(packet.operation,'saveDocumentDraft');assert.equal(JSON.stringify(packet).includes(h.choice.itemId),false);
-   if(status!==200)return Response.json({code:status===409?'VERSION_CONFLICT':'SERVICE_UNAVAILABLE'},{status});
+   assert.equal(packet.operation,'saveDocumentDraft');assert.deepEqual(packet.payload.stageOutputItem,{applicationRef:h.choice.applicationRef,itemId:h.choice.itemId});
+   if(status===409||status===503)return Response.json({code:status===409?'VERSION_CONFLICT':'SERVICE_UNAVAILABLE'},{status});
    const {title,formRef,stageNodeRef,content}=packet.payload;
    const ref={id:h.f.clientId,version:1,contentHash:contentHash(canonicalJson({title,formRef,stageNodeRef,content}))};
-   return Response.json({...reply,targetId:ref.id,version:1,data:{status:'DRAFT',ref}});
+   return Response.json({...reply,targetId:ref.id,version:1,data:{status:'DRAFT',ref,stageOutputItem:status==='OTHER_ITEM'?{...packet.payload.stageOutputItem,itemId:'A'}:packet.payload.stageOutputItem}});
   });
   await h.ui.React.act(async()=>{h.event(h.button('새 초안 버전 저장'),'onClick',{});});
   await waitFor(h,()=>!!(h.state().failure||h.state().savedRef));
   assert.deepEqual(sent,['uploadArtifact','saveDocumentDraft']);assert.equal(h.marker(),false);
   assert.equal(h.state().preparedStageOutput,undefined);assert.equal(h.state().body,'입력 본문');
   assert.deepEqual(h.state().stageNodeRef,b.stageNodeRef);
-  if(status===200){assert.equal(h.state().savedRef.version,1);assert.equal(h.state().pending,null);assert.equal(h.counts().saves,1);}
+  if(status==='OTHER_ITEM'){assert.equal(h.state().failure.code,'RESPONSE_INVALID');assert.equal(h.state().savedRef,null);assert.equal(h.counts().saves,0);}
+  else if(status===200){assert.deepEqual(h.state().stageOutputItem,{applicationRef:h.choice.applicationRef,itemId:h.choice.itemId});assert.equal(h.state().savedRef.version,1);assert.equal(h.state().pending,null);assert.equal(h.counts().saves,1);}
   else{assert.equal(h.state().failure.status,status);assert.ok(h.state().pending.save);assert.equal(h.state().saveUncertain,status===503);}
  }finally{await h.close();}
 });

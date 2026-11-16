@@ -30,6 +30,12 @@ test('문서 원문 승인 요청·결박은 전송하지 않으며 별도 재�
  const{f,b,next}=await bound();assert.equal(f.writes.length,0);assert.equal(next.pending!.upload.commandId,b.pending.upload.commandId);assert.deepEqual(next.pending!.upload.payload,b.pending.upload.payload);assert.equal(b.pending.upload.approvalRef,null);
  const ref=await continueDocumentSave(f.client,next.pending!,session,()=>{},()=>true);assert.equal(ref.version,3);assert.equal(f.writes.length,2);assert.deepEqual(f.raw,[Array.from(new TextEncoder().encode(b.body))]);assert.equal(f.writes[0]!.commandId,b.pending.upload.commandId);assert.equal(f.writes[1]!.commandId,b.pending.saveCommandId);assert.equal(f.writes[1]!.approvalRef,null);
 });
+test('다른 산출물에 대한 원 업로드 승인 준비는 저장과 소비 전에 거절한다',async()=>{
+ const b=await draft(),item={applicationRef:b.formRef,itemId:'A'};b.stageOutputItem={...item,itemId:'B'};b.pending.stageOutputItem=item;
+ await assert.rejects(newDocumentUploadApproval(b,session),{code:'DOCUMENT_UPLOAD_APPROVAL_MISMATCH'});
+ const {next,f}=await bound();const changed=structuredClone(next.pending!);changed.stageOutputItem=item;
+ await assert.rejects(continueDocumentSave(f.client,changed,session,()=>{},()=>true));assert.equal(f.writes.length,0);
+});
 test('명확한412 이외·다른buffer·주체·본문 변조·이미 문서저장단계는 승인 준비를 열지 않는다',async()=>{
  for(const mutate of [(b:DocumentBuffer)=>b.failure={code:'CONNECTION_LOST',status:0},(b:DocumentBuffer)=>b.failure={code:'APPROVAL_REQUIRED',status:403},(b:DocumentBuffer)=>b.failure={code:'RESPONSE_INVALID',status:412},(b:DocumentBuffer)=>b.ownerUserId=aid,(b:DocumentBuffer)=>b.body+='변경',(b:DocumentBuffer)=>b.pending!.body+='변경',(b:DocumentBuffer)=>b.pending!.save={...b.pending!.upload,operation:'saveDocumentDraft'}]){const b=await draft();mutate(b);await assert.rejects(newDocumentUploadApproval(b,session),ApiError);}
 });

@@ -25,14 +25,18 @@ test('수정 제안 선택은 원 문서의 고정 단계를 보존하고 단계
   const state = await prepareDocumentProposal(buffer, session);
   state.proposal = { id: project, baseRef: state.baseRef, proposedContentRef: body, diffRef: { ...body, mediaType: 'application/json;charset=utf-8' }, status: 'PENDING' };
   state.comparison = { proposal: { ...state.proposal, proposedContent: content, selections: [], reason: buffer.reason, createdAt: '2026-10-17T00:00:00Z', proposedBy: id }, base: { document: { title: buffer.title, formRef, stageNodeRef }, body: '원문' }, proposedBody: buffer.body } as any;
+  const item={applicationRef:{id:project,version:1,contentHash:'e'.repeat(64)},itemId:'B'};state.comparison!.base.document.stageOutputItem=item;
   let writes = 0;
   const client = new ApiClient(async (url, init) => {
     if (init?.method !== 'POST') return new Response(JSON.stringify({ id: project, participation: 'OWNER', controlState: { actorId: id, clientId: id, generation: 1, status: 'HELD' } }), { headers: { 'content-type': 'application/json' } });
     writes++; const command = JSON.parse(String(init.body)), ref = { id, version: 3, contentHash: contentHash(canonicalJson({ title: buffer.title, formRef, stageNodeRef, content })) };
-    return new Response(JSON.stringify({ commandId: command.commandId, projectId: project, status: 'APPLIED', operationId: id, targetId: id, version: 3, serverReceivedAt: '2026-10-17T00:00:00Z', data: { ref, status: 'DRAFT', proposalRef: project } }), { headers: { 'content-type': 'application/json' } });
+    return new Response(JSON.stringify({ commandId: command.commandId, projectId: project, status: 'APPLIED', operationId: id, targetId: id, version: 3, serverReceivedAt: '2026-10-17T00:00:00Z', data: { ref, status: 'DRAFT', proposalRef: project,stageOutputItem:item } }), { headers: { 'content-type': 'application/json' } });
   });
   state.applyCommand = await prepareProposalApplication(client, state, session, true);
   assert.deepEqual(state.applyCommand.payload.stageNodeRef, stageNodeRef);
+  assert.deepEqual(state.applyCommand.payload.stageOutputItem,item);
+  const other={...state.applyCommand,payload:{...state.applyCommand.payload,stageOutputItem:{...item,itemId:'A'}}};
+  await assert.rejects(applyDocumentProposal(client,{...state,applyCommand:other},session,()=>true),{code:'PROPOSAL_SELECTION_REQUIRED'});
   await assert.rejects(applyDocumentProposal(client, { ...state, applyCommand: { ...state.applyCommand, payload: { ...state.applyCommand.payload, stageNodeRef: null } } }, session, () => true));
   assert.equal(writes, 0);
   const result = await applyDocumentProposal(client, state, session, () => true);
