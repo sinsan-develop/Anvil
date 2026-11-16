@@ -2,12 +2,12 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
-## 현재 작업 요약 — 2026-11-16 직접 승인 후 구현 재개
+## 현재 작업 요약 — 2026-11-17 00:19:50 KST
 
-- **현재 상태: 전체 계획 미완료 · Settings key 수정 소스 검수 완료·통합 중.** CLI 보완 관측은 정상 종료했으나 이미지 크기 검사로 신원 미확인이다.
+- **현재 상태: 전체 계획 미완료 · PR159 설정 수정 통합 완료·FN07 실제 SDK 생산자 구현 중.** 고정 package/원 worker/단발 child bridge/query factory를 한 경로로 닫으며 실제 실행은 제외한다.
 - **현재 승인·결과:** 서버 항목 귀속5039D14A는 PR156 통합됐다. CLI 보완은 기존 승인 목적이라는 최신 PMO 명확화로 수행했으며 새승인 질문은 철회했다. 770175 결과 IMAGE_SIZE·자식/감독exit0·핸들0, 원20670a UNKNOWN/소진도 보존한다. 한도 확대·실제Agent 실행은 하지 않는다.
-- **담당·실행:** Primary가 Settings 쓰기를 반환했고 실제 SDK producer의 Native 호출선을 읽기 대조한다. Main은 검수·현황·Git 통합을 맡는다. 관측/수거 핸들은 0이며 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
-- **Git 제품 기준:** 최신 검증 mainab8b2a2ea94dbac2ecaaaf710a64df4ddd2c6332(PR158). source d7cac59a와 tree 동일·병합본순수RAM1PASS·복구tag pr-158-head와 완료branch 정리 확인. 현재 codex/av3-settings-panel-keys에서 검수된 설정 수정을 통합한다.
+- **담당·실행:** 기존 Primary 한 명이 검수 보완 명세의 제품12·시험3 경로에서 실제 SDK 생산자 A→D를 구현한다. Main은 범위·인터페이스 검수와 통합을 맡는다. 기존 관측/실행 핸들은 0이며 실제 DB·권한·키·서비스·Agent 실행은 제외한다.
+- **Git 제품 기준:** 최신 검증 main19e0430705f667593972524ed7c1c1c4e3cf1b66(PR159). sourceff3504fe와 tree 동일·병합본설정RAM1PASS/중복경고0·복구tag pr-159-head와 완료branch 정리 확인. 현재 codex/av3-normal-sdk-producer에서 다음 기존 승인 source 구현을 준비한다.
 - **완료한 소스 단위:** START 준비·원 READY·첫/후속 SEND·보호 출력·같은 Query 입력은 PR144~151에 source/RAM으로 통합됐다. STOP 소비 상태기계도 존재하지만 등록 실행기의 독립 CURRENT 생산자·실제 OS/SDK 연결은 미완료다. 소비 코드와 생산자 미연결을 구분한다.
 - **최근 확정 검증:** PR150 보호 출력과 PR151 동일 Query 입력은 각각 독립 C0/I0/M0·필요 타입/메모리 검사·병합본 RAM2건을 통과했다. 이전 PR148 spool 직접64건·선택6건 및 READY smoke는 이력으로 재사용하며 반복하지 않는다. 실제 SDK·Windows·DB 검증과 전체 인수는 미완료다.
 - **현재 구현 검증:** UI06 서버 항목 귀속은 직접87PASS·인접43PASS·루트타입0·독립 C0/I0/M0·27개 지문 일치·병합본 RAM3PASS로 PR156에 통합됐다. 구형 미기록·B/본문section A 구별·원receipt/audit·적용본 교체후 과거읽기/개정409를 확인했다. 실제 PG/served UI·Agent 실행 증거는 아니다.
@@ -15,7 +15,7 @@
 - **P03·SSH:** R3 복구는 복사·PG 기동·전환에 도달하지 못했고 원 자원을 보존한다. 자동 wrapper의 SSH255/UNKNOWN과 일반 SSH를 구분한다. 사용자 Windows PowerShell 로그인 성공 증거(11-16 18:04:45 KST)가 있으며 서버/로그인 불능으로 일반화하지 않는다. 새 부수 진단·재복제·정리는 하지 않는다.
 - **기록 기준:** 소스/RAM 합격, 실제 동작 확인, 사용자 인수를 구분한다. 기존 서로 다른 이력은 아래 보관 영역에 남긴다. 사용자 열람본의 기존 미추적 원본은 `D:\Project\Anvil\.av3-data\status-view-backup-20261116-184648`에 원본 해시 그대로 보존했다.
 
-최신 상세 근거: [작업 branch WORK_STATUS](https://github.com/sinsan-develop/Anvil/blob/codex/av3-settings-panel-keys/docs/WORK_STATUS.md), [WORK_CHECK](https://github.com/sinsan-develop/Anvil/blob/codex/av3-settings-panel-keys/docs/WORK_CHECK.md).
+최신 상세 근거: [작업 branch WORK_STATUS](https://github.com/sinsan-develop/Anvil/blob/codex/av3-normal-sdk-producer/docs/WORK_STATUS.md), [WORK_CHECK](https://github.com/sinsan-develop/Anvil/blob/codex/av3-normal-sdk-producer/docs/WORK_CHECK.md).
 <!-- CURRENT_WORK_ENTRY_END -->
 
 ## 이전 요약·누적 이력 — 당시 기록 보존(현재 판정 아님)
@@ -20295,3 +20295,19 @@ PMO turn01a1e4a7-6c0a-7fa2-8867-91c6cb444001/toolcall exec-d200d6bb-7079-459d-95
 Settings source는RED a8f5ba key중복1FAIL→d2da8c 직접·인접16PASS/FAIL0/SKIP0·1586.0417ms, 타입771c10→b7e31e/session62252종료 exit0·공백0·독립C0/I0/M0·3파일전후지문일치다. Main76d6b8은두JSX종류접두사를역치환한App.tsx가원Git바이트와같음을추가확인했다. 같은project상태보존/교체초기화·원console.error전달·모의GET만/POST0이며실제브라우저·CSRF회전은미검증이다. 결과서D68B391FFF1DD8CE3DD64807C3600B47D2598DD1B3AB68227EBEA3120202253B/쓰기반환·핸들0, Main이PR통합한다.
 
 다음핵심실제사용흐름은OwnedSpoolRuntime.outputSource의fixed.create 생산자다. 기존첫/후속Query·iterator/출력보관/STOP소비와고정SDK query호출형상은재사용하고, caller주입이아닌고정모듈loader/격리worker/검산형동기spawnhook·원child입출력/종료소유를묶을실제Native kernel호출선을기존Primary가읽기대조한다. CLI/모듈설치·신뢰근거미확인은실제검증제약이며이유없이기존승인source구현전체를중단하지않는다. 새권한/신뢰주체가정말필수인경우만구체차이를입증하고실제DB/키/서비스/Agent실행은확대하지않는다.
+
+
+## 2026-11-17 00:05:05 KST PR159 통합·정리 및 FN07 생산자 구현 준비
+
+PR159 sourceff3504feccf579c1b8b0cb005f0cfb2d35589791→main19e0430705f667593972524ed7c1c1c4e3cf1b66, Broker43887067527 success·source/main treed794188156d062f8d683ec619fae169d31ee9e69동일. Main1fc391→52e1b9 병합본설정RAM1PASS/FAIL0/SKIP0·1213.8774ms·중복key경고0, local/remote main exact clean·원격복구pr-159-head확인후완료branch/request/추적ref를정상정리했다. 실제브라우저/CSRF회전·설정POST·DB/권한/키/서비스/Agent는미검증/제외다.
+
+다음기존FN07 source생산자단위를Main이선정했다. codex/av3-normal-sdk-producer는최신main에서시작했고MainWI EBA7836B91796A6DB4C0213D1114029E2623677816AB4E6D4E116244993A6EEB를배정했다. 기존Primary는먼저FN07_NORMAL_SDK_PRODUCER_IMPLEMENTATION_SPEC_20261116.md 한문서에닫힌파일맵/인터페이스/위험검수5/체크리스트를작성하며제품/시험쓰기는Main의실제경로배정전0이다. writing-plans/subagent-driven-development의파일·서명·자기검토·독립검수와연속진행을적용하되사용자지정기존담당자/WORK_STATUS ledger/docs경로를유지하고새workspace/agent/인적재승인절차를추가하지않는다. 파일명의20261116은착수검토식별자이고실제기록시각은위KST를따른다.
+
+기술판정: 고정SDK package/원worker최초발급/목적한정자식bridge/query factory는승인된Agent연결의미완료구현을닫을단위다. 기존evidence·Codexhandshake·스풀발급목적을느슨하게하거나실제미검증을true로바꾸지않는다. 원등록주체/normal grant·slot·시도/기한·sourceRoot/env/고정package 및원handle검산으로한CLI자식만한정하며실제설치/새권한적용/DB·키·서비스·C#/SDK·Agent실행0이다. 잘못된경계는소유하지않은spawn위험이있으므로계약대조/독립C0전제품효과를추가하지않고, 기존grant밖실제효과/새신뢰주체가정말필수이면정확차이를입증한다. 설치미확인을source작업전체중단사유로만들거나새helper/mock을실제생산자완료로보고하지않는다.
+## 2026-11-17 00:19:50 KST FN07 생산자 명세 검수·기존 Primary 구현 배정
+
+Main이 명세 BC6BFC11 전체와 WI EBA7836B 및 기존 Forge source를 대조했다. 독립 검수 C0/I2: 최종 부모 exe/ASAR/header를 사전 manifest 입력으로 요구하는 순환과 Writable.write의 false를 무시한 입력이 미전송 큐에 무한 축적될 가능성이다. 두 항목은 승인된 기능의 내부 구현 보완이며 새로운 공개 계약·권한·실제 실행 승인을 요구하지 않는다. 기존 Primary가 사전 고정 빌드 준거/후행 native 부모 검산을 분리하고 입력 진입의 미전송+미확인 2MiB 예약을 보완했다. 수정 명세 SHA256 808629CECAF0362FB74FF4F4B4EB854340FAE5220A27D347560C26DDD03A0389. Main은 chunk64KiB·양방향 수송합256MiB·stderr64KiB를 별도 내부 수송 상한으로 채택했다. 기존 공동 spool256MiB·본문2MiB·원 기한·10초/64frame은 별도로 유지한다.
+
+기존 Primary에게 명세의 닫힌 제품12/시험3 경로를 단독 배정하고 A package/최초owner→B 목적한정 native child→C 격리 Query/동기 hook→D 기존 SEND/출력/STOP 구현을 연속 수행하도록 지시했다. Main은 제품 쓰기 없이 문서·검수·Git 통합을 맡는다. 독립 preflight는 두 사전문제 해소를 읽기 확인한다. 다른 담당자의 변경을 되돌리지 않으며 실제 DB·권한·키·서비스·설치·SDK/CLI/Agent/C# 실행·추가 SDK/SSH 조회·실자료 조사는 제외한다. 새로운 source/RAM 합격이나 실제 동작 완료는 아직 선언하지 않는다. 명세 단계 오류2건, 실제 새 실행0·소유 관측핸들0이다.
+
+승인 세 건의 결과 기록을 다시 대조했다. SDK 출력 저장 source는 기존 PR150 검수/통합 이력을 재사용하고, 공개 원문 단발 8aa1c8은 getCalls1·1.351176초·고정해시일치·요청종료/핸들0이다. WSL 보존 자원 관측76192f는 SSH255·0/14행·UNKNOWN_PRESERVE, 원인/자원상태는 미확인이고 재실행/자동삭제0이다. 이후 CLI 보완관측770175의 IMAGE_SIZE/정상종단은 별도 결과이며 앞선 WSL 또는 SDK 조회 성공으로 혼동하지 않는다. 추가 CLI크기한도 확대·SDK재조회·SSH재접속을 요청하거나 수행하지 않는다. 필요한 보고는 PMO에 전달했다.
