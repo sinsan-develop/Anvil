@@ -1,3 +1,11 @@
+## 2026-11-16 Windows 개발용 desktop lock 복원
+
+- 적용 범위는 FN18 타입 검증의 로컬 개발 의존성이다. DB/서버/실제 앱·Agent 운영 환경 ready를 뜻하지 않는다.
+- source checkpoint 1ed1dffe에서 apps/desktop/node_modules 부재를 검산하고 기존 npm ci --ignore-scripts --no-audit --no-fund --fetch-retries=0 --fetch-timeout=30000을 전용 개발 cache와 함께 한 번 실행했다. 163패키지·21초·exit0이며 설치 스크립트/앱 실행은 없다.
+- package.json SHA256 F21795964068338AEA8BFD811F7B6FE83B7AF35F81174387536CBF24693749DD, package-lock.json SHA256 544557A7849299B37EA00E6AF07E00E30DE54C51F950C64A94A050EDAC0516A8을 실행 전후 보존했다. locked resolved 163개는 HTTPS registry.npmjs.org이며 다른 host/scheme0이다.
+- 새 로컬 apps/desktop/node_modules와 .av3-data/fn18-locked-deps-cache-20261116-01은 후속 개발용으로 보존한다. 기존 공유 node_modules·junction·전역 설치·권한·인증은 변경하지 않았다. 실제 사용자/백업/DB/키/서비스 접근0이다.
+- electron/dist와 생성 path.txt 부재를 확인했다. 실제 Electron/SDK/Agent/C#/앱 패키징은 실행하지 않았다. 원 TS7.0.2와 desktop tsconfig --noEmit로 후속 진단을 수집하며, 생성 native-proof-runtime.cjs 해석4건은 lock 복원과 별도다.
+
 ## 2026-10-27 12:31 KST 복구 전제 추가 관측 — 기존 네트워크도 없음
 
 ## 2026-10-27 20:02 KST P03 RO 구조조사·일회 자원 회수

@@ -197,8 +197,30 @@ async function phaseKeyFrame(f,lease,phase,baseFrame=null){
 test('REGISTERED phase operation은 strict current·원 key/lease를 실제 driver에 연결하고 null·원형 오염은 child0이다',async()=>{
  for(const phase of ['STREAM','ARM','STATE','CLOSE']){const f=await liveNativeOwner(),now=f.dependencies.now();let absolute=now+10000,effects=0;const lease={signal:new AbortController().signal,check:()=>{},remainingMs:()=>absolute-now,callExpiresAt:()=>new Date(absolute).toISOString(),narrow:value=>{absolute=Math.min(absolute,value);},markEffect:()=>{effects++;}},frame=await phaseKeyFrame(f,lease,phase),operation=await f.dependencies.createOperation(lease,f.stored());await operation.current();const before=effects,otherBefore=f.writes.filter(v=>v.operation==='SIGN_NATIVE_PREPARATION_PROOF'||v.operation==='SIGN_PROOF').length,childBefore=f.writes.filter(v=>v.operation==='SIGN_NATIVE_FIRST_RECEIVE_PROOF').length;
  for(const mode of ['current-extra','current-purpose','challenge','current-session','null','schema','future']){const bad=structuredClone(frame);if(mode==='current-extra')bad.current.extra=true;if(mode==='current-purpose')bad.current.purpose='NATIVE_FIRST_RECEIVE_REGISTRATION_CURRENT';if(mode==='challenge')bad.current.challengeRef.contentHash='e'.repeat(64);if(mode==='current-session')bad.current.receiveSessionRef.contentHash='e'.repeat(64);if(mode==='null'){if(phase==='ARM')bad.request.offerRef=null;else bad.request.authorityRef={id:'87111111-1111-4111-8111-000000000099',version:1,contentHash:'e'.repeat(64)};}if(mode==='schema')bad.request.schemaVersion=2;if(mode==='future')bad.request.issuedAt=new Date(now+1000).toISOString();await assert.rejects(operation.signFirstReceiveProof(bad),undefined,phase+':'+mode);assert.equal(effects,before);assert.equal(f.writes.filter(v=>v.operation==='SIGN_NATIVE_FIRST_RECEIVE_PROOF').length,childBefore);}
+ const symbolic=structuredClone(frame);let symbolReads=0;
+ Object.defineProperty(symbolic.current,Symbol('unexpected'),{enumerable:true,get(){symbolReads++;throw Error('UNTRUSTED');}});
+ await assert.rejects(operation.signFirstReceiveProof(symbolic),{message:'PROTECTION_UNAVAILABLE'});
+ assert.equal(symbolReads,0);assert.equal(effects,before);assert.equal(f.writes.filter(v=>v.operation==='SIGN_NATIVE_FIRST_RECEIVE_PROOF').length,childBefore);
  const result=await operation.signFirstReceiveProof(frame);assert.equal(result.requestHash,contentHash(canonicalJson(frame.request)));assert.equal(result.keyId,f.stored().pendingKeyId);assert.equal(result.fingerprint,f.stored().key.fingerprint);assert.equal(f.writes.filter(v=>v.operation==='SIGN_NATIVE_FIRST_RECEIVE_PROOF').length,childBefore+1);if(phase==='STATE')for(const key of ['offerRef','armRef','authorityRef','deliveryRef','commandHash'])assert.equal(frame.request[key],null);assert.equal(f.writes.filter(v=>v.operation==='SIGN_NATIVE_PREPARATION_PROOF'||v.operation==='SIGN_PROOF').length,otherBefore,'기존 다른 SIGN 목적의 추가 호출0');await operation.close();
  }
+});
+test('phase 서명 시계 안에서 owner 문맥을 폐기하면 원 키 호출 전에 거절한다',async()=>{
+ const f=await liveNativeOwner(),now=f.dependencies.now(),epoch=f.owner.getState().contextEpoch;
+ let end=now+10000,armed=false,invalidations=0;
+ const lease={signal:new AbortController().signal,
+  check:()=>{if(f.owner.getState().contextEpoch!==epoch)throw Error('CONTEXT_CHANGED');},
+  remainingMs:()=>end-now,callExpiresAt:()=>new Date(end).toISOString(),
+  narrow:at=>{end=Math.min(end,at);},markEffect:()=>{}};
+ const frame=await phaseKeyFrame(f,lease,'STATE'),originalClock=f.ports.now;
+ f.ports.now=()=>{if(armed){armed=false;invalidations++;f.setContext({origin:'https://project.invalid',identity:'B'});}return originalClock();};
+ const operation=await f.dependencies.createOperation(lease,f.stored());
+ try{
+  await operation.current();
+  const count=()=>f.writes.filter(value=>value.operation==='SIGN_NATIVE_FIRST_RECEIVE_PROOF').length;
+  const before=count();armed=true;
+  await assert.rejects(operation.signFirstReceiveProof(frame),{message:'CONTEXT_CHANGED'});
+  assert.equal(invalidations,1);assert.equal(count(),before);
+ }finally{await operation.close();f.ports.now=originalClock;}
 });
 test('phase operation UNKNOWN 뒤 같은 Challenge의 다른 proof 시각도 재서명하지 않는다',async()=>{
  const f=await liveNativeOwner('FIRST_BAD_SIGNATURE'),now=f.dependencies.now();let current=now,absolute=now+10000;f.ports.now=()=>current;const lease={signal:new AbortController().signal,check:()=>{},remainingMs:()=>absolute-current,callExpiresAt:()=>new Date(absolute).toISOString(),narrow:value=>{absolute=Math.min(absolute,value);},markEffect:()=>{}},frame=await phaseKeyFrame(f,lease,'STATE'),operation=await f.dependencies.createOperation(lease,f.stored());await operation.current();await assert.rejects(operation.signFirstReceiveProof(frame),/OUTCOME_UNKNOWN/);const before=f.writes.filter(v=>v.operation==='SIGN_NATIVE_FIRST_RECEIVE_PROOF').length;assert.equal(before,1);const changed=structuredClone(frame);current++;changed.request.issuedAt=new Date(current).toISOString();await assert.rejects(operation.signFirstReceiveProof(changed));assert.equal(f.writes.filter(v=>v.operation==='SIGN_NATIVE_FIRST_RECEIVE_PROOF').length,before,'같은 Challenge UNKNOWN의 proof hash 변경으로 재서명0');await operation.close();
@@ -224,7 +246,17 @@ test('phase owner는 공급 부재·교차등록·입력 오염·GET 뒤 문맥/
 
 
 test('REGISTERED phase는 위조 AbortSignal을 active 변경 전에 거절하고 owner busy를 남기지 않는다',async()=>{
- const f=await liveNativeOwner(),oldNow=Date.now;Date.now=f.dependencies.now;try{const now=f.dependencies.now();let end=now+10000,calls=0;const lease={signal:new AbortController().signal,check:()=>{},remainingMs:()=>end-now,callExpiresAt:()=>new Date(end).toISOString(),narrow:at=>{end=Math.min(end,at);}},v=await phaseOwnerMaterials(f,lease,'STATE'),{createNativeFirstReceiveClient}=require('../../apps/desktop/src/native-first-receive-client.cjs');f.dependencies.createFirstReceiveClient=l=>createNativeFirstReceiveClient({fetch:async()=>new Response(canonicalJson(++calls===1?v.sessionView:v.value),{status:200,headers:{'content-type':'application/json'}})},f.stored().origin,l,()=>l.check(),nativeRuntime);const source=f.owner.createNativeFirstReceivePhaseProofSource(v.frame.window),before=f.writes.length;await assert.rejects(source.signPhase(v.frame.challenge,v.frame.request,v.frame.body,{aborted:false}),/CONTEXT_CHANGED/);let traps=0;await assert.rejects(source.signPhase(v.frame.challenge,v.frame.request,v.frame.body,Object.defineProperty({},'aborted',{get(){traps++;throw Error('UNTRUSTED');}})),/CONTEXT_CHANGED/);assert.equal(traps,0);assert.equal(calls,0);assert.equal(f.writes.length,before);assert.equal(f.timers(),0);const signed=await source.signPhase(v.frame.challenge,v.frame.request,v.frame.body,new AbortController().signal);assert.equal(signed.requestHash,contentHash(canonicalJson(v.frame.request)));assert.equal(calls,2);assert.equal(f.timers(),0);
+ const f=await liveNativeOwner(),oldNow=Date.now;Date.now=f.dependencies.now;try{const now=f.dependencies.now();let end=now+10000,calls=0;const lease={signal:new AbortController().signal,check:()=>{},remainingMs:()=>end-now,callExpiresAt:()=>new Date(end).toISOString(),narrow:at=>{end=Math.min(end,at);}},v=await phaseOwnerMaterials(f,lease,'STATE'),{createNativeFirstReceiveClient}=require('../../apps/desktop/src/native-first-receive-client.cjs');f.dependencies.createFirstReceiveClient=l=>createNativeFirstReceiveClient({fetch:async()=>new Response(canonicalJson(++calls===1?v.sessionView:v.value),{status:200,headers:{'content-type':'application/json'}})},f.stored().origin,l,()=>l.check(),nativeRuntime);const source=f.owner.createNativeFirstReceivePhaseProofSource(v.frame.window),before=f.writes.length;await assert.rejects(source.signPhase(v.frame.challenge,v.frame.request,v.frame.body,{aborted:false}),/CONTEXT_CHANGED/);let traps=0;await assert.rejects(source.signPhase(v.frame.challenge,v.frame.request,v.frame.body,Object.defineProperty({},'aborted',{get(){traps++;throw Error('UNTRUSTED');}})),/CONTEXT_CHANGED/);assert.equal(traps,0);
+ const signal=new AbortController().signal,descriptor=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted');
+ try{
+  for(const invalid of ['missing','data']){
+   if(invalid==='missing')delete AbortSignal.prototype.aborted;
+   else Object.defineProperty(AbortSignal.prototype,'aborted',{configurable:true,value:false});
+   await assert.rejects(source.signPhase(v.frame.challenge,v.frame.request,v.frame.body,signal),{message:'CONTEXT_CHANGED'});
+   assert.equal(f.owner.isBusy(),false);
+  }
+ }finally{Object.defineProperty(AbortSignal.prototype,'aborted',descriptor);}
+ assert.equal(calls,0);assert.equal(f.writes.length,before);assert.equal(f.timers(),0);const signed=await source.signPhase(v.frame.challenge,v.frame.request,v.frame.body,new AbortController().signal);assert.equal(signed.requestHash,contentHash(canonicalJson(v.frame.request)));assert.equal(calls,2);assert.equal(f.timers(),0);
  }finally{Date.now=oldNow;}
 });
 
@@ -321,6 +353,37 @@ test('실제 slot handoff 성공 중 SlotReceipt가 자동 생산되며 private 
 test('SlotReceipt는 수용전·void-only·위조/교차 receiver로 생산되지 않고 readonly facts는 전체 Delivery를 대조한다',async()=>{
  const oldNow=Date.now;let v,receiver,other;try{v=await registeredPhaseConsumer('NORMAL','STREAM');const p=v.phase.frame;let ids=0;const uuid=v.f.dependencies.uuid;v.f.dependencies.uuid=()=>{ids++;return uuid();};receiver=v.f.owner.createNativeFirstReceiveReceiver(p.window,v.native.protectedSource);assert.throws(()=>v.client.readSlotReceipt(receiver));assert.throws(()=>ownerSlotAcceptance(receiver,p.window,v.delivery));assert.equal(ids,0);let traps=0;const fake={accept:async()=>{traps++;},getChannel:()=>{traps++;},dispose:()=>{traps++;}},proxy=new Proxy(receiver,{getPrototypeOf(){traps++;throw Error('TRAP');},get(){traps++;throw Error('TRAP');},ownKeys(){traps++;throw Error('TRAP');}});for(const value of [null,{},fake,proxy,{...receiver}])assert.throws(()=>v.client.readSlotReceipt(value));assert.equal(traps,0);const data=Buffer.from(canonicalJson(v.delivery)),raw=Buffer.alloc(data.length+47);raw.writeUInt32BE(data.length);data.copy(raw,4);raw.fill('Z',data.length+4);try{assert.equal(await receiver.accept(raw,v.controller.signal),undefined);}finally{raw.fill(0);}assert.deepEqual(receiver.getChannel().identity,v.native.identity);assert.equal(ids,1);assert.throws(()=>v.client.readSlotReceipt(receiver),'직접 accept(void)는 private STREAM/handoff adapter 생산을 대체하지 않는다');const facts=ownerSlotAcceptance(receiver,p.window,v.delivery);assert.deepEqual(Object.keys(facts).sort(),['acceptedAt','expiresAt','receiptId']);const wrong=structuredClone(v.delivery);wrong.snapshot.commandHash='f'.repeat(64);assert.throws(()=>ownerSlotAcceptance(receiver,p.window,wrong));assert.throws(()=>ownerSlotAcceptance(receiver,p.window,new Proxy(v.delivery,{ownKeys(){traps++;throw Error('TRAP');},getPrototypeOf(){traps++;throw Error('TRAP');}})));assert.equal(traps,0);other=v.f.owner.createNativeFirstReceiveReceiver(p.window,v.native.protectedSource);assert.throws(()=>v.client.readSlotReceipt(other));assert.equal(ids,1);assert.equal(v.nativeRequests(),1);assert.equal(v.signs(),0);}finally{v?.client.disposeReceive();receiver?.dispose();other?.dispose();Date.now=oldNow;if(v){assert.equal(v.timers.size,0);assert.equal(v.f.timers(),0);}}
 });
+test('handoff 거절은 저장된 receiver 영수증을 정리하고 비객체 입력도 원 오류와 abort를 보존한다',async()=>{
+ const oldNow=Date.now;
+ const proto=nativeRuntime.NativeFirstReceiveHumanClient.prototype;
+ const descriptor=Object.getOwnPropertyDescriptor(proto,'abortReceivePhase');
+ let aborts=0,v,receiver;
+ Object.defineProperty(proto,'abortReceivePhase',{...descriptor,value:function(...args){
+  aborts++;
+  return Reflect.apply(descriptor.value,this,args);
+ }});
+ try{
+  v=await registeredPhaseConsumer('NORMAL','STREAM');
+  const p=v.phase.frame;
+  await v.client.consumeReceivePhase(p.window,p.challenge,p.request,p.body,v.source);
+  receiver=v.f.owner.createNativeFirstReceiveReceiver(p.window,v.native.protectedSource);
+  await v.client.handoffReceiveDelivery(receiver);
+  assert.equal(v.client.readSlotReceipt(receiver).snapshot.purpose,'NATIVE_FIRST_RECEIVE_SLOT_ACCEPTED');
+  const before=aborts;
+  await assert.rejects(v.client.handoffReceiveDelivery(receiver));
+  assert.equal(aborts,before+1);
+  assert.throws(()=>v.client.readSlotReceipt(receiver),{message:'NATIVE_RECEIVE_SOURCE_UNAVAILABLE'});
+  for(const bad of [null,undefined,42,'input',Symbol('unknown'),()=>{}]){
+   const count=aborts;
+   await assert.rejects(v.client.handoffReceiveDelivery(bad),{message:'NATIVE_RECEIVE_SOURCE_UNAVAILABLE'});
+   assert.equal(aborts,count+1);
+  }
+ }finally{
+  try{v?.client.disposeReceive();receiver?.dispose();}
+  finally{Object.defineProperty(proto,'abortReceivePhase',descriptor);Date.now=oldNow;}
+ }
+});
+
 test('SlotReceipt E는 원 Native current/authority와 실제 slot·Client 부모 min이며 처리3초나 긴 명목 profile로 바꾸지 않는다',async()=>{
  const oldNow=Date.now;try{for(const parent of [false,true]){let v,receiver;try{v=await registeredPhaseConsumer('NORMAL','STREAM');const p=v.phase.frame;await v.client.consumeReceivePhase(p.window,p.challenge,p.request,p.body,v.source);const base=Date.parse(p.request.issuedAt),read=v.native.protectedSource.read;v.native.protectedSource.read=async(...args)=>{const material=await Reflect.apply(read,v.native.protectedSource,args);material.current.expiresAt=new Date(base+4000).toISOString();material.profileExpiresAt=material.signerExpiresAt=new Date(base+30000).toISOString();return material;};if(parent)v.lease.narrow(base+2000);let ids=0;const uuid=v.f.dependencies.uuid;v.f.dependencies.uuid=()=>{ids++;return uuid();};receiver=v.f.owner.createNativeFirstReceiveReceiver(p.window,v.native.protectedSource);await v.client.handoffReceiveDelivery(receiver);const receipt=v.client.readSlotReceipt(receiver);assert.equal(receipt.snapshot.expiresAt,new Date(base+(parent?2000:4000)).toISOString());assert.equal(ids,1);assert.equal(Date.parse(receipt.snapshot.expiresAt)-Date.parse(receipt.snapshot.acceptedAt)<=10000,true);if(parent){v.lease.narrow(base+1000);assert.throws(()=>v.client.readSlotReceipt(receiver));assert.equal(receipt.snapshot.expiresAt,new Date(base+2000).toISOString(),'고정 영수증의 원문/기한을 고쳐쓰지 않는다');}else{v.clock.offset=4000;assert.throws(()=>v.client.readSlotReceipt(receiver));}assert.equal(ids,1);assert.equal(v.nativeRequests(),2);assert.equal(v.signs(),1);}finally{v?.client.disposeReceive();receiver?.dispose();if(v){assert.equal(v.timers.size,0);assert.equal(v.f.timers(),0);}}}}finally{Date.now=oldNow;}
 });
@@ -355,7 +418,7 @@ function receiveShellAssembly(f){
 async function receiveSettingsFixture(mode='NORMAL'){
  const f=await issueFixture(receiveShellAssembly);assert.equal((await issue(f)).ok,true);const now=f.dependencies.now(),clock=Object.assign(f.receiveClock,{phase:'WINDOW_PREPARED',requests:[],human:[],currentReads:0,streamEntered:false}),hash=value=>contentHash(canonicalJson(value)),ref=n=>({id:'ba111111-1111-4111-8111-'+n.toString(16).padStart(12,'0'),version:1,contentHash:'a'.repeat(64)}),lease={signal:new AbortController().signal,check:()=>{},remainingMs:()=>10000,callExpiresAt:()=>new Date(now+10000).toISOString(),narrow:()=>{}},template=await firstReceiveKeyFrame(f,lease,true),native=liveNativeModel(f,()=>{},nativeRuntime,true),timers=new Map();
  let window=null,sessionV=null,offer=null,arm=null,delivery=null,next=400;const challenges=new Map(),profile=template.value.profile,view={user:{id:ID,displayName:'원 합성 사용자',serverOwner:true},clientId:ID,csrfToken:'C'.repeat(43),expiresAt:template.window.snapshot.expiresAt,absoluteExpiresAt:template.window.snapshot.expiresAt,reauthUntil:template.window.snapshot.expiresAt};
- const state=()=>({schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_STATE',windowRef:window.ref,phase:clock.phase,receiveSessionRef:sessionV?.ref??null,offerRef:offer?.ref??null,armRef:arm?.ref??null,bindingRef:delivery?.snapshot.bindingRef??null,deliveryRef:delivery?.ref??null,authorityRef:delivery?.snapshot.authorityRef??null,ackRef:null,terminalRef:clock.phase==='CLOSED'?ref(999):null,current:{checkedAt:new Date(clock.now).toISOString(),usable:true,reason:'CURRENT'},observedAt:new Date(clock.now).toISOString(),expiresAt:window.snapshot.expiresAt,executionAuthorized:false});
+ const state=()=>({schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_STATE',windowRef:window.ref,phase:clock.phase,receiveSessionRef:sessionV?.ref??null,offerRef:offer?.ref??null,armRef:arm?.ref??null,bindingRef:delivery?.snapshot.bindingRef??null,deliveryRef:delivery?.ref??null,authorityRef:delivery?.snapshot.authorityRef??null,ackRef:clock.phase==='CONFIRMED'?ref(998):null,terminalRef:['CONFIRMED','UNCONFIRMED','CLOSED'].includes(clock.phase)?ref(999):null,current:{checkedAt:new Date(clock.now).toISOString(),usable:true,reason:'CURRENT'},observedAt:new Date(clock.now).toISOString(),expiresAt:window.snapshot.expiresAt,executionAuthorized:false});
  const remote=f.e.sessions.get('persist:anvil-web'),originalFetch=remote.fetch;remote.fetch=async function(url,init){clock.human.push({url,method:init.method});let value;if(url.includes('/connector-registrations/')){const response=await Reflect.apply(originalFetch,this,[url,init]);value=await response.json();value.credential={issued:true,status:'ACTIVE_STATUS_ONLY',expiresAt:f.stored().credential.expiresAt,revokedAt:null};}
  else if(url.endsWith('/api/v1/session'))value=clock.mode==='CROSS_SESSION'?{...view,user:{...view.user,id:ref(999).id}}:view;else if(url.endsWith('/native-channel-profile')){value=profile;if(clock.mode==='PROFILE_REVOKED'){value=structuredClone(profile);value.head.snapshot.state='REVOKED';value.head.ref.contentHash=hash(value.head.snapshot);}if(clock.mode==='AUTH_ABA')remote.cookies.emit('changed');}
  else if(url.endsWith('/native-receive-windows')){const command=JSON.parse(init.body);assert.equal(command.operation,'prepareNativeReceiveWindow');assert.equal(command.clientId,ID);assert.equal(command.controlGeneration,1);assert.deepEqual(command.payload.profileRef,profile.profile.ref);const snapshot={...template.window.snapshot,localReceiveAttemptId:command.payload.localReceiveAttemptId},without={...snapshot};delete without.authBindingHash;snapshot.authBindingHash=hash({authSessionId:native.authority.snapshot.subject.humanSessionId,window:without});window={ref:{...template.window.ref,contentHash:hash(snapshot)},snapshot};value={operationId:ref(next++).id,commandId:command.commandId,projectId:ID,status:'APPLIED',targetId:window.ref.id,version:1,data:{ref:window.ref,status:'NATIVE_RECEIVE_WINDOW_PREPARED',window},evidenceRefs:[],warnings:[],serverReceivedAt:new Date(now).toISOString()};}
@@ -381,6 +444,26 @@ test('실제 settings→preload→shell은 원 HUMAN Window·OPEN·pending STREA
  const oldNow=Date.now;let f;try{f=await receiveSettingsFixture();Date.now=f.dependencies.now;const ui=rendererFixture(f.api);ui.element('trust-open').dispatch('click');await until(()=>ui.element('trust-state').textContent.includes('상태 조회용'));ui.element('native-receive-begin').dispatch('click');await until(()=>f.clock.streamEntered);await until(()=>ui.element('native-receive-state').textContent==='원 명령 대기');assert.equal(f.clock.currentReads,0);f.publish();ui.element('native-receive-refresh').dispatch('click');await until(()=>ui.element('native-receive-state').textContent==='보호 원 명령 관측');ui.element('native-receive-confirm').checked=true;ui.element('native-receive-arm').dispatch('click');await until(()=>ui.element('native-receive-state').textContent==='ARM 기록 관측');assert.equal(f.clock.currentReads,0);f.deliver();await until(()=>f.clock.currentReads===1);for(let i=0;i<200;i++)await Promise.resolve();const requests=f.clock.requests.length;ui.element('native-receive-status').dispatch('click');await until(()=>ui.element('native-receive-state').textContent==='원 수신 처리 중 · 확인 완료 아님');assert.equal(f.clock.requests.length,requests);assert.equal(f.clock.requests.filter(x=>x.path.endsWith('/open')).length,1);assert.equal(f.clock.requests.filter(x=>x.path.endsWith('/stream')).length,1);assert.equal(f.clock.requests.some(x=>x.path.endsWith('/ack')),false);const status=await f.api.nativeReceiveStatus(f.ready.state.attemptId,f.ready.state.contextEpoch);assert.equal(status.ok,true);assert.equal(Object.keys(status.value).length,10);assert.equal(status.value.phase,'RECEIVING');assert.equal(status.value.outcome,'NONE');assert.equal(status.value.expiresAt,new Date(f.dependencies.now()+6000).toISOString());f.clock.now+=6000;const expired=await f.api.nativeReceiveStatus(f.ready.state.attemptId,f.ready.state.contextEpoch);assert.equal(expired.ok,false);assert.equal(expired.error.code,'EXPIRED');assert.equal(f.clock.requests.length,requests);assert.equal(JSON.stringify(status).includes('Z'.repeat(43)),false);assert.equal('authority'in status.value,false);assert.equal('secret'in status.value,false);}finally{f?.dispose();Date.now=oldNow;if(f){assert.equal(f.receiveTimers.size,0);assert.equal(f.timers(),0);}}
 });
 
+for(const phase of ['CONFIRMED','UNCONFIRMED'])test('수신 refresh는 서버 '+phase+'를 거절하고 기존 표시 상태를 유지한다',async()=>{
+ const oldNow=Date.now;let f;
+ try{
+  f=await receiveSettingsFixture();Date.now=f.dependencies.now;
+  const attempt=f.ready.state.attemptId,epoch=f.ready.state.contextEpoch,id=n=>'ad111111-1111-4111-8111-'+String(n).padStart(12,'0');
+  assert.equal((await f.api.nativeReceiveBegin(id(1),attempt,epoch)).ok,true);
+  await until(()=>f.clock.streamEntered);f.publish();
+  const offered=await f.api.nativeReceiveRefresh(id(2),attempt,epoch);
+  assert.equal(offered.value.phase,'OFFERED');
+  assert.equal((await f.api.nativeReceiveArm(id(3),attempt,epoch,offered.value.offerRef,true)).ok,true);
+  f.deliver();
+  let before;for(let i=0;i<300;i++){before=await f.api.nativeReceiveStatus(attempt,epoch);if(before.value.phase==='RECEIVING')break;}
+  assert.equal(before.value.phase,'RECEIVING');assert.equal(before.value.outcome,'NONE');
+  const operations=f.clock.requests.length;f.clock.phase=phase;
+  assert.deepEqual(await f.api.nativeReceiveRefresh(id(4),attempt,epoch),{ok:false,error:{code:'CONTEXT_CHANGED'}});
+  assert.deepEqual(await f.api.nativeReceiveStatus(attempt,epoch),before);
+  assert.equal(f.clock.requests.length,operations);
+ }finally{f?.dispose();Date.now=oldNow;}
+});
+
 test('shell 수신 UNKNOWN은 같은 begin replay도 성공으로 덮지 않고 새 Challenge·SIGN·native 재요청0이다',async()=>{
  const oldNow=Date.now;let f;try{f=await receiveSettingsFixture();Date.now=f.dependencies.now;f.clock.mode='CHALLENGE_LOST';const rid='a8111111-1111-4111-8111-111111111111',attempt=f.ready.state.attemptId,epoch=f.ready.state.contextEpoch;await f.api.nativeReceiveBegin(rid,attempt,epoch);let status;for(let i=0;i<300;i++){status=await f.api.nativeReceiveStatus(attempt,epoch);if(status.ok&&status.value.phase==='UNKNOWN')break;await Promise.resolve();}assert.equal(status.value.phase,'UNKNOWN');assert.equal(status.value.outcome,'UNKNOWN');const before=f.clock.requests.length,signs=f.writes.filter(v=>v.operation==='SIGN_NATIVE_FIRST_RECEIVE_PROOF').length;const same=await f.api.nativeReceiveBegin(rid,attempt,epoch);assert.equal(same.ok,false);assert.equal(same.error.code,'OUTCOME_UNKNOWN');assert.equal((await f.api.nativeReceiveBegin('a8111111-1111-4111-8111-222222222222',attempt,epoch)).ok,false);assert.equal((await f.api.nativeReceiveRefresh('a8111111-1111-4111-8111-333333333333',attempt,epoch)).ok,false);assert.equal(f.clock.requests.length,before);assert.equal(f.writes.filter(v=>v.operation==='SIGN_NATIVE_FIRST_RECEIVE_PROOF').length,signs);assert.equal(signs,1,'OPEN1회뿐이며 STREAM 재서명0');assert.equal(f.writes.filter(v=>v.operation==='SIGN_PROOF').length,3);}finally{f?.dispose();Date.now=oldNow;if(f){assert.equal(f.receiveTimers.size,0);assert.equal(f.timers(),0);}}
 });
@@ -397,6 +480,30 @@ test('shell은 원 ARM 재조회·refresh nonce0·중복 begin/ARM 단발을 실
 });
 test('shell Delivery current의 교차 ref·등록·만료·await 인증취소는 slot 성공0과 원 byte 수명 회수를 유지한다',async()=>{
  const oldNow=Date.now;try{for(const mode of ['CURRENT_REF','CURRENT_REGISTRATION','EXPIRED','HOLD_CURRENT']){let f;const from=Buffer.from,owned=[];try{f=await receiveSettingsFixture();Date.now=f.dependencies.now;const attempt=f.ready.state.attemptId,epoch=f.ready.state.contextEpoch;await f.api.nativeReceiveBegin('ad111111-1111-4111-8111-111111111111',attempt,epoch);await until(()=>f.clock.streamEntered);f.publish();const value=await f.api.nativeReceiveRefresh('ad111111-1111-4111-8111-222222222222',attempt,epoch);assert.equal((await f.api.nativeReceiveArm('ad111111-1111-4111-8111-333333333333',attempt,epoch,value.value.offerRef,true)).ok,true);Buffer.from=(...args)=>{const result=Reflect.apply(from,Buffer,args);if(args[0] instanceof Uint8Array&&args[0].byteLength===43&&args[0].every(byte=>byte===90))owned.push(result);return result;};f.clock.mode=mode;if(mode==='EXPIRED')f.clock.now+=6000;f.deliver();if(mode==='HOLD_CURRENT'){await until(()=>f.clock.currentReads===1);f.dispose();for(let i=0;i<300&&f.receiveTimers.size;i++)await Promise.resolve();assert.equal(f.clock.currentDestroyed,true);const status=await f.api.nativeReceiveStatus(attempt,epoch);assert.equal(status.ok,false);}else{let status;for(let i=0;i<300;i++){status=await f.api.nativeReceiveStatus(attempt,epoch);if(status.ok&&status.value.phase==='UNKNOWN'||!status.ok)break;await Promise.resolve();}assert.ok(!status.ok||status.value.phase==='UNKNOWN');assert.equal(f.clock.currentReads,mode==='EXPIRED'?0:1);}assert.equal(f.clock.requests.filter(v=>v.path.endsWith('/stream')).length,1);assert.equal(f.clock.requests.some(v=>v.path.endsWith('/ack')),false);assert.ok(owned.every(bytes=>bytes.every(byte=>byte===0)));if(mode!=='EXPIRED')assert.ok(owned.length>0);}finally{Buffer.from=from;f?.dispose();if(f){assert.equal(f.receiveTimers.size,0);assert.equal(f.timers(),0);}}}}finally{Date.now=oldNow;}
+});
+
+test('controller 준비 실패 뒤 ARM은 보호 오류를 유지하고 같은 요청 ID를 예약하지 않는다',async()=>{
+ const f=await issueFixture();assert.equal((await issue(f)).ok,true);
+ const original=f.ports.observeParent,attempt=f.ready.state.attemptId,epoch=f.ready.state.contextEpoch;
+ const requestId='ae111111-1111-4111-8111-333333333333';
+ let observations=0;
+ try{
+  f.ports.observeParent=async()=>{observations++;throw Error('PROTECTION_UNAVAILABLE');};
+  const begin=await f.api.nativeReceiveBegin('ae111111-1111-4111-8111-111111111111',attempt,epoch);
+  assert.deepEqual(begin,{ok:false,error:{code:'PROTECTION_UNAVAILABLE'}});
+  assert.ok(observations>0);
+  const status=await f.api.nativeReceiveStatus(attempt,epoch);
+  assert.equal(status.value.phase,'PREPARING');assert.equal(status.value.windowRef,null);
+  const before={observations,writes:f.writes.length,requests:f.server.calls.length};
+  for(const digit of ['a','b']){
+   const offerRef={id:requestId,version:1,contentHash:digit.repeat(64)};
+   assert.deepEqual(await f.api.nativeReceiveArm(requestId,attempt,epoch,offerRef,true),
+    {ok:false,error:{code:'PROTECTION_UNAVAILABLE'}});
+  }
+  assert.deepEqual({observations,writes:f.writes.length,requests:f.server.calls.length},before);
+  assert.deepEqual(await f.api.nativeReceiveStatus(attempt,epoch),status);
+  assert.equal(f.timers(),0);
+ }finally{f.ports.observeParent=original;}
 });
 
 test('수신 exact5 실제 handler는 원 local sender 밖에서 IPC_DENIED이며 source·network0이다',async()=>{const f=await issueFixture();assert.equal((await issue(f)).ok,true);const calls=f.server.calls.length,writes=f.writes.length,foreign=f.shell.getRemote().webContents;for(const action of ['begin','status','refresh','arm','close']){const result=await f.e.handlers.get('anvil:native-receive-'+action)({sender:foreign,senderFrame:foreign.mainFrame},{attemptId:f.ready.state.attemptId,epoch:f.ready.state.contextEpoch});assert.deepEqual(result,{ok:false,error:{code:'IPC_DENIED'}});}assert.equal(f.server.calls.length,calls);assert.equal(f.writes.length,writes);});
