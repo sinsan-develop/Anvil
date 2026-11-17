@@ -20699,3 +20699,5 @@ entry58742e/session15711→df03bd 종료1, UNKNOWN/INSTALL/DDL_REJECTED. 안전�
 기준7136c70c. developer_primary가 고정635557be 원문에서 끝행778 문장을 fn09_registered_approval_context(716~778)로 식별했다. 원파서는 catalog 복합형으로 중단했고 DECLARE 테이블행 타입7개만 RAM record로 치환한 뒤729행 CASE 오류가 재현됐다. 해당 CASE 괄호2바이트 추가시 같은 함수가 파싱됐다(ac618b). 실제 A6 오류와 동일 함수의 구문 결함이며 전체 설치 성공은 미확인이다.
 
 0077+baseline 지문+직접시험3경로 보완. SQL156568B/SHAa9f33cdc170b4483aa2f572c52b53272aba785ffd45facdd681151046f3ee174. RED6ff9d1 1실패→f8d6d5 2통과·실패/건너뜀0, 타입a2f599·diff1cdaed 종료0. Main5042f6 2통과 및 최소diff 확인. 파서a4b447 외부88·원PLpgSQL12/SQL6·RAM rowtype대체20함수 파싱성공, trigger3은 파서JSON처리 오류로 미검증. RAM 타입치환은 실제catalog 검증이 아니다. DB·SSH·Docker·A1~A6접근·재실행·삭제0. 다음은 커밋 원바이트 검증과 미확인 trigger구문 좁힘이며 IX01 미완료다.
+
+commit23409ff9 원Git 바이트 기준 Main 제어기2d1ea5은 27통과·실패/건너뜀0,종료0이다. 실제 DB검증은 미실행이다.
