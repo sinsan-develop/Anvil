@@ -20653,3 +20653,5 @@ RED f425d9 1실패 뒤 집중 2c42f0 2통과, 타입 e4cce9 및 diff 3dde1f 종�
 A4 보존 및 로컬 원인 확인·보완 직접 지시. developer_primary가 고정 1b60eec8의 0077과 선행 정의를 대조했다. 함수·제약 선행 누락은 확인되지 않았다. 기존 로컬 pglast v8.4/PostgreSQL18.4로 SQL 외부88문장 파싱 후 quota_plan_valid 본문의 두 IS DISTINCT FROM CASE 조건이 구문 오류임을 재현했다. 각 CASE에 괄호를 추가한 원문은 해석됐다. 실제 A4 거절 문장이 이 함수였는지는 오류 원문 부재로 미확인이다.
 
 0077 SQL 4바이트(괄호4개), current-schema-baseline 해당 size/hash, 직접 회귀시험 3경로만 변경. SQL 길이156566, SHA256 783bd97620a64f50aa3546933dce68ff355919f323ae957401b6a0642d526436. 원복 역치환이 원 Git 바이트와 동일하다. 역사105 TSV 및 실행기 진단 불변. RED645f96 뒤 de19b1 1통과, 타입2f1b39 종료0, Main e3ef8f 1통과·실패/건너뜀0 및 diff검사0. 파서 검증은 외부SQL88문장·PLpgSQL14·SQL함수6 성공이며 composite catalog 의존21개는 미검증이다. 실제 PG15·0095·TC01 저장/재조회 미검증, DB·SSH·Docker·A4 접근·재실행·삭제0. 다음은 커밋 원바이트에 결박한 인접 시험과 보완본 검수다. 전체 IX01 미완료.
+
+보완 commit 0a50b5fb의 Git 원바이트에 결박한 Main 제어기 전체시험 42ea20은 23통과·실패/건너뜀0, 종료0이다. 실제 DB 실행 없이 확인했다.
