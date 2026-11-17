@@ -20717,3 +20717,9 @@ guard_execution_preparation(946~1029)과 fn09_registered_quota_final_guard(1248~
 직접승인 고정소스d1b36f0e·실행안3f61b75c로 developer_primary가 수행했다. 사전검산ffd6bc,소스c0b858,외피525fbd 종료0/source14·SQL130·원장일치. 승인ID2df4dfc6-1f52-4bba-87c0-71b32dfdc710,단회entrycb1472/session69723→1e90ec 종료1.
 
 UNKNOWN/INSTALL/DDL_REJECTED. 앞112SQL·원장SETTLED(0077~0081포함),113번째0082_fn09_origin_reuse_synthetic_start SQL REJECTED/ledgerNOT_STARTED. 안전진단42601/statementEndLine322/diagnostic:null. 후속17·0095·TC01·정리 미실행. 컨테이너f3c7169ac03b4ec491beba19dc2f69f782d5902adb5de3e02679d6d6742e2757,networkIdnull은반환값이다. 단회소진·live0·A7보존,후속조회·재시도·삭제·A1~A6접근0,결과파일정착 미확인. 다음은고정0082의322행종료문장 로컬구문분석이다. IX01미완료.
+
+## IX01 0082 A7 오류 문장 및 추가 구문 보완
+
+기준5d0daa3b. developer_primary가0082 끝행322를fn09_origin_reuse_request_record_valid(303~322)로식별했다. rowtype2개RAM record치환 후319행 CASE오류재현·괄호2바이트시파싱성공(b6f915). 같은파일에서fn09_origin_reuse_consumption_maximum의비인용지역변수grant와execution_queue_authorized1505행CASE도구문오류로확인했다(384286).
+
+0082 CASE2곳괄호4바이트,지역변수grant15곳인용30바이트만추가하고baseline/직접시험갱신했다. JSON키·권한/기능 불변이며역치환하면고정A7원문과동일하다. SQL230277B/SHA3f32acd0f6f402e823bd3805b1948ae8f48d7ec98300e8dbdc2925923d49cfdf. REDf2965c/01f9e4각1실패뒤15b9b5 2통과,타입5d3fad·diff03e497 종료0. Main755a2c 2통과·실패/건너뜀0. 파서외부56·원PL5/SQL2·rowtypeRAM26함수성공,trigger2는기존JSON문제RAM분리확인. 실제catalog/타입/PG15검증아님. DB·SSH·Docker·A1~A7접근·재실행·삭제0. 다음은커밋원바이트회귀및미실행후속SQL의같은구문형식대조다. IX01미완료.

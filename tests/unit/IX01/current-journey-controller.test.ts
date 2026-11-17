@@ -464,7 +464,7 @@ test('IX01 0077 CASE 구문 RAM: 세 조건 괄호와 고정 원바이트 결박
  assert.deepEqual(Buffer.from(restored),original);
 });
 
-test('IX01 후속 CASE 구문 RAM: 네 조건 괄호와 세 원바이트 결박을 보존한다',()=>{
+test('IX01 후속 CASE 구문 RAM: 여섯 조건 괄호·grant 인용과 세 원바이트 결박을 보존한다',()=>{
  const entries=[
   {
     "path": "db/migrations/0078_start_execution_material_registration.sql.pending",
@@ -478,9 +478,11 @@ test('IX01 후속 CASE 구문 RAM: 네 조건 괄호와 세 원바이트 결박�
   {
     "path": "db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending",
     "oldHash": "4cbca6ad03aa9b4ac8b7ce485ca1dc9e34df8692cd7dc6a0b5de716101fa84b2",
-    "hash": "73374c8269fa9c8b13d8f3825d0f6c168772216968dc2f720fa064c91bc359a6",
-    "bytes": 230243,
+    "hash": "3f32acd0f6f402e823bd3805b1948ae8f48d7ec98300e8dbdc2925923d49cfdf",
+    "bytes": 230277,
     "expressions": [
+      "CASE d.decision WHEN 'APPROVE' THEN 'APPROVED' WHEN 'REJECT' THEN 'REJECTED' WHEN 'REQUEST_CHANGE' THEN 'CHANGE_REQUESTED' ELSE NULL END",
+      "CASE WHEN reuse THEN decision_row.id ELSE NULL END",
       "CASE WHEN reuse THEN ad.id ELSE NULL END",
       "CASE WHEN reuse THEN anvil.execution_json_hash(origin_request) ELSE anvil.execution_json_hash(jsonb_build_object(\n  'schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','queueExecutionCommand','targetId',NULL,\n  'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('preparationRef',f->'preparationRef','executionId',e.id,\n  'executionGeneration',e.generation,'permissionPolicyRef',c.policy_ref,'budgetPolicyRef',q->'budgetPolicyRef','operation','START_SESSION','payload',q->'payload'))) END"
     ]
@@ -506,6 +508,13 @@ test('IX01 후속 CASE 구문 RAM: 네 조건 괄호와 세 원바이트 결박�
   const row=manifest.find(row=>row.path===entry.path)!;
   assert.equal(row.bytes,raw.length);assert.equal(row.sha256,entry.hash);
   let restored=raw.toString('utf8');
+  if(entry.path.endsWith('/0082_fn09_origin_reuse_synthetic_start.sql.pending')){
+   assert.equal(restored.split('"grant"').length,16);
+   restored=restored.replaceAll('"grant"','grant');
+   const beforeA7=git(['cat-file','blob','d1b36f0e490cf4153e02b4943b6d41391c356102:'+entry.path]);
+   assert.equal(contentHash(beforeA7),'73374c8269fa9c8b13d8f3825d0f6c168772216968dc2f720fa064c91bc359a6');
+   assert.deepEqual(Buffer.from(restored.replace("(CASE d.decision WHEN 'APPROVE' THEN 'APPROVED' WHEN 'REJECT' THEN 'REJECTED' WHEN 'REQUEST_CHANGE' THEN 'CHANGE_REQUESTED' ELSE NULL END)","CASE d.decision WHEN 'APPROVE' THEN 'APPROVED' WHEN 'REJECT' THEN 'REJECTED' WHEN 'REQUEST_CHANGE' THEN 'CHANGE_REQUESTED' ELSE NULL END").replace("(CASE WHEN reuse THEN decision_row.id ELSE NULL END)","CASE WHEN reuse THEN decision_row.id ELSE NULL END")),beforeA7);
+  }
   for(const expression of entry.expressions){
    const fixed='('+expression+')';assert.equal(restored.split(fixed).length,2,entry.path);
    restored=restored.replace(fixed,expression);
@@ -513,7 +522,7 @@ test('IX01 후속 CASE 구문 RAM: 네 조건 괄호와 세 원바이트 결박�
   assert.deepEqual(Buffer.from(restored),original);
   added+=raw.length-original.length;
  }
- assert.equal(added,8);
+ assert.equal(added,42);
 });
 
 test('IX01 INSTALL 안전 진단 RAM: 원 parser 진단만 UNKNOWN 결과에 보존한다',async()=>{

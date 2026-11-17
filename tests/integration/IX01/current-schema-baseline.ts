@@ -18,7 +18,7 @@ const suffix=[
   ['0079_material_credential_namespace_binding','db/migrations/0079_material_credential_namespace_binding.sql.pending',7776,'4297c897e32c8141b03d6c9741c7217a4cdadbda6faf39abc521e9f551592deb'],
   ['0080_node_decisions','db/migrations/0080_node_decisions.sql.pending',50319,'4cf6922374cb640cc01fc6e56858eb6b17247acab720cfdadd76b70bc6d1ad74'],
   ['0081_execution_start_origins','db/migrations/0081_execution_start_origins.sql.pending',52536,'e642d2b48565dc17e5bbb35c1996a48abcaf0c1bbd988b15cde4a5c95c0f34de'],
-['0082_fn09_origin_reuse_synthetic_start','db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',230243,'73374c8269fa9c8b13d8f3825d0f6c168772216968dc2f720fa064c91bc359a6'],
+['0082_fn09_origin_reuse_synthetic_start','db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',230277,'3f32acd0f6f402e823bd3805b1948ae8f48d7ec98300e8dbdc2925923d49cfdf'],
   ["0083_normal_initial_execution","db/migrations/0083_normal_initial_execution.sql.pending",57849,"f4804eb9dcb30a88908d3cb51e3d3e2e98cedbddf75f5eb3605be44411f32294"],
   ["0084_normal_exchange_challenge","db/migrations/0084_normal_exchange_challenge.sql.pending",18740,"46763ae904087c1fdb5fb755b19ff07b4a25280f1dc28752c5d12b183fee2afb"],
   ["0085_normal_credential_exchange","db/migrations/0085_normal_credential_exchange.sql.pending",10243,"7328cfffcbbff943cb681bd02883854b7bf931df87c312969d7eb84186ae63ef"],
