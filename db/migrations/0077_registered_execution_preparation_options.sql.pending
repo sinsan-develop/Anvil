@@ -726,7 +726,7 @@ BEGIN
  IF member.participation IS DISTINCT FROM 'OWNER' OR control.actor_id IS DISTINCT FROM a OR control.client_id IS DISTINCT FROM c OR control.revoked_at IS NOT NULL THEN RAISE EXCEPTION 'PROJECT_WRITE_DENIED';END IF;
  IF NOT COALESCE(anvil.execution_json_shape(q,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']),false)
   OR q->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR q->>'projectId' IS DISTINCT FROM p::text OR q->>'clientId' IS DISTINCT FROM c::text OR q->'controlGeneration' IS DISTINCT FROM to_jsonb(control.generation)
-  OR q->>'operation' IS DISTINCT FROM CASE purpose WHEN 'REQUEST' THEN 'requestApproval' ELSE 'decideApproval' END OR q->'baselineRefs' IS DISTINCT FROM '[]'::jsonb OR q->'approvalRef' IS DISTINCT FROM 'null'::jsonb
+  OR q->>'operation' IS DISTINCT FROM (CASE purpose WHEN 'REQUEST' THEN 'requestApproval' ELSE 'decideApproval' END) OR q->'baselineRefs' IS DISTINCT FROM '[]'::jsonb OR q->'approvalRef' IS DISTINCT FROM 'null'::jsonb
   THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT';END IF;
  SELECT v.* INTO pv FROM anvil.permission_policies h JOIN anvil.permission_policy_versions v ON v.project_id=h.project_id AND v.policy_id=h.id AND v.version=h.head_version WHERE h.project_id=p FOR SHARE OF h;
  IF pv.policy_id IS NULL OR policy IS DISTINCT FROM jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash)
