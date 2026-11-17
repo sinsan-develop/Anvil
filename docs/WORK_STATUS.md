@@ -20669,3 +20669,9 @@ RED1ced35 뒤 GREEN1d25f6 2통과, 타입cb57b8·diff85b3a6 종료0. Main ed699b
 ## IX01 TC01 A5 격리 소스 준비
 
 기준4d3ff3a9. developer_primary가 기존 runner/test의 고정 자원7개를 A5로 분리하고 A1~A4 외피·인계 거절을 검증했다. SQL 보완 및 기존 격리·기한·불명 보존 검사를 유지한다. REDcd265d 1건 뒤 GREEN602c92 6통과·실패/건너뜀0, 타입c0626b·공백검사6974eb 종료0. Main diff검수0. 새 SQL130 합계4,004,532바이트, 원장SHA256 0cfbe777d6f545e9122a3c9505ad3162885748a9d4b088b6bdb03eee5a6f3fb3. 실제 A5 외피·자원·원격·Docker·DB·설치·삭제0. 다음은 실행 소스 commit과 고정안의 결박이며 최신 DB 접속·재실행 금지 지시에 따라 실제 시험은 별도 결정 전 미실행이다. IX01 미완료.
+
+## IX01 TC01 A5 단회 시험 0077 DDL 거절
+
+신산님 직접 승인. developer_primary가 고정 소스 c5114624 및 실행안57631811로 수행했다. 사전검산b2919d, 소스a84374, 외피553846 종료0. 소스14·SQL130(4,004,532바이트)·원장0cfbe777d6f545e9122a3c9505ad3162885748a9d4b088b6bdb03eee5a6f3fb3 일치. 승인ID6ac8b727-20f1-409c-b3ac-895328f4abc2.
+
+단회entry68ad91/session51733→6bf164 종료1, UNKNOWN/INSTALL/DDL_REJECTED. 앞선107개 SQL·원장SETTLED,108번째0077 SQL REJECTED·원장NOT_STARTED,후속22·0095 권한 검증·TC01 저장재조회·정리 미실행. 컨테이너57f7154c780696330f77d8d80b6eaa1aed755e2b2fac6a7a50b3d6526bf5ca26,networkId null은 반환값이다. 세션종결/live0·단회소진,후속조회·재시도·삭제 및 A1~A4접근0. A5보존. 정확 SQLSTATE·문장과 감사정착은 미확인이다. 괄호 보완만으로 설치문제가 모두 해결되지 않았음은 확인됐다. 다음은 로컬에서 비밀없는 기존 DDL 진단의 누락 경로를 보완해 원인 식별 가능성을 확보한다. IX01 미완료.
