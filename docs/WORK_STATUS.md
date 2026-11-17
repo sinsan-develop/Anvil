@@ -20701,3 +20701,9 @@ entry58742e/session15711→df03bd 종료1, UNKNOWN/INSTALL/DDL_REJECTED. 안전�
 0077+baseline 지문+직접시험3경로 보완. SQL156568B/SHAa9f33cdc170b4483aa2f572c52b53272aba785ffd45facdd681151046f3ee174. RED6ff9d1 1실패→f8d6d5 2통과·실패/건너뜀0, 타입a2f599·diff1cdaed 종료0. Main5042f6 2통과 및 최소diff 확인. 파서a4b447 외부88·원PLpgSQL12/SQL6·RAM rowtype대체20함수 파싱성공, trigger3은 파서JSON처리 오류로 미검증. RAM 타입치환은 실제catalog 검증이 아니다. DB·SSH·Docker·A1~A6접근·재실행·삭제0. 다음은 커밋 원바이트 검증과 미확인 trigger구문 좁힘이며 IX01 미완료다.
 
 commit23409ff9 원Git 바이트 기준 Main 제어기2d1ea5은 27통과·실패/건너뜀0,종료0이다. 실제 DB검증은 미실행이다.
+
+## IX01 0077 잔여 trigger 로컬 파서 제약 확인
+
+기준883fa521. developer_primary가 trigger3을 추가로 확인했다. raw parse_plpgsql_json은 결과문자열을 반환하지만 OLD datum 뒤 잘못된 JSON 닫힘조각 때문에 상위 json.loads가 실패했다. 최소 RETURN NEW trigger에서도 같은 현상이 재현됐다. SQL 변경 없이 반환문자열만 RAM 보정하면 AST가 해석됐고 고의 END IF 오류는 원파서가 ParseError로 거절했다(5b6f82 종료0).
+
+guard_execution_preparation(946~1029)과 fn09_registered_quota_final_guard(1248~1255)는 원본문, fn09_registered_preparation_guard(1031~1129)는 catalog rowtype9개만 RAM record로 대체한 제한 검증이다. 추가 확정 SQL 구문결함0이며 JSON 출력 보정은 실제 SQL 변경이 아니다. catalog·타입·실제PG15 적용 미검증을 유지한다. DB·SSH·Docker·A1~A6 접근·재실행·삭제·파일수정0. 다음 실제 검증은 0077 추가괄호 보완을 포함한 새 격리 실행 결정이 필요하다. IX01 미완료.
