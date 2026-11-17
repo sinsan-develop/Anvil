@@ -20725,3 +20725,13 @@ UNKNOWN/INSTALL/DDL_REJECTED. 앞112SQL·원장SETTLED(0077~0081포함),113번�
 0082 CASE2곳괄호4바이트,지역변수grant15곳인용30바이트만추가하고baseline/직접시험갱신했다. JSON키·권한/기능 불변이며역치환하면고정A7원문과동일하다. SQL230277B/SHA3f32acd0f6f402e823bd3805b1948ae8f48d7ec98300e8dbdc2925923d49cfdf. REDf2965c/01f9e4각1실패뒤15b9b5 2통과,타입5d3fad·diff03e497 종료0. Main755a2c 2통과·실패/건너뜀0. 파서외부56·원PL5/SQL2·rowtypeRAM26함수성공,trigger2는기존JSON문제RAM분리확인. 실제catalog/타입/PG15검증아님. DB·SSH·Docker·A1~A7접근·재실행·삭제0. 다음은커밋원바이트회귀및미실행후속SQL의같은구문형식대조다. IX01미완료.
 
 commit548c33cc 원Git바이트 기준 Main전체제어기10f4cc은27통과·실패/건너뜀0,종료0이다. 실제DB시험미실행.
+
+## IX01 후속17 SQL 로컬 파서 제한
+
+기준9213ad56. developer_primary의40e7d5는종료0이나출력절단으로전체결과수거에실패했다. 안전수거된rowtypeRAM파싱성공은0092의3·0094의5·0095의2함수다. RAM실패23개는namespace catalog미지원으로분류했고구문결함으로판정하지않았다. triggerJSON오류도기존파서제약으로분리했다. 원파서성공22개를중복확인한실행상한계를기록한다. 추가재실행없이종료했으며전체후속검증완료로세지않는다. 실제DB·SSH·Docker·자원접근·네트워크·설치0. 다음은0082보완을포함한새A8단회실행후보준비이며실제시험승인은미발급이다.
+
+## IX01 TC01 A8 source-only 준비
+
+독립d2_preflight가5d0daa3b..548c33cc의0082보완에C0/I0/M0를반환했다. CASE2곳괄호4바이트와grant15곳인용30바이트만추가했고역치환원문동일및JSON키/권한/분기의미유지를확인했다.
+
+developer_primary가기준9213ad56에서A8고정7리터럴및A1~A7혼합외피·인계거절을준비했다. RED2a5471뒤12911b 7통과·실패/건너뜀0,타입b110b9·원바이트907a43·diff48b3e8 종료0. Main diff검수0. SQL130총4,004,568바이트·원장546e8409e4313901597bcfdb71ce91efcd4f9eb6a54bdad99e5f439a017c324c. 실제외피·DB·SSH·Docker·A1~A7접근·재실행·삭제0. 다음은소스commit/고정안과별도단회실행결정이다. IX01미완료.
