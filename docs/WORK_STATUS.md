@@ -20681,3 +20681,9 @@ RED1ced35 뒤 GREEN1d25f6 2통과, 타입cb57b8·diff85b3a6 종료0. Main ed699b
 기준b039b2af. developer_primary가 기존 parser의 확정 DdlFailure를 runner 내부표식으로 전달해 INSTALL 결과에 optional ddlFailure SQLSTATE·제한 식별자·문장끝행을 보존했다. UNKNOWN/INSTALL/DDL_REJECTED 및 진행형상·후행차단은 유지한다. 원 SQL·stderr·stack은 보관하지 않는다. 위조/접근자/Proxy와 불명·현재성 소실 반례를 검증했다.
 
 RED0a481f 2실패 뒤 집중1d112a 7통과, 타입3f9fe6·diff167848 종료0. Main 전체제어기 b98bcb 27통과·실패/건너뜀0. 실제 PG 오류 진단 출력·0077 설치 원인은 미검증이다. DB·SSH·Docker·A1~A5 조회·재실행·설치·삭제0, A5보존. 새 실제 시험은 이번 소스 보완에 포함되지 않는다. IX01 미완료.
+
+## IX01 TC01 A6 source-only 진단 실행 준비
+
+기준0ae9e751. 독립 d2_preflight는 DDL 진단 전달 고정diff에 C0/I0/M0를 반환했고 원문 비노출·INSTALL 거절 및 후행 차단을 확인했다. developer_primary는 runner와 기존시험의 고정 리터럴7개를 A6로 분리하고 A1~A5 원/혼합 외피·인계 거절을 검증했다. SQL130/4,004,532바이트와 원장0cfbe777d6f545e9122a3c9505ad3162885748a9d4b088b6bdb03eee5a6f3fb3는 유지한다.
+
+REDd46994 1실패 뒤 집중2b5a17 9통과·실패/건너뜀0, 타입378417·원바이트144ea2·diff7b0ab8 종료0. Main diff검수0. 신규 후보에 source14와 자원·시간·불명 보존 조건을 고정했다. 실제 외피·DB·SSH·Docker·A1~A5 조회·설치·실행·삭제0. 다음은 소스 commit 확정 및 별도 A6 단회 실제 실행 결정이다. A5 승인 소진과 자원보존을 유지하고 IX01은 미완료다.
