@@ -9,6 +9,39 @@ import {currentLegacyModuleSource,currentProfile,currentRequiredSources,readCurr
 const cwd=fileURLToPath(new URL('../../../',import.meta.url));
 const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd,input,windowsHide:true,maxBuffer:16*1024*1024});
 const now=1_790_000_000_000,containerId='a'.repeat(64),networkId='b'.repeat(64);
+test('IX01 npm umask RAM: 동기 호출만 강화하고 원 mask를 복원한다',async()=>{
+ const {withCurrentNpmUmask}=await import('../../../scripts/qa-ix01-current-journey.ts');
+ assert.equal(typeof withCurrentNpmUmask,'function');
+ for(const original of [0o002,0o022,0o077,0o277,0o777])for(const throws of [false,true]){
+  let mask=original,calls=0;
+  const events:string[]=[];
+  const access=(value?:number)=>{const old=mask;if(value===undefined)events.push('READ');else{events.push('SET:'+value);mask=value;}return old;};
+  const error=Error('opaque');
+  const work=()=>{calls++;events.push('WORK');assert.equal(mask,original|0o077);if(throws)throw error;return 'result';};
+  if(throws)assert.throws(()=>withCurrentNpmUmask(work,access),caught=>caught===error);
+  else assert.equal(withCurrentNpmUmask(work,access),'result');
+  assert.equal(mask,original);assert.equal(calls,1);
+  assert.deepEqual(events,['READ','SET:'+(original|0o077),'WORK','SET:'+original]);
+ }
+ for(const phase of ['SET','RESTORE'] as const){
+  let writes=0,work=0;
+  const error=Error('mask unavailable');
+  assert.throws(()=>withCurrentNpmUmask(()=>{work++;return 'result';},value=>{
+   if(value===undefined)return 0o022;
+   writes++;if(writes===(phase==='SET'?1:2))throw error;return 0o022;
+  }),caught=>caught===error);
+  assert.equal(writes,2);assert.equal(work,phase==='SET'?0:1);
+ }
+ for(const invalid of [-1,0o1000,NaN,0.5]){
+  let reads=0,work=0;
+  assert.throws(()=>withCurrentNpmUmask(()=>{work++;return 'result';},()=>{reads++;return invalid;}),{message:'IX01_CURRENT_NPM_UMASK'});
+  assert.equal(reads,1);assert.equal(work,0);
+ }
+ let calls=0;
+ const readError=Error('read unavailable');
+ assert.throws(()=>withCurrentNpmUmask(()=>{calls++;return 'result';},()=>{throw readError;}),caught=>caught===readError);
+ assert.equal(calls,0);
+});
 test('IX01 runtime 고정 진단 RAM: 단계 실패는 비밀 없이 후속 작업을 차단한다',async()=>{
  const runtime=await import('../../../scripts/qa-ix01-current-journey.ts');
  assert.equal(typeof runtime.runCurrentRuntimeSteps,'function');

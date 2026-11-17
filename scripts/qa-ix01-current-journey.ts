@@ -115,6 +115,12 @@ export function verifyCurrentChildOutcome(value:unknown,handoffHash:string):bool
 }
 const runtimeSteps=['DIRECTORIES','CONFIG','TOOLS','LOCK','VERSION','PREINSTALL','INSTALL','POSTINSTALL'] as const;
 const runtimeFailures=new WeakMap<object,string>();
+// npm ci의 동기 자식 호출에만 적용한다. 기존보다 느슨한 mask로 바꾸지 않는다.
+export function withCurrentNpmUmask(work:()=>string,mask:(value?:number)=>number=process.umask):string{
+ const original=mask();
+ if(!Number.isInteger(original)||original<0||original>0o777)fail('IX01_CURRENT_NPM_UMASK');
+ try{mask(original|0o077);return work();}finally{mask(original);}
+}
 // 원 예외는 보관하거나 직렬화하지 않는다. 이 모듈이 발급한 고정 단계만 결과에 사용한다.
 export function runCurrentRuntimeSteps(steps:Record<typeof runtimeSteps[number],()=>void>):void{
  for(const step of runtimeSteps){
@@ -358,9 +364,10 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
   if(claimed&&plainFile(intentPath,f.uid,4096,0o600).toString('utf8')!==intentFor(auth))fail('IX01_CURRENT_INTENT');
  };
  const duration=(cap:number)=>Math.min(cap,pgUntil-host.time(),auth.plan.expiresAt-host.time());
- function run(file:string,args:string[],input?:string|Uint8Array,cap=10_000,extra?:Record<string,string>){
+ function run(file:string,args:string[],input?:string|Uint8Array,cap=10_000,extra?:Record<string,string>,restrictNpmCreation=false){
   assertCurrent();
-  const value=execFileSync(file,args,{cwd:f.source,env:{...gitEnv,...extra},input,encoding:'utf8',maxBuffer:65536,...currentLocalTimeoutOptions(duration(cap)),stdio:['pipe','pipe','pipe']});
+  const invoke=()=>execFileSync(file,args,{cwd:f.source,env:{...gitEnv,...extra},input,encoding:'utf8',maxBuffer:65536,...currentLocalTimeoutOptions(duration(cap)),stdio:['pipe','pipe','pipe']});
+  const value=restrictNpmCreation?withCurrentNpmUmask(invoke):invoke();
   assertCurrent();return value;
  }
  const dockRaw=(args:string[],input?:string|Uint8Array,cap?:number,extra?:Record<string,string>)=>{
@@ -454,7 +461,7 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
    checkNpm();checkNpmPackage();host.sources();missing(f.source+'/node_modules');missing(f.source+'/.npmrc');
    for(const path of [f.receipt+'/npm-user.conf',f.receipt+'/npm-global.conf'])if(plainFile(path,f.uid,0,0o600).length)fail('IX01_CURRENT_NPM_CONFIG');
     },
-    INSTALL(){run(f.node,[f.npm,'ci','--ignore-scripts','--no-audit','--no-fund',...opts],undefined,600_000);},
+    INSTALL(){run(f.node,[f.npm,'ci','--ignore-scripts','--no-audit','--no-fund',...opts],undefined,600_000,undefined,true);},
     POSTINSTALL(){host.pins.pin(f.source+'/node_modules');host.sources();},
    });
   },
