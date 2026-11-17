@@ -20608,3 +20608,8 @@ UI06의 보관 계획 개정 준비는 당시 documentRef를 그대로 사용한
 신산님이 승인한 메타데이터 조회 1회를 developer_primary가 수행했다. fa2781 SSH/inspect 종료0, A2 전용 이름과 owner/instance/plan 3개 및 이미지가 일치했다. 상태 created, running=false, ExitCode=0(시험 성공 증거 아님). 로그·env·DB·A1 조회와 변경·재시도·재시작·삭제0, 실행 핸들0. 조회 승인은 사용 완료했다.
 
 기준 461e9e64를 d2_preflight가 로컬에서 대조했다. 생성 사실로 START 전 실패 후보는 create 반환/현재성, 생성 직후 inspect, 시작 호출 경계까지 좁혀진다. created만으로 시작 미호출과 시작 실패는 구별되지 않으며, 정확한 원인은 여전히 미확정이다. 원격 후속 관측·코드 변경 없이 보존했다. SQL/0095/TC01 실제 검증 미완료.
+
+
+## IX01 TC01 A2 추가 메타데이터 관측 불명
+
+신산님 승인 1회에 따라 developer_primary가 A2 전용 컨테이너의 제한 관측을 수행했다. 7d26e7 Docker inspect 종료1, 감독 명령 종료2, UNKNOWN_INSPECT. 소유 및 검사별 일치 여부·State.Error 유무 미확인. 앞선 fa2781의 created 관측은 당시 증거로 유지하며 이번 결과에서 A2 부재를 추론하지 않는다. 로컬 보존 명령 대조에서 종료2는 inspect 실패를 매핑한 값이고 별도 timeout 예외 분기와 구별됐다. 템플릿 평가를 포함한 정확 실패 원인은 미확정이다. 오류 원문·로그·env·DB 조회 및 재시도·후속 조회·재실행·삭제0. A1·기존 자원 변경0. 해당 1회 승인은 사용 완료했고 IX01은 미완료다.
