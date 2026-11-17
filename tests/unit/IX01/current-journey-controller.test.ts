@@ -78,6 +78,29 @@ function harness(){
  };
  return {data,calls,ports,drop:()=>{current=false;},expire:()=>{time=now+10_000;}};
 }
+test('IX01 runtime controller 연결 RAM: 고정 실패는 UNKNOWN 기록만 남긴다',async()=>{
+ const {runCurrentRuntimeSteps}=await import('../../../scripts/qa-ix01-current-journey.ts');
+ const names=['DIRECTORIES','CONFIG','TOOLS','LOCK','VERSION','PREINSTALL','INSTALL','POSTINSTALL'] as const;
+ for(const failed of names){
+  const h=harness(),candidate=input(),steps:string[]=[],records:unknown[]=[];
+  h.ports.prepareRuntime=async()=>{
+   h.calls.push('RUNTIME');
+   runCurrentRuntimeSteps(Object.fromEntries(names.map(name=>[name,()=>{
+    steps.push(name);
+    if(name===failed)throw Object.assign(Error('secret/path/argv'),{stdout:'secret',stderr:'secret'});
+   }])) as Record<typeof names[number],()=>void>);
+  };
+  h.ports.record=async result=>{h.calls.push('RECORD');records.push(result);};
+  const result=await runCurrentJourney(candidate,h.ports);
+  assert.deepEqual(result,{status:'UNKNOWN',stage:'RUNTIME',code:'STOPPED_RUNTIME_'+failed,
+   planHash:candidate.planHash,containerId:null,networkId:null,schema:null,evidence:'RETAINED_WHEN_CREATED'});
+  assert.deepEqual(steps,names.slice(0,names.indexOf(failed)+1));
+  assert.deepEqual(h.calls,['PREFLIGHT','CLAIM','RUNTIME','RECORD']);
+  assert.deepEqual(records,[result]);
+  assert.strictEqual(records[0],result);
+ }
+});
+
 test('IX01 현재 실행 승인 없음·해시 변조·만료는 포트 진입 전 거절한다',async()=>{
  for(const candidate of [input({},'DENY'),{...input(),planHash:'9'.repeat(64)},{...input(),approvalRaw:'{}'},input({expiresAt:now})]){
   const h=harness();assert.equal((await runCurrentJourney(candidate,h.ports)).status,'REJECTED');assert.deepEqual(h.calls,[]);

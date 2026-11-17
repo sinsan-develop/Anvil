@@ -20572,3 +20572,8 @@ UI06의 보관 계획 개정 준비는 당시 documentRef를 그대로 사용한
 ## IX01 런타임 준비 실패 단계 분류
 
 기준 aac1fb94. developer_primary가 TC01 실행기와 집중시험 2파일을 보완했다. 기존 RUNTIME/UNKNOWN을 유지하며 8개 고정 단계로 오류를 분류한다. 임의 예외는 기존 일반 코드이며 원문·경로·출력·stack은 노출하지 않는다. RED d1df76 뒤 순수 RAM 873ed4 1통과, 타입50d103 종료0, 공백검사0. 독립 C0/I0/M1: 고정 SQL130 원바이트를 요구하는 controller 연결은 소스 판독만 했으며 해당 연결 시험은 미실행이다. 지난 UNKNOWN 원인은 미확정으로 유지한다. SSH/DB/npm 설치·TC01 재실행·보존 자원 조회·정리 0.
+
+
+## IX01 런타임 실패의 controller 연결 합성 검증
+
+기준 e355a002. developer_primary가 단일 집중시험을 추가했다. 기존 로컬 Git blob fixture를 사용해 8개 단계의 예외가 실제 controller 결과 UNKNOWN/RUNTIME/고정 실패 코드로 반환되는지 확인했다. 36a909 1통과·실패/건너뜀0, START/CLEANUP 호출0, 결과 기록1, 공백검사0. 제품 실행기·권한·기존 검산은 변경하지 않았다. npm/timeout 자식 및 SSH/DB/역할 실행0. 기존 보존 자원을 조회하거나 재실행하지 않았으며 실제 TC01과 이전 원인 규명은 미검증이다.
