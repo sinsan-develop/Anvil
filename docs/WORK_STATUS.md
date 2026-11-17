@@ -20655,3 +20655,9 @@ A4 보존 및 로컬 원인 확인·보완 직접 지시. developer_primary가 �
 0077 SQL 4바이트(괄호4개), current-schema-baseline 해당 size/hash, 직접 회귀시험 3경로만 변경. SQL 길이156566, SHA256 783bd97620a64f50aa3546933dce68ff355919f323ae957401b6a0642d526436. 원복 역치환이 원 Git 바이트와 동일하다. 역사105 TSV 및 실행기 진단 불변. RED645f96 뒤 de19b1 1통과, 타입2f1b39 종료0, Main e3ef8f 1통과·실패/건너뜀0 및 diff검사0. 파서 검증은 외부SQL88문장·PLpgSQL14·SQL함수6 성공이며 composite catalog 의존21개는 미검증이다. 실제 PG15·0095·TC01 저장/재조회 미검증, DB·SSH·Docker·A4 접근·재실행·삭제0. 다음은 커밋 원바이트에 결박한 인접 시험과 보완본 검수다. 전체 IX01 미완료.
 
 보완 commit 0a50b5fb의 Git 원바이트에 결박한 Main 제어기 전체시험 42ea20은 23통과·실패/건너뜀0, 종료0이다. 실제 DB 실행 없이 확인했다.
+
+## IX01 TC01 후속 미실행 SQL 구문 보완
+
+기준 10c8977e. developer_primary가 후속22개 고정 SQL을 기존 로컬 pglast로 대조해 0078 한곳, 0082 두곳, 0083 한곳의 IS DISTINCT FROM CASE 구문 오류를 재현했다. 각 CASE 괄호8바이트만 추가하고 current baseline 세 행 size/hash·직접 시험을 갱신했다. 역사 TSV·실행기 불변. 역치환하면 고정 원Git 바이트와 일치한다.
+
+RED1ced35 뒤 GREEN1d25f6 2통과, 타입cb57b8·diff85b3a6 종료0. Main ed699b 2통과·실패/건너뜀0, diff검수0. 파서8eb15f 종료0에서 후속22 SQL 외부566문장, PLpgSQL91·SQL본문27·DO15 파싱 성공. catalog 의존85개는 미검증이며 실제 PG15 설치와 TC01을 증명하지 않는다. DB·SSH·Docker·A1~A4 접근·재실행·삭제·설치0. A4 보존. 다음은 보완된 정확 Git 원바이트에 결박한 제어기 시험과 후속 실제 검증 결정이다. IX01 미완료.

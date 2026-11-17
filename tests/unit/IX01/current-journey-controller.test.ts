@@ -459,3 +459,55 @@ test('IX01 0077 CASE 구문 RAM: 두 조건 괄호와 고정 원바이트 결박
  for(const text of before){const fixed=text.replace('FROM CASE','FROM (CASE')+')';assert.equal(restored.split(fixed).length,2);restored=restored.replace(fixed,text);}
  assert.deepEqual(Buffer.from(restored),original);
 });
+
+test('IX01 후속 CASE 구문 RAM: 네 조건 괄호와 세 원바이트 결박을 보존한다',()=>{
+ const entries=[
+  {
+    "path": "db/migrations/0078_start_execution_material_registration.sql.pending",
+    "oldHash": "7a1b7ea71198e59b589a2df3356d8f6488fe0c4a9615daa4a135589d4a3d91fc",
+    "hash": "8e0a54d726de8da2c57b88f512ae18baf2ae3a55a74969cab99bf2078e5a0a3c",
+    "bytes": 27062,
+    "expressions": [
+      "CASE ix WHEN 1 THEN 'CONTEXT_BUNDLE' ELSE 'START_OPTIONS' END"
+    ]
+  },
+  {
+    "path": "db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending",
+    "oldHash": "4cbca6ad03aa9b4ac8b7ce485ca1dc9e34df8692cd7dc6a0b5de716101fa84b2",
+    "hash": "73374c8269fa9c8b13d8f3825d0f6c168772216968dc2f720fa064c91bc359a6",
+    "bytes": 230243,
+    "expressions": [
+      "CASE WHEN reuse THEN ad.id ELSE NULL END",
+      "CASE WHEN reuse THEN anvil.execution_json_hash(origin_request) ELSE anvil.execution_json_hash(jsonb_build_object(\n  'schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','queueExecutionCommand','targetId',NULL,\n  'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('preparationRef',f->'preparationRef','executionId',e.id,\n  'executionGeneration',e.generation,'permissionPolicyRef',c.policy_ref,'budgetPolicyRef',q->'budgetPolicyRef','operation','START_SESSION','payload',q->'payload'))) END"
+    ]
+  },
+  {
+    "path": "db/migrations/0083_normal_initial_execution.sql.pending",
+    "oldHash": "01794abbaf55fecc97b4f7c1709a1aabde748f4ee1fbd1e5f1d632cf912ad5e8",
+    "hash": "f4804eb9dcb30a88908d3cb51e3d3e2e98cedbddf75f5eb3605be44411f32294",
+    "bytes": 57849,
+    "expressions": [
+      "CASE ix WHEN 1 THEN 'CONTEXT_BUNDLE' ELSE 'START_OPTIONS' END"
+    ]
+  }
+];
+ const tsv=git(['cat-file','blob','HEAD:docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv']);
+ const manifest=readCurrentSchemaManifest(tsv);
+ let added=0;
+ for(const entry of entries){
+  const original=git(['cat-file','blob','10c8977edf087cde585c84850cac79028d516129:'+entry.path]);
+  assert.equal(contentHash(original),entry.oldHash);
+  const raw=Buffer.from(readFileSync(new URL('../../../'+entry.path,import.meta.url),'utf8').replace(/\r\n/g,'\n'));
+  assert.equal(raw.length,entry.bytes,entry.path);assert.equal(contentHash(raw),entry.hash,entry.path);
+  const row=manifest.find(row=>row.path===entry.path)!;
+  assert.equal(row.bytes,raw.length);assert.equal(row.sha256,entry.hash);
+  let restored=raw.toString('utf8');
+  for(const expression of entry.expressions){
+   const fixed='('+expression+')';assert.equal(restored.split(fixed).length,2,entry.path);
+   restored=restored.replace(fixed,expression);
+  }
+  assert.deepEqual(Buffer.from(restored),original);
+  added+=raw.length-original.length;
+ }
+ assert.equal(added,8);
+});

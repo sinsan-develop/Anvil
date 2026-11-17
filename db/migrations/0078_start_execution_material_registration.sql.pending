@@ -30,7 +30,7 @@ BEGIN
  FOR g IN SELECT value FROM jsonb_array_elements(d->'groups') LOOP
   ix=ix+1;
   IF NOT COALESCE(anvil.execution_json_shape(g,ARRAY['kind','payloadRef','source','parts']),false)
-  OR g->>'kind' IS DISTINCT FROM CASE ix WHEN 1 THEN 'CONTEXT_BUNDLE' ELSE 'START_OPTIONS' END
+  OR g->>'kind' IS DISTINCT FROM (CASE ix WHEN 1 THEN 'CONTEXT_BUNDLE' ELSE 'START_OPTIONS' END)
   OR g->'payloadRef' IS DISTINCT FROM d->'payload'->(CASE ix WHEN 1 THEN 'contextBundleRef' ELSE 'optionsRef' END) THEN RETURN false;END IF;
   s=g->'source';
   IF NOT COALESCE(anvil.execution_json_shape(s,ARRAY['sourceRef','bodyRef','originRef','contentHash','sourceBytes','mediaType']),false)

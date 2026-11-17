@@ -1084,7 +1084,7 @@ BEGIN
  SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=cid;
  auth_ref=jsonb_build_object('id',ar.id,'version',1,'contentHash',ar.scope_digest);
  IF ar.id IS NULL OR ar.scope_kind IS DISTINCT FROM 'PROJECT' OR ar.scope_id IS DISTINCT FROM pid OR ar.policy_ref IS DISTINCT FROM c.policy_ref
- OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) OR ar.approval_decision_ref IS DISTINCT FROM CASE WHEN reuse THEN ad.id ELSE NULL END
+ OR ar.subject_ref IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) OR ar.approval_decision_ref IS DISTINCT FROM (CASE WHEN reuse THEN ad.id ELSE NULL END)
  OR ar.scope_digest IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',c.result_ref->'data'->'ref'))
  OR x.authorization_ref IS DISTINCT FROM auth_ref
  OR env IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'commandId',d.command_id,'issuedAt',q->'queuedAt','expiresAt',g.snapshot_json->'expiresAt','executorRegistrationRef',q->'executorRegistrationRef','operation','START_SESSION','payload',q->'payload','context',jsonb_build_object('projectId',pid,'assignmentId',f->'intent'->'assignmentRef'->'id','executionId',d.execution_id,'executionGeneration',d.generation,'connectionRef',f->'intent'->'connectionRef','environmentRef',f->'intent'->'environmentRef','authorizationReceiptRef',auth_ref,'capabilityRef',f->'intent'->'capabilityRef','budgetRef',q->'reservationRef','sourceScopes',q->'sourceScopes'),'envelopeHash',x.envelope_hash) THEN RETURN false;END IF;
@@ -1591,10 +1591,10 @@ BEGIN
  END IF;
  IF (NOT reuse AND (gs->>'expiresAt')::timestamptz IS DISTINCT FROM deadline) OR (reuse AND ((gs->>'expiresAt')::timestamptz>deadline OR (gs->>'expiresAt')::timestamptz<=at_time)) OR deadline<=at_time THEN RETURN false;END IF;
  -- 실제 original request의 hash: 준비 ref는 불변 grant의 binding에서만 복원한다.
- IF NOT anvil.execution_preparation_ref_valid(f->'preparationRef') OR c.request_hash IS DISTINCT FROM CASE WHEN reuse THEN anvil.execution_json_hash(origin_request) ELSE anvil.execution_json_hash(jsonb_build_object(
+ IF NOT anvil.execution_preparation_ref_valid(f->'preparationRef') OR c.request_hash IS DISTINCT FROM (CASE WHEN reuse THEN anvil.execution_json_hash(origin_request) ELSE anvil.execution_json_hash(jsonb_build_object(
   'schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'operation','queueExecutionCommand','targetId',NULL,
   'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('preparationRef',f->'preparationRef','executionId',e.id,
-  'executionGeneration',e.generation,'permissionPolicyRef',c.policy_ref,'budgetPolicyRef',q->'budgetPolicyRef','operation','START_SESSION','payload',q->'payload'))) END THEN RETURN false;END IF;
+  'executionGeneration',e.generation,'permissionPolicyRef',c.policy_ref,'budgetPolicyRef',q->'budgetPolicyRef','operation','START_SESSION','payload',q->'payload'))) END) THEN RETURN false;END IF;
  auth_ref=jsonb_build_object('id',c.authorization_receipt_id,'version',1,'contentHash',(SELECT scope_digest FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id));
  IF x.id::text IS DISTINCT FROM c.result_ref->>'targetId' OR x.execution_id IS DISTINCT FROM e.id OR x.generation IS DISTINCT FROM e.generation
   OR x.grant_id IS DISTINCT FROM g.id OR x.grant_version IS DISTINCT FROM g.version OR x.version<>1 OR x.snapshot_json-'envelope' IS DISTINCT FROM q
