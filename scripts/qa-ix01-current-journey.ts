@@ -3,6 +3,7 @@ import {randomBytes} from 'node:crypto';
 import {constants,lstatSync,realpathSync,readSync,readdirSync,mkdirSync,openSync,fstatSync,writeFileSync,fsyncSync,closeSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {performance} from 'node:perf_hooks';
+import {types} from 'node:util';
 import {canonicalJson,contentHash,parseWireJson} from '../contracts/canonical.ts';
 import {readCurrentSchemaManifest,verifyCurrentSchemaSources,type SchemaMigrationBaseline} from '../tests/integration/IX01/current-schema-baseline.ts';
 import {installCurrentSchema,type CurrentSchemaInstallationPorts,type CurrentSchemaInstallationResult} from '../tests/integration/IX01/current-schema-installation.ts';
@@ -66,6 +67,7 @@ export interface CurrentResult{
  readonly status:'REJECTED'|'UNKNOWN'|'CLEANED';readonly stage:Stage;readonly code:string;
  readonly planHash:string|null;readonly containerId:string|null;readonly networkId:string|null;
  readonly schema:CurrentSchemaInstallationResult|null;
+ readonly ddlFailure?:Readonly<CurrentDdlDiagnostic>;
  readonly evidence:'RETAINED_WHEN_CREATED';
 }
 
@@ -152,9 +154,44 @@ export async function runCurrentStartSteps(steps:Record<StartSyncStep,()=>void>&
  }catch{stoppedStep('START',step);}
 }
 
+interface CurrentDdlDiagnostic{
+ readonly sqlState:string;
+ readonly diagnostic:Readonly<{kind:'RELATION'|'FUNCTION'|'COLUMN';identifier:string}>|null;
+ readonly statementEndLine:number|null;
+}
+const ddlFailures=new WeakMap<object,Readonly<CurrentDdlDiagnostic>|null>();
+// 원 R9 parser가 확정한 DdlFailure만 전달한다. 원 예외·메시지·SQL은 보관하지 않는다.
+export function runCurrentDdlInstall(work:()=>void,legacy:Pick<LegacyR9,'parsePsqlFailure'|'DdlFailure'>):'SETTLED'|'UNKNOWN'{
+ try{work();return 'SETTLED';}catch(error){
+  let parsed:unknown;
+  try{parsed=legacy.parsePsqlFailure(error);}catch{return 'UNKNOWN';}
+  if(!parsed||typeof parsed!=='object'||types.isProxy(parsed)||!(parsed instanceof legacy.DdlFailure))return 'UNKNOWN';
+  const data=(value:unknown,key:string):unknown=>{
+   if(!value||typeof value!=='object'||types.isProxy(value))return undefined;
+   const d=Object.getOwnPropertyDescriptor(value,key);return d&&Object.hasOwn(d,'value')?d.value:undefined;
+  };
+  const sqlState=data(parsed,'sqlState'),line=data(parsed,'statementEndLine'),raw=data(parsed,'diagnostic');
+  let details:Readonly<CurrentDdlDiagnostic>|null=null;
+  if(typeof sqlState==='string'&&/^[A-Z0-9]{5}$/.test(sqlState)){
+   const kind=data(raw,'kind'),identifier=data(raw,'identifier');
+   const expected=sqlState==='42P01'?'RELATION':sqlState==='42883'?'FUNCTION':sqlState==='42703'?'COLUMN':null;
+   const pattern=kind==='COLUMN'?/^[a-z_][a-z0-9_]{0,62}$/:/^(?:anvil\.|pg_catalog\.)?[a-z_][a-z0-9_]{0,62}$/;
+   const diagnostic=expected!==null&&kind===expected&&typeof identifier==='string'&&pattern.test(identifier)
+    ?Object.freeze({kind:expected,identifier}):null;
+   details=Object.freeze({sqlState,diagnostic,statementEndLine:typeof line==='number'&&Number.isSafeInteger(line)&&line>0?line:null});
+  }
+  const failure=Object.freeze(Object.create(null)) as object;ddlFailures.set(failure,details);throw failure;
+ }
+}
+function currentDdlFailure(error:unknown):{diagnostic:Readonly<CurrentDdlDiagnostic>|null}|null{
+ if(!error||(typeof error!=='object'&&typeof error!=='function')||!ddlFailures.has(error))return null;
+ return {diagnostic:ddlFailures.get(error)!};
+}
+
 export async function runCurrentJourney(input:CurrentInput,ports:CurrentPorts):Promise<CurrentResult>{
  let auth:CurrentAuthorization|null=null,stage:Stage='PREFLIGHT',containerId:string|null=null,networkId:string|null=null,schema:CurrentSchemaInstallationResult|null=null,claimed=false,claimStarted=false;
- const result=(status:CurrentResult['status'],code:string):CurrentResult=>Object.freeze({status,stage,code,planHash:auth?.planHash??null,containerId,networkId,schema,evidence:'RETAINED_WHEN_CREATED'});
+ let ddlFailure:Readonly<CurrentDdlDiagnostic>|null=null;
+ const result=(status:CurrentResult['status'],code:string):CurrentResult=>Object.freeze({status,stage,code,planHash:auth?.planHash??null,containerId,networkId,schema,evidence:'RETAINED_WHEN_CREATED',...(stage==='INSTALL'&&code==='DDL_REJECTED'&&ddlFailure?{ddlFailure}:{})});
  try{auth=readCurrentAuthorization(input,ports.now());}catch{return result('REJECTED','APPROVAL_OR_PLAN_INVALID');}
  const deadline=auth.plan.expiresAt;
  let observedAt=auth.plan.issuedAt;
@@ -174,7 +211,12 @@ export async function runCurrentJourney(input:CurrentInput,ports:CurrentPorts):P
   stage='INSTALL';
   const installPorts:CurrentSchemaInstallationPorts={
    assertCurrent(){fresh();ports.schema.assertCurrent();},
-   install:(raw,row)=>ports.schema.install(raw,row),
+   async install(raw,row){
+    try{return await ports.schema.install(raw,row);}catch(error){
+     const failure=currentDdlFailure(error);if(!failure)throw error;
+     ddlFailure=failure.diagnostic;return 'DDL_REJECTED';
+    }
+   },
    appendLedger:row=>ports.schema.appendLedger(row),readLedger:()=>ports.schema.readLedger(),
   };
   schema=await installCurrentSchema(tsv,sources,installPorts);
@@ -542,8 +584,7 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
   schema:{
    assertCurrent,
    async install(raw,row){
-    try{sql(migrator,raw,30_000,row);installed.push(row.path);return 'SETTLED';}
-    catch(error){return legacy!.parsePsqlFailure(error) instanceof legacy!.DdlFailure?'DDL_REJECTED':'UNKNOWN';}
+    return runCurrentDdlInstall(()=>{sql(migrator,raw,30_000,row);installed.push(row.path);},legacy!);
    },
    async appendLedger(row){
     if(!/^[a-z0-9_]+$/.test(row.id)||!hex(row.sha256,64))return 'UNKNOWN';

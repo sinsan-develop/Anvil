@@ -511,3 +511,65 @@ test('IX01 후속 CASE 구문 RAM: 네 조건 괄호와 세 원바이트 결박�
  }
  assert.equal(added,8);
 });
+
+test('IX01 INSTALL 안전 진단 RAM: 원 parser 진단만 UNKNOWN 결과에 보존한다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ assert.equal(typeof api.runCurrentDdlInstall,'function');
+ const raw=git(['cat-file','blob','HEAD:'+currentProfile.legacy]);
+ const legacy=await import('data:text/javascript;base64,'+Buffer.from(currentLegacyModuleSource(raw,currentProfile.legacyHash)).toString('base64'));
+ const cases=[
+  ['42601','syntax error near PRIVATE_SQL',null],
+  ['42P01','relation "anvil.missing_table" does not exist',{kind:'RELATION',identifier:'anvil.missing_table'}],
+  ['42883','function pg_catalog.missing_fn(uuid, jsonb) does not exist',{kind:'FUNCTION',identifier:'pg_catalog.missing_fn'}],
+  ['42703','column "missing_column" of relation "anvil.rows" does not exist',{kind:'COLUMN',identifier:'missing_column'}],
+  ['42P01','relation "private_schema.secret" does not exist',null],
+ ] as const;
+ for(const [sqlState,message,diagnostic] of cases){
+  const h=harness(),records:unknown[]=[];
+  h.ports.schema.install=async()=>{h.calls.push('SQL');return api.runCurrentDdlInstall(()=>{throw {status:3,signal:null,stderr:'psql:<stdin>:1170: ERROR:  '+sqlState+': '+message+'\nDETAIL: PRIVATE_DETAIL\n',stdout:'PRIVATE_STDOUT'};},legacy);};
+  h.ports.record=async result=>{h.calls.push('RECORD');records.push(result);};
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.status,'UNKNOWN');assert.equal(result.stage,'INSTALL');assert.equal(result.code,'DDL_REJECTED');
+  assert.deepEqual(result.ddlFailure,{sqlState,diagnostic,statementEndLine:1170});
+  assert.deepEqual(result.schema,{status:'STOPPED',reason:'DDL_REJECTED',progress:[{id:h.data.sql[0]!.id,sql:'REJECTED',ledger:'NOT_STARTED'}]});
+  assert.deepEqual(h.calls,['PREFLIGHT','CLAIM','RUNTIME','START','SQL','RECORD']);assert.deepEqual(records,[result]);
+  assert.doesNotMatch(JSON.stringify(result),/PRIVATE_|private_schema|stderr|stdout|stack/);
+ }
+ let calls=0;assert.equal(api.runCurrentDdlInstall(()=>{calls++;},legacy),'SETTLED');assert.equal(calls,1);
+});
+
+test('IX01 INSTALL 안전 진단 RAM: 불명과 현재성 소실은 진단을 승격하지 않는다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ assert.equal(typeof api.runCurrentDdlInstall,'function');
+ const raw=git(['cat-file','blob','HEAD:'+currentProfile.legacy]);
+ const legacy=await import('data:text/javascript;base64,'+Buffer.from(currentLegacyModuleSource(raw,currentProfile.legacyHash)).toString('base64'));
+ for(const error of [{status:1,stderr:'PRIVATE_ERROR'},{status:3,stderr:'ERROR:  42601: private\nERROR:  42601: another'},Error('private')]){
+  const h=harness();h.ports.schema.install=async()=>api.runCurrentDdlInstall(()=>{throw error;},legacy);
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.status,'UNKNOWN');assert.equal(result.code,'INSTALL_UNKNOWN');assert.equal(Object.hasOwn(result,'ddlFailure'),false);
+  assert.equal(h.calls.includes('CLEANUP'),false);assert.equal(h.calls.includes('SECURE'),false);assert.equal(h.calls.filter(c=>c==='RECORD').length,1);
+ }
+ const h=harness();h.ports.schema.install=async()=>api.runCurrentDdlInstall(()=>{h.drop();throw {status:3,stderr:'psql:<stdin>:9: ERROR:  42601: private'};},legacy);
+ const result=await runCurrentJourney(input(),h.ports);assert.equal(result.code,'INSTALL_UNKNOWN');assert.equal(Object.hasOwn(result,'ddlFailure'),false);
+});
+
+test('IX01 INSTALL 안전 진단 RAM: 진단 속성은 데이터만 복제하고 위조 결과를 거절한다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ const raw=git(['cat-file','blob','HEAD:'+currentProfile.legacy]);
+ const legacy=await import('data:text/javascript;base64,'+Buffer.from(currentLegacyModuleSource(raw,currentProfile.legacyHash)).toString('base64'));
+ let traps=0;
+ const accessor=new legacy.DdlFailure('42P01',null,1);
+ Object.defineProperty(accessor,'diagnostic',{get(){traps++;throw Error('private');}});
+ const unsafe=new legacy.DdlFailure('42P01',{kind:'RELATION',identifier:'private/path'},Number.MAX_SAFE_INTEGER+1);
+ const proxy=new Proxy({},{get(){traps++;throw Error('private');},getPrototypeOf(){traps++;throw Error('private');}});
+ for(const [parsed,expected] of [[accessor,{sqlState:'42P01',diagnostic:null,statementEndLine:1}],
+  [unsafe,{sqlState:'42P01',diagnostic:null,statementEndLine:null}],[proxy,null],
+  [{sqlState:'42P01',diagnostic:{kind:'RELATION',identifier:'anvil.forged'},statementEndLine:1},null]] as const){
+  const h=harness();
+  h.ports.schema.install=async()=>api.runCurrentDdlInstall(()=>{throw Error('private');},{DdlFailure:legacy.DdlFailure,parsePsqlFailure:()=>parsed});
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.code,expected?'DDL_REJECTED':'INSTALL_UNKNOWN');assert.deepEqual(result.ddlFailure,expected??undefined);
+  assert.doesNotMatch(JSON.stringify(result),/private|forged/);assert.equal(h.calls.includes('CLEANUP'),false);
+ }
+ assert.equal(traps,0);
+});

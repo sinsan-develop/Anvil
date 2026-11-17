@@ -20675,3 +20675,9 @@ RED1ced35 뒤 GREEN1d25f6 2통과, 타입cb57b8·diff85b3a6 종료0. Main ed699b
 신산님 직접 승인. developer_primary가 고정 소스 c5114624 및 실행안57631811로 수행했다. 사전검산b2919d, 소스a84374, 외피553846 종료0. 소스14·SQL130(4,004,532바이트)·원장0cfbe777d6f545e9122a3c9505ad3162885748a9d4b088b6bdb03eee5a6f3fb3 일치. 승인ID6ac8b727-20f1-409c-b3ac-895328f4abc2.
 
 단회entry68ad91/session51733→6bf164 종료1, UNKNOWN/INSTALL/DDL_REJECTED. 앞선107개 SQL·원장SETTLED,108번째0077 SQL REJECTED·원장NOT_STARTED,후속22·0095 권한 검증·TC01 저장재조회·정리 미실행. 컨테이너57f7154c780696330f77d8d80b6eaa1aed755e2b2fac6a7a50b3d6526bf5ca26,networkId null은 반환값이다. 세션종결/live0·단회소진,후속조회·재시도·삭제 및 A1~A4접근0. A5보존. 정확 SQLSTATE·문장과 감사정착은 미확인이다. 괄호 보완만으로 설치문제가 모두 해결되지 않았음은 확인됐다. 다음은 로컬에서 비밀없는 기존 DDL 진단의 누락 경로를 보완해 원인 식별 가능성을 확보한다. IX01 미완료.
+
+## IX01 TC01 INSTALL 안전 진단 보존
+
+기준b039b2af. developer_primary가 기존 parser의 확정 DdlFailure를 runner 내부표식으로 전달해 INSTALL 결과에 optional ddlFailure SQLSTATE·제한 식별자·문장끝행을 보존했다. UNKNOWN/INSTALL/DDL_REJECTED 및 진행형상·후행차단은 유지한다. 원 SQL·stderr·stack은 보관하지 않는다. 위조/접근자/Proxy와 불명·현재성 소실 반례를 검증했다.
+
+RED0a481f 2실패 뒤 집중1d112a 7통과, 타입3f9fe6·diff167848 종료0. Main 전체제어기 b98bcb 27통과·실패/건너뜀0. 실제 PG 오류 진단 출력·0077 설치 원인은 미검증이다. DB·SSH·Docker·A1~A5 조회·재실행·설치·삭제0, A5보존. 새 실제 시험은 이번 소스 보완에 포함되지 않는다. IX01 미완료.
