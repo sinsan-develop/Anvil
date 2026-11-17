@@ -20567,3 +20567,8 @@ UI06의 보관 계획 개정 준비는 당시 documentRef를 그대로 사용한
 실행 소스 f8c8b57864e923a0d924e9788ba373892a43abef. 신산님 최신 지시에 따라 Main이 실행 플랫폼 승격의 기존 WSL-server SSH 경로를 호스트 SINSAN/UID1000으로 확인했다(9cfbaa exit0). developer_primary가 전용 경로·컨테이너·네트워크 부재, 고정 도구·이미지·daemon을 검산했다(b7e14b exit0). 지정 private Git checkout과 고정 소스14·SQL130의 원바이트를 대조했다. 외피는 배타 저장·동기화·재조회 뒤 READY가 출력됐으며, 준비 명령 f68626은 이후 heredoc 종결자의 CR로 exit1이었다. 본 시험 진입 전 확인된 원외피만 유지했다.
 
 기존 고정 entry 1회(a8f399 exit1, 7.7676916초)는 UNKNOWN / RUNTIME / STOPPED_RUNTIME을 반환했다. 실행기는 단발 claim 뒤 런타임 준비에서 중단됐으며 containerId/networkId/schema는 null이다. PG 시작·SQL 설치·0095 역할 생성 및 임시 ADMIN 회수·TC01 실제 여정·정리는 미도달이다. 세부 런타임 준비 상태는 미확인으로 보존했다. 기존 DB·권한·서비스 변경 없음. 결과 불명 이후 후속 원격조회·재시도·자동 삭제 0, 실행 핸들0. 전용 checkout/외피와 생성된 실행 기록은 보존하며 IX01은 미완료다.
+
+
+## IX01 런타임 준비 실패 단계 분류
+
+기준 aac1fb94. developer_primary가 TC01 실행기와 집중시험 2파일을 보완했다. 기존 RUNTIME/UNKNOWN을 유지하며 8개 고정 단계로 오류를 분류한다. 임의 예외는 기존 일반 코드이며 원문·경로·출력·stack은 노출하지 않는다. RED d1df76 뒤 순수 RAM 873ed4 1통과, 타입50d103 종료0, 공백검사0. 독립 C0/I0/M1: 고정 SQL130 원바이트를 요구하는 controller 연결은 소스 판독만 했으며 해당 연결 시험은 미실행이다. 지난 UNKNOWN 원인은 미확정으로 유지한다. SSH/DB/npm 설치·TC01 재실행·보존 자원 조회·정리 0.

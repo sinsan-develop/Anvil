@@ -9,6 +9,26 @@ import {currentLegacyModuleSource,currentProfile,currentRequiredSources,readCurr
 const cwd=fileURLToPath(new URL('../../../',import.meta.url));
 const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd,input,windowsHide:true,maxBuffer:16*1024*1024});
 const now=1_790_000_000_000,containerId='a'.repeat(64),networkId='b'.repeat(64);
+test('IX01 runtime 고정 진단 RAM: 단계 실패는 비밀 없이 후속 작업을 차단한다',async()=>{
+ const runtime=await import('../../../scripts/qa-ix01-current-journey.ts');
+ assert.equal(typeof runtime.runCurrentRuntimeSteps,'function');
+ const names=['DIRECTORIES','CONFIG','TOOLS','LOCK','VERSION','PREINSTALL','INSTALL','POSTINSTALL'] as const;
+ for(const failed of names){
+  const calls:string[]=[];
+  const steps=Object.fromEntries(names.map(name=>[name,()=>{calls.push(name);if(name===failed)throw Object.assign(Error('secret/path/argv'),{stdout:'secret',stderr:'secret'});}])) as Record<typeof names[number],()=>void>;
+  let caught:unknown;
+  try{runtime.runCurrentRuntimeSteps(steps);}catch(error){caught=error;}
+  assert.equal(runtime.currentRuntimeFailureCode(caught),'STOPPED_RUNTIME_'+failed);
+  assert.deepEqual(calls,names.slice(0,names.indexOf(failed)+1));
+  assert.equal(JSON.stringify(caught),'{}');
+ }
+ const calls:string[]=[];
+ runtime.runCurrentRuntimeSteps(Object.fromEntries(names.map(name=>[name,()=>{calls.push(name);}])) as Record<typeof names[number],()=>void>);
+ assert.deepEqual(calls,names);
+ let reads=0;
+ for(const error of [Error('STOPPED_RUNTIME_INSTALL'),{code:'STOPPED_RUNTIME_INSTALL'},new Proxy({},{get(){reads++;throw Error('secret');}})])assert.equal(runtime.currentRuntimeFailureCode(error),'STOPPED_RUNTIME');
+ assert.equal(reads,0);
+});
 function input(change:Partial<CurrentPlan>={},decision='ALLOW_ONE_RUN'):CurrentInput{
  const plan={schemaVersion:1,purpose:'IX01_CURRENT_TC01',profile:currentProfile.owner,sourceHead:'1'.repeat(40),issuedAt:now-10,expiresAt:now+10_000,gitHash:'c'.repeat(64),dockerHash:'d'.repeat(64),
   sourceFiles:currentRequiredSources.map(path=>({path,sha256:path===currentProfile.legacy?currentProfile.legacyHash:'e'.repeat(64)})),...change};

@@ -113,6 +113,21 @@ export function verifyCurrentChildOutcome(value:unknown,handoffHash:string):bool
   &&exact(value.result,['schemaVersion','purpose','handoffHash','ledgerCount','status'])&&value.result.schemaVersion===1
   &&value.result.purpose==='IX01_CURRENT_TC01_CHILD_RESULT'&&value.result.handoffHash===handoffHash&&value.result.ledgerCount===130&&value.result.status==='PASSED';
 }
+const runtimeSteps=['DIRECTORIES','CONFIG','TOOLS','LOCK','VERSION','PREINSTALL','INSTALL','POSTINSTALL'] as const;
+const runtimeFailures=new WeakMap<object,string>();
+// 원 예외는 보관하거나 직렬화하지 않는다. 이 모듈이 발급한 고정 단계만 결과에 사용한다.
+export function runCurrentRuntimeSteps(steps:Record<typeof runtimeSteps[number],()=>void>):void{
+ for(const step of runtimeSteps){
+  try{steps[step]();}catch{
+   const failure=Object.freeze(Object.create(null)) as object;
+   runtimeFailures.set(failure,'STOPPED_RUNTIME_'+step);throw failure;
+  }
+ }
+}
+export function currentRuntimeFailureCode(error:unknown):string{
+ return error!==null&&(typeof error==='object'||typeof error==='function')?runtimeFailures.get(error)??'STOPPED_RUNTIME':'STOPPED_RUNTIME';
+}
+
 export async function runCurrentJourney(input:CurrentInput,ports:CurrentPorts):Promise<CurrentResult>{
  let auth:CurrentAuthorization|null=null,stage:Stage='PREFLIGHT',containerId:string|null=null,networkId:string|null=null,schema:CurrentSchemaInstallationResult|null=null,claimed=false,claimStarted=false;
  const result=(status:CurrentResult['status'],code:string):CurrentResult=>Object.freeze({status,stage,code,planHash:auth?.planHash??null,containerId,networkId,schema,evidence:'RETAINED_WHEN_CREATED'});
@@ -150,8 +165,8 @@ export async function runCurrentJourney(input:CurrentInput,ports:CurrentPorts):P
   if(ports.now()>=handoff.expiresAt)fail('IX01_CURRENT_CHILD_UNKNOWN');
   stage='CLEANUP';await call(()=>ports.cleanup(handoff));
   stage='RECORD';const done=result('CLEANED','TC01_PASSED');await call(()=>ports.record(done));return done;
- }catch{
-  const stopped=result(claimStarted?'UNKNOWN':'REJECTED',schema?.status==='STOPPED'?schema.reason:'STOPPED_'+stage);
+ }catch(error){
+  const stopped=result(claimStarted?'UNKNOWN':'REJECTED',schema?.status==='STOPPED'?schema.reason:stage==='RUNTIME'?currentRuntimeFailureCode(error):'STOPPED_'+stage);
   if(claimed&&stage!=='RECORD')try{await ports.record(stopped);}catch{/* 추가 실행 없이 감사 미정착을 보존한다. */}
   return stopped;
  }
@@ -425,17 +440,23 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
    return 'CLAIMED';
   },
   async prepareRuntime(){
-   for(const path of [configPath,f.receipt+'/npm-cache']){assertCurrent();mkdirSync(path,{mode:0o700});host.pins.pin(path,true);}
-   for(const path of [f.receipt+'/npm-user.conf',f.receipt+'/npm-global.conf'])createExclusive(path,'',assertCurrent);
-   checkNpm();checkNpmPackage();
    const opts=['--userconfig='+f.receipt+'/npm-user.conf','--globalconfig='+f.receipt+'/npm-global.conf','--cache='+f.receipt+'/npm-cache','--registry=https://registry.npmjs.org/'];
+   runCurrentRuntimeSteps({
+    DIRECTORIES(){for(const path of [configPath,f.receipt+'/npm-cache']){assertCurrent();mkdirSync(path,{mode:0o700});host.pins.pin(path,true);}},
+    CONFIG(){for(const path of [f.receipt+'/npm-user.conf',f.receipt+'/npm-global.conf'])createExclusive(path,'',assertCurrent);},
+    TOOLS(){checkNpm();checkNpmPackage();},
+    LOCK(){
    const lock=facts(checkedRawFile('package-lock.json',auth).toString('utf8'));
    if(lock.lockfileVersion!==3||!lock.packages||Object.entries(lock.packages).some(([key,row]:[string,any])=>key!==''&&(!row||row.link===true||typeof row.resolved!=='string'||!row.resolved.startsWith('https://registry.npmjs.org/')||!/^sha(?:256|384|512)-[A-Za-z0-9+/=]+$/.test(row.integrity))))fail('IX01_CURRENT_NPM_LOCK');
-   if(run(f.node,[f.npm,'--version',...opts]).trim()!==f.npmVersion)fail('IX01_CURRENT_NPM_VERSION');
+    },
+    VERSION(){if(run(f.node,[f.npm,'--version',...opts]).trim()!==f.npmVersion)fail('IX01_CURRENT_NPM_VERSION');},
+    PREINSTALL(){
    checkNpm();checkNpmPackage();host.sources();missing(f.source+'/node_modules');missing(f.source+'/.npmrc');
    for(const path of [f.receipt+'/npm-user.conf',f.receipt+'/npm-global.conf'])if(plainFile(path,f.uid,0,0o600).length)fail('IX01_CURRENT_NPM_CONFIG');
-   run(f.node,[f.npm,'ci','--ignore-scripts','--no-audit','--no-fund',...opts],undefined,600_000);
-   host.pins.pin(f.source+'/node_modules');host.sources();
+    },
+    INSTALL(){run(f.node,[f.npm,'ci','--ignore-scripts','--no-audit','--no-fund',...opts],undefined,600_000);},
+    POSTINSTALL(){host.pins.pin(f.source+'/node_modules');host.sources();},
+   });
   },
   async start(){
    const image=facts(docker(['image','inspect','--format','{"id":{{json .Id}},"volumes":{{json .Config.Volumes}}}',f.image]));
