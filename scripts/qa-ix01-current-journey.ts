@@ -114,7 +114,15 @@ export function verifyCurrentChildOutcome(value:unknown,handoffHash:string):bool
   &&value.result.purpose==='IX01_CURRENT_TC01_CHILD_RESULT'&&value.result.handoffHash===handoffHash&&value.result.ledgerCount===130&&value.result.status==='PASSED';
 }
 const runtimeSteps=['DIRECTORIES','CONFIG','TOOLS','LOCK','VERSION','PREINSTALL','INSTALL','POSTINSTALL'] as const;
-const runtimeFailures=new WeakMap<object,string>();
+const stepFailures=new WeakMap<object,{stage:'RUNTIME'|'START';code:string}>();
+function stoppedStep(stage:'RUNTIME'|'START',step:string):never{
+ const failure=Object.freeze(Object.create(null)) as object;
+ stepFailures.set(failure,{stage,code:'STOPPED_'+stage+'_'+step});throw failure;
+}
+function stepFailureCode(stage:'RUNTIME'|'START',error:unknown):string{
+ const failure=error!==null&&(typeof error==='object'||typeof error==='function')?stepFailures.get(error):undefined;
+ return failure?.stage===stage?failure.code:'STOPPED_'+stage;
+}
 // npm ci의 동기 자식 호출에만 적용한다. 기존보다 느슨한 mask로 바꾸지 않는다.
 export function withCurrentNpmUmask(work:()=>string,mask:(value?:number)=>number=process.umask):string{
  const original=mask();
@@ -124,14 +132,24 @@ export function withCurrentNpmUmask(work:()=>string,mask:(value?:number)=>number
 // 원 예외는 보관하거나 직렬화하지 않는다. 이 모듈이 발급한 고정 단계만 결과에 사용한다.
 export function runCurrentRuntimeSteps(steps:Record<typeof runtimeSteps[number],()=>void>):void{
  for(const step of runtimeSteps){
-  try{steps[step]();}catch{
-   const failure=Object.freeze(Object.create(null)) as object;
-   runtimeFailures.set(failure,'STOPPED_RUNTIME_'+step);throw failure;
-  }
+  try{steps[step]();}catch{stoppedStep('RUNTIME',step);}
  }
 }
 export function currentRuntimeFailureCode(error:unknown):string{
- return error!==null&&(typeof error==='object'||typeof error==='function')?runtimeFailures.get(error)??'STOPPED_RUNTIME':'STOPPED_RUNTIME';
+ return stepFailureCode('RUNTIME',error);
+}
+type StartSyncStep='IMAGE_COLLISION'|'CREATE'|'CREATE_INSPECT'|'START'|'START_INSPECT'|'BOOTSTRAP_ROLES';
+export async function runCurrentStartSteps(steps:Record<StartSyncStep,()=>void>&{READINESS():Promise<void>}):Promise<void>{
+ let step:StartSyncStep|'READINESS'='IMAGE_COLLISION';
+ try{
+  steps.IMAGE_COLLISION();
+  step='CREATE';steps.CREATE();
+  step='CREATE_INSPECT';steps.CREATE_INSPECT();
+  step='START';steps.START();
+  step='START_INSPECT';steps.START_INSPECT();
+  step='READINESS';await steps.READINESS();
+  step='BOOTSTRAP_ROLES';steps.BOOTSTRAP_ROLES();
+ }catch{stoppedStep('START',step);}
 }
 
 export async function runCurrentJourney(input:CurrentInput,ports:CurrentPorts):Promise<CurrentResult>{
@@ -172,7 +190,7 @@ export async function runCurrentJourney(input:CurrentInput,ports:CurrentPorts):P
   stage='CLEANUP';await call(()=>ports.cleanup(handoff));
   stage='RECORD';const done=result('CLEANED','TC01_PASSED');await call(()=>ports.record(done));return done;
  }catch(error){
-  const stopped=result(claimStarted?'UNKNOWN':'REJECTED',schema?.status==='STOPPED'?schema.reason:stage==='RUNTIME'?currentRuntimeFailureCode(error):'STOPPED_'+stage);
+  const stopped=result(claimStarted?'UNKNOWN':'REJECTED',schema?.status==='STOPPED'?schema.reason:stage==='RUNTIME'||stage==='START'?stepFailureCode(stage,error):'STOPPED_'+stage);
   if(claimed&&stage!=='RECORD')try{await ports.record(stopped);}catch{/* 추가 실행 없이 감사 미정착을 보존한다. */}
   return stopped;
  }
@@ -466,17 +484,24 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
    });
   },
   async start(){
+   await runCurrentStartSteps({
+    IMAGE_COLLISION(){
    const image=facts(docker(['image','inspect','--format','{"id":{{json .Id}},"volumes":{{json .Config.Volumes}}}',f.image]));
    if(image.id!==f.image||!exact(image.volumes,['/var/lib/postgresql/data']))fail('IX01_CURRENT_IMAGE');
    if(docker(['container','ls','-a','--filter','name=^/'+f.container+'$','--format','{{.ID}}']).trim()
      ||docker(['network','ls','--filter','name=^'+f.network+'$','--format','{{.ID}}']).trim())fail('IX01_CURRENT_RESOURCE_EXISTS');
+    },
+    CREATE(){
    pgUntil=Math.min(auth.plan.expiresAt,host.time()+pgBound);
    passwords={bootstrap:randomBytes(32).toString('hex'),app:randomBytes(32).toString('hex'),migrator:randomBytes(32).toString('hex')};
    containerId=docker(['create','--pull','never','--name',f.container,'--network','none','--user','999:999','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--log-driver','none','--pids-limit','64','--memory','512m','--cpus','1',
     ...Object.entries(tmpfs).flatMap(([k,v])=>['--tmpfs',k+':'+v]),...labelArgs(auth),'--env','POSTGRES_USER='+bootstrap,'--env','POSTGRES_DB='+f.database,'--env','POSTGRES_PASSWORD','--env','POSTGRES_HOST_AUTH_METHOD=scram-sha-256','--env','POSTGRES_INITDB_ARGS=--auth-local=trust --auth-host=scram-sha-256',f.image,'postgres','-c','listen_addresses=*','-c','log_statement=none','-c','log_min_error_statement=fatal'],undefined,10_000,{POSTGRES_PASSWORD:passwords.bootstrap}).trim();
-   const created=inspect();if(created.running||!noNetwork(created)&&!none(created))fail('IX01_CURRENT_CONTAINER_OWNER');
-   if(docker(['start',containerId]).trim()!==containerId)fail('IX01_CURRENT_CONTAINER_START');
-   onlyNone();let ready=false;
+    },
+    CREATE_INSPECT(){const created=inspect();if(created.running||!noNetwork(created)&&!none(created))fail('IX01_CURRENT_CONTAINER_OWNER');},
+    START(){if(docker(['start',containerId]).trim()!==containerId)fail('IX01_CURRENT_CONTAINER_START');},
+    START_INSPECT(){onlyNone();},
+    async READINESS(){
+   let ready=false;
    for(let count=0;count<40;count++){
     onlyNone();
     if(legacy!.parseFinalServer(docker(legacy!.finalServerArgs(containerId)))){
@@ -486,12 +511,16 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
     await new Promise<void>(resolve=>setTimeout(resolve,250));assertCurrent();
    }
    if(!ready)fail('IX01_CURRENT_POSTGRES_READY');
+    },
+    BOOTSTRAP_ROLES(){
    const db=facts(sql(bootstrap,"SELECT json_build_object('db',current_database(),'owner',pg_get_userbyid(datdba),'socket',inet_server_addr() IS NULL)::text FROM pg_catalog.pg_database WHERE datname=current_database();").trim());
    if(!same(db,{db:f.database,owner:bootstrap,socket:true}))fail('IX01_CURRENT_DATABASE');
    roles('PRISTINE');
    const oldDatabase='anvil_v3_ix01_ddl_20261104_r9_a1',original=legacy!.bootstrapSql(oldDatabase,paths());
    if(original.split(oldDatabase).length!==3)fail('IX01_CURRENT_BOOTSTRAP');
    sql(bootstrap,original.replaceAll(oldDatabase,f.database));roles('INSTALLER');
+    },
+   });
    return containerId;
   },
   schema:{

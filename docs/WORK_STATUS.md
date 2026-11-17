@@ -20596,3 +20596,8 @@ UI06의 보관 계획 개정 준비는 당시 documentRef를 그대로 사용한
 신산님 직접 승인과 소스 1ee8bb959db1d19cb1599bff2352bf61cdc67ec0 기준. developer_primary 지정 사전확인 ca05bd 종료0, A2 전용 자원 부재 및 고정 도구 확인. 원격 checkout 784b30 종료0, 외피 59b4ae 종료0, 소스14·SQL130(4,004,520바이트) 검산. 외피 ID d2b06131-d2ea-4469-8840-069c314821d8, plan SHA 0cb1997953b4bca850fc734526ccaf6dee58fdc7bd0932d5501530570554c4cc. 개행 오류 없이 외피 발급 후 단회 실행했다.
 
 실행 fec5da는 6.196초 뒤 종료1, UNKNOWN/START/STOPPED_START. 단회 claim 소진. 런타임 준비와 후행 검산을 통과했으나 START 내부 상세 원인과 부분 자원 상태는 미확인이다. 반환 containerId/networkId/schema=null은 자원 미생성 증거가 아니다. SQL 설치·0095 역할/임시 ADMIN 회수·TC01 여정·정리 미도달. A1 및 기존 DB·권한·서비스 접근/변경0, 이후 재시도·후속 원격 조회·자동삭제0, 실행 핸들0. A2 실행 기록과 생성된 자원을 보존한다. IX01 미완료.
+
+
+## IX01 TC01 START 오류 단계 분류
+
+기준 fc1c154e. developer_primary가 실행기·집중시험 2경로에서 기존 Docker 명령/검사/기한을 유지하며 START를 7개 고정 단계로 분류했다. 원 예외나 추가 ID를 출력하지 않으며 UNKNOWN 및 실패 후 설치/정리 차단을 유지한다. RED e3a84e 1실패 뒤 8ddcdd 3통과·실패/건너뜀0, 타입6d9379 및 diff29f475 종료0. 독립 C0/I0/M0와 동결 지문 일치. 실제 A2 실패 원인과 부분 리소스는 미확인으로 보존, 원격 조회·재실행·삭제0.

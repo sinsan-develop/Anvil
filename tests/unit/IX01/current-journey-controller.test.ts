@@ -9,6 +9,38 @@ import {currentLegacyModuleSource,currentProfile,currentRequiredSources,readCurr
 const cwd=fileURLToPath(new URL('../../../',import.meta.url));
 const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd,input,windowsHide:true,maxBuffer:16*1024*1024});
 const now=1_790_000_000_000,containerId='a'.repeat(64),networkId='b'.repeat(64);
+test('IX01 START 고정 진단 RAM: 단계 실패와 불명은 설치 정리 없이 기록된다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ assert.equal(typeof api.runCurrentStartSteps,'function');
+ const names=['IMAGE_COLLISION','CREATE','CREATE_INSPECT','START','START_INSPECT','READINESS','BOOTSTRAP_ROLES'] as const;
+ for(const failed of names){
+  const h=harness(),candidate=input(),calls:string[]=[],records:unknown[]=[];
+  const step=(name:typeof names[number])=>{calls.push(name);if(name===failed)throw Object.assign(Error('private/path/argv'),{stdout:'secret',stderr:'secret'});};
+  h.ports.start=async()=>{h.calls.push('START');await api.runCurrentStartSteps({
+   IMAGE_COLLISION:()=>step('IMAGE_COLLISION'),CREATE:()=>step('CREATE'),CREATE_INSPECT:()=>step('CREATE_INSPECT'),
+   START:()=>step('START'),START_INSPECT:()=>step('START_INSPECT'),READINESS:async()=>step('READINESS'),BOOTSTRAP_ROLES:()=>step('BOOTSTRAP_ROLES'),
+  });return containerId;};
+  h.ports.record=async result=>{h.calls.push('RECORD');records.push(result);};
+  const result=await runCurrentJourney(candidate,h.ports);
+  assert.deepEqual(result,{status:'UNKNOWN',stage:'START',code:'STOPPED_START_'+failed,planHash:candidate.planHash,
+   containerId:null,networkId:null,schema:null,evidence:'RETAINED_WHEN_CREATED'});
+  assert.deepEqual(calls,names.slice(0,names.indexOf(failed)+1));
+  assert.deepEqual(h.calls,['PREFLIGHT','CLAIM','RUNTIME','START','RECORD']);assert.deepEqual(records,[result]);
+ }
+ const calls:string[]=[];
+ await api.runCurrentStartSteps({IMAGE_COLLISION:()=>{calls.push('IMAGE_COLLISION');},CREATE:()=>{calls.push('CREATE');},
+  CREATE_INSPECT:()=>{calls.push('CREATE_INSPECT');},START:()=>{calls.push('START');},START_INSPECT:()=>{calls.push('START_INSPECT');},
+  READINESS:async()=>{await Promise.resolve();calls.push('READINESS');},BOOTSTRAP_ROLES:()=>{calls.push('BOOTSTRAP_ROLES');}});
+ assert.deepEqual(calls,names);
+ let reads=0;
+ for(const error of [Error('STOPPED_START_CREATE'),new Proxy({},{get(){reads++;throw Error('secret');}})]){
+  const h=harness();h.ports.start=async()=>{h.calls.push('START');throw error;};
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.code,'STOPPED_START');assert.equal(result.status,'UNKNOWN');assert.equal(result.stage,'START');
+  assert.deepEqual(h.calls,['PREFLIGHT','CLAIM','RUNTIME','START','RECORD']);
+ }
+ assert.equal(reads,0);
+});
 test('IX01 A2 고정 프로필 RAM: 정확 이름과 A1 외피 인계를 분리한다',()=>{
  assert.deepEqual({source:currentProfile.source,receipt:currentProfile.receipt,artifact:currentProfile.artifact,
   container:currentProfile.container,network:currentProfile.network,database:currentProfile.database,owner:currentProfile.owner},{
