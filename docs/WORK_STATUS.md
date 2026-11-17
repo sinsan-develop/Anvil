@@ -20687,3 +20687,9 @@ RED0a481f 2실패 뒤 집중1d112a 7통과, 타입3f9fe6·diff167848 종료0. Ma
 기준0ae9e751. 독립 d2_preflight는 DDL 진단 전달 고정diff에 C0/I0/M0를 반환했고 원문 비노출·INSTALL 거절 및 후행 차단을 확인했다. developer_primary는 runner와 기존시험의 고정 리터럴7개를 A6로 분리하고 A1~A5 원/혼합 외피·인계 거절을 검증했다. SQL130/4,004,532바이트와 원장0cfbe777d6f545e9122a3c9505ad3162885748a9d4b088b6bdb03eee5a6f3fb3는 유지한다.
 
 REDd46994 1실패 뒤 집중2b5a17 9통과·실패/건너뜀0, 타입378417·원바이트144ea2·diff7b0ab8 종료0. Main diff검수0. 신규 후보에 source14와 자원·시간·불명 보존 조건을 고정했다. 실제 외피·DB·SSH·Docker·A1~A5 조회·설치·실행·삭제0. 다음은 소스 commit 확정 및 별도 A6 단회 실제 실행 결정이다. A5 승인 소진과 자원보존을 유지하고 IX01은 미완료다.
+
+## IX01 TC01 A6 단회 시험 — 0077 42601/778행
+
+직접 승인된 고정안42ccc20e·소스635557be로 developer_primary가 수행했다. 사전확인4a5d82, source dc4947, 외피a638ce 종료0. source14·SQL130(4,004,532바이트)·원장0cfbe777 일치. 승인ID2c66b9ca-316c-407a-aa70-844e34f740f3.
+
+entry58742e/session15711→df03bd 종료1, UNKNOWN/INSTALL/DDL_REJECTED. 안전진단 sqlState42601,statementEndLine778,diagnostic:null. 앞107 SQL·원장SETTLED,108번째0077 REJECTED/ledger NOT_STARTED,후속22·0095·TC01·정리 미실행. 컨테이너516acfe6160839b19e9cf57cc63f55ae76a92e7f897c89083527e2b9366c2f49,networkId null은 반환값이다. 단회소진·live0,결과파일 정착 미확인. A6보존,후속조회·재시도·삭제·A1~A5접근0. 다음은 고정SQL의778행 종료 문장을 로컬에서 구문 분석하는 단계다. IX01 미완료.
