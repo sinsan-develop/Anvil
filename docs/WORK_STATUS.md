@@ -20665,3 +20665,7 @@ RED1ced35 뒤 GREEN1d25f6 2통과, 타입cb57b8·diff85b3a6 종료0. Main ed699b
 보완 commit 57fe3fb2의 원Git 바이트를 사용하는 Main 전체 제어기 시험 1fc998은 24통과·실패/건너뜀0, 종료0이다.
 
 독립 d2_preflight가 76613cfc~27c02e29 지정 diff를 검수해 C0/I0/M0를 반환했다. SQL6곳 괄호12바이트와 baseline4행 지문 일치 및 의미·거절조건 보존을 확인했다. 회귀시험은 지문·역치환 검사이고 parser 실증과 구별한다. WORK_CHECK에도 A4 실행·로컬 보완·실제 미검증을 반영했으며 IX01 완료 체크는 유지했다.
+
+## IX01 TC01 A5 격리 소스 준비
+
+기준4d3ff3a9. developer_primary가 기존 runner/test의 고정 자원7개를 A5로 분리하고 A1~A4 외피·인계 거절을 검증했다. SQL 보완 및 기존 격리·기한·불명 보존 검사를 유지한다. REDcd265d 1건 뒤 GREEN602c92 6통과·실패/건너뜀0, 타입c0626b·공백검사6974eb 종료0. Main diff검수0. 새 SQL130 합계4,004,532바이트, 원장SHA256 0cfbe777d6f545e9122a3c9505ad3162885748a9d4b088b6bdb03eee5a6f3fb3. 실제 A5 외피·자원·원격·Docker·DB·설치·삭제0. 다음은 실행 소스 commit과 고정안의 결박이며 최신 DB 접속·재실행 금지 지시에 따라 실제 시험은 별도 결정 전 미실행이다. IX01 미완료.
