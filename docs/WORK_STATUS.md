@@ -20707,3 +20707,7 @@ commit23409ff9 원Git 바이트 기준 Main 제어기2d1ea5은 27통과·실패/
 기준883fa521. developer_primary가 trigger3을 추가로 확인했다. raw parse_plpgsql_json은 결과문자열을 반환하지만 OLD datum 뒤 잘못된 JSON 닫힘조각 때문에 상위 json.loads가 실패했다. 최소 RETURN NEW trigger에서도 같은 현상이 재현됐다. SQL 변경 없이 반환문자열만 RAM 보정하면 AST가 해석됐고 고의 END IF 오류는 원파서가 ParseError로 거절했다(5b6f82 종료0).
 
 guard_execution_preparation(946~1029)과 fn09_registered_quota_final_guard(1248~1255)는 원본문, fn09_registered_preparation_guard(1031~1129)는 catalog rowtype9개만 RAM record로 대체한 제한 검증이다. 추가 확정 SQL 구문결함0이며 JSON 출력 보정은 실제 SQL 변경이 아니다. catalog·타입·실제PG15 적용 미검증을 유지한다. DB·SSH·Docker·A1~A6 접근·재실행·삭제·파일수정0. 다음 실제 검증은 0077 추가괄호 보완을 포함한 새 격리 실행 결정이 필요하다. IX01 미완료.
+
+## IX01 TC01 A7 source-only 준비
+
+기준9f6d4a55. developer_primary가 runner와 기존시험 고정리터럴7개를 A7로 분리하고 A1~A6 원/혼합 외피·인계 거절을 검증했다. RED67d6d4 뒤 집중e63d23 9통과·실패/건너뜀0, 타입91eb21·원바이트b94c91·공백검사 종료0. Main diff검수0. SQL130은0077 추가괄호 포함4,004,534바이트, 원장87ade27ede5e91adf12d83dc05e92668ccb8e27aa2f975cb211e649604fffdd3로 갱신했다. 후보source14표·시간/불명보존·파서한계 기록. 실제외피·DB·SSH·Docker·A1~A6 접근·재실행·삭제0. 다음은 고정소스 commit과 실제단회 승인 결정이며 IX01 미완료다.
