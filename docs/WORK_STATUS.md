@@ -20723,3 +20723,5 @@ UNKNOWN/INSTALL/DDL_REJECTED. 앞112SQL·원장SETTLED(0077~0081포함),113번�
 기준5d0daa3b. developer_primary가0082 끝행322를fn09_origin_reuse_request_record_valid(303~322)로식별했다. rowtype2개RAM record치환 후319행 CASE오류재현·괄호2바이트시파싱성공(b6f915). 같은파일에서fn09_origin_reuse_consumption_maximum의비인용지역변수grant와execution_queue_authorized1505행CASE도구문오류로확인했다(384286).
 
 0082 CASE2곳괄호4바이트,지역변수grant15곳인용30바이트만추가하고baseline/직접시험갱신했다. JSON키·권한/기능 불변이며역치환하면고정A7원문과동일하다. SQL230277B/SHA3f32acd0f6f402e823bd3805b1948ae8f48d7ec98300e8dbdc2925923d49cfdf. REDf2965c/01f9e4각1실패뒤15b9b5 2통과,타입5d3fad·diff03e497 종료0. Main755a2c 2통과·실패/건너뜀0. 파서외부56·원PL5/SQL2·rowtypeRAM26함수성공,trigger2는기존JSON문제RAM분리확인. 실제catalog/타입/PG15검증아님. DB·SSH·Docker·A1~A7접근·재실행·삭제0. 다음은커밋원바이트회귀및미실행후속SQL의같은구문형식대조다. IX01미완료.
+
+commit548c33cc 원Git바이트 기준 Main전체제어기10f4cc은27통과·실패/건너뜀0,종료0이다. 실제DB시험미실행.
