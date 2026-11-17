@@ -9,6 +9,30 @@ import {currentLegacyModuleSource,currentProfile,currentRequiredSources,readCurr
 const cwd=fileURLToPath(new URL('../../../',import.meta.url));
 const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd,input,windowsHide:true,maxBuffer:16*1024*1024});
 const now=1_790_000_000_000,containerId='a'.repeat(64),networkId='b'.repeat(64);
+test('IX01 A2 고정 프로필 RAM: 정확 이름과 A1 외피 인계를 분리한다',()=>{
+ assert.deepEqual({source:currentProfile.source,receipt:currentProfile.receipt,artifact:currentProfile.artifact,
+  container:currentProfile.container,network:currentProfile.network,database:currentProfile.database,owner:currentProfile.owner},{
+  source:'/home/daon/anvil-ix01-current-tc01-20261108-a2-qa',
+  receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-current-tc01-20261108-a2',
+  artifact:'/tmp/anvil-v3-ix01-current-tc01-20261108-a2',
+  container:'anvil-ix01-current-tc01-pg-20261108-a2',network:'anvil-ix01-current-tc01-net-20261108-a2',
+  database:'anvil_v3_ix01_current_tc01_20261108_a2',owner:'IX01_CURRENT_TC01_20261108_A2',
+ });
+ assert.equal(Object.isFrozen(currentProfile),true);
+ const candidate=input(),auth=readCurrentAuthorization(candidate,now);
+ assert.equal(auth.plan.profile,'IX01_CURRENT_TC01_20261108_A2');
+ for(const profile of ['IX01_CURRENT_TC01_20261108_A1','IX01_CURRENT_TC01_20261108_A3']){
+  const planRaw=canonicalJson({...JSON.parse(candidate.planRaw),profile}),planHash=contentHash(planRaw);
+  const approvalRaw=canonicalJson({...JSON.parse(candidate.approvalRaw),profile,planHash});
+  assert.throws(()=>readCurrentAuthorization({planRaw,planHash,approvalRaw,approvalHash:contentHash(approvalRaw)},now),{message:'IX01_CURRENT_PLAN_INVALID'});
+  const mixedApproval=canonicalJson({...JSON.parse(candidate.approvalRaw),profile});
+  assert.throws(()=>readCurrentAuthorization({...candidate,approvalRaw:mixedApproval,approvalHash:contentHash(mixedApproval)},now),{message:'IX01_CURRENT_APPROVAL_REQUIRED'});
+  const handoff=canonicalJson({schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD',profile,planHash:auth.planHash,
+   approvalHash:auth.approvalHash,sourceHead:auth.plan.sourceHead,expiresAt:now+1000,ledgerHash:'a'.repeat(64),containerId,networkId,host:'172.18.0.2'});
+  // profile 불일치에서 원장 입력을 읽기 전에 거절하며 원격 A1 자료는 조회하지 않는다.
+  assert.throws(()=>verifyCurrentHandoff(handoff,contentHash(handoff),auth,new Uint8Array(),now),{message:'IX01_CURRENT_HANDOFF_INVALID'});
+ }
+});
 test('IX01 npm umask RAM: 동기 호출만 강화하고 원 mask를 복원한다',async()=>{
  const {withCurrentNpmUmask}=await import('../../../scripts/qa-ix01-current-journey.ts');
  assert.equal(typeof withCurrentNpmUmask,'function');
