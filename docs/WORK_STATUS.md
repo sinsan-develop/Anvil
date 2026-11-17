@@ -20647,3 +20647,9 @@ RED f425d9 1실패 뒤 집중 2c42f0 2통과, 타입 e4cce9 및 diff 3dde1f 종�
 신산님 직접 승인. developer_primary가 고정안 cd1a2da6 및 실행 소스 1b60eec8a3d68a920d08130c3cc131274ae8aec3로 수행했다. 사전검산 cf04ef, 소스 6289→5b7c40, 외피 69bc19 모두 종료0. 고정 소스14·SQL130(4,004,520바이트)·원장 지문 일치. 승인 ID 36806db0-625e-4923-b1a2-65034454b466.
 
 실행 34172→110943 종료1, UNKNOWN/INSTALL/DDL_REJECTED. 생성·기동·초기화 단계를 지나 SQL 및 원장 107개 SETTLED, 108번째 0077_registered_execution_preparation_options SQL REJECTED·원장 NOT_STARTED. 나머지 22개, 0095 권한 생성·회수, TC01 저장·재조회, 성공 정리 미실행. 컨테이너 23c8cdacf8cf03c789a182143aab7401e05ff88df547c1935c2259e6c07fce0f, networkId null은 실행기 반환값이다. 정확 DDL 원인과 감사 파일 정착은 미확인. 단회 승인 소진, 실행 핸들0, 후속 조회·재시도·삭제 및 A1/A2/A3 접근0. A4 보존. 다음은 로컬에서 0077과 설치 순서 대조다. IX01 미완료.
+
+## IX01 TC01 0077 함수 본문 구문 보완
+
+A4 보존 및 로컬 원인 확인·보완 직접 지시. developer_primary가 고정 1b60eec8의 0077과 선행 정의를 대조했다. 함수·제약 선행 누락은 확인되지 않았다. 기존 로컬 pglast v8.4/PostgreSQL18.4로 SQL 외부88문장 파싱 후 quota_plan_valid 본문의 두 IS DISTINCT FROM CASE 조건이 구문 오류임을 재현했다. 각 CASE에 괄호를 추가한 원문은 해석됐다. 실제 A4 거절 문장이 이 함수였는지는 오류 원문 부재로 미확인이다.
+
+0077 SQL 4바이트(괄호4개), current-schema-baseline 해당 size/hash, 직접 회귀시험 3경로만 변경. SQL 길이156566, SHA256 783bd97620a64f50aa3546933dce68ff355919f323ae957401b6a0642d526436. 원복 역치환이 원 Git 바이트와 동일하다. 역사105 TSV 및 실행기 진단 불변. RED645f96 뒤 de19b1 1통과, 타입2f1b39 종료0, Main e3ef8f 1통과·실패/건너뜀0 및 diff검사0. 파서 검증은 외부SQL88문장·PLpgSQL14·SQL함수6 성공이며 composite catalog 의존21개는 미검증이다. 실제 PG15·0095·TC01 저장/재조회 미검증, DB·SSH·Docker·A4 접근·재실행·삭제0. 다음은 커밋 원바이트에 결박한 인접 시험과 보완본 검수다. 전체 IX01 미완료.

@@ -13,7 +13,7 @@ const historicalBytes=15807,historicalCount=105;
 const suffix=[
   ['0075_user_common_setup_definitions','db/migrations/0075_user_common_setup_definitions.sql.pending',64651,'f9dd6b1730da8d5428c6ccb66b3169758baa0c0a5ecc789f7c426559171f472c'],
   ['0076_native_first_receive','db/migrations/0076_native_first_receive.sql.pending',529020,'a8dc4ccdf2a603888dfb993f22712cf74677db59104fc59be80e0442c6ba1ba9'],
-  ['0077_registered_execution_preparation_options','db/migrations/0077_registered_execution_preparation_options.sql.pending',156562,'e2a2451e693ebf50026595691b547af39a2410e0c4a217aaf0e0e8a7b70920a8'],
+  ['0077_registered_execution_preparation_options','db/migrations/0077_registered_execution_preparation_options.sql.pending',156566,'783bd97620a64f50aa3546933dce68ff355919f323ae957401b6a0642d526436'],
   ['0078_start_execution_material_registration','db/migrations/0078_start_execution_material_registration.sql.pending',27060,'7a1b7ea71198e59b589a2df3356d8f6488fe0c4a9615daa4a135589d4a3d91fc'],
   ['0079_material_credential_namespace_binding','db/migrations/0079_material_credential_namespace_binding.sql.pending',7776,'4297c897e32c8141b03d6c9741c7217a4cdadbda6faf39abc521e9f551592deb'],
   ['0080_node_decisions','db/migrations/0080_node_decisions.sql.pending',50319,'4cf6922374cb640cc01fc6e56858eb6b17247acab720cfdadd76b70bc6d1ad74'],

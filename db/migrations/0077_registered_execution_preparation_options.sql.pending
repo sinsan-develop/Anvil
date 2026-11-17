@@ -1158,8 +1158,8 @@ BEGIN
  x=p->'parts'->0;
  IF NOT COALESCE(anvil.execution_json_shape(x,ARRAY['key','kind','id','bytes','contentHash','reservedBytes','settledBytes']),false)
   OR NOT COALESCE(anvil.execution_preparation_ref_valid(jsonb_build_object('id',x->'id','version',1,'contentHash',x->'contentHash')),false)
-  OR x->>'kind' IS DISTINCT FROM CASE op WHEN 'prepareExecution' THEN 'PREPARATION_OPTIONS' WHEN 'requestApproval' THEN 'PREPARATION_APPROVAL_REQUEST' ELSE 'PREPARATION_APPROVAL_DECISION' END
-  OR x->>'key' IS DISTINCT FROM CASE op WHEN 'prepareExecution' THEN 'registered_options' WHEN 'requestApproval' THEN 'registered_options_request' ELSE 'registered_options_decision' END
+  OR x->>'kind' IS DISTINCT FROM (CASE op WHEN 'prepareExecution' THEN 'PREPARATION_OPTIONS' WHEN 'requestApproval' THEN 'PREPARATION_APPROVAL_REQUEST' ELSE 'PREPARATION_APPROVAL_DECISION' END)
+  OR x->>'key' IS DISTINCT FROM (CASE op WHEN 'prepareExecution' THEN 'registered_options' WHEN 'requestApproval' THEN 'registered_options_request' ELSE 'registered_options_decision' END)
   THEN RETURN false;END IF;
  amount=anvil.quota_decimal(x->'bytes');
  IF amount>10737418240 OR amount IS DISTINCT FROM anvil.quota_decimal(x->'reservedBytes') OR amount IS DISTINCT FROM anvil.quota_decimal(x->'settledBytes') THEN RETURN false;END IF;

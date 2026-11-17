@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {execFileSync,spawnSync} from 'node:child_process';
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
@@ -437,4 +438,24 @@ test('IX01 0095 검산/회수 불명은 실제 current 제어선에서도 네트
   assert.deepEqual(h.calls.slice(-(mode==='INVALID_ROLE'?2:3)),mode==='INVALID_ROLE'?['SECURE','RECORD']:['SECURE','REVOKE_MODEL','RECORD']);
   assert(!h.calls.some(c=>['NETWORK','CHILD','CLEANUP'].includes(c)));
  }
+});
+
+test('IX01 0077 CASE 구문 RAM: 두 조건 괄호와 고정 원바이트 결박을 보존한다',()=>{
+ const path='db/migrations/0077_registered_execution_preparation_options.sql.pending';
+ const original=git(['cat-file','blob','1b60eec8a3d68a920d08130c3cc131274ae8aec3:'+path]);
+ assert.equal(contentHash(original),'e2a2451e693ebf50026595691b547af39a2410e0c4a217aaf0e0e8a7b70920a8');
+ // Windows checkout의 CRLF만 Git LF로 환원하고, 고정 expected SHA를 별도로 검산한다.
+ const raw=Buffer.from(readFileSync(new URL('../../../'+path,import.meta.url),'utf8').replace(/\r\n/g,'\n'));
+ assert.equal(raw.length,156566);
+ assert.equal(contentHash(raw),'783bd97620a64f50aa3546933dce68ff355919f323ae957401b6a0642d526436');
+ const tsv=git(['cat-file','blob','HEAD:docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv']);
+ const row=readCurrentSchemaManifest(tsv).find(row=>row.path===path)!;
+ assert.equal(row.bytes,raw.length);assert.equal(row.sha256,contentHash(raw));
+ const before=[
+  "OR x->>'kind' IS DISTINCT FROM CASE op WHEN 'prepareExecution' THEN 'PREPARATION_OPTIONS' WHEN 'requestApproval' THEN 'PREPARATION_APPROVAL_REQUEST' ELSE 'PREPARATION_APPROVAL_DECISION' END",
+  "OR x->>'key' IS DISTINCT FROM CASE op WHEN 'prepareExecution' THEN 'registered_options' WHEN 'requestApproval' THEN 'registered_options_request' ELSE 'registered_options_decision' END",
+ ];
+ let restored=raw.toString('utf8');
+ for(const text of before){const fixed=text.replace('FROM CASE','FROM (CASE')+')';assert.equal(restored.split(fixed).length,2);restored=restored.replace(fixed,text);}
+ assert.deepEqual(Buffer.from(restored),original);
 });
