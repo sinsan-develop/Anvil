@@ -20625,3 +20625,9 @@ A2 관측 템플릿 합성 재현은 로컬 Go 실행기를 찾지 못해 미실
 신산님 직접 승인. developer_primary가 고정 실행안 18991555와 소스 54a499268b05757d74e39e6c4ac7fcb721e8b914로 수행했다. 사전검산 deb4ea 종료0에서 A3 경로·전용 컨테이너·네트워크 부재와 도구·daemon·이미지 일치를 확인했다. 체크아웃 38679 → 8cd83a 및 외피 93ce59 종료0, 소스14·SQL130(4,004,520바이트) 일치. 승인 ID 9678a130-8f6c-4d2d-b6b0-8febf5ec38d7, plan SHA256 7c74f9ab728d64963631df85075430db040e2f1d7e99bc6da5679f2a6bf14db5.
 
 실행 7d394f 종료1, 8.019초, UNKNOWN/START/STOPPED_START_CREATE_INSPECT. 런타임과 CREATE 콜백은 반환했고 생성 직후 검사에서 중단됐다. 세부 검사 조건·컨테이너 소유와 결과 파일 정착은 미확인이다. 반환 ID null은 자원 부재 근거가 아니다. 승인 단회 소진, 실행 핸들0. Docker start·SQL130·0095 권한 생성/회수·TC01 저장/재조회·정리 미실행. 후속 조회·재시도·삭제와 A1/A2 접근0. 다음 조치는 기존 소스에서 CREATE_INSPECT의 거절 조건을 대조하는 것이며 A3와 관련 증거를 보존한다. IX01 미완료.
+
+## IX01 TC01 Docker mount 선언 호환성 보정
+
+기준 6caa12e2. developer_primary는 Moby HostConfig.Mounts의 json omitempty 계약에 맞춰 그 필드의 생략을 빈 선언으로 판정했다. 비빈 선언·실제 mount·bind·tmpfs·VolumesFrom·네트워크 검사는 기존대로 유지한다. A3 실제 실패 조건과 생성 직후 none 네트워크 표현은 미확인이다. 출처 https://raw.githubusercontent.com/moby/moby/master/api/types/container/hostconfig.go
+
+실행기와 기존 제어기 시험 2파일만 변경. RED c49ca9 1건, 집중 4be696 1통과, 타입 c74ef3 종료0, Main 전체 제어기 시험 b55bb5 21통과·실패/건너뜀0. 실제 Docker metadata, DB/0095/TC01 미검증. SSH·Docker·A1/A2/A3 접근·재실행·삭제0. 다음은 미확인 조건 근거 검토이며 A3 실행 승인은 소진 상태다.

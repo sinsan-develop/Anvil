@@ -9,6 +9,14 @@ import {currentLegacyModuleSource,currentProfile,currentRequiredSources,readCurr
 const cwd=fileURLToPath(new URL('../../../',import.meta.url));
 const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd,input,windowsHide:true,maxBuffer:16*1024*1024});
 const now=1_790_000_000_000,containerId='a'.repeat(64),networkId='b'.repeat(64);
+test('IX01 HostConfig Mounts RAM: 생략된 빈 선언만 호환하고 mount 선언을 거절한다',async()=>{
+ const {currentHostMountsEmpty}=await import('../../../scripts/qa-ix01-current-journey.ts');
+ assert.equal(typeof currentHostMountsEmpty,'function');
+ assert.equal(currentHostMountsEmpty({NetworkMode:'none',Binds:null,VolumesFrom:null,Tmpfs:{'/tmp':'rw,noexec,nosuid,size=16777216,uid=999,gid=999'}}),true);
+ for(const Mounts of [null,[],{}])assert.equal(currentHostMountsEmpty({Mounts}),true);
+ for(const Mounts of [undefined,[{Type:'bind',Source:'/foreign',Target:'/data'}],[{Type:'volume',Source:'foreign',Target:'/data'}],
+  [{Type:'tmpfs',Target:'/extra'}],{Type:'bind'},'',false,0])assert.equal(currentHostMountsEmpty({Mounts}),false);
+});
 test('IX01 START 고정 진단 RAM: 단계 실패와 불명은 설치 정리 없이 기록된다',async()=>{
  const api=await import('../../../scripts/qa-ix01-current-journey.ts');
  assert.equal(typeof api.runCurrentStartSteps,'function');

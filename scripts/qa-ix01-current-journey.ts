@@ -356,6 +356,10 @@ export function currentLegacyModuleSource(bytes:Uint8Array,expectedSha:string){
 }
 const tmpfs=Object.freeze({'/var/lib/postgresql/data':'rw,noexec,nosuid,size=268435456,uid=999,gid=999','/var/run/postgresql':'rw,noexec,nosuid,size=16777216,uid=999,gid=999','/tmp':'rw,noexec,nosuid,size=16777216,uid=999,gid=999'});
 const noEntries=(v:unknown)=>v===null||Array.isArray(v)&&v.length===0||exact(v,[]);
+/** Moby HostConfig.Mounts는 json omitempty다. 다른 필드의 부재 허용으로 확대하지 않는다. */
+export function currentHostMountsEmpty(host:Record<string,unknown>):boolean{
+ return !Object.hasOwn(host,'Mounts')||noEntries(host.Mounts);
+}
 const facts=(value:string):Record<string,any>=>{const obj=parseWireJson(value);if(!obj||typeof obj!=='object'||Array.isArray(obj))return fail('IX01_CURRENT_OBSERVATION');return obj as Record<string,any>;};
 const labels=(auth:CurrentAuthorization)=>({'anvil.owner':f.owner,'anvil.instance':auth.plan.sourceHead.slice(0,32),'anvil.plan':auth.planHash});
 const labelArgs=(auth:CurrentAuthorization)=>Object.entries(labels(auth)).flatMap(([k,v])=>['--label',k+'='+v]);
@@ -402,7 +406,7 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
   if(v.id!==containerId||v.name!=='/'+f.container||v.image!==f.image||v.user!=='999:999'||!same(v.labels,labels(auth))||typeof v.running!=='boolean'
     ||!h||h.Privileged!==false||h.ReadonlyRootfs!==true||h.NetworkMode!=='none'||h.LogConfig?.Type!=='none'||!noEntries(h.LogConfig.Config)
     ||!same(h.CapDrop,['ALL'])||!same(h.SecurityOpt,['no-new-privileges'])||h.PidsLimit!==64||h.Memory!==536870912||h.NanoCpus!==1000000000
-    ||h.PublishAllPorts!==false||!noEntries(h.PortBindings)||!noEntries(h.Binds)||!noEntries(h.Mounts)||!noEntries(h.VolumesFrom)||!same(h.Tmpfs,tmpfs)
+    ||h.PublishAllPorts!==false||!noEntries(h.PortBindings)||!noEntries(h.Binds)||!currentHostMountsEmpty(h)||!noEntries(h.VolumesFrom)||!same(h.Tmpfs,tmpfs)
     ||!Array.isArray(v.mounts)||v.mounts.some(m=>!m||m.Type!=='tmpfs'||!Object.hasOwn(tmpfs,m.Destination)||m.RW!==true||m.Source!==undefined&&m.Source!=='')
     ||new Set(v.mounts.map(m=>m.Destination)).size!==v.mounts.length
     ||v.ports!==null&&(!exact(v.ports,['5432/tcp'])||v.ports['5432/tcp']!==null)&&!exact(v.ports,[]))fail('IX01_CURRENT_CONTAINER_OWNER');
