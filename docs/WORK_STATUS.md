@@ -20663,3 +20663,5 @@ A4 보존 및 로컬 원인 확인·보완 직접 지시. developer_primary가 �
 RED1ced35 뒤 GREEN1d25f6 2통과, 타입cb57b8·diff85b3a6 종료0. Main ed699b 2통과·실패/건너뜀0, diff검수0. 파서8eb15f 종료0에서 후속22 SQL 외부566문장, PLpgSQL91·SQL본문27·DO15 파싱 성공. catalog 의존85개는 미검증이며 실제 PG15 설치와 TC01을 증명하지 않는다. DB·SSH·Docker·A1~A4 접근·재실행·삭제·설치0. A4 보존. 다음은 보완된 정확 Git 원바이트에 결박한 제어기 시험과 후속 실제 검증 결정이다. IX01 미완료.
 
 보완 commit 57fe3fb2의 원Git 바이트를 사용하는 Main 전체 제어기 시험 1fc998은 24통과·실패/건너뜀0, 종료0이다.
+
+독립 d2_preflight가 76613cfc~27c02e29 지정 diff를 검수해 C0/I0/M0를 반환했다. SQL6곳 괄호12바이트와 baseline4행 지문 일치 및 의미·거절조건 보존을 확인했다. 회귀시험은 지문·역치환 검사이고 parser 실증과 구별한다. WORK_CHECK에도 A4 실행·로컬 보완·실제 미검증을 반영했으며 IX01 완료 체크는 유지했다.
