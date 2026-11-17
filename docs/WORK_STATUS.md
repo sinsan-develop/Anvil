@@ -20641,3 +20641,9 @@ RED f425d9 1실패 뒤 집중 2c42f0 2통과, 타입 e4cce9 및 diff 3dde1f 종�
 ## IX01 TC01 A4 격리 소스 준비
 
 기준 452ea114. developer_primary가 실행기와 제어기 시험 2경로에서 A4 고정 자원 7개와 A1/A2/A3 외피·인계 거절을 검증했다. 두 Docker 응답 호환성 보정·실행 순서·격리 검사·시간 및 정리 조건을 유지했다. RED 15186f 1건, 집중 ed0be0 3통과·실패/건너뜀0, 타입 74e661 및 diff a0f750 종료0. Main diff와 두 지문 일치. 실제 A4 사전확인·외피·실행 및 원격·Docker·DB·A1~A3 접근0. 다음은 정확 실행 소스 및 원바이트 지문으로 A4 후보를 고정하는 단계다. IX01 미완료.
+
+## IX01 TC01 A4 단회 시험 — 0077 DDL 거절
+
+신산님 직접 승인. developer_primary가 고정안 cd1a2da6 및 실행 소스 1b60eec8a3d68a920d08130c3cc131274ae8aec3로 수행했다. 사전검산 cf04ef, 소스 6289→5b7c40, 외피 69bc19 모두 종료0. 고정 소스14·SQL130(4,004,520바이트)·원장 지문 일치. 승인 ID 36806db0-625e-4923-b1a2-65034454b466.
+
+실행 34172→110943 종료1, UNKNOWN/INSTALL/DDL_REJECTED. 생성·기동·초기화 단계를 지나 SQL 및 원장 107개 SETTLED, 108번째 0077_registered_execution_preparation_options SQL REJECTED·원장 NOT_STARTED. 나머지 22개, 0095 권한 생성·회수, TC01 저장·재조회, 성공 정리 미실행. 컨테이너 23c8cdacf8cf03c789a182143aab7401e05ff88df547c1935c2259e6c07fce0f, networkId null은 실행기 반환값이다. 정확 DDL 원인과 감사 파일 정착은 미확인. 단회 승인 소진, 실행 핸들0, 후속 조회·재시도·삭제 및 A1/A2/A3 접근0. A4 보존. 다음은 로컬에서 0077과 설치 순서 대조다. IX01 미완료.
