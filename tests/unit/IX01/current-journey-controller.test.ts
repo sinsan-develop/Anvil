@@ -9,6 +9,28 @@ import {currentLegacyModuleSource,currentProfile,currentRequiredSources,readCurr
 const cwd=fileURLToPath(new URL('../../../',import.meta.url));
 const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd,input,windowsHide:true,maxBuffer:16*1024*1024});
 const now=1_790_000_000_000,containerId='a'.repeat(64),networkId='b'.repeat(64);
+test('IX01 생성 none RAM: 명시적인 미할당 endpoint만 생성 단계에서 허용한다',async()=>{
+ const {currentCreatedUnallocatedNone}=await import('../../../scripts/qa-ix01-current-journey.ts');
+ assert.equal(typeof currentCreatedUnallocatedNone,'function');
+ // Moby v28.5.2 EndpointSettings{}의 JSON: 생략되지 않는 영값이다.
+ const endpoint={IPAMConfig:null,Links:null,Aliases:null,MacAddress:'',DriverOpts:null,GwPriority:0,
+  NetworkID:'',EndpointID:'',Gateway:'',IPAddress:'',IPPrefixLen:0,IPv6Gateway:'',GlobalIPv6Address:'',GlobalIPv6PrefixLen:0,DNSNames:null};
+ const created={running:false,host:{NetworkMode:'none'},networks:{none:endpoint}};
+ assert.equal(currentCreatedUnallocatedNone(created),true);
+ for(const field of ['NetworkID','EndpointID','Gateway','IPAddress','IPv6Gateway','GlobalIPv6Address','MacAddress'])
+  assert.equal(currentCreatedUnallocatedNone({...created,networks:{none:{...endpoint,[field]:'allocated'}}}),false,field);
+ for(const field of ['IPPrefixLen','GlobalIPv6PrefixLen','GwPriority'])
+  assert.equal(currentCreatedUnallocatedNone({...created,networks:{none:{...endpoint,[field]:1}}}),false,field);
+ for(const field of ['IPAMConfig','Links','Aliases','DriverOpts','DNSNames'])
+  assert.equal(currentCreatedUnallocatedNone({...created,networks:{none:{...endpoint,[field]:{configured:true}}}}),false,field);
+ for(const networks of [null,{}, {none:{}},{none:null},{bridge:endpoint},{none:endpoint,bridge:endpoint},
+  {none:{...endpoint,extra:true}},{none:{...endpoint,NetworkID:undefined}}])
+  assert.equal(currentCreatedUnallocatedNone({...created,networks}),false);
+ assert.equal(currentCreatedUnallocatedNone({...created,running:true}),false);
+ assert.equal(currentCreatedUnallocatedNone({...created,running:undefined}),false);
+ assert.equal(currentCreatedUnallocatedNone({...created,host:{NetworkMode:'bridge'}}),false);
+ assert.equal(currentCreatedUnallocatedNone({...created,host:null}),false);
+});
 test('IX01 HostConfig Mounts RAM: 생략된 빈 선언만 호환하고 mount 선언을 거절한다',async()=>{
  const {currentHostMountsEmpty}=await import('../../../scripts/qa-ix01-current-journey.ts');
  assert.equal(typeof currentHostMountsEmpty,'function');

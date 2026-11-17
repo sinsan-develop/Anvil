@@ -360,6 +360,18 @@ const noEntries=(v:unknown)=>v===null||Array.isArray(v)&&v.length===0||exact(v,[
 export function currentHostMountsEmpty(host:Record<string,unknown>):boolean{
  return !Object.hasOwn(host,'Mounts')||noEntries(host.Mounts);
 }
+/** Moby v28.5.2의 create 단계 EndpointSettings{}만 허용한다. 기동 후 none 검사는 별개다. */
+export function currentCreatedUnallocatedNone(value:Record<string,unknown>):boolean{
+ const host=value.host,networks=value.networks;
+ if(value.running!==false||!host||typeof host!=='object'||Array.isArray(host)
+  ||!Object.hasOwn(host,'NetworkMode')||Reflect.get(host,'NetworkMode')!=='none'||!exact(networks,['none']))return false;
+ const endpoint=networks.none;
+ const emptyStrings=['MacAddress','NetworkID','EndpointID','Gateway','IPAddress','IPv6Gateway','GlobalIPv6Address'];
+ const zeros=['GwPriority','IPPrefixLen','GlobalIPv6PrefixLen'];
+ const nulls=['IPAMConfig','Links','Aliases','DriverOpts','DNSNames'];
+ return exact(endpoint,[...emptyStrings,...zeros,...nulls])&&emptyStrings.every(key=>endpoint[key]==='')
+  &&zeros.every(key=>endpoint[key]===0)&&nulls.every(key=>endpoint[key]===null);
+}
 const facts=(value:string):Record<string,any>=>{const obj=parseWireJson(value);if(!obj||typeof obj!=='object'||Array.isArray(obj))return fail('IX01_CURRENT_OBSERVATION');return obj as Record<string,any>;};
 const labels=(auth:CurrentAuthorization)=>({'anvil.owner':f.owner,'anvil.instance':auth.plan.sourceHead.slice(0,32),'anvil.plan':auth.planHash});
 const labelArgs=(auth:CurrentAuthorization)=>Object.entries(labels(auth)).flatMap(([k,v])=>['--label',k+'='+v]);
@@ -501,7 +513,7 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
    containerId=docker(['create','--pull','never','--name',f.container,'--network','none','--user','999:999','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--log-driver','none','--pids-limit','64','--memory','512m','--cpus','1',
     ...Object.entries(tmpfs).flatMap(([k,v])=>['--tmpfs',k+':'+v]),...labelArgs(auth),'--env','POSTGRES_USER='+bootstrap,'--env','POSTGRES_DB='+f.database,'--env','POSTGRES_PASSWORD','--env','POSTGRES_HOST_AUTH_METHOD=scram-sha-256','--env','POSTGRES_INITDB_ARGS=--auth-local=trust --auth-host=scram-sha-256',f.image,'postgres','-c','listen_addresses=*','-c','log_statement=none','-c','log_min_error_statement=fatal'],undefined,10_000,{POSTGRES_PASSWORD:passwords.bootstrap}).trim();
     },
-    CREATE_INSPECT(){const created=inspect();if(created.running||!noNetwork(created)&&!none(created))fail('IX01_CURRENT_CONTAINER_OWNER');},
+    CREATE_INSPECT(){const created=inspect();if(created.running||!noNetwork(created)&&!none(created)&&!currentCreatedUnallocatedNone(created))fail('IX01_CURRENT_CONTAINER_OWNER');},
     START(){if(docker(['start',containerId]).trim()!==containerId)fail('IX01_CURRENT_CONTAINER_START');},
     START_INSPECT(){onlyNone();},
     async READINESS(){

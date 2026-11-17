@@ -20631,3 +20631,9 @@ A2 관측 템플릿 합성 재현은 로컬 Go 실행기를 찾지 못해 미실
 기준 6caa12e2. developer_primary는 Moby HostConfig.Mounts의 json omitempty 계약에 맞춰 그 필드의 생략을 빈 선언으로 판정했다. 비빈 선언·실제 mount·bind·tmpfs·VolumesFrom·네트워크 검사는 기존대로 유지한다. A3 실제 실패 조건과 생성 직후 none 네트워크 표현은 미확인이다. 출처 https://raw.githubusercontent.com/moby/moby/master/api/types/container/hostconfig.go
 
 실행기와 기존 제어기 시험 2파일만 변경. RED c49ca9 1건, 집중 4be696 1통과, 타입 c74ef3 종료0, Main 전체 제어기 시험 b55bb5 21통과·실패/건너뜀0. 실제 Docker metadata, DB/0095/TC01 미검증. SSH·Docker·A1/A2/A3 접근·재실행·삭제0. 다음은 미확인 조건 근거 검토이며 A3 실행 승인은 소진 상태다.
+
+## IX01 TC01 생성 직후 none endpoint 호환성
+
+기준 3d5ada55. developer_primary가 실행기와 제어기 시험 두 파일을 수정했다. Moby v28.5.2는 컨테이너 생성 시 빈 EndpointSettings를 구성할 수 있고 inspect는 이를 복사한다. 생성 직후에만 미기동·NetworkMode none·단독 none 및 15개 필드 전체 미할당 표현을 허용한다. 기동 후 none·소유·마운트·포트 검사는 기존대로 유지한다. 출처 https://github.com/moby/moby/blob/v28.5.2/daemon/container_operations.go#L340-L385
+
+RED f425d9 1실패 뒤 집중 2c42f0 2통과, 타입 e4cce9 및 diff 3dde1f 종료0. Main 제어기 시험 0f3be3 22통과·실패/건너뜀0. 실제 daemon 버전 및 A3 검사 실패 원인 미확정. SSH·Docker·DB·A1/A2/A3 접근·재실행·삭제0. 다음은 새 격리 시험 후보를 독립 이름과 정확 소스로 준비하는 단계이며 IX01은 미완료다.
