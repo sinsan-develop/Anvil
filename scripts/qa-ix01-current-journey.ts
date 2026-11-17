@@ -8,11 +8,11 @@ import {readCurrentSchemaManifest,verifyCurrentSchemaSources,type SchemaMigratio
 import {installCurrentSchema,type CurrentSchemaInstallationPorts,type CurrentSchemaInstallationResult} from '../tests/integration/IX01/current-schema-installation.ts';
 
 export const currentProfile=Object.freeze({
- source:'/home/daon/anvil-ix01-current-tc01-20261108-a3-qa',
- receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-current-tc01-20261108-a3',
- artifact:'/tmp/anvil-v3-ix01-current-tc01-20261108-a3',
- container:'anvil-ix01-current-tc01-pg-20261108-a3',network:'anvil-ix01-current-tc01-net-20261108-a3',
- database:'anvil_v3_ix01_current_tc01_20261108_a3',owner:'IX01_CURRENT_TC01_20261108_A3',
+ source:'/home/daon/anvil-ix01-current-tc01-20261108-a4-qa',
+ receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-current-tc01-20261108-a4',
+ artifact:'/tmp/anvil-v3-ix01-current-tc01-20261108-a4',
+ container:'anvil-ix01-current-tc01-pg-20261108-a4',network:'anvil-ix01-current-tc01-net-20261108-a4',
+ database:'anvil_v3_ix01_current_tc01_20261108_a4',owner:'IX01_CURRENT_TC01_20261108_A4',
  uid:1000,daemon:'e3349f1d-dbfc-478a-96d9-295bf6c6839e',image:'sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f',
  node:'/opt/node-v24.22.1-linux-x64/bin/node',nodeHash:'e32e2d16081cf644f88392934288086e7662529d0d43277c34f7aad2207cfafb',
  npm:'/opt/node-v24.22.1-linux-x64/lib/node_modules/npm/bin/npm-cli.js',npmHash:'8e5f6f3429f8cdbe693cdc29904e9d5a7b127a494bd15c804bd54c7403bfcbe7',

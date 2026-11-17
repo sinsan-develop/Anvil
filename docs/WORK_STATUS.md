@@ -20637,3 +20637,7 @@ A2 관측 템플릿 합성 재현은 로컬 Go 실행기를 찾지 못해 미실
 기준 3d5ada55. developer_primary가 실행기와 제어기 시험 두 파일을 수정했다. Moby v28.5.2는 컨테이너 생성 시 빈 EndpointSettings를 구성할 수 있고 inspect는 이를 복사한다. 생성 직후에만 미기동·NetworkMode none·단독 none 및 15개 필드 전체 미할당 표현을 허용한다. 기동 후 none·소유·마운트·포트 검사는 기존대로 유지한다. 출처 https://github.com/moby/moby/blob/v28.5.2/daemon/container_operations.go#L340-L385
 
 RED f425d9 1실패 뒤 집중 2c42f0 2통과, 타입 e4cce9 및 diff 3dde1f 종료0. Main 제어기 시험 0f3be3 22통과·실패/건너뜀0. 실제 daemon 버전 및 A3 검사 실패 원인 미확정. SSH·Docker·DB·A1/A2/A3 접근·재실행·삭제0. 다음은 새 격리 시험 후보를 독립 이름과 정확 소스로 준비하는 단계이며 IX01은 미완료다.
+
+## IX01 TC01 A4 격리 소스 준비
+
+기준 452ea114. developer_primary가 실행기와 제어기 시험 2경로에서 A4 고정 자원 7개와 A1/A2/A3 외피·인계 거절을 검증했다. 두 Docker 응답 호환성 보정·실행 순서·격리 검사·시간 및 정리 조건을 유지했다. RED 15186f 1건, 집중 ed0be0 3통과·실패/건너뜀0, 타입 74e661 및 diff a0f750 종료0. Main diff와 두 지문 일치. 실제 A4 사전확인·외피·실행 및 원격·Docker·DB·A1~A3 접근0. 다음은 정확 실행 소스 및 원바이트 지문으로 A4 후보를 고정하는 단계다. IX01 미완료.
