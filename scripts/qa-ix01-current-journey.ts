@@ -116,12 +116,12 @@ export function verifyCurrentChildOutcome(value:unknown,handoffHash:string):bool
   &&value.result.purpose==='IX01_CURRENT_TC01_CHILD_RESULT'&&value.result.handoffHash===handoffHash&&value.result.ledgerCount===130&&value.result.status==='PASSED';
 }
 const runtimeSteps=['DIRECTORIES','CONFIG','TOOLS','LOCK','VERSION','PREINSTALL','INSTALL','POSTINSTALL'] as const;
-const stepFailures=new WeakMap<object,{stage:'RUNTIME'|'START'|'CHILD';code:string}>();
-function stoppedStep(stage:'RUNTIME'|'START'|'CHILD',step:string):never{
+const stepFailures=new WeakMap<object,{stage:'RUNTIME'|'START'|'NETWORK'|'CHILD';code:string}>();
+function stoppedStep(stage:'RUNTIME'|'START'|'NETWORK'|'CHILD',step:string):never{
  const failure=Object.freeze(Object.create(null)) as object;
  stepFailures.set(failure,{stage,code:'STOPPED_'+stage+'_'+step});throw failure;
 }
-function stepFailureCode(stage:'RUNTIME'|'START'|'CHILD',error:unknown):string{
+function stepFailureCode(stage:'RUNTIME'|'START'|'NETWORK'|'CHILD',error:unknown):string{
  const failure=error!==null&&(typeof error==='object'||typeof error==='function')?stepFailures.get(error):undefined;
  return failure?.stage===stage?failure.code:'STOPPED_'+stage;
 }
@@ -140,6 +140,13 @@ export function runCurrentRuntimeSteps(steps:Record<typeof runtimeSteps[number],
 export function currentRuntimeFailureCode(error:unknown):string{
  return stepFailureCode('RUNTIME',error);
 }
+const networkSteps=['PRECHECK','CREATE','CREATE_VERIFY','NONE_VERIFY','DISCONNECT','DETACHED_VERIFY','CONNECT','ATTACHED_VERIFY'] as const;
+export function runCurrentNetworkSteps(steps:Record<typeof networkSteps[number],()=>void>):void{
+ for(const step of networkSteps){
+  try{steps[step]();}catch{stoppedStep('NETWORK',step);}
+ }
+}
+
 type StartSyncStep='IMAGE_COLLISION'|'CREATE'|'CREATE_INSPECT'|'START'|'START_INSPECT'|'BOOTSTRAP_ROLES';
 export async function runCurrentStartSteps(steps:Record<StartSyncStep,()=>void>&{READINESS():Promise<void>}):Promise<void>{
  let step:StartSyncStep|'READINESS'='IMAGE_COLLISION';
@@ -288,7 +295,7 @@ export async function runCurrentJourney(input:CurrentInput,ports:CurrentPorts):P
   stage='CLEANUP';await call(()=>ports.cleanup(handoff));
   stage='RECORD';const done=result('CLEANED','TC01_PASSED');await call(()=>ports.record(done));return done;
  }catch(error){
-  const stopped=result(claimStarted?'UNKNOWN':'REJECTED',schema?.status==='STOPPED'?schema.reason:stage==='RUNTIME'||stage==='START'||stage==='CHILD'?stepFailureCode(stage,error):'STOPPED_'+stage);
+  const stopped=result(claimStarted?'UNKNOWN':'REJECTED',schema?.status==='STOPPED'?schema.reason:stage==='RUNTIME'||stage==='START'||stage==='NETWORK'||stage==='CHILD'?stepFailureCode(stage,error):'STOPPED_'+stage);
   if(claimed&&stage!=='RECORD')try{await ports.record(stopped);}catch{/* 추가 실행 없이 감사 미정착을 보존한다. */}
   return stopped;
  }
@@ -660,17 +667,22 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
    sql(bootstrap,currentRevokeSql(legacy!,before.memberships.map(row=>row.role),paths()));roles('REVOKED');
   },
   async connect(id){
-   if(id!==containerId)fail('IX01_CURRENT_CONTAINER_ID');onlyNone();
-   networkId=docker(['network','create','--internal','--driver','bridge',...labelArgs(auth),f.network]).trim();
-   if(networkId===containerId||!emptyEndpoints(readNetwork().containers))fail('IX01_CURRENT_NETWORK');
-   const v=onlyNone(),noneId=v.networks.none.NetworkID;
-   if(!hex(noneId,64))fail('IX01_CURRENT_NONE_ONLY');
-   const n=facts(docker(['network','inspect','--format',networkFormat,noneId]));
-   if(n.id!==noneId||n.name!=='none'||n.driver!=='null')fail('IX01_CURRENT_NONE_ONLY');
-   docker(['network','disconnect',noneId,containerId]);
-   const detached=inspect();if(!detached.running||!noNetwork(detached)||!emptyEndpoints(readNetwork().containers))fail('IX01_CURRENT_NETWORK');
-   docker(['network','connect',networkId,containerId]);
-   const ip=attachedHost();attached=true;
+   let noneId='',ip='';
+   runCurrentNetworkSteps({
+    PRECHECK(){if(id!==containerId)fail('IX01_CURRENT_CONTAINER_ID');onlyNone();},
+    CREATE(){networkId=docker(['network','create','--internal','--driver','bridge',...labelArgs(auth),f.network]).trim();},
+    CREATE_VERIFY(){if(networkId===containerId||!emptyEndpoints(readNetwork().containers))fail('IX01_CURRENT_NETWORK');},
+    NONE_VERIFY(){
+     const v=onlyNone();noneId=v.networks.none.NetworkID;
+     if(!hex(noneId,64))fail('IX01_CURRENT_NONE_ONLY');
+     const n=facts(docker(['network','inspect','--format',networkFormat,noneId]));
+     if(n.id!==noneId||n.name!=='none'||n.driver!=='null')fail('IX01_CURRENT_NONE_ONLY');
+    },
+    DISCONNECT(){docker(['network','disconnect',noneId,containerId]);},
+    DETACHED_VERIFY(){const detached=inspect();if(!detached.running||!noNetwork(detached)||!emptyEndpoints(readNetwork().containers))fail('IX01_CURRENT_NETWORK');},
+    CONNECT(){docker(['network','connect',networkId,containerId]);},
+    ATTACHED_VERIFY(){ip=attachedHost();attached=true;},
+   });
    return {containerId,networkId,host:ip,expiresAt:pgUntil};
   },
   async child(handoff){

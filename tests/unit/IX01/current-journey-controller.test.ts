@@ -85,6 +85,36 @@ test('IX01 START 고정 진단 RAM: 단계 실패와 불명은 설치 정리 없
  }
  assert.equal(reads,0);
 });
+test('IX01 NETWORK 고정 진단 RAM: 단계 실패와 원 예외는 자식 정리 없이 기록된다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ assert.equal(typeof api.runCurrentNetworkSteps,'function');
+ const names=['PRECHECK','CREATE','CREATE_VERIFY','NONE_VERIFY','DISCONNECT','DETACHED_VERIFY','CONNECT','ATTACHED_VERIFY'] as const;
+ for(const failed of names){
+  const h=harness(),calls:string[]=[],records:unknown[]=[];
+  const steps=Object.fromEntries(names.map(name=>[name,()=>{calls.push(name);if(name===failed)throw Object.assign(Error('private/path/argv'),{stdout:'secret',stderr:'secret'});}])) as Record<typeof names[number],()=>void>;
+  h.ports.connect=async()=>{h.calls.push('NETWORK');api.runCurrentNetworkSteps(steps);return {containerId,networkId,host:'172.18.0.2',expiresAt:now+9000};};
+  h.ports.record=async result=>{h.calls.push('RECORD');records.push(result);};
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.status,'UNKNOWN');assert.equal(result.stage,'NETWORK');assert.equal(result.code,'STOPPED_NETWORK_'+failed);
+  assert.equal(result.networkId,null);assert.equal(result.schema?.status,'VERIFIED');
+  assert.deepEqual(calls,names.slice(0,names.indexOf(failed)+1));
+  assert.deepEqual(h.calls.slice(-3),['SECURE','NETWORK','RECORD']);assert.deepEqual(records,[result]);
+  assert(!h.calls.includes('CHILD'));assert(!h.calls.includes('CLEANUP'));
+  assert(!JSON.stringify(result).includes('secret'));assert(!JSON.stringify(result).includes('private/path/argv'));
+ }
+ const success=harness(),calls:string[]=[],connect=success.ports.connect;
+ success.ports.connect=async id=>{api.runCurrentNetworkSteps(Object.fromEntries(names.map(name=>[name,()=>{calls.push(name);}])) as Record<typeof names[number],()=>void>);return connect(id);};
+ assert.equal((await runCurrentJourney(input(),success.ports)).status,'CLEANED');assert.deepEqual(calls,names);
+ let reads=0;
+ for(const error of [Error('STOPPED_NETWORK_CREATE'),new Proxy({},{get(){reads++;throw Error('secret');}})]){
+  const h=harness();h.ports.connect=async()=>{h.calls.push('NETWORK');throw error;};
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.code,'STOPPED_NETWORK');assert.equal(result.status,'UNKNOWN');assert.equal(result.stage,'NETWORK');
+  assert.deepEqual(h.calls.slice(-2),['NETWORK','RECORD']);assert(!h.calls.includes('CHILD'));assert(!h.calls.includes('CLEANUP'));
+ }
+ assert.equal(reads,0);
+});
+
 test('IX01 A13 고정 프로필 RAM: 정확 이름과 구 프로필 외피 인계를 분리한다',()=>{
  assert.deepEqual({source:currentProfile.source,receipt:currentProfile.receipt,artifact:currentProfile.artifact,
   container:currentProfile.container,network:currentProfile.network,database:currentProfile.database,owner:currentProfile.owner},{
