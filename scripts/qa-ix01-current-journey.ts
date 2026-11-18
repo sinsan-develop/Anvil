@@ -154,11 +154,39 @@ export async function runCurrentStartSteps(steps:Record<StartSyncStep,()=>void>&
  }catch{stoppedStep('START',step);}
 }
 
-const childExitCodes=new Set(['STOPPED_CHILD_EXIT_SPAWN_ERROR','STOPPED_CHILD_EXIT_STATUS','STOPPED_CHILD_EXIT_SIGNAL','STOPPED_CHILD_EXIT_DEADLINE']);
-export function verifyCurrentChildExit(child:Pick<ReturnType<typeof spawnSync>,'error'|'status'|'signal'>,now:()=>number,expiresAt:number):void{
+const childFailureStages=['HANDOFF','DATABASE','LEDGER','CATALOG','LOGIN','TC01','CLOSE','RESULT'] as const;
+const childFailureStage=(value:unknown):value is typeof childFailureStages[number]=>typeof value==='string'&&childFailureStages.some(stage=>stage===value);
+// 원 인계 검산 뒤의 자식만 실제 파일 writer에 연결한다. 진단 실패는 원 실패를 바꾸지 않는다.
+export function recordCurrentChildFailure(stage:unknown,handoffHash:string,ports:{fresh():void;write(raw:string):void}):void{
+ try{
+  if(!childFailureStage(stage)||!hex(handoffHash,64))return;
+  ports.fresh();ports.write(canonicalJson({schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD_FAILURE',handoffHash,stage}));ports.fresh();
+ }catch{/* 부재/불명은 부모의 원 EXIT_STATUS를 유지한다. */}
+}
+interface ChildFailureRead{handoffHash:string;fresh():void;read():string}
+function readChildFailure(diagnostic:ChildFailureRead|undefined,now:()=>number,expiresAt:number):string|null{
+ if(!diagnostic)return null;
+ try{
+  if(!hex(diagnostic.handoffHash,64)||now()>=expiresAt)return null;
+  diagnostic.fresh();const raw=diagnostic.read();
+  if(typeof raw!=='string'||Buffer.byteLength(raw)>4096)return null;
+  const row=parseWireJson(raw);
+  if(!exact(row,['schemaVersion','purpose','handoffHash','stage'])||row.schemaVersion!==1||row.purpose!=='IX01_CURRENT_TC01_CHILD_FAILURE'
+   ||row.handoffHash!==diagnostic.handoffHash||!childFailureStage(row.stage))return null;
+  diagnostic.fresh();if(now()>=expiresAt)return null;
+  return row.stage;
+ }catch{return null;}
+}
+const childExitCodes=new Set(['STOPPED_CHILD_EXIT_SPAWN_ERROR','STOPPED_CHILD_EXIT_STATUS','STOPPED_CHILD_EXIT_SIGNAL','STOPPED_CHILD_EXIT_DEADLINE',
+ ...childFailureStages.map(stage=>'STOPPED_CHILD_EXIT_STATUS_'+stage)]);
+export function verifyCurrentChildExit(child:Pick<ReturnType<typeof spawnSync>,'error'|'status'|'signal'>,now:()=>number,expiresAt:number,diagnostic?:ChildFailureRead):void{
  if(child.error)stoppedStep('CHILD','EXIT_SPAWN_ERROR');
  // 기존 status 거절 경계에서 signal 동반 여부만 고정 분류한다. 원 오류/신호 값은 보관하지 않는다.
- if(child.status!==0)stoppedStep('CHILD',child.signal?'EXIT_SIGNAL':'EXIT_STATUS');
+ if(child.status!==0){
+  if(child.signal)stoppedStep('CHILD','EXIT_SIGNAL');
+  const stage=readChildFailure(diagnostic,now,expiresAt);
+  stoppedStep('CHILD',stage?'EXIT_STATUS_'+stage:'EXIT_STATUS');
+ }
  if(child.signal)stoppedStep('CHILD','EXIT_SIGNAL');
  if(now()>=expiresAt)stoppedStep('CHILD','EXIT_DEADLINE');
 }
@@ -654,7 +682,12 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
      });
     },
     CURRENT_AFTER_SPAWN(){assertCurrent();},
-    EXIT(){verifyCurrentChildExit(child,host.time,handoff.expiresAt);},
+    EXIT(){verifyCurrentChildExit(child,host.time,handoff.expiresAt,{
+     handoffHash:digest,
+     fresh(){assertCurrent();if(host.time()>=handoff.expiresAt||plainFile(handoffPath,f.uid,4096,0o600).toString('utf8')!==raw
+      ||plainFile(f.artifact+'/owner.json',f.uid,4096,0o600).toString('utf8')!==raw)fail('IX01_CURRENT_CHILD_SCOPE');},
+     read(){return plainFile(childResultPath,f.uid,4096,0o600).toString('utf8');},
+    });},
     RESULT_READ(){
      const outcome=parseWireJson(plainFile(childResultPath,f.uid,4096,0o600).toString('utf8'));
      return {status:child.status,signal:child.signal,stdout:child.stdout,stderr:child.stderr,result:outcome};
@@ -704,6 +737,7 @@ export function openCurrentChild(){
  return {
   handoff,historical,appPassword,migratorPassword,fresh,
   sourceBytes(path:string){fresh();return checkedRawFile(path,auth);},
+  failure(stage:unknown){recordCurrentChildFailure(stage,digest,{fresh,write(raw){createExclusive(childResultPath,raw,fresh);}});},
   finish(){createExclusive(childResultPath,canonicalJson({schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD_RESULT',handoffHash:digest,ledgerCount:130,status:'PASSED'}),fresh);},
  };
 }

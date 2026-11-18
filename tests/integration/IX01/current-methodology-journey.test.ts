@@ -17,8 +17,10 @@ test('IX01 TC01 현재 격리 저장 여정',{
   if(failed)throw Error('IX01_CURRENT_CHILD_CLOSE');
  }
  let code='HANDOFF',passed=false;
+ let failure:((stage:unknown)=>void)|undefined;
  try{
   const child=openCurrentChild(),{handoff}=child;
+  failure=child.failure;
   const fresh=()=>{if(t.signal.aborted)throw Error('IX01_CURRENT_CHILD_DEADLINE');child.fresh();};
   const bound=async <T>(work:()=>Promise<T>)=>{fresh();const result=await work();fresh();return result;};
   const {Pool}=await bound(()=>import('pg'));
@@ -79,6 +81,6 @@ test('IX01 TC01 현재 격리 저장 여정',{
   await closeOwned();fresh();
   code='RESULT';
   child.finish();passed=true;
- }catch{throw Error('IX01_CURRENT_CHILD_'+code);}
+ }catch{failure?.(code);throw Error('IX01_CURRENT_CHILD_'+code);}
  finally{if(!passed)try{await closeOwned();}catch{/* 결과는 미확정이며 부모는 자원을 보존한다. */}}
 });
