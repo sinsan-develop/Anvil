@@ -20,7 +20,8 @@ import {buildBuiltinMethodologies} from '../../../apps/server/modules/methodolog
 import {seedBuiltinMethodologies} from '../../../apps/server/modules/methodologies/catalog-seed.ts';
 import {methodContentReviewCriteria} from '../../../apps/server/modules/methodologies/content-review.ts';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
-import {newDocument,prepareDocumentSave,continueDocumentSave} from '../../../apps/web/src/features/design-trace/editor-api.ts';
+import {prepareDocumentSave,continueDocumentSave} from '../../../apps/web/src/features/design-trace/editor-api.ts';
+import {prepareStageDocumentDraft} from '../../../apps/web/src/features/design-trace/stage-document-draft.ts';
 import {readDocument,listDocuments} from '../../../apps/web/src/features/design-trace/api.ts';
 import {newDocumentReview,prepareDocumentReview,sendDocumentReview} from '../../../apps/web/src/features/design-trace/review-api.ts';
 import {newDocumentConfirmation,prepareDocumentConfirmation,sendDocumentConfirmation} from '../../../apps/web/src/features/design-trace/confirmation-api.ts';
@@ -125,19 +126,23 @@ test('IX01 실제 저장 여정 source — 명시 승인·최신 manifest·새 �
   const review=(await success(command('recordContentReview',{targetKind:'METHODOLOGY',targetRef:method,criteriaVersion:1,items:methodContentReviewCriteria.items.map(item=>({criterionId:item.criterionId,outcome:'ACCEPTED',evidenceRefs:[],reason:'합성 원문 대조'})),outcome:'ACCEPTED',reason:'실제 사용자 인수 아님'},method.id,method.version))).data.reviewRef;
   await success(command('confirmMethodology',{versionRef:method,reviewRefs:[review]},method.id,method.version));
   const applied=await success(command('applyMethodology',{methodologyRef:method,expectedApplicationVersion:1,reason:'업무 생성 전 명시 적용'},pid,1)),applicationRef=applied.data.ref;
-  async function document(formId:string,title:string,lead:string,confirmed=true){
-   const r=await app.inject({method:'GET',url:'/api/v1/forms/'+formId+'/versions/1',headers});assert.equal(r.statusCode,200);const form=r.json(),buffer=newDocument(pid,form,uid,1),text=[lead];
-   const node=source.graph.nodes.find(node=>node.outputs.some(output=>canonicalJson(output.formRef)===canonicalJson(form.ref)));assert(node,'실제 적용 graph의 해당 양식 출력 노드');
-   const stage={applicationId:applicationRef.id,nodeId:node.nodeId};buffer.stageNodeRef=stage;
+  async function document(formId:string,nodeId:string,itemId:string,title:string,lead:string,confirmed=true){
+   const r=await app.inject({method:'GET',url:'/api/v1/forms/'+formId+'/versions/1',headers});assert.equal(r.statusCode,200);const form=r.json(),text=[lead];
+   const nodes=source.graph.nodes.filter(node=>node.nodeId===nodeId);assert.equal(nodes.length,1);const node=nodes[0]!;
+   assert.equal(node.outputs.filter(output=>output.itemId===itemId&&canonicalJson(output.formRef)===canonicalJson(form.ref)).length,1,'명시한 노드/항목/양식의 정확 OUTPUT');
+   const stage={applicationId:applicationRef.id,nodeId},expectedOutput={applicationRef,itemId};
+   // 일반 node-only 저장은 유효한 호환 경로다. 이 여정은 UI06의 명시 산출물 선택을 별도로 검수한다.
+   const buffer=await prepareStageDocumentDraft(client,{projectId:pid,userId:uid,clientId:who.clientId,applicationRef,nodeId,itemId,formRef:form.ref},session,()=>{fresh();return true;});
    for(const item of(form.definition as FormDefinition).items){buffer.content.sections.push({itemId:item.itemId,anchor:'line:'+(text.length+1)});text.push('## '+item.title);if(item.valueType==='TEXT')text.push('격리 합성 범위·원근거·검수 조건');else text.push('| '+item.fields.map(f=>f.fieldId).join(' | ')+' |','| '+item.fields.map(()=>'---').join(' | ')+' |','| '+item.fields.map((_,i)=>'합성값'+i).join(' | ')+' |');}
-   Object.assign(buffer,{title,body:text.join('\n'),reason:'IX01 고정 원문',dirty:true});const ref=await continueDocumentSave(client,await prepareDocumentSave(buffer,session),session,()=>{},()=>true),view=await readDocument(client,pid,ref.id,ref.version,{expectedStage:stage,expectedContentHash:ref.contentHash});assert.equal(view.document.validation.validForConfirmation,true);
-   same(view.document.stageNodeRef,stage);same(view.document.stageBinding?.applicationRef,applicationRef);assert.equal(view.document.stageBinding?.nodeId,node.nodeId);assert(view.document.stageBinding?.uses.includes('OUTPUT'));
+   Object.assign(buffer,{title,body:text.join('\n'),reason:'IX01 고정 원문',dirty:true});const pending=await prepareDocumentSave(buffer,session);same(pending.stageOutputItem,expectedOutput);
+   const ref=await continueDocumentSave(client,pending,session,()=>{},()=>{fresh();return true;}),view=await readDocument(client,pid,ref.id,ref.version,{expectedStage:stage,expectedContentHash:ref.contentHash});assert.equal(view.document.validation.validForConfirmation,true);
+   same(view.document.stageOutputItem,expectedOutput);same(view.document.stageNodeRef,stage);same(view.document.stageBinding?.applicationRef,applicationRef);assert.equal(view.document.stageBinding?.nodeId,node.nodeId);assert(view.document.stageBinding?.uses.includes('OUTPUT'));
    const filtered=await listDocuments(client,pid,null,stage);assert(filtered.items.some(item=>item.id===ref.id&&item.headVersion===ref.version),'적용본/출력 노드 필터가 실제 저장 문서를 반환');
    let reviewRef:Awaited<ReturnType<typeof sendDocumentReview>>|null=null;
    if(confirmed){const r=newDocumentReview(pid,view.document,uid,1);r.items=r.items.map(i=>({...i,outcome:'ACCEPTED',reason:'합성 검토'}));r.outcome='ACCEPTED';r.reason='사용자 인수 아님';r.pending=prepareDocumentReview(r,session);reviewRef=await sendDocumentReview(client,r,session,()=>true);const c=newDocumentConfirmation(pid,(await readDocument(client,pid,ref.id,ref.version)).document,uid,1);c.acknowledged=true;c.pending=prepareDocumentConfirmation(c,session);await sendDocumentConfirmation(client,c,session,()=>true);}
-   return{ref,buffer,reviewRef};
+   return{ref,buffer,reviewRef,expectedOutput,stage};
   }
-  const design=await document('a6f30000-0000-4000-8000-000000000002','IX01 설계','# D11 원 설계'),screen=await document('a6f30000-0000-4000-8000-000000000003','IX01 화면','# UI01 합성 화면'),planDoc=await document('a6f30000-0000-4000-8000-000000000004','IX01 계획','# UI01 IX01 UI01\n# FN01 IX01 FN01');
+  const design=await document('a6f30000-0000-4000-8000-000000000002','ST02','ST02.OUTPUT.AF02','IX01 설계','# D11 원 설계'),screen=await document('a6f30000-0000-4000-8000-000000000003','ST03','ST03.OUTPUT.AF03','IX01 화면','# UI01 합성 화면'),planDoc=await document('a6f30000-0000-4000-8000-000000000004','ST04','ST04.OUTPUT.AF04','IX01 계획','# UI01 IX01 UI01\n# FN01 IX01 FN01');
   const index=(await success(command('indexDesignDocument',{documentRef:design.ref,items:[{localCode:'D11',title:'원 설계',anchor:'line:1'}],screens:[{designLocalCode:'D11',screenCode:'UI01',documentRef:screen.ref,anchor:'line:1'}],reason:'원문 위치 연결'},design.ref.id,design.ref.version))).data;
   const designLocation={kind:'DESIGN_ITEM' as const,id:index.designItems[0].id,versionRef:design.ref,localCode:'D11',anchor:'line:1'},screenLocation={kind:'SCREEN_REGION' as const,id:index.screenRegions[0].id,versionRef:screen.ref,localCode:'UI01',anchor:'line:1'};
   const task=(taskCode:string,type:TaskCard['type'],startPrerequisites:string[]):TaskCard=>({taskCode,type,title:'IX01 '+taskCode,purpose:'원 설계에서 작업·검수 왕복',designRefs:[designLocation],screenRefs:type==='SCREEN'?[screenLocation]:[],ownerRole:'단계책임자',inputs:['확정 설계'],outputs:['저장된 원문'],included:['작성·저장·조회'],excluded:['Agent 실행'],allowedFileRefs:['src/ix01.ts'],startPrerequisites,acceptancePrerequisites:[],steps:['명시 저장·재조회'],testCases:['NORMAL','IMPORTANT_FAILURE','DIRECT_IMPACT'].map((kind,n)=>({id:'T'+n,kind:kind as 'NORMAL'|'IMPORTANT_FAILURE'|'DIRECT_IMPACT',steps:['원근거 검산'],expected:'원문/ref 불변',environment:'격리 PG'})),acceptanceCriteria:['고정 버전 일치'],evidenceRequirements:['불변 ref·영수증'],rollback:'등록 자원 회수계획',recoveryNotes:'불명 보존'});
@@ -175,6 +180,7 @@ test('IX01 실제 저장 여정 source — 명시 승인·최신 manifest·새 �
   assert.equal(contextGeneration,2);same((await pool.query('SELECT current_database() db,current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows,[{db:binding.database,role:'anvil_v3_app',rolsuper:false,rolbypassrls:false}]);fresh();
   for(const [i,value]of [design,screen,planDoc].entries()){
    const readback=await readDocument(client,pid,value.ref.id,value.ref.version,{expectedContentHash:value.ref.contentHash});
+   same(readback.document.stageOutputItem,value.expectedOutput);same(readback.document.stageNodeRef,value.stage);same(readback.document.stageBinding?.applicationRef,value.expectedOutput.applicationRef);
    same(readback.document,documentsBeforeReconnect[i]!.document);assert.equal(readback.body,documentsBeforeReconnect[i]!.body);
   }
   const planAfterReconnect=await readWorkPlan(client,pid,plan.ref),knowledgeAfterReconnect=await readKnowledge(client,pid,knowledgeRef);
@@ -186,9 +192,9 @@ test('IX01 실제 저장 여정 source — 명시 승인·최신 manifest·새 �
   const unchanged=async(c:ProjectCommand)=>{const before=await count(),domainBefore=await domainState(),r=await send(c);assert(r.statusCode>=400);same(await count(),before);same(await domainState(),domainBefore);};
   await unchanged({...structuredClone(planRequest),commandId:randomUUID(),controlGeneration:2});
   await unchanged({...structuredClone(planRequest),commandId:randomUUID(),payload:{...planRequest.payload,designRef:{...design.ref,contentHash:'f'.repeat(64)}}});
-  const unconfirmed=await document('a6f30000-0000-4000-8000-000000000002','IX01 미확정','# D12 미확정',false);
+  const unconfirmed=await document('a6f30000-0000-4000-8000-000000000002','ST02','ST02.OUTPUT.AF02','IX01 미확정','# D12 미확정',false);
   const incompleteIndex=(await success(command('indexDesignDocument',{documentRef:unconfirmed.ref,items:[{localCode:'D12',title:'미확정',anchor:'line:1'}],screens:[{designLocalCode:'D12',screenCode:'UI01',documentRef:screen.ref,anchor:'line:1'}],reason:'미확정 원문도 합격으로 위장하지 않음'},unconfirmed.ref.id,unconfirmed.ref.version))).data;
-  const incompleteDoc=await document('a6f30000-0000-4000-8000-000000000004','IX01 미확정 계획','# UI01 IX01 UI01\n# FN01 IX01 FN01');
+  const incompleteDoc=await document('a6f30000-0000-4000-8000-000000000004','ST04','ST04.OUTPUT.AF04','IX01 미확정 계획','# UI01 IX01 UI01\n# FN01 IX01 FN01');
   const incompleteTasks=plan.tasks.map(t=>({...t,designRefs:[{kind:'DESIGN_ITEM',id:incompleteIndex.designItems[0].id,versionRef:unconfirmed.ref,localCode:'D12',anchor:'line:1'}],screenRefs:t.type==='SCREEN'?[{kind:'SCREEN_REGION',id:incompleteIndex.screenRegions[0].id,versionRef:screen.ref,localCode:'UI01',anchor:'line:1'}]:[]}));
   const incomplete=await success(command('saveWorkPlanDraft',{documentRef:incompleteDoc.ref,designRef:unconfirmed.ref,screenReviewRefs:[screen.reviewRef],tasks:incompleteTasks,reason:'미확정 설계의 issue 보관'}));assert(incomplete.data.workPlan.issues.some((i:{code:string})=>i.code==='DESIGN_NOT_CONFIRMED'));await unchanged(command('confirmWorkPlan',{versionRef:incomplete.data.ref,reviewRefs:[]},incomplete.data.ref.id,incomplete.data.ref.version));
   const outsider=randomUUID(),outsiderPassword=randomBytes(32).toString('base64url');await pool.query("INSERT INTO anvil.users(id,login_name,normalized_login_name,display_name,status) VALUES($1,$2,$2,'IX01 비회원','ACTIVE')",[outsider,'ix01-other-'+outsider]);await pool.query('INSERT INTO anvil.password_credentials(user_id,argon2_phc,credential_generation) VALUES($1,$2,1)',[outsider,await hashPassword(outsiderPassword)]);const outsiderLogin=await access.login('ix01-other-'+outsider,outsiderPassword,'IX01 비회원','ix01-other');
