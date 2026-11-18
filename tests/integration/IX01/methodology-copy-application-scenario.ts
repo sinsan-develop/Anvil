@@ -1,4 +1,4 @@
-import type {CurrentTc01RequestStage,CurrentTc01DiagnosticStage} from '../../../scripts/qa-ix01-current-journey.ts';
+import type {CurrentTc01RequestStage,CurrentTc01DiagnosticStage,CurrentTc01CopyCheck} from '../../../scripts/qa-ix01-current-journey.ts';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import type {buildApp} from '../../../apps/server/app.ts';
@@ -61,6 +61,7 @@ export async function runMethodologyCopyApplicationScenario({app,session,origin,
   assert.ok(uuid.test(actorId)&&uuid.test(clientId)&&/^[A-Za-z0-9_-]{43}$/.test(session.token)&&/^[A-Za-z0-9_-]{43}$/.test(session.csrfToken),'TC01_SESSION_SHAPE');
   const headers={host:url.host,origin,cookie:'__Host-anvil.sid='+session.token,'x-anvil-csrf':session.csrfToken};
 
+  const copyCheck=(stage:CurrentTc01RequestStage,check:CurrentTc01CopyCheck)=>{if(stage==='TC01_COPY')onStage?.(`TC01_COPY_VERIFY_${check}`);};
   async function request(stage:CurrentTc01RequestStage,status:number,path:string,payload?:object):Promise<Json>{
     onStage?.(`${stage}_REQUEST`);
     assertCurrent();
@@ -71,11 +72,16 @@ export async function runMethodologyCopyApplicationScenario({app,session,origin,
         :await app.inject({method:'POST',url:path,headers:{...headers,'content-type':'application/json'},payload});
     }catch{throw Error(stage+'_REQUEST_FAILED');}
     onStage?.(`${stage}_VERIFY`);
+    copyCheck(stage,'CURRENT');
     assertCurrent();
+    copyCheck(stage,'HTTP');
     assert.ok(response.statusCode===status,stage+'_HTTP_STATUS');
+    copyCheck(stage,'SIZE');
     assert.ok(Buffer.byteLength(response.body)<=2*1024*1024,stage+'_RESPONSE_SIZE');
     let result:unknown;
+    copyCheck(stage,'JSON');
     try{result=response.json();}catch{throw Error(stage+'_RESPONSE_JSON');}
+    copyCheck(stage,'SHAPE');
     return record(result,stage+'_RESPONSE_SHAPE');
   }
   const getMethod=(id:string,version:number,stage:CurrentTc01RequestStage)=>request(stage,200,'/api/v1/methodologies/'+id+'/versions/'+version);
@@ -83,7 +89,9 @@ export async function runMethodologyCopyApplicationScenario({app,session,origin,
     ({schemaVersion:1,commandId:randomUUID(),clientId,operation,targetId,expectedVersion,payload});
   async function send(stage:CurrentTc01RequestStage,body:ReturnType<typeof command>,dataStatus:string,version:number){
     const result=await request(stage,200,'/api/v1/user-common/commands',body),data=record(result.data,stage+'_DATA');
+    copyCheck(stage,'REF');
     const ref=versionRef(data.ref,stage+'_REF');
+    copyCheck(stage,'RECEIPT');
     assert.ok(result.scopeKind==='USER_COMMON'&&result.ownerUserId===actorId&&result.status==='APPLIED'&&result.commandId===body.commandId
       &&result.targetId===ref.id&&result.version===version&&ref.version===version&&data.status===dataStatus,stage+'_RECEIPT');
     if(body.targetId!==null)assert.ok(ref.id===body.targetId,stage+'_TARGET');
@@ -115,7 +123,10 @@ export async function runMethodologyCopyApplicationScenario({app,session,origin,
   const {ref:v1}=await send('TC01_COPY',command('copyMethodology',null,0,{
     sourceRef:builtinRef,name:copyName,scope:'USER_COMMON',reason:'고정 내장 방법론 복사',
   }),'DRAFT',1);
-  assert.ok(v1.id!==builtinRef.id&&v1.contentHash===builtinRef.contentHash,'TC01_COPY_IDENTITY');
+  copyCheck('TC01_COPY','IDENTITY');
+  assert.ok(v1.id!==builtinRef.id,'TC01_COPY_IDENTITY');
+  copyCheck('TC01_COPY','HASH');
+  assert.ok(v1.contentHash===builtinRef.contentHash,'TC01_COPY_IDENTITY');
   const copied=await getMethod(v1.id,1,'TC01_READ_V1'),copyProvenance={kind:'COPY',parentRef:builtinRef};
   checkMethod(copied,v1,originalGraph,copyProvenance,'TC01_READ_V1');
   assert.ok(copied.name===copyName&&copied.purpose===purpose&&copied.confirmation===null,'TC01_COPY_METADATA');

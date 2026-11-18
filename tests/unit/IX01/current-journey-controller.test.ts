@@ -733,7 +733,7 @@ test('IX01 TC01 능동 진단 RAM: 실제 요청과 검증 경계를 원문 없�
    session:{user:{id:'00000000-0000-4000-8000-000000000001',displayName:'RAM',serverOwner:false},clientId:'00000000-0000-4000-8000-000000000002',token:'a'.repeat(43),csrfToken:'b'.repeat(43)},
    origin:'https://localhost:3830',assertCurrent(){},onStage(stage:string){stages.push(stage);}}));
   assert.equal(requests,kind.startsWith('COPY_')?2:1);
-  assert.deepEqual(stages,kind==='REQUEST'?['TC01_BUILTIN_REQUEST']:['TC01_BUILTIN_REQUEST','TC01_BUILTIN_VERIFY',...(kind.startsWith('COPY_')?['TC01_COPY_REQUEST',...(kind==='COPY_VERIFY'?['TC01_COPY_VERIFY']:[])]:[])]);
+  assert.deepEqual(stages,kind==='REQUEST'?['TC01_BUILTIN_REQUEST']:['TC01_BUILTIN_REQUEST','TC01_BUILTIN_VERIFY',...(kind.startsWith('COPY_')?['TC01_COPY_REQUEST',...(kind==='COPY_VERIFY'?['TC01_COPY_VERIFY','TC01_COPY_VERIFY_CURRENT','TC01_COPY_VERIFY_HTTP','TC01_COPY_VERIFY_SIZE','TC01_COPY_VERIFY_JSON','TC01_COPY_VERIFY_SHAPE']:[])]:[])]);
   const rows:string[]=[];api.recordCurrentChildFailure(stages.at(-1),'a'.repeat(64),{fresh(){},write(raw){rows.push(raw);}});
   assert.equal(rows.length,1);assert.equal(JSON.parse(rows[0]!).stage,stages.at(-1));assert.doesNotMatch(rows[0]!,/private|response|payload|headers|https/);
  }
@@ -751,4 +751,55 @@ test('IX01 TC01 능동 진단 RAM: 앱과 요청 단계는 인계 결박 UNKNOWN
   assert.deepEqual([result.status,result.stage,result.code],['UNKNOWN','CHILD','STOPPED_CHILD_EXIT_STATUS'+(stage==='TC01_SECRET_VERIFY'?'':'_'+stage)]);
   assert.equal(h.calls.includes('CLEANUP'),false);assert.equal(h.calls.filter(x=>x==='RECORD').length,1);
  }
+});
+
+
+test('IX01 COPY 하위 진단 RAM: 고정 조건만 발행하고 다음 요청을 막는다',async()=>{
+ const {runMethodologyCopyApplicationScenario:run}=await import('../../integration/IX01/methodology-copy-application-scenario.ts');
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ const actorId='00000000-0000-4000-8000-000000000001',copyId='00000000-0000-4000-8000-000000000003';
+ for(const condition of ['CURRENT','HTTP','SIZE','JSON','SHAPE','DATA_SHAPE','REF','RECEIPT','IDENTITY','HASH','VALID']){
+  const stages:string[]=[],graph={nodes:[{position:{x:0}}],edges:[]};let requests=0;
+  const ref={id:'a6f20000-0000-4000-8000-000000000001',version:2,contentHash:contentHash(canonicalJson(graph))};
+  const app={async inject(options:{payload?:{commandId:string}}){
+   requests++;if(requests===3)throw Error('private later request');
+   const data={status:'DRAFT',ref:{id:condition==='IDENTITY'?ref.id:copyId,version:1,contentHash:condition==='HASH'?'f'.repeat(64):ref.contentHash}};
+   const receipt={scopeKind:'USER_COMMON',ownerUserId:actorId,status:condition==='RECEIPT'?'REJECTED':'APPLIED',commandId:options.payload?.commandId,targetId:data.ref.id,version:1,data};
+   return {statusCode:requests===2&&condition==='HTTP'?503:200,body:requests===2&&condition==='SIZE'?'x'.repeat(2*1024*1024+1):'{}',json(){
+    if(requests===1)return {ref,graph,validation:{validForConfirmation:true},scope:'SYSTEM',purpose:'RAM'};
+    if(condition==='JSON')throw Error('private JSON detail');
+    if(condition==='SHAPE')return [];
+    if(condition==='DATA_SHAPE')return {...receipt,data:null};
+    if(condition==='REF')return {...receipt,data:{...data,ref:{...data.ref,version:0}}};
+    return receipt;
+   }};
+  }};
+  await assert.rejects(run({app:app as unknown as Parameters<typeof run>[0]['app'],
+   session:{user:{id:actorId,displayName:'RAM',serverOwner:false},clientId:'00000000-0000-4000-8000-000000000002',token:'a'.repeat(43),csrfToken:'b'.repeat(43)},
+   origin:'https://localhost:3830',assertCurrent(){if(condition==='CURRENT'&&stages.at(-1)==='TC01_COPY_VERIFY_CURRENT')throw Error('private current detail');},onStage(stage){stages.push(stage);}}));
+  const expected=condition==='VALID'?'TC01_READ_V1_REQUEST':'TC01_COPY_VERIFY_'+(condition==='DATA_SHAPE'?'SHAPE':condition);
+  assert.equal(stages.at(-1),expected,condition);assert.equal(requests,condition==='VALID'?3:2,condition);
+  const rows:string[]=[];api.recordCurrentChildFailure(stages.at(-1),'a'.repeat(64),{fresh(){},write(raw){rows.push(raw);}});
+  assert.equal(rows.length,1);assert.equal(JSON.parse(rows[0]!).stage,expected);assert.doesNotMatch(rows[0]!,/private|payload|headers|https|503/);
+ }
+});
+
+test('IX01 COPY 하위 진단 RAM: 원 인계 UNKNOWN 결박과 거절 fallback을 유지한다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ for(const detail of ['CURRENT','HTTP','SIZE','JSON','SHAPE','REF','RECEIPT','IDENTITY','HASH']){
+  const stage='TC01_COPY_VERIFY_'+detail;
+  for(const invalid of ['NONE','HANDOFF','EXPIRED','STAGE']){
+   const h=harness();h.ports.child=async handoff=>{
+    const digest=contentHash(canonicalJson(handoff)),rows:string[]=[];
+    api.recordCurrentChildFailure(stage,digest,{fresh(){},write(raw){rows.push(raw);}});assert.equal(rows.length,1);
+    const row=JSON.parse(rows[0]!);if(invalid==='HANDOFF')row.handoffHash='f'.repeat(64);if(invalid==='STAGE')row.stage+='PRIVATE';
+    api.verifyCurrentChildExit({status:1,signal:null},()=>invalid==='EXPIRED'?handoff.expiresAt:now,handoff.expiresAt,{handoffHash:digest,fresh(){},read(){return canonicalJson(row);}});
+    assert.fail('실패 뒤 성공 금지');
+   };
+   const result=await runCurrentJourney(input(),h.ports);
+   assert.deepEqual([result.status,result.stage,result.code],['UNKNOWN','CHILD','STOPPED_CHILD_EXIT_STATUS'+(invalid==='NONE'?'_'+stage:'')]);
+   assert.equal(h.calls.includes('CLEANUP'),false);assert.equal(h.calls.filter(c=>c==='RECORD').length,1);assert.doesNotMatch(JSON.stringify(result),/PRIVATE|payload|headers/);
+  }
+ }
+ let writes=0;api.recordCurrentChildFailure('TC01_COPY_VERIFY_CURRENT','a'.repeat(64),{fresh(){throw Error('private expired');},write(){writes++;}});assert.equal(writes,0);
 });

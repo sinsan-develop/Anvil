@@ -158,9 +158,11 @@ const tc01Requests=['TC01_BUILTIN','TC01_COPY','TC01_READ_V1','TC01_REVIEW_V1','
  'TC01_REJECT_V1_REVIEW','TC01_AFTER_REJECT_V2','TC01_CONFIRM_V2','TC01_CONFIRMED_V2','TC01_CREATE_DRAFT','TC01_READ_DRAFT',
  'TC01_CREATE_PROJECT','TC01_READ_APPLICATION','TC01_REVISE_V3','TC01_READ_V3','TC01_READ_HISTORICAL_V2','TC01_READ_HISTORICAL_V1','TC01_REREAD_APPLICATION'] as const;
 export type CurrentTc01RequestStage=typeof tc01Requests[number];
-export type CurrentTc01DiagnosticStage=`${CurrentTc01RequestStage}_${'REQUEST'|'VERIFY'}`;
+const tc01CopyChecks=['CURRENT','HTTP','SIZE','JSON','SHAPE','REF','RECEIPT','IDENTITY','HASH'] as const;
+export type CurrentTc01CopyCheck=typeof tc01CopyChecks[number];
+export type CurrentTc01DiagnosticStage=`${CurrentTc01RequestStage}_${'REQUEST'|'VERIFY'}`|`TC01_COPY_VERIFY_${CurrentTc01CopyCheck}`;
 const childFailureStages=['HANDOFF','DATABASE','LEDGER','CATALOG','LOGIN','APP_LOAD','APP_BUILD','TC01','CLOSE','RESULT',
- ...tc01Requests.flatMap(stage=>[`${stage}_REQUEST`,`${stage}_VERIFY`] as const)] as const;
+ ...tc01Requests.flatMap(stage=>[`${stage}_REQUEST`,`${stage}_VERIFY`] as const),...tc01CopyChecks.map(check=>`TC01_COPY_VERIFY_${check}` as const)] as const;
 const childFailureStage=(value:unknown):value is typeof childFailureStages[number]=>typeof value==='string'&&childFailureStages.some(stage=>stage===value);
 // 원 인계 검산 뒤의 자식만 실제 파일 writer에 연결한다. 진단 실패는 원 실패를 바꾸지 않는다.
 export function recordCurrentChildFailure(stage:unknown,handoffHash:string,ports:{fresh():void;write(raw:string):void}):void{

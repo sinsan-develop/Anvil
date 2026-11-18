@@ -20857,3 +20857,9 @@ SQL 130개와 원장 130개가 SETTLED, schema VERIFIED다. 고정 소스 순서
 기준 5f9edb1a. developer_primary가 `KnowledgePage.tsx`에 명시 조회 버튼을 연결하고 `tests/unit/UI10/knowledge-exclusion-context.test.ts`에서 실제 화면 버튼과 메모리 API를 검증했다. 기존 조회로 대상의 고정 버전·해시와 보존 원문을 확인하고 저장 영수증의 제외 사건·사유·작성자를 대조한다. 기본 검색에서 항목이 사라져도 조회할 수 있다. 검색 조건과 기존 저장 동작을 유지하며 화면 변경 뒤 지연 응답은 폐기한다. 복구는 두 파일의 변경분 단위다.
 
 버튼 부재 RED 596ddc 3실패 이후 직접·인접 합성시험 25건 통과(실패·건너뜀 0, 22051c), 타입 d84931과 diff e94a56 종료 0. Main 직접·인접 시험 23건 통과 및 중복 키 경고 0(baba24), 파일 지문 일치와 diff 통과를 확인했다. 실제 브라우저·DB·서비스·A12 접근과 재실행은 없었다. IX01 통합 인수는 미완료다.
+
+## IX01 TC01 방법론 복사 응답의 실패 위치 구분
+
+기준 9d7fc631. developer_primary가 `scripts/qa-ix01-current-journey.ts`, `tests/integration/IX01/methodology-copy-application-scenario.ts`, `tests/unit/IX01/current-journey-controller.test.ts`를 보완했다. 복사 검증에 한해 현재성·HTTP·크기·JSON·형상·참조·영수증·복사본 ID·해시의 고정 코드 9개를 기록한다. 원 예외·상태값·응답 원문은 기록하지 않는다. 기존 인계 검산과 UNKNOWN·정리 차단 및 기한이 지난 진단을 채택하지 않는 동작을 유지한다. 기존 A12 고정 소스와 실행안은 각 원 커밋에 보존되어 있다.
+
+RED d75542 2실패 뒤 집중·인접 c09701 합성 9통과, 타입 32a36e·diff b67d9d 종료 0. Main이 최종 세 파일 지문 일치 및 제어기 전체 합성 37통과(실패·건너뜀 0, 4040c8)를 확인했다. 실제 환경·DB·A12 접근·재실행·삭제는 없었다. A12의 과거 실패 원인과 실제 저장·조회는 미확정이다. 새 격리 실행은 별도 고정 소스·실행안과 승인을 전제로 한다.
