@@ -35,6 +35,7 @@ import {ProjectKnowledge} from '../../../apps/server/modules/knowledge/knowledge
 import {ProjectTraces} from '../../../apps/server/modules/traceability/traces.ts';
 import {ProjectListCodec} from '../../../apps/server/modules/projects/service.ts';
 import {canonicalJson,contentHash,parseWireJson} from '../../../contracts/canonical.ts';
+import {isVersionRef} from '../../../contracts/references.ts';
 import type {TaskCard} from '../../../apps/server/modules/traceability/work-plan-card.ts';
 
 /** IX01 실행용 source 준비. PG/화면/사용자 인수 PASS가 아니며 이 파일은 아직 실행하지 않았다.
@@ -115,8 +116,31 @@ test('IX01 실제 저장 여정 source — 명시 승인·최신 manifest·새 �
    const r=await app.inject({method:(init?.method??'GET') as 'GET'|'POST',url:String(url),headers:{...headers,...init?.headers as Record<string,string>},payload});return new Response(r.body,{status:r.statusCode,headers:{'content-type':String(r.headers['content-type']??'')}});
   });
   const source=methods[0]!,sourceRef={id:source.id,version:source.version,contentHash:source.contentHash};
-  async function createProject(name:string){const r=await app.inject({method:'POST',url:'/api/v1/project-drafts',headers,payload:{schemaVersion:1,commandId:randomUUID(),clientId:who.clientId,targetId:null,expectedVersion:0,name,purpose:'방법론에서 지식까지 원 근거 연결',desiredOutcome:'저장·버전·접근 검산',sourceMode:'EMPTY',methodologySelection:{kind:'CONFIRMED_REFERENCE',versionRef:sourceRef},artifactRefs:[]}});assert.equal(r.statusCode,201);const v=await app.inject({method:'POST',url:'/api/v1/projects',headers,payload:{schemaVersion:1,commandId:randomUUID(),clientId:who.clientId,draftId:r.json().draftId,draftVersion:1}});assert.equal(v.statusCode,201);return v.json();}
+  async function createProject(name:string,selectedRef=sourceRef,readSelection=false){fresh();const r=await app.inject({method:'POST',url:'/api/v1/project-drafts',headers,payload:{schemaVersion:1,commandId:randomUUID(),clientId:who.clientId,targetId:null,expectedVersion:0,name,purpose:'방법론에서 지식까지 원 근거 연결',desiredOutcome:'저장·버전·접근 검산',sourceMode:'EMPTY',methodologySelection:{kind:'CONFIRMED_REFERENCE',versionRef:selectedRef},artifactRefs:[]}});fresh();assert.equal(r.statusCode,201);if(readSelection){const draft=r.json();const read=await app.inject({method:'GET',url:'/api/v1/project-drafts/'+draft.draftId,headers});fresh();assert.equal(read.statusCode,200);const stored=read.json();assert.equal(stored.draftId,draft.draftId);assert.equal(stored.version,1);same(stored.input.methodologySelection,{kind:'CONFIRMED_REFERENCE',versionRef:selectedRef});}const v=await app.inject({method:'POST',url:'/api/v1/projects',headers,payload:{schemaVersion:1,commandId:randomUUID(),clientId:who.clientId,draftId:r.json().draftId,draftVersion:1}});fresh();assert.equal(v.statusCode,201);return v.json();}
   const project=await createProject('IX01 원 여정'),other=await createProject('IX01 별도 프로젝트'),pid:string=project.id;
+  // 내장 원문 조회만으로 프로젝트 적용을 증명하지 않는다. 두 종류를 각각 별개 프로젝트에 고정한다.
+  async function readBuiltinApplication(projectId:string,applicationRef:typeof sourceRef,snapshot:object){
+   fresh();const response=await app.inject({method:'GET',url:'/api/v1/projects/'+projectId+'/methodology-application',headers});fresh();assert.equal(response.statusCode,200);
+   const view=response.json();assert.equal(view.projectId,projectId);assert.equal(view.executionState,'NOT_CONNECTED');
+   assert(isVersionRef(view.applicationRef));same(view.applicationRef,applicationRef);same(view.snapshot,snapshot);
+   assert.equal(view.applicationRef.contentHash,contentHash(canonicalJson(view.snapshot)));assert(iso(view.observedAt));
+   const {observedAt,...fixed}=view;return fixed;
+  }
+  const builtinApplications: {projectId:string;applicationRef:typeof sourceRef;snapshot:object;before:unknown}[]=[];
+  for(const [systemCode,id]of [['SYS-M02','a6f20000-0000-4000-8000-000000000002'],['SYS-M03','a6f20000-0000-4000-8000-000000000003']]as const){
+   const selected=methods.find(value=>value.systemCode===systemCode);assert(selected);assert.equal(selected.id,id);assert.equal(selected.version,2);
+   const selectedRef={id,version:selected.version,contentHash:selected.contentHash};
+   fresh();const originalResponse=await app.inject({method:'GET',url:'/api/v1/methodologies/'+id+'/versions/'+selected.version,headers});fresh();assert.equal(originalResponse.statusCode,200);
+   const original=originalResponse.json();same(original.ref,selectedRef);same(original.graph,selected.graph);assert.equal(original.scope,'SYSTEM');
+   assert.equal(contentHash(canonicalJson(original.graph)),selectedRef.contentHash);assert.equal(original.name,selected.name);assert.equal(original.purpose,selected.purpose);
+   same(original.sourceApproval,{kind:'P01_APPROVED_SOURCE',approvalRecord:'docs/04_test_reports/AV3/P01/REVIEW-01.md',sourceHash:selected.sourceHash,implementationRevision:selected.version,productAcceptance:false});
+   const created=await createProject('IX01 '+systemCode+' 고정 적용',selectedRef,true);assert(isVersionRef(created.currentMethodologyRef));
+   assert(typeof created.id==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(created.id));assert.equal(created.participation,'OWNER');
+   assert(![pid,other.id,...builtinApplications.map(value=>value.projectId)].includes(created.id));assert.equal(created.currentMethodologyRef.version,1);
+   const snapshot={name:selected.name,purpose:selected.purpose,graph:selected.graph,sourceRef:selectedRef};
+   const before=await readBuiltinApplication(created.id,created.currentMethodologyRef,snapshot);
+   builtinApplications.push({projectId:created.id,applicationRef:created.currentMethodologyRef,snapshot,before});
+  }
   const command=(operation:string,payload:Record<string,unknown>,targetId:string|null=null,expectedVersion=0):ProjectCommand=>({schemaVersion:1,projectId:pid,commandId:randomUUID(),clientId:who.clientId,controlGeneration:1,operation,targetId,expectedVersion,baselineRefs:[],approvalRef:null,payload});
   const send=(c:ProjectCommand)=>{fresh();return app.inject({method:'POST',url:'/api/v1/projects/'+c.projectId+'/commands',headers,payload:c});};
   const success=async(c:ProjectCommand)=>{const r=await send(c);assert.equal(r.statusCode,200,r.json().code);return r.json();};
@@ -178,6 +202,7 @@ test('IX01 실제 저장 여정 source — 명시 승인·최신 manifest·새 �
   const planBeforeReconnect=await readWorkPlan(client,pid,plan.ref),knowledgeBeforeReconnect=await readKnowledge(client,pid,knowledgeRef);
   await closeJourneyContext(current,fresh);fresh();current=createContext();({pool,access,app}=current);
   assert.equal(contextGeneration,2);same((await pool.query('SELECT current_database() db,current_user role,rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user')).rows,[{db:binding.database,role:'anvil_v3_app',rolsuper:false,rolbypassrls:false}]);fresh();
+  for(const saved of builtinApplications)same(await readBuiltinApplication(saved.projectId,saved.applicationRef,saved.snapshot),saved.before);
   for(const [i,value]of [design,screen,planDoc].entries()){
    const readback=await readDocument(client,pid,value.ref.id,value.ref.version,{expectedContentHash:value.ref.contentHash});
    same(readback.document.stageOutputItem,value.expectedOutput);same(readback.document.stageNodeRef,value.stage);same(readback.document.stageBinding?.applicationRef,value.expectedOutput.applicationRef);
