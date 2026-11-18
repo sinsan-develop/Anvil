@@ -20769,3 +20769,9 @@ developer_primary가기준2957fd80에서A9 literal7개및A1~A8혼합외피/인�
 단회entry8fd7a7/session52802→01237d 종료1,UNKNOWN/CHILD/STOPPED_CHILD_EXIT. SQL130·원장130SETTLED/schemaVERIFIED. 고정순서상SECURE/임시ADMIN회수검산/internal망/handoff·owner파일검산/spawn반환/후행현재성통과. EXIT의child.error/비0status/signal/인계기한중어느조건인지는결과에없어미확정이다. RESULT_READ/OUTPUT_VERIFY/CLEANUP미진입·TC01완료/최종결과정착미확인.
 
 컨테이너e2a3575dd2df0f9a14c2ff11f94eb7ce6ee776dad7061c327e65eb78448f9a79·망e20a6f350a86c4bf30c82080963470dcf0418ca660d38d3758f3cbddd71fa939보존. 단회소진·live0·실패후조회/재시도/삭제/A1~A8접근0. Main은수거결과와고정소스만검수했다. 다음은EXIT의안전한고정진단을로컬에서대조하는단계다. IX01미완료.
+
+## IX01 TC01 CHILD 종료 조건 진단
+
+기준 6dea997c에서 developer_primary가 실행기와 기존 제어기 시험을 보완했다. 자식 호출 오류, 비정상 종료 상태, 종료 신호, 인계 기한 초과를 고정 코드로 구분한다. 실패 판정과 후속 결과 읽기·정리 차단을 유지하며 오류 원문·종료값·신호명은 결과에 포함하지 않는다.
+
+RED 187360 1건, 집중 645560 5통과, 타입 2f3b3f 종료 0. Main 검수 53b2ef 전체 31통과·실패 및 건너뜀 0, diff 검사 통과. A9는 보존했고 실제 DB 접속·재실행·삭제는 하지 않았다. A9 원인과 실제 환경의 새 진단 출력은 미확인이다. IX01은 미완료다.

@@ -154,10 +154,21 @@ export async function runCurrentStartSteps(steps:Record<StartSyncStep,()=>void>&
  }catch{stoppedStep('START',step);}
 }
 
+const childExitCodes=new Set(['STOPPED_CHILD_EXIT_SPAWN_ERROR','STOPPED_CHILD_EXIT_STATUS','STOPPED_CHILD_EXIT_SIGNAL','STOPPED_CHILD_EXIT_DEADLINE']);
+export function verifyCurrentChildExit(child:Pick<ReturnType<typeof spawnSync>,'error'|'status'|'signal'>,now:()=>number,expiresAt:number):void{
+ if(child.error)stoppedStep('CHILD','EXIT_SPAWN_ERROR');
+ // 기존 status 거절 경계에서 signal 동반 여부만 고정 분류한다. 원 오류/신호 값은 보관하지 않는다.
+ if(child.status!==0)stoppedStep('CHILD',child.signal?'EXIT_SIGNAL':'EXIT_STATUS');
+ if(child.signal)stoppedStep('CHILD','EXIT_SIGNAL');
+ if(now()>=expiresAt)stoppedStep('CHILD','EXIT_DEADLINE');
+}
 const childSteps=['ATTACHED_HOST','CURRENT','ARTIFACT','HANDOFF','OWNER','SOURCES','SPAWN','CURRENT_AFTER_SPAWN','EXIT'] as const;
 export function runCurrentChildSteps<T>(steps:Record<typeof childSteps[number],()=>void>&{RESULT_READ():T}):T{
  for(const step of childSteps){
-  try{steps[step]();}catch{stoppedStep('CHILD',step);}
+  try{steps[step]();}catch(error){
+   if(step==='EXIT'&&childExitCodes.has(stepFailureCode('CHILD',error)))throw error;
+   stoppedStep('CHILD',step);
+  }
  }
  try{return steps.RESULT_READ();}catch{stoppedStep('CHILD','RESULT_READ');}
 }
@@ -643,7 +654,7 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
      });
     },
     CURRENT_AFTER_SPAWN(){assertCurrent();},
-    EXIT(){if(child.error||child.status!==0||child.signal||host.time()>=handoff.expiresAt)fail('IX01_CURRENT_CHILD_UNKNOWN');},
+    EXIT(){verifyCurrentChildExit(child,host.time,handoff.expiresAt);},
     RESULT_READ(){
      const outcome=parseWireJson(plainFile(childResultPath,f.uid,4096,0o600).toString('utf8'));
      return {status:child.status,signal:child.signal,stdout:child.stdout,stderr:child.stderr,result:outcome};

@@ -260,6 +260,38 @@ test('IX01 CHILD 고정 진단 RAM: 실패 단계만 남기고 원 예외와 정
   assert.equal(result.code,'STOPPED_CHILD');assert.equal(result.status,'UNKNOWN');assert.equal(h.calls.includes('CLEANUP'),false);
  }
 });
+test('IX01 CHILD EXIT 분류 RAM: 고정 종료 종류만 보존하고 후속 읽기와 정리를 막는다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ const check=api.verifyCurrentChildExit;
+ assert.equal(typeof check,'function');
+ let rawReads=0;const rawError=new Proxy(Error('secret'),{get(){rawReads++;throw Error('secret');}});
+ const cases=[
+  {value:{error:rawError,status:1,signal:'SIGTERM' as const},at:now,code:'SPAWN_ERROR',clock:0},
+  {value:{status:1,signal:null},at:now,code:'STATUS',clock:0},
+  {value:{status:null,signal:null},at:now,code:'STATUS',clock:0},
+  {value:{status:null,signal:'SIGTERM' as const},at:now,code:'SIGNAL',clock:0},
+  {value:{status:0,signal:'SIGTERM' as const},at:now,code:'SIGNAL',clock:0},
+  {value:{status:0,signal:null},at:now+1,code:'DEADLINE',clock:1},
+ ];
+ for(const c of cases){
+  const h=harness();let reads=0,clock=0;
+  h.ports.child=async()=>api.runCurrentChildSteps({
+   ATTACHED_HOST(){},CURRENT(){},ARTIFACT(){},HANDOFF(){},OWNER(){},SOURCES(){},SPAWN(){},CURRENT_AFTER_SPAWN(){},
+   EXIT(){check(c.value,()=>{clock++;return c.at;},now+1);},RESULT_READ(){reads++;return null;},
+  });
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.code,'STOPPED_CHILD_EXIT_'+c.code);assert.equal(result.status,'UNKNOWN');assert.equal(result.stage,'CHILD');
+  assert.equal(clock,c.clock);assert.equal(reads,0);assert.equal(h.calls.includes('CLEANUP'),false);assert.equal(h.calls.filter(v=>v==='RECORD').length,1);
+  assert.doesNotMatch(JSON.stringify(result),/secret|SIGTERM|stdout|stderr|stack/);
+ }
+ assert.equal(rawReads,0);
+ let clock=0;assert.doesNotThrow(()=>check({status:0,signal:null},()=>{clock++;return now;},now+1));assert.equal(clock,1);
+ const h=harness();h.ports.child=async()=>api.runCurrentChildSteps({
+  ATTACHED_HOST(){},CURRENT(){},ARTIFACT(){},HANDOFF(){},OWNER(){},SOURCES(){},SPAWN(){},CURRENT_AFTER_SPAWN(){},
+  EXIT(){throw {code:'STOPPED_CHILD_EXIT_STATUS'};},RESULT_READ(){assert.fail('after failed exit');},
+ });
+ assert.equal((await runCurrentJourney(input(),h.ports)).code,'STOPPED_CHILD_EXIT');
+});
 test('IX01 CHILD 출력 진단 RAM: TAP과 원 결과 결박 실패는 정리를 열지 않는다',async()=>{
  for(const mutate of [v=>({...v,stdout:'secret'}),v=>({...v,stderr:'secret'}),v=>({...v,result:{...v.result,handoffHash:'f'.repeat(64)}})] as ((v:ReturnType<typeof outcome>)=>unknown)[]){
   const h=harness();h.ports.child=async handoff=>mutate(outcome(contentHash(canonicalJson(handoff))));
