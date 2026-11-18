@@ -115,6 +115,99 @@ test('IX01 NETWORK 고정 진단 RAM: 단계 실패와 원 예외는 자식 정�
  assert.equal(reads,0);
 });
 
+function attachedFixture(){
+ const endpointId='c'.repeat(64),scope={containerId,networkId,containerName:String(currentProfile.container),networkName:String(currentProfile.network),image:String(currentProfile.image),labels:{'anvil.owner':currentProfile.owner,'anvil.instance':'d'.repeat(32),'anvil.plan':'e'.repeat(64)}};
+ const tmpfs={'/var/lib/postgresql/data':'rw,noexec,nosuid,size=268435456,uid=999,gid=999','/var/run/postgresql':'rw,noexec,nosuid,size=16777216,uid=999,gid=999','/tmp':'rw,noexec,nosuid,size=16777216,uid=999,gid=999'};
+ const network={id:networkId,name:scope.networkName,driver:'bridge',internal:true,labels:scope.labels,containers:{[containerId]:{Name:scope.containerName,IPv4Address:'172.18.0.2/16',EndpointID:endpointId}}};
+ const container={id:containerId,name:'/'+scope.containerName,image:scope.image,user:'999:999',labels:scope.labels,running:true,
+  host:{Privileged:false,ReadonlyRootfs:true,NetworkMode:'none',LogConfig:{Type:'none',Config:{}},CapDrop:['ALL'],SecurityOpt:['no-new-privileges'],PidsLimit:64,Memory:536870912,NanoCpus:1000000000,PublishAllPorts:false,PortBindings:{},Binds:null,VolumesFrom:null,Tmpfs:tmpfs},
+  mounts:Object.keys(tmpfs).map(Destination=>({Type:'tmpfs',Destination,RW:true,Source:''})),ports:{'5432/tcp':null},networks:{[scope.networkName]:{NetworkID:networkId,IPAddress:'172.18.0.2',EndpointID:endpointId}}};
+ return {scope,network,container};
+}
+
+test('IX01 ATTACHED metadata RAM: 원 검산과 최초 실패 코드만 보존한다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ assert.equal(typeof api.readCurrentAttachedHost,'function');
+ const normal=attachedFixture(),calls:string[]=[];
+ assert.equal(api.readCurrentAttachedHost(normal.scope,{network(){calls.push('network');return canonicalJson(normal.network);},container(){calls.push('container');return canonicalJson(normal.container);}}),'172.18.0.2');
+ assert.deepEqual(calls,['network','container']);
+ type Fixture=ReturnType<typeof attachedFixture>;
+ const cases:[string,(f:Fixture)=>void,string[]][]=[
+  ['NETWORK_ID',f=>{f.scope.networkId='invalid';},[]],
+  ['NETWORK_INTERNAL',f=>{f.network.internal=false;},['network']],
+  ['NETWORK_IDENTITY',f=>{f.network.id='f'.repeat(64);},['network']],
+  ['NETWORK_NAME',f=>{f.network.name='other';},['network']],
+  ['NETWORK_DRIVER',f=>{f.network.driver='other';},['network']],
+  ['NETWORK_LABELS',f=>{f.network.labels={...f.scope.labels,'anvil.plan':'f'.repeat(64)};},['network']],
+  ['CONTAINER_ID',f=>{f.scope.containerId='invalid';},['network']],
+  ['CONTAINER_IDENTITY',f=>{f.container.id='f'.repeat(64);},['network','container']],
+  ['CONTAINER_NAME',f=>{f.container.name='other';},['network','container']],
+  ['CONTAINER_IMAGE',f=>{f.container.image='other';},['network','container']],
+  ['CONTAINER_USER',f=>{f.container.user='other';},['network','container']],
+  ['CONTAINER_LABELS',f=>{f.container.labels={...f.scope.labels,'anvil.plan':'f'.repeat(64)};},['network','container']],
+  ['CONTAINER_STATE_TYPE',f=>{Reflect.deleteProperty(f.container,'running');},['network','container']],
+  ['HOST_PRESENT',f=>{Reflect.deleteProperty(f.container,'host');},['network','container']],
+  ['HOST_PRIVILEGED',f=>{f.container.host.Privileged=true;},['network','container']],
+  ['HOST_READONLY',f=>{delete (f.container.host as Partial<typeof f.container.host>).ReadonlyRootfs;},['network','container']],
+  ['HOST_NETWORK_MODE',f=>{f.container.host.NetworkMode=f.scope.networkName;},['network','container']],
+  ['HOST_LOG_DRIVER',f=>{f.container.host.LogConfig.Type='other';},['network','container']],
+  ['HOST_LOG_CONFIG',f=>{f.container.host.LogConfig.Config={unexpected:true};},['network','container']],
+  ['HOST_CAP_DROP',f=>{f.container.host.CapDrop=[];},['network','container']],
+  ['HOST_SECURITY_OPT',f=>{f.container.host.SecurityOpt=[];},['network','container']],
+  ['HOST_PIDS',f=>{f.container.host.PidsLimit=65;},['network','container']],
+  ['HOST_MEMORY',f=>{f.container.host.Memory=1;},['network','container']],
+  ['HOST_CPUS',f=>{f.container.host.NanoCpus=1;},['network','container']],
+  ['HOST_PUBLISH',f=>{f.container.host.PublishAllPorts=true;},['network','container']],
+  ['HOST_PORT_BINDINGS',f=>{f.container.host.PortBindings={unexpected:true};},['network','container']],
+  ['HOST_BINDS',f=>{Reflect.set(f.container.host,'Binds',['unexpected']);},['network','container']],
+  ['HOST_MOUNTS',f=>{Reflect.set(f.container.host,'Mounts',[{}]);},['network','container']],
+  ['HOST_VOLUMES_FROM',f=>{Reflect.set(f.container.host,'VolumesFrom',['unexpected']);},['network','container']],
+  ['HOST_TMPFS',f=>{Reflect.deleteProperty(f.container.host.Tmpfs,'/tmp');},['network','container']],
+  ['MOUNTS_SHAPE',f=>{Reflect.set(f.container,'mounts',null);},['network','container']],
+  ['MOUNTS_ENTRY',f=>{f.container.mounts[0]!.Type='bind';},['network','container']],
+  ['MOUNTS_DUPLICATE',f=>{f.container.mounts.push({...f.container.mounts[0]!});},['network','container']],
+  ['PORTS',f=>{Reflect.set(f.container.ports,'5432/tcp',[{}]);},['network','container']],
+  ['RUNNING',f=>{f.container.running=false;},['network','container']],
+  ['NETWORK_SET',f=>{f.container.networks.extra={...f.container.networks[f.scope.networkName]!};},['network','container']],
+  ['NETWORK_SET',f=>{delete f.container.networks[f.scope.networkName];},['network','container']],
+  ['CONTAINER_SET',f=>{f.network.containers['f'.repeat(64)]={...f.network.containers[containerId]!};},['network','container']],
+  ['CONTAINER_SET',f=>{delete f.network.containers[containerId];},['network','container']],
+  ['NAME',f=>{f.network.containers[containerId]!.Name='other';},['network','container']],
+  ['CIDR',f=>{f.network.containers[containerId]!.IPv4Address='172.18.0.2/15';},['network','container']],
+  ['ADDRESS',f=>{f.network.containers[containerId]!.IPv4Address='172.32.0.2/16';},['network','container']],
+  ['NETWORK_MATCH',f=>{f.container.networks[f.scope.networkName]!.NetworkID='f'.repeat(64);},['network','container']],
+  ['IP_MATCH',f=>{f.container.networks[f.scope.networkName]!.IPAddress='172.18.0.3';},['network','container']],
+  ['ENDPOINT',f=>{f.container.networks[f.scope.networkName]!.EndpointID='bad';},['network','container']],
+  ['ENDPOINT',f=>{f.network.containers[containerId]!.EndpointID='f'.repeat(64);},['network','container']],
+  ['NETWORK_INTERNAL',f=>{f.network.internal=false;f.container.image='other';},['network']],
+  ['HOST_NETWORK_MODE',f=>{f.container.host.NetworkMode=f.scope.networkName;f.container.mounts[0]!.Type='bind';},['network','container']],
+ ];
+ for(const [code,mutate,expectedCalls] of cases){
+  const fixture=attachedFixture(),seen:string[]=[],h=harness();mutate(fixture);
+  h.ports.connect=async()=>{h.calls.push('NETWORK');api.runCurrentNetworkSteps({PRECHECK(){},CREATE(){},CREATE_VERIFY(){},NONE_VERIFY(){},DISCONNECT(){},DETACHED_VERIFY(){},CONNECT(){},ATTACHED_VERIFY(){api.readCurrentAttachedHost(fixture.scope,{network(){seen.push('network');return canonicalJson(fixture.network);},container(){seen.push('container');return canonicalJson(fixture.container);}});}});throw Error('unreachable');};
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.code,'STOPPED_NETWORK_ATTACHED_VERIFY_'+code,code);assert.equal(result.status,'UNKNOWN');assert.equal(result.stage,'NETWORK');
+  assert.deepEqual(seen,expectedCalls,code);assert.equal(h.calls.filter(x=>x==='RECORD').length,1);assert(!h.calls.includes('CHILD'));assert(!h.calls.includes('CLEANUP'));
+ }
+});
+
+test('IX01 ATTACHED 전송 RAM: 명령 JSON 실패와 미발급 코드를 분리한다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');assert.equal(typeof api.readCurrentAttachedHost,'function');
+ for(const code of ['NETWORK_COMMAND','NETWORK_JSON','CONTAINER_COMMAND','CONTAINER_JSON']){
+  const f=attachedFixture(),calls:string[]=[],h=harness();
+  const read=(name:'NETWORK'|'CONTAINER',value:unknown)=>{calls.push(name);if(code===name+'_COMMAND')throw Object.assign(Error('secret exception'),{stdout:'secret output',stderr:'secret error'});return code===name+'_JSON'?'not JSON secret':canonicalJson(value);};
+  h.ports.connect=async()=>{api.runCurrentNetworkSteps({PRECHECK(){},CREATE(){},CREATE_VERIFY(){},NONE_VERIFY(){},DISCONNECT(){},DETACHED_VERIFY(){},CONNECT(){},ATTACHED_VERIFY(){api.readCurrentAttachedHost(f.scope,{network:()=>read('NETWORK',f.network),container:()=>read('CONTAINER',f.container)});}});throw Error('unreachable');};
+  const result=await runCurrentJourney(input(),h.ports);assert.equal(result.code,'STOPPED_NETWORK_ATTACHED_VERIFY_'+code);assert.equal(result.status,'UNKNOWN');
+  assert.deepEqual(calls,code.startsWith('NETWORK')?['NETWORK']:['NETWORK','CONTAINER']);assert(!JSON.stringify(result).includes('secret'));assert(!h.calls.includes('CHILD'));assert(!h.calls.includes('CLEANUP'));
+ }
+ let reads=0;
+ for(const error of [Error('STOPPED_NETWORK_ATTACHED_VERIFY_ENDPOINT'),new Proxy({},{get(){reads++;throw Error('secret');}})]){
+  const h=harness();h.ports.connect=async()=>{api.runCurrentNetworkSteps({PRECHECK(){},CREATE(){},CREATE_VERIFY(){},NONE_VERIFY(){},DISCONNECT(){},DETACHED_VERIFY(){},CONNECT(){},ATTACHED_VERIFY(){throw error;}});throw Error('unreachable');};
+  assert.equal((await runCurrentJourney(input(),h.ports)).code,'STOPPED_NETWORK_ATTACHED_VERIFY');
+ }
+ assert.equal(reads,0);
+});
+
 test('IX01 A14 고정 프로필 RAM: 정확 이름과 구 프로필 외피 인계를 분리한다',()=>{
  assert.deepEqual({source:currentProfile.source,receipt:currentProfile.receipt,artifact:currentProfile.artifact,
   container:currentProfile.container,network:currentProfile.network,database:currentProfile.database,owner:currentProfile.owner},{

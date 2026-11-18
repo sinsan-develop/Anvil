@@ -143,7 +143,11 @@ export function currentRuntimeFailureCode(error:unknown):string{
 const networkSteps=['PRECHECK','CREATE','CREATE_VERIFY','NONE_VERIFY','DISCONNECT','DETACHED_VERIFY','CONNECT','ATTACHED_VERIFY'] as const;
 export function runCurrentNetworkSteps(steps:Record<typeof networkSteps[number],()=>void>):void{
  for(const step of networkSteps){
-  try{steps[step]();}catch{stoppedStep('NETWORK',step);}
+  try{steps[step]();}catch(error){
+   const issued=error!==null&&(typeof error==='object'||typeof error==='function')?stepFailures.get(error):undefined;
+   if(step==='ATTACHED_VERIFY'&&issued?.stage==='NETWORK'&&issued.code.startsWith('STOPPED_NETWORK_ATTACHED_VERIFY_'))throw error;
+   stoppedStep('NETWORK',step);
+  }
  }
 }
 
@@ -486,6 +490,86 @@ const networkFormat='{"id":{{json .Id}},"name":{{json .Name}},"driver":{{json .D
 const ledgerSql="SELECT COALESCE(json_agg(json_build_object('id',id,'checksum',checksum) ORDER BY id),'[]'::json)::text FROM anvil.schema_migrations;";
 const hba='local all all trust\nhost all all 0.0.0.0/0 scram-sha-256\nhost all all ::0/0 reject\n';
 
+interface CurrentAttachedScope{
+ readonly containerId:string;readonly networkId:string;readonly containerName:string;readonly networkName:string;
+ readonly image:string;readonly labels:Readonly<Record<string,string>>;
+}
+// 실제 inspect와 RAM 검증은 같은 판정식을 쓴다. 관측 자료 자체는 실행 권위를 발급하지 않는다.
+function verifyContainerObservation(v:Record<string,any>,scope:Pick<CurrentAttachedScope,'containerId'|'containerName'|'image'|'labels'>,attached=false){
+ const h=v.host;
+ const reject=(check:string):never=>{if(attached)stoppedStep('NETWORK','ATTACHED_VERIFY_'+check);return fail('IX01_CURRENT_CONTAINER_OWNER');};
+ // 원 OR의 왼쪽부터 같은 식을 한 번씩 평가하며 첫 실패 뒤에는 평가하지 않는다.
+ if(v.id!==scope.containerId)reject('CONTAINER_IDENTITY');
+ if(v.name!=='/'+scope.containerName)reject('CONTAINER_NAME');
+ if(v.image!==scope.image)reject('CONTAINER_IMAGE');
+ if(v.user!=='999:999')reject('CONTAINER_USER');
+ if(!same(v.labels,scope.labels))reject('CONTAINER_LABELS');
+ if(typeof v.running!=='boolean')reject('CONTAINER_STATE_TYPE');
+ if(!h)reject('HOST_PRESENT');
+ if(h.Privileged!==false)reject('HOST_PRIVILEGED');
+ if(h.ReadonlyRootfs!==true)reject('HOST_READONLY');
+ if(h.NetworkMode!=='none')reject('HOST_NETWORK_MODE');
+ if(h.LogConfig?.Type!=='none')reject('HOST_LOG_DRIVER');
+ if(!noEntries(h.LogConfig.Config))reject('HOST_LOG_CONFIG');
+ if(!same(h.CapDrop,['ALL']))reject('HOST_CAP_DROP');
+ if(!same(h.SecurityOpt,['no-new-privileges']))reject('HOST_SECURITY_OPT');
+ if(h.PidsLimit!==64)reject('HOST_PIDS');
+ if(h.Memory!==536870912)reject('HOST_MEMORY');
+ if(h.NanoCpus!==1000000000)reject('HOST_CPUS');
+ if(h.PublishAllPorts!==false)reject('HOST_PUBLISH');
+ if(!noEntries(h.PortBindings))reject('HOST_PORT_BINDINGS');
+ if(!noEntries(h.Binds))reject('HOST_BINDS');
+ if(!currentHostMountsEmpty(h))reject('HOST_MOUNTS');
+ if(!noEntries(h.VolumesFrom))reject('HOST_VOLUMES_FROM');
+ if(!same(h.Tmpfs,tmpfs))reject('HOST_TMPFS');
+ if(!Array.isArray(v.mounts))return reject('MOUNTS_SHAPE');
+ if(v.mounts.some(m=>!m||m.Type!=='tmpfs'||!Object.hasOwn(tmpfs,m.Destination)||m.RW!==true||m.Source!==undefined&&m.Source!==''))reject('MOUNTS_ENTRY');
+ if(new Set(v.mounts.map(m=>m.Destination)).size!==v.mounts.length)reject('MOUNTS_DUPLICATE');
+ if(v.ports!==null&&(!exact(v.ports,['5432/tcp'])||v.ports['5432/tcp']!==null)&&!exact(v.ports,[]))reject('PORTS');
+ return v;
+}
+function verifyNetworkObservation(v:Record<string,any>,scope:Pick<CurrentAttachedScope,'networkId'|'networkName'|'labels'>,attached=false){
+ const reject=(check:string):never=>{if(attached)stoppedStep('NETWORK','ATTACHED_VERIFY_'+check);return fail('IX01_CURRENT_NETWORK');};
+ if(v.id!==scope.networkId)reject('NETWORK_IDENTITY');
+ if(v.name!==scope.networkName)reject('NETWORK_NAME');
+ if(v.driver!=='bridge')reject('NETWORK_DRIVER');
+ if(v.internal!==true)reject('NETWORK_INTERNAL');
+ if(!same(v.labels,scope.labels))reject('NETWORK_LABELS');
+ return v;
+}
+type AttachedCheck='NETWORK_ID'|'NETWORK_COMMAND'|'NETWORK_JSON'|'NETWORK_OWNER'|'CONTAINER_ID'|'CONTAINER_COMMAND'|'CONTAINER_JSON'|'CONTAINER_OWNER'
+ |'RUNNING'|'NETWORK_SET'|'CONTAINER_SET'|'NAME'|'CIDR'|'ADDRESS'|'NETWORK_MATCH'|'IP_MATCH'|'ENDPOINT';
+function attachedCheck<T>(check:AttachedCheck,work:()=>T):T{
+ try{return work();}catch(error){
+  const issued=error!==null&&(typeof error==='object'||typeof error==='function')?stepFailures.get(error):undefined;
+  if((check==='NETWORK_OWNER'||check==='CONTAINER_OWNER')&&issued?.stage==='NETWORK'&&issued.code.startsWith('STOPPED_NETWORK_ATTACHED_VERIFY_'))throw error;
+  stoppedStep('NETWORK','ATTACHED_VERIFY_'+check);
+ }
+}
+/** 원 readNetwork → inspect → 교차 검산 순서. 포트 오류/출력은 보관하지 않고 내부 고정 코드만 발급한다. */
+export function readCurrentAttachedHost(scope:CurrentAttachedScope,ports:{network():string;container():string}):string{
+ attachedCheck('NETWORK_ID',()=>{if(!hex(scope.networkId,64))fail('IX01_CURRENT_NETWORK');});
+ const networkRaw=attachedCheck('NETWORK_COMMAND',()=>ports.network());
+ const n=attachedCheck('NETWORK_JSON',()=>facts(networkRaw));
+ attachedCheck('NETWORK_OWNER',()=>verifyNetworkObservation(n,scope,true));
+ attachedCheck('CONTAINER_ID',()=>{if(!hex(scope.containerId,64))fail('IX01_CURRENT_CONTAINER_ID');});
+ const containerRaw=attachedCheck('CONTAINER_COMMAND',()=>ports.container());
+ const v=attachedCheck('CONTAINER_JSON',()=>facts(containerRaw));
+ attachedCheck('CONTAINER_OWNER',()=>verifyContainerObservation(v,scope,true));
+ const entry=n.containers?.[scope.containerId],local=v.networks?.[scope.networkName];
+ const ip=typeof entry?.IPv4Address==='string'&&/^(172\.[0-9.]+)\/(?:1[6-9]|2[0-9]|3[0-2])$/.exec(entry.IPv4Address)?.[1];
+ const require=(ok:unknown,check:AttachedCheck)=>{if(!ok)stoppedStep('NETWORK','ATTACHED_VERIFY_'+check);};
+ require(v.running,'RUNNING');
+ require(exact(v.networks,[scope.networkName]),'NETWORK_SET');
+ require(exact(n.containers,[scope.containerId]),'CONTAINER_SET');
+ require(entry?.Name===scope.containerName,'NAME');
+ if(!address(ip))stoppedStep('NETWORK','ATTACHED_VERIFY_'+(ip?'ADDRESS':'CIDR'));
+ require(local?.NetworkID===scope.networkId,'NETWORK_MATCH');
+ require(local?.IPAddress===ip,'IP_MATCH');
+ require(hex(local?.EndpointID,64)&&local.EndpointID===entry.EndpointID,'ENDPOINT');
+ return ip;
+}
+
 function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
  const host=verifiedHost(auth),checkDocker=tooling(f.docker,auth.plan.dockerHash);
  const checkNpm=tooling(f.npm,f.npmHash,54,0o755),checkNpmPackage=tooling(f.npmPackage,f.npmPackageHash,6597,0o644);
@@ -519,15 +603,8 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
  const docker=(args:string[],input?:string|Uint8Array,cap?:number,extra?:Record<string,string>)=>{daemon();return dockRaw(args,input,cap,extra);};
  const inspect=()=>{
   if(!hex(containerId,64))return fail('IX01_CURRENT_CONTAINER_ID');
-  const v=facts(docker(['container','inspect','--format',containerFormat,containerId])),h=v.host;
-  if(v.id!==containerId||v.name!=='/'+f.container||v.image!==f.image||v.user!=='999:999'||!same(v.labels,labels(auth))||typeof v.running!=='boolean'
-    ||!h||h.Privileged!==false||h.ReadonlyRootfs!==true||h.NetworkMode!=='none'||h.LogConfig?.Type!=='none'||!noEntries(h.LogConfig.Config)
-    ||!same(h.CapDrop,['ALL'])||!same(h.SecurityOpt,['no-new-privileges'])||h.PidsLimit!==64||h.Memory!==536870912||h.NanoCpus!==1000000000
-    ||h.PublishAllPorts!==false||!noEntries(h.PortBindings)||!noEntries(h.Binds)||!currentHostMountsEmpty(h)||!noEntries(h.VolumesFrom)||!same(h.Tmpfs,tmpfs)
-    ||!Array.isArray(v.mounts)||v.mounts.some(m=>!m||m.Type!=='tmpfs'||!Object.hasOwn(tmpfs,m.Destination)||m.RW!==true||m.Source!==undefined&&m.Source!=='')
-    ||new Set(v.mounts.map(m=>m.Destination)).size!==v.mounts.length
-    ||v.ports!==null&&(!exact(v.ports,['5432/tcp'])||v.ports['5432/tcp']!==null)&&!exact(v.ports,[]))fail('IX01_CURRENT_CONTAINER_OWNER');
-  return v;
+  const v=facts(docker(['container','inspect','--format',containerFormat,containerId]));
+  return verifyContainerObservation(v,{containerId,containerName:f.container,image:f.image,labels:labels(auth)});
  };
  const noNetwork=(v:Record<string,any>)=>v.networks===null||exact(v.networks,[]);
  const none=(v:Record<string,any>)=>{
@@ -539,16 +616,12 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
  function readNetwork(){
   if(!hex(networkId,64))return fail('IX01_CURRENT_NETWORK');
   const v=facts(docker(['network','inspect','--format',networkFormat,networkId]));
-  if(v.id!==networkId||v.name!==f.network||v.driver!=='bridge'||v.internal!==true||!same(v.labels,labels(auth)))fail('IX01_CURRENT_NETWORK');
-  return v;
+  return verifyNetworkObservation(v,{networkId,networkName:f.network,labels:labels(auth)});
  }
  const emptyEndpoints=(v:unknown)=>v===null||exact(v,[]);
  function attachedHost(){
-  const n=readNetwork(),v=inspect(),entry=n.containers?.[containerId],local=v.networks?.[f.network];
-  const ip=typeof entry?.IPv4Address==='string'&&/^(172\.[0-9.]+)\/(?:1[6-9]|2[0-9]|3[0-2])$/.exec(entry.IPv4Address)?.[1];
-  if(!v.running||!exact(v.networks,[f.network])||!exact(n.containers,[containerId])||entry?.Name!==f.container||!address(ip)
-   ||local?.NetworkID!==networkId||local?.IPAddress!==ip||!hex(local?.EndpointID,64)||local.EndpointID!==entry.EndpointID) return fail('IX01_CURRENT_NETWORK');
-  return ip;
+  return readCurrentAttachedHost({containerId,networkId,containerName:f.container,networkName:f.network,image:f.image,labels:labels(auth)},
+   {network:()=>docker(['network','inspect','--format',networkFormat,networkId]),container:()=>docker(['container','inspect','--format',containerFormat,containerId])});
  }
  const sql=(user:string,raw:string|Uint8Array,cap=30_000,row?:SchemaMigrationBaseline)=>{
   const owner=attached?attachedHost:onlyNone;
