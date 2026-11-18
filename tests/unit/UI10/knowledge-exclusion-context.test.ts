@@ -26,7 +26,7 @@ const saved=new Map<string,PropertyDescriptor|undefined>();let ui:any,uiCode:str
 const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class OwnedChannel extends NativeChannel{constructor(){super();channels.push(this);}}
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/knowledge/KnowledgePage.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:scope-boundary',name:'ScopeBoundaryTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'scope-boundary-memory',resolveId(id){if(id.endsWith('virtual:scope-boundary'))return '\0scope-boundary';},load(id){if(id==='\0scope-boundary')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{KnowledgePage}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{newKnowledge}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/knowledge/api.ts',import.meta.url)))};export{React,createRoot,KnowledgePage,ApiClient,newKnowledge};export{App}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/App.tsx',import.meta.url)))};export * as exclusions from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/knowledge/exclusion-api.ts',import.meta.url)))};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:scope-boundary',name:'ScopeBoundaryTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'scope-boundary-memory',resolveId(id){if(id.endsWith('virtual:scope-boundary'))return '\0scope-boundary';},load(id){if(id==='\0scope-boundary')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{KnowledgePage}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{newKnowledge}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/knowledge/api.ts',import.meta.url)))};export{React,createRoot,KnowledgePage,ApiClient,newKnowledge};export{App}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/App.tsx',import.meta.url)))};export * as exclusions from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/knowledge/exclusion-api.ts',import.meta.url)))};export * as corrections from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/knowledge/correction-api.ts',import.meta.url)))};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const [key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  uiCode=(Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return ScopeBoundaryTest;';ui=new Function(uiCode)();
@@ -176,4 +176,60 @@ for(const mode of ['편집','닫기']as const)test('실제 App 제외 CAS · dig
   digest?.restore();if(confirmDescriptor)Object.defineProperty(globalThis,'confirm',confirmDescriptor);else Reflect.deleteProperty(globalThis,'confirm');
   await ui.React.act(async()=>root.unmount());document.body.removeChild(container);window.location=oldLocation;window.addEventListener=oldAdd;window.removeEventListener=oldRemove;ui=originalUi;for(const[key,value]of local)if(value)Object.defineProperty(globalThis,key,value);else Reflect.deleteProperty(globalThis,key);
  }
+});
+
+
+async function correctionFixture(){
+ const target=draft().target;let correction:any=ui.corrections.newKnowledgeCorrection(pid,target,session,1),currentSession=session,projectId=pid,stored:any=null,lost=0;
+ correction={...correction,title:'정정한 새 제목',body:'정정해서 보관한 본문',reason:'새 이유',changeReason:'정정 근거',dirty:true};
+ const calls:{path:string;method:string}[]=[],writes:any[]=[],controls={read:async()=>Response.json(stored)};
+ const client=new ui.ApiClient(async(path:string,init:any)=>{
+  calls.push({path,method:init.method});
+  if(init.method==='POST'){
+   const upload=path.endsWith('/files'),c=JSON.parse(upload?new Headers(init.headers).get('x-anvil-command')!:init.body);writes.push(c);
+   if(!upload){const entry=c.payload.entry;stored={ref:{id:target.ref.id,version:2,contentHash:hash(entry)},entry,body:correction.body,state:'PROPOSED',headVersion:2,supersedesRef:target.ref,appliedAsConstitution:false,redactionState:'NOT_REDACTED',sensitiveInspection:'KNOWN_PATTERNS_ONLY',agentDelivery:'NOT_CONNECTED',history:[{id:id(19),kind:'CORRECTED',baseRef:target.ref,sourceRefs:c.payload.sourceRefs,reason:correction.changeReason,actorRef:{kind:'HUMAN',userId:uid},recordedAt:at}]};}
+   return Response.json({operationId:id(18),commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:upload?id(17):target.ref.id,version:upload?null:2,data:upload?{status:'ARTIFACT_READY',artifactRef:{artifactId:id(17),...c.payload}}:{status:'PROPOSED',ref:stored.ref,entry:stored.entry,baseRef:target.ref,supersedesRef:target.ref,reason:correction.changeReason,changeSources:c.payload.sourceRefs,eventId:id(19)},serverReceivedAt:at});
+  }
+  if(path.includes('/knowledge?'))return Response.json({items:[],hasMore:false,nextCursor:null,searchScope:'TITLE_REASON',observedAt:at});
+  if(path.includes('/conversations?'))return Response.json({items:[],hasMore:false,nextCursor:null,observedAt:at});
+  if(path.includes('/knowledge/'))return controls.read();
+  throw Error('UNEXPECTED_RAM_REQUEST');
+ });
+ const container=document.createElement('main'),root=ui.createRoot(container);document.body.appendChild(container);
+ const render=()=>root.render(ui.React.createElement(ui.KnowledgePage,{client,projectId,session:currentSession,buffer:null,onChange(){},conversationBuffer:null,onConversationChange(){},exclusion:null,onExclusionChange(){},correction,onCorrectionChange:(v:any)=>{correction=typeof v==='function'?v(correction):v;render();},decision:null,onDecisionChange(){},onAuthenticationLost(){lost++;}}));
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))],find=(label:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===label);
+ const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});
+ const wait=async(check:()=>boolean)=>{for(let n=0;n<150&&!check();n++)await settle();assert(check(),container.textContent);};
+ const click=async(label:string)=>{const button=find(label);assert(button&&!button.disabled,label);await ui.React.act(async()=>button.dispatchEvent({type:'click',button:0}));};
+ await ui.React.act(async()=>render());
+ return{calls,writes,controls,find,nodes,click,wait,settle,stored:()=>stored,buffer:()=>correction,lost:()=>lost,text:()=>container.textContent,replace:async(b:any)=>{correction=b;await ui.React.act(async()=>render());},context:async(s:typeof session,p=pid)=>{currentSession=s;projectId=p;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+}
+const correctionRead='저장한 정정본 고정 원문 보기';
+async function saveCorrection(f:Awaited<ReturnType<typeof correctionFixture>>){await f.click('지식 정정 저장');await f.wait(()=>!!f.buffer()?.savedRef);await f.settle();}
+
+test('정정 저장 고정 조회: 검색 결과가 비어도 savedRef의 정확 원문·이력을 명시 GET한다',async()=>{
+ const f=await correctionFixture();try{
+  assert(!f.find(correctionRead));await saveCorrection(f);assert.equal(f.writes.length,2);assert.equal(f.calls.filter(c=>c.path.includes('/knowledge/')).length,0);
+  const saved=f.buffer();await f.click(correctionRead);await f.wait(()=>f.nodes().some(n=>n.getAttribute('aria-label')==='보관 지식 원문'&&n.textContent===f.stored().body));
+  assert.equal(f.buffer(),saved);assert.equal(f.writes.length,2);assert.equal(f.calls.filter(c=>c.path.includes('/knowledge/')).length,1);assert(f.calls.some(c=>c.path===`/api/v1/projects/${pid}/knowledge/${saved.savedRef.id}/versions/2`));assert(f.text().includes('CORRECTED'));
+ }finally{await f.close();}
+});
+
+test('정정 저장 고정 조회: 늦은200/401과 교체·닫기·세션 변경은 원문 및 인증 효과0',async()=>{
+ for(const status of [200,401])for(const change of ['REPLACE','CLOSE','SESSION','PROJECT']){
+  const f=await correctionFixture(),gate=deferred<Response>();try{
+   await saveCorrection(f);f.controls.read=()=>gate.promise;await f.click(correctionRead);const original=f.buffer();
+   if(change==='REPLACE')await f.replace({...original,savedRef:null,dirty:true});if(change==='CLOSE')await f.replace(null);if(change==='SESSION')await f.context({...session,csrfToken:'d'.repeat(43)});if(change==='PROJECT')await f.context(session,id(21));
+   gate.resolve(status===200?Response.json(f.stored()):Response.json({code:'AUTH_REQUIRED'},{status}));for(let n=0;n<8;n++)await f.settle();
+   assert(!f.nodes().some(n=>n.getAttribute('aria-label')==='보관 지식 원문'));assert.equal(f.lost(),0);assert.equal(f.writes.length,2);
+  }finally{gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.close();}
+ }
+});
+
+test('정정 저장 고정 조회: UNKNOWN·미저장 차단 및 다른 hash·현재401 거절',async()=>{
+ const f=await correctionFixture();try{
+  await saveCorrection(f);const saved=f.buffer();await f.replace({...saved,uncertain:true});assert(!f.find(correctionRead));await f.replace(saved);
+  for(const field of ['ref','supersedesRef']){f.controls.read=async()=>{const value=structuredClone(f.stored());value[field].contentHash='f'.repeat(64);if(field==='supersedesRef')value.history[0].baseRef={...value.supersedesRef};return Response.json(value);};await f.click(correctionRead);await f.wait(()=>f.text().includes('RESPONSE_INVALID'));assert(!f.nodes().some(n=>n.getAttribute('aria-label')==='보관 지식 원문'));}
+  f.controls.read=async()=>Response.json({code:'AUTH_REQUIRED'},{status:401});await f.click(correctionRead);await f.wait(()=>f.lost()===1);assert.equal(f.writes.length,2);
+ }finally{await f.close();}
 });
