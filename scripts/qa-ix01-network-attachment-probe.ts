@@ -8,16 +8,17 @@ import {currentNetworkProbeContract as contract,currentCreatedUnallocatedNone,cu
 
 /** 실행 승인이 아닌 별도 후보. 기존 TC01 자원/외피/DB에 접근하는 경로는 없다. */
 export const networkProbeProfile=Object.freeze({
- owner:'IX01_NETWORK_ATTACHMENT_20261118_N1',
- source:'/home/daon/anvil-ix01-network-attachment-20261118-n1-qa',
- receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-network-attachment-20261118-n1',
- container:'anvil-ix01-network-attachment-20261118-n1',network:'anvil-ix01-network-attachment-net-20261118-n1',
+ owner:'IX01_NETWORK_ATTACHMENT_20261118_N2',
+ source:'/home/daon/anvil-ix01-network-attachment-20261118-n2-qa',
+ receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-network-attachment-20261118-n2',
+ container:'anvil-ix01-network-attachment-20261118-n2',network:'anvil-ix01-network-attachment-net-20261118-n2',
+ subnet:'172.30.250.0/28',
  overallMs:300_000,commandMs:10_000,processSeconds:120,
 });
 // 상대 import의 전체 전이 폐쇄. builtin 외 패키지 로드/설치와 SQL 실행은 없다.
 export const networkProbeSources=Object.freeze(['scripts/qa-ix01-network-attachment-probe.ts','scripts/qa-ix01-current-journey.ts',
  'contracts/canonical.ts','tests/integration/IX01/current-schema-baseline.ts','tests/integration/IX01/current-schema-installation.ts']);
-interface ProbePlan{schemaVersion:1;purpose:'IX01_NETWORK_ATTACHMENT';profile:string;sourceHead:string;issuedAt:number;expiresAt:number;sourceFiles:{path:string;sha256:string}[]}
+interface ProbePlan{schemaVersion:1;purpose:'IX01_NETWORK_ATTACHMENT';profile:string;subnet:string;sourceHead:string;issuedAt:number;expiresAt:number;sourceFiles:{path:string;sha256:string}[]}
 export interface NetworkProbeInput{planRaw:string;planHash:string;approvalRaw:string;approvalHash:string}
 export interface NetworkProbeAuthorization{readonly plan:Readonly<ProbePlan>;readonly planHash:string;readonly approvalHash:string;readonly approvalId:string}
 type Stage='PREFLIGHT'|'IMAGE'|'COLLISION'|'CLAIM'|'CREATE'|'CREATE_VERIFY'|'START'|'START_VERIFY'|'NETWORK'|'CLEANUP'|'RECORD';
@@ -147,8 +148,8 @@ function json(raw:string,hash?:string):Record<string,any>{
 export function readNetworkProbeAuthorization(input:NetworkProbeInput,at:number):NetworkProbeAuthorization{
  if(Buffer.byteLength(input.planRaw)>32768||Buffer.byteLength(input.approvalRaw)>32768)return reject();
  const plan=json(input.planRaw,input.planHash),approval=json(input.approvalRaw,input.approvalHash);
- if(!exact(plan,['schemaVersion','purpose','profile','sourceHead','issuedAt','expiresAt','sourceFiles'])||plan.schemaVersion!==1
-  ||plan.purpose!=='IX01_NETWORK_ATTACHMENT'||plan.profile!==p.owner||!hex(plan.sourceHead,40)
+ if(!exact(plan,['schemaVersion','purpose','profile','subnet','sourceHead','issuedAt','expiresAt','sourceFiles'])||plan.schemaVersion!==1
+  ||plan.purpose!=='IX01_NETWORK_ATTACHMENT'||plan.profile!==p.owner||plan.subnet!==p.subnet||!hex(plan.sourceHead,40)
   ||typeof plan.issuedAt!=='number'||typeof plan.expiresAt!=='number'||![at,plan.issuedAt,plan.expiresAt].every(Number.isSafeInteger)
   ||plan.issuedAt>at||plan.expiresAt<=at||plan.expiresAt-plan.issuedAt>p.overallMs
   ||!Array.isArray(plan.sourceFiles)||plan.sourceFiles.length!==networkProbeSources.length
@@ -174,16 +175,26 @@ export function runNetworkAttachmentProbe(input:NetworkProbeInput,ports:NetworkP
   const labelArgs=Object.entries(labels).flatMap(([key,value])=>['--label',key+'='+value]);
   const scope=()=>({containerId,networkId,containerName:p.container,networkName:p.network,image:contract.image,labels});
   const format=contract.containerFormat.slice(0,-1)+',"entrypoint":{{json .Config.Entrypoint}},"command":{{json .Config.Cmd}}}';
+  const networkFormat=contract.networkFormat.slice(0,-1)+',"ipam":{{json .IPAM.Config}}}';
+  // N2의 고정 /28 안에서 network/broadcast와 gateway를 제외한다. 호스트 route 충돌은
+  // 실행 전 외부 승인 범위에서 확인해야 하며 여기서는 임의 조회나 대체 subnet을 선택하지 않는다.
+  const subnetHost=(value:unknown):value is string=>typeof value==='string'&&/^172\.30\.250\.(?:[1-9]|1[0-4])$/.test(value);
+  const ipamCheck=(v:Record<string,unknown>):string=>{
+   if(!Array.isArray(v.ipam)||v.ipam.length!==1)return reject();const row=v.ipam[0];
+   if(!exact(row,['Subnet','Gateway'])||row.Subnet!==p.subnet||!subnetHost(row.Gateway))return reject();return row.Gateway;
+  };
   const processCheck=(v:Record<string,unknown>)=>{if(!same(v.entrypoint,['/bin/sleep'])||!same(v.command,['120']))reject();};
   const inspect=()=>{if(!hex(containerId,64))return reject();const v=json(docker(['container','inspect','--format',format,containerId]));verifyContainerObservation(v,scope());processCheck(v);return v;};
-  const network=()=>{if(!hex(networkId,64))return reject();return verifyNetworkObservation(json(docker(['network','inspect','--format',contract.networkFormat,networkId])),scope());};
+  const network=()=>{if(!hex(networkId,64))return reject();const v=verifyNetworkObservation(json(docker(['network','inspect','--format',networkFormat,networkId])),scope());ipamCheck(v);return v;};
   const empty=(v:unknown)=>v===null||exact(v,[]);
   const none=(v:Record<string,any>)=>exact(v.networks,['none'])&&hex((v.networks.none as Record<string,unknown>)?.NetworkID,64)&&(v.networks.none as Record<string,unknown>)?.IPAddress==='';
   const onlyNone=()=>{const v=inspect();if(!v.running||!none(v))return reject();return v;};
-  const attached=()=>{let containerRaw='';readCurrentAttachedHost(scope(),{
-   network:()=>docker(['network','inspect','--format',contract.networkFormat,networkId]),
+  const attached=()=>{let networkRaw='',containerRaw='';const ip=readCurrentAttachedHost(scope(),{
+   network:()=>networkRaw=docker(['network','inspect','--format',networkFormat,networkId]),
    container:()=>containerRaw=docker(['container','inspect','--format',format,containerId]),
-  });processCheck(json(containerRaw));check();};
+  });const n=json(networkRaw),v=json(containerRaw),gateway=ipamCheck(n);
+   if(!subnetHost(ip)||ip===gateway||n.containers[containerId].IPv4Address!==ip+'/28'||v.networks[p.network].IPPrefixLen!==28)reject();
+   processCheck(v);check();};
   // 새 receipt의 배타 claim과 빈 config가 정착한 뒤에만 Docker를 호출한다.
   stage='CLAIM';check();claimAttempted=true;const claim=ports.claim(auth);if(claim==='DUPLICATE'){duplicate=true;reject();}if(claim!=='CLAIMED')reject();claimed=true;check();
   stage='IMAGE';const image=json(docker(['image','inspect','--format','{"id":{{json .Id}},"volumes":{{json .Config.Volumes}}}',contract.image]));
@@ -200,7 +211,7 @@ export function runNetworkAttachmentProbe(input:NetworkProbeInput,ports:NetworkP
   stage='NETWORK';let noneId='';
   runCurrentNetworkSteps({
    PRECHECK(){onlyNone();},
-   CREATE(){const id=docker(['network','create','--internal','--driver','bridge',...labelArgs,p.network]).trim();if(!hex(id,64))reject();networkId=id;},
+   CREATE(){const id=docker(['network','create','--internal','--driver','bridge','--subnet',p.subnet,...labelArgs,p.network]).trim();if(!hex(id,64))reject();networkId=id;},
    CREATE_VERIFY(){if(networkId===containerId||!empty(network().containers))reject();},
    NONE_VERIFY(){const v=onlyNone();noneId=v.networks.none.NetworkID;if(!hex(noneId,64))reject();
     const n=json(docker(['network','inspect','--format',contract.networkFormat,noneId]));if(n.id!==noneId||n.name!=='none'||n.driver!=='null')reject();},
@@ -224,6 +235,8 @@ export function runNetworkAttachmentProbe(input:NetworkProbeInput,ports:NetworkP
 /** import는 관측/효과 0. 실제 entry는 별도 승인된 고정 source/외피가 있어야만 진입한다.
  * import 전 외부 감독자가 exact HEAD/launcher와 networkProbeSources 5개의 Git 원바이트를 검산해야 한다.
  * 자체 preflight는 이미 실행된 import의 출처 인증을 소급해서 대신하지 않는다.
+ * N2 고정 subnet의 호스트 route/IPAM 비충돌은 명시 허가된 외부 사전검산 조건이며,
+ * 이 모듈은 기존 자원/호스트 route를 열람하거나 바꾸지 않는다. 실제 N2 실행은 별도 승인 대상이다.
  */
 if(process.argv[1]&&fileURLToPath(import.meta.url)===process.argv[1]){
  let result:NetworkProbeResult={status:'REJECTED',stage:'PREFLIGHT',code:'STOPPED_PREFLIGHT'};

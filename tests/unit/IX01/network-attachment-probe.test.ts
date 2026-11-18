@@ -7,7 +7,7 @@ async function fixture(){
  const api=await import('../../../scripts/qa-ix01-network-attachment-probe.ts');
  const shared=await import('../../../scripts/qa-ix01-current-journey.ts');
  const p=api.networkProbeProfile;
- const plan={schemaVersion:1,purpose:'IX01_NETWORK_ATTACHMENT',profile:p.owner,sourceHead:'e'.repeat(40),issuedAt:now,expiresAt:now+300_000,
+ const plan={schemaVersion:1,purpose:'IX01_NETWORK_ATTACHMENT',profile:p.owner,subnet:'172.30.250.0/28',sourceHead:'e'.repeat(40),issuedAt:now,expiresAt:now+300_000,
   sourceFiles:api.networkProbeSources.map(path=>({path,sha256:'f'.repeat(64)}))};
  const planRaw=canonicalJson(plan),planHash=contentHash(planRaw);
  const approval={schemaVersion:1,purpose:'IX01_NETWORK_ATTACHMENT_RUN_APPROVAL',profile:p.owner,decision:'ALLOW_ONE_RUN',approvalId:'11111111-1111-4111-8111-111111111111',planHash,sourceHead:plan.sourceHead,issuedAt:now,expiresAt:plan.expiresAt};
@@ -17,7 +17,7 @@ async function fixture(){
  const container=()=>({id:cid,name:'/'+p.container,image:shared.currentNetworkProbeContract.image,user:'999:999',labels,running,
   host:{Privileged:false,ReadonlyRootfs:true,NetworkMode:'none',LogConfig:{Type:'none',Config:{}},CapDrop:['ALL'],SecurityOpt:['no-new-privileges'],PidsLimit:64,Memory:536870912,NanoCpus:1000000000,PublishAllPorts:false,PortBindings:{},Binds:null,VolumesFrom:null,Tmpfs:shared.currentNetworkProbeContract.tmpfs},
   mounts:Object.keys(shared.currentNetworkProbeContract.tmpfs).map(Destination=>({Type:'tmpfs',Destination,RW:true,Source:''})),ports:{'5432/tcp':null},
-  networks:attached?{[p.network]:{NetworkID:nid,IPAddress:'172.18.0.2',EndpointID:eid}}:detached?{}:{none:{NetworkID:noneId,IPAddress:''}},entrypoint:['/bin/sleep'],command:['120']});
+  networks:attached?{[p.network]:{NetworkID:nid,IPAddress:'172.30.250.2',IPPrefixLen:28,EndpointID:eid}}:detached?{}:{none:{NetworkID:noneId,IPAddress:''}},entrypoint:['/bin/sleep'],command:['120']});
  const ports={now:()=>time,assertCurrent(){assert(time<plan.expiresAt);},preflight(){calls.push(['PREFLIGHT']);},claim():'CLAIMED'|'DUPLICATE'{calls.push(['CLAIM']);return 'CLAIMED';},
   docker(args:readonly string[]):string{
    calls.push([...args]);
@@ -28,7 +28,7 @@ async function fixture(){
    if(args[0]==='start'){running=true;return cid;}
    if(args[0]==='container'&&args[1]==='inspect')return canonicalJson(container());
    if(args[0]==='network'&&args[1]==='create'){networkCreated=true;return nid;}
-   if(args[0]==='network'&&args[1]==='inspect')return args.at(-1)===noneId?canonicalJson({id:noneId,name:'none',driver:'null',internal:false,labels:{},containers:{}}):canonicalJson({id:nid,name:p.network,driver:'bridge',internal:true,labels,containers:attached?{[cid]:{Name:p.container,IPv4Address:'172.18.0.2/16',EndpointID:eid}}:{}});
+   if(args[0]==='network'&&args[1]==='inspect')return args.at(-1)===noneId?canonicalJson({id:noneId,name:'none',driver:'null',internal:false,labels:{},containers:{}}):canonicalJson({id:nid,name:p.network,driver:'bridge',internal:true,labels,ipam:[{Subnet:'172.30.250.0/28',Gateway:'172.30.250.1'}],containers:attached?{[cid]:{Name:p.container,IPv4Address:'172.30.250.2/28',EndpointID:eid}}:{}});
    if(args[0]==='network'&&args[1]==='disconnect'){detached=true;return '';}
    if(args[0]==='network'&&args[1]==='connect'){attached=true;return '';}
    if(args[0]==='stop'){running=false;return cid;}
@@ -41,6 +41,11 @@ async function fixture(){
 
 test('IX01 무DB 망 후보 RAM: 별도 승인과 source closure 및 5분 상한',async()=>{
  const h=await fixture();assert.equal(h.api.networkProbeSources.length,5);
+ assert.equal(h.p.owner,'IX01_NETWORK_ATTACHMENT_20261118_N2');
+ assert.deepEqual([h.p.source,h.p.receipt,h.p.container,h.p.network],[
+  '/home/daon/anvil-ix01-network-attachment-20261118-n2-qa',
+  '/home/daon/.local/share/anvil-v3-qa-receipts/ix01-network-attachment-20261118-n2',
+  'anvil-ix01-network-attachment-20261118-n2','anvil-ix01-network-attachment-net-20261118-n2']);
  assert.equal(h.api.readNetworkProbeAuthorization(h.input,now).plan.profile,h.p.owner);
  for(const change of [{profile:'IX01_CURRENT_TC01_20261108_A14'},{expiresAt:now+300_001},{issuedAt:now+1}]){
   const planRaw=canonicalJson({...h.plan,...change});const input={...h.input,planRaw,planHash:contentHash(planRaw)};
@@ -58,9 +63,76 @@ test('IX01 무DB 망 후보 RAM: 실제 명령 배열은 유한 대기와 원 �
  assert(h.calls.findIndex(args=>args[0]==='CLAIM')<h.calls.findIndex(args=>args[0]==='image'));
  assert(create.includes('--read-only'));assert(create.includes('--internal')===false);assert(!create.includes('--env'));assert(!create.includes('--publish'));assert(!create.includes('--volume'));
  assert.equal(h.calls.filter(args=>args[0]==='create').length,1);assert.equal(h.calls.filter(args=>args[0]==='network'&&args[1]==='create').length,1);
+ assert.deepEqual(h.calls.find(args=>args[0]==='network'&&args[1]==='create'),[
+  'network','create','--internal','--driver','bridge','--subnet','172.30.250.0/28',
+  '--label','anvil.owner='+h.p.owner,'--label','anvil.instance='+h.plan.sourceHead.slice(0,32),
+  '--label','anvil.plan='+h.input.planHash,h.p.network]);
+ assert(h.calls.filter(args=>args[0]==='network'&&args[1]==='inspect'&&args.at(-1)===nid).every(args=>args[args.indexOf('--format')+1]!.includes('{{json .IPAM.Config}}')));
  assert.equal(h.calls.filter(args=>args[0]==='stop').length,1);assert.equal(h.calls.filter(args=>args[1]==='rm').length,2);
  assert.equal(h.records.length,1);assert(!h.calls.some(args=>args.includes('exec')||args.includes('postgres')||args.includes('psql')));
  assert(!JSON.stringify(result).includes(cid));assert(!JSON.stringify(result).includes('172.'));
+});
+
+test('IX01 N2 RAM: N1 및 혼합 승인과 다른 subnet은 효과 전에 거절',async()=>{
+ for(const kind of ['old','mixed','subnet','missing'] as const){
+  const h=await fixture();const plan:Record<string,unknown>={...h.plan};const approval=JSON.parse(h.input.approvalRaw);
+  if(kind==='old'){plan.profile='IX01_NETWORK_ATTACHMENT_20261118_N1';delete plan.subnet;approval.profile=plan.profile;}
+  if(kind==='mixed')approval.profile='IX01_NETWORK_ATTACHMENT_20261118_N1';
+  if(kind==='subnet')plan.subnet='172.30.251.0/28';
+  if(kind==='missing')delete plan.subnet;
+  const planRaw=canonicalJson(plan),planHash=contentHash(planRaw);approval.planHash=planHash;
+  const approvalRaw=canonicalJson(approval),result=h.api.runNetworkAttachmentProbe({planRaw,planHash,approvalRaw,approvalHash:contentHash(approvalRaw)},h.ports);
+  assert.equal(result.status,'REJECTED');assert.deepEqual(h.calls,[]);assert.deepEqual(h.records,[]);
+ }
+});
+
+test('IX01 N2 RAM: 단일 exact IPAM이 아니면 분리와 연결 전 보존',async()=>{
+ for(const ipam of [undefined,null,[],[{Subnet:'172.30.251.0/28',Gateway:'172.30.251.1'}],
+  [{Subnet:'172.30.250.0/28',Gateway:'172.30.250.1',IPRange:'172.30.250.8/29'}],
+  [{Subnet:'172.30.250.0/28',Gateway:'172.30.250.1'},{Subnet:'172.30.251.0/28',Gateway:'172.30.251.1'}],
+  [{Subnet:'172.30.250.0/28',Gateway:'172.30.250.0'}],[{Subnet:'172.30.250.0/28',Gateway:'172.30.250.15'}]]){
+  const h=await fixture(),docker=h.ports.docker;
+  h.ports.docker=args=>{const raw=docker(args);if(args[0]==='network'&&args[1]==='inspect'&&args.at(-1)===nid){const v=JSON.parse(raw);v.ipam=ipam;return canonicalJson(v);}return raw;};
+  const result=h.api.runNetworkAttachmentProbe(h.input,h.ports);
+  assert.deepEqual(result,{status:'UNKNOWN',stage:'NETWORK',code:'STOPPED_NETWORK_CREATE_VERIFY'});
+  assert(!h.calls.some(a=>a[1]==='disconnect'||a[1]==='connect'||a[1]==='rm'||a[0]==='stop'));assert.equal(h.records.length,1);
+ }
+});
+
+test('IX01 N2 RAM: 연결 주소의 subnet 호스트 prefix 및 원 endpoint 결박',async()=>{
+ for(const kind of ['network','broadcast','outside','gateway','network-prefix','container-prefix','endpoint','changed-ipam'] as const){
+  const h=await fixture(),docker=h.ports.docker;let connected=false;
+  const ip=kind==='network'?'172.30.250.0':kind==='broadcast'?'172.30.250.15':kind==='outside'?'172.30.250.16':kind==='gateway'?'172.30.250.1':'172.30.250.2';
+  h.ports.docker=args=>{const raw=docker(args);if(args[0]==='network'&&args[1]==='connect')connected=true;
+   if(connected&&args[1]==='inspect'){
+    const v=JSON.parse(raw);
+    if(args[0]==='network'){
+     v.containers[cid].IPv4Address=ip+(kind==='network-prefix'?'/27':'/28');
+     if(kind==='changed-ipam')v.ipam[0].Subnet='172.30.251.0/28';
+    }else{v.networks[h.p.network].IPAddress=ip;if(kind==='container-prefix')v.networks[h.p.network].IPPrefixLen=27;if(kind==='endpoint')v.networks[h.p.network].EndpointID='e'.repeat(64);}
+    return canonicalJson(v);
+   }return raw;};
+  const result=h.api.runNetworkAttachmentProbe(h.input,h.ports);assert.equal(result.status,'UNKNOWN',kind);
+  assert(!h.calls.some(a=>a[0]==='stop'||a[1]==='rm'),kind);assert.equal(h.records.length,1);
+ }
+ for(const ip of ['172.30.250.2','172.30.250.14']){
+  const h=await fixture(),docker=h.ports.docker;
+  h.ports.docker=args=>{const raw=docker(args);if(args[1]!=='inspect')return raw;const v=JSON.parse(raw);
+   if(args[0]==='network'&&v.containers?.[cid])v.containers[cid].IPv4Address=ip+'/28';
+   if(args[0]==='container'&&v.networks?.[h.p.network])v.networks[h.p.network].IPAddress=ip;
+   return canonicalJson(v);};
+  assert.equal(h.api.runNetworkAttachmentProbe(h.input,h.ports).status,'CLEANED');
+ }
+});
+
+test('IX01 N2 RAM: 생성 충돌 또는 불명은 대체 망과 connect 및 삭제 없음',async()=>{
+ for(const kind of ['rejected','unknown'] as const){const h=await fixture(),docker=h.ports.docker;let creates=0;
+  h.ports.docker=args=>{if(args[0]==='network'&&args[1]==='create'){creates++;if(kind==='rejected')throw Error('private conflict');docker(args);throw Error('private outcome');}return docker(args);};
+  const result=h.api.runNetworkAttachmentProbe(h.input,h.ports);
+  assert.deepEqual(result,{status:'UNKNOWN',stage:'NETWORK',code:'STOPPED_NETWORK_CREATE'});assert.equal(creates,1);
+  assert(!h.calls.some(a=>a[1]==='connect'||a[1]==='disconnect'||a[1]==='rm'||a[0]==='stop'));assert.equal(h.records.length,1);
+  assert(!JSON.stringify(result).includes('private'));
+ }
 });
 
 test('IX01 무DB 망 후보 RAM: 단회 불명과 중복은 기록 덮기나 자원 생성이 없다',async()=>{
