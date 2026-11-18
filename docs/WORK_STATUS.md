@@ -20761,3 +20761,11 @@ RED3c9179 2실패뒤집중890adc 8통과,타입bb99eb·diff fac056 종료0. 중�
 독립d2_preflight가기준b82c726e..2957fd80 CHILD고정진단에C0/I0/M0를반환했다. 원호출·인자·환경·기한·TAP/hash기준과UNKNOWN정리차단을유지하고원예외비노출을확인했다.
 
 developer_primary가기준2957fd80에서A9 literal7개및A1~A8혼합외피/인계거절을준비했다. RED567b05뒤b28019 5통과·실패/건너뜀0,타입aaa236·원바이트894abc·공백834a93 종료0,Main diff검수0. SQL130/4,004,568B·원장546e8409e4313901597bcfdb71ce91efcd4f9eb6a54bdad99e5f439a017c324c불변. 실제외피·자식·DB·SSH·Docker·A1~A8접근·설치·삭제0. 다음은소스commit과고정실행안및별도단회실행결정이다. IX01미완료.
+
+## IX01 TC01 A9 — CHILD EXIT 중단
+
+직접승인 sourcecbe5e285·고정안7401141e로developer_primary가수행했다. 사전검산4e2252,source342313,외피338d41 종료0/source14·SQL1304004568B·원장일치. 승인ID5aa996bf-ba82-4cd0-87d3-bed0b0af94fd,2026-11-18 19:52:47.573 KST발급/20:22:47.573만료/19:54:09종단수거.
+
+단회entry8fd7a7/session52802→01237d 종료1,UNKNOWN/CHILD/STOPPED_CHILD_EXIT. SQL130·원장130SETTLED/schemaVERIFIED. 고정순서상SECURE/임시ADMIN회수검산/internal망/handoff·owner파일검산/spawn반환/후행현재성통과. EXIT의child.error/비0status/signal/인계기한중어느조건인지는결과에없어미확정이다. RESULT_READ/OUTPUT_VERIFY/CLEANUP미진입·TC01완료/최종결과정착미확인.
+
+컨테이너e2a3575dd2df0f9a14c2ff11f94eb7ce6ee776dad7061c327e65eb78448f9a79·망e20a6f350a86c4bf30c82080963470dcf0418ca660d38d3758f3cbddd71fa939보존. 단회소진·live0·실패후조회/재시도/삭제/A1~A8접근0. Main은수거결과와고정소스만검수했다. 다음은EXIT의안전한고정진단을로컬에서대조하는단계다. IX01미완료.
