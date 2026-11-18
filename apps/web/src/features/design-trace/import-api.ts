@@ -97,8 +97,14 @@ export async function adoptDocumentImport(client: ApiClient, buffer: DocumentBuf
     return{...buffer,body,mediaType:state.candidate.originalRef.mediaType,title:buffer.title||state.name,content:{attachments:[state.candidate.originalRef],sections:[],sourceRefs:[]},importCandidateRef:state.candidate.id,importState:null,dirty:true,savedRef:null,failure:null};
   }
   if (!state?.candidate || buffer.documentId !== null || buffer.pending || state.ownerUserId !== session.user.id || buffer.ownerUserId !== session.user.id || state.upload.clientId !== session.clientId || state.upload.projectId !== buffer.projectId || !validCandidate(state.candidate, state) || state.candidate.status !== 'READY') throw new ApiError('IMPORT_SELECTION_REQUIRED');
-  const candidate = await client.get<ImportCandidate>(`/api/v1/projects/${buffer.projectId}/imports/${state.candidate.id}`);
-  if (!validCandidate(candidate, state) || candidate.id !== state.candidate.id || candidate.status !== 'READY' || await digest(state.bytes) !== candidate.originalRef.contentHash || state.bytes.length !== candidate.originalRef.bytes || !equal(candidate.intendedFormRef, buffer.formRef)) throw new ApiError('IMPORT_INTEGRITY_FAILED');
+  const check=()=>{if(!active())throw new ApiError('IMPORT_SOURCE_READ_PAUSED');};check();
+  let candidate:ImportCandidate;
+  try{candidate=await client.get<ImportCandidate>(`/api/v1/projects/${buffer.projectId}/imports/${state.candidate.id}`);}
+  catch(cause){check();throw cause;}
+  check();
+  if (!validCandidate(candidate, state) || candidate.id !== state.candidate.id || candidate.status !== 'READY') throw new ApiError('IMPORT_INTEGRITY_FAILED');
+  const hash=await digest(state.bytes);check();
+  if (hash !== candidate.originalRef.contentHash || state.bytes.length !== candidate.originalRef.bytes || !equal(candidate.intendedFormRef, buffer.formRef)) throw new ApiError('IMPORT_INTEGRITY_FAILED');
   let body: string; try { body = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(state.bytes); } catch { throw new ApiError('DOCUMENT_UTF8_INVALID'); }
   return { ...buffer, body, mediaType: candidate.originalRef.mediaType, title: buffer.title || state.name, content: { attachments: [candidate.originalRef], sections: [], sourceRefs: [] }, importCandidateRef: candidate.id, importState: null, dirty: true, savedRef: null, failure: null };
 }

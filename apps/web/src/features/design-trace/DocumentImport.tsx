@@ -50,10 +50,12 @@ function UploadedDocumentImport({ client, session, buffer, onChange, onAuthentic
   async function adopt() {
     if (!state?.candidate || disabled || !acknowledged || running.current) return;
     running.current = true; setBusy(true); setError(null);
+    const captured=buffer,operationEpoch=epoch.current,transport=client.transport;
+    const active=()=>mounted.current&&epoch.current===operationEpoch&&latest.current===captured&&latest.current.importState===state&&context.current.client===client&&client.transport===transport&&!context.current.disabled;
     try {
-      const value = await adoptDocumentImport(client, buffer, session);
-      if (mounted.current) onChange(b => b?.importState?.upload?.commandId === state.upload.commandId ? value : b);
-    } catch (cause) { failed(cause); } finally { running.current = false; if (mounted.current) setBusy(false); }
+      const value = await adoptDocumentImport(client, captured, session,active);
+      if (active()) onChange(b => active()&&b===captured&&b.importState===state ? issue(value) : b);
+    } catch (cause) { if(active())failed(cause); } finally { running.current = false; if (mounted.current) setBusy(false); }
   }
   const approvalRequest=state?.uploadApproval?.request;
   const closeBlocked=disabled||busy||approvalBusy||running.current||!!approvalRequest?.pending||!!approvalRequest?.uncertain;
