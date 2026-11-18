@@ -20735,3 +20735,11 @@ commit548c33cc 원Git바이트 기준 Main전체제어기10f4cc은27통과·실�
 독립d2_preflight가5d0daa3b..548c33cc의0082보완에C0/I0/M0를반환했다. CASE2곳괄호4바이트와grant15곳인용30바이트만추가했고역치환원문동일및JSON키/권한/분기의미유지를확인했다.
 
 developer_primary가기준9213ad56에서A8고정7리터럴및A1~A7혼합외피·인계거절을준비했다. RED2a5471뒤12911b 7통과·실패/건너뜀0,타입b110b9·원바이트907a43·diff48b3e8 종료0. Main diff검수0. SQL130총4,004,568바이트·원장546e8409e4313901597bcfdb71ce91efcd4f9eb6a54bdad99e5f439a017c324c. 실제외피·DB·SSH·Docker·A1~A7접근·재실행·삭제0. 다음은소스commit/고정안과별도단회실행결정이다. IX01미완료.
+
+## IX01 TC01 A8 — SQL130 검증 후 CHILD 중단
+
+신산님 직접승인. developer_primary가 source1f1b5051·실행안71eb5c2a로 수행했다. 사전검산dfd8c6,소스5317fc,외피79fa02 종료0/source14·SQL130(4,004,568B)·원장546e8409 일치. 승인IDf1ef416d-b21f-4421-bc12-107535c6daeb,발급2026-11-18 19:30:25.175 KST/만료20:00:25.175,종단수거19:32:04.
+
+단회entryd85658/session48617→b4013a 종료1,UNKNOWN/CHILD/STOPPED_CHILD. schema VERIFIED/SQL130·원장130 SETTLED. 고정코드순서상SECURE정상반환·0095두역할검산/임시ADMIN회수후REVOKED검산·internal망연결·메모리handoff검산통과. 실제handoff파일정착·자식시작·TC01저장재조회성공·CHILD내부실패위치는미확인이다. 부모출력은자식세부결과를포함하지않는다.
+
+컨테이너1554cb1d689dd0df86c0aedccd99d0772a372ad981e8d4a561ae5458f7e0e869,네트워크ddb6bbc48a313df680ea405609d27c043078e90e3545912d1c8ff000f7ccfebc 보존. CLEANUP미진입·단회소진·live0,결과파일정착미확인. 실패후조회·재시도·삭제·A1~A7접근0. Main은수거stdout과고정소스만검수했다. IX01전체미완료이며다음은CHILD내부경계의로컬분석이다.
