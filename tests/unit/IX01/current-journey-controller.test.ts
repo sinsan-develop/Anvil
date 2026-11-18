@@ -10,6 +10,19 @@ import {currentLegacyModuleSource,currentProfile,currentRequiredSources,readCurr
 const cwd=fileURLToPath(new URL('../../../',import.meta.url));
 const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd,input,windowsHide:true,maxBuffer:16*1024*1024});
 const now=1_790_000_000_000,containerId='a'.repeat(64),networkId='b'.repeat(64);
+test('IX01 자식 Node 환경 RAM: worker 1만 허용하고 다른 환경은 거절한다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ const check=api.verifyCurrentChildEnvironment;
+ assert.equal(typeof check,'function');
+ const env={PATH:'/opt/node-v24.22.1-linux-x64/bin:/usr/bin:/bin',LANG:'C.UTF-8',LC_ALL:'C.UTF-8',HOME:currentProfile.receipt,
+  GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_SYSTEM:'/dev/null',GIT_CONFIG_GLOBAL:'/dev/null',GIT_CONFIG_COUNT:'0',GIT_OPTIONAL_LOCKS:'0',GIT_NO_REPLACE_OBJECTS:'1',GIT_NO_LAZY_FETCH:'1',GIT_TERMINAL_PROMPT:'0',GIT_ATTR_NOSYSTEM:'1',GIT_PAGER:'cat',
+  ANVIL_IX01_CURRENT_CHILD:'AUTHORIZED_PARENT',ANVIL_IX01_CURRENT_PLAN_SHA256:'a'.repeat(64),ANVIL_IX01_CURRENT_APPROVAL_SHA256:'b'.repeat(64),ANVIL_IX01_CURRENT_HANDOFF_SHA256:'c'.repeat(64),ANVIL_IX01_CURRENT_APP_PASSWORD:'d'.repeat(64),ANVIL_IX01_CURRENT_MIGRATOR_PASSWORD:'e'.repeat(64)};
+ assert.doesNotThrow(()=>check(env));
+ assert.doesNotThrow(()=>check({...env,NODE_TEST_WORKER_ID:'1'}));
+ for(const worker of ['', '0','2','01','1 ',undefined])assert.throws(()=>check({...env,NODE_TEST_WORKER_ID:worker}),{message:'IX01_CURRENT_CHILD_ENV'});
+ for(const other of [{NODE_TEST_CONTEXT:'child-v8'},{NODE_OPTIONS:'--inspect'},{EXTRA:'1'},{HOME:'/other'},{ANVIL_IX01_CURRENT_CHILD:'OTHER'}])
+  assert.throws(()=>check({...env,NODE_TEST_WORKER_ID:'1',...other}),{message:'IX01_CURRENT_CHILD_ENV'});
+});
 test('IX01 생성 none RAM: 명시적인 미할당 endpoint만 생성 단계에서 허용한다',async()=>{
  const {currentCreatedUnallocatedNone}=await import('../../../scripts/qa-ix01-current-journey.ts');
  assert.equal(typeof currentCreatedUnallocatedNone,'function');

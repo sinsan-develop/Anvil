@@ -20743,3 +20743,9 @@ developer_primary가기준9213ad56에서A8고정7리터럴및A1~A7혼합외피·
 단회entryd85658/session48617→b4013a 종료1,UNKNOWN/CHILD/STOPPED_CHILD. schema VERIFIED/SQL130·원장130 SETTLED. 고정코드순서상SECURE정상반환·0095두역할검산/임시ADMIN회수후REVOKED검산·internal망연결·메모리handoff검산통과. 실제handoff파일정착·자식시작·TC01저장재조회성공·CHILD내부실패위치는미확인이다. 부모출력은자식세부결과를포함하지않는다.
 
 컨테이너1554cb1d689dd0df86c0aedccd99d0772a372ad981e8d4a561ae5458f7e0e869,네트워크ddb6bbc48a313df680ea405609d27c043078e90e3545912d1c8ff000f7ccfebc 보존. CLEANUP미진입·단회소진·live0,결과파일정착미확인. 실패후조회·재시도·삭제·A1~A7접근0. Main은수거stdout과고정소스만검수했다. IX01전체미완료이며다음은CHILD내부경계의로컬분석이다.
+
+## IX01 TC01 자식 Node 환경 호환 보정
+
+기준5fd37885. developer_primary가로컬Nodev24.22.1 내장test_runner에서--test-isolation=none의NODE_TEST_WORKER_ID='1'주입을확인했다. 원환경검사RAM에서정상주입키를거절하는충돌이재현됐다(b2ab08). 대상Linux내장원바이트추가조회0이므로A8최초원인및대상동일성은미확정이다.
+
+runner/test2경로에서자식검사만분리해정확worker값1을허용하고다른값/키/고정환경변조거절을유지했다. 부모빈env·spawn·handoff·기한·결과검산불변. RED7fa279뒤fdc014 1통과·인접8050c0 4통과,타입779a24·diff5d481c 종료0. Main43d26e 전체28통과·실패/건너뜀0. 실제자식·DB·SSH·Docker·A1~A8접근·재실행·삭제0. A8보존/IX01미완료. 다음은독립검수와CHILD실패경계의한정진단보완여부확인이다.

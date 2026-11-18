@@ -649,13 +649,18 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
  };
 }
 
+export function verifyCurrentChildEnvironment(env:NodeJS.ProcessEnv):void{
+ const childKeys=['ANVIL_IX01_CURRENT_CHILD','ANVIL_IX01_CURRENT_PLAN_SHA256','ANVIL_IX01_CURRENT_APPROVAL_SHA256','ANVIL_IX01_CURRENT_HANDOFF_SHA256','ANVIL_IX01_CURRENT_APP_PASSWORD','ANVIL_IX01_CURRENT_MIGRATOR_PASSWORD'];
+ // 고정 Node v24.22.1의 --test-isolation=none이 자식 안에서만 주입한다.
+ if(Object.keys(env).some(key=>!Object.hasOwn(gitEnv,key)&&!childKeys.includes(key)&&!(key==='NODE_TEST_WORKER_ID'&&env[key]==='1'))
+    ||Object.entries(gitEnv).some(([key,value])=>env[key]!==value)
+    ||env.ANVIL_IX01_CURRENT_CHILD!=='AUTHORIZED_PARENT')fail('IX01_CURRENT_CHILD_ENV');
+}
+
 export function openCurrentChild(){
  if(process.argv.length!==2||process.argv[1]!==f.source+'/'+f.child)fail('IX01_CURRENT_CHILD_ARGV');
  const env=process.env;
- const childKeys=['ANVIL_IX01_CURRENT_CHILD','ANVIL_IX01_CURRENT_PLAN_SHA256','ANVIL_IX01_CURRENT_APPROVAL_SHA256','ANVIL_IX01_CURRENT_HANDOFF_SHA256','ANVIL_IX01_CURRENT_APP_PASSWORD','ANVIL_IX01_CURRENT_MIGRATOR_PASSWORD'];
- if(Object.keys(env).some(key=>!Object.hasOwn(gitEnv,key)&&!childKeys.includes(key))
-    ||Object.entries(gitEnv).some(([key,value])=>env[key]!==value)
-    ||env.ANVIL_IX01_CURRENT_CHILD!=='AUTHORIZED_PARENT')fail('IX01_CURRENT_CHILD_ENV');
+ verifyCurrentChildEnvironment(env);
  const {ANVIL_IX01_CURRENT_PLAN_SHA256:planHash,ANVIL_IX01_CURRENT_APPROVAL_SHA256:approvalHash,ANVIL_IX01_CURRENT_HANDOFF_SHA256:digest,ANVIL_IX01_CURRENT_APP_PASSWORD:appPassword,ANVIL_IX01_CURRENT_MIGRATOR_PASSWORD:migratorPassword}=env;
  if(!hex(planHash,64)||!hex(approvalHash,64)||!hex(digest,64)||!hex(appPassword,64)||!hex(migratorPassword,64)||appPassword===migratorPassword)return fail('IX01_CURRENT_CHILD_ENV');
  const input=fileInput(planHash,approvalHash),auth=readCurrentAuthorization(input,Date.now()),host=verifiedHost(auth,true);
