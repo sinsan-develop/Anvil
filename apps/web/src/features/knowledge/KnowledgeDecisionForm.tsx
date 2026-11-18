@@ -3,13 +3,17 @@ const labels={ACCEPTED:'적합',REWORK:'보완 필요',BLOCKED:'판단 불가',N
 export function KnowledgeDecisionForm({client,session,buffer,onChange,onSaved,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;buffer:KnowledgeDecisionBuffer;onChange:(change:KnowledgeDecisionChange)=>void;onSaved:(result:Awaited<ReturnType<typeof sendKnowledgeDecision>>)=>void;onAuthenticationLost:()=>void}){
  const[working,setWorking]=useState(false),alive=useRef(true),locked=useRef(false);useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
  const[reopenError,setReopenError]=useState<string|null>(null),reopening=useRef(false),current=useRef({client,session,buffer,onChange,working});current.current={client,session,buffer,onChange,working};
+ const identity=[client,client.transport,session.user.id,session.clientId,session.csrfToken,buffer.projectId],owner=useRef({identity});
+ if(identity.some((value,index)=>value!==owner.current.identity[index]))owner.current={identity};
+ const captured=owner.current,context=()=>owner.current===captured&&[current.current.client,client.transport,current.current.session.user.id,current.current.session.clientId,current.current.session.csrfToken,current.current.buffer.projectId].every((value,index)=>value===captured.identity[index]);
  if(buffer.ownerUserId!==session.user.id||buffer.ownerClientId!==session.clientId)return<p role="alert">다른 사용자·기기의 판단 요청은 열거나 전송하지 않습니다.</p>;
  function edit(p:Partial<KnowledgeDecisionBuffer>){if(working||buffer.pending||buffer.savedId)return;onChange({...buffer,...p,dirty:true,failure:null});}
  async function save(){
   if(locked.current||buffer.savedId)return;locked.current=true;setWorking(true);let b=buffer;
-  const owned=new Set([buffer]),transport=client.transport,identity=JSON.stringify([session.user.id,session.clientId,session.csrfToken]);
-  const active=()=>alive.current&&current.current.client===client&&client.transport===transport&&JSON.stringify([current.current.session.user.id,current.current.session.clientId,current.current.session.csrfToken])===identity&&owned.has(current.current.buffer);
-  const publish=(next:KnowledgeDecisionBuffer)=>{owned.add(next);onChange(previous=>previous&&owned.has(previous)?next:previous);};
+  const owned=new WeakSet([buffer]);
+  const active=()=>alive.current&&context()&&owned.has(current.current.buffer);
+  // 동일 문맥의 원 dispatch 결과는 화면 이탈 뒤에도 보존한다. 부모의 지연 updater에서도 세대를 다시 확인한다.
+  const publish=(next:KnowledgeDecisionBuffer)=>{owned.add(next);onChange(previous=>context()&&previous&&owned.has(previous)?next:previous);};
   try{
    if(!b.pending){const pending=await prepareKnowledgeDecision(b,session);if(!active())return;b={...b,pending};publish(b);}
    // 같은 명령 재확인도 이번 dispatch의 버퍼 객체로 결박한다.
@@ -18,7 +22,7 @@ export function KnowledgeDecisionForm({client,session,buffer,onChange,onSaved,on
    const applicationReceipt=result.kind==='APPLY'?{ref:{...result.applicationRef},commandId:b.pending!.commandId,ownerUserId:session.user.id,ownerClientId:session.clientId,csrfToken:session.csrfToken}:undefined;
    b={...b,pending:null,savedId:result.id,dirty:false,uncertain:false,failure:null,...(applicationReceipt?{applicationReceipt}:{})};publish(b);
    if(active())onSaved(result);
-  }catch(e){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');publish({...b,failure:{code:a.code,status:a.status},uncertain:b.uncertain||a.code!=='KNOWLEDGE_DECISION_PAUSED'&&!isKnownDocumentRejection(a)});if(a.status===401&&active())onAuthenticationLost();}
+  }catch(e){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');if(a.code==='KNOWLEDGE_DECISION_PAUSED'&&!active())return;publish({...b,failure:{code:a.code,status:a.status},uncertain:b.uncertain||a.code!=='KNOWLEDGE_DECISION_PAUSED'&&!isKnownDocumentRejection(a)});if(a.status===401&&active())onAuthenticationLost();}
   finally{locked.current=false;if(alive.current)setWorking(false);}
  }
  async function reopenRejectedReview(){

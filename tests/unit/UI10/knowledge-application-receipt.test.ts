@@ -48,6 +48,7 @@ function deferred<T>(){let resolve!:(v:T)=>void;const promise=new Promise<T>(r=>
 async function fixture(){
  let store:any={buffers:{[pid]:draft()},applications:{},scope:null},scope={},shown=true,currentSession=session,currentProject=pid,lost=0,changes=0,constitution:any=null,hold:ReturnType<typeof deferred<Response>>|null=null,fail=false;
  const writes:any[]=[],gets:string[]=[],receipts:any[]=[],records:any[]=[],responses:Response[]=[];
+ let deferChanges=false;const queued:(()=>void)[]=[];
  const client=new ui.ApiClient(async(path:string,init:any)=>{
   if(init?.method==='POST'){
    const c=JSON.parse(init.body);writes.push(c);
@@ -62,14 +63,14 @@ async function fixture(){
   throw Error('unexpected '+path);
  });
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
- function render(){const captured=scope,s=currentSession,p=currentProject;root.render(shown?ui.React.createElement(ui.KnowledgePage,{client,projectId:p,session:s,buffer:null,onChange(){},conversationBuffer:null,onConversationChange(){},exclusion:null,onExclusionChange(){},correction:null,onCorrectionChange(){},decision:store.buffers[p]??null,applicationReceiptRef:store.scope===scope?store.applications[p]:undefined,onDecisionChange:(change:any)=>{changes++;if(scope!==captured)return;store=ui.decisions.changeKnowledgeDecisionStore?ui.decisions.changeKnowledgeDecisionStore(store,p,s,scope,change):{...store,buffers:{...store.buffers,[p]:typeof change==='function'?change(store.buffers[p]??null):change}};render();},onAuthenticationLost(){lost++;}}):null);}
+ function render(){const captured=scope,s=currentSession,p=currentProject;root.render(shown?ui.React.createElement(ui.KnowledgePage,{client,projectId:p,session:s,buffer:null,onChange(){},conversationBuffer:null,onConversationChange(){},exclusion:null,onExclusionChange(){},correction:null,onCorrectionChange(){},decision:store.buffers[p]??null,applicationReceiptRef:store.scope===scope?store.applications[p]:undefined,onDecisionChange:(change:any)=>{changes++;const apply=()=>{if(scope!==captured)return;store=ui.decisions.changeKnowledgeDecisionStore?ui.decisions.changeKnowledgeDecisionStore(store,p,s,scope,change):{...store,buffers:{...store.buffers,[p]:typeof change==='function'?change(store.buffers[p]??null):change}};render();};if(deferChanges)queued.push(apply);else apply();},onAuthenticationLost(){lost++;}}):null);}
  const nodes=(predicate:(n:MemoryNode)=>boolean)=>{const all:MemoryNode[]=[];function visit(n:MemoryNode){if(predicate(n))all.push(n);n.childNodes.forEach(visit);}visit(container);return all;};
  const button=(name:string)=>{const b=nodes(n=>n.tagName==='BUTTON'&&n.textContent===name)[0];assert(b,name+' / '+container.textContent);return b;};
  const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});
  const wait=async(check:()=>boolean)=>{for(let n=0;n<100&&!check();n++)await settle();assert(check(),container.textContent);};
  const click=async(name:string)=>{const b=button(name);assert(!b.disabled);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
  await ui.React.act(async()=>render());
- return{client,writes,gets,receipts,records,responses,setConstitution:(v:any)=>{constitution=v;},button,click,wait,settle,container,store:()=>store,lost:()=>lost,changes:()=>changes,fail:()=>{fail=true;},hold:()=>{hold=deferred<Response>();return hold;},replace:async(b:any)=>{store={...store,buffers:{...store.buffers,[pid]:b}};await ui.React.act(async()=>render());},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},context:async(s=session,p=pid)=>{if(s!==currentSession)scope={};currentSession=s;currentProject=p;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{client,writes,gets,receipts,records,responses,defer:()=>{deferChanges=true;},flush:async()=>{deferChanges=false;await ui.React.act(async()=>{for(const apply of queued.splice(0))apply();});},setConstitution:(v:any)=>{constitution=v;},button,click,wait,settle,container,store:()=>store,lost:()=>lost,changes:()=>changes,fail:()=>{fail=true;},hold:()=>{hold=deferred<Response>();return hold;},replace:async(b:any)=>{store={...store,buffers:{...store.buffers,[pid]:b}};await ui.React.act(async()=>render());},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},context:async(s=session,p=pid)=>{if(s!==currentSession)scope={};currentSession=s;currentProject=p;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 test('APPLY 검산 fullref는 닫기와 화면 왕복 후 보존되어 현재 없음 GET을 거절한다',async()=>{
  const f=await fixture();try{await f.click('헌법 프로젝트 적용');await f.wait(()=>!!f.store().buffers[pid]?.savedId);
@@ -117,6 +118,26 @@ for(const mode of ['이탈','세션','버퍼']as const)test(`늦은401 ${mode} �
   late.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.settle();await f.settle();assert.equal(f.lost(),0);assert.deepEqual(f.store().applications,{});assert.equal(f.writes.length,1);
  }finally{await f.close();}
 });
+test('인증 세대 A→B→A 뒤 이전401은 부모 CAS와 별개인 인증소실도 일으키지 않는다',async()=>{
+ const f=await fixture(),late=f.hold();try{await f.click('헌법 프로젝트 적용');await f.wait(()=>f.writes.length===1);
+  const owned=f.store().buffers[pid];await f.context({...session,csrfToken:'d'.repeat(43)});await f.context(session);
+  late.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.settle();await f.settle();
+  assert.equal(f.lost(),0);assert.equal(f.store().buffers[pid],owned);assert.equal(owned.savedId,null);assert.equal(f.writes.length,1);
+ }finally{await f.close();}
+});
+
+for(const uncertain of [false,true])test(`부모 updater 지연 뒤 ${uncertain?'불명 원명령':'정상 저장'}을 보존하고 같은 render의 두 클릭은 POST1이다`,async()=>{
+ const f=await fixture();try{f.defer();if(uncertain)f.fail();const button=f.button('헌법 프로젝트 적용');
+  await ui.React.act(async()=>{button.dispatchEvent({type:'click',button:0,bubbles:true});button.dispatchEvent({type:'click',button:0,bubbles:true});});
+  await f.wait(()=>f.changes()>=3);await f.settle();assert.equal(f.writes.length,1);assert.equal(f.store().buffers[pid].pending,null);
+  await f.flush();await f.wait(()=>uncertain?f.store().buffers[pid].uncertain:!!f.store().buffers[pid].savedId);
+  if(uncertain){assert.deepEqual(f.store().buffers[pid].pending,f.writes[0]);assert.equal(f.store().buffers[pid].savedId,null);
+   await f.click('같은 지식 판단 명령 결과 확인');await f.wait(()=>!!f.store().buffers[pid].savedId);assert.deepEqual(f.writes[0],f.writes[1]);
+  }else assert.deepEqual(f.store().applications[pid],f.receipts[0]);
+  assert.equal(f.lost(),0);
+ }finally{await f.close();}
+});
+
 test('현재401은 기존 인증소실 처리와 원명령 보존을 유지한다',async()=>{
  const f=await fixture(),late=f.hold();try{await f.click('헌법 프로젝트 적용');await f.wait(()=>f.writes.length===1);late.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.wait(()=>f.lost()===1);assert(f.store().buffers[pid].pending);assert.deepEqual(f.store().applications,{});
  }finally{await f.close();}
