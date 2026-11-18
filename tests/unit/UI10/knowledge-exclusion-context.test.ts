@@ -208,11 +208,13 @@ const correctionRead='저장한 정정본 고정 원문 보기';
 async function saveCorrection(f:Awaited<ReturnType<typeof correctionFixture>>){await f.click('지식 정정 저장');await f.wait(()=>!!f.buffer()?.savedRef);await f.settle();}
 
 test('정정 저장 고정 조회: 검색 결과가 비어도 savedRef의 정확 원문·이력을 명시 GET한다',async()=>{
- const f=await correctionFixture();try{
+ const originalError=console.error;let duplicateKeys=0;
+ console.error=(...args:unknown[])=>{if(args.some(v=>typeof v==='string'&&v.includes('Encountered two children with the same key')))duplicateKeys++;Reflect.apply(originalError,console,args);};
+ try{const f=await correctionFixture();try{
   assert(!f.find(correctionRead));await saveCorrection(f);assert.equal(f.writes.length,2);assert.equal(f.calls.filter(c=>c.path.includes('/knowledge/')).length,0);
   const saved=f.buffer();await f.click(correctionRead);await f.wait(()=>f.nodes().some(n=>n.getAttribute('aria-label')==='보관 지식 원문'&&n.textContent===f.stored().body));
-  assert.equal(f.buffer(),saved);assert.equal(f.writes.length,2);assert.equal(f.calls.filter(c=>c.path.includes('/knowledge/')).length,1);assert(f.calls.some(c=>c.path===`/api/v1/projects/${pid}/knowledge/${saved.savedRef.id}/versions/2`));assert(f.text().includes('CORRECTED'));
- }finally{await f.close();}
+  assert.equal(f.buffer(),saved);assert.equal(f.writes.length,2);assert.equal(f.calls.filter(c=>c.path.includes('/knowledge/')).length,1);assert(f.calls.some(c=>c.path===`/api/v1/projects/${pid}/knowledge/${saved.savedRef.id}/versions/2`));assert(f.text().includes('CORRECTED'));assert.equal(duplicateKeys,0,'형제 출처 중복 key 경고');
+ }finally{await f.close();}}finally{console.error=originalError;}
 });
 
 test('정정 저장 고정 조회: 늦은200/401과 교체·닫기·세션 변경은 원문 및 인증 효과0',async()=>{
