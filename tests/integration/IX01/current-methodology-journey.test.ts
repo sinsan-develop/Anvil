@@ -71,12 +71,14 @@ test('IX01 TC01 현재 격리 저장 여정',{
   const session=await bound(()=>access.reauthenticate(loginResult.token,loginResult.csrfToken,password,'ix01-current-tc01'));
   const identity=await bound(()=>access.authenticated(session.token,session.csrfToken,async(_db,actor)=>actor));
   assert.equal(identity.actorId,id);assert.equal(identity.clientId,session.clientId);assert.equal(identity.credentialGeneration,1);assert.ok(identity.reauthUntil);
-  code='TC01';
+  code='APP_LOAD';
   const {buildApp}=await bound(()=>import('../../../apps/server/app.ts'));
   const {runMethodologyCopyApplicationScenario}=await bound(()=>import('./methodology-copy-application-scenario.ts'));
+  code='APP_BUILD';
   fresh();const app=buildApp({},undefined,{repository:access,origin,artifactRoot:currentProfile.artifact});
   registerJourneyClose(owned,'APP',()=>app.close());
-  await bound(()=>runMethodologyCopyApplicationScenario({app,session,origin,assertCurrent:fresh}));
+  code='TC01';
+  await bound(()=>runMethodologyCopyApplicationScenario({app,session,origin,assertCurrent:fresh,onStage(stage){code=stage;}}));
   code='CLOSE';
   await closeOwned();fresh();
   code='RESULT';

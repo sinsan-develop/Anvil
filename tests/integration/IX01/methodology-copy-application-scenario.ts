@@ -1,3 +1,4 @@
+import type {CurrentTc01RequestStage,CurrentTc01DiagnosticStage} from '../../../scripts/qa-ix01-current-journey.ts';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import type {buildApp} from '../../../apps/server/app.ts';
@@ -19,6 +20,7 @@ export interface MethodologyCopyApplicationContext{
   session:Pick<Session,'token'|'csrfToken'|'clientId'|'user'>;
   origin:string;
   assertCurrent:()=>void;
+  onStage?:(stage:CurrentTc01DiagnosticStage)=>void;
 }
 
 function record(value:unknown,stage:string):Json{
@@ -51,7 +53,7 @@ function reviewRefs(view:Json,stage:string):unknown[]{
 }
 
 /** 호출자가 승인된 현재 격리 앱과 재인증 세션을 준비한다. 이 모듈은 자동 실행하거나 자원을 소유하지 않는다. */
-export async function runMethodologyCopyApplicationScenario({app,session,origin,assertCurrent}:MethodologyCopyApplicationContext){
+export async function runMethodologyCopyApplicationScenario({app,session,origin,assertCurrent,onStage}:MethodologyCopyApplicationContext){
   assertCurrent();
   const url=URL.parse(origin);
   assert.ok(url?.protocol==='https:'&&url.origin===origin,'TC01_ORIGIN');
@@ -59,7 +61,8 @@ export async function runMethodologyCopyApplicationScenario({app,session,origin,
   assert.ok(uuid.test(actorId)&&uuid.test(clientId)&&/^[A-Za-z0-9_-]{43}$/.test(session.token)&&/^[A-Za-z0-9_-]{43}$/.test(session.csrfToken),'TC01_SESSION_SHAPE');
   const headers={host:url.host,origin,cookie:'__Host-anvil.sid='+session.token,'x-anvil-csrf':session.csrfToken};
 
-  async function request(stage:string,status:number,path:string,payload?:object):Promise<Json>{
+  async function request(stage:CurrentTc01RequestStage,status:number,path:string,payload?:object):Promise<Json>{
+    onStage?.(`${stage}_REQUEST`);
     assertCurrent();
     let response:Awaited<ReturnType<typeof app.inject>>;
     try{
@@ -67,6 +70,7 @@ export async function runMethodologyCopyApplicationScenario({app,session,origin,
         ?await app.inject({method:'GET',url:path,headers})
         :await app.inject({method:'POST',url:path,headers:{...headers,'content-type':'application/json'},payload});
     }catch{throw Error(stage+'_REQUEST_FAILED');}
+    onStage?.(`${stage}_VERIFY`);
     assertCurrent();
     assert.ok(response.statusCode===status,stage+'_HTTP_STATUS');
     assert.ok(Buffer.byteLength(response.body)<=2*1024*1024,stage+'_RESPONSE_SIZE');
@@ -74,10 +78,10 @@ export async function runMethodologyCopyApplicationScenario({app,session,origin,
     try{result=response.json();}catch{throw Error(stage+'_RESPONSE_JSON');}
     return record(result,stage+'_RESPONSE_SHAPE');
   }
-  const getMethod=(id:string,version:number,stage:string)=>request(stage,200,'/api/v1/methodologies/'+id+'/versions/'+version);
+  const getMethod=(id:string,version:number,stage:CurrentTc01RequestStage)=>request(stage,200,'/api/v1/methodologies/'+id+'/versions/'+version);
   const command=(operation:'copyMethodology'|'saveMethodologyDraft'|'recordContentReview'|'confirmMethodology',targetId:string|null,expectedVersion:number,payload:object)=>
     ({schemaVersion:1,commandId:randomUUID(),clientId,operation,targetId,expectedVersion,payload});
-  async function send(stage:string,body:ReturnType<typeof command>,dataStatus:string,version:number){
+  async function send(stage:CurrentTc01RequestStage,body:ReturnType<typeof command>,dataStatus:string,version:number){
     const result=await request(stage,200,'/api/v1/user-common/commands',body),data=record(result.data,stage+'_DATA');
     const ref=versionRef(data.ref,stage+'_REF');
     assert.ok(result.scopeKind==='USER_COMMON'&&result.ownerUserId===actorId&&result.status==='APPLIED'&&result.commandId===body.commandId
@@ -85,7 +89,7 @@ export async function runMethodologyCopyApplicationScenario({app,session,origin,
     if(body.targetId!==null)assert.ok(ref.id===body.targetId,stage+'_TARGET');
     return {data,ref};
   }
-  async function review(ref:VersionRef,stage:string){
+  async function review(ref:VersionRef,stage:CurrentTc01RequestStage){
     const {data,ref:target}=await send(stage,command('recordContentReview',ref.id,ref.version,{
       targetKind:'METHODOLOGY',targetRef:ref,criteriaVersion:1,outcome:'ACCEPTED',reason:'방법론 원문과 범위를 대조한 합성 검토',
       items:methodContentReviewCriteria.items.map(({criterionId})=>({criterionId,outcome:'ACCEPTED',evidenceRefs:[],reason:'해당 버전의 원문을 직접 대조'})),

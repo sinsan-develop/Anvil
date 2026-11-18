@@ -719,3 +719,36 @@ test('IX01 INSTALL 안전 진단 RAM: 진단 속성은 데이터만 복제하고
  }
  assert.equal(traps,0);
 });
+
+
+test('IX01 TC01 능동 진단 RAM: 실제 요청과 검증 경계를 원문 없이 추적한다',async()=>{
+ const {runMethodologyCopyApplicationScenario}=await import('../../integration/IX01/methodology-copy-application-scenario.ts');
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ for(const kind of ['REQUEST','STATUS','JSON','IDENTITY','COPY_REQUEST','COPY_VERIFY']){
+  const stages:string[]=[];let requests=0;
+  const graph={nodes:[{position:{x:0}}],edges:[]};
+  const builtin={ref:{id:'a6f20000-0000-4000-8000-000000000001',version:2,contentHash:contentHash(canonicalJson(graph))},graph,validation:{validForConfirmation:true},scope:'SYSTEM',purpose:'RAM'};
+  const app={async inject(){requests++;if(kind==='REQUEST'||kind==='COPY_REQUEST'&&requests===2)throw Error('private request detail');return {statusCode:kind==='STATUS'?503:200,body:'{}',json(){if(kind==='JSON')throw Error('private response detail');return kind.startsWith('COPY_')&&requests===1?builtin:{};}};}};
+  await assert.rejects(runMethodologyCopyApplicationScenario({app:app as unknown as Parameters<typeof runMethodologyCopyApplicationScenario>[0]['app'],
+   session:{user:{id:'00000000-0000-4000-8000-000000000001',displayName:'RAM',serverOwner:false},clientId:'00000000-0000-4000-8000-000000000002',token:'a'.repeat(43),csrfToken:'b'.repeat(43)},
+   origin:'https://localhost:3830',assertCurrent(){},onStage(stage:string){stages.push(stage);}}));
+  assert.equal(requests,kind.startsWith('COPY_')?2:1);
+  assert.deepEqual(stages,kind==='REQUEST'?['TC01_BUILTIN_REQUEST']:['TC01_BUILTIN_REQUEST','TC01_BUILTIN_VERIFY',...(kind.startsWith('COPY_')?['TC01_COPY_REQUEST',...(kind==='COPY_VERIFY'?['TC01_COPY_VERIFY']:[])]:[])]);
+  const rows:string[]=[];api.recordCurrentChildFailure(stages.at(-1),'a'.repeat(64),{fresh(){},write(raw){rows.push(raw);}});
+  assert.equal(rows.length,1);assert.equal(JSON.parse(rows[0]!).stage,stages.at(-1));assert.doesNotMatch(rows[0]!,/private|response|payload|headers|https/);
+ }
+});
+
+test('IX01 TC01 능동 진단 RAM: 앱과 요청 단계는 인계 결박 UNKNOWN이며 잘못된 단계는 fallback이다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ for(const stage of ['APP_LOAD','APP_BUILD','TC01_BUILTIN_REQUEST','TC01_COPY_VERIFY','TC01_CREATE_PROJECT_REQUEST','TC01_REREAD_APPLICATION_VERIFY','TC01','TC01_SECRET_VERIFY']){
+  const h=harness();h.ports.child=async handoff=>{
+   const digest=contentHash(canonicalJson(handoff));
+   api.verifyCurrentChildExit({status:1,signal:null},()=>now,handoff.expiresAt,{handoffHash:digest,fresh(){},read(){return canonicalJson({schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD_FAILURE',handoffHash:digest,stage});}});
+   assert.fail('실패 뒤 성공 진입 금지');
+  };
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.deepEqual([result.status,result.stage,result.code],['UNKNOWN','CHILD','STOPPED_CHILD_EXIT_STATUS'+(stage==='TC01_SECRET_VERIFY'?'':'_'+stage)]);
+  assert.equal(h.calls.includes('CLEANUP'),false);assert.equal(h.calls.filter(x=>x==='RECORD').length,1);
+ }
+});
