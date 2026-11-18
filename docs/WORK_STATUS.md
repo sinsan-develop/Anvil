@@ -20925,3 +20925,9 @@ SQL과 원장 130개는 모두 `SETTLED`, schema는 `VERIFIED`다. Main이 고�
 기준 `f9367555`. PMO가 SQL 재설치 없이 새 자원에서 연결 검산만 재현하는 후보의 준비를 지원했다. developer_primary가 `scripts/qa-ix01-current-journey.ts`와 `tests/unit/IX01/current-journey-controller.test.ts`를 보완했다. 실제 네트워크·컨테이너의 조회와 합성 입력이 같은 검산식을 쓴다. 명령·JSON·네트워크 신원·컨테이너의 `HostConfig.NetworkMode` 및 격리·주소/CIDR·endpoint 대조를 첫 실패의 고정 코드로 구분하며 원문은 반환하지 않는다. 기존 비교 순서·격리 기준·기한·불명 보존을 유지한다. 복구는 두 파일의 변경분 단위다.
 
 신규 RED f689a9 2실패 이후 담당자 직접·인접 10통과(61b452), 마지막 타입 좁힘 뒤 직접 2통과(008a9b), 타입·diff 종료0을 확인했다. Main 제어기 전체 합성 40통과·실패/건너뜀0(6a945b), 타입·diff 종료0 및 두 파일 지문 일치(b02b7a)다. 시험 자료 타입 5건과 배열 좁힘 2건은 보완했다. 새 실행기·프로필·실행 권한은 미발급이다. A1~A14 접근, Docker·DB·키·서비스·Agent 실제 실행과 기존 A14 고정 소스/시험안 변경은 0이다. 다음은 전용 네트워크 재현의 고정 자원·종단·정리 경계를 준비하는 단계다. A14 원인과 IX01 실제 저장·재조회는 미확인이다.
+
+## IX01 N1 DB 없는 연결 검산 후보 고정
+
+기준 d8592dc7. developer_primary가 `scripts/qa-ix01-network-attachment-probe.ts`와 합성시험을 추가하고 원 제어기에서 관측 형식·엄격 검산만 재사용하도록 연결했다. 소스 `2a506f96e9c1c6f4fd7bfe600aa47ea25936817d`의 [고정 후보](work_packages/IX01_NETWORK_ATTACHMENT_N1_EXECUTION_CANDIDATE.md)는 새 N1 단독 자원·5분 외피·명령10초·유한 대기·정상 결과만 정리를 정의한다. 원 TC01/A14 제어 흐름과 기존 기준은 유지한다. 복구 경계는 신규 probe·시험과 원 runner의 export 4행이다.
+
+RED 87b3bf 모듈 부재 1실패 뒤 담당자 직접8·인접3 통과. Main 직접8통과·실패/건너뜀0(2c03d8), 타입·diff 종료0 및 제출 3파일의 지문 일치(9a91fe), 별도 검토 C0/I0, 고정 Git blob 5개 대조(8b8238)를 확인했다. 중간 타입 선언 순서·좁힘 오류를 보완했다. N1 실제 실행은 새 단회 결정 전까지 미실행이다. A1~A14·DB·권한·서비스·키·Agent 접근 0이며 A14 원인 및 TC01 저장·재조회는 미확인이다.
