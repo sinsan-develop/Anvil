@@ -85,19 +85,19 @@ test('IX01 START 고정 진단 RAM: 단계 실패와 불명은 설치 정리 없
  }
  assert.equal(reads,0);
 });
-test('IX01 A9 고정 프로필 RAM: 정확 이름과 구 프로필 외피 인계를 분리한다',()=>{
+test('IX01 A10 고정 프로필 RAM: 정확 이름과 구 프로필 외피 인계를 분리한다',()=>{
  assert.deepEqual({source:currentProfile.source,receipt:currentProfile.receipt,artifact:currentProfile.artifact,
   container:currentProfile.container,network:currentProfile.network,database:currentProfile.database,owner:currentProfile.owner},{
-  source:'/home/daon/anvil-ix01-current-tc01-20261108-a9-qa',
-  receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-current-tc01-20261108-a9',
-  artifact:'/tmp/anvil-v3-ix01-current-tc01-20261108-a9',
-  container:'anvil-ix01-current-tc01-pg-20261108-a9',network:'anvil-ix01-current-tc01-net-20261108-a9',
-  database:'anvil_v3_ix01_current_tc01_20261108_a9',owner:'IX01_CURRENT_TC01_20261108_A9',
+  source:'/home/daon/anvil-ix01-current-tc01-20261108-a10-qa',
+  receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-current-tc01-20261108-a10',
+  artifact:'/tmp/anvil-v3-ix01-current-tc01-20261108-a10',
+  container:'anvil-ix01-current-tc01-pg-20261108-a10',network:'anvil-ix01-current-tc01-net-20261108-a10',
+  database:'anvil_v3_ix01_current_tc01_20261108_a10',owner:'IX01_CURRENT_TC01_20261108_A10',
  });
  assert.equal(Object.isFrozen(currentProfile),true);
  const candidate=input(),auth=readCurrentAuthorization(candidate,now);
- assert.equal(auth.plan.profile,'IX01_CURRENT_TC01_20261108_A9');
- for(const profile of ['IX01_CURRENT_TC01_20261108_A1','IX01_CURRENT_TC01_20261108_A2','IX01_CURRENT_TC01_20261108_A3','IX01_CURRENT_TC01_20261108_A4','IX01_CURRENT_TC01_20261108_A5','IX01_CURRENT_TC01_20261108_A6','IX01_CURRENT_TC01_20261108_A7','IX01_CURRENT_TC01_20261108_A8']){
+ assert.equal(auth.plan.profile,'IX01_CURRENT_TC01_20261108_A10');
+ for(const profile of ['IX01_CURRENT_TC01_20261108_A1','IX01_CURRENT_TC01_20261108_A2','IX01_CURRENT_TC01_20261108_A3','IX01_CURRENT_TC01_20261108_A4','IX01_CURRENT_TC01_20261108_A5','IX01_CURRENT_TC01_20261108_A6','IX01_CURRENT_TC01_20261108_A7','IX01_CURRENT_TC01_20261108_A8','IX01_CURRENT_TC01_20261108_A9']){
   const planRaw=canonicalJson({...JSON.parse(candidate.planRaw),profile}),planHash=contentHash(planRaw);
   const approvalRaw=canonicalJson({...JSON.parse(candidate.approvalRaw),profile,planHash});
   assert.throws(()=>readCurrentAuthorization({planRaw,planHash,approvalRaw,approvalHash:contentHash(approvalRaw)},now),{message:'IX01_CURRENT_PLAN_INVALID'});
@@ -105,7 +105,7 @@ test('IX01 A9 고정 프로필 RAM: 정확 이름과 구 프로필 외피 인계
   assert.throws(()=>readCurrentAuthorization({...candidate,approvalRaw:mixedApproval,approvalHash:contentHash(mixedApproval)},now),{message:'IX01_CURRENT_APPROVAL_REQUIRED'});
   const handoff=canonicalJson({schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD',profile,planHash:auth.planHash,
    approvalHash:auth.approvalHash,sourceHead:auth.plan.sourceHead,expiresAt:now+1000,ledgerHash:'a'.repeat(64),containerId,networkId,host:'172.18.0.2'});
-  // profile 불일치에서 원장 입력을 읽기 전에 거절하며 원격 A1/A2/A3/A4/A5/A6/A7/A8 자료는 조회하지 않는다.
+  // profile 불일치에서 원장 입력을 읽기 전에 거절하며 원격 A1/A2/A3/A4/A5/A6/A7/A8/A9 자료는 조회하지 않는다.
   assert.throws(()=>verifyCurrentHandoff(handoff,contentHash(handoff),auth,new Uint8Array(),now),{message:'IX01_CURRENT_HANDOFF_INVALID'});
  }
 });
