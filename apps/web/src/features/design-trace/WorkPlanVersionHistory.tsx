@@ -6,6 +6,7 @@ import {StoredPlanTasks} from './StoredPlanTasks.tsx';
 import {StoredPlanTaskRelations} from './StoredPlanTaskRelations.tsx';
 import {WorkPlanVersionComparison} from './WorkPlanVersionComparison.ts';
 import {PlanDocumentOriginal} from './PlanDocumentOriginal.tsx';
+import {WorkPlanReferences} from './WorkPlanReference.tsx';
 import {readWorkPlanDecision,type PlanDecisionView} from './work-plan-decision-api.ts';
 type HistoryProps={client:ApiClient;projectId:string;session:DocumentSession;observedPlan:WorkPlanView;onAuthenticationLost:()=>void};
 export function WorkPlanVersionHistory(props:HistoryProps){
@@ -36,6 +37,7 @@ function History({client,projectId,session,observedPlan,onAuthenticationLost}:Hi
    <HistoricalDecision key={'decision:'+JSON.stringify(value.ref)} client={client} projectId={projectId} plan={value} onAuthenticationLost={onAuthenticationLost}/>
    <WorkPlanVersionComparison before={value} after={observedPlan}/>
    <StoredPlanTasks key={JSON.stringify(value.ref)} tasks={value.tasks}/><StoredPlanTaskRelations key={'history:'+JSON.stringify(value.ref)} view={value}/>
+   <WorkPlanReferences key={'history-references:'+JSON.stringify([projectId,session.user.id,session.clientId,value.ref])} client={client} projectId={projectId} session={session} view={value} onAuthenticationLost={onAuthenticationLost}/>
    <PlanDocumentOriginal key={JSON.stringify([projectId,session.user.id,session.clientId,value.ref,value.documentRef])} client={client} projectId={projectId} session={session} view={value} onAuthenticationLost={onAuthenticationLost}/>
    <details><summary>원문·검토 참조와 저장된 구조 문제</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({documentRef:value.documentRef,designRef:value.designRef,screenReviewRefs:value.screenReviewRefs,issues:value.issues,relationalProjection:value.relationalProjection},null,2)}</pre></details>
   </section>:null}

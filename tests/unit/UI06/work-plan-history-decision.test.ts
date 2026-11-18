@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {blankPlanTask} from '../../../apps/web/src/features/design-trace/work-plan-api.ts';
 
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
 class MemoryNode{
@@ -17,7 +18,7 @@ class MemoryNode{
  removeChild(n:MemoryNode){const i=this.childNodes.indexOf(n);assert(i>=0);this.childNodes.splice(i,1);n.parentNode=null;return n;}
  setAttribute(k:string,v:unknown){this.attributes.set(k,String(v));if(k==='disabled')this.disabled=true;}removeAttribute(k:string){this.attributes.delete(k);if(k==='disabled')this.disabled=false;}getAttribute(k:string){return this.attributes.get(k)??null;}
  addEventListener(k:string,f:Function){this.listeners.set(k,[...(this.listeners.get(k)??[]),f]);}removeEventListener(k:string,f:Function){this.listeners.set(k,(this.listeners.get(k)??[]).filter(v=>v!==f));}
- contains(n:MemoryNode|null):boolean{return !!n&&(n===this||this.childNodes.some(c=>c.contains(n)));}focus(){this.ownerDocument.activeElement=this;}
+ contains(n:MemoryNode|null):boolean{return !!n&&(n===this||this.childNodes.some(c=>c.contains(n)));}focus(){this.ownerDocument.activeElement=this;}scrollIntoView(){}
  dispatchEvent(e:any){e.target=this;e.preventDefault??=()=>{e.defaultPrevented=true;};e.stopPropagation??=()=>{e.cancelBubble=true;};const chain:MemoryNode[]=[];for(let n:MemoryNode|null=this;n;n=n.parentNode)chain.push(n);for(const n of chain)for(const f of n.listeners.get(e.type)??[])f(e);return !e.defaultPrevented;}
 }
 const document:any=new MemoryNode('#document',9);document.ownerDocument=document;document.createElement=(n:string)=>new MemoryNode(n,1,document);document.createElementNS=(_ns:string,n:string)=>document.createElement(n);document.createTextNode=(s:string)=>{const n=new MemoryNode('#text',3,document);n.data=s;return n;};document.documentElement=document.createElement('html');document.body=document.createElement('body');document.documentElement.appendChild(document.body);document.activeElement=document.body;
@@ -36,16 +37,28 @@ function plan(version:number){const body={documentRef:ref(2),designRef:ref(3),sc
 const criteria={criteriaVersion:1,items:['PLAN_SCOPE','PLAN_TRACE','PLAN_DEPENDENCIES','PLAN_TESTS','PLAN_RECOVERY'].map(criterionId=>({criterionId,title:criterionId}))};
 function decision(p=plan(1),confirmed=true){const target=p.ref,validation={validForConfirmation:true,issues:[],sourceRefs:[p.documentRef,p.designRef],screenReviewRefs:[]},old={id:id(8),targetRef:target,criteriaVersion:1,outcome:'ACCEPTED'},latest={id:id(9),targetRef:target,criteriaVersion:1,outcome:'REWORK'};return{planRef:target,headVersion:2,confirmedVersion:confirmed?1:null,criteria,contentReviews:[{ref:latest,criteria,items:criteria.items.map(i=>({criterionId:i.criterionId,outcome:'REWORK',evidenceRefs:[],reason:'현재 보완 판단'})),reviewer:{kind:'HUMAN',userId:id(7),sameAsTargetRecorder:false},sourceKind:'HUMAN_REVIEW',reason:'현재 검토',reviewedAt:at,serverSequence:2}],confirmation:confirmed?{id:id(6),planRef:target,reviewRefs:[old],validation,confirmedBy:{kind:'HUMAN',userId:id(5)},confirmedAt:at}:null,validation,currentConfirmationValid:false,activatedAsBaseline:false,observedAt:at};}
 function deferred<T>(){let resolve!:(v:T)=>void;const promise=new Promise<T>(r=>resolve=r);return{promise,resolve};}
-async function fixture(){
- const calls:{path:string;method:string}[]=[],controls:{decision:()=>Promise<Response>}={decision:async()=>Response.json(decision())};let lost=0;
- const transport:typeof fetch=async(path,options)=>{calls.push({path:String(path),method:String(options?.method)});assert.equal(options?.method,'GET');return String(path).endsWith('/decision')?controls.decision():Response.json(plan(Number(String(path).split('/').at(-1))));};
+function referenceFixture(){
+ const body='과거 설계·시안 원문',artifact={artifactId:id(30),bytes:Buffer.byteLength(body),contentHash:contentHash(Buffer.from(body)),mediaType:'text/markdown;charset=utf-8'},designRef=ref(3),screenRef={...ref(31),version:3},formRef=ref(32);
+ const design={kind:'DESIGN_ITEM',id:id(33),versionRef:designRef,localCode:'D01',anchor:'line:1'},screen={kind:'SCREEN_REGION',id:id(34),versionRef:screenRef,localCode:'S01',anchor:'line:1'};
+ const itemData={documentRef:designRef,localCode:'D01',title:'과거 설계',anchor:'line:1'},item={id:design.id,...itemData,itemHash:contentHash(canonicalJson(itemData))};
+ const regionData={designItemId:design.id,screenCode:'S01',documentRef:screenRef,artifactRef:artifact,anchor:'line:1'},region={id:screen.id,...regionData,regionHash:contentHash(canonicalJson(regionData))};
+ const snapshot={documentRef:ref(2),designRef,screenReviewRefs:[],tasks:[{...blankPlanTask(),taskCode:'FN01',title:'과거 업무',designRefs:[design],screenRefs:[screen]}],dependencies:[],reason:'보관 계획 1',issues:[],relationalProjection:'STORED'};
+ const historical={...plan(1),...snapshot,ref:{id:id(1),version:1,contentHash:contentHash(canonicalJson(snapshot))}};
+ const document=(target=design)=>({...target.versionRef,title:target.localCode+' 과거 원문',formRef,confirmed:false,stageNodeRef:null,content:{body:artifact,attachments:[],sections:[],sourceRefs:[]},validation:{validForConfirmation:false,issues:[]},statusHistory:[],contentReviewCriteria:{criteriaVersion:1,formRef,items:[]},contentReviews:[]});
+ const form=(code:string)=>({ref:formRef,definition:{scope:'SYSTEM',formCode:code,name:'양식',purpose:'작성',requiredInputs:['설계'],authorRole:'작성',reviewerRole:'검토',confirmerRole:'사용자',items:[{itemId:'ID01',title:'원문',required:true,repeated:false,valueType:'TEXT',authoringRules:['기록'],reviewCriteria:['확인'],fields:[]}],authoringStandardRef:formRef},authoringStandard:{ref:formRef,content:'기준'},validation:{formatOnly:true,contentReview:'NOT_PERFORMED',userAcceptance:'NOT_PERFORMED'}});
+ return{body,design,screen,historical,document,form,index:{documentRef:designRef,items:[item],screenRegions:[region],status:'INDEXED',observedAt:at}};
+}
+async function fixture(withReferences=false){
+ const references=referenceFixture();let target=references.design;
+ const calls:{path:string;method:string}[]=[],controls={decision:async()=>Response.json(decision()),document:async()=>Response.json(references.document(target))};let lost=0;
+ const transport:typeof fetch=async(path,options)=>{calls.push({path:String(path),method:String(options?.method)});assert.equal(options?.method,'GET');const p=String(path);if(p.endsWith('/decision'))return controls.decision();if(withReferences){if(p.includes('/design-index?'))return Response.json(references.index);if(p.includes('/documents/')){target=p.includes('/'+references.screen.versionRef.id+'/')?references.screen:references.design;return controls.document();}if(p.includes('/files/'))return new Response(references.body,{headers:{'content-type':'application/octet-stream'}});if(p.includes('/forms/'))return Response.json(references.form(target.kind==='DESIGN_ITEM'?'AF02':'AF03'));if(p.endsWith('/versions/1'))return Response.json(references.historical);}return Response.json(plan(Number(p.split('/').at(-1))));};
  const client=new ui.ApiClient(transport),container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);let props={client,projectId:id(10),session:{user:{id:id(11)},clientId:id(12),csrfToken:'C'.repeat(43)},observedPlan:plan(2),onAuthenticationLost:()=>{lost++;}};
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))],button=(label:string)=>{const matches=nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent===label);assert.equal(matches.length,1,'버튼 '+label);return matches[0]!;};
  const render=async(next=props)=>{props=next;await ui.React.act(async()=>root.render(ui.React.createElement(ui.WorkPlanVersionHistory,props)));};
  const click=async(label:string)=>{const node=button(label);assert(!node.disabled,label+' 활성');await ui.React.act(async()=>node.dispatchEvent({type:'click',button:0,bubbles:true}));};
  const settle=async()=>{await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});};
  const waitFor=async(check:()=>boolean)=>{const end=Date.now()+1500;while(!check()&&Date.now()<end)await ui.React.act(async()=>{await new Promise(r=>setTimeout(r,2));});assert(check(),container.textContent);};
- await render();return{waitFor,calls,controls,client,container,root,button,click,render,settle,nodes,props:()=>props,lost:()=>lost,text:()=>container.textContent,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);},changeVersion:async(v:string)=>{const input=nodes().find(n=>n.tagName==='INPUT')!;const key=Object.keys(input).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>((input as any)[key].onChange({target:{value:v}})));}};
+ await render();return{references,waitFor,calls,controls,client,container,root,button,click,render,settle,nodes,props:()=>props,lost:()=>lost,text:()=>container.textContent,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);},changeVersion:async(v:string)=>{const input=nodes().find(n=>n.tagName==='INPUT')!;const key=Object.keys(input).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>((input as any)[key].onChange({target:{value:v}})));}};
 }
 test('과거 계획 원문 선택 뒤 명시 버튼으로만 해당 버전의 검토·확정 이력을 연다',async()=>{const f=await fixture();try{assert.equal(f.calls.length,0);await f.click('지정 보관 계획 버전 열기');await f.waitFor(()=>f.text().includes('보관 계획 1'));assert.equal(f.calls.length,1);f.button('이 버전 검토·확정 이력 조회');await f.click('이 버전 검토·확정 이력 조회');assert.equal(f.calls.filter(c=>c.path.endsWith('/versions/1/decision')).length,1);assert.match(f.text(),/과거 확정 이력 있음/);assert.match(f.text(),/현재 확정 유효하지 않음/);assert.match(f.text(),new RegExp(id(8)));assert.match(f.text(),new RegExp(id(9)));assert(f.calls.every(c=>c.method==='GET'));}finally{await f.close();}});
 
@@ -57,3 +70,31 @@ test('느린 JSON은 닫기·버전·사용자·프로젝트·clientId·실제 A
 test('동일 client의 transport 무렌더 교체와 렌더 ABA 모두 느린 JSON 결과를 버린다',async()=>{for(const change of ['NO_RENDER','ABA']){const f=await fixture(),gate=deferred<unknown>();try{f.controls.decision=async()=>{const r=Response.json(decision());r.json=()=>gate.promise;return r;};await openPast(f);await f.click('이 버전 검토·확정 이력 조회');const original=f.client.transport;f.client.transport=async()=>Response.json(decision());if(change==='ABA'){await f.render();f.client.transport=original;await f.render();}gate.resolve(decision());await f.settle();assert(!f.text().includes('과거 확정 이력 있음'),change);assert.equal(f.lost(),0);assert.equal(f.calls.filter(c=>c.path.endsWith('/decision')).length,1);if(change==='NO_RENDER'){await f.click('이 버전 검토·확정 이력 닫기');await f.click('이 버전 검토·확정 이력 조회');assert.match(f.text(),/과거 확정 이력 있음/);}}finally{gate.resolve(decision());await f.close();}}});
 test('요청 중 중복 입력은 GET1이며 닫기 후 새 조회가 옛 성공·오류에 덮이지 않는다',async()=>{const f=await fixture(),gate=deferred<unknown>();try{f.controls.decision=async()=>{const r=Response.json(decision());r.json=()=>gate.promise;return r;};await openPast(f);await f.click('이 버전 검토·확정 이력 조회');const button=f.button('이 버전 검토·확정 이력 조회');assert(button.disabled);await ui.React.act(async()=>button.dispatchEvent({type:'click',button:0,bubbles:true}));assert.equal(f.calls.filter(c=>c.path.endsWith('/decision')).length,1);await f.click('이 버전 검토·확정 이력 닫기');const empty=decision(plan(1),false);empty.contentReviews=[];f.controls.decision=async()=>Response.json(empty);await f.click('이 버전 검토·확정 이력 조회');gate.resolve(decision());await f.settle();assert.match(f.text(),/이 버전의 확정 이력 없음/);assert(!f.text().includes('과거 확정 이력 있음'));}finally{gate.resolve(decision());await f.close();}});
 test('원문 닫기·컴포넌트 이탈 후 늦은 이력 응답은 버리고 추가 GET을 보내지 않는다',async()=>{for(const change of ['ORIGINAL_CLOSE','UNMOUNT']){const f=await fixture(),gate=deferred<unknown>();let closed=false;try{f.controls.decision=async()=>{const r=Response.json(decision());r.json=()=>gate.promise;return r;};await openPast(f);await f.click('이 버전 검토·확정 이력 조회');if(change==='ORIGINAL_CLOSE')await f.click('과거 계획 원문 닫기');else{await f.close();closed=true;}gate.resolve(decision());await f.settle();assert(!f.text().includes('과거 확정 이력 있음'));assert.equal(f.calls.length,2);}finally{gate.resolve(decision());if(!closed)await f.close();}}});
+
+
+test('과거 업무 참조: 명시 설계·시안 버튼은 과거 계획과 정확 원문 버전만 GET한다',async()=>{
+ const f=await fixture(true);try{
+  assert.equal(f.calls.length,0);await f.click('지정 보관 계획 버전 열기');await f.waitFor(()=>f.text().includes('과거 업무'));assert.equal(f.calls.length,1);
+  for(const target of [f.references.design,f.references.screen]){
+   const button=f.nodes().find(n=>n.tagName==='BUTTON'&&n.getAttribute('aria-label')===target.localCode+' 고정 원문 보기');assert(button,'과거 업무 '+target.localCode+' 고정 원문 버튼');
+   const start=f.calls.length;await ui.React.act(async()=>button.dispatchEvent({type:'click',button:0}));await f.waitFor(()=>f.text().includes(target.localCode+' 과거 원문'));
+   const calls=f.calls.slice(start);assert.equal(calls.length,5);assert.equal(calls[0]!.path,`/api/v1/projects/${id(10)}/work-plans/${id(1)}/versions/1`);
+   assert(calls.some(c=>c.path===`/api/v1/projects/${id(10)}/documents/${target.versionRef.id}/versions/${target.versionRef.version}`));assert(calls.every(c=>c.method==='GET'));assert(f.text().includes(f.references.body));
+   await f.click('고정 원문 닫기');assert(!f.text().includes(f.references.body));
+  }
+  assert.equal(f.props().observedPlan.ref.version,2);
+ }finally{await f.close();}
+});
+
+test('과거 업무 참조: 선택 변경·원문 닫기 뒤 늦은200/401은 원문·인증 효과0이다',async()=>{
+ for(const status of [200,401])for(const change of ['VERSION','CLOSE']){
+  const f=await fixture(true),gate=deferred<Response>();try{
+   f.controls.document=()=>gate.promise;await f.click('지정 보관 계획 버전 열기');await f.waitFor(()=>f.text().includes('과거 업무'));
+   const button=f.nodes().find(n=>n.tagName==='BUTTON'&&n.getAttribute('aria-label')==='D01 고정 원문 보기');assert(button);
+   await ui.React.act(async()=>button.dispatchEvent({type:'click',button:0}));await f.waitFor(()=>f.calls.some(c=>c.path.includes('/documents/')));
+   if(change==='VERSION')await f.changeVersion('2');else await f.click('과거 계획 원문 닫기');
+   gate.resolve(status===200?Response.json(f.references.document()):Response.json({code:'AUTH_REQUIRED'},{status}));await f.settle();
+   assert(!f.text().includes(f.references.body));assert(!f.text().includes('AUTH_REQUIRED'));assert.equal(f.lost(),0);assert.equal(f.calls.length,status===200?5:4);assert(!f.calls.some(c=>c.path.includes('/forms/')));assert(f.calls.every(c=>c.method==='GET'));
+  }finally{gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.close();}
+ }
+});
