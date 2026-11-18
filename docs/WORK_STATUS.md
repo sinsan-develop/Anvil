@@ -20749,3 +20749,9 @@ developer_primary가기준9213ad56에서A8고정7리터럴및A1~A7혼합외피·
 기준5fd37885. developer_primary가로컬Nodev24.22.1 내장test_runner에서--test-isolation=none의NODE_TEST_WORKER_ID='1'주입을확인했다. 원환경검사RAM에서정상주입키를거절하는충돌이재현됐다(b2ab08). 대상Linux내장원바이트추가조회0이므로A8최초원인및대상동일성은미확정이다.
 
 runner/test2경로에서자식검사만분리해정확worker값1을허용하고다른값/키/고정환경변조거절을유지했다. 부모빈env·spawn·handoff·기한·결과검산불변. RED7fa279뒤fdc014 1통과·인접8050c0 4통과,타입779a24·diff5d481c 종료0. Main43d26e 전체28통과·실패/건너뜀0. 실제자식·DB·SSH·Docker·A1~A8접근·재실행·삭제0. A8보존/IX01미완료. 다음은독립검수와CHILD실패경계의한정진단보완여부확인이다.
+
+## IX01 CHILD 고정 단계 진단
+
+기준b82c726e. 독립d2_preflight는Node환경보정에C0/I0/M0를반환했다. developer_primary가runner/test2경로에서CHILD의ATTACHED_HOST/CURRENT/ARTIFACT/HANDOFF/OWNER/SOURCES/SPAWN/CURRENT_AFTER_SPAWN/EXIT/RESULT_READ및OUTPUT_VERIFY를기존private표식/결과code로구분했다. 원호출순서·기한·UNKNOWN·정리차단을유지하며원예외/자식출력/Secret을결과에추가하지않았다.
+
+RED3c9179 2실패뒤집중890adc 8통과,타입bb99eb·diff fac056 종료0. 중간RAM시험의타입단언오류2건은명시객체로보완했다. Mainc2d57c 전체30통과·실패/건너뜀0 및diff검수0. 실제자식·DB·SSH·Docker·A1~A8접근·재실행·삭제0. A8실패위치및보완후실제동작은미검증이다. 다음은고정진단의독립검수와새격리후보준비이며IX01미완료다.

@@ -116,12 +116,12 @@ export function verifyCurrentChildOutcome(value:unknown,handoffHash:string):bool
   &&value.result.purpose==='IX01_CURRENT_TC01_CHILD_RESULT'&&value.result.handoffHash===handoffHash&&value.result.ledgerCount===130&&value.result.status==='PASSED';
 }
 const runtimeSteps=['DIRECTORIES','CONFIG','TOOLS','LOCK','VERSION','PREINSTALL','INSTALL','POSTINSTALL'] as const;
-const stepFailures=new WeakMap<object,{stage:'RUNTIME'|'START';code:string}>();
-function stoppedStep(stage:'RUNTIME'|'START',step:string):never{
+const stepFailures=new WeakMap<object,{stage:'RUNTIME'|'START'|'CHILD';code:string}>();
+function stoppedStep(stage:'RUNTIME'|'START'|'CHILD',step:string):never{
  const failure=Object.freeze(Object.create(null)) as object;
  stepFailures.set(failure,{stage,code:'STOPPED_'+stage+'_'+step});throw failure;
 }
-function stepFailureCode(stage:'RUNTIME'|'START',error:unknown):string{
+function stepFailureCode(stage:'RUNTIME'|'START'|'CHILD',error:unknown):string{
  const failure=error!==null&&(typeof error==='object'||typeof error==='function')?stepFailures.get(error):undefined;
  return failure?.stage===stage?failure.code:'STOPPED_'+stage;
 }
@@ -152,6 +152,14 @@ export async function runCurrentStartSteps(steps:Record<StartSyncStep,()=>void>&
   step='READINESS';await steps.READINESS();
   step='BOOTSTRAP_ROLES';steps.BOOTSTRAP_ROLES();
  }catch{stoppedStep('START',step);}
+}
+
+const childSteps=['ATTACHED_HOST','CURRENT','ARTIFACT','HANDOFF','OWNER','SOURCES','SPAWN','CURRENT_AFTER_SPAWN','EXIT'] as const;
+export function runCurrentChildSteps<T>(steps:Record<typeof childSteps[number],()=>void>&{RESULT_READ():T}):T{
+ for(const step of childSteps){
+  try{steps[step]();}catch{stoppedStep('CHILD',step);}
+ }
+ try{return steps.RESULT_READ();}catch{stoppedStep('CHILD','RESULT_READ');}
 }
 
 interface CurrentDdlDiagnostic{
@@ -227,12 +235,13 @@ export async function runCurrentJourney(input:CurrentInput,ports:CurrentPorts):P
   networkId=isolation.networkId;
   const handoff=Object.freeze({schemaVersion:1,purpose:'IX01_CURRENT_TC01_CHILD',profile:f.owner,planHash:auth.planHash,approvalHash:auth.approvalHash,sourceHead:auth.plan.sourceHead,expiresAt:Math.min(ports.now()+90_000,isolation.expiresAt),ledgerHash:currentLedgerHash(tsv),containerId:containerId!,networkId,host:isolation.host} as const);
   const raw=canonicalJson(handoff),digest=contentHash(raw);verifyCurrentHandoff(raw,digest,auth,tsv,ports.now());
-  stage='CHILD';const child=await call(()=>ports.child(handoff));if(!verifyCurrentChildOutcome(child,digest))fail('IX01_CURRENT_CHILD_UNKNOWN');
+  stage='CHILD';const child=await call(()=>ports.child(handoff));
+  try{if(!verifyCurrentChildOutcome(child,digest))stoppedStep('CHILD','OUTPUT_VERIFY');}catch{stoppedStep('CHILD','OUTPUT_VERIFY');}
   if(ports.now()>=handoff.expiresAt)fail('IX01_CURRENT_CHILD_UNKNOWN');
   stage='CLEANUP';await call(()=>ports.cleanup(handoff));
   stage='RECORD';const done=result('CLEANED','TC01_PASSED');await call(()=>ports.record(done));return done;
  }catch(error){
-  const stopped=result(claimStarted?'UNKNOWN':'REJECTED',schema?.status==='STOPPED'?schema.reason:stage==='RUNTIME'||stage==='START'?stepFailureCode(stage,error):'STOPPED_'+stage);
+  const stopped=result(claimStarted?'UNKNOWN':'REJECTED',schema?.status==='STOPPED'?schema.reason:stage==='RUNTIME'||stage==='START'||stage==='CHILD'?stepFailureCode(stage,error):'STOPPED_'+stage);
   if(claimed&&stage!=='RECORD')try{await ports.record(stopped);}catch{/* 추가 실행 없이 감사 미정착을 보존한다. */}
   return stopped;
  }
@@ -618,20 +627,28 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
    return {containerId,networkId,host:ip,expiresAt:pgUntil};
   },
   async child(handoff){
-   if(handoff.host!==attachedHost()||handoff.containerId!==containerId||handoff.networkId!==networkId)fail('IX01_CURRENT_HANDOFF_INVALID');
-   assertCurrent();mkdirSync(f.artifact,{mode:0o700});host.pins.pin(f.artifact,true);
-   const raw=canonicalJson(handoff),digest=contentHash(raw);
-   createExclusive(handoffPath,raw,assertCurrent);
-   createExclusive(f.artifact+'/owner.json',raw,assertCurrent);
-   host.sources();assertCurrent();
-   const s=passwords!,child=spawnSync(f.node,[...childFlags,f.source+'/'+f.child],{
-    cwd:f.source,env:{...gitEnv,ANVIL_IX01_CURRENT_CHILD:'AUTHORIZED_PARENT',ANVIL_IX01_CURRENT_PLAN_SHA256:input.planHash,ANVIL_IX01_CURRENT_APPROVAL_SHA256:input.approvalHash,ANVIL_IX01_CURRENT_HANDOFF_SHA256:digest,ANVIL_IX01_CURRENT_APP_PASSWORD:s.app,ANVIL_IX01_CURRENT_MIGRATOR_PASSWORD:s.migrator},
-    encoding:'utf8',...currentLocalTimeoutOptions(duration(Math.min(90_000,handoff.expiresAt-host.time()))),maxBuffer:8192,stdio:['ignore','pipe','pipe'],
+   let raw='',digest='';
+   let child:ReturnType<typeof spawnSync>;
+   return runCurrentChildSteps({
+    ATTACHED_HOST(){if(handoff.host!==attachedHost()||handoff.containerId!==containerId||handoff.networkId!==networkId)fail('IX01_CURRENT_HANDOFF_INVALID');},
+    CURRENT(){assertCurrent();},
+    ARTIFACT(){mkdirSync(f.artifact,{mode:0o700});host.pins.pin(f.artifact,true);},
+    HANDOFF(){raw=canonicalJson(handoff);digest=contentHash(raw);createExclusive(handoffPath,raw,assertCurrent);},
+    OWNER(){createExclusive(f.artifact+'/owner.json',raw,assertCurrent);},
+    SOURCES(){host.sources();assertCurrent();},
+    SPAWN(){
+     const s=passwords!;child=spawnSync(f.node,[...childFlags,f.source+'/'+f.child],{
+      cwd:f.source,env:{...gitEnv,ANVIL_IX01_CURRENT_CHILD:'AUTHORIZED_PARENT',ANVIL_IX01_CURRENT_PLAN_SHA256:input.planHash,ANVIL_IX01_CURRENT_APPROVAL_SHA256:input.approvalHash,ANVIL_IX01_CURRENT_HANDOFF_SHA256:digest,ANVIL_IX01_CURRENT_APP_PASSWORD:s.app,ANVIL_IX01_CURRENT_MIGRATOR_PASSWORD:s.migrator},
+      encoding:'utf8',...currentLocalTimeoutOptions(duration(Math.min(90_000,handoff.expiresAt-host.time()))),maxBuffer:8192,stdio:['ignore','pipe','pipe'],
+     });
+    },
+    CURRENT_AFTER_SPAWN(){assertCurrent();},
+    EXIT(){if(child.error||child.status!==0||child.signal||host.time()>=handoff.expiresAt)fail('IX01_CURRENT_CHILD_UNKNOWN');},
+    RESULT_READ(){
+     const outcome=parseWireJson(plainFile(childResultPath,f.uid,4096,0o600).toString('utf8'));
+     return {status:child.status,signal:child.signal,stdout:child.stdout,stderr:child.stderr,result:outcome};
+    },
    });
-   assertCurrent();
-   if(child.error||child.status!==0||child.signal||host.time()>=handoff.expiresAt)fail('IX01_CURRENT_CHILD_UNKNOWN');
-   const outcome=parseWireJson(plainFile(childResultPath,f.uid,4096,0o600).toString('utf8'));
-   return {status:child.status,signal:child.signal,stdout:child.stdout,stderr:child.stderr,result:outcome};
   },
   async cleanup(handoff){
    if(handoff.host!==attachedHost())fail('IX01_CURRENT_NETWORK');

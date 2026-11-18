@@ -234,6 +234,41 @@ test('IX01 runtime controller 연결 RAM: 고정 실패는 UNKNOWN 기록만 남
  }
 });
 
+test('IX01 CHILD 고정 진단 RAM: 실패 단계만 남기고 원 예외와 정리를 차단한다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ const run=api.runCurrentChildSteps;
+ assert.equal(typeof run,'function');
+ const names=['ATTACHED_HOST','CURRENT','ARTIFACT','HANDOFF','OWNER','SOURCES','SPAWN','CURRENT_AFTER_SPAWN','EXIT','RESULT_READ'] as const;
+ const steps=(work:(name:typeof names[number])=>unknown)=>({
+  ATTACHED_HOST:()=>work('ATTACHED_HOST'),CURRENT:()=>work('CURRENT'),ARTIFACT:()=>work('ARTIFACT'),HANDOFF:()=>work('HANDOFF'),OWNER:()=>work('OWNER'),
+  SOURCES:()=>work('SOURCES'),SPAWN:()=>work('SPAWN'),CURRENT_AFTER_SPAWN:()=>work('CURRENT_AFTER_SPAWN'),EXIT:()=>work('EXIT'),RESULT_READ:()=>work('RESULT_READ'),
+ });
+ let secretReads=0;
+ for(const failed of names){
+  const h=harness(),calls:string[]=[],records:unknown[]=[];
+  h.ports.child=async()=>run(steps(name=>{calls.push(name);if(name===failed)throw new Proxy({},{get(){secretReads++;throw Error('secret/path/argv/stdout/stderr');}});return null;}));
+  h.ports.record=async value=>{h.calls.push('RECORD');records.push(value);};
+  const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.status,'UNKNOWN');assert.equal(result.stage,'CHILD');assert.equal(result.code,'STOPPED_CHILD_'+failed);
+  assert.deepEqual(calls,names.slice(0,names.indexOf(failed)+1));assert.equal(records.length,1);assert.equal(h.calls.includes('CLEANUP'),false);
+  assert.doesNotMatch(JSON.stringify(result),/secret|argv|stdout|stderr|stack/);
+ }
+ assert.equal(secretReads,0);
+ const calls:string[]=[],value={ok:true};assert.equal(run(steps(name=>{calls.push(name);return value;})),value);assert.deepEqual(calls,names);
+ for(const failure of [Error('STOPPED_CHILD_SPAWN'),{code:'STOPPED_CHILD_SPAWN'}]){
+  const h=harness();h.ports.child=async()=>{throw failure;};const result=await runCurrentJourney(input(),h.ports);
+  assert.equal(result.code,'STOPPED_CHILD');assert.equal(result.status,'UNKNOWN');assert.equal(h.calls.includes('CLEANUP'),false);
+ }
+});
+test('IX01 CHILD 출력 진단 RAM: TAP과 원 결과 결박 실패는 정리를 열지 않는다',async()=>{
+ for(const mutate of [v=>({...v,stdout:'secret'}),v=>({...v,stderr:'secret'}),v=>({...v,result:{...v.result,handoffHash:'f'.repeat(64)}})] as ((v:ReturnType<typeof outcome>)=>unknown)[]){
+  const h=harness();h.ports.child=async handoff=>mutate(outcome(contentHash(canonicalJson(handoff))));
+  const result=await runCurrentJourney(input(),h.ports);assert.equal(result.code,'STOPPED_CHILD_OUTPUT_VERIFY');assert.equal(result.status,'UNKNOWN');assert.equal(result.stage,'CHILD');
+  assert.equal(h.calls.includes('CLEANUP'),false);assert.equal(h.calls.filter(v=>v==='RECORD').length,1);assert.doesNotMatch(JSON.stringify(result),/secret|stdout|stderr/);
+ }
+ const h=harness();h.ports.child=async handoff=>{h.expire();return outcome(contentHash(canonicalJson(handoff)));};
+ const result=await runCurrentJourney(input(),h.ports);assert.equal(result.code,'STOPPED_CHILD');assert.equal(result.status,'UNKNOWN');assert.equal(h.calls.includes('CLEANUP'),false);
+});
 test('IX01 현재 실행 승인 없음·해시 변조·만료는 포트 진입 전 거절한다',async()=>{
  for(const candidate of [input({},'DENY'),{...input(),planHash:'9'.repeat(64)},{...input(),approvalRaw:'{}'},input({expiresAt:now})]){
   const h=harness();assert.equal((await runCurrentJourney(candidate,h.ports)).status,'REJECTED');assert.deepEqual(h.calls,[]);
