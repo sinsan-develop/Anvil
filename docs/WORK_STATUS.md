@@ -20755,3 +20755,9 @@ runner/test2경로에서자식검사만분리해정확worker값1을허용하고�
 기준b82c726e. 독립d2_preflight는Node환경보정에C0/I0/M0를반환했다. developer_primary가runner/test2경로에서CHILD의ATTACHED_HOST/CURRENT/ARTIFACT/HANDOFF/OWNER/SOURCES/SPAWN/CURRENT_AFTER_SPAWN/EXIT/RESULT_READ및OUTPUT_VERIFY를기존private표식/결과code로구분했다. 원호출순서·기한·UNKNOWN·정리차단을유지하며원예외/자식출력/Secret을결과에추가하지않았다.
 
 RED3c9179 2실패뒤집중890adc 8통과,타입bb99eb·diff fac056 종료0. 중간RAM시험의타입단언오류2건은명시객체로보완했다. Mainc2d57c 전체30통과·실패/건너뜀0 및diff검수0. 실제자식·DB·SSH·Docker·A1~A8접근·재실행·삭제0. A8실패위치및보완후실제동작은미검증이다. 다음은고정진단의독립검수와새격리후보준비이며IX01미완료다.
+
+## IX01 TC01 A9 source-only 준비
+
+독립d2_preflight가기준b82c726e..2957fd80 CHILD고정진단에C0/I0/M0를반환했다. 원호출·인자·환경·기한·TAP/hash기준과UNKNOWN정리차단을유지하고원예외비노출을확인했다.
+
+developer_primary가기준2957fd80에서A9 literal7개및A1~A8혼합외피/인계거절을준비했다. RED567b05뒤b28019 5통과·실패/건너뜀0,타입aaa236·원바이트894abc·공백834a93 종료0,Main diff검수0. SQL130/4,004,568B·원장546e8409e4313901597bcfdb71ce91efcd4f9eb6a54bdad99e5f439a017c324c불변. 실제외피·자식·DB·SSH·Docker·A1~A8접근·설치·삭제0. 다음은소스commit과고정실행안및별도단회실행결정이다. IX01미완료.
