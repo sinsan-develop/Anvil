@@ -20863,3 +20863,7 @@ SQL 130개와 원장 130개가 SETTLED, schema VERIFIED다. 고정 소스 순서
 기준 9d7fc631. developer_primary가 `scripts/qa-ix01-current-journey.ts`, `tests/integration/IX01/methodology-copy-application-scenario.ts`, `tests/unit/IX01/current-journey-controller.test.ts`를 보완했다. 복사 검증에 한해 현재성·HTTP·크기·JSON·형상·참조·영수증·복사본 ID·해시의 고정 코드 9개를 기록한다. 원 예외·상태값·응답 원문은 기록하지 않는다. 기존 인계 검산과 UNKNOWN·정리 차단 및 기한이 지난 진단을 채택하지 않는 동작을 유지한다. 기존 A12 고정 소스와 실행안은 각 원 커밋에 보존되어 있다.
 
 RED d75542 2실패 뒤 집중·인접 c09701 합성 9통과, 타입 32a36e·diff b67d9d 종료 0. Main이 최종 세 파일 지문 일치 및 제어기 전체 합성 37통과(실패·건너뜀 0, 4040c8)를 확인했다. 실제 환경·DB·A12 접근·재실행·삭제는 없었다. A12의 과거 실패 원인과 실제 저장·조회는 미확정이다. 새 격리 실행은 별도 고정 소스·실행안과 승인을 전제로 한다.
+
+## IX01 TC01 A13 격리 시험안 준비
+
+기준 370e5337. developer_primary가 실행기와 제어기 시험만 수정했고 Main이 A13 전용 자원 이름 일곱 개와 기존 인계·보존 조건을 검수했다. 실행 소스 f8a869d100487a803da8f20f9222de3d32b11278, [A13 고정 실행안](work_packages/IX01_TC01_A13_EXECUTION_CANDIDATE.md)에 source14·SQL130·원장 지문과 한도·정리 조건을 고정했다. RED 988620 1실패 뒤 합성 9통과(726a19), 타입 aa9a61 종료 0이다. Main도 합성 9통과(455526)와 Git 원바이트 14개·SQL 130개 4,004,568바이트를 대조했다. 실제 실행, 자원 조회·생성·삭제, 저장·재조회는 미실행이다. A12는 보존하며 IX01은 미완료다.
