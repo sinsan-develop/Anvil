@@ -46,21 +46,23 @@ function draft(base=0){
 }
 function deferred<T>(){let resolve!:(v:T)=>void;const promise=new Promise<T>(r=>resolve=r);return{promise,resolve};}
 async function fixture(){
- let buffer:any=draft(),shown=true,identity={},currentSession=session,lost=0,hold:ReturnType<typeof deferred<Response>>|null=null,fail=false;
- const writes:any[]=[],gets:string[]=[],responses:Response[]=[];
+ let buffer:any=draft(),stored:any=null,currentProject=pid,shown=true,identity={},currentSession=session,lost=0,hold:ReturnType<typeof deferred<Response>>|null=null,fail=false;
+ const writes:any[]=[],gets:string[]=[],responses:Response[]=[],controls={read:async()=>Response.json(stored)};
  const client=new ui.ApiClient(async(path:string,init:any)=>{
   if(init?.method==='POST'){
    const c=JSON.parse(init.body);writes.push(c);
+   stored={...structuredClone(buffer.target),state:'EXCLUDED',currentConfirmationValid:false,history:[...structuredClone(buffer.target.history),{id:id(10),kind:'EXCLUDED',reason:c.payload.reason,actorRef:{kind:'HUMAN',userId:uid},recordedAt:at}]};
    const response=Response.json({operationId:id(9),commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:c.targetId,version:c.expectedVersion,data:{status:'EXCLUDED',ref:c.payload.versionRef,reason:c.payload.reason,eventId:id(10)},serverReceivedAt:at});responses.push(response);
    if(hold){const wait=hold;hold=null;return wait.promise;}if(fail){fail=false;throw Error('transport');}return response;
   }
   gets.push(path);
   if(path.includes('/knowledge?'))return Response.json({items:[],hasMore:false,nextCursor:null,searchScope:'TITLE_REASON',observedAt:at});
   if(path.includes('/conversations?'))return Response.json({items:[],hasMore:false,nextCursor:null,observedAt:at});
+  if(path.includes('/knowledge/'))return controls.read();
   throw Error('unexpected '+path);
  });
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
- function render(){const captured=identity;root.render(shown?ui.React.createElement(ui.KnowledgePage,{client,projectId:pid,session:currentSession,buffer:null,onChange(){},conversationBuffer:null,onConversationChange(){},exclusion:buffer,onExclusionChange:(...args:any[])=>{
+ function render(){const captured=identity;root.render(shown?ui.React.createElement(ui.KnowledgePage,{client,projectId:currentProject,session:currentSession,buffer:null,onChange(){},conversationBuffer:null,onConversationChange(){},exclusion:buffer,onExclusionChange:(...args:any[])=>{
   if(captured!==identity)return false;
   // 이전 값 전달 계약과 보완된 expected/next CAS를 각각 그대로 소비한다.
   if(args.length===1)buffer=args[0];else{if(buffer!==args[0])return false;buffer=args[1];}
@@ -73,7 +75,7 @@ async function fixture(){
  const click=async(name:string)=>{const b=button(name);assert(!b.disabled);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
  const change=async(value:string)=>{const n=nodes().find(n=>n.getAttribute('aria-label')==='지식 제외 사유')!;const k=Object.keys(n).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>{(n as any)[k].onChange({target:{value}});});};
  await ui.React.act(async()=>render());
- return{writes,gets,responses,button,click,change,wait,settle,container,buffer:()=>buffer,lost:()=>lost,fail:()=>{fail=true;},hold:()=>{hold=deferred<Response>();return hold;},replace:async(b:any)=>{buffer=b;await ui.React.act(async()=>render());},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},context:async(s:typeof session)=>{identity={};currentSession=s;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{writes,gets,responses,controls,nodes,stored:()=>stored,button,click,change,wait,settle,container,buffer:()=>buffer,lost:()=>lost,fail:()=>{fail=true;},hold:()=>{hold=deferred<Response>();return hold;},replace:async(b:any)=>{buffer=b;await ui.React.act(async()=>render());},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},context:async(s:typeof session,p=pid)=>{identity={};currentSession=s;currentProject=p;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 function holdDigest(){
  const subtle=crypto.subtle,descriptor=Object.getOwnPropertyDescriptor(subtle,'digest'),original=subtle.digest;
@@ -234,4 +236,41 @@ test('정정 저장 고정 조회: UNKNOWN·미저장 차단 및 다른 hash·�
   for(const field of ['ref','supersedesRef']){f.controls.read=async()=>{const value=structuredClone(f.stored());value[field].contentHash='f'.repeat(64);if(field==='supersedesRef')value.history[0].baseRef={...value.supersedesRef};return Response.json(value);};await f.click(correctionRead);await f.wait(()=>f.text().includes('RESPONSE_INVALID'));assert(!f.nodes().some(n=>n.getAttribute('aria-label')==='보관 지식 원문'));}
   f.controls.read=async()=>Response.json({code:'AUTH_REQUIRED'},{status:401});await f.click(correctionRead);await f.wait(()=>f.lost()===1);assert.equal(f.writes.length,2);
  }finally{await f.close();}
+});
+
+
+const exclusionRead='제외한 지식 고정 원문·이력 보기';
+async function saveExclusion(f:Awaited<ReturnType<typeof fixture>>){await f.click('사용 제외 저장');await f.wait(()=>!!f.buffer()?.savedEventId);await f.settle();}
+const hasStoredOriginal=(f:Awaited<ReturnType<typeof fixture>>)=>f.nodes().some(n=>n.getAttribute('aria-label')==='보관 지식 원문');
+test('제외 저장 고정 조회: ACTIVE 빈목록에서도 원 영수증 사건·원문을 명시 GET으로 확인한다',async()=>{
+ const f=await fixture();try{
+  assert(!f.nodes().some(n=>n.textContent===exclusionRead));await saveExclusion(f);const saved=f.buffer();assert.equal(f.writes.length,1);assert.equal(f.gets.filter(p=>p.includes('/knowledge/')).length,0);
+  await f.click(exclusionRead);await f.wait(()=>hasStoredOriginal(f));assert(f.container.textContent.includes('EXCLUDED'));assert(f.container.textContent.includes(saved.savedEventId));assert.equal(f.buffer(),saved);assert.equal(f.writes.length,1);
+  assert.deepEqual(f.gets.filter(p=>p.includes('/knowledge/')),[`/api/v1/projects/${pid}/knowledge/${saved.target.ref.id}/versions/${saved.target.ref.version}`]);
+  assert(f.gets.filter(p=>p.includes('/knowledge?')).every(p=>!p.includes('EXCLUDED')));
+  await f.replace(null);assert(!hasStoredOriginal(f));
+ }finally{await f.close();}
+});
+
+test('제외 저장 고정 조회: 다른 사건·사유·작성자·hash와 미제외 응답은 원 영수증 확인이 아니다',async()=>{
+ const f=await fixture();try{
+  await saveExclusion(f);
+  for(const mode of ['EVENT','REASON','ACTOR','HASH','ABSENT']){
+   f.controls.read=async()=>{const v=structuredClone(f.stored()),e=v.history.at(-1);if(mode==='EVENT')e.id=id(27);if(mode==='REASON')e.reason='다른 합성 사유';if(mode==='ACTOR')e.actorRef.userId=id(28);if(mode==='HASH')v.ref.contentHash='f'.repeat(64);if(mode==='ABSENT'){v.history.pop();v.state='CONFIRMED';v.currentConfirmationValid=true;}return Response.json(v);};
+   await f.click(exclusionRead);await f.wait(()=>f.container.textContent.includes('RESPONSE_INVALID'));assert(!hasStoredOriginal(f),mode);assert.equal(f.lost(),0);
+  }
+  for(const status of [403,401]){f.controls.read=async()=>Response.json({code:status===401?'AUTH_REQUIRED':'FORBIDDEN'},{status});await f.click(exclusionRead);await f.wait(()=>f.container.textContent.includes(status===401?'AUTH_REQUIRED':'FORBIDDEN'));assert(!hasStoredOriginal(f));}
+  assert.equal(f.lost(),1);assert.equal(f.writes.length,1);
+ }finally{await f.close();}
+});
+
+test('제외 저장 고정 조회: UNKNOWN·미저장과 교체·닫기·세션/프로젝트 뒤 늦은 결과를 차단한다',async()=>{
+ for(const status of [200,401])for(const mode of ['REPLACE','CLOSE','SESSION','USER','DEVICE','PROJECT']){
+  const f=await fixture(),gate=deferred<Response>();try{
+   await saveExclusion(f);const saved=f.buffer();await f.replace({...saved,uncertain:true});assert(!f.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent===exclusionRead));await f.replace(saved);
+   f.controls.read=()=>gate.promise;await f.click(exclusionRead);
+   if(mode==='REPLACE')await f.replace({...saved,savedEventId:null});if(mode==='CLOSE')await f.replace(null);if(mode==='SESSION')await f.context({...session,csrfToken:'d'.repeat(43)});if(mode==='USER')await f.context({...session,user:{...session.user,id:id(30)}});if(mode==='DEVICE')await f.context({...session,clientId:id(31)});if(mode==='PROJECT')await f.context(session,id(29));
+   gate.resolve(status===200?Response.json(f.stored()):Response.json({code:'AUTH_REQUIRED'},{status}));for(let n=0;n<8;n++)await f.settle();assert(!hasStoredOriginal(f));assert.equal(f.lost(),0);assert.equal(f.writes.length,1);
+  }finally{gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.close();}
+ }
 });
