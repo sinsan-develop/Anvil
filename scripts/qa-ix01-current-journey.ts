@@ -487,6 +487,10 @@ const labelArgs=(auth:CurrentAuthorization)=>Object.entries(labels(auth)).flatMa
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const containerFormat='{"id":{{json .Id}},"name":{{json .Name}},"image":{{json .Image}},"user":{{json .Config.User}},"labels":{{json .Config.Labels}},"running":{{json .State.Running}},"host":{{json .HostConfig}},"mounts":{{json .Mounts}},"networks":{{json .NetworkSettings.Networks}},"ports":{{json .NetworkSettings.Ports}}}';
 const networkFormat='{"id":{{json .Id}},"name":{{json .Name}},"driver":{{json .Driver}},"internal":{{json .Internal}},"labels":{{json .Labels}},"containers":{{json .Containers}}}';
+// 별도 무DB QA는 같은 관측 형식과 판정식을 재사용한다. TC01 진입/전이는 변경하지 않는다.
+export const currentNetworkProbeContract=Object.freeze({image:f.image,tmpfs:Object.freeze({...tmpfs}),containerFormat,networkFormat});
+export {verifyContainerObservation,verifyNetworkObservation};
+export function currentNetworkFailureCode(error:unknown):string{return stepFailureCode('NETWORK',error);}
 const ledgerSql="SELECT COALESCE(json_agg(json_build_object('id',id,'checksum',checksum) ORDER BY id),'[]'::json)::text FROM anvil.schema_migrations;";
 const hba='local all all trust\nhost all all 0.0.0.0/0 scram-sha-256\nhost all all ::0/0 reject\n';
 
