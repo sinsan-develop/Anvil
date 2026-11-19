@@ -21143,3 +21143,15 @@ C안의 서버·실행기 소비·미적용 SQL 소스 구간을 검수했다. �
 실제 DB·권한·키·서비스·C#·SDK/Agent 실행 0. 원 worker 생산자나 실제 SEND의 선택 발행은 미구현이며 자동 선택과 보호 스풀 저장 형상 변경 0이다. 다음에는 기존 승인 범위에서 원 worker의 설정/패키지/실행 시도 연결을 검산한다. 복구는 신규 발급·노출 및 소비 진입을 닫되 C 형상 저장이 시작된 경우 5키 원형 판독과 해시 검산을 보존한다.
 
 스테이징 공백 검사가 0100 EOF 빈 줄 1개를 검출했다. 담당자가 그 1바이트만 제거했다. 기존 0097의 함수 밖 빈 줄을 함께 비교하던 시험은 함수 시작과 종결자까지의 정확 바이트를 비교하도록 보완했다. 최종 SQL SHA256 9571373E14D73B90729AFC9B759355E37C83FF9A8735999FCA15174547EC9A66, 정적 SQL 8건 통과(9dfda6).
+
+## 2026-11-20 FN07 신규 등록 전 SDK worker 부트스트랩 착수
+
+기준 `851ed16a` clean에서 기존 승인 SDK 생산자 명세 §A/B를 이어간다. 기존 developer_primary가 단일 코드 작성자다. 현재 shell의 원 등록 owner는 main에서 발급되며 설정·수신·등록 포트가 원 Electron 세션과 lease에 결박되어 있다. 보호 package Acquire는 native에서만 실행 근거를 검산하며 기존 일반 host는 dispatch 전 root·원장을 연다. 등록 후 FIRST_INSPECT를 등록 전 검산으로 재사용하지 않는다.
+
+별도 고정 비공개 모드에서 원 peer·패키지와 유한 단회 endpoint를 결박하고, 검증된 신규 경로에 한해 원 worker가 처음으로 등록 owner를 형성하도록 연결한다. 패키지 미확보 환경과 과거 등록의 기존 경로를 유지한다. Root/원장 준비·등록 권위 및 SDK 로드는 별도 정상 절차로 남긴다. 실제 소유 파일 조사·프로세스 실행·C#·SDK/Agent·DB·권한·키·서비스는 제외한다. 착수 시 새 실행과 검증 0이다.
+
+등록 전 비공개 package 검산·등록 Session 중계 소스 4경로를 검수한다. DesktopTrustKeyHostSource의 별도 고정 모드는 일반 root·저장소·등록 원장을 열지 않고 원 peer·package 핸들과 PREPARE→동일 endpoint/epoch ACCEPT→EOF를 결박한다. trust-key-host-client는 원 채널이 열린 동안만 결과를 단회 소비한다. 신규 worker 소스의 broker는 원 Session·origin·auth epoch·lease의 기존 등록 메서드 5개만 MessageChannel로 중계하며 외부 URL은 받지 않는다. 이 자료는 등록 전 검사 결과다. 실제 고정 Worker 생성·최초 owner·shell 진입과 SDK 로드 권위를 확인하지 못했다.
+
+담당자 검증은 열린 채널 소비(742e0d), transport 교체(f1481c), 원 lease 효과 표시(f4e7bf), 중계 누적 제한(38f9cd)의 반례 보완 후 직접·패키지 17건(`5f7ed4`)·기존 보호 IPC 인접 4건(`e69698`)·desktop 타입 검사 종료0이다. Main 직접17 재확인(`a032bd`), 동결 SHA 4/4 및 공백 검사 종료0(`126c96`). 쓰기 반환과 활성 핸들0. 앞선 출력이 절단된 실행은 결과 미확정이며 통과 합계에 넣지 않았다. 실제 C#·프로세스·파일 신원/생존, DB·권한·키·서비스·SDK/Agent 실행은 제외 또는 미검증이다.
+
+기존 설정과 최초 수신은 동기 owner 객체와 원 receiver/key 결박을 가진다. 등록만 worker로 넘기는 임시 shell 분기는 만들지 않았다. 다음 구간은 이 두 조정 흐름을 동일 worker 소유권 안에서 유지하고 main의 제한된 목적별 Session·폴더 선택만 중계하는 실제 연결이다. C 실행 근거의 native 소비는 이후 조립에서 원 FIRST claim과 연결한다.

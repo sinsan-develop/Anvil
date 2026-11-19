@@ -1,6 +1,8 @@
 'use strict';
 const path=require('node:path'),{types}=require('node:util'),{EventEmitter}=require('node:events');
 const {canonicalJson,contentHash,catalogueExact}=require('./runtime-catalogue-profile.cjs');
+const sdkBootstrapMode=Symbol('sdk-bootstrap');
+const sdkBootstrapEndpoints=new WeakMap();
 const intrinsicLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype),'byteLength')?.get;
 
 /** @returns {never} */function unavailable(){throw Error('PROTECTION_UNAVAILABLE');}
@@ -16,9 +18,9 @@ const intrinsicLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint
 /** @param {any} value */function fixedPath(value){return typeof value==='string'&&value.length<=1024&&/^[A-Za-z]:\\/.test(value)&&path.win32.normalize(value)===value&&!/[<>:"|?*\x00-\x1f]/.test(value.slice(2));}
 
 /** 명시 생성한 원 child만 소유한다. import/생성자는 process/FS 효과가 없다.
- * @param {any} input @param {any} ports
+ * @param {any} input @param {any} ports @param {symbol} [mode]
  */
-function createTrustKeyHostClient(input,ports){const binding=JSON.parse(canonicalJson(catalogueExact(input,'path,signerRef,helperHash')));if(!fixedPath(binding.path)||path.win32.basename(binding.path)!=='AnvilTrustKeyHost.exe'||!binding.signerRef||binding.signerRef.contentHash!==binding.helperHash||!/^[0-9a-f]{64}$/.test(binding.helperHash))return unavailable();const names=['readImage','companion','environment','spawn','uuid'];const functions=names.map(k=>own(ports,k));if(functions.some(f=>typeof f!=='function'))return unavailable();let used=false;
+function createTrustKeyHostClient(input,ports,mode){const binding=JSON.parse(canonicalJson(catalogueExact(input,'path,signerRef,helperHash')));if(!fixedPath(binding.path)||path.win32.basename(binding.path)!=='AnvilTrustKeyHost.exe'||!binding.signerRef||binding.signerRef.contentHash!==binding.helperHash||!/^[0-9a-f]{64}$/.test(binding.helperHash))return unavailable();const names=['readImage','companion','environment','spawn','uuid'];const functions=names.map(k=>own(ports,k));if(functions.some(f=>typeof f!=='function'))return unavailable();let used=false;
 /** @type {any} */let retained=null;
 
 /** @param {any} lease */async function open(lease){if(used)return unavailable();used=true;const check=own(lease,'check'),remaining=own(lease,'remainingMs'),expiry=own(lease,'callExpiresAt'),signal=own(lease,'signal');if(typeof check!=='function'||typeof remaining!=='function'||typeof expiry!=='function'||!(signal instanceof AbortSignal))return unavailable();let active=true,sticky=false,closed=false,ending=false,endRequested=false,writes=0,busy=false,sequence=0,buffer=Buffer.alloc(0);
@@ -28,7 +30,7 @@ function createTrustKeyHostClient(input,ports){const binding=JSON.parse(canonica
 const guard=()=>{if(!active||signal.aborted||names.some((k,i)=>own(ports,k)!==functions[i])||own(lease,'check')!==check||own(lease,'remainingMs')!==remaining||own(lease,'callExpiresAt')!==expiry||own(lease,'signal')!==signal)return unavailable();check();const ms=remaining();if(!Number.isFinite(ms)||ms<1||ms>10000)return unavailable();};
 
 /** @param {number} i @param {any[]} args */const call=async(i,args)=>{guard();const value=await Reflect.apply(functions[i],ports,args);guard();return value;};
-const image1=copyBuffer(await call(0,[binding.path,signal]),67108864);if(image1.length<1||contentHash(image1)!==binding.helperHash)return unavailable();image1.fill(0);const environment=Reflect.apply(functions[2],ports,[]),system=own(environment,'SystemRoot'),windir=own(environment,'WINDIR');if(!fixedPath(system)||!fixedPath(windir)||system.toLowerCase()!==windir.toLowerCase())return unavailable();const env=Object.freeze({SystemRoot:system,WINDIR:windir});for(const suffix of ['.config','.local','.manifest'])if(await call(1,[binding.path+suffix])!=='ABSENT')return unavailable();const image2=copyBuffer(await call(0,[binding.path,signal]),67108864);if(contentHash(image2)!==binding.helperHash)return unavailable();image2.fill(0);guard();const child=Reflect.apply(functions[3],ports,[binding.path,[],Object.freeze({shell:false,windowsHide:true,stdio:Object.freeze(['overlapped','overlapped','overlapped']),cwd:path.win32.dirname(binding.path),env})]);const stdin=own(child,'stdin'),stdout=own(child,'stdout'),stderr=own(child,'stderr'),write=method(stdin,'write'),end=method(stdin,'end');
+const image1=copyBuffer(await call(0,[binding.path,signal]),67108864);if(image1.length<1||contentHash(image1)!==binding.helperHash)return unavailable();image1.fill(0);const environment=Reflect.apply(functions[2],ports,[]),system=own(environment,'SystemRoot'),windir=own(environment,'WINDIR');if(!fixedPath(system)||!fixedPath(windir)||system.toLowerCase()!==windir.toLowerCase())return unavailable();const env=Object.freeze({SystemRoot:system,WINDIR:windir});for(const suffix of ['.config','.local','.manifest'])if(await call(1,[binding.path+suffix])!=='ABSENT')return unavailable();const image2=copyBuffer(await call(0,[binding.path,signal]),67108864);if(contentHash(image2)!==binding.helperHash)return unavailable();image2.fill(0);guard();const child=Reflect.apply(functions[3],ports,[binding.path,mode===sdkBootstrapMode?['--normal-sdk-bootstrap']:[],Object.freeze({shell:false,windowsHide:true,stdio:Object.freeze(['overlapped','overlapped','overlapped']),cwd:path.win32.dirname(binding.path),env})]);const stdin=own(child,'stdin'),stdout=own(child,'stdout'),stderr=own(child,'stderr'),write=method(stdin,'write'),end=method(stdin,'end');
 const stable=()=>{if(own(child,'stdin')!==stdin||own(child,'stdout')!==stdout||own(child,'stderr')!==stderr||method(stdin,'write')!==write||method(stdin,'end')!==end)return uncertain();};
 const latch=()=>{sticky=true;active=false;if(pending){clearTimeout(pending.timer);pending.reject(Error('OUTCOME_UNKNOWN'));pending=null;}};
 
@@ -67,4 +69,32 @@ return Object.freeze({open,closeOwned:async()=>retained?retained.close():{state:
 /** 실제 driver는 명시 호출 때만 동작한다. 자동 fallback/재시작/재접속은 없다.
  * @param {string} exe @param {string[]} args @param {any} options
  */function nodeKeyHostSpawn(exe,args,options){return require('node:child_process').spawn(exe,args,options);}
-module.exports={createTrustKeyHostClient,nodeKeyHostSpawn};
+/** 원 인증 채널의 패키지 검산을 원 endpoint 1회에 결박한다. 일반 등록/SDK 권한은 발급하지 않는다.
+ * @param {any} input @param {any} ports
+ */
+function createSdkBootstrapClient(input,ports){
+ const client=createTrustKeyHostClient(input,ports,sdkBootstrapMode),uuid=own(ports,'uuid');let used=false;
+ return Object.freeze({open:async(/** @type {any} */lease,/** @type {number} */epoch)=>{
+  if(used||!Number.isSafeInteger(epoch)||epoch<1)return unavailable();used=true;
+  const endpointId=Reflect.apply(uuid,ports,[]);if(typeof endpointId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(endpointId))return unavailable();
+  let attempted=false,accepted=false,closed=false;const narrow=own(lease,'narrow');if(typeof narrow!=='function')return unavailable();const channel=await client.open(lease);
+  try{
+   const r=catalogueExact(await channel.send('SDK_BOOTSTRAP_PREPARE',{endpointId,epoch}),'state,endpointId,epoch,manifestHash,recipeRef,expiresAt');
+   const ref=catalogueExact(r.recipeRef,'id,version,contentHash');
+   if(r.state!=='SDK_BOOTSTRAP_PREPARED'||r.endpointId!==endpointId||r.epoch!==epoch||typeof r.manifestHash!=='string'||!/^[0-9a-f]{64}$/.test(r.manifestHash)||typeof ref.id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(ref.id)||!Number.isSafeInteger(ref.version)||ref.version<1||typeof ref.contentHash!=='string'||!/^[0-9a-f]{64}$/.test(ref.contentHash)||typeof r.expiresAt!=='string'||!Number.isFinite(Date.parse(r.expiresAt))||new Date(r.expiresAt).toISOString()!==r.expiresAt||Date.parse(r.expiresAt)>Date.parse(lease.callExpiresAt()))return uncertain();
+   Reflect.apply(narrow,lease,[Date.parse(r.expiresAt)]);
+   const proof=JSON.parse(canonicalJson(r));
+   const check=()=>{lease.check();if(closed||own(lease,'narrow')!==narrow||lease.signal.aborted||lease.remainingMs()<=0)return unavailable();};check();
+   const original=Object.freeze({read:()=>{check();return JSON.parse(canonicalJson(proof));},accept:async()=>{
+    check();if(attempted)return unavailable();attempted=true;
+    const reply=catalogueExact(await channel.send('SDK_BOOTSTRAP_ACCEPT',{endpointId,epoch,manifestHash:proof.manifestHash}),'state,endpointId,epoch,manifestHash');check();
+    if(reply.state!=='SDK_BOOTSTRAP_ACCEPTED'||reply.endpointId!==endpointId||reply.epoch!==epoch||reply.manifestHash!==proof.manifestHash)return uncertain();accepted=true;
+   },close:async()=>{closed=true;return channel.close();}});
+   sdkBootstrapEndpoints.set(original,()=>{check();if(!accepted)return unavailable();return JSON.parse(canonicalJson(proof));});
+   return original;
+  }catch(error){try{await channel.close();}catch{}throw error;}
+ }});
+}
+/** 원 package 채널을 보유한 수령 직후 전용 endpoint 조립자가 1회 소비한다. 폐쇄 뒤 발급은 없다. @param {object} original */
+function takeSdkBootstrapEndpoint(original){const read=sdkBootstrapEndpoints.get(original);if(!read)return unavailable();sdkBootstrapEndpoints.delete(original);return read();}
+module.exports={createTrustKeyHostClient,createSdkBootstrapClient,takeSdkBootstrapEndpoint,nodeKeyHostSpawn};

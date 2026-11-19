@@ -20,7 +20,45 @@ internal sealed class DesktopTrustKeyHostSource {
  bool used;volatile bool active=true,unknown;DesktopTrustKeyPeerSource peer;DesktopTrustKeyBudget budget;DesktopTrustKeyRootSource root;DesktopTrustKeyBindingStoreSource store;
  long sequence;readonly HashSet<string> requests=new HashSet<string>();readonly HashSet<string> pending=new HashSet<string>(),created=new HashSet<string>();
  internal DesktopTrustKeyHostSource(IDesktopTrustKeyResources resource=null,DesktopTrustKeyKernel os=null,DesktopTrustKeyRootKernel roots=null,Func<DateTime> utcNow=null,Func<double> monotonic=null,Func<int,CancellationToken,Task> delayPort=null,Func<DesktopTrustKeyRootSource,DesktopTrustKeyBindingKernel> storagePort=null,Func<DesktopTrustKeyRootSource,Dictionary<string,object>,object> keyPort=null,Func<DesktopTrustKeyRootSource,Dictionary<string,object>,Func<int>,Func<DateTime>,Action,string> nativePort=null,Func<DesktopTrustKeyRootSource,Dictionary<string,object>,Func<int>,Func<DateTime>,Action,string> firstReceivePort=null,Func<Dictionary<string,object>,Func<int>,Func<DateTime>,Action,OwnershipEvidenceJobFactorySource.IOriginalSuspendedProcessCandidate> retainedPort=null,NativePreparationRetainedFactorySource.ProtectedSource retainedInputs=null){retainedProvider=retainedPort;resources=resource??new DesktopTrustKeyParentBasisSource.OwnAssemblyResources();kernel=os??new WindowsDesktopTrustKeyKernel();rootKernel=roots??new WindowsDesktopTrustKeyRootKernel();wall=utcNow??(()=>DateTime.UtcNow);var watch=Stopwatch.StartNew();mono=monotonic??(()=>watch.Elapsed.TotalMilliseconds);delay=delayPort??((ms,token)=>Task.Delay(ms,token));storage=storagePort??(r=>new WindowsDesktopTrustKeyBindingKernel(r));keyOperation=keyPort??ProtectedStore.ExecuteOwned;nativeOperation=nativePort??((r,f,n,e,c)=>ProtectedStore.SignNativeOwned(r,Text(f,"keyId"),f,n,e,c));firstReceiveOperation=firstReceivePort??((r,f,n,e,c)=>ProtectedStore.SignFirstReceiveOwned(r,Text(f,"keyId"),f,n,e,c));workerDeployment=new NativeWorkerDeploymentSource(()=>peer,WorkerRecord,()=>budget.Remaining(),Check,rootKernel);retainedFactory=new NativePreparationRetainedFactorySource(retainedInputs??new NativePreparationWorkerProvenanceSource(()=>{Check();return peer.HelperHash;},workerDeployment));}
- static int Main(string[] args){if(args==null||args.Length!=0)return 1;try{return new DesktopTrustKeyHostSource().RunAsync().GetAwaiter().GetResult();}catch{return 1;}}
+ static int Main(string[] args){if(args==null)return 1;try{if(args.Length==1&&args[0]=="--normal-sdk-bootstrap")return new DesktopTrustKeyHostSource().RunSdkBootstrapAsync().GetAwaiter().GetResult();if(args.Length!=0)return 1;return new DesktopTrustKeyHostSource().RunAsync().GetAwaiter().GetResult();}catch{return 1;}}
+ // 등록 전 전용 pipe: root/key/원장을 열지 않으며 SDK 실행권을 발급하지 않는다.
+ internal async Task<int> RunSdkBootstrapAsync(){
+  if(used)throw Invalid();used=true;int exit=1;NormalSdkWorkerPackageSource package=null;
+  try{
+   budget=new DesktopTrustKeyBudget(wall,mono);var basis=DesktopTrustKeyParentBasisSource.Read(resources);
+   peer=DesktopTrustKeyPeerSource.Open(basis,kernel,budget);peer.OpenStreams();Check();
+   string endpoint=null,manifest=null;long epoch=0;object recipeRef=null;
+   for(int step=0;step<2;step++){
+    byte[] frame=await Frame();Check();if(frame==null)throw Invalid();byte[] reply=null;
+    try{
+     var f=Parse(frame,true);Exact(f,"schemaVersion,purpose,requestId,sequence,callExpiresAt,remainingMs,signerRef,operation,payload");
+     if(Positive(f["schemaVersion"])!=1||Text(f,"purpose")!="DESKTOP_TRUST_KEY_OPERATION_V1"||Positive(f["sequence"])!=step+1||!requests.Add(Id(f,"requestId")))throw Invalid();
+     var signer=Ref(f["signerRef"]);if(Id(signer,"id")!=basis.SignerId||Positive(signer["version"])!=basis.SignerVersion||Text(signer,"contentHash")!=peer.HelperHash)throw Invalid();
+     int remaining=checked((int)Positive(f["remainingMs"]));if(remaining>10000)throw Invalid();budget.Tighten(Time(f,"callExpiresAt"),remaining);Check();
+     var v=Map(f["payload"]);Dictionary<string,object> result;
+     if(step==0){
+      if(Text(f,"operation")!="SDK_BOOTSTRAP_PREPARE")throw Invalid();Exact(v,"endpointId,epoch");endpoint=Id(v,"endpointId");epoch=Positive(v["epoch"]);
+      package=NormalSdkWorkerPackageSource.Acquire(peer);package.Check();var recipe=package.ExecutionRecipe;recipeRef=recipe["ref"];manifest=package.ManifestHash;Check();
+      result=new Dictionary<string,object>{{"state","SDK_BOOTSTRAP_PREPARED"},{"endpointId",endpoint},{"epoch",epoch},{"manifestHash",manifest},{"recipeRef",recipeRef},{"expiresAt",budget.ExpiresAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ",CultureInfo.InvariantCulture)}};
+     }else{
+      if(Text(f,"operation")!="SDK_BOOTSTRAP_ACCEPT")throw Invalid();Exact(v,"endpointId,epoch,manifestHash");
+      if(Id(v,"endpointId")!=endpoint||Positive(v["epoch"])!=epoch||Text(v,"manifestHash")!=manifest)throw Invalid();
+      package.Check();if(package.ManifestHash!=manifest||Canonical(package.ExecutionRecipe["ref"],0)!=Canonical(recipeRef,0))throw Invalid();Check();
+      result=new Dictionary<string,object>{{"state","SDK_BOOTSTRAP_ACCEPTED"},{"endpointId",endpoint},{"epoch",epoch},{"manifestHash",manifest}};
+     }
+     package.Check();Check();reply=Encoding.UTF8.GetBytes(Canonical(new Dictionary<string,object>{{"schemaVersion",1},{"purpose","DESKTOP_TRUST_KEY_RESULT_V1"},{"requestId",f["requestId"]},{"sequence",step+1},{"rootIdentity","SDK_BOOTSTRAP"},{"data",result}},0)+"\n");
+     await Reply(reply);package.Check();Check();
+    }finally{Array.Clear(frame,0,frame.Length);if(reply!=null)Array.Clear(reply,0,reply.Length);}
+   }
+   // ACK 이후 EOF만 허용한다. 다른 목적 프레임/다시 선점은 실행하지 않는다.
+   byte[] tail=await Frame();if(tail!=null){Array.Clear(tail,0,tail.Length);throw Invalid();}package.Check();Check();exit=0;
+  }catch{unknown=true;exit=1;}
+  finally{
+   active=false;if(package!=null){try{package.Dispose();}catch{unknown=true;exit=1;}}
+   if(peer!=null){try{peer.Dispose();}catch{unknown=true;exit=1;}}
+  }
+  if(peer!=null){await peer.WhenDrained;if(!peer.CleanupSettled)exit=1;}return unknown?1:exit;
+ }
  void Check(){if(!active)throw Invalid();budget.Check();peer.Check();if(root!=null)root.Check();}
  static Exception Invalid(){return DesktopTrustKeyParentBasisSource.Invalid();}
  async Task<T> IO<T>(byte[] owned,Func<CancellationToken,Task<T>> work,Func<T,T> consume=null){
