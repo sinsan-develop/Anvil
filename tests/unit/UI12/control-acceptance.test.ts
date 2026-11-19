@@ -148,9 +148,24 @@ test('보존된 확정 수락의 명시 조회는 오류·다른 원명령을 �
   }
   await render();assert.equal(calls.length,0);
   await reply(await begin(),result);assert.ok(container.textContent.includes(success));
+  const expand='수락 기록 상세 펼치기',collapse='수락 기록 상세 접기';
+  const refs=[result.requestRef,result.summaryRef,result.acceptanceRef,result.grantRef,result.receiptRef,result.auditRef];
+  assert.equal(find(container,expand)?.getAttribute('aria-expanded'),'false');
+  for(const ref of refs)assert.equal(container.textContent.includes(ref.contentHash),false);
+  const readCount=calls.length;
+  await click(expand);assert.equal(find(container,collapse)?.getAttribute('aria-expanded'),'true');
+  for(const ref of refs)assert.ok(container.textContent.includes(`${ref.id} · v${ref.version} · ${ref.contentHash}`));
+  for(const [label,basis]of [['이전 제어 기준',result.previousControl],['수락 후 제어 기준',result.nextControl]]as const){
+   assert.ok(container.textContent.includes(`${label}사용자 ${basis.actorId} · 기기 ${basis.clientId} · 세대 ${basis.generation} · 버전 ${basis.version}`));
+  }
+  assert.ok(container.textContent.includes('기록 당시 시각 '+result.recordedAt));
+  assert.ok(container.textContent.includes('현재 제어와 일반 작업 허가는 서버가 별도로 검산합니다.'));
+  await click(collapse);assert.equal(calls.length,readCount);
+  for(const ref of refs)assert.equal(container.textContent.includes(ref.contentHash),false);
+  await click(expand);assert.equal(calls.length,readCount);
   for(const status of [403,404,503,200,401]){
    const pending=await begin();assert.equal(container.textContent.includes(success),false);await reply(pending,other,status);
-   assert.ok(container.textContent.includes('수락 결과를 확인할 수 없습니다.'));assert.equal(container.textContent.includes(success),false);
+   assert.ok(container.textContent.includes('수락 결과를 확인할 수 없습니다.'));assert.equal(container.textContent.includes(success),false);assert.equal(find(container,expand),undefined);assert.equal(find(container,collapse),undefined);
   }
   assert.equal(authLost,1);
   for(const stale of ['닫기','다른 주체 ABA','명령 교체','재마운트']){
@@ -163,6 +178,14 @@ test('보존된 확정 수락의 명시 조회는 오류·다른 원명령을 �
    assert.equal(authLost,1);assert.equal(container.textContent.includes(success),false);assert.equal(container.textContent.includes('수락 결과를 확인할 수 없습니다.'),false);
   }
   await reply(await begin(),result);assert.ok(container.textContent.includes(success));assert.ok(container.textContent.includes('현재 제어는 아직 확인하지 않았습니다.'));
+  assert.equal(find(container,expand)?.getAttribute('aria-expanded'),'false');
+  for(const overrides of [{session:{...target,csrfToken:'d'.repeat(43)}},{client:new ui.ApiClient(client.transport)},{projectId:id(97)}]){
+   await click(expand);const count:number=calls.length;
+   await render(overrides);assert.equal(find(container,expand),undefined);assert.equal(find(container,collapse),undefined);
+   for(const ref of refs)assert.equal(container.textContent.includes(ref.contentHash),false);
+   assert.equal(calls.length,count);await render();assert.equal(find(container,expand),undefined);
+   await reply(await begin(),result);assert.equal(find(container,expand)?.getAttribute('aria-expanded'),'false');
+  }
   assert.equal(changes,0);assert.deepEqual(buffer,original);
  }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
 });

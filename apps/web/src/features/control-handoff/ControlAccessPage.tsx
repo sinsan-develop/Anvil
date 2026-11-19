@@ -190,9 +190,23 @@ function ConfirmedAcceptanceHistory({busy,initial,current,read,onAuthenticationL
   <button type="button" disabled={busy||history?.loading} onClick={()=>void query()}>수락 결과 다시 조회</button>
   {history?.loading?<p role="status">수락 결과를 조회하고 있습니다.</p>:null}
   {history?.error?<p role="alert">수락 결과를 확인할 수 없습니다. ({history.error.status||history.error.code})</p>:null}
-  {result?<section aria-label="제어 전환 결과 확인"><h3>제어 전환 결과 확인</h3><p>수락 결과의 사용자·기기 {result.nextControl.actorId} / {result.nextControl.clientId} · 세대 {result.nextControl.generation}</p><p>원 결과는 과거 사실입니다. 현재 제어와 일반 작업 허가는 서버가 별도로 검산합니다.</p></section>:null}
+  {result?<section aria-label="제어 전환 결과 확인"><h3>제어 전환 결과 확인</h3><p>수락 결과의 사용자·기기 {result.nextControl.actorId} / {result.nextControl.clientId} · 세대 {result.nextControl.generation}</p><p>원 결과는 과거 사실입니다. 현재 제어와 일반 작업 허가는 서버가 별도로 검산합니다.</p><AcceptanceRecordDetails result={result}/></section>:null}
   {result||history?.loading||history?.error?<button type="button" onClick={close}>수락 결과 닫기</button>:null}
  </section>;
+}
+
+function AcceptanceRecordDetails({result}:{result:HistoricalResult}){
+ const [expanded,setExpanded]=useState(false);
+ return <div>
+  <button type="button" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>수락 기록 상세 {expanded?'접기':'펼치기'}</button>
+  {expanded?<section aria-label="수락 기록 참조와 당시 제어 기준">
+   <p>기록 당시 시각 {result.recordedAt}</p>
+   <dl>
+    {([['원 요청',result.requestRef],['보호 인계요약',result.summaryRef],['수락',result.acceptanceRef],['제어 부여',result.grantRef],['영수증',result.receiptRef],['감사',result.auditRef]]as const).map(([label,ref])=><div key={label}><dt>{label} 참조</dt><dd style={{overflowWrap:'anywhere'}}>{ref.id} · v{ref.version} · {ref.contentHash}</dd></div>)}
+    {([['이전 제어 기준',result.previousControl],['수락 후 제어 기준',result.nextControl]]as const).map(([label,basis])=><div key={label}><dt>{label}</dt><dd>사용자 {basis.actorId} · 기기 {basis.clientId} · 세대 {basis.generation} · 버전 {basis.version}</dd></div>)}
+   </dl>
+  </section>:null}
+ </div>;
 }
 
 /** 요약 TTL과 원요청 만료는 별도 서버 관측 사실이다. */
