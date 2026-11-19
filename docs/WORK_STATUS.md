@@ -21243,3 +21243,11 @@ Stage D FN07 부분 구현의 검증 준비. 기준 `f960fd84`, 기존 developer
 입력 SHA, 파싱, 범위 모호·누락, 경계, 취소, 출력 상한을 합성으로 확인했다. 옵션 별칭/rename 부재 및 고정 플래그·anchor 선택의 RED `1f8460`·`03f4f4`를 보완했다. 초기 시험 경로 오기는 기능 실패 횟수와 분리했다. 담당 직접 12통과 `8e66d2`, Main 동결 지문2/2 `dd1bfc`, 직접 12통과·실패/건너뜀0 `403765`. 판독 소스 SHA256 `87ED415BC2483B264EA0CEC2F895965C3E2D0725705B94804799C3FED3526F83`, 시험 SHA256 `1A2E2C6D6934B2F18C1907CE4957EBCFFA640F3A642432CF449F6E1082342168`.
 
 구문 추출과 어휘 결박·실행 의미는 구분한다. 결과는 구문 위치와 조건 후보이며 제품 recipe 발행 여부를 승인으로 표시하지 않는다. 실제 SDK 원문 적용·HTTPS GET·C#/OS·서비스·DB·권한·키·Agent 실행은 모두 0이다. 다음은 기존 한도 감독에 이 판독부를 정확 지문으로 결박하고 실패 시 단발 소비를 확인할 실행안 검수다. 추가 GET은 별도 결정 대상이다. 롤백은 이 판독·시험 2경로에 한정한다.
+
+## FN07 고정 IMAGE argv/env 한정 조회 실행 후보 검수
+
+Stage D FN07 검증 준비. 기준 `2ab9f81d`, developer_primary가 후보 문서 1개를 작성하고 반환했다. `docs/work_packages/FN07_FIXED_IMAGE_ARGV_ENV_READ_EXECUTION_CANDIDATE.md`는 24,475바이트, SHA256 `EDBB17D34DAA01D21B2BEC7CF8B39BB7C77583CBEB05FF47E6F7213363614B79`다. 실제 추출 child 소스 SHA256 `9E1DCFE07298535B3760D04E498C8B158A07C49A5261F8FE9633F607AFF8C062`, 실행 전 승인 자리 치환만 남긴 감독 블록 SHA256 `DC6CA52BEDDCB79BD123AF7C4B9BE8339528E0B780472D74FA16F957A6BA8CA1`로 고정한다.
+
+기존 단회 감독·고정 HTTPS tarball 무결성, 판독부와 parser의 지문을 유지한다. 고정 IMAGE의 한 옵션 조합에서 aT/Qwt, initialize anchor와 네 직접 helper 후보를 같은 바이트에서 추출하고 미확인 결박을 명시한다. 원문·실제 로컬값은 출력하거나 저장하지 않는다. 누락·모호·기한·한도 실패를 recipe 근거로 사용하지 않는다.
+
+담당 합성 evidence 4통과 `45797f`에서 7단위·누락·중복·anchor 미발견을 구분했다. 이전 다중 function fixture의 parser 거절 1건은 유효한 var 중복으로 대체했다. Main 구문·문서와 정확 실행 블록 지문 `689f1e`, 원 readOnce/unpack/캡처 생성부 동일 및 공백 `d0557a` 종료0. E2E 감독·SDK GET·실제 SDK 적용·설치·OS·DB·권한·키·서비스·Agent 실행0, 활성 핸들0. 별도 결정 대상은 이 고정 공개 배포본 GET 1회뿐이다. 실제 argv/env·PRESPAWN·원 실행 권위는 미확정이다. 롤백은 후보와 작업 기록의 이번 추가분에 한정한다.
