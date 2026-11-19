@@ -21329,3 +21329,11 @@ UI10/FN05 부분 구현. 기준 `b4bd2439`, 기존 developer_primary 단일 작�
 신규 scripts/qa-ix01-subnet-observation-bundle.ts와 합성 시험 subnet-observation-bundle.test.ts 두 파일이다. 초기 부재 RED4 `b3d393`, 현재 TypeScript 7.0.2의 transpileModule 미제공으로 첫 구현 정상경로3 실패 `cdb557`. 설치 없이 기존 Rolldown을 사용했고 순서 helper의 정확 생성 경계와 전체 지문을 반영했다. 담당 집중4통과 `5927fb`·좁은 타입0 `8115de`, Main 직접4통과·실패/건너뜀0 `aa33a0` 및 두 원 지문 일치 `db6030`. VM의 모듈 로드는 주입한 합성 내장만 사용했고 native host 호출0, 활성 핸들0.
 
 실제 ip 지문, SSH 외부 단회 감독 및 원 관측 프로세스 회수, 운영 주소 예약과 충돌, TC01 저장·조회는 미검증이다. 후속은 검산된 번들의 메모리 전달과 원 자식 감독을 준비하는 것이다. 아직 실제 WSL·IPAM·Docker·보존 자원 및 DB·권한·키·서비스·Agent 접근0이다. 이전 N2 승인 소진과 별도 읽기 승인 범위는 그대로다. 롤백은 신규 두 파일에 한정한다.
+
+## IX01 원 관측 핸들의 로컬 수거 경계 검수
+
+기준 `36a2b11d`, 기존 developer_primary 단일 작성·반환. 신규 scripts/qa-ix01-subnet-observation-supervisor.ts와 tests/unit/IX01/subnet-observation-supervisor.test.ts. 이미 보유한 한 핸들의 입력 finish·출력 end·정상 close를 60초 및 stdout 4KiB 안에서 교차 확인한다. 원 핸들 단회 사용과 출력 JSON·UTF-8 형상을 검산하며 주소·출력 원문을 반환하지 않는다. 로컬 수거가 맞아도 실제 원격 종결은 UNKNOWN으로 유지한다. timeout은 호출을 종결하되 원 프로세스 종료나 정리를 확정하지 않는다.
+
+담당 초기 모듈 부재 RED와 BOM 반례 RED 448972를 보완했다. 최종 합성 8통과 c552b2, 좁은 타입 1aa92c 종료0. Main 직접 8통과·실패/건너뜀0 03e932, 동결 SHA 2/2 및 공백 진단0 031807. 신규 파일 SHA256 C318EEE31052FA186465FA7CB6FBCFA142E003EDA100A8D7515AEC1C5D1ECB6A 및 9162AF3F42AD144F22B5B530466C6AF98F04C27809D56CBC8C818B80AC53B677. 활성 합성 핸들0. 고정 5개 소스 및 메모리 번들 변경0.
+
+실제 프로세스 생성·회수, SSH·IPAM·Docker·DB·권한·키·서비스·Agent는 미실행이다. 로컬 close를 원격 종료 증거로 쓰지 않는다. 다음은 동일 WSL 감독에서 직접 도구 자식의 종료와 원 관측 완료를 어떻게 검산할지 기존 승인 범위의 소스를 대조하는 것이다. TC01 통합 검증은 미완료다. 롤백은 신규 두 경로와 해당 현황 추가에 한정한다.
