@@ -1,3 +1,4 @@
+import {documentVersionHref} from '../../shell/routes.ts';
 import {ExportApprovalPanel} from './ExportApprovalPanel.tsx';
 import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
@@ -68,6 +69,15 @@ export function ProjectBackupsPanel({client,session,projectId,buffer,scope,onCha
  <button disabled={busy||unresolved} onClick={()=>void list()}>보관 결과 목록 조회</button>{cursor?<button disabled={busy||unresolved} onClick={()=>void list(true)}>보관 결과 다음 페이지</button>:null}
  {activeView&&jobs!==null?<ul>{jobs.map(j=><li key={j.ref.id}>{j.manifest.createdAt} · {j.ref.id}<button disabled={busy||unresolved} onClick={()=>void inspect(j)}>보관 결과 상세 조회</button></li>)}</ul>:<p>아직 보관 결과를 조회하지 않았습니다.</p>}
  {activeView&&jobs?.length===0?<p>조회된 선택 원본 반출이 없습니다.</p>:null}
- {shown&&!work?.accessLost?<div><p>보관 원본: {shown.manifest.selection.documentRef.id} / {shown.manifest.selection.documentRef.version}판</p><p>제외: 프로젝트 DB snapshot, 프로젝트 소스, 다른 자료, 실행 상태 복원</p>{shown.sourceAvailability==='READY'?<a href={exportFileHref(projectId,shown)}>별도 보관 복사본 다운로드</a>:<p>원본의 현재 격리·검사 상태 때문에 다운로드를 차단했습니다.</p>}</div>:null}
+ {shown&&!work?.accessLost?<section aria-label="보관 반출 상세"><h3>보관 반출 상세</h3><dl>
+  <dt>고정 문서 ID</dt><dd>{shown.manifest.selection.documentRef.id}</dd>
+  <dt>문서 버전</dt><dd>{shown.manifest.selection.documentRef.version}판</dd>
+  <dt>문서 SHA-256</dt><dd>{shown.manifest.selection.documentRef.contentHash}</dd>
+  <dt>반출 원본 ID</dt><dd>{shown.manifest.selection.artifactRef.artifactId}</dd>
+  <dt>원본 크기</dt><dd>{shown.manifest.selection.artifactRef.bytes} bytes</dd>
+  <dt>원본 SHA-256</dt><dd>{shown.manifest.selection.artifactRef.contentHash}</dd>
+  <dt>보관 참조</dt><dd>{shown.ref.id} / {shown.ref.version}판 / {shown.ref.contentHash}</dd>
+  <dt>보관 시각</dt><dd>{shown.manifest.createdAt}</dd>
+ </dl><p>제외: 프로젝트 DB snapshot, 프로젝트 소스, 다른 자료, 실행 상태 복원</p>{shown.sourceAvailability==='READY'?<><a href={exportFileHref(projectId,shown)}>별도 보관 복사본 다운로드</a><p><a href={documentVersionHref(projectId,shown.manifest.selection.documentRef)}>반출한 고정 문서 원문 열기</a></p></>:<p>원본의 현재 격리·검사 상태 때문에 다운로드를 차단했습니다.</p>}</section>:null}
  </>}{activeView&&error?<p role="alert">{followup?'보관 명령은 확인됐지만 후속 조회 실패: ':''}{error}</p>:null}{busy&&activeView?<p role="status">처리 중입니다.</p>:null}</section>;
 }

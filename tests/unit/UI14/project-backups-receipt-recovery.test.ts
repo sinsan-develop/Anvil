@@ -5,17 +5,18 @@ import {fileURLToPath} from 'node:url';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {ExportScope,prepareExport,mergeExportPending} from '../../../apps/web/src/features/backups/project-backups-api.ts';
 const id=(n:number)=>'af140070-0000-4000-8000-'+String(n).padStart(12,'0'),pid=id(1),uid=id(2),cid=id(3),at='2026-11-17T00:00:00.000Z';
-const artifact={artifactId:id(5),bytes:8,contentHash:contentHash('ordinary'),mediaType:'application/octet-stream'},formRef={id:id(7),version:1,contentHash:'a'.repeat(64)},content={body:artifact,attachments:[],sections:[],sourceRefs:[]};
+const artifact={artifactId:id(5),bytes:8,contentHash:contentHash('ordinary'),mediaType:'application/octet-stream'},formRef={id:id(7),version:1,contentHash:'a'.repeat(64)},attachmentArtifact={...artifact,artifactId:id(6),bytes:12,contentHash:contentHash('second bytes')},content={body:artifact,attachments:[attachmentArtifact],sections:[],sourceRefs:[]};
 const basis={title:'보관 원문',formRef,stageNodeRef:null,content},documentValue={id:id(4),version:1,...basis,contentHash:contentHash(canonicalJson(basis))};
 const selection={kind:'DOCUMENT_ARTIFACT' as const,documentRef:{id:id(4),version:1,contentHash:documentValue.contentHash},artifactRef:artifact};
-function jobFor(mode='OK'){
- const chosen=mode==='SELECTION'?{...selection,documentRef:{...selection.documentRef,id:id(98)}}:selection;
- const manifest={schemaVersion:1,kind:'SELECTED_DOCUMENT_ARTIFACT_EXPORT',projectId:pid,includeSource:false,selection:chosen,files:[{artifactRef:artifact,downloadName:artifact.artifactId+'.bin'}],omitted:['PROJECT_DB_SNAPSHOT','PROJECT_SOURCE','OTHER_PROJECT_MATERIALS','EXECUTION_STATE_RESTORE'],createdAt:at,createdBy:{kind:'HUMAN',userId:mode==='ACTOR'?id(99):uid}};
- return{ref:{id:id(20),version:1,contentHash:contentHash(canonicalJson(manifest))},manifest,sourceAvailability:'READY'};
+function jobFor(mode='OK',attachment=false){
+ const original=attachment?attachmentArtifact:artifact;
+ const chosen=mode==='SELECTION'?{...selection,documentRef:{...selection.documentRef,id:id(98)}}:{...selection,artifactRef:original};
+ const manifest={schemaVersion:1,kind:'SELECTED_DOCUMENT_ARTIFACT_EXPORT',projectId:pid,includeSource:false,selection:chosen,files:[{artifactRef:original,downloadName:original.artifactId+'.bin'}],omitted:['PROJECT_DB_SNAPSHOT','PROJECT_SOURCE','OTHER_PROJECT_MATERIALS','EXECUTION_STATE_RESTORE'],createdAt:at,createdBy:{kind:'HUMAN',userId:mode==='ACTOR'?id(99):uid}};
+ return{ref:{id:id(attachment?21:20),version:1,contentHash:contentHash(canonicalJson(manifest))},manifest,sourceAvailability:mode==='BLOCKED'?'BLOCKED':'READY'};
 }
 const nodes=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(nodes)];
 async function settle(check:()=>boolean){for(let i=0;i<80;i++){if(check())return;await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});}assert.fail('RAM 정착 실패');}
-async function fixture(receiptMode='OK'){
+async function fixture(receiptMode='OK',browse=false){
  const session={user:{id:uid},clientId:cid,csrfToken:'C'.repeat(43)},calls:{path:string;method:string;body?:string}[]=[];
  let mode='503',release=()=>{},waiting=false,lost=0;
  const responseJob=jobFor(receiptMode);
@@ -28,22 +29,24 @@ async function fixture(receiptMode='OK'){
   }
   if(path==='/api/v1/projects/'+pid)return Response.json({id:pid,participation:'OWNER',controlState:{status:'HELD',actorId:uid,clientId:cid,generation:1}});
   if(path==='/api/v1/projects/'+pid+'/documents/'+id(4)+'/versions/1')return Response.json(documentValue);
-  assert.equal(path,'/api/v1/projects/'+pid+'/backups/'+id(20));
+  if(browse&&path==='/api/v1/projects/'+pid+'/backups?view=SELECTED_ARTIFACT_EXPORTS&limit=50')return Response.json({items:[responseJob,jobFor(receiptMode,true)],hasMore:false,nextCursor:null,observedAt:at,baselineVersion:null});
+  const detailJob=browse&&path.endsWith(id(21))?jobFor(receiptMode,true):responseJob;
+  assert.equal(path,'/api/v1/projects/'+pid+'/backups/'+detailJob.ref.id);
   const selectedMode=mode;
   if(mode.startsWith('WAIT')){waiting=true;await new Promise<void>(r=>release=r);}
   if(['503','403','401','WAIT401'].includes(selectedMode))return Response.json({code:selectedMode==='503'?'EXPORT_STORAGE_FAILED':'ACCESS_DENIED'},{status:selectedMode==='WAIT401'?401:Number(selectedMode)});
-  return Response.json(selectedMode==='HASH'?{...responseJob,ref:{...responseJob.ref,contentHash:'f'.repeat(64)}}:responseJob);
+  return Response.json(selectedMode==='HASH'?{...responseJob,ref:{...responseJob.ref,contentHash:'f'.repeat(64)}}:detailJob);
  });
- let buffer=await prepareExport(api,pid,session,selection,'보관 이유',()=>true) as any;
+ let buffer=(browse?null:await prepareExport(api,pid,session,selection,'보관 이유',()=>true)) as any;
  const scope=new ExportScope();scope.bind(session,api,pid);
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
  let props:any={client:api,session,projectId:pid,buffer,scope,onAuthenticationLost:()=>{lost++;}};
  const render=async(p=props)=>{props=p;scope.bind(props.session,props.client,props.projectId);await ui.React.act(async()=>root.render(ui.React.createElement(ui.ProjectBackupsPanel,props)));};
  props.onChange=(expected:string|null,next:any)=>{const updated=mergeExportPending(buffer,expected,next);if(updated===buffer)return false;buffer=updated;props={...props,buffer};root.render(ui.React.createElement(ui.ProjectBackupsPanel,props));return true;};
- const button=(label:string)=>{const found=nodes(container).filter(n=>n.tagName==='BUTTON'&&n.textContent===label);assert.equal(found.length,1,label);return found[0]!;};
- const click=async(label:string)=>{const b=button(label);assert(!b.disabled,label);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0}));};
+ const button=(label:string,index?:number)=>{const found=nodes(container).filter(n=>n.tagName==='BUTTON'&&n.textContent===label);if(index===undefined)assert.equal(found.length,1,label);assert.ok(found[index??0],label);return found[index??0]!;};
+ const click=async(label:string,index?:number)=>{const b=button(label,index);assert(!b.disabled,label);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0}));};
  await render();
- return{calls,scope,render,props:()=>props,buffer:()=>buffer,button,click,text:()=>container.textContent,links:()=>nodes(container).filter(n=>n.tagName==='A'),setMode:(v:string)=>{mode=v;},waiting:()=>waiting,release:()=>release(),lost:()=>lost,replace:async(next:any)=>{buffer=next;await render({...props,buffer});},close:async()=>{release();await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{details:()=>nodes(container).find(n=>n.getAttribute('aria-label')==='보관 반출 상세'),calls,scope,render,props:()=>props,buffer:()=>buffer,button,click,text:()=>container.textContent,links:()=>nodes(container).filter(n=>n.tagName==='A'),setMode:(v:string)=>{mode=v;},waiting:()=>waiting,release:()=>release(),lost:()=>lost,replace:async(next:any)=>{buffer=next;await render({...props,buffer});},close:async()=>{release();await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 const recover='확정 반출 결과 다시 조회';
 async function failedFollowup(f:Awaited<ReturnType<typeof fixture>>){
@@ -54,8 +57,8 @@ test('POST 성공 후 GET503은 원영수증 GET만 명시 복구해 링크를 �
  const f=await fixture();try{
   await failedFollowup(f);const original=f.buffer(),count=f.calls.length;f.setMode('OK');
   assert.equal(f.calls.length,count);
-  await f.click(recover);await settle(()=>f.links().length===1);
-  assert.equal(f.links()[0]!.getAttribute('href'),'/api/v1/projects/'+pid+'/backups/'+id(20)+'/file');
+  await f.click(recover);await settle(()=>f.links().some(a=>a.textContent==='별도 보관 복사본 다운로드'));
+  assert.equal(f.links().find(a=>a.textContent==='별도 보관 복사본 다운로드')!.getAttribute('href'),'/api/v1/projects/'+pid+'/backups/'+id(20)+'/file');
   assert.equal(f.calls.length,count+1);assert.equal(f.calls.filter(c=>c.method==='POST').length,1);assert.equal(f.buffer(),original);
  }finally{await f.close();}
 });
@@ -87,7 +90,7 @@ test('확정 재조회 연속 조작은 GET1이며 결과 닫기 뒤 링크와 �
   await failedFollowup(f);f.setMode('WAIT200');const before=f.calls.length,b=f.button(recover),key=Object.keys(b).find(k=>k.startsWith('__reactProps'))!;
   const action=(b as any)[key].onClick;
   await ui.React.act(async()=>{action();action();});await settle(f.waiting);assert.equal(f.calls.length,before+1);
-  await ui.React.act(async()=>{f.release();await new Promise(r=>setImmediate(r));});await settle(()=>f.links().length===1);
+  await ui.React.act(async()=>{f.release();await new Promise(r=>setImmediate(r));});await settle(()=>f.links().some(a=>a.textContent==='별도 보관 복사본 다운로드'));
   await f.click('확인 결과 닫기');assert.equal(f.buffer(),null);assert.equal(f.links().length,0);
   await ui.React.act(async()=>{action();});assert.equal(f.calls.length,before+1);assert.equal(f.calls.filter(c=>c.method==='POST').length,1);
  }finally{await f.close();}
@@ -136,3 +139,52 @@ before(async()=>{
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return ControlAcceptanceMemoryTest;')();
 });
 after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k,v]of saved)if(v)Object.defineProperty(globalThis,k,v);else Reflect.deleteProperty(globalThis,k);});
+
+
+test('보관 목록의 같은 문서 판별 원본 상세는 exact ref·artifact·시각과 명시 원문 링크를 구분한다',async()=>{
+ const f=await fixture('OK',true);try{
+  f.setMode('OK');assert.equal(f.calls.length,0);await f.click('보관 결과 목록 조회');await settle(()=>f.text().includes(id(20)));
+  assert.equal(f.details(),undefined);assert.equal(f.links().length,0);assert.equal(f.calls.length,1);
+  for(const index of [0,1]){
+   await f.click('보관 결과 상세 조회',index);await settle(()=>!f.text().includes('처리 중입니다.'));
+   assert.equal(f.links().filter(a=>a.textContent==='반출한 고정 문서 원문 열기').length,1,'명시 고정 원문 이동 누락');
+   const job=jobFor('OK',index===1),detail=f.details();assert.ok(detail,'검산한 원본 식별 상세');
+   for(const value of [job.manifest.selection.documentRef.id,job.manifest.selection.documentRef.contentHash,job.manifest.selection.artifactRef.artifactId,String(job.manifest.selection.artifactRef.bytes),job.manifest.selection.artifactRef.contentHash,job.ref.id,job.ref.contentHash,at])assert.ok(detail.textContent.includes(value),value);
+   const originals=f.links().filter(a=>a.textContent==='반출한 고정 문서 원문 열기');assert.equal(originals.length,1);
+   assert.equal(originals[0]!.getAttribute('href'),'#/projects/'+pid+'/documents/'+id(4)+'/versions/1/'+documentValue.contentHash);
+   assert.equal(f.links().find(a=>a.textContent==='별도 보관 복사본 다운로드')!.getAttribute('href'),'/api/v1/projects/'+pid+'/backups/'+job.ref.id+'/file');
+   assert.equal(f.calls.length,index+2);assert.equal(f.calls.at(-1)!.path,'/api/v1/projects/'+pid+'/backups/'+job.ref.id);
+  }
+  assert.equal(f.calls.every(c=>c.method==='GET'),true);assert.equal(f.buffer(),null);
+ }finally{await f.close();}
+});
+for(const mode of ['BLOCKED','403','401','SESSION','TRANSPORT','PROJECT','LATE401'] as const)test('보관 상세 '+mode+'는 고정 원문·다운로드 링크를 노출하지 않는다',async()=>{
+ const f=await fixture(mode==='BLOCKED'?'BLOCKED':'OK',true);try{
+  f.setMode('OK');await f.click('보관 결과 목록 조회');await settle(()=>f.text().includes(id(20)));
+  const changed=['SESSION','TRANSPORT','PROJECT','LATE401'].includes(mode);
+  f.setMode(changed?(mode==='LATE401'?'WAIT401':'WAIT200'):mode==='BLOCKED'?'OK':mode);
+  await f.click('보관 결과 상세 조회',0);
+  if(changed){
+   await settle(f.waiting);const props=f.props();
+   if(mode==='TRANSPORT'){const old=props.client.transport;props.client.transport=(...args:Parameters<typeof fetch>)=>old(...args);await f.render(props);}
+   else await f.render(mode==='PROJECT'?{...props,projectId:id(91)}:{...props,session:{...props.session}});
+   assert.equal(f.links().length,0);await ui.React.act(async()=>{f.release();await new Promise(r=>setImmediate(r));});
+  }else await settle(()=>!f.text().includes('처리 중입니다.'));
+  assert.equal(f.links().length,0);assert.equal(f.lost(),mode==='401'?1:0);assert.equal(f.calls.length,2);assert.equal(f.calls.every(c=>c.method==='GET'),true);assert.equal(f.buffer(),null);
+  if(mode==='BLOCKED')assert.match(f.text(),/다운로드를 차단/);else assert.equal(f.details(),undefined);
+ }finally{await f.close();}
+});
+
+
+test('이미 열린 보관 상세는 인증·전송·프로젝트 문맥 교체 즉시 두 링크를 숨긴다',async()=>{
+ for(const mode of ['SESSION','CSRF','TRANSPORT','PROJECT']){
+  const f=await fixture('OK',true);try{
+   f.setMode('OK');await f.click('보관 결과 목록 조회');await settle(()=>f.text().includes(id(20)));
+   await f.click('보관 결과 상세 조회',0);await settle(()=>f.links().length===2);const before=f.calls.length,props=f.props();
+   if(mode==='CSRF'){props.session.csrfToken='D'.repeat(43);await f.render(props);}
+   else if(mode==='TRANSPORT'){const transport=props.client.transport;props.client.transport=(...args:Parameters<typeof fetch>)=>transport(...args);await f.render(props);}
+   else await f.render(mode==='PROJECT'?{...props,projectId:id(91)}:{...props,session:{...props.session}});
+   assert.equal(f.links().length,0);assert.equal(f.details(),undefined);assert.equal(f.calls.length,before);assert.equal(f.buffer(),null);
+  }finally{await f.close();}
+ }
+});
