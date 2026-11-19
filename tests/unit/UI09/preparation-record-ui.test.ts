@@ -3,6 +3,71 @@ import assert from 'node:assert/strict';
 import {build} from 'vite';
 
 const targetButton='당시 대상 연결 정의 열기';
+const selectHistoricalContextButton='당시 맥락을 현재 새 준비기록에 선택';
+for(const mode of ['401','403','hash','assignment'] as const){
+ test('보관 맥락 재사용 · '+mode+' 재검산 실패는 초안과 원 기록을 보존한다',async()=>{
+  const context=historicalContext(),data=recordWithContext(context.ref),path='/api/v1/projects/'+pid+'/context/'+context.ref.id+'/versions/1';let reads=0;
+  const f=await host({knownRecord:{data},historicalGet:p=>{
+   if(p!==path)return;reads++;if(reads===1)return Response.json(context);
+   if(mode==='401'||mode==='403')return Response.json({code:'ACCESS_DENIED'},{status:Number(mode)});
+   const value=structuredClone(context);if(mode==='hash')value.ref.contentHash='f'.repeat(64);
+   else{value.manifest.assignmentRef={...value.manifest.assignmentRef,contentHash:'f'.repeat(64)};value.ref.contentHash=hash(value.manifest);}
+   return Response.json(value);
+  }});
+  try{await openHistoricalContext(f,data);const before=f.buffer();await f.click(selectHistoricalContextButton);
+   await f.settle(()=>!f.button(selectHistoricalContextButton).disabled);assert.equal(f.buffer(),before);assert(hasOriginal(f));assert.equal(f.lost(),mode==='401'?1:0);assert.equal(reads,2);assert(f.calls.every(c=>c.method==='GET'));
+  }finally{await f.close();}
+ });
+}
+
+for(const mode of ['닫기','기록재조회','맥락재조회','버퍼ABA','주체ABA','transport'] as const){
+ for(const status of [200,401])test('보관 맥락 재사용 · '+mode+' 뒤 늦은 '+status+'는 새 초안을 바꾸지 않는다',async()=>{
+  const context=historicalContext(),data=recordWithContext(context.ref),path='/api/v1/projects/'+pid+'/context/'+context.ref.id+'/versions/1';let reads=0,release=()=>{},waiting=false;
+  const f=await host({knownRecord:{data},historicalGet:p=>{
+   if(p!==path)return;reads++;if(reads!==2)return Response.json(context);
+   const response=Response.json(status===200?context:{code:'AUTH_REQUIRED'},{status}),json=response.json.bind(response);
+   response.json=async()=>{await new Promise<void>(resolve=>{release=resolve;waiting=true;});return json();};return response;
+  }});
+  try{await openHistoricalContext(f,data);const before=f.buffer(),button=f.button(selectHistoricalContextButton),propsKey=Object.keys(button).find(k=>k.startsWith('__reactProps'))!,lookup=f.button('알려진 준비기록 고정 조회'),lookupProps=Object.keys(lookup).find(k=>k.startsWith('__reactProps'))!;
+   await ui.React.act(async()=>{(button as any)[propsKey].onClick();(button as any)[propsKey].onClick();if(mode==='기록재조회')(lookup as any)[lookupProps].onClick();});await f.settle(()=>waiting);assert.equal(reads,2);
+   if(mode==='닫기')await f.click('준비기록 원문 닫기');
+   else if(mode==='기록재조회'||mode==='맥락재조회'){await f.settle(()=>hasOriginal(f));await f.click(contextButton);await f.settle(()=>reads===3&&f.nodes().some(n=>n.getAttribute('aria-label')==='당시 맥락 고정 원문'));}
+   else if(mode==='버퍼ABA'){f.buffers[before.key]=ui.api.editPreparation(before,{reason:'새 초안 편집'});await f.render();f.buffers[before.key]=before;await f.render();}
+   else if(mode==='주체ABA'){const original=f.props();await f.render({...original,session:{...original.session,clientId:id(98)}});await f.render(original);}
+   else{const original=f.client.transport;f.client.transport=(...args:any[])=>original(...args);await f.render();f.client.transport=original;await f.render();}
+   await ui.React.act(async()=>{release();await new Promise(resolve=>setImmediate(resolve));});
+   assert.equal(f.buffers[before.key],before);assert.equal(f.lost(),0);assert.doesNotMatch(f.text(),/AUTH_REQUIRED/);assert(f.calls.every(c=>c.method==='GET'));
+   if(mode==='닫기'||mode==='기록재조회'||mode==='맥락재조회'||mode==='버퍼ABA')assert.equal(f.button('준비기록 원명령 준비').disabled,false);
+  }finally{release();await f.close();}
+ });
+}
+
+test('보관 맥락 재사용 · PREPARED와 UNKNOWN 원명령에는 선택 동작이 없다',async()=>{
+ const context=historicalContext(),data=recordWithContext(context.ref),path='/api/v1/projects/'+pid+'/context/'+context.ref.id+'/versions/1';
+ const f=await host({knownRecord:{data},historicalGet:p=>p===path?Response.json(context):undefined});
+ try{await prepared(f);for(const unknown of [false,true]){
+  if(unknown){const old=f.buffer();f.buffers[old.key]=ui.api.markPreparationDispatch(old);await f.render();}
+  const before=f.buffer();await openHistoricalContext(f,data);assert.equal(f.buttons(selectHistoricalContextButton).length,0);assert.equal(f.buffer(),before);
+ }assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+test('보관 맥락 재사용 · 최근 목록 밖 exact 맥락을 명시 선택하고 원명령 준비에서 다시 검산한다',async()=>{
+ const context=historicalContext(),data=recordWithContext(context.ref),path='/api/v1/projects/'+pid+'/context/'+context.ref.id+'/versions/1';
+ const f=await host({knownRecord:{data},historicalGet:p=>p===path?Response.json(context):undefined});
+ try{
+  await chooseNull(f);const before=f.buffer(),record=canonicalJson(data);
+  assert.equal(f.buttons('맥락 '+context.ref.id+' 고정 선택').length,0);
+  await openHistoricalContext(f,data);assert.equal(f.buffer(),before);
+  assert.equal(f.calls.filter(c=>c.path===path).length,1);
+  await f.click(selectHistoricalContextButton);await f.settle(()=>f.buffer()!==before);
+  assert.deepEqual(f.buffer().contextRef,context.ref);assert.equal(f.buffer().contextSelected,true);assert.equal(f.buffer().pending,null);
+  assert.equal(f.buffer().reason,before.reason);assert.equal(canonicalJson(data),record);assert(hasOriginal(f));
+  assert.equal(f.calls.filter(c=>c.path===path).length,2);
+  await f.click('준비기록 원명령 준비');await f.settle(()=>f.buffer().pending?.state==='PREPARED');
+  assert.deepEqual(f.buffer().pending.command.payload.contextRef,context.ref);
+  assert.equal(f.calls.filter(c=>c.path===path).length,3);assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
 test('과거 대상 연결 · 같은 참조 재조회가 배치되어도 이전 표시를 폐기한다',async()=>{
  const target=historicalTarget(),data=recordWithTarget(target.ref),path='/api/v1/projects/'+pid+'/connections/'+target.ref.id+'/versions/2';
  const f=await host({empty:true,knownRecord:{data},historicalGet:p=>p===path?Response.json(target):undefined});

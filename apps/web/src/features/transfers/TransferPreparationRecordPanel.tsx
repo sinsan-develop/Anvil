@@ -19,9 +19,9 @@ export function TransferPreparationRecordPanel({client,session,confirmed,state,c
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;seq.current++;};},[]);
  const current=()=>mounted.current&&owner.current===scope&&client.transport===scope.transport&&session.csrfToken===scope.csrf;
  const stored=storage.buffers[key]??null,b=stored&&preparationOwned(stored,client,session,confirmed)?stored:null,busy=working===scope||lookupWorking===scope,view=current()&&rawView?.owner===scope?rawView.value:null;
- const activeBuffer=useRef(b),flightBuffer=useRef(b);activeBuffer.current=b;
+ const activeBuffer=useRef(b),flightBuffer=useRef(b),bufferGeneration=useRef(0);if(activeBuffer.current!==b)bufferGeneration.current++;activeBuffer.current=b;
  const locked=!!b?.pending;
- function replace(old:PreparationBuffer|null,next:PreparationBuffer){if(!current()||activeBuffer.current!==old||!storage.onChange(old,next))throw new ApiError('TRANSFER_PREPARATION_CONTEXT_CHANGED',412);activeBuffer.current=next;flightBuffer.current=next;}
+ function replace(old:PreparationBuffer|null,next:PreparationBuffer){if(!current()||activeBuffer.current!==old||!storage.onChange(old,next))throw new ApiError('TRANSFER_PREPARATION_CONTEXT_CHANGED',412);bufferGeneration.current++;activeBuffer.current=next;flightBuffer.current=next;}
  function edit(patch:Parameters<typeof editPreparation>[1]){if(!b||busy||!current())return;try{replace(b,editPreparation(b,patch));}catch{setError({owner:scope,value:'TRANSFER_PREPARATION_COMMAND_PRESERVED'});}}
  async function run(action:(check:()=>boolean)=>Promise<void>){if(!current()||flight.current===scope||lookupFlight.current?.owner===scope)return;flight.current=scope;flightBuffer.current=b;const ticket=++seq.current,check=()=>current()&&seq.current===ticket&&activeBuffer.current===flightBuffer.current;setWorking(scope);setError(null);setView(null);try{await action(check);}catch(cause){if(!check())return;const e=cause instanceof ApiError?cause:new ApiError('TRANSFER_PREPARATION_RESPONSE_INVALID',503);setError({owner:scope,value:/^[A-Z_]{1,80}$/.test(e.code)?e.code:'TRANSFER_PREPARATION_RESPONSE_INVALID'});if(e.status===401)lost.current();}finally{if(current()&&seq.current===ticket&&flight.current===scope){flight.current=null;setWorking(null);}}}
  async function selectRole(id:string,version:number,want?:PlanRef){await run(async check=>{if(!b||locked)return;const role=await readPreparationRole(client,confirmed,id,version,check);if(want&&!same(want,role.ref))throw new ApiError('TRANSFER_PREPARATION_ROLE_MISMATCH',412);if(check())replace(b,editPreparation(b,{roleRef:role.ref,roleSelected:true,oldBindingRef:null,bindingSelected:false}));});}
@@ -30,6 +30,14 @@ export function TransferPreparationRecordPanel({client,session,confirmed,state,c
  async function save(){await run(async check=>{if(!b)return;let latest=b;try{latest=markPreparationDispatch(b);replace(b,latest);const next=await sendPreparation(client,session,confirmed,latest,check);if(!check())return;replace(latest,next);latest=next;const result=await readPreparationRecord(client,confirmed.projectId,next.pending!.receipt.data.ref,confirmed.ref,check);if(check())setView({owner:scope,value:result});}catch(cause){if(check()&&cause instanceof ApiError)replace(latest,failPreparation(latest,cause));throw cause;}});}
  function next(){if(!b||busy||!current()||flight.current===scope||lookupFlight.current?.owner===scope||activeBuffer.current!==b)return;try{replace(b,nextPreparation(client,session,confirmed,b));seq.current++;setView(null);setError(null);setRoleId('');setRoleVersion('1');setBindingId('');setBindingVersion('1');setTargetId('');setTargetVersion('1');setTargetHash('');}catch{setError({owner:scope,value:'TRANSFER_PREPARATION_COMMAND_PRESERVED'});}}
  async function read(){await run(async check=>{if(!b?.pending?.receipt)return;const result=await readPreparationRecord(client,confirmed.projectId,b.pending.receipt.data.ref,confirmed.ref,check);if(check())setView({owner:scope,value:result});});}
+ async function selectHistoricalContext(reference:PlanRef,sourceCurrent:()=>boolean){
+  if(!b||b.pending||busy||!current()||!sourceCurrent()||activeBuffer.current!==b||flight.current===scope||lookupFlight.current?.owner===scope||displayed.current!==rawView||!rawView?.value.record.contextRef||!same(reference,rawView.value.record.contextRef))return;
+  const ticket=++seq.current,generation=bufferGeneration.current,check=()=>current()&&seq.current===ticket&&activeBuffer.current===b&&bufferGeneration.current===generation&&displayed.current===rawView&&sourceCurrent();
+  flight.current=scope;setWorking(scope);setError(null);
+  try{const value=await readTransferContext(client,confirmed.projectId,confirmed.ref,reference,check);if(check()&&value)replace(b,editPreparation(b,{contextRef:value.ref,contextSelected:true}));}
+  catch(cause){if(!check())return;const e=cause instanceof ApiError?cause:new ApiError('TRANSFER_PREPARATION_RESPONSE_INVALID',503);setError({owner:scope,value:/^[A-Z_]{1,80}$/.test(e.code)?e.code:'TRANSFER_PREPARATION_RESPONSE_INVALID'});if(e.status===401)lost.current();}
+  finally{if(current()&&seq.current===ticket&&flight.current===scope){flight.current=null;setWorking(null);}}
+ }
  const known=lookup?.owner===scope?lookup:{owner:scope,id:'',hash:''};
  function changeLookup(patch:Partial<{id:string;hash:string}>){if(!current()||working===scope)return;lookupSeq.current++;lookupFlight.current=null;setLookupWorking(null);setLookupError(null);setView(null);setLookup(old=>({...(old?.owner===scope?old:{owner:scope,id:'',hash:''}),...patch,owner:scope}));}
  async function readKnown(){if(!current()||busy)return;const reference:PlanRef={id:known.id,version:1,contentHash:known.hash},ticket=++lookupSeq.current;lookupFlight.current={owner:scope,ticket};const check=()=>current()&&lookupSeq.current===ticket&&lookupFlight.current?.owner===scope&&lookupFlight.current.ticket===ticket;setLookupWorking(scope);setLookupError(null);setView(null);try{const value=await readPreparationRecord(client,confirmed.projectId,reference,confirmed.ref,check);if(check())setView({owner:scope,value});}catch(cause){if(!check())return;const e=cause instanceof ApiError?cause:new ApiError('TRANSFER_PREPARATION_RESPONSE_INVALID',503);setLookupError({owner:scope,code:/^[A-Z_]{1,80}$/.test(e.code)?e.code:'TRANSFER_PREPARATION_RESPONSE_INVALID'});if(e.status===401)lost.current();}finally{if(check()){lookupFlight.current=null;setLookupWorking(null);}}}
@@ -52,14 +60,14 @@ export function TransferPreparationRecordPanel({client,session,confirmed,state,c
  {view?<section aria-label="준비기록 고정 원문"><p>{view.ref.id} · v1 · {view.ref.contentHash}</p><p>보관 관측 {view.record.observedAt} · 의도 기한 {view.record.intentExpiresAt} · {view.currentStatus.intentExpired?'과거 기한 경과':'조회 시 기한 이내'} · 원자료 현재성 {view.currentStatus.sourceCurrentness} · 실제 인계 불가</p><p>미확인 공백: {view.record.gaps.join(', ')}</p><pre>{JSON.stringify(view.record,null,2)}</pre>
  {view.record.budgetRef?<HistoricalBudget key={JSON.stringify([view.ref,view.record.budgetRef])} client={client} projectId={confirmed.projectId} reference={view.record.budgetRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>한도 정책 참조 없음</p>}
  {view.record.targetConnectionRef?<HistoricalTarget key={JSON.stringify([displayedGeneration.current,view.ref,view.record.targetConnectionRef])} client={client} projectId={confirmed.projectId} reference={view.record.targetConnectionRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>대상 연결 참조 없음</p>}
- {view.record.contextRef?<HistoricalContext key={JSON.stringify([displayedGeneration.current,view.ref,view.record.contextRef])} client={client} projectId={confirmed.projectId} assignmentRef={confirmed.ref} reference={view.record.contextRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>당시 맥락 참조 없음</p>}
+ {view.record.contextRef?<HistoricalContext key={JSON.stringify([displayedGeneration.current,view.ref,view.record.contextRef])} client={client} projectId={confirmed.projectId} assignmentRef={confirmed.ref} reference={view.record.contextRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()} onSelect={b&&!locked?(ref,check)=>void selectHistoricalContext(ref,check):undefined} selecting={busy}/>:<p>당시 맥락 참조 없음</p>}
  <button type="button" onClick={()=>setView(null)}>준비기록 원문 닫기</button></section>:null}
  </section>;
 }
 
 type ContextRead={state:'idle'|'loading'}|{state:'loaded';value:NonNullable<Awaited<ReturnType<typeof readTransferContext>>>}|{state:'error';code:string};
-function HistoricalContext({client,projectId,assignmentRef,reference,current,onAuthenticationLost}:{
- client:ApiClient;projectId:string;assignmentRef:PlanRef;reference:PlanRef;current:()=>boolean;onAuthenticationLost:()=>void;
+function HistoricalContext({client,projectId,assignmentRef,reference,current,onAuthenticationLost,onSelect,selecting}:{
+ client:ApiClient;projectId:string;assignmentRef:PlanRef;reference:PlanRef;current:()=>boolean;onAuthenticationLost:()=>void;onSelect?: (ref:PlanRef,current:()=>boolean)=>void;selecting:boolean;
 }){
  const [read,setRead]=useState<ContextRead>({state:'idle'});
  const sequence=useRef(0),inFlight=useRef(false);
@@ -90,6 +98,7 @@ function HistoricalContext({client,projectId,assignmentRef,reference,current,onA
    <p>제외: {read.value.manifest.excluded.join(', ')||'당시 metadata상 없음'}</p>
    <details><summary>고정 참조·누락·전달 계획 metadata</summary><pre>{JSON.stringify(read.value.manifest,null,2)}</pre></details>
    <p>이 조회는 원자료 본문 수집·이전 승인·Agent 전달·실행 완료를 확인하지 않습니다.</p>
+   {onSelect?<button type="button" disabled={selecting} onClick={()=>onSelect(read.value.ref,()=>current()&&sequence.current===displayedTicket)}>당시 맥락을 현재 새 준비기록에 선택</button>:null}
    <TransferContextOriginals client={client} projectId={projectId} assignmentRef={assignmentRef} context={read.value} current={()=>current()&&sequence.current===displayedTicket} onUnavailable={error=>{if(current()&&sequence.current===displayedTicket&&error.status===401)onAuthenticationLost();}}/>
   </section>:null}
  </section>;
