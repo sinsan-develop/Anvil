@@ -4,16 +4,34 @@ import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {fixture as activationFixture,pid,actor,id,at} from '../FN04/baseline-activation-fixture.ts';
 import {activationHash,newDesignActivation,prepareDesignActivation} from '../../../apps/web/src/features/design-change/activation-api.ts';
+import {workPlanReviewCriteria} from '../../../apps/server/modules/traceability/work-plan-reviews.ts';
+import {analyzeWorkPlanCards} from '../../../apps/server/modules/traceability/work-plan-card.ts';
 const nodes=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(nodes)];
 async function settle(check:()=>boolean){for(let i=0;i<80;i++){if(check())return;await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});}assert.fail('RAM 정착 실패');}
-async function fixture(withBuffer=false,distinctDesign=false){
+async function fixture(withBuffer=false,distinctDesign=false,withPlans=false){
  const f=activationFixture(),previous=f.record();
  if(distinctDesign){previous.snapshot.approvedDesignRef={...previous.snapshot.approvedDesignRef,version:1,contentHash:'b'.repeat(64)};previous.ref.contentHash=await activationHash(previous.snapshot);}
  const record=f.record(2,previous.ref),session={user:{id:actor.actorId},clientId:id(90),csrfToken:'C'.repeat(43)};
+ const plans:any[]=[];
+ if(withPlans){for(const [n,r] of [previous,record].entries()){
+  const card={taskCode:'FN01',type:'FUNCTION',title:'원문 읽기',purpose:'고정 원문 확인',ownerRole:'단계 책임자',designRefs:[{kind:'DESIGN_ITEM',id:id(72),versionRef:r.snapshot.approvedDesignRef,localCode:'FN01',anchor:'line:1'}],screenRefs:[],inputs:['고정 설계'],outputs:['확인 결과'],included:['원문 읽기'],excluded:['실행'],allowedFileRefs:['src/read.ts'],startPrerequisites:[],acceptancePrerequisites:[],steps:['원문 대조'],testCases:['NORMAL','IMPORTANT_FAILURE','DIRECT_IMPACT'].map((kind,i)=>({id:'TC'+i,kind,steps:['고정 참조 대조'],expected:'정확 원문',environment:'RAM'})),acceptanceCriteria:['일치'],evidenceRequirements:['고정 참조'],rollback:'원 입력 유지',recoveryNotes:'명시 재조회'};
+  const analysis=analyzeWorkPlanCards([card]);assert.equal(analysis.issues.length,0);
+  const snapshot={documentRef:{id:id(70),version:n+1,contentHash:(n?'c':'d').repeat(64)},designRef:r.snapshot.approvedDesignRef,screenReviewRefs:[],tasks:analysis.tasks,dependencies:analysis.dependencies,reason:'보관 계획 원문',issues:[],relationalProjection:'STORED'};
+  const plan={...snapshot,ref:{id:id(71),version:n+1,contentHash:await activationHash(snapshot)},status:'DRAFT',executionEvidence:'NOT_CONNECTED',observedAt:at};
+  const validation={validForConfirmation:true,issues:[],sourceRefs:[plan.documentRef,plan.designRef],screenReviewRefs:[]},reviewRef={id:id(75+n),targetRef:plan.ref,criteriaVersion:1,outcome:'ACCEPTED'};
+  const decision={planRef:plan.ref,headVersion:2,confirmedVersion:2,criteria:workPlanReviewCriteria,contentReviews:[{ref:reviewRef,criteria:workPlanReviewCriteria,items:workPlanReviewCriteria.items.map(i=>({criterionId:i.criterionId,outcome:'ACCEPTED',evidenceRefs:[],reason:'원문 대조'})),reviewer:{kind:'HUMAN',userId:actor.actorId,sameAsTargetRecorder:true},sourceKind:'HUMAN_REVIEW',reason:'원문 검토',reviewedAt:at,serverSequence:1}],confirmation:{id:id(78+n),planRef:plan.ref,reviewRefs:[reviewRef],validation,confirmedBy:{kind:'HUMAN',userId:actor.actorId},confirmedAt:at},validation,currentConfirmationValid:n===1,activatedAsBaseline:false,observedAt:at};
+  r.snapshot.confirmedPlanRef=plan.ref;if(n)r.snapshot.previousActivationRef=previous.ref;r.ref.contentHash=await activationHash(r.snapshot);plans.push({plan,decision});
+ }}
  const current={projectId:pid,current:{state:'PRESENT' as const,activationRef:record.ref,designRef:record.snapshot.approvedDesignRef,planRef:record.snapshot.confirmedPlanRef},observedAt:at,executionAuthorized:false as const,dispatchPerformed:false as const};
- const calls:{path:string;method:string}[]=[];let mode='OK',release=()=>{},waiting=false,lost=0,changes=0,requests=0;
+ const calls:{path:string;method:string}[]=[];let mode='OK',planMode='OK',release=()=>{},waiting=false,lost=0,changes=0,requests=0;
  const api=new ui.ApiClient(async(path:string,options?:RequestInit)=>{
   calls.push({path,method:options?.method??'GET'});assert.equal(options?.method??'GET','GET');
+  if(path.includes('/work-plans/')){
+   const row=plans.find(p=>path.startsWith(`/api/v1/projects/${pid}/work-plans/${p.plan.ref.id}/versions/${p.plan.ref.version}`));assert(row,path);const decision=path.endsWith('/decision'),selected=planMode;
+   if(selected.startsWith(decision?'WAIT_DECISION':'WAIT_PLAN')){waiting=true;await new Promise<void>(r=>release=r);}
+   if(selected==='401'||selected==='403'||selected.endsWith('401')&&selected.startsWith(decision?'WAIT_DECISION':'WAIT_PLAN'))return Response.json({code:'ACCESS_DENIED'},{status:selected==='403'?403:401});
+   return Response.json(decision?row.decision:row.plan);
+  }
   const selected=mode;if(selected.startsWith('WAIT')){waiting=true;await new Promise<void>(r=>release=r);}
   if(['401','403','WAIT401'].includes(selected))return Response.json({code:'ACCESS_DENIED'},{status:selected==='WAIT401'?401:Number(selected)});
   if(path==='/api/v1/projects/'+pid+'/baseline-activations/current')return Response.json(mode==='NONE'?{...current,current:{state:'NONE'}}:current);
@@ -28,8 +46,41 @@ async function fixture(withBuffer=false,distinctDesign=false){
  const button=(label:string)=>{const found=nodes(container).filter(n=>n.tagName==='BUTTON'&&n.textContent===label);assert.equal(found.length,1,label);return found[0]!;};
  const click=async(label:string)=>{const b=button(label);assert(!b.disabled,label);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0}));};
  await render();
- return{f,record,previous,current,calls,api,session,buffer:()=>buffer,props:()=>props,render,button,click,text:()=>container.textContent,region:(label:string)=>nodes(container).filter(n=>n.getAttribute('aria-label')===label),setMode:(v:string)=>{mode=v;},waiting:()=>waiting,release:()=>release(),lost:()=>lost,changes:()=>changes,requests:()=>requests,replace:async(b:any)=>{buffer=b;await render({...props,buffer});},close:async()=>{release();await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{f,record,previous,current,calls,api,session,plans,setPlanMode:(v:string)=>{planMode=v;},buffer:()=>buffer,props:()=>props,render,button,click,text:()=>container.textContent,region:(label:string)=>nodes(container).filter(n=>n.getAttribute('aria-label')===label),setMode:(v:string)=>{mode=v;},waiting:()=>waiting,release:()=>release(),lost:()=>lost,changes:()=>changes,requests:()=>requests,replace:async(b:any)=>{buffer=b;await render({...props,buffer});},close:async()=>{release();await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
+const planButton='당시 확정 계획 원문 확인',planLinks=(f:Awaited<ReturnType<typeof fixture>>)=>f.region('설계 변경 적용').flatMap(nodes).filter(n=>n.tagName==='A'&&n.textContent==='당시 확정 계획 작성 문서 보기');
+async function openHistory(f:Awaited<ReturnType<typeof fixture>>){await f.click('현재 적용 기준 확인');await settle(()=>f.region('현재 적용 기준').length===1);await f.click('적용 이력 원문 확인');await settle(()=>f.region('고정 적용 이력').length===1);}
+test('확정 계획 원문 · 명시 두 GET 뒤 현재/과거 원 문서 fullref를 연결한다',async()=>{
+ const f=await fixture(true,true,true);try{const base=f.buffer()!,pending=prepareDesignActivation({...base,current:{...f.current,current:{state:'NONE'}}},f.session),retained={...base,pending,uncertain:true};await f.replace(retained);await openHistory(f);
+  assert.equal(f.calls.filter(c=>c.path.includes('/work-plans/')).length,0);
+  for(const n of [1,0]){if(n===0){await f.click('직전 적용 이력 확인');await settle(()=>f.text().includes(f.previous.ref.contentHash));}assert.equal(planLinks(f).length,0);const before=f.calls.length;
+   await f.click(planButton);await settle(()=>planLinks(f).length===1);const ref=f.plans[n].plan.documentRef;assert.equal(planLinks(f)[0]!.getAttribute('href'),`#/projects/${pid}/documents/${ref.id}/versions/${ref.version}/${ref.contentHash}`);assert.equal(f.calls.length-before,2);assert.equal(f.buffer(),retained);
+  }assert.equal(f.changes(),0);assert.equal(f.requests(),0);assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+for(const mode of ['PLAN_REF','PLAN_HASH','DECISION_REF','DESIGN','UNCONFIRMED','CONFIRM_SOURCES','CONFIRM_SCREENS','401','403'] as const)test('확정 계획 원문 · '+mode+'는 링크를 표시하지 않는다',async()=>{
+ const f=await fixture(false,true,true);try{const row=f.plans[1];
+  if(mode==='PLAN_REF')row.plan.ref={...row.plan.ref,contentHash:'e'.repeat(64)};
+  else if(mode==='PLAN_HASH')row.plan.reason='다른 본문';
+  else if(mode==='DECISION_REF')row.decision.planRef={...row.decision.planRef,version:3};
+  else if(mode==='DESIGN'){row.plan.designRef={...row.plan.designRef,contentHash:'e'.repeat(64)};const{ref,status,executionEvidence,observedAt,...snapshot}=row.plan;row.plan.ref={...ref,contentHash:await activationHash(snapshot)};f.record.snapshot.confirmedPlanRef=row.plan.ref;f.record.ref.contentHash=await activationHash(f.record.snapshot);}
+  else if(mode==='UNCONFIRMED'){row.decision.confirmation=null;row.decision.currentConfirmationValid=false;}
+  else if(mode==='CONFIRM_SOURCES')row.decision.confirmation={...row.decision.confirmation,validation:{...row.decision.confirmation.validation,sourceRefs:[{...row.plan.documentRef,contentHash:'e'.repeat(64)},row.plan.designRef]}};
+  else if(mode==='CONFIRM_SCREENS')row.decision.confirmation={...row.decision.confirmation,validation:{...row.decision.confirmation.validation,screenReviewRefs:[row.plan.documentRef]}};
+  else f.setPlanMode(mode);
+  await openHistory(f);const before=f.calls.length;await f.click(planButton);await settle(()=>f.text().includes('당시 확정 계획 원문을 확인할 수 없습니다.'));assert.equal(planLinks(f).length,0);assert.equal(f.lost(),mode==='401'?1:0);assert.equal(f.calls.length-before,['PLAN_REF','PLAN_HASH','DESIGN','401','403'].includes(mode)?1:2);assert.equal(f.changes(),0);assert.equal(f.requests(),0);
+ }finally{await f.close();}
+});
+for(const phase of ['PLAN','DECISION'] as const)for(const change of ['HISTORY','PROJECT','CSRF','TRANSPORT'] as const)for(const status of [200,401])test(`확정 계획 원문 · ${phase}/${change} 뒤 늦은 ${status} 폐기`,async()=>{
+ const f=await fixture(false,true,true);try{await openHistory(f);f.setPlanMode(`WAIT_${phase}_${status}`);const button=f.button(planButton),props=Object.entries(button).find(([k])=>k.startsWith('__reactProps'))![1] as any;
+  await ui.React.act(async()=>{props.onClick();props.onClick();});await settle(f.waiting);const before=f.calls.filter(c=>c.path.includes('/work-plans/')).length;assert.equal(before,phase==='PLAN'?1:2);
+  if(change==='HISTORY'){await f.click('직전 적용 이력 확인');await settle(()=>f.text().includes(f.previous.ref.contentHash));}
+  else if(change==='PROJECT')await f.render({...f.props(),projectId:id(88)});
+  else if(change==='CSRF'){const original=f.props();await f.render({...original,session:{...f.session,csrfToken:'D'.repeat(43)}});await f.render(original);}
+  else{const original=f.api.transport;f.api.transport=(...args:any[])=>original(...args);await f.render();f.api.transport=original;await f.render();}
+  await ui.React.act(async()=>{f.release();await new Promise(r=>setImmediate(r));});assert.equal(planLinks(f).length,0);assert.equal(f.lost(),0);assert.doesNotMatch(f.text(),/ACCESS_DENIED/);assert.equal(f.calls.filter(c=>c.path.includes('/work-plans/')).length,before);assert.equal(f.changes(),0);assert.equal(f.requests(),0);
+ }finally{await f.close();}
+});
 const originalLinks=(f:Awaited<ReturnType<typeof fixture>>)=>f.region('설계 변경 적용').flatMap(nodes).filter(n=>n.tagName==='A'&&n.textContent==='당시 확정 설계 원문 보기');
 test('당시 확정 설계 링크는 고정 현재/직전 버전의 fullref만 사용하고 미결 명령을 보존한다',async()=>{
  const f=await fixture(true,true);try{
