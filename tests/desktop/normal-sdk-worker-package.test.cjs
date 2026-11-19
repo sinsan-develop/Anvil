@@ -46,7 +46,7 @@ function distribution() {
 }
 function recipe(d){
  const {canonicalJson,contentHash}=require('../../apps/desktop/src/runtime-catalogue-profile.cjs');
- const snapshot={schemaVersion:1,sdkDigest:d.sdkEntry.sha256,packageRefBasis:{id:'11111111-1111-4111-8111-111111111111',version:1,contentHash:contentHash(canonicalJson(d))},role:'CONTEXT_REVIEW',programSelector:{kind:d.cli.kind,logicalName:'RAM_REVIEW'},profileArgs:[],argvTokens:[{kind:'LITERAL',value:'RAM_ONLY'},{kind:'SESSION_ID'}],baseEnv:[],hookEnvRules:[],allowedOptions:['abortController','sessionId','cwd','env','model','maxTurns','maxBudgetUsd','pathToClaudeCodeExecutable','executable','executableArgs','spawnClaudeCodeProcess','canUseTool']};
+ const snapshot={schemaVersion:1,sdkDigest:d.sdkEntry.sha256,packageRefBasis:{id:'11111111-1111-4111-8111-111111111111',version:1,contentHash:contentHash(canonicalJson(d))},role:'CONTEXT_REVIEW',programSelector:{kind:d.cli.kind,logicalName:'RAM_REVIEW'},profileArgs:[],argvTokens:[{kind:'LITERAL',value:'RAM_ONLY'},{kind:'SESSION_ID'},{kind:'MODEL'}],baseEnv:[],hookEnvRules:[],allowedOptions:['abortController','sessionId','cwd','env','model','maxTurns','maxBudgetUsd','pathToClaudeCodeExecutable','executable','executableArgs','spawnClaudeCodeProcess','canUseTool']};
  return{ref:{id:'22222222-2222-4222-8222-222222222222',version:1,contentHash:contentHash(canonicalJson(snapshot))},snapshot};
 }
 test('실행 recipe는 고정 배포입력에 결박한 명시 원형만 허용하고 제품 기본값을 발행하지 않는다',()=>{
@@ -54,6 +54,19 @@ test('실행 recipe는 고정 배포입력에 결박한 명시 원형만 허용�
  d.recipe=recipe(d);assert.deepEqual(readDistribution(d).recipe,d.recipe);
  for(const change of [v=>v.recipe.snapshot.sdkDigest='0'.repeat(64),v=>v.recipe.snapshot.role='CODING',v=>v.recipe.snapshot.programSelector.kind='SCRIPT',v=>v.recipe.snapshot.baseEnv.push({name:'PATH',value:'C:\\RAM'}),v=>v.recipe.snapshot.argvTokens.push({kind:'EXTRA_ARGS'})]){
   const value=structuredClone(d);change(value);const {canonicalJson,contentHash}=require('../../apps/desktop/src/runtime-catalogue-profile.cjs');value.recipe.ref.contentHash=contentHash(canonicalJson(value.recipe.snapshot));assert.throws(()=>readDistribution(value),/SDK_PACKAGE_UNAVAILABLE/);
+ }
+});
+test('recipe IMAGE와 SCRIPT는 원 MODEL 정확 1개를 요구하고 재해시한 누락과 중복을 거절한다',()=>{
+ const {canonicalJson,contentHash}=require('../../apps/desktop/src/runtime-catalogue-profile.cjs');
+ for(const kind of ['IMAGE','SCRIPT']){
+  const d=distribution();if(kind==='SCRIPT')d.cli={kind,script:file('cli/example.cjs')};
+  d.recipe=recipe(d);if(kind==='SCRIPT')d.recipe.snapshot.argvTokens.push({kind:'SCRIPT'});
+  const rehash=v=>{v.recipe.ref.contentHash=contentHash(canonicalJson(v.recipe.snapshot));return v;};
+  rehash(d);assert.deepEqual(readDistribution(d).recipe,d.recipe);
+  const missing=structuredClone(d);missing.recipe.snapshot.argvTokens=missing.recipe.snapshot.argvTokens.filter(t=>t.kind!=='MODEL');
+  assert.throws(()=>readDistribution(rehash(missing)),/SDK_PACKAGE_UNAVAILABLE/,kind+' MODEL 누락');
+  const duplicate=structuredClone(d);duplicate.recipe.snapshot.argvTokens.push({kind:'MODEL'});
+  assert.throws(()=>readDistribution(rehash(duplicate)),/SDK_PACKAGE_UNAVAILABLE/,kind+' MODEL 중복');
  }
 });
 test('패키지 배포입력 IMAGE와 SCRIPT는 최종 parent 해시 없이 분리한다',()=>{

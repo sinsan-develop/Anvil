@@ -151,6 +151,14 @@ test('설정 준비 중 원 화면 문맥이 바뀌면 늦은 미리보기를 �
  await flush();ui.dispatch('trust-open');await flush();for(const [prefix,r] of [['execution-environment',f.selection.environmentRef],['execution-profile',f.selection.commandProfileRef]])for(const [suffix,value] of [['id',r.id],['version',String(r.version)],['hash',r.contentHash]])ui.element(prefix+'-'+suffix).value=value;
  ui.dispatch('execution-configuration-prepare');await flush();assert.equal(calls,1);ui.stateChanged();release({ok:true,value:{state:'PREPARED',ticketId:uuid(901),expiresAt:'2026-11-19T00:05:00.000Z',selectedPath:'LATE',role:'CONTEXT_REVIEW'}});await flush();assert.equal(ui.element('execution-configuration-preview').textContent,'');assert.equal(ui.element('execution-configuration-panel').hidden,true);
 });
+test('native recipe는 확정 전에 원 MODEL 존재와 기존 동적 토큰 중복 거절을 요구한다',()=>{
+ const fs=require('node:fs'),path=require('node:path'),read=name=>fs.readFileSync(path.join(__dirname,'../../apps/connector/native',name),'utf8');
+ const source=read('NormalExecutionConfigurationSource.cs'),recipe=source.slice(source.indexOf('internal static Row Recipe('),source.indexOf('internal static Row Selection('));
+ assert.match(recipe,/if\(!dynamic\.Contains\("SESSION_ID"\)\|\|!dynamic\.Contains\("MODEL"\)\|\|\(kind=="SCRIPT"\)!=dynamic\.Contains\("SCRIPT"\)\)throw Invalid\(\);/);
+ assert.match(recipe,/!dynamic\.Add\(token\)/);
+ assert.match(read('NormalSdkWorkerPackageSource.cs'),/if\(d\.ContainsKey\("recipe"\)\)recipe=NormalExecutionConfigurationSource\.Recipe\(d\);/);
+ assert.ok(source.indexOf('Row recipe=package.ExecutionRecipe')<source.indexOf('records.Confirm('));
+});
 test('native 설정 호출선은 원 등록·recipe·물리 핀과 보호 정착을 묶고 수거 뒤에만 응답한다',()=>{
  const fs=require('node:fs'),path=require('node:path'),native=name=>fs.readFileSync(path.join(__dirname,'../../apps/connector/native',name),'utf8');
  const source=native('NormalExecutionConfigurationSource.cs'),host=native('DesktopTrustKeyHostSource.cs'),root=native('DesktopTrustKeyRootSource.cs');

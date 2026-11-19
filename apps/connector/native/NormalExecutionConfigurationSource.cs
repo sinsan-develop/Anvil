@@ -74,7 +74,7 @@ internal sealed class NormalExecutionConfigurationSource {
    if(token=="LITERAL"){if(!Literal(S(a,"value"),4096))throw Invalid();}
    else if(!new[]{"SCRIPT","SESSION_ID","MODEL","MAX_TURNS","MAX_BUDGET_USD"}.Contains(token)||!dynamic.Add(token)||token=="SCRIPT"&&kind!="SCRIPT"||token=="MAX_BUDGET_USD"&&S(a,"format")!="DECIMAL")throw Invalid();
   }
-  if(!dynamic.Contains("SESSION_ID")||(kind=="SCRIPT")!=dynamic.Contains("SCRIPT"))throw Invalid();
+  if(!dynamic.Contains("SESSION_ID")||!dynamic.Contains("MODEL")||(kind=="SCRIPT")!=dynamic.Contains("SCRIPT"))throw Invalid();
   var names=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
   foreach(string field in new[]{"baseEnv","hookEnvRules"})foreach(object raw in ArrayOf(r[field],field=="baseEnv"?4:1)){
    var e=Map(raw);Exact(e,"name,value");string name=S(e,"name"),value=S(e,"value");

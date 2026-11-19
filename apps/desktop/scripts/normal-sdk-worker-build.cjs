@@ -32,7 +32,7 @@ function readRecipe(raw,distribution){
   if(kind==='LITERAL'){if(!literal(a.value))return unavailable();}
   else{if(!['SCRIPT','SESSION_ID','MODEL','MAX_TURNS','MAX_BUDGET_USD'].includes(kind)||dynamic.has(kind)||kind==='SCRIPT'&&p.kind!=='SCRIPT'||kind==='MAX_BUDGET_USD'&&a.format!=='DECIMAL')return unavailable();dynamic.add(kind);}
  }
- if(!dynamic.has('SESSION_ID')||(p.kind==='SCRIPT')!==dynamic.has('SCRIPT'))return unavailable();
+ if(!dynamic.has('SESSION_ID')||!dynamic.has('MODEL')||(p.kind==='SCRIPT')!==dynamic.has('SCRIPT'))return unavailable();
  const names=new Set();
  for(const [values,allowed] of [[s.baseEnv,['SystemRoot','WINDIR','TEMP','TMP']],[s.hookEnvRules,['CLAUDE_AGENT_SDK_VERSION']]])for(const value of values){const e=catalogueExact(value,'name,value');if(typeof e.name!=='string'||!allowed.includes(e.name)||names.has(e.name.toUpperCase())||!literal(e.value)||!e.value.length||e.name==='CLAUDE_AGENT_SDK_VERSION'&&e.value!=='0.3.224')return unavailable();names.add(e.name.toUpperCase());}
  const options=['abortController','sessionId','cwd','env','model','maxTurns','maxBudgetUsd','pathToClaudeCodeExecutable','executable','executableArgs','spawnClaudeCodeProcess','canUseTool'];

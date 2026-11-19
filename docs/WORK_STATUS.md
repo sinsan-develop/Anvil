@@ -21209,3 +21209,11 @@ PRESPAWN 후보 §6에 기본 서버 옵션 조립 미연결과 queue의 writer 
 연결 없음 RED `2d471c`에서 집중 통과 `feebac`로 전환. 최종 담당자 직접·인접 47 통과·건너뜀0 `e3b02f`. 시험 타입 오류 4건을 시험의 entry 타입에서 보완 후 root type 종료0 `deb31a`, 변경 시험 2건 및 공백 종료0 `1cf62b`. Main 최종 직접·인접 47 통과·실패/건너뜀0 `ef10cc`, 공백 `e8f067`, 최종 시험 파일 지문과 변경 시험 2건 `987dd8`. 활성 핸들0. 시험은 RAM 파일 저장소와 native 호출선 정적 검증이다.
 
 원 plannedSidDigest는 살아 있는 FIRST scope에 있고 정착 START/SEND 3행에는 없다. 원 Options 무결성에서 실행 인수·환경의 SDK 형식이나 새 실행 권위가 생기지 않는다. 실제 C#/Windows 보호 스풀, SDK/Agent, DB·권한·키·서비스는 미검증 또는 제외다. 후속은 원 계획 세션 값의 신뢰 근거와 배포 recipe의 실제 argv/env 근거 확보다. PRESPAWN·실행 lease 및 사용자 인수는 미완료다. 롤백은 지정 제품·시험 4경로에 한정한다.
+
+## FN07 보호 recipe의 원 모델 슬롯 검산
+
+Stage D FN07 부분 구현. 기준 `25879ea7`, 기존 developer_primary 단일 작성·반환. 4091F826의 원 모델 전달과 기존 START Options의 필수 model을 대조했다. IMAGE/SCRIPT 보호 배포 입력과 native 설정 검산이 모두 원 MODEL 슬롯 하나를 요구한다. 슬롯 없는 recipe를 이전에는 받아들였지만 이제 거절하고 기존 recipe를 자동 보정하지 않는다. 전체 인수 순서나 옵션값은 이 검산에서 확정하지 않는다.
+
+변경은 desktop worker build 및 native 설정 검산 각 1경로와 기존 직접 시험 2경로다. 해시를 다시 계산한 누락 입력·native 조건의 RED 2건 `e44676`에서 집중 2건 통과로 전환했다. 기존 중복 거절 유지. Main 최종 두 직접 파일 21건 통과·실패/건너뜀0 `d9caba`, 제품·시험 지문 4/4 및 공백 종료0 `fd5d2f`. 담당 실행 핸들0.
+
+실제 C#·보호 배포·SDK의 argv/env·원 Query·DB·권한·키·서비스·Agent는 미검증 또는 제외다. 이어갈 FN07 제품 연결에는 검증된 SDK 배포 조합과 PRESPAWN·원 실행 lease가 필요하다. FN13 과거 중지 조회는 기존 화면·API·기존 시험 증거를 대조했으며, 실제 중지는 원 현재 소유 근거가 선행한다. 롤백은 이번 제품·시험 4경로의 diff에 한정한다.
