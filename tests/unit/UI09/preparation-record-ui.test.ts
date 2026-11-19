@@ -431,3 +431,73 @@ test('등록정의 선택 뒤 저장전 바뀐 binding은 원 선택을 보존�
 test('등록정의 준비저장 UNKNOWN은 같은 원 packet을 보존하고 명시 재확인 전 추가 POST0이다',async()=>{
  const f=await host({registered:true});try{await selectRegisteredBinding(f);await f.click('준비기록 원명령 준비');await f.settle(()=>f.buffer().pending?.state==='PREPARED');const body=f.buffer().pending.body;f.modes.post='LOST';await f.click('같은 준비기록 명령 저장·재확인');await f.settle(()=>f.buffer().pending?.state==='UNKNOWN');assert.equal(f.buffer().pending.body,body);await f.render();assert.equal(f.calls.filter(c=>c.method==='POST').length,1);f.modes.post='OK';await f.click('같은 준비기록 명령 저장·재확인');await f.settle(()=>f.buffer().pending?.state==='STORED');assert.equal(f.buffer().pending.body,body);assert.deepEqual(f.calls.filter(c=>c.method==='POST').map(c=>c.body),[body,body]);}finally{await f.close();}
 });
+
+
+const contextButton='당시 맥락 원문 열기';
+function historicalContext(){
+ const value=structuredClone(transferFixture().context);value.manifest.id=id(87);value.ref.id=id(87);value.ref.contentHash=hash(value.manifest);return value;
+}
+function recordWithContext(contextRef:ReturnType<typeof historicalContext>['ref']|null,recordId=id(20)){
+ return receipt({commandId:id(90),payload:{assignmentRef:transferFixture().confirmed.ref,contextRef,roleRef:null,oldBindingRef:null,targetConnectionRef:null,intentExpiresAt:new Date(Date.now()+600000).toISOString(),reason:'보관 맥락 원참조'}},recordId).data;
+}
+
+test('과거 맥락 · 최근 후보 밖의 원참조를 명시 GET1로 열고 null은 버튼·GET0이다',async()=>{
+ for(const missing of [false,true]){
+  const context=historicalContext(),data=recordWithContext(missing?null:context.ref),path='/api/v1/projects/'+pid+'/context/'+context.ref.id+'/versions/1';
+  const f=await host({empty:true,knownRecord:{data},historicalGet:p=>p===path?Response.json(context):undefined});
+  try{await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));const before=f.calls.length;
+   assert(!f.f.contexts.items.some(item=>item.ref.id===context.ref.id));assert.equal(f.calls.filter(c=>c.path===path).length,0);
+   if(missing)assert.equal(f.buttons(contextButton).length,0);
+   else{await f.click(contextButton);await f.settle(()=>f.nodes().some(n=>n.getAttribute('aria-label')==='당시 맥락 고정 원문'));
+    assert.equal(f.calls.length,before+1);assert.equal(f.calls.at(-1)!.path,path);assert(f.text().includes(context.ref.contentHash));assert(f.text().includes('MATCHED_METADATA'));assert(f.text().includes('누락: PURPOSE_REASON'));assert(f.text().includes('제외:'));}
+   assert(f.calls.every(c=>c.method==='GET'));assert.deepEqual(f.buffers,{});
+  }finally{await f.close();}
+ }
+});
+
+
+for(const mode of ['hash','본문','project','임무','401','403'] as const){
+ test('과거 맥락 · '+mode+' 불일치는 원문을 표시하지 않는다',async()=>{
+  const context=historicalContext();
+  if(mode==='임무'){context.manifest.assignmentRef={...context.manifest.assignmentRef,id:id(99)};context.manifest.preparationInput.assignmentRef=context.manifest.assignmentRef;context.ref.contentHash=hash(context.manifest);}
+  const data=recordWithContext(context.ref),path='/api/v1/projects/'+pid+'/context/'+context.ref.id+'/versions/1';
+  const f=await host({empty:true,knownRecord:{data},historicalGet:p=>{
+   if(p!==path)return;
+   if(mode==='401'||mode==='403')return Response.json({code:'ACCESS_DENIED'},{status:Number(mode)});
+   const value=structuredClone(context);
+   if(mode==='hash')value.ref.contentHash='e'.repeat(64);
+   if(mode==='본문')value.manifest.preparationInput.reason='다른 내용';
+   if(mode==='project')value.projectId=id(99);
+   return Response.json(value);
+  }});
+  try{await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));await f.click(contextButton);
+   await f.settle(()=>f.nodes().some(n=>n.getAttribute('aria-label')==='당시 맥락 조회'&&n.textContent.includes('확인할 수 없습니다')));
+   assert(!f.nodes().some(n=>n.getAttribute('aria-label')==='당시 맥락 고정 원문'));assert.equal(f.lost(),mode==='401'?1:0);
+   if(mode==='임무')assert(f.text().includes('TRANSFER_CONTEXT_ASSIGNMENT_MISMATCH'));
+   assert.equal(f.calls.filter(c=>c.path===path).length,1);assert(f.calls.every(c=>c.method==='GET'));assert.deepEqual(f.buffers,{});
+  }finally{await f.close();}
+ });
+}
+
+for(const mode of ['닫기','재조회','기록ABA','주체ABA','프로젝트ABA'] as const){
+ test('과거 맥락 · '+mode+' 뒤 지연 원문·401을 폐기하고 중복 클릭은 GET1이다',async()=>{
+  const context=historicalContext(),a=recordWithContext(context.ref),b=recordWithContext(null,id(22)),path='/api/v1/projects/'+pid+'/context/'+context.ref.id+'/versions/1';
+  let release!:()=>void,reading=false;const gate=new Promise<void>(r=>release=r),late401=mode.endsWith('ABA');
+  const f=await host({empty:true,knownRecord:{data:a},historicalGet:p=>{
+   if(p.endsWith('/transfer-preparations/'+b.ref.id+'/versions/1'))return recordResponse(b);
+   if(p!==path)return;
+   const response=Response.json(late401?{code:'AUTH_REQUIRED'}:context,{status:late401?401:200}),parse=response.json.bind(response);
+   response.json=async()=>{reading=true;await gate;return parse();};return response;
+  }});
+  try{await queryKnown(f,a.ref);await f.settle(()=>hasOriginal(f));const button=f.button(contextButton),key=Object.keys(button).find(k=>k.startsWith('__reactProps'))!;
+   await ui.React.act(async()=>{(button as any)[key].onClick();(button as any)[key].onClick();});await f.settle(()=>reading);
+   if(mode==='닫기')await f.click('준비기록 원문 닫기');
+   else if(mode==='재조회'){await f.click('알려진 준비기록 고정 조회');await f.settle(()=>hasOriginal(f)&&!f.button(contextButton).disabled);}
+   else if(mode==='기록ABA'){await queryKnown(f,b.ref);await f.settle(()=>hasOriginal(f)&&f.text().includes('당시 맥락 참조 없음'));await queryKnown(f,a.ref);await f.settle(()=>f.buttons(contextButton).length===1);}
+   else{const props=f.props();await f.render(mode==='주체ABA'?{...props,session:{...session,user:{id:id(99)}}}:{...props,projectId:id(99)});await f.render(props);}
+   await ui.React.act(async()=>{release();await new Promise(r=>setTimeout(r,20));});
+   assert(!f.nodes().some(n=>n.getAttribute('aria-label')==='당시 맥락 고정 원문'));assert(!f.text().includes('AUTH_REQUIRED'));assert.equal(f.lost(),0);
+   assert.equal(f.calls.filter(c=>c.path===path).length,1);assert(f.calls.every(c=>c.method==='GET'));assert.deepEqual(f.buffers,{});
+  }finally{release();await f.close();}
+ });
+}

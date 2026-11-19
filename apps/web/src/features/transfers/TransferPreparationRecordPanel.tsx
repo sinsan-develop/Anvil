@@ -7,6 +7,7 @@ import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation
 import type {ResponsibleSessionState} from '../workspace/responsible-session-api.ts';
 import type {PlanRef} from '../design-trace/work-plan-api.ts';
 import {readContextPreparation} from '../workspace/context-api.ts';
+import {readTransferContext} from './transfer-read.ts';
 import {nextPreparation,newPreparation,preparationKey,preparationOwned,preparationSame as same,editPreparation,editRejectedPreparation,prepareRecord,markPreparationDispatch,sendPreparation,failPreparation,readPreparationRecord,readPreparationRole,readPreparationBinding,type PreparationBuffer,type PreparationStorage,type PreparationGet} from './preparation-record-api.ts';
 export function TransferPreparationRecordPanel({client,session,confirmed,state,contexts,storage,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;confirmed:ConfirmedAssignmentView;state:ResponsibleSessionState;contexts:PlanRef[];storage:PreparationStorage;onAuthenticationLost:()=>void}){
  const key=preparationKey(session,confirmed.projectId,confirmed.ref),owner=useRef({key,client,transport:client.transport,session,csrf:session.csrfToken});if(owner.current.key!==key||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.session!==session||owner.current.csrf!==session.csrfToken)owner.current={key,client,transport:client.transport,session,csrf:session.csrfToken};const scope=owner.current,mounted=useRef(true),seq=useRef(0),flight=useRef<object|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
@@ -50,7 +51,44 @@ export function TransferPreparationRecordPanel({client,session,confirmed,state,c
  {view?<section aria-label="준비기록 고정 원문"><p>{view.ref.id} · v1 · {view.ref.contentHash}</p><p>보관 관측 {view.record.observedAt} · 의도 기한 {view.record.intentExpiresAt} · {view.currentStatus.intentExpired?'과거 기한 경과':'조회 시 기한 이내'} · 원자료 현재성 {view.currentStatus.sourceCurrentness} · 실제 인계 불가</p><p>미확인 공백: {view.record.gaps.join(', ')}</p><pre>{JSON.stringify(view.record,null,2)}</pre>
  {view.record.budgetRef?<HistoricalBudget key={JSON.stringify([view.ref,view.record.budgetRef])} client={client} projectId={confirmed.projectId} reference={view.record.budgetRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>한도 정책 참조 없음</p>}
  {view.record.targetConnectionRef?<HistoricalTarget key={JSON.stringify([displayedGeneration.current,view.ref,view.record.targetConnectionRef])} client={client} projectId={confirmed.projectId} reference={view.record.targetConnectionRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>대상 연결 참조 없음</p>}
+ {view.record.contextRef?<HistoricalContext key={JSON.stringify([displayedGeneration.current,view.ref,view.record.contextRef])} client={client} projectId={confirmed.projectId} assignmentRef={confirmed.ref} reference={view.record.contextRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>당시 맥락 참조 없음</p>}
  <button type="button" onClick={()=>setView(null)}>준비기록 원문 닫기</button></section>:null}
+ </section>;
+}
+
+type ContextRead={state:'idle'|'loading'}|{state:'loaded';value:NonNullable<Awaited<ReturnType<typeof readTransferContext>>>}|{state:'error';code:string};
+function HistoricalContext({client,projectId,assignmentRef,reference,current,onAuthenticationLost}:{
+ client:ApiClient;projectId:string;assignmentRef:PlanRef;reference:PlanRef;current:()=>boolean;onAuthenticationLost:()=>void;
+}){
+ const [read,setRead]=useState<ContextRead>({state:'idle'});
+ const sequence=useRef(0),inFlight=useRef(false);
+ useLayoutEffect(()=>()=>{sequence.current++;inFlight.current=false;},[]);
+ async function load(){
+  if(inFlight.current||!current())return;
+  const ticket=++sequence.current,active=()=>ticket===sequence.current&&current();
+  inFlight.current=true;setRead({state:'loading'});
+  try{
+   const value=await readTransferContext(client,projectId,assignmentRef,reference,active);
+   if(active()&&value)setRead({state:'loaded',value});
+  }catch(error){
+   if(!active())return;
+   setRead({state:'error',code:error instanceof ApiError&&/^[A-Z_]{1,80}$/.test(error.code)?error.code:'CONTEXT_RESPONSE_INVALID'});
+   if(error instanceof ApiError&&error.status===401)onAuthenticationLost();
+  }finally{if(ticket===sequence.current)inFlight.current=false;}
+ }
+ return <section aria-label="당시 맥락 조회">
+  <button type="button" disabled={read.state==='loading'} onClick={()=>void load()}>당시 맥락 원문 열기</button>
+  {read.state==='loading'?<p role="status">저장된 맥락 조회 중</p>:null}
+  {read.state==='error'?<p role="alert">{read.code} · 저장된 맥락을 확인할 수 없습니다.</p>:null}
+  {read.state==='loaded'?<section aria-label="당시 맥락 고정 원문">
+   <p>{read.value.ref.id} · v{read.value.ref.version} · {read.value.ref.contentHash}</p>
+   <p>보관 맥락 metadata · 조회 관측 {read.value.observedAt}</p>
+   <p>현재 원문 대조 {read.value.currentCheck.state} · {read.value.currentCheck.issues.join(', ')||'추가 보고 없음 · 의미 적합 미확인'}</p>
+   <p>누락: {read.value.manifest.missingRequired.join(', ')||'당시 metadata상 없음 · 전체 맥락 완비 판정 아님'}</p>
+   <p>제외: {read.value.manifest.excluded.join(', ')||'당시 metadata상 없음'}</p>
+   <details><summary>고정 참조·누락·전달 계획 metadata</summary><pre>{JSON.stringify(read.value.manifest,null,2)}</pre></details>
+   <p>이 조회는 원자료 본문 수집·이전 승인·Agent 전달·실행 완료를 확인하지 않습니다.</p>
+  </section>:null}
  </section>;
 }
 
