@@ -21321,3 +21321,11 @@ UI10/FN05 부분 구현. 기준 `b4bd2439`, 기존 developer_primary 단일 작�
 제품 ControlAccessPage.tsx 및 직접 RAM control-acceptance.test.ts. 상세 버튼 부재 RED1 `ab2ebc`, 담당 직접7통과 `c0d6ef`, 타입0 `6990fc`, 공백0 `f10876`. 시험 지역 추론 TS7022는 해당 변수 타입만 명시해 바로잡았다. Main 동결 직접7통과·실패/건너뜀0 `7e0d6d`, 지문2/2·공백 `58a787`. 핸들0.
 
 실제 두 기기의 전환·DB·서비스·권한·Agent 또는 회수는 미검증 또는 제외다. 롤백은 제품·시험 두 경로의 이번 diff에 한정한다. FN07 추가 공개 GET은 별도 승인 대기, 실행0이다.
+
+## IX01 읽기 관측의 checkout 없는 메모리 번들 검수
+
+기준 `5c7e889f`, 기존 developer_primary 단일 작성·반환. 기존 호스트·명령·투영·판정 4개와 canonical.ts의 Git 원바이트 5개, 합계 38,742바이트를 변경 없이 고정했다. 로컬 lock의 Rolldown 1.2.14에서 정확 내부 참조와 Node 내장 7개만 소비한다. 순서 보존용 번들러 생성 조각을 별도로 구별하고 완성 CJS 35,390바이트 SHA256 `7374964b28227c507d9488a73b674074817e9a9b46712b68916f051f32a379e8`을 매 빌드 검산한다. 메모리 출력에는 기존 호스트 함수 내보내기만 있고 자동 실행·파일/checkout 생성·외부 접속은 없다.
+
+신규 scripts/qa-ix01-subnet-observation-bundle.ts와 합성 시험 subnet-observation-bundle.test.ts 두 파일이다. 초기 부재 RED4 `b3d393`, 현재 TypeScript 7.0.2의 transpileModule 미제공으로 첫 구현 정상경로3 실패 `cdb557`. 설치 없이 기존 Rolldown을 사용했고 순서 helper의 정확 생성 경계와 전체 지문을 반영했다. 담당 집중4통과 `5927fb`·좁은 타입0 `8115de`, Main 직접4통과·실패/건너뜀0 `aa33a0` 및 두 원 지문 일치 `db6030`. VM의 모듈 로드는 주입한 합성 내장만 사용했고 native host 호출0, 활성 핸들0.
+
+실제 ip 지문, SSH 외부 단회 감독 및 원 관측 프로세스 회수, 운영 주소 예약과 충돌, TC01 저장·조회는 미검증이다. 후속은 검산된 번들의 메모리 전달과 원 자식 감독을 준비하는 것이다. 아직 실제 WSL·IPAM·Docker·보존 자원 및 DB·권한·키·서비스·Agent 접근0이다. 이전 N2 승인 소진과 별도 읽기 승인 범위는 그대로다. 롤백은 신규 두 파일에 한정한다.
