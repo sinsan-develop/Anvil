@@ -10,7 +10,7 @@ import{ApiClient,ApiError}from'../../api/client.ts';
 import{documentControl,type DocumentSession}from'../design-trace/editor-api.ts';
 import{isKnownDocumentRejection,isConfirmedArtifactQuarantine,documentFailure}from'../design-trace/mutation-result.ts';
 import{knowledgeKinds,newKnowledge,newKnowledgeFromConversation,prepareKnowledge,sendKnowledge,readKnowledge,searchKnowledge,type KnowledgeBuffer,type KnowledgeView,type KnowledgeHit}from'./api.ts';
-import{ConversationPanel}from'./ConversationPanel.tsx';
+import{ConversationPanel,type ConversationSourceNavigation}from'./ConversationPanel.tsx';
 import type{ConversationBuffer,ConversationView}from'./conversation-api.ts';
 import{KnowledgeExclusionForm}from'./KnowledgeExclusionForm.tsx';
 import{newKnowledgeExclusion,type KnowledgeExclusionBuffer,type KnowledgeExclusionChange}from'./exclusion-api.ts';
@@ -52,6 +52,7 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,conversa
   const constitutionScope=useRef({identity:constitutionIdentity,epoch:0});
   if(constitutionIdentity.some((value,index)=>value!==constitutionScope.current.identity[index]))constitutionScope.current={identity:constitutionIdentity,epoch:constitutionScope.current.epoch+1};
   const observedConstitutionScope=constitutionScope.current;
+  const[conversationNavigation,setConversationNavigation]=useState<{scope:typeof observedConstitutionScope;target:ConversationSourceNavigation}|null>(null);
   const [applicationReceipt,setApplicationReceipt]=useState<{scope:typeof observedConstitutionScope;ref:KnowledgeView['ref']}|null>(null);
   const refs=[retainedApplicationReceipt,applicationReceipt?.scope===observedConstitutionScope?applicationReceipt.ref:undefined].filter((ref):ref is KnowledgeView['ref']=>!!ref&&ref.id===projectId);
   const applicationReceiptRef=refs.reduce<KnowledgeView['ref']|undefined>((latest,ref)=>!latest||ref.version>latest.version?ref:latest,undefined);
@@ -132,7 +133,7 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,conversa
   function inspectSaved(){if(!work?.resultRef||work.pending||work.uncertain||working||locked.current)return;const ref={id:work.resultRef.id,version:work.resultRef.version,contentHash:work.resultRef.contentHash},selection={key:savedKey,generation:savedGeneration,buffer:work,client,ref};if(currentSavedRead(selection))void inspect(ref,{saved:selection});}
   return<section className="editor-page"><header><h2>헌법·지식·결정 이유</h2><button type="button" onClick={()=>void start()} disabled={!!buffer||!!exclusion||!!correction||!!decision||working}>새 지식 작성</button><span title="원문/지식 저장·조회·정정·사용 제외・내용 검토·별도 확정입니다. 헌법 적용은 별도 확인하며 Agent 전달은 미연결입니다."> ⓘ</span></header>
     <ProjectConstitutionPanel key={JSON.stringify([observedConstitutionScope.epoch,applicationReceiptRef??null])} client={client} projectId={projectId} applicationReceiptRef={applicationReceiptRef} onOpen={ref=>void inspect(ref)} onAuthenticationLost={onAuthenticationLost}/>
-    <ConversationPanel client={client} projectId={projectId} session={session} buffer={conversationBuffer} onChange={onConversationChange} onAuthenticationLost={onAuthenticationLost} onKnowledgeSource={source=>void fromConversation(source)} knowledgeUnavailable={!!buffer||!!exclusion||!!correction||!!decision||working} onKnowledgeAttach={attachConversation} knowledgeAttachUnavailable={!work||working||!!work.pending||!!work.resultRef||!!work.uncertain||!!exclusion||!!correction||!!decision}/>
+    <ConversationPanel navigation={conversationNavigation?.scope===observedConstitutionScope?conversationNavigation.target:null} client={client} projectId={projectId} session={session} buffer={conversationBuffer} onChange={onConversationChange} onAuthenticationLost={onAuthenticationLost} onKnowledgeSource={source=>void fromConversation(source)} knowledgeUnavailable={!!buffer||!!exclusion||!!correction||!!decision||working} onKnowledgeAttach={attachConversation} knowledgeAttachUnavailable={!work||working||!!work.pending||!!work.resultRef||!!work.uncertain||!!exclusion||!!correction||!!decision}/>
     {exclusion?<KnowledgeExclusionForm key={exclusion.projectId+':'+exclusion.target.ref.id+':'+exclusion.target.ref.version} client={client} session={session} buffer={exclusion} onChange={onExclusionChange} onSaved={()=>void list()} onAuthenticationLost={onAuthenticationLost}/>:null}
     {savedExclusion?<button type="button" disabled={loading||working} onClick={inspectExcluded}>제외한 지식 고정 원문·이력 보기</button>:null}
     {correction?<KnowledgeCorrectionForm key={correction.projectId+':'+correction.target.ref.id+':'+correction.target.ref.version} client={client} session={session} buffer={correction} onChange={onCorrectionChange} onSaved={()=>void list()} onAuthenticationLost={onAuthenticationLost}/>:null}
@@ -163,7 +164,7 @@ export function KnowledgePage({client,projectId,session,buffer,onChange,conversa
     {view?<KnowledgeScopeOriginals key={JSON.stringify([projectId,session.user.id,session.clientId,view.ref])} client={client} projectId={projectId} view={view} onAuthenticationLost={onAuthenticationLost}/>:null}
     {view?<KnowledgeStoredReviewDetails key={JSON.stringify([projectId,session.user.id,session.clientId,savedGeneration,view.ref.id,view.ref.version,view.ref.contentHash])} view={view}/>:null}
     {view?<KnowledgeHistory view={view}/>:null}
-    {view?<KnowledgeDocumentSources key={JSON.stringify([projectId,session.user.id,session.clientId,view.ref,view.state])} client={client} projectId={projectId} session={session} view={view} onAuthenticationLost={onAuthenticationLost}/>:null}
+    {view?<KnowledgeDocumentSources key={JSON.stringify([observedConstitutionScope.epoch,projectId,session.user.id,session.clientId,view.ref,view.state])} client={client} projectId={projectId} session={session} view={view} onAuthenticationLost={onAuthenticationLost} onOpenConversation={(selection,original)=>{if(!alive.current||constitutionScope.current!==observedConstitutionScope||client.transport!==observedConstitutionScope.identity[1]||selection.projectId!==projectId||selection.userId!==session.user.id||selection.clientId!==session.clientId||JSON.stringify(selection.knowledgeRef)!==JSON.stringify(view.ref)||!view.entry.sourceRefs.some(r=>r.kind===selection.source.kind&&r.id===selection.source.id&&r.contentHash===selection.source.contentHash)||original.conversationId!==selection.conversationId||original.sourceRef.id!==selection.source.id||original.sourceRef.contentHash!==selection.source.contentHash)return;setConversationNavigation({scope:observedConstitutionScope,target:{projectId,userId:session.user.id,clientId:session.clientId,original}});}}/>:null}
     {onShareChange?<KnowledgeShareRequestPanel client={client} projectId={projectId} session={session} selected={view} buffer={shareBuffer} onChange={onShareChange} onAuthenticationLost={onAuthenticationLost}/>:null}
   </section>;
 }
