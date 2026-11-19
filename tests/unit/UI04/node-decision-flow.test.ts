@@ -147,3 +147,36 @@ test('저장 뒤 명시 선택 refs 변경·거절에는 이전 보호 본문을
 test('재봉인된 다른 판단값 응답도 원 packet의 receipt로 먼저 채택하지 않는다',async()=>{const f=await nodeDecisionFixture(),q=await nodeDecisionTransport(f),transport=async(input:any,init:any)=>{const response=await q.transport(input,init);if(init?.method!=='POST')return response;const raw=await response.json();raw.data.snapshot.value='STOP';raw.data.ref.contentHash=H(raw.data.snapshot);return Response.json(raw);},client=new ui.ApiClient(transport),c={client,projectId:f.pid,session:q.session,applicationRef:f.applicationRef,nodeId:'choose',controlGeneration:1},packet=await ui.api.prepareNodeDecision(c,f.basisSelection,[f.design.ref],'GO','원 입력 고정',null,false,()=>true);await assert.rejects(ui.api.sendNodeDecision(c,packet,()=>true,()=>{}));assert.equal(ui.api.nodeDecisionPacketState(packet).receipt,null);assert.equal(f.versions[0].snapshot_json.value,'GO');assert.equal(q.calls.filter(v=>v.method==='POST').length,1);});
 test('기존v1 새진입에서 자료를 명시 선택해도 같은 stream 정정·철회의 원 head CAS가 유지된다',async()=>{const h=await mount(false,true);try{await h.select();await h.click('판단 기록');await wait(()=>h.f.versions.length===2&&h.container.textContent.includes('보관 버전 2'),h.container);await h.change('판단 이유','새 화면의 명시 철회');await h.click('판단 철회');await wait(()=>h.f.versions.length===3&&h.container.textContent.includes('REVOKED'),h.container);const posted=h.q.calls.filter(v=>v.method==='POST').map(v=>JSON.parse(v.body!));assert.deepEqual(posted.map(c=>c.expectedVersion),[1,2]);assert.equal(posted[0].targetId,h.f.versions[0].stream_id);assert.equal(h.f.versions[2].snapshot_json.status,'REVOKED');assert(!h.container.textContent.includes('원 명령의 결과가 불명'));}finally{await h.close();}});
 test('실제 App의 같은 node 복귀는 새 보호 목록 HOLD·403에서 옛본문0이고 원 receipt만 보존한다',async()=>{const h=await mount(true);try{await wait(()=>!!h.node('적용 절차 조회'),h.container);await h.click('적용 절차 조회');await wait(()=>!!h.node('절차 정의: 사람 판단'),h.container);await h.click('절차 정의: 사람 판단');await h.select();await h.click('판단 기록');await wait(()=>!!h.node('보호 판단 원문'),h.container);const original=h.q.calls.find(v=>v.method==='POST')!.body;await h.click('절차 정의: 완료 정의');h.q.modes.read='HOLD_LIST';await h.click('절차 정의: 사람 판단');await wait(()=>h.q.enteredRead(),h.container);assert.equal(!!h.node('보호 판단 원문'),false);h.f.state.readAllowed=false;h.q.modes.read='NORMAL';await ui.React.act(async()=>{h.q.releaseRead();await tick();});await wait(()=>h.container.textContent.includes('PROJECT_OPERATION_DENIED'),h.container);assert.equal(!!h.node('보호 판단 원문'),false);assert(h.container.textContent.includes('원 저장 응답을 보존'));h.f.state.readAllowed=true;await h.click('이력 보호 재조회');await wait(()=>!!h.node('보호 판단 원문'),h.container);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,1);assert.equal(h.q.calls.find(v=>v.method==='POST')!.body,original);}finally{await h.close();}});
+
+test('역사 판단의 당시 설계·계획 작성문서·중복 근거는 exact 문서 경로만 명시 연결한다',async()=>{
+ const h=await mount(false,true);try{
+  await wait(()=>!!h.node('고정 이력 1')&&!h.node('고정 이력 1')!.disabled,h.container);
+  const links=()=>all(h.container).filter(n=>n.tagName==='A');
+  assert.equal(links().length,0);await h.click('고정 이력 1');await wait(()=>!!h.node('보호 판단 원문')&&!h.node('고정 이력 1')!.disabled,h.container);
+  const expected=[h.f.design.ref,h.f.planDoc.ref,h.f.design.ref].map(r=>`#/projects/${h.f.pid}/documents/${r.id}/versions/${r.version}/${r.contentHash}`);
+  assert.deepEqual(links().map(n=>n.getAttribute('href')),expected);
+  assert.deepEqual(links().map(n=>n.textContent),['당시 확정 설계 원문 보기','당시 확정 계획 작성 문서 보기','당시 근거 문서 1 보기']);
+  assert.equal(h.q.calls.filter(c=>c.method==='POST').length,0);
+  assert.equal(h.q.calls.filter(c=>c.path.includes('/documents/')).length,0);
+ }finally{await h.close();}
+});
+for(const fault of ['hash','403','401','late200','late401'])test('역사 판단 근거 링크: '+fault+'는 미검산·옛 문맥 링크0',async()=>{
+ const h=await mount(false,true);const gate=Promise.withResolvers<void>();let intercepted=false,enabled=false;
+ try{
+  const transport:typeof fetch=async(input,init)=>{
+   if(enabled&&String(input).includes('/node-decisions/')&&String(input).includes('/versions/')){
+    intercepted=true;if(fault.startsWith('late'))await gate.promise;
+    if(fault==='401'||fault==='late401'||fault==='403')return Response.json({code:'PROJECT_READ_DENIED'},{status:fault==='403'?403:401});
+    const response=await h.q.transport(input,init);if(fault!=='hash')return response;
+    const value=await response.json();value.basisSnapshot.designRef.contentHash='f'.repeat(64);return Response.json(value);
+   }
+   return h.q.transport(input,init);
+  };
+  h.props.client=new ui.ApiClient(transport);await h.render();await wait(()=>!!h.node('고정 이력 1')&&!h.node('고정 이력 1')!.disabled,h.container);
+  enabled=true;await h.click('고정 이력 1');await wait(()=>intercepted,h.container);
+  if(fault.startsWith('late')){h.props.session={...h.props.session,csrfToken:'D'.repeat(43)};await h.render();gate.resolve();await ui.React.act(async()=>{await tick();await tick();});}
+  else await wait(()=>!h.node('고정 이력 1')?.disabled,h.container);
+  assert.equal(all(h.container).filter(n=>n.tagName==='A').length,0);
+  assert.equal(h.authLost(),fault==='401'?1:0);assert.equal(h.q.calls.filter(c=>c.method==='POST').length,0);
+ }finally{gate.resolve();await h.close();}
+});
