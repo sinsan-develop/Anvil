@@ -10,7 +10,11 @@ export function NodeDocumentFields({ node, nodes, forms, onChange,formAccess }: 
   function patch(side: 'inputs' | 'outputs', itemId: string, patch: Partial<MethodologyDocumentItem>) { onChange({ [side]: node[side].map(item => item.itemId === itemId ? { ...item, ...patch } : item) }); }
   function add(side: 'inputs' | 'outputs') {
     const first = forms[0]; if (!first || node[side].length >= 200) return;
-    onChange({ [side]: [...node[side], { itemId: node.nodeId + (side === 'inputs' ? '-IN-' : '-OUT-') + crypto.randomUUID().slice(0, 8), formRef: first.ref, required: true, reviewCriteria: [] }] });
+    const used = new Set([...node.inputs, ...node.outputs].map(item => item.itemId));
+    const base = 'DOC-' + crypto.randomUUID();
+    let itemId = base;
+    for (let suffix = 1; used.has(itemId); suffix++) itemId = `${base}-${suffix}`;
+    onChange({ [side]: [...node[side], { itemId, formRef: first.ref, required: true, reviewCriteria: [] }] });
   }
   return <details><summary>단계의 입력·산출 문서 양식</summary><p className="meta">양식 ID/버전/hash를 고정합니다. 선택만으로 문서·검토·실제 작업을 생성하지 않습니다.</p>
     {(['inputs', 'outputs'] as const).map(side => <section key={side}><h4>{side === 'inputs' ? '입력 문서' : '산출 문서'}</h4><button disabled={!forms.length || node[side].length >= 200} onClick={() => add(side)}>{side === 'inputs' ? '입력 문서 추가' : '산출 문서 추가'}</button>
