@@ -57,3 +57,56 @@ test('실제 검수 페이지는 이전위치100을 넘기면 알리고 오래�
 test('실제 검수 원문은 명시 선택만 GET하고 페이지 이동/오류에 즉시 숨긴다',async()=>{const f=await mount();try{await f.click('보관 검수 목록 조회');await f.waitFor('보관 검수 1페이지');const before=f.requests.length;await f.click('보관 검수 원문 '+id(90));await f.waitFor('선택 원문만 보존');assert.equal(f.requests.length,before,'페이지 재조회0');f.state.mode='DELAY';await f.click('더 이전 검수 목록 조회');assert(!f.container.textContent.includes('선택 원문만 보존'));for(let n=0;n<100&&!f.state.release;n++)await f.flush();assert(f.state.release);await ui.React.act(async()=>f.state.release!(Response.json({code:'AUTH_REQUIRED'},{status:401})));await f.waitFor('검수 이력 미확인');assert.equal(f.lost(),1);assert(!f.container.textContent.includes('선택 원문만 보존'));}finally{await f.close();}});
 
 test('첫위치 root 복귀의 다른window 응답은 성공위치로 확정하지 않는다',async()=>{const f=await mount();try{await f.click('보관 검수 목록 조회');await f.waitFor('보관 검수 1페이지');await f.click('더 이전 검수 목록 조회');await f.waitFor('보관 검수 2페이지');f.state.mode='DELAY';await f.click('더 최근 검수 목록 조회');for(let n=0;n<100&&!f.state.release;n++)await f.flush();assert(f.state.release);const wrong=f.page(rootCursor);wrong.window={startedAt:'2026-10-20T00:00:00.000Z',expiresAt:'2026-10-20T00:30:00.000Z'};await ui.React.act(async()=>f.state.release!(Response.json(wrong)));await f.waitFor('검수 이력 미확인');assert(!f.container.textContent.includes('보관 검수 1페이지'));await f.click('같은 검수 목록 다시 조회');await f.waitFor('보관 검수 1페이지');assert.deepEqual(f.requests.slice(-2),[rootCursor,rootCursor]);}finally{await f.close();}});
+
+async function mountReviewEvidence(fault=''){
+ const h=await mount(),f=reworkFixture(),{assignment,result,criteria,review}=f.sources;
+ const {contentHash}=await import('../../../contracts/canonical.ts');
+ const {prepareReportedCoverage}=await import('../../../apps/server/modules/results/reported-coverage.ts');
+ const text='합성 보관 시험 근거',artifact={id:id(145),version:1,contentHash:contentHash(text)},m:any=result.snapshot.manifest;
+ m.baselineRefs=structuredClone(criteria.snapshot.baselineRefs);m.artifactRefs=[artifact];m.unexecuted=[];
+ m.testResults=[{criterionId:'save',testId:'SAVE-01',baselineRefs:m.baselineRefs,expected:'저장 확인',actual:'수행자 보고',status:'PASS',evidence:[{sourceKind:'TEST_ARTIFACT',ref:artifact,contentHash:artifact.contentHash,environmentRef:criteria.snapshot.items[0]!.environmentRef,recordedAt:result.snapshot.submittedAt}]}];
+ result.snapshot.manifestHash=hash(m);result.ref.contentHash=hash(result.snapshot);review.snapshot.input.resultRef=structuredClone(result.ref);review.ref.contentHash=hash(review.snapshot);
+ const calls:string[]=[],gate=Promise.withResolvers<Response>();let delayed=false;
+ const prefix='/api/v1/projects/'+assignment.projectId,coveragePath=prefix+'/results/'+result.ref.id+'/criteria/'+criteria.ref.id+'/versions/1/reported-coverage',filePath=prefix+'/results/'+result.ref.id+'/artifacts/'+artifact.id+'/text';
+ const coverage=()=>prepareReportedCoverage(result,{ref:criteria.ref,snapshot:criteria.snapshot},f.now);
+ const file=()=>({projectId:assignment.projectId,resultRef:result.ref,artifactRef:artifact,bytes:Buffer.byteLength(text),mediaType:'text/plain;charset=utf-8',text,sourceState:'REGISTERED_BYTES_ONLY',evidenceProvenanceVerified:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false,observedAt:f.now});
+ h.props.result=result;h.props.assignment=assignment;h.props.client=new ui.ApiClient(async(url:any,init:any)=>{
+  assert.equal(init.method,'GET');const path=String(url);calls.push(path);
+  if(path.endsWith('/review-pages')){const page=h.page(null);return Response.json({...page,resultRef:result.ref,items:[{ref:review.ref,criteriaRef:criteria.ref,outcome:review.snapshot.input.outcome,reviewedBy:review.snapshot.reviewedBy,sameAsSubmitter:review.snapshot.sameAsSubmitter,reviewedAt:review.snapshot.reviewedAt,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false}],hasMore:false,nextCursor:null});}
+  if(path===prefix+'/result-reviews/'+review.ref.id)return Response.json(review);
+  if(path===prefix+'/result-criteria/'+criteria.ref.id+'/versions/1'){const value=structuredClone(criteria);if(fault==='criteria')value.ref.contentHash='f'.repeat(64);return Response.json(value);}
+  if(path===coveragePath){if(fault==='403'||fault==='401')return Response.json({code:'ACCESS_DENIED'},{status:Number(fault)});if(fault.startsWith('late')){delayed=true;return gate.promise;}const value=coverage();if(fault==='result')value.resultRef={...value.resultRef,contentHash:'f'.repeat(64)};return Response.json(value);}
+  if(path===filePath)return Response.json(file());
+  assert.fail('승인되지 않은 합성 GET');
+ });
+ await h.render();return{...h,calls,text,review,criteria,coveragePath,filePath,gate,coverage,delayed:()=>delayed};
+}
+async function openReviewCriteria(h:Awaited<ReturnType<typeof mountReviewEvidence>>){
+ assert.equal(h.calls.length,0);await h.click('보관 검수 목록 조회');await h.waitFor('보관 검수 1페이지');await h.click('보관 검수 원문 '+h.review.ref.id);await h.waitFor('검수 기준·원조건 열기');
+ assert.equal(h.calls.length,2);await h.click('검수 기준·원조건 열기');await h.waitFor('조건별 실제 시험 계획');
+}
+test('보관 검수 실제 부모는 고정 기준에서 원 제출 보고·등록 근거를 명시 조회한다',async()=>{
+ const h=await mountReviewEvidence();try{
+  await openReviewCriteria(h);assert.equal(h.calls.length,3);assert.equal(h.buttons('조건별 보고 부족 대조').length,1);
+  await h.click('조건별 보고 부족 대조');await h.waitFor('근거 파일 대조 save 보고 1 근거 1');assert.equal(h.calls.length,4);assert.equal(h.calls[3],h.coveragePath);assert(!h.container.textContent.includes(h.text));
+  await h.click('근거 파일 대조 save 보고 1 근거 1');await h.waitFor(h.text);assert.equal(h.calls[4],h.filePath);assert.equal(h.calls.length,5);assert(h.container.textContent.includes('실행은 하지 않았습니다'));
+ }finally{await h.close();}
+});
+for(const fault of ['criteria','result','403','401','late200','late401'])test('보관 검수 부모의 보고·근거 대조: '+fault+'는 원문0',async()=>{
+ const h=await mountReviewEvidence(fault);try{
+  if(fault==='criteria'){
+   await h.click('보관 검수 목록 조회');await h.waitFor('보관 검수 1페이지');await h.click('보관 검수 원문 '+h.review.ref.id);await h.waitFor('검수 기준·원조건 열기');await h.click('검수 기준·원조건 열기');await h.waitFor('기준 원문 미확인');
+   assert.equal(h.buttons('조건별 보고 부족 대조').length,0);assert.equal(h.calls.length,3);
+  }else{
+   await openReviewCriteria(h);await h.click('조건별 보고 부족 대조');
+   if(fault.startsWith('late')){
+    for(let n=0;n<100&&!h.delayed();n++)await h.flush();assert(h.delayed());
+    h.props.result={...h.props.result,ref:{...h.props.result.ref,id:id(150)}};await h.render();
+    h.gate.resolve(fault==='late401'?Response.json({code:'AUTH_REQUIRED'},{status:401}):Response.json(h.coverage()));await h.flush();await h.flush();
+    assert.equal(h.buttons('조건별 보고 부족 대조').length,0);assert.equal(h.lost(),0);
+   }else{await h.waitFor('부족 대조 미확인');assert.equal(h.lost(),fault==='401'?1:0);}
+   assert.equal(h.calls.length,4);assert.equal(h.calls[3],h.coveragePath);
+  }
+  assert(!h.calls.includes(h.filePath));assert(!h.container.textContent.includes(h.text));assert.equal(h.buttons('근거 파일 대조 save 보고 1 근거 1').length,0);
+ }finally{h.gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await h.close();}
+});
