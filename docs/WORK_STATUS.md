@@ -21425,3 +21425,11 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 기준 `5bf35ac6`, developer_primary 단일 작성·반환. 신규 IX01_WINDOWS_SSH_READINESS_EXECUTION_PLAN.md 16,425B SHA256 429A4F014641F043067758E3B907353E13D5C1D207D604CFE82BF321641ACB74. PMO가 기존 8역할의 로컬 읽기 범위를 대조했고 실행 권한은 발급하지 않았다. 소스 20,197B SHA 6847D094 및 exact Git blob에 결박하여 기존 PowerShell 한 원 호출에서 조사 함수만 1회 소비하도록 고정했다. 승인 ID/원 시도/절대 시간창 미기입으로 실행 미승인이다.
 
 담당 구문만 검사 982eba, Main parse 오류0·Invoke AST1·실행0 및 문서 지문 일치 92523a. 새 시험·실대상 조회0. 결과 수거는 원 handle 종료0·단일 UTF8 4KiB·유효 창·정확 입력과 함께 검증한다. 8역할의 metadata·hash와 제한 형상은 비교 자료이며 실제 alias/trust/env나 review CURRENT로 승격하지 않는다. 다음은 고정된 Windows-only 읽기 1회의 직접 결정이다. SSH·IPAM·원장 쓰기·키·DB·권한·서비스·Agent 실행0 및 TC01 미완료. 롤백은 문서·작업 기록 추가에 한정한다.
+
+## IX01 Windows 읽기 결과의 비교 지문 검수
+
+기준 `4633b68b`, developer_primary 단일 작성·반환. 신규 windows-readiness-result.ts 및 직접 시험 1개. 고정 PowerShell 출력의 4KiB·UTF8·한 줄·결박·정확 8개 역할과 명시 부재를 검산한다. 기존 exe 원 SHA와 config/trust의 role 순서·길이·공개 지문 및 허용 형상을 각각 결박해 후속 비교값을 만든다. 공개 metadata MATCHED/ACL 근거이며 내부 원 파일 신원이나 경로·실행 권위가 아니다.
+
+담당 모듈 부재 RED 716385→직접5통과 471924, 초기 ES2022 타입 구성 실패를 저장소 ES2024로 바로잡아 좁은 타입 종료0 106dc8. Main 직접5통과·실패/건너뜀0 d2ec11, 동결 SHA 2/2 및 공백 9b4631. 소스 0945444C785A39C1F950C2DF8F32121543E27CF806F243E759DB9B92728FD022, 시험 547D86FCD4A5F7B29F46715E40FFE5061CBE63ADE08852C0EF68249C06505F6A. 고정 실행안 429A4F01 및 PS 6847D094 변경0.
+
+같은 원 handle/종료0/시간창은 실행 감독이 검증해야 한다. 실제 read 1회 결정은 요청된 상태이며 답변 확인 전 실행0. 실제 SSH, config 적용, alias/trust/env, 원장 쓰기, IPAM·DB·권한·키·서비스·Agent와 TC01 미검증 또는 제외다. FN03 관리 생산자 후보는 미채택이고 5039D14A는 문서 항목 귀속이라 해당 권한을 대체하지 않는다. 롤백은 신규 두 경로와 이번 기록으로 한정한다.
