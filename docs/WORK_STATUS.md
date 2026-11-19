@@ -21217,3 +21217,13 @@ Stage D FN07 부분 구현. 기준 `25879ea7`, 기존 developer_primary 단일 �
 변경은 desktop worker build 및 native 설정 검산 각 1경로와 기존 직접 시험 2경로다. 해시를 다시 계산한 누락 입력·native 조건의 RED 2건 `e44676`에서 집중 2건 통과로 전환했다. 기존 중복 거절 유지. Main 최종 두 직접 파일 21건 통과·실패/건너뜀0 `d9caba`, 제품·시험 지문 4/4 및 공백 종료0 `fd5d2f`. 담당 실행 핸들0.
 
 실제 C#·보호 배포·SDK의 argv/env·원 Query·DB·권한·키·서비스·Agent는 미검증 또는 제외다. 이어갈 FN07 제품 연결에는 검증된 SDK 배포 조합과 PRESPAWN·원 실행 lease가 필요하다. FN13 과거 중지 조회는 기존 화면·API·기존 시험 증거를 대조했으며, 실제 중지는 원 현재 소유 근거가 선행한다. 롤백은 이번 제품·시험 4경로의 diff에 한정한다.
+
+## FN07 SDK 고정 환경 표식의 보호 검산
+
+Stage D FN07 부분 구현. 기준 `47e4c1de`, 기존 developer_primary 단일 작성·반환. 2026-11-16에 이미 승인·수거한 `8aa1c8`의 하위 작업 보존 출력 6116·6120과 공개 Query 연결 `ea54d0`의 고정 sdk.mjs SHA를 대조했다. 명시 환경의 복사본에 값이 없을 때 ENTRYPOINT는 sdk-ts, SDK_VERSION은 0.3.224가 된다. 보존 발췌에서 추적 전파 주입, 선택 인증·파일 체크포인트·질문 미리보기, Windows config-dir fallback 및 transport의 NODE_OPTIONS 삭제와 DEBUG 분기도 확인했다. 새 외부 조회·원문 저장은 0이다.
+
+4091F826 범위의 build/native recipe 및 private child가 두 고정 표식을 필수 exact 값으로 대조하도록 연결했다. baseEnv 최대 4키, child 합계 최대 6키, 별칭·중복·미등록키·오값 및 기존 길이·제어문자 거절을 보존한다. recipe가 없는 배포 형상은 유지한다. 표식이 빠진 기존 recipe는 거절하며 자동 보정이나 준비·실행 권위를 추가하지 않았다.
+
+제품 3개·시험 2개. 집중 RED 3건 `e2a7bb`에서 GREEN 3건 `295de4`, 직접·인접 55건 `335a7f`. Main 동결 5개 지문 일치·공백 종료0 `5e1042`, 직접·인접 55건 통과·실패/건너뜀0 `fb0d80`. 활성 핸들0. native는 정적 검사다.
+
+보존 발췌의 argv 일부가 비연속이어서 최종 순서와 수치 표기는 미확인이다. 추적 및 조건별 환경 변화가 없는 단일 조합도 미확정이므로 제품 recipe는 미발행이다. PRESPAWN·원 witness·SDK/Agent/Windows/C#/DB·권한·키·서비스는 미구현 또는 제외다. 다음은 이미 확보한 공개 발췌 중 조립 조건을 더 닫을 수 있는 근거만 확인하는 것이다. 롤백은 이번 제품·시험 5경로에 한정한다.

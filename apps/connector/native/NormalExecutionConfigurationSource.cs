@@ -76,10 +76,11 @@ internal sealed class NormalExecutionConfigurationSource {
   }
   if(!dynamic.Contains("SESSION_ID")||!dynamic.Contains("MODEL")||(kind=="SCRIPT")!=dynamic.Contains("SCRIPT"))throw Invalid();
   var names=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-  foreach(string field in new[]{"baseEnv","hookEnvRules"})foreach(object raw in ArrayOf(r[field],field=="baseEnv"?4:1)){
+  foreach(string field in new[]{"baseEnv","hookEnvRules"})foreach(object raw in ArrayOf(r[field],field=="baseEnv"?4:2)){
    var e=Map(raw);Exact(e,"name,value");string name=S(e,"name"),value=S(e,"value");
-   if(!(field=="baseEnv"?new[]{"SystemRoot","WINDIR","TEMP","TMP"}:new[]{"CLAUDE_AGENT_SDK_VERSION"}).Contains(name)||!names.Add(name)||value.Length==0||!Literal(value,4096)||name=="CLAUDE_AGENT_SDK_VERSION"&&value!="0.3.224")throw Invalid();
+   if(!(field=="baseEnv"?new[]{"SystemRoot","WINDIR","TEMP","TMP"}:new[]{"CLAUDE_CODE_ENTRYPOINT","CLAUDE_AGENT_SDK_VERSION"}).Contains(name)||!names.Add(name)||value.Length==0||!Literal(value,4096)||name=="CLAUDE_CODE_ENTRYPOINT"&&value!="sdk-ts"||name=="CLAUDE_AGENT_SDK_VERSION"&&value!="0.3.224")throw Invalid();
   }
+  if(!names.Contains("CLAUDE_CODE_ENTRYPOINT")||!names.Contains("CLAUDE_AGENT_SDK_VERSION"))throw Invalid();
   if(!Same(r["allowedOptions"],new[]{"abortController","sessionId","cwd","env","model","maxTurns","maxBudgetUsd","pathToClaudeCodeExecutable","executable","executableArgs","spawnClaudeCodeProcess","canUseTool"}))throw Invalid();
   return DesktopTrustKeyHostSource.Parse(Encoding.UTF8.GetBytes(Canonical(wrapper)),false);
  }

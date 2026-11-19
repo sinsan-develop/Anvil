@@ -47,8 +47,32 @@ function distribution() {
 function recipe(d){
  const {canonicalJson,contentHash}=require('../../apps/desktop/src/runtime-catalogue-profile.cjs');
  const snapshot={schemaVersion:1,sdkDigest:d.sdkEntry.sha256,packageRefBasis:{id:'11111111-1111-4111-8111-111111111111',version:1,contentHash:contentHash(canonicalJson(d))},role:'CONTEXT_REVIEW',programSelector:{kind:d.cli.kind,logicalName:'RAM_REVIEW'},profileArgs:[],argvTokens:[{kind:'LITERAL',value:'RAM_ONLY'},{kind:'SESSION_ID'},{kind:'MODEL'}],baseEnv:[],hookEnvRules:[],allowedOptions:['abortController','sessionId','cwd','env','model','maxTurns','maxBudgetUsd','pathToClaudeCodeExecutable','executable','executableArgs','spawnClaudeCodeProcess','canUseTool']};
+ snapshot.hookEnvRules=[{name:'CLAUDE_CODE_ENTRYPOINT',value:'sdk-ts'},{name:'CLAUDE_AGENT_SDK_VERSION',value:'0.3.224'}];
  return{ref:{id:'22222222-2222-4222-8222-222222222222',version:1,contentHash:contentHash(canonicalJson(snapshot))},snapshot};
 }
+test('고정 SDK 표식: 두 exact 값과 기존 baseEnv 네 키만 수용한다',()=>{
+ const {canonicalJson,contentHash}=require('../../apps/desktop/src/runtime-catalogue-profile.cjs');
+ for(const kind of ['IMAGE','SCRIPT']){
+  const d=distribution();if(kind==='SCRIPT')d.cli={kind,script:file('cli/example.cjs')};
+  d.recipe=recipe(d);if(kind==='SCRIPT')d.recipe.snapshot.argvTokens.push({kind:'SCRIPT'});
+  d.recipe.snapshot.baseEnv=['SystemRoot','WINDIR','TEMP','TMP'].map(name=>({name,value:'RAM_ONLY'}));
+  d.recipe.ref.contentHash=contentHash(canonicalJson(d.recipe.snapshot));
+  assert.deepEqual(readDistribution(d).recipe,d.recipe);
+ }
+});
+test('고정 SDK 표식: 재해시한 누락·중복·별칭·오값·추가 환경키를 거절한다',()=>{
+ const {canonicalJson,contentHash}=require('../../apps/desktop/src/runtime-catalogue-profile.cjs');
+ const changes=[s=>s.hookEnvRules=[],...['CLAUDE_CODE_ENTRYPOINT','CLAUDE_AGENT_SDK_VERSION'].flatMap(name=>[
+  s=>s.hookEnvRules=s.hookEnvRules.filter(e=>e.name!==name),
+  s=>s.hookEnvRules.push({...s.hookEnvRules.find(e=>e.name===name)}),
+  s=>s.hookEnvRules.find(e=>e.name===name).name=name.toLowerCase(),
+  s=>s.hookEnvRules.find(e=>e.name===name).value='WRONG',
+  s=>s.baseEnv.push({...s.hookEnvRules.find(e=>e.name===name)})
+ ]),...['TRACEPARENT','TRACESTATE','ANTHROPIC_API_KEY','NODE_OPTIONS','DEBUG','CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING'].flatMap(name=>[
+  s=>s.hookEnvRules.push({name,value:'RAM_ONLY'}),s=>s.baseEnv.push({name,value:'RAM_ONLY'})
+ ]),s=>s.hookEnvRules[0].value='sdk-ts\0',s=>s.baseEnv=[{name:'TEMP',value:'x'.repeat(4097)}],s=>s.baseEnv=[{name:'TEMP',value:'RAM'},{name:'TEMP',value:'RAM'}]];
+ for(const change of changes){const d=distribution();d.recipe=recipe(d);change(d.recipe.snapshot);d.recipe.ref.contentHash=contentHash(canonicalJson(d.recipe.snapshot));assert.throws(()=>readDistribution(d),/SDK_PACKAGE_UNAVAILABLE/);}
+});
 test('실행 recipe는 고정 배포입력에 결박한 명시 원형만 허용하고 제품 기본값을 발행하지 않는다',()=>{
  const d=distribution();assert.equal(Object.hasOwn(readDistribution(d),'recipe'),false);
  d.recipe=recipe(d);assert.deepEqual(readDistribution(d).recipe,d.recipe);

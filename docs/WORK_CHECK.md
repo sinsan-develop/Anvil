@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-17 01:11:29 KST
 
+- **FN07 SDK 고정 환경 표식:** 기존 공개 발췌에 근거해 SDK 표식 두 값을 recipe와 private child 검산에 연결했다. 직접·인접 55건 통과. 전체 argv/env 조합·실제 Query·실행 권위는 미확정이다.
+
 - **FN07 보호 recipe의 원 모델 슬롯:** 데스크톱 배포 입력과 native 설정이 MODEL 누락·중복을 거절한다. 직접 검사 21건 통과. 실제 C#·SDK 인수/환경·Query 실행은 미검증이다.
 
 - **FN07 정착 START Options 검산:** 원 RECEIVED·optionsRef·부분 및 전체 SHA를 최초 FIRST에서 대조하는 소스와 집중·인접 47건을 검수했다. 실제 Windows·SDK, 실행 인수/환경 확정 및 실행 lease는 미완료다.

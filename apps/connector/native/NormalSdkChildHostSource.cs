@@ -41,7 +41,7 @@ internal sealed class NormalSdkChildHostSource:IDisposable {
    originalDeadline.Kind!=DateTimeKind.Utc)throw Invalid();
   package=originalPackage;directories=originalDirectories;cancellation=originalCancellation;
   from=DateTime.UtcNow;lastWall=from;deadline=originalDeadline;budgetMs=(deadline-from).TotalMilliseconds;
-  if(budgetMs<=0||boundArguments.Length>200||boundEnvironment.Count>5)throw Invalid();
+  if(budgetMs<=0||boundArguments.Length>200||boundEnvironment.Count>6)throw Invalid();
   package.Check();directories.Check();
   application=package.Kind=="IMAGE"?package.Cli:package.Kind=="SCRIPT"?package.Runtime:null;
   if(String.IsNullOrEmpty(application)||boundArguments.Any(v=>v==null||v.Length>4096||v.Any(c=>c<32||c==127)))throw Invalid();
@@ -49,11 +49,12 @@ internal sealed class NormalSdkChildHostSource:IDisposable {
   if(commandLine.Length>=32767)throw Invalid();
   var env=new SortedDictionary<string,string>(StringComparer.OrdinalIgnoreCase);
   foreach(var item in boundEnvironment){
-   if(!new[]{"SystemRoot","WINDIR","TEMP","TMP","CLAUDE_AGENT_SDK_VERSION"}.Contains(item.Key)||
+   if(!new[]{"SystemRoot","WINDIR","TEMP","TMP","CLAUDE_CODE_ENTRYPOINT","CLAUDE_AGENT_SDK_VERSION"}.Contains(item.Key)||
     String.IsNullOrEmpty(item.Value)||item.Value.Length>4096||item.Value.Any(c=>c<32||c==127)||
-    item.Key=="CLAUDE_AGENT_SDK_VERSION"&&item.Value!="0.3.224"||env.ContainsKey(item.Key))throw Invalid();
+    item.Key=="CLAUDE_CODE_ENTRYPOINT"&&item.Value!="sdk-ts"||item.Key=="CLAUDE_AGENT_SDK_VERSION"&&item.Value!="0.3.224"||env.ContainsKey(item.Key))throw Invalid();
    env.Add(item.Key,item.Value);
   }
+  if(!env.ContainsKey("CLAUDE_CODE_ENTRYPOINT")||!env.ContainsKey("CLAUDE_AGENT_SDK_VERSION"))throw Invalid();
   environment=String.Join("\0",env.Select(v=>v.Key+"="+v.Value).ToArray())+"\0\0";
   if(environment.Length>=32767)throw Invalid();Check();
  }

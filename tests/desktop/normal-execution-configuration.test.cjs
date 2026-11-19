@@ -151,6 +151,24 @@ test('설정 준비 중 원 화면 문맥이 바뀌면 늦은 미리보기를 �
  await flush();ui.dispatch('trust-open');await flush();for(const [prefix,r] of [['execution-environment',f.selection.environmentRef],['execution-profile',f.selection.commandProfileRef]])for(const [suffix,value] of [['id',r.id],['version',String(r.version)],['hash',r.contentHash]])ui.element(prefix+'-'+suffix).value=value;
  ui.dispatch('execution-configuration-prepare');await flush();assert.equal(calls,1);ui.stateChanged();release({ok:true,value:{state:'PREPARED',ticketId:uuid(901),expiresAt:'2026-11-19T00:05:00.000Z',selectedPath:'LATE',role:'CONTEXT_REVIEW'}});await flush();assert.equal(ui.element('execution-configuration-preview').textContent,'');assert.equal(ui.element('execution-configuration-panel').hidden,true);
 });
+test('고정 SDK 표식: native recipe와 private child는 두 값·6키 상한·문자 가드를 유지한다',()=>{
+ const fs=require('node:fs'),path=require('node:path'),read=name=>fs.readFileSync(path.join(__dirname,'../../apps/connector/native',name),'utf8');
+ const source=read('NormalExecutionConfigurationSource.cs'),recipe=source.slice(source.indexOf('internal static Row Recipe('),source.indexOf('internal static Row Selection(')),child=read('NormalSdkChildHostSource.cs');
+ assert.match(recipe,/field=="baseEnv"\?4:2/);
+ assert.match(recipe,/new\[\]\{"CLAUDE_CODE_ENTRYPOINT","CLAUDE_AGENT_SDK_VERSION"\}/);
+ assert.match(recipe,/name=="CLAUDE_CODE_ENTRYPOINT"&&value!="sdk-ts"/);
+ assert.match(recipe,/name=="CLAUDE_AGENT_SDK_VERSION"&&value!="0.3.224"/);
+ assert.match(recipe,/!names.Contains\("CLAUDE_CODE_ENTRYPOINT"\)\|\|!names.Contains\("CLAUDE_AGENT_SDK_VERSION"\)/);
+ assert.match(recipe,/StringComparer.OrdinalIgnoreCase/);assert.match(recipe,/!names.Add\(name\)/);assert.match(recipe,/!Literal\(value,4096\)/);
+ assert.match(child,/boundEnvironment.Count>6/);
+ assert.match(child,/"SystemRoot","WINDIR","TEMP","TMP","CLAUDE_CODE_ENTRYPOINT","CLAUDE_AGENT_SDK_VERSION"/);
+ assert.match(child,/item.Key=="CLAUDE_CODE_ENTRYPOINT"&&item.Value!="sdk-ts"/);
+ assert.match(child,/item.Key=="CLAUDE_AGENT_SDK_VERSION"&&item.Value!="0.3.224"/);
+ assert.match(child,/!env.ContainsKey\("CLAUDE_CODE_ENTRYPOINT"\)\|\|!env.ContainsKey\("CLAUDE_AGENT_SDK_VERSION"\)/);
+ assert.match(child,/item.Value.Length>4096\|\|item.Value.Any\(c=>c<32\|\|c==127\)/);
+ assert.match(child,/environment.Length>=32767/);assert.match(child,/env.ContainsKey\(item.Key\)/);
+ assert.match(child,/private NormalSdkChildHostSource\(/);
+});
 test('native recipe는 확정 전에 원 MODEL 존재와 기존 동적 토큰 중복 거절을 요구한다',()=>{
  const fs=require('node:fs'),path=require('node:path'),read=name=>fs.readFileSync(path.join(__dirname,'../../apps/connector/native',name),'utf8');
  const source=read('NormalExecutionConfigurationSource.cs'),recipe=source.slice(source.indexOf('internal static Row Recipe('),source.indexOf('internal static Row Selection('));

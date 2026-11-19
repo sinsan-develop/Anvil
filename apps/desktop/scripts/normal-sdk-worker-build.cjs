@@ -24,7 +24,7 @@ function readRecipe(raw,distribution){
  const p=catalogueExact(s.programSelector,'kind,logicalName');if(p.kind!==distribution.cli.kind||typeof p.logicalName!=='string'||!/^[A-Za-z][A-Za-z0-9_.-]{0,79}$/.test(p.logicalName))return unavailable();
  /** @param {unknown} v */
  const literal=v=>typeof v==='string'&&v.isWellFormed()&&v.length<=4096&&!/[\u0000-\u001f\u007f]/.test(v);
- if(!Array.isArray(s.profileArgs)||s.profileArgs.length>200||!Array.isArray(s.argvTokens)||s.argvTokens.length>200||!Array.isArray(s.baseEnv)||s.baseEnv.length>4||!Array.isArray(s.hookEnvRules)||s.hookEnvRules.length>1)return unavailable();
+ if(!Array.isArray(s.profileArgs)||s.profileArgs.length>200||!Array.isArray(s.argvTokens)||s.argvTokens.length>200||!Array.isArray(s.baseEnv)||s.baseEnv.length>4||!Array.isArray(s.hookEnvRules)||s.hookEnvRules.length>2)return unavailable();
  for(const value of s.profileArgs){const a=catalogueExact(value,'kind,value');if(a.kind!=='LITERAL'||!literal(a.value))return unavailable();}
  const dynamic=new Set();
  for(const value of s.argvTokens){const d=Object.getOwnPropertyDescriptor(value,'kind');if(!d||!('value'in d))return unavailable();const kind=d.value;
@@ -34,7 +34,8 @@ function readRecipe(raw,distribution){
  }
  if(!dynamic.has('SESSION_ID')||!dynamic.has('MODEL')||(p.kind==='SCRIPT')!==dynamic.has('SCRIPT'))return unavailable();
  const names=new Set();
- for(const [values,allowed] of [[s.baseEnv,['SystemRoot','WINDIR','TEMP','TMP']],[s.hookEnvRules,['CLAUDE_AGENT_SDK_VERSION']]])for(const value of values){const e=catalogueExact(value,'name,value');if(typeof e.name!=='string'||!allowed.includes(e.name)||names.has(e.name.toUpperCase())||!literal(e.value)||!e.value.length||e.name==='CLAUDE_AGENT_SDK_VERSION'&&e.value!=='0.3.224')return unavailable();names.add(e.name.toUpperCase());}
+ for(const [values,allowed] of [[s.baseEnv,['SystemRoot','WINDIR','TEMP','TMP']],[s.hookEnvRules,['CLAUDE_CODE_ENTRYPOINT','CLAUDE_AGENT_SDK_VERSION']]])for(const value of values){const e=catalogueExact(value,'name,value');if(typeof e.name!=='string'||!allowed.includes(e.name)||names.has(e.name.toUpperCase())||!literal(e.value)||!e.value.length||e.name==='CLAUDE_CODE_ENTRYPOINT'&&e.value!=='sdk-ts'||e.name==='CLAUDE_AGENT_SDK_VERSION'&&e.value!=='0.3.224')return unavailable();names.add(e.name.toUpperCase());}
+ if(!names.has('CLAUDE_CODE_ENTRYPOINT')||!names.has('CLAUDE_AGENT_SDK_VERSION'))return unavailable();
  const options=['abortController','sessionId','cwd','env','model','maxTurns','maxBudgetUsd','pathToClaudeCodeExecutable','executable','executableArgs','spawnClaudeCodeProcess','canUseTool'];
  if(canonicalJson(s.allowedOptions)!==canonicalJson(options))return unavailable();
  return JSON.parse(canonicalJson(r));
