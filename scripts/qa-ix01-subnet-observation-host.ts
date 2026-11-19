@@ -63,7 +63,7 @@ function snapshot(s:BigIntStats):Metadata{
  return {kind:s.isFile()?'file':s.isDirectory()?'directory':s.isSocket()?'socket':s.isCharacterDevice()?'character':'other',
   dev:String(s.dev),ino:String(s.ino),uid:Number(s.uid),gid:Number(s.gid),mode:Number(s.mode),nlink:Number(s.nlink),size:Number(s.size),rdev:String(s.rdev),mtimeNs:String(s.mtimeNs),ctimeNs:String(s.ctimeNs)};
 }
-function nativePorts():SubnetHostPorts{
+export function createSubnetNativeIdentity():Omit<SubnetHostPorts,'execute'>{
  return {
   now:()=>Date.now(),monotonic:()=>performance.now(),
   context:()=>({platform:process.platform,uid:process.getuid?.(),hostname:hostname(),execPath:process.execPath,
@@ -82,6 +82,10 @@ function nativePorts():SubnetHostPorts{
     check();return hash.digest('hex');
    }finally{closeSync(fd);}
   },
+ };
+}
+function nativePorts():SubnetHostPorts{
+ return {...createSubnetNativeIdentity(),
   execute(file,args,options){
    // shell/input/상속 env 없음. stderr는 OS null로 보내며 예외·출력 원문을 반환하지 않는다.
    const out=spawnSync(file,[...args],{...options,env:{...options.env},stdio:['ignore','pipe','ignore']});

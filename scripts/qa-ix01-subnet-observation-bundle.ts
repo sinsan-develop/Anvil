@@ -127,3 +127,19 @@ export async function buildSubnetObservationAsyncBundle(readSource:(path:string)
  const built=await buildPinnedBundle(readSource,{sources:SUBNET_ASYNC_SOURCES,entry:asyncEntry,edges:asyncEdges,builtins:Object.freeze([...builtins,'node:events']),order:asyncOrder,exports:['collectSubnetRemoteCompletion','observeSubnetRemote'],sha256:asyncOutputHash,generated:{path:asyncEntry,text:asyncEntryText}});
  return Object.freeze({...built,sourceHead:null,baselineHead:'95ea7c4d98b9db87b35a449232193e6d16b032a5',purpose:'SOURCE_ONLY_ASYNC_CANDIDATE'});
 }
+
+// native 후보는 과거 async 03221a62 프로필을 교체하지 않는다.
+const nativePath='scripts/qa-ix01-subnet-observation-native.ts';
+export const SUBNET_NATIVE_SOURCES=Object.freeze(SUBNET_ASYNC_SOURCES.map<SourcePin>(v=>v.path==='scripts/qa-ix01-subnet-observation-host.ts'?Object.freeze({"path":"scripts/qa-ix01-subnet-observation-host.ts","bytes":14607,"sha256":"6777d2a382a539fc4b6c831d85a0ee2d5c12b2159d9667c221302f8097f3b173"}):v).concat([Object.freeze({"path":"scripts/qa-ix01-subnet-observation-native.ts","bytes":5479,"sha256":"1ea96be81159d1cb31fa6919dfeaa0b045b22246d1c1e877f34e566b2f9f94df"})]));
+const nativeEntry='generated/subnet-observation-native-entry.ts';
+const nativeEntryText="export {observeSubnetNative} from '../scripts/qa-ix01-subnet-observation-native.ts';\nexport {collectSubnetRemoteCompletion} from '../scripts/qa-ix01-subnet-observation-supervisor.ts';\n";
+const nativeEdges=Object.freeze({...asyncEdges,
+ [nativePath]:Object.freeze({'node:child_process':'node:child_process','node:events':'node:events','node:util':'node:util','./qa-ix01-subnet-observation-host.ts':'scripts/qa-ix01-subnet-observation-host.ts','./qa-ix01-subnet-observation-remote.ts':remotePath}),
+ [nativeEntry]:Object.freeze({'../scripts/qa-ix01-subnet-observation-native.ts':nativePath,'../scripts/qa-ix01-subnet-observation-supervisor.ts':supervisorPath}),
+});
+const nativeOrder=Object.freeze([stepsPath,...moduleOrder,remotePath,nativePath,supervisorPath,nativeEntry]);
+const nativeOutputHash='da375f17e1ccfbc4a1bd85af108ee82c0a8398a061dced888427725223bb6d8d';
+export async function buildSubnetObservationNativeBundle(readSource:(path:string)=>unknown){
+ const built=await buildPinnedBundle(readSource,{sources:SUBNET_NATIVE_SOURCES,entry:nativeEntry,edges:nativeEdges,builtins:Object.freeze([...builtins,'node:events']),order:nativeOrder,exports:['collectSubnetRemoteCompletion','observeSubnetNative'],sha256:nativeOutputHash,generated:{path:nativeEntry,text:nativeEntryText}});
+ return Object.freeze({...built,sourceHead:null,baselineHead:'80f4c8506989e998c727b5a84dc8e6f7c86f0baf',purpose:'SOURCE_ONLY_NATIVE_CANDIDATE'});
+}

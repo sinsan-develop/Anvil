@@ -21357,3 +21357,11 @@ PMO가 기준 `95ea7c4d`의 고정 후보 `A9CA1198`을 기존 IX01 내부 QA �
 담당 RED는 async 함수 부재, Main 검수에서는 입력 결박 사후 변경과 타이머 등록 실패 경로를 발견했다. 요청 결박을 시작에 고정하고 기한 내 동일 자식에만 모의 종료 요청 최대 1회, 단일 1MiB 수거 버퍼와 실패 뒤 타이머 정리를 반영했다. 담당 37통과 a43933과 좁은 strict 타입 종료0 3eef71. Main 동결 지문 11개·공백 4d41b2 및 독립 직접 37통과·실패/건너뜀0 119f28. 원 번들 35,390B·7374964b 지문 유지. 고정 8원소스와 생성 entry의 새 source-only CJS는 54,294B, SHA256 03221A628F348CC4C94DC40C75933C36E94EB2B0A94A6E09E1D53FC3D0DEBB1B이다.
 
 합성 포트로만 검증했다. 실제 새 spawn/종료 신호/SSH 어댑터와 고정 실행안은 미구현이며 WSL·Docker·IPAM·DB·권한·키·서비스·Agent 실행0, TC01 저장·재조회 미완료다. 다음은 실제 진입부의 최소 범위와 고정 실행안 승인 대조다. 롤백은 이번 QA 소스·시험 변경에 한정하며 원 Git blob과 과거 번들 증거를 보존한다.
+
+## IX01 고정 Node 직접 자식 어댑터 소스 검수
+
+기준 `80f4c850`, PMO 기존 IX01 source-only 준비 범위 확인, developer_primary 단일 작성·반환. QA host/native/bundle 3개 및 native/bundle 시험 2개. 원 Linux Node·도구·환경·argv 검산 뒤에만 직접 ChildProcess를 생성하는 소스를 기존 순차 감독에 연결했다. 고정 stdout pipe·stdin/stderr ignore, shell 없음이다. 원 객체에만 기한 내 종료 요청 최대 1회이며 exit가 관측된 뒤에는 신호를 보내지 않는다. exit·종료 요청은 stdout/close의 완료 증거가 아니다. 불명 뒤 늦은 원 오류는 소비하며 close에서 자체 listener를 회수한다.
+
+Main의 exit 전후 반례 RED 04fba7을 보완했다. 담당 직접·인접 22통과 및 좁은 타입 종료0 5b89c6. Main 직접·인접 22통과·실패/건너뜀0 3b2b8b, 동결 SHA 5/5와 공백 8cb63f. 원 7374964b·03221a62 번들 재현. 별도 native 9원소스 CJS 59,073B, SHA256 DA375F17E1CCFBC4A1BD85AF108EE82C0A8398A061DCED888427725223BB6D8D. import/빌드 효과0, 합성 핸들0.
+
+실제 Node 진입·원 프로세스 종료·SSH·IPAM·Docker·DB·권한·키·서비스·Agent 실행0. 다음은 실제 ip 신원을 독립 확보하는 근거와 strict SSH 단회 전달·완료 기록의 고정 실행안 작성이다. 새 관측에는 IPAM 예외 및 실제 직접 자식 종료 효과를 포함한 실행 승인이 필요하다. TC01 저장·재조회 미완료. 롤백은 이번 5개 소스·시험 경로이며 원 번들 지문을 보존한다.
