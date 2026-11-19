@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
+import {readSubnetWindowsReadinessResult} from '../../../scripts/qa-ix01-subnet-observation-windows-readiness-result.ts';
 
 const sourceUrl=new URL('../../../scripts/qa-ix01-subnet-observation-windows-readiness.ps1',import.meta.url);
 // 이 PowerShell은 원 소스를 파싱하고 메모리 포트만 평가한다. native 포트/시스템 대상은 호출하지 않는다.
@@ -51,14 +52,25 @@ $ports=@{
 `;
 
 test('IX01 Windows readiness RAM: 원 PS 파서·8역할·고정 경로·해시 수거, 준비 권위 발급0',()=>{
+ const binding={attemptId:'11111111-1111-4111-8111-111111111111',approvalHash:'a'.repeat(64),planHash:'b'.repeat(64),sourceHash:'6847d094d436d246983a8ea353c0705541b4fd4c312f596ab78b5ff3efea8cc3',issuedAt:1800000000000,expiresAt:1800000060000};
  const r=ram(fixture+String.raw`
+$binding.sourceHash='6847d094d436d246983a8ea353c0705541b4fd4c312f596ab78b5ff3efea8cc3'
 $line=Invoke-Ix01WindowsReadiness -Binding $binding -Ports $ports
-@{result=($line|ConvertFrom-Json -AsHashtable);length=[Text.Encoding]::UTF8.GetByteCount($line);opens=$state.opens;closes=$state.closes;events=$state.events}|ConvertTo-Json -Depth 12 -Compress
+@{result=($line|ConvertFrom-Json -AsHashtable);wire=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($line+[char]10));length=[Text.Encoding]::UTF8.GetByteCount($line);opens=$state.opens;closes=$state.closes;events=$state.events}|ConvertTo-Json -Depth 12 -Compress
 `);
  assert.equal(r.result.code,'INSPECTION_COLLECTED',JSON.stringify(r));assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.result.files.length,8);assert.equal(r.opens,2);assert.equal(r.closes,2);assert(r.length<=4096);
  assert.deepEqual(r.result.files.map((x:any)=>x.role),['SSH_IMAGE','USER_CONFIG','SYSTEM_CONFIG','USER_TRUST','USER_TRUST_2','SYSTEM_TRUST','SYSTEM_TRUST_2','LEDGER_PARENT']);
  assert(!JSON.stringify(r.result).includes('fixture'));assert(!JSON.stringify(r.result).includes('example.invalid'));assert(!JSON.stringify(r.result).includes('S-1-5'));
  assert.equal(r.result.files[0].sha256,'039058c6f2c0cb492c533b0a4d14ef77cc0f78abccced5287d84a1a2011cfb81');
+ // 재직렬화한 JSON 대신 같은 PS 호출의 원 JSON과 실행안의 LF를 판독한다.
+ const wire=Buffer.from(r.wire,'base64');assert.equal(wire.length,r.length+1);assert.equal(wire.at(-1),10);
+ const comparison=readSubnetWindowsReadinessResult(wire,binding);
+ assert.equal(comparison.status,'COMPARISON_ONLY');
+ if(comparison.status!=='COMPARISON_ONLY')assert.fail('원 PS 합성 결과 판독 실패');
+ assert.equal(comparison.readiness,'UNCONFIRMED');assert.deepEqual(comparison.binding,binding);
+ assert.deepEqual(Object.keys(comparison.identity),['imageSha256','configurationSha256','knownHostsSha256']);
+ for(const hash of Object.values(comparison.identity))assert.match(hash,/^[0-9a-f]{64}$/);
+ assert.equal(comparison.identity.imageSha256,r.result.files[0].sha256);
 });
 
 test('IX01 Windows readiness RAM: 첫 불명·교체·링크·ACL·한도 실패 뒤 다음 읽기0, 원 stream close',()=>{
