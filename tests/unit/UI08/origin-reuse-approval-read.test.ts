@@ -133,6 +133,44 @@ test('의존 참조는 임의 건수 상한 없이 전체 2MiB 경계 안에서 
 });
 
 function currentStoredView(){const v=storedView(),at=Date.now();v.request.createdAt=new Date(at-1000).toISOString();v.request.details.expiresAt=new Date(at+60000).toISOString();v.observedAt=new Date(at-500).toISOString();return reseal(v);}
+function generalView(){const v=currentStoredView();delete v.request.originReuseEvidence;v.request.details.actionScope.operation='registerConnection';v.request.scopeDigest=hash(v.request.details.actionScope);return reseal(v);}
+test('일반 승인 조회 문맥 · 다른 요청의 보존 영수증을 현재 요청의 결과로 표시하지 않는다',async()=>{
+ const q=replies(generalView()),decision={requestId:id(77),reason:'앞 요청 입력',acknowledged:true,pending:{commandId:id(70)},resultId:id(78),failure:null,uncertain:false},initial={projectId:pid,ownerUserId:uid,ownerClientId:cid,selectedId:rid,request:null,decision};
+ const m=await mounted(q.transport,structuredClone(session),initial);try{await m.wait(()=>m.container.textContent.includes('보관 요청 원문'));assert.deepEqual(m.buffer.decision,decision);assert(m.container.textContent.includes('다른 요청의 보존된 결정 입력'));assert(!m.container.textContent.includes('결정 저장 영수증'));assert.equal(q.posts,0);}finally{await m.close();}
+});
+for(const status of [200,403])test('일반 승인 조회 문맥 · 재인증 GET '+status+' 뒤 원 미결 명령은 보존되고 자동 POST하지 않는다',async()=>{
+ const v=generalView(),q=replies(v),decision={requestId:rid,reason:'원 미결 판단',acknowledged:true,pending:{commandId:id(70)},resultId:null,failure:{code:'CONNECTION_LOST',status:0},uncertain:true};
+ const initial={projectId:pid,ownerUserId:uid,ownerClientId:cid,selectedId:rid,request:null,decision};let held=false,waiting=false,deniedRead=false,release=()=>{};
+ const m=await mounted(async(url,init)=>{if(held&&!String(url).includes('/approvals?')){await new Promise<void>(r=>{release=r;waiting=true;});if(status===403){const response=Response.json({code:'ACCESS_DENIED'},{status}),json=response.json.bind(response);response.json=async()=>{const v=await json();deniedRead=true;return v;};return response;}}return q.transport(url,init);},structuredClone(session),initial);
+ try{await m.wait(()=>m.container.textContent.includes('보관 요청 원문'));held=true;m.props.session={...m.props.session,csrfToken:'D'.repeat(43)};await m.render();await m.wait(()=>waiting);
+  assert(!m.container.textContent.includes('보관 요청 원문'));assert(!m.container.textContent.includes('같은 결정 명령 결과 확인'));assert.deepEqual(m.buffer.decision,decision);
+  held=false;await ui.React.act(async()=>release());await m.wait(()=>status===200?m.container.textContent.includes('보관 요청 원문'):deniedRead);await m.flush();
+  assert.deepEqual(m.buffer.decision,decision);assert.equal(m.container.textContent.includes('같은 결정 명령 결과 확인'),status===200);assert.equal(q.posts,0);
+ }finally{held=false;release();await m.close();}
+});
+for(const status of [200,401])test('일반 승인 조회 문맥 · 세션 ABA 뒤 이전 GET '+status+'는 새 조회·인증·입력을 바꾸지 않는다',async()=>{
+ const v=generalView(),late=generalView();late.request.details.reason='이전 세대 늦은 본문';reseal(late);const q=replies(v);let reads=0,release=()=>{},waiting=false;
+ const m=await mounted(async(url,init)=>{if(!String(url).includes('/approvals?')&&++reads===2){await new Promise<void>(r=>{release=r;waiting=true;});return Response.json(status===200?late:{code:'AUTH_REQUIRED'},{status});}return q.transport(url,init);});
+ try{await m.wait(()=>m.container.textContent.includes('보관 요청 원문'));await m.fillDecision('원 입력 유지');const original=structuredClone(m.buffer),a=m.props.session;
+  m.props.session={...a,csrfToken:'D'.repeat(43)};await m.render();await m.wait(()=>waiting);assert(!m.container.textContent.includes('보관 요청 원문'));
+  m.props.session=a;await m.render();await m.wait(()=>reads===3&&m.container.textContent.includes('보관 요청 원문'));const changes=m.changes;
+  await ui.React.act(async()=>release());await m.flush();assert.equal(m.authLost,0);assert.equal(m.changes,changes);assert.deepEqual(m.buffer,original);assert(!m.container.textContent.includes('이전 세대 늦은 본문'));assert(!m.container.textContent.includes('AUTH_REQUIRED'));assert.equal(q.posts,0);
+ }finally{release();await m.close();}
+});
+for(const mode of ['session','csrf','transport'] as const)test('일반 승인 조회 문맥 · '+mode+' 갱신은 새 GET 전 이전 상세·결정 UI를 숨기고 원 입력을 보존한다',async()=>{
+ const v=generalView(),q=replies(v);let hold=false,release=()=>{},waiting=false;
+ const transport:typeof fetch=async(url,init)=>{if(hold&&!String(url).includes('/approvals?'))await new Promise<void>(r=>{release=r;waiting=true;});return q.transport(url,init);};
+ const m=await mounted(transport);
+ try{await m.wait(()=>m.container.textContent.includes('보관 요청 원문'));await m.fillDecision('기존 명시 결정 이유');
+  assert.equal(m.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='이번만 승인')?.disabled,false);const original=structuredClone(m.buffer);
+  hold=true;if(mode==='session')m.props.session={...m.props.session};else if(mode==='csrf')m.props.session.csrfToken='D'.repeat(43);else m.props.client.transport=(...args:Parameters<typeof fetch>)=>transport(...args);
+  await m.render();await m.wait(()=>waiting);
+  assert(!m.nodes().some(n=>n.getAttribute('aria-label')==='승인 요청 상세'),'새 보호 조회 전 이전 상세 숨김');
+  assert(!m.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='이번만 승인'));assert.deepEqual(m.buffer,original);
+  hold=false;await ui.React.act(async()=>release());await m.wait(()=>m.container.textContent.includes('보관 요청 원문'));
+  assert.deepEqual(m.buffer,original);assert.equal(m.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='이번만 승인')?.disabled,false);assert.equal(q.posts,0);
+ }finally{hold=false;release();await m.close();}
+});
 function storedDecision(view:any,choice='APPROVE',reason='원 요청 명시 판단'){
  const body={requestId:view.request.id,requestVersion:1,requestRef:view.requestRef,scopeDigest:view.request.scopeDigest,decision:choice,reason,decidedBy:{...view.request.requestedBy},controlGeneration:view.request.controlGeneration,policyRef:view.request.policyRef};
  const ref={id:id(99),version:1,contentHash:hash(body)},decision={id:ref.id,...body,decidedAt:new Date().toISOString()};return{ref,decision};
