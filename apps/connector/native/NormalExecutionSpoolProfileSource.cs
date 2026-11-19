@@ -210,8 +210,8 @@ internal sealed class NormalExecutionSpoolProfileSource {
   return raw;
  }
  // 이 함수는 현재 열린 할당의 원본 3행만 확인한다. 경로/행·실행 권한을 외부에 내주지 않는다.
- internal string ReadSdkFirstAttempt(Row record,Row slot,Row scope,string startCommand,string sendCommand,Row handoff=null){
-  if(startCommand==sendCommand||DesktopTrustKeyHostSource.Time(slot,"expiresAt")<=DateTime.UtcNow)throw Invalid();
+ internal string ReadSdkFirstAttempt(Row record,Row slot,Row scope,string startCommand,string sendCommand,Row handoff=null,bool verifyOptions=false){
+  if(verifyOptions&&handoff==null||startCommand==sendCommand||DesktopTrustKeyHostSource.Time(slot,"expiresAt")<=DateTime.UtcNow)throw Invalid();
   string tuple=Tuple(Normal,record,slot);
   return Log(false,(log,rows)=>{
    if(!Has(rows,"REGISTERED",H(record))||!rows.Any(r=>S(r,"kind")=="SLOT_ID"&&S(r,"key")==S(slot,"slotId")&&S(r,"slotHash")==H(slot)))throw Invalid();
@@ -221,13 +221,16 @@ internal sealed class NormalExecutionSpoolProfileSource {
    var dir=root.RetainSpoolNamespace(id,false);
    if(dir.Identity!=S(allocation,"directoryIdentity"))throw Invalid();
    OutputScope(scope,rows,allocation,record,slot);
-   string start=ReadSdkAttemptChain(rows,id,dir,scope,startCommand,true,handoff);
-   string send=ReadSdkAttemptChain(rows,id,dir,scope,sendCommand,false,handoff);
+   object startReceived,sendReceived;
+   string start=ReadSdkAttemptChain(rows,id,dir,scope,startCommand,true,handoff,out startReceived);
+   string send=ReadSdkAttemptChain(rows,id,dir,scope,sendCommand,false,handoff,out sendReceived);
+   if(verifyOptions)ReadSdkStartOptions(rows,id,dir,scope,startCommand,handoff,startReceived);
    Check();if(DesktopTrustKeyHostSource.Time(slot,"expiresAt")<=DateTime.UtcNow)throw Invalid();
    return H(new object[]{scope,start,send});
   });
  }
- string ReadSdkAttemptChain(List<Row> rows,string allocation,DesktopTrustKeyDirectoryFact dir,Row scope,string command,bool start,Row handoff){
+ string ReadSdkAttemptChain(List<Row> rows,string allocation,DesktopTrustKeyDirectoryFact dir,Row scope,string command,bool start,Row handoff,out object receivedRef){
+  receivedRef=null;
   string id=DesktopTrustKeyHostSource.Id(R("id",command),"id");
   string channel="attempt-"+id;
   if(Unsettled(rows).Values.Any(r=>S(r,"allocation")==allocation&&S(r,"channel")==channel))throw Invalid();
@@ -275,7 +278,74 @@ internal sealed class NormalExecutionSpoolProfileSource {
    }
   }
   if(J(previous)!=J(scope[start?"startReadyRef":"dispatchAttemptRef"])||hashes[2]!=S(summary,"tail"))throw Invalid();
-  return H(hashes.ToArray());
+  receivedRef=received;return H(hashes.ToArray());
+ }
+ // 원문을 새로 저장/반환하지 않는다. FIRST3의 원 receivedRef가 고정한 기존 intake에서 Options만 검산한다.
+ Row ReadSdkIntakeRow(DesktopTrustKeyDirectoryFact dir,string channel,int sequence,out string rawHash){
+  Check();string path=Path.Combine(dir.Path,channel+"."+sequence.ToString("D6")+".json");
+  using(var file=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.Read)){
+   string identity=FileIdentity(file,path);long length=file.Length;if(length<1||length>3*MiB)throw Invalid();
+   byte[] bytes=new byte[checked((int)length)];
+   try{int offset=0;while(offset<bytes.Length){Check();int n=file.Read(bytes,offset,Math.Min(65536,bytes.Length-offset));if(n<=0)throw Invalid();offset+=n;}
+    if(file.ReadByte()!=-1||file.Length!=length||identity!=FileIdentity(file,path))throw Invalid();
+    rawHash=DesktopTrustKeyHostSource.Hash(bytes);Row row=DesktopTrustKeyHostSource.Parse(bytes,true);DesktopTrustKeyHostSource.Exact(row,"entry,bytes");Check();return row;
+   }finally{Array.Clear(bytes,0,bytes.Length);}
+  }
+ }
+ void ReadSdkStartOptions(List<Row> rows,string allocation,DesktopTrustKeyDirectoryFact dir,Row scope,string command,Row handoff,object receivedRef){
+  Check();string channel="intake-"+command;
+  if(Unsettled(rows).Values.Any(r=>S(r,"allocation")==allocation&&S(r,"channel")==channel))throw Invalid();
+  var settled=rows.LastOrDefault(r=>S(r,"kind")=="SETTLED"&&S(r,"writer")==Normal&&S(r,"allocation")==allocation&&S(r,"channel")==channel);
+  if(settled==null)throw Invalid();var summary=DesktopTrustKeyHostSource.Map(settled["summary"]);long count=N(summary["count"]);
+  if(count<3||count>201||J(Inspect(rows,Normal,allocation,dir,channel,summary))!=J(summary))throw Invalid();
+  string tailHash;Row tail=ReadSdkIntakeRow(dir,channel,checked((int)count),out tailHash),entry=DesktopTrustKeyHostSource.Map(tail["entry"]);
+  DesktopTrustKeyHostSource.Exact(entry,"ref,snapshot");Row terminal=DesktopTrustKeyHostSource.Map(entry["snapshot"]);
+  if(tailHash!=S(summary,"tail")||J(entry["ref"])!=J(receivedRef)||S(DesktopTrustKeyHostSource.Ref(entry["ref"]),"contentHash")!=H(terminal)||S(terminal,"kind")!="RECEIVED"||tail["bytes"]!=null)throw Invalid();
+  Row descriptor=DesktopTrustKeyHostSource.Map(terminal["materials"]);DesktopTrustKeyHostSource.Exact(descriptor,"manifestRef,groups");DesktopTrustKeyHostSource.Ref(descriptor["manifestRef"]);
+  string descriptorHash=H(descriptor);var groups=descriptor["groups"] as object[];if(groups==null||groups.Length!=2||descriptorHash!=S(terminal,"descriptorHash"))throw Invalid();
+  Row envelope=DesktopTrustKeyHostSource.Map(handoff["startEnvelope"]),payload=DesktopTrustKeyHostSource.Map(envelope["payload"]);
+  if(J(payload["contextBundleRef"])==J(payload["optionsRef"]))throw Invalid();
+  var parts=new List<Row>();var optionIds=new HashSet<string>();var ids=new HashSet<string>();Row options=null;
+  for(int g=0;g<2;g++){
+   Row group=DesktopTrustKeyHostSource.Map(groups[g]);DesktopTrustKeyHostSource.Exact(group,"kind,payloadRef,sourceRef,sourceBytes,contentHash,mediaType,parts");
+   DesktopTrustKeyHostSource.Ref(group["sourceRef"]);DesktopTrustKeyHostSource.Ref(group["payloadRef"]);long size=N(group["sourceBytes"]);
+   if(S(group,"kind")!=(g==0?"CONTEXT_BUNDLE":"START_OPTIONS")||J(group["payloadRef"])!=J(payload[g==0?"contextBundleRef":"optionsRef"])||size<1||size>2*MiB||!DesktopTrustKeyHostSource.IsHash(group["contentHash"])||S(group,"mediaType")!="application/json")throw Invalid();
+   var list=group["parts"] as object[];if(list==null||list.Length<1||list.Length>200)throw Invalid();long offset=0;
+   for(int n=0;n<list.Length;n++){
+    Row part=DesktopTrustKeyHostSource.Map(list[n]);DesktopTrustKeyHostSource.Exact(part,"materialId,partIndex,byteOffset,utf8Bytes,contentHash");string id=DesktopTrustKeyHostSource.Id(part,"materialId");long length=N(part["utf8Bytes"]);
+    if(!ids.Add(id)||N(part["partIndex"])!=n+1||N(part["byteOffset"])!=offset||length<1||length>2*MiB||!DesktopTrustKeyHostSource.IsHash(part["contentHash"]))throw Invalid();
+    offset=checked(offset+length);parts.Add(part);if(parts.Count>200)throw Invalid();if(g==1)optionIds.Add(id);
+   }
+   if(offset!=size)throw Invalid();if(g==1)options=group;
+  }
+  if(parts.Count+1!=count)throw Invalid();object previous=null;DateTime last=DateTime.MinValue;long optionBytes=0,metadataBytes=0;var references=new HashSet<string>();
+  var key=R("projectId",scope["projectId"],"executionId",scope["executionId"],"executionGeneration",scope["generation"],"commandId",command);
+  using(var digest=SHA256.Create()){
+   for(int n=1;n<=count;n++){
+    string rowHash;Row row=ReadSdkIntakeRow(dir,channel,n,out rowHash),ev=DesktopTrustKeyHostSource.Map(row["entry"]);DesktopTrustKeyHostSource.Exact(ev,"ref,snapshot");
+    Row snapshot=DesktopTrustKeyHostSource.Map(ev["snapshot"]),reference=DesktopTrustKeyHostSource.Ref(ev["ref"]);
+    DesktopTrustKeyHostSource.Exact(snapshot,"sequence,kind,key,envelopeHash,descriptorHash,materialId,partContentHash,proofResultRef,materials,recordedAt,previousRef");
+    metadataBytes=checked(metadataBytes+Encoding.UTF8.GetByteCount(J(ev)));if(metadataBytes>2*MiB)throw Invalid();
+    DateTime at=DesktopTrustKeyHostSource.Time(snapshot,"recordedAt");DesktopTrustKeyHostSource.Ref(snapshot["proofResultRef"]);
+    if(N(reference["version"])!=1||!references.Add(S(reference,"id"))||S(reference,"contentHash")!=H(snapshot)||N(snapshot["sequence"])!=n||J(snapshot["previousRef"])!=J(previous)||J(snapshot["key"])!=J(key)||S(snapshot,"envelopeHash")!=S(envelope,"envelopeHash")||S(snapshot,"descriptorHash")!=descriptorHash||at<last||at>DateTime.UtcNow)throw Invalid();
+    if(n==count){if(S(snapshot,"kind")!="RECEIVED"||snapshot["materialId"]!=null||snapshot["partContentHash"]!=null||row["bytes"]!=null||J(ev)!=J(entry)||rowHash!=tailHash)throw Invalid();}
+    else{
+     Row part=parts[n-1];string id=S(part,"materialId");
+     if(S(snapshot,"kind")!="MATERIAL"||S(snapshot,"materialId")!=id||S(snapshot,"partContentHash")!=S(part,"contentHash")||snapshot["materials"]!=null||!(row["bytes"] is string))throw Invalid();
+     if(optionIds.Contains(id)){
+      string encoded=S(row,"bytes");if(encoded.Length>2796203||encoded.Length%4==1||!Regex.IsMatch(encoded,@"\A[A-Za-z0-9_-]+\z"))throw Invalid();
+      byte[] bytes=Convert.FromBase64String(encoded.Replace('-','+').Replace('_','/')+new string('=',(4-encoded.Length%4)%4));
+      try{Check();if(bytes.LongLength!=N(part["utf8Bytes"])||Convert.ToBase64String(bytes).TrimEnd('=').Replace('+','-').Replace('/','_')!=encoded||DesktopTrustKeyHostSource.Hash(bytes)!=S(part,"contentHash"))throw Invalid();
+       optionBytes=checked(optionBytes+bytes.LongLength);if(optionBytes>2*MiB)throw Invalid();digest.TransformBlock(bytes,0,bytes.Length,bytes,0);
+      }finally{Array.Clear(bytes,0,bytes.Length);}
+     }
+    }
+    previous=reference;last=at;Check();
+   }
+   digest.TransformFinalBlock(new byte[0],0,0);
+   if(optionBytes!=N(options["sourceBytes"])||BitConverter.ToString(digest.Hash).Replace("-","").ToLowerInvariant()!=S(options,"contentHash"))throw Invalid();
+  }
+  if(J(Inspect(rows,Normal,allocation,dir,channel,summary))!=J(summary))throw Invalid();Check();
  }
  static void RequireSdkFirst(Row snapshot,Row reference,Row handoff,bool start,int sequence){
   var envelope=DesktopTrustKeyHostSource.Map(handoff[start?"startEnvelope":"sendEnvelope"]);

@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import type {NormalStartEntry} from '../../../apps/connector/runtime/normal-start-intake.ts';
+import {assembleNormalStartMaterial} from '../../../apps/connector/runtime/normal-start-material-consumer.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {join,relative,resolve,sep} from 'node:path';
 import {OwnedSpoolRuntime,outsideOwnedSpoolCallback} from '../../../apps/connector/runtime/normal-owned-spool-profile.ts';
@@ -235,4 +238,43 @@ test('한 거래에서 65번째 물리 frame을 발행하지 않고 예약을 �
   for(let i=0;i<64;i++)await borrowed.send('NORMAL_EXECUTION_WRITE',{});
  }));
  assert.equal(f.events.length,64);assert.equal(f.opens(),1);assert.equal(f.holds.size,1);
+});
+
+
+test('원 intake Options는 실제 RAM 보관 형상의 RECEIVED ref와 부분/전체 SHA로 재판독한다',async()=>{
+ const f=fixture(),key={...scope,commandId:id(910)},bytes=Buffer.from('{"claudeQueryParams":{"model":"원 모델","maxBudgetUsd":0.125}}');
+ const cuts=[0,17,bytes.length],parts=cuts.slice(1).map((end,i)=>({materialId:id(920+i),partIndex:i+1,byteOffset:cuts[i]!,utf8Bytes:end-cuts[i]!,contentHash:contentHash(bytes.subarray(cuts[i],end))}));
+ const group={kind:'START_OPTIONS' as const,payloadRef:ref(930),sourceRef:ref(931),sourceBytes:bytes.length,contentHash:contentHash(bytes),mediaType:'application/json' as const,parts};
+ const contextBytes=Buffer.from('{}'),contextPart={materialId:id(919),partIndex:1,byteOffset:0,utf8Bytes:contextBytes.length,contentHash:contentHash(contextBytes)};
+ const descriptor={manifestRef:ref(938),groups:[{...group,kind:'CONTEXT_BUNDLE' as const,payloadRef:ref(939),sourceRef:ref(937),sourceBytes:contextBytes.length,contentHash:contentHash(contextBytes),parts:[contextPart]},group]};
+ const entries:NormalStartEntry[]=[];const intake=f.store.intake();
+ const add=(kind:'MATERIAL'|'RECEIVED',n:number,part:typeof parts[number]|null)=>{const snapshot={sequence:n,kind,key,envelopeHash:'2'.repeat(64),descriptorHash:contentHash(canonicalJson(descriptor)),materialId:part?.materialId??null,partContentHash:part?.contentHash??null,proofResultRef:ref(932),materials:kind==='RECEIVED'?descriptor:null,recordedAt:new Date(time).toISOString(),previousRef:entries.at(-1)?.ref??null};const entry={ref:{id:id(940+n),version:1,contentHash:contentHash(canonicalJson(snapshot))},snapshot};entries.push(entry);return entry;};
+ await intake.exclusive(key,async tx=>{await tx.read();await tx.appendAndSync(add('MATERIAL',1,contextPart),contextBytes);for(const [i,part] of parts.entries())await tx.appendAndSync(add('MATERIAL',i+2,part),bytes.subarray(cuts[i],cuts[i+1]));await tx.appendAndSync(add('RECEIVED',4,null),null);});
+ const raw=[...f.ram.files.entries()].filter(([name])=>name.includes('intake-'+key.commandId)).sort(([a],[b])=>a.localeCompare(b)).map(([,v])=>JSON.parse(v.bytes.toString('utf8')));
+ assert.equal(raw.length,4);assert.deepEqual(Object.keys(raw[0]).sort(),['bytes','entry']);assert.equal(raw[3].bytes,null);assert.deepEqual(raw[3].entry.ref,entries[3]!.ref);
+ const received=await intake.exclusive(key,async tx=>{const saved=await tx.read();assert.equal(saved.complete,true);assert.deepEqual(saved.events.at(-1)?.ref,entries[3]!.ref);const received=[];for(const [i,part] of parts.entries())received.push({proofResultRef:ref(932),materialId:part.materialId,partIndex:i+1,bytes:await tx.readPart(entries[i+1]!.ref),observedAt:new Date(time).toISOString(),expiresAt:new Date(time+10000).toISOString()});return received;});
+ assert.deepEqual(Buffer.from(assembleNormalStartMaterial(group,received).bytes),bytes);
+ for(const bad of [{...group,sourceBytes:group.sourceBytes+1},{...group,contentHash:'0'.repeat(64)}])assert.throws(()=>assembleNormalStartMaterial(bad,received));
+ const altered=received.map(r=>({...r,bytes:new Uint8Array(r.bytes)}));altered[0]!.bytes[0]=altered[0]!.bytes[0]!^1;assert.throws(()=>assembleNormalStartMaterial(group,altered));
+ assert.equal(f.holds.size,0);
+});
+
+test('native FIRST Options 읽기는 원 ref·정착·파일 소유·전체 상한을 유지하고 부분 버퍼를 폐기한다',()=>{
+ const source=readFileSync(new URL('../../../apps/connector/native/NormalExecutionSpoolProfileSource.cs',import.meta.url),'utf8');
+ const read=source.slice(source.indexOf('Row ReadSdkIntakeRow('),source.indexOf('static void RequireSdkFirst('));
+ assert.match(read,/Unsettled\(rows\)[\s\S]*count<3\|\|count>201/);
+ assert.match(read,/J\(entry\["ref"\]\)!=J\(receivedRef\)/);
+ assert.match(read,/J\(group\["payloadRef"\]\)!=J\(payload\[g==0\?"contextBundleRef":"optionsRef"\]\)/);
+ assert.match(read,/S\(reference,"contentHash"\)!=H\(snapshot\)/);
+ assert.match(read,/J\(snapshot\["previousRef"\]\)!=J\(previous\)/);
+ assert.match(read,/S\(snapshot,"envelopeHash"\)!=S\(envelope,"envelopeHash"\)/);
+ assert.match(read,/N\(part\["byteOffset"\]\)!=offset/);
+ assert.match(read,/FileIdentity\(file,path\)[\s\S]*length>3\*MiB/);
+ assert.match(read,/bytes.LongLength!=N\(part\["utf8Bytes"\]\)[\s\S]*DesktopTrustKeyHostSource.Hash\(bytes\)!=S\(part,"contentHash"\)/);
+ assert.match(read,/optionBytes>2\*MiB/);
+ assert.match(read,/optionBytes!=N\(options\["sourceBytes"\]\)[\s\S]*S\(options,"contentHash"\)/);
+ assert.equal((read.match(/finally\{Array.Clear\(bytes,0,bytes.Length\);\}/g)||[]).length,2);
+ assert.equal((read.match(/Inspect\(rows,Normal,allocation,dir,channel,summary\)/g)||[]).length,2);
+ assert.equal((read.match(/H\(descriptor\)/g)||[]).length,1);
+ assert.doesNotMatch(read,/Append\(|Reserve\(|Allocate\(|FileMode.Create|WriteAll|Console\.|Process|plannedSid|claudeQueryParams/);
 });

@@ -127,7 +127,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   internal readonly DateTime ExpiresAt;
   internal FirstInspection(string digest,string source,string recordHash,string slotHash,DateTime expiresAt){Digest=digest;CanonicalSource=source;RecordHash=recordHash;SlotHash=slotHash;ExpiresAt=expiresAt;}
  }
- FirstInspection InspectFirstSource(RowRequest request,Dictionary<string,object> record,Dictionary<string,object> slot){
+ FirstInspection InspectFirstSource(RowRequest request,Dictionary<string,object> record,Dictionary<string,object> slot,bool verifyOptions=false){
   var h=request.Handoff;Exact(h,"startEnvelope,sendEnvelope,grantRef,startReadyRef,localAttemptRef,dispatchAttemptRef,permit,proofResultRef,scope,executionAuthority");
   if(J(h["scope"])!=J(request.Scope)||J(h["grantRef"])!=J(request.Scope["grantRef"])||J(h["startReadyRef"])!=J(request.Scope["startReadyRef"])||J(h["dispatchAttemptRef"])!=J(request.Scope["dispatchAttemptRef"]))throw Invalid();
   var start=SdkEnvelope(Map(h["startEnvelope"]),"START_SESSION",request.StartId,record,slot);
@@ -162,7 +162,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   if(observed>issued||issued>observed.AddSeconds(30)||issued>clock()||expires<=clock()||expires<=issued||expires>issued.AddSeconds(30)||expires>observed.AddSeconds(30)||At(snapshot,"commandExpiresAt")!=At(send,"expiresAt"))throw Invalid();
   foreach(string key in new[]{"commandExpiresAt","grantExpiresAt","proofExpiresAt"})if(expires>At(snapshot,key))throw Invalid();
   var limits=Map(fact["expires"]);Exact(limits,"humanSession,permissionPolicy,registration,budget,automaticScope");foreach(string key in limits.Keys)if(expires>At(limits,key))throw Invalid();
-  string digest=spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId,h);Check();if(expires<=clock())throw Invalid();
+  string digest=spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId,h,verifyOptions);Check();if(expires<=clock())throw Invalid();
   return new FirstInspection(digest,J(h),H(record),H(slot),expires);
  }
  Dictionary<string,object> SdkEnvelope(Dictionary<string,object> value,string operation,string command,Dictionary<string,object> record,Dictionary<string,object> slot){
@@ -178,7 +178,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  internal object InspectSdkFirst(RowRequest request,DesktopTrustKeyPeerSource peer){
   Check();var record=Record(request.AttemptId);var slot=LoadSlot(request.SlotId,record);
   if(spoolProfile==null)throw Invalid();
-  FirstInspection inspected=request.Handoff==null?null:InspectFirstSource(request,record,slot);
+  FirstInspection inspected=request.Handoff==null?null:InspectFirstSource(request,record,slot,true);
   string digest=inspected==null?spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId):inspected.Digest;
   using(var package=NormalSdkWorkerPackageSource.Acquire(peer)){
    Check();if(H(Record(request.AttemptId))!=H(record)||H(LoadSlot(request.SlotId,record))!=H(slot))throw Invalid();

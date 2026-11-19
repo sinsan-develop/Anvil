@@ -5,6 +5,17 @@ const {readFileSync}=require('node:fs');
 const path=require('node:path');
 const read=p=>readFileSync(path.resolve(__dirname,'../../',p),'utf8');
 
+test('FIRST Options 검산은 최초 Inspect에서만 원 정착 intake를 읽고 결과/원문을 내보내지 않는다',()=>{
+ const credential=read('apps/connector/native/NormalExecutionCredentialSource.cs');
+ const spool=read('apps/connector/native/NormalExecutionSpoolProfileSource.cs');
+ assert.equal((credential.match(/InspectFirstSource\(request,record,slot,true\)/g)||[]).length,1);
+ assert.match(credential,/ReadSdkFirstAttempt\(record,slot,request.Scope,request.StartId,request.SendId,h,verifyOptions\)/);
+ assert.match(credential,/InspectFirstSource\(RowRequest request,[^\n]*bool verifyOptions=false\)/);
+ assert.match(spool,/if\(verifyOptions\)ReadSdkStartOptions\(rows,id,dir,scope,startCommand,handoff,startReceived\)/);
+ assert.match(spool,/void ReadSdkStartOptions\(/);
+ assert.doesNotMatch(credential,/claudeQueryParams|MAX_BUDGET_USD|plannedSid\"/);
+});
+
 test('FIRST 보호 설정은 원 환경의 유일 현재 head와 저장 원 그래프를 재판독하고 원 cwd 핀을 보유한다',()=>{
  const config=read('apps/connector/native/NormalExecutionConfigurationSource.cs');
  const consume=read('apps/connector/native/NormalExecutionCredentialSource.cs');

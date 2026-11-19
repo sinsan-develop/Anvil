@@ -21196,8 +21196,16 @@ PRESPAWN 후보 §6에 기본 서버 옵션 조립 미연결과 queue의 writer 
 
 ## FN07 원 FIRST의 보호 설정 선택 및 작업 디렉터리 신원 연결
 
-기준 `5be58890`, Stage C FN07 부분 구현. 기존 developer_primary가 단일 작성 후 반환했다. 같은 등록·프로젝트·환경의 확정 설정 head가 하나일 때만 원 profile·환경·실행 recipe와 CONTEXT_REVIEW의 비재귀 FILE READ 범위를 검산한다. 선택한 envelope를 지문으로 다시 읽고 원 보호 설정의 root/cwd 물리 신원과 package, FIRST3·slot·권한 기한을 같은 범위에서 대조한다. 네이티브 읽기 경로는 기존 SDK_CONFIGURATION_UNAVAILABLE를 반환하며 pin을 해제한다. 제품 3파일·기존 시험 1파일이다.
+기준 `5be58890`, Stage D FN07 부분 구현. 기존 developer_primary가 단일 작성 후 반환했다. 같은 등록·프로젝트·환경의 확정 설정 head가 하나일 때만 원 profile·환경·실행 recipe와 CONTEXT_REVIEW의 비재귀 FILE READ 범위를 검산한다. 선택한 envelope를 지문으로 다시 읽고 원 보호 설정의 root/cwd 물리 신원과 package, FIRST3·slot·권한 기한을 같은 범위에서 대조한다. 네이티브 읽기 경로는 기존 SDK_CONFIGURATION_UNAVAILABLE를 반환하며 pin을 해제한다. 제품 3파일·기존 시험 1파일이다.
 
 신규 연결 부재 RED 1건 `a27f24`. 인접 48통과·1실패 `6dfeca`는 기준부터 존재한 부분 전송 guard 문자열 단언 불일치였다. 시험 기대 변경 없이 두 guard를 각각의 동등한 문장으로 유지했다. 최종 담당자 49통과·실패/건너뜀0 `9cb4df`, root 타입 종료0 `938a5c`. Main 직접·인접 49통과·실패/건너뜀0 `355c43`, 지문 4/4 `93d426`, 공백 검사 종료0 `2ef3c1`. 활성 시험 핸들0.
 
 실제 C# 컴파일·Windows pin 및 보호 저장·DB·권한·키·서비스·SDK/Agent 실행은 미검증 또는 제외다. 보호 head는 서버 현재성의 근거가 아니다. 다음은 고정 recipe와 현재 핀으로 검산 가능한 실행 인수·환경 구성과 PRESPAWN 경계 대조다. 소스 롤백은 지정 제품·시험 4경로에 한정한다.
+
+## FN07 최초 SEND의 정착 START Options 무결성 검산
+
+기준 `61c320fb`, Stage D FN07 부분 구현. 기존 developer_primary가 제품 2개·시험 2개를 단독 작성하고 반환했다. 최초 C 응답 검산 구간에서 같은 보호 할당의 원 START attempt가 참조한 RECEIVED와 원 START envelope의 optionsRef를 대조한다. 기존 정착 summary와 파일 신원, 순서·부분/전체 길이·SHA를 검산한다. 이후 재검사는 기존 FIRST digest 경로를 사용한다. 별도 원문 수송·저장·응답을 추가하지 않았다. 임시 바이트 배열은 finally에서 정리하며 관리형 문자열의 즉시 소거는 검증 범위에 없다.
+
+연결 없음 RED `2d471c`에서 집중 통과 `feebac`로 전환. 최종 담당자 직접·인접 47 통과·건너뜀0 `e3b02f`. 시험 타입 오류 4건을 시험의 entry 타입에서 보완 후 root type 종료0 `deb31a`, 변경 시험 2건 및 공백 종료0 `1cf62b`. Main 최종 직접·인접 47 통과·실패/건너뜀0 `ef10cc`, 공백 `e8f067`, 최종 시험 파일 지문과 변경 시험 2건 `987dd8`. 활성 핸들0. 시험은 RAM 파일 저장소와 native 호출선 정적 검증이다.
+
+원 plannedSidDigest는 살아 있는 FIRST scope에 있고 정착 START/SEND 3행에는 없다. 원 Options 무결성에서 실행 인수·환경의 SDK 형식이나 새 실행 권위가 생기지 않는다. 실제 C#/Windows 보호 스풀, SDK/Agent, DB·권한·키·서비스는 미검증 또는 제외다. 후속은 원 계획 세션 값의 신뢰 근거와 배포 recipe의 실제 argv/env 근거 확보다. PRESPAWN·실행 lease 및 사용자 인수는 미완료다. 롤백은 지정 제품·시험 4경로에 한정한다.

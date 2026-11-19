@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-17 01:11:29 KST
 
+- **FN07 정착 START Options 검산:** 원 RECEIVED·optionsRef·부분 및 전체 SHA를 최초 FIRST에서 대조하는 소스와 집중·인접 47건을 검수했다. 실제 Windows·SDK, 실행 인수/환경 확정 및 실행 lease는 미완료다.
+
 - **FN07 보호 설정 선택·작업 디렉터리 신원:** 원 FIRST 경로에서 유일한 확정 head와 FILE READ 범위·물리 신원을 검산하는 소스를 연결했다. 직접·인접 49건과 타입 검사를 확인했다. 서버 현재성·실행 lease·실제 Windows/SDK는 미완료다.
 
 - **FN07 원 FIRST native 읽기 수송:** 같은 slot/등록과 원 FIRST3·허가를 대조하는 소스와 합성 수송·타입을 검수했다. 보호 설정 선택·PRESPAWN·실제 C#/SDK 실행은 미완료다.
