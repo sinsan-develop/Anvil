@@ -21193,3 +21193,11 @@ PRESPAWN 후보 §6에 기본 서버 옵션 조립 미연결과 queue의 writer 
 정적 연결 RED `17a11c` 1실패 이후 통과. 담당자 FIRST 23통과 `bae6b4`, desktop 인접 68통과·fixture의 module-mock 옵션 누락 4실패 `55e85b`; 해당 4건의 정확 옵션 재검사 `3ba9bd` 4통과. 최종 native/채널 집중 4통과 `9ec125`, 최종 수송 집중 `cc6bd9` 1통과. 중간 TypeScript TS2339/TS7022 각1을 내부 타입으로 좁혔으며 최종 root `92d375`와 desktop `11fc25` 종료0. Main 최종 수송 집중 1통과 `678244`, 동결 지문9/9·공백 `37d204`. 활성 핸들0.
 
 실제 native 검산 결과의 외부 응답은 기존 SDK_CONFIGURATION_UNAVAILABLE다. 보호 environment/commandProfile의 단일 선택, PRESPAWN·lease 발급, child/SDK 생성은 미연결이다. 실제 C# 컴파일·OS·native·SDK/Agent·DB·권한·키·서비스는 미검증 또는 제외다. 다음은 같은 등록과 environment의 현재 보호 선택을 검산한 뒤 원 package/cwd의 물리 신원으로 연결하는 소스다. 복구는 이 9경로 변경에 한정하며 원장·보호 자료는 보존한다.
+
+## FN07 원 FIRST의 보호 설정 선택 및 작업 디렉터리 신원 연결
+
+기준 `5be58890`, Stage C FN07 부분 구현. 기존 developer_primary가 단일 작성 후 반환했다. 같은 등록·프로젝트·환경의 확정 설정 head가 하나일 때만 원 profile·환경·실행 recipe와 CONTEXT_REVIEW의 비재귀 FILE READ 범위를 검산한다. 선택한 envelope를 지문으로 다시 읽고 원 보호 설정의 root/cwd 물리 신원과 package, FIRST3·slot·권한 기한을 같은 범위에서 대조한다. 네이티브 읽기 경로는 기존 SDK_CONFIGURATION_UNAVAILABLE를 반환하며 pin을 해제한다. 제품 3파일·기존 시험 1파일이다.
+
+신규 연결 부재 RED 1건 `a27f24`. 인접 48통과·1실패 `6dfeca`는 기준부터 존재한 부분 전송 guard 문자열 단언 불일치였다. 시험 기대 변경 없이 두 guard를 각각의 동등한 문장으로 유지했다. 최종 담당자 49통과·실패/건너뜀0 `9cb4df`, root 타입 종료0 `938a5c`. Main 직접·인접 49통과·실패/건너뜀0 `355c43`, 지문 4/4 `93d426`, 공백 검사 종료0 `2ef3c1`. 활성 시험 핸들0.
+
+실제 C# 컴파일·Windows pin 및 보호 저장·DB·권한·키·서비스·SDK/Agent 실행은 미검증 또는 제외다. 보호 head는 서버 현재성의 근거가 아니다. 다음은 고정 recipe와 현재 핀으로 검산 가능한 실행 인수·환경 구성과 PRESPAWN 경계 대조다. 소스 롤백은 지정 제품·시험 4경로에 한정한다.

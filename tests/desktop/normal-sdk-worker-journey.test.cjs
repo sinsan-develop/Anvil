@@ -5,6 +5,41 @@ const {readFileSync}=require('node:fs');
 const path=require('node:path');
 const read=p=>readFileSync(path.resolve(__dirname,'../../',p),'utf8');
 
+test('FIRST 보호 설정은 원 환경의 유일 현재 head와 저장 원 그래프를 재판독하고 원 cwd 핀을 보유한다',()=>{
+ const config=read('apps/connector/native/NormalExecutionConfigurationSource.cs');
+ const consume=read('apps/connector/native/NormalExecutionCredentialSource.cs');
+ assert.match(consume,/using\(var configuration=source.PinFirst\(inspected,package\)\)[\s\S]*configuration.Check\(\)/);
+ assert.match(config,/internal FirstConfiguration PinFirst\(/);
+ assert.match(config,/internal Row UniqueFirstEnvelope\(/);
+ assert.match(config,/candidates.Length!=1/);
+ assert.match(config,/Graph\(Map\(envelope\["environment"\]\),Map\(envelope\["profile"\]\)/);
+ assert.match(config,/pins=new DirectoryPins\(peer,[\s\S]*pins.Require\(envelope\["physical"\]\)/);
+ assert.match(config,/headHash!=Hash\(records.UniqueFirstEnvelope\(fact,original,recipe\)\)/);
+ assert.match(config,/package.Check\(\);pins.Check\(\);check\(\)/);
+ const method=config.slice(config.indexOf('internal Row UniqueFirstEnvelope('),config.indexOf('internal Row Head('));
+ assert.doesNotMatch(method,/New\(|Open\(true\)|Confirm\(|Revoke\(|OrderByDescending/);
+ assert.doesNotMatch(consume,/new NormalSdkChildHostSource|CreateProcess|ResumeThread/);
+});
+
+test('FIRST 설정 재판독은 원 검산 객체와 기한에 묶이고 원문 대신 hash만 임시 수집한다',()=>{
+ const config=read('apps/connector/native/NormalExecutionConfigurationSource.cs');
+ const consume=read('apps/connector/native/NormalExecutionCredentialSource.cs');
+ assert.match(config,/PinFirst\(NormalExecutionCredentialSource.FirstInspection inspected,/);
+ assert.match(config,/Hash\(original\)!=inspected.RecordHash/);
+ assert.match(config,/wall\(\)>=expires/);
+ assert.match(config,/Scan\(bool firstHashes=false\)/);
+ assert.match(config,/if\(firstHashes\)result.envelopeHashes.Add/);
+ assert.doesNotMatch(config,/Dictionary<string,Row> envelopes/);
+ assert.match(config,/Hash\(envelope\)!=envelopeHash/);
+ assert.match(config,/heads.Where\(r=>S\(r,"state"\)=="CONFIRMED"&&Same\(r\["environmentRef"\],environmentRef\)/);
+ assert.match(config,/group.Single\(r=>DesktopTrustKeyHostSource.Positive\(r\["revision"\]\)==revision\)/);
+ assert.match(config,/S\(d,"access"\)=="READ"/);
+ assert.match(config,/if\(closed\)throw Invalid\(\)/);
+ assert.match(config,/public void Dispose\(\)\{if\(closed\)return;closed=true;pins.Dispose\(\);\}/);
+ assert.match(consume,/final.CanonicalSource!=inspected.CanonicalSource[\s\S]*configuration.Check\(\);originalCheck\(\)/);
+ assert.match(consume,/return new Dictionary<string,object>\{\{"state","SDK_CONFIGURATION_UNAVAILABLE"\}\}/);
+});
+
 test('FIRST 보호 인계는 원 core에서 native 읽기 검사로만 소비하고 FIRST3와 C hash를 독립 대조한다',()=>{
  const runtime=read('apps/connector/runtime/normal-owned-spool-profile.ts');
  assert.match(runtime,/takeNormalFirstPermitHandoff\(request,source\)/);

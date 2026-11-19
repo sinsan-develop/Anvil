@@ -122,7 +122,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  }
  void ClearFirst(){if(firstBytes!=null)Array.Clear(firstBytes,0,firstBytes.Length);firstBytes=null;}
  // 이 객체는 원 자료의 읽기 검산 결과일 뿐 lease/OS 현재 witness가 아니다. 외부로 반환하지 않는다.
- sealed class FirstInspection {
+ internal sealed class FirstInspection {
   internal readonly string Digest,CanonicalSource,RecordHash,SlotHash;
   internal readonly DateTime ExpiresAt;
   internal FirstInspection(string digest,string source,string recordHash,string slotHash,DateTime expiresAt){Digest=digest;CanonicalSource=source;RecordHash=recordHash;SlotHash=slotHash;ExpiresAt=expiresAt;}
@@ -184,6 +184,15 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
    Check();if(H(Record(request.AttemptId))!=H(record)||H(LoadSlot(request.SlotId,record))!=H(slot))throw Invalid();
    if(inspected==null){if(spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId)!=digest)throw Invalid();}
    else{var again=InspectFirstSource(request,record,slot);if(again.Digest!=inspected.Digest||again.CanonicalSource!=inspected.CanonicalSource||again.RecordHash!=inspected.RecordHash||again.SlotHash!=inspected.SlotHash||again.ExpiresAt!=inspected.ExpiresAt)throw Invalid();}
+   if(inspected!=null){
+    Action originalCheck=()=>{Check();if(clock()>=inspected.ExpiresAt||H(Record(request.AttemptId))!=inspected.RecordHash||H(LoadSlot(request.SlotId,record))!=inspected.SlotHash)throw Invalid();};
+    var source=new NormalExecutionConfigurationSource(owner,peer,()=>Record(request.AttemptId),originalCheck,clock);
+    using(var configuration=source.PinFirst(inspected,package)){
+     configuration.Check();var final=InspectFirstSource(request,record,slot);
+     if(final.Digest!=inspected.Digest||final.CanonicalSource!=inspected.CanonicalSource||final.RecordHash!=inspected.RecordHash||final.SlotHash!=inspected.SlotHash||final.ExpiresAt!=inspected.ExpiresAt)throw Invalid();
+     configuration.Check();originalCheck();
+    }
+   }
    package.Check();Check();
    return new Dictionary<string,object>{{"state","SDK_CONFIGURATION_UNAVAILABLE"}};
   }

@@ -87,6 +87,9 @@ internal sealed class NormalExecutionConfigurationSource {
  internal static Row Selection(Row input,Row record,Row recipe){
   Row registration=Map(record["registration"]),ev=Map(input["environment"]),pv=Map(input["profile"]);
   Row e=View(ev,record,"ENVIRONMENT_VERSION"),p=View(pv,record,"COMMAND_PROFILE_METADATA");
+  return Graph(e,p,ev["ref"],pv["ref"],registration,recipe);
+ }
+ static Row Graph(Row e,Row p,object environmentRef,object profileRef,Row registration,Row recipe){
   Exact(e,"id,version,sourceRoots,executionHostRef,targetHostRefs,commandProfileRefs,secretRefs,policyRef,contentHash");
   Host(e["executionHostRef"],registration);Ref(e["policyRef"]);
   foreach(object h in ArrayOf(e["targetHostRefs"],200))Host(h,registration);
@@ -97,12 +100,12 @@ internal sealed class NormalExecutionConfigurationSource {
   if(S(path,"kind")!="SOURCE_ROOT_DECLARATION"||DesktopTrustKeyHostSource.Id(source,"sourceRootId")!=S(Ref(path["sourceRootRef"]),"id"))throw Invalid();Host(path["hostRef"],registration);
   var scope=Map(source["permissionScope"]);Exact(scope,"kind,targets");var targets=ArrayOf(scope["targets"],200);if(S(scope,"kind")!="REQUESTED_SCOPE"||targets.Length==0)throw Invalid();var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
   foreach(object raw in targets){var t=Map(raw);Exact(t,"relativePath,kind,access,recursive");Relative(S(t,"relativePath"));if(!seen.Add(S(t,"relativePath"))||S(t,"kind")!="FILE"||!new[]{"READ","WRITE"}.Contains(S(t,"access"))||!(t["recursive"] is bool)||(bool)t["recursive"])throw Invalid();}
-  bool found=false;seen.Clear();foreach(object raw in ArrayOf(e["commandProfileRefs"],200)){var f=Map(raw);Exact(f,"kind,ref");var r=Ref(f["ref"]);if(S(f,"kind")!="COMMAND_PROFILE_METADATA"||!seen.Add(S(r,"id")))throw Invalid();if(Same(r,pv["ref"]))found=true;}if(!found)throw Invalid();
+  bool found=false;seen.Clear();foreach(object raw in ArrayOf(e["commandProfileRefs"],200)){var f=Map(raw);Exact(f,"kind,ref");var r=Ref(f["ref"]);if(S(f,"kind")!="COMMAND_PROFILE_METADATA"||!seen.Add(S(r,"id")))throw Invalid();if(Same(r,profileRef))found=true;}if(!found)throw Invalid();
   Exact(p,"id,version,status,definition");if(S(p,"status")!="DECLARED")throw Invalid();var d=Map(p["definition"]);Exact(d,"label,purpose,hostRef,toolRequirements,program,argsTemplate,workingDirectory,secretSlots,policyRef");
   Host(d["hostRef"],registration);Ref(d["policyRef"]);if(S(d,"purpose")!="CONTEXT_REVIEW"||ArrayOf(d["secretSlots"],200).Length!=0)throw Invalid();
   var rcp=Map(recipe["snapshot"]);if(S(d,"program")!=S(Map(rcp["programSelector"]),"logicalName")||!Same(d["argsTemplate"],rcp["profileArgs"]))throw Invalid();
   var cwd=Map(d["workingDirectory"]);Exact(cwd,"sourceRootRef,relativeDirectory");if(!Same(Ref(cwd["sourceRootRef"]),path["sourceRootRef"]))throw Invalid();if(cwd["relativeDirectory"]!=null)Relative(S(cwd,"relativeDirectory"));
-  return new Row{{"environmentRef",Ref(ev["ref"])},{"commandProfileRef",Ref(pv["ref"])},{"hostRef",e["executionHostRef"]},{"sourceRootRef",path["sourceRootRef"]},{"policyRef",e["policyRef"]},{"relativeDirectory",cwd["relativeDirectory"]}};
+  return new Row{{"environmentRef",Ref(environmentRef)},{"commandProfileRef",Ref(profileRef)},{"hostRef",e["executionHostRef"]},{"sourceRootRef",path["sourceRootRef"]},{"policyRef",e["policyRef"]},{"relativeDirectory",cwd["relativeDirectory"]}};
  }
  static Row View(Row v,Row record,string kind){
   Exact(v,"projectId,kind,ref,snapshot,historyVerification,current,executionEligible,dispatchPerformed,observedAt");
@@ -111,6 +114,31 @@ internal sealed class NormalExecutionConfigurationSource {
   if(S(c,"configurationCurrentness")!="MATCHED"||DesktopTrustKeyHostSource.Positive(c["headVersion"])!=DesktopTrustKeyHostSource.Positive(r["version"])||DesktopTrustKeyHostSource.Id(s,"id")!=S(r,"id")||DesktopTrustKeyHostSource.Positive(s["version"])!=DesktopTrustKeyHostSource.Positive(r["version"]))throw Invalid();
   foreach(object raw in ArrayOf(c["issues"],4209)){var issue=Map(raw);Exact(issue,"code,target");if(S(issue,"code")!="OBSERVATION_UNVERIFIED")throw Invalid();if(issue["target"]!=null){var target=Map(issue["target"]);Exact(target,"kind,ref");Ref(target["ref"]);}}
   var body=new Row(s);if(kind=="ENVIRONMENT_VERSION"){if(S(s,"contentHash")!=S(r,"contentHash"))throw Invalid();body.Remove("contentHash");}if(Hash(body)!=S(r,"contentHash"))throw Invalid();return s;
+ }
+ // FirstInspection의 원 canonical 자료만 내부 호출자가 전달한다. 로컬 head/핀은 서버 현재성이나 실행 lease가 아니다.
+ internal FirstConfiguration PinFirst(NormalExecutionCredentialSource.FirstInspection inspected,NormalSdkWorkerPackageSource package){
+  guard();peer.Check();if(inspected==null)throw Invalid();var source=DesktopTrustKeyHostSource.Parse(Encoding.UTF8.GetBytes(inspected.CanonicalSource),false);
+  Row snapshot=Map(Map(source["executionAuthority"])["permitSnapshot"]),fact=Map(snapshot["currentFact"]);
+  var original=Clone(currentRecord());DateTime expires=inspected.ExpiresAt;if(expires!=DesktopTrustKeyHostSource.Time(snapshot,"expiresAt")||Hash(original)!=inspected.RecordHash)throw Invalid();
+  Action check=()=>{guard();peer.Check();root.Check();if(wall()>=expires||!Same(original,currentRecord()))throw Invalid();};
+  check();return new FirstConfiguration(root,peer,original,fact,package,check);
+ }
+ internal sealed class FirstConfiguration:IDisposable {
+  readonly ProtectedRecords records;readonly Row fact,original,recipe;readonly string headHash;
+  readonly NormalSdkWorkerPackageSource package;readonly DirectoryPins pins;readonly Action check;bool closed;
+  internal FirstConfiguration(DesktopTrustKeyRootSource root,DesktopTrustKeyPeerSource peer,Row originalRecord,Row originalFact,NormalSdkWorkerPackageSource originalPackage,Action guard){
+   original=Clone(originalRecord);fact=Clone(originalFact);package=originalPackage;check=guard;
+   check();package.Check();recipe=package.ExecutionRecipe;records=new ProtectedRecords(root,original,check);
+   Row envelope=records.UniqueFirstEnvelope(fact,original,recipe);headHash=Hash(envelope);Row record=Map(envelope["record"]);
+   try{pins=new DirectoryPins(peer,S(Map(record["localRoot"]),"privateLocator"),record["relativeDirectory"] as string);pins.Require(envelope["physical"]);Check();}
+   catch{closed=true;if(pins!=null)pins.Dispose();throw;}
+  }
+  internal void Check(){
+   if(closed)throw Invalid();package.Check();pins.Check();check();
+   if(!Same(package.ExecutionRecipe,recipe)||headHash!=Hash(records.UniqueFirstEnvelope(fact,original,recipe)))throw Invalid();
+   package.Check();pins.Check();check();
+  }
+  public void Dispose(){if(closed)return;closed=true;pins.Dispose();}
  }
  internal sealed class DirectoryPins:IDisposable {
   readonly WindowsDesktopTrustKeyKernel kernel=new WindowsDesktopTrustKeyKernel();readonly DesktopTrustKeyPeerSource peer;
@@ -185,6 +213,7 @@ internal sealed class NormalExecutionConfigurationSource {
    present=true;Guard();
   }
   internal sealed class Catalogue {
+   internal readonly Dictionary<string,string> envelopeHashes=new Dictionary<string,string>();
    internal readonly List<Row> records=new List<Row>();internal readonly Dictionary<string,string> openClosures=new Dictionary<string,string>();internal readonly List<Row> reservedRefs=new List<Row>();
    internal long bytes;internal int reservations;internal string ledgerHash;
   }
@@ -206,7 +235,7 @@ internal sealed class NormalExecutionConfigurationSource {
    foreach(var pair in new[]{Tuple.Create("localRoot",Map(physical[0])),Tuple.Create("localCwd",Map(physical[physical.Length-1]))}){var p=Map(r[pair.Item1]);if(S(p,"privateLocator")!=S(pair.Item2,"path")||S(p,"volumeId")!=S(pair.Item2,"volumeId")||S(p,"fileId")!=S(pair.Item2,"fileId"))throw Invalid();}
    return r;
   }
-  internal Catalogue Scan(){
+  internal Catalogue Scan(bool firstHashes=false){
    Guard();var result=new Catalogue();if(!present)return result;
    var files=new Dictionary<string,string>(StringComparer.Ordinal);int count=0;
    foreach(string path in Directory.EnumerateFileSystemEntries(directory)){Guard();if(++count>514)throw Invalid();string name=Path.GetFileName(path);if(name=="writer.lock")continue;if(name!="heads.ledger"&&!Regex.IsMatch(name,@"\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[1-9][0-9]{0,2}\.(?:record|intent|done|closure)\z")||files.ContainsKey(name))throw Invalid();files.Add(name,path);using(var f=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.None)){Shape(f);result.bytes=checked(result.bytes+f.Length);}if(result.bytes>RegistrationLimit)throw Invalid();}
@@ -215,7 +244,7 @@ internal sealed class NormalExecutionConfigurationSource {
     if(name.EndsWith(".record")){
      string prefix=name.Substring(0,name.Length-7);if(!files.ContainsKey(prefix+".intent")||!files.ContainsKey(prefix+".done"))throw Invalid();
      var envelope=Read(item.Value,RevisionLimit+16384);var r=ValidateEnvelope(envelope);if(prefix!=S(r,"configurationId")+"."+DesktopTrustKeyHostSource.Positive(r["revision"]).ToString(CultureInfo.InvariantCulture))throw Invalid();
-     foreach(string suffix in new[]{".intent",".done"}){var marker=Read(files[prefix+suffix],4096);Exact(marker,"purpose,rootIdentity,registrationRef,envelopeHash");Bound(marker);if(S(marker,"envelopeHash")!=Hash(envelope))throw Invalid();}result.records.Add(r);
+     foreach(string suffix in new[]{".intent",".done"}){var marker=Read(files[prefix+suffix],4096);Exact(marker,"purpose,rootIdentity,registrationRef,envelopeHash");Bound(marker);if(S(marker,"envelopeHash")!=Hash(envelope))throw Invalid();}result.records.Add(r);if(firstHashes)result.envelopeHashes.Add(Hash(RecordRef(r)),Hash(envelope));
     }else{
      byte[] bytes=ReadBytes(item.Value,ClosureBytes);try{
       if(bytes.Length!=ClosureBytes)throw Invalid();int n=BitConverter.ToInt32(bytes,0);if(n<1||n>ClosureHeader-4)throw Invalid();var header=Decrypt(bytes.Skip(4).Take(n).ToArray());Exact(header,"purpose,rootIdentity,registrationRef,reservedRef,headKey");Bound(header);var reserved=Ref(header["reservedRef"]);string key=S(header,"headKey");if(!DesktopTrustKeyHostSource.IsHash(key)||name!=S(reserved,"id")+"."+DesktopTrustKeyHostSource.Positive(reserved["version"]).ToString(CultureInfo.InvariantCulture)+".closure")throw Invalid();
@@ -248,6 +277,27 @@ internal sealed class NormalExecutionConfigurationSource {
      Shape(file);if(file.Length!=LedgerBytes)throw Invalid();long at=index*LedgerSlot;file.Position=at;for(int i=0;i<LedgerSlot;i++)if(file.ReadByte()!=0)throw Invalid();Guard();file.Position=at;file.WriteByte(1);file.Flush(true);Guard();byte[] size=BitConverter.GetBytes(encrypted.Length);file.Write(size,0,4);file.Write(encrypted,0,encrypted.Length);file.Flush(true);Guard();file.Position=at;file.WriteByte(2);file.Flush(true);Shape(file);Guard();
     }
    }finally{System.Array.Clear(encrypted,0,encrypted.Length);}
+  }
+  internal Row UniqueFirstEnvelope(Row fact,Row original,Row recipe){
+   Guard();var intent=Map(fact["intent"]);Row environmentRef=Ref(intent["environmentRef"]);var originalRegistration=Map(original["registration"]);
+   if(S(fact,"transport")!="NORMAL_PROTECTED"||S(intent,"mode")!="CONTEXT_REVIEW"||!Same(Map(fact["registration"])["ref"],registration)||!Same(originalRegistration["registrationRef"],registration)||S(fact,"projectId")!=S(original,"projectId"))throw Invalid();
+   var all=Scan(true);var heads=new List<Row>();
+   foreach(var group in all.records.GroupBy(Key)){long revision=group.Max(r=>DesktopTrustKeyHostSource.Positive(r["revision"]));heads.Add(group.Single(r=>DesktopTrustKeyHostSource.Positive(r["revision"])==revision));}
+   var candidates=heads.Where(r=>S(r,"state")=="CONFIRMED"&&Same(r["environmentRef"],environmentRef)&&S(r,"projectId")==S(original,"projectId")).ToArray();
+   if(candidates.Length!=1)throw Invalid();Row chosen=candidates[0];string envelopeHash;
+   if(!all.envelopeHashes.TryGetValue(Hash(RecordRef(chosen)),out envelopeHash))throw Invalid();
+   Row envelope=Read(Path.Combine(directory,S(chosen,"configurationId")+"."+DesktopTrustKeyHostSource.Positive(chosen["revision"]).ToString(CultureInfo.InvariantCulture)+".record"),RevisionLimit+16384);
+   if(Hash(envelope)!=envelopeHash||!Same(ValidateEnvelope(envelope),chosen)||!Same(chosen["recipeRef"],recipe["ref"])||!Same(chosen["connectorRef"],originalRegistration["connectorRef"]))throw Invalid();
+   Row selected=Graph(Map(envelope["environment"]),Map(envelope["profile"]),chosen["environmentRef"],chosen["commandProfileRef"],originalRegistration,recipe);
+   foreach(var item in selected)if(!Same(chosen[item.Key],item.Value))throw Invalid();
+   var scopes=ArrayOf(intent["sourceScopes"],1);if(scopes.Length!=1)throw Invalid();var scope=Map(scopes[0]);Exact(scope,"sourceRootRef,mappingRef,observationRef,baselineRef,targets");
+   if(!Same(Ref(scope["sourceRootRef"]),selected["sourceRootRef"]))throw Invalid();if(scope["mappingRef"]!=null)Ref(scope["mappingRef"]);Ref(scope["observationRef"]);Ref(scope["baselineRef"]);
+   var targets=ArrayOf(scope["targets"],200);if(targets.Length==0)throw Invalid();var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+   var root=Map(ArrayOf(Map(envelope["environment"])["sourceRoots"],1)[0]);var declared=ArrayOf(Map(root["permissionScope"])["targets"],200);
+   foreach(object raw in targets){var target=Map(raw);Exact(target,"relativePath,kind,access,recursive");Relative(S(target,"relativePath"));
+    if(!seen.Add(S(target,"relativePath"))||S(target,"kind")!="FILE"||S(target,"access")!="READ"||!(target["recursive"] is bool)||(bool)target["recursive"]||!declared.Any(x=>{var d=Map(x);return S(d,"relativePath")==S(target,"relativePath")&&S(d,"kind")=="FILE"&&!(bool)d["recursive"]&&S(d,"access")=="READ";}))throw Invalid();
+   }
+   Guard();return Clone(envelope);
   }
   internal Row Head(Row selected,Row original){var key=Hash(new object[]{registration,original["projectId"],selected["environmentRef"],selected["commandProfileRef"]});return Scan().records.Where(r=>Key(r)==key).OrderByDescending(r=>DesktopTrustKeyHostSource.Positive(r["revision"])).FirstOrDefault();}
   void Reserve(Row record,string path){var header=Binding();header.Add("reservedRef",RecordRef(record));header.Add("headKey",Key(record));byte[] encrypted=Encrypt(header),bytes=new byte[ClosureBytes];try{if(encrypted.Length>ClosureHeader-4)throw Invalid();System.Array.Copy(BitConverter.GetBytes(encrypted.Length),bytes,4);System.Array.Copy(encrypted,0,bytes,4,encrypted.Length);New(path,bytes);}finally{System.Array.Clear(encrypted,0,encrypted.Length);System.Array.Clear(bytes,0,bytes.Length);}}
