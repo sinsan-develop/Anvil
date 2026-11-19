@@ -21169,3 +21169,11 @@ C안의 서버·실행기 소비·미적용 SQL 소스 구간을 검수했다. �
 기준 `2df6bd25`, 기존 담당자와 실제 호출선 대조 결과 제품 worker가 START 전에 쓸 원 current 공급자가 연결되지 않았다. 필수 값은 원 명령/attempt/grant/sourceObservationRefs/osOwnershipRef와 시각·기한이다. C의 SEND permit 응답은 그 이후이며, 원 START 전에는 실제 child가 없어 child 자신의 RUNNING 관측을 선행으로 사용할 수 없다. 기존 BOOTSTRAP_PREPARED는 최초 수용 기록이다.
 
 현재 native 준비 객체는 성공 직후 곧바로 해제되지 않지만 원 receiver와 최초부터 최대10초 host 유효 범위에서만 다시 읽을 수 있다. 현재 코드의 로컬 미재개 이력은 실제 물리 suspended 상태나 외부 handle 간섭 배제, 파일 격리 증명이 아니다. 별도 후보 `docs/contracts/FN08_NORMAL_START_PRESPAWN_CURRENT_CANDIDATE.md` SHA256 EF10FB357619D456DC936AF19746FCA9C4E0C3C94B0C37B1618178D162923DB9를 정리했다. 기존 RUNNING/STOP, 원 기한, 최초 영수증을 유지한다. 실제 물리 근거/수명 및 별도 source와 writer 현재성 생산자가 없어 시작을 허가하지 않는다. 후보는 미채택, 문서 공백 검사만 수행했으며 제품·시험·실제 실행0이다.
+
+## FN07 §B 원 자식 핸들 소유 소스 검수
+
+기준 `1a76874e`, 기존 developer_primary 단일 작성. 신규 `NormalSdkChildHostSource.cs`의 private 생성·단발 재개·입출력 전달과 보호 host의 고정 빌드 목록을 연결했다. 스레드·프로세스·Job 신원, 최초 atomic Job/stdio 상속, 반환 길이·단발 재개, 생성 실패/부분 소유, 정확 종료·불명 보존을 소스로 작성했다. 지정 시험 2곳 포함 4경로다. 이 클래스에 원 C/FIRST3/보호 설정을 넘길 lease 발급·감독 수송과 제품 호출은 미구현이다.
+
+담당자 신규 파일 부재 정적 RED `173b47` 3실패. 인접 `ac73c2` 47통과/1실패는 기존 빌드 29경로와 옛 27 기대의 차이에서 비롯되어 기존 29와 새 child를 포함한 정확 30경로·중복/누락/대체를 검산하도록 보완했다. 최종 `f098da` 48통과·실패/건너뜀0, desktop 타입 `22caaa`와 공백 `21bf6a` 종료0. Main 최종 48 재확인 `d60216`, 제품/시험 SHA 4/4 `2a3b0e`, 쓰기 반환·활성 핸들0. 실제 C# 컴파일·OS child 및 SDK·키·DB·서비스는 미검증 또는 제외다. 기존 stage 상태는 부분 구현이다.
+
+PRESPAWN 후보 §6에 기본 서버 옵션 조립 미연결과 queue의 writer NONE→예약 RESERVED→START permit OWNED 경계, 원 준비 host와 SDK child의 소유·기한·제품 호출 단절을 추가했다. 후보 SHA `C35A3BBF4D718F9C30B0A2AD79D4C7CAFFE4E39DF9B8423F03FEEA2742B98221`, 여전히 미채택이다. 다음은 같은 FIRST claim에서 원 두 envelope와 C 자료를 원 slot 및 보호 설정에 결박하여 기존 native 감독의 소비 지점을 닫는 소스다. rollback 단위는 지정 4개 제품/시험 변경이다.

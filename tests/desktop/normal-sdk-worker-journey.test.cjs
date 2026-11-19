@@ -4,6 +4,46 @@ const assert=require('node:assert/strict');
 const {readFileSync}=require('node:fs');
 const path=require('node:path');
 const read=p=>readFileSync(path.resolve(__dirname,'../../',p),'utf8');
+
+test('SDK 원 child 소유 primitive는 atomic Job와 자식 stdio 세 끝만 생성 전에 결박한다',()=>{
+ const source=read('apps/connector/native/NormalSdkChildHostSource.cs');
+ const create=source.slice(source.indexOf('void CreateSuspended()'),source.indexOf('void VerifyOriginal('));
+ assert.match(create,/attempted=true[\s\S]*CreateJobObjectW[\s\S]*ActiveProcessLimit=1/);
+ assert.match(create,/new IntPtr\(0x00020002\)[\s\S]*new IntPtr\(0x0002000D\)[\s\S]*CreateProcessW/);
+ assert.match(create,/Marshal.WriteIntPtr\(handles,stdinRead\)[\s\S]*Marshal.WriteIntPtr\(handles,IntPtr.Size,stdoutWrite\)[\s\S]*Marshal.WriteIntPtr\(handles,IntPtr.Size\*2,stderrWrite\)/);
+ assert.match(create,/created=ok\|\|original.Process!=IntPtr.Zero\|\|original.Thread!=IntPtr.Zero\|\|original.Pid!=0\|\|original.Tid!=0;[\s\S]*if\(!created\)\{creationRejected=true;throw Invalid\(\);\}[\s\S]*VerifyOriginal\(true\)/);
+ assert.doesNotMatch(source,/AssignProcessToJobObject|OpenProcess|GetEnvironmentVariables|Process\.Start|Console\.|public static/);
+ assert.match(require('../../apps/desktop/scripts/desktop-trust-key-host-build.cjs').SOURCE_FILES.join('\n'),/apps\/connector\/native\/NormalSdkChildHostSource\.cs/);
+});
+
+test('SDK 원 child 소유 primitive는 원 핸들 검산 뒤 resume·stdio 인계를 각 한 번만 허용한다',()=>{
+ const source=read('apps/connector/native/NormalSdkChildHostSource.cs');
+ assert.match(source,/void VerifyOriginal\(bool first\)[\s\S]*GetProcessId\(original.Process\)[\s\S]*GetProcessIdOfThread\(original.Thread\)[\s\S]*GetThreadId\(original.Thread\)[\s\S]*GetProcessTimes[\s\S]*GetThreadTimes[\s\S]*IsProcessInJob[\s\S]*Members\(\)!=1[\s\S]*QueryFullProcessImageNameW/);
+ const resume=source.slice(source.indexOf('void ResumeOriginal()'),source.indexOf('StreamSet TakeStreams()'));
+ assert.match(resume,/resumeAttempted=true;[\s\S]*Check\(\);VerifyOriginal\(false\);Check\(\);[\s\S]*ResumeThread\(original.Thread\)!=1[\s\S]*resumed=true/);
+ assert.match(source,/if\(streamsTaken\|\|!resumed\)[\s\S]*streamsTaken=true/);
+ assert.match(source,/cancellation.IsCancellationRequested[\s\S]*watch.Elapsed.TotalMilliseconds>=budgetMs/);
+ assert.match(source,/package.Check\(\);directories.Check\(\)/);
+ assert.match(source,/if\(returned<8\|\|returned>\(uint\)bytes\)throw Invalid\(\);[\s\S]*Marshal.ReadInt32\(buffer\)[\s\S]*returned<\(uint\)\(8\+count\*IntPtr.Size\)[\s\S]*Marshal.ReadIntPtr\(buffer,8\)/);
+ assert.match(resume,/catch\{unknown=true;Dispose\(\);throw;\}/);
+ // 원 lease 소비자는 다음 구간이다. 임의 callback/JSON 또는 공개 factory로 기술 primitive를 활성화하지 않는다.
+ assert.match(source,/private NormalSdkChildHostSource\(/);
+ assert.doesNotMatch(source,/internal static .*Create|internal .*Open\(/);
+});
+
+test('SDK 원 child 소유 primitive는 종료 불명과 닫힘 실패의 원 핸들을 보존한다',()=>{
+ const source=read('apps/connector/native/NormalSdkChildHostSource.cs');
+ assert.match(source,/WaitForSingleObject\(original.Process,0\)[\s\S]*GetExitCodeProcess\(original.Process,out code\)/);
+ assert.match(source,/TerminateProcess\(original.Process/);
+ assert.match(source,/if\(!CloseHandle\(handle\)\)[\s\S]*return;[\s\S]*handle=IntPtr.Zero/);
+ const dispose=source.slice(source.indexOf('public void Dispose()'));
+ assert.match(dispose,/if\(cleanupAttempted\)[\s\S]*cleanupAttempted=true/);
+ assert.match(dispose,/CloseOwned\(ref stdinRead[\s\S]*CloseOwned\(ref stdoutWrite[\s\S]*CloseOwned\(ref stderrWrite/);
+ assert.match(dispose,/if\(created&&!exitConfirmed\)[\s\S]*failed=true/);
+ assert.match(dispose,/if\(exitConfirmed&&streams.Input!=null\)/);
+ assert.match(dispose,/if\(failed\)[\s\S]*unconfirmed.Add\(this\)[\s\S]*throw Unknown\(\)/);
+ assert.doesNotMatch(dispose,/original=default|unconfirmed.Clear|GC.Collect/);
+});
 test('native 원 FIRST3 판독은 두 채널의 최근 정산·정확 3행/원바이트·참조연쇄를 검사하는 읽기 전용 경로다',()=>{
   const file=read('apps/connector/native/NormalExecutionSpoolProfileSource.cs');
   const part=file.slice(file.indexOf('internal string ReadSdkFirstAttempt('),file.indexOf('static Row LastOutputPhase('));

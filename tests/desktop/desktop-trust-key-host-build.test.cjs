@@ -3,7 +3,24 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const build=require('../../apps/desktop/scripts/desktop-trust-key-host-build.cjs');
 function input(){return {signerId:'11111111-1111-4111-8111-111111111111',signerVersion:1,compiler:{path:'C:\\Tools\\csc.exe'.replaceAll('\\\\','\\'),sha256:'a'.repeat(64)},references:build.REFERENCE_FILES.map(x=>({path:'C:\\Reference\\'+x,sha256:'b'.repeat(64)})),sources:build.SOURCE_FILES.map(x=>({path:x,sha256:'c'.repeat(64)})),repoRoot:'C:\\Anvil',basisPath:'C:\\Work\\ParentBasis.json',outputPath:'C:\\Work\\AnvilTrustKeyHost.exe'};}
 function basis(){return {schemaVersion:1,purpose:'DESKTOP_TRUST_SIGNER_PARENT_BASIS',namespace:'ANVIL_DESKTOP_TRUST_SIGNER_V1',signerId:'11111111-1111-4111-8111-111111111111',signerVersion:1,parentExeHash:'d'.repeat(64),parentAsarHash:'e'.repeat(64),parentHeaderHash:'f'.repeat(64)};}
-test('fixed signer closure produces exact entry and private resource input',()=>{const c=build.createCompileInput(input(),basis());assert.ok(c.arguments.includes('/main:DesktopTrustKeyHostSource'));assert.ok(c.arguments.some(x=>x.endsWith(',Anvil.Desktop.TrustKeyHost.ParentBasis.v1,private')));assert.equal(c.sources.length,27);assert.ok(c.sources.some(s=>s.path==='apps/connector/native/NormalExecutionSpoolProfileSource.cs'));assert.ok(c.sources.some(s=>s.path==='apps/connector/native/NativePreparationRetainedFactorySource.cs'));assert.ok(c.sources.some(s=>s.path==='apps/connector/native/NormalExecutionCredentialSource.cs'));assert.equal(c.references.length,5);assert.equal(c.workingDirectory,'C:\\Anvil');});
+// 승인된 기존 29개와 이번 원 child 1개. 제품 목록에서 기대값을 유도하지 않는다.
+const expectedSources=[
+ 'DesktopTrustKeyHostSource.cs','DesktopTrustKeyParentBasisSource.cs','DesktopTrustKeyPeerSource.cs',
+ 'DesktopTrustKeyRootSource.cs','DesktopTrustKeyBindingStoreSource.cs','ProtectedStore.cs',
+ 'NativePreparationProofSource.cs','NormalExecutionCredentialSource.cs','NormalSdkWorkerPackageSource.cs',
+ 'NormalSdkChildHostSource.cs','NormalExecutionConfigurationSource.cs','NormalExecutionSpoolProfileSource.cs',
+ 'OwnershipEvidenceJobFactorySource.cs','OwnershipEvidenceJobAssignmentSource.cs','OwnershipEvidenceProcessStartupSource.cs',
+ 'OwnershipEvidenceProcessOwnerSource.cs','OwnershipEvidenceWorkerInputSource.cs','OwnershipEvidencePreparedFactsSource.cs',
+ 'OwnershipEvidenceImageOwnerSource.cs','OwnershipEvidenceImageBindingSource.cs','OwnershipEvidenceRootSource.cs',
+ 'OwnershipEvidenceHost.cs','NativePreparationOwnershipReturnSource.cs','NativePreparationJournalKernel.cs',
+ 'NativePreparationJournalSource.cs','NativePreparationRetainedFactorySource.cs','NativePreparationWorkerProvenanceSource.cs',
+ 'NativeWorkerInstallationRootSource.cs','NativeWorkerInstallationStoreSource.cs','NativeWorkerDeploymentSource.cs',
+].map(name=>'apps/connector/native/'+name);
+test('fixed signer closure produces exact entry and private resource input',()=>{const c=build.createCompileInput(input(),basis());assert.ok(c.arguments.includes('/main:DesktopTrustKeyHostSource'));assert.ok(c.arguments.some(x=>x.endsWith(',Anvil.Desktop.TrustKeyHost.ParentBasis.v1,private')));assert.deepEqual(c.sources.map(s=>s.path),expectedSources);assert.equal(new Set(c.sources.map(s=>s.path)).size,30);assert.equal(c.references.length,5);assert.equal(c.workingDirectory,'C:\\Anvil');
+ const missing=input();missing.sources=missing.sources.filter(s=>!s.path.endsWith('/NormalSdkChildHostSource.cs'));assert.throws(()=>build.createCompileInput(missing,basis()));
+ const duplicate=input();duplicate.sources[9]={...duplicate.sources[8]};assert.throws(()=>build.createCompileInput(duplicate,basis()));
+ const substituted=input();substituted.sources[9]={...substituted.sources[9],path:'apps/connector/native/OtherChild.cs'};assert.throws(()=>build.createCompileInput(substituted,basis()));
+});
 module.exports={input,basis};
 
 test('retained/worker 조립기는 실제 고정 build closure에 포함되며 누락·다른source·예전22개입력은 거절한다',()=>{

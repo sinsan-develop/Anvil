@@ -71,3 +71,18 @@
 실제 native handle/서명/OS·DB 거래·2초/10초 내 종단 시간과 SDK 실행은 별도 검증이다. 합성 성공을 이 증거로 승격하지 않는다. 채택 전 제품 변화0; 채택 후 rollback은 신규 목적 진입을 차단하고 기존 원장/수용 이력을 읽을 수 있게 보존하며, 진행 중 원 객체를 재발급하지 않는 방향으로 고정한다.
 
 이번 산출물은 이 문서 한 개다. 제품·시험 실행·실환경 관측·자료 접근·Git 변경은 수행하지 않았다.
+
+## 6. 제품 호출순서에서 먼저 확인해야 하는 선행
+
+이 절은 PMO의 미채택 검토 뒤 확인한 소스 순서다. 전체 10초 성립이나 물리 증명은 여전히 미검증이다.
+
+| 순서 | 실제 시작점과 보유 주체 | 확인된 선행 또는 단절 |
+|---|---|---|
+| 일반 개발 서버 시작 | package.json의 `start` → `apps/server/main.ts:23` | `buildApp`에 HTTPS·웹·일반 access만 전달한다. `app.ts`의 normal queue/credential/permit 등은 선택 주입이며 기본 시작점에서 그 생산자를 넘기지 않는다. |
+| 최초 사용자의 시작 명령 제출 | `apps/server/modules/projects/routes.ts:375` → `NormalInitialExecution.command` | 기존 활성 `writer_claims` 부재와 별도 현재 관측을 먼저 확인한다. queue는 `writerState:NONE` 및 source·osFence·basis·storage·capability 등의 exact 증거를 요구한다. 이 관측의 실제 제품 공급자도 미연결이다. |
+| 같은 준비 객체의 생성과 최초 관측 | 기존 receiver가 `returnNativePreparationOwnership`의 원 host를 연다 | 원 host 시계 시작부터 최대10초 또는 더 짧은 permit/등록/원 권위 기한이다. `NativePreparationRetainedFactorySource`가 자기 image/Job/process를 붙들고 최초 수용 결과를 반환하며, 원 receiver 또는 host 종료에서 회수한다. 이 객체는 증거용 준비 worker이며 향후 SDK child와 별개다. |
+| normal grant·자격·writer 보관 | `normal-initial-execution.ts`의 현재성 확인 이후 같은 거래 | 실행·grant·자격 예약·writer `RESERVED`·명령 outbox를 보관한다. grant와 현재 실행 자격은 이 이전에는 사용할 수 없다. 이 저장은 Agent 시작으로 표시하지 않는다. |
+| normal START 허가 | worker의 `NormalStartCurrent`와 서버 `NormalPermitCurrentSource` | 원 grant와 exact START attempt의 근거 및 `writerState:OWNED`를 다시 확인한다. 최초 queue의 `NONE`, 예약 `RESERVED`, 원 준비 worker의 최초 결과로 대신할 수 없다. |
+| 실제 SDK child | 원 START_READY, 별도 첫 SEND permit, FIRST3 정착 이후 | 기존 준비 worker나 읽기 검산으로 실제 SDK child를 생성했다고 간주하지 않는다. 증거 없는 새 호출과 시간 연장은 없다. |
+
+10초와 관련한 최소 연쇄는 같은 host의 준비·최초 서명, 기존 서버 수용, 사용자의 정상 START 접수, queue의 현재성/정책·grant/예약 처리, 실행기의 정상 자격·START 수신, exact attempt current 요청·서명·수용, 서버 permit이다. 기존 소스에는 최초 사용자 접수를 실제 준비 객체 생성 전에 확정하고 남은 단계가 자동으로 이어진다는 제품 호출선이 없다. 단계별 제한은 유한 정지 조건이며 단계 합계가 10초 안에 성립한다는 관측은 아니다. 기존 사용자 대기 위치를 바꾸거나 이전 클릭을 새 실행 허가로 넓히는 결정을 내리지 않았다. `queueExecutionCommand` 전후 writer의 상태 경계와 독립 source 현재성까지 실제 생산자를 확인하기 전에는 §3의 신규 API/보관 후보를 바로 채택 대상으로 올리지 않는다.
