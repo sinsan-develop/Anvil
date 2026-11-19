@@ -21373,3 +21373,11 @@ Main의 exit 전후 반례 RED 04fba7을 보완했다. 담당 직접·인접 22�
 별도 wrapper 3,672B SHA256 CCF403D8B3281063C972D192725D66DA0808F8B90180AE19952848FE3FC8BC75, 고정 합성 예시 전체 83,083B C662DF2D8E31FC635FA9400FF5ADE4761FF5EF663D0316EB0F2DB43462E534E5. 담당 합성 4통과 8e54e0·좁은 strict 타입 fb4c52, Main 동일 VM 시험 4통과/실패·건너뜀0 8d44de, 동결 SHA 2/2 e7ecc1. VM Modules의 실험 기능 경고만 관측했다. 변경 두 파일 외 원 번들/기존 경로 변경0.
 
 실제 strict SSH 실행·호스트 조회·키 사용·네이티브 모듈 호출·신호·IPAM·DB·권한·서비스·Agent 실행0. 저장 소스에는 이번 관측의 고정 SSH carrier와 외부 단회 소진 원장이 없다. 기존 TC01 원격 intent 기록은 무파일 관측에 재사용할 수 없다. 다음은 정확 carrier와 외부 소비 기록을 같은 시도에 연결하는 최소 실행안이며, 실제 ip 지문과 단회 승인·예외는 별도 미확보다. TC01 미완료. 롤백은 신규 두 모듈과 기록 추가에 한정한다.
+
+## IX01 단회 SSH 전송·수거 결박의 합성 검수
+
+기준 `ed877b59`, developer_primary 단일 작성·반환. 신규 scripts/qa-ix01-subnet-observation-carrier.ts와 tests/unit/IX01/subnet-observation-carrier.test.ts. 고정 OpenSSH 경로와 strict/BatchMode, 포워딩·사용자 명령·신뢰/agent 자동 갱신을 끈 인자, 고정 Linux Node 실행 명령을 정의했다. 소스·적재물·시도·기한·SSH 신원과 일치하는 외부 소비 영수증 및 신원 검산 포트 없이는 시작하지 않는다. 같은 원 자식에 수거기를 붙이고 유효한 기한 타이머가 등록된 뒤에만 전송한다. 전송 예외·종료 불명은 UNKNOWN이며 같은 owner의 재실행0이다.
+
+담당 시험에서 신규 모듈 부재 RED 9e8399와 인자 누락·정상 close 뒤 전송 예외 반례 78155e를 보완했다. 담당 직접·인접 16통과 32c475·좁은 strict 타입 종료0 420893. Main 16통과·실패/건너뜀0 1042f3, 지문 2/2와 공백 e0aae3. 소스 SHA256 263FD78210E4BD2997DA022510C0C1C1A5931C6B31649EA029F332D551C0C1EC, 시험 B54AD997A8AA7B71E699ED7EEF7DAB4929F7179EEAC9BF9CD8AE3D0DC0445E68. 잔여 합성 핸들0. 기존 고정 Node 적재물·원 수거기·관측 한도 변경0.
+
+실제 SSH adapter·외부 원장 발급과 현재 SSH image/config/host trust·ip 신원은 미구현 또는 미확정이다. 인자와 합성 영수증은 실제 SSH 설정의 Match exec 부재나 실제 승인 증거가 아니다. 실제 프로세스·SSH·WSL·Docker/IPAM·DB·권한·키·서비스·Agent 접근0. 다음은 합성 carrier의 현행 신원/실행 선행을 동결 실행안으로 좁히고, 별도 읽기 또는 승인 필요 근거를 합쳐 제시하는 것이다. TC01 저장·재조회 미완료. 롤백은 신규 두 경로와 작업 기록의 추가분에 한정한다.
