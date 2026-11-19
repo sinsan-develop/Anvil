@@ -21381,3 +21381,9 @@ Main의 exit 전후 반례 RED 04fba7을 보완했다. 담당 직접·인접 22�
 담당 시험에서 신규 모듈 부재 RED 9e8399와 인자 누락·정상 close 뒤 전송 예외 반례 78155e를 보완했다. 담당 직접·인접 16통과 32c475·좁은 strict 타입 종료0 420893. Main 16통과·실패/건너뜀0 1042f3, 지문 2/2와 공백 e0aae3. 소스 SHA256 263FD78210E4BD2997DA022510C0C1C1A5931C6B31649EA029F332D551C0C1EC, 시험 B54AD997A8AA7B71E699ED7EEF7DAB4929F7179EEAC9BF9CD8AE3D0DC0445E68. 잔여 합성 핸들0. 기존 고정 Node 적재물·원 수거기·관측 한도 변경0.
 
 실제 SSH adapter·외부 원장 발급과 현재 SSH image/config/host trust·ip 신원은 미구현 또는 미확정이다. 인자와 합성 영수증은 실제 SSH 설정의 Match exec 부재나 실제 승인 증거가 아니다. 실제 프로세스·SSH·WSL·Docker/IPAM·DB·권한·키·서비스·Agent 접근0. 다음은 합성 carrier의 현행 신원/실행 선행을 동결 실행안으로 좁히고, 별도 읽기 또는 승인 필요 근거를 합쳐 제시하는 것이다. TC01 저장·재조회 미완료. 롤백은 신규 두 경로와 작업 기록의 추가분에 한정한다.
+
+## IX01 SSH 메타 사전검산·관측 단계의 실행 후보 대조
+
+기준 `834b998f`, developer_primary 단일 작성·반환. 신규 `docs/work_packages/IX01_SUBNET_OBSERVATION_SINGLE_ATTEMPT_EXECUTION_CANDIDATE.md` SHA256 AB8870DE7AD6645F7E0D8849B0E778459F0DD7C11FD5897E59D2F16485F1DA93. 기존 OS·등록된 SSH host 신뢰에서 현재 신원을 한정 확인하고, 최초 ip 지문 측정과 이후 변경 검산을 구분한다. 기존 source의 ip/적재물 사전 결박 때문에 메타 SSH 최대1회 후 관측 SSH 최대1회를 한 상위 시도·공유60초 안에 넣는 안을 비교했다. 기존 SSH 총1회와 분리되는 미채택 후보이며 실행 권한을 만들지 않는다.
+
+Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 예외·명령 및 보존 한도를 대조했다. 실제 host metadata·설정·키·원격/DB·권한·서비스·Agent 실행0, 신규 시험0. 후속 소스는 원격 ip 메타 helper와 Windows 현행 신원/로컬 단발 기록·carrier의 최소 포트다. 실제 접근 전에 정확 source·대상·한도·종료/보존과 SSH 횟수 차이를 한 실행안에 결박한다. TC01은 미완료다.
