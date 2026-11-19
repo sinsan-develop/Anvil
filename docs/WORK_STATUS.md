@@ -21163,3 +21163,9 @@ C안의 서버·실행기 소비·미적용 SQL 소스 구간을 검수했다. �
 변경 제품 5경로는 shell, 원 등록 owner, worker entry, 보호 host client, 최초 수신 client다. 기존 시험 2경로를 수정했다. 오래된 OPEN 취소의 UNKNOWN 분류 오류가 변경본 `c58360`과 기준 원본 `6c5891`에 똑같이 재현됐다. Main 3파일 155통과·1실패(`386afd`) 이후 취소를 확인한 경우만 원 guard 오류를 유지하도록 보완했다. 현재 문맥에서 실제 전송이 실패하면 UNKNOWN이며 서명/재시도 0인 검사를 추가했다. 기존 시험 기대값은 유지했다.
 
 최종 담당자 3파일 157통과·실패/건너뜀0(`e89f97`), desktop·root 타입 `ecc1d4`·`a50ee3` 종료0. Main 원 취소(`26ad7e`)와 전송 불명(`388f91`) 각 1통과, 동결 지문 7개와 공백 검사 종료0(`b04a50`). 선행 지문의 시험 출력이 절단된 실행과 타입 설정 경로 누락은 성공 합계에서 제외했다. 활성 핸들0. RAM은 package 단회 수령, owner 생성·등록 준비, 목적별 읽기/폴더, 늦은 응답, 정상·불명 종료를 검산했다. 실제 Windows package·프로세스, 전체 등록 완료→설정→첫 수신, 실제 DB·C#·SDK/Agent는 미검증이다. 복구는 이 변경 단위의 신규 worker 진입을 되돌리며 기존 보호 기록을 보존한다. 다음은 원 SDK START/FIRST3와 실제 child 감독 조립이다.
+
+## FN07/FN08 START 이전 실행 현재성의 미충족 근거
+
+기준 `2df6bd25`, 기존 담당자와 실제 호출선 대조 결과 제품 worker가 START 전에 쓸 원 current 공급자가 연결되지 않았다. 필수 값은 원 명령/attempt/grant/sourceObservationRefs/osOwnershipRef와 시각·기한이다. C의 SEND permit 응답은 그 이후이며, 원 START 전에는 실제 child가 없어 child 자신의 RUNNING 관측을 선행으로 사용할 수 없다. 기존 BOOTSTRAP_PREPARED는 최초 수용 기록이다.
+
+현재 native 준비 객체는 성공 직후 곧바로 해제되지 않지만 원 receiver와 최초부터 최대10초 host 유효 범위에서만 다시 읽을 수 있다. 현재 코드의 로컬 미재개 이력은 실제 물리 suspended 상태나 외부 handle 간섭 배제, 파일 격리 증명이 아니다. 별도 후보 `docs/contracts/FN08_NORMAL_START_PRESPAWN_CURRENT_CANDIDATE.md` SHA256 EF10FB357619D456DC936AF19746FCA9C4E0C3C94B0C37B1618178D162923DB9를 정리했다. 기존 RUNNING/STOP, 원 기한, 최초 영수증을 유지한다. 실제 물리 근거/수명 및 별도 source와 writer 현재성 생산자가 없어 시작을 허가하지 않는다. 후보는 미채택, 문서 공백 검사만 수행했으며 제품·시험·실제 실행0이다.
