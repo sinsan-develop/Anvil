@@ -3,6 +3,8 @@ const path=require('node:path'),{types}=require('node:util'),{EventEmitter}=requ
 const {canonicalJson,contentHash,catalogueExact}=require('./runtime-catalogue-profile.cjs');
 const sdkBootstrapMode=Symbol('sdk-bootstrap');
 const sdkBootstrapEndpoints=new WeakMap();
+const liveChannels=new WeakMap(),sdkBootstrapWorkers=new WeakMap(),sdkBootstrapPorts=new WeakMap();
+const unconfirmedSdkWorkers=new Map();
 const intrinsicLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype),'byteLength')?.get;
 
 /** @returns {never} */function unavailable(){throw Error('PROTECTION_UNAVAILABLE');}
@@ -63,7 +65,7 @@ async function executionConfiguration(action,attemptId,value){
   return result;
  }catch(error){if(dispatched)latch();throw error;}finally{bytes.fill(0);}
 }
-retained=Object.freeze({send,close,executionConfiguration});if(signal.aborted){abort();return uncertain();}guard();return retained;}
+retained=Object.freeze({send,close,executionConfiguration});liveChannels.set(retained,{check:()=>{guard();stable();if(sticky||closed||ending)return uncertain();},env});if(signal.aborted){abort();return uncertain();}guard();return retained;}
 return Object.freeze({open,closeOwned:async()=>retained?retained.close():{state:'UNKNOWN'}});}
 
 /** 실제 driver는 명시 호출 때만 동작한다. 자동 fallback/재시작/재접속은 없다.
@@ -77,24 +79,67 @@ function createSdkBootstrapClient(input,ports){
  return Object.freeze({open:async(/** @type {any} */lease,/** @type {number} */epoch)=>{
   if(used||!Number.isSafeInteger(epoch)||epoch<1)return unavailable();used=true;
   const endpointId=Reflect.apply(uuid,ports,[]);if(typeof endpointId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(endpointId))return unavailable();
-  let attempted=false,accepted=false,closed=false;const narrow=own(lease,'narrow');if(typeof narrow!=='function')return unavailable();const channel=await client.open(lease);
+  let attempted=false,accepted=false,closed=false;
+/** @type {Promise<any>|undefined} */
+/** @type {Promise<any>|undefined} */let closeWork;const narrow=own(lease,'narrow');if(typeof narrow!=='function')return unavailable();const channel=await client.open(lease);
   try{
    const r=catalogueExact(await channel.send('SDK_BOOTSTRAP_PREPARE',{endpointId,epoch}),'state,endpointId,epoch,manifestHash,recipeRef,expiresAt');
    const ref=catalogueExact(r.recipeRef,'id,version,contentHash');
    if(r.state!=='SDK_BOOTSTRAP_PREPARED'||r.endpointId!==endpointId||r.epoch!==epoch||typeof r.manifestHash!=='string'||!/^[0-9a-f]{64}$/.test(r.manifestHash)||typeof ref.id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(ref.id)||!Number.isSafeInteger(ref.version)||ref.version<1||typeof ref.contentHash!=='string'||!/^[0-9a-f]{64}$/.test(ref.contentHash)||typeof r.expiresAt!=='string'||!Number.isFinite(Date.parse(r.expiresAt))||new Date(r.expiresAt).toISOString()!==r.expiresAt||Date.parse(r.expiresAt)>Date.parse(lease.callExpiresAt()))return uncertain();
    Reflect.apply(narrow,lease,[Date.parse(r.expiresAt)]);
    const proof=JSON.parse(canonicalJson(r));
-   const check=()=>{lease.check();if(closed||own(lease,'narrow')!==narrow||lease.signal.aborted||lease.remainingMs()<=0)return unavailable();};check();
+   const check=()=>{const current=liveChannels.get(channel);if(!current)return unavailable();current.check();lease.check();if(closed||own(lease,'narrow')!==narrow||lease.signal.aborted||lease.remainingMs()<=0)return unavailable();};check();
    const original=Object.freeze({read:()=>{check();return JSON.parse(canonicalJson(proof));},accept:async()=>{
     check();if(attempted)return unavailable();attempted=true;
     const reply=catalogueExact(await channel.send('SDK_BOOTSTRAP_ACCEPT',{endpointId,epoch,manifestHash:proof.manifestHash}),'state,endpointId,epoch,manifestHash');check();
     if(reply.state!=='SDK_BOOTSTRAP_ACCEPTED'||reply.endpointId!==endpointId||reply.epoch!==epoch||reply.manifestHash!==proof.manifestHash)return uncertain();accepted=true;
-   },close:async()=>{closed=true;return channel.close();}});
+   },close:()=>{closed=true;if(!closeWork)closeWork=channel.close();return closeWork;}});
    sdkBootstrapEndpoints.set(original,()=>{check();if(!accepted)return unavailable();return JSON.parse(canonicalJson(proof));});
+   sdkBootstrapWorkers.set(original,{check:()=>{check();if(!accepted)return unavailable();},proof,lease,channel,helper:bindingForWorker(input)});
    return original;
-  }catch(error){try{await channel.close();}catch{}throw error;}
+  }catch(error){try{if((await channel.close()).state!=='CLOSED_CONFIRMED')return uncertain();}catch{return uncertain();}throw error;}
  }});
 }
 /** 원 package 채널을 보유한 수령 직후 전용 endpoint 조립자가 1회 소비한다. 폐쇄 뒤 발급은 없다. @param {object} original */
 function takeSdkBootstrapEndpoint(original){const read=sdkBootstrapEndpoints.get(original);if(!read)return unavailable();sdkBootstrapEndpoints.delete(original);return read();}
-module.exports={createTrustKeyHostClient,createSdkBootstrapClient,takeSdkBootstrapEndpoint,nodeKeyHostSpawn};
+/** 원 native admission을 소비하며 두 port를 직접 발급한다. 외부 port는 받지 않는다. @param {object} original */
+function createSdkBootstrapEndpoint(original){const proof=takeSdkBootstrapEndpoint(original),{MessageChannel}=require('node:worker_threads'),{port1,port2}=new MessageChannel();
+ const endpoint=Object.freeze({endpoint:Object.freeze({endpointId:proof.endpointId,epoch:proof.epoch}),port:port2,brokerPort:port1,close:()=>{port1.close();port2.close();}});
+ sdkBootstrapPorts.set(endpoint,{original,port:port2});return endpoint;
+}
+/** 원 helper와 같은 보호 ASAR의 고정 entry만 선택한다. @param {any} input */
+function bindingForWorker(input){return catalogueExact(input,'path,signerRef,helperHash').path;}
+/** 열린 원 package 채널에서만 고정 worker를 생성한다. 공개 IPC/파일 경로/Worker factory 입력은 없다.
+ * endpoint는 같은 조립 함수가 만든 전용 port이며 proof 복사본은 생성 권위가 아니다.
+ * @param {any} original @param {any} endpoint @param {any} context @param {string} connectorVersion
+ */
+async function launchSdkBootstrapWorker(original,endpoint,context,connectorVersion){
+ const owned=sdkBootstrapWorkers.get(original);if(!owned||unconfirmedSdkWorkers.size)return unavailable();sdkBootstrapWorkers.delete(original);owned.check();
+ const {Worker,MessageChannel}=require('node:worker_threads'),ports=sdkBootstrapPorts.get(endpoint);
+ if(!ports||ports.original!==original||ports.port!==endpoint.port)return unavailable();sdkBootstrapPorts.delete(endpoint);
+ const binding=catalogueExact(endpoint.endpoint,'endpointId,epoch'),ctx=catalogueExact(context,'origin,identity,authEpoch');
+ if(canonicalJson(binding)!==canonicalJson({endpointId:owned.proof.endpointId,epoch:owned.proof.epoch})||typeof connectorVersion!=='string'||!(/^[A-Za-z0-9._+-]{1,80}$/).test(connectorVersion))return unavailable();
+ const native=liveChannels.get(owned.channel);if(!native)return unavailable();owned.check();
+ const {port1,port2}=new MessageChannel(),entry=path.win32.join(path.win32.dirname(owned.helper),'app.asar','src','normal-sdk-worker-entry.cjs');
+ /** @type {any} */let worker;let settled=false,lost=false;
+/** @type {ReturnType<typeof setTimeout>|undefined} */let timer;
+ try{
+  owned.check();worker=new Worker(entry,{execArgv:[],argv:[],env:{...native.env},stdin:false,stdout:true,stderr:true,
+   workerData:{purpose:'NORMAL_SDK_ENROLLMENT_OWNER_V1',endpoint:JSON.parse(canonicalJson(binding)),context:JSON.parse(canonicalJson(ctx)),connectorVersion,port:port2,registrationPort:endpoint.port},transferList:[port2,endpoint.port]});
+  owned.check();
+  await new Promise((resolve,reject)=>{
+   const fail=()=>{lost=true;if(settled)return;settled=true;clearTimeout(timer);reject(Error('OUTCOME_UNKNOWN'));};
+   const ready=(/** @type {unknown} */raw)=>{try{owned.check();const r=catalogueExact(raw,'purpose,endpointId,epoch');if(r.purpose!=='NORMAL_SDK_ENROLLMENT_OWNER_READY'||r.endpointId!==binding.endpointId||r.epoch!==binding.epoch)return fail();if(settled)return;settled=true;clearTimeout(timer);resolve(null);}catch{fail();}};
+   worker.once('message',ready);worker.once('error',fail);worker.once('exit',fail);worker.stdout?.on('data',fail);worker.stderr?.on('data',fail);
+   timer=setTimeout(fail,Math.max(1,Math.floor(owned.lease.remainingMs())));
+  });
+  owned.check();if(lost)return uncertain();const closed=await original.close();if(closed.state!=='CLOSED_CONFIRMED'||lost)return uncertain();
+  return Object.freeze({worker,port:port1,check:()=>{if(lost)return uncertain();},endpoint:JSON.parse(canonicalJson(binding)),retain:()=>unconfirmedSdkWorkers.set(worker,{worker,port:port1,endpoint}),stop:()=>stopSdkWorker(worker,10000)});
+ }catch(error){port1.close();port2.close();endpoint.close();let unknown=false;if(worker){let ms=0;try{ms=Math.max(0,Math.min(10000,owned.lease.remainingMs()));}catch{}if((await stopSdkWorker(worker,ms)).state!=='CLOSED_CONFIRMED')unknown=true;}try{if((await original.close()).state!=='CLOSED_CONFIRMED')unknown=true;}catch{unknown=true;}if(unknown)return uncertain();throw error;}
+ finally{if(timer!==undefined)clearTimeout(timer);}
+}
+/** 원 worker 한 개의 종료만 수거한다. 불명 결과는 재시도/재발급하지 않는다. @param {any} worker @param {number} ms */
+async function stopSdkWorker(worker,ms){if(!unconfirmedSdkWorkers.has(worker))unconfirmedSdkWorkers.set(worker,{worker});let timer;
+ try{const termination=worker.terminate();const code=await Promise.race([termination,new Promise(resolve=>{timer=setTimeout(()=>resolve(null),ms);})]);if(!Number.isInteger(code))return{state:'UNKNOWN'};unconfirmedSdkWorkers.delete(worker);return{state:'CLOSED_CONFIRMED'};}catch{return{state:'UNKNOWN'};}finally{if(timer!==undefined)clearTimeout(timer);}
+}
+module.exports={createTrustKeyHostClient,createSdkBootstrapClient,takeSdkBootstrapEndpoint,createSdkBootstrapEndpoint,launchSdkBootstrapWorker,nodeKeyHostSpawn};

@@ -49,7 +49,7 @@ function bootstrapCarrier(change=x=>x){
  const abort=new AbortController();let end=Date.now()+9000;
  const lease={signal:abort.signal,narrow:value=>{end=Math.min(end,value);},check(){if(abort.signal.aborted)throw Error('CONTEXT_CHANGED');},remainingMs:()=>end-Date.now(),callExpiresAt:()=>new Date(end).toISOString()};
  const client=createSdkBootstrapClient({path:'C:\\Anvil\\AnvilTrustKeyHost.exe',signerRef:{id:randomUUID(),version:1,contentHash:sha},helperHash:sha},{readImage:async()=>Buffer.from(image),companion:async()=> 'ABSENT',environment:()=>({SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows'}),uuid:randomUUID,spawn:(_exe,args)=>{assert.deepEqual(args,['--normal-sdk-bootstrap']);return endpoint;}});
- return{client,lease,calls,abort};
+ return{client,lease,calls,abort,child:endpoint};
 }
 test('원 bootstrap 채널만 같은 endpoint·epoch에서 한 번 수령하고 확정 폐쇄한다',async()=>{
  const m=bootstrapCarrier(),lease=await m.client.open(m.lease,4),proof=lease.read();assert.equal(proof.epoch,4);
@@ -116,4 +116,142 @@ test('등록 endpoint의 끝난 요청은 native host frame 한도로 누적 제
  const human=registrationHuman();let calls=0;const session={fetch:async()=>{calls++;return new Response(JSON.stringify(human),{headers:{'content-type':'application/json'}});}},context=()=>({origin:'https://project.invalid',identity:'view-1',authEpoch:2});
  const bridge=await registrationEndpoint(session,context),worker=createRegistrationWorkerChannel(bridge.port),owned=registrationLease();
  try{const client=createWorkerRegistrationClient(bridge.endpoint,worker,owned.lease);for(let i=0;i<65;i++)await client.human(human.projectId,human.registrationRef.id);assert.equal(calls,65);}finally{worker.close();bridge.close();}
+});
+
+test('등록 session은 설정과 첫 수신을 같은 원 owner에 보유하고 미등록에는 보호 기능을 열지 않는다',async()=>{
+ const {createTrustEnrollmentSession}=require('../../apps/desktop/src/trust-enrollment-owner.cjs');
+ const session=createTrustEnrollmentSession(()=>({origin:'https://project.invalid',identity:'one',authEpoch:1}),null);
+ assert.equal(session.getState().attemptId,null);assert.equal(session.isBusy(),false);
+ const result=await session.handleReceive('native-receive-status',{attemptId:randomUUID(),epoch:1});assert.equal(result.ok,false);
+ assert.equal((await session.configuration('PREPARE',{attemptId:randomUUID(),epoch:1,selection:{}})).ok,false);
+ assert.equal('createNativeFirstReceiveReceiver'in session,false);assert.equal('createExecutionConfigurationController'in session,false);
+ session.invalidate();assert.equal(session.getState().attemptId,null);
+});
+
+test('열린 package 채널의 조기 종료 뒤에는 원 endpoint를 발급하지 않는다',async()=>{
+ const m=bootstrapCarrier(),original=await m.client.open(m.lease,4);await original.accept();
+ m.child.emit('close',0);
+ assert.throws(()=>require('../../apps/desktop/src/trust-key-host-client.cjs').takeSdkBootstrapEndpoint(original),/PROTECTION_UNAVAILABLE|OUTCOME_UNKNOWN/);
+ assert.equal((await original.close()).state,'UNKNOWN');
+});
+
+function isolatedWorkerFixture(closeState='CLOSED_CONFIRMED'){
+ const Module=require('node:module'),threads=require('node:worker_threads'),instances=[],owners=[];
+ const compile=(name,overrides)=>{const file=require.resolve('../../apps/desktop/src/'+name),loaded=new Module(file,module),base=Module.createRequire(file);loaded.filename=file;loaded.paths=module.paths;loaded.require=id=>Object.hasOwn(overrides,id)?overrides[id]:base(id);loaded._compile(readFileSync(file,'utf8'),file);return loaded.exports;};
+ const realOwner=require('../../apps/desktop/src/trust-enrollment-owner.cjs'),dependencies=[];
+ const deps={uuid:randomUUID,now:Date.now,monotonic:()=>performance.now(),schedule:(f,ms)=>{const timer=setTimeout(f,ms);return()=>clearTimeout(timer);},createOperation:async(lease,pending)=>{
+  let record=structuredClone(pending);const material={value:{snapshot:{expiresAt:new Date(Date.now()+8000).toISOString(),entries:[{sha256:'a'.repeat(64)}]}}};
+  return{current:async()=>material,readState:async()=>({record}),appendRecord:async row=>{record=structuredClone(row);return{record};},createKey:async id=>({keyId:id,publicKeySpki:'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEYP7UuiVanTHJYet0xjVtaMBJuJI7Yfps5mliLmDyn7Z5A_4QCLi8maQa6elWKLxk8vGyDC1-n1F3o8KU1EYimQ',fingerprint:'5a7a78cca4a0f420d9bc62bb669c3c2759e39f723d3ae10dcbe0f0815a07ecd4'}),close:async()=>({state:closeState})};
+ }};
+ class RamWorker extends EventEmitter{
+  constructor(file,options){super();instances.push(this);this.stdout=new EventEmitter();this.stderr=new EventEmitter();this.file=file;this.options=options;this.parent=new EventEmitter();this.parent.postMessage=v=>queueMicrotask(()=>this.emit('message',structuredClone(v)));queueMicrotask(()=>{try{compile('normal-sdk-worker-entry.cjs',{'node:worker_threads':{...threads,isMainThread:false,workerData:options.workerData,parentPort:this.parent},'./trust-enrollment-owner.cjs':{...realOwner,createDesktopTrustDependencies:()=>({...deps}),createTrustEnrollmentSession:(...args)=>{const owner=realOwner.createTrustEnrollmentSession(...args);owners.push(owner);dependencies.push(args[1]);return owner;}}});}catch(e){this.emit('error',e);}});}
+  async terminate(){this.terminations=(this.terminations??0)+1;this.parent.emit('close');this.emit('exit',0);return 0;}
+ }
+ const host=compile('trust-key-host-client.cjs',{'node:worker_threads':{...threads,Worker:RamWorker}}),entry=compile('normal-sdk-worker-entry.cjs',{'./trust-key-host-client.cjs':host});
+ return{host,entry,instances,owners,dependencies,deps};
+}
+test('고정 worker entry는 열린 package와 원 endpoint 안에서 등록 owner 하나를 처음 생성한다',async()=>{
+ const f=isolatedWorkerFixture(),m=bootstrapCarrier(),context={origin:'https://project.invalid',identity:'view-1',authEpoch:2};
+ // 같은 원 carrier fixture를 새 host 모듈에 그대로 연결한다. 실제 Worker/OS child는 0이다.
+ const image=Buffer.from('synthetic-helper'),hash=createHash('sha256').update(image).digest('hex');
+ const native=f.host.createSdkBootstrapClient({path:'C:\\Anvil\\resources\\AnvilTrustKeyHost.exe',signerRef:{id:randomUUID(),version:1,contentHash:hash},helperHash:hash},{readImage:async()=>Buffer.from(image),companion:async()=>'ABSENT',environment:()=>({SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows'}),uuid:randomUUID,spawn:()=>m.child});
+ const original=await native.open(m.lease,4);await original.accept();
+ const proxy=await f.entry.createSdkEnrollmentSession(original,{fetch:async()=>{assert.fail('unexpected HUMAN');}},()=>context,'1.0.0',async()=>{assert.fail('unexpected dialog');},()=>{});
+ try{
+  assert.equal(f.instances.length,1);assert.equal(f.owners.length,1);assert.equal(proxy.getState().contextEpoch,4);assert.equal(proxy.getState().phase,'IDLE');
+  assert.equal(f.instances[0].file,'C:\\Anvil\\resources\\app.asar\\src\\normal-sdk-worker-entry.cjs');assert.deepEqual(f.instances[0].options.execArgv,[]);assert.deepEqual(f.instances[0].options.env,{SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows'});
+  const pending=proxy.handle('trust-begin',{requestId:randomUUID(),epoch:4,confirmNewKey:true,label:'원 worker'});assert.equal(proxy.isBusy(),true);const result=await pending;
+  assert.equal(result.ok,true);assert.equal(result.state.phase,'KEY_READY');assert.equal(proxy.getState().attemptId,f.owners[0].getState().attemptId);assert.equal(proxy.isBusy(),false);
+  assert.equal((await proxy.handleReceive('native-receive-status',{attemptId:result.state.attemptId,epoch:4})).ok,false);
+  assert.equal((await proxy.configuration('PREPARE',{attemptId:result.state.attemptId,epoch:4,selection:{}})).ok,false);
+  await assert.rejects(f.host.launchSdkBootstrapWorker(original,{},context,'1.0.0'));assert.equal(f.instances.length,1);
+ }finally{assert.equal((await proxy.close()).state,'CLOSED_CONFIRMED');}
+});
+
+async function openWorkerModel(session,directory=async()=>null,options={}){
+ const f=isolatedWorkerFixture(options.closeState),m=bootstrapCarrier(),context=options.context??{origin:'https://project.invalid',identity:'view-1',authEpoch:2},image=Buffer.from('synthetic-helper'),hash=createHash('sha256').update(image).digest('hex');
+ const native=f.host.createSdkBootstrapClient({path:'C:\\Anvil\\resources\\AnvilTrustKeyHost.exe',signerRef:{id:randomUUID(),version:1,contentHash:hash},helperHash:hash},{readImage:async()=>Buffer.from(image),companion:async()=>'ABSENT',environment:()=>({SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows'}),uuid:randomUUID,spawn:()=>m.child});
+ const original=await native.open(m.lease,options.epoch??4);await original.accept();
+ const proxy=await f.entry.createSdkEnrollmentSession(original,session,options.current??(()=>context),'1.0.0',directory,()=>{});
+ return{...f,proxy,context};
+}
+function existingConfigurationFixture(){
+ // 기존 설정 fixture의 원 정의만 RAM으로 재사용한다. 기존 시험/실제 파일 포트는 실행하지 않는다.
+ const file=require.resolve('./normal-execution-configuration.test.cjs'),source=readFileSync(file,'utf8'),end=source.indexOf('function harness(');
+ return new Function('require',source.slice(0,end)+'\nreturn fixture();')(require('node:module').createRequire(file));
+}
+test('원 worker 설정 client는 고정 HUMAN 두 GET과 원기한 폴더 대화만 main에 중계한다',async()=>{
+ const fixture=existingConfigurationFixture(),calls=[];let dialog=0;
+ const h=await openWorkerModel({fetch:async(url,options)=>{calls.push(url);assert.equal(options.method,'GET');assert.equal(options.credentials,'include');return new Response(canonicalJson(fixture.views[calls.length-1]),{headers:{'content-type':'application/json'}});}},async lease=>{lease.check();dialog++;return'C:\\source';});
+ try{const life=new AbortController(),lease={signal:life.signal,check:()=>{},expiresAt:Date.now()+3000},reader=await h.dependencies[0].createExecutionConfigurationClient(lease);
+  const result=await reader.read(fixture.selection);assert.deepEqual(result.environment.snapshot,fixture.views[0].snapshot);assert.deepEqual(result.profile.snapshot,fixture.views[1].snapshot);assert.equal(calls.length,2);
+  assert.equal(await h.dependencies[0].selectExecutionDirectory(lease),'C:\\source');assert.equal(dialog,1);assert.equal(h.owners.length,1);
+  await assert.rejects(h.dependencies[0].selectExecutionDirectory({...lease,expiresAt:undefined}));assert.equal(dialog,1);
+ }finally{assert.equal((await h.proxy.close()).state,'CLOSED_CONFIRMED');}
+});
+test('원 worker 폴더 대기 중 인증 세대가 바뀌면 늦은 선택을 폐기하고 원 채널을 회수한다',async()=>{
+ let release,entered;const waiting=new Promise(resolve=>{entered=resolve;});
+ const h=await openWorkerModel({fetch:async()=>assert.fail('GET0')},lease=>{lease.check();entered();return new Promise(resolve=>{release=resolve;});});
+ const result=h.dependencies[0].selectExecutionDirectory({check:()=>{},expiresAt:Date.now()+3000});await waiting;h.context.authEpoch++;
+ release('C:\\source');await assert.rejects(result);assert.equal((await h.proxy.close()).state,'CLOSED_CONFIRMED');assert.equal(h.instances.length,1);
+});
+test('원 worker HUMAN 첫 응답 중 문맥 상실은 두 번째 GET과 설정 채택을 막는다',async()=>{
+ const fixture=existingConfigurationFixture();let h,calls=0;
+ h=await openWorkerModel({fetch:async()=>{calls++;h.context.authEpoch++;return new Response(canonicalJson(fixture.views[0]),{headers:{'content-type':'application/json'}});}});
+ const reader=await h.dependencies[0].createExecutionConfigurationClient({signal:new AbortController().signal,check:()=>{}});
+ await assert.rejects(reader.read(fixture.selection));assert.equal(calls,1);assert.equal((await h.proxy.close()).state,'CLOSED_CONFIRMED');
+});
+
+function existingElectronFixture(){
+ const s=readFileSync(require.resolve('./desktop-trust-registration.test.cjs'),'utf8'),start=s.indexOf('function electronFixture(){'),end=s.indexOf('async function until',start);
+ return new Function('require','assert','EventEmitter',s.slice(start,end)+'return electronFixture();')(require,assert,EventEmitter);
+}
+async function shellModel(bootstrap){
+ const e=existingElectronFixture(),f=isolatedWorkerFixture(),Module=require('node:module'),file=require.resolve('../../apps/desktop/src/shell.cjs'),m=new Module(file,module),base=Module.createRequire(file),owner=require('../../apps/desktop/src/trust-enrollment-owner.cjs');
+ e.electron.app.getVersion=()=> '1.0.0';e.electron.session.fromPartition('persist:anvil-web').fetch=async()=>assert.fail('unexpected Session request');m.filename=file;m.paths=module.paths;m.require=id=>id==='node:fs/promises'?e.io:id==='./trust-enrollment-owner.cjs'?{...owner,createDesktopTrustDependencies:()=>({...f.deps}),createDesktopSdkEnrollmentSession:bootstrap}:base(id);m._compile(readFileSync(file,'utf8'),file);const shell=await m.exports.createShell(e.electron);
+ const call=(name,input)=>{const w=e.windows[0].webContents;return e.handlers.get('anvil:'+name)({sender:w,senderFrame:w.mainFrame},input);};
+ await call('connect',{serverOrigin:'https://project.invalid',replaceInvalidConfig:false});return{...e,shell,call};
+}
+test('shell은 원 KEY_READY 등록을 신규 SDK owner로 자동 교체하지 않는다',async()=>{
+ let bootstraps=0;const h=await shellModel(async()=>{bootstraps++;return null;});let status=await h.call('trust-status',{attemptId:null,epoch:null});
+ const first=await h.call('trust-begin',{requestId:randomUUID(),epoch:status.state.contextEpoch,confirmNewKey:true,label:'원 등록'});assert.equal(first.ok,true);assert.equal(first.state.phase,'KEY_READY');assert.equal(bootstraps,1);
+ const second=await h.call('trust-begin',{requestId:randomUUID(),epoch:first.state.contextEpoch,confirmNewKey:true,label:'새 시도'});assert.equal(second.ok,false);assert.equal(bootstraps,1);
+ status=await h.call('trust-status',{attemptId:first.state.attemptId,epoch:first.state.contextEpoch});assert.equal(status.state.attemptId,first.state.attemptId);
+});
+test('shell 인증 전환 중 늦은 bootstrap은 일반 등록을 재개하지 않고 새 owner도 채택하지 않는다',async()=>{
+ let release,entered;const started=new Promise(resolve=>{entered=resolve;});let bootstraps=0;
+ const h=await shellModel(async()=>{bootstraps++;entered();return new Promise(resolve=>{release=resolve;});});const status=await h.call('trust-status',{attemptId:null,epoch:null});
+ const work=h.call('trust-begin',{requestId:randomUUID(),epoch:status.state.contextEpoch,confirmNewKey:true,label:'원 시도'});await started;
+ await assert.rejects(h.call('client-quit',{ackUnverifiedRuntime:true}),/CLIENT_BUSY_OR_UNKNOWN/);assert.equal(h.quits(),0);
+ h.sessions.get('persist:anvil-web').cookies.emit('changed');release(null);const result=await work;assert.equal(result.ok,false);assert.equal(result.error.code,'CONTEXT_CHANGED');
+ const current=await h.call('trust-status',{attemptId:null,epoch:null});assert.equal(current.state.attemptId,null);assert.equal(current.state.phase,'IDLE');
+ const retry=await h.call('trust-begin',{requestId:randomUUID(),epoch:current.state.contextEpoch,confirmNewKey:true,label:'새 시도'});assert.equal(retry.error.code,'OUTCOME_UNKNOWN');assert.equal(bootstraps,1);
+});
+
+test('shell 정상 종료는 신규 원 worker의 native close 후 두 endpoint와 worker를 한 번 회수한다',async()=>{
+ let model;const h=await shellModel(async(_electron,session,current,epoch,directory)=>{model=await openWorkerModel(session,directory,{context:current(),current,epoch});return model.proxy;});
+ const status=await h.call('trust-status',{attemptId:null,epoch:null}),begun=await h.call('trust-begin',{requestId:randomUUID(),epoch:status.state.contextEpoch,confirmNewKey:true,label:'고정 worker'});
+ assert.equal(begun.ok,true,JSON.stringify({code:begun.error?.code,phase:begun.state?.phase,model:model?.proxy.getState().phase,epoch:model?.proxy.getState().contextEpoch}));assert.equal(begun.state.phase,'KEY_READY');assert.equal(model.owners.length,1);
+ await h.call('client-quit',{ackUnverifiedRuntime:true});assert.equal(h.quits(),1);assert.equal(model.instances[0].terminations,1);assert.equal((await model.proxy.close()).state,'CLOSED_CONFIRMED');assert.equal(model.instances[0].terminations,1);
+});
+test('원 worker native close 불명은 정상 종료와 재발급을 열지 않는다',async()=>{
+ const h=await openWorkerModel({fetch:async()=>assert.fail('GET0')},undefined,{closeState:'UNKNOWN'});
+ const result=await h.proxy.handle('trust-begin',{requestId:randomUUID(),epoch:4,confirmNewKey:true,label:'종료 불명'});assert.equal(result.ok,false);assert.equal(h.proxy.getState().phase,'UNKNOWN');
+ assert.equal((await h.proxy.close()).state,'UNKNOWN');assert.equal((await h.proxy.close()).state,'UNKNOWN');assert.equal(h.instances[0].terminations??0,0);
+ assert.equal(h.proxy.getState().phase,'UNKNOWN');
+ // 보존 판정 뒤 시험 소유 RAM MessagePort만 해제한다. 제품 close 재시도나 OS 회수가 아니다.
+ h.instances[0].options.workerData.port.close();h.instances[0].options.workerData.registrationPort.close();h.instances[0].parent.emit('close');
+});
+test('고정 배포 profile이 없으면 shell bootstrap은 파일·원 worker·SDK를 열지 않는다',async()=>{
+ let reads=0;const electron=new Proxy({}, {get(){reads++;assert.fail('no application observation');}});
+ assert.equal(await require('../../apps/desktop/src/trust-enrollment-owner.cjs').createDesktopSdkEnrollmentSession(electron,null,()=>{assert.fail('no context');},1,()=>{assert.fail('no dialog');},()=>{}),null);assert.equal(reads,0);
+});
+
+test('복사한 endpoint·다른 port 또는 폐쇄한 native 채널은 고정 worker 생성0이다',async()=>{
+ for(const kind of ['copy','port','closed']){
+  const f=isolatedWorkerFixture(),m=bootstrapCarrier(),image=Buffer.from('synthetic-helper'),hash=createHash('sha256').update(image).digest('hex');
+  const native=f.host.createSdkBootstrapClient({path:'C:\\Anvil\\resources\\AnvilTrustKeyHost.exe',signerRef:{id:randomUUID(),version:1,contentHash:hash},helperHash:hash},{readImage:async()=>Buffer.from(image),companion:async()=>'ABSENT',environment:()=>({SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows'}),uuid:randomUUID,spawn:()=>m.child});
+  const original=await native.open(m.lease,4);await original.accept();const endpoint=f.host.createSdkBootstrapEndpoint(original);
+  const other=new(require('node:worker_threads').MessageChannel)();try{if(kind==='closed')await original.close();await assert.rejects(f.host.launchSdkBootstrapWorker(original,kind==='copy'?{...endpoint}:kind==='port'?{...endpoint,port:other.port2}:endpoint,{origin:'https://project.invalid',identity:'view',authEpoch:1},'1.0.0'));assert.equal(f.instances.length,0);}finally{other.port1.close();other.port2.close();endpoint.close();await original.close();}
+ }
 });

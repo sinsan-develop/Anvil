@@ -1,9 +1,9 @@
 'use strict';
 const {types}=require('node:util');
 const {randomUUID}=require('node:crypto');
-const {MessageChannel,MessagePort}=require('node:worker_threads');
+const {MessagePort}=require('node:worker_threads');
 const {canonicalJson,catalogueExact}=require('./runtime-catalogue-profile.cjs');
-const {takeSdkBootstrapEndpoint}=require('./trust-key-host-client.cjs');
+const {createSdkBootstrapEndpoint}=require('./trust-key-host-client.cjs');
 const {createTrustRegistrationClient}=require('./trust-registration-client.cjs');
 /** @typedef {'human'|'enroll'|'exchangeChallenge'|'issue'|'prove'} RegistrationMethod */
 const methods=Object.freeze({human:2,enroll:2,exchangeChallenge:4,issue:3,prove:3});
@@ -17,10 +17,10 @@ function safe(raw){const text=canonicalJson(raw);if(Buffer.byteLength(text)>6553
 /** 기존 등록 client와 같은 Session 메서드 identity를 endpoint 수명에도 고정한다. @param {object} session */
 function sessionTransport(session){let current=session;for(let depth=0;current&&depth<16;depth++){if(types.isProxy(current))fail();const d=Object.getOwnPropertyDescriptor(current,'fetch');if(d){if(!('value'in d)||typeof d.value!=='function'||types.isProxy(d.value))fail();return d.value;}current=Object.getPrototypeOf(current);}return fail();}
 /** 원 인증 package 채널을 소비한 main의 전용 등록 Session broker. URL/헤더/메서드 선택 RPC가 아니다.
- * @param {object} bootstrap @param {object} session @param {()=>{origin:string,identity:string,authEpoch:number}} context
+ * @param {{endpointId:string,epoch:number}} proof @param {object} session @param {()=>{origin:string,identity:string,authEpoch:number}} context
  */
-function createRegistrationSessionBroker(bootstrap,session,context){
- const proof=takeSdkBootstrapEndpoint(bootstrap),original=safe(context()),transport=sessionTransport(session);
+function createRegistrationSessionBroker(proof,session,context){
+ const original=safe(context()),transport=sessionTransport(session);
  const url=new URL(original.origin);if(url.protocol!=='https:'||url.origin!==original.origin||typeof original.identity!=='string'||!Number.isSafeInteger(original.authEpoch)||original.authEpoch<0)fail();
  let closed=false,busy=false,sequence=0;const operations=new Map();
  const guard=()=>{if(closed||sessionTransport(session)!==transport||canonicalJson(context())!==canonicalJson(original))fail('CONTEXT_CHANGED');};
@@ -74,7 +74,7 @@ function createWorkerRegistrationClient(endpoint,channel,lease){
  * @param {object} bootstrap @param {object} session @param {()=>{origin:string,identity:string,authEpoch:number}} context
  */
 function createRegistrationSessionEndpoint(bootstrap,session,context){
- const broker=createRegistrationSessionBroker(bootstrap,session,context),{port1,port2}=new MessageChannel();let closed=false;
+ const endpoint=createSdkBootstrapEndpoint(bootstrap);let broker;try{broker=createRegistrationSessionBroker(endpoint.endpoint,session,context);}catch(error){endpoint.close();throw error;}const port1=endpoint.brokerPort,port2=endpoint.port;let closed=false;
  const close=()=>{if(closed)return;closed=true;broker.close();port1.close();port2.close();};
  port1.on('message',async raw=>{
   try{
@@ -86,7 +86,7 @@ function createRegistrationSessionEndpoint(bootstrap,session,context){
   }catch{close();}
  });
  port1.on('messageerror',close);port1.on('close',close);
- return Object.freeze({endpoint:broker.endpoint,port:port2,close});
+ return endpoint;
 }
 /** 원 worker가 이전받은 등록 전용 port만 소비한다. @param {MessagePort} port */
 function createRegistrationWorkerChannel(port){
@@ -102,4 +102,101 @@ function createRegistrationWorkerChannel(port){
    });
   }});
 }
-module.exports={createRegistrationSessionEndpoint,createRegistrationWorkerChannel,createWorkerRegistrationClient};
+
+
+// 원 worker의 보호 client만 사용하는 닫힌 HUMAN 목적 표. binary OPEN/STREAM은 여기로 나오지 않는다.
+const humanRoutes=Object.freeze([
+ ['SESSION','GET',/^\/api\/v1\/session$/,8192],
+ ['PROFILE','GET',/^\/api\/v1\/projects\/([0-9a-f-]{36})\/native-channel-profile$/,2097152],
+ ['WINDOW_PREPARE','POST',/^\/api\/v1\/projects\/([0-9a-f-]{36})\/native-receive-windows$/,8192],
+ ['OPEN_CHALLENGE','POST',/^\/api\/v1\/projects\/([0-9a-f-]{36})\/native-receive-windows\/([0-9a-f-]{36})\/open-challenge$/,8192],
+ ['OFFER','GET',/^\/api\/v1\/projects\/([0-9a-f-]{36})\/native-receive-offers\/([0-9a-f-]{36})$/,2293760],
+ ['WINDOW_CLOSE','POST',/^\/api\/v1\/projects\/([0-9a-f-]{36})\/native-receive-windows\/([0-9a-f-]{36})\/close$/,8192],
+ ['WINDOW_STATE','GET',/^\/api\/v1\/projects\/([0-9a-f-]{36})\/native-receive-windows\/([0-9a-f-]{36})$/,8192],
+ ['SIGNING_CURRENT','GET',/^\/api\/v1\/projects\/([0-9a-f-]{36})\/native-receive-windows\/([0-9a-f-]{36})\/signing-current$/,2097152],
+ ['PHASE_CURRENT','POST',/^\/api\/v1\/projects\/([0-9a-f-]{36})\/native-receive-windows\/([0-9a-f-]{36})\/phase-signing-current$/,2097152],
+ ['ENVIRONMENT','GET',/^\/api\/v1\/projects\/([0-9a-f-]{36})\/environments\/([0-9a-f-]{36})\/versions\/([1-9][0-9]*)$/,4256256],
+ ['COMMAND_PROFILE','GET',/^\/api\/v1\/projects\/([0-9a-f-]{36})\/command-profile-metadata\/([0-9a-f-]{36})\/versions\/([1-9][0-9]*)$/,4256256]
+]);
+/** @param {any} raw @param {number} max */
+function bounded(raw,max){const text=canonicalJson(raw);if(Buffer.byteLength(text)>max)fail();return JSON.parse(text);}
+/** 고정 client가 만든 경로만 목적 코드/참조로 옮긴다. @param {string} path @param {string} method */
+function humanRoute(path,method){for(const r of humanRoutes){const m=/** @type {RegExp} */(r[2]).exec(path);if(m&&method===r[1]){for(const id of m.slice(1)){if(id.length===36&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id))fail();if(id.length!==36&&(!Number.isSafeInteger(Number(id))||Number(id)<1))fail();}return{kind:r[0],args:m.slice(1),maximum:r[3]};}}return fail();}
+/** @param {any} raw */
+function humanPath(raw){const v=catalogueExact(raw,'kind,args,body,csrf');if(!Array.isArray(v.args)||v.args.length>3)fail();const [p,id,version]=v.args;const base='/api/v1/projects/'+p;let path;
+ switch(v.kind){case'SESSION':path='/api/v1/session';break;case'PROFILE':path=base+'/native-channel-profile';break;case'WINDOW_PREPARE':path=base+'/native-receive-windows';break;case'OFFER':path=base+'/native-receive-offers/'+id;break;case'ENVIRONMENT':path=base+'/environments/'+id+'/versions/'+version;break;case'COMMAND_PROFILE':path=base+'/command-profile-metadata/'+id+'/versions/'+version;break;default:{const suffix={OPEN_CHALLENGE:'/open-challenge',WINDOW_CLOSE:'/close',WINDOW_STATE:'',SIGNING_CURRENT:'/signing-current',PHASE_CURRENT:'/phase-signing-current'};if(!Object.hasOwn(suffix,v.kind))return fail();path=base+'/native-receive-windows/'+id+suffix[/** @type {keyof typeof suffix} */(v.kind)];}}
+ const method=v.body===null?'GET':'POST',r=humanRoute(path,method);if(r.kind!==v.kind||canonicalJson(r.args)!==canonicalJson(v.args)||method==='POST'&&(typeof v.csrf!=='string'||!(/^[A-Za-z0-9_-]{43}$/).test(v.csrf)||typeof v.body!=='string'||Buffer.byteLength(v.body)>2097152)||method==='GET'&&v.csrf!==null)fail();return{...v,path,method,maximum:Number(r.maximum)};
+}
+/** 원 owner 내부 기능의 두 방향 제어 메시지는 이 하나의 전용 port만 사용한다.
+ * @param {MessagePort} port @param {(kind:string,value:any,deadline:number,signal:AbortSignal)=>Promise<any>} handler @param {()=>void} guard
+ */
+function duplex(port,handler,guard){
+ let closed=false,retiring=false,serial=0;const pending=new Map(),running=new Map();
+ const close=()=>{if(closed)return;closed=true;for(const p of pending.values()){clearTimeout(p.timer);p.remove();p.reject(Error('CONTEXT_CHANGED'));}pending.clear();for(const a of running.values())a.abort();running.clear();port.close();};
+ port.on('message',async raw=>{try{if(closed)return;const v=bounded(raw,5000000);if(v.kind==='RETIRE'&&v.type==='CALL')retiring=true;if(!retiring)guard();if(v.type==='CANCEL'){catalogueExact(v,'type,id');running.get(v.id)?.abort();return;}
+  if(v.type==='RESULT'){catalogueExact(v,'type,id,ok,value');const p=pending.get(v.id);if(!p)return;pending.delete(v.id);clearTimeout(p.timer);p.remove();if(v.ok===true)p.resolve(v.value);else p.reject(Error(fixedErrors.has(v.value)?v.value:'PROTECTION_UNAVAILABLE'));return;}
+  catalogueExact(v,'type,id,kind,value,deadline');if(retiring&&v.kind!=='RETIRE')return;if(v.type!=='CALL'||typeof v.id!=='string'||v.id.length>100||running.has(v.id)||running.size>=4||!Number.isSafeInteger(v.deadline)||v.deadline<=Date.now()||v.deadline>Date.now()+(v.kind==='DIRECTORY'||v.kind==='COMMAND'?300000:10000))fail();
+  const abort=new AbortController(),started=performance.now(),wall=Date.now();running.set(v.id,abort);const timer=setTimeout(()=>abort.abort(),v.deadline-wall);
+  try{const value=await handler(v.kind,v.value,v.deadline,abort.signal);if(!retiring)guard();if(abort.signal.aborted||Date.now()>=v.deadline||performance.now()-started>=v.deadline-wall)fail('DEADLINE');if(!closed)port.postMessage({type:'RESULT',id:v.id,ok:true,value:bounded(value,5000000)});}
+  catch(error){if(!closed)port.postMessage({type:'RESULT',id:v.id,ok:false,value:error instanceof Error&&fixedErrors.has(error.message)?error.message:'PROTECTION_UNAVAILABLE'});}
+  finally{clearTimeout(timer);running.delete(v.id);}
+ }catch{close();}});port.on('close',close);port.on('messageerror',close);
+ return Object.freeze({close,call:async(/** @type {string} */kind,/** @type {any} */value,/** @type {number} */deadline,/** @type {AbortSignal} */signal)=>{if(kind==='RETIRE'){retiring=true;for(const p of pending.values()){clearTimeout(p.timer);p.remove();p.reject(Error('CONTEXT_CHANGED'));}pending.clear();for(const a of running.values())a.abort();}else{if(retiring)fail('CONTEXT_CHANGED');guard();}if(closed||signal.aborted||pending.size>=4||!Number.isSafeInteger(deadline)||deadline<=Date.now()||deadline>Date.now()+(kind==='DIRECTORY'||kind==='COMMAND'?300000:10000))fail();const id=randomUUID()+':'+(++serial);return new Promise((resolve,reject)=>{const abort=()=>{const p=pending.get(id);if(!p)return;pending.delete(id);clearTimeout(p.timer);p.remove();port.postMessage({type:'CANCEL',id});reject(Error('CONTEXT_CHANGED'));};const timer=setTimeout(abort,deadline-Date.now());const remove=()=>signal.removeEventListener('abort',abort);pending.set(id,{resolve,reject,timer,remove});signal.addEventListener('abort',abort,{once:true});try{port.postMessage({type:'CALL',id,kind,value:bounded(value,5000000),deadline});}catch{abort();}});}});
+}
+/** 동일 원 Session과 고정 HUMAN 요청/로컬 폴더 dialog만 중계한다.
+ * @param {any} session @param {any} original @param {()=>any} context @param {(lease:any)=>Promise<any>} directory
+ */
+function humanRelay(session,original,context,directory){const fetch=sessionTransport(session),signature=canonicalJson(original);return async(/** @type {string} */kind,/** @type {any} */value,/** @type {number} */deadline,/** @type {AbortSignal} */signal)=>{
+ const start=Date.now(),tick=performance.now();const check=()=>{if(signal.aborted||Date.now()<start||performance.now()<tick||performance.now()-tick>=deadline-start||Date.now()>=deadline||canonicalJson(context())!==signature||sessionTransport(session)!==fetch)fail('CONTEXT_CHANGED');};check();
+ if(kind==='DIRECTORY'){if(value!==null)fail();const result=await directory(Object.freeze({check}));check();if(result!==null&&(typeof result!=='string'||result.length>1024))fail();return result;}
+ if(kind!=='HUMAN')fail();const request=humanPath(value),headers=request.method==='GET'?{Accept:'application/json'}:{Accept:'application/json','Content-Type':'application/json',Origin:original.origin,'X-Anvil-CSRF':request.csrf};
+ const response=await Reflect.apply(fetch,session,[original.origin+request.path,{method:request.method,credentials:'include',redirect:'error',cache:'no-store',bypassCustomProtocolHandlers:true,signal,headers,...(request.method==='POST'?{body:request.body}:{})}]);
+ let reader,done=false;const chunks=[];let total=0;
+ try{check();if(!response||response.redirected||![200,400,401,403,404,409,412,413,503].includes(response.status)||response.headers.has('location')||response.headers.has('content-encoding')||!/^application\/json(?:;\s*charset=utf-8)?$/i.test(response.headers.get('content-type')||''))fail();reader=response.body?.getReader();if(!reader)fail();for(;;){check();const part=await reader.read();check();if(part.done){done=true;break;}if(!(part.value instanceof Uint8Array)||part.value.byteLength>request.maximum-total)fail();total+=part.value.byteLength;chunks.push(Buffer.from(part.value));}
+  const bytes=Buffer.concat(chunks,total);try{check();const body=new TextDecoder('utf-8',{fatal:true}).decode(bytes),headers={'content-type':response.headers.get('content-type')};if(response.headers.has('content-length'))Reflect.set(headers,'content-length',response.headers.get('content-length'));return{status:response.status,headers,body};}finally{bytes.fill(0);}
+ }finally{if(!done){try{if(reader)await reader.cancel();else await response?.body?.cancel();}catch{}}reader?.releaseLock();for(const chunk of chunks)chunk.fill(0);}
+};}
+/** 실제 고정 entry에서만 호출. owner/credential/설정/receiver를 밖으로 돌려주지 않는다. @param {any} data @param {any} parent */
+function runEnrollmentWorker(data,parent){
+ const d=catalogueExact({...data,port:null,registrationPort:null},'purpose,endpoint,context,connectorVersion,port,registrationPort');
+ if(d.purpose!=='NORMAL_SDK_ENROLLMENT_OWNER_V1'||!(data.port instanceof MessagePort)||!(data.registrationPort instanceof MessagePort)||!parent)fail();
+ const original=safe(catalogueExact(d.context,'origin,identity,authEpoch'));let closed=false;const life=new AbortController();const check=()=>{if(closed||life.signal.aborted)fail('CONTEXT_CHANGED');};
+ const channel=createRegistrationWorkerChannel(data.registrationPort),operations=new Set();
+/** @type {ReturnType<typeof import('./trust-enrollment-owner.cjs').createTrustEnrollmentSession>} */let owner;
+ const rpc=duplex(data.port,async(kind,value,deadline,signal)=>{check();if(kind==='RETIRE'){if(value!==null)fail();owner.close();channel.close();let unknown=false;for(const operation of operations){try{if((await operation.close()).state!=='CLOSED_CONFIRMED')unknown=true;}catch{unknown=true;}}return{state:unknown?'UNKNOWN':'CLOSED_CONFIRMED'};}if(kind!=='COMMAND')fail();const v=catalogueExact(value,'name,input');if(v.name==='INVALIDATE'){owner.invalidate();return owner.getState();}if(v.name==='CLOSE_CONFIGURATION'){owner.closeConfiguration();return owner.getState();}if(v.name==='DISPOSE_RECEIVE'){owner.disposeReceive();return owner.getState();}
+  if(v.name==='CONFIGURATION'){const c=catalogueExact(v.input,'action,value');return owner.configuration(c.action,c.value);}
+  if(['native-receive-begin','native-receive-status','native-receive-refresh','native-receive-arm','native-receive-close'].includes(v.name))return owner.handleReceive(v.name,v.input);
+  if(!['trust-status','trust-begin','trust-pair','trust-act'].includes(v.name))fail();return owner.handle(v.name,v.input);
+ },check);
+ const session=Object.freeze({fetch:async(/** @type {string} */url,/** @type {any} */options)=>{check();const parsed=new URL(url);if(parsed.origin!==original.origin||parsed.href!==original.origin+parsed.pathname||options.credentials!=='include'||options.redirect!=='error'||options.cache!=='no-store')fail();const r=humanRoute(parsed.pathname,options.method),value={kind:r.kind,args:r.args,body:options.body??null,csrf:options.headers?.['X-Anvil-CSRF']??null};humanPath(value);const response=await rpc.call('HUMAN',value,Date.now()+10000,options.signal);check();return new Response(response.body,{status:response.status,headers:response.headers});}});
+ const module=require('./trust-enrollment-owner.cjs'),root=require('node:path').win32.dirname(__dirname);
+ /** @type {any} */const deps=module.createDesktopTrustDependencies({app:{getVersion:()=>d.connectorVersion,getPath:()=>process.execPath,getAppPath:()=>root}});if(!deps)fail();
+ const createOperation=deps.createOperation;deps.createOperation=async(/** @type {any} */lease,/** @type {any} */pending)=>{check();const original=await createOperation(lease,pending);
+/** @type {Promise<any>|undefined} */let closeWork;const tracked={...original,close:()=>{if(!closeWork)closeWork=Promise.resolve().then(()=>original.close()).then(result=>{if(result?.state==='CLOSED_CONFIRMED')operations.delete(tracked);return result;});return closeWork;}};operations.add(tracked);return tracked;};
+ deps.createRegistrationClient=async(/** @type {any} */lease)=>createWorkerRegistrationClient(d.endpoint,channel,lease);
+ deps.createFirstReceiveClient=async(/** @type {any} */lease)=>require('./native-first-receive-client.cjs').createNativeFirstReceiveClient(session,original.origin,lease,check);
+ deps.createExecutionConfigurationClient=async(/** @type {any} */lease)=>require('./execution-configuration-read-client.cjs').createExecutionConfigurationReadClient(session,original.origin,lease,check);
+ deps.selectExecutionDirectory=async(/** @type {any} */lease)=>{lease.check();const result=await rpc.call('DIRECTORY',null,lease.expiresAt,life.signal);lease.check();return result;};
+ owner=module.createTrustEnrollmentSession(()=>original,Object.freeze(deps),()=>{if(!closed)parent.postMessage({purpose:'NORMAL_SDK_OWNER_STATE',value:owner.getState()});},d.endpoint.epoch);
+ const close=()=>{if(closed)return;closed=true;life.abort();owner.close();channel.close();rpc.close();};data.port.on('close',close);parent.on('close',close);
+ parent.postMessage({purpose:'NORMAL_SDK_ENROLLMENT_OWNER_READY',endpointId:d.endpoint.endpointId,epoch:d.endpoint.epoch});
+}
+/** 원 bootstrap의 원 endpoint를 고정 entry에 넘기고 일반 UI는 기존 상태만 본다.
+ * @param {any} bootstrap @param {any} session @param {()=>any} context @param {string} version @param {(lease:any)=>Promise<any>} directory @param {()=>void} notify
+ */
+async function createSdkEnrollmentSession(bootstrap,session,context,version,directory,notify){
+ const original=safe(context()),endpoint=createRegistrationSessionEndpoint(bootstrap,session,context);let started;try{started=await require('./trust-key-host-client.cjs').launchSdkBootstrapWorker(bootstrap,endpoint,original,version);}catch(error){endpoint.close();throw error;}
+ let closed=false,busy=0;
+/** @type {any} */let state;const life=new AbortController(),signature=canonicalJson(original),check=()=>{started.check();if(closed||canonicalJson(context())!==signature)fail('CONTEXT_CHANGED');};
+ const rpc=duplex(started.port,humanRelay(session,original,context,directory),check);
+
+/** @type {Promise<any>|undefined} */let closeWork;const close=()=>{if(closeWork)return closeWork;endpoint.close();closeWork=(async()=>{let result={state:'UNKNOWN'};try{const answer=await rpc.call('RETIRE',null,Date.now()+10000,new AbortController().signal);if(answer?.state==='CLOSED_CONFIRMED')result=await started.stop();}catch{}finally{closed=true;life.abort();if(result.state==='CLOSED_CONFIRMED')rpc.close();else started.retain();if(result.state!=='CLOSED_CONFIRMED'&&state){state={...state,phase:'UNKNOWN',problem:'OUTCOME_UNKNOWN'};notify();}}return result;})();return closeWork;};
+ started.worker.on('error',close);started.worker.on('exit',close);started.worker.stdout?.on('data',close);started.worker.stderr?.on('data',close);started.worker.on('message',(/** @type {unknown} */raw)=>{try{check();const m=catalogueExact(raw,'purpose,value');if(m.purpose!=='NORMAL_SDK_OWNER_STATE')fail();state=safe(m.value);notify();}catch{close();}});
+ const command=async(/** @type {string} */name,/** @type {any} */input)=>{check();busy++;try{const result=await rpc.call('COMMAND',{name,input},Date.now()+300000,life.signal);check();if(result?.state?.schemaVersion===1&&Object.hasOwn(result.state,'contextEpoch'))state=safe(result.state);return result;}finally{busy--;}};
+ try{const initial=await command('trust-status',{attemptId:null,epoch:null});if(initial?.ok!==true)fail();state=safe(initial.state);}catch(error){close();throw error;}
+ return Object.freeze({getState:()=>safe(state),isBusy:()=>busy>0,handle:command,configuration:(/** @type {string} */action,/** @type {any} */value)=>command('CONFIGURATION',{action,value}),handleReceive:command,
+  closeConfiguration:()=>{void command('CLOSE_CONFIGURATION',null).catch(close);},disposeReceive:()=>{void command('DISPOSE_RECEIVE',null).catch(close);},invalidate:close,close});
+}
+module.exports={createRegistrationSessionEndpoint,createRegistrationWorkerChannel,createWorkerRegistrationClient,createSdkEnrollmentSession};
+const thread=require('node:worker_threads');
+if(!thread.isMainThread&&thread.workerData?.purpose==='NORMAL_SDK_ENROLLMENT_OWNER_V1')runEnrollmentWorker(thread.workerData,thread.parentPort);
