@@ -8,6 +8,7 @@ import type {ResponsibleSessionState} from '../workspace/responsible-session-api
 import type {PlanRef} from '../design-trace/work-plan-api.ts';
 import {readContextPreparation} from '../workspace/context-api.ts';
 import {readTransferContext} from './transfer-read.ts';
+import {TransferContextOriginals} from './TransferContextOriginals.tsx';
 import {nextPreparation,newPreparation,preparationKey,preparationOwned,preparationSame as same,editPreparation,editRejectedPreparation,prepareRecord,markPreparationDispatch,sendPreparation,failPreparation,readPreparationRecord,readPreparationRole,readPreparationBinding,type PreparationBuffer,type PreparationStorage,type PreparationGet} from './preparation-record-api.ts';
 export function TransferPreparationRecordPanel({client,session,confirmed,state,contexts,storage,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;confirmed:ConfirmedAssignmentView;state:ResponsibleSessionState;contexts:PlanRef[];storage:PreparationStorage;onAuthenticationLost:()=>void}){
  const key=preparationKey(session,confirmed.projectId,confirmed.ref),owner=useRef({key,client,transport:client.transport,session,csrf:session.csrfToken});if(owner.current.key!==key||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.session!==session||owner.current.csrf!==session.csrfToken)owner.current={key,client,transport:client.transport,session,csrf:session.csrfToken};const scope=owner.current,mounted=useRef(true),seq=useRef(0),flight=useRef<object|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
@@ -62,6 +63,7 @@ function HistoricalContext({client,projectId,assignmentRef,reference,current,onA
 }){
  const [read,setRead]=useState<ContextRead>({state:'idle'});
  const sequence=useRef(0),inFlight=useRef(false);
+ const displayedTicket=sequence.current;
  useLayoutEffect(()=>()=>{sequence.current++;inFlight.current=false;},[]);
  async function load(){
   if(inFlight.current||!current())return;
@@ -88,6 +90,7 @@ function HistoricalContext({client,projectId,assignmentRef,reference,current,onA
    <p>제외: {read.value.manifest.excluded.join(', ')||'당시 metadata상 없음'}</p>
    <details><summary>고정 참조·누락·전달 계획 metadata</summary><pre>{JSON.stringify(read.value.manifest,null,2)}</pre></details>
    <p>이 조회는 원자료 본문 수집·이전 승인·Agent 전달·실행 완료를 확인하지 않습니다.</p>
+   <TransferContextOriginals client={client} projectId={projectId} assignmentRef={assignmentRef} context={read.value} current={()=>current()&&sequence.current===displayedTicket} onUnavailable={error=>{if(current()&&sequence.current===displayedTicket&&error.status===401)onAuthenticationLost();}}/>
   </section>:null}
  </section>;
 }

@@ -6,12 +6,12 @@ import {readTransferOriginal} from './transfer-original.ts';
 import {TransferSourceRows} from './TransferSourceRows.ts';
 type Original=NonNullable<Awaited<ReturnType<typeof readTransferOriginal>>>;
 /** 사용자 선택 한 건만 조회하며 metadata와 실제 표시 본문을 구분한다. */
-export function TransferContextOriginals({client,projectId,assignmentRef,context,onUnavailable}:{client:ApiClient;projectId:string;assignmentRef:PlanRef;context:ContextPreparationView;onUnavailable:(error:ApiError)=>void}){
+export function TransferContextOriginals({client,projectId,assignmentRef,context,onUnavailable,current=()=>true}:{client:ApiClient;projectId:string;assignmentRef:PlanRef;context:ContextPreparationView;onUnavailable:(error:ApiError)=>void;current?:()=>boolean}){
  const [value,setValue]=useState<Original|null>(null),[error,setError]=useState<string|null>(null),[pending,setPending]=useState(false),ticket=useRef(0),flight=useRef(false),unavailable=useRef(onUnavailable);unavailable.current=onUnavailable;
  const key=JSON.stringify([projectId,assignmentRef,context.ref]),latest=useRef(key);latest.current=key;
  useEffect(()=>()=>{ticket.current++;flight.current=false;},[client,key]);
  function clear(){ticket.current++;flight.current=false;setValue(null);setError(null);setPending(false);}
- async function read(itemId:string){if(flight.current)return;flight.current=true;const id=++ticket.current,active=()=>ticket.current===id&&latest.current===key;setValue(null);setError(null);setPending(true);
+ async function read(itemId:string){if(flight.current||!current())return;flight.current=true;const id=++ticket.current,active=()=>ticket.current===id&&latest.current===key&&current();setValue(null);setError(null);setPending(true);
   try{const v=await readTransferOriginal(client,projectId,assignmentRef,context.ref,itemId,active);if(active()&&v)setValue(v);}
   catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('TRANSFER_ORIGINAL_READ_FAILED');setError(/^[A-Z_]{1,80}$/.test(e.code)?e.code:'TRANSFER_ORIGINAL_READ_FAILED');if([401,403,404].includes(e.status))unavailable.current(e);}
   finally{if(active()){flight.current=false;setPending(false);}}

@@ -106,6 +106,7 @@ test('과거 대상 연결 · 명시 클릭 1GET과 참조 부재 GET0',async()=
 
 import {fileURLToPath} from 'node:url';
 import {transferFixture,pid,at} from './transfer-fixture.ts';
+import {originalFixture} from './transfer-original-fixture.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {readCandidateInput,candidateReadiness,candidateCapabilities} from '../../../apps/server/modules/connections/candidate-input.ts';
 import {readPreparationSnapshot,readPreparationReceipt,readPreparationGet,permanentGaps} from '../../../apps/server/modules/transfers/preparation-record-input.ts';
@@ -498,6 +499,67 @@ for(const mode of ['닫기','재조회','기록ABA','주체ABA','프로젝트ABA
    await ui.React.act(async()=>{release();await new Promise(r=>setTimeout(r,20));});
    assert(!f.nodes().some(n=>n.getAttribute('aria-label')==='당시 맥락 고정 원문'));assert(!f.text().includes('AUTH_REQUIRED'));assert.equal(f.lost(),0);
    assert.equal(f.calls.filter(c=>c.path===path).length,1);assert(f.calls.every(c=>c.method==='GET'));assert.deepEqual(f.buffers,{});
+  }finally{release();await f.close();}
+ });
+}
+
+
+function historicalOriginal(){
+ const f=originalFixture(),context=f.context;context.manifest.id=id(88);context.ref.id=id(88);f.rehash();
+ const data=recordWithContext(context.ref),record=data.record;
+ record.requiredContext.find((r:any)=>r.code==='LATEST_INSTRUCTIONS').state='METADATA_ONLY';
+ record.sourceRefs=[{kind:'USER_INSTRUCTION',ref:f.conversation.sourceRef,conversationId:f.conversation.conversationId}];data.ref.contentHash=hash(record);
+ return{...f,data,contextPath:'/api/v1/projects/'+pid+'/context/'+context.ref.id+'/versions/1',bodyPath:'/api/v1/projects/'+pid+'/conversations/'+f.conversation.conversationId+'/messages/'+f.conversation.sourceRef.id};
+}
+async function openHistoricalContext(f:Awaited<ReturnType<typeof host>>,data:any){await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));await f.click(contextButton);await f.settle(()=>f.nodes().some(n=>n.getAttribute('aria-label')==='당시 맥락 고정 원문'));}
+const hasContextBody=(f:Awaited<ReturnType<typeof host>>)=>f.nodes().some(n=>n.getAttribute('aria-label')==='인계 항목 원문');
+
+test('보관 맥락 항목 · 명시 포함 항목 한 건만 재검산하고 보호 원문을 연다',async()=>{
+ const original=historicalOriginal(),f=await host({empty:true,knownRecord:{data:original.data},historicalGet:p=>p===original.contextPath?Response.json(original.context):p===original.bodyPath?Response.json(original.conversation):undefined});
+ try{await openHistoricalContext(f,original.data);assert.equal(f.calls.filter(c=>c.path===original.bodyPath).length,0);
+  assert.equal(f.button('인계 항목 원문 RULES_SCOPE').disabled,true);
+  await f.click('인계 항목 원문 '+original.itemId);await f.settle(()=>hasContextBody(f));
+  assert(f.text().includes(original.body));assert.equal(f.calls.filter(c=>c.path===original.contextPath).length,2);assert.equal(f.calls.filter(c=>c.path===original.bodyPath).length,1);assert(f.calls.every(c=>c.method==='GET'));assert.deepEqual(f.buffers,{});
+ }finally{await f.close();}
+});
+
+
+for(const mode of ['CHANGED','HASH','401','403','404'] as const){
+ test('보관 맥락 항목 · '+mode+' 거절은 보관 metadata를 유지하며 원문을 표시하지 않는다',async()=>{
+  const original=historicalOriginal();let contextReads=0;
+  const f=await host({empty:true,knownRecord:{data:original.data},historicalGet:p=>{
+   if(p===original.contextPath){contextReads++;const issues:string[]=[...original.context.currentCheck.issues],value=structuredClone({...original.context,currentCheck:{...original.context.currentCheck,issues}});
+    if(contextReads>1&&mode==='CHANGED')value.currentCheck={state:'CHANGED',issues:['CURRENT_SOURCE_OR_BASIS_CHANGED']};
+    if(contextReads>1&&mode==='HASH')value.ref.contentHash='f'.repeat(64);
+    return Response.json(value);}
+   if(p===original.bodyPath)return Response.json({code:'ACCESS_DENIED'},{status:Number(mode)});
+  }});
+  try{await openHistoricalContext(f,original.data);await f.click('인계 항목 원문 '+original.itemId);
+   await f.settle(()=>f.text().includes('원문 미확인. 다른 버전/자료로 대체하지 않습니다.'));
+   assert(!hasContextBody(f));assert(hasOriginal(f));assert(f.nodes().some(n=>n.getAttribute('aria-label')==='당시 맥락 고정 원문'));assert.equal(f.lost(),mode==='401'?1:0);
+   assert.equal(f.calls.filter(c=>c.path===original.bodyPath).length,['CHANGED','HASH'].includes(mode)?0:1);assert(f.calls.every(c=>c.method==='GET'));assert.deepEqual(f.buffers,{});
+  }finally{await f.close();}
+ });
+}
+
+for(const stage of ['CONTEXT','BODY'] as const)for(const change of ['닫기','재조회','기록ABA','주체ABA','transport'] as const){
+ test('보관 맥락 항목 · '+stage+' 대기 중 '+change+'는 후속 읽기·늦은 결과를 폐기한다',async()=>{
+  const original=historicalOriginal(),other=recordWithContext(null,id(22));let count=0,waiting=false,release!:()=>void;
+  const gate=new Promise<void>(r=>release=r),late401=stage==='BODY'&&change!=='닫기';
+  const f=await host({empty:true,knownRecord:{data:original.data},historicalGet:p=>{
+   if(p.endsWith('/transfer-preparations/'+other.ref.id+'/versions/1'))return recordResponse(other);
+   if(p!==original.contextPath&&p!==original.bodyPath)return;
+   const response=Response.json(p===original.bodyPath&&late401?{code:'AUTH_REQUIRED'}:p===original.contextPath?original.context:original.conversation,{status:p===original.bodyPath&&late401?401:200});
+   if(stage==='CONTEXT'&&p===original.contextPath&&++count===2||stage==='BODY'&&p===original.bodyPath){const parse=response.json.bind(response);response.json=async()=>{waiting=true;await gate;return parse();};}return response;
+  }});
+  try{await openHistoricalContext(f,original.data);await f.click('인계 항목 원문 '+original.itemId);await f.settle(()=>waiting);
+   if(change==='닫기')await f.click('준비기록 원문 닫기');
+   else if(change==='재조회'){await f.click(contextButton);await f.settle(()=>f.nodes().some(n=>n.getAttribute('aria-label')==='당시 맥락 고정 원문')&&!f.button('인계 항목 원문 '+original.itemId).disabled);}
+   else if(change==='기록ABA'){await queryKnown(f,other.ref);await f.settle(()=>hasOriginal(f)&&f.text().includes('당시 맥락 참조 없음'));await queryKnown(f,original.data.ref);await f.settle(()=>hasOriginal(f)&&f.buttons(contextButton).length===1);}
+   else if(change==='주체ABA'){const props=f.props();await f.render({...props,session:{...session,clientId:id(99)}});await f.render(props);}
+   else{const transport=f.client.transport;f.client.transport=async()=>{assert.fail('옛 요청은 새 transport를 호출하지 않음');};await f.render();f.client.transport=transport;await f.render();}
+   await ui.React.act(async()=>{release();await new Promise(r=>setTimeout(r,20));});
+   assert(!hasContextBody(f));assert(!f.text().includes('AUTH_REQUIRED'));assert.equal(f.lost(),0);assert.equal(f.calls.filter(c=>c.path===original.bodyPath).length,stage==='CONTEXT'?0:1);assert(f.calls.every(c=>c.method==='GET'));assert.deepEqual(f.buffers,{});
   }finally{release();await f.close();}
  });
 }
