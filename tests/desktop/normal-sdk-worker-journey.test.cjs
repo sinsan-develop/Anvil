@@ -72,6 +72,31 @@ test('FIRST 보호 인계는 원 core에서 native 읽기 검사로만 소비하
  assert.doesNotMatch(credential,/new NormalSdkChildHostSource|CreateProcess|ResumeThread/);
 });
 
+test('native hook 지문은 원 pinned 입력에서 독립 생성하고 첫 OS 효과 전에 단발 검산한다',()=>{
+ const source=read('apps/connector/native/NormalSdkChildHostSource.cs');
+ const ctor=source.slice(source.indexOf('private NormalSdkChildHostSource('),source.indexOf('static Exception Invalid('));
+ assert.match(ctor,/string observedHookHash/);
+ assert.match(ctor,/observedHookHash.Length!=64/);
+ assert.match(ctor,/observedHookHash.Any\(c=>!\(c>='0'&&c<='9'\|\|c>='a'&&c<='f'\)\)/);
+ assert.match(ctor,/boundArguments=\(string\[\]\)boundArguments.Clone\(\)/);
+ assert.match(ctor,/expectedHookHash=HookDigest\(application,directories.Cwd,boundArguments,env\)/);
+ assert.match(source,/new UTF8Encoding\(false,true\)/);
+ assert.match(source,/put\("SDK_HOOK_OBSERVED_V1"\);put\(command\);put\(cwd\)/);
+ assert.match(source,/args.Length.ToString\(CultureInfo.InvariantCulture\)/);
+ assert.match(source,/OrderBy\(v=>v.Key,StringComparer.Ordinal\)/);
+ assert.match(source,/length.ToString\(CultureInfo.InvariantCulture\)\+":"/);
+ assert.match(source,/buffer.Length\+prefix.Length\+length>65536/);
+ assert.match(source,/value.IndexOf\('\\0'\)>=0/);
+ assert.match(source,/catch\(EncoderFallbackException\)\{throw Invalid\(\);\}/);
+ const check=source.slice(source.indexOf('void Check()'),source.indexOf('static bool Valid('));
+ assert.match(check,/cancellation.IsCancellationRequested/);assert.match(check,/now>=deadline\|\|watch.Elapsed.TotalMilliseconds>=budgetMs/);
+ assert.match(source,/finally\{Array.Clear\(buffer.GetBuffer\(\),0,\(int\)buffer.Length\);\}/);
+ const create=source.slice(source.indexOf('void CreateSuspended()'),source.indexOf('void VerifyOriginal('));
+ assert.match(create,/if\(attempted\)throw Invalid\(\);attempted=true;[\s\S]*Check\(\);[\s\S]*String.Equals\(expectedHookHash,observedHookHash,StringComparison.Ordinal\)[\s\S]*Check\(\);[\s\S]*try\{[\s\S]*CreateJobObjectW/);
+ assert.match(create,/catch\{unknown=!creationRejected;Dispose\(\);throw;\}/);
+ assert.match(ctor,/package.Kind=="IMAGE"\?package.Cli:package.Kind=="SCRIPT"\?package.Runtime:null/);
+ assert.equal((source.match(/new NormalSdkChildHostSource\(/g)||[]).length,0);
+});
 test('SDK 원 child 소유 primitive는 atomic Job와 자식 stdio 세 끝만 생성 전에 결박한다',()=>{
  const source=read('apps/connector/native/NormalSdkChildHostSource.cs');
  const create=source.slice(source.indexOf('void CreateSuspended()'),source.indexOf('void VerifyOriginal('));

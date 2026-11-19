@@ -21227,3 +21227,11 @@ Stage D FN07 부분 구현. 기준 `47e4c1de`, 기존 developer_primary 단일 �
 제품 3개·시험 2개. 집중 RED 3건 `e2a7bb`에서 GREEN 3건 `295de4`, 직접·인접 55건 `335a7f`. Main 동결 5개 지문 일치·공백 종료0 `5e1042`, 직접·인접 55건 통과·실패/건너뜀0 `fb0d80`. 활성 핸들0. native는 정적 검사다.
 
 보존 발췌의 argv 일부가 비연속이어서 최종 순서와 수치 표기는 미확인이다. 추적 및 조건별 환경 변화가 없는 단일 조합도 미확정이므로 제품 recipe는 미발행이다. PRESPAWN·원 witness·SDK/Agent/Windows/C#/DB·권한·키·서비스는 미구현 또는 제외다. 다음은 이미 확보한 공개 발췌 중 조립 조건을 더 닫을 수 있는 근거만 확인하는 것이다. 롤백은 이번 제품·시험 5경로에 한정한다.
+
+## FN07 SDK hook 관측과 native 원 실행 입력 대조
+
+Stage D FN07 부분 구현. 기준 `48744158`, 기존 developer_primary 단일 작성·반환. 4091F826 §B·C의 원 application/고정 cwd/argv/env가 보호 원 입력에서만 파생되는 경계를 보완했다. private child가 JS SDK_HOOK_OBSERVED_V1과 동일한 UTF-8 바이트 길이 구분, 순서 있는 argv, ordinal 환경키 정렬, 64KiB 한도로 기대 지문을 독립 계산한다. 관측 지문은 생성 전에 검산하며 불일치·취소는 Job/Pipe/Process 효과 전 거절한다. 시도 후 기존 불명 및 원 핸들 정리 경계는 유지한다. 새 권위, transport 호출자, lease, SDK 생성은 연결하지 않았다.
+
+제품 1개·직접 시험 2개. 담당 RED `6270dc` JS 벡터 2통과·native 연결 부재 1실패, GREEN `cacda1` 3통과. Main 직접·인접 65건 통과·실패/건너뜀0 `2cf8f0`, 파일 지문·공백 종료0 `8d474c`. RAM의 실제 JS hook 벡터·순서와 UTF-8 크기 제한, native의 소스 호출 순서를 확인했다. 실제 C#·OS·SDK·DB·권한·키·서비스·Agent는 미검증 또는 제외다. 롤백은 이번 제품·시험 3경로에 한정한다.
+
+별도 문서 `docs/work_packages/FN07_FIXED_IMAGE_ARGV_ENV_READ_PREPARATION.md`의 지문 `99BED5F314705413F8038924852AC68D9F6523008E6B4A70B80F1070D88FC963`으로 고정 IMAGE 한 조합의 판독 범위를 기록했다. 원출력 발췌의 구간 공백 및 메모리 키 부재를 확인했고 GET 0이다. 다음은 기존 승인된 감독을 재사용해 판독 코드와 합성 검수를 준비하는 것이다. 고정 실행안 검수와 별도 GET 승인이 남아 있다. 완전한 argv/env가 확인되더라도 PRESPAWN과 원 실행 권위는 별도다.

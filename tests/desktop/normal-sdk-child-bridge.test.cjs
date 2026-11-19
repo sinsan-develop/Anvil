@@ -8,7 +8,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
 if(workerData?.fixture==='RAM_STDIO'){
   const {control,data,mode}=workerData;
   const life=new AbortController(),span=mode==='EXPIRE'?100:2000;
-  const spec={command:'ram-image',args:['--test'],cwd:'ram-root',env:{TEST_MARK:'fixture-only'},signal:life.signal};
+  const spec={...(workerData.spec??{command:'ram-image',args:['--test'],cwd:'ram-root',env:{TEST_MARK:'fixture-only'}}),signal:life.signal};
   let getters=0;
   if(mode==='ACCESSOR')Object.defineProperty(spec.env,'TEST_MARK',{enumerable:true,get(){getters++;return 'invalid';}});
   if(mode==='SIGNAL_PROXY')spec.signal=new Proxy(spec.signal,{getPrototypeOf(){getters++;throw Error('trap');}});
@@ -25,6 +25,35 @@ if(workerData?.fixture==='RAM_STDIO'){
   }catch(error){parentPort.postMessage({result:error.message,getters});}
   finally{control.close();data.close();parentPort.close();}
 }else{
+async function observeHook(spec){
+ const control=new MessageChannel(),data=new MessageChannel(),seen=[];
+ control.port1.on('message',frame=>{seen.push(frame);if(frame.op==='SPAWN'){const state=new Int32Array(frame.cell);Atomics.compareExchange(state,0,0,1);Atomics.notify(state,0);}});
+ const worker=new Worker(__filename,{workerData:{fixture:'RAM_STDIO',mode:'VECTOR',spec,control:control.port2,data:data.port2},transferList:[control.port2,data.port2]});
+ try{const [result,exit]=await Promise.all([once(worker,'message'),once(worker,'exit')]);assert.deepEqual(exit,[0]);return{result:result[0],seen};}
+ finally{control.port1.close();data.port1.close();}
+}
+test('hook 지문은 독립 고정 UTF8 벡터·argv 순서·문자 대소문자·ordinal 환경 순서를 보존한다',async()=>{
+ const {createHash}=require('node:crypto');
+ const spec={command:'C:\\가😀\\cli.exe',cwd:'C:\\작업',args:['--model','모델😀','','x:y'],env:{TEMP:'C:\\임시',CLAUDE_CODE_ENTRYPOINT:'sdk-ts',CLAUDE_AGENT_SDK_VERSION:'0.3.224'}};
+ const wire='20:SDK_HOOK_OBSERVED_V118:C:\\가😀\\cli.exe9:C:\\작업1:47:--model10:모델😀0:3:x:y1:324:CLAUDE_AGENT_SDK_VERSION7:0.3.22422:CLAUDE_CODE_ENTRYPOINT6:sdk-ts4:TEMP9:C:\\임시';
+ const expected='219c1b62373feb7befbd39baec4eaafcb288222992656817ddba454f68e11d54';
+ assert.equal(Buffer.byteLength(wire),176);assert.equal(createHash('sha256').update(wire).digest('hex'),expected);
+ const a=await observeHook(spec);assert.equal(a.result.result,'STREAM');assert.equal(a.seen.filter(f=>f.op==='SPAWN').length,1);assert.equal(a.seen[0].payload,expected);assert.equal(a.seen.filter(f=>f.op==='ABANDON').length,1);
+ assert.equal((await observeHook({...spec,env:Object.fromEntries(Object.entries(spec.env).reverse())})).seen[0].payload,expected);
+ const alias=structuredClone(spec);alias.env.Temp=alias.env.TEMP;delete alias.env.TEMP;assert.notEqual((await observeHook(alias)).seen[0].payload,expected);
+ for(const changed of [{...spec,args:[...spec.args].reverse()},{...spec,command:spec.command.replace('C:','c:')},{...spec,cwd:spec.cwd.replace('C:','c:')},{...spec,env:{...spec.env,TEMP:'C:\\다른'}}])assert.notEqual((await observeHook(changed)).seen[0].payload,expected);
+ const ordinal=await observeHook({command:'c',cwd:'d',args:[],env:{a:'2',Z:'1'}});
+ assert.equal(ordinal.seen[0].payload,createHash('sha256').update('20:SDK_HOOK_OBSERVED_V11:c1:d1:01:21:Z1:11:a1:2').digest('hex'));
+});
+test('hook 지문은 prefix 포함 64KiB 경계와 invalid UTF16을 송신 전에 검사한다',async()=>{
+ const prefix='20:SDK_HOOK_OBSERVED_V11:c1:d1:1',suffix='1:0';
+ const n=65536-Buffer.byteLength(prefix+suffix)-6;
+ assert.equal(Buffer.byteLength(prefix+n+':'+'x'.repeat(n)+suffix),65536);
+ const spec={command:'c',cwd:'d',args:['x'.repeat(n)],env:{}};
+ assert.equal((await observeHook(spec)).result.result,'STREAM');
+ assert.equal((await observeHook({...spec,args:['x'.repeat(n-4)+'😀']})).result.result,'STREAM');
+ for(const args of [['x'.repeat(n+1)],['x'.repeat(n-3)+'😀'],['\ud800'],['\udc00'],['a\0b']]){const r=await observeHook({...spec,args});assert.equal(r.result.result,'SDK_CHILD_UNKNOWN');assert.equal(r.seen.length,0);}
+});
 test('격리 RAM worker의 동기 hook은 원 기한 안에서만 원 제어 응답을 소비하고 입력 원문을 전달하지 않는다',async()=>{
   for(const mode of ['READY','EXPIRE','ACCESSOR','SIGNAL_PROXY','SIGNAL_GETTER','LIFETIME_PROXY','LIFETIME_LISTENER']){
     const control=new MessageChannel(),data=new MessageChannel();

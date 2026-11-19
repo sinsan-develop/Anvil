@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
@@ -18,6 +20,7 @@ internal sealed class NormalSdkChildHostSource:IDisposable {
  readonly NormalSdkWorkerPackageSource package;
  readonly NormalExecutionConfigurationSource.DirectoryPins directories;
  readonly string application,commandLine,environment;
+ readonly string expectedHookHash,observedHookHash;
  readonly DateTime deadline,from;
  DateTime lastWall;
  readonly double budgetMs;
@@ -36,12 +39,15 @@ internal sealed class NormalSdkChildHostSource:IDisposable {
  // SDK hook과 exact 대조할 값이다. JSON/사용자 입력/검사 callback을 받는 factory를 공개하지 않는다.
  private NormalSdkChildHostSource(NormalSdkWorkerPackageSource originalPackage,
   NormalExecutionConfigurationSource.DirectoryPins originalDirectories,string[] boundArguments,
-  SortedDictionary<string,string> boundEnvironment,DateTime originalDeadline,CancellationToken originalCancellation){
+  SortedDictionary<string,string> boundEnvironment,string observedHookHash,DateTime originalDeadline,CancellationToken originalCancellation){
   if(originalPackage==null||originalDirectories==null||boundArguments==null||boundEnvironment==null||
-   originalDeadline.Kind!=DateTimeKind.Utc)throw Invalid();
+   originalDeadline.Kind!=DateTimeKind.Utc||observedHookHash==null||observedHookHash.Length!=64||
+   observedHookHash.Any(c=>!(c>='0'&&c<='9'||c>='a'&&c<='f')))throw Invalid();
+  this.observedHookHash=observedHookHash;
   package=originalPackage;directories=originalDirectories;cancellation=originalCancellation;
   from=DateTime.UtcNow;lastWall=from;deadline=originalDeadline;budgetMs=(deadline-from).TotalMilliseconds;
   if(budgetMs<=0||boundArguments.Length>200||boundEnvironment.Count>6)throw Invalid();
+  boundArguments=(string[])boundArguments.Clone();
   package.Check();directories.Check();
   application=package.Kind=="IMAGE"?package.Cli:package.Kind=="SCRIPT"?package.Runtime:null;
   if(String.IsNullOrEmpty(application)||boundArguments.Any(v=>v==null||v.Length>4096||v.Any(c=>c<32||c==127)))throw Invalid();
@@ -57,6 +63,32 @@ internal sealed class NormalSdkChildHostSource:IDisposable {
   if(!env.ContainsKey("CLAUDE_CODE_ENTRYPOINT")||!env.ContainsKey("CLAUDE_AGENT_SDK_VERSION"))throw Invalid();
   environment=String.Join("\0",env.Select(v=>v.Key+"="+v.Value).ToArray())+"\0\0";
   if(environment.Length>=32767)throw Invalid();Check();
+  expectedHookHash=HookDigest(application,directories.Cwd,boundArguments,env);Check();
+ }
+ // JS SDK_HOOK_OBSERVED_V1과 같은 UTF8 바이트 길이 prefix. 관측값에서 기대값을 복원하지 않는다.
+ static string HookDigest(string command,string cwd,string[] args,SortedDictionary<string,string> env){
+  var utf8=new UTF8Encoding(false,true);
+  using(var buffer=new MemoryStream(65536)){
+   try{
+    Action<string> put=value=>{
+     if(value==null||value.Length>65536||value.IndexOf('\0')>=0)throw Invalid();
+     int length=utf8.GetByteCount(value);
+     byte[] prefix=Encoding.ASCII.GetBytes(length.ToString(CultureInfo.InvariantCulture)+":"),bytes=null;
+     try{
+      if(buffer.Length+prefix.Length+length>65536)throw Invalid();
+      bytes=utf8.GetBytes(value);buffer.Write(prefix,0,prefix.Length);buffer.Write(bytes,0,bytes.Length);
+     }finally{Array.Clear(prefix,0,prefix.Length);if(bytes!=null)Array.Clear(bytes,0,bytes.Length);}
+    };
+    put("SDK_HOOK_OBSERVED_V1");put(command);put(cwd);
+    put(args.Length.ToString(CultureInfo.InvariantCulture));foreach(string arg in args)put(arg);
+    put(env.Count.ToString(CultureInfo.InvariantCulture));foreach(var item in env.OrderBy(v=>v.Key,StringComparer.Ordinal)){put(item.Key);put(item.Value);}
+    using(var sha=SHA256.Create()){
+     byte[] digest=sha.ComputeHash(buffer.GetBuffer(),0,(int)buffer.Length);
+     try{return BitConverter.ToString(digest).Replace("-","").ToLowerInvariant();}finally{Array.Clear(digest,0,digest.Length);}
+    }
+   }catch(EncoderFallbackException){throw Invalid();}
+   finally{Array.Clear(buffer.GetBuffer(),0,(int)buffer.Length);}
+  }
  }
  static Exception Invalid(){return new InvalidOperationException("SDK_CHILD_UNAVAILABLE");}
  static Exception Unknown(){return new InvalidOperationException("SDK_CHILD_CLEANUP_UNKNOWN");}
@@ -103,6 +135,8 @@ internal sealed class NormalSdkChildHostSource:IDisposable {
 
  void CreateSuspended(){lock(gate){
   if(attempted)throw Invalid();attempted=true;
+  // 효과 전 거절은 생성 결과 불명과 분리한다. 이 검산 전에는 Job/Pipe/Process가 없다.
+  Check();if(!String.Equals(expectedHookHash,observedHookHash,StringComparison.Ordinal))throw Invalid();Check();
   try{
    Check();job=CreateJobObjectW(IntPtr.Zero,null);Need(Valid(job));Need(SetHandleInformation(job,1,0));
    var limits=new ExtendedLimits{Basic=new BasicLimits{Flags=0x2000|0x8,ActiveProcessLimit=1}};
