@@ -143,3 +143,15 @@ export async function buildSubnetObservationNativeBundle(readSource:(path:string
  const built=await buildPinnedBundle(readSource,{sources:SUBNET_NATIVE_SOURCES,entry:nativeEntry,edges:nativeEdges,builtins:Object.freeze([...builtins,'node:events']),order:nativeOrder,exports:['collectSubnetRemoteCompletion','observeSubnetNative'],sha256:nativeOutputHash,generated:{path:nativeEntry,text:nativeEntryText}});
  return Object.freeze({...built,sourceHead:null,baselineHead:'80f4c8506989e998c727b5a84dc8e6f7c86f0baf',purpose:'SOURCE_ONLY_NATIVE_CANDIDATE'});
 }
+
+// 메타 측정 후보는 기존 세 번들 원바이트/지문을 변경하지 않는다.
+const preflightPath='scripts/qa-ix01-subnet-observation-preflight.ts';
+export const SUBNET_PREFLIGHT_SOURCES=Object.freeze(SUBNET_NATIVE_SOURCES.filter(v=>v.path!==nativePath&&v.path!==supervisorPath).concat([
+ Object.freeze({path:preflightPath,bytes:6994,sha256:'e1228af0d86c599de9dd8439c809667b68f6bed842df304d12178746e525a8f4'}),
+]));
+const preflightEdges=Object.freeze({...asyncEdges,[preflightPath]:Object.freeze({'node:util':'node:util','./qa-ix01-subnet-observation-host.ts':'scripts/qa-ix01-subnet-observation-host.ts','./qa-ix01-subnet-observation-remote.ts':remotePath})});
+export const SUBNET_PREFLIGHT_BUNDLE_HASH='e79a0b34931921e6bfba34edd866b32a45f38b29d73e6eb0bb9b2d1fc6f49ba8';
+export async function buildSubnetPreflightBundle(readSource:(path:string)=>unknown){
+ const built=await buildPinnedBundle(readSource,{sources:SUBNET_PREFLIGHT_SOURCES,entry:preflightPath,edges:preflightEdges,builtins:Object.freeze([...builtins,'node:events']),order:Object.freeze([stepsPath,...moduleOrder,remotePath,preflightPath]),exports:['inspectSubnetIpPreflight'],sha256:SUBNET_PREFLIGHT_BUNDLE_HASH});
+ return Object.freeze({...built,sourceHead:null,baselineHead:'3ee214fcbc8b0beacb346ab085ce1e0b80a9ed4d',purpose:'SOURCE_ONLY_PREFLIGHT_CANDIDATE'});
+}
