@@ -21119,3 +21119,9 @@ status 0 연결 상실에서만 같은 읽음 조건과 cursor의 명시 재조�
 담당자 최초 reader 모듈 부재 RED `b5cef3`, 전송 거절 후 폐쇄 오판 RED `6fade4` 보완 후 직접 19건(`a8b74a`)·인접 6건(`100abc`), desktop·루트 타입 `9f7407`·`8c0729` 및 공백 `61bcba` 모두 종료 0. Main 직접 19건 재검산(`80057b`), 동결 파일 지문 15개 및 공백 검사 일치(`60bbff`). 쓰기 반환·실행 핸들 0. 실제 C# 컴파일, OS 저장·ACL·물리 신원, SDK/Agent, DB·권한·키·서비스는 미검증 또는 실행 제외다. 복구는 이 설정 변경 15경로를 되돌리는 단위이며 보호 경로 자동 삭제는 없다.
 
 원 FIRST3는 envelope 해시·permit만 보존한다. 다음에는 원 START 및 첫 SEND의 메모리 원문을 기존 승인 WI의 내부 FIRST3 재판독에 결박하고, 일치하는 실행 구성과 한정 lease를 검산한다. 원문을 보존 기록에서 추정하지 않는다. 실제 worker child와 Query 연결은 미구현이다.
+
+### 원 실행 역할·단계책임자 세대 전달의 미충족 선행
+
+`e5cc7475`에서 기존 담당자와 원 입력·FIRST3·보호 permit 응답을 대조했다. 원 START와 첫 SEND의 전체 envelope는 같은 worker 메모리에 있고, FIRST3는 원 해시·permit만 가진다. 서버 SEND permit 원본에는 roleBindingRef·bindingGeneration·원 intent mode가 이미 저장되지만 기존 응답은 원본을 반환하지 않는다. 원 실행 권위가 없으면 설정 목적값이나 다른 세대로 대체하지 않는다. 제품·시험 추가 변경과 실제 실행 0이다.
+
+검토 후보 `docs/contracts/FN07_NATIVE_FIRST_SEND_EXECUTION_AUTHORITY_CANDIDATE.md`의 SHA256은 `1C933448E675A052566DAEEC7B9379C16C437091FD14A23CAFEA698221134860`이다. 최초 초안은 현재 서버가 두 SEND 중 원 worker의 최초 소비를 식별할 수 없다는 Main 검수를 반영해 정정했다. A는 검산된 모든 해당 SEND에 원 permit 보호 메타데이터를 추가로 제공하는 결정이며, 기존 서명은 선택 헤더를 결박하지 않는다. 최초 전용 또는 선택 자체의 인증이 필요하면 별도 원 근거를 상세화한다. 양쪽 모두 미채택이며 설정 구현 승인 `4091F826`에 새 응답 또는 노출 정책을 포함시키지 않는다.
