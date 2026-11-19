@@ -92,7 +92,7 @@ executionAuthority: {
 
 ## 7. 권장 결정안 C — 서명된 요청 형상으로 검산 범위 제한
 
-**미채택. 이 절은 A의 미서명 헤더를 구현 후보에서 대체한다.** 최초성 서버 증명은 추가하지 않는다. 기존 허가와 원 사실 검산을 모두 통과한 `CONTEXT_REVIEW` 및 READ 전용 normal SEND만 지원하며, 여기에는 최초뿐 아니라 후속 SEND도 해당할 수 있다. 보호 수준이 더 넓은 WORK 및 START는 선택 응답을 거절한다. 실제 native 최초 소비에는 원 worker와 exact FIRST3의 기존 단발 기준을 계속 적용한다.
+**미채택. 채택 판단 대상은 이 절의 C다.** §2~6의 미서명 헤더와 SQL 보완 불필요 문구는 기존 A의 검토 이력이다. C의 입력·보관·노출·검수 및 복구는 이 절이 우선한다. 최초성 서버 증명은 추가하지 않는다. 기존 허가와 원 사실 검산을 모두 통과한 `CONTEXT_REVIEW` 및 READ 전용 normal SEND만 지원하며, 여기에는 최초뿐 아니라 후속 SEND도 해당할 수 있다. 보호 수준이 더 넓은 WORK 및 START는 선택 응답을 거절한다. 실제 native 최초 소비에는 원 worker와 exact FIRST3의 기존 단발 기준을 계속 적용한다.
 
 기존 POST의 닫힌 4개 본문 키를 그대로 받는다. C 선택 요청만 기존 키에 `representation: "SEND_PERMIT_SOURCE_V1"` 하나를 추가한 닫힌 5개 키 원형을 사용한다. 헤더 선택은 추가하지 않는다. 기존 정규 JSON `bodyHash`에 전체 원형을 넣고 challenge·proof·packetHash를 지금과 같이 대조한다. 서비스의 기존 한도·키·서명 알고리즘·nonce는 바꾸지 않는다. 요청에 선택값이 없으면 기존 축약 응답을 그대로 반환한다. 해당 문자열을 요청한 적격 SEND에만 §2의 `executionAuthority` 한 필드를 추가한다. 구형 서버는 새 원형을 거절하므로 자동으로 구형 형상으로 재전송하지 않는다. 구형 요청/응답과 과거 permit은 계속 읽을 수 있다.
 
@@ -101,3 +101,7 @@ executionAuthority: {
 `0097_normal_instruction_dispatch.sql.pending` 607행·700행·706행은 각각 기존 receipt bodyHash와 requestHash, permit 원 요청 hash, challenge bodyHash를 대조한다. C는 선택값까지 포함한 signed 요청 원형을 **기존 `permit.request` 안에 그대로 보존**하여 세 hash의 정확 동일성을 유지한다. SQL의 닫힌 요청 형상에서 기존 4개 또는 정확 단일 선택값의 5개 키를 인정하고, 5개 형상은 원 사실의 CONTEXT_REVIEW 및 READ 전용 조건과 함께 검산한다. 형상 변경은 목적 SEND의 forward SQL 보완으로만 제시하며 실제 적용은 이번 결정에 포함하지 않는다. START의 요청 guard, 다른 receipt·기존 SQL·권한·테이블·서명키·자료는 변경하지 않는다. 동일 중첩 원형을 검산하는 서버/실행기·원장 소비자와 보관 검산 코드는 기존 원형도 보존해야 한다.
 
 원 permit 전체의 기존 SHA256 결박을 검증하기 때문에 수신 자료엔 실행의 subject/session 식별자·근거 fullref·요청 메타데이터가 포함된다. 이 노출은 새 응답 계약의 명시적 결정 항목이다. 문서·지시 본문·token·키의 전달이나 UI/로그 출력, 추가 저장은 허용하지 않는다. 모든 해당 후속 SEND의 이 메타데이터 제공을 원치 않으면 C는 부적합하며 기존 축약 응답을 유지한다. 검수는 기본/과거 자료·START 보존, 요청값 변경/삭제·서명 불일치·WORK 및 쓰기 범위 거절·동일 선택 재조회, 구형 클라이언트 호환, exact FIRST3 및 한도·불명·rollback을 포함한다. 이 후보는 코드·미적용 SQL·합성 검증의 결정만 대상으로 하며 실제 DB·권한·키·서비스·C#·SDK/Agent 실행은 제외한다.
+
+`CONTEXT_REVIEW`는 저장된 원 `currentFact.intent.mode`의 정확 값으로 판정한다. `currentFact.intent.sourceScopes` 전체의 모든 target이 정확 `READ`여야 하며 일부 허용 target만 추출하지 않는다. 서버와 SQL은 같은 범위와 값으로 검산하고 구체 비교는 WI에서 고정한다.
+
+같은 명령에 기본→C 또는 C→기본의 다른 packet이 오면 기존 중복 또는 다른 원 요청 거절을 유지한다. 양방향 모두 새 permit·영수증·감사 및 원 권위 변경 0이다. rollback은 C 신규 발급·추가 응답과 native 사용을 닫되 이미 저장된 5개 키 원 요청의 requestHash·contentHash를 읽고 검산하는 규칙을 보존한다. 해당 원본을 구형 4개 키로 재작성하거나 과거 행을 삭제하지 않는다.
