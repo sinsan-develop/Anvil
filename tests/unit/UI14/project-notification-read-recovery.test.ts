@@ -38,13 +38,14 @@ const id=(n:number)=>`a6170000-0000-4000-8000-${String(n).padStart(12,'0')}`,pid
 const session={user:{id:uid},clientId:cid,csrfToken:'C'.repeat(43)};
 function dto(readAt:string|null=null){return{id:nid,eventRef:{kind:'APPROVAL_REQUESTED',serverCommandId:id(7),requestRef:{id:id(5),version:1,contentHash:'a'.repeat(64)},channel:'IN_APP',occurredAt:at},recipientRef:{kind:'HUMAN',userId:uid},projectRef:{id:pid},severity:'ACTION_REQUIRED',reason:'APPROVAL_REQUESTED',authenticatedTarget:{kind:'APPROVAL_REQUEST',projectId:pid,approvalRequestId:id(5)},deliveryState:'STORED_IN_APP',readAt};}
 function deferred<T>(){let resolve!:(value:T)=>void;const promise=new Promise<T>(r=>resolve=r);return{promise,resolve};}
-async function fixture(){
+async function fixture(pages?:{read:(path:string)=>Response|Promise<Response>}){
  let pending:any=null,shown=true,currentSession=session,projectId:string|null=pid,lost=0,postLost=false,read=false,readMode:string|null='503',hold:ReturnType<typeof deferred<Response>>|null=null;
  const posts:string[]=[],gets:string[]=[],unknown:string[]=[],scope=new ui.NotificationScope();
  const client=new ui.ApiClient(async(path:string,init:any)=>{
   if(init?.method==='POST'){assert.equal(path,`/api/v1/projects/${pid}/commands`);posts.push(init.body);const c=JSON.parse(init.body);read=true;if(postLost){postLost=false;throw Error('response lost');}return Response.json({commandId:c.commandId,operationId:id(8),projectId:pid,status:'APPLIED',targetId:nid,version:1,data:{status:'NOTIFICATION_READ',ref:c.payload.notificationRef,readAt:at},evidenceRefs:[],warnings:[],serverReceivedAt:at});}
   gets.push(path);
   if(path===`/api/v1/projects/${pid}`)return Response.json({id:pid,participation:'OWNER',controlState:{actorId:uid,clientId:cid,generation:3,status:'HELD'}});
+  if(pages&&path.startsWith(`/api/v1/projects/${pid}/notifications?`))return pages.read(path);
   if(path.startsWith(`/api/v1/projects/${pid}/notifications?`))return Response.json({items:[dto()],hasMore:false,nextCursor:null,observedAt:at,baselineVersion:null});
   if(path===`/api/v1/projects/${pid}/notifications/${nid}`){if(!read)return Response.json(dto());if(hold){const wait=hold;hold=null;return wait.promise;}if(readMode==='503'||readMode==='403'||readMode==='401')return Response.json({code:'NOTIFICATION_STORAGE_FAILED'},{status:Number(readMode)});if(readMode==='HASH')return Response.json({...dto(at),eventRef:{...dto().eventRef,serverCommandId:id(90)}});return Response.json(dto(readMode));}
   unknown.push(path);throw Error('UNEXPECTED_REQUEST');
@@ -55,7 +56,7 @@ async function fixture(){
  const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));}),wait=async(check:()=>boolean)=>{for(let n=0;n<100&&!check();n++)await settle();assert(check(),container.textContent);};
  const click=async(name:string)=>{const b=button(name);assert(!b.disabled);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
  await ui.React.act(async()=>render());assert.equal(gets.length,0);await click('알림 처음 조회');await wait(()=>nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='알림 상세 조회'));await click('알림 상세 조회');await wait(()=>container.textContent.includes('선택한 승인 알림'));
- return{posts,gets,unknown,container,readVerified:()=>nodes().some(n=>n.tagName==='DD'&&n.textContent==='읽음 · '+at),button,click,wait,settle,pending:()=>pending,lost:()=>lost,mode:(mode:string|null)=>{readMode=mode;},losePost:()=>{postLost=true;},hold:()=>{hold=deferred<Response>();return hold;},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},context:async(s=session,p:string|null=pid)=>{currentSession=s;projectId=p;await ui.React.act(async()=>render());},replace:async(next:any=null)=>{pending=next;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{filter:async(value:string)=>{const n=nodes().find(n=>n.tagName==='SELECT')!,key=Object.keys(n).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>(n as any)[key].onChange({target:{value}}));},transport:async()=>{const old=client.transport;client.transport=(...args:Parameters<typeof fetch>)=>old(...args);await ui.React.act(async()=>render());},posts,gets,unknown,container,readVerified:()=>nodes().some(n=>n.tagName==='DD'&&n.textContent==='읽음 · '+at),button,click,wait,settle,pending:()=>pending,lost:()=>lost,mode:(mode:string|null)=>{readMode=mode;},losePost:()=>{postLost=true;},hold:()=>{hold=deferred<Response>();return hold;},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},context:async(s=session,p:string|null=pid)=>{currentSession=s;projectId=p;await ui.React.act(async()=>render());},replace:async(next:any=null)=>{pending=next;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 test('읽음 POST확정 뒤 GET503은 원영수증 보존→명시 정확GET만으로 동일 readAt을 확인한다',async()=>{
  const f=await fixture();try{await f.click('명시적으로 읽음 표시');await f.wait(()=>f.container.textContent.includes('후속 조회 실패'));const original=f.pending(),before=f.gets.length;assert.equal(f.posts.length,1);assert.equal(original.receipt.readAt,at);
@@ -106,5 +107,72 @@ for(const status of [200,401])test(`최초 읽음 확정 직후 후속GET 지연
  const f=await fixture();try{const late=f.hold();await f.click('명시적으로 읽음 표시');await f.wait(()=>!!f.pending()?.receipt);const receipt=f.pending().receipt;assert.equal(receipt.readAt,at);await f.replace();
   const before=digestStarted;late.resolve(Response.json(status===200?dto(at):{code:'AUTH_REQUIRED'},{status}));if(status===200)await f.wait(()=>digestStarted>before&&digestCompleted===digestStarted);await f.settle();await f.settle();
   assert.equal(f.pending(),null);assert(!f.readVerified());assert.equal(f.lost(),0);assert.equal(f.posts.length,1);
+ }finally{await f.close();}
+});
+
+
+const pageCursor='fixed-notification-cursor';
+function notificationPage(next=true){return{items:[dto()],hasMore:next,nextCursor:next?pageCursor:null,observedAt:at,baselineVersion:null};}
+async function pagedFixture(){
+ let mode='LOST',hold:ReturnType<typeof deferred<Response>>|null=null;
+ const f=await fixture({read:async path=>{
+  const url=new URL(path,'https://test.invalid');
+  if(!url.searchParams.has('cursor'))return Response.json(notificationPage());
+  assert.equal(url.searchParams.get('cursor'),pageCursor);
+  if(hold){const wait=hold;hold=null;return wait.promise;}
+  if(mode==='LOST')throw Error('synthetic transport unavailable');
+  if(mode==='INVALID')return new Response('<html>invalid</html>',{status:503,headers:{'content-type':'text/html'}});
+  if(mode==='SHAPE')return Response.json({items:[]});
+  if(mode==='SERVER_CODE')return Response.json({code:'CONNECTION_LOST'},{status:503});
+  if(['401','403','404','400'].includes(mode))return Response.json({code:mode==='400'?'CURSOR_INVALID':'ACCESS_DENIED'},{status:Number(mode)});
+  return Response.json(notificationPage(false));
+ }});
+ return{...f,pageMode:(value:string)=>{mode=value;},holdPage:()=>{hold=deferred<Response>();return hold;}};
+}
+const retryPage='같은 알림 페이지 다시 조회';
+test('다음 알림 연결 오류는 원 filter/cursor의 명시 재조회만 허용하고 이전 상세를 숨긴다',async()=>{
+ const f=await pagedFixture();try{
+  const before=f.gets.length;await f.click('알림 다음 조회');await f.wait(()=>!f.container.textContent.includes('알림 조회·결과 확인 중'));
+  assert.equal(f.gets.length,before+1);assert(!f.container.textContent.includes('선택한 승인 알림'));
+  assert(!f.container.textContent.includes('같은 명령 결과'));assert.equal(f.button(retryPage).disabled,false);assert.equal(f.button('알림 다음 조회').disabled,true);
+  const exact=f.gets.at(-1);assert.match(exact!,/readState=ALL&cursor=fixed-notification-cursor$/);await f.settle();assert.equal(f.gets.length,before+1);
+  await f.click(retryPage);await f.wait(()=>!f.container.textContent.includes('알림 조회·결과 확인 중'));assert.equal(f.gets.at(-1),exact);assert.equal(f.gets.length,before+2);
+  f.pageMode('OK');const late=f.holdPage(),button=f.button(retryPage),key=Object.keys(button).find(k=>k.startsWith('__reactProps'))!,action=(button as any)[key].onClick;
+  await ui.React.act(async()=>{action();action();});assert.equal(f.gets.length,before+3);assert.equal(f.gets.at(-1),exact);
+  late.resolve(Response.json(notificationPage(false)));await f.wait(()=>f.container.textContent.includes('이번 응답 1건'));
+  assert(!f.container.textContent.includes(retryPage));assert(!f.container.textContent.includes('선택한 승인 알림'));assert.equal(f.posts.length,0);assert.equal(f.pending(),null);assert.equal(f.lost(),0);
+ }finally{await f.close();}
+});
+for(const mode of ['401','403','404','400','INVALID','SHAPE','SERVER_CODE'])test('다음 알림 '+mode+' 실패는 보존 cursor 재조회를 폐기한다',async()=>{
+ const f=await pagedFixture();try{
+  await f.click('알림 다음 조회');await f.wait(()=>f.container.textContent.includes(retryPage));f.pageMode(mode);const before=f.gets.length;
+  await f.click(retryPage);await f.wait(()=>!f.container.textContent.includes('알림 조회·결과 확인 중'));
+  assert(!f.container.textContent.includes(retryPage));assert(!f.container.textContent.includes('선택한 승인 알림'));assert(!f.container.textContent.includes('같은 명령 결과'));
+  assert.equal(f.button('알림 다음 조회').disabled,true);assert.equal(f.gets.length,before+1);assert.equal(f.posts.length,0);assert.equal(f.lost(),mode==='401'?1:0);
+ }finally{await f.close();}
+});
+for(const change of ['PROJECT_ABA','SESSION','TRANSPORT'] as const)for(const status of [200,401])test('알림 페이지 재조회 지연'+status+'는 '+change+' 뒤 cursor·응답을 폐기한다',async()=>{
+ const f=await pagedFixture();try{
+  await f.click('알림 다음 조회');await f.wait(()=>f.container.textContent.includes(retryPage));
+   const late=f.holdPage();await f.click(retryPage);
+   if(change==='PROJECT_ABA'){await f.context(session,id(99));await f.context();}
+   else if(change==='SESSION')await f.context({...session,csrfToken:'D'.repeat(43)});else await f.transport();
+   const before=digestStarted;late.resolve(Response.json(status===200?notificationPage(false):{code:'AUTH_REQUIRED'},{status}));
+   if(status===200)await f.wait(()=>digestStarted>before&&digestCompleted===digestStarted);await f.settle();await f.settle();
+   assert(!f.container.textContent.includes(retryPage));assert(!f.container.textContent.includes('이번 응답 1건'));assert(!f.container.textContent.includes('선택한 승인 알림'));assert.equal(f.lost(),0);
+  assert.equal(f.posts.length,0);assert.equal(f.pending(),null);
+ }finally{await f.close();}
+});
+
+
+test('알림 filter 변경은 이전 재조회 버튼을 폐기하고 새 미읽음 cursor만 명시 사용한다',async()=>{
+ const f=await pagedFixture();try{
+  await f.click('알림 다음 조회');await f.wait(()=>f.container.textContent.includes(retryPage));
+  const b=f.button(retryPage),key=Object.keys(b).find(k=>k.startsWith('__reactProps'))!,oldAction=(b as any)[key].onClick;
+  await f.filter('UNREAD');assert(!f.container.textContent.includes(retryPage));const before=f.gets.length;
+  await ui.React.act(async()=>oldAction());assert.equal(f.gets.length,before);
+  await f.click('알림 처음 조회');await f.wait(()=>f.container.textContent.includes('이번 응답 1건'));assert.match(f.gets.at(-1)!,/readState=UNREAD$/);
+  await f.click('알림 다음 조회');await f.wait(()=>f.container.textContent.includes(retryPage));const exact=f.gets.at(-1);assert.match(exact!,/readState=UNREAD&cursor=fixed-notification-cursor$/);
+  f.pageMode('OK');await f.click(retryPage);await f.wait(()=>f.container.textContent.includes('이번 응답 1건'));assert.equal(f.gets.at(-1),exact);assert.equal(f.gets.length,before+3);assert.equal(f.posts.length,0);
  }finally{await f.close();}
 });

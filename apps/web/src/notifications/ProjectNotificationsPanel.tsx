@@ -4,14 +4,16 @@ import type {DocumentSession} from '../features/design-trace/editor-api.ts';
 import {ApprovalRequestLinks} from '../features/mobile/ApprovalRequestLinks.ts';
 import {NotificationScope,listNotifications,readNotification,prepareNotificationRead,sendNotificationRead,notificationPendingMatches,type NotificationPage,type NotificationPending,type NotificationTicket,type NotificationView,type ReadState} from './project-notifications-api.ts';
 interface Ticket{local:NotificationTicket;owner:NotificationTicket}
-interface View{ticket:Ticket|null;page:NotificationPage|null;selected:NotificationView|null;busy:boolean;error:ApiError|null;followupFailed:boolean}
-const empty=():View=>({ticket:null,page:null,selected:null,busy:false,error:null,followupFailed:false});
+interface ListTarget{readState:ReadState;cursor:string|null}
+interface View{listRetry:ListTarget|null;listFailed:boolean;ticket:Ticket|null;page:NotificationPage|null;selected:NotificationView|null;busy:boolean;error:ApiError|null;followupFailed:boolean}
+const empty=():View=>({listRetry:null,listFailed:false,ticket:null,page:null,selected:null,busy:false,error:null,followupFailed:false});
 const asError=(e:unknown)=>e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');
-function errorText(e:ApiError){
+function errorText(e:ApiError,listFailed=false){
  if(e.status===401)return '로그인이 만료되었습니다. 다시 로그인하세요.';
  if(e.status===404)return '현재 프로젝트 또는 알림에 접근할 수 없습니다. 이전 내용을 숨겼습니다.';
  if(e.code==='NOTIFICATION_READ_APPROVAL_NOT_CONNECTED')return '읽음에 필요한 승인 연결이 없습니다. 이 화면에서 승인이나 정책을 새로 만들지 않습니다.';
  if(e.status===403)return '현재 제어 또는 읽음 권한이 없습니다. 서버가 현재 권한을 다시 검사합니다.';
+ if(listFailed&&e.code==='CONNECTION_LOST')return '알림 페이지를 확인하지 못했습니다. 이전 조회 내용을 숨겼습니다.';
  if(e.code==='NOTIFICATION_READ_RESULT_UNCERTAIN'||e.code==='CONNECTION_LOST')return '처리 결과 미확인. 자동으로 다시 보내지 않았습니다. 같은 명령 결과만 재확인하세요.';
  if(e.code==='NOTIFICATION_CONTEXT_CHANGED')return '로그인·기기·제어 또는 접속 조건이 변경되었습니다. 보존한 명령을 새 명령으로 바꾸지 않았습니다.';
  if(e.status===503)return '알림 저장소가 연결되지 않았거나 자료를 확인할 수 없습니다. 빈 목록으로 확인된 상태가 아닙니다.';
@@ -26,7 +28,7 @@ export function ProjectNotificationsPanel({client,session,projectId,buffer,scope
  useEffect(()=>()=>local.current.dispose(),[]);
  const matches=(t:Ticket)=>local.current.current(t.local)&&ownerScope.current(t.owner)&&live.current.client===client&&live.current.session===session&&live.current.projectId===projectId;
  const shown=view.ticket&&matches(view.ticket)?view:empty();
- const rendered=useRef({page:shown.page,selected:shown.selected,filter});rendered.current={page:shown.page,selected:shown.selected,filter};
+ const rendered=useRef({page:shown.page,selected:shown.selected,filter,retry:shown.listRetry});rendered.current={page:shown.page,selected:shown.selected,filter,retry:shown.listRetry};
  const work=buffer&&projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId&&buffer.projectId===projectId?buffer:null;
  const bound=!!work&&notificationPendingMatches(work,client,session,projectId!);
  const unresolved=!!work&&!work.receipt;
@@ -34,11 +36,11 @@ export function ProjectNotificationsPanel({client,session,projectId,buffer,scope
  function begin():Ticket|null{
   if(live.current.buffer!==buffer||!projectId||live.current.client!==client||live.current.session!==session||live.current.projectId!==projectId)return null;
   if(lock.current&&matches(lock.current))return null;
-  const t={local:local.current.ticket(),owner:ownerScope.ticket()};if(!matches(t))return null;lock.current=t;setView({...shown,ticket:t,busy:true,error:null,followupFailed:false});return t;
+  const t={local:local.current.ticket(),owner:ownerScope.ticket()};if(!matches(t))return null;lock.current=t;setView({...shown,ticket:t,busy:true,error:null,followupFailed:false,listRetry:null,listFailed:false});return t;
  }
  function finish(t:Ticket){if(lock.current===t)lock.current=null;if(matches(t))setView(v=>({...v,busy:false}));}
- function fail(cause:unknown,t:Ticket,followupFailed=false){if(!matches(t))return;const e=asError(cause);setView(v=>({...v,ticket:t,page:null,selected:null,busy:false,error:e,followupFailed}));if([403,404].includes(e.status)){const p=live.current.buffer;if(p)onChange(p.bindingId,{...p,accessLost:true});}if(e.status===401)onAuthenticationLost();}
- async function list(cursor:string|null=null){if(unresolved||rendered.current.filter!==filter)return;const t=begin();if(!t)return;if(work?.receipt&&!onChange(work.bindingId,null)){finish(t);return;}setView({...empty(),ticket:t,busy:true});try{const page=await listNotifications(client,projectId!,session.user.id,filter,cursor);if(matches(t))setView({...empty(),ticket:t,page});}catch(e){fail(e,t);}finally{finish(t);}}
+ function fail(cause:unknown,t:Ticket,followupFailed=false,listTarget:ListTarget|null=null){if(!matches(t))return;const e=asError(cause);setView(v=>({...v,ticket:t,page:null,selected:null,busy:false,error:e,followupFailed,listFailed:!!listTarget,listRetry:listTarget&&e.code==='CONNECTION_LOST'&&e.status===0?listTarget:null}));if([403,404].includes(e.status)){const p=live.current.buffer;if(p)onChange(p.bindingId,{...p,accessLost:true});}if(e.status===401)onAuthenticationLost();}
+ async function list(cursor:string|null=null,retry:ListTarget|null=null){if(unresolved||rendered.current.filter!==filter||retry&&(rendered.current.retry!==retry||shown.listRetry!==retry||retry.readState!==filter))return;const target={readState:filter,cursor};const t=begin();if(!t)return;if(work?.receipt&&!onChange(work.bindingId,null)){finish(t);return;}setView({...empty(),ticket:t,busy:true});try{const page=await listNotifications(client,projectId!,session.user.id,target.readState,target.cursor);if(matches(t))setView({...empty(),ticket:t,page});}catch(e){fail(e,t,false,target);}finally{finish(t);}}
  async function inspect(item:NotificationView){if(unresolved||rendered.current.page!==shown.page||!shown.page?.items.includes(item))return;const t=begin();if(!t)return;if(work?.receipt&&!onChange(work.bindingId,null)){finish(t);return;}setView({...shown,ticket:t,selected:null,busy:true,error:null,followupFailed:false});try{const value=await readNotification(client,projectId!,session.user.id,item.ref);if(matches(t))setView(v=>({...v,selected:value}));}catch(e){fail(e,t);}finally{finish(t);}}
  async function access(){
   if(!work||!bound)return;const t=begin();if(!t)return;
@@ -69,8 +71,9 @@ export function ProjectNotificationsPanel({client,session,projectId,buffer,scope
    <label>읽음 상태 <select value={filter} disabled={frozen} onChange={e=>{if(!frozen){local.current.ticket();setFilter(e.target.value as ReadState);setView(empty());}}}><option value="ALL">전체</option><option value="UNREAD">미읽음</option><option value="READ">읽음</option></select></label>{' '}
    <button type="button" disabled={frozen} onClick={()=>void list()}>알림 처음 조회</button>{' '}
    <button type="button" disabled={frozen||!shown.page?.hasMore} onClick={()=>void list(shown.page?.nextCursor??null)}>알림 다음 조회</button>
+   {shown.listRetry?<button type="button" disabled={frozen} onClick={()=>{const target=shown.listRetry;if(target)void list(target.cursor,target);}}>같은 알림 페이지 다시 조회</button>:null}
    {shown.busy?<p role="status">알림 조회·결과 확인 중</p>:null}
-   {shown.error?<p role="alert">{shown.followupFailed?'후속 조회 실패. ':''}{errorText(shown.error)}</p>:null}
+   {shown.error?<p role="alert">{shown.followupFailed?'후속 조회 실패. ':''}{shown.listRetry?'연결이 끊겨 알림 페이지를 읽지 못했습니다. 자동으로 재조회하지 않았습니다. 같은 알림 페이지를 다시 읽을 수 있습니다.':errorText(shown.error,shown.listFailed)}</p>:null}
    {work?.receipt?<p role="status">읽음 처리 확인 · <time dateTime={work.receipt.readAt}>{work.receipt.readAt}</time>{shown.followupFailed?' · 후속 조회는 확인하지 못했습니다.':''}</p>:null}
    {bound&&work?.receipt&&!work.accessLost?<button type="button" disabled={shown.busy} onClick={()=>void access()}>읽음 원알림 다시 확인</button>:null}
    {unresolved?<p role="status">처리 결과 미확인 · 원래 명령을 보존했습니다. 다른 읽음이나 대상 변경 전 같은 명령 결과를 재확인하세요.</p>:null}
