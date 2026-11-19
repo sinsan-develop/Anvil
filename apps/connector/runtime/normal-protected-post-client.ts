@@ -1,3 +1,4 @@
+import {readNormalPermitRequestV1,readNormalSendPermitSourceV1} from '../../../contracts/runtime/normal-send-permit-source-v1.ts';
 import {randomBytes,randomUUID} from 'node:crypto';
 import {NormalOwnedCredentialPort} from './normal-credential-bootstrap-client.ts';
 import {request as httpsRequest,type RequestOptions} from 'node:https';
@@ -16,7 +17,7 @@ export interface NormalProtectedPostOptions{origin:string;ca?:string;credential?
 export interface NormalProtectedPostPorts{signer?:NormalProtectedSigner;protectedCredential?:NormalOwnedCredentialPort;request?:NormalHttpsRequestDriver;now?:()=>number;monotonicNow?:()=>number;
  setTimeout?:typeof setTimeout;clearTimeout?:typeof clearTimeout}
 export interface PreparedNormalPost {kind:'PERMIT'|'OBSERVATIONS';path:string;auth:string;challengeRef:Ref;requestId:string;expiresAt:string}
-export interface NormalPermitResult {transport:'NORMAL_PROTECTED';proofResultRef:Ref;permit:{ref:Ref;commandId:string;envelopeHash:string;issuedAt:string;expiresAt:string};cacheControl:'no-store';nonceConsumed:true;executionAuthorized:true;dispatchPerformed:false}
+export interface NormalPermitResult {transport:'NORMAL_PROTECTED';proofResultRef:Ref;permit:{ref:Ref;commandId:string;envelopeHash:string;issuedAt:string;expiresAt:string};cacheControl:'no-store';nonceConsumed:true;executionAuthorized:true;dispatchPerformed:false;executionAuthority?:ReturnType<typeof readNormalSendPermitSourceV1>}
 export interface NormalObservationResult {transport:'NORMAL_PROTECTED';proofResultRef:Ref;ack:{ref:Ref;snapshot:any};cacheControl:'no-store';nonceConsumed:true;executionAuthorized:false;dispatchPerformed:false}
 
 export class NormalProtectedPostError extends Error{
@@ -123,11 +124,9 @@ export class NormalProtectedPostClient{
    expiresAt:new Date(Math.min(Date.parse(c.expiresAt),this.#credentialExpiry)).toISOString()};
  }
  async preparePermit(commandId:string,raw:unknown,signal:AbortSignal):Promise<PreparedNormalPost>{
-  if(!uuidV1(commandId)||!recordV1(raw,['envelopeHash','localAttemptRef','sourceObservationRefs','osOwnershipRef'])||
-   !hashV1(raw.envelopeHash)||!refV1(raw.localAttemptRef)||!refV1(raw.osOwnershipRef)||!Array.isArray(raw.sourceObservationRefs)||
-   raw.sourceObservationRefs.length<1||raw.sourceObservationRefs.length>200||!raw.sourceObservationRefs.every(refV1)||
-   new Set(raw.sourceObservationRefs.map(canonicalJson)).size!==raw.sourceObservationRefs.length)fail('NORMAL_POST_INPUT_INVALID');
-  const envelopeHash=raw.envelopeHash,body=canonicalJson(raw);if(Buffer.byteLength(body)>limits.PERMIT)fail('NORMAL_POST_INPUT_INVALID');
+  if(!uuidV1(commandId))fail('NORMAL_POST_INPUT_INVALID');
+  let request:ReturnType<typeof readNormalPermitRequestV1>;try{request=readNormalPermitRequestV1(raw);}catch{return fail('NORMAL_POST_INPUT_INVALID');}
+  const envelopeHash=request.envelopeHash,body=canonicalJson(request);if(Buffer.byteLength(body)>limits.PERMIT)fail('NORMAL_POST_INPUT_INVALID');
   const value=await this.#prepare(this.#base+'/commands/'+commandId+'/permit',body,signal);
   const p=Object.freeze({kind:'PERMIT' as const,path:value.path,auth:value.auth,challengeRef:value.challengeRef,requestId:value.requestId,expiresAt:value.expiresAt});
   this.#packets.set(p,{body,command:commandId,envelopeHash});return p;
@@ -147,8 +146,9 @@ export class NormalProtectedPostClient{
   const raw:any=await this.#send('POST',p.path,'',saved.body,['Content-Type','application/json','Anvil-Execution-Auth',p.auth],
    limits.RESPONSE,Math.min(expiry,this.#credentialExpiry),signal,'POST');
   try{
-   const variant=p.kind==='PERMIT'?'permit':'ack';
-   if(!recordV1(raw,['transport','proofResultRef',variant,'cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed'])||
+   const variant=p.kind==='PERMIT'?'permit':'ack',request=p.kind==='PERMIT'?readNormalPermitRequestV1(JSON.parse(saved.body)):null;
+   const fields=['transport','proofResultRef',variant,'cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed'];if(request?.representation)fields.push('executionAuthority');
+   if(!recordV1(raw,fields)||
     raw.transport!=='NORMAL_PROTECTED'||!refV1(raw.proofResultRef)||raw.cacheControl!=='no-store'||raw.nonceConsumed!==true||
     raw.dispatchPerformed!==false||raw.executionAuthorized!==(p.kind==='PERMIT'))throw Error();
    if(p.kind==='PERMIT'){
@@ -156,6 +156,7 @@ export class NormalProtectedPostClient{
     if(!recordV1(v,['ref','commandId','envelopeHash','issuedAt','expiresAt'])||!refV1(v.ref)||v.commandId!==saved.command||v.envelopeHash!==saved.envelopeHash||
      !isoV1(v.issuedAt)||!isoV1(v.expiresAt)||Date.parse(v.issuedAt)>now||Date.parse(v.expiresAt)<=now||
      Date.parse(v.expiresAt)>Math.min(Date.parse(v.issuedAt)+30000,expiry,this.#credentialExpiry))throw Error();
+    if(request?.representation)readNormalSendPermitSourceV1(raw.executionAuthority,{scope:{mode:'EXECUTION',...this.#scope},request,permit:{ref:v.ref,commandId:v.commandId,envelopeHash:v.envelopeHash,issuedAt:v.issuedAt,expiresAt:v.expiresAt},proofResultRef:raw.proofResultRef});
     // ref는 서버 full permit snapshot의 hash이며 축약 응답의 hash가 아니다.
    }else{
     const ack=raw.ack,v=ack?.snapshot,scope=this.#scope;

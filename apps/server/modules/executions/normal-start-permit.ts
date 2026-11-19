@@ -1,3 +1,4 @@
+import {readNormalPermitRequestV1} from '../../../../contracts/runtime/normal-send-permit-source-v1.ts';
 import {consumeNormalInstructionPermit,type NormalInstructionPermitOptions} from './normal-instruction-permit.ts';
 import {randomUUID} from 'node:crypto';
 import type {FastifyInstance,FastifyRequest} from 'fastify';
@@ -104,6 +105,7 @@ async function issue(o:NormalStartPermitOptions,connector:string,execution:strin
    const send=(await db.query('SELECT * FROM anvil.normal_instruction_record($1,$2,$3,$4)',[pid,execution,b.executionGeneration,command])).rows;
    if(send.length){await db.query('ROLLBACK');return {instruction:true} as const;}
   }
+  readRequest(request); // START는 기존 4키만 허용한다.
   const packetHash=digest({frame,target}),requestHash=digest(request);
   const previous=(await db.query(`SELECT v.content_hash AS vhash,v.snapshot_json AS consumed,r.id,r.content_hash,r.snapshot_json AS receipt
    FROM anvil.execution_challenges v LEFT JOIN anvil.execution_receipts r ON r.project_id=v.project_id AND r.challenge_id=v.id
@@ -194,7 +196,9 @@ export function registerNormalStartPermit(app:FastifyInstance,o:NormalStartPermi
    if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(r.headers['content-type']??''))deny('INPUT_INVALID',400);
    const body=r.body as {text:string;value:unknown}|undefined;
    if(!body||typeof body.text!=='string')deny('INPUT_INVALID',400);
-   const request=readRequest(body!.value),target=executionTarget('POST',path,[],body!.text);
+   let request:ReturnType<typeof readNormalPermitRequestV1>;
+   try{request=readNormalPermitRequestV1(body.value);}catch{deny('INPUT_INVALID',400);}
+   const target=executionTarget('POST',path,[],body!.text);
    const token=normalRequestBearerDigest(r,origin.host,true),packet=readPacket(r,true) as Packet;
    const run=(pre?:{scope:FactScope;fact:unknown})=>issue(o,cid,eid,command,token,packet,target,request,r.signal,pre);
    const first=await run();

@@ -67,3 +67,22 @@ test('0097 PLpgSQL IF의 receipt kind CASE는 괄호로 닫아 다음 OR 조건�
  assert.doesNotMatch(body,/IS DISTINCT FROM CASE/);
  assert.match(body,/IS DISTINCT FROM \(CASE WHEN p\.envelope->>'operation'='SEND_INSTRUCTION' THEN 'NORMAL_INSTRUCTION_MATERIAL' ELSE 'NORMAL_START_MATERIAL' END\) OR/);
 });
+
+
+test('0100 C forward는 SEND 요청 선택 검산 외 원 0097 guard 바이트를 보존한다',()=>{
+ const base=read('db/migrations/0097_normal_instruction_dispatch.sql.pending').replace(/\r\n/g,'\n'),next=read('db/migrations/0100_normal_send_permit_source.sql.pending');
+ const originalStart=base.indexOf('CREATE FUNCTION anvil.guard_normal_instruction_permit()'),bodyStart=next.indexOf('CREATE OR REPLACE FUNCTION anvil.guard_normal_instruction_permit()');
+ const originalEnd=base.indexOf('\n$$;',originalStart),bodyEnd=next.indexOf('\n$$;',bodyStart);
+ assert(originalStart>=0&&bodyStart>=0&&originalEnd>originalStart&&bodyEnd>bodyStart);
+ // 함수 종결자까지 그대로 비교하며 함수 밖 구분용 빈 줄/EOF만 제외한다.
+ const original=base.slice(originalStart,originalEnd+4),body=next.slice(bodyStart,bodyEnd+4);
+ const begin=body.indexOf('OR NOT (anvil.execution_json_shape(req,'),end=body.indexOf("\n  OR NOT anvil.execution_preparation_ref_valid(req->'localAttemptRef')",begin);
+ assert(begin>=0&&end>begin);
+ const changed=body.slice(begin,end);
+ assert.match(changed,/representation' IS NOT DISTINCT FROM '"SEND_PERMIT_SOURCE_V1"'::jsonb/);
+ assert.match(changed,/mode' IS NOT DISTINCT FROM '"CONTEXT_REVIEW"'::jsonb/);
+ assert.match(changed,/jsonb_array_elements\(source->'targets'\).*access' IS DISTINCT FROM 'READ'/);
+ const restored=body.slice(0,begin)+"OR NOT anvil.execution_json_shape(req,ARRAY['envelopeHash','localAttemptRef','sourceObservationRefs','osOwnershipRef'])"+body.slice(end);
+ assert.equal(restored.replace('CREATE OR REPLACE FUNCTION','CREATE FUNCTION'),original);
+ assert.doesNotMatch(body,/CREATE TABLE|CREATE ROLE|GRANT |REVOKE |DROP |UPDATE anvil|DELETE FROM/);
+});

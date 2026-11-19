@@ -59,3 +59,49 @@ test('원문 비저장·비정규 scope/중복 source ref/배열 입력을 네�
   assert(!JSON.stringify(f.h.store.sqlArgs).includes(f.h.token));
  }finally{await f.h.app.close();}
 });
+
+
+test('C 선택 connector는 기존 서명 HTTP와 원 전체 snapshot 검산을 통해 응답을 받는다',async()=>{
+ const {normalInstructionRuntimeFixture}=await import('./normal-instruction-dispatch-fixture.ts');
+ const x=await normalInstructionRuntimeFixture();try{
+  const c=x.h.f.tables.execution_commands!.find((r:any)=>r.snapshot_json?.envelope.operation==='SEND_INSTRUCTION')!,e=c.snapshot_json.envelope,f=x.h.q.g.snapshot_json.binding;
+  const request={envelopeHash:e.envelopeHash,localAttemptRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},sourceObservationRefs:[...new Map(f.intent.sourceScopes.map((s:any)=>[canonicalJson(s.observationRef),s.observationRef])).values()],osOwnershipRef:f.checks.osFence.evidenceRefs[0],representation:'SEND_PERMIT_SOURCE_V1'};
+  const packet=await x.post.preparePermit(e.commandId,request,x.signal),reply:any=await x.post.send(packet,x.signal);
+  assert.deepEqual(reply.executionAuthority.permitSnapshot.request,request);assert.equal(x.h.permits.length,1);
+  assert.deepEqual(await x.post.send(packet,x.signal),reply);assert.equal(x.h.permits.length,1);
+ }finally{await x.h.close();}
+});
+
+
+test('구형 START의 양의 localAttemptRef v2 호환과 C 선택 START 거절을 유지한다',async()=>{
+ for(const selected of [false,true]){
+  const f=await preparedExecution();try{
+   const raw={...body(f),localAttemptRef:{...body(f).localAttemptRef,version:2},...(selected?{representation:'SEND_PERMIT_SOURCE_V1'}:{})};
+   const packet=await f.post.preparePermit(f.e.commandId,raw,f.signal);
+   if(selected){await assert.rejects(f.post.send(packet,f.signal),(e:any)=>e.code==='NORMAL_POST_REJECTED'&&e.status===400);assert.equal(f.q.permits.length,0);}
+   else{const reply:any=await f.post.send(packet,f.signal);assert.equal(reply.permit.commandId,f.e.commandId);assert.equal(Object.hasOwn(reply,'executionAuthority'),false);assert.equal(f.q.permits[0].snapshot_json.request.localAttemptRef.version,2);}
+  }finally{await f.h.app.close();}
+ }
+});
+
+test('C 응답 유실의 원 packet 보존과 원본 불일치·downgrade 거절은 추가 permit을 발급하지 않는다',async()=>{
+ const {normalInstructionRuntimeFixture}=await import('./normal-instruction-dispatch-fixture.ts');
+ const x=await normalInstructionRuntimeFixture();try{
+  const c=x.h.f.tables.execution_commands!.find((r:any)=>r.snapshot_json?.envelope.operation==='SEND_INSTRUCTION')!,e=c.snapshot_json.envelope,f=x.h.q.g.snapshot_json.binding;
+  const request={envelopeHash:e.envelopeHash,localAttemptRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},sourceObservationRefs:[...new Map(f.intent.sourceScopes.map((s:any)=>[canonicalJson(s.observationRef),s.observationRef])).values()],osOwnershipRef:f.checks.osFence.evidenceRefs[0],representation:'SEND_PERMIT_SOURCE_V1'};
+  const packet=await x.post.preparePermit(e.commandId,request,x.signal);x.mode.losePermit=true;
+  await assert.rejects(x.post.send(packet,x.signal),(err:any)=>err.outcomeUnknown===true);assert.equal(x.h.permits.length,1);
+  x.mode.losePermit=false;const good:any=await x.post.send(packet,x.signal);
+  for(const mutate of [
+   (v:any)=>delete v.executionAuthority,
+   (v:any)=>v.executionAuthority.kind='NORMAL_FIRST_SEND_PERMIT_SOURCE_V1',
+   (v:any)=>v.executionAuthority.extra=true,
+   (v:any)=>v.executionAuthority.permitSnapshot.currentFact.agentSession.bindingGeneration++,
+   (v:any)=>v.executionAuthority.permitSnapshot.request.representation='other',
+   (v:any)=>v.permit.ref.contentHash='d'.repeat(64),
+   (v:any)=>v.proofResultRef.id=randomUUID()
+  ]){x.mode.mutatePermit=mutate;await assert.rejects(x.post.send(packet,x.signal),(err:any)=>err.code==='NORMAL_POST_RESPONSE_INVALID'&&err.outcomeUnknown===true);assert.equal(x.h.permits.length,1);}
+  x.mode.mutatePermit=null;assert.deepEqual(await x.post.send(packet,x.signal),good);
+  x.mode.wall=31000;await assert.rejects(x.post.send(packet,x.signal));assert.equal(x.h.permits.length,1);
+ }finally{await x.h.close();}
+});

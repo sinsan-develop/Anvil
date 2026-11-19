@@ -1,3 +1,4 @@
+import {readNormalPermitRequestV1,normalSendPermitSourceEligible,type NormalPermitRequestV1} from '../../../../contracts/runtime/normal-send-permit-source-v1.ts';
 import {randomUUID} from 'node:crypto';
 import {types} from 'node:util';
 import {readNormalInstructionFact,readNormalInstructionRecord,type NormalInstructionCurrentSource} from './normal-instruction-command.ts';
@@ -17,18 +18,13 @@ import {normalRequestBearerDigest,requestCredential} from './normal-request-chal
 function deny(code='EXECUTION_PERMIT_REJECTED',status=412):never{throw new AuthFailure(code,status);}
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
-type Request={envelopeHash:string;localAttemptRef:Ref;sourceObservationRefs:Ref[];osOwnershipRef:Ref};
+type Request=NormalPermitRequestV1;
 type FactScope={projectId:string;executionId:string;executionGeneration:number;grantRef:Ref;instructionRef:Ref;partsRef:Ref;commandId:string;envelopeHash:string;observedAt:string};
 export interface NormalInstructionPermitOptions{pool:Pick<Pool,'connect'>;current?:NormalInstructionCurrentSource;source:NormalInstructionSource}
 const receiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','commandRef','envelopeHash','requestHash','observedAt','expiresAt'];
 const permitKeys=['scope','commandId','commandRef','request','requestHash','proofRef','authorizationReceiptRef','bindingHash','currentFact','reservationRef','state','issuedAt','expiresAt','commandExpiresAt','grantExpiresAt','proofExpiresAt','executionAuthorized','dispatchPerformed'];
 
-function readRequest(raw:unknown):Request{
- if(!recordV1(raw,['envelopeHash','localAttemptRef','sourceObservationRefs','osOwnershipRef'])||!hashV1(raw.envelopeHash)||!refV1(raw.localAttemptRef)||raw.localAttemptRef.version!==1||!refV1(raw.osOwnershipRef)||
-   !arrayV1(raw.sourceObservationRefs,200)||!raw.sourceObservationRefs.length||!raw.sourceObservationRefs.every(refV1)||
-   new Set(raw.sourceObservationRefs.map(r=>canonicalJson(r))).size!==raw.sourceObservationRefs.length)return deny('INPUT_INVALID',400);
- return cloneV1(raw) as unknown as Request;
-}
+function readRequest(raw:unknown):Request{try{const request=readNormalPermitRequestV1(raw);if(request.localAttemptRef.version!==1)throw Error();return request;}catch{return deny('INPUT_INVALID',400);}}
 async function boundedFact(source:NormalInstructionCurrentSource,scope:FactScope,outer:AbortSignal){
  const controller=new AbortController(),until=performance.now()+2000,observe=source.observe;let timer:ReturnType<typeof setTimeout>|undefined;
  const stop=()=>controller.abort();outer.addEventListener('abort',stop,{once:true});
@@ -51,6 +47,7 @@ function checkFact(raw:any,b:any,e:DispatchEnvelopeV1,request:Request,now:Date,g
   executionFactChecks.some(n=>n!=='understanding'&&f.checks[n].state!=='VERIFIED_CURRENT')||Date.parse(f.checkedAt)>at||at-Date.parse(f.checkedAt)>30000||
   f.intent.mode==='WORK'&&(f.understandingReviewRef===null||f.checks.understanding.state!=='VERIFIED_CURRENT')||f.intent.mode==='CONTEXT_REVIEW'&&f.intent.sourceScopes.some(s=>s.targets.some(t=>t.access!=='READ'))||
   !same(e.context.budgetRef,s.reservationRef)||!same(e.executorRegistrationRef,f.registration.ref)||!same((e.payload as any).sessionBindingRef,f.agentSession.sessionRef))deny('EXECUTION_PERMIT_CURRENT_AUTHORITY_REQUIRED');
+ if(request.representation&&!normalSendPermitSourceEligible(f))deny('EXECUTION_PERMIT_REPRESENTATION_REJECTED');
  const refs=[...new Map(f.intent.sourceScopes.map(s=>[canonicalJson(s.observationRef),s.observationRef])).values()];
  if(!same(refs,request.sourceObservationRefs)||!f.checks.osFence.evidenceRefs.some(r=>same(r,request.osOwnershipRef)))deny('EXECUTION_PERMIT_SOURCE_OS_MISMATCH');
  return f;
@@ -63,6 +60,7 @@ export function readNormalInstructionPermitLedger(raw:unknown,scope:any,now:stri
   if(!recordV1(r,['ref','snapshot'])||!refV1(r.ref)||r.ref.version!==1||ids.has(r.ref.id)||r.ref.contentHash!==digest(s)||!recordV1(s,permitKeys)||s.state!=='NORMAL_INSTRUCTION_PERMITTED'||s.executionAuthorized!==true||s.dispatchPerformed!==false||![s.commandRef,s.proofRef,s.reservationRef,s.authorizationReceiptRef].every(refV1)||!uuidV1(s.commandId)||commands.has(s.commandId)||proofs.has(canonicalJson(s.proofRef))||!same(s.scope,scope)||![s.issuedAt,s.expiresAt,s.commandExpiresAt,s.grantExpiresAt,s.proofExpiresAt].every(isoV1)||Date.parse(s.issuedAt)>Date.parse(now)||Date.parse(s.expiresAt)<=Date.parse(s.issuedAt)||Date.parse(s.expiresAt)>Math.min(Date.parse(s.issuedAt)+30000,Date.parse(s.commandExpiresAt),Date.parse(s.grantExpiresAt),Date.parse(s.proofExpiresAt)))return bad();
   const request=readRequest(s.request),f=readNormalInstructionFact(s.currentFact),{checkedAt:_,expires:__,...fact}=f;
   if(s.requestHash!==digest(request)||s.bindingHash!==digest({scope,commandRef:s.commandRef,authorizationReceiptRef:s.authorizationReceiptRef,reservationRef:s.reservationRef,fact})||f.projectId!==scope.projectId||f.executionId!==scope.executionId||f.executionGeneration!==scope.executionGeneration||f.registration.connectorId!==scope.connectorId||f.executionCredentialReservation.generation!==scope.credentialGeneration||f.writerState!=='OWNED'||executionFactChecks.some(n=>n!=='understanding'&&f.checks[n].state!=='VERIFIED_CURRENT')||Date.parse(f.checkedAt)>Date.parse(s.issuedAt)||Date.parse(s.issuedAt)-Date.parse(f.checkedAt)>30000||Date.parse(s.expiresAt)>Math.min(Date.parse(f.checkedAt)+30000,...Object.values(f.expires).map(Date.parse)))return bad();
+  if(request.representation&&!normalSendPermitSourceEligible(f))return bad();
   const sourceRefs=[...new Map(f.intent.sourceScopes.map(x=>[canonicalJson(x.observationRef),x.observationRef])).values()];
   if([s.commandRef,s.proofRef,s.reservationRef,s.authorizationReceiptRef].some(x=>x.version!==1)||!same(sourceRefs,request.sourceObservationRefs)||!f.checks.osFence.evidenceRefs.some(x=>same(x,request.osOwnershipRef))||f.intent.mode==='WORK'&&(f.understandingReviewRef===null||f.checks.understanding.state!=='VERIFIED_CURRENT')||f.intent.mode==='CONTEXT_REVIEW'&&f.intent.sourceScopes.some(x=>x.targets.some(t=>t.access!=='READ')))return bad();
   ids.add(r.ref.id);commands.add(s.commandId);proofs.add(canonicalJson(s.proofRef));
@@ -174,9 +172,10 @@ async function issue(o:NormalInstructionPermitOptions,connector:string,execution
   const endAt=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;
   if(!(endAt instanceof Date)||!Number.isFinite(endAt.getTime())||endAt<last.now||endAt.getTime()>=expires||signal.aborted)deny();
   checkFact(pre.fact,last.binding,again.envelope,request,endAt,grants[0].snapshot_json.binding,again.record);
+  const response=respond(receiptRef,permitRef,permit);
   committing=true;
   if((await db.query('COMMIT')).command!=='COMMIT')throw Error();
-  committing=false;return {out:respond(receiptRef,permitRef,permit)} as const;
+  committing=false;return {out:response} as const;
  }catch(error){
   if(committing)discard=new Error('EXECUTION_PERMIT_COMMIT_UNKNOWN');
   try{await db.query('ROLLBACK');}catch{discard??=new Error('EXECUTION_PERMIT_ROLLBACK_UNKNOWN');}
@@ -185,8 +184,10 @@ async function issue(o:NormalInstructionPermitOptions,connector:string,execution
  }finally{db.release(discard);}
 }
 function respond(proofResultRef:Ref,permitRef:Ref,p:any){
- return {transport:'NORMAL_PROTECTED',proofResultRef,permit:{ref:permitRef,commandId:p.commandId,envelopeHash:p.request.envelopeHash,issuedAt:p.issuedAt,expiresAt:p.expiresAt},
-  cacheControl:'no-store',nonceConsumed:true,executionAuthorized:true,dispatchPerformed:false};
+ const response={transport:'NORMAL_PROTECTED',proofResultRef,permit:{ref:permitRef,commandId:p.commandId,envelopeHash:p.request.envelopeHash,issuedAt:p.issuedAt,expiresAt:p.expiresAt},
+  cacheControl:'no-store',nonceConsumed:true,executionAuthorized:true,dispatchPerformed:false,
+  ...(p.request.representation?{executionAuthority:{kind:'NORMAL_SEND_PERMIT_SOURCE_V1',permitSnapshot:cloneV1(p)}}:{})};
+ if(Buffer.byteLength(canonicalJson(response))>2097152)deny('EXECUTION_PERMIT_RESPONSE_LIMIT',413);return response;
 }
 
 /** 호출자는 기존 normal HTTP parser를 통과한다. 이 함수도 DB credential/서명/원 명령을 다시 검산한다. */

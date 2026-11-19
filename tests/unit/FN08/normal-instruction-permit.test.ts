@@ -65,3 +65,52 @@ for(const fault of ['ROLLBACK','COMMIT_TAG','LOST','BUSY','OS','CORRECTION','REP
   else{assert.equal(h.permits.length,0);assert.equal(h.q.j.store.events().length,events);assert.equal(h.q.j.store.receipts().length,receipts);}
  }finally{await h.close();}
 });
+
+
+test('C 선택 SEND는 서명한 원 요청과 전체 permit을 보존하고 같은 packet만 재조회한다',async()=>{
+ const h=await normalInstructionDeliveryFixture();try{
+  const c=h.f.tables.execution_commands!.find((r:any)=>r.snapshot_json?.envelope.operation==='SEND_INSTRUCTION')!,e=c.snapshot_json.envelope,f=h.q.g.snapshot_json.binding;
+  assert.equal(f.intent.mode,'CONTEXT_REVIEW');
+  const request={envelopeHash:e.envelopeHash,localAttemptRef:{id:randomUUID(),version:1,contentHash:contentHash('C attempted')},sourceObservationRefs:[...new Map(f.intent.sourceScopes.map((s:any)=>[canonicalJson(s.observationRef),s.observationRef])).values()],osOwnershipRef:f.checks.osFence.evidenceRefs[0],representation:'SEND_PERMIT_SOURCE_V1'};
+  const packet=await h.prepare(h.prefix+'/commands/'+e.commandId+'/permit',{},request),first=await packet.get();
+  assert.equal(first.statusCode,200);
+  const reply=first.json(),snapshot=h.permits[0].snapshot_json;
+  assert.deepEqual(reply.executionAuthority,{kind:'NORMAL_SEND_PERMIT_SOURCE_V1',permitSnapshot:snapshot});
+  assert.deepEqual(snapshot.request,request);assert.equal(snapshot.requestHash,contentHash(canonicalJson(request)));
+  assert.equal(reply.permit.ref.contentHash,contentHash(canonicalJson(snapshot)));
+  assert.deepEqual((await packet.get()).json(),reply);assert.equal(h.permits.length,1);
+  assert.equal(readNormalInstructionPermitLedger({complete:true,permits:[{ref:reply.permit.ref,snapshot}]},snapshot.scope,snapshot.issuedAt).length,1);
+ }finally{await h.close();}
+});
+
+
+for(const selected of [false,true])test('C 선택값 양방향 교체는 원 서명과 같은 명령을 바꾸지 않는다 '+selected,async()=>{
+ const h=await normalInstructionDeliveryFixture();try{
+  const c=h.f.tables.execution_commands!.find((r:any)=>r.snapshot_json?.envelope.operation==='SEND_INSTRUCTION')!,e=c.snapshot_json.envelope,f=h.q.g.snapshot_json.binding;
+  const request:Record<string,unknown>={envelopeHash:e.envelopeHash,localAttemptRef:{id:randomUUID(),version:1,contentHash:contentHash('signed selection')},sourceObservationRefs:[...new Map(f.intent.sourceScopes.map((s:any)=>[canonicalJson(s.observationRef),s.observationRef])).values()],osOwnershipRef:f.checks.osFence.evidenceRefs[0],...(selected?{representation:'SEND_PERMIT_SOURCE_V1'}:{})};
+  const path=h.prefix+'/commands/'+e.commandId+'/permit',packet=await h.prepare(path,{},request),events=h.q.j.store.events().length,receipts=h.q.j.store.receipts().length;
+  if(selected)delete request.representation;else request.representation='SEND_PERMIT_SOURCE_V1';
+  assert.notEqual((await packet.get()).statusCode,200);assert.equal(h.permits.length,0);
+  assert.equal(h.q.j.store.events().length,events);assert.equal(h.q.j.store.receipts().length,receipts);
+  if(selected)request.representation='SEND_PERMIT_SOURCE_V1';else delete request.representation;
+  const good=await packet.get();assert.equal(good.statusCode,200);
+  assert.equal(Object.hasOwn(good.json(),'executionAuthority'),selected);
+  const saved=structuredClone(h.permits);
+  if(selected)delete request.representation;else request.representation='SEND_PERMIT_SOURCE_V1';
+  const changed=await h.prepare(path,{},request),afterEvents=h.q.j.store.events().length,afterReceipts=h.q.j.store.receipts().length;assert.notEqual((await changed.get()).statusCode,200);
+  assert.deepEqual(h.permits,saved);assert.equal(h.q.j.store.events().length,afterEvents);assert.equal(h.q.j.store.receipts().length,afterReceipts);
+ }finally{await h.close();}
+});
+
+test('C 요청의 구형/선택 닫힌 형상 및 전체 READ 적격성을 분리한다',async()=>{
+ const {readNormalPermitRequestV1,normalSendPermitSourceEligible}=await import('../../../contracts/runtime/normal-send-permit-source-v1.ts');
+ const ref={id:randomUUID(),version:1,contentHash:'a'.repeat(64)},old={envelopeHash:'b'.repeat(64),localAttemptRef:ref,sourceObservationRefs:[ref],osOwnershipRef:ref};
+ assert.deepEqual(readNormalPermitRequestV1(old),old);
+ assert.deepEqual(readNormalPermitRequestV1({...old,representation:'SEND_PERMIT_SOURCE_V1'}),{...old,representation:'SEND_PERMIT_SOURCE_V1'});
+ for(const representation of [null,'',true,'FIRST_SEND_AUTHORITY_V1','SEND_PERMIT_SOURCE_V2'])assert.throws(()=>readNormalPermitRequestV1({...old,representation}));
+ assert.throws(()=>readNormalPermitRequestV1({...old,representation:'SEND_PERMIT_SOURCE_V1',extra:true}));
+ const f={intent:{mode:'CONTEXT_REVIEW',sourceScopes:[{targets:[{access:'READ'}]},{targets:[{access:'READ'}]}]}};
+ assert.equal(normalSendPermitSourceEligible(f),true);
+ assert.equal(normalSendPermitSourceEligible({...f,intent:{...f.intent,mode:'WORK'}}),false);
+ for(const access of ['WRITE','READ_WRITE',null,undefined]){const bad=structuredClone(f);(bad.intent.sourceScopes[1]!.targets[0] as any).access=access;assert.equal(normalSendPermitSourceEligible(bad),false);}
+});
