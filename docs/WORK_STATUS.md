@@ -21365,3 +21365,11 @@ PMO가 기준 `95ea7c4d`의 고정 후보 `A9CA1198`을 기존 IX01 내부 QA �
 Main의 exit 전후 반례 RED 04fba7을 보완했다. 담당 직접·인접 22통과 및 좁은 타입 종료0 5b89c6. Main 직접·인접 22통과·실패/건너뜀0 3b2b8b, 동결 SHA 5/5와 공백 8cb63f. 원 7374964b·03221a62 번들 재현. 별도 native 9원소스 CJS 59,073B, SHA256 DA375F17E1CCFBC4A1BD85AF108EE82C0A8398A061DCED888427725223BB6D8D. import/빌드 효과0, 합성 핸들0.
 
 실제 Node 진입·원 프로세스 종료·SSH·IPAM·Docker·DB·권한·키·서비스·Agent 실행0. 다음은 실제 ip 신원을 독립 확보하는 근거와 strict SSH 단회 전달·완료 기록의 고정 실행안 작성이다. 새 관측에는 IPAM 예외 및 실제 직접 자식 종료 효과를 포함한 실행 승인이 필요하다. TC01 저장·재조회 미완료. 롤백은 이번 5개 소스·시험 경로이며 원 번들 지문을 보존한다.
+
+## IX01 고정 stdin 메모리 적재물 합성 검수
+
+기준 `8bfcae4c`, developer_primary 단일 작성·반환. 신규 scripts/qa-ix01-subnet-observation-stdin.ts와 tests/unit/IX01/subnet-observation-stdin.test.ts. 기존 native CJS 59,073B 및 DA375F17 지문을 그대로 내장한다. 고정 ESM wrapper에서 내장 bytes·입력 지문과 닫힌 공용 형상, 고정 내장 모듈 목록을 확인한다. 호출자 파일 경로 대신 ip 위치 4종과 기대 지문만 받는다. 정상 완료는 한 줄 4KiB 이내로 반환하며 내장 자료·실행 오류는 고정 UNKNOWN이다. 전체 stdin 프로그램의 전송 잘림과 stdout 고장은 같은 handle 수거의 결과 부재·비정상 close로 판정한다.
+
+별도 wrapper 3,672B SHA256 CCF403D8B3281063C972D192725D66DA0808F8B90180AE19952848FE3FC8BC75, 고정 합성 예시 전체 83,083B C662DF2D8E31FC635FA9400FF5ADE4761FF5EF663D0316EB0F2DB43462E534E5. 담당 합성 4통과 8e54e0·좁은 strict 타입 fb4c52, Main 동일 VM 시험 4통과/실패·건너뜀0 8d44de, 동결 SHA 2/2 e7ecc1. VM Modules의 실험 기능 경고만 관측했다. 변경 두 파일 외 원 번들/기존 경로 변경0.
+
+실제 strict SSH 실행·호스트 조회·키 사용·네이티브 모듈 호출·신호·IPAM·DB·권한·서비스·Agent 실행0. 저장 소스에는 이번 관측의 고정 SSH carrier와 외부 단회 소진 원장이 없다. 기존 TC01 원격 intent 기록은 무파일 관측에 재사용할 수 없다. 다음은 정확 carrier와 외부 소비 기록을 같은 시도에 연결하는 최소 실행안이며, 실제 ip 지문과 단회 승인·예외는 별도 미확보다. TC01 미완료. 롤백은 신규 두 모듈과 기록 추가에 한정한다.
