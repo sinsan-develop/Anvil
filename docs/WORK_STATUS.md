@@ -21403,3 +21403,11 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 담당 신규 9통과 e4840e·인접 13통과 7bea44·좁은 타입 종료0 948d61. 모듈 부재 RED1, 신규 시험 준비 2건·타입 1건을 보완했다. Main 직접/원 번들 15통과·실패/건너뜀0 ffe9a2, 동결 SHA 5/5·공백 752397. 메타 8소스 CJS 54,437B SHA256 E79A0B34931921E6BFBA34EDD866B32A45F38B29D73E6EB0BB9B2D1FC6F49BA8, ESM wrapper AE8CA87E4C24883C598F10326A687F1977912F0E71274AE29C912D78331673CD. 이전 세 번들 및 기존 관측 CJS 59,073B 지문 재현. Native 호출은 합성으로 대체했다.
 
 실제 Windows launcher, 현행 SSH 설정/신뢰 판독, 지속 배타 원장은 미구현이다. 이전 영수증 조회만으로는 프로세스 간 단회를 보증할 수 없어 실제 기록을 배타 정착시킨 같은 외부 감독에 포트를 귀속해야 한다. 두 단계 SSH 및 보존 IPAM 예외의 실제 실행 미승인. 실제 원격·프로세스·OS 파일/키·DB·권한·서비스·Agent 접근0, 합성 핸들0. 다음은 Windows의 실제 진입·단발 기록·고정 실행안이다. TC01 미완료. 롤백은 QA 빌더 profile과 신규 4개 경로에 한정한다.
+
+## IX01 Windows 단회 기록과 원 SSH 시작 소스 검수
+
+기준 `a24e1482`, developer_primary 단일 작성·반환. 신규 scripts/qa-ix01-subnet-observation-windows.ts와 tests/unit/IX01/subnet-observation-windows.test.ts. 같은 Windows 감독이 단계별 신규 배타 원장을 만들고 전체 쓰기·flush·close·정착을 확인한 영수증만 소비한다. 중복 시도·불명·실패 후 같은 기록의 재발급이나 다음 연결을 허용하지 않는다. 기존 두 단계 carrier에 고정 OpenSSH/표준입출력 경로를 연결했다. 소스에 CLI 자동 진입·원장 삭제·프로세스 종료 효과는 없다.
+
+담당 초기 모듈 부재 RED 725f04 이후 직접 6통과 22cd87, 인접 9통과 009367, 좁은 타입 종료0 809733. Main 직접 6통과·실패/건너뜀0 3b29e8, 동결 SHA 2/2 및 공백 fa9dc2. 소스 3DADE4B79163E6AC79DECE080D26A9F6DDB96789EC60F35CCFFAA7EE17B737DC, 시험 5E92ABF2D98515E8109C378BC79B6E384F4EE1E0EFB19651BA907EFE72D84B3E. 기본 Windows 포트는 정적 검수만 했고 실원장·SSH·OS 설정/키·IPAM·DB·권한·서비스·Agent 접근0이다.
+
+현재 verifier와 승인 실행안, 안전한 기존 원장 부모 및 Windows SSH 최소 env/호환은 미확정이다. libuv/Windows의 실제 파일 정착·원 프로세스 종결, 원격 무응답 이후 OS 자원 보존은 합성 증거로 승격하지 않는다. 다음은 현행 alias/host trust와 원장 부모의 한정 비밀 없는 검산 범위를 고정하는 것이다. 실제 두 단계와 TC01은 미실행. 롤백은 신규 두 파일과 기록 추가에 한정한다.
