@@ -11,10 +11,40 @@ const entryDigest = '70e00a3ee54a88382ca606893ac3c4acdd9bb83a9e11a9d3e803fa0b633
 const {MAX_FILE,MAX_TOTAL} = require('./verify-installer-development.cjs');
 const unavailable = () => { throw Error('SDK_PACKAGE_UNAVAILABLE'); };
 
+/** 보호 배포 입력의 선언을 검산한다. SDK 동작을 관측하거나 recipe 기본값을 발급하지 않는다.
+ * @param {unknown} raw @param {ReturnType<typeof catalogueExact>} distribution
+ */
+function readRecipe(raw,distribution){
+ const r=catalogueExact(raw,'ref,snapshot'),s=catalogueExact(r.snapshot,'schemaVersion,sdkDigest,packageRefBasis,role,programSelector,profileArgs,argvTokens,baseEnv,hookEnvRules,allowedOptions');
+ /** @param {unknown} value */
+ const ref=value=>{const v=catalogueExact(value,'id,version,contentHash');if(typeof v.id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v.id)||!Number.isSafeInteger(v.version)||v.version<1||typeof v.contentHash!=='string'||!/^[0-9a-f]{64}$/.test(v.contentHash))return unavailable();return v;};
+ const digest=(/** @type {unknown} */value)=>createHash('sha256').update(canonicalJson(value)).digest('hex');
+ const {recipe:_,...basis}=distribution;
+ if(s.schemaVersion!==1||s.sdkDigest!==entryDigest||s.role!=='CONTEXT_REVIEW'||ref(r.ref).contentHash!==digest(s)||ref(s.packageRefBasis).contentHash!==digest(basis)||Buffer.byteLength(canonicalJson(r))>32768)return unavailable();
+ const p=catalogueExact(s.programSelector,'kind,logicalName');if(p.kind!==distribution.cli.kind||typeof p.logicalName!=='string'||!/^[A-Za-z][A-Za-z0-9_.-]{0,79}$/.test(p.logicalName))return unavailable();
+ /** @param {unknown} v */
+ const literal=v=>typeof v==='string'&&v.isWellFormed()&&v.length<=4096&&!/[\u0000-\u001f\u007f]/.test(v);
+ if(!Array.isArray(s.profileArgs)||s.profileArgs.length>200||!Array.isArray(s.argvTokens)||s.argvTokens.length>200||!Array.isArray(s.baseEnv)||s.baseEnv.length>4||!Array.isArray(s.hookEnvRules)||s.hookEnvRules.length>1)return unavailable();
+ for(const value of s.profileArgs){const a=catalogueExact(value,'kind,value');if(a.kind!=='LITERAL'||!literal(a.value))return unavailable();}
+ const dynamic=new Set();
+ for(const value of s.argvTokens){const d=Object.getOwnPropertyDescriptor(value,'kind');if(!d||!('value'in d))return unavailable();const kind=d.value;
+  const a=catalogueExact(value,kind==='LITERAL'?'kind,value':kind==='MAX_BUDGET_USD'?'kind,format':'kind');
+  if(kind==='LITERAL'){if(!literal(a.value))return unavailable();}
+  else{if(!['SCRIPT','SESSION_ID','MODEL','MAX_TURNS','MAX_BUDGET_USD'].includes(kind)||dynamic.has(kind)||kind==='SCRIPT'&&p.kind!=='SCRIPT'||kind==='MAX_BUDGET_USD'&&a.format!=='DECIMAL')return unavailable();dynamic.add(kind);}
+ }
+ if(!dynamic.has('SESSION_ID')||(p.kind==='SCRIPT')!==dynamic.has('SCRIPT'))return unavailable();
+ const names=new Set();
+ for(const [values,allowed] of [[s.baseEnv,['SystemRoot','WINDIR','TEMP','TMP']],[s.hookEnvRules,['CLAUDE_AGENT_SDK_VERSION']]])for(const value of values){const e=catalogueExact(value,'name,value');if(typeof e.name!=='string'||!allowed.includes(e.name)||names.has(e.name.toUpperCase())||!literal(e.value)||!e.value.length||e.name==='CLAUDE_AGENT_SDK_VERSION'&&e.value!=='0.3.224')return unavailable();names.add(e.name.toUpperCase());}
+ const options=['abortController','sessionId','cwd','env','model','maxTurns','maxBudgetUsd','pathToClaudeCodeExecutable','executable','executableArgs','spawnClaudeCodeProcess','canUseTool'];
+ if(canonicalJson(s.allowedOptions)!==canonicalJson(options))return unavailable();
+ return JSON.parse(canonicalJson(r));
+}
+
 /** @param {unknown} raw */
 function readDistribution(raw) {
   try {
-    const d = catalogueExact(raw, 'purpose,sdkVersion,archiveSha512,runtime,sdkEntry,modules,cli');
+    if(!raw||typeof raw!=='object'||types.isProxy(raw))return unavailable();
+    const d = catalogueExact(raw, 'purpose,sdkVersion,archiveSha512,runtime,sdkEntry,modules,cli'+(Object.hasOwn(raw,'recipe')?',recipe':''));
     if (d.purpose !== 'NORMAL_SDK_WORKER' || d.sdkVersion !== '0.3.224' ||
         d.archiveSha512 !== archiveDigest || !Array.isArray(d.modules) || d.modules.length > 64) return unavailable();
     const names = new Set();
@@ -45,6 +75,7 @@ function readDistribution(raw) {
     } else if (kind.value === 'SCRIPT') {
       if (!/\.(?:cjs|mjs|js)$/.test(file(catalogueExact(d.cli,'kind,script').script).path)) return unavailable();
     } else return unavailable();
+    if(Object.hasOwn(d,'recipe'))readRecipe(d.recipe,d);
     return JSON.parse(canonicalJson(d));
   } catch { return unavailable(); }
 }

@@ -26,12 +26,13 @@ internal sealed class NormalSdkWorkerPackageSource:IDisposable {
  readonly Dictionary<IntPtr,DesktopTrustKeyFileObservation> observations=new Dictionary<IntPtr,DesktopTrustKeyFileObservation>();
  long total;IntPtr parentHandle;DesktopTrustKeyProcessObservation parentIdentity;
  bool ready,closed;
- string runtime,cliPath,sdkEntry,kind,manifestHash;
+ string runtime,cliPath,sdkEntry,kind,manifestHash;Row recipe;
  internal string Runtime{get{Check();return runtime;}}
  internal string Cli{get{Check();return cliPath;}}
  internal string SdkEntry{get{Check();return sdkEntry;}}
  internal string Kind{get{Check();return kind;}}
  internal string ManifestHash{get{Check();return manifestHash;}}
+ internal Row ExecutionRecipe{get{Check();if(recipe==null)throw Invalid();return DesktopTrustKeyHostSource.Parse(Encoding.UTF8.GetBytes(DesktopTrustKeyHostSource.Canonical(recipe,0)),false);}}
  NormalSdkWorkerPackageSource(DesktopTrustKeyPeerSource original){peer=original;}
  static Exception Invalid(){return new InvalidOperationException("SDK_PACKAGE_UNAVAILABLE");}
  static Exception CleanupUnknown(){return new InvalidOperationException("SDK_PACKAGE_CLEANUP_UNKNOWN");}
@@ -92,7 +93,7 @@ internal sealed class NormalSdkWorkerPackageSource:IDisposable {
   var asar=kernel.HashFile(archive,true,peer.Check);
   peer.RequireWorkerParent(kernel.HashFile(exe,false,peer.Check).Whole,asar.Whole,asar.Header);
   byte[] raw=ReadManifest(archive,peer);var d=DesktopTrustKeyHostSource.Parse(raw,false);
-  DesktopTrustKeyHostSource.Exact(d,"purpose,sdkVersion,archiveSha512,runtime,sdkEntry,modules,cli");
+  DesktopTrustKeyHostSource.Exact(d,"purpose,sdkVersion,archiveSha512,runtime,sdkEntry,modules,cli"+(d.ContainsKey("recipe")?",recipe":""));
   if(S(d,"purpose")!="NORMAL_SDK_WORKER"||S(d,"sdkVersion")!="0.3.224"||S(d,"archiveSha512")!=TarSha)throw Invalid();
   manifestHash=DesktopTrustKeyHostSource.Hash(raw);string root=Path.Combine(resources,"normal-sdk");
   runtime=FileEntry(root,d["runtime"]);sdkEntry=FileEntry(root,d["sdkEntry"]);
@@ -110,6 +111,7 @@ internal sealed class NormalSdkWorkerPackageSource:IDisposable {
    if((kernel.File(paths[name]).Attributes&0x10)!=0)dirs.Push(name);else files++;
   }}
   if(files!=entries.Count)throw Invalid();peer.Check();
+  if(d.ContainsKey("recipe"))recipe=NormalExecutionConfigurationSource.Recipe(d);
  }
  internal void Check(){
   if(closed||!ready)throw Invalid();
@@ -134,6 +136,6 @@ internal sealed class NormalSdkWorkerPackageSource:IDisposable {
   }
   if(held.Count!=0){unconfirmed=this;throw CleanupUnknown();}
   paths.Clear();observations.Clear();
-  runtime=cliPath=sdkEntry=kind=manifestHash=null;
+  runtime=cliPath=sdkEntry=kind=manifestHash=null;recipe=null;
  }
 }

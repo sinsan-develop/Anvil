@@ -2,6 +2,12 @@
 const {contextBridge,ipcRenderer}=require('electron');
 contextBridge.exposeInMainWorld('anvilDesktop',Object.freeze({
  getState:()=>ipcRenderer.invoke('anvil:get-state',null),
+ /** @param {string} attemptId @param {number} epoch @param {{environmentRef:{id:string,version:number,contentHash:string},commandProfileRef:{id:string,version:number,contentHash:string}}} selection */
+ executionConfigurationPrepare:(attemptId,epoch,selection)=>ipcRenderer.invoke('anvil:execution-configuration-prepare',{attemptId,epoch,selection}),
+ /** @param {string} attemptId @param {number} epoch @param {string} ticketId @param {true} confirmed */
+ executionConfigurationConfirm:(attemptId,epoch,ticketId,confirmed)=>ipcRenderer.invoke('anvil:execution-configuration-confirm',{attemptId,epoch,ticketId,confirmed}),
+ /** @param {string} attemptId @param {number} epoch @param {{id:string,version:number,contentHash:string}} configurationRef @param {true} confirmed */
+ executionConfigurationRevoke:(attemptId,epoch,configurationRef,confirmed)=>ipcRenderer.invoke('anvil:execution-configuration-revoke',{attemptId,epoch,configurationRef,confirmed}),
  /** @param {string} requestId @param {string} attemptId @param {number} epoch */
  nativeReceiveBegin:(requestId,attemptId,epoch)=>ipcRenderer.invoke('anvil:native-receive-begin',{requestId,attemptId,epoch}),
  /** @param {string} attemptId @param {number} epoch */

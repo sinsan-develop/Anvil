@@ -45,7 +45,23 @@ const abort=()=>{latch();endRequested=true;tryEnd();};signal.addEventListener('a
 
 /** @param {string} operation @param {any} payload */async function send(operation,payload){if(busy||sticky||closed||ending)return uncertain();guard();stable();if(sequence>=64)return uncertain();const n=++sequence,requestId=Reflect.apply(functions[4],ports,[]);if(typeof requestId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(requestId))return unavailable();const frame=Buffer.from(canonicalJson({schemaVersion:1,purpose:'DESKTOP_TRUST_KEY_OPERATION_V1',requestId,sequence:n,callExpiresAt:expiry(),remainingMs:Math.floor(remaining()),signerRef:binding.signerRef,operation,payload})+'\n');if(frame.length>65536)return unavailable();busy=true;try{return await new Promise((resolve,reject)=>{pending={sequence:n,requestId,written:false,reply:undefined,resolve,reject,timer:setTimeout(latch,Math.max(1,Math.floor(remaining())))};try{guard();stable();writes++;write.call(stdin,frame,'utf8',/** @param {any} error */error=>{writes--;frame.fill(0);if(error)latch();else if(pending){try{guard();stable();pending.written=true;finish();}catch{latch();}}tryEnd();});}catch{if(writes>0)writes--;latch();}});}finally{busy=false;}}
 async function close(){endRequested=true;active=false;if(pending)latch();tryEnd();let timer;try{const ms=Math.max(0,Math.floor(remaining()));if(ms<1)return{state:'UNKNOWN'};const result=/** @type {any} */(await Promise.race([exited,new Promise(resolve=>{timer=setTimeout(()=>resolve({unknown:true}),ms);})]));if(result.unknown)return{state:'UNKNOWN'};signal.removeEventListener('abort',abort);return{state:'CLOSED_CONFIRMED'};}catch{return{state:'UNKNOWN'};}finally{if(timer!==undefined)clearTimeout(timer);}}
-retained=Object.freeze({send,close});if(signal.aborted){abort();return uncertain();}guard();return retained;}
+/** 원 보호 host의 같은 10초/64 frame 안에서만 목적별 입력을 유계 전달한다.
+ * @param {string} action @param {string} attemptId @param {unknown} value
+ */
+async function executionConfiguration(action,attemptId,value){
+ if(!['PREPARE_EXECUTION_CONFIGURATION','CONFIRM_EXECUTION_CONFIGURATION','REVOKE_EXECUTION_CONFIGURATION'].includes(action)||typeof attemptId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(attemptId))return unavailable();
+ guard();const bytes=Buffer.from(canonicalJson(value),'utf8');let dispatched=false;
+ try{if(bytes.length<1||bytes.length>1048576||sequence+Math.ceil(bytes.length/32768)>64)return unavailable();const transferId=Reflect.apply(functions[4],ports,[]);if(typeof transferId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(transferId))return unavailable();
+  const hash=contentHash(bytes);let result;
+  for(let offset=0,index=0;offset<bytes.length;offset+=32768,index++){
+   guard();const end=Math.min(bytes.length,offset+32768),final=end===bytes.length;
+   dispatched=true;result=await send(action,{attemptId,transferId,totalBytes:bytes.length,contentHash:hash,index,data:bytes.subarray(offset,end).toString('base64'),final});guard();
+   if(!final){const r=catalogueExact(result,'state,transferId,index');if(r.state!=='PART_ACCEPTED'||r.transferId!==transferId||r.index!==index)return uncertain();}
+  }
+  return result;
+ }catch(error){if(dispatched)latch();throw error;}finally{bytes.fill(0);}
+}
+retained=Object.freeze({send,close,executionConfiguration});if(signal.aborted){abort();return uncertain();}guard();return retained;}
 return Object.freeze({open,closeOwned:async()=>retained?retained.close():{state:'UNKNOWN'}});}
 
 /** 실제 driver는 명시 호출 때만 동작한다. 자동 fallback/재시작/재접속은 없다.
