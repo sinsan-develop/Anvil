@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const test=require('node:test');
 const {MessageChannel,Worker,workerData,parentPort}=require('node:worker_threads');
-const {once}=require('node:events');
+const {once,getEventListeners}=require('node:events');
 const {createChildStreams,createSynchronousSpawn}=require('../../apps/desktop/src/normal-sdk-child-bridge.cjs');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 if(workerData?.fixture==='RAM_STDIO'){
@@ -111,6 +111,47 @@ test('취소 후 이미 수락된 write 두 개의 오류·늦은 ACK와 ABANDON
     await once(port2,'close');await tick();
     assert.deepEqual(seen,[['a',true],['b',true]]);assert.deepEqual(frames,['STDIN','ABANDON']);
   }finally{port1.close();port2.close();}
+});
+for(const stream of ['stdin','stdout'])test(`SDK ${stream}.destroy 취소는 늦은 ACK 뒤 긴 쓰기의 추가 chunk와 대기 쓰기를 막는다`,async()=>{
+  const {port1,port2}=new MessageChannel(),life=new AbortController();
+  const child=createChildStreams(port1,life.signal,()=>true);
+  const frames=[],callbacks=[];let errors=0,exits=0;
+  port2.on('message',m=>frames.push(m));child.on('error',()=>errors++);child.on('exit',()=>exits++);
+  try{
+    const first=once(port2,'message');
+    child.stdin.write(Buffer.alloc(65537),e=>callbacks.push(['long',!!e]));
+    child.stdin.write('queued',e=>callbacks.push(['queued',!!e]));
+    const [data]=await first;assert.equal(data.op,'STDIN');
+    child[stream].destroy();
+    port2.postMessage({op:'STDIN_ACK',seq:data.seq});
+    await new Promise(resolve=>setTimeout(resolve,20));
+    assert.equal(frames.filter(f=>f.op==='STDIN').length,1,'취소 후 두 번째 chunk 전송 금지');
+    assert.deepEqual(frames.map(f=>f.op),['STDIN','ABANDON']);
+    assert.deepEqual(callbacks,[['long',true],['queued',true]]);
+    assert.equal(getEventListeners(life.signal,'abort').length,0);
+    child.stdin.destroy();child.stdout.destroy();life.abort();
+    port2.postMessage({op:'STDIN_ACK',seq:data.seq});await tick();await tick();
+    assert.equal(errors,1);assert.equal(exits,0);assert.equal(child.exitCode,null);
+    assert.equal(callbacks.length,2);assert.equal(frames.length,2);
+  }finally{life.abort();port1.close();port2.close();}
+});
+test('정상 stdin finish와 stdout EOF autoDestroy는 ABANDON 없이 원 EXIT만 한 번 보존한다',async()=>{
+  const {port1,port2}=new MessageChannel(),life=new AbortController();
+  const child=createChildStreams(port1,life.signal,()=>true);
+  const frames=[];let errors=0,exits=0;
+  port2.on('message',m=>frames.push(m));child.on('error',()=>errors++);child.on('exit',()=>exits++);
+  try{
+    const inputClosed=once(child.stdin,'close');child.stdin.end();await inputClosed;
+    const outputClosed=once(child.stdout,'close');child.stdout.resume();
+    port2.postMessage({op:'STDOUT_EOF',seq:0});await outputClosed;
+    assert.equal(child.stdin.writableFinished,true);assert.equal(child.stdout.readableEnded,true);
+    assert.equal(child.exitCode,null);assert.equal(errors,0);
+    const exited=once(child,'exit');port2.postMessage({op:'EXIT',code:7});assert.deepEqual(await exited,[7,null]);
+    life.abort();await tick();await tick();
+    assert.equal(frames.filter(f=>f.op==='STDIN_EOF').length,1);
+    assert.equal(frames.filter(f=>f.op==='ABANDON').length,0);
+    assert.equal(exits,1);assert.equal(errors,0);assert.equal(getEventListeners(life.signal,'abort').length,0);
+  }finally{life.abort();port1.close();port2.close();}
 });
 test('읽지 않은 stdout에 보낸 DATA 또는 EOF 전 EXIT는 원 세션 불명',async()=>{
   for(const frame of [{op:'STDOUT',seq:1,bytes:new Uint8Array([1])},{op:'EXIT',code:0}]){

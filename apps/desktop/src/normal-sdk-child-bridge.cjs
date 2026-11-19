@@ -73,7 +73,12 @@ function createChildStreams(port,signal,stopOriginal) {
     if(dead||ended||active){done(unknown());return;}
     if(!bytes.length){done();return;}
     active={bytes,offset:0,done};sendChunk();
-  },final(done){if(dead){done(unknown());return;}try{port.postMessage({op:'STDIN_EOF',seq:nextInput});done();}catch{done(unknown());fail();}}});
+  },final(done){if(dead){done(unknown());return;}try{port.postMessage({op:'STDIN_EOF',seq:nextInput});done();}catch{done(unknown());fail();}},
+  destroy(error,done){
+    // finish 뒤 autoDestroy는 입력 EOF일 뿐이며, 그 전 destroy는 원 시도의 취소다.
+    if(!dead&&!ended&&(error||!stdin.writableFinished))fail();
+    done(error);
+  }});
   stdin.on('error',()=>{});
   const rawWrite=stdin.write;
   /** @param {unknown} data @param {BufferEncoding|((e?:Error|null)=>void)} [encoding] @param {(e?:Error|null)=>void} [callback] */
@@ -113,6 +118,10 @@ function createChildStreams(port,signal,stopOriginal) {
   // 정지된 reader에서는 짧은 DATA 하나도 high-water mark에 닿는다.
   const stdout=new Readable({highWaterMark:1,read(){
     if(!dead&&!ended&&!eof&&!credit){credit=true;try{port.postMessage({op:'STDOUT_CREDIT',seq:nextOutput+1});}catch{fail();}}
+  },destroy(error,done){
+    // EOF를 끝까지 소비한 autoDestroy와 읽는 도중의 명시 취소를 구분한다.
+    if(!dead&&!ended&&(error||!stdout.readableEnded))fail();
+    done(error);
   }});
   stdout.on('error',()=>{});
   port.on('message',message=>{

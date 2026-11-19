@@ -20989,3 +20989,9 @@ Main 검수에서 발견한 요청 잠금 잔류, 작성 준비 중 이동의 �
 ## UI06 시험 근거 추적의 기존 연결과 남은 선행조건
 
 기준 582f8665, 작업 트리 clean. Main과 developer_primary가 SCREEN_WORK UI06의 시험 근거 역조회와 정방향 추적을 대조했다. 보고에서 확정 임무·원 계획·원 설계를 검산하는 역조회와 보관 검수에서 검수 기준·등록 근거 파일을 여는 기능은 이미 있다. 정방향 추적은 서버 traces.ts가 TEST_EVIDENCE_SOURCE_NOT_CONNECTED를 반환한다. 계획 고정버전과 업무 코드에서 정확 제출·검수 기록을 얻는 보호 조회가 현재 계약에는 없다. 계획·프로젝트 목록의 근사 매칭으로 이를 대체하지 않는다. 소스 쓰기·시험 재실행·실환경 접근 0, 담당자 읽기 종료. 다음은 실제 실행/검수 기록의 귀속 근거가 생겼을 때 정방향 연결을 진행한다.
+
+## FN07 SDK 스트림 조기 종료의 대기 입력 취소
+
+기준 88108410, 시작 시 기존 작업 브랜치와 원격 추적 ref 일치 및 clean. FN07 생산자 구현 명세 §C의 취소 뒤 미전송 바이트 차단·예약 단발 종결을 현재 stdio 브리지에 대조했다. developer_primary에게 기존 브리지와 직접 시험 두 경로의 단일 쓰기를 배정했다. 로컬 합성 RED fbbb83에서 stdin/stdout.destroy 모두 첫 DATA 뒤 늦은 ACK가 미전송 두 번째 chunk를 전달했다(2실패). 정상 finish/EOF 뒤 실제 EXIT의 기존 흐름은 1통과했다. SDK·실제 자식·WSL/DB·권한·키·서비스·Agent 실행은 이 작업에서 제외한다.
+
+보완은 두 스트림의 조기 destroy를 기존 ABANDON·오류 종결 경로에 연결한다. 이미 수락한 두 쓰기의 콜백은 각각 한 번 오류로 끝나고 늦은 ACK 뒤 데이터 전송은 0이다. 정상 stdin finish와 stdout EOF 뒤 자동 정리는 실제 EXIT를 계속 기다린다. 제품 apps/desktop/src/normal-sdk-child-bridge.cjs와 집중 시험 tests/desktop/normal-sdk-child-bridge.test.cjs에 한정했다. 담당자 GREEN 3통과(78d25f), 직접·인접 18통과/실패·건너뜀0(3f88d9), desktop 타입 exit0(08cb09), Main 재현2통과(e2e746)·동결 지문2개 일치(498cd4). 쓰기 반환 및 실행 핸들 0. 복구는 이 취소 변경과 신규 회귀 검사만 되돌리는 단위다. 실제 SDK 로딩·자식/OS 수거와 FN07 전체 동작은 미검증이며 보호 실행구성 결정은 남아 있다.
