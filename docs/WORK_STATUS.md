@@ -21125,3 +21125,5 @@ status 0 연결 상실에서만 같은 읽음 조건과 cursor의 명시 재조�
 `e5cc7475`에서 기존 담당자와 원 입력·FIRST3·보호 permit 응답을 대조했다. 원 START와 첫 SEND의 전체 envelope는 같은 worker 메모리에 있고, FIRST3는 원 해시·permit만 가진다. 서버 SEND permit 원본에는 roleBindingRef·bindingGeneration·원 intent mode가 이미 저장되지만 기존 응답은 원본을 반환하지 않는다. 원 실행 권위가 없으면 설정 목적값이나 다른 세대로 대체하지 않는다. 제품·시험 추가 변경과 실제 실행 0이다.
 
 검토 후보 `docs/contracts/FN07_NATIVE_FIRST_SEND_EXECUTION_AUTHORITY_CANDIDATE.md`의 SHA256은 `1C933448E675A052566DAEEC7B9379C16C437091FD14A23CAFEA698221134860`이다. 최초 초안은 현재 서버가 두 SEND 중 원 worker의 최초 소비를 식별할 수 없다는 Main 검수를 반영해 정정했다. A는 검산된 모든 해당 SEND에 원 permit 보호 메타데이터를 추가로 제공하는 결정이며, 기존 서명은 선택 헤더를 결박하지 않는다. 최초 전용 또는 선택 자체의 인증이 필요하면 별도 원 근거를 상세화한다. 양쪽 모두 미채택이며 설정 구현 승인 `4091F826`에 새 응답 또는 노출 정책을 포함시키지 않는다.
+
+PMO 회신 후 기존 signed bodyHash와 0097의 원 요청 세 검산을 대조했다. 권장 C는 정확한 대표값을 선택 요청의 서명 본문·원 permit.request에 함께 보존하고 CONTEXT_REVIEW/READ 전용 SEND에만 원 snapshot을 추가로 반환한다. 후보 SHA256 4D0F4CFE225B736EEFEE49F124A5636DD31DE6A26EED1D8C9AAA6631D58DACDC. 기존 축약 응답, 과거 permit, 권한·키·테이블을 유지하는 미채택안이다. 기존 내부 대조는 실제 SDK worker 생산자가 없어 호출을 닫지 못했으며, 제품 호출이 없는 점검 진입이나 합성 SDK 성공 경로는 추가하지 않았다.

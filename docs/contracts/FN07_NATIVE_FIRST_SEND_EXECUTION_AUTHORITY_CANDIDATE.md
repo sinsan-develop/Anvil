@@ -89,3 +89,15 @@ executionAuthority: {
 핵심 영향은 서버 `normal-instruction-permit.ts` 및 같은 route의 헤더 선택 연결, connector `normal-protected-post-client.ts`와 원 FIRST claim의 응답 보존, desktop 원 worker의 private 전달, native `NormalExecutionCredentialSource.cs`·`NormalExecutionSpoolProfileSource.cs`·`NormalExecutionConfigurationSource.cs`의 독립 검산이다. 현재 create 입력에는 전체 응답이 남지 않으므로 `normal-instruction-coordinator.ts`와 `normal-first-send-owner.ts`의 **메모리 형상** 보완도 필요하다. 정확 파일 목록은 채택 후 기존 호출선별 WI로 고정한다. DB migration, 기존 FIRST3 snapshot 수정, 새 public endpoint·권한 행은 필요하지 않다.
 
 합성 수용 기준: 후속 SEND도 A의 노출 범위임을 명시하고 두 대기 명령/앞선 거절/재접속을 최초 증거로 삼지 않음; unsigned 표현 헤더의 제거·추가·교체와 원 packet 재조회 보장 구분; 기존 기본 표현/START 호환; 명시 SEND 응답의 원 snapshot hash와 FIRST3 exact 일치; 같은 packet 재조회에서 같은 ref/원 시각·추가 기록0; 교차 grant/명령/session/roleBinding/세대 및 한 필드 변조 거절; 만료·권한/현재성 소실·구형 응답·불명 재발급0; 전체 크기/프레임 한도; signed preset이 아닌 RAM 표로 실제 실행권을 만들지 않음. RAM·정적 증거와 실제 서버/DB/native/SDK 검증은 구분한다. **현재 이 후보의 제품 구현 및 실제 실행은 0이다.**
+
+## 7. 권장 결정안 C — 서명된 요청 형상으로 검산 범위 제한
+
+**미채택. 이 절은 A의 미서명 헤더를 구현 후보에서 대체한다.** 최초성 서버 증명은 추가하지 않는다. 기존 허가와 원 사실 검산을 모두 통과한 `CONTEXT_REVIEW` 및 READ 전용 normal SEND만 지원하며, 여기에는 최초뿐 아니라 후속 SEND도 해당할 수 있다. 보호 수준이 더 넓은 WORK 및 START는 선택 응답을 거절한다. 실제 native 최초 소비에는 원 worker와 exact FIRST3의 기존 단발 기준을 계속 적용한다.
+
+기존 POST의 닫힌 4개 본문 키를 그대로 받는다. C 선택 요청만 기존 키에 `representation: "SEND_PERMIT_SOURCE_V1"` 하나를 추가한 닫힌 5개 키 원형을 사용한다. 헤더 선택은 추가하지 않는다. 기존 정규 JSON `bodyHash`에 전체 원형을 넣고 challenge·proof·packetHash를 지금과 같이 대조한다. 서비스의 기존 한도·키·서명 알고리즘·nonce는 바꾸지 않는다. 요청에 선택값이 없으면 기존 축약 응답을 그대로 반환한다. 해당 문자열을 요청한 적격 SEND에만 §2의 `executionAuthority` 한 필드를 추가한다. 구형 서버는 새 원형을 거절하므로 자동으로 구형 형상으로 재전송하지 않는다. 구형 요청/응답과 과거 permit은 계속 읽을 수 있다.
+
+정확 재조회는 같은 선택값까지 포함한 같은 원 packet에만 가능하다. 선택값이 바뀐 요청은 동일 permit의 표현 변경으로 처리하지 않는다. 기본으로 이미 발급된 동일 명령을 재호출해 표현을 바꾸거나 permit을 다시 발급하지 않는다. 불명·만료·회수는 기존 대로 보존하고 재시도하지 않는다. 2MiB 응답·인계 및 64프레임/10초 한도는 §5를 따른다.
+
+`0097_normal_instruction_dispatch.sql.pending` 607행·700행·706행은 각각 기존 receipt bodyHash와 requestHash, permit 원 요청 hash, challenge bodyHash를 대조한다. C는 선택값까지 포함한 signed 요청 원형을 **기존 `permit.request` 안에 그대로 보존**하여 세 hash의 정확 동일성을 유지한다. SQL의 닫힌 요청 형상에서 기존 4개 또는 정확 단일 선택값의 5개 키를 인정하고, 5개 형상은 원 사실의 CONTEXT_REVIEW 및 READ 전용 조건과 함께 검산한다. 형상 변경은 목적 SEND의 forward SQL 보완으로만 제시하며 실제 적용은 이번 결정에 포함하지 않는다. START의 요청 guard, 다른 receipt·기존 SQL·권한·테이블·서명키·자료는 변경하지 않는다. 동일 중첩 원형을 검산하는 서버/실행기·원장 소비자와 보관 검산 코드는 기존 원형도 보존해야 한다.
+
+원 permit 전체의 기존 SHA256 결박을 검증하기 때문에 수신 자료엔 실행의 subject/session 식별자·근거 fullref·요청 메타데이터가 포함된다. 이 노출은 새 응답 계약의 명시적 결정 항목이다. 문서·지시 본문·token·키의 전달이나 UI/로그 출력, 추가 저장은 허용하지 않는다. 모든 해당 후속 SEND의 이 메타데이터 제공을 원치 않으면 C는 부적합하며 기존 축약 응답을 유지한다. 검수는 기본/과거 자료·START 보존, 요청값 변경/삭제·서명 불일치·WORK 및 쓰기 범위 거절·동일 선택 재조회, 구형 클라이언트 호환, exact FIRST3 및 한도·불명·rollback을 포함한다. 이 후보는 코드·미적용 SQL·합성 검증의 결정만 대상으로 하며 실제 DB·권한·키·서비스·C#·SDK/Agent 실행은 제외한다.
