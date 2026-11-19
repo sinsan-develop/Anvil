@@ -16,6 +16,49 @@ async function readyFirst(f:Awaited<ReturnType<typeof firstSendFixture>>){
  await f.receive();return f.make();
 }
 
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('C FIRST native 읽기 수송은 원 자료와 slot을 보존하며 취소·교체·초과 뒤 추가 전송을 막는다',async()=>{
+ const {takeNormalFirstPermitHandoff}=await import('../../../apps/connector/runtime/normal-first-send-owner.ts');
+ const {inspectNormalFirstPermitHandoff}=await import('../../../apps/connector/runtime/normal-owned-spool-profile.ts');
+ const f=await firstSendFixture();let handoff:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>|undefined;
+ const create=f.source.create.bind(f.source);
+ f.source.create=async(request,prompt,signal)=>{handoff=takeNormalFirstPermitHandoff(request,f.source)!;return create(request,prompt,signal);};
+ try{
+  const coordinator=await readyFirst(f),selection=coordinator.selectFirstPermit(f.wire,f.signal);
+  const prepared=await coordinator.prepare(f.item.envelope,f.signal,selection);
+  await coordinator.dispatch(f.item.envelope,prepared,f.wire,f.signal);assert.ok(handoff);
+  for(const mode of ['ok','multipart','partial-cancel','cancel','slot-change','bad-ack','close-unknown','expired','oversize','budget-missing','budget-exhausted','budget-preused','budget-time'] as const){
+   const life=new AbortController(),frames:any[]=[],closed:string[]=[];let opens=0,now=f.clock();
+   const slot={slotId:randomUUID(),receiptRef:structuredClone(handoff.scope.slotRef),origin:'https://anvil-synthetic.invalid',scope:structuredClone(f.scope),expiresAt:new Date(now+30000).toISOString(),caHash:'a'.repeat(64)};
+   const input:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>=structuredClone(handoff);
+   // 이 변경은 수송 한도만 검사한다. native 검산/권위의 양성 fixture로 쓰지 않는다.
+   if(mode==='oversize')(input.executionAuthority.permitSnapshot.currentFact as any).intent.reason='가'.repeat(800000);
+   if(mode==='multipart'||mode==='partial-cancel'||mode==='budget-preused')(input.executionAuthority.permitSnapshot.currentFact as any).intent.reason='가'.repeat(20000);
+   if(mode==='expired')now=Date.parse(input.permit.expiresAt);
+   const ports={attemptId:randomUUID(),slot,now:()=>now,signal:life.signal,check(){},host:{async open(_signal:AbortSignal,metadata:any){
+    opens++;assert.deepEqual(metadata,slot);
+    return{...(mode==='budget-missing'?{}:{inspectionBudget:()=>({frames:mode==='budget-exhausted'?0:mode==='budget-preused'?1:60,remainingMs:mode==='budget-time'?0:9000})}),async send(operation:string,value:any){
+     assert.equal(operation,'NORMAL_SDK_FIRST_INSPECT');assert.equal(value.index,frames.length);assert.equal(value.slotId,slot.slotId);
+     const bytes=Buffer.from(value.data,'base64');assert(bytes.length<=32768);assert(Buffer.byteLength(canonicalJson(value))<64500);frames.push(structuredClone(value));
+     if(mode==='cancel'||mode==='partial-cancel')life.abort();if(mode==='slot-change')slot.receiptRef=ref();
+     if(mode==='bad-ack')return{state:'PART_ACCEPTED',transferId:randomUUID(),index:value.index};
+     return value.final?{state:'SDK_CONFIGURATION_UNAVAILABLE'}:{state:'PART_ACCEPTED',transferId:value.transferId,index:value.index};
+    },async close(disposition:string){closed.push(disposition);return{state:mode==='close-unknown'?'UNKNOWN':'CLOSED_CONFIRMED'};}};
+   }}};
+   if(mode==='ok'||mode==='multipart'){
+    await inspectNormalFirstPermitHandoff(input,ports);assert.equal(opens,1);assert.deepEqual(closed,['HOST_REQUEST_VALIDATED']);
+    const bytes=Buffer.concat(frames.map(x=>Buffer.from(x.data,'base64'))),decoded=JSON.parse(bytes.toString('utf8'));
+    assert.equal(contentHash(bytes),frames[0].contentHash);assert.deepEqual(decoded.handoff,input);assert.deepEqual(decoded.scope,handoff.scope);
+    if(mode==='multipart')assert(frames.length>1);
+    assert(frames.length>=1&&frames.length<=64);assert.equal(frames.at(-1).final,true);
+   }else{
+    await assert.rejects(inspectNormalFirstPermitHandoff(input,ports));
+    if(mode==='expired'||mode==='oversize'){assert.equal(opens,0);assert.equal(frames.length,0);assert.equal(closed.length,0);}
+    else{assert.equal(opens,1);assert.equal(frames.length,mode.startsWith('budget-')?0:1);assert.equal(closed.length,1);}
+   }
+  }
+ }finally{f.authority.abort();await f.h.close();}
+});
+
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('C FIRST private handoff는 원 claim과 create 수명에만 전체 보호 자료를 단회 전달한다',async()=>{
  const messages:unknown[]=[];
  const f=await firstSendFixture('yield-first',{async provide(_query,input){for await(const value of input)messages.push(value);}}),owner:any=await import('../../../apps/connector/runtime/normal-first-send-owner.ts');

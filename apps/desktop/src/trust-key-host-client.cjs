@@ -65,7 +65,7 @@ async function executionConfiguration(action,attemptId,value){
   return result;
  }catch(error){if(dispatched)latch();throw error;}finally{bytes.fill(0);}
 }
-retained=Object.freeze({send,close,executionConfiguration});liveChannels.set(retained,{check:()=>{guard();stable();if(sticky||closed||ending)return uncertain();},env});if(signal.aborted){abort();return uncertain();}guard();return retained;}
+retained=Object.freeze({send,close,executionConfiguration,inspectionBudget:()=>{guard();stable();if(busy||sticky||closed||ending)return uncertain();return {frames:64-sequence,remainingMs:Math.max(0,Math.floor(remaining()))};}});liveChannels.set(retained,{check:()=>{guard();stable();if(sticky||closed||ending)return uncertain();},env});if(signal.aborted){abort();return uncertain();}guard();return retained;}
 return Object.freeze({open,closeOwned:async()=>retained?retained.close():{state:'UNKNOWN'}});}
 
 /** 실제 driver는 명시 호출 때만 동작한다. 자동 fallback/재시작/재접속은 없다.

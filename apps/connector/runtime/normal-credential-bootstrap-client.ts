@@ -5,7 +5,7 @@ import {cloneV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../.
 /** 새 private owned-host protocol. 일반 token getter/임의 bytes signer가 아니다. */
 export interface NormalOwnedScope {projectId:string;connectorId:string;executionId:string;executionGeneration:number;grantRef:Ref;credentialGeneration:number}
 export type HostCloseDisposition = 'HOST_REQUEST_VALIDATED' | 'OPERATION_UNKNOWN';
-export interface NormalOwnedHostSession {readonly invalidated?:AbortSignal;current?():void;send(operation:string,payload:unknown):Promise<unknown>;close(disposition:HostCloseDisposition):Promise<{state:string}>}
+export interface NormalOwnedHostSession {readonly invalidated?:AbortSignal;current?():void;inspectionBudget?():{frames:number;remainingMs:number};send(operation:string,payload:unknown):Promise<unknown>;close(disposition:HostCloseDisposition):Promise<{state:string}>}
 export interface NormalOwnedHostFactory {open(signal:AbortSignal,request?:Readonly<NormalOwnedMetadata>):Promise<NormalOwnedHostSession>}
 export interface NormalOwnedMetadata {slotId:string;receiptRef:Ref;origin:string;scope:NormalOwnedScope;expiresAt:string;caHash:string}
 export interface NormalOwnedRequest {method:'GET'|'POST';path:string;query:string;body:string|null;auth:string|null;expiresAt:string}

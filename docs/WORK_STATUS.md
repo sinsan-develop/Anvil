@@ -21185,3 +21185,11 @@ PRESPAWN 후보 §6에 기본 서버 옵션 조립 미연결과 queue의 writer 
 기초 RED 2건(`53bbd9`) 후 새 기능 집중 4건 통과(`198ab2`). 인접 28통과/1실패(`a422c5`)의 generic receipt close1은 기준 원바이트에서도 동일했다(`4a8992`). callable async iterator의 descriptor를 검산한 뒤에만 Query를 소유하도록 보완하여 generic receipt는 UNKNOWN/close0, 실제 늦은 자기 Query는 close1, 다른 owner 별칭은 close0을 유지했다. 시험 기대를 변경하지 않았다.
 
 담당자 최종 직접·인접 29통과/실패·건너뜀0(`34d1e1`), 집중 5건과 기존 Proxy 1건, root 타입 `1012de`·공백 `a4aba9` 종료0. Main 동결 지문3/3 및 공백 `6ba567`, 새 전달/교차 검산과 기존 generic-ref 직접 5통과(`87d30e`). 활성 실행 핸들0. 새 인계는 실행 권위가 아니며 실제 native 독립 검산·원 child 소비·제품 START current·실제 C#/SDK/DB/OS/Agent는 미구현 또는 미검증이다. 복구는 이 3경로 변경만 되돌리고 기존 원장 형상·자료는 보존한다. 다음은 승인된 원 host/slot/정착 FIRST3에서 이 메모리 근거를 재검산하는 보호 수송 소스다.
+
+## FN07 원 FIRST 자료의 보호 native 읽기 수송
+
+기준 `e0119362`, 기존 developer_primary 단일 작성 및 작성권 반환. 원 FIRST capability를 소비하는 core에서 같은 등록·slot의 보호 host로 두 envelope와 원 C permit을 분할 전달한다. 선행 READ_STATE/PUBLIC_KEY 이후 host 잔여 프레임·10초를 전송 전에 검사하고 native도 남은 프레임, 원 순번·길이·hash, 정착 FIRST3·등록/slot·permit/receipt·예산 참조를 대조한다. 부분 전송/취소 시 byte buffer와 호출의 원 정리를 수행하고 불명은 보존한다. 7개 제품 경로·기존 시험 2개다. 구형 inspect, 저장 원장, 일반 SEND/자동 선택은 기존대로 유지한다.
+
+정적 연결 RED `17a11c` 1실패 이후 통과. 담당자 FIRST 23통과 `bae6b4`, desktop 인접 68통과·fixture의 module-mock 옵션 누락 4실패 `55e85b`; 해당 4건의 정확 옵션 재검사 `3ba9bd` 4통과. 최종 native/채널 집중 4통과 `9ec125`, 최종 수송 집중 `cc6bd9` 1통과. 중간 TypeScript TS2339/TS7022 각1을 내부 타입으로 좁혔으며 최종 root `92d375`와 desktop `11fc25` 종료0. Main 최종 수송 집중 1통과 `678244`, 동결 지문9/9·공백 `37d204`. 활성 핸들0.
+
+실제 native 검산 결과의 외부 응답은 기존 SDK_CONFIGURATION_UNAVAILABLE다. 보호 environment/commandProfile의 단일 선택, PRESPAWN·lease 발급, child/SDK 생성은 미연결이다. 실제 C# 컴파일·OS·native·SDK/Agent·DB·권한·키·서비스는 미검증 또는 제외다. 다음은 같은 등록과 environment의 현재 보호 선택을 검산한 뒤 원 package/cwd의 물리 신원으로 연결하는 소스다. 복구는 이 9경로 변경에 한정하며 원장·보호 자료는 보존한다.

@@ -1,4 +1,5 @@
 import {AsyncLocalStorage} from 'node:async_hooks';
+import {randomUUID} from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import {unlinkSync} from 'node:fs';
 import {basename,resolve,isAbsolute} from 'node:path';
@@ -9,7 +10,7 @@ import type {NormalOwnedHostFactory,NormalOwnedHostSession,NormalOwnedMetadata,H
 import {isOwnedSpoolPath,NormalStartFileStore,type NormalFilePorts,type NormalLocalScope,type ProfileJournalAccess} from './normal-start-file-store.ts';
 import {NormalStartIntake,type NormalStartStore} from './normal-start-intake.ts';
 import {NormalClaudeStartWire} from '../adapters/secondary/normal-start-wire.ts';
-import {confirmNormalLiveInputDelivery,takeFirstOutputOrigin,type LiveInputPort,type NormalFirstSendSource} from './normal-first-send-owner.ts';
+import {confirmNormalLiveInputDelivery,takeFirstOutputOrigin,takeNormalFirstPermitHandoff,type LiveInputPort,type NormalFirstSendSource} from './normal-first-send-owner.ts';
 import type {NormalStartWire,NormalStartCurrent} from './normal-start-coordinator.ts';
 import type {RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {receiveProfiledEnvelope,type InboxFilePorts,type InboxLimits} from './receipt-inbox.ts';
@@ -157,8 +158,8 @@ export class OwnedSpoolRuntime {
     try{
      if(this.#opening||this.#session||eligible&&byRef(request)!==byRef(this.external(this.#slot)))invalid('NORMAL_OWNED_BUSY');
      const raw=await this.external(()=>Reflect.apply(this.#open,this.#host,[signal]));
-     const send=raw.send,close=raw.close;let returned=false;
-     return {send:(op:string,p:unknown)=>{if(returned||raw.send!==send)invalid();return this.external(()=>Reflect.apply(send,raw,[op,p]));},
+     const send=raw.send,close=raw.close,budget=raw.inspectionBudget;let returned=false;
+     return {...(typeof budget==='function'?{inspectionBudget:()=>{if(returned||raw.inspectionBudget!==budget)invalid();return this.external(()=>Reflect.apply(budget,raw,[]));}}:{}),send:(op:string,p:unknown)=>{if(returned||raw.send!==send)invalid();return this.external(()=>Reflect.apply(send,raw,[op,p]));},
       close:async(d:HostCloseDisposition)=>{if(returned)invalid();returned=true;try{return await this.external(()=>Reflect.apply(close,raw,[d]));}finally{release();}}};
     }catch(error){release();throw error;}
    }
@@ -424,9 +425,11 @@ export class OwnedSpoolRuntime {
   const core={storage,plannedSid:sdk.plannedSid,expiresAt:sdk.expiresAt,ownerSignal:lifetime,slotRef:cloneV1(slot.receiptRef),
    clock:()=>{verify();return this.#clock();},
    check:(scope:Parameters<NormalFirstSendSource['check']>[0])=>{verify();return this.external(()=>Reflect.apply(fixed.check,sdk,[scope]));},
-   create:(...args:Parameters<NormalFirstSendSource['create']>)=>{
+   create:async(...args:Parameters<NormalFirstSendSource['create']>)=>{
     verify();if(inputStream)invalid();
     const [request,first,life]=args;
+    const handoff=takeNormalFirstPermitHandoff(request,source);
+    if(handoff){await this.#inspectFirst(handoff,life,verify);return invalid('SDK_CONFIGURATION_UNAVAILABLE');}
     const active=workerInput(first,life,()=>{verify();if(origin)this.external(origin.check);});inputStream=active;
     try{
      const result=this.external(()=>Reflect.apply(fixed.create,sdk,[request,active.stream,life]));
@@ -456,6 +459,14 @@ export class OwnedSpoolRuntime {
   }});
   return {source,port};
  }
+ // 원 FIRST의 core만 이 읽기 수송을 호출한다. 응답을 실행 lease로 승격하지 않는다.
+ async #inspectFirst(handoff:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>,life:AbortSignal,verify:Guard){
+  const slot=this.external(this.#slot);if(!slot)invalid();const key=byRef(slot);
+  try{await inspectNormalFirstPermitHandoff(handoff,{attemptId:this.#attempt,slot,host:this.credentialHost(),now:()=>this.#clock(),signal:AbortSignal.any([life,this.#owner]),
+   check:()=>{verify();if(this.#unknown||byRef(this.external(this.#slot))!==key)invalid();}});}
+  catch(error){this.#unknown=true;throw error;}
+ }
+
  receive(limits:InboxLimits,input:unknown,expected:Parameters<typeof receiveProfiledEnvelope>[3],signal:AbortSignal){
   return this.#transaction('UNVERIFIED_RECEIPT_INBOX','inbox',signal,async(path,io)=>{
    const receipt=await receiveProfiledEnvelope(path,limits,input,expected,this.#clock(),io);
@@ -506,3 +517,48 @@ function guardFiles(raw:IO,check:Guard,begin:Guard,end:Guard,root:string,stamp:s
  // FileHandle/Dir expose more methods in Node's types; these private views implement only the operations of the two stores.
  return io as unknown as IO;
 }
+
+// 읽기 전용 수송. 전달 객체는 native 원 행 검산 이전에는 실행 권위가 아니다.
+export async function inspectNormalFirstPermitHandoff(handoff:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>,ports:{attemptId:string;slot:NormalOwnedMetadata;host:NormalOwnedHostFactory;now():number;signal:AbortSignal;check():void}){
+  const {slot,host:factory,signal,check:verify}=ports;const open=factory.open;let unknown=false;
+  if(!slot||byRef(slot.receiptRef)!==byRef(handoff.scope.slotRef))invalid();
+  const slotKey=byRef(slot),begin=ports.now();let end=Math.min(begin+10000,Date.parse(slot.expiresAt),Date.parse(handoff.permit.expiresAt));
+  if(!Number.isSafeInteger(begin)||!Number.isFinite(end)||end<=begin)invalid();
+  let mono=performance.now()+end-begin;const local=new AbortController(),originalSignal=signal,combined=AbortSignal.any([originalSignal,local.signal]);
+  const bytes=Buffer.from(canonicalJson({attemptId:ports.attemptId,slotId:slot.slotId,startCommandId:handoff.startEnvelope.commandId,
+   sendCommandId:handoff.sendEnvelope.commandId,scope:handoff.scope,handoff}));
+  let host:NormalOwnedHostSession|undefined,closing:Promise<{state:string}>|undefined,finished=false,sent=false,validated=false;
+  const close=()=>closing??=host!.close(validated?'HOST_REQUEST_VALIDATED':'OPERATION_UNKNOWN');
+  const check=()=>{verify();if(combined.aborted||unknown||ports.now()<begin||ports.now()>=end||performance.now()>=mono||
+   factory.open!==open||byRef(ports.slot)!==slotKey)invalid();};
+  let reject!:(e:Error)=>void;const cancelled=new Promise<never>((_,r)=>{reject=r;});void cancelled.catch(()=>{});
+  const abort=()=>reject(Error('NORMAL_SPOOL_UNKNOWN'));combined.addEventListener('abort',abort,{once:true});
+  let timer=setTimeout(()=>local.abort(),Math.max(1,end-ports.now()));
+  try{
+   check();if(bytes.length<1||bytes.length>2097152)invalid();
+   const opening=Reflect.apply(open,factory,[combined,slot]);
+   void opening.then(late=>{if(finished){host=late;unknown=true;void close().catch(()=>{});}},()=>{});
+   host=await Promise.race([opening,cancelled]);check();const send=host.send,budget=host.inspectionBudget,transferId=randomUUID(),hash=contentHash(bytes);
+   if(typeof budget!=='function'||isProxy(budget))invalid();const left=Reflect.apply(budget,host,[]);
+   if(isProxy(left)||!recordV1(left,['frames','remainingMs'])||!Number.isSafeInteger(left.frames)||left.frames<Math.ceil(bytes.length/32768)||left.frames>64||
+    !Number.isSafeInteger(left.remainingMs)||left.remainingMs<1||left.remainingMs>10000)invalid();
+   end=Math.min(end,ports.now()+left.remainingMs);mono=Math.min(mono,performance.now()+left.remainingMs);check();
+   clearTimeout(timer);timer=setTimeout(()=>local.abort(),Math.max(1,Math.min(end-ports.now(),mono-performance.now())));
+   for(let offset=0,index=0;offset<bytes.length;offset+=32768,index++){
+    check();if(index>=64||host.send!==send||host.inspectionBudget!==budget)invalid();const part=bytes.subarray(offset,offset+32768),final=offset+part.length===bytes.length;
+    sent=true;const result=await Promise.race([Reflect.apply(send,host,[ 'NORMAL_SDK_FIRST_INSPECT',
+     {attemptId:ports.attemptId,slotId:slot.slotId,transferId,totalBytes:bytes.length,contentHash:hash,index,data:part.toString('base64'),final}]),cancelled]);check();
+    if(final){if(isProxy(result)||!recordV1(result,['state'])||result.state!=='SDK_CONFIGURATION_UNAVAILABLE')invalid();validated=true;}
+    else if(isProxy(result)||!recordV1(result,['state','transferId','index'])||result.state!=='PART_ACCEPTED'||result.transferId!==transferId||result.index!==index)invalid();
+   }
+  }catch(error){if(sent)unknown=true;throw error;}
+  finally{
+   finished=true;bytes.fill(0);clearTimeout(timer);combined.removeEventListener('abort',abort);
+   if(host){let closeTimer:ReturnType<typeof setTimeout>|undefined;try{
+    const remaining=Math.max(0,Math.min(end-ports.now(),mono-performance.now()));
+    const result=await Promise.race([close(),new Promise<{state:string}>(r=>{closeTimer=setTimeout(()=>r({state:'UNKNOWN'}),remaining);})]);
+    if(result.state!=='CLOSED_CONFIRMED')unknown=true;
+   }catch{unknown=true;}finally{if(closeTimer!==undefined)clearTimeout(closeTimer);}}
+   local.abort();if(unknown)invalid();
+  }
+ }

@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-17 01:11:29 KST
 
+- **FN07 원 FIRST native 읽기 수송:** 같은 slot/등록과 원 FIRST3·허가를 대조하는 소스와 합성 수송·타입을 검수했다. 보호 설정 선택·PRESPAWN·실제 C#/SDK 실행은 미완료다.
+
 - **FN07 원 FIRST의 C 증거 전달:** 원 create에 단회 메모리로만 전달하는 소스와 Query 오정리 보완을 검수했다. 합성 29건·타입 통과. native 소비·제품 START·실제 SDK/OS 실행은 미완료다.
 
 - **FN07 원 자식 핸들 소유 소스:** 원 process/thread/Job 및 표준입출력 1회 전달 소스·고정 빌드의 직접/인접 48건을 검수했다. 원 FIRST3 인계·PRESPAWN·실제 C#/OS/SDK 동작은 미구현 또는 미검증이다.

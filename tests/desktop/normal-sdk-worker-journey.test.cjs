@@ -5,6 +5,27 @@ const {readFileSync}=require('node:fs');
 const path=require('node:path');
 const read=p=>readFileSync(path.resolve(__dirname,'../../',p),'utf8');
 
+test('FIRST 보호 인계는 원 core에서 native 읽기 검사로만 소비하고 FIRST3와 C hash를 독립 대조한다',()=>{
+ const runtime=read('apps/connector/runtime/normal-owned-spool-profile.ts');
+ assert.match(runtime,/takeNormalFirstPermitHandoff\(request,source\)/);
+ assert.match(runtime,/await this\.#inspectFirst\(handoff,life,verify\)/);
+ const host=read('apps/connector/native/DesktopTrustKeyHostSource.cs');
+ assert.match(host,/value.ContainsKey\("transferId"\)[\s\S]*ReceiveSdkFirstPart\(value,peer\)/);
+ const credential=read('apps/connector/native/NormalExecutionCredentialSource.cs');
+ assert.match(credential,/sealed class FirstInspection/);
+ assert.match(credential,/S\(permitRef,"contentHash"\)!=H\(snapshot\)/);
+ assert.match(credential,/J\(scope\)!=J\(expectedScope\)/);
+ assert.match(credential,/J\(snapshot\["authorizationReceiptRef"\]\)!=J\(context\["authorizationReceiptRef"\]\)/);
+ assert.match(credential,/J\(snapshot\["reservationRef"\]\)!=J\(context\["budgetRef"\]\)/);
+ assert.match(credential,/firstConsumed=true;unknown=true;ClearFirst\(\);throw/);
+ assert.match(credential,/public void Dispose\(\)[^\n]*ClearFirst\(\)/);
+ assert.match(host,/normalExecution.IncompleteSdkFirstTransfer/);
+ assert.match(host,/normalExecution.HasSdkFirstTransfer&&\(operation!="NORMAL_SDK_FIRST_INSPECT"/);
+ const spool=read('apps/connector/native/NormalExecutionSpoolProfileSource.cs');
+ assert.match(spool,/RequireSdkFirst\(snapshot,reference,handoff,start,i\)/);
+ assert.doesNotMatch(credential,/new NormalSdkChildHostSource|CreateProcess|ResumeThread/);
+});
+
 test('SDK 원 child 소유 primitive는 atomic Job와 자식 stdio 세 끝만 생성 전에 결박한다',()=>{
  const source=read('apps/connector/native/NormalSdkChildHostSource.cs');
  const create=source.slice(source.indexOf('void CreateSuspended()'),source.indexOf('void VerifyOriginal('));
@@ -77,7 +98,7 @@ const {EventEmitter}=require('node:events');
 const {createHash,randomUUID}=require('node:crypto');
 const {canonicalJson}=require('../../apps/desktop/src/runtime-catalogue-profile.cjs');
 const {createSdkBootstrapClient}=require('../../apps/desktop/src/trust-key-host-client.cjs');
-function bootstrapCarrier(change=x=>x){
+function bootstrapCarrier(change=x=>x,normal=false){
  const image=Buffer.from('synthetic-helper'),sha=createHash('sha256').update(image).digest('hex'),calls=[];
  const endpoint={stdin:new EventEmitter(),stdout:new EventEmitter(),stderr:new EventEmitter()};Object.setPrototypeOf(endpoint,EventEmitter.prototype);EventEmitter.call(endpoint);
  let seq=0;endpoint.stdin.write=(bytes,_encoding,callback)=>{const f=JSON.parse(bytes.toString());calls.push(f.operation);seq++;let data;
@@ -88,9 +109,22 @@ function bootstrapCarrier(change=x=>x){
  endpoint.stdin.end=()=>queueMicrotask(()=>endpoint.emit('close',0));
  const abort=new AbortController();let end=Date.now()+9000;
  const lease={signal:abort.signal,narrow:value=>{end=Math.min(end,value);},check(){if(abort.signal.aborted)throw Error('CONTEXT_CHANGED');},remainingMs:()=>end-Date.now(),callExpiresAt:()=>new Date(end).toISOString()};
- const client=createSdkBootstrapClient({path:'C:\\Anvil\\AnvilTrustKeyHost.exe',signerRef:{id:randomUUID(),version:1,contentHash:sha},helperHash:sha},{readImage:async()=>Buffer.from(image),companion:async()=> 'ABSENT',environment:()=>({SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows'}),uuid:randomUUID,spawn:(_exe,args)=>{assert.deepEqual(args,['--normal-sdk-bootstrap']);return endpoint;}});
+ const factory=normal?require('../../apps/desktop/src/trust-key-host-client.cjs').createTrustKeyHostClient:createSdkBootstrapClient;
+ const client=factory({path:'C:\\Anvil\\AnvilTrustKeyHost.exe',signerRef:{id:randomUUID(),version:1,contentHash:sha},helperHash:sha},{readImage:async()=>Buffer.from(image),companion:async()=> 'ABSENT',environment:()=>({SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows'}),uuid:randomUUID,spawn:(_exe,args)=>{assert.deepEqual(args,normal?[]:['--normal-sdk-bootstrap']);return endpoint;}});
  return{client,lease,calls,abort,child:endpoint};
 }
+
+test('FIRST 읽기 수송 예산은 실제 채널의 선행 READ_STATE PUBLIC_KEY 사용분을 제외한다',async()=>{
+ const fixture=bootstrapCarrier(x=>x,true),channel=await fixture.client.open(fixture.lease);
+ try{
+  assert.equal(channel.inspectionBudget().frames,64);
+  await channel.send('READ_STATE',{});await channel.send('PUBLIC_KEY',{});
+  assert.equal(channel.inspectionBudget().frames,62);assert(channel.inspectionBudget().remainingMs>0);
+  await channel.send('NORMAL_SDK_FIRST_INSPECT',{});assert.equal(channel.inspectionBudget().frames,61);
+  assert.deepEqual(fixture.calls,['READ_STATE','PUBLIC_KEY','NORMAL_SDK_FIRST_INSPECT']);
+ }finally{assert.equal((await channel.close()).state,'CLOSED_CONFIRMED');}
+ assert.throws(()=>channel.inspectionBudget());
+});
 test('원 bootstrap 채널만 같은 endpoint·epoch에서 한 번 수령하고 확정 폐쇄한다',async()=>{
  const m=bootstrapCarrier(),lease=await m.client.open(m.lease,4),proof=lease.read();assert.equal(proof.epoch,4);
  await lease.accept();await assert.rejects(lease.accept());assert.equal((await lease.close()).state,'CLOSED_CONFIRMED');assert.throws(()=>lease.read());

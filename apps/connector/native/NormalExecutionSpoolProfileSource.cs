@@ -210,7 +210,7 @@ internal sealed class NormalExecutionSpoolProfileSource {
   return raw;
  }
  // 이 함수는 현재 열린 할당의 원본 3행만 확인한다. 경로/행·실행 권한을 외부에 내주지 않는다.
- internal string ReadSdkFirstAttempt(Row record,Row slot,Row scope,string startCommand,string sendCommand){
+ internal string ReadSdkFirstAttempt(Row record,Row slot,Row scope,string startCommand,string sendCommand,Row handoff=null){
   if(startCommand==sendCommand||DesktopTrustKeyHostSource.Time(slot,"expiresAt")<=DateTime.UtcNow)throw Invalid();
   string tuple=Tuple(Normal,record,slot);
   return Log(false,(log,rows)=>{
@@ -221,13 +221,13 @@ internal sealed class NormalExecutionSpoolProfileSource {
    var dir=root.RetainSpoolNamespace(id,false);
    if(dir.Identity!=S(allocation,"directoryIdentity"))throw Invalid();
    OutputScope(scope,rows,allocation,record,slot);
-   string start=ReadSdkAttemptChain(rows,id,dir,scope,startCommand,true);
-   string send=ReadSdkAttemptChain(rows,id,dir,scope,sendCommand,false);
+   string start=ReadSdkAttemptChain(rows,id,dir,scope,startCommand,true,handoff);
+   string send=ReadSdkAttemptChain(rows,id,dir,scope,sendCommand,false,handoff);
    Check();if(DesktopTrustKeyHostSource.Time(slot,"expiresAt")<=DateTime.UtcNow)throw Invalid();
    return H(new object[]{scope,start,send});
   });
  }
- string ReadSdkAttemptChain(List<Row> rows,string allocation,DesktopTrustKeyDirectoryFact dir,Row scope,string command,bool start){
+ string ReadSdkAttemptChain(List<Row> rows,string allocation,DesktopTrustKeyDirectoryFact dir,Row scope,string command,bool start,Row handoff){
   string id=DesktopTrustKeyHostSource.Id(R("id",command),"id");
   string channel="attempt-"+id;
   if(Unsettled(rows).Values.Any(r=>S(r,"allocation")==allocation&&S(r,"channel")==channel))throw Invalid();
@@ -269,12 +269,22 @@ internal sealed class NormalExecutionSpoolProfileSource {
       permit=p;if(!start)proof=DesktopTrustKeyHostSource.Ref(snapshot["proofResultRef"]);
      }
      if(i==3&&(J(snapshot["permit"])!=J(permit)||!start&&(J(snapshot["proofResultRef"])!=J(proof)||J(snapshot["localAttemptRef"])!=J(first)||snapshot["dispatchAttemptRef"]!=null)))throw Invalid();
+     if(handoff!=null)RequireSdkFirst(snapshot,reference,handoff,start,i);
      previous=reference;hashes.Add(DesktopTrustKeyHostSource.Hash(bytes));
     }finally{Array.Clear(bytes,0,bytes.Length);}
    }
   }
   if(J(previous)!=J(scope[start?"startReadyRef":"dispatchAttemptRef"])||hashes[2]!=S(summary,"tail"))throw Invalid();
   return H(hashes.ToArray());
+ }
+ static void RequireSdkFirst(Row snapshot,Row reference,Row handoff,bool start,int sequence){
+  var envelope=DesktopTrustKeyHostSource.Map(handoff[start?"startEnvelope":"sendEnvelope"]);
+  if(S(snapshot,"envelopeHash")!=S(envelope,"envelopeHash")||J(snapshot["grantRef"])!=J(handoff["grantRef"]))throw Invalid();
+  if(sequence==3&&J(reference)!=J(handoff[start?"startReadyRef":"dispatchAttemptRef"]))throw Invalid();
+  if(!start){
+   if(sequence==1&&J(reference)!=J(handoff["localAttemptRef"]))throw Invalid();
+   if(sequence>=2&&(J(snapshot["permit"])!=J(handoff["permit"])||J(snapshot["proofResultRef"])!=J(handoff["proofResultRef"])))throw Invalid();
+  }
  }
  static Row LastOutputPhase(List<Row> rows,string reservation){return rows.LastOrDefault(r=>IsOutput(r)&&S(r,"id")==reservation);}
  static void OutputTime(Row o){

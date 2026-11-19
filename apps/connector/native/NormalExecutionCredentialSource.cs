@@ -95,14 +95,95 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   }finally{Array.Clear(raw,0,raw.Length);}
   }
  }
+ // 분할 수송은 같은 등록/slot/host 예산의 단일 읽기 작업이다. 부분 자료를 저장하지 않는다.
+ byte[] firstBytes;string firstTransfer,firstHash,firstRecord,firstSlot,firstAttempt,firstSlotId;int firstOffset,firstIndex;bool firstConsumed;
+ internal bool HasSdkFirstTransfer {get{return firstTransfer!=null;}}
+ internal bool IncompleteSdkFirstTransfer {get{return firstTransfer!=null&&!firstConsumed;}}
+ internal object ReceiveSdkFirstPart(Dictionary<string,object> value,DesktopTrustKeyPeerSource peer){
+  try{
+   Check();Exact(value,"attemptId,slotId,transferId,totalBytes,contentHash,index,data,final");
+   string attempt=Id(value,"attemptId"),slotId=Id(value,"slotId"),transfer=Id(value,"transferId"),hash=S(value,"contentHash");
+   var record=Record(attempt);var slot=LoadSlot(slotId,record);int size=checked((int)N(value["totalBytes"])),index=checked((int)N(value["index"]));
+   if(firstConsumed||size<1||size>2097152||index>=64||!DesktopTrustKeyHostSource.IsHash(hash)||!(value["final"] is bool))throw Invalid();
+   if(firstTransfer==null){if(index!=0)throw Invalid();firstTransfer=transfer;firstHash=hash;firstRecord=H(record);firstSlot=H(slot);firstAttempt=attempt;firstSlotId=slotId;firstBytes=new byte[size];}
+   if(transfer!=firstTransfer||hash!=firstHash||attempt!=firstAttempt||slotId!=firstSlotId||H(record)!=firstRecord||H(slot)!=firstSlot||size!=firstBytes.Length||index!=firstIndex)throw Invalid();
+   string encoded=S(value,"data");if(encoded.Length<1||encoded.Length>43692)throw Invalid();byte[] part=Convert.FromBase64String(encoded);
+   try{
+    if(part.Length<1||part.Length>32768||Convert.ToBase64String(part)!=encoded||firstOffset>size-part.Length)throw Invalid();
+    bool final=(bool)value["final"];if(final!=(firstOffset+part.Length==size)||!final&&part.Length!=32768)throw Invalid();
+    Check();Array.Copy(part,0,firstBytes,firstOffset,part.Length);firstOffset+=part.Length;firstIndex++;
+    if(!final)return new Dictionary<string,object>{{"state","PART_ACCEPTED"},{"transferId",transfer},{"index",index}};
+    firstConsumed=true;if(H(firstBytes)!=firstHash)throw Invalid();var input=DesktopTrustKeyHostSource.Parse(firstBytes,false);
+    if(!firstBytes.SequenceEqual(B(input)))throw Invalid();var request=new RowRequest(input,true);
+    if(request.AttemptId!=firstAttempt||request.SlotId!=firstSlotId)throw Invalid();
+    return InspectSdkFirst(request,peer);
+   }finally{Array.Clear(part,0,part.Length);if(firstConsumed)ClearFirst();}
+  }catch{firstConsumed=true;unknown=true;ClearFirst();throw;}
+ }
+ void ClearFirst(){if(firstBytes!=null)Array.Clear(firstBytes,0,firstBytes.Length);firstBytes=null;}
+ // 이 객체는 원 자료의 읽기 검산 결과일 뿐 lease/OS 현재 witness가 아니다. 외부로 반환하지 않는다.
+ sealed class FirstInspection {
+  internal readonly string Digest,CanonicalSource,RecordHash,SlotHash;
+  internal readonly DateTime ExpiresAt;
+  internal FirstInspection(string digest,string source,string recordHash,string slotHash,DateTime expiresAt){Digest=digest;CanonicalSource=source;RecordHash=recordHash;SlotHash=slotHash;ExpiresAt=expiresAt;}
+ }
+ FirstInspection InspectFirstSource(RowRequest request,Dictionary<string,object> record,Dictionary<string,object> slot){
+  var h=request.Handoff;Exact(h,"startEnvelope,sendEnvelope,grantRef,startReadyRef,localAttemptRef,dispatchAttemptRef,permit,proofResultRef,scope,executionAuthority");
+  if(J(h["scope"])!=J(request.Scope)||J(h["grantRef"])!=J(request.Scope["grantRef"])||J(h["startReadyRef"])!=J(request.Scope["startReadyRef"])||J(h["dispatchAttemptRef"])!=J(request.Scope["dispatchAttemptRef"]))throw Invalid();
+  var start=SdkEnvelope(Map(h["startEnvelope"]),"START_SESSION",request.StartId,record,slot);
+  var send=SdkEnvelope(Map(h["sendEnvelope"]),"SEND_INSTRUCTION",request.SendId,record,slot);
+  var context=Map(send["context"]);var startContext=Map(start["context"]);
+  foreach(string key in new[]{"projectId","assignmentId","executionId","executionGeneration","connectionRef","environmentRef","capabilityRef","sourceScopes"})if(J(context[key])!=J(startContext[key]))throw Invalid();
+  var authority=Map(h["executionAuthority"]);Exact(authority,"kind,permitSnapshot");if(S(authority,"kind")!="NORMAL_SEND_PERMIT_SOURCE_V1")throw Invalid();
+  var snapshot=Map(authority["permitSnapshot"]);Exact(snapshot,"scope,commandId,commandRef,request,requestHash,proofRef,authorizationReceiptRef,bindingHash,currentFact,reservationRef,state,issuedAt,expiresAt,commandExpiresAt,grantExpiresAt,proofExpiresAt,executionAuthorized,dispatchPerformed");
+  var permit=Map(h["permit"]);Exact(permit,"ref,commandId,envelopeHash,issuedAt,expiresAt");var permitRef=DesktopTrustKeyHostSource.Ref(permit["ref"]);
+  var scope=Map(snapshot["scope"]);var expectedScope=new Dictionary<string,object>(Map(slot["scope"]));expectedScope.Add("mode","EXECUTION");
+  if(S(permitRef,"contentHash")!=H(snapshot)||N(permitRef["version"])!=1||J(scope)!=J(expectedScope)||S(snapshot,"commandId")!=request.SendId||S(permit,"commandId")!=request.SendId||S(permit,"envelopeHash")!=S(send,"envelopeHash")||
+   S(snapshot,"state")!="NORMAL_INSTRUCTION_PERMITTED"||!(snapshot["executionAuthorized"] is bool)||(bool)snapshot["executionAuthorized"]!=true||!(snapshot["dispatchPerformed"] is bool)||(bool)snapshot["dispatchPerformed"]||J(snapshot["proofRef"])!=J(h["proofResultRef"])||J(snapshot["authorizationReceiptRef"])!=J(context["authorizationReceiptRef"])||J(snapshot["reservationRef"])!=J(context["budgetRef"])||S(snapshot,"issuedAt")!=S(permit,"issuedAt")||S(snapshot,"expiresAt")!=S(permit,"expiresAt"))throw Invalid();
+  foreach(string key in new[]{"commandRef","proofRef","authorizationReceiptRef","reservationRef"})if(N(DesktopTrustKeyHostSource.Ref(snapshot[key])["version"])!=1)throw Invalid();
+  var requestBody=Map(snapshot["request"]);Exact(requestBody,"envelopeHash,localAttemptRef,sourceObservationRefs,osOwnershipRef,representation");
+  if(S(requestBody,"representation")!="SEND_PERMIT_SOURCE_V1"||S(requestBody,"envelopeHash")!=S(send,"envelopeHash")||J(requestBody["localAttemptRef"])!=J(h["localAttemptRef"])||H(requestBody)!=S(snapshot,"requestHash"))throw Invalid();
+  var fact=Map(snapshot["currentFact"]);var session=Map(fact["agentSession"]);Exact(session,"sessionRef,roleBindingRef,bindingGeneration");
+  var intent=Map(fact["intent"]);var registration=Map(fact["registration"]);var reserved=Map(fact["executionCredentialReservation"]);Exact(reserved,"id,generation");Id(reserved,"id");
+  if(S(fact,"transport")!="NORMAL_PROTECTED"||S(fact,"writerState")!="OWNED"||Id(fact,"projectId")!=Id(scope,"projectId")||Id(fact,"executionId")!=Id(scope,"executionId")||N(fact["executionGeneration"])!=N(scope["executionGeneration"])||
+   N(reserved["generation"])!=N(scope["credentialGeneration"])||N(session["bindingGeneration"])<1||J(session["sessionRef"])!=J(Map(send["payload"])["sessionBindingRef"])||J(session["roleBindingRef"])!=J(intent["roleBindingRef"])||
+   J(registration["ref"])!=J(send["executorRegistrationRef"])||Id(registration,"connectorId")!=Id(scope,"connectorId")||S(intent,"mode")!="CONTEXT_REVIEW"||Id(Map(intent["assignmentRef"]),"id")!=Id(context,"assignmentId"))throw Invalid();
+  DesktopTrustKeyHostSource.Ref(session["roleBindingRef"]);
+  foreach(string key in new[]{"connectionRef","environmentRef","capabilityRef","sourceScopes"})if(J(intent[key])!=J(context[key]))throw Invalid();
+  var sources=intent["sourceScopes"] as object[];if(sources==null||sources.Length<1||sources.Length>200)throw Invalid();var observations=new List<object>();
+  foreach(object raw in sources){var source=Map(raw);var observation=DesktopTrustKeyHostSource.Ref(source["observationRef"]);if(!observations.Any(x=>J(x)==J(observation)))observations.Add(observation);var targets=source["targets"] as object[];if(targets==null||targets.Length<1||targets.Length>200)throw Invalid();foreach(object target in targets)if(S(Map(target),"access")!="READ")throw Invalid();}
+  if(J(observations.ToArray())!=J(requestBody["sourceObservationRefs"]))throw Invalid();
+  var checks=Map(fact["checks"]);Exact(checks,"subject,session,registration,permissionPolicy,basis,context,capability,source,osFence,budget,storage,understanding");
+  foreach(var item in checks){var check=Map(item.Value);Exact(check,"state,evidenceRefs");if(item.Key!="understanding"&&S(check,"state")!="VERIFIED_CURRENT")throw Invalid();var refs=check["evidenceRefs"] as object[];if(refs==null||refs.Length>200)throw Invalid();foreach(object r in refs)DesktopTrustKeyHostSource.Ref(r);}
+  if(!((object[])Map(checks["osFence"])["evidenceRefs"]).Any(x=>J(x)==J(requestBody["osOwnershipRef"])))throw Invalid();
+  var binding=new Dictionary<string,object>(fact);binding.Remove("checkedAt");binding.Remove("expires");
+  if(S(snapshot,"bindingHash")!=H(new Dictionary<string,object>{{"scope",scope},{"commandRef",snapshot["commandRef"]},{"authorizationReceiptRef",snapshot["authorizationReceiptRef"]},{"reservationRef",snapshot["reservationRef"]},{"fact",binding}}))throw Invalid();
+  DateTime issued=At(snapshot,"issuedAt"),expires=At(snapshot,"expiresAt"),observed=At(fact,"checkedAt");
+  if(observed>issued||issued>observed.AddSeconds(30)||issued>clock()||expires<=clock()||expires<=issued||expires>issued.AddSeconds(30)||expires>observed.AddSeconds(30)||At(snapshot,"commandExpiresAt")!=At(send,"expiresAt"))throw Invalid();
+  foreach(string key in new[]{"commandExpiresAt","grantExpiresAt","proofExpiresAt"})if(expires>At(snapshot,key))throw Invalid();
+  var limits=Map(fact["expires"]);Exact(limits,"humanSession,permissionPolicy,registration,budget,automaticScope");foreach(string key in limits.Keys)if(expires>At(limits,key))throw Invalid();
+  string digest=spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId,h);Check();if(expires<=clock())throw Invalid();
+  return new FirstInspection(digest,J(h),H(record),H(slot),expires);
+ }
+ Dictionary<string,object> SdkEnvelope(Dictionary<string,object> value,string operation,string command,Dictionary<string,object> record,Dictionary<string,object> slot){
+  Exact(value,"schemaVersion,commandId,issuedAt,expiresAt,executorRegistrationRef,context,operation,payload,envelopeHash");
+  var body=new Dictionary<string,object>(value);body.Remove("envelopeHash");var context=Map(value["context"]);var scope=Map(slot["scope"]);
+  Exact(context,"projectId,assignmentId,executionId,executionGeneration,connectionRef,environmentRef,authorizationReceiptRef,capabilityRef,budgetRef,sourceScopes");
+  var payload=Map(value["payload"]);Exact(payload,operation=="START_SESSION"?"contextBundleRef,optionsRef":"sessionBindingRef,instructionRef,partsRef");foreach(object r in payload.Values)DesktopTrustKeyHostSource.Ref(r);
+  if(N(value["schemaVersion"])!=1||Id(value,"commandId")!=command||S(value,"operation")!=operation||H(body)!=S(value,"envelopeHash")||B(body).Length>2097152||
+   J(value["executorRegistrationRef"])!=J(Map(record["registration"])["registrationRef"])||Id(context,"projectId")!=Id(scope,"projectId")||Id(context,"executionId")!=Id(scope,"executionId")||N(context["executionGeneration"])!=N(scope["executionGeneration"])||At(value,"expiresAt")<=At(value,"issuedAt")||At(value,"expiresAt")>At(value,"issuedAt").AddHours(2)||At(value,"issuedAt")>clock())throw Invalid();
+  return value;
+ }
  // 별도 목적의 읽기 전용 선행. 원 credential·원 패키지를 재검산해도 cwd/env 실행권은 발급하지 않는다.
  internal object InspectSdkFirst(RowRequest request,DesktopTrustKeyPeerSource peer){
   Check();var record=Record(request.AttemptId);var slot=LoadSlot(request.SlotId,record);
   if(spoolProfile==null)throw Invalid();
-  string digest=spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId);
+  FirstInspection inspected=request.Handoff==null?null:InspectFirstSource(request,record,slot);
+  string digest=inspected==null?spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId):inspected.Digest;
   using(var package=NormalSdkWorkerPackageSource.Acquire(peer)){
    Check();if(H(Record(request.AttemptId))!=H(record)||H(LoadSlot(request.SlotId,record))!=H(slot))throw Invalid();
-   if(spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId)!=digest)throw Invalid();
+   if(inspected==null){if(spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId)!=digest)throw Invalid();}
+   else{var again=InspectFirstSource(request,record,slot);if(again.Digest!=inspected.Digest||again.CanonicalSource!=inspected.CanonicalSource||again.RecordHash!=inspected.RecordHash||again.SlotHash!=inspected.SlotHash||again.ExpiresAt!=inspected.ExpiresAt)throw Invalid();}
    package.Check();Check();
    return new Dictionary<string,object>{{"state","SDK_CONFIGURATION_UNAVAILABLE"}};
   }
@@ -110,10 +191,12 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  internal sealed class RowRequest{
   internal readonly string AttemptId,SlotId,StartId,SendId;
   internal readonly Dictionary<string,object> Scope;
-  internal RowRequest(Dictionary<string,object> value){
-   Exact(value,"attemptId,slotId,startCommandId,sendCommandId,scope");
+  internal readonly Dictionary<string,object> Handoff;
+  internal RowRequest(Dictionary<string,object> value,bool protectedHandoff=false){
+   Exact(value,"attemptId,slotId,startCommandId,sendCommandId,scope"+(protectedHandoff?",handoff":""));
    AttemptId=Id(value,"attemptId");SlotId=Id(value,"slotId");StartId=Id(value,"startCommandId");SendId=Id(value,"sendCommandId");
    Scope=Map(value["scope"]);
+   Handoff=protectedHandoff?Map(value["handoff"]):null;
   }
  }
  static string RenewalMarker(Dictionary<string,object> scope,object receipt){string h=H(new Dictionary<string,object>{{"grantRef",scope["grantRef"]},{"previousReceiptRef",receipt}});return h.Substring(0,8)+"-"+h.Substring(8,4)+"-4"+h.Substring(13,3)+"-8"+h.Substring(17,3)+"-"+h.Substring(20,12);}
@@ -301,7 +384,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  }
  void ClearInput(){if(incoming!=null){if(incoming.Length>0)Array.Clear(incoming.GetBuffer(),0,(int)incoming.Length);incoming.Dispose();}incoming=null;upload=null;inputHandle=null;bootstrapInput=false;}
  void ClearOutput(){if(output!=null)Array.Clear(output,0,output.Length);output=null;outputOffset=0;outputHandle=null;}
- public void Dispose(){unknown=true;ClearInput();ClearOutput();}
+ public void Dispose(){unknown=true;ClearInput();ClearOutput();ClearFirst();}
 }
 internal static partial class ProtectedStore {
  // 일반 Run/STORE_CREDENTIAL은 여전히 av3ct1_만 허용한다. 별도 kind와 DPAPI entropy로 normal 슬롯을 격리한다.
