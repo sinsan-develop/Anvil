@@ -61,7 +61,42 @@ export function TransferPreparationRecordPanel({client,session,confirmed,state,c
  {view.record.budgetRef?<HistoricalBudget key={JSON.stringify([view.ref,view.record.budgetRef])} client={client} projectId={confirmed.projectId} reference={view.record.budgetRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>한도 정책 참조 없음</p>}
  {view.record.targetConnectionRef?<HistoricalTarget key={JSON.stringify([displayedGeneration.current,view.ref,view.record.targetConnectionRef])} client={client} projectId={confirmed.projectId} reference={view.record.targetConnectionRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>대상 연결 참조 없음</p>}
  {view.record.contextRef?<HistoricalContext key={JSON.stringify([displayedGeneration.current,view.ref,view.record.contextRef])} client={client} projectId={confirmed.projectId} assignmentRef={confirmed.ref} reference={view.record.contextRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()} onSelect={b&&!locked?(ref,check)=>void selectHistoricalContext(ref,check):undefined} selecting={busy}/>:<p>당시 맥락 참조 없음</p>}
+ <HistoricalResponsibility key={JSON.stringify([displayedGeneration.current,view.ref,view.record.roleRef,view.record.oldBindingRef])} client={client} confirmed={confirmed} roleRef={view.record.roleRef} bindingRef={view.record.oldBindingRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>
  <button type="button" onClick={()=>setView(null)}>준비기록 원문 닫기</button></section>:null}
+ </section>;
+}
+
+type ResponsibilityRead={state:'idle'|'loading'}|{state:'loaded';role:Awaited<ReturnType<typeof readPreparationRole>>;binding:Awaited<ReturnType<typeof readPreparationBinding>>|null}|{state:'error';code:string};
+function HistoricalResponsibility({client,confirmed,roleRef,bindingRef,current,onAuthenticationLost}:{client:ApiClient;confirmed:ConfirmedAssignmentView;roleRef:PlanRef|null;bindingRef:PlanRef|null;current:()=>boolean;onAuthenticationLost:()=>void}){
+ const [read,setRead]=useState<ResponsibilityRead>({state:'idle'}),sequence=useRef(0),inFlight=useRef(false);
+ useLayoutEffect(()=>()=>{sequence.current++;inFlight.current=false;},[]);
+ async function load(){
+  if(!roleRef||inFlight.current||!current())return;
+  const ticket=++sequence.current,active=()=>ticket===sequence.current&&current();inFlight.current=true;setRead({state:'loading'});
+  try{
+   const role=await readPreparationRole(client,confirmed,roleRef.id,roleRef.version,active);
+   if(!active())return;if(!same(role.ref,roleRef))throw new ApiError('TRANSFER_PREPARATION_ROLE_MISMATCH',412);
+   const binding=bindingRef?await readPreparationBinding(client,confirmed,role,bindingRef.id,bindingRef.version,active):null;
+   if(!active())return;if(binding&&bindingRef&&!same(binding.ref,bindingRef))throw new ApiError('TRANSFER_PREPARATION_BINDING_MISMATCH',412);
+   setRead({state:'loaded',role,binding});
+  }catch(cause){
+   if(!active())return;const error=cause instanceof ApiError?cause:new ApiError('TRANSFER_PREPARATION_RESPONSE_INVALID',503);
+   setRead({state:'error',code:/^[A-Z_]{1,80}$/.test(error.code)?error.code:'TRANSFER_PREPARATION_RESPONSE_INVALID'});
+   if(error.status===401)onAuthenticationLost();
+  }finally{if(ticket===sequence.current)inFlight.current=false;}
+ }
+ const shown=current()&&read.state==='loaded'?read:null;
+ const refText=(ref:PlanRef)=>`${ref.id} · v${ref.version} · ${ref.contentHash}`;
+ return <section aria-label="당시 역할·책임 결박">
+  {!roleRef?<p>당시 역할 미기록</p>:<button type="button" disabled={read.state==='loading'} onClick={()=>void load()}>당시 역할·책임 결박 원문 열기</button>}
+  {!bindingRef?<p>당시 기존 책임 결박 미기록</p>:null}
+  {read.state==='loading'?<p role="status">당시 책임 관계 보호 조회 중 · 이전 원문 숨김</p>:null}
+  {read.state==='error'?<p role="alert">{read.code} · 당시 책임 관계를 확인할 수 없습니다.</p>:null}
+  {shown?<section aria-label="당시 책임 관계 고정 원문">
+   <p>당시 역할 {refText(shown.role.ref)}</p><pre>{JSON.stringify(shown.role.snapshot,null,2)}</pre>
+   {shown.binding?<><p>당시 책임 결박 {refText(shown.binding.ref)}</p><p>당시 세션 {refText(shown.binding.snapshot.sessionRef)}</p><p>당시 연결 {refText(shown.binding.snapshot.connectionRef)}</p><p>당시 예약 세대 {shown.binding.snapshot.generation} · 상태 {shown.binding.snapshot.state} · {shown.binding.snapshot.connectionReadiness}</p><pre>{JSON.stringify(shown.binding.snapshot,null,2)}</pre></>:null}
+   <p>보관 예약 관계입니다. 현재 권한·세션 가동·중지·쓰기 회수·이해 합격·인계 또는 실행 허가를 뜻하지 않습니다.</p>
+  </section>:null}
  </section>;
 }
 

@@ -58,6 +58,56 @@ for(const mode of ['다시조회','주체ABA','프로젝트','transport'] as con
 });
 
 const targetButton='당시 대상 연결 정의 열기';
+const responsibilityButton='당시 역할·책임 결박 원문 열기';
+function historicalResponsibility(kind:'binding'|'role'|'none'='binding'){
+ const f=seed();return receipt({commandId:id(92),payload:{assignmentRef:f.confirmed.ref,contextRef:null,roleRef:kind==='none'?null:f.stage.ref,oldBindingRef:kind==='binding'?f.binding.ref:null,targetConnectionRef:null,intentExpiresAt:new Date(Date.now()+600000).toISOString(),reason:'당시 책임 관계 보관'}}).data;
+}
+test('당시 책임 원문 · 고정 역할/결박 명시 조회만 수행하고 null·외부 버퍼를 보존한다',async()=>{
+ for(const kind of ['binding','role','none'] as const){
+  const data=historicalResponsibility(kind),f=await host({empty:true,knownRecord:{data}});
+  try{await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));const before=f.calls.length;
+   if(kind==='none'){assert.equal(f.buttons(responsibilityButton).length,0);assert.match(f.text(),/당시 역할 미기록/);}
+   else{await f.click(responsibilityButton);await f.settle(()=>f.nodes().some(n=>n.getAttribute('aria-label')==='당시 책임 관계 고정 원문'));
+    assert.equal(f.calls.length-before,kind==='binding'?2:1);
+    assert.match(f.text(),/고정 총괄 역할/);
+    if(kind==='binding'){assert.match(f.text(),/당시 예약 세대 1/);assert.ok(f.text().includes(f.f.binding.snapshot.sessionRef.contentHash));assert.ok(f.text().includes(f.f.binding.snapshot.connectionRef.contentHash));}
+    else assert.match(f.text(),/당시 기존 책임 결박 미기록/);
+   }
+   assert.deepEqual(f.buffers,{});assert.ok(f.calls.every(v=>v.method==='GET'));
+  }finally{await f.close();}
+ }
+});
+for(const mode of ['roleHash','bindingHash','assignment','401','403'] as const)test('당시 책임 원문 · '+mode+'는 관계 본문을 채택하지 않는다',async()=>{
+ const data=historicalResponsibility(),basis=seed(),rolePath=`/api/v1/projects/${pid}/project-roles/${basis.stage.ref.id}/versions/1`,bindingPath=`/api/v1/projects/${pid}/role-bindings/${basis.binding.ref.id}/versions/1`;
+ const f=await host({knownRecord:{data},historicalGet:path=>{
+  if(path===rolePath){if(mode==='401'||mode==='403')return Response.json({code:'ACCESS_DENIED'},{status:Number(mode)});const value=structuredClone(basis.stage);if(mode==='roleHash'){value.snapshot.reason='다른 유효 역할 본문';value.ref.contentHash=hash(value.snapshot);}return Response.json(value);}
+  if(path===bindingPath){const value=structuredClone(basis.binding);if(mode==='bindingHash')value.snapshot.reason='다른 유효 결박 본문';if(mode==='assignment')value.snapshot.assignmentRef={...value.snapshot.assignmentRef,contentHash:'f'.repeat(64)};value.ref.contentHash=hash(value.snapshot);return Response.json(value);}
+ }});
+ try{await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));const before=f.buffer(),calls=f.calls.length;await f.click(responsibilityButton);await f.settle(()=>!f.button(responsibilityButton).disabled);
+  assert.ok(!f.nodes().some(n=>n.getAttribute('aria-label')==='당시 책임 관계 고정 원문'));assert.match(f.text(),/TRANSFER_PREPARATION_.*MISMATCH|ACCESS_DENIED/);
+  assert.equal(f.calls.slice(calls).filter(v=>v.path===bindingPath).length,['roleHash','401','403'].includes(mode)?0:1);assert.equal(f.lost(),mode==='401'?1:0);assert.equal(f.buffer(),before);assert.ok(f.calls.every(v=>v.method==='GET'));
+ }finally{await f.close();}
+});
+for(const [phase,change] of [['role','닫기'],['role','기록ABA'],['binding','주체ABA'],['binding','transport']] as const)for(const status of [200,401])test(`당시 책임 원문 · ${phase}/${change} 뒤 늦은 ${status} 폐기`,async()=>{
+ const data=historicalResponsibility(),basis=seed(),rolePath=`/api/v1/projects/${pid}/project-roles/${basis.stage.ref.id}/versions/1`,bindingPath=`/api/v1/projects/${pid}/role-bindings/${basis.binding.ref.id}/versions/1`;
+ let delayed=false,waiting=false,release=()=>{};
+ const f=await host({knownRecord:{data},historicalGet:path=>{
+  if(path!==rolePath&&path!==bindingPath)return;const value=path===rolePath?basis.stage:basis.binding;
+  if(!delayed&&path===(phase==='role'?rolePath:bindingPath)){delayed=true;const response=Response.json(status===200?value:{code:'AUTH_REQUIRED'},{status}),json=response.json.bind(response);response.json=async()=>{await new Promise<void>(resolve=>{release=resolve;waiting=true;});return json();};return response;}
+  return Response.json(value);
+ }});
+ try{await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));const before=f.buffer(),calls=f.calls.length,button=f.button(responsibilityButton),props=Object.keys(button).find(k=>k.startsWith('__reactProps'))!;
+  await ui.React.act(async()=>{(button as any)[props].onClick();(button as any)[props].onClick();});await f.settle(()=>waiting);
+  assert.equal(f.calls.slice(calls).filter(v=>v.path===rolePath).length,1);
+  if(change==='닫기')await f.click('준비기록 원문 닫기');
+  else if(change==='기록ABA'){await f.click('준비기록 원문 닫기');await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));}
+  else if(change==='주체ABA'){const p=f.props();await f.render({...p,session:{...p.session,csrfToken:'d'.repeat(43)}});await f.render(p);}
+  else{const transport=f.client.transport;f.client.transport=(...args:any[])=>transport(...args);await f.render();f.client.transport=transport;await f.render();}
+  await ui.React.act(async()=>{release();await new Promise(r=>setImmediate(r));});
+  assert.equal(f.lost(),0);assert.doesNotMatch(f.text(),/AUTH_REQUIRED/);assert.ok(!f.nodes().some(n=>n.getAttribute('aria-label')==='당시 책임 관계 고정 원문'));assert.equal(f.buffers[before.key],before);
+  if(phase==='role')assert.equal(f.calls.slice(calls).filter(v=>v.path===bindingPath).length,0);assert.ok(f.calls.every(v=>v.method==='GET'));
+ }finally{release();await f.close();}
+});
 const selectHistoricalContextButton='당시 맥락을 현재 새 준비기록에 선택';
 for(const mode of ['401','403','hash','assignment'] as const){
  test('보관 맥락 재사용 · '+mode+' 재검산 실패는 초안과 원 기록을 보존한다',async()=>{

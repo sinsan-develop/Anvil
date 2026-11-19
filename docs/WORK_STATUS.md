@@ -21251,3 +21251,11 @@ Stage D FN07 검증 준비. 기준 `2ab9f81d`, developer_primary가 후보 문�
 기존 단회 감독·고정 HTTPS tarball 무결성, 판독부와 parser의 지문을 유지한다. 고정 IMAGE의 한 옵션 조합에서 aT/Qwt, initialize anchor와 네 직접 helper 후보를 같은 바이트에서 추출하고 미확인 결박을 명시한다. 원문·실제 로컬값은 출력하거나 저장하지 않는다. 누락·모호·기한·한도 실패를 recipe 근거로 사용하지 않는다.
 
 담당 합성 evidence 4통과 `45797f`에서 7단위·누락·중복·anchor 미발견을 구분했다. 이전 다중 function fixture의 parser 거절 1건은 유효한 var 중복으로 대체했다. Main 구문·문서와 정확 실행 블록 지문 `689f1e`, 원 readOnce/unpack/캡처 생성부 동일 및 공백 `d0557a` 종료0. E2E 감독·SDK GET·실제 SDK 적용·설치·OS·DB·권한·키·서비스·Agent 실행0, 활성 핸들0. 별도 결정 대상은 이 고정 공개 배포본 GET 1회뿐이다. 실제 argv/env·PRESPAWN·원 실행 권위는 미확정이다. 롤백은 후보와 작업 기록의 이번 추가분에 한정한다.
+
+## UI09 보관 인계 준비기록의 당시 역할·책임 결박 원문
+
+Stage D UI09/FN14 부분 구현. 기준 `67b1a69e`, 기존 developer_primary 단일 작성·반환. 보관 준비기록의 저장 roleRef와 oldBindingRef에서 시작해 사용자가 열기를 눌렀을 때 기존 보호 역할 GET→기존 보호 결박 GET으로 연결했다. 정확 프로젝트·확정 임무·역할·버전/hash를 원 reader와 저장 fullref로 대조하고 당시 세션·연결·예약 세대와 상태를 표시한다. 당시 미기록은 GET 없이 표시한다. 새 초안·버퍼·POST·권한 판정과 실행 효과는 발생하지 않는다. 기존 등록/과거 연결의 화면 계약은 유지한다.
+
+제품 `apps/web/src/features/transfers/TransferPreparationRecordPanel.tsx`와 기존 RAM 화면시험 `tests/unit/UI09/preparation-record-ui.test.ts` 두 파일이다. 기존 화면의 버튼 부재 RED1 `e2be4a` 뒤 집중 14통과 `92c50a`. 잘못된 hash·임무, 401/403, 중복 클릭과 닫기·기록 ABA·세션 ABA·transport 변경 후 지연 응답을 확인했다. Main 직접 파일 128통과·실패/건너뜀0·정상 종료 `116571`, 지문2/2·공백 `532816`. 담당 좁은 TypeScript 종료0 `e7704f`, 최초 MODULE_NOT_FOUND 1건은 실제 공유 도구 경로로 보완했다. 담당 전체 실행의 잘린 출력은 미수거로 집계 제외했고 Main 실행 핸들은 회수했다.
+
+실제 DB·보호 서비스·브라우저 인수·Agent 실행은 미검증 또는 제외다. 이 조회가 새 대상 세션 생성·이해 대조·인계 확정·실제 재개를 열지 않는다. FN07 고정 공개 SDK 1회 조회는 별도 결정 대기 상태이며 본 구간과 독립이다. 롤백은 지정 제품·시험 두 경로의 변경에 한정한다.
