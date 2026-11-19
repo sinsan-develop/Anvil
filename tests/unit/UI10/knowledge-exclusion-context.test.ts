@@ -274,3 +274,58 @@ test('제외 저장 고정 조회: UNKNOWN·미저장과 교체·닫기·세션/
   }finally{gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.close();}
  }
 });
+
+async function shareRecoveryFixture(){
+ let share:any=null,shown=true,currentSession=session,currentProject=pid,lost=0;
+ const source=draft().target,writes:string[]=[],gets:string[]=[],controls={read:async()=>Response.json(source)};
+ const client=new ui.ApiClient(async(path:string,init:any)=>{
+  if(init?.method==='POST'){writes.push(String(init.body));throw Error('합성 응답 유실');}
+  gets.push(path);
+  if(path.includes('/knowledge?'))return Response.json({items:[{versionRef:source.ref,title:source.entry.title,kind:source.entry.kind,sourceRefs:[],reasonSnippet:source.entry.reason,state:source.state,currentConfirmationValid:true}],hasMore:false,nextCursor:null,searchScope:'TITLE_REASON',observedAt:at});
+  if(path.includes('/knowledge/'))return controls.read();
+  if(path.includes('/conversations?'))return Response.json({items:[],hasMore:false,nextCursor:null,observedAt:at});
+  if(path===`/api/v1/projects/${pid}`)return Response.json({id:pid,participation:'OWNER',controlState:{status:'HELD',actorId:uid,clientId:cid,generation:1}});
+  if(path.startsWith('/api/v1/projects?'))return Response.json({items:[{id:id(40),name:'명시 대상',purpose:'합성 대상',version:1,updatedAt:at}],hasMore:false,nextCursor:null,observedAt:at,baselineVersion:null});
+  throw Error('예상 밖 합성 GET');
+ });
+ const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ function render(){root.render(shown?ui.React.createElement(ui.KnowledgePage,{client,projectId:currentProject,session:currentSession,buffer:null,onChange(){throw Error('지식 버퍼 변경 금지');},conversationBuffer:null,onConversationChange(){},exclusion:null,onExclusionChange(){},correction:null,onCorrectionChange(){},decision:null,onDecisionChange(){},shareBuffer:share,onShareChange:(change:any)=>{share=typeof change==='function'?change(share):change;render();},onAuthenticationLost(){lost++;}}):null);}
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
+ const button=(name:string)=>{const b=nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===name);assert(b,name);return b;};
+ const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});
+ const wait=async(check:()=>boolean)=>{for(let n=0;n<100&&!check();n++)await settle();assert(check(),container.textContent.slice(-1200));};
+ const click=async(name:string)=>{const b=button(name);assert(!b.disabled,name);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
+ const input=async(node:MemoryNode,value:any)=>{const k=Object.keys(node).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>{(node as any)[k].onChange({target:value});});};
+ await ui.React.act(async()=>render());await wait(()=>nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='지식 원문 보기'));
+ async function prepareUnknown(){await click('지식 원문 보기');await wait(()=>!button('선택 지식으로 요청 작성').disabled);await click('선택 지식으로 요청 작성');await wait(()=>!!share);await click('허가된 대상 프로젝트 조회');await wait(()=>nodes().some(n=>n.tagName==='INPUT'&&n.parentNode?.textContent==='명시 대상'));const check=nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent==='명시 대상')!;await input(check,{checked:true});await input(nodes().find(n=>n.getAttribute('aria-label')==='공유 요청 목적')!,{value:'원 지식의 명시 요청'});await click('공유 요청 보관');await wait(()=>!!share?.uncertain&&!!share?.failure);}
+ return{source,client,controls,gets,writes,container,nodes,button,click,settle,wait,prepareUnknown,buffer:()=>share,lost:()=>lost,render:()=>ui.React.act(async()=>render()),route:async(value:boolean)=>{shown=value;await ui.React.act(async()=>render());},replace:async(value:any)=>{share=value;await ui.React.act(async()=>render());},context:async(s:typeof session,p=pid)=>{currentSession=s;currentProject=p;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+}
+test('미결 공유 원 지식: 검색 선택·응답 유실·화면 왕복 뒤 정확 원문 명시 재선택',async()=>{
+ const f=await shareRecoveryFixture();try{
+  await f.prepareUnknown();const original=f.buffer(),command=JSON.stringify(original.pending);assert.equal(f.writes.length,1);
+  await f.route(false);await f.route(true);await f.wait(()=>!f.container.textContent.includes('검색 중'));assert(f.button('원명령 재확인').disabled);const count=f.gets.filter(p=>p.includes('/knowledge/')).length;
+  await f.click('미결 공유 요청의 원 지식 열기');await f.wait(()=>!f.button('원명령 재확인').disabled);
+  assert.equal(f.gets.filter(p=>p.includes('/knowledge/')).length,count+1);assert.equal(f.buffer(),original);assert.equal(JSON.stringify(f.buffer().pending),command);assert.equal(f.writes.length,1);assert(f.button('선택 지식으로 요청 작성').disabled);assert(f.container.textContent.includes(f.source.body));
+  await f.click('원명령 재확인');await f.wait(()=>f.writes.length===2&&!!f.buffer().failure);assert.equal(f.writes[0],f.writes[1]);assert.equal(JSON.stringify(f.buffer().pending),command);
+ }finally{await f.close();}
+});
+
+test('미결 공유 원 지식: 현재 최신판이 달라도 원 고정 버전을 선택하고 검색 조건을 보존한다',async()=>{
+ const f=await shareRecoveryFixture();try{await f.prepareUnknown();const b=f.buffer();await f.route(false);f.source.headVersion=2;f.source.state='SUPERSEDED';f.source.currentConfirmationValid=false;await f.route(true);await f.wait(()=>!f.button('미결 공유 요청의 원 지식 열기').disabled);const count=f.gets.length;await f.click('미결 공유 요청의 원 지식 열기');await f.wait(()=>!f.button('원명령 재확인').disabled);assert.equal(f.buffer(),b);assert.deepEqual(f.gets.slice(count),[`/api/v1/projects/${pid}/knowledge/${b.versionRefs[0].id}/versions/1`]);assert.equal(f.nodes().find(n=>n.getAttribute('aria-label')==='지식 검색')!.value,'');const filter=f.nodes().find(n=>n.getAttribute('aria-label')==='지식 상태 필터')!,props=Object.keys(filter).find(k=>k.startsWith('__reactProps'))!;assert.equal((filter as any)[props].value,'ACTIVE');assert.equal(f.writes.length,1);}finally{await f.close();}
+});
+for(const invalid of ['owner','client','project','commandRef','invalidRef'] as const)test('미결 공유 원 지식: '+invalid+'는 버튼·GET0',async()=>{
+ const f=await shareRecoveryFixture();try{await f.prepareUnknown();await f.route(false);const b=structuredClone(f.buffer());if(invalid==='owner')b.ownerUserId=id(90);if(invalid==='client')b.ownerClientId=id(90);if(invalid==='project')b.projectId=id(90);if(invalid==='commandRef')b.pending.payload.versionRefs[0].contentHash='b'.repeat(64);if(invalid==='invalidRef')b.versionRefs[0].contentHash='bad';await f.replace(b);await f.route(true);await f.settle();assert(!f.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='미결 공유 요청의 원 지식 열기'));assert.equal(f.gets.filter(p=>p.includes('/knowledge/')).length,1);assert.equal(f.writes.length,1);assert.equal(f.buffer(),b);}finally{await f.close();}
+});
+for(const invalid of ['hash','401','403'] as const)test('미결 공유 원 지식: '+invalid+' 거절은 선택0·원명령 보존',async()=>{
+ const f=await shareRecoveryFixture();try{await f.prepareUnknown();const b=f.buffer();await f.route(false);await f.route(true);await f.wait(()=>!f.button('미결 공유 요청의 원 지식 열기').disabled);f.controls.read=async()=>invalid==='hash'?Response.json({...f.source,ref:{...f.source.ref,contentHash:'b'.repeat(64)}}):Response.json({code:'AUTH_REQUIRED'},{status:Number(invalid)});await f.click('미결 공유 요청의 원 지식 열기');await f.wait(()=>!f.button('미결 공유 요청의 원 지식 열기').disabled);assert(f.button('원명령 재확인').disabled);assert(!f.nodes().some(n=>n.getAttribute('aria-label')==='보관 지식 원문'));assert.equal(f.buffer(),b);assert.equal(f.writes.length,1);assert.equal(f.lost(),invalid==='401'?1:0);}finally{await f.close();}
+});
+for(const boundary of ['bufferABA','project','session','transport','leave'] as const)for(const status of [200,401])test('미결 공유 원 지식: '+boundary+' 대기 중 old'+status+' 폐기',async()=>{
+ const f=await shareRecoveryFixture(),gate=deferred<Response>();try{await f.prepareUnknown();const original=f.buffer();await f.route(false);await f.route(true);await f.wait(()=>!f.button('미결 공유 요청의 원 지식 열기').disabled);f.controls.read=()=>gate.promise;const count=f.gets.filter(p=>p.includes('/knowledge/')).length,button=f.button('미결 공유 요청의 원 지식 열기');await ui.React.act(async()=>{button.dispatchEvent({type:'click',button:0,bubbles:true});button.dispatchEvent({type:'click',button:0,bubbles:true});});assert.equal(f.gets.filter(p=>p.includes('/knowledge/')).length,count+1);
+ if(boundary==='bufferABA'){await f.replace(structuredClone(original));await f.replace(original);}
+ if(boundary==='project'){await f.context(session,id(99));await f.context(session);}
+ if(boundary==='session'){await f.context({...session,csrfToken:'d'.repeat(43)});await f.context(session);}
+ if(boundary==='transport'){const transport=f.client.transport;f.client.transport=async()=>Response.json({code:'UNUSED'},{status:403});await f.render();f.client.transport=transport;await f.render();}
+ if(boundary==='leave'){await f.route(false);await f.route(true);}
+ gate.resolve(Response.json(status===200?f.source:{code:'AUTH_REQUIRED'},{status}));for(let n=0;n<8;n++)await f.settle();assert(!f.nodes().some(n=>n.getAttribute('aria-label')==='보관 지식 원문'));assert(f.button('원명령 재확인').disabled);assert.equal(f.lost(),0);assert.equal(f.writes.length,1);assert.equal(f.buffer(),original);
+ }finally{gate.resolve(Response.json({code:'CANCELLED'},{status:503}));await f.settle();await f.close();}
+});
