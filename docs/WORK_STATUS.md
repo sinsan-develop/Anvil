@@ -21387,3 +21387,11 @@ Main의 exit 전후 반례 RED 04fba7을 보완했다. 담당 직접·인접 22�
 기준 `834b998f`, developer_primary 단일 작성·반환. 신규 `docs/work_packages/IX01_SUBNET_OBSERVATION_SINGLE_ATTEMPT_EXECUTION_CANDIDATE.md` SHA256 AB8870DE7AD6645F7E0D8849B0E778459F0DD7C11FD5897E59D2F16485F1DA93. 기존 OS·등록된 SSH host 신뢰에서 현재 신원을 한정 확인하고, 최초 ip 지문 측정과 이후 변경 검산을 구분한다. 기존 source의 ip/적재물 사전 결박 때문에 메타 SSH 최대1회 후 관측 SSH 최대1회를 한 상위 시도·공유60초 안에 넣는 안을 비교했다. 기존 SSH 총1회와 분리되는 미채택 후보이며 실행 권한을 만들지 않는다.
 
 Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 예외·명령 및 보존 한도를 대조했다. 실제 host metadata·설정·키·원격/DB·권한·서비스·Agent 실행0, 신규 시험0. 후속 소스는 원격 ip 메타 helper와 Windows 현행 신원/로컬 단발 기록·carrier의 최소 포트다. 실제 접근 전에 정확 source·대상·한도·종료/보존과 SSH 횟수 차이를 한 실행안에 결박한다. TC01은 미완료다.
+
+## IX01 ip 파일 사전검산 소스 검수
+
+기준 `7ca3c02b`, developer_primary 단일 작성·반환. 신규 scripts/qa-ix01-subnet-observation-preflight.ts와 tests/unit/IX01/subnet-observation-preflight.test.ts. 기존 fingerprint 포트를 재사용해 고정 Linux Node, 명시 ip 위치 한 곳과 부모 소유·mode·실경로, 파일 읽기 전후 신원과 최초 SHA를 검산한다. 자체 10초·공유 60초 안에서 원 시도·helper 지문·기한에 결박한 4KiB 이내 한 줄을 반환한다. ip 실행·패키지 DB/서명 조회는 없다.
+
+담당 직접 3통과 64aa52·인접 host 5통과 d1db0a·좁은 타입 3b30f6 종료0. 최초 결과 절단 실행은 합격 집계에서 제외했다. Main 직접 3통과·실패/건너뜀0 e537c3, 동결 SHA 2/2와 공백 a8d06f. 소스 E1228AF0D86C599DE9DD8439C809667B68F6BED842DF304D12178746E525A8F4, 시험 D5BA021D9B97E48549941DA3BFBC8A417A0095BB8C1B7F6FC4E865BB3CD4FCB3. 실제 조사·프로세스·SSH·IPAM·DB·권한·키·서비스·Agent 실행0.
+
+측정값은 host trust를 전제로 한 파일 검산 근거다. 두 접속 사이에 같은 원 파일을 계속 보유하거나 기존 관측이 이전 inode까지 대조한다는 근거는 없다. 기존 관측은 새로 읽은 파일의 현재 신원과 기대 바이트 SHA를 확인한다. 다음은 정확 메타 적재·원 handle 수거와 Windows 단발 기록·현행 설정의 후속 실행 결박이다. 두 단계 실행 승인과 TC01 검증은 남아 있다. 롤백은 신규 두 파일과 이번 기록 추가에 한정한다.
