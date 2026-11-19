@@ -2,13 +2,30 @@ import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import type {DocumentSession} from '../design-trace/editor-api.ts';
 import {definitionOwned,newDefinition,editDefinition,prepareDefinition,markDefinitionUnknown,sendDefinition,readDefinition,failDefinition,editRejectedDefinition,bindDefinitionApproval,type DefinitionBuffer,type DefinitionView} from './connection-definition-api.ts';
+import {readEnvironmentConfiguration,type EnvironmentView} from './environment-configuration-api.ts';
 interface Props{onHumanReport?:(v:DefinitionView)=>void;client:ApiClient;projectId:string;session:DocumentSession;buffer:DefinitionBuffer|null;onChange:(expected:DefinitionBuffer|null,next:DefinitionBuffer)=>boolean;onApprovalRequest:(b:DefinitionBuffer)=>boolean;approvalRequestId:string|null;onAuthenticationLost:()=>void}
 export function ConnectionDefinitionPanel({onHumanReport,client,projectId,session,buffer,onChange,onApprovalRequest,approvalRequestId,onAuthenticationLost}:Props){
  const identity=JSON.stringify([projectId,session.user.id,session.clientId,session.csrfToken]),owner=useRef({identity,client,transport:client.transport,session,sequence:0,pending:false});if(owner.current.identity!==identity||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.session!==session)owner.current={identity,client,transport:client.transport,session,sequence:0,pending:false};
  const scope=owner.current,alive=useRef(true);useEffect(()=>{alive.current=true;return()=>{alive.current=false;owner.current.sequence++;};},[]);
  const[jsonDraft,setJsonDraft]=useState<{owner:object;values:Record<string,string>;invalid:string[]}|null>(null);
  const jsonState=jsonDraft?.owner===scope?jsonDraft:null;
- const[bub,setBusy]=useState<object|null>(null),[error,setError]=useState<{owner:object;value:string}|null>(null),[shown,setShown]=useState<{owner:object;view:DefinitionView}|null>(null),[refId,setRefId]=useState(''),[refVersion,setRefVersion]=useState('1'),[refHash,setRefHash]=useState('');
+ const[bub,setBusy]=useState<object|null>(null),[error,setError]=useState<{owner:object;value:string}|null>(null),[shown,storeShown]=useState<{owner:object;view:DefinitionView}|null>(null),[refId,setRefId]=useState(''),[refVersion,setRefVersion]=useState('1'),[refHash,setRefHash]=useState('');
+ const displayed=useRef(shown);function setShown(next:typeof shown){displayed.current=next;storeShown(next);}
+ const environmentRequest=useRef(0),environmentFlight=useRef<object|null>(null);
+ const[environment,setEnvironment]=useState<{selection:NonNullable<typeof shown>;view:EnvironmentView|null;error:string|null;loading:boolean}|null>(null);
+ const environmentShown=shown&&shown.owner===scope&&environment?.selection===shown?environment:null;
+ async function inspectEnvironment(){
+  const selection=displayed.current,ref=selection?.view.definition.environmentRef;
+  if(!selection||selection!==shown||selection.owner!==scope||!ref||environmentFlight.current===selection)return;
+  const sequence=scope.sequence,ticket=++environmentRequest.current;
+  const active=()=>current(sequence)&&displayed.current===selection&&environmentRequest.current===ticket;
+  if(!active())return;
+  environmentFlight.current=selection;setEnvironment({selection,view:null,error:null,loading:true});
+  try{const value=await readEnvironmentConfiguration(client,projectId,'ENVIRONMENT_VERSION',ref,active);if(active())setEnvironment({selection,view:value,error:null,loading:false});}
+  catch(e){if(active()){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');setEnvironment({selection,view:null,error:a.code,loading:false});if(a.status===401)onAuthenticationLost();}}
+  finally{if(environmentRequest.current===ticket)environmentFlight.current=null;}
+ }
+ function closeEnvironment(){environmentRequest.current++;environmentFlight.current=null;setEnvironment(null);}
  const b=buffer&&definitionOwned(buffer,client,session,projectId)?buffer:null,busy=bub===scope,view=shown?.owner===scope?shown.view:null,locked=!!b?.pending;
  const live=useRef({buffer,session,client});live.current={buffer,session,client};
  const current=(sequence:number)=>alive.current&&owner.current===scope&&scope.sequence===sequence&&client.transport===scope.transport&&live.current.session===session;
@@ -33,6 +50,13 @@ export function ConnectionDefinitionPanel({onHumanReport,client,projectId,sessio
  </>}
  <fieldset disabled={busy}><legend>알려진 연결 정의 고정 조회</legend><label>연결 ID<input aria-label="정의 조회 ID" value={refId} onChange={e=>{scope.sequence++;setShown(null);setRefId(e.target.value);}}/></label><label>버전<input aria-label="정의 조회 버전" value={refVersion} onChange={e=>{scope.sequence++;setShown(null);setRefVersion(e.target.value);}}/></label><label>hash<input aria-label="정의 조회 hash" value={refHash} onChange={e=>{scope.sequence++;setShown(null);setRefHash(e.target.value);}}/></label><button type="button" onClick={()=>void run(async check=>{const value=await readDefinition(client,projectId,{id:refId,version:Number(refVersion),contentHash:refHash},check);if(check())setShown({owner:scope,view:value});})}>알려진 연결 정의 조회</button></fieldset>
  {jsonState?.invalid.length?<p role="alert">JSON 입력을 완성하세요: {jsonState.invalid.join(', ')}</p>:null}{busy?<p role="status">연결 정의 고정 자료 확인 중</p>:null}{error?.owner===scope?<p role="alert">{error.value}</p>:null}{b?.failure?<p role="alert">{b.failure.code} · 원명령 보존</p>:null}
- {view?<section aria-label="연결 정의 고정 원문"><p>{view.ref.id} · v{view.ref.version} · {view.ref.contentHash}</p><p>NOT_READY · UNVERIFIED · 설정 head 일치 {String(view.currentStatus.configurationCurrent)} · 실제 실행 허가 false</p><pre>{JSON.stringify(view.definition,null,2)}</pre>{onHumanReport?<button type="button" onClick={()=>onHumanReport(view)}>이 정의로 사람 보고 작성</button>:null}<button type="button" onClick={()=>setShown(null)}>연결 정의 원문 닫기</button></section>:null}
+ {view?<section aria-label="연결 정의 고정 원문"><p>{view.ref.id} · v{view.ref.version} · {view.ref.contentHash}</p><p>NOT_READY · UNVERIFIED · 설정 head 일치 {String(view.currentStatus.configurationCurrent)} · 실제 실행 허가 false</p><pre>{JSON.stringify(view.definition,null,2)}</pre>
+ {view.definition.environmentRef?<button type="button" disabled={!!environmentShown?.loading} onClick={()=>void inspectEnvironment()}>당시 환경 정의 열기</button>:<p>당시 환경 참조 미기록</p>}
+ {environmentShown?<section aria-label="연결 정의 당시 환경 원문">
+ {environmentShown.loading?<p role="status">당시 환경 보호 자료 확인 중</p>:null}
+ {environmentShown.error?<p role="alert">{environmentShown.error}</p>:null}
+ {environmentShown.view?<><p>저장 당시 환경 원형 검산 · {environmentShown.view.historyVerification}</p><p>{environmentShown.view.ref.id} · v{environmentShown.view.ref.version} · {environmentShown.view.ref.contentHash}</p><p>현재 구성 {environmentShown.view.current.configurationCurrentness} · 확인 {environmentShown.view.current.checkedAt}</p><p>{environmentShown.view.current.issues.map(issue=>issue.code).join(' · ')}</p><pre>{JSON.stringify(environmentShown.view.snapshot,null,2)}</pre><p>실제 실행 허가 false · 실제 관측 미확인</p></>:null}
+ <button type="button" onClick={closeEnvironment}>당시 환경 원문 닫기</button></section>:null}
+ {onHumanReport?<button type="button" onClick={()=>onHumanReport(view)}>이 정의로 사람 보고 작성</button>:null}<button type="button" onClick={()=>setShown(null)}>연결 정의 원문 닫기</button></section>:null}
  </section>;
 }

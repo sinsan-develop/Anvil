@@ -21275,3 +21275,11 @@ Stage D UI07/FN04 부분 구현. 기준 `181ab511`, 기존 developer_primary 단
 제품 DesignActivationPanel.tsx와 기존 직접시험 design-activation-history-ui.test.ts 각 1개. 버튼 부재 RED1 `33b87e`. 중간 4건은 fixture 조회 순서 1건과 401을 잘못된 단계에 반환한 fixture 3건으로 분리했고 바로잡은 후 담당 최종 직접47통과 `ee6410`·좁은 타입0 `1409e7`·공백0 `1ed414`. Main 최종 47통과·실패/건너뜀0 `d0a81a`, 지문2/2·공백 `a81ef1`. 활성 핸들0.
 
 실제 브라우저 이동, 보호 서비스·DB·권한·Agent 및 기준 적용·재개는 미검증 또는 제외다. 롤백은 이번 제품·시험 두 파일의 추가 구간만이다. 다음은 FN07의 한정 공개 조회 결정과 독립된 기존 승인 업무를 이어간다.
+
+## UI11 저장 연결 정의의 당시 환경 원문 조회
+
+UI11/FN06 부분 구현. 기준 `3f513d6a`, 기존 developer_primary 단일 작성·반환. 사용자가 고정 연결 정의의 당시 환경을 열 때 저장 environmentRef만 기존 보호 GET에 전달한다. 원 불변 버전의 ID·버전·SHA와 당시 환경 원형을 검산하고 현재 구성 MATCHED/CHANGED/UNAVAILABLE과 구분해 표시한다. 누락 참조·미클릭은 환경 GET0, 현재 최신 버전 치환·새 API·버퍼 수정·POST·권위 변경0이다. 닫기·다른 정의·프로젝트 및 세션/transport 변경 뒤 늦은 응답은 폐기한다. 표시 범위는 기존 환경 화면의 보호 snapshot과 검산 상태다.
+
+제품 ConnectionDefinitionPanel.tsx 및 기존 RAM 시험 environment-configuration-ui.test.ts 각 1개. 버튼 부재 RED3 `32704c`, 담당 집중21통과 `85810b`, 직접42통과 `cfbebe`, 타입 종료0 `f626f9`, 공백0 `c632af`. Main 직접42통과·실패/건너뜀0 `bf278b`, 지문2/2·공백 `58ec75`. 앱 선로드 없는 최초 시험은 fixture의 순환 import 초기화 오류 1건으로 집계 제외했고 앱 진입 모듈 선로드로 기존 기대를 유지했다. 확인한 실행 핸들0.
+
+실제 브라우저·DB·서비스·설치 환경·Agent와 실제 연결/실행 권한은 미검증 또는 제외다. 롤백은 지정 제품·시험 두 파일의 이번 diff에 한정한다. FN07의 추가 공개 SDK 조회는 별도 직접 결정 대기이며 GET0이다.
