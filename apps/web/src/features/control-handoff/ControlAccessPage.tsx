@@ -35,7 +35,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
   if(context.current.transport!==client.transport||context.current.csrf!==session?.csrfToken){scope.dispose();setTicketRevision(v=>v+1);return false;}
   return live.current.session===session&&live.current.projectId===projectId&&live.current.client===client;
  };
- function start(binding:string|null=null){const ticket=scope.ticket(binding);ticketContexts.current.set(ticket,context.current);visibleContext.current=context.current;visible.current={session,projectId,client};setView(v=>({...v,error:null,busy:true}));setTicketRevision(v=>v+1);return ticket;}
+ function start(binding:string|null=null){const retain=visibleContext.current===context.current;const ticket=scope.ticket(binding);ticketContexts.current.set(ticket,context.current);visibleContext.current=context.current;visible.current={session,projectId,client};setView(v=>({...(retain?v:emptyView()),error:null,busy:true}));setTicketRevision(v=>v+1);return ticket;}
  function fail(cause:unknown,ticket:ControlTicket,binding:string|null=null){if(!matches(ticket,binding))return;const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setView({...emptyView(),error});if(error.status===401)onAuthenticationLost();}
  function currentController(state:ControlStateResult|null):state is ControlStateResult{
   const basis=state?.control.basis;

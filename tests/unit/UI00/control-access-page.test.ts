@@ -151,15 +151,17 @@ for(const mode of ['요청재선택200','주체전환200','주체ABA401'] as con
   }finally{release();await f.close();}
  });
 }
-async function followupFixture(options:{role:string;state?:string;expired?:boolean;wrongActor?:boolean;wrongBasis?:boolean;protectedRead?:(path:string)=>Response|Promise<Response>}){
+async function followupFixture(options:{role:string;target?:boolean;acceptanceRead?:(path:string)=>Response|Promise<Response>;state?:string;expired?:boolean;wrongActor?:boolean;wrongBasis?:boolean;protectedRead?:(path:string)=>Response|Promise<Response>}){
  const facts=await import('../FN15/control-handoff-summary-fixture.ts'),bundle=facts.requestBundle(),request=bundle.request,projectId=facts.projectId,targetSession={user:{id:facts.controller,displayName:'현재 제어 사용자'},clientId:facts.controllerClient,csrfToken:'c'.repeat(43)};
+ if(options.target){targetSession.user.id=facts.requester;targetSession.clientId=facts.requesterClient;}
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container),calls:string[]=[];let buffer:any={bindingId:'99999999-9999-4999-8999-000000000090',ownerUserId:targetSession.user.id,ownerClientId:targetSession.clientId,projectId,reason:'원 입력',expiresAt:'',pending:null},lost=0;
- const state={schemaVersion:1,projectId,observedAt:facts.now,actorId:options.wrongActor?facts.requester:facts.controller,clientId:facts.controllerClient,participation:options.role,control:{state:options.state??'HELD',basis:options.wrongBasis?{...facts.baseControl,clientId:facts.requesterClient}:facts.baseControl},executionAuthorized:false,controlTransferred:false};
+ const state={schemaVersion:1,projectId,observedAt:facts.now,actorId:options.wrongActor?facts.requester:targetSession.user.id,clientId:targetSession.clientId,participation:options.role,control:{state:options.state??'HELD',basis:options.wrongBasis?{...facts.baseControl,clientId:facts.requesterClient}:facts.baseControl},executionAuthorized:false,controlTransferred:false};
  const current={expired:options.expired??false,baseControlState:'MATCHED'},read={projectId,requestRef:request.requestRef,snapshot:request.snapshot,observedAt:facts.now,current,executionAuthorized:false,controlTransferred:false};
  const client=new ui.ApiClient(async(path:string,init?:RequestInit)=>{calls.push(path);assert.notEqual(init?.method,'POST','명령 보존 전후 자동 POST0');const url=new URL(path,'https://test.invalid');
+  if(url.pathname.includes('/acceptances/')&&options.acceptanceRead)return options.acceptanceRead(path);
   if(url.pathname.includes('/protected-handoff-summaries')&&options.protectedRead)return options.protectedRead(path);
   if(url.pathname.endsWith('/control-state'))return Response.json(state);
-  if(url.pathname.endsWith('/control-requests'))return Response.json({projectId,view:'CONTROLLER',limit:50,observedAt:facts.now,items:[{requestRef:request.requestRef,createdAt:request.snapshot.createdAt,expiresAt:request.snapshot.expiresAt,storedState:'PENDING',current,executionAuthorized:false,controlTransferred:false}],hasMore:false,nextCursor:null,executionAuthorized:false,controlTransferred:false});
+  if(url.pathname.endsWith('/control-requests'))return Response.json({projectId,view:options.target?'OWN':'CONTROLLER',limit:50,observedAt:facts.now,items:[{requestRef:request.requestRef,createdAt:request.snapshot.createdAt,expiresAt:request.snapshot.expiresAt,storedState:'PENDING',current,executionAuthorized:false,controlTransferred:false}],hasMore:false,nextCursor:null,executionAuthorized:false,controlTransferred:false});
   if(url.pathname.endsWith('/versions/1'))return Response.json(read);throw Error('예상 밖 IO '+path);
  });
  const props:any={client,projectId,session:targetSession,buffer,onChange:(expected:string|null,next:any)=>{if(buffer.bindingId!==expected)return false;buffer=next;props.buffer=buffer;root.render(ui.React.createElement(ui.ControlAccessPage,props));return true;},onAuthenticationLost:()=>{lost++;}};
@@ -181,3 +183,34 @@ test('HE 역할만·미확인·다른client·VIEWER·일치하지않는응답·�
  const expired=await followupFixture({role:'HANDOFF_ELIGIBLE',expired:true});try{await expired.click('현재 제어 조회');await settleUi(()=>expired.container.textContent.includes('HELD'));await expired.click('현재 제어자 요청 목록 조회');await settleUi(()=>expired.container.textContent.includes('요청 1 원문 확인'));await expired.click('요청 1 원문 확인');await settleUi(()=>expired.container.textContent.includes('선택한 고정 요청'));assert.equal(expired.button('보호요약 준비 명령 보존').disabled,true);assert.equal(expired.button('미확인 요약 준비 명령 보존').disabled,true);assert.equal(expired.getBuffer().pending,null);}finally{await expired.close();}
  const stale=await followupFixture({role:'HANDOFF_ELIGIBLE'});try{await stale.click('현재 제어 조회');await settleUi(()=>stale.container.textContent.includes('HELD'));const original=stale.getBuffer();original.pending={bindingId:'99999999-9999-4999-8999-000000000091',status:'UNKNOWN',command:{schemaVersion:1,operation:'prepareControlHandoff',commandId:'99999999-9999-4999-8999-000000000092',projectId:stale.props.projectId,clientId:stale.props.session.clientId,payload:{requestRef:{id:fixedIds.project,version:1,contentHash:'a'.repeat(64)}}}};stale.props.session={...stale.props.session};await stale.render();assert.equal(stale.button('현재 제어자 요청 목록 조회').disabled,true);assert.equal(stale.getBuffer(),original);assert.equal(stale.getBuffer().pending.status,'UNKNOWN');assert.equal(stale.calls.length,1);assert.equal(stale.lost(),0);}finally{await stale.close();}
 });
+
+for(const transition of ['같은 문맥','session','csrf','transport'] as const){
+ test('보존 결과 확인은 '+transition+'의 조회 소유권만 유지하며 이전 제어·요약을 되살리지 않는다',async()=>{
+  const facts=await import('../FN15/control-handoff-summary-fixture.ts'),{createControlAcceptanceChain}=await import('../../../apps/server/modules/control-handoff/control-grant.ts');
+  const wire=await protectedDisplayWire(),request=facts.requestBundle().request;
+  const command={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:'99999999-9999-4999-8999-000000000092',projectId:facts.projectId,clientId:facts.requesterClient,payload:{requestRef:request.requestRef,summaryVersion:1,reason:'원 수락 이유'}};
+  const result=createControlAcceptanceChain({projectId:facts.projectId,command,requestRef:request.requestRef,summaryRef:wire.summary.ref,before:facts.baseControl,targetActorId:facts.requester,recordedAt:facts.now,ids:{acceptance:fixedIds.project,revocation:fixedIds.actor,grant:fixedIds.client,receipt:'99999999-9999-4999-8999-000000000093',audit:'99999999-9999-4999-8999-000000000094'}}).result;
+  let release!:()=>void;const held=new Promise<void>(r=>{release=r;});
+  const f=await followupFixture({role:'OWNER',target:true,state:'OTHER_CLIENT',protectedRead:path=>Response.json(path.includes('/head?')?wire.head:wire.summary),acceptanceRead:async()=>{await held;return Response.json(result);}});
+  try{
+   await f.click('현재 제어 조회');await settleUi(()=>f.container.textContent.includes('OTHER_CLIENT'));
+   await f.click('내 요청 목록 조회');await settleUi(()=>f.container.textContent.includes('요청 1 원문 확인'));
+   await f.click('요청 1 원문 확인');await settleUi(()=>f.container.textContent.includes('선택한 고정 요청'));
+   await f.click('최신 보호요약 고정 원문 조회');await settleUi(()=>f.container.textContent.includes('고정 보호요약'));
+   const original=f.getBuffer();original.pending={bindingId:'99999999-9999-4999-8999-000000000091',kind:'ACCEPT',status:'UNKNOWN',command,summary:wire.summary};const bytes=JSON.stringify(original);
+   if(transition==='session')f.props.session={...f.props.session};
+   if(transition==='csrf')f.props.session.csrfToken='d'.repeat(43);
+   if(transition==='transport'){const transport=f.props.client.transport;f.props.client.transport=(...args:Parameters<typeof fetch>)=>transport(...args);}
+   await f.render();
+   if(transition!=='같은 문맥')assert.doesNotMatch(f.container.textContent,/OTHER_CLIENT|고정 보호요약|선택한 고정 요청/);
+   const before=f.calls.length;await f.click('같은 명령 결과 재확인');await settleUi(()=>f.calls.length>before);
+   assert.match(f.calls.at(-1)!,/\/acceptances\//);assert.equal(f.calls.length,before+1);
+   assert.equal(JSON.stringify(f.getBuffer()),bytes,'원 UNKNOWN 입력과 명령 보존');
+   if(transition==='같은 문맥')assert.match(f.container.textContent,/OTHER_CLIENT[\s\S]*고정 보호요약/);
+   else assert.doesNotMatch(f.container.textContent,/OTHER_CLIENT|고정 보호요약|선택한 고정 요청/);
+   release();await settleUi(()=>f.getBuffer().pending.status==='CONFIRMED'&&!f.container.textContent.includes('조회·결과 확인 중입니다.'));
+   assert.deepEqual(f.getBuffer().pending.command,command);assert.equal(f.calls.length,before+2);assert.equal(f.lost(),0);
+   assert.doesNotMatch(f.container.textContent,/고정 보호요약/);assert.match(f.container.textContent,/제어 전환 결과 확인/);
+  }finally{release();await f.close();}
+ });
+}
