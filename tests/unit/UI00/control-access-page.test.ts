@@ -68,18 +68,18 @@ const allNodes=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(allNodes)
 async function settleUi(check:()=>boolean){for(let i=0;i<40;i++){if(check())return;await ui.React.act(async()=>{await new Promise<void>(r=>setImmediate(r));});}assert.fail('유한 React 정착 누락');}
 const fixedIds={project:'11111111-1111-4111-8111-111111111111',actor:'44444444-4444-4444-8444-444444444444',client:'55555555-5555-4555-8555-555555555555'};
 /** 검산 가능한 합성 wire이며 실제 보호 관측/권한 생산의 증거가 아니다. */
-async function protectedDisplayWire(){
+async function protectedDisplayWire(ready=false){
  const facts=await import('../FN15/control-handoff-summary-fixture.ts'),request=facts.requestBundle().request;
  const hash=(v:unknown)=>contentHash(canonicalJson(v)),scope={projectId:facts.projectId,requestRef:request.requestRef,baseControl:facts.baseControl};
  const keys=['activeExecutions','pendingCommands','pendingApprovals','sourceCheckpointRefs'] as const;
  const collections=Object.fromEntries(keys.map((key,index)=>[key,{
-  state:index===0||index===2?'UNKNOWN':index===1?'WAITING':'VERIFIED_CURRENT',scope,observedAt:facts.now,expiresAt:facts.requestExpiresAt,
+  state:ready?'VERIFIED_CURRENT':index===0||index===2?'UNKNOWN':index===1?'WAITING':'VERIFIED_CURRENT',scope,observedAt:facts.now,expiresAt:facts.requestExpiresAt,
   coverage:{profile:'FN15_KNOWN_SOURCE_SET_V1',sources:[key],scopeHash:hash(scope),watermarkHash:'b'.repeat(64)},
-  items:index===0||index===1?[{kind:key,ref:{id:facts.evidenceRef.id,version:2,contentHash:index===0?'c'.repeat(64):'d'.repeat(64)},observedAt:facts.now,expiresAt:facts.requestExpiresAt,
+  items:!ready&&(index===0||index===1)?[{kind:key,ref:{id:facts.evidenceRef.id,version:2,contentHash:index===0?'c'.repeat(64):'d'.repeat(64)},observedAt:facts.now,expiresAt:facts.requestExpiresAt,
    provenance:index===0?'HISTORICAL_CLAIM':'SERVER_LEDGER',handoffDisposition:index===0?'UNKNOWN':'PRESERVE_BLOCKED_INPUT',reasonCode:index===0?'<script>보관된 차단 이유</script>':'ORIGINAL_INPUT_PRESERVED'}]:[],
-  gaps:index===0?['CURRENT_PROOF_UNAVAILABLE']:[],
+  gaps:!ready&&index===0?['CURRENT_PROOF_UNAVAILABLE']:[],
  }]));
- const snapshot={schemaVersion:2,purpose:'CONTROL_HANDOFF_PROTECTED_SUMMARY',projectId:facts.projectId,requestRef:request.requestRef,summaryVersion:1,baseControl:facts.baseControl,targetActorRef:request.snapshot.targetActorRef,targetClientRef:request.snapshot.targetClientRef,observedAt:facts.now,validUntil:facts.requestExpiresAt,collections,gaps:['RUNTIME_UNVERIFIED'],transferState:'UNKNOWN',executionAuthorized:false,dispatchPerformed:false,controlTransferred:false};
+ const snapshot={schemaVersion:2,purpose:'CONTROL_HANDOFF_PROTECTED_SUMMARY',projectId:facts.projectId,requestRef:request.requestRef,summaryVersion:1,baseControl:facts.baseControl,targetActorRef:request.snapshot.targetActorRef,targetClientRef:request.snapshot.targetClientRef,observedAt:facts.now,validUntil:facts.requestExpiresAt,collections,gaps:ready?[]:['RUNTIME_UNVERIFIED'],transferState:ready?'READY':'UNKNOWN',executionAuthorized:false,dispatchPerformed:false,controlTransferred:false};
  const summary={ref:{id:request.requestRef.id,version:1,contentHash:hash(snapshot)},snapshot};
  const head={schemaVersion:2,purpose:'CONTROL_HANDOFF_PROTECTED_HEAD',projectId:facts.projectId,requestRef:request.requestRef,observedAt:facts.now,head:{state:'AVAILABLE',summaryRef:summary.ref},executionAuthorized:false,dispatchPerformed:false,controlTransferred:false};
  return{summary,head};
@@ -212,5 +212,45 @@ for(const transition of ['같은 문맥','session','csrf','transport'] as const)
    assert.deepEqual(f.getBuffer().pending.command,command);assert.equal(f.calls.length,before+2);assert.equal(f.lost(),0);
    assert.doesNotMatch(f.container.textContent,/고정 보호요약/);assert.match(f.container.textContent,/제어 전환 결과 확인/);
   }finally{release();await f.close();}
+ });
+}
+
+
+for(const transition of ['같은 문맥','session','csrf','transport','sessionABA','새 요약'] as const){
+ test('수락 확인 체크는 '+transition+'에서 정확 조회 문맥·요약에만 귀속된다',async()=>{
+  const facts=await import('../FN15/control-handoff-summary-fixture.ts'),savedNow=Date.now;Date.now=()=>Date.parse(facts.now);
+  let wire=await protectedDisplayWire(true);
+  const f=await followupFixture({role:'OWNER',target:true,state:'OTHER_CLIENT',protectedRead:path=>Response.json(path.includes('/head?')?wire.head:wire.summary)});
+  const checkbox=()=>{const n=allNodes(f.container).find(n=>n.tagName==='INPUT'&&Object.keys(n).some(k=>k.startsWith('__reactProps')&&(n as unknown as Record<string,{type?:string}>)[k]?.type==='checkbox'));assert.ok(n);return n;};
+  const confirm=async()=>{const n=checkbox(),key=Object.keys(n).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>(n as unknown as Record<string,{onChange:(e:unknown)=>void}>)[key]!.onChange({target:{checked:true}}));};
+  const open=async()=>{
+   await f.click('현재 제어 조회');await settleUi(()=>f.container.textContent.includes('OTHER_CLIENT'));
+   await f.click('내 요청 목록 조회');await settleUi(()=>f.container.textContent.includes('요청 1 원문 확인'));
+   await f.click('요청 1 원문 확인');await settleUi(()=>f.container.textContent.includes('선택한 고정 요청'));
+   await f.click('최신 보호요약 고정 원문 조회');await settleUi(()=>f.container.textContent.includes('보호 검산 READY'));
+  };
+  try{
+   await open();assert.equal(checkbox().checked,false);assert.equal(f.button('인수 수락 명령 보존').disabled,true);
+   await confirm();assert.equal(checkbox().checked,true);assert.equal(f.button('인수 수락 명령 보존').disabled,false);
+   const original=f.getBuffer(),session=f.props.session;
+   if(transition==='session'||transition==='sessionABA')f.props.session={...session};
+   if(transition==='csrf')session.csrfToken='d'.repeat(43);
+   if(transition==='transport'){const transport=f.props.client.transport;f.props.client.transport=(...args:Parameters<typeof fetch>)=>transport(...args);}
+   if(transition==='새 요약'){
+    const snapshot={...wire.summary.snapshot,summaryVersion:2},ref={...wire.summary.ref,version:2,contentHash:contentHash(canonicalJson(snapshot))};
+    wire={summary:{snapshot,ref},head:{...wire.head,head:{state:'AVAILABLE',summaryRef:ref}}};
+   }
+   await f.render();if(transition==='sessionABA'){f.props.session=session;await f.render();}
+   await open();assert.equal(f.getBuffer(),original);assert.equal(f.getBuffer().pending,null);
+   assert.equal(checkbox().checked,transition==='같은 문맥','다른 문맥·요약은 새 확인 필요');
+   assert.equal(f.button('인수 수락 명령 보존').disabled,transition!=='같은 문맥');
+   if(transition!=='같은 문맥')await confirm();
+   await f.click('인수 수락 명령 보존');const prepared=JSON.stringify(f.getBuffer());
+   assert.equal(f.getBuffer().pending.kind,'ACCEPT');assert.equal(f.getBuffer().pending.status,'READY');
+   assert.deepEqual(f.getBuffer().pending.command.payload.requestRef,wire.summary.snapshot.requestRef);assert.deepEqual(f.getBuffer().pending.summary.ref,wire.summary.ref);
+   f.props.session={...f.props.session};await f.render();assert.equal(JSON.stringify(f.getBuffer()),prepared);
+   f.getBuffer().pending.status='UNKNOWN';const unknown=JSON.stringify(f.getBuffer());await f.render();await open();
+   assert.equal(JSON.stringify(f.getBuffer()),unknown);assert.equal(checkbox().disabled,true);assert.equal(f.button('인수 수락 명령 보존').disabled,true);assert.equal(f.lost(),0);
+  }finally{await f.close();Date.now=savedNow;}
  });
 }
