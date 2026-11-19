@@ -16,6 +16,17 @@ function fixture(){
  return {ports,calls,window:{issuedAt:epoch,expiresAt:epoch+60_000},advance:(ms:number)=>{wall+=ms;mono+=ms;},monoOnly:(ms:number)=>{mono+=ms;}};
 }
 
+test('IX01 observation payload async RAM: 같은 6단계 파서·원 순서와 실패 뒤 호출0',async()=>{
+ const m=await import('../../../scripts/qa-ix01-subnet-observation-payload.ts');
+ assert.equal(typeof m.observeSubnetCandidateAsync,'function');
+ const f=fixture(),run=f.ports.run;let active=0,maxActive=0;
+ f.ports.run=request=>{active++;maxActive=Math.max(maxActive,active);return Promise.resolve().then(()=>{active--;return run(request);});};
+ assert.deepEqual(await m.observeSubnetCandidateAsync(f.ports,f.window),{code:'CANDIDATE',cidr:'172.19.0.0/28'});
+ assert.equal(maxActive,1);assert.deepEqual(f.calls.map(c=>c.tool),['docker','docker','ip','ip','docker','docker']);
+ const bad=fixture(),old=bad.ports.run;bad.ports.run=async request=>request.args.includes('route')?(bad.calls.push(request),{status:'OK',stdout:'[{"dst":"default"}]'}):old(request);
+ assert.deepEqual(await m.observeSubnetCandidateAsync(bad.ports,bad.window),{code:'UNKNOWN'});assert.equal(bad.calls.length,4);
+});
+
 test('IX01 observation payload RAM: 고정 읽기 인자와 허용 투영만 후보로 연결',async()=>{
  const {observeSubnetCandidate}=await import('../../../scripts/qa-ix01-subnet-observation-payload.ts');const f=fixture();
  assert.deepEqual(observeSubnetCandidate(f.ports,f.window),{code:'CANDIDATE',cidr:'172.19.0.0/28'});

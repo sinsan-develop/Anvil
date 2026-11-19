@@ -4,6 +4,7 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {Script,createContext} from 'node:vm';
+import {readFileSync} from 'node:fs';
 
 const head='5c7e889ffabe3e4d0e13800d8999e2cda1f0407c';
 const expected=[
@@ -76,4 +77,24 @@ test('subnet bundle: proxy/비동기/shared 입력을 실행하지 않고 원 �
  for(const value of [proxy,promise,new Uint8Array(new SharedArrayBuffer(1))])await assert.rejects(()=>buildSubnetObservationBundle(()=>value),{message:'SUBNET_BUNDLE_SOURCE_INVALID'});
  const b=await buildSubnetObservationBundle(path=>{const v=new Uint8Array(source().get(path)!);for(const key of ['length','byteLength','buffer','byteOffset'])Object.defineProperty(v,key,{get(){traps++;throw Error('PRIVATE');}});return v;});
  assert.equal(b.sha256,hash(b.bytes));assert.equal(traps,0);
+});
+test('subnet async bundle: 별도 exact closure·지문이며 메모리 평가가 원 도구를 호출하지 않는다',async()=>{
+ const m=await import('../../../scripts/qa-ix01-subnet-observation-bundle.ts');assert.equal(typeof m.buildSubnetObservationAsyncBundle,'function');
+ const calls:string[]=[],read=(path:string)=>{calls.push(path);return readFileSync(new URL('../../../'+path,import.meta.url));};
+ const a=await m.buildSubnetObservationAsyncBundle(read),b=await m.buildSubnetObservationAsyncBundle(read);
+ assert.equal(a.sourceHead,null);assert.equal(a.baselineHead,'95ea7c4d98b9db87b35a449232193e6d16b032a5');
+ assert.deepEqual(calls,[...a.sources.map(v=>v.path),...a.sources.map(v=>v.path)]);assert.equal(a.sources.length,8);
+ assert.deepEqual(a.moduleOrder,['scripts/qa-ix01-subnet-observation-steps.ts','contracts/canonical.ts','scripts/qa-ix01-subnet-candidate.ts','scripts/qa-ix01-subnet-projection.ts','scripts/qa-ix01-subnet-observation-payload.ts','scripts/qa-ix01-subnet-observation-host.ts','scripts/qa-ix01-subnet-observation-remote.ts','scripts/qa-ix01-subnet-observation-supervisor.ts','generated/subnet-observation-async-entry.ts']);
+ assert.equal(a.byteLength,54294);assert.equal(a.sha256,'03221a628f348cc4c94dc40c75933c36e94eb2b0a94a6e09e1d53fc3d0debb1b');
+ assert.equal(a.sha256,hash(a.bytes));assert.deepEqual(a.bytes,b.bytes);assert.notEqual(a.sha256,'7374964b28227c507d9488a73b674074817e9a9b46712b68916f051f32a379e8');
+ const require=createRequire(import.meta.url),module={exports:{} as Record<string,unknown>};let effects=0;
+ const blocked=()=>{effects++;throw Error('FORBIDDEN');};
+ const context=createContext({module,exports:module.exports,require:(name:string)=>{
+  assert(a.builtins.includes(name));if(name==='node:child_process')return {spawnSync:blocked};
+  if(name==='node:fs')return {constants:{},lstatSync:blocked,realpathSync:blocked,openSync:blocked,fstatSync:blocked,readSync:blocked,closeSync:blocked};
+  if(name==='node:os')return {hostname:blocked};return require(name);
+ }});
+ const text=new TextDecoder().decode(a.bytes);assert(!text.includes(process.cwd()));assert(!/(?:^|[\s"'])[A-Za-z]:[\\/]/.test(text));
+ new Script(text).runInContext(context,{timeout:1000});assert.deepEqual(Object.keys(module.exports).sort(),['collectSubnetRemoteCompletion','observeSubnetRemote']);assert.equal(effects,0);
+ await assert.rejects(()=>m.buildSubnetObservationAsyncBundle(path=>{const bytes=read(path);if(path.endsWith('remote.ts'))bytes[0]=bytes[0]!^1;return bytes;}),{message:'SUBNET_BUNDLE_SOURCE_INVALID'});
 });

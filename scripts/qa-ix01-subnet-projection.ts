@@ -1,3 +1,4 @@
+import {runSubnetSteps,type SubnetSteps} from './qa-ix01-subnet-observation-steps.ts';
 import {isIP} from 'node:net';
 import {types} from 'node:util';
 import {parseWireJson} from '../contracts/canonical.ts';
@@ -50,19 +51,19 @@ function table(value:unknown):void{
 /** 후보 계산만 반환한다. 시작/종료 ID 집합 동일은 중간 변동·동일 ID의 IPAM 변경이나
  * 전체 관측의 원자성을 보장하지 않는다. 원문/ID/이름/포트 예외를 반환하거나 기록하지 않는다.
  */
-export function projectSubnetCandidate(ports:SubnetProjectionPorts,window:SubnetProjectionWindow):SubnetCandidateResult{
+export type SubnetProjectionRead={name:Exclude<typeof methods[number],'now'>;args:unknown[]};
+export function* projectSubnetSteps(now:()=>unknown,window:SubnetProjectionWindow,consume:(request:SubnetProjectionRead)=>SubnetSteps<unknown>):SubnetSteps<SubnetCandidateResult>{
  try{
-  const callbacks=record(ports,methods),period=record(window,['issuedAt','expiresAt']);
-  for(const name of methods)if(typeof callbacks[name]!=='function'||types.isProxy(callbacks[name]))return unknown;
+  const period=record(window,['issuedAt','expiresAt']);
   const start=period.issuedAt,end=period.expiresAt;
   if(typeof start!=='number'||typeof end!=='number'||!Number.isSafeInteger(start)||!Number.isSafeInteger(end)
    ||start<=0||end<=start||end-start>60_000)return unknown;
   let last=start,totalBytes=0;
-  const check=()=>{const value:unknown=Reflect.apply(callbacks.now as Function,ports,[]);
+  const check=()=>{const value:unknown=now();
    if(typeof value!=='number'||!Number.isSafeInteger(value)||value<last||value>=end)return invalid();last=value;return value;
   };
-  const read=(name:Exclude<typeof methods[number],'now'>,args:unknown[]=[])=>{
-   const before=check(),raw:unknown=Reflect.apply(callbacks[name] as Function,ports,args);const after=check();
+  const read=function*(name:Exclude<typeof methods[number],'now'>,args:unknown[]=[]):SubnetSteps<unknown>{
+   const before=check(),raw:unknown=yield* consume({name,args});const after=check();
    if(after-before>10_000)return invalid();
    if(typeof raw!=='string'||!raw.isWellFormed()||raw.length>1_048_576)return invalid();
    const bytes=Buffer.byteLength(raw);totalBytes+=bytes;
@@ -73,11 +74,11 @@ export function projectSubnetCandidate(ports:SubnetProjectionPorts,window:Subnet
    if(result.some(id=>typeof id!=='string'||!/^[a-f0-9]{64}$/.test(id))||new Set(result).size!==result.length)return invalid();
    return (result as string[]).slice().sort();
   };
-  const observedAt=check(),beforeIds=ids(read('readDockerIds'));
+  const observedAt=check(),beforeIds=ids(yield* read('readDockerIds'));
   const interfaces:{address:string;prefixLength:number}[]=[],routes:{table:string|number;destination:string}[]=[],
    dockerIpam:{subnet:string;ipRange:string|null;gateway:string|null;reserved:string[]}[]=[];
   let addressCount=0,configCount=0,reservedCount=0;
-  for(const value of rows(read('readAddresses'),4096)){
+  for(const value of rows(yield* read('readAddresses'),4096)){
    const item=record(value,['addr_info']);
    for(const raw of rows(item.addr_info,4096-addressCount)){
     addressCount++;const info=record(raw,['family','local','prefixlen']),family=ip(info.local),bits=info.prefixlen;
@@ -85,13 +86,13 @@ export function projectSubnetCandidate(ports:SubnetProjectionPorts,window:Subnet
     if(family===4)interfaces.push({address:info.local as string,prefixLength:bits});
    }
   }
-  for(const value of rows(read('readRoutes'),16384)){
+  for(const value of rows(yield* read('readRoutes'),16384)){
    const item=record(value,['table','dst']);table(item.table);
    const family=item.dst==='default'?4:typeof item.dst==='string'&&item.dst.includes('/')?cidr(item.dst):ip(item.dst);
    if(family===4)routes.push({table:item.table as string|number,destination:item.dst as string});
   }
   for(const id of beforeIds){
-   const item=record(read('readDockerIpam',[id]),['Id','IPAM']);if(item.Id!==id)return unknown;
+   const item=record(yield* read('readDockerIpam',[id]),['Id','IPAM']);if(item.Id!==id)return unknown;
    const ipam=record(item.IPAM,['Config']);if(ipam.Config===null)continue;
    for(const value of rows(ipam.Config,4096-configCount)){
     configCount++;const config=record(value,['Subnet','IPRange','Gateway','AuxiliaryAddresses']),family=cidr(config.Subnet);
@@ -106,9 +107,18 @@ export function projectSubnetCandidate(ports:SubnetProjectionPorts,window:Subnet
     if(family===4)dockerIpam.push({subnet:config.Subnet as string,ipRange:ipRange as string|null,gateway:gateway as string|null,reserved});
    }
   }
-  const afterIds=ids(read('readDockerIds'));
+  const afterIds=ids(yield* read('readDockerIds'));
   if(beforeIds.length!==afterIds.length||beforeIds.some((id,index)=>id!==afterIds[index]))return unknown;
   const projection:SubnetProjection={schemaVersion:1,observedAt,complete:{interfaces:true,routesAllTables:true,dockerIpam:true},interfaces,routes,dockerIpam};
   const result=selectSubnetCandidate(projection,check());check();return result;
+ }catch{return unknown;}
+}
+
+export function projectSubnetCandidate(ports:SubnetProjectionPorts,window:SubnetProjectionWindow):SubnetCandidateResult{
+ try{
+  const callbacks=record(ports,methods);for(const name of methods)if(typeof callbacks[name]!=='function'||types.isProxy(callbacks[name]))return unknown;
+  return runSubnetSteps(projectSubnetSteps(()=>Reflect.apply(callbacks.now as Function,ports,[]),window,function*(request){
+   return yield ()=>Reflect.apply(callbacks[request.name] as Function,ports,request.args);
+  }),unknown);
  }catch{return unknown;}
 }

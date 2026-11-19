@@ -64,3 +64,9 @@ test('IX01 observation host RAM: daemon 불일치·축소된 남은 timeout·get
  const a=fixture(),argv=['--input-type=module'];Object.defineProperty(argv,'0',{get(){traps++;throw Error('PRIVATE');}});
  a.ports.context=()=>({...fixture().ports.context(),execArgv:argv});assert.deepEqual(observeSubnetOnHost(a.binding,a.ports),{code:'UNKNOWN'});assert.equal(traps,0);assert.equal(a.calls.length,0);
 });
+
+test('IX01 observation async host RAM: 기존 신원 검산 뒤 원 실행 포트만 기다린다',async()=>{
+ const {observeSubnetOnHostAsync}=await import('../../../scripts/qa-ix01-subnet-observation-host.ts');const f=fixture(),execute=f.ports.execute;
+ f.ports.execute=async(...args)=>execute(...args);assert.deepEqual(await observeSubnetOnHostAsync(f.binding,f.ports),{code:'CANDIDATE',cidr:'172.16.0.0/28'});assert.equal(f.calls.length,5);
+ const bad=fixture();assert.deepEqual(await observeSubnetOnHostAsync({...bad.binding,ip:null},bad.ports),{code:'UNKNOWN'});assert.equal(bad.calls.length,0);
+});

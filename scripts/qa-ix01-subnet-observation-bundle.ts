@@ -47,47 +47,83 @@ const moduleOrder=Object.freeze(['contracts/canonical.ts','scripts/qa-ix01-subne
  * compilerVersion은 실제 로드된 Rolldown(TS 변환 포함)의 버전 검산이다. 도구 파일 신원을
  * 증명하지 않으며, 설치된 TypeScript의 미제공 transpileModule을 대체한다고 위장하지 않는다.
  */
-export async function buildSubnetObservationBundle(readSource:(path:string)=>unknown){
+type SourcePin=Readonly<{path:string;bytes:number;sha256:string}>;
+type BundleProfile={sources:readonly SourcePin[];entry:string;edges:Readonly<Record<string,Readonly<Record<string,string>>>>;builtins:readonly string[];order:readonly string[];exports:readonly string[];sha256:string;generated?:Readonly<{path:string;text:string}>};
+async function buildPinnedBundle(readSource:(path:string)=>unknown,profile:BundleProfile){
  let build:RolldownBuild|undefined;
  try{
   if(typeof readSource!=='function'||types.isProxy(readSource))return reject();
   if(VERSION!==compilerVersion)throw new Error('COMPILER_MISMATCH');
-  const sources=SUBNET_OBSERVATION_SOURCES.map(pin=>{
+  const sources=profile.sources.map(pin=>{
    const bytes=sourceCopy(readSource(pin.path),pin.bytes);
    if(hash(bytes)!==pin.sha256)return reject();
    const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
    if(text.includes('\r')||!Buffer.from(text,'utf8').equals(Buffer.from(bytes)))return reject();
    return {pin,text};
   });
-  const entry=SUBNET_OBSERVATION_SOURCES[0]!.path;
+  const entry=profile.entry;
+  if(profile.generated){const text=profile.generated.text,bytes=Buffer.from(text);sources.push({pin:{path:profile.generated.path,bytes:bytes.length,sha256:hash(bytes)},text});}
   const loaded=new Set<string>(),map=new Map(sources.map(v=>[virtual(v.pin.path),v]));
   build=await rolldown({input:virtual(entry),cwd:'/',platform:'neutral',tsconfig:false,treeshake:false,
    onLog(){reject();},plugins:[{name:'ix01-exact-memory-sources',
     resolveId(id,importer){
      if(importer===undefined){if(id!==virtual(entry))return reject();return id;}
      const source=map.get(importer);if(!source)return reject();
-     const edge=dependencies[source.pin.path]!;
+     const edge=profile.edges[source.pin.path]!;
      if(!Object.hasOwn(edge,id))return reject();const target=edge[id]!;
-     return builtins.includes(target)?{id:target,external:true}:virtual(target);
+     return profile.builtins.includes(target)?{id:target,external:true}:virtual(target);
     },
     load(id){const source=map.get(id);if(!source||loaded.has(id))return reject();loaded.add(id);return {code:source.text,moduleType:'ts',map:null};},
    }],
   });
   const output=await build.generate({format:'cjs',exports:'named',sourcemap:false,minify:false,comments:false,strictExecutionOrder:true});
   const chunk=output.output[0];
-  if(output.output.length!==1||!chunk||chunk.type!=='chunk'||!chunk.isEntry||chunk.facadeModuleId!==virtual(entry)||chunk.dynamicImports.length||chunk.map||chunk.exports.length!==1||chunk.exports[0]!=='observeSubnetOnHost')return reject();
+  if(output.output.length!==1||!chunk||chunk.type!=='chunk'||!chunk.isEntry||chunk.facadeModuleId!==virtual(entry)||chunk.dynamicImports.length||chunk.map||JSON.stringify([...chunk.exports].sort())!==JSON.stringify([...profile.exports].sort()))return reject();
   if(loaded.size!==sources.length||[...map.keys()].some(id=>!loaded.has(id)))return reject();
   const imports=[...new Set(chunk.imports)].sort();
-  if(JSON.stringify(imports)!==JSON.stringify([...builtins].sort()))return reject();
+  if(JSON.stringify(imports)!==JSON.stringify([...profile.builtins].sort()))return reject();
   const moduleIds=Object.keys(chunk.modules);
   // strictExecutionOrder가 만드는 단일 compiler helper는 원 소스가 아니다.
   // 다른 생성 모듈/순서와 변경된 완성 출력은 모두 거절한다.
-  if(JSON.stringify(moduleIds)!==JSON.stringify([generatedRuntime,...moduleOrder.map(virtual)]))return reject();
+  if(JSON.stringify(moduleIds)!==JSON.stringify([generatedRuntime,...profile.order.map(virtual)]))return reject();
   const text=chunk.code;
   const bytes=new Uint8Array(Buffer.from(text,'utf8'));
-  if(bytes.byteLength>262_144||hash(bytes)!==outputSha256)return reject();
-  return Object.freeze({sourceHead,compiler:'rolldown',compilerVersion:VERSION,sources:SUBNET_OBSERVATION_SOURCES,entry,
-   moduleOrder,generatedModules:Object.freeze([generatedRuntime]),builtins:Object.freeze(imports),bytes,byteLength:bytes.byteLength,sha256:hash(bytes)});
+  if(bytes.byteLength>262_144||hash(bytes)!==profile.sha256)return reject();
+  return Object.freeze({sourceHead,compiler:'rolldown',compilerVersion:VERSION,sources:profile.sources,entry,
+   moduleOrder:profile.order,generatedModules:Object.freeze(profile.generated?[generatedRuntime,virtual(entry)]:[generatedRuntime]),builtins:Object.freeze(imports),bytes,byteLength:bytes.byteLength,sha256:hash(bytes)});
  }catch{return reject();}
  finally{if(build)try{await build.close();}catch{reject();}}
+}
+
+export function buildSubnetObservationBundle(readSource:(path:string)=>unknown){return buildPinnedBundle(readSource,{sources:SUBNET_OBSERVATION_SOURCES,entry:SUBNET_OBSERVATION_SOURCES[0]!.path,edges:dependencies,builtins,order:moduleOrder,exports:['observeSubnetOnHost'],sha256:outputSha256});}
+
+// 새 source-only 후보. Main 확정 commit 결박 전이며 기존 Git blob 프로필과 혼합하지 않는다.
+export const SUBNET_ASYNC_SOURCES=Object.freeze([
+ Object.freeze({"path":"scripts/qa-ix01-subnet-observation-host.ts","bytes":14481,"sha256":"74a2ed2b0e6dd72714e8041b00bf43eed0fc85f511301b9f58539ca28cabb6df"}),
+ Object.freeze({"path":"scripts/qa-ix01-subnet-observation-payload.ts","bytes":8168,"sha256":"d921b0c8c38e921dad1a75c44e5f7c04ffc27a73254dbac06c716d69bc15b107"}),
+ Object.freeze({"path":"scripts/qa-ix01-subnet-projection.ts","bytes":8000,"sha256":"b74a85415fe484956ef204f565cdee3a13522ceee595419a5f038cffad35024c"}),
+ Object.freeze({"path":"scripts/qa-ix01-subnet-candidate.ts","bytes":7314,"sha256":"1ce97ab13fa4734f3306262fe4fc5f4af514a1329d11d822f1a7cb83f1280110"}),
+ Object.freeze({"path":"contracts/canonical.ts","bytes":2986,"sha256":"5be93c5b92a3bda99baa9bc561e6b535c9c1ab80196601e561903a0b6f74e143"}),
+ Object.freeze({"path":"scripts/qa-ix01-subnet-observation-steps.ts","bytes":1061,"sha256":"3734ff512890b69977b383f50acc7b4eda0d328a76cef89fc4ea8c975a6a4f1f"}),
+ Object.freeze({"path":"scripts/qa-ix01-subnet-observation-remote.ts","bytes":9974,"sha256":"6757a0eb635f431363559c44b3cf2099440d61399debd360f509145a9e90a092"}),
+ Object.freeze({"path":"scripts/qa-ix01-subnet-observation-supervisor.ts","bytes":8235,"sha256":"aa5ac81b74d41b36685a94d2411bd541b9673ae0d350388bb4cdf33bce8b9bbe"}),
+ ]);
+const stepsPath='scripts/qa-ix01-subnet-observation-steps.ts',remotePath='scripts/qa-ix01-subnet-observation-remote.ts',supervisorPath='scripts/qa-ix01-subnet-observation-supervisor.ts';
+const asyncEntry='generated/subnet-observation-async-entry.ts';
+const asyncEntryText="export {observeSubnetRemote} from '../scripts/qa-ix01-subnet-observation-remote.ts';\nexport {collectSubnetRemoteCompletion} from '../scripts/qa-ix01-subnet-observation-supervisor.ts';\n";
+const asyncEdges=Object.freeze({
+ ...dependencies,
+ 'scripts/qa-ix01-subnet-observation-host.ts':Object.freeze({...dependencies['scripts/qa-ix01-subnet-observation-host.ts'],'./qa-ix01-subnet-observation-steps.ts':stepsPath}),
+ 'scripts/qa-ix01-subnet-observation-payload.ts':Object.freeze({...dependencies['scripts/qa-ix01-subnet-observation-payload.ts'],'./qa-ix01-subnet-observation-steps.ts':stepsPath}),
+ 'scripts/qa-ix01-subnet-projection.ts':Object.freeze({...dependencies['scripts/qa-ix01-subnet-projection.ts'],'./qa-ix01-subnet-observation-steps.ts':stepsPath}),
+ [stepsPath]:Object.freeze({'node:util':'node:util'}),
+ [remotePath]:Object.freeze({'node:events':'node:events','node:util':'node:util','./qa-ix01-subnet-observation-host.ts':'scripts/qa-ix01-subnet-observation-host.ts'}),
+ [supervisorPath]:Object.freeze({'node:events':'node:events','node:util':'node:util','../contracts/canonical.ts':'contracts/canonical.ts','./qa-ix01-subnet-observation-remote.ts':remotePath}),
+ [asyncEntry]:Object.freeze({'../scripts/qa-ix01-subnet-observation-remote.ts':remotePath,'../scripts/qa-ix01-subnet-observation-supervisor.ts':supervisorPath}),
+});
+const asyncOrder=Object.freeze([stepsPath,...moduleOrder,remotePath,supervisorPath,asyncEntry]);
+const asyncOutputHash='03221a628f348cc4c94dc40c75933c36e94eb2b0a94a6e09e1d53fc3d0debb1b';
+export async function buildSubnetObservationAsyncBundle(readSource:(path:string)=>unknown){
+ const built=await buildPinnedBundle(readSource,{sources:SUBNET_ASYNC_SOURCES,entry:asyncEntry,edges:asyncEdges,builtins:Object.freeze([...builtins,'node:events']),order:asyncOrder,exports:['collectSubnetRemoteCompletion','observeSubnetRemote'],sha256:asyncOutputHash,generated:{path:asyncEntry,text:asyncEntryText}});
+ return Object.freeze({...built,sourceHead:null,baselineHead:'95ea7c4d98b9db87b35a449232193e6d16b032a5',purpose:'SOURCE_ONLY_ASYNC_CANDIDATE'});
 }

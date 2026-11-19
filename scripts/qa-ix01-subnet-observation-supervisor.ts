@@ -1,5 +1,7 @@
 import {EventEmitter} from 'node:events';
 import {types} from 'node:util';
+import {parseWireJson} from '../contracts/canonical.ts';
+import {readSubnetRemoteEnvelope,readSubnetCompletionBinding,type SubnetRemoteEnvelope} from './qa-ix01-subnet-observation-remote.ts';
 
 export interface SubnetCollectionClock{
  now():number;monotonic():number;
@@ -32,7 +34,7 @@ function validResult(bytes:Uint8Array):boolean{
  * 로컬 SSH close와 원격 완료는 별개다. 채택된 원격 완료 증거가 없는 이 단위는 모든 경우 UNKNOWN이며
  * 후보/원 stdout/예외/주소/ID를 발행하지 않는다. 기존 host와 번들, 승인 및 실제 실행 범위는 불변이다.
  */
-export function collectSubnetObservationChild(child:unknown,window:unknown,clock:SubnetCollectionClock):Promise<SubnetChildCollection>{
+function collectChild(child:unknown,window:unknown,clock:SubnetCollectionClock,validate:(bytes:Uint8Array)=>boolean):Promise<SubnetChildCollection>{
  let input:EventEmitter,output:EventEmitter,issuedAt:number,expiresAt:number;
  try{
   if(!emitter(child)||used.has(child)||!window||typeof window!=='object'||types.isProxy(window)
@@ -78,7 +80,7 @@ export function collectSubnetObservationChild(child:unknown,window:unknown,clock
    listen(output,'end',()=>{if(outputDone)finish('OUTPUT_INVALID');else outputDone=true;});
    listen(original,'close',(code:unknown,signal:unknown)=>{
     if(code!==0||signal!==null||!inputDone||!outputDone){finish('CLOSE_UNCONFIRMED');return;}
-    let valid=false;try{valid=validResult(bytes.subarray(0,size));}catch{/* 원문은 보관하지 않는다. */}
+    let valid=false;try{valid=validate(bytes.subarray(0,size));}catch{/* 원문은 보관하지 않는다. */}
     finish(valid?'REMOTE_COMPLETION_UNVERIFIED':'OUTPUT_INVALID',valid);
    });
    timer=clock.setTimeout(()=>{if(!done)finish('DEADLINE');},remaining);timerSet=true;
@@ -86,4 +88,22 @@ export function collectSubnetObservationChild(child:unknown,window:unknown,clock
    if(done)try{clock.clearTimeout(timer);}catch{/* 이미 UNKNOWN인 수거 결과는 승격하지 않는다. */}
   }catch{finish('COLLECTION_UNKNOWN');}
  });
+}
+export function collectSubnetObservationChild(child:unknown,window:unknown,clock:SubnetCollectionClock):Promise<SubnetChildCollection>{return collectChild(child,window,clock,validResult);}
+
+/** 고정 원 연결/소스의 소유자가 공급한 expected 결박만 소비한다. 임의 원격 보고를 인증하거나
+ * 실제 실행 승인을 발급하지 않는다. 원 완료 envelope와 같은 로컬 원 handle의 정상 종결 둘 다 필요하다.
+ * 기존 raw 후보 수거기는 계속 UNKNOWN이다. 새 형상은 후속 exact 실행안/adapter 없이는 운용하지 않는다.
+ */
+export async function collectSubnetRemoteCompletion(child:unknown,proof:unknown,window:unknown,clock:SubnetCollectionClock){
+ let binding:ReturnType<typeof readSubnetCompletionBinding>;
+ try{binding=readSubnetCompletionBinding(proof,window);}catch{return answer('INPUT_INVALID');}
+ let verified:SubnetRemoteEnvelope|undefined;
+ const local=await collectChild(child,binding.window,clock,bytes=>{
+  const text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes),raw=parseWireJson(text);
+  if(text!==JSON.stringify(raw)&&text!==JSON.stringify(raw)+'\n')return false;
+  verified=readSubnetRemoteEnvelope(raw,binding.proof,binding.window);return true;
+ });
+ if(local.localCollection!=='CONFIRMED'||!verified)return local;
+ return Object.freeze({status:'OBSERVATION_COLLECTED' as const,result:verified.result});
 }

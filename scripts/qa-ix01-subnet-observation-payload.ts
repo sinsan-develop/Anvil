@@ -1,6 +1,7 @@
+import {runSubnetSteps,runSubnetStepsAsync,type SubnetSteps} from './qa-ix01-subnet-observation-steps.ts';
 import {types} from 'node:util';
 import {parseWireJson} from '../contracts/canonical.ts';
-import {projectSubnetCandidate,type SubnetProjectionWindow} from './qa-ix01-subnet-projection.ts';
+import {projectSubnetSteps,type SubnetProjectionWindow} from './qa-ix01-subnet-projection.ts';
 import type {SubnetCandidateResult} from './qa-ix01-subnet-candidate.ts';
 
 export interface SubnetReadCommand {
@@ -44,7 +45,7 @@ function rows(value:unknown,max:number):unknown[]{if(!Array.isArray(value)||valu
  * 결과에는 후보/판정만 남긴다. 원 stdout은 파싱/선별 범위 밖으로 반환하지 않지만 메모리
  * zeroization이나 관측 원자성은 보장하지 않는다. 완전성은 원 포트 공급자의 책임이다.
  */
-export function observeSubnetCandidate(ports:SubnetObservationPorts,window:SubnetProjectionWindow):SubnetCandidateResult{
+export function* subnetObservationSteps(ports:SubnetObservationPorts,window:SubnetProjectionWindow,runStep?:(request:SubnetReadCommand)=>SubnetSteps<unknown>):SubnetSteps<SubnetCandidateResult>{
  try{
   const callbacks=exact(ports,['now','monotonic','run']),period=exact(window,['issuedAt','expiresAt']);
   for(const name of ['now','monotonic','run'])if(typeof callbacks[name]!=='function'||types.isProxy(callbacks[name]))return unknown;
@@ -58,38 +59,38 @@ export function observeSubnetCandidate(ports:SubnetObservationPorts,window:Subne
    if(typeof wall!=='number'||!Number.isSafeInteger(wall)||wall<lastWall||wall>=end||typeof mono!=='number'||!Number.isFinite(mono)||mono<lastMono||mono-initialMono>=60_000)return invalid();
    lastWall=wall;lastMono=mono;return {wall,mono};
   };
-  const command=(tool:'ip'|'docker',args:readonly string[],emptyList=false)=>{
+  const command=function*(tool:'ip'|'docker',args:readonly string[],emptyList=false):SubnetSteps<string>{
    const before=check(),timeoutMs=Math.floor(Math.min(10_000,end-before.wall,60_000-(before.mono-initialMono)));
    if(timeoutMs<=0)return invalid();
    const request=Object.freeze({tool,args:Object.freeze([...args]),timeoutMs,maxOutputBytes:maxBytes});
-   const returned=invoke('run',[request]),after=check();
+   const returned=runStep?yield* runStep(request):yield ()=>invoke('run',[request]);const after=check();
    if(after.wall-before.wall>timeoutMs||after.mono-before.mono>timeoutMs)return invalid();
    const result=exact(returned,['status','stdout']);if(result.status!=='OK')return invalid();
    const raw=result.stdout;if(typeof raw!=='string'||!raw.isWellFormed()||raw.length>maxBytes)return invalid();
    const bytes=Buffer.byteLength(raw);total+=bytes;if((!bytes&&!emptyList)||bytes>maxBytes||total>8_388_608)return invalid();return raw;
   };
-  const json=(tool:'ip'|'docker',args:readonly string[])=>{const value=parseWireJson(command(tool,args));check();return value;};
-  const daemon=exact(json('docker',[...host,'info','--format',daemonTemplate]),['ID','Name']);
+  const json=function*(tool:'ip'|'docker',args:readonly string[]):SubnetSteps<unknown>{const value=parseWireJson(yield* command(tool,args));check();return value;};
+  const daemon=exact(yield* json('docker',[...host,'info','--format',daemonTemplate]),['ID','Name']);
   if(daemon.ID!=='e3349f1d-dbfc-478a-96d9-295bf6c6839e'||daemon.Name!=='SINSAN')return unknown;
-  return projectSubnetCandidate({now:()=>check().wall,
-   readDockerIds(){
-    const raw=command('docker',[...host,'network','ls','--no-trunc','--format','{{json .ID}}'],true);
+  const readers={
+   *readDockerIds():SubnetSteps<string>{
+    const raw=yield* command('docker',[...host,'network','ls','--no-trunc','--format','{{json .ID}}'],true);
     if(raw==='')return '[]';
     const lines=raw.replace(/\r?\n$/,'').split(/\r?\n/);if(lines.length>4096)return invalid();
     const ids=lines.map(line=>parseWireJson(line));check();return JSON.stringify(ids);
    },
-   readAddresses(){
-    let count=0;const addresses=rows(json('ip',['-j','-4','address','show']),4096).map(value=>{
+   *readAddresses():SubnetSteps<string>{
+    let count=0;const addresses=rows(yield* json('ip',['-j','-4','address','show']),4096).map(value=>{
      const item=pick(value,['addr_info']);const addr_info=rows(item.addr_info,4096-count).map(info=>{count++;return pick(info,['family','local','prefixlen']);});return {addr_info};
     });check();return JSON.stringify(addresses);
    },
-   readRoutes(){
-    const routes=rows(json('ip',['-j','-4','-details','route','show','table','all']),16384).map(value=>pick(value,['table','dst']));
+   *readRoutes():SubnetSteps<string>{
+    const routes=rows(yield* json('ip',['-j','-4','-details','route','show','table','all']),16384).map(value=>pick(value,['table','dst']));
     check();return JSON.stringify(routes);
    },
-   readDockerIpam(id:string){
+   *readDockerIpam(id:string):SubnetSteps<string>{
     if(!/^[a-f0-9]{64}$/.test(id))return invalid();
-    const item=exact(json('docker',[...host,'network','inspect','--format',ipamTemplate,id]),['Id','IPAM']);
+    const item=exact(yield* json('docker',[...host,'network','inspect','--format',ipamTemplate,id]),['Id','IPAM']);
     const ipam=exact(item.IPAM,['Config']);
     const Config=ipam.Config===null?null:rows(ipam.Config,4096).map(value=>{
      const row=exact(value,['Subnet','IPRange','Gateway','AuxiliaryAddresses']);
@@ -97,6 +98,10 @@ export function observeSubnetCandidate(ports:SubnetObservationPorts,window:Subne
      return {...row,IPRange:row.IPRange===''?null:row.IPRange,Gateway:row.Gateway===''?null:row.Gateway};
     });check();return JSON.stringify({Id:item.Id,IPAM:{Config}});
    },
-  },{issuedAt:start,expiresAt:end});
+  };
+  return yield* projectSubnetSteps(()=>check().wall,{issuedAt:start,expiresAt:end},request=>request.name==='readDockerIpam'?readers.readDockerIpam(request.args[0] as string):readers[request.name]());
  }catch{return unknown;}
 }
+
+export function observeSubnetCandidate(ports:SubnetObservationPorts,window:SubnetProjectionWindow):SubnetCandidateResult{return runSubnetSteps(subnetObservationSteps(ports,window),unknown);}
+export function observeSubnetCandidateAsync(ports:SubnetObservationPorts,window:SubnetProjectionWindow):Promise<SubnetCandidateResult>{return runSubnetStepsAsync(subnetObservationSteps(ports,window),unknown);}

@@ -1,10 +1,11 @@
+import {runSubnetSteps,runSubnetStepsAsync,type SubnetSteps} from './qa-ix01-subnet-observation-steps.ts';
 import {spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {constants,lstatSync,realpathSync,openSync,fstatSync,readSync,closeSync,type BigIntStats} from 'node:fs';
 import {hostname} from 'node:os';
 import {performance} from 'node:perf_hooks';
 import {types} from 'node:util';
-import {observeSubnetCandidate,type SubnetReadCommand} from './qa-ix01-subnet-observation-payload.ts';
+import {subnetObservationSteps,type SubnetReadCommand} from './qa-ix01-subnet-observation-payload.ts';
 import type {SubnetCandidateResult} from './qa-ix01-subnet-candidate.ts';
 
 /** 상위 감독이 정확 승인/소스 및 SSH 단1회 진입을 결박한 뒤 공급할 운영 입력이다.
@@ -109,7 +110,7 @@ function allowed(command:SubnetReadCommand):boolean{
  * 소유자 root의 도구/부모/current metadata를 검산하나 특권 주체의 교체와 원자적 실행까지
  * 증명하는 새로운 보호 권위는 아니다. 파일/외피/설정/자원 생성 또는 정리는 수행하지 않는다.
  */
-export function observeSubnetOnHost(input:unknown,ports:SubnetHostPorts=nativePorts()):SubnetCandidateResult{
+function* subnetHostSteps(input:unknown,ports:SubnetHostPorts):SubnetSteps<SubnetCandidateResult>{
  try{
   const binding=exact(input,['issuedAt','expiresAt','ip']),ip=exact(binding.ip,['path','sha256']);
   if(typeof ip.path!=='string'||!['/usr/bin/ip','/usr/sbin/ip','/bin/ip','/sbin/ip'].includes(ip.path)||typeof ip.sha256!=='string'||!/^[a-f0-9]{64}$/.test(ip.sha256))return unknown;
@@ -150,18 +151,21 @@ export function observeSubnetOnHost(input:unknown,ports:SubnetHostPorts=nativePo
   if(socketIdentity.kind!=='socket'||socketIdentity.uid!==0||(socketIdentity.mode&0o002)!==0)return unknown;held.set(socket,socketIdentity);
   const fresh=()=>{context();for(const [path,prior] of held){if(resolved(path)!==path||!same(prior,inspect(path)))return invalid();}
    if(resolved('/var/run/docker.sock')!==socket)return invalid();clock();};
-  const result=observeSubnetCandidate({now:()=>clock().wall,monotonic:()=>clock().mono,
-   run(command){
+  const run=function*(command:SubnetReadCommand):SubnetSteps<unknown>{
     if(!allowed(command)||!Number.isInteger(command.timeoutMs)||command.timeoutMs<=0||command.timeoutMs>10_000||command.maxOutputBytes!==1_048_576)return invalid();
     fresh();const before=clock(),timeout=Math.floor(Math.min(command.timeoutMs,end-before.wall,60_000-(before.mono-firstMono)));if(timeout<=0)return invalid();
     const options:SubnetHostCommandOptions=Object.freeze({cwd:'/',env,timeout,maxBuffer:1_048_576,killSignal:'SIGKILL',stdio:Object.freeze(['ignore','pipe','ignore'] as const),shell:false,windowsHide:true});
     const args=Object.freeze(command.tool==='docker'?['--config','/dev/null',...command.args]:[...command.args]);
-    const raw=invoke('execute',[command.tool==='docker'?tools.docker:ip.path,args,options]),after=clock();
+    const raw=yield ()=>invoke('execute',[command.tool==='docker'?tools.docker:ip.path,args,options]);const after=clock();
     if(after.wall-before.wall>timeout||after.mono-before.mono>timeout)return invalid();
     const out=exact(raw,['ok','stdout']);if(out.ok!==true||typeof out.stdout!=='string'||!out.stdout.isWellFormed()||out.stdout.length>options.maxBuffer||Buffer.byteLength(out.stdout)>options.maxBuffer)return invalid();
     fresh();return {status:'OK',stdout:out.stdout};
-   },
-  },{issuedAt:start,expiresAt:end});
+  };
+  const result=yield* subnetObservationSteps({now:()=>clock().wall,monotonic:()=>clock().mono,run},{issuedAt:start,expiresAt:end},run);
   if(result.code==='UNKNOWN')return result;fresh();return result;
  }catch{return unknown;}
 }
+
+export function observeSubnetOnHost(input:unknown,ports:SubnetHostPorts=nativePorts()):SubnetCandidateResult{return runSubnetSteps(subnetHostSteps(input,ports),unknown);}
+/** 비동기 경로에는 기본 native 포트가 없다. 승인/원 직접 자식 감독을 대신하지 않는다. */
+export function observeSubnetOnHostAsync(input:unknown,ports:SubnetHostPorts):Promise<SubnetCandidateResult>{return runSubnetStepsAsync(subnetHostSteps(input,ports),unknown);}
