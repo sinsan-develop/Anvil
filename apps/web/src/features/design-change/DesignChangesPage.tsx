@@ -22,8 +22,15 @@ const reference = (value: PlanRef) => `${value.id} · v${value.version} · ${val
 export interface ChangeEditorGate { acquire: () => boolean; release: () => void; allowed: () => boolean }
 const targetLabel = (value: ImpactTargetRef) => `${value.kind} · ${value.localCode ?? value.id} · v${value.versionRef.version}${value.anchor ? ' · ' + value.anchor : ''}`;
 export function DesignChangesPage({ client, projectId, session, buffer, onChange, reviewBuffer, onReviewChange, activationBuffer, onActivationChange, onActivationRequest, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; buffer: ChangeRequestBuffer | null; onChange: Dispatch<SetStateAction<ChangeRequestBuffer | null>>; activationBuffer?:ActivationBuffer|null;onActivationChange?:Dispatch<SetStateAction<ActivationBuffer|null>>;onActivationRequest?:(buffer:ActivationBuffer)=>boolean;reviewBuffer: ImpactReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<ImpactReviewBuffer | null>>; onAuthenticationLost: () => void }) {
-  const [requestId, setRequestId] = useState(''), [value, setValue] = useState<DesignChangePage | null>(null), [error, setError] = useState<ApiError | null>(null), [busy, setBusy] = useState(false), [before, setBefore] = useState<number | null>(null);
-  const alive = useRef(true), flight = useRef(false);
+  const context = { client, transport: client.transport, projectId, userId: session.user.id, clientId: session.clientId, csrf: session.csrfToken };
+  const owner = useRef(context);
+  if (owner.current.client !== client || owner.current.transport !== client.transport || owner.current.projectId !== projectId || owner.current.userId !== session.user.id || owner.current.clientId !== session.clientId || owner.current.csrf !== session.csrfToken) owner.current = context;
+  const scope = owner.current;
+  type Selection = { scope: typeof scope; requestId: string; before: number | null; value: DesignChangePage | null; error: ApiError | null; busy: boolean };
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const shown = selection?.scope === scope ? selection : null;
+  const requestId = shown?.requestId ?? '', value = shown?.value ?? null, error = shown?.error ?? null, busy = shown?.busy ?? false, before = shown?.before ?? null;
+  const alive = useRef(true), flight = useRef<{ scope: typeof scope; id: string; before: number | null } | null>(null);
   const editorFlight=useRef(false), latest=useRef({buffer,reviewBuffer});latest.current={buffer,reviewBuffer};
   const [editorBusy,setEditorBusy]=useState(false);
   const acquire=()=>{if(editorFlight.current)return false;editorFlight.current=true;setEditorBusy(true);return true;};
@@ -32,17 +39,22 @@ export function DesignChangesPage({ client, projectId, session, buffer, onChange
   const reviewGate:ChangeEditorGate={acquire,release,allowed:()=>!latest.current.buffer||!!latest.current.buffer.result};
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   async function load(id: string, beforeVersion: number | null) {
-    if (flight.current) return; flight.current = true; setBusy(true); setValue(null); setError(null); setBefore(beforeVersion);
-    try { const page = await readDesignChange(client, projectId, id, beforeVersion); if (alive.current) setValue(page); }
-    catch (cause) { if (!alive.current) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if (failure.status === 401) onAuthenticationLost(); }
-    finally { flight.current = false; if (alive.current) setBusy(false); }
+    if (!alive.current || owner.current !== scope || client.transport !== scope.transport) return;
+    if (flight.current?.scope === scope && flight.current.id === id && flight.current.before === beforeVersion) return;
+    const request = { scope, id, before: beforeVersion }; flight.current = request;
+    const selected: Selection = { scope, requestId: id, before: beforeVersion, value: null, error: null, busy: true };
+    setSelection(selected);
+    const active = () => alive.current && owner.current === scope && client.transport === scope.transport && flight.current === request;
+    try { const page = await readDesignChange(client, projectId, id, beforeVersion); if (active()) setSelection({ ...selected, value: page, busy: false }); }
+    catch (cause) { if (!active()) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setSelection({ ...selected, error: failure, busy: false }); if (failure.status === 401) onAuthenticationLost(); }
+    finally { if (flight.current === request) flight.current = null; }
   }
   return <section className="editor-page" aria-label="설계 변경 조회"><h2>변경 요청·영향 이력</h2>{onActivationChange&&onActivationRequest?<DesignActivationPanel client={client} projectId={projectId} session={session} page={value} selectionId={requestId} buffer={activationBuffer??null} onChange={onActivationChange} onRequest={onActivationRequest} onAuthenticationLost={onAuthenticationLost}/>:null}
-    <DesignChangeRequest client={client} projectId={projectId} session={session} buffer={buffer} onChange={onChange} gate={requestGate} reading={busy} blocked={editorBusy||!!reviewBuffer&&!reviewBuffer.result} onOpen={id=>{setRequestId(id);void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/>
-    <ImpactReviewEditor client={client} projectId={projectId} session={session} page={value} buffer={reviewBuffer} onChange={onReviewChange} gate={reviewGate} canPrepare={!buffer||!!buffer.result} reading={busy||editorBusy} onOpen={id=>{setRequestId(id);void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/>
+    <DesignChangeRequest client={client} projectId={projectId} session={session} buffer={buffer} onChange={onChange} gate={requestGate} reading={busy} blocked={editorBusy||!!reviewBuffer&&!reviewBuffer.result} onOpen={id=>{void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/>
+    <ImpactReviewEditor client={client} projectId={projectId} session={session} page={value} buffer={reviewBuffer} onChange={onReviewChange} gate={reviewGate} canPrepare={!buffer||!!buffer.result} reading={busy||editorBusy} onOpen={id=>{void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/>
     <p className="meta">저장된 변경 요청 ID로 원문과 영향 검토 이력을 조회합니다. 기준 적용은 정확 후보의 별도 승인과 적용 절차를 따릅니다. 작업 재개는 실행하지 않습니다.</p>
     <form onSubmit={event => { event.preventDefault(); void load(requestId, null); }}><fieldset disabled={busy}><legend>저장된 요청 찾기</legend>
-      <label>변경 요청 ID<input value={requestId} maxLength={36} autoComplete="off" spellCheck={false} onChange={event => { setRequestId(event.target.value); setValue(null); setError(null); }} /></label><button type="submit" disabled={!requestId}>변경 요청 조회</button>
+      <label>변경 요청 ID<input value={requestId} maxLength={36} autoComplete="off" spellCheck={false} onChange={event => { flight.current = null; setSelection({ scope, requestId: event.target.value, before: null, value: null, error: null, busy: false }); }} /></label><button type="submit" disabled={!requestId}>변경 요청 조회</button>
     </fieldset></form>
     {busy ? <p role="status">변경 요청·영향 이력 조회 중</p> : null}{error ? <p role="alert">{error.code} · 요청과 영향은 현재 미확인입니다. 이전 조회 원문은 숨겼습니다.</p> : null}
     {value ? <section aria-label="보관 설계 변경"><h3>변경 요청 · 제안 상태</h3><p>{reference(value.change.ref)}</p><dl>
