@@ -20995,3 +20995,11 @@ Main 검수에서 발견한 요청 잠금 잔류, 작성 준비 중 이동의 �
 기준 88108410, 시작 시 기존 작업 브랜치와 원격 추적 ref 일치 및 clean. FN07 생산자 구현 명세 §C의 취소 뒤 미전송 바이트 차단·예약 단발 종결을 현재 stdio 브리지에 대조했다. developer_primary에게 기존 브리지와 직접 시험 두 경로의 단일 쓰기를 배정했다. 로컬 합성 RED fbbb83에서 stdin/stdout.destroy 모두 첫 DATA 뒤 늦은 ACK가 미전송 두 번째 chunk를 전달했다(2실패). 정상 finish/EOF 뒤 실제 EXIT의 기존 흐름은 1통과했다. SDK·실제 자식·WSL/DB·권한·키·서비스·Agent 실행은 이 작업에서 제외한다.
 
 보완은 두 스트림의 조기 destroy를 기존 ABANDON·오류 종결 경로에 연결한다. 이미 수락한 두 쓰기의 콜백은 각각 한 번 오류로 끝나고 늦은 ACK 뒤 데이터 전송은 0이다. 정상 stdin finish와 stdout EOF 뒤 자동 정리는 실제 EXIT를 계속 기다린다. 제품 apps/desktop/src/normal-sdk-child-bridge.cjs와 집중 시험 tests/desktop/normal-sdk-child-bridge.test.cjs에 한정했다. 담당자 GREEN 3통과(78d25f), 직접·인접 18통과/실패·건너뜀0(3f88d9), desktop 타입 exit0(08cb09), Main 재현2통과(e2e746)·동결 지문2개 일치(498cd4). 쓰기 반환 및 실행 핸들 0. 복구는 이 취소 변경과 신규 회귀 검사만 되돌리는 단위다. 실제 SDK 로딩·자식/OS 수거와 FN07 전체 동작은 미검증이며 보호 실행구성 결정은 남아 있다.
+
+## UI04 단계 전환 시 산출문서 준비 범위 고정
+
+기준 f28bdbab, 시작 시 clean 및 원격 추적 ref 일치. SCREEN_WORK UI04의 단계별 자료 전환을 WorkspacePage에서 대조했다. 기존 준비 표시가 단계와 무관한 boolean이어서 원 단계에서 연 양식 선택이 다른 단계나 절차 새로고침 뒤 자동으로 다시 열렸다. developer_primary에게 WorkspacePage.tsx와 기존 합성 DOM 시험 파일 한 경로의 단일 쓰기를 배정했다. 수정 전 실제 구성 조합 시험 8be1fe에서 세 전환 사례 모두 실패했다. 별도 저장·권한·서버 계약과 외부 보관 중인 문서 버퍼는 기존 흐름을 사용한다.
+
+준비 선택을 프로젝트·고정 적용본·단계·원본 조회 세대에 묶었다. 같은 단계의 재선택은 유지한다. 다른 단계와 원복, 새로고침, 적용본 교체, 기존 편집으로 준비를 잠갔다 다시 풀면 다시 명시 클릭해야 한다. 이전 선택의 늦은 200/401은 후속 GET·준비 결과·인증 콜백에 반영되지 않는다. WorkspacePage.tsx와 tests/unit/UI13/mobile-workspace-panes.test.ts만 보완했고 기존 외부 버퍼 연결은 유지했다.
+
+담당자 GREEN 3통과(507ee5), 최종 직접·인접 15통과 및 실패·건너뜀0(a45d35), 루트 타입 exit0(abd981), 공백 검사 exit0(b090a3). Main 변경 판독 및 최종 지문 2건 일치(08f63a), 명시 재선택·교체 2건 통과(36aa71). 쓰기 반환 및 시험 핸들 0. 실제 배포 화면·DB·Agent 실행과 전체 UI04 인수는 미검증이다. 복구는 이 준비 범위 변경과 추가 시험에 한정한다.

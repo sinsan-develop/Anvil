@@ -144,6 +144,50 @@ test('mobilePane 실제 App 승인 상세는 기존 exact 경로이고 앞3 선�
 });
 
 async function selectSecondStage(root:MemoryNode){await click(button(root,'적용 절차 조회'));await wait(()=>all(root).some(n=>n.getAttribute('aria-label')==='절차 정의: 둘째 단계'));await click(labelled(root,'절차 정의: 둘째 단계'));await settle();}
+async function documentPreparationFixture(){
+ let currentProject=pid,currentRef={...applicationRef},available=true,prepared=0,lost=0;
+ let held:Promise<Response>|null=null;const requests:string[]=[];
+ const client=new ui.ApiClient(async(input:any,init:any)=>{
+  assert.equal(init?.method??'GET','GET');const path=String(input);requests.push(path);
+  if(path===`/api/v1/projects/${currentProject}`){if(held){const p=held;held=null;return p;}return Response.json({...project,id:currentProject,currentMethodologyRef:currentRef,participation:'OWNER',controlState:{actorId:uid,clientId:cid,generation:1,status:'HELD'}});}
+  if(path.endsWith('/methodology-application'))return Response.json({projectId:currentProject,applicationRef:currentRef,snapshot,observedAt:at,executionState:'NOT_CONNECTED'});
+  if(path.includes('/conversations?'))return Response.json({items:[],hasMore:false,nextCursor:null,observedAt:at});
+  return Response.json({code:'SYNTHETIC_NOT_SELECTED'},{status:403});
+ });
+ const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ const render=async()=>{await ui.React.act(async()=>root.render(ui.React.createElement(ui.WorkspacePage,{client,projectId:currentProject,session,assignmentBuffer:null,onAssignmentChange:()=>assert.fail('임무 변경 금지'),conversationBuffer:null,onConversationChange:()=>assert.fail('대화 변경 금지'),onAuthenticationLost:()=>lost++,documentPreparation:{available,onPrepared:()=>prepared++}})));await settle();};
+ await render();await wait(()=>container.textContent.includes(project.name));
+ const select=async()=>{await click(button(container,'적용 절차 조회'));await wait(()=>all(container).some(n=>n.getAttribute('aria-label')==='절차 정의: 첫 단계'));};await select();
+ return{container,requests,select,render,hold(p:Promise<Response>){held=p;},async changeProject(){currentProject=id(91);await render();await wait(()=>container.textContent.includes(project.name));await select();},nextApplication(){currentRef={...currentRef,version:currentRef.version+1};},async setAvailable(value:boolean){available=value;await render();},get prepared(){return prepared;},get lost(){return lost;},async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+}
+const preparationVisible=(root:MemoryNode)=>all(root).some(n=>n.getAttribute('aria-label')==='방법론 산출문서 초안 준비');
+test('단계 문서 준비는 같은 단계 재선택만 유지하고 A→B→A에는 명시 클릭이 필요하다',async()=>{
+ const f=await documentPreparationFixture();try{
+  assert.equal(preparationVisible(f.container),false);await click(button(f.container,'선택 단계 산출문서 작성'));assert.equal(preparationVisible(f.container),true);
+  const originalForm=labelled(f.container,'방법론 산출문서 초안 준비');await click(labelled(f.container,'절차 정의: 첫 단계'));assert.equal(labelled(f.container,'방법론 산출문서 초안 준비')===originalForm,true);
+  await click(labelled(f.container,'절차 정의: 둘째 단계'));assert.equal(preparationVisible(f.container),false,'B 폼 자동 열기 금지');
+  await click(labelled(f.container,'절차 정의: 첫 단계'));assert.equal(preparationVisible(f.container),false,'A 복귀도 다시 클릭 필요');
+  await click(button(f.container,'선택 단계 산출문서 작성'));assert.equal(preparationVisible(f.container),true);await click(button(f.container,'단계 문서 준비 닫기'));assert.equal(preparationVisible(f.container),false);assert.equal(f.prepared,0);
+ }finally{await f.close();}
+});
+test('단계 문서 준비는 절차·원본 새로고침과 적용 세대·프로젝트 교체 후 자동 재개하지 않는다',async()=>{
+ const f=await documentPreparationFixture();try{
+  await click(button(f.container,'선택 단계 산출문서 작성'));await click(button(f.container,'적용 절차 새로고침'));await wait(()=>all(f.container).some(n=>n.getAttribute('aria-label')==='절차 정의: 첫 단계'));assert.equal(preparationVisible(f.container),false);
+  for(const next of [false,true]){await click(button(f.container,'선택 단계 산출문서 작성'));if(next)f.nextApplication();await click(button(f.container,'프로젝트 원본 새로고침'));await wait(()=>all(f.container).some(n=>n.tagName==='BUTTON'&&n.textContent==='적용 절차 조회'));await f.select();assert.equal(preparationVisible(f.container),false);}
+  await click(button(f.container,'선택 단계 산출문서 작성'));await f.changeProject();assert.equal(preparationVisible(f.container),false);
+  await click(button(f.container,'선택 단계 산출문서 작성'));await f.setAvailable(false);assert.equal(button(f.container,'선택 단계 산출문서 작성').disabled,true);await f.setAvailable(true);assert.equal(preparationVisible(f.container),false,'준비 가능 상태로 복귀해도 자동 열기 금지');assert.equal(f.prepared,0);
+ }finally{await f.close();}
+});
+test('이전 단계 준비 조회의 늦은 응답은 새 단계 폼·외부 버퍼·인증에 반영하지 않는다',async()=>{
+ for(const status of [200,401]){
+  const f=await documentPreparationFixture();try{
+   await click(button(f.container,'선택 단계 산출문서 작성'));let resolve!:(r:Response)=>void;f.hold(new Promise(r=>{resolve=r;}));
+   await click(button(f.container,'적용 단계의 산출문서 조회'));await click(labelled(f.container,'절차 정의: 둘째 단계'));
+   const before=f.requests.length;await ui.React.act(async()=>resolve(status===401?Response.json({code:'AUTH_REQUIRED'},{status}):Response.json({id:pid,currentMethodologyRef:applicationRef})));await settle();
+   assert.equal(preparationVisible(f.container),false);assert.equal(f.requests.length,before,'이전 준비의 후속 조회 금지');assert.equal(f.prepared,0);assert.equal(f.lost,0);
+  }finally{await f.close();}
+ }
+});
 const unhandled:unknown[]=[];const onUnhandled=(e:unknown)=>unhandled.push(e);before(()=>process.on('unhandledRejection',onUnhandled));after(()=>{process.off('unhandledRejection',onUnhandled);assert.deepEqual(unhandled,[]);assert.equal(document.body.childNodes.length,0,'소유 React container 회수');for(const listeners of events.values())assert.equal(listeners.length,0,'App global listener 회수');});
 
 test('mobilePane 실제 anchor는 modifier·중간버튼·이미취소된 click을 가로채지 않고 Enter click은 전환한다',async()=>{

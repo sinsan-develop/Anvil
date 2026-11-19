@@ -22,9 +22,15 @@ export function WorkspacePage({nodeDecisions,mobilePane,providedHumanReportRef, 
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [revision, setRevision] = useState(0);
   const [selectedStage, setSelectedStage] = useState<WorkspaceStageSelection | null>(null);
-  const [preparingDocument,setPreparingDocument]=useState(false);
+  const [preparingDocument,setPreparingDocument]=useState<string|null>(null);
+  const preparationKey=project?.currentMethodologyRef&&selectedStage?JSON.stringify([projectId,project.currentMethodologyRef.id,project.currentMethodologyRef.version,project.currentMethodologyRef.contentHash,selectedStage.applicationId,selectedStage.nodeId,revision]):null;
+  function selectStage(value:WorkspaceStageSelection|null){
+    if(!value||value.applicationId!==selectedStage?.applicationId||value.nodeId!==selectedStage?.nodeId)setPreparingDocument(null);
+    setSelectedStage(value);
+  }
+  useEffect(()=>{if(!documentPreparation?.available)setPreparingDocument(null);},[documentPreparation?.available]);
   useEffect(() => {
-    let current = true; setPending(true); setError(null); setProject(null); setSelectedStage(null);
+    let current = true; setPending(true); setError(null); setProject(null); setSelectedStage(null); setPreparingDocument(null);
     readWorkspaceProject(client, projectId).then(value => { if (current) setProject(value); }).catch((cause: unknown) => {
       if (!current) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
       if (failure.status === 401) onAuthenticationLost();
@@ -39,7 +45,7 @@ export function WorkspacePage({nodeDecisions,mobilePane,providedHumanReportRef, 
       <div className="project-workspace">
         <section className="status-card" aria-label="개발 절차" hidden={mobilePane!==undefined&&mobilePane!=='steps'}><h3>개발 절차</h3>
           {project.currentMethodologyRef ? <><p>고정 적용 참조 · 세대 {project.currentMethodologyRef.version}</p><p className="meta">{project.currentMethodologyRef.id}<br />{project.currentMethodologyRef.contentHash}</p></> : <p>확인된 방법론 적용본 없음</p>}
-          <WorkspaceMethodology key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash].join(':')} client={client} projectId={projectId} expectedRef={project.currentMethodologyRef} onAuthenticationLost={onAuthenticationLost} onStageChange={setSelectedStage} />
+          <WorkspaceMethodology key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash].join(':')} client={client} projectId={projectId} expectedRef={project.currentMethodologyRef} onAuthenticationLost={onAuthenticationLost} onStageChange={selectStage} />
           {nodeDecisions&&selectedStage&&project.currentMethodologyRef&&selectedStage.applicationId===project.currentMethodologyRef.id?<NodeDecisionPanel key={JSON.stringify([projectId,session.user.id,session.clientId,project.currentMethodologyRef,selectedStage.nodeId,project.controlState.generation])} client={client} projectId={projectId} session={session} applicationRef={project.currentMethodologyRef} nodeId={selectedStage.nodeId} participation={project.participation} controlState={project.controlState} storage={nodeDecisions} onAuthenticationLost={onAuthenticationLost}/>:null}
           <a href={routeHref('methodologies', projectId)}>방법론 원본·검토 열기</a><p className="meta">정의 조회와 실제 단계 수행은 별개입니다. 책임 세션·단계별 실제 상태는 아직 미연결입니다.</p>
         </section>
@@ -66,7 +72,7 @@ export function WorkspacePage({nodeDecisions,mobilePane,providedHumanReportRef, 
             <p className="meta">사용자가 저장한 위치 설명이며 파일 접근·검증·실행 권한이 아닙니다.</p>
           </details> : <p>기존 소스 사용자 선언 있음 · 원문은 소유자에게만 표시됩니다.</p> : <p className="meta">빈 프로젝트로 생성됨 · 기존 소스 선언 없음</p>}
           <WorkspaceDocuments key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash, selectedStage?.applicationId, selectedStage?.nodeId].join(':')} client={client} projectId={projectId} selectedStage={selectedStage} onAuthenticationLost={onAuthenticationLost} />
-          {selectedStage&&project.currentMethodologyRef&&documentPreparation?<section aria-label="선택 단계 문서 작성"><p>선택 단계: {selectedStage.nodeName} · 별도 저장 전 서버 문서를 만들지 않습니다.</p><button type="button" disabled={!documentPreparation.available||project.participation!=='OWNER'||project.controlState.status!=='HELD'||project.controlState.actorId!==session.user.id||project.controlState.clientId!==session.clientId} onClick={()=>setPreparingDocument(true)}>선택 단계 산출문서 작성</button>{!documentPreparation.available?<p>기존 문서 편집·검토·확정 입력을 보존했습니다. 문서 화면에서 해당 작업을 마친 뒤 새 초안을 준비하세요.</p>:null}{preparingDocument&&documentPreparation.available?<NewStageDocumentForm key={JSON.stringify([projectId,session.user.id,session.clientId,project.currentMethodologyRef,selectedStage.nodeId])} client={client} projectId={projectId} session={session} scope={{applicationRef:project.currentMethodologyRef,nodeId:selectedStage.nodeId}} backLabel="단계 문서 준비 닫기" onPrepared={documentPreparation.onPrepared} onBack={()=>setPreparingDocument(false)} onAuthenticationLost={onAuthenticationLost}/>:null}</section>:null}
+          {selectedStage&&project.currentMethodologyRef&&documentPreparation?<section aria-label="선택 단계 문서 작성"><p>선택 단계: {selectedStage.nodeName} · 별도 저장 전 서버 문서를 만들지 않습니다.</p><button type="button" disabled={!documentPreparation.available||project.participation!=='OWNER'||project.controlState.status!=='HELD'||project.controlState.actorId!==session.user.id||project.controlState.clientId!==session.clientId} onClick={()=>setPreparingDocument(preparationKey)}>선택 단계 산출문서 작성</button>{!documentPreparation.available?<p>기존 문서 편집·검토·확정 입력을 보존했습니다. 문서 화면에서 해당 작업을 마친 뒤 새 초안을 준비하세요.</p>:null}{preparationKey!==null&&preparingDocument===preparationKey&&documentPreparation.available?<NewStageDocumentForm key={JSON.stringify([projectId,session.user.id,session.clientId,project.currentMethodologyRef,selectedStage.nodeId])} client={client} projectId={projectId} session={session} scope={{applicationRef:project.currentMethodologyRef,nodeId:selectedStage.nodeId}} backLabel="단계 문서 준비 닫기" onPrepared={documentPreparation.onPrepared} onBack={()=>setPreparingDocument(null)} onAuthenticationLost={onAuthenticationLost}/>:null}</section>:null}
           <ProjectConstitutionPanel key={['constitution',projectId,session.user.id,session.clientId].join(':')} client={client} projectId={projectId} history={false} onAuthenticationLost={onAuthenticationLost}/>
           <WorkspaceConversationSources key={['conversation-sources',projectId,session.user.id,session.clientId].join(':')} client={client} projectId={projectId} onAuthenticationLost={onAuthenticationLost}/>
           <p className="meta">상세 작성·검토는 자료 화면에서 진행합니다. 실제 실행·코드 변경·테스트 결과는 아직 연결되지 않았습니다.</p></section>
