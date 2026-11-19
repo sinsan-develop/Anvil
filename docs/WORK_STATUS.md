@@ -20971,3 +20971,9 @@ RED ff56ab 신규 모듈 부재 6실패 뒤 담당자 직접6·인접7 통과(c9
 기준 502e3171. developer_primary가 신규 `scripts/qa-ix01-subnet-observation-payload.ts`와 집중 시험을 추가했다. 고정 읽기 요청, 도구·daemon 및 ID 확인 계약, 허용 필드 추출, wall·monotonic 60초와 개별 10초의 반환 검사, 누락·불명에서 후속 호출 차단을 검산한다. `ip`는 전체 테이블 상세 출력에서 명시된 table과 목적지만 받고, Docker는 ID·IPAM으로 제한된 출력만 받는다. 실제 실행기·원 자식 감독·도구 신원 보장은 외부 선행 조건이다. 상위 공개 근거는 [iproute2 출력 소스](https://github.com/iproute2/iproute2/blob/main/ip/iproute.c)와 [Docker 필드 제한 출력](https://docs.docker.com/reference/cli/docker/network/inspect/)이다. 복구는 신규 두 파일 단위다.
 
 RED 43f748 모듈 부재 4실패와 정상 빈 목록 938bfb 1실패를 보완해 담당자 5통과·타입0(55d1a4/b655b4). Main 직접 5통과·실패/건너뜀0(170991), 타입0 및 두 지문 일치(57a4b2)를 확인했다. f9290ca3 판정기와 90127b24 승인 요청 범위는 유지한다. 실제 도구·원 자식·데이터 투영·예약 및 실행은 미검증이며 WSL·Docker·보존 자원 접근 0이다.
+
+## IX01 대역 관측의 호스트 어댑터 합성 검수
+
+기준 d110178c. developer_primary가 신규 `scripts/qa-ix01-subnet-observation-host.ts`와 `tests/unit/IX01/subnet-observation-host.test.ts`를 구현했다. 지정 Node·Docker 지문과 호출 입력의 별도 ip 지문, UID·호스트 및 도구·소켓 신원을 대조한 뒤 고정 읽기 명령만 전달한다. 명령별 10초와 전체 60초를 검사하며 거절·불명과 출력 오류에서는 후속 명령을 막는다. SSH 진입점과 단회 승인 결박은 별도 감독의 책임이다. 동기 OS I/O 종료의 절대 한도 및 실제 WSL 도구 호환성은 확인하지 않았다.
+
+초기 RED d3517b는 신규 모듈 부재였다. 담당자 직접·인접 9통과(8a157b), Main 직접 4통과·실패/건너뜀0(7cac9e), 타입 exit0(03702e), 두 최종 지문 일치(cd6151)를 확인했다. 복구 단위는 신규 두 파일과 이 현황 기록이다. 실제 WSL/SSH·Docker·보존 자원 조회 0이다. 기존 읽기 관측 승인 요청 범위는 유지하며, 실제 주소 후보·망 연결과 TC01 여정은 미검증이다.
