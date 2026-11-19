@@ -10,7 +10,7 @@ import {cloneV1,recordV1,refV1,type RuntimeRefV1 as Ref} from '../../../contract
 import {boundedSdkObject,maxSdkObjectBytes,sdkOpaqueId,supportedSdkUser} from '../adapters/secondary/schemas.ts';
 import {copyNormalWorkerStart} from '../adapters/secondary/normal-start-wire.ts';
 import {takeNormalFirstStart,type NormalStartWire} from './normal-start-coordinator.ts';
-import {originalNormalLiveDispatch,type NormalDispatchClaim,type NormalInstructionDriverInput} from './normal-instruction-coordinator.ts';
+import {originalNormalLiveDispatch,takeNormalFirstPermitSource,type NormalDispatchClaim,type NormalInstructionDriverInput} from './normal-instruction-coordinator.ts';
 import {NormalSdkSessionOutput} from './normal-sdk-session-output.ts';
 import {bindProfileOutput} from './normal-owned-spool-profile.ts';
 
@@ -38,6 +38,15 @@ type InputOwner={wire:object;lease:Lease;parent:LiveSendParent;scope:Scope;sid:s
 const inputOwners=new WeakMap<NormalStartWire,InputOwner>();
 const issuedHandles=new WeakSet<object>();
 const leases=new WeakMap<NormalStartWire,Lease>();
+type FirstPermitHandoff={startEnvelope:Parent['start']['envelope'];sendEnvelope:NormalInstructionDriverInput['envelope'];
+ grantRef:Ref;startReadyRef:Ref;localAttemptRef:Ref;dispatchAttemptRef:Ref;permit:NormalInstructionDriverInput['permit'];proofResultRef:Ref;
+ scope:Scope;executionAuthority:NonNullable<ReturnType<typeof takeNormalFirstPermitSource>>};
+const firstPermitHandoffs=new WeakMap<object,{source:NormalFirstSendSource;value:FirstPermitHandoff|null;check():void}>();
+/** 원 create 호출 중 한 번만 읽는 메모리 인계. native는 원 packet/원장/설정을 별도로 재검산해야 한다. */
+export function takeNormalFirstPermitHandoff(request:object,source:NormalFirstSendSource):FirstPermitHandoff|null{
+ const saved=firstPermitHandoffs.get(request);if(!saved||saved.source!==source)return fail();
+ saved.check();firstPermitHandoffs.delete(request);return saved.value===null?null:cloneV1(saved.value);
+}
 const normalizeNext=NormalSdkSessionOutput.prototype.next,consumeInit=NormalSdkSessionOutput.prototype.consumeInit;
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
 const fail=():never=>{throw Error('NORMAL_FIRST_SEND_UNKNOWN');};
@@ -54,12 +63,13 @@ function native<T>(p:Promise<T>){if(!isPromise(p)||isProxy(p))return fail();retu
 function queryIterator(query:Query):Query[typeof Symbol.asyncIterator]{
  for(let object:object|null=query;object;object=Object.getPrototypeOf(object)){
   if(isProxy(object))return fail();const d=Object.getOwnPropertyDescriptor(object,Symbol.asyncIterator);
-  if(d)return 'value' in d&&typeof d.value==='function'&&!isProxy(d.value)?d.value:fail();
+  if(d)return 'value' in d&&typeof d.value==='function'?d.value:fail();
  }
  return fail();
 }
 export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDispatchClaim,source:NormalFirstSendSource,signal:AbortSignal,wire:object,port?:LiveInputPort):Promise<FirstSendCompletion>{
  const parent=takeNormalFirstStart(worker,claim);
+ const firstPermit=takeNormalFirstPermitSource(claim,wire);
  const keys=source&&!isProxy(source)&&Object.hasOwn(source,'stop')?[...sourceKeys,'stop']:sourceKeys;
  if(leases.has(worker)||!shape(source,keys))return fail();
  const lease:Lease={state:'PENDING',life:new AbortController(),closeStarted:false};leases.set(worker,lease);
@@ -75,9 +85,10 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
   registrationRef:e.executorRegistrationRef,profileRef:pinned.profileRef,assignmentRef:pinned.assignmentRef,slotRef:pinned.slotRef,grantRef:parent.grantRef,
   startReadyRef:parent.startReadyRef,dispatchAttemptRef:input.dispatchAttemptRef,sessionBindingRef:e.payload.sessionBindingRef,plannedSidDigest:digest(plannedSid)});
  const scopeDigest=digest(scope);
- let expiresAt=pinned.expiresAt,last=-Infinity,monoEnd=Infinity,readyToCommit=false;
+ let expiresAt=pinned.expiresAt,last=-Infinity,monoEnd=Infinity,readyToCommit=false,firstRequest:object|undefined;
  let ownerTimer:ReturnType<typeof setTimeout>|undefined;
  const abandon=()=>{
+  if(firstRequest)firstPermitHandoffs.delete(firstRequest);
   lease.state='UNKNOWN';lease.life.abort();clearTimeout(ownerTimer);pinned.ownerSignal.removeEventListener('abort',abandon);
   if(lease.query&&!lease.closeStarted){lease.closeStarted=true;try{void native(pinned.close.call(source,lease.query)).catch(()=>undefined);}catch{}}
  };
@@ -112,11 +123,21 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
   }});
   const send={...cloneV1({...input,instruction:null}),instruction:{...cloneV1({...input.instruction,bytes:null}),bytes:new Uint8Array(input.instruction.bytes)}};
   if(NormalSdkSessionOutput.prototype.next!==normalizeNext||NormalSdkSessionOutput.prototype.consumeInit!==consumeInit)return fail();
-  const created=native(pinned.create.call(source,{start:copyNormalWorkerStart(parent.start),send,scope:cloneV1(scope),plannedSid},prompt,lease.life.signal)).then(query=>{
+  const request={start:copyNormalWorkerStart(parent.start),send,scope:cloneV1(scope),plannedSid};
+  firstRequest=request;
+  firstPermitHandoffs.set(request,{source,check:guard,value:firstPermit?cloneV1({startEnvelope:parent.start.envelope,sendEnvelope:input.envelope,
+   grantRef:parent.grantRef,startReadyRef:parent.startReadyRef,localAttemptRef:input.localAttemptRef,dispatchAttemptRef:input.dispatchAttemptRef,
+   permit:input.permit,proofResultRef:input.proofResultRef,scope,executionAuthority:firstPermit}):null});
+  let pending:Promise<Query>;
+  try{pending=native(pinned.create.call(source,request,prompt,lease.life.signal));}catch(error){firstPermitHandoffs.delete(request);throw error;}
+  const created=pending.finally(()=>firstPermitHandoffs.delete(request)).then(query=>{
    if(!query||typeof query!=='object'||isProxy(query)||issuedHandles.has(query))return fail();
+   // 일반 영수증/accessor는 Query가 아니다. callable data descriptor를 확인한 뒤에만 소유한다.
+   const iterate=queryIterator(query);
    issuedHandles.add(query);lease.raw=query;lease.query=query;
-   if(lease.state==='UNKNOWN'){abandon();return fail();}
-   lease.iterate=queryIterator(query);return query;
+   // 원 Query의 callable Proxy는 실행하지 않되 생성한 자기 Query의 정리 책임은 유지한다.
+   if(lease.state==='UNKNOWN'||isProxy(iterate)){abandon();return fail();}
+   lease.iterate=iterate;return query;
   });
   const query=await Promise.race([created,interrupted]);arm();
   const interrupt=stop?interruptMethod(query):undefined;

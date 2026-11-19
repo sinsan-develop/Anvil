@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto';
+import {normalSendPermitRepresentation} from '../../../contracts/runtime/normal-send-permit-source-v1.ts';
 import {NormalObservationSpool,type NormalLocalObservation} from './normal-observation-spool.ts';
 import {isNormalInstructionWire,isNormalFirstSendWire,consumeNormalFirstSendResult,abandonNormalFirstSendResult,normalWireLiveParent} from '../adapters/secondary/normal-instruction-wire.ts';
 import type {FirstSendSummary,FirstSendCompletion,LiveSendCompletion,LiveSendParent} from './normal-first-send-owner.ts';
@@ -17,10 +18,19 @@ export interface NormalInstructionObservation{transport:'NORMAL_PROTECTED';respo
 export interface NormalInstructionWirePort{transport:'NORMAL_PROTECTED';send(capability:object,signal:AbortSignal):Promise<unknown>}
 export interface NormalInstructionDriverInput{envelope:Send;instruction:Awaited<ReturnType<NormalInstructionIntake['instruction']>>;localAttemptRef:Ref;dispatchAttemptRef:Ref;permit:NonNullable<NormalInstructionPreparationResult['permit']>;proofResultRef:Ref;actualExecutionVerified:false;executionAuthorized:false}
 export interface NormalInstructionDispatchResult{transport:'NORMAL_PROTECTED';state:'RESPONSE_RECORDED'|'FIRST_SEND_INPUT_AND_INIT_RECORDED'|'LIVE_SEND_INPUT_YIELDED'|'UNKNOWN';recordRef:Ref;responseRef:Ref|null;processRef:Ref|null;actualExecutionVerified:false;executionAuthorized:false;dispatchPerformed:false}
-type Fresh={material:NormalInstructionDriverInput['instruction'];end:number;monoEnd:number;current:unknown};
-type Ticket={parent?:LiveSendParent;grantRef:Ref;input:NormalInstructionDriverInput;signal:AbortSignal;active:boolean;claimed:boolean;verify:()=>Promise<void>;remaining:()=>number};
+type FirstPermit={wire:NormalInstructionWirePort;authority:NonNullable<NormalPermitResult['executionAuthority']>};
+type Fresh={material:NormalInstructionDriverInput['instruction'];end:number;monoEnd:number;current:unknown;firstPermit?:FirstPermit};
+type Ticket={parent?:LiveSendParent;firstPermit?:FirstPermit;grantRef:Ref;input:NormalInstructionDriverInput;signal:AbortSignal;active:boolean;claimed:boolean;verify:()=>Promise<void>;remaining:()=>number};
 const claimedDispatches=new WeakMap<object,Ticket>();
+const selectedFirstWires=new WeakSet<object>();
 export type NormalDispatchClaim=ReturnType<typeof claimNormalInstructionDispatch>;
+/** 원 claim 내부의 응답만 소비한다. 보호 응답은 실행 권위나 native 현재성의 대체물이 아니다. */
+export function takeNormalFirstPermitSource(claim:NormalDispatchClaim,wire:object){
+ const t=claimedDispatches.get(claim);if(!t||!t.active||!t.claimed||t.signal.aborted||t.parent)fail('NORMAL_INSTRUCTION_FIRST_SOURCE_INVALID');
+ const saved=t.firstPermit;if(!saved)return null;
+ if(saved.wire!==wire||normalWireLiveParent(wire)||t.remaining()<=0)fail('NORMAL_INSTRUCTION_FIRST_SOURCE_INVALID');
+ t.firstPermit=undefined;return cloneV1(saved.authority);
+}
 export function originalNormalDispatchGrant(claim:NormalDispatchClaim){
  const ticket=claimedDispatches.get(claim);return ticket?.active&&ticket.claimed&&!ticket.signal.aborted?cloneV1(ticket.grantRef):null;
 }
@@ -45,7 +55,14 @@ const hash=(v:unknown)=>contentHash(canonicalJson(v)),same=(a:unknown,b:unknown)
 function fail(code='NORMAL_INSTRUCTION_ATTEMPT_INVALID'):never{throw Error(code);}
 /** prepare는 내구 허가 기록 조회를 유지한다. dispatch는 같은 owner의 새 결과를 명시 소비하며 SDK 성공/cursor 권한을 만들지 않는다. */
 export class NormalInstructionCoordinator{
- #p:Ports;#current:NormalStartCurrent['current'];#exclusive:NormalInstructionStore['exclusive'];#last=-Infinity;#busy=false;#unknown=false;#ready=new WeakMap<object,{envelope:Send;result:NormalInstructionPreparationResult;material:NormalInstructionDriverInput['instruction'];end:number;monoEnd:number;mintedMono:number;current:unknown}>();
+ #p:Ports;#current:NormalStartCurrent['current'];#exclusive:NormalInstructionStore['exclusive'];#last=-Infinity;#busy=false;#unknown=false;#ready=new WeakMap<object,Fresh&{envelope:Send;result:NormalInstructionPreparationResult;mintedMono:number}>();
+ #firstSelections=new WeakMap<object,{wire:NormalInstructionWirePort;signal:AbortSignal}>();
+ /** 자동 polling/일반 SEND에는 사용하지 않는다. 동일 coordinator·FIRST wire의 단회 응답 선택이다. */
+ selectFirstPermit(wire:NormalInstructionWirePort,signal:AbortSignal):object{
+  if(this.#busy||this.#unknown||!(signal instanceof AbortSignal)||signal.aborted||!isNormalInstructionWire(wire)||
+   !isNormalFirstSendWire(wire)||normalWireLiveParent(wire)||selectedFirstWires.has(wire))fail('NORMAL_INSTRUCTION_FIRST_SELECTION_INVALID');
+  this.#ports();const token=Object.freeze({});selectedFirstWires.add(wire);this.#firstSelections.set(token,{wire,signal});return token;
+ }
  constructor(p:Ports){
   if(!p||isProxy(p)||!recordV1(p,['intake','store','post','current','grantRef','clock','timeoutMs'])||isProxy(p.intake)||Object.getPrototypeOf(p.intake)!==NormalInstructionIntake.prototype||
    isProxy(p.post)||Object.getPrototypeOf(p.post)!==NormalProtectedPostClient.prototype||!p.store||isProxy(p.store)||p.store.transport!=='NORMAL_PROTECTED'||typeof p.store.exclusive!=='function'||
@@ -185,8 +202,14 @@ export class NormalInstructionCoordinator{
   if(first&&!same(source.inputs.map(v=>v.type),['RECEIVED','PREPARED','PERMIT_RECORDED']))fail();
   return{state:source.state,recordedRefs,...(first?{requiredAckRef:recordedRefs.at(-1)}:{}),executionAuthorized:false as const,dispatchPerformed:false as const,actualExecutionVerified:false as const};
  }
- async prepare(raw:unknown,signal:AbortSignal):Promise<NormalInstructionPreparationResult>{
+ async prepare(raw:unknown,signal:AbortSignal,firstSelection?:object):Promise<NormalInstructionPreparationResult>{
   if(this.#busy)fail('NORMAL_INSTRUCTION_BUSY');if(this.#unknown)fail('NORMAL_INSTRUCTION_UNKNOWN');if(!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_INSTRUCTION_CANCELLED');
+  let firstWire:NormalInstructionWirePort|undefined;
+  if(firstSelection!==undefined){
+   const selected=this.#firstSelections.get(firstSelection);this.#firstSelections.delete(firstSelection);
+   if(!selected||selected.signal!==signal||!isNormalInstructionWire(selected.wire)||!isNormalFirstSendWire(selected.wire)||normalWireLiveParent(selected.wire))fail('NORMAL_INSTRUCTION_FIRST_SELECTION_INVALID');
+   firstWire=selected.wire;
+  }
   this.#ports();const captured=captureInstructionInput(raw),e=readDispatchEnvelopeV1(captured,Date.parse((captured as any)?.issuedAt));if(e.operation!=='SEND_INSTRUCTION'||Date.parse(e.issuedAt)>this.#now())fail();
   const prepareMono=performance.now(),prepareWall=this.#now();this.#busy=true;let attempted=false,eligibility:Fresh|null=null;
   try{
@@ -209,19 +232,32 @@ export class NormalInstructionCoordinator{
      const refs=[...new Map(e.context.sourceScopes.map(s=>[canonicalJson(s.observationRef),s.observationRef])).values()],now=this.#now();
      if(!recordV1(v,['transport','key','envelopeHash','grantRef','localAttemptRef','sourceObservationRefs','osOwnershipRef','checkedAt','expiresAt'])||v.transport!=='NORMAL_PROTECTED'||!same(v.key,receiptKeyV1(e))||v.envelopeHash!==e.envelopeHash||!same(v.grantRef,this.#p.grantRef)||!same(v.localAttemptRef,attempt.ref)||!same(v.sourceObservationRefs,refs)||!refV1(v.osOwnershipRef)||!isoV1(v.checkedAt)||!isoV1(v.expiresAt)||Date.parse(v.checkedAt)>now||now-Date.parse(v.checkedAt)>30000||Date.parse(v.expiresAt)<=now||Date.parse(v.expiresAt)>Date.parse(v.checkedAt)+30000)fail('NORMAL_INSTRUCTION_CURRENT_INVALID');
      end=Math.min(end,Date.parse(v.expiresAt));
-     const packet=await this.#bounded(s=>this.#p.post.preparePermit(e.commandId,{envelopeHash:e.envelopeHash,localAttemptRef:attempt.ref,sourceObservationRefs:v.sourceObservationRefs,osOwnershipRef:v.osOwnershipRef},s),signal,end);
+     const request={envelopeHash:e.envelopeHash,localAttemptRef:attempt.ref,sourceObservationRefs:v.sourceObservationRefs,osOwnershipRef:v.osOwnershipRef,...(firstWire?{representation:normalSendPermitRepresentation}:{})};
+     const packet=await this.#bounded(s=>this.#p.post.preparePermit(e.commandId,request,s),signal,end);
      const reply=await this.#bounded(s=>this.#p.post.send(packet,s),signal,end) as NormalPermitResult;
-     if(!recordV1(reply,['transport','proofResultRef','permit','cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed'])||reply.transport!=='NORMAL_PROTECTED'||!refV1(reply.proofResultRef)||reply.cacheControl!=='no-store'||reply.nonceConsumed!==true||reply.executionAuthorized!==true||reply.dispatchPerformed!==false)fail('NORMAL_INSTRUCTION_PERMIT_INVALID');
+     if(!recordV1(reply,['transport','proofResultRef','permit','cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed',...(firstWire?['executionAuthority']:[])])||reply.transport!=='NORMAL_PROTECTED'||!refV1(reply.proofResultRef)||reply.cacheControl!=='no-store'||reply.nonceConsumed!==true||reply.executionAuthorized!==true||reply.dispatchPerformed!==false)fail('NORMAL_INSTRUCTION_PERMIT_INVALID');
      this.#permit(reply.permit,e);end=Math.min(end,Date.parse(reply.permit.expiresAt));
+     let firstPermit:FirstPermit|undefined;
+     if(firstWire){
+      // #ports가 고정한 원 post.send만 이 지점에 온다. 그 내부 private scope/원 signed request와
+      // 전체 snapshot hash 검산을 재사용하며, 응답 자체를 expected scope의 새 권위로 삼지 않는다.
+      const authority=cloneV1(reply.executionAuthority!),snapshot=(authority as any).permitSnapshot,scope=snapshot.scope,fact=snapshot.currentFact,intent=fact.intent;
+      // coordinator가 실제 보유한 원 envelope/grant/세션과 독립 교차 검산한다.
+      if(!same(scope.grantRef,this.#p.grantRef)||scope.projectId!==e.context.projectId||scope.executionId!==e.context.executionId||scope.executionGeneration!==e.context.executionGeneration||
+       !same(fact.agentSession.sessionRef,e.payload.sessionBindingRef)||!same(fact.registration.ref,e.executorRegistrationRef)||intent.assignmentRef.id!==e.context.assignmentId||
+       !same(intent.connectionRef,e.context.connectionRef)||!same(intent.environmentRef,e.context.environmentRef)||!same(intent.capabilityRef,e.context.capabilityRef)||
+       !same(intent.sourceScopes,e.context.sourceScopes)||!same(snapshot.request,request)||normalWireLiveParent(firstWire))fail('NORMAL_INSTRUCTION_FIRST_SOURCE_INVALID');
+      firstPermit={wire:firstWire,authority};
+     }
      const latest=await this.#p.intake.instruction(e);this.#ports();if(!same({...latest,bytes:null},{...material,bytes:null})||!Buffer.from(latest.bytes).equals(Buffer.from(material.bytes))||signal.aborted||this.#now()>=end)fail();
-     const saved=await append('PERMIT_RECORDED',reply.permit,reply.proofResultRef);this.#ports();if(signal.aborted||this.#now()>=end)fail();const {checkedAt:_,expiresAt:__,...currentBinding}=v;eligibility={material:latest,end,monoEnd:prepareMono+end-prepareWall,current:cloneV1(currentBinding)};return this.#result(e,saved);
+     const saved=await append('PERMIT_RECORDED',reply.permit,reply.proofResultRef);this.#ports();if(signal.aborted||this.#now()>=end)fail();const {checkedAt:_,expiresAt:__,...currentBinding}=v;eligibility={material:latest,end,monoEnd:prepareMono+end-prepareWall,current:cloneV1(currentBinding),firstPermit};return this.#result(e,saved);
     }catch{
      this.#unknown=true;const last=rows.at(-1);await append('UNKNOWN',last.snapshot.permit,last.snapshot.proofResultRef);return this.#result(e,rows.at(-1));
     }
    });
    // strict-close 실패이면 이 지점에 도달하지 않는다. 역사 조회는 eligibility를 설정하지 않는다.
    const fresh=eligibility as Fresh|null;
-   if(fresh&&!signal.aborted&&this.#now()<fresh.end&&performance.now()<fresh.monoEnd){this.#ports();this.#ready.set(result as object,{envelope:cloneV1(e),result:cloneV1(result) as NormalInstructionPreparationResult,material:copyInstruction(fresh.material),end:fresh.end,monoEnd:fresh.monoEnd,mintedMono:performance.now(),current:cloneV1(fresh.current)});}
+   if(fresh&&!signal.aborted&&this.#now()<fresh.end&&performance.now()<fresh.monoEnd){this.#ports();this.#ready.set(result as object,{envelope:cloneV1(e),result:cloneV1(result) as NormalInstructionPreparationResult,material:copyInstruction(fresh.material),end:fresh.end,monoEnd:fresh.monoEnd,mintedMono:performance.now(),current:cloneV1(fresh.current),firstPermit:fresh.firstPermit});}
    return result as NormalInstructionPreparationResult;
   }catch(error){if(attempted)this.#unknown=true;throw error;}finally{this.#busy=false;}
  }
@@ -232,6 +268,7 @@ export class NormalInstructionCoordinator{
   const e=readDispatchEnvelopeV1(captureInstructionInput(raw),this.#now());if(e.operation!=='SEND_INSTRUCTION'||!same(e,ready.envelope)||!same(captureInstructionInput(prepared),ready.result)||prepared.state!=='PERMIT_RECORDED'||!prepared.permit||!prepared.proofResultRef)fail('NORMAL_INSTRUCTION_DISPATCH_NOT_ELIGIBLE');
   prepared=cloneV1(ready.result);
   if(!isNormalInstructionWire(wire))fail('NORMAL_INSTRUCTION_WIRE_REQUIRED');
+  if(ready.firstPermit&&(ready.firstPermit.wire!==wire||!isNormalFirstSendWire(wire)||normalWireLiveParent(wire)))fail('NORMAL_INSTRUCTION_FIRST_SOURCE_INVALID');
   const send=wire.send,started=performance.now(),wall=this.#now();let end=Math.min(ready.end,Date.parse(e.expiresAt),Date.parse(prepared.permit!.expiresAt),wall+this.#p.timeoutMs,wall+ready.monoEnd-started),ticket:Ticket|undefined,lastTick=started;
   const live=()=>{this.#ports();const tick=performance.now();if(tick<lastTick)fail('NORMAL_INSTRUCTION_CLOCK_INVALID');lastTick=tick;if(!isNormalInstructionWire(wire)||wire.send!==send||wire.transport!=='NORMAL_PROTECTED'||signal.aborted||this.#now()>=end||performance.now()-started>=end-wall)fail('NORMAL_INSTRUCTION_DISPATCH_EXPIRED');};
   const verifyCurrent=async(attemptRef:Ref)=>{
@@ -267,7 +304,7 @@ export class NormalInstructionCoordinator{
     const issued=Object.freeze({});capability=issued;
     let value:unknown;
     try{value=await this.#bounded(async child=>{
-     ticket={...(parent?{parent:cloneV1(parent)}:{}),grantRef:cloneV1(this.#p.grantRef),input:{envelope:cloneV1(e),instruction:copyInstruction(ready.material),localAttemptRef:cloneV1(chain[0].ref),dispatchAttemptRef:cloneV1(chain[2].ref),permit:cloneV1(prepared.permit!),proofResultRef:cloneV1(prepared.proofResultRef!),actualExecutionVerified:false,executionAuthorized:false},signal:child,active:true,claimed:false,
+     ticket={...(parent?{parent:cloneV1(parent)}:{}),firstPermit:ready.firstPermit,grantRef:cloneV1(this.#p.grantRef),input:{envelope:cloneV1(e),instruction:copyInstruction(ready.material),localAttemptRef:cloneV1(chain[0].ref),dispatchAttemptRef:cloneV1(chain[2].ref),permit:cloneV1(prepared.permit!),proofResultRef:cloneV1(prepared.proofResultRef!),actualExecutionVerified:false,executionAuthorized:false},signal:child,active:true,claimed:false,
       verify:async()=>{if(child.aborted||!ticket?.active)fail();await verify();if(child.aborted||!ticket.active)fail();},remaining:()=>{checkParent();return Math.min(end-this.#now(),end-wall-(performance.now()-started));}};
      dispatchTickets.set(issued,ticket);return Reflect.apply(send,wire,[issued,child]);
     },signal,end);}catch(error){

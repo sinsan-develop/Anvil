@@ -7,6 +7,108 @@ import {normalInstructionPollingFixture} from '../FN08/normal-instruction-dispat
 
 const ref=()=>({id:randomUUID(),version:1,contentHash:'a'.repeat(64)});
 const digest=(x:unknown)=>contentHash(canonicalJson(x));
+async function readyFirst(f:Awaited<ReturnType<typeof firstSendFixture>>){
+ const {receiveNormalStart}=await import('../../../apps/connector/runtime/normal-start-intake.ts');
+ const {NormalStartCoordinator}=await import('../../../apps/connector/runtime/normal-start-coordinator.ts');
+ const options=f.options(),start=f.page.items[0]!;assert.ok(start.materials!==null);
+ await receiveNormalStart(f.get,options.start.intake,start,f.page.proofResultRef,f.signal);
+ assert.equal((await new NormalStartCoordinator(options.start).startPage(start,f.signal))?.state,'START_READY_RECORDED');
+ await f.receive();return f.make();
+}
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('C FIRST private handoff는 원 claim과 create 수명에만 전체 보호 자료를 단회 전달한다',async()=>{
+ const messages:unknown[]=[];
+ const f=await firstSendFixture('yield-first',{async provide(_query,input){for await(const value of input)messages.push(value);}}),owner:any=await import('../../../apps/connector/runtime/normal-first-send-owner.ts');
+ let seen:any,requestSaved:unknown;const create=f.source.create.bind(f.source);
+ f.source.create=async(request,prompt,signal)=>{
+  requestSaved=request;
+  assert.throws(()=>owner.takeNormalFirstPermitHandoff({...request},f.source));
+  assert.throws(()=>owner.takeNormalFirstPermitHandoff(request,{...f.source}));
+  seen=owner.takeNormalFirstPermitHandoff(request,f.source);
+  assert.throws(()=>owner.takeNormalFirstPermitHandoff(request,f.source));
+  assert.equal(Object.hasOwn(request,'executionAuthority'),false);
+  return create(request,prompt,signal);
+ };
+ try{
+  const c:any=await readyFirst(f),selection=c.selectFirstPermit(f.wire,f.signal);
+  assert.throws(()=>c.selectFirstPermit(f.wire,f.signal));
+  assert.throws(()=>f.make().selectFirstPermit(f.wire,f.signal));
+  const prepared=await c.prepare(f.item.envelope,f.signal,selection);assert.equal(prepared.state,'PERMIT_RECORDED');
+  assert.equal(Object.hasOwn(prepared,'executionAuthority'),false);
+  assert.equal((await c.dispatch(f.item.envelope,prepared,f.wire,f.signal)).state,'FIRST_SEND_INPUT_AND_INIT_RECORDED');
+  assert.equal(f.effects.create,1);assert.ok(seen);
+  assert.equal(digest(seen.executionAuthority.permitSnapshot),prepared.permit.ref.contentHash);
+  assert.equal(seen.sendEnvelope.envelopeHash,f.item.envelope.envelopeHash);
+  assert.equal(seen.startEnvelope.envelopeHash,f.page.items[0]!.envelope.envelopeHash);
+  assert.ok(canonicalJson(seen.permit)===canonicalJson(prepared.permit));
+  assert.equal(seen.executionAuthority.permitSnapshot.request.representation,'SEND_PERMIT_SOURCE_V1');
+  assert.throws(()=>owner.takeNormalFirstPermitHandoff(requestSaved,f.source));
+  const calls=f.calls.length;
+  assert.equal((await f.make().prepare(f.item.envelope,f.signal)).state,'FIRST_SEND_INPUT_AND_INIT_RECORDED');assert.equal(f.calls.length,calls);
+  for(const [,file] of f.fs.files)if(file.bytes)assert.equal(file.bytes.includes(Buffer.from('executionAuthority')),false);
+  await assert.rejects(c.prepare(f.item.envelope,f.signal,selection));
+  assert.throws(()=>f.make().selectFirstPermit(f.wire,f.signal));
+  const {prepareLiveFollowup}=await import('../FN08/normal-instruction-dispatch-fixture.ts');
+  const followup=await prepareLiveFollowup(f,'동일 Query 후속 입력');
+  assert.equal(Object.hasOwn(f.h.permits.at(-1)!.snapshot_json.request,'representation'),false);
+  assert.equal((await followup.c.dispatch(followup.item.envelope,followup.prepared,f.wire,f.signal)).state,'LIVE_SEND_INPUT_YIELDED');
+  assert.equal(messages.length,1);assert.equal(f.effects.create,1);
+  assert.throws(()=>owner.takeNormalFirstPermitHandoff(requestSaved,f.source));
+ }finally{f.authority.abort();await f.h.close();}
+});
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('C FIRST private handoff는 정상 해시의 다른 원 세션·연결 자료도 envelope와 다르면 거절한다',async()=>{
+ for(const field of ['session','connection']){
+  const f=await firstSendFixture();try{
+   const c=await readyFirst(f),selection=c.selectFirstPermit(f.wire,f.signal);
+   f.mode.mutatePermit=(reply:any)=>{
+    const snapshot=reply.executionAuthority.permitSnapshot,fact=snapshot.currentFact;
+    if(field==='session')fact.agentSession.sessionRef=ref();else fact.intent.connectionRef=ref();
+    const {checkedAt:_,expires:__,...binding}=fact;
+    snapshot.bindingHash=digest({scope:snapshot.scope,commandRef:snapshot.commandRef,authorizationReceiptRef:snapshot.authorizationReceiptRef,reservationRef:snapshot.reservationRef,fact:binding});
+    reply.permit.ref.contentHash=digest(snapshot);
+   };
+   assert.equal((await c.prepare(f.item.envelope,f.signal,selection)).state,'UNKNOWN');
+   assert.equal(f.effects.create,0);
+  }finally{f.authority.abort();await f.h.close();}
+ }
+});
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('C FIRST private handoff는 교차 wire·만료·취소 뒤 소비와 재dispatch를 막는다',async()=>{
+ for(const mode of ['wire','expiry','abort']){
+  const f=await firstSendFixture();try{
+   const c=await readyFirst(f),selection=c.selectFirstPermit(f.wire,f.signal);
+   const prepared=await c.prepare(f.item.envelope,f.signal,selection);assert.equal(prepared.state,'PERMIT_RECORDED');
+   if(mode==='wire'){
+    const {NormalInstructionWire}=await import('../../../apps/connector/adapters/secondary/normal-instruction-wire.ts');
+    const other=NormalInstructionWire.forFirstSend(f.worker,f.source);
+    await assert.rejects(c.dispatch(f.item.envelope,prepared,other,f.signal));
+    await assert.rejects(c.dispatch(f.item.envelope,prepared,f.wire,f.signal));assert.equal(f.effects.create,0);
+   }else if(mode==='expiry'){
+    f.mode.wall+=30001;await assert.rejects(c.dispatch(f.item.envelope,prepared,f.wire,f.signal));assert.equal(f.effects.create,0);
+   }else{
+    const owner=await import('../../../apps/connector/runtime/normal-first-send-owner.ts');
+    f.source.create=async(request)=>{f.authority.abort();assert.throws(()=>owner.takeNormalFirstPermitHandoff(request,f.source));throw Error('RAM_CANCELLED');};
+    assert.equal((await c.dispatch(f.item.envelope,prepared,f.wire,f.signal)).state,'UNKNOWN');
+   }
+  }finally{f.authority.abort();await f.h.close();}
+ }
+});
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('C FIRST private handoff의 복제·교차 coordinator 선택과 기본 호출은 보호 자료를 발급하지 않는다',async()=>{
+ const f=await firstSendFixture(),owner:any=await import('../../../apps/connector/runtime/normal-first-send-owner.ts');
+ const create=f.source.create.bind(f.source);
+ f.source.create=async(request,prompt,signal)=>{assert.equal(owner.takeNormalFirstPermitHandoff(request,f.source),null);return create(request,prompt,signal);};
+ try{
+  const c:any=await readyFirst(f),selection=c.selectFirstPermit(f.wire,f.signal),before=f.calls.length;
+  await assert.rejects(f.make().prepare(f.item.envelope,f.signal,{...selection} as any));
+  await assert.rejects(f.make().prepare(f.item.envelope,f.signal,selection));assert.equal(f.calls.length,before);
+  const plainCoordinator=f.make(),prepared=await plainCoordinator.prepare(f.item.envelope,f.signal);assert.equal(prepared.state,'PERMIT_RECORDED');
+  const permit=f.h.permits.at(-1)!;assert.equal(Object.hasOwn(permit.snapshot_json.request,'representation'),false);
+  assert.equal((await plainCoordinator.dispatch(f.item.envelope,prepared,f.wire,f.signal)).state,'FIRST_SEND_INPUT_AND_INIT_RECORDED');
+ }finally{f.authority.abort();await f.h.close();}
+ const plain=await firstSendFixture();try{assert.equal((await plain.run()).state,'LIMIT_REACHED');assert.equal(plain.effects.create,1);}finally{plain.authority.abort();await plain.h.close();}
+});
 export async function firstSendFixture(order='yield-first',followup?:{provide(query:AsyncIterable<unknown>,input:AsyncIterable<unknown>,signal:AbortSignal):Promise<void>}){
  const f=await normalInstructionPollingFixture(Infinity,{text:'원문 🙂\n두 번째 줄',mediaType:'text/plain;charset=utf-8'});
  const {NormalClaudeStartWire}=await import('../../../apps/connector/adapters/secondary/normal-start-wire.ts');

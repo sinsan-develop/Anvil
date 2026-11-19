@@ -21177,3 +21177,11 @@ C안의 서버·실행기 소비·미적용 SQL 소스 구간을 검수했다. �
 담당자 신규 파일 부재 정적 RED `173b47` 3실패. 인접 `ac73c2` 47통과/1실패는 기존 빌드 29경로와 옛 27 기대의 차이에서 비롯되어 기존 29와 새 child를 포함한 정확 30경로·중복/누락/대체를 검산하도록 보완했다. 최종 `f098da` 48통과·실패/건너뜀0, desktop 타입 `22caaa`와 공백 `21bf6a` 종료0. Main 최종 48 재확인 `d60216`, 제품/시험 SHA 4/4 `2a3b0e`, 쓰기 반환·활성 핸들0. 실제 C# 컴파일·OS child 및 SDK·키·DB·서비스는 미검증 또는 제외다. 기존 stage 상태는 부분 구현이다.
 
 PRESPAWN 후보 §6에 기본 서버 옵션 조립 미연결과 queue의 writer NONE→예약 RESERVED→START permit OWNED 경계, 원 준비 host와 SDK child의 소유·기한·제품 호출 단절을 추가했다. 후보 SHA `C35A3BBF4D718F9C30B0A2AD79D4C7CAFFE4E39DF9B8423F03FEEA2742B98221`, 여전히 미채택이다. 다음은 같은 FIRST claim에서 원 두 envelope와 C 자료를 원 slot 및 보호 설정에 결박하여 기존 native 감독의 소비 지점을 닫는 소스다. rollback 단위는 지정 4개 제품/시험 변경이다.
+
+## FN07 서명 SEND 근거의 원 FIRST 실행 시도 메모리 전달
+
+기준 `641b8a30`, 기존 developer_primary 단일 작성 후 반환. 원 coordinator와 같은 FIRST wire에 발급한 단회 선택을 기존 C의 서명 요청에 포함한다. 원 보호 POST의 private scope 검산 이후에도 exact grant/envelope·세션·등록·환경/연결·전체 sourceScopes를 대조한다. 보호 전체 응답과 두 envelope는 `#ready`·원 claim·같은 create 요청/source 수명에서만 한 번 전달한다. 저장한 attempt·permit 행, 기본 polling, 실제 제품의 자동 C 선택, LIVE·과거 읽기에는 추가하지 않는다. 제품 2파일과 기존 시험 1파일이다.
+
+기초 RED 2건(`53bbd9`) 후 새 기능 집중 4건 통과(`198ab2`). 인접 28통과/1실패(`a422c5`)의 generic receipt close1은 기준 원바이트에서도 동일했다(`4a8992`). callable async iterator의 descriptor를 검산한 뒤에만 Query를 소유하도록 보완하여 generic receipt는 UNKNOWN/close0, 실제 늦은 자기 Query는 close1, 다른 owner 별칭은 close0을 유지했다. 시험 기대를 변경하지 않았다.
+
+담당자 최종 직접·인접 29통과/실패·건너뜀0(`34d1e1`), 집중 5건과 기존 Proxy 1건, root 타입 `1012de`·공백 `a4aba9` 종료0. Main 동결 지문3/3 및 공백 `6ba567`, 새 전달/교차 검산과 기존 generic-ref 직접 5통과(`87d30e`). 활성 실행 핸들0. 새 인계는 실행 권위가 아니며 실제 native 독립 검산·원 child 소비·제품 START current·실제 C#/SDK/DB/OS/Agent는 미구현 또는 미검증이다. 복구는 이 3경로 변경만 되돌리고 기존 원장 형상·자료는 보존한다. 다음은 승인된 원 host/slot/정착 FIRST3에서 이 메모리 근거를 재검산하는 보호 수송 소스다.
