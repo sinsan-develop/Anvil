@@ -21419,3 +21419,9 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 담당 초기 부재 RED, fixture 및 타입 경로 오류는 성공 집계에서 제외했다. 직접 7통과 10a965, 좁은 타입 종료0 c030ab. Main 직접 7통과·실패/건너뜀0 509c43, 동결 지문 3/3·공백 e9222c. 검사 소스 SHA256 6847D094D436D246983A8EA353C0705541B4FD4C312F596AB78B5FF3EFEA8CC3, 시험 629E215BA036B323FCA1A25E042E13663468EE9DB8432BAC492D02EFD27FC9CB, 후보 문서 8BE417E412AAAA8489AAE618B2A69B52D75ED2BDF3A8DCE24A042D95EB2D805A. PowerShell은 -NoProfile의 원 parser와 메모리 포트만 검수했으며 실제 native 검사, Windows 대상·권한·키·SSH·WSL·IPAM·DB·서비스·Agent 접근0이다.
 
 후속은 고정 Windows-only 읽기 1회에 원 실행 host/승인/절대 기한·close를 결박하는 결정이다. 실제 alias/trust·원장 부모와 최소 env를 확인하기 전 기존 SSH 준비 완료나 두 단계 관측을 선언하지 않는다. 실제 관측 및 TC01 미완료. 롤백은 이번 신규 후보/소스/시험·기록 추가에 한정한다.
+
+## IX01 Windows 한정 읽기 실행 결박 확정
+
+기준 `5bf35ac6`, developer_primary 단일 작성·반환. 신규 IX01_WINDOWS_SSH_READINESS_EXECUTION_PLAN.md 16,425B SHA256 429A4F014641F043067758E3B907353E13D5C1D207D604CFE82BF321641ACB74. PMO가 기존 8역할의 로컬 읽기 범위를 대조했고 실행 권한은 발급하지 않았다. 소스 20,197B SHA 6847D094 및 exact Git blob에 결박하여 기존 PowerShell 한 원 호출에서 조사 함수만 1회 소비하도록 고정했다. 승인 ID/원 시도/절대 시간창 미기입으로 실행 미승인이다.
+
+담당 구문만 검사 982eba, Main parse 오류0·Invoke AST1·실행0 및 문서 지문 일치 92523a. 새 시험·실대상 조회0. 결과 수거는 원 handle 종료0·단일 UTF8 4KiB·유효 창·정확 입력과 함께 검증한다. 8역할의 metadata·hash와 제한 형상은 비교 자료이며 실제 alias/trust/env나 review CURRENT로 승격하지 않는다. 다음은 고정된 Windows-only 읽기 1회의 직접 결정이다. SSH·IPAM·원장 쓰기·키·DB·권한·서비스·Agent 실행0 및 TC01 미완료. 롤백은 문서·작업 기록 추가에 한정한다.
