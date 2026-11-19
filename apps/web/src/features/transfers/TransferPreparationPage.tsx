@@ -11,6 +11,7 @@ import {SessionDetailContent} from '../session-detail/SessionDetailPage.tsx';
 import {readTransferRecords,readTransferContext} from './transfer-read.ts';
 import {TransferContextOriginals} from './TransferContextOriginals.tsx';
 import {TransferTargetCandidates} from './TransferTargetCandidates.tsx';
+import {validRef} from '../connections/api.ts';
 type Records=NonNullable<Awaited<ReturnType<typeof readTransferRecords>>>;
 type Context=NonNullable<Awaited<ReturnType<typeof readTransferContext>>>;
 const labels={PURPOSE_REASON:'목적과 이유',RULES_SCOPE:'헌법과 범위',LATEST_INSTRUCTIONS:'최신 관련 지시',DECISIONS_REASON:'결정과 이유',CURRENT_POSITION:'현재 위치',ACTUAL_GAPS:'실제 공백',NEXT_ACTION:'다음 행동'};
@@ -46,6 +47,31 @@ export function TransferPreparationPage({client,projectId,assignmentRef,onAuthen
  </section>;
 }
 
+/** 보호 원문을 읽은 뒤 당시 선언만 표시한다. 누락을 빈 목록이나 완료로 해석하지 않는다. */
+function CheckpointStateSummary({state}:{state:unknown}){
+ const object=(v:unknown):Record<string,unknown>|null=>v!==null&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:null;
+ const text=(v:unknown):v is string=>typeof v==='string'&&!!v.trim()&&v.length<=20000&&v.isWellFormed();
+ const sequence=(v:unknown)=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0?String(v):'미확인';
+ const s=object(state),position=object(s?.currentPosition),ack=object(s?.lastServerAck);
+ function items(value:unknown){
+  if(!Array.isArray(value)||value.length>200)return <p>미확인 · 항목 형상 또는 기록 없음</p>;
+  const rows=value.map(object);
+  if(rows.some(v=>!v||!text(v.itemId)||!text(v.description)||!Array.isArray(v.evidenceRefs)||v.evidenceRefs.length>200||!v.evidenceRefs.every(validRef)))return <p>미확인 · 항목 형상 또는 기록 없음</p>;
+  return rows.length?<ul>{rows.map((v,i)=><li key={i}><span>{v!.itemId as string}</span> · {v!.description as string}</li>)}</ul>:<p>당시 기재 항목 없음 · 완료나 작업 없음 판정 아님</p>;
+ }
+ const forbidden=s?.forbiddenActions,decisions=s?.pendingDecisions;
+ const validDecisions=Array.isArray(decisions)&&decisions.length<=200&&decisions.every(v=>{const d=object(v);return d&&text(d.decisionId)&&text(d.question)&&text(d.reason)&&typeof d.requiredFrom==='string'&&['HUMAN','COORDINATOR','STAGE_OWNER'].includes(d.requiredFrom);});
+ return <section aria-label="기록 당시 작업 상태"><h4>기록 당시 작업 상태</h4><p>사람이 기록한 선언이며 현재 진행·완료 인수·중지·회수·재개 가능 여부는 미확인입니다.</p>
+  <h5>기록 당시 위치</h5><p>{text(position?.description)?position.description:'미확인 · 위치 기록 없음'}</p>
+  <h5>완료 주장 · 근거 인수 미확인</h5>{items(s?.completedItems)}
+  <h5>진행 중</h5>{items(s?.inProgress)}<h5>남은 일</h5>{items(s?.remaining)}
+  <h5>다음 행동</h5><p>{text(s?.nextAction)?s.nextAction:'미확인 · 다음 행동 기록 없음'}</p>
+  <p>당시 로컬 순번 {sequence(s?.lastLocalSequence)} · 서버 ACK 순번 {sequence(ack?.sequence)} · 현재 전달 완료 미확인</p>
+  <h5>판단 대기</h5>{validDecisions?<ul>{decisions.length?decisions.map((v,i)=><li key={i}>{v.decisionId} · {v.question} · {v.reason} · 요청 대상 {v.requiredFrom}</li>):<li>당시 기재 항목 없음 · 결정 완료 판정 아님</li>}</ul>:<p>미확인 · 판단 대기 기록 형상 확인 불가</p>}
+  <h5>당시 금지 행동</h5>{Array.isArray(forbidden)&&forbidden.length<=200&&forbidden.every(text)?<ul>{forbidden.length?forbidden.map((v,i)=><li key={i}>{v}</li>):<li>당시 기재 없음 · 행동 허용 아님</li>}</ul>:<p>미확인 · 금지 행동 기록 형상 확인 불가</p>}
+ </section>;
+}
+
 /** 기존 보호 GET의 명시 표시만 담당하며 저장·이전·재개를 실행하지 않는다. */
 function TransferCheckpointHistory({client,confirmed,onUnavailable}:{client:ApiClient;confirmed:ConfirmedAssignmentView;onUnavailable:(error:ApiError)=>void}){
  const key=JSON.stringify([confirmed.projectId,confirmed.ref]),owner=useRef({client,transport:client.transport,key,epoch:0});if(owner.current.client!==client||owner.current.transport!==client.transport||owner.current.key!==key)owner.current={client,transport:client.transport,key,epoch:owner.current.epoch+1};const scope=owner.current,active=()=>owner.current===scope&&client.transport===scope.transport;
@@ -55,5 +81,5 @@ function TransferCheckpointHistory({client,confirmed,onUnavailable}:{client:ApiC
  async function run(action:(current:()=>boolean)=>Promise<void>){if(!active()||flight.current)return;flight.current=true;const ticket=++sequence.current,current=()=>active()&&sequence.current===ticket;setBusy(true);setError(null);setRecord(null);try{await action(current);}catch(cause){if(!current())return;setPage(null);setRecord(null);const e=cause instanceof ApiError?cause:new ApiError('CHECKPOINT_RESPONSE_INVALID');setError(/^[A-Z_]{1,80}$/.test(e.code)?e.code:'CHECKPOINT_RESPONSE_INVALID');if([401,403,404].includes(e.status))onUnavailable(e);}finally{if(current()){flight.current=false;setBusy(false);}}}
  async function list(cursor:string|null){await run(async current=>{setPage(null);const v=await listStoredCheckpoints(client,confirmed,cursor,current);if(current()&&v)setPage({owner:scope,value:v});});}
  async function read(ref:Parameters<typeof readStoredCheckpoint>[2]){await run(async current=>{const v=await readStoredCheckpoint(client,confirmed,ref,current);if(current()&&v)setRecord({owner:scope,value:v});});}
- return <section aria-label="이전 작업현황 기록"><h3>이전 작업현황 기록</h3><p>과거 사람의 선언입니다. 현재 사실·중지·쓰기 회수·인계 확정·새 writer·재개는 미확인입니다. 전체 프로젝트 저장량 검증 공급자 미연결로 신규 저장은 412로 차단됩니다.</p><button type="button" disabled={busy} onClick={()=>void list(null)}>이전 작업현황 목록 조회</button>{busy?<p role="status">정확 확정 임무의 보관 기록 대조 중 · 이전 본문 숨김</p>:null}{error?<p role="alert">{error} · 보관 기록 미확인</p>:null}{page?<section aria-label="이전 작업현황 목록"><p>관측 시각 {page.observedAt}</p>{page.items.length?<ul>{page.items.map((item:any)=><li key={item.ref.id}><p>{item.recordedAt} · 순번 {item.serverSequence}</p><button type="button" disabled={busy} onClick={()=>void read(item.ref)}>작업현황 원문 {item.ref.id}</button></li>)}</ul>:<p>이 조회 범위의 보관 기록 없음 · 작업 없음이나 회수 완료가 아닙니다.</p>}{page.hasMore?<button type="button" disabled={busy} onClick={()=>void list(page.nextCursor)}>더 이전 작업현황</button>:null}</section>:null}{record?<section aria-label="이전 작업현황 고정 원문"><p>{record.ref.id} · v{record.ref.version} · {record.ref.contentHash}</p><p>기록 시각 {record.snapshot.recordedAt} · 공유 감사 순번 {record.serverSequence}</p><p>당시 미확인: {record.snapshot.gaps.join(', ')}</p><p>원문·hash 검산은 현재 사실·완료·안전한 이전·실행 허가가 아닙니다.</p><pre>{record.recordText}</pre><button type="button" onClick={()=>{sequence.current++;setRecord(null);}}>이전 작업현황 원문 닫기</button></section>:null}</section>;
+ return <section aria-label="이전 작업현황 기록"><h3>이전 작업현황 기록</h3><p>과거 사람의 선언입니다. 현재 사실·중지·쓰기 회수·인계 확정·새 writer·재개는 미확인입니다. 전체 프로젝트 저장량 검증 공급자 미연결로 신규 저장은 412로 차단됩니다.</p><button type="button" disabled={busy} onClick={()=>void list(null)}>이전 작업현황 목록 조회</button>{busy?<p role="status">정확 확정 임무의 보관 기록 대조 중 · 이전 본문 숨김</p>:null}{error?<p role="alert">{error} · 보관 기록 미확인</p>:null}{page?<section aria-label="이전 작업현황 목록"><p>관측 시각 {page.observedAt}</p>{page.items.length?<ul>{page.items.map((item:any)=><li key={item.ref.id}><p>{item.recordedAt} · 순번 {item.serverSequence}</p><button type="button" disabled={busy} onClick={()=>void read(item.ref)}>작업현황 원문 {item.ref.id}</button></li>)}</ul>:<p>이 조회 범위의 보관 기록 없음 · 작업 없음이나 회수 완료가 아닙니다.</p>}{page.hasMore?<button type="button" disabled={busy} onClick={()=>void list(page.nextCursor)}>더 이전 작업현황</button>:null}</section>:null}{record?<section aria-label="이전 작업현황 고정 원문"><p>{record.ref.id} · v{record.ref.version} · {record.ref.contentHash}</p><p>기록 시각 {record.snapshot.recordedAt} · 공유 감사 순번 {record.serverSequence}</p><p>당시 미확인: {record.snapshot.gaps.join(', ')}</p><p>원문·hash 검산은 현재 사실·완료·안전한 이전·실행 허가가 아닙니다.</p><CheckpointStateSummary state={record.snapshot.input?.state}/><pre>{record.recordText}</pre><button type="button" onClick={()=>{sequence.current++;setRecord(null);}}>이전 작업현황 원문 닫기</button></section>:null}</section>;
 }

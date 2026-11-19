@@ -1,6 +1,61 @@
 import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'vite';
+import {prepareCheckpointDraft} from '../../../apps/server/modules/checkpoints/checkpoint-input.ts';
+import {createCheckpointRecord} from '../../../apps/server/modules/checkpoints/checkpoint-record.ts';
+
+function checkpointHistoryFixture(empty=false){
+ const f=transferFixture(),input={baseRef:null,reason:'당시 인계 진행 기록',state:{assignmentRef:f.confirmed.ref,executionRefs:[],baselineRefs:f.confirmed.snapshot.definition.baselineRefs,currentPosition:{taskRef:f.confirmed.snapshot.definition.taskRef,description:'저장 화면 검수 중'},completedItems:empty?[]:[{itemId:'done',description:'저장 화면 구현 주장',evidenceRefs:[f.confirmed.ref]}],inProgress:empty?[]:[{itemId:'doing',description:'합성 검수 진행',evidenceRefs:[]}],remaining:empty?[]:[{itemId:'todo',description:'실제 환경 검수 필요',evidenceRefs:[]}],sourceSnapshotRefs:[],changedFiles:[],verificationRefs:[],errorFingerprints:[],attemptCounts:[],lastLocalSequence:3,lastServerAck:{sequence:0,batchRef:null},untransmittedRefs:[],pendingDecisions:[],nextAction:'사람의 검수 결과 확인',forbiddenActions:['자동 재개'],recordFileRef:null}};
+ const record=createCheckpointRecord(prepareCheckpointDraft(f.confirmed,input),{kind:'HUMAN',userId:pid,clientId:id(2)},at),ref={id:id(91),version:1,contentHash:hash(record.snapshot)},value={projectId:pid,ref,...record,observedAt:new Date().toISOString(),serverSequence:9};
+ const path='/api/v1/projects/'+pid+'/checkpoints',page={items:[{ref,assignmentRef:f.confirmed.ref,previousRef:null,recordedAt:at,serverSequence:9}],hasMore:false,nextCursor:null,observedAt:value.observedAt};
+ return{value,page,path,recordPath:path+'/'+ref.id};
+}
+async function openCheckpoint(f:Awaited<ReturnType<typeof host>>,c:ReturnType<typeof checkpointHistoryFixture>){await f.click('이전 작업현황 목록 조회');await f.settle(()=>f.buttons('작업현황 원문 '+c.value.ref.id).length===1);await f.click('작업현황 원문 '+c.value.ref.id);await f.settle(()=>f.nodes().some(n=>n.getAttribute('aria-label')==='이전 작업현황 고정 원문'));}
+test('보관 작업현황 요약 · 명시 고정 조회 뒤 당시 상태만 구조화하고 원문·감사를 보존한다',async()=>{
+ const c=checkpointHistoryFixture(),f=await host({empty:true,historicalGet:p=>p===c.path?Response.json(c.page):p===c.recordPath?Response.json(c.value):undefined});
+ try{assert.equal(f.calls.filter(v=>v.path.startsWith(c.path)).length,0);await openCheckpoint(f,c);
+  const summary=f.nodes().find(n=>n.getAttribute('aria-label')==='기록 당시 작업 상태');assert(summary,'구조화된 당시 상태');
+  for(const text of ['기록 당시 위치','저장 화면 검수 중','완료 주장','저장 화면 구현 주장','진행 중','합성 검수 진행','남은 일','실제 환경 검수 필요','다음 행동','사람의 검수 결과 확인','자동 재개'])assert(summary.textContent.includes(text),text);
+  assert(f.nodes().some(n=>n.tagName==='PRE'&&n.textContent===c.value.recordText));assert(f.text().includes('공유 감사 순번 9'));assert(f.text().includes('COMPLETED_ITEM_EVIDENCE_UNVERIFIED'));
+  assert.equal(f.calls.filter(v=>v.path.startsWith(c.path)).length,2);assert(f.calls.every(v=>v.method==='GET'));assert.deepEqual(f.buffers,{});
+ }finally{await f.close();}
+});
+for(const malformed of [false,true])test('보관 작업현황 요약 · '+(malformed?'비정상 형상':'빈 항목')+'을 완료로 표시하지 않는다',async()=>{
+ const c=checkpointHistoryFixture(!malformed);
+ if(malformed){
+  // 정상 서버 생산물이 아닌 방어용 wire: hash 일치만으로 표시 형상이 보장되지 않음을 확인한다.
+  const s:any=c.value.snapshot.input.state;s.currentPosition.description={bad:true};s.completedItems[0].description={bad:true};s.inProgress=[{itemId:'bad-ref',description:'잘못된 참조는 요약 미표시',evidenceRefs:[{id:'-'.repeat(36),version:1,contentHash:'a'.repeat(64)}]}];delete s.remaining;s.nextAction={bad:true};s.pendingDecisions=null;s.forbiddenActions=[{bad:true}];
+  const flags={checkpointStored:false,recordFileStored:false,currentFactsVerified:false,writerReleaseVerified:false,resumeAuthorized:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false};
+  const prepared={schemaVersion:1,projectId:pid,input:c.value.snapshot.input,sourceAssurance:'CALLER_DECLARED_STATE_NOT_VERIFIED',gaps:c.value.snapshot.gaps,...flags};
+  c.value.recordText='# Anvil 작업현황 · 기록 초안\n\n이 기록은 수행자 선언이며 실제 파일/중지/회수·완료/재개를 인증하지 않습니다.\n\n'+JSON.stringify(prepared,null,2)+'\n';
+  c.value.snapshot.preparedHash=hash(prepared);c.value.snapshot.recordFile.bytes=Buffer.byteLength(c.value.recordText);c.value.snapshot.recordFile.contentHash=contentHash(c.value.recordText);c.value.ref.contentHash=hash(c.value.snapshot);
+ }
+ const f=await host({empty:true,historicalGet:p=>p===c.path?Response.json(c.page):p===c.recordPath?Response.json(c.value):undefined});
+ try{await openCheckpoint(f,c);const summary=f.nodes().find(n=>n.getAttribute('aria-label')==='기록 당시 작업 상태');assert(summary);
+  assert(summary.textContent.includes(malformed?'미확인 · 항목 형상 또는 기록 없음':'당시 기재 항목 없음 · 완료나 작업 없음 판정 아님'));
+  if(malformed){assert(summary.textContent.includes('미확인 · 다음 행동 기록 없음'));assert(summary.textContent.includes('미확인 · 위치 기록 없음'));assert.doesNotMatch(summary.textContent,/\[object Object\]|잘못된 참조는 요약 미표시/);}
+  assert(f.calls.every(v=>v.method==='GET'));assert.deepEqual(f.buffers,{});
+ }finally{await f.close();}
+});
+for(const status of [401,403,404])test('보관 작업현황 요약 · 현재 '+status+'는 상태 원문을 표시하지 않는다',async()=>{
+ const c=checkpointHistoryFixture(),f=await host({empty:true,historicalGet:p=>p===c.path?Response.json(c.page):p===c.recordPath?Response.json({code:'ACCESS_DENIED'},{status}):undefined});
+ try{await f.click('이전 작업현황 목록 조회');await f.settle(()=>f.buttons('작업현황 원문 '+c.value.ref.id).length===1);await f.click('작업현황 원문 '+c.value.ref.id);await f.settle(()=>f.text().includes('ACCESS_DENIED'));
+  assert(!f.nodes().some(n=>n.getAttribute('aria-label')==='기록 당시 작업 상태'));assert.equal(f.lost(),status===401?1:0);assert(f.calls.every(v=>v.method==='GET'));
+ }finally{await f.close();}
+});
+for(const mode of ['다시조회','주체ABA','프로젝트','transport'] as const)for(const status of [200,401])test('보관 작업현황 요약 · '+mode+' 뒤 늦은 '+status+'를 표시하지 않는다',async()=>{
+ const c=checkpointHistoryFixture();let release=()=>{},waiting=false;
+ const f=await host({empty:true,historicalGet:p=>{if(p===c.path)return Response.json(c.page);if(p!==c.recordPath)return;
+  const r=Response.json(status===200?c.value:{code:'AUTH_REQUIRED'},{status}),json=r.json.bind(r);r.json=async()=>{await new Promise<void>(resolve=>{release=resolve;waiting=true;});return json();};return r;
+ }});
+ try{await f.click('이전 작업현황 목록 조회');await f.settle(()=>f.buttons('작업현황 원문 '+c.value.ref.id).length===1);await f.click('작업현황 원문 '+c.value.ref.id);await f.settle(()=>waiting);
+  if(mode==='다시조회')await f.click('인계 기록 다시 조회');
+  else if(mode==='주체ABA'){const p=f.props();await f.render({...p,session:{...p.session,clientId:id(99)}});await f.render(p);}
+  else if(mode==='프로젝트')await f.render({...f.props(),projectId:id(99)});
+  else{const transport=f.client.transport;f.client.transport=(...args:any[])=>transport(...args);await f.render();}
+  await ui.React.act(async()=>{release();await new Promise(resolve=>setImmediate(resolve));});assert.equal(f.lost(),0);assert(!f.nodes().some(n=>n.getAttribute('aria-label')==='기록 당시 작업 상태'));assert.doesNotMatch(f.text(),/AUTH_REQUIRED/);assert(f.calls.every(v=>v.method==='GET'));assert.deepEqual(f.buffers,{});
+ }finally{release();await f.close();}
+});
 
 const targetButton='당시 대상 연결 정의 열기';
 const selectHistoricalContextButton='당시 맥락을 현재 새 준비기록에 선택';
@@ -36,6 +91,7 @@ for(const mode of ['닫기','기록재조회','맥락재조회','버퍼ABA','주
    else if(mode==='주체ABA'){const original=f.props();await f.render({...original,session:{...original.session,clientId:id(98)}});await f.render(original);}
    else{const original=f.client.transport;f.client.transport=(...args:any[])=>original(...args);await f.render();f.client.transport=original;await f.render();}
    await ui.React.act(async()=>{release();await new Promise(resolve=>setImmediate(resolve));});
+   if(mode==='닫기'||mode==='기록재조회'||mode==='맥락재조회'||mode==='버퍼ABA')await f.settle(()=>!f.button('준비기록 원명령 준비').disabled);
    assert.equal(f.buffers[before.key],before);assert.equal(f.lost(),0);assert.doesNotMatch(f.text(),/AUTH_REQUIRED/);assert(f.calls.every(c=>c.method==='GET'));
    if(mode==='닫기'||mode==='기록재조회'||mode==='맥락재조회'||mode==='버퍼ABA')assert.equal(f.button('준비기록 원명령 준비').disabled,false);
   }finally{release();await f.close();}
