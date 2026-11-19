@@ -3,11 +3,13 @@ import {test,before,after} from 'node:test';
 import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {fixture as activationFixture,pid,actor,id,at} from '../FN04/baseline-activation-fixture.ts';
-import {newDesignActivation,prepareDesignActivation} from '../../../apps/web/src/features/design-change/activation-api.ts';
+import {activationHash,newDesignActivation,prepareDesignActivation} from '../../../apps/web/src/features/design-change/activation-api.ts';
 const nodes=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(nodes)];
 async function settle(check:()=>boolean){for(let i=0;i<80;i++){if(check())return;await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});}assert.fail('RAM 정착 실패');}
-async function fixture(withBuffer=false){
- const f=activationFixture(),previous=f.record(),record=f.record(2,previous.ref),session={user:{id:actor.actorId},clientId:id(90),csrfToken:'C'.repeat(43)};
+async function fixture(withBuffer=false,distinctDesign=false){
+ const f=activationFixture(),previous=f.record();
+ if(distinctDesign){previous.snapshot.approvedDesignRef={...previous.snapshot.approvedDesignRef,version:1,contentHash:'b'.repeat(64)};previous.ref.contentHash=await activationHash(previous.snapshot);}
+ const record=f.record(2,previous.ref),session={user:{id:actor.actorId},clientId:id(90),csrfToken:'C'.repeat(43)};
  const current={projectId:pid,current:{state:'PRESENT' as const,activationRef:record.ref,designRef:record.snapshot.approvedDesignRef,planRef:record.snapshot.confirmedPlanRef},observedAt:at,executionAuthorized:false as const,dispatchPerformed:false as const};
  const calls:{path:string;method:string}[]=[];let mode='OK',release=()=>{},waiting=false,lost=0,changes=0,requests=0;
  const api=new ui.ApiClient(async(path:string,options?:RequestInit)=>{
@@ -28,6 +30,28 @@ async function fixture(withBuffer=false){
  await render();
  return{f,record,previous,current,calls,api,session,buffer:()=>buffer,props:()=>props,render,button,click,text:()=>container.textContent,region:(label:string)=>nodes(container).filter(n=>n.getAttribute('aria-label')===label),setMode:(v:string)=>{mode=v;},waiting:()=>waiting,release:()=>release(),lost:()=>lost,changes:()=>changes,requests:()=>requests,replace:async(b:any)=>{buffer=b;await render({...props,buffer});},close:async()=>{release();await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
+const originalLinks=(f:Awaited<ReturnType<typeof fixture>>)=>f.region('설계 변경 적용').flatMap(nodes).filter(n=>n.tagName==='A'&&n.textContent==='당시 확정 설계 원문 보기');
+test('당시 확정 설계 링크는 고정 현재/직전 버전의 fullref만 사용하고 미결 명령을 보존한다',async()=>{
+ const f=await fixture(true,true);try{
+  const base=f.buffer()!,pending=prepareDesignActivation({...base,current:{...f.current,current:{state:'NONE'}}},f.session),retained={...base,pending,uncertain:true};await f.replace(retained);
+  assert.equal(originalLinks(f).length,0);
+  await f.click('현재 적용 기준 확인');await settle(()=>f.region('현재 적용 기준').length===1);assert.equal(originalLinks(f).length,0);
+  for(const [button,record] of [['적용 이력 원문 확인',f.record],['직전 적용 이력 확인',f.previous]] as const){
+   await f.click(button);await settle(()=>f.region('고정 적용 이력')[0]?.textContent.includes(record.ref.contentHash)??false);
+   const links=originalLinks(f),ref=record.snapshot.approvedDesignRef;assert.equal(links.length,1);
+   assert.equal(links[0]!.getAttribute('href'),`#/projects/${pid}/documents/${ref.id}/versions/${ref.version}/${ref.contentHash}`);
+   const count=f.calls.length;await ui.React.act(async()=>links[0]!.dispatchEvent({type:'click',button:0}));assert.equal(f.calls.length,count);assert.equal(f.buffer(),retained);
+  }
+  assert.equal(f.changes(),0);assert.equal(f.requests(),0);assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+for(const mode of ['CSRF','TRANSPORT'] as const)test('당시 확정 설계 링크는 '+mode+' 교체 후 이전 응답을 노출하지 않는다',async()=>{
+ const f=await fixture();try{await f.click('현재 적용 기준 확인');await settle(()=>f.region('현재 적용 기준').length===1);await f.click('적용 이력 원문 확인');await settle(()=>originalLinks(f).length===1);
+  if(mode==='CSRF')await f.render({...f.props(),session:{...f.session,csrfToken:'D'.repeat(43)}});
+  else{const old=f.api.transport;f.api.transport=(...args:any[])=>old(...args);await f.render();}
+  assert.equal(originalLinks(f).length,0);assert.equal(f.changes(),0);assert.equal(f.requests(),0);assert.equal(f.calls.length,2);
+ }finally{await f.close();}
+});
 test('버퍼 없는 다른 제어 기기의 OWNER는 현재→고정→직전 이력을 GET만으로 읽는다',async()=>{
  const f=await fixture();try{
   assert.equal(f.calls.length,0);assert.equal(f.button('설계 변경 적용 준비').disabled,true);

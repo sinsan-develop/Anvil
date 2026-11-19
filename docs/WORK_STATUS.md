@@ -21259,3 +21259,11 @@ Stage D UI09/FN14 부분 구현. 기준 `67b1a69e`, 기존 developer_primary 단
 제품 `apps/web/src/features/transfers/TransferPreparationRecordPanel.tsx`와 기존 RAM 화면시험 `tests/unit/UI09/preparation-record-ui.test.ts` 두 파일이다. 기존 화면의 버튼 부재 RED1 `e2be4a` 뒤 집중 14통과 `92c50a`. 잘못된 hash·임무, 401/403, 중복 클릭과 닫기·기록 ABA·세션 ABA·transport 변경 후 지연 응답을 확인했다. Main 직접 파일 128통과·실패/건너뜀0·정상 종료 `116571`, 지문2/2·공백 `532816`. 담당 좁은 TypeScript 종료0 `e7704f`, 최초 MODULE_NOT_FOUND 1건은 실제 공유 도구 경로로 보완했다. 담당 전체 실행의 잘린 출력은 미수거로 집계 제외했고 Main 실행 핸들은 회수했다.
 
 실제 DB·보호 서비스·브라우저 인수·Agent 실행은 미검증 또는 제외다. 이 조회가 새 대상 세션 생성·이해 대조·인계 확정·실제 재개를 열지 않는다. FN07 고정 공개 SDK 1회 조회는 별도 결정 대기 상태이며 본 구간과 독립이다. 롤백은 지정 제품·시험 두 경로의 변경에 한정한다.
+
+## UI07 적용 이력에서 당시 확정 설계 원문으로 이동
+
+Stage D UI07/FN04 부분 구현. 기준 `5b6b5326`, 기존 developer_primary 단일 작성·반환. 고정 적용 이력에 검산된 프로젝트와 당시 확정 설계의 ID·버전·SHA256을 기존 보호 문서 라우트의 명시 링크로 연결했다. 현재와 직전 이력에서 각각 당시 버전을 사용한다. 현재 문서로 치환하거나 적용 요청을 보내지 않는다. 미조회·권한 실패·문맥 전환에서는 링크를 숨기며 기존 미확인 적용 명령은 App 상위 버퍼에 보존한다.
+
+제품 `apps/web/src/features/design-change/DesignActivationPanel.tsx`와 RAM 직접시험 `tests/unit/UI07/design-activation-history-ui.test.ts` 두 경로다. 링크 부재 RED1 `e464d1`, 담당 직접21통과 `f9885c`·좁은 타입 종료0 `34247e`. Main 직접21통과·실패/건너뜀0 `228199`, 지문2/2 및 공백 `c541d2`. 현재·직전의 서로 다른 문서 버전과 hash, 접근 실패·지연 응답, 원 버퍼 변경/추가 POST0을 확인했다. 활성 핸들0.
+
+실제 브라우저 라우팅·보호 서비스·DB·권한·Agent와 설계 변경의 실제 적용·재개는 미검증 또는 제외다. 원 문서 위치를 확인하는 흐름만 추가했다. 롤백은 지정 제품·시험 두 경로에 한정한다. FN07 공개 SDK 별도 조회는 아직 실행하지 않았다.
