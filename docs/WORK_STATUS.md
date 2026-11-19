@@ -21411,3 +21411,11 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 담당 초기 모듈 부재 RED 725f04 이후 직접 6통과 22cd87, 인접 9통과 009367, 좁은 타입 종료0 809733. Main 직접 6통과·실패/건너뜀0 3b29e8, 동결 SHA 2/2 및 공백 fa9dc2. 소스 3DADE4B79163E6AC79DECE080D26A9F6DDB96789EC60F35CCFFAA7EE17B737DC, 시험 5E92ABF2D98515E8109C378BC79B6E384F4EE1E0EFB19651BA907EFE72D84B3E. 기본 Windows 포트는 정적 검수만 했고 실원장·SSH·OS 설정/키·IPAM·DB·권한·서비스·Agent 접근0이다.
 
 현재 verifier와 승인 실행안, 안전한 기존 원장 부모 및 Windows SSH 최소 env/호환은 미확정이다. libuv/Windows의 실제 파일 정착·원 프로세스 종결, 원격 무응답 이후 OS 자원 보존은 합성 증거로 승격하지 않는다. 다음은 현행 alias/host trust와 원장 부모의 한정 비밀 없는 검산 범위를 고정하는 것이다. 실제 두 단계와 TC01은 미실행. 롤백은 신규 두 파일과 기록 추가에 한정한다.
+
+## IX01 Windows 실행 전 한정 읽기 소스·후보 검수
+
+기준 `65289bba`, developer_primary 단일 작성·반환. 신규 Windows readiness 후보 문서, qa-ix01-subnet-observation-windows-readiness.ps1, 합성 시험 1개. 고정 8역할에 한정해 읽기 전후 신원·ACL, 분할 SHA, 60초/파일10초, 같은 stream close와 설정의 제한 형상을 검사한다. Include/custom trust/Match exec 및 보호 경로 불명은 추가 읽기를 차단한다. 자동 진입·접속·원장 쓰기·비밀키 읽기0이며 수거 성공도 readiness=UNCONFIRMED다.
+
+담당 초기 부재 RED, fixture 및 타입 경로 오류는 성공 집계에서 제외했다. 직접 7통과 10a965, 좁은 타입 종료0 c030ab. Main 직접 7통과·실패/건너뜀0 509c43, 동결 지문 3/3·공백 e9222c. 검사 소스 SHA256 6847D094D436D246983A8EA353C0705541B4FD4C312F596AB78B5FF3EFEA8CC3, 시험 629E215BA036B323FCA1A25E042E13663468EE9DB8432BAC492D02EFD27FC9CB, 후보 문서 8BE417E412AAAA8489AAE618B2A69B52D75ED2BDF3A8DCE24A042D95EB2D805A. PowerShell은 -NoProfile의 원 parser와 메모리 포트만 검수했으며 실제 native 검사, Windows 대상·권한·키·SSH·WSL·IPAM·DB·서비스·Agent 접근0이다.
+
+후속은 고정 Windows-only 읽기 1회에 원 실행 host/승인/절대 기한·close를 결박하는 결정이다. 실제 alias/trust·원장 부모와 최소 env를 확인하기 전 기존 SSH 준비 완료나 두 단계 관측을 선언하지 않는다. 실제 관측 및 TC01 미완료. 롤백은 이번 신규 후보/소스/시험·기록 추가에 한정한다.
