@@ -3,10 +3,15 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
+import {readSubnetWindowsFinalReadinessResult,readSubnetWindowsReadinessResult} from '../../../scripts/qa-ix01-subnet-observation-windows-readiness-result.ts';
 const base=new URL('../../../',import.meta.url);
 const paths=['scripts/qa-ix01-subnet-observation-windows-readiness.ps1','scripts/qa-ix01-subnet-observation-alias-config.ps1','scripts/qa-ix01-subnet-observation-identity-path.ps1','scripts/qa-ix01-subnet-observation-windows-final-readiness.ps1'];
 const original=readFileSync(new URL('tests/unit/IX01/subnet-observation-windows-readiness.test.ts',base),'utf8');
 const fixture=original.split('const fixture=String.raw`')[1]!.split('`;')[0]!;
+const finalSourceHash='ad2254c843f97ff420eee2d35cf6968783f199694ee5b6404bdde69dd74cd3d8';
+const expectedBinding={attemptId:'11111111-1111-4111-8111-111111111111',approvalHash:'a'.repeat(64),planHash:'b'.repeat(64),sourceHash:finalSourceHash,issuedAt:1800000000000,expiresAt:1800000060000};
+const executionPlan=readFileSync(new URL('docs/work_packages/IX01_WINDOWS_FINAL_READINESS_EXECUTION_PLAN.md',base),'utf8');
+const command=executionPlan.split('```powershell')[1]!.split('```')[0]!;
 function ram(body:string){
  const source=paths.map(p=>readFileSync(new URL(p,base),'utf8')).join('\n');
  const script=`$ErrorActionPreference='Stop'
@@ -15,6 +20,7 @@ $t=$null;$e=$null;$a=[Management.Automation.Language.Parser]::ParseInput($source
 if($e.Count -ne 0 -or @($a.EndBlock.Statements|Where-Object {$_ -isnot [Management.Automation.Language.FunctionDefinitionAst]}).Count -ne 0){throw 'SOURCE'}
 . ([scriptblock]::Create($source))
 ${fixture}
+$binding.sourceHash='${finalSourceHash}'
 $targets=Get-Ix01WindowsReadinessTargets;$byPath=@{};foreach($target in $targets){$byPath[$target.path]=$target}
 $algorithm=[Text.Encoding]::ASCII.GetBytes('ssh-ed25519');$blob=[byte[]]::new(4+$algorithm.Length+1);$blob[3]=[byte]$algorithm.Length;[Array]::Copy($algorithm,0,$blob,4,$algorithm.Length)
 $trust=[Text.Encoding]::UTF8.GetBytes('PRIVATE.invalid ssh-ed25519 '+[Convert]::ToBase64String($blob))
@@ -43,7 +49,11 @@ ${body}`;
  assert.equal(r.error,undefined);assert.equal(r.status,0,`RAM PowerShell exit ${r.status}`);return JSON.parse(r.stdout.trim());
 }
 test('IX01 final readiness RAM: 8역할 원 순회·config 각각 read1·alias 결합·비교만·원 바이트 소거',()=>{
- const r=ram(String.raw`
+ const r=ram(`
+$command=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${Buffer.from(command).toString('base64')}'))
+$ct=$null;$ce=$null;$ca=[Management.Automation.Language.Parser]::ParseInput($command,[ref]$ct,[ref]$ce)
+$calls=@($ca.FindAll({param($node) $node -is [Management.Automation.Language.CommandAst] -and $node.GetCommandName() -ceq 'Invoke-Ix01WindowsFinalReadiness'},$true))
+if($ce.Count -ne 0 -or $calls.Count -ne 1){throw 'PLAN_SYNTAX'}
 $line=Invoke-Ix01WindowsFinalReadiness $binding $ports
 $cleared=$true;foreach($owned in $captured){if(@($owned|Where-Object {$_ -ne 0}).Count -ne 0){$cleared=$false}}
 @{result=($line|ConvertFrom-Json -AsHashtable);wire=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($line+[char]10));counts=$counts;opens=$state.opens;closes=$state.closes;cleared=$cleared}|ConvertTo-Json -Depth 12 -Compress
@@ -54,6 +64,32 @@ $cleared=$true;foreach($owned in $captured){if(@($owned|Where-Object {$_ -ne 0})
  assert.equal(r.result.files[1].text,'ALIAS_SUBSET');assert.equal(r.result.files[3].text,'SUBSET_ONLY');
  const wire=Buffer.from(r.wire,'base64');assert(wire.length<=4096);assert.equal(wire.at(-1),10);assert.equal(wire.toString('utf8').split('\n').length,2);
  assert(!JSON.stringify(r.result).includes('PRIVATE'));assert(!JSON.stringify(r.result).includes('fixture'));assert(!JSON.stringify(r.result).includes('C:/'));
+ const comparison=readSubnetWindowsFinalReadinessResult(wire,expectedBinding);
+ assert.equal(comparison.status,'COMPARISON_ONLY');if(comparison.status!=='COMPARISON_ONLY')assert.fail('FINAL_RESULT');
+ assert.equal(comparison.readiness,'UNCONFIRMED');assert.deepEqual(comparison.binding,expectedBinding);assert.deepEqual(comparison.alias,r.result.alias);
+ assert.equal(comparison.identity.imageSha256,r.result.files[0].sha256);for(const hash of Object.values(comparison.identity))assert.match(hash,/^[0-9a-f]{64}$/);
+ assert.equal(comparison.outputSha256,createHash('sha256').update(wire).digest('hex'));assert(Object.isFrozen(comparison.alias)&&Object.isFrozen(comparison.alias.fields));
+ assert.equal(readSubnetWindowsReadinessResult(wire,expectedBinding).status,'UNKNOWN');
+ const encode=(v:unknown)=>Buffer.from(JSON.stringify(v)+'\n');
+ const mutations=[
+  (v:any)=>{v.binding.sourceHash='6847d094d436d246983a8ea353c0705541b4fd4c312f596ab78b5ff3efea8cc3';},
+  (v:any)=>{v.binding.attemptId='22222222-2222-4222-8222-222222222222';},
+  (v:any)=>{v.code='INSPECTION_COLLECTED';},(v:any)=>{v.alias.authorized=true;},(v:any)=>{v.alias.alias='other';},
+  (v:any)=>{v.alias.status='CURRENT';},(v:any)=>{v.alias.readiness='VERIFIED';},(v:any)=>{v.alias.code='PASS';},
+  (v:any)=>{v.alias.fields[0].key='command';},(v:any)=>{v.alias.fields[0].role='SSH_IMAGE';},
+  (v:any)=>{v.alias.fields[0].line=0;},(v:any)=>{v.alias.fields[0].line=4097;},(v:any)=>{v.alias.fields[0].line=1.5;},
+  (v:any)=>{v.alias.fields.reverse();},(v:any)=>{v.alias.fields.push({...v.alias.fields[0]});},
+  (v:any)=>{v.alias.fields[0].value='PRIVATE';},(v:any)=>{v.alias.userKind='UNSET';},
+  (v:any)=>{v.alias.fields=v.alias.fields.filter((x:any)=>x.key!=='user');},
+  (v:any)=>{v.files[1]={role:'USER_CONFIG',state:'ABSENT',metadata:'MATCHED'};},
+  (v:any)=>{v.files[1].text='SUBSET_ONLY';},(v:any)=>{v.files[3].text='ALIAS_SUBSET';},
+  (v:any)=>{v.files.pop();},(v:any)=>{v.files[0].bytes=67108865;},(v:any)=>{v.exit=0;},
+ ];
+ for(const mutate of mutations){const v=structuredClone(r.result);mutate(v);assert.equal(readSubnetWindowsFinalReadinessResult(encode(v),expectedBinding).status,'UNKNOWN');}
+ for(const raw of [Buffer.concat([Buffer.from([239,187,191]),wire]),Buffer.concat([wire,Buffer.from('\n')]),Buffer.alloc(4097),Buffer.from([255,10]),Buffer.from(wire.toString().replace('"schemaVersion":1','"schemaVersion":1,"schemaVersion":1'))])assert.equal(readSubnetWindowsFinalReadinessResult(raw,expectedBinding).status,'UNKNOWN');
+ const changed=structuredClone(r.result);changed.alias.fields[0].line=4;
+ const other=readSubnetWindowsFinalReadinessResult(encode(changed),expectedBinding);assert.equal(other.status,'COMPARISON_ONLY');if(other.status!=='COMPARISON_ONLY')assert.fail('COMPARISON');
+ assert.notEqual(other.identity.configurationSha256,comparison.identity.configurationSha256);assert.equal(other.identity.knownHostsSha256,comparison.identity.knownHostsSha256);
 });
 test('IX01 final readiness RAM: USER 불명·SYSTEM 누적·trust/시한/close 실패 후 후속0 및 소거',()=>{
  const rows=ram(String.raw`
@@ -81,8 +117,13 @@ $line=Invoke-Ix01WindowsFinalReadiness $binding $ports
 `);
  assert.equal(r.result.code,'COMPARISON_ONLY');assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.result.alias.userKind,'UNSET');assert.deepEqual(r.result.alias.fields,[]);
  assert.equal(r.result.files[1].state,'ABSENT');assert.equal(r.result.files[2].state,'ABSENT');assert(!Object.hasOwn(r.counts,'USER_CONFIG'));assert(!Object.hasOwn(r.counts,'SYSTEM_CONFIG'));assert.equal(r.opens,5);assert.equal(r.closes,5);
+ const parsed=readSubnetWindowsFinalReadinessResult(Buffer.from(JSON.stringify(r.result)+'\n'),expectedBinding);assert.equal(parsed.status,'COMPARISON_ONLY');
 });
 test('IX01 final readiness source: 원 순회 위임1·별도 config read/새 native0·순수 의존 고정',()=>{
+ assert(executionPlan.includes('ef52ba33a7db6ea9db5ffe0defc622091e8232dc'));
+ for(const path of paths){const bytes=readFileSync(new URL(path,base));assert(command.includes(`path='${path}';bytes=${bytes.length};hash='${createHash('sha256').update(bytes).digest('hex')}'`));}
+ assert(command.includes("$approvalId='';$approvalHash='';$planHash='';$attemptId='';$approvalIssuedAtMs='';$approvalDeadlineMs=''"));
+ assert(executionPlan.includes(createHash('sha256').update(readFileSync(new URL('scripts/qa-ix01-subnet-observation-windows-readiness-result.ts',base))).digest('hex').toUpperCase()));
  const s=readFileSync(new URL(paths[3]!,base),'utf8');assert.equal((s.match(/Invoke-Ix01WindowsReadiness\s+-Binding/g)||[]).length,1);
  assert(!/Invoke-Ix01ConfigReadiness|Get-Item|Get-Acl|File\]::|Start-Process|Invoke-Expression/.test(s));
  assert.equal(createHash('sha256').update(readFileSync(new URL(paths[1]!,base))).digest('hex'),'d972a785a99cc8c883b15ab716b8d939241e5e5663f56d67d73581ff0c15e09b');
