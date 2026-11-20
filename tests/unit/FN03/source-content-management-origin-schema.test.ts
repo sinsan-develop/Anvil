@@ -49,8 +49,11 @@ test('RLS FORCE/false·전 INSERT 거절·불변/truncate 거절을 유지하고
  assert.match(compact,/BEFORE INSERT ON anvil\.source_content_policy_management_origins FOR EACH ROW EXECUTE FUNCTION anvil\.source_content_unavailable\(\)/);
  assert.match(compact,/BEFORE UPDATE OR DELETE ON anvil\.source_content_policy_management_origins FOR EACH ROW EXECUTE FUNCTION anvil\.source_content_append_only\(\)/);
  assert.match(compact,/BEFORE TRUNCATE ON anvil\.source_content_policy_management_origins FOR EACH STATEMENT EXECUTE FUNCTION anvil\.source_content_append_only\(\)/);
- assert.doesNotMatch(compact,/DROP\b|INSERT INTO|UPDATE anvil|DELETE FROM|SET ROLE/);
- assert.equal((compact.match(/SECURITY DEFINER/g)??[]).length,1);
+ assert.doesNotMatch(compact,/DROP\b|DELETE FROM|SET ROLE/);
+ // 새 private producer 본문에만 DML을 허용한다. 권한과 기존 차단 trigger는 위에서 별도로 고정한다.
+ const withoutWrite=sql.replace(/CREATE FUNCTION anvil\.fn03_source_content_management_commit\([^]*?\$\$;/,'');
+ assert.doesNotMatch(withoutWrite,/INSERT INTO|UPDATE anvil/);
+ assert.equal((compact.match(/SECURITY DEFINER/g)??[]).length,2);
  assert.match(compact,/fn03_source_content_management_read\([^;]+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog/);
  const helpers=[...compact.matchAll(/CREATE FUNCTION anvil\.(fn03_management_\w+)\(([^)]*)\)/g)];
  assert.deepEqual(helpers.map(m=>m[1]),['fn03_management_physical','fn03_management_plan_valid','fn03_management_definition_valid','fn03_management_rows','fn03_management_actual','fn03_management_maximum','fn03_management_fixed_point','fn03_management_complete','fn03_management_history_bundle','fn03_management_context']);
@@ -121,4 +124,51 @@ test('보호 read는 current exact3→O→역사 완결→current이고 순수 �
  assert.equal((read.match(/EXCEPTION WHEN/g)??[]).length,1);assert.doesNotMatch(read,/WHEN OTHERS|quota_|INSERT|UPDATE|DELETE|GUC|set_config/);
  assert.doesNotMatch(read,/plan[^\n]*(actorId|clientId|authSessionId|authorizedUntil)|R\.plan/);
  assert.match(compact,/REVOKE ALL ON FUNCTION anvil\.fn03_source_content_management_read\(uuid,uuid,uuid,uuid,bigint,jsonb,jsonb,text\) FROM PUBLIC,anvil_v3_app/);
+});
+
+test('새 private commit은 원 context/계정/전체비용/head CAS 뒤에만 예약과 실제 다섯 행을 쓴다',()=>{
+ const write=body('fn03_source_content_management_commit');
+ const ordered=['anvil.fn03_management_context(', 'FROM anvil.project_storage_accounts', 'anvil.quota_complete(p)', 'FROM anvil.source_content_policy_events', 'anvil.fn03_management_definition_valid(', 'anvil.fn03_management_fixed_point(', 'INSERT INTO anvil.project_storage_reservations', "SET phase='IO_STARTED'", 'INSERT INTO anvil.commands', 'INSERT INTO anvil.authorization_receipts', 'INSERT INTO anvil.audit_events', 'INSERT INTO anvil.source_content_policy_events', 'INSERT INTO anvil.source_content_policy_management_origins', 'anvil.fn03_management_actual(', "SET phase='SETTLED'", 'anvil.fn03_management_history_bundle('];
+ let last=-1;for(const token of ordered){const next=write.indexOf(token,last+1);assert.ok(next>last,token);last=next;}
+ assert.match(write,/previous IS DISTINCT FROM q->'payload'->'previousPolicyRef'/);
+ assert.match(write,/ORDER BY x\.sequence DESC LIMIT 1/);assert.doesNotMatch(write,/disposition\s*=\s*'AUTO'/);
+ for(const f of ['fn15_storage_actual','fn75_project_storage_actual_bytes','fn76_storage_actual','fn15_storage_future','fn75_project_storage_future','fn76_storage_future','fn09_registered_other_bytes'])assert.ok(write.includes(`anvil.${f}(p)`));
+ assert.match(write,/used\+held\+reserved\+other_bytes>10737418240/);
+ assert.match(write,/used\+settled\+held\+other_bytes>10737418240/);
+ assert.match(write,/jsonb_build_object\('status','RECORDED','transactionId',expected_tx\)\|\|bundle/);
+ assert.doesNotMatch(write,/WHEN OTHERS|ON CONFLICT|set_config|SET ROLE|quota_account\(/);
+});
+test('write는 실제 clock·원 plan·CAS와 저장 뒤 물리행 검산을 유지한다',()=>{
+ const write=body('fn03_source_content_management_commit');
+ assert.match(write,/expected_tx IS DISTINCT FROM txid_current\(\)::text/);
+ assert.match(write,/received_at=transaction_timestamp\(\)/);
+ assert.match(write,/e_at=date_trunc\('milliseconds',at_time\)/);assert.match(write,/o_at=date_trunc\('milliseconds',at_time\)/);
+ assert.match(write,/done_at<received_at/);assert.doesNotMatch(write,/greatest\([^]*clock_timestamp/);
+ assert.match(write,/plan_hash=sealed_hash AND phase='RESERVED' AND start_fence=0/);
+ assert.match(write,/plan_hash=sealed_hash AND phase='IO_STARTED' AND start_fence=1/);
+ assert.doesNotMatch(write,/SET plan_json|SET plan_hash|SET authorized_until/);
+ assert.match(write,/actual>maximum OR settled>reserved/);
+ assert.match(write,/final_ctx IS DISTINCT FROM ctx/);
+ assert.match(write,/\(bundle->'rows'-'R'\) IS DISTINCT FROM prepared/);
+ assert.match(write,/bundle->'rows'->'R'->'plan_json' IS DISTINCT FROM plan/);
+ assert.match(write,/bundle->'rows'->'R'->>'plan_hash' IS DISTINCT FROM sealed_hash/);
+ assert.match(write,/coverage_state='VERIFIED' AND generation=ac\.generation AND used_bytes=used AND held_bytes=held\+reserved/);
+ assert.match(compact,/REVOKE ALL ON FUNCTION anvil\.fn03_source_content_management_commit\(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text,timestamptz\) FROM PUBLIC,anvil_v3_app/);
+});
+
+test('producer의 물리 tuple은 exact 기존 열을 보존하고 generated E열·가상 비용열은 쓰지 않는다',()=>{
+ const write=body('fn03_source_content_management_commit');
+ const insert=write.match(/INSERT INTO anvil\.source_content_policy_events\(([^)]*)\)/);assert.ok(insert);
+ assert.deepEqual(insert[1]!.split(','),['project_id','id','version','sequence','subject_user_id','disposition','snapshot_json','content_hash','previous_ref','management_command_id','recorded_at','expires_at']);
+ for(const [table,record] of [['commands','cmd'],['authorization_receipts','receipt'],['audit_events','audit'],['source_content_policy_management_origins','o'],['project_storage_reservations','r']]){
+  assert.ok(write.includes(`NULL::anvil.${table}`));assert.ok(write.includes(`INSERT INTO anvil.${table} SELECT (${record}).*;`));
+ }
+ assert.match(write,/audit\.server_sequence=audit_seq/);assert.match(write,/'server_sequence',audit_seq::text/);
+ assert.match(write,/audit_seq NOT BETWEEN 1 AND 9007199254740991/);
+ assert.doesNotMatch(write,/request_canonical|snapshot_canonical|_canonical_result_ref/);
+ const finalAt=write.indexOf('bundle=anvil.fn03_management_history_bundle');
+ assert.doesNotMatch(write.slice(finalAt),/INSERT INTO|UPDATE anvil|DELETE FROM/);
+ // 원 AUTO 허가와 새 CM 의도(AUTO/DENY/REVOKED)는 서로 다른 원형이며 새 intent로 현재 허가를 만들지 않는다.
+ assert.match(write,/fn03_management_context\(s,a,c,p,g,'defineSourceContentPolicy',policy,observed_until\)/);
+ assert.match(write,/fn03_management_definition_valid\(q->'payload'->'definition',q->'payload'->'reason',a,e_at\)/);
 });

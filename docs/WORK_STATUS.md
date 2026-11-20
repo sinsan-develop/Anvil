@@ -21583,3 +21583,11 @@ PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확
 기준 `106d2b17`, developer_primary 단일 작성·반환. 미적용 0101과 정적 시험 2경로. DB의 기존 인증 행 검사와 프로젝트·소유자·현재 client/제어세대·최신 정책 순서로 잠근다. 기존 DENY/REQUIRE_APPROVAL 거절을 지키고 정확 PROJECT/HUMAN AUTO 및 재인증·최소기한만 허용한다. 명시 조회는 현재 권한·거래 확인 뒤 정확 O/E 선택→과거 불변 완결→현재 재검산으로 연결했다. 같은 이벤트의 ref 변조는 거절하고, 정확한 과거 이벤트가 존재하며 O만 없을 때 ORIGIN_ABSENT를 반환한다. 조회에 데이터 쓰기나 용량 할당은 없지만 기존 인증/프로젝트 행 잠금은 수행하는 설계다.
 
 담당 신규 함수 부재 RED 3건 `ea0421`, 직접·인접 20통과/실패·건너뜀0 `3a928c`, 타입 종료0 `d1551d`. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 정적 11통과·실패/건너뜀0·공백검사 종료0 `ab220c`. SQL SHA256 B7ACE3C4C42A1B77A124FCD3518E883A024137AB36A24D21B979F6FEAA4137D4, 시험 270714E18022521F878E89A68D6EE69E24B9ACD385BBC519C9171089C75AFA8B. pglast 외부36문장/context 본문 구문 통과, read 원 rowtype 미검증·메모리 DECLARE 2곳을 record로 치환한 구문만 확인. 실PG·역할·거래/락 동작 미검증이며 app/PUBLIC EXEC·표 접근·E/O INSERT 차단 유지. 다음은 원거래 준비·예약/정산·역완결/지연 제약, 실제 Access와 화면 배선이다. 실제 DB·권한·키·서비스·Agent·파일 관측·SSH 실행0. 롤백은 두 경로 및 이 기록 변경분이다.
+
+### FN03 0101 목적 쓰기 SQL 본문 검수
+
+기준 `af07cd7f`, developer_primary 단일 작성·반환. 미적용 0101과 schema 시험 2경로. 원 명령·서버 발급 ID·동일 거래/현재 권한에서 계정 잠금과 기존 용량 집계 및 최신 이벤트 CAS를 검산하고, 독립 E/O 시각→예약 봉인→RESERVED/IO_STARTED→관리·권한·감사·이벤트·원문 5행→정산→원물리행·최종 현재성을 동일 거래에 연결했다. 저장 실패를 성공으로 바꾸거나 재시도하지 않는다. 기존 INSERT 차단과 app/PUBLIC 실행권 차단은 유지된다.
+
+담당 신규 함수 부재 RED 2건 `011f24`, 직접·인접 31통과·실패/건너뜀0 `826ec8`, 좁은 타입 종료0 `469c46`. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 정적 14통과·실패/건너뜀0 및 공백 종료0 `c31663`. SQL SHA256 FFB5CC421663481FD8235FF2167227C27CD6D8A6094C6876820B82FDBB457442, 시험 DB9198BE8426069DE3CEE491618BF80BA38EFF1426AE02DD15965A4DE9B743D0. 외부 SQL 39문 구문 통과, 원 본문은 catalog 제약으로 미검증이며 메모리에서 DECLARE rowtype 8곳을 record로 치환한 구문만 확인했다. 실제 PG/권한·제약·롤백 경합과 DB·키·서비스·Agent·파일·SSH 실행0.
+
+남은 연결은 신규 R CHECK/dispatcher, 목적 역완결 및 16개 지연 제약, 최소 ACL, 실제 Access callback·정책 선택 화면이다. 현재 SQL 본문만으로는 목적 거래를 호출할 수 없으므로 전체 구현·실제 검수 완료로 승격하지 않았다. 롤백은 이번 두 경로와 기록 변경분이다.

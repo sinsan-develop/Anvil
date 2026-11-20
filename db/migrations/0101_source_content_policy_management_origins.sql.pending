@@ -455,3 +455,154 @@ BEGIN
 END;$$;
 ALTER FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,bigint,jsonb,jsonb,text) OWNER TO anvil_v3_source_content_management_owner;
 REVOKE ALL ON FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,bigint,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+
+-- 실제 목적 write의 내부 순서. 원 account/현재 head 아래에서만 M/r/s와 정확 물리행을 만든다.
+-- 아직 R 목적 CHECK/dispatcher·16 지연제약·최종 guard/ACL/source caller 미연결이다.
+-- 아래 함수만으로 실행을 열지 않는다. 기존 E/O INSERT 거절과 app/PUBLIC EXEC 차단을 보존한다.
+CREATE FUNCTION anvil.fn03_source_content_management_commit(s uuid,a uuid,c uuid,p uuid,q jsonb,policy jsonb,ids jsonb,expected_tx text,observed_until timestamptz) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE ctx jsonb;final_ctx jsonb;ac anvil.project_storage_accounts;head anvil.source_content_policy_events;
+ e anvil.source_content_policy_events;o anvil.source_content_policy_management_origins;cmd anvil.commands;
+ receipt anvil.authorization_receipts;audit anvil.audit_events;r anvil.project_storage_reservations;
+ previous jsonb='null'::jsonb;er jsonb;orr jsonb;snapshot jsonb;origin_snapshot jsonb;plan jsonb;part jsonb;
+ prepared jsonb;template jsonb;bundle jsonb;qh text;digest text;sealed_hash text;k text;cid uuid;g bigint;
+ seq bigint=1;audit_seq bigint;used numeric;held numeric;other_bytes numeric;maximum bigint;reserved bigint;actual bigint;settled bigint;
+ begin_at timestamptz;last_at timestamptz;at_time timestamptz;e_at timestamptz;o_at timestamptz;done_at timestamptz;
+ received_at timestamptz;until_at timestamptz;
+BEGIN
+ IF expected_tx IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_TRANSACTION_INVALID' USING ERRCODE='42501';END IF;
+ IF anvil.source_read_exact(q,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']) IS NOT TRUE
+  OR q->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR q->>'projectId' IS DISTINCT FROM p::text OR q->>'clientId' IS DISTINCT FROM c::text
+  OR q->>'operation' IS DISTINCT FROM 'defineSourceContentPolicy' OR q->'targetId' IS DISTINCT FROM 'null'::jsonb
+  OR q->'expectedVersion' IS DISTINCT FROM '0'::jsonb OR q->'baselineRefs' IS DISTINCT FROM '[]'::jsonb OR q->'approvalRef' IS DISTINCT FROM 'null'::jsonb
+  OR anvil.source_read_exact(q->'payload',ARRAY['definition','previousPolicyRef','reason']) IS NOT TRUE
+  OR jsonb_typeof(q->'controlGeneration') IS DISTINCT FROM 'number' OR jsonb_typeof(q->'commandId') IS DISTINCT FROM 'string'
+  OR q->>'commandId'!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  OR octet_length(convert_to(anvil.source_read_canonical_json(q),'UTF8'))>1048576 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
+ IF (q->>'controlGeneration')::numeric NOT BETWEEN 1 AND 9007199254740991
+  OR (q->>'controlGeneration')::numeric<>trunc((q->>'controlGeneration')::numeric)
+  OR anvil.source_read_exact(ids,ARRAY['serverCommandId','operationId','authorizationReceiptId','auditEventId','policyEventId','originId']) IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
+ FOR k IN SELECT jsonb_object_keys(ids) LOOP
+  IF jsonb_typeof(ids->k) IS DISTINCT FROM 'string' OR ids->>k!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
+ END LOOP;
+ IF (SELECT count(DISTINCT value) FROM jsonb_each_text(ids))<>6 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
+ g=(q->>'controlGeneration')::bigint;cid=(ids->>'serverCommandId')::uuid;qh=anvil.source_read_hash(q);
+ received_at=transaction_timestamp();begin_at=clock_timestamp();
+ ctx=anvil.fn03_management_context(s,a,c,p,g,'defineSourceContentPolicy',policy,observed_until);
+ until_at=(ctx->>'authorizedUntil')::timestamptz;last_at=clock_timestamp();
+ IF NOT isfinite(received_at) OR NOT isfinite(begin_at) OR NOT isfinite(last_at) OR last_at<begin_at OR last_at>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
+ SELECT x.* INTO STRICT ac FROM anvil.project_storage_accounts x WHERE x.project_id=p FOR UPDATE;
+ IF ac.coverage_state IS DISTINCT FROM 'VERIFIED' OR ac.generation NOT BETWEEN 1 AND 9007199254740991
+  OR anvil.quota_complete(p) IS NOT TRUE THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_UNVERIFIED';END IF;
+ SELECT COALESCE(sum(x.settled_bytes) FILTER(WHERE x.phase='SETTLED'),0),COALESCE(sum(x.reserved_bytes) FILTER(WHERE x.phase IN('RESERVED','IO_STARTED','UNKNOWN')),0)
+  INTO used,held FROM anvil.project_storage_reservations x WHERE x.project_id=p;
+ used=used+anvil.fn15_storage_actual(p)+anvil.fn75_project_storage_actual_bytes(p)+anvil.fn76_storage_actual(p);
+ held=held+anvil.fn15_storage_future(p)+anvil.fn75_project_storage_future(p)+anvil.fn76_storage_future(p);
+ other_bytes=anvil.fn09_registered_other_bytes(p);
+ IF used IS NULL OR held IS NULL OR other_bytes IS NULL OR used<0 OR held<0 OR other_bytes<0 OR used+held+other_bytes>10737418240
+  OR ac.used_bytes IS DISTINCT FROM used OR ac.held_bytes IS DISTINCT FROM held THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED';END IF;
+ -- project lock는 빈 head도 직렬화한다. 회수/만료된 마지막 E를 필터링하지 않는다.
+ SELECT x.* INTO head FROM anvil.source_content_policy_events x WHERE x.project_id=p ORDER BY x.sequence DESC LIMIT 1 FOR UPDATE;
+ IF FOUND THEN
+  IF anvil.source_content_policy_row_shape(head) IS NOT TRUE OR head.sequence>=9007199254740991 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_HEAD_INVALID';END IF;
+  previous=jsonb_build_object('id',head.id,'version',head.version,'contentHash',head.content_hash);seq=head.sequence+1;
+ END IF;
+ IF previous IS DISTINCT FROM q->'payload'->'previousPolicyRef' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_HEAD_CONFLICT';END IF;
+ -- 이 producer는 신규 동일 명령만 저장한다. replay는 별도 역사 read 검산 없이 성공을 재발급하지 않는다.
+ IF EXISTS(SELECT 1 FROM anvil.commands x WHERE x.id=cid OR x.project_id=p AND x.actor_id=a AND x.command_id=(q->>'commandId')::uuid)
+  OR EXISTS(SELECT 1 FROM anvil.project_storage_reservations x WHERE x.id=cid OR x.project_id=p AND x.actor_id=a AND x.external_command_id=(q->>'commandId')::uuid)
+  OR EXISTS(SELECT 1 FROM anvil.source_content_policy_events x WHERE x.project_id=p AND x.id=(ids->>'policyEventId')::uuid)
+  OR EXISTS(SELECT 1 FROM anvil.source_content_policy_management_origins x WHERE x.project_id=p AND x.id=(ids->>'originId')::uuid) THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT';END IF;
+ at_time=clock_timestamp();
+ IF NOT isfinite(at_time) OR at_time<last_at OR at_time>=until_at OR head.id IS NOT NULL AND at_time<head.recorded_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
+ e_at=date_trunc('milliseconds',at_time);last_at=at_time;
+ IF anvil.fn03_management_definition_valid(q->'payload'->'definition',q->'payload'->'reason',a,e_at) IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
+ snapshot=(q->'payload'->'definition')||jsonb_build_object('projectId',p,'sequence',seq,'recordedAt',anvil.source_read_iso(e_at),'reason',q->'payload'->'reason');
+ IF octet_length(convert_to(anvil.source_read_canonical_json(snapshot),'UTF8'))>1048576 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
+ er=jsonb_build_object('id',ids->>'policyEventId','version',1,'contentHash',anvil.source_read_hash(snapshot));
+ at_time=clock_timestamp();
+ IF NOT isfinite(at_time) OR at_time<last_at OR at_time>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
+ o_at=date_trunc('milliseconds',at_time);last_at=at_time;
+ origin_snapshot=jsonb_build_object('schemaVersion',1,'purpose','SOURCE_CONTENT_POLICY_MANAGEMENT_ORIGIN','id',ids->>'originId','version',1,'projectId',p,
+  'managementCommandId',cid,'policyEventRef',er,'originalRequest',q,'requestHash',qh,'recordedAt',anvil.source_read_iso(o_at));
+ IF e_at>o_at OR octet_length(convert_to(anvil.source_read_canonical_json(origin_snapshot),'UTF8'))>2097152 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
+ orr=jsonb_build_object('id',ids->>'originId','version',1,'contentHash',anvil.source_read_hash(origin_snapshot));
+ digest=anvil.source_read_hash(jsonb_build_object('projectId',p,'actorId',a,'clientId',c,'controlGeneration',g,'requestHash',qh,'policyRef',policy,'targetRef',er));
+ e=jsonb_populate_record(NULL::anvil.source_content_policy_events,jsonb_build_object('project_id',p,'id',ids->>'policyEventId','version',1,'sequence',seq,'subject_user_id',a,
+  'disposition',snapshot->>'disposition','snapshot_json',snapshot,'content_hash',er->>'contentHash','previous_ref',previous,'management_command_id',cid,'recorded_at',e_at,'expires_at',snapshot->>'expiresAt',
+  'previous_id',previous->>'id','previous_version',previous->'version','previous_hash',previous->>'contentHash'));
+ o=jsonb_populate_record(NULL::anvil.source_content_policy_management_origins,jsonb_build_object('project_id',p,'id',ids->>'originId','version',1,'management_command_id',cid,
+  'policy_event_ref',er,'request_json',q,'request_hash',qh,'recorded_at',o_at,'content_hash',orr->>'contentHash'));
+ cmd=jsonb_populate_record(NULL::anvil.commands,jsonb_build_object('id',cid,'scope_kind','PROJECT','scope_id',p,'project_id',p,'draft_id',NULL,'actor_id',a,'client_id',c,'operation','defineSourceContentPolicy',
+  'command_id',q->>'commandId','request_hash',qh,'operation_id',ids->>'operationId','state','APPLIED','authorization_receipt_id',ids->>'authorizationReceiptId','approval_consumption_id',NULL,'expected_version',0,
+  'control_generation',g,'policy_ref',policy,'payload_ref',NULL,'received_at',received_at,'completed_at',o_at,
+  'result_ref',jsonb_build_object('operationId',ids->>'operationId','commandId',q->>'commandId','projectId',p,'status','APPLIED','targetId',e.id,'version',1,
+   'data',jsonb_build_object('ref',er,'status','CONTENT_POLICY_EVENT_RECORDED','policyRef',er,'previousPolicyRef',previous,'sequence',seq,'executionAuthorized',false,'agentDispatchPerformed',false,'baselineConfirmed',false,'linkAuthorized',false),
+   'evidenceRefs','[]'::jsonb,'warnings','[]'::jsonb,'serverReceivedAt',anvil.source_read_iso(o_at))));
+ receipt=jsonb_populate_record(NULL::anvil.authorization_receipts,jsonb_build_object('id',ids->>'authorizationReceiptId','scope_kind','PROJECT','scope_id',p,'command_id',cid,
+  'subject_ref',jsonb_build_object('kind','HUMAN','userId',a,'clientId',c),'policy_ref',policy,'scope_digest',digest,'approval_decision_ref',NULL,'authorized_at',o_at));
+ audit=jsonb_populate_record(NULL::anvil.audit_events,jsonb_build_object('project_id',p,'server_sequence',9223372036854775807,'event_id',ids->>'auditEventId',
+  'actor_ref',jsonb_build_object('kind','HUMAN','userId',a),'client_ref',c,'command_id',cid,'operation_id',ids->>'operationId','target_ref',er,'policy_ref',policy,'approval_ref',NULL,
+  'outcome','APPLIED','reason_code','SOURCE_CONTENT_POLICY_EVENT_RECORDED','scope_digest',digest,'recorded_at',o_at,'source_kind','HUMAN_COMMAND','correction_of',NULL));
+ prepared=jsonb_build_object('O',anvil.fn03_management_physical(to_jsonb(o)),'E',anvil.fn03_management_physical(to_jsonb(e)),
+  'C',anvil.fn03_management_physical(to_jsonb(cmd)),'A',anvil.fn03_management_physical(to_jsonb(receipt)),'U',anvil.fn03_management_physical(to_jsonb(audit)));
+ part=jsonb_build_object('key','management_origin','kind','SOURCE_CONTENT_POLICY_MANAGEMENT','id',o.id,'contentHash',o.content_hash,'bytes','0','reservedBytes','0','settledBytes','0');
+ plan=jsonb_build_object('schemaVersion',1,'purpose','SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE','projectId',p,'actorId',a,'clientId',c,'authSessionId',s,
+  'credentialGeneration',ctx->'credentialGeneration','controlGeneration',g,'operation','defineSourceContentPolicy','externalCommandId',q->>'commandId','requestHash',qh,'permissionPolicyRef',policy,
+  'originRef',orr,'policyEventRef',er,'ids',ids,'coverageGeneration',ac.generation::text,'authorizedUntil',ctx->'authorizedUntil','transactionId',expected_tx,'parts',jsonb_build_array(part));
+ -- 미확정 phase 시각은 비용용이다. created_at은 INSERT 직전 실제 관측으로 교체한다.
+ r=jsonb_populate_record(NULL::anvil.project_storage_reservations,jsonb_build_object('id',cid,'project_id',p,'actor_id',a,'client_id',c,'external_command_id',q->>'commandId',
+  'operation','defineSourceContentPolicy','command_hash',qh,'part_key','management_origin','part_kind','SOURCE_CONTENT_POLICY_MANAGEMENT','plan_json',plan,'plan_hash',repeat('0',64),
+  'reserved_bytes',0,'settled_bytes',0,'phase','RESERVED','start_fence',0,'authorized_until',until_at,'server_command_id',NULL,'authorization_receipt_id',NULL,'scope_digest',NULL,'created_at',o_at,'started_at',NULL,'settled_at',NULL));
+ template=anvil.fn03_management_physical(to_jsonb(r));maximum=anvil.fn03_management_maximum(prepared,template);
+ reserved=anvil.fn03_management_fixed_point(maximum,template);
+ IF used+held+reserved+other_bytes>10737418240 THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;
+ part=part||jsonb_build_object('bytes',reserved::text,'reservedBytes',reserved::text,'settledBytes',reserved::text);plan=jsonb_set(plan,'{parts,0}',part);
+ IF anvil.fn03_management_plan_valid(plan) IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_PLAN_INVALID';END IF;
+ sealed_hash=anvil.source_read_hash(plan);r.plan_json=plan;r.plan_hash=sealed_hash;r.reserved_bytes=reserved;
+ at_time=clock_timestamp();
+ IF NOT isfinite(at_time) OR at_time<last_at OR at_time>=until_at OR expected_tx IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
+ r.created_at=at_time;last_at=at_time;
+ INSERT INTO anvil.project_storage_reservations SELECT (r).*;
+ UPDATE anvil.project_storage_accounts SET held_bytes=held_bytes+reserved,updated_at=at_time
+  WHERE project_id=p AND coverage_state='VERIFIED' AND generation=ac.generation AND used_bytes=used AND held_bytes=held;
+ IF NOT FOUND THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED';END IF;
+ at_time=clock_timestamp();
+ IF NOT isfinite(at_time) OR at_time<last_at OR at_time>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
+ UPDATE anvil.project_storage_reservations SET phase='IO_STARTED',start_fence=1,started_at=at_time
+  WHERE id=cid AND project_id=p AND plan_json=plan AND plan_hash=sealed_hash AND phase='RESERVED' AND start_fence=0 RETURNING * INTO STRICT r;
+ last_at=at_time;
+ SELECT COALESCE(max(x.server_sequence),0)+1 INTO audit_seq FROM anvil.audit_events x WHERE x.project_id=p;
+ IF audit_seq NOT BETWEEN 1 AND 9007199254740991 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_SEQUENCE_INVALID';END IF;
+ done_at=clock_timestamp();
+ IF NOT isfinite(done_at) OR done_at<last_at OR done_at<received_at OR done_at>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
+ cmd.completed_at=done_at;cmd.result_ref=jsonb_set(cmd.result_ref,'{serverReceivedAt}',to_jsonb(anvil.source_read_iso(done_at)));
+ receipt.authorized_at=done_at;audit.recorded_at=done_at;audit.server_sequence=audit_seq;last_at=done_at;
+ prepared=prepared||jsonb_build_object('C',anvil.fn03_management_physical(to_jsonb(cmd)),'A',anvil.fn03_management_physical(to_jsonb(receipt)),
+  'U',anvil.fn03_management_physical(to_jsonb(audit))||jsonb_build_object('server_sequence',audit_seq::text));
+ INSERT INTO anvil.commands SELECT (cmd).*;
+ INSERT INTO anvil.authorization_receipts SELECT (receipt).*;
+ INSERT INTO anvil.audit_events SELECT (audit).*;
+ -- E의 generated previous 세 열은 삽입하지 않는다. 기존 생성식이 실값을 다시 계산한다.
+ INSERT INTO anvil.source_content_policy_events(project_id,id,version,sequence,subject_user_id,disposition,snapshot_json,content_hash,previous_ref,management_command_id,recorded_at,expires_at)
+  VALUES(e.project_id,e.id,e.version,e.sequence,e.subject_user_id,e.disposition,e.snapshot_json,e.content_hash,e.previous_ref,e.management_command_id,e.recorded_at,e.expires_at);
+ INSERT INTO anvil.source_content_policy_management_origins SELECT (o).*;
+ actual=anvil.fn03_management_actual(p,cid);template=anvil.fn03_management_physical(to_jsonb(r));
+ settled=anvil.fn03_management_fixed_point(actual,template,reserved);
+ IF actual>maximum OR settled>reserved OR used+settled+held+other_bytes>10737418240 THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;
+ at_time=clock_timestamp();
+ IF NOT isfinite(at_time) OR at_time<last_at OR at_time>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
+ UPDATE anvil.project_storage_reservations SET phase='SETTLED',settled_bytes=settled,server_command_id=cid,authorization_receipt_id=receipt.id,scope_digest=digest,settled_at=at_time
+  WHERE id=cid AND project_id=p AND plan_json=plan AND plan_hash=sealed_hash AND phase='IO_STARTED' AND start_fence=1 RETURNING * INTO STRICT r;
+ UPDATE anvil.project_storage_accounts SET used_bytes=used_bytes+settled,held_bytes=held_bytes-reserved,updated_at=at_time
+  WHERE project_id=p AND coverage_state='VERIFIED' AND generation=ac.generation AND used_bytes=used AND held_bytes=held+reserved;
+ IF NOT FOUND THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED';END IF;
+ last_at=at_time;bundle=anvil.fn03_management_history_bundle(p,cid);
+ IF (bundle->'rows'-'R') IS DISTINCT FROM prepared OR bundle->'rows'->'R'->'plan_json' IS DISTINCT FROM plan
+  OR bundle->'rows'->'R'->>'plan_hash' IS DISTINCT FROM sealed_hash THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_STORED_MISMATCH';END IF;
+ -- 역사 검산 뒤 현재를 재검산한다. 미연결 16제약/목적 finalguard를 성공으로 취급하지 않는다.
+ final_ctx=anvil.fn03_management_context(s,a,c,p,g,'defineSourceContentPolicy',policy,until_at);at_time=clock_timestamp();
+ IF final_ctx IS DISTINCT FROM ctx OR expected_tx IS DISTINCT FROM txid_current()::text OR NOT isfinite(at_time) OR at_time<last_at OR at_time>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
+ RETURN jsonb_build_object('status','RECORDED','transactionId',expected_tx)||bundle;
+END;$$;
+ALTER FUNCTION anvil.fn03_source_content_management_commit(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text,timestamptz) OWNER TO anvil_v3_source_content_management_owner;
+REVOKE ALL ON FUNCTION anvil.fn03_source_content_management_commit(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text,timestamptz) FROM PUBLIC,anvil_v3_app;
