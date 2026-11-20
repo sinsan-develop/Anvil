@@ -21475,3 +21475,11 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 기준 `6bcef769`, developer_primary 단일 작성·반환. 신규 순수 IdentityFile 형상 분류와 합성 시험만 추가했다. 일반 Windows 드라이브 경로·인용 공백·tilde 및 token/env, UNC·상대 참조를 원 값 없이 분류한다. 동적 확장·파일 조회를 하지 않으며 모두 UNCONFIRMED다. 기존 소진 실행의 alias helper/실행안/결과를 바꾸지 않았다.
 
 담당 직접4통과 c0747f·strict 타입 종료0 a7a2bb. Main 직접4통과·실패/건너뜀0 5522df, SHA 2/2와 공백 16b722. 소스 5846A8D06AA7CAA8453A792DF52A37562D2C37F6BEFE932B3C608C399758E2BC, 시험 D05C738DBECFEACD8555863969D4C1A1251B4F947825E8F389030972A151E06D. 실설정/키·SSH·WSL·DB·권한·서비스·Agent 실행0, 합성 핸들0. 기존 alias 소비에 연결하고 종단 검수하는 작업이 남았다. 추가 실제 설정 재조회 결정은 요청하지 않았다.
+
+## IX01 Windows IdentityFile 형상 분류의 설정 검사 연결
+
+기준 `04f1fca8`, developer_primary 단일 작성·반환. 기존 alias 함수의 명시 분류 모드에서만 순수 분류기를 호출하고 새 config 검사 진입에 연결했다. 정적 Windows 드라이브 경로·인용 공백·tilde는 문자열 형상으로 처리한다. token/env·UNC·상대·불명 escape 및 복수 적용은 미확인으로 유지하며 사용자 파일 실패 뒤 시스템 파일 읽기0을 확인했다. 실제 참조의 존재·권한·키·Windows SSH 해석 또는 연결 현재성을 발급하지 않는다.
+
+담당 신규 기능 RED 1725aa와 중간 fixture 오류2건을 분리해 정정했다. 최종 직접17통과 850cfb·strict 타입 종료0 65084e. Main 직접17통과·실패/건너뜀0, 원 handle2808 회수 ac3689, 동결 SHA 5/5와 공백 b2de25. 신규 alias D972A785A99CC8C883B15AB716B8D939241E5E5663F56D67D73581FF0C15E09B, config 8A3008A818F4A38CCC449E7E69A87C42C3E65470130D89FCCA25C7EC95F5F2BE. 소진 실행안과 실제 기록은 불변이며 과거 `1b5232a7`의 Git blob 3개를 기존 기대 지문으로 대조해 과거의 정상·거절을 재현했다.
+
+실제 재판독·키·SSH·WSL·IPAM·DB·권한·서비스·Agent 실행0, 합성 핸들0. 새 네 소스의 실제 실행은 고정 실행안과 별도 승인 전까지 미실행이다. 다음은 같은 설정을 사유별로 반복 조회하지 않도록 필요한 최종 확인 범위와 후속 소비를 통합하는 것이다. 롤백은 이번 소스 2개·시험 3개 및 기록 추가에 한정한다.

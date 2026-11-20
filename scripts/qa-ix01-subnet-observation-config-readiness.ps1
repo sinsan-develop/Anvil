@@ -1,4 +1,4 @@
-# 메모리에 검산 적재된 6847D094 원 helper 및 EB0B9449 alias helper만 재사용한다.
+# 메모리에 검산 적재된 6847D094 원 helper와 새 alias/IdentityFile closure를 재사용한다.
 # 자동 진입/소스 로드/새 native 포트는 없다. 실제 호출은 별도 신규 승인과 원 감독의 책임이다.
 function Invoke-Ix01ConfigReadiness($Binding, $Ports) {
     $ErrorActionPreference='Stop'
@@ -64,7 +64,7 @@ function Invoke-Ix01ConfigReadiness($Binding, $Ports) {
             $result.reason='WINDOW_EXPIRED';$now=& $p.Clock
             if (!(Test-Ix01ReadinessBudget $now $q $start $previous $step)) { throw 'REJECTED' };$previous=$now
             # 첫 파일의 불명도 다음 파일 읽기 전에 닫는다. user/system 최종 첫 값은 아래에서 합성한다.
-            $verdict=if($target.role -ceq 'USER_CONFIG'){Read-Ix01SubnetAliasConfig -UserBytes $body -SystemBytes $null}else{Read-Ix01SubnetAliasConfig -UserBytes $null -SystemBytes $body}
+            $verdict=if($target.role -ceq 'USER_CONFIG'){Read-Ix01SubnetAliasConfig -UserBytes $body -SystemBytes $null -ClassifyIdentityPaths}else{Read-Ix01SubnetAliasConfig -UserBytes $null -SystemBytes $body -ClassifyIdentityPaths}
             if($verdict.status -cne 'ALIAS_SUBSET') {
                 $result.reason=$verdict.code
                 if($verdict.role -cin @('USER_CONFIG','SYSTEM_CONFIG') -and (Test-Ix01ReadinessInteger $verdict.line) -and $verdict.line -le 4096) {
@@ -78,7 +78,7 @@ function Invoke-Ix01ConfigReadiness($Binding, $Ports) {
             $bodies[$target.role]=$body;$body=$null;$result.files+=,$entry
             if($null -ne $buffer) { [Array]::Clear($buffer,0,$buffer.Length);$buffer=$null }
         }
-        $verdict=Read-Ix01SubnetAliasConfig -UserBytes $bodies['USER_CONFIG'] -SystemBytes $bodies['SYSTEM_CONFIG']
+        $verdict=Read-Ix01SubnetAliasConfig -UserBytes $bodies['USER_CONFIG'] -SystemBytes $bodies['SYSTEM_CONFIG'] -ClassifyIdentityPaths
         if($verdict.status -cne 'ALIAS_SUBSET') {
             $result.reason=$verdict.code
             if($verdict.role -cin @('USER_CONFIG','SYSTEM_CONFIG') -and (Test-Ix01ReadinessInteger $verdict.line) -and $verdict.line -le 4096) {

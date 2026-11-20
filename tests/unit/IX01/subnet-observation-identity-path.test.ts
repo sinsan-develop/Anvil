@@ -47,5 +47,7 @@ test('IX01 IdentityFile syntax: 불명 인용/escape·동적 형상·control·�
 });
 test('IX01 IdentityFile syntax source: 고정 alias/실행 closure 보존, 순수 함수만',()=>{
  const s=readFileSync(sourceUrl,'utf8');assert(!/Get-Item|Get-Content|Get-Acl|Test-Path|Resolve-Path|ExpandEnvironmentVariables|GetEnvironmentVariable|Start-Process|Invoke-Expression|Invoke-WebRequest|File\]::|Directory\]::/.test(s));
- assert.equal(createHash('sha256').update(readFileSync(new URL('scripts/qa-ix01-subnet-observation-alias-config.ps1',base))).digest('hex'),'eb0b94496e2c28c8c0193c2904cf3477d07b9a18540a673b9739c7d446cdd488');
+ const original=spawnSync('git',['cat-file','blob','1b5232a7f83ab190b3ae7649196f198d0b7469aa:scripts/qa-ix01-subnet-observation-alias-config.ps1'],{cwd:base,windowsHide:true,maxBuffer:65536});
+ assert.equal(original.error,undefined);assert.equal(original.status,0);
+ assert.equal(createHash('sha256').update(original.stdout).digest('hex'),'eb0b94496e2c28c8c0193c2904cf3477d07b9a18540a673b9739c7d446cdd488');
 });

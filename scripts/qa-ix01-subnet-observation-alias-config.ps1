@@ -1,7 +1,7 @@
 # 순수 오프라인 subset 판독. 원 6847D094 검사/실제 출력/실행안을 대체하지 않는다.
 # 호출자가 제공한 user/system 바이트만 읽는다. null은 명시 부재이며 실제 부재 증명이 아니다.
 # OpenSSH 전체 문법/기본값/인증/host trust/현재성/승인을 발급하지 않는다.
-function Read-Ix01SubnetAliasConfig($UserBytes, $SystemBytes) {
+function Read-Ix01SubnetAliasConfig($UserBytes, $SystemBytes, [switch]$ClassifyIdentityPaths) {
     $reason='INPUT_UNCONFIRMED';$role='USER_CONFIG';$lineNumber=0;$owned=$null
     try {
         $selected=@{};$identity=$null;$userKind='UNSET'
@@ -62,8 +62,19 @@ function Read-Ix01SubnetAliasConfig($UserBytes, $SystemBytes) {
                     'port' { if ($value -cnotmatch '\A[0-9]{1,5}\z' -or [int]$value -lt 1 -or [int]$value -gt 65535) { throw 'REJECTED' } }
                     'identitiesonly' { if ($value -cnotin @('yes','no')) { throw 'REJECTED' } }
                     'identityfile' {
-                        $reason='PATH_UNCONFIRMED'
-                        if ($value -cnotmatch '\A~/\.ssh/[A-Za-z0-9_.-]{1,128}\z' -or $value -cin @('~/.ssh/.','~/.ssh/..')) { throw 'REJECTED' }
+                        if ($ClassifyIdentityPaths) {
+                            # 새 closure에서만 명시 선택한다. 구형 호출은 원 tilde 검사 그대로다.
+                            $reason='IDENTITY_CLASSIFIER_UNCONFIRMED'
+                            $classification=Read-Ix01IdentityPathSyntax $value
+                            $reason='PATH_UNCONFIRMED'
+                            if ($classification -isnot [hashtable] -or $classification.Count -ne 6 -or
+                                $classification.schemaVersion -ne 1 -or $classification.status -cne 'CLASSIFIED' -or
+                                $classification.readiness -cne 'UNCONFIRMED' -or $classification.reference -cne 'LITERAL' -or
+                                $classification.quoted -isnot [bool] -or $classification.kind -cnotin @('WINDOWS_DRIVE_PATH','TILDE_PATH')) { throw 'REJECTED' }
+                        } else {
+                            $reason='PATH_UNCONFIRMED'
+                            if ($value -cnotmatch '\A~/\.ssh/[A-Za-z0-9_.-]{1,128}\z' -or $value -cin @('~/.ssh/.','~/.ssh/..')) { throw 'REJECTED' }
+                        }
                         # IdentityFile은 누적형이다. scalar 첫 값으로 바꾸지 않고 복수 적용은 미지원이다.
                         if ($null -ne $identity) { $reason='IDENTITY_SET_UNCONFIRMED';throw 'REJECTED' }
                         $identity=@{key=$key;role=$role;line=$lineNumber}

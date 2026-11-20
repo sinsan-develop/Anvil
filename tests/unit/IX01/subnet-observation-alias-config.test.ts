@@ -4,8 +4,8 @@ import {readFileSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 
 const sourceUrl=new URL('../../../scripts/qa-ix01-subnet-observation-alias-config.ps1',import.meta.url);
-function ram(cases:readonly {user:string|null;system:string|null}[]){
- const source=readFileSync(sourceUrl,'utf8');
+function ram(cases:readonly {user:string|null;system:string|null}[],classifyIdentityPaths=false){
+ const source=readFileSync(sourceUrl,'utf8')+(classifyIdentityPaths?'\n'+readFileSync(new URL('../../../scripts/qa-ix01-subnet-observation-identity-path.ps1',import.meta.url),'utf8'):'');
  const input=Buffer.from(JSON.stringify(cases)).toString('base64');
  const script=`$ErrorActionPreference='Stop'
 $source=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${Buffer.from(source).toString('base64')}'))
@@ -18,7 +18,7 @@ $out=@();foreach($case in $cases){
  $user=$null;$system=$null
  if($null -ne $case.user){$user=[Text.Encoding]::UTF8.GetBytes($case.user)}
  if($null -ne $case.system){$system=[Text.Encoding]::UTF8.GetBytes($case.system)}
- $out+=Read-Ix01SubnetAliasConfig -UserBytes $user -SystemBytes $system
+ $out+=Read-Ix01SubnetAliasConfig -UserBytes $user -SystemBytes $system ${classifyIdentityPaths?'-ClassifyIdentityPaths':''}
 }
 ConvertTo-Json -InputObject $out -Depth 10 -Compress`;
  const r=spawnSync('C:\\Program Files\\PowerShell\\7\\pwsh.exe',['-NoLogo','-NoProfile','-NonInteractive','-Command','$s=[Console]::In.ReadToEnd(); & ([scriptblock]::Create($s))'],{input:script,encoding:'utf8',timeout:20000,maxBuffer:65536,windowsHide:true});
@@ -31,6 +31,16 @@ test('IX01 alias config RAM: 고정 alias·전역/user/system 첫 값, 출력 �
  assert.equal(r.status,'ALIAS_SUBSET');assert.equal(r.readiness,'UNCONFIRMED');assert.equal(r.userKind,'NON_ROOT_LITERAL');
  assert.deepEqual(r.fields,[{key:'hostname',role:'USER_CONFIG',line:3},{key:'user',role:'USER_CONFIG',line:1},{key:'port',role:'USER_CONFIG',line:4},{key:'identitiesonly',role:'SYSTEM_CONFIG',line:3}]);
  assert(!JSON.stringify(r).includes('fixture'));assert(!JSON.stringify(r).includes('example.invalid'));assert(!JSON.stringify(r).includes('2222'));
+});
+
+test('IX01 alias config RAM: 명시 IdentityFile 분류 연결의 정적 경로와 미확인 경계',()=>{
+ const paths=[String.raw`C:\PRIVATE\id`,'D:/PRIVATE/id','"C:/PRIVATE USER/id"',String.raw`"C:\PRIVATE USER\id"`,'~/.ssh/id','"~/.ssh/PRIVATE KEY"',
+  '~/.ssh/%h','C:/${HOME}/id',String.raw`\\PRIVATE_SERVER\PRIVATE\id`,'//PRIVATE_SERVER/PRIVATE/id','PRIVATE/id','C:PRIVATE','~other/id',String.raw`"C:\PRIVATE\ KEY"`];
+ const rows=ram(paths.map(path=>({user:`Host WSL-server\n IdentityFile ${path}`,system:null})),true);
+ rows.forEach((r:any,i:number)=>{assert.equal(r.status,i<6?'ALIAS_SUBSET':'UNKNOWN');assert.equal(r.readiness,'UNCONFIRMED');if(i<6)assert.deepEqual(r.fields,[{key:'identityfile',role:'USER_CONFIG',line:2}]);else assert.equal(r.code,'PATH_UNCONFIRMED');});
+ const [duplicate]=ram([{user:'IdentityFile C:/PRIVATE/id',system:'IdentityFile ~/.ssh/id'}],true);
+ assert.equal(duplicate.code,'IDENTITY_SET_UNCONFIRMED');assert.equal(duplicate.role,'SYSTEM_CONFIG');assert.equal(duplicate.line,1);
+ assert(!JSON.stringify(rows).includes('PRIVATE'));assert(!JSON.stringify(rows).includes('HOME'));
 });
 
 test('IX01 alias config RAM: Host 패턴·부정·비대상 무해 값·system scope 초기화',()=>{
