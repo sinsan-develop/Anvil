@@ -49,9 +49,11 @@ test('RLS FORCE/false·전 INSERT 거절·불변/truncate 거절을 유지하고
  assert.match(compact,/BEFORE INSERT ON anvil\.source_content_policy_management_origins FOR EACH ROW EXECUTE FUNCTION anvil\.source_content_unavailable\(\)/);
  assert.match(compact,/BEFORE UPDATE OR DELETE ON anvil\.source_content_policy_management_origins FOR EACH ROW EXECUTE FUNCTION anvil\.source_content_append_only\(\)/);
  assert.match(compact,/BEFORE TRUNCATE ON anvil\.source_content_policy_management_origins FOR EACH STATEMENT EXECUTE FUNCTION anvil\.source_content_append_only\(\)/);
- assert.doesNotMatch(compact,/DROP\b|SECURITY DEFINER|INSERT INTO|UPDATE anvil|DELETE FROM|SET ROLE/);
+ assert.doesNotMatch(compact,/DROP\b|INSERT INTO|UPDATE anvil|DELETE FROM|SET ROLE/);
+ assert.equal((compact.match(/SECURITY DEFINER/g)??[]).length,1);
+ assert.match(compact,/fn03_source_content_management_read\([^;]+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog/);
  const helpers=[...compact.matchAll(/CREATE FUNCTION anvil\.(fn03_management_\w+)\(([^)]*)\)/g)];
- assert.deepEqual(helpers.map(m=>m[1]),['fn03_management_physical','fn03_management_plan_valid','fn03_management_definition_valid','fn03_management_rows','fn03_management_actual','fn03_management_maximum','fn03_management_fixed_point','fn03_management_complete','fn03_management_history_bundle']);
+ assert.deepEqual(helpers.map(m=>m[1]),['fn03_management_physical','fn03_management_plan_valid','fn03_management_definition_valid','fn03_management_rows','fn03_management_actual','fn03_management_maximum','fn03_management_fixed_point','fn03_management_complete','fn03_management_history_bundle','fn03_management_context']);
  for(const helper of helpers)assert.ok(compact.includes(`REVOKE ALL ON FUNCTION anvil.${helper[1]}(`));
  assert.doesNotMatch(compact,/anvil\.(source_content_requests|source_content_observations|source_content_verifications|document_source_links)\b/);
 });
@@ -83,4 +85,40 @@ test('역사 완결은 실제 E/O 별도 시각과 원 봉인 수명을 보존�
  assert.doesNotMatch(complete,/WHEN OTHERS|RETURN true[^]*EXCEPTION/);
  assert.match(body('fn03_management_fixed_point'),/1\.\.64/);
  assert.match(body('fn03_management_maximum'),/9223372036854775807/);
+});
+
+test('현재 목적은 실 auth 잠금 뒤 project/member/control/head 순서와 유한 원 기한을 검산한다',()=>{
+ const current=body('fn03_management_context');
+ const ordered=['PERFORM anvil.fn01_active(s,a,c)','FROM anvil.auth_sessions','FROM anvil.projects','FROM anvil.project_members','FROM anvil.project_control','FROM anvil.permission_policies'];
+ let previous=-1;for(const token of ordered){const at=current.indexOf(token);assert.ok(at>previous,token);previous=at;}
+ assert.match(current,/FOR SHARE OF h/);assert.match(current,/FOR UPDATE/g);
+ for(const token of ["'defineSourceContentPolicy'","'readSourceContentPolicyManagementOrigin'","participation IS DISTINCT FROM 'OWNER'",'control.client_id IS DISTINCT FROM c','control.generation IS DISTINCT FROM g','auth.reauth_until IS NULL','auth.revoked_at IS NOT NULL','auth.credential_generation','date_trunc(\'milliseconds\',until_at)'])assert.ok(current.includes(token),token);
+ assert.doesNotMatch(current,/current_setting|set_config|fn01_lock_owner|quota_account|project_storage|INSERT|UPDATE anvil|DELETE/);
+});
+test('현재 DENY/REQUIRE_APPROVAL은 좁은 AUTO 형상 전에 거절하고 만료 및 주체·목적을 구분한다',()=>{
+ const current=body('fn03_management_context');
+ const deny=current.indexOf("rule->>'disposition' IS DISTINCT FROM 'AUTO'");
+ const narrow=current.indexOf("rule->'targetScopes' IS DISTINCT FROM jsonb_build_array");
+ assert.ok(deny>=0&&narrow>deny);assert.match(current,/rule_until>at_time/);
+ for(const token of ["rule->'subjectRef'->>'kind'='HUMAN'","rule->'subjectRef'->>'userId'=a::text","rule->'operations' ? op","scope->>'kind'='PROJECT'","scope->>'projectId'=p::text","rule->'limitPolicyRef' IS DISTINCT FROM 'null'::jsonb",'IF NOT matched'])assert.ok(current.includes(token),token);
+ assert.doesNotMatch(current,/ORDER BY|LIMIT 1|approval_consumptions/);
+});
+test('보호 read는 current exact3→O→역사 완결→current이고 순수 부재만 ORIGIN_ABSENT다',()=>{
+ const read=body('fn03_source_content_management_read');
+ assert.equal((read.match(/anvil\.fn03_management_context\(/g)??[]).length,2);
+ assert.match(read,/expected_tx IS DISTINCT FROM txid_current\(\)::text/);
+ assert.match(read,/ARRAY\['originRef','policyEventRef','managementCommandId'\]/);
+ assert.match(read,/o\.id=\(selection->'originRef'->>'id'\)::uuid OR o\.management_command_id=cid OR o\.policy_event_ref->>'id'=selection->'policyEventRef'->>'id'/);
+ const absence=read.indexOf('EXCEPTION WHEN no_data_found THEN absent=true'),bundle=read.indexOf('anvil.fn03_management_history_bundle(p,cid)');
+ assert.ok(absence>=0&&bundle>absence);assert.match(read,/SOURCE_CONTENT_MANAGEMENT_SELECTION_MISMATCH/);
+ const historical=read.slice(read.indexOf('IF absent THEN'),read.indexOf('ELSE',read.indexOf('IF absent THEN')));
+ assert.match(historical,/FROM anvil\.source_content_policy_events e WHERE e\.project_id=p AND e\.management_command_id=cid/);
+ assert.match(historical,/IF NOT FOUND OR selection->'policyEventRef' IS DISTINCT FROM jsonb_build_object\('id',historical_event\.id,'version',historical_event\.version,'contentHash',historical_event\.content_hash\)/);
+ assert.match(historical,/source_content_policy_row_shape\(historical_event\) IS NOT TRUE/);
+ assert.match(historical,/RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_SELECTION_MISMATCH'/);
+ assert.match(read,/jsonb_build_object\('status','ORIGIN_ABSENT','transactionId',expected_tx\)/);
+ assert.match(read,/jsonb_build_object\('status','FOUND','transactionId',expected_tx\)\|\|bundle/);
+ assert.equal((read.match(/EXCEPTION WHEN/g)??[]).length,1);assert.doesNotMatch(read,/WHEN OTHERS|quota_|INSERT|UPDATE|DELETE|GUC|set_config/);
+ assert.doesNotMatch(read,/plan[^\n]*(actorId|clientId|authSessionId|authorizedUntil)|R\.plan/);
+ assert.match(compact,/REVOKE ALL ON FUNCTION anvil\.fn03_source_content_management_read\(uuid,uuid,uuid,uuid,bigint,jsonb,jsonb,text\) FROM PUBLIC,anvil_v3_app/);
 });

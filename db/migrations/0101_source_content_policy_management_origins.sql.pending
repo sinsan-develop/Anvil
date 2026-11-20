@@ -342,3 +342,116 @@ BEGIN
  RETURN jsonb_build_object('previousEvent',previous,'rows',rows);
 END;$$;
 REVOKE ALL ON FUNCTION anvil.fn03_management_history_bundle(uuid,uuid) FROM PUBLIC,anvil_v3_app;
+
+-- 현재 인가와 역사 정착을 분리한다. fn01_active는 DB의 원 행 잠금일 뿐 token/CSRF 소유 proof가 아니다.
+-- 진짜 Access callback/같은 query의 소유 검산은 업무C에서 결합한다. GUC나 caller verified flag를 받지 않는다.
+-- INVOKER: 목적 역할의 정확 열 SELECT/행잠금 권한·fn01_active EXEC는 전체 저장 DAG 완결 뒤에만 부여한다.
+CREATE FUNCTION anvil.fn03_management_context(s uuid,a uuid,c uuid,p uuid,g bigint,op text,policy jsonb,observed_until timestamptz) RETURNS jsonb LANGUAGE plpgsql VOLATILE SET search_path=pg_catalog AS $$
+DECLARE auth record;member record;control record;pv record;rule jsonb;matched boolean=false;
+ begin_at timestamptz;at_time timestamptz;last_at timestamptz;rule_until timestamptz;until_at timestamptz;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR current_user<>'anvil_v3_source_content_management_owner'
+  OR s IS NULL OR a IS NULL OR c IS NULL OR p IS NULL OR g IS NULL OR g NOT BETWEEN 1 AND 9007199254740991
+  OR op IS NULL OR op NOT IN('defineSourceContentPolicy','readSourceContentPolicyManagementOrigin')
+  OR anvil.source_read_ref(policy) IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CONTEXT_INVALID' USING ERRCODE='42501';END IF;
+ IF op='defineSourceContentPolicy' AND observed_until IS NULL OR observed_until IS NOT NULL AND NOT isfinite(observed_until) THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CONTEXT_INVALID' USING ERRCODE='42501';END IF;
+ begin_at=clock_timestamp();
+ IF NOT isfinite(begin_at) THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ PERFORM anvil.fn01_active(s,a,c);
+ SELECT x.id,x.user_id,x.client_id,x.credential_generation,x.idle_expires_at,x.absolute_expires_at,x.reauth_until,x.revoked_at
+  INTO auth FROM anvil.auth_sessions x WHERE x.id=s AND x.user_id=a AND x.client_id=c;
+ IF auth.id IS NULL OR auth.revoked_at IS NOT NULL OR auth.reauth_until IS NULL
+  OR auth.credential_generation NOT BETWEEN 1 AND 9007199254740991 OR NOT isfinite(auth.idle_expires_at)
+  OR NOT isfinite(auth.absolute_expires_at) OR NOT isfinite(auth.reauth_until) THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ PERFORM x.id FROM anvil.projects x WHERE x.id=p AND x.archived_at IS NULL FOR UPDATE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT x.project_id,x.user_id,x.participation,x.revoked_at INTO member FROM anvil.project_members x WHERE x.project_id=p AND x.user_id=a FOR UPDATE;
+ SELECT x.project_id,x.actor_id,x.client_id,x.generation,x.revoked_at INTO control FROM anvil.project_control x WHERE x.project_id=p FOR UPDATE;
+ IF member.project_id IS NULL OR member.participation IS DISTINCT FROM 'OWNER' OR member.revoked_at IS NOT NULL
+  OR control.project_id IS NULL OR control.actor_id IS DISTINCT FROM a OR control.client_id IS DISTINCT FROM c
+  OR control.generation IS DISTINCT FROM g OR control.revoked_at IS NOT NULL THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT v.project_id,v.policy_id,v.version,v.rules_json,v.reason,v.review_refs,v.content_hash INTO pv
+  FROM anvil.permission_policies h JOIN anvil.permission_policy_versions v ON v.project_id=h.project_id AND v.policy_id=h.id AND v.version=h.head_version
+  WHERE h.project_id=p FOR SHARE OF h;
+ IF pv.policy_id IS NULL OR pv.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('rules',pv.rules_json,'reason',pv.reason,'reviewRefs',pv.review_refs))
+  OR policy IS DISTINCT FROM jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash)
+  OR jsonb_typeof(pv.rules_json) IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_POLICY_INVALID' USING ERRCODE='42501';END IF;
+ IF jsonb_array_length(pv.rules_json)>200 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_POLICY_INVALID' USING ERRCODE='42501';END IF;
+ at_time=clock_timestamp();
+ until_at=least(auth.idle_expires_at,auth.absolute_expires_at,auth.reauth_until,observed_until);
+ IF NOT isfinite(at_time) OR at_time<begin_at OR at_time>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(pv.rules_json) LOOP
+  IF anvil.source_read_exact(rule,ARRAY['ruleId','subjectRef','operations','targetScopes','disposition','limitPolicyRef','expiresAt']) IS NOT TRUE
+   OR jsonb_typeof(rule->'operations') IS DISTINCT FROM 'array' OR jsonb_typeof(rule->'targetScopes') IS DISTINCT FROM 'array'
+   OR jsonb_typeof(rule->'expiresAt') IS DISTINCT FROM 'string' OR rule->>'expiresAt'!~'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$' THEN
+   RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_POLICY_INVALID' USING ERRCODE='42501';END IF;
+  rule_until=(rule->>'expiresAt')::timestamptz;
+  IF NOT isfinite(rule_until) OR anvil.source_read_iso(rule_until) IS DISTINCT FROM rule->>'expiresAt' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_POLICY_INVALID' USING ERRCODE='42501';END IF;
+  -- 기존 대상 매칭으로 먼저 명시 거절을 찾는다. exact AUTO보다 넓은 PROJECT 거절을 건너뛰지 않는다.
+  IF rule->'subjectRef'->>'kind'='HUMAN' AND rule->'subjectRef'->>'userId'=a::text AND rule->'operations' ? op
+   AND EXISTS(SELECT 1 FROM jsonb_array_elements(rule->'targetScopes') scope WHERE scope->>'kind'='PROJECT' AND scope->>'projectId'=p::text)
+   AND rule_until>at_time THEN
+   IF rule->>'disposition' IS DISTINCT FROM 'AUTO' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_OPERATION_DENIED' USING ERRCODE='42501';END IF;
+   IF rule->'subjectRef' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',a)
+    OR rule->'targetScopes' IS DISTINCT FROM jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',p))
+    OR rule->'limitPolicyRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_OPERATION_DENIED' USING ERRCODE='42501';END IF;
+   matched=true;until_at=least(until_at,rule_until);
+  END IF;
+ END LOOP;
+ IF NOT matched THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_OPERATION_DENIED' USING ERRCODE='42501';END IF;
+ -- 공개 ms 기한은 원 raw 최소기한을 줄일 수만 있다. 과거 R의 시각이나 기한으로 현재 인가를 만들지 않는다.
+ until_at=date_trunc('milliseconds',until_at);last_at=clock_timestamp();
+ IF NOT isfinite(last_at) OR last_at<at_time OR last_at>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN jsonb_build_object('operation',op,'projectId',p,'actorId',a,'clientId',c,'authSessionId',s,'credentialGeneration',auth.credential_generation,
+  'controlGeneration',g,'permissionPolicyRef',policy,'transactionId',txid_current()::text,'authorizedUntil',anvil.source_read_iso(until_at));
+END;$$;
+ALTER FUNCTION anvil.fn03_management_context(uuid,uuid,uuid,uuid,bigint,text,jsonb,timestamptz) OWNER TO anvil_v3_source_content_management_owner;
+REVOKE ALL ON FUNCTION anvil.fn03_management_context(uuid,uuid,uuid,uuid,bigint,text,jsonb,timestamptz) FROM PUBLIC,anvil_v3_app;
+
+-- 실제 보호 read의 소스 연결. 아직 app EXEC·필수 표/함수 ACL·E/O SELECT 정책을 부여하지 않았으므로 진입은 비활성이다.
+-- 원문은 이 내부 RPC의 보호 bundle만 거쳐 기존 TS inspector로 간다. 일반 files/검색/로그 응답을 만들지 않는다.
+CREATE FUNCTION anvil.fn03_source_content_management_read(s uuid,a uuid,c uuid,p uuid,control_generation bigint,policy jsonb,selection jsonb,expected_tx text) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE ctx jsonb;final_ctx jsonb;bundle jsonb;origin anvil.source_content_policy_management_origins;
+ historical_event anvil.source_content_policy_events;cid uuid;absent boolean=false;
+ begin_at timestamptz;at_time timestamptz;until_at timestamptz;last_at timestamptz;
+BEGIN
+ IF expected_tx IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_TRANSACTION_INVALID' USING ERRCODE='42501';END IF;
+ begin_at=clock_timestamp();
+ ctx=anvil.fn03_management_context(s,a,c,p,control_generation,'readSourceContentPolicyManagementOrigin',policy,NULL);
+ IF anvil.source_read_exact(selection,ARRAY['originRef','policyEventRef','managementCommandId']) IS NOT TRUE
+  OR anvil.source_read_ref(selection->'originRef') IS NOT TRUE OR selection->'originRef'->'version' IS DISTINCT FROM '1'::jsonb
+  OR anvil.source_read_ref(selection->'policyEventRef') IS NOT TRUE OR selection->'policyEventRef'->'version' IS DISTINCT FROM '1'::jsonb
+  OR jsonb_typeof(selection->'managementCommandId') IS DISTINCT FROM 'string'
+  OR selection->>'managementCommandId'!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+  OR octet_length(convert_to(anvil.source_read_canonical_json(selection),'UTF8'))>4096 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_SELECTION_INVALID' USING ERRCODE='42501';END IF;
+ cid=(selection->>'managementCommandId')::uuid;until_at=(ctx->>'authorizedUntil')::timestamptz;at_time=clock_timestamp();
+ IF NOT isfinite(begin_at) OR NOT isfinite(at_time) OR at_time<begin_at OR at_time>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ BEGIN
+  -- 관련 O가 하나라도 있으면 잘못된 ref/hash를 부재로 숨기지 않는다. 다중 교차 선택도 STRICT로 거절한다.
+  SELECT o.* INTO STRICT origin FROM anvil.source_content_policy_management_origins o WHERE o.project_id=p
+   AND (o.id=(selection->'originRef'->>'id')::uuid OR o.management_command_id=cid OR o.policy_event_ref->>'id'=selection->'policyEventRef'->>'id');
+ EXCEPTION WHEN no_data_found THEN absent=true;
+ END;
+ IF absent THEN
+  -- 과거 O 부재는 실제 같은 project/command의 검산된 E에 한정한다. 임의 선택이나 변조 E를 부재로 바꾸지 않는다.
+  SELECT e.* INTO historical_event FROM anvil.source_content_policy_events e WHERE e.project_id=p AND e.management_command_id=cid;
+  IF NOT FOUND OR selection->'policyEventRef' IS DISTINCT FROM jsonb_build_object('id',historical_event.id,'version',historical_event.version,'contentHash',historical_event.content_hash)
+   OR anvil.source_content_policy_row_shape(historical_event) IS NOT TRUE THEN
+   RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_SELECTION_MISMATCH' USING ERRCODE='42501';END IF;
+ ELSE
+  IF selection->'originRef' IS DISTINCT FROM jsonb_build_object('id',origin.id,'version',origin.version,'contentHash',origin.content_hash)
+   OR selection->'policyEventRef' IS DISTINCT FROM origin.policy_event_ref OR origin.management_command_id IS DISTINCT FROM cid THEN
+   RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_SELECTION_MISMATCH' USING ERRCODE='42501';END IF;
+  bundle=anvil.fn03_management_history_bundle(p,cid);
+ END IF;
+ -- 부재도 현재 권한·원 Tx·기한을 통과한 상태만 반환한다. 역사 actor/client/plan은 새 주체로 덮지 않는다.
+ final_ctx=anvil.fn03_management_context(s,a,c,p,control_generation,'readSourceContentPolicyManagementOrigin',policy,until_at);
+ last_at=clock_timestamp();
+ IF final_ctx IS DISTINCT FROM ctx OR expected_tx IS DISTINCT FROM txid_current()::text
+  OR NOT isfinite(last_at) OR last_at<at_time OR last_at>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ IF absent THEN RETURN jsonb_build_object('status','ORIGIN_ABSENT','transactionId',expected_tx);END IF;
+ RETURN jsonb_build_object('status','FOUND','transactionId',expected_tx)||bundle;
+END;$$;
+ALTER FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,bigint,jsonb,jsonb,text) OWNER TO anvil_v3_source_content_management_owner;
+REVOKE ALL ON FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,bigint,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
