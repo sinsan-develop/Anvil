@@ -21549,3 +21549,9 @@ PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확
 기준 `a48eab04`, developer_primary 단일 writer. 신규 source-content-policy-management-storage.ts와 FN03 저장량 시험만 작성·반환했다. exact 5행·R의 정규화 투영, exact19 봉인 PLAN/단일 part, 원 봉인·hash/coverage·프로젝트·역할 결박, 예약과 정산의 유계 최소고정점 및 기존 U/H/O6의 10GiB 식을 합성으로 확인했다. 물리시각27자와 최상위 정수만 정규화하고 중첩 원문을 보존한다. 정산 결과는 원 봉인 계획을 다시 쓰지 않는다. 실제 권한·저장·거래 또는 파일 관측을 실행하는 진입점은 없다.
 
 담당 최초 함수 부재 RED 6건 `bde7e7`, 최종 직접·인접 39통과·실패/건너뜀0 `5af679`, 좁은 strict 타입 종료0 `601ef2`. Main `node --test tests/unit/FN03/source-content-management-origin-storage.test.ts` 직접 7통과·실패/건너뜀0 `0476e6`. 소스 SHA256 AED81973AE09F2775269988DC6226763B70042FE240445189349F3BDF9C2BFB3, 시험 4635ACAADCEB2A65C0DDF434DA919D0DA2ECE34D7F652BB862FBB7B5174B160A. 다음은 새 미적용 SQL과 목적 저장·내부 조회의 결박, 이후 실제 명령과 화면 연결이다. 실 DB·권한·키·서비스·Agent·파일 관측 실행0. 실제 원장·DB 시각 공급·잠금·ACL·COMMIT 검증은 미실행이다. 롤백은 두 신규 경로와 기록의 역적용이다.
+
+### FN03 미적용 0101 보호 원문 원장 토대 검수
+
+기준 `d34d0e5a`, developer_primary 단일 writer. 0101 번호 부재를 확인하고 `0101_source_content_policy_management_origins.sql.pending`과 FN03 schema 시험만 추가했다. exact9 원장과 행 내부 원문·도출 hash, O에서 관리 event·command로 향하는 동일 프로젝트 FK와 유일성, RLS FORCE/false·변경/삭제/TRUNCATE 차단을 검산한다. 역사 event 전체에 역 FK를 두지 않아 ORIGIN_ABSENT 경계를 보존한다. 새 목적 역할의 원문 접근과 목적 RPC는 열기 전이며 기존 event·관측 3표·LINK의 권한과 소스를 보존했다.
+
+담당 SQL 파일 부재 RED 5건 `214c5b`, 직접·인접 13통과/실패·건너뜀0 `cac77f`, 좁은 타입 종료0 `f71e69`. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 정적 6통과/실패·건너뜀0 `22d877`. SQL SHA256 F69D557E6B7D4E9C302F8DD41E8A7DA8E5C0E61C78169271B60FBE31BC7EFACB, 시험 A65249C29EDE9AE22833693C2A1B4077D37566301B817966DECC070AE6B8EC80. 테스트는 SQL 텍스트 검사이며 실제 PG 구문·역할·제약/COMMIT은 미실행이다. 다음은 event fullref·원 5행/R 역완결과 보호 저장·조회 함수다. DB·SQL 적용·권한·키·서비스·Agent·실자료·SSH 실행0. 롤백은 이번 신규 SQL·시험과 기록의 역적용이다.
