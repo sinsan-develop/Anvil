@@ -125,6 +125,35 @@ function attachedFixture(){
  return {scope,network,container};
 }
 
+test('IX01 ATTACHED dedicated /28 RAM: 명시 scope의 IPAM과 양쪽 주소만 추가 검산한다',async()=>{
+ const api=await import('../../../scripts/qa-ix01-current-journey.ts');
+ // 합성 주소이며 운영 대역 선택/예약 근거가 아니다.
+ const fixture=()=>{const f=attachedFixture();return {...f,scope:{...f.scope,subnet:'172.18.0.16/28'},
+  network:{...f.network,ipam:[{Subnet:'172.18.0.16/28',Gateway:'172.18.0.17'}],containers:{[containerId]:{...f.network.containers[containerId]!,IPv4Address:'172.18.0.18/28'}}},
+  container:{...f.container,networks:{[f.scope.networkName]:{...f.container.networks[f.scope.networkName]!,IPAddress:'172.18.0.18',IPPrefixLen:28}}}};};
+ const read=(f:ReturnType<typeof fixture>,seen:string[])=>api.readCurrentAttachedHost(f.scope,{network(){seen.push('network');return canonicalJson(f.network);},container(){seen.push('container');return canonicalJson(f.container);}});
+ const seen:string[]=[];assert.equal(read(fixture(),seen),'172.18.0.18');assert.deepEqual(seen,['network','container']);
+ const cases:((f:any)=>void)[]=[
+  f=>{f.scope.subnet='172.18.0.17/28';},f=>{f.scope.subnet='172.18.0.16/27';},f=>{f.scope.subnet='172.32.0.16/28';},
+  f=>{f.scope.subnet='172.18.255.16/28';},f=>{f.scope.subnet='172.18.00.16/28';},f=>{f.scope.subnet+='\n';},f=>{f.scope.subnet=null;},f=>{f.scope.subnet=undefined;},
+  f=>{delete f.network.ipam;},f=>{f.network.ipam=[];},f=>{f.network.ipam.push({...f.network.ipam[0]});},
+  f=>{f.network.ipam[0].Subnet='172.18.0.32/28';},f=>{f.network.ipam[0].IPRange='172.18.0.16/28';},
+  f=>{delete f.network.ipam[0].Gateway;},f=>{f.network.ipam[0].Gateway='172.18.0.16';},f=>{f.network.ipam[0].Gateway='172.18.0.31';},f=>{f.network.ipam[0].Gateway='172.18.0.33';},
+  f=>{f.network.containers[containerId].IPv4Address='172.18.0.18/27';},f=>{f.container.networks[f.scope.networkName].IPPrefixLen=27;},
+  ...['172.18.0.16','172.18.0.31','172.18.0.17','172.18.0.33'].map(ip=>(f:any)=>{f.network.containers[containerId].IPv4Address=ip+'/28';f.container.networks[f.scope.networkName].IPAddress=ip;}),
+ ];
+ for(const mutate of cases){const f=fixture(),calls:string[]=[];mutate(f);assert.throws(()=>read(f,calls),error=>api.currentNetworkFailureCode(error)==='STOPPED_NETWORK_ATTACHED_VERIFY_CIDR');assert.deepEqual(calls,['network','container']);}
+ for(const [subnet,gateway,ip] of [['172.16.0.0/28','172.16.0.1','172.16.0.14'],['172.31.254.240/28','172.31.254.241','172.31.254.254']]){
+  const f=fixture();f.scope.subnet=subnet!;f.network.ipam=[{Subnet:subnet!,Gateway:gateway!}];f.network.containers[containerId]!.IPv4Address=ip+'/28';f.container.networks[f.scope.networkName]!.IPAddress=ip!;assert.equal(read(f,[]),ip);
+ }
+ const wrong=fixture();wrong.container.networks[wrong.scope.networkName]!.IPAddress='172.18.0.19';assert.throws(()=>read(wrong,[]),error=>api.currentNetworkFailureCode(error)==='STOPPED_NETWORK_ATTACHED_VERIFY_IP_MATCH');
+ const endpoint=fixture();endpoint.container.networks[endpoint.scope.networkName]!.EndpointID='f'.repeat(64);assert.throws(()=>read(endpoint,[]),error=>api.currentNetworkFailureCode(error)==='STOPPED_NETWORK_ATTACHED_VERIFY_ENDPOINT');
+ const bad=fixture(),h=harness();bad.network.ipam=[];
+ h.ports.connect=async()=>{h.calls.push('NETWORK');api.runCurrentNetworkSteps({PRECHECK(){},CREATE(){},CREATE_VERIFY(){},NONE_VERIFY(){},DISCONNECT(){},DETACHED_VERIFY(){},CONNECT(){},ATTACHED_VERIFY(){read(bad,[]);}});throw Error('unreachable');};
+ const result=await runCurrentJourney(input(),h.ports);assert.equal(result.status,'UNKNOWN');assert.equal(result.stage,'NETWORK');assert.equal(result.code,'STOPPED_NETWORK_ATTACHED_VERIFY_CIDR');
+ assert.deepEqual(h.calls.slice(-2),['NETWORK','RECORD']);assert.equal(h.calls.filter(c=>c==='RECORD').length,1);assert(!h.calls.includes('CHILD'));assert(!h.calls.includes('CLEANUP'));
+});
+
 test('IX01 ATTACHED metadata RAM: 원 검산과 최초 실패 코드만 보존한다',async()=>{
  const api=await import('../../../scripts/qa-ix01-current-journey.ts');
  assert.equal(typeof api.readCurrentAttachedHost,'function');

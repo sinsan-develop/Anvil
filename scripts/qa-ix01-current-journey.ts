@@ -497,6 +497,9 @@ const hba='local all all trust\nhost all all 0.0.0.0/0 scram-sha-256\nhost all a
 interface CurrentAttachedScope{
  readonly containerId:string;readonly networkId:string;readonly containerName:string;readonly networkName:string;
  readonly image:string;readonly labels:Readonly<Record<string,string>>;
+ // 선택적 순수 검산 입력. 현재 A14 plan/실제 inspect/create 경로는 공급하지 않는다.
+ // 관측 후보·이 값만으로 대역 예약/비충돌/실행 권한을 발급하지 않는다.
+ readonly subnet?:string;
 }
 // 실제 inspect와 RAM 검증은 같은 판정식을 쓴다. 관측 자료 자체는 실행 권위를 발급하지 않는다.
 function verifyContainerObservation(v:Record<string,any>,scope:Pick<CurrentAttachedScope,'containerId'|'containerName'|'image'|'labels'>,attached=false){
@@ -571,6 +574,16 @@ export function readCurrentAttachedHost(scope:CurrentAttachedScope,ports:{networ
  require(local?.NetworkID===scope.networkId,'NETWORK_MATCH');
  require(local?.IPAddress===ip,'IP_MATCH');
  require(hex(local?.EndpointID,64)&&local.EndpointID===entry.EndpointID,'ENDPOINT');
+ if('subnet' in scope)attachedCheck('CIDR',()=>{
+  const subnet=scope.subnet;
+  const match=typeof subnet==='string'&&/^172\.(1[6-9]|2\d|3[01])\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\/28$/.exec(subnet);
+  if(!match||match[0]!==subnet||Number(match[2])>254||Number(match[3])>240||Number(match[3])%16!==0)return fail('IX01_CURRENT_NETWORK');
+  const prefix=`172.${match[1]}.${match[2]}.`,first=Number(match[3]);
+  const host=(value:unknown):value is string=>address(value)&&value.startsWith(prefix)&&Number(value.split('.')[3])>first&&Number(value.split('.')[3])<first+15;
+  if(!Array.isArray(n.ipam)||n.ipam.length!==1||!exact(n.ipam[0],['Subnet','Gateway']))fail('IX01_CURRENT_NETWORK');
+  const row=n.ipam[0];
+  if(row.Subnet!==subnet||!host(row.Gateway)||!host(ip)||ip===row.Gateway||entry.IPv4Address!==ip+'/28'||local.IPPrefixLen!==28)fail('IX01_CURRENT_NETWORK');
+ });
  return ip;
 }
 

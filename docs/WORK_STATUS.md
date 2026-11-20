@@ -21515,3 +21515,11 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 소스 SHA256 D65F57C7D3B46AC813151BCFE8792492F35DDE8A4A5AFAD59A5B396ED06BCDBB. 담당 합성 RED 3건 `19407a`, 보완 후 직접·역사 12 통과 `897358`, 좁은 strict 타입 종료0 `75df34`. Main은 `node --test`로 alias-config, config-readiness, identity-path, windows-final-readiness 대응 시험을 재검증해 24 통과·실패/건너뜀0·종료0 `7102f2`. 실제 읽기 오류 추가0. 변경은 소스 1·시험 2·점검 문서 2이며, 롤백은 이 변경의 역적용이다.
 
 실제 USER_CONFIG 54행의 내용·효과, alias/신뢰·환경의 현재성은 여전히 미확정이다. 새 진단 모드는 실제 검사 진입점에 연결하거나 실행하지 않았다. 실설정·SSH/WSL/IPAM·DB·권한·키·서비스·Agent 접근0, 합성 원 핸들0. 다음에는 실제 승인 범위의 연결·환경 검산과 전용 대역 확인을 한 실행안으로 좁힌다. 기존 runner의 network create가 특정 대역을 결박하지 않으므로, 다음 TC01 격리 실행 전 확인된 대역을 실행안과 생성·검산에 함께 결박해야 한다. 실제 TC01 저장·재조회와 IX01 인수는 미완료다.
+
+## IX01 TC01 전용 대역과 연결 관측의 한정 검산
+
+기준 `bce144ed`, 추적 ref 차이0·clean. developer_primary 단일 작성·반환. `scripts/qa-ix01-current-journey.ts`의 기존 연결 검산과 `tests/unit/IX01/current-journey-controller.test.ts`만 보완했다. 명시 /28이 공급될 때 IPAM 단일 항목의 subnet·gateway, 양쪽 endpoint의 동일 주소와 /28, 대역 내부의 실제 호스트 주소를 대조한다. network/broadcast/gateway를 호스트로 거절하며 기존 CIDR 실패 코드로 중단한다. 과거 승인안의 A14 profile·plan·생성 인자·호출자는 그대로이며, 이번 소스는 별도 실행 허가나 예약 근거를 발급하지 않는다.
+
+담당 RED `e2f6de` 1건 확인 후 GREEN 4통과 `e09ace`, 중간 타입 좁히기 오류 1건을 수정해 좁은 strict 타입·공백 검산 `27d3f0` 종료0. Main `node --test --test-name-pattern 'ATTACHED|A14' tests/unit/IX01/current-journey-controller.test.ts` 4통과·실패/건너뜀0 `0e4606`. 불일치 시 UNKNOWN/NETWORK/CIDR, 보고 기록1과 CHILD/CLEANUP0 확인. 소스 SHA256 A3DE404E3397741CECA76E61B766BB3CB240AF83D765BF8A978DC4D9CFF8A63B. 롤백은 이번 두 코드·시험 경로 및 기록의 변경분이다.
+
+실제 대역 선정·생성 직전 비충돌·새 실행안에서의 대역 고정·기존 strict SSH의 현재 신뢰는 미확인이다. 실환경, SSH·WSL·Docker·DB·권한·키·서비스·Agent 실행0, 합성 원 핸들0. 확인된 대역을 새 실행안의 승인 inputs와 `--subnet`·IPAM 투영에 연결하기 전에는 실제 TC01을 진행하지 않는다. 기존 보존 시험 자원에는 접근하지 않았다.
