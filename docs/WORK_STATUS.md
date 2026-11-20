@@ -21469,3 +21469,9 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 원 프로세스 종료1·도구 1.860초, 승인/시도/소스/실행안 결박과 60초 창 일치. 결과 `UNKNOWN / PATH_UNCONFIRMED / UNCONFIRMED`, 실패1. 진단 USER_CONFIG 21행, 완료 역할0, SYSTEM_CONFIG 미도달. 고정 alias 판독에서 PATH_UNCONFIRMED는 적용되는 IdentityFile의 값이 제한된 ~/.ssh/단일파일 형식 조건을 충족하지 않은 경우다. 실제 값·파일·키·적용 타당성은 미확인이다.
 
 단회 승인 소진·원 핸들0. 같은 대상 재실행·SSH/WSL/IPAM·개인키/known_hosts/환경 읽기·설정/권한/원장/대상 파일 쓰기·DB/서비스/Agent 실행0. PMO에 예외를 공유했다. 다음은 일반 Windows 경로 형식의 합성 분류와 실제 대상 접근 권위의 최소 대조이며 TC01은 미실행이다.
+
+## IX01 IdentityFile 문자열 형상의 순수 분류 검수
+
+기준 `6bcef769`, developer_primary 단일 작성·반환. 신규 순수 IdentityFile 형상 분류와 합성 시험만 추가했다. 일반 Windows 드라이브 경로·인용 공백·tilde 및 token/env, UNC·상대 참조를 원 값 없이 분류한다. 동적 확장·파일 조회를 하지 않으며 모두 UNCONFIRMED다. 기존 소진 실행의 alias helper/실행안/결과를 바꾸지 않았다.
+
+담당 직접4통과 c0747f·strict 타입 종료0 a7a2bb. Main 직접4통과·실패/건너뜀0 5522df, SHA 2/2와 공백 16b722. 소스 5846A8D06AA7CAA8453A792DF52A37562D2C37F6BEFE932B3C608C399758E2BC, 시험 D05C738DBECFEACD8555863969D4C1A1251B4F947825E8F389030972A151E06D. 실설정/키·SSH·WSL·DB·권한·서비스·Agent 실행0, 합성 핸들0. 기존 alias 소비에 연결하고 종단 검수하는 작업이 남았다. 추가 실제 설정 재조회 결정은 요청하지 않았다.
