@@ -21591,3 +21591,9 @@ PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확
 담당 신규 함수 부재 RED 2건 `011f24`, 직접·인접 31통과·실패/건너뜀0 `826ec8`, 좁은 타입 종료0 `469c46`. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 정적 14통과·실패/건너뜀0 및 공백 종료0 `c31663`. SQL SHA256 FFB5CC421663481FD8235FF2167227C27CD6D8A6094C6876820B82FDBB457442, 시험 DB9198BE8426069DE3CEE491618BF80BA38EFF1426AE02DD15965A4DE9B743D0. 외부 SQL 39문 구문 통과, 원 본문은 catalog 제약으로 미검증이며 메모리에서 DECLARE rowtype 8곳을 record로 치환한 구문만 확인했다. 실제 PG/권한·제약·롤백 경합과 DB·키·서비스·Agent·파일·SSH 실행0.
 
 남은 연결은 신규 R CHECK/dispatcher, 목적 역완결 및 16개 지연 제약, 최소 ACL, 실제 Access callback·정책 선택 화면이다. 현재 SQL 본문만으로는 목적 거래를 호출할 수 없으므로 전체 구현·실제 검수 완료로 승격하지 않았다. 롤백은 이번 두 경로와 기록 변경분이다.
+
+### FN03 0101 예약 목적과 기존 정산 검산 연결
+
+기준 `a13bb4e2`, developer_primary 단일 작성·반환. 미적용 0101과 정적 시험 2경로. 고정 0081/0082의 기존 허용 집합과 함수 원문을 보존하고, 신규 관리 operation·part 한 쌍과 원 봉인만 추가했다. 새 목적 분기를 제거하면 기존 두 함수 전체와 일치하는지 검산했다. 기존 예약·정산 집계와 quota_complete 구현은 그대로이며 새 분기는 과거 완결을 호출한다. 기존 정산 역할이 FORCE RLS 보호 원문을 조회할 수 있다는 증거는 없으므로 목적 완결의 제한 실행 권한을 후속으로 연결해야 한다. 일반 표 접근이나 목적 RPC 실행권은 열지 않았다.
+
+담당 신규 분기 부재 RED 3건 `0ccc94`, 정적 17통과 `3cc6db`, 인접 포함 34통과 `cd1419`. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 17통과·실패/건너뜀0 및 공백 종료0 `ccaf5e`. pglast 외부 46문장·plan 본문 구문 검사, settled 본문은 원 catalog가 없어 메모리 record 인자 치환 구문만 검사했다. 실 PG·DB·권한·키·서비스·Agent·SSH·파일 관측 실행0. 목적 역완결·16 지연 제약·최소 실행 권한과 실제 Access/화면 배선은 잔여다. 롤백은 이번 두 경로와 기록 변경분이다.

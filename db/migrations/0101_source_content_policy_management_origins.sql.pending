@@ -1,5 +1,5 @@
 -- FN03 관리 원문 A안의 미적용 forward 토대. 자동 적용/실행 manifest 등록 없음.
--- 목적 commit/read RPC·현재 권한·정산·완결 DAG 미연결: 원문 조회/저장 및 E INSERT는 계속 닫힌다.
+-- 목적 commit/read RPC의 16 지연제약·역완결·최소 ACL/source caller 미연결: 원문 조회/저장 및 E INSERT는 계속 닫힌다.
 -- 실제 PostgreSQL 구문/ACL/COMMIT 검증 아님. 이 파일은 같은 Stage의 후속 RPC 구현으로 이어진다.
 
 -- 이미 존재하는 역할을 신뢰하거나 속성을 고쳐 재사용하지 않는다. 설치는 기존 migration 거래 경계에서 수행해야 한다.
@@ -92,7 +92,7 @@ CREATE TRIGGER source_content_management_no_truncate BEFORE TRUNCATE ON anvil.so
 
 -- 업무B 첫 SQL 검수 단위: 실제 저장행 -> 물리 투영/비용 -> 역사 완결 -> 보호 bundle.
 -- 아래 함수는 현재 인가를 발급하지 않으며 app/PUBLIC EXECUTE와 표 권한을 열지 않는다.
--- current/reserve/settle/RPC·16개 지연제약 연결 전에는 위 E/O 쓰기 차단이 그대로다.
+-- 16개 지연제약·역완결/ACL/source caller 연결 전에는 위 E/O 쓰기 차단이 그대로다.
 CREATE FUNCTION anvil.fn03_management_physical(v jsonb) RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
 DECLARE pair record;t timestamptz;stamp text;
 BEGIN
@@ -457,7 +457,7 @@ ALTER FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,big
 REVOKE ALL ON FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,bigint,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
 
 -- 실제 목적 write의 내부 순서. 원 account/현재 head 아래에서만 M/r/s와 정확 물리행을 만든다.
--- 아직 R 목적 CHECK/dispatcher·16 지연제약·최종 guard/ACL/source caller 미연결이다.
+-- R 목적 CHECK/dispatcher는 아래에 연결하며 16 지연제약·최종 guard/ACL/source caller는 아직 미연결이다.
 -- 아래 함수만으로 실행을 열지 않는다. 기존 E/O INSERT 거절과 app/PUBLIC EXEC 차단을 보존한다.
 CREATE FUNCTION anvil.fn03_source_content_management_commit(s uuid,a uuid,c uuid,p uuid,q jsonb,policy jsonb,ids jsonb,expected_tx text,observed_until timestamptz) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE ctx jsonb;final_ctx jsonb;ac anvil.project_storage_accounts;head anvil.source_content_policy_events;
@@ -606,3 +606,107 @@ BEGIN
 END;$$;
 ALTER FUNCTION anvil.fn03_source_content_management_commit(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text,timestamptz) OWNER TO anvil_v3_source_content_management_owner;
 REVOKE ALL ON FUNCTION anvil.fn03_source_content_management_commit(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text,timestamptz) FROM PUBLIC,anvil_v3_app;
+
+-- R의 기존 허용 집합(0081 operation/0082 kind)에는 신규 목적 한 개씩만 더한다.
+-- 기존 node/registered-options/origin-reuse 조합 제약과 모든 일반 quota 집계는 그대로다.
+ALTER TABLE anvil.project_storage_reservations DROP CONSTRAINT project_storage_reservations_operation_check;
+ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT project_storage_reservations_operation_check CHECK(operation IN('uploadArtifact','proposeDocumentChange','saveCheckpoint','createProject','linkDocumentSource','proposeDocumentSourceChange','prepareExecution','requestApproval','decideApproval','recordNodeDecision','revokeNodeDecision','registerExecutionStartOrigin','defineSourceContentPolicy'));
+ALTER TABLE anvil.project_storage_reservations DROP CONSTRAINT project_storage_reservations_part_kind_check;
+ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT project_storage_reservations_part_kind_check CHECK(part_kind IN('ARTIFACT','CHECKPOINT','ADOPTION','SOURCE_LINK_EVENT','PREPARATION_OPTIONS','PREPARATION_APPROVAL_REQUEST','PREPARATION_APPROVAL_DECISION','NODE_DECISION','EXECUTION_START_ORIGIN','ORIGIN_REUSE_APPROVAL_REQUEST','ORIGIN_REUSE_APPROVAL_DECISION','SOURCE_CONTENT_POLICY_MANAGEMENT'));
+-- 새 표식의 일부만 있거나 다른 목적과 섞이면 거절한다. 기존 행의 현재 시각/권한을 요구하지 않는다.
+ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT source_content_management_purpose_pair CHECK(
+ CASE WHEN operation='defineSourceContentPolicy' OR part_kind='SOURCE_CONTENT_POLICY_MANAGEMENT' OR part_key='management_origin'
+  OR plan_json->>'purpose'='SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE' OR plan_json->>'operation'='defineSourceContentPolicy'
+  OR plan_json->'request'->>'operation'='defineSourceContentPolicy'
+  OR plan_json->'parts' @> '[{"kind":"SOURCE_CONTENT_POLICY_MANAGEMENT"}]'::jsonb OR plan_json->'parts' @> '[{"key":"management_origin"}]'::jsonb THEN
+  (operation='defineSourceContentPolicy' AND part_kind='SOURCE_CONTENT_POLICY_MANAGEMENT' AND part_key='management_origin'
+   AND plan_json->>'purpose'='SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE' AND anvil.fn03_management_plan_valid(plan_json) IS TRUE
+   AND plan_hash=anvil.source_read_hash(plan_json) AND plan_json->>'projectId'=project_id::text
+   AND plan_json->>'actorId'=actor_id::text AND plan_json->>'clientId'=client_id::text
+   AND plan_json->>'externalCommandId'=external_command_id::text AND plan_json->>'requestHash'=command_hash
+   AND plan_json->'ids'->>'serverCommandId'=id::text AND plan_json->'parts'->0->>'bytes'=reserved_bytes::text
+   AND authorized_until=(plan_json->>'authorizedUntil')::timestamptz) IS TRUE ELSE true END
+);
+
+-- CREATE OR REPLACE는 기존 0082 함수의 owner/ACL/모드/search_path를 유지한다.
+-- 아래 표시된 분기 외 원 본문은 동일하다. private 목적 helper의 추가 ACL은 아직 발급하지 않는다.
+CREATE OR REPLACE FUNCTION anvil.quota_plan_valid(v jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE part jsonb;amount numeric;
+BEGIN
+ -- FN03_MANAGEMENT_DISPATCH_BEGIN
+ IF v->>'purpose'='SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE' OR v->>'operation'='defineSourceContentPolicy'
+  OR v->'request'->>'operation'='defineSourceContentPolicy'
+  OR v->'parts' @> '[{"kind":"SOURCE_CONTENT_POLICY_MANAGEMENT"}]'::jsonb OR v->'parts' @> '[{"key":"management_origin"}]'::jsonb THEN
+  RETURN anvil.fn03_management_plan_valid(v) IS TRUE;
+ END IF;
+ -- FN03_MANAGEMENT_DISPATCH_END
+ IF v->'parts'->0->>'kind'='ORIGIN_REUSE_APPROVAL_CONSUMPTION' THEN
+  IF NOT COALESCE(anvil.execution_json_shape(v,ARRAY['request','actorId','parts','commandHash','policyRef','authorizedUntil','replay','planHash','coverageGeneration','requestRecord','requestRef','receiptIds']),false)
+   OR v->'replay' IS DISTINCT FROM 'false'::jsonb OR v->'request'->>'operation' IS DISTINCT FROM 'queueExecutionCommand'
+   OR v->>'commandHash' IS DISTINCT FROM anvil.fn01_hash(v->'request') OR v->>'planHash' IS DISTINCT FROM anvil.fn01_hash(v-'planHash')
+   OR v->'actorId' IS DISTINCT FROM v->'requestRecord'->'grant'->'snapshot'->'binding'->'subject'->'userId'
+   OR NOT COALESCE(anvil.execution_preparation_ref_valid(v->'policyRef'),false) OR NOT COALESCE(anvil.execution_preparation_ref_valid(v->'requestRef'),false)
+   OR jsonb_typeof(v->'parts') IS DISTINCT FROM 'array' OR jsonb_array_length(v->'parts')<>1
+   OR NOT(CASE WHEN v->>'coverageGeneration'~'^[1-9][0-9]{0,15}$' THEN(v->>'coverageGeneration')::numeric<=9007199254740991 ELSE false END)
+   OR v->'requestRecord'->>'purpose' IS DISTINCT FROM 'ORIGIN_REUSE_APPROVAL_CONSUMPTION'
+   OR v->'requestRef'->>'contentHash' IS DISTINCT FROM anvil.fn01_hash(v->'requestRecord'->'queueIntent') THEN RETURN false;END IF;
+  part=v->'parts'->0;
+  IF NOT COALESCE(anvil.execution_json_shape(part,ARRAY['key','kind','id','bytes','contentHash','reservedBytes','settledBytes']),false)
+   OR part->>'kind' IS DISTINCT FROM 'ORIGIN_REUSE_APPROVAL_CONSUMPTION' OR part->>'key' IS DISTINCT FROM 'origin_reuse_consumption'
+   OR part->>'id' IS DISTINCT FROM v->'requestRef'->>'id' OR part->>'contentHash' IS DISTINCT FROM v->'requestRef'->>'contentHash' THEN RETURN false;END IF;
+  amount=anvil.quota_decimal(part->'bytes');RETURN COALESCE(amount<=10737418240 AND amount=anvil.quota_decimal(part->'reservedBytes') AND amount=anvil.quota_decimal(part->'settledBytes'),false);
+ END IF;
+ IF v->'parts'->0->>'kind'='ORIGIN_REUSE_APPROVAL_DECISION' THEN
+  IF NOT COALESCE(anvil.execution_json_shape(v,ARRAY['request','actorId','parts','commandHash','policyRef','authorizedUntil','replay','planHash','coverageGeneration','requestRecord','requestRef','receiptIds']),false)
+   OR v->'replay' IS DISTINCT FROM 'false'::jsonb OR v->'request'->>'operation' IS DISTINCT FROM 'decideApproval'
+   OR v->>'commandHash' IS DISTINCT FROM anvil.fn01_hash(v->'request') OR v->>'planHash' IS DISTINCT FROM anvil.fn01_hash(v-'planHash')
+   OR v->'actorId' IS DISTINCT FROM v->'requestRecord'->'decidedBy'->'userId'
+   OR NOT COALESCE(anvil.execution_preparation_ref_valid(v->'policyRef'),false) OR NOT COALESCE(anvil.execution_preparation_ref_valid(v->'requestRef'),false)
+   OR jsonb_typeof(v->'parts') IS DISTINCT FROM 'array' OR jsonb_array_length(v->'parts')<>1
+   OR NOT(CASE WHEN v->>'coverageGeneration'~'^[1-9][0-9]{0,15}$' THEN(v->>'coverageGeneration')::numeric<=9007199254740991 ELSE false END)
+   OR v->'request'->'payload' IS DISTINCT FROM jsonb_build_object('requestId',v->'requestRecord'->'requestId','expectedVersion',1,'scopeDigest',v->'requestRecord'->'scopeDigest','decision',v->'requestRecord'->'decision','reason',v->'requestRecord'->'reason')
+   OR v->'requestRef'->>'contentHash' IS DISTINCT FROM anvil.fn01_hash((v->'requestRecord')-ARRAY['id','decidedAt']) THEN RETURN false;END IF;
+  part=v->'parts'->0;
+  IF NOT COALESCE(anvil.execution_json_shape(part,ARRAY['key','kind','id','bytes','contentHash','reservedBytes','settledBytes']),false)
+   OR part->>'kind' IS DISTINCT FROM 'ORIGIN_REUSE_APPROVAL_DECISION' OR part->>'key' IS DISTINCT FROM 'origin_reuse_decision'
+   OR part->>'id' IS DISTINCT FROM v->'requestRef'->>'id' OR part->>'contentHash' IS DISTINCT FROM v->'requestRef'->>'contentHash' THEN RETURN false;END IF;
+  amount=anvil.quota_decimal(part->'bytes');RETURN COALESCE(amount<=10737418240 AND amount=anvil.quota_decimal(part->'reservedBytes') AND amount=anvil.quota_decimal(part->'settledBytes'),false);
+ END IF;
+ IF COALESCE(v->'parts'->0->>'kind'<>'ORIGIN_REUSE_APPROVAL_REQUEST',false) THEN RETURN anvil.quota_plan_before_origin_reuse_request(v);END IF;
+ IF NOT COALESCE(anvil.execution_json_shape(v,ARRAY['request','actorId','parts','commandHash','policyRef','authorizedUntil','replay','planHash','coverageGeneration','requestRecord','requestRef','receiptIds']),false)
+  OR v->'replay' IS DISTINCT FROM 'false'::jsonb OR v->'request'->>'operation' IS DISTINCT FROM 'requestApproval'
+  OR v->>'commandHash' IS DISTINCT FROM anvil.fn01_hash(v->'request') OR v->>'planHash' IS DISTINCT FROM anvil.fn01_hash(v-'planHash')
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(v->'policyRef'),false) OR NOT COALESCE(anvil.execution_preparation_ref_valid(v->'requestRef'),false)
+  OR jsonb_typeof(v->'parts') IS DISTINCT FROM 'array' OR jsonb_array_length(v->'parts')<>1
+  OR NOT(CASE WHEN v->>'coverageGeneration'~'^[1-9][0-9]{0,15}$' THEN(v->>'coverageGeneration')::numeric<=9007199254740991 ELSE false END)
+  OR v->'requestRecord'->'details' IS DISTINCT FROM v->'request'->'payload'->'details'
+  OR v->'requestRecord'->'originReuseEvidence'->'candidatePayload' IS DISTINCT FROM v->'request'->'payload'->'candidatePayload'
+  OR v->'requestRef'->>'contentHash' IS DISTINCT FROM anvil.fn01_hash((v->'requestRecord')-ARRAY['id','version','status','createdAt']) THEN RETURN false;END IF;
+ part=v->'parts'->0;
+ IF NOT COALESCE(anvil.execution_json_shape(part,ARRAY['key','kind','id','bytes','contentHash','reservedBytes','settledBytes']),false)
+  OR part->>'kind' IS DISTINCT FROM 'ORIGIN_REUSE_APPROVAL_REQUEST' OR part->>'key' IS DISTINCT FROM 'origin_reuse_request'
+  OR part->>'id' IS DISTINCT FROM v->'requestRef'->>'id' OR part->>'contentHash' IS DISTINCT FROM v->'requestRef'->>'contentHash' THEN RETURN false;END IF;
+ amount=anvil.quota_decimal(part->'bytes');
+ RETURN COALESCE(amount<=10737418240 AND amount=anvil.quota_decimal(part->'reservedBytes') AND amount=anvil.quota_decimal(part->'settledBytes'),false);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+
+CREATE OR REPLACE FUNCTION anvil.quota_settled_complete(r anvil.project_storage_reservations) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ -- FN03_MANAGEMENT_DISPATCH_BEGIN
+ IF r.operation='defineSourceContentPolicy' OR r.part_kind='SOURCE_CONTENT_POLICY_MANAGEMENT' OR r.part_key='management_origin'
+  OR r.plan_json->>'purpose'='SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE' OR r.plan_json->>'operation'='defineSourceContentPolicy'
+  OR r.plan_json->'request'->>'operation'='defineSourceContentPolicy'
+  OR r.plan_json->'parts' @> '[{"kind":"SOURCE_CONTENT_POLICY_MANAGEMENT"}]'::jsonb OR r.plan_json->'parts' @> '[{"key":"management_origin"}]'::jsonb THEN
+  IF r.operation IS DISTINCT FROM 'defineSourceContentPolicy' OR r.part_kind IS DISTINCT FROM 'SOURCE_CONTENT_POLICY_MANAGEMENT'
+   OR r.part_key IS DISTINCT FROM 'management_origin' OR r.phase IS DISTINCT FROM 'SETTLED' OR r.start_fence IS DISTINCT FROM 1
+   OR r.id IS DISTINCT FROM r.server_command_id OR r.plan_json->>'purpose' IS DISTINCT FROM 'SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE'
+   OR anvil.fn03_management_plan_valid(r.plan_json) IS NOT TRUE OR r.plan_hash IS DISTINCT FROM anvil.source_read_hash(r.plan_json) THEN RETURN false;END IF;
+  IF to_jsonb(r) IS DISTINCT FROM (SELECT to_jsonb(stored) FROM anvil.project_storage_reservations stored WHERE stored.project_id=r.project_id AND stored.id=r.id) THEN RETURN false;END IF;
+  RETURN anvil.fn03_management_complete(r.project_id,r.id) IS TRUE;
+ END IF;
+ -- FN03_MANAGEMENT_DISPATCH_END
+ IF r.part_kind='ORIGIN_REUSE_APPROVAL_REQUEST' THEN RETURN anvil.fn09_origin_reuse_request_complete(r.project_id,r.id);END IF;
+ IF r.part_kind='ORIGIN_REUSE_APPROVAL_DECISION' THEN RETURN anvil.fn09_origin_reuse_decision_complete(r.project_id,r.id);END IF;
+ IF r.part_kind='ORIGIN_REUSE_APPROVAL_CONSUMPTION' THEN RETURN anvil.fn09_origin_reuse_consumption_complete(r.project_id,r.id);END IF;
+ RETURN anvil.quota_settled_before_origin_reuse_request(r);
+END;$$;

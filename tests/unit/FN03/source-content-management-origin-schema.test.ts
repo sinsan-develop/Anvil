@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 
 const file=new URL('../../../db/migrations/0101_source_content_policy_management_origins.sql.pending',import.meta.url);
 const text=existsSync(file)?readFileSync(file,'utf8'):'';
@@ -13,6 +15,47 @@ test('0101은 미적용 토대이며 기존 exact9 원문만 저장한다',()=>{
  const columns=[...table[1]!.matchAll(/^ ([a-z_]+) (uuid|smallint|jsonb|text|timestamptz)\b/gm)].map(m=>m[1]);
  assert.deepEqual(columns,['project_id','id','version','management_command_id','policy_event_ref','request_json','request_hash','recorded_at','content_hash']);
  assert.doesNotMatch(table[1]!,/GENERATED|canonical\s+text|snapshot_json/);
+});
+
+const baselineQuota=execFileSync('git',['show','a13bb4e2:db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending'],{encoding:'utf8'});
+const baselineOperation=execFileSync('git',['show','a13bb4e2:db/migrations/0081_execution_start_origins.sql.pending'],{encoding:'utf8'});
+function checkList(source:string,name:string){
+ const m=source.match(new RegExp(`ADD CONSTRAINT ${name} CHECK\\([^]*?IN\\(([^)]*)\\)\\);`));assert.ok(m,name);return [...m[1]!.matchAll(/'([^']+)'/g)].map(x=>x[1]);
+}
+function dispatcher(source:string,name:string){
+ const m=source.match(new RegExp(`CREATE(?: OR REPLACE)? FUNCTION anvil\\.${name}\\([^]*?\\$\\$;`));assert.ok(m,name);return m[0];
+}
+test('R 최종 허용 집합은 고정 0081/0082에 신규 operation/kind 한 개만 더한다',()=>{
+ assert.equal(createHash('sha256').update(baselineQuota).digest('hex'),'3f32acd0f6f402e823bd3805b1948ae8f48d7ec98300e8dbdc2925923d49cfdf');
+ assert.equal(createHash('sha256').update(baselineOperation).digest('hex'),'e642d2b48565dc17e5bbb35c1996a48abcaf0c1bbd988b15cde4a5c95c0f34de');
+ assert.deepEqual(checkList(text,'project_storage_reservations_operation_check'),[...checkList(baselineOperation,'project_storage_reservations_operation_check'),'defineSourceContentPolicy']);
+ assert.deepEqual(checkList(text,'project_storage_reservations_part_kind_check'),[...checkList(baselineQuota,'project_storage_reservations_part_kind_check'),'SOURCE_CONTENT_POLICY_MANAGEMENT']);
+ const drops=[...sql.matchAll(/DROP CONSTRAINT (\w+)/g)].map(m=>m[1]);
+ assert.deepEqual(drops,['project_storage_reservations_operation_check','project_storage_reservations_part_kind_check']);
+ assert.doesNotMatch(sql,/DROP CONSTRAINT (registered_options_purpose_pair|node_decision_purpose_pair|execution_start_origin_purpose_pair|origin_reuse_\w+_purpose_pair)/);
+});
+test('management R은 op/kind/key/purpose 중 하나라도 오면 exact 봉인 조합을 요구한다',()=>{
+ const m=sql.match(/ADD CONSTRAINT source_content_management_purpose_pair CHECK\(([^]*?)\n\);/);assert.ok(m);const pair=m[1]!;
+ const [selector,required]=pair.split('THEN');assert.ok(selector);assert.ok(required);
+ for(const token of ["operation='defineSourceContentPolicy'","part_kind='SOURCE_CONTENT_POLICY_MANAGEMENT'","part_key='management_origin'","plan_json->>'purpose'='SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE'"]){assert.ok(selector.includes(token),token);assert.ok(required.includes(token),token);}
+ assert.match(required,/fn03_management_plan_valid\(plan_json\) IS TRUE/);assert.match(required,/plan_hash=anvil\.source_read_hash\(plan_json\)/);
+ for(const token of ["plan_json->>'projectId'=project_id::text","plan_json->>'actorId'=actor_id::text","plan_json->>'clientId'=client_id::text","plan_json->>'externalCommandId'=external_command_id::text","plan_json->>'requestHash'=command_hash","plan_json->'ids'->>'serverCommandId'=id::text","plan_json->'parts'->0->>'bytes'=reserved_bytes::text"])assert.ok(required.includes(token),token);
+ assert.match(required,/\) IS TRUE ELSE true END/);assert.doesNotMatch(pair,/clock_timestamp|fn03_management_context|quota_complete/);
+});
+test('quota 두 dispatcher의 새 분기 역치환은 고정 0082 전체 함수와 같고 역사 완결만 연결한다',()=>{
+ for(const name of ['quota_plan_valid','quota_settled_complete']){
+  const next=dispatcher(text,name),old=dispatcher(baselineQuota,name);
+  const restored=next.replace('CREATE OR REPLACE FUNCTION','CREATE FUNCTION').replace(/ -- FN03_MANAGEMENT_DISPATCH_BEGIN\r?\n[^]*? -- FN03_MANAGEMENT_DISPATCH_END\r?\n/,'');
+  assert.equal(restored.replace(/\r\n/g,'\n'),old.replace(/\r\n/g,'\n'),name);
+  assert.doesNotMatch(text,new RegExp(`ALTER FUNCTION anvil\\.${name}\\([^;]* (OWNER|RENAME)`));
+ }
+ const plan=dispatcher(sql,'quota_plan_valid'),settled=dispatcher(sql,'quota_settled_complete');
+ assert.match(plan,/fn03_management_plan_valid\(v\)/);assert.match(plan,/@> '\[\{"kind":"SOURCE_CONTENT_POLICY_MANAGEMENT"\}\]'/);
+ assert.match(plan,/@> '\[\{"key":"management_origin"\}\]'/);
+ assert.match(settled,/r\.phase IS DISTINCT FROM 'SETTLED'/);assert.match(settled,/r\.id IS DISTINCT FROM r\.server_command_id/);
+ assert.match(settled,/to_jsonb\(r\) IS DISTINCT FROM \(SELECT to_jsonb\(stored\)/);
+ assert.match(settled,/fn03_management_complete\(r\.project_id,r\.id\)/);
+ assert.doesNotMatch(plan+settled,/clock_timestamp|fn03_management_context|quota_complete\(|fn03_management_actual\(|INSERT|UPDATE|GRANT/);
 });
 test('O의 프로젝트·원command hash·관리 event 식별을 정확 FK/유일성으로 결박한다',()=>{
  assert.match(compact,/UNIQUE \(project_id,id,request_hash\)/);
@@ -49,11 +92,12 @@ test('RLS FORCE/false·전 INSERT 거절·불변/truncate 거절을 유지하고
  assert.match(compact,/BEFORE INSERT ON anvil\.source_content_policy_management_origins FOR EACH ROW EXECUTE FUNCTION anvil\.source_content_unavailable\(\)/);
  assert.match(compact,/BEFORE UPDATE OR DELETE ON anvil\.source_content_policy_management_origins FOR EACH ROW EXECUTE FUNCTION anvil\.source_content_append_only\(\)/);
  assert.match(compact,/BEFORE TRUNCATE ON anvil\.source_content_policy_management_origins FOR EACH STATEMENT EXECUTE FUNCTION anvil\.source_content_append_only\(\)/);
- assert.doesNotMatch(compact,/DROP\b|DELETE FROM|SET ROLE/);
+ assert.doesNotMatch(compact,/DELETE FROM|SET ROLE/);
+ assert.doesNotMatch(compact.replace(/ALTER TABLE anvil\.project_storage_reservations DROP CONSTRAINT project_storage_reservations_(operation|part_kind)_check;/g,''),/DROP\b/);
  // 새 private producer 본문에만 DML을 허용한다. 권한과 기존 차단 trigger는 위에서 별도로 고정한다.
  const withoutWrite=sql.replace(/CREATE FUNCTION anvil\.fn03_source_content_management_commit\([^]*?\$\$;/,'');
  assert.doesNotMatch(withoutWrite,/INSERT INTO|UPDATE anvil/);
- assert.equal((compact.match(/SECURITY DEFINER/g)??[]).length,2);
+ assert.equal((compact.match(/SECURITY DEFINER/g)??[]).length,4);
  assert.match(compact,/fn03_source_content_management_read\([^;]+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog/);
  const helpers=[...compact.matchAll(/CREATE FUNCTION anvil\.(fn03_management_\w+)\(([^)]*)\)/g)];
  assert.deepEqual(helpers.map(m=>m[1]),['fn03_management_physical','fn03_management_plan_valid','fn03_management_definition_valid','fn03_management_rows','fn03_management_actual','fn03_management_maximum','fn03_management_fixed_point','fn03_management_complete','fn03_management_history_bundle','fn03_management_context']);
