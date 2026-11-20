@@ -21555,3 +21555,11 @@ PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확
 기준 `d34d0e5a`, developer_primary 단일 writer. 0101 번호 부재를 확인하고 `0101_source_content_policy_management_origins.sql.pending`과 FN03 schema 시험만 추가했다. exact9 원장과 행 내부 원문·도출 hash, O에서 관리 event·command로 향하는 동일 프로젝트 FK와 유일성, RLS FORCE/false·변경/삭제/TRUNCATE 차단을 검산한다. 역사 event 전체에 역 FK를 두지 않아 ORIGIN_ABSENT 경계를 보존한다. 새 목적 역할의 원문 접근과 목적 RPC는 열기 전이며 기존 event·관측 3표·LINK의 권한과 소스를 보존했다.
 
 담당 SQL 파일 부재 RED 5건 `214c5b`, 직접·인접 13통과/실패·건너뜀0 `cac77f`, 좁은 타입 종료0 `f71e69`. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 정적 6통과/실패·건너뜀0 `22d877`. SQL SHA256 F69D557E6B7D4E9C302F8DD41E8A7DA8E5C0E61C78169271B60FBE31BC7EFACB, 시험 A65249C29EDE9AE22833693C2A1B4077D37566301B817966DECC070AE6B8EC80. 테스트는 SQL 텍스트 검사이며 실제 PG 구문·역할·제약/COMMIT은 미실행이다. 다음은 event fullref·원 5행/R 역완결과 보호 저장·조회 함수다. DB·SQL 적용·권한·키·서비스·Agent·실자료·SSH 실행0. 롤백은 이번 신규 SQL·시험과 기록의 역적용이다.
+
+### FN03 보호 저장 목적 호출·응답의 합성 연결 검수
+
+기준 `06cfe542`, developer_primary 단일 작성·반환. 신규 `source-content-policy-management-origin-store.ts`와 대응 서비스 시험. 검산 전용 포트로 저장/조회의 고정 9/8 인자를 한 번만 전달한다. 현재 목적·기한과 과거 정착의 불변 시각을 분리하고, 원 5행/R을 입력·용량·기존 CM inspector와 대조한다. 조회 결과는 보호 메타데이터 exact5 또는 원문부재 내부 상태로 제한하고 원문이나 원 오류는 반환하지 않는다. 거래 변경·늦은 회수·기한·응답 변조는 실패/불명으로 닫으며 후속 조회나 자동 재시도는 없다. 실제 Access·SQL 실행기·인증/COMMIT 증명은 연결하지 않았다.
+
+담당 함수 부재 RED 6건 `538c96`, 직접·인접 22통과 `d7cec0`, 최종 직접 8통과 `ad93e7`, 좁은 타입 종료0 `750d63`. Main `node --test tests/unit/FN03/source-content-management-origin-service.test.ts` 직접 8통과·실패/건너뜀0 `db55e8`. 제품 233B9FF3D71DE49288AD88BA0ABC5E540F27C88CF564C2D8BF52F394A11DF37F, 시험 F2E8658B81CDEF885226DFA699EFC13F5EA4824BD6BAF0D8A3D01A9A2B535A27. 롤백은 두 경로와 기록의 역적용이다.
+
+아직 목적 SQL·실제 Access callback의 query/XID/권한·replay 경로·별도 E/O 시각이 미연결이다. 현재 지원하는 동일 발급 시각은 저장 계약 전체를 대체하지 않는다. 실제 환경·DB·권한·키·서비스·Agent·파일 관측·SSH 실행0. 다음은 미적용 0101의 동일 거래 보호 완결·목적 RPC 소스와 실제 명령·화면의 연결이다.
