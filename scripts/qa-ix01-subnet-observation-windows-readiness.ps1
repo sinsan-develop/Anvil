@@ -126,10 +126,10 @@ function Get-Ix01ReadinessTextVerdict([byte[]]$Bytes, [string]$Kind) {
     return 'SUBSET_ONLY'
 }
 
-function Invoke-Ix01WindowsReadiness($Binding, $Ports) {
+function Invoke-Ix01WindowsReadiness($Binding, $Ports, [switch]$ClassifyAliasConfig) {
     $ErrorActionPreference='Stop'
     $result=[ordered]@{schemaVersion=1;code='UNKNOWN';readiness='UNCONFIRMED';reason='INPUT_UNCONFIRMED';files=@()}
-    $stream=$null;$buffer=$null;$body=$null;$digest=$null
+    $stream=$null;$buffer=$null;$body=$null;$digest=$null;$userConfig=$null;$alias=$null
     try {
         if (!(Test-Ix01ReadinessKeys $Binding @('attemptId','approvalHash','planHash','sourceHash','issuedAt','expiresAt')) -or
             $Binding.attemptId -isnot [string] -or $Binding.attemptId -cnotmatch '\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\z' -or
@@ -161,7 +161,11 @@ function Invoke-Ix01WindowsReadiness($Binding, $Ports) {
                 if ($null -eq $stream) { throw 'REJECTED' }
                 $opened=& $p.Observe $target.path $false ($target.kind -ceq 'IMAGE')
                 if (!(Test-Ix01ReadinessObservation $opened $target $owner) -or (Get-Ix01ReadinessMetadataHash $opened) -cne $metadataHash) { throw 'REJECTED' }
-                $buffer=[byte[]]::new(8192);$body=if($target.kind -cne 'IMAGE'){[byte[]]::new([int]$before.length)}else{$null}
+                $buffer=[byte[]]::new(8192);$body=$null
+                if($ClassifyAliasConfig){
+                    # 새 순수 byte[] 소비에는 if 출력의 배열 열거를 피한다. 구형 기본 모드는 보존한다.
+                    if($target.kind -cne 'IMAGE'){$body=[byte[]]::new([int]$before.length)}
+                }else{$body=if($target.kind -cne 'IMAGE'){[byte[]]::new([int]$before.length)}else{$null}}
                 $digest=[Security.Cryptography.IncrementalHash]::CreateHash([Security.Cryptography.HashAlgorithmName]::SHA256);$total=0L
                 while ($true) {
                     $result.reason='WINDOW_EXPIRED';$now=& $p.Clock
@@ -185,7 +189,28 @@ function Invoke-Ix01WindowsReadiness($Binding, $Ports) {
             $result.reason='WINDOW_EXPIRED';$now=& $p.Clock
             if (!(Test-Ix01ReadinessBudget $now $q $start $previous $step)) { throw 'REJECTED' };$previous=$now
             if ($null -ne $stream) { $closing=$stream;$stream=$null;$result.reason='CLOSE_UNCONFIRMED';$null=& $p.Close $closing }
-            if ($null -ne $body) {
+            if ($ClassifyAliasConfig -and $target.kind -ceq 'CONFIG') {
+                # 새 모드에서만 같은 원 읽기의 byte[]를 사용한다. config 재조회/새 IO 포트는 없다.
+                $result.reason='ALIAS_UNCONFIRMED'
+                $checked=if($target.role -ceq 'USER_CONFIG'){
+                    Read-Ix01SubnetAliasConfig -UserBytes $body -SystemBytes $null -ClassifyIdentityPaths
+                }else{
+                    Read-Ix01SubnetAliasConfig -UserBytes $userConfig -SystemBytes $body -ClassifyIdentityPaths
+                }
+                if($checked.status -cne 'ALIAS_SUBSET') {
+                    $result.reason=$checked.code
+                    if($checked.role -cin @('USER_CONFIG','SYSTEM_CONFIG') -and (Test-Ix01ReadinessInteger $checked.line) -and $checked.line -le 4096){
+                        $result.diagnostic=@{role=$checked.role;line=$checked.line}
+                    }
+                    throw 'REJECTED'
+                }
+                if($before.state -ceq 'PRESENT'){$entry.text='ALIAS_SUBSET'}
+                if($target.role -ceq 'USER_CONFIG'){$userConfig=$body;$body=$null}else{
+                    $alias=$checked
+                    if($null -ne $userConfig){[Array]::Clear($userConfig,0,$userConfig.Length);$userConfig=$null}
+                    if($null -ne $body){[Array]::Clear($body,0,$body.Length);$body=$null}
+                }
+            } elseif ($null -ne $body) {
                 $verdict=Get-Ix01ReadinessTextVerdict $body $target.kind
                 if ($verdict -cne 'SUBSET_ONLY') { $result.reason=$verdict;throw 'REJECTED' };$entry.text='SUBSET_ONLY'
                 [Array]::Clear($body,0,$body.Length);$body=$null
@@ -196,7 +221,8 @@ function Invoke-Ix01WindowsReadiness($Binding, $Ports) {
             if ($before.state -ceq 'PRESENT') { $entry.aclHash=$before.aclHash }
             $result.files+=,$entry
         }
-        $result.code='INSPECTION_COLLECTED';$result.reason='DEFAULT_SCOPE_ENV_AND_TRUST_UNCONFIRMED'
+        if($ClassifyAliasConfig){$result.code='COMPARISON_ONLY';$result.alias=$alias}else{$result.code='INSPECTION_COLLECTED'}
+        $result.reason='DEFAULT_SCOPE_ENV_AND_TRUST_UNCONFIRMED'
     } catch {
         $result.code='UNKNOWN' # 예외 message/경로/원문은 읽지도 반환하지도 않는다.
     } finally {
@@ -204,6 +230,7 @@ function Invoke-Ix01WindowsReadiness($Binding, $Ports) {
         if ($null -ne $digest) { $digest.Dispose() }
         if ($null -ne $buffer) { [Array]::Clear($buffer,0,$buffer.Length) }
         if ($null -ne $body) { [Array]::Clear($body,0,$body.Length) }
+        if ($null -ne $userConfig) { [Array]::Clear($userConfig,0,$userConfig.Length) }
         # decoded 관리형 문자열/OS 내부 캐시의 즉시 소거는 보증하지 않는다.
     }
     $line=$result | ConvertTo-Json -Depth 8 -Compress

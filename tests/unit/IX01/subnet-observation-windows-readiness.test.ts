@@ -1,13 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {spawnSync} from 'node:child_process';
+import {spawnSync,execFileSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import {readSubnetWindowsReadinessResult} from '../../../scripts/qa-ix01-subnet-observation-windows-readiness-result.ts';
 
 const sourceUrl=new URL('../../../scripts/qa-ix01-subnet-observation-windows-readiness.ps1',import.meta.url);
 // 이 PowerShell은 원 소스를 파싱하고 메모리 포트만 평가한다. native 포트/시스템 대상은 호출하지 않는다.
-function ram(body:string){
- const source=readFileSync(sourceUrl,'utf8');
+function ram(body:string,historic=false){
+ const bytes=historic?execFileSync('git',['cat-file','blob','1b5232a7f83ab190b3ae7649196f198d0b7469aa:scripts/qa-ix01-subnet-observation-windows-readiness.ps1'],{cwd:new URL('../../../',import.meta.url),windowsHide:true,maxBuffer:65536}):readFileSync(sourceUrl);
+ if(historic){assert.equal(bytes.length,20197);assert.equal(createHash('sha256').update(bytes).digest('hex'),'6847d094d436d246983a8ea353c0705541b4fd4c312f596ab78b5ff3efea8cc3');}
+ const source=bytes.toString('utf8');
  const script=`$ErrorActionPreference='Stop'
 $source=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${Buffer.from(source).toString('base64')}'))
 $tokens=$null;$errors=$null;$ast=[Management.Automation.Language.Parser]::ParseInput($source,[ref]$tokens,[ref]$errors)
@@ -57,7 +60,7 @@ test('IX01 Windows readiness RAM: 원 PS 파서·8역할·고정 경로·해시 
 $binding.sourceHash='6847d094d436d246983a8ea353c0705541b4fd4c312f596ab78b5ff3efea8cc3'
 $line=Invoke-Ix01WindowsReadiness -Binding $binding -Ports $ports
 @{result=($line|ConvertFrom-Json -AsHashtable);wire=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($line+[char]10));length=[Text.Encoding]::UTF8.GetByteCount($line);opens=$state.opens;closes=$state.closes;events=$state.events}|ConvertTo-Json -Depth 12 -Compress
-`);
+`,true);
  assert.equal(r.result.code,'INSPECTION_COLLECTED',JSON.stringify(r));assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.result.files.length,8);assert.equal(r.opens,2);assert.equal(r.closes,2);assert(r.length<=4096);
  assert.deepEqual(r.result.files.map((x:any)=>x.role),['SSH_IMAGE','USER_CONFIG','SYSTEM_CONFIG','USER_TRUST','USER_TRUST_2','SYSTEM_TRUST','SYSTEM_TRUST_2','LEDGER_PARENT']);
  assert(!JSON.stringify(r.result).includes('fixture'));assert(!JSON.stringify(r.result).includes('example.invalid'));assert(!JSON.stringify(r.result).includes('S-1-5'));

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {readFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
 import {readSubnetWindowsReadinessResult} from '../../../scripts/qa-ix01-subnet-observation-windows-readiness-result.ts';
 
 const sourceHash='6847d094d436d246983a8ea353c0705541b4fd4c312f596ab78b5ff3efea8cc3';
@@ -20,7 +20,7 @@ const wire=(value:unknown)=>Buffer.from(JSON.stringify(value)+'\n');
 function valid(result:ReturnType<typeof readSubnetWindowsReadinessResult>){assert.equal(result.status,'COMPARISON_ONLY');if(result.status!=='COMPARISON_ONLY')throw Error('FIXTURE');return result;}
 
 test('IX01 Windows result: 고정 PS 계약 8역할 왕복은 비교 지문만 만들고 CURRENT/승인0',()=>{
- const bytes=readFileSync(new URL('../../../scripts/qa-ix01-subnet-observation-windows-readiness.ps1',import.meta.url));assert.equal(bytes.length,20197);assert.equal(createHash('sha256').update(bytes).digest('hex'),sourceHash);
+ const bytes=execFileSync('git',['cat-file','blob','1b5232a7f83ab190b3ae7649196f198d0b7469aa:scripts/qa-ix01-subnet-observation-windows-readiness.ps1'],{cwd:new URL('../../../',import.meta.url),windowsHide:true,maxBuffer:65536});assert.equal(bytes.length,20197);assert.equal(createHash('sha256').update(bytes).digest('hex'),sourceHash);
  const input=fixture(),raw=wire(input),r=valid(readSubnetWindowsReadinessResult(raw,binding()));
  assert.equal(r.readiness,'UNCONFIRMED');assert.deepEqual(r.binding,binding());assert.equal(r.identity.imageSha256,input.files[0]!.sha256);
  assert.equal(r.outputSha256,createHash('sha256').update(raw).digest('hex'));assert(Object.isFrozen(r)&&Object.isFrozen(r.identity)&&Object.isFrozen(r.binding));

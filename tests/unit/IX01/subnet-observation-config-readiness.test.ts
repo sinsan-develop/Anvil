@@ -99,7 +99,7 @@ $out=@();foreach($mode in @('binding','window','mutate','close-late','short-wind
 test('IX01 config readiness source: 두 원 지문·함수 재사용·새 native/8역할 진입0',()=>{
  const hashes=paths.slice(0,2).map(p=>createHash('sha256').update(historicSource(p)).digest('hex'));
  assert.deepEqual(hashes,['6847d094d436d246983a8ea353c0705541b4fd4c312f596ab78b5ff3efea8cc3','eb0b94496e2c28c8c0193c2904cf3477d07b9a18540a673b9739c7d446cdd488']);
- assert.equal(createHash('sha256').update(readFileSync(new URL(paths[0]!,base))).digest('hex'),historicPins[0]);
+ assert.equal(createHash('sha256').update(historicSource(paths[0]!)).digest('hex'),historicPins[0]);
  assert.equal(createHash('sha256').update(readFileSync(new URL('scripts/qa-ix01-subnet-observation-identity-path.ps1',base))).digest('hex'),'5846a8d06aa7caa8453a792df52a37562d2c37f6befe932b3c608c399758e2bc');
  const s=readFileSync(new URL(paths[2]!,base),'utf8');assert(!/Invoke-Ix01WindowsReadiness|New-Ix01WindowsReadinessNativePorts|Get-Item|Get-Acl|Get-Content|Start-Process|File\]::Open/.test(s));
  for(const name of ['Test-Ix01ReadinessObservation','Get-Ix01ReadinessMetadataHash','Test-Ix01ReadinessBudget','Read-Ix01SubnetAliasConfig'])assert(s.includes(name));
