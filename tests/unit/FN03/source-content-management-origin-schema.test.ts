@@ -25,6 +25,73 @@ function checkList(source:string,name:string){
 function dispatcher(source:string,name:string){
  const m=source.match(new RegExp(`CREATE(?: OR REPLACE)? FUNCTION anvil\\.${name}\\([^]*?\\$\\$;`));assert.ok(m,name);return m[0];
 }
+const deferredRoots=[
+ ['fn09_prepare_complete','0055_execution_preparation_one_time_approval.sql.pending'],
+ ['fn09_understanding_complete','0056_understanding_review_one_time_approval.sql.pending'],
+ ['guard_child_human_complete','0061_child_assignment_content.sql.pending'],
+ ['fn16_policy_complete','0063_backup_policies.sql.pending'],
+ ['fn09_registered_binding_complete','0068_registered_definition_reservations.sql.pending'],
+ ['material_registration_reverse','0078_start_execution_material_registration.sql.pending'],
+] as const;
+const flushNames=['fn09_prepare_commands_complete','fn09_prepare_authorization_receipts_complete','fn09_prepare_audit_events_complete','fn09_understanding_commands_complete','fn09_understanding_authorization_receipts_complete','fn09_understanding_audit_events_complete','child_human_commands_complete','child_human_receipts_complete','child_human_audits_complete','fn16_policy_commands_complete','fn16_policy_authorization_receipts_complete','fn16_policy_audit_events_complete','fn09_registered_commands_complete','fn09_registered_authorization_receipts_complete','fn09_registered_audit_events_complete','material_registration_complete'];
+test('6 INVOKER root는 목적 분기 역치환 뒤 원 Git 함수 전체와 같고 다른 표/DELETE를 건너뛰지 않는다',()=>{
+ for(const [name,file] of deferredRoots){
+  const old=dispatcher(execFileSync('git',['show',`9f0f36d5:db/migrations/${file}`],{encoding:'utf8'}),name);
+  const next=dispatcher(text,name);
+  const restored=next.replace(/ -- FN03_MANAGEMENT_TRIGGER_BEGIN\r?\n[^]*? -- FN03_MANAGEMENT_TRIGGER_END\r?\n/,'').replace('CREATE OR REPLACE FUNCTION','CREATE FUNCTION');
+  assert.equal(restored.replace(/\r\n/g,'\n'),old.replace('CREATE OR REPLACE FUNCTION','CREATE FUNCTION').replace(/\r\n/g,'\n'),name);
+  const added=next.match(/ -- FN03_MANAGEMENT_TRIGGER_BEGIN[^]*? -- FN03_MANAGEMENT_TRIGGER_END/)?.[0];assert.ok(added);
+  assert.match(added,/TG_OP IN\('INSERT','UPDATE'\)/);
+  assert.match(added,/TG_TABLE_NAME='commands'/);assert.match(added,/TG_TABLE_NAME='authorization_receipts'/);assert.match(added,/TG_TABLE_NAME='audit_events'/);
+  assert.match(added,/NEW\.scope_kind='PROJECT'/);assert.match(added,/x\.operation='defineSourceContentPolicy'/);
+  assert.match(added,/fn03_management_dispatch\(TG_TABLE_NAME,to_jsonb\(NEW\)\)/);
+  assert.doesNotMatch(next,/SECURITY DEFINER|SET search_path/);
+ }
+});
+test('원 목적 dispatch는 실 role/원 행 전체/단일 봉인 R/같은 XID 없이는 생략할 수 없다',()=>{
+ const proof=body('fn03_management_dispatch');
+ for(const token of ["session_user<>'anvil_v3_app'","current_user<>'anvil_v3_source_content_management_owner'","r.plan_json->>'transactionId' IS DISTINCT FROM txid_current()::text","r.phase IS DISTINCT FROM 'SETTLED'","r.start_fence IS DISTINCT FROM 1",'r.plan_hash IS DISTINCT FROM anvil.source_read_hash(r.plan_json)','row_value IS DISTINCT FROM stored','count(*)','ids'])assert.ok(proof.includes(token),token);
+ assert.doesNotMatch(proof,/RETURN true|current_setting|set_config|quota_complete|fn03_management_actual/);
+ const final=body('fn03_management_current_final');
+ assert.match(final,/fn03_management_complete\(p,cid\) IS NOT TRUE/);assert.match(final,/fn03_management_context/);
+ assert.match(final,/clock_timestamp\(\)/);assert.match(final,/at_time<r\.settled_at/);
+ assert.match(final,/expected_tx IS DISTINCT FROM txid_current\(\)::text/);
+ assert.doesNotMatch(final,/quota_complete|WHEN OTHERS|INSERT INTO|UPDATE anvil/);
+});
+test('6표 역완결은 C-only도 검사하고 RPC는 exact16 IMMEDIATE→DEFERRED 뒤 현재를 재검산한다',()=>{
+ const final=body('fn03_management_final_guard');
+ assert.match(final,/TG_OP='UPDATE'/);assert.match(final,/to_jsonb\(OLD\),to_jsonb\(NEW\)/);
+ assert.match(final,/raw->>'operation' IS DISTINCT FROM 'defineSourceContentPolicy'/);
+ assert.match(final,/fn03_management_current_final\(p,cid,txid_current\(\)::text\)/);
+ const attached=[...sql.matchAll(/CREATE CONSTRAINT TRIGGER source_content_management_\w+_complete AFTER INSERT OR UPDATE OR DELETE ON anvil\.(\w+) DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil\.fn03_management_final_guard\(\)/g)].map(x=>x[1]);
+ assert.deepEqual(attached,['commands','authorization_receipts','audit_events','source_content_policy_events','source_content_policy_management_origins','project_storage_reservations']);
+ const write=body('fn03_source_content_management_commit');
+ const calls=[...write.matchAll(/SET CONSTRAINTS ([^;]+) (IMMEDIATE|DEFERRED);/g)];assert.equal(calls.length,2);
+ for(const call of calls)assert.deepEqual(call[1]!.replace(/\s+/g,'').split(','),flushNames.map(x=>`anvil.${x}`));
+ assert.deepEqual(calls.map(x=>x[2]),['IMMEDIATE','DEFERRED']);
+ assert.ok(write.indexOf('fn03_management_current_final')<calls[0]!.index!);
+ assert.ok(write.lastIndexOf('fn03_management_current_final')>calls[1]!.index!);
+ assert.doesNotMatch(write.slice(calls[0]!.index!),/INSERT INTO|UPDATE anvil|DELETE FROM|SET CONSTRAINTS ALL/);
+ assert.match(text,/pg_catalog\.pg_trigger/);assert.match(text,/tgdeferrable/);assert.match(text,/tginitdeferred/);assert.match(text,/tgenabled/);
+ assert.match(text,/SOURCE_CONTENT_MANAGEMENT_TRIGGER_LAYOUT_INVALID/);
+});
+test('설치 대상16 이름의24 부착 및 AFTER ROW 이벤트 비트는 원 DDL과 같다',()=>{
+ const expected:Array<[string,string,string,number]>=[];
+ for(const [name,file] of deferredRoots.slice(0,5)){
+  const old=execFileSync('git',['show',`9f0f36d5:db/migrations/${file}`],{encoding:'utf8'});
+  for(const m of old.matchAll(/CREATE CONSTRAINT TRIGGER (\w+) AFTER (INSERT(?: OR UPDATE)?(?: OR DELETE)?) ON anvil\.(\w+) DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil\.(\w+)\(\)/g)){
+   if(flushNames.includes(m[1]!)){assert.equal(m[4],name);expected.push([m[1]!,m[3]!,name,1+4+(m[2]!.includes('UPDATE')?16:0)+(m[2]!.includes('DELETE')?8:0)]);}
+  }
+ }
+ const material=execFileSync('git',['show','9f0f36d5:db/migrations/0062_execution_material_registration.sql.pending'],{encoding:'utf8'});
+ const tables=material.match(/FOREACH t IN ARRAY ARRAY\[([^\]]+)\] LOOP\s+EXECUTE format\('CREATE CONSTRAINT TRIGGER material_registration_complete AFTER INSERT OR UPDATE OR DELETE/);assert.ok(tables);
+ for(const m of tables[1]!.matchAll(/'([^']+)'/g))expected.push(['material_registration_complete',m[1]!,'material_registration_reverse',29]);
+ assert.equal(expected.length,24);
+ const layout=text.match(/WITH expected\(trigger_name,table_name,function_name,event_bits\) AS \(VALUES([^]*?)\)\s+SELECT 1 FROM expected/);assert.ok(layout);
+ const actual=[...layout[1]!.matchAll(/\('([^']+)','([^']+)','([^']+)',(\d+)\)/g)].map(m=>[m[1],m[2],m[3],Number(m[4])]);
+ assert.deepEqual(actual,expected);
+ for(const token of ['t.tgtype<>e.event_bits','pg_catalog.pg_constraint','con.contype IS DISTINCT FROM \'t\'','con.connamespace IS DISTINCT FROM n.oid','f.prorettype'])assert.ok(text.includes(token),token);
+});
 test('R 최종 허용 집합은 고정 0081/0082에 신규 operation/kind 한 개만 더한다',()=>{
  assert.equal(createHash('sha256').update(baselineQuota).digest('hex'),'3f32acd0f6f402e823bd3805b1948ae8f48d7ec98300e8dbdc2925923d49cfdf');
  assert.equal(createHash('sha256').update(baselineOperation).digest('hex'),'e642d2b48565dc17e5bbb35c1996a48abcaf0c1bbd988b15cde4a5c95c0f34de');
@@ -97,10 +164,10 @@ test('RLS FORCE/false·전 INSERT 거절·불변/truncate 거절을 유지하고
  // 새 private producer 본문에만 DML을 허용한다. 권한과 기존 차단 trigger는 위에서 별도로 고정한다.
  const withoutWrite=sql.replace(/CREATE FUNCTION anvil\.fn03_source_content_management_commit\([^]*?\$\$;/,'');
  assert.doesNotMatch(withoutWrite,/INSERT INTO|UPDATE anvil/);
- assert.equal((compact.match(/SECURITY DEFINER/g)??[]).length,4);
+ assert.equal((compact.match(/SECURITY DEFINER/g)??[]).length,5);
  assert.match(compact,/fn03_source_content_management_read\([^;]+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog/);
  const helpers=[...compact.matchAll(/CREATE FUNCTION anvil\.(fn03_management_\w+)\(([^)]*)\)/g)];
- assert.deepEqual(helpers.map(m=>m[1]),['fn03_management_physical','fn03_management_plan_valid','fn03_management_definition_valid','fn03_management_rows','fn03_management_actual','fn03_management_maximum','fn03_management_fixed_point','fn03_management_complete','fn03_management_history_bundle','fn03_management_context']);
+ assert.deepEqual(helpers.map(m=>m[1]),['fn03_management_physical','fn03_management_plan_valid','fn03_management_definition_valid','fn03_management_rows','fn03_management_actual','fn03_management_maximum','fn03_management_fixed_point','fn03_management_complete','fn03_management_history_bundle','fn03_management_context','fn03_management_dispatch','fn03_management_current_final','fn03_management_final_guard']);
  for(const helper of helpers)assert.ok(compact.includes(`REVOKE ALL ON FUNCTION anvil.${helper[1]}(`));
  assert.doesNotMatch(compact,/anvil\.(source_content_requests|source_content_observations|source_content_verifications|document_source_links)\b/);
 });

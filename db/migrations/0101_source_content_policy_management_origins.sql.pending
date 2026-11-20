@@ -1,5 +1,5 @@
 -- FN03 관리 원문 A안의 미적용 forward 토대. 자동 적용/실행 manifest 등록 없음.
--- 목적 commit/read RPC의 16 지연제약·역완결·최소 ACL/source caller 미연결: 원문 조회/저장 및 E INSERT는 계속 닫힌다.
+-- 목적 commit/read RPC의 최소 ACL/source caller 미연결: 원문 조회/저장 및 E INSERT는 계속 닫힌다.
 -- 실제 PostgreSQL 구문/ACL/COMMIT 검증 아님. 이 파일은 같은 Stage의 후속 RPC 구현으로 이어진다.
 
 -- 이미 존재하는 역할을 신뢰하거나 속성을 고쳐 재사용하지 않는다. 설치는 기존 migration 거래 경계에서 수행해야 한다.
@@ -92,7 +92,7 @@ CREATE TRIGGER source_content_management_no_truncate BEFORE TRUNCATE ON anvil.so
 
 -- 업무B 첫 SQL 검수 단위: 실제 저장행 -> 물리 투영/비용 -> 역사 완결 -> 보호 bundle.
 -- 아래 함수는 현재 인가를 발급하지 않으며 app/PUBLIC EXECUTE와 표 권한을 열지 않는다.
--- 16개 지연제약·역완결/ACL/source caller 연결 전에는 위 E/O 쓰기 차단이 그대로다.
+-- 16개 지연제약·역완결은 아래에 연결하며 ACL/source caller 검수 전 E/O 쓰기 차단은 그대로다.
 CREATE FUNCTION anvil.fn03_management_physical(v jsonb) RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
 DECLARE pair record;t timestamptz;stamp text;
 BEGIN
@@ -457,7 +457,7 @@ ALTER FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,big
 REVOKE ALL ON FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,bigint,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
 
 -- 실제 목적 write의 내부 순서. 원 account/현재 head 아래에서만 M/r/s와 정확 물리행을 만든다.
--- R 목적 CHECK/dispatcher는 아래에 연결하며 16 지연제약·최종 guard/ACL/source caller는 아직 미연결이다.
+-- R 목적 CHECK/dispatcher·16 지연제약·최종 guard는 아래에 연결하며 ACL/source caller는 아직 미연결이다.
 -- 아래 함수만으로 실행을 열지 않는다. 기존 E/O INSERT 거절과 app/PUBLIC EXEC 차단을 보존한다.
 CREATE FUNCTION anvil.fn03_source_content_management_commit(s uuid,a uuid,c uuid,p uuid,q jsonb,policy jsonb,ids jsonb,expected_tx text,observed_until timestamptz) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE ctx jsonb;final_ctx jsonb;ac anvil.project_storage_accounts;head anvil.source_content_policy_events;
@@ -599,7 +599,13 @@ BEGIN
  last_at=at_time;bundle=anvil.fn03_management_history_bundle(p,cid);
  IF (bundle->'rows'-'R') IS DISTINCT FROM prepared OR bundle->'rows'->'R'->'plan_json' IS DISTINCT FROM plan
   OR bundle->'rows'->'R'->>'plan_hash' IS DISTINCT FROM sealed_hash THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_STORED_MISMATCH';END IF;
- -- 역사 검산 뒤 현재를 재검산한다. 미연결 16제약/목적 finalguard를 성공으로 취급하지 않는다.
+ -- 원 목적 역할 안에서만 기존 정확16 대기 검사를 발화하고 원 DEFERRED 모드로 복원한다.
+ -- 다른 도메인 대기 이벤트는 원 root 그대로 검산된다. 오류는 거래 전체 거절이며 삼키지 않는다.
+ PERFORM anvil.fn03_management_current_final(p,cid,expected_tx);
+ SET CONSTRAINTS anvil.fn09_prepare_commands_complete,anvil.fn09_prepare_authorization_receipts_complete,anvil.fn09_prepare_audit_events_complete,anvil.fn09_understanding_commands_complete,anvil.fn09_understanding_authorization_receipts_complete,anvil.fn09_understanding_audit_events_complete,anvil.child_human_commands_complete,anvil.child_human_receipts_complete,anvil.child_human_audits_complete,anvil.fn16_policy_commands_complete,anvil.fn16_policy_authorization_receipts_complete,anvil.fn16_policy_audit_events_complete,anvil.fn09_registered_commands_complete,anvil.fn09_registered_authorization_receipts_complete,anvil.fn09_registered_audit_events_complete,anvil.material_registration_complete IMMEDIATE;
+ SET CONSTRAINTS anvil.fn09_prepare_commands_complete,anvil.fn09_prepare_authorization_receipts_complete,anvil.fn09_prepare_audit_events_complete,anvil.fn09_understanding_commands_complete,anvil.fn09_understanding_authorization_receipts_complete,anvil.fn09_understanding_audit_events_complete,anvil.child_human_commands_complete,anvil.child_human_receipts_complete,anvil.child_human_audits_complete,anvil.fn16_policy_commands_complete,anvil.fn16_policy_authorization_receipts_complete,anvil.fn16_policy_audit_events_complete,anvil.fn09_registered_commands_complete,anvil.fn09_registered_authorization_receipts_complete,anvil.fn09_registered_audit_events_complete,anvil.material_registration_complete DEFERRED;
+ PERFORM anvil.fn03_management_current_final(p,cid,expected_tx);
+ -- 복원 이후에는 현재성 검사/반환만 남고 어떤 추가 DML도 하지 않는다.
  final_ctx=anvil.fn03_management_context(s,a,c,p,g,'defineSourceContentPolicy',policy,until_at);at_time=clock_timestamp();
  IF final_ctx IS DISTINCT FROM ctx OR expected_tx IS DISTINCT FROM txid_current()::text OR NOT isfinite(at_time) OR at_time<last_at OR at_time>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
  RETURN jsonb_build_object('status','RECORDED','transactionId',expected_tx)||bundle;
@@ -709,4 +715,441 @@ BEGIN
  IF r.part_kind='ORIGIN_REUSE_APPROVAL_DECISION' THEN RETURN anvil.fn09_origin_reuse_decision_complete(r.project_id,r.id);END IF;
  IF r.part_kind='ORIGIN_REUSE_APPROVAL_CONSUMPTION' THEN RETURN anvil.fn09_origin_reuse_consumption_complete(r.project_id,r.id);END IF;
  RETURN anvil.quota_settled_before_origin_reuse_request(r);
+END;$$;
+
+-- 원 deferred NEW의 C/A/U만 검산한다. caller boolean/GUC가 아닌 실제 목적 역할·저장행·봉인 R이다.
+-- INVOKER이고 일반 app에 EXEC를 열지 않는다. 기존 root의 다른 목적은 이 함수를 호출하지 않는다.
+CREATE FUNCTION anvil.fn03_management_dispatch(table_name text,row_value jsonb) RETURNS void LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+DECLARE p uuid;cid uuid;cmd anvil.commands;r anvil.project_storage_reservations;ids jsonb;stored jsonb;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR current_user<>'anvil_v3_source_content_management_owner'
+  OR table_name IS NULL OR table_name NOT IN('commands','authorization_receipts','audit_events') OR jsonb_typeof(row_value) IS DISTINCT FROM 'object' THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_DISPATCH_INVALID' USING ERRCODE='42501';END IF;
+ IF table_name='authorization_receipts' THEN
+  IF row_value->>'scope_kind' IS DISTINCT FROM 'PROJECT' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_DISPATCH_INVALID';END IF;
+  p=(row_value->>'scope_id')::uuid;cid=(row_value->>'command_id')::uuid;
+ ELSE p=(row_value->>'project_id')::uuid;cid=(CASE WHEN table_name='commands' THEN row_value->>'id' ELSE row_value->>'command_id' END)::uuid;END IF;
+ SELECT x.* INTO STRICT cmd FROM anvil.commands x WHERE x.project_id=p AND x.id=cid AND x.scope_kind='PROJECT' AND x.scope_id=p AND x.operation='defineSourceContentPolicy';
+ SELECT x.* INTO STRICT r FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.id=cid;
+ ids=r.plan_json->'ids';
+ IF r.operation IS DISTINCT FROM 'defineSourceContentPolicy' OR r.part_kind IS DISTINCT FROM 'SOURCE_CONTENT_POLICY_MANAGEMENT' OR r.part_key IS DISTINCT FROM 'management_origin'
+  OR r.phase IS DISTINCT FROM 'SETTLED' OR r.start_fence IS DISTINCT FROM 1 OR r.server_command_id IS DISTINCT FROM cid
+  OR r.plan_json->>'transactionId' IS DISTINCT FROM txid_current()::text OR anvil.fn03_management_plan_valid(r.plan_json) IS NOT TRUE
+  OR r.plan_hash IS DISTINCT FROM anvil.source_read_hash(r.plan_json)
+  OR (SELECT count(*) FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.plan_json->>'transactionId'=txid_current()::text)<>1
+  OR r.actor_id IS DISTINCT FROM cmd.actor_id OR r.client_id IS DISTINCT FROM cmd.client_id OR r.external_command_id IS DISTINCT FROM cmd.command_id
+  OR r.command_hash IS DISTINCT FROM cmd.request_hash OR cmd.state IS DISTINCT FROM 'APPLIED'
+  OR ids->>'serverCommandId' IS DISTINCT FROM cid::text OR ids->>'operationId' IS DISTINCT FROM cmd.operation_id::text
+  OR ids->>'authorizationReceiptId' IS DISTINCT FROM cmd.authorization_receipt_id::text OR r.authorization_receipt_id IS DISTINCT FROM cmd.authorization_receipt_id
+  OR r.plan_json->>'projectId' IS DISTINCT FROM p::text OR r.plan_json->>'actorId' IS DISTINCT FROM cmd.actor_id::text
+  OR r.plan_json->>'clientId' IS DISTINCT FROM cmd.client_id::text OR r.plan_json->>'externalCommandId' IS DISTINCT FROM cmd.command_id::text
+  OR r.plan_json->>'requestHash' IS DISTINCT FROM cmd.request_hash OR r.plan_json->'controlGeneration' IS DISTINCT FROM to_jsonb(cmd.control_generation)
+  OR r.plan_json->'permissionPolicyRef' IS DISTINCT FROM cmd.policy_ref OR r.plan_json->>'authorizedUntil' IS DISTINCT FROM anvil.source_read_iso(r.authorized_until)
+  OR r.plan_json->'parts'->0->>'bytes' IS DISTINCT FROM r.reserved_bytes::text THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_DISPATCH_INVALID' USING ERRCODE='42501';END IF;
+ IF table_name='commands' THEN stored=to_jsonb(cmd);
+ ELSIF table_name='authorization_receipts' THEN
+  SELECT to_jsonb(x) INTO STRICT stored FROM anvil.authorization_receipts x WHERE x.scope_kind='PROJECT' AND x.scope_id=p AND x.command_id=cid AND x.id=cmd.authorization_receipt_id;
+ ELSE
+  SELECT to_jsonb(x) INTO STRICT stored FROM anvil.audit_events x WHERE x.project_id=p AND x.command_id=cid AND x.event_id=(ids->>'auditEventId')::uuid;
+ END IF;
+ IF row_value IS DISTINCT FROM stored THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_DISPATCH_INVALID' USING ERRCODE='42501';END IF;
+END;$$;
+ALTER FUNCTION anvil.fn03_management_dispatch(text,jsonb) OWNER TO anvil_v3_source_content_management_owner;
+REVOKE ALL ON FUNCTION anvil.fn03_management_dispatch(text,jsonb) FROM PUBLIC,anvil_v3_app;
+
+-- 역사 complete와 달리 새 거래의 원 시각/등록/봉인 XID를 확인한다. 현재성으로 과거 행을 다시 봉인하지 않는다.
+CREATE FUNCTION anvil.fn03_management_current_final(p uuid,cid uuid,expected_tx text) RETURNS void LANGUAGE plpgsql VOLATILE SET search_path=pg_catalog AS $$
+DECLARE cmd anvil.commands;r anvil.project_storage_reservations;ctx jsonb;begin_at timestamptz;at_time timestamptz;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR current_user<>'anvil_v3_source_content_management_owner'
+  OR expected_tx IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_TRANSACTION_INVALID' USING ERRCODE='42501';END IF;
+ begin_at=clock_timestamp();
+ -- C-only 상태도 STRICT R 선택에서 거절한다. R/원문 JOIN으로 C를 조용히 누락시키지 않는다.
+ SELECT x.* INTO STRICT cmd FROM anvil.commands x WHERE x.project_id=p AND x.id=cid AND x.operation='defineSourceContentPolicy';
+ SELECT x.* INTO STRICT r FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.id=cid;
+ PERFORM anvil.fn03_management_dispatch('commands',to_jsonb(cmd));
+ IF anvil.fn03_management_complete(p,cid) IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INCOMPLETE';END IF;
+ IF NOT EXISTS(SELECT 1 FROM anvil.project_storage_accounts x WHERE x.project_id=p AND x.coverage_state='VERIFIED' AND x.generation::text=r.plan_json->>'coverageGeneration') THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_UNVERIFIED';END IF;
+ ctx=anvil.fn03_management_context((r.plan_json->>'authSessionId')::uuid,cmd.actor_id,cmd.client_id,p,cmd.control_generation,'defineSourceContentPolicy',cmd.policy_ref,r.authorized_until);
+ at_time=clock_timestamp();
+ IF ctx->'credentialGeneration' IS DISTINCT FROM r.plan_json->'credentialGeneration' OR ctx->'authorizedUntil' IS DISTINCT FROM r.plan_json->'authorizedUntil'
+  OR ctx->>'transactionId' IS DISTINCT FROM expected_tx OR NOT isfinite(begin_at) OR NOT isfinite(at_time)
+  OR at_time<begin_at OR at_time<r.settled_at OR at_time>=r.authorized_until THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
+END;$$;
+ALTER FUNCTION anvil.fn03_management_current_final(uuid,uuid,text) OWNER TO anvil_v3_source_content_management_owner;
+REVOKE ALL ON FUNCTION anvil.fn03_management_current_final(uuid,uuid,text) FROM PUBLIC,anvil_v3_app;
+
+-- 전용 DEFINER의 역완결. 일반 app의 원문 SELECT/EXEC를 추가하지 않는다.
+-- OLD/NEW 양쪽 목적을 검사하여 목적 제거·행 이동·C-only·부분 R을 성공으로 숨기지 않는다.
+CREATE FUNCTION anvil.fn03_management_final_guard() RETURNS trigger LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE raw jsonb;versions jsonb;p uuid;cid uuid;stored jsonb;
+BEGIN
+ IF TG_TABLE_SCHEMA<>'anvil' OR TG_TABLE_NAME NOT IN('commands','authorization_receipts','audit_events','source_content_policy_events','source_content_policy_management_origins','project_storage_reservations') THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_TRIGGER_INVALID';END IF;
+ IF TG_OP='INSERT' THEN versions=jsonb_build_array(to_jsonb(NEW));
+ ELSIF TG_OP='DELETE' THEN versions=jsonb_build_array(to_jsonb(OLD));
+ ELSIF TG_OP='UPDATE' THEN versions=jsonb_build_array(to_jsonb(OLD),to_jsonb(NEW));
+ ELSE RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_TRIGGER_INVALID';END IF;
+ FOR raw IN SELECT value FROM jsonb_array_elements(versions) LOOP
+  IF TG_TABLE_NAME='commands' THEN
+   IF raw->>'operation' IS DISTINCT FROM 'defineSourceContentPolicy' THEN CONTINUE;END IF;p=(raw->>'project_id')::uuid;cid=(raw->>'id')::uuid;
+  ELSIF TG_TABLE_NAME='authorization_receipts' THEN
+   IF raw->>'scope_kind' IS DISTINCT FROM 'PROJECT' THEN CONTINUE;END IF;p=(raw->>'scope_id')::uuid;cid=(raw->>'command_id')::uuid;
+   IF NOT EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=p AND x.id=cid AND x.operation='defineSourceContentPolicy') THEN CONTINUE;END IF;
+  ELSIF TG_TABLE_NAME='audit_events' THEN
+   p=(raw->>'project_id')::uuid;cid=(raw->>'command_id')::uuid;
+   IF NOT EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=p AND x.id=cid AND x.operation='defineSourceContentPolicy') THEN CONTINUE;END IF;
+  ELSIF TG_TABLE_NAME IN('source_content_policy_events','source_content_policy_management_origins') THEN p=(raw->>'project_id')::uuid;cid=(raw->>'management_command_id')::uuid;
+  ELSE
+   IF (raw->>'operation'='defineSourceContentPolicy' OR raw->>'part_kind'='SOURCE_CONTENT_POLICY_MANAGEMENT' OR raw->>'part_key'='management_origin'
+    OR raw->'plan_json'->>'purpose'='SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE' OR raw->'plan_json'->>'operation'='defineSourceContentPolicy'
+    OR raw->'plan_json'->'parts' @> '[{"kind":"SOURCE_CONTENT_POLICY_MANAGEMENT"}]'::jsonb OR raw->'plan_json'->'parts' @> '[{"key":"management_origin"}]'::jsonb) IS NOT TRUE THEN CONTINUE;END IF;
+   p=(raw->>'project_id')::uuid;cid=(raw->>'id')::uuid;
+  END IF;
+  PERFORM anvil.fn03_management_current_final(p,cid,txid_current()::text);
+  IF TG_TABLE_NAME IN('commands','authorization_receipts','audit_events') THEN PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,raw);
+  ELSIF TG_TABLE_NAME='source_content_policy_events' THEN
+   SELECT to_jsonb(x) INTO STRICT stored FROM anvil.source_content_policy_events x WHERE x.project_id=p AND x.management_command_id=cid;
+   IF stored IS DISTINCT FROM raw THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_STORED_MISMATCH';END IF;
+  ELSIF TG_TABLE_NAME='source_content_policy_management_origins' THEN
+   SELECT to_jsonb(x) INTO STRICT stored FROM anvil.source_content_policy_management_origins x WHERE x.project_id=p AND x.management_command_id=cid;
+   IF stored IS DISTINCT FROM raw THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_STORED_MISMATCH';END IF;
+  ELSE
+   SELECT to_jsonb(x) INTO STRICT stored FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.id=cid;
+   IF raw-ARRAY['phase','start_fence','settled_bytes','started_at','settled_at','server_command_id','authorization_receipt_id','scope_digest']
+    IS DISTINCT FROM stored-ARRAY['phase','start_fence','settled_bytes','started_at','settled_at','server_command_id','authorization_receipt_id','scope_digest'] THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_STORED_MISMATCH';END IF;
+  END IF;
+ END LOOP;
+ RETURN NULL;
+END;$$;
+ALTER FUNCTION anvil.fn03_management_final_guard() OWNER TO anvil_v3_source_content_management_owner;
+REVOKE ALL ON FUNCTION anvil.fn03_management_final_guard() FROM PUBLIC,anvil_v3_app;
+
+CREATE CONSTRAINT TRIGGER source_content_management_commands_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn03_management_final_guard();
+CREATE CONSTRAINT TRIGGER source_content_management_receipts_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn03_management_final_guard();
+CREATE CONSTRAINT TRIGGER source_content_management_audits_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn03_management_final_guard();
+CREATE CONSTRAINT TRIGGER source_content_management_events_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.source_content_policy_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn03_management_final_guard();
+CREATE CONSTRAINT TRIGGER source_content_management_origins_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.source_content_policy_management_origins DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn03_management_final_guard();
+CREATE CONSTRAINT TRIGGER source_content_management_reservations_complete AFTER INSERT OR UPDATE OR DELETE ON anvil.project_storage_reservations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn03_management_final_guard();
+
+-- 16 이름은 24개 실제 부착이다. material의 다른 6표 이벤트는 새 목적 분기를 타지 않는다.
+-- 설치 source 검산이며 실제 catalog/PG15 발화 principal 시험을 대신하지 않는다.
+DO $$
+BEGIN
+ IF EXISTS(
+  WITH expected(trigger_name,table_name,function_name,event_bits) AS (VALUES
+   ('fn09_prepare_commands_complete','commands','fn09_prepare_complete',21),
+   ('fn09_prepare_authorization_receipts_complete','authorization_receipts','fn09_prepare_complete',21),
+   ('fn09_prepare_audit_events_complete','audit_events','fn09_prepare_complete',21),
+   ('fn09_understanding_commands_complete','commands','fn09_understanding_complete',21),
+   ('fn09_understanding_authorization_receipts_complete','authorization_receipts','fn09_understanding_complete',21),
+   ('fn09_understanding_audit_events_complete','audit_events','fn09_understanding_complete',21),
+   ('child_human_commands_complete','commands','guard_child_human_complete',29),
+   ('child_human_receipts_complete','authorization_receipts','guard_child_human_complete',29),
+   ('child_human_audits_complete','audit_events','guard_child_human_complete',29),
+   ('fn16_policy_commands_complete','commands','fn16_policy_complete',29),
+   ('fn16_policy_authorization_receipts_complete','authorization_receipts','fn16_policy_complete',29),
+   ('fn16_policy_audit_events_complete','audit_events','fn16_policy_complete',29),
+   ('fn09_registered_commands_complete','commands','fn09_registered_binding_complete',5),
+   ('fn09_registered_authorization_receipts_complete','authorization_receipts','fn09_registered_binding_complete',5),
+   ('fn09_registered_audit_events_complete','audit_events','fn09_registered_binding_complete',5),
+   ('material_registration_complete','execution_material_manifests','material_registration_reverse',29),
+   ('material_registration_complete','execution_materials','material_registration_reverse',29),
+   ('material_registration_complete','execution_material_proof_bindings','material_registration_reverse',29),
+   ('material_registration_complete','execution_commands','material_registration_reverse',29),
+   ('material_registration_complete','commands','material_registration_reverse',29),
+   ('material_registration_complete','authorization_receipts','material_registration_reverse',29),
+   ('material_registration_complete','audit_events','material_registration_reverse',29),
+   ('material_registration_complete','execution_receipts','material_registration_reverse',29),
+   ('material_registration_complete','execution_challenges','material_registration_reverse',29))
+  SELECT 1 FROM expected e
+  LEFT JOIN pg_catalog.pg_namespace n ON n.nspname='anvil'
+  LEFT JOIN pg_catalog.pg_class rel ON rel.relnamespace=n.oid AND rel.relname=e.table_name
+  LEFT JOIN pg_catalog.pg_trigger t ON t.tgrelid=rel.oid AND t.tgname=e.trigger_name
+  LEFT JOIN pg_catalog.pg_proc f ON f.oid=t.tgfoid
+  LEFT JOIN pg_catalog.pg_constraint con ON con.oid=t.tgconstraint
+  WHERE t.oid IS NULL OR t.tgisinternal OR NOT t.tgdeferrable OR NOT t.tginitdeferred OR t.tgenabled<>'O' OR t.tgtype<>e.event_bits
+   OR con.contype IS DISTINCT FROM 't' OR con.connamespace IS DISTINCT FROM n.oid OR con.conrelid IS DISTINCT FROM rel.oid
+   OR con.condeferrable IS DISTINCT FROM true OR con.condeferred IS DISTINCT FROM true
+   OR f.pronamespace IS DISTINCT FROM n.oid OR f.proname IS DISTINCT FROM e.function_name OR f.prosecdef OR f.pronargs<>0
+   OR f.prokind IS DISTINCT FROM 'f' OR f.prorettype IS DISTINCT FROM 'pg_catalog.trigger'::regtype
+ ) OR (SELECT count(*) FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_class rel ON rel.oid=t.tgrelid JOIN pg_catalog.pg_namespace n ON n.oid=rel.relnamespace
+  WHERE n.nspname='anvil' AND t.tgname=ANY(ARRAY['fn09_prepare_commands_complete','fn09_prepare_authorization_receipts_complete','fn09_prepare_audit_events_complete','fn09_understanding_commands_complete','fn09_understanding_authorization_receipts_complete','fn09_understanding_audit_events_complete','child_human_commands_complete','child_human_receipts_complete','child_human_audits_complete','fn16_policy_commands_complete','fn16_policy_authorization_receipts_complete','fn16_policy_audit_events_complete','fn09_registered_commands_complete','fn09_registered_authorization_receipts_complete','fn09_registered_audit_events_complete','material_registration_complete']))<>24 THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_TRIGGER_LAYOUT_INVALID';
+ END IF;
+END;$$;
+
+-- 각 root의 원 owner/ACL/INVOKER/body는 보존하고 명시된 새 목적 분기만 더한다.
+CREATE OR REPLACE FUNCTION anvil.fn09_prepare_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v jsonb=to_jsonb(NEW);pid uuid;cid uuid;rid uuid;c anvil.commands%ROWTYPE;r anvil.approval_requests%ROWTYPE;did uuid;
+BEGIN
+ -- FN03_MANAGEMENT_TRIGGER_BEGIN
+ IF TG_OP IN('INSERT','UPDATE') THEN
+  IF TG_TABLE_NAME='commands' THEN
+   IF NEW.operation='defineSourceContentPolicy' THEN PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;END IF;
+  ELSIF TG_TABLE_NAME='authorization_receipts' THEN
+   IF NEW.scope_kind='PROJECT' AND EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.scope_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  ELSIF TG_TABLE_NAME='audit_events' THEN
+   IF EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.project_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  END IF;
+ END IF;
+ -- FN03_MANAGEMENT_TRIGGER_END
+ pid=CASE WHEN TG_TABLE_NAME='authorization_receipts' THEN (v->>'scope_id')::uuid ELSE (v->>'project_id')::uuid END;
+ cid=CASE WHEN TG_TABLE_NAME='commands' THEN (v->>'id')::uuid ELSE (v->>'command_id')::uuid END;
+ IF TG_TABLE_NAME='execution_preparation_approval_candidates' THEN cid=(v->>'request_command_id')::uuid;rid=(v->>'request_id')::uuid;
+ ELSIF TG_TABLE_NAME='approval_requests' THEN rid=(v->>'id')::uuid;
+ ELSIF TG_TABLE_NAME='approval_decisions' THEN rid=(v->>'request_id')::uuid;END IF;
+ IF TG_TABLE_NAME IN('authorization_receipts','approval_consumptions') THEN
+ SELECT d.request_id INTO rid FROM anvil.approval_decisions d WHERE d.project_id=pid AND d.id=COALESCE((v->>'approval_decision_ref')::uuid,(v->>'decision_id')::uuid);
+ ELSIF TG_TABLE_NAME='audit_events' THEN
+ rid=(v->'approval_ref'->>'requestId')::uuid;
+ IF EXISTS(SELECT 1 FROM anvil.execution_preparations ep WHERE ep.project_id=pid AND ep.id::text=v->'target_ref'->>'id' AND ep.command_id IS DISTINCT FROM cid) THEN RAISE EXCEPTION 'PREPARATION_AUDIT_LINK_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ SELECT * INTO c FROM anvil.commands x WHERE x.project_id=pid AND x.id=cid;
+ IF c.operation='prepareExecution' OR EXISTS(SELECT 1 FROM anvil.execution_preparations x WHERE x.project_id=pid AND x.command_id=cid) THEN
+  IF c.id IS NULL OR c.operation<>'prepareExecution' OR c.state<>'APPLIED' OR (SELECT count(*) FROM anvil.execution_preparations x WHERE x.project_id=pid AND x.command_id=cid)<>1
+  OR (SELECT count(*) FROM anvil.authorization_receipts x WHERE x.command_id=cid)<>1 OR (SELECT count(*) FROM anvil.audit_events x WHERE x.project_id=pid AND x.command_id=cid AND x.outcome='APPLIED')<>1
+  THEN RAISE EXCEPTION 'PREPARATION_COMMAND_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+  IF c.approval_consumption_id IS NULL THEN
+   IF c.payload_ref IS NOT NULL OR EXISTS(SELECT 1 FROM anvil.approval_consumptions x WHERE x.command_id=cid)
+   OR EXISTS(SELECT 1 FROM anvil.authorization_receipts x WHERE x.command_id=cid AND x.approval_decision_ref IS NOT NULL)
+   OR EXISTS(SELECT 1 FROM anvil.audit_events x WHERE x.command_id=cid AND x.approval_ref IS NOT NULL)
+   OR NOT COALESCE(anvil.execution_preparation_authorized_before_preparation(pid,'prepareExecution'),false) THEN RAISE EXCEPTION 'PREPARATION_AUTO_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+  ELSE
+   SELECT x.approval_decision_ref INTO did FROM anvil.authorization_receipts x WHERE x.command_id=cid AND x.id=c.authorization_receipt_id;
+   IF (SELECT count(*) FROM anvil.approval_consumptions x WHERE x.command_id=cid)<>1 OR NOT COALESCE(anvil.fn09_prepare_approval_execution_valid(pid,cid,did,true),false) THEN RAISE EXCEPTION 'PREPARATION_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+  END IF;
+ END IF;
+ FOR r IN SELECT x.* FROM anvil.approval_requests x WHERE x.project_id=pid AND (x.id=rid OR x.command_id=cid
+ OR EXISTS(SELECT 1 FROM anvil.execution_preparation_approval_candidates b WHERE b.project_id=pid AND b.request_id=x.id AND (b.request_command_id=cid OR b.candidate_command_id=c.command_id))
+ OR EXISTS(SELECT 1 FROM anvil.approval_decisions d JOIN anvil.approval_consumptions ac ON ac.project_id=d.project_id AND ac.decision_id=d.id WHERE d.project_id=pid AND d.request_id=x.id AND ac.command_id=cid)) LOOP
+  IF r.action_scope_json->>'operation'='prepareExecution' OR EXISTS(SELECT 1 FROM anvil.execution_preparation_approval_candidates b WHERE b.project_id=pid AND b.request_id=r.id) THEN
+   IF (SELECT count(*) FROM anvil.execution_preparation_approval_candidates b WHERE b.project_id=pid AND b.request_id=r.id)<>1 OR NOT COALESCE(anvil.fn09_prepare_candidate_valid(pid,r.id),false) THEN RAISE EXCEPTION 'PREPARATION_CANDIDATE_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+   IF EXISTS(SELECT 1 FROM anvil.approval_decisions d JOIN anvil.authorization_receipts ar ON ar.scope_kind='PROJECT' AND ar.scope_id=d.project_id AND ar.approval_decision_ref=d.id WHERE d.project_id=pid AND d.request_id=r.id AND NOT EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=pid AND x.id=ar.command_id AND x.operation='prepareExecution' AND x.authorization_receipt_id=ar.id AND x.approval_consumption_id IS NOT NULL))
+   OR EXISTS(SELECT 1 FROM anvil.audit_events a WHERE a.project_id=pid AND a.approval_ref->>'requestId'=r.id::text AND NOT EXISTS(SELECT 1 FROM anvil.commands x JOIN anvil.approval_consumptions ac ON ac.project_id=x.project_id AND ac.command_id=x.id JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id WHERE x.project_id=pid AND x.id=a.command_id AND x.operation='prepareExecution' AND x.approval_consumption_id=ac.id AND d.request_id=r.id))
+   THEN RAISE EXCEPTION 'PREPARATION_APPROVAL_LINK_GRAPH_REQUIRED' USING ERRCODE='42501';END IF;
+   IF r.status='CONSUMED' THEN
+    IF (SELECT count(*) FROM anvil.approval_decisions d JOIN anvil.approval_consumptions ac ON ac.project_id=d.project_id AND ac.decision_id=d.id JOIN anvil.commands x ON x.project_id=ac.project_id AND x.id=ac.command_id JOIN anvil.execution_preparations ep ON ep.project_id=x.project_id AND ep.command_id=x.id WHERE d.project_id=pid AND d.request_id=r.id AND d.decision='APPROVE' AND x.operation='prepareExecution' AND anvil.fn09_prepare_approval_execution_valid(pid,x.id,d.id,true))<>1 THEN RAISE EXCEPTION 'PREPARATION_CONSUMED_GRAPH_REQUIRED' USING ERRCODE='42501';END IF;
+   ELSIF EXISTS(SELECT 1 FROM anvil.approval_decisions d JOIN anvil.approval_consumptions ac ON ac.project_id=d.project_id AND ac.decision_id=d.id WHERE d.project_id=pid AND d.request_id=r.id) THEN RAISE EXCEPTION 'PREPARATION_UNCONSUMED_GRAPH_REQUIRED' USING ERRCODE='42501';END IF;
+  END IF;
+ END LOOP;RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION anvil.fn09_understanding_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;raw jsonb=to_jsonb(NEW);c anvil.commands%ROWTYPE;b anvil.understanding_review_approval_candidates%ROWTYPE;v anvil.understanding_reviews%ROWTYPE;r anvil.approval_requests%ROWTYPE;
+BEGIN
+ -- FN03_MANAGEMENT_TRIGGER_BEGIN
+ IF TG_OP IN('INSERT','UPDATE') THEN
+  IF TG_TABLE_NAME='commands' THEN
+   IF NEW.operation='defineSourceContentPolicy' THEN PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;END IF;
+  ELSIF TG_TABLE_NAME='authorization_receipts' THEN
+   IF NEW.scope_kind='PROJECT' AND EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.scope_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  ELSIF TG_TABLE_NAME='audit_events' THEN
+   IF EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.project_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  END IF;
+ END IF;
+ -- FN03_MANAGEMENT_TRIGGER_END
+ pid=CASE WHEN TG_TABLE_NAME='authorization_receipts' THEN (raw->>'scope_id')::uuid ELSE (raw->>'project_id')::uuid END;
+ IF pid IS NULL THEN RETURN NULL;END IF;
+ FOR r IN SELECT * FROM anvil.approval_requests WHERE project_id=pid AND action_scope_json->>'operation'='reviewUnderstanding' LOOP
+  IF NOT COALESCE(anvil.fn09_understanding_candidate_valid(pid,r.id),false) THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_CANDIDATE_REQUIRED' USING ERRCODE='42501';END IF;
+ END LOOP;
+ FOR b IN SELECT * FROM anvil.understanding_review_approval_candidates WHERE project_id=pid LOOP
+  IF NOT COALESCE(anvil.fn09_understanding_candidate_valid(pid,b.request_id),false) THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_CANDIDATE_REQUIRED' USING ERRCODE='42501';END IF;
+ END LOOP;
+ FOR c IN SELECT * FROM anvil.commands WHERE project_id=pid AND scope_kind='PROJECT' AND operation='reviewUnderstanding' LOOP
+  SELECT * INTO v FROM anvil.understanding_reviews WHERE project_id=pid AND command_id=c.id;
+  IF v.command_id IS NULL OR v.snapshot_json->'requestHash' IS DISTINCT FROM to_jsonb(c.request_hash) OR anvil.execution_json_hash(v.snapshot_json->'request') IS DISTINCT FROM c.request_hash OR v.content_hash IS DISTINCT FROM anvil.execution_json_hash(v.snapshot_json) OR c.result_ref->'data'->'ref' IS DISTINCT FROM jsonb_build_object('id',v.id,'version',v.version,'contentHash',v.content_hash) OR c.result_ref->'data'->'snapshot' IS DISTINCT FROM v.snapshot_json THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+  IF c.approval_consumption_id IS NOT NULL THEN
+   IF NOT COALESCE(anvil.fn09_understanding_approval_valid(pid,c.id,(v.snapshot_json->'request'->'approvalRef'->>'decisionId')::uuid,true),false) THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+  ELSIF c.payload_ref IS NOT NULL OR v.snapshot_json->'request'->'approvalRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'UNDERSTANDING_AUTO_LINK_REQUIRED' USING ERRCODE='42501';END IF;
+ END LOOP;
+ IF EXISTS(SELECT 1 FROM anvil.understanding_reviews u LEFT JOIN anvil.commands c ON c.project_id=u.project_id AND c.id=u.command_id WHERE u.project_id=pid AND (c.id IS NULL OR c.operation<>'reviewUnderstanding')) THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+ IF EXISTS(SELECT 1 FROM anvil.approval_requests r LEFT JOIN anvil.approval_decisions d ON d.project_id=r.project_id AND d.request_id=r.id LEFT JOIN anvil.approval_consumptions ac ON ac.project_id=r.project_id AND ac.decision_id=d.id LEFT JOIN anvil.commands c ON c.project_id=r.project_id AND c.id=ac.command_id LEFT JOIN anvil.understanding_reviews u ON u.project_id=c.project_id AND u.command_id=c.id WHERE r.project_id=pid AND r.action_scope_json->>'operation'='reviewUnderstanding' AND ((r.status='CONSUMED' AND (ac.id IS NULL OR c.id IS NULL OR u.command_id IS NULL)) OR (ac.id IS NOT NULL AND (r.status<>'CONSUMED' OR c.operation IS DISTINCT FROM 'reviewUnderstanding' OR u.command_id IS NULL)))) THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION anvil.guard_child_human_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE n jsonb; cid uuid; pid uuid; c anvil.commands%ROWTYPE; d anvil.assignment_draft_versions%ROWTYPE; at timestamptz;
+BEGIN
+ -- FN03_MANAGEMENT_TRIGGER_BEGIN
+ IF TG_OP IN('INSERT','UPDATE') THEN
+  IF TG_TABLE_NAME='commands' THEN
+   IF NEW.operation='defineSourceContentPolicy' THEN PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;END IF;
+  ELSIF TG_TABLE_NAME='authorization_receipts' THEN
+   IF NEW.scope_kind='PROJECT' AND EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.scope_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  ELSIF TG_TABLE_NAME='audit_events' THEN
+   IF EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.project_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  END IF;
+ END IF;
+ -- FN03_MANAGEMENT_TRIGGER_END
+ IF TG_OP='DELETE' THEN n=to_jsonb(OLD);ELSE n=to_jsonb(NEW);END IF;
+ cid=CASE WHEN TG_TABLE_NAME='commands' THEN (n->>'id')::uuid ELSE (n->>'command_id')::uuid END;
+ SELECT * INTO c FROM anvil.commands WHERE id=cid;
+ IF c.id IS NULL THEN
+  IF EXISTS(SELECT 1 FROM anvil.assignment_content_reviews WHERE command_id=cid) OR EXISTS(SELECT 1 FROM anvil.assignment_versions WHERE command_id=cid) THEN RAISE EXCEPTION 'ASSIGNMENT_CONTENT_INCOMPLETE' USING ERRCODE='42501';END IF;
+  RETURN NULL;
+ END IF;
+ pid=c.project_id;
+ IF anvil.child_human_complete(pid,cid) IS NOT TRUE THEN RAISE EXCEPTION 'ASSIGNMENT_CONTENT_INCOMPLETE' USING ERRCODE='42501';END IF;
+ -- 새 child 기록은 잠금 대기 뒤 최종 clock에서도 현재 세션/정책/부모가 유효해야 한다.
+ IF c.operation='reviewAssignmentContent' THEN
+  SELECT dv.* INTO d FROM anvil.assignment_draft_versions dv JOIN anvil.assignment_content_reviews r ON r.project_id=dv.project_id AND r.draft_id=dv.draft_id AND r.draft_version=dv.version WHERE r.project_id=pid AND r.command_id=cid;
+ ELSE
+  SELECT dv.* INTO d FROM anvil.assignment_draft_versions dv JOIN anvil.assignment_versions v ON v.project_id=dv.project_id AND v.assignment_id=dv.draft_id AND v.version=dv.version WHERE v.project_id=pid AND v.command_id=cid;
+ END IF;
+ IF d.draft_id IS NOT NULL AND d.version_json->'definition'->'parentAssignmentRef' IS DISTINCT FROM 'null'::jsonb THEN
+  at=clock_timestamp();
+  IF anvil.assignment_content_authorized(pid,c.operation) IS NOT TRUE OR anvil.assignment_parent_current(pid,d.draft_id,d.version_json) IS NOT TRUE THEN RAISE EXCEPTION 'ASSIGNMENT_PARENT_NOT_CURRENT' USING ERRCODE='42501';END IF;
+ END IF;
+ RETURN NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION anvil.fn16_policy_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;cid uuid;v anvil.backup_policy_versions;b anvil.backup_policy_approval_candidates;c anvil.commands;
+BEGIN
+ -- FN03_MANAGEMENT_TRIGGER_BEGIN
+ IF TG_OP IN('INSERT','UPDATE') THEN
+  IF TG_TABLE_NAME='commands' THEN
+   IF NEW.operation='defineSourceContentPolicy' THEN PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;END IF;
+  ELSIF TG_TABLE_NAME='authorization_receipts' THEN
+   IF NEW.scope_kind='PROJECT' AND EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.scope_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  ELSIF TG_TABLE_NAME='audit_events' THEN
+   IF EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.project_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  END IF;
+ END IF;
+ -- FN03_MANAGEMENT_TRIGGER_END
+ IF TG_TABLE_NAME='backup_policies' THEN
+  pid=COALESCE(NEW.project_id,OLD.project_id);
+  IF NOT EXISTS(SELECT 1 FROM anvil.backup_policy_versions v JOIN anvil.backup_policies h ON h.project_id=v.project_id AND h.id=v.policy_id AND h.head_version=v.version WHERE h.project_id=pid AND h.id=NEW.id AND anvil.fn16_policy_version_valid(v.project_id,v.policy_id,v.version)) THEN RAISE EXCEPTION 'BACKUP_POLICY_HEAD_INCOMPLETE' USING ERRCODE='23514';END IF;
+ ELSIF TG_TABLE_NAME='backup_policy_versions' THEN pid=NEW.project_id;cid=NEW.command_id;
+ ELSIF TG_TABLE_NAME='backup_policy_approval_candidates' THEN pid=NEW.project_id;cid=NEW.request_command_id;
+ ELSIF TG_TABLE_NAME='commands' THEN pid=COALESCE(NEW.project_id,OLD.project_id);cid=COALESCE(NEW.id,OLD.id);
+ ELSIF TG_TABLE_NAME='authorization_receipts' THEN
+  IF COALESCE(NEW.scope_kind,OLD.scope_kind)<>'PROJECT' THEN RETURN NULL;END IF;
+  pid=COALESCE(NEW.scope_id,OLD.scope_id);cid=COALESCE(NEW.command_id,OLD.command_id);
+ ELSIF TG_TABLE_NAME='audit_events' OR TG_TABLE_NAME='approval_consumptions' THEN pid=COALESCE(NEW.project_id,OLD.project_id);cid=COALESCE(NEW.command_id,OLD.command_id);
+ ELSIF TG_TABLE_NAME='approval_requests' THEN pid=COALESCE(NEW.project_id,OLD.project_id);cid=COALESCE(NEW.command_id,OLD.command_id);
+ ELSIF TG_TABLE_NAME='approval_decisions' THEN
+  pid=COALESCE(NEW.project_id,OLD.project_id);
+  SELECT request_command_id INTO cid FROM anvil.backup_policy_approval_candidates WHERE project_id=pid AND request_id=COALESCE(NEW.request_id,OLD.request_id);
+ END IF;
+ IF pid IS NULL THEN RETURN NULL;END IF;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ -- 원행을 먼저 분류한다. operation/result 변조가 원행 보호를 우회하지 않는다.
+ FOR v IN SELECT * FROM anvil.backup_policy_versions WHERE project_id=pid AND command_id=cid LOOP
+  IF NOT COALESCE(anvil.fn16_policy_version_valid(pid,v.policy_id,v.version),false) THEN RAISE EXCEPTION 'BACKUP_POLICY_INCOMPLETE' USING ERRCODE='23514';END IF;
+ END LOOP;
+ FOR b IN SELECT * FROM anvil.backup_policy_approval_candidates WHERE project_id=pid AND request_command_id=cid LOOP
+  IF NOT COALESCE(anvil.fn16_policy_candidate_valid(pid,b.request_id),false) THEN RAISE EXCEPTION 'BACKUP_POLICY_CANDIDATE_INCOMPLETE' USING ERRCODE='23514';END IF;
+  FOR v IN SELECT v0.* FROM anvil.backup_policy_versions v0 JOIN anvil.approval_consumptions ac ON ac.project_id=v0.project_id AND ac.command_id=v0.command_id JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id WHERE d.project_id=pid AND d.request_id=b.request_id LOOP
+   IF NOT COALESCE(anvil.fn16_policy_version_valid(pid,v.policy_id,v.version),false) THEN RAISE EXCEPTION 'BACKUP_POLICY_CONSUMPTION_INCOMPLETE' USING ERRCODE='23514';END IF;
+  END LOOP;
+ END LOOP;
+ FOR b IN SELECT b0.* FROM anvil.backup_policy_approval_candidates b0 WHERE b0.project_id=pid AND EXISTS(
+  SELECT 1 FROM anvil.approval_decisions d WHERE d.project_id=pid AND d.request_id=b0.request_id AND d.command_id=cid) LOOP
+  IF NOT anvil.fn16_policy_candidate_valid(pid,b.request_id) THEN RAISE EXCEPTION 'BACKUP_POLICY_CANDIDATE_INCOMPLETE' USING ERRCODE='23514';END IF;
+  FOR v IN SELECT v0.* FROM anvil.backup_policy_versions v0 JOIN anvil.approval_consumptions ac ON ac.project_id=v0.project_id AND ac.command_id=v0.command_id JOIN anvil.approval_decisions d ON d.project_id=ac.project_id AND d.id=ac.decision_id WHERE d.project_id=pid AND d.request_id=b.request_id LOOP
+   IF NOT anvil.fn16_policy_version_valid(pid,v.policy_id,v.version) THEN RAISE EXCEPTION 'BACKUP_POLICY_CONSUMPTION_INCOMPLETE' USING ERRCODE='23514';END IF;
+  END LOOP;
+ END LOOP;
+ IF c.operation='saveBackupPolicy' AND c.state='APPLIED' AND (SELECT count(*) FROM anvil.backup_policy_versions WHERE project_id=pid AND command_id=cid)<>1 THEN RAISE EXCEPTION 'BACKUP_POLICY_ROW_MISSING' USING ERRCODE='23514';END IF;
+ IF c.operation='requestApproval' AND c.state='APPLIED' AND EXISTS(SELECT 1 FROM anvil.approval_requests r WHERE r.project_id=pid AND r.command_id=cid AND r.action_scope_json->>'operation'='saveBackupPolicy') AND (SELECT count(*) FROM anvil.backup_policy_approval_candidates WHERE project_id=pid AND request_command_id=cid)<>1 THEN RAISE EXCEPTION 'BACKUP_POLICY_CANDIDATE_MISSING' USING ERRCODE='23514';END IF;
+ IF NOT anvil.fn16_policy_capacity(pid) THEN RAISE EXCEPTION 'BACKUP_POLICY_LIMIT_UNAVAILABLE' USING ERRCODE='23514';END IF;
+ RETURN NULL;
+END;$$;
+
+CREATE OR REPLACE FUNCTION anvil.fn09_registered_binding_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE b anvil.role_bindings%ROWTYPE;s anvil.agent_sessions%ROWTYPE;c anvil.commands%ROWTYPE;d anvil.connection_definition_versions%ROWTYPE;cid uuid;pid uuid;
+BEGIN
+ -- FN03_MANAGEMENT_TRIGGER_BEGIN
+ IF TG_OP IN('INSERT','UPDATE') THEN
+  IF TG_TABLE_NAME='commands' THEN
+   IF NEW.operation='defineSourceContentPolicy' THEN PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;END IF;
+  ELSIF TG_TABLE_NAME='authorization_receipts' THEN
+   IF NEW.scope_kind='PROJECT' AND EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.scope_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  ELSIF TG_TABLE_NAME='audit_events' THEN
+   IF EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.project_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  END IF;
+ END IF;
+ -- FN03_MANAGEMENT_TRIGGER_END
+ IF TG_TABLE_NAME='commands' THEN pid=NEW.project_id;cid=NEW.id;ELSIF TG_TABLE_NAME='authorization_receipts' THEN pid=NEW.scope_id;cid=NEW.command_id;ELSE pid=NEW.project_id;cid=NEW.command_id;END IF;
+ SELECT * INTO b FROM anvil.role_bindings WHERE project_id=pid AND command_id=cid;
+ SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=cid;
+ IF b.snapshot_json ? 'connectionKind' THEN
+  IF b.snapshot_json->'connectionKind' IS DISTINCT FROM '"REGISTERED_DEFINITION"'::jsonb OR c.operation IS DISTINCT FROM 'bindResponsibleSession' OR NOT anvil.fn09_binding_variant(b.snapshot_json) THEN RAISE EXCEPTION 'FN09_REGISTERED_BINDING_COMPLETE_REQUIRED';END IF;
+  SELECT * INTO s FROM anvil.agent_sessions WHERE project_id=pid AND session_id=b.session_id;
+  SELECT * INTO d FROM anvil.connection_definition_versions WHERE project_id=pid AND connection_id::text=b.snapshot_json->'connectionRef'->>'id' AND version=(b.snapshot_json->'connectionRef'->>'version')::bigint;
+  IF s.session_id IS NULL OR s.snapshot_json->'connectionKind' IS DISTINCT FROM b.snapshot_json->'connectionKind' OR b.snapshot_json->'connectionRef' IS DISTINCT FROM s.snapshot_json->'connectionRef' OR d.connection_id IS NULL OR b.snapshot_json->'connectionRef' IS DISTINCT FROM jsonb_build_object('id',d.connection_id,'version',d.version,'contentHash',d.content_hash) OR NOT anvil.connection_definition_proof(d) THEN RAISE EXCEPTION 'FN09_REGISTERED_BINDING_COMPLETE_REQUIRED';END IF;
+ ELSIF c.result_ref->'data'->'snapshot' ? 'connectionKind' AND c.operation='bindResponsibleSession' THEN RAISE EXCEPTION 'FN09_REGISTERED_BINDING_COMPLETE_REQUIRED';END IF;
+ RETURN NEW;
+END;$$;
+
+CREATE OR REPLACE FUNCTION anvil.material_registration_reverse() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;cid uuid;q anvil.execution_commands%ROWTYPE;rid uuid;ch uuid;row_json jsonb;candidate record;is_material boolean=false;
+BEGIN
+ -- FN03_MANAGEMENT_TRIGGER_BEGIN
+ IF TG_OP IN('INSERT','UPDATE') THEN
+  IF TG_TABLE_NAME='commands' THEN
+   IF NEW.operation='defineSourceContentPolicy' THEN PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;END IF;
+  ELSIF TG_TABLE_NAME='authorization_receipts' THEN
+   IF NEW.scope_kind='PROJECT' AND EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.scope_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  ELSIF TG_TABLE_NAME='audit_events' THEN
+   IF EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.project_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  END IF;
+ END IF;
+ -- FN03_MANAGEMENT_TRIGGER_END
+ row_json=CASE WHEN TG_OP='DELETE' THEN to_jsonb(OLD) ELSE to_jsonb(NEW) END;pid=(row_json->>'project_id')::uuid;
+ IF TG_TABLE_NAME='authorization_receipts' THEN IF row_json->>'scope_kind' IS DISTINCT FROM 'PROJECT' THEN RETURN NULL;END IF;pid=(row_json->>'scope_id')::uuid;END IF;
+ IF TG_TABLE_NAME IN('execution_material_manifests','execution_materials') THEN cid=(row_json->>'created_command_id')::uuid;
+ ELSIF TG_TABLE_NAME='execution_commands' THEN cid=(row_json->>'created_command_id')::uuid;
+ ELSIF TG_TABLE_NAME='commands' THEN cid=(row_json->>'id')::uuid;
+ ELSIF TG_TABLE_NAME IN('authorization_receipts','audit_events','executions','execution_grants','delivery_outbox') THEN cid=(row_json->>'command_id')::uuid;
+ ELSIF TG_TABLE_NAME IN('usage_reservations','writer_claims') THEN cid=(row_json->>'created_command_id')::uuid;
+ END IF;
+ IF cid IS NOT NULL THEN
+  IF EXISTS(SELECT 1 FROM anvil.execution_material_manifests WHERE project_id=pid AND created_command_id=cid) OR EXISTS(SELECT 1 FROM anvil.execution_materials WHERE project_id=pid AND created_command_id=cid) THEN
+   IF NOT COALESCE(anvil.material_registration_complete(pid,cid),false) THEN RAISE EXCEPTION 'MATERIAL_REGISTRATION_ATOMIC_REQUIRED';END IF;
+  ELSE
+   SELECT * INTO q FROM anvil.execution_commands WHERE project_id=pid AND created_command_id=cid;
+   IF q.id IS NOT NULL AND (q.snapshot_json->'envelope'->>'operation' IN('SEND_INSTRUCTION','START_SESSION') OR q.snapshot_json->>'state' IN('SYNTHETIC_INSTRUCTION_QUEUED','SYNTHETIC_QUEUED')) THEN RAISE EXCEPTION 'MATERIAL_REGISTRATION_MISSING';END IF;
+  END IF;
+ END IF;
+ IF TG_TABLE_NAME='execution_material_proof_bindings' THEN rid=(row_json->>'proof_result_id')::uuid;
+ ELSIF TG_TABLE_NAME='execution_receipts' THEN rid=(row_json->>'id')::uuid;
+ ELSIF TG_TABLE_NAME='execution_challenges' THEN ch=(row_json->>'id')::uuid;SELECT id INTO rid FROM anvil.execution_receipts WHERE project_id=pid AND challenge_id=ch;
+ END IF;
+ IF rid IS NOT NULL THEN
+  IF EXISTS(SELECT 1 FROM anvil.execution_material_proof_bindings WHERE project_id=pid AND proof_result_id=rid) THEN
+   IF NOT COALESCE(anvil.material_binding_complete(pid,rid),false) THEN RAISE EXCEPTION 'MATERIAL_BINDING_ATOMIC_REQUIRED';END IF;
+  ELSE
+   IF COALESCE(anvil.material_target_required(pid,rid),false) THEN RAISE EXCEPTION 'MATERIAL_BINDING_MISSING';END IF;
+  END IF;
+ END IF;RETURN NULL;
 END;$$;

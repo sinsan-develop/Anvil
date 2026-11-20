@@ -21597,3 +21597,11 @@ PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확
 기준 `a13bb4e2`, developer_primary 단일 작성·반환. 미적용 0101과 정적 시험 2경로. 고정 0081/0082의 기존 허용 집합과 함수 원문을 보존하고, 신규 관리 operation·part 한 쌍과 원 봉인만 추가했다. 새 목적 분기를 제거하면 기존 두 함수 전체와 일치하는지 검산했다. 기존 예약·정산 집계와 quota_complete 구현은 그대로이며 새 분기는 과거 완결을 호출한다. 기존 정산 역할이 FORCE RLS 보호 원문을 조회할 수 있다는 증거는 없으므로 목적 완결의 제한 실행 권한을 후속으로 연결해야 한다. 일반 표 접근이나 목적 RPC 실행권은 열지 않았다.
 
 담당 신규 분기 부재 RED 3건 `0ccc94`, 정적 17통과 `3cc6db`, 인접 포함 34통과 `cd1419`. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 17통과·실패/건너뜀0 및 공백 종료0 `ccaf5e`. pglast 외부 46문장·plan 본문 구문 검사, settled 본문은 원 catalog가 없어 메모리 record 인자 치환 구문만 검사했다. 실 PG·DB·권한·키·서비스·Agent·SSH·파일 관측 실행0. 목적 역완결·16 지연 제약·최소 실행 권한과 실제 Access/화면 배선은 잔여다. 롤백은 이번 두 경로와 기록 변경분이다.
+
+### FN03 0101 목적 역완결과 16개 지연 제약 검수
+
+기준 `9f0f36d5`, developer_primary 단일 작성·반환. 미적용 0101과 schema 시험에 기존 INVOKER 함수 6개의 목적 분기와 6표 역완결을 연결했다. 새 분기 제거 시 고정 원 함수와 일치한다. 목적 역할·원 C/A/U 행·단일 봉인 예약·같은 XID가 모두 맞아야 기존 무관 도메인 선조회를 대체할 수 있다. 원문/승인/감사/예약 누락과 C-only를 역검사한다. 설치 시 16개 지연 제약 이름의 24개 부착과 root/속성을 대조하며, 목적 쓰기는 정확 16개 검사·상태 복원 뒤 현재성을 재검산한다. 일반 INSERT/표 권한·app/PUBLIC EXEC는 닫힌 상태다.
+
+담당 신규 분기 RED 3건 및 상세 부착 RED 1건, 직접·인접 38통과·실패/건너뜀0 `c0be33`, 좁은 타입·공백 종료0. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 정적 21통과·실패/건너뜀0 및 공백검사 종료0 `b5e4fc`. SQL SHA256 D9079C65EA4DEA1A16A97C31D1BBEA79C4BDF46D1B0E256B127C1FEFCD83675E, 시험 8647E5584C68B3015E2F10872143281FF459AE8AE5C1503CAAE10EB0A098E266. 외부 SQL 68문 파싱. 일부 PL 본문은 rowtype RAM 치환 구문만 검증했으며 trigger 7개는 decoder 한계로 완전 본문 검사에 포함하지 않았다. 실 PG15 발화 역할·권한/락·COMMIT·롤백 미검증, 실제 DB/권한/키/서비스/Agent/SSH·파일 관측0.
+
+다음은 보호 원문 FORCE RLS를 지키는 최소 목적 역할 권한과 제한 함수 호출을 연결한 뒤 실제 Access/정책 화면으로 통합하는 것이다. 이 SQL은 미적용이고 기존 검증 기준을 낮추지 않았다. 롤백은 이번 두 경로와 기록 변경분이다.
