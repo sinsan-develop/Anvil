@@ -21621,3 +21621,11 @@ PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확
 경로 7개는 project-command/routes, 관리 저장소·서비스, 0101, FN03 schema/service 시험이다. 최초 Fastify inject write 400을 재현해 기존 route의 write enum 한 곳을 보완했고 200·목적 RPC1·COMMIT, 내부 read 명령 400·추가 query0을 확인했다. 담당 집중·인접 83통과·실패/건너뜀0, 좁은 타입·공백 종료0. Main `node --test tests/unit/FN03/source-content-management-origin-service.test.ts tests/unit/FN03/source-content-management-origin-schema.test.ts` 47통과·실패/건너뜀0 `4f4c1e`. 별도 일반문서 인접은 23통과/1실패다. document-source-detach.test.ts:45의 기존 linkDocumentSource 거절 기대 실패는 기준 Git blob에서도 재현됐으며 이 작업에서 시험/기준은 바꾸지 않았다.
 
 최종 0101 SHA256 930F8CD3DA7372BB09FE4BE49C388AA5A9CA619989A29297B8369A34984231C1. 외부 SQL 158문장 파싱, commit 본문은 RAM rowtype 치환 구문 검사만 수행했다. 실제 PostgreSQL/권한/마이그레이션 적용·서비스 listen·키·Agent·실자료·SSH 실행0. 다음은 기존 정책 선택 UI에서 승인된 두 목적만 추가하고 사용 경로를 합성 검수하는 것이다. 실제 파일 관측·운영 및 전체 FN03 검수는 남는다. 롤백은 이번 7경로와 기록의 변경분이다.
+
+### FN03 A안 정책 화면 연결 및 source-only 통합 검수
+
+기준 `3820600d` clean·추적 차이0. developer_primary 단일 작성·반환. 기존 연결 화면의 자료 정책 프로필에 승인된 관리 저장·내부 조회 두 목적만 추가했다. 기본 미선택, 명시 선택 및 저장, PROJECT/HUMAN 정책만 유지한다. 다른 프로필·권한 범위는 그대로다. 내부 조회는 정책 목적 선택 항목으로만 나타나며 공개 원문을 조회하거나 표출하는 버튼은 없다. 기존 실제 화면 구성 요소의 메모리 렌더와 정책 직렬화·재조회·서버 DENY/REQUIRE_APPROVAL 거절을 검산했다.
+
+담당 UI 직접·인접 20통과/실패·건너뜀0, 좁은 타입·공백 종료0. 초기 SSR 채널 잔류 실행은 합격에 넣지 않았으며 소유 채널 종료를 보완하고 재실행해 정상 종료·핸들0을 확인했다. Main은 FN03 입력/저장량/서비스/schema/관리 증거와 UI11 신규/자료/후보 정책의 8파일을 `node --test`로 검증해 **103통과·실패/건너뜀0** `776308`. 전체 `npm run typecheck` 원 handle 종료0 `d19cf1`, `git diff --check` 종료0. 제품 SHA256 E20061586A524BD322DB9C9B76F083EDBF1067770ACCD4761C93902F1E9A1362, 시험 67315DCD3FE399A45B15BA187713E95E5FE78709BD91BF11ED10F8C233A54F6A. 일반 문서 시험의 기준 실패 1건은 따로 유지하고 합격으로 세지 않는다.
+
+승인된 이 소스 범위는 코드·정책 선택 화면·미적용 0101·합성 검수까지다. 실브라우저·정식 DB/권한·키·서비스·Agent·SSH·실자료·파일 관측 실행0. 실제 PostgreSQL15 ACL/RLS·지연 제약 발화 역할·동시성·COMMIT/rollback, 실제 관측 생산자 및 FN03·IX01 전체는 미완료다. main 병합 gate 미충족. 이번 롤백은 화면·시험 및 기록의 역적용이고, 원 저장 producer 구현 이력은 기존 작업 브랜치에 보존한다.
