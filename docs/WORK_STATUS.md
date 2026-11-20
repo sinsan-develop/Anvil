@@ -21523,3 +21523,13 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 담당 RED `e2f6de` 1건 확인 후 GREEN 4통과 `e09ace`, 중간 타입 좁히기 오류 1건을 수정해 좁은 strict 타입·공백 검산 `27d3f0` 종료0. Main `node --test --test-name-pattern 'ATTACHED|A14' tests/unit/IX01/current-journey-controller.test.ts` 4통과·실패/건너뜀0 `0e4606`. 불일치 시 UNKNOWN/NETWORK/CIDR, 보고 기록1과 CHILD/CLEANUP0 확인. 소스 SHA256 A3DE404E3397741CECA76E61B766BB3CB240AF83D765BF8A978DC4D9CFF8A63B. 롤백은 이번 두 코드·시험 경로 및 기록의 변경분이다.
 
 실제 대역 선정·생성 직전 비충돌·새 실행안에서의 대역 고정·기존 strict SSH의 현재 신뢰는 미확인이다. 실환경, SSH·WSL·Docker·DB·권한·키·서비스·Agent 실행0, 합성 원 핸들0. 확인된 대역을 새 실행안의 승인 inputs와 `--subnet`·IPAM 투영에 연결하기 전에는 실제 TC01을 진행하지 않는다. 기존 보존 시험 자원에는 접근하지 않았다.
+
+## FN03 보호 관리 원문 계약의 현재 선행 확인
+
+기준 `34c91de6`, 추적 ref 차이0·clean. Main은 정본 Stage B와 20261108 결정 패킷을 대조하고 기존 Primary에 읽기 전용 영향 대조를 배정했다. 기존 source-content-policy-management-evidence.ts는 확정 증거의 검산 소비처이며 보호 원문을 새로 저장하는 운영 생산자는 아니다. A안의 신규 보호 목적·전용 읽기·거래별 용량 계상은 기존 형상 승인과 구분한다. 후보 SHA256 CBEFC3E3736301E9A49B8B26DB41FCC3C0CEDBB0A052C9E0CDAEDDE0B93C5230, 결정 패킷 239845D61699C4987AEB11A05046A115F323C1BEE1949CA38837FCD6D48A6EAF를 검산했고 채택은 한 번 요청했다. 채택 전 제품 변경0.
+
+기존 후보의 SQL 번호 0083은 normal_initial_execution이 사용한다. 현재 목록의 마지막은 0100이며 채택 후 배정 직전에 최신 번호를 다시 확인한다. 기술 WI §2의 잠금 뒤 발급 시각과 일반 거래 시작 시각의 불일치는 저장 전 해결할 항목이다. 기존 영수증 시간을 바꾸지 않고 새 목적 함수의 시각과 원자성을 검산한다. Main의 모듈 검색 문법 오류1은 PowerShell 경로 목록을 명시해 바로잡았다. 제품 실패나 실제 검증 결과는 아니다. 새 시험·마이그레이션 적용·실자료·DB·권한·키·서비스·Agent 실행0.
+
+PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확인되지 않았다. IX01 실제 Windows 감독 review 공급·현재 신뢰 및 실행 직전 자원 확인은 미충족이다. 사용자에게 임의 대역을 정하도록 요청하지 않았으며 소진된 로컬 읽기나 원격 시험을 반복하지 않았다. FN03 결정과 IX01 실행 선행은 별개다. 완료 항목 상향0, 이번 변경은 점검표·현황 기록에 한정한다.
+
+기존 Primary의 독립 읽기 대조를 수거했다. 현재 0100 뒤 0101은 번호 후보이며 선점하지 않는다. 채택 후 첫 구현 단위는 ProjectPolicyRepository.command의 같은 인증 거래에서 목적 RPC를 한 번 호출하고 원문·명령·승인 근거·감사·용량 계상을 원자적으로 검산하는 것이다. 기존 wire/evidence를 재사용하고, 같은 거래에서 일반 저장을 추가 호출하지 않는다. 운영 반영이나 실제 DB 검증은 이번 범위에 없다.
