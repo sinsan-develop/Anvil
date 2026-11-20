@@ -21605,3 +21605,11 @@ PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확
 담당 신규 분기 RED 3건 및 상세 부착 RED 1건, 직접·인접 38통과·실패/건너뜀0 `c0be33`, 좁은 타입·공백 종료0. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 정적 21통과·실패/건너뜀0 및 공백검사 종료0 `b5e4fc`. SQL SHA256 D9079C65EA4DEA1A16A97C31D1BBEA79C4BDF46D1B0E256B127C1FEFCD83675E, 시험 8647E5584C68B3015E2F10872143281FF459AE8AE5C1503CAAE10EB0A098E266. 외부 SQL 68문 파싱. 일부 PL 본문은 rowtype RAM 치환 구문만 검증했으며 trigger 7개는 decoder 한계로 완전 본문 검사에 포함하지 않았다. 실 PG15 발화 역할·권한/락·COMMIT·롤백 미검증, 실제 DB/권한/키/서비스/Agent/SSH·파일 관측0.
 
 다음은 보호 원문 FORCE RLS를 지키는 최소 목적 역할 권한과 제한 함수 호출을 연결한 뒤 실제 Access/정책 화면으로 통합하는 것이다. 이 SQL은 미적용이고 기존 검증 기준을 낮추지 않았다. 롤백은 이번 두 경로와 기록 변경분이다.
+
+### FN03 최소 목적 권한과 보호 원문 쓰기 SQL 검수
+
+기준 `53b548ee`, developer_primary 단일 작성·반환. 미적용 0101과 schema 시험만 변경했다. 앱의 허용은 저장·조회 RPC 두 함수의 EXEC로 제한하고 보호 표의 직접 접근·멤버십은 거절한다. 전용 역할의 정확 열과 호출 함수만 허용한다. 기존 정산 역할은 목적 DEFINER 완결 검사 함수만 호출하고 보호 원문 표는 읽지 않는다. E/O INSERT는 원 IO_STARTED 예약·XID·C/A/U/현재 권한을 결박한다. E의 기존 발화 제약은 목적 역할 안에서 별도 검사·복원하고 그 뒤 E를 쓰지 않는다. E/O UPDATE 권한 없이 기존 프로젝트 잠금과 정확 최신 head CAS를 보존한다. 마이그레이션 소스는 임시 설치 권한 회수·최소 권한 최종 검산을 같은 거래로 묶으며 자동 적용 목록에는 넣지 않았다.
+
+담당 집중·인접 54통과·실패/건너뜀0 `2c4540`와 타입 종료0 `cd3507`. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 정적 29통과·실패/건너뜀0 및 공백검사 종료0 `282279`. 이후 주석만 정리했고 최종 지문과 공백을 대조했다. SQL SHA256 08E17B73AA8FEAF41D4C0222331C069C33ED5326593EDB8B7019D6A32BA7CAF2, 시험 13B1791EA165693985C84B9511E63ACE7BE9C0D0EB6A333A752F0F953CF3A1CF. 외부 SQL 158문장·DO 6건 구문 확인. 일부 본문은 catalog 선언을 RAM에서 치환한 구문만 확인했고 실제 PG15 권한·trigger·경합·COMMIT은 미검증이다. 실DB·권한·키·서비스·Agent·실자료·SSH 실행0.
+
+다음은 같은 Access 인증 callback에서 원 query/XID·현재 세대·세션·새 명령/과거 재조회 분기를 보호 배선하고 정책 선택 UI를 연결하는 범위다. 롤백은 이번 SQL·시험·기록 변경분이며 실제 DDL 적용/권한 회수가 아니다.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync,existsSync} from 'node:fs';
+import {readFileSync,existsSync,readdirSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 
@@ -8,9 +8,116 @@ const file=new URL('../../../db/migrations/0101_source_content_policy_management
 const text=existsSync(file)?readFileSync(file,'utf8'):'';
 const sql=text.replace(/--[^\r\n]*/g,'');
 const compact=sql.replace(/\s+/g,' ').trim();
+test('목적 설치는 단일 거래이며 임시 ADMIN/CREATE를 회수하고 앱에는 두 RPC만 연다',()=>{
+ assert.match(compact,/^BEGIN;/);assert.match(compact,/COMMIT;$/);
+ assert.match(compact,/GRANT anvil_v3_source_content_management_owner TO anvil_v3_migrator WITH ADMIN OPTION/);
+ assert.match(compact,/REVOKE anvil_v3_source_content_management_owner FROM anvil_v3_migrator/);
+ assert.match(compact,/REVOKE CREATE ON SCHEMA anvil FROM anvil_v3_source_content_management_owner/);
+ const appGrants=[...sql.matchAll(/GRANT ([^;]+) TO anvil_v3_app;/g)].map(m=>m[1]);
+ assert.deepEqual(appGrants,[
+  'EXECUTE ON FUNCTION anvil.fn03_source_content_management_commit(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text,timestamptz)',
+  'EXECUTE ON FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,bigint,jsonb,jsonb,text)',
+ ]);
+ assert.match(sql,/pg_catalog\.pg_auth_members/);assert.match(sql,/relowner=purpose_oid/);
+});
+test('E/O INSERT는 원 IO_STARTED 봉인·XID·현재 context 및 실제 C/A/U만 받는다',()=>{
+ const gate=body('fn03_management_insert_guard');
+ for(const token of ["current_user<>'anvil_v3_source_content_management_owner'","session_user<>'anvil_v3_app'","r.phase IS DISTINCT FROM 'IO_STARTED'","r.start_fence IS DISTINCT FROM 1","r.plan_json->>'transactionId' IS DISTINCT FROM txid_current()::text",'fn03_management_context','r.plan_hash IS DISTINCT FROM anvil.source_read_hash(r.plan_json)','count(*)','authorization_receipts','audit_events','r.created_at','r.started_at','RETURN NEW'])assert.ok(gate.includes(token),token);
+ assert.doesNotMatch(gate,/SECURITY DEFINER|current_setting|set_config|WHEN OTHERS|fn03_management_complete/);
+ assert.match(compact,/DROP TRIGGER source_content_unavailable ON anvil\.source_content_policy_events;/);
+ assert.match(compact,/DROP TRIGGER source_content_management_unavailable ON anvil\.source_content_policy_management_origins;/);
+});
+test('quota owner는 목적 SD complete EXEC만 받고 E/O 직접 권한은 받지 않는다',()=>{
+ assert.match(dispatcher(sql,'fn03_management_complete'),/STABLE SECURITY DEFINER SET search_path=pg_catalog/);
+ assert.match(sql,/GRANT EXECUTE ON FUNCTION anvil\.fn03_management_complete\(uuid,uuid\) TO %I/);
+ assert.match(sql,/GRANT EXECUTE ON FUNCTION anvil\.fn03_management_plan_valid\(jsonb\) TO %I/);
+ assert.doesNotMatch(sql,/GRANT SELECT[^;]+TO %I/);
+ assert.match(sql,/SOURCE_CONTENT_MANAGEMENT_DISPATCHER_OWNER_INVALID/);
+ assert.match(sql,/SOURCE_CONTENT_MANAGEMENT_CALLEE_INVALID/);
+});
+test('기존 E INVOKER 제약만 별도 목적-role flush하고 그 뒤 E 재쓰기는 없다',()=>{
+ const write=body('fn03_source_content_management_commit');
+ assert.match(write,/SET CONSTRAINTS anvil\.source_content_policy_final IMMEDIATE;\s+SET CONSTRAINTS anvil\.source_content_policy_final DEFERRED;/);
+ assert.doesNotMatch(write.slice(write.indexOf('SET CONSTRAINTS anvil.source_content_policy_final IMMEDIATE')),/INSERT INTO|UPDATE anvil|DELETE FROM/);
+ assert.match(sql,/SOURCE_CONTENT_MANAGEMENT_EVENT_TRIGGER_INVALID/);
+ assert.doesNotMatch(sql,/CREATE OR REPLACE FUNCTION anvil\.check_source_content_policy_final/);
+});
+test('목적 열 ACL은 원 WI의 13표·6 UPDATE 집합이며 account 원문/봉인 R 갱신은 없다',()=>{
+ const grants=[...sql.matchAll(/GRANT (SELECT|INSERT|UPDATE)\(([^)]+)\) ON anvil\.(\w+) TO anvil_v3_source_content_management_owner;/g)];
+ assert.equal(grants.length,25);
+ const selected=new Map(grants.filter(x=>x[1]==='SELECT').map(x=>[x[3],x[2]]));
+ assert.deepEqual([...selected.keys()],['auth_sessions','projects','project_members','project_control','permission_policies','permission_policy_versions','project_storage_accounts','project_storage_reservations','commands','authorization_receipts','audit_events','source_content_policy_events','source_content_policy_management_origins']);
+ assert.equal(selected.get('auth_sessions'),'id,user_id,client_id,credential_generation,idle_expires_at,absolute_expires_at,reauth_until,revoked_at');
+ assert.equal(selected.get('project_storage_accounts'),'project_id,coverage_state,generation,used_bytes,held_bytes');
+ assert.deepEqual(grants.filter(x=>x[1]==='UPDATE').map(x=>[x[3],x[2]]),[
+  ['projects','id'],['project_members','participation'],['project_control','generation'],['permission_policies','head_version'],
+  ['project_storage_accounts','used_bytes,held_bytes,updated_at'],['project_storage_reservations','phase,start_fence,started_at,settled_bytes,server_command_id,authorization_receipt_id,scope_digest,settled_at'],
+ ]);
+ const inserted=grants.filter(x=>x[1]==='INSERT');
+ assert.deepEqual(inserted.map(x=>x[3]),['project_storage_reservations','commands','authorization_receipts','audit_events','source_content_policy_events','source_content_policy_management_origins']);
+ for(const x of inserted){
+  const columns=selected.get(x[3]);assert.ok(columns);
+  assert.equal(x[2],x[3]==='source_content_policy_events'?columns.replace(',previous_id,previous_version,previous_hash',''):columns);
+ }
+ assert.match(body('fn03_source_content_management_commit'),/SELECT x\.project_id,x\.coverage_state,x\.generation,x\.used_bytes,x\.held_bytes INTO STRICT ac/);
+ assert.match(body('fn03_source_content_management_commit'),/SELECT x\.\* INTO head FROM anvil\.source_content_policy_events x WHERE x\.project_id=p ORDER BY x\.sequence DESC LIMIT 1;/);
+ assert.match(body('fn03_management_context'),/PERFORM x\.id FROM anvil\.projects x WHERE x\.id=p AND x\.archived_at IS NULL FOR UPDATE/);
+ assert.doesNotMatch(body('fn03_source_content_management_commit'),/source_content_policy_events[^;]+FOR UPDATE/);
+ assert.doesNotMatch(sql,/GRANT (?:ALL|SELECT|INSERT|UPDATE) ON anvil\./);
+});
+test('RLS와 역할 후검산은 일반 C/A/U를 변경하지 않고 직접 원문/상속/owner를 차단한다',()=>{
+ const policies=[...sql.matchAll(/CREATE POLICY source_content_management_(select|insert) ON anvil\.(\w+) FOR (SELECT|INSERT) TO ([a-z0-9_]+)/g)];
+ assert.deepEqual(policies.map(x=>[x[1],x[2],x[3],x[4]]),[
+  ['select','source_content_policy_events','SELECT','anvil_v3_source_content_management_owner'],
+  ['insert','source_content_policy_events','INSERT','anvil_v3_source_content_management_owner'],
+  ['select','source_content_policy_management_origins','SELECT','anvil_v3_source_content_management_owner'],
+  ['insert','source_content_policy_management_origins','INSERT','anvil_v3_source_content_management_owner'],
+ ]);
+ for(const token of ['m.roleid=purpose_oid OR m.member=purpose_oid','has_any_column_privilege(app_oid,r.oid,privilege)','has_table_privilege(app_oid,r.oid,privilege)','r.relrowsecurity OR r.relforcerowsecurity OR r.relowner IN(purpose_oid,app_oid)','f.proowner<>purpose_oid','NOT(a.grantee=ANY(allowed))'])assert.ok(sql.includes(token),token);
+ assert.doesNotMatch(sql,/ALTER FUNCTION anvil\.(?:fn01_|fn09_registered_|fn15_|fn75_|fn76_|quota_|check_source_content_)/);
+});
+test('E/O 직전 guard는 다른 역할/Tx/ID/회수·기한·계보 오류를 고정 실패로 분리한다',()=>{
+ const gate=body('fn03_management_insert_guard');
+ for(const token of ["TG_OP<>'INSERT'","TG_WHEN<>'BEFORE'","TG_LEVEL<>'ROW'","c.id::text=ids->>'serverCommandId'","a.id::text=ids->>'authorizationReceiptId'","u.event_id::text=ids->>'auditEventId'","ctx->'credentialGeneration' IS DISTINCT FROM r.plan_json->'credentialGeneration'",'begin_at>=r.authorized_until','at_time<begin_at','at_time>=r.authorized_until',"r.plan_json->'originRef' IS DISTINCT FROM jsonb_build_object",'NEW.request_hash IS DISTINCT FROM c.request_hash','source_content_policy_lineage_shape(b,e) IS NOT TRUE'])assert.ok(gate.includes(token),token);
+ assert.match(gate,/TG_TABLE_NAME='source_content_policy_events'[\s\S]+ELSE[\s\S]+q=NEW\.request_json/);
+ assert.doesNotMatch(gate,/INSERT INTO|UPDATE anvil|DELETE FROM|EXECUTE|RETURN true|EXCEPTION WHEN/);
+ // 원문은 이 private 검사에서만 소비하며 외부 오류는 고정 코드다.
+ for(const m of gate.matchAll(/RAISE EXCEPTION ([^;]+);/g))assert.match(m[1]!,/^'SOURCE_CONTENT_MANAGEMENT_[A-Z_]+' USING ERRCODE='42501'$/);
+});
+test('목적 INVOKER 전이와 기존 collector SD 경계는 정확 29 EXEC 집합이다',()=>{
+ const directory=new URL('../../../db/migrations/',import.meta.url);
+ const functions=new Map<string,{source:string;body:string}>();
+ for(const file of readdirSync(directory).filter(x=>/^\d{4}_.+\.sql(?:\.pending)?$/.test(x)&&x.slice(0,4)<='0101').sort()){
+  const raw=readFileSync(new URL(file,directory),'utf8');
+  for(const m of raw.matchAll(/CREATE(?: OR REPLACE)? FUNCTION anvil\.(\w+)\([^]*?AS (\$\w*\$)([^]*?)\2;/g))functions.set(m[1]!,{source:m[0],body:m[3]!});
+ }
+ const seen=new Set<string>();const external=new Set<string>();
+ function visit(name:string){
+  if(seen.has(name))return;seen.add(name);const f=functions.get(name);if(!f)return;
+  if(!name.startsWith('fn03_')){external.add(name);if(f.source.split('AS ')[0]!.includes('SECURITY DEFINER'))return;}
+  for(const m of f.body.matchAll(/anvil\.(\w+)\(/g)){
+   // R 비용 호출은 literal R/NULL로 고정됐다. P/C 전용 shape 분기에 권한을 추가하지 않는다.
+   if(name==='fn09_registered_cost'&&m[1]==='execution_json_shape'){
+    assert.match(f.body,/IF kind IN\('P','C'\) THEN/);
+    assert.match(functions.get('fn09_registered_reservation_cost')!.body,/fn09_registered_cost\(anvil\.fn09_registered_cost_projection\(projection_row\),'R',NULL\)/);
+    continue;
+   }
+   visit(m[1]!);
+  }
+ }
+ for(const name of functions.keys())if(name.startsWith('fn03_management_')||name.startsWith('fn03_source_content_management_'))visit(name);
+ const granted=[...sql.matchAll(/GRANT EXECUTE ON FUNCTION anvil\.(\w+)\([^;]+ TO anvil_v3_source_content_management_owner;/g)].map(x=>x[1]!);
+ assert.equal(granted.length,29);assert.equal(new Set(granted).size,29);
+ assert.deepEqual([...external].sort(),granted.sort());
+ for(const name of granted){
+  const f=functions.get(name)!;const sd=f.source.split('AS ')[0]!.includes('SECURITY DEFINER');
+  assert.match(sql,new RegExp(`\\('anvil\\.${name}\\([^']*\\)',${sd}\\)`));
+  if(sd)assert.ok(f.source.split('AS ')[0]!.includes('SET search_path=pg_catalog'),name);
+ }
+});
 test('0101은 미적용 토대이며 기존 exact9 원문만 저장한다',()=>{
  assert.ok(text.length>0,'0101 source absent');
- assert.match(text,/미적용/);assert.match(text,/RPC.*미연결/);
+ assert.match(text,/미적용/);assert.match(text,/source caller 미연결/);
  const table=sql.match(/CREATE TABLE anvil\.source_content_policy_management_origins\s*\(([\s\S]*?)\n\);/);assert.ok(table);
  const columns=[...table[1]!.matchAll(/^ ([a-z_]+) (uuid|smallint|jsonb|text|timestamptz)\b/gm)].map(m=>m[1]);
  assert.deepEqual(columns,['project_id','id','version','management_command_id','policy_event_ref','request_json','request_hash','recorded_at','content_hash']);
@@ -66,7 +173,7 @@ test('6표 역완결은 C-only도 검사하고 RPC는 exact16 IMMEDIATE→DEFERR
  const attached=[...sql.matchAll(/CREATE CONSTRAINT TRIGGER source_content_management_\w+_complete AFTER INSERT OR UPDATE OR DELETE ON anvil\.(\w+) DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil\.fn03_management_final_guard\(\)/g)].map(x=>x[1]);
  assert.deepEqual(attached,['commands','authorization_receipts','audit_events','source_content_policy_events','source_content_policy_management_origins','project_storage_reservations']);
  const write=body('fn03_source_content_management_commit');
- const calls=[...write.matchAll(/SET CONSTRAINTS ([^;]+) (IMMEDIATE|DEFERRED);/g)];assert.equal(calls.length,2);
+ const calls=[...write.matchAll(/SET CONSTRAINTS ([^;]+) (IMMEDIATE|DEFERRED);/g)].filter(x=>x[1]!== 'anvil.source_content_policy_final');assert.equal(calls.length,2);
  for(const call of calls)assert.deepEqual(call[1]!.replace(/\s+/g,'').split(','),flushNames.map(x=>`anvil.${x}`));
  assert.deepEqual(calls.map(x=>x[2]),['IMMEDIATE','DEFERRED']);
  assert.ok(write.indexOf('fn03_management_current_final')<calls[0]!.index!);
@@ -146,13 +253,13 @@ test('exact11 원명령과 exact10 도출 hash·1MiB/2MiB·유한 ms 시각을 C
 });
 test('목적 역할은 신규 NOLOGIN·비우회이며 앱 membership과 원문 권한을 발급하지 않는다',()=>{
  assert.match(compact,/CREATE ROLE anvil_v3_source_content_management_owner NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS/);
- assert.doesNotMatch(compact,/GRANT anvil_v3_source_content_management_owner TO|ALTER ROLE|ALTER TABLE[^;]* OWNER TO/);
+ assert.doesNotMatch(compact,/GRANT anvil_v3_source_content_management_owner TO anvil_v3_app|ALTER ROLE|ALTER TABLE[^;]* OWNER TO/);
  assert.match(compact,/pg_has_role\('anvil_v3_app','anvil_v3_source_content_management_owner','MEMBER'\)/);
  assert.match(compact,/GRANT USAGE ON SCHEMA anvil TO anvil_v3_source_content_management_owner/);
  assert.match(compact,/REVOKE ALL ON anvil\.source_content_policy_management_origins FROM PUBLIC,anvil_v3_app,anvil_v3_source_content_management_owner/);
- assert.deepEqual([...compact.matchAll(/GRANT ([^;]+);/g)].map(m=>m[1]),['USAGE ON SCHEMA anvil TO anvil_v3_source_content_management_owner']);
+ assert.doesNotMatch(compact,/GRANT (?:SELECT|INSERT|UPDATE|ALL)[^;]+ TO (?:PUBLIC|anvil_v3_app)/);
 });
-test('RLS FORCE/false·전 INSERT 거절·불변/truncate 거절을 유지하고 기존 관측/LINK는 변경하지 않는다',()=>{
+test('RLS FORCE/false·목적 INSERT 한정·불변/truncate 거절을 유지하고 기존 관측/LINK는 변경하지 않는다',()=>{
  assert.match(compact,/ALTER TABLE anvil\.source_content_policy_management_origins ENABLE ROW LEVEL SECURITY/);
  assert.match(compact,/ALTER TABLE anvil\.source_content_policy_management_origins FORCE ROW LEVEL SECURITY/);
  assert.match(compact,/CREATE POLICY source_content_management_unavailable ON anvil\.source_content_policy_management_origins USING\(false\) WITH CHECK\(false\)/);
@@ -160,14 +267,14 @@ test('RLS FORCE/false·전 INSERT 거절·불변/truncate 거절을 유지하고
  assert.match(compact,/BEFORE UPDATE OR DELETE ON anvil\.source_content_policy_management_origins FOR EACH ROW EXECUTE FUNCTION anvil\.source_content_append_only\(\)/);
  assert.match(compact,/BEFORE TRUNCATE ON anvil\.source_content_policy_management_origins FOR EACH STATEMENT EXECUTE FUNCTION anvil\.source_content_append_only\(\)/);
  assert.doesNotMatch(compact,/DELETE FROM|SET ROLE/);
- assert.doesNotMatch(compact.replace(/ALTER TABLE anvil\.project_storage_reservations DROP CONSTRAINT project_storage_reservations_(operation|part_kind)_check;/g,''),/DROP\b/);
+ assert.doesNotMatch(compact.replace(/ALTER TABLE anvil\.project_storage_reservations DROP CONSTRAINT project_storage_reservations_(operation|part_kind)_check;/g,'').replace(/DROP TRIGGER (?:source_content_unavailable ON anvil\.source_content_policy_events|source_content_management_unavailable ON anvil\.source_content_policy_management_origins);/g,''),/DROP\b/);
  // 새 private producer 본문에만 DML을 허용한다. 권한과 기존 차단 trigger는 위에서 별도로 고정한다.
  const withoutWrite=sql.replace(/CREATE FUNCTION anvil\.fn03_source_content_management_commit\([^]*?\$\$;/,'');
  assert.doesNotMatch(withoutWrite,/INSERT INTO|UPDATE anvil/);
- assert.equal((compact.match(/SECURITY DEFINER/g)??[]).length,5);
+ assert.equal((compact.match(/SECURITY DEFINER/g)??[]).length,6);
  assert.match(compact,/fn03_source_content_management_read\([^;]+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog/);
  const helpers=[...compact.matchAll(/CREATE FUNCTION anvil\.(fn03_management_\w+)\(([^)]*)\)/g)];
- assert.deepEqual(helpers.map(m=>m[1]),['fn03_management_physical','fn03_management_plan_valid','fn03_management_definition_valid','fn03_management_rows','fn03_management_actual','fn03_management_maximum','fn03_management_fixed_point','fn03_management_complete','fn03_management_history_bundle','fn03_management_context','fn03_management_dispatch','fn03_management_current_final','fn03_management_final_guard']);
+ assert.deepEqual(helpers.map(m=>m[1]),['fn03_management_physical','fn03_management_plan_valid','fn03_management_definition_valid','fn03_management_rows','fn03_management_actual','fn03_management_maximum','fn03_management_fixed_point','fn03_management_complete','fn03_management_history_bundle','fn03_management_context','fn03_management_dispatch','fn03_management_current_final','fn03_management_final_guard','fn03_management_insert_guard']);
  for(const helper of helpers)assert.ok(compact.includes(`REVOKE ALL ON FUNCTION anvil.${helper[1]}(`));
  assert.doesNotMatch(compact,/anvil\.(source_content_requests|source_content_observations|source_content_verifications|document_source_links)\b/);
 });

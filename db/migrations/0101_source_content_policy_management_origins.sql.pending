@@ -1,8 +1,16 @@
 -- FN03 관리 원문 A안의 미적용 forward 토대. 자동 적용/실행 manifest 등록 없음.
--- 목적 commit/read RPC의 최소 ACL/source caller 미연결: 원문 조회/저장 및 E INSERT는 계속 닫힌다.
--- 실제 PostgreSQL 구문/ACL/COMMIT 검증 아님. 이 파일은 같은 Stage의 후속 RPC 구현으로 이어진다.
+-- 목적 commit/read RPC의 SQL 경계만 연결한다. 실제 source caller 미연결·DB 적용/인수 미실행.
+-- 실제 PostgreSQL ACL/COMMIT 검증 아님. 적용 manifest와 실제 source caller는 후속 검수 대상이다.
 
--- 이미 존재하는 역할을 신뢰하거나 속성을 고쳐 재사용하지 않는다. 설치는 기존 migration 거래 경계에서 수행해야 한다.
+-- 기존 0073/0095처럼 전체 설치를 한 거래로 묶는다. 중간 실패는 역할/ACL/DDL 모두 롤백한다.
+BEGIN;
+DO $$BEGIN
+ IF current_user<>'anvil_v3_migrator' OR session_user<>'anvil_v3_migrator' THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_MIGRATOR_REQUIRED';END IF;
+ IF EXISTS(SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='anvil_v3_source_content_management_owner') THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_ROLE_EXISTS';END IF;
+END;$$;
+-- 이미 존재하는 역할을 신뢰하거나 속성을 고쳐 재사용하지 않는다.
 CREATE ROLE anvil_v3_source_content_management_owner NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
 DO $$
 BEGIN
@@ -10,7 +18,9 @@ BEGIN
   RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_ROLE_INVALID' USING ERRCODE='42501';
  END IF;
 END;$$;
+GRANT anvil_v3_source_content_management_owner TO anvil_v3_migrator WITH ADMIN OPTION;
 GRANT USAGE ON SCHEMA anvil TO anvil_v3_source_content_management_owner;
+GRANT CREATE ON SCHEMA anvil TO anvil_v3_source_content_management_owner;
 
 -- 기존 commands.id가 이미 PK이므로 행 의미/원hash를 바꾸지 않는 참조 대상 키다.
 ALTER TABLE anvil.commands ADD CONSTRAINT source_content_management_command_hash_identity UNIQUE (project_id,id,request_hash);
@@ -269,7 +279,7 @@ BEGIN
 END;$$;
 REVOKE ALL ON FUNCTION anvil.fn03_management_fixed_point(bigint,jsonb,bigint) FROM PUBLIC,anvil_v3_app;
 
-CREATE FUNCTION anvil.fn03_management_complete(p uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+CREATE FUNCTION anvil.fn03_management_complete(p uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE rows jsonb;plan jsonb;q jsonb;ids jsonb;er jsonb;orr jsonb;digest text;expected_result jsonb;
  o anvil.source_content_policy_management_origins;e anvil.source_content_policy_events;b anvil.source_content_policy_events;
  c anvil.commands;a anvil.authorization_receipts;u anvil.audit_events;r anvil.project_storage_reservations;
@@ -457,10 +467,10 @@ ALTER FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,big
 REVOKE ALL ON FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,bigint,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
 
 -- 실제 목적 write의 내부 순서. 원 account/현재 head 아래에서만 M/r/s와 정확 물리행을 만든다.
--- R 목적 CHECK/dispatcher·16 지연제약·최종 guard는 아래에 연결하며 ACL/source caller는 아직 미연결이다.
--- 아래 함수만으로 실행을 열지 않는다. 기존 E/O INSERT 거절과 app/PUBLIC EXEC 차단을 보존한다.
+-- R 목적 CHECK/dispatcher·16 지연제약·최종 guard와 최소 ACL은 아래에서 같은 설치 거래로 연결한다.
+-- 일반 E/O DML과 PUBLIC/private EXEC는 닫고 앱의 정확 두 RPC만 허용한다. 실제 source caller는 미연결이다.
 CREATE FUNCTION anvil.fn03_source_content_management_commit(s uuid,a uuid,c uuid,p uuid,q jsonb,policy jsonb,ids jsonb,expected_tx text,observed_until timestamptz) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE ctx jsonb;final_ctx jsonb;ac anvil.project_storage_accounts;head anvil.source_content_policy_events;
+DECLARE ctx jsonb;final_ctx jsonb;ac record;head anvil.source_content_policy_events;
  e anvil.source_content_policy_events;o anvil.source_content_policy_management_origins;cmd anvil.commands;
  receipt anvil.authorization_receipts;audit anvil.audit_events;r anvil.project_storage_reservations;
  previous jsonb='null'::jsonb;er jsonb;orr jsonb;snapshot jsonb;origin_snapshot jsonb;plan jsonb;part jsonb;
@@ -490,7 +500,7 @@ BEGIN
  ctx=anvil.fn03_management_context(s,a,c,p,g,'defineSourceContentPolicy',policy,observed_until);
  until_at=(ctx->>'authorizedUntil')::timestamptz;last_at=clock_timestamp();
  IF NOT isfinite(received_at) OR NOT isfinite(begin_at) OR NOT isfinite(last_at) OR last_at<begin_at OR last_at>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
- SELECT x.* INTO STRICT ac FROM anvil.project_storage_accounts x WHERE x.project_id=p FOR UPDATE;
+ SELECT x.project_id,x.coverage_state,x.generation,x.used_bytes,x.held_bytes INTO STRICT ac FROM anvil.project_storage_accounts x WHERE x.project_id=p FOR UPDATE;
  IF ac.coverage_state IS DISTINCT FROM 'VERIFIED' OR ac.generation NOT BETWEEN 1 AND 9007199254740991
   OR anvil.quota_complete(p) IS NOT TRUE THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_UNVERIFIED';END IF;
  SELECT COALESCE(sum(x.settled_bytes) FILTER(WHERE x.phase='SETTLED'),0),COALESCE(sum(x.reserved_bytes) FILTER(WHERE x.phase IN('RESERVED','IO_STARTED','UNKNOWN')),0)
@@ -501,7 +511,8 @@ BEGIN
  IF used IS NULL OR held IS NULL OR other_bytes IS NULL OR used<0 OR held<0 OR other_bytes<0 OR used+held+other_bytes>10737418240
   OR ac.used_bytes IS DISTINCT FROM used OR ac.held_bytes IS DISTINCT FROM held THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED';END IF;
  -- project lock는 빈 head도 직렬화한다. 회수/만료된 마지막 E를 필터링하지 않는다.
- SELECT x.* INTO head FROM anvil.source_content_policy_events x WHERE x.project_id=p ORDER BY x.sequence DESC LIMIT 1 FOR UPDATE;
+ -- 원 project 행 잠금이 모든 목적 E INSERT를 직렬화한다. 불변 head에는 UPDATE 권한을 부여하지 않는다.
+ SELECT x.* INTO head FROM anvil.source_content_policy_events x WHERE x.project_id=p ORDER BY x.sequence DESC LIMIT 1;
  IF FOUND THEN
   IF anvil.source_content_policy_row_shape(head) IS NOT TRUE OR head.sequence>=9007199254740991 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_HEAD_INVALID';END IF;
   previous=jsonb_build_object('id',head.id,'version',head.version,'contentHash',head.content_hash);seq=head.sequence+1;
@@ -601,6 +612,9 @@ BEGIN
   OR bundle->'rows'->'R'->>'plan_hash' IS DISTINCT FROM sealed_hash THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_STORED_MISMATCH';END IF;
  -- 원 목적 역할 안에서만 기존 정확16 대기 검사를 발화하고 원 DEFERRED 모드로 복원한다.
  -- 다른 도메인 대기 이벤트는 원 root 그대로 검산된다. 오류는 거래 전체 거절이며 삼키지 않는다.
+ -- 0040의 별도 E INVOKER도 목적 역할 안에서만 원문을 읽는다. C/A/U 16개는 그대로다.
+ SET CONSTRAINTS anvil.source_content_policy_final IMMEDIATE;
+ SET CONSTRAINTS anvil.source_content_policy_final DEFERRED;
  PERFORM anvil.fn03_management_current_final(p,cid,expected_tx);
  SET CONSTRAINTS anvil.fn09_prepare_commands_complete,anvil.fn09_prepare_authorization_receipts_complete,anvil.fn09_prepare_audit_events_complete,anvil.fn09_understanding_commands_complete,anvil.fn09_understanding_authorization_receipts_complete,anvil.fn09_understanding_audit_events_complete,anvil.child_human_commands_complete,anvil.child_human_receipts_complete,anvil.child_human_audits_complete,anvil.fn16_policy_commands_complete,anvil.fn16_policy_authorization_receipts_complete,anvil.fn16_policy_audit_events_complete,anvil.fn09_registered_commands_complete,anvil.fn09_registered_authorization_receipts_complete,anvil.fn09_registered_audit_events_complete,anvil.material_registration_complete IMMEDIATE;
  SET CONSTRAINTS anvil.fn09_prepare_commands_complete,anvil.fn09_prepare_authorization_receipts_complete,anvil.fn09_prepare_audit_events_complete,anvil.fn09_understanding_commands_complete,anvil.fn09_understanding_authorization_receipts_complete,anvil.fn09_understanding_audit_events_complete,anvil.child_human_commands_complete,anvil.child_human_receipts_complete,anvil.child_human_audits_complete,anvil.fn16_policy_commands_complete,anvil.fn16_policy_authorization_receipts_complete,anvil.fn16_policy_audit_events_complete,anvil.fn09_registered_commands_complete,anvil.fn09_registered_authorization_receipts_complete,anvil.fn09_registered_audit_events_complete,anvil.material_registration_complete DEFERRED;
@@ -1153,3 +1167,291 @@ BEGIN
   END IF;
  END IF;RETURN NULL;
 END;$$;
+
+-- 즉시 INSERT는 caller flag가 아니라 원 목적 principal·실제 IO_STARTED 행을 소비한다.
+-- E/O의 나머지 완결/정산은 기존 같은 거래의 deferred final 및 RPC flush가 강제한다.
+CREATE FUNCTION anvil.fn03_management_insert_guard() RETURNS trigger LANGUAGE plpgsql VOLATILE SET search_path=pg_catalog AS $$
+DECLARE p uuid;cid uuid;r anvil.project_storage_reservations;c anvil.commands;a anvil.authorization_receipts;u anvil.audit_events;
+ e anvil.source_content_policy_events;b anvil.source_content_policy_events;ctx jsonb;ids jsonb;q jsonb;at_time timestamptz;begin_at timestamptz;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR current_user<>'anvil_v3_source_content_management_owner'
+  OR TG_TABLE_SCHEMA<>'anvil' OR TG_TABLE_NAME NOT IN('source_content_policy_events','source_content_policy_management_origins')
+  OR TG_OP<>'INSERT' OR TG_WHEN<>'BEFORE' OR TG_LEVEL<>'ROW' THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INSERT_CONTEXT_INVALID' USING ERRCODE='42501';END IF;
+ begin_at=clock_timestamp();p=NEW.project_id;cid=NEW.management_command_id;
+ SELECT * INTO STRICT r FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.id=cid;
+ IF r.operation IS DISTINCT FROM 'defineSourceContentPolicy' OR r.part_kind IS DISTINCT FROM 'SOURCE_CONTENT_POLICY_MANAGEMENT'
+  OR r.part_key IS DISTINCT FROM 'management_origin' OR r.phase IS DISTINCT FROM 'IO_STARTED' OR r.start_fence IS DISTINCT FROM 1
+  OR r.plan_json->>'transactionId' IS DISTINCT FROM txid_current()::text
+  OR anvil.fn03_management_plan_valid(r.plan_json) IS NOT TRUE OR r.plan_hash IS DISTINCT FROM anvil.source_read_hash(r.plan_json)
+  OR (SELECT count(*) FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.plan_json->>'transactionId'=txid_current()::text)<>1
+  OR NOT isfinite(begin_at) OR NOT isfinite(r.created_at) OR NOT isfinite(r.started_at) OR NOT isfinite(r.authorized_until)
+  OR r.created_at>r.started_at OR r.started_at>begin_at OR begin_at>=r.authorized_until THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INSERT_RESERVATION_INVALID' USING ERRCODE='42501';END IF;
+ ids=r.plan_json->'ids';
+ SELECT * INTO STRICT c FROM anvil.commands x WHERE x.project_id=p AND x.id=cid;
+ SELECT * INTO STRICT a FROM anvil.authorization_receipts x WHERE x.scope_kind='PROJECT' AND x.scope_id=p AND x.command_id=cid;
+ SELECT * INTO STRICT u FROM anvil.audit_events x WHERE x.project_id=p AND x.command_id=cid;
+ IF (c.scope_kind='PROJECT' AND c.scope_id=p AND c.operation='defineSourceContentPolicy' AND c.state='APPLIED'
+  AND c.id::text=ids->>'serverCommandId' AND c.operation_id::text=ids->>'operationId'
+  AND c.authorization_receipt_id=a.id AND a.id::text=ids->>'authorizationReceiptId' AND u.event_id::text=ids->>'auditEventId'
+  AND r.actor_id=c.actor_id AND r.client_id=c.client_id AND r.external_command_id=c.command_id AND r.command_hash=c.request_hash
+  AND r.plan_json->>'projectId'=p::text AND r.plan_json->>'actorId'=c.actor_id::text AND r.plan_json->>'clientId'=c.client_id::text
+  AND r.plan_json->>'externalCommandId'=c.command_id::text AND r.plan_json->>'requestHash'=c.request_hash
+  AND r.plan_json->'controlGeneration'=to_jsonb(c.control_generation) AND r.plan_json->'permissionPolicyRef'=c.policy_ref
+  AND r.authorized_until=(r.plan_json->>'authorizedUntil')::timestamptz
+  AND a.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) AND a.policy_ref=c.policy_ref
+  AND u.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND u.client_ref=c.client_id
+  AND u.operation_id=c.operation_id AND u.policy_ref=c.policy_ref AND u.outcome='APPLIED' AND u.source_kind='HUMAN_COMMAND'
+  AND c.completed_at>=r.started_at AND c.received_at<=c.completed_at AND c.completed_at<=begin_at
+  AND a.authorized_at=c.completed_at AND u.recorded_at=c.completed_at) IS NOT TRUE THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INSERT_ROWS_INVALID' USING ERRCODE='42501';END IF;
+ ctx=anvil.fn03_management_context((r.plan_json->>'authSessionId')::uuid,c.actor_id,c.client_id,p,c.control_generation,
+  'defineSourceContentPolicy',c.policy_ref,r.authorized_until);
+ IF ctx->'credentialGeneration' IS DISTINCT FROM r.plan_json->'credentialGeneration'
+  OR ctx->>'authorizedUntil' IS DISTINCT FROM r.plan_json->>'authorizedUntil'
+  OR NOT EXISTS(SELECT 1 FROM anvil.project_storage_accounts x WHERE x.project_id=p AND x.coverage_state='VERIFIED'
+   AND x.generation::text=r.plan_json->>'coverageGeneration') THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INSERT_CURRENT_INVALID' USING ERRCODE='42501';END IF;
+ IF TG_TABLE_NAME='source_content_policy_events' THEN
+  e=NEW;
+  IF r.plan_json->'policyEventRef' IS DISTINCT FROM jsonb_build_object('id',e.id,'version',e.version,'contentHash',e.content_hash)
+   OR e.id::text IS DISTINCT FROM ids->>'policyEventId' OR e.subject_user_id IS DISTINCT FROM c.actor_id
+   OR e.recorded_at>r.created_at OR anvil.source_content_policy_row_shape(e) IS NOT TRUE THEN
+   RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INSERT_EVENT_INVALID' USING ERRCODE='42501';END IF;
+  SELECT * INTO b FROM anvil.source_content_policy_events x WHERE x.project_id=p ORDER BY x.sequence DESC LIMIT 1;
+  IF anvil.source_content_policy_lineage_shape(b,e) IS NOT TRUE THEN
+   RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INSERT_EVENT_INVALID' USING ERRCODE='42501';END IF;
+ ELSE
+  q=NEW.request_json;
+  SELECT * INTO STRICT e FROM anvil.source_content_policy_events x WHERE x.project_id=p AND x.management_command_id=cid;
+  IF NEW.id::text IS DISTINCT FROM ids->>'originId'
+   OR r.plan_json->'originRef' IS DISTINCT FROM jsonb_build_object('id',NEW.id,'version',NEW.version,'contentHash',NEW.content_hash)
+   OR NEW.policy_event_ref IS DISTINCT FROM r.plan_json->'policyEventRef'
+   OR NEW.policy_event_ref IS DISTINCT FROM jsonb_build_object('id',e.id,'version',e.version,'contentHash',e.content_hash)
+   OR NEW.request_hash IS DISTINCT FROM c.request_hash OR NEW.request_hash IS DISTINCT FROM anvil.source_read_hash(q)
+   OR q->>'commandId' IS DISTINCT FROM c.command_id::text OR q->>'clientId' IS DISTINCT FROM c.client_id::text
+   OR q->'controlGeneration' IS DISTINCT FROM to_jsonb(c.control_generation)
+   OR q->'payload'->'previousPolicyRef' IS DISTINCT FROM e.previous_ref
+   OR e.snapshot_json IS DISTINCT FROM (q->'payload'->'definition')||jsonb_build_object('projectId',p,'sequence',e.sequence,'recordedAt',anvil.source_read_iso(e.recorded_at),'reason',q->'payload'->'reason')
+   OR anvil.fn03_management_definition_valid(q->'payload'->'definition',q->'payload'->'reason',c.actor_id,e.recorded_at) IS NOT TRUE
+   OR NEW.recorded_at<e.recorded_at OR NEW.recorded_at>r.created_at THEN
+   RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INSERT_ORIGIN_INVALID' USING ERRCODE='42501';END IF;
+ END IF;
+ at_time=clock_timestamp();
+ IF NOT isfinite(at_time) OR at_time<begin_at OR at_time>=r.authorized_until THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INSERT_CURRENT_INVALID' USING ERRCODE='42501';END IF;
+ RETURN NEW;
+END;$$;
+ALTER FUNCTION anvil.fn03_management_insert_guard() OWNER TO anvil_v3_source_content_management_owner;
+REVOKE ALL ON FUNCTION anvil.fn03_management_insert_guard() FROM PUBLIC,anvil_v3_app;
+
+-- 선행 E INVOKER의 추가 부착/역할 변경은 허용하지 않는다. 실제 PG15 발화 검증은 별도다.
+DO $$BEGIN
+ IF (SELECT count(*) FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_class c ON c.oid=t.tgrelid
+  JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='anvil' AND t.tgname='source_content_policy_final')<>1
+ OR NOT EXISTS(SELECT 1 FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_proc f ON f.oid=t.tgfoid
+  JOIN pg_catalog.pg_constraint con ON con.oid=t.tgconstraint
+  WHERE t.tgrelid='anvil.source_content_policy_events'::regclass AND t.tgname='source_content_policy_final'
+   AND t.tgfoid='anvil.check_source_content_policy_final()'::regprocedure AND NOT t.tgisinternal
+   AND t.tgtype=5 AND t.tgenabled='O' AND t.tgdeferrable AND t.tginitdeferred
+   AND con.contype='t' AND con.conrelid=t.tgrelid AND con.condeferrable AND con.condeferred AND NOT f.prosecdef) THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_EVENT_TRIGGER_INVALID';END IF;
+END;$$;
+DROP TRIGGER source_content_unavailable ON anvil.source_content_policy_events;
+DROP TRIGGER source_content_management_unavailable ON anvil.source_content_policy_management_origins;
+CREATE TRIGGER source_content_management_insert BEFORE INSERT ON anvil.source_content_policy_events
+ FOR EACH ROW EXECUTE FUNCTION anvil.fn03_management_insert_guard();
+CREATE TRIGGER source_content_management_insert BEFORE INSERT ON anvil.source_content_policy_management_origins
+ FOR EACH ROW EXECUTE FUNCTION anvil.fn03_management_insert_guard();
+-- 기존 false 정책 및 UPDATE/DELETE/TRUNCATE 거절은 남긴다. 목적 principal만 E/O를 소비한다.
+CREATE POLICY source_content_management_select ON anvil.source_content_policy_events FOR SELECT TO anvil_v3_source_content_management_owner USING(true);
+CREATE POLICY source_content_management_insert ON anvil.source_content_policy_events FOR INSERT TO anvil_v3_source_content_management_owner
+ WITH CHECK(session_user='anvil_v3_app' AND current_user='anvil_v3_source_content_management_owner');
+CREATE POLICY source_content_management_select ON anvil.source_content_policy_management_origins FOR SELECT TO anvil_v3_source_content_management_owner USING(true);
+CREATE POLICY source_content_management_insert ON anvil.source_content_policy_management_origins FOR INSERT TO anvil_v3_source_content_management_owner
+ WITH CHECK(session_user='anvil_v3_app' AND current_user='anvil_v3_source_content_management_owner');
+
+-- WI §6: 전체 물리행 SELECT·저장열 INSERT, 잠금 UPDATE는 지정 열만.
+GRANT SELECT(id,user_id,client_id,credential_generation,idle_expires_at,absolute_expires_at,reauth_until,revoked_at) ON anvil.auth_sessions TO anvil_v3_source_content_management_owner;
+GRANT SELECT(id,archived_at) ON anvil.projects TO anvil_v3_source_content_management_owner;
+GRANT SELECT(project_id,user_id,participation,revoked_at) ON anvil.project_members TO anvil_v3_source_content_management_owner;
+GRANT SELECT(project_id,actor_id,client_id,generation,revoked_at) ON anvil.project_control TO anvil_v3_source_content_management_owner;
+GRANT SELECT(project_id,id,head_version) ON anvil.permission_policies TO anvil_v3_source_content_management_owner;
+GRANT SELECT(project_id,policy_id,version,rules_json,reason,review_refs,content_hash) ON anvil.permission_policy_versions TO anvil_v3_source_content_management_owner;
+GRANT SELECT(project_id,coverage_state,generation,used_bytes,held_bytes) ON anvil.project_storage_accounts TO anvil_v3_source_content_management_owner;
+GRANT SELECT(id,project_id,actor_id,client_id,external_command_id,operation,command_hash,part_key,part_kind,plan_json,plan_hash,reserved_bytes,settled_bytes,phase,start_fence,authorized_until,server_command_id,authorization_receipt_id,scope_digest,created_at,started_at,settled_at) ON anvil.project_storage_reservations TO anvil_v3_source_content_management_owner;
+GRANT SELECT(id,scope_kind,scope_id,project_id,draft_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,approval_consumption_id,expected_version,control_generation,policy_ref,payload_ref,result_ref,received_at,completed_at) ON anvil.commands TO anvil_v3_source_content_management_owner;
+GRANT SELECT(id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest,approval_decision_ref,authorized_at) ON anvil.authorization_receipts TO anvil_v3_source_content_management_owner;
+GRANT SELECT(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,recorded_at,source_kind,correction_of) ON anvil.audit_events TO anvil_v3_source_content_management_owner;
+GRANT SELECT(project_id,id,version,sequence,subject_user_id,disposition,snapshot_json,content_hash,previous_ref,management_command_id,recorded_at,expires_at,previous_id,previous_version,previous_hash) ON anvil.source_content_policy_events TO anvil_v3_source_content_management_owner;
+GRANT SELECT(project_id,id,version,management_command_id,policy_event_ref,request_json,request_hash,recorded_at,content_hash) ON anvil.source_content_policy_management_origins TO anvil_v3_source_content_management_owner;
+GRANT INSERT(id,project_id,actor_id,client_id,external_command_id,operation,command_hash,part_key,part_kind,plan_json,plan_hash,reserved_bytes,settled_bytes,phase,start_fence,authorized_until,server_command_id,authorization_receipt_id,scope_digest,created_at,started_at,settled_at) ON anvil.project_storage_reservations TO anvil_v3_source_content_management_owner;
+GRANT INSERT(id,scope_kind,scope_id,project_id,draft_id,actor_id,client_id,operation,command_id,request_hash,operation_id,state,authorization_receipt_id,approval_consumption_id,expected_version,control_generation,policy_ref,payload_ref,result_ref,received_at,completed_at) ON anvil.commands TO anvil_v3_source_content_management_owner;
+GRANT INSERT(id,scope_kind,scope_id,command_id,subject_ref,policy_ref,scope_digest,approval_decision_ref,authorized_at) ON anvil.authorization_receipts TO anvil_v3_source_content_management_owner;
+GRANT INSERT(project_id,server_sequence,event_id,actor_ref,client_ref,command_id,operation_id,target_ref,policy_ref,approval_ref,outcome,reason_code,scope_digest,recorded_at,source_kind,correction_of) ON anvil.audit_events TO anvil_v3_source_content_management_owner;
+GRANT INSERT(project_id,id,version,sequence,subject_user_id,disposition,snapshot_json,content_hash,previous_ref,management_command_id,recorded_at,expires_at) ON anvil.source_content_policy_events TO anvil_v3_source_content_management_owner;
+GRANT INSERT(project_id,id,version,management_command_id,policy_event_ref,request_json,request_hash,recorded_at,content_hash) ON anvil.source_content_policy_management_origins TO anvil_v3_source_content_management_owner;
+GRANT UPDATE(id) ON anvil.projects TO anvil_v3_source_content_management_owner;
+GRANT UPDATE(participation) ON anvil.project_members TO anvil_v3_source_content_management_owner;
+GRANT UPDATE(generation) ON anvil.project_control TO anvil_v3_source_content_management_owner;
+GRANT UPDATE(head_version) ON anvil.permission_policies TO anvil_v3_source_content_management_owner;
+GRANT UPDATE(used_bytes,held_bytes,updated_at) ON anvil.project_storage_accounts TO anvil_v3_source_content_management_owner;
+GRANT UPDATE(phase,start_fence,started_at,settled_bytes,server_command_id,authorization_receipt_id,scope_digest,settled_at) ON anvil.project_storage_reservations TO anvil_v3_source_content_management_owner;
+REVOKE ALL ON anvil.source_content_policy_events FROM PUBLIC,anvil_v3_app;
+REVOKE ALL(project_id,id,version,sequence,subject_user_id,disposition,snapshot_json,content_hash,previous_ref,management_command_id,recorded_at,expires_at,previous_id,previous_version,previous_hash) ON anvil.source_content_policy_events FROM PUBLIC,anvil_v3_app;
+REVOKE ALL ON anvil.source_content_policy_management_origins FROM PUBLIC,anvil_v3_app;
+REVOKE ALL(project_id,id,version,management_command_id,policy_event_ref,request_json,request_hash,recorded_at,content_hash) ON anvil.source_content_policy_management_origins FROM PUBLIC,anvil_v3_app;
+
+-- 원문을 읽는 역사 complete는 목적 DEFINER 경계다. 기존 quota owner는 boolean만 소비한다.
+ALTER FUNCTION anvil.fn03_management_physical(jsonb) OWNER TO anvil_v3_source_content_management_owner;
+ALTER FUNCTION anvil.fn03_management_plan_valid(jsonb) OWNER TO anvil_v3_source_content_management_owner;
+ALTER FUNCTION anvil.fn03_management_definition_valid(jsonb,jsonb,uuid,timestamptz) OWNER TO anvil_v3_source_content_management_owner;
+ALTER FUNCTION anvil.fn03_management_rows(uuid,uuid) OWNER TO anvil_v3_source_content_management_owner;
+ALTER FUNCTION anvil.fn03_management_actual(uuid,uuid) OWNER TO anvil_v3_source_content_management_owner;
+ALTER FUNCTION anvil.fn03_management_maximum(jsonb,jsonb) OWNER TO anvil_v3_source_content_management_owner;
+ALTER FUNCTION anvil.fn03_management_fixed_point(bigint,jsonb,bigint) OWNER TO anvil_v3_source_content_management_owner;
+ALTER FUNCTION anvil.fn03_management_complete(uuid,uuid) OWNER TO anvil_v3_source_content_management_owner;
+ALTER FUNCTION anvil.fn03_management_history_bundle(uuid,uuid) OWNER TO anvil_v3_source_content_management_owner;
+
+-- 정확 transitive INVOKER 및 collector DEFINER root만. 기존 ACL/owner/search_path는 바꾸지 않는다.
+GRANT EXECUTE ON FUNCTION anvil.fn01_hash(jsonb) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn01_json(jsonb) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn75_cost(jsonb) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn75_json_projection(text) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn75_string_end(bytea,integer) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn09_registered_reservation_cost(jsonb,text,bigint,bigint) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn09_registered_cost_projection(jsonb) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn09_registered_cost(jsonb,text,jsonb) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_read_exact(jsonb,text[]) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_read_canonical_json(jsonb) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_read_hash(jsonb) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_read_iso(timestamptz) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_read_ref(jsonb) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_read_relative_file(text) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_read_uppercase_v1(text) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_read_utf16_length(text) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_content_nonblank(text) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_content_millisecond(timestamptz) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_content_policy_row_shape(anvil.source_content_policy_events) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.source_content_policy_lineage_shape(anvil.source_content_policy_events,anvil.source_content_policy_events) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn01_active(uuid,uuid,uuid) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.quota_complete(uuid) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn15_storage_actual(uuid) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn15_storage_future(uuid) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn75_project_storage_actual_bytes(uuid) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn75_project_storage_future(uuid) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn76_storage_actual(uuid) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn76_storage_future(uuid) TO anvil_v3_source_content_management_owner;
+GRANT EXECUTE ON FUNCTION anvil.fn09_registered_other_bytes(uuid) TO anvil_v3_source_content_management_owner;
+
+-- 실제 SD 경계 및 원 권한을 설치 시 대조한다. collector 내부 SELECT를 새 역할에 주지 않는다.
+DO $$DECLARE e record;f record;owner_row record;dependency text;
+BEGIN
+ FOR e IN SELECT * FROM (VALUES
+  ('anvil.fn01_hash(jsonb)',false),
+  ('anvil.fn01_json(jsonb)',false),
+  ('anvil.fn75_cost(jsonb)',false),
+  ('anvil.fn75_json_projection(text)',false),
+  ('anvil.fn75_string_end(bytea,integer)',false),
+  ('anvil.fn09_registered_reservation_cost(jsonb,text,bigint,bigint)',false),
+  ('anvil.fn09_registered_cost_projection(jsonb)',false),
+  ('anvil.fn09_registered_cost(jsonb,text,jsonb)',false),
+  ('anvil.source_read_exact(jsonb,text[])',false),
+  ('anvil.source_read_canonical_json(jsonb)',false),
+  ('anvil.source_read_hash(jsonb)',false),
+  ('anvil.source_read_iso(timestamptz)',false),
+  ('anvil.source_read_ref(jsonb)',false),
+  ('anvil.source_read_relative_file(text)',false),
+  ('anvil.source_read_uppercase_v1(text)',false),
+  ('anvil.source_read_utf16_length(text)',false),
+  ('anvil.source_content_nonblank(text)',false),
+  ('anvil.source_content_millisecond(timestamptz)',false),
+  ('anvil.source_content_policy_row_shape(anvil.source_content_policy_events)',false),
+  ('anvil.source_content_policy_lineage_shape(anvil.source_content_policy_events,anvil.source_content_policy_events)',false),
+  ('anvil.fn01_active(uuid,uuid,uuid)',true),
+  ('anvil.quota_complete(uuid)',true),
+  ('anvil.fn15_storage_actual(uuid)',true),
+  ('anvil.fn15_storage_future(uuid)',true),
+  ('anvil.fn75_project_storage_actual_bytes(uuid)',true),
+  ('anvil.fn75_project_storage_future(uuid)',true),
+  ('anvil.fn76_storage_actual(uuid)',true),
+  ('anvil.fn76_storage_future(uuid)',true),
+  ('anvil.fn09_registered_other_bytes(uuid)',true)
+ ) AS edges(signature,is_definer) LOOP
+  SELECT * INTO STRICT f FROM pg_catalog.pg_proc WHERE oid=e.signature::regprocedure;
+  IF f.prosecdef IS DISTINCT FROM e.is_definer OR NOT pg_catalog.has_function_privilege('anvil_v3_source_content_management_owner',f.oid,'EXECUTE')
+   OR (e.is_definer AND f.proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog']::text[]) THEN
+   RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CALLEE_INVALID';END IF;
+ END LOOP;
+ FOR e IN SELECT * FROM (VALUES
+  ('anvil.quota_plan_valid(jsonb)','i'),
+  ('anvil.quota_settled_complete(anvil.project_storage_reservations)','v')
+ ) AS dispatchers(signature,volatility) LOOP
+  SELECT * INTO STRICT f FROM pg_catalog.pg_proc WHERE oid=e.signature::regprocedure;
+  SELECT * INTO STRICT owner_row FROM pg_catalog.pg_roles WHERE oid=f.proowner;
+  IF NOT f.prosecdef OR f.provolatile::text<>e.volatility OR f.proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog']::text[]
+   OR owner_row.rolname IN('anvil_v3_app','anvil_v3_source_content_management_owner')
+   OR pg_catalog.pg_has_role('anvil_v3_app',owner_row.oid,'MEMBER')
+   OR (owner_row.rolname<>session_user AND (owner_row.rolcanlogin OR owner_row.rolsuper OR owner_row.rolcreaterole OR owner_row.rolbypassrls))
+   OR EXISTS(SELECT 1 FROM pg_catalog.aclexplode(COALESCE(f.proacl,pg_catalog.acldefault('f',f.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE') THEN
+   RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_DISPATCHER_OWNER_INVALID';END IF;
+  IF e.signature='anvil.quota_plan_valid(jsonb)' THEN
+   EXECUTE format('GRANT EXECUTE ON FUNCTION anvil.fn03_management_plan_valid(jsonb) TO %I',owner_row.rolname);
+   FOREACH dependency IN ARRAY ARRAY['anvil.source_read_exact(jsonb,text[])','anvil.source_read_ref(jsonb)','anvil.source_read_iso(timestamptz)'] LOOP
+    IF NOT pg_catalog.has_function_privilege(owner_row.oid,dependency,'EXECUTE') THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CALLEE_INVALID';END IF;
+   END LOOP;
+  ELSE
+   EXECUTE format('GRANT EXECUTE ON FUNCTION anvil.fn03_management_complete(uuid,uuid) TO %I',owner_row.rolname);
+  END IF;
+ END LOOP;
+END;$$;
+GRANT EXECUTE ON FUNCTION anvil.fn03_source_content_management_commit(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text,timestamptz) TO anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.fn03_source_content_management_read(uuid,uuid,uuid,uuid,bigint,jsonb,jsonb,text) TO anvil_v3_app;
+REVOKE CREATE ON SCHEMA anvil FROM anvil_v3_source_content_management_owner;
+REVOKE anvil_v3_source_content_management_owner FROM anvil_v3_migrator;
+
+-- 설치 종료: role/tableowner 우회·PUBLIC/private 호출·직간접 앱 membership을 허용하지 않는다.
+DO $$DECLARE purpose_oid oid;app_oid oid;r record;f record;t text;privilege text;allowed oid[];
+BEGIN
+ SELECT oid INTO STRICT purpose_oid FROM pg_catalog.pg_roles WHERE rolname='anvil_v3_source_content_management_owner';
+ SELECT oid INTO STRICT app_oid FROM pg_catalog.pg_roles WHERE rolname='anvil_v3_app';
+ SELECT * INTO STRICT r FROM pg_catalog.pg_roles WHERE oid=purpose_oid;
+ IF r.rolcanlogin OR r.rolinherit OR r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls
+  OR EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.roleid=purpose_oid OR m.member=purpose_oid)
+  OR pg_catalog.pg_has_role('anvil_v3_app','anvil_v3_source_content_management_owner','MEMBER')
+  OR pg_catalog.has_schema_privilege(purpose_oid,'anvil','CREATE') OR pg_catalog.has_schema_privilege(app_oid,'anvil','CREATE')
+  OR EXISTS(SELECT 1 FROM pg_catalog.pg_class WHERE relowner=purpose_oid)
+  OR EXISTS(SELECT 1 FROM pg_catalog.pg_roles WHERE oid=app_oid AND (rolsuper OR rolcreaterole OR rolbypassrls)) THEN
+  RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_ROLE_INVALID';END IF;
+ FOREACH t IN ARRAY ARRAY['source_content_policy_events','source_content_policy_management_origins'] LOOP
+  SELECT * INTO STRICT r FROM pg_catalog.pg_class WHERE oid=('anvil.'||t)::regclass;
+  IF NOT r.relrowsecurity OR NOT r.relforcerowsecurity OR r.relowner=app_oid THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_RLS_INVALID';END IF;
+  FOREACH privilege IN ARRAY ARRAY['SELECT','INSERT','UPDATE','REFERENCES'] LOOP
+   IF pg_catalog.has_any_column_privilege(app_oid,r.oid,privilege) THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_APP_RAW_ACCESS';END IF;
+  END LOOP;
+  FOREACH privilege IN ARRAY ARRAY['DELETE','TRUNCATE','TRIGGER'] LOOP
+   IF pg_catalog.has_table_privilege(app_oid,r.oid,privilege) THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_APP_RAW_ACCESS';END IF;
+  END LOOP;
+  IF pg_catalog.has_any_column_privilege(purpose_oid,r.oid,'UPDATE') OR pg_catalog.has_table_privilege(purpose_oid,r.oid,'DELETE')
+   OR pg_catalog.has_table_privilege(purpose_oid,r.oid,'TRUNCATE') THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_PURPOSE_ACL_INVALID';END IF;
+ END LOOP;
+ -- 이 표들에 현재 없는 RLS를 가정해서 정책을 덧붙이거나 tableowner로 우회하지 않는다.
+ FOREACH t IN ARRAY ARRAY['auth_sessions','projects','project_members','project_control','permission_policies','permission_policy_versions','project_storage_accounts','project_storage_reservations','commands','authorization_receipts','audit_events'] LOOP
+  SELECT * INTO STRICT r FROM pg_catalog.pg_class WHERE oid=('anvil.'||t)::regclass;
+  IF r.relrowsecurity OR r.relforcerowsecurity OR r.relowner IN(purpose_oid,app_oid) THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_PREDECESSOR_RLS_INVALID';END IF;
+ END LOOP;
+ FOR f IN SELECT x.* FROM pg_catalog.pg_proc x JOIN pg_catalog.pg_namespace n ON n.oid=x.pronamespace
+  WHERE n.nspname='anvil' AND (x.proname LIKE 'fn03_management_%' OR x.proname IN('fn03_source_content_management_commit','fn03_source_content_management_read')) LOOP
+  allowed=ARRAY[purpose_oid];
+  IF f.proname IN('fn03_source_content_management_commit','fn03_source_content_management_read') THEN allowed=array_append(allowed,app_oid);
+  ELSIF f.proname='fn03_management_plan_valid' THEN allowed=array_append(allowed,(SELECT proowner FROM pg_catalog.pg_proc WHERE oid='anvil.quota_plan_valid(jsonb)'::regprocedure));
+  ELSIF f.proname='fn03_management_complete' THEN allowed=array_append(allowed,(SELECT proowner FROM pg_catalog.pg_proc WHERE oid='anvil.quota_settled_complete(anvil.project_storage_reservations)'::regprocedure));END IF;
+  IF f.proowner<>purpose_oid OR f.proconfig IS DISTINCT FROM ARRAY['search_path=pg_catalog']::text[]
+   OR f.prosecdef IS DISTINCT FROM (f.proname IN('fn03_management_complete','fn03_management_final_guard','fn03_source_content_management_commit','fn03_source_content_management_read'))
+   OR EXISTS(SELECT 1 FROM pg_catalog.aclexplode(COALESCE(f.proacl,pg_catalog.acldefault('f',f.proowner))) a WHERE a.privilege_type='EXECUTE' AND NOT(a.grantee=ANY(allowed)))
+   OR (f.proname NOT IN('fn03_source_content_management_commit','fn03_source_content_management_read') AND pg_catalog.has_function_privilege(app_oid,f.oid,'EXECUTE')) THEN
+   RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_FUNCTION_ACL_INVALID';END IF;
+ END LOOP;
+END;$$;
+COMMIT;
