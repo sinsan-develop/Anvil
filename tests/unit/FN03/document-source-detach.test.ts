@@ -40,9 +40,26 @@ test('다른 target/stale ref·부가권위 입력은 receipt와 저장 전에 �
 test('CAS 실패와 저장 오류는 성공을 반환하지 않고 고정 오류로 상위 transaction rollback을 요구한다',async()=>{
  const repo=await api();for(const options of [{cas:true},{fail:true}]){const f=database(options);await assert.rejects(repo.detach(f.db,actor,command(),policy),(e:any)=>e.statusCode===(options.cas?409:503)&&!e.message.includes('private'));}
 });
-test('명시 정책은 기존 detach 연산만 허용하며 link 생성/관측 권한을 함께 추가하지 않는다',()=>{
+test('명시 DETACH 정책과 별도 LINK 정책은 서로의 실행·소스변경 권한을 만들지 않는다',async()=>{
  const rule={ruleId:'DETACH_ONLY',subjectRef:{kind:'HUMAN',userId:uid},operations:['detachDocumentSource'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'};
- assert.deepEqual(materialRules([rule],pid,uid),[rule]);assert.throws(()=>materialRules([{...rule,operations:['linkDocumentSource']}],pid,uid));
+ const before=structuredClone(rule);
+ assert.deepEqual(materialRules([rule],pid,uid),[rule]);
+ const make=(selected:typeof rule)=>({query:async(sql:string)=>{
+  assert(sql.startsWith('SELECT p.id,p.head_version'));
+  const rules=[selected],reason='명시 연산 분리',reviewRefs:unknown[]=[];
+  return{rows:[{id:policy.id,head_version:1,rules_json:rules,reason,review_refs:reviewRefs,content_hash:contentHash(canonicalJson({rules,reason,reviewRefs})),created_at:new Date('2026-10-21T00:00:00.000Z')}]};
+ }})as unknown as PoolClient;
+ const original=first().snapshot;
+ const link:ProjectCommand={...command(),operation:'linkDocumentSource',targetId:null,expectedVersion:0,payload:{documentRef:original.documentRef,sourceRootId:original.sourceRootId,relativePath:original.relativePath,sourceSnapshotRef:original.sourceSnapshotRef,blobHash:original.blobHash,reason:original.reason}};
+ const change:ProjectCommand={...command(),operation:'proposeDocumentSourceChange',payload:{sourceLinkRef:first().ref,observedSnapshotRef:original.sourceSnapshotRef,choice:'KEEP_SERVER',reason:'서버 원문 보존'}};
+ assert.equal((await authorizeMaterial(make(rule),actor,command())).approvalRequired,false);
+ for(const request of [link,change])await assert.rejects(authorizeMaterial(make(rule),actor,request),{message:'PROJECT_OPERATION_DENIED',statusCode:403});
+ // 후속 관측 WI가 LINK 문법을 채택했다. 별도 정책 인가는 실제 관측/저장 허가를 대신하지 않는다.
+ const linkRule={...rule,ruleId:'LINK_ONLY',operations:['linkDocumentSource']};
+ assert.deepEqual(materialRules([linkRule],pid,uid),[linkRule]);
+ assert.equal((await authorizeMaterial(make(linkRule),actor,link)).approvalRequired,false);
+ for(const request of [command(),change])await assert.rejects(authorizeMaterial(make(linkRule),actor,request),{message:'PROJECT_OPERATION_DENIED',statusCode:403});
+ assert.deepEqual(rule,before);assert.deepEqual(linkRule.operations,['linkDocumentSource']);
 });
 
 test('현재 정책 없음·DENY·만료·승인 누락과 불필요한 승인은 분리 허가가 아니다',async()=>{
