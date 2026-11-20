@@ -89,3 +89,256 @@ CREATE TRIGGER source_content_management_no_truncate BEFORE TRUNCATE ON anvil.so
 -- C/A/U 및 R의 정확5행+단일 예약·시각·봉인 plan/hash·정산·새Tx finalguard 대조는 아직 필수 미완료다.
 -- 그 DAG/current/role별 EXEC 전이·목적16제약 flush/복원까지 연결하기 전 E의 기존 trigger/RLSfalse는 변경하지 않는다.
 -- 새 역할의 표 SELECT/INSERT·잠금열 UPDATE와 private EXECUTE, app의 목적 RPC EXECUTE도 이번 토대에서 발급하지 않는다.
+
+-- 업무B 첫 SQL 검수 단위: 실제 저장행 -> 물리 투영/비용 -> 역사 완결 -> 보호 bundle.
+-- 아래 함수는 현재 인가를 발급하지 않으며 app/PUBLIC EXECUTE와 표 권한을 열지 않는다.
+-- current/reserve/settle/RPC·16개 지연제약 연결 전에는 위 E/O 쓰기 차단이 그대로다.
+CREATE FUNCTION anvil.fn03_management_physical(v jsonb) RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE pair record;t timestamptz;stamp text;
+BEGIN
+ IF jsonb_typeof(v) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_ROW_INVALID';END IF;
+ FOR pair IN SELECT key,value FROM jsonb_each(v) LOOP
+  IF pair.key~'(_at|_until)$' AND pair.value<>'null'::jsonb THEN
+   IF jsonb_typeof(pair.value) IS DISTINCT FROM 'string' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_ROW_INVALID';END IF;
+   t=(pair.value#>>'{}')::timestamptz;stamp=to_char(t AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"');
+   IF NOT isfinite(t) OR length(stamp)<>27 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_ROW_INVALID';END IF;
+   v=jsonb_set(v,ARRAY[pair.key],to_jsonb(stamp));
+  END IF;
+ END LOOP;
+ RETURN v;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn03_management_physical(jsonb) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn03_management_plan_valid(v jsonb) RETURNS boolean LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+DECLARE k text;part jsonb;ids jsonb;n numeric;stamp timestamptz;
+BEGIN
+ IF anvil.source_read_exact(v,ARRAY['schemaVersion','purpose','projectId','actorId','clientId','authSessionId','credentialGeneration','controlGeneration','operation','externalCommandId','requestHash','permissionPolicyRef','originRef','policyEventRef','ids','coverageGeneration','authorizedUntil','transactionId','parts']) IS NOT TRUE
+  OR v->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR v->>'purpose' IS DISTINCT FROM 'SOURCE_CONTENT_POLICY_MANAGEMENT_STORAGE'
+  OR v->>'operation' IS DISTINCT FROM 'defineSourceContentPolicy' THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['projectId','actorId','clientId','authSessionId','externalCommandId'] LOOP
+  IF jsonb_typeof(v->k) IS DISTINCT FROM 'string' OR v->>k!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' THEN RETURN false;END IF;
+ END LOOP;
+ FOREACH k IN ARRAY ARRAY['credentialGeneration','controlGeneration'] LOOP
+  IF jsonb_typeof(v->k) IS DISTINCT FROM 'number' THEN RETURN false;END IF;
+  n=(v->>k)::numeric;IF n NOT BETWEEN 1 AND 9007199254740991 OR n<>trunc(n) THEN RETURN false;END IF;
+ END LOOP;
+ IF jsonb_typeof(v->'coverageGeneration') IS DISTINCT FROM 'string' OR v->>'coverageGeneration'!~'^[1-9][0-9]{0,15}$' THEN RETURN false;END IF;
+ IF (v->>'coverageGeneration')::numeric>9007199254740991 THEN RETURN false;END IF;
+ IF jsonb_typeof(v->'transactionId') IS DISTINCT FROM 'string' OR v->>'transactionId'!~'^[1-9][0-9]{0,19}$' THEN RETURN false;END IF;
+ IF (v->>'transactionId')::numeric>18446744073709551615 THEN RETURN false;END IF;
+ IF jsonb_typeof(v->'requestHash') IS DISTINCT FROM 'string' OR v->>'requestHash'!~'^[0-9a-f]{64}$'
+  OR anvil.source_read_ref(v->'permissionPolicyRef') IS NOT TRUE OR anvil.source_read_ref(v->'originRef') IS NOT TRUE
+  OR anvil.source_read_ref(v->'policyEventRef') IS NOT TRUE OR v->'originRef'->'version' IS DISTINCT FROM '1'::jsonb
+  OR v->'policyEventRef'->'version' IS DISTINCT FROM '1'::jsonb THEN RETURN false;END IF;
+ IF jsonb_typeof(v->'authorizedUntil') IS DISTINCT FROM 'string' OR v->>'authorizedUntil'!~'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$' THEN RETURN false;END IF;
+ stamp=(v->>'authorizedUntil')::timestamptz;
+ IF NOT isfinite(stamp) OR anvil.source_read_iso(stamp) IS DISTINCT FROM v->>'authorizedUntil' THEN RETURN false;END IF;
+ ids=v->'ids';
+ IF anvil.source_read_exact(ids,ARRAY['serverCommandId','operationId','authorizationReceiptId','auditEventId','policyEventId','originId']) IS NOT TRUE THEN RETURN false;END IF;
+ FOR k IN SELECT jsonb_object_keys(ids) LOOP
+  IF jsonb_typeof(ids->k) IS DISTINCT FROM 'string' OR ids->>k!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' THEN RETURN false;END IF;
+ END LOOP;
+ IF (SELECT count(DISTINCT value) FROM jsonb_each_text(ids))<>6
+  OR ids->'originId' IS DISTINCT FROM v->'originRef'->'id' OR ids->'policyEventId' IS DISTINCT FROM v->'policyEventRef'->'id'
+  OR jsonb_typeof(v->'parts') IS DISTINCT FROM 'array' THEN RETURN false;END IF;
+ IF jsonb_array_length(v->'parts')<>1 THEN RETURN false;END IF;part=v->'parts'->0;
+ IF anvil.source_read_exact(part,ARRAY['key','kind','id','contentHash','bytes','reservedBytes','settledBytes']) IS NOT TRUE
+  OR part->>'key' IS DISTINCT FROM 'management_origin' OR part->>'kind' IS DISTINCT FROM 'SOURCE_CONTENT_POLICY_MANAGEMENT'
+  OR part->'id' IS DISTINCT FROM v->'originRef'->'id' OR part->'contentHash' IS DISTINCT FROM v->'originRef'->'contentHash'
+  OR jsonb_typeof(part->'bytes') IS DISTINCT FROM 'string' OR part->>'bytes'!~'^(0|[1-9][0-9]{0,10})$' THEN RETURN false;END IF;
+ RETURN ((part->>'bytes')::numeric<=10737418240 AND part->'reservedBytes'=part->'bytes' AND part->'settledBytes'=part->'bytes') IS TRUE;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn03_management_plan_valid(jsonb) FROM PUBLIC,anvil_v3_app;
+
+-- 원 CM definition의 순수 형상. observation scope/실파일/서명·현재 권한을 대신하지 않는다.
+CREATE FUNCTION anvil.fn03_management_definition_valid(d jsonb,reason jsonb,actor uuid,at_time timestamptz) RETURNS boolean LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+DECLARE k text;item jsonb;blob jsonb;limits jsonb;ordered jsonb='[]'::jsonb;expires timestamptz;
+ path text;folded text;paths text[]='{}';documents text[]='{}';n numeric;total numeric=0;
+ caps jsonb='{"maxFiles":200,"maxFileBytes":2097152,"maxTotalBytes":20971520,"maxObservationMs":30000,"maxReportBytes":1048576}'::jsonb;
+BEGIN
+ IF anvil.source_read_exact(d,ARRAY['protocolVersion','namespace','subjectUserId','disposition','expiresAt','allowedOperations','sourceRootRef','connectorRef','registrationRef','observerRef','targets','limits']) IS NOT TRUE
+  OR d->'protocolVersion' IS DISTINCT FROM '1'::jsonb OR d->>'namespace' IS DISTINCT FROM 'SOURCE_DOCUMENT_CONTENT_HASH_V1'
+  OR d->>'subjectUserId' IS DISTINCT FROM actor::text OR d->>'disposition' IS NULL OR d->>'disposition' NOT IN('AUTO','DENY','REVOKED')
+  OR jsonb_typeof(d->'expiresAt') IS DISTINCT FROM 'string' OR d->>'expiresAt'!~'^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$' THEN RETURN false;END IF;
+ expires=(d->>'expiresAt')::timestamptz;
+ IF at_time IS NULL OR NOT isfinite(at_time) OR NOT isfinite(expires) OR expires<=at_time OR anvil.source_read_iso(expires) IS DISTINCT FROM d->>'expiresAt' THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['sourceRootRef','connectorRef','registrationRef','observerRef'] LOOP
+  IF anvil.source_read_ref(d->k) IS NOT TRUE THEN RETURN false;END IF;
+ END LOOP;
+ IF jsonb_typeof(d->'allowedOperations') IS DISTINCT FROM 'array' THEN RETURN false;END IF;
+ IF jsonb_array_length(d->'allowedOperations')>3 THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['linkDocumentSource','requestSourceContentHash','revokeSourceContentHash'] LOOP
+  IF d->'allowedOperations' ? k THEN ordered=ordered||jsonb_build_array(k);END IF;
+ END LOOP;
+ IF ordered IS DISTINCT FROM d->'allowedOperations' OR (d->>'disposition'='AUTO' AND ordered='[]'::jsonb)
+  OR (d->>'disposition'<>'AUTO' AND ordered<>'[]'::jsonb) THEN RETURN false;END IF;
+ IF jsonb_typeof(reason) IS DISTINCT FROM 'string' OR anvil.source_content_nonblank(reason#>>'{}') IS NOT TRUE
+  OR anvil.source_read_utf16_length(reason#>>'{}')>20000 OR regexp_replace(reason#>>'{}',E'[\t\n\r]','','g') COLLATE "C" ~ '[[:cntrl:]]' THEN RETURN false;END IF;
+ limits=d->'limits';
+ IF anvil.source_read_exact(limits,ARRAY['maxFiles','maxFileBytes','maxTotalBytes','maxObservationMs','maxReportBytes']) IS NOT TRUE THEN RETURN false;END IF;
+ FOR k IN SELECT jsonb_object_keys(caps) LOOP
+  IF jsonb_typeof(limits->k) IS DISTINCT FROM 'number' THEN RETURN false;END IF;
+  n=(limits->>k)::numeric;IF n<=0 OR n<>trunc(n) OR n>(caps->>k)::numeric THEN RETURN false;END IF;
+ END LOOP;
+ IF jsonb_typeof(d->'targets') IS DISTINCT FROM 'array' THEN RETURN false;END IF;
+ IF jsonb_array_length(d->'targets') NOT BETWEEN 1 AND 200 OR jsonb_array_length(d->'targets')>(limits->>'maxFiles')::integer THEN RETURN false;END IF;
+ FOR item IN SELECT value FROM jsonb_array_elements(d->'targets') LOOP
+  IF anvil.source_read_exact(item,ARRAY['relativePath','documentRef','documentBlobRef']) IS NOT TRUE
+   OR jsonb_typeof(item->'relativePath') IS DISTINCT FROM 'string' OR anvil.source_read_ref(item->'documentRef') IS NOT TRUE THEN RETURN false;END IF;
+  path=item->>'relativePath';folded=anvil.source_read_uppercase_v1(path);
+  IF anvil.source_read_relative_file(path) IS NOT TRUE OR folded COLLATE "C"=ANY(paths) OR item->'documentRef'->>'id'=ANY(documents) THEN RETURN false;END IF;
+  paths=array_append(paths,folded);documents=array_append(documents,item->'documentRef'->>'id');blob=item->'documentBlobRef';
+  IF anvil.source_read_exact(blob,ARRAY['artifactId','bytes','contentHash','mediaType']) IS NOT TRUE
+   OR jsonb_typeof(blob->'artifactId') IS DISTINCT FROM 'string' OR blob->>'artifactId'!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+   OR jsonb_typeof(blob->'bytes') IS DISTINCT FROM 'number' OR jsonb_typeof(blob->'contentHash') IS DISTINCT FROM 'string' OR blob->>'contentHash'!~'^[0-9a-f]{64}$'
+   OR jsonb_typeof(blob->'mediaType') IS DISTINCT FROM 'string' OR anvil.source_content_nonblank(blob->>'mediaType') IS NOT TRUE
+   OR anvil.source_read_utf16_length(blob->>'mediaType')>200 OR (blob->>'mediaType') COLLATE "C" ~ '[[:cntrl:]]' THEN RETURN false;END IF;
+  n=(blob->>'bytes')::numeric;total=total+n;
+  IF n<0 OR n<>trunc(n) OR n>(limits->>'maxFileBytes')::numeric OR total>(limits->>'maxTotalBytes')::numeric THEN RETURN false;END IF;
+ END LOOP;
+ RETURN true;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn03_management_definition_valid(jsonb,jsonb,uuid,timestamptz) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn03_management_rows(p uuid,cid uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+DECLARE o anvil.source_content_policy_management_origins;e anvil.source_content_policy_events;c anvil.commands;
+ a anvil.authorization_receipts;u anvil.audit_events;r anvil.project_storage_reservations;
+BEGIN
+ SELECT x.* INTO STRICT c FROM anvil.commands x WHERE x.project_id=p AND x.id=cid AND x.operation='defineSourceContentPolicy';
+ SELECT x.* INTO STRICT o FROM anvil.source_content_policy_management_origins x WHERE x.project_id=p AND x.management_command_id=cid;
+ SELECT x.* INTO STRICT e FROM anvil.source_content_policy_events x WHERE x.project_id=p AND x.management_command_id=cid;
+ SELECT x.* INTO STRICT a FROM anvil.authorization_receipts x WHERE x.scope_kind='PROJECT' AND x.scope_id=p AND x.command_id=cid;
+ SELECT x.* INTO STRICT u FROM anvil.audit_events x WHERE x.project_id=p AND x.command_id=cid;
+ SELECT x.* INTO STRICT r FROM anvil.project_storage_reservations x WHERE x.project_id=p AND x.id=cid;
+ RETURN jsonb_build_object('O',anvil.fn03_management_physical(to_jsonb(o)),'E',anvil.fn03_management_physical(to_jsonb(e)),
+  'C',anvil.fn03_management_physical(to_jsonb(c)),'A',anvil.fn03_management_physical(to_jsonb(a)),
+  'U',anvil.fn03_management_physical(to_jsonb(u))||jsonb_build_object('server_sequence',u.server_sequence::text),
+  'R',anvil.fn03_management_physical(to_jsonb(r)));
+EXCEPTION WHEN no_data_found OR too_many_rows THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_ROWS_INCOMPLETE';
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn03_management_rows(uuid,uuid) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn03_management_actual(p uuid,cid uuid) RETURNS bigint LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+DECLARE rows jsonb;kind text;total numeric=0;
+BEGIN
+ rows=anvil.fn03_management_rows(p,cid);
+ FOREACH kind IN ARRAY ARRAY['O','E','C','A','U'] LOOP
+  total=total+anvil.fn75_cost(anvil.fn09_registered_cost_projection(rows->kind));
+ END LOOP;
+ IF total>10737418240 THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;
+ RETURN total::bigint;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn03_management_actual(uuid,uuid) FROM PUBLIC,anvil_v3_app;
+
+-- prepared은 실제 발급된 정확5행 투영이다. 미래 done/U순번만 비용 상계로 치환하며 저장/권위에 사용하지 않는다.
+CREATE FUNCTION anvil.fn03_management_maximum(prepared jsonb,template jsonb) RETURNS bigint LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE kind text;row_value jsonb;total numeric=0;stamp text='2000-01-01T00:00:00.000000Z';
+BEGIN
+ IF anvil.source_read_exact(prepared,ARRAY['O','E','C','A','U']) IS NOT TRUE OR jsonb_typeof(template) IS DISTINCT FROM 'object'
+  OR template->>'part_kind' IS DISTINCT FROM 'SOURCE_CONTENT_POLICY_MANAGEMENT' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_TEMPLATE_INVALID';END IF;
+ FOREACH kind IN ARRAY ARRAY['O','E','C','A','U'] LOOP
+  row_value=prepared->kind;
+  IF kind='C' THEN row_value=jsonb_set(row_value||jsonb_build_object('completed_at',stamp),'{result_ref,serverReceivedAt}','"2000-01-01T00:00:00.000Z"'::jsonb);
+  ELSIF kind='A' THEN row_value=row_value||jsonb_build_object('authorized_at',stamp);
+  ELSIF kind='U' THEN row_value=row_value||jsonb_build_object('recorded_at',stamp,'server_sequence','9223372036854775807');END IF;
+  total=total+anvil.fn75_cost(anvil.fn09_registered_cost_projection(row_value));
+ END LOOP;
+ IF total>10737418240 THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;
+ RETURN total::bigint;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn03_management_maximum(jsonb,jsonb) FROM PUBLIC,anvil_v3_app;
+
+-- 기존 R 비용식만 재사용. sealed NULL은 예약 r, supplied r은 불변 PLAN(r)의 정산 s다.
+CREATE FUNCTION anvil.fn03_management_fixed_point(base bigint,template jsonb,sealed bigint DEFAULT NULL) RETURNS bigint LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE value bigint;next_value numeric;own bigint;iteration integer;
+BEGIN
+ IF base IS NULL OR base<0 OR base>10737418240 OR sealed IS NOT NULL AND (sealed<0 OR sealed>10737418240) THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;
+ value=base;
+ FOR iteration IN 1..64 LOOP
+  IF sealed IS NULL THEN
+   own=greatest(anvil.fn09_registered_reservation_cost(template,'RESERVED',value,0),anvil.fn09_registered_reservation_cost(template,'IO_STARTED',value,0),anvil.fn09_registered_reservation_cost(template,'SETTLED',value,value));
+  ELSE
+   IF value>sealed THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;
+   own=anvil.fn09_registered_reservation_cost(template,'SETTLED',sealed,value);
+  END IF;
+  next_value=greatest(value::numeric,base::numeric+own::numeric);
+  IF next_value>10737418240 OR sealed IS NOT NULL AND next_value>sealed THEN RAISE EXCEPTION 'PROJECT_STORAGE_LIMIT_EXCEEDED';END IF;
+  IF next_value=value THEN RETURN value;END IF;value=next_value::bigint;
+ END LOOP;
+ RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_FIXED_POINT_UNRESOLVED';
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn03_management_fixed_point(bigint,jsonb,bigint) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn03_management_complete(p uuid,cid uuid) RETURNS boolean LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+DECLARE rows jsonb;plan jsonb;q jsonb;ids jsonb;er jsonb;orr jsonb;digest text;expected_result jsonb;
+ o anvil.source_content_policy_management_origins;e anvil.source_content_policy_events;b anvil.source_content_policy_events;
+ c anvil.commands;a anvil.authorization_receipts;u anvil.audit_events;r anvil.project_storage_reservations;
+ maximum bigint;actual bigint;reserved bigint;settled bigint;
+BEGIN
+ rows=anvil.fn03_management_rows(p,cid);
+ SELECT * INTO o FROM jsonb_populate_record(NULL::anvil.source_content_policy_management_origins,rows->'O');
+ SELECT * INTO e FROM jsonb_populate_record(NULL::anvil.source_content_policy_events,rows->'E');
+ SELECT * INTO c FROM jsonb_populate_record(NULL::anvil.commands,rows->'C');
+ SELECT * INTO a FROM jsonb_populate_record(NULL::anvil.authorization_receipts,rows->'A');
+ SELECT * INTO u FROM jsonb_populate_record(NULL::anvil.audit_events,rows->'U');
+ SELECT * INTO r FROM jsonb_populate_record(NULL::anvil.project_storage_reservations,rows->'R');
+ plan=r.plan_json;q=o.request_json;ids=plan->'ids';
+ IF anvil.fn03_management_plan_valid(plan) IS NOT TRUE OR r.plan_hash IS DISTINCT FROM anvil.source_read_hash(plan) THEN RETURN false;END IF;
+ IF e.sequence>1 THEN SELECT x.* INTO STRICT b FROM anvil.source_content_policy_events x WHERE x.project_id=p AND x.sequence=e.sequence-1;END IF;
+ IF anvil.source_content_policy_lineage_shape(b,e) IS NOT TRUE
+  OR anvil.fn03_management_definition_valid(q->'payload'->'definition',q->'payload'->'reason',c.actor_id,e.recorded_at) IS NOT TRUE THEN RETURN false;END IF;
+ er=jsonb_build_object('id',e.id,'version',1,'contentHash',e.content_hash);
+ orr=jsonb_build_object('id',o.id,'version',1,'contentHash',o.content_hash);
+ IF (o.project_id=p AND e.project_id=p AND o.management_command_id=cid AND e.management_command_id=cid
+  AND o.policy_event_ref=er AND o.request_hash=anvil.source_read_hash(q) AND o.request_hash=c.request_hash
+  AND o.content_hash=anvil.source_read_hash(jsonb_build_object('schemaVersion',1,'purpose','SOURCE_CONTENT_POLICY_MANAGEMENT_ORIGIN','id',o.id,'version',1,'projectId',p,'managementCommandId',cid,'policyEventRef',er,'originalRequest',q,'requestHash',o.request_hash,'recordedAt',anvil.source_read_iso(o.recorded_at)))
+  AND q->>'projectId'=p::text AND q->>'commandId'=c.command_id::text AND q->>'clientId'=c.client_id::text
+  AND q->'controlGeneration'=to_jsonb(c.control_generation) AND q->>'operation'='defineSourceContentPolicy'
+  AND q->'targetId'='null'::jsonb AND q->'expectedVersion'='0'::jsonb AND q->'baselineRefs'='[]'::jsonb AND q->'approvalRef'='null'::jsonb
+  AND q->'payload'->'previousPolicyRef'=e.previous_ref AND e.subject_user_id=c.actor_id
+  AND e.snapshot_json=(q->'payload'->'definition')||jsonb_build_object('projectId',p,'sequence',e.sequence,'recordedAt',anvil.source_read_iso(e.recorded_at),'reason',q->'payload'->'reason')) IS NOT TRUE THEN RETURN false;END IF;
+ IF plan->>'projectId' IS DISTINCT FROM p::text OR plan->>'actorId' IS DISTINCT FROM c.actor_id::text OR plan->>'clientId' IS DISTINCT FROM c.client_id::text
+  OR plan->>'externalCommandId' IS DISTINCT FROM c.command_id::text OR plan->>'requestHash' IS DISTINCT FROM c.request_hash
+  OR plan->'controlGeneration' IS DISTINCT FROM to_jsonb(c.control_generation) OR plan->'permissionPolicyRef' IS DISTINCT FROM c.policy_ref
+  OR plan->'originRef' IS DISTINCT FROM orr OR plan->'policyEventRef' IS DISTINCT FROM er
+  OR ids IS DISTINCT FROM jsonb_build_object('serverCommandId',cid,'operationId',c.operation_id,'authorizationReceiptId',a.id,'auditEventId',u.event_id,'policyEventId',e.id,'originId',o.id) THEN RETURN false;END IF;
+ digest=anvil.source_read_hash(jsonb_build_object('projectId',p,'actorId',c.actor_id,'clientId',c.client_id,'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',er));
+ expected_result=jsonb_build_object('operationId',c.operation_id,'commandId',c.command_id,'projectId',p,'status','APPLIED','targetId',e.id,'version',1,
+  'data',jsonb_build_object('ref',er,'status','CONTENT_POLICY_EVENT_RECORDED','policyRef',er,'previousPolicyRef',e.previous_ref,'sequence',e.sequence,'executionAuthorized',false,'agentDispatchPerformed',false,'baselineConfirmed',false,'linkAuthorized',false),
+  'evidenceRefs','[]'::jsonb,'warnings','[]'::jsonb,'serverReceivedAt',anvil.source_read_iso(c.completed_at));
+ IF (c.scope_kind='PROJECT' AND c.scope_id=p AND c.draft_id IS NULL AND c.state='APPLIED' AND c.expected_version=0
+  AND c.authorization_receipt_id=a.id AND c.approval_consumption_id IS NULL AND c.payload_ref IS NULL AND c.result_ref=expected_result
+  AND a.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) AND a.policy_ref=c.policy_ref AND a.scope_digest=digest AND a.approval_decision_ref IS NULL
+  AND u.server_sequence BETWEEN 1 AND 9007199254740991 AND u.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+  AND u.client_ref=c.client_id AND u.operation_id=c.operation_id AND u.target_ref=er AND u.policy_ref=c.policy_ref AND u.approval_ref IS NULL
+  AND u.outcome='APPLIED' AND u.reason_code='SOURCE_CONTENT_POLICY_EVENT_RECORDED' AND u.scope_digest=digest AND u.source_kind='HUMAN_COMMAND' AND u.correction_of IS NULL
+  AND r.actor_id=c.actor_id AND r.client_id=c.client_id AND r.external_command_id=c.command_id AND r.operation=c.operation AND r.command_hash=c.request_hash
+  AND r.part_key='management_origin' AND r.part_kind='SOURCE_CONTENT_POLICY_MANAGEMENT' AND r.phase='SETTLED' AND r.start_fence=1
+  AND r.server_command_id=cid AND r.authorization_receipt_id=a.id AND r.scope_digest=digest
+  AND r.authorized_until=(plan->>'authorizedUntil')::timestamptz AND r.reserved_bytes::text=plan->'parts'->0->>'bytes'
+  AND c.completed_at IS NOT NULL AND a.authorized_at=c.completed_at AND u.recorded_at=c.completed_at) IS NOT TRUE THEN RETURN false;END IF;
+ -- 물리 시각의 유한/27자 형상은 rows에서 검산했다. E와 O는 별도 실제 관측값이며 같게 덮지 않는다.
+ IF e.recorded_at>o.recorded_at OR o.recorded_at>r.created_at OR r.created_at>r.started_at OR r.started_at>c.completed_at
+  OR c.received_at>c.completed_at OR c.completed_at>r.settled_at OR r.settled_at>=r.authorized_until THEN RETURN false;END IF;
+ maximum=anvil.fn03_management_maximum(rows-'R',rows->'R');actual=anvil.fn03_management_actual(p,cid);
+ reserved=anvil.fn03_management_fixed_point(maximum,(rows->'R')||jsonb_build_object('plan_hash',repeat('0',64)));
+ settled=anvil.fn03_management_fixed_point(actual,rows->'R',r.reserved_bytes);
+ RETURN (actual<=maximum AND reserved=r.reserved_bytes AND settled=r.settled_bytes AND settled<=reserved
+  AND actual+anvil.fn75_cost(anvil.fn09_registered_cost_projection(rows->'R'))=settled) IS TRUE;
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn03_management_complete(uuid,uuid) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn03_management_history_bundle(p uuid,cid uuid) RETURNS jsonb LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+DECLARE rows jsonb;previous jsonb='null'::jsonb;b anvil.source_content_policy_events;
+BEGIN
+ IF anvil.fn03_management_complete(p,cid) IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INCOMPLETE';END IF;
+ rows=anvil.fn03_management_rows(p,cid);
+ IF (rows->'E'->>'sequence')::bigint>1 THEN
+  SELECT x.* INTO STRICT b FROM anvil.source_content_policy_events x WHERE x.project_id=p AND x.sequence=(rows->'E'->>'sequence')::bigint-1;
+  previous=jsonb_build_object('project_id',b.project_id,'id',b.id,'version',b.version,'sequence',b.sequence,'subject_user_id',b.subject_user_id,'disposition',b.disposition,
+   'recorded_at',anvil.source_read_iso(b.recorded_at),'expires_at',anvil.source_read_iso(b.expires_at),'snapshot_json',b.snapshot_json,'content_hash',b.content_hash,'previous_ref',b.previous_ref,'management_command_id',b.management_command_id);
+ END IF;
+ -- 내부 결과만. 현재 read/replay RPC가 자신의 status/transactionId를 붙이되 원 plan metadata는 불변이다.
+ RETURN jsonb_build_object('previousEvent',previous,'rows',rows);
+END;$$;
+REVOKE ALL ON FUNCTION anvil.fn03_management_history_bundle(uuid,uuid) FROM PUBLIC,anvil_v3_app;

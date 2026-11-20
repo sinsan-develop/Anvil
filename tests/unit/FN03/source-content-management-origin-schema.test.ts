@@ -49,7 +49,10 @@ test('RLS FORCE/false·전 INSERT 거절·불변/truncate 거절을 유지하고
  assert.match(compact,/BEFORE INSERT ON anvil\.source_content_policy_management_origins FOR EACH ROW EXECUTE FUNCTION anvil\.source_content_unavailable\(\)/);
  assert.match(compact,/BEFORE UPDATE OR DELETE ON anvil\.source_content_policy_management_origins FOR EACH ROW EXECUTE FUNCTION anvil\.source_content_append_only\(\)/);
  assert.match(compact,/BEFORE TRUNCATE ON anvil\.source_content_policy_management_origins FOR EACH STATEMENT EXECUTE FUNCTION anvil\.source_content_append_only\(\)/);
- assert.doesNotMatch(compact,/DROP\b|CREATE (?:OR REPLACE )?FUNCTION|SECURITY DEFINER|INSERT INTO|UPDATE anvil|DELETE FROM|SET ROLE/);
+ assert.doesNotMatch(compact,/DROP\b|SECURITY DEFINER|INSERT INTO|UPDATE anvil|DELETE FROM|SET ROLE/);
+ const helpers=[...compact.matchAll(/CREATE FUNCTION anvil\.(fn03_management_\w+)\(([^)]*)\)/g)];
+ assert.deepEqual(helpers.map(m=>m[1]),['fn03_management_physical','fn03_management_plan_valid','fn03_management_definition_valid','fn03_management_rows','fn03_management_actual','fn03_management_maximum','fn03_management_fixed_point','fn03_management_complete','fn03_management_history_bundle']);
+ for(const helper of helpers)assert.ok(compact.includes(`REVOKE ALL ON FUNCTION anvil.${helper[1]}(`));
  assert.doesNotMatch(compact,/anvil\.(source_content_requests|source_content_observations|source_content_verifications|document_source_links)\b/);
 });
 test('기존 0040은 E관리command unique와 무조건 쓰기 거절을 가진 선행이다',()=>{
@@ -57,4 +60,27 @@ test('기존 0040은 E관리command unique와 무조건 쓰기 거절을 가진 
  assert.ok(old.includes('UNIQUE(project_id,management_command_id)'));
  assert.ok(old.includes("CREATE TRIGGER source_content_unavailable BEFORE INSERT OR UPDATE OR DELETE"));
  assert.ok(old.includes("RAISE EXCEPTION 'SOURCE_CONTENT_AUTHORITY_NOT_ACTIVATED'"));
+});
+
+function body(name:string){
+ const found=sql.match(new RegExp(`CREATE FUNCTION anvil\\.${name}\\([^]*?AS \\$\\$([^]*?)\\$\\$;`));
+ assert.ok(found,`${name} source absent`);return found[1]!;
+}
+test('실제 물리행 수집→비용→봉인 정산→역사 bundle DAG는 현재 권한과 분리한다',()=>{
+ const rows=body('fn03_management_rows'),actual=body('fn03_management_actual'),complete=body('fn03_management_complete'),history=body('fn03_management_history_bundle');
+ for(const table of ['source_content_policy_management_origins','source_content_policy_events','commands','authorization_receipts','audit_events','project_storage_reservations'])assert.ok(rows.includes(`anvil.${table}`));
+ assert.match(rows,/INTO STRICT/);assert.match(rows,/server_sequence[^]*::text/);
+ assert.match(actual,/fn03_management_rows/);assert.match(actual,/fn09_registered_cost_projection/);assert.match(actual,/fn75_cost/);
+ assert.match(complete,/fn03_management_maximum/);assert.match(complete,/fn03_management_fixed_point/);assert.match(complete,/plan_hash[^]*source_read_hash/);
+ assert.match(history,/fn03_management_complete\(p,cid\) IS NOT TRUE/);
+ for(const name of ['fn03_management_rows','fn03_management_actual','fn03_management_complete','fn03_management_history_bundle'])assert.doesNotMatch(body(name),/clock_timestamp|quota_complete|fn03_management_context|fn01_active/);
+});
+test('역사 완결은 실제 E/O 별도 시각과 원 봉인 수명을 보존하며 예외를 성공으로 바꾸지 않는다',()=>{
+ const complete=body('fn03_management_complete');
+ assert.match(complete,/e\.recorded_at>o\.recorded_at/);assert.doesNotMatch(complete,/e\.recorded_at\s*=\s*o\.recorded_at/);
+ assert.match(complete,/r\.settled_at>=r\.authorized_until/);
+ assert.match(complete,/received_at>c\.completed_at/);
+ assert.doesNotMatch(complete,/WHEN OTHERS|RETURN true[^]*EXCEPTION/);
+ assert.match(body('fn03_management_fixed_point'),/1\.\.64/);
+ assert.match(body('fn03_management_maximum'),/9223372036854775807/);
 });

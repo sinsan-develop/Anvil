@@ -21563,3 +21563,11 @@ PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확
 담당 함수 부재 RED 6건 `538c96`, 직접·인접 22통과 `d7cec0`, 최종 직접 8통과 `ad93e7`, 좁은 타입 종료0 `750d63`. Main `node --test tests/unit/FN03/source-content-management-origin-service.test.ts` 직접 8통과·실패/건너뜀0 `db55e8`. 제품 233B9FF3D71DE49288AD88BA0ABC5E540F27C88CF564C2D8BF52F394A11DF37F, 시험 F2E8658B81CDEF885226DFA699EFC13F5EA4824BD6BAF0D8A3D01A9A2B535A27. 롤백은 두 경로와 기록의 역적용이다.
 
 아직 목적 SQL·실제 Access callback의 query/XID/권한·replay 경로·별도 E/O 시각이 미연결이다. 현재 지원하는 동일 발급 시각은 저장 계약 전체를 대체하지 않는다. 실제 환경·DB·권한·키·서비스·Agent·파일 관측·SSH 실행0. 다음은 미적용 0101의 동일 거래 보호 완결·목적 RPC 소스와 실제 명령·화면의 연결이다.
+
+### FN03 0101 물리행·과거 완결 SQL 한정 검수
+
+기준 `a1f673de`, developer_primary 단일 작성·반환. 미적용 0101과 정적 시험만 수정했다. 원 O/E/C/A/U/R 정확 단일행을 묶고, 기존 비용 정규화와 자기비용 계산으로 원 봉인·유계 최소고정점을 검산한다. 관리 event와 실제 원문의 별도 발급 시각, 명령·감사·계상 hash, 과거 보호 bundle을 검산한다. 권한을 발급하지 않는 내부 함수이며 새 쓰기/공개 RPC·일반 표 접근은 닫힌 상태다.
+
+담당 신규 함수 부재 RED 2건 `7cff5c`, 직접·인접 23통과·실패/건너뜀0 `16e116`, 좁은 타입 종료0 `7899a6`. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 정적 8통과/실패·건너뜀0·공백검사 종료0 `51ae48`. SQL SHA256 4622CF6285DFF3413C935B968D843098195819570515B70C5D09A3696D1F970C, 시험 4BC72B8D02802C8755AC31417C996A7541AFF617CECF3A2A2EA82C6463F7F7F4. 기존 pglast로 외부 30문장과 원 본문 6건을 구문 검사했다. rowtype 본문 3건은 실제 catalog가 없어 원형은 미검증이며 메모리에서 선언을 record로 바꾼 구문 검사만 했다. 실제 SQL 적용·역할·제약·COMMIT 및 서비스·Agent·SSH 실행0.
+
+새 SQL은 E/O의 서로 다른 유효 시각을 보존한다. 이에 맞춰 TS의 같은 시각 가정과 원 수신시각/E 절삭시각 비교를 보완한다. 이후 동일 거래 현재성·잠금·예약/정산·역완결과 지연 제약 및 제한 RPC 연결이 남는다. 롤백은 이번 SQL·시험·기록의 변경분이다.
