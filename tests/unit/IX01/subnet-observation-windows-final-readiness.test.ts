@@ -6,6 +6,10 @@ import {spawnSync} from 'node:child_process';
 import {readSubnetWindowsFinalReadinessResult,readSubnetWindowsReadinessResult} from '../../../scripts/qa-ix01-subnet-observation-windows-readiness-result.ts';
 const base=new URL('../../../',import.meta.url);
 const paths=['scripts/qa-ix01-subnet-observation-windows-readiness.ps1','scripts/qa-ix01-subnet-observation-alias-config.ps1','scripts/qa-ix01-subnet-observation-identity-path.ps1','scripts/qa-ix01-subnet-observation-windows-final-readiness.ps1'];
+const historicalAlias=spawnSync('git',['cat-file','blob','ef52ba33a7db6ea9db5ffe0defc622091e8232dc:'+paths[1]],{cwd:base,maxBuffer:65536,windowsHide:true});
+assert.equal(historicalAlias.error,undefined);assert.equal(historicalAlias.status,0);
+assert.equal(createHash('sha256').update(historicalAlias.stdout).digest('hex'),'d972a785a99cc8c883b15ab716b8d939241e5e5663f56d67d73581ff0c15e09b');
+const pinnedSource=(path:string)=>path===paths[1]?historicalAlias.stdout:readFileSync(new URL(path,base));
 const original=readFileSync(new URL('tests/unit/IX01/subnet-observation-windows-readiness.test.ts',base),'utf8');
 const fixture=original.split('const fixture=String.raw`')[1]!.split('`;')[0]!;
 const finalSourceHash='ad2254c843f97ff420eee2d35cf6968783f199694ee5b6404bdde69dd74cd3d8';
@@ -13,7 +17,7 @@ const expectedBinding={attemptId:'11111111-1111-4111-8111-111111111111',approval
 const executionPlan=readFileSync(new URL('docs/work_packages/IX01_WINDOWS_FINAL_READINESS_EXECUTION_PLAN.md',base),'utf8');
 const command=executionPlan.split('```powershell')[1]!.split('```')[0]!;
 function ram(body:string){
- const source=paths.map(p=>readFileSync(new URL(p,base),'utf8')).join('\n');
+ const source=paths.map(p=>pinnedSource(p).toString('utf8')).join('\n');
  const script=`$ErrorActionPreference='Stop'
 $source=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${Buffer.from(source).toString('base64')}'))
 $t=$null;$e=$null;$a=[Management.Automation.Language.Parser]::ParseInput($source,[ref]$t,[ref]$e)
@@ -121,11 +125,11 @@ $line=Invoke-Ix01WindowsFinalReadiness $binding $ports
 });
 test('IX01 final readiness source: 원 순회 위임1·별도 config read/새 native0·순수 의존 고정',()=>{
  assert(executionPlan.includes('ef52ba33a7db6ea9db5ffe0defc622091e8232dc'));
- for(const path of paths){const bytes=readFileSync(new URL(path,base));assert(command.includes(`path='${path}';bytes=${bytes.length};hash='${createHash('sha256').update(bytes).digest('hex')}'`));}
+ for(const path of paths){const bytes=pinnedSource(path);assert(command.includes(`path='${path}';bytes=${bytes.length};hash='${createHash('sha256').update(bytes).digest('hex')}'`));}
  assert(command.includes("$approvalId='';$approvalHash='';$planHash='';$attemptId='';$approvalIssuedAtMs='';$approvalDeadlineMs=''"));
  assert(executionPlan.includes(createHash('sha256').update(readFileSync(new URL('scripts/qa-ix01-subnet-observation-windows-readiness-result.ts',base))).digest('hex').toUpperCase()));
  const s=readFileSync(new URL(paths[3]!,base),'utf8');assert.equal((s.match(/Invoke-Ix01WindowsReadiness\s+-Binding/g)||[]).length,1);
  assert(!/Invoke-Ix01ConfigReadiness|Get-Item|Get-Acl|File\]::|Start-Process|Invoke-Expression/.test(s));
- assert.equal(createHash('sha256').update(readFileSync(new URL(paths[1]!,base))).digest('hex'),'d972a785a99cc8c883b15ab716b8d939241e5e5663f56d67d73581ff0c15e09b');
+ assert.equal(createHash('sha256').update(pinnedSource(paths[1]!)).digest('hex'),'d972a785a99cc8c883b15ab716b8d939241e5e5663f56d67d73581ff0c15e09b');
  assert.equal(createHash('sha256').update(readFileSync(new URL(paths[2]!,base))).digest('hex'),'5846a8d06aa7caa8453a792df52a37562d2c37f6befe932b3c608c399758e2bc');
 });

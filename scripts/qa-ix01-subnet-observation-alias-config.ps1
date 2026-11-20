@@ -1,8 +1,9 @@
 # 순수 오프라인 subset 판독. 원 6847D094 검사/실제 출력/실행안을 대체하지 않는다.
 # 호출자가 제공한 user/system 바이트만 읽는다. null은 명시 부재이며 실제 부재 증명이 아니다.
 # OpenSSH 전체 문법/기본값/인증/host trust/현재성/승인을 발급하지 않는다.
-function Read-Ix01SubnetAliasConfig($UserBytes, $SystemBytes, [switch]$ClassifyIdentityPaths) {
+function Read-Ix01SubnetAliasConfig($UserBytes, $SystemBytes, [switch]$ClassifyIdentityPaths, [switch]$DiagnosticOnly) {
     $reason='INPUT_UNCONFIRMED';$role='USER_CONFIG';$lineNumber=0;$owned=$null
+    $diagnostics=@();$additional=$false;$unsupported=$false
     try {
         $selected=@{};$identity=$null;$userKind='UNSET'
         $inputs=@(@{role='USER_CONFIG';bytes=$UserBytes},@{role='SYSTEM_CONFIG';bytes=$SystemBytes})
@@ -50,6 +51,22 @@ function Read-Ix01SubnetAliasConfig($UserBytes, $SystemBytes, [switch]$ClassifyI
                 if ($key -ceq 'match') { $reason='MATCH_UNCONFIRMED';throw 'REJECTED' }
                 if ($key -cin @('userknownhostsfile','globalknownhostsfile','knownhostscommand','hostkeyalias')) { $reason='CUSTOM_SCOPE_UNCONFIRMED';throw 'REJECTED' }
                 if ($key -cin @('proxycommand','proxyjump','localcommand','permitlocalcommand','remotecommand','identityagent','forwardagent','forwardx11','forwardx11trusted','localforward','remoteforward','dynamicforward','tunnel','controlmaster','controlpath','controlpersist','canonicalizehostname')) { $reason='EFFECT_UNCONFIRMED';throw 'REJECTED' }
+                if ($DiagnosticOnly -and $key -cnotin @('hostname','user','port','identityfile','identitiesonly')) {
+                    # applicable은 이 subset의 Host 구간 일치만 뜻한다. 실제 적용/무해함/효과를 추정하지 않는다.
+                    # CARRIER_FIXED는 고정 argv가 덮는 키 분류일 뿐 이 모드가 해당 argv를 실행/검증하지 않는다.
+                    $reason='MALFORMED_VALUE'
+                    if ($value.IndexOfAny([char[]]@([char]34,[char]39,[char]92,[char]35)) -ge 0) { throw 'REJECTED' }
+                    $code='UNSUPPORTED_DIRECTIVE'
+                    if ($key -cin @('serveraliveinterval','serveralivecountmax')) {
+                        if ($value -cnotmatch '\A[0-9]{1,10}\z' -or [long]$value -gt 2147483647L) { throw 'REJECTED' }
+                        $code=if($key -ceq 'serveraliveinterval'){'CARRIER_FIXED_SERVER_ALIVE_INTERVAL'}else{'CARRIER_FIXED_SERVER_ALIVE_COUNT_MAX'}
+                    } elseif ($key -ceq 'loglevel') {
+                        if ($value -cnotin @('QUIET','FATAL','ERROR','INFO','VERBOSE','DEBUG','DEBUG1','DEBUG2','DEBUG3')) { throw 'REJECTED' }
+                        $code='CARRIER_FIXED_LOG_LEVEL'
+                    } else { $unsupported=$true }
+                    if ($diagnostics.Count -lt 16) { $diagnostics+=@{role=$role;line=$lineNumber;code=$code;applicable=[bool]$active} } else { $additional=$true }
+                    continue
+                }
                 # 비대상의 heartbeat 간격만 좁게 무시한다. 대상에서의 의미/기본값은 아직 지원하지 않는다.
                 if (!$active -and $key -ceq 'serveraliveinterval') { continue }
                 if ($key -cnotin @('hostname','user','port','identityfile','identitiesonly')) { $reason='UNSUPPORTED_DIRECTIVE';throw 'REJECTED' }
@@ -88,11 +105,17 @@ function Read-Ix01SubnetAliasConfig($UserBytes, $SystemBytes, [switch]$ClassifyI
             }
             [Array]::Clear($owned,0,$owned.Length);$owned=$null
         }
+        if ($DiagnosticOnly) {
+            return @{schemaVersion=1;status=$(if($unsupported){'UNKNOWN'}else{'COMPARISON_ONLY'});code=$(if($unsupported){'UNSUPPORTED_DIRECTIVE'}else{'CONFIG_DIAGNOSTIC_COLLECTED'});alias='WSL-server';readiness='UNCONFIRMED';diagnostics=$diagnostics;additional=$additional}
+        }
         $fields=@();foreach($key in @('hostname','user','port','identitiesonly')) { if($selected.ContainsKey($key)) {$fields+=$selected[$key]} }
         if($null -ne $identity) {$fields+=$identity}
         # ROOT_LITERAL은 분류뿐이다. UNSET을 비root/기본 사용자로 추정하지 않고 값/경로도 반환하지 않는다.
         return @{schemaVersion=1;status='ALIAS_SUBSET';code='CONFIG_CLASSIFIED';alias='WSL-server';readiness='UNCONFIRMED';userKind=$userKind;fields=$fields}
     } catch {
+        if ($DiagnosticOnly) {
+            return @{schemaVersion=1;status='UNKNOWN';code=$reason;alias='WSL-server';readiness='UNCONFIRMED';role=$role;line=$lineNumber;diagnostics=$diagnostics;additional=$additional}
+        }
         return @{schemaVersion=1;status='UNKNOWN';code=$reason;alias='WSL-server';readiness='UNCONFIRMED';role=$role;line=$lineNumber}
     } finally {
         if($null -ne $owned) {[Array]::Clear($owned,0,$owned.Length)}
