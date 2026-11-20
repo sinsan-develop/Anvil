@@ -76,13 +76,13 @@ export function createSourceContentManagementOriginStore(ports:SourceContentMana
   if(!recordV1(ports,['now','assertCurrent','invoke'])||ports.now!==now||ports.assertCurrent!==assertCurrent||ports.invoke!==invoke)return invalid();
   const t=now();if(!Number.isSafeInteger(t)||t<0||t<lastTime||t>=Date.parse(c.authorizedUntil))return invalid();lastTime=t;return t;
  }
- async function run(purpose:Purpose,raw:unknown,rawContext:unknown,rawIds?:unknown){
+ async function run(purpose:Purpose,raw:unknown,rawContext:unknown,rawIds?:unknown,replay=false){
   if(spent)return invalid();spent=true;let invoked=false;
   try{
    const c=context(rawContext,purpose),t=clock(c),isCommit=purpose==='defineSourceContentPolicy';
-   const v=copy(raw,isCommit?1048576:4096);let ids:Record<string,any>|undefined;
+   const v=copy(raw,isCommit?1048576:4096);let ids:Record<string,any>|null=null;
    if(isCommit){
-    const i=copy(rawIds,4096);if(!recordV1(i,idsKeys)||!Object.values(i).every(uuidV1)||new Set(Object.values(i)).size!==6)return invalid();ids=i;
+    if(!replay){const i=copy(rawIds,4096);if(!recordV1(i,idsKeys)||!Object.values(i).every(uuidV1)||new Set(Object.values(i)).size!==6)return invalid();ids=i;}
     if(!recordV1(v,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])||v.schemaVersion!==1||v.projectId!==c.projectId||v.clientId!==c.clientId||v.controlGeneration!==c.controlGeneration||v.operation!==purpose||!uuidV1(v.commandId)||v.targetId!==null||v.expectedVersion!==0||!same(v.baselineRefs,[])||v.approvalRef!==null||!recordV1(v.payload,['previousPolicyRef','definition','reason']))return invalid();
    }else readSourceContentManagementOriginSelection(v,c,t);
    const call:SourceContentManagementRpcCall=freeze(isCommit?{name:'fn03_source_content_management_commit',args:[c.authSessionId,c.actorId,c.clientId,c.projectId,v,c.permissionPolicyRef,ids,c.transactionId,c.authorizedUntil]}:{name:'fn03_source_content_management_read',args:[c.authSessionId,c.actorId,c.clientId,c.projectId,c.controlGeneration,c.permissionPolicyRef,v,c.transactionId]});
@@ -92,11 +92,16 @@ export function createSourceContentManagementOriginStore(ports:SourceContentMana
    // 반환값을 검사하기 전에도 원 Access/Tx current가 유지되어야 한다. boolean VERIFIED는 받지 않는다.
    if(await assertCurrent(scope)!==undefined)return invalid();clock(c);
    if(!isCommit&&recordV1(response,['status','transactionId'])&&response.status==='ORIGIN_ABSENT'&&response.transactionId===c.transactionId)return freeze({kind:'ORIGIN_ABSENT' as const});
-   if(!recordV1(response,['status','transactionId','previousEvent','rows'])||response.transactionId!==c.transactionId||response.status!==(isCommit?'RECORDED':'FOUND'))return invalid();
+   if(!recordV1(response,['status','transactionId','previousEvent','rows'])||response.transactionId!==c.transactionId||response.status!==(isCommit?(replay?'REPLAYED':'RECORDED'):'FOUND'))return invalid();
    const inspected=inspectRows(response);
    if(inspected.plan.projectId!==c.projectId||Date.parse(iso(inspected.rows.R.settled_at))>clock(c))return invalid();
    if(isCommit){
     const original=inspected.historicalContext;
+    if(replay){
+     // 현재 write 정책/인증과 과거 정착 수명은 별개다. 원 q 및 동일 원 actor/client만 재사용한다.
+     if(!same(inspected.rows.O.request_json,v)||original.actorId!==c.actorId||original.clientId!==c.clientId||original.controlGeneration!==c.controlGeneration)return invalid();
+     return freeze({kind:'REPLAYED' as const,result:inspected.rows.C.result_ref});
+    }
     if(!same(inspected.rows.O.request_json,v)||!same(inspected.plan.ids,ids)||!same({...original,authorizedUntil:c.authorizedUntil},c)||Date.parse(original.authorizedUntil)>Date.parse(c.authorizedUntil))return invalid();
     if(clock(c)>=Date.parse(original.authorizedUntil))return invalid();
     return freeze({kind:'RECORDED' as const,result:inspected.rows.C.result_ref});
@@ -105,5 +110,5 @@ export function createSourceContentManagementOriginStore(ports:SourceContentMana
    return freeze({kind:'FOUND' as const,value:{...inspected.selection,requestHash:inspected.rows.O.request_hash,authority:'UNVERIFIED' as const}});
   }catch{if(invoked)return unknown();return invalid();}
  }
- return Object.freeze({commit:(request:unknown,c:unknown,ids:unknown)=>run('defineSourceContentPolicy',request,c,ids),read:(selection:unknown,c:unknown)=>run('readSourceContentPolicyManagementOrigin',selection,c)});
+ return Object.freeze({commit:(request:unknown,c:unknown,ids:unknown)=>run('defineSourceContentPolicy',request,c,ids),replay:(request:unknown,c:unknown)=>run('defineSourceContentPolicy',request,c,undefined,true),read:(selection:unknown,c:unknown)=>run('readSourceContentPolicyManagementOrigin',selection,c)});
 }

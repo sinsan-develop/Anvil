@@ -8,6 +8,14 @@ const file=new URL('../../../db/migrations/0101_source_content_policy_management
 const text=existsSync(file)?readFileSync(file,'utf8'):'';
 const sql=text.replace(/--[^\r\n]*/g,'');
 const compact=sql.replace(/\s+/g,' ').trim();
+test('write replay는 ids SQL NULL만 받고 현재 write→역사 완결→현재 write 후 반환, 신규 예약/행/ID 발급0',()=>{
+ const commit=body('fn03_source_content_management_commit'),start=commit.indexOf('IF ids IS NULL THEN'),end=commit.indexOf("IF anvil.source_read_exact(ids",start);
+ assert.ok(start>commit.indexOf("fn03_management_context(s,a,c,p,g,'defineSourceContentPolicy'"));assert.ok(end>start);
+ const replay=commit.slice(start,end);
+ for(const token of ['INTO STRICT cmd',"x.scope_kind='PROJECT'",'x.project_id=p','x.actor_id=a',"cmd.request_hash IS DISTINCT FROM qh",'cmd.client_id IS DISTINCT FROM c','cmd.control_generation IS DISTINCT FROM g','fn03_management_history_bundle(p,cmd.id)',"request_json' IS DISTINCT FROM q","fn03_management_context(s,a,c,p,g,'defineSourceContentPolicy'","'REPLAYED'"])assert.ok(replay.includes(token),token);
+ assert.doesNotMatch(replay,/INSERT INTO|UPDATE |DELETE |random|quota_complete|fn03_source_content_management_read|readSourceContentPolicyManagementOrigin/);
+ assert.ok(end<commit.indexOf('FROM anvil.project_storage_accounts'));
+});
 test('목적 설치는 단일 거래이며 임시 ADMIN/CREATE를 회수하고 앱에는 두 RPC만 연다',()=>{
  assert.match(compact,/^BEGIN;/);assert.match(compact,/COMMIT;$/);
  assert.match(compact,/GRANT anvil_v3_source_content_management_owner TO anvil_v3_migrator WITH ADMIN OPTION/);
@@ -384,7 +392,8 @@ test('producer의 물리 tuple은 exact 기존 열을 보존하고 generated E�
  assert.match(write,/audit\.server_sequence=audit_seq/);assert.match(write,/'server_sequence',audit_seq::text/);
  assert.match(write,/audit_seq NOT BETWEEN 1 AND 9007199254740991/);
  assert.doesNotMatch(write,/request_canonical|snapshot_canonical|_canonical_result_ref/);
- const finalAt=write.indexOf('bundle=anvil.fn03_management_history_bundle');
+ const finalAt=write.indexOf('bundle=anvil.fn03_management_history_bundle(p,cid)');
+ assert.ok(finalAt>write.indexOf("SET phase='SETTLED'"));
  assert.doesNotMatch(write.slice(finalAt),/INSERT INTO|UPDATE anvil|DELETE FROM/);
  // 원 AUTO 허가와 새 CM 의도(AUTO/DENY/REVOKED)는 서로 다른 원형이며 새 intent로 현재 허가를 만들지 않는다.
  assert.match(write,/fn03_management_context\(s,a,c,p,g,'defineSourceContentPolicy',policy,observed_until\)/);

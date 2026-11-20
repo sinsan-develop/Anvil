@@ -489,17 +489,35 @@ BEGIN
   OR q->>'commandId'!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
   OR octet_length(convert_to(anvil.source_read_canonical_json(q),'UTF8'))>1048576 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
  IF (q->>'controlGeneration')::numeric NOT BETWEEN 1 AND 9007199254740991
-  OR (q->>'controlGeneration')::numeric<>trunc((q->>'controlGeneration')::numeric)
-  OR anvil.source_read_exact(ids,ARRAY['serverCommandId','operationId','authorizationReceiptId','auditEventId','policyEventId','originId']) IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
- FOR k IN SELECT jsonb_object_keys(ids) LOOP
-  IF jsonb_typeof(ids->k) IS DISTINCT FROM 'string' OR ids->>k!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
- END LOOP;
- IF (SELECT count(DISTINCT value) FROM jsonb_each_text(ids))<>6 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
- g=(q->>'controlGeneration')::bigint;cid=(ids->>'serverCommandId')::uuid;qh=anvil.source_read_hash(q);
+  OR (q->>'controlGeneration')::numeric<>trunc((q->>'controlGeneration')::numeric) THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
+ g=(q->>'controlGeneration')::bigint;qh=anvil.source_read_hash(q);
  received_at=transaction_timestamp();begin_at=clock_timestamp();
  ctx=anvil.fn03_management_context(s,a,c,p,g,'defineSourceContentPolicy',policy,observed_until);
  until_at=(ctx->>'authorizedUntil')::timestamptz;last_at=clock_timestamp();
  IF NOT isfinite(received_at) OR NOT isfinite(begin_at) OR NOT isfinite(last_at) OR last_at<begin_at OR last_at>=until_at THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
+ -- SQL NULL은 동일 목적의 기존 명령 재조회만이다. 역사 없음/오염이면 신규 저장으로 전환하지 않는다.
+ IF ids IS NULL THEN
+  SELECT x.* INTO STRICT cmd FROM anvil.commands x
+   WHERE x.scope_kind='PROJECT' AND x.project_id=p AND x.actor_id=a AND x.command_id=(q->>'commandId')::uuid;
+  IF cmd.operation IS DISTINCT FROM 'defineSourceContentPolicy' OR cmd.request_hash IS DISTINCT FROM qh
+   OR cmd.client_id IS DISTINCT FROM c OR cmd.control_generation IS DISTINCT FROM g OR cmd.state IS DISTINCT FROM 'APPLIED'
+   THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT';END IF;
+  bundle=anvil.fn03_management_history_bundle(p,cmd.id);
+  IF bundle->'rows'->'O'->'request_json' IS DISTINCT FROM q OR bundle->'rows'->'C'->'result_ref' IS DISTINCT FROM cmd.result_ref
+   THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_HISTORY_INVALID';END IF;
+  final_ctx=anvil.fn03_management_context(s,a,c,p,g,'defineSourceContentPolicy',policy,until_at);
+  at_time=clock_timestamp();
+  IF final_ctx IS DISTINCT FROM ctx OR NOT isfinite(at_time) OR at_time<last_at OR at_time>=until_at
+   OR (bundle->'rows'->'R'->>'settled_at')::timestamptz>at_time
+   THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_CURRENT_REQUIRED';END IF;
+  RETURN jsonb_build_object('status','REPLAYED','transactionId',expected_tx)||bundle;
+ END IF;
+ IF anvil.source_read_exact(ids,ARRAY['serverCommandId','operationId','authorizationReceiptId','auditEventId','policyEventId','originId']) IS NOT TRUE THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
+ FOR k IN SELECT jsonb_object_keys(ids) LOOP
+  IF jsonb_typeof(ids->k) IS DISTINCT FROM 'string' OR ids->>k!~'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
+ END LOOP;
+ IF (SELECT count(DISTINCT value) FROM jsonb_each_text(ids))<>6 THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_INPUT_INVALID';END IF;
+ cid=(ids->>'serverCommandId')::uuid;
  SELECT x.project_id,x.coverage_state,x.generation,x.used_bytes,x.held_bytes INTO STRICT ac FROM anvil.project_storage_accounts x WHERE x.project_id=p FOR UPDATE;
  IF ac.coverage_state IS DISTINCT FROM 'VERIFIED' OR ac.generation NOT BETWEEN 1 AND 9007199254740991
   OR anvil.quota_complete(p) IS NOT TRUE THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_UNVERIFIED';END IF;
@@ -518,7 +536,7 @@ BEGIN
   previous=jsonb_build_object('id',head.id,'version',head.version,'contentHash',head.content_hash);seq=head.sequence+1;
  END IF;
  IF previous IS DISTINCT FROM q->'payload'->'previousPolicyRef' THEN RAISE EXCEPTION 'SOURCE_CONTENT_MANAGEMENT_HEAD_CONFLICT';END IF;
- -- 이 producer는 신규 동일 명령만 저장한다. replay는 별도 역사 read 검산 없이 성공을 재발급하지 않는다.
+ -- 신규 저장 분기에는 이미 정착된 명령을 섞지 않는다.
  IF EXISTS(SELECT 1 FROM anvil.commands x WHERE x.id=cid OR x.project_id=p AND x.actor_id=a AND x.command_id=(q->>'commandId')::uuid)
   OR EXISTS(SELECT 1 FROM anvil.project_storage_reservations x WHERE x.id=cid OR x.project_id=p AND x.actor_id=a AND x.external_command_id=(q->>'commandId')::uuid)
   OR EXISTS(SELECT 1 FROM anvil.source_content_policy_events x WHERE x.project_id=p AND x.id=(ids->>'policyEventId')::uuid)

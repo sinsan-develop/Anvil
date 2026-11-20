@@ -21613,3 +21613,11 @@ PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확
 담당 집중·인접 54통과·실패/건너뜀0 `2c4540`와 타입 종료0 `cd3507`. Main `node --test tests/unit/FN03/source-content-management-origin-schema.test.ts` 정적 29통과·실패/건너뜀0 및 공백검사 종료0 `282279`. 이후 주석만 정리했고 최종 지문과 공백을 대조했다. SQL SHA256 08E17B73AA8FEAF41D4C0222331C069C33ED5326593EDB8B7019D6A32BA7CAF2, 시험 13B1791EA165693985C84B9511E63ACE7BE9C0D0EB6A333A752F0F953CF3A1CF. 외부 SQL 158문장·DO 6건 구문 확인. 일부 본문은 catalog 선언을 RAM에서 치환한 구문만 확인했고 실제 PG15 권한·trigger·경합·COMMIT은 미검증이다. 실DB·권한·키·서비스·Agent·실자료·SSH 실행0.
 
 다음은 같은 Access 인증 callback에서 원 query/XID·현재 세대·세션·새 명령/과거 재조회 분기를 보호 배선하고 정책 선택 UI를 연결하는 범위다. 롤백은 이번 SQL·시험·기록 변경분이며 실제 DDL 적용/권한 회수가 아니다.
+
+### FN03 목적 저장·과거 재조회·내부 읽기의 서버 연결 검수
+
+기준 `bf50ded6`, developer_primary 단일 작성·반환. 프로젝트 POST의 전용 write 분기, 원 Access 인증 거래, 현재 OWNER/client/세대·재인증·별도 AUTO 및 원 query/XID, 목적 RPC와 원 결과 검산을 연결했다. 내부 읽기는 exact5/원문부재만 반환하며 HTTP 읽기나 일반 명령/replay는 차단한다. 원문이나 원 오류는 응답에 포함하지 않는다. 동일 q/hash의 재조회는 기존 저장 RPC에서 ids SQL NULL로 구분하며 신규 ID·예약·행 쓰기0이다. 현재 목적이 없거나 소유/거래·과거 완결이 어긋나면 거절한다. 실패 뒤 원 명령 재시도나 권한 확대는 없다.
+
+경로 7개는 project-command/routes, 관리 저장소·서비스, 0101, FN03 schema/service 시험이다. 최초 Fastify inject write 400을 재현해 기존 route의 write enum 한 곳을 보완했고 200·목적 RPC1·COMMIT, 내부 read 명령 400·추가 query0을 확인했다. 담당 집중·인접 83통과·실패/건너뜀0, 좁은 타입·공백 종료0. Main `node --test tests/unit/FN03/source-content-management-origin-service.test.ts tests/unit/FN03/source-content-management-origin-schema.test.ts` 47통과·실패/건너뜀0 `4f4c1e`. 별도 일반문서 인접은 23통과/1실패다. document-source-detach.test.ts:45의 기존 linkDocumentSource 거절 기대 실패는 기준 Git blob에서도 재현됐으며 이 작업에서 시험/기준은 바꾸지 않았다.
+
+최종 0101 SHA256 930F8CD3DA7372BB09FE4BE49C388AA5A9CA619989A29297B8369A34984231C1. 외부 SQL 158문장 파싱, commit 본문은 RAM rowtype 치환 구문 검사만 수행했다. 실제 PostgreSQL/권한/마이그레이션 적용·서비스 listen·키·Agent·실자료·SSH 실행0. 다음은 기존 정책 선택 UI에서 승인된 두 목적만 추가하고 사용 경로를 합성 검수하는 것이다. 실제 파일 관측·운영 및 전체 FN03 검수는 남는다. 롤백은 이번 7경로와 기록의 변경분이다.
