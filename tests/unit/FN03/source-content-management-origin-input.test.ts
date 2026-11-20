@@ -69,3 +69,14 @@ test('exact3 내부 조회 선택은 고정 refs/관리 command와 읽기 목적
  rejects(()=>api.readSourceContentManagementOriginSelection({...selection,originRef:{...v.originRef,version:2}},context,now));
  rejects(()=>api.readSourceContentManagementOriginSelection(selection,context,now+10000));
 });
+
+test('별도 O 시각은 E 이후 독립 hash로 봉인하며 생략한 기존 동일시각 호출을 보존한다',()=>{
+ const f=fixture(),later='2026-11-20T00:00:00.001Z';
+ const call=(event:unknown)=>api.prepareSourceContentManagementOriginInput(f.request,f.context,f.ids,event,now+2);
+ const original=call(f.event),explicit=call({...f.event,originRecordedAt:at}),separate=call({...f.event,originRecordedAt:later});
+ assert.deepEqual(explicit,original);assert.equal(separate.policySnapshot.recordedAt,at);assert.equal(separate.originSnapshot.recordedAt,later);
+ assert.deepEqual(separate.policyEventRef,original.policyEventRef);assert.equal(separate.requestHash,original.requestHash);
+ assert.notEqual(separate.originRef.contentHash,original.originRef.contentHash);assert.equal(separate.originRef.contentHash,contentHash(canonicalJson(separate.originSnapshot)));
+ for(const originRecordedAt of ['2026-11-19T23:59:59.999Z','2026-11-20T00:00:00.003Z','2026-11-20T00:00:00.001000Z',null,undefined])rejects(()=>call({...f.event,originRecordedAt}));
+ rejects(()=>call({...f.event,originRecordedAt:later,extra:true}));
+});

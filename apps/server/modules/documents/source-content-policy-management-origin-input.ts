@@ -61,11 +61,14 @@ export function prepareSourceContentManagementOriginInput(originalRequest:unknow
   if(!recordV1(q,requestKeys)||q.schemaVersion!==1||q.operation!=='defineSourceContentPolicy'||q.projectId!==c.projectId||q.clientId!==c.clientId||q.controlGeneration!==c.controlGeneration||
    !uuidV1(q.commandId)||q.targetId!==null||q.expectedVersion!==0||!Array.isArray(q.baselineRefs)||q.baselineRefs.length!==0||q.approvalRef!==null||
    !recordV1(i,idKeys)||!Object.values(i).every(uuidV1)||new Set(Object.values(i)).size!==6||
-   !recordV1(e,['sequence','recordedAt'])||!isoV1(e.recordedAt)||Date.parse(e.recordedAt)>nowMs)return invalid();
+   !(recordV1(e,['sequence','recordedAt'])||recordV1(e,['sequence','recordedAt','originRecordedAt']))||!isoV1(e.recordedAt)||Date.parse(e.recordedAt)>nowMs)return invalid();
+  // 기존 exact2 호출은 같은 시각이다. 명시한 O 시각은 별도 원 공급값이며 생략/오염으로 보정하지 않는다.
+  const originRecordedAt=Object.hasOwn(e,'originRecordedAt')?e.originRecordedAt:e.recordedAt;
+  if(!isoV1(originRecordedAt)||originRecordedAt<e.recordedAt||Date.parse(originRecordedAt)>nowMs)return invalid();
   const candidate=buildSourceContentPolicySnapshotCandidate(q.payload,{projectId:c.projectId,actorId:c.actorId,sequence:e.sequence,recordedAt:e.recordedAt});
   const requestHash=contentHash(canonicalJson(q));
   const policyEventRef={id:i.policyEventId,version:1,contentHash:candidate.contentHash};
-  const originSnapshot={schemaVersion:1,purpose:'SOURCE_CONTENT_POLICY_MANAGEMENT_ORIGIN',id:i.originId,version:1,projectId:c.projectId,managementCommandId:i.serverCommandId,policyEventRef,originalRequest:q,requestHash,recordedAt:e.recordedAt};
+  const originSnapshot={schemaVersion:1,purpose:'SOURCE_CONTENT_POLICY_MANAGEMENT_ORIGIN',id:i.originId,version:1,projectId:c.projectId,managementCommandId:i.serverCommandId,policyEventRef,originalRequest:q,requestHash,recordedAt:originRecordedAt};
   const originRaw=canonicalJson(originSnapshot);if(Buffer.byteLength(originRaw,'utf8')>2097152)return invalid();
   return freeze({...unverified,originalRequest:q,context:c,ids:i,policySnapshot:candidate.snapshot,previousPolicyRef:candidate.previousPolicyRef,policyEventRef,requestHash,originSnapshot,originRef:{id:i.originId,version:1,contentHash:contentHash(originRaw)}});
  }catch{return invalid();}

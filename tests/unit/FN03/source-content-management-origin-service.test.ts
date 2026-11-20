@@ -10,16 +10,16 @@ const ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
 const epoch=Date.parse('2026-11-20T00:00:00.000Z'),at=(n:number)=>new Date(epoch+n).toISOString(),p27=(v:string)=>v.slice(0,-1)+'000Z';
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
 const cost=(row:any)=>Buffer.byteLength(canonicalJson(Object.fromEntries(Object.entries(row).map(([k,v])=>[k,typeof v==='number'&&/^(version|generation|.*_version|.*_generation|server_sequence|reserved_bytes|settled_bytes|start_fence)$/.test(k)?String(v):v]))));
-function fixture():any{
+function fixture(originMs=0,receivedAt=p27(at(-1))):any{
  const context={operation:'defineSourceContentPolicy',projectId:id(1),actorId:id(2),clientId:id(3),authSessionId:id(4),credentialGeneration:2,controlGeneration:3,permissionPolicyRef:ref(5),transactionId:'9007199254740993',authorizedUntil:at(10000)};
  const ids={serverCommandId:id(10),operationId:id(11),authorizationReceiptId:id(12),auditEventId:id(13),policyEventId:id(14),originId:id(15)};
  const request={schemaVersion:1,projectId:id(1),commandId:id(6),clientId:id(3),controlGeneration:3,operation:'defineSourceContentPolicy',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{previousPolicyRef:null,definition:{protocolVersion:1,namespace:'SOURCE_DOCUMENT_CONTENT_HASH_V1',subjectUserId:id(2),disposition:'AUTO',expiresAt:at(86400000),allowedOperations:['requestSourceContentHash'],sourceRootRef:ref(20),connectorRef:ref(21),registrationRef:ref(22),observerRef:ref(23),targets:[{relativePath:'src/private-fixture.ts',documentRef:ref(24),documentBlobRef:{artifactId:id(25),bytes:0,contentHash:'b'.repeat(64),mediaType:'text/plain'}}],limits:{maxFiles:200,maxFileBytes:2097152,maxTotalBytes:20971520,maxObservationMs:30000,maxReportBytes:1048576}},reason:'출력 금지 합성 원문'}};
- const input={originalRequest:request,context,ids,eventValues:{sequence:1,recordedAt:at(0)},coverageGeneration:'7',receivedAt:p27(at(-1))};
+ const input={originalRequest:request,context,ids,eventValues:{sequence:1,recordedAt:at(0),...(originMs===0?{}:{originRecordedAt:at(originMs)})},coverageGeneration:'7',receivedAt};
  const v=prepareSourceContentManagementOriginInput(request,context,ids,input.eventValues,epoch+5000),seal=prepareSourceContentManagementStorage(input,epoch+5000),er=v.policyEventRef,S:any=v.policySnapshot;
  const digest=hash({projectId:context.projectId,actorId:context.actorId,clientId:context.clientId,controlGeneration:3,requestHash:v.requestHash,policyRef:context.permissionPolicyRef,targetRef:er});
  const result={operationId:ids.operationId,commandId:request.commandId,projectId:id(1),status:'APPLIED',targetId:er.id,version:1,data:{ref:er,status:'CONTENT_POLICY_EVENT_RECORDED',policyRef:er,previousPolicyRef:null,sequence:1,executionAuthorized:false,agentDispatchPerformed:false,baselineConfirmed:false,linkAuthorized:false},evidenceRefs:[],warnings:[],serverReceivedAt:at(2000)};
  const rows:any={
- O:{project_id:id(1),id:ids.originId,version:1,management_command_id:ids.serverCommandId,policy_event_ref:er,request_json:request,request_hash:v.requestHash,recorded_at:p27(at(0)),content_hash:v.originRef.contentHash},
+ O:{project_id:id(1),id:ids.originId,version:1,management_command_id:ids.serverCommandId,policy_event_ref:er,request_json:request,request_hash:v.requestHash,recorded_at:p27(at(originMs)),content_hash:v.originRef.contentHash},
  E:{project_id:id(1),id:ids.policyEventId,version:1,sequence:1,subject_user_id:id(2),disposition:'AUTO',snapshot_json:S,content_hash:er.contentHash,previous_ref:null,management_command_id:ids.serverCommandId,recorded_at:p27(at(0)),expires_at:p27(S.expiresAt),previous_id:null,previous_version:null,previous_hash:null},
  C:{id:ids.serverCommandId,scope_kind:'PROJECT',scope_id:id(1),project_id:id(1),draft_id:null,actor_id:id(2),client_id:id(3),operation:request.operation,command_id:request.commandId,request_hash:v.requestHash,operation_id:ids.operationId,state:'APPLIED',authorization_receipt_id:ids.authorizationReceiptId,approval_consumption_id:null,expected_version:0,control_generation:3,policy_ref:context.permissionPolicyRef,payload_ref:null,result_ref:result,received_at:input.receivedAt,completed_at:p27(at(2000))},
  A:{id:ids.authorizationReceiptId,scope_kind:'PROJECT',scope_id:id(1),command_id:ids.serverCommandId,subject_ref:{kind:'HUMAN',userId:id(2),clientId:id(3)},policy_ref:context.permissionPolicyRef,scope_digest:digest,approval_decision_ref:null,authorized_at:p27(at(2000))},
@@ -52,9 +52,23 @@ test('ORIGIN_ABSENT는 read의 exact 상태로만 구분하며 commit/오염 부
  h=harness(f,async()=>({status:'ORIGIN_ABSENT',transactionId:f.context.transactionId}));await assert.rejects(h.store.commit(f.request,f.context,f.ids),unknown);
  h=harness(f,async()=>({status:'ORIGIN_ABSENT',transactionId:f.context.transactionId,rows:f.rows}));await assert.rejects(h.store.read(f.selection,readContext),unknown);
 });
-test('정착/해시/원문/다른 Tx·선택 오염과 별도 E/O 시각은 성공으로 승격하지 않는다',async()=>{
+test('정착/해시/원문/다른 Tx·선택 오염과 hash를 바꾸지 않은 O 시각 변조는 성공으로 승격하지 않는다',async()=>{
  for(const mutate of [(v:any)=>v.transactionId='2',(v:any)=>v.rows.O.request_json.payload.reason='변경',(v:any)=>v.rows.A.scope_digest='f'.repeat(64),(v:any)=>v.rows.R.settled_bytes++,(v:any)=>v.rows.R.plan_hash='0'.repeat(64),(v:any)=>v.rows.R.settled_at=p27(at(9000)),(v:any)=>v.rows.O.recorded_at=p27(at(1)),(v:any)=>delete v.rows.U]){const f=fixture(),h=harness(f,async()=>{const response=structuredClone(f.response);mutate(response);return response;});await assert.rejects(h.store.commit(f.request,f.context,f.ids),unknown);assert.equal(h.calls.length,1);}
  const f=fixture();f.response.status='FOUND';const h=harness(f);await assert.rejects(h.store.read({...f.selection,originRef:ref(99)},{...f.context,operation:'readSourceContentPolicyManagementOrigin'}),unknown);
+});
+
+test('별도 E/O와 같은 ms 수신 micro를 원 물리행으로 검산하고 현재 commit/만료 뒤 역사 read를 분리한다',async()=>{
+ const f=fixture(1,'2026-11-20T00:00:00.000123Z');
+ const commit=harness(f);assert.deepEqual(await commit.store.commit(f.request,f.context,f.ids),{kind:'RECORDED',result:f.result});
+ assert.equal(commit.calls.length,1);assert.notEqual(f.rows.O.recorded_at,f.rows.E.recorded_at);
+ const current={...f.context,operation:'readSourceContentPolicyManagementOrigin',actorId:id(40),clientId:id(41),authSessionId:id(42),transactionId:'9007199254740994',authorizedUntil:at(100000)};
+ f.response.status='FOUND';f.response.transactionId=current.transactionId;const read=harness(f);read.setTime(epoch+90000);
+ assert.deepEqual(await read.store.read(f.selection,current),{kind:'FOUND',value:{...f.selection,requestHash:hash(f.request),authority:'UNVERIFIED'}});
+ assert.equal(read.calls.length,1);
+ for(const mutate of [(x:any)=>x.rows.O.recorded_at=p27(at(-1)),(x:any)=>x.rows.O.recorded_at=p27(at(0)),(x:any)=>x.rows.O.recorded_at='2026-11-20T00:00:00.001001Z',(x:any)=>x.rows.R.created_at=p27(at(0)),(x:any)=>x.rows.C.received_at='2026-11-20T00:00:02.000001Z']){
+  const original=fixture(1,'2026-11-20T00:00:00.000123Z'),h=harness(original,async()=>{const changed=structuredClone(original.response);mutate(changed);return changed;});
+  await assert.rejects(h.store.commit(original.request,original.context,original.ids),unknown);assert.equal(h.calls.length,1);
+ }
 });
 test('현재성 사전 거절/boolean·query 교체는 호출0, 늦은 취소/기한은 후속0·원 오류 숨김',async()=>{
  let f=fixture(),h=harness(f);h.ports.assertCurrent=async()=>{throw Error('raw secret');};await assert.rejects(h.store.commit(f.request,f.context,f.ids),invalid);assert.equal(h.calls.length,0);

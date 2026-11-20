@@ -37,7 +37,7 @@ function preparedInput(raw:unknown,nowMs:number){
  if(!recordV1(f,['originalRequest','context','ids','eventValues','coverageGeneration','receivedAt'])||!physical(f.receivedAt))return invalid();
  decimal(f.coverageGeneration,Number.MAX_SAFE_INTEGER,true);
  const origin=prepareSourceContentManagementOriginInput(f.originalRequest,f.context,f.ids,f.eventValues,nowMs);
- if(f.receivedAt>p27(origin.policySnapshot.recordedAt))return invalid();
+ // 수신은 원 Tx의 micro 시각이다. E의 ms 절삭값과 비교하지 않고 실제 done이 주어진 정산에서 검산한다.
  return {origin,coverageGeneration:f.coverageGeneration as string,receivedAt:f.receivedAt};
 }
 type Input=ReturnType<typeof preparedInput>;

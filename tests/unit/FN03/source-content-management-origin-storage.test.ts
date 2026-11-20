@@ -22,7 +22,7 @@ function rows(f=input()){
  const done='2026-11-20T00:00:02.001234Z',donePublic='2026-11-20T00:00:02.001Z';
  const digest=hash({projectId:c.projectId,actorId:c.actorId,clientId:c.clientId,controlGeneration:c.controlGeneration,requestHash:v.requestHash,policyRef:c.permissionPolicyRef,targetRef:er});
  return {
- O:{project_id:c.projectId,id:i.originId,version:1,management_command_id:i.serverCommandId,policy_event_ref:er,request_json:q,request_hash:v.requestHash,recorded_at:p27(at),content_hash:v.originRef.contentHash},
+ O:{project_id:c.projectId,id:i.originId,version:1,management_command_id:i.serverCommandId,policy_event_ref:er,request_json:q,request_hash:v.requestHash,recorded_at:p27(v.originSnapshot.recordedAt),content_hash:v.originRef.contentHash},
   E:{project_id:c.projectId,id:i.policyEventId,version:1,sequence:1,subject_user_id:c.actorId,disposition:'AUTO',snapshot_json:S,content_hash:er.contentHash,previous_ref:null,management_command_id:i.serverCommandId,recorded_at:p27(at),expires_at:p27(q.payload.definition.expiresAt),previous_id:null,previous_version:null,previous_hash:null},
  C:{id:i.serverCommandId,scope_kind:'PROJECT',scope_id:c.projectId,project_id:c.projectId,draft_id:null,actor_id:c.actorId,client_id:c.clientId,operation:q.operation,command_id:q.commandId,request_hash:v.requestHash,operation_id:i.operationId,state:'APPLIED',authorization_receipt_id:i.authorizationReceiptId,approval_consumption_id:null,expected_version:0,control_generation:3,policy_ref:c.permissionPolicyRef,payload_ref:null,result_ref:{operationId:i.operationId,commandId:q.commandId,projectId:c.projectId,status:'APPLIED',targetId:er.id,version:1,data:{ref:er,status:'CONTENT_POLICY_EVENT_RECORDED',policyRef:er,previousPolicyRef:null,sequence:1,executionAuthorized:false,agentDispatchPerformed:false,baselineConfirmed:false,linkAuthorized:false},evidenceRefs:[],warnings:[],serverReceivedAt:donePublic},received_at:f.receivedAt,completed_at:done},
  A:{id:i.authorizationReceiptId,scope_kind:'PROJECT',scope_id:c.projectId,command_id:i.serverCommandId,subject_ref:{kind:'HUMAN',userId:c.actorId,clientId:c.clientId},policy_ref:c.permissionPolicyRef,scope_digest:digest,approval_decision_ref:null,authorized_at:done},
@@ -44,6 +44,20 @@ test('봉인 PLAN의 exact19/단일 part와 물리5행+R 정산의 유한 고정
  assert.equal(result.status,'UNVERIFIED');assert.equal(result.storageMutationPerformed,false);assert.equal(canonicalJson(seal),before);
  const previous={...actual.R,settled_bytes:s-1};assert.ok(B+cost(previous)>s-1);
  assert.deepEqual(Object.values(actual).map(r=>Object.keys(r).length),[9,15,21,9,16,22]);
+});
+
+test('같은 ms의 수신 micro는 E보다 뒤여도 done 이전이면 정상이며 E/O 원시각과 비용을 각각 보존한다',()=>{
+ const f:any=input();f.eventValues.originRecordedAt='2026-11-20T00:00:00.001Z';f.receivedAt='2026-11-20T00:00:00.000123Z';
+ const {seal,actual,B,s}=settled(f);actual.R.created_at='2026-11-20T00:00:00.002111Z';
+ const result=api.inspectSourceContentManagementSettlement(f,seal,actual,now);
+ assert.equal(actual.E.recorded_at,p27(at));assert.equal(actual.O.recorded_at,p27(f.eventValues.originRecordedAt));
+ assert.equal(result.actualBytes,String(B));assert.equal(result.settledBytes,String(s));assert.equal(result.planHash,seal.planHash);
+ for(const mutate of [(x:any)=>x.O.recorded_at=x.E.recorded_at,(x:any)=>x.O.content_hash=x.E.content_hash,(x:any)=>x.R.created_at=x.E.recorded_at,(x:any)=>x.R.started_at=x.E.recorded_at,(x:any)=>x.R.settled_at=x.R.started_at]){
+  const changed=structuredClone(actual);mutate(changed);fail(()=>api.inspectSourceContentManagementSettlement(f,seal,changed,now));
+ }
+ const late={...f,receivedAt:'2026-11-20T00:00:02.001235Z'},lateRows=settled(late);lateRows.actual.R.created_at=actual.R.created_at;
+ fail(()=>api.inspectSourceContentManagementSettlement(late,lateRows.seal,lateRows.actual,now));
+ const reversed={...f,eventValues:{...f.eventValues,originRecordedAt:'2026-11-19T23:59:59.999Z'}};fail(()=>api.prepareSourceContentManagementStorage(reversed,now));
 });
 test('물리 정규화는 최상위만 적용하고 원문/결과/plan 실복제 및 null 키를 각각 센다',()=>{
  const {actual,B}=settled();const inspected=api.inspectSourceContentManagementSettlement(input(),api.prepareSourceContentManagementStorage(input(),now),actual,now);

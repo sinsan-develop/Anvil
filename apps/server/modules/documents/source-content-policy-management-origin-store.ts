@@ -55,10 +55,10 @@ function inspectRows(value:Record<string,any>){
  // 물리행 순서/원 수명/plan 전체와 hash는 아래 기존 A/B에서 다시 검산한다.
  const historyTime=Date.parse(iso(R.settled_at));
  const historicalContext={operation:'defineSourceContentPolicy',projectId:plan.projectId,actorId:plan.actorId,clientId:plan.clientId,authSessionId:plan.authSessionId,credentialGeneration:plan.credentialGeneration,controlGeneration:plan.controlGeneration,permissionPolicyRef:plan.permissionPolicyRef,transactionId:plan.transactionId,authorizedUntil:plan.authorizedUntil};
- const input={originalRequest:O.request_json,context:historicalContext,ids:plan.ids,eventValues:{sequence:E.sequence,recordedAt:iso(E.recorded_at)},coverageGeneration:plan.coverageGeneration,receivedAt:C.received_at};
+ const input={originalRequest:O.request_json,context:historicalContext,ids:plan.ids,eventValues:{sequence:E.sequence,recordedAt:iso(E.recorded_at),originRecordedAt:iso(O.recorded_at)},coverageGeneration:plan.coverageGeneration,receivedAt:C.received_at};
  const sealed=prepareSourceContentManagementStorage(input,historyTime);
  inspectSourceContentManagementSettlement(input,sealed,rows,historyTime);
- // 원 E/O 별도 시각은 현재 A/B가 지원하지 않으므로 덮어쓰거나 역생성하지 않고 거절한다.
+ // E/O 각각의 원 ms 시각·hash를 보존한다. 원 물리행의 비-ms 부분은 A/B exact 행 대조에서 거절한다.
  const policyEvent=eventView(E),command={id:C.id,scopeKind:C.scope_kind,scopeId:C.scope_id,projectId:C.project_id,actorId:C.actor_id,clientId:C.client_id,operation:C.operation,commandId:C.command_id,requestHash:C.request_hash,operationId:C.operation_id,state:C.state,authorizationReceiptId:C.authorization_receipt_id,approvalConsumptionId:C.approval_consumption_id,expectedVersion:C.expected_version,controlGeneration:C.control_generation,policyRef:C.policy_ref,payloadRef:C.payload_ref,resultRef:C.result_ref,completedAt:iso(C.completed_at)};
  const receipt={id:A.id,scopeKind:A.scope_kind,scopeId:A.scope_id,commandId:A.command_id,subjectRef:A.subject_ref,policyRef:A.policy_ref,scopeDigest:A.scope_digest,approvalDecisionRef:A.approval_decision_ref};
  const audit={projectId:U.project_id,serverSequence:Number(U.server_sequence),eventId:U.event_id,actorRef:U.actor_ref,clientRef:U.client_ref,commandId:U.command_id,operationId:U.operation_id,targetRef:U.target_ref,policyRef:U.policy_ref,approvalRef:U.approval_ref,outcome:U.outcome,reasonCode:U.reason_code,scopeDigest:U.scope_digest,sourceKind:U.source_kind,correctionOf:U.correction_of,recordedAt:iso(U.recorded_at)};
