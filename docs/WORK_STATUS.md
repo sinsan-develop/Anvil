@@ -21461,3 +21461,11 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 기준 `ee4a8092`, developer_primary 단일 작성·반환. 기존 ACL·대상 metadata·분할 읽기·닫기와 순수 alias 판독을 재사용해 USER_CONFIG/SYSTEM_CONFIG 두 역할만 읽는 소스와 실행안을 추가했다. 제한 진단은 고정 사유·역할·행번호다. 원문·지시명·값·경로는 반환하지 않으며 첫 불명 시 다음 대상0이다. 이전 8역할 단회 조사와 실패 결과는 보존한다.
 
 담당 직접6통과 23661b·좁은 strict 타입 종료0 3f80bc, Main 직접6통과·실패/건너뜀0 bdfbaf, 지문3/3·구문 오류0·Invoke AST1·실행0 3c9bca. 신규 소스 5D2B8D4442B7A4B8C3F7C98BAA0B1C114BA20178CDE7C5A411572D79D3AEF8CC, 시험 486E39A30C6621173A82021F801830CC0D9F74E462063AF04BC305D7DE2A8A7A, 실행안 5A2B08DF6174172D4EBEF1E35521585CE9CA715FCD2F05DC386BF3A8A07B5C66. 실제 읽기·SSH·WSL·키·권한·원장·DB·서비스·Agent 실행0. 실행은 신규 결정으로만 가능하며 이전 단회는 소진됐다. 다음은 좁힌 읽기 승인 후 원 핸들에서 한 번 수거하는 것이다. 실제 SSH와 TC01은 미완료다.
+
+## 2026-11-20 IX01 SSH 설정 한정 읽기 1회 결과
+
+기준 `1b5232a7` clean·원격 차이0. 직접 응답 `call_f8e70eeb72c542f08e110190b92c2277`의 두 설정 한정 읽기 1회만 Main이 수행했다. 승인 확인 19:48:14 KST, 시작 19:49:05.790 KST, 시도 `08895987-ad02-4055-9507-ad0ead0a1eba`. 실행안 SHA256 5A2B08DF6174172D4EBEF1E35521585CE9CA715FCD2F05DC386BF3A8A07B5C66, 신규 원 검사 5D2B8D4442B7A4B8C3F7C98BAA0B1C114BA20178CDE7C5A411572D79D3AEF8CC, 동결 치환 본문 987A7102E123FD62460C7337597FB3F453D8C5371B758BD0C5CCD5838C14D9D4. 원 NoProfile PowerShell 호출 `22671a` 한 번만 소비했다.
+
+원 프로세스 종료1·도구 1.860초, 승인/시도/소스/실행안 결박과 60초 창 일치. 결과 `UNKNOWN / PATH_UNCONFIRMED / UNCONFIRMED`, 실패1. 진단 USER_CONFIG 21행, 완료 역할0, SYSTEM_CONFIG 미도달. 고정 alias 판독에서 PATH_UNCONFIRMED는 적용되는 IdentityFile의 값이 제한된 ~/.ssh/단일파일 형식 조건을 충족하지 않은 경우다. 실제 값·파일·키·적용 타당성은 미확인이다.
+
+단회 승인 소진·원 핸들0. 같은 대상 재실행·SSH/WSL/IPAM·개인키/known_hosts/환경 읽기·설정/권한/원장/대상 파일 쓰기·DB/서비스/Agent 실행0. PMO에 예외를 공유했다. 다음은 일반 Windows 경로 형식의 합성 분류와 실제 대상 접근 권위의 최소 대조이며 TC01은 미실행이다.
