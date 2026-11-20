@@ -21439,3 +21439,11 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 기준 `7beed753`, developer_primary 단일 작성·반환. 기존 Windows readiness 정상 8역할 시험의 같은 PS 모의 호출에서 원 JSON+LF를 받아 새 결과 판독기에 연결했다. 정확 결박, UNCONFIRMED 상태 및 3개 비교 지문을 확인했다. 실제 PS 호출을 추가하지 않았고 고정 검사 소스와 승인 대상 실행안은 그대로다.
 
 담당 기존 직접 7통과 2180de. Main 변경 사례만 1통과 65c30d, 파일 SHA256 1B361414AE5684C4C0EFCF436AC913B37D75EF5F1D63DF4482C9A7FE82A43FB0 및 공백 440260. 신규 실패0. 실제 OS·SSH·WSL·권한·키·DB·서비스·Agent 실행0, 활성 핸들0. 고정 로컬 읽기는 직접 결정 대기이며, 실제 원 프로세스 종료와 현행 alias/trust/env 또는 TC01 증거가 아니다. 롤백은 직접 시험 연결과 이 기록에 한정한다.
+
+## 2026-11-20 IX01 Windows 한정 읽기 1회 결과
+
+기준 `585fb609` clean·원격 차이0. 신산님 직접 응답 `call_5aa2f5005bc2421795dcfa9b233f1b30`의 한정 읽기 1회만 Main이 수행했다. 승인 확인 19:27:23 KST, 시작 19:28:40.328 KST, 원 시도 `4bcc028a-7cf8-4df4-a41f-41965fe6a6f5`. 고정 실행안 `4633b68b`/429A4F014641F043067758E3B907353E13D5C1D207D604CFE82BF321641ACB74, 검사 소스 6847D094D436D246983A8EA353C0705541B4FD4C312F596AB78B5FF3EFEA8CC3, 동결 치환 본문 9778530D15A694262E426F8B3F34B3384EFFF23C39C508301651143E97BDD234. 기존 -NoProfile 원 PowerShell에서 단일 본문·원 호출 `a6aa2f`만 소비했다.
+
+원 프로세스 종료1·도구 1.599초. 승인/시도/소스/실행안 결박과 60초 창 일치. 결과 `UNKNOWN / CONFIG_UNCONFIRMED / UNCONFIRMED`, 실패1. 앞선 SSH_IMAGE만 PRESENT·MATCHED, 1,256,448B, SHA256 98d447730047f5df91373e852d057928a921c3d1e89938700ab656ba84b19dc8, ACL digest 45f3dd9244f85f525a58009d808566d789ff0d22f45d8e03b1bb402b3faf835c. 다음 USER_CONFIG의 제한 형상 검산에서 중단했다. 반환값에는 원인 설정 항목·값이 없다. 이후 역할의 실제 상태, alias/trust/env, 원장 부모는 미검증이다. 부분 반환을 비교 지문 완결 또는 SSH 준비 완료로 승격하지 않는다.
+
+단회 승인 소진. 같은 대상 재실행·후속 조회·SSH/WSL/IPAM·개인키·설정/권한 변경·원장 또는 대상 파일 쓰기·DB/서비스/Agent 실행0, 원 활성 핸들0. PMO에 예외를 공유했다. 다음은 기존 등록 경로의 최소 안전 대안 대조이며 두 단계 관측 및 TC01은 미실행이다.
