@@ -21447,3 +21447,11 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 원 프로세스 종료1·도구 1.599초. 승인/시도/소스/실행안 결박과 60초 창 일치. 결과 `UNKNOWN / CONFIG_UNCONFIRMED / UNCONFIRMED`, 실패1. 앞선 SSH_IMAGE만 PRESENT·MATCHED, 1,256,448B, SHA256 98d447730047f5df91373e852d057928a921c3d1e89938700ab656ba84b19dc8, ACL digest 45f3dd9244f85f525a58009d808566d789ff0d22f45d8e03b1bb402b3faf835c. 다음 USER_CONFIG의 제한 형상 검산에서 중단했다. 반환값에는 원인 설정 항목·값이 없다. 이후 역할의 실제 상태, alias/trust/env, 원장 부모는 미검증이다. 부분 반환을 비교 지문 완결 또는 SSH 준비 완료로 승격하지 않는다.
 
 단회 승인 소진. 같은 대상 재실행·후속 조회·SSH/WSL/IPAM·개인키·설정/권한 변경·원장 또는 대상 파일 쓰기·DB/서비스/Agent 실행0, 원 활성 핸들0. PMO에 예외를 공유했다. 다음은 기존 등록 경로의 최소 안전 대안 대조이며 두 단계 관측 및 TC01은 미실행이다.
+
+## IX01 지정 SSH alias의 오프라인 설정 분류 검수
+
+기준 `f30ec022`, developer_primary 단일 작성·반환. 승인 1회에서 나온 CONFIG_UNCONFIRMED의 단일 사유를 합성 입력에서 명확히 구분하기 위해 순수 alias-config.ps1과 시험 1개를 추가했다. 고정 alias의 Host 패턴/부정과 파일별 전역 구간, user→system의 첫 scalar 값을 검산한다. 누적 IdentityFile을 scalar로 바꾸지 않고 복수 적용은 미지원으로 반환한다. 비대상의 알려진 무해 값과 대상 효과를 구분하며 Include/Match·추가 명령·경로 불명은 보수적으로 분류한다. 반복 wildcard는 NonBacktracking으로 제한했다. OpenSSH 공식 ssh_config(5)의 적용 순서·Host·Match 설명을 비교했으며 전체 구현 호환을 뜻하지 않는다.
+
+담당 모듈 부재 RED 3ef59a와 직접4통과 05316b·좁은 타입/공백 91c428. Main 직접4통과·실패/건너뜀0 a25a95, 동결 SHA 2/2·공백 58a265. 소스 EB0B94496E2C28C8C0193C2904CF3477D07B9A18540A673B9739C7D446CDD488, 시험 70E161ECC52ADD3DE78925AD7CE3D26A0C6A17882761C1683F6E2ACE15632564. 기존 고정 검사/실행안/실제 관측 변경0. 실제 설정·키·SSH/WSL/IPAM·DB·권한·서비스·Agent 접근0, 가동 합성 핸들0.
+
+기존 실제 설정 형상 불명의 원인은 여전히 미확정이다. 다음은 기존 8역할 전체 반복을 피하고 해당 설정의 필요한 범위만 분류해 후속 실행안에 연결할 결정을 대조하는 것이다. 새 실제 읽기와 두 단계 SSH 및 TC01은 미실행이다. 롤백은 이번 신규 두 경로와 기록에 한정한다.
