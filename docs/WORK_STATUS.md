@@ -21533,3 +21533,13 @@ Main은 동결 지문, 고정 번들·wrapper·carrier 결박과 기존 조회 �
 PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확인되지 않았다. IX01 실제 Windows 감독 review 공급·현재 신뢰 및 실행 직전 자원 확인은 미충족이다. 사용자에게 임의 대역을 정하도록 요청하지 않았으며 소진된 로컬 읽기나 원격 시험을 반복하지 않았다. FN03 결정과 IX01 실행 선행은 별개다. 완료 항목 상향0, 이번 변경은 점검표·현황 기록에 한정한다.
 
 기존 Primary의 독립 읽기 대조를 수거했다. 현재 0100 뒤 0101은 번호 후보이며 선점하지 않는다. 채택 후 첫 구현 단위는 ProjectPolicyRepository.command의 같은 인증 거래에서 목적 RPC를 한 번 호출하고 원문·명령·승인 근거·감사·용량 계상을 원자적으로 검산하는 것이다. 기존 wire/evidence를 재사용하고, 같은 거래에서 일반 저장을 추가 호출하지 않는다. 운영 반영이나 실제 DB 검증은 이번 범위에 없다.
+
+## 2026-11-20 FN03 보호 관리 원문 A안 직접 채택과 구현 착수
+
+신산님 응답 `request_user_input_async/call_e84c338e2011485a9ea5c3fdd193ed5e/0`의 “A안 계약·source-only 구현 채택”을 기준으로 삼는다. 계약 CBEFC3E3736301E9A49B8B26DB41FCC3C0CEDBB0A052C9E0CDAEDDE0B93C5230을 현재 `8ba6f450` clean에서 검산했다. 계약 원본의 DRAFT 표시는 동결 당시 이력이며 채택 상태는 이 기록을 따른다. 구현은 코드·화면·미적용 forward SQL·합성 검증으로 한정한다. 실제 DB·권한·키·서비스·Agent 실행과 실제 파일 관측, IX01 SSH·격리 시험은 제외다.
+
+기존 developer_primary 단일 writer를 기술 WI 업무 A의 원문 입력·목적 결박부터 배정했다. 첫 쓰기 범위는 신규 documents/source-content-policy-management-origin-input.ts와 신규 FN03 대응 시험이며 기존 wire/evidence를 재사용한다. 실제 명령 등록은 거래·유효 범위 검산과 함께 통합한다. 마이그레이션은 기존 0083을 보존하고 작성 직전 현재 번호를 재확인한다. Main은 별도 검수·통합을 맡는다. 이 기록 시점에는 새 코드 시험이나 실제 환경 검증 결과가 없다.
+
+원문 입력·목적 결박 검수 결과. developer_primary가 신규 코드·시험 두 파일을 작성하고 반환했다. 원 envelope exact11·불변 사본과 SHA, 관리 ids exact6, 프로젝트·client·제어세대·기한·거래 ID 형식, 기존 정책 snapshot exact16, origin exact10과 내부 조회 선택 exact3을 검산한다. 원 envelope 1MiB·도출 snapshot 2MiB 한도를 구분한다. 실제 ref 귀속, 인증 callback, DB 거래·잠금 후 DB clock·저장·일반 명령 배선은 미연결이다. 입력 형상은 현재 권한 증거를 발급하지 않는다.
+
+담당 최초 함수 미구현 RED 7건 `c1de2e`, 직접·인접 32통과/실패·건너뜀0 `9b7958`, 좁은 strict 타입 종료0 `358afa`. Main `node --test tests/unit/FN03/source-content-management-origin-input.test.ts` 직접 7통과·실패/건너뜀0 `e2eac7`. 제품 SHA256 A0273F42A4E915E172D01A50FBB6439B42A8FB740429D2207F40C0BC285D4408, 시험 F47C9305E53A0A529B24C929477A4F722F5FC9629243F7CC654E3BADCDE50F9C. 변경 4경로는 신규 pure 모듈·시험과 점검 문서2다. 실환경 접근·실DB/DDL·권한·키·서비스·Agent 실행0. 다음은 목적 저장·회계와 원거래 배선이며 전체 FN03 합격이 아니다. 롤백은 신규 두 파일과 이번 기록의 역적용이다.
