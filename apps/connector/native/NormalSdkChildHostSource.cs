@@ -66,7 +66,7 @@ internal sealed class NormalSdkChildHostSource:IDisposable {
   expectedHookHash=HookDigest(application,directories.Cwd,boundArguments,env);Check();
  }
  // JS SDK_HOOK_OBSERVED_V1과 같은 UTF8 바이트 길이 prefix. 관측값에서 기대값을 복원하지 않는다.
- static string HookDigest(string command,string cwd,string[] args,SortedDictionary<string,string> env){
+ internal static string HookDigest(string command,string cwd,string[] args,SortedDictionary<string,string> env){
   var utf8=new UTF8Encoding(false,true);
   using(var buffer=new MemoryStream(65536)){
    try{

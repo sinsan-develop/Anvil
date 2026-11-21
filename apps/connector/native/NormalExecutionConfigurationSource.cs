@@ -119,27 +119,72 @@ internal sealed class NormalExecutionConfigurationSource {
  // FirstInspection의 원 canonical 자료만 내부 호출자가 전달한다. 로컬 head/핀은 서버 현재성이나 실행 lease가 아니다.
  internal FirstConfiguration PinFirst(NormalExecutionCredentialSource.FirstInspection inspected,NormalSdkWorkerPackageSource package){
   guard();peer.Check();if(inspected==null)throw Invalid();var source=DesktopTrustKeyHostSource.Parse(Encoding.UTF8.GetBytes(inspected.CanonicalSource),false);
+  if(inspected.Options==null||inspected.Options.OriginalRef!=Canonical(Map(Map(source["startEnvelope"])["payload"])["optionsRef"])||!DesktopTrustKeyHostSource.IsHash(inspected.Options.BytesHash))throw Invalid();
+  string sid=S(source,"plannedSid");if(Hash(sid)!=S(Map(source["scope"]),"plannedSidDigest"))throw Invalid();
   Row snapshot=Map(Map(source["executionAuthority"])["permitSnapshot"]),fact=Map(snapshot["currentFact"]);
   var original=Clone(currentRecord());DateTime expires=inspected.ExpiresAt;if(expires!=DesktopTrustKeyHostSource.Time(snapshot,"expiresAt")||Hash(original)!=inspected.RecordHash)throw Invalid();
   Action check=()=>{guard();peer.Check();root.Check();if(wall()>=expires||!Same(original,currentRecord()))throw Invalid();};
-  check();return new FirstConfiguration(root,peer,original,fact,package,check);
+  check();return new FirstConfiguration(root,peer,original,fact,package,check,sid,inspected.Options);
+ }
+ // 검산된 최초 입력과 package recipe만 소비하는 비실행 계획. 외부/child에 반환하지 않는다.
+ static Row BuildFirstInputs(NormalSdkWorkerPackageSource package,DirectoryPins pins,Row recipe,string sid,NormalExecutionSpoolProfileSource.SdkStartOptions options){
+  package.Check();pins.Check();if(options==null||options.MaxBudgetUsd.HasValue)throw Invalid();
+  Row r=Map(recipe["snapshot"]);string kind=package.Kind;
+  if((kind!="IMAGE"&&kind!="SCRIPT")||S(Map(r["programSelector"]),"kind")!=kind)throw Invalid();
+  string application=kind=="IMAGE"?package.Cli:package.Runtime;
+  var args=new List<string>();var dynamic=new HashSet<string>(StringComparer.Ordinal);
+  foreach(object raw in ArrayOf(r["argvTokens"],200)){
+   Row item=Map(raw);string token=S(item,"kind"),value;
+   if(token=="LITERAL")value=S(item,"value");
+   else{
+    if(!dynamic.Add(token)||token=="MAX_BUDGET_USD")throw Invalid();
+    if(token=="SCRIPT"){if(kind!="SCRIPT")throw Invalid();value=package.Cli;}
+    else if(token=="SESSION_ID")value=sid;
+    else if(token=="MODEL")value=options.Model;
+    else if(token=="MAX_TURNS"){if(!options.MaxTurns.HasValue)throw Invalid();value=options.MaxTurns.Value.ToString(CultureInfo.InvariantCulture);}
+    else throw Invalid();
+   }
+   if(!Literal(value,4096))throw Invalid();args.Add(value);
+  }
+  if(!dynamic.Contains("SESSION_ID")||!dynamic.Contains("MODEL")||(kind=="SCRIPT")!=dynamic.Contains("SCRIPT")||options.MaxTurns.HasValue!=dynamic.Contains("MAX_TURNS"))throw Invalid();
+  var env=new SortedDictionary<string,string>(StringComparer.OrdinalIgnoreCase);
+  foreach(string field in new[]{"baseEnv","hookEnvRules"})foreach(object raw in ArrayOf(r[field],field=="baseEnv"?4:2)){
+   Row item=Map(raw);string name=S(item,"name"),value=S(item,"value");
+   if(!(field=="baseEnv"?new[]{"SystemRoot","WINDIR","TEMP","TMP"}:new[]{"CLAUDE_CODE_ENTRYPOINT","CLAUDE_AGENT_SDK_VERSION"}).Contains(name)||env.ContainsKey(name)||value.Length==0||!Literal(value,4096)||name=="CLAUDE_CODE_ENTRYPOINT"&&value!="sdk-ts"||name=="CLAUDE_AGENT_SDK_VERSION"&&value!="0.3.224")throw Invalid();
+   env.Add(name,value);
+  }
+  if(!env.ContainsKey("CLAUDE_CODE_ENTRYPOINT")||!env.ContainsKey("CLAUDE_AGENT_SDK_VERSION")||env.Count>6)throw Invalid();
+  // child의 Windows quoting 길이만 여기서 검사한다. hook 상한/지문은 원 순수 함수를 공유한다.
+  long commandLength=QuotedLength(application);foreach(string arg in args)commandLength=checked(commandLength+1+QuotedLength(arg));
+  if(commandLength>=32767||env.Sum(x=>(long)x.Key.Length+1+x.Value.Length+1)+1>=32767)throw Invalid();
+  package.Check();pins.Check();return new Row{{"application",application},{"cwd",pins.Cwd},{"args",args.ToArray()},{"env",env.ToDictionary(x=>x.Key,x=>(object)x.Value,StringComparer.Ordinal)}};
+ }
+ static string FirstHookHash(Row bound){
+  var env=new SortedDictionary<string,string>(StringComparer.OrdinalIgnoreCase);foreach(var item in Map(bound["env"]))env.Add(item.Key,(string)item.Value);
+  return NormalSdkChildHostSource.HookDigest(S(bound,"application"),S(bound,"cwd"),(string[])bound["args"],env);
+ }
+ static long QuotedLength(string value){
+  if(value==null||value.IndexOf('\0')>=0)throw Invalid();long length=2,slashes=0;
+  foreach(char c in value){if(c=='\\'){slashes++;continue;}length=checked(length+(c=='"'?slashes*2+1:slashes)+1);slashes=0;}return checked(length+slashes*2);
  }
  internal sealed class FirstConfiguration:IDisposable {
   readonly ProtectedRecords records;readonly Row fact,original,recipe;readonly string headHash;
+  readonly Row bound;readonly string boundHash,expectedHookHash;
   readonly NormalSdkWorkerPackageSource package;readonly DirectoryPins pins;readonly Action check;bool closed;
-  internal FirstConfiguration(DesktopTrustKeyRootSource root,DesktopTrustKeyPeerSource peer,Row originalRecord,Row originalFact,NormalSdkWorkerPackageSource originalPackage,Action guard){
+  internal FirstConfiguration(DesktopTrustKeyRootSource root,DesktopTrustKeyPeerSource peer,Row originalRecord,Row originalFact,NormalSdkWorkerPackageSource originalPackage,Action guard,string sid,NormalExecutionSpoolProfileSource.SdkStartOptions options){
    original=Clone(originalRecord);fact=Clone(originalFact);package=originalPackage;check=guard;
    check();package.Check();recipe=package.ExecutionRecipe;records=new ProtectedRecords(root,original,check);
    Row envelope=records.UniqueFirstEnvelope(fact,original,recipe);headHash=Hash(envelope);Row record=Map(envelope["record"]);
-   try{pins=new DirectoryPins(peer,S(Map(record["localRoot"]),"privateLocator"),record["relativeDirectory"] as string);pins.Require(envelope["physical"]);Check();}
-   catch{closed=true;if(pins!=null)pins.Dispose();throw;}
+   try{pins=new DirectoryPins(peer,S(Map(record["localRoot"]),"privateLocator"),record["relativeDirectory"] as string);pins.Require(envelope["physical"]);bound=BuildFirstInputs(package,pins,recipe,sid,options);boundHash=Hash(bound);expectedHookHash=FirstHookHash(bound);Check();}
+   catch{closed=true;if(bound!=null)bound.Clear();if(pins!=null)pins.Dispose();throw;}
   }
   internal void Check(){
    if(closed)throw Invalid();package.Check();pins.Check();check();
    if(!Same(package.ExecutionRecipe,recipe)||headHash!=Hash(records.UniqueFirstEnvelope(fact,original,recipe)))throw Invalid();
+   if(bound==null||Hash(bound)!=boundHash||S(bound,"cwd")!=pins.Cwd||S(bound,"application")!=(package.Kind=="IMAGE"?package.Cli:package.Runtime)||FirstHookHash(bound)!=expectedHookHash)throw Invalid();
    package.Check();pins.Check();check();
   }
-  public void Dispose(){if(closed)return;closed=true;pins.Dispose();}
+  public void Dispose(){if(closed)return;closed=true;if(bound!=null)bound.Clear();pins.Dispose();}
  }
  internal sealed class DirectoryPins:IDisposable {
   readonly WindowsDesktopTrustKeyKernel kernel=new WindowsDesktopTrustKeyKernel();readonly DesktopTrustKeyPeerSource peer;

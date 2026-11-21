@@ -21743,3 +21743,9 @@ PMO 회신과 DEVELOPMENT_ENVIRONMENT·FN03_ISOLATED_DOCUMENT_RESULT를 대조�
 기준 `9372e6d3`. developer_primary 단일 작성 후 반환. 기존 부분·전체 해시를 확인하고 나서 같은 원 START_OPTIONS 바이트의 닫힌 필드와 필수 모델·선택 turns/USD를 검사한다. 구조·추가/중복 키·제어문자·UTF-8·정수/유한·범위 조건을 검산하고 원 정착과 현재성을 다시 검사한다. 2MiB 이내 시험 전용 원 버퍼를 종료 시 소거하며 관리형 문자열의 즉시 소거는 보장하지 않는다. 범용 native parser, 인수/환경, 실제 실행 권위는 변경0.
 
 담당 정적 반례 RED `4d2328` 뒤 직접·인접 42통과·실패/건너뜀0 `73f223`; Main 최종 `node --experimental-test-module-mocks --test tests/desktop/normal-sdk-worker-journey.test.cjs tests/unit/FN07/claude-start-options.test.ts` 42통과·종료0 `ebb175`, 동결 대비 지문 일치 `996f29`. C# 실제 컴파일/실행0으로 native 의미 동작과 극한 숫자 반올림, SDK 정확 표기는 미검증이다. 실제 SDK·OS·Agent·DB·권한·키·서비스 실행0. 롤백은 이번 native/시험과 기록을 역적용한다.
+
+### FN07 최초 검산 Options를 보호 실행 구성에 연결
+
+기준 `e549c587`. developer_primary 단일 작성 후 반환. 최초 원 Options를 읽기 전용 값으로 원 검사→설정 핀에 전달하고 기존 hash-only 반환은 보존한다. 같은 원 optionsRef·SID digest·확정 recipe·package IMAGE/SCRIPT 및 cwd 핀에서 argv/env를 조립하고 기존 순수 HookDigest를 같은 읽기 검사에서 재사용한다. 선택 turns 존재 불일치와 SDK 표기 미입증인 비용 입력/토큰은 거절한다. 실제 hook, child/lease/PRESPAWN, 공개 출력이나 기본 recipe는 연결하지 않았다.
+
+담당 RED `ccd3f4` 뒤 최종 직접·인접 88통과·실패/건너뜀0 `6b12ba`, 공백 통과 `395343`. Main 직접 정적·합성 5통과·실패/건너뜀0 `3c128c`, 파일/공백 대조 `e3e25a`. C# 컴파일·native 의미 실행·실제 SDK recipe 및 운영 연결은 미검증이다. 실제 Agent·DB·권한·키·서비스·OS 실행0. 롤백은 이번 native/시험 5파일과 기록의 역적용이다.

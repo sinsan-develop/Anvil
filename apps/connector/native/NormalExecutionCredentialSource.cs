@@ -125,7 +125,8 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  internal sealed class FirstInspection {
   internal readonly string Digest,CanonicalSource,RecordHash,SlotHash;
   internal readonly DateTime ExpiresAt;
-  internal FirstInspection(string digest,string source,string recordHash,string slotHash,DateTime expiresAt){Digest=digest;CanonicalSource=source;RecordHash=recordHash;SlotHash=slotHash;ExpiresAt=expiresAt;}
+  internal readonly NormalExecutionSpoolProfileSource.SdkStartOptions Options;
+  internal FirstInspection(string digest,string source,string recordHash,string slotHash,DateTime expiresAt,NormalExecutionSpoolProfileSource.SdkStartOptions options){Digest=digest;CanonicalSource=source;RecordHash=recordHash;SlotHash=slotHash;ExpiresAt=expiresAt;Options=options;}
  }
  FirstInspection InspectFirstSource(RowRequest request,Dictionary<string,object> record,Dictionary<string,object> slot,bool verifyOptions=false){
   var h=request.Handoff;Exact(h,"startEnvelope,sendEnvelope,grantRef,startReadyRef,localAttemptRef,dispatchAttemptRef,permit,proofResultRef,scope,executionAuthority,plannedSid");
@@ -163,8 +164,9 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   if(observed>issued||issued>observed.AddSeconds(30)||issued>clock()||expires<=clock()||expires<=issued||expires>issued.AddSeconds(30)||expires>observed.AddSeconds(30)||At(snapshot,"commandExpiresAt")!=At(send,"expiresAt"))throw Invalid();
   foreach(string key in new[]{"commandExpiresAt","grantExpiresAt","proofExpiresAt"})if(expires>At(snapshot,key))throw Invalid();
   var limits=Map(fact["expires"]);Exact(limits,"humanSession,permissionPolicy,registration,budget,automaticScope");foreach(string key in limits.Keys)if(expires>At(limits,key))throw Invalid();
-  string digest=spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId,h,verifyOptions);Check();if(expires<=clock())throw Invalid();
-  return new FirstInspection(digest,J(h),H(record),H(slot),expires);
+  NormalExecutionSpoolProfileSource.SdkStartOptions options;
+  string digest=spoolProfile.ReadSdkFirstAttempt(record,slot,request.Scope,request.StartId,request.SendId,h,out options,verifyOptions);Check();if(expires<=clock())throw Invalid();
+  return new FirstInspection(digest,J(h),H(record),H(slot),expires,options);
  }
  Dictionary<string,object> SdkEnvelope(Dictionary<string,object> value,string operation,string command,Dictionary<string,object> record,Dictionary<string,object> slot){
   Exact(value,"schemaVersion,commandId,issuedAt,expiresAt,executorRegistrationRef,context,operation,payload,envelopeHash");

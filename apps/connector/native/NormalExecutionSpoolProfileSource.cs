@@ -211,9 +211,13 @@ internal sealed class NormalExecutionSpoolProfileSource {
  }
  // 이 함수는 현재 열린 할당의 원본 3행만 확인한다. 경로/행·실행 권한을 외부에 내주지 않는다.
  internal string ReadSdkFirstAttempt(Row record,Row slot,Row scope,string startCommand,string sendCommand,Row handoff=null,bool verifyOptions=false){
+  SdkStartOptions ignored;return ReadSdkFirstAttempt(record,slot,scope,startCommand,sendCommand,handoff,out ignored,verifyOptions);
+ }
+ internal string ReadSdkFirstAttempt(Row record,Row slot,Row scope,string startCommand,string sendCommand,Row handoff,out SdkStartOptions options,bool verifyOptions){
+  options=null;SdkStartOptions candidate=null;
   if(verifyOptions&&handoff==null||startCommand==sendCommand||DesktopTrustKeyHostSource.Time(slot,"expiresAt")<=DateTime.UtcNow)throw Invalid();
   string tuple=Tuple(Normal,record,slot);
-  return Log(false,(log,rows)=>{
+  string digest=Log(false,(log,rows)=>{
    if(!Has(rows,"REGISTERED",H(record))||!rows.Any(r=>S(r,"kind")=="SLOT_ID"&&S(r,"key")==S(slot,"slotId")&&S(r,"slotHash")==H(slot)))throw Invalid();
    Row allocation=Allocate(rows,log,Normal,tuple,true);
    string id=S(allocation,"id");
@@ -224,10 +228,11 @@ internal sealed class NormalExecutionSpoolProfileSource {
    object startReceived,sendReceived;
    string start=ReadSdkAttemptChain(rows,id,dir,scope,startCommand,true,handoff,out startReceived);
    string send=ReadSdkAttemptChain(rows,id,dir,scope,sendCommand,false,handoff,out sendReceived);
-   if(verifyOptions)ReadSdkStartOptions(rows,id,dir,scope,startCommand,handoff,startReceived);
+   if(verifyOptions)candidate=ReadSdkStartOptions(rows,id,dir,scope,startCommand,handoff,startReceived);
    Check();if(DesktopTrustKeyHostSource.Time(slot,"expiresAt")<=DateTime.UtcNow)throw Invalid();
    return H(new object[]{scope,start,send});
   });
+  options=candidate;return digest;
  }
  string ReadSdkAttemptChain(List<Row> rows,string allocation,DesktopTrustKeyDirectoryFact dir,Row scope,string command,bool start,Row handoff,out object receivedRef){
   receivedRef=null;
@@ -292,7 +297,7 @@ internal sealed class NormalExecutionSpoolProfileSource {
    }finally{Array.Clear(bytes,0,bytes.Length);}
   }
  }
- void ReadSdkStartOptions(List<Row> rows,string allocation,DesktopTrustKeyDirectoryFact dir,Row scope,string command,Row handoff,object receivedRef){
+ SdkStartOptions ReadSdkStartOptions(List<Row> rows,string allocation,DesktopTrustKeyDirectoryFact dir,Row scope,string command,Row handoff,object receivedRef){
   Check();string channel="intake-"+command;
   if(Unsettled(rows).Values.Any(r=>S(r,"allocation")==allocation&&S(r,"channel")==channel))throw Invalid();
   var settled=rows.LastOrDefault(r=>S(r,"kind")=="SETTLED"&&S(r,"writer")==Normal&&S(r,"allocation")==allocation&&S(r,"channel")==channel);
@@ -347,14 +352,19 @@ internal sealed class NormalExecutionSpoolProfileSource {
    digest.TransformFinalBlock(new byte[0],0,0);
    if(optionBytes!=N(options["sourceBytes"])||BitConverter.ToString(digest.Hash).Replace("-","").ToLowerInvariant()!=S(options,"contentHash"))throw Invalid();
   }
-  Check();ValidateSdkStartOptions(optionRaw);
+  Check();var parsed=ValidateSdkStartOptions(optionRaw,J(payload["optionsRef"]),S(options,"contentHash"));
   if(J(Inspect(rows,Normal,allocation,dir,channel,summary))!=J(summary))throw Invalid();Check();
+  return parsed;
   }finally{Array.Clear(optionRaw,0,optionRaw.Length);}
  }
  // START_OPTIONS 데이터만 검사한다. 일반 wire parser/SDK 표기/실행 계획을 발급하지 않는다.
- void ValidateSdkStartOptions(byte[] bytes){
+ internal sealed class SdkStartOptions {
+  internal readonly string Model,OriginalRef,BytesHash;internal readonly long? MaxTurns;internal readonly double? MaxBudgetUsd;
+  internal SdkStartOptions(string model,long? turns,double? budget,string originalRef,string bytesHash){Model=model;MaxTurns=turns;MaxBudgetUsd=budget;OriginalRef=originalRef;BytesHash=bytesHash;}
+ }
+ SdkStartOptions ValidateSdkStartOptions(byte[] bytes,string originalRef,string bytesHash){
   try{Check();if(bytes==null||bytes.Length<1||bytes.Length>2*MiB)throw Invalid();
-   string text=new UTF8Encoding(false,true).GetString(bytes);new SdkOptionsReader(text,Check).Read();Check();
+   string text=new UTF8Encoding(false,true).GetString(bytes);var parsed=new SdkOptionsReader(text,Check).Read(originalRef,bytesHash);Check();return parsed;
   }catch{throw Invalid();}
  }
  sealed class SdkOptionsReader {
@@ -388,14 +398,15 @@ internal sealed class NormalExecutionSpoolProfileSource {
   }
   // ECMAScript trim의 공백 집합. Char.IsWhiteSpace의 U+0085 등으로 넓히지 않는다.
   static bool TrimSpace(char c){return c=='\u0009'||c=='\u000a'||c=='\u000b'||c=='\u000c'||c=='\u000d'||c=='\u0020'||c=='\u00a0'||c=='\u1680'||c>='\u2000'&&c<='\u200a'||c=='\u2028'||c=='\u2029'||c=='\u202f'||c=='\u205f'||c=='\u3000'||c=='\ufeff';}
-  internal void Read(){
+  internal SdkStartOptions Read(string originalRef,string bytesHash){
+   string model=null;long? turns=null;double? budget=null;
    current();Token('{');string key=Text();if(key!="claudeQueryParams")throw Invalid();Token(':');Token('{');var keys=new HashSet<string>(StringComparer.Ordinal);
    while(true){key=Text();if(!keys.Add(key))throw Invalid();Token(':');
-    if(key=="model"){string model=Text();if(model.Length<1||model.Length>200||model.All(TrimSpace)||model.Any(c=>Char.IsControl(c)))throw Invalid();}
-    else{if(key!="maxTurns"&&key!="maxBudgetUsd")throw Invalid();double value=Number();if(value<0||value>9007199254740991d||key=="maxTurns"&&(value<1||Math.Truncate(value)!=value))throw Invalid();}
+    if(key=="model"){model=Text();if(model.Length<1||model.Length>200||model.All(TrimSpace)||model.Any(c=>Char.IsControl(c)))throw Invalid();}
+    else{if(key!="maxTurns"&&key!="maxBudgetUsd")throw Invalid();double value=Number();if(value<0||value>9007199254740991d||key=="maxTurns"&&(value<1||Math.Truncate(value)!=value))throw Invalid();if(key=="maxTurns")turns=checked((long)value);else budget=value;}
     Space();if(Peek()=='}'){Step();break;}Token(',');
    }
-   if(!keys.Contains("model"))throw Invalid();Token('}');Space();if(at!=text.Length)throw Invalid();current();
+   if(!keys.Contains("model"))throw Invalid();Token('}');Space();if(at!=text.Length)throw Invalid();current();return new SdkStartOptions(model,turns,budget,originalRef,bytesHash);
   }
  }
  static void RequireSdkFirst(Row snapshot,Row reference,Row handoff,bool start,int sequence){
