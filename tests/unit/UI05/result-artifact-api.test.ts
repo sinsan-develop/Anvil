@@ -6,3 +6,21 @@ function fixture(){const f=resultFixture(),text='원문 <script>unsafe()</script
 test('선택 제출 fullref와 실제 UTF8 hash를 같은origin GET으로 대조·출처/합격 미승격',async()=>{const f=fixture(),calls:string[]=[],client=new ApiClient(async(path,options)=>{calls.push(String(path));assert.equal(options?.method,'GET');assert.equal(options?.credentials,'same-origin');return Response.json(f.response);});assert.deepEqual(await readResultArtifactText(client,f.entry as any,f.ref,()=>true),f.response);assert.deepEqual(calls,[`/api/v1/projects/${f.pid}/results/${f.entry.ref.id}/artifacts/${f.ref.id}/text`]);});
 test('변형 원문/다른참조·출처승격·binary·추가필드는 거절하고 미선언은 요청0',async()=>{for(const change of [(v:any)=>v.text+='x',(v:any)=>v.resultRef.contentHash='f'.repeat(64),(v:any)=>v.artifactRef.version=2,(v:any)=>v.evidenceProvenanceVerified=true,(v:any)=>v.mediaType='text/html;charset=utf-8',(v:any)=>v.extra='secret',(v:any)=>v.bytes++]){const f=fixture(),body=structuredClone(f.response);change(body);await assert.rejects(readResultArtifactText(new ApiClient(async()=>Response.json(body)),f.entry as any,f.ref,()=>true));}const f=fixture();let calls=0;await assert.rejects(readResultArtifactText(new ApiClient(async()=>{calls++;return Response.json(f.response);}),f.entry as any,{...f.ref,id:f.pid},()=>true));assert.equal(calls,0);});
 test('조회403·지연이탈을 성공/이전자료로 바꾸지 않음',async()=>{const f=fixture();await assert.rejects(readResultArtifactText(new ApiClient(async()=>Response.json({code:'NOT_ALLOWED'},{status:403})),f.entry as any,f.ref,()=>true),(e:any)=>e instanceof ApiError&&e.status===403);let active=true;const v=await readResultArtifactText(new ApiClient(async()=>{active=false;return Response.json(f.response);}),f.entry as any,f.ref,()=>active);assert.equal(v,null);});
+
+
+test('원 입력 hash 대기 중 transport 교체는 후속 텍스트 GET0',async()=>{
+ const f=fixture();let calls=0;const active=()=>true,client=new ApiClient(async()=>{calls++;return Response.json(f.response);});
+ const pending=readResultArtifactText(client,f.entry as any,f.ref,active);client.transport=async()=>{calls++;return Response.json(f.response);};
+ assert.equal((await pending)===null,true);assert.equal(calls,0);
+});
+for(const status of [200,401])test(`원 GET 대기 중 transport 교체는 이전 ${status}를 폐기`,async()=>{
+ const f=fixture();let finish!:(value:Response)=>void,enter!:()=>void,calls=0;const started=new Promise<void>(resolve=>enter=resolve),active=()=>true;
+ const client=new ApiClient(async()=>{calls++;enter();return new Promise<Response>(resolve=>finish=resolve);});
+ const pending=readResultArtifactText(client,f.entry as any,f.ref,active);await started;client.transport=async()=>{throw Error('UNEXPECTED_REQUEST');};
+ finish(Response.json(status===200?f.response:{code:'AUTH_REQUIRED'},{status}));assert.equal((await pending)===null,true);assert.equal(calls,1);
+});
+test('이탈 후401은 폐기하고 현재401/403은 원 오류로 보존',async()=>{
+ const f=fixture();let enabled=true;const active=()=>enabled,client=new ApiClient(async()=>{enabled=false;return Response.json({code:'AUTH_REQUIRED'},{status:401});});
+ assert.equal(await readResultArtifactText(client,f.entry as any,f.ref,active),null);enabled=true;
+ for(const status of [401,403]){client.transport=async()=>Response.json({code:status===401?'AUTH_REQUIRED':'ACCESS_DENIED'},{status});await assert.rejects(readResultArtifactText(client,f.entry as any,f.ref,active),(error:any)=>error instanceof ApiError&&error.status===status&&error.code===(status===401?'AUTH_REQUIRED':'ACCESS_DENIED'));}
+});

@@ -22135,3 +22135,11 @@ Main 루트 타입 재검사 exit0(`f223b8`), 변경 진단 시험만 선택해 
 직접 RED 3통과/4실패(`e1fb79`)→7통과(`e39b6d`). Main 직접·인접 38통과/실패·건너뜀0(`f1f4d4`), 메모리 웹 빌드 525모듈·출력3 exit0(`f8cbe1`), 담당 루트 타입 exit0(`cbe6e1`), 독립 C0/I0/M0. Git LF SHA256 소스 `2275C746D7E646F431E47059138D14BBD1D7E22E70BD0976A1CDBABF45DF6A77`, 시험 `0F78EA9DE842A88477DE5510B4C3765358B62E5CC85DD7CEE6FDD4A5617AE392`.
 
 실제 네트워크·브라우저·서버·DB·SSH·Agent 실행0. 실제 protected GET·검수 인수는 미검증이며 롤백은 위 두 파일과 기록의 역적용이다.
+
+### FN12/UI05·UI08 시험 근거와 산출물 텍스트 조회의 현재 연결
+
+기준 `b2fcecd0` clean. developer_primary가 [시험 근거 대조](../apps/web/src/features/session-detail/reported-evidence-artifact.ts)와 [산출물 텍스트 조회](../apps/web/src/features/session-detail/result-artifact-api.ts), 기존 직접 시험 2개를 수정했다. 원 제출과 검수 기준을 해시로 대조하는 동안 연결이 바뀌면 후속 텍스트 GET이 새 연결로 넘어가거나 이전 응답·인증 오류를 반영할 수 있었다. 최초 현재성을 하위 텍스트 조회까지 전달하고 직접 텍스트 조회도 같은 원 연결과 호출자 문맥을 확인한다. 현재 오류·원 바이트 검산·권한 계약과 기존 바이너리 다운로드는 유지했다.
+
+직접 RED 6통과/8실패(`426ebf`)→직접·기존 다운로드 인접 25통과(`700452`). Main 직접·인접 32통과/실패·건너뜀0(`67edcf`), 메모리 웹 빌드 525모듈·출력3 exit0(`2bb2df`), 담당 루트 타입 exit0(`c744ba`), 독립 C0/I0/M0. 동결 SHA 및 Git LF 원문 지문 대조(`285c9e`).
+
+실제 산출물·브라우저·서버·DB·SSH·Agent 실행0. 실제 파일 조회와 FN12 인수는 미검증이며 롤백은 위 4개 파일과 기록의 역적용이다.
