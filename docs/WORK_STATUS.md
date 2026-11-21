@@ -21663,3 +21663,9 @@ Main은 0101의 직접 표 접근과 두 목적 함수·기존 dispatcher의 제
 기준 `deb8cd0b`, developer_primary 단일 작성·반환. 신규 FN03 거래 어댑터와 합성 시험 두 경로. 기존 Access의 실제 인증 메서드가 받은 원 Pool/client를 감싸고 연결별 query를 고정해 같은 query 검산을 유지한다. 원 BEGIN/COMMIT/ROLLBACK 명령 태그와 release를 수거한다. COMMIT 불명은 이어진 ROLLBACK 정상 응답으로 덮지 않고, 현재성 상실 뒤 새 업무와 연결을 차단한다.
 
 담당 모듈 부재 RED 뒤 직접9·인접7통과, 좁은 TypeScript 검사·공백 종료0. Main `node --test` 거래 어댑터 및 여정 두 파일 16통과·실패/건너뜀0·공백 종료0 `6ac227`. 소스 SHA256 49458652C591996071B456443320D76E4EA034CDD326690CAD2C9DA3EE67A6CA, 시험 D1AEAA73FDCC7A08D9E86ABDEEF3619838608663D8C98C4019C67CEF9B236BA6. 실제 DB·권한·서비스·WSL/SSH·키·Agent 접근0. 실제 PG 취소·서버 종결과 격리 관측 연결은 미검증. 다음은 신규 격리 환경에서만 앱과 보호 원장 관측을 연결하는 시험 코드다. 롤백은 신규 두 파일과 기록을 역적용한다.
+
+### FN03 실제 앱 진입점의 격리 시험 조립
+
+기준 `63117a8c`, developer_primary 단일 작성·반환. 신규 child와 합성 시험만 추가했다. 제공된 원 Pool을 거래 어댑터로 감싸 기존 AccessRepository와 Fastify inject, 보호 내부 조회, 원장 검증 여정을 연결했다. 관측은 고정 SQL·식별자 3개만 별도 포트에 전달한다. 자기 앱만 닫는다. 정상 합성은 COMMIT 3·거절 ROLLBACK 1·원 release 4·observer 5이며 Pool.end0이다. 첫 403·COMMIT 불명·현재성 상실 뒤 후속 업무 호출0을 확인했다.
+
+담당 직접·인접 19통과·실패/건너뜀0·좁은 타입·공백 종료0. Main `node --test` child/거래 두 시험 12통과·실패/건너뜀0 및 공백 종료0 `74c197`. 제품 SHA256 B64FDBFD105C1AEBC245E7D26FDEC53B9D6000446A00EC58E38B1448A8805C82, 시험 00BDF1F50A551C544AF619E12D61EC67D74C9EA7E7E30BF340DD965D967BF9B1. 실제 PG·권한·세션/자료 생성·키·서비스·WSL/SSH·Agent 실행0. 격리 감독의 실제 Pool/관측 공급, 합성 자료의 실제 PG 설치, 실행 원장과 자원 경계가 남는다. 롤백은 신규 두 파일과 기록의 역적용이다.
