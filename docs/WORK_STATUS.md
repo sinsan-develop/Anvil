@@ -22127,3 +22127,11 @@ Main 루트 타입 재검사 exit0(`f223b8`), 변경 진단 시험만 선택해 
 직접 RED 3실패(`b2ed2c`)→집중 3통과(`34e41c`). 정상 무경고와 오염 응답의 경고 미표시를 함께 확인했다. Main 직접·인접 34통과/실패·건너뜀0(`21b682`), 메모리 웹 빌드 525모듈·출력3 exit0(`d7fa79`), 담당 루트 타입 exit0(`2bce92`), 독립 C0/I0/M0. 신규 fixture의 존재 검사 TS2532 한 건을 명시 단언으로 바로잡았다. Git LF SHA256 소스 `DE81AF8D0EFE2D99FB9C5D0BFCCA182F52D545D5210907A8A81B3FC45B71E013`, 시험 `3D35DDD52942FB15E12D334E773B776F8004DE1B5EF6CC15D4725136A6B989A3`.
 
 실제 브라우저·서버·DB·SSH·Agent 실행0. FN12/UI08 전체 인수는 미검증이며 롤백은 위 두 파일과 기록의 역적용이다.
+
+### FN12/UI05·UI08 보고 대조 조회의 원 연결 수명 확인
+
+기준 `73f24af5` clean. developer_primary가 [보고 대조 조회](../apps/web/src/features/session-detail/reported-coverage-api.ts)와 [직접 시험](../tests/unit/UI05/reported-coverage-api.test.ts)을 보완했다. 조회 준비의 해시 계산이나 GET 응답 대기 중 원 transport 또는 호출자 문맥이 바뀌었을 때 옛 요청·응답·인증 오류가 남는 경우를 재현했다. 원 transport를 첫 await 전에 캡처하고 호출자 현재성을 함께 검사한다. 이전 요청의 성공·오류는 현재 결과에 반영하지 않으며 동일 현재 401/403은 기존처럼 전달한다. 응답 형상·원문 해시·서버 권한·명시 조회 정책은 유지했다.
+
+직접 RED 3통과/4실패(`e1fb79`)→7통과(`e39b6d`). Main 직접·인접 38통과/실패·건너뜀0(`f1f4d4`), 메모리 웹 빌드 525모듈·출력3 exit0(`f8cbe1`), 담당 루트 타입 exit0(`cbe6e1`), 독립 C0/I0/M0. Git LF SHA256 소스 `2275C746D7E646F431E47059138D14BBD1D7E22E70BD0976A1CDBABF45DF6A77`, 시험 `0F78EA9DE842A88477DE5510B4C3765358B62E5CC85DD7CEE6FDD4A5617AE392`.
+
+실제 네트워크·브라우저·서버·DB·SSH·Agent 실행0. 실제 protected GET·검수 인수는 미검증이며 롤백은 위 두 파일과 기록의 역적용이다.

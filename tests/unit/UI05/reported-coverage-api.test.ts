@@ -11,3 +11,21 @@ function read(...args:any[]){assert.equal(typeof mod.readReportedCoverage,'funct
 test('원제출/선택기준의고정ref로sameoriginGET만하고PASS와미실행을검수로승격하지않는다',async()=>{const f=fixture(),calls:any[]=[],value=await read(new ApiClient(async(url,o)=>{calls.push([String(url),o?.method,o?.credentials]);return Response.json(f.coverage);}),f.result,f.criteria,()=>true);assert.deepEqual(value,f.coverage);assert.equal(value.completionAccepted,false);assert.equal(value.items.length,2);assert.equal(value.items[1]!.state,'REPORTED_NOT_EXECUTED');assert.deepEqual(calls,[[`/api/v1/projects/${f.assignment.projectId}/results/${f.result.ref.id}/criteria/${f.criteria.ref.id}/versions/1/reported-coverage`,'GET','same-origin']]);});
 test('다른ref·미실행숨김/원주장변경·거짓합격·미검증누락응답은대조화면에올리지않는다',async()=>{for(const alter of [(v:any)=>v.criteriaRef.id=criteriaId(11),(v:any)=>v.items[1].state='REPORTED_ONLY',(v:any)=>v.items[0].reports[0].actual='다른 원문',(v:any)=>v.completionAccepted=true,(v:any)=>v.items[0].reasons=[],(v:any)=>v.items[0].verificationState='VERIFIED',(v:any)=>v.items.pop()]){const f=fixture();alter(f.coverage);await assert.rejects(read(new ApiClient(async()=>Response.json(f.coverage)),f.result,f.criteria,()=>true),(e:any)=>e.code==='RESULT_COVERAGE_RESPONSE_INVALID');}});
 test('기준전환/권한실패는이전대조를반환하지않고caller수정과기대범위는분리한다',async()=>{const f=fixture();let calls=0,active=true;assert.equal(await read(new ApiClient(async()=>{calls++;throw Error();}),f.result,f.criteria,()=>false),null);assert.equal(await read(new ApiClient(async()=>{calls++;active=false;return Response.json(f.coverage);}),f.result,f.criteria,()=>active),null);assert.equal(calls,1);await assert.rejects(read(new ApiClient(async()=>Response.json({code:'ACCESS_DENIED'},{status:403})),f.result,f.criteria,()=>true),(e:any)=>e.status===403);const g=fixture();assert.deepEqual(await read(new ApiClient(async()=>{g.criteria.snapshot.items[0].kind='UNIT';return Response.json(g.coverage);}),g.result,g.criteria,()=>true),g.coverage);});
+
+
+test('입력 hash 대기 중 transport 교체는 옛 대조 GET을 보내지 않는다',async()=>{
+ const f=fixture();let calls=0;const client=new ApiClient(async()=>{calls++;return Response.json(f.coverage);});
+ const pending=read(client,f.result,f.criteria,()=>true);client.transport=async()=>{calls++;return Response.json(f.coverage);};
+ assert.equal((await pending)===null,true);assert.equal(calls,0);
+});
+for(const status of [200,401])test(`GET 대기 중 transport 교체는 이전 ${status} 결과를 폐기한다`,async()=>{
+ const f=fixture();let finish!:(response:Response)=>void,entered!:()=>void,calls=0;const started=new Promise<void>(resolve=>entered=resolve);
+ const client=new ApiClient(async()=>{calls++;entered();return new Promise<Response>(resolve=>finish=resolve);});
+ const pending=read(client,f.result,f.criteria,()=>true);await started;client.transport=async()=>{throw Error('UNEXPECTED_NEW_REQUEST');};
+ finish(Response.json(status===200?f.coverage:{code:'AUTH_REQUIRED'},{status}));assert.equal((await pending)===null,true);assert.equal(calls,1);
+});
+test('active 해제 뒤 이전401은 폐기하고 동일 현재401/403은 보존한다',async()=>{
+ const f=fixture();let active=true;
+ assert.equal(await read(new ApiClient(async()=>{active=false;return Response.json({code:'AUTH_REQUIRED'},{status:401});}),f.result,f.criteria,()=>active),null);
+ for(const status of [401,403])await assert.rejects(read(new ApiClient(async()=>Response.json({code:status===401?'AUTH_REQUIRED':'ACCESS_DENIED'},{status})),f.result,f.criteria,()=>true),(error:any)=>error.status===status&&error.code===(status===401?'AUTH_REQUIRED':'ACCESS_DENIED'));
+});
