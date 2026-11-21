@@ -35,6 +35,86 @@ function basis(value:unknown,q:ProjectCommand,at:number){
 export class NormalUnderstandingReadRequests{
  readonly #access:AccessRepository;
  constructor(access:AccessRepository){this.#access=access;}
+ async readiness(token:string,csrf:string,projectId:string,raw:unknown){
+  const selection=cloneV1(raw);
+  if(!uuidV1(projectId)||!recordV1(selection,['controlGeneration','assignmentRef','preparationRef'])
+   ||!Number.isSafeInteger(selection.controlGeneration)||selection.controlGeneration<1
+   ||!refV1(selection.assignmentRef)||!refV1(selection.preparationRef))return fail('INPUT_INVALID',422);
+  const {controlGeneration,assignmentRef,preparationRef}=selection;
+  const unavailable=()=>fail('NORMAL_UNDERSTANDING_READINESS_UNAVAILABLE',412);
+  let wall=Date.now(),mono=performance.now(),end=wall+30000,monoEnd=mono+30000;
+  const check=()=>{
+   const w=Date.now(),m=performance.now();
+   if(w<wall||m<mono||w>=end||m>=monoEnd||Object.getPrototypeOf(this.#access)!==AccessRepository.prototype
+    ||Object.hasOwn(this.#access,'authenticated')||Object.hasOwn(this.#access,'authenticateInTransaction')
+    ||AccessRepository.prototype.authenticated!==originalAuthenticated||AccessRepository.prototype.authenticateInTransaction!==originalAuthenticate)unavailable();
+   wall=w;mono=m;
+  };
+  check();
+  try{
+   const projection=await this.#access.authenticated(token,csrf,async(db,actor)=>{
+    const identity=actorIdentity(actor),query=db.query,s=actor.authSession;
+    if(!s||!uuidV1(s.id)||!isoV1(s.idleExpiresAt)||!isoV1(s.absoluteExpiresAt))return unavailable();
+    let tx='',dbAt=-Infinity;
+    const clock=async()=>{
+     check();if(db.query!==query||actorIdentity(actor)!==identity)return unavailable();
+     const {rows}=await db.query('SELECT clock_timestamp() AS at,txid_current()::text AS transaction_id');check();
+     const r=rows.length===1?rows[0]:null;
+     if(db.query!==query||actorIdentity(actor)!==identity||!(r?.at instanceof Date)||!Number.isFinite(r.at.getTime())||r.at.getTime()<dbAt
+      ||typeof r.transaction_id!=='string'||!/^[1-9][0-9]{0,18}$/.test(r.transaction_id)||tx&&tx!==r.transaction_id)return unavailable();
+     tx=r.transaction_id;dbAt=r.at.getTime();if(actor.reauthUntil!.getTime()<=dbAt)return fail('REAUTHENTICATION_REQUIRED',412);
+     return dbAt;
+    };
+    const request:ProjectCommand={schemaVersion:1,projectId,commandId:randomUUID(),clientId:actor.clientId,controlGeneration,
+     operation:'readNormalUnderstandingResponse',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{assignmentRef,preparationRef}};
+    await clock();await currentProjectController(db,actor,request);await clock();
+    const policy=await authorizeMaterial(db,actor,request,true);if(policy.approvalRequired)return fail('PROJECT_OPERATION_DENIED',403);
+    const locate=async()=>{
+     const {rows}=await db.query(`SELECT e.id AS execution_id,e.generation FROM anvil.execution_grants g
+      JOIN anvil.executions e ON e.project_id=g.project_id AND e.id=g.execution_id AND e.generation=g.generation AND e.command_id=g.command_id
+      WHERE g.project_id=$1 AND g.created_by=$2 AND g.client_id=$3 AND e.transport='NORMAL_PROTECTED' AND e.state='QUEUED'
+       AND g.snapshot_json->>'transport'='NORMAL_PROTECTED' AND g.snapshot_json->>'state'='GRANTED'
+       AND g.snapshot_json#>>'{binding,intent,mode}'='CONTEXT_REVIEW'
+       AND g.snapshot_json#>'{binding,intent,assignmentRef}'=$4::jsonb AND g.snapshot_json#>'{binding,preparationRef}'=$5::jsonb
+       AND g.snapshot_json#>'{binding,subject}'=$6::jsonb
+       AND g.snapshot_json->>'expiresAt'>to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+       AND NOT EXISTS(SELECT 1 FROM anvil.executions newer WHERE newer.project_id=e.project_id AND newer.id=e.id AND newer.generation>e.generation)
+       AND NOT EXISTS(SELECT 1 FROM anvil.execution_grant_revocations r WHERE r.project_id=g.project_id AND r.grant_id=g.id AND r.grant_version=g.version)
+      LIMIT 2`,[projectId,actor.actorId,actor.clientId,JSON.stringify(assignmentRef),JSON.stringify(preparationRef),JSON.stringify({
+       userId:actor.actorId,clientId:actor.clientId,humanSessionId:s.id,credentialGeneration:actor.credentialGeneration,controlGeneration
+      })]);
+     await clock();
+     const row=rows.length===1?rows[0]:null;
+     const gen=typeof row?.generation==='string'&&/^[1-9][0-9]{0,15}$/.test(row.generation)?Number(row.generation):row?.generation;
+     if(!uuidV1(row?.execution_id)||!Number.isSafeInteger(gen)||gen<1)return unavailable();
+     return {targetId:row.execution_id as string,expectedVersion:gen as number};
+    };
+    const selected=await locate(),exactRequest={...request,...selected};
+    const inspect=async()=>{
+     const at=await clock();
+     const {rows}=await db.query('SELECT anvil.fn09_normal_understanding_request_basis($1,$2,$3,$4,$5,$6) AS basis',
+      [s.id,actor.actorId,actor.clientId,JSON.stringify(exactRequest),JSON.stringify(policy.ref),tx]);
+     const value=basis(rows.length===1?rows[0]?.basis:null,exactRequest,await clock());
+     if(Date.parse(value.observedAt)<at)return unavailable();
+     return value;
+    };
+    const first=await inspect();
+    if(actorIdentity(await this.#access.authenticateInTransaction(db,token,csrf))!==identity)return unavailable();
+    if(!same(await locate(),selected))return unavailable();
+    const last=await inspect();if(!same(first.context,last.context))return unavailable();
+    const expires=Math.min(Date.parse(first.expiresAt),Date.parse(last.expiresAt),policy.validUntil,Date.parse(s.idleExpiresAt),
+     Date.parse(s.absoluteExpiresAt),actor.reauthUntil!.getTime());
+    const remaining=expires-dbAt;if(!Number.isFinite(remaining)||remaining<=0)return unavailable();
+    end=Math.min(end,wall+remaining);monoEnd=Math.min(monoEnd,mono+remaining);check();
+    return {projectId,executionId:selected.targetId,executionGeneration:selected.expectedVersion,assignmentRef,preparationRef,
+     observedAt:last.observedAt,expiresAt:new Date(expires).toISOString()};
+   });
+   check();return projection;
+  }catch(error){
+   if(error instanceof AuthFailure&&error.statusCode<500)throw error;
+   return unavailable();
+  }
+ }
  async command(token:string,csrf:string,raw:unknown){
   const q=input(raw),wall=Date.now(),mono=performance.now();let lastWall=wall,lastMono=mono,end=wall+30000,monoEnd=mono+30000;
   const check=()=>{const at=Date.now(),mark=performance.now();if(at<lastWall||mark<lastMono||at>=end||mark>=monoEnd
