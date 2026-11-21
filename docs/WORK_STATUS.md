@@ -22161,3 +22161,25 @@ Main 루트 타입 재검사 exit0(`f223b8`), 변경 진단 시험만 선택해 
 IX01 설치 전용 승인·소진·고정 적재·CLI·송신의 내부 소스와 합성 왕복은 앞선 6항목과 일치했다. Windows sender의 실제 호출자와 운영 검산 포트, 동일 시도의 검증된 호스트·원 파일 배치·보호 승인 자료 및 원 실행 관리가 남았다. 원 Windows §1 결정은 별도로 보존한다. 제품 변경·시험 재실행·실제 SSH/DB/권한/키/서비스/Agent 실행 및 실패 시도는 0이다.
 
 PMO 경계 확인을 받아 developer_primary가 [최초 이해응답 선택·검토 후보 r1](contracts/FN09_NORMAL_INITIAL_UNDERSTANDING_RESPONSE_CANDIDATE.md)을 작성하고 반환했다. 현재 소유자가 같은 CONTEXT_REVIEW의 보호 출력 범위를 선택하고 여섯 기준의 원 근거를 결박하는 신규 의미만 다룬다. 기존 합성 검토 분기, 원 승인 소비 및 이력을 보존하며 새 표·역할을 전제하지 않는다. 후보는 미채택이다. 원문 21,340B/99 LF, SHA256 9ED4E1C28953B905D99D22A38AF5B51F57E5DED46BD481B7AE3B2520468DF588, 담당 원바이트·공백 검사 c5c096 exit0, 독립 C0/I0/M0, Main SHA 대조. 실제 검토 공급·보호 조회·저장·Agent 실행 미확인. 롤백은 후보와 이번 기록의 역적용이다.
+
+### 2026-11-22 FN09 최초 이해 검토 A안·IX01 두 설정 파일 직접 승인
+
+기준 5ddb90bd clean. 신산님 직접 메시지 01a1ff4f-e37b-78c1-b1c5-133d9f1cf6dd(UTF-8 285B, SHA256 244BA08BB2D88903B9AA09E3CD6EAEAEAC6CCD6E863EC696E3A960DF37FEFBFC)에서 [최초 이해응답 후보 r1](contracts/FN09_NORMAL_INITIAL_UNDERSTANDING_RESPONSE_CANDIDATE.md)의 코드·화면·미적용 SQL·합성 검증과 [IX01 조건부 재개 §1](work_packages/IX01_CONDITIONAL_RESUMPTION_PLAN.md)의 Windows 설정 두 파일 한정 읽기 1회를 승인했다. FN09는 원 후보 SHA256 9ED4E1C28953B905D99D22A38AF5B51F57E5DED46BD481B7AE3B2520468DF588을 적용한다. 후보 작성 시점의 미채택 원본은 보존한다.
+
+정상 출력 보호 검산의 첫 소스·직접 시험 두 경로를 developer_primary 단일 작성으로 맡겼다. 기존 검수 담당은 IX01의 고정 실행 본문과 원 포트의 효과 및 종료 조건을 대조한다. 승인 후 30분 창에서 60초 한도의 한정 읽기만 하며 실패·불명 시 재실행하지 않는다. 이 기록 작성 시점의 실제 설정 파일 읽기·SSH·DB·권한·키·서비스 변경·Agent 실행·정식 실패는 0이다.
+
+#### IX01 Windows §1 한정 읽기 소진·부분 결과
+
+담당 baseline_predispatch_task_review, Main 판독. 승인 창 2026-11-22 03:13:07~03:43:07 KST, 시도 d608abfd-c1d6-4c36-af57-53a88f22c489 단1회. 고정 부록 5,460B/SHA256 357F720A88251869B322CF2015EC9BFF03B0142C51DDA4472D18CF2ED1C1619E 및 네 Git 원문·checkout·decoder 일치. 여섯 상수 치환본 5,686B/SHA256 89BDBCBAB7516440232A67C14E7E1064F25B701BAE9938277701585CA3690813. 원 호출 43c91f, 03:18:01~03:18:05 KST 수거, exit1/UNKNOWN, 2.652초. 바인딩 시작 1795285082621·만료 1795285142621로 호출 범위와 기한 일치. 원 stdout 1,090B·LF1·SHA256 C4FB1E2C10672C25BBF0421AF5A3A8104629DB3079805A35EFD48D9B047E8C77.
+
+담당의 로컬 판독은 Node REPL의 TS import 제한으로 함수 실행 전 중단됐다. Main이 수거 원 바이트와 독립 기대 바인딩을 기존 Node 판독 함수에 공급했다. e33518 exit0, PARTIAL/COMPARISON_ONLY/UNCONFIRMED. 사용자 설정 55행 CUSTOM_SCOPE_UNCONFIRMED에서 중단했고 사용자 설정 한 번 닫음, 시스템 설정 열기0. 앞선 사용자 32행과 54행의 제한 분류는 해당 alias 적용 아님이었다. 55행의 실제 지시 종류·적용 여부·효과는 미확인이다.
+
+단회 승인 소진. 설정 내용·값·개인키 공유, 추가 조회·재시도·SSH·설치·DB·권한·서비스 변경·Agent 실행0. 실제 접속·신뢰·통합 여정은 미검증을 유지한다. 다음은 운영자가 기존 설정에서 55행의 지시 범주·대상 alias 적용 여부·효과 분류를 확인할 수 있을 때 그 사실을 기존 고정 경로와 대조하는 것이다. 설정 우회나 변경은 없다.
+
+#### FN09 최초 이해 검토 A안 — 선택 출력의 보호 원문 검산
+
+developer_primary 단일 작성·동결. 신규 normal-understanding-response-source.ts와 직접 시험에서 같은 CONTEXT_REVIEW의 정확 scope와 수신·권위 기반의 현재성, 정상 보호 읽기 종결, 원 init/prefix/chain/tail 및 바이트·해시를 검산한다. 기존 NormalSdkSessionOutput이 합성 포트로 실제 생성한 행의 init 전 응답도 소비했다. 허용한 유한 text만 SESSION_ONLY로 반환하고 격리·지원하지 않는 선택·변조·만료·불명은 반환하지 않는다. 정상 읽기 공급자·사람의 조회 허가·WORK 권한 발급은 이 단위 범위 밖이다.
+
+기존 승인 인접 시험 1건은 정상 COMMIT의 합성 샘플에 command tag가 없어 TRANSACTION_STATE_UNKNOWN으로 실패했다(ead821). 담당자가 해당 첫 샘플의 BEGIN/COMMIT/ROLLBACK 정상 태그만 보완했고 실제 거래 검사·기대 결과·실패 분기는 유지했다. Main 직접·인접 20통과/실패·건너뜀0(d9be35), 루트 타입 exit0(dba9f6), 최종 동결 지문·공백 검사 exit0(8cdd7a), 독립 C0/I0/M0. 소스 SHA B32095E78835D8CBDAD6681ED8FAFDDA6048C60D618762B30D3CE4DA01F10276, 시험 CA044F2B10CFA7FD867547DA3D1F2FB922599EF3E51DD354464592A978DD54B1, 보완 시험 0E0166822E5163ED669AD8F56892DD0E464B5BC58D8CBC95C929B801A778DF3F.
+
+원 private 출력 읽기의 현재 소유·정상 종결을 등록 통신에 결박하는 경로, HUMAN 보호 조회·불변 선택·정상 검토·미적용 SQL·화면은 후속 구현이다. 실제 공급자·DB·키·권한·서비스·Agent·SDK 실행은 없다. 롤백은 신규 두 경로, 합성 태그 수정 및 기록의 역적용이다.
