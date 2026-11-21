@@ -21807,3 +21807,13 @@ PMO 회신과 DEVELOPMENT_ENVIRONMENT·FN03_ISOLATED_DOCUMENT_RESULT를 대조�
 ### 기본 단위 시험의 Node 모듈 모의 옵션 누락 보완
 
 기준 `29297e56`. developer_primary가 기존 `package.json` 시험 인자로 FN10 보호 source 합성 사례를 실행해 `mock.module is not a function` 1실패를 재현했다 `21b533`. 같은 Node 버전과 전체 단위 시험 선택 범위를 유지하고, `test` script에 기존 시험들이 사용하는 `--experimental-test-module-mocks`만 추가 후 작성권 반환. 같은 단일 사례 통과·실패/건너뜀0·종료0 `94b52f`, Main 재검산 종료0·공백0 `bec45b`. 전체 단위 시험은 이번 미실행이다. 제품/DB/서비스/Agent 변경 또는 실행0. 이 수정으로 기존 검수 기준과 통합 완료 여부는 변경하지 않는다. 롤백은 시험 script 한 줄과 기록의 역적용이다.
+
+### FN07 SID 발급 변경 후 FN08 STOP 인접 회귀
+
+기준 `6409f5c6` clean, 원격 추적 대비 0/0. developer_primary가 RAM 파일·원장, 모의 SQL·전송, 소켓 없는 inject를 확인한 뒤 다음 두 기존 시험을 단회 실행했다.
+
+```text
+node --experimental-test-module-mocks --test tests/unit/FN08/normal-stop-coordinator.test.ts tests/unit/FN08/normal-stop-polling-journey.test.ts
+```
+
+30통과·실패/건너뜀0·종료0, 28.25초 `36a72e`. 기존 원 Query 소유 확인, 교차·만료·취소 거절, 협력 중지 단회, UNKNOWN 보존·ACK 재전달을 확인했다. Main은 담당 종결 증거와 같은 HEAD의 clean `f1c5a6`, 독립 STOP 호출선 및 계약 순서를 대조했다. 새 제품·시험 파일 수정0, 시험 재실행0. 실제 SDK/OS 종료·Agent·DB·권한·키·서비스 검증은 미실행이며 계획 완료 체크는 변경하지 않는다. 컴파일러·참조 6개 읽기의 기존 결정은 응답 대기다.
