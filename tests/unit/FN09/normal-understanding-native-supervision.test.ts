@@ -280,7 +280,7 @@ test('S2-R1 원 capability 없음/중복/다른 request·slot·body는 source ga
 test('S2-R1 두 관리행은 WI exact 필드만 생성하며 auth·본문·bearer는 저장하지 않는다 (source RAM)', () => {
  const p=source('NormalExecutionSpoolProfileSource.cs');
  const store=p.slice(p.indexOf('internal Row StoreUnderstandingPrepared('),p.indexOf('internal Row StartUnderstandingSend('));
- const expression=store.match(/var row=(R\([\s\S]*?\));\n    DesktopTrustKeyHostSource.Exact/)?.[1];assert.ok(expression);
+ const expression=store.match(/var row=(R\([\s\S]*?\));\r?\n    DesktopTrustKeyHostSource.Exact/)?.[1];assert.ok(expression);
  const row=(...pairs:unknown[])=>Object.fromEntries(Array.from({length:pairs.length/2},(_,i)=>[pairs[i*2] as string,pairs[i*2+1]]));
  const scope={projectId:'project',connectorId:'connector',executionId:'execution',executionGeneration:1,grantRef:{id:'grant'},credentialGeneration:1};
  const pickup={requestRef:{id:'request'},acquisitionRef:{id:'acquisition'}};
@@ -291,7 +291,7 @@ test('S2-R1 두 관리행은 WI exact 필드만 생성하며 auth·본문·beare
  assert.equal(Object.keys(prepared).some(k=>['auth','body','credential','path','sid'].includes(k)),false);
  assert.equal(JSON.stringify(prepared).includes('fixture'),false);
  const send=p.slice(p.indexOf('internal Row StartUnderstandingSend('),p.indexOf('// 이 함수는 현재 열린 할당'));
- const sendExpression=send.match(/var row=(R\([\s\S]*?\));\n    DesktopTrustKeyHostSource.Exact/)?.[1];assert.ok(sendExpression);
+ const sendExpression=send.match(/var row=(R\([\s\S]*?\));\r?\n    DesktopTrustKeyHostSource.Exact/)?.[1];assert.ok(sendExpression);
  const started=new Function('R','H','key','prepared','return '+sendExpression)(row,JSON.stringify,'request',prepared);
  const sendKeys=p.match(/const string SendStartedKeys="([^"]+)"/)?.[1]?.split(',');assert.ok(sendKeys);assert.deepEqual(Object.keys(started),sendKeys);
  assert.equal(started.preparedHash,JSON.stringify(prepared));
