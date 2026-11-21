@@ -21785,3 +21785,9 @@ PMO 회신과 DEVELOPMENT_ENVIRONMENT·FN03_ISOLATED_DOCUMENT_RESULT를 대조�
 기준 `f78ab7a0f2f926c3bdf3fdd21eebcd8a7550df85` clean, 개발 브랜치와 원격 추적 0/0. 지난 작업에서 추가한 프로젝트·지식·책임세션·능력보고·보완 편집 화면과 서버 순환 초기화 수정이 한 트리에 합쳐진 상태를 기존 의존성으로 확인했다. 담당 developer_primary 읽기·검증 전용. `node ../../node_modules/typescript/bin/tsc --noEmit -p tsconfig.base.json` 종료0·오류0 `032b33`. 기존 웹 Vite 설정을 사용한 메모리 빌드는 설정 번들·환경 파일 로드를 건너뛰고 `configFile:false, envDir:false, build.write:false, emptyOutDir:false`로 실행해 525모듈·JS/CSS/HTML 3개·종료0 `98b8c6`. 실제 빌드 산출물 저장·삭제·설치 0, 잔여 핸들0 및 상태·공백 재확인 `7ee3b7`.
 
 실제 브라우저/WSL PG15·C# 컴파일/SDK/Agent·서비스·권한 검증은 미실행이다. FN07의 다음 실행 선행은 이미 요청한 compiler와 5개 참조의 한정 읽기 결정이며 기존 단회 승인을 재사용하지 않는다. FN12 후속 임무·재작업·새 제출의 귀속은 PMO 재확인 결과 별도 채택 근거를 찾지 못해 이번 구현에 포함하지 않는다. 이 검수로 Stage·전체 계획의 완료 체크를 변경하지 않는다.
+
+### FN08 최초 START의 queue와 준비 객체 보유 선행 검토
+
+기준 `6bdac930` clean. Main과 baseline_predispatch_task_review의 정본·제품 읽기 및 PMO 지원 결과를 기존 PRESPAWN 결정 후보 §7에 통합했다. 기존 queue의 preparationRef가 native 수용 영수증이 아니라 Options를 포함한 실행 준비 참조이고, 실제 current 포트는 요청 hash와 queue transactionId에 결박됨을 확인했다. 접수와 queue를 구분하는 순서, writer NONE→RESERVED→OWNED, 보유 목적·원 기한·회수 책임, SDK child와의 차이를 구체화했다. 기존 10초 그대로의 방향을 최초 비교 대상으로 두고 대안의 유한 기한/권위는 결정 전이다. 실제 source/writer 존재나 원 준비 물리 증거를 확인하지 않아 도입·실행은 승인 요청하지 않았다.
+
+독립 검수와 Main의 원 포트/상태 순서 대조 `7f5946`; 제품/시험·C#/SDK·Agent·실DB·권한·기기·서비스 변경/실행0. FN07 도구 읽기 응답은 새로 확인되지 않았고 기존 질문을 반복하지 않았다. 롤백은 PRESPAWN 후보 §7과 이 기록의 역적용이다.
