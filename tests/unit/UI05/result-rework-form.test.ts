@@ -50,7 +50,8 @@ after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k
 
 async function mount(){
  const f=reworkFixture(),binding:any=f.sources.binding,requests:{url:string;body:any}[]=[],container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
- const state:{delay:boolean;release:(()=>void)|null;status:number;readbackStatus:number}={delay:false,release:null,status:200,readbackStatus:200};let stored:any=null,lost=0,unavailable=0,buffers:Record<string,any>={},drafts:Record<string,any>={};
+ const controls:(()=>void)[]=[],commits:(()=>void)[]=[];
+ const state:{deferBuffer?:boolean;delayControl?:boolean;delay:boolean;release:(()=>void)|null;status:number;readbackStatus:number}={delay:false,release:null,status:200,readbackStatus:200};let stored:any=null,lost=0,unavailable=0,buffers:Record<string,any>={},drafts:Record<string,any>={};
  const props:any={assignment:f.sources.assignment,result:f.sources.result,review:f.sources.review,responsibleState:{roles:[f.sources.role],bindings:[binding]},session:{user:{id:id(6)},clientId:id(24),csrfToken:'C'.repeat(43)},onAuthenticationLost:()=>lost++,onAccessUnavailable:()=>unavailable++};
  props.client=new ui.ApiClient(async(url:any,options:any)=>{
   const path=String(url),body=options?.body?JSON.parse(options.body):null;requests.push({url:path,body});let response:Response;
@@ -62,18 +63,21 @@ async function mount(){
    if(state.delay)return new Promise<Response>(resolve=>{state.release=()=>resolve(response);});
   }else if(path.includes('/result-reworks/'))response=Response.json(state.readbackStatus===200?stored:{code:'ACCESS_DENIED'},{status:state.readbackStatus});
   else{assert.equal(path,'/api/v1/projects/'+f.sources.assignment.projectId);response=Response.json({id:f.sources.assignment.projectId,participation:'OWNER',controlState:{actorId:props.session.user.id,clientId:props.session.clientId,generation:3,status:'HELD'}});}
+  if(state.delayControl&&path==='/api/v1/projects/'+f.sources.assignment.projectId)return new Promise<Response>(resolve=>controls.push(()=>resolve(response)));
   return response;
  });
- function render(){root.render(ui.React.createElement(ui.ResultReworkEditor,{...props,reworks:{buffers,onChange:(key:string,value:any)=>{buffers={...buffers,[key]:typeof value==='function'?value(buffers[key]??null):value};render();},form:{drafts,onChange:(key:string,value:any)=>{drafts={...drafts,[key]:typeof value==='function'?value(drafts[key]??null):value};render();}}}}));}
+ function render(){root.render(ui.React.createElement(ui.ResultReworkEditor,{...props,reworks:{buffers,onChange:(key:string,value:any)=>{const commit=()=>{buffers={...buffers,[key]:typeof value==='function'?value(buffers[key]??null):value};render();};if(state.deferBuffer)commits.push(commit);else commit();},form:{drafts,onChange:(key:string,value:any)=>{drafts={...drafts,[key]:typeof value==='function'?value(drafts[key]??null):value};render();}}}}));}
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))];
  async function flush(){await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});}
  async function waitFor(check:()=>boolean){for(let n=0;n<100&&!check();n++)await flush();assert(check(),container.textContent);}
  const button=(text:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===text);
  async function click(text:string){const node=button(text);assert(node,text);assert(!node.disabled);await ui.React.act(async()=>node.dispatchEvent({type:'click',button:0,bubbles:true}));}
- async function change(label:string,value?:string){const node=nodes().find(n=>n.attributes.get('aria-label')===label);assert(node,label);const key=Object.keys(node).find(k=>k.startsWith('__reactProps$'));assert(key);await ui.React.act(async()=>(node as any)[key].onChange({target:{value}}));}
- async function prepare(){await change('보완 조건 save');await change('보완 대상 예약 세션',binding.ref.id);await change('보완 파일 '+f.input.sourceScopes[0]!.targets[0]!.relativePath);await change('보완 요청 이유',f.input.reason);await click('보완 초안 명시 준비');await waitFor(()=>!!button('보완 저장 명령 준비'));await click('보완 저장 명령 준비');await waitFor(()=>!!Object.values(buffers)[0]);}
+ function captureChange(label:string){const node=nodes().find(n=>n.attributes.get('aria-label')===label);assert(node,label);const key=Object.keys(node).find(k=>k.startsWith('__reactProps$'));assert(key);return (node as any)[key].onChange as (event:{target:{value?:string}})=>void;}
+ async function change(label:string,value?:string){const change=captureChange(label);await ui.React.act(async()=>change({target:{value}}));}
+ async function prepareDraft(){await change('보완 조건 save');await change('보완 대상 예약 세션',binding.ref.id);await change('보완 파일 '+f.input.sourceScopes[0]!.targets[0]!.relativePath);await change('보완 요청 이유',f.input.reason);await click('보완 초안 명시 준비');await waitFor(()=>!!button('보완 저장 명령 준비'));}
+ async function prepare(){await prepareDraft();await click('보완 저장 명령 준비');await waitFor(()=>!!Object.values(buffers)[0]);}
  await ui.React.act(async()=>render());
- return{f,props,requests,container,state,button,change,click,prepare,waitFor,flush,syncRender:()=>ui.flushSync(render),buffer:()=>Object.values(buffers)[0],replace:async(value:any)=>{await ui.React.act(async()=>{buffers={...buffers,[Object.keys(buffers)[0]!]:value};render();});},render:async()=>{await ui.React.act(async()=>render());},lost:()=>lost,unavailable:()=>unavailable,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{f,props,requests,container,state,controls,commits,button,captureChange,change,click,prepare,prepareDraft,waitFor,flush,syncRender:()=>ui.flushSync(render),buffer:()=>Object.values(buffers)[0],replace:async(value:any)=>{await ui.React.act(async()=>{buffers={...buffers,[Object.keys(buffers)[0]!]:value};render();});},render:async()=>{await ui.React.act(async()=>render());},lost:()=>lost,unavailable:()=>unavailable,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 const releaseLabel='미전송 보완 준비 해제 후 입력 수정';
 test('실제 보완 화면: 명시 해제 취소/확인→입력 보존→새 준비→기존 저장',async()=>{
@@ -136,4 +140,73 @@ test('같은 문맥에서 원 buffer 교체/ABA 후 지연401은 원 미결과 �
 });
 test('명확한 서버 거절의 기존 입력 수정과 동일 명령 재확인 버튼은 보존한다',async()=>{
  const m=await mount();try{await m.prepare();const original=m.buffer();m.state.status=403;await m.click('보완 초안 명시 저장');await m.waitFor(()=>!!m.buffer().failure);assert.equal(m.buffer().uncertain,false);assert(!m.button(releaseLabel));assert(m.button('같은 보완 명령 재확인'));await m.click('확인된 거절 이후 보완 입력 수정');assert.equal(m.buffer(),null);assert(m.button('보완 저장 명령 준비'));assert.equal(m.requests.filter(r=>r.url.endsWith('/commands')).length,1);assert.equal(original.pending.command.payload.reason,m.f.input.reason);}finally{await m.close();}
+});
+
+
+test('제어 GET 대기 중 수정 뒤 새 준비는 원 입력을 유지하고 이전 준비를 폐기한다',async()=>{
+ const m=await mount();try{
+  await m.prepareDraft();m.state.delayControl=true;await m.click('보완 저장 명령 준비');await m.waitFor(()=>m.controls.length===1);
+  await m.change('보완 요청 이유','대기 중 수정한 이유');
+  await ui.React.act(async()=>m.controls[0]!());await m.flush();assert.equal(m.buffer(),undefined);
+  m.state.delayControl=false;await m.click('보완 초안 명시 준비');await m.waitFor(()=>!!m.button('보완 저장 명령 준비'));
+  await m.click('보완 저장 명령 준비');await m.waitFor(()=>!!m.buffer());
+  assert.equal(m.buffer().pending.command.payload.reason,'대기 중 수정한 이유');assert.equal(m.requests.filter(r=>r.url.endsWith('/commands')).length,0);
+ }finally{await m.close();}
+});
+
+test('늦은 이전 PREPARE finally는 최신 준비 잠금과 상태를 회수하지 않는다',async()=>{
+ const m=await mount();try{
+  await m.prepareDraft();m.state.delayControl=true;await m.click('보완 저장 명령 준비');await m.waitFor(()=>m.controls.length===1);
+  await m.change('보완 요청 이유','새 원 준비');await m.click('보완 초안 명시 준비');await m.waitFor(()=>!!m.button('보완 저장 명령 준비'));
+  await m.click('보완 저장 명령 준비');await m.waitFor(()=>m.controls.length===2);
+  await ui.React.act(async()=>m.controls[0]!());await m.flush();assert.equal(m.buffer(),undefined);assert.equal(m.button('보완 저장 명령 준비')!.disabled,true);
+  await ui.React.act(async()=>m.controls[1]!());await m.waitFor(()=>!!m.buffer());assert.equal(m.buffer().pending.command.payload.reason,'새 원 준비');
+  assert.equal(m.requests.filter(r=>r.url.endsWith('/commands')).length,0);
+ }finally{await m.close();}
+});
+
+
+test('이전 입력 이벤트는 진행 중 SAVE의 원 명령·잠금·결과 수거를 무효화하지 않는다',async()=>{
+ const m=await mount();try{
+  await m.prepareDraft();const stale=m.captureChange('보완 요청 이유');await m.click('보완 저장 명령 준비');await m.waitFor(()=>!!m.buffer());
+  const original=m.buffer().pending;m.state.delay=true;await m.click('보완 초안 명시 저장');await m.waitFor(()=>!!m.state.release);
+  await ui.React.act(async()=>stale({target:{value:'늦은 수정'}}));await m.flush();
+  assert.equal(m.buffer().pending,original);assert.equal(m.button('같은 보완 명령 재확인')!.disabled,true);
+  await ui.React.act(async()=>m.state.release!());await m.waitFor(()=>!!m.buffer().stored);
+  assert.equal(m.buffer().pending,original);assert.equal(m.buffer().stored.snapshot.input.reason,original.command.payload.reason);
+  assert.equal(m.requests.filter(r=>r.url.endsWith('/commands')).length,1);
+ }finally{await m.close();}
+});
+
+
+test('완료된 PREPARE의 지연 부모 updater는 잠금 회수 후에도 원 pending을 보존한다',async()=>{
+ const m=await mount();try{
+  await m.prepareDraft();m.state.deferBuffer=true;await m.click('보완 저장 명령 준비');
+  await m.waitFor(()=>m.commits.length===1&&!m.button('보완 저장 명령 준비')!.disabled);
+  assert.equal(m.buffer(),undefined);await ui.React.act(async()=>m.commits[0]!());
+  assert(m.buffer()?.pending,'finally 이후 원 준비 commit');assert.equal(m.buffer().pending.command.payload.reason,m.f.input.reason);
+  assert.equal(m.requests.filter(r=>r.url.endsWith('/commands')).length,0);
+ }finally{await m.close();}
+});
+
+test('완료 PREPARE의 지연 부모 updater는 그 사이 입력 변경 뒤 pending을 만들지 않는다',async()=>{
+ const m=await mount();try{
+  await m.prepareDraft();m.state.deferBuffer=true;await m.click('보완 저장 명령 준비');
+  await m.waitFor(()=>m.commits.length===1&&!m.button('보완 저장 명령 준비')!.disabled);
+  await m.change('보완 요청 이유','지연 commit 이전 수정');await ui.React.act(async()=>m.commits[0]!());assert.equal(m.buffer(),null);
+  m.state.deferBuffer=false;await m.click('보완 초안 명시 준비');await m.waitFor(()=>!!m.button('보완 저장 명령 준비'));await m.click('보완 저장 명령 준비');await m.waitFor(()=>!!m.buffer());
+  assert.equal(m.buffer().pending.command.payload.reason,'지연 commit 이전 수정');assert.equal(m.requests.filter(r=>r.url.endsWith('/commands')).length,0);
+ }finally{await m.close();}
+});
+
+
+test('지연 PREPARE commit은 새 시도 또는 문맥 교체 뒤 재생되지 않는다',async()=>{
+ for(const kind of ['attempt','context']){const m=await mount();try{
+  await m.prepareDraft();m.state.deferBuffer=true;await m.click('보완 저장 명령 준비');await m.waitFor(()=>m.commits.length===1&&!m.button('보완 저장 명령 준비')!.disabled);
+  if(kind==='attempt'){await m.click('보완 저장 명령 준비');await m.waitFor(()=>m.commits.length===2&&!m.button('보완 저장 명령 준비')!.disabled);}
+  else{m.props.session={...m.props.session,csrfToken:'D'.repeat(43)};await m.render();}
+  await ui.React.act(async()=>m.commits[0]!());assert.equal(m.buffer(),null,kind);
+  if(kind==='attempt'){await ui.React.act(async()=>m.commits[1]!());assert(m.buffer()?.pending);}
+  assert.equal(m.requests.filter(r=>r.url.endsWith('/commands')).length,0);
+ }finally{await m.close();}}
 });
