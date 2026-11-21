@@ -6,7 +6,7 @@ import type { ExecutionGrantRead } from '../context/read-access.ts';
 import { projectNotArchived } from '../context/read-access.ts';
 import { ProjectContexts, registeredStartContextRead as contextRead } from '../context/project-contexts.ts';
 import { ProjectContextSources, registeredContextSourceResolve as sourceResolve } from '../context/context-sources.ts';
-import { startContextBody } from './normal-initial-execution.ts';
+import { startContextBody } from './normal-start-context-body.ts';
 import { startMaterialDescriptor, type NormalStartContextSource } from './normal-start-materials.ts';
 
 type Scope = Parameters<NormalStartContextSource['contextBody']>[0];

@@ -1,3 +1,5 @@
+import {startContextBody} from './normal-start-context-body.ts';
+export {startContextBody} from './normal-start-context-body.ts';
 import {randomUUID} from 'node:crypto';
 import type {PoolClient} from 'pg';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
@@ -104,28 +106,6 @@ async function protectedBasis(db:PoolClient,actor:AuthenticatedIdentity,request:
   return {intent,host,stageRef:{applicationRef:task.applicationRef,nodeId:task.nodeId},sessionRef:binding.snapshot.sessionRef,bindingGeneration:binding.snapshot.generation,basisRefs:prep.snapshot.basisRefs,latestInstructionRefs:prep.snapshot.latestInstructionRefs,
     materials:[{kind:'CONTEXT_BUNDLE',ref:ctx.ref,contentHash:contentHash(body),bytes:Buffer.byteLength(body)},
       {kind:'START_OPTIONS',ref:prep.ref,contentHash:opt.contentHash,bytes:opt.utf8Bytes}]};
-}
-type StartContext=Awaited<ReturnType<ProjectContexts['readStartSource']>>;
-/** 보호 reader가 돌려준 맥락에서 START 자료 원문을 만든다. 최초 등록과 이후 자료 전달이 같은 bytes를 내도록 한곳에 둔다.
- * 이 함수는 접근 권한이나 전달 허가를 만들지 않는다. */
-export function startContextBody(ctx:StartContext,intent:{contextBundleRef:Ref;assignmentRef:Ref}):string{
-  if(!same(ctx.ref,intent.contextBundleRef)||!same(ctx.manifest.assignmentRef,intent.assignmentRef)||!ctx.prepared.parts.length)return reject();
-  const items=ctx.manifest.items.map(item=>{
-    const bound=ctx.manifest.sourceBindings.find(b=>b.itemId===item.itemId);
-    if(!bound?.bodyRef||!bound.selection||item.issue||item.includedState!=='INCLUDED')return reject();
-    const parts=ctx.manifest.deliveryPlan.parts.filter(v=>v.itemId===item.itemId).map(v=>{
-      const t=ctx.prepared.parts.find(x=>x.partId===v.partId&&x.itemId===item.itemId);
-      if(!t||t.utf8Bytes!==v.utf8Bytes||t.contentHash!==v.contentHash||!t.text.length
-        ||Buffer.byteLength(t.text)!==v.utf8Bytes||contentHash(t.text)!==v.contentHash)return reject();
-      return {partId:v.partId,order:v.order,byteOffset:v.byteOffset,utf8Bytes:v.utf8Bytes,contentHash:v.contentHash,text:t.text};
-    });
-    if(!parts.length)return reject();
-    return {itemId:item.itemId,category:item.category,sourceRef:item.sourceRef,selection:bound.selection,bodyRef:bound.bodyRef,
-      sourceState:bound.sourceState,includedState:item.includedState,reason:item.reason,parts};
-  });
-  return canonicalJson({schemaVersion:1,purpose:'START_CONTEXT_BODY_V1',contextBundleRef:ctx.ref,assignmentRef:intent.assignmentRef,
-    budgetRef:ctx.manifest.budgetRef,baselineRefs:ctx.manifest.baselineRefs,constitutionRef:ctx.manifest.constitutionRef,items,
-    ready:false,executionAuthorized:false,dispatchPerformed:false});
 }
 const PRESENT='NORMAL_PROTECTED';
 /** 보호 source와 저장소 reader는 서버 조립 때만 받는다. 읽기 성공이나 등록 자체는 실행 정책을 발급하지 않는다. */

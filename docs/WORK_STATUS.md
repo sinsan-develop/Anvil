@@ -21761,3 +21761,9 @@ PMO 회신과 DEVELOPMENT_ENVIRONMENT·FN03_ISOLATED_DOCUMENT_RESULT를 대조�
 기준 `5c313a47`. developer_primary 단일 작성 후 반환. 예약에 저장된 connectionRef로만 기존 보호 GET을 명시 실행하고 당시 도구·모델 옵션·환경 참조를 표시한다. 현재 head는 응답 의미대로 따로 표시하며 RESERVED를 실제 Agent 연결로 표시하지 않는다. 저장 버퍼/UNKNOWN·공개 계약·DB·권한과 기존 작성 동작 변경0. 겹친 refresh 중 늦은 응답은 이전 요청의 revision을 유지하므로 새 조회 자격을 얻지 못한다.
 
 담당 RED 버튼 부재 `9499ac` 뒤 직접14통과·실패/건너뜀0 `31a35d`, 좁은 타입·공백 종료0. Main 최종 직접14통과·실패/건너뜀0 `e9f46c`. 별도 같은 서버 시험 `tests/unit/FN09/registered-definition-responsible-session.test.ts`는 `project-execution-preparations.ts:190`의 ProjectConnectionDefinitions 초기화 ReferenceError로 케이스 실행 전 중단·종료1 `958fee`. 독립 원인 조사 진행, 실패를 PASS로 포함하지 않는다. 실제 브라우저·DB·서비스·Agent는 미실행이며 롤백은 이번 UI·시험 3파일과 작업기록을 역적용한다.
+
+### FN09 서버 시험의 모듈 순환 초기화 복구
+
+기준 `66761758`. Main이 기존 서버 시험의 ESM 초기화 오류를 재현 `958fee`. 독립 검수에서 START 본문 계산을 읽으려는 모듈이 전체 초기 실행 모듈을 거쳐 아직 초기화 중인 ProjectConnectionDefinitions.prototype을 접근하는 경로를 확인했다. developer_primary가 기존 순수 startContextBody를 경량 모듈로 이동하고 기존 export·bytes 및 원본 prototype 캡처를 보존했다. 변경은 executions 3파일이며 기존 권한·guard·API·DB 동작 변경0.
+
+담당 기준 Git의 본문/잔여 코드 동일 대조 `304b87`, 원 서버·인접 context 시험82통과·실패/건너뜀0 `f87dc3`, 좁은 타입 종료0 `323796`. Main 원 실패 명령 `node --test tests/unit/FN09/registered-definition-responsible-session.test.ts`에서 기존 10건이 실행돼 모두 통과, 종료0 `290a04`. 실제 서버 기동·DB·권한·키·Agent 실행0이며 롤백은 해당 세 파일과 작업기록의 역적용이다.
