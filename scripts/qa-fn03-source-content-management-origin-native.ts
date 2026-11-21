@@ -1,3 +1,4 @@
+import {managementOriginProfile,managementOriginTc01Profile,type ManagementOriginProfile} from './qa-fn03-source-content-management-origin-profiles.ts';
 import * as fs from 'node:fs';
 import {posix} from 'node:path';
 import {spawnSync} from 'node:child_process';
@@ -27,9 +28,18 @@ interface Row{path:string;bytes:number;sha256:string}
 const fail=():never=>{throw Error('FN03_MANAGEMENT_NATIVE_UNKNOWN');};
 function check(v:unknown):asserts v{if(!v)fail();}
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
-const profile='FN03_MANAGEMENT_ORIGIN_ENTRY_V1',purpose='FN03_MANAGEMENT_ORIGIN_ISOLATED';
 const entry='scripts/qa-fn03-source-content-management-origin-entry.ts',native='scripts/qa-fn03-source-content-management-origin-native.ts';
 const required=[entry,native,'scripts/qa-fn03-source-content-management-origin-isolated-ports.ts','scripts/qa-fn03-source-content-management-origin-host.ts','scripts/qa-ix01-current-journey.ts','scripts/qa-ix01-subnet-observation-host.ts','package.json','package-lock.json'];
+// 최소 필수행일 뿐 전체 import closure/실제 적재를 증명하지 않는다. 원 launcher 검산은 별도다.
+const tc01Required=[...required,
+ 'scripts/qa-fn03-source-content-management-origin-profiles.ts',
+ 'scripts/qa-fn03-source-content-management-origin.ts',
+ 'scripts/qa-fn03-source-content-management-origin-auth-fixture.ts',
+ 'tests/integration/IX01/methodology-copy-application-scenario.ts',
+ 'tests/integration/IX01/current-schema-baseline.ts',
+ 'tests/integration/IX01/current-schema-installation.ts',
+ ...['supervision','schema','transaction-fence','provision','fixture','journey'].map(name=>'tests/integration/FN03/source-content-management-origin-'+name+'.ts'),
+];
 function defaults():ManagementOriginNativeOperations{return{identity:createSubnetNativeIdentity(),files:fs,spawn:spawnSync,pool:request=>new Pool(request),timer:(f,ms)=>setTimeout(f,ms),clearTimer:h=>clearTimeout(h as ReturnType<typeof setTimeout>)};}
 function manifest(raw:string,sha:string,dependencies:boolean):Record<string,any>&{files:Row[]}{
  check(typeof raw==='string'&&raw.isWellFormed()&&Buffer.byteLength(raw)<=2097152&&contentHash(Buffer.from(raw))===sha);
@@ -46,14 +56,14 @@ function manifest(raw:string,sha:string,dependencies:boolean):Record<string,any>
  * 실제 manifest/승인 파일은 현재 미공급이며 과거 tool/dependency hash로 대체하지 않는다.
  * native 원 read/spawnSync가 OS에서 반환하지 않는 경우의 외부 전체 감독도 별도 필요하다.
  */
-function nativeProviders(preparation:ManagementOriginNativePreparation,injected?:ManagementOriginNativeOperations):ManagementOriginEntryPorts{
+function nativeProviders(preparation:ManagementOriginNativePreparation,selected:ManagementOriginProfile,injected?:ManagementOriginNativeOperations):ManagementOriginEntryPorts{
  const p=copyControlData(preparation,5*1024*1024) as unknown as ManagementOriginNativePreparation;
- check(recordV1(p,['binding','runtime','sourceManifestRaw','dependencyManifestRaw']));const b=p.binding,r=p.runtime;
- check(recordV1(b,['attemptId','approvalId','planHash','approvalHash','sourceHead','issuedAt','expiresAt','artifactRoot','subnet'])&&uuidV1(b.attemptId)&&uuidV1(b.approvalId)&&hashV1(b.planHash)&&hashV1(b.approvalHash)&&/^[a-f0-9]{40}$/.test(b.sourceHead)&&Number.isSafeInteger(b.issuedAt)&&Number.isSafeInteger(b.expiresAt)&&b.issuedAt>=0&&b.expiresAt>b.issuedAt&&b.expiresAt-b.issuedAt<=1800000);
- const root='/home/daon/anvil-fn03-management-'+b.attemptId+'-qa',receipt='/home/daon/.local/share/anvil-v3-qa-receipts/fn03-management-'+b.attemptId,parent=posix.dirname(receipt),artifact='/tmp/anvil-v3-fn03-management-'+b.attemptId,config=receipt+'/docker-config';
+ check(recordV1(p,['binding','runtime','sourceManifestRaw','dependencyManifestRaw']));const b=p.binding,r=p.runtime,{purpose,profile}=selected;
+ check(recordV1(b,['attemptId','approvalId','planHash','approvalHash','sourceHead','issuedAt','expiresAt','artifactRoot','subnet',...(selected.integrated?['purpose','profile']:[])])&&(!selected.integrated||b.purpose===purpose&&b.profile===profile)&&uuidV1(b.attemptId)&&uuidV1(b.approvalId)&&hashV1(b.planHash)&&hashV1(b.approvalHash)&&/^[a-f0-9]{40}$/.test(b.sourceHead)&&Number.isSafeInteger(b.issuedAt)&&Number.isSafeInteger(b.expiresAt)&&b.issuedAt>=0&&b.expiresAt>b.issuedAt&&b.expiresAt-b.issuedAt<=1800000);
+ const root='/home/daon/'+selected.sourcePrefix+b.attemptId+'-qa',receipt='/home/daon/.local/share/anvil-v3-qa-receipts/'+selected.receiptPrefix+b.attemptId,parent=posix.dirname(receipt),artifact='/tmp/'+selected.artifactPrefix+b.attemptId,config=receipt+'/docker-config';
  check(b.artifactRoot===artifact&&recordV1(r,['sourceHead','entry','nodeSha256','sourceClosureSha256','packageLockSha256','installedDependenciesSha256'])&&r.sourceHead===b.sourceHead&&r.entry===entry&&r.nodeSha256===currentProfile.nodeHash&&[r.sourceClosureSha256,r.packageLockSha256,r.installedDependenciesSha256].every(hashV1));
  const sources=manifest(p.sourceManifestRaw,r.sourceClosureSha256,false),dependencies=manifest(p.dependencyManifestRaw,r.installedDependenciesSha256,true);
- check(sources.sourceHead===b.sourceHead&&sources.sourceRoot===root&&hashV1(sources.gitSha256)&&hashV1(sources.dockerSha256)&&required.every(path=>sources.files.some(row=>row.path===path))&&sources.files.find(row=>row.path==='package-lock.json')?.sha256===r.packageLockSha256&&dependencies.sourceHead===b.sourceHead&&dependencies.packageLockSha256===r.packageLockSha256);
+ check(sources.sourceHead===b.sourceHead&&sources.sourceRoot===root&&hashV1(sources.gitSha256)&&hashV1(sources.dockerSha256)&&(selected.integrated?tc01Required:required).every(path=>sources.files.some(row=>row.path===path))&&sources.files.find(row=>row.path==='package-lock.json')?.sha256===r.packageLockSha256&&dependencies.sourceHead===b.sourceHead&&dependencies.packageLockSha256===r.packageLockSha256);
  const subnet=/^172\.(1[6-9]|2\d|3[01])\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\/28$/.exec(b.subnet);check(subnet&&Number(subnet[2])<=254&&Number(subnet[3])<=240&&Number(subnet[3])%16===0);
  const ops=injected??defaults(),io=ops.files,identity=ops.identity;
  const fsKeys=['lstatSync','fstatSync','realpathSync','openSync','readSync','writeFileSync','fsyncSync','closeSync','mkdirSync','readdirSync'] as const;
@@ -86,7 +96,7 @@ function nativeProviders(preparation:ManagementOriginNativePreparation,injected?
   finally{data.fill(0);io.closeSync(fd);}
  };
  const syncDir=(path:string)=>{const fd=io.openSync(path,fs.constants.O_RDONLY|fs.constants.O_DIRECTORY|fs.constants.O_NOFOLLOW);try{io.fsyncSync(fd);}finally{io.closeSync(fd);}};
- const intent=canonicalJson({schemaVersion:1,purpose:'FN03_MANAGEMENT_ORIGIN_INTENT',binding:b,runtime:r});
+ const intent=canonicalJson({schemaVersion:1,purpose:selected.intentPurpose,binding:b,runtime:r});
  const fresh=()=>{
   clock();check(ops.files===io&&ops.identity===identity);
   const currentMethods=functionList();check(methods.length===currentMethods.length&&methods.every((f,i)=>f===currentMethods[i]));
@@ -158,7 +168,7 @@ function nativeProviders(preparation:ManagementOriginNativePreparation,injected?
   }catch{broken=true;fail();}},
   async openPool(request){
    current();let pool:Pool|undefined,newOwned=false;
-   try{check(consumed&&recordV1(request,['host','port','database','user','password','ssl','max','connectionTimeoutMillis','statement_timeout','query_timeout'])&&['anvil_v3_app','anvil_v3_migrator','anvil_v3_bootstrap'].includes(request.user)&&!roles.has(request.user)&&request.database==='anvil_v3_fn03_management_'+b.attemptId.replaceAll('-','')&&request.port===5432&&request.ssl===false&&request.max===2&&request.connectionTimeoutMillis===3000&&request.statement_timeout===5000&&request.query_timeout===6000&&hashV1(request.password));
+   try{check(consumed&&recordV1(request,['host','port','database','user','password','ssl','max','connectionTimeoutMillis','statement_timeout','query_timeout'])&&['anvil_v3_app','anvil_v3_migrator','anvil_v3_bootstrap'].includes(request.user)&&!roles.has(request.user)&&request.database===selected.resourcePrefix+b.attemptId.replaceAll('-','')&&request.port===5432&&request.ssl===false&&request.max===2&&request.connectionTimeoutMillis===3000&&request.statement_timeout===5000&&request.query_timeout===6000&&hashV1(request.password));
     const prefix=`172.${subnet[1]}.${subnet[2]}.`,last=Number(request.host.slice(prefix.length));check(request.host.startsWith(prefix)&&String(last)===request.host.slice(prefix.length)&&last>Number(subnet[3])&&last<Number(subnet[3])+15);
     roles.add(request.user);pool=ops.pool({...request});check(pool&&typeof pool.end==='function'&&!pools.has(pool));pools.set(pool,{end:pool.end,state:'OPEN'});newOwned=true;current();return pool;
    }catch{broken=true;if(newOwned&&pool&&pools.get(pool)?.state==='OPEN')await end(pool,10000).catch(()=>{});return fail();}
@@ -169,5 +179,10 @@ function nativeProviders(preparation:ManagementOriginNativePreparation,injected?
 }
 
 export function createManagementOriginNativeProviders(preparation:ManagementOriginNativePreparation,injected?:ManagementOriginNativeOperations):ManagementOriginEntryPorts{
- try{return nativeProviders(preparation,injected);}catch{return fail();}
+ try{return nativeProviders(preparation,managementOriginProfile,injected);}catch{return fail();}
+}
+
+/** 신규 TC01 목적만 선택한다. legacy factory/CLI의 자동 전환은 없다. */
+export function createManagementOriginTc01NativeProviders(preparation:ManagementOriginNativePreparation,injected?:ManagementOriginNativeOperations):ManagementOriginEntryPorts{
+ try{return nativeProviders(preparation,managementOriginTc01Profile,injected);}catch{return fail();}
 }

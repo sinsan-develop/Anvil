@@ -21851,3 +21851,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 두 여정이 확인되고 기존 앱·Pool이 제때 닫힌 뒤에만 정리를 요청한다. TC01 실패 시 앞서 검산한 FN03 단계 근거는 남고 전체 STOPPED, 정리0이다. 담당 초기 미연결 RED `deb3f6`, entry/host/isolated 직접 31통과·실패/건너뜀0 `e08a73`, 좁은 타입·공백0 `ae1d97`, 합성 핸들 잔여0. Main 범위·지문 대조와 독립 C0/I0. 기존 A14·FN03 단독 호출 및 native/CLI는 그대로다. 실제 환경 또는 사람 인수의 증거는 없다.
 
 다음은 새 native 공급자가 위 프로필과 정확 소스·설치 closure, 원 launcher를 검산하는 연결이다. 실제 Windows 설정 진단 1회의 응답은 미확인이며 실행하지 않았다. SSH/IPAM·새 PG 설치/두 여정·실제 정리는 미완료다. 되돌리기는 해당 구현·시험 일곱 경로와 이 기록의 역적용이다.
+
+### IX01/FN03 통합 프로필의 Linux 공급자 연결
+
+기준 `30457027` clean·추적 차이0. developer_primary가 명시 통합 native factory·공용 프로필·RAM 시험 세 경로를 작성 후 반환했다. 원 계획/승인·sourceHead·시도·기한·자원, 고정 `/home/daon/anvil-fn03-tc01-<attempt>-qa` checkout, 분리된 receipt와 intent, 정확 DB와 원 Docker 단회 ticket을 대조한다. 교차 프로필·경로·DB·누락 또는 교체된 소스에서 다음 효과를 거절한다. 구 FN03 경로와 명령·Pool 회수 조건을 보존한다.
+
+담당 최초 미연결 RED `8d83d5` 이후 native/entry/host/isolated 직접·인접 46통과·실패/건너뜀0 `df06d7`, 좁은 타입0 `50c3bb`, 공백0 `197bf2`. 중간 시험의 첫 Docker 명령 기대를 실제 daemon 검산 순서로 정정했다. Main이 고정 profile·기존 경로와 정확 diff를 대조했고 독립 C0/I0이다. 합성 실행 핸들 잔여0. 실제 Linux, 외부 launcher, SSH, DB/권한/키/서비스는 실행하지 않았다.
+
+다음은 import 전 source·설치 closure와 단회 승인·원 프로세스 수거를 새 entry/native 포트의 한 실행에 결박하는 단계다. 최소 source 목록은 전체 closure나 적재 증거가 아니다. Windows 설정 한정 읽기의 기존 승인 요청은 아직 응답 미확인이다. TC01과 IX01은 미완료이며 되돌리기는 이번 세 코드·시험 경로와 상태 기록의 역적용이다.
