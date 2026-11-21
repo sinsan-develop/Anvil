@@ -3,10 +3,22 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {spawnSync,execFileSync} from 'node:child_process';
+import {readSubnetWindowsConfigDiagnosticResult} from '../../../scripts/qa-ix01-subnet-observation-windows-readiness-result.ts';
 const base=new URL('../../../',import.meta.url);
 const paths=['scripts/qa-ix01-subnet-observation-windows-readiness.ps1','scripts/qa-ix01-subnet-observation-alias-config.ps1','scripts/qa-ix01-subnet-observation-config-readiness.ps1'];
 const historicHead='1b5232a7f83ab190b3ae7649196f198d0b7469aa';
 const historicPins=['6847d094d436d246983a8ea353c0705541b4fd4c312f596ab78b5ff3efea8cc3','eb0b94496e2c28c8c0193c2904cf3477d07b9a18540a673b9739c7d446cdd488','5d2b8d4442b7a4b8c3f7c98baa0b1c114ba20178cde7c5a411572d79d3aef8cc'];
+const diagnosticSourceHash='30ece222c2f5f194e8bd3de5f952b012c5fdcfddaca4fe3a42e9a5d6e448dbef';
+const diagnosticBinding={attemptId:'11111111-1111-4111-8111-111111111111',approvalHash:'a'.repeat(64),planHash:'b'.repeat(64),sourceHash:diagnosticSourceHash,issuedAt:1800000000000,expiresAt:1800000060000};
+function decodedWire(row:{wire:string},coverage:'BOTH_CONFIGS'|'PARTIAL'){
+ const bytes=Buffer.from(row.wire,'base64'),before=Buffer.from(bytes);
+ const decoded=readSubnetWindowsConfigDiagnosticResult(bytes,diagnosticBinding);
+ assert.deepEqual(bytes,before);assert.equal(decoded.status,'COMPARISON_ONLY');
+ if(decoded.status!=='COMPARISON_ONLY')throw new Error('DIAGNOSTIC_WIRE_REJECTED');
+ assert.equal(decoded.readiness,'UNCONFIRMED');assert.equal(decoded.coverage,coverage);
+ assert.equal(decoded.outputSha256,createHash('sha256').update(bytes).digest('hex'));
+ return decoded;
+}
 function historicSource(path:string){
  const bytes=execFileSync('git',['cat-file','blob',`${historicHead}:${path}`],{cwd:base,windowsHide:true,maxBuffer:65536});
  assert.equal(createHash('sha256').update(bytes).digest('hex'),historicPins[paths.indexOf(path)]);return bytes;
@@ -131,6 +143,7 @@ $out=@();foreach($path in @('~/.ssh/id','C:\PRIVATE\id')){
 });
 
 const twoConfigFixture=String.raw`
+$binding.sourceHash='30ece222c2f5f194e8bd3de5f952b012c5fdcfddaca4fe3a42e9a5d6e448dbef'
 $baseObserve=$ports.Observe;$baseOpen=$ports.Open
 $ports.Observe={param($path,$dir,$leaf)
  $v=&$baseObserve $path $dir $leaf
@@ -157,6 +170,7 @@ $out=@();foreach($diagnostic in @($false,$true)){
  assert.equal(rows[0].result.code,'UNKNOWN');assert.equal(rows[0].result.reason,'UNSUPPORTED_DIRECTIVE');assert.equal(rows[0].system,0);assert.equal(rows[0].opens,1);
  const r=rows[1];assert.equal(r.result.code,'UNKNOWN');assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.opens,2);assert.equal(r.closes,2);assert.equal(r.system,3);
  assert.deepEqual(r.result.alias.diagnostics,[{role:'USER_CONFIG',line:2,code:'UNSUPPORTED_DIRECTIVE',applicable:true},{role:'USER_CONFIG',line:3,code:'CARRIER_FIXED_SERVER_ALIVE_INTERVAL',applicable:true},{role:'SYSTEM_CONFIG',line:2,code:'UNSUPPORTED_DIRECTIVE',applicable:false},{role:'SYSTEM_CONFIG',line:4,code:'CARRIER_FIXED_LOG_LEVEL',applicable:true}]);
+ assert.deepEqual(decodedWire(r,'BOTH_CONFIGS').diagnostics,r.result.alias.diagnostics);
  assert.equal(r.result.alias.additional,false);assert.equal(r.result.alias.status,'UNKNOWN');assert.deepEqual(r.result.files.map((f:any)=>f.text),['DIAGNOSTIC_ONLY','DIAGNOSTIC_ONLY']);
  const wire=Buffer.from(r.wire,'base64');assert(wire.length<=4096);assert.equal(wire.toString().split('\n').length,2);assert(!wire.toString().includes('PRIVATE'));assert(!wire.toString().includes('C:\\'));
 });
@@ -170,10 +184,10 @@ PRIVATEFIRST PRIVATE_VALUE
 PRIVATELATER PRIVATE_VALUE")
  $systemData=[Text.Encoding]::UTF8.GetBytes('PRIVATESYSTEM PRIVATE_VALUE');$state.opens=0;$state.closes=0;$scope.Clear()
  $line=Invoke-Ix01ConfigReadiness $binding $ports -DiagnosticOnly
- $out+=@{result=($line|ConvertFrom-Json -AsHashtable);opens=$state.opens;closes=$state.closes;system=@($scope|Where-Object {$_ -ceq 'C:\ProgramData\ssh\ssh_config'}).Count}
+ $out+=@{result=($line|ConvertFrom-Json -AsHashtable);wire=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($line+[char]10));opens=$state.opens;closes=$state.closes;system=@($scope|Where-Object {$_ -ceq 'C:\ProgramData\ssh\ssh_config'}).Count}
 };ConvertTo-Json -InputObject $out -Depth 12 -Compress
 `);
- rows.forEach((r:any,i:number)=>{assert.equal(r.result.code,'UNKNOWN');assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.result.reason,['INCLUDE_UNCONFIRMED','MATCH_UNCONFIRMED','EFFECT_UNCONFIRMED','PATH_UNCONFIRMED'][i]);assert.equal(r.result.alias.role,'USER_CONFIG');assert.equal(r.result.alias.line,3);assert.equal(r.result.alias.diagnostics.length,1);assert.equal(r.opens,1);assert.equal(r.closes,1);assert.equal(r.system,0);});assert(!JSON.stringify(rows).includes('PRIVATE'));
+ rows.forEach((r:any,i:number)=>{assert.deepEqual(decodedWire(r,'PARTIAL').stop,{code:r.result.reason,role:'USER_CONFIG',line:3});assert.equal(r.result.code,'UNKNOWN');assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.result.reason,['INCLUDE_UNCONFIRMED','MATCH_UNCONFIRMED','EFFECT_UNCONFIRMED','PATH_UNCONFIRMED'][i]);assert.equal(r.result.alias.role,'USER_CONFIG');assert.equal(r.result.alias.line,3);assert.equal(r.result.alias.diagnostics.length,1);assert.equal(r.opens,1);assert.equal(r.closes,1);assert.equal(r.system,0);});assert(!JSON.stringify(rows).includes('PRIVATE'));
 });
 test('IX01 config diagnostic: 전역16개/추가 여부, SYSTEM HARD와 carrier 분류는 권위0',()=>{
  const rows=ram(twoConfigFixture+String.raw`
@@ -184,9 +198,10 @@ LogLevel ERROR"}else{(('PRIVATEKEY PRIVATE_VALUE'+[char]10)*18)}))
  $systemData=[Text.Encoding]::UTF8.GetBytes($(if($mode -eq 'hard'){'Include PRIVATE_PATH'}elseif($mode -eq 'fixed'){'# PRIVATE_COMMENT'}else{'PRIVATESYSTEM PRIVATE_VALUE'}))
  $state.opens=0;$state.closes=0;$scope.Clear()
  $line=Invoke-Ix01ConfigReadiness $binding $ports -DiagnosticOnly
- $out+=@{result=($line|ConvertFrom-Json -AsHashtable);bytes=[Text.Encoding]::UTF8.GetByteCount($line)+1;opens=$state.opens;closes=$state.closes}
+ $out+=@{result=($line|ConvertFrom-Json -AsHashtable);wire=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($line+[char]10));bytes=[Text.Encoding]::UTF8.GetByteCount($line)+1;opens=$state.opens;closes=$state.closes}
 };ConvertTo-Json -InputObject $out -Depth 12 -Compress
 `);
+ rows.forEach((r:any,i:number)=>decodedWire(r,i===1?'PARTIAL':'BOTH_CONFIGS'));
  for(const r of rows){assert(r.bytes<=4096);assert.equal(r.opens,2);assert.equal(r.closes,2);assert.equal(r.result.readiness,'UNCONFIRMED');}
  assert.equal(rows[0].result.alias.diagnostics.length,16);assert.equal(rows[0].result.alias.additional,true);assert.equal(rows[0].result.code,'UNKNOWN');
  assert.equal(rows[1].result.alias.diagnostics.length,16);assert.equal(rows[1].result.alias.additional,true);assert.equal(rows[1].result.reason,'INCLUDE_UNCONFIRMED');assert.equal(rows[1].result.alias.role,'SYSTEM_CONFIG');assert.equal(rows[1].result.alias.line,1);
@@ -198,7 +213,7 @@ $out=@();foreach($mode in @('access','changed','deadline','step-time','read','cl
  $state.mode=$mode;$state.wall=$binding.issuedAt;$state.mono=1L;$state.opens=0;$state.closes=0;$state.observes=0;$scope.Clear()
  $data=[Text.Encoding]::UTF8.GetBytes('PRIVATEKEY PRIVATE_VALUE')
  $line=Invoke-Ix01ConfigReadiness $binding $ports -DiagnosticOnly
- $out+=@{result=($line|ConvertFrom-Json -AsHashtable);opens=$state.opens;closes=$state.closes;system=@($scope|Where-Object {$_ -ceq 'C:\ProgramData\ssh\ssh_config'}).Count}
+ $out+=@{result=($line|ConvertFrom-Json -AsHashtable);wire=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($line+[char]10));opens=$state.opens;closes=$state.closes;system=@($scope|Where-Object {$_ -ceq 'C:\ProgramData\ssh\ssh_config'}).Count}
 };ConvertTo-Json -InputObject $out -Depth 12 -Compress
 `);
  for(const r of rows){assert.equal(r.result.code,'UNKNOWN');assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.system,0);assert.equal(r.closes,r.opens);assert(!Object.hasOwn(r.result,'alias'));}assert(!JSON.stringify(rows).includes('PRIVATE'));
@@ -225,8 +240,42 @@ $out=@();foreach($mode in @('system-read','system-close','final-deadline')){
  $p.Read={param($s,$b,$n) if($mode -eq 'system-read' -and [object]::ReferenceEquals($s,$box.stream)){throw 'PRIVATE_READ'};return &$read $s $b $n}
  $p.Close={param($s) &$close $s;if([object]::ReferenceEquals($s,$box.stream)){if($mode -eq 'system-close'){throw 'PRIVATE_CLOSE'};if($mode -eq 'final-deadline'){$state.wall+=60001L;$state.mono+=60001L}}}
  $line=Invoke-Ix01ConfigReadiness $binding $p -DiagnosticOnly
- $out+=@{result=($line|ConvertFrom-Json -AsHashtable);opens=$state.opens;closes=$state.closes}
+ $out+=@{result=($line|ConvertFrom-Json -AsHashtable);wire=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($line+[char]10));opens=$state.opens;closes=$state.closes}
 };ConvertTo-Json -InputObject $out -Depth 12 -Compress
 `);
- rows.forEach((r:any,i:number)=>{assert.equal(r.result.code,'UNKNOWN');assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.result.reason,['READ_UNCONFIRMED','CLOSE_UNCONFIRMED','WINDOW_EXPIRED'][i]);assert.equal(r.result.alias.diagnostics.length,1);assert.equal(r.result.alias.diagnostics[0].role,'USER_CONFIG');assert.equal(r.opens,2);assert.equal(r.closes,2);});assert(!JSON.stringify(rows).includes('PRIVATE'));
+ rows.forEach((r:any,i:number)=>{assert.equal(decodedWire(r,'PARTIAL').reason,r.result.reason);assert.equal(r.result.code,'UNKNOWN');assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.result.reason,['READ_UNCONFIRMED','CLOSE_UNCONFIRMED','WINDOW_EXPIRED'][i]);assert.equal(r.result.alias.diagnostics.length,1);assert.equal(r.result.alias.diagnostics[0].role,'USER_CONFIG');assert.equal(r.opens,2);assert.equal(r.closes,2);});assert(!JSON.stringify(rows).includes('PRIVATE'));
+});
+
+
+test('IX01 conditional resumption: 부모 본문 exact 치환·4 pin·빈 승인·단회 진단 AST만 검산',()=>{
+ const parent=readFileSync(new URL('docs/work_packages/IX01_WINDOWS_FINAL_READINESS_EXECUTION_PLAN.md',base),'utf8');
+ assert.equal(createHash('sha256').update(parent).digest('hex'),'44ed1b9a16471e91c334530815db23ba27643adcb6d5360a77559b28772978d7');
+ const document=readFileSync(new URL('docs/work_packages/IX01_CONDITIONAL_RESUMPTION_PLAN.md',base),'utf8');
+ const command=document.split('```powershell\n')[1]!.split('```')[0]!;
+ let expected=parent.split('```powershell\n')[1]!.split('```')[0]!;
+ for(const [from,to] of [
+  ['bytes=8309','bytes=10415'],
+  ['d972a785a99cc8c883b15ab716b8d939241e5e5663f56d67d73581ff0c15e09b','d65f57c7d3b46ac813151bcfe8792492f35dde8a4a5afad59a5b396ed06bcdbb'],
+  ['qa-ix01-subnet-observation-windows-final-readiness.ps1','qa-ix01-subnet-observation-config-readiness.ps1'],
+  ['bytes=523','bytes=10009'],
+  ['ad2254c843f97ff420eee2d35cf6968783f199694ee5b6404bdde69dd74cd3d8',diagnosticSourceHash],
+  ['Invoke-Ix01WindowsFinalReadiness','Invoke-Ix01ConfigReadiness'],
+  ['$candidate=Invoke-Ix01ConfigReadiness -Binding $binding -Ports $ports','$candidate=Invoke-Ix01ConfigReadiness -Binding $binding -Ports $ports -DiagnosticOnly'],
+  ["'COMPARISON_ONLY'","'CONFIG_DIAGNOSTIC_COLLECTED'"],
+ ] as const){assert(expected.includes(from));expected=expected.replaceAll(from,to);}
+ assert.equal(command,expected);assert.equal(Buffer.byteLength(command),5460);assert(!command.includes('\r'));
+ assert.equal(createHash('sha256').update(command).digest('hex'),'357f720a88251869b322cf2015ec9bff03b0142c51dda4472d18cf2ed1c1619e');
+ assert(command.includes("$approvalId='';$approvalHash='';$planHash='';$attemptId='';$approvalIssuedAtMs='';$approvalDeadlineMs=''"));
+ assert(command.indexOf("throw 'UNBOUND'")<command.indexOf('[IO.File]::Open'));
+ const decoder=readFileSync(new URL('scripts/qa-ix01-subnet-observation-windows-readiness-result.ts',base));
+ assert.equal(createHash('sha256').update(decoder).digest('hex'),'8214ac2a43116108b231de15b7a8116397d2dec72385123634460767533632c0');
+ const pins=[...command.matchAll(/path='([^']+)';bytes=(\d+);hash='([a-f0-9]{64})'/g)];assert.equal(pins.length,4);
+ for(const pin of pins){const bytes=readFileSync(new URL(pin[1]!,base));assert.equal(bytes.length,Number(pin[2]));assert.equal(createHash('sha256').update(bytes).digest('hex'),pin[3]);}
+ const r=ram(`
+$command=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${Buffer.from(command).toString('base64')}'))
+$t=$null;$e=$null;$a=[Management.Automation.Language.Parser]::ParseInput($command,[ref]$t,[ref]$e)
+$calls=@($a.FindAll({param($n) $n -is [Management.Automation.Language.CommandAst] -and $n.GetCommandName() -ceq 'Invoke-Ix01ConfigReadiness'},$true))
+@{errors=$e.Count;calls=$calls.Count;diagnostic=@($calls[0].CommandElements|Where-Object {$_ -is [Management.Automation.Language.CommandParameterAst] -and $_.ParameterName -ceq 'DiagnosticOnly'}).Count;opens=$state.opens;observes=$state.observes}|ConvertTo-Json -Compress
+`);
+ assert.deepEqual(r,{errors:0,calls:1,diagnostic:1,opens:0,observes:0});
 });

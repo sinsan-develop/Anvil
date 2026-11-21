@@ -21827,3 +21827,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 담당 `node --test tests/unit/IX01/subnet-observation-config-readiness.test.ts` 13통과·실패/건너뜀0 `a5ae4d`, 결과 판독 직접 10통과 `1230c6`, 기존 final 결과의 RAM 왕복 2통과 `ddd25c`, 좁은 타입·공백 종료0 `874dbc`·`1735c6`. 원 합성 핸들 종결. 두 묶음의 독립 소스 검수는 각각 C0/I0이며 Main이 허용 경로와 지문을 대조했다. 실제 설정·키·SSH·WSL/IPAM·DB·서비스 접근 및 시험은 0이다. 롤백은 이번 코드·시험 네 파일과 상태 기록의 역적용이다.
 
 다음은 동결 소스와 로컬 읽기·접속·IPAM·새 격리 시험의 조건을 한 안으로 대조하는 일이다. 실제 설정 판독과 보존 네트워크 IPAM 관측 허가는 기존 J3 격리 시험 범위와 구분한다. TC01 저장·재조회와 IX01은 미완료다.
+
+### IX01 조건부 재개안과 로컬 진단 실행본문 고정
+
+기준 `5012a0d6` clean·원격 추적 0/0. Main은 기존 Windows 읽기·두 SSH 관측·J3/0095의 실제 효과를 [조건부 재개안](work_packages/IX01_CONDITIONAL_RESUMPTION_PLAN.md) 한 곳에 대조했다. developer_primary가 §1 부록의 네 소스와 기존 기한·단회·출력 제한을 고정하고 작성권을 반환했다. 승인 상수는 공백이며 실제 읽기·접속 실행은 없었다.
+
+검증은 `node --test tests/unit/IX01/subnet-observation-config-readiness.test.ts` 14통과·실패/건너뜀0 `c0b92a`, 좁은 타입·공백0 `5292e1`이다. RAM 출력의 원 바이트를 decoder에 전달해 전체·중단·부분 실패 경계를 검산했다. Main은 부록 LF 5,460B/SHA256 `357F720A88251869B322CF2015EC9BFF03B0142C51DDA4472D18CF2ED1C1619E`와 PowerShell AST를 독립 확인했다 `585b54`. 합성 핸들 잔여0, 실제 native 포트 호출0. 기존 실제 실패와 소진 기록을 보존한다.
+
+독립 소스 대조와 PMO는 새 통합 프로필이 FN03 격리 runner의 명시 /28·132개 설치를 사용하고 별도 합성 프로젝트에서 기존 TC01 시나리오를 잇는 source·RAM 범위를 확인했다. 기존 A14는 보존한다. 다음 작업은 관리 원문 여정이 성공한 뒤 동일 앱·Pool이 닫히기 전에 TC01을 고정 연결하는 것이다. 실제 설정/SSH/IPAM·132개 SQL/0101 역할·새 격리 저장 효과의 실행 결박은 미완료다. 롤백은 이번 계획과 합성 시험 보강 및 상태 기록의 역적용이다.
