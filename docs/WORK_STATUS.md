@@ -21919,3 +21919,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 신규 모듈 부재 RED exit1 `b91c87` 이후 `node --test tests/unit/FN03/tc01-child-collection.test.ts` 합성11통과·실패/건너뜀0 exit0 `ceb460`, 좁은 타입 exit0 `1523f0`, 공백/LF exit0 `11d4aa`. Main 원 계약과 두 지문 대조, 독립 C0/I0. 소스 SHA256 `56CA9ED64C15896586229FEAC1D3D1D6AD6C95B9845EA922E5CBBBE0081AA1B7`, 시험 SHA256 `0CAD348AB3F081CEE57BCBF0AB2BBD263F2B0CEA4241E2ADA6F467362872D9AF`.
 
 회수는 자기 listener/timer에만 적용한다. 실제 프로세스 진입·원 child/manifest/승인의 결박, 동일 Linux 설치본과 PG 저장·재조회는 미완료다. Windows 설정·SSH·WSL·DB·권한·서비스·Agent 실행0. 다음은 검산된 실행 파일과 입력을 기존 감독의 단일 child에 결박하는 것이다. 롤백은 신규 두 파일과 기록·요약의 역적용이다.
+
+### IX01/FN03 파일 검산과 같은 프로세스의 실행 연결
+
+기준 `c87e3f88` clean. developer_primary가 [실행 연결](../scripts/qa-fn03-tc01-verified-launch.ts)과 [합성시험](../tests/unit/FN03/tc01-verified-launch.test.ts)을 작성하고 작성권을 반환했다. 같은 감독과 단회 파일 검산이 보유한 graph·적재 바이트만 기존 launcher에 넘긴다. 복사 직전과 성공 수거 직전에 검산하고 실행 중 기존 현재성·기한 및 원 Pool 회수를 유지한다. 종료 뒤 소유 바이트를 소거한다.
+
+직접 8통과 `d2ea30`, 인접 합계 30통과·실패/건너뜀0 `bf68ec`, 좁은 타입 exit0 `4c536f`, 공백/LF exit0 `dfb86f`. 최초 합성 fixture의 미등록 STOPPED 값은 기존 STARTED/READ 형상으로 바로잡았다. Main 지문 두 건 대조 및 독립 C0/I0. 소스 SHA256 `3538EED56A8C42230E2F2D3759D3984D23F0A789F182BD5CFB0B3123FB90EEB7`, 시험 SHA256 `5EA0CEA820014D92D870E74902F8D0E0885FEC29ACF3D9B258553DC721DC8A81`.
+
+별도 child의 stdin에 현 launcher 입력을 그대로 보내는 경로는 구현하지 않았다. 입력에 합성 비밀·Buffer·SQL이 있고 기존 감독의 현재성 함수는 전송 가능한 데이터가 아니다. 다음은 고정 child 안에서 승인 파일과 설치 원본으로 입력을 재구성하고 합성 자격을 같은 child에서만 생성하는 방식이다. 기존 보호 plan/approval 및 배타 intent는 그대로 대조한다. 실제 Linux 설치·SSH·PG·권한·서비스·Agent 실행0, 실제 TC01 저장·재조회 미검증. 롤백은 신규 두 파일과 두 작업기록의 역적용이다.
