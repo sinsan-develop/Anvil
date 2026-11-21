@@ -882,7 +882,7 @@ test('IX01 TC01 능동 진단 RAM: 실제 요청과 검증 경계를 원문 없�
   const builtin={ref:{id:'a6f20000-0000-4000-8000-000000000001',version:2,contentHash:contentHash(canonicalJson(graph))},graph,validation:{validForConfirmation:true},scope:'SYSTEM',purpose:'RAM'};
   const app={async inject(){requests++;if(kind==='REQUEST'||kind==='COPY_REQUEST'&&requests===2)throw Error('private request detail');return {statusCode:kind==='STATUS'?503:200,body:'{}',json(){if(kind==='JSON')throw Error('private response detail');return kind.startsWith('COPY_')&&requests===1?builtin:{};}};}};
   await assert.rejects(runMethodologyCopyApplicationScenario({app:app as unknown as Parameters<typeof runMethodologyCopyApplicationScenario>[0]['app'],
-   session:{user:{id:'00000000-0000-4000-8000-000000000001',displayName:'RAM',serverOwner:false},clientId:'00000000-0000-4000-8000-000000000002',token:'a'.repeat(43),csrfToken:'b'.repeat(43)},
+   session:{user:{id:'00000000-0000-4000-8000-000000000001'},clientId:'00000000-0000-4000-8000-000000000002',token:'a'.repeat(43),csrfToken:'b'.repeat(43)},
    origin:'https://localhost:3830',assertCurrent(){},onStage(stage:string){stages.push(stage);}}));
   assert.equal(requests,kind.startsWith('COPY_')?2:1);
   assert.deepEqual(stages,kind==='REQUEST'?['TC01_BUILTIN_REQUEST']:['TC01_BUILTIN_REQUEST','TC01_BUILTIN_VERIFY',...(kind.startsWith('COPY_')?['TC01_COPY_REQUEST',...(kind==='COPY_VERIFY'?['TC01_COPY_VERIFY','TC01_COPY_VERIFY_CURRENT','TC01_COPY_VERIFY_HTTP','TC01_COPY_VERIFY_SIZE','TC01_COPY_VERIFY_JSON','TC01_COPY_VERIFY_SHAPE']:[])]:[])]);
@@ -927,7 +927,7 @@ test('IX01 COPY 하위 진단 RAM: 고정 조건만 발행하고 다음 요청�
    }};
   }};
   await assert.rejects(run({app:app as unknown as Parameters<typeof run>[0]['app'],
-   session:{user:{id:actorId,displayName:'RAM',serverOwner:false},clientId:'00000000-0000-4000-8000-000000000002',token:'a'.repeat(43),csrfToken:'b'.repeat(43)},
+   session:{user:{id:actorId},clientId:'00000000-0000-4000-8000-000000000002',token:'a'.repeat(43),csrfToken:'b'.repeat(43)},
    origin:'https://localhost:3830',assertCurrent(){if(condition==='CURRENT'&&stages.at(-1)==='TC01_COPY_VERIFY_CURRENT')throw Error('private current detail');},onStage(stage){stages.push(stage);}}));
   const expected=condition==='VALID'?'TC01_READ_V1_REQUEST':'TC01_COPY_VERIFY_'+(condition==='DATA_SHAPE'?'SHAPE':condition);
   assert.equal(stages.at(-1),expected,condition);assert.equal(requests,condition==='VALID'?3:2,condition);
