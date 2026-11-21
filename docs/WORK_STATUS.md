@@ -21749,3 +21749,9 @@ PMO 회신과 DEVELOPMENT_ENVIRONMENT·FN03_ISOLATED_DOCUMENT_RESULT를 대조�
 기준 `e549c587`. developer_primary 단일 작성 후 반환. 최초 원 Options를 읽기 전용 값으로 원 검사→설정 핀에 전달하고 기존 hash-only 반환은 보존한다. 같은 원 optionsRef·SID digest·확정 recipe·package IMAGE/SCRIPT 및 cwd 핀에서 argv/env를 조립하고 기존 순수 HookDigest를 같은 읽기 검사에서 재사용한다. 선택 turns 존재 불일치와 SDK 표기 미입증인 비용 입력/토큰은 거절한다. 실제 hook, child/lease/PRESPAWN, 공개 출력이나 기본 recipe는 연결하지 않았다.
 
 담당 RED `ccd3f4` 뒤 최종 직접·인접 88통과·실패/건너뜀0 `6b12ba`, 공백 통과 `395343`. Main 직접 정적·합성 5통과·실패/건너뜀0 `3c128c`, 파일/공백 대조 `e3e25a`. C# 컴파일·native 의미 실행·실제 SDK recipe 및 운영 연결은 미검증이다. 실제 Agent·DB·권한·키·서비스·OS 실행0. 롤백은 이번 native/시험 5파일과 기록의 역적용이다.
+
+### FN07 native 빌드 컴파일 전용 후보
+
+기준 `56b4511e`. PMO의 권한 대조와 독립 빌드 읽기 검수를 반영해 developer_primary가 신규 계획 검산과 시험 두 파일을 작성 후 반환했다. 기존 SOURCE_FILES 30·REFERENCE_FILES 5·createCompileInput을 그대로 사용한다. 실제 패키지 조사·배포 검증·서명 경로 대신 합성 private ParentBasis, 고정 x64 EXE 진입점과 전용 QA 출력 두 개, 유한 시도·수집, 성공 뒤 정확 소유 확인을 검산하는 무효과 후보다. 기존 다른 목적의 단회 컴파일 승인을 사용하지 않는다.
+
+담당 함수 부재 RED `14da39` 뒤 직접6통과·실패/건너뜀0 및 node 문법/공백 통과 `f75b13`. Main 직접·인접22통과·실패/건너뜀0와 동결 SHA256 대조 `3a76fa`. 현재 compiler+참조 5개 원바이트·신원, 고정 환경/실행기·원 핸들 종결, 대상 전용 root는 미검증이며 실제 compiler·파일 생성/조사·SDK/Agent·DB·서비스 실행0. 먼저 현재 도구의 한정 읽기를 별도로 결정하고, 이후 정확 실행안의 컴파일만 판단한다. 롤백은 신규 두 파일과 기록의 역적용이다.
