@@ -13,7 +13,8 @@ test('FIRST Options 검산은 최초 Inspect에서만 원 정착 intake를 읽�
  assert.match(credential,/InspectFirstSource\(RowRequest request,[^\n]*bool verifyOptions=false\)/);
  assert.match(spool,/if\(verifyOptions\)ReadSdkStartOptions\(rows,id,dir,scope,startCommand,handoff,startReceived\)/);
  assert.match(spool,/void ReadSdkStartOptions\(/);
- assert.doesNotMatch(credential,/claudeQueryParams|MAX_BUDGET_USD|plannedSid\"/);
+ assert.doesNotMatch(credential,/claudeQueryParams|MAX_BUDGET_USD/);
+ assert.match(credential,/H\(plannedSid\)!=S\(request.Scope,"plannedSidDigest"\)/);
 });
 
 test('FIRST 보호 설정은 원 환경의 유일 현재 head와 저장 원 그래프를 재판독하고 원 cwd 핀을 보유한다',()=>{

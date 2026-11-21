@@ -21731,3 +21731,9 @@ PMO 회신과 DEVELOPMENT_ENVIRONMENT·FN03_ISOLATED_DOCUMENT_RESULT를 대조�
 기준 `e73afa78`. developer_primary 단일 작성 후 반환. 기존 확정 실행과 목록 갱신을 유지하고, 같은 화면의 원 저장 영수증에서 명시 조회를 연결했다. 기존 보호 고정 버전의 사건 ID·지식 fullref·이유·주체·선택 검토를 원 응답과 대조하며 이후 제외·대체·재검토가 있어도 당시 확정 이력으로 표시한다. 조회 실패 시 원 저장 영수증 보존 및 재조회 가능, 추가 POST0. 다른 문맥이나 화면 이탈 뒤 이전 200·401은 폐기한다. 새 공개 API·DB·권한 변경0.
 
 담당 버튼 부재 RED `34f981`, 직접·인접 합성 23통과·실패/건너뜀0 `d428f7`, 좁은 타입·공백 통과 `cb0012`/`d77dde`. Main 직접 합성 6통과·실패/건너뜀0 및 3파일 지문 대조 `61fe66`. 개발 환경 브라우저·실제 DB·서비스·Agent는 미실행이며 당시 이력 확인을 현재 적용/실행의 권위로 사용하지 않는다. 롤백은 기존 폼과 조회 도움 함수 및 신규 시험의 이번 변경을 역적용한다.
+
+### FN07 최초 SEND 원 SID의 일회 내부 인계
+
+기준 `d24ac0c6`. 원 계획 SID가 FIRST owner에 있고 native 인계에는 digest만 있는 단절을 확인했다. PMO는 이미 승인된 생산자 계약 §B/C의 내부 연결로 판단했다. developer_primary 단일 작성 뒤 반환. 원 캡처 SID를 기존 한 번의 private 자료에 포함하고 같은 slot·scope·기한·형상을 결박한다. 수송은 한도 안의 사본에서 해시를 확인하고 native는 기존 canonical SHA를 다시 검산한다. 구형/추가 키·다른 SID/slot·기한/취소·복제/중복은 거절한다. 원장·공개 HTTP·로그·응답 형상 변경0. 수송 byte 배열은 기존 종료 경로에서 지우지만 관리형 문자열의 즉시 삭제는 보증하지 않는다.
+
+담당 RED 0통과·2실패 `14e1a6` 뒤 직접·인접 58통과·실패/건너뜀0 `17ec43`/`c965f9`, 마지막 시간 경계 변경 뒤 집중6통과 `bb3fce`와 좁은 타입 `96f319` 종료0. Main 최종 소스에서 같은 3개 시험 파일을 `node --experimental-test-module-mocks --test --test-reporter=dot`로 재검수해 58통과·종료0, 공백 종료0 `9ee07e`. 실제 C#·SDK·OS·Agent·DB·권한·키·서비스 미실행. 최초 SID의 제품 발급 권위, PRESPAWN 및 실제 실행 lease는 미연결이며 native 결과는 SDK_CONFIGURATION_UNAVAILABLE을 유지한다. 롤백은 이번 소스·시험 6파일과 기록의 역적용이다.

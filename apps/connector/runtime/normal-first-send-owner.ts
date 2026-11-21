@@ -40,7 +40,7 @@ const issuedHandles=new WeakSet<object>();
 const leases=new WeakMap<NormalStartWire,Lease>();
 type FirstPermitHandoff={startEnvelope:Parent['start']['envelope'];sendEnvelope:NormalInstructionDriverInput['envelope'];
  grantRef:Ref;startReadyRef:Ref;localAttemptRef:Ref;dispatchAttemptRef:Ref;permit:NormalInstructionDriverInput['permit'];proofResultRef:Ref;
- scope:Scope;executionAuthority:NonNullable<ReturnType<typeof takeNormalFirstPermitSource>>};
+ scope:Scope;executionAuthority:NonNullable<ReturnType<typeof takeNormalFirstPermitSource>>;plannedSid:string};
 const firstPermitHandoffs=new WeakMap<object,{source:NormalFirstSendSource;value:FirstPermitHandoff|null;check():void}>();
 /** 원 create 호출 중 한 번만 읽는 메모리 인계. native는 원 packet/원장/설정을 별도로 재검산해야 한다. */
 export function takeNormalFirstPermitHandoff(request:object,source:NormalFirstSendSource):FirstPermitHandoff|null{
@@ -127,7 +127,7 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
   firstRequest=request;
   firstPermitHandoffs.set(request,{source,check:guard,value:firstPermit?cloneV1({startEnvelope:parent.start.envelope,sendEnvelope:input.envelope,
    grantRef:parent.grantRef,startReadyRef:parent.startReadyRef,localAttemptRef:input.localAttemptRef,dispatchAttemptRef:input.dispatchAttemptRef,
-   permit:input.permit,proofResultRef:input.proofResultRef,scope,executionAuthority:firstPermit}):null});
+   permit:input.permit,proofResultRef:input.proofResultRef,scope,executionAuthority:firstPermit,plannedSid}):null});
   let pending:Promise<Query>;
   try{pending=native(pinned.create.call(source,request,prompt,lease.life.signal));}catch(error){firstPermitHandoffs.delete(request);throw error;}
   const created=pending.finally(()=>firstPermitHandoffs.delete(request)).then(query=>{

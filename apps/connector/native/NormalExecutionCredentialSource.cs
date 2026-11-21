@@ -128,8 +128,9 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   internal FirstInspection(string digest,string source,string recordHash,string slotHash,DateTime expiresAt){Digest=digest;CanonicalSource=source;RecordHash=recordHash;SlotHash=slotHash;ExpiresAt=expiresAt;}
  }
  FirstInspection InspectFirstSource(RowRequest request,Dictionary<string,object> record,Dictionary<string,object> slot,bool verifyOptions=false){
-  var h=request.Handoff;Exact(h,"startEnvelope,sendEnvelope,grantRef,startReadyRef,localAttemptRef,dispatchAttemptRef,permit,proofResultRef,scope,executionAuthority");
+  var h=request.Handoff;Exact(h,"startEnvelope,sendEnvelope,grantRef,startReadyRef,localAttemptRef,dispatchAttemptRef,permit,proofResultRef,scope,executionAuthority,plannedSid");
   if(J(h["scope"])!=J(request.Scope)||J(h["grantRef"])!=J(request.Scope["grantRef"])||J(h["startReadyRef"])!=J(request.Scope["startReadyRef"])||J(h["dispatchAttemptRef"])!=J(request.Scope["dispatchAttemptRef"]))throw Invalid();
+  string plannedSid=S(h,"plannedSid");if(plannedSid.Length<1||plannedSid.Length>512||plannedSid.Any(c=>c<32||c==127)||H(plannedSid)!=S(request.Scope,"plannedSidDigest"))throw Invalid();
   var start=SdkEnvelope(Map(h["startEnvelope"]),"START_SESSION",request.StartId,record,slot);
   var send=SdkEnvelope(Map(h["sendEnvelope"]),"SEND_INSTRUCTION",request.SendId,record,slot);
   var context=Map(send["context"]);var startContext=Map(start["context"]);

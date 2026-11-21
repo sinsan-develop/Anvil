@@ -2,6 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const root=new URL('../../../',import.meta.url);
+
+test('FIRST SID는 exact private 인계에서만 원 scope의 canonical 문자열 SHA와 대조하고 실행 권위를 발급하지 않는다',()=>{
+ const s=readFileSync(new URL('apps/connector/native/NormalExecutionCredentialSource.cs',root),'utf8');
+ const first=s.slice(s.indexOf('FirstInspection InspectFirstSource('),s.indexOf('Dictionary<string,object> SdkEnvelope('));
+ assert.match(first,/Exact\(h,"startEnvelope,sendEnvelope,grantRef,startReadyRef,localAttemptRef,dispatchAttemptRef,permit,proofResultRef,scope,executionAuthority,plannedSid"\)/);
+ assert.match(first,/string plannedSid=S\(h,"plannedSid"\)/);
+ assert.match(first,/plannedSid.Length<1\|\|plannedSid.Length>512\|\|plannedSid.Any\(c=>c<32\|\|c==127\)/);
+ assert.match(first,/H\(plannedSid\)!=S\(request.Scope,"plannedSidDigest"\)/);
+ assert(first.indexOf('H(plannedSid)')<first.indexOf('ReadSdkFirstAttempt('));
+ assert.match(first,/J\(h\["scope"\]\)!=J\(request.Scope\)/);
+ assert.match(first,/expectedScope=new Dictionary<string,object>\(Map\(slot\["scope"\]\)\)/);
+ assert.match(first,/Check\(\);if\(expires<=clock\(\)\)throw Invalid\(\)/);
+ assert.doesNotMatch(first,/claudeQueryParams|MAX_BUDGET_USD|Write|Append|Console|CreateProcess|new NormalSdkChildHostSource/);
+ assert.match(s,/void ClearFirst\(\)\{if\(firstBytes!=null\)Array.Clear\(firstBytes,0,firstBytes.Length\);firstBytes=null;/);
+ assert.match(s,/return new Dictionary<string,object>\{\{"state","SDK_CONFIGURATION_UNAVAILABLE"\}\}/);
+ const spool=readFileSync(new URL('apps/connector/runtime/normal-owned-spool-profile.ts',root),'utf8');
+ assert.match(spool,/finished=true;bytes.fill\(0\)/);
+ const source=readFileSync(new URL('apps/connector/runtime/normal-first-send-owner.ts',root),'utf8');
+ assert.match(source,/firstPermitHandoffs.delete\(request\)/);
+ assert.match(source,/pending.finally\(\(\)=>firstPermitHandoffs.delete\(request\)\)/);
+});
 test('갱신 native source는 결정적 marker와 receipt 슬롯을 연결하고 만료 예외를 갱신 검산에 한정한다',()=>{
  const s=readFileSync(new URL('apps/connector/native/NormalExecutionCredentialSource.cs',root),'utf8');
  for(const literal of ['NORMAL_EXECUTION_RENEW','RenewalMarker','previousSlotRef','ReadSlotChain','LoadSlot(Id(previous,"slotId"),record,true)',

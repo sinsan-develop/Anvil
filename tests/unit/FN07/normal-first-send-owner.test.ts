@@ -26,16 +26,27 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('
   const coordinator=await readyFirst(f),selection=coordinator.selectFirstPermit(f.wire,f.signal);
   const prepared=await coordinator.prepare(f.item.envelope,f.signal,selection);
   await coordinator.dispatch(f.item.envelope,prepared,f.wire,f.signal);assert.ok(handoff);
-  for(const mode of ['ok','multipart','partial-cancel','cancel','slot-change','bad-ack','close-unknown','expired','oversize','budget-missing','budget-exhausted','budget-preused','budget-time'] as const){
+  for(const mode of ['ok','unicode','input-change','multipart','partial-cancel','cancel','slot-change','bad-ack','close-unknown','expired','oversize','budget-missing','budget-exhausted','budget-preused','budget-time','old-shape','extra-key','sid-mismatch','sid-empty','sid-control','sid-surrogate','sid-long','slot-mismatch'] as const){
    const life=new AbortController(),frames:any[]=[],closed:string[]=[];let opens=0,now=f.clock();
    const slot={slotId:randomUUID(),receiptRef:structuredClone(handoff.scope.slotRef),origin:'https://anvil-synthetic.invalid',scope:structuredClone(f.scope),expiresAt:new Date(now+30000).toISOString(),caHash:'a'.repeat(64)};
    const input:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>=structuredClone(handoff);
+   if(mode==='old-shape')delete (input as any).plannedSid;
+   if(mode==='extra-key')(input as any).extra='not-accepted';
+   if(mode==='sid-mismatch')(input as any).plannedSid='different-session';
+   if(mode==='sid-empty')(input as any).plannedSid='';
+   if(mode==='sid-control')(input as any).plannedSid='sid\u0000';
+   if(mode==='sid-surrogate')(input as any).plannedSid='sid\ud800';
+   if(mode==='sid-long')(input as any).plannedSid='s'.repeat(513);
+   if(mode==='slot-mismatch')input.scope.slotRef=ref();
+   if(mode==='unicode'){input.plannedSid='원 "SID"\\🙂';input.scope.plannedSidDigest=digest(input.plannedSid);}
    // 이 변경은 수송 한도만 검사한다. native 검산/권위의 양성 fixture로 쓰지 않는다.
    if(mode==='oversize')(input.executionAuthority.permitSnapshot.currentFact as any).intent.reason='가'.repeat(800000);
    if(mode==='multipart'||mode==='partial-cancel'||mode==='budget-preused')(input.executionAuthority.permitSnapshot.currentFact as any).intent.reason='가'.repeat(20000);
    if(mode==='expired')now=Date.parse(input.permit.expiresAt);
+   const expected=structuredClone(input);
    const ports={attemptId:randomUUID(),slot,now:()=>now,signal:life.signal,check(){},host:{async open(_signal:AbortSignal,metadata:any){
     opens++;assert.deepEqual(metadata,slot);
+    if(mode==='input-change'){input.plannedSid='changed-after-copy';input.scope.plannedSidDigest=digest(input.plannedSid);}
     return{...(mode==='budget-missing'?{}:{inspectionBudget:()=>({frames:mode==='budget-exhausted'?0:mode==='budget-preused'?1:60,remainingMs:mode==='budget-time'?0:9000})}),async send(operation:string,value:any){
      assert.equal(operation,'NORMAL_SDK_FIRST_INSPECT');assert.equal(value.index,frames.length);assert.equal(value.slotId,slot.slotId);
      const bytes=Buffer.from(value.data,'base64');assert(bytes.length<=32768);assert(Buffer.byteLength(canonicalJson(value))<64500);frames.push(structuredClone(value));
@@ -44,15 +55,16 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('
      return value.final?{state:'SDK_CONFIGURATION_UNAVAILABLE'}:{state:'PART_ACCEPTED',transferId:value.transferId,index:value.index};
     },async close(disposition:string){closed.push(disposition);return{state:mode==='close-unknown'?'UNKNOWN':'CLOSED_CONFIRMED'};}};
    }}};
-   if(mode==='ok'||mode==='multipart'){
+   if(mode==='ok'||mode==='unicode'||mode==='input-change'||mode==='multipart'){
     await inspectNormalFirstPermitHandoff(input,ports);assert.equal(opens,1);assert.deepEqual(closed,['HOST_REQUEST_VALIDATED']);
     const bytes=Buffer.concat(frames.map(x=>Buffer.from(x.data,'base64'))),decoded=JSON.parse(bytes.toString('utf8'));
-    assert.equal(contentHash(bytes),frames[0].contentHash);assert.deepEqual(decoded.handoff,input);assert.deepEqual(decoded.scope,handoff.scope);
+    assert.equal(contentHash(bytes),frames[0].contentHash);assert.deepEqual(decoded.handoff,expected);assert.deepEqual(decoded.scope,expected.scope);
+    assert.equal(digest(decoded.handoff.plannedSid),decoded.scope.plannedSidDigest);
     if(mode==='multipart')assert(frames.length>1);
     assert(frames.length>=1&&frames.length<=64);assert.equal(frames.at(-1).final,true);
    }else{
     await assert.rejects(inspectNormalFirstPermitHandoff(input,ports));
-    if(mode==='expired'||mode==='oversize'){assert.equal(opens,0);assert.equal(frames.length,0);assert.equal(closed.length,0);}
+    if(mode==='expired'||mode==='oversize'||mode==='old-shape'||mode==='extra-key'||mode.startsWith('sid-')||mode==='slot-mismatch'){assert.equal(opens,0);assert.equal(frames.length,0);assert.equal(closed.length,0);}
     else{assert.equal(opens,1);assert.equal(frames.length,mode.startsWith('budget-')?0:1);assert.equal(closed.length,1);}
    }
   }
@@ -67,7 +79,9 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('
   requestSaved=request;
   assert.throws(()=>owner.takeNormalFirstPermitHandoff({...request},f.source));
   assert.throws(()=>owner.takeNormalFirstPermitHandoff(request,{...f.source}));
+  request.plannedSid='changed-request-alias';
   seen=owner.takeNormalFirstPermitHandoff(request,f.source);
+  assert.equal(seen.plannedSid,f.source.plannedSid);request.plannedSid=f.source.plannedSid;
   assert.throws(()=>owner.takeNormalFirstPermitHandoff(request,f.source));
   assert.equal(Object.hasOwn(request,'executionAuthority'),false);
   return create(request,prompt,signal);
@@ -80,6 +94,8 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('
   assert.equal(Object.hasOwn(prepared,'executionAuthority'),false);
   assert.equal((await c.dispatch(f.item.envelope,prepared,f.wire,f.signal)).state,'FIRST_SEND_INPUT_AND_INIT_RECORDED');
   assert.equal(f.effects.create,1);assert.ok(seen);
+  assert.equal(seen.plannedSid,f.source.plannedSid);assert.equal(digest(seen.plannedSid),seen.scope.plannedSidDigest);
+  assert.deepEqual(Object.keys(seen).sort(),['startEnvelope','sendEnvelope','grantRef','startReadyRef','localAttemptRef','dispatchAttemptRef','permit','proofResultRef','scope','executionAuthority','plannedSid'].sort());
   assert.equal(digest(seen.executionAuthority.permitSnapshot),prepared.permit.ref.contentHash);
   assert.equal(seen.sendEnvelope.envelopeHash,f.item.envelope.envelopeHash);
   assert.equal(seen.startEnvelope.envelopeHash,f.page.items[0]!.envelope.envelopeHash);
@@ -88,7 +104,7 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('
   assert.throws(()=>owner.takeNormalFirstPermitHandoff(requestSaved,f.source));
   const calls=f.calls.length;
   assert.equal((await f.make().prepare(f.item.envelope,f.signal)).state,'FIRST_SEND_INPUT_AND_INIT_RECORDED');assert.equal(f.calls.length,calls);
-  for(const [,file] of f.fs.files)if(file.bytes)assert.equal(file.bytes.includes(Buffer.from('executionAuthority')),false);
+  for(const [,file] of f.fs.files)if(file.bytes){assert.equal(file.bytes.includes(Buffer.from('executionAuthority')),false);assert.equal(file.bytes.includes(Buffer.from('"plannedSid":')),false);}
   await assert.rejects(c.prepare(f.item.envelope,f.signal,selection));
   assert.throws(()=>f.make().selectFirstPermit(f.wire,f.signal));
   const {prepareLiveFollowup}=await import('../FN08/normal-instruction-dispatch-fixture.ts');
@@ -118,7 +134,7 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('
 });
 
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('C FIRST private handoff는 교차 wire·만료·취소 뒤 소비와 재dispatch를 막는다',async()=>{
- for(const mode of ['wire','expiry','abort']){
+ for(const mode of ['wire','expiry','abort','source-sid']){
   const f=await firstSendFixture();try{
    const c=await readyFirst(f),selection=c.selectFirstPermit(f.wire,f.signal);
    const prepared=await c.prepare(f.item.envelope,f.signal,selection);assert.equal(prepared.state,'PERMIT_RECORDED');
@@ -131,7 +147,7 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('
     f.mode.wall+=30001;await assert.rejects(c.dispatch(f.item.envelope,prepared,f.wire,f.signal));assert.equal(f.effects.create,0);
    }else{
     const owner=await import('../../../apps/connector/runtime/normal-first-send-owner.ts');
-    f.source.create=async(request)=>{f.authority.abort();assert.throws(()=>owner.takeNormalFirstPermitHandoff(request,f.source));throw Error('RAM_CANCELLED');};
+    f.source.create=async(request)=>{if(mode==='source-sid')f.source.plannedSid='changed-owner';else f.authority.abort();assert.throws(()=>owner.takeNormalFirstPermitHandoff(request,f.source));throw Error('RAM_CANCELLED');};
     assert.equal((await c.dispatch(f.item.envelope,prepared,f.wire,f.signal)).state,'UNKNOWN');
    }
   }finally{f.authority.abort();await f.h.close();}

@@ -10,6 +10,7 @@ import type {NormalOwnedHostFactory,NormalOwnedHostSession,NormalOwnedMetadata,H
 import {isOwnedSpoolPath,NormalStartFileStore,type NormalFilePorts,type NormalLocalScope,type ProfileJournalAccess} from './normal-start-file-store.ts';
 import {NormalStartIntake,type NormalStartStore} from './normal-start-intake.ts';
 import {NormalClaudeStartWire} from '../adapters/secondary/normal-start-wire.ts';
+import {boundedSdkObject,maxSdkObjectBytes,sdkOpaqueId} from '../adapters/secondary/schemas.ts';
 import {confirmNormalLiveInputDelivery,takeFirstOutputOrigin,takeNormalFirstPermitHandoff,type LiveInputPort,type NormalFirstSendSource} from './normal-first-send-owner.ts';
 import type {NormalStartWire,NormalStartCurrent} from './normal-start-coordinator.ts';
 import type {RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
@@ -520,11 +521,15 @@ function guardFiles(raw:IO,check:Guard,begin:Guard,end:Guard,root:string,stamp:s
 
 // 읽기 전용 수송. 전달 객체는 native 원 행 검산 이전에는 실행 권위가 아니다.
 export async function inspectNormalFirstPermitHandoff(handoff:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>,ports:{attemptId:string;slot:NormalOwnedMetadata;host:NormalOwnedHostFactory;now():number;signal:AbortSignal;check():void}){
-  const {slot,host:factory,signal,check:verify}=ports;const open=factory.open;let unknown=false;
+  const {slot,host:factory,signal,check:verify}=ports;const open=factory.open,begin=ports.now(),beganMono=performance.now();let unknown=false;
+  // 원 FIRST 자료의 독립 사본만 수송한다. 원 SDK 입력/원장 형상은 확장하지 않는다.
+  try{handoff=boundedSdkObject(handoff,maxSdkObjectBytes).value as typeof handoff;}catch{invalid();}
+  if(!recordV1(handoff,['startEnvelope','sendEnvelope','grantRef','startReadyRef','localAttemptRef','dispatchAttemptRef','permit','proofResultRef','scope','executionAuthority','plannedSid'])||
+   !sdkOpaqueId(handoff.plannedSid)||!handoff.scope||contentHash(canonicalJson(handoff.plannedSid))!==handoff.scope.plannedSidDigest)invalid();
   if(!slot||byRef(slot.receiptRef)!==byRef(handoff.scope.slotRef))invalid();
-  const slotKey=byRef(slot),begin=ports.now();let end=Math.min(begin+10000,Date.parse(slot.expiresAt),Date.parse(handoff.permit.expiresAt));
+  const slotKey=byRef(slot);let end=Math.min(begin+10000,Date.parse(slot.expiresAt),Date.parse(handoff.permit.expiresAt));
   if(!Number.isSafeInteger(begin)||!Number.isFinite(end)||end<=begin)invalid();
-  let mono=performance.now()+end-begin;const local=new AbortController(),originalSignal=signal,combined=AbortSignal.any([originalSignal,local.signal]);
+  let mono=beganMono+end-begin;const local=new AbortController(),originalSignal=signal,combined=AbortSignal.any([originalSignal,local.signal]);
   const bytes=Buffer.from(canonicalJson({attemptId:ports.attemptId,slotId:slot.slotId,startCommandId:handoff.startEnvelope.commandId,
    sendCommandId:handoff.sendEnvelope.commandId,scope:handoff.scope,handoff}));
   let host:NormalOwnedHostSession|undefined,closing:Promise<{state:string}>|undefined,finished=false,sent=false,validated=false;
