@@ -2,7 +2,7 @@ import test,{before,after} from 'node:test';
 import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {reworkFixture} from '../FN12/result-rework-input-fixture.ts';
-import {criteriaId as id,criteriaHash as hash} from '../FN12/result-criteria-fixture.ts';
+import {criteriaFixture,criteriaId as id,criteriaHash as hash} from '../FN12/result-criteria-fixture.ts';
 import {prepareResultRework} from '../../../apps/server/modules/results/result-rework-input.ts';
 import assert from 'node:assert/strict';
 const m:any=await import('../../../apps/web/src/features/session-detail/result-rework-form.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
@@ -39,7 +39,7 @@ const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class
 
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultReviewSources.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:stored-rework',name:'StoredReviewTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'rework-memory-entry',transform(code,id){if(id.replaceAll('\\','/').endsWith('/ResultReviewSources.tsx'))return code+'\nexport {ResultReworkEditor};';},resolveId(id){if(id.endsWith('virtual:stored-rework'))return '\0stored-rework';},load(id){if(id==='\0stored-rework')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{flushSync}from'react-dom';import{ResultReworkEditor}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as writes from ${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-rework-write-api.ts',import.meta.url)))};export{React,createRoot,flushSync,ResultReworkEditor,ApiClient,writes};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:stored-rework',name:'StoredReviewTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'rework-memory-entry',transform(code,id){if(id.replaceAll('\\','/').endsWith('/ResultReviewSources.tsx'))return code+'\nexport {ResultReworkEditor};';},resolveId(id){if(id.endsWith('virtual:stored-rework'))return '\0stored-rework';},load(id){if(id==='\0stored-rework')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{flushSync}from'react-dom';import{ResultReworkEditor}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as writes from ${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-rework-write-api.ts',import.meta.url)))};import{ResultCriteriaEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultCriteriaEditor.tsx',import.meta.url)))};import * as criteriaWrites from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-criteria-api.ts',import.meta.url)))};export{React,createRoot,flushSync,ResultReworkEditor,ResultCriteriaEditor,ApiClient,writes,criteriaWrites};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return StoredReviewTest;')();
@@ -209,4 +209,45 @@ test('지연 PREPARE commit은 새 시도 또는 문맥 교체 뒤 재생되지 
   if(kind==='attempt'){await ui.React.act(async()=>m.commits[1]!());assert(m.buffer()?.pending);}
   assert.equal(m.requests.filter(r=>r.url.endsWith('/commands')).length,0);
  }finally{await m.close();}}
+});
+
+
+async function mountCriteria(){
+ const f=criteriaFixture(),session={user:{id:id(6)},clientId:id(8),csrfToken:'A'.repeat(43)},rows=[{field:'acceptanceCriteria',index:0,criterionId:'save',testId:'SAVE-01',kind:'INTEGRATION'},{field:'verificationRequirements',index:0,criterionId:'denied',testId:'DENY-01',kind:'SECURITY'}];
+ const pending=await ui.criteriaWrites.prepareCriteriaRegistration(f.assignment,rows,'원 기준 입력',session,3);
+ let buffer:any={bindingId:id(90),ownerUserId:session.user.id,ownerClientId:session.clientId,assignmentRef:f.assignment.ref,controlGeneration:3,rows,reason:'원 기준 입력',pending,stored:null,dirty:true,uncertain:false,failure:null},shown=true;
+ const original=buffer,updates:(()=>void)[]=[],controls:(()=>void)[]=[],requests:string[]=[],state={defer:false},container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ const props:any={assignment:f.assignment,session,onAuthenticationLost(){},onAccessUnavailable(){}};
+ props.client=new ui.ApiClient(async(url:any,options:any)=>{requests.push(options?.method??'GET');assert.notEqual(options?.method,'POST');return new Promise<Response>(resolve=>controls.push(()=>resolve(Response.json({code:'ACCESS_DENIED'},{status:403}))));});
+ function render(){root.render(shown?ui.React.createElement(ui.ResultCriteriaEditor,{...props,buffer,onChange:(change:any)=>{const update=()=>{buffer=typeof change==='function'?change(buffer):change;render();};if(state.defer)updates.push(update);else update();}}):null);}
+ const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))];
+ const button=(label:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===label);
+ const flush=async()=>ui.React.act(async()=>{await new Promise(resolve=>setImmediate(resolve));});
+ await ui.React.act(async()=>render());
+ return{props,original,pending,state,updates,controls,requests,button,buffer:()=>buffer,flush,render:()=>ui.React.act(async()=>render()),depart:()=>ui.flushSync(()=>{shown=false;render();}),
+  close:async()=>{await ui.React.act(async()=>{for(const finish of controls)finish();await new Promise(resolve=>setImmediate(resolve));});await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+}
+const criteriaRelease='미전송 기준 저장 준비 해제';
+test('기준 해제 confirm 중 SAVE 진입 또는 editor 이탈은 원 준비를 보존한다',async()=>{
+ for(const mode of ['save','unmount']){const m=await mountCriteria(),oldConfirm=globalThis.confirm;try{
+  const save=handler(m.button('검수 기준 명시 저장')),release=handler(m.button(criteriaRelease));
+  globalThis.confirm=()=>{if(mode==='save')save();else m.depart();return true;};
+  await ui.React.act(async()=>release());assert.equal(m.buffer().pending===m.pending,true,mode);assert.equal(m.requests.filter(v=>v==='GET').length,mode==='save'?1:0);assert(!m.requests.includes('POST'));
+ }finally{globalThis.confirm=oldConfirm;await m.close();}}
+});
+test('기준 해제 취소와 정상 확인은 원 입력을 유지하고 명령만 한 번 해제한다',async()=>{
+ const m=await mountCriteria(),oldConfirm=globalThis.confirm;try{
+  const release=handler(m.button(criteriaRelease));globalThis.confirm=()=>false;await ui.React.act(async()=>release());assert.equal(m.buffer(),m.original);
+  globalThis.confirm=()=>true;await ui.React.act(async()=>release());assert.deepEqual(m.buffer(),{...m.original,pending:null,dirty:true});assert.equal(m.requests.length,0);
+ }finally{globalThis.confirm=oldConfirm;await m.close();}
+});
+test('지연 기준 해제 updater는 SAVE 또는 문맥 변경 뒤 원 pending을 비우지 않는다',async()=>{
+ for(const mode of ['save','session','transport','generation']){const m=await mountCriteria(),oldConfirm=globalThis.confirm;try{
+  m.state.defer=true;globalThis.confirm=()=>true;await ui.React.act(async()=>handler(m.button(criteriaRelease))());assert.equal(m.updates.length,1);
+  if(mode==='save')await ui.React.act(async()=>handler(m.button('검수 기준 명시 저장'))());
+  else if(mode==='session'){m.props.session={...m.props.session,csrfToken:'D'.repeat(43)};await m.render();}
+  else if(mode==='transport'){m.props.client.transport=async()=>{throw Error('MUST_NOT_CALL');};await m.render();}
+  else{m.original.controlGeneration++;await m.render();}
+  await ui.React.act(async()=>m.updates[0]!());assert.equal(m.buffer().pending===m.pending,true,mode);assert(!m.requests.includes('POST'));
+ }finally{globalThis.confirm=oldConfirm;await m.close();}}
 });

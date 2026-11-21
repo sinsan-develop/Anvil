@@ -20,11 +20,13 @@ export function ResultCriteriaEditor({client,assignment,session,buffer,onChange,
  const bound=buffer&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId&&buffer.assignmentRef.id===assignment.ref.id&&buffer.assignmentRef.version===assignment.ref.version&&buffer.assignmentRef.contentHash===assignment.ref.contentHash?buffer:null,d=assignment.snapshot.definition,canCreate=!!d.environmentRef&&d.baselineRefs.length>0&&d.acceptanceCriteria.length>0&&d.verificationRequirements.length>0;
  const epoch=useRef(0),identity=useRef<{client:ApiClient;key:string}|null>(null),identityKey=ordered([session.user.id,session.clientId,assignment.projectId,assignment.ref,bound?.bindingId??null,bound?.controlGeneration??null]);
  if(identity.current?.client!==client||identity.current.key!==identityKey){epoch.current++;identity.current={client,key:identityKey};}
- const latest=useRef({client,session,assignment,buffer,bound});latest.current={client,session,assignment,buffer,bound};
+ const latest=useRef({client,session,assignment,buffer,bound,busy});latest.current={client,session,assignment,buffer,bound,busy};
+ const attempt=useRef(0),releaseRevision=useRef(0),releaseIdentity=useRef<{client:ApiClient;transport:ApiClient['transport'];buffer:CriteriaBuffer|null;key:string}|null>(null),releaseKey=ordered([session,assignment,buffer]);
+ if(releaseIdentity.current?.client!==client||releaseIdentity.current.transport!==client.transport||releaseIdentity.current.buffer!==buffer||releaseIdentity.current.key!==releaseKey){releaseRevision.current++;releaseIdentity.current={client,transport:client.transport,buffer,key:releaseKey};}
  const change=(next:CriteriaBuffer,expected:CriteriaBuffer|null=bound)=>onChange(current=>current&&expected&&ordered(current)===ordered(expected)?next:current);
  const edit=(field:'reason'|'rows'|'items',value:string|CriteriaRow[]|CriteriaInput['items'])=>{if(!bound||bound.pending||bound.stored||working.current)return;setFailure(null);change({...bound,[field]:value,dirty:true,failure:null});};
  async function run(mode:'CREATE'|'PREPARE'|'SAVE'|'REBIND'){
-  if(working.current)return;working.current=true;setBusy(true);setFailure(null);const b=bound;let attempted=false,expected=b;const context=latest.current,requestEpoch=epoch.current;
+  if(working.current)return;attempt.current++;working.current=true;setBusy(true);setFailure(null);const b=bound;let attempted=false,expected=b;const context=latest.current,requestEpoch=epoch.current;
   const active=()=>{const now=latest.current;return live.current&&epoch.current===requestEpoch&&now.client===context.client&&now.session.user.id===context.session.user.id&&now.session.clientId===context.session.clientId&&ordered(now.assignment)===ordered(context.assignment)&&(!b?now.buffer===context.buffer:now.bound?.bindingId===b.bindingId&&now.bound.controlGeneration===b.controlGeneration&&ordered(now.bound.pending)===ordered(b.pending));};
   try{
    const generation=await documentControl(client,assignment.projectId,session);if(!active())return;
@@ -39,8 +41,10 @@ export function ResultCriteriaEditor({client,assignment,session,buffer,onChange,
  const frozen=busy||!!bound?.pending||!!bound?.stored;
  function releaseUnsentPreparation(){
   if(working.current||busy||!bound?.pending||bound.uncertain||bound.stored||bound.failure)return;
-  const chosen=bound;if(!confirm('미전송 기준 저장 준비만 해제하고 입력 수정으로 돌아갈까요? 서버 저장이나 전송된 명령은 취소하지 않습니다.'))return;
-  onChange(current=>current?.bindingId===chosen.bindingId&&current.pending?.command.commandId===chosen.pending?.command.commandId&&!current.uncertain&&!current.stored&&!current.failure?{...current,pending:null,dirty:true}:current);
+  const chosen=bound,pending=bound.pending,original=ordered([session,assignment,chosen]),transport=client.transport,revision=releaseRevision.current,turn=attempt.current;
+  const currentPreparation=()=>{const now=latest.current;return live.current&&!working.current&&!now.busy&&releaseRevision.current===revision&&attempt.current===turn&&now.client===client&&now.client.transport===transport&&now.buffer===chosen&&now.bound===chosen&&chosen.pending===pending&&!chosen.uncertain&&!chosen.stored&&!chosen.failure&&ordered([now.session,now.assignment,chosen])===original;};
+  if(!currentPreparation()||!confirm('미전송 기준 저장 준비만 해제하고 입력 수정으로 돌아갈까요? 서버 저장이나 전송된 명령은 취소하지 않습니다.')||!currentPreparation())return;
+  onChange(current=>current===chosen&&currentPreparation()?{...current,pending:null,dirty:true}:current);
  }
  return <section className="status-card" aria-label="검수 기준 등록"><h5>명시 검수 기준 등록</h5><p>원조건마다 시험 ID·종류를 직접 지정합니다. 환경은 확정 임무의 고정 참조이며 실제 가동·검수 합격·실행 허가를 뜻하지 않습니다.</p>
   {!canCreate?<p role="status">확정 임무의 기준·환경·완료/검증 조건이 부족하여 등록할 수 없습니다. 먼저 임무를 보완하세요.</p>:null}
