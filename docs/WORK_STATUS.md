@@ -21873,3 +21873,9 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 기준 `ca7bd814` clean·추적 차이0. developer_primary가 원 importer·원본 지문·파생 33,478B 지문을 명시 승인 graph의 한 항목으로 결박하는 코드를 작성하고 반환했다. Node 훅은 같은 원 importer가 전달하는 정규 base64 한 본문과 해당 모듈의 고정 다섯 builtin만 허용한다. 다른 data URL과 교차 parent·변형은 해당 실행의 후속 적재까지 차단한다.
 
 담당 RED `a8c4c6` 뒤 `node --test tests/unit/FN03/tc01-pinned-load.test.ts` 17통과·실패/건너뜀0, 타입0 `45cab6`, 공백0 `3a8bc7`. 기존 적재 검사를 사용하는 합성 importer에서 원 Git의 파생 모듈을 실제 Node 훅으로 적재해 고정 export 존재를 확인했다. 명령·CLI·DB export 호출0, 잔여 hook/handle0. Main 범위·지문 대조 및 독립 C0/I0. 실제 Linux/SSH/설치 closure·서비스·권한·DB는 미검증이며 기존 설정 읽기 승인 대기다. 롤백은 이 두 소스·시험과 기록의 역적용이다.
+
+### IX01/FN03 같은 승인과 적재 그래프 결박
+
+기준 `b2839f71` 계열. developer_primary가 새 bootstrap 입력 검산과 합성시험 두 경로를 작성 후 반환했다. 기존 통합 plan/approval 원문과 entry/native의 시도·root·기한·실행 지문을 대조한다. 승인된 소스 목록의 고정 control 행으로 graph 원 바이트를 확인하고, 소스·설치 목록에서 적재할 파일만 정확히 선택한다. 최소 bridge/entry/native를 포함해야 한다. 검산한 동일 미등록 loader와 고정 메타데이터를 반환하며 임시 원입력 복사본은 정리한다. SQL·시험 자료의 기존 entry 검산은 유지한다.
+
+담당 모듈 부재 RED `a3bc9c` 뒤 직접·인접 24통과 `4ed107`, 최종 직접7통과·실패/건너뜀0·타입0 `216a03`. Main 미등록 loader 집중1통과 및 신규 두 지문 확인 `4303ab`, 독립 검수 C0/I0. 실제 graph·hook 등록·외부 런처·Linux/SSH/DB·권한·서비스 실행0. 다음은 외부 감독에서 사용할 고정 bridge 및 같은 loader 등록·수거 연결이다. 실제 Windows 진단 승인에는 응답이 확인되지 않았다. 롤백은 신규 코드·시험과 이 기록의 역적용이다.
