@@ -19,6 +19,34 @@ import {takeNormalUnderstandingDiscovery,type NormalUnderstandingDiscoveryTicket
 import {readNormalUnderstandingDiscovery,type NormalUnderstandingDiscoveryProjection,readNormalUnderstandingResponse,type NormalUnderstandingResponseProjection} from './normal-understanding-response-source.ts';
 import type {NormalOwnedCredentialPort} from './normal-credential-bootstrap-client.ts';
 
+import type {NormalProtectedPostClient} from './normal-protected-post-client.ts';
+
+declare const resultSeal:unique symbol;
+export type NormalUnderstandingResultSeal=Readonly<{[resultSeal]:true}>;
+type DiscoveryReadResult={metadata:NormalUnderstandingDiscoveryProjection;seal:NormalUnderstandingResultSeal};
+const discoveryResults=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;post:NormalProtectedPostClient;metadata:NormalUnderstandingDiscoveryProjection;expiresAt:string;check:Guard;finish:Guard}>();
+/** 발급 함수는 없다. 원 outputSource의 정상 read/close 뒤에만 등록한 인계를 한 번 소비한다. */
+function takeNormalUnderstandingResult(seal:NormalUnderstandingResultSeal,client:NormalProtectedGetClient,post:NormalProtectedPostClient,owned:NormalOwnedCredentialPort){
+ const saved=discoveryResults.get(seal);if(!saved)invalid('NORMAL_POST_RESULT_SEAL_INVALID');discoveryResults.delete(seal);
+ try{if(saved.client!==client||saved.post!==post||saved.owned!==owned)invalid('NORMAL_POST_RESULT_SEAL_INVALID');saved.check();return saved;}
+ catch(error){saved.finish();throw error;}
+}
+/** 원 worker의 결과를 한 번만 목적 본문에 결박한다. 보호 signer 증명 미연결이며 외부 전송은 없다. */
+export async function prepareNormalUnderstandingResult(seal:NormalUnderstandingResultSeal,client:NormalProtectedGetClient,post:NormalProtectedPostClient,owned:NormalOwnedCredentialPort,signal:AbortSignal){
+ if(!(signal instanceof AbortSignal)||signal.aborted)invalid('NORMAL_POST_RESULT_SEAL_INVALID');
+ const saved=takeNormalUnderstandingResult(seal,client,post,owned);let bytes:Buffer|undefined;
+ try{
+  saved.check();const m=saved.metadata,s=owned.metadata.scope;
+  if(m.projectId!==s.projectId||m.executionId!==s.executionId||m.executionGeneration!==s.executionGeneration)invalid('NORMAL_POST_RESULT_SEAL_INVALID');
+  bytes=Buffer.from(canonicalJson({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:m}),'utf8');
+  if(bytes.length>2*1024*1024)invalid('NORMAL_POST_RESULT_SEAL_INVALID');
+  const bodyHash=contentHash(bytes);
+  saved.check();if(signal.aborted)invalid('NORMAL_POST_RESULT_SEAL_INVALID');
+  return Object.freeze({state:'SIGNING_UNAVAILABLE' as const,requestRef:Object.freeze(cloneV1(m.requestRef)),acquisitionRef:Object.freeze(cloneV1(m.acquisitionRef)),bodyHash,executionAuthorized:false as const,dispatchPerformed:false as const});
+ }finally{bytes?.fill(0);saved.finish();}
+}
+export function discardNormalUnderstandingResult(seal:NormalUnderstandingResultSeal){const saved=discoveryResults.get(seal);discoveryResults.delete(seal);saved?.finish();}
+
 type Writer='NORMAL_EXECUTION'|'UNVERIFIED_RECEIPT_INBOX';
 type IO=NormalFilePorts&InboxFilePorts;
 type Guard=()=>void;
@@ -428,7 +456,7 @@ export class OwnedSpoolRuntime {
    catch(error){unknown=true;throw error;}finally{reading=false;completed.resolve();}
   }};
  }
- outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>;readUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingDiscoveryProjection>}{
+ outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>;readUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,post:NormalProtectedPostClient):Promise<DiscoveryReadResult>}{
   const saved=this.#workers.get(worker),slot=this.external(this.#slot);
   if(this.#binding||!saved||saved.journal!==journal||!slot||!refV1(slot.receiptRef)||this.#owner.aborted||signal.aborted||
    isProxy(sdk)||!recordV1(sdk,['expiresAt','check','create','close','classify'])||
@@ -496,11 +524,17 @@ export class OwnedSpoolRuntime {
    try{await body({rowCount:rows.length,read:async sequence=>{guard();if(!active||!Number.isSafeInteger(sequence)||sequence<1||sequence>rows.length)invalid();return cloneV1(rows[sequence-1]);}});guard();}
    finally{active=false;rows.length=0;}
   },guard);};
-  return {source,port,readUnderstandingDiscovery:async(ticket,client,owned)=>{
+  return {source,port,readUnderstandingDiscovery:async(ticket,client,owned,post)=>{
    verify();if(!origin||!binding||this.#unknown||byRef(owned.metadata)!==slotKey)invalid();
    const original=takeNormalUnderstandingDiscovery(ticket,client,owned,origin.scope,origin.start);
    const guard=()=>{verify();original.check();if(!origin||origin.signal.aborted||this.#unknown)invalid();this.external(origin.check);};
-   try{guard();return await readNormalUnderstandingDiscovery(original.binding,{clock:()=>{guard();return this.#clock();},current:()=>{guard();return original.binding;},withRead:body=>withRead(body,guard)},origin.signal);}finally{original.finish();}
+   let issued=false;
+   try{
+    guard();const metadata=await readNormalUnderstandingDiscovery(original.binding,{clock:()=>{guard();return this.#clock();},current:()=>{guard();return original.binding;},withRead:body=>withRead(body,guard)},origin.signal);guard();
+    const seal=Object.freeze({}) as NormalUnderstandingResultSeal;
+    discoveryResults.set(seal,{client,owned,post,metadata,expiresAt:original.binding.expiresAt,check:guard,finish:original.finish});issued=true;
+    return {metadata,seal};
+   }finally{if(!issued)original.finish();}
   },readUnderstanding:async(ticket,client,owned)=>{
    verify();if(!origin||!binding||this.#unknown||byRef(owned.metadata)!==slotKey)invalid();
    const original=takeNormalUnderstandingRead(ticket,client,owned,this.#attempt,origin.scope);

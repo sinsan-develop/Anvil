@@ -22223,3 +22223,11 @@ developer_primary 단일 작성·동결. 신규 normal-understanding-response-so
 독립 I1에서 서버의 START DB 불변 ref ID와 원 envelope commandId가 별개인데도 같은 값으로 비교한 문제를 확인했다. 실제처럼 별도 ID를 둔 owner fixture에서 실패(0a28cc)를 재현했고 잘못된 동일성 조건만 제거했다. 다른 원 FIRST commandId 및 context/등록 불일치는 계속 거절한다. 최종 독립 C0/I0/M0. Main 직접 41통과(63cf6d), owner RAM 16 및 native 정적 1 통과(d7a267), 실패·건너뜀0. 루트 타입·공백 검사 exit0(235b07), 최종 동결 지문 일치. C# 컴파일·실 native HTTPS/스풀, DB·권한·키·서비스·SSH·SDK·Agent 실행0.
 
 다음은 같은 획득 영수증과 원 close에 결박한 메타 결과의 서명 POST·불변 보관이다. 첫 SELECT와 UI에서 볼 상태/범위·정상 검토는 미완료이며, 현재 코드는 result 전송 권위를 발급하지 않는다. 롤백은 이번 정확 10경로와 기록 변경분이다.
+
+#### FN09 S3 — 원 메타 결과의 일회 준비와 일반 전송 차단
+
+기준 ba24f38d, developer_primary 단일 작성·동결. 명시 탐색의 같은 worker가 보호 읽기를 정상 종료한 경우에만 비공개 단회 준비 정보를 만든다. 동일 client/post/owned·slot과 현재성을 검산하고 acquisition/request와 canonical 메타 본문 해시를 결박한다. 준비 상태는 SIGNING_UNAVAILABLE이다. 일반 owned PREPARE/REQUEST와 native result Call은 출처 검산 없이 진행하지 않으며 기존 permit·관측과 빌더 검산은 유지했다.
+
+일반 입구가 원 host를 호출하던 RED를 재현 후 차단했다. 최초 정적 상호 import의 초기화 순환을 확인했고 지연 import로 바꾸면 고정 빌더가 거절했다. 역참조를 제거해 원 profile/runtime에서 소비하도록 연결했으며 빌더 검산을 완화하지 않았다. Main 직접 42통과(5dd489), owner RAM 및 native 정적 18통과(4737af), 실패·건너뜀0, 루트 타입·공백 및 동결 지문 exit0(accdf1), 독립 C0/I0/M0. 실 C#·native 스풀/HTTPS·DB·권한·키·서비스·SSH·SDK·Agent 실행0.
+
+실제 result 서명·POST와 서버 보관은 아직 없다. 일반 native close 응답은 CLOSED_CONFIRMED뿐이며 SDK_READ_CLOSED는 기존 출력 쓰기 연계다. 다음은 원 보호 read에서 직접 도출한 메타의 검산·정상 종결과 exact request/acquisition·slot/attempt·본문 해시를 묶어 기존 signer에서 단회 소비하는 출처 증명 및 서버 보관이다. 그 전 결과 요청은 503이다. 롤백은 위 정확 6경로와 기록 변경분이다.

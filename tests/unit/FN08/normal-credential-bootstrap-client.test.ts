@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {canonicalJson} from '../../../contracts/canonical.ts';
 import {NormalCredentialBootstrapClient} from '../../../apps/connector/runtime/normal-credential-bootstrap-client.ts';
+import {prepareNormalUnderstandingResult} from '../../../apps/connector/runtime/normal-owned-spool-profile.ts';
 import {NormalProtectedPostClient} from '../../../apps/connector/runtime/normal-protected-post-client.ts';
 const id=(n:number)=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const hash=(b:Uint8Array|string)=>createHash('sha256').update(b).digest('hex');
@@ -133,12 +134,12 @@ test('보호 POST 분기는 원본문·packet identity를 보존하고 다른 pe
  }
 });
 
-test('FN09 소유 channel은 고정 read/result만 원 native 요청에 전달하고 잘못된 경로/query/body는 전송0',async()=>{
+test('FN09 소유 channel은 고정 read만 전달하며 raw result와 잘못된 경로/query/body는 전송0',async()=>{
  const base='/api/v1/connectors/'+id(2)+'/executions/'+id(3)+'/understanding-response-read';
  for(const [method,path,body] of [['GET',base,null],['POST',base+'/'+id(6)+'/result',canonicalJson({requestId:id(6),parts:[]})]] as const){
   const f=fixture(12),p=await f.client.bootstrap(new AbortController().signal),r={method,path,body,query:'',auth:'public-proof',expiresAt};
-  await p.request(r,new AbortController().signal);
-  const sent=f.calls.find(c=>c[0]==='NORMAL_EXECUTION_CALL')[1];assert.equal(sent.request.path,path);assert.equal(sent.request.method,method);assert.equal(sent.body,body);assert.equal(sent.bodyHash,hash(body??''));
+  if(method==='POST'){const count=f.calls.length;await assert.rejects(p.request(r,new AbortController().signal),/NORMAL_OWNED_RESULT_UNAVAILABLE/);assert.equal(f.calls.length,count);}
+  else{await p.request(r,new AbortController().signal);const sent=f.calls.find(c=>c[0]==='NORMAL_EXECUTION_CALL')[1];assert.equal(sent.request.path,path);assert.equal(sent.request.method,method);assert.equal(sent.body,body);assert.equal(sent.bodyHash,hash(body??''));}
   const before=f.calls.length;
   for(const patch of [{query:'?waitMs=0'},{method:method==='GET'?'POST':'GET'},{path:path+'/'},{path:path.replace(id(2),id(11))},{path:path.replace('understanding','Understanding')},...(method==='POST'?[{path:base+'/00000000-0000-0000-0000-000000000000/result'},{path:base+'/%30'+id(6).slice(1)+'/result'},{body:null}]:[{body:'{}'}])]){
    await assert.rejects(()=>p.request({...r,...patch} as any,new AbortController().signal));assert.equal(f.calls.length,before);
@@ -184,12 +185,13 @@ test('FN09 원 owned GET ticket만 같은 client/slot/attempt에서 한 번 소�
 });
 
 
-test('FN09 두 exact 목적은 원 UTF8 2MiB/+1·공백 확대를 parse 전 검산하고 불명 재시도0',async()=>{
+test('FN09 read UTF8 2MiB/+1·공백 확대와 result 효과 전 거절, 불명 재시도0',async()=>{
  for(const result of [false,true])for(const extra of [0,1]){
   const f=fixture(2*1024*1024-11+extra),signal=new AbortController().signal,p=await f.client.bootstrap(signal);
   assert.equal(f.response.length,2*1024*1024+extra);
   const path='/api/v1/connectors/'+id(2)+'/executions/'+id(3)+'/understanding-response-read'+(result?'/'+id(6)+'/result':'');
   const request={method:result?'POST' as const:'GET' as const,path,query:'',body:result?'{}':null,auth:'public-proof',expiresAt};
+  if(result){const count=f.calls.length;await assert.rejects(p.request(request,signal),/NORMAL_OWNED_RESULT_UNAVAILABLE/);assert.equal(f.calls.length,count);continue;}
   if(!extra)assert.equal((await p.request(request,signal) as any).body.length,2*1024*1024-11);
   else{await assert.rejects(p.request(request,signal),/UNKNOWN/);const count=f.calls.length;await assert.rejects(p.request(request,signal),/UNKNOWN/);assert.equal(f.calls.length,count);}
  }
@@ -216,4 +218,18 @@ for(const mode of ['NONE','DENIED','EXPIRED','CLOSE','EXTRA','SLOT','PATH','STAT
   assert.deepEqual(await port.prepareUnderstandingDiscovery(signal),{kind:'NOT_ACQUIRED',status:mode});assert.equal(closed,2);terminal=false;
   assert.equal((await port.prepareUnderstandingDiscovery(signal)).kind,'PACKET');assert.equal(closed,3);
  }else{await assert.rejects(port.prepareUnderstandingDiscovery(signal),/UNKNOWN/);const n=calls;await assert.rejects(port.prepareUnderstandingDiscovery(signal),/UNKNOWN/);assert.equal(calls,n);}
+});
+
+
+test('FN09 raw 결과 POST와 위조 result seal은 host 효과 전에 거절한다',async()=>{
+ for(const method of ['prepare','request'] as const){
+  const f=fixture(12),port=await f.client.bootstrap(new AbortController().signal),before=f.calls.length;
+  const input={method:'POST' as const,path:'/api/v1/connectors/'+id(2)+'/executions/'+id(3)+'/understanding-response-read/'+id(99)+'/result',query:'',body:'{}',auth:'a',expiresAt};
+  await assert.rejects(()=>method==='prepare'?port.prepare(input,new AbortController().signal):port.request(input,new AbortController().signal),/NORMAL_OWNED_RESULT_UNAVAILABLE/);
+  assert.equal(f.calls.length,before);
+ }
+ const f=fixture(12),port=await f.client.bootstrap(new AbortController().signal),post=new NormalProtectedPostClient({origin:'https://example.invalid',ca:'RAM CA',scope,credentialExpiresAt:expiresAt},{protectedCredential:port,now:()=>at});
+ const before=f.calls.length;
+ await assert.rejects(()=>prepareNormalUnderstandingResult({} as never,{} as never,post,port,new AbortController().signal),/NORMAL_POST_RESULT_SEAL_INVALID/);
+ assert.equal(f.calls.length,before);
 });

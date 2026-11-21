@@ -145,6 +145,8 @@ export class NormalOwnedCredentialPort {
   if(!recordV1(r,['method','path','query','body','auth','expiresAt'])||!['GET','POST'].includes(r.method)||!r.path.startsWith(base+'/')||
    typeof r.query!=='string'||(r.body!==null&&typeof r.body!=='string')||!isoV1(r.expiresAt))fail();
   const suffix=r.path.slice(base.length),parts=suffix.split('/');
+  // 등록 서명은 원 private read/close의 출처 증명이 아니다. 목적 증명 연결 전 raw 전송을 닫는다.
+  if(r.method==='POST'&&parts.length===4&&parts[1]==='understanding-response-read'&&uuidV1(parts[2])&&parts[3]==='result')fail('NORMAL_OWNED_RESULT_UNAVAILABLE');
   const allowed=r.method==='GET'&&(suffix==='/commands'||suffix==='/understanding-response-read'||parts.length===5&&parts[1]==='commands'&&uuidV1(parts[2])&&parts[3]==='materials'&&uuidV1(parts[4]))||
    r.method==='POST'&&(suffix==='/observations'||parts.length===4&&parts[1]==='understanding-response-read'&&uuidV1(parts[2])&&parts[3]==='result'||parts.length===4&&parts[1]==='commands'&&uuidV1(parts[2])&&parts[3]==='permit');
   if(!allowed||parts[1]==='understanding-response-read'&&r.query!==''||r.method==='GET'&&r.body!==null||r.method==='POST'&&(r.body===null||r.query!==''))fail();

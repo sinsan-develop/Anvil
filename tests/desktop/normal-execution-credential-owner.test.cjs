@@ -669,6 +669,12 @@ for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START',
   }
   if(['OK','NONE','DENIED','EXPIRED','GET_DENIED'].includes(mode)){
    const result=await worker.discoverUnderstanding(a.signal);assert.equal(result.kind,'DISCOVERY');assert.equal(result.metadata.ranges.length,1);assert.equal(result.metadata.ranges[0].sequence,3);assert.deepEqual(result.metadata.initConfirmationRef,rows[1].ref);assert.deepEqual(result.metadata.tailRef,rows[2].ref);assert.equal(closed,1);await Promise.all(concurrent);
+   const body=canonicalJson({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:result.metadata});
+   assert.deepEqual(result.preparation,{state:'SIGNING_UNAVAILABLE',requestRef:result.metadata.requestRef,acquisitionRef:result.metadata.acquisitionRef,bodyHash:executionTarget('POST',base+'/'+result.metadata.requestRef.id+'/result',[],body).bodyHash,executionAuthorized:false,dispatchPerformed:false});
+   assert.equal(Object.isFrozen(result.preparation),true);assert.equal(Object.isFrozen(result.preparation.acquisitionRef),true);
+   const beforeForged=x.m.calls.length;
+   await assert.rejects(x.pair.post.send(result.preparation,a.signal),/NORMAL_POST_PACKET_INVALID/);
+   assert.equal(x.m.calls.length,beforeForged);
    if(mode==='OK')assert.deepEqual([...phases],['PREPARE','REQUEST','PRIVATE_READ']);
    assert.equal(/선택된|session_id|plannedSid|private|cwd|textHash/.test(JSON.stringify(result)),false);
    const count=x.m.calls.length;await assert.rejects(worker.discoverUnderstanding(a.signal));assert.equal(x.m.calls.slice(count).filter(v=>v.operation.startsWith('NORMAL_SPOOL_')).length,0);
@@ -692,4 +698,13 @@ test('FN09 native 목적 부정 응답은 exact TLS HTTP412 또는 정상 NONE�
  assert.ok(source.includes('req.AllowAutoRedirect=false;req.Proxy=null;req.UseDefaultCredentials=false;req.Credentials=null;'));
  assert.ok(source.includes('response.ResponseUri.AbsoluteUri!=S(record,"origin")+path+query'));
  assert.ok(source.includes('if(H(Record(Id(h,"attemptId")))!=recordHash||clock()>=end)throw Invalid();'));
+});
+
+
+test('FN09 raw result native Call은 출처 증명 없이 CA·challenge·서명 전에 거절 · 정적',()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../../apps/connector/native/NormalExecutionCredentialSource.cs'),'utf8');
+ const call=source.slice(source.indexOf('object Call(Dictionary<string,object> h,byte[] bodyBytes)'));
+ const gate=call.indexOf('S(target,"path").StartsWith(Base(scope)+"/understanding-response-read/",StringComparison.Ordinal))throw Invalid();');
+ assert.ok(gate>=0&&gate<call.indexOf('ProtectedStore.LoadNormalOwned'));
+ assert.ok(gate<call.indexOf('ChallengeRequest(')&&gate<call.indexOf('Sign('));
 });

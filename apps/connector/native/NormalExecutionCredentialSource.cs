@@ -315,6 +315,8 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   if(bodyBytes.Length!=N(h["bodyLength"])||H(bodyBytes)!=S(h,"bodyHash"))throw Invalid();string body=(bool)h["bodyIsNull"]?null:new UTF8Encoding(false,true).GetString(bodyBytes);
   if(body==null&&bodyBytes.Length!=0)throw Invalid();var record=Record(Id(h,"attemptId"));string recordHash=H(record);
   var slot=LoadSlot(Id(h,"slotId"),record);var scope=Map(slot["scope"]);var r=Map(h["request"]);var target=Target(scope,r,body);
+  // S1 target 문법은 보존하되 원 close/body 출처 증명 없는 raw 목적 서명 및 HTTP는 금지한다.
+  if(S(target,"method")=="POST"&&S(target,"path").StartsWith(Base(scope)+"/understanding-response-read/",StringComparison.Ordinal))throw Invalid();
   byte[] caBytes=ProtectedStore.LoadNormalOwned(owner,Id(h,"slotId"),"execution-ca",current);try{if(H(caBytes)!=S(slot,"caHash"))throw Invalid();activeCA=new UTF8Encoding(false,true).GetString(caBytes);}finally{Array.Clear(caBytes,0,caBytes.Length);}
   DateTime end=new[]{At(slot,"expiresAt"),At(r,"expiresAt")}.Min();if(end<=clock())throw Invalid();object result;
   if(S(h,"kind")=="PREPARE"){

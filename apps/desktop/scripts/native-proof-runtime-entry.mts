@@ -2,7 +2,7 @@ import { NormalProtectedGetClient, type NormalProtectedGetOptions } from '../../
 import { NormalProtectedPostClient } from '../../connector/runtime/normal-protected-post-client.ts';
 import { NormalInstructionWire } from '../../connector/adapters/secondary/normal-instruction-wire.ts';
 import { NormalInstructionIntake } from '../../connector/runtime/normal-instruction-intake.ts';
-import { OwnedSpoolRuntime,type WorkerSdkPorts } from '../../connector/runtime/normal-owned-spool-profile.ts';
+import { OwnedSpoolRuntime,prepareNormalUnderstandingResult,discardNormalUnderstandingResult,type WorkerSdkPorts } from '../../connector/runtime/normal-owned-spool-profile.ts';
 import { NormalCredentialBootstrapClient, type NormalOwnedHostFactory, NormalOwnedCredentialPort } from '../../connector/runtime/normal-credential-bootstrap-client.ts';
 import { cloneV1, recordV1, refV1, type RuntimeRefV1 } from '../../../contracts/runtime/validation-v1.ts';
 import { canonicalJson } from '../../../contracts/canonical.ts';
@@ -150,8 +150,13 @@ export function createOwnedSpoolController(host: NormalOwnedHostFactory, attempt
        const received=await original.get.receiveUnderstandingDiscovery(readSignal);checkedClock();
        if(active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');
        if(received.kind==='NOT_ACQUIRED')return received;
-       const result=await sdkWorker.readUnderstandingDiscovery(received.ticket,original.get,owned);checkedClock();
-       if(active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');return {kind:'DISCOVERY' as const,metadata:result};
+       const result=await sdkWorker.readUnderstandingDiscovery(received.ticket,original.get,owned,original.post);
+       try{
+        checkedClock();if(active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');
+        const preparation=await prepareNormalUnderstandingResult(result.seal,original.get,original.post,owned,readSignal);checkedClock();
+        if(active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');
+        return {kind:'DISCOVERY' as const,metadata:result.metadata,preparation};
+       }finally{discardNormalUnderstandingResult(result.seal);}
       }catch(error){understandingUnknown=true;throw error;}finally{readingUnderstanding=false;}
     },renew:async(renewSignal:AbortSignal)=>{if(readingUnderstanding)throw Error('NORMAL_POLL_UNAVAILABLE');return poll.renew(renewSignal);},readUnderstanding:async(requestSignal:AbortSignal)=>{
       checkClients(active);
