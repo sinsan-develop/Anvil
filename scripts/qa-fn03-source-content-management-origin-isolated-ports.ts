@@ -1,3 +1,4 @@
+import {managementOriginProfile,managementOriginTc01Profile,type ManagementOriginProfile} from './qa-fn03-source-content-management-origin-profiles.ts';
 import {posix} from 'node:path';
 import type {Pool,PoolClient} from 'pg';
 import {canonicalJson,contentHash,parseWireJson} from '../contracts/canonical.ts';
@@ -68,10 +69,16 @@ type Legacy=ManagementOriginHostPorts['legacy']&{bootstrapSql(database:string,se
 
 /** 고정된 R9의 검산된 module 부분만 적재한다. 제거한 CLI entry/actualPorts는 호출하지 않는다.
  * 생성만으로 provider/OS/DB 효과0. 이 소스는 새 실행안·실제 승인·신원 핀·원장 구현을 대신하지 않는다. */
-export async function createManagementOriginIsolatedPorts(input:ManagementOriginIsolatedInput,providers:ManagementOriginIsolatedProviders):Promise<ManagementOriginHostPorts>{
+export async function createManagementOriginIsolatedPorts(input:ManagementOriginIsolatedInput,providers:ManagementOriginIsolatedProviders):Promise<ManagementOriginHostPorts>{return createIsolatedPorts(input,providers,managementOriginProfile);}
+export async function createManagementOriginTc01IsolatedPorts(input:ManagementOriginIsolatedInput,providers:ManagementOriginIsolatedProviders):Promise<ManagementOriginHostPorts>{return createIsolatedPorts(input,providers,managementOriginTc01Profile);}
+async function createIsolatedPorts(input:ManagementOriginIsolatedInput,providers:ManagementOriginIsolatedProviders,selected:ManagementOriginProfile):Promise<ManagementOriginHostPorts>{
  const binding=Object.freeze(copyControlData(input.binding,8192)) as unknown as Readonly<ManagementOriginHostBinding>;
  check(uuidV1(binding.attemptId)&&uuidV1(binding.approvalId)&&hex(binding.planHash)&&hex(binding.approvalHash)&&/^[a-f0-9]{40}$/.test(binding.sourceHead));
- const receipt=input.receiptRoot;check(typeof receipt==='string'&&receipt.startsWith('/')&&posix.normalize(receipt)===receipt&&!receipt.includes('\0')&&!receipt.includes('\\')&&receipt.endsWith('/fn03-management-'+binding.attemptId));
+ const receipt=input.receiptRoot;check(typeof receipt==='string'&&receipt.startsWith('/')&&posix.normalize(receipt)===receipt&&!receipt.includes('\0')&&!receipt.includes('\\')&&receipt.endsWith('/'+selected.receiptPrefix+binding.attemptId));
+ if(selected.integrated){
+  check(recordV1(binding,['purpose','profile','attemptId','approvalId','planHash','approvalHash','sourceHead','issuedAt','expiresAt','artifactRoot','subnet'])&&binding.purpose===selected.purpose&&binding.profile===selected.profile);
+  check(receipt==='/home/daon/.local/share/anvil-v3-qa-receipts/'+selected.receiptPrefix+binding.attemptId&&binding.artifactRoot==='/tmp/'+selected.artifactPrefix+binding.attemptId);
+ }else check(binding.purpose===undefined&&binding.profile===undefined);
  const source=Buffer.from(input.legacyBytes),moduleSource=currentLegacyModuleSource(source,currentProfile.legacyHash);
  const rows=readManagementOriginSchemaManifest(Buffer.from(input.historicalTsv)),paths=rows.map(r=>r.path);
  const own=(raw:Uint8Array,sha:string)=>{check(raw instanceof Uint8Array&&raw.buffer instanceof ArrayBuffer&&raw.byteLength<=2097152);const b=Buffer.from(raw);check(contentHash(b)===sha);return b;};
@@ -85,8 +92,8 @@ export async function createManagementOriginIsolatedPorts(input:ManagementOrigin
  check(fixture.artifactRoot===binding.artifactRoot&&methods.some(m=>same(fixture.methodologyRef,{id:m.id,version:m.version,contentHash:m.contentHash})));
  const legacy=await import('data:text/javascript;base64,'+Buffer.from(moduleSource).toString('base64')) as Legacy;
  const {now,monotonic,assertCurrent,consume,command,wait,openPool,closePool,prepareArtifactRoot}=providers;
- const tag=binding.attemptId.replaceAll('-',''),name='anvil_v3_fn03_management_'+tag;
- const labels=Object.freeze({'anvil.owner':'FN03_MANAGEMENT_ORIGIN','anvil.instance':tag,'anvil.plan':binding.planHash});
+ const tag=binding.attemptId.replaceAll('-',''),name=selected.resourcePrefix+tag;
+ const labels=Object.freeze({'anvil.owner':selected.owner,'anvil.instance':tag,'anvil.plan':binding.planHash});
  let broken=false,phase='NEW',cid='',nid='',noneId='',address='',installed=0,appended=0,ledgerReads=0,systemHash='',seeded=false,acquired=false,closed=false,closeFailed=false;
  let pgWall=Infinity,pgMono=Infinity,journeyWall=Infinity,journeyMono=Infinity,operationWall=Infinity,operationMono=Infinity,attachedNetworkRaw='';
  let scope:Readonly<ManagementOriginHostScope>|undefined;

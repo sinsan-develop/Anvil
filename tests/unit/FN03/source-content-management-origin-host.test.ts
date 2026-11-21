@@ -1,11 +1,11 @@
-import test from 'node:test';
+import test,{mock} from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
 import {readFileSync} from 'node:fs';
 import type {Pool} from 'pg';
-import {createManagementOriginHost,type ManagementOriginHostPorts} from '../../../scripts/qa-fn03-source-content-management-origin-host.ts';
+import {createManagementOriginHost,createManagementOriginTc01Host,type ManagementOriginHostPorts} from '../../../scripts/qa-fn03-source-content-management-origin-host.ts';
 import {readManagementOriginSchemaManifest} from '../../integration/FN03/source-content-management-origin-schema.ts';
 import {currentNetworkProbeContract} from '../../../scripts/qa-ix01-current-journey.ts';
 const id=(n:number)=>`9a000000-0000-4000-8000-${String(n).padStart(12,'0')}`,ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
@@ -16,17 +16,17 @@ function load(){
 }
 let cached:ReturnType<typeof load>|undefined;
 const role=(name:string)=>({name,superuser:false,inherit:false,createRole:false,createDb:false,replication:false,bypassRls:false,login:false,validUntil:null});
-function harness(){
+function harness(integrated=false){
  const source=cached??=load(),trace:string[]=[],ledger:{id:string;checksum:string}[]=[],at=Date.parse('2026-11-21T00:00:00Z');let wall=at,mono=0,active=true,revoked=false;
- const binding={attemptId:id(1),approvalId:id(2),planHash:'b'.repeat(64),approvalHash:'c'.repeat(64),sourceHead:'d'.repeat(40),issuedAt:at,expiresAt:at+1800000,artifactRoot:resolve('/synthetic-unopened-fn03/'+id(1)),subnet:'172.18.0.16/28'};
+ const binding={attemptId:id(1),approvalId:id(2),planHash:'b'.repeat(64),approvalHash:'c'.repeat(64),sourceHead:'d'.repeat(40),issuedAt:at,expiresAt:at+1800000,artifactRoot:integrated?'/tmp/fn03-tc01-'+id(1):resolve('/synthetic-unopened-fn03/'+id(1)),subnet:'172.18.0.16/28',...(integrated?{purpose:'FN03_MANAGEMENT_ORIGIN_TC01_ISOLATED',profile:'FN03_MANAGEMENT_ORIGIN_TC01_ENTRY_V1'}:{})};
  const input={artifactRoot:binding.artifactRoot,access:{installationId:id(3),key:Buffer.alloc(32,7)},origin:'https://anvil.invalid',actorId:id(4),loginName:'synthetic-fn03',password:'Synthetic fixture only 123!',credentialGeneration:1,methodologyRef:ref(5),ids:{draftCommandId:id(6),createCommandId:id(7),policyCommandId:id(8),ruleId:id(9),managementCommandId:id(10),deniedCommandId:id(11),readCommandId:id(12)},policyExpiresAt:new Date(at+300000).toISOString(),managementPayload:{}};
  const appPool={async connect(){trace.push('APP_CONNECT');throw Error('PRIVATE_UNEXPECTED');}} as unknown as Pool;
  const resources={appPool,observer:{async query(){trace.push('OBSERVE');throw Error('PRIVATE_UNEXPECTED');}},input,
   async prepareCatalogAndUser(pool:Pool):Promise<void>{assert.equal(pool,appPool);trace.push('SEED');throw Error('PRIVATE_UNPROVIDED');},async close(timeoutMs:number){assert.equal(timeoutMs,10000);trace.push('POOL_CLOSE');}};
  const metadata=()=>JSON.stringify({sessionUser:'anvil_v3_bootstrap',currentUser:'anvil_v3_bootstrap',roles:[role('worker_owner'),role('worker_publisher'),role('anvil_v3_source_content_management_owner')],memberships:revoked?[]:[{role:'worker_owner',member:'anvil_v3_migrator',grantor:'anvil_v3_migrator',adminOption:true}]});
  const endpoint='e'.repeat(64),containerId='f'.repeat(64),networkId='a'.repeat(64);
- const ports:ManagementOriginHostPorts={now:()=>wall,monotonic:()=>mono,assertCurrent(s){assert.equal(s.database,'anvil_v3_fn03_management_'+id(1).replaceAll('-',''));if(!active)throw Error('PRIVATE_CURRENT');},async claim(){trace.push('CLAIM');},
-  legacy:{DdlFailure:class extends Error{},parsePsqlFailure(){return null;},buildPsqlArgs(cid,db,user,path,sha){assert.equal(cid,containerId);assert.equal(db,'anvil_v3_fn03_management_'+id(1).replaceAll('-',''));return[user,path??'',sha??''];},roleMetadataSql:()=> 'ROLE_METADATA',
+ const ports:ManagementOriginHostPorts={now:()=>wall,monotonic:()=>mono,assertCurrent(s){assert.equal(s.database,(integrated?'anvil_v3_fn03_tc01_':'anvil_v3_fn03_management_')+id(1).replaceAll('-',''));if(!active)throw Error('PRIVATE_CURRENT');},async claim(){trace.push('CLAIM');},
+  legacy:{DdlFailure:class extends Error{},parsePsqlFailure(){return null;},buildPsqlArgs(cid,db,user,path,sha){assert.equal(cid,containerId);assert.equal(db,(integrated?'anvil_v3_fn03_tc01_':'anvil_v3_fn03_management_')+id(1).replaceAll('-',''));return[user,path??'',sha??''];},roleMetadataSql:()=> 'ROLE_METADATA',
    verifyRoleMetadata(raw,phase){const v=JSON.parse(raw);assert.deepEqual(v.roles,[]);assert.deepEqual(v.memberships,[]);trace.push('VERIFY:'+phase);return{systemHash:'9'.repeat(64),memberships:[]};},revokeSql(){return'BEGIN;COMMIT;';}},
   start:{check(step){trace.push(step);},create(){trace.push('CREATE');return containerId;},start(){trace.push('START');return containerId;},async readiness(){trace.push('READINESS');}},
   network:{step(step){trace.push(step);},create(){trace.push('NETWORK_CREATE');return networkId;},inspectNetwork(s){trace.push('NETWORK_INSPECT');return JSON.stringify({id:networkId,name:s.networkName,driver:'bridge',internal:true,labels:s.labels,ipam:[{Subnet:s.subnet,Gateway:'172.18.0.17'}],containers:{[containerId]:{Name:s.containerName,IPv4Address:'172.18.0.18/28',EndpointID:endpoint}}});},inspectContainer(s){trace.push('CONTAINER_INSPECT');return JSON.stringify({id:containerId,name:'/'+s.containerName,image:s.image,user:'999:999',labels:s.labels,running:true,host:{Privileged:false,ReadonlyRootfs:true,NetworkMode:'none',LogConfig:{Type:'none',Config:{}},CapDrop:['ALL'],SecurityOpt:['no-new-privileges'],PidsLimit:64,Memory:536870912,NanoCpus:1000000000,PublishAllPorts:false,PortBindings:{},Binds:null,VolumesFrom:null,Tmpfs:currentNetworkProbeContract.tmpfs},mounts:Object.keys(currentNetworkProbeContract.tmpfs).map(Destination=>({Type:'tmpfs',Destination,RW:true,Source:''})),ports:{'5432/tcp':null},networks:{[s.networkName]:{NetworkID:networkId,IPAddress:'172.18.0.18',IPPrefixLen:28,Gateway:'172.18.0.17',EndpointID:endpoint}}});}},
@@ -95,4 +95,45 @@ test('일반 실행/130 설치/새 연결 생성 없음; 정상 app/Pool 종결 
  assert.doesNotMatch(s,/new Pool|process\.env|process\.argv|\.listen\(|child_process|runCurrentJourney\(|installCurrentSchema\(|\.runCurrentChild/);
  assert(s.indexOf('if(!checked)return outcome')<s.indexOf('cleanup.call'));
  assert.match(s,/result.status==='CHECKED'&&result.appClosed/);assert.match(s,/check\(poolClosed\)/);
+});
+
+
+test('통합 host는 원 132/정확 namespace/신규 runner로 연결하고 교차 binding은 claim0',async()=>{
+ const h=harness(true);const r=await createManagementOriginTc01Host(h.ports).run(h.binding,h.source.tsv,h.source.files);
+ assert.equal(r.stage,'AUTH');assert.equal(r.status,'STOPPED');assert.equal(h.trace.filter(x=>x.startsWith('SQL:')).length,132);assert(!h.trace.includes('CLEANUP'));
+ for(const fault of ['legacy','profile','root','new-on-old','root-parent','root-relative']){
+  const x=harness(fault!=='new-on-old');
+  if(fault==='profile')x.binding.profile='FN03_MANAGEMENT_ORIGIN_ENTRY_V1';
+  if(fault==='root-parent')x.binding.artifactRoot='/other/fn03-tc01-'+id(1);if(fault==='root-relative')x.binding.artifactRoot='tmp/fn03-tc01-'+id(1);
+  if(fault==='root')x.binding.artifactRoot=resolve('/synthetic/anvil-v3-fn03-management-'+id(1));
+  const out=await (fault==='legacy'?createManagementOriginHost:createManagementOriginTc01Host)(x.ports).run(x.binding,x.source.tsv,x.source.files);
+  assert.equal(out.status,'STOPPED');assert.deepEqual(x.trace,[]);
+ }
+});
+
+test('통합 host의 원 runner 선택·FN03 완료 보존·앱/Pool 종결과 기한 뒤에만 cleanup',async()=>{
+ let h:ReturnType<typeof harness>,mode='',selected=0;
+ const auth=mock.module('../../../scripts/qa-fn03-source-content-management-origin-auth-fixture.ts',{namedExports:{createManagementOriginAuthFixture:()=>({async prepareFixtureInput(){h.trace.push('AUTH_FIXTURE');return{};},dispose(){h.trace.push('AUTH_DISPOSE');}})}});
+ const runner=mock.module('../../../scripts/qa-fn03-source-content-management-origin.ts',{namedExports:{
+  createManagementOriginRunner(){throw Error('WRONG_LEGACY_FACTORY');},
+  createManagementOriginTc01Runner(ports:any){selected++;return{async run(_tsv:unknown,files:any[]){
+   const rows=readManagementOriginSchemaManifest(h.source.tsv);
+   for(let i=0;i<files.length;i++){await ports.installation.install(files[i].bytes,rows[i]);await ports.installation.appendLedger(rows[i]);}
+   await ports.installation.readLedger();const metadata=JSON.parse(await ports.readRoleMetadata());metadata.roles=metadata.roles.filter((r:any)=>r.name!=='anvil_v3_source_content_management_owner');ports.verifyExistingRoles(JSON.stringify(metadata));
+   await ports.prepareFixtureInput(ports.pool);h.trace.push('RUNNER_TC01');if(mode==='late')h.mono(90000);
+   return{status:mode==='tc01'||mode==='fn03'?'STOPPED':'CHECKED',stage:'TC01',appClosed:mode!=='app-close',settlements:['COMMIT'],releases:['RELEASED'],journeys:{fn03:mode==='fn03'?'NOT_CHECKED':'CHECKED',tc01:mode==='tc01'||mode==='fake-success'?'STARTED':mode==='fn03'?'NOT_STARTED':'CHECKED',tc01Stage:null}};
+  }};}
+ }});
+ try{
+  const path='../../../scripts/qa-fn03-source-content-management-origin-host.ts?tc01-profile';const module=await import(path);
+  for(mode of ['ok','tc01','fn03','late','app-close','pool-close','fake-success']){
+   h=harness(true);if(mode==='pool-close')h.resources.close=async()=>{h.trace.push('POOL_CLOSE_FAILED');throw Error('PRIVATE');};
+   const out=await module.createManagementOriginTc01Host(h.ports).run(h.binding,h.source.tsv,h.source.files);
+   assert.equal(out.status,mode==='ok'?'CHECKED':'STOPPED',mode);assert.equal(out.journeys.fn03,mode==='fn03'?'NOT_CHECKED':'CHECKED',mode);
+   assert.equal(h.trace.filter(x=>x==='CLEANUP').length,mode==='ok'?1:0,mode);
+   assert.equal(h.trace.filter(x=>x==='POOL_CLOSE'||x==='POOL_CLOSE_FAILED').length,1,mode);
+   if(mode==='ok')assert(h.trace.indexOf('POOL_CLOSE')<h.trace.indexOf('CLEANUP'));
+  }
+  assert.equal(selected,7);
+ }finally{runner.restore();auth.restore();}
 });

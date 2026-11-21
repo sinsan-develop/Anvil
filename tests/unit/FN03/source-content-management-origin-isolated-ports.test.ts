@@ -8,8 +8,8 @@ import {buildOfficialForms} from '../../../apps/server/modules/documents/forms.t
 import {buildBuiltinMethodologies} from '../../../apps/server/modules/methodologies/builtins.ts';
 import {readManagementOriginSchemaManifest} from '../../integration/FN03/source-content-management-origin-schema.ts';
 import {currentNetworkProbeContract,currentProfile} from '../../../scripts/qa-ix01-current-journey.ts';
-import {createManagementOriginHost} from '../../../scripts/qa-fn03-source-content-management-origin-host.ts';
-import {createManagementOriginIsolatedPorts,consumeManagementOriginDockerCall,managementOriginDatabaseIdentitySql,type ManagementOriginIsolatedInput,type ManagementOriginIsolatedProviders,type ManagementOriginDockerCall} from '../../../scripts/qa-fn03-source-content-management-origin-isolated-ports.ts';
+import {createManagementOriginHost,createManagementOriginTc01Host} from '../../../scripts/qa-fn03-source-content-management-origin-host.ts';
+import {createManagementOriginIsolatedPorts,createManagementOriginTc01IsolatedPorts,consumeManagementOriginDockerCall,managementOriginDatabaseIdentitySql,type ManagementOriginIsolatedInput,type ManagementOriginIsolatedProviders,type ManagementOriginDockerCall} from '../../../scripts/qa-fn03-source-content-management-origin-isolated-ports.ts';
 const id=(n:number)=>`9b000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 function load(){
  const cwd=fileURLToPath(new URL('../../../',import.meta.url)),git=(args:string[],input?:string)=>execFileSync('git',args,{cwd,input,windowsHide:true,maxBuffer:16*1024*1024}),blob=(path:string)=>git(['cat-file','blob','9a176646:'+path]);
@@ -20,13 +20,13 @@ function load(){
 }
 let cached:ReturnType<typeof load>|undefined;
 const system=['pg_database_owner','pg_read_all_data','pg_write_all_data','pg_monitor','pg_read_all_settings','pg_read_all_stats','pg_stat_scan_tables','pg_read_server_files','pg_write_server_files','pg_execute_server_program','pg_signal_backend','pg_checkpoint'];
-function harness(fault=''){
+function harness(fault='',integrated=false){
  const source=cached??=load(),at=Date.parse('2026-11-21T00:00:00Z'),trace:string[]=[],calls:ManagementOriginDockerCall[]=[],ledger:{id:string;checksum:string}[]=[];
  let active=true,time=at,mono=0,started=false,bootstrapped=false,revoked=false,count=0,net=false,attached=false,detached=false,stopped=false,removed=false,netRemoved=false;
- const cid='1'.repeat(64),nid='2'.repeat(64),none='3'.repeat(64),endpoint='4'.repeat(64),tag=id(1).replaceAll('-',''),name='anvil_v3_fn03_management_'+tag;
- const binding={attemptId:id(1),approvalId:id(2),planHash:'5'.repeat(64),approvalHash:'6'.repeat(64),sourceHead:'7'.repeat(40),issuedAt:at,expiresAt:at+1800000,artifactRoot:resolve('/synthetic-fn03-unopened/'+id(1)),subnet:'172.18.0.16/28'};
- const input:ManagementOriginIsolatedInput={binding,receiptRoot:'/synthetic-receipts/fn03-management-'+id(1),historicalTsv:source.historicalTsv,legacyBytes:source.legacyBytes,sources:source.sources,passwords:{bootstrap:'a'.repeat(64),app:'b'.repeat(64),migrator:'c'.repeat(64)},fixture:{artifactRoot:binding.artifactRoot,access:{installationId:id(3),key:Buffer.alloc(32,8)},origin:'https://anvil.invalid',actorId:id(4),loginName:'fn03-isolated-fixture',password:'Synthetic fixture only 123!',credentialGeneration:1,methodologyRef:source.methodologyRef,ids:{draftCommandId:id(6),createCommandId:id(7),policyCommandId:id(8),ruleId:id(9),managementCommandId:id(10),deniedCommandId:id(11),readCommandId:id(12)},policyExpiresAt:new Date(at+300000).toISOString(),managementPayload:{}}};
- const labels={'anvil.owner':'FN03_MANAGEMENT_ORIGIN','anvil.instance':tag,'anvil.plan':binding.planHash};
+ const cid='1'.repeat(64),nid='2'.repeat(64),none='3'.repeat(64),endpoint='4'.repeat(64),tag=id(1).replaceAll('-',''),name=(integrated?'anvil_v3_fn03_tc01_':'anvil_v3_fn03_management_')+tag;
+ const binding={attemptId:id(1),approvalId:id(2),planHash:'5'.repeat(64),approvalHash:'6'.repeat(64),sourceHead:'7'.repeat(40),issuedAt:at,expiresAt:at+1800000,artifactRoot:integrated?'/tmp/fn03-tc01-'+id(1):resolve('/synthetic-fn03-unopened/'+id(1)),subnet:'172.18.0.16/28',...(integrated?{purpose:'FN03_MANAGEMENT_ORIGIN_TC01_ISOLATED',profile:'FN03_MANAGEMENT_ORIGIN_TC01_ENTRY_V1'}:{})};
+ const input:ManagementOriginIsolatedInput={binding,receiptRoot:(integrated?'/home/daon/.local/share/anvil-v3-qa-receipts/fn03-tc01-':'/synthetic-receipts/fn03-management-')+id(1),historicalTsv:source.historicalTsv,legacyBytes:source.legacyBytes,sources:source.sources,passwords:{bootstrap:'a'.repeat(64),app:'b'.repeat(64),migrator:'c'.repeat(64)},fixture:{artifactRoot:binding.artifactRoot,access:{installationId:id(3),key:Buffer.alloc(32,8)},origin:'https://anvil.invalid',actorId:id(4),loginName:'fn03-isolated-fixture',password:'Synthetic fixture only 123!',credentialGeneration:1,methodologyRef:source.methodologyRef,ids:{draftCommandId:id(6),createCommandId:id(7),policyCommandId:id(8),ruleId:id(9),managementCommandId:id(10),deniedCommandId:id(11),readCommandId:id(12)},policyExpiresAt:new Date(at+300000).toISOString(),managementPayload:{}}};
+ const labels={'anvil.owner':integrated?'FN03_MANAGEMENT_ORIGIN_TC01':'FN03_MANAGEMENT_ORIGIN','anvil.instance':tag,'anvil.plan':binding.planHash};
  const roles=()=>{
   const row=(name:string,owner=false)=>{const bootstrap=name==='anvil_v3_bootstrap',migration=name==='anvil_v3_migrator';return{name,superuser:bootstrap,inherit:!owner,createRole:bootstrap||migration&&!revoked,createDb:bootstrap,replication:bootstrap,bypassRls:bootstrap,login:bootstrap||migration||name==='anvil_v3_app',validUntil:null};};
   const all=[...system.map(n=>row(n)),row('anvil_v3_bootstrap')],memberships=system.filter(n=>['pg_read_all_settings','pg_read_all_stats','pg_stat_scan_tables'].includes(n)).map(role=>({role,member:'pg_monitor',grantor:'anvil_v3_bootstrap',adminOption:false}));
@@ -133,5 +133,42 @@ test('native 원 호출은 raw/다른 시도/중복/반환 후 소비와 바뀐 
   };
   const p=await createManagementOriginIsolatedPorts(h.input,h.providers);await createManagementOriginHost(p).run(h.input.binding,h.source.historicalTsv,h.source.sql);assert(refused);assert(!h.trace.includes('STOP'));
   if(h.calls[0])assert.throws(()=>consumeManagementOriginDockerCall(h.calls[0]!,h.input.binding));
+ }
+});
+
+
+test('통합 isolated recorder: 별도 원 이름/라벨/receipt·/28·132와 같은 DB Pool 결박',async()=>{
+ const h=harness('',true),ports=await createManagementOriginTc01IsolatedPorts(h.input,h.providers);
+ assert.equal(h.calls.length,0);const r=await createManagementOriginTc01Host(ports).run(h.input.binding,h.source.historicalTsv,h.source.sql);
+ assert.equal(r.status,'STOPPED');assert.equal(r.stage,'AUTH');assert.equal(r.poolClosed,true);assert.equal(h.state.count,132);
+ const name='anvil_v3_fn03_tc01_'+id(1).replaceAll('-',''),create=h.calls.find(c=>c.argv[4]==='create')!;
+ assert.equal(create.argv[create.argv.indexOf('--name')+1],name);assert(create.argv.includes('anvil.owner=FN03_MANAGEMENT_ORIGIN_TC01'));
+ const net=h.calls.find(c=>c.argv[4]==='network'&&c.argv[5]==='create')!;
+ assert.equal(net.argv.at(-1),name+'_net');assert.equal(net.argv[net.argv.indexOf('--subnet')+1],h.input.binding.subnet);
+ assert(h.calls.every(c=>c.argv[1]===h.input.receiptRoot+'/docker-config'));assert.equal(h.pools.length,3);assert(!h.trace.includes('STOP'));
+});
+
+test('통합/구 isolated factory 교차·다른 receipt/root/profile는 provider 효과0',async()=>{
+ for(const kind of ['legacy-factory','new-on-old','receipt','root','profile','root-parent','root-relative']){
+  const h=harness('',kind!=='new-on-old');
+  if(kind==='receipt')h.input.receiptRoot='/synthetic-receipts/fn03-tc01-'+id(1);
+  if(kind==='root-parent')h.input.binding.artifactRoot='/other/fn03-tc01-'+id(1);if(kind==='root-relative')h.input.binding.artifactRoot='tmp/fn03-tc01-'+id(1);
+  if(kind==='root')h.input.binding.artifactRoot=resolve('/synthetic/anvil-v3-fn03-management-'+id(1));
+  if(kind==='profile')h.input.binding.profile='FN03_MANAGEMENT_ORIGIN_ENTRY_V1';
+  await assert.rejects((kind==='legacy-factory'?createManagementOriginIsolatedPorts:createManagementOriginTc01IsolatedPorts)(h.input,h.providers));
+  assert.equal(h.calls.length,0);assert.equal(h.pools.length,0);assert.deepEqual(h.trace,[]);
+ }
+});
+
+
+test('통합 isolated의 교차 container/network/DB/owner scope는 배타 소비 전 거절',async()=>{
+ for(const kind of ['container','network','database','owner']){
+  const h=harness('',true),ports=await createManagementOriginTc01IsolatedPorts(h.input,h.providers),tag=id(1).replaceAll('-',''),name='anvil_v3_fn03_tc01_'+tag;
+  const scope={...h.input.binding,containerName:name,networkName:name+'_net',database:name,image:currentNetworkProbeContract.image,labels:{'anvil.owner':'FN03_MANAGEMENT_ORIGIN_TC01','anvil.instance':tag,'anvil.plan':h.input.binding.planHash},containerId:'',networkId:'',host:''};
+  if(kind==='container')scope.containerName='anvil_v3_fn03_management_'+tag;
+  if(kind==='network')scope.networkName='anvil_v3_fn03_management_'+tag+'_net';
+  if(kind==='database')scope.database='anvil_v3_fn03_management_'+tag;
+  if(kind==='owner')scope.labels['anvil.owner']='FN03_MANAGEMENT_ORIGIN';
+  await assert.rejects(ports.claim(scope));assert.equal(h.calls.length,0);assert.deepEqual(h.trace,[]);
  }
 });

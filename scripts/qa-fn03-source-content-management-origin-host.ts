@@ -1,3 +1,4 @@
+import {managementOriginProfile,managementOriginTc01Profile,type ManagementOriginProfile} from './qa-fn03-source-content-management-origin-profiles.ts';
 import {types} from 'node:util';
 import {isAbsolute,resolve} from 'node:path';
 import type {Pool,PoolClient} from 'pg';
@@ -5,13 +6,17 @@ import {contentHash,parseWireJson} from '../contracts/canonical.ts';
 import {recordV1,uuidV1} from '../contracts/runtime/validation-v1.ts';
 import {copyControlData} from '../apps/server/modules/control-handoff/control-grant.ts';
 import {readManagementOriginSchemaManifest} from '../tests/integration/FN03/source-content-management-origin-schema.ts';
-import {createManagementOriginRunner,type ManagementOriginRunnerObserver} from './qa-fn03-source-content-management-origin.ts';
+import {createManagementOriginRunner,createManagementOriginTc01Runner,type ManagementOriginTc01RunnerResult,type ManagementOriginRunnerObserver} from './qa-fn03-source-content-management-origin.ts';
 import {createManagementOriginAuthFixture,type ManagementOriginAuthFixtureInput,type ManagementOriginAuthFixturePorts} from './qa-fn03-source-content-management-origin-auth-fixture.ts';
 import {runCurrentStartSteps,runCurrentNetworkSteps,readCurrentAttachedHost,runCurrentDdlInstall,currentRevokeSql,verifyCurrentRoleMetadata,currentNetworkProbeContract} from './qa-ix01-current-journey.ts';
 
 export interface ManagementOriginHostBinding {
+ purpose?:string;profile?:string;
  attemptId:string;approvalId:string;planHash:string;approvalHash:string;sourceHead:string;
  issuedAt:number;expiresAt:number;artifactRoot:string;subnet:string;
+}
+export interface ManagementOriginTc01HostBinding extends ManagementOriginHostBinding {
+ purpose:typeof managementOriginTc01Profile.purpose;profile:typeof managementOriginTc01Profile.profile;
 }
 export interface ManagementOriginHostScope extends ManagementOriginHostBinding {
  containerName:string;networkName:string;database:string;image:string;
@@ -82,7 +87,9 @@ function sourceCopy(tsv:unknown,sql:unknown){
 /** 실행 진입/연결 생성/환경/파일/권한 발급 없음. 외부 감독의 고정 effect 포트만 소비한다.
  * factory spent는 프로세스 간 단회 증거가 아니다. 실제 명령/타이머·배타 기록·동일 DB 신원은 아직 외부 실행안 책임이다.
  * 기존 IX01 A14 프로필/child/130 설치를 호출하지 않는다. runner 한 곳에서 132 전체 바이트를 설치한다. */
-export function createManagementOriginHost(ports:ManagementOriginHostPorts){
+export function createManagementOriginHost(ports:ManagementOriginHostPorts){return createHost(ports,managementOriginProfile);}
+export function createManagementOriginTc01Host(ports:ManagementOriginHostPorts){return createHost(ports,managementOriginTc01Profile);}
+function createHost(ports:ManagementOriginHostPorts,selected:ManagementOriginProfile){
  const {now,monotonic,assertCurrent,claim,legacy,start,network,psql,secure,acquire,cleanup}=ports;
  const identities=()=>[ports.now,ports.monotonic,ports.assertCurrent,ports.claim,legacy.buildPsqlArgs,legacy.roleMetadataSql,legacy.verifyRoleMetadata,legacy.revokeSql,legacy.parsePsqlFailure,legacy.DdlFailure,start.check,start.create,start.start,start.readiness,network.step,network.create,network.inspectNetwork,network.inspectContainer,ports.psql,ports.secure,ports.acquire,ports.cleanup];
  const functions=identities();
@@ -92,7 +99,8 @@ export function createManagementOriginHost(ports:ManagementOriginHostPorts){
   let resources:Awaited<ReturnType<ManagementOriginHostPorts['acquire']>>|undefined,auth:ReturnType<typeof createManagementOriginAuthFixture>|undefined;
   let acquired:Readonly<{pool:Pool;connect:()=>Promise<PoolClient>;observer:ManagementOriginRunnerObserver;query:ManagementOriginRunnerObserver['query'];prepare:ManagementOriginAuthFixturePorts['prepareCatalogAndUser'];close:(timeoutMs:10000)=>Promise<void>}>|undefined;
   let poolClosed=false,appClosed=false,cleaned=false,checked=false;
-  const outcome=(reason:string)=>Object.freeze({status:checked&&cleaned?'CHECKED' as const:'STOPPED' as const,stage,reason,authority:'NOT_ISSUED' as const,appClosed,poolClosed,resources:cleaned?'REMOVED' as const:'PRESERVED_OR_UNCONFIRMED' as const});
+  let journeys:ManagementOriginTc01RunnerResult['journeys']=Object.freeze({fn03:'NOT_CHECKED',tc01:'NOT_STARTED',tc01Stage:null});
+  const outcome=(reason:string)=>Object.freeze({status:checked&&cleaned?'CHECKED' as const:'STOPPED' as const,stage,reason,authority:'NOT_ISSUED' as const,appClosed,poolClosed,resources:cleaned?'REMOVED' as const:'PRESERVED_OR_UNCONFIRMED' as const,...(selected.integrated?{journeys}:{})});
   if(spent)return outcome('ATTEMPT_CONSUMED');spent=true;
   const current=()=>{
    check(scope&&ports.now===now&&ports.monotonic===monotonic&&ports.assertCurrent===assertCurrent&&ports.claim===claim&&ports.legacy===legacy&&ports.start===start&&ports.network===network&&ports.psql===psql&&ports.secure===secure&&ports.acquire===acquire&&ports.cleanup===cleanup);
@@ -109,12 +117,13 @@ export function createManagementOriginHost(ports:ManagementOriginHostPorts){
    check(typeof raw==='string'&&raw.isWellFormed()&&Buffer.byteLength(raw)<=1048576);return raw;
   };
   try{
-   const b=copyControlData(binding,8192);check(recordV1(b,['attemptId','approvalId','planHash','approvalHash','sourceHead','issuedAt','expiresAt','artifactRoot','subnet'])&&uuidV1(b.attemptId)&&uuidV1(b.approvalId)&&hex(b.planHash,64)&&hex(b.approvalHash,64)&&hex(b.sourceHead,40));
+   const b=copyControlData(binding,8192);check(recordV1(b,['attemptId','approvalId','planHash','approvalHash','sourceHead','issuedAt','expiresAt','artifactRoot','subnet',...(selected.integrated?['purpose','profile']:[])])&&uuidV1(b.attemptId)&&uuidV1(b.approvalId)&&hex(b.planHash,64)&&hex(b.approvalHash,64)&&hex(b.sourceHead,40));
    check(Number.isSafeInteger(b.issuedAt)&&Number.isSafeInteger(b.expiresAt)&&typeof b.issuedAt==='number'&&typeof b.expiresAt==='number'&&b.issuedAt>=0&&b.expiresAt>b.issuedAt&&b.expiresAt-b.issuedAt<=1800000);
-   check(typeof b.artifactRoot==='string'&&isAbsolute(b.artifactRoot)&&resolve(b.artifactRoot)===b.artifactRoot&&!b.artifactRoot.includes('\0'));
+   check(typeof b.artifactRoot==='string'&&(selected.integrated?b.artifactRoot==='/tmp/'+selected.artifactPrefix+b.attemptId:isAbsolute(b.artifactRoot)&&resolve(b.artifactRoot)===b.artifactRoot&&!b.artifactRoot.includes('\0')));
    const m=typeof b.subnet==='string'&&/^172\.(1[6-9]|2\d|3[01])\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\/28$/.exec(b.subnet);check(m&&Number(m[2])<=254&&Number(m[3])<=240&&Number(m[3])%16===0);
-   const tag=b.attemptId.replaceAll('-',''),prefix='anvil_v3_fn03_management_'+tag;
-   scope=Object.freeze({...b as unknown as ManagementOriginHostBinding,containerName:prefix,networkName:prefix+'_net',database:prefix,image:currentNetworkProbeContract.image,labels:Object.freeze({'anvil.owner':'FN03_MANAGEMENT_ORIGIN','anvil.instance':tag,'anvil.plan':b.planHash as string}),containerId:'',networkId:'',host:''});
+   if(selected.integrated)check(b.purpose===selected.purpose&&b.profile===selected.profile);
+   const tag=b.attemptId.replaceAll('-',''),prefix=selected.resourcePrefix+tag;
+   scope=Object.freeze({...b as unknown as ManagementOriginHostBinding,containerName:prefix,networkName:prefix+'_net',database:prefix,image:currentNetworkProbeContract.image,labels:Object.freeze({'anvil.owner':selected.owner,'anvil.instance':tag,'anvil.plan':b.planHash as string}),containerId:'',networkId:'',host:''});
    current();outerMonoUntil=lastMono+scope.expiresAt-lastWall;check(Number.isSafeInteger(outerMonoUntil));const source=sourceCopy(tsv,sql);current();
    stage='CLAIM';check(await claim.call(ports,scope)===undefined);current();
    stage='START';await runCurrentStartSteps({
@@ -132,7 +141,7 @@ export function createManagementOriginHost(ports:ManagementOriginHostPorts){
    const installed:string[]=[],paths=source.rows.map(r=>r.path);let systemHash='';
    const roles=(raw:string,phase:'SETTLED'|'REVOKED')=>{const r=verifyCurrentRoleMetadata(legacy,raw,phase,installed,installed,paths);check(hex(r.systemHash,64)&&(!systemHash||systemHash===r.systemHash));systemHash=r.systemHash;return r;};
    stage='INSTALL';
-   const runner=createManagementOriginRunner({pool,observer,now:()=>current(),assertCurrent:()=>{current();},
+   const runner=(selected.integrated?createManagementOriginTc01Runner:createManagementOriginRunner)({pool,observer,now:()=>current(),assertCurrent:()=>{current();},
     installation:{assertCurrent:()=>{current();},async install(raw,row){return runCurrentDdlInstall(()=>{query('anvil_v3_migrator',raw,row.path,row.sha256);installed.push(row.path);},legacy);},
      async appendLedger(row){check(/^[a-z0-9_]+$/.test(row.id)&&hex(row.sha256,64));query('anvil_v3_migrator',"INSERT INTO anvil.schema_migrations(id,checksum) VALUES('"+row.id+"','"+row.sha256+"');");return'SETTLED';},
      async readLedger(){return parseWireJson(query('anvil_v3_migrator',ledgerSql));}},
@@ -162,7 +171,10 @@ export function createManagementOriginHost(ports:ManagementOriginHostPorts){
      stage='AUTH';const input=await auth.prepareFixtureInput(pool);current();stage='JOURNEY';return input;
     },
    });
-   const result=await runner.run(source.historical,source.files);appClosed=result.appClosed;current();
+   const result=await runner.run(source.historical,source.files);appClosed=result.appClosed;
+   if(selected.integrated){check('journeys' in result);journeys=(result as ManagementOriginTc01RunnerResult).journeys;if(result.stage==='TC01')stage='TC01';}
+   current();
+   if(selected.integrated)check(journeys.fn03==='CHECKED'&&journeys.tc01==='CHECKED');
    check(result.status==='CHECKED'&&result.appClosed&&result.settlements.length>0&&!result.settlements.includes('UNKNOWN')&&result.releases.every(x=>x==='RELEASED'));checked=true;
   }catch{checked=false;}finally{
    auth?.dispose();
