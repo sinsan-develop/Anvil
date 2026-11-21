@@ -356,14 +356,14 @@ for(const scenario of ['OK','CAPACITY','WRONG_PROOF','LOST_SETTLE','OWNER_LOST',
  scenario==='OK'?'등록 owner 원 Query의 SDK 대기 중 독립 START ACK가 끝나고 같은 보호 예약에 출력이 정착한다':'보호 SDK 출력 거절 '+scenario,async()=>{
  const q=await outputProfile(),x=await pollingFixture(q.profile,true,true);q.bind(x);
  const {wire:unused,...input}=x.input;input.timeoutMs=2000;
- const sid='ram-session',message={type:'assistant',uuid:'private',session_id:sid,parent_tool_use_id:null,message:{content:[{type:'text',text:'합성 격리 본문'}]}};
- const init={type:'system',subtype:'init',uuid:'init',session_id:sid,apiKeySource:'none',claude_code_version:'2.1.224',cwd:'fixture',tools:[],mcp_servers:[],model:'fixture',permissionMode:'default',slash_commands:[],output_style:'fixture',skills:[],plugins:[]};
+ let sid;const message={type:'assistant',uuid:'private',session_id:sid,parent_tool_use_id:null,message:{content:[{type:'text',text:'합성 격리 본문'}]}};
+ const init={type:'system',subtype:'init',uuid:'init',session_id:null,apiKeySource:'none',claude_code_version:'2.1.224',cwd:'fixture',tools:[],mcp_servers:[],model:'fixture',permissionMode:'default',slash_commands:[],output_style:'fixture',skills:[],plugins:[]};
  let created=0,reads=0,independent,asked=0,valid=true,iteratorCalls=0,callGetter=0,proxyCalls=0,alternativeReads=0,ownQuery;const closed=[];
  if(scenario==='CAPACITY')q.state.room=0;if(scenario==='LOST_SETTLE')q.state.mode='LOSE';
- const sdk={plannedSid:sid,expiresAt:x.clock()+(scenario==='EXPIRED'?200:4000),check:scope=>valid?{scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000}:null,
+ const sdk={expiresAt:x.clock()+(scenario==='EXPIRED'?200:4000),check:scope=>valid?{scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000}:null,
   classify:v=>v.uuid==='private'?'SENSITIVE':'ORDINARY',close:async query=>{closed.push(query);},
-  async create(_,prompt){
-   created++;const user=await prompt[Symbol.asyncIterator]().next();assert.equal(user.value.message.content,'보호 출력 시험 입력');
+  async create(request,prompt){
+   created++;sid=request.plannedSid;assert.match(sid,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);assert.equal(request.scope.plannedSidDigest,contentHash(canonicalJson(sid)));message.session_id=sid;init.session_id=sid;const user=await prompt[Symbol.asyncIterator]().next();assert.equal(user.value.message.content,'보호 출력 시험 입력');assert.equal(user.value.session_id,sid);
    const query={};ownQuery=query;const acquire=function(){assert.equal(this,query);iteratorCalls++;return {async next(){
     const n=reads++;assert.ok(q.state.parked);
     if(n===0&&scenario==='OK'){
@@ -416,15 +416,43 @@ for(const scenario of ['OK','CAPACITY','WRONG_PROOF','LOST_SETTLE','OWNER_LOST',
  }finally{x.source.dispose();fixtures.setFiles(undefined);}
 });
 
+for(const mode of ['CALLER_SID','RNG_FAILURE','INVALID_UUID','EXPIRED','CANCELLED','EXPIRED_DURING_ISSUE','SID_ADDED'])test('등록 FIRST SID 발급의 효과 전 거절과 재발급0 '+mode,async(t)=>{
+ const q=await outputProfile(),x=await pollingFixture(q.profile,true,true);q.bind(x);
+ const {wire:unused,...input}=x.input;input.timeoutMs=1200;
+ let creates=0,issued=0;
+ const sdk={expiresAt:x.clock()+(mode==='EXPIRED'?0:4000),check:scope=>({scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000}),
+  classify:()=> 'ORDINARY',close:async()=>{},create:async()=>{creates++;throw Error('UNEXPECTED_QUERY');}};
+ if(mode==='CALLER_SID')sdk.plannedSid='caller-selected';
+ const crypto=require('node:crypto'),original=crypto.randomUUID;
+ const mocked=t.mock.method(crypto,'randomUUID',function(...args){
+  if(new Error().stack.includes('takeProfileFirstSid')){
+   issued++;if(mode==='RNG_FAILURE')throw Error('TEST_ONLY_RANDOM_UNAVAILABLE');
+   if(mode==='INVALID_UUID')return 'not-a-uuid';if(mode==='EXPIRED_DURING_ISSUE')x.advance(5000);if(mode==='SID_ADDED')sdk.plannedSid='late-caller-sid';
+  }
+  return Reflect.apply(original,crypto,args);
+ });
+ try{
+  if(mode==='CALLER_SID'){assert.throws(()=>x.source.createWorkerStartPolling(x.pair,input,sdk));}
+  else{
+   const poll=x.source.createWorkerStartPolling(x.pair,input,sdk);
+   if(mode==='CANCELLED')x.source.dispose();
+   await poll.run(x.signal).catch(()=>{});
+   const first=issued;await poll.run(x.signal).catch(()=>{});assert.equal(issued,first,'동일 원 시도 재입장으로 UUID 재발급0');
+  }
+  assert.equal(creates,0);assert.equal(q.state.settlements,0);
+  assert.equal(issued,['RNG_FAILURE','INVALID_UUID','EXPIRED_DURING_ISSUE','SID_ADDED'].includes(mode)?1:0);
+ }finally{mocked.mock.restore();x.source.dispose();fixtures.setFiles(undefined);}
+});
+
 for(const mode of ['PULL','NO_PULL','DISPOSE','CURRENT_LOST','EARLY_RETURN'])test('동일 등록 Query가 실제 소비한 후속 입력만 정착한다 '+mode,async()=>{
  const q=await outputProfile(),x=await pollingFixture(q.profile,true,'FOLLOW');q.bind(x);
  const {wire:unused,...input}=x.input;input.timeoutMs=1200;
  let queryCount=0,iterators=0,reader,pull,outputs=0,duplicate,valid=true;
- const delivered=[],sid='ram-session';
- const init={type:'system',subtype:'init',uuid:'init',session_id:sid,apiKeySource:'none',claude_code_version:'2.1.224',cwd:'fixture',tools:[],mcp_servers:[],model:'fixture',permissionMode:'default',slash_commands:[],output_style:'fixture',skills:[],plugins:[]};
- const sdk={plannedSid:sid,expiresAt:x.clock()+4000,check:scope=>valid?{scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000}:null,
-  classify:()=> 'ORDINARY',close:async()=>{},async create(_,prompt){
-   queryCount++;reader=prompt[Symbol.asyncIterator]();const first=await reader.next();delivered.push(first.value.message.content);
+ const delivered=[];
+ const init={type:'system',subtype:'init',uuid:'init',session_id:null,apiKeySource:'none',claude_code_version:'2.1.224',cwd:'fixture',tools:[],mcp_servers:[],model:'fixture',permissionMode:'default',slash_commands:[],output_style:'fixture',skills:[],plugins:[]};
+ const sdk={expiresAt:x.clock()+4000,check:scope=>valid?{scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000}:null,
+  classify:()=> 'ORDINARY',close:async()=>{},async create(request,prompt){
+   init.session_id=request.plannedSid;assert.match(init.session_id,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);queryCount++;reader=prompt[Symbol.asyncIterator]();const first=await reader.next();delivered.push(first.value.message.content);
    if(mode!=='NO_PULL'){
     pull=reader.next().then(r=>{if(!r.done)delivered.push(r.value.message.content);},()=>{});
     duplicate=reader.next().then(()=>false,()=>true);

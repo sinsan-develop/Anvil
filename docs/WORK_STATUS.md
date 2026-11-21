@@ -21797,3 +21797,9 @@ PMO 회신과 DEVELOPMENT_ENVIRONMENT·FN03_ISOLATED_DOCUMENT_RESULT를 대조�
 기준 `a38ed772` clean. developer_primary가 기존 컴포넌트 단위의 재현에서 남겨 둔 App 이동을 신규 시험 한 파일에서 확인한 뒤 작성권을 반환했다. 실제 App/연결 화면의 보호 GET과 명시 선택, 해시 이동 뒤 Workspace의 기존 준비 입력에 정확 보고·임무 참조가 이어진다. 다른 화면이나 프로젝트로 이동했다 돌아와도 과거 선택을 되살리지 않고, 기존 준비 명령은 보존한다. 이 시험의 서버 전송 POST 0이며 저장의 기존 합성 검수는 중복하지 않았다.
 
 가상 entry·주변 응답 fixture 누락으로 인한 시험 준비 오류를 보완했다. 담당 App 통합 1통과·실패/건너뜀0 `1e4744`, 좁은 타입 종료0 `b6450c`. Main 재검수 같은 1통과·종료0 및 지문 확인 `7933e6`, 시험 SHA256 16FAB518E2897DBE0D289B2761FBEF4F40CCF7D3B34EC4C80C9A9F308E24852F. 제품 변경0, 가상 DOM/모의 전송·메모리 빌드이며 실제 브라우저·DB·서비스·Agent 접근/실행0. Stage 및 전체 완료 상태 불변. 롤백은 신규 시험과 이 기록의 역적용이다.
+
+### FN07 등록 worker의 첫 SEND 계획 SID 단회 발급
+
+기준 `2fe86226`. 기존 채택된 원 worker 계획 SID 사전 결박 및 init 대조의 구현 세부로 PMO 판단을 받았다. developer_primary 단일 작성 후 반환. 등록 outputSource만 원 READY/최초 SEND의 원 claim에서 만든 비공개 단회 표식으로 같은 worker·slot·배정·실행세대·기한을 검산한 뒤 crypto UUIDv4를 만든다. 원 digest·첫 입력·비공개 인계·원 Query init 대조에 같은 값을 쓰며, 논리 sessionBindingRef와 구분한다. 직접 RAM fixture의 명시 SID는 보존하고 등록 포트의 caller SID는 거절한다. 임의 표식·취소·만료·발급 실패·재진입은 추가 발급과 Query 생성을 하지 않는다. 공개 API·로그·보호 원장과 실제 실행 권위 변경0.
+
+고정 SDK 0.3.224의 새 대화 sessionId UUID 지원 근거는 `docs/contracts/FN07_CLAUDE_DRIVER_PROCESS_TOOL_BOUNDARY_CANDIDATE_20261106.md` §5.1과 기존 sdk.mjs SHA256 70e00a3ee54a88382ca606893ac3c4acdd9bb83a9e11a9d3e803fa0b63389ed5 기록을 재사용했으며 외부 재조회0. 담당 RED 기존 등록 SID 강제 `b321df`; 전체 최초 실행은 기존 module mock 플래그 부재로 5실패, 플래그 명시 후 기존 두 시험 76통과·실패/건너뜀0 `eb03f2`, 좁은 타입·공백 통과 `9a3186`. Main 최종 집중 반례 9통과·실패/건너뜀0 `d08e82`. 실제 SDK/C#/OS·서비스·DB·권한·키·Agent 실행0. PRESPAWN·실행 lease와 SDK_CONFIGURATION_UNAVAILABLE 차단 유지. 롤백은 이번 제품/시험 4파일과 기록의 역적용이다.

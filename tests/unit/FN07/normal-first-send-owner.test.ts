@@ -466,3 +466,17 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('
   assert.notEqual((await f.make().history(b.item,f.signal)).state,'LIVE_SEND_INPUT_YIELDED');assert.equal(f.effects.create,1);assert.equal(f.effects.iterate,1);
  }finally{f.authority.abort();await f.h.close();}
 });
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('등록되지 않은 직접 RAM source의 null SID는 자동 발급하거나 Query를 만들지 않는다',async()=>{
+ const f=await firstSendFixture();try{
+  (f.source as any).plannedSid=null;
+  const result=await f.run();assert.equal(result.state,'UNKNOWN');assert.equal(f.effects.create,0);assert.equal(f.effects.inputs.length,0);assert.equal(f.effects.rows.length,0);
+ }finally{f.authority.abort();await f.h.close();}
+});
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('raw ticket은 원 FIRST claim의 SID 발급 근거를 만들지 않는다',async()=>{
+ const f=await firstSendFixture(),{takeFirstSidOrigin}=await import('../../../apps/connector/runtime/normal-first-send-owner.ts');try{
+  assert.throws(()=>takeFirstSidOrigin({},f.source,f.worker),/NORMAL_FIRST_SEND_UNKNOWN/);
+  assert.equal(f.effects.create,0);assert.equal(f.effects.rows.length,0);
+ }finally{f.authority.abort();await f.h.close();}
+});

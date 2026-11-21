@@ -12,7 +12,7 @@ import {copyNormalWorkerStart} from '../adapters/secondary/normal-start-wire.ts'
 import {takeNormalFirstStart,type NormalStartWire} from './normal-start-coordinator.ts';
 import {originalNormalLiveDispatch,takeNormalFirstPermitSource,type NormalDispatchClaim,type NormalInstructionDriverInput} from './normal-instruction-coordinator.ts';
 import {NormalSdkSessionOutput} from './normal-sdk-session-output.ts';
-import {bindProfileOutput} from './normal-owned-spool-profile.ts';
+import {bindProfileOutput,takeProfileFirstSid} from './normal-owned-spool-profile.ts';
 
 type OutputOptions=ConstructorParameters<typeof NormalSdkSessionOutput>[0];
 type Scope=OutputOptions['scope'];
@@ -25,7 +25,7 @@ export type FirstSendCompletion={kind:'FIRST';summary:FirstSendSummary;commit(te
 export type LiveSendCompletion={kind:'LIVE';summary:LiveSendParent & Pick<FirstSendSummary,'inputEvidence'>;check():void;commit(terminal:Ref):void;abandon():void};
 /** 명시 source 의존성. 이 포트에 SDK 서명·등록 권한·보호 배정의 기본 구현은 없다. */
 export interface NormalFirstSendSource{
- profileRef:Ref;assignmentRef:Ref;slotRef:Ref;plannedSid:string;expiresAt:number;ownerSignal:AbortSignal;clock():number;
+ profileRef:Ref;assignmentRef:Ref;slotRef:Ref;plannedSid:string|null;expiresAt:number;ownerSignal:AbortSignal;clock():number;
  check(scope:Scope):{scopeDigest:string;expiresAt:number}|null;
  storage:Pick<OutputOptions['ports'],'classify'|'reserve'|'strictExclusive'|'settle'>;
  create(request:{start:Parent['start'];send:NormalInstructionDriverInput;scope:Scope;plannedSid:string},prompt:AsyncIterable<unknown>,lifetime:AbortSignal):Promise<Query>;
@@ -57,6 +57,13 @@ export function takeFirstOutputOrigin(ticket:object,storage:NormalFirstSendSourc
  const saved=bindingOrigins.get(ticket);if(!saved||saved.storage!==storage||saved.origin.worker!==worker)return fail();
  bindingOrigins.delete(ticket);saved.origin.check();return saved.origin;
 }
+type FirstSidOrigin={source:NormalFirstSendSource;worker:NormalStartWire;basis:Omit<Scope,'plannedSidDigest'>;check():void};
+const firstSidOrigins=new WeakMap<object,FirstSidOrigin>();
+/** 원 READY/FIRST claim을 소비한 호출만 만든 일회 ticket. 발급자는 이 모듈 밖으로 내보내지 않는다. */
+export function takeFirstSidOrigin(ticket:object,source:NormalFirstSendSource,worker:NormalStartWire){
+ const saved=firstSidOrigins.get(ticket);if(!saved||saved.source!==source||saved.worker!==worker)return fail();
+ firstSidOrigins.delete(ticket);saved.check();return {basis:cloneV1(saved.basis),check:saved.check};
+}
 const sourceKeys=['profileRef','assignmentRef','slotRef','plannedSid','expiresAt','ownerSignal','clock','check','storage','create','close'];
 const storageKeys=['classify','reserve','strictExclusive','settle'] as const;
 function native<T>(p:Promise<T>){if(!isPromise(p)||isProxy(p))return fail();return new Promise<T>((resolve,reject)=>Reflect.apply(Promise.prototype.then,p,[resolve,reject]));}
@@ -79,11 +86,23 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
  if(stop&&(!shape(stop,['store','readCurrent'])||typeof stop.readCurrent!=='function'||!shape(stop.store,['transport','exclusive'])||stop.store.transport!=='NORMAL_PROTECTED'||typeof stop.store.exclusive!=='function'))return fail();
  const stopRead=stop?.readCurrent,stopStore=stop?.store,stopExclusive=stopStore?.exclusive;
  const store=source.storage;if(!shape(store,[...storageKeys]))return fail();const methods={...store};
- if(![pinned.profileRef,pinned.assignmentRef,pinned.slotRef].every(v=>!isProxy(v)&&refV1(v))||!sdkOpaqueId(pinned.plannedSid)||
+ if(![pinned.profileRef,pinned.assignmentRef,pinned.slotRef].every(v=>!isProxy(v)&&refV1(v))||pinned.plannedSid!==null&&!sdkOpaqueId(pinned.plannedSid)||
   !(pinned.ownerSignal instanceof AbortSignal)||pinned.ownerSignal.aborted||!Number.isSafeInteger(pinned.expiresAt)||[pinned.clock,pinned.check,pinned.create,pinned.close,...Object.values(methods)].some(fn=>typeof fn!=='function'))return fail();
- const {input}=claim,e=input.envelope,plannedSid=pinned.plannedSid,scope:Scope=cloneV1({projectId:e.context.projectId,executionId:e.context.executionId,generation:e.context.executionGeneration,
+ const {input}=claim,e=input.envelope,basis=cloneV1({projectId:e.context.projectId,executionId:e.context.executionId,generation:e.context.executionGeneration,
   registrationRef:e.executorRegistrationRef,profileRef:pinned.profileRef,assignmentRef:pinned.assignmentRef,slotRef:pinned.slotRef,grantRef:parent.grantRef,
-  startReadyRef:parent.startReadyRef,dispatchAttemptRef:input.dispatchAttemptRef,sessionBindingRef:e.payload.sessionBindingRef,plannedSidDigest:digest(plannedSid)});
+  startReadyRef:parent.startReadyRef,dispatchAttemptRef:input.dispatchAttemptRef,sessionBindingRef:e.payload.sessionBindingRef});
+ if(signal.aborted||claim.remaining()<=0)return fail();
+ const sidTicket={};let ownedSid:string|null,sidLast=-Infinity,sidUntil=pinned.expiresAt;
+ firstSidOrigins.set(sidTicket,{source,worker,basis,check:()=>{
+  if(signal.aborted||pinned.ownerSignal.aborted||claim.remaining()<=0||!shape(source,keys)||
+   source.clock!==pinned.clock||source.check!==pinned.check||source.ownerSignal!==pinned.ownerSignal||source.plannedSid!==pinned.plannedSid||
+   digest(source.profileRef)!==digest(basis.profileRef)||digest(source.slotRef)!==digest(basis.slotRef)||digest(source.assignmentRef)!==digest(basis.assignmentRef))return fail();
+  const now=pinned.clock.call(source);sidUntil=Math.min(sidUntil,source.expiresAt);
+  if(!Number.isSafeInteger(source.expiresAt)||!Number.isSafeInteger(now)||now<sidLast||now>=sidUntil)return fail();sidLast=now;
+ }});
+ try{ownedSid=takeProfileFirstSid(sidTicket,source,worker);}finally{firstSidOrigins.delete(sidTicket);}
+ const plannedSid=ownedSid??pinned.plannedSid;if(!sdkOpaqueId(plannedSid)||ownedSid!==null&&pinned.plannedSid!==null)return fail();
+ const scope:Scope={...basis,plannedSidDigest:digest(plannedSid)};
  const scopeDigest=digest(scope);
  let expiresAt=pinned.expiresAt,last=-Infinity,monoEnd=Infinity,readyToCommit=false,firstRequest:object|undefined;
  let ownerTimer:ReturnType<typeof setTimeout>|undefined;
@@ -94,7 +113,7 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
  };
  const current=()=>{
   if(lease.state==='UNKNOWN'||!shape(source,keys)||source.create!==pinned.create||source.close!==pinned.close||source.check!==pinned.check||source.clock!==pinned.clock||
-   source.stop!==stop||stop&&(!shape(stop,['store','readCurrent'])||stop.readCurrent!==stopRead||stop.store!==stopStore||!shape(stopStore,['transport','exclusive'])||stopStore!.exclusive!==stopExclusive)||source.ownerSignal!==pinned.ownerSignal||pinned.ownerSignal.aborted||!Number.isSafeInteger(source.expiresAt)||source.plannedSid!==plannedSid||source.storage!==store||!shape(store,[...storageKeys])||storageKeys.some(k=>store[k]!==methods[k])||
+   source.stop!==stop||stop&&(!shape(stop,['store','readCurrent'])||stop.readCurrent!==stopRead||stop.store!==stopStore||!shape(stopStore,['transport','exclusive'])||stopStore!.exclusive!==stopExclusive)||source.ownerSignal!==pinned.ownerSignal||pinned.ownerSignal.aborted||!Number.isSafeInteger(source.expiresAt)||source.plannedSid!==pinned.plannedSid||source.storage!==store||!shape(store,[...storageKeys])||storageKeys.some(k=>store[k]!==methods[k])||
    digest(source.profileRef)!==digest(scope.profileRef)||digest(source.slotRef)!==digest(scope.slotRef)||digest(source.assignmentRef)!==digest(scope.assignmentRef))return fail();
   const c=pinned.check.call(source,cloneV1(scope)),now=pinned.clock.call(source);
   if(!shape(c,['scopeDigest','expiresAt'])||!c||c.scopeDigest!==scopeDigest||!Number.isSafeInteger(c.expiresAt)||!Number.isSafeInteger(now)||now<last)return fail();

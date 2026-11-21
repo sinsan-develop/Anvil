@@ -11,7 +11,7 @@ import {isOwnedSpoolPath,NormalStartFileStore,type NormalFilePorts,type NormalLo
 import {NormalStartIntake,type NormalStartStore} from './normal-start-intake.ts';
 import {NormalClaudeStartWire} from '../adapters/secondary/normal-start-wire.ts';
 import {boundedSdkObject,maxSdkObjectBytes,sdkOpaqueId} from '../adapters/secondary/schemas.ts';
-import {confirmNormalLiveInputDelivery,takeFirstOutputOrigin,takeNormalFirstPermitHandoff,type LiveInputPort,type NormalFirstSendSource} from './normal-first-send-owner.ts';
+import {confirmNormalLiveInputDelivery,takeFirstOutputOrigin,takeFirstSidOrigin,takeNormalFirstPermitHandoff,type LiveInputPort,type NormalFirstSendSource} from './normal-first-send-owner.ts';
 import type {NormalStartWire,NormalStartCurrent} from './normal-start-coordinator.ts';
 import type {RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {receiveProfiledEnvelope,type InboxFilePorts,type InboxLimits} from './receipt-inbox.ts';
@@ -31,13 +31,26 @@ const tickets=new AsyncLocalStorage<Ticket>();
 const outside=new AsyncLocalStorage<boolean>();
 const profileJournals=new WeakSet<ProfileJournalAccess>();
 type OutputPorts=NormalFirstSendSource['storage'];
-export type WorkerSdkPorts=Pick<NormalFirstSendSource,'plannedSid'|'expiresAt'|'create'|'close'|'check'>&{classify:OutputPorts['classify']};
+export type WorkerSdkPorts=Pick<NormalFirstSendSource,'expiresAt'|'create'|'close'|'check'>&{classify:OutputPorts['classify']};
 type Hold=Awaited<ReturnType<OutputPorts['reserve']>>;
 type OutputTx=Parameters<OutputPorts['strictExclusive']>[1];
 type Handoff={reservation:string;challenge:string;scopeDigest:string;requestDigest:string};
 type PhaseControls={resume?:Handoff;closeReservation?:string;challenge?:string;guard:()=>void};
 const outputBinders=new WeakMap<OutputPorts,(ticket:object)=>void>();
 const outputJournals=new WeakSet<ProfileJournalAccess>();
+type FirstSidBasis=Omit<Parameters<NormalFirstSendSource['check']>[0],'plannedSidDigest'>;
+const firstSidSources=new WeakMap<NormalFirstSendSource,{worker:NormalStartWire;spent:boolean;verify(basis:FirstSidBasis):void}>();
+/** 등록 outputSource의 원 FIRST만 소비한다. bundle/public API에는 이 내부 함수가 노출되지 않는다. */
+export function takeProfileFirstSid(ticket:object,source:NormalFirstSendSource,worker:NormalStartWire):string|null{
+ const original=firstSidSources.get(source);if(!original)return null;
+ if(original.spent||original.worker!==worker)invalid();
+ const origin=takeFirstSidOrigin(ticket,source,worker);original.spent=true;
+ const check=()=>{origin.check();original.verify(origin.basis);};
+ check();const sid=randomUUID();
+ if(typeof sid!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(sid))invalid();
+ check();return sid;
+}
+
 export function isProfileOutputJournal(access:ProfileJournalAccess){return outputJournals.has(access);}
 export function bindProfileOutput(store:OutputPorts,ticket:object){outputBinders.get(store)?.(ticket);}
 function gate<T>(){
@@ -408,13 +421,13 @@ export class OwnedSpoolRuntime {
  outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort}{
   const saved=this.#workers.get(worker),slot=this.external(this.#slot);
   if(this.#binding||!saved||saved.journal!==journal||!slot||!refV1(slot.receiptRef)||this.#owner.aborted||signal.aborted||
-   isProxy(sdk)||!recordV1(sdk,['plannedSid','expiresAt','check','create','close','classify'])||
+   isProxy(sdk)||!recordV1(sdk,['expiresAt','check','create','close','classify'])||
    [sdk.check,sdk.create,sdk.close,sdk.classify].some(fn=>typeof fn!=='function'||isProxy(fn)))return invalid();
   const fixed={...sdk},slotKey=byRef(slot),lifetime=AbortSignal.any([signal,this.#owner]);
   let binding:{profile:RuntimeRefV1;allocation:RuntimeRefV1}|undefined,origin:ReturnType<typeof takeFirstOutputOrigin>|undefined;
   const verify=()=>{
-   if(lifetime.aborted||byRef(this.external(this.#slot))!==slotKey||sdk.check!==fixed.check||sdk.create!==fixed.create||
-      sdk.close!==fixed.close||sdk.classify!==fixed.classify||sdk.plannedSid!==fixed.plannedSid||sdk.expiresAt!==fixed.expiresAt)invalid();
+   if(lifetime.aborted||isProxy(sdk)||!recordV1(sdk,['expiresAt','check','create','close','classify'])||byRef(this.external(this.#slot))!==slotKey||sdk.check!==fixed.check||sdk.create!==fixed.create||
+      sdk.close!==fixed.close||sdk.classify!==fixed.classify||sdk.expiresAt!==fixed.expiresAt)invalid();
   };
   const storage=this.#outputPorts(saved.scope,()=>{
    verify();if(!origin||!binding||origin.signal.aborted)return invalid();
@@ -423,7 +436,7 @@ export class OwnedSpoolRuntime {
   },raw=>this.external(()=>Reflect.apply(fixed.classify,sdk,[raw])));
   // These two fields are populated only by the verified native allocation, before the first protected START completes.
   let inputStream:ReturnType<typeof workerInput>|undefined,query:AsyncIterable<unknown>|undefined;
-  const core={storage,plannedSid:sdk.plannedSid,expiresAt:sdk.expiresAt,ownerSignal:lifetime,slotRef:cloneV1(slot.receiptRef),
+  const core={storage,plannedSid:null,expiresAt:sdk.expiresAt,ownerSignal:lifetime,slotRef:cloneV1(slot.receiptRef),
    clock:()=>{verify();return this.#clock();},
    check:(scope:Parameters<NormalFirstSendSource['check']>[0])=>{verify();return this.external(()=>Reflect.apply(fixed.check,sdk,[scope]));},
    create:async(...args:Parameters<NormalFirstSendSource['create']>)=>{
@@ -442,6 +455,15 @@ export class OwnedSpoolRuntime {
    },
    close:(...args:Parameters<NormalFirstSendSource['close']>)=>this.external(()=>Reflect.apply(fixed.close,sdk,args))};
   const source=core as NormalFirstSendSource;this.#foreground=signal;
+  firstSidSources.set(source,{worker,spent:false,verify:basis=>{
+   verify();const now=this.external(()=>this.#clock()),end=Math.min(fixed.expiresAt,Date.parse(slot.expiresAt));
+   if(!binding||this.#unknown||!Number.isSafeInteger(now)||!Number.isSafeInteger(end)||now>=end||
+    byRef(basis.registrationRef)!==byRef(saved.registration)||byRef(basis.grantRef)!==byRef(saved.grant)||
+    byRef(basis.slotRef)!==byRef(slot.receiptRef)||byRef(basis.profileRef)!==byRef(binding.profile)||
+    byRef(basis.assignmentRef)!==byRef(binding.allocation)||basis.projectId!==saved.scope.projectId||
+    basis.executionId!==saved.scope.executionId||basis.generation!==saved.scope.executionGeneration)invalid();
+  }});
+
   this.#binding={update:(profile,allocation)=>{
    verify();if(binding){if(byRef(profile)!==byRef(binding.profile)||byRef(allocation)!==byRef(binding.allocation))invalid();return;}
    binding={profile,allocation};source.profileRef=cloneV1(profile);source.assignmentRef=cloneV1(allocation);Object.freeze(source);
