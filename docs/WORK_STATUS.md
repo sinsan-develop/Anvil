@@ -22060,6 +22060,6 @@ Main 입력 변조 RED `9587cc`와 독립 초기 callback의 기대값 변경 RE
 
 기준 `01f13077` clean. developer_primary가 [최초 적재 소스](../scripts/qa-fn03-tc01-dependency-bootstrap-start.mjs)와 [합성시험](../tests/unit/FN03/tc01-dependency-bootstrap-start.test.ts)을 작성했다. Node 내장 모듈만 먼저 적재하고, 고정 Linux 진입점과 pre-hook 3개를 원 바이트의 SHA·길이·허용 import와 대조한다. 실제 Node hook이 네 모듈 모두를 적재했는지 확인한 뒤 첫 hook을 회수하고 기존 승인 검산·설치 준비에 연결한다. 훅 해제 불명은 UNKNOWN으로 반환하고 재호출하지 않는다.
 
-신규 모듈 부재 RED `69ed53` 뒤 Main 직접·인접 35통과/실패·건너뜀0(`2f02c5`), 담당자 제한 `--allowJs --checkJs --strict --noEmit` exit0(`ba757d`), 독립 C0/I0/M0. 소스 SHA256 `4485ECEB758BC9F4A2C5B29797AE89A9B31265F64D3E0BEA69C3988DAEE7B45D`, 시험 SHA256 `8632620667A55B238B7154B68DAE52C25BF44511860D0B7DBDA7E165E30F8758`.
+신규 모듈 부재 RED `69ed53` 뒤 Main 직접·인접 35통과/실패·건너뜀0(`2f02c5`), 담당자 제한 `--allowJs --checkJs --strict --noEmit` exit0(`ba757d`), 독립 C0/I0/M0. Git 원문 소스 SHA256 `99D4ED9FB47252815616ED3109645843BAF97FD56E20BBA47769A1A68F6AB18C` 14,597B(검수 사본의 마지막 줄 CRLF 한 건만 LF로 정규화), 시험 SHA256 `8632620667A55B238B7154B68DAE52C25BF44511860D0B7DBDA7E165E30F8758`.
 
 검증은 기존 Git 바이트와 로컬 메모리용 Node hook을 사용했다. 실제 stdin의 승인·시스템 포트 생산자, 최초 Node/시작 프로그램의 고정 실행과 외부 원 프로세스 수거는 남았다. WSL·SSH·보호 원장 쓰기·설치·DB·권한·서비스·Agent 실행0. 롤백은 신규 두 파일과 기록의 역적용이다.
