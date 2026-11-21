@@ -1,4 +1,4 @@
-import{useEffect,useRef,useState}from'react';import{ApiClient,ApiError}from'../../api/client.ts';import type{DocumentSession}from'../design-trace/editor-api.ts';import{isKnownDocumentRejection}from'../design-trace/mutation-result.ts';import{prepareKnowledgeDecision,sendKnowledgeDecision,retireRejectedKnowledgeReview,type KnowledgeDecisionBuffer,type KnowledgeDecisionChange}from'./decision-api.ts';import{knowledgeOutcomes,ordered,type KnowledgeOutcome}from'./review-view.ts';
+import{useEffect,useRef,useState}from'react';import{ApiClient,ApiError}from'../../api/client.ts';import type{DocumentSession}from'../design-trace/editor-api.ts';import{isKnownDocumentRejection}from'../design-trace/mutation-result.ts';import{prepareKnowledgeDecision,sendKnowledgeDecision,readSavedKnowledgeConfirmation,retireRejectedKnowledgeReview,type KnowledgeDecisionBuffer,type KnowledgeDecisionChange}from'./decision-api.ts';import{knowledgeOutcomes,ordered,type KnowledgeOutcome}from'./review-view.ts';
 const labels={ACCEPTED:'적합',REWORK:'보완 필요',BLOCKED:'판단 불가',NOT_EXECUTED:'미검토'};
 export function KnowledgeDecisionForm({client,session,buffer,onChange,onSaved,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;buffer:KnowledgeDecisionBuffer;onChange:(change:KnowledgeDecisionChange)=>void;onSaved:(result:Awaited<ReturnType<typeof sendKnowledgeDecision>>)=>void;onAuthenticationLost:()=>void}){
  const[working,setWorking]=useState(false),alive=useRef(true),locked=useRef(false);useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
@@ -44,5 +44,41 @@ export function KnowledgeDecisionForm({client,session,buffer,onChange,onSaved,on
  {reopenError?<p role="alert">{reopenError}</p>:null}
  {review&&!working&&!buffer.savedId&&!buffer.uncertain&&buffer.pending&&isKnownDocumentRejection(buffer.failure)?<button type="button" onClick={()=>void reopenRejectedReview()}>거절된 지식 검토 명령 보관하고 입력 다시 열기</button>:null}
  <button type="button" disabled={working||!!buffer.savedId||!buffer.reason.trim()||(review?buffer.items.some(i=>!i.reason.trim()):!buffer.acknowledged)} onClick={()=>void save()}>{buffer.pending?'같은 지식 판단 명령 결과 확인':review?'지식 검토 저장':apply?'헌법 프로젝트 적용':'지식 확정 저장'}</button><button type="button" disabled={working||buffer.uncertain||!!buffer.pending&&!isKnownDocumentRejection(buffer.failure)} onClick={close}>지식 판단 닫기</button>
- {buffer.failure?<p role="alert">{buffer.failure.code}{buffer.uncertain?' · 결과 미확인: 원래 명령과 판단을 보존합니다.':''}</p>:null}{buffer.savedId?<p role="status">{review?'지식 검토 저장 확인':apply?'헌법 프로젝트 적용 확인':'지식 확정 저장 확인'} · 원문·이력 보존</p>:null}</section>;
+ {buffer.failure?<p role="alert">{buffer.failure.code}{buffer.uncertain?' · 결과 미확인: 원래 명령과 판단을 보존합니다.':''}</p>:null}{buffer.savedId?<p role="status">{review?'지식 검토 저장 확인':apply?'헌법 프로젝트 적용 확인':'지식 확정 저장 확인'} · 원문·이력 보존</p>:null}{buffer.kind==='CONFIRM'&&buffer.savedId&&!buffer.pending&&!buffer.uncertain&&!buffer.dirty&&!buffer.failure?<KnowledgeConfirmationReceipt client={client} session={session} buffer={buffer} onAuthenticationLost={onAuthenticationLost}/>:null}</section>;
+}
+
+function KnowledgeConfirmationReceipt({client,session,buffer,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;buffer:KnowledgeDecisionBuffer;onAuthenticationLost:()=>void}){
+ const fingerprint=ordered(buffer),sessionFingerprint=ordered(session),identity=[client,client.transport,session,sessionFingerprint,buffer,fingerprint],scope=useRef({identity});
+ if(identity.some((value,index)=>value!==scope.current.identity[index]))scope.current={identity};
+ const owner=scope.current,alive=useRef(true),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+ type Request={owner:typeof owner};type Result=Awaited<ReturnType<typeof readSavedKnowledgeConfirmation>>;
+ const flight=useRef<Request|null>(null),[state,setState]=useState<{request:Request;pending:boolean;result:Result|null;error:string|null}|null>(null);
+ const shown=state?.request.owner===owner?state:null;
+ async function read(){
+  if(flight.current?.owner===owner||scope.current!==owner)return;
+  const request={owner};flight.current=request;
+  const active=()=>alive.current&&scope.current===owner&&flight.current===request&&client.transport===owner.identity[1]&&ordered(buffer)===fingerprint&&ordered(session)===sessionFingerprint;
+  if(!active()){flight.current=null;return;}
+  setState({request,pending:true,result:null,error:null});
+  try{const result=await readSavedKnowledgeConfirmation(client,buffer,session,active);if(active())setState({request,pending:false,result,error:null});}
+  catch(error){if(active()){const e=error instanceof ApiError?error:new ApiError('RESPONSE_INVALID');setState({request,pending:false,result:null,error:/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESPONSE_INVALID'});if(e.status===401)lost.current();}}
+  finally{if(flight.current===request)flight.current=null;}
+ }
+ function close(){if(scope.current!==owner)return;flight.current=null;setState(null);}
+ const result=shown?.result;
+ return<section aria-label="지식 확정 영수증 대조">
+  <button type="button" disabled={!!shown?.pending} onClick={()=>void read()}>저장된 지식 확정 사건 조회</button>
+  {shown?<button type="button" onClick={close}>확정 사건 조회 닫기</button>:null}
+  {shown?.pending?<p role="status">저장된 확정 사건 조회 중</p>:null}
+  {shown?.error?<p role="alert">{shown.error} · 확정 사건 조회 미확인. 원 저장 영수증을 보존하며 다시 조회할 수 있습니다.</p>:null}
+  {result?<section aria-label="저장된 지식 확정 사건"><dl>
+   <dt>확정 사건</dt><dd>{result.confirmation.eventId}</dd>
+   <dt>고정 지식 참조</dt><dd>{result.ref.id} · v{result.ref.version} · {result.ref.contentHash}</dd>
+   <dt>확정 이유</dt><dd>{result.confirmation.reason}</dd>
+   <dt>확정 주체</dt><dd>{result.confirmation.actorRef.kind} · {result.confirmation.actorRef.userId}</dd>
+   <dt>당시 선택 검토</dt><dd>{result.confirmation.reviewRefs.map(ref=><p key={ref.id}>{ref.id} · 기준 v{ref.criteriaVersion} · {ref.outcome} · {ref.targetRef.id} · v{ref.targetRef.version} · {ref.targetRef.contentHash}</p>)}</dd>
+   <dt>기록 시각</dt><dd><time dateTime={result.confirmation.recordedAt}>{result.confirmation.recordedAt}</time></dd>
+  </dl><p>원 저장 영수증과 일치한 당시 확정 사건입니다. 현재 유효성·헌법 적용·Agent 전달을 뜻하지 않습니다.</p></section>:null}
+ </section>;
 }

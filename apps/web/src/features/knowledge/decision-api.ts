@@ -1,6 +1,6 @@
 import{ApiClient,ApiError}from'../../api/client.ts';
 import{postDocumentCommand,type DocumentSession,type DocumentWrite}from'../design-trace/editor-api.ts';
-import{validateKnowledgeView,type KnowledgeView}from'./api.ts';
+import{readKnowledge,validateKnowledgeView,type KnowledgeView}from'./api.ts';
 import{ordered,knowledgeReason,knowledgeOutcomes,type KnowledgeOutcome,type KnowledgeStoredReview,type KnowledgeReviewRef}from'./review-view.ts';
 import{constitutionHash,constitutionRef}from'./constitution-proof.ts';
 import{isKnownDocumentRejection}from'../design-trace/mutation-result.ts';
@@ -47,6 +47,19 @@ export async function retireRejectedKnowledgeReview(input:KnowledgeDecisionBuffe
  return{...b,pending:null,failure:null,dirty:true,rejectedAttempts:[...(b.rejectedAttempts??[]),{title:b.target.entry.title,command:structuredClone(c!),failure:{...b.failure!}}]};
 }
 export async function prepareKnowledgeDecision(b:KnowledgeDecisionBuffer,s:DocumentSession){if(b.pending||b.savedId)throw new ApiError('KNOWLEDGE_DECISION_PENDING');return command(b,s,await payload(b,s),crypto.randomUUID());}
+/** 원 영수증의 사건을 보호 고정 버전에서 대조한다. 현재 유효성이나 적용 권위를 발급하지 않는다. */
+export async function readSavedKnowledgeConfirmation(client:ApiClient,input:KnowledgeDecisionBuffer,session:DocumentSession,active:()=>boolean){
+ const fingerprint=ordered(input),sessionFingerprint=ordered(session),b=structuredClone(input),s=structuredClone(session),transport=client.transport;
+ const current=()=>{if(!active()||client.transport!==transport||ordered(input)!==fingerprint||ordered(session)!==sessionFingerprint)throw new ApiError('KNOWLEDGE_DECISION_PAUSED');};
+ current();
+ if(b.kind!=='CONFIRM'||!b.savedId||!uuid.test(b.savedId)||b.pending||b.uncertain||b.dirty||b.failure)throw new ApiError('KNOWLEDGE_CONFIRMATION_RECEIPT_INVALID');
+ const p=await payload(b,s);current();
+ let view:KnowledgeView;
+ try{view=await readKnowledge(client,b.projectId,b.target.ref);}catch(error){current();throw error;}
+ current();const confirmation=view.confirmation;
+ if(!confirmation||confirmation.eventId!==b.savedId||confirmation.reason!==b.reason||ordered(confirmation.actorRef)!==ordered({kind:'HUMAN',userId:b.ownerUserId})||ordered(confirmation.reviewRefs)!==ordered(p.reviewRefs))throw new ApiError('KNOWLEDGE_CONFIRMATION_RECEIPT_MISMATCH');
+ return{ref:structuredClone(view.ref),confirmation:structuredClone(confirmation)};
+}
 export async function sendKnowledgeDecision(client:ApiClient,b:KnowledgeDecisionBuffer,s:DocumentSession,active:()=>boolean){
  const p=await payload(b,s),c=b.pending;if(!c||!uuid.test(c.commandId)||ordered(c)!==ordered(command(b,s,p,c.commandId)))throw new ApiError('KNOWLEDGE_DECISION_INPUT_INVALID');if(!active())throw new ApiError('KNOWLEDGE_DECISION_PAUSED');
  const r=await postDocumentCommand(client,c,s.csrfToken),d=r.data,ref=b.target.ref;
