@@ -740,7 +740,7 @@ test('FN09 native 원 획득과 원 파일 close가 목적 body 증거를 독립
  assert.ok(credential.includes('Double.IsNaN(n)||Double.IsInfinity(n)'));
  assert.ok(!profile.includes('H(message)'));
  assert.ok(profile.indexOf('var metadata=ReadUnderstandingOutput')<profile.indexOf('Append(log,rows,R("kind","UNDERSTANDING_READ_CLOSED"'));
- assert.match(profile,/metadataHash!=S\(request,"bodyHash"\)/);
+ assert.match(profile,/metadataHash!=S\(purpose,"bodyHash"\)/);
  assert.match(profile,/Array.Clear\(bytes,0,bytes.Length\)/);
 });
 

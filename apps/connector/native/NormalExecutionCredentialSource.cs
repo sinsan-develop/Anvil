@@ -15,6 +15,8 @@ using System.Web.Script.Serialization;
 // caller scope는 선택자다. 직접 HTTPS challenge의 bootstrapBinding 검산 전에는 권위가 아니다.
 internal sealed class NormalExecutionCredentialSource : IDisposable {
  const int Limit=2812587, Chunk=48000;
+ internal delegate Dictionary<string,object> UnderstandingReadGuard(string attempt,string recordHash,Func<Dictionary<string,object>,Dictionary<string,object>> complete);
+ readonly UnderstandingReadGuard understandingGuard;
  readonly NormalExecutionSpoolProfileSource spoolProfile;
  readonly DesktopTrustKeyRootSource owner;readonly Func<Dictionary<string,object>> registered;
  readonly Action current;readonly Func<int> remaining;readonly Func<DateTime> clock;
@@ -32,14 +34,31 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  static Exception Invalid(){return new Exception("NORMAL_EXECUTION_UNAVAILABLE");}
  static string B64(byte[] b){return Convert.ToBase64String(b).TrimEnd('=').Replace('+','-').Replace('/','_');}
  static byte[] Decode(string s,int max){if(s.Length<1||s.Length>max*4/3+4||s.Any(c=>!Char.IsLetterOrDigit(c)&&c!='_'&&c!='-'))throw Invalid();string x=s.Replace('-','+').Replace('_','/');byte[] b=Convert.FromBase64String(x.PadRight((x.Length+3)/4*4,'='));if(b.Length>max||B64(b)!=s)throw Invalid();return b;}
- internal NormalExecutionCredentialSource(DesktopTrustKeyRootSource root,Func<Dictionary<string,object>> record,Action check,Func<int> left,Func<DateTime> now,NormalExecutionSpoolProfileSource profile=null){spoolProfile=profile;owner=root;registered=record;current=check;remaining=left;clock=now;}
+ internal NormalExecutionCredentialSource(DesktopTrustKeyRootSource root,Func<Dictionary<string,object>> record,Action check,Func<int> left,Func<DateTime> now,NormalExecutionSpoolProfileSource profile=null,UnderstandingReadGuard readGuard=null){understandingGuard=readGuard;spoolProfile=profile;owner=root;registered=record;current=check;remaining=left;clock=now;}
  void Check(){current();owner.Check();if(unknown||remaining()<1)throw Invalid();}
  Dictionary<string,object> Record(string attempt){Check();var r=registered();if(r==null||S(r,"state")!="REGISTERED"||Id(r,"attemptId")!=attempt)throw Invalid();
   var c=Map(r["credential"]);var g=Map(r["registration"]);if(S(c,"storageState")!="STORED"||At(c,"expiresAt")<=clock()||At(g,"registrationExpiresAt")<=clock())throw Invalid();return r;}
+ void ValidateUnderstandingRecord(Dictionary<string,object> live,string attempt,string recordHash,string slotId,string slotHash){
+  Check();if(live==null||S(live,"state")!="REGISTERED"||Id(live,"attemptId")!=attempt||H(live)!=recordHash)throw Invalid();
+  var credential=Map(live["credential"]);var registration=Map(live["registration"]);
+  if(S(credential,"storageState")!="STORED"||At(credential,"expiresAt")<=clock()||At(registration,"registrationExpiresAt")<=clock()||H(LoadSlot(slotId,live))!=slotHash)throw Invalid();Check();
+ }
  internal object Spool(string operation,Dictionary<string,object> value){
   Check();if(spoolProfile==null)throw Invalid();string attempt=Id(value,"attemptId");var record=Record(attempt);
   var slot=S(value,"writer")=="NORMAL_EXECUTION"?LoadSlot(Id(value,"slotId"),record):null;
-  Dictionary<string,object> answer;try{answer=spoolProfile.Control(operation,value,record,slot);}
+  Action understandingCurrent=null;Func<Func<Action,Dictionary<string,object>>,Dictionary<string,object>> understandingFinal=null;
+  if(operation=="NORMAL_SPOOL_CLOSE"&&S(value,"writer")=="NORMAL_EXECUTION"&&value.ContainsKey("understanding")){
+   string recordHash=H(record),slotHash=H(slot),slotId=Id(value,"slotId");
+   // 부모만 원 보호 등록/자격/slot을 읽는다. child에는 이 callback/원 token을 넘기지 않는다.
+   understandingCurrent=()=>{Check();var live=Record(attempt);if(H(live)!=recordHash||H(LoadSlot(slotId,live))!=slotHash)throw Invalid();Check();};
+   if(understandingGuard==null)throw Invalid();
+   understandingFinal=finish=>understandingGuard(attempt,recordHash,live=>{
+    // 자기 binding lock 안에서 일반 Record/Read에 재진입하지 않고 원 snapshot과 slot을 검산한다.
+    Action validate=()=>ValidateUnderstandingRecord(live,attempt,recordHash,slotId,slotHash);
+    validate();var result=finish(validate);validate();return result;
+   });
+  }
+  Dictionary<string,object> answer;try{answer=spoolProfile.Control(operation,value,record,slot,understandingCurrent,understandingFinal);}
   catch(NormalExecutionSpoolProfileSource.SpoolCapacityException){if(operation!="NORMAL_SPOOL_RESERVE")throw;answer=new Dictionary<string,object>{{"state","CAPACITY_EXCEEDED"}};}
   Check();if(H(Record(attempt))!=H(record)||(slot!=null&&At(slot,"expiresAt")<=clock()))throw Invalid();return answer;
  }

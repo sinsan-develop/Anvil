@@ -20,7 +20,7 @@ internal abstract class DesktopTrustKeyRootKernel {
 // Root 경로를 JSON/argv/환경에서 받지 않는다. 생성자는 OS IO를 하지 않는다.
 internal sealed class DesktopTrustKeyRootSource:IDisposable {
  readonly DesktopTrustKeyRootKernel kernel;readonly DesktopTrustKeyBudget budget;readonly string sid,path;readonly List<Tuple<IntPtr,DesktopTrustKeyDirectoryFact>> retained=new List<Tuple<IntPtr,DesktopTrustKeyDirectoryFact>>();
- bool disposed;internal readonly bool Created;internal bool CleanupSettled{get;private set;}
+ bool disposed,existingOnly;internal readonly bool Created;internal bool CleanupSettled{get;private set;}
  object spoolCreation,expectedSpoolCreation;
  readonly Dictionary<string,Tuple<IntPtr,DesktopTrustKeyDirectoryFact>> spoolDirectories=new Dictionary<string,Tuple<IntPtr,DesktopTrustKeyDirectoryFact>>(StringComparer.OrdinalIgnoreCase);
  object journalCreation;bool journalPermitTaken;IntPtr journalHandle;DesktopTrustKeyDirectoryFact journalFact;
@@ -30,7 +30,7 @@ internal sealed class DesktopTrustKeyRootSource:IDisposable {
   if(registration!=null){Guid id;if(!Guid.TryParseExact(registration,"D",out id)||id.ToString("D")!=registration||!executionDirectories.ContainsKey(location))throw Invalid();location=System.IO.Path.Combine(location,registration);}
   Tuple<IntPtr,DesktopTrustKeyDirectoryFact> pinned;
   if(executionDirectories.TryGetValue(location,out pinned)){if(create)throw Invalid();if(!Same(pinned.Item2,kernel.Observe(pinned.Item1)))throw Invalid();return location;}
-  if(create&&!kernel.CreatePrivateExclusive(location,sid))throw Invalid();
+  if(create&&(existingOnly||!kernel.CreatePrivateExclusive(location,sid)))throw Invalid();
   var fact=kernel.Inspect(location);if(fact==null||!fact.Exists||fact.Link||fact.Owner!=sid||!fact.Private)throw Invalid();
   IntPtr handle=kernel.Retain(location);if(handle==IntPtr.Zero||handle==new IntPtr(-1))throw Invalid();
   pinned=Tuple.Create(handle,fact);executionDirectories.Add(location,pinned);if(!Same(fact,kernel.Observe(handle)))throw Invalid();Check();return location;
@@ -45,7 +45,7 @@ internal sealed class DesktopTrustKeyRootSource:IDisposable {
   }
   Tuple<IntPtr,DesktopTrustKeyDirectoryFact> pinned;
   if(spoolDirectories.TryGetValue(location,out pinned)){if(create)throw Invalid();CheckSpoolNamespace(pinned);return pinned.Item2;}
-  if(create&&!kernel.CreatePrivateExclusive(location,sid))throw Invalid();
+  if(create&&(existingOnly||!kernel.CreatePrivateExclusive(location,sid)))throw Invalid();
   var fact=kernel.Inspect(location);if(fact==null||!fact.Exists||fact.Link||fact.Owner!=sid||!fact.Private)throw Invalid();
   var handle=kernel.Retain(location);if(handle==IntPtr.Zero||handle==new IntPtr(-1))throw Invalid();
   pinned=Tuple.Create(handle,fact);spoolDirectories.Add(location,pinned);CheckSpoolNamespace(pinned);return fact;
@@ -57,15 +57,18 @@ internal sealed class DesktopTrustKeyRootSource:IDisposable {
  internal string JournalIdentity{get{CheckJournalNamespace();return journalFact.Identity;}}
  internal object TakeJournalCreationPermit(){Check();if(journalPermitTaken)return null;journalPermitTaken=true;return journalCreation;}
  internal void ConsumeJournalCreationPermit(object permit){Check();if(permit==null||!Object.ReferenceEquals(permit,journalCreation)||!journalPermitTaken)throw Invalid();journalCreation=null;}
- internal void RetainJournalNamespace(bool create){Check();string location=System.IO.Path.Combine(path,"native-journal.v1");if(journalHandle!=IntPtr.Zero){if(create)throw Invalid();CheckJournalNamespace();return;}if(create&&!kernel.CreatePrivateExclusive(location,sid))throw Invalid();var before=kernel.Inspect(location);if(before==null||!before.Exists||before.Link||before.Owner!=sid||!before.Private)throw Invalid();journalHandle=kernel.Retain(location);journalFact=before;CheckJournalNamespace();}
+ internal void RetainJournalNamespace(bool create){Check();string location=System.IO.Path.Combine(path,"native-journal.v1");if(journalHandle!=IntPtr.Zero){if(create)throw Invalid();CheckJournalNamespace();return;}if(create&&(existingOnly||!kernel.CreatePrivateExclusive(location,sid)))throw Invalid();var before=kernel.Inspect(location);if(before==null||!before.Exists||before.Link||before.Owner!=sid||!before.Private)throw Invalid();journalHandle=kernel.Retain(location);journalFact=before;CheckJournalNamespace();}
  internal void CheckJournalNamespace(){Check();if(journalHandle==IntPtr.Zero||journalFact==null||!Same(journalFact,kernel.Observe(journalHandle))||!Same(journalFact,kernel.Inspect(journalFact.Path)))throw Invalid();}
  DesktopTrustKeyRootSource(DesktopTrustKeyRootKernel source,DesktopTrustKeyBudget clock,string user,string location,bool created){kernel=source;budget=clock;sid=user;path=location;Created=created;}
  internal string PathValue{get{Check();return path;}}
  internal string Identity{get{Check();return retained[retained.Count-1].Item2.Identity;}}
- internal static DesktopTrustKeyRootSource Open(DesktopTrustKeyRootKernel kernel,DesktopTrustKeyBudget budget){
-  if(kernel==null||budget==null)throw Invalid();budget.Check();string sid=kernel.CurrentSid(),known=kernel.KnownFolder();Shape(known);if(String.IsNullOrEmpty(sid))throw Invalid();string root=System.IO.Path.Combine(known,"Anvil","Trust","v1");var result=new DesktopTrustKeyRootSource(kernel,budget,sid,root,!kernel.Inspect(root).Exists);
+ // 이해 reader 전용: 원 보호 directory만 열며 생성/발급 permit은 만들지 않는다.
+ internal static DesktopTrustKeyRootSource OpenExistingForUnderstanding(DesktopTrustKeyRootKernel kernel,DesktopTrustKeyBudget budget){return OpenRoot(kernel,budget,true);}
+ internal static DesktopTrustKeyRootSource Open(DesktopTrustKeyRootKernel kernel,DesktopTrustKeyBudget budget){return OpenRoot(kernel,budget,false);}
+ static DesktopTrustKeyRootSource OpenRoot(DesktopTrustKeyRootKernel kernel,DesktopTrustKeyBudget budget,bool existingOnly){
+  if(kernel==null||budget==null)throw Invalid();budget.Check();string sid=kernel.CurrentSid(),known=kernel.KnownFolder();Shape(known);if(String.IsNullOrEmpty(sid))throw Invalid();string root=System.IO.Path.Combine(known,"Anvil","Trust","v1");var initial=kernel.Inspect(root);if(initial==null||existingOnly&&!initial.Exists)throw Invalid();var result=new DesktopTrustKeyRootSource(kernel,budget,sid,root,!initial.Exists);result.existingOnly=existingOnly;
   try{var ancestry=new List<string>();string next=known;while(next!=null){ancestry.Add(next);string parent=System.IO.Path.GetDirectoryName(next);if(parent==next)break;next=parent;if(ancestry.Count>64)throw Invalid();}ancestry.Reverse();foreach(string item in ancestry)result.Keep(item,item==known,false);
-   string cursor=known;foreach(string name in new[]{"Anvil","Trust","v1"}){cursor=System.IO.Path.Combine(cursor,name);budget.Check();var fact=kernel.Inspect(cursor);if(fact==null)throw Invalid();bool exclusive=false;if(!fact.Exists){if(cursor==root)exclusive=kernel.CreatePrivateExclusive(cursor,sid);else kernel.CreatePrivate(cursor,sid);budget.Check();}result.Keep(cursor,true,cursor==root);if(exclusive)result.journalCreation=new object();if(exclusive)result.spoolCreation=result.expectedSpoolCreation=new object();}result.Check();return result;
+   string cursor=known;foreach(string name in new[]{"Anvil","Trust","v1"}){cursor=System.IO.Path.Combine(cursor,name);budget.Check();var fact=kernel.Inspect(cursor);if(fact==null)throw Invalid();bool exclusive=false;if(!fact.Exists){if(existingOnly)throw Invalid();if(cursor==root)exclusive=kernel.CreatePrivateExclusive(cursor,sid);else kernel.CreatePrivate(cursor,sid);budget.Check();}result.Keep(cursor,true,cursor==root);if(exclusive)result.journalCreation=new object();if(exclusive)result.spoolCreation=result.expectedSpoolCreation=new object();}result.Check();return result;
   }catch{result.Dispose();throw Invalid();}
  }
  static Exception Invalid(){return DesktopTrustKeyParentBasisSource.Invalid();}
