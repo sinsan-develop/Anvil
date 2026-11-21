@@ -621,7 +621,7 @@ for(const mode of ['OK','NO_REQUEST','WRONG_ATTEMPT','CLOSE_UNKNOWN','CANCELLED'
  }finally{x.source.dispose();fixtures.setFiles(undefined);}
 });
 
-for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START','CONTEXT','REGISTRATION','CLOSE_UNKNOWN','CANCELLED'])test('FN09 DISCOVERY 실제 registered owner→GET→원 close 메타 '+mode,async()=>{
+for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START','CONTEXT','REGISTRATION','CLOSE_UNKNOWN','NATIVE_BODY','NATIVE_EXTRA','NATIVE_UNKNOWN','NATIVE_HOST_CLOSE','CANCELLED'])test('FN09 DISCOVERY 실제 registered owner→GET→원 close 메타 '+mode,async()=>{
  const q=await outputProfile(),x=await pollingFixture(q.profile,true,true);q.bind(x);
  const {wire:unused,...input}=x.input;input.timeoutMs=2000;
  let n=0,closed=0;
@@ -653,9 +653,22 @@ for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START',
    assert.equal(r.method,'GET');assert.equal(r.path,base);
    if(terminal&&mode==='GET_DENIED')return outcome('DENIED','REQUEST');
    const receipt={kind:'NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED',binding:{...scope,transport:'NORMAL_PROTECTED',mode:'EXECUTION',scopeDigest:'b'.repeat(64),publicKeyFingerprint:'c'.repeat(64)},credentialRef:ref(4),challengeRef:frame.challengeRef,packetHash:mode==='PACKET'?'f'.repeat(64):hash({frame,target}),target,requestId:frame.proof.requestId,understandingRequestRef:ref(777),context,observedAt:stamp,expiresAt:end};
-   return {transport:'NORMAL_PROTECTED',status:'DISCOVERY_ACQUIRED',proofResultRef:{...ref(783),contentHash:hash(receipt)},receipt,sourceAvailable:false,selectionAvailable:false,cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
+   acquisitionRef={...ref(783),contentHash:hash(receipt)};return {transport:'NORMAL_PROTECTED',status:'DISCOVERY_ACQUIRED',proofResultRef:acquisitionRef,receipt,sourceAvailable:false,selectionAvailable:false,cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
   });
-  const handle=q.profile.handle;q.profile.handle=(v,...rest)=>{if(v.operation==='NORMAL_SPOOL_CLOSE'&&!v.payload.reservation){closed++;if(mode==='CLOSE_UNKNOWN')return{state:'UNKNOWN'};}return handle(v,...rest);};
+  // RAM native 대역. 입력 해시를 그대로 권위로 반사하지 않고 이 fixture의 원 행/획득으로 별도 기대값을 구성한다.
+  let acquisitionRef;
+  const expectedMetadata=()=>({attribution:'SESSION_ONLY',projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,requestRef:ref(777),acquisitionRef,contextBundleRef:context.contextBundleRef,initConfirmationRef:rows[1].ref,tailRef:rows[2].ref,ranges:[{outputRef:rows[2].ref,sequence:3,payloadDigest:rows[2].snapshot.payloadDigest,textBlocks:1,textBytes:Buffer.byteLength('선택된 이해 근거')}],wholeConversationComplete:false,executionAuthorized:false});
+  const handle=q.profile.handle;q.profile.handle=(v,...rest)=>{
+   if(v.operation==='NORMAL_SPOOL_CLOSE'&&!v.payload.reservation){closed++;if(mode==='CLOSE_UNKNOWN')return{state:'UNKNOWN'};
+    if(v.payload.understanding){
+     if(mode==='NATIVE_HOST_CLOSE'){const child=rest[0];child.stdin.end=(_a,_b,done)=>{queueMicrotask(()=>{child.stdout.emit('end');child.emit('close',1);done?.();});};}
+     const request=v.payload.understanding,expected=expectedMetadata(),bodyHash=hash({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:expected});
+     assert.deepEqual(request,{requestRef:expected.requestRef,acquisitionRef:expected.acquisitionRef,bodyHash});
+     if(mode==='NATIVE_UNKNOWN')return{state:'UNKNOWN'};
+     return{state:'CLOSED_CONFIRMED',understanding:{state:'NATIVE_METADATA_CLOSED',requestRef:expected.requestRef,acquisitionRef:expected.acquisitionRef,bodyHash:mode==='NATIVE_BODY'?'f'.repeat(64):bodyHash,...(mode==='NATIVE_EXTRA'?{verified:true}:{})}};
+    }
+   }return handle(v,...rest);
+  };
   const before=x.m.calls.length,files=canonicalJson([...q.local.files].map(([p,f])=>[p,f.bytes.toString('base64')])),a=new AbortController();if(mode==='CANCELLED')a.abort();
   const concurrent=[],phases=new Set();
   if(mode==='OK')x.m.onFrame(v=>{
@@ -668,7 +681,7 @@ for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START',
    assert.equal(closed,0);assert.equal(x.m.calls.slice(before).filter(v=>v.operation.startsWith('NORMAL_SPOOL_')).length,0);terminal=false;
   }
   if(['OK','NONE','DENIED','EXPIRED','GET_DENIED'].includes(mode)){
-   const result=await worker.discoverUnderstanding(a.signal);assert.equal(result.kind,'DISCOVERY');assert.equal(result.metadata.ranges.length,1);assert.equal(result.metadata.ranges[0].sequence,3);assert.deepEqual(result.metadata.initConfirmationRef,rows[1].ref);assert.deepEqual(result.metadata.tailRef,rows[2].ref);assert.equal(closed,1);await Promise.all(concurrent);
+   const result=await worker.discoverUnderstanding(a.signal);assert.equal(result.kind,'DISCOVERY');assert.equal(result.metadata.ranges.length,1);assert.equal(result.metadata.ranges[0].sequence,3);assert.deepEqual(result.metadata.initConfirmationRef,rows[1].ref);assert.deepEqual(result.metadata.tailRef,rows[2].ref);assert.equal(closed,2);await Promise.all(concurrent);
    const body=canonicalJson({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:result.metadata});
    assert.deepEqual(result.preparation,{state:'SIGNING_UNAVAILABLE',requestRef:result.metadata.requestRef,acquisitionRef:result.metadata.acquisitionRef,bodyHash:executionTarget('POST',base+'/'+result.metadata.requestRef.id+'/result',[],body).bodyHash,executionAuthorized:false,dispatchPerformed:false});
    assert.equal(Object.isFrozen(result.preparation),true);assert.equal(Object.isFrozen(result.preparation.acquisitionRef),true);
@@ -707,4 +720,78 @@ test('FN09 raw result native Call은 출처 증명 없이 CA·challenge·서명 
  const gate=call.indexOf('S(target,"path").StartsWith(Base(scope)+"/understanding-response-read/",StringComparison.Ordinal))throw Invalid();');
  assert.ok(gate>=0&&gate<call.indexOf('ProtectedStore.LoadNormalOwned'));
  assert.ok(gate<call.indexOf('ChallengeRequest(')&&gate<call.indexOf('Sign('));
+});
+
+test('FN09 native 원 획득과 원 파일 close가 목적 body 증거를 독립 도출 · 정적',()=>{
+ const credential=fs.readFileSync(path.resolve(__dirname,'../../apps/connector/native/NormalExecutionCredentialSource.cs'),'utf8');
+ const profile=fs.readFileSync(path.resolve(__dirname,'../../apps/connector/native/NormalExecutionSpoolProfileSource.cs'),'utf8');
+ assert.match(credential,/ValidateUnderstandingPickup\(answer,record,slot,packet,target/);
+ assert.ok(credential.includes('answer.ContainsKey("status")&&Object.Equals(answer["status"],"DISCOVERY_ACQUIRED")'));
+ assert.match(profile,/UNDERSTANDING_PICKUP/);
+ assert.match(profile,/UNDERSTANDING_READ_STARTED/);
+ assert.match(profile,/UNDERSTANDING_READ_CLOSED/);
+ assert.match(profile,/ReadUnderstandingOutput/);
+ assert.ok(profile.includes('S(pickup,"pickupHost")==understandingHost'));
+ assert.ok(profile.includes('Has(rows,"UNDERSTANDING_READ_STARTED",key)'));
+ assert.ok(profile.includes('Unsettled(rows).Values.Any(r=>S(r,"allocation")==id)'));
+ assert.ok(profile.includes('FileIdentity(file,path)!=identity'));
+ assert.ok(profile.includes('cipher.Length>MaxEntry')&&profile.includes('ManagementHold(rows))>AdminCap'));
+ assert.ok(credential.includes('new JsonKeys(text,64).Check()'));
+ assert.ok(credential.includes('Double.IsNaN(n)||Double.IsInfinity(n)'));
+ assert.ok(!profile.includes('H(message)'));
+ assert.ok(profile.indexOf('var metadata=ReadUnderstandingOutput')<profile.indexOf('Append(log,rows,R("kind","UNDERSTANDING_READ_CLOSED"'));
+ assert.match(profile,/metadataHash!=S\(request,"bodyHash"\)/);
+ assert.match(profile,/Array.Clear\(bytes,0,bytes.Length\)/);
+});
+
+// C#은 실행하지 않는다. 작은 동일성 식을 원 source에서 꺼내 RAM 값으로 대조하며,
+// 실제 DPAPI/파일/host 종료는 이 시험의 입증 범위가 아니다.
+test('FN09 pickup exact replay 원 시각·보호 동일성·무쓰기 분기 · source RAM',()=>{
+ const credential=fs.readFileSync(path.resolve(__dirname,'../../apps/connector/native/NormalExecutionCredentialSource.cs'),'utf8');
+ const profile=fs.readFileSync(path.resolve(__dirname,'../../apps/connector/native/NormalExecutionSpoolProfileSource.cs'),'utf8');
+ const validation=credential.slice(credential.indexOf('void ValidateUnderstandingPickup('),credential.indexOf('object Call(Dictionary'));
+ assert.equal(validation.includes('At(receipt,"observedAt")<started'),false,'fresh HTTP 시작은 기존 protected pickup의 하한이 아니다');
+ const expression=profile.match(/static bool SameUnderstandingPickup\([^\n]+\)\{\s*return ([\s\S]*?);\s*\}/)?.[1];assert.ok(expression);
+ const hash=v=>contentHash(canonicalJson(v)),stamp=1000,expiry=3000;
+ const record={attemptId:id(21)},slot={slotId:id(22)},requestRef=ref(23),acquisitionRef=ref(24),context={startCommandId:id(25)};
+ const pickup={recordHash:hash(record),slotHash:hash(slot),attemptId:record.attemptId,requestRef,acquisitionRef,context,observedAt:stamp,expiresAt:expiry};
+ const compare=new Function('S','H','J','Time','pickup','record','slot','requestRef','acquisitionRef','context','observed','expires','return '+expression.replaceAll('DesktopTrustKeyHostSource.Time','Time'));
+ const check=(p=pickup,r=record,s=slot,q=requestRef,a=acquisitionRef,c=context,o=stamp,e=expiry)=>compare((v,k)=>v[k],hash,canonicalJson,(v,k)=>v[k],p,r,s,q,a,c,o,e);
+ assert.equal(check(),true);
+ for(const key of ['recordHash','slotHash','attemptId','requestRef','acquisitionRef','context','observedAt','expiresAt']){
+  const changed=structuredClone(pickup);changed[key]=typeof changed[key]==='object'?{...changed[key],changed:true}:String(changed[key])+'changed';assert.equal(check(changed),false,key);
+ }
+ assert.equal(check(pickup,{attemptId:id(26)}),false);assert.equal(check(pickup,record,{slotId:id(26)}),false);
+ const bind=profile.slice(profile.indexOf('internal void BindUnderstandingPickup('),profile.indexOf('Row ReadUnderstandingRow('));
+ assert.ok(bind.includes('DesktopTrustKeyHostSource.Exact(pickup,'));
+ const replay=bind.slice(bind.indexOf('if(pickup!=null)'),bind.indexOf('if(observed<started)'));
+ assert.ok(replay.includes('SameUnderstandingPickup(')&&replay.includes('return true;'));
+ assert.equal(/Append\(|pickup\[[^\]]+\]\s*=/.test(replay),false);
+ assert.ok(bind.indexOf('expires<=DateTime.UtcNow')<bind.indexOf('if(pickup!=null)'));
+ assert.ok(bind.includes('begun.Count!=1||closed.Count!=1'));
+ assert.ok(bind.includes('S(closed[0],"pickupHash")!=H(pickup)'));
+ const partial=bind.match(/if\((begun\.Count!=1[\s\S]*?)\)throw Invalid\(\);/)?.[1];assert.ok(partial);
+ const incomplete=new Function('S','H','Time','begun','closed','pickup','expires','return '+partial.replaceAll('.Count','.length').replaceAll('DesktopTrustKeyHostSource.Time','Time'));
+ const started={pickupHash:hash(pickup),host:id(29)},ended={...started,expiresAt:expiry};
+ const bad=(begun,closed)=>incomplete((v,k)=>v[k],hash,(v,k)=>v[k],begun,closed,pickup,expiry);
+ assert.equal(bad([started],[ended]),false);
+ for(const [begun,closed] of [[[started],[]],[[],[ended]],[[started,started],[ended]],[[started],[{...ended,pickupHash:'f'.repeat(64)}]],[[started],[{...ended,host:id(30)}]],[[started],[{...ended,expiresAt:expiry+1}]]])assert.equal(bad(begun,closed),true);
+
+ assert.ok(bind.indexOf('if(observed<started)')<bind.indexOf('Append(log,rows,R("kind","UNDERSTANDING_PICKUP"'));
+ assert.ok(profile.includes('Has(rows,"UNDERSTANDING_READ_STARTED",key)'));
+});
+
+test('FN09 lower owned GET 동일 packet 명시 재확인은 원 응답·정상 host close만 반환 · RAM',async()=>{
+ const f=await fixtures.liveNativeOwner(),base=f.dependencies.now();let offset=0;
+ f.dependencies.now=()=>base+offset;f.ports.now=()=>base+offset;
+ const m=model(f),port=await f.owner.createNormalCredentialBootstrap(m.config).bootstrap(new AbortController().signal),signal=new AbortController().signal;
+ const target={method:'GET',path:'/api/v1/connectors/'+m.config.scope.connectorId+'/executions/'+m.config.scope.executionId+'/understanding-response-read',query:'',body:null,auth:Buffer.from(canonicalJson({proof:{requestId:id(6)}})).toString('base64url'),expiresAt:m.expiresAt};
+ const receipt={kind:'NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED',binding:m.config.scope,credentialRef:ref(4),challengeRef:ref(5),packetHash:'a'.repeat(64),target:{method:'GET',path:target.path},requestId:id(6),understandingRequestRef:ref(777),context:{startCommandId:id(56)},observedAt:new Date(base).toISOString(),expiresAt:m.expiresAt};
+ const response={transport:'NORMAL_PROTECTED',status:'DISCOVERY_ACQUIRED',proofResultRef:{...ref(783),contentHash:contentHash(canonicalJson(receipt))},receipt,sourceAvailable:false,selectionAvailable:false,cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
+ // native 진위 검산은 위 source 검사와 구분한다. 이 RAM host는 수송/close만 대행한다.
+ m.respond(()=>response);const before=m.calls.length,first=await port.requestUnderstandingDiscovery(target,signal);offset=10;
+ const replay=await port.requestUnderstandingDiscovery(target,signal);assert.deepEqual(replay,first);assert.equal(replay.kind,'RESPONSE');assert.equal(replay.value.receipt.observedAt,new Date(base).toISOString());
+ const calls=m.calls.slice(before);assert.equal(calls.length,2);assert.ok(calls.every(v=>v.operation==='NORMAL_EXECUTION_CALL'&&v.payload.kind==='REQUEST'));
+ assert.deepEqual(calls[0].payload,calls[1].payload);assert.equal(f.ends(),f.calls());assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
+ const n=m.calls.length;offset=5001;await assert.rejects(port.requestUnderstandingDiscovery(target,signal));assert.equal(m.calls.length,n);
 });

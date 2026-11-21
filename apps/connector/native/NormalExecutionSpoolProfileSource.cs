@@ -209,6 +209,144 @@ internal sealed class NormalExecutionSpoolProfileSource {
   foreach(string k in new[]{"startReadyRef","dispatchAttemptRef","sessionBindingRef"})DesktopTrustKeyHostSource.Ref(raw[k]);
   return raw;
  }
+ // 별도 목적의 획득/읽기 근거. output RESERVED/SDK_READ_CLOSED의 쓰기 권위를 재사용하지 않는다.
+ readonly string understandingHost=Id();
+ static bool SameUnderstandingPickup(Row pickup,Row record,Row slot,Row requestRef,Row acquisitionRef,Row context,DateTime observed,DateTime expires){
+  return S(pickup,"recordHash")==H(record)&&S(pickup,"slotHash")==H(slot)&&S(pickup,"attemptId")==S(record,"attemptId")&&
+   J(pickup["requestRef"])==J(requestRef)&&J(pickup["acquisitionRef"])==J(acquisitionRef)&&J(pickup["context"])==J(context)&&
+   DesktopTrustKeyHostSource.Time(pickup,"observedAt")==observed&&DesktopTrustKeyHostSource.Time(pickup,"expiresAt")==expires;
+ }
+ internal void BindUnderstandingPickup(Row record,Row slot,Row requestRef,Row acquisitionRef,Row context,DateTime observed,DateTime expires,DateTime started){
+  string key=S(requestRef,"id");
+  Log(false,(log,rows)=>{
+   if(!Has(rows,"REGISTERED",H(record))||!rows.Any(r=>S(r,"kind")=="SLOT_ID"&&S(r,"key")==S(slot,"slotId")&&S(r,"slotHash")==H(slot))||
+    expires<=DateTime.UtcNow||expires>DesktopTrustKeyHostSource.Time(slot,"expiresAt"))throw Invalid();
+   var pickup=rows.SingleOrDefault(r=>S(r,"kind")=="UNDERSTANDING_PICKUP"&&S(r,"key")==key);
+   if(pickup!=null){
+    DesktopTrustKeyHostSource.Exact(pickup,"kind,key,recordHash,slotHash,attemptId,pickupHost,requestRef,acquisitionRef,context,observedAt,expiresAt");
+    DesktopTrustKeyHostSource.Id(pickup,"pickupHost");
+    if(!SameUnderstandingPickup(pickup,record,slot,requestRef,acquisitionRef,context,observed,expires))throw Invalid();
+    var begun=rows.Where(r=>S(r,"kind")=="UNDERSTANDING_READ_STARTED"&&S(r,"key")==key).ToList();
+    var closed=rows.Where(r=>S(r,"kind")=="UNDERSTANDING_READ_CLOSED"&&S(r,"key")==key).ToList();
+    if(begun.Count!=0||closed.Count!=0){
+     if(begun.Count!=1||closed.Count!=1||S(begun[0],"pickupHash")!=H(pickup)||S(closed[0],"pickupHash")!=H(pickup)||
+      S(begun[0],"host")!=S(closed[0],"host")||DesktopTrustKeyHostSource.Time(closed[0],"expiresAt")!=expires)throw Invalid();
+    }
+    // 정상 검산된 원 영수증만 재관측한다. 새 host/시각/권위나 START/CLOSE를 발급하지 않는다.
+    return true;
+   }
+   if(observed<started)throw Invalid();
+   if(rows.Any(r=>S(r,"kind")=="UNDERSTANDING_PICKUP"&&S(r,"slotHash")==H(slot)&&DesktopTrustKeyHostSource.Time(r,"expiresAt")>DateTime.UtcNow&&!Has(rows,"UNDERSTANDING_READ_CLOSED",S(r,"key"))))throw Invalid();
+   Append(log,rows,R("kind","UNDERSTANDING_PICKUP","key",key,"recordHash",H(record),"slotHash",H(slot),"attemptId",record["attemptId"],
+    "pickupHost",understandingHost,"requestRef",requestRef,"acquisitionRef",acquisitionRef,"context",context,
+    "observedAt",observed.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'",System.Globalization.CultureInfo.InvariantCulture),
+    "expiresAt",expires.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'",System.Globalization.CultureInfo.InvariantCulture)));
+   return true;
+  });
+ }
+ Row ReadUnderstandingRow(DesktopTrustKeyDirectoryFact dir,string channel,int sequence,out string hash){
+  Check();string path=Path.Combine(dir.Path,channel+"."+sequence.ToString("D6")+".json");
+  using(var file=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.Read)){
+   string identity=FileIdentity(file,path);long length=file.Length;if(length<1||length>3*MiB)throw Invalid();byte[] bytes=new byte[checked((int)length)];
+   try{int offset=0;while(offset<bytes.Length){Check();int n=file.Read(bytes,offset,Math.Min(65536,bytes.Length-offset));if(n<1)throw Invalid();offset+=n;}
+    if(file.ReadByte()!=-1||file.Length!=length||FileIdentity(file,path)!=identity)throw Invalid();hash=DesktopTrustKeyHostSource.Hash(bytes);
+    Row row=DesktopTrustKeyHostSource.Parse(bytes,true);DesktopTrustKeyHostSource.Exact(row,"ref,snapshot");Check();return row;
+   }finally{Array.Clear(bytes,0,bytes.Length);}
+  }
+ }
+ static void SdkKeys(Row value,string required,string optional=""){
+  var must=required.Split(',');var allowed=new HashSet<string>(must.Concat(optional==""?new string[0]:optional.Split(',')),StringComparer.Ordinal);
+  if(must.Any(k=>!value.ContainsKey(k))||value.Keys.Any(k=>!allowed.Contains(k)))throw Invalid();
+ }
+ static bool SdkOpaque(object value){var text=value as string;return text!=null&&text.Length>0&&text.Length<=512&&!text.Any(c=>c<32||c==127);}
+ static bool SdkStrings(object value){var list=value as object[];return list!=null&&list.All(x=>x is string);}
+ static bool SdkParent(object value){return value==null||SdkOpaque(value);}
+ static bool SdkNumber(object value){return value is int||value is long||value is double||value is decimal;}
+ static string UnderstandingFamily(Row m){
+  if(!m.ContainsKey("type")||!m.ContainsKey("session_id")||!m.ContainsKey("uuid")||!SdkOpaque(m["session_id"])||!SdkOpaque(m["uuid"]))throw Invalid();string type=S(m,"type");
+  if(type=="system"){
+   SdkKeys(m,"type,subtype,apiKeySource,claude_code_version,cwd,tools,mcp_servers,model,permissionMode,slash_commands,output_style,skills,plugins,uuid,session_id","agents,betas,fast_mode_state,fast_mode_disabled_reason,capabilities");
+   if(S(m,"subtype")!="init"||S(m,"claude_code_version")!="2.1.224")throw Invalid();
+   foreach(string k in new[]{"apiKeySource","cwd","model","permissionMode","output_style"})if(!(m[k] is string))throw Invalid();
+   foreach(string k in new[]{"tools","slash_commands","skills"})if(!SdkStrings(m[k]))throw Invalid();
+   var servers=m["mcp_servers"] as object[];var plugins=m["plugins"] as object[];if(servers==null||plugins==null)throw Invalid();
+   foreach(object raw in servers){var v=DesktopTrustKeyHostSource.Map(raw);SdkKeys(v,"name,status");if(!(v["name"] is string)||!(v["status"] is string))throw Invalid();}
+   foreach(object raw in plugins){var v=DesktopTrustKeyHostSource.Map(raw);SdkKeys(v,"name,path","version");if(!(v["name"] is string)||!(v["path"] is string)||v.ContainsKey("version")&&!(v["version"] is string))throw Invalid();}return "SYSTEM_INIT";
+  }
+  if(type=="assistant"){
+   SdkKeys(m,"type,message,parent_tool_use_id,uuid,session_id","error,request_id,resumed_from_incomplete_thinking,supersedes,aborted,subagent_type,task_description,timestamp");
+   if(!(m["message"] is Row)||!SdkParent(m["parent_tool_use_id"])||m.ContainsKey("error")&&!new[]{"authentication_failed","oauth_org_not_allowed","billing_error","rate_limit","overloaded","invalid_request","model_not_found","server_error","unknown","max_output_tokens"}.Contains(S(m,"error")))throw Invalid();return "ASSISTANT";
+  }
+  if(type=="stream_event"){
+   SdkKeys(m,"type,event,parent_tool_use_id,uuid,session_id","ttft_ms");if(!(m["event"] is Row)||!SdkParent(m["parent_tool_use_id"]))throw Invalid();return "STREAM_EVENT";
+  }
+  if(type!="result"||!m.ContainsKey("subtype"))throw Invalid();bool success=S(m,"subtype")=="success";
+  if(!success&&!new[]{"error_during_execution","error_max_turns","error_max_budget_usd","error_max_structured_output_retries"}.Contains(S(m,"subtype")))throw Invalid();
+  SdkKeys(m,"type,subtype,duration_ms,duration_api_ms,is_error,num_turns,stop_reason,total_cost_usd,usage,modelUsage,permission_denials,uuid,session_id,"+(success?"result":"errors"),
+   "terminal_reason,fast_mode_state,fast_mode_disabled_reason,origin"+(success?",ttft_ms,ttft_stream_ms,time_to_request_ms,user_message_uuid,request_sent_wall_ms,time_to_request_from_spawn_ms,warm_spare_claimed,time_origin_ms,api_error_status,structured_output,deferred_tool_use":""));
+  foreach(string k in new[]{"duration_ms","duration_api_ms","num_turns","total_cost_usd"})if(!SdkNumber(m[k]))throw Invalid();
+  if(!(m["is_error"] is bool)||!(m["stop_reason"]==null||m["stop_reason"] is string)||!(m["usage"] is Row)||!(m["modelUsage"] is Row)||!(m["permission_denials"] is object[])||success&&!(m["result"] is string)||!success&&!SdkStrings(m["errors"]))throw Invalid();return success?"RESULT_SUCCESS":"RESULT_ERROR";
+ }
+ Row ReadUnderstandingOutput(List<Row> rows,Row allocation,DesktopTrustKeyDirectoryFact dir,Row record,Row slot,Row pickup,Row summary){
+  string id=S(allocation,"id");long count=N(summary["count"]);if(count<1||count>10000)throw Invalid();
+  Row context=DesktopTrustKeyHostSource.Map(pickup["context"]),scope=null;object previous=null,init=null;string prefix=H(new object[0]),lastFamily=null;bool initSeen=false;long blocks=0;DateTime last=DateTime.MinValue;
+  var ids=new HashSet<string>();var identities=new HashSet<string>();var ranges=new List<object>();
+  for(int n=1;n<=count;n++){
+   Check();if(DateTime.UtcNow>=DesktopTrustKeyHostSource.Time(pickup,"expiresAt"))throw Invalid();string rawHash;Row row=ReadUnderstandingRow(dir,Output,n,out rawHash),v=DesktopTrustKeyHostSource.Map(row["snapshot"]),reference=DesktopTrustKeyHostSource.Ref(row["ref"]);
+   if(scope==null){scope=OutputScope(DesktopTrustKeyHostSource.Map(v["scope"]),rows,allocation,record,slot);
+    if(J(scope["sessionBindingRef"])!=J(context["sessionBindingRef"])||!rows.Any(r=>S(r,"kind")=="GRANT"&&S(r,"key")==id&&S(r,"grant")==H(scope["grantRef"])))throw Invalid();
+    var reservations=rows.Where(r=>S(r,"kind")=="RESERVED"&&S(r,"allocation")==id&&IsOutput(r)).ToArray();
+    if(reservations.Length==0||reservations.Any(r=>!r.ContainsKey("output")||S(DesktopTrustKeyHostSource.Map(r["output"]),"scopeDigest")!=H(scope)||S(DesktopTrustKeyHostSource.Map(r["output"]),"recordHash")!=H(record)||S(DesktopTrustKeyHostSource.Map(r["output"]),"slotHash")!=H(slot)||S(DesktopTrustKeyHostSource.Map(r["output"]),"attemptId")!=S(record,"attemptId")))throw Invalid();
+    object received;ReadSdkAttemptChain(rows,id,dir,scope,S(context,"startCommandId"),true,null,out received);
+    string ignored;var start=ReadUnderstandingRow(dir,"attempt-"+S(context,"startCommandId"),3,out ignored);
+    if(J(start["ref"])!=J(scope["startReadyRef"]))throw Invalid();
+   }
+   DateTime observed=DesktopTrustKeyHostSource.Time(v,"observedAt");
+   if(N(reference["version"])!=1||!ids.Add(S(reference,"id"))||S(reference,"contentHash")!=H(v)||N(v["schemaVersion"])!=1||N(v["sequence"])!=n||J(v["scope"])!=J(scope)||J(v["previousRef"])!=J(previous)||observed<last||observed>DateTime.UtcNow||n==count&&rawHash!=S(summary,"tail"))throw Invalid();last=observed;
+   if(S(v,"state")=="SESSION_INIT_CONFIRMED"){
+    DesktopTrustKeyHostSource.Exact(v,"schemaVersion,state,scope,sequence,previousRef,initOutputRef,observedSidDigest,prefixCount,tailRef,prefixDigest,observedAt");
+    if(init!=null||lastFamily!="SYSTEM_INIT"||J(v["initOutputRef"])!=J(previous)||J(v["tailRef"])!=J(previous)||N(v["prefixCount"])!=n-1||S(v,"prefixDigest")!=prefix||S(v,"observedSidDigest")!=S(scope,"plannedSidDigest"))throw Invalid();init=reference;
+   }else{
+    DesktopTrustKeyHostSource.Exact(v,"schemaVersion,state,scope,sequence,previousRef,initConfirmationRef,observedAt,family,identity,payloadDigest,classification,body");
+    if(S(v,"state")!=(init==null?"OUTPUT_PENDING_SESSION":"SESSION_OUTPUT")||J(v["initConfirmationRef"])!=J(init)||S(v,"classification")!="ORDINARY"||!DesktopTrustKeyHostSource.IsHash(v["payloadDigest"]))throw Invalid();
+    string encoded=S(v,"body");if(encoded.Length>2796204)throw Invalid();byte[] bytes=Convert.FromBase64String(encoded);
+    try{
+     if(bytes.Length>2*MiB||Convert.ToBase64String(bytes)!=encoded||DesktopTrustKeyHostSource.Hash(bytes)!=S(v,"payloadDigest"))throw Invalid();
+     var message=NormalExecutionCredentialSource.ReadUnderstandingSdkBody(bytes);string family=UnderstandingFamily(message);
+     if(family!=S(v,"family")||H(message["uuid"])!=S(v,"identity")||!identities.Add(S(v,"identity"))||H(message["session_id"])!=S(scope,"plannedSidDigest"))throw Invalid();
+     if(family=="SYSTEM_INIT"){if(initSeen||init!=null)throw Invalid();initSeen=true;}
+     if(family=="ASSISTANT"){
+      var content=DesktopTrustKeyHostSource.Map(message["message"]);var list=content.ContainsKey("content")?content["content"] as object[]:null;
+      if(message["parent_tool_use_id"]!=null||message.ContainsKey("error")||list==null||list.Length<1||list.Length>200||content.ContainsKey("role")&&!Object.Equals(content["role"],"assistant"))throw Invalid();long textBytes=0;
+      foreach(object raw in list){var block=DesktopTrustKeyHostSource.Map(raw);DesktopTrustKeyHostSource.Exact(block,"type,text");string text=S(block,"text");
+       if(S(block,"type")!="text"||text.Trim(new[]{'\u0009','\u000a','\u000b','\u000c','\u000d','\u0020','\u00a0','\u1680','\u2000','\u2001','\u2002','\u2003','\u2004','\u2005','\u2006','\u2007','\u2008','\u2009','\u200a','\u2028','\u2029','\u202f','\u205f','\u3000','\ufeff'}).Length==0)throw Invalid();textBytes=checked(textBytes+Encoding.UTF8.GetByteCount(text));}
+      blocks=checked(blocks+list.Length);if(blocks>200||ranges.Count>=200)throw Invalid();ranges.Add(R("outputRef",reference,"sequence",n,"payloadDigest",v["payloadDigest"],"textBlocks",list.Length,"textBytes",textBytes));
+     }
+     lastFamily=family;
+    }finally{Array.Clear(bytes,0,bytes.Length);}
+    prefix=H(R("previous",prefix,"ref",reference,"payloadDigest",v["payloadDigest"]));
+   }previous=reference;
+  }
+  if(init==null||previous==null)throw Invalid();return R("attribution","SESSION_ONLY","projectId",scope["projectId"],"executionId",scope["executionId"],"executionGeneration",scope["generation"],
+   "requestRef",pickup["requestRef"],"acquisitionRef",pickup["acquisitionRef"],"contextBundleRef",context["contextBundleRef"],"initConfirmationRef",init,"tailRef",previous,"ranges",ranges.ToArray(),"wholeConversationComplete",false,"executionAuthorized",false);
+ }
+ Row CloseUnderstanding(List<Row> rows,FileStream log,Row value,Row record,Row slot,Row allocation,DesktopTrustKeyDirectoryFact dir){
+  var request=DesktopTrustKeyHostSource.Map(value["understanding"]);DesktopTrustKeyHostSource.Exact(request,"requestRef,acquisitionRef,bodyHash");
+  var requested=DesktopTrustKeyHostSource.Ref(request["requestRef"]);DesktopTrustKeyHostSource.Ref(request["acquisitionRef"]);if(!DesktopTrustKeyHostSource.IsHash(request["bodyHash"]))throw Invalid();
+  string key=S(requested,"id"),id=S(allocation,"id");var pickup=rows.SingleOrDefault(r=>S(r,"kind")=="UNDERSTANDING_PICKUP"&&S(r,"key")==key);
+  if(pickup==null||S(pickup,"pickupHost")==understandingHost||J(pickup["requestRef"])!=J(requested)||J(pickup["acquisitionRef"])!=J(request["acquisitionRef"])||S(pickup,"recordHash")!=H(record)||S(pickup,"slotHash")!=H(slot)||S(pickup,"attemptId")!=S(value,"attemptId")||DateTime.UtcNow>=DesktopTrustKeyHostSource.Time(pickup,"expiresAt")||Has(rows,"UNDERSTANDING_READ_STARTED",key)||owned.Values.Contains(id)||Unsettled(rows).Values.Any(r=>S(r,"allocation")==id))throw Invalid();
+  Append(log,rows,R("kind","UNDERSTANDING_READ_STARTED","key",key,"host",understandingHost,"pickupHash",H(pickup)));
+  var settled=rows.LastOrDefault(r=>S(r,"kind")=="SETTLED"&&S(r,"allocation")==id&&S(r,"channel")==Output);if(settled==null)throw Invalid();var summary=DesktopTrustKeyHostSource.Map(settled["summary"]);
+  if(J(Inspect(rows,Normal,id,dir,Output,summary))!=J(summary))throw Invalid();
+  var metadata=ReadUnderstandingOutput(rows,allocation,dir,record,slot,pickup,summary);
+  byte[] body=Encoding.UTF8.GetBytes(J(R("schemaVersion",1,"kind","DISCOVERY_METADATA","metadata",metadata)));string metadataHash;
+  try{if(body.Length>2*MiB)throw Invalid();metadataHash=DesktopTrustKeyHostSource.Hash(body);}finally{Array.Clear(body,0,body.Length);}
+  if(metadataHash!=S(request,"bodyHash")||J(Inspect(rows,Normal,id,dir,Output,summary))!=J(summary)||DateTime.UtcNow>=DesktopTrustKeyHostSource.Time(pickup,"expiresAt"))throw Invalid();
+  // 모든 원 source fd가 정상 Dispose된 뒤에만 작은 근거를 기록한다. 관리 원장/host 종결은 별도 검산이다.
+  Append(log,rows,R("kind","UNDERSTANDING_READ_CLOSED","key",key,"host",understandingHost,"pickupHash",H(pickup),"allocation",id,"directoryIdentity",dir.Identity,
+   "summaryHash",H(summary),"bodyHash",metadataHash,"initConfirmationRef",metadata["initConfirmationRef"],"tailRef",metadata["tailRef"],"expiresAt",pickup["expiresAt"]));
+  opened.Remove(id);return R("state","CLOSED_CONFIRMED","understanding",R("state","NATIVE_METADATA_CLOSED","requestRef",requested,"acquisitionRef",request["acquisitionRef"],"bodyHash",metadataHash));
+ }
  // 이 함수는 현재 열린 할당의 원본 3행만 확인한다. 경로/행·실행 권한을 외부에 내주지 않는다.
  internal string ReadSdkFirstAttempt(Row record,Row slot,Row scope,string startCommand,string sendCommand,Row handoff=null,bool verifyOptions=false){
   SdkStartOptions ignored;return ReadSdkFirstAttempt(record,slot,scope,startCommand,sendCommand,handoff,out ignored,verifyOptions);
@@ -453,11 +591,13 @@ internal sealed class NormalExecutionSpoolProfileSource {
   bool outputReserve=writer==Normal&&operation=="NORMAL_SPOOL_RESERVE"&&Object.Equals(value.ContainsKey("channel")?value["channel"]:null,Output);
   bool resumeOutput=writer==Normal&&operation=="NORMAL_SPOOL_RESUME"&&value.ContainsKey("challenge");
   bool closeOutput=writer==Normal&&operation=="NORMAL_SPOOL_CLOSE"&&value.ContainsKey("reservation");
+  bool closeUnderstanding=writer==Normal&&operation=="NORMAL_SPOOL_CLOSE"&&value.ContainsKey("understanding");
   bool binding=writer==Normal&&(operation=="NORMAL_SPOOL_RESUME"||operation=="NORMAL_SPOOL_ALLOCATE")&&value.ContainsKey("outputBinding");
   if(resumeOutput)DesktopTrustKeyHostSource.Exact(value,auth+",reservation,challenge,scopeDigest,requestDigest");
   else if(binding){DesktopTrustKeyHostSource.Exact(value,auth+",outputBinding");if(!Object.Equals(value["outputBinding"],true))throw Invalid();}
   else if(outputReserve)DesktopTrustKeyHostSource.Exact(value,auth+",allocation,channel,nodeStamp,request,scope,expiresAt");
   else if(closeOutput)DesktopTrustKeyHostSource.Exact(value,auth+",allocation,reservation");
+  else if(closeUnderstanding)DesktopTrustKeyHostSource.Exact(value,auth+",allocation,understanding");
   else if(operation=="NORMAL_SPOOL_PROFILE_STATE"||operation=="NORMAL_SPOOL_ALLOCATE"||operation=="NORMAL_SPOOL_RESUME")DesktopTrustKeyHostSource.Exact(value,auth);
   else if(operation=="NORMAL_SPOOL_RESERVE")DesktopTrustKeyHostSource.Exact(value,auth+",allocation,channel,nodeStamp");
   else if(operation=="NORMAL_SPOOL_SETTLE")DesktopTrustKeyHostSource.Exact(value,auth+",allocation,channel,reservation");
@@ -480,6 +620,7 @@ internal sealed class NormalExecutionSpoolProfileSource {
     if(binding){result.Add("profileRef",EvidenceRef(profileId,rows[0]));result.Add("assignmentRef",EvidenceRef(id,allocation));}return result;}
    if(!opened.Contains(id)||!ownedAllocation(id,value))throw Invalid();
    if(closeOutput)return OutputHandoff(rows,log,value,id,dir,out timing);
+   if(closeUnderstanding)return CloseUnderstanding(rows,log,value,record,slot,allocation,dir);
    if(operation=="NORMAL_SPOOL_CLOSE"){if(owned.Values.Contains(id))throw Invalid();opened.Remove(id);return R("state","CLOSED_CONFIRMED");}
    string channel=Channel(value,writer);var prior=rows.LastOrDefault(r=>S(r,"kind")=="SETTLED"&&S(r,"allocation")==id&&S(r,"channel")==channel);
    var before=prior==null?Empty():DesktopTrustKeyHostSource.Map(prior["summary"]);

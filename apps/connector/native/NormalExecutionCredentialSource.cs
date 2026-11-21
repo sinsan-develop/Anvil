@@ -311,6 +311,25 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   }return null;
  }
  object DiscoveryOutcome(string status,string stage,Dictionary<string,object> r,Dictionary<string,object> slot,string requestId,DateTime end){return new Dictionary<string,object>{{"kind","NORMAL_UNDERSTANDING_NOT_ACQUIRED"},{"status",status},{"stage",stage},{"path",r["path"]},{"query",""},{"requestId",requestId},{"slotRef",slot["receiptRef"]},{"expiresAt",Stamp(end)}};}
+ // 원 HTTPS 응답을 보유한 이 호출만 목적 획득을 profile에 넘긴다. 외부 DTO/boolean issuer는 없다.
+ void ValidateUnderstandingPickup(Dictionary<string,object> answer,Dictionary<string,object> record,Dictionary<string,object> slot,Dictionary<string,object> packet,Dictionary<string,object> target,DateTime started,DateTime end){
+  Check();if(spoolProfile==null)throw Invalid();
+  Exact(answer,"transport,status,proofResultRef,receipt,sourceAvailable,selectionAvailable,cacheControl,nonceConsumed,executionAuthorized,dispatchPerformed");
+  if(S(answer,"transport")!="NORMAL_PROTECTED"||S(answer,"status")!="DISCOVERY_ACQUIRED"||S(answer,"cacheControl")!="no-store"||!Object.Equals(answer["nonceConsumed"],true))throw Invalid();
+  foreach(string k in new[]{"sourceAvailable","selectionAvailable","executionAuthorized","dispatchPerformed"})if(!Object.Equals(answer[k],false))throw Invalid();
+  var receipt=Map(answer["receipt"]);Exact(receipt,"kind,binding,credentialRef,challengeRef,packetHash,target,requestId,understandingRequestRef,context,observedAt,expiresAt");
+  var reference=DesktopTrustKeyHostSource.Ref(answer["proofResultRef"]);var requested=DesktopTrustKeyHostSource.Ref(receipt["understandingRequestRef"]);
+  if(N(reference["version"])!=1||N(requested["version"])!=1||S(reference,"contentHash")!=H(receipt)||S(receipt,"kind")!="NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED"||
+   J(receipt["credentialRef"])!=J(slot["receiptRef"])||J(receipt["challengeRef"])!=J(packet["challengeRef"])||Id(receipt,"requestId")!=Id(Map(packet["proof"]),"requestId")||
+   S(receipt,"packetHash")!=H(new Dictionary<string,object>{{"frame",packet},{"target",target}})||J(receipt["target"])!=J(target)||At(receipt,"observedAt")>clock()||At(receipt,"expiresAt")<=clock()||At(receipt,"expiresAt")>end||At(receipt,"expiresAt")>At(receipt,"observedAt").AddSeconds(30))throw Invalid();
+  var scope=Map(slot["scope"]);var binding=Map(receipt["binding"]);Exact(binding,"transport,mode,projectId,connectorId,executionId,executionGeneration,grantRef,scopeDigest,credentialGeneration,publicKeyFingerprint");
+  if(S(binding,"transport")!="NORMAL_PROTECTED"||S(binding,"mode")!="EXECUTION"||S(binding,"scopeDigest")!=S(slot,"scopeDigest")||S(binding,"publicKeyFingerprint")!=S(Map(record["key"]),"fingerprint"))throw Invalid();
+  var context=Map(receipt["context"]);Exact(context,"projectId,executionId,executionGeneration,grantRef,registrationRef,connectorId,credentialGeneration,startCommandId,startCommandRef,assignmentRef,preparationRef,contextBundleRef,sessionBindingRef");
+  foreach(string k in scope.Keys)if(J(scope[k])!=J(binding[k])||J(scope[k])!=J(context[k]))throw Invalid();
+  foreach(string k in new[]{"grantRef","registrationRef","startCommandRef","assignmentRef","preparationRef","contextBundleRef","sessionBindingRef"})DesktopTrustKeyHostSource.Ref(context[k]);Id(context,"startCommandId");
+  if(J(context["registrationRef"])!=J(Map(record["registration"])["registrationRef"]))throw Invalid();
+  Check();spoolProfile.BindUnderstandingPickup(record,slot,requested,reference,context,At(receipt,"observedAt"),At(receipt,"expiresAt"),started);Check();
+ }
  object Call(Dictionary<string,object> h,byte[] bodyBytes){
   if(bodyBytes.Length!=N(h["bodyLength"])||H(bodyBytes)!=S(h,"bodyHash"))throw Invalid();string body=(bool)h["bodyIsNull"]?null:new UTF8Encoding(false,true).GetString(bodyBytes);
   if(body==null&&bodyBytes.Length!=0)throw Invalid();var record=Record(Id(h,"attemptId"));string recordHash=H(record);
@@ -338,8 +357,10 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
    byte[] raw=ProtectedStore.LoadNormalOwned(owner,Id(proof,"requestId"),"execution-proof",current);
    try{var saved=Parse(raw);if(S(saved,"slotId")!=Id(h,"slotId")||S(saved,"recordHash")!=recordHash||J(saved["target"])!=J(target)||
     S(saved,"authHash")!=H(Encoding.UTF8.GetBytes(S(r,"auth")))||At(saved,"expiresAt")<=clock())throw Invalid();end=new[]{end,At(saved,"expiresAt")}.Min();}finally{Array.Clear(raw,0,raw.Length);}
-   bool discovery=DiscoveryTarget(scope,target);var answer=Http(record,S(r,"method"),S(r,"path"),S(r,"query"),body,S(slot,"credential"),S(r,"auth"),discovery?2097152:Limit,discovery);
-   string status=discovery?DiscoveryStatus(answer,false):null;result=status==null?(object)answer:DiscoveryOutcome(status,"REQUEST",r,slot,Id(proof,"requestId"),end);
+   bool discovery=DiscoveryTarget(scope,target);DateTime responseStarted=clock();var answer=Http(record,S(r,"method"),S(r,"path"),S(r,"query"),body,S(slot,"credential"),S(r,"auth"),discovery?2097152:Limit,discovery);
+   string status=discovery?DiscoveryStatus(answer,false):null;
+   if(discovery&&status==null&&answer.ContainsKey("status")&&Object.Equals(answer["status"],"DISCOVERY_ACQUIRED"))ValidateUnderstandingPickup(answer,record,slot,packet,target,responseStarted,end);
+   result=status==null?(object)answer:DiscoveryOutcome(status,"REQUEST",r,slot,Id(proof,"requestId"),end);
   }
   if(H(Record(Id(h,"attemptId")))!=recordHash||clock()>=end)throw Invalid();output=B(result);if(output.Length<1||output.Length>Limit)throw Invalid();
   outputHandle=Guid.NewGuid().ToString("D");outputHash=H(output);outputOffset=0;outputExpiry=end;return Next();
@@ -415,11 +436,24 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  [DllImport("crypt32.dll",SetLastError=true)][return:MarshalAs(UnmanagedType.Bool)]static extern bool CertCloseStore(IntPtr store,int flags);
  // JSON 중복 key는 deserializer로 소실되기 전에 거절한다. canonical hash는 파싱한 exact 자료에 적용한다.
  static Dictionary<string,object> Parse(byte[] bytes){string s=new UTF8Encoding(false,true).GetString(bytes);new JsonKeys(s).Check();return new JavaScriptSerializer{MaxJsonLength=Limit,RecursionLimit=32}.Deserialize<Dictionary<string,object>>(s);}
+ // 이 목적은 SDK 원 bytes를 hash로 보존한다. 소수/지수를 공통 Canonical로 재직렬화하지 않는다.
+ internal static Dictionary<string,object> ReadUnderstandingSdkBody(byte[] bytes){
+  if(bytes==null||bytes.Length<1||bytes.Length>2097152)throw Invalid();string text=new UTF8Encoding(false,true).GetString(bytes);
+  new JsonKeys(text,64).Check();var value=new JavaScriptSerializer{MaxJsonLength=2097152,RecursionLimit=64}.Deserialize<Dictionary<string,object>>(text);
+  UnderstandingValue(value,0);return value;
+ }
+ static void UnderstandingValue(object value,int depth){
+  if(depth>64)throw Invalid();if(value==null||value is bool)return;
+  if(value is string){J(value);return;}
+  if(value is int||value is long||value is decimal||value is double){double n=Convert.ToDouble(value,CultureInfo.InvariantCulture);if(Double.IsNaN(n)||Double.IsInfinity(n)||Math.Truncate(n)==n&&Math.Abs(n)>9007199254740991d)throw Invalid();return;}
+  var map=value as Dictionary<string,object>;if(map!=null){foreach(var pair in map){if(new[]{"__proto__","prototype","constructor","toJSON"}.Contains(pair.Key))throw Invalid();J(pair.Key);UnderstandingValue(pair.Value,depth+1);}return;}
+  var list=value as object[];if(list!=null){foreach(object item in list)UnderstandingValue(item,depth+1);return;}throw Invalid();
+ }
  sealed class JsonKeys {
-  readonly string s;int p;internal JsonKeys(string text){s=text;}
+  readonly string s;readonly int maxDepth;int p;internal JsonKeys(string text,int depth=32){s=text;maxDepth=depth;}
   void Space(){while(p<s.Length&&" \r\n\t".IndexOf(s[p])>=0)p++;}
   string Str(){int start=p++;bool escaped=false;while(p<s.Length){char c=s[p++];if(c=='"'&&!escaped)return new JavaScriptSerializer().Deserialize<string>(s.Substring(start,p-start));if(c=='\\'&&!escaped)escaped=true;else escaped=false;}throw Invalid();}
-  void Value(int depth){Space();if(depth>32||p>=s.Length)throw Invalid();char c=s[p];if(c=='"'){Str();return;}if(c=='{'||c=='['){
+  void Value(int depth){Space();if(depth>maxDepth||p>=s.Length)throw Invalid();char c=s[p];if(c=='"'){Str();return;}if(c=='{'||c=='['){
    bool obj=c=='{';p++;Space();var keys=new HashSet<string>(StringComparer.Ordinal);if(p<s.Length&&s[p]==(obj?'}':']')){p++;return;}
    while(true){Space();if(obj){if(p>=s.Length||s[p]!='"'||!keys.Add(Str()))throw Invalid();Space();if(p>=s.Length||s[p++]!=':')throw Invalid();}Value(depth+1);Space();if(p>=s.Length)throw Invalid();char next=s[p++];if(next==(obj?'}':']'))return;if(next!=',')throw Invalid();}
   }int start=p;while(p<s.Length&&",]} \t\r\n".IndexOf(s[p])<0)p++;if(p==start)throw Invalid();}

@@ -22231,3 +22231,11 @@ developer_primary 단일 작성·동결. 신규 normal-understanding-response-so
 일반 입구가 원 host를 호출하던 RED를 재현 후 차단했다. 최초 정적 상호 import의 초기화 순환을 확인했고 지연 import로 바꾸면 고정 빌더가 거절했다. 역참조를 제거해 원 profile/runtime에서 소비하도록 연결했으며 빌더 검산을 완화하지 않았다. Main 직접 42통과(5dd489), owner RAM 및 native 정적 18통과(4737af), 실패·건너뜀0, 루트 타입·공백 및 동결 지문 exit0(accdf1), 독립 C0/I0/M0. 실 C#·native 스풀/HTTPS·DB·권한·키·서비스·SSH·SDK·Agent 실행0.
 
 실제 result 서명·POST와 서버 보관은 아직 없다. 일반 native close 응답은 CLOSED_CONFIRMED뿐이며 SDK_READ_CLOSED는 기존 출력 쓰기 연계다. 다음은 원 보호 read에서 직접 도출한 메타의 검산·정상 종결과 exact request/acquisition·slot/attempt·본문 해시를 묶어 기존 signer에서 단회 소비하는 출처 증명 및 서버 보관이다. 그 전 결과 요청은 503이다. 롤백은 위 정확 6경로와 기록 변경분이다.
+
+#### FN09 S3 — 원 native 출력 검산과 동일 획득 재확인
+
+기준 92252bed. developer_primary가 `NormalExecutionCredentialSource.cs`, `NormalExecutionSpoolProfileSource.cs`, `normal-owned-spool-profile.ts`, `normal-execution-credential-owner.test.cjs`를 단일 작성했다. 원 등록 HTTPS 획득의 영수증·서명 패킷·등록·slot·기한을 대조하고 같은 보호 원장에 작은 획득 근거를 남긴다. 원 출력 파일의 ref·init·앞선 행·tail·원 바이트 digest로 탐색 메타만 다시 도출한다. 원 파일·관리 원장 및 같은 native host의 정상 종료가 모두 확인되어야 local seal을 만든다. 원 provider 응답이나 caller의 digest만으로 서명 권위를 발급하지 않는다.
+
+독립 C0/I1/M0. 기존 하위 owned API의 같은 패킷 재확인에서 원 관측 시각을 새 HTTP 시작과 비교하고 획득 중복을 거절하던 문제를 확인했다. RED 714592 후 기존 보호 원장의 exact match일 때만 원 영수증을 무기록 재확인하도록 수정했다. 부분 START/CLOSE·교차 근거·만료는 계속 거절한다. 최초 획득 시각 경계와 읽기 단회는 유지한다. Main 검수는 동결 SHA 4종 일치, 직접·인접 42건(f70f67), owner 합성·native 정적 19건(97bc25), 타입 exit0(cf1ad4), diff·지문 058349이다. C#은 정적 검사와 합성 대역이며 실제 C# 컴파일·DPAPI·파일 종료·HTTPS·DB·권한·서비스·SSH·SDK·Agent 실행은 미검증이다.
+
+브랜치 반영은 Main이 순차 처리한다. UI11 준비 정책 선택은 별도 워크트리에서 구현해 a6807417로 동결했다. 직접 Editor 4건(3e37b7), 담당 직접·인접 79건 및 Main 타입(3d05e3)을 확인했다. 기존 기본 미선택·DENY 및 별도 제출을 유지한다. 기능의 실제 UI04 탐색은 PMO가 기존 A안의 동일 권한과 최소 보호 조회로 진행할 수 있다고 확인해 별도 작성자가 구현 중이다. 서버는 신규 결과의 원 획득 검산을 다른 워크트리에서 작성 중이다. native 단회 서명·전송·서버 결과 저장 및 선택·검토 실제 여정은 미완료다. 현재 롤백은 이번 4개 파일과 기록의 역적용이며 UI11은 a6807417의 두 경로 역적용이다.

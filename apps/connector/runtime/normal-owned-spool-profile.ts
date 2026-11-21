@@ -66,7 +66,7 @@ export type WorkerSdkPorts=Pick<NormalFirstSendSource,'expiresAt'|'create'|'clos
 type Hold=Awaited<ReturnType<OutputPorts['reserve']>>;
 type OutputTx=Parameters<OutputPorts['strictExclusive']>[1];
 type Handoff={reservation:string;challenge:string;scopeDigest:string;requestDigest:string};
-type PhaseControls={resume?:Handoff;readOnly?:boolean;closeReservation?:string;challenge?:string;guard:()=>void};
+type PhaseControls={resume?:Handoff;readOnly?:boolean;closeReservation?:string;challenge?:string;understanding?:{requestRef:RuntimeRefV1;acquisitionRef:RuntimeRefV1;bodyHash:string};guard:()=>void};
 const outputBinders=new WeakMap<OutputPorts,(ticket:object)=>void>();
 const outputJournals=new WeakSet<ProfileJournalAccess>();
 type FirstSidBasis=Omit<Parameters<NormalFirstSendSource['check']>[0],'plannedSidDigest'>;
@@ -272,10 +272,14 @@ export class OwnedSpoolRuntime {
    let denied=false;
    try{result=await this.#bounded(s,()=>this.#als.run(t,()=>body(t)));this.#check(s);if(t.child||s.borrowed)invalid();}catch(error){if(error!==capacity)throw error;denied=true;}finally{t.live=false;}
    phase?.guard();
-   const closed=await this.#frame(s,'NORMAL_SPOOL_CLOSE',{...auth,allocation:s.allocation,...(phase?.closeReservation?{reservation:phase.closeReservation}:{})});
+   const closed=await this.#frame(s,'NORMAL_SPOOL_CLOSE',{...auth,allocation:s.allocation,...(phase?.closeReservation?{reservation:phase.closeReservation}:phase?.understanding?{understanding:phase.understanding}:{})});
    if(phase?.closeReservation){
     if(!recordV1(closed,['state','challenge'])||closed.state!=='SDK_READ_CLOSED'||typeof closed.challenge!=='string'||!uuidV1(closed.challenge.slice(0,36))||!uuidV1(closed.challenge.slice(36)))invalid();
     phase.challenge=closed.challenge;
+   }else if(phase?.understanding){
+    if(!recordV1(closed,['state','understanding'])||closed.state!=='CLOSED_CONFIRMED')invalid();
+    const proof=closed.understanding;
+    if(!recordV1(proof,['state','requestRef','acquisitionRef','bodyHash'])||proof.state!=='NATIVE_METADATA_CLOSED'||byRef(proof.requestRef)!==byRef(phase.understanding.requestRef)||byRef(proof.acquisitionRef)!==byRef(phase.understanding.acquisitionRef)||proof.bodyHash!==phase.understanding.bodyHash)invalid();
    }else if(!recordV1(closed,['state'])||closed.state!=='CLOSED_CONFIRMED')invalid();
    success=true;if(denied)throw capacity;return result!;
   }finally{
@@ -531,6 +535,14 @@ export class OwnedSpoolRuntime {
    let issued=false;
    try{
     guard();const metadata=await readNormalUnderstandingDiscovery(original.binding,{clock:()=>{guard();return this.#clock();},current:()=>{guard();return original.binding;},withRead:body=>withRead(body,guard)},origin.signal);guard();
+    // TS projection은 비교값일 뿐이다. 같은 native 원 GET pickup과 독립 파일 읽기/close가
+    // 동일 body를 확인하고 원 host까지 정상 닫힌 뒤에만 local seal을 발급한다.
+    const body=Buffer.from(canonicalJson({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata}));
+    try{
+     if(body.length>2*1024*1024)invalid();
+     const understanding={requestRef:cloneV1(metadata.requestRef),acquisitionRef:cloneV1(metadata.acquisitionRef),bodyHash:contentHash(body)};
+     await this.#root('NORMAL_EXECUTION',origin.signal,async()=>{guard();},{readOnly:true,understanding,guard});guard();
+    }finally{body.fill(0);}
     const seal=Object.freeze({}) as NormalUnderstandingResultSeal;
     discoveryResults.set(seal,{client,owned,post,metadata,expiresAt:original.binding.expiresAt,check:guard,finish:original.finish});issued=true;
     return {metadata,seal};
