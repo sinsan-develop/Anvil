@@ -8,6 +8,7 @@ import {routeHref} from '../../shell/routes.ts';
 import {ProjectPendingApprovals} from './ProjectPendingApprovals.tsx';
 import {ProjectAssignmentDrafts} from './ProjectAssignmentDrafts.tsx';
 import {ProjectMethodologyOriginal} from './ProjectMethodologyOriginal.tsx';
+import {ProjectWaitingQueuePreview} from './ProjectWaitingQueuePreview.tsx';
 import {mergeProjectListSnapshot,selectProjectListSnapshot,type ProjectListSnapshot,type ProjectListVisible} from './project-list-snapshot.ts';
 
 export function ProjectListResults({client,snapshot,pending,error,onAuthenticationLost,membership}:{client:ApiClient;snapshot:ProjectListVisible|null;pending:boolean;error:ApiError|null;onAuthenticationLost:()=>void;membership?:MembershipUI}){
@@ -27,6 +28,7 @@ export function ProjectListResults({client,snapshot,pending,error,onAuthenticati
       <ProjectAccessSummary membership={membership} key={[item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       <ProjectPendingApprovals key={'decisions:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       <ProjectAssignmentDrafts key={'drafts:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
+      <ProjectWaitingQueuePreview key={'queue:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} session={membership?.session} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
       {membership?<ProjectSetupCopies client={client} session={membership.session} projectId={item.id} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>:null}
       <ProjectMethodologyOriginal key={'method:'+ [item.id,snapshot.query,snapshot.archived,snapshot.refresh,item.version].join(':')} client={client} projectId={item.id} name={item.name} disabled={locked} onAuthenticationLost={onAuthenticationLost}/>
     </li>)}</ul>
