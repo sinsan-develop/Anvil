@@ -22007,3 +22007,11 @@ UI05의 보호 원자료 선택→대상 신규 단건 조회→기존 정책 �
 검수 중 파일/디렉터리 충돌과 공용 JSON 판독 전 구조 한도 공백을 발견했다. 해당 경계의 RED 두 건 `1fcb4e`, `8f5fa6` 뒤 모든 상위 경로를 대조하고 외부 메시지·내부 목록 양쪽에 사전 구조 한도를 적용했다. 기존 2MiB 및 파일 수 제한을 유지했고 정상 18,000행·2,088,173바이트를 확인했다. 최종 직접11통과·좁은 타입 exit0 `59c19c`, LF·공백 exit0 `009ea4`. 앞선 인접38통과 `690987`는 수정 뒤 재실행하지 않았다. Main 구조 한도 사례 1통과 `801de7`(Node 시험 mock 경고 포함), 독립 두 지적 해소·잔여 C0/I0. 소스 SHA256 `0FD5115F692FFBD7B3BAC2CFF100FDAEF892D484D27B488E0C04EDFA0240E4B9`, 시험 SHA256 `5924FF123DEA37354BAC57D130612E71C8687F0C370818C8FF959BE6E0054A5F`.
 
 실제 보호 승인/배타 소진 원장 진위와 원 프로세스 종료·전송·정상 설치는 미연결이다. 실제 WSL·설치·DB·권한·서비스·Agent 실행0. 판독기는 비교 결과만 반환하며 실제 실행 승인을 발급하지 않는다. 롤백은 위 신규 두 파일과 작업 기록의 역적용이다.
+
+### IX01 설치 목록 전송의 원 프로세스 수거 연결
+
+기준 `4f409720` clean. developer_primary가 [설치 목록 수거 감독](../scripts/qa-fn03-tc01-dependency-carrier-supervisor.ts)과 [직접 합성시험](../tests/unit/FN03/tc01-dependency-carrier-supervisor.test.ts) 두 경로를 작성하고 반환했다. 고정 입력·기대값의 소유 복사본을 검산한 뒤 원 child·원 stdin/stdout에 listener/timer를 먼저 설치하고 한 번만 입력을 보낸다. 원 stdin 완료, stdout 종료, 정상 close와 같은 기한에서만 후보를 수거한다. 실패·불명에서는 원 child의 소유권을 유지하고 자체 listener/timer만 정리한다.
+
+Main 입력 변조 RED `9587cc`와 독립 초기 callback의 기대값 변경 RED `695264`를 보완했다. 원 입력 해시를 전송 반환과 입력 종결·최종 수거에 대조하고 첫 시각 callback 전에 기대값을 복사한다. 최종 직접16통과 `4c8f9a`, 인접22통과·실패/건너뜀0 `31b1ab`, 좁은 타입 exit0 `f4e56b`, LF·공백 exit0 `f87efd`. Main 수정 회귀2통과 `b7c25c`, 독립 지적 해소·잔여 C0/I0. 소스 SHA256 `D35FA25EBF1CC4E336AAE92D23D49A1F349C4F7B8920AA508BD6A5B12DC976E9`, 시험 SHA256 `81FA4A0F57EC0AAFC29288D2A88F7EB4E395250C6C88CFB0039CD74ACB7C86E1`.
+
+실제 보호 승인/소진 기록, 원 child와 transport 공급, Linux 설치·실제 PG 여정은 미완료다. 해당 반환은 로컬 후보 수거이며 실제 외부 설치 또는 시험 성공으로 세지 않는다. 실제 WSL·SSH·설치·DB·권한·서비스·Agent 실행0. 롤백은 위 신규 두 파일과 작업 기록의 역적용이다.
