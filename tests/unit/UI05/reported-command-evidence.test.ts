@@ -48,3 +48,21 @@ test('응답 headers 도착 뒤 JSON 처리 중 선택을 닫으면 원문을 �
  const reading=mod.readReportedCommandEvidence(client,f.entry as any,f.selection,()=>active);
  await started;active=false;release();assert.equal(await reading,null);assert.equal(calls,1);
 });
+
+
+test('최초 명령 근거 hash 대기 중 transport 교체는 후속 GET0',async()=>{
+ const mod=await module(),f=fixture();let calls=0;const client=new ApiClient(async()=>{calls++;return Response.json(f.file());});
+ const pending=mod.readReportedCommandEvidence(client,f.entry as any,f.selection,()=>true);client.transport=async()=>{calls++;return Response.json(f.file());};
+ assert.equal((await pending)===null,true);assert.equal(calls,0);
+});
+for(const status of [200,401])test(`명령 근거 GET 대기 중 transport 교체는 이전 ${status}를 폐기`,async()=>{
+ const mod=await module(),f=fixture();let finish!:(value:Response)=>void,enter!:()=>void,calls=0;const started=new Promise<void>(resolve=>enter=resolve);
+ const client=new ApiClient(async()=>{calls++;enter();return new Promise<Response>(resolve=>finish=resolve);});
+ const pending=mod.readReportedCommandEvidence(client,f.entry as any,f.selection,()=>true);await started;client.transport=async()=>{throw Error('UNEXPECTED_REQUEST');};
+ finish(Response.json(status===200?f.file():{code:'AUTH_REQUIRED'},{status}));assert.equal((await pending)===null,true);assert.equal(calls,1);
+});
+test('명령 근거 이탈 뒤401은 폐기하고 현재401/403은 보존',async()=>{
+ const mod=await module(),f=fixture();let active=true;const client=new ApiClient(async()=>{active=false;return Response.json({code:'AUTH_REQUIRED'},{status:401});});
+ assert.equal(await mod.readReportedCommandEvidence(client,f.entry as any,f.selection,()=>active),null);active=true;
+ for(const status of [401,403]){client.transport=async()=>Response.json({code:status===401?'AUTH_REQUIRED':'ACCESS_DENIED'},{status});await assert.rejects(mod.readReportedCommandEvidence(client,f.entry as any,f.selection,()=>active),(error:any)=>error instanceof ApiError&&error.status===status&&error.code===(status===401?'AUTH_REQUIRED':'ACCESS_DENIED'));}
+});

@@ -11,12 +11,13 @@ async function hash(value:unknown){const bytes=new TextEncoder().encode(ordered(
 /** Compare one command's declared evidence to registered bytes, never outputRef or OS paths.
  * Source kind/environment remain claims, not verified provenance or command execution. */
 export async function readReportedCommandEvidence(client:ApiClient,original:SubmittedResultView,selection:CommandEvidenceSelection,active:()=>boolean){
- if(!active())return null;
+ const transport=client.transport,current=()=>active()&&client.transport===transport;
+ if(!current())return null;
  const r=structuredClone(original),pick=structuredClone(selection),s=r?.snapshot?.scope,m=r?.snapshot?.manifest;
  if(!pick||Object.keys(pick).sort().join(',')!=='commandIndex,evidenceIndex'||!Number.isSafeInteger(pick.commandIndex)||pick.commandIndex<0||!Number.isSafeInteger(pick.evidenceIndex)||pick.evidenceIndex<0
   ||!s||!m||new TextEncoder().encode(ordered(r)).length>2*1024*1024||await hash(r.snapshot)!==r.ref.contentHash||await hash(m)!==r.snapshot.manifestHash
   ||!same(m.executionRef,s.executionRef)||!Array.isArray(m.artifactRefs)||m.artifactRefs.length>200)invalid();
- if(!active())return null;
+ if(!current())return null;
  const commands=inspectReportedCommands(m.commandResults),command=commands.rows.find(row=>row.index===pick.commandIndex)?.value;
  if(commands.listInvalid||!command) return invalid();
  const e=command.evidence[pick.evidenceIndex];if(!e)return invalid();
@@ -31,8 +32,8 @@ export async function readReportedCommandEvidence(client:ApiClient,original:Subm
  const base={purpose:'REPORTED_COMMAND_EVIDENCE_COMPARISON_ONLY' as const,projectId:s.projectId,resultRef:r.ref,executionRef:s.executionRef,
   selection:pick,reported:structuredClone(e),issues,evidenceProvenanceVerified:false as const,commandExecutionVerified:false as const,
   commandExitVerified:false as const,completionAccepted:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
- if(issues.length)return active()?{...base,bytesState:'NOT_QUERIED_BINDING_MISMATCH' as const,file:null}:null;
- const file=await readResultArtifactText(client,r,e.ref,active);
- return active()&&file?{...base,bytesState:'MATCHED_REGISTERED_BYTES' as const,file}:null;
+ if(issues.length)return current()?{...base,bytesState:'NOT_QUERIED_BINDING_MISMATCH' as const,file:null}:null;
+ const file=await readResultArtifactText(client,r,e.ref,current);
+ return current()&&file?{...base,bytesState:'MATCHED_REGISTERED_BYTES' as const,file}:null;
 }
 export type CommandEvidenceView=NonNullable<Awaited<ReturnType<typeof readReportedCommandEvidence>>>;
