@@ -14,7 +14,7 @@ import type {RecordedResultReview} from './result-review-write-api.ts';
 import type {ResponsibleSessionState} from '../workspace/responsible-session-api.ts';
 import {ordered} from '../knowledge/review-view.ts';
 import {prepareResultReworkDraft,type ResultReworkDraft} from './result-rework-api.ts';
-import {prepareResultReworkWrite,saveResultReworkWrite,ReworkReadbackUnconfirmed,type ResultReworkBuffer,type ResultReworkBuffers} from './result-rework-write-api.ts';
+import {prepareResultReworkWrite,saveResultReworkWrite,canReleaseUnsentRework,releaseUnsentRework,ReworkReadbackUnconfirmed,type ResultReworkBuffer,type ResultReworkBuffers} from './result-rework-write-api.ts';
 import {StoredResultReworkHistory} from './StoredResultReworkHistory.tsx';
 import {resultReworkFormKey,type ResultReworkFormDraft} from './result-rework-form.ts';
 import {ReviewCriteriaOriginal} from './ReviewCriteriaOriginal.tsx';
@@ -58,43 +58,61 @@ function ReportedCompletionGap({coverage}:{coverage:ReportedCoverageView}){
 }
 function ResultReworkEditor({client,assignment,result,review,responsibleState,session,reworks,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;result:SubmittedResultView;review:RecordedResultReview;responsibleState?:ResponsibleSessionState|null;session:DocumentSession;reworks?:ResultReworkBuffers;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
  const [localForms,setLocalForms]=useState<Record<string,ResultReworkFormDraft|null>>({}),[prepared,setPrepared]=useState<ResultReworkDraft|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),attempt=useRef(0),live=useRef(true),working=useRef(false);
+ const scopeKey=ordered([session,assignment.projectId,assignment.ref,assignment.snapshot.definition.allowedScopes,result.ref,result.snapshot.scope,review.ref,responsibleState]),scope=useRef({key:scopeKey,session,client,transport:client.transport}),releaseOwners=useRef(new WeakMap<object,object>());
+ if(scope.current.key!==scopeKey||scope.current.session!==session||scope.current.client!==client||scope.current.transport!==client.transport)scope.current={key:scopeKey,session,client,transport:client.transport};
+ const observedScope=scope.current;
+ useEffect(()=>{attempt.current++;working.current=false;setBusy(false);setPrepared(null);setError(null);},[observedScope]);
  const formKey=resultReworkFormKey({userId:session.user.id,clientId:session.clientId,projectId:assignment.projectId,assignmentRef:assignment.ref,resultRef:result.ref,reviewRef:review.ref}),emptyForm:ResultReworkFormDraft={selected:[],files:[],bindingId:'',reason:''},form=reworks?.form,values=(form?form.drafts[formKey]:localForms[formKey])??emptyForm,{selected,files,bindingId,reason}=values;
  function setField<K extends keyof ResultReworkFormDraft>(field:K,value:ResultReworkFormDraft[K]|((previous:ResultReworkFormDraft[K])=>ResultReworkFormDraft[K])){const update=(current:ResultReworkFormDraft|null)=>{const previous=current??emptyForm;return{...previous,[field]:typeof value==='function'?value(previous[field]):value};};if(form)form.onChange(formKey,update);else setLocalForms(previous=>({...previous,[formKey]:update(previous[formKey]??null)}));}
  const setSelected=(value:string[]|((previous:string[])=>string[]))=>setField('selected',value),setFiles=(value:string[]|((previous:string[])=>string[]))=>setField('files',value),setBindingId=(value:string)=>setField('bindingId',value),setReason=(value:string)=>setField('reason',value);
- useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
+ useEffect(()=>{live.current=true;return()=>{live.current=false;attempt.current++;};},[]);
  const task=assignment.snapshot.definition.taskRef,scopes=assignment.snapshot.definition.allowedScopes,bindings=(responsibleState?.bindings??[]).filter(b=>ordered(b.snapshot.assignmentRef)===ordered(assignment.ref)&&responsibleState?.roles.some(r=>ordered(r.ref)===ordered(b.snapshot.roleRef)&&r.snapshot.kind==='STAGE_OWNER'&&ordered(r.snapshot.stageRef)===ordered({applicationRef:task.applicationRef,nodeId:task.nodeId}))),binding=bindings.find(b=>b.ref.id===bindingId);
  const changed=()=>{attempt.current++;setPrepared(null);setBusy(false);setError(null);};
  const toggle=(values:string[],key:string)=>values.includes(key)?values.filter(v=>v!==key):[...values,key];
  const bufferKey=[session.user.id,session.clientId,assignment.projectId,ordered(result.ref),ordered(review.ref)].join(':'),buffer=reworks?.buffers[bufferKey]??null;
  const bound=buffer&&buffer.pending.ownerUserId===session.user.id&&buffer.pending.command.clientId===session.clientId&&buffer.pending.command.projectId===assignment.projectId&&ordered(buffer.pending.prepared.scope)===ordered(result.snapshot.scope)&&ordered(buffer.pending.command.payload.resultRef)===ordered(result.ref)&&ordered(buffer.pending.command.payload.reviewRef)===ordered(review.ref)?buffer:null;
- const change=(value:ResultReworkBuffer)=>reworks?.onChange(bufferKey,current=>current?.bindingId===value.bindingId?value:current);
+ const writeOwner=useRef<{buffers:WeakMap<ResultReworkBuffer,string>;invalid:boolean}|null>(null);
+ const previousBuffer=useRef({buffer,body:ordered(buffer)});
+ if(previousBuffer.current.buffer!==buffer||previousBuffer.current.body!==ordered(buffer)){if(writeOwner.current&&(!buffer||writeOwner.current.buffers.get(buffer)!==ordered(buffer)))writeOwner.current.invalid=true;if(previousBuffer.current.buffer)releaseOwners.current.delete(previousBuffer.current.buffer.pending);previousBuffer.current={buffer,body:ordered(buffer)};}
+ const latest=useRef({buffer,bound,bufferKey,reworks});latest.current={buffer,bound,bufferKey,reworks};
+ const currentScope=()=>live.current&&scope.current===observedScope&&client.transport===observedScope.transport&&ordered([session,assignment.projectId,assignment.ref,assignment.snapshot.definition.allowedScopes,result.ref,result.snapshot.scope,review.ref,responsibleState])===observedScope.key;
+ const change=(value:ResultReworkBuffer)=>{const owner=writeOwner.current;owner?.buffers.set(value,ordered(value));reworks?.onChange(bufferKey,current=>owner&&!owner.invalid&&current&&owner.buffers.get(current)===ordered(current)?value:current);};
  const failure=(cause:unknown)=>{const e=cause instanceof ApiError?cause:new ApiError('RESULT_REWORK_INPUT_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REWORK_RESPONSE_INVALID';setError(code);if([401,403,404].includes(e.status))onAccessUnavailable(code);if(e.status===401)onAuthenticationLost();return{e,code};};
  async function write(mode:'PREPARE'|'SAVE'){
-  if(working.current||!reworks)return;working.current=true;setBusy(true);setError(null);const b=bound,turn=++attempt.current,active=()=>live.current&&attempt.current===turn;
+  if(!currentScope()||working.current||!reworks)return;working.current=true;setBusy(true);setError(null);const b=bound,owner=mode==='SAVE'&&b?{buffers:new WeakMap([[b,ordered(b)]]),invalid:false}:null;writeOwner.current=owner;const turn=++attempt.current,active=()=>currentScope()&&attempt.current===turn&&(!owner||!owner.invalid&&writeOwner.current===owner&&!!latest.current.buffer&&owner.buffers.get(latest.current.buffer)===ordered(latest.current.buffer));
   try{
    if(mode==='PREPARE'){
     if(buffer||!prepared)return;const generation=await documentControl(client,assignment.projectId,session);if(!active())return;
-    const pending=await prepareResultReworkWrite(prepared,session,generation);if(active())reworks.onChange(bufferKey,current=>current??{bindingId:crypto.randomUUID(),pending,stored:null,uncertain:false,dirty:true,failure:null});return;
+    const pending=await prepareResultReworkWrite(prepared,session,generation);if(active()){releaseOwners.current.set(pending,observedScope);reworks.onChange(bufferKey,current=>active()?(current??{bindingId:crypto.randomUUID(),pending,stored:null,uncertain:false,dirty:true,failure:null}):current);}return;
    }
    if(!b||b.stored)return;change({...b,uncertain:true,failure:null});
    const stored=await saveResultReworkWrite(client,b.pending,session,active);if(active()&&stored)change({...b,stored,dirty:false,uncertain:false,failure:null});
   }catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_REWORK_INPUT_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REWORK_RESPONSE_INVALID';
    if(b)change({...b,failure:{code,status:e.status},uncertain:b.uncertain||e instanceof ReworkReadbackUnconfirmed||!isKnownDocumentRejection(e)});failure(e);
-  }finally{working.current=false;if(active())setBusy(false);}
+  }finally{if(attempt.current===turn){working.current=false;setBusy(false);}if(writeOwner.current===owner)writeOwner.current=null;}
+ }
+ function releaseUnsent(){
+  const chosen=bound;if(!chosen)return;const fingerprint=ordered(chosen),pending=chosen.pending;
+  const current=()=>currentScope()&&!busy&&!working.current&&latest.current.buffer===chosen&&latest.current.bound===chosen&&latest.current.bufferKey===bufferKey&&latest.current.reworks?.form===reworks?.form&&ordered(chosen)===fingerprint&&!chosen.uncertain&&!chosen.stored&&!chosen.failure&&releaseOwners.current.get(pending)===observedScope&&canReleaseUnsentRework(pending,session);
+  if(!current()||!globalThis.confirm('미전송 보완 저장 준비만 해제하고 입력 수정으로 돌아갈까요? 전송한 명령이나 서버 저장은 취소하지 않습니다.')||!current())return;
+  const p=releaseUnsentRework(pending,session);releaseOwners.current.delete(pending);attempt.current++;setPrepared(null);setError(null);
+  setSelected([...p.missingItems]);setBindingId(p.responsibleBindingRef.id);setReason(p.reason);
+  setFiles(scopes.flatMap((s,index)=>s.targets.flatMap((t,n)=>p.sourceScopes.some(a=>ordered(a.sourceRootRef)===ordered(s.sourceRootRef)&&a.targets.some(v=>ordered(v)===ordered(t)))?[index+':'+n]:[])));
+  reworks?.onChange(bufferKey,value=>currentScope()&&value===chosen&&ordered(value)===fingerprint?null:value);
  }
  function editRejected(){
-  if(!bound||bound.uncertain||bound.stored||working.current||!isKnownDocumentRejection(bound.failure))return;
+  if(!currentScope()||!bound||bound.uncertain||bound.stored||working.current||!isKnownDocumentRejection(bound.failure))return;
   const p=bound.pending.prepared;setPrepared(p);setSelected([...p.missingItems]);setBindingId(p.responsibleBindingRef.id);setReason(p.reason);setError(null);
   setFiles(scopes.flatMap((s,index)=>s.targets.flatMap((t,n)=>p.sourceScopes.some(a=>ordered(a.sourceRootRef)===ordered(s.sourceRootRef)&&a.targets.some(v=>ordered(v)===ordered(t)))?[index+':'+n]:[])));
   reworks?.onChange(bufferKey,current=>current?.bindingId===bound.bindingId?null:current);
  }
- async function prepare(){if(!binding||!selected.length||!files.length||!reason.trim())return;const turn=++attempt.current,active=()=>live.current&&attempt.current===turn;setPrepared(null);setBusy(true);setError(null);
+ async function prepare(){if(!binding||!selected.length||!files.length||!reason.trim())return;const turn=++attempt.current,active=()=>currentScope()&&attempt.current===turn;setPrepared(null);setBusy(true);setError(null);
   const sourceScopes=scopes.map((s,index)=>({...s,targets:s.targets.filter((_,n)=>files.includes(index+':'+n))})).filter(s=>s.targets.length);
   try{const value=await prepareResultReworkDraft(client,assignment,result,review,binding,{resultRef:result.ref,reviewRef:review.ref,responsibleBindingRef:binding.ref,missingItems:selected,sourceScopes,reason},session,active);if(active()&&value)setPrepared(value);}catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_REWORK_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REWORK_RESPONSE_INVALID';setError(code);if([401,403,404].includes(e.status))onAccessUnavailable(code);if(e.status===401)onAuthenticationLost();}finally{if(active())setBusy(false);}
  }
  if(buffer)return <section className="status-card" aria-label="보완 초안 준비"><h5>보완 초안 명시 저장</h5><p>원제출·검수·같은 Anvil 예약 세션의 보완 초안만 보관합니다. 실제 배정·Agent 실행·업무 완료·실패 집계를 하지 않습니다.</p>
   {!bound?<p role="alert">RESULT_REWORK_BINDING_INVALID · 다른 주체/자료의 명령으로 대체하지 않습니다.</p>:<>
-   {!bound.stored?<><details><summary>보완 초안 고정 명령</summary><pre>{JSON.stringify(bound.pending.command,null,2)}</pre></details><button type="button" disabled={busy} onClick={()=>void write('SAVE')}>{bound.uncertain||bound.failure?'같은 보완 명령 재확인':'보완 초안 명시 저장'}</button>{!bound.uncertain&&isKnownDocumentRejection(bound.failure)?<button type="button" disabled={busy} onClick={editRejected}>확인된 거절 이후 보완 입력 수정</button>:null}</>:null}
+   {!bound.stored?<><details><summary>보완 초안 고정 명령</summary><pre>{JSON.stringify(bound.pending.command,null,2)}</pre></details><button type="button" disabled={busy} onClick={()=>void write('SAVE')}>{bound.uncertain||bound.failure?'같은 보완 명령 재확인':'보완 초안 명시 저장'}</button>{!bound.uncertain&&!bound.failure&&releaseOwners.current.get(bound.pending)===observedScope&&canReleaseUnsentRework(bound.pending,session)?<button type="button" disabled={busy} onClick={releaseUnsent}>미전송 보완 준비 해제 후 입력 수정</button>:null}{!bound.uncertain&&isKnownDocumentRejection(bound.failure)?<button type="button" disabled={busy} onClick={editRejected}>확인된 거절 이후 보완 입력 수정</button>:null}</>:null}
    {bound.uncertain?<p role="status">보완 저장 결과 미확인 · 고정 명령을 보존했습니다. 새 명령을 만들지 않고 같은 ID로만 확인합니다.</p>:null}
    {bound.stored?<article aria-label="보완 저장 원문"><h5>보완 초안 고정 원문 확인 완료 · 실제 배정/실행 아님</h5><p>{bound.stored.ref.id} · {bound.stored.ref.contentHash}</p><details><summary>별도 보관 보완 원문</summary><pre>{JSON.stringify(bound.stored,null,2)}</pre></details></article>:null}
   </>}
