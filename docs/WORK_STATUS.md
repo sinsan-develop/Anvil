@@ -21859,3 +21859,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 담당 최초 미연결 RED `8d83d5` 이후 native/entry/host/isolated 직접·인접 46통과·실패/건너뜀0 `df06d7`, 좁은 타입0 `50c3bb`, 공백0 `197bf2`. 중간 시험의 첫 Docker 명령 기대를 실제 daemon 검산 순서로 정정했다. Main이 고정 profile·기존 경로와 정확 diff를 대조했고 독립 C0/I0이다. 합성 실행 핸들 잔여0. 실제 Linux, 외부 launcher, SSH, DB/권한/키/서비스는 실행하지 않았다.
 
 다음은 import 전 source·설치 closure와 단회 승인·원 프로세스 수거를 새 entry/native 포트의 한 실행에 결박하는 단계다. 최소 source 목록은 전체 closure나 적재 증거가 아니다. Windows 설정 한정 읽기의 기존 승인 요청은 아직 응답 미확인이다. TC01과 IX01은 미완료이며 되돌리기는 이번 세 코드·시험 경로와 상태 기록의 역적용이다.
+
+### IX01/FN03 통합 launcher의 적재 소스 검산
+
+기준 `b232de8d` clean·추적 차이0. developer_primary가 적재 검사와 합성 시험 두 새 경로를 단일 작성·반환했다. 승인 지문의 명세에 결박된 source와 dependency 바이트를 소유 복사해 전체 길이·SHA·형상과 원 import 연결을 검산한다. 등록한 Node 동기 훅은 원 경로별 소유 바이트만 반환한다. 거절된 모듈이 오류를 잡아도 그 실행의 뒤 import는 차단하며, 원 감독의 명시 해제에서만 훅을 닫는다. 호출자의 접근자나 Proxy 입력을 평가하지 않는다.
+
+담당 미연결 RED `159b4d` 뒤 `node --test tests/unit/FN03/tc01-pinned-load.test.ts` 13통과·실패/건너뜀0 `56ab2f`, 좁은 타입 종료0 `92568d`. Main 재시도 차단 실제 합성 훅 1통과·실패/건너뜀0 `0bbeb5`. 독립 I1의 기존 CommonJS 확장자·index·JSON require는 승인된 연결 및 require 문맥에 한정해 보완했고 재검수 C0/I0이다. ESM/TS 합성은 실제 Node hooks, CJS/JSON은 POSIX VM·포트 검산이다. Windows의 Linux URL 변형은 거절하며 Linux 실제 의존성 적재는 미검증이다.
+
+다음은 기존 R9 원 모듈의 정확 파생 바이트와 원 importer만 연결하고, 새 bootstrap에서 실제 source/설치 사전검산·순서·원 종결을 결박하는 단계다. 실제 설정·SSH·Linux·DB/권한/키·서비스 실행0이며 이전 실제 승인 요청은 새 응답이 없다. 합성 훅·핸들 잔여0. 롤백은 신규 두 파일과 이 기록을 역적용한다.
