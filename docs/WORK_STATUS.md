@@ -21895,3 +21895,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 담당 AST·parser metadata 대조 `30e239`, 전체 길이·SHA·연결 대조 `b9327a`. Main 367개 원 Git blob 및 edge 수 독립 대조 `170a48`, 최종 문서 SHA256 `8378C19DD2547738C52D5F0D010C3C6D9902E44015B209D7A2E0ADC366C55453`. 독립 root·R9·package 표본 검수 C0/I0. 코드를 실행하거나 Linux 설치 tree를 사용하지 않았다. 이 근거는 최종 적재 graph·실제 Linux CJS 호환·실제 승인에 해당하지 않는다.
 
 다음은 부팅 중 상대 JSON을 적재 검사에 연결할 수 있는지 확인하고, 실제 Linux package resolution/설치 파일 및 원 프로세스 수거의 외부 근거를 확보하는 단계다. 기존 Windows 한정 읽기는 아직 응답 미확인이다. 되돌리기는 새 조사 결과와 상태 기록의 역적용이다.
+
+### IX01 참조 스키마를 검산된 JSON 적재 경로로 연결
+
+기준 `b2b1759f`. developer_primary가 `contracts/references.ts`의 평가 시 디스크 직접 읽기를 같은 원 JSON의 정적 import로 교체하고 작성권을 반환했다. Ajv의 기존 strict·allErrors 설정과 참조 검증 결과는 유지한다. NodeNext 타입 검사에 설정 추가가 필요하지 않았다. 원 [스키마](../contracts/common/refs.schema.json)는 불변이다.
+
+기존 참조 검증 1통과 `362cb3`, JSON 적재 관련 합성 3통과 `a5a633`, 좁은 타입 및 공백 검사 종료0 `aafba1`·`74ffb7`. Main 코드 한 파일과 원 JSON 지문을 대조했다. 후속 적재 graph에는 `contracts/references.ts` 335B/SHA256 `42BFCDD12103C7C7E57B46D64D7B3939266DFE814CD03D579172C95E967BD8A5`에서 `./common/refs.schema.json`으로 가는 명시 `type: json` edge가 필요하다. JSON은 511B/SHA256 `7CDE583810C0D7B0629DDF2FED49772FE273DD39345F3BF06DA69C63AC78CC45`이며 169216ec 조사 그래프는 당시 근거로 보존한다.
+
+실제 Linux의 설치본·graph 전체·원 프로세스 수거와 통합 DB 여정은 미검증이다. Windows 설정·SSH·서비스·DB/권한 접근0, 한정 읽기 승인 응답은 미확인이다. 롤백은 `references.ts` 한 파일과 이 기록의 역적용이다.
