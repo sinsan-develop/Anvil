@@ -11,6 +11,11 @@ export interface Tc01PinnedLoadInput {
  files:readonly {path:string;bytes:Uint8Array}[];
 }
 interface Row{path:string;bytes:number;sha256:string;format:Format}
+const r9Parent='scripts/qa-fn03-source-content-management-origin-isolated-ports.ts';
+const r9OriginSha='b7b730518bf917f0462ee48fbc2569444f50d141d1b28b49c94bec1680daf733';
+const r9Sha='1ee090f4e5e46c096cec8e5f4e82c35d09c3604893a68367181cc85cdec20f1b',r9Length=33478;
+const r9Prefix='data:text/javascript;base64,';
+const r9Builtins=Object.freeze(['node:child_process','node:crypto','node:fs','node:fs/promises','node:url']);
 const fail=():never=>{throw Error('FN03_TC01_PINNED_LOAD_UNKNOWN');};
 function check(value:unknown):asserts value{if(!value)fail();}
 const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
@@ -50,7 +55,7 @@ function formatOk(path:string,format:unknown):format is Format{
  * 실제 적재 전 native 신원·설치 tree·소비 원장·전체 수명은 외부 감독 책임이다.
  * hook은 코드의 OS 효과를 격리하지 않는다. 이미 적재된 Node cache는 이 검사로 재입증되지 않는다.
  * revoke는 보유 byte/hook만 회수하며 이미 평가된 모듈/그 효과를 회수한다고 주장하지 않는다.
- * 기존 R9의 가공 data module 및 미입증 형식은 이 단위에서 거절한다.
+ * R9는 명시 manifest의 고정 원 importer/파생 SHA 한 건만 허용한다. 일반 data/미입증 형식은 거절한다.
  */
 export function createTc01PinnedLoad(input:Tc01PinnedLoadInput){
  const buffers:Buffer[]=[];let registration:ModuleHooks|undefined,closed=false,poisoned=false,registered=false,entered=false;
@@ -63,7 +68,10 @@ export function createTc01PinnedLoad(input:Tc01PinnedLoadInput){
   check(uuidV1(supplied.attemptId)&&hashV1(supplied.manifestSha256));
   const raw=owned(supplied.manifestBytes,2097152);buffers.push(raw);check(hash(raw)===supplied.manifestSha256);
   const manifest=parseWireJson(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(raw));
-  check(exact(manifest,['schemaVersion','attemptId','root','entry','sources','dependencies','builtins','imports'])&&manifest.schemaVersion===1&&manifest.attemptId===supplied.attemptId);
+  const manifestKeys=['schemaVersion','attemptId','root','entry','sources','dependencies','builtins','imports'];
+  const withR9=exact(manifest,[...manifestKeys,'legacyR9']);
+  check((withR9||exact(manifest,manifestKeys))&&manifest.schemaVersion===1&&manifest.attemptId===supplied.attemptId);
+  if(withR9)check(exact(manifest.legacyR9,['parent','originSha256','bytes','sha256'])&&manifest.legacyR9.parent===r9Parent&&manifest.legacyR9.originSha256===r9OriginSha&&manifest.legacyR9.bytes===r9Length&&manifest.legacyR9.sha256===r9Sha);
   const root='/home/daon/anvil-fn03-tc01-'+supplied.attemptId+'-qa';check(manifest.root===root);
   const base='file://'+root+'/',rows=new Map<string,Row>(),bytes=new Map<string,Buffer>();let total=0;
   check(Array.isArray(manifest.sources)&&manifest.sources.length>0&&Array.isArray(manifest.dependencies)&&manifest.sources.length+manifest.dependencies.length<=20000);
@@ -75,6 +83,8 @@ export function createTc01PinnedLoad(input:Tc01PinnedLoadInput){
   }
   check(pathOk(manifest.entry)&&rows.has(manifest.entry)&&!manifest.entry.startsWith('node_modules/')&&rows.get(manifest.entry)!.format!=='json');
   const entryURL=base+manifest.entry;
+  if(withR9)check(rows.get(r9Parent)?.format==='module-typescript'&&total+r9Length<=268435456);
+  let r9URL:string|undefined;
   const suppliedFiles=dataArray(supplied.files,20000);check(suppliedFiles.length===rows.size);let prior='';
   for(const rawFile of suppliedFiles){
    const file=dataRecord(rawFile,['path','bytes']);check(typeof file.path==='string'&&file.path>prior);prior=file.path;const row=rows.get(file.path);check(row);
@@ -83,6 +93,7 @@ export function createTc01PinnedLoad(input:Tc01PinnedLoadInput){
   }
   check(Array.isArray(manifest.builtins)&&manifest.builtins.length<=128);const builtins=new Set<string>();prior='';
   for(const name of manifest.builtins){check(typeof name==='string'&&/^node:[a-z_]+(?:\/[a-z_]+)*$/.test(name)&&isBuiltin(name)&&name>prior);prior=name;builtins.add(name);}
+  if(withR9)check(r9Builtins.every(name=>builtins.has(name)));
   check(Array.isArray(manifest.imports)&&manifest.imports.length<=20000);const edges=new Map<string,{url:string;requireOnly:boolean}>();
   for(const edge of manifest.imports){
    check(exact(edge,['parent','specifier','target'])&&pathOk(edge.parent)&&rows.has(edge.parent)&&typeof edge.specifier==='string'&&edge.specifier.length>0&&edge.specifier.length<=400&&typeof edge.target==='string');
@@ -105,7 +116,18 @@ export function createTc01PinnedLoad(input:Tc01PinnedLoadInput){
   const resolve:ResolveHookSync=(specifier,context,_next)=>guarded(()=>{
    check(typeof specifier==='string'&&context&&typeof context==='object');let url:string;
    if(!entered&&specifier===entryURL){attrs(context.importAttributes,false,context.conditions);entered=true;url=entryURL;}
-   else{
+   else if(withR9&&specifier.startsWith('data:')){
+    check(context.parentURL===base+r9Parent&&permitted.has(context.parentURL)&&specifier.length===r9Prefix.length+4*Math.ceil(r9Length/3)&&specifier.startsWith(r9Prefix));
+    attrs(context.importAttributes,false,context.conditions);
+    if(r9URL===undefined){
+     const encoded=specifier.slice(r9Prefix.length),copy=Buffer.from(encoded,'base64');buffers.push(copy);
+     check(copy.length===r9Length&&copy.toString('base64')===encoded&&hash(copy)===r9Sha);
+     r9URL=specifier;bytes.set(r9URL,copy);
+    }else check(specifier===r9URL);
+    url=r9URL;
+   }else if(withR9&&r9URL!==undefined&&context.parentURL===r9URL){
+    check(permitted.has(r9URL)&&r9Builtins.includes(specifier)&&builtins.has(specifier));attrs(context.importAttributes,false,context.conditions);url=specifier;
+   }else{
     check(typeof context.parentURL==='string'&&bytes.has(context.parentURL)&&permitted.has(context.parentURL));
     const found=edges.get(context.parentURL+'\n'+specifier);check(found&&(!found.requireOnly||context.conditions.includes('require')));url=found.url;
     attrs(context.importAttributes,!builtins.has(url)&&rows.get(url.slice(base.length))!.format==='json',context.conditions);
@@ -115,7 +137,8 @@ export function createTc01PinnedLoad(input:Tc01PinnedLoadInput){
   const load:LoadHookSync=(url,context,next)=>guarded(()=>{
    check(permitted.has(url));
    if(builtins.has(url)){attrs(context.importAttributes,false,context.conditions);return next(url,{...context,format:'builtin'});}
-   const row=rows.get(url.slice(base.length)),copy=bytes.get(url);check(url.startsWith(base)&&row&&copy);
+   const derived=withR9&&r9URL!==undefined&&url===r9URL;
+   const row=derived?{bytes:r9Length,sha256:r9Sha,format:'module' as const}:rows.get(url.slice(base.length)),copy=bytes.get(url);check((derived||url.startsWith(base))&&row&&copy);
    attrs(context.importAttributes,row.format==='json',context.conditions);check(context.format===undefined||context.format===null||context.format===row.format);
    check(copy.length===row.bytes&&hash(copy)===row.sha256);return{format:row.format,source:Buffer.from(copy),shortCircuit:true};
   });

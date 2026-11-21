@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {compileFunction} from 'node:vm';
 import {posix} from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {currentLegacyModuleSource,currentProfile} from '../../../scripts/qa-ix01-current-journey.ts';
 import {createHash} from 'node:crypto';
 import {createTc01PinnedLoad} from '../../../scripts/qa-fn03-tc01-pinned-load.ts';
 const sha=(b:Uint8Array)=>createHash('sha256').update(b).digest('hex');
@@ -160,4 +163,67 @@ test('고정 TS byte는 실제 hook, JSON은 exact attribute와 소유 byte를 �
  const json=createTc01PinnedLoad(f.input);json.resolve(json.entryURL,context(),never);const jsonContext={...context(json.entryURL),importAttributes:{type:'json'}};const target=json.resolve('./value.json',jsonContext,never);const output=json.load(target.url,{...loadContext,importAttributes:{type:'json'}},never);assert(Buffer.isBuffer(output.source));assert.equal(output.source.toString(),'{"answer":42}');json.revoke();
  const invalid=createTc01PinnedLoad(f.input);invalid.resolve(invalid.entryURL,context(),never);assert.throws(()=>invalid.resolve('./value.json',context(invalid.entryURL),never));invalid.revoke();
  const huge=fixture();huge.input.manifestBytes=Buffer.alloc(2097153);huge.input.manifestSha256=sha(huge.input.manifestBytes);assert.throws(()=>createTc01PinnedLoad(huge.input));
+});
+
+const r9Parent='scripts/qa-fn03-source-content-management-origin-isolated-ports.ts';
+const r9Sha='1ee090f4e5e46c096cec8e5f4e82c35d09c3604893a68367181cc85cdec20f1b';
+const r9Builtins=['node:child_process','node:crypto','node:fs','node:fs/promises','node:url'];
+let r9:Buffer|undefined;
+function originalR9(){
+ if(!r9){const raw=execFileSync('git',['cat-file','blob','ca7bd814:scripts/qa-ix01-schema-closure.sh'],{cwd:fileURLToPath(new URL('../../../',import.meta.url)),maxBuffer:65536,windowsHide:true});
+  assert.equal(raw.length,35588);assert.equal(sha(raw),'b7b730518bf917f0462ee48fbc2569444f50d141d1b28b49c94bec1680daf733');
+  r9=Buffer.from(currentLegacyModuleSource(raw,currentProfile.legacyHash));assert.equal(r9.length,33478);assert.equal(sha(r9),r9Sha);
+ }return Buffer.from(r9);
+}
+function r9Fixture(){
+ const f=fixture(),body=originalR9(),url='data:text/javascript;base64,'+body.toString('base64');
+ const source=Buffer.from('export const legacy=await import('+JSON.stringify(url)+');');
+ f.input.files=[{path:r9Parent,bytes:source}];f.manifest.entry=r9Parent;
+ f.manifest.sources=[{path:r9Parent,bytes:source.length,sha256:sha(source),format:'module-typescript'}];f.manifest.dependencies=[];f.manifest.imports=[];f.manifest.builtins=[...r9Builtins];
+ Object.assign(f.manifest,{legacyR9:{parent:r9Parent,originSha256:currentProfile.legacyHash,bytes:33478,sha256:r9Sha}});f.seal();
+ return{...f,body,url};
+}
+
+test('명시 R9 manifest는 원 importer가 만든 exact 파생 byte만 적재한다',async()=>{
+ const f=r9Fixture(),loader=createTc01PinnedLoad(f.input),handle=loader.register();
+ try{const result=await import(loader.entryURL);assert.equal(typeof result.legacy.bootstrapSql,'function');assert.equal(typeof result.legacy.verifyRoleMetadata,'function');loader.assertHealthy();}
+ finally{handle.revoke();}
+});
+
+test('R9 명시 결박의 누락/추가/부모·원 hash·파생 hash·길이·builtin 불일치는 발급0',()=>{
+ for(const mutate of [
+  (m:any)=>{m.legacyR9.parent='scripts/other.ts';},
+  (m:any)=>{m.legacyR9.originSha256='0'.repeat(64);},
+  (m:any)=>{m.legacyR9.sha256='0'.repeat(64);},
+  (m:any)=>{m.legacyR9.bytes++;},
+  (m:any)=>{m.legacyR9.other=true;},
+  (m:any)=>{delete m.legacyR9.originSha256;},
+  (m:any)=>{m.builtins=m.builtins.filter((v:string)=>v!=='node:fs');},
+ ]){const f=r9Fixture();mutate(f.manifest);f.seal();assert.throws(()=>createTc01PinnedLoad(f.input),/^Error: FN03_TC01_PINNED_LOAD_UNKNOWN$/);}
+ const f=r9Fixture();delete (f.manifest as any).legacyR9;f.seal();const loader=createTc01PinnedLoad(f.input);loader.resolve(loader.entryURL,context(),never);assert.throws(()=>loader.resolve(f.url,context(loader.entryURL),never));assert.throws(()=>loader.assertHealthy());loader.revoke();
+});
+
+test('R9 canonical base64와 exact 본문만 허용하며 다른 data·부모·미진입은 거절한다',()=>{
+ const original=r9Fixture(),alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+ const padIndex=alphabet.indexOf(original.url.at(-3)!);assert(padIndex>=0&&padIndex%16===0);
+ const noncanonical=original.url.slice(0,-3)+alphabet[padIndex+1]+'==';
+ assert.deepEqual(Buffer.from(noncanonical.slice('data:text/javascript;base64,'.length),'base64'),original.body);
+ const altered=Buffer.from(original.body);altered[0]=altered[0]!^1;
+ for(const url of [
+  noncanonical,original.url.slice(0,-1),original.url+'\n',original.url.replace('text/javascript','application/javascript'),
+  'data:text/javascript;base64,'+altered.toString('base64'),'data:text/javascript,export default 1',
+  original.url+'#fragment',original.url.replace('base64,','base64, '),
+ ]){const f=r9Fixture(),loader=createTc01PinnedLoad(f.input);loader.resolve(loader.entryURL,context(),never);assert.throws(()=>loader.resolve(url,context(loader.entryURL),never),/^Error: FN03_TC01_PINNED_LOAD_UNKNOWN$/);assert.throws(()=>loader.assertHealthy());loader.revoke();}
+ for(const parent of ['file:///tmp/other.ts','file://'+original.manifest.root+'/scripts/other.ts']){const f=r9Fixture(),loader=createTc01PinnedLoad(f.input);loader.resolve(loader.entryURL,context(),never);assert.throws(()=>loader.resolve(f.url,context(parent),never));loader.revoke();}
+ const f=r9Fixture(),loader=createTc01PinnedLoad(f.input);assert.throws(()=>loader.resolve(f.url,context(loader.entryURL),never));loader.revoke();
+});
+
+test('R9 load는 검산한 소유 copy만 반환하며 R9 parent는 원 다섯 builtin 밖으로 나가지 않는다',()=>{
+ const f=r9Fixture();f.manifest.builtins.push('node:os');f.manifest.builtins.sort();f.seal();const loader=createTc01PinnedLoad(f.input);
+ loader.resolve(loader.entryURL,context(),never);assert.equal(loader.resolve(f.url,context(loader.entryURL),never).url,f.url);
+ const result=loader.load(f.url,loadContext,never);assert.equal(result.format,'module');assert(Buffer.isBuffer(result.source));assert.equal(result.source.length,33478);assert.equal(sha(result.source),r9Sha);
+ result.source.fill(0);f.body.fill(0);const again=loader.load(f.url,loadContext,never);assert(Buffer.isBuffer(again.source));assert.equal(sha(again.source),r9Sha);
+ for(const name of r9Builtins)assert.equal(loader.resolve(name,context(f.url),never).url,name);
+ assert.throws(()=>loader.resolve('node:os',context(f.url),never));assert.throws(()=>loader.load(f.url,loadContext,never));loader.revoke();
+ const bare=r9Fixture(),other=createTc01PinnedLoad(bare.input);other.resolve(other.entryURL,context(),never);other.resolve(bare.url,context(other.entryURL),never);assert.throws(()=>other.resolve('fs',context(bare.url),never));other.revoke();
 });

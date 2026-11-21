@@ -21867,3 +21867,9 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 담당 미연결 RED `159b4d` 뒤 `node --test tests/unit/FN03/tc01-pinned-load.test.ts` 13통과·실패/건너뜀0 `56ab2f`, 좁은 타입 종료0 `92568d`. Main 재시도 차단 실제 합성 훅 1통과·실패/건너뜀0 `0bbeb5`. 독립 I1의 기존 CommonJS 확장자·index·JSON require는 승인된 연결 및 require 문맥에 한정해 보완했고 재검수 C0/I0이다. ESM/TS 합성은 실제 Node hooks, CJS/JSON은 POSIX VM·포트 검산이다. Windows의 Linux URL 변형은 거절하며 Linux 실제 의존성 적재는 미검증이다.
 
 다음은 기존 R9 원 모듈의 정확 파생 바이트와 원 importer만 연결하고, 새 bootstrap에서 실제 source/설치 사전검산·순서·원 종결을 결박하는 단계다. 실제 설정·SSH·Linux·DB/권한/키·서비스 실행0이며 이전 실제 승인 요청은 새 응답이 없다. 합성 훅·핸들 잔여0. 롤백은 신규 두 파일과 이 기록을 역적용한다.
+
+### IX01/FN03 고정 R9 의존 모듈 적재 연결
+
+기준 `ca7bd814` clean·추적 차이0. developer_primary가 원 importer·원본 지문·파생 33,478B 지문을 명시 승인 graph의 한 항목으로 결박하는 코드를 작성하고 반환했다. Node 훅은 같은 원 importer가 전달하는 정규 base64 한 본문과 해당 모듈의 고정 다섯 builtin만 허용한다. 다른 data URL과 교차 parent·변형은 해당 실행의 후속 적재까지 차단한다.
+
+담당 RED `a8c4c6` 뒤 `node --test tests/unit/FN03/tc01-pinned-load.test.ts` 17통과·실패/건너뜀0, 타입0 `45cab6`, 공백0 `3a8bc7`. 기존 적재 검사를 사용하는 합성 importer에서 원 Git의 파생 모듈을 실제 Node 훅으로 적재해 고정 export 존재를 확인했다. 명령·CLI·DB export 호출0, 잔여 hook/handle0. Main 범위·지문 대조 및 독립 C0/I0. 실제 Linux/SSH/설치 closure·서비스·권한·DB는 미검증이며 기존 설정 읽기 승인 대기다. 롤백은 이 두 소스·시험과 기록의 역적용이다.
