@@ -2,7 +2,9 @@ import {randomBytes,randomUUID} from 'node:crypto';
 import {NormalOwnedCredentialPort} from './normal-credential-bootstrap-client.ts';
 import {request as httpsRequest,type RequestOptions} from 'node:https';
 import type {ClientRequest,IncomingMessage} from 'node:http';
-import {canonicalJson,parseWireJson} from '../../../contracts/canonical.ts';
+import {canonicalJson,parseWireJson,contentHash} from '../../../contracts/canonical.ts';
+import {boundedSdkObject} from '../adapters/secondary/schemas.ts';
+import {readNormalUnderstandingSelection,type NormalUnderstandingResponseRequest} from './normal-understanding-response-source.ts';
 import {cloneV1,hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import {executionChallengeRequestBytes,executionProofBytes,executionTarget} from '../../server/modules/executions/execution-proof.ts';
 import {readNormalStopItem,type NormalStopOriginal,type NormalPageItem,readNormalInstructionItem,assembleNormalInstructionMaterial,normalMaterialPath,readNormalCommandPage,readNormalMaterialResponse,type NormalCommandPage,type NormalCommandPageItem,type NormalMaterialReceived} from './normal-start-material-consumer.ts';
@@ -24,6 +26,17 @@ interface PreparedBase{path:string;query:string;auth:string;challengeRef:Ref;req
 export interface PreparedCommandPage extends PreparedBase{kind:'COMMANDS';afterSequence:number}
 export interface PreparedMaterial extends PreparedBase{kind:'MATERIAL';item:NormalCommandPageItem;materialId:string}
 export type PreparedNormalGet=PreparedCommandPage|PreparedMaterial;
+declare const understandingTicket:unique symbol;
+export type NormalUnderstandingReadTicket=Readonly<{[understandingTicket]:true}>;
+type UnderstandingSelection=ReturnType<typeof readNormalUnderstandingSelection>;
+const understandingReads=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;attemptId:string;selection:UnderstandingSelection;guard:()=>void;finish:()=>void}>();
+const originalOwnedPrepare=NormalOwnedCredentialPort.prototype.prepare,originalOwnedRequest=NormalOwnedCredentialPort.prototype.request;
+/** 원 클라이언트가 발급한 ticket을 동일 worker/slot/attempt에서 한 번만 소비한다. raw DTO는 거절한다. */
+export function takeNormalUnderstandingRead(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,attemptId:string,scope:NormalUnderstandingResponseRequest['scope']){
+ const saved=understandingReads.get(ticket);if(!saved)fail('NORMAL_GET_READ_TICKET_INVALID');understandingReads.delete(ticket);
+ if(saved.client!==client||saved.owned!==owned||saved.attemptId!==attemptId||!same(saved.selection.request.scope,scope))fail('NORMAL_GET_READ_TICKET_INVALID');
+ saved.guard();return {selection:cloneV1(saved.selection),check:saved.guard,finish:saved.finish};
+}
 
 export class NormalProtectedGetError extends Error{
  readonly code:string;readonly status:number;
@@ -60,6 +73,7 @@ export class NormalProtectedGetClient{
  readonly executionAuthorized=false;readonly dispatchPerformed=false;
  #origin:string;#ca:string;#credential:string;#credentialExpiry:number;#scope:NormalProtectedGetScope;#base:string;
  #owned:NormalOwnedCredentialPort|undefined;
+ #understandingBusy=false;#understandingRequests=new Set<string>();
  #signer:NormalProtectedSigner;#request:NormalHttpsRequestDriver;#now:()=>number;#monotonic:()=>number;#set:typeof setTimeout;#clear:typeof clearTimeout;
  constructor(options:NormalProtectedGetOptions,ports:NormalProtectedGetPorts){
   this.#origin=readOrigin(options?.origin);this.#scope=readScope(options?.scope);
@@ -120,6 +134,29 @@ export class NormalProtectedGetClient{
    fail('NORMAL_GET_INPUT_INVALID');
   const query:[string,string][]=[...(input.afterCursor!==undefined?[['afterCursor',input.afterCursor] as [string,string]]:[]),['waitMs',String(input.waitMs)]];
   return {kind:'COMMANDS',afterSequence:input.afterSequence,...await this.#prepare(this.#base+'/commands',query,signal)};
+ }
+ /** 명시 요청 한 번만 수신한다. 자동 poll/일반 signer fallback/결과 POST는 없다. */
+ async receiveUnderstandingRead(signal:AbortSignal):Promise<NormalUnderstandingReadTicket>{
+  if(!this.#owned||this.#understandingBusy||this.#understandingRequests.size>=1024)fail('NORMAL_GET_READ_UNAVAILABLE');
+  if(!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_GET_CANCELLED');
+  this.#understandingBusy=true;
+  const owned=this.#owned,metadata=owned.metadata,path=this.#base+'/understanding-response-read',wall=this.#clock(),tick=this.#tick();
+  let end=Math.min(wall+30000,this.#credentialExpiry),lastWall=wall,lastTick=tick,issued=false,active=true;
+  const guard=()=>{const now=this.#clock(),mono=this.#tick();if(!active||signal.aborted||this.#owned!==owned||owned.prepare!==originalOwnedPrepare||owned.request!==originalOwnedRequest||!same(owned.metadata,metadata)||now<lastWall||mono<lastTick||now>=end||mono-tick>=end-wall)fail('NORMAL_GET_READ_UNAVAILABLE');lastWall=now;lastTick=mono;};
+  try{
+   guard();const packet=await this.#prepare(path,[],signal);end=Math.min(end,Date.parse(packet.expiresAt));guard();
+   const raw=await this.#send('GET',path,'',null,['Anvil-Execution-Auth',packet.auth],2*1024*1024,end,signal,'GET');guard();
+   const v=boundedSdkObject(raw,2*1024*1024).value,r=v.receipt,q=v.request;
+   const hash=(value:unknown)=>contentHash(canonicalJson(value));
+   if(!recordV1(v,['transport','proofResultRef','receipt','requestRef','request','cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed'])||v.transport!=='NORMAL_PROTECTED'||v.cacheControl!=='no-store'||v.nonceConsumed!==true||v.executionAuthorized!==false||v.dispatchPerformed!==false||!refV1(v.proofResultRef)||v.proofResultRef.version!==1||!refV1(v.requestRef)||v.requestRef.version!==1||
+    !recordV1(q,['schemaVersion','requestId','attemptId','selection','binding'])||q.schemaVersion!==1||!uuidV1(q.requestId)||!uuidV1(q.attemptId)||v.requestRef.id!==q.requestId||v.requestRef.contentHash!==hash(q)||
+    !recordV1(r,['kind','target','packetHash','challengeRef','slotRef','requestRef','observedAt','expiresAt'])||r.kind!=='NORMAL_UNDERSTANDING_READ_ACQUIRED'||!same(r.target,executionTarget('GET',path,[],null))||r.packetHash!==hash(parseWireJson(Buffer.from(packet.auth,'base64url').toString('utf8')))||!same(r.challengeRef,packet.challengeRef)||!same(r.slotRef,metadata.receiptRef)||!same(r.requestRef,v.requestRef)||v.proofResultRef.contentHash!==hash(r)||!isoV1(r.observedAt)||!isoV1(r.expiresAt)||Date.parse(r.observedAt)>this.#clock()||Date.parse(r.observedAt)<wall||Date.parse(r.expiresAt)>end)fail('NORMAL_GET_RESPONSE_INVALID',200,true);
+   const selection=readNormalUnderstandingSelection(q.selection,q.binding,this.#clock()),s=selection.request.scope;
+   if(s.projectId!==this.#scope.projectId||s.executionId!==this.#scope.executionId||s.generation!==this.#scope.executionGeneration||!same(s.grantRef,this.#scope.grantRef)||!same(s.slotRef,metadata.receiptRef)||this.#understandingRequests.has(q.requestId))fail('NORMAL_GET_RESPONSE_INVALID',200,true);
+   end=Math.min(end,Date.parse(r.expiresAt),Date.parse(selection.binding.expiresAt));guard();this.#understandingRequests.add(q.requestId);
+   const ticket=Object.freeze({}) as NormalUnderstandingReadTicket;understandingReads.set(ticket,{client:this,owned,attemptId:q.attemptId,selection,guard,finish:()=>{active=false;this.#understandingBusy=false;}});issued=true;return ticket;
+  }catch(error){if(error instanceof NormalProtectedGetError)throw error;return fail('NORMAL_GET_RESPONSE_INVALID',0,true);}
+  finally{if(!issued){active=false;this.#understandingBusy=false;}}
  }
  /** 자료 ID는 직전에 검산한 명령 페이지 item의 descriptor에 있는 것만 받는다. */
  async prepareMaterial(item:NormalPageItem,materialId:string,signal:AbortSignal):Promise<PreparedMaterial>{

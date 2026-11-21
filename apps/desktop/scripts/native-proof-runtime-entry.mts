@@ -13,7 +13,7 @@ import { NormalStartPolling, type NormalPollingClients,type NormalStartPollingOp
 import { isProxy } from 'node:util/types';
 
 const pairs = new WeakMap<NormalPollingClients, { port: NormalOwnedCredentialPort; scope: NormalProtectedGetOptions['scope'] }>();
-const getMethods = ['prepareCommandPage','prepareMaterial','send'] as const;
+const getMethods = ['prepareCommandPage','prepareMaterial','send','receiveUnderstandingRead'] as const;
 const postMethods = ['preparePermit','prepareObservations','send'] as const;
 const originalGet = getMethods.map(name => NormalProtectedGetClient.prototype[name]);
 const originalPost = postMethods.map(name => NormalProtectedPostClient.prototype[name]);
@@ -118,7 +118,7 @@ export function createOwnedSpoolController(host: NormalOwnedHostFactory, attempt
     const store=service.journal({projectId,executionId,executionGeneration},signal);
     const current=input.current,currentMethod=current?.current;
     if(current?.transport!=='NORMAL_PROTECTED'||typeof currentMethod!=='function')throw Error('NORMAL_START_PORTS_REQUIRED');
-    let active=pair,running=false;
+    let active=pair,running=false,readingUnderstanding=false,understandingUnknown=false;
     const clock=()=>service.external(()=>{
       if(latest?.pair!==active||signal.aborted||current.current!==currentMethod)throw Error('NORMAL_OWNED_PREDECESSOR');
       return now();
@@ -139,10 +139,20 @@ export function createOwnedSpoolController(host: NormalOwnedHostFactory, attempt
     const poll=assembleStartPolling(pair,latest.port,registration,{...input,intakeStore:store.intake(),journalStore:store,current,wire},checkedClock,
       async(previous,signal)=>active=await renew(previous,signal),instruction);
     return Object.freeze({run:async(signal:AbortSignal)=>{
-      if(running||signal.aborted||lifetime.signal.aborted)throw Error('NORMAL_POLL_UNAVAILABLE');running=true;
+      if(running||readingUnderstanding||signal.aborted||lifetime.signal.aborted)throw Error('NORMAL_POLL_UNAVAILABLE');running=true;
       const cancel=()=>lifetime.abort();signal.addEventListener('abort',cancel,{once:true});
       try{return await poll.run(signal);}finally{signal.removeEventListener('abort',cancel);running=false;}
-    },renew:poll.renew});
+    },renew:async(renewSignal:AbortSignal)=>{if(readingUnderstanding)throw Error('NORMAL_POLL_UNAVAILABLE');return poll.renew(renewSignal);},readUnderstanding:async(requestSignal:AbortSignal)=>{
+      checkClients(active);
+      checkedClock();if(!sdkWorker||running||readingUnderstanding||understandingUnknown||requestSignal.aborted||!latest||latest.pair!==active)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');
+      readingUnderstanding=true;try{
+      const original=active,owned=latest.port,readSignal=AbortSignal.any([signal,requestSignal]);
+      const ticket=await original.get.receiveUnderstandingRead(readSignal);checkedClock();
+      if(active!==original||latest?.port!==owned)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');
+      const result=await sdkWorker.readUnderstanding(ticket,original.get,owned);checkedClock();
+      if(active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');return result;
+      }catch(error){understandingUnknown=true;throw error;}finally{readingUnderstanding=false;}
+    }});
   };
   return Object.freeze({
     bootstrap:async(signal:AbortSignal)=>bind(await issuer.bootstrap(signal)),renew,

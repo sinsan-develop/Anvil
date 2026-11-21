@@ -145,3 +145,55 @@ test('FN09 소유 channel은 고정 read/result만 원 native 요청에 전달�
   }
  }
 });
+
+
+test('FN09 원 owned GET ticket만 같은 client/slot/attempt에서 한 번 소비하고 오염·불명은 거절한다',async()=>{
+ const {NormalProtectedGetClient,takeNormalUnderstandingRead}=await import('../../../apps/connector/runtime/normal-protected-get-client.ts');
+ const {executionTarget}=await import('../../../apps/server/modules/executions/execution-proof.ts');
+ for(const mode of ['OK','ATTEMPT','SCOPE','PACKET','WORK','EXTRA','CLOSE','UNAVAILABLE','DUPLICATE']){
+  const f=fixture(1),signal=new AbortController().signal,port=await f.client.bootstrap(signal);
+  const get=new NormalProtectedGetClient({origin:'https://example.invalid',ca:'RAM CA',scope,credentialExpiresAt:expiresAt},{protectedCredential:port,now:()=>at});
+  const sourceScope={projectId:scope.projectId,executionId:scope.executionId,generation:1,plannedSidDigest:'a'.repeat(64),registrationRef:ref,profileRef:ref,assignmentRef:ref,slotRef:ref,grantRef:ref,startReadyRef:ref,dispatchAttemptRef:ref,sessionBindingRef:ref};
+  const auth=Buffer.from(canonicalJson({fixture:'original proof packet'})).toString('base64url');
+  let sent=0;
+  f.host.send=async(op,p)=>{
+   assert.equal(op,'NORMAL_EXECUTION_CALL');f.calls.push([op,p]);sent++;
+   if(mode==='UNAVAILABLE')throw Error('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE');
+   let value:unknown;
+   const short=new Date(at+10000).toISOString();
+   if(p.kind==='PREPARE')value={path:p.request.path,query:'',auth,challengeRef:ref,requestId:id(77),expiresAt:short};
+   else{
+    const request={schemaVersion:1,requestId:id(90),attemptId:mode==='ATTEMPT'?id(999):id(8),selection:{scope:mode==='SCOPE'?{...sourceScope,generation:2}:sourceScope,initConfirmationRef:ref,tailRef:ref,firstSequence:3,lastSequence:3},binding:{scope:sourceScope,mode:mode==='WORK'?'WORK':'CONTEXT_REVIEW',bundleRef:ref,subjectBindingRef:ref,basisRefs:[ref],requiredPartRefs:[ref],receivedPartRefs:[ref],checkedAt:new Date(at).toISOString(),expiresAt:short}};
+    const requestRef={...ref,id:id(90),contentHash:hash(canonicalJson(request))};
+    const receipt={kind:'NORMAL_UNDERSTANDING_READ_ACQUIRED',target:executionTarget('GET',p.request.path,[],null),packetHash:mode==='PACKET'?'f'.repeat(64):hash(Buffer.from(auth,'base64url')),challengeRef:ref,slotRef:ref,requestRef,observedAt:new Date(at).toISOString(),expiresAt:short};
+    value={transport:'NORMAL_PROTECTED',proofResultRef:{...ref,contentHash:hash(canonicalJson(receipt))},receipt,requestRef,request,cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false,...(mode==='EXTRA'?{raw:'forbidden'}:{})};
+    if(mode==='CLOSE')f.mode('CLOSE_UNKNOWN');
+   }
+   const bytes=Buffer.from(canonicalJson(value));return{handle:id(9),offset:0,total:bytes.length,hash:hash(bytes),expiresAt:short,bytes:bytes.toString('base64url'),done:true};
+  };
+  if(['SCOPE','PACKET','WORK','EXTRA','CLOSE','UNAVAILABLE'].includes(mode))await assert.rejects(get.receiveUnderstandingRead(signal));
+  else{
+   const ticket=await get.receiveUnderstandingRead(signal);assert.deepEqual(Object.keys(ticket),[]);assert.equal(Object.isFrozen(ticket),true);
+   assert.throws(()=>takeNormalUnderstandingRead({} as any,get,port,id(8),sourceScope));
+   if(mode==='ATTEMPT')assert.throws(()=>takeNormalUnderstandingRead(ticket,get,port,id(8),sourceScope));
+   else{await assert.rejects(get.receiveUnderstandingRead(signal));const held=takeNormalUnderstandingRead(ticket,get,port,id(8),sourceScope);assert.deepEqual(held.selection.request.scope,sourceScope);await assert.rejects(get.receiveUnderstandingRead(signal));held.finish();assert.throws(held.check);assert.throws(()=>takeNormalUnderstandingRead(ticket,get,port,id(8),sourceScope));}
+   if(mode==='DUPLICATE')await assert.rejects(get.receiveUnderstandingRead(signal));
+  }
+  assert.equal(sent,mode==='UNAVAILABLE'?1:mode==='DUPLICATE'?4:2);
+ }
+});
+
+
+test('FN09 두 exact 목적은 원 UTF8 2MiB/+1·공백 확대를 parse 전 검산하고 불명 재시도0',async()=>{
+ for(const result of [false,true])for(const extra of [0,1]){
+  const f=fixture(2*1024*1024-11+extra),signal=new AbortController().signal,p=await f.client.bootstrap(signal);
+  assert.equal(f.response.length,2*1024*1024+extra);
+  const path='/api/v1/connectors/'+id(2)+'/executions/'+id(3)+'/understanding-response-read'+(result?'/'+id(6)+'/result':'');
+  const request={method:result?'POST' as const:'GET' as const,path,query:'',body:result?'{}':null,auth:'public-proof',expiresAt};
+  if(!extra)assert.equal((await p.request(request,signal) as any).body.length,2*1024*1024-11);
+  else{await assert.rejects(p.request(request,signal),/UNKNOWN/);const count=f.calls.length;await assert.rejects(p.request(request,signal),/UNKNOWN/);assert.equal(f.calls.length,count);}
+ }
+ const f=fixture(1),signal=new AbortController().signal,p=await f.client.bootstrap(signal);let calls=0;
+ f.host.send=async()=>{calls++;return {handle:id(9),offset:0,total:2*1024*1024+1,hash:hash(' '.repeat(2*1024*1024-1)+'{}'),expiresAt,bytes:Buffer.from(' '.repeat(48000)).toString('base64url'),done:false};};
+ await assert.rejects(p.request({method:'GET',path:'/api/v1/connectors/'+id(2)+'/executions/'+id(3)+'/understanding-response-read',query:'',body:null,auth:'public-proof',expiresAt},signal),/UNKNOWN/);assert.equal(calls,1);
+});

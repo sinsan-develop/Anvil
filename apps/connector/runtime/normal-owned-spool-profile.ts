@@ -15,6 +15,9 @@ import {confirmNormalLiveInputDelivery,takeFirstOutputOrigin,takeFirstSidOrigin,
 import type {NormalStartWire,NormalStartCurrent} from './normal-start-coordinator.ts';
 import type {RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {receiveProfiledEnvelope,type InboxFilePorts,type InboxLimits} from './receipt-inbox.ts';
+import {takeNormalUnderstandingRead,type NormalUnderstandingReadTicket,type NormalProtectedGetClient} from './normal-protected-get-client.ts';
+import {readNormalUnderstandingResponse,type NormalUnderstandingResponseProjection} from './normal-understanding-response-source.ts';
+import type {NormalOwnedCredentialPort} from './normal-credential-bootstrap-client.ts';
 
 type Writer='NORMAL_EXECUTION'|'UNVERIFIED_RECEIPT_INBOX';
 type IO=NormalFilePorts&InboxFilePorts;
@@ -35,7 +38,7 @@ export type WorkerSdkPorts=Pick<NormalFirstSendSource,'expiresAt'|'create'|'clos
 type Hold=Awaited<ReturnType<OutputPorts['reserve']>>;
 type OutputTx=Parameters<OutputPorts['strictExclusive']>[1];
 type Handoff={reservation:string;challenge:string;scopeDigest:string;requestDigest:string};
-type PhaseControls={resume?:Handoff;closeReservation?:string;challenge?:string;guard:()=>void};
+type PhaseControls={resume?:Handoff;readOnly?:boolean;closeReservation?:string;challenge?:string;guard:()=>void};
 const outputBinders=new WeakMap<OutputPorts,(ticket:object)=>void>();
 const outputJournals=new WeakSet<ProfileJournalAccess>();
 type FirstSidBasis=Omit<Parameters<NormalFirstSendSource['check']>[0],'plannedSidDigest'>;
@@ -223,7 +226,7 @@ export class OwnedSpoolRuntime {
    if(recordV1(state,['state'])&&state.state==='UNSUPPORTED'){success=true;invalid('NORMAL_SPOOL_UNSUPPORTED');}
    if(!recordV1(state,['profileId','allocated'])||!uuidV1(state.profileId)||typeof state.allocated!=='boolean')invalid('NORMAL_SPOOL_UNSUPPORTED');
    const binding=writer==='NORMAL_EXECUTION'&&!!this.#binding&&!phase?.resume;
-   if(phase?.resume&&!state.allocated)invalid();phase?.guard();
+   if((phase?.resume||phase?.readOnly)&&!state.allocated)invalid();phase?.guard();
    const a=await this.#frame(s,state.allocated?'NORMAL_SPOOL_RESUME':'NORMAL_SPOOL_ALLOCATE',
     phase?.resume?{...auth,...phase.resume}:binding?{...auth,outputBinding:true}:auth);
    if(!recordV1(a,['state','profileId','allocation','root','directoryIdentity',...(binding?['profileRef','assignmentRef']:[])])||a.state!==(state.allocated?'RESUMED':'ALLOCATED')||
@@ -330,7 +333,7 @@ export class OwnedSpoolRuntime {
   this.#workers.set(worker,{journal,scope:{projectId,executionId,executionGeneration},registration:cloneV1(expected.executorRegistrationRef),grant:cloneV1(grantRef)});
   return worker;
  }
- #outputPorts(local:NormalLocalScope,origin:()=>{scope:ReturnType<typeof takeFirstOutputOrigin>['scope'];signal:AbortSignal;end:number;profile:string;allocation:string},classify:OutputPorts['classify']):OutputPorts{
+ #outputPorts(local:NormalLocalScope,origin:()=>{scope:ReturnType<typeof takeFirstOutputOrigin>['scope'];signal:AbortSignal;end:number;profile:string;allocation:string},classify:OutputPorts['classify']){
   type Request=Parameters<OutputPorts['reserve']>[0];
   type Closed={holdId:string;tailRef:RuntimeRefV1|null;rows:number};
   const make=(req:Request)=>({req,ready:gate<Hold>(),pre:gate<OutputTx>(),post:gate<number>(),written:gate<Closed>(),
@@ -370,8 +373,10 @@ export class OwnedSpoolRuntime {
     guard();if(!open||pending||t.child||s.borrowed)invalid();return end;
    }finally{active=false;outputJournals.delete(access);profileJournals.delete(access);}
   };
-  return Object.freeze({classify,
+  let reading=false,readFinished=Promise.resolve();
+  const storage:OutputPorts=Object.freeze({classify,
    reserve:async(request:Request)=>{
+    if(reading)await readFinished;
     const b=check(),sd=contentHash(byRef(b.scope));if(ongoing||this.#als.getStore()||request.scopeDigest!==sd||request.channel!=='SDK_SESSION_OUTPUT'||request.pool!=='NORMAL_EXECUTION')invalid();
     const op=make(cloneV1(request));ongoing=op;
     const phase:PhaseControls={guard:()=>{check();}};
@@ -417,8 +422,13 @@ export class OwnedSpoolRuntime {
     const closed=await op.write;check();ongoing=undefined;return closed;
    }
   });
+  return {storage,read:async(body:OutputTx,guard:Guard)=>{
+   const b=check();guard();if(reading||ongoing||this.#als.getStore())invalid();reading=true;const completed=gate<void>();readFinished=completed.promise;
+   try{await this.#root('NORMAL_EXECUTION',b.signal,async t=>{guard();await inspect(t,body,true);guard();},{readOnly:true,guard:()=>{check();guard();}});guard();}
+   catch(error){unknown=true;throw error;}finally{reading=false;completed.resolve();}
+  }};
  }
- outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort}{
+ outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>}{
   const saved=this.#workers.get(worker),slot=this.external(this.#slot);
   if(this.#binding||!saved||saved.journal!==journal||!slot||!refV1(slot.receiptRef)||this.#owner.aborted||signal.aborted||
    isProxy(sdk)||!recordV1(sdk,['expiresAt','check','create','close','classify'])||
@@ -429,11 +439,12 @@ export class OwnedSpoolRuntime {
    if(lifetime.aborted||isProxy(sdk)||!recordV1(sdk,['expiresAt','check','create','close','classify'])||byRef(this.external(this.#slot))!==slotKey||sdk.check!==fixed.check||sdk.create!==fixed.create||
       sdk.close!==fixed.close||sdk.classify!==fixed.classify||sdk.expiresAt!==fixed.expiresAt)invalid();
   };
-  const storage=this.#outputPorts(saved.scope,()=>{
+  const output=this.#outputPorts(saved.scope,()=>{
    verify();if(!origin||!binding||origin.signal.aborted)return invalid();
    const end=this.external(origin.check);
    return {scope:origin.scope,signal:origin.signal,end,profile:binding.profile.id,allocation:binding.allocation.id};
   },raw=>this.external(()=>Reflect.apply(fixed.classify,sdk,[raw])));
+  const storage=output.storage;
   // These two fields are populated only by the verified native allocation, before the first protected START completes.
   let inputStream:ReturnType<typeof workerInput>|undefined,query:AsyncIterable<unknown>|undefined;
   const core={storage,plannedSid:null,expiresAt:sdk.expiresAt,ownerSignal:lifetime,slotRef:cloneV1(slot.receiptRef),
@@ -480,7 +491,17 @@ export class OwnedSpoolRuntime {
    if(!inputStream||!query||original!==query||!origin||origin.signal.aborted)return Promise.reject(Error('NORMAL_WORKER_INPUT_UNAVAILABLE'));
    return inputStream.provide(input,signal,()=>confirmNormalLiveInputDelivery(input,worker,original,port));
   }});
-  return {source,port};
+  return {source,port,readUnderstanding:async(ticket,client,owned)=>{
+   verify();if(!origin||!binding||this.#unknown||byRef(owned.metadata)!==slotKey)invalid();
+   const original=takeNormalUnderstandingRead(ticket,client,owned,this.#attempt,origin.scope);
+   const guard=()=>{verify();original.check();if(!origin||origin.signal.aborted||this.#unknown)invalid();this.external(origin.check);};
+   try{guard();return await readNormalUnderstandingResponse(original.selection.request,{clock:()=>{guard();return this.#clock();},current:()=>{guard();return original.selection.binding;},
+    withRead:async body=>{await output.read(async tx=>{guard();const rows=await tx.read();guard();let active=true;
+     try{await body({rowCount:rows.length,read:async sequence=>{guard();if(!active||!Number.isSafeInteger(sequence)||sequence<1||sequence>rows.length)invalid();return cloneV1(rows[sequence-1]);}});guard();}
+     finally{active=false;rows.length=0;}
+    },guard);}
+   },origin.signal);}finally{original.finish();}
+  }};
  }
  // 원 FIRST의 core만 이 읽기 수송을 호출한다. 응답을 실행 lease로 승격하지 않는다.
  async #inspectFirst(handoff:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>,life:AbortSignal,verify:Guard){

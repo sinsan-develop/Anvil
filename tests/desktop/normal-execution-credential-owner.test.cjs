@@ -31,7 +31,7 @@ function model(f,mode='NORMAL',profile=null){
    if(profile&&v.operation.startsWith('NORMAL_SPOOL_'))data=profile.handle(v,child,metadata);
    else if(v.operation==='NORMAL_EXECUTION_BOOTSTRAP'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.scope,scope);metadata={slotId:id(3),receiptRef:ref(4),origin:row.origin,scope,expiresAt,caHash:contentHash(config.ca)};data=metadata;}
    else if(v.operation==='NORMAL_EXECUTION_RENEW'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.previous,metadata);assert.ok(Date.parse(metadata.expiresAt)<=f.dependencies.now());expiresAt=new Date(f.dependencies.now()+5000).toISOString();metadata={...metadata,slotId:id(11),receiptRef:ref(12),expiresAt};data=mode==='RENEW_UNKNOWN'?{...metadata,caHash:'b'.repeat(64)}:metadata;}
-   else if(v.operation==='NORMAL_EXECUTION_CALL'){assert.equal(v.payload.attemptId,row.attemptId);assert.equal(v.payload.slotId,metadata.slotId);const r=v.payload.request;reply=Buffer.from(canonicalJson(v.payload.kind==='PREPARE'?{path:r.path,query:r.query,auth:'A'.repeat(20),challengeRef:ref(5),requestId:id(6),expiresAt}:respond?respond(r,v.payload.body):mode==='PAIR'?typedReply(r):mode==='MAX'?{value:'x'.repeat(2812587-12)}:{commands:[]}));offset=0;data=chunk();}
+   else if(v.operation==='NORMAL_EXECUTION_CALL'){assert.equal(v.payload.attemptId,row.attemptId);assert.equal(v.payload.slotId,metadata.slotId);const r=v.payload.request;reply=Buffer.from(canonicalJson(v.payload.kind==='PREPARE'?{path:r.path,query:r.query,auth:r.path.endsWith('/understanding-response-read')?Buffer.from(canonicalJson({fixture:'original read proof'})).toString('base64url'):'A'.repeat(20),challengeRef:ref(5),requestId:id(6),expiresAt}:respond?respond(r,v.payload.body):mode==='PAIR'?typedReply(r):mode==='MAX'?{value:'x'.repeat(2812587-12)}:{commands:[]}));offset=0;data=chunk();}
    else if(v.operation==='NORMAL_EXECUTION_READ'){assert.equal(v.payload.handle,id(7));assert.equal(v.payload.offset,offset);data=chunk();}
    else throw Error('UNEXPECTED_NORMAL_OPERATION');
    child.stdout.emit('data',Buffer.from(canonicalJson({schemaVersion:1,purpose:'DESKTOP_TRUST_KEY_RESULT_V1',requestId:v.requestId,sequence:v.sequence,rootIdentity:mode==='ROOT'?'OTHER_ROOT':'TEST_ONLY_ROOT',data})+'\n'));done();
@@ -571,4 +571,52 @@ test('ACK 결과 불명은 원 cursor를 유지하고 같은 poller 재호출로
  assert.equal(x.seen.events.length,5);assert.equal(x.seen.wires,1);assert.equal(x.seen.permits,1);
  const before=x.m.calls.length;assert.equal((await poller.run(x.signal)).state,'UNKNOWN');await assert.rejects(poller.renew(x.signal),/UNKNOWN/);
  assert.equal(x.m.calls.length,before);x.source.dispose();
+});
+
+
+for(const mode of ['OK','NO_REQUEST','WRONG_ATTEMPT','CLOSE_UNKNOWN','CANCELLED'])test('FN09 원 등록 GET→private output read→정상 host close '+mode,async()=>{
+ const q=await outputProfile(),x=await pollingFixture(q.profile,true,true);q.bind(x);
+ const {wire:unused,...input}=x.input;input.timeoutMs=2000;
+ let n=0,closed=0;
+ const sdk={expiresAt:x.clock()+4000,check:scope=>({scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000}),classify:()=> 'ORDINARY',close:async()=>{},
+  async create(request,prompt){await prompt[Symbol.asyncIterator]().next();const sid=request.plannedSid;return{[Symbol.asyncIterator](){return{async next(){
+   const i=n++;if(i===0)return{done:false,value:{type:'system',subtype:'init',uuid:'init',session_id:sid,apiKeySource:'none',claude_code_version:'2.1.224',cwd:'fixture',tools:[],mcp_servers:[],model:'fixture',permissionMode:'default',slash_commands:[],output_style:'fixture',skills:[],plugins:[]}};
+   if(i===1)return{done:false,value:{type:'assistant',uuid:'answer',session_id:sid,parent_tool_use_id:null,message:{content:[{type:'text',text:'선택된 이해 근거'}]}}};
+   return{done:true,value:undefined};
+  }}}};}};
+ try{
+  const worker=x.source.createWorkerStartPolling(x.pair,input,sdk);assert.equal(x.m.calls.filter(v=>v.payload.request?.path?.endsWith('/understanding-response-read')).length,0);
+  const start=await worker.run(x.signal);assert.equal(start.state,'LIMIT_REACHED');
+  for(let i=0;i<50&&(q.state.holds.size||n<3);i++)await new Promise(r=>setImmediate(r));
+  const rows=[...q.local.files].filter(([p])=>path.basename(p).startsWith('sdk-session-output.')&&p.endsWith('.json')).sort(([a],[b])=>a.localeCompare(b)).map(([,f])=>JSON.parse(f.bytes));
+  assert.deepEqual(rows.map(r=>r.snapshot.state),['OUTPUT_PENDING_SESSION','SESSION_INIT_CONFIRMED','SESSION_OUTPUT']);
+  const hash=v=>contentHash(canonicalJson(v)),stamp=new Date(x.clock()).toISOString(),end=new Date(x.clock()+3000).toISOString();
+  const request={schemaVersion:1,requestId:id(777),attemptId:mode==='WRONG_ATTEMPT'?id(778):x.f.stored().attemptId,
+   selection:{scope:rows[0].snapshot.scope,initConfirmationRef:rows[1].ref,tailRef:rows[2].ref,firstSequence:3,lastSequence:3},
+   binding:{scope:rows[0].snapshot.scope,mode:'CONTEXT_REVIEW',bundleRef:ref(780),subjectBindingRef:ref(781),basisRefs:[ref(782)],requiredPartRefs:[ref(782)],receivedPartRefs:[ref(782)],checkedAt:stamp,expiresAt:end}};
+  const {executionTarget}=await import('../../apps/server/modules/executions/execution-proof.ts');
+  x.m.respond(r=>{
+   assert.equal(r.method,'GET');assert.ok(r.path.endsWith('/understanding-response-read'));
+   if(mode==='NO_REQUEST')return {code:'NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE'};
+   const requestRef={...ref(777),contentHash:hash(request)},receipt={kind:'NORMAL_UNDERSTANDING_READ_ACQUIRED',target:executionTarget('GET',r.path,[],null),packetHash:hash({fixture:'original read proof'}),challengeRef:ref(5),slotRef:ref(4),requestRef,observedAt:stamp,expiresAt:end};
+   return{transport:'NORMAL_PROTECTED',proofResultRef:{...ref(783),contentHash:hash(receipt)},receipt,requestRef,request,cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
+  });
+  const handle=q.profile.handle;q.profile.handle=(v,...rest)=>{if(v.operation==='NORMAL_SPOOL_CLOSE'&&!v.payload.reservation){closed++;if(mode==='CLOSE_UNKNOWN')return{state:'UNKNOWN'};}return handle(v,...rest);};
+  const before=x.m.calls.length,files=canonicalJson([...q.local.files].map(([p,f])=>[p,f.bytes.toString('base64')])),a=new AbortController();if(mode==='CANCELLED')a.abort();
+  const concurrent=[],phases=new Set();
+  if(mode==='OK')x.m.onFrame(v=>{
+   const phase=v.operation==='NORMAL_SPOOL_PROFILE_STATE'?'PRIVATE_READ':v.payload.request?.path?.endsWith('/understanding-response-read')?v.payload.kind:null;
+   if(!phase||phases.has(phase))return;phases.add(phase);
+   concurrent.push(assert.rejects(worker.readUnderstanding(a.signal)),assert.rejects(worker.run(a.signal)),assert.rejects(worker.renew(a.signal)));
+  });
+  if(mode==='OK'){
+   const result=await worker.readUnderstanding(a.signal);assert.equal(result.parts[0].text,'선택된 이해 근거');assert.equal(result.attribution,'SESSION_ONLY');assert.equal(result.executionAuthorized,false);assert.equal(closed,1);await Promise.all(concurrent);assert.deepEqual([...phases],['PREPARE','REQUEST','PRIVATE_READ']);
+   assert.equal(/session_id|plannedSid|private|cwd/.test(JSON.stringify(result)),false);
+   const count=x.m.calls.length;await assert.rejects(worker.readUnderstanding(a.signal));assert.equal(x.m.calls.slice(count).filter(v=>v.operation.startsWith('NORMAL_SPOOL_')).length,0);
+  }else{await assert.rejects(worker.readUnderstanding(a.signal));const count=x.m.calls.length;await assert.rejects(worker.readUnderstanding(a.signal));assert.equal(x.m.calls.length,count);}
+  const calls=x.m.calls.slice(before);assert.equal(calls.filter(v=>v.payload.request?.method==='POST'||['NORMAL_SPOOL_ALLOCATE','NORMAL_SPOOL_RESERVE','NORMAL_SPOOL_SETTLE'].includes(v.operation)).length,0);
+  if(['NO_REQUEST','WRONG_ATTEMPT','CANCELLED'].includes(mode))assert.equal(calls.filter(v=>v.operation.startsWith('NORMAL_SPOOL_')).length,0);
+  assert.equal(canonicalJson([...q.local.files].map(([p,f])=>[p,f.bytes.toString('base64')])),files);
+  assert.equal(x.f.owner.isBusy(),false);assert.equal(x.f.timers(),0);
+ }finally{x.source.dispose();fixtures.setFiles(undefined);}
 });

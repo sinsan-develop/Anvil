@@ -122,6 +122,7 @@ export class NormalOwnedCredentialPort {
   const allowed=r.method==='GET'&&(suffix==='/commands'||suffix==='/understanding-response-read'||parts.length===5&&parts[1]==='commands'&&uuidV1(parts[2])&&parts[3]==='materials'&&uuidV1(parts[4]))||
    r.method==='POST'&&(suffix==='/observations'||parts.length===4&&parts[1]==='understanding-response-read'&&uuidV1(parts[2])&&parts[3]==='result'||parts.length===4&&parts[1]==='commands'&&uuidV1(parts[2])&&parts[3]==='permit');
   if(!allowed||parts[1]==='understanding-response-read'&&r.query!==''||r.method==='GET'&&r.body!==null||r.method==='POST'&&(r.body===null||r.query!==''))fail();
+  const responseLimit=parts[1]==='understanding-response-read'?2097152:limit;
   const bytes=Buffer.from(r.body??'','utf8');if(bytes.length>2097152)fail();
   try{return await c.operation(signal,Math.min(Date.parse(m.expiresAt),Date.parse(r.expiresAt)),async send=>{
    const header={attemptId:c.config.attemptId,slotId:m.slotId,kind,request:{...r,body:null},bodyLength:bytes.length,bodyHash:digest(bytes),bodyIsNull:r.body===null};
@@ -140,7 +141,7 @@ export class NormalOwnedCredentialPort {
    const buffers:Buffer[]=[];let offset=0,handle:string|undefined,hash:string|undefined,total:number|undefined,wireExpiry:string|undefined;
    try{while(true){
     if(!recordV1(reply,['handle','offset','total','hash','expiresAt','bytes','done'])||!uuidV1(reply.handle)||reply.offset!==offset||
-     !Number.isSafeInteger(reply.total)||reply.total<1||reply.total>limit||typeof reply.hash!=='string'||!/^[a-f0-9]{64}$/.test(reply.hash)||
+     !Number.isSafeInteger(reply.total)||reply.total<1||reply.total>responseLimit||typeof reply.hash!=='string'||!/^[a-f0-9]{64}$/.test(reply.hash)||
      !isoV1(reply.expiresAt)||Date.parse(reply.expiresAt)>Date.parse(m.expiresAt)||Date.parse(reply.expiresAt)<=c.now()||
      typeof reply.bytes!=='string'||!/^[A-Za-z0-9_-]+$/.test(reply.bytes)||typeof reply.done!=='boolean')fail();
     if(handle!==undefined&&(reply.handle!==handle||reply.hash!==hash||reply.total!==total||reply.expiresAt!==wireExpiry))fail();

@@ -22191,3 +22191,11 @@ developer_primary 단일 작성·동결. 신규 normal-understanding-response-so
 독립 최초 I1은 공통 경로 확장이 합성 실행의 발급·원장 재확인에 들어가는 문제였다. 유효 서명 RED faa3cb 뒤 합성 검증·원장 reader의 원 경계에서 거절하도록 수정했다. M1의 실제 Fastify preHandler는 RAM inject로 확인했고 제품 성공 handler는 추가하지 않았다. 최종 독립 C0/I0/M0. 담당 직접·인접 68통과·실패/건너뜀0(c88b4b). Main 직접·인접 53통과·실패/건너뜀0(395c63), 루트 타입 37599b exit0, diff·동결 일치. C#은 소스 정적 검사만 했다.
 
 다음은 동일 owner의 private 읽기·정상 종결과 일회 원 결과 봉인을 실제 호출선에 연결한 뒤, 보호 조회 요청·거래 nonce와 영수증·불변 보관·미적용 SQL 및 최초 선택 화면을 연결하는 것이다. 실제 수송·DB·권한·키·서비스·SSH·Agent 실행 없음. 롤백은 이 문서, 제품6·시험6과 기록의 역적용이다.
+
+#### FN09 등록 수송 S2 — 원 등록 GET과 같은 worker의 보호 읽기
+
+기준 b0c78d03, developer_primary 단일 작성 후 독립 C0/I0/M0. 같은 owned credential의 PREPARE/GET 영수증에서 검산한 요청만 단회 ticket으로 만들고 동일 client·slot·attempt에서 소비한다. 기존 private 읽기·재판독과 원 host 정상 close까지 확인한 뒤 고정 범위의 텍스트를 반환한다. 기존 검산 본문을 공유하고 런타임 빌더에 정확 한 경로만 추가했다. 같은 worker 동시 read/run/renew, 교차 요청·취소·close 불명은 가시 결과0이다. 새 두 목적의 원 응답 2MiB를 JSON 파싱 전에 확인한다.
+
+원 빌더 허용목록 RED 93f377→RAM GREEN 6690df, raw 한도 RED df3856→GREEN 99e8e9. 담당 최종 집중 5통과(2e6cc8), 직접·인접 26통과(99e8e9), 전체 owner 56통과(35dccf)는 마지막 raw 한도·불명 보완 전 범위다. Main 신규 경로의 원 owner RAM 5통과/실패·건너뜀0(ca76d8), 직접·인접 22통과(8427e9), 루트 타입735e58 exit0와 공백 검사 exit0. C#·실제 파일·SDK·DB·권한·키·서비스·SSH 실행 없음.
+
+실제 HUMAN 요청 발급·현재 원 근거·SQL/nonce/영수증·보호 보관·POST 원결과 결박 및 화면은 미완료다. 현재 미공급 503은 유지한다. S3는 알려진 요청 없음/거절과 불명 결과를 분리하고 이전 실패가 새 명시 요청에 미치는 상태를 검산해야 한다. 자동 재실행·순환 polling은 없다. 롤백은 이번 정확 9경로와 기록 변경분이다.
