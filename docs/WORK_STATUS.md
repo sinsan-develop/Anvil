@@ -21951,3 +21951,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 신규 진입 부재 RED `363d20` 후 직접13통과 `0f957a`, 인접 포함 31통과·실패/건너뜀0 `2210ae`, 좁은 타입 exit0 `5758e4`, 공백/LF exit0 `0848d8`. Main 원 지문과 diff 확인, 독립 C0/I0. 소스 SHA256 `F0FCEC46D19929C861A828A662216F2F1C8D69F0DEBD5EF5E91C4E4867E3A7E1`, 시험 SHA256 `8EB1194AC2465AF0958192077DA6B20BBD18587C6D2B1681290A74E275792337`.
 
 직접 합성에서 원 132 SQL·한글 3문서와 원 사본 소거까지 검증했다. 실제 Linux 설치본과 적재 graph, 실행 프로세스·승인 결박, PG 저장·재조회 미완료다. 기존 Windows 2파일 진단 응답 미확인. 다음 실행 준비는 고정 Node/npm과 정확 lock으로 격리 설치 증거를 먼저 수거하는 범위이며 132 SQL·0101 실제 효과와 분리한다. 실제 SSH·WSL·난수·DB·권한·서비스·Agent 실행0. 롤백은 위 두 파일과 작업 기록의 역적용이다.
+
+### IX01/FN03 격리 설치의 고정 명령과 종료 수거
+
+기준 `f3a1775c` clean. developer_primary가 [격리 설치 준비 코드](../scripts/qa-fn03-tc01-dependency-preparation.ts)와 [직접 합성시험](../tests/unit/FN03/tc01-dependency-preparation.test.ts)을 작성하고 작성권을 반환했다. 고정 Node/npm 지문·원 lock·빈 설정·전용 cache와 npm 설치 후보 한 개를 감독에 결박했다. 원 child 종결과 사후 검사까지 검산한다. 600초 및 합산 64KiB 상한과 실패·불명의 자원 보존을 적용한다.
+
+Main I1에서 설치 준비가 실행용 receipt를 선점하는 원인을 확인했다. 재현 RED `0bda15` 뒤 설치용 HOME·설정·cache를 정확한 별도 형제 경로로 옮겼고, 세 검산 시점마다 실행용 receipt·artifact 부재를 요구한다. 최종 직접15통과 및 인접 umask 1통과·실패/건너뜀0 `c0aff2`, 좁은 타입 exit0 `15383e`, 공백/LF exit0. Main 최종 지문 대조, 독립 I1 해소·잔여 C0/I0. 소스 SHA256 `DBEDAB6FE7467464B413844639E67B19259FEF75131AD416C50E6BF087F6A602`, 시험 SHA256 `E355DE36D49E621FE0C1645D287298157271441B4EF8D44CD7FF0B57702C0665`.
+
+현재 `--omit=dev` 후보는 런타임 설치용이다. lock에서 rolldown/Vite는 개발 의존이므로 실제 파일 그래프 수집에 별도 검산된 도구가 필요하다. 설치 권위·파일 manifest·실제 Linux 설치 증거를 발급하지 않았으며 실제 감독의 도구/checkout/원 child 공급이 남았다. Windows 2파일 한정 진단 응답 미확인, 실제 SSH·설치·DB·권한·서비스·Agent 실행0. 롤백은 위 신규 두 파일과 작업 기록의 역적용이다.
