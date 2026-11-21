@@ -2,9 +2,52 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {getEventListeners} from 'node:events';
 import {randomUUID} from 'node:crypto';
-import {canonicalJson} from '../../../contracts/canonical.ts';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {preparedExecution} from './normal-start-execution-fixture.ts';
 import {NormalProtectedPostClient} from '../../../apps/connector/runtime/normal-protected-post-client.ts';
+import {NormalProtectedGetClient} from '../../../apps/connector/runtime/normal-protected-get-client.ts';
+import {prepareNormalUnderstandingResult} from '../../../apps/connector/runtime/normal-owned-spool-profile.ts';
+import * as ownedBootstrap from '../../../apps/connector/runtime/normal-credential-bootstrap-client.ts';
+import {frameUnderstandingResult,NormalCredentialBootstrapClient,type NormalPreparedUnderstandingResult} from '../../../apps/connector/runtime/normal-credential-bootstrap-client.ts';
+
+test('canonical 큰 본문의 frame만 구성할 수 있고 정상 등록 port로 raw 목적 호출은 할 수 없다',async()=>{
+ const ref=()=>({id:randomUUID(),version:1,contentHash:'a'.repeat(64)});
+ const scope={projectId:randomUUID(),connectorId:randomUUID(),executionId:randomUUID(),executionGeneration:1,grantRef:ref(),credentialGeneration:1};
+ const attemptId=randomUUID(),slotId=randomUUID(),origin='https://synthetic.invalid',ca='SYNTHETIC_CA',now=Date.now();
+ const expiresAt=new Date(now+5000).toISOString(),signal=new AbortController().signal;
+ const metadata={slotId,receiptRef:ref(),origin,scope,expiresAt,caHash:contentHash(ca)};
+ const requestRef=ref(),acquisitionRef=ref(),path='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/understanding-response-read/'+requestRef.id+'/result';
+ const body=canonicalJson({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:{attribution:'SESSION_ONLY',projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,
+  requestRef,acquisitionRef,contextBundleRef:ref(),initConfirmationRef:ref(),tailRef:ref(),wholeConversationComplete:false,executionAuthorized:false,
+  ranges:Array.from({length:200},(_,i)=>({sequence:i+1,textBytes:200,outputRef:ref(),payloadDigest:contentHash('합성'+i),padding:'합성'.repeat(30)}))}});
+ const bodyHash=contentHash(body),proof={requestId:randomUUID(),method:'POST',path,queryHash:contentHash('{}'),bodyHash,grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,serverNonce:Buffer.alloc(32,3).toString('base64url')};
+ const auth=Buffer.from(canonicalJson({schemaVersion:1,challengeRef:ref(),proof,signature:Buffer.alloc(64,5).toString('base64url')})).toString('base64url');
+ const prepared:NormalPreparedUnderstandingResult={state:'NATIVE_DISCOVERY_RESULT_PREPARED',requestRef,acquisitionRef,preparedHash:contentHash('synthetic row'),expiresAt,auth};
+ const calls:string[]=[];
+ const host={async open(){
+  return {async close(){return {state:'CLOSED_CONFIRMED'};},async send(op:string){
+   calls.push(op);assert.equal(op,'NORMAL_EXECUTION_BOOTSTRAP');return metadata;
+  }};
+ }};
+ const owned=await new NormalCredentialBootstrapClient({attemptId,origin,ca,scope},{host,now:()=>now}).bootstrap(signal);
+ const options={origin,ca,scope,credentialExpiresAt:expiresAt},ports={protectedCredential:owned,now:()=>now};
+ const post=new NormalProtectedPostClient(options,ports),get=new NormalProtectedGetClient(options,ports);
+ const binding={requestRef,acquisitionRef,bodyHash};
+ const chunked=frameUnderstandingResult(attemptId,metadata,prepared,binding,Buffer.from(body));
+ assert.deepEqual(chunked,{kind:'CHUNKED',begin:{attemptId,slotId,kind:'UNDERSTANDING_RESULT_SEND',requestRef,acquisitionRef,preparedHash:prepared.preparedHash,auth,bodyLength:Buffer.byteLength(body),bodyHash},chunkSize:48000});
+ const directBody=canonicalJson({...JSON.parse(body),metadata:{...JSON.parse(body).metadata,ranges:[]}});
+ assert.equal(frameUnderstandingResult(attemptId,metadata,prepared,{...binding,bodyHash:contentHash(directBody)},Buffer.from(directBody)).kind,'DIRECT');
+ for(const candidate of [directBody,body]){
+  await assert.rejects(owned.prepare({method:'POST',path,query:'',body:candidate,expiresAt},signal),/NORMAL_OWNED_RESULT_UNAVAILABLE/);
+  await assert.rejects(owned.request({method:'POST',path,query:'',body:candidate,auth,expiresAt},signal),/NORMAL_OWNED_RESULT_UNAVAILABLE/);
+ }
+ assert.equal('holdUnderstandingResultTransmission' in ownedBootstrap,false);
+ assert.equal('sendUnderstandingResult' in owned,false);
+ assert.equal('sendUnderstandingResult' in post,false);
+ await assert.rejects(prepareNormalUnderstandingResult(prepared as any,get,post,owned,signal),/NORMAL_POST_RESULT_SEAL_INVALID/);
+ await assert.rejects(post.send(prepared as any,signal),/NORMAL_POST_PACKET_INVALID/);
+ assert.deepEqual(calls,['NORMAL_EXECUTION_BOOTSTRAP']);
+});
 function body(f:Awaited<ReturnType<typeof preparedExecution>>){return{envelopeHash:f.e.envelopeHash,localAttemptRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},
  sourceObservationRefs:[...new Map(f.e.context.sourceScopes.map((s:any)=>[canonicalJson(s.observationRef),s.observationRef])).values()],osOwnershipRef:f.binding.checks.osFence.evidenceRefs[0]};}
 test('POST는 서명 중 caller 본문 변경에도 최초 body/hash를 보존하고 축약 permit 원 ref를 받는다',async()=>{

@@ -150,9 +150,13 @@ export function createOwnedSpoolController(host: NormalOwnedHostFactory, attempt
        const received=await original.get.receiveUnderstandingDiscovery(readSignal);checkedClock();
        if(active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');
        if(received.kind==='NOT_ACQUIRED')return received;
-       const result=await sdkWorker.readUnderstandingDiscovery(received.ticket,original.get,owned,original.post);
+       const current=()=>{
+        checkedClock();checkClients(original);
+        if(active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');
+       };
+       const result=await sdkWorker.readUnderstandingDiscovery(received.ticket,original.get,owned,original.post,readSignal,current);
        try{
-        checkedClock();if(active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');
+        current();
         const preparation=await prepareNormalUnderstandingResult(result.seal,original.get,original.post,owned,readSignal);checkedClock();
         if(active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');
         return {kind:'DISCOVERY' as const,metadata:result.metadata,preparation};

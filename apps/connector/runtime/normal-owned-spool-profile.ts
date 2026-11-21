@@ -6,7 +6,7 @@ import {basename,resolve,isAbsolute} from 'node:path';
 import {isPromise,isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {cloneV1,refV1,recordV1,uuidV1,hashV1} from '../../../contracts/runtime/validation-v1.ts';
-import type {NormalOwnedHostFactory,NormalOwnedHostSession,NormalOwnedMetadata,HostCloseDisposition} from './normal-credential-bootstrap-client.ts';
+import {frameUnderstandingResult,readPreparedUnderstandingResult,type NormalOwnedHostFactory,type NormalOwnedHostSession,type NormalOwnedMetadata,type HostCloseDisposition,type NormalUnderstandingResultBinding,type NormalPreparedUnderstandingResult,type NormalUnderstandingResultSendOperation} from './normal-credential-bootstrap-client.ts';
 import {isOwnedSpoolPath,NormalStartFileStore,type NormalFilePorts,type NormalLocalScope,type ProfileJournalAccess} from './normal-start-file-store.ts';
 import {NormalStartIntake,type NormalStartStore} from './normal-start-intake.ts';
 import {NormalClaudeStartWire} from '../adapters/secondary/normal-start-wire.ts';
@@ -24,25 +24,32 @@ import type {NormalProtectedPostClient} from './normal-protected-post-client.ts'
 declare const resultSeal:unique symbol;
 export type NormalUnderstandingResultSeal=Readonly<{[resultSeal]:true}>;
 type DiscoveryReadResult={metadata:NormalUnderstandingDiscoveryProjection;seal:NormalUnderstandingResultSeal};
-const discoveryResults=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;post:NormalProtectedPostClient;metadata:NormalUnderstandingDiscoveryProjection;expiresAt:string;check:Guard;finish:Guard}>();
+type ClosedUnderstanding={transmit(body:Buffer,binding:NormalUnderstandingResultBinding,signal:AbortSignal):Promise<void>};
+const discoveryResults=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;post:NormalProtectedPostClient;metadata:NormalUnderstandingDiscoveryProjection;closed?:ClosedUnderstanding;check:Guard;finish:Guard}>();
 /** 발급 함수는 없다. 원 outputSource의 정상 read/close 뒤에만 등록한 인계를 한 번 소비한다. */
 function takeNormalUnderstandingResult(seal:NormalUnderstandingResultSeal,client:NormalProtectedGetClient,post:NormalProtectedPostClient,owned:NormalOwnedCredentialPort){
  const saved=discoveryResults.get(seal);if(!saved)invalid('NORMAL_POST_RESULT_SEAL_INVALID');discoveryResults.delete(seal);
  try{if(saved.client!==client||saved.post!==post||saved.owned!==owned)invalid('NORMAL_POST_RESULT_SEAL_INVALID');saved.check();return saved;}
  catch(error){saved.finish();throw error;}
 }
-/** 원 worker의 결과를 한 번만 목적 본문에 결박한다. 보호 signer 증명 미연결이며 외부 전송은 없다. */
+/** 물리 종료를 끝낸 원 신뢰 호스트의 결박만 비공개 단회 전송으로 이어진다. */
 export async function prepareNormalUnderstandingResult(seal:NormalUnderstandingResultSeal,client:NormalProtectedGetClient,post:NormalProtectedPostClient,owned:NormalOwnedCredentialPort,signal:AbortSignal){
- if(!(signal instanceof AbortSignal)||signal.aborted)invalid('NORMAL_POST_RESULT_SEAL_INVALID');
  const saved=takeNormalUnderstandingResult(seal,client,post,owned);let bytes:Buffer|undefined;
  try{
+  if(!(signal instanceof AbortSignal)||signal.aborted)invalid('NORMAL_POST_RESULT_SEAL_INVALID');
   saved.check();const m=saved.metadata,s=owned.metadata.scope;
   if(m.projectId!==s.projectId||m.executionId!==s.executionId||m.executionGeneration!==s.executionGeneration)invalid('NORMAL_POST_RESULT_SEAL_INVALID');
   bytes=Buffer.from(canonicalJson({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:m}),'utf8');
   if(bytes.length>2*1024*1024)invalid('NORMAL_POST_RESULT_SEAL_INVALID');
   const bodyHash=contentHash(bytes);
   saved.check();if(signal.aborted)invalid('NORMAL_POST_RESULT_SEAL_INVALID');
-  return Object.freeze({state:'SIGNING_UNAVAILABLE' as const,requestRef:Object.freeze(cloneV1(m.requestRef)),acquisitionRef:Object.freeze(cloneV1(m.acquisitionRef)),bodyHash,executionAuthorized:false as const,dispatchPerformed:false as const});
+  const binding={requestRef:cloneV1(m.requestRef),acquisitionRef:cloneV1(m.acquisitionRef),bodyHash};
+  const outcome={requestRef:Object.freeze(cloneV1(m.requestRef)),acquisitionRef:Object.freeze(cloneV1(m.acquisitionRef)),bodyHash,executionAuthorized:false as const,dispatchPerformed:false as const};
+  if(!saved.closed)return Object.freeze({state:'SIGNING_UNAVAILABLE' as const,...outcome});
+  await saved.closed.transmit(bytes,binding,signal);
+  saved.check();if(signal.aborted)invalid('NORMAL_POST_RESULT_SEAL_INVALID');
+  // 서버 영수증 계약이 조립될 때까지 전송 결과를 보관 성공으로 해석하지 않는다.
+  return Object.freeze({state:'TRANSMISSION_UNCONFIRMED' as const,...outcome});
  }finally{bytes?.fill(0);saved.finish();}
 }
 export function discardNormalUnderstandingResult(seal:NormalUnderstandingResultSeal){const saved=discoveryResults.get(seal);discoveryResults.delete(seal);saved?.finish();}
@@ -66,7 +73,7 @@ export type WorkerSdkPorts=Pick<NormalFirstSendSource,'expiresAt'|'create'|'clos
 type Hold=Awaited<ReturnType<OutputPorts['reserve']>>;
 type OutputTx=Parameters<OutputPorts['strictExclusive']>[1];
 type Handoff={reservation:string;challenge:string;scopeDigest:string;requestDigest:string};
-type PhaseControls={resume?:Handoff;readOnly?:boolean;closeReservation?:string;challenge?:string;understanding?:{requestRef:RuntimeRefV1;acquisitionRef:RuntimeRefV1;bodyHash:string};guard:()=>void};
+type PhaseControls={resume?:Handoff;readOnly?:boolean;closeReservation?:string;challenge?:string;understanding?:NormalUnderstandingResultBinding;resultDeadline?:number;closed?:ClosedUnderstanding;guard:()=>void};
 const outputBinders=new WeakMap<OutputPorts,(ticket:object)=>void>();
 const outputJournals=new WeakSet<ProfileJournalAccess>();
 type FirstSidBasis=Omit<Parameters<NormalFirstSendSource['check']>[0],'plannedSidDigest'>;
@@ -176,21 +183,103 @@ export class OwnedSpoolRuntime {
   if(this.#unknown||s.dead||this.#owner.aborted||s.signal.aborted||s!==this.#session||
      wall>=s.wall||performance.now()>=s.mono||slot!==s.scope)invalid();
  }
- async #bounded<T>(s:Session,run:()=>Promise<T>):Promise<T>{
-  this.#check(s);
+ async #bounded<T>(s:Session,run:()=>Promise<T>,physical=true):Promise<T>{
+  this.#check(s,physical);
   let reject!:(error:Error)=>void;
-  const lost=new Promise<never>((_,r)=>{reject=r;}),signals=[s.signal,this.#owner,s.invalidated];
+  const lost=new Promise<never>((_,r)=>{reject=r;}),signals=physical?[s.signal,this.#owner,s.invalidated]:[s.signal,this.#owner];
   void lost.catch(()=>{});
   const cancel=()=>{s.dead=true;reject(Error('NORMAL_SPOOL_UNKNOWN'));};
   const timer=setTimeout(cancel,Math.max(1,Math.min(s.wall-this.#clock(),s.mono-performance.now())));
   for(const signal of signals)signal.addEventListener('abort',cancel,{once:true});
-  try{this.#check(s);return await Promise.race([run(),lost]);}
+  try{this.#check(s,physical);return await Promise.race([run(),lost]);}
   finally{clearTimeout(timer);for(const signal of signals)signal.removeEventListener('abort',cancel);}
  }
  async #frame(s:Session,op:string,p:unknown){
   this.#check(s);if(s.sending||++s.frames>64)invalid();s.sending=true;
   try{const answer=await this.external(()=>Reflect.apply(s.send,s.host,[op,p]));this.#check(s);return answer;}
   catch(e){s.dead=true;throw e;}finally{s.sending=false;}
+ }
+ async #openUnderstanding(signal:AbortSignal,wall:number,mono:number,check:Guard,slot?:NormalOwnedMetadata){
+  const local=new AbortController(),combined=AbortSignal.any([signal,this.#owner,local.signal]);
+  const remaining=()=>Math.min(wall-this.#clock(),mono-performance.now());
+  const current=()=>{
+   check();if(combined.aborted||remaining()<=0||this.#host.open!==this.#open)invalid();
+  };
+  current();
+  let reject!:(error:Error)=>void,host:NormalOwnedHostSession|undefined,finished=false,kept=false,closing=false;
+  const cancelled=new Promise<never>((_,fail)=>{reject=fail;});
+  void cancelled.catch(()=>{});
+  const abort=()=>reject(Error('NORMAL_SPOOL_UNKNOWN'));
+  const closeLate=()=>{
+   if(closing||!host)return;
+   closing=true;const late=host;
+   try{void this.external(()=>late.close('OPERATION_UNKNOWN')).catch(()=>{});}catch{}
+  };
+  const timer=setTimeout(()=>local.abort(),Math.max(1,remaining()));
+  combined.addEventListener('abort',abort,{once:true});
+  try{
+   current();
+   const opening=Promise.resolve(this.external(()=>Reflect.apply(this.#open,this.#host,slot?[combined,cloneV1(slot)]:[combined])))
+    .then(opened=>{host=opened;if(finished&&!kept)closeLate();return opened;});
+   const opened=await Promise.race([opening,cancelled]);
+   current();kept=true;return opened;
+  }finally{
+   finished=true;clearTimeout(timer);combined.removeEventListener('abort',abort);
+   if(!kept){local.abort();closeLate();}
+  }
+ }
+ /** The closure created after the original physical close is the only caller. */
+ async #transmitUnderstanding(slot:NormalOwnedMetadata,proof:NormalPreparedUnderstandingResult,binding:NormalUnderstandingResultBinding,body:Buffer,signal:AbortSignal,check:Guard,wall:number,mono:number){
+  check();
+  const framed=frameUnderstandingResult(this.#attempt,slot,proof,binding,body);
+  const release=await this.#enterTurn(true,signal);
+  let host:NormalOwnedHostSession|undefined,s:Session|undefined,close:NormalOwnedHostSession['close']|undefined,opened=false,success=false;
+  try{
+   check();
+   if(this.#als.getStore()||this.#session||this.#opening||signal.aborted||this.#host.open!==this.#open)invalid();
+   this.#opening=true;opened=true;
+   host=await this.#openUnderstanding(signal,wall,mono,check,slot);
+   close=host.close;
+   const physical=host,current=host.current,invalidated=host.invalidated,send=host.sendUnderstandingResult;
+   if(typeof current!=='function'||isProxy(current)||!(invalidated instanceof AbortSignal)||typeof send!=='function'||isProxy(send))invalid();
+   const session:Session={host,current,invalidated,send:host.send,scope:byRef(slot),writer:'NORMAL_EXECUTION',slot,signal,wall,mono,
+    frames:0,sending:false,borrowed:false,dead:false,profile:'',allocation:'',path:'',stamp:''};
+   s=session;this.#session=session;
+   const frame=async(op:NormalUnderstandingResultSendOperation,p:unknown)=>{
+    check();if(physical.sendUnderstandingResult!==send||++session.frames>64||Buffer.byteLength(canonicalJson(p))>64500)invalid();
+    const reply=await this.#bounded(session,()=>this.external(()=>Reflect.apply(send,physical,[op,p])));
+    this.#check(session);check();if(physical.sendUnderstandingResult!==send)invalid();
+    return reply;
+   };
+   if(framed.kind==='DIRECT')await frame('NORMAL_EXECUTION_UNDERSTANDING_RESULT_SEND',framed.payload);
+   else{
+    const start=await frame('NORMAL_EXECUTION_BEGIN',framed.begin);
+    if(!recordV1(start,['handle'])||!uuidV1(start.handle))invalid();
+    for(let offset=0;offset<body.length;offset+=framed.chunkSize){
+     const part=body.subarray(offset,offset+framed.chunkSize);
+     const ack=await frame('NORMAL_EXECUTION_WRITE',{handle:start.handle,offset,bytes:part.toString('base64url')});
+     if(!recordV1(ack,['handle','offset'])||ack.handle!==start.handle||ack.offset!==offset+part.length)invalid();
+    }
+    await frame('NORMAL_EXECUTION_EXECUTE',{handle:start.handle});
+   }
+   success=true;
+  }finally{
+   if(host){
+    try{
+     const physical=host;
+     if(physical.close!==close)invalid();
+     const closing=this.external(()=>Reflect.apply(close!,physical,[success?'HOST_REQUEST_VALIDATED':'OPERATION_UNKNOWN']));
+     void closing.catch(()=>{});
+     const result=success&&s?await this.#bounded(s,()=>closing,false):await closing;
+     if(result?.state!=='CLOSED_CONFIRMED'||physical.close!==close)success=false;
+     if(success&&s){this.#check(s,false);check();}
+    }catch{success=false;}
+   }
+   if(s){s.dead=true;this.#session=undefined;}
+   if(opened)this.#opening=false;
+   release();
+   if(opened&&!success){this.#unknown=true;invalid();}
+  }
  }
  // Channel.operation supplies its captured credential metadata only for a protected HTTP request.
  credentialHost():NormalOwnedHostFactory{
@@ -241,12 +330,17 @@ export class OwnedSpoolRuntime {
   if(this.#unknown||this.#session||this.#opening||this.#owner.aborted||signal.aborted||this.#host.open!==this.#open)invalid('NORMAL_OWNED_BUSY');
   this.#opening=true;
   let host:NormalOwnedHostSession|undefined,s:Session|undefined,success=false,openingStarted=false;
+  let closePhysical:NormalOwnedHostSession['close']|undefined,prepared:NormalPreparedUnderstandingResult|undefined;
   try{
    const slot=writer==='NORMAL_EXECUTION'?this.external(this.#slot):null;
    if(writer==='NORMAL_EXECUTION'&&!slot)invalid('NORMAL_SPOOL_UNSUPPORTED');
-   const now=this.#clock(),wall=Math.min(now+10000,slot?Date.parse(slot.expiresAt):Infinity),mono=performance.now()+wall-now;
+   const now=this.#clock(),wall=Math.min(now+10000,slot?Date.parse(slot.expiresAt):Infinity,phase?.resultDeadline??Infinity),mono=performance.now()+wall-now;
    if(wall<=now||this.#owner.aborted||signal.aborted)invalid();
-   openingStarted=true;host=await this.external(()=>Reflect.apply(this.#open,this.#host,[signal]));
+   openingStarted=true;
+   host=phase?.understanding?await this.#openUnderstanding(signal,wall,mono,phase.guard,slot!):await this.external(()=>Reflect.apply(this.#open,this.#host,[signal]));
+   closePhysical=host.close;
+   const purposeSend=phase?.understanding?host.sendUnderstandingResult:undefined;
+   const prepare=typeof purposeSend==='function'?host.prepareUnderstandingResult:undefined;
    const current=host.current,invalidated=host.invalidated;if(typeof current!=='function'||isProxy(current)||!(invalidated instanceof AbortSignal))invalid();
    s={host,current,invalidated,send:host.send,scope:byRef(slot),writer,slot,signal,wall,mono,frames:0,sending:false,borrowed:false,dead:false,profile:'',allocation:'',path:'',stamp:''};
    this.#session=s;const auth=this.#auth(s);
@@ -280,12 +374,49 @@ export class OwnedSpoolRuntime {
     if(!recordV1(closed,['state','understanding'])||closed.state!=='CLOSED_CONFIRMED')invalid();
     const proof=closed.understanding;
     if(!recordV1(proof,['state','requestRef','acquisitionRef','bodyHash'])||proof.state!=='NATIVE_METADATA_CLOSED'||byRef(proof.requestRef)!==byRef(phase.understanding.requestRef)||byRef(proof.acquisitionRef)!==byRef(phase.understanding.acquisitionRef)||proof.bodyHash!==phase.understanding.bodyHash)invalid();
+    if(prepare!==undefined){
+     if(!slot||typeof prepare!=='function'||isProxy(prepare)||isProxy(purposeSend)||host.prepareUnderstandingResult!==prepare||host.sendUnderstandingResult!==purposeSend||host.close!==closePhysical||s.sending||++s.frames>64)invalid();
+     phase.guard();
+     const binding=phase.understanding;
+     const payload={attemptId:this.#attempt,slotId:slot.slotId,...cloneV1(binding)};
+     const answer=await this.#bounded(s,()=>this.external(()=>Reflect.apply(prepare,host!,[payload])));
+     this.#check(s);phase.guard();
+     if(host.prepareUnderstandingResult!==prepare||host.sendUnderstandingResult!==purposeSend||host.close!==closePhysical)invalid();
+     prepared=readPreparedUnderstandingResult(answer,binding,slot,this.#clock(),s.wall);
+     const expiry=Date.parse(prepared.expiresAt);
+     s.mono=Math.min(s.mono,performance.now()+expiry-this.#clock());s.wall=expiry;
+    }
    }else if(!recordV1(closed,['state'])||closed.state!=='CLOSED_CONFIRMED')invalid();
    success=true;if(denied)throw capacity;return result!;
   }finally{
    if(host){
-    try{const physical=host;const closed=await this.external(()=>physical.close(success?'HOST_REQUEST_VALIDATED':'OPERATION_UNKNOWN'));if(closed?.state!=='CLOSED_CONFIRMED')success=false;
-     if(success&&s)this.#check(s,false);
+    try{
+     const physical=host;
+     const close=()=>this.external(()=>Reflect.apply(closePhysical!,physical,[success?'HOST_REQUEST_VALIDATED':'OPERATION_UNKNOWN']));
+     if(physical.close!==closePhysical)invalid();
+     if(prepared&&s&&phase&&success){
+      try{this.#check(s,false);phase.guard();}catch{success=false;}
+     }
+     const closing=close();
+     void closing.catch(()=>{});
+     const closed=prepared&&s&&success?await this.#bounded(s,()=>closing,false):await closing;
+     if(closed?.state!=='CLOSED_CONFIRMED'||physical.close!==closePhysical)success=false;
+     if(success&&s){
+      this.#check(s,false);
+      if(prepared&&phase){
+       const {wall,mono,scope,slot}=s,proof=prepared,binding=phase.understanding;
+       if(!slot||!binding)invalid();
+       const check=()=>{
+        phase.guard();
+        if(signal.aborted||this.#owner.aborted||this.#unknown||this.#clock()>=wall||performance.now()>=mono||byRef(this.external(this.#slot))!==scope)invalid();
+       };
+       check();
+       phase.closed={transmit:(body,exact,requestSignal)=>{
+        if(requestSignal.aborted||byRef(exact)!==byRef(binding))invalid();
+        return this.#transmitUnderstanding(slot,proof,binding,body,AbortSignal.any([signal,requestSignal]),check,wall,mono);
+       }};
+      }
+     }
     }catch{success=false;}
    }
    if(s)s.dead=true;this.#session=undefined;this.#opening=false;
@@ -460,7 +591,7 @@ export class OwnedSpoolRuntime {
    catch(error){unknown=true;throw error;}finally{reading=false;completed.resolve();}
   }};
  }
- outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>;readUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,post:NormalProtectedPostClient):Promise<DiscoveryReadResult>}{
+ outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>;readUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,post:NormalProtectedPostClient,readSignal:AbortSignal,current:Guard):Promise<DiscoveryReadResult>}{
   const saved=this.#workers.get(worker),slot=this.external(this.#slot);
   if(this.#binding||!saved||saved.journal!==journal||!slot||!refV1(slot.receiptRef)||this.#owner.aborted||signal.aborted||
    isProxy(sdk)||!recordV1(sdk,['expiresAt','check','create','close','classify'])||
@@ -528,23 +659,25 @@ export class OwnedSpoolRuntime {
    try{await body({rowCount:rows.length,read:async sequence=>{guard();if(!active||!Number.isSafeInteger(sequence)||sequence<1||sequence>rows.length)invalid();return cloneV1(rows[sequence-1]);}});guard();}
    finally{active=false;rows.length=0;}
   },guard);};
-  return {source,port,readUnderstandingDiscovery:async(ticket,client,owned,post)=>{
+  return {source,port,readUnderstandingDiscovery:async(ticket,client,owned,post,readSignal,current)=>{
    verify();if(!origin||!binding||this.#unknown||byRef(owned.metadata)!==slotKey)invalid();
    const original=takeNormalUnderstandingDiscovery(ticket,client,owned,origin.scope,origin.start);
-   const guard=()=>{verify();original.check();if(!origin||origin.signal.aborted||this.#unknown)invalid();this.external(origin.check);};
+   const scopeSignal=AbortSignal.any([readSignal,origin.signal]);
+   const guard=()=>{this.external(current);verify();original.check();if(!origin||scopeSignal.aborted||this.#unknown)invalid();this.external(origin.check);};
+   const phase:PhaseControls={readOnly:true,resultDeadline:Date.parse(original.binding.expiresAt),guard};
    let issued=false;
    try{
-    guard();const metadata=await readNormalUnderstandingDiscovery(original.binding,{clock:()=>{guard();return this.#clock();},current:()=>{guard();return original.binding;},withRead:body=>withRead(body,guard)},origin.signal);guard();
+    guard();const metadata=await readNormalUnderstandingDiscovery(original.binding,{clock:()=>{guard();return this.#clock();},current:()=>{guard();return original.binding;},withRead:body=>withRead(body,guard)},scopeSignal);guard();
     // TS projection은 비교값일 뿐이다. 같은 native 원 GET pickup과 독립 파일 읽기/close가
     // 동일 body를 확인하고 원 host까지 정상 닫힌 뒤에만 local seal을 발급한다.
     const body=Buffer.from(canonicalJson({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata}));
     try{
      if(body.length>2*1024*1024)invalid();
-     const understanding={requestRef:cloneV1(metadata.requestRef),acquisitionRef:cloneV1(metadata.acquisitionRef),bodyHash:contentHash(body)};
-     await this.#root('NORMAL_EXECUTION',origin.signal,async()=>{guard();},{readOnly:true,understanding,guard});guard();
+     phase.understanding={requestRef:cloneV1(metadata.requestRef),acquisitionRef:cloneV1(metadata.acquisitionRef),bodyHash:contentHash(body)};
+     await this.#root('NORMAL_EXECUTION',scopeSignal,async()=>{guard();},phase);guard();
     }finally{body.fill(0);}
     const seal=Object.freeze({}) as NormalUnderstandingResultSeal;
-    discoveryResults.set(seal,{client,owned,post,metadata,expiresAt:original.binding.expiresAt,check:guard,finish:original.finish});issued=true;
+    discoveryResults.set(seal,{client,owned,post,metadata,closed:phase.closed,check:guard,finish:original.finish});issued=true;
     return {metadata,seal};
    }finally{if(!issued)original.finish();}
   },readUnderstanding:async(ticket,client,owned)=>{

@@ -2,12 +2,17 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),Module=require('node:module'),path=require('node:path');
 const {canonicalJson,contentHash}=require('../../apps/desktop/src/runtime-catalogue-profile.cjs');
 // 기존 실제 등록 owner/host-client fixture만 메모리 재사용. 기존 test는 등록/실행하지 않는다.
-let fixtures;
+let fixtures,syntheticResultOwner;
 test.before(async()=>{
  const file=require.resolve('./desktop-trust-registration.test.cjs'),m=new Module(file,module),before=[];
  const register=()=>{};register.before=fn=>before.push(fn);const original=Module.createRequire(file);
  m.filename=file;m.paths=module.paths;m.require=name=>name==='node:test'?register:original(name);
- m._compile(fs.readFileSync(file,'utf8')+'\nmodule.exports={liveNativeOwner,enrollmentFixture,setFiles(io){profileRamFiles=io;},get runtime(){return nativeRuntime;},get other(){return nativeRuntimeOther;}};',file);
+ m.withResultOwner=(factory,...args)=>{
+  const owner=syntheticResultOwner;
+  return m.exports.runtime.createOwnedSpoolController(owner?owner(factory):factory,...args);
+ };
+ const source=fs.readFileSync(file,'utf8').replace("name==='./native-proof-runtime.cjs'?nativeRuntime:original(name)","name==='./native-proof-runtime.cjs'?Object.freeze({...nativeRuntime,createOwnedSpoolController:module.withResultOwner}):original(name)");
+ m._compile(source+'\nmodule.exports={liveNativeOwner,enrollmentFixture,setFiles(io){profileRamFiles=io;},get runtime(){return nativeRuntime;},get other(){return nativeRuntimeOther;}};',file);
  assert.equal(before.length,1);await before[0]();fixtures=m.exports;
 });
 const id=n=>'ce140001-0000-4000-8000-'+String(n).padStart(12,'0'),ref=n=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
@@ -621,8 +626,42 @@ for(const mode of ['OK','NO_REQUEST','WRONG_ATTEMPT','CLOSE_UNKNOWN','CANCELLED'
  }finally{x.source.dispose();fixtures.setFiles(undefined);}
 });
 
-for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START','CONTEXT','REGISTRATION','CLOSE_UNKNOWN','NATIVE_BODY','NATIVE_EXTRA','NATIVE_UNKNOWN','NATIVE_HOST_CLOSE','CANCELLED'])test('FN09 DISCOVERY 실제 registered owner→GET→원 close 메타 '+mode,async()=>{
+for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START','CONTEXT','REGISTRATION','CLOSE_UNKNOWN','NATIVE_BODY','NATIVE_EXTRA','NATIVE_UNKNOWN','NATIVE_HOST_CLOSE','CANCELLED','SEND_ONCE','SEND_PROVIDER_MISSING','SEND_NEXT_PROVIDER_MISSING','SEND_PARENT_UNKNOWN','SEND_CANCEL_CLOSE','SEND_EXPIRE_CLOSE','SEND_BAD_PROOF','SEND_LOST','SEND_LATE_PARENT_OPEN','SEND_LATE_NEXT_OPEN'])test('FN09 DISCOVERY 실제 registered owner→GET→원 close 메타 '+mode,async()=>{
+ const sendMode=mode.startsWith('SEND_'),steps=[];
+ let stagePrepare,stageSend,finishClose,releaseLate,firstSlot;
+ let lateClosed=0;
+ if(sendMode)syntheticResultOwner=factory=>({async open(signal,slot){
+  const native=await factory.open(signal,slot),isNext=steps.includes('physical-close');
+  if(slot){
+   if(isNext)assert.deepEqual(slot,firstSlot);
+   else firstSlot=structuredClone(slot);
+  }
+  let isParent=false;
+  const host={...native,
+   async prepareUnderstandingResult(binding){isParent=true;steps.push('prepare');return stagePrepare(binding);},
+   async close(disposition){
+    const result=await native.close(disposition);
+    if(!isParent)return result;
+    assert.equal(result.state,'CLOSED_CONFIRMED');
+    if(disposition!=='HOST_REQUEST_VALIDATED')return result;
+    steps.push('physical-close');
+    finishClose();
+    return mode==='SEND_PARENT_UNKNOWN'?{state:'UNKNOWN'}:result;
+   },
+   ...((mode==='SEND_PROVIDER_MISSING'||mode==='SEND_NEXT_PROVIDER_MISSING'&&isNext)?{}:{async sendUnderstandingResult(operation,payload){
+    assert.equal(operation,'NORMAL_EXECUTION_UNDERSTANDING_RESULT_SEND');
+    steps.push('send');return stageSend(payload);
+   }})
+  };
+  if(slot&&(mode==='SEND_LATE_PARENT_OPEN'&&!isNext||mode==='SEND_LATE_NEXT_OPEN'&&isNext)){
+   return new Promise(resolve=>{releaseLate=()=>resolve({...host,close(disposition){
+    assert.equal(disposition,'OPERATION_UNKNOWN');lateClosed++;return host.close(disposition);
+   }});});
+  }
+  return host;
+ }});
  const q=await outputProfile(),x=await pollingFixture(q.profile,true,true);q.bind(x);
+ syntheticResultOwner=undefined;
  const {wire:unused,...input}=x.input;input.timeoutMs=2000;
  let n=0,closed=0;
  const sdk={expiresAt:x.clock()+4000,check:scope=>({scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000}),classify:()=> 'ORDINARY',close:async()=>{},
@@ -637,7 +676,7 @@ for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START',
   for(let i=0;i<50&&(q.state.holds.size||n<3);i++)await new Promise(r=>setImmediate(r));
   const rows=[...q.local.files].filter(([p])=>path.basename(p).startsWith('sdk-session-output.')&&p.endsWith('.json')).sort(([a],[b])=>a.localeCompare(b)).map(([,f])=>JSON.parse(f.bytes));
   assert.deepEqual(rows.map(r=>r.snapshot.state),['OUTPUT_PENDING_SESSION','SESSION_INIT_CONFIRMED','SESSION_OUTPUT']);
-  const hash=v=>contentHash(canonicalJson(v)),stamp=new Date(x.clock()).toISOString(),end=new Date(x.clock()+3000).toISOString();
+  const hash=v=>contentHash(canonicalJson(v)),stamp=new Date(x.clock()).toISOString(),end=new Date(x.clock()+(mode.startsWith('SEND_LATE_')?1200:3000)).toISOString();
   const {executionTarget}=await import('../../apps/server/modules/executions/execution-proof.ts');
   const scope=x.m.config.scope,base='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/understanding-response-read',target=executionTarget('GET',base,[],null);
   const frame={schemaVersion:1,challengeRef:ref(5),proof:{requestId:id(6),...target,grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,serverNonce:Buffer.alloc(32,1).toString('base64url')},signature:Buffer.alloc(64,2).toString('base64url')};
@@ -658,9 +697,29 @@ for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START',
   // RAM native 대역. 입력 해시를 그대로 권위로 반사하지 않고 이 fixture의 원 행/획득으로 별도 기대값을 구성한다.
   let acquisitionRef;
   const expectedMetadata=()=>({attribution:'SESSION_ONLY',projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,requestRef:ref(777),acquisitionRef,contextBundleRef:context.contextBundleRef,initConfirmationRef:rows[1].ref,tailRef:rows[2].ref,ranges:[{outputRef:rows[2].ref,sequence:3,payloadDigest:rows[2].snapshot.payloadDigest,textBlocks:1,textBytes:Buffer.byteLength('선택된 이해 근거')}],wholeConversationComplete:false,executionAuthorized:false});
+  const expectedBody=()=>canonicalJson({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:expectedMetadata()});
+  let exactPrepared;
+  stagePrepare=binding=>{
+   assert.deepEqual(steps,['metadata-close','prepare']);
+   const expected=expectedMetadata(),body=expectedBody();
+   assert.deepEqual(binding,{attemptId:x.f.stored().attemptId,slotId:id(3),requestRef:expected.requestRef,acquisitionRef:expected.acquisitionRef,bodyHash:contentHash(body)});
+   const resultTarget=executionTarget('POST',base+'/'+expected.requestRef.id+'/result',[],body);
+   const proof={requestId:id(812),...resultTarget,grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,serverNonce:Buffer.alloc(32,3).toString('base64url')};
+   if(mode==='SEND_BAD_PROOF')proof.credentialGeneration++;
+   const auth=Buffer.from(canonicalJson({schemaVersion:1,challengeRef:ref(813),proof,signature:Buffer.alloc(64,4).toString('base64url')})).toString('base64url');
+   exactPrepared={attemptId:binding.attemptId,slotId:binding.slotId,requestRef:binding.requestRef,acquisitionRef:binding.acquisitionRef,preparedHash:contentHash('protected synthetic row'),auth};
+   return {state:'NATIVE_DISCOVERY_RESULT_PREPARED',requestRef:binding.requestRef,acquisitionRef:binding.acquisitionRef,preparedHash:exactPrepared.preparedHash,auth,expiresAt:end};
+  };
+  stageSend=payload=>{
+   assert.deepEqual(steps,['metadata-close','prepare','physical-close','send']);
+   assert.deepEqual(payload,{...exactPrepared,body:expectedBody()});
+   if(mode==='SEND_LOST')throw Error('SYNTHETIC_REPLY_LOST');
+   return {unverified:'fixture'};
+  };
   const handle=q.profile.handle;q.profile.handle=(v,...rest)=>{
    if(v.operation==='NORMAL_SPOOL_CLOSE'&&!v.payload.reservation){closed++;if(mode==='CLOSE_UNKNOWN')return{state:'UNKNOWN'};
     if(v.payload.understanding){
+     steps.push('metadata-close');
      if(mode==='NATIVE_HOST_CLOSE'){const child=rest[0];child.stdin.end=(_a,_b,done)=>{queueMicrotask(()=>{child.stdout.emit('end');child.emit('close',1);done?.();});};}
      const request=v.payload.understanding,expected=expectedMetadata(),bodyHash=hash({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:expected});
      assert.deepEqual(request,{requestRef:expected.requestRef,acquisitionRef:expected.acquisitionRef,bodyHash});
@@ -670,6 +729,10 @@ for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START',
    }return handle(v,...rest);
   };
   const before=x.m.calls.length,files=canonicalJson([...q.local.files].map(([p,f])=>[p,f.bytes.toString('base64')])),a=new AbortController();if(mode==='CANCELLED')a.abort();
+  finishClose=()=>{
+   if(mode==='SEND_CANCEL_CLOSE')a.abort();
+   if(mode==='SEND_EXPIRE_CLOSE')x.advance(Date.parse(end)-x.clock());
+  };
   const concurrent=[],phases=new Set();
   if(mode==='OK')x.m.onFrame(v=>{
    const phase=v.operation==='NORMAL_SPOOL_PROFILE_STATE'?'PRIVATE_READ':v.payload.request?.path?.endsWith('/understanding-response-read')?v.payload.kind:null;
@@ -680,19 +743,31 @@ for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START',
    const result=await worker.discoverUnderstanding(a.signal);assert.deepEqual(result,{kind:'NOT_ACQUIRED',status:mode==='GET_DENIED'?'DENIED':mode});
    assert.equal(closed,0);assert.equal(x.m.calls.slice(before).filter(v=>v.operation.startsWith('NORMAL_SPOOL_')).length,0);terminal=false;
   }
-  if(['OK','NONE','DENIED','EXPIRED','GET_DENIED'].includes(mode)){
+  if(['OK','NONE','DENIED','EXPIRED','GET_DENIED','SEND_ONCE','SEND_PROVIDER_MISSING'].includes(mode)){
    const result=await worker.discoverUnderstanding(a.signal);assert.equal(result.kind,'DISCOVERY');assert.equal(result.metadata.ranges.length,1);assert.equal(result.metadata.ranges[0].sequence,3);assert.deepEqual(result.metadata.initConfirmationRef,rows[1].ref);assert.deepEqual(result.metadata.tailRef,rows[2].ref);assert.equal(closed,2);await Promise.all(concurrent);
    const body=canonicalJson({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:result.metadata});
-   assert.deepEqual(result.preparation,{state:'SIGNING_UNAVAILABLE',requestRef:result.metadata.requestRef,acquisitionRef:result.metadata.acquisitionRef,bodyHash:executionTarget('POST',base+'/'+result.metadata.requestRef.id+'/result',[],body).bodyHash,executionAuthorized:false,dispatchPerformed:false});
+   assert.deepEqual(result.preparation,{state:mode==='SEND_ONCE'?'TRANSMISSION_UNCONFIRMED':'SIGNING_UNAVAILABLE',requestRef:result.metadata.requestRef,acquisitionRef:result.metadata.acquisitionRef,bodyHash:executionTarget('POST',base+'/'+result.metadata.requestRef.id+'/result',[],body).bodyHash,executionAuthorized:false,dispatchPerformed:false});
    assert.equal(Object.isFrozen(result.preparation),true);assert.equal(Object.isFrozen(result.preparation.acquisitionRef),true);
    const beforeForged=x.m.calls.length;
    await assert.rejects(x.pair.post.send(result.preparation,a.signal),/NORMAL_POST_PACKET_INVALID/);
+   assert.equal('sendUnderstandingResult' in x.pair.post,false);
    assert.equal(x.m.calls.length,beforeForged);
    if(mode==='OK')assert.deepEqual([...phases],['PREPARE','REQUEST','PRIVATE_READ']);
    assert.equal(/선택된|session_id|plannedSid|private|cwd|textHash/.test(JSON.stringify(result)),false);
    const count=x.m.calls.length;await assert.rejects(worker.discoverUnderstanding(a.signal));assert.equal(x.m.calls.slice(count).filter(v=>v.operation.startsWith('NORMAL_SPOOL_')).length,0);
   }else{await assert.rejects(worker.discoverUnderstanding(a.signal));const count=x.m.calls.length;await assert.rejects(worker.discoverUnderstanding(a.signal));assert.equal(x.m.calls.length,count);}
+  if(mode.startsWith('SEND_LATE_')){
+   assert.equal(typeof releaseLate,'function');
+   releaseLate();
+   await new Promise(resolve=>setImmediate(resolve));
+   assert.equal(lateClosed,1);
+  }
   const calls=x.m.calls.slice(before);assert.equal(calls.filter(v=>v.payload.request?.method==='POST'||['NORMAL_SPOOL_ALLOCATE','NORMAL_SPOOL_RESERVE','NORMAL_SPOOL_SETTLE'].includes(v.operation)).length,0);
+  if(sendMode)assert.equal(steps.filter(step=>step==='send').length,['SEND_ONCE','SEND_LOST'].includes(mode)?1:0);
+  if(mode==='SEND_PROVIDER_MISSING')assert.deepEqual(steps,['metadata-close']);
+  if(mode==='SEND_NEXT_PROVIDER_MISSING')assert.deepEqual(steps,['metadata-close','prepare','physical-close']);
+  if(mode==='SEND_LATE_PARENT_OPEN')assert.deepEqual(steps,[]);
+  if(mode==='SEND_LATE_NEXT_OPEN')assert.deepEqual(steps,['metadata-close','prepare','physical-close']);
   if(['PACKET','START','CONTEXT','REGISTRATION','CANCELLED'].includes(mode))assert.equal(calls.filter(v=>v.operation.startsWith('NORMAL_SPOOL_')).length,0);
   assert.equal(canonicalJson([...q.local.files].map(([p,f])=>[p,f.bytes.toString('base64')])),files);
   assert.equal(x.f.owner.isBusy(),false);assert.equal(x.f.timers(),0);
