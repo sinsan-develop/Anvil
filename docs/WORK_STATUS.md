@@ -21637,3 +21637,11 @@ PMO에서는 현행 전용 IPv4·비충돌 근거와 별도 등록 절차가 확
 developer_primary가 시험 한 파일만 변경했다. DETACH-only는 LINK/소스 변경을, LINK-only는 DETACH/소스 변경을 실제 서버 권한 함수에서 각각 403으로 거절하는지 검산한다. 기존 문법 전면 거절 단언을 서로의 권한을 만들어 내지 않는 검산으로 바로잡았다. 제품·SQL·기존 게이트 변경0. 담당 직접·인접 46통과/type·공백 종료0, Main 동일 4 시험 파일 `node --test` 46통과·실패/건너뜀0 `f9533a`. Git LF SHA256 64D57D13A7D1AB37FCD879C74BA7237DA20D53710C40DE08D1C49679B2DD0AB3. 이전 기준 실패와 초기 좁은 타입 명령 설정 오류 이력은 보존한다. 롤백은 시험과 이번 기록의 변경분이다.
 
 Main은 0101의 직접 표 접근과 두 목적 함수·기존 dispatcher의 제한 EXEC, RLS/SECURITY DEFINER/search_path, 원 query/XID와 동일 q 분기·롤백/불명 계약을 소스에서 대조했다. 기존 pglast 독립 재검산 `b8009b`에서 외부 158 SQL 문장·PL 본문 14개를 파싱했다. 다른 16 PL 본문은 실제 catalog 타입 또는 기존 디코더 제약으로 원형 미검증이다. 이 검토는 PG15 설치·실권한·지연 역할 발화·동시성·COMMIT 검증을 대체하지 않는다. 실제 DB/권한·키·서비스·Agent·실파일/SSH 실행0. A안 소스 범위의 검수를 기록하되 전체 FN03·IX01·Stage B 완료/병합으로 승격하지 않는다.
+
+### 2026-11-21 FN03 관리 원문 격리 검증 절차 소스
+
+기준 `874a69dc` clean·기존 원격 추적 차이0. developer_primary 단일 작성·반환. 신규 FN03 integration 절차와 대응 합성 시험 두 파일. 정상 명령→원 COMMIT 수거→별도 원장 관측과 O/E/C/A/U/R 계상 확인→보호 exact read→동일 명령 replay→정책 거절의 원 ROLLBACK 및 원장 불변을 검산한다. 연결·환경 읽기·프로세스·실행 진입점은 없으며 독립 원장 관측과 거래 종결 증거는 향후 격리 감독이 공급해야 한다.
+
+초기 fixture 구성 실패3건은 자료 정정 후 해소했다. 담당 직접7 통과·좁은 strict 타입·공백 검사 종료0. Main `node --test tests/unit/FN03/source-content-management-origin-journey.test.ts` 직접7통과·실패/건너뜀0, 공백검사 종료0 `a99fb0`. 소스 AE1067A73424B901859355063C11CCA6CAB6A8EB95475441AE7D6949AACBD971, 시험 7808CDFE32ABD5C70E57F52E8AF2CE419BCBEFAC979BAE4879D503CE4B084869. 실DB·권한·키·서비스·WSL/SSH·Agent 접근/실행0, 실제 COMMIT·제약 발화 미검증. 롤백은 신규 두 파일과 이 기록을 역적용한다.
+
+독립 확인은 원 IX01 130행의 순서·Git 바이트·SHA 불일치0과 0100/0101 추가 원본을 확인했다. 다음은 과거 130행 계약을 보존하면서 132행과 0101 설치 역할의 정확 수명을 별도 격리 경로에 연결하는 작업이다. 0101 자체 거래 안의 역할 생성·임시 membership 회수를 중복 수행하지 않는다. 운영 자원과 묶인 실행안을 승인받기 전 실제 실행을 시작하지 않는다.
