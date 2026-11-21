@@ -100,3 +100,5 @@ Main은 이 접점의 소스와 현재 운영 근거를 고정한 뒤, §1 세 �
 `4c44da5d`에서 설치 전용 보호 plan/approval의 원문 검산과 별도 `-dependency-consumption`의 신규 배타 intent를 연결했다. plan은 exact14, approval은 exact9, intent는 exact7 canonical JSON(LF 없음)이며 원 생성 fd와 동일한 readback만 허용한다. 기존 TC01 및 준비용 경로와 분리한다.
 
 [Linux 적재 진입점](../../scripts/qa-fn03-tc01-dependency-linux-entry.ts)은 `4c44da5d`의 원 소스 13파일을 고정한다. 실행 12파일에는 외부 패키지가 없고 기존 loader를 재사용한다. 최초 Node·bootstrap·pre-hook 신원과 같은 HEAD의 원바이트는 외부의 `verifyBootstrap`·`takeSourceFiles`가 제공해야 한다. 실제 보호 승인 원본 및 OS 포트 공급도 남았다. 위 소스 연결만으로는 실제 CLI나 실행안을 확정할 수 없다. §1의 기존 승인 및 실행 제외 범위는 그대로 적용한다.
+
+[최초 메모리 적재 소스](../../scripts/qa-fn03-tc01-dependency-bootstrap-start.mjs)는 Node 내장만 먼저 적재하고 고정 Linux 진입점과 pre-hook 3종을 검산한 바이트에서 적재한다. 실제 환경의 한정 stdin과 원 승인/시스템 포트는 아직 공급되지 않는다. 최초 Node/시작 프로그램의 검증과 고정 호출, 외부 원 프로세스 수거도 남았다.

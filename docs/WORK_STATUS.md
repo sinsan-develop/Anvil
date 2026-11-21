@@ -22055,3 +22055,11 @@ Main 입력 변조 RED `9587cc`와 독립 초기 callback의 기대값 변경 RE
 신규 진입점 부재 RED `931248` 뒤 Main 직접·인접 31통과/실패·건너뜀0(`6611f6`), 담당자 좁은 타입 exit0(`86f568`), 독립 C0/I0. 소스 SHA256 `59DBEAB165BDD9EC333D084C5E03C86658634E6418198FE780A9E099BA8B9EA0`, 시험 SHA256 `18DE9209E29503D5FE93D5CCB9F145166F8934721D008692EC0F107773D46828`.
 
 실제 최초 Node·bootstrap·pre-hook의 원 적재 신원 공급, 승인 원본·Linux 시스템 포트의 공급, Windows SSH 전송과 원 프로세스 수거는 남았다. 실제 WSL·SSH·설치·DB·권한·서비스·Agent 실행은 0이다. 롤백은 신규 두 파일과 기록의 역적용이다.
+
+### IX01 설치 전용 최초 메모리 적재
+
+기준 `01f13077` clean. developer_primary가 [최초 적재 소스](../scripts/qa-fn03-tc01-dependency-bootstrap-start.mjs)와 [합성시험](../tests/unit/FN03/tc01-dependency-bootstrap-start.test.ts)을 작성했다. Node 내장 모듈만 먼저 적재하고, 고정 Linux 진입점과 pre-hook 3개를 원 바이트의 SHA·길이·허용 import와 대조한다. 실제 Node hook이 네 모듈 모두를 적재했는지 확인한 뒤 첫 hook을 회수하고 기존 승인 검산·설치 준비에 연결한다. 훅 해제 불명은 UNKNOWN으로 반환하고 재호출하지 않는다.
+
+신규 모듈 부재 RED `69ed53` 뒤 Main 직접·인접 35통과/실패·건너뜀0(`2f02c5`), 담당자 제한 `--allowJs --checkJs --strict --noEmit` exit0(`ba757d`), 독립 C0/I0/M0. 소스 SHA256 `4485ECEB758BC9F4A2C5B29797AE89A9B31265F64D3E0BEA69C3988DAEE7B45D`, 시험 SHA256 `8632620667A55B238B7154B68DAE52C25BF44511860D0B7DBDA7E165E30F8758`.
+
+검증은 기존 Git 바이트와 로컬 메모리용 Node hook을 사용했다. 실제 stdin의 승인·시스템 포트 생산자, 최초 Node/시작 프로그램의 고정 실행과 외부 원 프로세스 수거는 남았다. WSL·SSH·보호 원장 쓰기·설치·DB·권한·서비스·Agent 실행0. 롤백은 신규 두 파일과 기록의 역적용이다.
