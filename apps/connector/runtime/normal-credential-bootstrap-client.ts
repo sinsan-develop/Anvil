@@ -1,11 +1,23 @@
 import {createHash} from 'node:crypto';
 import {canonicalJson,parseWireJson} from '../../../contracts/canonical.ts';
-import {cloneV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
+import {cloneV1,hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 
 /** 새 private owned-host protocol. 일반 token getter/임의 bytes signer가 아니다. */
 export interface NormalOwnedScope {projectId:string;connectorId:string;executionId:string;executionGeneration:number;grantRef:Ref;credentialGeneration:number}
 export type HostCloseDisposition = 'HOST_REQUEST_VALIDATED' | 'OPERATION_UNKNOWN';
-export interface NormalOwnedHostSession {readonly invalidated?:AbortSignal;current?():void;inspectionBudget?():{frames:number;remainingMs:number};send(operation:string,payload:unknown):Promise<unknown>;close(disposition:HostCloseDisposition):Promise<{state:string}>}
+export interface NormalUnderstandingResultBinding {requestRef:Ref;acquisitionRef:Ref;bodyHash:string}
+export interface NormalUnderstandingResultPrepare extends NormalUnderstandingResultBinding {attemptId:string;slotId:string}
+export interface NormalPreparedUnderstandingResult {state:'NATIVE_DISCOVERY_RESULT_PREPARED';requestRef:Ref;acquisitionRef:Ref;preparedHash:string;auth:string;expiresAt:string}
+export type NormalUnderstandingResultSendOperation='NORMAL_EXECUTION_UNDERSTANDING_RESULT_SEND'|'NORMAL_EXECUTION_BEGIN'|'NORMAL_EXECUTION_WRITE'|'NORMAL_EXECUTION_EXECUTE';
+export interface NormalOwnedHostSession {
+ readonly invalidated?:AbortSignal;
+ current?():void;
+ inspectionBudget?():{frames:number;remainingMs:number};
+ prepareUnderstandingResult?(binding:NormalUnderstandingResultPrepare):Promise<unknown>;
+ sendUnderstandingResult?(operation:NormalUnderstandingResultSendOperation,payload:unknown):Promise<unknown>;
+ send(operation:string,payload:unknown):Promise<unknown>;
+ close(disposition:HostCloseDisposition):Promise<{state:string}>;
+}
 export interface NormalOwnedHostFactory {open(signal:AbortSignal,request?:Readonly<NormalOwnedMetadata>):Promise<NormalOwnedHostSession>}
 export interface NormalOwnedMetadata {slotId:string;receiptRef:Ref;origin:string;scope:NormalOwnedScope;expiresAt:string;caHash:string}
 export interface NormalOwnedRequest {method:'GET'|'POST';path:string;query:string;body:string|null;auth:string|null;expiresAt:string}
@@ -17,6 +29,49 @@ const scopeValid=(s:any)=>recordV1(s,['projectId','connectorId','executionId','e
  ['projectId','connectorId','executionId'].every(k=>uuidV1(s[k]))&&refV1(s.grantRef)&&
  [s.executionGeneration,s.credentialGeneration].every(v=>Number.isSafeInteger(v)&&v>0);
 function fail(code='NORMAL_OWNED_INVALID'):never{throw Error(code);}
+function base64url(value:unknown,length?:number):value is string{
+ if(typeof value!=='string'||!/^[A-Za-z0-9_-]{1,8192}$/.test(value))return false;
+ const bytes=Buffer.from(value,'base64url');
+ return (length===undefined||bytes.length===length)&&bytes.toString('base64url')===value;
+}
+export function readPreparedUnderstandingResult(raw:unknown,binding:NormalUnderstandingResultBinding,slot:NormalOwnedMetadata,now:number,deadline:number):NormalPreparedUnderstandingResult{
+ if(!recordV1(raw,['state','requestRef','acquisitionRef','preparedHash','auth','expiresAt'])||
+    raw.state!=='NATIVE_DISCOVERY_RESULT_PREPARED'||!refV1(raw.requestRef)||!refV1(raw.acquisitionRef)||
+    !same(raw.requestRef,binding.requestRef)||!same(raw.acquisitionRef,binding.acquisitionRef)||!hashV1(raw.preparedHash)||
+    !base64url(raw.auth)||!isoV1(raw.expiresAt)||Date.parse(raw.expiresAt)<=now||
+    Date.parse(raw.expiresAt)>Math.min(deadline,Date.parse(slot.expiresAt)))fail('NORMAL_OWNED_RESULT_INVALID');
+ const wire=new TextDecoder('utf-8',{fatal:true}).decode(Buffer.from(raw.auth,'base64url'));
+ const frame=parseWireJson(wire);
+ const scope=slot.scope;
+ const path='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/understanding-response-read/'+binding.requestRef.id+'/result';
+ if(canonicalJson(frame)!==wire||!recordV1(frame,['schemaVersion','challengeRef','proof','signature'])||
+    frame.schemaVersion!==1||!refV1(frame.challengeRef)||frame.challengeRef.version!==1||!base64url(frame.signature,64)||
+    !recordV1(frame.proof,['requestId','method','path','queryHash','bodyHash','grantRef','credentialGeneration','serverNonce'])||
+    !uuidV1(frame.proof.requestId)||frame.proof.method!=='POST'||frame.proof.path!==path||
+    frame.proof.queryHash!==digest(canonicalJson({}))||frame.proof.bodyHash!==binding.bodyHash||
+    !same(frame.proof.grantRef,scope.grantRef)||frame.proof.credentialGeneration!==scope.credentialGeneration||
+    !base64url(frame.proof.serverNonce,32))fail('NORMAL_OWNED_RESULT_INVALID');
+ return cloneV1(raw) as unknown as NormalPreparedUnderstandingResult;
+}
+/** Pure purpose framing. The protected host and the once-only handoff stay with the original spool owner. */
+export function frameUnderstandingResult(attemptId:string,slot:NormalOwnedMetadata,prepared:NormalPreparedUnderstandingResult,binding:NormalUnderstandingResultBinding,bytes:Buffer){
+ if(bytes.length+Buffer.byteLength(prepared.auth)>2097152||digest(bytes)!==binding.bodyHash)fail('NORMAL_OWNED_RESULT_INVALID');
+ const body=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+ const data=parseWireJson(body),scope=slot.scope;
+ if(!recordV1(data,['schemaVersion','kind','metadata'])||data.schemaVersion!==1||data.kind!=='DISCOVERY_METADATA'||
+    canonicalJson(data)!==body)fail('NORMAL_OWNED_RESULT_INVALID');
+ const value=data.metadata;
+ if(!recordV1(value,['attribution','projectId','executionId','executionGeneration','requestRef','acquisitionRef','contextBundleRef','initConfirmationRef','tailRef','ranges','wholeConversationComplete','executionAuthorized'])||
+    value.attribution!=='SESSION_ONLY'||value.projectId!==scope.projectId||value.executionId!==scope.executionId||
+    value.executionGeneration!==scope.executionGeneration||!same(value.requestRef,binding.requestRef)||!same(value.acquisitionRef,binding.acquisitionRef)||
+    value.wholeConversationComplete!==false||value.executionAuthorized!==false)fail('NORMAL_OWNED_RESULT_INVALID');
+ const {requestRef,acquisitionRef,preparedHash,auth}=prepared;
+ const target={attemptId,slotId:slot.slotId,requestRef,acquisitionRef,preparedHash,auth};
+ const direct={...target,body};
+ if(Buffer.byteLength(canonicalJson(direct))<=64000)return {kind:'DIRECT' as const,payload:direct};
+ const begin={...target,kind:'UNDERSTANDING_RESULT_SEND',bodyLength:bytes.length,bodyHash:binding.bodyHash};
+ return {kind:'CHUNKED' as const,begin,chunkSize};
+}
 function origin(v:string){let u:URL;try{u=new URL(v);}catch{return fail();}if(u.protocol!=='https:'||u.origin!==v||u.username||u.password)return fail();return v;}
 type Config={attemptId:string;origin:string;ca:string;scope:NormalOwnedScope};
 type Ports={host:NormalOwnedHostFactory;now?:()=>number};

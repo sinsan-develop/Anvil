@@ -4,9 +4,29 @@ import {randomUUID} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {readNormalUnderstandingResponse} from '../../../apps/server/modules/executions/normal-understanding-response-source.ts';
 import {NormalSdkSessionOutput} from '../../../apps/connector/runtime/normal-sdk-session-output.ts';
+import {readPreparedUnderstandingResult} from '../../../apps/connector/runtime/normal-credential-bootstrap-client.ts';
 
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
 const ref=():{id:string;version:number;contentHash:string}=>({id:randomUUID(),version:1,contentHash:'a'.repeat(64)});
+test('DISCOVERY 준비는 원 ref·POST·본문·등록 세대와 가장 이른 기한에 결박한다',()=>{
+ const at=Date.parse('2026-11-22T00:00:00.000Z'),end=at+5000;
+ const binding={requestRef:ref(),acquisitionRef:ref(),bodyHash:hash({kind:'DISCOVERY_METADATA'})};
+ const scope={projectId:randomUUID(),connectorId:randomUUID(),executionId:randomUUID(),executionGeneration:1,grantRef:ref(),credentialGeneration:2};
+ const slot={scope,slotId:randomUUID(),receiptRef:ref(),origin:'https://synthetic.invalid',expiresAt:new Date(end+1).toISOString(),caHash:hash('SYNTHETIC')};
+ const path='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/understanding-response-read/'+binding.requestRef.id+'/result';
+ const proof={requestId:randomUUID(),method:'POST',path,queryHash:hash({}),bodyHash:binding.bodyHash,grantRef:scope.grantRef,credentialGeneration:2,serverNonce:Buffer.alloc(32,3).toString('base64url')};
+ const signed={schemaVersion:1,challengeRef:ref(),proof,signature:Buffer.alloc(64,4).toString('base64url')};
+ const encode=(packet:unknown)=>Buffer.from(canonicalJson(packet)).toString('base64url');
+ const raw={state:'NATIVE_DISCOVERY_RESULT_PREPARED',requestRef:binding.requestRef,acquisitionRef:binding.acquisitionRef,preparedHash:hash('row'),auth:encode(signed),expiresAt:new Date(end).toISOString()};
+ assert.deepEqual(readPreparedUnderstandingResult(raw,binding,slot,at,end),raw);
+ for(const change of [{requestRef:ref()},{acquisitionRef:ref()},{preparedHash:'wrong'},{expiresAt:slot.expiresAt},{expiresAt:new Date(at).toISOString()},{raw:true},{auth:raw.auth+'='}]){
+  assert.throws(()=>readPreparedUnderstandingResult({...raw,...change},binding,slot,at,end));
+ }
+ for(const change of [{method:'GET'},{path:path+'/late'},{queryHash:hash({wrong:true})},{bodyHash:hash('other')},{grantRef:ref()},{credentialGeneration:1},{serverNonce:'ABC'}]){
+  const auth=encode({...signed,proof:{...proof,...change}});
+  assert.throws(()=>readPreparedUnderstandingResult({...raw,auth},binding,slot,at,end));
+ }
+});
 function fixture(){
  const at=Date.parse('2026-11-22T00:00:00.000Z'),sid='private-session-not-for-output';
  const scope={projectId:randomUUID(),executionId:randomUUID(),generation:1,registrationRef:ref(),profileRef:ref(),assignmentRef:ref(),slotRef:ref(),grantRef:ref(),startReadyRef:ref(),dispatchAttemptRef:ref(),sessionBindingRef:ref(),plannedSidDigest:hash(sid)};
