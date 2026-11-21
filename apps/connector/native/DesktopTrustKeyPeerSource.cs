@@ -35,6 +35,7 @@ internal sealed class DesktopTrustKeyFileHashes {
 // 행위 결과를 숨긴 verified bool 대신 실제 관측 값만 반환한다. 기본 구현은 entry가 명시 호출할 때만 IO한다.
 internal abstract class DesktopTrustKeyKernel {
  internal abstract IntPtr Standard(int which);internal abstract uint FileType(IntPtr handle);internal abstract uint PipeFlags(IntPtr handle);internal abstract uint ServerPid(IntPtr handle);
+ internal virtual uint ParentPid(IntPtr process){throw DesktopTrustKeyParentBasisSource.Invalid();}
  internal abstract uint SelfPid();internal abstract IntPtr OpenProcess(uint pid);internal abstract DesktopTrustKeyProcessObservation Process(IntPtr handle);
  internal abstract IntPtr OpenFile(string path,bool directory);internal abstract DesktopTrustKeyFileObservation File(IntPtr handle);
  internal abstract DesktopTrustKeyFileHashes HashFile(IntPtr handle,bool asar,Action check);
@@ -44,7 +45,7 @@ internal abstract class DesktopTrustKeyKernel {
 internal sealed class DesktopTrustKeyPeerSource:IDisposable {
  readonly object gate=new object();readonly DesktopTrustKeyKernel kernel;readonly DesktopTrustKeyBudget budget;readonly List<IntPtr> handles=new List<IntPtr>();
  readonly List<Tuple<IntPtr,DesktopTrustKeyFileObservation>> files=new List<Tuple<IntPtr,DesktopTrustKeyFileObservation>>();
- IntPtr input,output,parent,self;DesktopTrustKeyProcessObservation parentInstance;bool invalid,disposeRequested,settled,releaseAttempted;int pending;TaskCompletionSource<bool> drain;
+ IntPtr input,output,parent,self,delegatingParent;DesktopTrustKeyProcessObservation parentInstance,delegatingInstance,ownInstance;bool understandingReader;bool invalid,disposeRequested,settled,releaseAttempted;int pending;TaskCompletionSource<bool> drain;
  DesktopTrustKeyParentBasisSource parentBasis;
  Stream read,write;internal string HelperHash{get;private set;}
  internal bool CleanupSettled{get{lock(gate){return settled;}}}
@@ -52,23 +53,47 @@ internal sealed class DesktopTrustKeyPeerSource:IDisposable {
  internal static DesktopTrustKeyPeerSource Open(DesktopTrustKeyParentBasisSource basis,DesktopTrustKeyKernel kernel,DesktopTrustKeyBudget clock){
   var lease=new DesktopTrustKeyPeerSource(kernel,clock);try{lease.Initialize(basis);return lease;}catch{lease.invalid=true;lease.Dispose();throw DesktopTrustKeyParentBasisSource.Invalid();}
  }
+ // 같은 installed helper의 목적 한정 pipe만 허용한다. 일반 Open의 부모 조건은 불변이다.
+ internal static DesktopTrustKeyPeerSource OpenUnderstandingReader(DesktopTrustKeyParentBasisSource basis,DesktopTrustKeyKernel kernel,DesktopTrustKeyBudget clock){
+  var lease=new DesktopTrustKeyPeerSource(kernel,clock);lease.understandingReader=true;try{lease.Initialize(basis);return lease;}catch{lease.invalid=true;lease.Dispose();throw DesktopTrustKeyParentBasisSource.Invalid();}
+ }
+ internal string UnderstandingReaderImage{get{Check();if(understandingReader)throw DesktopTrustKeyParentBasisSource.Invalid();return ownInstance.Image;}}
+ internal string UnderstandingChannelDigest{get{Check();if(understandingReader)throw DesktopTrustKeyParentBasisSource.Invalid();return DesktopTrustKeyHostSource.Hash(Encoding.UTF8.GetBytes(String.Join(":",ownInstance.Pid,ownInstance.Created,input.ToInt64(),output.ToInt64(),parentInstance.Pid,parentInstance.Created)));}}
+ internal long OriginalCreated{get{Check();return ownInstance.Created;}}
+ internal uint OriginalPid{get{Check();return ownInstance.Pid;}}
+ internal long AnvilCreated{get{Check();return parentInstance.Created;}}
+ internal uint AnvilPid{get{Check();return parentInstance.Pid;}}
+ internal void CheckUnderstandingDelegation(uint supervisorPid,long supervisorCreated,uint anvilPid,long anvilCreated){
+  Check();if(!understandingReader||delegatingInstance.Pid!=supervisorPid||delegatingInstance.Created!=supervisorCreated||parentInstance.Pid!=anvilPid||parentInstance.Created!=anvilCreated)throw DesktopTrustKeyParentBasisSource.Invalid();
+ }
  void Keep(IntPtr handle){if(handle==IntPtr.Zero||handle==new IntPtr(-1)||handles.Contains(handle))throw DesktopTrustKeyParentBasisSource.Invalid();handles.Add(handle);}
  uint ObservePipes(){budget.Check();if(kernel.Standard(-10)!=input||kernel.Standard(-11)!=output||kernel.FileType(input)!=3||kernel.FileType(output)!=3||kernel.PipeFlags(input)!=0||kernel.PipeFlags(output)!=0)throw DesktopTrustKeyParentBasisSource.Invalid();uint a=kernel.ServerPid(input),b=kernel.ServerPid(output);if(a==0||a!=b||a==kernel.SelfPid())throw DesktopTrustKeyParentBasisSource.Invalid();return a;}
  static bool Same(DesktopTrustKeyProcessObservation a,DesktopTrustKeyProcessObservation b){return a!=null&&b!=null&&a.Alive&&b.Alive&&a.Pid==b.Pid&&a.Created>0&&a.Created==b.Created&&String.Equals(a.Image,b.Image,StringComparison.OrdinalIgnoreCase);}
+ internal static bool UnderstandingChain(DesktopTrustKeyProcessObservation own,DesktopTrustKeyProcessObservation supervisor,DesktopTrustKeyProcessObservation anvil,uint actualParent,uint actualRoot){
+  return own!=null&&supervisor!=null&&anvil!=null&&own.Alive&&supervisor.Alive&&anvil.Alive&&own.Pid!=supervisor.Pid&&own.Pid!=anvil.Pid&&supervisor.Pid!=anvil.Pid&&actualParent==supervisor.Pid&&actualRoot==anvil.Pid&&anvil.Created>0&&anvil.Created<=supervisor.Created&&supervisor.Created<=own.Created&&String.Equals(supervisor.Image,own.Image,StringComparison.OrdinalIgnoreCase);
+ }
  static void PathShape(string path){if(path==null||path.Length>1024||!System.Text.RegularExpressions.Regex.IsMatch(path,@"\A[A-Za-z]:\\")||System.Text.RegularExpressions.Regex.IsMatch(path.Substring(2),"[<>:\"|?*\\x00-\\x1f]")||System.IO.Path.GetFullPath(path)!=path)throw DesktopTrustKeyParentBasisSource.Invalid();foreach(string part in path.Substring(3).Split('\\'))if(part.Length==0||part.EndsWith(".")||part.EndsWith(" "))throw DesktopTrustKeyParentBasisSource.Invalid();}
  IntPtr Retain(string path,bool directory){PathShape(path);var ancestry=new List<string>();string p=System.IO.Path.GetDirectoryName(path);while(p!=null){ancestry.Add(p);string next=System.IO.Path.GetDirectoryName(p);if(next==p)break;p=next;if(ancestry.Count>64)throw DesktopTrustKeyParentBasisSource.Invalid();}
   ancestry.Reverse();foreach(string dir in ancestry)RetainOne(dir,true);return RetainOne(path,directory);
  }
  IntPtr RetainOne(string path,bool directory){foreach(var item in files)if(String.Equals(item.Item2.Path,path,StringComparison.OrdinalIgnoreCase))return item.Item1;budget.Check();var handle=kernel.OpenFile(path,directory);Keep(handle);var info=kernel.File(handle);if(info==null||(info.Attributes&0x400)!=0||((info.Attributes&0x10)!=0)!=directory||!String.Equals(info.Path,path,StringComparison.OrdinalIgnoreCase)||String.IsNullOrEmpty(info.Identity)||!directory&&(info.Length<1||info.Length>1073741824))throw DesktopTrustKeyParentBasisSource.Invalid();files.Add(Tuple.Create(handle,info));budget.Check();return handle;}
  void Initialize(DesktopTrustKeyParentBasisSource basis){
-  if(basis==null||kernel==null||budget==null)throw DesktopTrustKeyParentBasisSource.Invalid();budget.Check();input=kernel.Standard(-10);output=kernel.Standard(-11);Keep(input);Keep(output);uint pid=ObservePipes();parent=kernel.OpenProcess(pid);Keep(parent);parentInstance=kernel.Process(parent);if(parentInstance==null||parentInstance.Pid!=pid||!parentInstance.Alive||parentInstance.Created<=0)throw DesktopTrustKeyParentBasisSource.Invalid();PathShape(parentInstance.Image);if(!String.Equals(System.IO.Path.GetFileName(parentInstance.Image),"Anvil.exe",StringComparison.OrdinalIgnoreCase))throw DesktopTrustKeyParentBasisSource.Invalid();
-  self=kernel.OpenProcess(kernel.SelfPid());Keep(self);var own=kernel.Process(self);if(own==null||!own.Alive||own.Pid!=kernel.SelfPid()||own.Created<=0)throw DesktopTrustKeyParentBasisSource.Invalid();PathShape(own.Image);
+  if(basis==null||kernel==null||budget==null)throw DesktopTrustKeyParentBasisSource.Invalid();budget.Check();input=kernel.Standard(-10);output=kernel.Standard(-11);Keep(input);Keep(output);uint pid=ObservePipes();
+  if(understandingReader){
+   delegatingParent=kernel.OpenProcess(pid);Keep(delegatingParent);delegatingInstance=kernel.Process(delegatingParent);
+   if(delegatingInstance==null||delegatingInstance.Pid!=pid||!delegatingInstance.Alive||delegatingInstance.Created<=0)throw DesktopTrustKeyParentBasisSource.Invalid();
+   // PID는 입력이 아닌 pipe의 kernel owner와 실제 process ancestry에서 얻는다.
+   pid=kernel.ParentPid(delegatingParent);if(pid==0||pid==delegatingInstance.Pid)throw DesktopTrustKeyParentBasisSource.Invalid();
+  }
+  parent=kernel.OpenProcess(pid);Keep(parent);parentInstance=kernel.Process(parent);if(parentInstance==null||parentInstance.Pid!=pid||!parentInstance.Alive||parentInstance.Created<=0)throw DesktopTrustKeyParentBasisSource.Invalid();PathShape(parentInstance.Image);if(!String.Equals(System.IO.Path.GetFileName(parentInstance.Image),"Anvil.exe",StringComparison.OrdinalIgnoreCase))throw DesktopTrustKeyParentBasisSource.Invalid();
+  self=kernel.OpenProcess(kernel.SelfPid());Keep(self);var own=kernel.Process(self);if(own==null||!own.Alive||own.Pid!=kernel.SelfPid()||own.Created<=0)throw DesktopTrustKeyParentBasisSource.Invalid();PathShape(own.Image);ownInstance=own;
+  if(understandingReader&&!UnderstandingChain(own,delegatingInstance,parentInstance,kernel.ParentPid(self),kernel.ParentPid(delegatingParent)))throw DesktopTrustKeyParentBasisSource.Invalid();
   var exe=Retain(parentInstance.Image,false);string asar=System.IO.Path.Combine(System.IO.Path.GetDirectoryName(parentInstance.Image),"resources","app.asar");var archive=Retain(asar,false);var helper=Retain(own.Image,false);
   long total=0;foreach(var file in files)if((file.Item2.Attributes&0x10)==0)total=checked(total+file.Item2.Length);if(total>4294967296L)throw DesktopTrustKeyParentBasisSource.Invalid();
   Check();var exeHash=kernel.HashFile(exe,false,Check);Check();var asarHash=kernel.HashFile(archive,true,Check);Check();var helperHash=kernel.HashFile(helper,false,Check);Check();
   if(exeHash.Whole!=basis.ParentExeHash||asarHash.Whole!=basis.ParentAsarHash||asarHash.Header!=basis.ParentHeaderHash||!System.Text.RegularExpressions.Regex.IsMatch(helperHash.Whole??"",@"\A[0-9a-f]{64}\z"))throw DesktopTrustKeyParentBasisSource.Invalid();HelperHash=helperHash.Whole;parentBasis=basis;
  }
- internal void Check(){if(invalid||disposeRequested)throw DesktopTrustKeyParentBasisSource.Invalid();try{budget.Check();if(ObservePipes()!=parentInstance.Pid||!Same(parentInstance,kernel.Process(parent)))throw DesktopTrustKeyParentBasisSource.Invalid();foreach(var item in files){var current=kernel.File(item.Item1);var before=item.Item2;if(current==null||current.Identity!=before.Identity||current.Length!=before.Length||current.Attributes!=before.Attributes||!String.Equals(current.Path,before.Path,StringComparison.OrdinalIgnoreCase))throw DesktopTrustKeyParentBasisSource.Invalid();}budget.Check();}catch{invalid=true;throw DesktopTrustKeyParentBasisSource.Invalid();}}
+ internal void Check(){if(invalid||disposeRequested)throw DesktopTrustKeyParentBasisSource.Invalid();try{budget.Check();if(ObservePipes()!=(understandingReader?delegatingInstance.Pid:parentInstance.Pid)||!Same(parentInstance,kernel.Process(parent))||understandingReader&&(!Same(delegatingInstance,kernel.Process(delegatingParent))||kernel.ParentPid(delegatingParent)!=parentInstance.Pid||kernel.ParentPid(self)!=delegatingInstance.Pid))throw DesktopTrustKeyParentBasisSource.Invalid();foreach(var item in files){var current=kernel.File(item.Item1);var before=item.Item2;if(current==null||current.Identity!=before.Identity||current.Length!=before.Length||current.Attributes!=before.Attributes||!String.Equals(current.Path,before.Path,StringComparison.OrdinalIgnoreCase))throw DesktopTrustKeyParentBasisSource.Invalid();}budget.Check();}catch{invalid=true;throw DesktopTrustKeyParentBasisSource.Invalid();}}
  internal void RequireWorkerParent(string exe,string asar,string header){Check();if(parentBasis==null||exe!=parentBasis.ParentExeHash||asar!=parentBasis.ParentAsarHash||header!=parentBasis.ParentHeaderHash)throw DesktopTrustKeyParentBasisSource.Invalid();}
  // 원 peer가 검산한 parent에서 고정 payload만 읽는다. caller path/raw handle은 받거나 반환하지 않는다.
  internal byte[] ReadPackagedWorker(string expectedHash,Action current){
@@ -106,6 +131,9 @@ internal sealed class WindowsDesktopTrustKeyKernel:DesktopTrustKeyKernel {
  internal override IntPtr Standard(int n){return GetStdHandle(n);}internal override uint FileType(IntPtr h){return GetFileType(h);}
  internal override uint PipeFlags(IntPtr h){uint flags;if(!GetNamedPipeInfo(h,out flags,IntPtr.Zero,IntPtr.Zero,IntPtr.Zero))throw Invalid();return flags;}
  internal override uint ServerPid(IntPtr h){uint pid;if(!GetNamedPipeServerProcessId(h,out pid)||pid==0)throw Invalid();return pid;}
+ [StructLayout(LayoutKind.Sequential)]struct ProcessBasicInformation{internal IntPtr Reserved1,Peb,Reserved2,Reserved3,Pid,Parent;}
+ [DllImport("ntdll.dll")]static extern int NtQueryInformationProcess(IntPtr process,int kind,out ProcessBasicInformation value,int length,out int returned);
+ internal override uint ParentPid(IntPtr process){ProcessBasicInformation value;int returned;if(NtQueryInformationProcess(process,0,out value,Marshal.SizeOf(typeof(ProcessBasicInformation)),out returned)!=0||returned!=Marshal.SizeOf(typeof(ProcessBasicInformation))||value.Parent.ToInt64()<=0||value.Parent.ToInt64()>UInt32.MaxValue)throw Invalid();return checked((uint)value.Parent.ToInt64());}
  internal override uint SelfPid(){return GetCurrentProcessId();}
  internal override IntPtr OpenProcess(uint pid){var value=OpenProcess(0x00101000,false,pid);if(value==IntPtr.Zero)throw Invalid();return value;}
  internal override DesktopTrustKeyProcessObservation Process(IntPtr h){FT created,exited,kernel,user;int length=1024;var image=new StringBuilder(length);if(!GetProcessTimes(h,out created,out exited,out kernel,out user)||!QueryFullProcessImageNameW(h,0,image,ref length)||length<1||length>=1024)throw Invalid();return new DesktopTrustKeyProcessObservation(GetProcessId(h),created.Value,image.ToString(),WaitForSingleObject(h,0)==258);}

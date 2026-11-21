@@ -38,6 +38,22 @@ internal sealed class DesktopTrustKeyBindingStoreSource {
  Dictionary<string,object> Decode(byte[] encrypted){if(encrypted==null)return null;if(encrypted.Length<1||encrypted.Length>Maximum)throw Invalid();byte[] plain=io.Unprotect((byte[])encrypted.Clone());check();try{if(plain==null||plain.Length<1||plain.Length>Maximum)throw Invalid();var c=DesktopTrustKeyHostSource.Parse(plain,false);Validate(c);return c;}finally{if(plain!=null)Array.Clear(plain,0,plain.Length);}}
  void RequireSettled(){if(unknown)throw new DesktopTrustKeyStoreUnknownException();check();try{foreach(string name in new[]{"bindings.v1.next","bindings.v1.lock"}){byte[] pending=io.Read(name,Maximum);check();if(pending!=null){Array.Clear(pending,0,pending.Length);unknown=true;throw new DesktopTrustKeyStoreUnknownException();}}}catch{unknown=true;throw new DesktopTrustKeyStoreUnknownException();}}
  internal Dictionary<string,object> Read(){if(busy)throw new DesktopTrustKeyStoreUnknownException();RequireSettled();var current=ReadOwned();RequireSettled();return current;}
+ // 원 등록 잠금을 보유한 동안만 목적 CLOSED callback을 호출한다. 원장 쓰기/발급은 없다.
+ internal Dictionary<string,object> WithUnderstandingReadGuard(string attempt,string expectedRecordHash,Func<Dictionary<string,object>,Dictionary<string,object>> complete){
+  if(busy||complete==null||!DesktopTrustKeyHostSource.IsHash(expectedRecordHash))throw Invalid();RequireSettled();busy=true;
+  try{
+   Dictionary<string,object> answer;
+   using(io.Lock()){
+    check();byte[] pending=io.Read("bindings.v1.next",Maximum);try{if(pending!=null)throw Invalid();}finally{if(pending!=null)Array.Clear(pending,0,pending.Length);}
+    var container=ReadOwned();if(container==null)throw Invalid();string containerHash=Digest(container);Dictionary<string,object> record=null;
+    foreach(object raw in Rows(container)){var candidate=DesktopTrustKeyHostSource.Map(raw);if(DesktopTrustKeyHostSource.Id(candidate,"attemptId")==attempt)record=candidate;}
+    if(record==null||DesktopTrustKeyHostSource.Text(record,"state")!="REGISTERED"||Digest(record)!=expectedRecordHash)throw Invalid();
+    check();answer=complete(record);check();
+    var after=ReadOwned();if(after==null||Digest(after)!=containerHash||Digest(record)!=expectedRecordHash)throw Invalid();
+   }
+   RequireSettled();check();return answer;
+  }catch{unknown=true;throw new DesktopTrustKeyStoreUnknownException();}finally{busy=false;}
+ }
  // 일반 Read는 전후 sidecar 검사를 감싼다. Append의 자기 lock/next 안에서는 이 private 원문 경로만 쓴다.
  Dictionary<string,object> ReadOwned(){
   byte[] current=null,previous=null;
