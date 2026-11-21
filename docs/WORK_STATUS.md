@@ -21645,3 +21645,9 @@ Main은 0101의 직접 표 접근과 두 목적 함수·기존 dispatcher의 제
 초기 fixture 구성 실패3건은 자료 정정 후 해소했다. 담당 직접7 통과·좁은 strict 타입·공백 검사 종료0. Main `node --test tests/unit/FN03/source-content-management-origin-journey.test.ts` 직접7통과·실패/건너뜀0, 공백검사 종료0 `a99fb0`. 소스 AE1067A73424B901859355063C11CCA6CAB6A8EB95475441AE7D6949AACBD971, 시험 7808CDFE32ABD5C70E57F52E8AF2CE419BCBEFAC979BAE4879D503CE4B084869. 실DB·권한·키·서비스·WSL/SSH·Agent 접근/실행0, 실제 COMMIT·제약 발화 미검증. 롤백은 신규 두 파일과 이 기록을 역적용한다.
 
 독립 확인은 원 IX01 130행의 순서·Git 바이트·SHA 불일치0과 0100/0101 추가 원본을 확인했다. 다음은 과거 130행 계약을 보존하면서 132행과 0101 설치 역할의 정확 수명을 별도 격리 경로에 연결하는 작업이다. 0101 자체 거래 안의 역할 생성·임시 membership 회수를 중복 수행하지 않는다. 운영 자원과 묶인 실행안을 승인받기 전 실제 실행을 시작하지 않는다.
+
+### FN03 132개 격리 설치·원장 검산 합성
+
+기준 `bcecbf60` clean·추적 차이0. developer_primary 단일 작성·반환. 신규 FN03 integration 설치 모듈·대응 unit 시험 두 경로. 원 130개 검산기를 그대로 재사용하고 0100/0101을 포함한 132개의 정확 순서·원바이트를 첫 효과 전 확인한다. 추가 두 SQL은 각각 정상 정착 뒤 원장에 기록하고 마지막 132행을 다시 대조한다. 0101 자체 BEGIN/COMMIT과 임시 멤버십 회수는 원바이트 그대로 보존한다. 변조·누락이나 실패·현재성 소실 뒤 추가 설치·원장 효과는 없다.
+
+담당 신규 모듈 부재 RED 후 FN03 7·기존 IX01 8통과, 좁은 타입·공백 종료0. Main `node --test tests/unit/FN03/source-content-management-origin-installation.test.ts tests/unit/IX01/current-schema-installation.test.ts` 15통과·실패/건너뜀0·공백 종료0 `34b188`. 소스 CE85342132B238D7BCB7F7C48329C367D41F01F8735DFB21889C2BB078C83737, 시험 5589BC543032E3B1B57B5006330C694361B97CFC888FD29D2798765A666D0194. 실제 SQL/PG·권한·키·서비스·WSL/SSH·Agent 실행0. 다음은 격리된 감독의 역할 확인과 앱/검수 연결에서 원 정착을 수거하는 부분이다. 롤백은 신규 두 파일과 기록을 역적용한다.
