@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test,{mock} from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
@@ -6,6 +6,7 @@ import {resolve} from 'node:path';
 import {createHash,createHmac} from 'node:crypto';
 import type {Pool} from 'pg';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {runMethodologyCopyApplicationScenario as realTc01} from '../../integration/IX01/methodology-copy-application-scenario.ts';
 import {readManagementOriginSchemaManifest} from '../../integration/FN03/source-content-management-origin-schema.ts';
 import {createManagementOriginRunner,readManagementOriginProvisionObservation,managementOriginProvisionInspectionSql} from '../../../scripts/qa-fn03-source-content-management-origin.ts';
 
@@ -85,4 +86,48 @@ test('설치·역할·초기 문맥 거절은 app Pool 획득0',async()=>{
 });
 test('원 Access rollback 불명/늦은 인증 결과도 후속0이며 키 공급본과 Pool 소유를 보존한다',async()=>{
  for(const mode of ['unknown','late']){const h=harness(mode),before=Buffer.from(h.input.access.key);const r=await createManagementOriginRunner(h.ports).run(h.tsv,h.files);assert.equal(r.status,'STOPPED');assert.equal(r.appClosed,true);assert.deepEqual(r.settlements,['UNKNOWN']);assert.deepEqual(r.releases,['RELEASED']);assert(!h.trace.some(x=>x.includes('OBSERVER')));assert.deepEqual(h.input.access.key,before);assert.equal(h.ends,0);}
+});
+
+
+test('명시 통합 runner: FN03 뒤 같은 앱의 TC01 한 번, 실패/만료에서도 원 FN03 증거 보존',async()=>{
+ const trace:string[]=[];let currentHarness:ReturnType<typeof harness>,mode='',seenApp:unknown;
+ const provisionMock=mock.module('../../integration/FN03/source-content-management-origin-provision.ts',{namedExports:{createManagementOriginProvision:(ports:any)=>({async run(){
+  trace.push('PROVISION');seenApp=ports.app;
+  return{status:'PREPARED',fixture:{dispose(){trace.push('DISPOSE');},forChild(input:any){return{access:{installationId:id(90),key:Buffer.alloc(32,8)},assertCurrent:input.assertCurrent,inspect:input.inspect,journey:{request:{projectId:id(40),commandId:id(14)},deniedRequest:{commandId:id(15)}}};}}};
+ }})}});
+ const journeyMock=mock.module('../../integration/FN03/source-content-management-origin-journey.ts',{namedExports:{managementOriginInspectionSql:'SYNTHETIC_INSPECTION',async runSourceContentManagementOriginJourney(context:any){
+  trace.push('FN03');assert.equal(context.app,seenApp);context.assertCurrent();if(mode==='fn03')throw Error('PRIVATE_FN03');
+ }}});
+ const supervisionUrl='../../integration/FN03/source-content-management-origin-supervision.ts?integrated-sequence';
+ const realSupervision=await import(supervisionUrl);
+ const supervisorMock=mock.module('../../integration/FN03/source-content-management-origin-supervision.ts',{namedExports:{createManagementOriginSupervision:(ports:any)=>{
+  const original=realSupervision.createManagementOriginSupervision(ports);
+  return{async run(tsv:unknown,files:unknown){const result=await original.run(tsv,files);if(mode==='before-tc01'&&result.status==='CHECKED')currentHarness.stop();return result;}};
+ }}});
+ const tc01Mock=mock.module('../../integration/IX01/methodology-copy-application-scenario.ts',{namedExports:{async runMethodologyCopyApplicationScenario(context:any){
+  trace.push('TC01');assert.equal(context.app,seenApp);assert.equal(context.origin,currentHarness.input.provision.origin);
+  assert.deepEqual(context.session,{token:currentHarness.input.provision.normal.token,csrfToken:currentHarness.input.provision.normal.csrfToken,clientId:id(3),user:{id:id(2)}});
+  context.assertCurrent();if(mode==='actual-tc01')return realTc01(context);context.onStage('TC01_BUILTIN_REQUEST');
+  if(mode==='tc01')throw Error('PRIVATE_TC01');if(mode==='late')currentHarness.stop();context.assertCurrent();
+  return{projectId:id(400)};
+ }}});
+ try{
+  const runnerUrl='../../../scripts/qa-fn03-source-content-management-origin.ts?integrated-sequence';
+  const module=await import(runnerUrl);
+  assert.equal(typeof module.createManagementOriginTc01Runner,'function');
+  for(const selected of ['ok','tc01','actual-tc01','late','fn03','before-tc01','legacy']){
+   mode=selected;trace.length=0;currentHarness=harness();const h=currentHarness;
+   // 원 FN03 감독이 종료한 직후의 외부 기한 상실. TC01 자체 호출 전 current에서 차단한다.
+   const runner=mode==='legacy'?module.createManagementOriginRunner(h.ports):module.createManagementOriginTc01Runner(h.ports);
+   assert.equal(trace.length,0);const r=await runner.run(h.tsv,h.files);
+   assert.equal(h.trace.filter(x=>x.startsWith('INSTALL:')).length,132);assert.equal(h.ends,0);assert.equal(r.appClosed,true);
+   assert(!JSON.stringify(r).includes(h.input.provision.normal.token));assert(!JSON.stringify(r).includes('PRIVATE'));
+   if(mode==='legacy'){assert.equal(r.status,'CHECKED');assert(!Object.hasOwn(r,'journeys'));assert.deepEqual(trace,['PROVISION','FN03','DISPOSE']);}
+   else if(mode==='ok'){assert.equal(r.status,'CHECKED');assert.deepEqual(r.journeys,{fn03:'CHECKED',tc01:'CHECKED',tc01Stage:'TC01_BUILTIN_REQUEST'});assert.deepEqual(trace,['PROVISION','FN03','TC01','DISPOSE']);}
+   else if(mode==='fn03'){assert.equal(r.status,'STOPPED');assert.equal(r.journeys.fn03,'NOT_CHECKED');assert.equal(r.journeys.tc01,'NOT_STARTED');assert(!trace.includes('TC01'));}
+   else if(mode==='before-tc01'){assert.equal(r.status,'STOPPED');assert.equal(r.journeys.fn03,'CHECKED');assert.equal(r.journeys.tc01,'NOT_STARTED');assert(!trace.includes('TC01'));}
+   else{assert.equal(r.status,'STOPPED');assert.equal(r.stage,'TC01');assert.equal(r.journeys.fn03,'CHECKED');assert.equal(r.journeys.tc01,'STARTED');assert.equal(trace.filter(x=>x==='TC01').length,1);if(mode==='actual-tc01'){assert.deepEqual(r.settlements,['ROLLBACK']);assert.equal(r.journeys.tc01Stage,'TC01_BUILTIN_VERIFY');assert(h.trace.includes('AUTH'));}}
+   const count=h.trace.length,events=trace.length;assert.equal((await runner.run(h.tsv,h.files)).reason,'ATTEMPT_CONSUMED');assert.equal(h.trace.length,count);assert.equal(trace.length,events);
+  }
+ }finally{tc01Mock.restore();supervisorMock.restore();journeyMock.restore();provisionMock.restore();}
 });

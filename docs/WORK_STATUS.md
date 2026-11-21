@@ -21835,3 +21835,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 검증은 `node --test tests/unit/IX01/subnet-observation-config-readiness.test.ts` 14통과·실패/건너뜀0 `c0b92a`, 좁은 타입·공백0 `5292e1`이다. RAM 출력의 원 바이트를 decoder에 전달해 전체·중단·부분 실패 경계를 검산했다. Main은 부록 LF 5,460B/SHA256 `357F720A88251869B322CF2015EC9BFF03B0142C51DDA4472D18CF2ED1C1619E`와 PowerShell AST를 독립 확인했다 `585b54`. 합성 핸들 잔여0, 실제 native 포트 호출0. 기존 실제 실패와 소진 기록을 보존한다.
 
 독립 소스 대조와 PMO는 새 통합 프로필이 FN03 격리 runner의 명시 /28·132개 설치를 사용하고 별도 합성 프로젝트에서 기존 TC01 시나리오를 잇는 source·RAM 범위를 확인했다. 기존 A14는 보존한다. 다음 작업은 관리 원문 여정이 성공한 뒤 동일 앱·Pool이 닫히기 전에 TC01을 고정 연결하는 것이다. 실제 설정/SSH/IPAM·132개 SQL/0101 역할·새 격리 저장 효과의 실행 결박은 미완료다. 롤백은 이번 계획과 합성 시험 보강 및 상태 기록의 역적용이다.
+
+### IX01/FN03 통합 격리 여정의 같은 앱 연결
+
+기준 `ef1e50b0` clean·추적 차이0. PMO가 확인한 내부 구현 범위에서 developer_primary가 `qa-fn03-source-content-management-origin.ts`의 명시 통합 runner, 기존 TC01 내부 세션 타입 최소화와 runner 시험의 세 경로를 단일 작성·반환했다. 기존 132개/역할 검산/FN03 성공 뒤 같은 앱·fence Pool·재인증 세션에서 TC01을 1회 호출한다. 원 FN03 실패에서 TC01 0, TC01 실패·기한 불명에서 FN03 확인 근거 보존·전체 STOPPED다. 기존 runner의 반환과 실제 host 선택은 유지한다.
+
+신규 export 부재 RED `e9de90` 뒤 직접 runner/supervision 13통과 `7f091d`, 인접 TC01 4통과 `2376a9`, 실패/건너뜀0. 타입·공백 종료0 `0fd156`이며 중간 타입 fixture·기한 반례 위치를 정정했다. Main 명시 통합 1통과 및 세 지문 대조 `d92f7d`, 독립 C0/I0. 성공 순서는 RAM 대역이며 기존 TC01 첫 GET이 실제 앱의 합성 인증 거절·ROLLBACK으로 닫히는 경로도 별도 확인했다.
+
+실제 설정 읽기·SSH·DB·권한·키·서비스·Agent 실행0. 고정 로컬 진단 1회의 추가 승인만 요청했고 답변 전 실행하지 않았다. 다음은 새 프로필을 명시 host 진입에 결박하는 소스이며 실제 설치·두 여정·자원 수거는 미검증이다. 롤백은 이번 세 구현·시험 경로와 상태 문서의 역적용이다.

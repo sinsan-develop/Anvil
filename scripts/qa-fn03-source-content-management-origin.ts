@@ -1,4 +1,6 @@
 import {types} from 'node:util';
+import {runMethodologyCopyApplicationScenario,type MethodologyCopyApplicationContext} from '../tests/integration/IX01/methodology-copy-application-scenario.ts';
+import type {CurrentTc01DiagnosticStage} from './qa-ix01-current-journey.ts';
 import {isAbsolute,resolve} from 'node:path';
 import type {Pool} from 'pg';
 import {recordV1,uuidV1} from '../contracts/runtime/validation-v1.ts';
@@ -76,13 +78,16 @@ export interface ManagementOriginRunnerInput {
  access:{installationId:string;key:Uint8Array};
  provision:unknown;
 }
-type Stage='PREPARE'|'INSTALL_AND_ROLES'|'APP'|'PROVISION'|'JOURNEY'|'CLOSE'|'DONE';
+type Stage='PREPARE'|'INSTALL_AND_ROLES'|'APP'|'PROVISION'|'JOURNEY'|'TC01'|'CLOSE'|'DONE';
 type Terminal='COMMIT'|'ROLLBACK'|'UNKNOWN';
 export interface ManagementOriginRunnerResult {
  readonly status:'CHECKED'|'STOPPED';readonly stage:Stage;
  readonly reason:'JOURNEY_CHECKED'|'ATTEMPT_CONSUMED'|'BOUNDARY_OR_OUTCOME_UNKNOWN';
  readonly authority:'NOT_ISSUED';readonly appClosed:boolean;
  readonly settlements:readonly Terminal[];readonly releases:readonly ('RELEASED'|'UNKNOWN')[];
+}
+export interface ManagementOriginTc01RunnerResult extends ManagementOriginRunnerResult {
+ readonly journeys:Readonly<{fn03:'NOT_CHECKED'|'CHECKED';tc01:'NOT_STARTED'|'STARTED'|'CHECKED';tc01Stage:CurrentTc01DiagnosticStage|null}>;
 }
 const fail=():never=>{throw Error('FN03_MANAGEMENT_RUNNER_UNKNOWN');};
 function check(value:unknown):asserts value{if(!value)fail();}
@@ -91,16 +96,26 @@ function check(value:unknown):asserts value{if(!value)fail();}
  * 설치 migrator/0095·0101 임시 역할 회수 및 별도 observer의 실제 권위/SQL·기한은 원 감독 책임이다.
  * supervision이 journey를 한 번 실행한다. child.run을 중복 호출하지 않고 같은 실제 Access/fence/app 구성을 쓴다.
  * 합성 포트의 CHECKED는 실제 PG15/파일·격리·실행 승인 증거가 아니다. */
-export function createManagementOriginRunner(ports:ManagementOriginRunnerPorts){
+export function createManagementOriginRunner(ports:ManagementOriginRunnerPorts){return createRunner(ports,false);}
+/** 명시 통합 후보만 FN03 성공 뒤 같은 앱의 TC01을 수행한다. 기존 host/entry는 이 factory를 자동 선택하지 않는다. */
+export function createManagementOriginTc01Runner(ports:ManagementOriginRunnerPorts){return createRunner(ports,true);}
+function createRunner(ports:ManagementOriginRunnerPorts,integrated:true):Readonly<{run(historicalTsv:unknown,orderedSql:unknown):Promise<ManagementOriginTc01RunnerResult>}>;
+function createRunner(ports:ManagementOriginRunnerPorts,integrated:false):Readonly<{run(historicalTsv:unknown,orderedSql:unknown):Promise<ManagementOriginRunnerResult>}>;
+function createRunner(ports:ManagementOriginRunnerPorts,integrated:boolean){
  const {pool,assertCurrent,now,installation,readRoleMetadata,verifyExistingRoles,prepareFixtureInput,observer}=ports,observerQuery=observer.query;
  const {install,appendLedger,readLedger,assertCurrent:installCurrent}=installation;
  let spent=false;
- return Object.freeze({async run(historicalTsv:unknown,orderedSql:unknown):Promise<ManagementOriginRunnerResult>{
+ return Object.freeze({async run(historicalTsv:unknown,orderedSql:unknown):Promise<ManagementOriginRunnerResult|ManagementOriginTc01RunnerResult>{
   let stage:Stage='PREPARE',closed=false,appClosed=false,last=-1,until=Infinity;
+  let fn03:'NOT_CHECKED'|'CHECKED'='NOT_CHECKED',tc01:'NOT_STARTED'|'STARTED'|'CHECKED'='NOT_STARTED',tc01Stage:CurrentTc01DiagnosticStage|null=null;
+  let tc01Context:MethodologyCopyApplicationContext|undefined;
   let app:ReturnType<typeof buildApp>|undefined,key:Buffer|undefined;
   let fence:ReturnType<typeof createManagementOriginTransactionFence<Pool>>|undefined;
   let fixture:Extract<Awaited<ReturnType<ReturnType<typeof createManagementOriginProvision>['run']>>,{status:'PREPARED'}>['fixture']|undefined;
-  const result=(status:'CHECKED'|'STOPPED',reason:ManagementOriginRunnerResult['reason']):ManagementOriginRunnerResult=>Object.freeze({status,stage,reason,authority:'NOT_ISSUED',appClosed,settlements:fence?.settlements()??Object.freeze([]),releases:fence?.releases()??Object.freeze([])});
+  const result=(status:'CHECKED'|'STOPPED',reason:ManagementOriginRunnerResult['reason'])=>{
+   const common={status,stage,reason,authority:'NOT_ISSUED' as const,appClosed,settlements:fence?.settlements()??Object.freeze([]),releases:fence?.releases()??Object.freeze([])};
+   return integrated?Object.freeze({...common,journeys:Object.freeze({fn03,tc01,tc01Stage})}):Object.freeze(common);
+  };
   if(spent)return result('STOPPED','ATTEMPT_CONSUMED');spent=true;
   const boundary=()=>{
    check(ports.pool===pool&&ports.assertCurrent===assertCurrent&&ports.now===now&&ports.installation===installation&&ports.readRoleMetadata===readRoleMetadata&&ports.verifyExistingRoles===verifyExistingRoles&&ports.prepareFixtureInput===prepareFixtureInput&&ports.observer===observer&&observer.query===observerQuery);
@@ -130,6 +145,8 @@ export function createManagementOriginRunner(ports:ManagementOriginRunnerPorts){
      app=buildApp({},undefined,{repository:access,origin:source.origin,artifactRoot});current();
      stage='PROVISION';const prepared=await createManagementOriginProvision({app,assertCurrent:current,now:()=>boundary(),settlements:fence.settlements,observe:selection=>readManagementOriginProvisionObservation(observer,selection,current)},source,{installationId,key:key!}).run();current();
      check(prepared.status==='PREPARED');fixture=prepared.fixture;
+     // 정상 provision이 검산한 원 로그인만 private 수명 안에서 재사용한다. 보고/저장에 세션 원문을 추가하지 않는다.
+     if(integrated)tc01Context={app,origin:source.origin,session:{token:source.normal.token,csrfToken:source.normal.csrfToken,clientId:source.normal.clientId,user:{id:source.normal.userId}},assertCurrent:current,onStage:value=>{tc01Stage=value;}};
      const child=fixture.forChild({pool:fence.pool,assertCurrent:current,inspect:(sql,args)=>observerQuery.call(observer,sql,args)});
      // forChild가 복사한 seed는 여기서 새 Access를 만들지 않는다. 기존 동일 Access와 결박만 확인하고 폐기한다.
      try{check(child.access.installationId===installationId&&child.access.key.length===key!.length&&child.access.key.every((byte,index)=>byte===key![index]));}finally{child.access.key.fill(0);key!.fill(0);}
@@ -137,12 +154,17 @@ export function createManagementOriginRunner(ports:ManagementOriginRunnerPorts){
      const inspect:ManagementOriginJourneyContext['inspect']=async(sql,values)=>{child.assertCurrent();check(sql===managementOriginInspectionSql&&values.length===3&&values.every((value,index)=>value===args[index]));const response=await child.inspect(managementOriginInspectionSql,args);child.assertCurrent();return response;};
      stage='JOURNEY';return{...child.journey,app,service:new ProjectSourceContentPolicyManagement(access),inspect,assertCurrent:child.assertCurrent,settlements:fence.settlements};
     }});
-   stage='INSTALL_AND_ROLES';const supervised=await supervisor.run(historicalTsv,orderedSql);current();check(supervised.status==='CHECKED');
+   stage='INSTALL_AND_ROLES';const supervised=await supervisor.run(historicalTsv,orderedSql);check(supervised.status==='CHECKED');fn03='CHECKED';current();
    check(fence&&fence.releases().every(x=>x==='RELEASED')&&!fence.settlements().includes('UNKNOWN'));
+   if(integrated){
+    stage='TC01';current();check(tc01Context&&tc01Context.app===app);tc01='STARTED';
+    await runMethodologyCopyApplicationScenario(tc01Context);current();
+    check(fence.releases().every(x=>x==='RELEASED')&&!fence.settlements().includes('UNKNOWN'));tc01='CHECKED';
+   }
    stage='DONE';outcome=result('CHECKED','JOURNEY_CHECKED');
   }catch{outcome=result('STOPPED','BOUNDARY_OR_OUTCOME_UNKNOWN');}
   finally{
-   closed=true;fixture?.dispose();key?.fill(0);
+   closed=true;tc01Context=undefined;fixture?.dispose();key?.fill(0);
    // 이 조립이 만든 소켓 없는 앱만 닫는다. 원 Pool/observer/자원은 외부 감독 소유이며 실패 후 조회/재시도0.
    if(app)try{await app.close();appClosed=true;}catch{stage='CLOSE';outcome=result('STOPPED','BOUNDARY_OR_OUTCOME_UNKNOWN');}
    if(outcome?.status==='CHECKED')try{boundary();}catch{stage='CLOSE';outcome=result('STOPPED','BOUNDARY_OR_OUTCOME_UNKNOWN');}
