@@ -109,3 +109,22 @@ test('소스가 read 완료를 기다리지 않은 종결과 기한 연장으로
  const g=fixture();g.state.afterRead=()=>{g.state.now+=10000;g.binding.expiresAt=new Date(g.state.now+10000).toISOString();};
  await assert.rejects(g.run(),/NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE/);
 });
+
+for(const mode of ['OK','EMPTY','CLOSE','CHAIN','QUARANTINED'])test('DISCOVERY 원 행에서 init/tail 메타만 도출 '+mode,async()=>{
+ const {readNormalUnderstandingDiscovery}=await import('../../../apps/connector/runtime/normal-understanding-response-source.ts');
+ const f=fixture();if(mode==='EMPTY')f.rows.pop();if(mode==='CLOSE')f.state.failClose=true;if(mode==='CHAIN')f.rows[2]!.snapshot.previousRef=ref();if(mode==='QUARANTINED'){f.rows[2]!.snapshot.classification='QUARANTINED';f.rehash(2);}
+ const current={scope:f.scope,requestRef:ref(),acquisitionRef:ref(),contextBundleRef:f.binding.bundleRef,checkedAt:f.binding.checkedAt,expiresAt:f.binding.expiresAt};
+ const run=()=>readNormalUnderstandingDiscovery(current,{...f.source,current:()=>f.state.active?current:null},f.signal.signal);
+ if(!['OK','EMPTY'].includes(mode)){await assert.rejects(run(),/NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE/);return;}
+ const result=await run();assert.equal(f.state.closed,1);assert.deepEqual(result.initConfirmationRef,f.rows[1]!.ref);assert.deepEqual(result.tailRef,f.rows.at(-1)!.ref);assert.equal(result.ranges.length,mode==='EMPTY'?0:1);
+ assert.equal(/사람이|private|plannedSid|session_id|body|textHash/.test(JSON.stringify(result)),false);assert.equal(result.executionAuthorized,false);assert.equal(Object.isFrozen(result),true);assert.equal(Object.isFrozen(result.ranges),true);if(result.ranges.length)assert.equal(Object.isFrozen(result.ranges[0]!.outputRef),true);
+});
+
+for(const mode of ['DOUBLE','LATE','CANCEL','OVER_PARTS'])test('DISCOVERY callback·기한·취소·200 한도는 부분 메타를 반환하지 않는다 '+mode,async()=>{
+ const {readNormalUnderstandingDiscovery}=await import('../../../apps/connector/runtime/normal-understanding-response-source.ts');const f=fixture();
+ if(mode==='DOUBLE'){const old=f.source.withRead;f.source.withRead=async body=>{await old(body);try{await old(body);}catch{}};}
+ if(mode==='LATE')f.state.afterClose=()=>{f.state.now+=10000;};if(mode==='CANCEL')f.state.afterRead=()=>f.signal.abort();
+ if(mode==='OVER_PARTS'){const row=f.rows[2]!,m=JSON.parse(Buffer.from(row.snapshot.body,'base64').toString());m.message.content=Array.from({length:201},()=>({type:'text',text:'bounded'}));row.snapshot.body=Buffer.from(canonicalJson(m)).toString('base64');row.snapshot.payloadDigest=hash(m);f.rehash(2);}
+ const binding={scope:f.scope,requestRef:ref(),acquisitionRef:ref(),contextBundleRef:f.binding.bundleRef,checkedAt:f.binding.checkedAt,expiresAt:f.binding.expiresAt};
+ await assert.rejects(readNormalUnderstandingDiscovery(binding,{...f.source,current:()=>binding},f.signal.signal),/NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE/);
+});

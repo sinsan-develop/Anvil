@@ -51,7 +51,7 @@ const normalizeNext=NormalSdkSessionOutput.prototype.next,consumeInit=NormalSdkS
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
 const fail=():never=>{throw Error('NORMAL_FIRST_SEND_UNKNOWN');};
 const shape=(v:unknown,keys:string[])=>!isProxy(v)&&recordV1(v,keys);
-type OutputOrigin={worker:NormalStartWire;scope:Scope;signal:AbortSignal;check:()=>number};
+type OutputOrigin={worker:NormalStartWire;scope:Scope;start:{startCommandId:string;assignmentId:string;contextBundleRef:Ref};signal:AbortSignal;check:()=>number};
 const bindingOrigins=new WeakMap<object,{storage:NormalFirstSendSource['storage'];origin:OutputOrigin}>();
 export function takeFirstOutputOrigin(ticket:object,storage:NormalFirstSendSource['storage'],worker:NormalStartWire){
  const saved=bindingOrigins.get(ticket);if(!saved||saved.storage!==storage||saved.origin.worker!==worker)return fail();
@@ -171,8 +171,9 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
   }
   issuedHandles.add(iterator);lease.iterator=iterator;arm();
   const origin={owner:worker,attempt:claim,query,iterator};
+  if(!('contextBundleRef' in parent.start.envelope.payload)||!refV1(parent.start.envelope.payload.contextBundleRef))return fail();
   const binding=Object.freeze({});
-  bindingOrigins.set(binding,{storage:store,origin:{worker,scope:cloneV1(scope),signal:lease.life.signal,check:()=>{
+  bindingOrigins.set(binding,{storage:store,origin:{worker,scope:cloneV1(scope),start:cloneV1({startCommandId:parent.start.envelope.commandId,assignmentId:parent.start.envelope.context.assignmentId,contextBundleRef:parent.start.envelope.payload.contextBundleRef}),signal:lease.life.signal,check:()=>{
    if(leases.get(worker)!==lease||lease.query!==query||lease.iterator!==iterator||origin.attempt!==claim)return fail();
    current();return expiresAt;
   }}});

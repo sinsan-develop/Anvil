@@ -273,7 +273,9 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  }
  Dictionary<string,object> Challenge(Dictionary<string,object> record,Dictionary<string,object> scope,Dictionary<string,object> request,string token,string scopeDigest,int ttl){
   var signed=new Dictionary<string,object>(request);signed["signature"]=Sign(record,"EXECUTION_CHALLENGE_REQUEST",request);
-  var reply=Http(record,"POST",Base(scope)+"/challenges","",J(signed),token,null,16384);
+  bool discovery=token!=null&&request.ContainsKey("target")&&DiscoveryTarget(scope,Map(request["target"]));
+  var reply=Http(record,"POST",Base(scope)+"/challenges","",J(signed),token,null,16384,discovery);
+  if(discovery&&DiscoveryStatus(reply,true)!=null)return reply;
   Exact(reply,token==null?"ref,challenge,credentialIssued,nonceConsumed,executionAuthorized,dispatchPerformed,bootstrapBinding":"ref,challenge,credentialIssued,nonceConsumed,executionAuthorized,dispatchPerformed");
   foreach(string k in new[]{"credentialIssued","nonceConsumed","executionAuthorized","dispatchPerformed"})if(!(reply[k] is bool)||(bool)reply[k])throw Invalid();
   var r=DesktopTrustKeyHostSource.Ref(reply["ref"]);var c=Map(reply["challenge"]);
@@ -298,6 +300,17 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   }
   return new Dictionary<string,object>{{"method",method},{"path",path},{"queryHash",H(q)},{"bodyHash",body==null?H(Encoding.UTF8.GetBytes("null")):H(Parse(Encoding.UTF8.GetBytes(body)))}};
  }
+ bool DiscoveryTarget(Dictionary<string,object> scope,Dictionary<string,object> target){return S(target,"method")=="GET"&&S(target,"path")==Base(scope)+"/understanding-response-read"&&S(target,"queryHash")==H(new Dictionary<string,object>())&&S(target,"bodyHash")==H(Encoding.UTF8.GetBytes("null"));}
+ sealed class DiscoveryRefusal:Dictionary<string,object>{internal readonly string Status;internal DiscoveryRefusal(string status){Status=status;}}
+ string DiscoveryStatus(Dictionary<string,object> value,bool allowNone){
+  if(value is DiscoveryRefusal)return ((DiscoveryRefusal)value).Status;
+  if(allowNone&&value.ContainsKey("status")){
+   Exact(value,"transport,status,challenge,nonceConsumed,executionAuthorized,dispatchPerformed");
+   if(S(value,"transport")!="NORMAL_PROTECTED"||S(value,"status")!="NONE"||value["challenge"]!=null)throw Invalid();
+   foreach(string k in new[]{"nonceConsumed","executionAuthorized","dispatchPerformed"})if(!(value[k] is bool)||(bool)value[k])throw Invalid();return "NONE";
+  }return null;
+ }
+ object DiscoveryOutcome(string status,string stage,Dictionary<string,object> r,Dictionary<string,object> slot,string requestId,DateTime end){return new Dictionary<string,object>{{"kind","NORMAL_UNDERSTANDING_NOT_ACQUIRED"},{"status",status},{"stage",stage},{"path",r["path"]},{"query",""},{"requestId",requestId},{"slotRef",slot["receiptRef"]},{"expiresAt",Stamp(end)}};}
  object Call(Dictionary<string,object> h,byte[] bodyBytes){
   if(bodyBytes.Length!=N(h["bodyLength"])||H(bodyBytes)!=S(h,"bodyHash"))throw Invalid();string body=(bool)h["bodyIsNull"]?null:new UTF8Encoding(false,true).GetString(bodyBytes);
   if(body==null&&bodyBytes.Length!=0)throw Invalid();var record=Record(Id(h,"attemptId"));string recordHash=H(record);
@@ -306,20 +319,25 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   DateTime end=new[]{At(slot,"expiresAt"),At(r,"expiresAt")}.Min();if(end<=clock())throw Invalid();object result;
   if(S(h,"kind")=="PREPARE"){
    if(r["auth"]!=null)throw Invalid();var request=ChallengeRequest(scope,"EXECUTION_REQUEST",target);
-   var reply=Challenge(record,scope,request,S(slot,"credential"),S(slot,"scopeDigest"),30000);var c=Map(reply["challenge"]);
+   var reply=Challenge(record,scope,request,S(slot,"credential"),S(slot,"scopeDigest"),30000);
+   string status=DiscoveryTarget(scope,target)?DiscoveryStatus(reply,true):null;
+   if(status!=null)result=DiscoveryOutcome(status,"PREPARE",r,slot,Id(request,"requestId"),end);
+   else{var c=Map(reply["challenge"]);
    var proof=new Dictionary<string,object>(target);proof["requestId"]=request["requestId"];proof["grantRef"]=scope["grantRef"];proof["credentialGeneration"]=scope["credentialGeneration"];proof["serverNonce"]=c["serverNonce"];
    var packet=new Dictionary<string,object>{{"schemaVersion",1},{"challengeRef",reply["ref"]},{"proof",proof},{"signature",Sign(record,"EXECUTION_REQUEST_PROOF",proof)}};
    string auth=B64(B(packet));end=new[]{end,At(c,"expiresAt")}.Min();
    var saved=new Dictionary<string,object>{{"slotId",slot["slotId"]},{"target",target},{"authHash",H(Encoding.UTF8.GetBytes(auth))},{"expiresAt",Stamp(end)},{"recordHash",recordHash}};
    ProtectedStore.SaveNormalOwned(owner,Id(request,"requestId"),"execution-proof",B(saved),current);
    result=new Dictionary<string,object>{{"path",r["path"]},{"query",r["query"]},{"auth",auth},{"challengeRef",reply["ref"]},{"requestId",request["requestId"]},{"expiresAt",Stamp(end)}};
+   }
   }else{
    byte[] packetBytes=Decode(S(r,"auth"),4096);Dictionary<string,object> packet;try{packet=Parse(packetBytes);}finally{Array.Clear(packetBytes,0,packetBytes.Length);}
    Exact(packet,"schemaVersion,challengeRef,proof,signature");var proof=Map(packet["proof"]);
    byte[] raw=ProtectedStore.LoadNormalOwned(owner,Id(proof,"requestId"),"execution-proof",current);
    try{var saved=Parse(raw);if(S(saved,"slotId")!=Id(h,"slotId")||S(saved,"recordHash")!=recordHash||J(saved["target"])!=J(target)||
     S(saved,"authHash")!=H(Encoding.UTF8.GetBytes(S(r,"auth")))||At(saved,"expiresAt")<=clock())throw Invalid();end=new[]{end,At(saved,"expiresAt")}.Min();}finally{Array.Clear(raw,0,raw.Length);}
-   result=Http(record,S(r,"method"),S(r,"path"),S(r,"query"),body,S(slot,"credential"),S(r,"auth"),Limit);
+   bool discovery=DiscoveryTarget(scope,target);var answer=Http(record,S(r,"method"),S(r,"path"),S(r,"query"),body,S(slot,"credential"),S(r,"auth"),discovery?2097152:Limit,discovery);
+   string status=discovery?DiscoveryStatus(answer,false):null;result=status==null?(object)answer:DiscoveryOutcome(status,"REQUEST",r,slot,Id(proof,"requestId"),end);
   }
   if(H(Record(Id(h,"attemptId")))!=recordHash||clock()>=end)throw Invalid();output=B(result);if(output.Length<1||output.Length>Limit)throw Invalid();
   outputHandle=Guid.NewGuid().ToString("D");outputHash=H(output);outputOffset=0;outputExpiry=end;return Next();
@@ -327,7 +345,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  object Next(){Check();if(output==null||clock()>=outputExpiry)throw Invalid();int at=outputOffset,n=Math.Min(Chunk,output.Length-at);byte[] part=new byte[n];Buffer.BlockCopy(output,at,part,0,n);outputOffset+=n;
   try{var result=new Dictionary<string,object>{{"handle",outputHandle},{"offset",at},{"total",output.Length},{"hash",outputHash},{"expiresAt",Stamp(outputExpiry)},{"bytes",B64(part)},{"done",outputOffset==output.Length}};if(outputOffset==output.Length)ClearOutput();return result;}finally{Array.Clear(part,0,part.Length);}
  }
- Dictionary<string,object> Http(Dictionary<string,object> record,string method,string path,string query,string body,string token,string auth,int max){
+ Dictionary<string,object> Http(Dictionary<string,object> record,string method,string path,string query,string body,string token,string auth,int max,bool discovery=false){
   Check();var req=(HttpWebRequest)WebRequest.Create(S(record,"origin")+path+query);req.Method=method;req.AllowAutoRedirect=false;req.Proxy=null;req.UseDefaultCredentials=false;req.Credentials=null;
   req.SslProtocols=System.Security.Authentication.SslProtocols.Tls12;
   var pins=Pins(activeCA);req.ServerCertificateValidationCallback=(sender,certificate,chain,errors)=>Pinned(pins,certificate,chain,errors);
@@ -335,11 +353,20 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   if(token!=null)req.Headers[HttpRequestHeader.Authorization]="Bearer "+token;if(auth!=null)req.Headers["Anvil-Execution-Auth"]=auth;
   byte[] payload=body==null?null:Encoding.UTF8.GetBytes(body);
   try{if(payload!=null){req.ContentType="application/json";req.ContentLength=payload.Length;using(var s=req.GetRequestStream()){Check();s.Write(payload,0,payload.Length);}}Check();
-   using(var response=(HttpWebResponse)req.GetResponse()){
-    if(response.StatusCode!=HttpStatusCode.OK||response.ResponseUri.AbsoluteUri!=S(record,"origin")+path+query||
+   HttpWebResponse original;
+   try{original=(HttpWebResponse)req.GetResponse();}catch(WebException e){
+    original=e.Response as HttpWebResponse;
+    if(!discovery||original==null||original.StatusCode!=HttpStatusCode.PreconditionFailed){if(original!=null)original.Dispose();throw Invalid();}
+   }
+   using(var response=original){
+    if((response.StatusCode!=HttpStatusCode.OK&&(!discovery||response.StatusCode!=HttpStatusCode.PreconditionFailed))||response.ResponseUri.AbsoluteUri!=S(record,"origin")+path+query||
      !response.ContentType.StartsWith("application/json",StringComparison.OrdinalIgnoreCase)||!String.IsNullOrEmpty(response.ContentEncoding)||response.ContentLength>max)throw Invalid();
     using(var stream=response.GetResponseStream())using(var bytes=new MemoryStream()){
-     byte[] part=new byte[8192];try{int n;while(true){Check();if(stream.CanTimeout)stream.ReadTimeout=remaining();n=stream.Read(part,0,part.Length);if(n==0)break;Check();if(bytes.Length+n>max)throw Invalid();bytes.Write(part,0,n);}Check();byte[] raw=bytes.ToArray();try{return Parse(raw);}finally{Array.Clear(raw,0,raw.Length);}}
+     byte[] part=new byte[8192];try{int n;while(true){Check();if(stream.CanTimeout)stream.ReadTimeout=remaining();n=stream.Read(part,0,part.Length);if(n==0)break;Check();if(bytes.Length+n>max)throw Invalid();bytes.Write(part,0,n);}Check();byte[] raw=bytes.ToArray();try{var parsed=Parse(raw);if(response.StatusCode==HttpStatusCode.OK)return parsed;
+      Exact(parsed,"code,message,requestId,targetId,retryDisposition,details");string code=S(parsed,"code");
+      if((code!="NORMAL_UNDERSTANDING_DISCOVERY_DENIED"&&code!="NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED")||S(parsed,"message")!="요청을 처리하지 못했습니다"||S(parsed,"requestId").Length<1||S(parsed,"requestId").Length>128||parsed["targetId"]!=null||S(parsed,"retryDisposition")!="not-retryable")throw Invalid();if(Map(parsed["details"]).Count!=0)throw Invalid();
+      return new DiscoveryRefusal(code=="NORMAL_UNDERSTANDING_DISCOVERY_DENIED"?"DENIED":"EXPIRED");
+     }finally{Array.Clear(raw,0,raw.Length);}}
      finally{Array.Clear(part,0,part.Length);if(bytes.Length>0)Array.Clear(bytes.GetBuffer(),0,(int)bytes.Length);}
     }
    }

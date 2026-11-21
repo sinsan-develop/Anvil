@@ -14,7 +14,7 @@ const id=n=>'ce140001-0000-4000-8000-'+String(n).padStart(12,'0'),ref=n=>({id:id
 function model(f,mode='NORMAL',profile=null){
  const row=f.stored(),scope={projectId:row.projectId,connectorId:row.registration.connectorRef.id,executionId:id(1),executionGeneration:1,grantRef:ref(2),credentialGeneration:1};
  const config={origin:row.origin,ca:'TEST_ONLY_EXPLICIT_CA',scope},calls=[],spawn=f.ports.spawn;let expiresAt=new Date(f.dependencies.now()+5000).toISOString();
- let metadata,reply,offset=0,onFrame=()=>{},respond;
+ let metadata,reply,offset=0,onFrame=()=>{},respond,prepareRespond;
  const typedReply=request=>{
   const recordedAt=new Date(f.dependencies.now()).toISOString(),result={transport:'NORMAL_PROTECTED',proofResultRef:ref(20),cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
   if(request.method==='GET')return {...result,items:[],nextCursor:'cursor1',hasMore:false,observedAt:recordedAt,expiresAt};
@@ -31,13 +31,13 @@ function model(f,mode='NORMAL',profile=null){
    if(profile&&v.operation.startsWith('NORMAL_SPOOL_'))data=profile.handle(v,child,metadata);
    else if(v.operation==='NORMAL_EXECUTION_BOOTSTRAP'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.scope,scope);metadata={slotId:id(3),receiptRef:ref(4),origin:row.origin,scope,expiresAt,caHash:contentHash(config.ca)};data=metadata;}
    else if(v.operation==='NORMAL_EXECUTION_RENEW'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.previous,metadata);assert.ok(Date.parse(metadata.expiresAt)<=f.dependencies.now());expiresAt=new Date(f.dependencies.now()+5000).toISOString();metadata={...metadata,slotId:id(11),receiptRef:ref(12),expiresAt};data=mode==='RENEW_UNKNOWN'?{...metadata,caHash:'b'.repeat(64)}:metadata;}
-   else if(v.operation==='NORMAL_EXECUTION_CALL'){assert.equal(v.payload.attemptId,row.attemptId);assert.equal(v.payload.slotId,metadata.slotId);const r=v.payload.request;reply=Buffer.from(canonicalJson(v.payload.kind==='PREPARE'?{path:r.path,query:r.query,auth:r.path.endsWith('/understanding-response-read')?Buffer.from(canonicalJson({fixture:'original read proof'})).toString('base64url'):'A'.repeat(20),challengeRef:ref(5),requestId:id(6),expiresAt}:respond?respond(r,v.payload.body):mode==='PAIR'?typedReply(r):mode==='MAX'?{value:'x'.repeat(2812587-12)}:{commands:[]}));offset=0;data=chunk();}
+   else if(v.operation==='NORMAL_EXECUTION_CALL'){assert.equal(v.payload.attemptId,row.attemptId);assert.equal(v.payload.slotId,metadata.slotId);const r=v.payload.request;reply=Buffer.from(canonicalJson(v.payload.kind==='PREPARE'?(prepareRespond?prepareRespond(r):{path:r.path,query:r.query,auth:r.path.endsWith('/understanding-response-read')?Buffer.from(canonicalJson({fixture:'original read proof'})).toString('base64url'):'A'.repeat(20),challengeRef:ref(5),requestId:id(6),expiresAt}):respond?respond(r,v.payload.body):mode==='PAIR'?typedReply(r):mode==='MAX'?{value:'x'.repeat(2812587-12)}:{commands:[]}));offset=0;data=chunk();}
    else if(v.operation==='NORMAL_EXECUTION_READ'){assert.equal(v.payload.handle,id(7));assert.equal(v.payload.offset,offset);data=chunk();}
    else throw Error('UNEXPECTED_NORMAL_OPERATION');
    child.stdout.emit('data',Buffer.from(canonicalJson({schemaVersion:1,purpose:'DESKTOP_TRUST_KEY_RESULT_V1',requestId:v.requestId,sequence:v.sequence,rootIdentity:mode==='ROOT'?'OTHER_ROOT':'TEST_ONLY_ROOT',data})+'\n'));done();
   });return true;
  };if(mode==='CLOSE'){child.stdin.end=(_a,_b,done)=>{queueMicrotask(()=>{child.stdout.emit('end');child.emit('close',1);done?.();});};}return child;};
- return{config,calls,expiresAt,respond(fn){respond=fn;},onFrame(fn){onFrame=fn;},request:{method:'GET',path:'/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/commands',query:'',body:null,expiresAt}};
+ return{config,calls,expiresAt,respond(fn){respond=fn;},prepareRespond(fn){prepareRespond=fn;},onFrame(fn){onFrame=fn;},request:{method:'GET',path:'/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/commands',query:'',body:null,expiresAt}};
 }
 test('REGISTERED 실제 owner→bundle bootstrap→제한 host client, 매 작업 새 lease/root 검산',async()=>{
  const f=await fixtures.liveNativeOwner(),m=model(f),before=f.calls(),client=f.owner.createNormalCredentialBootstrap(m.config);
@@ -619,4 +619,77 @@ for(const mode of ['OK','NO_REQUEST','WRONG_ATTEMPT','CLOSE_UNKNOWN','CANCELLED'
   assert.equal(canonicalJson([...q.local.files].map(([p,f])=>[p,f.bytes.toString('base64')])),files);
   assert.equal(x.f.owner.isBusy(),false);assert.equal(x.f.timers(),0);
  }finally{x.source.dispose();fixtures.setFiles(undefined);}
+});
+
+for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START','CONTEXT','REGISTRATION','CLOSE_UNKNOWN','CANCELLED'])test('FN09 DISCOVERY 실제 registered owner→GET→원 close 메타 '+mode,async()=>{
+ const q=await outputProfile(),x=await pollingFixture(q.profile,true,true);q.bind(x);
+ const {wire:unused,...input}=x.input;input.timeoutMs=2000;
+ let n=0,closed=0;
+ const sdk={expiresAt:x.clock()+4000,check:scope=>({scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000}),classify:()=> 'ORDINARY',close:async()=>{},
+  async create(request,prompt){await prompt[Symbol.asyncIterator]().next();const sid=request.plannedSid;return{[Symbol.asyncIterator](){return{async next(){
+   const i=n++;if(i===0)return{done:false,value:{type:'system',subtype:'init',uuid:'init',session_id:sid,apiKeySource:'none',claude_code_version:'2.1.224',cwd:'fixture',tools:[],mcp_servers:[],model:'fixture',permissionMode:'default',slash_commands:[],output_style:'fixture',skills:[],plugins:[]}};
+   if(i===1)return{done:false,value:{type:'assistant',uuid:'answer',session_id:sid,parent_tool_use_id:null,message:{content:[{type:'text',text:'선택된 이해 근거'}]}}};
+   return{done:true,value:undefined};
+  }}}};}};
+ try{
+  const worker=x.source.createWorkerStartPolling(x.pair,input,sdk);assert.equal(x.m.calls.filter(v=>v.payload.request?.path?.endsWith('/understanding-response-read')).length,0);
+  const start=await worker.run(x.signal);assert.equal(start.state,'LIMIT_REACHED');
+  for(let i=0;i<50&&(q.state.holds.size||n<3);i++)await new Promise(r=>setImmediate(r));
+  const rows=[...q.local.files].filter(([p])=>path.basename(p).startsWith('sdk-session-output.')&&p.endsWith('.json')).sort(([a],[b])=>a.localeCompare(b)).map(([,f])=>JSON.parse(f.bytes));
+  assert.deepEqual(rows.map(r=>r.snapshot.state),['OUTPUT_PENDING_SESSION','SESSION_INIT_CONFIRMED','SESSION_OUTPUT']);
+  const hash=v=>contentHash(canonicalJson(v)),stamp=new Date(x.clock()).toISOString(),end=new Date(x.clock()+3000).toISOString();
+  const {executionTarget}=await import('../../apps/server/modules/executions/execution-proof.ts');
+  const scope=x.m.config.scope,base='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/understanding-response-read',target=executionTarget('GET',base,[],null);
+  const frame={schemaVersion:1,challengeRef:ref(5),proof:{requestId:id(6),...target,grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,serverNonce:Buffer.alloc(32,1).toString('base64url')},signature:Buffer.alloc(64,2).toString('base64url')};
+  let terminal=['NONE','DENIED','EXPIRED','GET_DENIED'].includes(mode),prepares=0;
+  const outcome=(status,stage)=>({kind:'NORMAL_UNDERSTANDING_NOT_ACQUIRED',status,stage,path:base,query:'',requestId:id(6),slotRef:ref(4),expiresAt:end});
+  x.m.prepareRespond(r=>{prepares++;if(terminal&&mode!=='GET_DENIED')return outcome(mode,'PREPARE');return {path:r.path,query:'',auth:Buffer.from(canonicalJson(frame)).toString('base64url'),challengeRef:frame.challengeRef,requestId:frame.proof.requestId,expiresAt:end};});
+  const sourceScope=rows[0].snapshot.scope;
+  const context={...scope,registrationRef:sourceScope.registrationRef,startCommandId:id(56),startCommandRef:ref(785),assignmentRef:ref(40),preparationRef:ref(784),contextBundleRef:ref(50),sessionBindingRef:sourceScope.sessionBindingRef};
+  assert.notEqual(context.startCommandId,context.startCommandRef.id); // 원 queue 행 ref와 envelope 명령 ID는 독립이다.
+  if(mode==='START')context.startCommandId=id(789);
+  if(mode==='CONTEXT')context.contextBundleRef=ref(789);if(mode==='REGISTRATION')context.registrationRef=ref(789);
+  x.m.respond(r=>{
+   assert.equal(r.method,'GET');assert.equal(r.path,base);
+   if(terminal&&mode==='GET_DENIED')return outcome('DENIED','REQUEST');
+   const receipt={kind:'NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED',binding:{...scope,transport:'NORMAL_PROTECTED',mode:'EXECUTION',scopeDigest:'b'.repeat(64),publicKeyFingerprint:'c'.repeat(64)},credentialRef:ref(4),challengeRef:frame.challengeRef,packetHash:mode==='PACKET'?'f'.repeat(64):hash({frame,target}),target,requestId:frame.proof.requestId,understandingRequestRef:ref(777),context,observedAt:stamp,expiresAt:end};
+   return {transport:'NORMAL_PROTECTED',status:'DISCOVERY_ACQUIRED',proofResultRef:{...ref(783),contentHash:hash(receipt)},receipt,sourceAvailable:false,selectionAvailable:false,cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
+  });
+  const handle=q.profile.handle;q.profile.handle=(v,...rest)=>{if(v.operation==='NORMAL_SPOOL_CLOSE'&&!v.payload.reservation){closed++;if(mode==='CLOSE_UNKNOWN')return{state:'UNKNOWN'};}return handle(v,...rest);};
+  const before=x.m.calls.length,files=canonicalJson([...q.local.files].map(([p,f])=>[p,f.bytes.toString('base64')])),a=new AbortController();if(mode==='CANCELLED')a.abort();
+  const concurrent=[],phases=new Set();
+  if(mode==='OK')x.m.onFrame(v=>{
+   const phase=v.operation==='NORMAL_SPOOL_PROFILE_STATE'?'PRIVATE_READ':v.payload.request?.path?.endsWith('/understanding-response-read')?v.payload.kind:null;
+   if(!phase||phases.has(phase))return;phases.add(phase);
+   concurrent.push(assert.rejects(worker.discoverUnderstanding(a.signal)),assert.rejects(worker.run(a.signal)),assert.rejects(worker.renew(a.signal)));
+  });
+  if(terminal){
+   const result=await worker.discoverUnderstanding(a.signal);assert.deepEqual(result,{kind:'NOT_ACQUIRED',status:mode==='GET_DENIED'?'DENIED':mode});
+   assert.equal(closed,0);assert.equal(x.m.calls.slice(before).filter(v=>v.operation.startsWith('NORMAL_SPOOL_')).length,0);terminal=false;
+  }
+  if(['OK','NONE','DENIED','EXPIRED','GET_DENIED'].includes(mode)){
+   const result=await worker.discoverUnderstanding(a.signal);assert.equal(result.kind,'DISCOVERY');assert.equal(result.metadata.ranges.length,1);assert.equal(result.metadata.ranges[0].sequence,3);assert.deepEqual(result.metadata.initConfirmationRef,rows[1].ref);assert.deepEqual(result.metadata.tailRef,rows[2].ref);assert.equal(closed,1);await Promise.all(concurrent);
+   if(mode==='OK')assert.deepEqual([...phases],['PREPARE','REQUEST','PRIVATE_READ']);
+   assert.equal(/선택된|session_id|plannedSid|private|cwd|textHash/.test(JSON.stringify(result)),false);
+   const count=x.m.calls.length;await assert.rejects(worker.discoverUnderstanding(a.signal));assert.equal(x.m.calls.slice(count).filter(v=>v.operation.startsWith('NORMAL_SPOOL_')).length,0);
+  }else{await assert.rejects(worker.discoverUnderstanding(a.signal));const count=x.m.calls.length;await assert.rejects(worker.discoverUnderstanding(a.signal));assert.equal(x.m.calls.length,count);}
+  const calls=x.m.calls.slice(before);assert.equal(calls.filter(v=>v.payload.request?.method==='POST'||['NORMAL_SPOOL_ALLOCATE','NORMAL_SPOOL_RESERVE','NORMAL_SPOOL_SETTLE'].includes(v.operation)).length,0);
+  if(['PACKET','START','CONTEXT','REGISTRATION','CANCELLED'].includes(mode))assert.equal(calls.filter(v=>v.operation.startsWith('NORMAL_SPOOL_')).length,0);
+  assert.equal(canonicalJson([...q.local.files].map(([p,f])=>[p,f.bytes.toString('base64')])),files);
+  assert.equal(x.f.owner.isBusy(),false);assert.equal(x.f.timers(),0);
+ }finally{x.source.dispose();fixtures.setFiles(undefined);}
+});
+
+test('FN09 native 목적 부정 응답은 exact TLS HTTP412 또는 정상 NONE만 값으로 보존 · 정적',()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../../apps/connector/native/NormalExecutionCredentialSource.cs'),'utf8');
+ assert.match(source,/sealed class DiscoveryRefusal:Dictionary/);
+ assert.ok(source.includes('if(value is DiscoveryRefusal)return'));
+ assert.match(source,/original.StatusCode!=HttpStatusCode.PreconditionFailed/);
+ assert.match(source,/transport,status,challenge,nonceConsumed,executionAuthorized,dispatchPerformed/);
+ assert.match(source,/code,message,requestId,targetId,retryDisposition,details/);
+ assert.ok(source.includes('NORMAL_UNDERSTANDING_DISCOVERY_DENIED')&&source.includes('NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED'));
+ assert.ok(source.includes('NORMAL_UNDERSTANDING_NOT_ACQUIRED'));
+ assert.ok(source.includes('req.AllowAutoRedirect=false;req.Proxy=null;req.UseDefaultCredentials=false;req.Credentials=null;'));
+ assert.ok(source.includes('response.ResponseUri.AbsoluteUri!=S(record,"origin")+path+query'));
+ assert.ok(source.includes('if(H(Record(Id(h,"attemptId")))!=recordHash||clock()>=end)throw Invalid();'));
 });

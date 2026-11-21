@@ -15,8 +15,8 @@ import {confirmNormalLiveInputDelivery,takeFirstOutputOrigin,takeFirstSidOrigin,
 import type {NormalStartWire,NormalStartCurrent} from './normal-start-coordinator.ts';
 import type {RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {receiveProfiledEnvelope,type InboxFilePorts,type InboxLimits} from './receipt-inbox.ts';
-import {takeNormalUnderstandingRead,type NormalUnderstandingReadTicket,type NormalProtectedGetClient} from './normal-protected-get-client.ts';
-import {readNormalUnderstandingResponse,type NormalUnderstandingResponseProjection} from './normal-understanding-response-source.ts';
+import {takeNormalUnderstandingDiscovery,type NormalUnderstandingDiscoveryTicket,takeNormalUnderstandingRead,type NormalUnderstandingReadTicket,type NormalProtectedGetClient} from './normal-protected-get-client.ts';
+import {readNormalUnderstandingDiscovery,type NormalUnderstandingDiscoveryProjection,readNormalUnderstandingResponse,type NormalUnderstandingResponseProjection} from './normal-understanding-response-source.ts';
 import type {NormalOwnedCredentialPort} from './normal-credential-bootstrap-client.ts';
 
 type Writer='NORMAL_EXECUTION'|'UNVERIFIED_RECEIPT_INBOX';
@@ -428,7 +428,7 @@ export class OwnedSpoolRuntime {
    catch(error){unknown=true;throw error;}finally{reading=false;completed.resolve();}
   }};
  }
- outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>}{
+ outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>;readUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingDiscoveryProjection>}{
   const saved=this.#workers.get(worker),slot=this.external(this.#slot);
   if(this.#binding||!saved||saved.journal!==journal||!slot||!refV1(slot.receiptRef)||this.#owner.aborted||signal.aborted||
    isProxy(sdk)||!recordV1(sdk,['expiresAt','check','create','close','classify'])||
@@ -491,15 +491,22 @@ export class OwnedSpoolRuntime {
    if(!inputStream||!query||original!==query||!origin||origin.signal.aborted)return Promise.reject(Error('NORMAL_WORKER_INPUT_UNAVAILABLE'));
    return inputStream.provide(input,signal,()=>confirmNormalLiveInputDelivery(input,worker,original,port));
   }});
-  return {source,port,readUnderstanding:async(ticket,client,owned)=>{
+  const withRead=async(body:Parameters<Parameters<typeof readNormalUnderstandingResponse>[1]['withRead']>[0],guard:()=>void)=>{await output.read(async tx=>{
+   guard();const rows=await tx.read();guard();let active=true;
+   try{await body({rowCount:rows.length,read:async sequence=>{guard();if(!active||!Number.isSafeInteger(sequence)||sequence<1||sequence>rows.length)invalid();return cloneV1(rows[sequence-1]);}});guard();}
+   finally{active=false;rows.length=0;}
+  },guard);};
+  return {source,port,readUnderstandingDiscovery:async(ticket,client,owned)=>{
+   verify();if(!origin||!binding||this.#unknown||byRef(owned.metadata)!==slotKey)invalid();
+   const original=takeNormalUnderstandingDiscovery(ticket,client,owned,origin.scope,origin.start);
+   const guard=()=>{verify();original.check();if(!origin||origin.signal.aborted||this.#unknown)invalid();this.external(origin.check);};
+   try{guard();return await readNormalUnderstandingDiscovery(original.binding,{clock:()=>{guard();return this.#clock();},current:()=>{guard();return original.binding;},withRead:body=>withRead(body,guard)},origin.signal);}finally{original.finish();}
+  },readUnderstanding:async(ticket,client,owned)=>{
    verify();if(!origin||!binding||this.#unknown||byRef(owned.metadata)!==slotKey)invalid();
    const original=takeNormalUnderstandingRead(ticket,client,owned,this.#attempt,origin.scope);
    const guard=()=>{verify();original.check();if(!origin||origin.signal.aborted||this.#unknown)invalid();this.external(origin.check);};
    try{guard();return await readNormalUnderstandingResponse(original.selection.request,{clock:()=>{guard();return this.#clock();},current:()=>{guard();return original.selection.binding;},
-    withRead:async body=>{await output.read(async tx=>{guard();const rows=await tx.read();guard();let active=true;
-     try{await body({rowCount:rows.length,read:async sequence=>{guard();if(!active||!Number.isSafeInteger(sequence)||sequence<1||sequence>rows.length)invalid();return cloneV1(rows[sequence-1]);}});guard();}
-     finally{active=false;rows.length=0;}
-    },guard);}
+    withRead:body=>withRead(body,guard)
    },origin.signal);}finally{original.finish();}
   }};
  }

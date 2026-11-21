@@ -197,3 +197,23 @@ test('FN09 두 exact 목적은 원 UTF8 2MiB/+1·공백 확대를 parse 전 검�
  f.host.send=async()=>{calls++;return {handle:id(9),offset:0,total:2*1024*1024+1,hash:hash(' '.repeat(2*1024*1024-1)+'{}'),expiresAt,bytes:Buffer.from(' '.repeat(48000)).toString('base64url'),done:false};};
  await assert.rejects(p.request({method:'GET',path:'/api/v1/connectors/'+id(2)+'/executions/'+id(3)+'/understanding-response-read',query:'',body:null,auth:'public-proof',expiresAt},signal),/UNKNOWN/);assert.equal(calls,1);
 });
+
+for(const mode of ['NONE','DENIED','EXPIRED','CLOSE','EXTRA','SLOT','PATH','STATUS','RAW_CODE','EXPIRED_CLOCK'])test('FN09 목적 NONE/거절은 원 Channel 정상 close 이후만 해석 '+mode,async()=>{
+ const signal=new AbortController().signal;let now=at,closed=0,calls=0;
+ const base='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/understanding-response-read';
+ let terminal=true;
+ const factory={async open(){return {async send(op:string,p:any){calls++;
+  if(op==='NORMAL_EXECUTION_BOOTSTRAP')return {slotId:id(7),receiptRef:ref,scope,origin:'https://example.invalid',expiresAt,caHash:hash('RAM CA')};
+  assert.equal(op,'NORMAL_EXECUTION_CALL');
+  const status=mode==='DENIED'||mode==='EXPIRED'?mode:'NONE';
+  const value:any=terminal?{kind:'NORMAL_UNDERSTANDING_NOT_ACQUIRED',status,stage:'PREPARE',path:base,query:'',requestId:id(77),slotRef:ref,expiresAt:new Date(at+10000).toISOString()}:{path:base,query:'',auth:'a',challengeRef:ref,requestId:id(77),expiresAt:new Date(at+10000).toISOString()};
+  if(mode==='EXTRA')value.raw='private';if(mode==='SLOT')value.slotRef={...ref,id:id(88)};if(mode==='PATH')value.path+='/result';if(mode==='STATUS')value.status='UNKNOWN';
+  const raw=Buffer.from(canonicalJson(mode==='RAW_CODE'?{code:'NORMAL_UNDERSTANDING_DISCOVERY_DENIED'}:value));
+  return {handle:id(9),offset:0,total:raw.length,hash:hash(raw),expiresAt:new Date(at+10000).toISOString(),bytes:raw.toString('base64url'),done:true};
+ },async close(){closed++;if(calls>1&&mode==='EXPIRED_CLOCK')now=at+10000;return {state:calls>1&&mode==='CLOSE'?'UNKNOWN':'CLOSED_CONFIRMED'};}};}};
+ const owner=new NormalCredentialBootstrapClient({attemptId:id(8),origin:'https://example.invalid',ca:'RAM CA',scope},{host:factory,now:()=>now}),port=await owner.bootstrap(signal);
+ if(['NONE','DENIED','EXPIRED'].includes(mode)){
+  assert.deepEqual(await port.prepareUnderstandingDiscovery(signal),{kind:'NOT_ACQUIRED',status:mode});assert.equal(closed,2);terminal=false;
+  assert.equal((await port.prepareUnderstandingDiscovery(signal)).kind,'PACKET');assert.equal(closed,3);
+ }else{await assert.rejects(port.prepareUnderstandingDiscovery(signal),/UNKNOWN/);const n=calls;await assert.rejects(port.prepareUnderstandingDiscovery(signal),/UNKNOWN/);assert.equal(calls,n);}
+});

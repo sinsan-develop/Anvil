@@ -38,6 +38,19 @@ export function takeNormalUnderstandingRead(ticket:NormalUnderstandingReadTicket
  saved.guard();return {selection:cloneV1(saved.selection),check:saved.guard,finish:saved.finish};
 }
 
+declare const discoveryTicket:unique symbol;
+export type NormalUnderstandingDiscoveryTicket=Readonly<{[discoveryTicket]:true}>;
+const discoveries=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;context:any;requestRef:Ref;acquisitionRef:Ref;observedAt:string;expiresAt:string;guard:()=>void;finish:()=>void}>();
+const originalDiscoveryPrepare=NormalOwnedCredentialPort.prototype.prepareUnderstandingDiscovery,originalDiscoveryRequest=NormalOwnedCredentialPort.prototype.requestUnderstandingDiscovery;
+export function takeNormalUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,scope:NormalUnderstandingResponseRequest['scope'],start:{startCommandId:string;assignmentId:string;contextBundleRef:Ref}){
+ const saved=discoveries.get(ticket);if(!saved)fail('NORMAL_GET_READ_TICKET_INVALID');discoveries.delete(ticket);
+ try{
+  const c=saved.context;
+  if(saved.client!==client||saved.owned!==owned||c.projectId!==scope.projectId||c.executionId!==scope.executionId||c.executionGeneration!==scope.generation||!same(c.registrationRef,scope.registrationRef)||!same(c.grantRef,scope.grantRef)||!same(c.sessionBindingRef,scope.sessionBindingRef)||!same(owned.metadata.receiptRef,scope.slotRef)||c.startCommandId!==start.startCommandId||c.assignmentRef.id!==start.assignmentId||!same(c.contextBundleRef,start.contextBundleRef))fail('NORMAL_GET_READ_TICKET_INVALID');
+  saved.guard();return {binding:{scope:cloneV1(scope),requestRef:saved.requestRef,acquisitionRef:saved.acquisitionRef,contextBundleRef:c.contextBundleRef,checkedAt:saved.observedAt,expiresAt:saved.expiresAt},check:saved.guard,finish:saved.finish};
+ }catch(error){saved.finish();throw error;}
+}
+
 export class NormalProtectedGetError extends Error{
  readonly code:string;readonly status:number;
  /** GET을 보낸 뒤 결과를 알 수 없으면 true다. 같은 packet 재전송 여부는 호출자가 정한다. */
@@ -157,6 +170,32 @@ export class NormalProtectedGetClient{
    const ticket=Object.freeze({}) as NormalUnderstandingReadTicket;understandingReads.set(ticket,{client:this,owned,attemptId:q.attemptId,selection,guard,finish:()=>{active=false;this.#understandingBusy=false;}});issued=true;return ticket;
   }catch(error){if(error instanceof NormalProtectedGetError)throw error;return fail('NORMAL_GET_RESPONSE_INVALID',0,true);}
   finally{if(!issued){active=false;this.#understandingBusy=false;}}
+ }
+ /** 서버 DISCOVERY_ACQUIRED만 받는 별도 명시 GET. SELECT ticket 및 결과 POST와 분리한다. */
+ async receiveUnderstandingDiscovery(signal:AbortSignal):Promise<{kind:'DISCOVERY';ticket:NormalUnderstandingDiscoveryTicket}|{kind:'NOT_ACQUIRED';status:'NONE'|'DENIED'|'EXPIRED'}>{
+  if(!this.#owned||this.#understandingBusy||this.#understandingRequests.size>=1024||!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_GET_READ_UNAVAILABLE');
+  this.#understandingBusy=true;
+  const owned=this.#owned,metadata=owned.metadata,path=this.#base+'/understanding-response-read',wall=this.#clock(),tick=this.#tick();
+  let end=Math.min(wall+30000,this.#credentialExpiry),lastWall=wall,lastTick=tick,issued=false,active=true;
+  const finish=()=>{active=false;this.#understandingBusy=false;};
+  const guard=()=>{const now=this.#clock(),mono=this.#tick();if(!active||signal.aborted||this.#owned!==owned||owned.prepareUnderstandingDiscovery!==originalDiscoveryPrepare||owned.requestUnderstandingDiscovery!==originalDiscoveryRequest||!same(owned.metadata,metadata)||now<lastWall||mono<lastTick||now>=end||mono-tick>=end-wall)fail('NORMAL_GET_READ_UNAVAILABLE');lastWall=now;lastTick=mono;};
+  try{
+   guard();const prepared=await owned.prepareUnderstandingDiscovery(signal);guard();if(prepared.kind==='NOT_ACQUIRED')return prepared;
+   const packet=prepared.packet;end=Math.min(end,Date.parse(packet.expiresAt));guard();
+   const response=await owned.requestUnderstandingDiscovery({method:'GET',path,query:'',body:null,auth:packet.auth,expiresAt:new Date(end).toISOString()},signal);guard();if(response.kind==='NOT_ACQUIRED')return response;
+   const v=boundedSdkObject(response.value,2*1024*1024).value,r=v.receipt,c=r?.context,b=r?.binding;
+   const hash=(value:unknown)=>contentHash(canonicalJson(value)),target=executionTarget('GET',path,[],null),frame=parseWireJson(Buffer.from(packet.auth,'base64url').toString('utf8')) as any;
+   if(!recordV1(frame,['schemaVersion','challengeRef','proof','signature'])||frame.schemaVersion!==1||!same(frame.challengeRef,packet.challengeRef)||!recordV1(frame.proof,['requestId','method','path','queryHash','bodyHash','grantRef','credentialGeneration','serverNonce'])||frame.proof.requestId!==packet.requestId||!same({...target,requestId:packet.requestId,grantRef:this.#scope.grantRef,credentialGeneration:this.#scope.credentialGeneration,serverNonce:frame.proof.serverNonce},frame.proof)||!base64(frame.signature,64)||!base64(frame.proof.serverNonce,32))fail('NORMAL_GET_RESPONSE_INVALID',200,true);
+   if(!recordV1(v,['transport','status','proofResultRef','receipt','sourceAvailable','selectionAvailable','cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed'])||v.transport!=='NORMAL_PROTECTED'||v.status!=='DISCOVERY_ACQUIRED'||v.sourceAvailable!==false||v.selectionAvailable!==false||v.cacheControl!=='no-store'||v.nonceConsumed!==true||v.executionAuthorized!==false||v.dispatchPerformed!==false||!refV1(v.proofResultRef)||v.proofResultRef.version!==1||
+    !recordV1(r,['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','understandingRequestRef','context','observedAt','expiresAt'])||r.kind!=='NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED'||v.proofResultRef.contentHash!==hash(r)||!same(r.credentialRef,metadata.receiptRef)||!same(r.challengeRef,packet.challengeRef)||r.requestId!==packet.requestId||r.packetHash!==hash({frame,target})||!same(r.target,target)||!refV1(r.understandingRequestRef)||r.understandingRequestRef.version!==1||!isoV1(r.observedAt)||!isoV1(r.expiresAt)||Date.parse(r.observedAt)>this.#clock()||Date.parse(r.observedAt)<wall||Date.parse(r.expiresAt)>end||
+    !recordV1(b,['transport','mode','projectId','connectorId','executionId','executionGeneration','grantRef','scopeDigest','credentialGeneration','publicKeyFingerprint'])||b.transport!=='NORMAL_PROTECTED'||b.mode!=='EXECUTION'||!hashV1(b.scopeDigest)||!hashV1(b.publicKeyFingerprint)||!same({...this.#scope,transport:b.transport,mode:b.mode,scopeDigest:b.scopeDigest,publicKeyFingerprint:b.publicKeyFingerprint},b)||
+    !recordV1(c,['projectId','executionId','executionGeneration','grantRef','registrationRef','connectorId','credentialGeneration','startCommandId','startCommandRef','assignmentRef','preparationRef','contextBundleRef','sessionBindingRef'])||!uuidV1(c.startCommandId)||!['grantRef','registrationRef','startCommandRef','assignmentRef','preparationRef','contextBundleRef','sessionBindingRef'].every(k=>refV1(c[k]))||!Object.keys(this.#scope).every(k=>same(c[k],this.#scope[k as keyof NormalProtectedGetScope]))||this.#understandingRequests.has(r.understandingRequestRef.id))fail('NORMAL_GET_RESPONSE_INVALID',200,true);
+   end=Math.min(end,Date.parse(r.expiresAt));guard();this.#understandingRequests.add(r.understandingRequestRef.id);
+   const ticket=Object.freeze({}) as NormalUnderstandingDiscoveryTicket;
+   discoveries.set(ticket,{client:this,owned,context:cloneV1(c),requestRef:cloneV1(r.understandingRequestRef),acquisitionRef:cloneV1(v.proofResultRef),observedAt:r.observedAt,expiresAt:r.expiresAt,guard,finish});issued=true;
+   return {kind:'DISCOVERY',ticket};
+  }catch(error){if(error instanceof NormalProtectedGetError)throw error;return fail('NORMAL_GET_RESPONSE_INVALID',0,true);}
+  finally{if(!issued)finish();}
  }
  /** 자료 ID는 직전에 검산한 명령 페이지 item의 descriptor에 있는 것만 받는다. */
  async prepareMaterial(item:NormalPageItem,materialId:string,signal:AbortSignal):Promise<PreparedMaterial>{

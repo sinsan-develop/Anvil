@@ -22215,3 +22215,11 @@ developer_primary 단일 작성·동결. 신규 normal-understanding-response-so
 부재 RED 2f09ed, 최초 직접·인접 37통과(6bda4a). 독립 I1의 늦은 현재성 상실 뒤 ROLLBACK tag/예외 불명 반례 4실패(181782)를 보완해 발급·획득 모두 503 UNKNOWN과 원 client discard가 우선하도록 했다. 독립 재검수 C0/I0/M0. Main 직접·인접 44통과/실패·건너뜀0(0473a2), 타입 exit0(cf8bf9), SQL 외부 44문장·SHA·공백 exit0(44ea36). SQL SHA256 AEFC381920AB785128BA8EE9E4ED7C893D7CCB4247EFBEDA976F44D23DFC3096. 실제 PG 내 함수·권한·락·동시성은 미검증이다.
 
 결과는 DISCOVERY_ACQUIRED이며 FIRST·init/tail, SELECT ticket, 결과 POST 또는 실행 권위를 발급하지 않는다. 실제 등록 실행기의 획득 응답 소비, 원 정상 close 증거를 결박한 메타 결과와 불변 정착, 이후 선택·검토 화면은 후속이다. DB·권한·키·서비스·SSH·SDK·Agent 실행0. 롤백은 이번 정확 6경로와 기록의 역적용이다.
+
+#### FN09 S3 — 등록 실행기의 탐색 메타 읽기
+
+기준 dcde102d. developer_primary 단일 작성·동결. 등록 GET의 원 credential/획득 영수증·같은 packet·worker scope를 대조한 일회 인계로만 같은 private 스풀을 읽는다. init 확인·tail 및 선택 가능한 범위는 원 행에서 직접 도출하고 정상 원 host close 뒤 제한된 메타만 반환한다. 본문·SDK object·SID·경로를 반환하지 않는다. 정상 NONE/확정 거절은 원 정상 종결 뒤 해석하고 이후의 새 명시 요청을 허용한다. 불명·취소·다른 권위·close 실패에서는 메타 반환과 자동 재시도가 차단된다.
+
+독립 I1에서 서버의 START DB 불변 ref ID와 원 envelope commandId가 별개인데도 같은 값으로 비교한 문제를 확인했다. 실제처럼 별도 ID를 둔 owner fixture에서 실패(0a28cc)를 재현했고 잘못된 동일성 조건만 제거했다. 다른 원 FIRST commandId 및 context/등록 불일치는 계속 거절한다. 최종 독립 C0/I0/M0. Main 직접 41통과(63cf6d), owner RAM 16 및 native 정적 1 통과(d7a267), 실패·건너뜀0. 루트 타입·공백 검사 exit0(235b07), 최종 동결 지문 일치. C# 컴파일·실 native HTTPS/스풀, DB·권한·키·서비스·SSH·SDK·Agent 실행0.
+
+다음은 같은 획득 영수증과 원 close에 결박한 메타 결과의 서명 POST·불변 보관이다. 첫 SELECT와 UI에서 볼 상태/범위·정상 검토는 미완료이며, 현재 코드는 result 전송 권위를 발급하지 않는다. 롤백은 이번 정확 10경로와 기록 변경분이다.

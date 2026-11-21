@@ -106,12 +106,38 @@ export class NormalOwnedCredentialPort {
  constructor(channel:Channel,metadata:NormalOwnedMetadata,key:symbol){if(key!==secret)fail();this.#channel=channel;this.#metadata=cloneV1(metadata);known.add(this);}
  get metadata():NormalOwnedMetadata{return cloneV1(this.#metadata);}
  matches(origin:string,scope:NormalOwnedScope,expiresAt:string,ca:string|undefined){return known.has(this)&&typeof ca==='string'&&digest(ca)===this.#metadata.caHash&&origin===this.#metadata.origin&&same(scope,this.#metadata.scope)&&expiresAt===this.#metadata.expiresAt;}
+ /** 목적 전용 응답은 Channel의 원 close가 확인된 다음에만 해석한다. */
+ async prepareUnderstandingDiscovery(signal:AbortSignal):Promise<{kind:'PACKET';packet:NormalOwnedPrepared}|{kind:'NOT_ACQUIRED';status:'NONE'|'DENIED'|'EXPIRED'}>{
+  const m=this.#metadata,r={method:'GET' as const,path:'/api/v1/connectors/'+m.scope.connectorId+'/executions/'+m.scope.executionId+'/understanding-response-read',query:'',body:null,auth:null,expiresAt:m.expiresAt};
+  const v=await this.#call('PREPARE',r,signal);
+  try{
+   if(v?.kind==='NORMAL_UNDERSTANDING_NOT_ACQUIRED')return {kind:'NOT_ACQUIRED',status:this.#notAcquired(v,r,'PREPARE')};
+   return {kind:'PACKET',packet:this.#prepared(v,r)};
+  }catch{this.#channel.unknown=true;return fail('NORMAL_OWNED_UNKNOWN');}
+ }
+ #notAcquired(v:any,r:NormalOwnedRequest,stage:'PREPARE'|'REQUEST'):'NONE'|'DENIED'|'EXPIRED'{
+  if(!recordV1(v,['kind','status','stage','path','query','requestId','slotRef','expiresAt'])||v.kind!=='NORMAL_UNDERSTANDING_NOT_ACQUIRED'||v.stage!==stage||v.path!==r.path||v.query!==''||!uuidV1(v.requestId)||!same(v.slotRef,this.#metadata.receiptRef)||!isoV1(v.expiresAt)||Date.parse(v.expiresAt)<=this.#channel.now()||Date.parse(v.expiresAt)>Date.parse(r.expiresAt)||Date.parse(v.expiresAt)>Date.parse(this.#metadata.expiresAt)||!(v.status==='DENIED'||v.status==='EXPIRED'||stage==='PREPARE'&&v.status==='NONE'))fail();
+  return v.status;
+ }
+ async requestUnderstandingDiscovery(request:NormalOwnedRequest,signal:AbortSignal):Promise<{kind:'RESPONSE';value:unknown}|{kind:'NOT_ACQUIRED';status:'DENIED'|'EXPIRED'}>{
+  const m=this.#metadata;
+  if(request.method!=='GET'||request.path!=='/api/v1/connectors/'+m.scope.connectorId+'/executions/'+m.scope.executionId+'/understanding-response-read'||request.query!==''||request.body!==null)fail();
+  const v=await this.#call('REQUEST',request,signal);
+  try{if(v?.kind==='NORMAL_UNDERSTANDING_NOT_ACQUIRED'){
+   const status=this.#notAcquired(v,request,'REQUEST');
+   const packet=parseWireJson(Buffer.from(request.auth!,'base64url').toString('utf8')) as any;
+   if(v.requestId!==packet?.proof?.requestId||status==='NONE')fail();return {kind:'NOT_ACQUIRED',status};
+  }return {kind:'RESPONSE',value:v};}catch{this.#channel.unknown=true;return fail('NORMAL_OWNED_UNKNOWN');}
+ }
  async prepare(request:Omit<NormalOwnedRequest,'auth'>,signal:AbortSignal):Promise<NormalOwnedPrepared>{
   const v=await this.#call('PREPARE',{...request,auth:null},signal);
-  try{if(!recordV1(v,['path','query','auth','challengeRef','requestId','expiresAt'])||v.path!==request.path||v.query!==request.query||
+  try{return this.#prepared(v,request);}catch{this.#channel.unknown=true;return fail('NORMAL_OWNED_UNKNOWN');}
+ }
+ #prepared(v:any,request:Omit<NormalOwnedRequest,'auth'>):NormalOwnedPrepared{
+  if(!recordV1(v,['path','query','auth','challengeRef','requestId','expiresAt'])||v.path!==request.path||v.query!==request.query||
    typeof v.auth!=='string'||!/^[A-Za-z0-9_-]{1,8192}$/.test(v.auth)||!refV1(v.challengeRef)||!uuidV1(v.requestId)||!isoV1(v.expiresAt)||
    Date.parse(v.expiresAt)>Date.parse(this.#metadata.expiresAt)||Date.parse(v.expiresAt)<=this.#channel.now())fail();
-  return v as unknown as NormalOwnedPrepared;}catch{this.#channel.unknown=true;return fail('NORMAL_OWNED_UNKNOWN');}
+  return v as unknown as NormalOwnedPrepared;
  }
  request(request:NormalOwnedRequest,signal:AbortSignal):Promise<unknown>{return this.#call('REQUEST',request,signal);}
  async #call(kind:'PREPARE'|'REQUEST',r:NormalOwnedRequest,signal:AbortSignal):Promise<any>{
