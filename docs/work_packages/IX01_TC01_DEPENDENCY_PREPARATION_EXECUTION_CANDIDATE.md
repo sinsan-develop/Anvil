@@ -94,3 +94,9 @@
 다음 구현 위치는 **고정 Linux bootstrap 한 곳**이다. 거기서 원 승인/소진·source/tool/lock 공급자를 검산하고 native factory와 receiver를 직접 조립하며, 같은 원 Windows 감독이 strict SSH 한 번과 원 수거를 담당해야 한다. 현재 보호 원문/소진 공급자 및 고정 bootstrap 파일·배포/적재 방식·command SHA가 없으므로 파일명을 꾸며 호출 명령을 제공하지 않는다. 이들은 기존 helper를 더 감싸는 문제가 아니라 실제 효과 전 외부 원본을 공급하는 남은 접점이다.
 
 Main은 이 접점의 소스와 현재 운영 근거를 고정한 뒤, §1 세 차이만 포함한 하나의 정확 설치 실행 결정을 받는다. 승인 문구/기한/원 소진 기록이 확정되기 전 native 호출0이다. 기존 Windows §1·J3/0095는 다시 묻지 않으며 이번 단계에 0101/PG/Docker/서비스/Agent 효과를 추가하지 않는다. 문서 rollback은 이 신규 파일 제거뿐이고 과거 실행안·소진 기록·소스는 보존한다.
+
+## 7. 후속 소스 연결
+
+`4c44da5d`에서 설치 전용 보호 plan/approval의 원문 검산과 별도 `-dependency-consumption`의 신규 배타 intent를 연결했다. plan은 exact14, approval은 exact9, intent는 exact7 canonical JSON(LF 없음)이며 원 생성 fd와 동일한 readback만 허용한다. 기존 TC01 및 준비용 경로와 분리한다.
+
+[Linux 적재 진입점](../../scripts/qa-fn03-tc01-dependency-linux-entry.ts)은 `4c44da5d`의 원 소스 13파일을 고정한다. 실행 12파일에는 외부 패키지가 없고 기존 loader를 재사용한다. 최초 Node·bootstrap·pre-hook 신원과 같은 HEAD의 원바이트는 외부의 `verifyBootstrap`·`takeSourceFiles`가 제공해야 한다. 실제 보호 승인 원본 및 OS 포트 공급도 남았다. 위 소스 연결만으로는 실제 CLI나 실행안을 확정할 수 없다. §1의 기존 승인 및 실행 제외 범위는 그대로 적용한다.

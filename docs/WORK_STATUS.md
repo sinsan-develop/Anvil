@@ -22047,3 +22047,11 @@ Main 입력 변조 RED `9587cc`와 독립 초기 callback의 기대값 변경 RE
 독립 검수에서 원 intent가 같은 내용의 다른 inode로 교체될 수 있음을 지적했다. sync·close 교체 합성 반례 2건 실패(`c694b9`) 뒤 원 fd 신원을 close 전 고정하고 readback까지 재검산해 2건 모두 통과(`5fcc3d`)했다. 교체 시 준비·spawn·추가 READ 0과 원 close 1회를 확인했다. Main 재실행 직접·인접 37통과/실패·건너뜀0(`85defc`), 담당자 좁은 타입 exit0(`c7c3a1`), 독립 재검수 C0/I0 및 지문 일치. 소스 SHA256 `691F540D32DA8A0C98C993ECC09C3A63C0788CDCFF4D64A21B3B71B6DD9CFF34`, 검증 SHA256 `25E5D1AB157C9DABFDBEBDF877E27A54F944335B4AE7A4E24A73E7839614480F`.
 
 실제 Linux 부트스트랩의 적재 바이트 검산, 보호 승인·원 시스템 포트 공급과 Windows SSH 전송은 미연결이다. 보호 파일 발급·원장 쓰기·WSL/SSH·설치·DB·권한·서비스·Agent 실행 0이다. 다음은 고정 Linux 진입점의 원 소스·도구 검산을 연결하는 것이다. 롤백은 신규 두 파일과 작업 기록의 역적용이다.
+
+### IX01 설치 전용 Linux 원 소스 적재 연결
+
+기준 `4c44da5d` clean. developer_primary가 [Linux 진입 소스](../scripts/qa-fn03-tc01-dependency-linux-entry.ts)와 [합성시험](../tests/unit/FN03/tc01-dependency-linux-entry.test.ts)을 작성했다. 기준 Git 원문 13파일을 고정하고, 실행 그래프의 12파일 및 Node 내장 8종만 기존 pinned loader에 전달한다. 별도 pre-hook 3파일은 최초 적재 증거와 일치해야 하며 외부 패키지 없이 검산한 설치 승인 진입 함수 한 곳을 호출한다. 같은 기한, 겹친 hook 등록 거절, 원 hook 회수와 복사본 소거를 확인했다.
+
+신규 진입점 부재 RED `931248` 뒤 Main 직접·인접 31통과/실패·건너뜀0(`6611f6`), 담당자 좁은 타입 exit0(`86f568`), 독립 C0/I0. 소스 SHA256 `59DBEAB165BDD9EC333D084C5E03C86658634E6418198FE780A9E099BA8B9EA0`, 시험 SHA256 `18DE9209E29503D5FE93D5CCB9F145166F8934721D008692EC0F107773D46828`.
+
+실제 최초 Node·bootstrap·pre-hook의 원 적재 신원 공급, 승인 원본·Linux 시스템 포트의 공급, Windows SSH 전송과 원 프로세스 수거는 남았다. 실제 WSL·SSH·설치·DB·권한·서비스·Agent 실행은 0이다. 롤백은 신규 두 파일과 기록의 역적용이다.
