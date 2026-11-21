@@ -22039,3 +22039,11 @@ Main 입력 변조 RED `9587cc`와 독립 초기 callback의 기대값 변경 RE
 문서 SHA256 `165CE75AB66BF23120B7F284354DD8DA7FCC98A59F96E11BD1816B44444B73B8` (15,751B). 담당 Git 원바이트·공백/LF 종료0 `98d5e5`, Main 기준 source10 및 package/lock2의 경로·바이트·SHA 일치 `6913ab`, 독립 C0/I0. 256MiB는 설치 후 파일 목록 관측 한도이며 설치 중 다운로드·디스크 쓰기의 상한이 아니다. UNKNOWN에서는 신규 경로·원 child·소진 기록을 보존한다.
 
 실제 고정 Linux 진입 파일과 승인/소진 원본 공급, strict SSH 명령·현재 설정/호스트 근거가 확정되지 않아 이 후보는 실행 요청이나 실행에 사용할 수 없다. 제품·시험 변경0, 실제 WSL·SSH·설치·DB·권한·서비스·Agent 실행0. 롤백은 후보 문서와 작업 기록의 역적용이다.
+
+### IX01 설치 전용 승인 원문과 배타 소진 연결
+
+기준 `e7b77981` clean. PMO는 IX01 설치 전용 승인·소진의 비공개 소스와 합성 검수를 기존 준비 범위로 확인했다. developer_primary가 [승인 검산 진입점](../scripts/qa-fn03-tc01-dependency-authorized-entry.ts)과 [합성 검증](../tests/unit/FN03/tc01-dependency-authorized-entry.test.ts) 두 파일을 작성했다. 보호 plan/approval의 원 바이트와 독립 기대 지문, 용도·시도·HEAD·lock·소스·명령·30분 창을 확인한다. 새 `-dependency-consumption` 경로에 배타적으로 남긴 intent를 원 생성 fd와 연결해 검산한 뒤에만 같은 lock 바이트를 기존 수신·설치 준비 경로에 공급한다.
+
+독립 검수에서 원 intent가 같은 내용의 다른 inode로 교체될 수 있음을 지적했다. sync·close 교체 합성 반례 2건 실패(`c694b9`) 뒤 원 fd 신원을 close 전 고정하고 readback까지 재검산해 2건 모두 통과(`5fcc3d`)했다. 교체 시 준비·spawn·추가 READ 0과 원 close 1회를 확인했다. Main 재실행 직접·인접 37통과/실패·건너뜀0(`85defc`), 담당자 좁은 타입 exit0(`c7c3a1`), 독립 재검수 C0/I0 및 지문 일치. 소스 SHA256 `691F540D32DA8A0C98C993ECC09C3A63C0788CDCFF4D64A21B3B71B6DD9CFF34`, 검증 SHA256 `25E5D1AB157C9DABFDBEBDF877E27A54F944335B4AE7A4E24A73E7839614480F`.
+
+실제 Linux 부트스트랩의 적재 바이트 검산, 보호 승인·원 시스템 포트 공급과 Windows SSH 전송은 미연결이다. 보호 파일 발급·원장 쓰기·WSL/SSH·설치·DB·권한·서비스·Agent 실행 0이다. 다음은 고정 Linux 진입점의 원 소스·도구 검산을 연결하는 것이다. 롤백은 신규 두 파일과 작업 기록의 역적용이다.
