@@ -21959,3 +21959,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 Main I1에서 설치 준비가 실행용 receipt를 선점하는 원인을 확인했다. 재현 RED `0bda15` 뒤 설치용 HOME·설정·cache를 정확한 별도 형제 경로로 옮겼고, 세 검산 시점마다 실행용 receipt·artifact 부재를 요구한다. 최종 직접15통과 및 인접 umask 1통과·실패/건너뜀0 `c0aff2`, 좁은 타입 exit0 `15383e`, 공백/LF exit0. Main 최종 지문 대조, 독립 I1 해소·잔여 C0/I0. 소스 SHA256 `DBEDAB6FE7467464B413844639E67B19259FEF75131AD416C50E6BF087F6A602`, 시험 SHA256 `E355DE36D49E621FE0C1645D287298157271441B4EF8D44CD7FF0B57702C0665`.
 
 현재 `--omit=dev` 후보는 런타임 설치용이다. lock에서 rolldown/Vite는 개발 의존이므로 실제 파일 그래프 수집에 별도 검산된 도구가 필요하다. 설치 권위·파일 manifest·실제 Linux 설치 증거를 발급하지 않았으며 실제 감독의 도구/checkout/원 child 공급이 남았다. Windows 2파일 한정 진단 응답 미확인, 실제 SSH·설치·DB·권한·서비스·Agent 실행0. 롤백은 위 신규 두 파일과 작업 기록의 역적용이다.
+
+### IX01/FN03 Linux 설치 파일 목록 후보와 기존 검산기 연결
+
+기준 `ea484088` clean. developer_primary가 [설치 파일 목록 후보 생성](../scripts/qa-fn03-tc01-dependency-evidence.ts)과 [직접 합성시험](../tests/unit/FN03/tc01-dependency-evidence.test.ts)을 작성하고 반환했다. 같은 감독이 고정 root·승인 기한의 현재성을 검사할 때만 원 디렉터리 전체와 각 파일의 길이·SHA를 대조한다. 기존 형상으로 표현할 수 없는 링크·빈 디렉터리·특수 파일과 관측 중의 변경은 거절한다. 일반 파일은 빠짐없이 포함한다. 후보 목록·SHA만 반환하고 원 파일 바이트를 소거한다.
+
+초기 node_modules 일반 파일 반례 RED `59db6d`를 확인해 루트의 디렉터리 요건을 검사했다. 직접14통과와 좁은 타입 exit0 `b14245`, 인접21통과·실패/건너뜀0 `6e8379`, LF·공백 exit0 `40fd21`. bootstrap 합성 fixture의 resolve→load 순서를 한 건 정정했고 기존 loader는 불변이다. Main 지문 대조·독립 C0/I0. 소스 SHA256 `9D04F02138F92E7ED0D658B1D9C025989988642B053DCC909F66881567843268`, 시험 SHA256 `493B11465B3AC385293C7BD4CC504739D0FD50DC1687ED8E9E30AF4839C32497`.
+
+동일 후보 원문을 기존 preload·bootstrap에 공급해 수용과 변조 거절을 확인했다. 실제 설치·원 실행 증거·설치 목록 관측의 권위 및 최종 import graph는 미발급이다. 실제 Linux/WSL·SSH·DB·권한·서비스·Agent 실행0. 다음은 현재 고정 source와 사전 적재·보호 적재의 구분을 반영해 프로젝트 소스 graph의 최신 근거를 준비하고 Windows 진단 승인 응답을 확인하는 것이다. 롤백은 위 두 파일과 작업 기록의 역적용이다.
