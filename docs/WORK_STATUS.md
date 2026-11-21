@@ -22063,3 +22063,11 @@ Main 입력 변조 RED `9587cc`와 독립 초기 callback의 기대값 변경 RE
 신규 모듈 부재 RED `69ed53` 뒤 Main 직접·인접 35통과/실패·건너뜀0(`2f02c5`), 담당자 제한 `--allowJs --checkJs --strict --noEmit` exit0(`ba757d`), 독립 C0/I0/M0. Git 원문 소스 SHA256 `99D4ED9FB47252815616ED3109645843BAF97FD56E20BBA47769A1A68F6AB18C` 14,597B(검수 사본의 마지막 줄 CRLF 한 건만 LF로 정규화), 시험 SHA256 `8632620667A55B238B7154B68DAE52C25BF44511860D0B7DBDA7E165E30F8758`.
 
 검증은 기존 Git 바이트와 로컬 메모리용 Node hook을 사용했다. 실제 stdin의 승인·시스템 포트 생산자, 최초 Node/시작 프로그램의 고정 실행과 외부 원 프로세스 수거는 남았다. WSL·SSH·보호 원장 쓰기·설치·DB·권한·서비스·Agent 실행0. 롤백은 신규 두 파일과 기록의 역적용이다.
+
+### IX01 설치 전용 CLI의 승인·stdin·시스템 포트 연결
+
+기준 `78dae503` clean. developer_primary가 [설치 CLI](../scripts/qa-fn03-tc01-dependency-cli.mjs)와 [합성시험](../tests/unit/FN03/tc01-dependency-cli.test.ts)을 작성했다. 고정 Node와 실행 경로, 외부가 고정하는 시도 및 plan/approval/Git 지문 인자를 요구한다. stdin은 기존 carrier wire만 받고, 보호 승인 원문·고정 Git 13파일·도구의 신원을 기존 최초 적재→승인 검산→배타 소진→설치 준비 경로에 연결한다. 소스 closure는 정렬한 `{path,bytes,sha256}` 13행 canonical JSON UTF-8(no LF)의 SHA256 `D4A0CA7695CCB7D05D2C9E61E113C2CD6A09D774F59A674AA53C288B1F460132` (원 파일 합계 172,503B)다.
+
+초기 검수 C0/I3/M1을 조치했다. strict 승인·wire 검산을 첫 Git 명령 앞에 두고, stdin 대기 중 receipt/prep/commondir가 생겨도 명령0을 확인했다. 원 Git 경로 간접 참조와 기한 불명은 거절하며, 준비 검산과 시작 직전 재검산을 모두 허용하면서 npm 버전 조회를 1회로 유지한다. stdin의 남은 오류 수신기는 원 close에서 회수한다. Main 직접·인접 41통과/실패·건너뜀0(`e8551c`), 담당자 직접6통과·strict 타입/구문/공백0(`fe344b`), 독립 재검수 C0/I0/M0. Git LF 소스 SHA256 `CDBAD5AD1EFFF6BE94AA03439E9ED80968D018077961ED66B3E1FB8AF2AEE765`, 시험 SHA256 `DD0E08331415A2E223E7362E5535AD0E33DA444DF6FE6A2FD4DF37371DC99E6A`.
+
+합성의 도구 지문 3개는 RAM 표지이며 실제 Linux 도구 검증이 아니다. 실제 최초 실행 이미지·고정 시작 인자의 외부 감독, Git 지문 실측, 승인 원본과 전용 경로 준비, Windows SSH 전송·원 프로세스 수거는 미실행이다. 실제 WSL·SSH·CLI·보호 원장 쓰기·설치·DB·권한·서비스·Agent 실행0. 롤백은 신규 두 파일과 기록의 역적용이다.

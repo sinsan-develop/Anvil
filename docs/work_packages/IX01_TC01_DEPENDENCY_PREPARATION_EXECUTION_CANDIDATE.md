@@ -102,3 +102,5 @@ Main은 이 접점의 소스와 현재 운영 근거를 고정한 뒤, §1 세 �
 [Linux 적재 진입점](../../scripts/qa-fn03-tc01-dependency-linux-entry.ts)은 `4c44da5d`의 원 소스 13파일을 고정한다. 실행 12파일에는 외부 패키지가 없고 기존 loader를 재사용한다. 최초 Node·bootstrap·pre-hook 신원과 같은 HEAD의 원바이트는 외부의 `verifyBootstrap`·`takeSourceFiles`가 제공해야 한다. 실제 보호 승인 원본 및 OS 포트 공급도 남았다. 위 소스 연결만으로는 실제 CLI나 실행안을 확정할 수 없다. §1의 기존 승인 및 실행 제외 범위는 그대로 적용한다.
 
 [최초 메모리 적재 소스](../../scripts/qa-fn03-tc01-dependency-bootstrap-start.mjs)는 Node 내장만 먼저 적재하고 고정 Linux 진입점과 pre-hook 3종을 검산한 바이트에서 적재한다. 실제 환경의 한정 stdin과 원 승인/시스템 포트는 아직 공급되지 않는다. 최초 Node/시작 프로그램의 검증과 고정 호출, 외부 원 프로세스 수거도 남았다.
+
+[설치 전용 CLI 소스](../../scripts/qa-fn03-tc01-dependency-cli.mjs)를 연결했다. 고정 디렉터리는 `/home/daon/.local/share/anvil-v3-qa-launchers/fn03-tc01-dependency-78dae503`이며 CLI, 최초 적재 .mjs, Linux 진입점의 독립 Git 원문을 공급할 대상이다. checkout은 별도 고정 `4c44da5d`다. 최초 감독이 인자 `--run <attempt> <plan SHA> <approval SHA> <Git SHA>`를 고정하고, stdin은 기존 준비 wire에만 사용한다. plan의 source closure 기준은 13행 canonical UTF-8(no LF) SHA256 `D4A0CA7695CCB7D05D2C9E61E113C2CD6A09D774F59A674AA53C288B1F460132`이다. 실제 Git 지문·Node와 CLI 최초 시작 신원·전용 디렉터리 배치·승인 발급·SSH 및 원 수거는 미확정이므로 여전히 실행안과 실제 실행 승인으로 사용할 수 없다.
