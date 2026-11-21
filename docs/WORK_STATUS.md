@@ -21903,3 +21903,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 기존 참조 검증 1통과 `362cb3`, JSON 적재 관련 합성 3통과 `a5a633`, 좁은 타입 및 공백 검사 종료0 `aafba1`·`74ffb7`. Main 코드 한 파일과 원 JSON 지문을 대조했다. 후속 적재 graph에는 `contracts/references.ts` 335B/SHA256 `42BFCDD12103C7C7E57B46D64D7B3939266DFE814CD03D579172C95E967BD8A5`에서 `./common/refs.schema.json`으로 가는 명시 `type: json` edge가 필요하다. JSON은 511B/SHA256 `7CDE583810C0D7B0629DDF2FED49772FE273DD39345F3BF06DA69C63AC78CC45`이며 169216ec 조사 그래프는 당시 근거로 보존한다.
 
 실제 Linux의 설치본·graph 전체·원 프로세스 수거와 통합 DB 여정은 미검증이다. Windows 설정·SSH·서비스·DB/권한 접근0, 한정 읽기 승인 응답은 미확인이다. 롤백은 `references.ts` 한 파일과 이 기록의 역적용이다.
+
+### IX01/FN03 실행 전 소스·설치 파일 검산
+
+기준 `14c3ad76` clean·추적 차이0. developer_primary가 [실행 전 파일 검산](../scripts/qa-fn03-tc01-preload-files.ts)과 [직접 합성시험](../tests/unit/FN03/tc01-preload-files.test.ts)을 작성하고 작성권을 반환했다. 외부 감독의 현재성 및 절대·단조 기한 안에서 고정 source/설치 manifest, 원 lock, Linux 소유·경로·파일 SHA, 설치 디렉터리 전체 자식 집합을 확인한다. 원 파일은 같은 descriptor로 다루고 회수 실패 시 후속 파일을 열지 않는다. 선택한 바이트만 보유하며 나머지는 즉시 소거한다.
+
+최초 신규 모듈 부재 RED exit1 `08261f`. 최종 `node --test tests/unit/FN03/tc01-preload-files.test.ts` 10통과·실패/건너뜀0 exit0 `d3dcf7`, 좁은 TypeScript exit0 `289694`, 신규 파일 공백/LF exit0 `ac51b7`. Main 최종 지문 확인, 독립 검수 C0/I0. 링크·설치 트리 누락/추가·파일 변조·만료·원 handle 회수 불명을 합성 검증했다. 소스 SHA256 `5A708D939D13E794F0C6BE5050C490D6A4A1100405D115321848CD272CB83D65`, 시험 SHA256 `07CCBB197B5BAEBC50639519FF09C61F6851C7F5544D89A8CB0A9E8921B07021`.
+
+실제 Linux 설치 경로와 install 옵션·플랫폼별 선택 의존성·완전 적재 graph·프로세스 감독은 미확인이다. .bin 링크는 발견 시 거절한다. 실제 Windows 설정 읽기·SSH·WSL·DB·권한·서비스·Agent 실행0. 다음은 고정 Node의 단일 실행 진입 및 같은 프로세스의 결과 수거를 기존 감독 경로에 연결하는 것이다. 롤백은 신규 두 파일과 이 기록·요약의 역적용이다.
