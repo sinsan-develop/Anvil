@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const source = (name: string) => readFileSync(new URL('../../../apps/connector/native/' + name, import.meta.url), 'utf8');
 
@@ -231,4 +232,110 @@ test('원 binding guard의 회수·snapshot 교체는 CLOSED callback 전에 거
   assert.ok(method.indexOf('using(io.Lock())') < method.indexOf('complete(record)'));
   assert.ok(method.indexOf('RequireSettled();check();return answer') > method.lastIndexOf('ReadOwned()'));
   assert.match(method, /catch\{unknown=true;throw new DesktopTrustKeyStoreUnknownException\(\);\}finally\{busy=false;\}/);
+});
+
+
+test('S2-R1 목적 준비는 원 CLOSE capability를 먼저 소비하고 원장 정착 뒤에만 패킷을 반환한다 (정적)', () => {
+ const p=source('NormalExecutionSpoolProfileSource.cs'), c=source('NormalExecutionCredentialSource.cs');
+ assert.match(p,/sealed class UnderstandingResultCapability/);
+ assert.match(c,/NORMAL_EXECUTION_UNDERSTANDING_RESULT_PREPARE/);
+ const prepare=c.slice(c.indexOf('object PrepareUnderstandingResult('),c.indexOf('object SendUnderstandingResult('));
+ assert.ok(prepare.indexOf('TakeUnderstandingResult(')<prepare.indexOf('ChallengeRequest('));
+ assert.ok(prepare.indexOf('StoreUnderstandingPrepared(')<prepare.indexOf('NATIVE_DISCOVERY_RESULT_PREPARED'));
+ assert.doesNotMatch(prepare,/SaveNormalOwned/);
+ assert.match(p,/UNDERSTANDING_RESULT_PREPARED/);assert.match(p,/UNDERSTANDING_RESULT_SEND_STARTED/);
+});
+
+test('S2-R1 목적 SEND는 exact body/auth를 고정하고 STARTED/원 잠금 회수 뒤에만 HTTP를 호출한다 (정적)', () => {
+ const c=source('NormalExecutionCredentialSource.cs');
+ const send=c.slice(c.indexOf('object SendUnderstandingResult('),c.indexOf('object Call('));
+ assert.match(send,/attemptId,slotId,requestRef,acquisitionRef,preparedHash,auth,body/);
+ assert.ok(send.indexOf('StartUnderstandingSend(')<send.indexOf('Http('));
+ assert.doesNotMatch(send,/ChallengeRequest\(|Sign\(/);
+ assert.match(c,/kind\"\)==\"UNDERSTANDING_RESULT_SEND/);
+ assert.match(c,/StartsWith\(Base\(scope\)\+\"\/understanding-response-read\/\",StringComparison.Ordinal\)\)throw Invalid/);
+});
+
+
+test('S2-R1 원 capability 없음/중복/다른 request·slot·body는 source gate에서 거절한다 (source RAM)', () => {
+ const p=source('NormalExecutionSpoolProfileSource.cs'), c=source('NormalExecutionCredentialSource.cs');
+ const take=p.slice(p.indexOf('internal Row TakeUnderstandingResult('),p.indexOf('internal Row StoreUnderstandingPrepared('));
+ assert.ok(take.indexOf('understandingResultCapability=null')<take.indexOf('if(capability==null'));
+ const condition=take.match(/if\((S\(value,"attemptId"\)[^\n]+?)\)throw Invalid\(\);/)?.[1]; assert.ok(condition);
+ const reject=new Function('value','prior','purpose','S','J','return '+condition);
+ const prior={attemptId:'attempt',slotId:'slot'}, purpose={requestRef:{id:'request'},acquisitionRef:{id:'acquisition'},bodyHash:'hash'};
+ const original={...prior,...purpose};
+ const rejected=(v: typeof original)=>reject(v,prior,purpose,(r:Record<string,unknown>,k:string)=>r[k],JSON.stringify);
+ assert.equal(rejected(original),false);
+ for(const key of ['attemptId','slotId','bodyHash'] as const)assert.equal(rejected({...original,[key]:'changed'}),true);
+ for(const key of ['requestRef','acquisitionRef'] as const)assert.equal(rejected({...original,[key]:{id:'changed'}}),true);
+ const prepare=c.slice(c.indexOf('object PrepareUnderstandingResult('),c.indexOf('object SendUnderstandingResult('));
+ assert.ok(prepare.indexOf('understandingCloseAccepted=false')<prepare.indexOf('if(!accepted'));
+ const finish=p.slice(p.indexOf('Row FinishSupervisedUnderstanding('),p.indexOf('const string PreparedKeys'));
+ assert.ok(finish.indexOf('var answer=finalGuard')<finish.indexOf('understandingResultCapability=new'));
+ assert.match(take,/S\(ended,"host"\)!=understandingHost/);
+ assert.match(take,/Has\(rows,"UNDERSTANDING_RESULT_PREPARED"/);
+});
+
+test('S2-R1 두 관리행은 WI exact 필드만 생성하며 auth·본문·bearer는 저장하지 않는다 (source RAM)', () => {
+ const p=source('NormalExecutionSpoolProfileSource.cs');
+ const store=p.slice(p.indexOf('internal Row StoreUnderstandingPrepared('),p.indexOf('internal Row StartUnderstandingSend('));
+ const expression=store.match(/var row=(R\([\s\S]*?\));\n    DesktopTrustKeyHostSource.Exact/)?.[1];assert.ok(expression);
+ const row=(...pairs:unknown[])=>Object.fromEntries(Array.from({length:pairs.length/2},(_,i)=>[pairs[i*2] as string,pairs[i*2+1]]));
+ const scope={projectId:'project',connectorId:'connector',executionId:'execution',executionGeneration:1,grantRef:{id:'grant'},credentialGeneration:1};
+ const pickup={requestRef:{id:'request'},acquisitionRef:{id:'acquisition'}};
+ const facts={challengeRef:{id:'challenge'},proofRequestId:'proof',nonceDigest:'nonce-digest',packetHash:'packet-hash',expiresAt:'expiry'};
+ const build=new Function('R','H','key','ended','origin','pickup','record','slot','scope','proofFacts','value','return '+expression);
+ const prepared=build(row,(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex'),'request',{allocation:'allocation',host:'host'},{closeHash:'close',pickupHash:'pickup'},pickup,{state:'REGISTERED'},{slotId:'slot',receiptRef:{id:'receipt'},credential:'fixture'},scope,facts,{bodyHash:'body-hash'});
+ const exact=p.match(/const string PreparedKeys="([^"]+)"/)?.[1]?.split(',');assert.ok(exact);assert.deepEqual(Object.keys(prepared),exact);
+ assert.equal(Object.keys(prepared).some(k=>['auth','body','credential','path','sid'].includes(k)),false);
+ assert.equal(JSON.stringify(prepared).includes('fixture'),false);
+ const send=p.slice(p.indexOf('internal Row StartUnderstandingSend('),p.indexOf('// 이 함수는 현재 열린 할당'));
+ const sendExpression=send.match(/var row=(R\([\s\S]*?\));\n    DesktopTrustKeyHostSource.Exact/)?.[1];assert.ok(sendExpression);
+ const started=new Function('R','H','key','prepared','return '+sendExpression)(row,JSON.stringify,'request',prepared);
+ const sendKeys=p.match(/const string SendStartedKeys="([^"]+)"/)?.[1]?.split(',');assert.ok(sendKeys);assert.deepEqual(Object.keys(started),sendKeys);
+ assert.equal(started.preparedHash,JSON.stringify(prepared));
+ assert.match(store,/S\(r,"nonceDigest"\)==S\(proofFacts,"nonceDigest"\)/);assert.match(store,/S\(r,"proofRequestId"\)==S\(proofFacts,"proofRequestId"\)/);
+ assert.match(store,/Append\(log,rows,row\)/);assert.match(send,/Append\(log,rows,row\)/);
+ assert.match(p,/log.Flush\(true\)/);assert.match(p,/activeAnchor.Flush\(true\)/);
+ assert.match(p,/log.Length\+4\+cipher.Length\+activeAnchor.Length\+32\+ManagementHold\(rows\)/);
+ assert.match(p,/cipher.Length>MaxEntry/);assert.match(p,/AdminCap=64\*MiB/);
+ for(const code of [store,send]){
+  assert.match(code,/Log\(false,\(log,rows\)=>\{var saved=/);
+  assert.match(code,/saved==null\|\|J\(saved\)!=J\(/);
+  assert.match(code,/catch\{blocked=true;throw;\}/);
+ }
+});
+
+test('S2-R1 SEND 원 hash·등록·slot·refs·중복 원장 검산은 같은 packet만 허용한다 (source RAM)', () => {
+ const p=source('NormalExecutionSpoolProfileSource.cs');const send=p.slice(p.indexOf('internal Row StartUnderstandingSend('),p.indexOf('// 이 함수는 현재 열린 할당'));
+ const condition=send.match(/if\((H\(prepared\)[^\n]+?)\)throw Invalid\(\);/)?.[1];assert.ok(condition);
+ const same=JSON.stringify, H=(v:unknown)=>JSON.stringify(v), S=(r:Record<string,unknown>,k:string)=>r[k];
+ const record={state:'REGISTERED'},slot={slotId:'slot',receiptRef:{id:'receipt'}};
+ const ended={host:'host',allocation:'allocation'},pickup={key:'request'};
+ const prepared={closeHash:H(ended),pickupHash:H(pickup),host:'host',allocation:'allocation',recordHash:H(record),slotHash:H(slot),slotId:'slot',slotReceiptRef:slot.receiptRef,requestRef:{id:'request'},acquisitionRef:{id:'acquisition'},bodyHash:'body-hash'};
+ const value={preparedHash:H(prepared),requestRef:prepared.requestRef,acquisitionRef:prepared.acquisitionRef,bodyHash:'body-hash'};
+ const gate=new Function('prepared','value','rows','key','ended','pickup','record','slot','H','S','J','Has','understandingHost','return '+condition);
+ const reject=(v=value,r=record,t=slot,duplicate=false,host='next-host')=>gate(prepared,v,[],pickup.key,ended,pickup,r,t,H,S,same,()=>duplicate,host);
+ assert.equal(reject(),false);assert.equal(reject(value,record,slot,true),true);assert.equal(reject(value,record,slot,false,'host'),true);
+ assert.equal(reject({...value,preparedHash:'changed'}),true);assert.equal(reject({...value,bodyHash:'changed'}),true);
+ assert.equal(reject({...value,requestRef:{id:'other'}}),true);assert.equal(reject({...value,acquisitionRef:{id:'other'}}),true);
+ assert.equal(reject(value,{state:'REVOKED'}),true);assert.equal(reject(value,record,{slotId:'renewed',receiptRef:{id:'receipt'}}),true);
+ assert.match(send,/new\[\]\{"challengeRef","proofRequestId","nonceDigest","packetHash"\}/);
+ assert.match(send,/prepared,"expiresAt"\)>DesktopTrustKeyHostSource.Time\(origin,"expiresAt"/);
+ assert.match(send,/TightenRead\(DesktopTrustKeyHostSource.Time\(prepared,"expiresAt"\)\)/);
+});
+
+test('S2-R1 목적 chunk만 exact9이고 raw generic result·추가 경로는 열리지 않는다 (정적)',()=>{
+ const c=source('NormalExecutionCredentialSource.cs');
+ const header=c.slice(c.indexOf('void Header('),c.indexOf('Dictionary<string,object> LoadSlot('));
+ assert.match(header,/if\(inline\)throw Invalid\(\);Exact\(h,"attemptId,slotId,kind,requestRef,acquisitionRef,preparedHash,auth,bodyLength,bodyHash"\)/);
+ assert.match(header,/N\(h\["bodyLength"\]\)\+Encoding.UTF8.GetByteCount\(S\(h,"auth"\)\)>2097152/);
+ assert.match(c,/new UTF8Encoding\(false,true\).GetString\(body\)/);
+ const send=c.slice(c.indexOf('object SendUnderstandingResult('),c.indexOf('object Call('));
+ assert.match(send,/J\(metadata\)!=body/);assert.match(send,/B64\(B\(packet\)\)!=auth/);
+ assert.match(send,/bodyBytes.Length\+Encoding.UTF8.GetByteCount\(auth\)>2097152/);
+ assert.match(send,/finally\{Array.Clear\(bodyBytes/);
+ assert.match(c,/new\[\]\{"PREPARE","REQUEST"\}/);
+ assert.match(c,/serverNonce"\),32/);
 });
