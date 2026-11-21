@@ -21927,3 +21927,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 직접 8통과 `d2ea30`, 인접 합계 30통과·실패/건너뜀0 `bf68ec`, 좁은 타입 exit0 `4c536f`, 공백/LF exit0 `dfb86f`. 최초 합성 fixture의 미등록 STOPPED 값은 기존 STARTED/READ 형상으로 바로잡았다. Main 지문 두 건 대조 및 독립 C0/I0. 소스 SHA256 `3538EED56A8C42230E2F2D3759D3984D23F0A789F182BD5CFB0B3123FB90EEB7`, 시험 SHA256 `5EA0CEA820014D92D870E74902F8D0E0885FEC29ACF3D9B258553DC721DC8A81`.
 
 별도 child의 stdin에 현 launcher 입력을 그대로 보내는 경로는 구현하지 않았다. 입력에 합성 비밀·Buffer·SQL이 있고 기존 감독의 현재성 함수는 전송 가능한 데이터가 아니다. 다음은 고정 child 안에서 승인 파일과 설치 원본으로 입력을 재구성하고 합성 자격을 같은 child에서만 생성하는 방식이다. 기존 보호 plan/approval 및 배타 intent는 그대로 대조한다. 실제 Linux 설치·SSH·PG·권한·서비스·Agent 실행0, 실제 TC01 저장·재조회 미검증. 롤백은 신규 두 파일과 두 작업기록의 역적용이다.
+
+### IX01/FN03 격리 실행 입력의 같은 프로세스 내 조립
+
+기준 `2a464044` clean. developer_primary가 [실행 입력 생산자](../scripts/qa-fn03-tc01-local-entry-input.ts)와 [직접 합성시험](../tests/unit/FN03/tc01-local-entry-input.test.ts)을 작성하고 작성권을 반환했다. 보호 승인·원 preload에 결박한 TSV·legacy·공식 3문서·132 SQL을 기존 판독기로 대조해 기존 entry 형상에 맞춘다. 명시된 합성 난수 포트에서만 별도 시험 자격을 생성하고 로컬 callback에만 전달한다. 자체 사본은 성공·실패 모두 소거하며 원 preload 회수는 감독에 남긴다.
+
+기존 실제 entry의 입력 검산과 첫 현재성 확인까지 연결하고 합성 guard에서 중단해 자원 소비·명령·Pool 생성0을 확인했다. 직접6통과 `a592f6`, 인접 합계14통과·실패/건너뜀0 `2423eb`, 좁은 타입 exit0 `4df77c`, 공백/LF exit0 `eccd41`. Main과 독립 검수에서 두 지문 일치 및 C0/I0를 확인했다. 소스 SHA256 `FA7F973EC3B927044FE6F105CEC9C3C94BDDD5AC419E796032CE278021A789AA`, 시험 SHA256 `C01E326FAEA5F2F9E63917AC9CF322F7D332B5ADA5D5A5E6EF68FDDDAD177538`.
+
+실제 정본의 공식 양식·문서 공통 기준·기본 방법론 Markdown 파일 3개는 현재 ASCII 경로 검사에서 거절됨을 확인했다. 다음은 같은 정본 3경로만 명시적으로 허용해 기존 해시와 소유 검산에 연결하는 것이다. 실제 Ajv/Fastify/pg Linux tree 및 해석 근거, 최종 child와 launcher의 연결, WSL·DB 저장·재조회는 미완료다. 실제 파일 관측·난수·WSL·SSH·DB·권한·서비스·Agent 실행0. 롤백은 신규 두 파일과 작업 기록의 역적용이다.
