@@ -21791,3 +21791,9 @@ PMO 회신과 DEVELOPMENT_ENVIRONMENT·FN03_ISOLATED_DOCUMENT_RESULT를 대조�
 기준 `6bdac930` clean. Main과 baseline_predispatch_task_review의 정본·제품 읽기 및 PMO 지원 결과를 기존 PRESPAWN 결정 후보 §7에 통합했다. 기존 queue의 preparationRef가 native 수용 영수증이 아니라 Options를 포함한 실행 준비 참조이고, 실제 current 포트는 요청 hash와 queue transactionId에 결박됨을 확인했다. 접수와 queue를 구분하는 순서, writer NONE→RESERVED→OWNED, 보유 목적·원 기한·회수 책임, SDK child와의 차이를 구체화했다. 기존 10초 그대로의 방향을 최초 비교 대상으로 두고 대안의 유한 기한/권위는 결정 전이다. 실제 source/writer 존재나 원 준비 물리 증거를 확인하지 않아 도입·실행은 승인 요청하지 않았다.
 
 독립 검수와 Main의 원 포트/상태 순서 대조 `7f5946`; 제품/시험·C#/SDK·Agent·실DB·권한·기기·서비스 변경/실행0. FN07 도구 읽기 응답은 새로 확인되지 않았고 기존 질문을 반복하지 않았다. 롤백은 PRESPAWN 후보 §7과 이 기록의 역적용이다.
+
+### FN09 보관 능력보고의 App 화면 이동 통합 검수
+
+기준 `a38ed772` clean. developer_primary가 기존 컴포넌트 단위의 재현에서 남겨 둔 App 이동을 신규 시험 한 파일에서 확인한 뒤 작성권을 반환했다. 실제 App/연결 화면의 보호 GET과 명시 선택, 해시 이동 뒤 Workspace의 기존 준비 입력에 정확 보고·임무 참조가 이어진다. 다른 화면이나 프로젝트로 이동했다 돌아와도 과거 선택을 되살리지 않고, 기존 준비 명령은 보존한다. 이 시험의 서버 전송 POST 0이며 저장의 기존 합성 검수는 중복하지 않았다.
+
+가상 entry·주변 응답 fixture 누락으로 인한 시험 준비 오류를 보완했다. 담당 App 통합 1통과·실패/건너뜀0 `1e4744`, 좁은 타입 종료0 `b6450c`. Main 재검수 같은 1통과·종료0 및 지문 확인 `7933e6`, 시험 SHA256 16FAB518E2897DBE0D289B2761FBEF4F40CCF7D3B34EC4C80C9A9F308E24852F. 제품 변경0, 가상 DOM/모의 전송·메모리 빌드이며 실제 브라우저·DB·서비스·Agent 접근/실행0. Stage 및 전체 완료 상태 불변. 롤백은 신규 시험과 이 기록의 역적용이다.

@@ -1,0 +1,97 @@
+import test,{before,after} from 'node:test';
+import assert from 'node:assert/strict';
+import {build} from 'vite';
+import {fileURLToPath} from 'node:url';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {seed,clientFixture} from './registered-preparation-options-fixture.ts';
+import {newContextPreparation} from '../../../apps/web/src/features/workspace/context-api.ts';
+import {buildContextManifest} from '../../../apps/server/modules/context/context-manifest.ts';
+import {planContextText} from '../../../apps/server/modules/context/context-text-plan.ts';
+/** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
+class MemoryNode{
+ nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
+ constructor(name:string,type=1,owner?:any){this.nodeType=type;this.nodeName=type===1?name.toUpperCase():name;this.tagName=this.nodeName;this.localName=name;this.ownerDocument=owner;}
+ get options():MemoryNode[]{return this.childNodes.flatMap(n=>n.tagName==='OPTION'?[n]:n.options);}
+ get firstChild():MemoryNode|null{return this.childNodes[0]??null;}get lastChild():MemoryNode|null{return this.childNodes.at(-1)??null;}get nextSibling():MemoryNode|null{const a=this.parentNode?.childNodes;return a?.[a.indexOf(this)+1]??null;}
+ get nodeValue():string|null{return this.nodeType===3?this.data:null;}set nodeValue(v:string|null){if(this.nodeType===3)this.data=v??'';}
+ get textContent():string{return this.nodeType===3?this.data:this.childNodes.map(n=>n.textContent).join('');}
+ set textContent(v:string){if(this.nodeType===3){this.data=String(v);return;}for(const n of this.childNodes)n.parentNode=null;this.childNodes=[];if(v)this.appendChild(this.ownerDocument.createTextNode(String(v)));}
+ appendChild(n:MemoryNode){if(n.parentNode)n.parentNode.removeChild(n);n.parentNode=this;this.childNodes.push(n);return n;}
+ insertBefore(n:MemoryNode,b:MemoryNode){if(n.parentNode)n.parentNode.removeChild(n);n.parentNode=this;const i=this.childNodes.indexOf(b);assert(i>=0);this.childNodes.splice(i,0,n);return n;}
+ removeChild(n:MemoryNode){const i=this.childNodes.indexOf(n);assert(i>=0);this.childNodes.splice(i,1);n.parentNode=null;return n;}
+ setAttribute(k:string,v:unknown){this.attributes.set(k,String(v));if(k==='disabled')this.disabled=true;}removeAttribute(k:string){this.attributes.delete(k);if(k==='disabled')this.disabled=false;}getAttribute(k:string){return this.attributes.get(k)??null;}
+ addEventListener(k:string,f:Function){this.listeners.set(k,[...(this.listeners.get(k)??[]),f]);}removeEventListener(k:string,f:Function){this.listeners.set(k,(this.listeners.get(k)??[]).filter(v=>v!==f));}
+ contains(n:MemoryNode|null):boolean{return !!n&&(n===this||this.childNodes.some(c=>c.contains(n)));}focus(){this.ownerDocument.activeElement=this;}
+ dispatchEvent(e:any){e.target=this;e.preventDefault??=()=>{e.defaultPrevented=true;};e.stopPropagation??=()=>{e.cancelBubble=true;};const chain:MemoryNode[]=[];for(let n:MemoryNode|null=this;n;n=n.parentNode)chain.push(n);for(const n of chain)for(const f of n.listeners.get(e.type)??[])f(e);return !e.defaultPrevented;}
+}
+const document:any=new MemoryNode('#document',9);document.ownerDocument=document;document.createElement=(n:string)=>new MemoryNode(n,1,document);document.createElementNS=(_ns:string,n:string)=>document.createElement(n);document.createTextNode=(s:string)=>{const n=new MemoryNode('#text',3,document);n.data=s;return n;};document.documentElement=document.createElement('html');document.body=document.createElement('body');document.documentElement.appendChild(document.body);document.activeElement=document.body;
+
+const saved=new Map<string,PropertyDescriptor|undefined>(),events=new Map<string,Set<Function>>(),channels:MessageChannel[]=[];
+let ui:any,currentTransport:typeof fetch;
+const location={hash:'',protocol:'https:',origin:'https://anvil-synthetic.invalid'};
+before(async()=>{
+ const app=fileURLToPath(new URL('../../../apps/web/src/App.tsx',import.meta.url));
+ const result:any=await build({configFile:false,envDir:false,publicDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:archived-report-app',name:'ArchivedReportApp',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'archived-report-app-memory',resolveId(id){if(id.endsWith('virtual:archived-report-app'))return '\0archived-report-app';},load(id){if(id==='\0archived-report-app')return `export * as React from 'react';export {createRoot} from 'react-dom/client';export {App} from ${JSON.stringify(app)};`;}}]});
+ const Native=globalThis.MessageChannel;class Channel extends Native{constructor(){super();channels.push(this);}}
+ const add=(k:string,f:Function)=>{let set=events.get(k);if(!set)events.set(k,set=new Set());set.add(f);},remove=(k:string,f:Function)=>events.get(k)?.delete(f),window={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener:add,removeEventListener:remove,getComputedStyle:()=>({}),location};document.defaultView=window;
+ for(const[k,v]of Object.entries({window,document,location,addEventListener:add,removeEventListener:remove,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:Channel,confirm:()=>true,fetch:(...args:Parameters<typeof fetch>)=>currentTransport(...args)})){saved.set(k,Object.getOwnPropertyDescriptor(globalThis,k));Object.defineProperty(globalThis,k,{value:v,writable:true,configurable:true});}
+ ui=new Function((Array.isArray(result)?result[0]:result).output.find((v:any)=>v.type==='chunk').code+';return ArchivedReportApp;')();
+});
+after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k,v]of saved)if(v)Object.defineProperty(globalThis,k,v);else Reflect.deleteProperty(globalThis,k);});
+const H=(v:unknown)=>contentHash(canonicalJson(v));
+function fixture(){
+ const f=seed(),definition={...f.confirmed.snapshot.definition,baselineRefs:[],recordingPolicyRef:null},task=definition.taskRef;
+ const snapshot={definition,reason:'보관 임무',previousRef:null,basis:{...task,designRef:task.planRef,taskCardHash:'c'.repeat(64)},readinessIssues:[],status:'DRAFT',ready:false,executionAuthorized:false,dispatchPerformed:false};
+ const draft={projectId:f.confirmed.projectId,ref:{...f.confirmed.ref,contentHash:H(snapshot)},snapshot,headVersion:1,sourceCurrentness:'NOT_RECHECKED',observedAt:f.at};
+ f.confirmed.snapshot.definition=definition;f.confirmed.snapshot.draftRef=draft.ref;f.confirmed.ref.contentHash=H(f.confirmed.snapshot);
+ f.binding.snapshot.assignmentRef=f.confirmed.ref;f.binding.ref.contentHash=H(f.binding.snapshot);f.state.assignmentRef=f.confirmed.ref;f.state.bindings=[f.binding];
+ const cb=newContextPreparation(f.confirmed,f.session,1);cb.input.reason='원 맥락';const planned=planContextText(cb.input.slots.map(slot=>({itemId:slot.code,category:slot.code,required:true,sourceRef:null,reason:slot.reason,state:'MISSING',bodyRef:null,body:null})),cb.input.limits);
+ const prepared:any={preparationInput:cb.input,assignmentRef:f.confirmed.ref,baselineRefs:[task.planRef],constitutionRef:null,budgetRef:f.budget.ref,bindings:cb.input.slots.map(slot=>({itemId:slot.code,selection:null,bodyRef:null,sourceState:'NOT_SELECTED'})),...planned,unverified:[]};
+ f.context={...f.context,...buildContextManifest(f.context.ref.id,f.confirmed.projectId,prepared)};
+ const decision={projectId:draft.projectId,draftRef:draft.ref,criteriaVersion:1,criteria:['PURPOSE_SCOPE','BASELINE_TASK','INPUT_OUTPUT','COMPLETION_VERIFICATION','BOUNDARIES','RECORD_RECOVERY'],reviews:[],hasMoreReviews:false,contentIssues:[],currentIssue:null,confirmedRef:f.confirmed.ref,latestReviewAccepted:false,readinessIssues:[],ready:false,executionAuthorized:false,dispatchPerformed:false,observedAt:f.at};
+ const project=(pid:string)=>({id:pid,name:'합성 프로젝트',purpose:'App 연결 검산',desiredOutcome:'보관 보고 명시 선택',version:1,createdAt:f.at,updatedAt:f.at,currentMethodologyRef:null,baselineRef:null,sourceMode:'EMPTY',sourceDeclaration:null,readinessIssues:[],viewerPermissions:['READ_PROJECT'],participation:'OWNER',controlState:{actorId:f.session.user.id,clientId:f.session.clientId,generation:1,status:'HELD'}});
+ const q=clientFixture(f),calls:{path:string;method:string}[]=[],unexpected:string[]=[];
+ currentTransport=async(url,init)=>{
+  const path=String(url),method=init?.method??'GET';calls.push({path,method});assert.equal(method,'GET','선택/준비만, 저장 명령 전송0');
+  if(path==='/api/v1/session')return Response.json({...f.session,user:{...f.session.user,displayName:'합성 소유자'}});
+  const pid=/^\/api\/v1\/projects\/([^/?]+)/.exec(path)?.[1];
+  if(path===`/api/v1/projects/${pid}`)return Response.json(project(pid!));
+  if(path.endsWith('/methodology-application'))return Response.json({projectId:pid,applicationRef:null,snapshot:null,observedAt:f.at,executionState:'NOT_CONNECTED'});
+  const emptyViews:Record<string,string>={'connector-registrations?limit=50':'HOST_TRUST_REGISTRATIONS_ONLY','source-read-grants?limit=20':'SOURCE_READ_GRANTS','source-roots?limit=50':'SOURCE_ROOT_DECLARATIONS'};
+  for(const [suffix,view]of Object.entries(emptyViews))if(path===`/api/v1/projects/${pid}/${suffix}`)return Response.json({view,items:[],hasMore:false,nextCursor:null,observedAt:f.at});
+  if(path===`/api/v1/projects/${pid}/conversations?limit=50`)return Response.json({items:[],hasMore:false,nextCursor:null,observedAt:f.at});
+  if(path.includes('/connection-candidates?'))return Response.json({view:'CANDIDATES_ONLY',items:[],hasMore:false,nextCursor:null,observedAt:f.at});
+  if(path.includes('/assignment-drafts?'))return Response.json({items:[{ref:draft.ref,status:'DRAFT',goal:definition.goal,taskRef:task,issueCount:0,updatedAt:f.at,ready:false,executionAuthorized:false}],hasMore:false,nextCursor:null,observedAt:f.at});
+  if(path===`/api/v1/projects/${draft.projectId}/assignment-drafts/${draft.ref.id}/versions/1`)return Response.json(draft);
+  if(path===`/api/v1/projects/${draft.projectId}/assignment-drafts/${draft.ref.id}/versions/1/decision`)return Response.json(decision);
+  if(path===`/api/v1/projects/${draft.projectId}/assignments/${f.confirmed.ref.id}/versions/1`)return Response.json(f.confirmed);
+  if(pid===draft.projectId&&['/permission-policy','/execution-preparation-state','/role-bindings/','/context?','/context/','/connection-candidates/','/capability-reports/','/limit-policies/'].some(part=>path.includes(part)))return q.client.transport(url,init);
+  unexpected.push(path);return Response.json({code:'NOT_FOUND'},{status:404});
+ };
+ return{f,draft,calls,unexpected};
+}
+test('실제 App의 보관 보고 GET→명시 선택→hash 이동→UI04 원 준비 입력과 route/project 선택 수명',async()=>{
+ const q=fixture(),pid=q.f.confirmed.projectId;location.hash=`#/projects/${pid}/connections`;
+ const container=document.createElement('main');document.body.appendChild(container);const root=ui.createRoot(container);
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
+ const button=(name:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===name);
+ const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});
+ const wait=async(check:()=>boolean)=>{for(let i=0;i<150&&!check();i++)await settle();assert(check(),container.textContent);};
+ const click=async(name:string)=>{const b=button(name);assert(b,name);assert(!b.disabled);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0}));await settle();};
+ const change=async(name:string,value:string|boolean)=>{const n=nodes().find(n=>n.getAttribute('aria-label')===name);assert(n,name);const key=Object.keys(n).find(k=>k.startsWith('__reactProps'));assert(key);await ui.React.act(async()=>(n as any)[key].onChange({target:{value,checked:value}}));await settle();};
+ const go=async(hash:string,link=false)=>{if(link)assert(nodes().some(n=>n.tagName==='A'&&n.getAttribute('href')===hash),'실제 화면 링크');await ui.React.act(async()=>{location.hash=hash;for(const f of events.get('hashchange')??[])f();});await settle();};
+ const openAssignment=async()=>{await wait(()=>!!button('임무 초안 목록 조회'));await click('임무 초안 목록 조회');await wait(()=>!!button('임무 버전 열기: 1'));await click('임무 버전 열기: 1');await wait(()=>!!button('확정 임무 원본 재조회'));await click('확정 임무 원본 재조회');await wait(()=>!!button('새 실행 의도 준비'));};
+ const selectReport=async()=>{await wait(()=>!!button('고정 보고 조회'));await change('기존 보고 조회',JSON.stringify(q.f.report.ref));await click('고정 보고 조회');await wait(()=>!!button('이 보고를 실행 준비 입력으로 선택'));await click('이 보고를 실행 준비 입력으로 선택');};
+ try{
+  await ui.React.act(async()=>root.render(ui.React.createElement(ui.App)));await wait(()=>!!button('고정 보고 조회'));
+  assert.equal(q.calls.filter(c=>c.path.includes('/capability-reports/')).length,0);await selectReport();assert.equal(q.calls.filter(c=>c.path.includes('/capability-reports/')).length,1);
+  await go(`#/projects/${pid}/workspace`,true);await openAssignment();await click('새 실행 의도 준비');await wait(()=>!!button('이 사람보고 명시 선택'));await click('이 사람보고 명시 선택');
+  await change('준비 예약binding',q.f.binding.ref.id);await change('준비 맥락',q.f.context.ref.id);await change('준비 범위 src/main.ts READ',true);await change('준비 mode','CONTEXT_REVIEW');await change('준비 이유','보관 원 보고로 준비');await click('의도 준비·입력 확인');await wait(()=>!!button('준비본 보관'));
+  const payload=nodes().filter(n=>n.tagName==='PRE').map(n=>{try{return JSON.parse(n.textContent);}catch{return null;}}).find(v=>v?.capabilityRef);
+  assert.deepEqual(payload.capabilityRef,q.f.report.ref);assert.deepEqual(payload.assignmentRef,q.f.confirmed.ref);assert(q.calls.filter(c=>c.path.includes('/capability-reports/')).length>=2,'원 준비에서 보호 보고 재검산');
+  await go('#/no-such-screen');await go(`#/projects/${pid}/workspace`);await openAssignment();assert(!button('이 사람보고 명시 선택'),'다른 route 왕복으로 선택 부활0');
+  await go(`#/projects/${pid}/connections`,true);await selectReport();await go(`#/projects/${q.f.otherProject}/connections`);await wait(()=>!!button('고정 보고 조회'));assert(!button('이 보고를 실행 준비 입력으로 선택'),'타 프로젝트로 보관 원문 누수0');
+  await go(`#/projects/${pid}/workspace`);await openAssignment();assert(!button('이 사람보고 명시 선택'),'프로젝트 ABA 후 과거 선택 부활0');assert(button('준비본 보관'),'원 프로젝트의 준비 명령 자체는 보존');
+  assert.equal(q.calls.filter(c=>c.method!=='GET').length,0);assert.deepEqual(q.unexpected,[]);
+ }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+});
