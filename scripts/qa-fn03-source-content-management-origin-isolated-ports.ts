@@ -48,6 +48,17 @@ function check(v:unknown):asserts v{if(!v)fail();}
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const hex=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 const empty=(v:unknown)=>v===null||recordV1(v,[]);
+// 원 adapter가 이미 검산한 같은 호출 객체만 native 효과 포트에 단회 전달한다.
+// 발급은 아래 run 내부에만 있으며 raw argv/SQL을 권위로 바꾸는 공개 발급 함수는 없다.
+const nativeCalls=new WeakMap<object,{binding:string;snapshot:string}>();
+function nativeCallSnapshot(call:Readonly<ManagementOriginDockerCall>):string{
+ const input=call.input;
+ return canonicalJson({...call,input:input===undefined?null:{kind:typeof input==='string'?'TEXT':'BYTES',bytes:typeof input==='string'?Buffer.byteLength(input):input.byteLength,sha256:contentHash(typeof input==='string'?Buffer.from(input):input)}});
+}
+export function consumeManagementOriginDockerCall(call:Readonly<ManagementOriginDockerCall>,binding:Readonly<ManagementOriginHostBinding>):void{
+ const issued=nativeCalls.get(call);nativeCalls.delete(call);
+ check(issued&&issued.binding===canonicalJson(binding)&&issued.snapshot===nativeCallSnapshot(call));
+}
 const boot='anvil_v3_bootstrap',migrator='anvil_v3_migrator',app='anvil_v3_app',managementOwner='anvil_v3_source_content_management_owner';
 const hba='local all all trust\nhost all all 0.0.0.0/0 scram-sha-256\nhost all all ::/0 reject\n';
 const networkFormat=currentNetworkProbeContract.networkFormat.slice(0,-1)+',"ipam":{{json .IPAM.Config}}}';
@@ -91,7 +102,10 @@ export async function createManagementOriginIsolatedPorts(input:ManagementOrigin
  const run=(args:string[],ms:number,raw?:string|Uint8Array,extra?:Readonly<Record<string,string>>,allowNotReady=false)=>{
   current();check(phase!=='NEW'&&Number.isSafeInteger(ms)&&ms>0&&ms<=30000);
   const began=now.call(providers),mono=monotonic.call(providers);const cap=Math.min(ms,Math.min(binding.expiresAt,pgWall,journeyWall,operationWall)-began,Math.min(pgMono,journeyMono,operationMono)-mono);check(cap>0);
-  const r=command.call(providers,Object.freeze({file:'/usr/bin/docker' as const,argv:Object.freeze(['--config',receipt+'/docker-config','--host','unix:///var/run/docker.sock',...args]),input:raw,env:Object.freeze({PATH:'/opt/node-v24.22.1-linux-x64/bin:/usr/bin:/bin',LANG:'C.UTF-8',LC_ALL:'C.UTF-8',HOME:receipt,...extra}),timeoutMs:cap,maxBuffer:65536 as const,shell:false as const}));
+  const call=Object.freeze({file:'/usr/bin/docker' as const,argv:Object.freeze(['--config',receipt+'/docker-config','--host','unix:///var/run/docker.sock',...args]),input:raw,env:Object.freeze({PATH:'/opt/node-v24.22.1-linux-x64/bin:/usr/bin:/bin',LANG:'C.UTF-8',LC_ALL:'C.UTF-8',HOME:receipt,...extra}),timeoutMs:cap,maxBuffer:65536 as const,shell:false as const});
+  nativeCalls.set(call,{binding:canonicalJson(binding),snapshot:nativeCallSnapshot(call)});
+  let r:ReturnType<ManagementOriginIsolatedProviders['command']>;
+  try{r=command.call(providers,call);}finally{nativeCalls.delete(call);}
   current();check(recordV1(r,['status','signal','stdout'])&&r.signal===null&&typeof r.stdout==='string'&&r.stdout.isWellFormed()&&Buffer.byteLength(r.stdout)<=65536&&Number.isInteger(r.status)&&(r.status===0||allowNotReady&&(r.status===1||r.status===2)));
   const end=now.call(providers),endMono=monotonic.call(providers);check(end>=began&&end-began<cap&&endMono>=mono&&endMono-mono<cap);return r;
  };

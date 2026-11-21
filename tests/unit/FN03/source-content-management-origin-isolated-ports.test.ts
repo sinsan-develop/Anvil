@@ -9,7 +9,7 @@ import {buildBuiltinMethodologies} from '../../../apps/server/modules/methodolog
 import {readManagementOriginSchemaManifest} from '../../integration/FN03/source-content-management-origin-schema.ts';
 import {currentNetworkProbeContract,currentProfile} from '../../../scripts/qa-ix01-current-journey.ts';
 import {createManagementOriginHost} from '../../../scripts/qa-fn03-source-content-management-origin-host.ts';
-import {createManagementOriginIsolatedPorts,managementOriginDatabaseIdentitySql,type ManagementOriginIsolatedInput,type ManagementOriginIsolatedProviders,type ManagementOriginDockerCall} from '../../../scripts/qa-fn03-source-content-management-origin-isolated-ports.ts';
+import {createManagementOriginIsolatedPorts,consumeManagementOriginDockerCall,managementOriginDatabaseIdentitySql,type ManagementOriginIsolatedInput,type ManagementOriginIsolatedProviders,type ManagementOriginDockerCall} from '../../../scripts/qa-fn03-source-content-management-origin-isolated-ports.ts';
 const id=(n:number)=>`9b000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 function load(){
  const cwd=fileURLToPath(new URL('../../../',import.meta.url)),git=(args:string[],input?:string)=>execFileSync('git',args,{cwd,input,windowsHide:true,maxBuffer:16*1024*1024}),blob=(path:string)=>git(['cat-file','blob','9a176646:'+path]);
@@ -37,7 +37,7 @@ function harness(fault=''){
  const container=()=>({id:cid,name:'/'+name,image:currentNetworkProbeContract.image,user:'999:999',labels,running:started&&!stopped,host:{Privileged:false,ReadonlyRootfs:true,NetworkMode:'none',LogConfig:{Type:'none',Config:{}},CapDrop:['ALL'],SecurityOpt:['no-new-privileges'],PidsLimit:64,Memory:536870912,NanoCpus:1000000000,PublishAllPorts:false,PortBindings:{},Binds:null,VolumesFrom:null,Tmpfs:currentNetworkProbeContract.tmpfs},mounts:Object.keys(currentNetworkProbeContract.tmpfs).map(Destination=>({Type:'tmpfs',Destination,RW:true,Source:''})),ports:{'5432/tcp':null},networks:attached?{[name+'_net']:{NetworkID:nid,IPAddress:'172.18.0.18',IPPrefixLen:28,EndpointID:endpoint}}:started&&!detached?{none:{NetworkID:none,IPAddress:''}}:{}});
  const pools:Pool[]=[],poolNames=new Map<Pool,string>(),poolQueries:string[]=[];
  const providers:ManagementOriginIsolatedProviders={now:()=>time,monotonic:()=>mono,assertCurrent(b){assert.deepEqual(b,binding);if(!active)throw Error('PRIVATE_CURRENT');},async consume(){trace.push('CLAIM');if(fault==='claim')throw Error('PRIVATE_CLAIM');},async wait(ms){assert.equal(ms,250);mono+=ms;time+=ms;},
-  command(call){calls.push(call);assert.equal(call.file,'/usr/bin/docker');assert.equal(call.shell,false);assert.equal(call.maxBuffer,65536);assert(call.timeoutMs>0);assert.deepEqual(call.argv.slice(0,4),['--config',input.receiptRoot+'/docker-config','--host','unix:///var/run/docker.sock']);const args=call.argv.slice(4);let out='';
+  command(call){consumeManagementOriginDockerCall(call,binding);calls.push(call);assert.equal(call.file,'/usr/bin/docker');assert.equal(call.shell,false);assert.equal(call.maxBuffer,65536);assert(call.timeoutMs>0);assert.deepEqual(call.argv.slice(0,4),['--config',input.receiptRoot+'/docker-config','--host','unix:///var/run/docker.sock']);const args=call.argv.slice(4);let out='';
    if(args[0]==='info')out=JSON.stringify({ID:fault==='daemon'?'wrong':currentProfile.daemon,Name:'SINSAN'});
    else if(args[0]==='image')out=JSON.stringify({id:currentNetworkProbeContract.image,volumes:{'/var/lib/postgresql/data':{}}});
    else if(args[0]==='create'){trace.push('CREATE');assert(args.includes('--pull')&&args[args.indexOf('--pull')+1]==='never');assert(!args.includes('-p')&&!args.includes('--publish')&&!args.includes('-v'));assert.equal(call.env.POSTGRES_PASSWORD,input.passwords.bootstrap);out=cid;}
@@ -118,4 +118,20 @@ test('별도 bootstrap observer에는 고정 두 SQL/UUID 선택만, 임의 SQL0
  await createManagementOriginHost({...p,async acquire(...args){const saved=await p.acquire(...args),n=h.poolQueries.length;
   await assert.rejects(saved.observer.query('SELECT * FROM anvil.users',[]));assert.equal(h.poolQueries.length,n);verified=true;return saved;
  }}).run(h.input.binding,h.source.historicalTsv,h.source.sql);assert(verified);assert(!h.trace.includes('STOP')&&!h.trace.includes('SEED_QUERY'));
+});
+
+test('native 원 호출은 raw/다른 시도/중복/반환 후 소비와 바뀐 SQL을 거절한다',async()=>{
+ for(const fault of ['raw','other','duplicate','input']){
+  const h=harness(),original=h.providers.command;let refused=false;
+  h.providers.command=call=>{
+   if(fault==='input'&&!(call.input instanceof Uint8Array))return original(call);
+   const before=h.calls.length;
+   if(fault==='input'){const bytes=call.input as Uint8Array;bytes[0]=bytes[0]!^1;}
+   if(fault==='duplicate')consumeManagementOriginDockerCall(call,h.input.binding);
+   assert.throws(()=>consumeManagementOriginDockerCall(fault==='raw'?{...call}:call,fault==='other'?{...h.input.binding,attemptId:id(99)}:h.input.binding));
+   assert.equal(h.calls.length,before);refused=true;throw Error('FIXED_TEST_STOP');
+  };
+  const p=await createManagementOriginIsolatedPorts(h.input,h.providers);await createManagementOriginHost(p).run(h.input.binding,h.source.historicalTsv,h.source.sql);assert(refused);assert(!h.trace.includes('STOP'));
+  if(h.calls[0])assert.throws(()=>consumeManagementOriginDockerCall(h.calls[0]!,h.input.binding));
+ }
 });
