@@ -21755,3 +21755,9 @@ PMO 회신과 DEVELOPMENT_ENVIRONMENT·FN03_ISOLATED_DOCUMENT_RESULT를 대조�
 기준 `56b4511e`. PMO의 권한 대조와 독립 빌드 읽기 검수를 반영해 developer_primary가 신규 계획 검산과 시험 두 파일을 작성 후 반환했다. 기존 SOURCE_FILES 30·REFERENCE_FILES 5·createCompileInput을 그대로 사용한다. 실제 패키지 조사·배포 검증·서명 경로 대신 합성 private ParentBasis, 고정 x64 EXE 진입점과 전용 QA 출력 두 개, 유한 시도·수집, 성공 뒤 정확 소유 확인을 검산하는 무효과 후보다. 기존 다른 목적의 단회 컴파일 승인을 사용하지 않는다.
 
 담당 함수 부재 RED `14da39` 뒤 직접6통과·실패/건너뜀0 및 node 문법/공백 통과 `f75b13`. Main 직접·인접22통과·실패/건너뜀0와 동결 SHA256 대조 `3a76fa`. 현재 compiler+참조 5개 원바이트·신원, 고정 환경/실행기·원 핸들 종결, 대상 전용 root는 미검증이며 실제 compiler·파일 생성/조사·SDK/Agent·DB·서비스 실행0. 먼저 현재 도구의 한정 읽기를 별도로 결정하고, 이후 정확 실행안의 컴파일만 판단한다. 롤백은 신규 두 파일과 기록의 역적용이다.
+
+### FN09/UI04 예약 당시 등록 정의 고정 조회
+
+기준 `5c313a47`. developer_primary 단일 작성 후 반환. 예약에 저장된 connectionRef로만 기존 보호 GET을 명시 실행하고 당시 도구·모델 옵션·환경 참조를 표시한다. 현재 head는 응답 의미대로 따로 표시하며 RESERVED를 실제 Agent 연결로 표시하지 않는다. 저장 버퍼/UNKNOWN·공개 계약·DB·권한과 기존 작성 동작 변경0. 겹친 refresh 중 늦은 응답은 이전 요청의 revision을 유지하므로 새 조회 자격을 얻지 못한다.
+
+담당 RED 버튼 부재 `9499ac` 뒤 직접14통과·실패/건너뜀0 `31a35d`, 좁은 타입·공백 종료0. Main 최종 직접14통과·실패/건너뜀0 `e9f46c`. 별도 같은 서버 시험 `tests/unit/FN09/registered-definition-responsible-session.test.ts`는 `project-execution-preparations.ts:190`의 ProjectConnectionDefinitions 초기화 ReferenceError로 케이스 실행 전 중단·종료1 `958fee`. 독립 원인 조사 진행, 실패를 PASS로 포함하지 않는다. 실제 브라우저·DB·서비스·Agent는 미실행이며 롤백은 이번 UI·시험 3파일과 작업기록을 역적용한다.

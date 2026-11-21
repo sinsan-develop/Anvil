@@ -1,3 +1,4 @@
+import {ReservedSessionConnectionDefinition} from './ReservedSessionConnectionDefinition.tsx';
 import {readDefinition} from '../connections/connection-definition-api.ts';
 import {RegisteredReservationRejected} from './responsible-session-api.ts';
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
@@ -15,6 +16,7 @@ import { assertResponsibleSessionInputCurrent, canPrepareResponsibleSessionInput
 
 export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,onChange,owner,busy,run}:{client:ApiClient;confirmed:ConfirmedAssignmentView;session:DocumentSession;buffer:ResponsibleSessionBuffer|null;onChange:Dispatch<SetStateAction<ResponsibleSessionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
   const [state,setState]=useState<ResponsibleSessionState|null>(null),[candidates,setCandidates]=useState<CandidateHit[]>([]),[nextCursor,setNextCursor]=useState<string|null>(null),[notice,setNotice]=useState<string|null>(null);
+  const stateStamp=useRef({epoch:-1,revision:-1}),stateRevision=useRef(0);
   const acknowledgements=useRef<Array<{next:ResponsibleSessionBuffer;ticket:number;resolve:(ok:boolean)=>void}>>([]);
   const [definitionInput,setDefinitionInput]=useState({id:'',version:'1',hash:''});const selectionRevision=useRef(0);
   const alive=useRef(true),epoch=useRef(0),currentBuffer=useRef(buffer);currentBuffer.current=buffer;
@@ -33,15 +35,15 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
   const locked=busy||!owner||!bound||!!buffer?.pending||!!buffer?.uncertain;
   const retainedSelection=buffer&&bound&&!binding&&buffer.connectionKind===undefined&&buffer.connectionRef&&!candidates.some(hit=>ordered(hit.ref)===ordered(buffer.connectionRef))?buffer.connectionRef:null;
   async function load(cursor:string|null=null) {
-    const ticket=epoch.current;setState(null);setNotice(null);
+    const ticket=epoch.current,revision=++stateRevision.current;setState(null);setNotice(null);
     try{const [value,page]=await Promise.all([readResponsibleSessionState(client,confirmed),listCandidates(client,confirmed.projectId,'CONNECTION_CANDIDATE',cursor)]);
-    if(!active(ticket))return;setState(value);setCandidates(page.items);setNextCursor(page.nextCursor);}catch(e){if(active(ticket))throw e;}
+    if(!active(ticket))return;stateStamp.current={epoch:ticket,revision};setState(value);setCandidates(page.items);setNextCursor(page.nextCursor);}catch(e){if(active(ticket))throw e;}
   }
   async function prepare() {
     if(!owner||!canPrepareResponsibleSessionInput(buffer,confirmed,session))return;
     if(buffer?.dirty&&!confirm('미저장 책임 세션 입력을 버리고 새로 준비할까요?'))return;
-    const ticket=epoch.current,result=await prepareResponsibleSessionInput(client,confirmed,session,buffer,()=>{setState(null);setNotice(null);},()=>active(ticket));
-    if(!result)return;const old=buffer?.bindingId;onChange(value=>value?.bindingId===old?result.buffer:value);setState(result.state);
+    const ticket=epoch.current;let revision=stateRevision.current;const result=await prepareResponsibleSessionInput(client,confirmed,session,buffer,()=>{revision=++stateRevision.current;setState(null);setNotice(null);},()=>active(ticket));
+    if(!result)return;const old=buffer?.bindingId;onChange(value=>value?.bindingId===old?result.buffer:value);stateStamp.current={epoch:ticket,revision};setState(result.state);
   }
   async function write(action:ResponsibleSessionAction) {
     if(!owner||!bound||!buffer||!state)return;
@@ -69,8 +71,8 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
       if(!active(ticket))return;
       if(!await settle(settleResponsibleSessionWrite(current,receipt))||!active(ticket))return;
       setNotice((action==='BIND'||action==='BIND_COORDINATOR'?'책임 세션 예약':'역할 정의')+' 저장 영수증 확인 · v'+receipt.ref.version+' · 실제 Agent 실행 아님');
-      setState(null);const refreshed=await readResponsibleSessionState(client,confirmed);
-      if(active(ticket))setState(refreshed);
+      const revision=++stateRevision.current;setState(null);const refreshed=await readResponsibleSessionState(client,confirmed);
+      if(active(ticket)){stateStamp.current={epoch:ticket,revision};setState(refreshed);}
     }catch(cause){
       if(!active(ticket))return;
       const failure=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');
@@ -82,6 +84,7 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
   async function selectDefinition(){if(locked||binding||!buffer)return;const ticket=epoch.current,revision=selectionRevision.current,original=buffer,raw={...definitionInput};try{const value=await readDefinition(client,confirmed.projectId,{id:raw.id,version:Number(raw.version),contentHash:raw.hash},()=>active(ticket)&&selectionRevision.current===revision);if(!active(ticket)||selectionRevision.current!==revision)return;assertResponsibleSessionInputCurrent(currentBuffer.current,original);onChange(previous=>previous&&ordered(previous)===ordered(original)?{...previous,connectionKind:'REGISTERED_DEFINITION',connectionRef:structuredClone(value.ref),dirty:true,failure:null}:previous);setNotice('등록 정의 고정 원문 선택 · NOT_READY/UNVERIFIED · 예약 설정이며 실행 허가 아님');}catch(e){if(active(ticket)&&selectionRevision.current===revision)throw e;}}
   const pendingRoles=state?.roles.filter(r=>ordered(r.ref)===ordered(buffer?.pending?.payload.roleRef))??[],pendingRole=pendingRoles.length===1?pendingRoles[0]:undefined;
   const retryAction:ResponsibleSessionAction|null=buffer?.pending?.operation==='bindResponsibleSession'?(pendingRole?.snapshot.kind==='COORDINATOR'?'BIND_COORDINATOR':pendingRole?.snapshot.kind==='STAGE_OWNER'?'BIND':null):buffer?.pending?.payload.kind==='STAGE_OWNER'?'STAGE_OWNER':'COORDINATOR';
+  const definitionEpoch=epoch.current,definitionRevision=stateRevision.current;
   return <section aria-label="책임 역할·예약 세션"><h6>책임 역할·예약 세션</h6>
     <p>확정 임무의 총괄 또는 단계책임자와 Anvil 예약 세션을 연결합니다. RESERVED는 외부 Agent 세션 생성·실행 허가가 아닙니다.</p>
     <button disabled={busy} onClick={()=>run(()=>load())}>현재 역할·예약·준비 이력 조회</button>
@@ -96,6 +99,7 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
     {state?<><p>현재성 별도 재검사 필요 · 실행 허가 없음 · Agent 전달 없음</p>
       <ul>{state.roles.map(role=><li key={role.ref.id}>{role.snapshot.kind==='COORDINATOR'?'총괄':'선택 단계 책임자'} 역할 · {role.ref.id} · v{role.ref.version}</li>)}</ul>
       {binding?<p>책임 세션 {binding.snapshot.sessionRef.id} · RESERVED · 결박 v{binding.ref.version}<br/>현재 결박 임무 {binding.snapshot.assignmentRef.id} · v{binding.snapshot.assignmentRef.version} · 도구 교체는 별도 이전 절차입니다.</p>:<p>선택 역할에 저장된 책임 세션 예약이 없습니다.</p>}
+      {binding?.snapshot.connectionKind==='REGISTERED_DEFINITION'&&binding.snapshot.state==='RESERVED'&&stateStamp.current.epoch===epoch.current&&stateStamp.current.revision===stateRevision.current?<ReservedSessionConnectionDefinition client={client} projectId={confirmed.projectId} connectionRef={binding.snapshot.connectionRef} buffer={buffer} contextKey={ordered([definitionEpoch,definitionRevision,binding.ref,buffer])} disabled={busy||!bound} isCurrent={()=>active(definitionEpoch)&&stateRevision.current===definitionRevision&&currentBuffer.current===buffer} onAuthenticationLost={()=>run(async()=>{throw new ApiError('AUTH_REQUIRED',401);})}/>:null}
       {binding&&owner?<ProviderClaimHistoryPanel key={ordered([confirmed.projectId,binding.snapshot.sessionRef,session.user.id,session.clientId])} client={client} projectId={confirmed.projectId} sessionRef={binding.snapshot.sessionRef} subjectKey={session.user.id+':'+session.clientId} onAuthenticationLost={()=>run(async()=>{throw new ApiError('AUTH_REQUIRED',401);})}/>:null}
       {buffer&&bound?<><fieldset disabled={locked}><legend>현재 임무 책임자 정의·예약</legend>
         <label>예약 대상 역할<select aria-label="예약 대상 역할" value={['COORDINATOR','STAGE_OWNER'].includes(reservationKind)?reservationKind:''} onChange={e=>{if(locked)return;const kind=e.target.value;if(kind!=='COORDINATOR'&&kind!=='STAGE_OWNER')return;const role=state.roles.find(r=>r.snapshot.kind===kind),existing=state.bindings.find(b=>ordered(b.snapshot.roleRef)===ordered(role?.ref??null));update(b=>{const {connectionKind,...rest}=b;return {...rest,reservationKind:kind,connectionRef:existing?structuredClone(existing.snapshot.connectionRef):null,...(existing?.snapshot.connectionKind==='REGISTERED_DEFINITION'?{connectionKind:'REGISTERED_DEFINITION' as const}:{}),dirty:true,failure:null};});}}><option value="STAGE_OWNER">선택 단계 책임자</option><option value="COORDINATOR">총괄</option></select></label>
