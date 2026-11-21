@@ -21767,3 +21767,9 @@ PMO 회신과 DEVELOPMENT_ENVIRONMENT·FN03_ISOLATED_DOCUMENT_RESULT를 대조�
 기준 `66761758`. Main이 기존 서버 시험의 ESM 초기화 오류를 재현 `958fee`. 독립 검수에서 START 본문 계산을 읽으려는 모듈이 전체 초기 실행 모듈을 거쳐 아직 초기화 중인 ProjectConnectionDefinitions.prototype을 접근하는 경로를 확인했다. developer_primary가 기존 순수 startContextBody를 경량 모듈로 이동하고 기존 export·bytes 및 원본 prototype 캡처를 보존했다. 변경은 executions 3파일이며 기존 권한·guard·API·DB 동작 변경0.
 
 담당 기준 Git의 본문/잔여 코드 동일 대조 `304b87`, 원 서버·인접 context 시험82통과·실패/건너뜀0 `f87dc3`, 좁은 타입 종료0 `323796`. Main 원 실패 명령 `node --test tests/unit/FN09/registered-definition-responsible-session.test.ts`에서 기존 10건이 실행돼 모두 통과, 종료0 `290a04`. 실제 서버 기동·DB·권한·키·Agent 실행0이며 롤백은 해당 세 파일과 작업기록의 역적용이다.
+
+### FN09/UI11 보관한 능력보고를 실행 준비에 재사용
+
+기준 `773f412f`. developer_primary 단일 작성 후 반환. 기존 보호 GET으로 검산한 보고를 사용자가 선택하면 같은 프로젝트·사용자·client·인증·전송 문맥에서 기존 UI04 준비 입력으로 전달한다. 선택은 실행·저장 요청을 보내지 않으며 기존 실행 준비는 연결·환경과 원 자료를 계속 재검산한다. 원 보고 저장·UNKNOWN 버퍼를 보존하고 이후 새 보고를 저장하면 기존 신규 저장 결과 경로를 사용한다. 새 API·DB·권한·실행 권위 변경0.
+
+담당 버튼 부재 RED `d8a3ae` 뒤 직접8통과·실패/건너뜀0 `631477`, 인접38통과 `fa45cc`, App 포함 좁은 타입·공백 종료0 `7b47da`/`374a3e`. Main 같은 직접8통과·실패/건너뜀0과 diff 대조 `da5712`. RAM 제품 컴포넌트에서 GET→명시 선택→기존 준비본 POST1→고정 조회의 합성을 확인했다. 실제 App 전체 라우팅·브라우저·DB·서비스·키·Agent 미실행. 롤백은 이번 제품/시험 4파일 및 기록의 역적용이다.
