@@ -22015,3 +22015,11 @@ UI05의 보호 원자료 선택→대상 신규 단건 조회→기존 정책 �
 Main 입력 변조 RED `9587cc`와 독립 초기 callback의 기대값 변경 RED `695264`를 보완했다. 원 입력 해시를 전송 반환과 입력 종결·최종 수거에 대조하고 첫 시각 callback 전에 기대값을 복사한다. 최종 직접16통과 `4c8f9a`, 인접22통과·실패/건너뜀0 `31b1ab`, 좁은 타입 exit0 `f4e56b`, LF·공백 exit0 `f87efd`. Main 수정 회귀2통과 `b7c25c`, 독립 지적 해소·잔여 C0/I0. 소스 SHA256 `D35FA25EBF1CC4E336AAE92D23D49A1F349C4F7B8920AA508BD6A5B12DC976E9`, 시험 SHA256 `81FA4A0F57EC0AAFC29288D2A88F7EB4E395250C6C88CFB0039CD74ACB7C86E1`.
 
 실제 보호 승인/소진 기록, 원 child와 transport 공급, Linux 설치·실제 PG 여정은 미완료다. 해당 반환은 로컬 후보 수거이며 실제 외부 설치 또는 시험 성공으로 세지 않는다. 실제 WSL·SSH·설치·DB·권한·서비스·Agent 실행0. 롤백은 위 신규 두 파일과 작업 기록의 역적용이다.
+
+### IX01 설치 준비 송수신과 같은 시도의 목록 후보 왕복
+
+기준 `d201f697` clean. developer_primary가 [수신 처리](../scripts/qa-fn03-tc01-dependency-carrier-entry.ts)와 [합성 왕복 시험](../tests/unit/FN03/tc01-dependency-carrier-entry.test.ts)을 작성하고 반환했다. 수신 측은 고정 입력을 검산하고 동일 HEAD의 lock 사본을 단회 받아 SHA를 대조한다. 전체 기한을 유지한 채 기존 설치 준비·목록 관측에 전달하고 같은 시도의 후보 또는 UNKNOWN을 반환한다. 실패 때도 기존 원 자원 회수를 유지한다. 후보는 실제 설치·실행을 허가하지 않는다.
+
+신규 모듈 부재 RED `d0d2f0` 뒤 직접8통과 `331cc9`, 인접36통과·실패/건너뜀0 `b39806`, 좁은 타입 exit0 `1108d8`, LF·공백 exit0 `5f23d5`. Main 송신부터 기존 intake까지의 합성 왕복 1통과 `73ae68`, 독립 C0/I0 및 두 지문 일치. 소스 SHA256 `97D272BC776CD54992AE8DA246E840D609F53806406FD540E15FEB811557E615`, 시험 SHA256 `90D44473F359639169B4148A594D58E28EE1B7FF49DF1ADDA28028E596EDD206`.
+
+실제 보호 승인·소진/lock 공급과 고정 원 프로세스·transport·설치·PG 여정은 미확인이다. 실제 WSL·SSH·파일/설치·DB·권한·서비스·Agent 실행0. 다음은 기존 Windows/SSH 결정 범위와 실제 외피·정착 절차를 대조해 남은 승인 범위만 특정하는 것이다. 롤백은 위 신규 두 파일과 작업 기록의 역적용이다.
