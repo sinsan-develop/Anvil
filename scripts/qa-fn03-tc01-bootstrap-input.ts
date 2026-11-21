@@ -1,3 +1,4 @@
+import {isTc01OfficialEvidencePath} from './qa-fn03-tc01-evidence-paths.ts';
 import {types} from 'node:util';
 import {posix} from 'node:path';
 import {canonicalJson,contentHash,parseWireJson} from '../contracts/canonical.ts';
@@ -36,7 +37,7 @@ function bytes(value:unknown,max:number){check(types.isUint8Array(value)&&!types
 function wire(raw:unknown,sha:unknown,max:number):Record<string,any>{
  check(typeof raw==='string'&&raw.isWellFormed()&&Buffer.byteLength(raw)<=max&&hashV1(sha)&&contentHash(Buffer.from(raw))===sha);return parseWireJson(raw) as Record<string,any>;
 }
-const pathOk=(value:unknown):value is string=>typeof value==='string'&&/^[A-Za-z0-9_@.+/-]{1,400}$/.test(value)&&!value.startsWith('/')&&posix.normalize(value)===value&&!value.split('/').some(p=>p==='.'||p==='..'||p==='')&&!value.startsWith('.git/');
+const pathOk=(value:unknown,evidence=false):value is string=>typeof value==='string'&&(/^[A-Za-z0-9_@.+/-]{1,400}$/.test(value)||evidence&&isTc01OfficialEvidencePath(value))&&!value.startsWith('/')&&posix.normalize(value)===value&&!value.split('/').some(p=>p==='.'||p==='..'||p==='')&&!value.startsWith('.git/');
 interface Row{path:string;bytes:number;sha256:string;dependency:boolean}
 
 /** 동일 plan 아래 graph/manifest와 load bytes만 연결한다. SQL132/fixture의 의미·원문은
@@ -69,7 +70,7 @@ export function prepareTc01BootstrapInput(input:Tc01BootstrapInput){
   const rows=new Map<string,Row>();
   for(const [manifest,dependency]of [[sources,false],[dependencies,true]] as const){
    check(Array.isArray(manifest.files)&&manifest.files.length>0&&manifest.files.length<=20000);let prior='',total=0;
-   for(const row of manifest.files){check(recordV1(row,['path','bytes','sha256'])&&pathOk(row.path)&&row.path>prior&&row.path.startsWith('node_modules/')===dependency&&!rows.has(row.path)&&Number.isSafeInteger(row.bytes)&&row.bytes>=0&&row.bytes<=16777216&&hashV1(row.sha256));prior=row.path;total+=row.bytes;check(total<=268435456);rows.set(row.path,{path:row.path,bytes:row.bytes,sha256:row.sha256,dependency});}
+   for(const row of manifest.files){check(recordV1(row,['path','bytes','sha256'])&&pathOk(row.path,!dependency)&&row.path>prior&&row.path.startsWith('node_modules/')===dependency&&!rows.has(row.path)&&Number.isSafeInteger(row.bytes)&&row.bytes>=0&&row.bytes<=16777216&&hashV1(row.sha256));prior=row.path;total+=row.bytes;check(total<=268435456);rows.set(row.path,{path:row.path,bytes:row.bytes,sha256:row.sha256,dependency});}
   }
   check(rows.get('package-lock.json')?.sha256===runtime.packageLockSha256);const graphRow=rows.get(graphPath);check(graphRow&&!graphRow.dependency&&graphRow.bytes<=2097152);
   graphBytes=bytes(top.graphBytes,graphRow.bytes);check(graphBytes.length===graphRow.bytes&&contentHash(graphBytes)===graphRow.sha256);
@@ -77,7 +78,7 @@ export function prepareTc01BootstrapInput(input:Tc01BootstrapInput){
   const withR9=recordV1(graph,[...graphKeys,'legacyR9']);check((withR9||recordV1(graph,graphKeys))&&graph.schemaVersion===1&&graph.entry===targetEntry&&Array.isArray(graph.files)&&graph.files.length===rows.size&&graph.files.length<=20000);
   const loadRows:({path:string;bytes:number;sha256:string;format:string;dependency:boolean})[]=[],classes=new Map<string,string>();let prior='';
   for(const classification of graph.files){
-   check(recordV1(classification,classification?.kind==='load'?['path','kind','format']:['path','kind'])&&pathOk(classification.path)&&classification.path>prior&&['load','nonload','control'].includes(classification.kind));prior=classification.path;
+   check(recordV1(classification,classification?.kind==='load'?['path','kind','format']:['path','kind'])&&pathOk(classification.path,classification.kind==='nonload'||classification.kind==='control')&&classification.path>prior&&['load','nonload','control'].includes(classification.kind));prior=classification.path;
    const row=rows.get(classification.path);check(row);classes.set(row.path,classification.kind);
    if(classification.kind==='load'){check(typeof classification.format==='string');loadRows.push({...row,format:classification.format});}
   }

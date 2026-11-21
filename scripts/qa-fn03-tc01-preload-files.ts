@@ -1,3 +1,4 @@
+import {isTc01OfficialEvidencePath} from './qa-fn03-tc01-evidence-paths.ts';
 import * as fs from 'node:fs';
 import {posix} from 'node:path';
 import {types} from 'node:util';
@@ -47,7 +48,7 @@ function manifest(raw:unknown,sha:unknown,dependency:boolean):Record<string,any>
  check(typeof raw==='string'&&raw.isWellFormed()&&Buffer.byteLength(raw)<=2*MiB&&hashV1(sha));const encoded=Buffer.from(raw);try{check(contentHash(encoded)===sha);}finally{clear(encoded);}
  const m=parseWireJson(raw);check(recordV1(m,dependency?['schemaVersion','sourceHead','packageLockSha256','files']:['schemaVersion','sourceHead','sourceRoot','gitSha256','dockerSha256','files'])&&m.schemaVersion===1);
  const input=array(m.files,20000);check(input.length>0);let prior='',total=0;
- const rows:Row[]=input.map(v=>{const r=record(v,['path','bytes','sha256']);check(typeof r.path==='string'&&/^[A-Za-z0-9_@.+/-]{1,400}$/.test(r.path)&&!r.path.startsWith('/')&&posix.normalize(r.path)===r.path&&!r.path.split('/').some((p:string)=>p==='.'||p==='..'||p==='')&&!r.path.startsWith('.git/')&&r.path.startsWith('node_modules/')===dependency&&r.path>prior&&Number.isSafeInteger(r.bytes)&&r.bytes>=0&&r.bytes<=16*MiB&&hashV1(r.sha256));prior=r.path;total+=r.bytes;check(total<=256*MiB);return Object.freeze({path:r.path,bytes:r.bytes,sha256:r.sha256});});
+ const rows:Row[]=input.map(v=>{const r=record(v,['path','bytes','sha256']);check(typeof r.path==='string'&&(/^[A-Za-z0-9_@.+/-]{1,400}$/.test(r.path)||!dependency&&isTc01OfficialEvidencePath(r.path))&&!r.path.startsWith('/')&&posix.normalize(r.path)===r.path&&!r.path.split('/').some((p:string)=>p==='.'||p==='..'||p==='')&&!r.path.startsWith('.git/')&&r.path.startsWith('node_modules/')===dependency&&r.path>prior&&Number.isSafeInteger(r.bytes)&&r.bytes>=0&&r.bytes<=16*MiB&&hashV1(r.sha256));prior=r.path;total+=r.bytes;check(total<=256*MiB);return Object.freeze({path:r.path,bytes:r.bytes,sha256:r.sha256});});
  return{...m,rows};
 }
 /** 앱 import/CLI/설치/권위 발급 없음. factory 생성은 효과0, read는 단회다.

@@ -121,3 +121,16 @@ test('R9 optional marker는 고정 값만 기존 private loader로 전달한다'
  for(const change of [(m:any)=>{m.sha256='0'.repeat(64);},(m:any)=>{m.parent=entry;},(m:any)=>{m.bytes--;},(m:any)=>{m.callback='not-allowed';}]){const f=build();change(f.graph.legacyR9);f.sealGraph();assert.throws(()=>prepareTc01BootstrapInput(f.input));}
  const self=fixture();self.graph.sha256='0'.repeat(64);self.sealGraph();assert.throws(()=>prepareTc01BootstrapInput(self.input));
 });
+
+const officialEvidence=['docs/design/공식산출물_양식정의.md','docs/design/문서작성_공통기준.md','docs/design/기본방법론_상세검토안.md'];
+function evidenceGraph(f:ReturnType<typeof fixture>,paths:readonly string[],kind:string){
+ for(const path of paths)f.graph.files.push({path,kind,...(kind==='load'?{format:'module-typescript'}:{})});f.graph.files.sort((a:any,b:any)=>a.path<b.path?-1:1);f.sealGraph();
+ for(const path of paths)f.source.files.push({path,bytes:1,sha256:hash('x')});f.source.files.sort((a:any,b:any)=>a.path<b.path?-1:1);f.sealPacket();
+}
+test('공식3경로는 통합 nonload/control source로만 partition하며 loader에 노출하지 않는다',()=>{
+ for(const kind of ['nonload','control']){const f=fixture();evidenceGraph(f,officialEvidence,kind);const out=prepareTc01BootstrapInput(f.input);out.loader.assertHealthy();assert.throws(()=>out.loader.resolve('file://'+f.source.sourceRoot+'/'+officialEvidence[0],context(out.loader.entryURL),never));out.loader.revoke();}
+});
+test('공식 경로의 load·dependency·다른 위치/정규화·Unicode는 거절',()=>{
+ for(const [path,kind]of [[officialEvidence[0]!,'load'],['node_modules/'+officialEvidence[0]!,'control'],[officialEvidence[0]!.normalize('NFD'),'control'],['docs/other/'+officialEvidence[0]!.split('/').at(-1),'control'],['./'+officialEvidence[0]!,'control'],['docs/design/임의.md','control']]){const f=fixture();evidenceGraph(f,[path!],kind!);if(kind==='load'){f.input.loadFiles.push({path,bytes:Buffer.from('x')});f.input.loadFiles.sort((a:any,b:any)=>a.path<b.path?-1:1);}assert.throws(()=>prepareTc01BootstrapInput(f.input),/FN03_TC01_BOOTSTRAP_INPUT_UNKNOWN/);}
+ const f=fixture();evidenceGraph(f,[officialEvidence[0]!],'control');const row=f.source.files.find((r:any)=>r.path===officialEvidence[0]);f.source.files=f.source.files.filter((r:any)=>r!==row);f.dependency.files.push(row);f.dependency.files.sort((a:any,b:any)=>a.path<b.path?-1:1);f.sealPacket();assert.throws(()=>prepareTc01BootstrapInput(f.input),/FN03_TC01_BOOTSTRAP_INPUT_UNKNOWN/);
+});

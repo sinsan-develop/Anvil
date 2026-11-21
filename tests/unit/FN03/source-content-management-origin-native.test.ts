@@ -45,7 +45,7 @@ const tc01Sources=[
 ];
 const id=(n:number)=>`9d000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const h=(text:string)=>contentHash(Buffer.from(text));
-function harness(fault='',integrated=false){
+function harness(fault='',integrated=false,evidencePaths:readonly string[]=[]){
  const at=Date.parse('2026-11-21T00:00:00Z'),attemptId=id(1),head='7'.repeat(40),trace:string[]=[],commands:any[]=[],root='/home/daon/'+(integrated?'anvil-fn03-tc01-':'anvil-fn03-management-')+attemptId+'-qa',receipt='/home/daon/.local/share/anvil-v3-qa-receipts/'+(integrated?'fn03-tc01-':'fn03-management-')+attemptId,artifact='/tmp/'+(integrated?'fn03-tc01-':'anvil-v3-fn03-management-')+attemptId;
  let wall=at,mono=0,ino=1,fd=1,closed=0,endCalls=0;const timers=new Map<number,()=>void>();let timerId=0;
  type Node={kind:'file'|'dir'|'socket'|'link';bytes:Buffer;ino:number;uid:number;mode:number;mtimeMs:number;ctimeMs:number};
@@ -55,7 +55,7 @@ function harness(fault='',integrated=false){
  const lookup=(path:string)=>{const n=tree.get(path);if(!n)throw Object.assign(Error('PRIVATE_ABSENT'),{code:'ENOENT'});return n;};
  const stat=(path:string)=>{const n=lookup(path);return{dev:1,ino:n.ino,uid:n.uid,gid:n.uid,mode:n.mode,nlink:1,size:n.bytes.length,mtimeMs:n.mtimeMs,ctimeMs:n.ctimeMs,isFile:()=>n.kind==='file',isDirectory:()=>n.kind==='dir',isSocket:()=>n.kind==='socket'};};
  dir(root);dir(root+'/.git');dir(receipt.slice(0,receipt.lastIndexOf('/')));dir('/tmp',0,0o1777);dir('/run',0,0o755);
- const sourcePaths=['scripts/qa-fn03-source-content-management-origin-entry.ts','scripts/qa-fn03-source-content-management-origin-native.ts','scripts/qa-fn03-source-content-management-origin-isolated-ports.ts','scripts/qa-fn03-source-content-management-origin-host.ts','scripts/qa-ix01-current-journey.ts','scripts/qa-ix01-subnet-observation-host.ts','package.json','package-lock.json',...(integrated?tc01Sources:[])].sort();
+ const sourcePaths=['scripts/qa-fn03-source-content-management-origin-entry.ts','scripts/qa-fn03-source-content-management-origin-native.ts','scripts/qa-fn03-source-content-management-origin-isolated-ports.ts','scripts/qa-fn03-source-content-management-origin-host.ts','scripts/qa-ix01-current-journey.ts','scripts/qa-ix01-subnet-observation-host.ts','package.json','package-lock.json',...(integrated?tc01Sources:[]),...evidencePaths].sort();
  const rows=sourcePaths.map(path=>{const raw='synthetic-source:'+path;file(root+'/'+path,raw);return{path,bytes:Buffer.byteLength(raw),sha256:h(raw)};});
  const packageLockSha256=rows.find(r=>r.path==='package-lock.json')!.sha256;
  const sourceManifestRaw=JSON.stringify({schemaVersion:1,sourceHead:head,sourceRoot:root,gitSha256:'1'.repeat(64),dockerSha256:'2'.repeat(64),files:rows});
@@ -236,4 +236,16 @@ test('미소비 원 ticket의 legacy/TC01 교차 및 승인 후 source 교체는
  const x=harness('',true),p=createManagementOriginTc01NativeProviders(x.preparation,x.ops);p.assertCurrent(x.preparation.binding);
  x.tree.get(x.root+'/'+tc01Sources[0])!.ino++;
  const before=x.commands.length;await assert.rejects(p.consume(x.preparation.binding));assert.equal(x.commands.length,before);assert(!x.trace.includes('WRITE'));assert(!x.trace.includes('MKDIR'));
+});
+
+const officialEvidence=['docs/design/공식산출물_양식정의.md','docs/design/문서작성_공통기준.md','docs/design/기본방법론_상세검토안.md'];
+test('통합 native만 currentProfile 원 한글3문서의 tracked checkout/hash를 검산한다',()=>{
+ assert.deepEqual(officialEvidence,[currentProfile.forms,currentProfile.standard,currentProfile.methods]);const h=harness('',true,officialEvidence),p=createManagementOriginTc01NativeProviders(h.preparation,h.ops);assert.equal(h.trace.length,0);
+ p.assertPreparedRuntime(h.preparation.binding,h.preparation.runtime);assert.equal(h.commands.length,3);assert(h.commands.every(c=>c.path===currentProfile.git));assert.equal(h.opened.size,0);assert(!h.trace.includes('WRITE'));assert(!h.trace.includes('POOL'));
+ const bad=harness('',true,officialEvidence);bad.tree.get(bad.root+'/'+officialEvidence[0])!.bytes.fill(0);const q=createManagementOriginTc01NativeProviders(bad.preparation,bad.ops);assert.throws(()=>q.assertPreparedRuntime(bad.preparation.binding,bad.preparation.runtime));assert.equal(bad.opened.size,0);assert(!bad.trace.includes('WRITE'));
+});
+test('legacy·dependency 및 유사 Unicode 경로에는 통합 native 예외를 확대하지 않는다',()=>{
+ const legacy=harness('',false,officialEvidence);assert.throws(()=>createManagementOriginNativeProviders(legacy.preparation,legacy.ops));assert.equal(legacy.trace.length,0);
+ for(const path of ['node_modules/'+officialEvidence[0],officialEvidence[0]!.normalize('NFD'),'docs/other/'+officialEvidence[0]!.split('/').at(-1),'./'+officialEvidence[0],'docs/design/임의.md']){const h=harness('',true,[path]);assert.throws(()=>createManagementOriginTc01NativeProviders(h.preparation,h.ops));assert.equal(h.trace.length,0);}
+ const d=harness('',true);const manifest=JSON.parse(d.preparation.dependencyManifestRaw);manifest.files.push({path:'node_modules/'+officialEvidence[0],bytes:1,sha256:h('x')});manifest.files.sort((a:any,b:any)=>a.path<b.path?-1:1);d.preparation.dependencyManifestRaw=JSON.stringify(manifest);d.preparation.runtime.installedDependenciesSha256=h(d.preparation.dependencyManifestRaw);assert.throws(()=>createManagementOriginTc01NativeProviders(d.preparation,d.ops));assert.equal(d.trace.length,0);
 });

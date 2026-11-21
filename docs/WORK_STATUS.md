@@ -21935,3 +21935,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 기존 실제 entry의 입력 검산과 첫 현재성 확인까지 연결하고 합성 guard에서 중단해 자원 소비·명령·Pool 생성0을 확인했다. 직접6통과 `a592f6`, 인접 합계14통과·실패/건너뜀0 `2423eb`, 좁은 타입 exit0 `4df77c`, 공백/LF exit0 `eccd41`. Main과 독립 검수에서 두 지문 일치 및 C0/I0를 확인했다. 소스 SHA256 `FA7F973EC3B927044FE6F105CEC9C3C94BDDD5AC419E796032CE278021A789AA`, 시험 SHA256 `C01E326FAEA5F2F9E63917AC9CF322F7D332B5ADA5D5A5E6EF68FDDDAD177538`.
 
 실제 정본의 공식 양식·문서 공통 기준·기본 방법론 Markdown 파일 3개는 현재 ASCII 경로 검사에서 거절됨을 확인했다. 다음은 같은 정본 3경로만 명시적으로 허용해 기존 해시와 소유 검산에 연결하는 것이다. 실제 Ajv/Fastify/pg Linux tree 및 해석 근거, 최종 child와 launcher의 연결, WSL·DB 저장·재조회는 미완료다. 실제 파일 관측·난수·WSL·SSH·DB·권한·서비스·Agent 실행0. 롤백은 신규 두 파일과 작업 기록의 역적용이다.
+
+### IX01/FN03 공식 근거 문서 3개 경로의 실행 전 검사 정합
+
+기준 `7bd3ef3e` clean. developer_primary가 고정 정본의 원 경로 3개만 통합 TC01의 first-party 비실행 자료로 통과하도록 preload·bootstrap·native source 검사에 연결했다. 경로 정규화·별칭 없이 정확 경로를 비교한다. load 분류·의존성·기존 비통합 프로필 및 임의 Unicode는 계속 거절한다. 경로·소유·Git 추적·바이트 길이·SHA 검산은 유지한다. 변경은 구현 4경로 및 기존 합성시험 3경로다.
+
+기존 거절 RED 3건 `639d48` 뒤 직접38통과 `51bebd`, 최종 bootstrap·인접 23통과 `38339f`(직접 시험과 중복), 좁은 타입 exit0 `d38931`, 공백/LF exit0 `168c2d`. Main 최종 지문 7/7과 경계 diff 대조, 독립 C0/I0. 신규 공통 경로 helper SHA256 `4B2BB54646688A80BB07899E726C7A40A08BC4A3EC551B8394040C73F0B46BDC`.
+
+최종 정본 graph에 새 helper와 import 3경로를 반영해야 한다. 다음은 같은 검산 바이트에서 시험 입력을 생성하는 producer와 기존 실행기의 최종 내부 연결이다. 실제 Linux 설치·SSH·DB·권한·서비스·Agent 실행0, TC01 저장·재조회 미검증. 롤백은 지정 일곱 코드·시험과 작업 기록의 역적용이다.

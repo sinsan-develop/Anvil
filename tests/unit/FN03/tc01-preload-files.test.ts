@@ -105,3 +105,14 @@ test('입력 Proxy/getter 평가0·포트 교체는 뒤 효과0',()=>{
 test('보유 byte의 사용자 fill 교체를 호출하지 않고 소거한다',()=>{
  const f=fixture(),out=createTc01PreloadFiles(f.supervisor,f.io).read(f.input);let called=0;out.files[0]!.bytes.fill=(()=>{called++;throw Error('PRIVATE_OVERRIDE');}) as never;out.dispose();assert.equal(called,0);zero(f);
 });
+
+const officialEvidence=['docs/design/공식산출물_양식정의.md','docs/design/문서작성_공통기준.md','docs/design/기본방법론_상세검토안.md'];
+test('통합 source 공식3경로만 원 checkout에서 읽고 보유·소거한다',()=>{
+ const f=fixture();for(const path of officialEvidence)f.contents.set(path,Buffer.from('synthetic evidence:'+path));f.seal();f.build();f.input.retainPaths=[...officialEvidence].sort();
+ const out=createTc01PreloadFiles(f.supervisor,f.io).read(f.input);assert.deepEqual(out.files.map(r=>r.path),[...officialEvidence].sort());for(const row of out.files){assert.equal(row.bytes.toString(),'synthetic evidence:'+row.path);assert.equal(f.trace.filter(t=>t.op==='open'&&t.path===f.root+'/'+row.path).length,1);}out.dispose();zero(f);
+});
+test('한글 경로 예외는 다른 이름/위치·정규화·node_modules·구 profile을 허용하지 않는다',()=>{
+ const original=officialEvidence[0]!;
+ for(const path of ['docs/other/'+original.split('/').at(-1),original+'.ts',original.normalize('NFD'),'./'+original,'docs/design/../design/'+original,original.replaceAll('/','\\'),'node_modules/'+original,'docs/design/임의.md']){const f=fixture();f.contents.set(path,Buffer.from('x'));f.seal();f.build();stopped(f);assert.equal(f.trace.length,0);}
+ const f=fixture();f.contents.set(original,Buffer.from('x'));f.seal();f.build();f.binding.profile='FN03_MANAGEMENT_ORIGIN_ENTRY_V1';stopped(f);assert.equal(f.trace.length,0);
+});

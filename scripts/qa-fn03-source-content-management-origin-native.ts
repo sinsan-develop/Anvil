@@ -1,3 +1,4 @@
+import {isTc01OfficialEvidencePath} from './qa-fn03-tc01-evidence-paths.ts';
 import {managementOriginProfile,managementOriginTc01Profile,type ManagementOriginProfile} from './qa-fn03-source-content-management-origin-profiles.ts';
 import * as fs from 'node:fs';
 import {posix} from 'node:path';
@@ -41,11 +42,11 @@ const tc01Required=[...required,
  ...['supervision','schema','transaction-fence','provision','fixture','journey'].map(name=>'tests/integration/FN03/source-content-management-origin-'+name+'.ts'),
 ];
 function defaults():ManagementOriginNativeOperations{return{identity:createSubnetNativeIdentity(),files:fs,spawn:spawnSync,pool:request=>new Pool(request),timer:(f,ms)=>setTimeout(f,ms),clearTimer:h=>clearTimeout(h as ReturnType<typeof setTimeout>)};}
-function manifest(raw:string,sha:string,dependencies:boolean):Record<string,any>&{files:Row[]}{
+function manifest(raw:string,sha:string,dependencies:boolean,integrated=false):Record<string,any>&{files:Row[]}{
  check(typeof raw==='string'&&raw.isWellFormed()&&Buffer.byteLength(raw)<=2097152&&contentHash(Buffer.from(raw))===sha);
  const m=parseWireJson(raw);check(recordV1(m,dependencies?['schemaVersion','sourceHead','packageLockSha256','files']:['schemaVersion','sourceHead','sourceRoot','gitSha256','dockerSha256','files'])&&m.schemaVersion===1&&Array.isArray(m.files)&&m.files.length>0&&m.files.length<=20000);
  let total=0,prior='';const files:Row[]=m.files.map((r:unknown)=>{
-  check(recordV1(r,['path','bytes','sha256'])&&typeof r.path==='string'&&/^[A-Za-z0-9_@.+/-]{1,400}$/.test(r.path)&&posix.normalize(r.path)===r.path&&!r.path.startsWith('/')&&!r.path.split('/').some((p:string)=>p==='..'||p==='.'||p==='')&&r.path>prior&&Number.isSafeInteger(r.bytes)&&r.bytes>=0&&r.bytes<=16*1024*1024&&hashV1(r.sha256));
+  check(recordV1(r,['path','bytes','sha256'])&&typeof r.path==='string'&&(/^[A-Za-z0-9_@.+/-]{1,400}$/.test(r.path)||integrated&&!dependencies&&isTc01OfficialEvidencePath(r.path))&&posix.normalize(r.path)===r.path&&!r.path.startsWith('/')&&!r.path.split('/').some((p:string)=>p==='..'||p==='.'||p==='')&&r.path>prior&&Number.isSafeInteger(r.bytes)&&r.bytes>=0&&r.bytes<=16*1024*1024&&hashV1(r.sha256));
   check(dependencies?r.path.startsWith('node_modules/'):!r.path.startsWith('node_modules/')&&!r.path.startsWith('.git/'));prior=r.path;total+=r.bytes;check(total<=256*1024*1024);return{path:r.path,bytes:r.bytes,sha256:r.sha256};
  });return{...m,files};
 }
@@ -62,7 +63,7 @@ function nativeProviders(preparation:ManagementOriginNativePreparation,selected:
  check(recordV1(b,['attemptId','approvalId','planHash','approvalHash','sourceHead','issuedAt','expiresAt','artifactRoot','subnet',...(selected.integrated?['purpose','profile']:[])])&&(!selected.integrated||b.purpose===purpose&&b.profile===profile)&&uuidV1(b.attemptId)&&uuidV1(b.approvalId)&&hashV1(b.planHash)&&hashV1(b.approvalHash)&&/^[a-f0-9]{40}$/.test(b.sourceHead)&&Number.isSafeInteger(b.issuedAt)&&Number.isSafeInteger(b.expiresAt)&&b.issuedAt>=0&&b.expiresAt>b.issuedAt&&b.expiresAt-b.issuedAt<=1800000);
  const root='/home/daon/'+selected.sourcePrefix+b.attemptId+'-qa',receipt='/home/daon/.local/share/anvil-v3-qa-receipts/'+selected.receiptPrefix+b.attemptId,parent=posix.dirname(receipt),artifact='/tmp/'+selected.artifactPrefix+b.attemptId,config=receipt+'/docker-config';
  check(b.artifactRoot===artifact&&recordV1(r,['sourceHead','entry','nodeSha256','sourceClosureSha256','packageLockSha256','installedDependenciesSha256'])&&r.sourceHead===b.sourceHead&&r.entry===entry&&r.nodeSha256===currentProfile.nodeHash&&[r.sourceClosureSha256,r.packageLockSha256,r.installedDependenciesSha256].every(hashV1));
- const sources=manifest(p.sourceManifestRaw,r.sourceClosureSha256,false),dependencies=manifest(p.dependencyManifestRaw,r.installedDependenciesSha256,true);
+ const sources=manifest(p.sourceManifestRaw,r.sourceClosureSha256,false,selected.integrated),dependencies=manifest(p.dependencyManifestRaw,r.installedDependenciesSha256,true);
  check(sources.sourceHead===b.sourceHead&&sources.sourceRoot===root&&hashV1(sources.gitSha256)&&hashV1(sources.dockerSha256)&&(selected.integrated?tc01Required:required).every(path=>sources.files.some(row=>row.path===path))&&sources.files.find(row=>row.path==='package-lock.json')?.sha256===r.packageLockSha256&&dependencies.sourceHead===b.sourceHead&&dependencies.packageLockSha256===r.packageLockSha256);
  const subnet=/^172\.(1[6-9]|2\d|3[01])\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\/28$/.exec(b.subnet);check(subnet&&Number(subnet[2])<=254&&Number(subnet[3])<=240&&Number(subnet[3])%16===0);
  const ops=injected??defaults(),io=ops.files,identity=ops.identity;
