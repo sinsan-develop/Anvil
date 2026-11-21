@@ -1,3 +1,4 @@
+import {createTc01LocalEntryInput,type Tc01LocalEntryInputPorts} from './qa-fn03-tc01-local-entry-input.ts';
 import {types} from 'node:util';
 import {parseWireJson} from '../contracts/canonical.ts';
 import {createTc01PreloadFiles,type Tc01PreloadSupervisor,type Tc01PreloadFilesPort} from './qa-fn03-tc01-preload-files.ts';
@@ -8,6 +9,10 @@ export interface Tc01VerifiedLaunchInput {
  entryInput:Tc01LauncherInput['entryInput'];nativePreparation:Tc01LauncherInput['nativePreparation'];
  /** 보유할 승인 행의 부분집합이다. graph 자신과 모든 load 행을 포함해야 하며 권위가 아니다. */
  retainPaths:readonly string[];
+}
+export interface Tc01LocalVerifiedLaunchSupervisor extends Tc01VerifiedLaunchSupervisor {fillSyntheticEntropy:Tc01LocalEntryInputPorts['fillSyntheticEntropy']}
+export interface Tc01LocalVerifiedLaunchInput {
+ packet:Tc01LauncherInput['entryInput']['packet'];nativePreparation:Tc01LauncherInput['nativePreparation'];retainPaths:readonly string[];
 }
 const graphPath='scripts/qa-fn03-tc01-load-graph.json';
 const fail=():never=>{throw Error('FN03_TC01_VERIFIED_LAUNCH_UNKNOWN');};
@@ -40,17 +45,24 @@ const unknown=()=>Object.freeze({status:'STOPPED' as const,stage:'INPUT' as cons
  * retainPaths는 보유 선택일 뿐이다. 정확 graph 분류/전체 manifest/SQL·fixture는 기존 소비자가 재검산한다.
  */
 export function createTc01VerifiedLaunch(supervisor:Tc01VerifiedLaunchSupervisor,files:Tc01PreloadFilesPort){
+ const runner=createVerifiedLaunch(supervisor,files,false);return Object.freeze({run:(input:Tc01VerifiedLaunchInput)=>runner.run(input)});
+}
+/** 같은 원 preload에서만 SQL/문서/fixture를 생산한다. 외부 raw fixture fallback 및 별도 IO/entropy 기본값 없음. */
+export function createTc01LocalVerifiedLaunch(supervisor:Tc01LocalVerifiedLaunchSupervisor,files:Tc01PreloadFilesPort){
+ const runner=createVerifiedLaunch(supervisor,files,true);return Object.freeze({run:(input:Tc01LocalVerifiedLaunchInput)=>runner.run(input)});
+}
+function createVerifiedLaunch(supervisor:Tc01VerifiedLaunchSupervisor|Tc01LocalVerifiedLaunchSupervisor,files:Tc01PreloadFilesPort,local:boolean){
  let spent=false;
- return Object.freeze({async run(input:Tc01VerifiedLaunchInput){
+ return Object.freeze({async run(input:Tc01VerifiedLaunchInput|Tc01LocalVerifiedLaunchInput){
   if(spent)return unknown();spent=true;
   const owned:Buffer[]=[];let held:ReturnType<ReturnType<typeof createTc01PreloadFiles>['read']>|undefined;
   let result:Awaited<ReturnType<ReturnType<typeof createTc01Launcher>['run']>>=unknown();
   try{
-   const keys=['now','monotonic','assertCurrent','readCurrentEvidence'] as const,methods=fields(supervisor,keys);check(keys.every(k=>typeof methods[k]==='function'));
+   const keys=['now','monotonic','assertCurrent','readCurrentEvidence',...(local?['fillSyntheticEntropy']:[])],methods=fields(supervisor,keys);check(keys.every(k=>typeof methods[k]==='function'));
    const current=()=>{const now=fields(supervisor,keys);check(keys.every(k=>now[k]===methods[k]));};
    // 생략된 포트가 기존 preload의 native default로 넘어가지 않게 효과 전에 닫는다.
    const fileMethods=fields(files,['context','lstat','fstat','realpath','open','read','close','readdir']);check(Object.values(fileMethods).every(v=>typeof v==='function'));
-   const top=fields(input,['entryInput','nativePreparation','retainPaths']),copy=snapshot(top,owned);
+   const top=fields(input,[local?'packet':'entryInput','nativePreparation','retainPaths']),copy=snapshot(top,owned);
    const preload=createTc01PreloadFiles({now:()=>{current();return methods.now.call(supervisor);},monotonic:()=>{current();return methods.monotonic.call(supervisor);},assertCurrent:(b,r)=>{current();check(methods.assertCurrent.call(supervisor,b,r)===undefined);current();}},files);
    held=preload.read({preparation:copy.nativePreparation,retainPaths:copy.retainPaths});
    const graph=held.files.find(row=>row.path===graphPath);check(graph&&graph.bytes.length<=2097152);
@@ -58,9 +70,13 @@ export function createTc01VerifiedLaunch(supervisor:Tc01VerifiedLaunchSupervisor
    check(parsed&&Array.isArray(parsed.files)&&parsed.files.length<=20000);
    // 여기서는 보유 row를 고르는 데만 사용; 승인 판단은 아래 기존 bootstrap의 exact 검산이다.
    const byPath=new Map(held.files.map(row=>[row.path,row]));const loadFiles=parsed.files.filter((r:any)=>r?.kind==='load').map((r:any)=>{const row=byPath.get(r.path);check(row);return row;});
-   held.assertCurrent();
+   if(!local)held.assertCurrent();
    const launcher=createTc01Launcher({now:()=>{current();return methods.now.call(supervisor);},monotonic:()=>{current();return methods.monotonic.call(supervisor);},readCurrentEvidence:()=>{current();const evidence=methods.readCurrentEvidence.call(supervisor);current();return evidence;}});
-   result=await launcher.run({entryInput:copy.entryInput,nativePreparation:copy.nativePreparation,graphBytes:graph.bytes,loadFiles});
+   if(local){
+    const producer=createTc01LocalEntryInput({now:()=>{current();return methods.now.call(supervisor);},monotonic:()=>{current();return methods.monotonic.call(supervisor);},assertCurrent:(b,r)=>{current();check(methods.assertCurrent.call(supervisor,b,r)===undefined);current();},fillSyntheticEntropy:target=>{current();check(methods.fillSyntheticEntropy.call(supervisor,target)===undefined);current();}});
+    // producer는 raw 결과를 반환하지 않는다. launcher의 닫힌 보고만 동일 호출의 지역 변수에 받는다.
+    await producer.withInput(held,copy.packet,async entryInput=>{result=await launcher.run({entryInput,nativePreparation:copy.nativePreparation,graphBytes:graph.bytes,loadFiles});});
+   }else result=await launcher.run({entryInput:copy.entryInput,nativePreparation:copy.nativePreparation,graphBytes:graph.bytes,loadFiles});
    if(result.status==='CHECKED')held.assertCurrent();
   }catch{result=unknown();}
   finally{try{held?.dispose();}catch{result=unknown();}finally{let failed=false;for(const b of owned)try{fill.call(b,0);}catch{failed=true;}if(failed)result=unknown();}}

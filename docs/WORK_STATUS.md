@@ -21943,3 +21943,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 기존 거절 RED 3건 `639d48` 뒤 직접38통과 `51bebd`, 최종 bootstrap·인접 23통과 `38339f`(직접 시험과 중복), 좁은 타입 exit0 `d38931`, 공백/LF exit0 `168c2d`. Main 최종 지문 7/7과 경계 diff 대조, 독립 C0/I0. 신규 공통 경로 helper SHA256 `4B2BB54646688A80BB07899E726C7A40A08BC4A3EC551B8394040C73F0B46BDC`.
 
 최종 정본 graph에 새 helper와 import 3경로를 반영해야 한다. 다음은 같은 검산 바이트에서 시험 입력을 생성하는 producer와 기존 실행기의 최종 내부 연결이다. 실제 Linux 설치·SSH·DB·권한·서비스·Agent 실행0, TC01 저장·재조회 미검증. 롤백은 지정 일곱 코드·시험과 작업 기록의 역적용이다.
+
+### IX01/FN03 같은 격리 프로세스의 자료 조립과 기존 실행기 연결
+
+기준 `e1dbd8b8` clean. developer_primary가 [실행 연결](../scripts/qa-fn03-tc01-verified-launch.ts)과 [직접 시험](../tests/unit/FN03/tc01-verified-launch.test.ts) 두 경로를 작성하고 작성권을 반환했다. 단회 preload의 원 바이트로 시험 SQL·공식 문서·합성 입력을 로컬에서 조립하고 기존 launcher에 한 번 전달한다. 원본이 빠지거나 외부 fixture가 섞이면 적재 전 거절한다. 기존 호출을 유지하며 원 회수 이후 자체 사본을 소거한다.
+
+신규 진입 부재 RED `363d20` 후 직접13통과 `0f957a`, 인접 포함 31통과·실패/건너뜀0 `2210ae`, 좁은 타입 exit0 `5758e4`, 공백/LF exit0 `0848d8`. Main 원 지문과 diff 확인, 독립 C0/I0. 소스 SHA256 `F0FCEC46D19929C861A828A662216F2F1C8D69F0DEBD5EF5E91C4E4867E3A7E1`, 시험 SHA256 `8EB1194AC2465AF0958192077DA6B20BBD18587C6D2B1681290A74E275792337`.
+
+직접 합성에서 원 132 SQL·한글 3문서와 원 사본 소거까지 검증했다. 실제 Linux 설치본과 적재 graph, 실행 프로세스·승인 결박, PG 저장·재조회 미완료다. 기존 Windows 2파일 진단 응답 미확인. 다음 실행 준비는 고정 Node/npm과 정확 lock으로 격리 설치 증거를 먼저 수거하는 범위이며 132 SQL·0101 실제 효과와 분리한다. 실제 SSH·WSL·난수·DB·권한·서비스·Agent 실행0. 롤백은 위 두 파일과 작업 기록의 역적용이다.

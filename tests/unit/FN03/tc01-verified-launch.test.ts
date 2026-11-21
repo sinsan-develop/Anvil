@@ -1,9 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {posix} from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {currentProfile} from '../../../scripts/qa-ix01-current-journey.ts';
+import {readManagementOriginSchemaManifest} from '../../integration/FN03/source-content-management-origin-schema.ts';
 import type {Tc01PreloadFilesPort} from '../../../scripts/qa-fn03-tc01-preload-files.ts';
 import {createHash} from 'node:crypto';
-import {createTc01VerifiedLaunch} from '../../../scripts/qa-fn03-tc01-verified-launch.ts';
+import {createTc01VerifiedLaunch,createTc01LocalVerifiedLaunch} from '../../../scripts/qa-fn03-tc01-verified-launch.ts';
 const hash=(v:string|Uint8Array)=>createHash('sha256').update(v).digest('hex');
 const success=()=>({status:'CHECKED',stage:'DONE',reason:'JOURNEY_CHECKED',authority:'NOT_ISSUED',appClosed:true,poolClosed:true,resources:'REMOVED',journeys:{fn03:'CHECKED',tc01:'CHECKED',tc01Stage:'DONE'}});
 // Synthetic modules expose no real native/provider calls or authority. Unique roots avoid module-cache reuse.
@@ -51,9 +55,9 @@ function fixture(){
 }
 
 // 저장소/OS를 읽지 않는 승인 입력 모형. 원 파일 포트가 받은 실제 Buffer를 추적한다.
-function filesFixture(f:ReturnType<typeof fixture>){
+function filesFixture(f:ReturnType<typeof fixture>,extra:readonly {path:string;bytes:Buffer}[]=[]){
  const root=f.source.sourceRoot as string;
- const contents=new Map<string,Buffer>([...f.input.loadFiles.map((r:any)=>[r.path,Buffer.from(r.bytes)]),[graphPath,Buffer.from(f.input.graphBytes)],['package-lock.json',Buffer.from('synthetic lock')],['db/fixture.sql',Buffer.from('not-loaded')]] as [string,Buffer][]);
+ const contents=new Map<string,Buffer>([...extra.map(r=>[r.path,Buffer.from(r.bytes)]),...f.input.loadFiles.map((r:any)=>[r.path,Buffer.from(r.bytes)]),[graphPath,Buffer.from(f.input.graphBytes)],['package-lock.json',Buffer.from('synthetic lock')],['db/fixture.sql',Buffer.from('not-loaded')]] as [string,Buffer][]);
  let inode=1,fd=10;const nodes=new Map<string,any>(),handles=new Map<number,string>(),trace:{op:string;path?:string;fd?:number}[]=[],buffers:Buffer[]=[];
  const metadata=(dir:boolean,size=0)=>({dev:1,ino:inode++,uid:1000,gid:1000,mode:dir?0o040755:0o100644,size,mtimeMs:1,ctimeMs:1,nlink:dir?2:1});
  for(const [relative,data]of contents){const path=root+'/'+relative;let parent=posix.dirname(path);while(parent!=='/'){if(!nodes.has(parent))nodes.set(parent,{...metadata(true),uid:['/home','/home/daon'].includes(parent)?0:1000});parent=posix.dirname(parent);}nodes.set(path,metadata(false,data.length));}nodes.get(root).mode=0o040700;
@@ -116,4 +120,46 @@ test('preload callback 이전 소유 입력 snapshot과 caller mutation 분리·
  let changed=false;d.hooks.afterRead=()=>{if(changed)return;changed=true;f.input.entryInput.packet.planRaw='changed';f.input.nativePreparation.sourceManifestRaw='changed';f.input.entryInput.sql[0].bytes.fill(7);};
  f.harness.onRun=async(_p:any,i:any)=>{assert.notEqual(i.packet.planRaw,'changed');assert.equal(i.sql[0].bytes.toString(),'sql-owned');return success();};assert.equal((await run(f,d)).status,'CHECKED');
  const g=fixture(),e=filesFixture(g);let getters=0;Object.defineProperty(e.input.entryInput,'packet',{enumerable:true,get(){getters++;throw Error('PRIVATE');}});assert.equal((await run(g,e)).status,'STOPPED');assert.equal(getters,0);assert.equal(e.trace.length,0);
+});
+
+test('명시 local 입력 생산 진입은 미공급 입력에서 효과0',async()=>{assert.equal((await createTc01LocalVerifiedLaunch({} as never,{} as never).run(undefined as never)).status,'STOPPED');});
+
+function originals(){
+ const cwd=fileURLToPath(new URL('../../../',import.meta.url)),git=(args:string[],input?:string)=>execFileSync('git',args,{cwd,input,windowsHide:true,maxBuffer:32*1024*1024});
+ const tsv=git(['cat-file','blob','e1dbd8b8:'+currentProfile.manifest]),rows=readManagementOriginSchemaManifest(tsv);
+ const paths=[currentProfile.manifest,currentProfile.legacy,currentProfile.forms,currentProfile.standard,currentProfile.methods,...rows.map(r=>r.path)],batch=git(['cat-file','--batch'],paths.map(p=>'e1dbd8b8:'+p).join('\n')+'\n');let cursor=0;
+ const files=paths.map(path=>{const end=batch.indexOf(10,cursor),match=/^[a-f0-9]{40} blob ([1-9][0-9]*)$/.exec(batch.subarray(cursor,end).toString('ascii'));assert(match);const start=end+1;cursor=start+Number(match[1]);assert.equal(batch[cursor++],10);return{path,bytes:Buffer.from(batch.subarray(start,cursor-1))};});assert.equal(cursor,batch.length);return{files,rows};
+}
+let localOriginals:ReturnType<typeof originals>|undefined;
+
+function localFixture(){
+ const f=fixture(),original=localOriginals??=originals();
+ for(const row of original.files)f.graph.files.push({path:row.path,kind:'nonload'});f.graph.files.sort((a:any,b:any)=>a.path<b.path?-1:1);f.sealGraph();
+ f.source.files.push(...original.files.map(r=>({path:r.path,bytes:r.bytes.length,sha256:hash(r.bytes)})));f.source.files.sort((a:any,b:any)=>a.path<b.path?-1:1);f.sealPacket();
+ const d=filesFixture(f,original.files),entropy:Uint8Array[]=[];const hooks={entropy:()=>{}};
+ const supervisor={...d.supervisor,fillSyntheticEntropy(target:Uint8Array){entropy.push(target);for(let i=0;i<target.length;i++)target[i]=(i*13+7)%256;hooks.entropy();}};
+ const input={packet:f.input.entryInput.packet,nativePreparation:f.input.nativePreparation,retainPaths:[...d.input.retainPaths,...original.files.map(r=>r.path)].sort()};
+ return{f,d,supervisor,input,entropy,hooks,rows:original.rows};
+}
+function localCleared(h:ReturnType<typeof localFixture>){cleared(h.d);assert(h.entropy.every(b=>b.every(x=>x===0)));if(h.f.harness.input){const input=h.f.harness.input;assert(input.isolated.fixture.access.key.every((b:number)=>b===0));assert(input.sql.every((r:any)=>r.bytes.every((b:number)=>b===0)));assert(Object.values(input.isolated.sources).every((b:any)=>b.every((x:number)=>x===0)));}}
+async function runLocal(h:ReturnType<typeof localFixture>){try{return await createTc01LocalVerifiedLaunch(h.supervisor,h.d.io).run(h.input);}finally{h.f.cleanup();localCleared(h);}}
+test('단회 preload→원 132/공식3문서 local producer→실제 RAM hook launcher 및 전체 소거',async()=>{
+ const h=localFixture(),{f,d}=h,runner=createTc01LocalVerifiedLaunch(h.supervisor,d.io);assert.equal(d.trace.length,0);assert.equal(h.entropy.length,0);
+ f.harness.onRun=async(p:any,i:any)=>{const ioBefore=d.trace.length;assert.equal(i.sql.length,132);assert.deepEqual(i.sql.map((r:any)=>({id:r.id,path:r.path,bytes:r.bytes.length,sha256:hash(r.bytes)})),h.rows);assert.equal(hash(i.isolated.sources.forms),hash(d.contents.get(currentProfile.forms)!));assert.equal(hash(i.isolated.sources.standard),hash(d.contents.get(currentProfile.standard)!));assert.equal(hash(i.isolated.sources.methods),hash(d.contents.get(currentProfile.methods)!));assert.equal(i.isolated.fixture.methodologyRef.version,2);assert.equal(i.isolated.fixture.credentialGeneration,1);assert.equal(i.isolated.fixture.origin,'https://anvil.invalid');assert.equal(Object.keys(i.isolated.passwords).length,3);p.assertCurrent(i.isolated.binding);await p.consume(i.isolated.binding);await p.closePool({},10000);assert.equal(d.trace.length,ioBefore,'실행 중 파일 재읽기/전체 재검사0');return success();};
+ try{const out=await runner.run(h.input);assert.equal(out.status,'CHECKED');assert.equal(out.authority,'NOT_ISSUED');assert.deepEqual(Object.keys(out).sort(),['status','stage','code','authority','fn03','tc01','appClosed','poolClosed','resources'].sort());assert.equal(h.entropy.length,1);assert.equal(d.trace.filter(t=>t.op==='open').length,d.contents.size);assert.equal(d.trace.filter(t=>t.op==='readdir'&&t.path===d.root+'/node_modules').length,5);assert(!JSON.stringify(out).includes('fixture'));assert(!JSON.stringify(out).includes('anvil.invalid'));localCleared(h);const calls=d.trace.length;assert.equal((await runner.run(h.input)).status,'STOPPED');assert.equal(d.trace.length,calls);assert.equal(h.entropy.length,1);}finally{f.cleanup();}
+});
+test('local 원 자료 미보유/오염·raw fixture 혼입은 fallback 없이 import0',async()=>{
+ for(const mode of ['retain','bytes','raw','port'] as const){const h=localFixture();
+  if(mode==='retain')h.input.retainPaths=h.input.retainPaths.filter((p:string)=>p!==h.rows[131]!.path);
+  if(mode==='bytes')h.d.contents.get(currentProfile.methods)!.fill(0);
+  if(mode==='raw')(h.input as any).entryInput=h.f.input.entryInput;
+  if(mode==='port')delete (h.supervisor as any).fillSyntheticEntropy;
+  const out=await runLocal(h);assert.equal(out.status,'STOPPED');assert.deepEqual(h.f.trace,[]);assert.equal(h.entropy.length,0);
+ }
+});
+test('local entropy 실패·만료/교체에서는 import0, 재시도0·원 seed 소거',async()=>{
+ for(const mode of ['failure','late','replace'] as const){const h=localFixture();h.hooks.entropy=()=>{if(mode==='failure')throw Error('PRIVATE_ENTROPY');if(mode==='late')h.f.setTime(h.f.plan.expiresAt,0);if(mode==='replace')h.supervisor.fillSyntheticEntropy=()=>{};};const out=await runLocal(h);assert.equal(out.status,'STOPPED');assert.deepEqual(h.f.trace,[]);assert.equal(h.entropy.length,1);assert(!JSON.stringify(out).includes('PRIVATE'));}
+});
+test('local 실행 실패/늦은 성공·최종 파일 변경에도 원 close와 소거를 유지',async()=>{
+ for(const mode of ['stopped','late','changed'] as const){const h=localFixture();h.f.harness.onRun=async(p:any)=>{await p.closePool({},10000);if(mode==='late')h.f.setTime(h.f.plan.expiresAt,0);if(mode==='changed')h.d.nodes.get(h.d.root+'/'+currentProfile.forms).ino++;return mode==='stopped'?{...success(),status:'STOPPED',resources:'PRESERVED_OR_UNCONFIRMED',journeys:{fn03:'CHECKED',tc01:'STARTED',tc01Stage:'READ'}}:success();};const out=await runLocal(h);assert.equal(out.status,'STOPPED');assert.equal(out.fn03,mode==='stopped'?'CHECKED':'NOT_CHECKED');assert.equal(out.resources,'PRESERVED_OR_UNCONFIRMED');assert.equal(h.f.trace.filter(t=>t==='close').length,1);}
 });
