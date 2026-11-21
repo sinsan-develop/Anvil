@@ -21887,3 +21887,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 담당 최초 모듈 부재 RED `6488a2` 뒤 직접12·적재/부팅 인접24 합계36통과·실패/건너뜀0 `4bb05d`, 좁은 타입0 `6a48dd`, 공백/LF0 `c71c3a`. Main 동일 launcher 인스턴스의 중복 등록 차단과 절대 기한 연장 거절 2통과 `b8c494`. 독립 지적의 절대·단조 최소 기한 불일치를 보완했다. 중복 등록 guard는 같은 launcher 모듈 인스턴스에 적용되므로 실제 외피는 단일 고정 URL에서만 실행해야 한다. 합성 Node 훅과 대체 bridge에서 확인했으며 합성 핸들 잔여0이다.
 
 실제 전체 graph/설치 tree의 검산, 고정 외부 프로세스 수거, Windows/SSH·Linux/DB·서비스·권한·키 실행은 미완료다. 기존 한정 읽기 결정은 응답 미확인이다. 다음은 실제 소스/의존성 mapping과 새 통합 launcher의 정확 호출 입력을 같은 환경·승인 근거로 묶는 단계다. 롤백은 신규 세 파일과 이 기록의 역적용이다.
+
+### IX01/FN03 프로젝트 소스 적재 경로의 기준 근거
+
+기준 `169216ec` clean. developer_primary가 고정 bridge와 적재 전 launcher를 시작점으로 원 Git LF 바이트를 AST 분석했다. [프로젝트 소스 연결 근거](04_test_reports/AV3/IX01/TC01_RUNTIME_FIRST_PARTY_CLOSURE.json)는 367개 파일과 실행 연결 2,271개, 계산 import 3건을 기록한다. 설치 package 경계는 Ajv·Fastify·pg 세 곳이다. 고정 R9 파생 모듈과 기존 legacy의 별도 계산 import는 실제로 실행하지 않았다.
+
+담당 AST·parser metadata 대조 `30e239`, 전체 길이·SHA·연결 대조 `b9327a`. Main 367개 원 Git blob 및 edge 수 독립 대조 `170a48`, 최종 문서 SHA256 `8378C19DD2547738C52D5F0D010C3C6D9902E44015B209D7A2E0ADC366C55453`. 독립 root·R9·package 표본 검수 C0/I0. 코드를 실행하거나 Linux 설치 tree를 사용하지 않았다. 이 근거는 최종 적재 graph·실제 Linux CJS 호환·실제 승인에 해당하지 않는다.
+
+다음은 부팅 중 상대 JSON을 적재 검사에 연결할 수 있는지 확인하고, 실제 Linux package resolution/설치 파일 및 원 프로세스 수거의 외부 근거를 확보하는 단계다. 기존 Windows 한정 읽기는 아직 응답 미확인이다. 되돌리기는 새 조사 결과와 상태 기록의 역적용이다.
