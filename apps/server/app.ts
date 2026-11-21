@@ -1,3 +1,4 @@
+import {registerNormalUnderstandingReadRoutes} from './modules/executions/normal-understanding-read-routes.ts';
 import {readNormalStopOptions,type NormalStopOptions} from './modules/executions/normal-stop-target.ts';
 import {NormalInstructionSource} from './modules/executions/normal-instruction-source.ts';
 import {ProjectConversations} from './modules/knowledge/conversations.ts';
@@ -91,7 +92,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   registerDesktopRuntimeCatalogue(app,runtimeCatalogue);
   registerWorkerDeploymentRoutes(app,workerDeployment);
   app.get('/api/v1/health', async () => ({ status: 'ok', scope: 'process', version: '0.1.0' }));
-  if (access) { registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation,normalExecution,normalGrantRevocation,normalInstruction,normalStop); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
+  if (access) { registerNormalUnderstandingReadRoutes(app,access); registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation,normalExecution,normalGrantRevocation,normalInstruction,normalStop); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
   if(access)registerUnderstandingHistoryRoutes(app,access,syntheticExecution?.understandingHistory);
   if(nativePreparation?.enabled===true)registerNativePreparationRoutes(app,nativePreparation,access);
   if(nativeReceive?.enabled===true){if(nativeReceive.service instanceof NativeFirstReceiveService&&nativePreparation?.preparations)nativeReceive.service.connectNativeCommand(nativePreparation.preparations);registerNativeFirstReceiveRoutes(app,nativeReceive,access);}

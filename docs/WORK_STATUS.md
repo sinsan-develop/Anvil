@@ -22199,3 +22199,11 @@ developer_primary 단일 작성·동결. 신규 normal-understanding-response-so
 원 빌더 허용목록 RED 93f377→RAM GREEN 6690df, raw 한도 RED df3856→GREEN 99e8e9. 담당 최종 집중 5통과(2e6cc8), 직접·인접 26통과(99e8e9), 전체 owner 56통과(35dccf)는 마지막 raw 한도·불명 보완 전 범위다. Main 신규 경로의 원 owner RAM 5통과/실패·건너뜀0(ca76d8), 직접·인접 22통과(8427e9), 루트 타입735e58 exit0와 공백 검사 exit0. C#·실제 파일·SDK·DB·권한·키·서비스·SSH 실행 없음.
 
 실제 HUMAN 요청 발급·현재 원 근거·SQL/nonce/영수증·보호 보관·POST 원결과 결박 및 화면은 미완료다. 현재 미공급 503은 유지한다. S3는 알려진 요청 없음/거절과 불명 결과를 분리하고 이전 실패가 새 명시 요청에 미치는 상태를 검산해야 한다. 자동 재실행·순환 polling은 없다. 롤백은 이번 정확 9경로와 기록 변경분이다.
+
+#### FN09 S3 — 최초 메타 탐색 요청의 HUMAN 저장과 재확인
+
+기준 6f48c063, developer_primary 단일 작성·동결. 실제 서버 앱의 전용 POST를 Access의 같은 인증 거래·OWNER 제어·재인증·정확 프로젝트 정책, 정상 CONTEXT_REVIEW의 원 START에 연결했다. 명령·인가·감사·요청 행을 함께 저장하고 같은 원명령 재확인은 목적 RPC가 원본과 현재 근거를 대조한다. 일반 명령 경로와 직접 표 SELECT/DML, PUBLIC 및 비범위 완결 함수 접근은 닫았다. 결과는 PENDING_SOURCE/sourceScope:null이며 FIRST, init/tail, 선택 원문과 실행 권위를 발급하지 않는다.
+
+합성 최초 RED 0ca46c→GREEN bb3337, 실제 Access Date 재인증 RED a7f472→GREEN a15034. 독립 I1의 START queue/envelope 원 해시는 0083의 execution_json_hash로 복귀해 기존 숫자 canonical 형상을 보존했다. 새 요청·명령/인가/감사 해시는 유지했다. 독립 최종 C0/I0/M0. Main 합성 36통과/실패·건너뜀0(acd528), 루트 타입 exit0(df0d7a), 미적용 0102 외부 SQL 23문장·동결 SHA 대조(8f5d0a). 실제 PG/PL 함수, ACL·시각·락의 동작은 미검증. SQL SHA256 8182FF57BFC3000DCE3576746EF83B9A249E016EDCB5C4F83580DEEC414892E5.
+
+현재는 같은 실행·세대에서 보존 중인 탐색 1개만 허용한다. 종료·만료·불명과 다음 명시 요청을 구분할 완결 연결이 남아 있으므로 정상 대기 흐름 완료로 표시하지 않는다. 등록 GET/challenge 미공급 503, 보호 결과·선택 원문·정산·정상 검토·화면 미구현. 실제 DB·권한·키·서비스·SSH·Agent 변경·실행0. 롤백은 최초 저장의 7경로와 기록 변경분이며 미적용 SQL의 철회다.
