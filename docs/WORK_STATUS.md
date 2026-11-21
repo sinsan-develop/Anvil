@@ -22207,3 +22207,11 @@ developer_primary 단일 작성·동결. 신규 normal-understanding-response-so
 합성 최초 RED 0ca46c→GREEN bb3337, 실제 Access Date 재인증 RED a7f472→GREEN a15034. 독립 I1의 START queue/envelope 원 해시는 0083의 execution_json_hash로 복귀해 기존 숫자 canonical 형상을 보존했다. 새 요청·명령/인가/감사 해시는 유지했다. 독립 최종 C0/I0/M0. Main 합성 36통과/실패·건너뜀0(acd528), 루트 타입 exit0(df0d7a), 미적용 0102 외부 SQL 23문장·동결 SHA 대조(8f5d0a). 실제 PG/PL 함수, ACL·시각·락의 동작은 미검증. SQL SHA256 8182FF57BFC3000DCE3576746EF83B9A249E016EDCB5C4F83580DEEC414892E5.
 
 현재는 같은 실행·세대에서 보존 중인 탐색 1개만 허용한다. 종료·만료·불명과 다음 명시 요청을 구분할 완결 연결이 남아 있으므로 정상 대기 흐름 완료로 표시하지 않는다. 등록 GET/challenge 미공급 503, 보호 결과·선택 원문·정산·정상 검토·화면 미구현. 실제 DB·권한·키·서비스·SSH·Agent 변경·실행0. 롤백은 최초 저장의 7경로와 기록 변경분이며 미적용 SQL의 철회다.
+
+#### FN09 S3 — 등록 실행기의 동일 탐색 요청 획득
+
+기준 a8d8e5e6. developer_primary 단일 작성·동결. 전용 등록 challenge v1에 당시 정확 HUMAN 요청 ref를 고정하고, 서명된 GET이 같은 요청·현재 권위·기한을 검산한 뒤 nonce v2와 목적 영수증을 함께 저장한다. 동일 패킷의 명시 재확인은 최초 영수증/기한만 반환한다. NONE은 단회 정상 ROLLBACK 확인 뒤만 반환한다. 기존 0090/0097 원 파일과 일반 검산 함수의 위임·trigger 이름/조건·시점을 보존했다. 미적용 0102는 새 목적만 별도 검산한다.
+
+부재 RED 2f09ed, 최초 직접·인접 37통과(6bda4a). 독립 I1의 늦은 현재성 상실 뒤 ROLLBACK tag/예외 불명 반례 4실패(181782)를 보완해 발급·획득 모두 503 UNKNOWN과 원 client discard가 우선하도록 했다. 독립 재검수 C0/I0/M0. Main 직접·인접 44통과/실패·건너뜀0(0473a2), 타입 exit0(cf8bf9), SQL 외부 44문장·SHA·공백 exit0(44ea36). SQL SHA256 AEFC381920AB785128BA8EE9E4ED7C893D7CCB4247EFBEDA976F44D23DFC3096. 실제 PG 내 함수·권한·락·동시성은 미검증이다.
+
+결과는 DISCOVERY_ACQUIRED이며 FIRST·init/tail, SELECT ticket, 결과 POST 또는 실행 권위를 발급하지 않는다. 실제 등록 실행기의 획득 응답 소비, 원 정상 close 증거를 결박한 메타 결과와 불변 정착, 이후 선택·검토 화면은 후속이다. DB·권한·키·서비스·SSH·SDK·Agent 실행0. 롤백은 이번 정확 6경로와 기록의 역적용이다.

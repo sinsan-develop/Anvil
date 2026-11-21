@@ -1,3 +1,4 @@
+import {NormalUnderstandingReadAcquisition,registerNormalUnderstandingReadAcquisition} from './modules/executions/normal-understanding-read-acquisition.ts';
 import {registerNormalUnderstandingReadRoutes} from './modules/executions/normal-understanding-read-routes.ts';
 import {readNormalStopOptions,type NormalStopOptions} from './modules/executions/normal-stop-target.ts';
 import {NormalInstructionSource} from './modules/executions/normal-instruction-source.ts';
@@ -87,7 +88,9 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   }
   if(normalObservations)registerNormalObservations(app,normalObservations,readPacket);
   if(normalRequestChallenge&&!normalExchange)throw Error('EXECUTION_CHALLENGE_STORE_REQUIRED');
-  if(normalExchange)registerNormalExchangeChallenge(app,normalExchange,normalRequestChallenge);
+  const understandingAcquisition=access&&normalExchange&&normalRequestChallenge&&access.origin===normalRequestChallenge.origin&&access.repository.pool===normalExchange.pool?new NormalUnderstandingReadAcquisition(normalExchange.pool):undefined;
+  if(understandingAcquisition)registerNormalUnderstandingReadAcquisition(app,understandingAcquisition,normalRequestChallenge!.origin);
+  if(normalExchange)registerNormalExchangeChallenge(app,normalExchange,normalRequestChallenge?{...normalRequestChallenge,understanding:understandingAcquisition}:undefined);
   if(normalCredentialExchange)registerNormalCredentialExchange(app,normalCredentialExchange);
   registerDesktopRuntimeCatalogue(app,runtimeCatalogue);
   registerWorkerDeploymentRoutes(app,workerDeployment);

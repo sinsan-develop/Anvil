@@ -1,3 +1,4 @@
+import type {NormalUnderstandingReadAcquisition} from './normal-understanding-read-acquisition.ts';
 import {createHash,randomBytes,randomUUID} from 'node:crypto';
 import {TextDecoder} from 'node:util';
 import type {FastifyInstance} from 'fastify';
@@ -53,7 +54,9 @@ export async function readCurrent(db:PoolClient,project:string,connector:string,
 }
 export function original(row:any,binding:unknown,purpose:Purpose='CREDENTIAL_EXCHANGE',credentialRef?:unknown){
  const s=row.snapshot_json,p=s?.publicChallenge,request=s?.request;
- if(!recordV1(s,['sequence','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption',...(purpose==='EXECUTION_REQUEST'?['credentialRef']:[])])
+ const discovery=purpose==='EXECUTION_REQUEST'&&request?.target?.method==='GET'&&request.target.path==='/api/v1/connectors/'+(binding as any)?.connectorId+'/executions/'+(binding as any)?.executionId+'/understanding-response-read';
+ if(discovery&&!refV1(s?.understandingRequestRef))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
+ if(!recordV1(s,['sequence','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption',...(purpose==='EXECUTION_REQUEST'?['credentialRef']:[]),...(discovery?['understandingRequestRef']:[])])
   ||(purpose==='EXECUTION_REQUEST'&&(!refV1(credentialRef)||!same(s.credentialRef,credentialRef)))
   ||s.previousRef!==null||s.consumption!==null||!Number.isSafeInteger(s.sequence)||Number(s.sequence)<1
   ||!same(s.binding,binding)||row.content_hash!==digest(s)||s.requestHash!==digest(request)
@@ -79,17 +82,17 @@ async function bootstrapReservation(db:PoolClient,b:any){
   return fail('EXECUTION_BOOTSTRAP_RESERVATION_INVALID',412);
  return {registrationRef:s.registrationRef,reservationRef:{id:row.id,version:1,contentHash:row.content_hash},expiresAt:s.expiresAt};
 }
-async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string,body:unknown,bearerDigest?:string){
+async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string,body:unknown,bearerDigest?:string,understandingSource?:NormalUnderstandingReadAcquisition){
  const purpose:Purpose=bearerDigest?'EXECUTION_REQUEST':'CREDENTIAL_EXCHANGE';
  const {request,signature}=decode(body,purpose),ref=request.grantRef;
  if(!refV1(ref))return fail('INPUT_INVALID',400);
- // 목적 요청/custody 및 거래 handler가 아직 없다. 문법 지원을 nonce 발행 권위로 승격하지 않는다.
- // 기존 current/credential 검산을 대체할 caller boolean/임의 provider도 받지 않는다.
+ // 원 HUMAN 요청과 같은 DB 목적 저장소가 없으면 새 경로의 nonce를 발행하지 않는다. result/SELECT는 아직 닫혀 있다.
  const understanding='/api/v1/connectors/'+connector+'/executions/'+execution+'/understanding-response-read';
- if(request.target.path===understanding||request.target.path.startsWith(understanding+'/'))
+ const discovery=request.target.path===understanding&&request.target.method==='GET'&&!!bearerDigest&&understandingSource?.pool===pool;
+ if((request.target.path===understanding||request.target.path.startsWith(understanding+'/'))&&!discovery)
   return fail('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE',503);
  const db=await pool.connect();
- let committing=false,discard:Error|undefined;
+ let committing=false,noneRollback=false,discard:Error|undefined;
  try{
   await db.query('BEGIN');await db.query("SET LOCAL statement_timeout='5s'; SET LOCAL lock_timeout='2s'");
   const credential=bearerDigest?await requestCredential(db,bearerDigest,connector,execution,request):null;
@@ -98,7 +101,7 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   const project=scope[0].project_id,keys=[project,ref.id,ref.version];
   const current=await readCurrent(db,project,connector,execution,request);
   const reservation=credential?null:await bootstrapReservation(db,current.binding);
-  const deadline=Math.min(current.deadline.getTime(),credential?.expiresAt??Infinity);
+  let deadline=Math.min(current.deadline.getTime(),credential?.expiresAt??Infinity);
   if(current.now.getTime()>=deadline)return fail('EXECUTION_CREDENTIAL_EXPIRED',412);
   const rows=(await db.query('SELECT id,content_hash,snapshot_json FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND version=1 AND (request_id=$4 OR client_nonce=$5) LIMIT 2',[...keys,request.requestId,request.clientNonce])).rows;
   const replay=rows.find(row=>row.snapshot_json?.request?.requestId===request.requestId);
@@ -108,6 +111,9 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   verifyRequest(current.spki,signature,request,current.binding,checked?new Date(checked.challenge.issuedAt):current.now);
   if(rows.length>1||replay&&!identical)return fail('IDEMPOTENCY_CONFLICT',409);
   if(rows.length&&!replay)return fail('EXECUTION_CHALLENGE_CLIENT_NONCE_REUSED',409);
+  const human=discovery?await understandingSource!.current(db,bearerDigest!,current.binding,request.requestId,checked?replay.snapshot_json.understandingRequestRef:null):null;
+  if(discovery&&!human){noneRollback=true;discard=new Error('NORMAL_UNDERSTANDING_DISCOVERY_ROLLBACK_UNKNOWN');if((await db.query('ROLLBACK')).command!=='ROLLBACK')return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);discard=undefined;return {transport:'NORMAL_PROTECTED',status:'NONE',challenge:null,nonceConsumed:false,executionAuthorized:false,dispatchPerformed:false};}
+  if(human){deadline=Math.min(deadline,Date.parse(human.expiresAt));if(current.now.getTime()>=deadline)return fail('NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED',412);}
   let result=checked;
   if(!result){
    const stats=credential?await requestChallengeStats(db,keys,credential.ref,current.now):(await db.query(`SELECT count(*) FILTER (WHERE version=1)::int AS total,
@@ -119,7 +125,7 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
    const challenge={id:randomUUID(),requestId:request.requestId,purpose:request.purpose,grantRef:ref,credentialGeneration:request.credentialGeneration,
     scopeDigest:current.binding.scopeDigest,serverNonce:randomBytes(32).toString('base64url'),clientNonce:request.clientNonce,
     issuedAt:current.now.toISOString(),expiresAt:new Date(Math.min(current.now.getTime()+(credential?30000:120000),deadline)).toISOString()};
-   const snapshot={sequence:stats.sequence,...(credential?{credentialRef:credential.ref}:{}),binding:current.binding,request,requestHash:digest(request),signedInputHash:signedInputHash(request),serverNonceDigest:nonceDigest(challenge.serverNonce),publicChallenge:challenge,previousRef:null,consumption:null};
+   const snapshot={sequence:stats.sequence,...(human?{understandingRequestRef:human.requestRef}:{}),...(credential?{credentialRef:credential.ref}:{}),binding:current.binding,request,requestHash:digest(request),signedInputHash:signedInputHash(request),serverNonceDigest:nonceDigest(challenge.serverNonce),publicChallenge:challenge,previousRef:null,consumption:null};
    const content=digest(snapshot);
    if(credential)await db.query("SELECT set_config('anvil.normal_request_verified',txid_current()::text||':'||$1||':'||$2||':'||$3,true)",[content,credential.ref.contentHash,bearerDigest]);
    else await db.query("SELECT set_config('anvil.normal_challenge_verified',txid_current()::text||':'||$1,true)",[content]);
@@ -137,6 +143,8 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   if(!same(final.binding,current.binding)||final.spki!==current.spki||final.now<current.now||Math.min(final.deadline.getTime(),credential?.expiresAt??Infinity)<expiry
     ||Date.parse(result.challenge.issuedAt)>current.now.getTime()||(!checked&&final.now.getTime()>=expiry))
     return fail('EXECUTION_CHALLENGE_CURRENT_BINDING_REQUIRED',412);
+  if(human){const finalHuman=await understandingSource!.current(db,bearerDigest!,final.binding,request.requestId,human.requestRef);
+   if(!finalHuman||!same(finalHuman.context,human.context)||Date.parse(finalHuman.expiresAt)<expiry||final.now.getTime()>=expiry)return fail('NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED',412);}
   let bootstrapBinding:unknown;
   if(reservation){
    const last=await bootstrapReservation(db,final.binding);
@@ -154,12 +162,19 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   return reservation?{...result,bootstrapBinding}:result;
  }catch(error){
   if(committing)discard=new Error('EXECUTION_CHALLENGE_COMMIT_UNKNOWN');
-  try{await db.query('ROLLBACK');}catch{discard??=new Error('EXECUTION_CHALLENGE_ROLLBACK_UNKNOWN');}
+  let rollbackUnknown=noneRollback;
+  try{
+   if(!noneRollback){const ended=await db.query('ROLLBACK');
+    if(discovery&&ended?.command!=='ROLLBACK'){rollbackUnknown=true;discard??=new Error('EXECUTION_CHALLENGE_ROLLBACK_UNKNOWN');}}
+  }catch{rollbackUnknown=true;discard??=new Error('EXECUTION_CHALLENGE_ROLLBACK_UNKNOWN');}
+  if(discovery&&rollbackUnknown)return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);
   if(committing)return fail('EXECUTION_CHALLENGE_COMMIT_UNKNOWN',503);
+  if(noneRollback)return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);
+  if(discovery&&!(error instanceof AuthFailure)){if(error instanceof Error&&/^NORMAL_UNDERSTANDING_DISCOVERY_(DENIED|EXPIRED)$/.test(error.message))return fail(error.message,412);return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);}
   throw error;
  }finally{db.release(discard);}
 }
-export function registerNormalExchangeChallenge(app:FastifyInstance,options:NormalExchangeOptions,requestOptions?:{origin:string}){
+export function registerNormalExchangeChallenge(app:FastifyInstance,options:NormalExchangeOptions,requestOptions?:{origin:string;understanding?:NormalUnderstandingReadAcquisition}){
  const origin=requestOptions?new URL(requestOptions.origin):null;
  if(origin&&(origin.protocol!=='https:'||origin.origin!==requestOptions!.origin))throw Error('EXECUTION_CHALLENGE_ORIGIN_INVALID');
  app.register(async scope=>{
@@ -176,7 +191,7 @@ export function registerNormalExchangeChallenge(app:FastifyInstance,options:Norm
     ||[...(commandChallenge?[]:['authorization']),'cookie','origin','x-anvil-csrf','content-encoding'].some(h=>names.includes(h)||r.headers[h]!==undefined))
     throw new AuthFailure('EXECUTION_CHALLENGE_HEADER_REJECTED',403);
    if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(r.headers['content-type']??''))throw new AuthFailure('INPUT_INVALID',400);
-   try{return await issue(options.pool,cid,eid,r.body,commandChallenge?normalRequestBearerDigest(r,origin!.host):undefined);}catch(error){
+   try{return await issue(options.pool,cid,eid,r.body,commandChallenge?normalRequestBearerDigest(r,origin!.host):undefined,requestOptions?.understanding);}catch(error){
     if(error instanceof AuthFailure&&error.message==='NOT_FOUND')return reply.callNotFound();
     throw error;
    }
