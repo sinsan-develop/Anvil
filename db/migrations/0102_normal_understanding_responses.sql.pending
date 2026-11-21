@@ -246,22 +246,23 @@ REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_discovery(text,jsonb,uuid
 GRANT EXECUTE ON FUNCTION anvil.fn09_normal_understanding_discovery(text,jsonb,uuid,jsonb) TO anvil_v3_app;
 CREATE UNIQUE INDEX normal_understanding_challenge_request_once ON anvil.execution_challenges(project_id,((snapshot_json->'understandingRequestRef'->>'id')))
  WHERE version=1 AND snapshot_json ? 'understandingRequestRef';
+-- GET marker/index는 그대로 두고 결과 challenge만 HUMAN 요청당 별도 단일 slot으로 고정한다.
+CREATE UNIQUE INDEX normal_understanding_result_challenge_once ON anvil.execution_challenges(project_id,((snapshot_json#>>'{understandingResultBinding,requestRef,id}')))
+ WHERE version=1 AND snapshot_json ? 'understandingResultBinding';
 
 CREATE FUNCTION anvil.fn09_normal_understanding_challenge_valid(n anvil.execution_challenges,deferred_check boolean) RETURNS boolean LANGUAGE plpgsql AS $$
 DECLARE s jsonb=n.snapshot_json;b jsonb=s->'binding';r jsonb=s->'request';t jsonb=r->'target';p jsonb=s->'publicChallenge';
  ref jsonb=s->'credentialRef';receipt anvil.execution_receipts%ROWTYPE;cred record;cur record;at_time timestamptz;ends timestamptz;
- total bigint;recent bigint;live bigint;last_seq bigint;discovery jsonb;
+ total bigint;recent bigint;live bigint;last_seq bigint;discovery jsonb;result_basis jsonb;result_binding jsonb=s->'understandingResultBinding';is_result boolean=COALESCE(t->>'method'='POST',false);
 BEGIN
  IF n.version<>1 OR n.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) OR octet_length(anvil.execution_authority_canonical(s))>16384
-  OR NOT anvil.execution_json_shape(s,ARRAY['sequence','credentialRef','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption','understandingRequestRef'])
+  OR NOT anvil.execution_json_shape(s,ARRAY['sequence','credentialRef','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption']||ARRAY[CASE WHEN is_result THEN 'understandingResultBinding' ELSE 'understandingRequestRef' END])
   OR s->'previousRef' IS DISTINCT FROM 'null'::jsonb OR s->'consumption' IS DISTINCT FROM 'null'::jsonb OR s->'sequence' IS DISTINCT FROM to_jsonb(n.server_sequence)
 
   OR NOT anvil.execution_json_shape(r,ARRAY['requestId','purpose','grantRef','credentialGeneration','target','clientNonce','issuedAt'])
   OR r->>'purpose' IS DISTINCT FROM 'EXECUTION_REQUEST' OR r->'grantRef' IS DISTINCT FROM b->'grantRef' OR r->'credentialGeneration' IS DISTINCT FROM b->'credentialGeneration'
   OR jsonb_typeof(r->'requestId') IS DISTINCT FROM 'string' OR r->>'requestId' IS DISTINCT FROM (r->>'requestId')::uuid::text
   OR NOT anvil.execution_json_shape(t,ARRAY['method','path','bodyHash','queryHash']) OR t->>'method' NOT IN ('GET','POST')
-  OR t IS DISTINCT FROM jsonb_build_object('method','GET','path','/api/v1/connectors/'||(b->>'connectorId')||'/executions/'||(b->>'executionId')||'/understanding-response-read','bodyHash',anvil.execution_json_hash('null'::jsonb),'queryHash',anvil.execution_json_hash('{}'::jsonb))
-  OR NOT COALESCE(anvil.execution_preparation_ref_valid(s->'understandingRequestRef'),false)
   OR jsonb_typeof(t->'queryHash') IS DISTINCT FROM 'string' OR t->>'queryHash' !~ '^[0-9a-f]{64}$'
   OR s->>'requestHash' IS DISTINCT FROM anvil.execution_json_hash(r)
   OR s->>'signedInputHash' IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_object('purpose','EXECUTION_CHALLENGE_REQUEST','request',r))
@@ -271,6 +272,17 @@ BEGIN
   OR p IS DISTINCT FROM jsonb_build_object('id',n.id,'requestId',r->'requestId','purpose','EXECUTION_REQUEST','grantRef',b->'grantRef',
    'credentialGeneration',r->'credentialGeneration','scopeDigest',b->'scopeDigest','serverNonce',p->'serverNonce','clientNonce',r->'clientNonce','issuedAt',p->'issuedAt','expiresAt',p->'expiresAt')
  THEN RETURN false;END IF;
+ IF is_result THEN
+  IF NOT COALESCE(anvil.execution_json_shape(result_binding,ARRAY['requestRef','acquisitionRef']),false)
+   OR NOT COALESCE(anvil.execution_preparation_ref_valid(result_binding->'requestRef'),false) OR result_binding#>'{requestRef,version}' IS DISTINCT FROM '1'::jsonb
+   OR NOT COALESCE(anvil.execution_preparation_ref_valid(result_binding->'acquisitionRef'),false) OR result_binding#>'{acquisitionRef,version}' IS DISTINCT FROM '1'::jsonb
+   OR jsonb_typeof(t->'bodyHash') IS DISTINCT FROM 'string' OR t->>'bodyHash' !~ '^[0-9a-f]{64}$' OR t->>'bodyHash'=anvil.execution_json_hash('null'::jsonb)
+   OR t IS DISTINCT FROM jsonb_build_object('method','POST','path','/api/v1/connectors/'||(b->>'connectorId')||'/executions/'||(b->>'executionId')||'/understanding-response-read/'||(result_binding#>>'{requestRef,id}')||'/result','bodyHash',t->'bodyHash','queryHash',anvil.execution_json_hash('{}'::jsonb))
+  THEN RETURN false;END IF;
+ ELSE
+  IF t IS DISTINCT FROM jsonb_build_object('method','GET','path','/api/v1/connectors/'||(b->>'connectorId')||'/executions/'||(b->>'executionId')||'/understanding-response-read','bodyHash',anvil.execution_json_hash('null'::jsonb),'queryHash',anvil.execution_json_hash('{}'::jsonb))
+   OR NOT COALESCE(anvil.execution_preparation_ref_valid(s->'understandingRequestRef'),false) THEN RETURN false;END IF;
+ END IF;
  SELECT * INTO receipt FROM anvil.execution_receipts WHERE project_id=n.project_id AND grant_id=n.grant_id AND grant_version=n.grant_version AND id=(ref->>'id')::uuid;
  IF NOT FOUND OR current_setting('anvil.normal_request_verified',true) IS DISTINCT FROM
     txid_current()::text||':'||n.content_hash||':'||(ref->>'contentHash')||':'||(receipt.snapshot_json->>'tokenDigest') THEN RETURN false;END IF;
@@ -280,8 +292,20 @@ BEGIN
  SELECT * INTO cur FROM anvil.normal_exchange_current(n.project_id,(b->>'connectorId')::uuid,(b->>'executionId')::uuid,n.grant_id,n.grant_version,
   b#>>'{grantRef,contentHash}',(r->>'credentialGeneration')::bigint);
  IF NOT FOUND OR cur.binding IS DISTINCT FROM b THEN RETURN false;END IF;
- discovery=anvil.fn09_normal_understanding_discovery(receipt.snapshot_json->>'tokenDigest',b,(r->>'requestId')::uuid,s->'understandingRequestRef');
- IF discovery->>'status' IS DISTINCT FROM 'REQUEST' OR (p->>'expiresAt')::timestamptz>(discovery->>'deadline')::timestamptz THEN RETURN false;END IF;
+ IF is_result THEN
+  result_basis=anvil.fn09_normal_understanding_result_basis(receipt.snapshot_json->>'tokenDigest',b,result_binding->'requestRef',result_binding->'acquisitionRef');
+  IF result_basis->'requestRef' IS DISTINCT FROM result_binding->'requestRef' OR result_basis->'acquisitionRef' IS DISTINCT FROM result_binding->'acquisitionRef'
+   OR (p->>'expiresAt')::timestamptz>(result_basis->>'deadline')::timestamptz
+   OR (p->>'issuedAt')::timestamptz<(result_basis#>>'{receipt,observedAt}')::timestamptz
+   OR n.id::text IS NOT DISTINCT FROM result_basis#>>'{getChallenge,id}' OR n.server_sequence<=(result_basis#>>'{getConsumed,snapshot,sequence}')::bigint
+   OR r->'requestId' IS NOT DISTINCT FROM result_basis#>'{getChallenge,snapshot_json,request,requestId}'
+   OR r->'clientNonce' IS NOT DISTINCT FROM result_basis#>'{getChallenge,snapshot_json,request,clientNonce}'
+   OR s->'serverNonceDigest' IS NOT DISTINCT FROM result_basis#>'{getChallenge,snapshot_json,serverNonceDigest}'
+  THEN RETURN false;END IF;
+ ELSE
+  discovery=anvil.fn09_normal_understanding_discovery(receipt.snapshot_json->>'tokenDigest',b,(r->>'requestId')::uuid,s->'understandingRequestRef');
+  IF discovery->>'status' IS DISTINCT FROM 'REQUEST' OR (p->>'expiresAt')::timestamptz>(discovery->>'deadline')::timestamptz THEN RETURN false;END IF;
+ END IF;
  at_time=(p->>'issuedAt')::timestamptz;ends=(p->>'expiresAt')::timestamptz;
  IF at_time>cur.observed_at OR abs(extract(epoch FROM (r->>'issuedAt')::timestamptz-at_time))>30
   OR ends<=clock_timestamp() OR ends>least(at_time+interval '30 seconds',cred.expires_at,cur.deadline) THEN RETURN false;END IF;
@@ -299,7 +323,7 @@ $$;
 ALTER FUNCTION anvil.normal_request_challenge_valid(anvil.execution_challenges,boolean) RENAME TO normal_request_challenge_valid_pre0102;
 CREATE FUNCTION anvil.normal_request_challenge_valid(n anvil.execution_challenges,deferred_check boolean) RETURNS boolean LANGUAGE plpgsql AS $$
 BEGIN
- IF n.snapshot_json ? 'understandingRequestRef' OR n.snapshot_json#>>'{request,target,path}' LIKE '%/understanding-response-read%' THEN
+ IF n.snapshot_json ? 'understandingRequestRef' OR n.snapshot_json ? 'understandingResultBinding' OR n.snapshot_json#>>'{request,target,path}' LIKE '%/understanding-response-read%' THEN
   RETURN anvil.fn09_normal_understanding_challenge_valid(n,deferred_check);
  END IF;
  RETURN anvil.normal_request_challenge_valid_pre0102(n,deferred_check);

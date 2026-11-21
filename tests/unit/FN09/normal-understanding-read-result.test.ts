@@ -6,6 +6,7 @@ import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {executionProofBytes,executionTarget} from '../../../apps/server/modules/executions/execution-proof.ts';
 import {publicKeyFingerprint} from '../../../apps/server/modules/connections/registration-proof.ts';
 import {reserveExecutionBudget} from '../../../apps/server/modules/executions/execution-budget.ts';
+import {original} from '../../../apps/server/modules/executions/normal-exchange-challenge.ts';
 
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
 const clone=<T>(v:T):T=>JSON.parse(canonicalJson(v));
@@ -33,13 +34,14 @@ function fixture(){
  const basis={requestRef,snapshot,acquisitionRef,receipt,getChallenge:get,getConsumed:{ref:{id:get.id,version:2,contentHash:hash(consumed)},snapshot:consumed},deadline:iso(29000)};
  const metadata={attribution:'SESSION_ONLY',projectId:pid,executionId:eid,executionGeneration:1,requestRef,acquisitionRef,contextBundleRef:context.contextBundleRef,initConfirmationRef:ref(),tailRef:ref(),ranges:[{outputRef:ref(),sequence:3,payloadDigest:hash('payload'),textBlocks:1,textBytes:12}],wholeConversationComplete:false,executionAuthorized:false};
  const body={schemaVersion:1,kind:'DISCOVERY_METADATA',metadata};
- const post=challenge(executionTarget('POST',base+'/'+requestRef.id+'/result',[],canonicalJson(body)),3);
+ const post=challenge(executionTarget('POST',base+'/'+requestRef.id+'/result',[],canonicalJson(body)),3,{understandingResultBinding:{requestRef,acquisitionRef}});
+ const rawPost=clone(post);delete (rawPost.snapshot_json as any).understandingResultBinding;rawPost.content_hash=hash(rawPost.snapshot_json);
  const proof={requestId:post.snapshot_json.request.requestId,...post.snapshot_json.request.target,grantRef:grant,credentialGeneration:1,serverNonce:post.snapshot_json.publicChallenge.serverNonce};
  const frame={schemaVersion:1,challengeRef:{id:post.id,version:1,contentHash:post.content_hash},proof,signature:sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key:pair.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url')};
  const ps={scope:{kind:'PROJECT',projectId:pid},state:'APPLIED',limits:{maxAttempts:3,maxCalls:50,maxConcurrentAssignments:1,maxElapsedMs:7200000,maxOfflineMs:300000,maxSpoolBytes:1073741824},decidedAt:iso(0),expiresAt:iso(240000)};
  const policy={projectId:pid,ref:{...ref(),contentHash:hash(ps)},snapshot:ps};
  const reserve=reserveExecutionBudget([],policy as any,{projectId:pid,executionId:eid,executionGeneration:1,commandId:randomUUID(),assignmentRef:grant,stageRef:{applicationRef:grant,nodeId:'개발'},policyRef:policy.ref,operation:'START_SESSION',demand:{attempts:1,calls:1,spoolBytes:1,cost:null,costStatus:'VERIFIED_NO_CHARGE'}},iso(0));
- const state={now:at+1000,connects:0,queries:[] as string[],releases:[] as boolean[],rpc:0,deny:false,lateLoss:false,commitUnknown:false,rollbackUnknown:false,usedPost:false,connectFailure:false,lookupCount:1,lookupCross:false,unconsumedGet:false,changedTransaction:false,lookupUnknown:false,onCommit:()=>{},mutate:(_v:any)=>{}};
+ const state={now:at+1000,connects:0,queries:[] as string[],releases:[] as boolean[],rpc:0,deny:false,lateLoss:false,commitUnknown:false,rollbackUnknown:false,usedPost:false,connectFailure:false,lookupCount:1,lookupCross:false,unconsumedGet:false,changedTransaction:false,lookupUnknown:false,postSlots:[post] as any[],onCommit:()=>{},mutate:(_v:any)=>{}};
  const pool={async connect(){state.connects++;if(state.connectFailure)throw Error('RAW_CONNECTION_SECRET');let inTransaction=false;return {release(e?:Error){state.releases.push(!!e);},async query(sql:string,a:any[]=[]):Promise<any>{
   state.queries.push(sql);
   if(sql==='COMMIT'){inTransaction=false;state.onCommit();return {command:state.commitUnknown?'':'COMMIT',rows:[]};}
@@ -63,12 +65,15 @@ function fixture(){
    if(state.deny||state.lateLoss&&state.rpc>1||canonicalJson(JSON.parse(a[2]))!==canonicalJson(requestRef)||canonicalJson(JSON.parse(a[3]))!==canonicalJson(acquisitionRef))throw Error('NORMAL_UNDERSTANDING_RESULT_DENIED');
    const value=clone(basis);state.mutate(value);return {rows:[{basis:value}]};
   }
+  if(sql.includes("snapshot_json ? 'understandingResultBinding'"))return {rows:clone(state.postSlots)};
   if(sql.includes('FROM anvil.execution_challenges')&&sql.includes('version=2'))return {rows:state.usedPost?[{id:post.id}]:[]};
   if(sql.includes('FROM anvil.execution_challenges'))return {rows:a[3]===post.id&&a[4]===post.content_hash?[clone(post)]:[]};
   throw Error('Unexpected SQL');
  }}}};
  async function transaction<T>(work:(db:any)=>Promise<T>){const db=await pool.connect();try{await db.query('BEGIN');const v=await work(db);await db.query('COMMIT');return v;}catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}}
- return {source:new NormalUnderstandingReadResult(pool as any),state,body,frame,post,get,basis,token,cid,eid,
+ return {source:new NormalUnderstandingReadResult(pool as any),state,body,frame,post,rawPost,get,basis,token,cid,eid,binding,credential,
+  bind:(row:unknown=rawPost)=>transaction(db=>new NormalUnderstandingReadResult(pool as any).bindChallenge(db,token,binding,credential,row,new Date(state.now))),
+  validate:(row:unknown)=>transaction(db=>new NormalUnderstandingReadResult(pool as any).validateChallenge(db,token,binding,credential,row,new Date(state.now))),
   challenge:(target:unknown=post.snapshot_json.request.target)=>transaction(db=>new NormalUnderstandingReadResult(pool as any).challengeBasis(db,token,binding,credential,target,new Date(state.now))),
   current:(value:unknown,target:unknown=executionTarget('POST',base+'/'+requestRef.id+'/result',[],canonicalJson(value)))=>transaction(db=>new NormalUnderstandingReadResult(pool as any).current(db,token,binding,credential,value,new Date(state.now),target)),
   inspect:(value:unknown=body,packet:unknown=frame)=>new NormalUnderstandingReadResult(pool as any).inspect(cid,eid,token,packet,value,new AbortController().signal)};
@@ -176,4 +181,34 @@ test('exact challenge target has no caller fullrefs, alternate scope/encoding/qu
   const value=clone(f.body);modify(value);await assert.rejects(f.current(value,basis.target));
  }
  assert.equal(f.state.queries.some(q=>/INSERT|UPDATE|set_config/.test(q)),false);
+});
+
+test('internal POST v1 derives a separate result binding from DB, while unbound generic POST has no accepted ledger shape',async()=>{
+ const f=fixture(),bound=await f.bind();
+ assert.deepEqual(bound.snapshot_json.understandingResultBinding,{requestRef:f.body.metadata.requestRef,acquisitionRef:f.body.metadata.acquisitionRef});
+ assert.equal(Object.hasOwn(bound.snapshot_json,'understandingRequestRef'),false);
+ assert.equal(bound.content_hash,hash(bound.snapshot_json));assert.ok(Object.isFrozen(bound.snapshot_json.understandingResultBinding));
+ assert.deepEqual(original(bound,f.binding,'EXECUTION_REQUEST',f.credential).ref,{id:bound.id,version:1,contentHash:bound.content_hash});
+ assert.throws(()=>original(f.rawPost,f.binding,'EXECUTION_REQUEST',f.credential));
+ const verified=await f.validate(bound);assert.equal(verified.source.bodyHash,hash(f.body));
+ f.state.postSlots=[bound];assert.deepEqual(await f.validate(bound),verified);
+ assert.equal(f.state.queries.some(q=>/INSERT|UPDATE|set_config/.test(q)),false);
+});
+
+test('result v1 rejects old GET identities/nonces, swapped acquisition/current and duplicate or changed POST slots',async()=>{
+ const rebuild=(row:any)=>{const s=row.snapshot_json;s.requestHash=hash(s.request);s.signedInputHash=hash({purpose:'EXECUTION_CHALLENGE_REQUEST',request:s.request});s.serverNonceDigest=contentHash(Buffer.from(s.publicChallenge.serverNonce,'base64url'));row.content_hash=hash(s);return row;};
+ for(const [index,mutate] of [
+  (r:any,f:ReturnType<typeof fixture>)=>{r.snapshot_json.understandingResultBinding.acquisitionRef.id=randomUUID();},
+  (r:any,f:ReturnType<typeof fixture>)=>{r.snapshot_json.request.requestId=f.get.snapshot_json.request.requestId;r.snapshot_json.publicChallenge.requestId=r.snapshot_json.request.requestId;},
+  (r:any,f:ReturnType<typeof fixture>)=>{r.snapshot_json.request.clientNonce=f.get.snapshot_json.request.clientNonce;r.snapshot_json.publicChallenge.clientNonce=r.snapshot_json.request.clientNonce;},
+  (r:any,f:ReturnType<typeof fixture>)=>{r.snapshot_json.publicChallenge.serverNonce=f.get.snapshot_json.publicChallenge.serverNonce;},
+  (r:any)=>{r.snapshot_json.request.target.bodyHash=hash('different claim');},
+ ].entries()){
+  const f=fixture(),originalRow=await f.bind(),changed=clone(originalRow);f.state.postSlots=index===4?[originalRow]:[];mutate(changed,f);rebuild(changed);
+  await assert.rejects(f.validate(changed));assert.equal(f.state.queries.some(q=>/INSERT|UPDATE|set_config/.test(q)),false);
+ }
+ for(const mode of ['duplicate','current','expired'] as const){const f=fixture(),row=await f.bind();
+  if(mode==='duplicate')f.state.postSlots=[row,row];else if(mode==='current')f.state.deny=true;else f.state.now+=30000;
+  await assert.rejects(f.validate(row));
+ }
 });

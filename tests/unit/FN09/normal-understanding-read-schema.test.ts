@@ -51,7 +51,7 @@ test('0102 preserves exact latest legacy validator definitions by rename/delegat
  assert.doesNotMatch(sql,/GRANT SELECT ON anvil\.normal_understanding_read_requests|CREATE ROLE/);
 });
 
-test('result basis reads exact historical GET completion under current authority; does not open POST/custody or reuse POST identity as GET uniqueness',()=>{
+test('result basis reads exact historical GET completion under current authority; does not store custody or reuse POST identity as GET uniqueness',()=>{
  const start=sql.indexOf('CREATE FUNCTION anvil.fn09_normal_understanding_result_basis('),end=sql.indexOf('\n$$;',start);
  assert.ok(start>0&&end>start);const basis=sql.slice(start,end);
  assert.match(basis,/SECURITY INVOKER SET search_path=pg_catalog/);
@@ -68,5 +68,19 @@ test('result basis reads exact historical GET completion under current authority
  assert.match(sql,/REVOKE ALL ON FUNCTION anvil\.fn09_normal_understanding_result_basis\(text,jsonb,jsonb,jsonb\) FROM PUBLIC,anvil_v3_app/);
  assert.doesNotMatch(sql,/CREATE TABLE anvil\.normal_understanding_(?:read_results|responses)|NORMAL_UNDERSTANDING_RESULT_STORED/);
  const challenge=sql.slice(sql.indexOf('CREATE FUNCTION anvil.fn09_normal_understanding_challenge_valid'),sql.indexOf('ALTER FUNCTION anvil.normal_request_challenge_valid'));
- assert.match(challenge,/jsonb_build_object\('method','GET','path'/);assert.doesNotMatch(challenge,/'method','POST'/);
+ assert.match(challenge,/jsonb_build_object\('method','GET','path'/);
+ const consumption=sql.slice(sql.indexOf('CREATE FUNCTION anvil.fn09_normal_understanding_consumption_valid'),sql.indexOf('ALTER FUNCTION anvil.normal_command_consumption_valid'));
+ assert.match(consumption,/jsonb_build_object\('method','GET','path'/);assert.doesNotMatch(consumption,/'method','POST'/);
+});
+
+test('internal result v1 has a separate request slot and exact acquisition/current proof; no role, v2 or result receipt activation',async()=>{
+ assert.ok(sql.includes("CREATE UNIQUE INDEX normal_understanding_challenge_request_once ON anvil.execution_challenges(project_id,((snapshot_json->'understandingRequestRef'->>'id')))\n WHERE version=1 AND snapshot_json ? 'understandingRequestRef';"));
+ assert.match(sql,/CREATE UNIQUE INDEX normal_understanding_result_challenge_once[^;]*understandingResultBinding,requestRef,id[^;]*WHERE version=1 AND snapshot_json \? 'understandingResultBinding'/s);
+ const challenge=sql.slice(sql.indexOf('CREATE FUNCTION anvil.fn09_normal_understanding_challenge_valid'),sql.indexOf('ALTER FUNCTION anvil.normal_request_challenge_valid'));
+ for(const key of ['understandingResultBinding','requestRef','acquisitionRef','fn09_normal_understanding_result_basis','getConsumed,snapshot,sequence','getChallenge,snapshot_json,request,requestId','getChallenge,snapshot_json,request,clientNonce','getChallenge,snapshot_json,serverNonceDigest',"total<10000 AND recent<60 AND live=0"]){assert.ok(challenge.includes(key),key);}
+ assert.match(challenge,/jsonb_build_object\('method','POST','path'[^\n]*requestRef,id[^\n]*'\/result'/);
+ assert.doesNotMatch(sql,/NORMAL_UNDERSTANDING_RESULT_STORED|CREATE ROLE|GRANT[^;]*(?:PUBLIC|UPDATE|DELETE)/);
+ const source=await readFile(new URL('../../../apps/server/modules/executions/normal-exchange-challenge.ts',import.meta.url),'utf8');
+ assert.ok(source.includes("if((request.target.path===understanding||request.target.path.startsWith(understanding+'/'))&&!discovery)"));
+ assert.ok(source.includes("return fail('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE',503)"));
 });
