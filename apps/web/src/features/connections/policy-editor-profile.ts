@@ -17,6 +17,7 @@ export const policyEditorOperations={
   ['registerExecutionStartOrigin','START 원자료 명시 저장'],['readExecutionStartOrigins','START 원자료 보호 조회·이력'],
   ['prepareNativeReceiveWindow','최초 수신 창 준비'],['offerNativeReceiveCommand','최초 수신 원명령 제안 저장'],['closeNativeReceiveWindow','최초 수신 창 닫기'],['readNativeChannelProfile','보호 수신 프로필 조회'],['readNativeReceiveWindow','최초 수신 창 조회'],['readNativeReceiveOffer','최초 수신 제안 원문 조회'],
   ['prepareAssignment','임무 초안 저장'],['reviewAssignmentContent','임무 내용 검토'],['confirmAssignment','임무 별도 확정'],['buildTaskContext','임무 맥락 구성'],
+  ['readNormalUnderstandingResponse','최초 이해 자료 탐색 요청 (AUTO 허용 시)'],
   ['defineProjectRole','프로젝트 책임 역할 정의'],['bindResponsibleSession','책임 세션 예약'],['prepareExecution','실행 준비 기록'],['reviewUnderstanding','임무 이해 검토'],['createTransferPreparationRecord','인계 준비기록 저장'],['readTransferPreparationRecord','인계 준비기록 고정 조회'],['prepareNativeBoundary','실행 경계 준비 원명령 저장'],['readNativePreparationAuthority','실행 경계 준비 고정 조회']
  ],
  PROJECT_LIMITS:[['applyLimitPolicy','한도 정책 작성·개정'],['revokeLimitPolicy','한도 정책 회수']],
