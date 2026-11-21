@@ -9,6 +9,7 @@ import { listCandidates, readCandidate, type CandidateHit } from '../connections
 import { ordered } from '../knowledge/review-view.ts';
 import {readProviderClaimPageHistory,readProviderClaimReceiptHistory,type ProviderClaimPageHistory,type ProviderClaimHistory,type ProviderClaimHistoryQuery} from './provider-claim-receipt-api.ts';
 import {ClaimUnderstandingHistory} from './ClaimUnderstandingHistory.tsx';
+import {NormalUnderstandingDiscovery} from './NormalUnderstandingDiscovery.tsx';
 import {ResponsibleSessionApprovalEditor} from './ResponsibleSessionApprovalEditor.tsx';
 import {checkResponsibleSessionApprovalBinding,markResponsibleSessionDispatch,settleResponsibleSessionWrite} from './responsible-session-approval.ts';
 import {updateResponsibleSessionApprovalBuffer} from './responsible-session-api.ts';
@@ -127,6 +128,9 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
       {state.hasMorePreparations?<p>최신20건 표시 · 이전 준비가 더 있습니다.</p>:null}
       <p>새 실행 준비 저장은 유효한 예산·능력 참조 연결이 필요합니다. 미구현 참조를 가짜 값으로 대체하지 않습니다.</p>
     </>:<p>역할·예약·준비 원문은 아직 조회 확인되지 않았습니다.</p>}
+    {owner&&bound?<NormalUnderstandingDiscovery client={client} session={session} projectId={confirmed.projectId} assignmentRef={confirmed.ref}
+     preparations={state&&stateStamp.current.epoch===epoch.current&&stateStamp.current.revision===stateRevision.current?state.preparations:[]}
+     busy={busy}/>:null}
   </section>;
 }
 

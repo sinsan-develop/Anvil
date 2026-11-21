@@ -12,6 +12,7 @@ function fixture(reauthMode='CURRENT'){
  const pid=id(1),uid=id(2),cid=id(3),sid=id(4),eid=id(5),token='t'.repeat(43),csrf='c'.repeat(43);
  const at=new Date(),until=new Date(at.getTime()+60000),calls:string[]=[];
  let state:any={commands:[],requests:[]},backup:any,control=1,denied=false,failInsert=false,loseCommit=false,changed=false,changeAfterInsert=false,swapQuery=false,basisMissing=false;
+ let candidates=1,locates=0,changeSelection=false;
  const rules:any[]=[{ruleId:'read-normal-understanding',subjectRef:{kind:'HUMAN',userId:uid},operations:['readNormalUnderstandingResponse'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',limitPolicyRef:null,expiresAt:until.toISOString()}];
  const context={projectId:pid,executionId:eid,executionGeneration:1,grantRef:ref(10),registrationRef:ref(11),connectorId:id(12),credentialGeneration:1,
   startCommandId:id(13),startCommandRef:ref(14),assignmentRef:ref(15),preparationRef:ref(16),contextBundleRef:ref(17),sessionBindingRef:ref(18)};
@@ -27,6 +28,13 @@ function fixture(reauthMode='CURRENT'){
   if(sql.startsWith('SELECT p.id,p.archived_at'))return rows([{id:pid,participation:'OWNER',archived_at:null}]);
   if(sql.startsWith('SELECT * FROM anvil.project_control'))return rows([{actor_id:uid,client_id:cid,generation:control,revoked_at:null}]);
   if(sql.includes('FROM anvil.permission_policies')){const body={rules:[...rules,...(denied?[{...rules[0],ruleId:'deny',disposition:'DENY'}]:[])],reason:'RAM',reviewRefs:[]};return rows([{id:id(30),head_version:1,rules_json:body.rules,content_hash:hash(body),reason:body.reason,review_refs:[],created_at:at}]);}
+  if(sql.startsWith('SELECT e.id AS execution_id,e.generation')){
+   assert.deepEqual(p.slice(0,3),[pid,uid,cid]);
+   assert.deepEqual(p.slice(3).map(v=>JSON.parse(v)),[context.assignmentRef,context.preparationRef,{userId:uid,clientId:cid,humanSessionId:sid,credentialGeneration:1,controlGeneration:1}]);
+   for(const token of ["e.transport='NORMAL_PROTECTED'","e.state='QUEUED'","='CONTEXT_REVIEW'",'binding,intent,assignmentRef','binding,preparationRef','binding,subject','expiresAt','newer.generation>e.generation','anvil.execution_grant_revocations','LIMIT 2'])assert.ok(sql.includes(token));
+   assert.ok(!sql.includes('ORDER BY'));locates++;
+   return rows(Array.from({length:candidates},(_,i)=>({execution_id:i||changeSelection&&locates>1?id(98):eid,generation:'1'})));
+  }
   if(sql.startsWith('SELECT anvil.fn09_normal_understanding_request_basis')){if(swapQuery){const original=db.query;db.query=(...args:any[])=>original(...args);}return rows([{basis:basisMissing?null:{context:{...context,...(changed?{startCommandId:id(99)}:{})},observedAt:at.toISOString(),expiresAt:until.toISOString()}}]);}
   if(sql.startsWith('SELECT operation,request_hash,result_ref'))return rows(state.commands.filter((c:any)=>c.command_key===p[2]));
   if(sql.startsWith('SELECT * FROM anvil.fn09_normal_understanding_request_replay'))return rows(state.requests.filter((r:any)=>r.commandId===JSON.parse(p[3]).commandId));
@@ -36,7 +44,8 @@ function fixture(reauthMode='CURRENT'){
   throw Error('UNEXPECTED_RAM_SQL');
  },release:()=>{calls.push('RELEASE');}};
  const access=new AccessRepository({connect:async()=>db} as any,{installationId:id(40),key:Buffer.alloc(32,1)});
- return{access,db,calls,request,token,csrf,pid,context,rules,run:()=>{assert.equal(typeof mod.NormalUnderstandingReadRequests,'function');return new mod.NormalUnderstandingReadRequests(access).command(token,csrf,request());},state:()=>state,deny:()=>{denied=true;},stale:()=>{control=2;},fail:()=>{failInsert=true;},unknown:()=>{loseCommit=true;},change:()=>{changed=true;},lateChange:()=>{changeAfterInsert=true;},swap:()=>{swapQuery=true;},missing:()=>{basisMissing=true;}};
+ const readiness=()=>new mod.NormalUnderstandingReadRequests(access).readiness(token,csrf,pid,{controlGeneration:1,...request().payload});
+ return{access,db,calls,request,token,csrf,pid,context,rules,readiness,candidates:(count:number)=>{candidates=count;},changeSelection:()=>{changeSelection=true;},run:()=>{assert.equal(typeof mod.NormalUnderstandingReadRequests,'function');return new mod.NormalUnderstandingReadRequests(access).command(token,csrf,request());},state:()=>state,deny:()=>{denied=true;},stale:()=>{control=2;},fail:()=>{failInsert=true;},unknown:()=>{loseCommit=true;},change:()=>{changed=true;},lateChange:()=>{changeAfterInsert=true;},swap:()=>{swapQuery=true;},missing:()=>{basisMissing=true;}};
 }
 test('FN09 metadata request uses original Access transaction and stores waiting only; identical replay writes nothing',async()=>{
  const f=fixture(),first=await f.run();assert.equal(first.data.status,'NORMAL_UNDERSTANDING_METADATA_REQUESTED');assert.equal(first.data.state,'PENDING_SOURCE');assert.equal(first.data.sourceAvailable,false);assert.equal(first.data.selectionAvailable,false);
@@ -63,4 +72,50 @@ test('FN09 actual buildApp inject reaches dedicated metadata request and blocks 
  const {buildApp}=await import('../../../apps/server/app.ts');const f=fixture(),app=buildApp({},undefined,{repository:f.access,origin:'https://anvil.test'});
  const url='/api/v1/projects/'+f.pid+'/executions/'+f.request().targetId+'/understanding-response-read-requests',headers={host:'anvil.test',origin:'https://anvil.test',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf};
  try{const response=await app.inject({method:'POST',url,headers,payload:f.request()});assert.equal(response.statusCode,200,response.body);assert.equal(response.json().data.state,'PENDING_SOURCE');const writes=f.state().commands.length;for(const patch of [{url:url+'?next=1'},{headers:{...headers,authorization:'Bearer ignored'}},{payload:{...f.request(),projectId:id(99)}}]){const r=await app.inject({method:'POST',url,headers,payload:f.request(),...patch});assert.ok(r.statusCode>=400);assert.equal(f.state().commands.length,writes);}}finally{await app.close();}
+});
+
+test('FN09 readiness exposes only exact bound execution coordinates and writes no request or authorization',async()=>{
+ const f=fixture(),value=await f.readiness(),{projectId,executionId,executionGeneration,assignmentRef,preparationRef}=f.context;
+ assert.deepEqual(value,{projectId,executionId,executionGeneration,assignmentRef,preparationRef,observedAt:value.observedAt,expiresAt:value.expiresAt});
+ assert.ok(Date.parse(value.expiresAt)>Date.parse(value.observedAt));
+ assert.equal(f.calls.filter(s=>s.startsWith('SELECT anvil.fn09_normal_understanding_request_basis')).length,2);
+ assert.equal(f.calls.filter(s=>s.startsWith('SELECT e.id AS execution_id')).length,2);
+ assert.equal(f.calls.some(s=>s.startsWith('INSERT')||s.includes('request_insert')),false);
+ assert.equal(f.state().requests.length,0);
+});
+
+test('FN09 readiness hides ambiguous, changed, absent, unauthorized and unconfirmed candidates',async()=>{
+ for(const modify of [(f:ReturnType<typeof fixture>)=>f.candidates(0),(f:ReturnType<typeof fixture>)=>f.candidates(2),
+  (f:ReturnType<typeof fixture>)=>f.changeSelection(),(f:ReturnType<typeof fixture>)=>f.missing(),(f:ReturnType<typeof fixture>)=>f.deny(),
+  (f:ReturnType<typeof fixture>)=>f.stale(),(f:ReturnType<typeof fixture>)=>f.swap(),(f:ReturnType<typeof fixture>)=>f.unknown()]){
+  const f=fixture();modify(f);await assert.rejects(f.readiness());
+  assert.equal(f.calls.some(s=>s.startsWith('INSERT')||s.includes('request_insert')),false);
+ }
+});
+
+test('FN09 readiness uses exact browser GET and excludes mixed channel, HEAD and repeated query',async()=>{
+ const {buildApp}=await import('../../../apps/server/app.ts');const f=fixture(),app=buildApp({},undefined,{repository:f.access,origin:'https://anvil.test'});
+ const query=new URLSearchParams({controlGeneration:'1',assignmentId:f.context.assignmentRef.id,assignmentVersion:'1',assignmentHash:f.context.assignmentRef.contentHash,
+  preparationId:f.context.preparationRef.id,preparationVersion:'1',preparationHash:f.context.preparationRef.contentHash});
+ const url=`/api/v1/projects/${f.pid}/understanding-response-readiness?${query}`,
+  headers={host:'anvil.test',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf};
+ try{
+  const response=await app.inject({method:'GET',url,headers});assert.equal(response.statusCode,200,response.body);assert.equal(response.headers['cache-control'],'no-store');
+  assert.equal(response.json().executionId,f.context.executionId);const queries=f.calls.length;
+  for(const patch of [{method:'HEAD' as const},{url:url+'&controlGeneration=1'},{headers:{...headers,authorization:'Bearer ignored'}},
+   {headers:{...headers,origin:'https://outside.test'}},{headers:{host:headers.host,cookie:headers.cookie}}]){
+   const denied=await app.inject({method:'GET',url,headers,...patch});assert.ok(denied.statusCode>=400,denied.body);assert.ok(!denied.body.includes(f.context.executionId));
+  }
+  assert.equal(f.calls.length,queries);
+  const scope=response.json(),raw=f.request(),request={...raw,targetId:scope.executionId,expectedVersion:scope.executionGeneration,
+   payload:{assignmentRef:scope.assignmentRef,preparationRef:scope.preparationRef}};
+  const posted=await app.inject({method:'POST',url:`/api/v1/projects/${f.pid}/executions/${scope.executionId}/understanding-response-read-requests`,
+   headers:{...headers,origin:'https://anvil.test'},payload:request});
+  assert.equal(posted.statusCode,200,posted.body);
+  const receipt=posted.json(),{operationId,serverReceivedAt,data:{requestRef,expiresAt}}=receipt;
+  assert.deepEqual(receipt,{operationId,commandId:request.commandId,projectId:f.pid,status:'APPLIED',targetId:requestRef.id,version:1,
+   data:{ref:requestRef,status:'NORMAL_UNDERSTANDING_METADATA_REQUESTED',requestRef,state:'PENDING_SOURCE',sourceAvailable:false,selectionAvailable:false,expiresAt},
+   evidenceRefs:[],warnings:[],serverReceivedAt});
+  assert.equal(f.state().requests.length,1);
+ }finally{await app.close();}
 });
