@@ -5,7 +5,7 @@
   "type": "module",
   "engines": { "node": ">=24.18.0 <25", "npm": ">=11.12.1 <12" },
   "scripts": {
-    "test": "node --test tests/unit/**/*.test.ts",
+    "test": "node --experimental-test-module-mocks --test tests/unit/**/*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.base.json",
     "build": "npm run typecheck && vite build --config apps/web/vite.config.ts",
     "start": "node apps/server/main.ts",
