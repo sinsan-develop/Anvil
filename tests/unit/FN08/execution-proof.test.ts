@@ -100,3 +100,14 @@ test('경로·query 끝의 개행/제어문자를 정규식의 끝 일치로 무
   assert.throws(()=>m.executionTarget('GET',f.base+'/commands',[['afterCursor','cursor'+ending]],null));
  }
 });
+
+test('FN09 목적 target은 exact method/path/빈 query와 원 body hash만 서명하며 현재 권위는 발급하지 않는다',()=>{
+ const f=fixture(),base=f.base+'/understanding-response-read',requestId=uuid();
+ for(const [method,path,body] of [['GET',base,null],['POST',base+'/'+requestId+'/result',canonicalJson({requestId,parts:[]})]] as const){
+  const t=m.executionTarget(method,path,[],body),r={requestId:uuid(),purpose:'EXECUTION_REQUEST',grantRef:f.context.grantRef,credentialGeneration:2,target:t,clientNonce:Buffer.alloc(32,4).toString('base64url'),issuedAt:at};
+  const sig=sign('sha256',m.executionChallengeRequestBytes('EXECUTION',r),{key:f.key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');
+  assert.doesNotThrow(()=>m.verifyNormalCommandChallengeRequest(f.spki,sig,r,{...f.context,transport:'NORMAL_PROTECTED'},new Date(at)));
+  for(const target of [{...t,queryHash:contentHash('{"x":1}')},{...t,path:path.replace(f.context.executionId,uuid())},{...t,bodyHash:contentHash(method==='GET'?'{}':'null')}])assert.throws(()=>m.verifyNormalCommandChallengeRequest(f.spki,sig,{...r,target},{...f.context,transport:'NORMAL_PROTECTED'},new Date(at)));
+ }
+ for(const [method,path,query,body] of [['POST',base,[],'{}'],['GET',base+'/'+requestId+'/result',[],null],['GET',base,[['waitMs','0']],null],['GET',base,[],'{}'],['POST',base+'/'+requestId+'/result',[['x','1']],'{}'],['POST',base+'/'+requestId+'/result',[],null],['GET',base+'/',[],null],['GET',base.replace('understanding','Understanding'),[],null],['POST',base+'/not-a-uuid/result',[],'{}'],['POST',base+'/'+requestId+'/result',[],'{"x":1,"x":2}'],['GET',f.base+'/recovery/understanding-response-read',[],null]])assert.throws(()=>m.executionTarget(method,path,query,body));
+});

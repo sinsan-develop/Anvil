@@ -22183,3 +22183,11 @@ developer_primary 단일 작성·동결. 신규 normal-understanding-response-so
 기존 승인 인접 시험 1건은 정상 COMMIT의 합성 샘플에 command tag가 없어 TRANSACTION_STATE_UNKNOWN으로 실패했다(ead821). 담당자가 해당 첫 샘플의 BEGIN/COMMIT/ROLLBACK 정상 태그만 보완했고 실제 거래 검사·기대 결과·실패 분기는 유지했다. Main 직접·인접 20통과/실패·건너뜀0(d9be35), 루트 타입 exit0(dba9f6), 최종 동결 지문·공백 검사 exit0(8cdd7a), 독립 C0/I0/M0. 소스 SHA B32095E78835D8CBDAD6681ED8FAFDDA6048C60D618762B30D3CE4DA01F10276, 시험 CA044F2B10CFA7FD867547DA3D1F2FB922599EF3E51DD354464592A978DD54B1, 보완 시험 0E0166822E5163ED669AD8F56892DD0E464B5BC58D8CBC95C929B801A778DF3F.
 
 원 private 출력 읽기의 현재 소유·정상 종결을 등록 통신에 결박하는 경로, HUMAN 보호 조회·불변 선택·정상 검토·미적용 SQL·화면은 후속 구현이다. 실제 공급자·DB·키·권한·서비스·Agent·SDK 실행은 없다. 롤백은 신규 두 경로, 합성 태그 수정 및 기록의 역적용이다.
+
+#### FN09 등록 수송 S1 — 목적 경로 검산과 미공급 발행 차단
+
+기준 643f8e36. developer_primary 단일 작성 및 독립 검수. [수송 작업지시](work_packages/FN09_INITIAL_UNDERSTANDING_RESPONSE_TRANSPORT_IMPLEMENTATION.md) 19,235B/SHA256 6B023555A95A82B2FDA72A32B0EF7C87040740A309052B601C2019E84440B772, 공백·LF 종료0(bcc1e0). 등록 실행기가 이해응답만 읽고 돌려주기 위한 정확 GET/POST 경로를 기존 server proof·HTTP guard·소유 TS/native 경계에 맞췄다. 실제 목적 요청·보관 handler 미공급이면 DB 연결 전 503, nonce·영수증 발급0이다. 기존 마이그레이션 및 SQL 변경0.
+
+독립 최초 I1은 공통 경로 확장이 합성 실행의 발급·원장 재확인에 들어가는 문제였다. 유효 서명 RED faa3cb 뒤 합성 검증·원장 reader의 원 경계에서 거절하도록 수정했다. M1의 실제 Fastify preHandler는 RAM inject로 확인했고 제품 성공 handler는 추가하지 않았다. 최종 독립 C0/I0/M0. 담당 직접·인접 68통과·실패/건너뜀0(c88b4b). Main 직접·인접 53통과·실패/건너뜀0(395c63), 루트 타입 37599b exit0, diff·동결 일치. C#은 소스 정적 검사만 했다.
+
+다음은 동일 owner의 private 읽기·정상 종결과 일회 원 결과 봉인을 실제 호출선에 연결한 뒤, 보호 조회 요청·거래 nonce와 영수증·불변 보관·미적용 SQL 및 최초 선택 화면을 연결하는 것이다. 실제 수송·DB·권한·키·서비스·SSH·Agent 실행 없음. 롤백은 이 문서, 제품6·시험6과 기록의 역적용이다.

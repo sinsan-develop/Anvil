@@ -13,23 +13,27 @@ const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 /** 이 결과는 서명 문법/정확 binding뿐이다. nonce 소비·현재 DB/OS 허가·실행 성공은 별도다. */
 const verified=()=>({signatureVerified:true as const,nonceConsumed:false as const,currentAuthorityVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const});
 function copy(value:unknown){const text=canonicalJson(value);if(Buffer.byteLength(text)>2*1024*1024)return invalid();return JSON.parse(text);}
-function target(value:unknown){
+function target(value:unknown,normalUnderstanding=true){
  if(!recordV1(value,['method','path','queryHash','bodyHash'])||!hashV1(value.queryHash)||!hashV1(value.bodyHash))return invalid();
- route(value.method,value.path);return cloneV1(value);
+ route(value.method,value.path,normalUnderstanding);return cloneV1(value);
 }
-function route(method:unknown,path:unknown){
+function route(method:unknown,path:unknown,normalUnderstanding=true){
  if(typeof path!=='string'||typeof method!=='string'||!['GET','POST'].includes(method))return invalid();
  const p=/^\/api\/v1\/connectors\/([^/]+)\/executions\/([^/]+)(\/recovery)?(\/.*)$/.exec(path);
  if(!p||!uuidV1(p[1])||!uuidV1(p[2]))return invalid();
  const mode:Mode=p[3]?'RECOVERY':'EXECUTION',suffix=p[4]!;
  const command=/^\/commands\/([^/]+)\/(permit|materials\/([^/]+))$/.exec(suffix);
+ const understanding=/^\/understanding-response-read\/([^/]+)\/result$/.exec(suffix);
  const allowed=mode==='RECOVERY'
   ?method==='GET'&&suffix==='/stop-instruction'||method==='POST'&&['/credential-exchange','/observations','/stop-receipts','/heartbeat'].includes(suffix)
   :method==='GET'&&suffix==='/commands'||method==='POST'&&['/credential-exchange','/receipts','/observations','/heartbeat','/provider-session-claims'].includes(suffix)
+   ||normalUnderstanding&&(method==='GET'&&suffix==='/understanding-response-read'||method==='POST'&&!!understanding&&uuidV1(understanding[1]))
    ||!!command&&uuidV1(command[1])&&(command[2]==='permit'?method==='POST':method==='GET'&&uuidV1(command[3]));
  if(!allowed)return invalid();
  return{mode,connectorId:p[1],executionId:p[2],suffix};
 }
+/** 합성 발급/소비 및 보관 영수증에는 normal 전용 수송 target을 허용하지 않는다. */
+export function assertSyntheticExecutionTarget(value:unknown):void {target(value,false);}
 /** 실제 HTTP adapter가 명시된 query와 parseWireJson 본문을 hash할 때 쓰는 순수 경계. listener를 만들지 않는다. */
 export function executionTarget(method:unknown,path:unknown,query:unknown,bodyRaw:unknown){
  try{
@@ -105,14 +109,18 @@ export function verifyNormalCredentialExchangeProof(spki:unknown,sig:unknown,val
  signature(spki,sig,executionProofBytes('EXECUTION_CREDENTIAL_EXCHANGE',p),binding.publicKeyFingerprint);
  return verified();
 }
-/** 명령 조회 또는 그 명령에 등록된 자료 한 부분만 대상이다. 자료 경로는 query를 받지 않는다. */
+/** 명령/고정 자료와 목적 한정 이해응답 GET 문법. 목적 공급자 현재성은 발급 handler가 별도 검사한다. */
 function normalRequestPath(t:{path:string;queryHash:string},commands:string){
  if(t.path===commands)return true;
+ if(t.path===commands.slice(0,-'/commands'.length)+'/understanding-response-read')return t.queryHash===contentHash(canonicalJson({}));
  const m=t.path.startsWith(commands+'/')&&/^([^/]+)\/materials\/([^/]+)$/.exec(t.path.slice(commands.length+1));
  return !!m&&uuidV1(m[1])&&uuidV1(m[2])&&t.queryHash===contentHash(canonicalJson({}));
 }
-/** GET은 명령 조회·자료(본문 null), POST는 그 명령의 일회 실행 허가(permit) 또는 실행 관측(observations)만 받는다. POST는 query 없이 본문 hash를 봉인한다. */
+/** 보호 요청의 문법/서명 결박만 검사한다. 이해응답 handler/custody 부재는 실제 challenge 발급에서 닫는다. */
 function normalRequestTarget(t:{method:string;path:string;queryHash:string;bodyHash:string},commands:string){
+ const base=commands.slice(0,-'/commands'.length),read=base+'/understanding-response-read/';
+ const response=t.method==='POST'&&t.path.startsWith(read)&&/^([^/]+)\/result$/.exec(t.path.slice(read.length));
+ if(response&&uuidV1(response[1]))return t.queryHash===contentHash(canonicalJson({}))&&t.bodyHash!==contentHash(canonicalJson(null));
  if(t.method==='GET')return normalRequestPath(t,commands)&&t.bodyHash===contentHash(canonicalJson(null));
  if(t.method==='POST'&&t.path===commands.slice(0,-'/commands'.length)+'/observations')return t.queryHash===contentHash(canonicalJson({}))&&t.bodyHash!==contentHash(canonicalJson(null));
  const m=t.method==='POST'&&t.path.startsWith(commands+'/')&&/^([^/]+)\/permit$/.exec(t.path.slice(commands.length+1));
@@ -140,6 +148,7 @@ function signature(spki:unknown,sig:unknown,bytes:Buffer,fingerprint:string){
 export function verifyExecutionProof(spki:unknown,sig:unknown,kind:ProofKind,value:unknown,expected:unknown,serverContext:unknown,challenge:unknown,now:Date){
  try{
   const c=context(serverContext,now),p=proof(kind,value),basis=proof(kind,expected),exchange=kind.endsWith('CREDENTIAL_EXCHANGE');
+  if(!exchange)assertSyntheticExecutionTarget({method:p.method,path:p.path,queryHash:p.queryHash,bodyHash:p.bodyHash});
   const expectedKind=(c.mode==='RECOVERY'?'EXECUTION_RECOVERY_':'EXECUTION_')+(exchange?'CREDENTIAL_EXCHANGE':'REQUEST_PROOF');
   if(kind!==expectedKind||!same(p,basis)||!recordV1(challenge,['issuedAt','expiresAt'])||!isoV1(challenge.issuedAt)||!isoV1(challenge.expiresAt))return invalid();
   const start=Date.parse(challenge.issuedAt),end=Date.parse(challenge.expiresAt);
@@ -153,6 +162,7 @@ export function verifyExecutionProof(spki:unknown,sig:unknown,kind:ProofKind,val
 export function verifyExecutionChallengeRequest(spki:unknown,sig:unknown,value:unknown,expected:unknown,serverContext:unknown,now:Date){
  try{
   const c=context(serverContext,now),p=challengeRequest(value),basis=challengeRequest(expected);
+  assertSyntheticExecutionTarget(p.target);
   if(!same(p,basis)||Math.abs(Date.parse(p.issuedAt)-now.getTime())>30000)return invalid();
   exactSubject(p,c);exactRoute(p.target,c,p.purpose==='CREDENTIAL_EXCHANGE');
   signature(spki,sig,executionChallengeRequestBytes(c.mode,p),c.publicKeyFingerprint);return verified();

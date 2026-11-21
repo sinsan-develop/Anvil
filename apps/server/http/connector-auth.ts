@@ -9,9 +9,9 @@ export function enforceConnectorCredentialScope(request:FastifyRequest):void {
  const values=[...authValues,...(Array.isArray(value)?value:[value])];
  if(values.some(v=>typeof v==='string'&&/(?:^bearer\s*|(?:^|[^a-z0-9_-]))av3ex1_/i.test(v.trim()))){
   if(authValues.length!==1||typeof value!=='string'||value!==authValues[0]||!/^Bearer av3ex1_[A-Za-z0-9_-]{43}$/.test(value)||
-    !(request.method==='POST'&&['/api/v1/connectors/:cid/executions/:eid/challenges','/api/v1/connectors/:cid/executions/:eid/commands/:command/permit','/api/v1/connectors/:cid/executions/:eid/observations'].includes(request.routeOptions.url??'')||
+    !(request.method==='POST'&&['/api/v1/connectors/:cid/executions/:eid/challenges','/api/v1/connectors/:cid/executions/:eid/commands/:command/permit','/api/v1/connectors/:cid/executions/:eid/observations','/api/v1/connectors/:cid/executions/:eid/understanding-response-read/:requestId/result'].includes(request.routeOptions.url??'')||
       request.method==='GET'&&['/api/v1/connectors/:cid/executions/:eid/commands',
-       '/api/v1/connectors/:cid/executions/:eid/commands/:command/materials/:material'].includes(request.routeOptions.url??''))||
+       '/api/v1/connectors/:cid/executions/:eid/commands/:command/materials/:material','/api/v1/connectors/:cid/executions/:eid/understanding-response-read'].includes(request.routeOptions.url??''))||
     request.headers.cookie!==undefined||headers.some((h,i)=>i%2===0&&h.toLowerCase()==='cookie'))
     throw new AuthFailure('CONNECTOR_CREDENTIAL_SCOPE_DENIED',403);
   return;

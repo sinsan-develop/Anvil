@@ -83,6 +83,11 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
  const purpose:Purpose=bearerDigest?'EXECUTION_REQUEST':'CREDENTIAL_EXCHANGE';
  const {request,signature}=decode(body,purpose),ref=request.grantRef;
  if(!refV1(ref))return fail('INPUT_INVALID',400);
+ // 목적 요청/custody 및 거래 handler가 아직 없다. 문법 지원을 nonce 발행 권위로 승격하지 않는다.
+ // 기존 current/credential 검산을 대체할 caller boolean/임의 provider도 받지 않는다.
+ const understanding='/api/v1/connectors/'+connector+'/executions/'+execution+'/understanding-response-read';
+ if(request.target.path===understanding||request.target.path.startsWith(understanding+'/'))
+  return fail('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE',503);
  const db=await pool.connect();
  let committing=false,discard:Error|undefined;
  try{

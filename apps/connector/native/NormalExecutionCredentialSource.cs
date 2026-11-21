@@ -285,8 +285,10 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  }
  Dictionary<string,object> Target(Dictionary<string,object> scope,Dictionary<string,object> r,string body){
   string method=S(r,"method"),path=S(r,"path"),query=S(r,"query"),basePath=Base(scope);
-  bool valid=method=="GET"&&(path==basePath+"/commands"||System.Text.RegularExpressions.Regex.IsMatch(path,"\\A"+System.Text.RegularExpressions.Regex.Escape(basePath)+"/commands/[a-f0-9-]{36}/materials/[a-f0-9-]{36}\\z"))||
-   method=="POST"&&(path==basePath+"/observations"||System.Text.RegularExpressions.Regex.IsMatch(path,"\\A"+System.Text.RegularExpressions.Regex.Escape(basePath)+"/commands/[a-f0-9-]{36}/permit\\z"));
+  string[] parts=path.StartsWith(basePath+"/",StringComparison.Ordinal)?path.Substring(basePath.Length).Split('/'):new string[0];
+  bool understandingResult=parts.Length==4&&parts[1]=="understanding-response-read"&&parts[3]=="result"&&System.Text.RegularExpressions.Regex.IsMatch(parts[2],"\\A[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\z");
+  bool valid=method=="GET"&&(path==basePath+"/commands"||path==basePath+"/understanding-response-read"||System.Text.RegularExpressions.Regex.IsMatch(path,"\\A"+System.Text.RegularExpressions.Regex.Escape(basePath)+"/commands/[a-f0-9-]{36}/materials/[a-f0-9-]{36}\\z"))||
+   method=="POST"&&(path==basePath+"/observations"||understandingResult||System.Text.RegularExpressions.Regex.IsMatch(path,"\\A"+System.Text.RegularExpressions.Regex.Escape(basePath)+"/commands/[a-f0-9-]{36}/permit\\z"));
   if(!valid||path.Contains("%")||path.Contains("..")||(method=="GET"&&body!=null)||(method=="POST"&&(body==null||query!="")))throw Invalid();
   var q=new Dictionary<string,object>();if(query!=""){
    if(path!=basePath+"/commands"||!query.StartsWith("?"))throw Invalid();foreach(string pair in query.Substring(1).Split('&')){

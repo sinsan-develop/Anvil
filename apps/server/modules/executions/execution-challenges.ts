@@ -4,7 +4,7 @@ import type { VersionRef } from '../../../../contracts/generated-types.ts';
 import { cloneV1, hashV1, isoV1, recordV1, refV1, uuidV1 } from '../../../../contracts/runtime/validation-v1.ts';
 import { AuthFailure } from '../access/repository.ts';
 import { canonicalBase64, publicKeyFingerprint, readHostPublicKey } from '../connections/registration-proof.ts';
-import { executionChallengeRequestBytes, executionProofBytes, verifyExecutionChallengeRequest, verifyExecutionProof } from './execution-proof.ts';
+import { assertSyntheticExecutionTarget, executionChallengeRequestBytes, executionProofBytes, verifyExecutionChallengeRequest, verifyExecutionProof } from './execution-proof.ts';
 
 interface Scope {mode:'EXECUTION'|'RECOVERY';projectId:string;connectorId:string;executionId:string;executionGeneration:number;grantRef:VersionRef;credentialGeneration:number}
 interface Entry {ref:VersionRef;snapshot:{sequence:number;binding:any;request:any;requestHash:string;publicChallenge:any;previousRef:VersionRef|null;consumption:null|{proofHash:string;resultRef:VersionRef;consumedAt:string}}}
@@ -59,7 +59,7 @@ function readJournal(value:unknown,scope:Scope,now:string){
    ||p.id!==e.ref.id||p.requestId!==s.request.requestId||p.purpose!==s.request.purpose||!same(p.grantRef,s.binding.grantRef)||p.credentialGeneration!==s.binding.credentialGeneration
    ||p.scopeDigest!==s.binding.scopeDigest||p.clientNonce!==s.request.clientNonce||!isoV1(p.issuedAt)||!isoV1(p.expiresAt)||Date.parse(p.issuedAt)>Date.parse(now)
    ||Date.parse(p.expiresAt)<=Date.parse(p.issuedAt)||Date.parse(p.expiresAt)-Date.parse(p.issuedAt)>(p.purpose==='CREDENTIAL_EXCHANGE'?120000:30000))return bad();
-  try{executionChallengeRequestBytes(s.binding.mode,s.request);canonicalBase64(p.serverNonce,32);}catch{return bad();}
+  try{assertSyntheticExecutionTarget(s.request.target);executionChallengeRequestBytes(s.binding.mode,s.request);canonicalBase64(p.serverNonce,32);}catch{return bad();}
   const entry=cloneV1(e) as unknown as Entry,previous=heads.get(e.ref.id),eventTime=s.consumption?.consumedAt??p.issuedAt;
   if(!isoV1(eventTime)||Date.parse(eventTime)<last||Date.parse(eventTime)>Date.parse(now))return bad();last=Date.parse(eventTime);
   if(!previous){

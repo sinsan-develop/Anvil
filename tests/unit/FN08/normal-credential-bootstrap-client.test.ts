@@ -132,3 +132,16 @@ test('보호 POST 분기는 원본문·packet identity를 보존하고 다른 pe
   if(mode==='CLOSE_UNKNOWN'){const count=f.calls.length;await assert.rejects(()=>post.send(packet,new AbortController().signal));assert.equal(f.calls.length,count);}
  }
 });
+
+test('FN09 소유 channel은 고정 read/result만 원 native 요청에 전달하고 잘못된 경로/query/body는 전송0',async()=>{
+ const base='/api/v1/connectors/'+id(2)+'/executions/'+id(3)+'/understanding-response-read';
+ for(const [method,path,body] of [['GET',base,null],['POST',base+'/'+id(6)+'/result',canonicalJson({requestId:id(6),parts:[]})]] as const){
+  const f=fixture(12),p=await f.client.bootstrap(new AbortController().signal),r={method,path,body,query:'',auth:'public-proof',expiresAt};
+  await p.request(r,new AbortController().signal);
+  const sent=f.calls.find(c=>c[0]==='NORMAL_EXECUTION_CALL')[1];assert.equal(sent.request.path,path);assert.equal(sent.request.method,method);assert.equal(sent.body,body);assert.equal(sent.bodyHash,hash(body??''));
+  const before=f.calls.length;
+  for(const patch of [{query:'?waitMs=0'},{method:method==='GET'?'POST':'GET'},{path:path+'/'},{path:path.replace(id(2),id(11))},{path:path.replace('understanding','Understanding')},...(method==='POST'?[{path:base+'/00000000-0000-0000-0000-000000000000/result'},{path:base+'/%30'+id(6).slice(1)+'/result'},{body:null}]:[{body:'{}'}])]){
+   await assert.rejects(()=>p.request({...r,...patch} as any,new AbortController().signal));assert.equal(f.calls.length,before);
+  }
+ }
+});

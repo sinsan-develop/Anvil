@@ -50,3 +50,18 @@ test('credential 분당 60·grant v1 수명 10000과 COMMIT 불명은 새 nonce 
   assert.equal(h.store.events().length,3);
  }finally{await h.app.close();}
 });
+
+test('FN09 목적 handler/custody 공급 부재에서는 유효 등록 서명도 nonce와 DB 연결을 발급하지 않는다',async()=>{
+ const h=await journey();try{
+  const before=h.store.events().length,conns=h.store.mode.conns;
+  for(const suffix of ['/understanding-response-read','/understanding-response-read/'+randomUUID()+'/result']){
+   const r=h.mk(),post=suffix.endsWith('/result');
+   r.target={method:post?'POST':'GET',path:r.target.path.replace('/commands',suffix),queryHash:digest({}),bodyHash:digest(post?{requestId:randomUUID(),parts:[]}:null)};
+   const packet=h.signed(r);
+   for(let n=0;n<2;n++){
+    const result=await h.post(packet);assert.equal(result.statusCode,503,result.body);assert.equal(result.json().code,'NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE');assert.equal(result.json().challenge,undefined);
+   }
+  }
+  assert.equal(h.store.events().length,before);assert.equal(h.store.mode.conns,conns);
+ }finally{await h.app.close();}
+});

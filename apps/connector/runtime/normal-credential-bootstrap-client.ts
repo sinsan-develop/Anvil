@@ -119,9 +119,9 @@ export class NormalOwnedCredentialPort {
   if(!recordV1(r,['method','path','query','body','auth','expiresAt'])||!['GET','POST'].includes(r.method)||!r.path.startsWith(base+'/')||
    typeof r.query!=='string'||(r.body!==null&&typeof r.body!=='string')||!isoV1(r.expiresAt))fail();
   const suffix=r.path.slice(base.length),parts=suffix.split('/');
-  const allowed=r.method==='GET'&&(suffix==='/commands'||parts.length===5&&parts[1]==='commands'&&uuidV1(parts[2])&&parts[3]==='materials'&&uuidV1(parts[4]))||
-   r.method==='POST'&&(suffix==='/observations'||parts.length===4&&parts[1]==='commands'&&uuidV1(parts[2])&&parts[3]==='permit');
-  if(!allowed||r.method==='GET'&&r.body!==null||r.method==='POST'&&(r.body===null||r.query!==''))fail();
+  const allowed=r.method==='GET'&&(suffix==='/commands'||suffix==='/understanding-response-read'||parts.length===5&&parts[1]==='commands'&&uuidV1(parts[2])&&parts[3]==='materials'&&uuidV1(parts[4]))||
+   r.method==='POST'&&(suffix==='/observations'||parts.length===4&&parts[1]==='understanding-response-read'&&uuidV1(parts[2])&&parts[3]==='result'||parts.length===4&&parts[1]==='commands'&&uuidV1(parts[2])&&parts[3]==='permit');
+  if(!allowed||parts[1]==='understanding-response-read'&&r.query!==''||r.method==='GET'&&r.body!==null||r.method==='POST'&&(r.body===null||r.query!==''))fail();
   const bytes=Buffer.from(r.body??'','utf8');if(bytes.length>2097152)fail();
   try{return await c.operation(signal,Math.min(Date.parse(m.expiresAt),Date.parse(r.expiresAt)),async send=>{
    const header={attemptId:c.config.attemptId,slotId:m.slotId,kind,request:{...r,body:null},bodyLength:bytes.length,bodyHash:digest(bytes),bodyIsNull:r.body===null};

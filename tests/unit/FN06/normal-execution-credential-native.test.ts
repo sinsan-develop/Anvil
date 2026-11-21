@@ -45,3 +45,13 @@ test('normal native source는 소유 host closure와 별도 슬롯을 사용하�
  const store=readFileSync(new URL('apps/connector/native/ProtectedStore.cs',root),'utf8');assert.ok(store.includes('av3ct1_'));
  const build=readFileSync(new URL('apps/desktop/scripts/desktop-trust-key-host-build.cjs',root),'utf8');assert.ok(build.includes('NormalExecutionCredentialSource.cs'));
 });
+
+test('FN09 native Target은 TS와 같은 목적 literal/UUID·빈 query 및 기존 body hash/상한을 유지한다',()=>{
+ const s=readFileSync(new URL('apps/connector/native/NormalExecutionCredentialSource.cs',root),'utf8'),target=s.slice(s.indexOf('Dictionary<string,object> Target('),s.indexOf(' object Call('));
+ assert.ok(target.includes('path==basePath+"/understanding-response-read"'));
+ assert.ok(target.includes('parts.Length==4&&parts[1]=="understanding-response-read"&&parts[3]=="result"'));
+ assert.ok(target.includes('[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}'));
+ assert.ok(target.includes('path!=basePath+"/commands"'));assert.ok(target.includes('(method=="GET"&&body!=null)'));assert.ok(target.includes('(body==null||query!="")'));
+ assert.ok(target.includes('H(Parse(Encoding.UTF8.GetBytes(body)))'));assert.ok(s.includes('2097152'));
+ assert.ok(s.indexOf('target=Target(scope,r,body)')<s.indexOf('var reply=Challenge(record,scope,request,S(slot,"credential")'));
+});
