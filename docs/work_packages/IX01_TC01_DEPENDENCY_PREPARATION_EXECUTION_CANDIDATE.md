@@ -106,3 +106,9 @@ Main은 이 접점의 소스와 현재 운영 근거를 고정한 뒤, §1 세 �
 [설치 전용 CLI 소스](../../scripts/qa-fn03-tc01-dependency-cli.mjs)를 연결했다. 고정 디렉터리는 `/home/daon/.local/share/anvil-v3-qa-launchers/fn03-tc01-dependency-78dae503`이며 CLI, 최초 적재 .mjs, Linux 진입점의 독립 Git 원문을 공급할 대상이다. checkout은 별도 고정 `4c44da5d`다. 최초 감독이 인자 `--run <attempt> <plan SHA> <approval SHA> <Git SHA>`를 고정하고, stdin은 기존 준비 wire에만 사용한다. plan의 source closure 기준은 13행 canonical UTF-8(no LF) SHA256 `D4A0CA7695CCB7D05D2C9E61E113C2CD6A09D774F59A674AA53C288B1F460132`이다. 실제 Git 지문·Node와 CLI 최초 시작 신원·전용 디렉터리 배치·승인 발급·SSH 및 원 수거는 미확정이므로 여전히 실행안과 실제 실행 승인으로 사용할 수 없다.
 
 [Windows 송신 소스](../../scripts/qa-fn03-tc01-dependency-windows-sender.ts)는 설치 전용 profile `TC01_DEPENDENCY_PREPARATION_WINDOWS_SENDER_V1`과 신규 배타 기록에 원 시도·plan/approval SHA·Git SHA·기한을 결박한다. 외부 review가 현재 Windows SSH exe·alias/설정·호스트 신뢰·원장 부모와 Linux 파일 배치·최초 실행을 먼저 확인해야 한다. 기존 SSH 보호 옵션 및 빈 Windows env 후보에서 고정 CWD와 CLI 인자로 단회 전송하고, 반환은 같은 원 프로세스에서 수거한 후보로 한정한다. 이 소스는 운영 review나 실제 준비 승인을 대신하지 않는다.
+
+## 8. 합성 왕복 이후 실제 준비
+
+Windows sender가 만든 CLI 호출과 원 stdin을 Linux CLI에 그대로 연결한 합성 왕복, 원 승인·Git 불일치와 다른 반환 binding의 거절을 확인했다. 직접·인접 33건 통과. 실제 Windows 설정/alias·호스트 신뢰·빈 env 인증, 보호 원장 부모와 Linux 도구·별도 launcher 배치, 보호 plan/approval 발급 및 원 프로세스 수거는 별도 운영 근거가 필요하다.
+
+실행 후보를 구체화할 때는 위 운영 근거를 같은 시도에 고정한다. Windows 현재 설정 읽기 결정은 조건부 재개안 §1의 원 결정으로만 다룬다. 실제 배치와 설치의 기대 지문·부작용·보존 책임이 확정되기 전에는 SSH/설치 후보로 실행하지 않는다. J3/0095 기존 승인 및 제외 범위를 변경하지 않는다.

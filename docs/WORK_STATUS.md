@@ -22079,3 +22079,11 @@ Main 입력 변조 RED `9587cc`와 독립 초기 callback의 기대값 변경 RE
 Main 검토에서 외부 검산 중 시간이 흐르면 정상 timer가 거절되는 경우와 잘못된 스트림 형상에서 원 SSH 오류 수신기가 누락되는 경우를 보완했다. 남은 wall/mono 시간으로 timer를 줄이고 원 child의 오류 수신을 먼저 등록한다. Main 직접·인접 31통과/실패·건너뜀0(`168d00`), 담당자 직접·carrier 인접 25통과(`c1653b`) 및 좁은 strict 타입·공백0, 독립 재검수 C0/I0/M0. 소스 SHA256 `504080A0086C30145B66C2417CA3D8622B14250F82F93EBE54F7B7B58CE3E645`, 시험 SHA256 `AEAD31713C0D57E10A4FF5E97ECE0EAC01B96FBDE7F17BD73C00E36E16ED7617`.
 
 합성 review는 실제 호스트나 승인 공급자가 아니다. 실제 Windows SSH exe·설정·호스트 신뢰·빈 env 인증·원장 부모 ACL, Linux 배치·도구 지문·최초 실행 근거가 남았다. Windows 원장 쓰기·SSH·WSL·설치·DB·권한·서비스·Agent 실행0. 롤백은 신규 두 파일과 기록의 역적용이다.
+
+### IX01 설치 전용 Windows↔Linux 전체 합성 왕복
+
+기준 `c3c51fe1` clean. developer_primary가 기존 [CLI 합성시험](../tests/unit/FN03/tc01-dependency-cli.test.ts)에 두 호스트의 송수신을 잇는 사례를 추가했다. Windows sender가 생성한 원 SSH 명령의 CWD·7 argv와 보낸 stdin을 그대로 Linux CLI에 공급하고, 두 loader·원 승인 검산·배타 소진·intake 반환을 같은 SSH child stdout으로 되돌렸다. 원장·SSH·전송·버전 조회·모의 설치 각 1회, 고정 원문 13개와 단계별 종료·소거를 확인했다.
+
+Linux approval 또는 Git 원문이 다르면 후속 명령·설치·후보 0이다. 원 child에서 돌아온 binding만 달라진 경우에도 Windows 후보 0이며 원 Linux 기록은 보존된다. Main 직접·인접 33통과/실패·건너뜀0(`e88968`), 담당자 직접8통과(`437b8a`) 및 strict 타입/공백0, 독립 C0/I0/M0. 시험 SHA256 `6EEA5EB10F433544B596342E10142CAC6F3612648F6DFD40546ACA9049003126`.
+
+제품 소스 변경0. Windows와 Linux 사이의 전달·정착 조건을 합성 포트로 검증했으며, 실제 SSH·파일 배치·설치·호스트 신뢰·승인 원본은 미검증이다. 롤백은 이번 시험·기록의 역적용이다.

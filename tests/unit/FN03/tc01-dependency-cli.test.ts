@@ -6,6 +6,7 @@ import {EventEmitter} from 'node:events';
 import {posix} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {createTc01DependencyWindowsSender} from '../../../scripts/qa-fn03-tc01-dependency-windows-sender.ts';
 import {currentProfile} from '../../../scripts/qa-ix01-current-journey.ts';
 import {readTc01DependencyCarrierResult} from '../../../scripts/qa-fn03-tc01-dependency-carrier-wire.ts';
 const markers=[{raw:Buffer.alloc(32,81),sha:'e32e2d16081cf644f88392934288086e7662529d0d43277c34f7aad2207cfafb'},{raw:Buffer.alloc(54,82),sha:'8e5f6f3429f8cdbe693cdc29904e9d5a7b127a494bd15c804bd54c7403bfcbe7'},{raw:Buffer.alloc(6597,83),sha:'f6478d5600180a23f73e4217610c7709a71cedb4ae13f6c3e15ecb457f5d4fd6'}];
@@ -61,8 +62,8 @@ function fixture(){
  const git=Buffer.from('RAM independently approved Git');put('/usr/bin/git',git,0,0o100755);put(root+'/.git/config',Buffer.from('[core]\nrepositoryformatversion = 0\n'));put(root+'/.git/HEAD',Buffer.from('ref: refs/heads/fixed\n'));
  const argv=[currentProfile.node,cli,'--run',attemptId,planHash,approvalHash,contentHash(git)];
  const stdin=Object.assign(new EventEmitter(),{resume(){queueMicrotask(()=>{stdin.emit('data',wire);stdin.emit('end');stdin.emit('close');});}});
- const executions:any[]=[];const io={context:()=>({platform:'linux',uid:1000,execPath:currentProfile.node,execArgv:[],argv,environmentKeys:[],cwd:root,moduleURL:pathToFileURL(cli).href,nodeVersion:'24.22.1'}),now:()=>wall,monotonic:()=>mono,system,stdin,execute:(c:any)=>{executions.push(c);if(c.file===currentProfile.node)return'11.19.1\n';if(c.args.includes('ls-files'))return'H package.json\0';if(c.args.includes('rev-parse'))return head+'\n';if(c.args.includes('status'))return'';throw Error('UNEXPECTED');}};
- return{io,argv,put,expected,binding,wire,root,base,prep,receipt,plan,planBytes,approvalBytes,intent,system,hooks,calls,nodes,data,handles,owned,executions,stdin,setTime:(w:number,m:number)=>{wall=w;mono=m;}};
+ const executions:any[]=[];const io={context:()=>({platform:'linux',uid:1000,execPath:currentProfile.node as string,execArgv:[],argv,environmentKeys:[],cwd:root,moduleURL:pathToFileURL(cli).href,nodeVersion:'24.22.1'}),now:()=>wall,monotonic:()=>mono,system,stdin,execute:(c:any)=>{executions.push(c);if(c.file===currentProfile.node)return'11.19.1\n';if(c.args.includes('ls-files'))return'H package.json\0';if(c.args.includes('rev-parse'))return head+'\n';if(c.args.includes('status'))return'';throw Error('UNEXPECTED');}};
+ return{io,argv,put,expected,binding,wire,root,base,prep,receipt,plan,planBytes,approvalBytes,intent,system,hooks,calls,nodes,data,handles,owned,executions,stdin,child,get pendingTimer(){return timer;},setTime:(w:number,m:number)=>{wall=w;mono=m;}};
 }
 
 test('original CLI RAM stdin -> both actual pinned loaders -> authorized native intake; version once, install once',async()=>{
@@ -116,4 +117,59 @@ test('original fd replacement and command expiry do not adopt equal bytes or sta
 test('receipt, preparation or commondir appearing while stdin waits is rejected before first Git',async()=>{
  for(const path of ['receipt','prep','commondir'] as const){const f=fixture();f.stdin.resume=()=>{queueMicrotask(()=>{f.put(path==='commondir'?f.root+'/.git/commondir':f[path]+'/existing',Buffer.from('x'));f.stdin.emit('data',f.wire);f.stdin.emit('end');f.stdin.emit('close');});};
  assert.equal((await runTc01DependencyCli(f.io) as any).status,'UNKNOWN');assert.equal(f.executions.length,0);assert.equal(f.calls.filter(c=>c==='spawn').length,0);assert.equal(f.handles.size,0);}
+});
+
+// A RAM transport for the real sender's emitted remote command, not a second expected command builder.
+// It never evaluates a shell: it accepts only the existing cd/exec/env -i carrier grammar and feeds
+// the actual seven captured tokens and cwd to the real CLI context. All tool/FS effects remain fixture ports.
+function windowsRoundTrip(f:ReturnType<typeof fixture>,mode:'normal'|'approval'|'git'|'foreign-result'='normal'){
+ const child=Object.assign(new EventEmitter(),{stdin:new EventEmitter(),stdout:new EventEmitter()}),token=Object.freeze({});
+ const calls:string[]=[],copies:Uint8Array[]=[],timers=new Set<object>(),errors:unknown[]=[];
+ let ledger=Buffer.alloc(0),opened=false,flushed=false,closed=false,task:Promise<void>|undefined,remoteArgv:string[]|undefined,remoteCwd:string|undefined,received:Buffer|undefined;
+ const value={profile:'TC01_DEPENDENCY_PREPARATION_WINDOWS_SENDER_V1',binding:structuredClone(f.binding),planSha256:contentHash(f.planBytes),gitSha256:contentHash(f.data.get('/usr/bin/git')!),carrier:{imageSha256:'1'.repeat(64),configurationSha256:'2'.repeat(64),knownHostsSha256:'3'.repeat(64)}};
+ // Synthetic equality evidence only: no actual Windows ACL/host/placement/SSH authority is claimed.
+ const review=(r:Readonly<Record<string,unknown>>)=>{assert.equal(r.planSha256,contentHash(f.planBytes));assert.equal((r.binding as any).approvalSha256,contentHash(f.approvalBytes));assert.equal((r.binding as any).consumptionSha256,contentHash(f.intent));assert.deepEqual(r.binding,f.binding);};
+ const ports={platform:()=> 'win32',now:()=>1000,monotonic:()=>0,
+  setTimeout:(_fn:()=>void,ms:number)=>{assert(ms>0&&ms<=1800000);const t={};timers.add(t);calls.push('timer');return t;},clearTimeout:(t:unknown)=>{assert(timers.delete(t as object));calls.push('clear');},
+  openExclusive:(_path:string)=>{assert(!opened);opened=true;calls.push('open');return token;},
+  write:(t:object,b:Uint8Array,o:number)=>{assert.equal(t,token);assert.equal(o,ledger.length);assert(!closed&&!flushed);copies.push(b);const n=Math.min(97,b.length-o);ledger=Buffer.concat([ledger,Buffer.from(b.subarray(o,o+n))]);return n;},
+  flush:(t:object)=>{assert.equal(t,token);assert(!flushed);flushed=true;calls.push('flush');},close:(t:object)=>{assert.equal(t,token);assert(!closed);closed=true;calls.push('close');},
+  confirmClosed:(t:object,n:number)=>{assert.equal(t,token);assert(closed&&flushed);assert.equal(n,ledger.length);calls.push('confirm');},
+  spawn:(file:string,args:readonly string[],options:any)=>{
+   assert.equal(file,String.raw`C:\Windows\System32\OpenSSH\ssh.exe`);assert.equal(args.at(-2),'WSL-server');assert.deepEqual(options.stdio,['pipe','pipe','ignore']);assert.equal(options.shell,false);
+   const match=/^cd '([^']+)' && exec \/usr\/bin\/env -i ([^\r\n]+)$/.exec(args.at(-1)!);assert(match);remoteCwd=match[1]!;remoteArgv=match[2]!.split(' ');assert.equal(remoteArgv.length,7);assert(remoteArgv.every(x=>x.length>0));
+   const prior=f.io.context;f.io.context=()=>({...prior(),argv:[...remoteArgv!],cwd:remoteCwd!,execPath:remoteArgv![0]!,moduleURL:pathToFileURL(remoteArgv![1]!).href});
+   calls.push('ssh');return child;
+  },
+  end:(c:EventEmitter,b:Uint8Array)=>{
+   assert.equal(c,child);assert(remoteArgv&&remoteCwd);assert(child.stdin.listenerCount('finish')>0&&child.stdout.listenerCount('data')>0&&child.listenerCount('close')>=2&&timers.size===1);assert.deepEqual(Buffer.from(b),f.wire);copies.push(b);received=Buffer.from(b);calls.push('send');
+   if(mode==='approval')f.put(f.receipt+'-approval.json',Buffer.from(f.approvalBytes.toString().replace('ALLOW_ONE_RUN','DENY_ONE_RUN_')));
+   if(mode==='git')f.put('/usr/bin/git',Buffer.from('different independently unapproved Git'),0,0o100755);
+   f.stdin.resume=()=>{queueMicrotask(()=>{f.stdin.emit('data',received);f.stdin.emit('end');f.stdin.emit('close');received!.fill(0);});};
+   child.stdin.emit('finish');
+   task=(async()=>{const result=await runTc01DependencyCli(f.io);let raw=typeof result==='string'?result:canonicalJson(result)+'\n';
+    if(mode==='foreign-result'&&typeof result==='string'){const v=JSON.parse(result);v.binding.approvalSha256='0'.repeat(64);raw=canonicalJson(v)+'\n';}
+    child.stdout.emit('data',Buffer.from(raw));child.stdout.emit('end');const code=typeof result==='string'?0:1;child.emit('exit',code,null);child.emit('close',code,null);
+   })().catch(error=>{errors.push(error);child.emit('error',Error('RAM_TRANSPORT_UNKNOWN'));child.emit('close',1,null);}).finally(()=>received?.fill(0));
+  },
+ };
+ const sender=createTc01DependencyWindowsSender(review,ports);
+ return{sender,value,calls,copies,timers,errors,child,run:()=>sender.run(f.wire,value),wait:()=>task,get received(){return received;},get ledger(){return ledger;},get argv(){return remoteArgv;},get cwd(){return remoteCwd;}};
+}
+
+test('Windows original sender -> emitted SSH argv/stdin -> actual pinned Linux CLI -> same child candidate round trip',async()=>{
+ const f=fixture(),t=windowsRoundTrip(f),result=await t.run();await t.wait();assert.deepEqual(t.errors,[]);assert.equal(result.status,'COLLECTED');assert.equal(result.authority,'NOT_ISSUED');assert.equal(result.candidate?.status,'CANDIDATE_ONLY');
+ assert.equal(t.calls.filter(c=>c==='open').length,1);assert.equal(t.calls.filter(c=>c==='ssh').length,1);assert.equal(t.calls.filter(c=>c==='send').length,1);assert(t.calls.indexOf('confirm')<t.calls.indexOf('ssh'));
+ assert.equal(t.cwd,f.plan.sourceRoot);assert.equal(t.argv![3],f.plan.attemptId);assert.equal(t.argv![4],contentHash(f.planBytes));assert.equal(t.argv![5],contentHash(f.approvalBytes));assert.equal(t.argv![6],contentHash(f.data.get('/usr/bin/git')!));
+ assert.equal(f.executions.filter(c=>c.file===currentProfile.node).length,1);assert.equal(f.calls.filter(c=>c==='spawn').length,1);assert.equal(f.calls.filter(c=>c==='mkdir:'+f.receipt).length,1);assert.deepEqual(f.data.get(f.receipt+'/intent.json'),f.intent);
+ for(const row of sourceFiles)assert(f.calls.includes('open:'+f.root+'/'+row.path));assert.equal(sourceFiles.length,13);assert.equal(f.handles.size,0);assert.equal(f.pendingTimer,undefined);assert.equal(t.timers.size,0);assert(t.copies.every(b=>b.every(x=>x===0)));assert(t.received!.every(x=>x===0));assert(f.owned.every(b=>b.every(x=>x===0)));for(const e of[t.child,t.child.stdin,t.child.stdout,f.stdin,f.child,f.child.stdout,f.child.stderr])assert.equal(e.eventNames().length,0);
+ const ledger=JSON.parse(t.ledger.toString());assert.equal(ledger.planSha256,contentHash(f.planBytes));assert.equal(ledger.approvalSha256,contentHash(f.approvalBytes));assert.equal(ledger.inputSha256,contentHash(f.wire));assert.equal(ledger.attemptId,f.plan.attemptId);
+ assert.equal((await t.run()).status,'UNKNOWN');assert.equal(t.calls.filter(c=>c==='ssh').length,1);
+});
+
+test('same sender transport rejects Linux approval/Git originals or foreign returned binding without candidate',async()=>{
+ for(const mode of ['approval','git','foreign-result'] as const){const f=fixture(),t=windowsRoundTrip(f,mode),result=await t.run();await t.wait();assert.deepEqual(t.errors,[]);assert.equal(result.status,'UNKNOWN',mode);assert.equal(result.candidate,undefined);assert.equal(t.calls.filter(c=>c==='open').length,1);assert.equal(t.calls.filter(c=>c==='ssh').length,1);assert.equal(t.calls.filter(c=>c==='send').length,1);assert.equal(f.handles.size,0);assert.equal(t.timers.size,0);
+  if(mode!=='foreign-result'){assert.equal(f.executions.length,0);assert.equal(f.calls.filter(c=>c==='spawn').length,0);assert(!f.nodes.has(f.receipt));}else{assert.equal(f.calls.filter(c=>c==='spawn').length,1);assert.deepEqual(f.data.get(f.receipt+'/intent.json'),f.intent);}
+  for(const e of[t.child,t.child.stdin,t.child.stdout])assert.equal(e.eventNames().length,0);assert(t.copies.every(b=>b.every(x=>x===0)));assert(t.received!.every(x=>x===0));assert.equal(f.pendingTimer,undefined);
+ }
 });
