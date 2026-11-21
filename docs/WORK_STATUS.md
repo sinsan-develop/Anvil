@@ -22071,3 +22071,11 @@ Main 입력 변조 RED `9587cc`와 독립 초기 callback의 기대값 변경 RE
 초기 검수 C0/I3/M1을 조치했다. strict 승인·wire 검산을 첫 Git 명령 앞에 두고, stdin 대기 중 receipt/prep/commondir가 생겨도 명령0을 확인했다. 원 Git 경로 간접 참조와 기한 불명은 거절하며, 준비 검산과 시작 직전 재검산을 모두 허용하면서 npm 버전 조회를 1회로 유지한다. stdin의 남은 오류 수신기는 원 close에서 회수한다. Main 직접·인접 41통과/실패·건너뜀0(`e8551c`), 담당자 직접6통과·strict 타입/구문/공백0(`fe344b`), 독립 재검수 C0/I0/M0. Git LF 소스 SHA256 `CDBAD5AD1EFFF6BE94AA03439E9ED80968D018077961ED66B3E1FB8AF2AEE765`, 시험 SHA256 `DD0E08331415A2E223E7362E5535AD0E33DA444DF6FE6A2FD4DF37371DC99E6A`.
 
 합성의 도구 지문 3개는 RAM 표지이며 실제 Linux 도구 검증이 아니다. 실제 최초 실행 이미지·고정 시작 인자의 외부 감독, Git 지문 실측, 승인 원본과 전용 경로 준비, Windows SSH 전송·원 프로세스 수거는 미실행이다. 실제 WSL·SSH·CLI·보호 원장 쓰기·설치·DB·권한·서비스·Agent 실행0. 롤백은 신규 두 파일과 기록의 역적용이다.
+
+### IX01 설치 전용 Windows 송신·원 프로세스 수거
+
+기준 `8d6dde29` clean. developer_primary가 [Windows 송신 소스](../scripts/qa-fn03-tc01-dependency-windows-sender.ts)와 [합성시험](../tests/unit/FN03/tc01-dependency-windows-sender.test.ts)을 작성했다. 외부 승인·호스트·배치 검산 뒤 기존 Windows 검사와 목적이 다른 `fn03-tc01-dependency-<attempt>.json`을 신규 배타 생성한다. 원 flush·close·신원 대조 뒤 고정 SSH를 1회 시작하고, 같은 소유 stdin에 기존 wire만 보낸다. 원 stdin finish·stdout end·정상 close와 결과 binding을 기존 수거기가 검산한다.
+
+Main 검토에서 외부 검산 중 시간이 흐르면 정상 timer가 거절되는 경우와 잘못된 스트림 형상에서 원 SSH 오류 수신기가 누락되는 경우를 보완했다. 남은 wall/mono 시간으로 timer를 줄이고 원 child의 오류 수신을 먼저 등록한다. Main 직접·인접 31통과/실패·건너뜀0(`168d00`), 담당자 직접·carrier 인접 25통과(`c1653b`) 및 좁은 strict 타입·공백0, 독립 재검수 C0/I0/M0. 소스 SHA256 `504080A0086C30145B66C2417CA3D8622B14250F82F93EBE54F7B7B58CE3E645`, 시험 SHA256 `AEAD31713C0D57E10A4FF5E97ECE0EAC01B96FBDE7F17BD73C00E36E16ED7617`.
+
+합성 review는 실제 호스트나 승인 공급자가 아니다. 실제 Windows SSH exe·설정·호스트 신뢰·빈 env 인증·원장 부모 ACL, Linux 배치·도구 지문·최초 실행 근거가 남았다. Windows 원장 쓰기·SSH·WSL·설치·DB·권한·서비스·Agent 실행0. 롤백은 신규 두 파일과 기록의 역적용이다.
