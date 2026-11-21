@@ -21983,3 +21983,11 @@ PMO의 원 영수증/기존 읽기 경로 우선 대조 지시에 따랐다. 문
 담당 AST 생성 exit0 `fec4ac`, 분류·공백 exit0 `1c2cfa`, JSON/LF 및 역사 보존 exit0 `b7f8a6`. 초기 PowerShell 구문 문제 `c418d0`는 분석 실행 전 중단 후 인자 전달을 정정했다. Main은 375개 경로의 동일 Git tree/blob·길이·LF SHA와 2,295 연결 수를 독립 대조했다 `8ceef3`. 별도 독립 C0/I0. 보고 SHA256 `822A591EB1396DCBB013C5184F11E8FD2ED2D1277AA459D881FF2117DA2E3C3E`.
 
 이 보고에는 외부 패키지 3종의 실제 Linux 설치 경로·선택 의존성 또는 CLI가 없다. 설치 graph/권위나 실제 검증 완료에 사용하지 않는다. 실제 WSL·SSH·설치·DB·권한·서비스·Agent 실행0. 다음은 고정 진입점과 실제 설치 근거·승인 요청의 정확한 결합이다. 롤백은 이번 조사 보고서와 작업 기록의 역적용이다.
+
+### FN08 회수 대상 조회 후보 r2와 기존 정책·미결 명령 연결 대조
+
+기준 `20cb66a7` clean. developer_primary가 [FN08 대상 조회 후보](contracts/FN08_NORMAL_GRANT_REVOCATION_TARGET_READ_CANDIDATE.md)의 구현 범위를 정리하고 반환했다. PMO 지시에 따라 현재 permission GET의 무결한 전체 규칙에서 exact 실행 범위의 limitPolicyRef를 골라 기존 exact budget 조회로 보낸다. 복수 후보는 명시 선택, 실제 current head·단독 제어·권한·저장 grant의 범위는 기존 회수 POST가 확인한다. 추가 정책 조회는 필요하지 않다.
+
+UI05의 보호 원자료 선택→대상 신규 단건 조회→기존 정책 선택→회수 사유와 명시 확인→기존 POST→응답 유실 시 App의 원 pending/hash 보존과 동일 명령 재확인을 한 여정으로 고정했다. 변경 결정은 신규 보호 GET과 현재 OWNER/HUMAN의 명시 읽기 정책에 한정한다. 기존 회수 저장·재확인 권위, 실제 main 활성화·SQL 적용·권한·서비스·Agent 실행은 제외다. 원자료가 없는 발급을 찾는 별도 목록은 이번 범위에 포함하지 않는다.
+
+문서 한 파일 +29/-15행, UTF-8/LF·공백 exit0 `23b5e2`. Main 지문 일치와 독립 C0/I0. r2 SHA256 `3FD35E353650B8860D58C35865789ECB1567256DB6360272C6BB88D262D3CB39` (23,308B). 사용자 신규 조회 채택 미확정, 제품·시험·SQL·실환경 실행0. 후속 기능 롤백은 신규 reader/UI 연결 제거로 하며 원 회수 기록과 기존 POST는 보존한다.

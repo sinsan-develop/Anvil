@@ -1,6 +1,6 @@
 # FN08 normal 허가 회수 대상의 보호 단건 조회 후보
 
-상태: **미채택 계약 후보**. 소스 대조 기준 `753b551b`. 이 문서는 신규 공개 조회·노출·읽기 정책의 결정 준비이며 구현·실제 활성화·DB/ACL 적용·Agent 실행 승인이 아니다. 제품·시험·SQL은 변경하지 않았다.
+상태: **r2 · 미채택 계약 후보**. 소스 대조 기준 `20cb66a7`(r1 `0715ad99`에 보관된 후보). r2는 PMO의 기존 정책 조회 재사용 판단을 반영한 구현맵이며 신규 대상 GET/읽기 목적의 채택을 대신하지 않는다. 이 문서는 신규 공개 조회·노출·읽기 정책의 결정 준비이며 구현·실제 활성화·DB/ACL 적용·Agent 실행 승인이 아니다. 제품·시험·SQL은 변경하지 않았다.
 
 기존 normal 회수 저장은 이미 채택됐다. `FN08_NORMAL_GRANT_REVOCATION_SOURCE_IMPLEMENTATION_20261114.md`의 부모 SHA256 `462D92B2429701077E9B9A8BDE26DCC68ACE8F31323A87ABF685FBC8A4EFC542`, `WORK_STATUS.md:19380–19390`의 채택·source 검수 기록을 따른다. 부모 후보의 과거 “미채택” 표제를 다시 승인 대기로 해석하지 않는다. 기존 `revokeExecutionGrant` payload/저장/동일 명령 재확인·0096은 재승인 대상이 아니다.
 
@@ -75,7 +75,11 @@ fullref는 항상 `{id,version,contentHash}` 전체다. 원 envelope/영수증�
 
 신규 역사 reader가 구현해야 할 후보 검산은 다음과 같다. 현재 이 전체 검산을 수행하는 공개 역사 reader는 없으며, 기존 producer의 저장 관계를 이 후보가 구현 완료했다고 간주하지 않는다. 원 C는 PROJECT `queueExecutionCommand`, APPLIED, `NORMAL_QUEUE_STORED`, snapshot NORMAL_PROTECTED/START_SESSION이어야 한다. E/G/C/X·authorization receipt/audit와 원 queue ref/hash, grant의 factHash/scopeDigest/hash 및 원 발급 시각/기한을 검산한다. `G.binding.permissionPolicyRef = C.policy_ref`, `q.budgetPolicyRef = G.binding.intent.budgetPolicyRef`와 원 발급 역사 참조를 확인한다. 없는 값을 최신 policy로 채우거나 source callback 값을 검산된 저장 사실로 승격하지 않는다.
 
-`ProjectLimitPolicies.read(db,actor,pid,id,version)`는 원 발급 budget의 불변 버전/hash와 저장 영수증 대조에 재사용할 수 있다. 원 budget/permission 정책이 현재 expired/revised라는 이유로 정상 역사 ref를 최신 ref로 치환하지 않는다. 반면 실제 회수 입력의 permissionPolicyRef/budgetPolicyRef는 **현재 회수자에게 적용되는 현재 정책**이다. 기존 `authorizeRuntimePolicy`/`ProjectLimitPolicies.resolveCurrent` 및 POST가 이를 다시 검산한다. 원 발급의 과거 정책 refs는 반환하지 않으며 회수 폼의 현재 정책으로 자동 채택하지 않는다.
+현재 정책 입력은 새 API 없이 기존 보호 조회에서 얻는다. `connections/candidate-policy-api.ts:26–29`의 `readCandidatePermissionPolicy`는 현재 `/permission-policy` head의 ref와 **전체 rules**를 hash 검산한다. PROJECT-only 제한은 같은 파일의 편집 함수에 적용되는 것으로 GET 필터가 아니다. 현재 사용자 HUMAN/userId, `revokeExecutionGrant`, targetScopes 하나의 exact EXECUTION/projectId/executionId/generation, 유효한 limitPolicyRef·기한을 갖는 규칙에서 budget 후보 fullref를 수집한다. 같은 fullref는 묶되 원 규칙을 버리지 않고, 복수 ref는 사용자가 명시 선택한다. 배열 첫 값·최신 추정·과거 발급 정책을 자동 선택하지 않는다.
+
+선택한 limitPolicyRef는 기존 `readLimitPolicy`(`connections/limit-policy-api.ts:48–52`)의 exact GET으로 조회한다. 서버 `ProjectLimitPolicies.read`(`runtime-policy.ts:155–162`)의 projectMember 및 불변 원문/영수증 검산과 웹 project/ref/hash 검산을 유지한다. 이는 **현재 budget head 인증이 아니다**. 화면은 선택한 저장 정책과 기한만 보여 주고 현재 허용/예산 가용/회수 가능을 확정하지 않는다. 원 grant의 sourceScopes는 최소 대상 응답에 없으므로 UI가 coverage를 계산했다고 표시하지 않는다. DENY/REQUIRE_APPROVAL 규칙을 숨기거나 승인 대안으로 바꾸지 않으며, 문법·ref가 오염되면 준비를 닫는다.
+
+최종 판정은 기존 POST의 `authorizeRuntimePolicy`(`runtime-policy.ts:198–219`)에 남긴다. 현재 제어권·permission head exact ref, 현재 HUMAN/EXECUTION scope와 원 grant의 모든 sourceScopes coverage, 겹치는 DENY 우선, 선택 budget에 적용되는 REQUIRE_APPROVAL 거절, approvalRef:null, PROJECT `resolveCurrent`의 현재 head/APPLIED/기한을 원 거래에서 검산한다. 따라서 exact GET에서 읽힌 오래된 budget도 POST에서 거절될 수 있다. 후보 없음·정책 변경·명확한 거절은 사유와 원 입력을 남기고, 선택 ref 교체나 POST 자동 재시도는 하지 않는다. 별도 policy discovery/current-budget GET는 이 여정에 필요하지 않다.
 
 `0083_normal_initial_execution.sql.pending:96`의 `normal_initial_graph`는 첫 단계에서 `normal_queue_authorized`를 호출한다. 후자는 현재 command GUC/원 HUMAN·정책 등 발급 거래 조건을 포함한다. 이를 역사 GET에 그대로 호출하여 “옛 발급자 현재 로그인 필요”를 만들거나 그 조건을 완화하지 않는다. 역사 불변 관계 검산을 기존 TS ref/hash·receipt 규칙에서 분리해 재사용하는 구현이 필요하다. 현재 발급/permit/challenge 함수를 역사 조회를 위해 수정하지 않는다.
 
@@ -93,24 +97,34 @@ fullref는 항상 `{id,version,contentHash}` 전체다. 원 envelope/영수증�
 
 기존 미결 회수 command/hash와 입력은 조회 실패·새 대상 선택·페이지 왕복으로 지우거나 다시 쓰지 않는다. UNKNOWN/APPLIED 응답 유실은 **기존 동일 command 명시 재확인**으로만 처리한다. 새 GET이 그 명령 결과를 대신 판단하지 않는다. 회수 기록 존재/조회 실패가 기존 동일 명령 재확인을 금지하는 사유도 아니다. 새 명령의 이중 회수 409 및 기존 replay 현재 권한 검산은 보존한다.
 
-## 6. 최소 조립·SQL/ACL 판단 및 미완료
+## 6. 확정 구현맵과 최소 변경 후보
 
-Main 조립 후보는 기존 AccessRepository와 ProjectLimitPolicies를 사용하는 별도 normal target reader→명시 구성된 projects GET→UI05 기존 원자료 선택의 조회 버튼이다. 원자료 재검산은 기존 보호 reader의 같은 거래 핵심을 재사용해야 하며 두 인증 거래의 독립 결과를 현재성 근거로 단순 합치지 않는다. 필요 내부 메서드 추출은 의미 보존 범위로 검수한다. app 기본 활성화·서버 main 구성은 이 문서로 켜지 않는다.
+사용자 흐름은 **UI05 원자료 선택 → 새 대상 GET → 기존 현재 permission policy GET → 후보 limit ref 명시 선택·기존 exact GET → 사유/명시 확인 → 기존 회수 POST → 영수증 또는 원 명령 재확인**이다. A는 원자료와 exact 값이 일치하는 발급에 한정된다. 원자료 없는 전체 발급 발견은 B의 임무별 목록/cursor 노출 비용이 추가되며 이번 A 구현에 포함하지 않는다.
 
-`0017:209`는 app에 executions/execution_grants/execution_commands SELECT를 이미 부여한다. 0083는 normal 저장·완결을 기존 표에 연결한다. 실제 normal revoke도 같은 app authenticated 거래에서 해당 저장행을 SELECT한다. 따라서 **현재 소스상 새 table/role/일반 GRANT는 필수로 입증되지 않았다**. 프로젝트/주체 보호는 새 reader의 실제 접근 경계이며 기존 table SELECT가 공개 GET 노출 승인을 대신하지 않는다. 실제 PG role/ACL/RLS·잠금·역사 손상 행은 미검증이다. 구현 중 추가 권한이 필요하면 이 후보로 넓히지 않고 정확 대상/최소 delta를 별도 보고한다. 기존 0017/0083/0096 원문 수정이나 일반 권한 완화는 없다.
+| 단계 | 기존 근거·구현 경계 |
+|---|---|
+| 대상 조회 | AccessRepository + ProjectLimitPolicies를 사용하는 별도 normal target reader, 명시 projects GET. 원자료 보호 판독과 역사 대조를 같은 authenticated 거래에서 결박한다. 두 독립 인증 결과를 현재성 근거로 합치지 않는다. |
+| 정책 후보 선택 | §4의 기존 두 reader를 호출한다. 현재 permission head ref와 선택한 limitPolicyRef를 고정하되 최종 현재성/권한은 POST 책임이다. 새 정책 API·EXECUTION 정책 발급/편집·권한 부여는 추가하지 않는다. |
+| 회수 준비/제출 | 현재 documentControl의 client/controlGeneration과 대상 project/execution/generation/grantRef, 선택 policy refs, 사유를 기존 ProjectCommand로 결박한다. `operation:revokeExecutionGrant`, `targetId:executionId`, `expectedVersion:generation`, `baselineRefs:[]`, `approvalRef:null`, payload exact `{grantRef,permissionPolicyRef,budgetPolicyRef,reason}`. 사용자 확인 전 POST0, 새 commandId는 준비 때 한 번 고정한다. |
+| 기존 서버 소비 | `/api/v1/projects/:projectId/commands`의 명시 normalRevocations 분기→`NormalGrantRevocations.command`를 그대로 사용한다. 현재 HUMAN·CSRF43·제어·정책·기한·원 grant/회수 원장을 재검산한다. 서버 미구성/미적용 SQL은 실패이며 성공으로 흉내 내지 않는다. |
+| 결과와 미결 복구 | 기존 NORMAL_PROTECTED/NORMAL_REVOCATION_STORED/NORMAL_GRANT_REVOCATION_STORED·APPLIED, 원 request/hash/ref와 효과 false flags를 검산한다. 응답 유실/형상 불명은 원 pending/hash·사유·refs를 상위 App buffer에 보존하고 편집/새 준비를 막는다. 사용자 ‘같은 명령 결과 확인’만 원 command를 재제출한다. 정책이 바뀌어 replay가 거절돼도 refs/ID를 교체하지 않는다. |
 
-채택 후 파일 후보: 신규 `apps/server/modules/executions/normal-grant-revocation-target.ts`, 기존 `projects/routes.ts`·`app.ts`의 명시 reader 구성, `access/project-command.ts`의 GET 목적 allowlist/POST 차단, `connections/policy-editor-profile.ts`의 정확 읽기 목적, 기존 UI05 원자료 패널과 신규 전용 웹 decoder/작은 조회 패널, 대응 FN08/UI05 직접 시험. 실제 소유 경로는 Main이 채택 이후 최소 단위로 고정한다. 기존 회수 생산자/정책 의미를 바꾸는 일은 이 목록에 포함하지 않는다.
+재사용 근거는 `SourceReadGrantsPanel.tsx:14–23`의 명시 회수 작성→상위 buffer에 pending/hash 저장→send→소유된 settle/불명 보존 및 `App.tsx:130–131,373`의 페이지 밖 buffer 보유다. 정확 buffer/transport·세션/CSRF와 늦은 결과 분리는 `MethodApplicationPanel.tsx`의 `capture/changeOwned/send` 패턴을 참조한다. 기존 관측 패널의 자동 목록 조회나 회수 권한을 복사하지 않는다. 새 target/policy 읽기는 명시 동작이며 project/user/client·세션/transport·닫기/ABA 후 응답은 폐기한다. 원 pending은 별도 소유 검산 아래 보존해 페이지 왕복 후 돌아올 수 있고, 다른 주체에게 노출하거나 자동 제출하지 않는다. 명확한 거절과 응답 유실을 구별하며 원 명령을 수정한 재확인은 없다.
 
-**현재 회수 정책 입력의 별도 빈칸:** `connections/candidate-policy-api.ts:26–29`의 `readCandidatePermissionPolicy`는 `/permission-policy`의 현재 PROJECT policy head 전체와 rules/hash를 읽는다(`access/project-command.ts:157,326`). 이 ref는 서버 `authorizeRuntimePolicy`가 받는 현재 permission policy head와 같은 종류이지만, 조회 성공만으로 `revokeExecutionGrant`의 exact HUMAN·EXECUTION(project/execution/generation)·sourceScopes·limitPolicyRef·DENY/기한 조건을 만족한다고 볼 수 없다. 같은 파일의 `editablePermissionRule`과 `policy-editor-profile.ts`는 PROJECT scope/limitPolicyRef:null의 편집만 지원하며 runtime 회수 규칙을 준비하는 화면이 아니다. `connections/limit-policy-api.ts:48–52`의 `readLimitPolicy` 역시 이미 아는 exact ref의 역사 판독이고 현재 budget head/가용성 선택을 보증하지 않는다. 따라서 현재 runtime 규칙에서 같은 grant 범위에 적용될 명시 후보를 선택하고 그 limitPolicyRef가 현재 PROJECT budget head인지 확인하는 웹 소비는 아직 미구현·미입증이다. 이 후보의 역사 GET으로 그 권위를 만들거나 과거 ref를 자동 채우지 않는다. 기존 보호 정책 조회/선택으로 이를 닫을 수 있는지 후속 구현에서 먼저 증명하고, 부족한 공개 조회가 실제 필요하면 그 delta를 별도로 제시한다.
+채택 후 소유 후보는 다음으로 한정해 순차 검수한다.
 
-**남은 사용자 연결:** A GET+UI 명시 조회로 고정 회수 대상을 찾는 단계는 닫을 수 있다. 현재 웹에 없는 normal 회수 폼·현재 EXECUTION 정책 선택/제어 확인·원 미결 buffer 보존을 기존 채택 POST와 연결해야 실제 회수 요청 여정이 끝난다. 이 문서는 저장 의미를 다시 승인받는 안이 아니며, 그 UI 미구현을 숨기지도 않는다. source-only 합격을 실제 회수/STOP/Agent 실행 완료로 세지 않는다.
+- 서버: 신규 `apps/server/modules/executions/normal-grant-revocation-target.ts`, 기존 `projects/routes.ts`·`app.ts` 명시 조립, `access/project-command.ts`의 신규 GET 목적 allowlist/일반 POST 차단. 기존 normal 회수 producer와 runtime policy 계약은 유지한다.
+- 웹: 기존 `ExecutionStartOriginPanel.tsx`, 신규 같은 폴더의 `normal-grant-revocation-api.ts`/`NormalGrantRevocationPanel.tsx`, `App.tsx` 및 실제 상위 session-detail props 경로의 원 buffer 전달, `connections/policy-editor-profile.ts`의 **신규 읽기 목적만** 추가. `candidate-policy-api.ts`와 `limit-policy-api.ts`는 기존 export 재사용이 우선이다. 실제 props 연결 파일은 구현 착수 시 확정한다.
+- 검수: 신규 FN08 보호 target/service 시험과 UI05 회수 폼·App buffer RAM 시험. 기존 normal revoke/replay 시험은 의미·기댓값을 유지한다. 조회·후보 선택의 성공과 회수 저장/실제 효과를 분리한다.
 
-## 7. 채택 후 검수와 rollback
+`0017:209`의 app SELECT와 0083의 기존 표/완결을 재사용하므로 현재 소스상 새 table/role/일반 GRANT가 필수로 입증되지는 않았다. 실제 PG ACL/RLS·잠금은 미검증이며 필요 권한은 별도 정확 delta로 보고한다. 기존 0017/0083/0096 수정·일반 권한 완화는 없다. **새 공개 계약은 대상 GET과 읽기 목적만**이다. 실제 server main 활성화·DB 적용·권한 발급·서비스/Agent/STOP 실행은 제외하며, 이 문서만으로 전체 사용자 여정 구현 완료를 주장하지 않는다.
 
-- 실제 앱 RAM: 기존 UI05 원자료 목록→정확 원문 선택→명시 버튼 전 GET0→같은 project/assignment의 유일한 normal 발급 단건. 원자료 생성 commandId를 발급 commandId로 오용하지 않음. 원 발급자와 다른 현재 OWNER의 정상 읽기 및 명시 읽기 정책 없는 거절.
-- normal producer의 실제 RAM 행/영수증에서 최소 projection 생성. 발급 commandId/queueRef/과거 permission·budget refs 공개0. 과거 policy와 현재 회수 policy를 다른 값으로 두고 자동 치환0. originRef가 grant binding에 새로 들어가지 않음.
-- 0건/2건·같은 execution 다른 prep/임무/hash·다른 project·기존 C/G 관계 손상·옛 세대·만료/회수·정책 전환/경합·현재 세션 변경·지연 old401/닫기·ABA 반례. current/OS/Agent/STOP 호출0·POST 자동0.
-- 기존 normal revoke 정상 저장 및 동일 q/hash 재확인·다른 q 이중 회수·COMMIT UNKNOWN 회귀. 현재 읽기 실패로 원 미결 buffer 소멸0.
-- SQL 소스/실제 ACL 근거를 구분한다. RAM/정적 검수는 실제 PG 잠금·권한·배포나 사용자 인수를 대신하지 않는다.
+## 7. 채택 후 합성 검수와 rollback
 
-미채택 후보 rollback은 이 신규 문서의 인수 제외다. 이후 소스 구현을 철회할 때는 명시 reader/UI 구성만 제거하고 원 회수 명령·역사 행·미결 buffer와 기존 정책 기록을 보존한다. 이미 저장된 회수를 삭제/취소하거나 기존 승인된 회수 POST를 닫는 rollback은 이 범위가 아니다. 실제 DB·권한·키·서비스·Agent·사용자 자료·네트워크 실행은 모두 제외한다.
+- 실제 App RAM에서 원자료 목록→고정 선택→명시 target GET→현재 policy head/rules→복수 limit ref 중 명시 선택→exact GET→사유/확인→기존 POST와 원 영수증을 연결한다. 클릭 전 추가 GET/POST0, 서로 다른 선택·project·주체에서 누수0. 원 발급자와 다른 현재 OWNER의 읽기 및 신규 읽기 정책 거절도 검산한다.
+- 현재 permission GET에 PROJECT/EXECUTION 규칙을 함께 두어 전체 rules가 유지되는지 확인한다. 다른 사용자/op/project/execution/generation·오염 ref는 후보0, 동일 ref 중복/복수 ref는 자동 선택0. 과거 발급 policy와 현재 선택 policy를 다르게 두고 자동 치환0, 새 policy API0.
+- exact budget GET 성공이 현재 head를 뜻하지 않는 반례와 POST의 current head 교체·제어 상실·DENY·sourceScopes 미충족·REQUIRE_APPROVAL·budget 회수/만료 거절을 기존 서버 합성 경계로 검산한다. UI 자체의 조회 성공을 회수 권한으로 표시하지 않는다.
+- 대상 0/2건·다른 prep/임무/hash·손상·옛 세대·만료/회수와 닫기·ABA·늦은 401·세션/transport 교체를 검산한다. 원 commandId/queueRef/과거 policy refs 공개0, origin 계보 추가0.
+- POST 응답 유실 및 APPLIED 후 응답 검산 실패→App 상위 pending 보존→페이지 왕복→동일 q/hash 명시 재확인. 이 사이 target/read 정책 실패·현재 runtime policy 변경도 원 입력을 지우거나 ref를 바꾸지 않는다. silent retry/다른 command 생성0, 새 회수 409와 기존 replay 검산 유지. 실제 회수/OS 종료/writer 해제·Agent 효과 주장0.
+
+이 r2 작업은 문서만 변경하며 시험·실환경 실행은 하지 않았다. 이후 rollback은 신규 reader/UI 명시 연결을 제거하고 기존 회수 명령·역사·미결 buffer·정책 기록을 보존한다. 저장된 회수 삭제/취소나 기존 채택 POST 폐쇄는 이 범위가 아니다.
