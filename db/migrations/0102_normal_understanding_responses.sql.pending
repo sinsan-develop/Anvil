@@ -397,4 +397,67 @@ REVOKE ALL ON FUNCTION anvil.normal_request_challenge_valid(anvil.execution_chal
 GRANT EXECUTE ON FUNCTION anvil.normal_request_challenge_valid(anvil.execution_challenges,boolean),anvil.normal_command_consumption_valid(anvil.execution_challenges,boolean),
  anvil.fn09_normal_understanding_challenge_valid(anvil.execution_challenges,boolean),anvil.fn09_normal_understanding_consumption_valid(anvil.execution_challenges,boolean),
  anvil.fn09_normal_understanding_acquisition_valid(anvil.execution_receipts),anvil.guard_fn09_normal_understanding_acquisition() TO anvil_v3_app;
+-- S3 결과 custody의 내부 조회 선행만 제공한다. POST 발행/소비/결과 저장·선택 권위는 여전히 없다.
+-- GET-only 단일성의 signed_request_id는 아래 원 GET에서 읽는다. fresh POST identity로 대체하지 않는다.
+CREATE FUNCTION anvil.fn09_normal_understanding_result_basis(token text,b jsonb,expected_request jsonb,expected_acquisition jsonb)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=pg_catalog AS $$
+DECLARE r anvil.execution_receipts;g anvil.execution_challenges;u anvil.execution_challenges;cr record;cur record;d jsonb;s jsonb;ends timestamptz;get_ref jsonb;
+BEGIN
+ IF token IS NULL OR token !~ '^[0-9a-f]{64}$'
+  OR NOT COALESCE(anvil.execution_json_shape(b,ARRAY['transport','mode','projectId','connectorId','executionId','executionGeneration','grantRef','scopeDigest','credentialGeneration','publicKeyFingerprint']),false)
+  OR b->>'transport' IS DISTINCT FROM 'NORMAL_PROTECTED' OR b->>'mode' IS DISTINCT FROM 'EXECUTION'
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(expected_request),false) OR expected_request->'version' IS DISTINCT FROM '1'::jsonb
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(expected_acquisition),false) OR expected_acquisition->'version' IS DISTINCT FROM '1'::jsonb
+ THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RESULT_DENIED';END IF;
+ SELECT * INTO STRICT cr FROM anvil.normal_request_credential(token,(b->>'connectorId')::uuid,(b->>'executionId')::uuid,
+  (b#>>'{grantRef,id}')::uuid,(b#>>'{grantRef,version}')::bigint,b#>>'{grantRef,contentHash}',(b->>'credentialGeneration')::bigint);
+ SELECT * INTO STRICT cur FROM anvil.normal_exchange_current(cr.project_id,(b->>'connectorId')::uuid,(b->>'executionId')::uuid,
+  (b#>>'{grantRef,id}')::uuid,(b#>>'{grantRef,version}')::bigint,b#>>'{grantRef,contentHash}',(b->>'credentialGeneration')::bigint);
+ IF cr.project_id::text IS DISTINCT FROM b->>'projectId' OR cur.binding IS DISTINCT FROM b THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RESULT_DENIED';END IF;
+ SELECT * INTO STRICT r FROM anvil.execution_receipts WHERE project_id=cr.project_id AND id=(expected_acquisition->>'id')::uuid AND version=1;
+ s=r.snapshot_json;
+ SELECT * INTO STRICT g FROM anvil.execution_challenges WHERE project_id=r.project_id AND id=r.challenge_id AND version=1;
+ SELECT * INTO STRICT u FROM anvil.execution_challenges WHERE project_id=r.project_id AND id=r.challenge_id AND version=2;
+ get_ref=jsonb_build_object('id',g.id,'version',1,'contentHash',g.content_hash);
+ IF r.content_hash IS DISTINCT FROM expected_acquisition->>'contentHash' OR r.content_hash IS DISTINCT FROM anvil.execution_json_hash(s)
+  OR r.grant_id::text IS DISTINCT FROM b#>>'{grantRef,id}' OR r.grant_version::text IS DISTINCT FROM b#>>'{grantRef,version}' OR r.challenge_version<>1
+  OR NOT COALESCE(anvil.execution_json_shape(s,ARRAY['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','understandingRequestRef','context','observedAt','expiresAt']),false)
+  OR s->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED' OR s->'binding' IS DISTINCT FROM b
+  OR s->'credentialRef' IS DISTINCT FROM cr.credential_ref OR s->'challengeRef' IS DISTINCT FROM get_ref
+  OR s->'understandingRequestRef' IS DISTINCT FROM expected_request
+  OR g.grant_id<>r.grant_id OR g.grant_version<>r.grant_version OR u.grant_id<>r.grant_id OR u.grant_version<>r.grant_version
+  OR g.content_hash IS DISTINCT FROM anvil.execution_json_hash(g.snapshot_json) OR u.content_hash IS DISTINCT FROM anvil.execution_json_hash(u.snapshot_json)
+  OR g.snapshot_json->'binding' IS DISTINCT FROM b OR g.snapshot_json->'credentialRef' IS DISTINCT FROM cr.credential_ref
+  OR g.snapshot_json->'understandingRequestRef' IS DISTINCT FROM expected_request
+  OR g.snapshot_json#>>'{publicChallenge,purpose}' IS DISTINCT FROM 'EXECUTION_REQUEST'
+  OR g.snapshot_json#>'{request,requestId}' IS DISTINCT FROM s->'requestId'
+  OR g.snapshot_json#>'{publicChallenge,requestId}' IS DISTINCT FROM s->'requestId'
+  OR g.snapshot_json#>'{request,target}' IS DISTINCT FROM s->'target'
+  OR s->'target' IS DISTINCT FROM jsonb_build_object('method','GET','path','/api/v1/connectors/'||(b->>'connectorId')||'/executions/'||(b->>'executionId')||'/understanding-response-read',
+    'bodyHash',anvil.execution_json_hash('null'::jsonb),'queryHash',anvil.execution_json_hash('{}'::jsonb))
+  OR g.snapshot_json->'previousRef' IS DISTINCT FROM 'null'::jsonb OR g.snapshot_json->'consumption' IS DISTINCT FROM 'null'::jsonb
+  OR u.server_sequence<=g.server_sequence
+  OR u.snapshot_json IS DISTINCT FROM (g.snapshot_json||jsonb_build_object('sequence',u.server_sequence,'previousRef',get_ref,
+    'consumption',jsonb_build_object('resultRef',expected_acquisition,'packetHash',s->'packetHash','consumedAt',s->'observedAt')))
+  OR NOT COALESCE(anvil.execution_iso_valid(s->'observedAt'),false) OR NOT COALESCE(anvil.execution_iso_valid(s->'expiresAt'),false)
+  OR jsonb_typeof(s->'packetHash') IS DISTINCT FROM 'string' OR s->>'packetHash' !~ '^[0-9a-f]{64}$'
+ THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RESULT_DENIED';END IF;
+ -- 원 HUMAN 인증·OWNER/client/control/policy 및 정상 등록/예산/회수를 같은 거래에서 다시 조회한다.
+ d=anvil.fn09_normal_understanding_discovery(token,b,(s->>'requestId')::uuid,expected_request);
+ IF d->>'status' IS DISTINCT FROM 'REQUEST' OR d->'requestRef' IS DISTINCT FROM expected_request OR s->'context' IS DISTINCT FROM d#>'{snapshot,context}'
+  OR (s->>'observedAt')::timestamptz<(g.snapshot_json#>>'{publicChallenge,issuedAt}')::timestamptz
+  OR (s->>'observedAt')::timestamptz>cur.observed_at OR (s->>'expiresAt')::timestamptz<=(s->>'observedAt')::timestamptz
+  OR (s->>'expiresAt')::timestamptz>least(cr.expires_at,cur.deadline,(d->>'deadline')::timestamptz,(g.snapshot_json#>>'{publicChallenge,expiresAt}')::timestamptz)
+ THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RESULT_DENIED';END IF;
+ ends=least(cr.expires_at,cur.deadline,(d->>'deadline')::timestamptz,(s->>'expiresAt')::timestamptz);
+ IF ends<=clock_timestamp() THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RESULT_DENIED';END IF;
+ RETURN jsonb_build_object('requestRef',expected_request,'snapshot',d->'snapshot','acquisitionRef',expected_acquisition,'receipt',s,
+  'getChallenge',jsonb_build_object('id',g.id,'content_hash',g.content_hash,'snapshot_json',g.snapshot_json),
+  'getConsumed',jsonb_build_object('ref',jsonb_build_object('id',u.id,'version',2,'contentHash',u.content_hash),'snapshot',u.snapshot_json),
+  'deadline',to_char(ends AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+END;
+$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_result_basis(text,jsonb,jsonb,jsonb) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_result_basis(text,jsonb,jsonb,jsonb) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.fn09_normal_understanding_result_basis(text,jsonb,jsonb,jsonb) TO anvil_v3_app;
 COMMIT;

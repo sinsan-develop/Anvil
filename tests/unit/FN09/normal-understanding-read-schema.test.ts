@@ -50,3 +50,23 @@ test('0102 preserves exact latest legacy validator definitions by rename/delegat
  assert.match(sql,/CREATE UNIQUE INDEX normal_understanding_challenge_request_once/);
  assert.doesNotMatch(sql,/GRANT SELECT ON anvil\.normal_understanding_read_requests|CREATE ROLE/);
 });
+
+test('result basis reads exact historical GET completion under current authority; does not open POST/custody or reuse POST identity as GET uniqueness',()=>{
+ const start=sql.indexOf('CREATE FUNCTION anvil.fn09_normal_understanding_result_basis('),end=sql.indexOf('\n$$;',start);
+ assert.ok(start>0&&end>start);const basis=sql.slice(start,end);
+ assert.match(basis,/SECURITY INVOKER SET search_path=pg_catalog/);
+ assert.match(basis,/id=\(expected_acquisition->>'id'\)::uuid AND version=1/);
+ assert.match(basis,/g\.snapshot_json->'understandingRequestRef' IS DISTINCT FROM expected_request/);
+ assert.match(basis,/u\.snapshot_json IS DISTINCT FROM/);
+ assert.match(basis,/jsonb_build_object\('resultRef',expected_acquisition,'packetHash',s->'packetHash','consumedAt',s->'observedAt'\)/);
+ assert.match(basis,/fn09_normal_understanding_discovery\(token,b,\(s->>'requestId'\)::uuid,expected_request\)/);
+ assert.match(basis,/normal_request_credential/);assert.match(basis,/normal_exchange_current/);
+ assert.match(basis,/s->'context' IS DISTINCT FROM d#>'\{snapshot,context\}'/);
+ assert.match(basis,/ends<=clock_timestamp\(\)/);
+ assert.doesNotMatch(basis,/INSERT INTO|UPDATE |DELETE FROM|set_config|current_setting|nativeVerified|sourceVerified/);
+ assert.match(sql,/ALTER FUNCTION anvil\.fn09_normal_understanding_result_basis\(text,jsonb,jsonb,jsonb\) OWNER TO anvil_v3_migrator/);
+ assert.match(sql,/REVOKE ALL ON FUNCTION anvil\.fn09_normal_understanding_result_basis\(text,jsonb,jsonb,jsonb\) FROM PUBLIC,anvil_v3_app/);
+ assert.doesNotMatch(sql,/CREATE TABLE anvil\.normal_understanding_(?:read_results|responses)|NORMAL_UNDERSTANDING_RESULT_STORED/);
+ const challenge=sql.slice(sql.indexOf('CREATE FUNCTION anvil.fn09_normal_understanding_challenge_valid'),sql.indexOf('ALTER FUNCTION anvil.normal_request_challenge_valid'));
+ assert.match(challenge,/jsonb_build_object\('method','GET','path'/);assert.doesNotMatch(challenge,/'method','POST'/);
+});
