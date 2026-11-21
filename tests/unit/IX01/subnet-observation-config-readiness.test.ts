@@ -129,3 +129,104 @@ $out=@();foreach($path in @('~/.ssh/id','C:\PRIVATE\id')){
  assert.equal(rows[0].result.code,'CONFIG_INSPECTION_COLLECTED');assert.equal(rows[1].result.code,'UNKNOWN');assert.equal(rows[1].result.reason,'PATH_UNCONFIRMED');assert.equal(rows[1].system,0);
  for(const r of rows){assert.equal(r.opens,1);assert.equal(r.closes,1);}
 });
+
+const twoConfigFixture=String.raw`
+$baseObserve=$ports.Observe;$baseOpen=$ports.Open
+$ports.Observe={param($path,$dir,$leaf)
+ $v=&$baseObserve $path $dir $leaf
+ if($path -ceq 'C:\ProgramData\ssh\ssh_config'){$v.state='PRESENT';$v.owner='S-1-5-18';$v.rules=@(@{sid='S-1-5-18';allow=$true;rights=2032127L});$v.length=[long]$systemData.Length}
+ return $v
+}
+$ports.Open={param($path) if($path -ceq 'C:\ProgramData\ssh\ssh_config'){$state.opens++;return [IO.MemoryStream]::new($systemData)};return &$baseOpen $path}
+`;
+test('IX01 config diagnostic: 일반 미지원은 두 파일 각1회 결합, 기본 엄격 중단은 보존',()=>{
+ const rows=ram(twoConfigFixture+String.raw`
+$data=[Text.Encoding]::UTF8.GetBytes("Host WSL-server
+PRIVATEUSER PRIVATE_VALUE
+ServerAliveInterval 30")
+$systemData=[Text.Encoding]::UTF8.GetBytes("Host other
+PRIVATESYSTEM PRIVATE_VALUE
+Host WSL-server
+LogLevel ERROR")
+$out=@();foreach($diagnostic in @($false,$true)){
+ $state.opens=0;$state.closes=0;$scope.Clear()
+ $line=Invoke-Ix01ConfigReadiness $binding $ports -DiagnosticOnly:$diagnostic
+ $out+=@{result=($line|ConvertFrom-Json -AsHashtable);wire=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($line+[char]10));opens=$state.opens;closes=$state.closes;system=@($scope|Where-Object {$_ -ceq 'C:\ProgramData\ssh\ssh_config'}).Count}
+};ConvertTo-Json -InputObject $out -Depth 12 -Compress
+`);
+ assert.equal(rows[0].result.code,'UNKNOWN');assert.equal(rows[0].result.reason,'UNSUPPORTED_DIRECTIVE');assert.equal(rows[0].system,0);assert.equal(rows[0].opens,1);
+ const r=rows[1];assert.equal(r.result.code,'UNKNOWN');assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.opens,2);assert.equal(r.closes,2);assert.equal(r.system,3);
+ assert.deepEqual(r.result.alias.diagnostics,[{role:'USER_CONFIG',line:2,code:'UNSUPPORTED_DIRECTIVE',applicable:true},{role:'USER_CONFIG',line:3,code:'CARRIER_FIXED_SERVER_ALIVE_INTERVAL',applicable:true},{role:'SYSTEM_CONFIG',line:2,code:'UNSUPPORTED_DIRECTIVE',applicable:false},{role:'SYSTEM_CONFIG',line:4,code:'CARRIER_FIXED_LOG_LEVEL',applicable:true}]);
+ assert.equal(r.result.alias.additional,false);assert.equal(r.result.alias.status,'UNKNOWN');assert.deepEqual(r.result.files.map((f:any)=>f.text),['DIAGNOSTIC_ONLY','DIAGNOSTIC_ONLY']);
+ const wire=Buffer.from(r.wire,'base64');assert(wire.length<=4096);assert.equal(wire.toString().split('\n').length,2);assert(!wire.toString().includes('PRIVATE'));assert(!wire.toString().includes('C:\\'));
+});
+
+test('IX01 config diagnostic: HARD stop까지 수거하고 USER 중단 뒤 SYSTEM0',()=>{
+ const rows=ram(twoConfigFixture+String.raw`
+$out=@();foreach($stop in @('Include PRIVATE_PATH','Match exec PRIVATE_COMMAND','ProxyCommand PRIVATE_COMMAND','IdentityFile PRIVATE_PATH')){
+ $data=[Text.Encoding]::UTF8.GetBytes("Host WSL-server
+PRIVATEFIRST PRIVATE_VALUE
+"+$stop+"
+PRIVATELATER PRIVATE_VALUE")
+ $systemData=[Text.Encoding]::UTF8.GetBytes('PRIVATESYSTEM PRIVATE_VALUE');$state.opens=0;$state.closes=0;$scope.Clear()
+ $line=Invoke-Ix01ConfigReadiness $binding $ports -DiagnosticOnly
+ $out+=@{result=($line|ConvertFrom-Json -AsHashtable);opens=$state.opens;closes=$state.closes;system=@($scope|Where-Object {$_ -ceq 'C:\ProgramData\ssh\ssh_config'}).Count}
+};ConvertTo-Json -InputObject $out -Depth 12 -Compress
+`);
+ rows.forEach((r:any,i:number)=>{assert.equal(r.result.code,'UNKNOWN');assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.result.reason,['INCLUDE_UNCONFIRMED','MATCH_UNCONFIRMED','EFFECT_UNCONFIRMED','PATH_UNCONFIRMED'][i]);assert.equal(r.result.alias.role,'USER_CONFIG');assert.equal(r.result.alias.line,3);assert.equal(r.result.alias.diagnostics.length,1);assert.equal(r.opens,1);assert.equal(r.closes,1);assert.equal(r.system,0);});assert(!JSON.stringify(rows).includes('PRIVATE'));
+});
+test('IX01 config diagnostic: 전역16개/추가 여부, SYSTEM HARD와 carrier 분류는 권위0',()=>{
+ const rows=ram(twoConfigFixture+String.raw`
+$out=@();foreach($mode in @('bounded','hard','fixed')){
+ $data=[Text.Encoding]::UTF8.GetBytes($(if($mode -eq 'fixed'){"ServerAliveInterval 15
+ServerAliveCountMax 1
+LogLevel ERROR"}else{(('PRIVATEKEY PRIVATE_VALUE'+[char]10)*18)}))
+ $systemData=[Text.Encoding]::UTF8.GetBytes($(if($mode -eq 'hard'){'Include PRIVATE_PATH'}elseif($mode -eq 'fixed'){'# PRIVATE_COMMENT'}else{'PRIVATESYSTEM PRIVATE_VALUE'}))
+ $state.opens=0;$state.closes=0;$scope.Clear()
+ $line=Invoke-Ix01ConfigReadiness $binding $ports -DiagnosticOnly
+ $out+=@{result=($line|ConvertFrom-Json -AsHashtable);bytes=[Text.Encoding]::UTF8.GetByteCount($line)+1;opens=$state.opens;closes=$state.closes}
+};ConvertTo-Json -InputObject $out -Depth 12 -Compress
+`);
+ for(const r of rows){assert(r.bytes<=4096);assert.equal(r.opens,2);assert.equal(r.closes,2);assert.equal(r.result.readiness,'UNCONFIRMED');}
+ assert.equal(rows[0].result.alias.diagnostics.length,16);assert.equal(rows[0].result.alias.additional,true);assert.equal(rows[0].result.code,'UNKNOWN');
+ assert.equal(rows[1].result.alias.diagnostics.length,16);assert.equal(rows[1].result.alias.additional,true);assert.equal(rows[1].result.reason,'INCLUDE_UNCONFIRMED');assert.equal(rows[1].result.alias.role,'SYSTEM_CONFIG');assert.equal(rows[1].result.alias.line,1);
+ assert.equal(rows[2].result.code,'CONFIG_DIAGNOSTIC_COLLECTED');assert.equal(rows[2].result.alias.status,'COMPARISON_ONLY');assert.equal(rows[2].result.alias.additional,false);assert.deepEqual(rows[2].result.alias.diagnostics.map((v:any)=>v.code),['CARRIER_FIXED_SERVER_ALIVE_INTERVAL','CARRIER_FIXED_SERVER_ALIVE_COUNT_MAX','CARRIER_FIXED_LOG_LEVEL']);assert(!JSON.stringify(rows).includes('PRIVATE'));
+});
+test('IX01 config diagnostic: 불명 metadata/기한/close 후 읽기0 및 원 바이트 소거',()=>{
+ const rows=ram(String.raw`
+$out=@();foreach($mode in @('access','changed','deadline','step-time','read','close')){
+ $state.mode=$mode;$state.wall=$binding.issuedAt;$state.mono=1L;$state.opens=0;$state.closes=0;$state.observes=0;$scope.Clear()
+ $data=[Text.Encoding]::UTF8.GetBytes('PRIVATEKEY PRIVATE_VALUE')
+ $line=Invoke-Ix01ConfigReadiness $binding $ports -DiagnosticOnly
+ $out+=@{result=($line|ConvertFrom-Json -AsHashtable);opens=$state.opens;closes=$state.closes;system=@($scope|Where-Object {$_ -ceq 'C:\ProgramData\ssh\ssh_config'}).Count}
+};ConvertTo-Json -InputObject $out -Depth 12 -Compress
+`);
+ for(const r of rows){assert.equal(r.result.code,'UNKNOWN');assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.system,0);assert.equal(r.closes,r.opens);assert(!Object.hasOwn(r.result,'alias'));}assert(!JSON.stringify(rows).includes('PRIVATE'));
+ const erased=ram(twoConfigFixture+String.raw`
+$data=[Text.Encoding]::UTF8.GetBytes('PRIVATEKEY PRIVATE_VALUE');$systemData=[Text.Encoding]::UTF8.GetBytes('PRIVATEOTHER PRIVATE_VALUE')
+$parser=(Get-Command Read-Ix01SubnetAliasConfig).ScriptBlock;$seen=[Collections.Generic.List[object]]::new()
+function Read-Ix01SubnetAliasConfig($UserBytes,$SystemBytes,[switch]$ClassifyIdentityPaths,[switch]$DiagnosticOnly){
+ if($null -ne $UserBytes){$seen.Add($UserBytes)};if($null -ne $SystemBytes){$seen.Add($SystemBytes)}
+ & $parser -UserBytes $UserBytes -SystemBytes $SystemBytes -ClassifyIdentityPaths:$ClassifyIdentityPaths -DiagnosticOnly:$DiagnosticOnly
+}
+$line=Invoke-Ix01ConfigReadiness $binding $ports -DiagnosticOnly
+@{code=($line|ConvertFrom-Json).code;seen=$seen.Count;nonzero=@($seen|ForEach-Object {$_}|Where-Object {$_ -ne 0}).Count;opens=$state.opens;closes=$state.closes}|ConvertTo-Json -Compress
+`);
+ assert.deepEqual(erased,{code:'UNKNOWN',seen:3,nonzero:0,opens:2,closes:2});
+});
+
+test('IX01 config diagnostic: SYSTEM read/close·최종 기한 불명은 USER 부분 진단을 성공으로 승격하지 않는다',()=>{
+ const rows=ram(twoConfigFixture+String.raw`
+$data=[Text.Encoding]::UTF8.GetBytes('PRIVATEUSER PRIVATE_VALUE');$systemData=[Text.Encoding]::UTF8.GetBytes('PRIVATESYSTEM PRIVATE_VALUE')
+$open=$ports.Open;$read=$ports.Read;$close=$ports.Close
+$out=@();foreach($mode in @('system-read','system-close','final-deadline')){
+ $state.wall=$binding.issuedAt;$state.mono=1L;$state.opens=0;$state.closes=0;$scope.Clear();$p=$ports.Clone();$box=@{stream=$null}
+ $p.Open={param($path) $s=&$open $path;if($path -ceq 'C:\ProgramData\ssh\ssh_config'){$box.stream=$s};return $s}
+ $p.Read={param($s,$b,$n) if($mode -eq 'system-read' -and [object]::ReferenceEquals($s,$box.stream)){throw 'PRIVATE_READ'};return &$read $s $b $n}
+ $p.Close={param($s) &$close $s;if([object]::ReferenceEquals($s,$box.stream)){if($mode -eq 'system-close'){throw 'PRIVATE_CLOSE'};if($mode -eq 'final-deadline'){$state.wall+=60001L;$state.mono+=60001L}}}
+ $line=Invoke-Ix01ConfigReadiness $binding $p -DiagnosticOnly
+ $out+=@{result=($line|ConvertFrom-Json -AsHashtable);opens=$state.opens;closes=$state.closes}
+};ConvertTo-Json -InputObject $out -Depth 12 -Compress
+`);
+ rows.forEach((r:any,i:number)=>{assert.equal(r.result.code,'UNKNOWN');assert.equal(r.result.readiness,'UNCONFIRMED');assert.equal(r.result.reason,['READ_UNCONFIRMED','CLOSE_UNCONFIRMED','WINDOW_EXPIRED'][i]);assert.equal(r.result.alias.diagnostics.length,1);assert.equal(r.result.alias.diagnostics[0].role,'USER_CONFIG');assert.equal(r.opens,2);assert.equal(r.closes,2);});assert(!JSON.stringify(rows).includes('PRIVATE'));
+});

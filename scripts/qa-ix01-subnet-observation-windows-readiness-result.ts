@@ -96,18 +96,24 @@ export function readSubnetWindowsFinalReadinessResult(raw:unknown,expectedBindin
  return result.status==='COMPARISON_ONLY'&&'alias' in result?result:unknown;
 }
 
+function ownedWireBytes(raw:unknown):Uint8Array{
+ if(types.isProxy(raw)||!types.isUint8Array(raw)||types.isSharedArrayBuffer(backing.call(raw)))return reject();
+ const size=byteLength.call(raw);if(size<3||size>4096)return reject();
+ const bytes=new Uint8Array(size);try{Uint8Array.prototype.set.call(bytes,raw);return bytes;}catch{bytes.fill(0);return reject();}
+}
+function wireValue(bytes:Uint8Array):unknown{
+ const text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);
+ // 원 Console.Out.Write의 정확 LF 한 개. BOM/다른 줄 구분자와 중복 JSON 키는 거절한다.
+ if(!text.endsWith('\n')||/[\r\n\uFEFF\u0085\u2028\u2029]/u.test(text.slice(0,-1)))return reject();
+ return parseWireJson(text.slice(0,-1));
+}
+
 function readResult(raw:unknown,expectedBinding:unknown,final:boolean):SubnetWindowsReadinessComparison|SubnetWindowsFinalReadinessComparison|typeof unknown{
  let bytes:Uint8Array|undefined;
  try{
   const pinnedHash=final?finalSourceHash:sourceHash,expected=readBinding(expectedBinding,pinnedHash);
-  if(types.isProxy(raw)||!types.isUint8Array(raw)||types.isSharedArrayBuffer(backing.call(raw)))return unknown;
-  const size=byteLength.call(raw);
-  if(size<3||size>4096)return unknown;
-  bytes=new Uint8Array(size);Uint8Array.prototype.set.call(bytes,raw);
-  const text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);
-  // 고정 실행 본문의 Console.Out.Write가 붙인 정확 LF 한 개. BOM/다른 줄 구분자도 허용하지 않는다.
-  if(!text.endsWith('\n')||/[\r\n\uFEFF\u0085\u2028\u2029]/u.test(text.slice(0,-1)))return unknown;
-  const r=fields(parseWireJson(text.slice(0,-1)),['schemaVersion','code','readiness','reason','binding','files',...(final?['alias']:[])]);
+  bytes=ownedWireBytes(raw);
+  const r=fields(wireValue(bytes),['schemaVersion','code','readiness','reason','binding','files',...(final?['alias']:[])]);
   if(r.schemaVersion!==1||r.code!==(final?'COMPARISON_ONLY':'INSPECTION_COLLECTED')||r.readiness!=='UNCONFIRMED'||r.reason!=='DEFAULT_SCOPE_ENV_AND_TRUST_UNCONFIRMED')return unknown;
   const binding=readBinding(r.binding,pinnedHash);
   if(canonicalJson(binding)!==canonicalJson(expected)||!Array.isArray(r.files)||r.files.length!==roles.length)return unknown;
@@ -122,4 +128,76 @@ function readResult(raw:unknown,expectedBinding:unknown,final:boolean):SubnetWin
    outputSha256:contentHash(bytes),metadataSha256:groupHash('IX01_WINDOWS_PUBLIC_METADATA_COMPARISON_V1',measurements,pinnedHash),...(alias?{alias}:{})});
  }catch{return unknown;}
  finally{bytes?.fill(0);}
+}
+
+const diagnosticSourceHash='30ece222c2f5f194e8bd3de5f952b012c5fdcfddaca4fe3a42e9a5d6e448dbef';
+const configRoles=['USER_CONFIG','SYSTEM_CONFIG'] as const;
+const diagnosticCodes=['UNSUPPORTED_DIRECTIVE','CARRIER_FIXED_SERVER_ALIVE_INTERVAL','CARRIER_FIXED_SERVER_ALIVE_COUNT_MAX','CARRIER_FIXED_LOG_LEVEL'] as const;
+const fatalCodes=['INPUT_UNCONFIRMED','TEXT_UNCONFIRMED','MALFORMED_CONFIG','UNSUPPORTED_HOST_PATTERN','INCLUDE_UNCONFIRMED','MATCH_UNCONFIRMED','CUSTOM_SCOPE_UNCONFIRMED','EFFECT_UNCONFIRMED','MALFORMED_VALUE','IDENTITY_CLASSIFIER_UNCONFIRMED','PATH_UNCONFIRMED','IDENTITY_SET_UNCONFIRMED'] as const;
+const partialCodes=['WINDOW_EXPIRED','METADATA_UNCONFIRMED','READ_UNCONFIRMED','LENGTH_UNCONFIRMED','METADATA_CHANGED','CLOSE_UNCONFIRMED'] as const;
+type ConfigRole=typeof configRoles[number];
+type ConfigMeasurement=Readonly<{role:ConfigRole;state:'ABSENT';metadata:'MATCHED'}|{role:ConfigRole;state:'PRESENT';metadata:'MATCHED';bytes:number;sha256:string;aclHash:string;text:'DIAGNOSTIC_ONLY'}>;
+type ConfigDiagnostic=Readonly<{role:ConfigRole;line:number;code:typeof diagnosticCodes[number];applicable:boolean}>;
+export type SubnetWindowsConfigDiagnosticComparison=Readonly<{
+ status:'COMPARISON_ONLY';readiness:'UNCONFIRMED';coverage:'BOTH_CONFIGS'|'PARTIAL';binding:Binding;reason:string;
+ files:readonly ConfigMeasurement[];diagnostics:readonly ConfigDiagnostic[];additional:boolean;
+ stop:Readonly<{code:typeof fatalCodes[number];role:ConfigRole;line:number}>|null;outputSha256:string;
+}>;
+function configMeasurement(value:unknown,index:number):ConfigMeasurement{
+ const state=value&&typeof value==='object'?Object.getOwnPropertyDescriptor(value,'state')?.value:undefined;
+ const f=fields(value,state==='ABSENT'?['role','state','metadata']:['role','state','metadata','bytes','sha256','aclHash','text']);
+ const role=configRoles[index]!;if(f.role!==role||f.metadata!=='MATCHED')return reject();
+ if(state==='ABSENT')return Object.freeze({role,state,metadata:'MATCHED'});
+ if(state!=='PRESENT'||!integer(f.bytes)||f.bytes>65536||!hex(f.sha256)||!hex(f.aclHash)||f.text!=='DIAGNOSTIC_ONLY'||f.bytes===0&&f.sha256!==emptyHash)return reject();
+ return Object.freeze({role,state,metadata:'MATCHED',bytes:f.bytes,sha256:f.sha256,aclHash:f.aclHash,text:'DIAGNOSTIC_ONLY'});
+}
+/** 동결 config -DiagnosticOnly 출력만 판독한다. coverage는 출력 형상의 범위일 뿐
+ * 같은 handle의 종결/EXIT0·시간창·승인이나 실제 config 적용/SSH 신뢰를 입증하지 않는다.
+ * 호출 감독은 이 원 수거 증거를 별도로 검산해야 하며 부분 실패는 BOTH_CONFIGS로 승격하지 않는다. */
+export function readSubnetWindowsConfigDiagnosticResult(raw:unknown,expectedBinding:unknown):SubnetWindowsConfigDiagnosticComparison|typeof unknown{
+ let bytes:Uint8Array|undefined;
+ try{
+  const expected=readBinding(expectedBinding,diagnosticSourceHash);bytes=ownedWireBytes(raw);
+  const r=fields(wireValue(bytes),['schemaVersion','code','readiness','reason','files','binding','alias']);
+  if(r.schemaVersion!==1||r.readiness!=='UNCONFIRMED'||r.code!=='UNKNOWN'&&r.code!=='CONFIG_DIAGNOSTIC_COLLECTED'||typeof r.reason!=='string')return unknown;
+  const binding=readBinding(r.binding,diagnosticSourceHash);
+  if(canonicalJson(binding)!==canonicalJson(expected)||!Array.isArray(r.files)||r.files.length<1||r.files.length>2)return unknown;
+  const files=Object.freeze(r.files.map(configMeasurement));
+  const rawAlias=r.alias;
+  const hasStop=!!rawAlias&&typeof rawAlias==='object'&&Object.hasOwn(rawAlias,'role');
+  const a=fields(rawAlias,['schemaVersion','status','code','alias','readiness','diagnostics','additional',...(hasStop?['role','line']:[])]);
+  if(a.schemaVersion!==1||a.alias!=='WSL-server'||a.readiness!=='UNCONFIRMED'||!Array.isArray(a.diagnostics)||a.diagnostics.length>16||typeof a.additional!=='boolean'||a.additional&&a.diagnostics.length!==16)return unknown;
+  const position=(role:unknown,line:unknown,zero=false)=>{
+   const index=(configRoles as readonly unknown[]).indexOf(role);const file=files[index];
+   if(index<0||!integer(line)||line<(zero?0:1)||line>4096||!file||file.state!=='PRESENT'||file.bytes===0||line>file.bytes)return reject();
+   return {role:configRoles[index]!,line,order:index*4097+line};
+  };
+  let previous=-1;
+  const diagnostics=Object.freeze(a.diagnostics.map(value=>{
+   const d=fields(value,['role','line','code','applicable']),p=position(d.role,d.line);
+   if(p.order<=previous||typeof d.applicable!=='boolean'||!(diagnosticCodes as readonly unknown[]).includes(d.code))return reject();previous=p.order;
+   return Object.freeze({role:p.role,line:p.line,code:d.code as typeof diagnosticCodes[number],applicable:d.applicable});
+  }));
+  let stop:SubnetWindowsConfigDiagnosticComparison['stop']=null;
+  if(hasStop){
+   if(a.status!=='UNKNOWN'||!(fatalCodes as readonly unknown[]).includes(a.code))return unknown;
+   const p=position(a.role,a.line,a.code==='INPUT_UNCONFIRMED'||a.code==='TEXT_UNCONFIRMED');
+   if(p.order<=previous||files.length!==(p.role==='USER_CONFIG'?1:2))return unknown;
+   stop=Object.freeze({code:a.code as typeof fatalCodes[number],role:p.role,line:p.line});
+  }else{
+   const unsupported=diagnostics.some(d=>d.code==='UNSUPPORTED_DIRECTIVE');
+   if(a.status==='COMPARISON_ONLY'){if(a.code!=='CONFIG_DIAGNOSTIC_COLLECTED'||unsupported)return unknown;}
+   else if(a.status!=='UNKNOWN'||a.code!=='UNSUPPORTED_DIRECTIVE'||!unsupported&&!a.additional)return unknown;
+  }
+  let coverage:SubnetWindowsConfigDiagnosticComparison['coverage']='PARTIAL';
+  if(!stop&&r.reason===a.code){
+   if(files.length!==2||r.code!==(a.status==='COMPARISON_ONLY'?'CONFIG_DIAGNOSTIC_COLLECTED':'UNKNOWN'))return unknown;
+   coverage='BOTH_CONFIGS';
+  }else{
+   if(r.code!=='UNKNOWN'||r.reason!==stop?.code&&!(partialCodes as readonly string[]).includes(r.reason))return unknown;
+   // read/metadata/close 실패의 alias는 직전 USER만이다. 두 번째 parser 이후 가능한 실패는 시간창뿐이다.
+   if((partialCodes as readonly string[]).includes(r.reason)&&r.reason!=='WINDOW_EXPIRED'&&(files.length!==1||stop))return unknown;
+  }
+  return Object.freeze({status:'COMPARISON_ONLY',readiness:'UNCONFIRMED',coverage,binding,reason:r.reason,files,diagnostics,additional:a.additional,stop,outputSha256:contentHash(bytes)});
+ }catch{return unknown;}finally{bytes?.fill(0);}
 }

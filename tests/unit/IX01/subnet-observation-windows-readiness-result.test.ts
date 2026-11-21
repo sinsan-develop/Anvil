@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
+import * as resultReaders from '../../../scripts/qa-ix01-subnet-observation-windows-readiness-result.ts';
 import {readSubnetWindowsReadinessResult} from '../../../scripts/qa-ix01-subnet-observation-windows-readiness-result.ts';
 
 const sourceHash='6847d094d436d246983a8ea353c0705541b4fd4c312f596ab78b5ff3efea8cc3';
@@ -58,4 +60,59 @@ test('IX01 Windows result: getter/Proxy/가짜 수거 권위는 읽거나 받아
  const proxy=new Proxy(binding(),{getPrototypeOf(){calls++;throw Error('PRIVATE');}});assert.equal(readSubnetWindowsReadinessResult(wire(fixture()),proxy).status,'UNKNOWN');assert.equal(calls,0);
  assert.equal(readSubnetWindowsReadinessResult({bytes:wire(fixture()),exitCode:0,handle:'PRIVATE',verified:true},binding()).status,'UNKNOWN');
  const e2=binding(),raw=wire(fixture()),r=valid(readSubnetWindowsReadinessResult(raw,e2));e2.planHash='9'.repeat(64);raw.fill(0);assert.equal(r.binding.planHash,'b'.repeat(64));
+});
+
+const diagnosticSource='30ece222c2f5f194e8bd3de5f952b012c5fdcfddaca4fe3a42e9a5d6e448dbef';
+const diagnosticBinding=()=>({...binding(),sourceHash:diagnosticSource});
+// 동결 PS -DiagnosticOnly의 실제 외피/alias/측정 행 형상. 실제 파일·수거 증거가 아니다.
+function diagnosticFixture():any{return{schemaVersion:1,code:'UNKNOWN',readiness:'UNCONFIRMED',reason:'UNSUPPORTED_DIRECTIVE',binding:diagnosticBinding(),files:[
+ {role:'USER_CONFIG',state:'PRESENT',metadata:'MATCHED',bytes:100,sha256:'e'.repeat(64),aclHash:'d'.repeat(64),text:'DIAGNOSTIC_ONLY'},
+ {role:'SYSTEM_CONFIG',state:'ABSENT',metadata:'MATCHED'}],alias:{schemaVersion:1,status:'UNKNOWN',code:'UNSUPPORTED_DIRECTIVE',alias:'WSL-server',readiness:'UNCONFIRMED',diagnostics:[{role:'USER_CONFIG',line:2,code:'UNSUPPORTED_DIRECTIVE',applicable:true}],additional:false}};}
+function decodeDiagnostic(raw:unknown,expected:unknown=diagnosticBinding()):any{
+ const read=(resultReaders as any).readSubnetWindowsConfigDiagnosticResult;assert.equal(typeof read,'function');return read(raw,expected);
+}
+test('IX01 config diagnostic result: 고정 두 역할·미지원 수거는 비교 전용이며 권위0',()=>{
+ const f=diagnosticFixture(),r=decodeDiagnostic(wire(f));assert.equal(r.status,'COMPARISON_ONLY');assert.equal(r.readiness,'UNCONFIRMED');assert.equal(r.coverage,'BOTH_CONFIGS');assert.equal(r.reason,'UNSUPPORTED_DIRECTIVE');assert.deepEqual(r.diagnostics,f.alias.diagnostics);assert.equal(r.additional,false);assert(!('identity'in r));assert(!('CURRENT'in r));assert(!('approved'in r));
+ const ok=diagnosticFixture();ok.code=ok.reason=ok.alias.code='CONFIG_DIAGNOSTIC_COLLECTED';ok.alias.status='COMPARISON_ONLY';ok.alias.diagnostics=[];assert.equal(decodeDiagnostic(wire(ok)).coverage,'BOTH_CONFIGS');
+});
+
+test('IX01 config diagnostic result: 동결 PS 원 SHA와 중단/부분 실패 형상은 완료로 승격0',()=>{
+ const bytes=readFileSync(new URL('../../../scripts/qa-ix01-subnet-observation-config-readiness.ps1',import.meta.url));assert.equal(createHash('sha256').update(bytes).digest('hex'),diagnosticSource);
+ for(const role of ['USER_CONFIG','SYSTEM_CONFIG']){
+  const f=diagnosticFixture();if(role==='USER_CONFIG')f.files.pop();else f.files[1]={...f.files[0],role};
+  f.reason=f.alias.code='INCLUDE_UNCONFIRMED';Object.assign(f.alias,{role,line:3});
+  const r=decodeDiagnostic(wire(f));assert.equal(r.status,'COMPARISON_ONLY');assert.equal(r.coverage,'PARTIAL');assert.deepEqual(r.stop,{role,line:3,code:'INCLUDE_UNCONFIRMED'});
+ }
+ for(const reason of ['READ_UNCONFIRMED','CLOSE_UNCONFIRMED','METADATA_CHANGED','METADATA_UNCONFIRMED','LENGTH_UNCONFIRMED','WINDOW_EXPIRED']){
+  const f=diagnosticFixture();f.files.pop();f.reason=reason;const r=decodeDiagnostic(wire(f));assert.equal(r.status,'COMPARISON_ONLY');assert.equal(r.coverage,'PARTIAL');assert.equal(r.reason,reason);assert.equal(r.diagnostics.length,1);assert.equal(r.stop,null);
+  f.code='CONFIG_DIAGNOSTIC_COLLECTED';assert.equal(decodeDiagnostic(wire(f)).status,'UNKNOWN');
+ }
+ const last=diagnosticFixture();last.reason='WINDOW_EXPIRED';assert.equal(decodeDiagnostic(wire(last)).coverage,'PARTIAL');
+ const early={schemaVersion:1,code:'UNKNOWN',readiness:'UNCONFIRMED',reason:'INPUT_UNCONFIRMED',files:[]};assert.deepEqual(decodeDiagnostic(wire(early)),{status:'UNKNOWN',code:'READINESS_RESULT_UNCONFIRMED'});
+});
+test('IX01 config diagnostic result: 순서/파일/진단/중단/권위 오염은 고정 UNKNOWN·원문0',()=>{
+ const changes:((f:any)=>void)[]=[f=>f.binding.sourceHash=sourceHash,f=>f.binding.attemptId='22222222-2222-4222-8222-222222222222',f=>f.readiness='READY',f=>f.code='CONFIG_INSPECTION_COLLECTED',f=>f.authority='CURRENT',f=>f.reason='PRIVATE',
+ f=>f.files.reverse(),f=>f.files.push(f.files[0]),f=>f.files[0].bytes=65537,f=>f.files[0].bytes=0,f=>f.files[0].bytes=1.5,f=>f.files[0].metadata='VERIFIED',f=>f.files[0].text='ALIAS_SUBSET',f=>f.files[0].path='PRIVATE',f=>f.files[1].sha256='e'.repeat(64),
+ f=>f.alias.readiness='READY',f=>f.alias.alias='OTHER',f=>f.alias.status='ALIAS_SUBSET',f=>f.alias.userKind='ROOT_LITERAL',f=>f.alias.additional=true,f=>f.alias.diagnostics[0].key='PRIVATE',f=>f.alias.diagnostics[0].code='PRIVATE',f=>f.alias.diagnostics[0].applicable=1,
+ f=>f.alias.diagnostics[0].line=0,f=>f.alias.diagnostics[0].line=4097,f=>f.alias.diagnostics[0].line=101,f=>f.alias.diagnostics[0].role='SYSTEM_CONFIG',f=>f.alias.diagnostics.push(f.alias.diagnostics[0]),f=>f.alias.diagnostics=Array(17).fill(f.alias.diagnostics[0]),
+ f=>{f.alias.status='COMPARISON_ONLY';f.alias.code=f.code=f.reason='CONFIG_DIAGNOSTIC_COLLECTED';},
+ f=>{f.alias.diagnostics=[];},f=>{f.files.pop();},
+ f=>{f.reason=f.alias.code='INCLUDE_UNCONFIRMED';Object.assign(f.alias,{role:'USER_CONFIG',line:3});},
+ f=>{f.files.pop();f.reason=f.alias.code='INCLUDE_UNCONFIRMED';Object.assign(f.alias,{role:'USER_CONFIG',line:2});},
+ f=>{f.files.pop();f.reason=f.alias.code='MATCH_UNCONFIRMED';Object.assign(f.alias,{role:'USER_CONFIG',line:0});},
+ f=>{f.reason='READ_UNCONFIRMED';}];
+ for(const change of changes){const f=diagnosticFixture();change(f);const r=decodeDiagnostic(wire(f));assert.deepEqual(r,{status:'UNKNOWN',code:'READINESS_RESULT_UNCONFIRMED'});assert(!JSON.stringify(r).includes('PRIVATE'));}
+ const wrong=diagnosticBinding();wrong.sourceHash=sourceHash;assert.equal(decodeDiagnostic(wire(diagnosticFixture()),wrong).status,'UNKNOWN');
+});
+test('IX01 config diagnostic result: 전역16·추가와 fatal 위치, 부재·빈 파일 및 불변 결과',()=>{
+ const f=diagnosticFixture();f.files[1]={...f.files[0],role:'SYSTEM_CONFIG'};f.alias.diagnostics=Array.from({length:16},(_,i)=>({role:i<8?'USER_CONFIG':'SYSTEM_CONFIG',line:i%8+1,code:'UNSUPPORTED_DIRECTIVE',applicable:i<8}));f.alias.additional=true;
+ const raw=wire(f),r=decodeDiagnostic(raw);assert.equal(r.coverage,'BOTH_CONFIGS');assert.equal(r.diagnostics.length,16);assert.equal(r.additional,true);assert(Object.isFrozen(r)&&Object.isFrozen(r.files)&&Object.isFrozen(r.diagnostics)&&Object.isFrozen(r.diagnostics[0]));raw.fill(0);f.alias.diagnostics[0].line=999;assert.equal(r.diagnostics[0].line,1);
+ const fatal=diagnosticFixture();fatal.files.pop();fatal.alias.diagnostics=[];fatal.reason=fatal.alias.code='TEXT_UNCONFIRMED';Object.assign(fatal.alias,{role:'USER_CONFIG',line:0});assert.equal(decodeDiagnostic(wire(fatal)).coverage,'PARTIAL');
+ const empty=diagnosticFixture();empty.code=empty.reason=empty.alias.code='CONFIG_DIAGNOSTIC_COLLECTED';empty.alias.status='COMPARISON_ONLY';empty.alias.diagnostics=[];empty.files[0].bytes=0;empty.files[0].sha256=createHash('sha256').update('').digest('hex');assert.equal(decodeDiagnostic(wire(empty)).coverage,'BOTH_CONFIGS');empty.files[0]={role:'USER_CONFIG',state:'ABSENT',metadata:'MATCHED'};assert.equal(decodeDiagnostic(wire(empty)).coverage,'BOTH_CONFIGS');
+});
+test('IX01 config diagnostic result: 정확 LF/UTF8/중복키/4096B와 expected getter·가짜 종결 거절',()=>{
+ const raw=wire(diagnosticFixture()),s=raw.toString();
+ for(const value of [Buffer.from(s.slice(0,-1)),Buffer.from(s+'\n'),Buffer.from(s.replace(/\n$/,'\r\n')),Buffer.concat([Buffer.from([239,187,191]),raw]),Buffer.from([255,10]),Buffer.from(s+'\u2028'),Buffer.from(s.replace('"schemaVersion":1','"schemaVersion":1,"schemaVersion":1')),Buffer.alloc(4097),new Uint8Array(new SharedArrayBuffer(50)),{bytes:raw,exitCode:0,verified:true}])assert.equal(decodeDiagnostic(value).status,'UNKNOWN');
+ const edge=Buffer.from(' '.repeat(4096-raw.length)+s);assert.equal(decodeDiagnostic(edge).coverage,'BOTH_CONFIGS');
+ let reads=0;const expected=diagnosticBinding();Object.defineProperty(expected,'planHash',{get(){reads++;throw Error('PRIVATE');},enumerable:true});assert.equal(decodeDiagnostic(raw,expected).status,'UNKNOWN');assert.equal(reads,0);
 });

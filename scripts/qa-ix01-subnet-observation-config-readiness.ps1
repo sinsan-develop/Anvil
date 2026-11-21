@@ -1,6 +1,6 @@
 # 메모리에 검산 적재된 6847D094 원 helper와 새 alias/IdentityFile closure를 재사용한다.
 # 자동 진입/소스 로드/새 native 포트는 없다. 실제 호출은 별도 신규 승인과 원 감독의 책임이다.
-function Invoke-Ix01ConfigReadiness($Binding, $Ports) {
+function Invoke-Ix01ConfigReadiness($Binding, $Ports, [switch]$DiagnosticOnly) {
     $ErrorActionPreference='Stop'
     $result=[ordered]@{schemaVersion=1;code='UNKNOWN';readiness='UNCONFIRMED';reason='INPUT_UNCONFIRMED';files=@()}
     $stream=$null;$buffer=$null;$body=$null;$digest=$null;$bodies=@{}
@@ -63,6 +63,19 @@ function Invoke-Ix01ConfigReadiness($Binding, $Ports) {
             if($null -ne $stream) { $closing=$stream;$stream=$null;$result.reason='CLOSE_UNCONFIRMED';$null=& $p.Close $closing }
             $result.reason='WINDOW_EXPIRED';$now=& $p.Clock
             if (!(Test-Ix01ReadinessBudget $now $q $start $previous $step)) { throw 'REJECTED' };$previous=$now
+            if($DiagnosticOnly) {
+                # 닫힌 원 소유 바이트만 결합한다. 일반 미지원은 수거하되 HARD/형상 불명 뒤 새 파일0.
+                if($before.state -ceq 'PRESENT') { $entry.aclHash=$before.aclHash;$entry.text='DIAGNOSTIC_ONLY' }
+                $bodies[$target.role]=$body;$body=$null;$result.files+=,$entry
+                $verdict=Read-Ix01SubnetAliasConfig -UserBytes $bodies['USER_CONFIG'] -SystemBytes $bodies['SYSTEM_CONFIG'] -ClassifyIdentityPaths -DiagnosticOnly
+                $result.alias=$verdict
+                $result.reason='WINDOW_EXPIRED';$now=& $p.Clock
+                if (!(Test-Ix01ReadinessBudget $now $q $start $previous $step)) { throw 'REJECTED' };$previous=$now
+                $result.reason=$verdict.code
+                if($verdict.ContainsKey('role') -or $verdict.code -cnotin @('UNSUPPORTED_DIRECTIVE','CONFIG_DIAGNOSTIC_COLLECTED')) { throw 'REJECTED' }
+                if($null -ne $buffer) { [Array]::Clear($buffer,0,$buffer.Length);$buffer=$null }
+                continue
+            }
             # 첫 파일의 불명도 다음 파일 읽기 전에 닫는다. user/system 최종 첫 값은 아래에서 합성한다.
             $verdict=if($target.role -ceq 'USER_CONFIG'){Read-Ix01SubnetAliasConfig -UserBytes $body -SystemBytes $null -ClassifyIdentityPaths}else{Read-Ix01SubnetAliasConfig -UserBytes $null -SystemBytes $body -ClassifyIdentityPaths}
             if($verdict.status -cne 'ALIAS_SUBSET') {
@@ -78,6 +91,12 @@ function Invoke-Ix01ConfigReadiness($Binding, $Ports) {
             $bodies[$target.role]=$body;$body=$null;$result.files+=,$entry
             if($null -ne $buffer) { [Array]::Clear($buffer,0,$buffer.Length);$buffer=$null }
         }
+        if($DiagnosticOnly) {
+            $result.reason='WINDOW_EXPIRED';$now=& $p.Clock
+            if (!(Test-Ix01ReadinessBudget $now $q $start $previous $null)) { throw 'REJECTED' }
+            $result.code=if($verdict.status -ceq 'COMPARISON_ONLY'){'CONFIG_DIAGNOSTIC_COLLECTED'}else{'UNKNOWN'}
+            $result.reason=$verdict.code
+        } else {
         $verdict=Read-Ix01SubnetAliasConfig -UserBytes $bodies['USER_CONFIG'] -SystemBytes $bodies['SYSTEM_CONFIG'] -ClassifyIdentityPaths
         if($verdict.status -cne 'ALIAS_SUBSET') {
             $result.reason=$verdict.code
@@ -89,6 +108,7 @@ function Invoke-Ix01ConfigReadiness($Binding, $Ports) {
         $result.reason='WINDOW_EXPIRED';$now=& $p.Clock
         if (!(Test-Ix01ReadinessBudget $now $q $start $previous $null)) { throw 'REJECTED' }
         $result.alias=$verdict;$result.code='CONFIG_INSPECTION_COLLECTED';$result.reason='DEFAULT_SCOPE_ENV_AND_TRUST_UNCONFIRMED'
+        }
     } catch { $result.code='UNKNOWN' } finally {
         if($null -ne $stream) { try { $null=& $p.Close $stream } catch {} }
         if($null -ne $digest) {$digest.Dispose()}
