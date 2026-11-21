@@ -4,9 +4,10 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-22 KST
 
-- **현재 판정:** 작업계획 전체 미완료. 기존 개발 브랜치 `codex/av3-normal-sdk-producer`의 UI04 통합 기준은 `532739b6`이다. 원 native 출력 탐색 메타 검산·동일 GET 재확인·UI11 탐색 정책 선택에 이어 UI04 최초 탐색을 통합하고 로컬·원격 0/0을 확인했다. 실제 Agent 시동·결과 저장·첫 이해 검토 여정은 미검증이다.
+- **현재 판정:** 작업계획 전체 미완료. 기존 개발 브랜치 `codex/av3-normal-sdk-producer`의 읽기 감독 통합 기준은 `3a505b22`이며 UI04 `532739b6`을 포함한다. 원 native 출력 탐색 메타 검산·동일 GET 재확인·UI11 탐색 정책 선택에 이어 UI04 최초 탐색을 통합하고 로컬·원격 0/0을 확인했다. 실제 Agent 시동·결과 저장·첫 이해 검토 여정은 미검증이다.
 - **FN09 S3 화면·API:** `fn09_discovery_ui`가 정확 임무/실행 준비 선택 → 현재 실행 근거 명시 조회 → 기존 탐색 요청을 UI04에 연결했다. 서로 다른 준비·실행·세대를 구분하고, 결과 불명은 같은 로그인에서 세션이 다시 조회돼도 원 명령 본문을 보존한다. 같은 명령의 명시 재확인만 가능하다. 독립 검수에서 세션 객체 교체 시 원 명령이 누락되는 I1을 1건 확인하고 보완했다. Main 직접·인접 합성 36건(7bfbc5), 타입(46eeba), 메모리 웹 빌드 3개 출력(f90f95)을 확인했다. 변경은 `normal-understanding-read-requests.ts`, `normal-understanding-read-routes.ts`, `WorkspaceResponsibleSessions.tsx`, `NormalUnderstandingDiscovery.tsx`와 직접 시험 2개다. 구현 `e17c7ce4`의 바이트 대조 및 통합본 직접 합성 16건(1ae625)을 확인하고 원격 `532739b6`으로 게시했다. 정확 UI 전용 worktree와 branch는 정리했다.
 - **FN09 S3 서버 보관 선행:** `baseline_predispatch_task_review`가 원 GET challenge v1/v2 및 획득 영수증, 현재 권위, 결과 POST의 별도 서명·본문 해시를 내부에서 검산했다. 메타 결과 수신·저장을 활성화할 source 근거는 아직 없다. 독립 Minor 2건(접속 실패 분류, 정상 COMMIT 뒤 취소·만료) 보완 후 Main 합성 25건(d7993c), 타입(72e113), 외부 SQL 파싱 48문장·합성 record 선언의 PL/pgSQL 본문 1개(ae94d6)를 확인했다. 결과 서비스·미적용 0102·시험 2개는 로컬 `c7f82db6`에 보존했다. 요청 경로의 ID에서 소비된 원 GET fullref를 도출하는 후속 `14895924`은 Main 직접·인접 합성 28건(7d4f55), 지문·공백(3c4509)을 확인했다. 기본 앱의 결과 발행 503은 유지한다.
+- **FN09 S2 native 읽기 감독:** `developer_primary` 고정 소스 `22eb0505`를 포함했다. 같은 원 Anvil의 읽기 전용 child와 원 파일·EOF·정상 종료·현재 등록 잠금을 검산한다. 합성/정적 13건, 빌더 고정 목록 1건, 타입 및 owner 정확 25건의 Main 별도 실행을 확인했다. 첫 담당 실행의 단일 실패와 격리 검증을 상세 기록했다. 실제 Windows pipe/Job/DPAPI, C# 및 Agent는 미실행이다.
 - **다음·잔여 범위:** `developer_primary`가 기존 Anvil 신뢰에서 원 읽기 프로세스·정상 종료·한정 위임 경로를 구현 중이다. 개발 branch의 통합 워크트리를 분리했다. native 작성자는 같은 물리 작업 사본을 `codex/av3-fn09-native-supervision`으로 전환해 그대로 이어가며 전환 전후 10경로의 지문 일치를 확인했다. 서버 보관 선행은 별도 로컬 작업 커밋으로 보존했다. 원 종료 근거의 일회 서명, 결과 저장·선택·검토를 뒤이어 연결한다. IX01 Windows 설정 한정 읽기는 사용자 설정 55행 부분 결과로 소진됐고 추가 조회·SSH·실제 PG 여정은 미실행이다. 실제 브라우저·DB·권한 적용·키·서비스·C#·SDK·Agent 실행은 미검증이다.
 
 ### 2026-11-17 당시 누적 근거
@@ -22246,3 +22247,11 @@ developer_primary 단일 작성·동결. 신규 normal-understanding-response-so
 독립 C0/I1/M0. 기존 하위 owned API의 같은 패킷 재확인에서 원 관측 시각을 새 HTTP 시작과 비교하고 획득 중복을 거절하던 문제를 확인했다. RED 714592 후 기존 보호 원장의 exact match일 때만 원 영수증을 무기록 재확인하도록 수정했다. 부분 START/CLOSE·교차 근거·만료는 계속 거절한다. 최초 획득 시각 경계와 읽기 단회는 유지한다. Main 검수는 동결 SHA 4종 일치, 직접·인접 42건(f70f67), owner 합성·native 정적 19건(97bc25), 타입 exit0(cf1ad4), diff·지문 058349이다. C#은 정적 검사와 합성 대역이며 실제 C# 컴파일·DPAPI·파일 종료·HTTPS·DB·권한·서비스·SSH·SDK·Agent 실행은 미검증이다.
 
 브랜치 반영은 Main이 순차 처리한다. UI11 준비 정책 선택은 별도 워크트리에서 구현해 a6807417로 동결했다. 직접 Editor 4건(3e37b7), 담당 직접·인접 79건 및 Main 타입(3d05e3)을 확인했다. 기존 기본 미선택·DENY 및 별도 제출을 유지한다. 기능의 실제 UI04 탐색은 PMO가 기존 A안의 동일 권한과 최소 보호 조회로 진행할 수 있다고 확인해 별도 작성자가 구현 중이다. 서버는 신규 결과의 원 획득 검산을 다른 워크트리에서 작성 중이다. native 단회 서명·전송·서버 결과 저장 및 선택·검토 실제 여정은 미완료다. 현재 롤백은 이번 4개 파일과 기록의 역적용이며 UI11은 a6807417의 두 경로 역적용이다.
+
+#### FN09 S2 읽기 감독 검수와 목적 서명 착수
+
+담당 developer_primary, 기준 c6d82d01에서 작업 사본을 분리한 뒤 고정 12경로를 22eb0505로 동결했다. 기존 Anvil.exe/ASAR의 원 peer가 같은 설치 reader의 읽기 전용 모드를 한 번 감독한다. 원 파일·stdout/입력 정상 종결과 같은 원 handle의 exit0을 대조한다. 실제 bearer/full record는 child에 전달하지 않는다. 원 세대의 미완결 요청을 slot 갱신이나 기한 경과로 풀지 않는다. 최초 output 읽기 전에 원 최단 벽·단조 기한을 적용하고 기존 binding 잠금 안에서 마지막 spool 종결을 검산한다. 지정 독립 재검수 C0/I0/M0. Native 원 프로세스 실행·DPAPI/Win32·C#·DB·권한·키·서비스·Agent는 이번에 검증하지 않았다.
+
+Main 직접 source/RAM 13건(044bd0), 빌더 목록 1건(5654c4), 루트 타입 exit0(00ba6e), 통합본 13건 및 12경로 바이트 일치(7f70fe). 담당 owner 집중 첫 실행 24통과/1실패(665603)의 원 RAM 파일 동일성 실패는 정확 사례 별도 실행 1통과(55a2ca), Main 별도 전체 집중 25통과(0dab5a)였다. 최초 실패 원인은 확정하지 않았다. 커밋 검사에서 합성 test 값 한 개가 generic-api-key로 탐지돼(8678e8) 명백한 시험 표기로 교체하고 같은 검사 훅을 통과했다(2ca3fb). 검산 조건과 권한은 유지했다.
+
+S2 결과 서명/전송의 확정 작업지시는 [FN09 목적 전송](work_packages/FN09_NATIVE_DISCOVERY_RESULT_SEND_IMPLEMENTATION.md) SHA256 9E98447504B885769C94C641D1692B6089FB1AF4785DABCF882F2C1BF33C75A0, PMO의 같은 신뢰 root·등록·ACL 내 소스 확인 근거, e58cf64b다. Native 준비·전송 원장과 TS 소유·물리 종료 후 일회 릴리스를 별도 워크트리에서 구현한다. 서버 내부 v1 결박은 로컬 b4662bf3, 합성 35건(17a7f2)·SQL 외부 49문장 및 대역 선언 PL/pgSQL 두 본문(84b102)·독립 C0/I0/M0이다. 실제 목적 challenge/PG 결과 저장은 닫혀 있다. PMO는 기존 프로젝트 총량과 권한을 그대로 적용하는 목적 전용 정산의 소스·미적용 SQL·합성 검증을 A안 상세 범위로 확인했다. 기존 0059의 일반 허용집합을 넓히지 않고 원 탐색·획득·결과 영수증과 canonical metadata 바이트를 같은 transaction에 결박한다. 신규 상한·면제·권한 부여와 실제 적용은 제외한다.
