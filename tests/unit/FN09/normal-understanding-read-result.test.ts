@@ -39,16 +39,24 @@ function fixture(){
  const ps={scope:{kind:'PROJECT',projectId:pid},state:'APPLIED',limits:{maxAttempts:3,maxCalls:50,maxConcurrentAssignments:1,maxElapsedMs:7200000,maxOfflineMs:300000,maxSpoolBytes:1073741824},decidedAt:iso(0),expiresAt:iso(240000)};
  const policy={projectId:pid,ref:{...ref(),contentHash:hash(ps)},snapshot:ps};
  const reserve=reserveExecutionBudget([],policy as any,{projectId:pid,executionId:eid,executionGeneration:1,commandId:randomUUID(),assignmentRef:grant,stageRef:{applicationRef:grant,nodeId:'개발'},policyRef:policy.ref,operation:'START_SESSION',demand:{attempts:1,calls:1,spoolBytes:1,cost:null,costStatus:'VERIFIED_NO_CHARGE'}},iso(0));
- const state={now:at+1000,connects:0,queries:[] as string[],releases:[] as boolean[],rpc:0,deny:false,lateLoss:false,commitUnknown:false,rollbackUnknown:false,usedPost:false,connectFailure:false,onCommit:()=>{},mutate:(_v:any)=>{}};
- const pool={async connect(){state.connects++;if(state.connectFailure)throw Error('RAW_CONNECTION_SECRET');return {release(e?:Error){state.releases.push(!!e);},async query(sql:string,a:any[]=[]):Promise<any>{
+ const state={now:at+1000,connects:0,queries:[] as string[],releases:[] as boolean[],rpc:0,deny:false,lateLoss:false,commitUnknown:false,rollbackUnknown:false,usedPost:false,connectFailure:false,lookupCount:1,lookupCross:false,unconsumedGet:false,changedTransaction:false,lookupUnknown:false,onCommit:()=>{},mutate:(_v:any)=>{}};
+ const pool={async connect(){state.connects++;if(state.connectFailure)throw Error('RAW_CONNECTION_SECRET');let inTransaction=false;return {release(e?:Error){state.releases.push(!!e);},async query(sql:string,a:any[]=[]):Promise<any>{
   state.queries.push(sql);
-  if(sql==='COMMIT'){state.onCommit();return {command:state.commitUnknown?'':'COMMIT',rows:[]};}
-  if(sql==='ROLLBACK')return {command:state.rollbackUnknown?'':'ROLLBACK',rows:[]};
-  if(sql==='BEGIN'||sql.includes('SET LOCAL'))return {command:'BEGIN',rows:[]};
+  if(sql==='COMMIT'){inTransaction=false;state.onCommit();return {command:state.commitUnknown?'':'COMMIT',rows:[]};}
+  if(sql==='ROLLBACK'){inTransaction=false;return {command:state.rollbackUnknown?'':'ROLLBACK',rows:[]};}
+  if(sql==='BEGIN'){inTransaction=true;return {command:'BEGIN',rows:[]};}
+  if(sql.includes('SET LOCAL'))return {rows:[]};
   if(sql.includes('normal_request_credential'))return {rows:[{project_id:pid,credential_ref:credential,expires_at:new Date(at+240000)}]};
   if(sql.includes('normal_exchange_current'))return {rows:[{binding,spki,deadline:new Date(at+240000),observed_at:new Date(state.now),budget_ref:reserve.ref,budget_policy:policy}]};
   if(sql.includes('FROM anvil.usage_reservations'))return {rows:[{project_id:pid,reservation_id:reserve.ref.id,version:1,content_hash:reserve.ref.contentHash,snapshot_json:reserve.snapshot,server_sequence:1,command_id:reserve.snapshot.claim.commandId}]};
   if(sql==='SELECT clock_timestamp() AS at')return {rows:[{at:new Date(state.now)}]};
+  if(sql.startsWith('SELECT g.snapshot_json')){
+   if(state.lookupUnknown)throw Error('RAW_LOOKUP_SECRET');
+   assert.deepEqual(a.slice(0,4),[pid,grant.id,grant.version,requestRef.id]);assert.deepEqual(a.slice(4).map(v=>JSON.parse(v)),[binding,credential,get.snapshot_json.request.target]);
+   for(const part of ["g.snapshot_json ? 'understandingRequestRef'","g.snapshot_json->'understandingRequestRef'->>'id'=$4",'u.version=2','r.challenge_id=g.id',"u.snapshot_json#>'{consumption,resultRef}'",'LIMIT 2'])assert.ok(sql.includes(part),part);
+   return {rows:state.unconsumedGet?[]:Array.from({length:state.lookupCount},()=>({request_ref:state.lookupCross?ref():requestRef,acquisition_ref:acquisitionRef,transaction_id:inTransaction?'17':null}))};
+  }
+  if(sql.includes('pg_current_xact_id_if_assigned()'))return {rows:[{at:new Date(state.now),transaction_id:inTransaction?(state.changedTransaction?'18':'17'):null}]};
   if(sql.includes('fn09_normal_understanding_result_basis')){
    state.rpc++;assert.equal(a[0],token);assert.deepEqual(JSON.parse(a[1]),binding);
    // SQL-purpose substitution only. No physical database, accepted POST row or native source proof.
@@ -59,8 +67,10 @@ function fixture(){
   if(sql.includes('FROM anvil.execution_challenges'))return {rows:a[3]===post.id&&a[4]===post.content_hash?[clone(post)]:[]};
   throw Error('Unexpected SQL');
  }}}};
+ async function transaction<T>(work:(db:any)=>Promise<T>){const db=await pool.connect();try{await db.query('BEGIN');const v=await work(db);await db.query('COMMIT');return v;}catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}}
  return {source:new NormalUnderstandingReadResult(pool as any),state,body,frame,post,get,basis,token,cid,eid,
-  current:async(value:unknown)=>new NormalUnderstandingReadResult(pool as any).current(await pool.connect() as any,token,binding,credential,value,new Date(state.now)),
+  challenge:(target:unknown=post.snapshot_json.request.target)=>transaction(db=>new NormalUnderstandingReadResult(pool as any).challengeBasis(db,token,binding,credential,target,new Date(state.now))),
+  current:(value:unknown,target:unknown=executionTarget('POST',base+'/'+requestRef.id+'/result',[],canonicalJson(value)))=>transaction(db=>new NormalUnderstandingReadResult(pool as any).current(db,token,binding,credential,value,new Date(state.now),target)),
   inspect:(value:unknown=body,packet:unknown=frame)=>new NormalUnderstandingReadResult(pool as any).inspect(cid,eid,token,packet,value,new AbortController().signal)};
 }
 test('internal metadata prerequisite checks original GET custody + fresh signed POST in one read-only transaction; no normal/native authority',async()=>{
@@ -131,4 +141,39 @@ test('known COMMIT followed by cancellation/expiry publishes no preflight and ne
   assert.equal(f.state.connects,1);assert.equal(f.state.queries.filter(q=>q==='COMMIT').length,1);
   assert.equal(f.state.queries.filter(q=>q==='ROLLBACK').length,0);assert.deepEqual(f.state.releases,[false]);
  }}finally{t.mock.restoreAll();}
+});
+
+test('bodyless challenge basis derives immutable fullrefs only from indexed consumed GET and same transaction/current authority',async()=>{
+ const f=fixture(),target=clone(f.post.snapshot_json.request.target),b=await f.challenge(target);
+ assert.deepEqual(b.requestRef,f.body.metadata.requestRef);assert.deepEqual(b.acquisitionRef,f.body.metadata.acquisitionRef);assert.equal(b.bodyHash,hash(f.body));
+ assert.ok(Object.isFrozen(b)&&Object.isFrozen(b.requestRef)&&Object.isFrozen(b.context));
+ target.bodyHash=hash('changed external target');assert.equal(b.bodyHash,hash(f.body));
+ assert.deepEqual(await f.current(f.body,b.target),b);
+ assert.equal(f.state.queries.some(q=>/INSERT|UPDATE|set_config/.test(q)),false);
+ assert.equal(f.state.queries.filter(q=>q.startsWith('SELECT g.snapshot_json')).length,2);
+});
+
+test('basis rejects absent, ambiguous, unconsumed, cross and changed-current/transaction origins without any creation',async()=>{
+ for(const mode of ['absent','ambiguous','unconsumedGet','lookupCross','deny','lateLoss','changedTransaction','lookupUnknown','expired'] as const){
+  const f=fixture();
+  if(mode==='absent')f.state.lookupCount=0;else if(mode==='ambiguous')f.state.lookupCount=2;else if(mode==='expired')f.state.now+=30000;
+  else if(mode==='lateLoss')f.state.deny=true;else f.state[mode]=true;
+  await assert.rejects(f.challenge(),(error:any)=>[412,503].includes(error.statusCode)&&!error.message.includes('RAW_LOOKUP_SECRET'));
+  assert.equal(f.state.queries.some(q=>/INSERT|UPDATE|set_config/.test(q)),false);
+ }
+});
+
+test('exact challenge target has no caller fullrefs, alternate scope/encoding/query, or interchangeable metadata claim',async()=>{
+ const f=fixture(),target=clone(f.post.snapshot_json.request.target);
+ assert.ok(typeof target.path==='string');
+ for(const changed of [
+  {...target,method:'GET'},{...target,path:target.path+'/x'},{...target,path:target.path.replace(f.cid,randomUUID())},
+  {...target,path:target.path.replace('/result','%2Fresult')},{...target,path:target.path+'?x=1'},
+  {...target,queryHash:hash({x:1})},{...target,bodyHash:hash(null)},{...target,acquisitionRef:f.body.metadata.acquisitionRef},
+ ])await assert.rejects(f.challenge(changed));
+ const basis=await f.challenge();
+ for(const modify of [(v:any)=>{v.metadata.acquisitionRef.id=randomUUID();},(v:any)=>{v.metadata.ranges[0].textBytes++;}]){
+  const value=clone(f.body);modify(value);await assert.rejects(f.current(value,basis.target));
+ }
+ assert.equal(f.state.queries.some(q=>/INSERT|UPDATE|set_config/.test(q)),false);
 });

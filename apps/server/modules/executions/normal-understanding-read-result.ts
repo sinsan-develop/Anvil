@@ -47,25 +47,22 @@ export class NormalUnderstandingReadResult {
  readonly pool:Pick<Pool,'connect'>;
  constructor(pool:Pick<Pool,'connect'>){this.pool=pool;}
 
- /** 미래의 목적 challenge/result 거래가 같은 PoolClient와 readCurrent 근거로 재사용할 조회. */
- async current(db:PoolClient,token:string,binding:any,credentialRef:unknown,value:unknown,at:Date){
-  const input=body(value),m=input.metadata;
-  if(!hashV1(token)||!refV1(credentialRef)||!(at instanceof Date)||!Number.isFinite(at.getTime())
-   ||m.projectId!==binding.projectId||m.executionId!==binding.executionId||m.executionGeneration!==binding.executionGeneration)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+ /** GET 원장 검산은 challenge와 결과 본문에서 이 경로 하나만 재사용한다. */
+ async #acquired(db:PoolClient,token:string,binding:any,credentialRef:unknown,requestRef:unknown,acquisitionRef:unknown,at:Date){
   const rows=(await db.query('SELECT anvil.fn09_normal_understanding_result_basis($1,$2,$3,$4) AS basis',
-   [token,JSON.stringify(binding),JSON.stringify(m.requestRef),JSON.stringify(m.acquisitionRef)])).rows;
+   [token,JSON.stringify(binding),JSON.stringify(requestRef),JSON.stringify(acquisitionRef)])).rows;
   const v=rows[0]?.basis,s=v?.snapshot,r=v?.receipt,get=v?.getChallenge,used=v?.getConsumed;
   if(rows.length!==1||!recordV1(v,['requestRef','snapshot','acquisitionRef','receipt','getChallenge','getConsumed','deadline'])
-   ||!same(v.requestRef,m.requestRef)||!same(v.acquisitionRef,m.acquisitionRef)||hash(s)!==m.requestRef.contentHash
+   ||!same(v.requestRef,requestRef)||!same(v.acquisitionRef,acquisitionRef)||!refV1(requestRef)||hash(s)!==requestRef.contentHash
    ||!recordV1(s,['schemaVersion','purpose','request','context','requestedBy','policyRef','state','sourceScope','createdAt','expiresAt'])
    ||s.schemaVersion!==1||s.purpose!=='NORMAL_UNDERSTANDING_METADATA_DISCOVERY'||s.state!=='PENDING_SOURCE'||s.sourceScope!==null
    ||!recordV1(s.context,contextKeys)||!same(s.context.grantRef,binding.grantRef)||s.context.projectId!==binding.projectId
    ||s.context.executionId!==binding.executionId||s.context.executionGeneration!==binding.executionGeneration
    ||s.context.connectorId!==binding.connectorId||s.context.credentialGeneration!==binding.credentialGeneration
    ||!uuidV1(s.context.startCommandId)||!contextKeys.filter(k=>k.endsWith('Ref')).every(k=>refV1(s.context[k]))
-   ||!same(s.context.contextBundleRef,m.contextBundleRef)||!isoV1(s.createdAt)||!isoV1(s.expiresAt)
-   ||!recordV1(r,receiptKeys)||r.kind!=='NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED'||hash(r)!==m.acquisitionRef.contentHash
-   ||!same(r.binding,binding)||!same(r.credentialRef,credentialRef)||!same(r.understandingRequestRef,m.requestRef)||!same(r.context,s.context)
+   ||!isoV1(s.createdAt)||!isoV1(s.expiresAt)
+   ||!recordV1(r,receiptKeys)||r.kind!=='NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED'||!refV1(acquisitionRef)||hash(r)!==acquisitionRef.contentHash
+   ||!same(r.binding,binding)||!same(r.credentialRef,credentialRef)||!same(r.understandingRequestRef,requestRef)||!same(r.context,s.context)
    ||!hashV1(r.packetHash)||!uuidV1(r.requestId)||!isoV1(r.observedAt)||!isoV1(r.expiresAt)
    ||!recordV1(get,['id','content_hash','snapshot_json'])||!recordV1(used,['ref','snapshot'])||!refV1(used.ref)||used.ref.version!==2
    ||used.ref.id!==get.id||hash(used.snapshot)!==used.ref.contentHash||!positive(used.snapshot.sequence)
@@ -73,13 +70,68 @@ export class NormalUnderstandingReadResult {
   const old=original(get,binding,'EXECUTION_REQUEST',credentialRef),c=old.challenge;
   const getTarget=executionTarget('GET','/api/v1/connectors/'+binding.connectorId+'/executions/'+binding.executionId+'/understanding-response-read',[],null);
   if(!same(r.challengeRef,old.ref)||!same(r.target,getTarget)||!same(get.snapshot_json.request.target,getTarget)
-   ||r.requestId!==c.requestId||!same(get.snapshot_json.understandingRequestRef,m.requestRef)
-   ||!same(used.snapshot,{...get.snapshot_json,sequence:used.snapshot.sequence,previousRef:old.ref,consumption:{resultRef:m.acquisitionRef,packetHash:r.packetHash,consumedAt:r.observedAt}})
+   ||r.requestId!==c.requestId||!same(get.snapshot_json.understandingRequestRef,requestRef)
+   ||!same(used.snapshot,{...get.snapshot_json,sequence:used.snapshot.sequence,previousRef:old.ref,consumption:{resultRef:acquisitionRef,packetHash:r.packetHash,consumedAt:r.observedAt}})
    ||Date.parse(r.observedAt)<Date.parse(c.issuedAt)||Date.parse(r.observedAt)>at.getTime()
    ||Date.parse(r.expiresAt)>Math.min(Date.parse(c.expiresAt),Date.parse(s.expiresAt))
    ||Date.parse(v.deadline)>Date.parse(r.expiresAt)||Date.parse(v.deadline)<=at.getTime())fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
   return {requestRef:v.requestRef,acquisitionRef:v.acquisitionRef,context:s.context,getChallengeRef:old.ref,getRequestId:c.requestId,
-   observedAt:r.observedAt,deadline:v.deadline,bodyHash:input.bodyHash};
+   observedAt:r.observedAt,deadline:v.deadline};
+ }
+
+ /** body 없는 challenge의 내부 선행. caller fullref 대신 path의 HUMAN 요청 id로 원 소비를 찾는다.
+  * 원 거래/현재 credential과 기존 GET index만 사용하며 nonce·POST slot·저장/서명 권위를 발급하지 않는다. */
+ async challengeBasis(db:PoolClient,token:string,rawBinding:unknown,credentialRef:unknown,rawTarget:unknown,at:Date){
+  let binding:any,target:any;
+  try{binding=JSON.parse(canonicalJson(rawBinding));target=JSON.parse(canonicalJson(rawTarget));}catch{return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);}
+  if(!hashV1(token)||!refV1(credentialRef)||!(at instanceof Date)||!Number.isFinite(at.getTime())
+   ||!recordV1(binding,['transport','mode','projectId','connectorId','executionId','executionGeneration','grantRef','scopeDigest','credentialGeneration','publicKeyFingerprint'])
+   ||binding.transport!=='NORMAL_PROTECTED'||binding.mode!=='EXECUTION'||!['projectId','connectorId','executionId'].every(k=>uuidV1(binding[k]))
+   ||!positive(binding.executionGeneration)||!refV1(binding.grantRef)||!positive(binding.credentialGeneration)||!hashV1(binding.scopeDigest)||!hashV1(binding.publicKeyFingerprint)
+   ||!recordV1(target,['method','path','queryHash','bodyHash'])||target.method!=='POST'||typeof target.path!=='string'
+   ||target.queryHash!==hash({})||!hashV1(target.bodyHash)||target.bodyHash===hash(null))fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+  const prefix='/api/v1/connectors/'+binding.connectorId+'/executions/'+binding.executionId+'/understanding-response-read/';
+  const id=target.path.startsWith(prefix)&&target.path.endsWith('/result')?target.path.slice(prefix.length,-'/result'.length):'';
+  if(!uuidV1(id)||target.path!==prefix+id+'/result')fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+  const query=db.query,observed=at.getTime();
+  try{
+   const getTarget=executionTarget('GET',prefix.slice(0,-1),[],null);
+   const rows=(await db.query(`SELECT g.snapshot_json->'understandingRequestRef' AS request_ref,
+    jsonb_build_object('id',r.id,'version',r.version,'contentHash',r.content_hash) AS acquisition_ref,
+    pg_current_xact_id_if_assigned()::text AS transaction_id
+    FROM anvil.execution_challenges g JOIN anvil.execution_challenges u ON u.project_id=g.project_id AND u.id=g.id AND u.version=2 AND u.grant_id=g.grant_id AND u.grant_version=g.grant_version
+    JOIN anvil.execution_receipts r ON r.project_id=g.project_id AND r.challenge_id=g.id AND r.challenge_version=1 AND r.version=1 AND r.grant_id=g.grant_id AND r.grant_version=g.grant_version
+     AND u.snapshot_json#>'{consumption,resultRef}'=jsonb_build_object('id',r.id,'version',r.version,'contentHash',r.content_hash)
+    WHERE g.project_id=$1 AND g.grant_id=$2 AND g.grant_version=$3 AND g.version=1 AND g.snapshot_json ? 'understandingRequestRef'
+     AND g.snapshot_json->'understandingRequestRef'->>'id'=$4 AND g.snapshot_json->'binding'=$5::jsonb AND g.snapshot_json->'credentialRef'=$6::jsonb
+     AND g.snapshot_json#>'{request,target}'=$7::jsonb AND r.snapshot_json->>'kind'='NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED'
+    LIMIT 2`,[binding.projectId,binding.grantRef.id,binding.grantRef.version,id,JSON.stringify(binding),JSON.stringify(credentialRef),JSON.stringify(getTarget)])).rows;
+   const row=rows[0],tx=row?.transaction_id;
+   if(db.query!==query||rows.length!==1||!refV1(row?.request_ref)||row.request_ref.version!==1||row.request_ref.id!==id
+    ||!refV1(row.acquisition_ref)||row.acquisition_ref.version!==1||typeof tx!=='string'||!/^[1-9][0-9]{0,18}$/.test(tx))fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+   const value=await this.#acquired(db,token,binding,credentialRef,row.request_ref,row.acquisition_ref,new Date(observed));
+   if(db.query!==query)fail();
+   const clocks=(await db.query('SELECT clock_timestamp() AS at,pg_current_xact_id_if_assigned()::text AS transaction_id')).rows,clock=clocks[0];
+   if(db.query!==query||clocks.length!==1||clock?.transaction_id!==tx||!(clock.at instanceof Date)||!Number.isFinite(clock.at.getTime())
+    ||clock.at.getTime()<observed||clock.at.getTime()>=Date.parse(value.deadline))fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+   const result={...value,bodyHash:target.bodyHash as string,target};
+   const freeze=(v:any):void=>{if(v&&typeof v==='object'){for(const item of Object.values(v))freeze(item);Object.freeze(v);}};
+   freeze(result);return result;
+  }catch(error){
+   if(error instanceof AuthFailure)throw error;
+   if(error instanceof Error&&error.message==='NORMAL_UNDERSTANDING_RESULT_DENIED')fail(error.message,412);
+   return fail();
+  }
+ }
+
+ /** 나중에 온 본문도 같은 서버 원장 경로로 도출하며 원 target/bodyHash와 비교한다. */
+ async current(db:PoolClient,token:string,binding:any,credentialRef:unknown,value:unknown,at:Date,target:unknown){
+  const input=body(value),m=input.metadata;
+  const source=await this.challengeBasis(db,token,binding,credentialRef,target,at);
+  if(source.bodyHash!==input.bodyHash||!same(source.requestRef,m.requestRef)||!same(source.acquisitionRef,m.acquisitionRef)
+   ||!same(source.context.contextBundleRef,m.contextBundleRef)||m.projectId!==binding.projectId||m.executionId!==binding.executionId
+   ||m.executionGeneration!==binding.executionGeneration)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+  return source;
  }
 
  /** 내부 거래의 준비 검산만 수행한다. fresh POST 원장의 proof를 확인해도 전송 권위를 발급하지 않는다. */
@@ -104,7 +156,7 @@ export class NormalUnderstandingReadResult {
    if(rows.length!==1)fail();const post=original(rows[0],b,'EXECUTION_REQUEST',cred.ref);
    if(!same(rows[0].snapshot_json.request.target,target))fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
    verifyNormalCommandPageProof(cur.spki,frame.signature,p,b,post.challenge,target);
-   const source=await this.current(db,token,b,cred.ref,input.value,cur.now);
+   const source=await this.current(db,token,b,cred.ref,input.value,cur.now,target);
    const ends=Math.min(cred.expiresAt,cur.deadline.getTime(),Date.parse(source.deadline),Date.parse(post.challenge.expiresAt));
    if(c.id===source.getChallengeRef.id||p.requestId===source.getRequestId||Date.parse(post.challenge.expiresAt)>Math.min(cred.expiresAt,cur.deadline.getTime(),Date.parse(source.deadline))
     ||Date.parse(post.challenge.issuedAt)<Date.parse(source.observedAt)
@@ -113,7 +165,7 @@ export class NormalUnderstandingReadResult {
    // POST는 별도 미소비 원장 신원만 쓰며 원 GET v1/v2를 대체하거나 다시 소비하지 않는다.
    if((await db.query('SELECT id FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND id=$4 AND version=2',[...keys,c.id])).rows.length)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
    const lastMark=mark(),lastCred=await requestCredential(db,token,connector,execution,p),last=await readCurrent(db,cred.project,connector,execution,p);
-   const lastSource=await this.current(db,token,last.binding,lastCred.ref,input.value,last.now);
+   const lastSource=await this.current(db,token,last.binding,lastCred.ref,input.value,last.now,target);
    if(!same(cred,lastCred)||!same(b,last.binding)||cur.spki!==last.spki||!same(source,lastSource)||last.now<cur.now||last.now.getTime()>=ends||signal.aborted)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
    // DB 시각의 잔여 한도를 원 monotonic 표본에 결박한다. COMMIT 대기 시간도 한도를 소비한다.
    const monoEnd=Math.min(firstMark+ends-cur.now.getTime(),lastMark+ends-last.now.getTime());
