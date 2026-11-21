@@ -21737,3 +21737,9 @@ PMO 회신과 DEVELOPMENT_ENVIRONMENT·FN03_ISOLATED_DOCUMENT_RESULT를 대조�
 기준 `d24ac0c6`. 원 계획 SID가 FIRST owner에 있고 native 인계에는 digest만 있는 단절을 확인했다. PMO는 이미 승인된 생산자 계약 §B/C의 내부 연결로 판단했다. developer_primary 단일 작성 뒤 반환. 원 캡처 SID를 기존 한 번의 private 자료에 포함하고 같은 slot·scope·기한·형상을 결박한다. 수송은 한도 안의 사본에서 해시를 확인하고 native는 기존 canonical SHA를 다시 검산한다. 구형/추가 키·다른 SID/slot·기한/취소·복제/중복은 거절한다. 원장·공개 HTTP·로그·응답 형상 변경0. 수송 byte 배열은 기존 종료 경로에서 지우지만 관리형 문자열의 즉시 삭제는 보증하지 않는다.
 
 담당 RED 0통과·2실패 `14e1a6` 뒤 직접·인접 58통과·실패/건너뜀0 `17ec43`/`c965f9`, 마지막 시간 경계 변경 뒤 집중6통과 `bb3fce`와 좁은 타입 `96f319` 종료0. Main 최종 소스에서 같은 3개 시험 파일을 `node --experimental-test-module-mocks --test --test-reporter=dot`로 재검수해 58통과·종료0, 공백 종료0 `9ee07e`. 실제 C#·SDK·OS·Agent·DB·권한·키·서비스 미실행. 최초 SID의 제품 발급 권위, PRESPAWN 및 실제 실행 lease는 미연결이며 native 결과는 SDK_CONFIGURATION_UNAVAILABLE을 유지한다. 롤백은 이번 소스·시험 6파일과 기록의 역적용이다.
+
+### FN07 보호 스풀의 START Options 의미 검사
+
+기준 `9372e6d3`. developer_primary 단일 작성 후 반환. 기존 부분·전체 해시를 확인하고 나서 같은 원 START_OPTIONS 바이트의 닫힌 필드와 필수 모델·선택 turns/USD를 검사한다. 구조·추가/중복 키·제어문자·UTF-8·정수/유한·범위 조건을 검산하고 원 정착과 현재성을 다시 검사한다. 2MiB 이내 시험 전용 원 버퍼를 종료 시 소거하며 관리형 문자열의 즉시 소거는 보장하지 않는다. 범용 native parser, 인수/환경, 실제 실행 권위는 변경0.
+
+담당 정적 반례 RED `4d2328` 뒤 직접·인접 42통과·실패/건너뜀0 `73f223`; Main 최종 `node --experimental-test-module-mocks --test tests/desktop/normal-sdk-worker-journey.test.cjs tests/unit/FN07/claude-start-options.test.ts` 42통과·종료0 `ebb175`, 동결 대비 지문 일치 `996f29`. C# 실제 컴파일/실행0으로 native 의미 동작과 극한 숫자 반올림, SDK 정확 표기는 미검증이다. 실제 SDK·OS·Agent·DB·권한·키·서비스 실행0. 롤백은 이번 native/시험과 기록을 역적용한다.

@@ -5,6 +5,37 @@ const {readFileSync}=require('node:fs');
 const path=require('node:path');
 const read=p=>readFileSync(path.resolve(__dirname,'../../',p),'utf8');
 
+test('START Options 원 SHA 뒤 닫힌 model·선택 숫자 검사와 바이트 소거가 연결된다',async()=>{
+ const spool=read('apps/connector/native/NormalExecutionSpoolProfileSource.cs');
+ const intake=spool.slice(spool.indexOf('void ReadSdkStartOptions('),spool.indexOf('static void RequireSdkFirst('));
+ assert.match(intake,/new byte\[checked\(\(int\)N\(options\["sourceBytes"\]\)\)\]/);
+ assert.match(intake,/Buffer.BlockCopy\(bytes,0,optionRaw,checked\(\(int\)optionBytes\),bytes.Length\)/);
+ assert(intake.indexOf('ValidateSdkStartOptions(optionRaw)')>intake.indexOf('digest.TransformFinalBlock('));
+ assert.match(intake,/finally\{Array.Clear\(optionRaw,0,optionRaw.Length\);\}/);
+ const validator=spool.slice(spool.indexOf('void ValidateSdkStartOptions('),spool.indexOf('static void RequireSdkFirst('));
+ assert.match(validator,/new UTF8Encoding\(false,true\).GetString\(bytes\)/);
+ assert.match(validator,/new SdkOptionsReader\(text,Check\).Read\(\)/);
+ assert.match(validator,/key!="claudeQueryParams"/);
+ assert.match(validator,/!keys.Add\(key\)/);
+ assert.match(validator,/key!="maxTurns"&&key!="maxBudgetUsd"/);
+ assert.match(validator,/model.Length<1\|\|model.Length>200/);
+ assert.match(validator,/model.Any\(c=>Char.IsControl\(c\)\)/);
+ assert.match(validator,/Double.TryParse\(token,System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out value\)/);
+ assert.match(validator,/Double.IsNaN\(value\)\|\|Double.IsInfinity\(value\)/);
+ assert.match(validator,/value<0\|\|value>9007199254740991d/);
+ assert.match(validator,/value<1\|\|Math.Truncate\(value\)!=value/);
+ assert.doesNotMatch(validator,/DesktopTrustKeyHostSource.Parse|Canonical|Write|Append|Console|Process|Query\(/);
+ // 원 TS 계약의 RAM 기준이다. C# parser를 실행한 증거가 아니다.
+ const {readClaudeQueryParams}=await import('../../apps/connector/adapters/secondary/start-options.ts');
+ const {parseWireJson}=await import('../../contracts/canonical.ts');
+ for(const raw of ['{"claudeQueryParams":{"model":"auto"}}',' { "claudeQueryParams": {"maxTurns":1e0,"model":" 모델 🙂 ","maxBudgetUsd":0.125} }',
+  '{"claudeQueryParams":{"model":"m","maxTurns":9007199254740991,"maxBudgetUsd":-0}}'])assert.ok(readClaudeQueryParams(parseWireJson(raw)));
+ for(const raw of ['{"claudeQueryParams":{"model":"m","model":"n"}}','{"claudeQueryParams":{"model":"m","maxTurns":1.5}}',
+  '{"claudeQueryParams":{"model":"m","maxBudgetUsd":1e400}}','{"claudeQueryParams":{"model":"m","maxBudgetUsd":null}}',
+  '{"claudeQueryParams":{"model":"m","extra":1}}','{"claudeQueryParams":{"model":"m"},"extra":1}',
+  '{"claudeQueryParams":{"model":"\\u0085"}}','{"claudeQueryParams":{"model":"\\ud800"}}','{"claudeQueryParams":{"model":"   "}}'])assert.throws(()=>readClaudeQueryParams(parseWireJson(raw)));
+});
+
 test('FIRST Options 검산은 최초 Inspect에서만 원 정착 intake를 읽고 결과/원문을 내보내지 않는다',()=>{
  const credential=read('apps/connector/native/NormalExecutionCredentialSource.cs');
  const spool=read('apps/connector/native/NormalExecutionSpoolProfileSource.cs');

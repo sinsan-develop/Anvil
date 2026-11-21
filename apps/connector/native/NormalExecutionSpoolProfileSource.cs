@@ -320,7 +320,8 @@ internal sealed class NormalExecutionSpoolProfileSource {
   }
   if(parts.Count+1!=count)throw Invalid();object previous=null;DateTime last=DateTime.MinValue;long optionBytes=0,metadataBytes=0;var references=new HashSet<string>();
   var key=R("projectId",scope["projectId"],"executionId",scope["executionId"],"executionGeneration",scope["generation"],"commandId",command);
-  using(var digest=SHA256.Create()){
+  byte[] optionRaw=new byte[checked((int)N(options["sourceBytes"]))];
+  try{using(var digest=SHA256.Create()){
    for(int n=1;n<=count;n++){
     string rowHash;Row row=ReadSdkIntakeRow(dir,channel,n,out rowHash),ev=DesktopTrustKeyHostSource.Map(row["entry"]);DesktopTrustKeyHostSource.Exact(ev,"ref,snapshot");
     Row snapshot=DesktopTrustKeyHostSource.Map(ev["snapshot"]),reference=DesktopTrustKeyHostSource.Ref(ev["ref"]);
@@ -336,6 +337,7 @@ internal sealed class NormalExecutionSpoolProfileSource {
       string encoded=S(row,"bytes");if(encoded.Length>2796203||encoded.Length%4==1||!Regex.IsMatch(encoded,@"\A[A-Za-z0-9_-]+\z"))throw Invalid();
       byte[] bytes=Convert.FromBase64String(encoded.Replace('-','+').Replace('_','/')+new string('=',(4-encoded.Length%4)%4));
       try{Check();if(bytes.LongLength!=N(part["utf8Bytes"])||Convert.ToBase64String(bytes).TrimEnd('=').Replace('+','-').Replace('/','_')!=encoded||DesktopTrustKeyHostSource.Hash(bytes)!=S(part,"contentHash"))throw Invalid();
+       if(optionBytes+bytes.LongLength>optionRaw.LongLength)throw Invalid();Buffer.BlockCopy(bytes,0,optionRaw,checked((int)optionBytes),bytes.Length);
        optionBytes=checked(optionBytes+bytes.LongLength);if(optionBytes>2*MiB)throw Invalid();digest.TransformBlock(bytes,0,bytes.Length,bytes,0);
       }finally{Array.Clear(bytes,0,bytes.Length);}
      }
@@ -345,7 +347,56 @@ internal sealed class NormalExecutionSpoolProfileSource {
    digest.TransformFinalBlock(new byte[0],0,0);
    if(optionBytes!=N(options["sourceBytes"])||BitConverter.ToString(digest.Hash).Replace("-","").ToLowerInvariant()!=S(options,"contentHash"))throw Invalid();
   }
+  Check();ValidateSdkStartOptions(optionRaw);
   if(J(Inspect(rows,Normal,allocation,dir,channel,summary))!=J(summary))throw Invalid();Check();
+  }finally{Array.Clear(optionRaw,0,optionRaw.Length);}
+ }
+ // START_OPTIONS 데이터만 검사한다. 일반 wire parser/SDK 표기/실행 계획을 발급하지 않는다.
+ void ValidateSdkStartOptions(byte[] bytes){
+  try{Check();if(bytes==null||bytes.Length<1||bytes.Length>2*MiB)throw Invalid();
+   string text=new UTF8Encoding(false,true).GetString(bytes);new SdkOptionsReader(text,Check).Read();Check();
+  }catch{throw Invalid();}
+ }
+ sealed class SdkOptionsReader {
+  readonly string text;readonly Action current;int at;
+  internal SdkOptionsReader(string value,Action check){text=value;current=check;}
+  char Peek(){return at<text.Length?text[at]:'\0';}
+  void Step(){at++;if((at&1023)==0)current();}
+  void Space(){while(Peek()==' '||Peek()=='\t'||Peek()=='\r'||Peek()=='\n')Step();}
+  void Token(char value){Space();if(Peek()!=value)throw Invalid();Step();}
+  static bool Digit(char c){return c>='0'&&c<='9';}
+  static bool Hex(char c){return Digit(c)||c>='a'&&c<='f'||c>='A'&&c<='F';}
+  string Text(){
+   Space();int start=at;if(Peek()!='"')throw Invalid();Step();bool ended=false;
+   while(at<text.Length){char c=Peek();Step();if(c=='"'){ended=true;break;}if(c<32)throw Invalid();
+    if(c=='\\'){if(at>=text.Length)throw Invalid();char escape=Peek();Step();
+     if(escape=='u'){for(int n=0;n<4;n++){if(at>=text.Length||!Hex(Peek()))throw Invalid();Step();}}
+     else if(escape!='"'&&escape!='\\'&&escape!='/'&&escape!='b'&&escape!='f'&&escape!='n'&&escape!='r'&&escape!='t')throw Invalid();
+    }
+   }
+   if(!ended)throw Invalid();
+   string decoded=new System.Web.Script.Serialization.JavaScriptSerializer{MaxJsonLength=2097152,RecursionLimit=2}.Deserialize<string>(text.Substring(start,at-start));
+   return DesktopTrustKeyHostSource.Text(R("value",decoded),"value");
+  }
+  double Number(){
+   Space();int start=at;if(Peek()=='-')Step();if(Peek()=='0')Step();else{if(Peek()<'1'||Peek()>'9')throw Invalid();while(Digit(Peek()))Step();}
+   if(Peek()=='.'){Step();if(!Digit(Peek()))throw Invalid();while(Digit(Peek()))Step();}
+   if(Peek()=='e'||Peek()=='E'){Step();if(Peek()=='+'||Peek()=='-')Step();if(!Digit(Peek()))throw Invalid();while(Digit(Peek()))Step();}
+   string token=text.Substring(start,at-start);double value;
+   if(!Double.TryParse(token,System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out value)||Double.IsNaN(value)||Double.IsInfinity(value))throw Invalid();
+   return value;
+  }
+  // ECMAScript trim의 공백 집합. Char.IsWhiteSpace의 U+0085 등으로 넓히지 않는다.
+  static bool TrimSpace(char c){return c=='\u0009'||c=='\u000a'||c=='\u000b'||c=='\u000c'||c=='\u000d'||c=='\u0020'||c=='\u00a0'||c=='\u1680'||c>='\u2000'&&c<='\u200a'||c=='\u2028'||c=='\u2029'||c=='\u202f'||c=='\u205f'||c=='\u3000'||c=='\ufeff';}
+  internal void Read(){
+   current();Token('{');string key=Text();if(key!="claudeQueryParams")throw Invalid();Token(':');Token('{');var keys=new HashSet<string>(StringComparer.Ordinal);
+   while(true){key=Text();if(!keys.Add(key))throw Invalid();Token(':');
+    if(key=="model"){string model=Text();if(model.Length<1||model.Length>200||model.All(TrimSpace)||model.Any(c=>Char.IsControl(c)))throw Invalid();}
+    else{if(key!="maxTurns"&&key!="maxBudgetUsd")throw Invalid();double value=Number();if(value<0||value>9007199254740991d||key=="maxTurns"&&(value<1||Math.Truncate(value)!=value))throw Invalid();}
+    Space();if(Peek()=='}'){Step();break;}Token(',');
+   }
+   if(!keys.Contains("model"))throw Invalid();Token('}');Space();if(at!=text.Length)throw Invalid();current();
+  }
  }
  static void RequireSdkFirst(Row snapshot,Row reference,Row handoff,bool start,int sequence){
   var envelope=DesktopTrustKeyHostSource.Map(handoff[start?"startEnvelope":"sendEnvelope"]);
