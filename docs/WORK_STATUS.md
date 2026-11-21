@@ -21911,3 +21911,11 @@ developer_primary가 단일 작성했다. 기존 2파일 읽기 감독에 명시
 최초 신규 모듈 부재 RED exit1 `08261f`. 최종 `node --test tests/unit/FN03/tc01-preload-files.test.ts` 10통과·실패/건너뜀0 exit0 `d3dcf7`, 좁은 TypeScript exit0 `289694`, 신규 파일 공백/LF exit0 `ac51b7`. Main 최종 지문 확인, 독립 검수 C0/I0. 링크·설치 트리 누락/추가·파일 변조·만료·원 handle 회수 불명을 합성 검증했다. 소스 SHA256 `5A708D939D13E794F0C6BE5050C490D6A4A1100405D115321848CD272CB83D65`, 시험 SHA256 `07CCBB197B5BAEBC50639519FF09C61F6851C7F5544D89A8CB0A9E8921B07021`.
 
 실제 Linux 설치 경로와 install 옵션·플랫폼별 선택 의존성·완전 적재 graph·프로세스 감독은 미확인이다. .bin 링크는 발견 시 거절한다. 실제 Windows 설정 읽기·SSH·WSL·DB·권한·서비스·Agent 실행0. 다음은 고정 Node의 단일 실행 진입 및 같은 프로세스의 결과 수거를 기존 감독 경로에 연결하는 것이다. 롤백은 신규 두 파일과 이 기록·요약의 역적용이다.
+
+### IX01/FN03 원 Node 결과의 한정 수거
+
+기준 `562fc908` clean·추적 차이0. developer_primary가 [결과 수거기](../scripts/qa-fn03-tc01-child-collection.ts)와 [직접 합성시험](../tests/unit/FN03/tc01-child-collection.test.ts)을 작성하고 작성권을 반환했다. 원 stdin 완료, stdout 완료, 원 child 정상 close를 순서대로 검산한다. 기존 launcher의 9필드 보고·출력 4KiB·최대30분 승인창만 소비하며 역순·중복·초과·오류·만료·정리 불명은 UNKNOWN이다. 수거 성공은 로컬 수거 사실이며 원격 시험이나 권위 판정에 사용하지 않는다.
+
+신규 모듈 부재 RED exit1 `b91c87` 이후 `node --test tests/unit/FN03/tc01-child-collection.test.ts` 합성11통과·실패/건너뜀0 exit0 `ceb460`, 좁은 타입 exit0 `1523f0`, 공백/LF exit0 `11d4aa`. Main 원 계약과 두 지문 대조, 독립 C0/I0. 소스 SHA256 `56CA9ED64C15896586229FEAC1D3D1D6AD6C95B9845EA922E5CBBBE0081AA1B7`, 시험 SHA256 `0CAD348AB3F081CEE57BCBF0AB2BBD263F2B0CEA4241E2ADA6F467362872D9AF`.
+
+회수는 자기 listener/timer에만 적용한다. 실제 프로세스 진입·원 child/manifest/승인의 결박, 동일 Linux 설치본과 PG 저장·재조회는 미완료다. Windows 설정·SSH·WSL·DB·권한·서비스·Agent 실행0. 다음은 검산된 실행 파일과 입력을 기존 감독의 단일 child에 결박하는 것이다. 롤백은 신규 두 파일과 기록·요약의 역적용이다.
