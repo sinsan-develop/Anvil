@@ -21677,3 +21677,9 @@ Main은 0101의 직접 표 접근과 두 목적 함수·기존 dispatcher의 제
 담당 공개 생성 계약과 불일치하던 초기 반례2건을 보완해 직접6·인접3통과, 좁은 타입·공백 종료0. Main `node --test tests/unit/FN03/source-content-management-origin-fixture.test.ts tests/unit/FN03/source-content-management-origin-child.test.ts` 9통과·실패/건너뜀0·공백0 `08a1f7`. 소스 0A4F5CEF3BE2319BDAB011BA727211D139D5583290328F99AF7E5D924C1B07E8, 시험 BC0C026B8CECF3BCA0CE118BFF9D7CD812EBA96839BCF06A1B70B6D22C3B6841. 실제 세션·DB·권한·키·서비스·WSL/SSH·Agent 접근/실행0. 롤백은 신규 두 파일 및 이 기록의 역적용이다.
 
 독립 확인에서 공개 draft→project 생성의 지정 artifactRoot가 빈 선택에도 namespace proof를 만들고 원 생성 거래에서 quota_adopt_creation에 연결됨을 확인했다. 다음은 해당 정상 경로로 권한과 원장 증거를 공급하는 격리 시험 준비를 코드로 연결하는 것이다. 기존 DB에 account를 직접 채우거나 시험 자원이 실제로 생성됐다고 표시하지 않는다.
+
+### FN03 격리 시험의 공개 생성·정책 준비 경로
+
+기준 `b04a28d7`, developer_primary 단일 작성·반환. 신규 provision과 합성 시험을 추가했다. 기존 draft→project→savePermissionPolicy 진입점의 요청과 반환, 각 단계의 동일 원 거래 순서와 COMMIT 응답, 생성 요청·결과 및 저장량 계정·현재 정책·방법론의 관측 근거를 대조한 뒤 앞선 fixture 검산에 전달한다. 프로젝트 생성 한 요청의 복수 거래는 기록 순서에서 확인한다. 원 거래 불명·반환/관측 불일치·현재성 상실 뒤 추가 POST/관측0이다. DB에 계정이나 정책을 직접 삽입하는 경로는 없다.
+
+담당 신규 모듈 부재 RED 뒤 직접4·인접6통과·실패/건너뜀0 `2fcff0`, 좁은 TypeScript/공백 종료0 `50dc62`. Main `node --test tests/unit/FN03/source-content-management-origin-provision.test.ts` 직접4통과·실패/건너뜀0 `38f97a`. 소스 SHA256 565DCEC1C73C0F14372FA4A9B2A518EE31F61A139DCFA7D4905F0447D174B6B1, 시험 4E52B6A8230A5553D028269940BF1A10E5EC11361E9107C7F1E2BB68A9C0F5C5. 합성 Fastify 응답이며 실제 PG/root 생성·관측·정착·연결은 미검증이다. 실제 DB·권한·키·서비스·WSL/SSH·Agent 접근0. 다음은 기존 PostgreSQL 격리 실행기의 원 자원·연결 및 고정 관측 공급을 조립하는 것이다. 롤백은 이번 두 파일과 기록을 역적용한다.
