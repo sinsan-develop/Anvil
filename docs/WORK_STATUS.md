@@ -21669,3 +21669,11 @@ Main은 0101의 직접 표 접근과 두 목적 함수·기존 dispatcher의 제
 기준 `63117a8c`, developer_primary 단일 작성·반환. 신규 child와 합성 시험만 추가했다. 제공된 원 Pool을 거래 어댑터로 감싸 기존 AccessRepository와 Fastify inject, 보호 내부 조회, 원장 검증 여정을 연결했다. 관측은 고정 SQL·식별자 3개만 별도 포트에 전달한다. 자기 앱만 닫는다. 정상 합성은 COMMIT 3·거절 ROLLBACK 1·원 release 4·observer 5이며 Pool.end0이다. 첫 403·COMMIT 불명·현재성 상실 뒤 후속 업무 호출0을 확인했다.
 
 담당 직접·인접 19통과·실패/건너뜀0·좁은 타입·공백 종료0. Main `node --test` child/거래 두 시험 12통과·실패/건너뜀0 및 공백 종료0 `74c197`. 제품 SHA256 B64FDBFD105C1AEBC245E7D26FDEC53B9D6000446A00EC58E38B1448A8805C82, 시험 00BDF1F50A551C544AF619E12D61EC67D74C9EA7E7E30BF340DD965D967BF9B1. 실제 PG·권한·세션/자료 생성·키·서비스·WSL/SSH·Agent 실행0. 격리 감독의 실제 Pool/관측 공급, 합성 자료의 실제 PG 설치, 실행 원장과 자원 경계가 남는다. 롤백은 신규 두 파일과 기록의 역적용이다.
+
+### FN03 격리 시험용 세션·정책·프로젝트 생성 근거 검산
+
+기준 `d09d1e83`, developer_primary 단일 작성·반환. 신규 FN03 fixture와 시험 두 경로. 제공된 세션의 token/CSRF 결박·기한, 동일 OWNER의 두 client와 단독 제어, 기존 정책 편집기가 수용하는 본인 관리 목적 AUTO, 원 createProject의 intent·명령·영수증·계정·manifest 대응을 검산한다. 두 번째 client의 403은 실제 제어권 미보유이며 정책 DENY 실행 증거와 구분한다. quota 행의 대응을 검산하지만 실제 namespace proof·동일 거래 정착이나 인가를 발급하지 않는다.
+
+담당 공개 생성 계약과 불일치하던 초기 반례2건을 보완해 직접6·인접3통과, 좁은 타입·공백 종료0. Main `node --test tests/unit/FN03/source-content-management-origin-fixture.test.ts tests/unit/FN03/source-content-management-origin-child.test.ts` 9통과·실패/건너뜀0·공백0 `08a1f7`. 소스 0A4F5CEF3BE2319BDAB011BA727211D139D5583290328F99AF7E5D924C1B07E8, 시험 BC0C026B8CECF3BCA0CE118BFF9D7CD812EBA96839BCF06A1B70B6D22C3B6841. 실제 세션·DB·권한·키·서비스·WSL/SSH·Agent 접근/실행0. 롤백은 신규 두 파일 및 이 기록의 역적용이다.
+
+독립 확인에서 공개 draft→project 생성의 지정 artifactRoot가 빈 선택에도 namespace proof를 만들고 원 생성 거래에서 quota_adopt_creation에 연결됨을 확인했다. 다음은 해당 정상 경로로 권한과 원장 증거를 공급하는 격리 시험 준비를 코드로 연결하는 것이다. 기존 DB에 account를 직접 채우거나 시험 자원이 실제로 생성됐다고 표시하지 않는다.
