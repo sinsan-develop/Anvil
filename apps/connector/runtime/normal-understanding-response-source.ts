@@ -94,9 +94,12 @@ async function readSource(raw:NormalUnderstandingResponseRequest|NormalUnderstan
    for(let n=1;n<=rowCount;n++){
     guard();if(reader.rowCount!==rowCount||reader.read!==readRow)bad();
     const rawRow=await readRow.call(reader,n);guard();
+    if(!discovery&&(reader.rowCount!==rowCount||reader.read!==readRow))bad();
     const r=boundedSdkObject(rawRow,3*MiB).value,s=r.snapshot;
     total+=Buffer.byteLength(canonicalJson(r))+1;
     if(total>64*MiB||!exact(r,['ref','snapshot'])||!refV1(r.ref)||r.ref.version!==1||ids.has(r.ref.id)||r.ref.contentHash!==hash(s)||!equal(s.scope,request.scope)||s.schemaVersion!==1||s.sequence!==n||!equal(s.previousRef,previous)||!isoV1(s.observedAt)||Date.parse(s.observedAt)>last||Date.parse(s.observedAt)<previousTime)bad();
+    const fixedTail=!discovery&&r.ref.id===request.tailRef.id;
+    if(fixedTail&&(!equal(r.ref,request.tailRef)||n<request.lastSequence))bad();
     ids.add(r.ref.id);previousTime=Date.parse(s.observedAt);
     if(n===request.firstSequence)beforeRef=cloneV1(previous);
     if(n===request.lastSequence+1)afterRef=cloneV1(r.ref);
@@ -136,6 +139,8 @@ async function readSource(raw:NormalUnderstandingResponseRequest|NormalUnderstan
      prefix=hash({previous:prefix,ref:r.ref,payloadDigest:s.payloadDigest});
     }
     previous=cloneV1(r.ref);
+    // 선택 범위와 앞뒤 참조는 요청이 고정한 검산된 prefix 내부에서만 얻는다.
+    if(fixedTail)break;
    }
    guard();if(!confirmed||!discovery&&(!parts.length||!equal(previous,request.tailRef)))bad();completed=true;
    }catch{live=false;return bad();}
