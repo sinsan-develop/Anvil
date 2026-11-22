@@ -31,10 +31,11 @@ const projectId=id(1),session={user:{id:id(2)},clientId:id(3),csrfToken:'c'.repe
 // Run the real click handlers in memory; the fixture owns hook state/effect cleanup and opens no browser.
 const reactMemory='data:text/javascript,'+encodeURIComponent(`
  let cursor=0,slots=[],effects=new Map(),pending=[];
+ const roots=new Map();
  export function useState(initial){
-  const id=cursor++;
+  const id=cursor++,owned=slots;
   if(!(id in slots))slots[id]=initial;
-  return [slots[id],value=>{slots[id]=typeof value==='function'?value(slots[id]):value;}];
+  return [slots[id],value=>{owned[id]=typeof value==='function'?value(owned[id]):value;}];
  }
  export function useRef(value){
   const id=cursor++;
@@ -46,11 +47,18 @@ const reactMemory='data:text/javascript,'+encodeURIComponent(`
   return slots[id].value;
  }
  export function useEffect(effect,deps){
-  const id=cursor++,old=effects.get(id);
-  if(!old||deps.some((value,i)=>value!==old.deps[i]))pending.push(()=>{old?.clean?.();effects.set(id,{deps,clean:effect()});});
+  const id=cursor++,owned=effects,old=owned.get(id);
+  if(!old||deps.some((value,i)=>value!==old.deps[i]))pending.push(()=>{old?.clean?.();owned.set(id,{deps,clean:effect()});});
  }
- export function draw(render){cursor=0;const tree=render();for(const effect of pending.splice(0))effect();return tree;}
- export function unmount(){for(const {clean} of effects.values())clean?.();effects.clear();slots=[];}`);
+ export function draw(render,key='default'){
+  if(!roots.has(key))roots.set(key,{slots:[],effects:new Map(),pending:[]});
+  ({slots,effects,pending}=roots.get(key));cursor=0;
+  const tree=render();for(const effect of pending.splice(0))effect();return tree;
+ }
+ export function unmount(key='default'){
+  const root=roots.get(key);if(!root)return;
+  for(const {clean} of root.effects.values())clean?.();roots.delete(key);
+ }`);
 type ElementNode={type?:unknown;props?:{children?:unknown;onClick?:()=>void;disabled?:boolean}};
 function button(tree:unknown,label:string):ElementNode['props']{
  if(Array.isArray(tree)){for(const item of tree){const found=button(item,label);if(found)return found;}return;}
@@ -59,6 +67,64 @@ function button(tree:unknown,label:string):ElementNode['props']{
  if(node.type==='button'&&node.props?.children===label)return node.props;
  return button(node.props?.children,label);
 }
+
+test('FN09 range confirmation uses exact contiguous metadata and invalidates cancelled or replaced drafts',async()=>{
+ const hooks=await import(reactMemory),m=await compile(reactMemory),f=fixture();
+ const command=m.prepareNormalUnderstandingCommand({scope:f.ready,clientId:session.clientId,controlGeneration:9});
+ const requestRef=ref(26),request={requestRef,projectId,executionId:command.targetId,executionGeneration:command.expectedVersion,assignmentRef,preparationRef};
+ m.normalUnderstandingRecords(session,f.client).set('stored',{command,body:JSON.stringify(command),state:'PENDING_SOURCE',requestRef});
+ type Props=Parameters<UI['NormalUnderstandingDiscovery']>[0];
+ type Reader=NonNullable<Props['metadataReader']>;
+ type Requester=NonNullable<Props['rangeRequester']>;
+ const ranges=[3,4,6,7].map(sequence=>({sequence,outputRef:ref(29+sequence),payloadDigest:'b'.repeat(64),textBlocks:1,textBytes:sequence>=6?1100000:8}));
+ const stored:Awaited<ReturnType<Reader>>={status:'METADATA_STORED',request,resultRef:ref(27),observedAt:f.ready.observedAt,expiresAt:f.ready.expiresAt,currentness:'CURRENT',selectionAvailable:false,
+  metadata:{attribution:'SESSION_ONLY',contextBundleRef:ref(28),initConfirmationRef:ref(29),tailRef:ref(36),wholeConversationComplete:false,ranges}};
+ const calls:{draft:Parameters<Requester>[0];signal:AbortSignal;resolve:()=>void}[]=[];
+ const submit:Requester=(draft,signal)=>new Promise(resolve=>calls.push({draft,signal,resolve}));
+ let metadataReader:Reader=async()=>stored,rangeRequester:Requester|undefined;
+ const draw=()=>hooks.draw(()=>m.NormalUnderstandingDiscovery({client:f.client,session,projectId,assignmentRef,preparations:[],busy:false,metadataReader,rangeRequester}));
+ const find=(tree:unknown,match:(v:any)=>boolean):any=>{
+  if(Array.isArray(tree)){for(const entry of tree){const found=find(entry,match);if(found)return found;}return;}
+  return tree&&typeof tree==='object'?(match(tree)?tree:find((tree as ElementNode).props?.children,match)):undefined;
+ };
+ const pane=()=>{
+  const node=find(draw(),node=>node.props?.requestRange);
+  if(!node){hooks.unmount('range');return null;}
+  return hooks.draw(()=>node.type(node.props),'range');
+ };
+ const select=(label:string,value:string)=>find(pane(),node=>node.type==='select'&&node.props['aria-label']===label).props.onChange({target:{value}});
+ const pick=(from:number,to:number)=>{select('출력 구간 시작 순번',String(from));select('출력 구간 끝 순번',String(to));};
+ const read=async()=>{button(draw(),'탐색 결과 확인')?.onClick?.();await new Promise<void>(resolve=>setImmediate(resolve));};
+ try{
+  await read();assert.equal(pane(),null);assert.equal(calls.length,0);
+  rangeRequester=submit;pane();
+  for(const [from,to] of [[3,6],[6,7],[4,3],[5,5]] as const){
+   pick(from,to);assert.equal(button(pane(),'선택 구간 조회 요청')?.disabled,true);
+   button(pane(),'선택 구간 조회 요청')?.onClick?.();
+  }
+  assert.equal(calls.length,0);
+  pick(3,4);const old=button(pane(),'선택 구간 조회 요청');assert.equal(old?.disabled,false);assert.equal(calls.length,0);
+  old?.onClick?.();old?.onClick?.();assert.equal(calls.length,1);
+  assert.deepEqual(calls[0]!.draft,{request,resultRef:stored.resultRef,contextBundleRef:stored.metadata.contextBundleRef,initConfirmationRef:stored.metadata.initConfirmationRef,tailRef:stored.metadata.tailRef,firstSequence:3,lastSequence:4,ranges:ranges.slice(0,2)});
+  assert.equal('text' in calls[0]!.draft.ranges[0]!,false);
+  button(pane(),'구간 선택 취소')?.onClick?.();assert.equal(calls[0]!.signal.aborted,true);
+  old?.onClick?.();calls[0]!.resolve();await Promise.resolve();
+  assert.equal(calls.length,1);assert.ok(!renderToStaticMarkup(pane()).includes('구간 요청 전달'));
+  pick(3,4);assert.equal(button(pane(),'선택 구간 조회 요청')?.disabled,true);
+  pick(3,3);const previous=button(pane(),'선택 구간 조회 요청');
+  metadataReader=async()=>structuredClone(stored);pane();
+  await read();pane();previous?.onClick?.();assert.equal(calls.length,1);
+  assert.equal(button(pane(),'선택 구간 조회 요청')?.disabled,true);
+  pick(4,4);const previousRequester=button(pane(),'선택 구간 조회 요청');
+  rangeRequester=undefined;assert.equal(pane(),null);
+  rangeRequester=submit;pane();previousRequester?.onClick?.();assert.equal(calls.length,1);
+  pick(4,4);const aboutToExpire=button(pane(),'선택 구간 조회 요청'),clock=Date.now;
+  try{Date.now=()=>Date.parse(stored.expiresAt);aboutToExpire?.onClick?.();assert.equal(pane(),null);}
+  finally{Date.now=clock;}
+  assert.equal(calls.length,1);
+  assert.deepEqual(f.calls,[]);
+ }finally{hooks.unmount('range');hooks.unmount();}
+});
 
 test('FN09 workspace keeps the metadata reader across equivalent owner projections and invalidates old readers',async()=>{
  const hooks=await import(reactMemory),m=await compile(reactMemory,'WorkspaceResponsibleSessions');

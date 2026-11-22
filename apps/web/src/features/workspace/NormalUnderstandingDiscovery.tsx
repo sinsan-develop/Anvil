@@ -27,7 +27,14 @@ export type NormalUnderstandingMetadataResult=
  | {status:'METADATA_STORED';request:NormalUnderstandingMetadataRequest;resultRef:PlanRef;currentness:'CURRENT';observedAt:string;expiresAt:string;
     metadata:{contextBundleRef:PlanRef;initConfirmationRef:PlanRef;tailRef:PlanRef;attribution:'SESSION_ONLY';wholeConversationComplete:false;ranges:MetadataRange[]};selectionAvailable:false};
 export type NormalUnderstandingMetadataReader=(request:Readonly<NormalUnderstandingMetadataRequest>,signal:AbortSignal)=>Promise<NormalUnderstandingMetadataResult>;
-type Props={client:ApiClient;session:DocumentSession;projectId:string;assignmentRef:PlanRef;preparations:PreparationRecord[];busy:boolean;metadataReader?:NormalUnderstandingMetadataReader};
+type StoredMetadata=Extract<NormalUnderstandingMetadataResult,{status:'METADATA_STORED'}>;
+export type NormalUnderstandingRangeDraft=Readonly<{
+ request:NormalUnderstandingMetadataRequest;resultRef:PlanRef;contextBundleRef:PlanRef;
+ initConfirmationRef:PlanRef;tailRef:PlanRef;firstSequence:number;lastSequence:number;ranges:ReadonlyArray<Readonly<MetadataRange>>;
+}>;
+export type NormalUnderstandingRangeRequester=(draft:NormalUnderstandingRangeDraft,signal:AbortSignal)=>Promise<void>;
+type Props={client:ApiClient;session:DocumentSession;projectId:string;assignmentRef:PlanRef;preparations:PreparationRecord[];busy:boolean;
+ metadataReader?:NormalUnderstandingMetadataReader;rangeRequester?:NormalUnderstandingRangeRequester};
 type SessionRecords={csrf:string;userId:string;clientId:string;commands:Map<string,Retained>};
 const clientRecords=new WeakMap<ApiClient,WeakMap<typeof fetch,SessionRecords[]>>();
 
@@ -159,7 +166,73 @@ export async function readNormalUnderstandingMetadata(client:ApiClient,session:D
  }
 }
 
-export function NormalUnderstandingDiscovery({client,session,projectId,assignmentRef,preparations,busy,metadataReader}:Props){
+function prepareRangeDraft(current:StoredMetadata,firstSequence:number,lastSequence:number):NormalUnderstandingRangeDraft|null{
+ if(Date.parse(current.expiresAt)<=Date.now()||!version(firstSequence)||!version(lastSequence)||lastSequence<firstSequence||lastSequence-firstSequence>=200)return null;
+ const ranges=current.metadata.ranges.filter(range=>range.sequence>=firstSequence&&range.sequence<=lastSequence);
+ if(ranges.length!==lastSequence-firstSequence+1||ranges.some((range,index)=>range.sequence!==firstSequence+index)||
+    ranges.reduce((count,range)=>count+range.textBlocks,0)>200||ranges.reduce((bytes,range)=>bytes+range.textBytes,0)>2*1024*1024)return null;
+ const {request,resultRef,metadata:{contextBundleRef,initConfirmationRef,tailRef}}=current;
+ return structuredClone({request,resultRef,contextBundleRef,initConfirmationRef,tailRef,firstSequence,lastSequence,ranges});
+}
+
+function UnderstandingRangeSelection({current,requestRange,active,disabled}:{current:StoredMetadata;requestRange:NormalUnderstandingRangeRequester;active:()=>boolean;disabled:boolean}){
+ const [first,setFirst]=useState(''),[last,setLast]=useState(''),[notice,setNotice]=useState('');
+ const ownerRef=useRef({current,requestRange});
+ if(ownerRef.current.current!==current||ownerRef.current.requestRange!==requestRange)ownerRef.current={current,requestRange};
+ const owner=ownerRef.current,view=useRef({owner,active,disabled});view.current={owner,active,disabled};
+ const firstOwner=useRef(owner),activeSelection=firstOwner.current===owner;
+ const inFlight=useRef<{owner:typeof owner;controller:AbortController}|null>(null);
+ const live=useRef(false);
+ const dispatched=useRef<{current:StoredMetadata;keys:Set<string>}>({current,keys:new Set()});
+ if(dispatched.current.current!==current)dispatched.current={current,keys:new Set()};
+ const range=activeSelection?prepareRangeDraft(current,Number(first),Number(last)):null;
+ const selection=useRef(range);selection.current=range;
+ useEffect(()=>{
+  live.current=true;firstOwner.current=owner;selection.current=null;setFirst('');setLast('');setNotice('');
+  return()=>{
+   live.current=false;selection.current=null;
+   if(inFlight.current?.owner===owner){inFlight.current.controller.abort();inFlight.current=null;}
+  };
+ },[owner]);
+ function cancel(){
+  if(ownerRef.current!==owner)return;
+  inFlight.current?.controller.abort();inFlight.current=null;
+  selection.current=null;setFirst('');setLast('');setNotice('');
+ }
+ async function confirm(){
+  if(!live.current||ownerRef.current!==owner||view.current.owner!==owner||!view.current.active()||view.current.disabled||inFlight.current||
+     !range||!selection.current||!same(selection.current,range))return;
+  const draft=prepareRangeDraft(current,range.firstSequence,range.lastSequence);
+  if(!draft||!same(draft,range))return;
+  const key=ordered([draft.firstSequence,draft.lastSequence]),used=dispatched.current.keys;
+  if(used.has(key))return;
+  used.add(key);
+  const flight={owner,controller:new AbortController()};inFlight.current=flight;setNotice('구간 요청 전달 중');
+  const isCurrent=()=>inFlight.current===flight&&ownerRef.current===owner&&view.current.active()&&!flight.controller.signal.aborted&&Date.parse(current.expiresAt)>Date.now();
+  try{await requestRange(draft,flight.controller.signal);if(isCurrent())setNotice('구간 요청 전달');}
+  catch{if(isCurrent())setNotice('구간 요청 결과 미확인');}
+  finally{if(inFlight.current===flight)inFlight.current=null;}
+ }
+ const busy=inFlight.current?.owner===owner;
+ const used=range!==null&&dispatched.current.keys.has(ordered([range.firstSequence,range.lastSequence]));
+ return <div>
+  <fieldset disabled={disabled||busy}>
+   <legend>조회할 출력 구간</legend>
+   <label>시작 순번<select aria-label="출력 구간 시작 순번" value={activeSelection?first:''} onChange={event=>{selection.current=null;setFirst(event.target.value);setNotice('');}}>
+    <option value="">시작 순번 선택</option>{current.metadata.ranges.map(row=><option key={row.sequence} value={row.sequence}>{row.sequence}</option>)}
+   </select></label>
+   <label>끝 순번<select aria-label="출력 구간 끝 순번" value={activeSelection?last:''} onChange={event=>{selection.current=null;setLast(event.target.value);setNotice('');}}>
+    <option value="">끝 순번 선택</option>{current.metadata.ranges.map(row=><option key={row.sequence} value={row.sequence}>{row.sequence}</option>)}
+   </select></label>
+   {activeSelection&&first&&last&&!range?<p role="status">목록에 있는 연속 순번을 한도 안에서 선택하세요.</p>:null}
+   <button type="button" disabled={!range||used} onClick={()=>void confirm()}>선택 구간 조회 요청</button>
+  </fieldset>
+  {activeSelection&&(first||last||notice)?<button type="button" onClick={cancel}>구간 선택 취소</button>:null}
+  {activeSelection&&notice?<p role="status">{notice}</p>:null}
+ </div>;
+}
+
+export function NormalUnderstandingDiscovery({client,session,projectId,assignmentRef,preparations,busy,metadataReader,rangeRequester}:Props){
  const [selection,setSelection]=useState(''),[basis,setBasis]=useState<Basis|null>(null),[notice,setNotice]=useState(''),[working,setWorking]=useState(false),[,render]=useState(0);
  const local=normalUnderstandingRecords(session,client),key=ordered([projectId,assignmentRef,session.user.id,session.clientId]);
  const scope=useRef({key,records:local}),flight=useRef<AbortController|null>(null);
@@ -180,9 +253,11 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
  const [metadata,setMetadata]=useState<{key:string;record:Retained;owner:typeof readOwner;
   value:NormalUnderstandingMetadataResult|'READING'|'UNKNOWN'|'AUTH_REQUIRED'}|null>(null);
  const metadataFlight=useRef<{owner:typeof readOwner;controller:AbortController}|null>(null);
+ const metadataView=useRef<typeof metadata>(null);
  function cancelMetadata(){
   metadataFlight.current?.controller.abort();
   metadataFlight.current=null;
+  metadataView.current=null;
   setMetadata(null);
  }
  useEffect(()=>{
@@ -202,6 +277,7 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
    assignmentRef:command.payload.assignmentRef,preparationRef:command.payload.preparationRef});
   const operation=new AbortController(),reading={owner:readOwner,controller:operation};
   metadataFlight.current=reading;
+  metadataView.current=null;
   const isCurrent=()=>active(operation)&&metadataScope.current===readOwner&&local.get(writeKey)===record;
   const publish=(value:NonNullable<typeof metadata>['value'])=>{if(isCurrent())setMetadata({key:writeKey,record,owner:readOwner,value});};
   publish('READING');
@@ -214,6 +290,7 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
   finally{if(metadataFlight.current===reading)metadataFlight.current=null;}
  }
  const shownMetadata=metadata?.owner===readOwner?metadata:null;
+ metadataView.current=shownMetadata;
  useEffect(()=>{
   const value=shownMetadata?.value;
   if(typeof value!=='object'||value.status!=='METADATA_STORED')return;
@@ -278,6 +355,8 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
      <p role="status">출력 메타데이터 보관 · 관측 {currentView.observedAt}</p>
      <p>같은 세션 · 출력 구간 {currentView.metadata.ranges.length}개 · 결과 {currentView.resultRef.id}</p>
      <ul>{currentView.metadata.ranges.map(range=><li key={range.outputRef.id}>순번 {range.sequence} · 출력 {range.outputRef.id} · 텍스트 {range.textBlocks}개 / {range.textBytes} 바이트</li>)}</ul>
+     {rangeRequester&&currentView.metadata.ranges.length?<UnderstandingRangeSelection current={currentView} requestRange={rangeRequester} disabled={busy||working}
+      active={()=>metadataScope.current===readOwner&&metadataView.current===shownMetadata&&local.get(writeKey)===record&&normalUnderstandingRecords(session,client)===local}/>:null}
     </>:null}
    </>:null}
    {record.state==='DENIED'?<><p role="alert">탐색 요청 거절 · {record.code}</p>
