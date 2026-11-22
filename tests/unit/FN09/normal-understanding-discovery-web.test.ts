@@ -126,6 +126,90 @@ test('FN09 range confirmation uses exact contiguous metadata and invalidates can
  }finally{hooks.unmount('range');hooks.unmount();}
 });
 
+test('FN09 range provider preserves the exact uncertain command and only sends it again by explicit confirmation',async()=>{
+ const hooks=await import(reactMemory),m=await compile(reactMemory);
+ const posts:{path:string;body:string;signal:AbortSignal|null|undefined}[]=[];
+ const newRef=ref(47),requestRef=ref(46),executionId=id(8),signal=new AbortController().signal;
+ const range={outputRef:ref(44),sequence:3,payloadDigest:'b'.repeat(64),textBlocks:1,textBytes:12};
+ const nextRange={...range,sequence:4,outputRef:ref(48)};
+ const draft={request:{requestRef,projectId,executionId,executionGeneration:7,assignmentRef,preparationRef},resultRef:ref(42),
+  contextBundleRef:ref(43),initConfirmationRef:ref(45),tailRef:nextRange.outputRef,firstSequence:3,lastSequence:3,ranges:[range]};
+ const different={...draft,firstSequence:4,lastSequence:4,ranges:[nextRange]};
+ let resumeControl!:()=>void,resumePost!:()=>void;
+ const controlWait=new Promise<void>(resolve=>{resumeControl=resolve;});
+ const postWait=new Promise<void>(resolve=>{resumePost=resolve;});
+ const metadataReader:NonNullable<Parameters<UI['NormalUnderstandingDiscovery']>[0]['metadataReader']>=async()=>({
+  status:'METADATA_STORED',request:draft.request,resultRef:draft.resultRef,currentness:'CURRENT',observedAt:new Date().toISOString(),
+  expiresAt:new Date(Date.now()+30000).toISOString(),selectionAvailable:false,metadata:{contextBundleRef:draft.contextBundleRef,
+    initConfirmationRef:draft.initConfirmationRef,tailRef:draft.tailRef,ranges:[range,nextRange],attribution:'SESSION_ONLY',wholeConversationComplete:false}
+ });
+ let generation=9,mode='UNKNOWN',active=true,reads=0;
+ const client=new ApiClient(async(url,init)=>{
+  if(init?.method==='GET'){if(++reads===1)await controlWait;return Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation,status:'HELD'}});}
+  const body=String(init?.body);posts.push({path:String(url),body,signal:init?.signal});
+  assert.equal(init?.method,'POST');assert.equal(init?.credentials,'same-origin');assert.equal(init?.cache,'no-store');
+  assert.equal(new Headers(init?.headers).get('x-anvil-csrf'),session.csrfToken);
+  if(mode==='UNKNOWN'){await postWait;return Response.json({code:'NORMAL_UNDERSTANDING_REQUEST_INVALID'},{status:422});}
+  const original=JSON.parse(body),at=Date.now()-(mode==='HISTORICAL'?30000:0),observedAt=new Date(at).toISOString(),expiresAt=new Date(at+10000).toISOString();
+  return Response.json({operationId:id(24),commandId:original.commandId,projectId,status:'APPLIED',targetId:newRef.id,version:1,
+   data:{ref:newRef,status:'NORMAL_UNDERSTANDING_RANGE_REQUESTED',requestRef:newRef,state:'PENDING_SOURCE',sourceAvailable:false,selectionAvailable:false,expiresAt},
+   evidenceRefs:[],warnings:[],serverReceivedAt:observedAt});
+ });
+ const assignmentKey=JSON.stringify({contentHash:assignmentRef.contentHash,id:assignmentRef.id,version:assignmentRef.version});
+ let projection=session,commands=m.createNormalUnderstandingRangeCommands(client,session,projectId,assignmentKey,()=>active);
+ const draw=()=>hooks.draw(()=>m.NormalUnderstandingDiscovery({client,session:projection,projectId,assignmentRef,preparations:[],busy:false,metadataReader,
+  rangeRequester:commands.request,rangeRecovery:commands.recover}));
+ const markup=()=>renderToStaticMarkup(draw());
+ const recover=()=>{const control=button(draw(),'같은 구간 명령 결과 확인');assert.ok(control?.onClick);control.onClick();};
+ const settle=()=>new Promise<void>(resolve=>setImmediate(resolve));
+ try{
+  assert.equal(markup(),'');assert.equal(posts.length,0);assert.equal(reads,0);
+  const originalCall=commands.request(draft,signal,()=>true);
+  const rejected=assert.rejects(originalCall,{code:'NORMAL_UNDERSTANDING_REQUEST_INVALID'});
+  await assert.rejects(commands.request(different,signal,()=>true),{code:'NORMAL_UNDERSTANDING_RANGE_ORIGINAL_REQUIRED'});
+  assert.equal(reads,1);assert.equal(posts.length,0);
+  resumeControl();await settle();
+  await assert.rejects(commands.request(different,signal,()=>true),{code:'NORMAL_UNDERSTANDING_RANGE_ORIGINAL_REQUIRED'});
+  assert.equal(reads,1);assert.equal(posts.length,1);
+  resumePost();await rejected;
+  assert.equal(posts.length,1);
+  assert.equal(posts[0]!.path,`/api/v1/projects/${projectId}/executions/${executionId}/understanding-response-read-requests`);
+  assert.equal(posts[0]!.signal,signal);
+  const original=JSON.parse(posts[0]!.body);
+  assert.deepEqual(original,{schemaVersion:1,projectId,commandId:original.commandId,clientId:session.clientId,controlGeneration:9,operation:'readNormalUnderstandingResponse',
+   targetId:executionId,expectedVersion:7,baselineRefs:[],approvalRef:null,payload:{assignmentRef,preparationRef,selection:{requestRef,resultRef:draft.resultRef,
+    initConfirmationRef:draft.initConfirmationRef,tailRef:draft.tailRef,firstSequence:3,lastSequence:3,ranges:[range]}}});
+  await assert.rejects(commands.request(draft,signal,()=>true),{code:'NORMAL_UNDERSTANDING_RANGE_ORIGINAL_REQUIRED'});
+  await assert.rejects(commands.request(different,signal,()=>true),{code:'NORMAL_UNDERSTANDING_RANGE_ORIGINAL_REQUIRED'});
+  assert.equal(posts.length,1);assert.equal(reads,1);
+  assert.match(markup(),new RegExp(original.commandId));assert.match(markup(),/구간 요청 결과 미확인/);
+  projection={...session,user:{...session.user}};
+  commands=m.createNormalUnderstandingRangeCommands(client,projection,projectId,assignmentKey,()=>active);
+  assert.match(markup(),/같은 구간 명령 결과 확인/);
+  const metadataCommand=m.prepareNormalUnderstandingCommand({clientId:session.clientId,controlGeneration:9,
+   scope:{projectId,executionId,executionGeneration:7,assignmentRef,preparationRef,
+    observedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+30000).toISOString()}});
+  m.normalUnderstandingRecords(projection,client).set('original-metadata',{
+   command:metadataCommand,body:JSON.stringify(metadataCommand),state:'PENDING_SOURCE',requestRef
+  });
+  button(draw(),'탐색 결과 확인')?.onClick?.();await settle();
+  assert.match(markup(),/출력 메타데이터 보관/);assert.doesNotMatch(markup(),/선택 구간 조회 요청/);
+  generation=10;recover();await settle();assert.equal(posts.length,1);
+  assert.match(markup(),/구간 요청 결과 미확인/);
+  generation=9;mode='ACK';recover();await settle();
+  assert.equal(posts.length,2);assert.equal(posts[1]!.body,posts[0]!.body);
+  assert.match(markup(),/구간 요청 보관 · 원문 대기/);assert.doesNotMatch(markup(),/같은 구간 명령 결과 확인|출력 원문/);
+  await assert.rejects(commands.request(different,signal,()=>true),{code:'NORMAL_UNDERSTANDING_RANGE_ORIGINAL_REQUIRED'});
+  await assert.rejects(commands.request({...draft,firstSequence:4,lastSequence:4},signal,()=>false),{code:'DISCOVERY_SCOPE_CHANGED'});
+  assert.equal(posts.length,2);
+  mode='HISTORICAL';
+  assert.deepEqual(await commands.request({...draft,request:{...draft.request,executionId:id(81),requestRef:ref(82)}},signal,()=>true),newRef);
+  assert.equal(posts.length,3);assert.notEqual(JSON.parse(posts[2]!.body).commandId,original.commandId);
+  assert.match(markup(),/구간 요청 보관 · 현재 원문 조회 불가/);
+  active=false;projection={...session,csrfToken:'r'.repeat(43)};assert.equal(markup(),'');
+ }finally{resumeControl();resumePost();hooks.unmount();}
+});
+
 test('FN09 workspace keeps the metadata reader across equivalent owner projections and invalidates old readers',async()=>{
  const hooks=await import(reactMemory),m=await compile(reactMemory,'WorkspaceResponsibleSessions');
  const client=new ApiClient(async()=>{throw Error('UNEXPECTED_FETCH');});
