@@ -9,20 +9,98 @@ import {ApiClient} from '../../../apps/web/src/api/client.ts';
 type UI=typeof import('../../../apps/web/src/features/workspace/NormalUnderstandingDiscovery.tsx');
 let compiled:Promise<UI>|undefined;
 function load(){
- return compiled??=(async()=>{
+ return compiled??=compile();
+}
+async function compile(hooks?:string):Promise<UI>{
   const entry=fileURLToPath(new URL('../../../apps/web/src/features/workspace/NormalUnderstandingDiscovery.tsx',import.meta.url));
   const built=await build({configFile:false,logLevel:'error',build:{write:false,lib:{entry,formats:['es']},rollupOptions:{external:['react','react/jsx-runtime']}}});
   const output=Array.isArray(built)?built[0]:built;
   assert.ok(output&&'output'in output);
   const chunk=output.output.find(value=>value.type==='chunk');assert.ok(chunk&&chunk.type==='chunk');
-  const code=chunk.code.replace(/(["'])(react(?:\/jsx-runtime)?)\1/g,(_match,_quote,name)=>JSON.stringify(import.meta.resolve(name)));
+  const code=chunk.code.replace(/(["'])(react(?:\/jsx-runtime)?)\1/g,(_match,_quote,name)=>JSON.stringify(name==='react'&&hooks?hooks:import.meta.resolve(name)));
   return import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
- })();
 }
 
 const id=(n:number)=>`af090102-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
 const projectId=id(1),session={user:{id:id(2)},clientId:id(3),csrfToken:'c'.repeat(43)},assignmentRef=ref(5),preparationRef=ref(6);
+
+// Run the real click handlers in memory; the fixture owns hook state/effect cleanup and opens no browser.
+const reactMemory='data:text/javascript,'+encodeURIComponent(`
+ let cursor=0,slots=[],effects=new Map(),pending=[];
+ export function useState(initial){
+  const id=cursor++;
+  if(!(id in slots))slots[id]=initial;
+  return [slots[id],value=>{slots[id]=typeof value==='function'?value(slots[id]):value;}];
+ }
+ export function useRef(value){
+  const id=cursor++;
+  return slots[id]??=( {current:value} );
+ }
+ export function useEffect(effect,deps){
+  const id=cursor++,old=effects.get(id);
+  if(!old||deps.some((value,i)=>value!==old.deps[i]))pending.push(()=>{old?.clean?.();effects.set(id,{deps,clean:effect()});});
+ }
+ export function draw(render){cursor=0;const tree=render();for(const effect of pending.splice(0))effect();return tree;}
+ export function unmount(){for(const {clean} of effects.values())clean?.();effects.clear();slots=[];}`);
+type ElementNode={type?:unknown;props?:{children?:unknown;onClick?:()=>void;disabled?:boolean}};
+function button(tree:unknown,label:string):ElementNode['props']{
+ if(Array.isArray(tree)){for(const item of tree){const found=button(item,label);if(found)return found;}return;}
+ if(!tree||typeof tree!=='object')return;
+ const node=tree as ElementNode;
+ if(node.type==='button'&&node.props?.children===label)return node.props;
+ return button(node.props?.children,label);
+}
+
+test('FN09 metadata click is scoped, current-only, cancellable, and independent from POST recovery',async()=>{
+ const hooks=await import(reactMemory),m=await compile(reactMemory),f=fixture();
+ const command=m.prepareNormalUnderstandingCommand({scope:f.ready,clientId:session.clientId,controlGeneration:9});
+ const requestRef=ref(26),record={command,body:JSON.stringify(command),state:'PENDING_SOURCE' as const,requestRef};
+ const expected={requestRef,projectId,executionId:command.targetId,executionGeneration:command.expectedVersion,assignmentRef,preparationRef};
+ m.normalUnderstandingRecords(session,f.client).set('stored',record);
+ m.normalUnderstandingRecords(session,f.client).set('uncertain',{...record,state:'UNKNOWN'});
+ type Result=Awaited<ReturnType<NonNullable<Parameters<UI['NormalUnderstandingDiscovery']>[0]['metadataReader']>>>;
+ const calls:{request:unknown;signal:AbortSignal;resolve:(value:Result)=>void;reject:(cause:unknown)=>void}[]=[];
+ let reader:Parameters<UI['NormalUnderstandingDiscovery']>[0]['metadataReader']=(request,signal)=>new Promise((resolve,reject)=>calls.push({request,signal,resolve,reject}));
+ let projection=session;
+ const draw=()=>hooks.draw(()=>m.NormalUnderstandingDiscovery({client:f.client,session:projection,projectId,assignmentRef,preparations:[],busy:false,metadataReader:reader}));
+ const markup=()=>renderToStaticMarkup(draw());
+ const click=(label:string)=>{
+  const target=button(draw(),label);assert.ok(target?.onClick);assert.equal(!!target.disabled,false);target.onClick();
+ };
+ const stored:Result={status:'METADATA_STORED',request:expected,resultRef:ref(27),observedAt:f.ready.observedAt,expiresAt:f.ready.expiresAt,currentness:'CURRENT',selectionAvailable:false,
+  metadata:{attribution:'SESSION_ONLY',contextBundleRef:ref(28),initConfirmationRef:ref(29),tailRef:ref(30),wholeConversationComplete:false,
+   ranges:[{outputRef:ref(30),sequence:3,payloadDigest:'b'.repeat(64),textBlocks:1,textBytes:8}]}};
+ const settle=()=>new Promise<void>(resolve=>setImmediate(resolve));
+ try{
+  const original=reader;reader=undefined;
+  assert.ok(!markup().includes('탐색 결과 확인'));assert.ok(markup().includes('같은 탐색 명령 결과 확인'));
+  reader=original;
+  assert.ok(markup().includes('자료 대기'));assert.equal(calls.length,0);
+  click('탐색 결과 확인');assert.deepEqual(calls[0]!.request,expected);
+  assert.ok(markup().includes('탐색 결과 확인 중'));assert.equal(button(draw(),'탐색 결과 확인')?.disabled,true);
+  click('조회 취소');assert.equal(calls[0]!.signal.aborted,true);
+  calls[0]!.resolve(stored);await settle();assert.ok(!markup().includes('출력 메타데이터 보관'));
+  click('탐색 결과 확인');calls[1]!.resolve({status:'PENDING_SOURCE',request:expected});await settle();assert.ok(markup().includes('자료 대기'));
+  click('탐색 결과 확인');calls[2]!.resolve({status:'CURRENT_UNAVAILABLE',request:expected});await settle();assert.ok(markup().includes('현재 조회 불가'));
+  click('탐색 결과 확인');calls[3]!.reject(Error('fixture error text'));await settle();assert.ok(markup().includes('조회 결과 미확인'));assert.ok(!markup().includes('fixture error text'));
+  click('탐색 결과 확인');calls[4]!.resolve({...stored,request:{...expected,requestRef:ref(99)}});await settle();assert.ok(markup().includes('조회 결과 미확인'));
+  click('탐색 결과 확인');calls[5]!.resolve({...stored,metadata:{...stored.metadata,text:'보호 원문 표식'}} as Result);await settle();assert.ok(markup().includes('조회 결과 미확인'));
+  click('탐색 결과 확인');calls[6]!.resolve(stored);await settle();
+  assert.match(markup(),/출력 메타데이터 보관/);assert.match(markup(),/순번 3/);
+  assert.doesNotMatch(markup(),/보호 원문 표식|발췌|검토 저장/);assert.ok(markup().includes('같은 탐색 명령 결과 확인'));
+  reader=undefined;assert.ok(!markup().includes('출력 메타데이터 보관'));
+  reader=original;assert.ok(!markup().includes('출력 메타데이터 보관'));assert.equal(calls.length,7);
+  click('탐색 결과 확인');const replacement:NonNullable<typeof reader>=async()=>{throw Error('UNEXPECTED_REPLACEMENT_READ');};
+  reader=replacement;assert.ok(!markup().includes('탐색 결과 확인 중'));assert.equal(calls[7]!.signal.aborted,true);
+  reader=original;calls[7]!.resolve(stored);await settle();
+  assert.ok(!markup().includes('출력 메타데이터 보관'));assert.equal(calls.length,8);
+  assert.ok(markup().includes('같은 탐색 명령 결과 확인'));
+  click('탐색 결과 확인');projection={...session,csrfToken:'r'.repeat(43)};draw();
+  assert.equal(calls[8]!.signal.aborted,true);calls[8]!.resolve(stored);await settle();
+  assert.ok(!markup().includes('출력 메타데이터 보관'));assert.deepEqual(f.calls,[]);
+ }finally{hooks.unmount();}
+});
 
 function fixture(){
  const observedAt=new Date().toISOString(),expiresAt=new Date(Date.now()+30000).toISOString();
