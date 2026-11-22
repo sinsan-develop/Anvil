@@ -86,6 +86,26 @@ test('internal result v1 has a separate request slot and exact acquisition/curre
 });
 
 function definition(name:string){const start=sql.indexOf('CREATE FUNCTION anvil.'+name+'('),end=sql.indexOf('$$;',start)+3;assert.ok(start>=0&&end>start,name);return sql.slice(start,end);}
+
+test('HUMAN current metadata uses exact private projection, independent current policy and historical settlement without new writes',()=>{
+ const body=definition('fn09_normal_understanding_metadata_current');
+ assert.match(body,/SECURITY DEFINER SET search_path=pg_catalog/);
+ assert.match(body,/expected_tx IS DISTINCT FROM txid_current\(\)::text/);
+ assert.match(body,/fn01_active\(s,a,c\)/);
+ assert.ok(body.indexOf('fn09_normal_understanding_request_basis(s,a,c,command,policy,expected_tx)')<body.indexOf('SELECT \* INTO h'.replace('\\','')));
+ for(const token of ['requestedBy,userId','requestedBy,clientId','requestedBy,sessionId','selection->\'requestRef\' IS DISTINCT FROM','h.execution_id','h.generation',
+  'fn09_normal_understanding_request_complete','fn09_normal_understanding_result_pair_historical','fn09_normal_understanding_storage_complete','last_basis','context',
+  "version=2 AND snapshot_json#>>'{understandingResultBinding,requestRef,id}'=rid::text","part_kind='FN09_DISCOVERY_METADATA'",'LIMIT 2',
+  "least(h.expires_at",'storageExpiresAt','CURRENT_UNAVAILABLE',"'selectionAvailable',false"]){assert.ok(body.includes(token),token);}
+ assert.match(body,/NORMAL_UNDERSTANDING_METADATA_INTEGRITY_FAILED/);
+ assert.doesNotMatch(body,/INSERT INTO|UPDATE |DELETE FROM|set_config|current_setting|normal_request_credential|fn09_normal_understanding_result_custody_valid|EXECUTE /);
+ assert.match(sql,/ALTER FUNCTION anvil\.fn09_normal_understanding_metadata_current\(uuid,uuid,uuid,jsonb,jsonb,text\) OWNER TO anvil_v3_migrator/);
+ assert.match(sql,/REVOKE ALL ON FUNCTION anvil\.fn09_normal_understanding_metadata_current\(uuid,uuid,uuid,jsonb,jsonb,text\) FROM PUBLIC,anvil_v3_app/);
+ assert.match(sql,/GRANT EXECUTE ON FUNCTION anvil\.fn09_normal_understanding_metadata_current\(uuid,uuid,uuid,jsonb,jsonb,text\) TO anvil_v3_app/);
+ assert.doesNotMatch(sql,/GRANT SELECT ON anvil\.normal_understanding_read_requests|CREATE ROLE/);
+ const projection=body.slice(body.lastIndexOf("RETURN jsonb_build_object('status','METADATA_STORED'"));
+ assert.doesNotMatch(projection,/token|credentialRef|acquisitionRef|snapshot_json|sessionBindingRef|binding|sourceScope|bodyHash/);
+});
 test('historical metadata accounting is independent of expiry/revocation/current credentials; new admission remains current and bounded',()=>{
  for(const name of ['fn09_normal_understanding_result_pair_historical','fn09_normal_understanding_storage_plan','fn09_normal_understanding_storage_complete']){
   const body=definition(name);assert.doesNotMatch(body,/clock_timestamp|current_setting|normal_exchange_current|normal_request_credential|fn09_normal_understanding_result_basis/);
