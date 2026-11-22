@@ -55,8 +55,15 @@ export async function readCurrent(db:PoolClient,project:string,connector:string,
 export function original(row:any,binding:unknown,purpose:Purpose='CREDENTIAL_EXCHANGE',credentialRef?:unknown){
  const s=row.snapshot_json,p=s?.publicChallenge,request=s?.request;
  const discovery=purpose==='EXECUTION_REQUEST'&&request?.target?.method==='GET'&&request.target.path==='/api/v1/connectors/'+(binding as any)?.connectorId+'/executions/'+(binding as any)?.executionId+'/understanding-response-read';
+ const resultPrefix='/api/v1/connectors/'+(binding as any)?.connectorId+'/executions/'+(binding as any)?.executionId+'/understanding-response-read/';
+ const resultId=purpose==='EXECUTION_REQUEST'&&request?.target?.method==='POST'&&typeof request.target.path==='string'&&request.target.path.startsWith(resultPrefix)&&request.target.path.endsWith('/result')?request.target.path.slice(resultPrefix.length,-'/result'.length):'';
+ const result=uuidV1(resultId)&&request.target.path===resultPrefix+resultId+'/result';
  if(discovery&&!refV1(s?.understandingRequestRef))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
- if(!recordV1(s,['sequence','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption',...(purpose==='EXECUTION_REQUEST'?['credentialRef']:[]),...(discovery?['understandingRequestRef']:[])])
+ if(result&&(!recordV1(s?.understandingResultBinding,['requestRef','acquisitionRef'])
+  ||!refV1(s.understandingResultBinding.requestRef)||s.understandingResultBinding.requestRef.version!==1||s.understandingResultBinding.requestRef.id!==resultId
+  ||!refV1(s.understandingResultBinding.acquisitionRef)||s.understandingResultBinding.acquisitionRef.version!==1
+  ||request.target.queryHash!==digest({})||!hashV1(request.target.bodyHash)||request.target.bodyHash===digest(null)))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
+ if(!recordV1(s,['sequence','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption',...(purpose==='EXECUTION_REQUEST'?['credentialRef']:[]),...(discovery?['understandingRequestRef']:[]),...(result?['understandingResultBinding']:[])])
   ||(purpose==='EXECUTION_REQUEST'&&(!refV1(credentialRef)||!same(s.credentialRef,credentialRef)))
   ||s.previousRef!==null||s.consumption!==null||!Number.isSafeInteger(s.sequence)||Number(s.sequence)<1
   ||!same(s.binding,binding)||row.content_hash!==digest(s)||s.requestHash!==digest(request)
