@@ -10,7 +10,8 @@ test.before(async()=>{
  assert.equal(before.length,1);await before[0]();fixtures=m.exports;fixtures.capture();
 });
 const id=n=>'ce140001-0000-4000-8000-'+String(n).padStart(12,'0'),ref=n=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
-async function scenario(){
+const resultConfiguration={mode:'NORMAL_PROTECTED',purpose:'FN09_DISCOVERY_METADATA'};
+async function scenario(configuration=resultConfiguration){
  const f=await fixtures.liveNativeOwner(),row=f.stored(),calls=[],spawn=f.ports.spawn;
  const scope={projectId:row.projectId,connectorId:row.registration.connectorRef.id,executionId:id(1),executionGeneration:1,grantRef:ref(2),credentialGeneration:1};
  const config={origin:row.origin,ca:'TEST_ONLY_EXPLICIT_CA',scope},expiresAt=new Date(f.dependencies.now()+5000).toISOString();
@@ -32,9 +33,36 @@ async function scenario(){
   };
   child.stdin.end=(...a)=>closeMode==='UNKNOWN'?queueMicrotask(()=>{child.stdout.emit('end');child.emit('close',1);}):end(...a);return child;
  };
- const api=f.owner.createProfileExecutionClients(config),signal=new AbortController();
+ const api=f.owner.createProfileExecutionClients(config,configuration===null?undefined:configuration),signal=new AbortController();
  return {f,calls,api,signal,slot,binding,prepared,body,config,mode(v){closeMode=v;},release(){pending();},async closedHost(){const h=await api.open(signal.signal,slot);await h.send('NORMAL_SPOOL_CLOSE',{writer:'NORMAL_EXECUTION',attemptId:row.attemptId,slotId:slot.slotId,allocation:id(21),understanding:{requestRef:binding.requestRef,acquisitionRef:binding.acquisitionRef,bodyHash:binding.bodyHash}});return h;}};
 }
+
+test('기본 NORMAL 어댑터는 원 metadata CLOSE/physical close를 유지하고 named 준비·전송을 노출하지 않는다',async()=>{
+ const x=await scenario(null),h=await x.closedHost();
+ assert.equal(Object.hasOwn(h,'prepareUnderstandingResult'),false);assert.equal(Object.hasOwn(h,'sendUnderstandingResult'),false);
+ assert.equal(h.prepareUnderstandingResult,undefined);assert.equal(h.sendUnderstandingResult,undefined);
+ assert.equal((await h.close('HOST_REQUEST_VALIDATED')).state,'CLOSED_CONFIRMED');
+ assert.equal(x.calls.length,1);assert.equal(x.calls[0].operation,'NORMAL_SPOOL_CLOSE');assert.equal(x.f.owner.isBusy(),false);assert.equal(x.f.timers(),0);
+ const next=await x.api.open(x.signal.signal,x.slot);assert.equal(next.prepareUnderstandingResult,undefined);assert.equal(next.sendUnderstandingResult,undefined);
+ await next.close();assert.equal(x.calls.length,1);
+});
+
+test('전용 활성은 exact 내부 설정만 허용하며 오염·getter·Proxy는 원 host 생성 전에 거절한다',async()=>{
+ const x=await scenario(null),before=x.f.calls();let traps=0;
+ const getter=Object.defineProperty({purpose:resultConfiguration.purpose},'mode',{get(){traps++;return resultConfiguration.mode;},enumerable:true});
+ const proxy=new Proxy(resultConfiguration,{get(){traps++;throw Error('TRAP');},ownKeys(){traps++;throw Error('TRAP');}});
+ for(const config of [null,true,'FN09_DISCOVERY_METADATA',{}, {mode:'NORMAL_PROTECTED'}, {...resultConfiguration,purpose:'SELECT_TEXT'}, {...resultConfiguration,mode:'SYNTHETIC'}, {...resultConfiguration,enabled:true},getter,proxy]){
+  assert.throws(()=>x.f.owner.createProfileExecutionClients(x.config,config),/PROTECTION_UNAVAILABLE/);assert.equal(x.f.calls(),before);
+ }
+ assert.equal(traps,0);assert.equal(x.f.owner.isBusy(),false);assert.equal(x.f.timers(),0);
+});
+
+test('원 내부 설정은 snapshot이며 활성 뒤 caller 변경도 다른 어댑터의 기본 상태를 켜지 않는다',async()=>{
+ const config={...resultConfiguration},x=await scenario(config);config.purpose='SELECT_TEXT';
+ const h=await x.api.open(x.signal.signal,x.slot);assert.equal(typeof h.prepareUnderstandingResult,'function');assert.equal(typeof h.sendUnderstandingResult,'function');await h.close();
+ const disabled=x.f.owner.createProfileExecutionClients(x.config),next=await disabled.open(x.signal.signal,x.slot);
+ assert.equal(next.prepareUnderstandingResult,undefined);assert.equal(next.sendUnderstandingResult,undefined);await next.close();assert.equal(x.calls.length,0);
+});
 test('generic BEGIN은 result 목적을 원 채널에 전달하지 않는다',async()=>{
  const x=await scenario(),h=await x.api.open(x.signal.signal),before=x.calls.length;
  await assert.rejects(h.send('NORMAL_EXECUTION_BEGIN',{attemptId:x.binding.attemptId,kind:'UNDERSTANDING_RESULT_SEND'}));

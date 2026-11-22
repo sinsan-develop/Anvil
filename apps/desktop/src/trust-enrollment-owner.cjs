@@ -4,7 +4,7 @@ const {canonicalJson,contentHash,catalogueExact}=require('./runtime-catalogue-pr
 const {normalizeOrigin}=require('./policy.cjs');
 const {EventEmitter}=require('node:events');
 /** @type {WeakMap<object,{attached:boolean,lost:AbortController}>} */const spoolHostLifetimes=new WeakMap();
-// 원 NORMAL factory의 lease만 내부 native 채널을 연결한다. 공개 issuer/옵션으로 발급하지 않는다.
+// exact 내부 구성으로 선택한 NORMAL factory만 native 목적 채널을 연결한다. wire/renderer 입력이 아니다.
 const understandingHostLeases=new WeakSet();
 /** @type {WeakMap<object,(operation:string,payload:any)=>Promise<any>>} */const understandingHostCalls=new WeakMap();
 /** @typedef {{current:()=>Promise<any>,readState:()=>Promise<any>,appendRecord:(record:any)=>Promise<any>,createKey:(id:string)=>Promise<any>,close:()=>Promise<any>}} TrustOperation */
@@ -113,11 +113,20 @@ const promise=Promise.race([work,new Promise((_resolve,reject)=>{const abort=()=
 function createNormalCredentialBootstrap(input){return normalCredentialSource(input,false);}
 /** @param {any} input */
 function createNormalExecutionClients(input){return normalCredentialSource(input,true);}
-/** @param {any} input */
-function createProfileExecutionClients(input){return normalCredentialSource(input,true,'NORMAL');}
+/** 실제 desktop 기본 조립은 미구성이다. 이 목적의 명시 내부 source 조립만 두번째 인자를 제공한다.
+ * @param {any} input @param {any} [resultConfiguration] */
+function createProfileExecutionClients(input,resultConfiguration){return normalCredentialSource(input,true,'NORMAL',resultConfiguration);}
 function createProfileReceiptInbox(){return normalCredentialSource(null,true,'RECEIPT');}
-/** @param {any} input @param {boolean} paired @param {'NORMAL'|'RECEIPT'} [purpose] */
-function normalCredentialSource(input,paired,purpose){
+/** @param {any} input @param {boolean} paired @param {'NORMAL'|'RECEIPT'} [purpose] @param {any} [resultConfiguration] */
+function normalCredentialSource(input,paired,purpose,resultConfiguration){
+ let resultEnabled=false;
+ if(resultConfiguration!==undefined){
+  if(purpose!=='NORMAL'||!resultConfiguration||types.isProxy(resultConfiguration)||![Object.prototype,null].includes(Object.getPrototypeOf(resultConfiguration)))return fail('PROTECTION_UNAVAILABLE');
+  const fields=Object.getOwnPropertyDescriptors(resultConfiguration);
+  if(Reflect.ownKeys(fields).length!==2||!fields.mode||!fields.purpose||![fields.mode,fields.purpose].every(d=>'value'in d&&d.enumerable)
+   ||fields.mode.value!=='NORMAL_PROTECTED'||fields.purpose.value!=='FN09_DISCOVERY_METADATA')return fail('PROTECTION_UNAVAILABLE');
+  resultEnabled=true;
+ }
  if(state.phase!=='REGISTERED'||!bindingRecord||bindingRecord.state!=='REGISTERED'||active||!dependencies)return fail('PROTECTION_UNAVAILABLE');
  const original=copy(bindingRecord),ownerEpoch=epoch,ownerContext=canonicalJson(context());
  const config=purpose==='RECEIPT'?{origin:original.origin,scope:{projectId:original.projectId,connectorId:original.registration.connectorRef.id}}:firstReceiveSnapshot(catalogueExact(input,'origin,ca,scope'));
@@ -174,7 +183,7 @@ function normalCredentialSource(input,paired,purpose){
   const check=()=>{const at=ownerGuard();if(controller.signal.aborted||signal.aborted&&!closing||active!==ticket)return fail('CONTEXT_CHANGED');effective=Math.max(at.wall,effective+at.mono-previousMono);previousMono=at.mono;if(effective>=end||at.mono>=monoEnd)return fail('DEADLINE');};
   const lease=Object.freeze({signal:controller.signal,check,markEffect:()=>{check();ticket.effect=true;},remainingMs:()=>{check();return Math.max(1,Math.floor(Math.min(end-effective,monoEnd-previousMono)));},callExpiresAt:()=>{check();return new Date(end).toISOString();},narrow:(/** @type {number} */expiry)=>{check();if(!Number.isSafeInteger(expiry))return fail('PROTECTION_UNAVAILABLE');end=Math.min(end,expiry);monoEnd=Math.min(monoEnd,previousMono+Math.max(0,end-effective));check();}});
   const physical=purpose?{attached:false,lost:new AbortController()}:null;if(physical)spoolHostLifetimes.set(lease,physical);
-   if(purpose==='NORMAL')understandingHostLeases.add(lease);
+   if(resultEnabled)understandingHostLeases.add(lease);
    if(resultSlot)lease.narrow(Math.min(Date.parse(resultSlot.expiresAt),sendingResult?Date.parse(understandingPrepared.expiresAt):Infinity));
   signal.addEventListener('abort',abort,{once:true});cancel=functions[4](abort,Math.max(1,end-start.wall));
   const work=(async()=>{try{
