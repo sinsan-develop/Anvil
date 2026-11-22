@@ -1,7 +1,7 @@
 import {ReservedSessionConnectionDefinition} from './ReservedSessionConnectionDefinition.tsx';
 import {readDefinition} from '../connections/connection-definition-api.ts';
 import {RegisteredReservationRejected} from './responsible-session-api.ts';
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { documentControl, type DocumentSession } from '../design-trace/editor-api.ts';
 import type { ConfirmedAssignmentView } from './assignment-confirmation-api.ts';
@@ -9,7 +9,7 @@ import { listCandidates, readCandidate, type CandidateHit } from '../connections
 import { ordered } from '../knowledge/review-view.ts';
 import {readProviderClaimPageHistory,readProviderClaimReceiptHistory,type ProviderClaimPageHistory,type ProviderClaimHistory,type ProviderClaimHistoryQuery} from './provider-claim-receipt-api.ts';
 import {ClaimUnderstandingHistory} from './ClaimUnderstandingHistory.tsx';
-import {NormalUnderstandingDiscovery} from './NormalUnderstandingDiscovery.tsx';
+import {NormalUnderstandingDiscovery,readNormalUnderstandingMetadata,type NormalUnderstandingMetadataReader} from './NormalUnderstandingDiscovery.tsx';
 import {ResponsibleSessionApprovalEditor} from './ResponsibleSessionApprovalEditor.tsx';
 import {checkResponsibleSessionApprovalBinding,markResponsibleSessionDispatch,settleResponsibleSessionWrite} from './responsible-session-approval.ts';
 import {updateResponsibleSessionApprovalBuffer} from './responsible-session-api.ts';
@@ -29,6 +29,20 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
   useEffect(()=>{const waiting=acknowledgements.current;acknowledgements.current=[];for(const a of waiting){if(!active(a.ticket)||buffer?.bindingId!==a.next.bindingId)a.resolve(false);else if(buffer&&ordered(buffer)===ordered(a.next))a.resolve(true);else acknowledgements.current.push(a);}},[buffer,client,session,confirmed,owner]);
   const sameOwner=!buffer||buffer.projectId===confirmed.projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId;
   const bound=sameOwner&&(!buffer||ordered(buffer.assignmentRef)===ordered(confirmed.ref));
+  const projectId=confirmed.projectId,assignmentKey=ordered(confirmed.ref),transport=client.transport;
+  const userId=session.user.id,{clientId,csrfToken}=session,showMetadata=owner&&bound;
+  const readerOwner=useRef<NormalUnderstandingMetadataReader|undefined>(undefined);
+  const metadataReader=useMemo<NormalUnderstandingMetadataReader|undefined>(()=>{
+    if(!showMetadata)return undefined;
+    const authorization={user:{id:userId},clientId,csrfToken};
+    const reader:NormalUnderstandingMetadataReader=async(request,signal)=>{
+      const current=()=>alive.current&&readerOwner.current===reader&&client.transport===transport&&!signal.aborted;
+      if(!current()||request.projectId!==projectId||ordered(request.assignmentRef)!==assignmentKey)throw new ApiError('DISCOVERY_SCOPE_CHANGED');
+      return readNormalUnderstandingMetadata(client,authorization,request,signal,current);
+    };
+    return reader;
+  },[client,transport,userId,clientId,csrfToken,projectId,assignmentKey,showMetadata]);
+  readerOwner.current=metadataReader;
   const update=(change:(b:ResponsibleSessionBuffer)=>ResponsibleSessionBuffer)=>{const binding=buffer?.bindingId;onChange(current=>current&&current.bindingId===binding?change(current):current);};
   const coordinator=state?.roles.find(r=>r.snapshot.kind==='COORDINATOR'),stage=state?.roles.find(r=>r.snapshot.kind==='STAGE_OWNER');
   const reservationKind=buffer?.reservationKind===undefined?'STAGE_OWNER':buffer.reservationKind,selectedRole=reservationKind==='COORDINATOR'?coordinator:reservationKind==='STAGE_OWNER'?stage:undefined,binding=state?.bindings.find(r=>ordered(r.snapshot.roleRef)===ordered(selectedRole?.ref??null));
@@ -130,7 +144,7 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
     </>:<p>역할·예약·준비 원문은 아직 조회 확인되지 않았습니다.</p>}
     {owner&&bound?<NormalUnderstandingDiscovery client={client} session={session} projectId={confirmed.projectId} assignmentRef={confirmed.ref}
      preparations={state&&stateStamp.current.epoch===epoch.current&&stateStamp.current.revision===stateRevision.current?state.preparations:[]}
-     busy={busy}/>:null}
+     busy={busy} metadataReader={metadataReader}/>:null}
   </section>;
 }
 
