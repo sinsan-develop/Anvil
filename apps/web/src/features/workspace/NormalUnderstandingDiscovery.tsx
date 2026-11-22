@@ -17,7 +17,14 @@ type Scope={projectId:string;executionId:string;executionGeneration:number;assig
 type Basis={scope:Scope;controlGeneration:number;clientId:string};
 type Command={schemaVersion:1;projectId:string;commandId:string;clientId:string;controlGeneration:number;operation:'readNormalUnderstandingResponse';targetId:string;expectedVersion:number;baselineRefs:[];approvalRef:null;payload:{assignmentRef:PlanRef;preparationRef:PlanRef}};
 type Retained={command:Command;body:string;state:'SENDING'|'UNKNOWN'|'DENIED'|'PENDING_SOURCE';code?:string;requestRef?:PlanRef};
-type Props={client:ApiClient;session:DocumentSession;projectId:string;assignmentRef:PlanRef;preparations:PreparationRecord[];busy:boolean};
+export type NormalUnderstandingMetadataRequest=Pick<Scope,'projectId'|'executionId'|'executionGeneration'|'assignmentRef'|'preparationRef'>&{requestRef:PlanRef};
+type MetadataRange={outputRef:PlanRef;sequence:number;payloadDigest:string;textBlocks:number;textBytes:number};
+export type NormalUnderstandingMetadataResult=
+ | {status:'PENDING_SOURCE'|'CURRENT_UNAVAILABLE';request:NormalUnderstandingMetadataRequest}
+ | {status:'METADATA_STORED';request:NormalUnderstandingMetadataRequest;resultRef:PlanRef;currentness:'CURRENT';observedAt:string;expiresAt:string;
+    metadata:{contextBundleRef:PlanRef;initConfirmationRef:PlanRef;tailRef:PlanRef;attribution:'SESSION_ONLY';wholeConversationComplete:false;ranges:MetadataRange[]};selectionAvailable:false};
+export type NormalUnderstandingMetadataReader=(request:Readonly<NormalUnderstandingMetadataRequest>,signal:AbortSignal)=>Promise<NormalUnderstandingMetadataResult>;
+type Props={client:ApiClient;session:DocumentSession;projectId:string;assignmentRef:PlanRef;preparations:PreparationRecord[];busy:boolean;metadataReader?:NormalUnderstandingMetadataReader};
 type SessionRecords={csrf:string;userId:string;clientId:string;commands:Map<string,Retained>};
 const clientRecords=new WeakMap<ApiClient,WeakMap<typeof fetch,SessionRecords[]>>();
 
@@ -92,7 +99,35 @@ export async function sendNormalUnderstandingCommand(client:ApiClient,session:Do
  return v.data.requestRef;
 }
 
-export function NormalUnderstandingDiscovery({client,session,projectId,assignmentRef,preparations,busy}:Props){
+function currentMetadata(value:NormalUnderstandingMetadataResult,request:NormalUnderstandingMetadataRequest):NormalUnderstandingMetadataResult{
+ const invalid=()=>{throw new ApiError('RESPONSE_INVALID');};
+ if(!value||!same(value.request,request))return invalid();
+ if(value.status==='PENDING_SOURCE'||value.status==='CURRENT_UNAVAILABLE'){
+  if(!exact(value,['status','request']))return invalid();
+  return {status:value.status,request};
+ }
+ if(value.status!=='METADATA_STORED'||!exact(value,['status','request','resultRef','currentness','observedAt','expiresAt','metadata','selectionAvailable'])
+    ||value.currentness!=='CURRENT'||value.selectionAvailable!==false||!ref(value.resultRef)||value.resultRef.version!==1||
+    !instant(value.observedAt)||!instant(value.expiresAt)||Date.parse(value.expiresAt)<=Math.max(Date.now(),Date.parse(value.observedAt)))return invalid();
+ const m=value.metadata;
+ if(!exact(m,['contextBundleRef','initConfirmationRef','tailRef','attribution','wholeConversationComplete','ranges'])||
+    !ref(m.contextBundleRef)||!ref(m.initConfirmationRef)||!ref(m.tailRef)||m.initConfirmationRef.version!==1||m.tailRef.version!==1||
+    m.attribution!=='SESSION_ONLY'||m.wholeConversationComplete!==false||!Array.isArray(m.ranges)||m.ranges.length>200)return invalid();
+ if(m.initConfirmationRef.id===m.tailRef.id&&(!same(m.initConfirmationRef,m.tailRef)||m.ranges.length!==0))return invalid();
+ let sequence=0,blocks=0;const outputs=new Set<string>();
+ for(const range of m.ranges){
+  if(!exact(range,['outputRef','sequence','payloadDigest','textBlocks','textBytes'])||!ref(range.outputRef)||range.outputRef.version!==1||
+     outputs.has(range.outputRef.id)||range.outputRef.id===m.initConfirmationRef.id||
+     range.outputRef.id===m.tailRef.id&&(!same(range.outputRef,m.tailRef)||range!==m.ranges.at(-1))||
+     !version(range.sequence)||range.sequence<=sequence||range.sequence>10000||
+     typeof range.payloadDigest!=='string'||!/^[a-f0-9]{64}$/.test(range.payloadDigest)||
+     !version(range.textBlocks)||(blocks+=range.textBlocks)>200||!version(range.textBytes)||range.textBytes>2*1024*1024)return invalid();
+  outputs.add(range.outputRef.id);sequence=range.sequence;
+ }
+ return structuredClone(value);
+}
+
+export function NormalUnderstandingDiscovery({client,session,projectId,assignmentRef,preparations,busy,metadataReader}:Props){
  const [selection,setSelection]=useState(''),[basis,setBasis]=useState<Basis|null>(null),[notice,setNotice]=useState(''),[working,setWorking]=useState(false),[,render]=useState(0);
  const local=normalUnderstandingRecords(session,client),key=ordered([projectId,assignmentRef,session.user.id,session.clientId]);
  const scope=useRef({key,records:local}),flight=useRef<AbortController|null>(null);
@@ -107,8 +142,53 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
  const current=basis&&selected&&same(basis.scope.assignmentRef,assignmentRef)&&same(basis.scope.preparationRef,selected.ref)?basis:null;
  const selectedKey=current?ordered([key,current.scope.preparationRef,current.scope.executionId,current.scope.executionGeneration]):null;
  const kept=selectedKey===null?undefined:local.get(selectedKey);
+ const metadataScope=useRef({owner,reader:metadataReader});
+ if(metadataScope.current.owner!==owner||metadataScope.current.reader!==metadataReader)metadataScope.current={owner,reader:metadataReader};
+ const readOwner=metadataScope.current;
+ const [metadata,setMetadata]=useState<{key:string;record:Retained;owner:typeof readOwner;
+  value:NormalUnderstandingMetadataResult|'READING'|'UNKNOWN'}|null>(null);
+ const metadataFlight=useRef<{owner:typeof readOwner;controller:AbortController}|null>(null);
+ function cancelMetadata(){
+  metadataFlight.current?.controller.abort();
+  metadataFlight.current=null;
+  setMetadata(null);
+ }
+ useEffect(()=>{
+  setMetadata(current=>current&&current.owner!==readOwner?null:current);
+  return()=>{
+   if(metadataFlight.current?.owner===readOwner){
+    metadataFlight.current.controller.abort();metadataFlight.current=null;
+   }
+  };
+ },[readOwner]);
+ async function readMetadata(writeKey:string,record:Retained){
+  if(!metadataReader||busy||working||scope.current!==owner||metadataScope.current!==readOwner||flight.current||metadataFlight.current||record.state!=='PENDING_SOURCE'||
+     local.get(writeKey)!==record||!ref(record.requestRef)||record.requestRef.version!==1)return;
+  const command=record.command;
+  if(command.projectId!==projectId||!same(command.payload.assignmentRef,assignmentRef))return;
+  const request=structuredClone({requestRef:record.requestRef,projectId,executionId:command.targetId,executionGeneration:command.expectedVersion,
+   assignmentRef:command.payload.assignmentRef,preparationRef:command.payload.preparationRef});
+  const operation=new AbortController(),reading={owner:readOwner,controller:operation};
+  metadataFlight.current=reading;
+  const isCurrent=()=>active(operation)&&metadataScope.current===readOwner&&local.get(writeKey)===record;
+  const publish=(value:NonNullable<typeof metadata>['value'])=>{if(isCurrent())setMetadata({key:writeKey,record,owner:readOwner,value});};
+  publish('READING');
+  try{
+   const response=await metadataReader(structuredClone(request),operation.signal);
+   if(isCurrent())publish(currentMetadata(response,request));
+  }catch{publish('UNKNOWN');}
+  finally{if(metadataFlight.current===reading)metadataFlight.current=null;}
+ }
+ const shownMetadata=metadata?.owner===readOwner?metadata:null;
+ useEffect(()=>{
+  const value=shownMetadata?.value;
+  if(typeof value!=='object'||value.status!=='METADATA_STORED')return;
+  const timer=setTimeout(()=>setMetadata(current=>current&&current===shownMetadata?{...current,value:{status:'CURRENT_UNAVAILABLE',request:value.request}}:current),
+   Math.min(2147483647,Math.max(0,Date.parse(value.expiresAt)-Date.now())));
+  return()=>clearTimeout(timer);
+ },[shownMetadata]);
  async function run(work:(operation:AbortController)=>Promise<void>){
-  if(flight.current||busy||scope.current!==owner)return;
+  if(flight.current||metadataFlight.current||busy||scope.current!==owner)return;
   const operation=new AbortController();flight.current=operation;setWorking(true);setNotice('');
   try{await work(operation);}catch(cause){if(active(operation)&&(!(cause instanceof ApiError)||cause.code!=='DISCOVERY_SCOPE_CHANGED'))setNotice(cause instanceof ApiError?cause.code:'RESPONSE_INVALID');}
   finally{if(flight.current===operation)flight.current=null;if(active(operation)){setWorking(false);render(value=>value+1);}}
@@ -140,7 +220,7 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
  if(!available.length&&!recordsForAssignment.length)return null;
  return <section aria-label="최초 이해 자료 탐색"><h6>최초 이해 자료 탐색</h6>
   <fieldset disabled={busy||working}><legend>등록 실행 준비 선택</legend>
-   <select aria-label="이해 자료 탐색 준비" value={selection} onChange={event=>{setSelection(event.target.value);setBasis(null);setNotice('');}}>
+   <select aria-label="이해 자료 탐색 준비" value={selection} onChange={event=>{cancelMetadata();setSelection(event.target.value);setBasis(null);setNotice('');}}>
     <option value="">실행 준비 선택</option>{available.map(p=><option key={ordered(p.ref)} value={ordered(p.ref)}>준비 {p.ref.id} · v{p.ref.version}</option>)}
    </select>
    <button type="button" disabled={!selected} onClick={()=>void check()}>탐색 근거 확인</button>
@@ -148,15 +228,29 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
     <button type="button" onClick={()=>void submit()}>최초 이해 자료 탐색 요청</button></>:null}
   </fieldset>
   {notice?<p role="alert">탐색 근거 확인 불가 · {notice}</p>:null}
-  {recordsForAssignment.length?<ul>{recordsForAssignment.map(([writeKey,record])=><li key={writeKey}>
+  {recordsForAssignment.length?<ul>{recordsForAssignment.map(([writeKey,record])=>{
+   const view=shownMetadata?.key===writeKey&&shownMetadata.record===record?shownMetadata.value:null;
+   const currentView=typeof view==='object'&&view?.status==='METADATA_STORED'&&Date.parse(view.expiresAt)<=Date.now()?{status:'CURRENT_UNAVAILABLE' as const}:view;
+   return <li key={writeKey}>
    <p>준비 {record.command.payload.preparationRef.id} · 실행 {record.command.targetId} · 세대 {record.command.expectedVersion}</p>
-   {record.state==='PENDING_SOURCE'?<p role="status">탐색 요청 보관 · 자료 대기 · {record.requestRef?.id}</p>:null}
+   {record.state==='PENDING_SOURCE'?<>
+    <p role="status">탐색 요청 보관{currentView===null||typeof currentView==='object'&&currentView?.status==='PENDING_SOURCE'?' · 자료 대기':''} · {record.requestRef?.id}</p>
+    {metadataReader&&record.requestRef?<button type="button" disabled={busy||working||shownMetadata?.value==='READING'} onClick={()=>void readMetadata(writeKey,record)}>탐색 결과 확인</button>:null}
+    {currentView==='READING'?<><p role="status">탐색 결과 확인 중</p><button type="button" onClick={cancelMetadata}>조회 취소</button></>:null}
+    {currentView==='UNKNOWN'?<p role="status">조회 결과 미확인</p>:null}
+    {typeof currentView==='object'&&currentView?.status==='CURRENT_UNAVAILABLE'?<p role="status">현재 조회 불가</p>:null}
+    {typeof currentView==='object'&&currentView?.status==='METADATA_STORED'?<>
+     <p role="status">출력 메타데이터 보관 · 관측 {currentView.observedAt}</p>
+     <p>같은 세션 · 출력 구간 {currentView.metadata.ranges.length}개 · 결과 {currentView.resultRef.id}</p>
+     <ul>{currentView.metadata.ranges.map(range=><li key={range.outputRef.id}>순번 {range.sequence} · 출력 {range.outputRef.id} · 텍스트 {range.textBlocks}개 / {range.textBytes} 바이트</li>)}</ul>
+    </>:null}
+   </>:null}
    {record.state==='DENIED'?<><p role="alert">탐색 요청 거절 · {record.code}</p>
     <button type="button" disabled={busy||working} onClick={()=>{if(local.get(writeKey)!==record)return;local.delete(writeKey);setBasis(null);render(value=>value+1);}}>거절 확인 후 다시 선택</button></>:null}
    {record.state==='UNKNOWN'?<><p role="status">요청 결과 불명 · 원 명령 보존 · {record.command.commandId}</p>
     <button type="button" disabled={busy||working} onClick={()=>void submit(writeKey)}>같은 탐색 명령 결과 확인</button></>:null}
    {record.state==='SENDING'?<p role="status">원 명령 결과 확인 중</p>:null}
-  </li>)}</ul>:null}
+  </li>;})}</ul>:null}
   {working?<p role="status">확인 중</p>:null}
  </section>;
 }
