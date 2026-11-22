@@ -1,11 +1,14 @@
 import type {Pool,PoolClient} from 'pg';
 import {randomUUID} from 'node:crypto';
-import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
+import {isProxy} from 'node:util/types';
+import type {FastifyInstance} from 'fastify';
+import {canonicalJson,contentHash,parseWireJson} from '../../../../contracts/canonical.ts';
 import {arrayV1,hashV1,isoV1,recordV1,refV1,uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AuthFailure} from '../access/repository.ts';
 import {executionTarget,verifyNormalCommandPageProof} from './execution-proof.ts';
 import {original,readCurrent} from './normal-exchange-challenge.ts';
-import {requestCredential} from './normal-request-challenge.ts';
+import {normalRequestBearerDigest,requestCredential} from './normal-request-challenge.ts';
+import {readPacket} from './normal-command-pages.ts';
 
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
@@ -16,6 +19,16 @@ const contextKeys=['projectId','executionId','executionGeneration','grantRef','r
 const receiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','understandingRequestRef','context','observedAt','expiresAt'];
 const resultReceiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','understandingRequestRef','acquisitionRef','context','body','observedAt','expiresAt'];
 type ResultPair={ref:{id:string;version:number;contentHash:string};receipt:Record<string,any>};
+export interface NormalUnderstandingResultOptions {mode:'NORMAL_PROTECTED';purpose:'FN09_DISCOVERY_METADATA'}
+/** 내부 구성일 뿐 native 원 출처/현재 HUMAN 권위를 대신하는 입력은 아니다. */
+export function readNormalUnderstandingResultOptions(value:NormalUnderstandingResultOptions):Readonly<NormalUnderstandingResultOptions>{
+ const invalid=():never=>{throw Error('NORMAL_UNDERSTANDING_RESULT_CONFIGURATION_INVALID');};
+ if(!value||isProxy(value)||![Object.prototype,null].includes(Object.getPrototypeOf(value)))invalid();
+ const fields=Object.getOwnPropertyDescriptors(value);
+ if(Reflect.ownKeys(fields).length!==2||!fields.mode||!fields.purpose||![fields.mode,fields.purpose].every(d=>'value'in d&&d.enumerable)
+  ||fields.mode.value!=='NORMAL_PROTECTED'||fields.purpose.value!=='FN09_DISCOVERY_METADATA')invalid();
+ return Object.freeze({mode:'NORMAL_PROTECTED',purpose:'FN09_DISCOVERY_METADATA'});
+}
 /** 현재 producer의 비밀 없는 metadata 형상만 읽는다. private read/close 또는 signer의 증명이 아니다. */
 function body(value:unknown){
  try{
@@ -45,8 +58,8 @@ function body(value:unknown){
 /**
  * S3 원 GET/현재성 검산과 채택된 metadata 전용 내부 custody. inspect는 기존 preflight만 수행한다.
  * inspectResult는 같은 proof/현재 거래에서 목적 정산과 v2/영수증을 원자 정착하며 선택 text는 받지 않는다.
- * 공개 route/기본 POST 발행은 미연결이다. 실제 native 원 결과의 단회 서명 소비 통합을 별도로 확인하기 전
- * 이 내부 메서드를 normal 공급자로 등록하지 않는다. 실행·HUMAN 권위를 발급하지 않는다.
+ * 기본 POST는 닫혀 있다. 실제 native 원 결과의 목적 서명 경로를 사용하는 명시 서버 조립에서만 등록한다.
+ * 내부 구성값은 private read/close 증명을 대신하지 않으며 실행·HUMAN 권위를 발급하지 않는다.
  */
 export class NormalUnderstandingReadResult {
  readonly pool:Pick<Pool,'connect'>;
@@ -287,4 +300,29 @@ export class NormalUnderstandingReadResult {
    return fail();
   }finally{db.release(discard);}
  }
+}
+
+/** metadata만 받는 등록 credential 목적 경로. 기본 app에는 등록하지 않는다. */
+export function registerNormalUnderstandingReadResult(app:FastifyInstance,source:NormalUnderstandingReadResult,origin:string){
+ const host=new URL(origin);if(host.protocol!=='https:'||host.origin!==origin)throw Error('EXECUTION_PAGE_HOST_REQUIRED');
+ const limit=2*1024*1024;
+ app.register(async route=>{
+  route.removeContentTypeParser('application/json');
+  route.addContentTypeParser('application/json',{parseAs:'buffer',bodyLimit:limit},(_request,buf,done)=>{
+   try{const text=new TextDecoder('utf-8',{fatal:true}).decode(buf as Buffer),value=parseWireJson(text);if(canonicalJson(value)!==text)throw Error();done(null,{text,value});}
+   catch{done(new AuthFailure('INPUT_INVALID',400),undefined);}
+  });
+  route.post<{Params:{cid:string;eid:string;requestId:string}}>('/api/v1/connectors/:cid/executions/:eid/understanding-response-read/:requestId/result',{bodyLimit:limit,handlerTimeout:20000},async(r,reply)=>{
+   const {cid,eid,requestId}=r.params,path='/api/v1/connectors/'+cid+'/executions/'+eid+'/understanding-response-read/'+requestId+'/result';
+   if(![cid,eid,requestId].every(uuidV1)||r.raw.method!=='POST'||r.raw.url!==path)return reply.callNotFound();
+   const names=r.raw.rawHeaders.filter((_,i)=>i%2===0).map(h=>h.toLowerCase());
+   if(names.filter(h=>h==='content-type').length!==1||names.filter(h=>h==='content-length').length!==1
+    ||!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(r.headers['content-type']??''))fail('INPUT_INVALID',400);
+   const payload=r.body as {text:string;value:unknown}|undefined;
+   if(!payload||typeof payload.text!=='string'||r.headers['content-length']!==String(Buffer.byteLength(payload.text)))return fail('INPUT_INVALID',400);
+   const token=normalRequestBearerDigest(r,host.host,true),frame=readPacket(r,true),input=body(payload.value);
+   if(input.metadata.requestRef.id!==requestId||input.text!==payload.text)fail('INPUT_INVALID',400);
+   return source.inspectResult(cid,eid,token,frame,input.value,r.signal);
+  });
+ });
 }
