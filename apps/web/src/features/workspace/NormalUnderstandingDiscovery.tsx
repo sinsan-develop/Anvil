@@ -12,6 +12,9 @@ const ref=(v:unknown):v is PlanRef=>exact(v,['id','version','contentHash'])&&uui
 const instant=(v:unknown):v is string=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(v);
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b);
 const denied=new Set(['AUTH_REQUIRED','CSRF_INVALID','PERMISSION_POLICY_UNCONFIGURED','PROJECT_OPERATION_DENIED','PROJECT_CONTROL_REQUIRED','CONTROL_GENERATION_CONFLICT','PROJECT_WRITE_DENIED','PROJECT_ARCHIVED','NORMAL_UNDERSTANDING_REQUEST_INVALID','REAUTHENTICATION_REQUIRED','INPUT_INVALID']);
+const metadataAuthStatuses=new Map([['AUTH_REQUIRED',401],['CSRF_INVALID',403],['REAUTHENTICATION_REQUIRED',412]]);
+const metadataCurrentStatuses=new Map([['PROJECT_OPERATION_DENIED',403],['PROJECT_WRITE_DENIED',403],['PROJECT_CONTROL_REQUIRED',403],
+ ['CONTROL_GENERATION_CONFLICT',409],['PROJECT_ARCHIVED',412],['PERMISSION_POLICY_UNCONFIGURED',412],['NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED',412]]);
 
 type Scope={projectId:string;executionId:string;executionGeneration:number;assignmentRef:PlanRef;preparationRef:PlanRef;observedAt:string;expiresAt:string};
 type Basis={scope:Scope;controlGeneration:number;clientId:string};
@@ -127,6 +130,35 @@ function currentMetadata(value:NormalUnderstandingMetadataResult,request:NormalU
  return structuredClone(value);
 }
 
+export async function readNormalUnderstandingMetadata(client:ApiClient,session:DocumentSession,request:NormalUnderstandingMetadataRequest,signal:AbortSignal,active:()=>boolean):Promise<NormalUnderstandingMetadataResult>{
+ const expected=structuredClone(request),{projectId,executionId,executionGeneration,requestRef,assignmentRef,preparationRef}=expected;
+ if(!uuid(projectId)||!uuid(executionId)||!uuid(session.clientId)||!version(executionGeneration)||!ref(requestRef)||requestRef.version!==1||
+    !ref(assignmentRef)||!ref(preparationRef))throw new ApiError('INPUT_INVALID',422);
+ const owner=channel(client,session,signal,active);
+ const controlClient=new ApiClient((input,options)=>{
+  owner.check();
+  return owner.transport.call(globalThis,input,{...options,signal});
+ });
+ const check=()=>{owner.check();if(!same(expected,request))throw new ApiError('DISCOVERY_SCOPE_CHANGED');};
+ try{
+  const controlGeneration=await documentControl(controlClient,projectId,session);check();
+  const query=new URLSearchParams({
+   controlGeneration:String(controlGeneration),executionGeneration:String(executionGeneration),requestVersion:String(requestRef.version),requestHash:requestRef.contentHash,
+   assignmentId:assignmentRef.id,assignmentVersion:String(assignmentRef.version),assignmentHash:assignmentRef.contentHash,
+   preparationId:preparationRef.id,preparationVersion:String(preparationRef.version),preparationHash:preparationRef.contentHash
+  }).toString();
+  if(query.length>1024)throw new ApiError('INPUT_INVALID',422);
+  const response=await wire(owner,`/api/v1/projects/${projectId}/executions/${executionId}/understanding-response-read-requests/${requestRef.id}/current?${query}`,signal);
+  check();return currentMetadata(response as NormalUnderstandingMetadataResult,expected);
+ }catch(error){
+  check();
+  if(error instanceof ApiError&&metadataCurrentStatuses.get(error.code)===error.status){
+   return {status:'CURRENT_UNAVAILABLE',request:expected};
+  }
+  throw error;
+ }
+}
+
 export function NormalUnderstandingDiscovery({client,session,projectId,assignmentRef,preparations,busy,metadataReader}:Props){
  const [selection,setSelection]=useState(''),[basis,setBasis]=useState<Basis|null>(null),[notice,setNotice]=useState(''),[working,setWorking]=useState(false),[,render]=useState(0);
  const local=normalUnderstandingRecords(session,client),key=ordered([projectId,assignmentRef,session.user.id,session.clientId]);
@@ -146,7 +178,7 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
  if(metadataScope.current.owner!==owner||metadataScope.current.reader!==metadataReader)metadataScope.current={owner,reader:metadataReader};
  const readOwner=metadataScope.current;
  const [metadata,setMetadata]=useState<{key:string;record:Retained;owner:typeof readOwner;
-  value:NormalUnderstandingMetadataResult|'READING'|'UNKNOWN'}|null>(null);
+  value:NormalUnderstandingMetadataResult|'READING'|'UNKNOWN'|'AUTH_REQUIRED'}|null>(null);
  const metadataFlight=useRef<{owner:typeof readOwner;controller:AbortController}|null>(null);
  function cancelMetadata(){
   metadataFlight.current?.controller.abort();
@@ -176,7 +208,9 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
   try{
    const response=await metadataReader(structuredClone(request),operation.signal);
    if(isCurrent())publish(currentMetadata(response,request));
-  }catch{publish('UNKNOWN');}
+  }catch(error){
+   publish(error instanceof ApiError&&metadataAuthStatuses.get(error.code)===error.status?'AUTH_REQUIRED':'UNKNOWN');
+  }
   finally{if(metadataFlight.current===reading)metadataFlight.current=null;}
  }
  const shownMetadata=metadata?.owner===readOwner?metadata:null;
@@ -238,6 +272,7 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
     {metadataReader&&record.requestRef?<button type="button" disabled={busy||working||shownMetadata?.value==='READING'} onClick={()=>void readMetadata(writeKey,record)}>탐색 결과 확인</button>:null}
     {currentView==='READING'?<><p role="status">탐색 결과 확인 중</p><button type="button" onClick={cancelMetadata}>조회 취소</button></>:null}
     {currentView==='UNKNOWN'?<p role="status">조회 결과 미확인</p>:null}
+    {currentView==='AUTH_REQUIRED'?<p role="status">인증을 확인한 뒤 다시 조회하세요.</p>:null}
     {typeof currentView==='object'&&currentView?.status==='CURRENT_UNAVAILABLE'?<p role="status">현재 조회 불가</p>:null}
     {typeof currentView==='object'&&currentView?.status==='METADATA_STORED'?<>
      <p role="status">출력 메타데이터 보관 · 관측 {currentView.observedAt}</p>

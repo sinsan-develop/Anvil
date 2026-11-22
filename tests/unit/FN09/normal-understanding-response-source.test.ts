@@ -44,7 +44,8 @@ function fixture(){
   state.open++;await body({rowCount:rows.length,read:async sequence=>{state.reads++;const row=structuredClone(rows[sequence-1]);state.afterRead();return row;}});state.closed++;state.afterClose();if(state.failClose)throw Error('private path/error');
  }};
  const signal=new AbortController();
- return{scope,rows,binding,request,state,source,signal,run:()=>readNormalUnderstandingResponse(request,source,signal.signal),rehash:(i:number)=>{rows[i]!.ref.contentHash=hash(rows[i]!.snapshot);}};
+ const append=(id:string,text:string)=>message({type:'assistant',uuid:id,session_id:sid,parent_tool_use_id:null,message:{role:'assistant',content:[{type:'text',text}]}},confirmation);
+ return{scope,rows,binding,request,state,source,signal,append,run:()=>readNormalUnderstandingResponse(request,source,signal.signal),rehash:(i:number)=>{rows[i]!.ref.contentHash=hash(rows[i]!.snapshot);}};
 }
 test('같은 보호 읽기의 정상 종결 뒤 고정 범위 text만 반환하고 권위·SID·SDK 메타를 반환하지 않는다',async()=>{
  const f=fixture(),v=await f.run();
@@ -62,6 +63,60 @@ test('다른 세대·WORK·필수 수신 부족은 원 읽기 전 거절한다',
 test('원 범위·tail·init·chain·본문 해시가 다르면 projection을 반환하지 않는다',async()=>{
  for(const change of [(f:ReturnType<typeof fixture>)=>{f.request.tailRef=ref();},(f:ReturnType<typeof fixture>)=>{f.request.initConfirmationRef=ref();},(f:ReturnType<typeof fixture>)=>{f.rows[2]!.snapshot.previousRef=ref();},(f:ReturnType<typeof fixture>)=>{f.rows[2]!.snapshot.payloadDigest='b'.repeat(64);f.rehash(2);f.request.tailRef=f.rows[2]!.ref;},(f:ReturnType<typeof fixture>)=>{f.rows[1]!.snapshot.prefixDigest='b'.repeat(64);}]){
   const f=fixture();change(f);await assert.rejects(f.run(),/NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE/);
+ }
+});
+test('고정 tail 다음 정상 append와 진행 중 추가 행은 읽지 않고 원 선택을 유지한다',async()=>{
+ const f=fixture(),expected=await f.run();
+ assert.equal(expected.afterRef,null);
+ const late=f.append('after-tail','선택 영역 밖');
+ f.state.reads=0;f.state.afterRead=()=>{if(f.state.reads===2)f.append('during-read','조회 중 새 행');};
+ const actual=await f.run();
+ assert.deepEqual(actual,expected);assert.equal(f.state.reads,3);
+ assert.equal(f.rows.length,5);assert.ok(!JSON.stringify(actual).includes(late.id));
+});
+test('선택 뒤 경계 참조도 고정 tail 내부에서만 얻고 바깥 원문은 제외한다',async()=>{
+ const f=fixture(),pinned=f.append('within-prefix','선택 뒤 원문');
+ f.request.tailRef=pinned;
+ f.append('after-tail','선택 영역 밖');
+ const actual=await f.run();
+ assert.equal(f.state.reads,4);assert.deepEqual(actual.tailRef,pinned);assert.deepEqual(actual.afterRef,pinned);
+ assert.equal(actual.parts.length,1);assert.doesNotMatch(JSON.stringify(actual),/선택 뒤 원문|선택 영역 밖/);
+});
+test('고정 tail 누락·같은 ID 교체·앞선 tail·검산 prefix 중복이나 갭은 모두 거절한다',async()=>{
+ for(const kind of ['MISSING','REPLACED','EARLY','DUPLICATE','GAP']){
+  const f=fixture();
+  const original=f.request.tailRef;
+  const suffix=f.append('later-row','고정되지 않은 원문');
+  if(kind==='MISSING')f.request.tailRef=ref();
+  if(kind==='REPLACED'){
+   f.request.tailRef=structuredClone(original);
+   const snapshot=f.rows[2]!.snapshot,m=JSON.parse(Buffer.from(snapshot.body,'base64').toString());
+   m.message.content[0].text='고정 후 교체된 원문';
+   snapshot.body=Buffer.from(canonicalJson(m)).toString('base64');snapshot.payloadDigest=hash(m);f.rehash(2);
+  }
+  if(kind==='EARLY')f.request.lastSequence=4;
+  if(kind==='DUPLICATE'){f.request.tailRef=suffix;f.rows[2]!.ref.id=f.rows[0]!.ref.id;}
+  if(kind==='GAP'){f.rows[2]!.snapshot.sequence=4;f.rehash(2);}
+  await assert.rejects(f.run(),/NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE/,kind);
+  if(kind!=='MISSING')assert.ok(f.state.reads<=3,kind);
+ }
+});
+test('고정 tail에서 source header 교체·취소·close 실패를 무시하지 않는다',async()=>{
+ for(const kind of ['COUNT','METHOD','CAP','CANCEL','CLOSE']){
+  const f=fixture();f.append('after-tail','선택 영역 밖');
+  if(kind==='CANCEL')f.state.afterRead=()=>{if(f.state.reads===3)f.signal.abort();};
+  if(kind==='CLOSE')f.state.failClose=true;
+  if(['COUNT','METHOD','CAP'].includes(kind))f.source.withRead=async body=>{
+   const reader={rowCount:kind==='CAP'?10001:f.rows.length,read:async (n:number)=>{
+    f.state.reads++;
+    if(n===3&&kind==='COUNT')reader.rowCount++;
+    if(n===3&&kind==='METHOD')reader.read=async()=>undefined;
+    return structuredClone(f.rows[n-1]);
+   }};
+   await body(reader);
+  };
+  await assert.rejects(f.run(),/NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE/,kind);
+  assert.equal(f.state.reads,kind==='CAP'?0:3,kind);
  }
 });
 test('QUARANTINED·도구 block·혼합 content·하위 agent·모호한 본문은 선택에서 조용히 건너뛰지 않는다',async()=>{

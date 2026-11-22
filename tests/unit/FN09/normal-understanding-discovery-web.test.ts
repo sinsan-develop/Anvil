@@ -7,12 +7,15 @@ import {build} from 'vite';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
 
 type UI=typeof import('../../../apps/web/src/features/workspace/NormalUnderstandingDiscovery.tsx');
+type Workspace=typeof import('../../../apps/web/src/features/workspace/WorkspaceResponsibleSessions.tsx');
 let compiled:Promise<UI>|undefined;
 function load(){
  return compiled??=compile();
 }
-async function compile(hooks?:string):Promise<UI>{
-  const entry=fileURLToPath(new URL('../../../apps/web/src/features/workspace/NormalUnderstandingDiscovery.tsx',import.meta.url));
+async function compile(hooks?:string):Promise<UI>;
+async function compile(hooks:string,entryFile:'WorkspaceResponsibleSessions'):Promise<Workspace>;
+async function compile(hooks?:string,entryFile='NormalUnderstandingDiscovery'):Promise<UI|Workspace>{
+  const entry=fileURLToPath(new URL(`../../../apps/web/src/features/workspace/${entryFile}.tsx`,import.meta.url));
   const built=await build({configFile:false,logLevel:'error',build:{write:false,lib:{entry,formats:['es']},rollupOptions:{external:['react','react/jsx-runtime']}}});
   const output=Array.isArray(built)?built[0]:built;
   assert.ok(output&&'output'in output);
@@ -37,6 +40,11 @@ const reactMemory='data:text/javascript,'+encodeURIComponent(`
   const id=cursor++;
   return slots[id]??=( {current:value} );
  }
+ export function useMemo(build,deps){
+  const id=cursor++,old=slots[id];
+  if(!old||deps.some((value,i)=>value!==old.deps[i]))slots[id]={deps,value:build()};
+  return slots[id].value;
+ }
  export function useEffect(effect,deps){
   const id=cursor++,old=effects.get(id);
   if(!old||deps.some((value,i)=>value!==old.deps[i]))pending.push(()=>{old?.clean?.();effects.set(id,{deps,clean:effect()});});
@@ -51,6 +59,29 @@ function button(tree:unknown,label:string):ElementNode['props']{
  if(node.type==='button'&&node.props?.children===label)return node.props;
  return button(node.props?.children,label);
 }
+
+test('FN09 workspace keeps the metadata reader across equivalent owner projections and invalidates old readers',async()=>{
+ const hooks=await import(reactMemory),m=await compile(reactMemory,'WorkspaceResponsibleSessions');
+ const client=new ApiClient(async()=>{throw Error('UNEXPECTED_FETCH');});
+ type Reader=NonNullable<Parameters<UI['NormalUnderstandingDiscovery']>[0]['metadataReader']>;
+ const receiver=(tree:unknown):Reader|undefined=>{
+  if(Array.isArray(tree)){for(const item of tree){const found=receiver(item);if(found)return found;}return;}
+  if(!tree||typeof tree!=='object')return;
+  const props=(tree as {props?:{children?:unknown;metadataReader?:Reader}}).props;
+  return props?.metadataReader??receiver(props?.children);
+ };
+ const draw=(projection=session,owner=true)=>hooks.draw(()=>m.WorkspaceResponsibleSessions({client,confirmed:{projectId,ref:{...assignmentRef}} as any,session:projection,
+  owner,buffer:null,onChange:()=>{},busy:false,run:()=>{}}));
+ try{
+  const original=receiver(draw());assert.ok(original);
+  assert.strictEqual(receiver(draw({...session,user:{...session.user}})),original);
+  assert.equal(receiver(draw(session,false)),undefined);
+  const renewed=receiver(draw());assert.ok(renewed);assert.notStrictEqual(renewed,original);
+  const req={projectId,executionId:id(8),executionGeneration:7,assignmentRef,preparationRef,requestRef:ref(26)},signal=new AbortController().signal;
+  await assert.rejects(original(req,signal),{code:'DISCOVERY_SCOPE_CHANGED'});
+  await assert.rejects(renewed({...req,assignmentRef:ref(39)},signal),{code:'DISCOVERY_SCOPE_CHANGED'});
+ }finally{hooks.unmount();}
+});
 
 test('FN09 metadata click is scoped, current-only, cancellable, and independent from POST recovery',async()=>{
  const hooks=await import(reactMemory),m=await compile(reactMemory),f=fixture();
@@ -152,6 +183,56 @@ test('FN09 Web rejects mismatched preparation projection before any POST',async(
  const m=await load(),f=fixture();f.bad();
  await assert.rejects(m.readNormalUnderstandingBasis(f.client,session,projectId,assignmentRef,preparationRef,new AbortController().signal),{code:'RESPONSE_INVALID'});
  assert.ok(f.calls.every(call=>call.init?.method==='GET'));
+});
+
+test('FN09 protected metadata GET rechecks exact control and only requests canonical current scope',async()=>{
+ const m=await load(),calls:{path:string;init:RequestInit|undefined}[]=[];
+ const signal=new AbortController().signal;
+ const req={projectId,executionId:id(8),executionGeneration:7,assignmentRef,preparationRef,requestRef:ref(26)};
+ const current={status:'PENDING_SOURCE',request:req};
+ let answer=()=>Response.json(current);
+ const client=new ApiClient(async(url,init)=>{
+  const path=String(url);calls.push({path,init});
+  return path===`/api/v1/projects/${projectId}`?Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}):answer();
+ });
+ const read=()=>m.readNormalUnderstandingMetadata(client,session,req,signal,()=>true);
+ assert.deepEqual(await read(),current);assert.equal(calls.length,2);
+ const metadata=calls[1]!,params=new URLSearchParams({controlGeneration:'9',executionGeneration:'7',requestVersion:'1',requestHash:req.requestRef.contentHash,
+  assignmentId:assignmentRef.id,assignmentVersion:'1',assignmentHash:assignmentRef.contentHash,preparationId:preparationRef.id,preparationVersion:'1',preparationHash:preparationRef.contentHash});
+ assert.equal(metadata.path,`/api/v1/projects/${projectId}/executions/${req.executionId}/understanding-response-read-requests/${req.requestRef.id}/current?${params}`);
+ assert.equal(calls[0]!.init?.signal,signal);assert.equal(metadata.init?.signal,signal);
+ assert.equal(metadata.init?.method,'GET');assert.equal(metadata.init?.credentials,'same-origin');assert.equal(metadata.init?.redirect,'error');
+ assert.equal(metadata.init?.cache,'no-store');assert.equal(new Headers(metadata.init?.headers).get('x-anvil-csrf'),session.csrfToken);
+ assert.equal(metadata.init?.body,undefined);
+ answer=()=>Response.json({code:'REAUTHENTICATION_REQUIRED'},{status:412});
+ await assert.rejects(read(),{code:'REAUTHENTICATION_REQUIRED'});
+ answer=()=>Response.json({code:'NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED'},{status:412});
+ assert.deepEqual(await read(),{status:'CURRENT_UNAVAILABLE',request:req});
+ answer=()=>Response.json({code:'NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED'},{status:403});
+ await assert.rejects(read(),{code:'NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED',status:403});
+ answer=()=>Response.json({code:'NORMAL_UNDERSTANDING_METADATA_NOT_FOUND'},{status:404});
+ await assert.rejects(read(),{code:'NORMAL_UNDERSTANDING_METADATA_NOT_FOUND'});
+ answer=()=>Response.json({code:'NORMAL_UNDERSTANDING_METADATA_UNKNOWN'},{status:503});
+ await assert.rejects(read(),{code:'NORMAL_UNDERSTANDING_METADATA_UNKNOWN'});
+ answer=()=>Response.json({...current,request:{...req,executionGeneration:6}});
+ await assert.rejects(read(),{code:'RESPONSE_INVALID'});
+ assert.ok(calls.every(call=>call.init?.method==='GET'));
+});
+
+test('FN09 protected metadata checks active channel on both sides of current control lookup',async()=>{
+ const m=await load();
+ const req={projectId,executionId:id(8),executionGeneration:7,assignmentRef,preparationRef,requestRef:ref(26)};
+ for(const mode of ['transport','selection','cancel'] as const){
+  const controller=new AbortController();let active=true,calls=0,replacement=0,unblock!:()=>void;
+  const pending=new Promise<void>(resolve=>{unblock=resolve;});
+  const client=new ApiClient(async()=>{calls++;await pending;return Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}});});
+  const read=m.readNormalUnderstandingMetadata(client,session,req,controller.signal,()=>active);
+  if(mode==='transport')client.transport=async()=>{replacement++;throw Error('UNEXPECTED_FETCH');};
+  if(mode==='selection')active=false;
+  if(mode==='cancel')controller.abort();
+  unblock();
+  await assert.rejects(read,{code:'DISCOVERY_SCOPE_CHANGED'});assert.equal(calls,1);assert.equal(replacement,0);
+ }
 });
 
 test('FN09 Web never sends readiness or a late POST through changed scope or transport',async()=>{
