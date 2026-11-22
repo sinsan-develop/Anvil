@@ -42,7 +42,7 @@ test('0102 preserves exact latest legacy validator definitions by rename/delegat
  }
  const prior=prior97.toString('utf8'),begin=prior.indexOf('DROP TRIGGER synthetic_execution_receipt_guard'),end=prior.indexOf('\n',prior.indexOf('EXECUTE FUNCTION anvil.guard_execution_challenge_complete();',begin))+1;
  const currentBegin=sql.indexOf('DROP TRIGGER synthetic_execution_receipt_guard'),currentEnd=sql.indexOf('\n',sql.indexOf('EXECUTE FUNCTION anvil.guard_execution_challenge_complete();',currentBegin))+1;
- assert.equal(sql.slice(currentBegin,currentEnd).replaceAll(" AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED'",''),prior.slice(begin,end));
+ assert.equal(sql.slice(currentBegin,currentEnd).replaceAll(" AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED'",'').replaceAll(" AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_RESULT'",''),prior.slice(begin,end));
  assert.match(sql,/CREATE TRIGGER normal_understanding_acquisition_guard BEFORE INSERT/);
  assert.match(sql,/CREATE CONSTRAINT TRIGGER normal_understanding_acquisition_complete AFTER INSERT[^;]*DEFERRABLE INITIALLY DEFERRED/);
  assert.match(sql,/request_basis\(\(r.snapshot_json#>>'\{requestedBy,sessionId\}'\)::uuid,cmd.actor_id,cmd.client_id/);
@@ -73,7 +73,7 @@ test('result basis reads exact historical GET completion under current authority
  assert.match(consumption,/jsonb_build_object\('method','GET','path'/);assert.doesNotMatch(consumption,/'method','POST'/);
 });
 
-test('internal result v1 has a separate request slot and exact acquisition/current proof; no role, v2 or result receipt activation',async()=>{
+test('internal result v1 has a separate request slot and exact acquisition/current proof; no role or default POST activation',async()=>{
  assert.ok(sql.includes("CREATE UNIQUE INDEX normal_understanding_challenge_request_once ON anvil.execution_challenges(project_id,((snapshot_json->'understandingRequestRef'->>'id')))\n WHERE version=1 AND snapshot_json ? 'understandingRequestRef';"));
  assert.match(sql,/CREATE UNIQUE INDEX normal_understanding_result_challenge_once[^;]*understandingResultBinding,requestRef,id[^;]*WHERE version=1 AND snapshot_json \? 'understandingResultBinding'/s);
  const challenge=sql.slice(sql.indexOf('CREATE FUNCTION anvil.fn09_normal_understanding_challenge_valid'),sql.indexOf('ALTER FUNCTION anvil.normal_request_challenge_valid'));
@@ -83,4 +83,68 @@ test('internal result v1 has a separate request slot and exact acquisition/curre
  const source=await readFile(new URL('../../../apps/server/modules/executions/normal-exchange-challenge.ts',import.meta.url),'utf8');
  assert.ok(source.includes("if((request.target.path===understanding||request.target.path.startsWith(understanding+'/'))&&!discovery)"));
  assert.ok(source.includes("return fail('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE',503)"));
+});
+
+function definition(name:string){const start=sql.indexOf('CREATE FUNCTION anvil.'+name+'('),end=sql.indexOf('$$;',start)+3;assert.ok(start>=0&&end>start,name);return sql.slice(start,end);}
+test('historical metadata accounting is independent of expiry/revocation/current credentials; new admission remains current and bounded',()=>{
+ for(const name of ['fn09_normal_understanding_result_pair_historical','fn09_normal_understanding_storage_plan','fn09_normal_understanding_storage_complete']){
+  const body=definition(name);assert.doesNotMatch(body,/clock_timestamp|current_setting|normal_exchange_current|normal_request_credential|fn09_normal_understanding_result_basis/);
+ }
+ const plan=definition('fn09_normal_understanding_storage_plan');
+ assert.match(plan,/bytes=octet_length\(anvil.execution_authority_canonical\(records\)\)/);
+ for(const part of ['request','humanCommand','humanAuthorization','humanAudit','credentialReservation','credentialV1','credentialV2','credentialReceipt','getV1','getV2','acquisition','postV1','postV2','result'])assert.ok(plan.includes("'"+part+"'"),part);
+ assert.match(plan,/SET TimeZone='UTC'/);
+ const admission=definition('fn09_normal_understanding_result_admission');
+ assert.match(admission,/fn09_normal_understanding_result_basis/);assert.match(admission,/authorized_until<=clock_timestamp\(\)/);assert.match(admission,/normal_page_verified/);
+ assert.match(admission,/fn09_normal_understanding_storage_complete/);
+});
+test('atomic result purpose uses existing VERIFIED account/cap and globally rejects a second transaction latch without accepting caller bytes',()=>{
+ const store=definition('fn09_normal_understanding_result_store');
+ assert.match(store,/coverage_state IS DISTINCT FROM 'VERIFIED'/);assert.match(store,/FOR UPDATE/);
+ assert.match(store,/ac.used_bytes\+ac.held_bytes\+charge>10737418240/);
+ assert.match(store,/part_kind='FN09_DISCOVERY_METADATA' AND z.plan_json->>'transactionId'=tx/);
+ assert.doesNotMatch(store,/project_id=old.project_id AND z.plan_json/);
+ assert.ok(store.indexOf('fn09_normal_understanding_result_basis')<store.indexOf('INSERT INTO anvil.project_storage_reservations'));
+ assert.ok(store.indexOf('INSERT INTO anvil.project_storage_reservations')<store.indexOf('INSERT INTO anvil.execution_challenges'));
+ assert.ok(store.indexOf('INSERT INTO anvil.execution_receipts')<store.indexOf("phase='SETTLED'"));
+ assert.match(store,/fn09_normal_understanding_result_admission\(v,true\)/);
+ assert.doesNotMatch(store.split('RETURNS')[0]!,/bytes|count|native|verified/i);
+ assert.doesNotMatch(sql,/CREATE(?: OR REPLACE)? FUNCTION anvil\.(quota_plan_valid|quota_current|quota_reserve|quota_start|quota_settle)\(/);
+ assert.doesNotMatch(sql,/GRANT (?:SELECT|INSERT|UPDATE|DELETE).*project_storage|CREATE ROLE|GRANT[^;]*TO PUBLIC/);
+ assert.match(sql,/REVOKE ALL ON FUNCTION[^;]*fn09_normal_understanding_result_store[^;]*FROM PUBLIC,anvil_v3_app/s);
+ assert.doesNotMatch(sql,/GRANT[^;]*fn09_normal_understanding_result_admission/);
+});
+test('FN09 quota forward preserves exact 0059 bytes and all existing FN03/legacy settled branches',async()=>{
+ const {createHash}=await import('node:crypto');
+ const original=await readFile(new URL('../../../db/migrations/0059_project_storage_quota.sql.pending',import.meta.url));
+ const fn03=await readFile(new URL('../../../db/migrations/0101_source_content_policy_management_origins.sql.pending',import.meta.url));
+ assert.equal(createHash('sha256').update(original).digest('hex'),'0e13c17946d47a03e388c16d6cc05cab17f13033dec572dedd9e559a0f4e24e7');
+ assert.equal(createHash('sha256').update(fn03).digest('hex'),'930f8cd3da7372bb09fe4be49c388aa5a9ca619989a29297b8369a34984231c1');
+ const extract=(value:string)=>{const start=value.indexOf('CREATE OR REPLACE FUNCTION anvil.quota_settled_complete(');return value.slice(start,value.indexOf('END;$$;',start)+7);};
+ assert.equal(extract(sql).replace(/ -- FN09_METADATA_DISPATCH_BEGIN[\s\S]*? -- FN09_METADATA_DISPATCH_END\n/,''),extract(fn03.toString('utf8')));
+});
+
+test('result v2 deferred admission owns only its private definer trigger; invoker GET and legacy page guards retain their exact scope',async()=>{
+ const prior=await readFile(new URL('../../../db/migrations/0087_normal_command_pages.sql.pending',import.meta.url),'utf8');
+ const trigger=(value:string,name:string)=>{const start=value.indexOf('CREATE '+(name.endsWith('_complete')?'CONSTRAINT ':'')+'TRIGGER '+name+' ');assert.ok(start>=0,name);return value.slice(start,value.indexOf(';',start)+1);};
+ for(const name of ['normal_page_consumption_guard','normal_page_consumption_complete']){
+  const current=trigger(sql,name);
+  assert.equal(current.replace(" AND NOT (NEW.snapshot_json ? 'understandingResultBinding')",''),trigger(prior,name));
+ }
+ const consumption=definition('fn09_normal_understanding_consumption_valid');
+ assert.match(consumption,/IF FOUND AND old\.snapshot_json \? 'understandingResultBinding' THEN RETURN false;END IF/);
+ assert.doesNotMatch(consumption,/fn09_normal_understanding_result_admission/);
+ const guard=definition('guard_fn09_normal_understanding_result_consumption');
+ assert.match(guard,/SECURITY DEFINER SET search_path=pg_catalog/);
+ assert.match(guard,/NEW\.version<>2/);assert.match(guard,/NOT \(NEW\.snapshot_json \? 'understandingResultBinding'\)/);
+ assert.match(guard,/fn09_normal_understanding_result_admission\(NEW::anvil.execution_challenges,TG_WHEN='AFTER'\)/);
+ assert.match(sql,/ALTER FUNCTION anvil\.guard_fn09_normal_understanding_result_consumption\(\) OWNER TO anvil_v3_migrator/);
+ assert.match(sql,/REVOKE ALL ON FUNCTION anvil\.guard_fn09_normal_understanding_result_consumption\(\) FROM PUBLIC,anvil_v3_app/);
+ assert.doesNotMatch(sql,/GRANT[^;]*(?:result_admission|guard_fn09_normal_understanding_result_consumption)/);
+ for(const name of ['fn09_understanding_result_consumption_guard','fn09_understanding_result_consumption_complete']){
+  const statement=trigger(sql,name);assert.match(statement,/WHEN \(NEW.version=2 AND NEW.snapshot_json \? 'understandingResultBinding'\)/);
+  assert.match(statement,/EXECUTE FUNCTION anvil.guard_fn09_normal_understanding_result_consumption\(\)/);
+  if(name.endsWith('_complete'))assert.match(statement,/AFTER INSERT[^;]*DEFERRABLE INITIALLY DEFERRED/);
+ }
+ // 이 검산은 SQL 호출선/ACL의 정적 증거다. 실제 app COMMIT의 trigger 권한 실행을 대체하지 않는다.
 });

@@ -38,16 +38,21 @@ function fixture(){
  const rawPost=clone(post);delete (rawPost.snapshot_json as any).understandingResultBinding;rawPost.content_hash=hash(rawPost.snapshot_json);
  const proof={requestId:post.snapshot_json.request.requestId,...post.snapshot_json.request.target,grantRef:grant,credentialGeneration:1,serverNonce:post.snapshot_json.publicChallenge.serverNonce};
  const frame={schemaVersion:1,challengeRef:{id:post.id,version:1,contentHash:post.content_hash},proof,signature:sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key:pair.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url')};
+ const resultReceipt={kind:'NORMAL_UNDERSTANDING_DISCOVERY_RESULT',binding,credentialRef:credential,challengeRef:frame.challengeRef,packetHash:hash({frame,target:post.snapshot_json.request.target}),target:post.snapshot_json.request.target,requestId:proof.requestId,understandingRequestRef:requestRef,acquisitionRef,context,body,observedAt:iso(1000),expiresAt:iso(29000)};
+ const resultRef={...ref(),contentHash:hash(resultReceipt)},resultConsumed={...post.snapshot_json,sequence:4,previousRef:frame.challengeRef,consumption:{resultRef,packetHash:resultReceipt.packetHash,consumedAt:resultReceipt.observedAt}};
  const ps={scope:{kind:'PROJECT',projectId:pid},state:'APPLIED',limits:{maxAttempts:3,maxCalls:50,maxConcurrentAssignments:1,maxElapsedMs:7200000,maxOfflineMs:300000,maxSpoolBytes:1073741824},decidedAt:iso(0),expiresAt:iso(240000)};
  const policy={projectId:pid,ref:{...ref(),contentHash:hash(ps)},snapshot:ps};
  const reserve=reserveExecutionBudget([],policy as any,{projectId:pid,executionId:eid,executionGeneration:1,commandId:randomUUID(),assignmentRef:grant,stageRef:{applicationRef:grant,nodeId:'개발'},policyRef:policy.ref,operation:'START_SESSION',demand:{attempts:1,calls:1,spoolBytes:1,cost:null,costStatus:'VERIFIED_NO_CHARGE'}},iso(0));
- const state={now:at+1000,connects:0,queries:[] as string[],releases:[] as boolean[],rpc:0,deny:false,lateLoss:false,commitUnknown:false,rollbackUnknown:false,usedPost:false,connectFailure:false,lookupCount:1,lookupCross:false,unconsumedGet:false,changedTransaction:false,lookupUnknown:false,postSlots:[post] as any[],onCommit:()=>{},mutate:(_v:any)=>{}};
- const pool={async connect(){state.connects++;if(state.connectFailure)throw Error('RAW_CONNECTION_SECRET');let inTransaction=false;return {release(e?:Error){state.releases.push(!!e);},async query(sql:string,a:any[]=[]):Promise<any>{
+ const state={now:at+1000,connects:0,queries:[] as string[],releases:[] as boolean[],rpc:0,deny:false,lateLoss:false,commitUnknown:false,rollbackUnknown:false,usedPost:false,connectFailure:false,lookupCount:1,lookupCross:false,unconsumedGet:false,changedTransaction:false,lookupUnknown:false,postSlots:[post] as any[],paired:false,pairValid:true,pairUnknown:false,quotaVerified:true,used:0n,held:0n,storeCalls:0,persisted:false,failStore:false,conflictingLatch:false,afterStore:()=>{},mutatePair:(_v:any)=>{},onCommit:()=>{},mutate:(_v:any)=>{}};
+ let savedPair:any=null,lock=Promise.resolve();
+ const pool={async connect(){state.connects++;if(state.connectFailure)throw Error('RAW_CONNECTION_SECRET');let inTransaction=false,pendingPair:any=null,used=0n,held=0n,unlock=()=>{};
+ return {release(e?:Error){state.releases.push(!!e);},async query(sql:string,a:any[]=[]):Promise<any>{
   state.queries.push(sql);
-  if(sql==='COMMIT'){inTransaction=false;state.onCommit();return {command:state.commitUnknown?'':'COMMIT',rows:[]};}
-  if(sql==='ROLLBACK'){inTransaction=false;return {command:state.rollbackUnknown?'':'ROLLBACK',rows:[]};}
-  if(sql==='BEGIN'){inTransaction=true;return {command:'BEGIN',rows:[]};}
-  if(sql.includes('SET LOCAL'))return {rows:[]};
+  if(sql==='COMMIT'){savedPair=pendingPair;state.used=used;state.held=held;state.persisted=!!savedPair;inTransaction=false;unlock();state.onCommit();return {command:state.commitUnknown?'':'COMMIT',rows:[]};}
+  if(sql==='ROLLBACK'){inTransaction=false;unlock();return {command:state.rollbackUnknown?'':'ROLLBACK',rows:[]};}
+  if(sql==='BEGIN'){const prior=lock;lock=new Promise<void>(r=>unlock=r);await prior;pendingPair=savedPair&&clone(savedPair);used=state.used;held=state.held;inTransaction=true;return {command:'BEGIN',rows:[]};}
+  if(sql.includes('SET LOCAL')||sql.includes('set_config'))return {rows:[]};
+  if(sql.startsWith('SELECT COALESCE(max(server_sequence)'))return {rows:[{sequence:4}]};
   if(sql.includes('normal_request_credential'))return {rows:[{project_id:pid,credential_ref:credential,expires_at:new Date(at+240000)}]};
   if(sql.includes('normal_exchange_current'))return {rows:[{binding,spki,deadline:new Date(at+240000),observed_at:new Date(state.now),budget_ref:reserve.ref,budget_policy:policy}]};
   if(sql.includes('FROM anvil.usage_reservations'))return {rows:[{project_id:pid,reservation_id:reserve.ref.id,version:1,content_hash:reserve.ref.contentHash,snapshot_json:reserve.snapshot,server_sequence:1,command_id:reserve.snapshot.claim.commandId}]};
@@ -65,6 +70,25 @@ function fixture(){
    if(state.deny||state.lateLoss&&state.rpc>1||canonicalJson(JSON.parse(a[2]))!==canonicalJson(requestRef)||canonicalJson(JSON.parse(a[3]))!==canonicalJson(acquisitionRef))throw Error('NORMAL_UNDERSTANDING_RESULT_DENIED');
    const value=clone(basis);state.mutate(value);return {rows:[{basis:value}]};
   }
+  if(sql.includes('fn09_normal_understanding_result_store')){
+   state.storeCalls++;assert.equal(a.length,6);assert.equal(a[0],token);assert.deepEqual(JSON.parse(a[1]),binding);assert.deepEqual(JSON.parse(a[2]),frame.challengeRef);
+   const v=JSON.parse(a[3]),rref=JSON.parse(a[4]),r=JSON.parse(a[5]);assert.equal(rref.contentHash,hash(r));assert.deepEqual(v.consumption.resultRef,rref);
+   if(!state.quotaVerified)throw Error('PROJECT_STORAGE_QUOTA_UNVERIFIED');if(pendingPair)throw Error('NORMAL_UNDERSTANDING_RESULT_REPLAY_CONFLICT');
+   if(state.conflictingLatch)throw Error('NORMAL_UNDERSTANDING_STORAGE_TRANSACTION_CONFLICT');
+   // DB 목적/정산 RPC의 RAM 대역이다. 실제 SQL canonical/행 잠금/ACL 증명은 아니다.
+   const bytes=BigInt(Buffer.byteLength(canonicalJson({request:snapshot,credentialRef:credential,get:get.snapshot_json,acquisition:receipt,post:post.snapshot_json,consumed:v,result:r})));
+   if(used+held+bytes>10737418240n)throw Error('PROJECT_STORAGE_QUOTA_EXCEEDED');
+   held+=bytes;pendingPair={valid:true,vhash:hash(v),consumed:v,id:rref.id,content_hash:rref.contentHash,receipt:r,charged:bytes.toString()};held-=bytes;used+=bytes;
+   if(state.failStore)throw Error('RAW_WRITE_SECRET');state.afterStore();
+   return {rows:[{stored:{status:'SETTLED',ref:rref,bytes:bytes.toString(),planHash:hash({ref:rref,bytes:bytes.toString()})}}]};
+  }
+  if(sql.includes('fn09_normal_understanding_result_custody_valid')){
+   assert.deepEqual(a,[pid,grant.id,grant.version,post.id,token]);
+   if(state.pairUnknown)throw Error('RAW_PAIR_SECRET');
+   if(state.deny)throw Error('NORMAL_UNDERSTANDING_RESULT_DENIED');
+   const record=pendingPair?clone(pendingPair):{valid:state.pairValid,vhash:hash(resultConsumed),consumed:clone(resultConsumed),id:resultRef.id,content_hash:resultRef.contentHash,receipt:clone(resultReceipt)};
+   state.mutatePair(record);return {rows:pendingPair||state.paired?[record]:[]};
+  }
   if(sql.includes("snapshot_json ? 'understandingResultBinding'"))return {rows:clone(state.postSlots)};
   if(sql.includes('FROM anvil.execution_challenges')&&sql.includes('version=2'))return {rows:state.usedPost?[{id:post.id}]:[]};
   if(sql.includes('FROM anvil.execution_challenges'))return {rows:a[3]===post.id&&a[4]===post.content_hash?[clone(post)]:[]};
@@ -72,10 +96,12 @@ function fixture(){
  }}}};
  async function transaction<T>(work:(db:any)=>Promise<T>){const db=await pool.connect();try{await db.query('BEGIN');const v=await work(db);await db.query('COMMIT');return v;}catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}}
  return {source:new NormalUnderstandingReadResult(pool as any),state,body,frame,post,rawPost,get,basis,token,cid,eid,binding,credential,
+  saved:()=>savedPair,history:(otherSettled=0n)=>!!savedPair&&savedPair.vhash===hash(savedPair.consumed)&&savedPair.content_hash===hash(savedPair.receipt)&&state.used===BigInt(savedPair.charged)+otherSettled&&state.held===0n,
   bind:(row:unknown=rawPost)=>transaction(db=>new NormalUnderstandingReadResult(pool as any).bindChallenge(db,token,binding,credential,row,new Date(state.now))),
   validate:(row:unknown)=>transaction(db=>new NormalUnderstandingReadResult(pool as any).validateChallenge(db,token,binding,credential,row,new Date(state.now))),
   challenge:(target:unknown=post.snapshot_json.request.target)=>transaction(db=>new NormalUnderstandingReadResult(pool as any).challengeBasis(db,token,binding,credential,target,new Date(state.now))),
   current:(value:unknown,target:unknown=executionTarget('POST',base+'/'+requestRef.id+'/result',[],canonicalJson(value)))=>transaction(db=>new NormalUnderstandingReadResult(pool as any).current(db,token,binding,credential,value,new Date(state.now),target)),
+  inspectResult:(value:unknown=body,packet:unknown=frame)=>new NormalUnderstandingReadResult(pool as any).inspectResult(cid,eid,token,packet,value,new AbortController().signal),
   inspect:(value:unknown=body,packet:unknown=frame)=>new NormalUnderstandingReadResult(pool as any).inspect(cid,eid,token,packet,value,new AbortController().signal)};
 }
 test('internal metadata prerequisite checks original GET custody + fresh signed POST in one read-only transaction; no normal/native authority',async()=>{
@@ -210,5 +236,70 @@ test('result v1 rejects old GET identities/nonces, swapped acquisition/current a
  for(const mode of ['duplicate','current','expired'] as const){const f=fixture(),row=await f.bind();
   if(mode==='duplicate')f.state.postSlots=[row,row];else if(mode==='current')f.state.deny=true;else f.state.now+=30000;
   await assert.rejects(f.validate(row));
+ }
+});
+
+test('result final transaction atomically stores one original pair/accounting; exact signed packet replay is read-only with delta0',async()=>{
+ const f=fixture(),first=await f.inspectResult(),used=f.state.used,again=await f.inspectResult();
+ assert.deepEqual(first,again);assert.equal(first.status,'DISCOVERY_METADATA_STORED');assert.equal(first.resultStored,true);assert.equal(first.selectionAvailable,false);
+ assert.equal(f.state.storeCalls,1);assert.ok(used>0n);assert.equal(f.state.used,used);assert.equal(f.state.held,0n);assert.equal(f.history(),true);
+ assert.equal(f.state.queries.filter(q=>q==='COMMIT').length,1);assert.equal(f.state.queries.filter(q=>q==='ROLLBACK').length,1);
+ assert.equal(f.state.queries.filter(q=>q.includes('set_config')).length,1);assert.deepEqual(f.state.releases,[false,false]);
+});
+
+test('final pair cannot launder wrong packet/body/context/v2/hash or failed SQL into storage accounting success',async()=>{
+ for(const mutate of [
+  (r:any)=>{r.receipt.packetHash=hash('other packet');},
+  (r:any)=>{r.receipt.body.metadata.ranges[0].textBytes++;r.content_hash=hash(r.receipt);},
+  (r:any)=>{r.receipt.context.registrationRef.id=randomUUID();r.content_hash=hash(r.receipt);},
+  (r:any)=>{r.consumed.previousRef.id=randomUUID();r.vhash=hash(r.consumed);},
+  (r:any)=>{r.valid=false;},
+ ]){const f=fixture();f.state.paired=true;f.state.mutatePair=mutate;
+  await assert.rejects(f.inspectResult(),{message:'NORMAL_UNDERSTANDING_RESULT_REPLAY_CONFLICT',statusCode:409});
+  assert.equal(f.state.queries.some(q=>/INSERT|UPDATE|set_config/.test(q)),false);
+ }
+ const f=fixture(),packet=clone(f.frame);packet.signature=randomBytes(64).toString('base64url');await assert.rejects(f.inspectResult(f.body,packet));
+ assert.equal(f.state.queries.some(q=>q.includes('fn09_normal_understanding_result_custody_valid')),false);
+ assert.equal(f.state.storeCalls,0);assert.equal(f.state.queries.some(q=>q.includes('set_config')),false);
+});
+
+test('missing/over-cap coverage, partial RPC failure and late current loss roll nonce/receipt/accounting back together',async()=>{
+ for(const mode of ['unverified','cap','partial','late','other-project-latch'] as const){const f=fixture();
+  if(mode==='unverified')f.state.quotaVerified=false;else if(mode==='cap')f.state.used=10737418240n;
+  else if(mode==='partial')f.state.failStore=true;else if(mode==='other-project-latch')f.state.conflictingLatch=true;else f.state.afterStore=()=>{f.state.deny=true;};
+  const used=f.state.used;await assert.rejects(f.inspectResult());
+  assert.equal(f.state.used,used);assert.equal(f.state.held,0n);assert.equal(f.state.persisted,false);assert.equal(f.saved(),null);
+  assert.equal(f.state.queries.filter(q=>q==='COMMIT').length,0);assert.equal(f.state.queries.filter(q=>q==='ROLLBACK').length,1);
+ }
+});
+
+test('old settled accounting stays historical after expiry/current loss and other purpose charges; replay remains current with delta0',async()=>{
+ const f=fixture();await f.inspectResult();
+ f.state.now+=60000;f.state.deny=true;assert.equal(f.history(),true);
+ // 기존 다른 목적의 정착을 표현하는 RAM 원장 대역. FN09 과거 proof는 현재 자격을 요구하지 않는다.
+ const otherSettled=100n;f.state.used+=otherSettled;const used=f.state.used;assert.equal(f.history(otherSettled),true);
+ await assert.rejects(f.inspectResult());assert.equal(f.history(otherSettled),true);assert.equal(f.state.used,used);assert.equal(f.state.storeCalls,1);
+});
+
+test('concurrent identical packets settle once; commit uncertainty preserves original pair for explicit replay with delta0',async()=>{
+ const f=fixture(),[a,b]=await Promise.all([f.inspectResult(),f.inspectResult()]);assert.deepEqual(a,b);assert.equal(f.state.storeCalls,1);assert.equal(f.history(),true);
+ const g=fixture();g.state.commitUnknown=true;await assert.rejects(g.inspectResult(),{statusCode:503});assert.deepEqual(g.state.releases,[true]);
+ const used=g.state.used,ref=g.saved().id;g.state.commitUnknown=false;const replay=await g.inspectResult();
+ assert.equal(replay.proofResultRef.id,ref);assert.equal(g.state.used,used);assert.equal(g.state.storeCalls,1);
+});
+
+test('known custody COMMIT followed by cancellation keeps committed pair, reports delivery unknown and never rolls it back',async()=>{
+ const f=fixture(),controller=new AbortController();f.state.onCommit=()=>controller.abort();
+ await assert.rejects(f.source.inspectResult(f.cid,f.eid,f.token,f.frame,f.body,controller.signal),{message:'NORMAL_UNDERSTANDING_RESULT_DELIVERY_UNKNOWN',statusCode:503});
+ assert.equal(f.state.persisted,true);assert.equal(f.history(),true);assert.equal(f.state.queries.filter(q=>q==='ROLLBACK').length,0);assert.deepEqual(f.state.releases,[false]);
+});
+
+test('result validation unknown rollback discards once, while current loss and query errors preserve safe bounded failure',async()=>{
+ for(const mode of ['unknown','current','rollbackUnknown'] as const){const f=fixture();f.state.paired=true;
+  if(mode==='current')f.state.lateLoss=true;else f.state.pairUnknown=true;
+  if(mode==='rollbackUnknown')f.state.rollbackUnknown=true;
+  await assert.rejects(f.inspectResult(),(error:any)=>error.statusCode===(mode==='current'?412:503)&&!error.message.includes('RAW_PAIR_SECRET'));
+  assert.equal(f.state.connects,1);assert.equal(f.state.queries.filter(q=>q==='ROLLBACK').length,1);
+  assert.deepEqual(f.state.releases,[mode==='rollbackUnknown']);
  }
 });

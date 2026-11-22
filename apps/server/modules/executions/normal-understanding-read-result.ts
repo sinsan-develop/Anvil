@@ -1,4 +1,5 @@
 import type {Pool,PoolClient} from 'pg';
+import {randomUUID} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {arrayV1,hashV1,isoV1,recordV1,refV1,uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AuthFailure} from '../access/repository.ts';
@@ -13,6 +14,8 @@ const positive=(v:unknown):v is number=>Number.isSafeInteger(v)&&Number(v)>0;
 const freeze=(v:any):void=>{if(v&&typeof v==='object'){for(const item of Object.values(v))freeze(item);Object.freeze(v);}};
 const contextKeys=['projectId','executionId','executionGeneration','grantRef','registrationRef','connectorId','credentialGeneration','startCommandId','startCommandRef','assignmentRef','preparationRef','contextBundleRef','sessionBindingRef'];
 const receiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','understandingRequestRef','context','observedAt','expiresAt'];
+const resultReceiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','understandingRequestRef','acquisitionRef','context','body','observedAt','expiresAt'];
+type ResultPair={ref:{id:string;version:number;contentHash:string};receipt:Record<string,any>};
 /** 현재 producer의 비밀 없는 metadata 형상만 읽는다. private read/close 또는 signer의 증명이 아니다. */
 function body(value:unknown){
  try{
@@ -40,9 +43,10 @@ function body(value:unknown){
 }
 
 /**
- * S3 내부 custody 선행. 실제 DB의 원 GET v1/v2/영수증과 현재 HUMAN/normal 근거를 조회한다.
- * 공개 route/POST 발행/nonce 소비/본문 저장은 없다. source-purpose native 단회 서명이 미연결이므로
- * 성공적인 inspect도 저장·선택·실행 권위를 발급하지 않는다. 일반 signer 증명만으로 이를 활성화하면 안 된다.
+ * S3 원 GET/현재성 검산과 채택된 metadata 전용 내부 custody. inspect는 기존 preflight만 수행한다.
+ * inspectResult는 같은 proof/현재 거래에서 목적 정산과 v2/영수증을 원자 정착하며 선택 text는 받지 않는다.
+ * 공개 route/기본 POST 발행은 미연결이다. 실제 native 원 결과의 단회 서명 소비 통합을 별도로 확인하기 전
+ * 이 내부 메서드를 normal 공급자로 등록하지 않는다. 실행·HUMAN 권위를 발급하지 않는다.
  */
 export class NormalUnderstandingReadResult {
  readonly pool:Pick<Pool,'connect'>;
@@ -173,8 +177,52 @@ export class NormalUnderstandingReadResult {
   return source;
  }
 
- /** 내부 거래의 준비 검산만 수행한다. fresh POST 원장의 proof를 확인해도 전송 권위를 발급하지 않는다. */
+ async #resultPair(db:PoolClient,keys:unknown[],token:string,old:any,frame:any,input:ReturnType<typeof body>,source:Awaited<ReturnType<NormalUnderstandingReadResult['challengeBasis']>>,credentialRef:unknown,at:Date){
+  const rows=(await db.query(`SELECT anvil.fn09_normal_understanding_result_custody_valid(v,r,$5) AS valid,
+   v.content_hash AS vhash,v.snapshot_json AS consumed,r.id,r.content_hash,r.snapshot_json AS receipt
+   FROM anvil.execution_challenges v LEFT JOIN anvil.execution_receipts r ON r.project_id=v.project_id AND r.challenge_id=v.id
+   WHERE v.project_id=$1 AND v.grant_id=$2 AND v.grant_version=$3 AND v.id=$4 AND v.version=2`,[...keys,frame.challengeRef.id,token])).rows;
+  if(rows.length===0)return null;
+  const row=rows[0],s=row?.receipt,c=frame.challengeRef,post=old.snapshot_json;
+  if(rows.length!==1||row.valid!==true||!uuidV1(row.id)||!recordV1(s,resultReceiptKeys)||s.kind!=='NORMAL_UNDERSTANDING_DISCOVERY_RESULT'
+   ||row.content_hash!==hash(s)||row.vhash!==hash(row.consumed)||!positive(row.consumed?.sequence)||row.consumed.sequence<=post.sequence||row.consumed.sequence>20000
+   ||!same(s.binding,post.binding)||!same(s.credentialRef,credentialRef)||!same(s.challengeRef,c)||!same(s.target,source.target)
+   ||s.requestId!==frame.proof.requestId||s.packetHash!==hash({frame,target:source.target})||!same(s.understandingRequestRef,source.requestRef)
+   ||!same(s.acquisitionRef,source.acquisitionRef)||!same(s.context,source.context)||!same(s.body,input.value)||hash(s.body)!==source.bodyHash
+   ||Buffer.byteLength(canonicalJson(s))>2*1024*1024||!isoV1(s.observedAt)||!isoV1(s.expiresAt)
+   ||Date.parse(s.observedAt)<Date.parse(post.publicChallenge.issuedAt)||Date.parse(s.observedAt)>at.getTime()
+   ||Date.parse(s.expiresAt)>Math.min(Date.parse(source.deadline),Date.parse(post.publicChallenge.expiresAt))||Date.parse(s.expiresAt)<=at.getTime()
+   ||!same(row.consumed,{...post,sequence:row.consumed.sequence,previousRef:c,consumption:{resultRef:{id:row.id,version:1,contentHash:row.content_hash},packetHash:s.packetHash,consumedAt:s.observedAt}}))fail('NORMAL_UNDERSTANDING_RESULT_REPLAY_CONFLICT',409);
+  return {ref:{id:row.id as string,version:1,contentHash:row.content_hash as string},receipt:s};
+ }
+ async #storeResult(db:PoolClient,keys:unknown[],token:string,old:any,frame:any,input:ReturnType<typeof body>,source:Awaited<ReturnType<NormalUnderstandingReadResult['challengeBasis']>>,credentialRef:unknown,at:Date,ends:number){
+  const sequence=(await db.query('SELECT COALESCE(max(server_sequence),0)::int+1 AS sequence FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3',keys)).rows[0]?.sequence;
+  if(!positive(sequence)||sequence<=old.snapshot_json.sequence||sequence>20000)fail();
+  const receipt={kind:'NORMAL_UNDERSTANDING_DISCOVERY_RESULT',binding:old.snapshot_json.binding,credentialRef,challengeRef:frame.challengeRef,
+   packetHash:hash({frame,target:source.target}),target:source.target,requestId:frame.proof.requestId,understandingRequestRef:source.requestRef,acquisitionRef:source.acquisitionRef,
+   context:source.context,body:input.value,observedAt:at.toISOString(),expiresAt:new Date(ends).toISOString()};
+  if(Buffer.byteLength(canonicalJson(receipt))>2*1024*1024)fail('INPUT_INVALID',400);
+  const ref={id:randomUUID(),version:1,contentHash:hash(receipt)},consumed={...old.snapshot_json,sequence,previousRef:frame.challengeRef,consumption:{resultRef:ref,packetHash:receipt.packetHash,consumedAt:receipt.observedAt}};
+  await db.query("SELECT set_config('anvil.normal_page_verified',txid_current()::text||':'||$1||':'||$2,true)",[ref.contentHash,token]);
+  const rows=(await db.query('SELECT anvil.fn09_normal_understanding_result_store($1,$2,$3,$4,$5,$6) AS stored',
+   [token,JSON.stringify(old.snapshot_json.binding),JSON.stringify(frame.challengeRef),JSON.stringify(consumed),JSON.stringify(ref),JSON.stringify(receipt)])).rows;
+  const stored=rows[0]?.stored;
+  if(rows.length!==1||!recordV1(stored,['status','ref','bytes','planHash'])||stored.status!=='SETTLED'||!same(stored.ref,ref)||!hashV1(stored.planHash)||typeof stored.bytes!=='string'||!/^[1-9][0-9]{0,18}$/.test(stored.bytes))fail();
+  const actual=await this.#resultPair(db,keys,token,old,frame,input,source,credentialRef,at);
+  if(!actual||!same(actual.ref,ref)||!same(actual.receipt,receipt))fail();return actual;
+ }
+
+ /** 기존 native 미연결 preflight의 반환 의미를 보존한다. */
  async inspect(connector:string,execution:string,token:string,packet:unknown,value:unknown,signal:AbortSignal){
+  const result=await this.#inspect(connector,execution,token,packet,value,signal,false);
+  if(result.status!=='NATIVE_SOURCE_AUTHORITY_REQUIRED')return fail();return result;
+ }
+ /** 실제 proof/current/목적 정산을 같은 거래에 정착한다. HTTP/normal 기본 조립에는 등록하지 않는다. */
+ async inspectResult(connector:string,execution:string,token:string,packet:unknown,value:unknown,signal:AbortSignal){
+  const result=await this.#inspect(connector,execution,token,packet,value,signal,true);
+  if(result.status!=='DISCOVERY_METADATA_STORED')return fail();return result;
+ }
+ async #inspect(connector:string,execution:string,token:string,packet:unknown,value:unknown,signal:AbortSignal,validateResult:boolean){
   const input=body(value);let frame:any;
   try{frame=JSON.parse(canonicalJson(packet));}catch{return fail('INPUT_INVALID',400);}
   if(!uuidV1(connector)||!uuidV1(execution)||!hashV1(token)||!(signal instanceof AbortSignal)||signal.aborted
@@ -185,7 +233,7 @@ export class NormalUnderstandingReadResult {
   const target=executionTarget('POST','/api/v1/connectors/'+connector+'/executions/'+execution+'/understanding-response-read/'+input.metadata.requestRef.id+'/result',[],input.text);
   let db:PoolClient;
   try{db=await this.pool.connect();}catch{return fail();}
-  let committing=false,committed=false,discard:Error|undefined,mono=performance.now();
+  let committing=false,committed=false,rolledBack=false,rollbackAttempted=false,discard:Error|undefined,mono=performance.now();const query=db.query;
   const mark=()=>{const next=performance.now();if(!Number.isFinite(next)||!Number.isFinite(mono)||next<mono)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);mono=next;return next;};
   try{
    await db.query('BEGIN');await db.query("SET LOCAL statement_timeout='5s'; SET LOCAL lock_timeout='2s'");
@@ -202,25 +250,40 @@ export class NormalUnderstandingReadResult {
     ||cur.now.getTime()<Date.parse(post.challenge.issuedAt)||cur.now.getTime()>=ends||signal.aborted)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
    // GET 단일성은 목적 RPC가 원 GET requestId로 검산한다.
    // POST는 별도 미소비 원장 신원만 쓰며 원 GET v1/v2를 대체하거나 다시 소비하지 않는다.
-   if((await db.query('SELECT id FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND id=$4 AND version=2',[...keys,c.id])).rows.length)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+   let result:ResultPair|null=null;
+   let replay=false;
+   if(validateResult){result=await this.#resultPair(db,keys,token,rows[0],frame,input,source,cred.ref,cur.now);replay=result!==null;
+    if(!result)result=await this.#storeResult(db,keys,token,rows[0],frame,input,source,cred.ref,cur.now,ends);
+   }
+   else if((await db.query('SELECT id FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND id=$4 AND version=2',[...keys,c.id])).rows.length)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
    const lastMark=mark(),lastCred=await requestCredential(db,token,connector,execution,p),last=await readCurrent(db,cred.project,connector,execution,p);
    const {source:lastSource}=await this.validateChallenge(db,token,last.binding,lastCred.ref,rows[0],last.now);
    this.#matchBody(input,lastSource,last.binding);
-   if(!same(cred,lastCred)||!same(b,last.binding)||cur.spki!==last.spki||!same(source,lastSource)||last.now<cur.now||last.now.getTime()>=ends||signal.aborted)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+   if(db.query!==query||!same(cred,lastCred)||!same(b,last.binding)||cur.spki!==last.spki||!same(source,lastSource)||last.now<cur.now||last.now.getTime()>=ends||signal.aborted)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
    // DB 시각의 잔여 한도를 원 monotonic 표본에 결박한다. COMMIT 대기 시간도 한도를 소비한다.
    const monoEnd=Math.min(firstMark+ends-cur.now.getTime(),lastMark+ends-last.now.getTime());
    if(mark()>=monoEnd)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+   if(validateResult&&replay){rollbackAttempted=true;discard=new Error('NORMAL_UNDERSTANDING_RESULT_ROLLBACK_UNKNOWN');
+    if((await db.query('ROLLBACK')).command!=='ROLLBACK'){discard=new Error('NORMAL_UNDERSTANDING_RESULT_ROLLBACK_UNKNOWN');fail();}
+    rolledBack=true;discard=undefined;
+   }else{
    committing=true;if((await db.query('COMMIT')).command!=='COMMIT')throw Error();committing=false;committed=true;
-   if(signal.aborted||mark()>=monoEnd)fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+   }
+   if(signal.aborted||mark()>=monoEnd)fail(validateResult?'NORMAL_UNDERSTANDING_RESULT_DELIVERY_UNKNOWN':'NORMAL_UNDERSTANDING_RESULT_DENIED',validateResult?503:412);
+   if(validateResult&&result)return {transport:'NORMAL_PROTECTED' as const,status:'DISCOVERY_METADATA_STORED' as const,proofResultRef:result.ref,receipt:result.receipt,
+    cacheControl:'no-store' as const,resultStored:true as const,metadataAvailable:true as const,selectionAvailable:false as const,nonceConsumed:true as const,executionAuthorized:false as const,dispatchPerformed:false as const};
    return {status:'NATIVE_SOURCE_AUTHORITY_REQUIRED' as const,requestRef:source.requestRef,acquisitionRef:source.acquisitionRef,bodyHash:source.bodyHash,
     cacheControl:'no-store' as const,resultStored:false as const,nonceConsumed:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
   }catch(error){
    // 정상 COMMIT 뒤의 늦은 취소/만료는 저장 불명이나 새 ROLLBACK으로 재분류하지 않는다.
-   if(committed){if(error instanceof AuthFailure)throw error;return fail();}
+   if(committed||rolledBack){if(error instanceof AuthFailure)throw error;return fail();}
    if(committing)discard=new Error('NORMAL_UNDERSTANDING_RESULT_COMMIT_UNKNOWN');
-   try{if((await db.query('ROLLBACK')).command!=='ROLLBACK')discard??=new Error('NORMAL_UNDERSTANDING_RESULT_ROLLBACK_UNKNOWN');}catch{discard??=new Error('NORMAL_UNDERSTANDING_RESULT_ROLLBACK_UNKNOWN');}
+   if(!rollbackAttempted){rollbackAttempted=true;try{if((await db.query('ROLLBACK')).command!=='ROLLBACK')discard??=new Error('NORMAL_UNDERSTANDING_RESULT_ROLLBACK_UNKNOWN');}catch{discard??=new Error('NORMAL_UNDERSTANDING_RESULT_ROLLBACK_UNKNOWN');}}
    if(committing||discard)fail();if(error instanceof AuthFailure)throw error;
    if(error instanceof Error&&error.message==='NORMAL_UNDERSTANDING_RESULT_DENIED')fail(error.message,412);
+   if(error instanceof Error&&error.message==='PROJECT_STORAGE_QUOTA_EXCEEDED')fail(error.message,409);
+   if(error instanceof Error&&error.message==='PROJECT_STORAGE_QUOTA_UNVERIFIED')fail(error.message,412);
+   if(error instanceof Error&&error.message==='NORMAL_UNDERSTANDING_RESULT_REPLAY_CONFLICT')fail(error.message,409);
    return fail();
   }finally{db.release(discard);}
  }
