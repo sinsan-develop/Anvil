@@ -7,6 +7,8 @@ import {reserveExecutionBudget} from '../../../apps/server/modules/executions/ex
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {executionChallengeRequestBytes,executionProofBytes} from '../../../apps/server/modules/executions/execution-proof.ts';
 import {publicKeyFingerprint} from '../../../apps/server/modules/connections/registration-proof.ts';
+import {readNormalUnderstandingDiscovery} from '../../../apps/connector/runtime/normal-understanding-response-source.ts';
+import {readPreparedUnderstandingResult,frameUnderstandingResult} from '../../../apps/connector/runtime/normal-credential-bootstrap-client.ts';
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),copy=<T>(v:T):T=>JSON.parse(canonicalJson(v));
 const enabled={mode:'NORMAL_PROTECTED',purpose:'FN09_DISCOVERY_METADATA'};
 
@@ -80,8 +82,53 @@ function fixture(option:unknown=enabled,configure:{synthetic?:boolean;wrongPool?
  async function acquire(){const r=request('GET',base),issued=await issue(r);assert.equal(issued.statusCode,200,issued.body);const frame=packet(r,issued.json());const got=await send('GET',base,frame);assert.equal(got.statusCode,200,got.body);return got.json();}
  const body=(acq:any)=>({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:{attribution:'SESSION_ONLY',projectId:pid,executionId:eid,executionGeneration:1,requestRef:human,acquisitionRef:acq.proofResultRef,contextBundleRef:context.contextBundleRef,initConfirmationRef:ref(),tailRef:ref(),ranges:[{outputRef:ref(),sequence:2,payloadDigest:hash('payload'),textBlocks:1,textBytes:8}],wholeConversationComplete:false,executionAuthorized:false}});
  async function ready(){const acq=await acquire(),value=body(acq),r=request('POST',base+'/'+human.id+'/result',value),issued=await issue(r);assert.equal(issued.statusCode,200,issued.body);return{value,r,issued:issued.json(),frame:packet(r,issued.json())};}
- return{app,state,path,base,human,request,issue,packet,send,acquire,body,ready,headers,rows:()=>rows,receipts:()=>receipts};
+ return{app,state,path,base,human,context,binding,request,issue,packet,send,acquire,body,ready,headers,rows:()=>rows,receipts:()=>receipts};
 }
+
+test('TS discovery reader canonical bytes and purpose frame cross actual signed HTTP custody; native provenance remains synthetic',async()=>{
+ for(const mode of ['stored','default503','expired'] as const){const f=fixture(mode==='default503'?null:enabled);let bytes:Buffer|undefined;
+  try{
+   const acq=await f.acquire(),ref=()=>({id:randomUUID(),version:1,contentHash:hash('RAM reference')}),sid='ram-session-not-a-credential';
+   const scope={projectId:f.binding.projectId,executionId:f.binding.executionId,generation:1,registrationRef:f.context.registrationRef,
+    profileRef:ref(),assignmentRef:ref(),slotRef:acq.receipt.credentialRef,grantRef:f.binding.grantRef,startReadyRef:ref(),dispatchAttemptRef:ref(),sessionBindingRef:f.context.sessionBindingRef,plannedSidDigest:hash(sid)};
+   const rows:{ref:ReturnType<typeof ref>;snapshot:any}[]=[];
+   const add=(snapshot:any)=>{const r={ref:{...ref(),contentHash:hash(snapshot)},snapshot};rows.push(r);return r.ref;};
+   const message=(value:any,init:ReturnType<typeof ref>|null)=>add({schemaVersion:1,state:init?'SESSION_OUTPUT':'OUTPUT_PENDING_SESSION',scope,sequence:rows.length+1,previousRef:rows.at(-1)?.ref??null,
+    initConfirmationRef:init,observedAt:new Date(f.state.now).toISOString(),family:value.type==='system'?'SYSTEM_INIT':'ASSISTANT',identity:hash(value.uuid),payloadDigest:hash(value),classification:'ORDINARY',body:Buffer.from(canonicalJson(value)).toString('base64')});
+   const first=message({type:'system',subtype:'init',uuid:'ram-init',session_id:sid,apiKeySource:'none',claude_code_version:'2.1.224',cwd:'ram-private-path',tools:[],mcp_servers:[],model:'ram-model',permissionMode:'default',slash_commands:[],output_style:'fixture',skills:[],plugins:[]},null);
+   const init=add({schemaVersion:1,state:'SESSION_INIT_CONFIRMED',scope,sequence:2,previousRef:first,initOutputRef:first,observedSidDigest:scope.plannedSidDigest,prefixCount:1,tailRef:first,
+    prefixDigest:hash({previous:hash([]),ref:first,payloadDigest:rows[0]!.snapshot.payloadDigest}),observedAt:new Date(f.state.now).toISOString()});
+   const tail=message({type:'assistant',uuid:'ram-answer',session_id:sid,parent_tool_use_id:null,message:{role:'assistant',content:[{type:'text',text:'RAM 보호 응답 본문'}]}},init);
+   const sourceBinding={scope,requestRef:f.human,acquisitionRef:acq.proofResultRef,contextBundleRef:f.context.contextBundleRef,checkedAt:acq.receipt.observedAt,expiresAt:acq.receipt.expiresAt};
+   let reads=0,closed=0;
+   const metadata=await readNormalUnderstandingDiscovery(sourceBinding,{clock:()=>f.state.now,current:()=>sourceBinding,withRead:async body=>{
+    await body({rowCount:rows.length,read:async n=>{reads++;return copy(rows[n-1]);}});closed++;
+   }},new AbortController().signal);
+   assert.equal(reads,3);assert.equal(closed,1);assert.deepEqual(metadata.initConfirmationRef,init);assert.deepEqual(metadata.tailRef,tail);
+   bytes=Buffer.from(canonicalJson({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata}));
+   assert.doesNotMatch(bytes.toString(),/ram-private-path|ram-session|RAM 보호 응답 본문|plannedSidDigest/);
+   const target=f.base+'/'+f.human.id+'/result',request=f.request('POST',target,JSON.parse(bytes.toString())),before=f.state.connects,issued=await f.issue(request);
+   if(mode==='default503'){assert.equal(issued.statusCode,503,issued.body);assert.equal(f.state.connects,before);assert.equal(f.state.stores,0);continue;}
+   assert.equal(issued.statusCode,200,issued.body);
+   // C# PREPARE/보호 원장은 명시 RAM 대역이다. 서명/nonce는 실제 HTTP challenge의 원값만 사용한다.
+   const frame=f.packet(request,issued.json()),binding={requestRef:f.human,acquisitionRef:acq.proofResultRef,bodyHash:contentHash(bytes)};
+   const slot={slotId:randomUUID(),receiptRef:acq.receipt.credentialRef,origin:'https://synthetic.invalid',scope:{projectId:f.binding.projectId,connectorId:f.binding.connectorId,executionId:f.binding.executionId,executionGeneration:1,grantRef:f.binding.grantRef,credentialGeneration:1},expiresAt:sourceBinding.expiresAt,caHash:hash('RAM CA metadata')};
+   const raw={state:'NATIVE_DISCOVERY_RESULT_PREPARED',...binding,preparedHash:hash('RAM protected prepared row'),auth:Buffer.from(canonicalJson(frame)).toString('base64url'),expiresAt:issued.json().challenge.expiresAt};
+   const {bodyHash:_,...preparedWire}=raw;
+   const prepared=readPreparedUnderstandingResult(preparedWire,binding,slot,f.state.now,Date.parse(sourceBinding.expiresAt));
+   const framed=frameUnderstandingResult(randomUUID(),slot,prepared,binding,bytes);assert.equal(framed.kind,'DIRECT');if(framed.kind!=='DIRECT')throw Error('RAM_EXPECTED_DIRECT');
+   assert.ok(Buffer.from(framed.payload.body).equals(bytes));assert.deepEqual(framed.payload.acquisitionRef,acq.proofResultRef);
+   const originalPacket=JSON.parse(Buffer.from(framed.payload.auth,'base64url').toString());assert.equal(originalPacket.proof.bodyHash,contentHash(bytes));
+   if(mode==='expired')f.state.now=Date.parse(sourceBinding.expiresAt);
+   const answer=await f.send(originalPacket.proof.method,originalPacket.proof.path,originalPacket,framed.payload.body);
+   if(mode==='expired'){assert.equal(answer.statusCode,412,answer.body);assert.equal(f.state.stores,0);assert.equal(f.receipts().length,1);}
+   else{assert.equal(answer.statusCode,200,answer.body);assert.equal(answer.json().status,'DISCOVERY_METADATA_STORED');const used=f.state.used;
+    assert.ok(Buffer.from(canonicalJson(f.receipts().at(-1).snapshot_json.body)).equals(bytes));
+    const again=await f.send(originalPacket.proof.method,originalPacket.proof.path,originalPacket,framed.payload.body);assert.equal(again.statusCode,200,again.body);
+    assert.deepEqual(again.json(),answer.json());assert.equal(f.state.stores,1);assert.equal(f.state.used,used);assert.equal(f.receipts().length,2);}
+  }finally{bytes?.fill(0);await f.app.close();}
+ }
+});
 
 test('result transport stays absent and challenge stays503 with only existing GET options',async()=>{
  const f=fixture(null);try{const acq=await f.acquire(),b=f.body(acq),r=f.request('POST',f.base+'/'+f.human.id+'/result',b),before=f.state.connects;
