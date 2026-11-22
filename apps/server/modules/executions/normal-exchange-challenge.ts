@@ -1,4 +1,5 @@
 import type {NormalUnderstandingReadAcquisition} from './normal-understanding-read-acquisition.ts';
+import type {NormalUnderstandingReadResult} from './normal-understanding-read-result.ts';
 import {createHash,randomBytes,randomUUID} from 'node:crypto';
 import {TextDecoder} from 'node:util';
 import type {FastifyInstance} from 'fastify';
@@ -89,17 +90,21 @@ async function bootstrapReservation(db:PoolClient,b:any){
   return fail('EXECUTION_BOOTSTRAP_RESERVATION_INVALID',412);
  return {registrationRef:s.registrationRef,reservationRef:{id:row.id,version:1,contentHash:row.content_hash},expiresAt:s.expiresAt};
 }
-async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string,body:unknown,bearerDigest?:string,understandingSource?:NormalUnderstandingReadAcquisition){
+async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string,body:unknown,bearerDigest?:string,understandingSource?:NormalUnderstandingReadAcquisition,resultSource?:NormalUnderstandingReadResult,signal?:AbortSignal){
  const purpose:Purpose=bearerDigest?'EXECUTION_REQUEST':'CREDENTIAL_EXCHANGE';
  const {request,signature}=decode(body,purpose),ref=request.grantRef;
  if(!refV1(ref))return fail('INPUT_INVALID',400);
- // 원 HUMAN 요청과 같은 DB 목적 저장소가 없으면 새 경로의 nonce를 발행하지 않는다. result/SELECT는 아직 닫혀 있다.
+ // 원 HUMAN/GET와 같은 DB 목적 저장소가 없으면 새 경로의 nonce를 발행하지 않는다. SELECT는 닫혀 있다.
  const understanding='/api/v1/connectors/'+connector+'/executions/'+execution+'/understanding-response-read';
  const discovery=request.target.path===understanding&&request.target.method==='GET'&&!!bearerDigest&&understandingSource?.pool===pool;
+ const resultId=request.target.method==='POST'&&request.target.path.startsWith(understanding+'/')&&request.target.path.endsWith('/result')?request.target.path.slice(understanding.length+1,-'/result'.length):'';
+ const metadataResult=!!bearerDigest&&resultSource?.pool===pool&&uuidV1(resultId)&&request.target.path===understanding+'/'+resultId+'/result';
  if((request.target.path===understanding||request.target.path.startsWith(understanding+'/'))&&!discovery)
-  return fail('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE',503);
- const db=await pool.connect();
- let committing=false,noneRollback=false,discard:Error|undefined;
+  if(!metadataResult)return fail('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE',503);
+ if(metadataResult&&(!signal||signal.aborted))return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+ let db:PoolClient;try{db=await pool.connect();}catch(error){if(metadataResult)return fail('NORMAL_UNDERSTANDING_RESULT_UNKNOWN',503);throw error;}
+ let committing=false,committed=false,noneRollback=false,discard:Error|undefined;
+ const scoped=discovery||metadataResult,monoStart=performance.now();
  try{
   await db.query('BEGIN');await db.query("SET LOCAL statement_timeout='5s'; SET LOCAL lock_timeout='2s'");
   const credential=bearerDigest?await requestCredential(db,bearerDigest,connector,execution,request):null;
@@ -121,6 +126,11 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   const human=discovery?await understandingSource!.current(db,bearerDigest!,current.binding,request.requestId,checked?replay.snapshot_json.understandingRequestRef:null):null;
   if(discovery&&!human){noneRollback=true;discard=new Error('NORMAL_UNDERSTANDING_DISCOVERY_ROLLBACK_UNKNOWN');if((await db.query('ROLLBACK')).command!=='ROLLBACK')return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);discard=undefined;return {transport:'NORMAL_PROTECTED',status:'NONE',challenge:null,nonceConsumed:false,executionAuthorized:false,dispatchPerformed:false};}
   if(human){deadline=Math.min(deadline,Date.parse(human.expiresAt));if(current.now.getTime()>=deadline)return fail('NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED',412);}
+  const resultBasis=metadataResult?await resultSource!.challengeBasis(db,bearerDigest!,current.binding,credential!.ref,request.target,current.now):null;
+  if(resultBasis){deadline=Math.min(deadline,Date.parse(resultBasis.deadline));
+   if(current.now.getTime()>=deadline)return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+   if(checked)await resultSource!.validateChallenge(db,bearerDigest!,current.binding,credential!.ref,replay,current.now);
+  }
   let result=checked;
   if(!result){
    const stats=credential?await requestChallengeStats(db,keys,credential.ref,current.now):(await db.query(`SELECT count(*) FILTER (WHERE version=1)::int AS total,
@@ -132,8 +142,10 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
    const challenge={id:randomUUID(),requestId:request.requestId,purpose:request.purpose,grantRef:ref,credentialGeneration:request.credentialGeneration,
     scopeDigest:current.binding.scopeDigest,serverNonce:randomBytes(32).toString('base64url'),clientNonce:request.clientNonce,
     issuedAt:current.now.toISOString(),expiresAt:new Date(Math.min(current.now.getTime()+(credential?30000:120000),deadline)).toISOString()};
-   const snapshot={sequence:stats.sequence,...(human?{understandingRequestRef:human.requestRef}:{}),...(credential?{credentialRef:credential.ref}:{}),binding:current.binding,request,requestHash:digest(request),signedInputHash:signedInputHash(request),serverNonceDigest:nonceDigest(challenge.serverNonce),publicChallenge:challenge,previousRef:null,consumption:null};
-   const content=digest(snapshot);
+   const candidate={sequence:stats.sequence,...(human?{understandingRequestRef:human.requestRef}:{}),...(credential?{credentialRef:credential.ref}:{}),binding:current.binding,request,requestHash:digest(request),signedInputHash:signedInputHash(request),serverNonceDigest:nonceDigest(challenge.serverNonce),publicChallenge:challenge,previousRef:null,consumption:null};
+   const bound=metadataResult?await resultSource!.bindChallenge(db,bearerDigest!,current.binding,credential!.ref,{id:challenge.id,content_hash:digest(candidate),snapshot_json:candidate},current.now):null;
+   const snapshot=bound?.snapshot_json??candidate,content=bound?.content_hash??digest(snapshot);
+   if(metadataResult&&signal?.aborted)return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
    if(credential)await db.query("SELECT set_config('anvil.normal_request_verified',txid_current()::text||':'||$1||':'||$2||':'||$3,true)",[content,credential.ref.contentHash,bearerDigest]);
    else await db.query("SELECT set_config('anvil.normal_challenge_verified',txid_current()::text||':'||$1,true)",[content]);
    const inserted=await db.query('INSERT INTO anvil.execution_challenges(project_id,id,version,grant_id,grant_version,server_sequence,content_hash,snapshot_json) VALUES($1,$2,1,$3,$4,$5,$6,$7)',[project,challenge.id,ref.id,ref.version,stats.sequence,content,JSON.stringify(snapshot)]);
@@ -152,6 +164,12 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
     return fail('EXECUTION_CHALLENGE_CURRENT_BINDING_REQUIRED',412);
   if(human){const finalHuman=await understandingSource!.current(db,bearerDigest!,final.binding,request.requestId,human.requestRef);
    if(!finalHuman||!same(finalHuman.context,human.context)||Date.parse(finalHuman.expiresAt)<expiry||final.now.getTime()>=expiry)return fail('NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED',412);}
+  if(resultBasis){
+   const stored=(await db.query('SELECT id,content_hash,snapshot_json FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND id=$4 AND version=1 AND content_hash=$5',[...keys,result.ref.id,result.ref.contentHash])).rows;
+   if(stored.length!==1)return fail('NORMAL_UNDERSTANDING_RESULT_UNKNOWN',503);
+   const last=await resultSource!.validateChallenge(db,bearerDigest!,final.binding,credential!.ref,stored[0],final.now);
+   if(!same(last.source,resultBasis)||final.now.getTime()>=expiry)return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+  }
   let bootstrapBinding:unknown;
   if(reservation){
    const last=await bootstrapReservation(db,final.binding);
@@ -162,26 +180,31 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
     grantRef:b.grantRef,credentialGeneration:b.credentialGeneration,scopeDigest:b.scopeDigest,registrationRef:last.registrationRef,
     reservationRef:last.reservationRef,publicKeyFingerprint:b.publicKeyFingerprint,checkedAt:final.now.toISOString(),expiresAt:new Date(end).toISOString()};
   }
+  const monoEnd=monoStart+Math.min(deadline,Date.parse(result.challenge.expiresAt))-current.now.getTime();
+  if(metadataResult&&(signal?.aborted||!Number.isFinite(monoEnd)||performance.now()<monoStart||performance.now()>=monoEnd))return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
   committing=true;
   const completion=await db.query('COMMIT');
   if(completion?.command!=='COMMIT')throw new Error('EXECUTION_CHALLENGE_COMMIT_UNKNOWN');
-  committing=false;
+  committing=false;committed=true;
+  if(metadataResult&&(signal?.aborted||performance.now()<monoStart||performance.now()>=monoEnd))return fail('NORMAL_UNDERSTANDING_RESULT_DELIVERY_UNKNOWN',503);
   return reservation?{...result,bootstrapBinding}:result;
  }catch(error){
+  if(committed){if(error instanceof AuthFailure)throw error;return fail('NORMAL_UNDERSTANDING_RESULT_UNKNOWN',503);}
   if(committing)discard=new Error('EXECUTION_CHALLENGE_COMMIT_UNKNOWN');
   let rollbackUnknown=noneRollback;
   try{
    if(!noneRollback){const ended=await db.query('ROLLBACK');
-    if(discovery&&ended?.command!=='ROLLBACK'){rollbackUnknown=true;discard??=new Error('EXECUTION_CHALLENGE_ROLLBACK_UNKNOWN');}}
+    if(scoped&&ended?.command!=='ROLLBACK'){rollbackUnknown=true;discard??=new Error('EXECUTION_CHALLENGE_ROLLBACK_UNKNOWN');}}
   }catch{rollbackUnknown=true;discard??=new Error('EXECUTION_CHALLENGE_ROLLBACK_UNKNOWN');}
-  if(discovery&&rollbackUnknown)return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);
+  if(scoped&&rollbackUnknown)return fail(metadataResult?'NORMAL_UNDERSTANDING_RESULT_UNKNOWN':'NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);
   if(committing)return fail('EXECUTION_CHALLENGE_COMMIT_UNKNOWN',503);
   if(noneRollback)return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);
   if(discovery&&!(error instanceof AuthFailure)){if(error instanceof Error&&/^NORMAL_UNDERSTANDING_DISCOVERY_(DENIED|EXPIRED)$/.test(error.message))return fail(error.message,412);return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);}
+  if(metadataResult&&!(error instanceof AuthFailure)){if(error instanceof Error&&error.message==='NORMAL_UNDERSTANDING_RESULT_DENIED')return fail(error.message,412);return fail('NORMAL_UNDERSTANDING_RESULT_UNKNOWN',503);}
   throw error;
  }finally{db.release(discard);}
 }
-export function registerNormalExchangeChallenge(app:FastifyInstance,options:NormalExchangeOptions,requestOptions?:{origin:string;understanding?:NormalUnderstandingReadAcquisition}){
+export function registerNormalExchangeChallenge(app:FastifyInstance,options:NormalExchangeOptions,requestOptions?:{origin:string;understanding?:NormalUnderstandingReadAcquisition;understandingResult?:NormalUnderstandingReadResult}){
  const origin=requestOptions?new URL(requestOptions.origin):null;
  if(origin&&(origin.protocol!=='https:'||origin.origin!==requestOptions!.origin))throw Error('EXECUTION_CHALLENGE_ORIGIN_INVALID');
  app.register(async scope=>{
@@ -198,7 +221,7 @@ export function registerNormalExchangeChallenge(app:FastifyInstance,options:Norm
     ||[...(commandChallenge?[]:['authorization']),'cookie','origin','x-anvil-csrf','content-encoding'].some(h=>names.includes(h)||r.headers[h]!==undefined))
     throw new AuthFailure('EXECUTION_CHALLENGE_HEADER_REJECTED',403);
    if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(r.headers['content-type']??''))throw new AuthFailure('INPUT_INVALID',400);
-   try{return await issue(options.pool,cid,eid,r.body,commandChallenge?normalRequestBearerDigest(r,origin!.host):undefined,requestOptions?.understanding);}catch(error){
+   try{return await issue(options.pool,cid,eid,r.body,commandChallenge?normalRequestBearerDigest(r,origin!.host):undefined,requestOptions?.understanding,requestOptions?.understandingResult,r.signal);}catch(error){
     if(error instanceof AuthFailure&&error.message==='NOT_FOUND')return reply.callNotFound();
     throw error;
    }
