@@ -93,6 +93,158 @@ test('FN09 readiness hides ambiguous, changed, absent, unauthorized and unconfir
  }
 });
 
+test('FN09 HUMAN current metadata uses original authenticated transaction without creating a command',async()=>{
+ const f=fixture(),requestRef=ref(60),request={requestRef,projectId:f.pid,executionId:f.context.executionId,executionGeneration:1,assignmentRef:f.context.assignmentRef,preparationRef:f.context.preparationRef};
+ const original=f.db.query;let reads=0;
+ f.db.query=async(sql:string,p:any[]=[])=>{
+  if(sql.startsWith('SELECT anvil.fn09_normal_understanding_metadata_current')){
+   reads++;assert.deepEqual(JSON.parse(p[3]),{...request,controlGeneration:1});assert.equal(p[5],'17');
+   return {rows:[{projection:{status:'PENDING_SOURCE',request}}]};
+  }
+  return original(sql,p);
+ };
+ const result=await new mod.NormalUnderstandingReadRequests(f.access).current(f.token,f.csrf,{...request,controlGeneration:1});
+ assert.deepEqual(result,{status:'PENDING_SOURCE',request});assert.equal(reads,2);
+ assert.equal(f.calls.some(s=>s.startsWith('INSERT')||s.includes('request_insert')),false);
+ assert.equal(f.calls.filter(s=>s==='COMMIT').length,1);
+});
+
+function currentFixture(reauthMode='CURRENT'){
+ const f=fixture(reauthMode),request={requestRef:ref(60),projectId:f.pid,executionId:f.context.executionId,executionGeneration:1,
+  assignmentRef:f.context.assignmentRef,preparationRef:f.context.preparationRef};
+ const selection={...request,controlGeneration:1},original=f.db.query;let readCount=0;
+ const stored={status:'METADATA_STORED',request,resultRef:ref(61),currentness:'CURRENT',observedAt:new Date(Date.now()-500).toISOString(),
+  expiresAt:new Date(Date.now()+25000).toISOString(),selectionAvailable:false,
+  metadata:{contextBundleRef:f.context.contextBundleRef,initConfirmationRef:ref(62),tailRef:ref(63),attribution:'SESSION_ONLY',wholeConversationComplete:false,
+   ranges:[{outputRef:ref(63),sequence:3,payloadDigest:'b'.repeat(64),textBlocks:1,textBytes:12}]}};
+ let project:(n:number)=>unknown=()=>structuredClone(stored);
+ f.db.query=async(sql:string,p:any[]=[])=>{
+  if(sql.startsWith('SELECT s.*,u.id AS uid')&&p[0]!==createHash('sha256').update(f.token).digest('hex')){f.calls.push(sql);return {rows:[]};}
+  if(sql.startsWith('SELECT p.id,p.archived_at')&&p[0]!==f.pid){f.calls.push(sql);return {rows:[]};}
+  if(sql.startsWith('SELECT anvil.fn09_normal_understanding_metadata_current')){
+   if(p[0]!==id(4)||p[1]!==id(2)||p[2]!==id(3))throw Object.assign(Error('NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED'),{code:'P0001'});
+   f.calls.push(sql);assert.deepEqual(JSON.parse(p[3]),selection);assert.equal(p[5],'17');
+   return {rows:[{projection:project(++readCount)}]};
+  }
+  return original(sql,p);
+ };
+ return {...f,selection,stored,request,reads:()=>readCount,projection:(fn:typeof project)=>{project=fn;},
+  current:()=>new mod.NormalUnderstandingReadRequests(f.access).current(f.token,f.csrf,selection)};
+}
+
+test('FN09 current metadata returns only settled projection, preserves pending/unavailable, and never writes or retries',async()=>{
+ for(const status of ['METADATA_STORED','PENDING_SOURCE','CURRENT_UNAVAILABLE']){
+  const f=currentFixture();if(status!=='METADATA_STORED')f.projection(()=>({status,request:f.request}));
+  const result=await f.current();assert.equal(result.status,status);assert.deepEqual(result.request,f.request);
+  if(status==='METADATA_STORED'){
+   assert.deepEqual(result.metadata,f.stored.metadata);assert.deepEqual(result.resultRef,f.stored.resultRef);
+   assert.equal(result.selectionAvailable,false);assert.ok(Date.parse(result.expiresAt)<=Date.parse(f.stored.expiresAt));
+  }else assert.deepEqual(Object.keys(result).sort(),['request','status']);
+  assert.equal(f.reads(),2);assert.equal(f.calls.filter(s=>s==='BEGIN').length,1);
+  assert.equal(f.calls.some(s=>/^(INSERT|UPDATE|DELETE)/.test(s)||s.includes('set_config')||s.includes('_store(')),false);
+ }
+});
+
+test('FN09 current metadata keeps original session, CSRF, project and effective policy; other session cannot claim stored request',async()=>{
+ for(const mode of ['token','csrf','project','policy','session'] as const){
+  const f=currentFixture();let token=f.token,csrf=f.csrf,selection=f.selection;
+  if(mode==='token')token='x'.repeat(43);
+  if(mode==='csrf')csrf='z'.repeat(43);
+  if(mode==='project')selection={...selection,projectId:id(99)};
+  if(mode==='policy')f.rules[0].expiresAt=new Date(0).toISOString();
+  if(mode==='session'){
+   const original=f.db.query;f.db.query=async(sql:string,p:any[]=[])=>{const result=await original(sql,p);
+    return sql.startsWith('SELECT s.*,u.id AS uid')?{...result,rows:result.rows.map((row:any)=>({...row,id:id(94)}))}:result;};
+  }
+  const expected={token:['AUTH_REQUIRED',401],csrf:['CSRF_INVALID',403],project:['NOT_FOUND',404],policy:['PROJECT_OPERATION_DENIED',403],session:['NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED',412]}[mode];
+  await assert.rejects(new mod.NormalUnderstandingReadRequests(f.access).current(token,csrf,selection),{message:expected[0],statusCode:expected[1]});
+  assert.equal(f.reads(),0);assert.equal(f.calls.some(s=>/^(INSERT|UPDATE|DELETE)/.test(s)),false);
+ }
+});
+
+test('FN09 current metadata binds database TTL to the pre-query wall and monotonic samples',async t=>{
+ for(const mode of ['both','wall-only','mono-only','wall-backward','commit-late','within'] as const){
+  const f=currentFixture(),base=Date.now();let wall=base,mono=100,clocks=0;
+  f.stored.expiresAt=new Date(base+1000).toISOString();
+  const original=f.db.query;
+  f.db.query=async(sql:string,p:any[]=[])=>{
+   const result=await original(sql,p);
+   if(sql==='SELECT clock_timestamp() AS at,txid_current()::text AS transaction_id'&&++clocks===4&&mode!=='commit-late'){
+    // DB 원 시각 snapshot의 응답 수거 중 경과를 RAM에서 모사한다. sleep/DB 실행 없음.
+    if(mode==='both'||mode==='wall-only')wall+=1500;
+    if(mode==='both'||mode==='mono-only')mono+=1500;
+    if(mode==='wall-backward')wall--;
+    if(mode==='within'){wall+=100;mono+=100;}
+   }
+   if(sql==='COMMIT'&&mode==='commit-late'){wall+=1500;mono+=1500;}
+   return result;
+  };
+  t.mock.method(Date,'now',()=>wall);t.mock.method(performance,'now',()=>mono);
+  try{
+   if(mode==='within'){const result=await f.current();assert.equal(result.status,'METADATA_STORED');assert.equal(result.expiresAt,f.stored.expiresAt);}
+   else await assert.rejects(f.current(),{message:'NORMAL_UNDERSTANDING_METADATA_UNKNOWN',statusCode:503},mode);
+   assert.equal(f.calls.filter(s=>s==='BEGIN').length,1);assert.equal(f.calls.at(-1),'RELEASE');
+   if(!['within','commit-late'].includes(mode)){assert.equal(f.reads(),1);assert.ok(!f.calls.includes('COMMIT'));}
+  }finally{t.mock.restoreAll();}
+ }
+});
+
+test('FN09 current metadata rejects wrong refs, extra raw values, expired projection and between-read corruption',async()=>{
+ const changes=[(v:any)=>{v.request.requestRef=ref(99);},(v:any)=>{v.request.executionGeneration=2;},
+  (v:any)=>{v.metadata.raw='fixture-only';},(v:any)=>{v.metadata.ranges[0].outputRef=ref(62);},
+  (v:any)=>{v.metadata.ranges.push({...v.metadata.ranges[0]});},(v:any)=>{v.expiresAt=new Date(0).toISOString();},
+  (v:any)=>{v.currentness='HISTORICAL';},(v:any)=>{v.selectionAvailable=true;}];
+ for(const change of changes){const f=currentFixture();f.projection(()=>{const v=structuredClone(f.stored);change(v);return v;});
+  await assert.rejects(f.current(),{message:'NORMAL_UNDERSTANDING_METADATA_UNKNOWN',statusCode:503});assert.equal(f.reads(),1);assert.ok(!f.calls.includes('COMMIT'));}
+ const f=currentFixture();f.projection(n=>({...structuredClone(f.stored),resultRef:ref(n===1?61:98)}));
+ await assert.rejects(f.current(),{message:'NORMAL_UNDERSTANDING_METADATA_UNKNOWN',statusCode:503});assert.equal(f.reads(),2);assert.ok(!f.calls.includes('COMMIT'));
+});
+
+test('FN09 current metadata preserves authority denials and suppresses unknown COMMIT, database failure or query replacement',async()=>{
+ for(const alter of [(f:ReturnType<typeof currentFixture>)=>f.deny(),(f:ReturnType<typeof currentFixture>)=>f.stale(),
+  (f:ReturnType<typeof currentFixture>)=>{f.rules[0].disposition='REQUIRE_APPROVAL';}]){
+  const f=currentFixture();alter(f);await assert.rejects(f.current());assert.equal(f.reads(),0);
+ }
+ for(const mode of ['NONE','EXPIRED']){const f=currentFixture(mode);await assert.rejects(f.current(),{message:'REAUTHENTICATION_REQUIRED',statusCode:412});assert.equal(f.reads(),0);}
+ for(const code of ['NORMAL_UNDERSTANDING_METADATA_NOT_FOUND','NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED','PROJECT_OPERATION_DENIED']){
+  const f=currentFixture();f.projection(()=>{throw Object.assign(Error(code),{code:'P0001'});});
+  await assert.rejects(f.current(),{message:code,statusCode:code.endsWith('NOT_FOUND')?404:code==='PROJECT_OPERATION_DENIED'?403:412});assert.equal(f.reads(),1);
+ }
+ for(const change of ['commit','database','query','late-deny'] as const){const f=currentFixture();
+  if(change==='commit')f.unknown();
+  else f.projection(()=>{if(change==='database')throw Error('fixture private error');if(change==='query'){const q=f.db.query;f.db.query=(...args:any[])=>q(...args);}else f.deny();return structuredClone(f.stored);});
+  await assert.rejects(f.current(),{message:change==='late-deny'?'PROJECT_OPERATION_DENIED':'NORMAL_UNDERSTANDING_METADATA_UNKNOWN',statusCode:change==='late-deny'?403:503});
+  assert.equal(f.calls.filter(s=>s==='BEGIN').length,1);assert.equal(f.calls.at(-1),'RELEASE');
+ }
+});
+
+test('FN09 current metadata exact HUMAN GET uses existing app routing and rejects unbounded or mixed channels before SQL',async()=>{
+ const {buildApp}=await import('../../../apps/server/app.ts');const f=currentFixture(),app=buildApp({},undefined,{repository:f.access,origin:'https://anvil.test'});
+ const query=new URLSearchParams({controlGeneration:'1',executionGeneration:'1',requestVersion:'1',requestHash:f.request.requestRef.contentHash,
+  assignmentId:f.request.assignmentRef.id,assignmentVersion:'1',assignmentHash:f.request.assignmentRef.contentHash,
+  preparationId:f.request.preparationRef.id,preparationVersion:'1',preparationHash:f.request.preparationRef.contentHash});
+ const path=`/api/v1/projects/${f.pid}/executions/${f.request.executionId}/understanding-response-read-requests/${f.request.requestRef.id}/current`,url=path+'?'+query;
+ const headers={host:'anvil.test',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf};
+ try{
+  const response=await app.inject({method:'GET',url,headers});assert.equal(response.statusCode,200,response.body);assert.equal(response.headers['cache-control'],'no-store');
+  assert.equal(response.json().status,'METADATA_STORED');assert.deepEqual(response.json().request,f.request);
+  const count=f.calls.length;
+  for(const patch of [{method:'HEAD' as const},{url:url+'&requestHash='+f.request.requestRef.contentHash},{url:url+'&extra=1'},
+   {headers:{...headers,authorization:'Bearer fixture'}},{headers:{...headers,origin:'https://outside.test'}},
+   {headers:{host:headers.host,cookie:headers.cookie}},{headers:{...headers,'content-length':'0'}},
+   {url:url.replace('requestVersion=1','requestVersion=2')},{url:url.replace('executionGeneration=1','executionGeneration=0')}]){
+   const rejected=await app.inject({method:'GET',url,headers,...patch});assert.ok(rejected.statusCode>=400,rejected.body);assert.ok(!rejected.body.includes(f.stored.resultRef.id));
+  }
+  assert.equal(f.calls.length,count);
+  const beforeDenied=f.reads();
+  f.projection(()=>{throw Object.assign(Error('fixture private permission detail'),{code:'42501'});});
+  const unavailable=await app.inject({method:'GET',url,headers});
+  assert.equal(unavailable.statusCode,503);assert.equal(unavailable.json().code,'NORMAL_UNDERSTANDING_METADATA_UNKNOWN');
+  assert.ok(!unavailable.body.includes('fixture private permission detail'));assert.ok(!unavailable.body.includes(f.stored.resultRef.id));
+  assert.equal(f.reads(),beforeDenied+1);assert.equal(f.calls.at(-1),'RELEASE');
+ }finally{await app.close();}
+});
+
 test('FN09 readiness uses exact browser GET and excludes mixed channel, HEAD and repeated query',async()=>{
  const {buildApp}=await import('../../../apps/server/app.ts');const f=fixture(),app=buildApp({},undefined,{repository:f.access,origin:'https://anvil.test'});
  const query=new URLSearchParams({controlGeneration:'1',assignmentId:f.context.assignmentRef.id,assignmentVersion:'1',assignmentHash:f.context.assignmentRef.contentHash,

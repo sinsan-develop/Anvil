@@ -795,4 +795,83 @@ ALTER FUNCTION anvil.guard_fn09_normal_understanding_result() OWNER TO anvil_v3_
 ALTER FUNCTION anvil.fn09_normal_understanding_result_store(text,jsonb,jsonb,jsonb,jsonb,jsonb) OWNER TO anvil_v3_migrator;
 REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_metadata_valid(jsonb,jsonb,jsonb,jsonb),anvil.fn09_normal_understanding_result_pair_historical(anvil.execution_challenges,anvil.execution_receipts),anvil.fn09_normal_understanding_storage_plan(anvil.execution_challenges,anvil.execution_receipts,bigint,text,timestamptz),anvil.fn09_normal_understanding_storage_plan_valid(jsonb),anvil.fn09_normal_understanding_storage_complete(anvil.project_storage_reservations),anvil.fn09_normal_understanding_result_custody_valid(anvil.execution_challenges,anvil.execution_receipts,text),anvil.fn09_normal_understanding_result_admission(anvil.execution_challenges,boolean),anvil.guard_fn09_normal_understanding_result(),anvil.fn09_normal_understanding_result_store(text,jsonb,jsonb,jsonb,jsonb,jsonb) FROM PUBLIC,anvil_v3_app;
 GRANT EXECUTE ON FUNCTION anvil.fn09_normal_understanding_result_custody_valid(anvil.execution_challenges,anvil.execution_receipts,text),anvil.fn09_normal_understanding_result_store(text,jsonb,jsonb,jsonb,jsonb,jsonb) TO anvil_v3_app;
+-- HUMAN current projection만 제공한다. 등록 bearer/nonce/GUC는 받지 않으며 역사 정산을 현재 권위로 승격하지 않는다.
+CREATE FUNCTION anvil.fn09_normal_understanding_metadata_current(s uuid,a uuid,c uuid,selection jsonb,policy jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid;rid uuid;h anvil.normal_understanding_read_requests;r anvil.execution_receipts;v anvil.execution_challenges;
+ q anvil.project_storage_reservations;credential anvil.execution_receipts;basis jsonb;last_basis jsonb;request jsonb;command jsonb;m jsonb;
+ n bigint;at timestamptz;ends timestamptz;
+BEGIN
+ IF expected_tx IS DISTINCT FROM txid_current()::text
+  OR NOT COALESCE(anvil.execution_json_shape(selection,ARRAY['projectId','executionId','executionGeneration','assignmentRef','preparationRef','requestRef','controlGeneration']),false)
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(selection->'requestRef'),false) OR selection#>'{requestRef,version}' IS DISTINCT FROM '1'::jsonb
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(selection->'assignmentRef'),false) OR NOT COALESCE(anvil.execution_preparation_ref_valid(selection->'preparationRef'),false)
+  OR selection->'executionGeneration' IS DISTINCT FROM to_jsonb((selection->>'executionGeneration')::bigint)
+  OR (selection->>'executionGeneration')::bigint<1 OR (selection->>'executionGeneration')::bigint>9007199254740991
+  OR selection->'controlGeneration' IS DISTINCT FROM to_jsonb((selection->>'controlGeneration')::bigint)
+  OR (selection->>'controlGeneration')::bigint<1 OR (selection->>'controlGeneration')::bigint>9007199254740991
+  OR octet_length(anvil.fn01_json(selection))>2048 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_INVALID';END IF;
+ p=(selection->>'projectId')::uuid;rid=(selection#>>'{requestRef,id}')::uuid;
+ IF p IS NULL OR rid IS NULL OR (selection->>'executionId')::uuid IS NULL THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_INVALID';END IF;
+ PERFORM anvil.fn01_active(s,a,c);
+ -- 부재도 현재 HUMAN 권한 확인 뒤에만 반환한다. 이 q는 조회 입력이며 명령/영수증을 만들지 않는다.
+ command=jsonb_build_object('schemaVersion',1,'projectId',p,'commandId',rid,'clientId',c,'controlGeneration',selection->'controlGeneration',
+  'operation','readNormalUnderstandingResponse','targetId',selection->'executionId','expectedVersion',selection->'executionGeneration',
+  'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('assignmentRef',selection->'assignmentRef','preparationRef',selection->'preparationRef'));
+ -- basis의 기존 project/control/등록 잠금 순서를 그대로 사용해 result store와 직렬화한다.
+ basis=anvil.fn09_normal_understanding_request_basis(s,a,c,command,policy,expected_tx);
+ SELECT * INTO h FROM anvil.normal_understanding_read_requests WHERE project_id=p AND id=rid;
+ IF NOT FOUND THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_NOT_FOUND';END IF;
+ IF h.snapshot_json#>>'{requestedBy,userId}' IS DISTINCT FROM a::text OR h.snapshot_json#>>'{requestedBy,clientId}' IS DISTINCT FROM c::text
+  OR h.snapshot_json#>>'{requestedBy,sessionId}' IS DISTINCT FROM s::text THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED';END IF;
+ IF selection->'requestRef' IS DISTINCT FROM jsonb_build_object('id',h.id,'version',1,'contentHash',h.content_hash)
+  OR selection->>'executionId' IS DISTINCT FROM h.execution_id::text OR selection->'executionGeneration' IS DISTINCT FROM to_jsonb(h.generation)
+  OR selection->'assignmentRef' IS DISTINCT FROM h.snapshot_json#>'{request,payload,assignmentRef}'
+  OR selection->'preparationRef' IS DISTINCT FROM h.snapshot_json#>'{request,payload,preparationRef}'
+  OR NOT COALESCE(anvil.fn09_normal_understanding_request_complete(p,rid),false) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_INTEGRITY_FAILED';END IF;
+ request=selection-'controlGeneration';
+ command=(h.snapshot_json->'request')||jsonb_build_object('clientId',c,'controlGeneration',selection->'controlGeneration');
+ IF basis->'context' IS DISTINCT FROM h.snapshot_json->'context' THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED';END IF;
+ -- id로 먼저 찾고 fullref는 역사 helper에서 확인한다. 변조 hash/부분 v2/예약을 정상 부재로 숨기지 않는다.
+ SELECT count(*) INTO n FROM (SELECT id FROM anvil.execution_receipts WHERE project_id=p AND version=1
+  AND snapshot_json->>'kind'='NORMAL_UNDERSTANDING_DISCOVERY_RESULT' AND snapshot_json#>>'{understandingRequestRef,id}'=rid::text LIMIT 2) found;
+ IF n>1 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_INTEGRITY_FAILED';END IF;
+ IF n=0 THEN
+  IF EXISTS(SELECT 1 FROM anvil.execution_challenges WHERE project_id=p AND version=2 AND snapshot_json#>>'{understandingResultBinding,requestRef,id}'=rid::text)
+   OR EXISTS(SELECT 1 FROM anvil.project_storage_reservations WHERE project_id=p AND part_kind='FN09_DISCOVERY_METADATA' AND plan_json#>>'{requestRef,id}'=rid::text)
+   THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_INTEGRITY_FAILED';END IF;
+  last_basis=anvil.fn09_normal_understanding_request_basis(s,a,c,command,policy,expected_tx);
+  IF last_basis->'context' IS DISTINCT FROM basis->'context' THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED';END IF;
+  IF least((basis->>'expiresAt')::timestamptz,(last_basis->>'expiresAt')::timestamptz)<=clock_timestamp() THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED';END IF;
+  RETURN jsonb_build_object('status',CASE WHEN h.expires_at<=clock_timestamp() THEN 'CURRENT_UNAVAILABLE' ELSE 'PENDING_SOURCE' END,'request',request);
+ END IF;
+ SELECT * INTO STRICT r FROM anvil.execution_receipts WHERE project_id=p AND version=1 AND snapshot_json->>'kind'='NORMAL_UNDERSTANDING_DISCOVERY_RESULT'
+  AND snapshot_json#>>'{understandingRequestRef,id}'=rid::text;
+ SELECT * INTO STRICT v FROM anvil.execution_challenges WHERE project_id=p AND id=r.challenge_id AND version=2;
+ SELECT * INTO STRICT q FROM anvil.project_storage_reservations WHERE project_id=p AND id=r.id;
+ IF NOT COALESCE(anvil.fn09_normal_understanding_result_pair_historical(v,r),false)
+  OR NOT COALESCE(anvil.fn09_normal_understanding_storage_complete(q),false)
+  OR r.snapshot_json->'context' IS DISTINCT FROM basis->'context' OR q.plan_json->'requestRef' IS DISTINCT FROM selection->'requestRef'
+  THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_INTEGRITY_FAILED';END IF;
+ SELECT * INTO STRICT credential FROM anvil.execution_receipts WHERE project_id=p AND id=(r.snapshot_json#>>'{credentialRef,id}')::uuid AND version=1;
+ -- credential/GET/POST 원 기한의 역사 완결은 storage_complete에서 검산한다. 현재성은 HUMAN basis로 별도 검산한다.
+ last_basis=anvil.fn09_normal_understanding_request_basis(s,a,c,command,policy,expected_tx);
+ IF last_basis->'context' IS DISTINCT FROM basis->'context' THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED';END IF;
+ at=clock_timestamp();
+ IF least((basis->>'expiresAt')::timestamptz,(last_basis->>'expiresAt')::timestamptz)<=at THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED';END IF;
+ ends=least(h.expires_at,(r.snapshot_json->>'expiresAt')::timestamptz,(credential.snapshot_json->>'expiresAt')::timestamptz,
+  (credential.snapshot_json->>'storageExpiresAt')::timestamptz,(basis->>'expiresAt')::timestamptz,(last_basis->>'expiresAt')::timestamptz);
+ IF ends<=at THEN RETURN jsonb_build_object('status','CURRENT_UNAVAILABLE','request',request);END IF;
+ m=r.snapshot_json#>'{body,metadata}';
+ RETURN jsonb_build_object('status','METADATA_STORED','request',request,'resultRef',jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash),
+  'currentness','CURRENT','observedAt',to_char(at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+  'expiresAt',to_char(ends AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'selectionAvailable',false,
+  'metadata',jsonb_build_object('contextBundleRef',m->'contextBundleRef','initConfirmationRef',m->'initConfirmationRef','tailRef',m->'tailRef',
+   'attribution','SESSION_ONLY','wholeConversationComplete',false,'ranges',m->'ranges'));
+END;$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_metadata_current(uuid,uuid,uuid,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_metadata_current(uuid,uuid,uuid,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+-- 승인 A의 신뢰 경계는 원 AccessRepository + app 역할이다. XID/활성 ID 자체를 HTTP 인증 proof라고 주장하지 않는다.
+-- 같은 app DB 역할을 장악한 직접 SQL 호출을 별도 인증하는 새 키/토큰/GUC 체계는 추가하지 않는다.
+GRANT EXECUTE ON FUNCTION anvil.fn09_normal_understanding_metadata_current(uuid,uuid,uuid,jsonb,jsonb,text) TO anvil_v3_app;
 COMMIT;

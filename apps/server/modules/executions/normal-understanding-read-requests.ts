@@ -30,11 +30,98 @@ function basis(value:unknown,q:ProjectCommand,at:number){
   ||['grantRef','registrationRef','startCommandRef','assignmentRef','preparationRef','contextBundleRef','sessionBindingRef'].some(k=>!refV1(c[k])))fail();
  return b;
 }
+const currentKeys=['projectId','executionId','executionGeneration','assignmentRef','preparationRef','requestRef'];
+function currentInput(raw:unknown){
+ const s=cloneV1(raw);
+ if(!recordV1(s,[...currentKeys,'controlGeneration'])||!uuidV1(s.projectId)||!uuidV1(s.executionId)
+  ||!Number.isSafeInteger(s.executionGeneration)||s.executionGeneration<1||!Number.isSafeInteger(s.controlGeneration)||s.controlGeneration<1
+  ||!refV1(s.assignmentRef)||!refV1(s.preparationRef)||!refV1(s.requestRef)||s.requestRef.version!==1)return fail('INPUT_INVALID',422);
+ return s;
+}
+function metadataProjection(raw:unknown,request:Record<string,unknown>,at:number){
+ const v=cloneV1(raw),invalid=()=>fail('NORMAL_UNDERSTANDING_METADATA_UNKNOWN',503);
+ if(!recordV1(v,['status','request'])&&!recordV1(v,['status','request','resultRef','currentness','observedAt','expiresAt','metadata','selectionAvailable']))return invalid();
+ if(!same(v.request,request))return invalid();
+ if(v.status==='PENDING_SOURCE'||v.status==='CURRENT_UNAVAILABLE'){if(!recordV1(v,['status','request']))return invalid();return v;}
+ if(v.status!=='METADATA_STORED'||v.currentness!=='CURRENT'||v.selectionAvailable!==false||!refV1(v.resultRef)||v.resultRef.version!==1
+  ||!isoV1(v.observedAt)||!isoV1(v.expiresAt)||Date.parse(v.observedAt)>at||Date.parse(v.expiresAt)<=Math.max(at,Date.parse(v.observedAt)))return invalid();
+ const m=v.metadata;
+ if(!recordV1(m,['contextBundleRef','initConfirmationRef','tailRef','attribution','wholeConversationComplete','ranges'])
+  ||!refV1(m.contextBundleRef)||!refV1(m.initConfirmationRef)||m.initConfirmationRef.version!==1||!refV1(m.tailRef)||m.tailRef.version!==1
+  ||m.attribution!=='SESSION_ONLY'||m.wholeConversationComplete!==false||!Array.isArray(m.ranges)||m.ranges.length>200)return invalid();
+ if(m.initConfirmationRef.id===m.tailRef.id&&(!same(m.initConfirmationRef,m.tailRef)||m.ranges.length))return invalid();
+ let sequence=0,blocks=0;const seen=new Set<string>();
+ for(const r of m.ranges){
+  if(!recordV1(r,['outputRef','sequence','payloadDigest','textBlocks','textBytes'])||!refV1(r.outputRef)||r.outputRef.version!==1||seen.has(r.outputRef.id)
+   ||r.outputRef.id===m.initConfirmationRef.id||r.outputRef.id===m.tailRef.id&&(!same(r.outputRef,m.tailRef)||r!==m.ranges.at(-1))
+   ||!Number.isSafeInteger(r.sequence)||r.sequence<=sequence||r.sequence>10000||typeof r.payloadDigest!=='string'||!/^[a-f0-9]{64}$/.test(r.payloadDigest)
+   ||!Number.isSafeInteger(r.textBlocks)||r.textBlocks<1||(blocks+=r.textBlocks)>200||!Number.isSafeInteger(r.textBytes)||r.textBytes<1||r.textBytes>2097152)return invalid();
+  sequence=r.sequence;seen.add(r.outputRef.id);
+ }
+ return v;
+}
 /** 실제 HUMAN 인증 transaction 안의 메타 탐색 요청만 저장한다.
  * FIRST/slot/init/tail은 미공급이다. 이 결과는 S2 선택 ticket이나 connector challenge가 아니다. */
 export class NormalUnderstandingReadRequests{
  readonly #access:AccessRepository;
  constructor(access:AccessRepository){this.#access=access;}
+ /** HUMAN current 메타 조회. 새 명령/nonce/정산을 만들지 않으며 원 거래 COMMIT 뒤에만 반환한다. */
+ async current(token:string,csrf:string,raw:unknown){
+  const selection=currentInput(raw),{controlGeneration,...request}=selection;
+  let wall=Date.now(),mono=performance.now(),end=wall+30000,monoEnd=mono+30000;
+  const unknown=()=>fail('NORMAL_UNDERSTANDING_METADATA_UNKNOWN',503);
+  const check=()=>{const w=Date.now(),m=performance.now();if(w<wall||m<mono||w>=end||m>=monoEnd
+   ||Object.getPrototypeOf(this.#access)!==AccessRepository.prototype||Object.hasOwn(this.#access,'authenticated')||Object.hasOwn(this.#access,'authenticateInTransaction')
+   ||AccessRepository.prototype.authenticated!==originalAuthenticated||AccessRepository.prototype.authenticateInTransaction!==originalAuthenticate)unknown();wall=w;mono=m;};
+  check();
+  try{
+   const result=await this.#access.authenticated(token,csrf,async(db,actor)=>{
+    const identity=actorIdentity(actor),query=db.query,s=actor.authSession;let tx='',dbAt=-Infinity,clockWall=wall,clockMono=mono;
+    if(!s||!uuidV1(s.id)||!isoV1(s.idleExpiresAt)||!isoV1(s.absoluteExpiresAt))return unknown();
+    const clock=async()=>{check();if(db.query!==query||actorIdentity(actor)!==identity)return unknown();
+     const beforeWall=wall,beforeMono=mono;
+     const rows=(await db.query('SELECT clock_timestamp() AS at,txid_current()::text AS transaction_id')).rows;check();const row=rows.length===1?rows[0]:null;
+     if(db.query!==query||actorIdentity(actor)!==identity||!(row?.at instanceof Date)||!Number.isFinite(row.at.getTime())||row.at.getTime()<dbAt
+      ||typeof row.transaction_id!=='string'||!/^[1-9][0-9]{0,18}$/.test(row.transaction_id)||tx&&row.transaction_id!==tx)return unknown();
+     tx=row.transaction_id;dbAt=row.at.getTime();clockWall=beforeWall;clockMono=beforeMono;
+     if(actor.reauthUntil!.getTime()<=dbAt)fail('REAUTHENTICATION_REQUIRED',412);return dbAt;};
+    const q:ProjectCommand={schemaVersion:1,projectId:selection.projectId,commandId:selection.requestRef.id,clientId:actor.clientId,controlGeneration,
+     operation:'readNormalUnderstandingResponse',targetId:selection.executionId,expectedVersion:selection.executionGeneration,baselineRefs:[],approvalRef:null,
+     payload:{assignmentRef:selection.assignmentRef,preparationRef:selection.preparationRef}};
+    let policyRef:unknown;
+    const inspect=async()=>{
+     await clock();await currentProjectController(db,actor,q);await clock();const policy=await authorizeMaterial(db,actor,q,true);await clock();
+     if(policy.approvalRequired||policyRef!==undefined&&!same(policyRef,policy.ref))fail('PROJECT_OPERATION_DENIED',403);policyRef=policy.ref;
+     const rows=(await db.query('SELECT anvil.fn09_normal_understanding_metadata_current($1,$2,$3,$4,$5,$6) AS projection',
+      [s.id,actor.actorId,actor.clientId,JSON.stringify(selection),JSON.stringify(policy.ref),tx])).rows;
+     const at=await clock(),v=metadataProjection(rows.length===1?rows[0]?.projection:null,request,at);
+     const expires=Math.min(policy.validUntil,Date.parse(s.idleExpiresAt),Date.parse(s.absoluteExpiresAt),actor.reauthUntil!.getTime(),
+      v.status==='METADATA_STORED'?Date.parse(v.expiresAt):Infinity);
+     // DB snapshot의 남은 기한에 응답 수거 시간이 더해지지 않도록 쿼리 직전 양 clock에 결박한다.
+     if(!Number.isFinite(expires)||expires<=at)return unknown();end=Math.min(end,clockWall+expires-at);monoEnd=Math.min(monoEnd,clockMono+expires-at);check();
+     return v;
+    };
+    const first=await inspect();if(actorIdentity(await this.#access.authenticateInTransaction(db,token,csrf))!==identity)return unknown();
+    const last=await inspect();
+    if(first.status!==last.status)return unknown();
+    if(first.status==='METADATA_STORED'){
+     if(!same(first.resultRef,last.resultRef)||!same(first.metadata,last.metadata))return unknown();
+     last.expiresAt=new Date(Math.min(Date.parse(first.expiresAt),Date.parse(last.expiresAt))).toISOString();
+    }
+    check();return last;
+   });check();return result;
+  }catch(error){
+   if(error instanceof AuthFailure&&error.statusCode<500)throw error;
+   // PostgreSQL의 고정 목적 오류만 분류하며 DB 원문은 응답에 포함하지 않는다.
+   if(error instanceof Error&&'code'in error&&error.code==='P0001'){
+    if(error.message==='NORMAL_UNDERSTANDING_METADATA_NOT_FOUND')fail(error.message,404);
+    if(['NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_EXPIRED'].includes(error.message))fail('NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED',412);
+    if(error.message==='PROJECT_OPERATION_DENIED'||error.message==='PROJECT_CONTROL_REQUIRED')fail(error.message,403);
+    if(error.message==='REAUTHENTICATION_REQUIRED')fail(error.message,412);
+   }
+   return unknown();
+  }
+ }
  async readiness(token:string,csrf:string,projectId:string,raw:unknown){
   const selection=cloneV1(raw);
   if(!uuidV1(projectId)||!recordV1(selection,['controlGeneration','assignmentRef','preparationRef'])
