@@ -15,6 +15,7 @@ export interface NormalOwnedHostSession {
  readonly invalidated?:AbortSignal;
  current?():void;
  inspectionBudget?():{frames:number;remainingMs:number};
+ prepareSdkChildSource?(source:Readonly<Record<string,unknown>>):Promise<NormalOwnedSdkHandoff>;
  prepareUnderstandingResult?(binding:NormalUnderstandingResultPrepare):Promise<unknown>;
  sendUnderstandingResult?(operation:NormalUnderstandingResultSendOperation,payload:unknown):Promise<unknown>;
  prepareUnderstandingRangeResult?(binding:NormalUnderstandingResultPrepare):Promise<unknown>;
@@ -22,6 +23,9 @@ export interface NormalOwnedHostSession {
  send(operation:string,payload:unknown):Promise<unknown>;
  close(disposition:HostCloseDisposition):Promise<{state:string}>;
 }
+/** 원 native source가 발급한 endpoint의 수령자다. SDK 생성/일반 서명 권위가 아니다. */
+export interface NormalOwnedSdkSupervisor {read():{leaseId:string;endpointId:string;sourceHash:string;bindingHash:string;expiresAt:string;childCreated:false;executionAuthorized:false;dispatchPerformed:false};close():Promise<{state:'UNKNOWN'}>}
+export interface NormalOwnedSdkHandoff {acknowledge():Promise<void>;afterClose():Promise<NormalOwnedSdkSupervisor>;discard():Promise<{state:'UNKNOWN'}>}
 export interface NormalOwnedHostFactory {open(signal:AbortSignal,request?:Readonly<NormalOwnedMetadata>):Promise<NormalOwnedHostSession>}
 export interface NormalOwnedMetadata {slotId:string;receiptRef:Ref;origin:string;scope:NormalOwnedScope;expiresAt:string;caHash:string}
 export interface NormalOwnedRequest {method:'GET'|'POST';path:string;query:string;body:string|null;auth:string|null;expiresAt:string}

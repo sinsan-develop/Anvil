@@ -84,7 +84,7 @@ internal sealed class NormalSdkWorkerPackageSource:IDisposable {
   try{owned.Load();owned.ready=true;owned.Check();return owned;}catch{owned.Dispose();throw Invalid();}
  }
  void Load(){
-  peer.Check();var pipe=kernel.Standard(-10);uint pid=kernel.ServerPid(pipe);
+  peer.Check();var pipe=kernel.Standard(-10);uint pid=peer.IsSdkSupervisor?peer.SdkAnvilPid:kernel.ServerPid(pipe);
   var parent=kernel.OpenProcess(pid);held.Add(parent);
   var original=kernel.Process(parent);if(!original.Alive||original.Pid!=pid||original.Created<=0||Path.GetFileName(original.Image)!="Anvil.exe")throw Invalid();
   parentHandle=parent;parentIdentity=original;

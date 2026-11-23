@@ -5,6 +5,15 @@ const {readFileSync}=require('node:fs');
 const path=require('node:path');
 const read=p=>readFileSync(path.resolve(__dirname,'../../',p),'utf8');
 
+test('원 FIRST caller는 같은 등록 host의 전용 준비·supervisor ACK·물리 close·opposite endpoint 소비만 잇는다',async()=>{
+ const {prepareNormalSdkChildHandoff}=await import('../../apps/connector/runtime/normal-owned-spool-profile.ts');
+ assert.equal(typeof prepareNormalSdkChildHandoff,'function');
+ const runtime=read('apps/connector/runtime/normal-owned-spool-profile.ts');
+ assert.match(runtime,/await this\.#prepareSdkFirst\(handoff,life,verify\)/);
+ const native=read('apps/connector/native/DesktopTrustKeyHostSource.cs');
+ assert.match(native,/--normal-sdk-child/);assert.match(native,/RunSdkChildSupervisorAsync/);
+});
+
 test('FIRST 검산 Options와 SID만 같은 pinned recipe의 비실행 계획에 결박한다',()=>{
  const spool=read('apps/connector/native/NormalExecutionSpoolProfileSource.cs'),credential=read('apps/connector/native/NormalExecutionCredentialSource.cs'),config=read('apps/connector/native/NormalExecutionConfigurationSource.cs');
  assert.match(spool,/out SdkStartOptions options,bool verifyOptions/);
@@ -125,10 +134,10 @@ test('FIRST 설정 재판독은 원 검산 객체와 기한에 묶이고 원문 
  assert.match(consume,/return new Dictionary<string,object>\{\{"state","SDK_CONFIGURATION_UNAVAILABLE"\}\}/);
 });
 
-test('FIRST 보호 인계는 원 core에서 native 읽기 검사로만 소비하고 FIRST3와 C hash를 독립 대조한다',()=>{
+test('FIRST 보호 인계는 원 core의 전용 준비에서 FIRST3와 C hash를 독립 대조하고 INSPECT를 보존한다',()=>{
  const runtime=read('apps/connector/runtime/normal-owned-spool-profile.ts');
  assert.match(runtime,/takeNormalFirstPermitHandoff\(request,source\)/);
- assert.match(runtime,/await this\.#inspectFirst\(handoff,life,verify\)/);
+ assert.match(runtime,/await this\.#prepareSdkFirst\(handoff,life,verify\)/);
  const host=read('apps/connector/native/DesktopTrustKeyHostSource.cs');
  assert.match(host,/value.ContainsKey\("transferId"\)[\s\S]*ReceiveSdkFirstPart\(value,peer\)/);
  const credential=read('apps/connector/native/NormalExecutionCredentialSource.cs');
@@ -243,7 +252,7 @@ const {EventEmitter}=require('node:events');
 const {createHash,randomUUID}=require('node:crypto');
 const {canonicalJson}=require('../../apps/desktop/src/runtime-catalogue-profile.cjs');
 const {createSdkBootstrapClient}=require('../../apps/desktop/src/trust-key-host-client.cjs');
-function bootstrapCarrier(change=x=>x,normal=false){
+function bootstrapCarrier(change=x=>x,normal=false,extra={}){
  const image=Buffer.from('synthetic-helper'),sha=createHash('sha256').update(image).digest('hex'),calls=[];
  const endpoint={stdin:new EventEmitter(),stdout:new EventEmitter(),stderr:new EventEmitter()};Object.setPrototypeOf(endpoint,EventEmitter.prototype);EventEmitter.call(endpoint);
  let seq=0;endpoint.stdin.write=(bytes,_encoding,callback)=>{const f=JSON.parse(bytes.toString());calls.push(f.operation);seq++;let data;
@@ -255,7 +264,7 @@ function bootstrapCarrier(change=x=>x,normal=false){
  const abort=new AbortController();let end=Date.now()+9000;
  const lease={signal:abort.signal,narrow:value=>{end=Math.min(end,value);},check(){if(abort.signal.aborted)throw Error('CONTEXT_CHANGED');},remainingMs:()=>end-Date.now(),callExpiresAt:()=>new Date(end).toISOString()};
  const factory=normal?require('../../apps/desktop/src/trust-key-host-client.cjs').createTrustKeyHostClient:createSdkBootstrapClient;
- const client=factory({path:'C:\\Anvil\\AnvilTrustKeyHost.exe',signerRef:{id:randomUUID(),version:1,contentHash:sha},helperHash:sha},{readImage:async()=>Buffer.from(image),companion:async()=> 'ABSENT',environment:()=>({SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows'}),uuid:randomUUID,spawn:(_exe,args)=>{assert.deepEqual(args,normal?[]:['--normal-sdk-bootstrap']);return endpoint;}});
+ const client=factory({path:'C:\\Anvil\\AnvilTrustKeyHost.exe',signerRef:{id:randomUUID(),version:1,contentHash:sha},helperHash:sha},{readImage:async()=>Buffer.from(image),companion:async()=> 'ABSENT',environment:()=>({SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows'}),uuid:randomUUID,spawn:(_exe,args)=>{assert.deepEqual(args,normal?[]:['--normal-sdk-bootstrap']);extra.spawned?.();return endpoint;},...extra});
  return{client,lease,calls,abort,child:endpoint};
 }
 
@@ -487,7 +496,9 @@ test('원 등록 native SOURCE_PREPARE는 INSPECT와 분리된 실제 분할 입
  assert.match(child,/SDK_CHILD_SOURCE_PREPARED/);assert.match(child,/childCreated",false/);assert.match(child,/executionAuthorized",false/);
  assert.match(child,/if\(failed\)\{lock\(unconfirmedLeases\)/);assert.match(child,/SDK_CHILD_SOURCE_CLEANUP_UNKNOWN/);assert.match(child,/재시작 소진 원장이 아니다/);
  assert.doesNotMatch(prepare,/SaveNormalOwned|CreateProcess|ResumeThread|Append\(/);
- assert.doesNotMatch(host,/OpenSdkSupervisor|OpenExistingForSdkSupervisor|--normal-sdk-child/);
+ assert.match(host,/args.Length==1&&args\[0\]=="--normal-sdk-child"/);
+ assert.match(host,/DesktopTrustKeyPeerSource.OpenSdkSupervisor[\s\S]*DesktopTrustKeyRootSource.OpenExistingForSdkSupervisor/);
+ const reader=host.slice(host.indexOf('internal async Task<int> RunUnderstandingReaderAsync'),host.indexOf('// FN07 B:'));assert.doesNotMatch(reader,/OpenSdkSupervisor|OpenExistingForSdkSupervisor/);
  const inspect=credential.slice(credential.indexOf('internal object InspectSdkFirst('),credential.indexOf('object PrepareSdkChildSource('));
  assert.match(inspect,/SDK_CONFIGURATION_UNAVAILABLE/);assert.doesNotMatch(inspect,/OriginalLease.Bind|preparedSdkSource=/);
 });
@@ -514,4 +525,70 @@ test('실제 private host source 준비는 같은 원바이트만 native에 분�
   }finally{await channel.close();body.fill(0);}
   if(source)assert.throws(()=>source.read());
  }
+});
+
+
+test('원 FIRST 전용 source→native 감독 준비→broker ACK→원 host 물리 close→opposite 소비는 실제 CJS와 TS를 단회 연결한다 · RAM',async()=>{
+ const {prepareNormalSdkChildHandoff}=await import('../../apps/connector/runtime/normal-owned-spool-profile.ts');
+ for(const kind of ['OK','CROSS','EXPIRED','ACK','CLOSE','EARLY','DUPLICATE','LOST','STALE']){
+  const trace=[];let spawned=0,socket,sourceHash,metadata,requested,sequence=0,current=true;
+  const endpointId=randomUUID(),leaseId=randomUUID(),bindingHash='b'.repeat(64),ref=()=>({id:randomUUID(),version:1,contentHash:'a'.repeat(64)}),signal=new AbortController();
+  const fixture=bootstrapCarrier(x=>x,true,{spawned:()=>spawned++,openSdkBroker:name=>{
+   trace.push('BROKER_CONNECT');assert.equal(name,['','','.','pipe','anvil-sdk-'+endpointId].join(String.fromCharCode(92)));
+   socket=new EventEmitter();socket.destroy=()=>{trace.push('BROKER_CLOSE');};
+   socket.write=(bytes,callback)=>{const ack=JSON.parse(bytes.toString());trace.push('BROKER_ACK');assert.equal(ack.purpose,'NORMAL_SDK_BROKER_ACK_V1');
+    queueMicrotask(()=>{callback();if(kind==='LOST'){signal.abort();return;}socket.emit('data',Buffer.from(canonicalJson({...ack,purpose:kind==='ACK'?'BAD_ACK':'NORMAL_SDK_BROKER_ACKED_V1',endpointId:kind==='ACK'?randomUUID():endpointId})+'\n'));});return true;};return socket;
+  }});
+  const end=fixture.lease.callExpiresAt(),slot={slotId:randomUUID(),receiptRef:ref(),expiresAt:end};
+  const scope={slotRef:slot.receiptRef,plannedSidDigest:createHash('sha256').update(canonicalJson('synthetic-sid')).digest('hex')};
+  const handoff={startEnvelope:{commandId:randomUUID()},sendEnvelope:{commandId:randomUUID()},grantRef:ref(),startReadyRef:ref(),localAttemptRef:ref(),dispatchAttemptRef:ref(),permit:{expiresAt:end},proofResultRef:ref(),scope,executionAuthority:{fixture:'native-independent-first-validation'},plannedSid:'synthetic-sid'};
+  const attemptId=randomUUID();
+  fixture.child.stdin.write=(bytes,encoding,callback)=>{
+   const f=JSON.parse(bytes.toString());sequence++;trace.push(f.operation);let data;
+   if(f.operation==='NORMAL_SDK_CHILD_SOURCE_PREPARE'){
+    sourceHash=f.payload.contentHash;assert.equal(f.payload.final,true);requested=JSON.parse(Buffer.from(f.payload.data,'base64').toString());assert.deepEqual(requested.handoff,handoff);
+    data={state:'SDK_CHILD_SOURCE_PREPARED',leaseId,sourceHash,bindingHash,expiresAt:end,childCreated:false,executionAuthorized:false,dispatchPerformed:false};
+   }else if(f.operation==='NORMAL_SDK_CHILD_SUPERVISOR_BEGIN'){
+    metadata={state:'SDK_SUPERVISOR_ENDPOINT',leaseId,endpointId,pipeName:['','','.','pipe','anvil-sdk-'+endpointId].join(String.fromCharCode(92)),sourceHash:kind==='CROSS'?'c'.repeat(64):sourceHash,bindingHash,expiresAt:kind==='EXPIRED'?new Date(Date.now()-1).toISOString():end,childCreated:false,executionAuthorized:false,dispatchPerformed:false};data=metadata;
+   }else{assert.equal(f.operation,'NORMAL_SDK_CHILD_SUPERVISOR_ACK');trace.push('NATIVE_INDEPENDENT_ACK');data={state:'SDK_SUPERVISOR_ACKNOWLEDGED',leaseId,endpointId,sourceHash,bindingHash};}
+   queueMicrotask(()=>{callback();fixture.child.stdout.emit('data',Buffer.from(canonicalJson({schemaVersion:1,purpose:'DESKTOP_TRUST_KEY_RESULT_V1',requestId:f.requestId,sequence:f.sequence,rootIdentity:'SDK_FIXTURE_ROOT',data})+'\n'));});return true;
+  };
+  fixture.child.stdin.end=()=>{trace.push('HOST_END');queueMicrotask(()=>{fixture.child.emit('close',kind==='CLOSE'?1:0);trace.push('HOST_CLOSED');if(kind==='STALE')current=false;if(socket&&kind!=='CLOSE')queueMicrotask(()=>socket.emit('data',Buffer.from(canonicalJson({schemaVersion:1,purpose:kind==='EARLY'?'NORMAL_SDK_BROKER_ACKED_V1':'NORMAL_SDK_BROKER_CONSUMED_V1',leaseId,endpointId,sourceHash,bindingHash})+'\n')));});};
+  let prepared,channel;
+  const factory={open:async()=>{channel=await fixture.client.open(fixture.lease);return{send:channel.send,close:channel.close,prepareSdkChildSource:async raw=>{
+   const own=await channel.prepareSdkChildSource(raw);prepared=await channel.beginSdkChildSupervisor(own);return prepared;
+  }};}};
+  const ports={attemptId,slot,host:factory,now:Date.now,signal:signal.signal,check(){if(!current)throw Error('CONTEXT_CHANGED');}};
+  if(['OK','DUPLICATE'].includes(kind)){
+   const owner=await prepareNormalSdkChildHandoff(handoff,ports);assert.equal(owner.read().sourceHash,sourceHash);assert.equal(owner.read().childCreated,false);assert.equal('handoff'in owner.read(),false);
+   assert(trace.indexOf('NATIVE_INDEPENDENT_ACK')<trace.indexOf('HOST_END'));assert(trace.indexOf('HOST_CLOSED')>trace.indexOf('HOST_END'));
+   if(kind==='DUPLICATE'){const n=sequence;await assert.rejects(prepared.acknowledge());await assert.rejects(prepared.afterClose());await assert.rejects(prepareNormalSdkChildHandoff(handoff,ports));assert.equal(sequence,n);}
+   assert.deepEqual(await owner.close(),{state:'UNKNOWN'});assert.throws(()=>owner.read());
+  }else await assert.rejects(prepareNormalSdkChildHandoff(handoff,ports));
+  assert.equal(spawned,1);assert.equal(trace.some(x=>/CLI|SPAWN|RESUME/.test(x)),false);assert.equal(trace.filter(x=>x==='NORMAL_SDK_CHILD_SUPERVISOR_BEGIN').length,1);
+  await channel?.close();
+ }
+});
+
+
+test('SDK 감독의 원 host·peer·job·기한·회수는 전용 source에만 있으며 일반 read와 CLI 실행은 열지 않는다 · 정적',()=>{
+ const peer=read('apps/connector/native/DesktopTrustKeyPeerSource.cs'),root=read('apps/connector/native/DesktopTrustKeyRootSource.cs'),child=read('apps/connector/native/NormalSdkChildHostSource.cs'),host=read('apps/connector/native/DesktopTrustKeyHostSource.cs'),credential=read('apps/connector/native/NormalExecutionCredentialSource.cs'),runtime=read('apps/connector/runtime/normal-owned-spool-profile.ts');
+ assert.match(peer,/OpenSdkSupervisor[\s\S]*lease.sdkSupervisor=true[\s\S]*!lease.CleanupSettled[\s\S]*sdkUnknown.Add/);
+ assert.match(peer,/if\(understandingReader\|\|sdkSupervisor\)[\s\S]*UnderstandingChain\(own,delegatingInstance,parentInstance,kernel.ParentPid\(self\),kernel.ParentPid\(delegatingParent\)\)/);
+ assert.match(peer,/if\(original.Alive\)return false[\s\S]*GetExitCodeProcess\(delegatingParent,out code\)\|\|code!=0[\s\S]*sdkAccepted=true/);
+ assert.match(root,/OpenExistingForSdkSupervisor[\s\S]*OpenRoot\(kernel,budget,true,true\)/);assert.match(root,/if\(!result.CleanupSettled\)[\s\S]*sdkUnknownRoots.Add/);
+ assert.match(child,/internal sealed class OriginalLease[\s\S]*sealed class SupervisorProcess[\s\S]*const uint Suspended/);
+ assert.match(child,/var inherited=new\[\]\{inputRead,outputWrite,errorWrite,broker,job\}/);
+ assert.match(child,/0x0002000D[\s\S]*CreateProcessW\(image,[\s\S]*Suspended\|UnicodeEnvironment\|ExtendedStartup\|NoWindow/);
+ assert.match(child,/GetNamedPipeClientProcessId\(broker,out pid\)&&pid==expected/);
+ assert.match(child,/if\(acknowledged\|\|!created\)[\s\S]*lock\(unknownOwners\)[\s\S]*throw Unknown/);
+ assert.match(credential,/BindSdkSupervisorDeadline[\s\S]*!peer.IsSdkSupervisor[\s\S]*value!=budget.ExpiresAt/);
+ assert.match(credential,/sdkSupervisorDeadline.Value>inspected.ExpiresAt[\s\S]*sdkSupervisorDeadline.Value>At\(slot,"expiresAt"\)/);
+ const supervisor=host.slice(host.indexOf('internal async Task<int> RunSdkChildSupervisorAsync'),host.indexOf('// 등록 전 전용 pipe'));
+ assert.match(supervisor,/CheckSdkDelegation[\s\S]*CheckSupervisorHandles[\s\S]*ReceiveSdkChildSourcePart[\s\S]*VerifyDelegatedSdkSource[\s\S]*CheckBrokerClient/);
+ assert.match(supervisor,/while\(!peer.AcceptSdkOriginalClose\(\)\)[\s\S]*NORMAL_SDK_BROKER_CONSUMED_V1/);
+ assert.doesNotMatch(supervisor,/CreateSuspended|NORMAL_EXECUTION_CALL|SignProof|IssueChildLease/);
+ assert.match(runtime,/finally\{if\(this.#sdkFirstOwner\)\{this.#unknown=true;await this.#sdkFirstOwner.close\(\);\}\}[\s\S]*SDK_CONFIGURATION_UNAVAILABLE/);
+ assert.match(read('apps/desktop/src/trust-enrollment-owner.cjs'),/budget.frames<Math.ceil\(bytes.length\/32768\)\+2/);
+ assert.doesNotMatch(read('apps/desktop/src/trust-key-host-client.cjs'),/spawn[^\n]*--normal-sdk-child/);
 });

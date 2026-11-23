@@ -3,7 +3,7 @@ const path=require('node:path'),{types}=require('node:util'),{EventEmitter}=requ
 const {canonicalJson,contentHash,catalogueExact}=require('./runtime-catalogue-profile.cjs');
 const sdkBootstrapMode=Symbol('sdk-bootstrap');
 const sdkBootstrapEndpoints=new WeakMap();
-const sdkChildSources=new WeakMap();
+const sdkChildSources=new WeakMap(),preparedSdkChildOwners=new WeakMap();
 const liveChannels=new WeakMap(),sdkBootstrapWorkers=new WeakMap(),sdkBootstrapPorts=new WeakMap();
 const unconfirmedSdkWorkers=new Map();
 const intrinsicLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype),'byteLength')?.get;
@@ -90,15 +90,61 @@ async function prepareSdkChildSource(raw){
   if(r.state!=='SDK_CHILD_SOURCE_PREPARED'||!validId(r.leaseId)||r.sourceHash!==hash||typeof r.bindingHash!=='string'||!/^[a-f0-9]{64}$/.test(r.bindingHash)||r.childCreated!==false||r.executionAuthorized!==false||r.dispatchPerformed!==false||typeof r.expiresAt!=='string'||new Date(r.expiresAt).toISOString()!==r.expiresAt||Date.parse(r.expiresAt)<=Date.now()||Date.parse(r.expiresAt)>Date.parse(expiry()))return uncertain();
   const metadata=JSON.parse(canonicalJson(r));state.expiresAt=Date.parse(r.expiresAt);state.check();
   const prepared=Object.freeze({read:()=>{state.check();return JSON.parse(canonicalJson(metadata));}});
-  return prepared;
+  preparedSdkChildOwners.set(prepared,{channel:retained,state,value,metadata,used:false});return prepared;
  }catch(error){state.closed=true;if(dispatched)latch();throw error;}finally{bytes.fill(0);}
 }
-retained=Object.freeze({send,close,executionConfiguration,prepareSdkChildSource,inspectionBudget:()=>{guard();stable();if(busy||sticky||closed||ending)return uncertain();return {frames:64-sequence,remainingMs:Math.max(0,Math.floor(remaining()))};}});liveChannels.set(retained,{check:()=>{guard();stable();if(sticky||closed||ending)return uncertain();},env});if(signal.aborted){abort();return uncertain();}guard();return retained;}
+/** 원 host가 만든 endpoint만 연결한다. Node는 supervisor process를 시작하지 않는다. @param {object} original */
+async function beginSdkChildSupervisor(original){
+ guard();stable();const owned=preparedSdkChildOwners.get(original);if(!owned||owned.channel!==retained||owned.used)return unavailable();owned.used=true;owned.state.check();
+ const m=owned.metadata,v=owned.value,payload={attemptId:v.attemptId,slotId:v.slotId,leaseId:m.leaseId,sourceHash:m.sourceHash,bindingHash:m.bindingHash};
+ let broker;try{
+  const raw=await send('NORMAL_SDK_CHILD_SUPERVISOR_BEGIN',payload);owned.state.check();
+  const r=catalogueExact(raw,'state,leaseId,endpointId,pipeName,sourceHash,bindingHash,expiresAt,childCreated,executionAuthorized,dispatchPerformed');
+  const meta=catalogueExact({...r},'state,leaseId,endpointId,pipeName,sourceHash,bindingHash,expiresAt,childCreated,executionAuthorized,dispatchPerformed');
+  if(meta.state!=='SDK_SUPERVISOR_ENDPOINT'||meta.leaseId!==m.leaseId||meta.sourceHash!==m.sourceHash||meta.bindingHash!==m.bindingHash||meta.expiresAt!==m.expiresAt||meta.childCreated!==false||meta.executionAuthorized!==false||meta.dispatchPerformed!==false||typeof meta.endpointId!=='string'||!(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/).test(meta.endpointId)||meta.pipeName!==['','','.','pipe','anvil-sdk-'+meta.endpointId].join(String.fromCharCode(92)))return uncertain();
+  const descriptor=Object.getOwnPropertyDescriptor(ports,'openSdkBroker');if(descriptor&&!('value'in descriptor)||descriptor&&typeof descriptor.value!=='function')return unavailable();
+  const connect=descriptor?.value??(name=>require('node:net').createConnection({path:name}));
+  broker=createSdkSupervisorBroker(meta,connect,()=>{if(Object.getOwnPropertyDescriptor(ports,'openSdkBroker')?.value!==descriptor?.value)return unavailable();});
+  let acknowledged=false,consumed=false;
+  return Object.freeze({acknowledge:async()=>{
+   owned.state.check();if(acknowledged)return unavailable();acknowledged=true;await broker.acknowledge();owned.state.check();
+   const answer=catalogueExact(await send('NORMAL_SDK_CHILD_SUPERVISOR_ACK',{...payload,endpointId:meta.endpointId}),'state,leaseId,endpointId,sourceHash,bindingHash');owned.state.check();
+   if(answer.state!=='SDK_SUPERVISOR_ACKNOWLEDGED'||answer.leaseId!==meta.leaseId||answer.endpointId!==meta.endpointId||answer.sourceHash!==meta.sourceHash||answer.bindingHash!==meta.bindingHash)return uncertain();
+  },afterClose:async()=>{
+   // 원 host의 실제 close와 supervisor 자신의 원 parent exit 검산이 모두 필요하다.
+   if(!acknowledged||consumed||!closed||sticky||!ending)return uncertain();consumed=true;await broker.consumed();
+   const {state:_state,pipeName:_pipe,...metadata}=meta;
+   return Object.freeze({read:()=>{broker.check();return JSON.parse(canonicalJson(metadata));},close:async()=>{broker.close();return{state:'UNKNOWN'};}});
+  },discard:async()=>{broker.close();return{state:'UNKNOWN'};}});
+ }catch(error){broker?.close();latch();throw error;}
+}
+retained=Object.freeze({send,close,executionConfiguration,prepareSdkChildSource,beginSdkChildSupervisor,inspectionBudget:()=>{guard();stable();if(busy||sticky||closed||ending)return uncertain();return {frames:64-sequence,remainingMs:Math.max(0,Math.floor(remaining()))};}});liveChannels.set(retained,{check:()=>{guard();stable();if(sticky||closed||ending)return uncertain();},env});if(signal.aborted){abort();return uncertain();}guard();return retained;}
 return Object.freeze({open,closeOwned:async()=>retained?retained.close():{state:'UNKNOWN'}});}
 
 /** 실제 driver는 명시 호출 때만 동작한다. 자동 fallback/재시작/재접속은 없다.
  * @param {string} exe @param {string[]} args @param {any} options
  */function nodeKeyHostSpawn(exe,args,options){return require('node:child_process').spawn(exe,args,options);}
+/** 원 endpoint의 메타 수령/ACK만 맡는다. EOF를 supervisor 종료 증거로 만들지 않는다.
+ * @param {any} meta @param {(name:string)=>any} connect @param {()=>void} current
+ */
+function createSdkSupervisorBroker(meta,connect,current){
+ const end=Date.parse(meta.expiresAt),started=Date.now(),mono=performance.now(),monoEnd=mono+end-started;
+ if(!Number.isFinite(end)||end<=started||end-started>10000)return unavailable();
+ const socket=connect(meta.pipeName),on=method(socket,'on'),off=method(socket,'removeListener'),write=method(socket,'write'),destroy=method(socket,'destroy');
+ let stop;const stopped=new Promise((resolve,reject)=>{stop=reject;});void stopped.catch(()=>{});
+ let dead=false,ack=false,used=false,bytes=Buffer.alloc(0),pending=null,queued=[];const listeners=[];
+ const close=()=>{if(dead)return;dead=true;stop(Error('OUTCOME_UNKNOWN'));clearTimeout(timer);for(const [event,fn] of listeners)off.call(socket,event,fn);bytes.fill(0);bytes=Buffer.alloc(0);queued=[];pending?.reject(Error('OUTCOME_UNKNOWN'));pending=null;try{destroy.call(socket);}catch{}};
+ const check=()=>{current();if(dead||Date.now()<started||Date.now()>=end||performance.now()>=monoEnd||method(socket,'write')!==write||method(socket,'destroy')!==destroy)return uncertain();};
+ const equal=row=>{const r=catalogueExact(row,'schemaVersion,purpose,leaseId,endpointId,sourceHash,bindingHash');if(r.schemaVersion!==1||r.leaseId!==meta.leaseId||r.endpointId!==meta.endpointId||r.sourceHash!==meta.sourceHash||r.bindingHash!==meta.bindingHash)return uncertain();return r;};
+ const fail=()=>close();const timer=setTimeout(close,Math.max(1,end-started));timer.unref?.();
+ const data=raw=>{try{check();const b=copyBuffer(raw,4096-bytes.length);bytes=Buffer.concat([bytes,b]);b.fill(0);const at=bytes.indexOf(10);if(at<0)return;if(at!==bytes.length-1)return uncertain();const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes.subarray(0,at)),value=equal(JSON.parse(text));if(canonicalJson(value)!==text)return uncertain();bytes.fill(0);bytes=Buffer.alloc(0);if(pending){const p=pending;pending=null;p.resolve(value);}else{if(queued.length)return uncertain();queued.push(value);}}catch{close();}};
+ for(const [event,fn] of [['data',data],['error',fail],['end',fail],['close',fail]]){on.call(socket,event,fn);listeners.push([event,fn]);}
+ const receive=async purpose=>{check();const row=queued.length?queued.shift():await new Promise((resolve,reject)=>{if(pending)return reject(Error('OUTCOME_UNKNOWN'));pending={resolve,reject};});check();if(row.purpose!==purpose)return uncertain();return row;};
+ return Object.freeze({check,close,acknowledge:async()=>{
+  check();if(ack)return unavailable();ack=true;const frame=Buffer.from(canonicalJson({schemaVersion:1,purpose:'NORMAL_SDK_BROKER_ACK_V1',leaseId:meta.leaseId,endpointId:meta.endpointId,sourceHash:meta.sourceHash,bindingHash:meta.bindingHash})+'\n');
+  try{await Promise.race([new Promise((resolve,reject)=>{write.call(socket,frame,error=>error?reject(error):resolve(null));}),stopped]);check();await receive('NORMAL_SDK_BROKER_ACKED_V1');}finally{frame.fill(0);}
+ },consumed:async()=>{check();if(!ack||used)return unavailable();used=true;await receive('NORMAL_SDK_BROKER_CONSUMED_V1');}});
+}
 /** 원 인증 채널의 패키지 검산을 원 endpoint 1회에 결박한다. 일반 등록/SDK 권한은 발급하지 않는다.
  * @param {any} input @param {any} ports
  */

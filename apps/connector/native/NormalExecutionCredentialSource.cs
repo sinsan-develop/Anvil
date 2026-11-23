@@ -257,7 +257,8 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
    return new Dictionary<string,object>{{"state","SDK_CONFIGURATION_UNAVAILABLE"}};
   }
  }
- NormalSdkChildHostSource.OriginalLease preparedSdkSource;bool sdkPreparationAttempted,sdkSourceCleanupUnknown;
+ NormalSdkChildHostSource.OriginalLease preparedSdkSource;bool sdkPreparationAttempted,sdkSourceCleanupUnknown;DateTime? sdkSupervisorDeadline;
+ internal void BindSdkSupervisorDeadline(DesktopTrustKeyPeerSource peer,DesktopTrustKeyBudget budget,DateTime value){Check();if(!peer.IsSdkSupervisor||sdkSupervisorDeadline.HasValue||sdkPreparationAttempted||value.Kind!=DateTimeKind.Utc||value<=clock()||value!=budget.ExpiresAt)throw Invalid();sdkSupervisorDeadline=value;}
  internal bool HasSdkChildSourceCleanupUnknown{get{return sdkSourceCleanupUnknown;}}
  object PrepareSdkChildSource(RowRequest request,DesktopTrustKeyPeerSource peer){
   if(sdkPreparationAttempted||preparedSdkSource!=null)throw Invalid();sdkPreparationAttempted=true;
@@ -272,14 +273,26 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
    configuration=source.PinFirst(inspected,package);configuration.Check();var again=InspectFirstSource(request,record,slot);
    if(again.Digest!=inspected.Digest||again.CanonicalSource!=inspected.CanonicalSource||again.RecordHash!=inspected.RecordHash||again.SlotHash!=inspected.SlotHash||again.ExpiresAt!=inspected.ExpiresAt)throw Invalid();
    var until=new[]{inspected.ExpiresAt,clock().AddMilliseconds(remaining()),At(slot,"expiresAt")}.Min();
+   if(sdkSupervisorDeadline.HasValue){if(!peer.IsSdkSupervisor||sdkSupervisorDeadline.Value>inspected.ExpiresAt||sdkSupervisorDeadline.Value>At(slot,"expiresAt"))throw Invalid();until=sdkSupervisorDeadline.Value;}
    string sourceHash=H(new Dictionary<string,object>{{"attemptId",request.AttemptId},{"slotId",request.SlotId},{"startCommandId",request.StartId},{"sendCommandId",request.SendId},{"scope",request.Scope},{"handoff",request.Handoff}});
-   var lease=NormalSdkChildHostSource.OriginalLease.Bind(package,configuration,inspected,sourceHash,until,originalCheck,clock);
+   var lease=NormalSdkChildHostSource.OriginalLease.Bind(package,configuration,inspected,sourceHash,until,originalCheck,clock,new Dictionary<string,object>{{"attemptId",request.AttemptId},{"slotId",request.SlotId},{"startCommandId",request.StartId},{"sendCommandId",request.SendId},{"scope",request.Scope},{"handoff",request.Handoff}});
    preparedSdkSource=lease;package=null;configuration=null;return lease.Read();
   }finally{
    bool failed=false;if(configuration!=null)try{configuration.Dispose();}catch{failed=true;}
    if(package!=null)try{package.Dispose();}catch{failed=true;}
    if(failed){sdkSourceCleanupUnknown=true;unknown=true;throw new InvalidOperationException("SDK_CHILD_SOURCE_CLEANUP_UNKNOWN");}
   }
+ }
+ internal Dictionary<string,object> BeginSdkSupervisor(Dictionary<string,object> value,DesktopTrustKeyPeerSource peer,DesktopTrustKeyBudget budget){
+  Check();if(preparedSdkSource==null)throw Invalid();Exact(value,"attemptId,slotId,leaseId,sourceHash,bindingHash");var bound=preparedSdkSource.Read();
+  if(Id(value,"attemptId")!=sdkSourceAttempt||Id(value,"slotId")!=sdkSourceSlotId||Id(value,"leaseId")!=S(bound,"leaseId")||S(value,"sourceHash")!=S(bound,"sourceHash")||S(value,"bindingHash")!=S(bound,"bindingHash"))throw Invalid();
+  return preparedSdkSource.BeginSupervisor(peer,budget);
+ }
+ internal Dictionary<string,object> AcknowledgeSdkSupervisor(Dictionary<string,object> value){Check();if(preparedSdkSource==null)throw Invalid();return preparedSdkSource.AcknowledgeSupervisor(value);}
+ internal void CheckPreparedSdkSource(){Check();if(preparedSdkSource==null)throw Invalid();preparedSdkSource.Check();}
+ internal void VerifyDelegatedSdkSource(Dictionary<string,object> expected,Dictionary<string,object> actual){
+  Check();if(preparedSdkSource==null||S(actual,"state")!="SDK_CHILD_SOURCE_PREPARED")throw Invalid();
+  var bound=preparedSdkSource.Read();foreach(string key in new[]{"sourceHash","bindingHash","expiresAt"})if(J(bound[key])!=J(expected[key])||J(actual[key])!=J(expected[key]))throw Invalid();
  }
  internal sealed class RowRequest{
   internal readonly string AttemptId,SlotId,StartId,SendId;

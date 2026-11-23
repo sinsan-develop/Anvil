@@ -6,7 +6,7 @@ import {basename,resolve,isAbsolute} from 'node:path';
 import {isPromise,isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {cloneV1,refV1,recordV1,uuidV1,hashV1} from '../../../contracts/runtime/validation-v1.ts';
-import {frameUnderstandingRangeResult,readPreparedUnderstandingRangeResult,type NormalPreparedUnderstandingRangeResult,type NormalUnderstandingRangeResultSendOperation,frameUnderstandingResult,readPreparedUnderstandingResult,type NormalOwnedHostFactory,type NormalOwnedHostSession,type NormalOwnedMetadata,type HostCloseDisposition,type NormalUnderstandingResultBinding,type NormalPreparedUnderstandingResult,type NormalUnderstandingResultSendOperation} from './normal-credential-bootstrap-client.ts';
+import {frameUnderstandingRangeResult,readPreparedUnderstandingRangeResult,type NormalPreparedUnderstandingRangeResult,type NormalUnderstandingRangeResultSendOperation,frameUnderstandingResult,readPreparedUnderstandingResult,type NormalOwnedSdkSupervisor,type NormalOwnedHostFactory,type NormalOwnedHostSession,type NormalOwnedMetadata,type HostCloseDisposition,type NormalUnderstandingResultBinding,type NormalPreparedUnderstandingResult,type NormalUnderstandingResultSendOperation} from './normal-credential-bootstrap-client.ts';
 import {isOwnedSpoolPath,NormalStartFileStore,type NormalFilePorts,type NormalLocalScope,type ProfileJournalAccess} from './normal-start-file-store.ts';
 import {NormalStartIntake,type NormalStartStore} from './normal-start-intake.ts';
 import {NormalClaudeStartWire} from '../adapters/secondary/normal-start-wire.ts';
@@ -310,9 +310,9 @@ export class OwnedSpoolRuntime {
     const release=await this.#enterTurn(eligible,signal);
     try{
      if(this.#opening||this.#session||eligible&&byRef(request)!==byRef(this.external(this.#slot)))invalid('NORMAL_OWNED_BUSY');
-     const raw=await this.external(()=>Reflect.apply(this.#open,this.#host,[signal]));
-     const send=raw.send,close=raw.close,budget=raw.inspectionBudget;let returned=false;
-     return {...(typeof budget==='function'?{inspectionBudget:()=>{if(returned||raw.inspectionBudget!==budget)invalid();return this.external(()=>Reflect.apply(budget,raw,[]));}}:{}),send:(op:string,p:unknown)=>{if(returned||raw.send!==send)invalid();return this.external(()=>Reflect.apply(send,raw,[op,p]));},
+     const raw=await this.external(()=>Reflect.apply(this.#open,this.#host,eligible?[signal,cloneV1(request)]:[signal]));
+     const send=raw.send,close=raw.close,budget=raw.inspectionBudget,prepare=raw.prepareSdkChildSource;let returned=false;
+     return {...(typeof prepare==='function'?{prepareSdkChildSource:(source:Readonly<Record<string,unknown>>)=>{if(returned||raw.prepareSdkChildSource!==prepare||!eligible||byRef(request)!==byRef(this.external(this.#slot)))invalid();return this.external(()=>Reflect.apply(prepare,raw,[source]));}}:{}),...(typeof budget==='function'?{inspectionBudget:()=>{if(returned||raw.inspectionBudget!==budget)invalid();return this.external(()=>Reflect.apply(budget,raw,[]));}}:{}),send:(op:string,p:unknown)=>{if(returned||raw.send!==send)invalid();return this.external(()=>Reflect.apply(send,raw,[op,p]));},
       close:async(d:HostCloseDisposition)=>{if(returned)invalid();returned=true;try{return await this.external(()=>Reflect.apply(close,raw,[d]));}finally{release();}}};
     }catch(error){release();throw error;}
    }
@@ -647,7 +647,11 @@ export class OwnedSpoolRuntime {
     verify();if(inputStream)invalid();
     const [request,first,life]=args;
     const handoff=takeNormalFirstPermitHandoff(request,source);
-    if(handoff){await this.#inspectFirst(handoff,life,verify);return invalid('SDK_CONFIGURATION_UNAVAILABLE');}
+    if(handoff){
+     try{await this.#prepareSdkFirst(handoff,life,verify);}
+     finally{if(this.#sdkFirstOwner){this.#unknown=true;await this.#sdkFirstOwner.close();}}
+     return invalid('SDK_CONFIGURATION_UNAVAILABLE');
+    }
     const active=workerInput(first,life,()=>{verify();if(origin)this.external(origin.check);});inputStream=active;
     try{
      const result=this.external(()=>Reflect.apply(fixed.create,sdk,[request,active.stream,life]));
@@ -761,6 +765,12 @@ export class OwnedSpoolRuntime {
   }};
  }
  // 원 FIRST의 core만 이 읽기 수송을 호출한다. 응답을 실행 lease로 승격하지 않는다.
+ #sdkFirstOwner:NormalOwnedSdkSupervisor|undefined;
+ async #prepareSdkFirst(handoff:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>,life:AbortSignal,verify:Guard){
+  const slot=this.external(this.#slot);if(!slot||this.#sdkFirstOwner)invalid();const key=byRef(slot);
+  try{this.#sdkFirstOwner=await prepareNormalSdkChildHandoff(handoff,{attemptId:this.#attempt,slot,host:this.credentialHost(),now:()=>this.#clock(),signal:AbortSignal.any([life,this.#owner]),check:()=>{verify();if(this.#unknown||byRef(this.external(this.#slot))!==key)invalid();}});}
+  catch(error){this.#unknown=true;throw error;}
+ }
  async #inspectFirst(handoff:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>,life:AbortSignal,verify:Guard){
   const slot=this.external(this.#slot);if(!slot)invalid();const key=byRef(slot);
   try{await inspectNormalFirstPermitHandoff(handoff,{attemptId:this.#attempt,slot,host:this.credentialHost(),now:()=>this.#clock(),signal:AbortSignal.any([life,this.#owner]),
@@ -819,7 +829,45 @@ function guardFiles(raw:IO,check:Guard,begin:Guard,end:Guard,root:string,stamp:s
  return io as unknown as IO;
 }
 
-// 읽기 전용 수송. 전달 객체는 native 원 행 검산 이전에는 실행 권위가 아니다.
+// 전용 인계 수송. 전달 객체는 native 원 행 검산 이전에는 실행 권위가 아니다.
+/** 원 FIRST source의 준비와 같은 helper 인계를 실제 host session에서만 소비한다. */
+export async function prepareNormalSdkChildHandoff(handoff:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>,ports:{attemptId:string;slot:NormalOwnedMetadata;host:NormalOwnedHostFactory;now():number;signal:AbortSignal;check():void}):Promise<NormalOwnedSdkSupervisor>{
+ const {slot,host:factory,signal}=ports,open=factory.open,began=ports.now(),mono=performance.now(),slotKey=byRef(slot);
+ handoff=boundedSdkObject(handoff,maxSdkObjectBytes).value as typeof handoff;
+ if(!recordV1(handoff,['startEnvelope','sendEnvelope','grantRef','startReadyRef','localAttemptRef','dispatchAttemptRef','permit','proofResultRef','scope','executionAuthority','plannedSid'])||!sdkOpaqueId(handoff.plannedSid)||!handoff.scope||contentHash(canonicalJson(handoff.plannedSid))!==handoff.scope.plannedSidDigest||byRef(slot.receiptRef)!==byRef(handoff.scope.slotRef))invalid();
+ const end=Math.min(began+10000,Date.parse(slot.expiresAt),Date.parse(handoff.permit.expiresAt)),monoEnd=mono+end-began;
+ if(!Number.isSafeInteger(began)||!Number.isFinite(end)||end<=began)invalid();
+ const local=new AbortController(),life=AbortSignal.any([signal,local.signal]);let host:NormalOwnedHostSession|undefined,prepared:Awaited<ReturnType<NonNullable<NormalOwnedHostSession['prepareSdkChildSource']>>>|undefined,closed=false,finished=false;
+ const raw={attemptId:ports.attemptId,slotId:slot.slotId,startCommandId:handoff.startEnvelope.commandId,sendCommandId:handoff.sendEnvelope.commandId,scope:handoff.scope,handoff},bytes=Buffer.from(canonicalJson(raw)),sourceHash=contentHash(bytes);
+ const check=()=>{ports.check();if(life.aborted||factory.open!==open||byRef(ports.slot)!==slotKey||ports.now()<began||ports.now()>=end||performance.now()>=monoEnd)invalid('SDK_CONFIGURATION_UNAVAILABLE');};
+ let reject!:(error:Error)=>void;const cancelled=new Promise<never>((_,fail)=>{reject=fail;});void cancelled.catch(()=>{});const abort=()=>reject(Error('NORMAL_SPOOL_UNKNOWN'));
+ const timer=setTimeout(()=>local.abort(),Math.max(1,end-began));life.addEventListener('abort',abort,{once:true});
+ try{
+  check();if(bytes.length<1||bytes.length>2097152)invalid();
+  const opening=Reflect.apply(open,factory,[life,slot]);void opening.then(late=>{if(finished)void late.close('OPERATION_UNKNOWN').catch(()=>{});},()=>{});
+  host=await Promise.race([opening,cancelled]);check();const prepare=host.prepareSdkChildSource;
+  if(typeof prepare!=='function'||isProxy(prepare))invalid('SDK_CONFIGURATION_UNAVAILABLE');
+  const pending=Reflect.apply(prepare,host,[cloneV1(raw)]);void pending.then(late=>{if(finished)void late.discard().catch(()=>{});},()=>{});
+  prepared=await Promise.race([pending,cancelled]);check();const acknowledge=prepared.acknowledge,afterClose=prepared.afterClose,discard=prepared.discard;
+  if([acknowledge,afterClose,discard].some(fn=>typeof fn!=='function'||isProxy(fn)))invalid();
+  await Promise.race([Reflect.apply(acknowledge,prepared,[]),cancelled]);check();
+  const close=host.close,result=await Promise.race([Reflect.apply(close,host,['HOST_REQUEST_VALIDATED']),cancelled]);
+  if(result.state!=='CLOSED_CONFIRMED')invalid();closed=true;check();
+  const receiving=Reflect.apply(afterClose,prepared,[]);void receiving.then((late:NormalOwnedSdkSupervisor)=>{if(finished)void late.close().catch(()=>{});},()=>{});
+  const owner=await Promise.race([receiving,cancelled]);check();const read=owner.read,closeOwner=owner.close;
+  if([read,closeOwner].some(fn=>typeof fn!=='function'||isProxy(fn)))invalid();
+  const value=Reflect.apply(read,owner,[]);
+  if(!recordV1(value,['leaseId','endpointId','sourceHash','bindingHash','expiresAt','childCreated','executionAuthorized','dispatchPerformed'])||!uuidV1(value.leaseId)||!uuidV1(value.endpointId)||value.sourceHash!==sourceHash||!hashV1(value.bindingHash)||typeof value.expiresAt!=='string'||Date.parse(value.expiresAt)<=ports.now()||Date.parse(value.expiresAt)>end||value.childCreated!==false||value.executionAuthorized!==false||value.dispatchPerformed!==false)invalid();
+  prepared=undefined;return owner;
+ }finally{
+  finished=true;bytes.fill(0);clearTimeout(timer);life.removeEventListener('abort',abort);
+  const cleanup=async(call:()=>Promise<unknown>)=>{let timer:ReturnType<typeof setTimeout>|undefined;try{await Promise.race([call(),new Promise(resolve=>{timer=setTimeout(resolve,Math.max(0,Math.min(end-ports.now(),monoEnd-performance.now())));})]);}catch{}finally{if(timer!==undefined)clearTimeout(timer);}};
+  if(prepared)await cleanup(()=>prepared!.discard());
+  if(host&&!closed)await cleanup(()=>host!.close('OPERATION_UNKNOWN'));
+  local.abort();
+ }
+}
+
 export async function inspectNormalFirstPermitHandoff(handoff:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>,ports:{attemptId:string;slot:NormalOwnedMetadata;host:NormalOwnedHostFactory;now():number;signal:AbortSignal;check():void}){
   const {slot,host:factory,signal,check:verify}=ports;const open=factory.open,begin=ports.now(),beganMono=performance.now();let unknown=false;
   // 원 FIRST 자료의 독립 사본만 수송한다. 원 SDK 입력/원장 형상은 확장하지 않는다.

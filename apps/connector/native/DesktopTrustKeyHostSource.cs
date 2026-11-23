@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.IO.Pipes;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -21,7 +24,7 @@ internal sealed class DesktopTrustKeyHostSource {
  bool sdkSourceCleanupUnknown;bool used;volatile bool active=true,unknown;DesktopTrustKeyPeerSource peer;DesktopTrustKeyBudget budget;DesktopTrustKeyRootSource root;DesktopTrustKeyBindingStoreSource store;
  long sequence;readonly HashSet<string> requests=new HashSet<string>();readonly HashSet<string> pending=new HashSet<string>(),created=new HashSet<string>();
  internal DesktopTrustKeyHostSource(IDesktopTrustKeyResources resource=null,DesktopTrustKeyKernel os=null,DesktopTrustKeyRootKernel roots=null,Func<DateTime> utcNow=null,Func<double> monotonic=null,Func<int,CancellationToken,Task> delayPort=null,Func<DesktopTrustKeyRootSource,DesktopTrustKeyBindingKernel> storagePort=null,Func<DesktopTrustKeyRootSource,Dictionary<string,object>,object> keyPort=null,Func<DesktopTrustKeyRootSource,Dictionary<string,object>,Func<int>,Func<DateTime>,Action,string> nativePort=null,Func<DesktopTrustKeyRootSource,Dictionary<string,object>,Func<int>,Func<DateTime>,Action,string> firstReceivePort=null,Func<Dictionary<string,object>,Func<int>,Func<DateTime>,Action,OwnershipEvidenceJobFactorySource.IOriginalSuspendedProcessCandidate> retainedPort=null,NativePreparationRetainedFactorySource.ProtectedSource retainedInputs=null){retainedProvider=retainedPort;resources=resource??new DesktopTrustKeyParentBasisSource.OwnAssemblyResources();kernel=os??new WindowsDesktopTrustKeyKernel();rootKernel=roots??new WindowsDesktopTrustKeyRootKernel();wall=utcNow??(()=>DateTime.UtcNow);var watch=Stopwatch.StartNew();mono=monotonic??(()=>watch.Elapsed.TotalMilliseconds);delay=delayPort??((ms,token)=>Task.Delay(ms,token));storage=storagePort??(r=>new WindowsDesktopTrustKeyBindingKernel(r));keyOperation=keyPort??ProtectedStore.ExecuteOwned;nativeOperation=nativePort??((r,f,n,e,c)=>ProtectedStore.SignNativeOwned(r,Text(f,"keyId"),f,n,e,c));firstReceiveOperation=firstReceivePort??((r,f,n,e,c)=>ProtectedStore.SignFirstReceiveOwned(r,Text(f,"keyId"),f,n,e,c));workerDeployment=new NativeWorkerDeploymentSource(()=>peer,WorkerRecord,()=>budget.Remaining(),Check,rootKernel);retainedFactory=new NativePreparationRetainedFactorySource(retainedInputs??new NativePreparationWorkerProvenanceSource(()=>{Check();return peer.HelperHash;},workerDeployment));}
- static int Main(string[] args){if(args==null)return 1;try{if(args.Length==1&&args[0]==NormalUnderstandingReadSupervisorSource.ReaderArgument)return new DesktopTrustKeyHostSource().RunUnderstandingReaderAsync().GetAwaiter().GetResult();if(args.Length==1&&args[0]=="--normal-sdk-bootstrap")return new DesktopTrustKeyHostSource().RunSdkBootstrapAsync().GetAwaiter().GetResult();if(args.Length!=0)return 1;return new DesktopTrustKeyHostSource().RunAsync().GetAwaiter().GetResult();}catch{return 1;}}
+ static int Main(string[] args){if(args==null)return 1;try{if(args.Length==1&&args[0]=="--normal-sdk-child")return new DesktopTrustKeyHostSource().RunSdkChildSupervisorAsync().GetAwaiter().GetResult();if(args.Length==1&&args[0]==NormalUnderstandingReadSupervisorSource.ReaderArgument)return new DesktopTrustKeyHostSource().RunUnderstandingReaderAsync().GetAwaiter().GetResult();if(args.Length==1&&args[0]=="--normal-sdk-bootstrap")return new DesktopTrustKeyHostSource().RunSdkBootstrapAsync().GetAwaiter().GetResult();if(args.Length!=0)return 1;return new DesktopTrustKeyHostSource().RunAsync().GetAwaiter().GetResult();}catch{return 1;}}
  // 목적 reader는 일반 Dispatch/ProtectedStore/credential 발급을 호출하지 않는다.
  internal async Task<int> RunUnderstandingReaderAsync(){
   if(used)throw Invalid();used=true;int exit=1;byte[] frame=null,reply=null;
@@ -46,6 +49,59 @@ internal sealed class DesktopTrustKeyHostSource {
   }
   if(peer!=null){await peer.WhenDrained;if(!peer.CleanupSettled)unknown=true;}return unknown?1:exit;
  }
+ // FN07 B: 원 host의 kernel pipe/동일 helper/Anvil peer에서만 재구성하는 전용 감독 입구.
+ internal async Task<int> RunSdkChildSupervisorAsync(){
+  if(used)throw Invalid();used=true;int exit=1;byte[] headerBytes=null;NamedPipeServerStream broker=null;IntPtr job=IntPtr.Zero;
+  try{
+   budget=new DesktopTrustKeyBudget(wall,mono);var basis=DesktopTrustKeyParentBasisSource.Read(resources);peer=DesktopTrustKeyPeerSource.OpenSdkSupervisor(basis,kernel,budget);peer.OpenStreams();Check();headerBytes=await Frame();if(headerBytes==null)throw Invalid();
+   var h=Parse(headerBytes,true);Exact(h,"schemaVersion,purpose,originalPid,originalCreated,anvilPid,anvilCreated,helperHash,expiresAt,remainingMs,leaseId,endpointId,pipeName,brokerHandle,jobHandle,attemptId,slotId,sourceHash,bindingHash,totalBytes");
+   if(Positive(h["schemaVersion"])!=1||Text(h,"purpose")!="NORMAL_SDK_SUPERVISOR_V1"||Text(h,"helperHash")!=peer.HelperHash||Text(h,"pipeName")!=@"\\.\pipe\anvil-sdk-"+Id(h,"endpointId")||!IsHash(Text(h,"sourceHash"))||!IsHash(Text(h,"bindingHash"))||Positive(h["totalBytes"])>2097152)throw Invalid();
+   peer.CheckSdkDelegation(checked((uint)Positive(h["originalPid"])),NormalUnderstandingReadSupervisorSource.ProcessBirth(Text(h,"originalCreated")),checked((uint)Positive(h["anvilPid"])),NormalUnderstandingReadSupervisorSource.ProcessBirth(Text(h,"anvilCreated")));
+   budget.Tighten(Time(h,"expiresAt"),checked((int)Positive(h["remainingMs"])));Check();normalAttempt=Id(h,"attemptId");
+   var handle=new IntPtr(NormalUnderstandingReadSupervisorSource.ProcessBirth(Text(h,"brokerHandle")));job=new IntPtr(NormalUnderstandingReadSupervisorSource.ProcessBirth(Text(h,"jobHandle")));
+   NormalSdkChildHostSource.CheckSupervisorHandles(handle,job,checked((uint)Positive(h["originalPid"])),peer.OriginalPid);
+   broker=new NamedPipeServerStream(PipeDirection.InOut,true,false,new SafePipeHandle(handle,true));
+   root=DesktopTrustKeyRootSource.OpenExistingForSdkSupervisor(rootKernel,budget);Check();store=new DesktopTrustKeyBindingStoreSource(storage(root),Check);spoolProfile=NormalExecutionSpoolProfileSource.Open(root,Check);
+   normalExecution=new NormalExecutionCredentialSource(root,NormalRecord,Check,()=>budget.Remaining(),wall,spoolProfile,WithUnderstandingReadGuard);
+   normalExecution.BindSdkSupervisorDeadline(peer,budget,Time(h,"expiresAt"));
+   string transfer=null;long total=Positive(h["totalBytes"]);long usedBytes=0;
+   for(int index=0;index<64;index++){
+    byte[] frame=await Frame();if(frame==null)throw Invalid();Dictionary<string,object> answer;
+    try{
+     var part=Parse(frame,true);if(Id(part,"attemptId")!=normalAttempt||Id(part,"slotId")!=Id(h,"slotId")||Positive(part["totalBytes"])!=total||Text(part,"contentHash")!=Text(h,"sourceHash")||Nonnegative(part["index"])!=index)throw Invalid();
+     if(transfer==null)transfer=Id(part,"transferId");else if(Id(part,"transferId")!=transfer)throw Invalid();
+     answer=Map(normalExecution.ReceiveSdkChildSourcePart(part,peer));byte[] decoded=Convert.FromBase64String(Text(part,"data"));try{usedBytes+=decoded.Length;}finally{Array.Clear(decoded,0,decoded.Length);}
+     if((bool)part["final"]){if(usedBytes!=total)throw Invalid();normalExecution.VerifyDelegatedSdkSource(h,answer);answer=SdkSupervisorMetadata(h,"SDK_SUPERVISOR_READY");await Reply(Encoding.UTF8.GetBytes(Canonical(answer,0)+"\n"));break;}
+     await Reply(Encoding.UTF8.GetBytes(Canonical(answer,0)+"\n"));if(index==63)throw Invalid();
+    }finally{Array.Clear(frame,0,frame.Length);}
+   }
+   Action current=()=>{Check();normalExecution.CheckPreparedSdkSource();};
+   await WaitSdk(Task.Run(()=>broker.WaitForConnection()),current);current();NormalSdkChildHostSource.CheckBrokerClient(broker.SafePipeHandle.DangerousGetHandle(),peer.AnvilPid);
+   var ackTask=Task.Run(()=>NormalSdkChildHostSource.ReadLine(broker,4096));await WaitSdk(ackTask,current);var ack=Parse(ackTask.Result,true);Array.Clear(ackTask.Result,0,ackTask.Result.Length);
+   Exact(ack,"schemaVersion,purpose,leaseId,endpointId,sourceHash,bindingHash");if(Canonical(ack,0)!=Canonical(SdkBrokerMetadata(h,"NORMAL_SDK_BROKER_ACK_V1"),0))throw Invalid();current();
+   await WriteSdkBroker(broker,SdkBrokerMetadata(h,"NORMAL_SDK_BROKER_ACKED_V1"),current);await Reply(Encoding.UTF8.GetBytes(Canonical(SdkSupervisorMetadata(h,"SDK_SUPERVISOR_ACKNOWLEDGED"),0)+"\n"));
+   // caller의 close bool이 아니라 원 부모 handle의 exit0를 supervisor 자신이 검산한다.
+   while(!peer.AcceptSdkOriginalClose()){budget.Check();await Task.Delay(Math.Min(10,budget.Remaining()));}
+   current();await WriteSdkBroker(broker,SdkBrokerMetadata(h,"NORMAL_SDK_BROKER_CONSUMED_V1"),current);
+   // 이 단위는 인계만 한다. PRESPAWN/CLI SPAWN·RESUME opcode는 제공하지 않는다.
+   var eof=Task.Run(()=>broker.ReadByte());await WaitSdk(eof,current);if(eof.Result!=-1)throw Invalid();current();exit=0;
+  }catch{unknown=true;exit=1;}
+  finally{
+   active=false;if(headerBytes!=null)Array.Clear(headerBytes,0,headerBytes.Length);
+   if(normalExecution!=null)try{normalExecution.Dispose();}catch{unknown=true;}
+   if(broker!=null)try{broker.Dispose();}catch{unknown=true;}
+   if(root!=null)try{root.Dispose();if(!root.CleanupSettled)unknown=true;}catch{unknown=true;}
+   if(peer!=null)try{peer.Dispose();}catch{unknown=true;}
+   if(job!=IntPtr.Zero&&!CloseSdkJob(job))unknown=true;
+  }
+  if(peer!=null){await peer.WhenDrained;if(!peer.CleanupSettled)unknown=true;}return unknown?1:exit;
+ }
+ static Dictionary<string,object> SdkSupervisorMetadata(Dictionary<string,object> h,string state){return new Dictionary<string,object>{{"state",state},{"leaseId",h["leaseId"]},{"endpointId",h["endpointId"]},{"sourceHash",h["sourceHash"]},{"bindingHash",h["bindingHash"]}};}
+ static Dictionary<string,object> SdkBrokerMetadata(Dictionary<string,object> h,string purpose){return new Dictionary<string,object>{{"schemaVersion",1},{"purpose",purpose},{"leaseId",h["leaseId"]},{"endpointId",h["endpointId"]},{"sourceHash",h["sourceHash"]},{"bindingHash",h["bindingHash"]}};}
+ async Task WaitSdk(Task operation,Action current){while(!operation.IsCompleted){current();await Task.WhenAny(operation,Task.Delay(Math.Min(20,budget.Remaining())));}current();await operation;current();}
+ async Task WriteSdkBroker(Stream stream,object value,Action current){byte[] bytes=Encoding.UTF8.GetBytes(Canonical(value,0)+"\n");try{if(bytes.Length>4096)throw Invalid();await WaitSdk(Task.Run(()=>{stream.Write(bytes,0,bytes.Length);stream.Flush();}),current);}finally{Array.Clear(bytes,0,bytes.Length);}}
+ [DllImport("kernel32.dll",EntryPoint="CloseHandle",SetLastError=true)]static extern bool CloseSdkJob(IntPtr handle);
+
  // 등록 전 전용 pipe: root/key/원장을 열지 않으며 SDK 실행권을 발급하지 않는다.
  internal async Task<int> RunSdkBootstrapAsync(){
   if(used)throw Invalid();used=true;int exit=1;NormalSdkWorkerPackageSource package=null;
@@ -207,7 +263,7 @@ internal sealed class DesktopTrustKeyHostSource {
  }
  object Dispatch(string operation,Dictionary<string,object> value){
   if(normalExecution!=null&&normalExecution.HasSdkFirstTransfer&&(operation!="NORMAL_SDK_FIRST_INSPECT"||!value.ContainsKey("transferId")))throw Invalid();
-  if(normalExecution!=null&&normalExecution.HasSdkChildSourceTransfer&&operation!="NORMAL_SDK_CHILD_SOURCE_PREPARE")throw Invalid();
+  if(normalExecution!=null&&normalExecution.HasSdkChildSourceTransfer&&operation!="NORMAL_SDK_CHILD_SOURCE_PREPARE"&&operation!="NORMAL_SDK_CHILD_SUPERVISOR_BEGIN"&&operation!="NORMAL_SDK_CHILD_SUPERVISOR_ACK")throw Invalid();
   if(operation=="PREPARE_EXECUTION_CONFIGURATION"||operation=="CONFIRM_EXECUTION_CONFIGURATION"||operation=="REVOKE_EXECUTION_CONFIGURATION")return ExecutionConfiguration(operation,value);
   if(operation=="INSTALL_WORKER"){
    Exact(value,"attemptId,request");if(workerInstallAttempted)throw Invalid();workerInstallAttempted=true;workerAttempt=Id(value,"attemptId");workerRecord=Canonical(WorkerRecord(),0);var request=Map(value["request"]);Exact(request,"factoryRef,bundle,head");try{var result=workerDeployment.Install(request);WorkerRecord();return result;}catch(InvalidOperationException e){if(e.Message=="NATIVE_WORKER_INSTALLATION_UNSUPPORTED")return new Dictionary<string,object>{{"state","UNSUPPORTED"}};unknown=true;throw;}
@@ -221,6 +277,10 @@ internal sealed class DesktopTrustKeyHostSource {
    var answer=journal.Dispatch(op,payload);Check();return answer;
   }
   if(operation.StartsWith("NATIVE_OWNERSHIP_RETURN_",StringComparison.Ordinal))return ReturnOwnership(operation,value);
+  if(operation=="NORMAL_SDK_CHILD_SUPERVISOR_BEGIN"||operation=="NORMAL_SDK_CHILD_SUPERVISOR_ACK"){
+   if(normalExecution==null||!normalExecution.HasSdkChildSourceTransfer||normalAttempt!=Id(value,"attemptId"))throw Invalid();
+   return operation=="NORMAL_SDK_CHILD_SUPERVISOR_BEGIN"?normalExecution.BeginSdkSupervisor(value,peer,budget):normalExecution.AcknowledgeSdkSupervisor(value);
+  }
   if(operation=="NORMAL_SDK_CHILD_SOURCE_PREPARE"){
    if(Nonnegative(value["index"])==0&&Positive(value["totalBytes"])>(65-sequence)*32768)throw Invalid();
    string attempt=Id(value,"attemptId");if(normalAttempt!=null&&normalAttempt!=attempt)throw Invalid();normalAttempt=attempt;

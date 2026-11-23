@@ -64,12 +64,17 @@ internal sealed class DesktopTrustKeyRootSource:IDisposable {
  internal string Identity{get{Check();return retained[retained.Count-1].Item2.Identity;}}
  // 이해 reader 전용: 원 보호 directory만 열며 생성/발급 permit은 만들지 않는다.
  internal static DesktopTrustKeyRootSource OpenExistingForUnderstanding(DesktopTrustKeyRootKernel kernel,DesktopTrustKeyBudget budget){return OpenRoot(kernel,budget,true);}
+ static readonly HashSet<DesktopTrustKeyRootSource> sdkUnknownRoots=new HashSet<DesktopTrustKeyRootSource>();
+ internal static DesktopTrustKeyRootSource OpenExistingForSdkSupervisor(DesktopTrustKeyRootKernel kernel,DesktopTrustKeyBudget budget){
+  lock(sdkUnknownRoots){if(sdkUnknownRoots.Count!=0)throw new InvalidOperationException("SDK_SUPERVISOR_CLEANUP_UNKNOWN");}
+  return OpenRoot(kernel,budget,true,true);
+ }
  internal static DesktopTrustKeyRootSource Open(DesktopTrustKeyRootKernel kernel,DesktopTrustKeyBudget budget){return OpenRoot(kernel,budget,false);}
- static DesktopTrustKeyRootSource OpenRoot(DesktopTrustKeyRootKernel kernel,DesktopTrustKeyBudget budget,bool existingOnly){
+ static DesktopTrustKeyRootSource OpenRoot(DesktopTrustKeyRootKernel kernel,DesktopTrustKeyBudget budget,bool existingOnly,bool sdkOnly=false){
   if(kernel==null||budget==null)throw Invalid();budget.Check();string sid=kernel.CurrentSid(),known=kernel.KnownFolder();Shape(known);if(String.IsNullOrEmpty(sid))throw Invalid();string root=System.IO.Path.Combine(known,"Anvil","Trust","v1");var initial=kernel.Inspect(root);if(initial==null||existingOnly&&!initial.Exists)throw Invalid();var result=new DesktopTrustKeyRootSource(kernel,budget,sid,root,!initial.Exists);result.existingOnly=existingOnly;
   try{var ancestry=new List<string>();string next=known;while(next!=null){ancestry.Add(next);string parent=System.IO.Path.GetDirectoryName(next);if(parent==next)break;next=parent;if(ancestry.Count>64)throw Invalid();}ancestry.Reverse();foreach(string item in ancestry)result.Keep(item,item==known,false);
    string cursor=known;foreach(string name in new[]{"Anvil","Trust","v1"}){cursor=System.IO.Path.Combine(cursor,name);budget.Check();var fact=kernel.Inspect(cursor);if(fact==null)throw Invalid();bool exclusive=false;if(!fact.Exists){if(existingOnly)throw Invalid();if(cursor==root)exclusive=kernel.CreatePrivateExclusive(cursor,sid);else kernel.CreatePrivate(cursor,sid);budget.Check();}result.Keep(cursor,true,cursor==root);if(exclusive)result.journalCreation=new object();if(exclusive)result.spoolCreation=result.expectedSpoolCreation=new object();}result.Check();return result;
-  }catch{result.Dispose();throw Invalid();}
+  }catch{if(!sdkOnly){result.Dispose();throw Invalid();}try{result.Dispose();}catch{}if(!result.CleanupSettled){lock(sdkUnknownRoots){sdkUnknownRoots.Add(result);}throw new InvalidOperationException("SDK_SUPERVISOR_CLEANUP_UNKNOWN");}throw Invalid();}
  }
  static Exception Invalid(){return DesktopTrustKeyParentBasisSource.Invalid();}
  static void Shape(string value){if(value==null||value.Length>1024||!System.Text.RegularExpressions.Regex.IsMatch(value,@"\A[A-Za-z]:\\")||System.IO.Path.GetFullPath(value)!=value)throw Invalid();if(value.Length==3)return;foreach(string p in value.Substring(3).Split('\\'))if(p.Length==0||p=="."||p==".."||p.EndsWith(".")||p.EndsWith(" "))throw Invalid();}

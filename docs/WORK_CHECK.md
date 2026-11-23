@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN07 감독 인계:** 원 FIRST → 원 등록 host → 동일 helper supervisor → 원 Anvil broker의 단발 수령을 소스에 연결했다. Main 합성·정적 57/57, 작성자 타입, 독립 C0/I0/M0. 실제 Windows 실행·재시작 후 단회 소비·PRESPAWN·SDK는 미검증 또는 미구현이다.
+
 - **FN09→WORK 화면:** UI04 최신 적합 판단 명시 선택 → 별도 준비 승인 → 같은 참조 저장·재조회·원 명령 재확인을 합성으로 확인했다. Main 46/46·작성자 타입·독립 C0/I0/M0. 실제 브라우저·PostgreSQL·Agent 실행은 미검증이며 Stage 완료 판정은 보류한다.
 
 - **FN09→WORK 시작 검산:** 정착 준비의 원 검토, 새 실행 ID와 현재 조건을 확인해 새 실행 대기·허가를 검산한다. 기존 정착 명령·허가의 정확 재확인을 유지한다. Main 합성·정적 38건·타입·독립 C0/I0. UI04 명시 선택과 실제 PostgreSQL·Agent 인계는 남아 있다.
