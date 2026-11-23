@@ -834,6 +834,7 @@ BEGIN
  -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_BEGIN
  IF selection->>'purpose'='NORMAL_REVIEW_BASIS' THEN RETURN anvil.fn09_normal_understanding_review_basis(s,a,c,selection-'purpose',policy,expected_tx);END IF;
  IF selection->>'purpose'='NORMAL_REVIEW_REPLAY' THEN RETURN anvil.fn09_normal_understanding_review_replay(s,a,c,selection-'purpose',policy,expected_tx);END IF;
+ IF selection->>'purpose'='NORMAL_REVIEW_HISTORY' THEN RETURN anvil.fn09_normal_understanding_review_history(s,a,c,selection-'purpose',policy,expected_tx);END IF;
  -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_END
  -- FN09_RANGE_CURRENT_DISPATCH_BEGIN
  IF selection->>'purpose'='FIXED_RANGE_CURRENT' THEN RETURN anvil.fn09_normal_understanding_range_current(s,a,c,selection-'purpose',policy,expected_tx);END IF;
@@ -2633,4 +2634,39 @@ BEGIN
 END;$$;
 ALTER FUNCTION anvil.fn09_normal_understanding_review_replay(uuid,uuid,uuid,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
 REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_replay(uuid,uuid,uuid,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+-- 정착한 최초 normal 검토의 회원 역사 조회다. 현재 원문/실행/옛 검토자의 권한을 재발급하지 않는다.
+CREATE FUNCTION anvil.fn09_normal_understanding_review_history(s uuid,a uuid,c uuid,selection jsonb,policy jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid;eid uuid;gen bigint;hs anvil.auth_sessions;v anvil.understanding_reviews;n bigint;items jsonb='[]'::jsonb;answer jsonb;at timestamptz=clock_timestamp();until_at timestamptz;
+BEGIN
+ IF expected_tx IS DISTINCT FROM txid_current()::text OR policy IS NOT NULL
+  OR NOT COALESCE(anvil.execution_json_shape(selection,ARRAY['projectId','executionId','executionGeneration']),false)
+  OR (selection->>'projectId')::uuid IS NULL OR (selection->>'executionId')::uuid IS NULL
+  OR selection->'executionGeneration' IS DISTINCT FROM to_jsonb((selection->>'executionGeneration')::bigint)
+  OR (selection->>'executionGeneration')::bigint NOT BETWEEN 1 AND 9007199254740991 THEN RAISE EXCEPTION 'UNDERSTANDING_HISTORY_INVALID';END IF;
+ p=(selection->>'projectId')::uuid;eid=(selection->>'executionId')::uuid;gen=(selection->>'executionGeneration')::bigint;
+ PERFORM anvil.fn01_active(s,a,c);SELECT * INTO STRICT hs FROM anvil.auth_sessions WHERE id=s AND user_id=a AND client_id=c;
+ -- 기존 HUMAN 읽기와 동일한 현재 회원 경계다. OWNER/제어/재인증/옛 actor 일치를 요구하지 않는다.
+ PERFORM id FROM anvil.projects WHERE id=p FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'NOT_FOUND';END IF;
+ IF NOT EXISTS(SELECT 1 FROM anvil.project_members WHERE project_id=p AND user_id=a AND revoked_at IS NULL FOR SHARE) THEN RAISE EXCEPTION 'NOT_FOUND';END IF;
+ until_at=least(at+interval '30 seconds',hs.idle_expires_at,hs.absolute_expires_at);
+ SELECT count(*) INTO n FROM (SELECT 1 FROM anvil.understanding_reviews WHERE project_id=p AND execution_id=eid AND generation=gen LIMIT 2) bounded;
+ IF n>1 THEN RAISE EXCEPTION 'UNDERSTANDING_HISTORY_INVALID';END IF;
+ IF n=1 THEN
+  SELECT * INTO STRICT v FROM anvil.understanding_reviews WHERE project_id=p AND execution_id=eid AND generation=gen;
+  IF NOT COALESCE(anvil.fn09_normal_understanding_review_historical(v),false) THEN RAISE EXCEPTION 'UNDERSTANDING_HISTORY_INVALID';END IF;
+  items=jsonb_build_array(jsonb_build_object('ref',jsonb_build_object('id',v.id,'version',v.version,'contentHash',v.content_hash),'snapshot',v.snapshot_json));
+ ELSE
+  -- 저장행이 없는 손상된 normal 명령을 EMPTY로 표시하지 않는다. 다른 목적/실행은 조회하지 않는다.
+  IF EXISTS(SELECT 1 FROM anvil.commands h WHERE h.project_id=p AND h.operation='reviewUnderstanding'
+   AND h.result_ref#>>'{data,status}'='NORMAL_UNDERSTANDING_REVIEWED'
+   AND h.result_ref#>'{data,snapshot,scope}'=jsonb_build_object('projectId',p,'executionId',eid,'executionGeneration',gen)) THEN RAISE EXCEPTION 'UNDERSTANDING_HISTORY_INVALID';END IF;
+ END IF;
+ answer=jsonb_build_object('transport','NORMAL_PROTECTED','scope',selection,'items',items,'currentness','NOT_RECHECKED','executionAuthorized',false,'dispatchPerformed',false);
+ PERFORM anvil.fn01_active(s,a,c);
+ IF clock_timestamp()>=until_at OR octet_length(anvil.execution_authority_canonical(answer))>2097152 THEN RAISE EXCEPTION 'UNDERSTANDING_HISTORY_INVALID';END IF;
+ RETURN answer;
+END;$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_review_history(uuid,uuid,uuid,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_history(uuid,uuid,uuid,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
 COMMIT;

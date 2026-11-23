@@ -3,7 +3,7 @@ import {types} from 'node:util';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {arrayV1,cloneV1,isoV1,recordV1,refV1,uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
-import {authorizeMaterial,currentProjectController,persistProjectReceipt,projectReplay,type ProjectCommand} from '../access/project-command.ts';
+import {authorizeMaterial,currentProjectController,persistProjectReceipt,projectReplay,projectMember,type ProjectCommand} from '../access/project-command.ts';
 import {readUnderstandingReviewCommand} from './execution-understanding.ts';
 
 export interface NormalUnderstandingReviewOptions{mode:'NORMAL_PROTECTED';purpose:'FN09_NORMAL_FIRST_REVIEW'}
@@ -40,7 +40,7 @@ function stable(v:Record<string,any>){const {checkedAt:_,expiresAt:__,...rest}=v
 function binding(v:Record<string,any>,q:ProjectCommand){return {transport:'NORMAL_PROTECTED',scope:v.scope,bundleRef:v.bundleRef,responseRef:v.responseRef,subjectBindingRef:v.subjectBindingRef,
  basisRefs:v.basisRefs,latestInstructionRefs:v.latestInstructionRefs,requiredPartRefs:v.requiredPartRefs,receivedPartRefs:v.receivedPartRefs,responsePartRefs:v.responsePartRefs,
  criteria:(q.payload.items as any[]).map(({judgement:_,reason:__,...item})=>item),sourceState:'AVAILABLE',responseSubject:'EXTERNAL_AGENT',sourceBasis:stable(v)};}
-function record(raw:any,q:ProjectCommand,actor:AuthenticatedIdentity){
+function record(raw:any,q:ProjectCommand,actor:Pick<AuthenticatedIdentity,'actorId'|'clientId'>){
  const v=cloneV1(raw),s=v?.snapshot,r=s?.reviewer;
  if(!recordV1(v,['ref','snapshot'])||!refV1(v.ref)||v.ref.version!==1||!recordV1(s,['scope','sequence','previousRef','request','requestHash','reviewer','policyRef','currentBinding','input','outcome','recordedAt','executionAuthorized','dispatchPerformed'])
   ||!same(s.request,q)||s.requestHash!==hash(q)||!same(s.input,q.payload)||s.sequence!==1||s.previousRef!==null||!same(s.scope,{projectId:q.projectId,executionId:q.targetId,executionGeneration:q.expectedVersion})
@@ -51,10 +51,47 @@ function record(raw:any,q:ProjectCommand,actor:AuthenticatedIdentity){
  if(!same(s.currentBinding,binding(valid,q)))return failure();return v;
 }
 
+export interface NormalUnderstandingHistoryScope{projectId:string;executionId:string;executionGeneration:number}
+/** 역사 내용은 원 저장 hash/refs만 검산한다. 원 검토자를 현재 조회자로 대체하지 않는다. */
+export function readNormalUnderstandingHistoryValue(raw:unknown,scope:NormalUnderstandingHistoryScope){
+ const v=cloneV1(raw);
+ if(!recordV1(v,['transport','scope','items','currentness','executionAuthorized','dispatchPerformed'])||v.transport!=='NORMAL_PROTECTED'||!same(v.scope,scope)||v.currentness!=='NOT_RECHECKED'||v.executionAuthorized!==false||v.dispatchPerformed!==false||!arrayV1(v.items,1)||Buffer.byteLength(canonicalJson(v))>2097152)return failure();
+ for(const row of v.items){const q=readUnderstandingReviewCommand(row?.snapshot?.request),r=row?.snapshot?.reviewer;
+  if(!same(row?.snapshot?.scope,scope)||!uuidV1(r?.userId)||!uuidV1(r?.clientId))return failure();
+  record(row,q,{actorId:r.userId,clientId:r.clientId});
+ }
+ return v;
+}
+
 /** 기존 HUMAN transaction과 app INSERT만 소비한다. 원문/실행 권위나 합성 current 제공자를 받지 않는다. */
 export class NormalUnderstandingReviews{
+ readonly transport='NORMAL_PROTECTED' as const;
  readonly #access:AccessRepository;
  constructor(access:AccessRepository){this.#access=access;}
+ /** 회원의 읽기 거래다. 현재 OWNER/제어/옛 actor/원 수송 TTL은 요구하지 않는다. */
+ async list(token:string,rawScope:unknown){
+  const scope=cloneV1(rawScope);if(!recordV1(scope,['projectId','executionId','executionGeneration'])||!uuidV1(scope.projectId)||!uuidV1(scope.executionId)||!Number.isSafeInteger(scope.executionGeneration)||scope.executionGeneration<1)return failure('INPUT_INVALID',400);
+  let wall=Date.now(),mono=performance.now(),end=wall+30000,monoEnd=mono+30000;
+  const check=()=>{const w=Date.now(),m=performance.now();if(w<wall||m<mono||w>=end||m>=monoEnd||Object.getPrototypeOf(this.#access)!==AccessRepository.prototype||Object.hasOwn(this.#access,'authenticated')||AccessRepository.prototype.authenticated!==originalAuthenticated)return failure('AUTH_REQUIRED',401);wall=w;mono=m;};
+  try{check();const result=await this.#access.authenticated(token,null,async(db,actor)=>{
+   const actorKey=()=>hash({actorId:actor.actorId,clientId:actor.clientId,credentialGeneration:actor.credentialGeneration,authSession:actor.authSession}),session=actor.authSession,query=db.query,id=actorKey();let tx='',last=-Infinity;
+   if(!session||!uuidV1(session.id))return failure('AUTH_REQUIRED',401);
+   const clock=async()=>{check();const w=wall,m=mono;if(db.query!==query||actorKey()!==id)return failure();
+    const rows=(await db.query('SELECT clock_timestamp() AS at,txid_current()::text AS transaction_id')).rows;check();const row=rows.length===1?rows[0]:null;
+    if(db.query!==query||actorKey()!==id||!(row?.at instanceof Date)||!Number.isFinite(row.at.getTime())||row.at.getTime()<last||typeof row.transaction_id!=='string'||!/^[1-9][0-9]*$/.test(row.transaction_id)||tx&&tx!==row.transaction_id)return failure();
+    tx=row.transaction_id;last=row.at.getTime();const remaining=Math.min(Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt))-last;
+    if(!Number.isFinite(remaining)||remaining<=0)return failure('AUTH_REQUIRED',401);end=Math.min(end,w+remaining);monoEnd=Math.min(monoEnd,m+remaining);check();return last;
+   };
+   const started=await clock();const inspect=async()=>{check();await projectMember(db,actor,scope.projectId,true);await clock();
+    const rows=(await db.query('SELECT anvil.fn09_normal_understanding_metadata_current($1,$2,$3,$4,$5,$6) AS projection',[session.id,actor.actorId,actor.clientId,canonicalJson({purpose:'NORMAL_REVIEW_HISTORY',...scope}),null,tx])).rows;
+    const at=await clock();if(at-started>=30000)return failure('AUTH_REQUIRED',401);if(rows.length!==1)return failure();return readNormalUnderstandingHistoryValue(rows[0]?.projection,scope as unknown as NormalUnderstandingHistoryScope);
+   };
+   const before=await inspect(),after=await inspect();if(!same(before,after))return failure();check();return after;
+  });check();return result;
+  }catch(error){if(error instanceof AuthFailure&&error.statusCode<500)throw error;
+   if((error as any)?.code==='P0001'&&(error as Error).message==='NOT_FOUND')return failure('NOT_FOUND',404);
+   return failure('UNDERSTANDING_HISTORY_UNAVAILABLE');}
+ }
  async command(token:string,csrf:string,raw:ProjectCommand){
   const q=readUnderstandingReviewCommand(raw);let wall=Date.now(),mono=performance.now(),end=wall+30000,monoEnd=mono+30000;
   const check=()=>{const w=Date.now(),m=performance.now();if(w<wall||m<mono||w>=end||m>=monoEnd||Object.getPrototypeOf(this.#access)!==AccessRepository.prototype

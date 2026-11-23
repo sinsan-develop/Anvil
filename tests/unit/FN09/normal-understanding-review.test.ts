@@ -17,7 +17,7 @@ function reviewPayload(){return{bundleRef:approvalRef(10),responseRef:approvalRe
 const reviewCommand=(payload=reviewPayload()):any=>({schemaVersion:1,projectId:approvalPid,commandId:approvalId(30),clientId:approvalActor.clientId,controlGeneration:1,operation:'reviewUnderstanding',targetId:approvalId(70),expectedVersion:3,baselineRefs:[],approvalRef:null,payload});
 function reviewRule(disposition='REQUIRE_APPROVAL'){return{ruleId:'review',subjectRef:{kind:'HUMAN',userId:approvalActor.actorId},operations:['reviewUnderstanding','requestApproval','decideApproval'],targetScopes:[{kind:'PROJECT',projectId:approvalPid}],disposition,limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'};}
 function approvalFixture(){
- const state={calls:0,driftAt:Infinity,currentUnavailable:false,commitUnknown:false,authRevoked:false,releases:[] as boolean[],trace:[] as string[]};let backup:any,committed=false;
+ const state={calls:0,driftAt:Infinity,currentUnavailable:false,commitUnknown:false,authRevoked:false,memberRevoked:false,memberRole:'OWNER',revokeAfterHistory:false,historyDelay:0,historyCalls:0,releases:[] as boolean[],trace:[] as string[]};let backup:any,committed=false;
  let data:any={commands:[],receipts:[],audits:[],requests:[],decisions:[],consumptions:[],candidates:[],preparations:[],notifications:[],reviews:[]};
  const at=new Date();let clock=at;const live:any={...approvalActor,authSession:{id:approvalId(80),idleExpiresAt:'2099-01-01T00:00:00.000Z',absoluteExpiresAt:'2099-01-01T00:00:00.000Z'}};
  const input=reviewPayload(),control={actor_id:approvalActor.actorId,client_id:approvalActor.clientId,generation:1,revoked_at:null as Date|null};let failAt='';
@@ -34,6 +34,16 @@ function approvalFixture(){
   if(sql.startsWith('UPDATE anvil.auth_sessions'))return rows([]);
   if(sql.includes('fn09_normal_understanding_metadata_current')){
    const selection=JSON.parse(p[3]);assert.equal(p[5],'17');
+   if(selection.purpose==='NORMAL_REVIEW_HISTORY'){
+    state.historyCalls++;assert.equal(p[4],null);assert.deepEqual(Object.keys(selection).sort(),['purpose','projectId','executionId','executionGeneration'].sort());
+    if(state.memberRevoked)throw Object.assign(Error('NOT_FOUND'),{code:'P0001'});
+    const found=data.reviews.filter((v:any)=>v.project_id===selection.projectId&&v.execution_id===selection.executionId&&v.generation===selection.executionGeneration);
+    assert.ok(found.length<=1,'normal history is exactly zero or one');
+    const items=found.map((v:any)=>{const h=data.commands.find((h:any)=>h.id===v.command_id),receipt=data.receipts.find((r:any)=>r.command_id===h?.id),audit=data.audits.find((r:any)=>r.command_id===h?.id);assert.ok(h&&receipt&&audit);assert.equal(v.content_hash,H(v.snapshot_json));assert.deepEqual(h.result_ref.data,{status:'NORMAL_UNDERSTANDING_REVIEWED',ref:{id:v.id,version:v.version,contentHash:v.content_hash},snapshot:v.snapshot_json});return {ref:{id:v.id,version:v.version,contentHash:v.content_hash},snapshot:v.snapshot_json};});
+    if(state.revokeAfterHistory)state.memberRevoked=true;
+    if(state.historyDelay)clock=new Date(clock.getTime()+state.historyDelay);
+    return rows([{projection:{transport:'NORMAL_PROTECTED',scope:{projectId:selection.projectId,executionId:selection.executionId,executionGeneration:selection.executionGeneration},items,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false}}]);
+   }
    if(selection.purpose==='NORMAL_REVIEW_REPLAY'){const c=data.commands.find((c:any)=>c.command_id===selection.commandId&&c.project_id===selection.projectId&&c.request_hash===selection.requestHash),v=c&&data.reviews.find((v:any)=>v.command_id===c.id);assert.ok(v);assert.equal(v.content_hash,H(v.snapshot_json));return rows([{projection:c.result_ref}]);}
    assert.equal(selection.purpose,'NORMAL_REVIEW_BASIS');assert.deepEqual(selection.responseRef,approvalRef(11));state.calls++;if(state.currentUnavailable)throw Object.assign(Error('UNDERSTANDING_NORMAL_CURRENT_REQUIRED'),{code:'P0001'});
    const ground={bundleRef:approvalRef(10),preparationRef:approvalRef(14),grantRef:approvalRef(15),startCommandRef:approvalRef(16),manifestRef:approvalRef(17),roleBindingRef:approvalRef(12),agentSessionRef:approvalRef(18),roleRef:approvalRef(19),basisRefs:state.calls>=state.driftAt?[approvalRef(40),approvalRef(44)]:[approvalRef(40)],latestInstructionRefs:[],requiredPartRefs:[approvalRef(41)],receivedPartRefs:[approvalRef(41)],deliveryReceiptRefs:[approvalRef(43)],status:'SOURCE_BASIS_ONLY',subjectBindingState:'VERIFIED',subjectBindingRef:approvalRef(12),reviewAvailable:false,scope:{projectId:approvalPid,executionId:approvalId(70),executionGeneration:3},requestRef:approvalRef(20),responseRef:approvalRef(11),responsePartRefs:[approvalRef(42)],checkedAt:clock.toISOString(),expiresAt:new Date(clock.getTime()+20000).toISOString(),executionAuthorized:false,dispatchPerformed:false};
@@ -41,7 +51,7 @@ function approvalFixture(){
   }
   if(sql.startsWith('SELECT id FROM anvil.understanding_reviews'))return rows(data.reviews.filter((v:any)=>v.project_id===p[0]&&v.execution_id===p[1]&&v.generation===p[2]));
 
-  if(sql.startsWith('SELECT p.id,p.archived_at'))return rows(p[0]===approvalPid&&p[1]===live.actorId?[{id:approvalPid,participation:'OWNER',archived_at:null}]:[]);
+  if(sql.startsWith('SELECT p.id,p.archived_at'))return rows(!state.memberRevoked&&p[0]===approvalPid&&p[1]===live.actorId?[{id:approvalPid,participation:state.memberRole,archived_at:null}]:[]);
   if(sql.includes('FROM anvil.permission_policies p JOIN'))return rows([policyRow]);
   if(sql.startsWith('SELECT * FROM anvil.project_control')||sql.startsWith('SELECT actor_id,client_id,generation'))return rows([control]);
   if(sql.startsWith('SELECT transaction_timestamp'))return rows([{at}]);if(sql.startsWith('SELECT clock_timestamp'))return rows([{at:clock,transaction_id:'17'}]);
@@ -107,4 +117,37 @@ test('명시 normal 구성에서만 기존 command HTTP가 실제 정상 provide
  const a=app(f);try{const c=reviewCommand(f.input);const r=await a.inject({method:'POST',url:'/api/v1/projects/'+approvalPid+'/commands?extra=1',headers:{host:'normal.invalid',origin:'https://normal.invalid',cookie:'__Host-anvil.sid='+'t'.repeat(43),'x-anvil-csrf':'c'.repeat(43)},payload:c});assert.equal(r.statusCode,400);assert.equal(f.data.reviews.length,0);
   const bearer=await a.inject({method:'POST',url:'/api/v1/projects/'+approvalPid+'/commands',headers:{host:'normal.invalid',origin:'https://normal.invalid',cookie:'__Host-anvil.sid='+'t'.repeat(43),'x-anvil-csrf':'c'.repeat(43),authorization:'Bearer av3ex1_'+'a'.repeat(43)},payload:c});assert.equal(bearer.statusCode,403);assert.equal(f.data.reviews.length,0);
  }finally{await a.close();}
+});
+
+const historyScope={projectId:approvalPid,executionId:approvalId(70),executionGeneration:3};
+const historyUrl='/api/v1/projects/'+approvalPid+'/executions/'+approvalId(70)+'/understanding-reviews?generation=3';
+const historyHeaders={host:'normal.invalid',origin:'https://normal.invalid',cookie:'__Host-anvil.sid='+'t'.repeat(43)};
+test('normal history HTTP는 회원의 새 조회만 검산하고 과거 승인·grant·수송 만료 뒤에도 원 판단만 반환한다 · RAM',async()=>{
+ const {f,c}=await approved(),stored=await f.store(c),writes=[f.data.commands.length,f.data.receipts.length,f.data.audits.length,f.data.consumptions.length];
+ f.state.currentUnavailable=true;f.advance(new Date('2098-02-01'));f.actor.actorId=approvalId(90);f.actor.clientId=approvalId(91);f.state.memberRole='VIEWER';
+ const a=app(f);try{const r=await a.inject({method:'GET',url:historyUrl,headers:historyHeaders});assert.equal(r.statusCode,200,r.body);assert.equal(r.headers['cache-control'],'no-store');const v=r.json();assert.equal(v.transport,'NORMAL_PROTECTED');assert.equal(v.currentness,'NOT_RECHECKED');assert.deepEqual(v.items,[{ref:stored.data.ref,snapshot:stored.data.snapshot}]);assert.equal(v.executionAuthorized,false);assert.equal(v.dispatchPerformed,false);assert.equal(f.state.calls,3);assert.deepEqual([f.data.commands.length,f.data.receipts.length,f.data.audits.length,f.data.consumptions.length],writes);
+  const {validateNormalUnderstandingHistory,readNormalUnderstandingHistory}=await import('../../../apps/web/src/features/session-detail/understanding-history-api.ts');
+  assert.deepEqual(await validateNormalUnderstandingHistory(v,historyScope),v);
+  const {ApiClient}=await import('../../../apps/web/src/api/client.ts');let calls=0;const client=new ApiClient(async(path,options)=>{calls++;assert.equal(path,historyUrl);assert.equal(options?.credentials,'same-origin');assert.equal(options?.cache,'no-store');return new Response(JSON.stringify(v),{headers:{'content-type':'application/json'}});});
+  assert.deepEqual(await readNormalUnderstandingHistory(client,historyScope,()=>true),v);assert.equal(calls,1);
+  for(const mutate of [(x:any)=>x.items.push(x.items[0]),(x:any)=>x.items[0].snapshot.currentBinding.transport='SYNTHETIC_ONLY',(x:any)=>x.items[0].snapshot.input.reason='변조',(x:any)=>x.scope.executionGeneration=4]){const bad=structuredClone(v);mutate(bad);await assert.rejects(validateNormalUnderstandingHistory(bad,historyScope));if(bad.items.length===1){bad.items[0].ref.contentHash=H(bad.items[0].snapshot);await assert.rejects(validateNormalUnderstandingHistory(bad,historyScope));}}
+ }finally{await a.close();}
+});
+test('normal history EMPTY·default off와 혼입/손상/회원 폐기/새 조회 만료를 구분하며 효과를 추가하지 않는다 · RAM',async()=>{
+ for(const mode of ['empty','default','duplicate','synthetic','corrupt','member','late-member','expired','unknown']){const f=approvalFixture();auto(f);if(!['empty','default'].includes(mode))await f.store(reviewCommand(f.input));if(mode==='duplicate')f.data.reviews.push(structuredClone(f.data.reviews[0]));if(mode==='synthetic')f.data.reviews[0].snapshot_json.currentBinding.transport='SYNTHETIC_ONLY';if(mode==='corrupt')f.data.reviews[0].content_hash='0'.repeat(64);if(mode==='member')f.state.memberRevoked=true;if(mode==='late-member')f.state.revokeAfterHistory=true;if(mode==='expired')f.state.historyDelay=31000;if(mode==='unknown')f.state.commitUnknown=true;
+  const a=app(f,mode!=='default');try{const r=await a.inject({method:'GET',url:historyUrl,headers:historyHeaders});assert.equal(r.statusCode,mode==='empty'?200:['member','late-member'].includes(mode)?404:mode==='expired'?401:503,mode+': '+r.body);if(mode==='empty')assert.deepEqual(r.json().items,[]);assert.equal(r.headers['cache-control'],'no-store');assert.equal(f.data.commands.length,mode==='empty'||mode==='default'?0:1);}finally{await a.close();}
+ }
+ const f=approvalFixture(),a=app(f);try{for(const headers of [{...historyHeaders,authorization:'Bearer no'},{...historyHeaders,host:'other.invalid'},{...historyHeaders,origin:'https://other.invalid'}])assert.equal((await a.inject({method:'GET',url:historyUrl,headers})).statusCode,403);assert.equal((await a.inject({method:'GET',url:historyUrl+'&extra=1',headers:historyHeaders})).statusCode,400);assert.equal(f.state.historyCalls,0);}finally{await a.close();}
+});
+
+test('scope 전용 history는 stalled stream을 새 30초에 취소하고 원 transport의 오래된 성공/401을 폐기한다 · RAM',async(t)=>{
+ const {readNormalUnderstandingHistory,validateUnderstandingHistory}=await import('../../../apps/web/src/features/session-detail/understanding-history-api.ts'),{ApiClient,ApiError}=await import('../../../apps/web/src/api/client.ts');
+ const f=approvalFixture();auto(f);await f.store(reviewCommand(f.input));const v=await f.preparations.list('t'.repeat(43),historyScope);
+ await assert.rejects(validateUnderstandingHistory(v,historyScope));
+ let cancelled=0,ready!:()=>void;const pending=new Promise<void>(resolve=>{ready=resolve;});
+ t.mock.timers.enable({apis:['Date','setTimeout'],now:Date.now()});
+ try{const client=new ApiClient(async()=>new Response(new ReadableStream({pull(){ready();},cancel(){cancelled++;}},{highWaterMark:0}),{headers:{'content-type':'application/json'}})),result=readNormalUnderstandingHistory(client,historyScope,()=>true);await pending;t.mock.timers.tick(30000);await assert.rejects(result,(e:any)=>e instanceof ApiError&&e.status===503);assert.equal(cancelled,1);}finally{t.mock.timers.reset();}
+ for(const status of [200,401]){let reply!:(r:Response)=>void,started!:()=>void;const began=new Promise<void>(r=>{started=r;}),response=new Promise<Response>(r=>{reply=r;}),client=new ApiClient(async()=>{started();return response;}),result=readNormalUnderstandingHistory(client,historyScope,()=>true);await began;client.transport=async()=>{throw Error('new transport not called');};reply(new Response(JSON.stringify(status===200?v:{code:'AUTH_REQUIRED'}),{status,headers:{'content-type':'application/json'}}));assert.equal(await result,null);}
+ const denied=new ApiClient(async()=>new Response(JSON.stringify({code:'AUTH_REQUIRED'}),{status:401,headers:{'content-type':'application/json'}}));await assert.rejects(readNormalUnderstandingHistory(denied,historyScope,()=>true),(e:any)=>e instanceof ApiError&&e.code==='AUTH_REQUIRED'&&e.status===401);
+ let called=0;const unused=new ApiClient(async()=>{called++;throw Error('not reached');});assert.equal(await readNormalUnderstandingHistory(unused,historyScope,()=>false),null);assert.equal(called,0);
 });

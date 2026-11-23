@@ -134,7 +134,7 @@ test('range result marker-only/receipt-only/body-only writes have exact BEFORE a
  const shape=history.match(/execution_json_shape\(s,ARRAY\[([^\]]+)\]/)?.[1];assert.ok(shape);assert.doesNotMatch(shape,/'(?:body|text|parts|auth|bodyBase64|sdk|sessionId)'/);
  assert.match(shape,/'responseRef','partRefs','bodyHash','bodyBytes'/);
  const section=sql.slice(sql.indexOf('-- FN09 A §4.3:'));
- const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,29);
+ const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,30);
  for(const [,name,args] of helpers){
   const signature=name+'('+args!.split(',').filter(Boolean).map(x=>x.trim().split(/\s+/).at(-1)).join(',')+')';
   assert.ok(section.includes('ALTER FUNCTION anvil.'+signature+' OWNER TO anvil_v3_migrator;'),signature);
@@ -607,4 +607,13 @@ test('원 CONTEXT_BUNDLE 자료 refs와 각 전달 영수증의 조합은 모두
   assert.throws(()=>delivered(receipts,bindings),mode);
  }
  for(const changed of [{...row,materials:materials.slice(1)},{...row,manifest:{...manifest,scope:{...manifest.scope,executionGeneration:2}}}])assert.throws(()=>startMaterialDescriptor(changed,b,envelope));
+});
+
+test('normal review member history dispatch reuses immutable settlement and never current source/controller/original actor authority',()=>{
+ const history=definition('fn09_normal_understanding_review_history');
+ for(const token of ['txid_current()',"policy IS NOT NULL","ARRAY['projectId','executionId','executionGeneration']",'fn01_active(s,a,c)','anvil.project_members','revoked_at IS NULL FOR SHARE','LIMIT 2','n>1','review_historical(v)',"'NOT_RECHECKED'","'executionAuthorized',false","'dispatchPerformed',false",'2097152',"interval '30 seconds'",'hs.idle_expires_at','hs.absolute_expires_at'])assert.ok(history.includes(token),token);
+ assert.doesNotMatch(history,/participation='OWNER'|project_control|reauth_until|v.created_by\s*(?:=|IS)|normal_exchange_current|request_basis|committed_basis|review_current|INSERT |UPDATE anvil|body_bytes|GRANT /);
+ assert.match(definition('fn09_normal_understanding_metadata_current'),/NORMAL_REVIEW_HISTORY.*review_history\(s,a,c,selection-'purpose',policy,expected_tx\)/);
+ const historical=definition('fn09_normal_understanding_review_historical');for(const token of ['review_response','fn09_understanding_approval_valid','authorization_receipts','audit_events','execution_json_hash'])assert.ok(historical.includes(token),token);
+ assert.doesNotMatch(historical,/clock_timestamp|fn01_active|normal_exchange_current/);
 });

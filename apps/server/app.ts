@@ -1,4 +1,4 @@
-import {readNormalUnderstandingReviewOptions,type NormalUnderstandingReviewOptions} from './modules/executions/normal-understanding-review.ts';
+import {NormalUnderstandingReviews,readNormalUnderstandingReviewOptions,type NormalUnderstandingReviewOptions} from './modules/executions/normal-understanding-review.ts';
 import {NormalUnderstandingReadAcquisition,registerNormalUnderstandingReadAcquisition,registerNormalUnderstandingRangeAcquisition,readNormalUnderstandingRangeOptions,type NormalUnderstandingRangeOptions} from './modules/executions/normal-understanding-read-acquisition.ts';
 import {NormalUnderstandingRangeReadResult,readNormalUnderstandingRangeResultOptions,type NormalUnderstandingRangeResultOptions,NormalUnderstandingReadResult,readNormalUnderstandingResultOptions,registerNormalUnderstandingReadResult,type NormalUnderstandingResultOptions} from './modules/executions/normal-understanding-read-result.ts';
 import {registerNormalUnderstandingReadRoutes} from './modules/executions/normal-understanding-read-routes.ts';
@@ -119,7 +119,7 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   registerWorkerDeploymentRoutes(app,workerDeployment);
   app.get('/api/v1/health', async () => ({ status: 'ok', scope: 'process', version: '0.1.0' }));
   if (access) { registerNormalUnderstandingReadRoutes(app,access); registerAccessRoutes(app, access); registerProjectRoutes(app, access, syntheticExecution,documentObservation,normalExecution,normalGrantRevocation,normalInstruction,normalStop,normalUnderstandingReview); registerDocumentRoutes(app, access); registerMethodologyRoutes(app, access); registerCommonMethodologyWrites(app, access); registerCommonSetupRoutes(app,access); registerProjectFileRoutes(app, access); registerConnectorRegistrationRoutes(app,access); registerSourceReadRoutes(app,access); registerProviderClaimHistoryRoutes(app,access); }
-  if(access)registerUnderstandingHistoryRoutes(app,access,syntheticExecution?.understandingHistory);
+  if(access)registerUnderstandingHistoryRoutes(app,access,syntheticExecution?.understandingHistory,normalUnderstandingReview?new NormalUnderstandingReviews(access.repository):undefined);
   if(nativePreparation?.enabled===true)registerNativePreparationRoutes(app,nativePreparation,access);
   if(nativeReceive?.enabled===true){if(nativeReceive.service instanceof NativeFirstReceiveService&&nativePreparation?.preparations)nativeReceive.service.connectNativeCommand(nativePreparation.preparations);registerNativeFirstReceiveRoutes(app,nativeReceive,access);}
   else if(access){const service=new NativeFirstReceiveService(access.repository,undefined,Date.now,nativePreparation?.preparations??null,undefined,access.origin);if(nativePreparation?.preparations)service.connectNativeCommand(nativePreparation.preparations);registerNativeFirstReceiveRoutes(app,{enabled:true,service},access);}
