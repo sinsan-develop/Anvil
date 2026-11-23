@@ -1,3 +1,4 @@
+import {executionPreparationOwned} from '../workspace/execution-preparation-api.ts';
 import {isOriginReuseApproval,assertOriginReuseOwner,sendOriginReuseDecision} from './origin-reuse-approval-api.ts';
 import {SourceLinkScope,sourceLinkOwned,type SourceLinkBuffer,type SourceLinkChange} from '../design-trace/source-link-command-api.ts';
 import {newSourceLinkApprovalRequest,prepareSourceLinkApprovalRequest,bindSourceLinkApproval} from './source-link-approval-api.ts';
@@ -75,6 +76,7 @@ function PreparationApprovalReturn({view,original,projectId,session}:{
   <p>작업공간에서 원 확정 임무를 직접 열고, 같은 원명령의 승인 결박과 보관을 각각 확인하세요.</p></>;
 }
 export function ApprovalsPage({executionPreparation,onMembershipReturn,nativeBuffer,environmentBuffer,backupPolicyBuffer,installationResourceBuffer,backupReferenceBuffer,activationBuffer,responsibleSessionBuffers,limitBuffers,stageStartBuffers,client,projectId,requestId,session,buffer,onChange,candidate,onCandidateChange,sourceDetach,onSourceDetachChange,sourceLink,onSourceLinkChange,resultIssueSelection,onResultIssueClose,onAuthenticationLost}:Props){
+ executionPreparation=executionPreparation&&executionPreparationOwned(client,executionPreparation,session)?executionPreparation:null;
  const backupScope=useRef(new BackupReferenceScope());backupScope.current.bind(session,client,projectId);useEffect(()=>()=>backupScope.current.dispose(),[]);
  const policyScope=useRef(new BackupReferenceScope());policyScope.current.bind(session,client,projectId);useEffect(()=>()=>policyScope.current.dispose(),[]);
  const policyLive=useRef(backupPolicyBuffer);policyLive.current=backupPolicyBuffer;
