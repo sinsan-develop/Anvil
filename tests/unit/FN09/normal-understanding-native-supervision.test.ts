@@ -6,6 +6,26 @@ import {canonicalJson} from '../../../contracts/canonical.ts';
 
 const source = (name: string) => readFileSync(new URL('../../../apps/connector/native/' + name, import.meta.url), 'utf8');
 
+test('고정 범위 준비는 원 CLOSE 객체와 별도 관리행을 소비하고 원 SEND_STARTED 회수 뒤에만 HTTP를 호출한다 · 정적',()=>{
+ const c=source('NormalExecutionCredentialSource.cs'),p=source('NormalExecutionSpoolProfileSource.cs');
+ const close=p.slice(p.indexOf(' Row FinishSupervisedUnderstandingRange('),p.indexOf(' const string PreparedKeys='));
+ assert.ok(close.indexOf('understandingSupervisor.Consume')<close.indexOf('understandingRangeResultCapability=new'));
+ assert.ok(close.indexOf('finalGuard(')<close.indexOf('understandingRangeResultCapability=new'));
+ assert.doesNotMatch(close,/understandingResultCapability=/);
+ const take=p.slice(p.indexOf(' internal Row TakeUnderstandingRangeResult('),p.indexOf(' internal Row StoreUnderstandingRangePrepared('));
+ assert.ok(take.indexOf('understandingRangeResultCapability=null')<take.indexOf('Log(false'));
+ for(const v of ['Object.ReferenceEquals(admission,understandingRangePreparedAdmission)','UNDERSTANDING_RANGE_RESULT_PREPARED','UNDERSTANDING_RANGE_RESULT_SEND_STARTED','H(purpose["selection"])','H(purpose)'])assert.ok(p.includes(v),v);
+ const prep=c.slice(c.indexOf(' object PrepareUnderstandingRangeResult('),c.indexOf(' object SendUnderstandingRangeResult('));
+ assert.ok(prep.indexOf('understandingRangeCloseAccepted=false')<prep.indexOf('TakeUnderstandingRangeResult'));
+ assert.ok(prep.indexOf('TakeUnderstandingRangeResult')<prep.indexOf('Challenge(record'));
+ assert.ok(prep.indexOf('StoreUnderstandingRangePrepared')<prep.indexOf('NATIVE_RANGE_RESULT_PREPARED'));
+ const send=c.slice(c.indexOf(' object SendUnderstandingRangeResult('),c.indexOf(' object Call('));
+ assert.ok(send.includes('FIXED_RANGE_SELECTION'));assert.ok(send.indexOf('StartUnderstandingRangeSend')<send.indexOf('Http(record,"POST"'));
+ assert.doesNotMatch(send,/DISCOVERY_METADATA|StartUnderstandingSend\(/);
+ const origin=p.slice(p.indexOf(' Row UnderstandingRangeResultOrigin('),p.indexOf(' internal Row TakeUnderstandingRangeResult('));
+ for(const v of ['UNDERSTANDING_RANGE_PICKUP','UNDERSTANDING_RANGE_READ_STARTED','UNDERSTANDING_RANGE_READ_CLOSED','selectionHash,sourceRequestRef,sourceResultRef','S(ended,"bodyHash")','TightenRead(end)'])assert.ok(origin.includes(v),v);
+});
+
 test('고정 범위 원 HTTPS pickup과 실제 delegated prefix/close는 metadata signing과 별개로 연결된다 · 정적',()=>{
  const credential=source('NormalExecutionCredentialSource.cs'),profile=source('NormalExecutionSpoolProfileSource.cs');
  assert.ok(credential.includes('spoolProfile.BindUnderstandingRangePickup('));
@@ -270,7 +290,7 @@ test('S2-R1 목적 준비는 원 CLOSE capability를 먼저 소비하고 원장 
 
 test('S2-R1 목적 SEND는 exact body/auth를 고정하고 STARTED/원 잠금 회수 뒤에만 HTTP를 호출한다 (정적)', () => {
  const c=source('NormalExecutionCredentialSource.cs');
- const send=c.slice(c.indexOf('object SendUnderstandingResult('),c.indexOf('object Call('));
+ const send=c.slice(c.indexOf('object SendUnderstandingResult('),c.indexOf('object PrepareUnderstandingRangeResult('));
  assert.match(send,/attemptId,slotId,requestRef,acquisitionRef,preparedHash,auth,body/);
  assert.ok(send.indexOf('StartUnderstandingSend(')<send.indexOf('Http('));
  assert.doesNotMatch(send,/ChallengeRequest\(|Sign\(/);
@@ -354,7 +374,7 @@ test('S2-R1 목적 chunk만 exact9이고 raw generic result·추가 경로는 �
  assert.match(header,/if\(inline\)throw Invalid\(\);Exact\(h,"attemptId,slotId,kind,requestRef,acquisitionRef,preparedHash,auth,bodyLength,bodyHash"\)/);
  assert.match(header,/N\(h\["bodyLength"\]\)\+Encoding.UTF8.GetByteCount\(S\(h,"auth"\)\)>2097152/);
  assert.match(c,/new UTF8Encoding\(false,true\).GetString\(body\)/);
- const send=c.slice(c.indexOf('object SendUnderstandingResult('),c.indexOf('object Call('));
+ const send=c.slice(c.indexOf('object SendUnderstandingResult('),c.indexOf('object PrepareUnderstandingRangeResult('));
  assert.match(send,/J\(metadata\)!=body/);assert.match(send,/B64\(B\(packet\)\)!=auth/);
  assert.match(send,/bodyBytes.Length\+Encoding.UTF8.GetByteCount\(auth\)>2097152/);
  assert.match(send,/finally\{Array.Clear\(bodyBytes/);

@@ -6,7 +6,7 @@ import {basename,resolve,isAbsolute} from 'node:path';
 import {isPromise,isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {cloneV1,refV1,recordV1,uuidV1,hashV1} from '../../../contracts/runtime/validation-v1.ts';
-import {frameUnderstandingResult,readPreparedUnderstandingResult,type NormalOwnedHostFactory,type NormalOwnedHostSession,type NormalOwnedMetadata,type HostCloseDisposition,type NormalUnderstandingResultBinding,type NormalPreparedUnderstandingResult,type NormalUnderstandingResultSendOperation} from './normal-credential-bootstrap-client.ts';
+import {frameUnderstandingRangeResult,readPreparedUnderstandingRangeResult,type NormalPreparedUnderstandingRangeResult,type NormalUnderstandingRangeResultSendOperation,frameUnderstandingResult,readPreparedUnderstandingResult,type NormalOwnedHostFactory,type NormalOwnedHostSession,type NormalOwnedMetadata,type HostCloseDisposition,type NormalUnderstandingResultBinding,type NormalPreparedUnderstandingResult,type NormalUnderstandingResultSendOperation} from './normal-credential-bootstrap-client.ts';
 import {isOwnedSpoolPath,NormalStartFileStore,type NormalFilePorts,type NormalLocalScope,type ProfileJournalAccess} from './normal-start-file-store.ts';
 import {NormalStartIntake,type NormalStartStore} from './normal-start-intake.ts';
 import {NormalClaudeStartWire} from '../adapters/secondary/normal-start-wire.ts';
@@ -25,9 +25,22 @@ declare const resultSeal:unique symbol;
 export type NormalUnderstandingResultSeal=Readonly<{[resultSeal]:true}>;
 declare const rangeReadSeal:unique symbol;
 export type NormalUnderstandingRangeReadResult=Readonly<{[rangeReadSeal]:true;kind:'RANGE_READ_VERIFIED';requestRef:RuntimeRefV1;acquisitionRef:RuntimeRefV1;bodyHash:string;executionAuthorized:false;dispatchPerformed:false}>;
-const rangeReadResults=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;projection:NormalUnderstandingRangeProjection;body:Buffer;check:Guard;dispose:()=>void}>();
+const rangeReadResults=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;projection:NormalUnderstandingRangeProjection;body:Buffer;closed?:ClosedUnderstanding;check:Guard;dispose:()=>void}>();
 /** 원문은 이 모듈의 단회 상태에만 남긴다. 폐기는 서명/전송 권위를 발급하지 않는다. */
 export function discardNormalUnderstandingRangeReadResult(result:NormalUnderstandingRangeReadResult){rangeReadResults.get(result)?.dispose();}
+/** 원문과 준비 capability는 같은 비공개 상태의 단회 소비에만 전달한다. */
+async function transmitNormalUnderstandingRangeResult(result:NormalUnderstandingRangeReadResult,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,signal:AbortSignal){
+ const saved=rangeReadResults.get(result);if(!saved)invalid();rangeReadResults.delete(result);
+ try{
+  if(saved.client!==client||saved.owned!==owned||signal.aborted)invalid();saved.check();
+  const binding={requestRef:result.requestRef,acquisitionRef:result.acquisitionRef,bodyHash:result.bodyHash};
+  if(contentHash(saved.body)!==binding.bodyHash)invalid();
+  const outcome={requestRef:result.requestRef,acquisitionRef:result.acquisitionRef,bodyHash:result.bodyHash,executionAuthorized:false as const,dispatchPerformed:false as const};
+  if(!saved.closed)return Object.freeze({state:'SIGNING_UNAVAILABLE' as const,...outcome});
+  await saved.closed.transmit(saved.body,binding,signal);saved.check();if(signal.aborted)invalid();
+  return Object.freeze({state:'TRANSMISSION_UNCONFIRMED' as const,...outcome});
+ }finally{saved.dispose();}
+}
 type DiscoveryReadResult={metadata:NormalUnderstandingDiscoveryProjection;seal:NormalUnderstandingResultSeal};
 type ClosedUnderstanding={transmit(body:Buffer,binding:NormalUnderstandingResultBinding,signal:AbortSignal):Promise<void>};
 const discoveryResults=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;post:NormalProtectedPostClient;metadata:NormalUnderstandingDiscoveryProjection;closed?:ClosedUnderstanding;check:Guard;finish:Guard}>();
@@ -78,7 +91,7 @@ export type WorkerSdkPorts=Pick<NormalFirstSendSource,'expiresAt'|'create'|'clos
 type Hold=Awaited<ReturnType<OutputPorts['reserve']>>;
 type OutputTx=Parameters<OutputPorts['strictExclusive']>[1];
 type Handoff={reservation:string;challenge:string;scopeDigest:string;requestDigest:string};
-type PhaseControls={resume?:Handoff;readOnly?:boolean;closeReservation?:string;challenge?:string;understanding?:NormalUnderstandingResultBinding;range?:NormalUnderstandingResultBinding&{selection:NormalUnderstandingRangeAcquisition['selection']};resultDeadline?:number;closed?:ClosedUnderstanding;guard:()=>void};
+type PhaseControls={resume?:Handoff;readOnly?:boolean;closeReservation?:string;challenge?:string;understanding?:NormalUnderstandingResultBinding;range?:NormalUnderstandingResultBinding&{selection:NormalUnderstandingRangeAcquisition['selection']};resultDeadline?:number;prepareRange?:true;closed?:ClosedUnderstanding;guard:()=>void};
 const outputBinders=new WeakMap<OutputPorts,(ticket:object)=>void>();
 const outputJournals=new WeakSet<ProfileJournalAccess>();
 type FirstSidBasis=Omit<Parameters<NormalFirstSendSource['check']>[0],'plannedSidDigest'>;
@@ -234,9 +247,10 @@ export class OwnedSpoolRuntime {
   }
  }
  /** The closure created after the original physical close is the only caller. */
- async #transmitUnderstanding(slot:NormalOwnedMetadata,proof:NormalPreparedUnderstandingResult,binding:NormalUnderstandingResultBinding,body:Buffer,signal:AbortSignal,check:Guard,wall:number,mono:number){
+ async #transmitUnderstanding(slot:NormalOwnedMetadata,proof:NormalPreparedUnderstandingResult|NormalPreparedUnderstandingRangeResult,binding:NormalUnderstandingResultBinding,body:Buffer,signal:AbortSignal,check:Guard,wall:number,mono:number){
   check();
-  const framed=frameUnderstandingResult(this.#attempt,slot,proof,binding,body);
+  const range=proof.state==='NATIVE_RANGE_RESULT_PREPARED';
+  const framed=range?frameUnderstandingRangeResult(this.#attempt,slot,proof,binding,body):frameUnderstandingResult(this.#attempt,slot,proof,binding,body);
   const release=await this.#enterTurn(true,signal);
   let host:NormalOwnedHostSession|undefined,s:Session|undefined,close:NormalOwnedHostSession['close']|undefined,opened=false,success=false;
   try{
@@ -245,18 +259,18 @@ export class OwnedSpoolRuntime {
    this.#opening=true;opened=true;
    host=await this.#openUnderstanding(signal,wall,mono,check,slot);
    close=host.close;
-   const physical=host,current=host.current,invalidated=host.invalidated,send=host.sendUnderstandingResult;
+   const physical=host,current=host.current,invalidated=host.invalidated,send=range?host.sendUnderstandingRangeResult:host.sendUnderstandingResult;
    if(typeof current!=='function'||isProxy(current)||!(invalidated instanceof AbortSignal)||typeof send!=='function'||isProxy(send))invalid();
    const session:Session={host,current,invalidated,send:host.send,scope:byRef(slot),writer:'NORMAL_EXECUTION',slot,signal,wall,mono,
     frames:0,sending:false,borrowed:false,dead:false,profile:'',allocation:'',path:'',stamp:''};
    s=session;this.#session=session;
-   const frame=async(op:NormalUnderstandingResultSendOperation,p:unknown)=>{
-    check();if(physical.sendUnderstandingResult!==send||++session.frames>64||Buffer.byteLength(canonicalJson(p))>64500)invalid();
+   const frame=async(op:NormalUnderstandingResultSendOperation|NormalUnderstandingRangeResultSendOperation,p:unknown)=>{
+    check();if((range?physical.sendUnderstandingRangeResult:physical.sendUnderstandingResult)!==send||++session.frames>64||Buffer.byteLength(canonicalJson(p))>64500)invalid();
     const reply=await this.#bounded(session,()=>this.external(()=>Reflect.apply(send,physical,[op,p])));
-    this.#check(session);check();if(physical.sendUnderstandingResult!==send)invalid();
+    this.#check(session);check();if((range?physical.sendUnderstandingRangeResult:physical.sendUnderstandingResult)!==send)invalid();
     return reply;
    };
-   if(framed.kind==='DIRECT')await frame('NORMAL_EXECUTION_UNDERSTANDING_RESULT_SEND',framed.payload);
+   if(framed.kind==='DIRECT')await frame(range?'NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_SEND':'NORMAL_EXECUTION_UNDERSTANDING_RESULT_SEND',framed.payload);
    else{
     const start=await frame('NORMAL_EXECUTION_BEGIN',framed.begin);
     if(!recordV1(start,['handle'])||!uuidV1(start.handle))invalid();
@@ -335,7 +349,7 @@ export class OwnedSpoolRuntime {
   if(this.#unknown||this.#session||this.#opening||this.#owner.aborted||signal.aborted||this.#host.open!==this.#open)invalid('NORMAL_OWNED_BUSY');
   this.#opening=true;
   let host:NormalOwnedHostSession|undefined,s:Session|undefined,success=false,openingStarted=false;
-  let closePhysical:NormalOwnedHostSession['close']|undefined,prepared:NormalPreparedUnderstandingResult|undefined;
+  let closePhysical:NormalOwnedHostSession['close']|undefined,prepared:NormalPreparedUnderstandingResult|NormalPreparedUnderstandingRangeResult|undefined;
   try{
    const slot=writer==='NORMAL_EXECUTION'?this.external(this.#slot):null;
    if(writer==='NORMAL_EXECUTION'&&!slot)invalid('NORMAL_SPOOL_UNSUPPORTED');
@@ -344,8 +358,8 @@ export class OwnedSpoolRuntime {
    openingStarted=true;
    host=phase?.understanding||phase?.range?await this.#openUnderstanding(signal,wall,mono,phase.guard,slot!):await this.external(()=>Reflect.apply(this.#open,this.#host,[signal]));
    closePhysical=host.close;
-   const purposeSend=phase?.understanding?host.sendUnderstandingResult:undefined;
-   const prepare=typeof purposeSend==='function'?host.prepareUnderstandingResult:undefined;
+   const purposeSend=phase?.prepareRange?host.sendUnderstandingRangeResult:phase?.understanding?host.sendUnderstandingResult:undefined;
+   const prepare=typeof purposeSend==='function'?(phase?.prepareRange?host.prepareUnderstandingRangeResult:host.prepareUnderstandingResult):undefined;
    const current=host.current,invalidated=host.invalidated;if(typeof current!=='function'||isProxy(current)||!(invalidated instanceof AbortSignal))invalid();
    s={host,current,invalidated,send:host.send,scope:byRef(slot),writer,slot,signal,wall,mono,frames:0,sending:false,borrowed:false,dead:false,profile:'',allocation:'',path:'',stamp:''};
    this.#session=s;const auth=this.#auth(s);
@@ -395,6 +409,14 @@ export class OwnedSpoolRuntime {
      s.mono=Math.min(s.mono,performance.now()+expiry-this.#clock());s.wall=expiry;
     }
    }else if(!recordV1(closed,['state'])||closed.state!=='CLOSED_CONFIRMED')invalid();
+   if(phase?.prepareRange&&prepare!==undefined){
+    if(!phase.range||!slot||typeof prepare!=='function'||isProxy(prepare)||isProxy(purposeSend)||host.prepareUnderstandingRangeResult!==prepare||host.sendUnderstandingRangeResult!==purposeSend||host.close!==closePhysical||s.sending||++s.frames>64)invalid();
+    phase.guard();const {requestRef,acquisitionRef,bodyHash}=phase.range,binding={requestRef,acquisitionRef,bodyHash};
+    const answer=await this.#bounded(s,()=>this.external(()=>Reflect.apply(prepare,host!,[{attemptId:this.#attempt,slotId:slot.slotId,...cloneV1(binding)}])));
+    this.#check(s);phase.guard();if(host.prepareUnderstandingRangeResult!==prepare||host.sendUnderstandingRangeResult!==purposeSend||host.close!==closePhysical)invalid();
+    prepared=readPreparedUnderstandingRangeResult(answer,binding,slot,this.#clock(),s.wall);
+    const expiry=Date.parse(prepared.expiresAt);s.mono=Math.min(s.mono,performance.now()+expiry-this.#clock());s.wall=expiry;
+   }
    success=true;if(denied)throw capacity;return result!;
   }finally{
    if(host){
@@ -412,7 +434,7 @@ export class OwnedSpoolRuntime {
      if(success&&s){
       this.#check(s,false);if(phase?.range)phase.guard();
       if(prepared&&phase){
-       const {wall,mono,scope,slot}=s,proof=prepared,binding=phase.understanding;
+       const {wall,mono,scope,slot}=s,proof=prepared,binding=phase.prepareRange&&phase.range?{requestRef:phase.range.requestRef,acquisitionRef:phase.range.acquisitionRef,bodyHash:phase.range.bodyHash}:phase.understanding;
        if(!slot||!binding)invalid();
        const check=()=>{
         phase.guard();
@@ -599,7 +621,7 @@ export class OwnedSpoolRuntime {
    catch(error){unknown=true;throw error;}finally{reading=false;completed.resolve();}
   }};
  }
- outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;readUnderstandingRange(acquired:NormalUnderstandingRangeAcquisition,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,readSignal:AbortSignal,current:Guard):Promise<NormalUnderstandingRangeReadResult>;checkUnderstandingRangeAcquisition(context?:NormalUnderstandingRangeAcquisition['context']):void;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>;readUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,post:NormalProtectedPostClient,readSignal:AbortSignal,current:Guard):Promise<DiscoveryReadResult>}{
+ outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;readUnderstandingRange(acquired:NormalUnderstandingRangeAcquisition,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,readSignal:AbortSignal,current:Guard):Promise<NormalUnderstandingRangeReadResult>;transmitUnderstandingRange(acquired:NormalUnderstandingRangeAcquisition,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,readSignal:AbortSignal,current:Guard):Promise<Awaited<ReturnType<typeof transmitNormalUnderstandingRangeResult>>>;checkUnderstandingRangeAcquisition(context?:NormalUnderstandingRangeAcquisition['context']):void;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>;readUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,post:NormalProtectedPostClient,readSignal:AbortSignal,current:Guard):Promise<DiscoveryReadResult>}{
   const saved=this.#workers.get(worker),slot=this.external(this.#slot);
   if(this.#binding||!saved||saved.journal!==journal||!slot||!refV1(slot.receiptRef)||this.#owner.aborted||signal.aborted||
    isProxy(sdk)||!recordV1(sdk,['expiresAt','check','create','close','classify'])||
@@ -682,7 +704,7 @@ export class OwnedSpoolRuntime {
    }
    verify();this.external(origin.check);
   };
-  return {source,port,checkUnderstandingRangeAcquisition:checkRange,readUnderstandingRange:async(acquired,client,owned,readSignal,current)=>{
+  const readRange=async(acquired:NormalUnderstandingRangeAcquisition,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,readSignal:AbortSignal,current:Guard,prepareRange:boolean)=>{
    checkRange();if(!origin||byRef(owned.metadata)!==slotKey)invalid();
    const original=takeNormalUnderstandingRangeAcquisition(acquired,client,owned),v=original.value;
    const scopeSignal=AbortSignal.any([readSignal,origin.signal]);
@@ -692,19 +714,23 @@ export class OwnedSpoolRuntime {
    const body=Buffer.from(canonicalJson(projection));let transferred=false;
    try{
     if(body.length>2*1024*1024)invalid();const bodyHash=contentHash(body);
-    const phase:PhaseControls={readOnly:true,resultDeadline:Date.parse(v.expiresAt),range:{requestRef:v.rangeRequestRef,acquisitionRef:v.acquisitionRef,selection:v.selection,bodyHash},guard};
+    const phase:PhaseControls={readOnly:true,resultDeadline:Date.parse(v.expiresAt),...(prepareRange?{prepareRange:true as const}:{}),range:{requestRef:v.rangeRequestRef,acquisitionRef:v.acquisitionRef,selection:v.selection,bodyHash},guard};
     await this.#root('NORMAL_EXECUTION',scopeSignal,async()=>{guard();},phase);guard();
     const result=Object.freeze({kind:'RANGE_READ_VERIFIED',requestRef:Object.freeze(cloneV1(v.rangeRequestRef)),acquisitionRef:Object.freeze(cloneV1(v.acquisitionRef)),bodyHash,executionAuthorized:false,dispatchPerformed:false}) as NormalUnderstandingRangeReadResult;
     const delay=Math.max(1,Math.min(Date.parse(v.expiresAt),this.external(origin.check))-this.#clock());guard();
     let timer:ReturnType<typeof setTimeout>|undefined,disposed=false;
     const dispose=()=>{if(disposed)return;disposed=true;if(timer!==undefined)clearTimeout(timer);scopeSignal.removeEventListener('abort',dispose);rangeReadResults.delete(result);body.fill(0);for(const part of projection.parts)part.text='';projection.parts.length=0;};
     try{
-     rangeReadResults.set(result,{client,owned,projection,body,check:()=>{if(disposed)invalid();guard();},dispose});
+     rangeReadResults.set(result,{client,owned,projection,body,closed:phase.closed,check:()=>{if(disposed)invalid();guard();},dispose});
      scopeSignal.addEventListener('abort',dispose,{once:true});timer=setTimeout(dispose,delay);timer.unref();
      guard();if(disposed)invalid();transferred=true;return result;
     }catch(error){dispose();throw error;}
    }finally{if(!transferred){body.fill(0);for(const part of projection.parts)part.text='';projection.parts.length=0;}}
-  },readUnderstandingDiscovery:async(ticket,client,owned,post,readSignal,current)=>{
+  };
+  return {source,port,checkUnderstandingRangeAcquisition:checkRange,
+   readUnderstandingRange:(a,c,o,s,g)=>readRange(a,c,o,s,g,false),
+   transmitUnderstandingRange:async(a,c,o,s,g)=>{const result=await readRange(a,c,o,s,g,true);return transmitNormalUnderstandingRangeResult(result,c,o,s);},
+   readUnderstandingDiscovery:async(ticket,client,owned,post,readSignal,current)=>{
    verify();if(!origin||!binding||this.#unknown||byRef(owned.metadata)!==slotKey)invalid();
    const original=takeNormalUnderstandingDiscovery(ticket,client,owned,origin.scope,origin.start);
    const scopeSignal=AbortSignal.any([readSignal,origin.signal]);

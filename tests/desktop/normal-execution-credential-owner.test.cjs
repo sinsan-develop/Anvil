@@ -33,7 +33,7 @@ function model(f,mode='NORMAL',profile=null){
   const v=JSON.parse(Buffer.from(raw).toString());if(!v.operation.startsWith('NORMAL_EXECUTION_')&&!(profile&&v.operation.startsWith('NORMAL_SPOOL_')))return write(raw,encoding,done);
   assert.ok(Buffer.byteLength(raw)<=65536);assert.equal(v.sequence,calls.filter(x=>x.child===child).length+4);calls.push({...v,child});
   queueMicrotask(()=>{let data;onFrame(v);
-   if(profile&&v.operation.startsWith('NORMAL_SPOOL_'))data=profile.handle(v,child,metadata);
+   if(profile&&(v.operation.startsWith('NORMAL_SPOOL_')||v.operation.startsWith('NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_')||['NORMAL_EXECUTION_BEGIN','NORMAL_EXECUTION_WRITE','NORMAL_EXECUTION_EXECUTE'].includes(v.operation)))data=profile.handle(v,child,metadata);
    else if(v.operation==='NORMAL_EXECUTION_BOOTSTRAP'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.scope,scope);metadata={slotId:id(3),receiptRef:ref(4),origin:row.origin,scope,expiresAt,caHash:contentHash(config.ca)};data=metadata;}
    else if(v.operation==='NORMAL_EXECUTION_RENEW'){assert.equal(v.payload.attemptId,row.attemptId);assert.deepEqual(v.payload.previous,metadata);assert.ok(Date.parse(metadata.expiresAt)<=f.dependencies.now());expiresAt=new Date(f.dependencies.now()+5000).toISOString();metadata={...metadata,slotId:id(11),receiptRef:ref(12),expiresAt};data=mode==='RENEW_UNKNOWN'?{...metadata,caHash:'b'.repeat(64)}:metadata;}
    else if(v.operation==='NORMAL_EXECUTION_CALL'){assert.equal(v.payload.attemptId,row.attemptId);assert.equal(v.payload.slotId,metadata.slotId);const r=v.payload.request;reply=Buffer.from(canonicalJson(['PREPARE','UNDERSTANDING_RANGE_PREPARE'].includes(v.payload.kind)?(prepareRespond?prepareRespond(r):{path:r.path,query:r.query,auth:r.path.endsWith('/understanding-response-read')?Buffer.from(canonicalJson({fixture:'original read proof'})).toString('base64url'):'A'.repeat(20),challengeRef:ref(5),requestId:id(6),expiresAt}):respond?respond(r,v.payload.body):mode==='PAIR'?typedReply(r):mode==='MAX'?{value:'x'.repeat(2812587-12)}:{commands:[]}));offset=0;data=chunk();}
@@ -179,8 +179,9 @@ test('이미 발송한 GET 도중 dispose는 늦은 응답을 성공으로 바�
  assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
 });
 
-for(const mode of ['READ_OK','READ_REPEAT','READ_FORGED','READ_BAD_HASH','READ_BAD_REF','READ_METADATA','READ_UNKNOWN','READ_NONORDINARY','READ_CLOSE_UNKNOWN','READ_DEADLINE','READ_PRE_BODY','READ_REVOKED','OK','REPLAY_TIME','EXACT_BYTES','NONE','DENIED','EXPIRED','GET_DENIED','NO_SDK','NO_ORIGIN','START','BUNDLE','BUNDLE_HASH','SESSION','SESSION_HASH','SOURCE_CHANGED_BEFORE','SOURCE_CHANGED_CLOSE','SCOPE','REGISTRATION','ASSIGNMENT','PACKET','CREDENTIAL','RANGE_REF','SOURCE_REF','SEQUENCE','INIT_ALIAS','TAIL_ALIAS','BLOCKS','TOTAL_BYTES','EXTRA','DISCOVERY','CANCELLED','CLOSE_UNKNOWN','EXPIRED_CLOSE','REVOKED'])test('FN09 등록 실행기의 명시 고정 범위 획득·원 close 및 읽기0 '+mode,async()=>{
- const q=await outputProfile(),x=await pollingFixture(q.profile,true,true),{wire:unused,...input}=x.input;
+for(const mode of ['READ_SEND_OK','READ_SEND_CHUNK','READ_SEND_MISSING','READ_SEND_CLOSE_UNKNOWN','READ_SEND_EXPIRE_CLOSE','READ_SEND_BAD_PROOF','READ_OK','READ_REPEAT','READ_FORGED','READ_BAD_HASH','READ_BAD_REF','READ_METADATA','READ_UNKNOWN','READ_NONORDINARY','READ_CLOSE_UNKNOWN','READ_DEADLINE','READ_PRE_BODY','READ_REVOKED','OK','REPLAY_TIME','EXACT_BYTES','NONE','DENIED','EXPIRED','GET_DENIED','NO_SDK','NO_ORIGIN','START','BUNDLE','BUNDLE_HASH','SESSION','SESSION_HASH','SOURCE_CHANGED_BEFORE','SOURCE_CHANGED_CLOSE','SCOPE','REGISTRATION','ASSIGNMENT','PACKET','CREDENTIAL','RANGE_REF','SOURCE_REF','SEQUENCE','INIT_ALIAS','TAIL_ALIAS','BLOCKS','TOTAL_BYTES','EXTRA','DISCOVERY','CANCELLED','CLOSE_UNKNOWN','EXPIRED_CLOSE','REVOKED'])test('FN09 등록 실행기의 명시 고정 범위 획득·원 close 및 읽기0 '+mode,async()=>{
+ const sendMode=mode.startsWith('READ_SEND_'),rangeText=mode==='READ_SEND_CHUNK'?'가'.repeat(25000):'선택된 이해 근거';
+ const q=await outputProfile(),x=await pollingFixture(q.profile,true,true,sendMode&&mode!=='READ_SEND_MISSING'?{mode:'NORMAL_PROTECTED',purpose:'FN09_FIXED_RANGE_SELECTION'}:undefined),{wire:unused,...input}=x.input;
  q.bind(x);
  input.timeoutMs=2000;
  // 기존 DISCOVERY와 같은 원 worker/FIRST/init 경로다. SDK/파일/프로세스는 모두 기존 RAM fixture다.
@@ -188,7 +189,7 @@ for(const mode of ['READ_OK','READ_REPEAT','READ_FORGED','READ_BAD_HASH','READ_B
  const sdk={expiresAt:x.clock()+4000,check:scope=>({scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000}),classify:()=> 'ORDINARY',close:async()=>{},
   async create(request,prompt){await prompt[Symbol.asyncIterator]().next();const sid=request.plannedSid;return{[Symbol.asyncIterator](){return{async next(){
    const i=sdkMessages++;if(i===0)return{done:false,value:{type:'system',subtype:'init',uuid:'init',session_id:sid,apiKeySource:'none',claude_code_version:'2.1.224',cwd:'fixture',tools:[],mcp_servers:[],model:'fixture',permissionMode:'default',slash_commands:[],output_style:'fixture',skills:[],plugins:[]}};
-   if(i===1)return{done:false,value:{type:'assistant',uuid:'answer',session_id:sid,parent_tool_use_id:null,message:{content:[{type:'text',text:'선택된 이해 근거'}]}}};
+   if(i===1)return{done:false,value:{type:'assistant',uuid:'answer',session_id:sid,parent_tool_use_id:null,message:{content:[{type:'text',text:rangeText}]}}};
    return{done:true,value:undefined};
   }}}};}};
  const worker=x.source.createWorkerStartPolling(x.pair,input,mode==='NO_SDK'?undefined:sdk),signal=new AbortController(),scope=x.m.config.scope;
@@ -210,7 +211,7 @@ for(const mode of ['READ_OK','READ_REPEAT','READ_FORGED','READ_BAD_HASH','READ_B
   rangeRows=files.map(([,f])=>JSON.parse(f.bytes));assert.equal(rangeRows.length,3);
   const row=rangeRows[2];
   if(mode==='READ_NONORDINARY'){row.snapshot.classification='QUARANTINED';row.ref.contentHash=hash(row.snapshot);files[2][1].bytes=Buffer.from(canonicalJson(row)+'\n');}
-  selection.initConfirmationRef=rangeRows[1].ref;selection.tailRef=row.ref;selection.ranges=[{outputRef:row.ref,sequence:3,payloadDigest:row.snapshot.payloadDigest,textBlocks:1,textBytes:Buffer.byteLength('선택된 이해 근거')}];
+  selection.initConfirmationRef=rangeRows[1].ref;selection.tailRef=row.ref;selection.ranges=[{outputRef:row.ref,sequence:3,payloadDigest:row.snapshot.payloadDigest,textBlocks:1,textBytes:Buffer.byteLength(rangeText)}];
  }
 
  if(mode==='SCOPE')context.executionGeneration++;if(mode==='REGISTRATION')context.registrationRef=ref(790);if(mode==='ASSIGNMENT')context.assignmentRef=ref(790);
@@ -254,23 +255,42 @@ for(const mode of ['READ_OK','READ_REPEAT','READ_FORGED','READ_BAD_HASH','READ_B
   await assert.rejects(x.pair.get.send(result,signal.signal));await assert.rejects(x.pair.post.send(result,signal.signal));
   if(mode.startsWith('READ_')){
    assert.equal(typeof worker.readUnderstandingRange,'function');
-   const projection={schemaVersion:1,kind:'FIXED_RANGE_SELECTION',attribution:'SESSION_ONLY',projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,requestRef:result.rangeRequestRef,acquisitionRef:result.acquisitionRef,sourceRequestRef:selection.requestRef,sourceResultRef:selection.resultRef,contextBundleRef:context.contextBundleRef,initConfirmationRef:selection.initConfirmationRef,tailRef:selection.tailRef,firstSequence:3,lastSequence:3,beforeRef:rangeRows[1].ref,afterRef:null,parts:[{outputRef:rangeRows[2].ref,sequence:3,payloadDigest:rangeRows[2].snapshot.payloadDigest,blockIndex:0,kind:'ASSISTANT_TEXT',text:'선택된 이해 근거',textHash:contentHash('선택된 이해 근거')}],wholeConversationComplete:false,executionAuthorized:false};
-   const expectedHash=hash(projection),handle=q.profile.handle;let nativeReads=0;
+   const projection={schemaVersion:1,kind:'FIXED_RANGE_SELECTION',attribution:'SESSION_ONLY',projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,requestRef:result.rangeRequestRef,acquisitionRef:result.acquisitionRef,sourceRequestRef:selection.requestRef,sourceResultRef:selection.resultRef,contextBundleRef:context.contextBundleRef,initConfirmationRef:selection.initConfirmationRef,tailRef:selection.tailRef,firstSequence:3,lastSequence:3,beforeRef:rangeRows[1].ref,afterRef:null,parts:[{outputRef:rangeRows[2].ref,sequence:3,payloadDigest:rangeRows[2].snapshot.payloadDigest,blockIndex:0,kind:'ASSISTANT_TEXT',text:rangeText,textHash:contentHash(rangeText)}],wholeConversationComplete:false,executionAuthorized:false};
+   const expectedBody=canonicalJson(projection),expectedHash=hash(projection),handle=q.profile.handle,steps=[];let nativeReads=0,prepareCount=0,sendCount=0,parentChild,physicalClosed=false,upload=[],uploadOffset=0;
+   const sendProof={...frame,proof:{...frame.proof,method:'POST',path:path.replace(/\/range$/,'/'+result.rangeRequestRef.id+'/result'),bodyHash:expectedHash}};
+   const auth=Buffer.from(canonicalJson(sendProof)).toString('base64url');
+   const consume=bytes=>{assert.equal(physicalClosed,true);assert.equal(bytes.toString(),expectedBody);assert.equal(contentHash(bytes),expectedHash);steps.push('send');sendCount++;return {state:'TEST_ONLY_TRANSPORT_UNCONFIRMED'};};
    q.profile.handle=(v,...args)=>{
+    if(v.operation==='NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_PREPARE'){
+     assert.equal(args[0],parentChild);assert.equal(physicalClosed,false);steps.push('prepare');prepareCount++;
+     assert.deepEqual(v.payload,{attemptId:x.f.stored().attemptId,slotId:id(3),requestRef:result.rangeRequestRef,acquisitionRef:result.acquisitionRef,bodyHash:expectedHash});
+     const bad=mode==='READ_SEND_BAD_PROOF'?Buffer.from(canonicalJson({...sendProof,proof:{...sendProof.proof,bodyHash:'f'.repeat(64)}})).toString('base64url'):auth;
+     return {state:'NATIVE_RANGE_RESULT_PREPARED',requestRef:result.rangeRequestRef,acquisitionRef:result.acquisitionRef,preparedHash:'b'.repeat(64),auth:bad,expiresAt:end};
+    }
+    if(v.operation==='NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_SEND'){assert.notEqual(args[0],parentChild);return consume(Buffer.from(v.payload.body));}
+    if(v.operation==='NORMAL_EXECUTION_BEGIN'){assert.equal(v.payload.kind,'UNDERSTANDING_RANGE_RESULT_SEND');assert.equal(v.payload.bodyHash,expectedHash);assert.notEqual(args[0],parentChild);return {handle:id(810)};}
+    if(v.operation==='NORMAL_EXECUTION_WRITE'){assert.equal(v.payload.handle,id(810));assert.equal(v.payload.offset,uploadOffset);const b=Buffer.from(v.payload.bytes,'base64url');upload.push(b);uploadOffset+=b.length;return {handle:id(810),offset:uploadOffset};}
+    if(v.operation==='NORMAL_EXECUTION_EXECUTE'){assert.equal(v.payload.handle,id(810));return consume(Buffer.concat(upload));}
+
     if(v.operation==='NORMAL_SPOOL_CLOSE'&&v.payload.understandingRange){
-     nativeReads++;const received=v.payload.understandingRange;
+     nativeReads++;parentChild=args[0];steps.push('native-close');parentChild.once('close',()=>{physicalClosed=true;steps.push('physical-close');if(mode==='READ_SEND_EXPIRE_CLOSE')x.advance(5000);});const received=v.payload.understandingRange;
      assert.deepEqual(received,{requestRef:result.rangeRequestRef,acquisitionRef:result.acquisitionRef,selection,bodyHash:expectedHash});
      if(mode==='READ_UNKNOWN')return {state:'UNKNOWN'};
      const child=args[0];
-     if(mode==='READ_CLOSE_UNKNOWN')child.stdin.end=(_a,_b,done)=>{queueMicrotask(()=>{child.stdout.emit('end');child.emit('close',1);done?.();});};
+     if(mode==='READ_CLOSE_UNKNOWN'||mode==='READ_SEND_CLOSE_UNKNOWN')child.stdin.end=(_a,_b,done)=>{queueMicrotask(()=>{child.stdout.emit('end');child.emit('close',1);done?.();});};
      if(mode==='READ_DEADLINE')child.once('close',()=>x.advance(5000));
      if(mode==='READ_REVOKED')x.f.owner.invalidate();
      return {state:'CLOSED_CONFIRMED',understandingRange:{state:mode==='READ_METADATA'?'NATIVE_METADATA_CLOSED':'NATIVE_RANGE_CLOSED',requestRef:result.rangeRequestRef,acquisitionRef:mode==='READ_BAD_REF'?ref(899):result.acquisitionRef,bodyHash:mode==='READ_BAD_HASH'?'f'.repeat(64):expectedHash}};
     }return handle(v,...args);
    };
-   const beforeRead=x.m.calls.length,read=()=>worker.readUnderstandingRange(mode==='READ_FORGED'?structuredClone(result):result,signal.signal);
-   if(['READ_OK','READ_REPEAT'].includes(mode)){const selected=await read();assert.deepEqual(selected,{kind:'RANGE_READ_VERIFIED',requestRef:result.rangeRequestRef,acquisitionRef:result.acquisitionRef,bodyHash:expectedHash,executionAuthorized:false,dispatchPerformed:false});assert.equal('projection'in selected,false);assert.equal(JSON.stringify(selected).includes('선택된 이해 근거'),false);assert.equal(nativeReads,1);assert.equal(/session_id|plannedSid|cwd|subjectBindingRef|basisRefs/.test(JSON.stringify(selected)),false);}
-   else await assert.rejects(read);
+   const beforeRead=x.m.calls.length,read=()=>sendMode?worker.transmitUnderstandingRange(result,signal.signal):worker.readUnderstandingRange(mode==='READ_FORGED'?structuredClone(result):result,signal.signal);
+   if(sendMode&&['READ_SEND_OK','READ_SEND_CHUNK','READ_SEND_MISSING'].includes(mode)){
+    const selected=await read();assert.deepEqual(selected,{state:mode==='READ_SEND_MISSING'?'SIGNING_UNAVAILABLE':'TRANSMISSION_UNCONFIRMED',requestRef:result.rangeRequestRef,acquisitionRef:result.acquisitionRef,bodyHash:expectedHash,executionAuthorized:false,dispatchPerformed:false});
+    assert.equal(JSON.stringify(selected).includes(rangeText),false);assert.equal(nativeReads,1);
+    assert.equal(prepareCount,mode==='READ_SEND_MISSING'?0:1);assert.equal(sendCount,mode==='READ_SEND_MISSING'?0:1);
+    if(sendCount)assert.deepEqual(steps.slice(0,4),['native-close','prepare','physical-close','send']);
+   }else if(['READ_OK','READ_REPEAT'].includes(mode)){const selected=await read();assert.deepEqual(selected,{kind:'RANGE_READ_VERIFIED',requestRef:result.rangeRequestRef,acquisitionRef:result.acquisitionRef,bodyHash:expectedHash,executionAuthorized:false,dispatchPerformed:false});assert.equal('projection'in selected,false);assert.equal(JSON.stringify(selected).includes('선택된 이해 근거'),false);assert.equal(nativeReads,1);assert.equal(/session_id|plannedSid|cwd|subjectBindingRef|basisRefs/.test(JSON.stringify(selected)),false);}
+   else {await assert.rejects(read);if(sendMode)assert.equal(sendCount,0);}
    if(mode==='READ_FORGED')assert.equal(x.m.calls.length,beforeRead);
    if(mode==='READ_PRE_BODY')assert.equal(x.m.calls.slice(beforeRead).some(v=>v.operation==='NORMAL_SPOOL_RESUME'||v.operation==='NORMAL_SPOOL_CLOSE'),false);
    const count=x.m.calls.length;await assert.rejects(read);assert.equal(x.m.calls.length,count);
@@ -281,13 +301,13 @@ for(const mode of ['READ_OK','READ_REPEAT','READ_FORGED','READ_BAD_HASH','READ_B
   await assert.rejects(worker.acquireUnderstandingRange(signal.signal));assert.equal(x.m.calls.length,n);
  }
  await Promise.all(concurrent);
- const calls=x.m.calls.slice(before);assert.ok(calls.every(v=>v.operation==='NORMAL_EXECUTION_READ'||mode.startsWith('READ_')&&['NORMAL_SPOOL_PROFILE_STATE','NORMAL_SPOOL_RESUME','NORMAL_SPOOL_CLOSE'].includes(v.operation)||v.operation==='NORMAL_EXECUTION_CALL'&&['UNDERSTANDING_RANGE_PREPARE','UNDERSTANDING_RANGE_REQUEST'].includes(v.payload.kind)));
+ const calls=x.m.calls.slice(before);assert.ok(calls.every(v=>v.operation==='NORMAL_EXECUTION_READ'||mode.startsWith('READ_')&&['NORMAL_SPOOL_PROFILE_STATE','NORMAL_SPOOL_RESUME','NORMAL_SPOOL_CLOSE'].includes(v.operation)||sendMode&&['NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_PREPARE','NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_SEND','NORMAL_EXECUTION_BEGIN','NORMAL_EXECUTION_WRITE','NORMAL_EXECUTION_EXECUTE'].includes(v.operation)||v.operation==='NORMAL_EXECUTION_CALL'&&['UNDERSTANDING_RANGE_PREPARE','UNDERSTANDING_RANGE_REQUEST'].includes(v.payload.kind)));
  if(['NO_SDK','NO_ORIGIN','SOURCE_CHANGED_BEFORE'].includes(mode))assert.equal(calls.length,0);
  assert.equal(calls.filter(v=>(!mode.startsWith('READ_')&&v.operation.startsWith('NORMAL_SPOOL_'))||['NORMAL_SPOOL_RESERVE','NORMAL_SPOOL_SETTLE'].includes(v.operation)||v.payload.request?.method==='POST'||v.operation.includes('UNDERSTANDING_RESULT')).length,0);
  assert.equal(canonicalJson([...q.local.files].map(([p,f])=>[p,f.bytes.toString('base64')])),files);
 });
 
-async function pollingFixture(profile=null,workerOptions=false,mixed=false){
+async function pollingFixture(profile=null,workerOptions=false,mixed=false,resultConfiguration=undefined){
  const f=await fixtures.liveNativeOwner(),base=f.dependencies.now();let offset=0;
  f.dependencies.now=()=>base+offset;f.ports.now=()=>base+offset;
  const m=model(f,'PAIR',profile),scope=m.config.scope,clock=f.dependencies.now,signal=new AbortController().signal;
@@ -326,7 +346,7 @@ async function pollingFixture(profile=null,workerOptions=false,mixed=false){
  const current={transport:'NORMAL_PROTECTED',async current(e,attempt){return {transport:'NORMAL_PROTECTED',key:{...local,commandId:e.commandId},envelopeHash:e.envelopeHash,grantRef:scope.grantRef,localAttemptRef:attempt,sourceObservationRefs:[ref(47)],osOwnershipRef:ref(62),checkedAt:new Date(clock()).toISOString(),expiresAt:new Date(clock()+5000).toISOString()};}};
  const wire={transport:'NORMAL_PROTECTED',async send(value){seen.wires++;assert.equal(Buffer.from(value.options.bytes).toString(),bodies[1]);return {transport:'NORMAL_PROTECTED',responseRef:ref(63),processRef:null};}};
  const input={expected,intakeStore:store.intake(),journalStore:store,current,wire,timeoutMs:1000,deadline:clock()+30000,maxPages:1,idleMs:1};
- const source=profile?f.owner.createProfileExecutionClients(m.config):f.owner.createNormalExecutionClients(m.config),pair=await source.bootstrap(signal);
+ const source=profile?f.owner.createProfileExecutionClients(m.config,resultConfiguration):f.owner.createNormalExecutionClients(m.config),pair=await source.bootstrap(signal);
  if(profile){delete input.intakeStore;delete input.journalStore;}
  return {f,m,local,clock,signal,memory,input,source,pair,seen,advance(ms){offset+=ms;}};
 }

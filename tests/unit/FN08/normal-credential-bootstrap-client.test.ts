@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {canonicalJson} from '../../../contracts/canonical.ts';
-import {NormalCredentialBootstrapClient} from '../../../apps/connector/runtime/normal-credential-bootstrap-client.ts';
+import {NormalCredentialBootstrapClient,readPreparedUnderstandingRangeResult,frameUnderstandingRangeResult,frameUnderstandingResult} from '../../../apps/connector/runtime/normal-credential-bootstrap-client.ts';
 import {prepareNormalUnderstandingResult} from '../../../apps/connector/runtime/normal-owned-spool-profile.ts';
 import {NormalProtectedPostClient} from '../../../apps/connector/runtime/normal-protected-post-client.ts';
 const id=(n:number)=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
@@ -269,4 +269,20 @@ test('FN09 raw 결과 POST와 위조 result seal은 host 효과 전에 거절한
  const before=f.calls.length;
  await assert.rejects(()=>prepareNormalUnderstandingResult({} as never,{} as never,post,port,new AbortController().signal),/NORMAL_POST_RESULT_SEAL_INVALID/);
  assert.equal(f.calls.length,before);
+});
+
+test('고정 범위 framer는 원 canonical bytes와 별도 준비 상태만 DIRECT/CHUNKED로 소비한다 · RAM',()=>{
+ const r={id:id(80),version:1,contentHash:'a'.repeat(64)},slot={slotId:id(81),receiptRef:r,origin:'https://example.invalid',scope,expiresAt,caHash:'a'.repeat(64)};
+ for(const text of ['선택된 원문','가'.repeat(25000)]){
+  const data={schemaVersion:1,kind:'FIXED_RANGE_SELECTION',attribution:'SESSION_ONLY',projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,requestRef:r,acquisitionRef:{...r,id:id(82)},sourceRequestRef:{...r,id:id(83)},sourceResultRef:{...r,id:id(84)},contextBundleRef:r,initConfirmationRef:r,tailRef:r,firstSequence:3,lastSequence:3,beforeRef:null,afterRef:null,parts:[{outputRef:r,sequence:3,payloadDigest:'b'.repeat(64),blockIndex:0,kind:'ASSISTANT_TEXT',text,textHash:hash(text)}],wholeConversationComplete:false,executionAuthorized:false};
+  const bytes=Buffer.from(canonicalJson(data)),b={requestRef:data.requestRef,acquisitionRef:data.acquisitionRef,bodyHash:hash(bytes)},path='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/understanding-response-read/'+r.id+'/result';
+  const packet={schemaVersion:1,challengeRef:r,proof:{method:'POST',path,queryHash:hash('{}'),bodyHash:b.bodyHash,requestId:id(85),grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,serverNonce:Buffer.alloc(32).toString('base64url')},signature:Buffer.alloc(64).toString('base64url')};
+  const raw={state:'NATIVE_RANGE_RESULT_PREPARED',requestRef:b.requestRef,acquisitionRef:b.acquisitionRef,preparedHash:'c'.repeat(64),auth:Buffer.from(canonicalJson(packet)).toString('base64url'),expiresAt};
+  const prepared=readPreparedUnderstandingRangeResult(raw,b,slot,at,at+60000),framed=frameUnderstandingRangeResult(id(86),slot,prepared,b,bytes);
+  assert.equal(framed.kind,text.length<100?'DIRECT':'CHUNKED');
+  if(framed.kind==='DIRECT')assert.equal(framed.payload.body,bytes.toString());else{assert.equal(framed.begin.kind,'UNDERSTANDING_RANGE_RESULT_SEND');assert.equal(framed.begin.bodyHash,hash(bytes));assert.equal(framed.chunkSize,48000);}
+  assert.throws(()=>readPreparedUnderstandingRangeResult({...raw,state:'NATIVE_DISCOVERY_RESULT_PREPARED'},b,slot,at,at+60000));
+  assert.throws(()=>frameUnderstandingRangeResult(id(86),slot,prepared,{...b,bodyHash:'f'.repeat(64)},bytes));
+  assert.throws(()=>frameUnderstandingResult(id(86),slot,prepared as never,b,bytes));
+ }
 });

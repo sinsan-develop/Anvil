@@ -8,6 +8,8 @@ export type HostCloseDisposition = 'HOST_REQUEST_VALIDATED' | 'OPERATION_UNKNOWN
 export interface NormalUnderstandingResultBinding {requestRef:Ref;acquisitionRef:Ref;bodyHash:string}
 export interface NormalUnderstandingResultPrepare extends NormalUnderstandingResultBinding {attemptId:string;slotId:string}
 export interface NormalPreparedUnderstandingResult {state:'NATIVE_DISCOVERY_RESULT_PREPARED';requestRef:Ref;acquisitionRef:Ref;preparedHash:string;auth:string;expiresAt:string}
+export interface NormalPreparedUnderstandingRangeResult {state:'NATIVE_RANGE_RESULT_PREPARED';requestRef:Ref;acquisitionRef:Ref;preparedHash:string;auth:string;expiresAt:string}
+export type NormalUnderstandingRangeResultSendOperation='NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_SEND'|'NORMAL_EXECUTION_BEGIN'|'NORMAL_EXECUTION_WRITE'|'NORMAL_EXECUTION_EXECUTE';
 export type NormalUnderstandingResultSendOperation='NORMAL_EXECUTION_UNDERSTANDING_RESULT_SEND'|'NORMAL_EXECUTION_BEGIN'|'NORMAL_EXECUTION_WRITE'|'NORMAL_EXECUTION_EXECUTE';
 export interface NormalOwnedHostSession {
  readonly invalidated?:AbortSignal;
@@ -15,6 +17,8 @@ export interface NormalOwnedHostSession {
  inspectionBudget?():{frames:number;remainingMs:number};
  prepareUnderstandingResult?(binding:NormalUnderstandingResultPrepare):Promise<unknown>;
  sendUnderstandingResult?(operation:NormalUnderstandingResultSendOperation,payload:unknown):Promise<unknown>;
+ prepareUnderstandingRangeResult?(binding:NormalUnderstandingResultPrepare):Promise<unknown>;
+ sendUnderstandingRangeResult?(operation:NormalUnderstandingRangeResultSendOperation,payload:unknown):Promise<unknown>;
  send(operation:string,payload:unknown):Promise<unknown>;
  close(disposition:HostCloseDisposition):Promise<{state:string}>;
 }
@@ -53,6 +57,25 @@ export function readPreparedUnderstandingResult(raw:unknown,binding:NormalUnders
     !base64url(frame.proof.serverNonce,32))fail('NORMAL_OWNED_RESULT_INVALID');
  return cloneV1(raw) as unknown as NormalPreparedUnderstandingResult;
 }
+export function readPreparedUnderstandingRangeResult(raw:unknown,binding:NormalUnderstandingResultBinding,slot:NormalOwnedMetadata,now:number,deadline:number):NormalPreparedUnderstandingRangeResult{
+ if(!recordV1(raw,['state','requestRef','acquisitionRef','preparedHash','auth','expiresAt'])||
+    raw.state!=='NATIVE_RANGE_RESULT_PREPARED'||!refV1(raw.requestRef)||!refV1(raw.acquisitionRef)||
+    !same(raw.requestRef,binding.requestRef)||!same(raw.acquisitionRef,binding.acquisitionRef)||!hashV1(raw.preparedHash)||
+    !base64url(raw.auth)||!isoV1(raw.expiresAt)||Date.parse(raw.expiresAt)<=now||
+    Date.parse(raw.expiresAt)>Math.min(deadline,Date.parse(slot.expiresAt)))fail('NORMAL_OWNED_RESULT_INVALID');
+ const wire=new TextDecoder('utf-8',{fatal:true}).decode(Buffer.from(raw.auth,'base64url'));
+ const frame=parseWireJson(wire);
+ const scope=slot.scope;
+ const path='/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/understanding-response-read/'+binding.requestRef.id+'/result';
+ if(canonicalJson(frame)!==wire||!recordV1(frame,['schemaVersion','challengeRef','proof','signature'])||
+    frame.schemaVersion!==1||!refV1(frame.challengeRef)||frame.challengeRef.version!==1||!base64url(frame.signature,64)||
+    !recordV1(frame.proof,['requestId','method','path','queryHash','bodyHash','grantRef','credentialGeneration','serverNonce'])||
+    !uuidV1(frame.proof.requestId)||frame.proof.method!=='POST'||frame.proof.path!==path||
+    frame.proof.queryHash!==digest(canonicalJson({}))||frame.proof.bodyHash!==binding.bodyHash||
+    !same(frame.proof.grantRef,scope.grantRef)||frame.proof.credentialGeneration!==scope.credentialGeneration||
+    !base64url(frame.proof.serverNonce,32))fail('NORMAL_OWNED_RESULT_INVALID');
+ return cloneV1(raw) as unknown as NormalPreparedUnderstandingRangeResult;
+}
 /** Pure purpose framing. The protected host and the once-only handoff stay with the original spool owner. */
 export function frameUnderstandingResult(attemptId:string,slot:NormalOwnedMetadata,prepared:NormalPreparedUnderstandingResult,binding:NormalUnderstandingResultBinding,bytes:Buffer){
  if(bytes.length+Buffer.byteLength(prepared.auth)>2097152||digest(bytes)!==binding.bodyHash)fail('NORMAL_OWNED_RESULT_INVALID');
@@ -71,6 +94,18 @@ export function frameUnderstandingResult(attemptId:string,slot:NormalOwnedMetada
  if(Buffer.byteLength(canonicalJson(direct))<=64000)return {kind:'DIRECT' as const,payload:direct};
  const begin={...target,kind:'UNDERSTANDING_RESULT_SEND',bodyLength:bytes.length,bodyHash:binding.bodyHash};
  return {kind:'CHUNKED' as const,begin,chunkSize};
+}
+/** 원 RANGE CLOSE의 private 봉인에서만 호출한다. 일반 POST framer가 아니다. */
+export function frameUnderstandingRangeResult(attemptId:string,slot:NormalOwnedMetadata,prepared:NormalPreparedUnderstandingRangeResult,binding:NormalUnderstandingResultBinding,bytes:Buffer){
+ if(bytes.length+Buffer.byteLength(prepared.auth)>2097152||digest(bytes)!==binding.bodyHash)fail('NORMAL_OWNED_RESULT_INVALID');
+ const body=new TextDecoder('utf-8',{fatal:true}).decode(bytes),d=parseWireJson(body),s=slot.scope;
+ if(!recordV1(d,['schemaVersion','kind','attribution','projectId','executionId','executionGeneration','requestRef','acquisitionRef','sourceRequestRef','sourceResultRef','contextBundleRef','initConfirmationRef','tailRef','firstSequence','lastSequence','beforeRef','afterRef','parts','wholeConversationComplete','executionAuthorized'])||d.schemaVersion!==1||d.kind!=='FIXED_RANGE_SELECTION'||d.attribution!=='SESSION_ONLY'||d.projectId!==s.projectId||d.executionId!==s.executionId||d.executionGeneration!==s.executionGeneration||!same(d.requestRef,binding.requestRef)||!same(d.acquisitionRef,binding.acquisitionRef)||d.wholeConversationComplete!==false||d.executionAuthorized!==false||canonicalJson(d)!==body)fail('NORMAL_OWNED_RESULT_INVALID');
+ for(const r of [d.requestRef,d.acquisitionRef,d.sourceRequestRef,d.sourceResultRef,d.contextBundleRef,d.initConfirmationRef,d.tailRef])if(!refV1(r))fail('NORMAL_OWNED_RESULT_INVALID');
+ if(!Number.isSafeInteger(d.firstSequence)||!Number.isSafeInteger(d.lastSequence)||d.firstSequence<1||d.lastSequence<d.firstSequence||d.lastSequence>10000||![d.beforeRef,d.afterRef].every(r=>r===null||refV1(r))||!Array.isArray(d.parts)||d.parts.length<1||d.parts.length>200)fail('NORMAL_OWNED_RESULT_INVALID');
+ let total=0;for(const p of d.parts)if(!recordV1(p,['outputRef','sequence','payloadDigest','blockIndex','kind','text','textHash'])||!refV1(p.outputRef)||!Number.isSafeInteger(p.sequence)||p.sequence<d.firstSequence||p.sequence>d.lastSequence||!hashV1(p.payloadDigest)||!Number.isSafeInteger(p.blockIndex)||p.blockIndex<0||p.kind!=='ASSISTANT_TEXT'||typeof p.text!=='string'||digest(p.text)!==p.textHash||(total+=Buffer.byteLength(p.text))>2097152)fail('NORMAL_OWNED_RESULT_INVALID');
+ const {requestRef,acquisitionRef,preparedHash,auth}=prepared,target={attemptId,slotId:slot.slotId,requestRef,acquisitionRef,preparedHash,auth},direct={...target,body};
+ if(Buffer.byteLength(canonicalJson(direct))<=64000)return {kind:'DIRECT' as const,payload:direct};
+ return {kind:'CHUNKED' as const,begin:{...target,kind:'UNDERSTANDING_RANGE_RESULT_SEND',bodyLength:bytes.length,bodyHash:binding.bodyHash},chunkSize};
 }
 function origin(v:string){let u:URL;try{u=new URL(v);}catch{return fail();}if(u.protocol!=='https:'||u.origin!==v||u.username||u.password)return fail();return v;}
 type Config={attemptId:string;origin:string;ca:string;scope:NormalOwnedScope};

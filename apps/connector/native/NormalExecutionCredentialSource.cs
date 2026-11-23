@@ -20,7 +20,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  readonly NormalExecutionSpoolProfileSource spoolProfile;
  readonly DesktopTrustKeyRootSource owner;readonly Func<Dictionary<string,object>> registered;
  readonly Action current;readonly Func<int> remaining;readonly Func<DateTime> clock;
- bool understandingCloseAccepted;
+ bool understandingCloseAccepted,understandingRangeCloseAccepted;
  Dictionary<string,object> upload;MemoryStream incoming;string inputHandle;byte[] output;int outputOffset;string outputHandle,outputHash;DateTime outputExpiry;bool unknown,bootstrapInput,renewalInput;string activeCA;
  static Dictionary<string,object> Map(object o){return DesktopTrustKeyHostSource.Map(o);}
  static string S(Dictionary<string,object> d,string k){return DesktopTrustKeyHostSource.Text(d,k);}
@@ -61,12 +61,14 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   }
   Dictionary<string,object> answer;try{answer=spoolProfile.Control(operation,value,record,slot,understandingCurrent,understandingFinal);}
   catch(NormalExecutionSpoolProfileSource.SpoolCapacityException){if(operation!="NORMAL_SPOOL_RESERVE")throw;answer=new Dictionary<string,object>{{"state","CAPACITY_EXCEEDED"}};}
-  Check();if(H(Record(attempt))!=H(record)||(slot!=null&&At(slot,"expiresAt")<=clock()))throw Invalid();if(understandingCurrent!=null){bool range=value.ContainsKey("understandingRange");if(S(answer,"state")!="CLOSED_CONFIRMED"||S(Map(answer[range?"understandingRange":"understanding"]),"state")!=(range?"NATIVE_RANGE_CLOSED":"NATIVE_METADATA_CLOSED"))throw Invalid();if(!range)understandingCloseAccepted=true;}return answer;
+  Check();if(H(Record(attempt))!=H(record)||(slot!=null&&At(slot,"expiresAt")<=clock()))throw Invalid();if(understandingCurrent!=null){bool range=value.ContainsKey("understandingRange");if(S(answer,"state")!="CLOSED_CONFIRMED"||S(Map(answer[range?"understandingRange":"understanding"]),"state")!=(range?"NATIVE_RANGE_CLOSED":"NATIVE_METADATA_CLOSED"))throw Invalid();if(!range)understandingCloseAccepted=true;else understandingRangeCloseAccepted=true;}return answer;
  }
  internal object Dispatch(string operation,Dictionary<string,object> value){
   Check();try{
    if(operation=="NORMAL_EXECUTION_UNDERSTANDING_RESULT_PREPARE"){if(incoming!=null||output!=null)throw Invalid();return PrepareUnderstandingResult(value);}
    if(operation=="NORMAL_EXECUTION_UNDERSTANDING_RESULT_SEND"){if(incoming!=null||output!=null)throw Invalid();return SendUnderstandingResult(value);}
+   if(operation=="NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_PREPARE"){if(incoming!=null||output!=null)throw Invalid();return PrepareUnderstandingRangeResult(value);}
+   if(operation=="NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_SEND"){if(incoming!=null||output!=null)throw Invalid();return SendUnderstandingRangeResult(value);}
    if(operation=="NORMAL_EXECUTION_BOOTSTRAP")return Bootstrap(value);
    if(operation=="NORMAL_EXECUTION_RENEW")return Bootstrap(value,true);
    if(operation=="NORMAL_EXECUTION_RENEW_BEGIN"){renewalInput=true;operation="NORMAL_EXECUTION_BOOTSTRAP_BEGIN";}
@@ -81,8 +83,8 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
    }
    if(operation=="NORMAL_EXECUTION_EXECUTE"){
     Exact(value,"handle");if(incoming==null||S(value,"handle")!=inputHandle||incoming.Length!=N(upload["bodyLength"]))throw Invalid();
-    byte[] body=incoming.ToArray();var header=upload;bool bootstrap=bootstrapInput;bool renewal=renewalInput;ClearInput();renewalInput=false;try{if(H(body)!=S(header,"bodyHash"))throw Invalid();if(!bootstrap&&S(header,"kind")=="UNDERSTANDING_RESULT_SEND"){
-     var send=new Dictionary<string,object>();foreach(string k in new[]{"attemptId","slotId","requestRef","acquisitionRef","preparedHash","auth"})send.Add(k,header[k]);send.Add("body",new UTF8Encoding(false,true).GetString(body));return SendUnderstandingResult(send);
+    byte[] body=incoming.ToArray();var header=upload;bool bootstrap=bootstrapInput;bool renewal=renewalInput;ClearInput();renewalInput=false;try{if(H(body)!=S(header,"bodyHash"))throw Invalid();if(!bootstrap&&(S(header,"kind")=="UNDERSTANDING_RESULT_SEND"||S(header,"kind")=="UNDERSTANDING_RANGE_RESULT_SEND")){
+     var send=new Dictionary<string,object>();foreach(string k in new[]{"attemptId","slotId","requestRef","acquisitionRef","preparedHash","auth"})send.Add(k,header[k]);send.Add("body",new UTF8Encoding(false,true).GetString(body));return S(header,"kind")=="UNDERSTANDING_RANGE_RESULT_SEND"?SendUnderstandingRangeResult(send):SendUnderstandingResult(send);
     }return bootstrap?(object)Bootstrap(Parse(body),renewal):Call(header,body);}finally{Array.Clear(body,0,body.Length);}
    }
    if(operation=="NORMAL_EXECUTION_CALL"){
@@ -93,7 +95,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   }catch{unknown=true;ClearInput();ClearOutput();throw;}
  }
  void Header(Dictionary<string,object> h,bool inline){
-  if(S(h,"kind")=="UNDERSTANDING_RESULT_SEND"){
+  if(S(h,"kind")=="UNDERSTANDING_RESULT_SEND"||S(h,"kind")=="UNDERSTANDING_RANGE_RESULT_SEND"){
    if(inline)throw Invalid();Exact(h,"attemptId,slotId,kind,requestRef,acquisitionRef,preparedHash,auth,bodyLength,bodyHash");Id(h,"attemptId");Id(h,"slotId");DesktopTrustKeyHostSource.Ref(h["requestRef"]);DesktopTrustKeyHostSource.Ref(h["acquisitionRef"]);
    if(N(h["bodyLength"])<1||N(h["bodyLength"])+Encoding.UTF8.GetByteCount(S(h,"auth"))>2097152||!DesktopTrustKeyHostSource.IsHash(h["bodyHash"])||!DesktopTrustKeyHostSource.IsHash(h["preparedHash"]))throw Invalid();return;
   }
@@ -436,6 +438,41 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
    packetBytes=Decode(auth,4096);var packet=Parse(packetBytes);if(B64(B(packet))!=auth)throw Invalid();var facts=UnderstandingProofFacts(packet,target,scope);
    var selected=new Dictionary<string,object>();foreach(string k in new[]{"attemptId","slotId","requestRef","acquisitionRef","preparedHash"})selected.Add(k,value[k]);selected.Add("bodyHash",H(bodyBytes));
    LoadUnderstandingCa(slot);var prepared=understandingGuard(attempt,recordHash,live=>{ValidateUnderstandingRecord(live,attempt,recordHash,slotId,slotHash);var saved=spoolProfile.StartUnderstandingSend(selected,live,slot,facts);ValidateUnderstandingRecord(live,attempt,recordHash,slotId,slotHash);return saved;});
+   // 원 SEND_STARTED append/readback 및 두 lock의 정상 회수 뒤에만 원 패킷을 한 번 보낸다.
+   ValidateUnderstandingRecord(Record(attempt),attempt,recordHash,slotId,slotHash);Check();DateTime end=At(prepared,"expiresAt");if(clock()>=end)throw Invalid();
+   var answer=Http(record,"POST",S(target,"path"),"",body,S(slot,"credential"),auth,2097152);
+   ValidateUnderstandingRecord(Record(attempt),attempt,recordHash,slotId,slotHash);Check();if(clock()>=end)throw Invalid();
+   // 기존 유계 응답 회수만 수행하며 HTTP 결과를 서버 정착/실행 권위로 승격하지 않는다.
+   output=B(answer);if(output.Length<1||output.Length>2097152)throw Invalid();outputHandle=Guid.NewGuid().ToString("D");outputHash=H(output);outputOffset=0;outputExpiry=end;return Next();
+  }finally{Array.Clear(bodyBytes,0,bodyBytes.Length);if(packetBytes!=null)Array.Clear(packetBytes,0,packetBytes.Length);}
+ }
+ object PrepareUnderstandingRangeResult(Dictionary<string,object> value){
+  bool accepted=understandingRangeCloseAccepted;understandingRangeCloseAccepted=false;
+  if(!accepted||spoolProfile==null||understandingGuard==null)throw Invalid();Exact(value,"attemptId,slotId,requestRef,acquisitionRef,bodyHash");
+  string attempt=Id(value,"attemptId"),slotId=Id(value,"slotId");var record=Record(attempt);var slot=LoadSlot(slotId,record);string recordHash=H(record),slotHash=H(slot);
+  var admission=understandingGuard(attempt,recordHash,live=>{ValidateUnderstandingRecord(live,attempt,recordHash,slotId,slotHash);return spoolProfile.TakeUnderstandingRangeResult(value,live,slot);});
+  DateTime end=At(admission,"expiresAt");var scope=Map(slot["scope"]);var target=UnderstandingResultTarget(slot,value,S(value,"bodyHash"));
+  ValidateUnderstandingRecord(Record(attempt),attempt,recordHash,slotId,slotHash);LoadUnderstandingCa(slot);
+  var request=ChallengeRequest(scope,"EXECUTION_REQUEST",target);var reply=Challenge(record,scope,request,S(slot,"credential"),S(slot,"scopeDigest"),30000);
+  var challenge=Map(reply["challenge"]);end=new[]{end,At(challenge,"expiresAt")}.Min();spoolProfile.TightenUnderstandingResult(end);
+  ValidateUnderstandingRecord(Record(attempt),attempt,recordHash,slotId,slotHash);
+  var proof=new Dictionary<string,object>(target);proof["requestId"]=request["requestId"];proof["grantRef"]=scope["grantRef"];proof["credentialGeneration"]=scope["credentialGeneration"];proof["serverNonce"]=challenge["serverNonce"];
+  var packet=new Dictionary<string,object>{{"schemaVersion",1},{"challengeRef",reply["ref"]},{"proof",proof},{"signature",Sign(record,"EXECUTION_REQUEST_PROOF",proof)}};
+  var facts=UnderstandingProofFacts(packet,target,scope);facts.Add("expiresAt",Stamp(end));
+  var prepared=understandingGuard(attempt,recordHash,live=>{ValidateUnderstandingRecord(live,attempt,recordHash,slotId,slotHash);var saved=spoolProfile.StoreUnderstandingRangePrepared(admission,value,live,slot,facts);ValidateUnderstandingRecord(live,attempt,recordHash,slotId,slotHash);return saved;});
+  ValidateUnderstandingRecord(Record(attempt),attempt,recordHash,slotId,slotHash);Check();if(clock()>=end)throw Invalid();
+  return new Dictionary<string,object>{{"state","NATIVE_RANGE_RESULT_PREPARED"},{"requestRef",value["requestRef"]},{"acquisitionRef",value["acquisitionRef"]},{"preparedHash",H(prepared)},{"auth",B64(B(packet))},{"expiresAt",Stamp(end)}};
+ }
+ object SendUnderstandingRangeResult(Dictionary<string,object> value){
+  if(spoolProfile==null||understandingGuard==null)throw Invalid();Exact(value,"attemptId,slotId,requestRef,acquisitionRef,preparedHash,auth,body");
+  string attempt=Id(value,"attemptId"),slotId=Id(value,"slotId"),body=S(value,"body"),auth=S(value,"auth");byte[] bodyBytes=Encoding.UTF8.GetBytes(body),packetBytes=null;
+  try{
+   if(bodyBytes.Length<1||bodyBytes.Length+Encoding.UTF8.GetByteCount(auth)>2097152||!DesktopTrustKeyHostSource.IsHash(value["preparedHash"]))throw Invalid();
+   var metadata=Parse(bodyBytes);Exact(metadata,"schemaVersion,kind,attribution,projectId,executionId,executionGeneration,requestRef,acquisitionRef,sourceRequestRef,sourceResultRef,contextBundleRef,initConfirmationRef,tailRef,firstSequence,lastSequence,beforeRef,afterRef,parts,wholeConversationComplete,executionAuthorized");if(N(metadata["schemaVersion"])!=1||S(metadata,"kind")!="FIXED_RANGE_SELECTION"||S(metadata,"attribution")!="SESSION_ONLY"||J(metadata["requestRef"])!=J(value["requestRef"])||J(metadata["acquisitionRef"])!=J(value["acquisitionRef"])||J(metadata["wholeConversationComplete"])!="false"||J(metadata["executionAuthorized"])!="false"||J(metadata)!=body)throw Invalid();
+   var record=Record(attempt);var slot=LoadSlot(slotId,record);string recordHash=H(record),slotHash=H(slot);var scope=Map(slot["scope"]);var target=UnderstandingResultTarget(slot,value,H(bodyBytes));
+   packetBytes=Decode(auth,4096);var packet=Parse(packetBytes);if(B64(B(packet))!=auth)throw Invalid();var facts=UnderstandingProofFacts(packet,target,scope);
+   var selected=new Dictionary<string,object>();foreach(string k in new[]{"attemptId","slotId","requestRef","acquisitionRef","preparedHash"})selected.Add(k,value[k]);selected.Add("bodyHash",H(bodyBytes));
+   LoadUnderstandingCa(slot);var prepared=understandingGuard(attempt,recordHash,live=>{ValidateUnderstandingRecord(live,attempt,recordHash,slotId,slotHash);var saved=spoolProfile.StartUnderstandingRangeSend(selected,live,slot,facts);ValidateUnderstandingRecord(live,attempt,recordHash,slotId,slotHash);return saved;});
    // 원 SEND_STARTED append/readback 및 두 lock의 정상 회수 뒤에만 원 패킷을 한 번 보낸다.
    ValidateUnderstandingRecord(Record(attempt),attempt,recordHash,slotId,slotHash);Check();DateTime end=At(prepared,"expiresAt");if(clock()>=end)throw Invalid();
    var answer=Http(record,"POST",S(target,"path"),"",body,S(slot,"credential"),auth,2097152);

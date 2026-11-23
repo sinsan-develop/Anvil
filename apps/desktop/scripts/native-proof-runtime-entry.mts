@@ -163,6 +163,15 @@ export function createOwnedSpoolController(host: NormalOwnedHostFactory, attempt
        const current=()=>{checkedClock();checkClients(original);if(understandingUnknown||active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');};
        current();held=await sdkWorker.readUnderstandingRange(acquired,original.get,owned,readSignal,current);current();return held;
       }catch(error){if(held)discardNormalUnderstandingRangeReadResult(held);understandingUnknown=true;throw error;}finally{readingUnderstanding=false;}
+    },transmitUnderstandingRange:async(acquired:NormalUnderstandingRangeAcquisition,requestSignal:AbortSignal)=>{
+      checkClients(active);checkedClock();
+      if(!worker||!sdkWorker||running||readingUnderstanding||understandingUnknown||!(requestSignal instanceof AbortSignal)||requestSignal.aborted||!latest||latest.pair!==active)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');
+      readingUnderstanding=true;
+      try{
+       const original=active,owned=latest.port,readSignal=AbortSignal.any([signal,requestSignal]);
+       const current=()=>{checkedClock();checkClients(original);if(understandingUnknown||active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');};
+       current();const outcome=await sdkWorker.transmitUnderstandingRange(acquired,original.get,owned,readSignal,current);current();return outcome;
+      }catch(error){understandingUnknown=true;throw error;}finally{readingUnderstanding=false;}
     },discoverUnderstanding:async(requestSignal:AbortSignal)=>{
       checkClients(active);
       checkedClock();if(!sdkWorker||running||readingUnderstanding||understandingUnknown||requestSignal.aborted||!latest||latest.pair!==active)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');

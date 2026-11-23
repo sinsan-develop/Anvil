@@ -12,6 +12,7 @@ test.before(async()=>{
 const id=n=>'ce140001-0000-4000-8000-'+String(n).padStart(12,'0'),ref=n=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
 const resultConfiguration={mode:'NORMAL_PROTECTED',purpose:'FN09_DISCOVERY_METADATA'};
 async function scenario(configuration=resultConfiguration){
+ const range=configuration?.purpose==='FN09_FIXED_RANGE_SELECTION';
  const f=await fixtures.liveNativeOwner(),row=f.stored(),calls=[],spawn=f.ports.spawn;
  const scope={projectId:row.projectId,connectorId:row.registration.connectorRef.id,executionId:id(1),executionGeneration:1,grantRef:ref(2),credentialGeneration:1};
  const config={origin:row.origin,ca:'TEST_ONLY_EXPLICIT_CA',scope},expiresAt=new Date(f.dependencies.now()+5000).toISOString();
@@ -19,13 +20,13 @@ async function scenario(configuration=resultConfiguration){
  const body=canonicalJson({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:{fixture:'TEST_ONLY_METADATA'}});
  const binding={attemptId:row.attemptId,slotId:slot.slotId,requestRef:ref(7),acquisitionRef:ref(8),bodyHash:contentHash(body)};
  const auth=Buffer.from(canonicalJson({schemaVersion:1,challengeRef:ref(9),proof:{method:'POST',path:'/api/v1/connectors/'+scope.connectorId+'/executions/'+scope.executionId+'/understanding-response-read/'+binding.requestRef.id+'/result',queryHash:contentHash('{}'),bodyHash:binding.bodyHash,requestId:id(10),grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,serverNonce:Buffer.alloc(32).toString('base64url')},signature:Buffer.alloc(64).toString('base64url')})).toString('base64url');
- const prepared={state:'NATIVE_DISCOVERY_RESULT_PREPARED',requestRef:binding.requestRef,acquisitionRef:binding.acquisitionRef,preparedHash:'b'.repeat(64),auth,expiresAt};
+ const prepared={state:range?'NATIVE_RANGE_RESULT_PREPARED':'NATIVE_DISCOVERY_RESULT_PREPARED',requestRef:binding.requestRef,acquisitionRef:binding.acquisitionRef,preparedHash:'b'.repeat(64),auth,expiresAt};
  let closeMode='OK',pending=null;
  f.ports.spawn=(...args)=>{const child=spawn(...args),write=child.stdin.write,end=child.stdin.end;
   child.stdin.write=(raw,encoding,done)=>{const v=JSON.parse(Buffer.from(raw).toString());if(!/^(NORMAL_EXECUTION_|NORMAL_SPOOL_)/.test(v.operation))return write(raw,encoding,done);
    calls.push(v);const answer=()=>{let data={state:'OK'};
-    if(v.operation==='NORMAL_SPOOL_CLOSE')data={state:'CLOSED_CONFIRMED',understanding:{state:'NATIVE_METADATA_CLOSED',requestRef:binding.requestRef,acquisitionRef:binding.acquisitionRef,bodyHash:binding.bodyHash}};
-    if(v.operation==='NORMAL_EXECUTION_UNDERSTANDING_RESULT_PREPARE')data=prepared;
+    if(v.operation==='NORMAL_SPOOL_CLOSE')data={state:'CLOSED_CONFIRMED',[range?'understandingRange':'understanding']:{state:range?'NATIVE_RANGE_CLOSED':'NATIVE_METADATA_CLOSED',requestRef:binding.requestRef,acquisitionRef:binding.acquisitionRef,bodyHash:binding.bodyHash}};
+    if(v.operation===(range?'NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_PREPARE':'NORMAL_EXECUTION_UNDERSTANDING_RESULT_PREPARE'))data=prepared;
     if(v.operation==='NORMAL_EXECUTION_BEGIN')data={handle:id(20)};
     if(v.operation==='NORMAL_EXECUTION_WRITE')data={handle:id(20),offset:v.payload.offset+Buffer.from(v.payload.bytes,'base64url').length};
     child.stdout.emit('data',Buffer.from(canonicalJson({schemaVersion:1,purpose:'DESKTOP_TRUST_KEY_RESULT_V1',requestId:v.requestId,sequence:v.sequence,rootIdentity:'TEST_ONLY_ROOT',data})+'\n'));done();};
@@ -34,13 +35,31 @@ async function scenario(configuration=resultConfiguration){
   child.stdin.end=(...a)=>closeMode==='UNKNOWN'?queueMicrotask(()=>{child.stdout.emit('end');child.emit('close',1);}):end(...a);return child;
  };
  const api=f.owner.createProfileExecutionClients(config,configuration===null?undefined:configuration),signal=new AbortController();
- return {f,calls,api,signal,slot,binding,prepared,body,config,mode(v){closeMode=v;},release(){pending();},async closedHost(){const h=await api.open(signal.signal,slot);await h.send('NORMAL_SPOOL_CLOSE',{writer:'NORMAL_EXECUTION',attemptId:row.attemptId,slotId:slot.slotId,allocation:id(21),understanding:{requestRef:binding.requestRef,acquisitionRef:binding.acquisitionRef,bodyHash:binding.bodyHash}});return h;}};
+ return {f,calls,api,signal,slot,binding,prepared,body,config,mode(v){closeMode=v;},release(){pending();},async closedHost(){const h=await api.open(signal.signal,slot);await h.send('NORMAL_SPOOL_CLOSE',{writer:'NORMAL_EXECUTION',attemptId:row.attemptId,slotId:slot.slotId,allocation:id(21),[range?'understandingRange':'understanding']:{requestRef:binding.requestRef,acquisitionRef:binding.acquisitionRef,bodyHash:binding.bodyHash,...(range?{selection:{fixture:'TEST_ONLY_RANGE'}}:{})}});return h;}};
 }
+
+for(const mode of ['OK','UNKNOWN','UNVALIDATED','CROSS','REPEAT'])test('고정 범위 전용 원 CLOSE→같은 host 준비→물리 종료→동일 slot 단회 소비 '+mode,async()=>{
+ const x=await scenario({mode:'NORMAL_PROTECTED',purpose:'FN09_FIXED_RANGE_SELECTION'}),h=await x.closedHost();
+ assert.equal(h.prepareUnderstandingResult,undefined);assert.equal(h.sendUnderstandingResult,undefined);
+ assert.equal(typeof h.prepareUnderstandingRangeResult,'function');
+ await h.prepareUnderstandingRangeResult(x.binding);
+ const n=x.calls.length;await assert.rejects(h.send('NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_SEND',{}));assert.equal(x.calls.length,n);
+ if(mode==='UNKNOWN')x.mode('UNKNOWN');
+ const ended=await h.close(mode==='UNVALIDATED'?'OPERATION_UNKNOWN':'HOST_REQUEST_VALIDATED');
+ if(mode==='UNKNOWN'||mode==='UNVALIDATED'){await assert.rejects(x.api.open(x.signal.signal,x.slot));assert.equal(x.calls.length,2);return;}
+ assert.equal(ended.state,'CLOSED_CONFIRMED');
+ const next=await x.api.open(x.signal.signal,x.slot),{bodyHash,...b}=x.binding;
+ const p={...b,preparedHash:x.prepared.preparedHash,auth:x.prepared.auth,body:x.body};
+ if(mode==='CROSS'){await assert.rejects(next.sendUnderstandingRangeResult('NORMAL_EXECUTION_UNDERSTANDING_RESULT_SEND',p));assert.equal(x.calls.length,2);}
+ else{await next.sendUnderstandingRangeResult('NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_SEND',p);if(mode==='REPEAT')await assert.rejects(next.sendUnderstandingRangeResult('NORMAL_EXECUTION_UNDERSTANDING_RANGE_RESULT_SEND',p));assert.equal(x.calls.length,3);}
+ await next.close();
+});
 
 test('기본 NORMAL 어댑터는 원 metadata CLOSE/physical close를 유지하고 named 준비·전송을 노출하지 않는다',async()=>{
  const x=await scenario(null),h=await x.closedHost();
  assert.equal(Object.hasOwn(h,'prepareUnderstandingResult'),false);assert.equal(Object.hasOwn(h,'sendUnderstandingResult'),false);
  assert.equal(h.prepareUnderstandingResult,undefined);assert.equal(h.sendUnderstandingResult,undefined);
+ assert.equal(h.prepareUnderstandingRangeResult,undefined);assert.equal(h.sendUnderstandingRangeResult,undefined);
  assert.equal((await h.close('HOST_REQUEST_VALIDATED')).state,'CLOSED_CONFIRMED');
  assert.equal(x.calls.length,1);assert.equal(x.calls[0].operation,'NORMAL_SPOOL_CLOSE');assert.equal(x.f.owner.isBusy(),false);assert.equal(x.f.timers(),0);
  const next=await x.api.open(x.signal.signal,x.slot);assert.equal(next.prepareUnderstandingResult,undefined);assert.equal(next.sendUnderstandingResult,undefined);
