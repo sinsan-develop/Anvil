@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN09 등록 owner 전체 RAM 검수:** 늦은 host 열기 대역을 DISCOVERY 단계에만 적용하도록 시험을 정정했다. 원 host 회수 1회·POST 및 저장 0을 포함해 138/138(`037a3a`), 독립 C0/I0/M0. 실제 Windows·DB·Agent 인수는 남아 있다.
+
 - **FN07/FN08/FN18 데스크톱 회귀:** 원 감독 인계·실행 전 검산의 desktop 타입 검사를 복구하고, 승인 source 53개와 고정 builtin 8개인 패키지 경계를 검증했다. Main 105/105·desktop 타입, 작성자 루트 타입 통과, 두 단계 독립 C0/I0/M0. 실제 실행·패키징은 미검증이다.
 
 - **FN07/FN08 보호 worker RAM 인계 검수:** 시험의 의존성 경로를 현재 작업사본으로 고쳐 고정 desktop lock에서 host·worker·factory 23/23을 확인했다(`03f611`). 독립 C0/I0/M0. 실제 Windows·C#·SDK 확인은 남아 있다.

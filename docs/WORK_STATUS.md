@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN09 등록 owner 전체 RAM 검수:** `baseline_predispatch_task_review`가 DISCOVERY용 늦은 host 열기 주입을 실제 DISCOVERY 시작 이후로 한정했다. 기존 fixture는 앞선 START에서도 같은 slot을 가로채 정상 최초 작업을 `UNKNOWN`으로 끝냈다. 늦은 parent/next 두 경우의 host 정확 1회 회수, 단계 순서, POST·저장 0 및 원 기한은 보존했다. 초기 선택 실행은 129/134(`414336`), 이 중 모듈 mock 플래그 누락 4건은 올바른 명령에서 4/4(`326385`), 지연 parent 실패는 별도 재현(`17758d`) 후 fixture 1파일을 정정했다. 최종 Main 전체 138/138·실패/skip 0·약 274초(`037a3a`), 독립 C0/I0/M0. 제품·정책·기한 변화 0, 실제 native/C#/DB/Agent는 미검증이다.
+
 - **FN06/FN08 등록 owner와 번들 결합 재검수:** 데스크톱 회귀 보완 `d2692b58`에서 실제 등록 owner 소스와 메모리 host를 연결하는 4건을 15초 시험 한도로 선택 실행했다. 등록 bootstrap 및 매번 새 lease, 같은 번들의 보호 GET/POST, 다른 권위의 전송 전 거절, 같은 번들의 START/ACK까지 4/4·실패 및 skip 0(`bd1046`). 이전 전체 조합의 중단 기록은 유지하며 이번에 전체 owner 시험을 통과한 것으로 계산하지 않는다. 별도 코드 수정·실제 등록·키·Windows/DB·Agent 실행은 없다.
 
 - **FN07/FN08/FN18 데스크톱 타입·패키지 회귀:** `baseline_predispatch_task_review`가 desktop `checkJs`의 신규 CJS 오류 49건과 지원되지 않는 JSON import attributes 오류 2건을 해소했다. 기존 broker·취소·시한·불명 결과 동작은 보존하고 원 broker 참조와 전용 메서드 타입만 좁혔다. Desktop의 `noEmit` 검사에 Node18 module 및 JSON 타입 해석을 적용하고 기존 Node16 resolution·strict 검사와 원 선언을 유지했다. 고정 번들 시험에서 승인된 이해응답 source 추가분을 반영해 53개를 검증한다. 출력 metadata와 실제 literal require 양쪽의 고정 builtin 8개 집합을 검산하고 누락·중복·빈 슬롯 metadata를 거절한다. 동적 import, 미허용 외부 모듈, 2MiB 상한과 exact exports는 유지한다. 최초 native-runtime RAM 12/15(`ab6489`), 최종 Main 결합 RAM·정적 105/105 실패 및 skip 0(`8348b6`), Main desktop 타입 exit 0(`cc52fe`), 작성자 루트 타입 exit 0(`cbf848`). CJS 3개·번들 1개·검사설정 1개·시험 1개, 기존 범위의 내부 검증 보완이다. 실제 C#·Windows 패키지·SDK·DB·Agent 및 FN08 PRESPAWN는 미검증 또는 결정 대기다.

@@ -757,7 +757,7 @@ for(const mode of ['OK','NO_REQUEST','WRONG_ATTEMPT','CLOSE_UNKNOWN','CANCELLED'
 for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START','CONTEXT','REGISTRATION','CLOSE_UNKNOWN','NATIVE_BODY','NATIVE_EXTRA','NATIVE_UNKNOWN','NATIVE_HOST_CLOSE','CANCELLED','SEND_ONCE','SEND_PROVIDER_MISSING','SEND_NEXT_PROVIDER_MISSING','SEND_PARENT_UNKNOWN','SEND_CANCEL_CLOSE','SEND_EXPIRE_CLOSE','SEND_BAD_PROOF','SEND_LOST','SEND_LATE_PARENT_OPEN','SEND_LATE_NEXT_OPEN'])test('FN09 DISCOVERY 실제 registered owner→GET→원 close 메타 '+mode,async()=>{
  const sendMode=mode.startsWith('SEND_'),steps=[];
  let stagePrepare,stageSend,finishClose,releaseLate,firstSlot;
- let lateClosed=0;
+ let lateClosed=0,discoveryStarted=false;
  if(sendMode)syntheticResultOwner=factory=>({async open(signal,slot){
   const native=await factory.open(signal,slot),isNext=steps.includes('physical-close');
   if(slot){
@@ -781,7 +781,7 @@ for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START',
     steps.push('send');return stageSend(payload);
    }})
   };
-  if(slot&&(mode==='SEND_LATE_PARENT_OPEN'&&!isNext||mode==='SEND_LATE_NEXT_OPEN'&&isNext)){
+  if(discoveryStarted&&slot&&(mode==='SEND_LATE_PARENT_OPEN'&&!isNext||mode==='SEND_LATE_NEXT_OPEN'&&isNext)){
    return new Promise(resolve=>{releaseLate=()=>resolve({...host,close(disposition){
     assert.equal(disposition,'OPERATION_UNKNOWN');lateClosed++;return host.close(disposition);
    }});});
@@ -867,6 +867,8 @@ for(const mode of ['OK','NONE','DENIED','EXPIRED','GET_DENIED','PACKET','START',
    if(!phase||phases.has(phase))return;phases.add(phase);
    concurrent.push(assert.rejects(worker.discoverUnderstanding(a.signal)),assert.rejects(worker.run(a.signal)),assert.rejects(worker.renew(a.signal)));
   });
+  // 최초 START 조회도 slot을 전달하므로, 늦은 open은 DISCOVERY 진입 이후에만 주입한다.
+  discoveryStarted=true;
   if(terminal){
    const result=await worker.discoverUnderstanding(a.signal);assert.deepEqual(result,{kind:'NOT_ACQUIRED',status:mode==='GET_DENIED'?'DENIED':mode});
    assert.equal(closed,0);assert.equal(x.m.calls.slice(before).filter(v=>v.operation.startsWith('NORMAL_SPOOL_')).length,0);terminal=false;
