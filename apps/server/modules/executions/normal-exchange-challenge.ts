@@ -55,7 +55,8 @@ export async function readCurrent(db:PoolClient,project:string,connector:string,
 }
 export function original(row:any,binding:unknown,purpose:Purpose='CREDENTIAL_EXCHANGE',credentialRef?:unknown){return originalValue(row,binding,purpose,credentialRef,false);}
 export function originalRange(row:any,binding:any,credentialRef:unknown){return originalValue(row,binding,'EXECUTION_REQUEST',credentialRef,true);}
-function originalValue(row:any,binding:any,purpose:Purpose,credentialRef:unknown,range:boolean){
+export function originalRangeResult(row:any,binding:any,credentialRef:unknown){return originalValue(row,binding,'EXECUTION_REQUEST',credentialRef,false,true);}
+function originalValue(row:any,binding:any,purpose:Purpose,credentialRef:unknown,range:boolean,rangeResult=false){
  const s=row.snapshot_json,p=s?.publicChallenge,request=s?.request;
  const discovery=purpose==='EXECUTION_REQUEST'&&request?.target?.method==='GET'&&request.target.path==='/api/v1/connectors/'+(binding as any)?.connectorId+'/executions/'+(binding as any)?.executionId+'/understanding-response-read';
  const resultPrefix='/api/v1/connectors/'+(binding as any)?.connectorId+'/executions/'+(binding as any)?.executionId+'/understanding-response-read/';
@@ -63,11 +64,12 @@ function originalValue(row:any,binding:any,purpose:Purpose,credentialRef:unknown
  const result=uuidV1(resultId)&&request.target.path===resultPrefix+resultId+'/result';
  if(range&&(!same(request?.target,normalUnderstandingRangeTarget(binding.connectorId,binding.executionId))||!refV1(s?.understandingRangeRequestRef)||s.understandingRangeRequestRef.version!==1))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
  if(discovery&&!refV1(s?.understandingRequestRef))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
- if(result&&(!recordV1(s?.understandingResultBinding,['requestRef','acquisitionRef'])
-  ||!refV1(s.understandingResultBinding.requestRef)||s.understandingResultBinding.requestRef.version!==1||s.understandingResultBinding.requestRef.id!==resultId
-  ||!refV1(s.understandingResultBinding.acquisitionRef)||s.understandingResultBinding.acquisitionRef.version!==1
-  ||request.target.queryHash!==digest({})||!hashV1(request.target.bodyHash)||request.target.bodyHash===digest(null)))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
- if(!recordV1(s,['sequence','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption',...(purpose==='EXECUTION_REQUEST'?['credentialRef']:[]),...(discovery?['understandingRequestRef']:[]),...(result?['understandingResultBinding']:[]),...(range?['understandingRangeRequestRef']:[])])
+ if(rangeResult&&!result)return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
+ const marker=rangeResult?s?.understandingRangeResultBinding:s?.understandingResultBinding;
+ if(result&&((rangeResult?(!recordV1(marker,['rangeRequestRef','acquisitionRef','sourceRequestRef','sourceResultRef','selectionHash'])||!['rangeRequestRef','acquisitionRef','sourceRequestRef','sourceResultRef'].every(k=>refV1(marker[k])&&marker[k].version===1)||!hashV1(marker.selectionHash)):
+  (!recordV1(marker,['requestRef','acquisitionRef'])||!refV1(marker.requestRef)||marker.requestRef.version!==1||!refV1(marker.acquisitionRef)||marker.acquisitionRef.version!==1))
+  ||(rangeResult?marker.rangeRequestRef.id:marker.requestRef.id)!==resultId||request.target.queryHash!==digest({})||!hashV1(request.target.bodyHash)||request.target.bodyHash===digest(null)))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
+ if(!recordV1(s,['sequence','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption',...(purpose==='EXECUTION_REQUEST'?['credentialRef']:[]),...(discovery?['understandingRequestRef']:[]),...(result?[rangeResult?'understandingRangeResultBinding':'understandingResultBinding']:[]),...(range?['understandingRangeRequestRef']:[])])
   ||(purpose==='EXECUTION_REQUEST'&&(!refV1(credentialRef)||!same(s.credentialRef,credentialRef)))
   ||s.previousRef!==null||s.consumption!==null||!Number.isSafeInteger(s.sequence)||Number(s.sequence)<1
   ||!same(s.binding,binding)||row.content_hash!==digest(s)||s.requestHash!==digest(request)
@@ -93,7 +95,7 @@ async function bootstrapReservation(db:PoolClient,b:any){
   return fail('EXECUTION_BOOTSTRAP_RESERVATION_INVALID',412);
  return {registrationRef:s.registrationRef,reservationRef:{id:row.id,version:1,contentHash:row.content_hash},expiresAt:s.expiresAt};
 }
-async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string,body:unknown,bearerDigest?:string,understandingSource?:NormalUnderstandingReadAcquisition,resultSource?:NormalUnderstandingReadResult,signal?:AbortSignal,rangeSource?:NormalUnderstandingReadAcquisition){
+async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string,body:unknown,bearerDigest?:string,understandingSource?:NormalUnderstandingReadAcquisition,resultSource?:NormalUnderstandingReadResult,signal?:AbortSignal,rangeSource?:NormalUnderstandingReadAcquisition,rangeResultSource?:NormalUnderstandingReadResult){
  const rangePath='/api/v1/connectors/'+connector+'/executions/'+execution+'/understanding-response-read/range';
  const requestedRange=(body as any)?.target?.path===rangePath;
  const range=requestedRange&&!!bearerDigest&&rangeSource?.pool===pool;
@@ -105,6 +107,7 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
  const understanding='/api/v1/connectors/'+connector+'/executions/'+execution+'/understanding-response-read';
  const discovery=request.target.path===understanding&&request.target.method==='GET'&&!!bearerDigest&&understandingSource?.pool===pool;
  const resultId=request.target.method==='POST'&&request.target.path.startsWith(understanding+'/')&&request.target.path.endsWith('/result')?request.target.path.slice(understanding.length+1,-'/result'.length):'';
+ resultSource??=rangeResultSource;
  const metadataResult=!!bearerDigest&&resultSource?.pool===pool&&uuidV1(resultId)&&request.target.path===understanding+'/'+resultId+'/result';
  if((request.target.path===understanding||request.target.path.startsWith(understanding+'/'))&&!discovery&&!range)
   if(!metadataResult)return fail('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE',503);
@@ -129,7 +132,11 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   const rows=(await db.query('SELECT id,content_hash,snapshot_json FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND version=1 AND (request_id=$4 OR client_nonce=$5) LIMIT 2',[...keys,request.requestId,request.clientNonce])).rows;
   const replay=rows.find(row=>row.snapshot_json?.request?.requestId===request.requestId);
   const identical=replay&&same(replay.snapshot_json.request,request);
-  const checked=identical?(range?originalRange(replay,current.binding,credential?.ref):original(replay,current.binding,purpose,credential?.ref)):null;
+  if(identical&&metadataResult){
+   if(replay.snapshot_json?.understandingRangeResultBinding){if(rangeResultSource?.pool!==pool)return fail('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE',503);resultSource=rangeResultSource;}
+   else if(resultSource?.purpose!=='FN09_DISCOVERY_METADATA')return fail('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE',503);
+  }
+  const checked=identical?(range?originalRange(replay,current.binding,credential?.ref):metadataResult&&resultSource?.purpose==='FN09_FIXED_RANGE_SELECTION'?originalRangeResult(replay,current.binding,credential?.ref):original(replay,current.binding,purpose,credential?.ref)):null;
   const verifyRequest=range?verifyNormalUnderstandingRangeChallenge:credential?verifyNormalCommandChallengeRequest:verifyNormalExchangeRequest;
   verifyRequest(current.spki,signature,request,current.binding,checked?new Date(checked.challenge.issuedAt):current.now);
   if(rows.length>1||replay&&!identical)return fail('IDEMPOTENCY_CONFLICT',409);
@@ -138,6 +145,16 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   if((discovery||range)&&!human){noneRollback=true;discard=new Error('NORMAL_UNDERSTANDING_DISCOVERY_ROLLBACK_UNKNOWN');if((await db.query('ROLLBACK')).command!=='ROLLBACK')return fail(range?'NORMAL_UNDERSTANDING_RANGE_UNKNOWN':'NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);discard=undefined;return {transport:'NORMAL_PROTECTED',status:'NONE',challenge:null,nonceConsumed:false,executionAuthorized:false,dispatchPerformed:false};}
   if(human){deadline=Math.min(deadline,Date.parse(human.expiresAt));if(current.now.getTime()>=deadline)return fail(range?'NORMAL_UNDERSTANDING_RANGE_EXPIRED':'NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED',412);}
   checkRange();
+  // 두 목적이 공존할 때 body 없는 challenge는 원 GET marker로만 선택한다. 실패 뒤 다른 목적을 시도하지 않는다.
+  if(metadataResult&&!checked&&resultSource?.purpose==='FN09_DISCOVERY_METADATA'&&rangeResultSource?.pool===pool){
+   const origins=(await db.query(`SELECT snapshot_json AS result_origin FROM anvil.execution_challenges
+    WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND version=1 AND snapshot_json->'binding'=$5::jsonb AND snapshot_json->'credentialRef'=$6::jsonb
+     AND ((snapshot_json ? 'understandingRequestRef' AND snapshot_json#>>'{understandingRequestRef,id}'=$4)
+      OR (snapshot_json ? 'understandingRangeRequestRef' AND snapshot_json#>>'{understandingRangeRequestRef,id}'=$4)) LIMIT 2`,[...keys,resultId,JSON.stringify(current.binding),JSON.stringify(credential!.ref)])).rows;
+   if(origins.length!==1)return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+   const origin=origins[0]?.result_origin,metadata=!!origin&&Object.hasOwn(origin,'understandingRequestRef'),selected=!!origin&&Object.hasOwn(origin,'understandingRangeRequestRef');
+   if(metadata===selected)return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);if(selected)resultSource=rangeResultSource;
+  }
   const resultBasis=metadataResult?await resultSource!.challengeBasis(db,bearerDigest!,current.binding,credential!.ref,request.target,current.now):null;
   if(resultBasis){deadline=Math.min(deadline,Date.parse(resultBasis.deadline));
    if(current.now.getTime()>=deadline)return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
@@ -162,7 +179,7 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
    else await db.query("SELECT set_config('anvil.normal_challenge_verified',txid_current()::text||':'||$1,true)",[content]);
    const inserted=await db.query('INSERT INTO anvil.execution_challenges(project_id,id,version,grant_id,grant_version,server_sequence,content_hash,snapshot_json) VALUES($1,$2,1,$3,$4,$5,$6,$7)',[project,challenge.id,ref.id,ref.version,stats.sequence,content,JSON.stringify(snapshot)]);
    if(inserted.rowCount!==1)return fail('EXECUTION_CHALLENGE_WRITE_FAILED',503);
-   result=range?originalRange({id:challenge.id,content_hash:content,snapshot_json:snapshot},current.binding,credential?.ref):original({id:challenge.id,content_hash:content,snapshot_json:snapshot},current.binding,purpose,credential?.ref);
+   result=range?originalRange({id:challenge.id,content_hash:content,snapshot_json:snapshot},current.binding,credential?.ref):metadataResult&&resultSource?.purpose==='FN09_FIXED_RANGE_SELECTION'?originalRangeResult({id:challenge.id,content_hash:content,snapshot_json:snapshot},current.binding,credential?.ref):original({id:challenge.id,content_hash:content,snapshot_json:snapshot},current.binding,purpose,credential?.ref);
   }
   const final=await readCurrent(db,project,connector,execution,request);
   if(credential&&bearerDigest){
@@ -213,7 +230,7 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   if(committing)return fail('EXECUTION_CHALLENGE_COMMIT_UNKNOWN',503);
   if(noneRollback)return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);
   if(discovery&&!(error instanceof AuthFailure)){if(error instanceof Error&&/^NORMAL_UNDERSTANDING_DISCOVERY_(DENIED|EXPIRED)$/.test(error.message))return fail(error.message,412);return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);}
-  if(metadataResult&&!(error instanceof AuthFailure)){if(error instanceof Error&&error.message==='NORMAL_UNDERSTANDING_RESULT_DENIED')return fail(error.message,412);return fail('NORMAL_UNDERSTANDING_RESULT_UNKNOWN',503);}
+  if(metadataResult&&!(error instanceof AuthFailure)){if(error instanceof Error&&/^NORMAL_UNDERSTANDING_RANGE_RESULT_(DENIED|EXPIRED)$/.test(error.message))return fail(error.message,412);if(error instanceof Error&&error.message==='PROJECT_STORAGE_QUOTA_EXCEEDED')return fail(error.message,409);if(error instanceof Error&&error.message==='PROJECT_STORAGE_QUOTA_UNVERIFIED')return fail(error.message,412);if(error instanceof Error&&error.message==='NORMAL_UNDERSTANDING_RESULT_DENIED')return fail(error.message,412);return fail('NORMAL_UNDERSTANDING_RESULT_UNKNOWN',503);}
   if(range&&!(error instanceof AuthFailure)){if(error instanceof Error&&/^NORMAL_UNDERSTANDING_RANGE_(DENIED|EXPIRED)$/.test(error.message))return fail(error.message,412);if(error instanceof Error&&error.message==='PROJECT_STORAGE_QUOTA_EXCEEDED')return fail(error.message,409);if(error instanceof Error&&error.message==='PROJECT_STORAGE_QUOTA_UNVERIFIED')return fail(error.message,412);return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN',503);}
   throw error;
  }finally{db.release(discard);}
@@ -223,7 +240,7 @@ export function issueNormalUnderstandingRangeChallenge(pool:Pick<Pool,'connect'>
  if(!uuidV1(connector)||!uuidV1(execution)||!hashV1(token)||source.pool!==pool||!same((body as any)?.target,normalUnderstandingRangeTarget(connector,execution)))return fail('INPUT_INVALID',400);
  return issue(pool,connector,execution,body,token,undefined,undefined,signal,source);
 }
-export function registerNormalExchangeChallenge(app:FastifyInstance,options:NormalExchangeOptions,requestOptions?:{origin:string;understanding?:NormalUnderstandingReadAcquisition;understandingResult?:NormalUnderstandingReadResult;understandingRange?:NormalUnderstandingReadAcquisition}){
+export function registerNormalExchangeChallenge(app:FastifyInstance,options:NormalExchangeOptions,requestOptions?:{origin:string;understanding?:NormalUnderstandingReadAcquisition;understandingResult?:NormalUnderstandingReadResult;understandingRange?:NormalUnderstandingReadAcquisition;understandingRangeResult?:NormalUnderstandingReadResult}){
  const origin=requestOptions?new URL(requestOptions.origin):null;
  if(origin&&(origin.protocol!=='https:'||origin.origin!==requestOptions!.origin))throw Error('EXECUTION_CHALLENGE_ORIGIN_INVALID');
  app.register(async scope=>{
@@ -240,7 +257,7 @@ export function registerNormalExchangeChallenge(app:FastifyInstance,options:Norm
     ||[...(commandChallenge?[]:['authorization']),'cookie','origin','x-anvil-csrf','content-encoding'].some(h=>names.includes(h)||r.headers[h]!==undefined))
     throw new AuthFailure('EXECUTION_CHALLENGE_HEADER_REJECTED',403);
    if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(r.headers['content-type']??''))throw new AuthFailure('INPUT_INVALID',400);
-   try{return await issue(options.pool,cid,eid,r.body,commandChallenge?normalRequestBearerDigest(r,origin!.host):undefined,requestOptions?.understanding,requestOptions?.understandingResult,r.signal,requestOptions?.understandingRange);}catch(error){
+   try{return await issue(options.pool,cid,eid,r.body,commandChallenge?normalRequestBearerDigest(r,origin!.host):undefined,requestOptions?.understanding,requestOptions?.understandingResult,r.signal,requestOptions?.understandingRange,requestOptions?.understandingRangeResult);}catch(error){
     if(error instanceof AuthFailure&&error.message==='NOT_FOUND')return reply.callNotFound();
     throw error;
    }
