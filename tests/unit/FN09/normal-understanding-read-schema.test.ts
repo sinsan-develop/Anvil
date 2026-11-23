@@ -134,7 +134,7 @@ test('range result marker-only/receipt-only/body-only writes have exact BEFORE a
  const shape=history.match(/execution_json_shape\(s,ARRAY\[([^\]]+)\]/)?.[1];assert.ok(shape);assert.doesNotMatch(shape,/'(?:body|text|parts|auth|bodyBase64|sdk|sessionId)'/);
  assert.match(shape,/'responseRef','partRefs','bodyHash','bodyBytes'/);
  const section=sql.slice(sql.indexOf('-- FN09 A §4.3:'));
- const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,30);
+ const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,31);
  for(const [,name,args] of helpers){
   const signature=name+'('+args!.split(',').filter(Boolean).map(x=>x.trim().split(/\s+/).at(-1)).join(',')+')';
   assert.ok(section.includes('ALTER FUNCTION anvil.'+signature+' OWNER TO anvil_v3_migrator;'),signature);
@@ -323,7 +323,7 @@ test('fixed range forward retains exact original discovery, current metadata, ch
   fn09_normal_understanding_consumption_valid:'0cae65df8c1ab09b5a33424a363fbe0de5784346471417e3f2df1dbce9b67f63',
   fn09_normal_understanding_result_pair_historical:'6767b3e8a31a300b40872e7187dd02eef2e2beb1aa91e26bb3069ffa4c559720',
   fn09_normal_understanding_result_store:'c2aa2d863f425e6f04a0f7f7ecc92b93f09b8bbf507b00f6b2e2d5b6e12e9d03'};
- for(const [name,digest] of Object.entries(original))assert.equal(createHash('sha256').update(definition(name).replace(/\r\n/g,'\n').replace(/ -- FN09_RANGE_CURRENT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_CURRENT_DISPATCH_END\n/,'').replace(/ -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_BEGIN\n[\s\S]*? -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_END\n/,'').replace(/ -- FN09_RANGE_RESULT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_RESULT_DISPATCH_END\n/,'').replace(" IF expected->>'purpose'='FIXED_RANGE' THEN RETURN anvil.fn09_normal_understanding_range_connector_current(token,b,signed_request_id,expected);END IF;\n",'')).digest('hex'),digest,name);
+ for(const [name,digest] of Object.entries(original))assert.equal(createHash('sha256').update(definition(name).replace(/\r\n/g,'\n').replace(/ -- FN09_RANGE_HISTORY_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_HISTORY_DISPATCH_END\n/,'').replace(/ -- FN09_RANGE_CURRENT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_CURRENT_DISPATCH_END\n/,'').replace(/ -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_BEGIN\n[\s\S]*? -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_END\n/,'').replace(/ -- FN09_RANGE_RESULT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_RESULT_DISPATCH_END\n/,'').replace(" IF expected->>'purpose'='FIXED_RANGE' THEN RETURN anvil.fn09_normal_understanding_range_connector_current(token,b,signed_request_id,expected);END IF;\n",'')).digest('hex'),digest,name);
 });
 
 test('range connector current preserves auth SHARE then project lock, exact settled parent and HUMAN policy without auth lock upgrade',()=>{
@@ -616,4 +616,20 @@ test('normal review member history dispatch reuses immutable settlement and neve
  assert.match(definition('fn09_normal_understanding_metadata_current'),/NORMAL_REVIEW_HISTORY.*review_history\(s,a,c,selection-'purpose',policy,expected_tx\)/);
  const historical=definition('fn09_normal_understanding_review_historical');for(const token of ['review_response','fn09_understanding_approval_valid','authorization_receipts','audit_events','execution_json_hash'])assert.ok(historical.includes(token),token);
  assert.doesNotMatch(historical,/clock_timestamp|fn01_active|normal_exchange_current/);
+});
+
+test('A §64 history-only purpose checks current HUMAN/OWNER/control/AUTO before immutable body; old auth/grant/transport expiry grants no new authority',()=>{
+ const h=definition('fn09_normal_understanding_range_history');
+ for(const token of ['expected_tx IS DISTINCT FROM txid_current()','FOR pass IN 1..2','fn01_active(s,a,c)',"m.participation IS DISTINCT FROM 'OWNER'",'pc.client_id IS DISTINCT FROM c','hs.reauth_until','PROJECT_OPERATION_DENIED',"rule->>'disposition' IS DISTINCT FROM 'AUTO'",'cmd.actor_id IS DISTINCT FROM a OR cmd.client_id IS DISTINCT FROM c','range_complete(cmd)','range_result_challenge_history(old)','range_result_historical(v,r,body.body_bytes)','range_result_complete(quota)','review_response(p,body.response_ref)',"'RANGE_STORED_HISTORICAL'","'NOT_RECHECKED'","'selectionAvailable',false","'reviewAvailable',false","'executionAuthorized',false","'dispatchPerformed',false",'2097152',"'requestRef',rf",'NORMAL_UNDERSTANDING_RANGE_HISTORY_NOT_STORED'])assert.ok(h.includes(token),token);
+ assert.doesNotMatch(h,/request_basis|committed_basis|normal_exchange_current|normal_request_credential|requestedBy,sessionId|requestedBy,credentialGeneration|ss->>'expiresAt'|publicChallenge,expiresAt|INSERT INTO|UPDATE anvil|DELETE FROM|GRANT /);
+ assert.ok(h.indexOf('fn01_active(s,a,c)')<h.indexOf('FROM anvil.normal_understanding_range_result_bodies'));
+ assert.match(definition('fn09_normal_understanding_metadata_current'),/FIXED_RANGE_HISTORY.*range_history\(s,a,c,selection-'purpose',policy,expected_tx\)/);
+});
+
+test('history command 부재 probe는 고아 획득도 검출하되 정상 명령 뒤의 미정착 판정은 RESULT receipt만 검사한다',()=>{
+ const h=definition('fn09_normal_understanding_range_history'),before=h.slice(0,h.indexOf('IF cmd.actor_id')),after=h.slice(h.indexOf('IF cmd.actor_id'));
+ assert.match(before,/execution_receipts WHERE project_id=p AND snapshot_json#>>'\{rangeRequestRef,id\}'=rid::text/);
+ assert.equal((after.match(/execution_receipts WHERE project_id=p AND snapshot_json->>'kind'='NORMAL_UNDERSTANDING_RANGE_RESULT' AND snapshot_json#>>'\{rangeRequestRef,id\}'=rid::text/g)??[]).length,3);
+ assert.doesNotMatch(after,/execution_receipts WHERE project_id=p AND snapshot_json#>>'\{rangeRequestRef,id\}'=rid::text/);
+ assert.equal((after.match(/RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_HISTORY_NOT_STORED'/g)??[]).length,2);
 });

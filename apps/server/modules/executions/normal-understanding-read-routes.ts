@@ -53,7 +53,7 @@ export function registerNormalUnderstandingReadRoutes(app:FastifyInstance,option
     ||(q as Record<string,unknown>).projectId!==params.pid||(q as Record<string,unknown>).targetId!==params.eid)throw new AuthFailure('INPUT_INVALID',400);
    const result=await service.command(token,csrf,q);reply.header('cache-control','no-store');return result;
   });
-  for(const suffix of ['current','range-current'] as const)route.get(`/api/v1/projects/:pid/executions/:eid/understanding-response-read-requests/:rid/${suffix}`,{exposeHeadRoute:false},async(request,reply)=>{
+  for(const suffix of ['current','range-current','range-history'] as const)route.get(`/api/v1/projects/:pid/executions/:eid/understanding-response-read-requests/:rid/${suffix}`,{exposeHeadRoute:false},async(request,reply)=>{
    reply.header('cache-control','no-store');
    if(header(request,'host')!==origin.host||(request.headers.origin!==undefined&&header(request,'origin')!==options.origin)
     ||request.headers.authorization!==undefined||request.headers['content-encoding']!==undefined||request.headers['transfer-encoding']!==undefined
@@ -66,7 +66,7 @@ export function registerNormalUnderstandingReadRoutes(app:FastifyInstance,option
    if([...q.keys()].length!==keys.length||keys.some(key=>q.getAll(key).length!==1)||url!==`${path}?${q}`)throw new AuthFailure('INPUT_INVALID',400);
    const version=(key:string)=>{const value=q.get(key)??'';return /^[1-9][0-9]{0,15}$/.test(value)?Number(value):null;};
    const {token,csrf}=humanSession(request);
-   return service[suffix==='range-current'?'currentRange':'current'](token,csrf,{projectId:params.pid,executionId:params.eid,executionGeneration:version('executionGeneration'),controlGeneration:version('controlGeneration'),
+   return service[suffix==='range-history'?'historicalRange':suffix==='range-current'?'currentRange':'current'](token,csrf,{projectId:params.pid,executionId:params.eid,executionGeneration:version('executionGeneration'),controlGeneration:version('controlGeneration'),
     requestRef:{id:params.rid,version:version('requestVersion'),contentHash:q.get('requestHash')},
     assignmentRef:{id:q.get('assignmentId'),version:version('assignmentVersion'),contentHash:q.get('assignmentHash')},
     preparationRef:{id:q.get('preparationId'),version:version('preparationVersion'),contentHash:q.get('preparationHash')}});

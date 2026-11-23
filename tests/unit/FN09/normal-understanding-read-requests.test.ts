@@ -287,7 +287,7 @@ test('FN09 HUMAN current metadata uses original authenticated transaction withou
  assert.equal(f.calls.filter(s=>s==='COMMIT').length,1);
 });
 
-function rangeCurrentFixture(reauthMode='CURRENT'){
+function rangeCurrentFixture(reauthMode='CURRENT',historical=false){
  const f=fixture(reauthMode),request={requestRef:ref(70),projectId:f.pid,executionId:f.context.executionId,executionGeneration:1,assignmentRef:f.context.assignmentRef,preparationRef:f.context.preparationRef};
  const selection={...request,controlGeneration:1},part={outputRef:ref(74),sequence:1,payloadDigest:'b'.repeat(64),blockIndex:0,kind:'ASSISTANT_TEXT',text:'한정 원문',textHash:contentHash('한정 원문')};
  const body={schemaVersion:1,kind:'FIXED_RANGE_SELECTION',attribution:'SESSION_ONLY',projectId:f.pid,executionId:request.executionId,executionGeneration:1,
@@ -299,10 +299,11 @@ function rangeCurrentFixture(reauthMode='CURRENT'){
  f.db.query=async(sql:string,p:any[]=[])=>{
   if(sql.startsWith('SELECT s.*,u.id AS uid')&&p[0]!==createHash('sha256').update(f.token).digest('hex')){f.calls.push(sql);return {rows:[]};}
   if(sql.startsWith('SELECT p.id,p.archived_at')&&p[0]!==f.pid){f.calls.push(sql);return {rows:[]};}
-  if(sql.startsWith('SELECT anvil.fn09_normal_understanding_metadata_current')){f.calls.push(sql);assert.deepEqual(JSON.parse(p[3]),{...selection,purpose:'FIXED_RANGE_CURRENT'});assert.equal(p[5],'17');return {rows:[{projection:project(++reads)}]};}
+  if(sql.startsWith('SELECT anvil.fn09_normal_understanding_metadata_current')){f.calls.push(sql);assert.deepEqual(JSON.parse(p[3]),{...selection,purpose:historical?'FIXED_RANGE_HISTORY':'FIXED_RANGE_CURRENT'});assert.equal(p[5],'17');return {rows:[{projection:project(++reads)}]};}
   return original(sql,p);
  };
- return {...f,request,selection,stored,reads:()=>reads,projection:(fn:typeof project)=>{project=fn;},current:()=>new mod.NormalUnderstandingReadRequests(f.access).currentRange(f.token,f.csrf,selection)};
+ if(historical)project=()=>mod.normalUnderstandingRangeHistoricalProjection(request,stored.resultRef,stored,stored.body,stored.observedAt,stored.expiresAt);
+ return {...f,request,selection,stored,reads:()=>reads,projection:(fn:typeof project)=>{project=fn;},history:()=>new mod.NormalUnderstandingReadRequests(f.access).historicalRange(f.token,f.csrf,selection),current:()=>new mod.NormalUnderstandingReadRequests(f.access).currentRange(f.token,f.csrf,selection)};
 }
 
 test('FN09 고정 범위 HUMAN current는 같은 인증 거래의 정착 원문만 반환하고 쓰기나 자동 선택을 하지 않는다',async()=>{
@@ -544,4 +545,29 @@ test('FN09 readiness uses exact browser GET and excludes mixed channel, HEAD and
    evidenceRefs:[],warnings:[],serverReceivedAt});
   assert.equal(f.state().requests.length,1);
  }finally{await app.close();}
+});
+
+test('FN09 역사 원문 조회는 새 HUMAN 거래·현재 정책만 쓰고 과거 증거를 CURRENT로 승격하지 않는다 · RAM',async()=>{
+ const f=rangeCurrentFixture('CURRENT',true),v=await f.history();assert.equal(v.status,'RANGE_STORED_HISTORICAL');assert.equal(v.currentness,'NOT_RECHECKED');assert.equal(v.selectionAvailable,false);assert.equal(v.reviewAvailable,false);assert.equal(v.executionAuthorized,false);assert.equal(v.dispatchPerformed,false);assert.deepEqual(v.requestRef,f.request.requestRef);assert.equal('request'in v,false);assert.deepEqual(v.body,f.stored.body);assert.equal(f.reads(),2);assert.equal(f.calls.filter(s=>s==='COMMIT').length,1);assert.equal(f.calls.some(s=>/^(INSERT|UPDATE|DELETE)/.test(s)),false);
+ for(const [code,statusCode]of [['NORMAL_UNDERSTANDING_RANGE_NOT_FOUND',404],['NORMAL_UNDERSTANDING_RANGE_HISTORY_NOT_STORED',412],['NORMAL_UNDERSTANDING_RANGE_HISTORY_DENIED',403],['NORMAL_UNDERSTANDING_RANGE_HISTORY_CURRENT_REQUIRED',412],['NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED',503]] as const){const f=rangeCurrentFixture('CURRENT',true);f.projection(()=>{throw Object.assign(Error(code),{code:'P0001'});});await assert.rejects(f.history(),{message:statusCode===503?'NORMAL_UNDERSTANDING_RANGE_HISTORY_UNKNOWN':code,statusCode});assert.equal(f.calls.includes('COMMIT'),false);}
+});
+
+test('역사 DTO의 CURRENT 승격/추가키/내용·부분 오염과 권한·회수·거래 불명은 원문을 반환하지 않는다 · RAM',async()=>{
+ for(const mode of ['status','currentness','selection','review','execution','dispatch','extra','requestRef','part','changed','database','commit','deny','reauth','control']){
+  const f=rangeCurrentFixture(mode==='reauth'?'EXPIRED':'CURRENT',true);
+  if(mode==='commit')f.unknown();else if(mode==='deny')f.deny();else if(mode==='control')f.stale();else if(mode!=='reauth')f.projection(n=>{if(mode==='database')throw Error('RAW_HISTORY_SQL_NOT_INSTALLED');const v=mod.normalUnderstandingRangeHistoricalProjection(f.request,f.stored.resultRef,f.stored,f.stored.body,f.stored.observedAt,f.stored.expiresAt);
+   if(mode==='status')v.status='RANGE_STORED';if(mode==='currentness')v.currentness='CURRENT';if(mode==='selection')v.selectionAvailable=true;if(mode==='review')v.reviewAvailable=true;if(mode==='execution')v.executionAuthorized=true;if(mode==='dispatch')v.dispatchPerformed=true;if(mode==='extra')v.currentGrant=f.context.grantRef;if(mode==='requestRef')v.requestRef=ref(99);if(mode==='part')v.body.parts[0].textHash='0'.repeat(64);if(mode==='changed'&&n===2)v.resultRef=ref(99);return v;});
+  await assert.rejects(f.history());assert.equal(f.calls.some(s=>/^(INSERT|UPDATE|DELETE)/.test(s)),false);
+ }
+ const current=rangeCurrentFixture();current.projection(()=>mod.normalUnderstandingRangeHistoricalProjection(current.request,current.stored.resultRef,current.stored,current.stored.body,current.stored.observedAt,current.stored.expiresAt));await assert.rejects(current.current(),{message:'NORMAL_UNDERSTANDING_RANGE_UNKNOWN'});
+});
+test('역사 sibling HTTP는 기존 채널·scope 검산과 전체 2MiB 경계를 유지하고 초과를 자르지 않는다 · RAM',async()=>{
+ const {buildApp}=await import('../../../apps/server/app.ts');
+ for(const extra of [0,1]){const f=rangeCurrentFixture('CURRENT',true),v=mod.normalUnderstandingRangeHistoricalProjection(f.request,f.stored.resultRef,f.stored,f.stored.body,f.stored.observedAt,f.stored.expiresAt);
+  v.body.parts[0].text='';v.body.parts[0].textHash=contentHash('');v.partRefs[0].contentHash=hash(v.body.parts[0]);v.responseRef.contentHash=hash(v.body);const overhead=Buffer.byteLength(canonicalJson(v));v.body.parts[0].text='x'.repeat(2097152-overhead+extra);v.body.parts[0].textHash=contentHash(v.body.parts[0].text);v.partRefs[0].contentHash=hash(v.body.parts[0]);v.responseRef.contentHash=hash(v.body);assert.equal(Buffer.byteLength(canonicalJson(v)),2097152+extra);f.projection(()=>v);
+  const r=f.request,q=new URLSearchParams({controlGeneration:'1',executionGeneration:'1',requestVersion:'1',requestHash:r.requestRef.contentHash,assignmentId:r.assignmentRef.id,assignmentVersion:'1',assignmentHash:r.assignmentRef.contentHash,preparationId:r.preparationRef.id,preparationVersion:'1',preparationHash:r.preparationRef.contentHash}),path=`/api/v1/projects/${f.pid}/executions/${r.executionId}/understanding-response-read-requests/${r.requestRef.id}/range-history`,url=path+'?'+q,headers={host:'anvil.test',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf};
+  const a=buildApp({},undefined,{repository:f.access,origin:'https://anvil.test'});try{const out=await a.inject({method:'GET',url,headers});assert.equal(out.statusCode,extra?413:200,out.body.slice(0,160));assert.equal(out.headers['cache-control'],'no-store');if(!extra)assert.equal(Buffer.byteLength(out.body),2097152);else assert.ok(!out.body.includes('xxx'));
+   const before=f.reads();for(const change of [{method:'HEAD' as const},{url:url+'&extra=1'},{url:url+'&requestHash='+r.requestRef.contentHash},{url:url.replace('/range-history','/%72ange-history')},{headers:{...headers,authorization:'Bearer synthetic'}},{headers:{...headers,origin:'https://other.invalid'}},{headers:{...headers,'x-anvil-csrf':'invalid'}}]){const denied=await a.inject({method:'GET',url,headers,...change});assert.ok([400,401,403,404].includes(denied.statusCode),denied.body);assert.equal(f.reads(),before);}assert.equal(f.calls.some(s=>/^(INSERT|UPDATE|DELETE)/.test(s)),false);
+  }finally{await a.close();}
+ }
 });
