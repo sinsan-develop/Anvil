@@ -94,3 +94,82 @@ test('최초 응답 유실 뒤 검산된 v2가 생겨도 같은 command의 원 v
  let posts=0;const bodies:string[]=[];const client=new ApiClient(async(_path,init)=>{if(init?.method==='POST'){posts++;bodies.push(String(init.body));return Response.json({status:'APPLIED',projectId:basis.scope.projectId,commandId:b.pending!.commandId,operationId:id(93),targetId:first.ref.id,version:1,data:{status:'NORMAL_UNDERSTANDING_REVIEWED',ref:first.ref,snapshot:first.snapshot},serverReceivedAt:new Date().toISOString()});}return Response.json(value);});b.ownerEpoch=normalInitialUnderstandingOwner(client,session);b.uncertain=true;
  assert.deepEqual(await saveNormalInitialUnderstandingReview(client,b,session,()=>true),first);assert.equal(posts,1);assert.equal(bodies[0],JSON.stringify(b.pending));assert.ok(!JSON.stringify(b).includes('RAW_SOURCE'));
 });
+
+test('normal 후속 초안은 검산된 latest fullref만 pin하고 새 여섯 판단은 비워 두며 first와 용도를 섞지 않는다',async()=>{
+ const f=fixture(),basis=await normalInitialUnderstandingBasis(f.source,f.preparation,f.preparation.ref),first=beginNormalInitialUnderstandingReview(basis,session,id(101));first.form.reason='최초 기록';for(const item of first.form.items){item.sourceRefs=[f.basisRefs[0]!];item.responsePartRefs=f.source.partRefs;item.judgement='MATCH';item.reason='최초 사람 판단';}first.pending=await prepareNormalInitialUnderstandingReview(first,session,9,first.ownerEpoch);
+ const row=historyRecord(first,first.pending),history={transport:'NORMAL_PROTECTED',scope:basis.scope,items:[row],currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false},m:any=await import('../../../apps/web/src/features/session-detail/understanding-review-write.ts');
+ const next=await m.beginNormalFollowUpUnderstandingReview(basis,session,first.ownerEpoch,history,()=>true);assert.deepEqual(next.previousReviewRef,row.ref);assert.ok(next.form.items.every((v:any)=>v.judgement===''&&v.reason===''&&v.sourceRefs.length===0&&v.responsePartRefs.length===0));assert.ok(!JSON.stringify(next).includes('RAW_SOURCE'));await assert.rejects(prepareNormalInitialUnderstandingReview(next,session,9,first.ownerEpoch));await assert.rejects(m.prepareNormalFollowUpUnderstandingReview(first,session,9,first.ownerEpoch));
+ for(const item of next.form.items){item.sourceRefs=[f.basisRefs[0]!];item.responsePartRefs=f.source.partRefs;item.judgement='INSUFFICIENT';item.reason='다시 사람이 대조';}next.form.reason='후속 명시 판단';const command=await m.prepareNormalFollowUpUnderstandingReview(next,session,9,first.ownerEpoch);assert.deepEqual(command.baselineRefs,[]);assert.equal(command.expectedVersion,7);assert.equal(command.operation,'reviewUnderstanding');assert.equal('previousReviewRef'in command.payload,false);assert.equal('previousReviewRef'in command,false);assert.equal(command.approvalRef,null);
+});
+
+
+function appendNormalRow(previous:any,buffer:any,command:any){const row:any=historyRecord(buffer,command);row.ref.id=previous.ref.id;row.ref.version=previous.ref.version+1;row.snapshot.sequence=row.ref.version;row.snapshot.previousRef=structuredClone(previous.ref);row.snapshot.recordedAt=new Date(Math.max(Date.parse(previous.snapshot.recordedAt),Date.now())).toISOString();row.ref.contentHash=H(row.snapshot);return row;}
+async function followHost(){
+ const m=await component(),hooks=await import(hooksUrl),domain=await import('../../../apps/web/src/features/session-detail/understanding-review-write.ts'),f=fixture(),basis=await normalInitialUnderstandingBasis(f.source,f.preparation,f.preparation.ref),firstBuffer=beginNormalInitialUnderstandingReview(basis,session,id(101));
+ firstBuffer.form.reason='보관 최초 판단';for(const item of firstBuffer.form.items){item.sourceRefs=[f.basisRefs[0]!];item.responsePartRefs=f.source.partRefs;item.judgement='MATCH';item.reason='최초 사람이 대조';}firstBuffer.pending=await prepareNormalInitialUnderstandingReview(firstBuffer,session,9,firstBuffer.ownerEpoch);
+ const rows:any[]=[historyRecord(firstBuffer,firstBuffer.pending)],posts:any[]=[],paths:string[]=[];let buffers:Record<string,any>={},renderBuffers=buffers,projection=session,source:any=f.source,approval:any=null,decided=false,stores=0,lost=false,concurrent=false,writerOff=false,pause=false,historyGets=0,failHistory=0,release!:()=>void,started!:()=>void;
+ const storage={get buffers(){return renderBuffers;},read:(key:string)=>buffers[key]??null,hasUnresolved:(epoch:string,scope:any)=>domain.unresolvedNormalUnderstandingReviewScope(buffers,epoch,projection,scope),onChange:(key:string,change:any)=>{buffers={...buffers,[key]:change(buffers[key]??null)};}};
+ const history=()=>({transport:'NORMAL_PROTECTED',scope:f.scope,items:rows,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false});
+ const buffer=()=>Object.values(buffers).filter((v:any)=>v?.previousReviewRef).sort((a:any,b:any)=>b.previousReviewRef.version-a.previousReviewRef.version)[0];
+ const client=new ApiClient(async(path,options)=>{
+  paths.push(String(path));assert.equal(options?.credentials,'same-origin');assert.equal(options?.cache,'no-store');assert.equal(options?.redirect,'error');
+  if(options?.method==='POST'){
+   const q=JSON.parse(String(options.body));posts.push(q);assert.equal('previousReviewRef'in q,false);assert.equal('previousReviewRef'in q.payload,false);assert.deepEqual(q.baselineRefs,[]);
+   if(q.operation==='requestApproval'){approval=q;const v=approvalProjection(q,false);return Response.json({status:'APPLIED',projectId:q.projectId,commandId:q.commandId,operationId:id(91),targetId:v.request.id,version:1,data:{status:'APPROVAL_REQUESTED',ref:v.requestRef,request:v.request},serverReceivedAt:new Date().toISOString()});}
+   readUnderstandingReviewCommand(q);if(writerOff)return Response.json({code:'UNDERSTANDING_NORMAL_FIRST_REQUIRED'},{status:412});
+   let stored=rows.find(row=>row.snapshot.request.commandId===q.commandId);
+   if(stored)assert.deepEqual(stored.snapshot.request,q);
+   else{if(concurrent){concurrent=false;const other={...structuredClone(q),commandId:id(150),approvalRef:null};rows.push(appendNormalRow(rows.at(-1),buffer(),other));}stored=appendNormalRow(rows.at(-1),buffer(),q);rows.push(stored);stores++;}
+   if(lost){lost=false;throw Error('AFTER_COMMIT_LOST');}
+   return Response.json({status:'APPLIED',projectId:q.projectId,commandId:q.commandId,operationId:id(92),targetId:stored.ref.id,version:stored.ref.version,data:{status:'NORMAL_UNDERSTANDING_REVIEWED',ref:stored.ref,snapshot:stored.snapshot},serverReceivedAt:new Date().toISOString()});
+  }
+  if(String(path).includes('/approvals/'))return Response.json(approvalProjection(approval,decided));
+  if(String(path).includes('/understanding-reviews?')){historyGets++;if(historyGets===failHistory)return Response.json({code:'UNDERSTANDING_HISTORY_UNAVAILABLE'},{status:503});if(pause){pause=false;started();await new Promise<void>(r=>{release=r;});}return Response.json(history());}
+  assert.equal(path,'/api/v1/projects/'+f.scope.projectId);return Response.json({id:f.scope.projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}});
+ });
+ const draw=()=>{renderBuffers={...buffers};return hooks.draw(()=>m.NormalInitialUnderstandingReview({client,session:projection,request:f.source.request,preparation:f.preparation,source,viewActive:()=>!!source,storage,busy:false}));},html=()=>renderToStaticMarkup(draw());
+ const click=(label:string)=>{const node=find(draw(),x=>x.type==='button'&&x.props.children===label);assert.ok(node,label);assert.equal(!!node.props.disabled,false,label);node.props.onClick();};
+ const change=(label:string,value:any,checked?:boolean)=>{const node=find(draw(),x=>x.props?.['aria-label']===label);assert.ok(node,label);node.props.onChange({target:{value,checked}});};
+ async function begin(){click('후속 이해 검토 입력 준비');await until(()=>!!buffer(),'follow draft');}
+ function fill(){for(let n=1;n<=6;n++){change('기준 '+n+' '+f.basisRefs[0]!.id,'',true);change('응답 '+n+' '+f.source.partRefs[0].id,'',true);change('후속 이해 판단 '+n,'INSUFFICIENT');change('후속 이해 이유 '+n,'새로 사람이 대조');}change('후속 이해 검토 이유','후속 여섯 기준 판단');}
+ async function prepare(){click('후속 이해 검토 명령 준비');await until(()=>!!buffer()?.pending,'follow command');}
+ async function approve(){click('후속 이해 검토 승인 요청 준비');await until(()=>!!buffer()?.approval,'follow approval draft');change('후속 이해 승인 요청 이유','후속 정확 원명령 보관 승인');click('후속 이해 승인 요청 보관');await until(()=>!!buffer()?.approval?.requestId,'approval receipt');decided=true;click('같은 후속 원명령에 결정 결박');await until(()=>!!buffer()?.pending?.approvalRef,'bound follow approval');}
+ draw();click('정상 이해 검토 이력 확인');await until(()=>!!find(draw(),x=>x.type==='button'&&x.props.children==='후속 이해 검토 입력 준비'),'follow current basis');
+ return{f,basis,rows,posts,paths,client,storage,draw,html,click,change,begin,fill,prepare,approve,buffer,history,close:()=>hooks.unmount(),get buffers(){return buffers;},get stores(){return stores;},add:(value?:any)=>{const q=value??{...structuredClone(rows.at(-1).snapshot.request),commandId:id(140+rows.length)};rows.push(appendNormalRow(rows.at(-1),buffer()??firstBuffer,q));},lose:()=>{lost=true;},concurrent:()=>{concurrent=true;},deny:()=>{writerOff=true;},failHistoryAfter:(n:number)=>{failHistory=historyGets+n;},source:(value:any)=>{source=value;},session:(value:any)=>{projection=value;},pause:()=>{pause=true;return new Promise<void>(r=>{started=r;});},release:()=>release(),inject:(key:string,value:any)=>{buffers={...buffers,[key]:value};}};
+}
+
+test('실제 후속 폼→별도 승인→v2 저장은 current 원문/정확 latest만 쓰고 first/synthetic/과거 원문을 섞지 않는다 · React/RAM',async()=>{
+ const h=await followHost();try{await h.begin();assert.equal(h.buffer().previousReviewRef.version,1);assert.ok(h.buffer().form.items.every((r:any)=>!r.judgement&&!r.reason&&!r.sourceRefs.length&&!r.responsePartRefs.length));assert.ok(!JSON.stringify(h.buffers).includes('RAW_SOURCE'));h.fill();await h.prepare();const original=structuredClone(h.buffer().pending);await h.approve();assert.equal(h.buffer().pending.commandId,original.commandId);assert.deepEqual(h.buffer().pending.payload,original.payload);
+  h.change('후속 이해 검토 저장 확인','',true);h.click('후속 이해 검토 저장');await until(()=>!!h.buffer()?.stored,'v2 stored');assert.equal(h.buffer().stored.ref.version,2);assert.equal(h.stores,1);assert.deepEqual(h.buffer().stored.snapshot.previousRef,h.rows[0].ref);assert.match(h.html(),/후속 이해 검토 보관 확인/);h.click('정상 이해 검토 이력 확인');await until(()=>h.html().includes('보관된 후속 검토 · v2'),'explicit vN history');assert.doesNotMatch(h.html(),/보관된 최초 검토 · v2|합성 제공자|RAW_SOURCE/);assert.equal(h.posts.filter(q=>q.operation==='reviewUnderstanding').length,1);assert.equal(h.posts.filter(q=>q.operation==='requestApproval').length,1);
+ }finally{h.close();}
+});
+
+test('후속 저장 불명은 exact command N을 먼저 찾아 POST0으로 회복하고 현재 latest를 자기 결과로 바꾸지 않는다',async()=>{
+ const h=await followHost();try{await h.begin();h.fill();await h.prepare();h.lose();h.change('후속 이해 검토 저장 확인','',true);h.click('후속 이해 검토 저장');await until(()=>h.buffer()?.uncertain&&h.buffer()?.failure?.code==='CONNECTION_LOST','uncertain committed v2');const pending=structuredClone(h.buffer().pending),before=h.posts.length;h.add();assert.equal(h.rows.at(-1).ref.version,3);h.source(null);h.draw();assert.equal(find(h.draw(),x=>x.type==='button'&&x.props.children==='후속 이해 검토 입력 준비'),undefined);h.click('같은 후속 이해 검토 명령 재확인');await until(()=>!!h.buffer()?.stored,'original N recovery');assert.equal(h.buffer().stored.ref.version,2);assert.deepEqual(h.buffer().pending,pending);assert.equal(h.posts.length,before);assert.equal(h.stores,1);assert.ok(!JSON.stringify(h.buffers).includes('RAW_SOURCE'));
+ }finally{h.close();}
+});
+
+test('같은 정상 명령이 경합 뒤 N+2에 저장되면 실제 previous와 확인했던 previous를 함께 표시하고 성공을 보존한다',async()=>{
+ const h=await followHost();try{await h.begin();h.fill();await h.prepare();h.concurrent();h.change('후속 이해 검토 저장 확인','',true);h.click('후속 이해 검토 저장');await until(()=>!!h.buffer()?.stored,'serialized append');assert.equal(h.buffer().stored.ref.version,3);assert.equal(h.buffer().previousReviewRef.version,1);assert.equal(h.buffer().stored.snapshot.previousRef.version,2);assert.match(h.html(),/화면에서 확인한 이전 v1 · 서버가 저장한 이전 v2/);assert.equal(h.buffer().failure,null);assert.equal(h.posts.length,1);assert.equal(h.stores,1);
+ }finally{h.close();}
+});
+
+test('후속 PREPARE의 stale head와 렌더 사이 새 키의 같은 실행 불명은 CAS에서 멈추고 원 draft/승인을 보존한다',async()=>{
+ const h=await followHost();try{await h.begin();h.fill();const original=structuredClone(h.buffer());h.add();h.click('후속 이해 검토 명령 준비');await until(()=>h.html().includes('UNDERSTANDING_REVIEW_HEAD_CHANGED'),'stale head');assert.equal(h.buffer().pending,null);assert.deepEqual(h.buffer().previousReviewRef,original.previousReviewRef);assert.deepEqual(h.buffer().form,original.form);assert.equal(h.posts.length,0);
+  h.click('후속 이해 검토 입력 준비');await until(()=>Object.values(h.buffers).length===2,'explicit new latest draft');assert.equal(h.buffer().previousReviewRef.version,2);assert.ok(h.buffer().form.items.every((r:any)=>!r.judgement&&!r.reason));h.fill();const waiting=h.pause();h.click('후속 이해 검토 명령 준비');await waiting;
+  const other=structuredClone(h.buffer());other.uncertain=true;other.basis.preparationRef=ref(199);other.pending={schemaVersion:1,commandId:id(198)};h.inject('new-unrendered-key',other);h.release();for(let n=0;n<15;n++)await new Promise<void>(r=>setImmediate(r));assert.equal(h.buffer().pending,null);assert.equal(h.posts.length,0);assert.match(h.html(),/UNDERSTANDING_REVIEW_RECOVERY_REQUIRED|같은 실행의 미확정/);assert.ok(!h.html().includes(id(199)));assert.ok(h.buffers['new-unrendered-key'].uncertain);
+ }finally{h.close();}
+});
+
+test('후속 저장의 writer-off 거절과 client/transport/CSRF epoch 교체는 원 pending/승인을 보존하며 다른 용도로 전송하지 않는다',async()=>{
+ const h=await followHost();try{await h.begin();h.fill();await h.prepare();h.deny();h.change('후속 이해 검토 저장 확인','',true);h.click('후속 이해 검토 저장');await until(()=>h.buffer()?.failure?.code==='UNDERSTANDING_NORMAL_FIRST_REQUIRED','writer off known rejection');assert.equal(h.buffer().uncertain,false);assert.equal(h.buffer().stored,null);assert.match(h.html(),/서버가 최초 검토만 허용/);const stored=structuredClone(h.buffers),old=find(h.draw(),x=>x.type==='button'&&x.props.children==='후속 이해 검토 저장'),before=h.paths.length;h.session({...session,csrfToken:'r'.repeat(43)});assert.equal(h.html(),'');old.props.onClick();for(let n=0;n<4;n++)await new Promise<void>(r=>setImmediate(r));assert.equal(h.paths.length,before);assert.deepEqual(h.buffers,stored);assert.ok(!JSON.stringify(h.buffers).includes(session.csrfToken));
+ }finally{h.close();}
+});
+
+
+test('후속 외부 head 검산 뒤 내부 GET503은 POST/uncertain0이며 다음 시도도 바뀐 head를 새로 거절한다',async()=>{
+ const h=await followHost();try{await h.begin();h.fill();await h.prepare();await h.approve();const pending=structuredClone(h.buffer().pending),approval=structuredClone(h.buffer().approval),before=h.posts.length;
+  h.failHistoryAfter(2);h.change('후속 이해 검토 저장 확인','',true);h.click('후속 이해 검토 저장');await until(()=>h.buffer()?.failure?.code==='UNDERSTANDING_HISTORY_UNAVAILABLE','internal preflight failure');assert.equal(h.buffer().uncertain,false);assert.equal(h.posts.length,before);assert.deepEqual(h.buffer().pending,pending);assert.deepEqual(h.buffer().approval,approval);assert.match(h.html(),/저장 POST는 전송하지 않았습니다/);assert.equal(find(h.draw(),n=>n.type==='button'&&n.props.children==='같은 후속 이해 검토 명령 재확인'),undefined);
+  h.add();h.click('후속 이해 검토 저장');await until(()=>h.html().includes('UNDERSTANDING_REVIEW_HEAD_CHANGED'),'retry rechecks new latest');assert.equal(h.buffer().uncertain,false);assert.equal(h.posts.length,before);assert.deepEqual(h.buffer().pending,pending);assert.deepEqual(h.buffer().approval,approval);
+ }finally{h.close();}
+});

@@ -1,12 +1,12 @@
 import {readUnderstandingApprovalCommand} from '../decisions/understanding-review-approval-api.ts';
-import {readNormalUnderstandingHistory,type NormalUnderstandingHistoryView,type UnderstandingHistoryScope} from './understanding-history-api.ts';
+import {readNormalUnderstandingHistory,validateNormalUnderstandingHistory,type NormalUnderstandingHistoryView,type UnderstandingHistoryScope} from './understanding-history-api.ts';
 import type {PlanRef} from '../design-trace/work-plan-api.ts';
 import type {PreparationRecord} from '../workspace/responsible-session-api.ts';
 import type {NormalUnderstandingRangeResult} from '../workspace/NormalUnderstandingDiscovery.tsx';
 import {understandingApprovalRef} from '../decisions/understanding-review-approval-api.ts';
 import type {ApprovalRequestWork} from '../decisions/api.ts';
 import {ApiClient,ApiError} from '../../api/client.ts';
-import {postDocumentCommand,type DocumentSession,type DocumentWrite} from '../design-trace/editor-api.ts';
+import {postDocumentCommand,documentControl,type DocumentSession,type DocumentWrite} from '../design-trace/editor-api.ts';
 import {ordered} from '../knowledge/review-view.ts';
 import type {SubmittedResultView} from './result-api.ts';
 import {readStoredUnderstandingHistory,validateUnderstandingHistory,type UnderstandingHistoryView} from './understanding-history-api.ts';
@@ -47,8 +47,12 @@ export async function saveUnderstandingReview(client:ApiClient,raw:Understanding
 
 export interface NormalInitialUnderstandingBasis{scope:UnderstandingHistoryScope;assignmentRef:PlanRef;preparationRef:PlanRef;rangeRequestRef:PlanRef;bundleRef:PlanRef;subjectBindingRef:PlanRef;basisRefs:PlanRef[];responseRef:PlanRef;responsePartRefs:PlanRef[]}
 export type NormalInitialUnderstandingRecord=NormalUnderstandingHistoryView['items'][number];
-export interface NormalInitialUnderstandingReviewBuffer{ownerEpoch:string;bindingId:string;ownerUserId:string;ownerClientId:string;basis:NormalInitialUnderstandingBasis;form:UnderstandingReviewBuffer['form'];pending:DocumentWrite|null;stored:NormalInitialUnderstandingRecord|null;uncertain:boolean;failure:{code:string;status:number}|null;approval?:{work:ApprovalRequestWork|null;requestId:string}}
-export interface NormalInitialUnderstandingReviewStorage{buffers:Record<string,NormalInitialUnderstandingReviewBuffer|null>;read:(key:string)=>NormalInitialUnderstandingReviewBuffer|null;onChange:(key:string,change:(prior:NormalInitialUnderstandingReviewBuffer|null)=>NormalInitialUnderstandingReviewBuffer|null)=>void}
+export interface NormalInitialUnderstandingReviewBuffer{previousReviewRef?:PlanRef;ownerEpoch:string;bindingId:string;ownerUserId:string;ownerClientId:string;basis:NormalInitialUnderstandingBasis;form:UnderstandingReviewBuffer['form'];pending:DocumentWrite|null;stored:NormalInitialUnderstandingRecord|null;uncertain:boolean;failure:{code:string;status:number}|null;approval?:{work:ApprovalRequestWork|null;requestId:string}}
+export interface NormalInitialUnderstandingReviewStorage{hasUnresolved?:(ownerEpoch:string,scope:UnderstandingHistoryScope)=>boolean;buffers:Record<string,NormalInitialUnderstandingReviewBuffer|null>;read:(key:string)=>NormalInitialUnderstandingReviewBuffer|null;onChange:(key:string,change:(prior:NormalInitialUnderstandingReviewBuffer|null)=>NormalInitialUnderstandingReviewBuffer|null)=>void}
+/** App의 동기 원 저장소에서 같은 인증 epoch/실행의 불명 여부만 반환한다. 다른 refs나 입력은 노출하지 않는다. */
+export function unresolvedNormalUnderstandingReviewScope(records:Record<string,NormalInitialUnderstandingReviewBuffer|null>,epoch:string,s:DocumentSession,scope:UnderstandingHistoryScope){
+ return Object.values(records).some(v=>v&&v.ownerEpoch===epoch&&v.ownerUserId===s.user.id&&v.ownerClientId===s.clientId&&same(v.basis.scope,scope)&&(v.uncertain||v.approval?.work?.uncertain));
+}
 const normalRef=(v:any):v is PlanRef=>!!v&&same(Object.keys(v).sort(),['contentHash','id','version'])&&uuid(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&typeof v.contentHash==='string'&&/^[a-f0-9]{64}$/.test(v.contentHash);
 const normalRefs=(v:any):v is PlanRef[]=>Array.isArray(v)&&v.length>0&&v.length<=200&&v.every(normalRef)&&new Set(v.map(ordered)).size===v.length;
 /** 보호 reader가 검산한 현재 BODY와 동일 EP 원형을 다시 대조한다. 반환/보존은 refs뿐이다. */
@@ -73,7 +77,19 @@ export function beginNormalInitialUnderstandingReview(raw:NormalInitialUnderstan
  const b=structuredClone(raw);if(!uuid(ownerEpoch)||!uuid(s.user.id)||!uuid(s.clientId)||!normalRefs(b.basisRefs)||!normalRefs(b.responsePartRefs)||![b.assignmentRef,b.preparationRef,b.rangeRequestRef,b.bundleRef,b.subjectBindingRef,b.responseRef].every(normalRef))fail();
  return{ownerEpoch,bindingId:crypto.randomUUID(),ownerUserId:s.user.id,ownerClientId:s.clientId,basis:b,form:{bundleRef:b.bundleRef,responseRef:b.responseRef,subjectBindingRef:b.subjectBindingRef,criteriaVersion:1,items:['PURPOSE_REASON','BASELINE_AUTHORITY','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'].map(code=>({code:code as Input['items'][number]['code'],sourceRefs:[],responsePartRefs:[],judgement:'',reason:''})),reason:''},pending:null,stored:null,uncertain:false,failure:null};
 }
-export async function prepareNormalInitialUnderstandingReview(raw:NormalInitialUnderstandingReviewBuffer,s:DocumentSession,generation:number,ownerEpoch:string):Promise<DocumentWrite>{
+export function normalFollowUpUnderstandingReviewKey(b:NormalInitialUnderstandingBasis,s:DocumentSession,epoch:string,previous:PlanRef){if(!normalRef(previous)||previous.version>=1000)fail();return ordered([normalInitialUnderstandingReviewKey(b,s,epoch),'FOLLOW_UP',previous]);}
+/** 이력은 head를 찾는 자료다. 현재 원문/정확 EP의 refs와 모두 같아야 후속 작성의 로컬 기준으로 고정한다. */
+export async function normalFollowUpUnderstandingLatest(b:NormalInitialUnderstandingBasis,raw:NormalUnderstandingHistoryView,active:()=>boolean=()=>true):Promise<PlanRef>{
+ const history=await validateNormalUnderstandingHistory(raw,b.scope,active),latest=history?.items.at(-1),c=latest?.snapshot.currentBinding,g=c?.sourceBasis;
+ if(!active()||!latest||latest.ref.version>=1000||!c||!g||!same(g.preparationRef,b.preparationRef)||!same(g.requestRef,b.rangeRequestRef)||!same(c.bundleRef,b.bundleRef)||!same(c.subjectBindingRef,b.subjectBindingRef)||!same(c.responseRef,b.responseRef)||!same(c.basisRefs,b.basisRefs)||!same(c.responsePartRefs,b.responsePartRefs))throw new ApiError('UNDERSTANDING_REVIEW_HEAD_REQUIRED',409);
+ return structuredClone(latest.ref);
+}
+export async function beginNormalFollowUpUnderstandingReview(b:NormalInitialUnderstandingBasis,s:DocumentSession,epoch:string,history:NormalUnderstandingHistoryView,active:()=>boolean=()=>true):Promise<NormalInitialUnderstandingReviewBuffer>{
+ const previousReviewRef=await normalFollowUpUnderstandingLatest(b,history,active);if(!active())fail();return {...beginNormalInitialUnderstandingReview(b,s,epoch),previousReviewRef};
+}
+export async function prepareNormalInitialUnderstandingReview(raw:NormalInitialUnderstandingReviewBuffer,s:DocumentSession,generation:number,epoch:string):Promise<DocumentWrite>{if(raw.previousReviewRef!==undefined)fail();return prepareNormalReview(raw,s,generation,epoch);}
+export async function prepareNormalFollowUpUnderstandingReview(raw:NormalInitialUnderstandingReviewBuffer,s:DocumentSession,generation:number,epoch:string):Promise<DocumentWrite>{if(!normalRef(raw.previousReviewRef)||raw.previousReviewRef.version>=1000)fail();return prepareNormalReview(raw,s,generation,epoch);}
+async function prepareNormalReview(raw:NormalInitialUnderstandingReviewBuffer,s:DocumentSession,generation:number,ownerEpoch:string):Promise<DocumentWrite>{
  const b=structuredClone(raw),basis=b.basis,i=b.form;
  if(!uuid(ownerEpoch)||b.ownerEpoch!==ownerEpoch||b.ownerUserId!==s.user.id||b.ownerClientId!==s.clientId||!uuid(s.user.id)||!uuid(s.clientId)||!(/^[A-Za-z0-9_-]{43}$/).test(s.csrfToken)||!Number.isSafeInteger(generation)||generation<1||b.stored||!['bundleRef','responseRef','subjectBindingRef'].every(k=>same(i[k as keyof typeof i],basis[k as 'bundleRef']))||!normalRefs(basis.basisRefs)||!normalRefs(basis.responsePartRefs))fail();
  for(const row of i.items){if(!normalRefs(row.sourceRefs)||!normalRefs(row.responsePartRefs)||!row.sourceRefs.every(r=>basis.basisRefs.some(v=>same(r,v)))||!row.responsePartRefs.every(r=>basis.responsePartRefs.some(v=>same(r,v))))fail();}
@@ -83,7 +99,7 @@ export async function prepareNormalInitialUnderstandingReview(raw:NormalInitialU
  if(b.pending&&!same(b.pending,command)||!b.pending&&b.uncertain)fail();return structuredClone(command) as DocumentWrite;
 }
 export function matchNormalInitialUnderstandingReview(raw:NormalUnderstandingHistoryView,b:NormalInitialUnderstandingReviewBuffer):NormalInitialUnderstandingRecord|null{
- if(!b.pending||!same(raw.scope,b.basis.scope))return null;const matches=raw.items.filter(row=>row.snapshot.request.commandId===b.pending!.commandId);if(matches.length!==1)return null;const row=matches[0]!,s=row.snapshot;
+ if(b.previousReviewRef!==undefined||!b.pending||!same(raw.scope,b.basis.scope))return null;const matches=raw.items.filter(row=>row.snapshot.request.commandId===b.pending!.commandId);if(matches.length!==1)return null;const row=matches[0]!,s=row.snapshot;
  if(!same(s.request,b.pending)||!same(s.input,b.form)||s.reviewer.userId!==b.ownerUserId||s.reviewer.clientId!==b.ownerClientId||s.currentBinding.transport!=='NORMAL_PROTECTED'||!same(s.currentBinding.sourceBasis.preparationRef,b.basis.preparationRef)||!same(s.currentBinding.sourceBasis.requestRef,b.basis.rangeRequestRef)||!same(s.currentBinding.basisRefs,b.basis.basisRefs)||!same(s.currentBinding.responsePartRefs,b.basis.responsePartRefs)||row.ref.version!==1||s.sequence!==1||s.previousRef!==null)return null;return structuredClone(row);
 }
 /** 정상 POST와 exact 이력 1행이 모두 같을 때만 저장 확인이다. 응답유실은 원명령을 보존한다. */
@@ -93,6 +109,37 @@ export async function saveNormalInitialUnderstandingReview(client:ApiClient,raw:
  const pinned=new ApiClient((...args)=>{if(!check())throw new ApiError('UNDERSTANDING_REVIEW_INPUT_INVALID');return transport.call(globalThis,...args);});
  const receipt=await postDocumentCommand(pinned,command,s.csrfToken);if(!check())return null;
  try{const history=await readNormalUnderstandingHistory(client,b.basis.scope,check);if(!history||!check())return null;const row=matchNormalInitialUnderstandingReview(history,b),d=receipt.data;
+  if(!row||receipt.targetId!==row.ref.id||receipt.version!==row.ref.version||!d||!same(Object.keys(d).sort(),['ref','snapshot','status'])||d.status!=='NORMAL_UNDERSTANDING_REVIEWED'||!same(d.ref,row.ref)||!same(d.snapshot,row.snapshot))throw new ApiError('UNDERSTANDING_REVIEW_RESPONSE_INVALID');return row;
+ }catch(cause){const e=cause instanceof ApiError?cause:new ApiError('UNDERSTANDING_REVIEW_RESPONSE_INVALID');throw new UnderstandingReadbackUnconfirmed(e.code,e.status);}
+}
+
+/** 검산된 체인에서 원 command의 저장 N을 찾는다. 서버가 붙인 실제 이전 버전은 화면 pin과 다를 수 있다. */
+export function matchNormalFollowUpUnderstandingReview(raw:NormalUnderstandingHistoryView,b:NormalInitialUnderstandingReviewBuffer):NormalInitialUnderstandingRecord|null{
+ if(!normalRef(b.previousReviewRef)||!b.pending||!same(raw.scope,b.basis.scope)||!same(raw.items[b.previousReviewRef.version-1]?.ref,b.previousReviewRef))return null;
+ const matches=raw.items.filter(row=>row.snapshot.request.commandId===b.pending!.commandId);if(matches.length!==1)return null;const row=matches[0]!,s=row.snapshot;
+ if(row.ref.id!==b.previousReviewRef.id||row.ref.version<=b.previousReviewRef.version||s.sequence!==row.ref.version||!normalRef(s.previousRef)||s.previousRef.id!==row.ref.id||s.previousRef.version!==row.ref.version-1||!same(raw.items[row.ref.version-2]?.ref,s.previousRef)
+  ||!same(s.request,b.pending)||!same(s.input,b.form)||s.reviewer.userId!==b.ownerUserId||s.reviewer.clientId!==b.ownerClientId||s.currentBinding.transport!=='NORMAL_PROTECTED'||!same(s.currentBinding.sourceBasis.preparationRef,b.basis.preparationRef)||!same(s.currentBinding.sourceBasis.requestRef,b.basis.rangeRequestRef)||!same(s.currentBinding.bundleRef,b.basis.bundleRef)||!same(s.currentBinding.subjectBindingRef,b.basis.subjectBindingRef)||!same(s.currentBinding.responseRef,b.basis.responseRef)||!same(s.currentBinding.basisRefs,b.basis.basisRefs)||!same(s.currentBinding.responsePartRefs,b.basis.responsePartRefs))return null;return structuredClone(row);
+}
+/** 선행 history에서 이미 저장된 command면 POST하지 않는다. 원문이나 화면 head를 새 승인 필드로 보내지 않는다. */
+export async function saveNormalFollowUpUnderstandingReview(client:ApiClient,raw:NormalInitialUnderstandingReviewBuffer,rawSession:DocumentSession,active:()=>boolean,beforeDispatch:(body:string)=>boolean):Promise<NormalInitialUnderstandingRecord|null>{
+ const b=structuredClone(raw),s=structuredClone(rawSession),transport=client.transport,epoch=normalInitialUnderstandingOwner(client,s);
+ const check=()=>active()&&client.transport===transport&&same(rawSession,s)&&normalInitialUnderstandingOwner(client,rawSession)===epoch&&b.ownerEpoch===epoch;
+ if(!b.pending)fail();const command=await prepareNormalFollowUpUnderstandingReview(b,s,b.pending.controlGeneration,epoch);if(!check())return null;
+ const before=await readNormalUnderstandingHistory(client,b.basis.scope,check);if(!before||!check())return null;
+ const already=matchNormalFollowUpUnderstandingReview(before,b);if(already)return already;
+ if(before.items.some(row=>row.snapshot.request.commandId===command.commandId))throw new ApiError('UNDERSTANDING_REVIEW_RESPONSE_INVALID');
+ if(!b.uncertain&&!same(await normalFollowUpUnderstandingLatest(b.basis,before,check),b.previousReviewRef))throw new ApiError('UNDERSTANDING_REVIEW_HEAD_CHANGED',409);if(!check())return null;
+ const control=new ApiClient((url,options)=>{if(!check())throw new ApiError('UNDERSTANDING_REVIEW_INPUT_INVALID');return transport.call(globalThis,url,options);});
+ if(await documentControl(control,b.basis.scope.projectId,s)!==command.controlGeneration)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);if(!check())return null;
+ let dispatched=false;const body=JSON.stringify(command),path=`/api/v1/projects/${command.projectId}/commands`;
+ const pinned=new ApiClient((url,options)=>{
+  if(!check()||dispatched||String(url)!==path||options?.method!=='POST'||options.body!==body)throw new ApiError('UNDERSTANDING_REVIEW_INPUT_INVALID');
+  // 원 transport 호출의 마지막 동기 경계다. 로컬 저장소의 CAS가 실제 수용된 때에만 전송을 시작한다.
+  if(!beforeDispatch(body))throw new ApiError('UNDERSTANDING_REVIEW_DISPATCH_REJECTED',409);dispatched=true;
+  return transport.call(globalThis,url,options);
+ });
+ const receipt=await postDocumentCommand(pinned,command,s.csrfToken);if(!check())return null;
+ try{const history=await readNormalUnderstandingHistory(client,b.basis.scope,check);if(!history||!check())return null;const row=matchNormalFollowUpUnderstandingReview(history,b),d=receipt.data;
   if(!row||receipt.targetId!==row.ref.id||receipt.version!==row.ref.version||!d||!same(Object.keys(d).sort(),['ref','snapshot','status'])||d.status!=='NORMAL_UNDERSTANDING_REVIEWED'||!same(d.ref,row.ref)||!same(d.snapshot,row.snapshot))throw new ApiError('UNDERSTANDING_REVIEW_RESPONSE_INVALID');return row;
  }catch(cause){const e=cause instanceof ApiError?cause:new ApiError('UNDERSTANDING_REVIEW_RESPONSE_INVALID');throw new UnderstandingReadbackUnconfirmed(e.code,e.status);}
 }
