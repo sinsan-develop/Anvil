@@ -134,7 +134,7 @@ test('range result marker-only/receipt-only/body-only writes have exact BEFORE a
  const shape=history.match(/execution_json_shape\(s,ARRAY\[([^\]]+)\]/)?.[1];assert.ok(shape);assert.doesNotMatch(shape,/'(?:body|text|parts|auth|bodyBase64|sdk|sessionId)'/);
  assert.match(shape,/'responseRef','partRefs','bodyHash','bodyBytes'/);
  const section=sql.slice(sql.indexOf('-- FN09 A §4.3:'));
- const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,27);
+ const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,29);
  for(const [,name,args] of helpers){
   const signature=name+'('+args!.split(',').filter(Boolean).map(x=>x.trim().split(/\s+/).at(-1)).join(',')+')';
   assert.ok(section.includes('ALTER FUNCTION anvil.'+signature+' OWNER TO anvil_v3_migrator;'),signature);
@@ -323,7 +323,7 @@ test('fixed range forward retains exact original discovery, current metadata, ch
   fn09_normal_understanding_consumption_valid:'0cae65df8c1ab09b5a33424a363fbe0de5784346471417e3f2df1dbce9b67f63',
   fn09_normal_understanding_result_pair_historical:'6767b3e8a31a300b40872e7187dd02eef2e2beb1aa91e26bb3069ffa4c559720',
   fn09_normal_understanding_result_store:'c2aa2d863f425e6f04a0f7f7ecc92b93f09b8bbf507b00f6b2e2d5b6e12e9d03'};
- for(const [name,digest] of Object.entries(original))assert.equal(createHash('sha256').update(definition(name).replace(/\r\n/g,'\n').replace(/ -- FN09_RANGE_CURRENT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_CURRENT_DISPATCH_END\n/,'').replace(/ -- FN09_RANGE_RESULT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_RESULT_DISPATCH_END\n/,'').replace(" IF expected->>'purpose'='FIXED_RANGE' THEN RETURN anvil.fn09_normal_understanding_range_connector_current(token,b,signed_request_id,expected);END IF;\n",'')).digest('hex'),digest,name);
+ for(const [name,digest] of Object.entries(original))assert.equal(createHash('sha256').update(definition(name).replace(/\r\n/g,'\n').replace(/ -- FN09_RANGE_CURRENT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_CURRENT_DISPATCH_END\n/,'').replace(/ -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_BEGIN\n[\s\S]*? -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_END\n/,'').replace(/ -- FN09_RANGE_RESULT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_RESULT_DISPATCH_END\n/,'').replace(" IF expected->>'purpose'='FIXED_RANGE' THEN RETURN anvil.fn09_normal_understanding_range_connector_current(token,b,signed_request_id,expected);END IF;\n",'')).digest('hex'),digest,name);
 });
 
 test('range connector current preserves auth SHARE then project lock, exact settled parent and HUMAN policy without auth lock upgrade',()=>{
@@ -563,6 +563,20 @@ test('normal 첫 검토는 BEFORE와 모든 deferred companion을 닫고 기존 
  for(const [name,file]of originals){const old=await readFile(new URL('../../../db/migrations/'+file,import.meta.url),'utf8'),needle='CREATE OR REPLACE FUNCTION anvil.'+name+'()',from=old.indexOf(needle),to=old.indexOf('$$;',from)+3;assert.ok(from>=0);const start=sql.indexOf(needle),end=sql.indexOf('$$;',start)+3;assert.ok(start>=0);const before=old.slice(from,to),after=sql.slice(start,end).replace(/ -- FN09_NORMAL_REVIEW_DISPATCH_BEGIN\n[\s\S]*? -- FN09_NORMAL_REVIEW_DISPATCH_END\n/g,'');assert.equal(after,before,name);}
  assert.doesNotMatch(sql,/DROP TRIGGER understanding_|GRANT[^;]*(?:review_append|review_current|review_input_valid|guard_fn09_normal_understanding_review)/);
  const legacy=await readFile(new URL('../../../db/migrations/0019_understanding_reviews.sql',import.meta.url),'utf8');assert.match(legacy,/GRANT INSERT ON anvil.understanding_reviews TO anvil_v3_app/);assert.match(legacy,/understanding_command_complete AFTER INSERT/);
+});
+
+test('normal 검토 provider의 근거 조회는 기존 metadata_current의 exact read-only 목적이며 private 본문·권한·쓰기 RPC를 열지 않는다',()=>{
+ const source=definition('fn09_normal_understanding_review_basis'),dispatcher=definition('fn09_normal_understanding_metadata_current');
+ assert.match(dispatcher,/selection->>'purpose'='NORMAL_REVIEW_BASIS'.*review_basis\(s,a,c,selection-'purpose',policy,expected_tx\)/);
+ for(const token of ['fn01_active','FOR UPDATE','project_members','project_control','OWNER','responseRef','executionId','executionGeneration','committed_basis','review_response','expected_tx'])assert.ok(source.includes(token),token);
+ assert.ok(source.indexOf('fn01_active')<source.indexOf('review_response'));assert.doesNotMatch(source,/INSERT INTO|UPDATE anvil|DELETE FROM|body_bytes|set_config|SYNTHETIC_ONLY/);
+ assert.match(sql,/REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_basis\(uuid,uuid,uuid,jsonb,jsonb,text\) FROM PUBLIC,anvil_v3_app/);
+ assert.doesNotMatch(sql,/GRANT[^;]*review_basis/);
+ const replay=definition('fn09_normal_understanding_review_replay');
+ assert.match(dispatcher,/NORMAL_REVIEW_REPLAY/);assert.match(replay,/review_historical\(v\)/);assert.match(replay,/h.request_hash IS DISTINCT FROM selection->>'requestHash'/);
+ assert.match(replay,/project_control/);assert.match(replay,/rule->'operations' \? 'reviewUnderstanding'/);assert.match(replay,/until_at=least\(until_at/);
+ assert.doesNotMatch(replay,/committed_basis|review_current\(|review_context_basis|range_current\(|INSERT INTO|UPDATE anvil|DELETE FROM|body_bytes/);
+ assert.match(replay,/RETURN h.result_ref/);assert.match(sql,/REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_replay\(uuid,uuid,uuid,jsonb,jsonb,text\) FROM PUBLIC,anvil_v3_app/);
 });
 
 test('원 CONTEXT_BUNDLE 자료 refs와 각 전달 영수증의 조합은 모두 필요하다 · 실제 descriptor/RAM 관계 검산, SQL 실행 아님',async()=>{

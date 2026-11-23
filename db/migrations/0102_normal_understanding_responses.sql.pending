@@ -831,6 +831,10 @@ DECLARE p uuid;rid uuid;h anvil.normal_understanding_read_requests;r anvil.execu
  q anvil.project_storage_reservations;credential anvil.execution_receipts;basis jsonb;last_basis jsonb;request jsonb;command jsonb;m jsonb;
  n bigint;at timestamptz;ends timestamptz;
 BEGIN
+ -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_BEGIN
+ IF selection->>'purpose'='NORMAL_REVIEW_BASIS' THEN RETURN anvil.fn09_normal_understanding_review_basis(s,a,c,selection-'purpose',policy,expected_tx);END IF;
+ IF selection->>'purpose'='NORMAL_REVIEW_REPLAY' THEN RETURN anvil.fn09_normal_understanding_review_replay(s,a,c,selection-'purpose',policy,expected_tx);END IF;
+ -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_END
  -- FN09_RANGE_CURRENT_DISPATCH_BEGIN
  IF selection->>'purpose'='FIXED_RANGE_CURRENT' THEN RETURN anvil.fn09_normal_understanding_range_current(s,a,c,selection-'purpose',policy,expected_tx);END IF;
  -- FN09_RANGE_CURRENT_DISPATCH_END
@@ -2564,4 +2568,69 @@ BEGIN
  RETURN NULL;
 END;
 $$;
+-- 기존 metadata_current의 내부 목적 입력만 소비한다. 현재성 근거이며 검토 저장/승인/본문 공개가 아니다.
+CREATE FUNCTION anvil.fn09_normal_understanding_review_basis(s uuid,a uuid,c uuid,selection jsonb,policy jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid;pc anvil.project_control;receipt anvil.execution_receipts;src jsonb;ground jsonb;read_q jsonb;read_basis jsonb;call_started timestamptz=clock_timestamp();
+BEGIN
+ IF expected_tx IS DISTINCT FROM txid_current()::text OR NOT COALESCE(anvil.execution_json_shape(selection,ARRAY['projectId','executionId','executionGeneration','responseRef','controlGeneration']),false)
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(selection->'responseRef'),false) OR selection#>'{responseRef,version}' IS DISTINCT FROM '1'::jsonb
+  OR (selection->>'projectId')::uuid IS NULL OR (selection->>'executionId')::uuid IS NULL
+  OR selection->'executionGeneration' IS DISTINCT FROM to_jsonb((selection->>'executionGeneration')::bigint) OR (selection->>'executionGeneration')::bigint NOT BETWEEN 1 AND 9007199254740991
+  OR selection->'controlGeneration' IS DISTINCT FROM to_jsonb((selection->>'controlGeneration')::bigint) OR (selection->>'controlGeneration')::bigint NOT BETWEEN 1 AND 9007199254740991
+ THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_CURRENT_REQUIRED';END IF;
+ p=(selection->>'projectId')::uuid;PERFORM anvil.fn01_active(s,a,c);
+ PERFORM id FROM anvil.projects WHERE id=p AND archived_at IS NULL FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'NOT_FOUND';END IF;
+ IF NOT EXISTS(SELECT 1 FROM anvil.project_members WHERE project_id=p AND user_id=a AND participation='OWNER' AND revoked_at IS NULL FOR SHARE) THEN RAISE EXCEPTION 'PROJECT_CONTROL_REQUIRED';END IF;
+ SELECT * INTO STRICT pc FROM anvil.project_control WHERE project_id=p FOR UPDATE;
+ IF pc.actor_id IS DISTINCT FROM a OR pc.client_id IS DISTINCT FROM c OR pc.revoked_at IS NOT NULL OR to_jsonb(pc.generation) IS DISTINCT FROM selection->'controlGeneration' THEN RAISE EXCEPTION 'PROJECT_CONTROL_REQUIRED';END IF;
+ SELECT * INTO STRICT receipt FROM anvil.execution_receipts WHERE project_id=p AND version=1 AND snapshot_json->>'kind'='NORMAL_UNDERSTANDING_RANGE_RESULT' AND snapshot_json->'responseRef'=selection->'responseRef';
+ read_q=jsonb_build_object('schemaVersion',1,'projectId',p,'commandId',selection#>'{responseRef,id}','clientId',c,'controlGeneration',selection->'controlGeneration','operation','readNormalUnderstandingResponse',
+  'targetId',selection->'executionId','expectedVersion',selection->'executionGeneration','baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('assignmentRef',receipt.snapshot_json#>'{context,assignmentRef}','preparationRef',receipt.snapshot_json#>'{context,preparationRef}'));
+ read_basis=anvil.fn09_normal_understanding_request_basis(s,a,c,read_q,policy,expected_tx);
+ src=anvil.fn09_normal_understanding_review_response(p,selection->'responseRef');
+ IF read_basis->'context' IS DISTINCT FROM src->'context' OR src#>'{context,executionId}' IS DISTINCT FROM selection->'executionId' OR src#>'{context,executionGeneration}' IS DISTINCT FROM selection->'executionGeneration' THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_CURRENT_REQUIRED';END IF;
+ ground=anvil.fn09_normal_understanding_committed_basis(s,a,c,(src->'selection')||jsonb_build_object('controlGeneration',selection->'controlGeneration'),policy,expected_tx,selection->'responseRef');
+ IF least(call_started+interval '30 seconds',(ground->>'expiresAt')::timestamptz)<=clock_timestamp() THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_CURRENT_REQUIRED';END IF;
+ RETURN ground||jsonb_build_object('expiresAt',to_char(least(call_started+interval '30 seconds',(ground->>'expiresAt')::timestamptz) AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+END;$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_review_basis(uuid,uuid,uuid,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_basis(uuid,uuid,uuid,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+-- 동일 명령의 역사 재확인이다. 현재 material/원문/새 판단의 권위를 공급하지 않는다.
+CREATE FUNCTION anvil.fn09_normal_understanding_review_replay(s uuid,a uuid,c uuid,selection jsonb,policy jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid;pc anvil.project_control;hs anvil.auth_sessions;pv anvil.permission_policy_versions;h anvil.commands;v anvil.understanding_reviews;rule jsonb;allowed boolean=false;at timestamptz=clock_timestamp();until_at timestamptz;
+BEGIN
+ IF expected_tx IS DISTINCT FROM txid_current()::text OR NOT COALESCE(anvil.execution_json_shape(selection,ARRAY['projectId','executionId','executionGeneration','commandId','requestHash','controlGeneration']),false)
+  OR selection->>'requestHash' !~ '^[a-f0-9]{64}$' OR (selection->>'projectId')::uuid IS NULL OR (selection->>'executionId')::uuid IS NULL OR (selection->>'commandId')::uuid IS NULL
+  OR selection->'executionGeneration' IS DISTINCT FROM to_jsonb((selection->>'executionGeneration')::bigint) OR (selection->>'executionGeneration')::bigint NOT BETWEEN 1 AND 9007199254740991
+  OR selection->'controlGeneration' IS DISTINCT FROM to_jsonb((selection->>'controlGeneration')::bigint) OR (selection->>'controlGeneration')::bigint NOT BETWEEN 1 AND 9007199254740991 THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_REPLAY_INVALID';END IF;
+ p=(selection->>'projectId')::uuid;PERFORM anvil.fn01_active(s,a,c);
+ SELECT * INTO STRICT hs FROM anvil.auth_sessions WHERE id=s AND user_id=a AND client_id=c;
+ PERFORM id FROM anvil.projects WHERE id=p AND archived_at IS NULL FOR UPDATE;IF NOT FOUND THEN RAISE EXCEPTION 'NOT_FOUND';END IF;
+ IF NOT EXISTS(SELECT 1 FROM anvil.project_members WHERE project_id=p AND user_id=a AND participation='OWNER' AND revoked_at IS NULL FOR SHARE) THEN RAISE EXCEPTION 'PROJECT_CONTROL_REQUIRED';END IF;
+ SELECT * INTO STRICT pc FROM anvil.project_control WHERE project_id=p FOR UPDATE;
+ IF pc.actor_id IS DISTINCT FROM a OR pc.client_id IS DISTINCT FROM c OR pc.revoked_at IS NOT NULL OR to_jsonb(pc.generation) IS DISTINCT FROM selection->'controlGeneration' THEN RAISE EXCEPTION 'PROJECT_CONTROL_REQUIRED';END IF;
+ IF hs.reauth_until IS NULL OR hs.reauth_until<=clock_timestamp() THEN RAISE EXCEPTION 'REAUTHENTICATION_REQUIRED';END IF;
+ until_at=least(at+interval '30 seconds',hs.idle_expires_at,hs.absolute_expires_at,hs.reauth_until);
+ SELECT ver.* INTO STRICT pv FROM anvil.permission_policies head JOIN anvil.permission_policy_versions ver ON ver.project_id=head.project_id AND ver.policy_id=head.id AND ver.version=head.head_version WHERE head.project_id=p FOR SHARE OF head;
+ IF policy IS DISTINCT FROM jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash) OR pv.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('rules',pv.rules_json,'reason',pv.reason,'reviewRefs',pv.review_refs)) THEN RAISE EXCEPTION 'PROJECT_OPERATION_DENIED';END IF;
+ SELECT * INTO STRICT h FROM anvil.commands WHERE project_id=p AND actor_id=a AND command_id=(selection->>'commandId')::uuid AND operation='reviewUnderstanding';
+ SELECT * INTO STRICT v FROM anvil.understanding_reviews WHERE project_id=p AND command_id=h.id AND execution_id=(selection->>'executionId')::uuid AND generation=(selection->>'executionGeneration')::bigint;
+ IF h.client_id IS DISTINCT FROM c OR h.request_hash IS DISTINCT FROM selection->>'requestHash' OR h.control_generation IS DISTINCT FROM pc.generation OR NOT COALESCE(anvil.fn09_normal_understanding_review_historical(v),false) THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_REPLAY_INVALID';END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(pv.rules_json) LOOP
+  IF rule#>>'{subjectRef,kind}'='HUMAN' AND rule#>>'{subjectRef,userId}'=a::text AND rule->'operations' ? 'reviewUnderstanding'
+   AND EXISTS(SELECT 1 FROM jsonb_array_elements(rule->'targetScopes') t WHERE t->>'kind'='PROJECT' AND t->>'projectId'=p::text) AND (rule->>'expiresAt')::timestamptz>clock_timestamp() THEN
+   IF rule->>'disposition'='DENY' OR rule->'limitPolicyRef' IS DISTINCT FROM 'null'::jsonb OR rule->'subjectRef' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',a)
+    OR rule->'targetScopes' IS DISTINCT FROM jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',p)) OR rule->>'disposition' NOT IN('AUTO','REQUIRE_APPROVAL')
+    OR (rule->>'disposition'='REQUIRE_APPROVAL' AND h.approval_consumption_id IS NULL) THEN RAISE EXCEPTION 'PROJECT_OPERATION_DENIED';END IF;
+   IF rule->>'disposition'=(CASE WHEN h.approval_consumption_id IS NULL THEN 'AUTO' ELSE 'REQUIRE_APPROVAL' END) THEN allowed=true;END IF;
+   until_at=least(until_at,(rule->>'expiresAt')::timestamptz);
+  END IF;
+ END LOOP;
+ IF NOT allowed OR clock_timestamp()>=until_at THEN RAISE EXCEPTION 'PROJECT_OPERATION_DENIED';END IF;
+ RETURN h.result_ref;
+END;$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_review_replay(uuid,uuid,uuid,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_replay(uuid,uuid,uuid,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
 COMMIT;
