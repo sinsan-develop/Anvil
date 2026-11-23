@@ -29,7 +29,7 @@ test('준비 입력의 권한 true·빈 범위·경로 이탈·옛/위조 ref와
   assert.throws(() => read(getter), /EXECUTION_INTENT_INVALID/); assert.equal(calls,0);
 });
 
-function fixture() {
+export function fixture() {
   assert.equal(typeof module.ProjectExecutionPreparations, 'function');
   const rows: any[] = [], commands = new Map<string, any>();
   const actor: any = { actorId: pid, clientId: pid, serverOwner: false, credentialGeneration: 1, reauthUntil: null };
@@ -214,4 +214,13 @@ test('등록 준비 Options는 getter와 Proxy를 실행하지 않고 원문 자
   const params:any={model:'x'};Object.defineProperty(params,'maxTurns',{enumerable:true,get(){traps++;return 1;}});
   assert.throws(()=>compileExecutionPreparationOptions({adapterKind:'CLAUDE_AGENT_SDK',toolProduct:'Claude Code',modelOptions:{claudeQueryParams:params}}),/EXECUTION_PREPARATION_OPTIONS_INVALID/);
   assert.equal(traps,0);
+});
+
+test('정상 검토 선택은 등록 WORK 준비에만 보존하고 공통 실행 intent에는 전달하지 않는다',async()=>{
+ const {readExecutionPreparationInput}=await import('../../../apps/server/modules/executions/preparation-input.ts');
+ const value={...intent(),connectionKind:'REGISTERED_DEFINITION',optionsFormat:'CLAUDE_QUERY_DATA_V1',understandingReviewRef:{...ref,version:2}};
+ assert.deepEqual(readExecutionPreparationInput(value),value);
+ assert.throws(()=>read(value),/EXECUTION_INTENT_INVALID/);
+ for(const patch of [{mode:'CONTEXT_REVIEW'},{connectionKind:undefined},{understandingReviewRef:null},{understandingReviewRef:{...ref,version:0}},{understandingReviewRef:{...ref,version:1001}},{executionAuthorized:true}])assert.throws(()=>readExecutionPreparationInput({...value,...patch}),/EXECUTION_INTENT_INVALID/);
+ const selected=readExecutionPreparationInput(value) as any;value.understandingReviewRef.version=3;assert.equal(selected.understandingReviewRef.version,2);
 });

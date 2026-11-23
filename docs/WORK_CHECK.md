@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN09→WORK 준비 저장:** 명시 선택한 최신 정상 적합 판단을 기존 준비 명령·별도 승인·정산·원 선택 재확인에 연결했다. Main 합성·정적 86건·타입·독립 C0/I0. 미적용 SQL과 준비 기록이며 실제 WORK 시작 검산·UI04 선택·실제 PostgreSQL은 남아 있다.
+
 - **FN09→WORK 선행 근거:** 최신 정상 적합 판단을 사용자가 선택해 별도 WORK 준비와 결박하는 A안이 직접 채택됐다. 소스·화면·미적용 SQL·합성 검증 착수 대상이며 기존 WORK 접근·예산·능력·실행 허가와 실제 환경은 별도다.
 
 - **FN07 원 자료 비실행 준비:** native 원 등록·slot·FIRST3·설정·package의 pins를 원 호스트에서 확인하고 임시 보유한다. Main 합성·정적 63건·타입·독립 C0/I0. 별도 host-build 합성 PE fixture 실패 1건과 실제 C#·Win32, supervisor/broker 인계 및 도구 실행은 미완료다.

@@ -1,3 +1,4 @@
+import {readNormalWorkPreparationBasis,readNormalWorkPreparationBasisValue} from './normal-understanding-review.ts';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
@@ -66,7 +67,7 @@ export class ProjectExecutionPreparations {
     const raw=result as {data?:{status?:unknown;ref?:VersionRef;snapshot?:unknown}};
     if (raw?.data?.status!=='EXECUTION_PREPARED' || !refV1(raw.data.ref)) throw new AuthFailure('EXECUTION_PREPARATION_INTEGRITY_FAILED',503);
     const original=await this.read(db,actor,request.projectId,raw.data.ref.id,raw.data.ref.version);
-    if (!same(original.ref,raw.data.ref) || !same(original.snapshot,raw.data.snapshot) || !same(original.snapshot.intent,input)) throw new AuthFailure('EXECUTION_PREPARATION_INTEGRITY_FAILED',503);
+    if (!same(original.ref,raw.data.ref) || !same(original.snapshot,raw.data.snapshot) || !same(original.snapshot.intent,preparationRuntimeInput(input))||('understandingReviewRef' in input?!same(original.snapshot.understandingBasis?.reviewRef,input.understandingReviewRef):Object.hasOwn(original.snapshot,'understandingBasis'))) throw new AuthFailure('EXECUTION_PREPARATION_INTEGRITY_FAILED',503);
   }
   /** 기존 보호 원문을 같은 Tx에서 재검산하는 내부 전용 접점이다. */
   async readStartOriginSources(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,rawRef:unknown,mode:'FRESH'|'HISTORY',guard:()=>Promise<void>){
@@ -99,7 +100,7 @@ export class ProjectExecutionPreparations {
   async save(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,policyRef:VersionRef) {
     if(request.operation!=='prepareExecution'||request.targetId!==null||request.expectedVersion!==0)throw new AuthFailure('VERSION_CONFLICT',409);
     if(request.baselineRefs.length)throw new AuthFailure('EXECUTION_PREPARATION_APPROVAL_NOT_CONNECTED',412);
-    const input=readExecutionPreparationInput(request.payload);
+    const selected=readExecutionPreparationInput(request.payload),input=preparationRuntimeInput(selected);
     if(input.projectId!==request.projectId)throw new AuthFailure('EXECUTION_PROJECT_MISMATCH',422);
     await projectMember(db,actor,request.projectId,true);
     const assignment=await this.assignments.read(db,actor,request.projectId,input.assignmentRef.id,input.assignmentRef.version);
@@ -117,6 +118,7 @@ export class ProjectExecutionPreparations {
     const context=await this.contexts.read(db,actor,request.projectId,input.contextBundleRef.id,input.contextBundleRef.version);
     if(context.projectId!==request.projectId||!same(context.ref,input.contextBundleRef)||!same(context.manifest.assignmentRef,input.assignmentRef)
       ||context.manifest.ready!==false||context.manifest.executionAuthorized!==false||context.manifest.dispatchPerformed!==false)throw new AuthFailure('EXECUTION_CONTEXT_MISMATCH',409);
+    if('understandingReviewRef' in selected&&(context.currentCheck.state!=='MATCHED_METADATA'||context.manifest.missingRequired.length))throw new AuthFailure('WORK_PREPARATION_UNDERSTANDING_CHANGED',412);
     const options=registered?await this.#registeredOptions(db,actor,input,true):null;
     if(!registered)for(const [candidateRef,kind] of [[input.connectionRef,'CONNECTION_CANDIDATE'],[input.environmentRef,'ENVIRONMENT_CANDIDATE']] as const) {
       const candidate=await this.candidates.read(db,actor,request.projectId,candidateRef.id,candidateRef.version);
@@ -136,8 +138,10 @@ export class ProjectExecutionPreparations {
     const basisRefs=[...new Map((candidates as VersionRef[]).map(ref=>[canonicalJson(ref),ref])).values()];
     const latestInstructionRefs=structuredClone(context.manifest.latestInstructionRefs);
     if(!arrayV1(latestInstructionRefs,200)||!latestInstructionRefs.every(instructionRef))throw new AuthFailure('EXECUTION_BASIS_INVALID',503);
+    const understandingBasis='understandingReviewRef' in selected?await readNormalWorkPreparationBasis(db,actor,request,policyRef):undefined;
+    if(understandingBasis&&(!same(understandingBasis.basisRefs,basisRefs)||!same(understandingBasis.latestInstructionRefs,latestInstructionRefs)))throw new AuthFailure('WORK_PREPARATION_UNDERSTANDING_CHANGED',412);
     const at=(await db.query('SELECT transaction_timestamp() AS at')).rows[0].at.toISOString();
-    const snapshot={intent:input,basisRefs,latestInstructionRefs,checkedAt:at,missingConditions,authorizationState:'NOT_AUTHORIZED',preparedBy:{kind:'HUMAN',userId:actor.actorId},executionAuthorized:false,dispatchPerformed:false,...(options?{options}:{})};
+    const snapshot={intent:input,basisRefs,latestInstructionRefs,checkedAt:at,missingConditions,authorizationState:'NOT_AUTHORIZED',preparedBy:{kind:'HUMAN',userId:actor.actorId},executionAuthorized:false,dispatchPerformed:false,...(options?{options}:{}),...(understandingBasis?{understandingBasis}:{})};
     if(Buffer.byteLength(canonicalJson(snapshot),'utf8')>2*1024*1024)throw new AuthFailure('EXECUTION_PREPARATION_TOO_LARGE',422);
     const ref={id:randomUUID(),version:1,contentHash:contentHash(canonicalJson(snapshot))};
     if(registered&&!this.#registeredQuota)throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
@@ -150,6 +154,7 @@ export class ProjectExecutionPreparations {
       const finalOptions=await this.#registeredOptions(db,actor,input,true);
       if(!same(finalOptions,options))throw new AuthFailure('EXECUTION_PREPARATION_SOURCE_MISMATCH',409);
     }
+    if(understandingBasis&&!same(await readNormalWorkPreparationBasis(db,actor,request,policyRef),understandingBasis))throw new AuthFailure('WORK_PREPARATION_UNDERSTANDING_CHANGED',412);
     return receipt.result;
   }
   async read(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,id:string,version:number) {
@@ -163,7 +168,7 @@ export class ProjectExecutionPreparations {
       const intent=readExecutionPreparationInput(snapshot?.intent),registered='connectionKind' in intent;
       const required=registered?unresolved.map(code=>code==='CONNECTION_CANDIDATE_ONLY'?'CONNECTION_DEFINITION_ONLY':code==='ENVIRONMENT_CANDIDATE_ONLY'?'ENVIRONMENT_DEFINITION_ONLY':code):[...unresolved];
       const codes=[...required,'REQUIRED_CONTEXT_MISSING','CURRENT_CONTEXT_CHANGED','UNDERSTANDING_NOT_REVIEWED'];
-      if(!refV1(ref)||!recordV1(snapshot,['intent','basisRefs','latestInstructionRefs','checkedAt','missingConditions','authorizationState','preparedBy','executionAuthorized','dispatchPerformed',...(registered?['options']:[])])
+      if(!refV1(ref)||!recordV1(snapshot,['intent','basisRefs','latestInstructionRefs','checkedAt','missingConditions','authorizationState','preparedBy','executionAuthorized','dispatchPerformed',...(registered?['options']:[]),...(Object.hasOwn(snapshot,'understandingBasis')?['understandingBasis']:[])])
         ||readExecutionPreparationInput(snapshot.intent).projectId!==projectId||!arrayV1(snapshot.basisRefs,200)||!snapshot.basisRefs.every(refV1)||!isoV1(snapshot.checkedAt)
         ||!arrayV1(snapshot.latestInstructionRefs,200)||!snapshot.latestInstructionRefs.every(instructionRef)
         ||!arrayV1(snapshot.missingConditions,codes.length)||new Set(snapshot.missingConditions).size!==snapshot.missingConditions.length
@@ -173,6 +178,7 @@ export class ProjectExecutionPreparations {
         ||row.operation!=='prepareExecution'||row.state!=='APPLIED'||row.result_ref?.status!=='APPLIED'||row.result_ref?.projectId!==projectId
         ||row.result_ref?.data?.status!=='EXECUTION_PREPARED'||!same(row.result_ref.data.ref,ref)||!same(row.result_ref.data.snapshot,snapshot)
         ||contentHash(canonicalJson(snapshot))!==ref.contentHash)throw Error();
+      if(Object.hasOwn(snapshot,'understandingBasis'))readNormalWorkPreparationBasisValue(snapshot.understandingBasis,{...intent,understandingReviewRef:snapshot.understandingBasis?.reviewRef} as ExecutionPreparationIntentV1);
       if(registered && (!recordV1(snapshot.options,['format','mediaType','body','utf8Bytes','contentHash']) || snapshot.options.format!==intent.optionsFormat || snapshot.options.mediaType!=='application/json' || typeof snapshot.options.body!=='string' || !snapshot.options.body.isWellFormed() || snapshot.options.utf8Bytes!==Buffer.byteLength(snapshot.options.body,'utf8') || snapshot.options.contentHash!==contentHash(snapshot.options.body))) throw Error();
       if(Buffer.byteLength(canonicalJson(snapshot),'utf8')>2*1024*1024) throw Error();
       original={projectId,ref,snapshot:structuredClone(snapshot),currentness:'NOT_RECHECKED'};
@@ -181,6 +187,11 @@ export class ProjectExecutionPreparations {
     if('connectionKind' in intent){
       const options=await this.#registeredOptions(db,actor,intent,false);
       if(!same(options,original.snapshot.options))throw new AuthFailure('EXECUTION_PREPARATION_INTEGRITY_FAILED',503);
+    }
+    if(Object.hasOwn(original.snapshot,'understandingBasis')){
+      const rows=(await db.query('SELECT anvil.fn09_normal_understanding_metadata_current($1,$2,$3,$4,$5,$6) AS projection',[actor.authSession?.id,actor.actorId,actor.clientId,canonicalJson({purpose:'WORK_PREPARATION_HISTORY',projectId,preparationRef:original.ref}),null,(await db.query('SELECT txid_current()::text AS tx')).rows[0]?.tx])).rows;
+      const v=rows.length===1?rows[0]?.projection:null;
+      if(!recordV1(v,['status','basis'])||v.status!=='WORK_PREPARATION_HISTORY'||!same(v.basis,original.snapshot.understandingBasis))throw new AuthFailure('EXECUTION_PREPARATION_INTEGRITY_FAILED',503);
     }
     return original;
   }
@@ -192,3 +203,9 @@ const originalStartOriginProtectedPorts=[
   [ProjectSourceRoots.prototype,['read']], [SourceReadRecords.prototype,['readSnapshot','load']], [ProjectRegistrationReads.prototype,['read']],
 ] as const;
 const originalStartOriginProtectedMethods=originalStartOriginProtectedPorts.flatMap(([prototype,names])=>names.map(name=>({prototype,name,fn:Object.getOwnPropertyDescriptor(prototype,name)?.value})));
+
+// 선택은 준비 명령/불변 근거에만 남는다. 실행 공통 intent에는 전달하지 않는다.
+function preparationRuntimeInput(input:ExecutionPreparationIntentV1):ExecutionPreparationIntentV1{
+ if(!('understandingReviewRef' in input))return input;
+ const {understandingReviewRef:_,...intent}=input;return intent;
+}

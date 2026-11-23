@@ -1,3 +1,6 @@
+import type {PoolClient} from 'pg';
+import type {ExecutionPreparationIntentV1} from '../../../../contracts/runtime/execution-intent-v1.ts';
+import {readExecutionPreparationInput} from './preparation-input.ts';
 import {randomUUID} from 'node:crypto';
 import {types} from 'node:util';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
@@ -155,4 +158,35 @@ export class NormalUnderstandingReviews{
    }
    return failure();}
  }
+}
+
+
+const workBasisRefs=['reviewRef','preparationRef','assignmentRef','roleBindingRef','agentSessionRef','contextBundleRef','connectionRef','environmentRef','responseRef','requestRef'] as const;
+/** 준비 선택은 기존 정상 판단·자료의 참조다. WORK 실행 권한을 발급하지 않는다. */
+export function readNormalWorkPreparationBasisValue(raw:unknown,input:ExecutionPreparationIntentV1){
+ const v=cloneV1(raw),bad=():never=>failure('WORK_PREPARATION_UNDERSTANDING_INVALID',503);
+ if(!('understandingReviewRef' in input)||!('connectionKind' in input)||input.connectionKind!=='REGISTERED_DEFINITION'||input.mode!=='WORK'||!recordV1(v,['kind','scope',...workBasisRefs,'basisRefs','latestInstructionRefs'])||v.kind!=='NORMAL_UNDERSTANDING_WORK_BASIS'
+  ||!recordV1(v.scope,['projectId','executionId','executionGeneration'])||v.scope.projectId!==input.projectId||!uuidV1(v.scope.executionId)||!Number.isSafeInteger(v.scope.executionGeneration)||v.scope.executionGeneration<1
+  ||workBasisRefs.some(k=>!refV1(v[k]))||!same(v.reviewRef,input.understandingReviewRef)||v.reviewRef.version>1000
+  ||(['assignmentRef','roleBindingRef','contextBundleRef','connectionRef','environmentRef'] as const).some(k=>!same(v[k],input[k]))
+  ||!arrayV1(v.basisRefs,200)||!v.basisRefs.length||!v.basisRefs.every(refV1)||new Set(v.basisRefs.map(canonicalJson)).size!==v.basisRefs.length
+  ||!arrayV1(v.latestInstructionRefs,200)||v.latestInstructionRefs.some((r:unknown)=>!recordV1(r,['kind','id','contentHash'])||r.kind!=='CONVERSATION'||!refV1({id:r.id,version:1,contentHash:r.contentHash}))
+  ||new Set(v.latestInstructionRefs.map(canonicalJson)).size!==v.latestInstructionRefs.length||Buffer.byteLength(canonicalJson(v))>2097152)return bad();
+ return v;
+}
+/** 기존 app EXECUTE의 같은 HUMAN 거래만 사용한다. 원 수송 기한/현재 grant를 새 권위로 만들지 않는다. */
+export async function readNormalWorkPreparationBasis(db:PoolClient,actor:AuthenticatedIdentity,raw:ProjectCommand,policyRef:import('../../../../contracts/generated-types.ts').VersionRef){
+ const q=cloneV1(raw),input=readExecutionPreparationInput(q.payload),query=db.query,key=identity(actor),start=performance.now();let tx:string|undefined,last=-Infinity;
+ if(q.operation!=='prepareExecution'||q.targetId!==null||q.expectedVersion!==0||q.baselineRefs.length||q.projectId!==input.projectId||q.clientId!==actor.clientId||!('understandingReviewRef' in input)||!refV1(policyRef))return failure('INPUT_INVALID',422);
+ const clock=async()=>{if(db.query!==query||identity(actor)!==key||performance.now()-start>=30000)return failure();
+  const rows=(await Reflect.apply(query,db,['SELECT clock_timestamp() AS at,txid_current()::text AS tx'])).rows;
+  const row=rows.length===1?rows[0]:null,at=row?.at instanceof Date?row.at.getTime():NaN;
+  if(!Number.isFinite(at)||at<last||typeof row?.tx!=='string'||!row.tx||tx!==undefined&&row.tx!==tx)return failure();last=at;tx=row.tx;return at;};
+ try{
+ const at=await clock();
+ const rows=(await Reflect.apply(query,db,['SELECT anvil.fn09_normal_understanding_metadata_current($1,$2,$3,$4,$5,$6) AS projection',[actor.authSession!.id,actor.actorId,actor.clientId,canonicalJson({purpose:'WORK_PREPARATION_BASIS',projectId:q.projectId,command:q}),canonicalJson(policyRef),tx]])).rows;
+ const final=await clock(),v=cloneV1(rows.length===1?rows[0]?.projection:null);
+ if(!recordV1(v,['status','basis','checkedAt','expiresAt'])||v.status!=='WORK_PREPARATION_BASIS'||!isoV1(v.checkedAt)||!isoV1(v.expiresAt)||Date.parse(v.checkedAt)<at||Date.parse(v.checkedAt)>final||Date.parse(v.expiresAt)<=final||Date.parse(v.expiresAt)-Date.parse(v.checkedAt)>30000)return failure();
+ return readNormalWorkPreparationBasisValue(v.basis,input);
+ }catch(error){if(error instanceof AuthFailure)throw error;return failure('WORK_PREPARATION_UNDERSTANDING_INVALID',503);}
 }

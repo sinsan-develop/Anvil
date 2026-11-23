@@ -323,7 +323,7 @@ test('fixed range forward retains exact original discovery, current metadata, ch
   fn09_normal_understanding_consumption_valid:'0cae65df8c1ab09b5a33424a363fbe0de5784346471417e3f2df1dbce9b67f63',
   fn09_normal_understanding_result_pair_historical:'6767b3e8a31a300b40872e7187dd02eef2e2beb1aa91e26bb3069ffa4c559720',
   fn09_normal_understanding_result_store:'c2aa2d863f425e6f04a0f7f7ecc92b93f09b8bbf507b00f6b2e2d5b6e12e9d03'};
- for(const [name,digest] of Object.entries(original))assert.equal(createHash('sha256').update(definition(name).replace(/\r\n/g,'\n').replace(/ -- FN09_RANGE_HISTORY_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_HISTORY_DISPATCH_END\n/,'').replace(/ -- FN09_RANGE_CURRENT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_CURRENT_DISPATCH_END\n/,'').replace(/ -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_BEGIN\n[\s\S]*? -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_END\n/,'').replace(/ -- FN09_RANGE_RESULT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_RESULT_DISPATCH_END\n/,'').replace(" IF expected->>'purpose'='FIXED_RANGE' THEN RETURN anvil.fn09_normal_understanding_range_connector_current(token,b,signed_request_id,expected);END IF;\n",'')).digest('hex'),digest,name);
+ for(const [name,digest] of Object.entries(original))assert.equal(createHash('sha256').update(definition(name).replace(/\r\n/g,'\n').replace(/ -- FN09_WORK_PREPARATION_DISPATCH_BEGIN\n[\s\S]*? -- FN09_WORK_PREPARATION_DISPATCH_END\n/,'').replace(/ -- FN09_RANGE_HISTORY_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_HISTORY_DISPATCH_END\n/,'').replace(/ -- FN09_RANGE_CURRENT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_CURRENT_DISPATCH_END\n/,'').replace(/ -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_BEGIN\n[\s\S]*? -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_END\n/,'').replace(/ -- FN09_RANGE_RESULT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_RESULT_DISPATCH_END\n/,'').replace(" IF expected->>'purpose'='FIXED_RANGE' THEN RETURN anvil.fn09_normal_understanding_range_connector_current(token,b,signed_request_id,expected);END IF;\n",'')).digest('hex'),digest,name);
 });
 
 test('range connector current preserves auth SHARE then project lock, exact settled parent and HUMAN policy without auth lock upgrade',()=>{
@@ -649,4 +649,25 @@ test('normal 후속 writer 설정과 무관한 history/replay는 기존 app 목�
  const history=definition('fn09_normal_understanding_review_history'),replay=definition('fn09_normal_understanding_review_replay');
  assert.match(history,/review_chain\(p,eid,gen\)/);assert.match(replay,/review_chain\(p,v.execution_id,v.generation\)/);assert.match(replay,/items->\(\(v.version-1\)::integer\)/);assert.match(replay,/RETURN h.result_ref/);
  for(const text of [history,replay])assert.doesNotMatch(text,/fn09_normal_review_append|committed_basis|review_current|INSERT INTO|UPDATE anvil|body_bytes/);
+});
+
+
+test('WORK 준비 forward는 exact 선택 payload·snapshot·승인·actual·역사만 확장하고 원 권한과 수송은 보존한다',async()=>{
+ const sql=await readFile(new URL('../../../db/migrations/0103_work_preparation_understanding_basis.sql.pending',import.meta.url),'utf8');
+ for(const name of ['fn09_work_prepare_payload','fn09_work_prepare_basis_history','fn09_work_prepare_current','fn09_work_prepare_basis','fn09_work_prepare_history','fn09_registered_prepare_snapshot_valid','fn09_prepare_payload_valid','fn09_prepare_approval_execution_valid','fn09_registered_prepare_reserve','fn09_registered_prepare_actual_core','fn09_registered_preparation_guard'])assert.ok(sql.includes('FUNCTION anvil.'+name+'('),name);
+ for(const text of ["i->'connectionKind' IS DISTINCT FROM '\"REGISTERED_DEFINITION\"'::jsonb","i->'mode' IS DISTINCT FROM '\"WORK\"'::jsonb","'understandingReviewRef'","'understandingBasis'","fn09_normal_understanding_review_chain","fn09_normal_understanding_review_historical","fn09_normal_understanding_review_context_basis","NORMAL_UNDERSTANDING_WORK_BASIS","WORK_PREPARATION_BASIS","WORK_PREPARATION_HISTORY"])assert.ok(sql.includes(text),text);
+ assert.ok(sql.includes("fn09_work_prepare_payload(ep.snapshot_json)"));assert.ok(sql.includes("fn09_work_prepare_payload(snapshot) IS DISTINCT FROM q->'payload'"));
+ assert.ok(sql.includes("payload=CASE WHEN snapshot?'understandingBasis'"));assert.ok(sql.includes("reservation.plan_json->'request'->'payload' IS DISTINCT FROM anvil.fn09_work_prepare_payload(s)"));
+ assert.ok(!sql.includes('RENAME TO'));assert.ok(!/^[ \t]*GRANT\s|CREATE TABLE|UPDATE anvil.execution_grants|INTERVAL '.*minute/im.test(sql));
+ assert.ok(sql.includes('FROM PUBLIC,anvil_v3_app'));assert.ok(sql.includes("interval '30 seconds'"));
+ assert.ok(sql.includes('DEFERRABLE INITIALLY DEFERRED'));assert.ok(sql.includes('r.authorized_until<=clock_timestamp()'));
+ assert.ok(sql.includes("IF NOT(NEW.snapshot_json?'understandingBasis') THEN RETURN NULL;END IF"));
+ const current=sql.slice(sql.indexOf('CREATE FUNCTION anvil.fn09_work_prepare_current_source('),sql.indexOf('CREATE FUNCTION anvil.fn09_work_prepare_current('));
+ assert.ok(current.includes("chain->(jsonb_array_length(chain)-1)->'ref' IS DISTINCT FROM i->'understandingReviewRef'"));
+ assert.ok(current.includes("receipt.snapshot_json->'binding'"));assert.ok(!current.includes("sourceBasis,binding"));assert.ok(!/normal_exchange_current|request_basis|grant.*expires_at|credential.*expires_at/.test(current));
+ const history=sql.slice(sql.indexOf('CREATE FUNCTION anvil.fn09_work_prepare_basis_history('),sql.indexOf('CREATE FUNCTION anvil.fn09_work_prepare_current_source('));
+ assert.ok(!/clock_timestamp|reauth_until|normal_exchange_current|review_current/.test(history));assert.ok(history.includes("s->>'outcome' IS DISTINCT FROM 'ACCEPTED'"));
+ const settle=sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION anvil.fn09_registered_prepare_settle('),sql.indexOf('CREATE FUNCTION anvil.fn09_work_prepare_history('));
+ assert.ok(settle.indexOf('fn09_work_prepare_current(')<settle.indexOf("UPDATE anvil.project_storage_reservations SET phase='SETTLED'"));
+ const metadata=await readFile(new URL('../../../db/migrations/0102_normal_understanding_responses.sql.pending',import.meta.url),'utf8');assert.ok(metadata.includes("selection->>'purpose'='WORK_PREPARATION_BASIS'"));assert.ok(metadata.includes("selection->>'purpose'='WORK_PREPARATION_HISTORY'"));
 });

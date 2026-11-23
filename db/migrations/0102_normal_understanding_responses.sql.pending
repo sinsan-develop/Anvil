@@ -831,6 +831,10 @@ DECLARE p uuid;rid uuid;h anvil.normal_understanding_read_requests;r anvil.execu
  q anvil.project_storage_reservations;credential anvil.execution_receipts;basis jsonb;last_basis jsonb;request jsonb;command jsonb;m jsonb;
  n bigint;at timestamptz;ends timestamptz;
 BEGIN
+ -- FN09_WORK_PREPARATION_DISPATCH_BEGIN
+ IF selection->>'purpose'='WORK_PREPARATION_BASIS' THEN RETURN anvil.fn09_work_prepare_basis(s,a,c,selection-'purpose',policy,expected_tx);END IF;
+ IF selection->>'purpose'='WORK_PREPARATION_HISTORY' THEN RETURN anvil.fn09_work_prepare_history(s,a,c,selection-'purpose',policy,expected_tx);END IF;
+ -- FN09_WORK_PREPARATION_DISPATCH_END
  -- FN09_NORMAL_REVIEW_BASIS_DISPATCH_BEGIN
  IF selection->>'purpose'='NORMAL_REVIEW_BASIS' THEN RETURN anvil.fn09_normal_understanding_review_basis(s,a,c,selection-'purpose',policy,expected_tx);END IF;
  IF selection->>'purpose'='NORMAL_REVIEW_REPLAY' THEN RETURN anvil.fn09_normal_understanding_review_replay(s,a,c,selection-'purpose',policy,expected_tx);END IF;

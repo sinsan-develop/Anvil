@@ -22,10 +22,20 @@ export function readExecutionIntentV1(value: unknown): ExecutionIntentV1 {
 export interface RegisteredExecutionPreparationIntentV1 extends ExecutionIntentV1 {
   connectionKind: 'REGISTERED_DEFINITION'; optionsFormat: 'CLAUDE_QUERY_DATA_V1';
 }
-export type ExecutionPreparationIntentV1 = ExecutionIntentV1 | RegisteredExecutionPreparationIntentV1;
+export interface NormalWorkPreparationIntentV1 extends RegisteredExecutionPreparationIntentV1 {
+  mode: 'WORK'; understandingReviewRef: RuntimeRefV1;
+}
+export type ExecutionPreparationIntentV1 = ExecutionIntentV1 | RegisteredExecutionPreparationIntentV1 | NormalWorkPreparationIntentV1;
 export function readExecutionPreparationIntentV1(value: unknown): ExecutionPreparationIntentV1 {
   const keys = ['projectId','assignmentRef','roleBindingRef','contextBundleRef','connectionRef','environmentRef',
     'capabilityRef','budgetPolicyRef','sourceScopes','mode','reason','connectionKind','optionsFormat'];
+  if (recordV1(value,[...keys,'understandingReviewRef'])) {
+    if(value.mode!=='WORK'||!refV1(value.understandingReviewRef)||value.understandingReviewRef.version>1000)throw Error('EXECUTION_INTENT_INVALID');
+    const copied=cloneV1(value),{understandingReviewRef,...base}=copied;
+    const registered=readExecutionPreparationIntentV1(base);
+    if(!('connectionKind' in registered)||Buffer.byteLength(canonicalJson(copied),'utf8')>2*1024*1024)throw Error('EXECUTION_INTENT_INVALID');
+    return {...registered,mode:'WORK',understandingReviewRef} as NormalWorkPreparationIntentV1;
+  }
   if (!recordV1(value, keys)) return readExecutionIntentV1(value);
   if (value.connectionKind !== 'REGISTERED_DEFINITION' || value.optionsFormat !== 'CLAUDE_QUERY_DATA_V1') throw Error('EXECUTION_INTENT_INVALID');
   const copied = cloneV1(value);

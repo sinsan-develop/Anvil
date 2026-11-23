@@ -1,7 +1,7 @@
 import {AuthFailure} from '../../../apps/server/modules/access/repository.ts';
 import {readFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test,{mock} from 'node:test';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {authorizeMaterial,ProjectPolicyRepository,projectReplay} from '../../../apps/server/modules/access/project-command.ts';
 import {ProjectExecutionPreparations} from '../../../apps/server/modules/executions/project-execution-preparations.ts';
@@ -206,3 +206,59 @@ test('등록 승인 producer의 정책·원Tx·주체·만료·잘못된 예약�
 test('등록 승인 receipt ID는 위조/다른 목적에 사용하면 실제 persist IO 전에 거절한다',async()=>{const m=await import('../../../apps/server/modules/access/project-command.ts'),f=fullFixture(),ids=m.reserveRegisteredPreparationApprovalRequestReceiptIds(),decision=m.reserveRegisteredPreparationApprovalDecisionReceiptIds(),request=structuredClone(f.request);Object.assign(request.payload.candidatePayload,{connectionKind:'REGISTERED_DEFINITION',optionsFormat:'CLAUDE_QUERY_DATA_V1'});for(const [original,wrong]of [[command(),ids],[request,decision],[request,{...ids}]] as any[]){let io=0;const db:any={query:async()=>{io++;throw Error('도달 금지');}};await assert.rejects(m.persistProjectReceipt(db,f.actor,original,ref(99),{status:'APPROVAL_REQUESTED'},f.policyRef,'원 요청',wrong));assert.equal(io,0);}assert(Object.isFrozen(ids));assert.equal(m.isRegisteredPreparationApprovalReceiptIds({...ids},'REQUEST'),false);assert.equal(m.isRegisteredPreparationApprovalReceiptIds(ids,'DECISION'),false);});
 
 test('등록 결정 중 Tx교체·정산 유실·만료는 원 요청 알림과 PENDING 원문을 보존하고 새 요청을 만들지 않는다',async()=>{for(const kind of ['TX','SETTLE_LOST','EXPIRED']){const f=await registeredApprovalFixture(),asked:any=await f.ask(),original=canonicalJson(f.currentData.requests[0].request_json),at=f.trace.length;if(kind==='TX')f.swapDuringDefinition();if(kind==='SETTLE_LOST')f.mode.loseSettle=true;if(kind==='EXPIRED'){f.actor.authSession.idleExpiresAt=new Date(f.now.getTime()+3000).toISOString();f.mode.expireSettle=true;}await assert.rejects(f.decide(asked.data.ref.id),(e:any)=>e.message==='PROJECT_STORAGE_QUOTA_OUTCOME_UNKNOWN'&&e.statusCode===503,kind);const data=f.currentData;assert.equal(data.requests.length,1);assert.equal(data.requests[0].status,'PENDING');assert.equal(data.requests[0].version,1);assert.equal(canonicalJson(data.requests[0].request_json),original);assert.equal(data.notifications.length,1);assert.equal(data.decisions.length,0);assert.equal(data.consumptions.length,0);assert.equal(data.registeredReservations.length,1);assert.equal(data.registeredReservations[0].phase,'SETTLED');const trace=f.trace.slice(at);assert.equal(trace.filter(s=>s.includes('fn09_registered_approval_request_')).length,0,'원 요청 재공급0');assert.equal(trace.filter(s=>s.includes('fn09_registered_approval_decision_reserve')).length,kind==='TX'?0:1);assert.equal(trace.filter(s=>s.includes('fn09_registered_approval_decision_settle')).length,kind==='TX'?0:1);}});
+
+
+test('등록 WORK 승인 후보는 선택 fullref까지 원 payload hash에 결박하고 바뀐 선택·candidate 혼합을 거절한다',async()=>{
+ const input:any={...payload(),mode:'WORK',connectionKind:'REGISTERED_DEFINITION',optionsFormat:'CLAUDE_QUERY_DATA_V1',understandingReviewRef:{...ref(81),version:2}};
+ const before=canonicalJson(input),read=mod.readExecutionPreparationApprovalPayload(input,H(input));assert.deepEqual(read,input);assert.notEqual(read,input);
+ for(const change of [{understandingReviewRef:ref(82)},{mode:'CONTEXT_REVIEW'},{connectionKind:undefined}])assert.throws(()=>mod.readExecutionPreparationApprovalPayload({...input,...change},H(input)));
+ assert.notEqual(H(input),H(Object.fromEntries(Object.entries(input).filter(([key])=>key!=='understandingReviewRef'))));assert.equal(canonicalJson(input),before);
+ const q=fullFixture(),candidate=new mod.ExecutionPreparationApprovalCandidates(),details=structuredClone(q.details);details.actionScope.payloadHash=H(input);
+ const c:any={...q.request,payload:{details,candidatePayload:input}};
+ await candidate.capture(q.db,q.actor,{command:c,requestId:id(83),serverCommandId:id(84),policyRef:q.policyRef,details,payload:input});
+ assert.equal(q.data.candidates.length,1);assert.deepEqual(q.data.candidates[0].payload_json,input);assert.equal(q.data.candidates[0].payload_hash,H(input));assert.equal(q.data.preparations.length,0);assert.equal(q.data.consumptions.length,0);
+});
+
+
+test('정상 WORK 선택의 실제 별도 승인·정산·C/A/U·준비 저장과 응답 유실 replay는 같은 거래를 사용한다',async()=>{
+ const {ProjectConnectionDefinitions}=await import('../../../apps/server/modules/connections/project-connection-definitions.ts'),{ProjectEnvironments}=await import('../../../apps/server/modules/connections/project-environments.ts'),{ProjectStorageQuota}=await import('../../../apps/server/modules/projects/project-storage-quota.ts');
+ for(const scenario of ['NORMAL','INSERT','DRIFT','CAP','CONTEXT']){
+  const f=fullFixture(),rawQuery=f.db.query;Object.assign(f.input,{mode:'WORK',connectionKind:'REGISTERED_DEFINITION',optionsFormat:'CLAUDE_QUERY_DATA_V1',understandingReviewRef:{...ref(81),version:2}});
+  if(scenario==='CONTEXT'){(f.input as any).mode='CONTEXT_REVIEW';delete (f.input as any).understandingReviewRef;}
+  f.actor.serverOwner=false;f.actor.reauthUntil=new Date(f.now.getTime()+60000);f.details.actionScope.payloadHash=H(f.input);
+  const basis={kind:'NORMAL_UNDERSTANDING_WORK_BASIS',reviewRef:{...ref(81),version:2},scope:{projectId:pid,executionId:id(82),executionGeneration:1},preparationRef:ref(83),assignmentRef:f.input.assignmentRef,roleBindingRef:f.input.roleBindingRef,agentSessionRef:ref(84),contextBundleRef:f.input.contextBundleRef,connectionRef:f.input.connectionRef,environmentRef:f.input.environmentRef,responseRef:ref(85),requestRef:ref(86),basisRefs:[ref(40),ref(41),ref(42)],latestInstructionRefs:[]};
+  let quota=new Map<string,any>(),currentReads=0,denyFresh=false;
+  // 같은 프로젝트의 기존 거래 잠금을 RAM에서 직렬화한다. 실제 PG 경합 검증이 아니다.
+  const auth=f.access.authenticated;let tail=Promise.resolve<any>(undefined);f.access.authenticated=(...args:any[])=>{const job=tail.then(async()=>{const saved=structuredClone(quota);try{return await auth(...args);}catch(e){quota=saved;throw e;}});tail=job.catch(()=>undefined);return job;};
+  f.db.query=async(sql:string,p:any[]=[])=>{
+   if(sql.startsWith('SELECT txid_current()::text AS transaction_id'))return{rows:[{transaction_id:'42',observed_at:f.now}]};
+   if(sql.startsWith('SELECT clock_timestamp() AS at,txid_current()'))return{rows:[{at:f.now,tx:'42'}]};
+   if(sql.startsWith('SELECT txid_current()::text AS tx'))return{rows:[{tx:'42'}]};
+   if(sql.includes('fn09_normal_understanding_metadata_current')){const selection=JSON.parse(p[3]);if(selection.purpose==='WORK_PREPARATION_HISTORY')return{rows:[{projection:{status:'WORK_PREPARATION_HISTORY',basis}}]};currentReads++;if(denyFresh)throw Error('current source unavailable');const observed=scenario==='DRIFT'&&currentReads===2?{...basis,reviewRef:ref(99)}:basis;return{rows:[{projection:{status:'WORK_PREPARATION_BASIS',basis:observed,checkedAt:f.now.toISOString(),expiresAt:new Date(f.now.getTime()+20000).toISOString()}}]};}
+   if(sql.startsWith('SELECT * FROM anvil.fn09_registered_')&&sql.includes('_reserve(')){if(scenario==='CAP'&&sql.includes('fn09_registered_prepare_reserve'))throw Object.assign(Error('PROJECT_STORAGE_LIMIT_EXCEEDED'),{code:'P0001'});const r=JSON.parse(p[5]),ids=JSON.parse(p[8]);quota.set(ids.serverCommandId,{state:'RESERVED',request:JSON.parse(p[4]),ref:r});return{rows:[{reservation_id:ids.serverCommandId,transaction_id:'42',preparation_hash:r.contentHash,record_hash:r.contentHash,plan_hash:'b'.repeat(64),reserved_bytes:'2048',authorized_until:new Date(f.now.getTime()+20000).toISOString()}]};}
+   if(sql.startsWith('SELECT * FROM anvil.fn09_registered_')&&sql.includes('_settle(')){const q=quota.get(p[5]);assert.ok(q);q.state='SETTLED';return{rows:[{status:'SETTLED',reservation_id:p[5],transaction_id:'42',settled_bytes:'2048'}]};}
+   return rawQuery(sql,p);
+  };
+  const originalBinding=f.preparations.sessions.readBinding;f.preparations.sessions.readBinding=async(...args:any[])=>{const r=await (originalBinding as any)(...args);return{...r,snapshot:{...r.snapshot,connectionKind:'REGISTERED_DEFINITION',connectionReadiness:'REGISTERED_DEFINITION_ONLY'}};};
+  let app:import('fastify').FastifyInstance|undefined;
+   if(['NORMAL','CONTEXT'].includes(scenario)){const {buildApp}=await import('../../../apps/server/app.ts'),{resolve}=await import('node:path');app=buildApp({},undefined,{repository:f.access,origin:'https://work.invalid',artifactRoot:resolve('RAM-NOT-USED'),exportRoot:resolve('RAM-NOT-USED')});}
+  const mocks=[mock.method(ProjectConnectionDefinitions.prototype,'read',async()=>({projectId:pid,ref:f.input.connectionRef,definition:{environmentRef:f.input.environmentRef,adapterKind:'CLAUDE_AGENT_SDK',toolProduct:'Claude Code',modelOptions:{claudeQueryParams:{model:'auto'}}},currentStatus:{configurationCurrent:true}}) as any),mock.method(ProjectEnvironments.prototype,'read',async()=>({projectId:pid,ref:f.input.environmentRef,current:{configurationCurrentness:'MATCHED'}}) as any)];
+  const {ProjectAssignmentConfirmations}=await import('../../../apps/server/modules/assignments/project-assignment-confirmations.ts'),{ProjectAssignmentDrafts}=await import('../../../apps/server/modules/assignments/project-assignment-drafts.ts'),{ResponsibleSessions}=await import('../../../apps/server/modules/assignments/responsible-sessions.ts'),{ProjectContexts}=await import('../../../apps/server/modules/context/project-contexts.ts');
+  mocks.push(mock.method(ProjectAssignmentConfirmations.prototype,'read',f.preparations.assignments.read as any),mock.method(ProjectAssignmentDrafts.prototype,'current',f.preparations.drafts.current as any),mock.method(ResponsibleSessions.prototype,'readBinding',f.preparations.sessions.readBinding as any),mock.method(ProjectContexts.prototype,'read',f.preparations.contexts.read as any));
+  try{
+   const post=async(c:any)=>{assert.ok(app);const r=await app.inject({method:'POST',url:'/api/v1/projects/'+pid+'/commands',headers:{host:'work.invalid',origin:'https://work.invalid',cookie:'__Host-anvil.sid='+'t'.repeat(43),'x-anvil-csrf':'c'.repeat(43),'idempotency-key':c.commandId},payload:c});if(r.statusCode!==200)throw Object.assign(Error(r.body),{statusCode:r.statusCode});assert.equal(r.headers['cache-control'],'no-store');return r.json();};
+   const approvals=new ProjectApprovals(undefined,f.access),store=new ProjectExecutionPreparations(f.preparations.assignments,f.preparations.drafts,f.preparations.sessions,f.preparations.contexts,f.preparations.candidates,{definitions:Object.create(ProjectConnectionDefinitions.prototype),environments:Object.create(ProjectEnvironments.prototype),quota:new ProjectStorageQuota(f.access)});
+   const asked=app?await post(f.request):await f.run(f.request,(db:any,a:any,p:any)=>approvals.request(db,a,f.request,p)),rid=asked.data.ref.id;
+   const d:any={...command(),commandId:id(32),operation:'decideApproval',targetId:rid,expectedVersion:1,payload:{requestId:rid,expectedVersion:1,scopeDigest:H(f.details.actionScope),decision:'APPROVE',reason:'사람의 별도 결정'}};
+   const decision=app?await post(d):await f.run(d,(db:any,a:any,p:any)=>approvals.decide(db,a,d,p));
+   const c=command(f.input);c.approvalRef={requestId:rid,decisionId:decision.data.ref.id,scopeDigest:H(f.details.actionScope)};
+   const policy=new ProjectPolicyRepository(f.access),save=()=>app?post(c):policy.command('MEMORY_TOKEN','MEMORY_CSRF',c,(db,a,p)=>store.save(db,a,c,p),(db,a,q,result)=>store.verifyRegisteredReplay(db,a,q,result));
+   if(['INSERT','DRIFT','CAP'].includes(scenario)){if(scenario==='INSERT')f.fail('INSERT INTO anvil.execution_preparations');await assert.rejects(save());assert.equal(f.data.preparations.length,0);assert.equal(f.data.consumptions.length,0);assert.equal(f.data.requests[0].status,'APPROVED');assert.equal(quota.size,2);assert.equal(f.data.commands.filter((q:any)=>q.operation==='prepareExecution').length,0);continue;}
+   const state=()=>H(JSON.parse(JSON.stringify({...f.data,audits:f.data.audits.filter((a:any)=>a.command_id)})));
+   const pair=await Promise.all([save(),save()]);assert.deepEqual(pair[0],pair[1]);const saved:any=pair[0],before=state(),settlements=canonicalJson([...quota]);assert.equal(f.data.preparations.length,1);assert.equal(f.data.consumptions.length,1);assert.equal(quota.size,3);assert.ok([...quota.values()].every(v=>v.state==='SETTLED'));assert.deepEqual(saved.data.snapshot.understandingBasis,scenario==='CONTEXT'?undefined:basis);
+   // 저장 응답을 받지 못한 호출자가 원 명령을 명시 재확인한다. 새 current 자료 공급·정산은 없다.
+   denyFresh=true;const reads=currentReads;assert.deepEqual(await save(),saved);assert.equal(currentReads,reads);assert.equal(state(),before);assert.equal(canonicalJson([...quota]),settlements);
+   c.payload=scenario==='CONTEXT'?{...c.payload,reason:'바뀐 승인 payload'}:{...c.payload,understandingReviewRef:ref(99)};await assert.rejects(save());assert.equal(state(),before);assert.equal(canonicalJson([...quota]),settlements);
+  }finally{if(app)await app.close();mocks.forEach(m=>m.mock.restore());}
+ }
+});

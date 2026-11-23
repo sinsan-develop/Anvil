@@ -2,7 +2,7 @@ import {readMembershipCommand} from '../../../../contracts/runtime/project-membe
 import {recordV1,refV1,uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {copyControlData} from '../control-handoff/control-grant.ts';
 import {readUnderstandingReviewCommand} from '../executions/execution-understanding.ts';
-import {readExecutionIntentV1} from '../../../../contracts/runtime/execution-intent-v1.ts';
+import {readExecutionPreparationInput} from '../executions/preparation-input.ts';
 import{AuthFailure}from'../access/repository.ts';
 import type{ProjectCommand}from'../access/project-command.ts';
 import type{VersionRef}from'../../../../contracts/generated-types.ts';
@@ -66,7 +66,7 @@ export function assertApprovalCandidate(details:ApprovalDetails,c:ProjectCommand
   if(canonicalJson(s.targetRef)!==canonicalJson(target))throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
  }
  if(['exportProject','buildTaskContext','startStage'].includes(s.operation)&&(s.targetRef!==null||s.expectedVersion!==0))throw new AuthFailure('APPROVAL_INPUT_INVALID',422);
- if(s.operation==='prepareExecution'){try{const p=readExecutionIntentV1(c.payload);if(p.projectId!==projectId||s.targetRef!==null||s.expectedVersion!==0)throw Error();}catch{throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}}
+ if(s.operation==='prepareExecution'){try{const p=readExecutionPreparationInput(c.payload);if(p.projectId!==projectId||s.targetRef!==null||s.expectedVersion!==0)throw Error();}catch{throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}}
  if(s.operation==='detachDocumentSource'){
   let payload;try{payload=readDocumentSourceLinkInput('detachDocumentSource',c.payload);}catch{throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);}
   if(canonicalJson(s.targetRef)!==canonicalJson(payload.sourceLinkRef)||s.expectedVersion!==1)throw new AuthFailure('APPROVAL_CANDIDATE_MISMATCH',409);
