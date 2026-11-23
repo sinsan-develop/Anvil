@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN07/FN08/FN18 데스크톱 회귀:** 원 감독 인계·실행 전 검산의 desktop 타입 검사를 복구하고, 승인 source 53개와 고정 builtin 8개인 패키지 경계를 검증했다. Main 105/105·desktop 타입, 작성자 루트 타입 통과, 두 단계 독립 C0/I0/M0. 실제 실행·패키징은 미검증이다.
+
 - **FN07/FN08 보호 worker RAM 인계 검수:** 시험의 의존성 경로를 현재 작업사본으로 고쳐 고정 desktop lock에서 host·worker·factory 23/23을 확인했다(`03f611`). 독립 C0/I0/M0. 실제 Windows·C#·SDK 확인은 남아 있다.
 
 - **FN07의 남은 합성 PE 실패 해소:** `pe-library` 누락을 원인으로 확인하고 desktop lock의 해시가 맞는 의존성만 이 worktree에 복원했다. 원 제품·시험 그대로 PE 합성 9/9 통과(`49459f`). 실제 Windows 실행·C# 컴파일은 미검증이다.

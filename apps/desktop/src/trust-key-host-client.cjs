@@ -8,6 +8,13 @@ const liveChannels=new WeakMap(),sdkBootstrapWorkers=new WeakMap(),sdkBootstrapP
 const unconfirmedSdkWorkers=new Map();
 const intrinsicLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype),'byteLength')?.get;
 
+/** @typedef {{leaseId:string,sourceHash:string,bindingHash:string,expiresAt:string,childCreated:false,executionAuthorized:false,dispatchPerformed:false}} SdkSourceMetadata */
+/** @typedef {Readonly<{read:()=>SdkSourceMetadata&{state:'SDK_CHILD_SOURCE_PREPARED'}}>} PreparedSdkChildSource */
+/** @typedef {{state:'SDK_HOOK_EFFECT_UNAVAILABLE',reason:'PRESPAWN_CURRENT_UNAVAILABLE'}} SdkHookUnavailable */
+/** @typedef {Readonly<{read:()=>SdkSourceMetadata&{endpointId:string},inspectQueryAdmission:(signal:AbortSignal)=>Promise<never>,verifyHook:(spec:unknown,signal:AbortSignal)=>Promise<SdkHookUnavailable>,close:()=>Promise<{state:'UNKNOWN'}>}>} SdkSupervisorOwner */
+/** @typedef {Readonly<{acknowledge:()=>Promise<void>,afterClose:()=>Promise<SdkSupervisorOwner>,discard:()=>Promise<{state:'UNKNOWN'}>}>} PreparedSdkSupervisorHandoff */
+/** @typedef {{schemaVersion:number,purpose:string,leaseId:string,endpointId:string,sourceHash:string,bindingHash:string}&Record<string,unknown>} SdkBrokerFrame */
+
 /** @returns {never} */function unavailable(){throw Error('PROTECTION_UNAVAILABLE');}
 
 /** @returns {never} */function uncertain(){throw Error('OUTCOME_UNKNOWN');}
@@ -69,11 +76,12 @@ async function executionConfiguration(action,attemptId,value){
 /** 원 source bytes를 같은 등록 native host에 단회 전달한다. 반환은 비실행 준비의 opaque 소유자다.
  * 보존은 현재 channel/process 한정이다. 재시작 소진·supervisor/child 실행을 보장하지 않는다.
  * @param {unknown} raw
+ * @returns {Promise<PreparedSdkChildSource>}
  */
 async function prepareSdkChildSource(raw){
  guard();stable();if(mode===sdkBootstrapMode||sdkChildSources.has(retained))return unavailable();
  const value=JSON.parse(canonicalJson(catalogueExact(raw,'attemptId,slotId,startCommandId,sendCommandId,scope,handoff')));
- const validId=v=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
+ const validId=(/** @type {unknown} */v)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
  if(![value.attemptId,value.slotId,value.startCommandId,value.sendCommandId].every(validId))return unavailable();
  const bytes=Buffer.from(canonicalJson(value));let dispatched=false;
  const state={closed:false,expiresAt:Infinity,check:()=>{guard();stable();if(state.closed||Date.now()>=state.expiresAt)return unavailable();}};
@@ -93,31 +101,33 @@ async function prepareSdkChildSource(raw){
   preparedSdkChildOwners.set(prepared,{channel:retained,state,value,metadata,used:false});return prepared;
  }catch(error){state.closed=true;if(dispatched)latch();throw error;}finally{bytes.fill(0);}
 }
-/** 원 host가 만든 endpoint만 연결한다. Node는 supervisor process를 시작하지 않는다. @param {object} original */
+/** 원 host가 만든 endpoint만 연결한다. Node는 supervisor process를 시작하지 않는다.
+ * @param {object} original @returns {Promise<PreparedSdkSupervisorHandoff>}
+ */
 async function beginSdkChildSupervisor(original){
  guard();stable();const owned=preparedSdkChildOwners.get(original);if(!owned||owned.channel!==retained||owned.used)return unavailable();owned.used=true;owned.state.check();
  const m=owned.metadata,v=owned.value,payload={attemptId:v.attemptId,slotId:v.slotId,leaseId:m.leaseId,sourceHash:m.sourceHash,bindingHash:m.bindingHash};
- let broker;try{
+ /** @type {ReturnType<typeof createSdkSupervisorBroker>|undefined} */let broker;try{
   const raw=await send('NORMAL_SDK_CHILD_SUPERVISOR_BEGIN',payload);owned.state.check();
   const r=catalogueExact(raw,'state,leaseId,endpointId,pipeName,sourceHash,bindingHash,expiresAt,childCreated,executionAuthorized,dispatchPerformed');
   const meta=catalogueExact({...r},'state,leaseId,endpointId,pipeName,sourceHash,bindingHash,expiresAt,childCreated,executionAuthorized,dispatchPerformed');
   if(meta.state!=='SDK_SUPERVISOR_ENDPOINT'||meta.leaseId!==m.leaseId||meta.sourceHash!==m.sourceHash||meta.bindingHash!==m.bindingHash||meta.expiresAt!==m.expiresAt||meta.childCreated!==false||meta.executionAuthorized!==false||meta.dispatchPerformed!==false||typeof meta.endpointId!=='string'||!(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/).test(meta.endpointId)||meta.pipeName!==['','','.','pipe','anvil-sdk-'+meta.endpointId].join(String.fromCharCode(92)))return uncertain();
   const descriptor=Object.getOwnPropertyDescriptor(ports,'openSdkBroker');if(descriptor&&!('value'in descriptor)||descriptor&&typeof descriptor.value!=='function')return unavailable();
-  const connect=descriptor?.value??(name=>require('node:net').createConnection({path:name}));
-  broker=createSdkSupervisorBroker(meta,connect,()=>{if(Object.getOwnPropertyDescriptor(ports,'openSdkBroker')?.value!==descriptor?.value)return unavailable();});
+  const connect=descriptor?.value??((/** @type {string} */name)=>require('node:net').createConnection({path:name}));
+  const originalBroker=createSdkSupervisorBroker(meta,connect,()=>{if(Object.getOwnPropertyDescriptor(ports,'openSdkBroker')?.value!==descriptor?.value)return unavailable();});broker=originalBroker;
   let acknowledged=false,consumed=false;
   return Object.freeze({acknowledge:async()=>{
-   owned.state.check();if(acknowledged)return unavailable();acknowledged=true;await broker.acknowledge();owned.state.check();
+   owned.state.check();if(acknowledged)return unavailable();acknowledged=true;await originalBroker.acknowledge();owned.state.check();
    const answer=catalogueExact(await send('NORMAL_SDK_CHILD_SUPERVISOR_ACK',{...payload,endpointId:meta.endpointId}),'state,leaseId,endpointId,sourceHash,bindingHash');owned.state.check();
    if(answer.state!=='SDK_SUPERVISOR_ACKNOWLEDGED'||answer.leaseId!==meta.leaseId||answer.endpointId!==meta.endpointId||answer.sourceHash!==meta.sourceHash||answer.bindingHash!==meta.bindingHash)return uncertain();
   },afterClose:async()=>{
    // 원 host의 실제 close와 supervisor 자신의 원 parent exit 검산이 모두 필요하다.
-   if(!acknowledged||consumed||!closed||sticky||!ending)return uncertain();consumed=true;await broker.consumed();
+   if(!acknowledged||consumed||!closed||sticky||!ending)return uncertain();consumed=true;await originalBroker.consumed();
    const {state:_state,pipeName:_pipe,...metadata}=meta;
-   const adapter=require('./normal-sdk-worker-entry.cjs').createOwnedSdkQueryPreflight(Object.freeze({check:()=>broker.check(),readIntent:()=>broker.readIntent(),verifyHook:hash=>broker.verifyHook(hash),admitQuery:()=>broker.admitQuery(),close:async()=>{broker.close();return{state:'UNKNOWN'};}}));
-   broker.onDispose(()=>{void adapter.close().catch(()=>{});});
-   return Object.freeze({read:()=>{broker.check();return JSON.parse(canonicalJson(metadata));},inspectQueryAdmission:adapter.inspectQueryAdmission,verifyHook:adapter.verifyHook,close:adapter.close});
-  },discard:async()=>{broker.close();return{state:'UNKNOWN'};}});
+   const adapter=require('./normal-sdk-worker-entry.cjs').createOwnedSdkQueryPreflight(Object.freeze({check:()=>originalBroker.check(),readIntent:()=>originalBroker.readIntent(),verifyHook:hash=>originalBroker.verifyHook(hash),admitQuery:()=>originalBroker.admitQuery(),close:async()=>{originalBroker.close();return{state:/** @type {'UNKNOWN'} */('UNKNOWN')};}}));
+   originalBroker.onDispose(()=>{void adapter.close().catch(()=>{});});
+   return Object.freeze({read:()=>{originalBroker.check();return JSON.parse(canonicalJson(metadata));},inspectQueryAdmission:adapter.inspectQueryAdmission,verifyHook:adapter.verifyHook,close:adapter.close});
+  },discard:async()=>{originalBroker.close();return{state:/** @type {'UNKNOWN'} */('UNKNOWN')};}});
  }catch(error){broker?.close();latch();throw error;}
 }
 retained=Object.freeze({send,close,executionConfiguration,prepareSdkChildSource,beginSdkChildSupervisor,inspectionBudget:()=>{guard();stable();if(busy||sticky||closed||ending)return uncertain();return {frames:64-sequence,remainingMs:Math.max(0,Math.floor(remaining()))};}});liveChannels.set(retained,{check:()=>{guard();stable();if(sticky||closed||ending)return uncertain();},env});if(signal.aborted){abort();return uncertain();}guard();return retained;}
@@ -133,31 +143,42 @@ function createSdkSupervisorBroker(meta,connect,current){
  const end=Date.parse(meta.expiresAt),started=Date.now(),mono=performance.now(),monoEnd=mono+end-started;
  if(!Number.isFinite(end)||end<=started||end-started>10000)return unavailable();
  const socket=connect(meta.pipeName),on=method(socket,'on'),off=method(socket,'removeListener'),write=method(socket,'write'),destroy=method(socket,'destroy');
- let stop;const stopped=new Promise((resolve,reject)=>{stop=reject;});void stopped.catch(()=>{});
- let receiveLimit=4096,disposeCallback=null;let dead=false,ack=false,used=false,bytes=Buffer.alloc(0),pending=null,queued=[];const listeners=[];
+ /** @type {(error:Error)=>void} */let stop;
+ /** @type {Promise<never>} */const stopped=new Promise((resolve,reject)=>{stop=reject;});void stopped.catch(()=>{});
+ let receiveLimit=4096;
+ /** @type {(()=>void)|null} */let disposeCallback=null;
+ let dead=false,ack=false,used=false,bytes=Buffer.alloc(0);
+ /** @type {{resolve:(frame:SdkBrokerFrame)=>void,reject:(error:Error)=>void}|null} */let pending=null;
+ /** @type {SdkBrokerFrame[]} */let queued=[];
+ /** @type {Array<[string,(value?:unknown)=>void]>} */const listeners=[];
  const close=()=>{if(dead)return;dead=true;stop(Error('OUTCOME_UNKNOWN'));clearTimeout(timer);for(const [event,fn] of listeners)off.call(socket,event,fn);bytes.fill(0);bytes=Buffer.alloc(0);queued=[];pending?.reject(Error('OUTCOME_UNKNOWN'));pending=null;try{destroy.call(socket);}catch{}const callback=disposeCallback;disposeCallback=null;try{callback?.();}catch{}};
  const check=()=>{current();if(dead||Date.now()<started||Date.now()>=end||performance.now()>=monoEnd||method(socket,'write')!==write||method(socket,'destroy')!==destroy)return uncertain();};
+ /** @param {Record<string,unknown>} row @returns {SdkBrokerFrame} */
  const equal=row=>{const base='schemaVersion,purpose,leaseId,endpointId,sourceHash,bindingHash';const extra=row?.purpose==='NORMAL_SDK_INTENT_PART_RESULT_V1'?',sequence,index,totalBytes,intentHash,data,final':row?.purpose==='NORMAL_SDK_HOOK_EFFECT_UNAVAILABLE_V1'?',sequence,hookHash,reason':row?.purpose==='NORMAL_SDK_QUERY_UNAVAILABLE_V1'?',sequence,reason':'';const r=catalogueExact(row,base+extra);if(r.schemaVersion!==1||r.leaseId!==meta.leaseId||r.endpointId!==meta.endpointId||r.sourceHash!==meta.sourceHash||r.bindingHash!==meta.bindingHash)return uncertain();return r;};
  const fail=()=>close();const timer=setTimeout(close,Math.max(1,end-started));timer.unref?.();
+ /** @param {unknown} raw */
  const data=raw=>{try{check();const b=copyBuffer(raw,receiveLimit-bytes.length);bytes=Buffer.concat([bytes,b]);b.fill(0);const at=bytes.indexOf(10);if(at<0)return;if(at!==bytes.length-1)return uncertain();const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes.subarray(0,at)),value=equal(JSON.parse(text));if(canonicalJson(value)!==text)return uncertain();bytes.fill(0);bytes=Buffer.alloc(0);if(pending){const p=pending;pending=null;p.resolve(value);}else{if(queued.length)return uncertain();queued.push(value);}}catch{close();}};
- for(const [event,fn] of [['data',data],['error',fail],['end',fail],['close',fail]]){on.call(socket,event,fn);listeners.push([event,fn]);}
- const receive=async purpose=>{check();const row=queued.length?queued.shift():await new Promise((resolve,reject)=>{if(pending)return reject(Error('OUTCOME_UNKNOWN'));pending={resolve,reject};});check();if(row.purpose!==purpose)return uncertain();return row;};
+ for(const [event,fn] of /** @type {Array<[string,(value?:unknown)=>void]>} */([['data',data],['error',fail],['end',fail],['close',fail]])){on.call(socket,event,fn);listeners.push([event,fn]);}
+ /** @param {string} purpose @returns {Promise<SdkBrokerFrame>} */
+ const receive=async purpose=>{check();const row=queued.length?/** @type {SdkBrokerFrame} */(queued.shift()):await new Promise(/** @param {(value:SdkBrokerFrame)=>void} resolve */(resolve,reject)=>{if(pending)return reject(Error('OUTCOME_UNKNOWN'));pending={resolve,reject};});check();if(row.purpose!==purpose)return uncertain();return row;};
  let sequence=0,busy=false,intentRead=false,hookUsed=false,queryUsed=false;
+ /** @param {string} purpose @param {Record<string,unknown>} fields @param {string} resultPurpose */
  const request=async(purpose,fields,resultPurpose)=>{check();if(!used||busy||sequence>=66)return unavailable();busy=true;receiveLimit=purpose==='NORMAL_SDK_INTENT_PART_V1'?65536:4096;const n=++sequence,frame=Buffer.from(canonicalJson({schemaVersion:1,purpose,leaseId:meta.leaseId,endpointId:meta.endpointId,sourceHash:meta.sourceHash,bindingHash:meta.bindingHash,sequence:n,...fields})+'\n');
-  try{if(frame.length>4096)return unavailable();await Promise.race([new Promise((resolve,reject)=>{write.call(socket,frame,error=>error?reject(error):resolve(null));}),stopped]);const r=await receive(resultPurpose);check();if(r.sequence!==n)return uncertain();return r;}catch(error){close();throw error;}finally{frame.fill(0);busy=false;receiveLimit=4096;}};
- const readIntent=async()=>{check();if(intentRead||hookUsed||queryUsed)return unavailable();intentRead=true;let owned=null,total=0,expected=null,at=0;
+  try{if(frame.length>4096)return unavailable();await Promise.race([new Promise((resolve,reject)=>{write.call(socket,frame,(/** @type {Error|null|undefined} */error)=>error?reject(error):resolve(null));}),stopped]);const r=await receive(resultPurpose);check();if(r.sequence!==n)return uncertain();return r;}catch(error){close();throw error;}finally{frame.fill(0);busy=false;receiveLimit=4096;}};
+ const readIntent=async()=>{check();if(intentRead||hookUsed||queryUsed)return unavailable();intentRead=true;/** @type {Buffer|null} */let owned=null;let total=0,at=0;/** @type {string|null} */let expected=null;
   try{for(let index=0;index<64;index++){
    const p=await request('NORMAL_SDK_INTENT_PART_V1',{index},'NORMAL_SDK_INTENT_PART_RESULT_V1');
-   if(p.index!==index||!Number.isSafeInteger(p.totalBytes)||p.totalBytes<1||p.totalBytes>2097152||typeof p.intentHash!=='string'||!(/^[0-9a-f]{64}$/).test(p.intentHash)||typeof p.data!=='string'||p.data.length>43692||typeof p.final!=='boolean')return uncertain();
-   if(!owned){total=p.totalBytes;expected=p.intentHash;owned=Buffer.alloc(total);}if(total!==p.totalBytes||expected!==p.intentHash)return uncertain();
+   if(p.index!==index||!Number.isSafeInteger(p.totalBytes)||/** @type {number} */(p.totalBytes)<1||/** @type {number} */(p.totalBytes)>2097152||typeof p.intentHash!=='string'||!(/^[0-9a-f]{64}$/).test(p.intentHash)||typeof p.data!=='string'||p.data.length>43692||typeof p.final!=='boolean')return uncertain();
+   if(!owned){total=/** @type {number} */(p.totalBytes);expected=p.intentHash;owned=Buffer.alloc(total);}if(total!==p.totalBytes||expected!==p.intentHash)return uncertain();
    const part=Buffer.from(p.data,'base64');try{if(part.toString('base64')!==p.data||part.length!==Math.min(32768,total-at)||p.final!==(at+part.length===total))return uncertain();part.copy(owned,at);at+=part.length;}finally{part.fill(0);}
    if(p.final){if(contentHash(owned)!==expected)return uncertain();const text=new TextDecoder('utf-8',{fatal:true}).decode(owned),v=JSON.parse(text);if(canonicalJson(v)!==text||v.sourceHash!==meta.sourceHash||v.bindingHash!==meta.bindingHash)return uncertain();check();return v;}
   }return uncertain();}catch(error){close();throw error;}finally{owned?.fill(0);}};
+ /** @param {string} hookHash @returns {Promise<SdkHookUnavailable>} */
  const verifyHook=async hookHash=>{check();if(!intentRead||hookUsed||queryUsed||typeof hookHash!=='string'||!(/^[0-9a-f]{64}$/).test(hookHash))return unavailable();hookUsed=true;const r=await request('NORMAL_SDK_HOOK_VERIFY_V1',{hookHash},'NORMAL_SDK_HOOK_EFFECT_UNAVAILABLE_V1');if(r.hookHash!==hookHash||r.reason!=='PRESPAWN_CURRENT_UNAVAILABLE')return uncertain();return Object.freeze({state:'SDK_HOOK_EFFECT_UNAVAILABLE',reason:r.reason});};
  const admitQuery=async()=>{check();if(!intentRead||queryUsed)return unavailable();queryUsed=true;const r=await request('NORMAL_SDK_QUERY_ADMIT_V1',{},'NORMAL_SDK_QUERY_UNAVAILABLE_V1');if(r.reason!=='PRESPAWN_CURRENT_UNAVAILABLE')return uncertain();throw Error('SDK_CONFIGURATION_UNAVAILABLE');};
- return Object.freeze({check,close,onDispose:callback=>{check();if(disposeCallback||typeof callback!=='function')return unavailable();disposeCallback=callback;},readIntent,verifyHook,admitQuery,acknowledge:async()=>{
+ return Object.freeze({check,close,onDispose:(/** @type {()=>void} */callback)=>{check();if(disposeCallback||typeof callback!=='function')return unavailable();disposeCallback=callback;},readIntent,verifyHook,admitQuery,acknowledge:async()=>{
   check();if(ack)return unavailable();ack=true;const frame=Buffer.from(canonicalJson({schemaVersion:1,purpose:'NORMAL_SDK_BROKER_ACK_V1',leaseId:meta.leaseId,endpointId:meta.endpointId,sourceHash:meta.sourceHash,bindingHash:meta.bindingHash})+'\n');
-  try{await Promise.race([new Promise((resolve,reject)=>{write.call(socket,frame,error=>error?reject(error):resolve(null));}),stopped]);check();await receive('NORMAL_SDK_BROKER_ACKED_V1');}finally{frame.fill(0);}
+  try{await Promise.race([new Promise((resolve,reject)=>{write.call(socket,frame,(/** @type {Error|null|undefined} */error)=>error?reject(error):resolve(null));}),stopped]);check();await receive('NORMAL_SDK_BROKER_ACKED_V1');}finally{frame.fill(0);}
  },consumed:async()=>{check();if(!ack||used)return unavailable();used=true;await receive('NORMAL_SDK_BROKER_CONSUMED_V1');}});
 }
 /** 원 인증 채널의 패키지 검산을 원 endpoint 1회에 결박한다. 일반 등록/SDK 권한은 발급하지 않는다.

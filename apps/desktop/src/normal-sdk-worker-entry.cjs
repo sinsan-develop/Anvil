@@ -197,19 +197,24 @@ async function createSdkEnrollmentSession(bootstrap,session,context,version,dire
  return Object.freeze({getState:()=>safe(state),isBusy:()=>busy>0,handle:command,configuration:(/** @type {string} */action,/** @type {any} */value)=>command('CONFIGURATION',{action,value}),handleReceive:command,
   closeConfiguration:()=>{void command('CLOSE_CONFIGURATION',null).catch(close);},disposeReceive:()=>{void command('DISPOSE_RECEIVE',null).catch(close);},invalidate:close,close});
 }
+/** @typedef {{sdkVersion:'0.3.224',sdkEntry:string,runtime:string,cli:string,manifestHash:string,hookHash:string,plannedSid:string,model:string,maxTurns:number|null,program:{application:string,cwd:string,args:string[],env:Record<string,string>},sourceHash:string,bindingHash:string}} SdkIntent */
 /** 같은 supervisor의 private source만 조립한다. 원 포트의 반환은 실행 허가가 아니다.
- * @param {{check:()=>void,readIntent:()=>Promise<any>,verifyHook:(h:string)=>Promise<any>,admitQuery:()=>Promise<never>,close:()=>Promise<any>}} source
+ * @param {{check:()=>void,readIntent:()=>Promise<unknown>,verifyHook:(h:string)=>Promise<import('./trust-key-host-client.cjs').SdkHookUnavailable>,admitQuery:()=>Promise<never>,close:()=>Promise<{state:'UNKNOWN'}>}} source
  */
 function createOwnedSdkQueryPreflight(source){
  if(!source||types.isProxy(source)||Object.getPrototypeOf(source)!==Object.prototype)fail();
  const names=['check','readIntent','verifyHook','admitQuery','close'],methods=names.map(name=>{const d=Object.getOwnPropertyDescriptor(source,name);if(!d||!('value'in d)||typeof d.value!=='function'||types.isProxy(d.value))fail();return d.value;});
- let attempted=false,hookAttempted=false,dead=false,intentPromise;
+ let attempted=false,hookAttempted=false,dead=false;
+ /** @type {Promise<SdkIntent>|null|undefined} */let intentPromise;
  const guard=()=>{if(dead||names.some((name,i)=>Object.getOwnPropertyDescriptor(source,name)?.value!==methods[i]))fail('CONTEXT_CHANGED');methods[0]();};
  const read=async()=>{guard();if(!intentPromise){intentPromise=(async()=>{const raw=await methods[1]();guard();return safeSdkIntent(raw);})();}return await intentPromise;};
+ /** @returns {Promise<{state:'UNKNOWN'}>} */
  const close=async()=>{if(dead)return{state:'UNKNOWN'};dead=true;intentPromise=null;return await methods[4]();};
+ /** @param {AbortSignal} signal */
  const watch=signal=>{if(types.isProxy(signal)||!signal||Object.getPrototypeOf(signal)!==AbortSignal.prototype||['aborted','addEventListener','removeEventListener'].some(key=>Object.hasOwn(signal,key))||signal.aborted)fail('CONTEXT_CHANGED');const abort=()=>{void close().catch(()=>{});};EventTarget.prototype.addEventListener.call(signal,'abort',abort,{once:true});if(signal.aborted){abort();fail('CONTEXT_CHANGED');}return()=>EventTarget.prototype.removeEventListener.call(signal,'abort',abort);};
+ /** @param {unknown} spec @param {AbortSignal} signal @returns {Promise<import('./trust-key-host-client.cjs').SdkHookUnavailable>} */
  const verifyHook=async(spec,signal)=>{guard();if(hookAttempted)fail();hookAttempted=true;const unwatch=watch(signal);try{const v=await read();guard();if(signal.aborted)fail('CONTEXT_CHANGED');const {observeSdkHook}=require('./normal-sdk-child-bridge.cjs'),observed=observeSdkHook(spec,signal);if(observed.hookHash!==v.hookHash)fail('CONTEXT_CHANGED');const answer=await methods[2](observed.hookHash);guard();if(signal.aborted)fail('CONTEXT_CHANGED');return answer;}finally{unwatch();}};
- return Object.freeze({verifyHook,close,inspectQueryAdmission:async(signal)=>{
+ return Object.freeze({verifyHook,close,inspectQueryAdmission:async(/** @type {AbortSignal} */signal)=>{
   guard();if(attempted)fail();attempted=true;const unwatch=watch(signal);
   try{await read();guard();if(signal.aborted)fail('CONTEXT_CHANGED');
    // 실제 PRESPAWN 생산자가 없는 현재 native 응답은 반드시 여기서 거절한다.
@@ -218,7 +223,7 @@ function createOwnedSdkQueryPreflight(source){
   }finally{unwatch();}
  }});
 }
-/** @param {any} raw */
+/** @param {unknown} raw @returns {SdkIntent} */
 function safeSdkIntent(raw){
  const v=JSON.parse(canonicalJson(catalogueExact(raw,'sdkVersion,sdkEntry,runtime,cli,manifestHash,hookHash,plannedSid,model,maxTurns,program,sourceHash,bindingHash'))),p=catalogueExact(v.program,'application,cwd,args,env');
  if(Buffer.byteLength(canonicalJson(v))>2097152||v.sdkVersion!=='0.3.224'||![v.sourceHash,v.bindingHash,v.manifestHash,v.hookHash].every(h=>typeof h==='string'&&/^[0-9a-f]{64}$/.test(h))||typeof v.plannedSid!=='string'||!v.plannedSid||v.plannedSid.length>512||typeof v.model!=='string'||!v.model||v.maxTurns!==null&&(!Number.isSafeInteger(v.maxTurns)||v.maxTurns<1)||typeof v.sdkEntry!=='string'||!v.sdkEntry.endsWith('\\sdk.mjs')||!Array.isArray(p.args)||p.args.length>200||!p.env||Object.keys(p.env).length>6)fail();
