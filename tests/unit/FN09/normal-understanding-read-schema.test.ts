@@ -168,3 +168,61 @@ test('result v2 deferred admission owns only its private definer trigger; invoke
  }
  // 이 검산은 SQL 호출선/ACL의 정적 증거다. 실제 app COMMIT의 trigger 권한 실행을 대체하지 않는다.
 });
+
+test('fixed range admission uses exact current parent and existing purpose RPC, with no discovery rows, connector nonce or new role grants',()=>{
+ const valid=definition('fn09_normal_understanding_range_valid');
+ for(const text of ["ARRAY['requestRef','resultRef','initConfirmationRef','tailRef','firstSequence','lastSequence','ranges']","BETWEEN 1 AND 200","to_jsonb((x->>'firstSequence')::bigint+i)","{initConfirmationRef,id}","{tailRef,id}",'blocks>200'])assert.ok(valid.includes(text),text);
+ const basis=definition('fn09_normal_understanding_range_basis');
+ for(const text of ['fn09_normal_understanding_range_authorize','fn09_normal_understanding_metadata_current',"'METADATA_STORED'","'CURRENT'","v->'resultRef' IS DISTINCT FROM x->'resultRef'","expected IS DISTINCT FROM x->'ranges'","least(until_at,(v->>'expiresAt')::timestamptz)"])assert.ok(basis.includes(text),text);
+ const auth=definition('fn09_normal_understanding_range_authorize');
+ for(const text of ['fn01_active(s,a,c)','FOR UPDATE',"participation='OWNER'",'FOR SHARE',"rule->>'disposition' IS DISTINCT FROM 'AUTO'","rule->'limitPolicyRef' IS DISTINCT FROM 'null'::jsonb",'hs.reauth_until<=at','txid_current()::text'])assert.ok(auth.includes(text),text);
+ const insert=definition('fn09_normal_understanding_request_insert'),replay=definition('fn09_normal_understanding_request_replay');
+ assert.ok(insert.indexOf('fn09_normal_understanding_range_store')<insert.indexOf('fn09_normal_understanding_request_basis'));
+ assert.ok(replay.indexOf('fn09_normal_understanding_range_replay')<replay.indexOf('fn09_normal_understanding_request_basis'));
+ const newPurpose=sql.slice(sql.indexOf('-- HUMAN 고정 범위 의사만'));
+ assert.doesNotMatch(newPurpose,/CREATE TABLE|CREATE ROLE|GRANT |INSERT INTO anvil\.(?:normal_understanding_read_requests|execution_challenges|execution_receipts|execution_commands)/);
+ assert.match(newPurpose,/REVOKE ALL ON FUNCTION[^;]*fn09_normal_understanding_range_store[^;]*FROM PUBLIC,anvil_v3_app/s);
+});
+
+test('fixed range accounting uses only new exact immutable C/A/U bytes and remains historical after expiry or revocation',()=>{
+ for(const name of ['fn09_normal_understanding_range_historical','fn09_normal_understanding_range_plan','fn09_normal_understanding_range_storage_complete','fn09_normal_understanding_range_complete']){
+  const body=definition(name);assert.doesNotMatch(body,/clock_timestamp|transaction_timestamp|fn01_active|normal_exchange_current|normal_request_credential|metadata_current|range_basis|range_authorize/);
+ }
+ const historical=definition('fn09_normal_understanding_range_historical');
+ for(const text of ['fn09_normal_understanding_result_pair_historical(v,r)','fn09_normal_understanding_storage_complete(parent_quota)',"ss#>'{requestedBy,sessionId}'",'EXPLICIT_NORMAL_UNDERSTANDING_RANGE_REQUEST',"expected IS DISTINCT FROM x->'ranges'"])assert.ok(historical.includes(text),text);
+ const plan=definition('fn09_normal_understanding_range_plan');
+ assert.match(plan,/records=jsonb_build_object\('command',to_jsonb\(cmd\),'authorization',to_jsonb\(ar\),'audit',to_jsonb\(au\)\);bytes=octet_length\(anvil.execution_authority_canonical\(records\)\)/);
+ assert.match(plan,/SET TimeZone='UTC'/);assert.match(plan,/'parentResultRef'/);
+ assert.match(plan,/coverage IS NULL/);assert.match(plan,/tx IS NULL/);
+ const valid=definition('fn09_normal_understanding_range_plan_valid');assert.match(valid,/jsonb_typeof\(p->'transactionId'\) IS DISTINCT FROM 'string'/);assert.match(valid,/jsonb_typeof\(p->'coverageGeneration'\) IS DISTINCT FROM 'string'/);
+ assert.doesNotMatch(plan,/to_jsonb\((?:parent_quota|r|v|h)\)|'humanCommand'|'getV1'|'postV1'/);
+ const replay=definition('fn09_normal_understanding_range_replay');assert.match(replay,/range_authorize/);assert.match(replay,/range_complete/);
+ assert.doesNotMatch(replay,/INSERT INTO|UPDATE |DELETE FROM|range_basis|metadata_current|range_store/);
+ const immutable=definition('guard_fn09_normal_understanding_range_history');
+ for(const text of ["TG_TABLE_NAME='commands'","OLD.result_ref","NEW.result_ref",'cid=OLD.command_id','id=NEW.command_id','NORMAL_UNDERSTANDING_RANGE_IMMUTABLE'])assert.ok(immutable.includes(text),text);
+ for(const table of ['commands','authorization_receipts','audit_events'])assert.match(sql,new RegExp('BEFORE UPDATE OR DELETE ON anvil\\.'+table+' FOR EACH ROW EXECUTE FUNCTION anvil.guard_fn09_normal_understanding_range_history'));
+});
+
+test('fixed range store is same-project lock/CAS, existing VERIFIED cap, exact transaction settlement and deferred current recheck',()=>{
+ const body=definition('fn09_normal_understanding_range_store');
+ for(const text of ['NORMAL_UNDERSTANDING_RANGE_PENDING',"sourceScope,requestRef}","coverage_state IS DISTINCT FROM 'VERIFIED'",'FOR UPDATE',"plan_json->>'transactionId'=expected_tx",'ac.used_bytes+ac.held_bytes+charge>10737418240',"'RESERVED'","phase='IO_STARTED'","phase='SETTLED'",'held_bytes=held_bytes-charge,used_bytes=used_bytes+charge','fn09_normal_understanding_range_final(cmd)'])assert.ok(body.includes(text),text);
+ assert.ok(body.indexOf('range_basis')<body.indexOf('INSERT INTO anvil.project_storage_reservations'));
+ const latch=body.slice(body.indexOf("IF EXISTS(SELECT 1 FROM anvil.project_storage_reservations"),body.indexOf('ends=anvil.fn09_normal_understanding_range_basis',body.indexOf('SELECT * INTO STRICT ac')));
+ assert.doesNotMatch(latch,/project_id=/);
+ const final=definition('fn09_normal_understanding_range_final');assert.match(final,/txid_current\(\)::text/);assert.match(final,/range_basis/);assert.match(final,/expiresAt.*clock_timestamp/);
+ assert.match(definition('fn09_normal_understanding_request_final'),/PERFORM anvil.fn09_normal_understanding_range_final\(c\);RETURN NULL/);
+ const dispatch=sql.slice(sql.indexOf('-- FN09_METADATA_DISPATCH_BEGIN'),sql.indexOf('-- FN09_METADATA_DISPATCH_END'));
+ assert.match(dispatch,/fn09_normal_understanding_range_storage_complete\(r\)/);
+ assert.doesNotMatch(sql,/CREATE(?: OR REPLACE)? FUNCTION anvil\.(?:quota_plan_valid|quota_current|quota_reserve|quota_start|quota_settle)\(/);
+});
+
+test('fixed range forward retains exact original discovery, current metadata, challenge/consumption and settled metadata functions',async()=>{
+ const {createHash}=await import('node:crypto');
+ const original={fn09_normal_understanding_discovery:'627c6769874011a14332945f9d86183d42acd2777cc5ccfb671a32faa4e6f4e3',
+  fn09_normal_understanding_metadata_current:'91d227bedaee509d18247f7cd8313fb6c0237e6cc22203deca8aea8325c62c5a',
+  fn09_normal_understanding_challenge_valid:'f04d6109c957e0154f8767c80da5b974846f9005858709675731e400ab9432ca',
+  fn09_normal_understanding_consumption_valid:'0cae65df8c1ab09b5a33424a363fbe0de5784346471417e3f2df1dbce9b67f63',
+  fn09_normal_understanding_result_pair_historical:'6767b3e8a31a300b40872e7187dd02eef2e2beb1aa91e26bb3069ffa4c559720',
+  fn09_normal_understanding_result_store:'c2aa2d863f425e6f04a0f7f7ecc92b93f09b8bbf507b00f6b2e2d5b6e12e9d03'};
+ for(const [name,digest] of Object.entries(original))assert.equal(createHash('sha256').update(definition(name).replace(/\r\n/g,'\n')).digest('hex'),digest,name);
+});

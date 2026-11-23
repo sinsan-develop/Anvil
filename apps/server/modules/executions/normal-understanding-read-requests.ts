@@ -12,13 +12,54 @@ function actorIdentity(a:AuthenticatedIdentity){if(!(a.reauthUntil instanceof Da
 const contextKeys=['projectId','executionId','executionGeneration','grantRef','registrationRef','connectorId','credentialGeneration','startCommandId','startCommandRef','assignmentRef','preparationRef','contextBundleRef','sessionBindingRef'];
 function input(raw:unknown):ProjectCommand{
  const q=cloneV1(raw);
- if(!recordV1(q,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])
-  ||q.schemaVersion!==1||!uuidV1(q.projectId)||!uuidV1(q.commandId)||!uuidV1(q.clientId)||!uuidV1(q.targetId)
+ if(!recordV1(q,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']))return fail('INPUT_INVALID',422);
+ const range=recordV1(q.payload,['assignmentRef','preparationRef','selection']);
+ if(q.schemaVersion!==1||!uuidV1(q.projectId)||!uuidV1(q.commandId)||!uuidV1(q.clientId)||!uuidV1(q.targetId)
   ||!Number.isSafeInteger(q.controlGeneration)||q.controlGeneration<1||!Number.isSafeInteger(q.expectedVersion)||q.expectedVersion<1
   ||q.operation!=='readNormalUnderstandingResponse'||q.approvalRef!==null||!Array.isArray(q.baselineRefs)||q.baselineRefs.length
-  ||!recordV1(q.payload,['assignmentRef','preparationRef'])||!refV1(q.payload.assignmentRef)||!refV1(q.payload.preparationRef)
-  ||Buffer.byteLength(canonicalJson(q))>8192)fail('INPUT_INVALID',422);
+  ||!range&&!recordV1(q.payload,['assignmentRef','preparationRef'])||!refV1(q.payload.assignmentRef)||!refV1(q.payload.preparationRef)
+  ||Buffer.byteLength(canonicalJson(q))>(range?2097152:8192))return fail('INPUT_INVALID',422);
+ if(range)fixedSelection(q.payload.selection);
  return q as ProjectCommand;
+}
+function fixedSelection(raw:unknown){
+ const s=cloneV1(raw);
+ if(!recordV1(s,['requestRef','resultRef','initConfirmationRef','tailRef','firstSequence','lastSequence','ranges'])
+  ||!['requestRef','resultRef','initConfirmationRef','tailRef'].every(k=>refV1(s[k])&&s[k].version===1)
+  ||!Number.isSafeInteger(s.firstSequence)||s.firstSequence<1||!Number.isSafeInteger(s.lastSequence)||s.lastSequence<s.firstSequence||s.lastSequence>10000
+  ||!Array.isArray(s.ranges)||!s.ranges.length||s.ranges.length>200||s.ranges.length!==s.lastSequence-s.firstSequence+1)return fail('INPUT_INVALID',422);
+ const seen=new Set<string>();let blocks=0;
+ for(const [i,r]of s.ranges.entries()){
+  if(!recordV1(r,['outputRef','sequence','payloadDigest','textBlocks','textBytes'])||!refV1(r.outputRef)||r.outputRef.version!==1
+   ||r.sequence!==s.firstSequence+i||seen.has(r.outputRef.id)||r.outputRef.id===s.initConfirmationRef.id
+   ||r.outputRef.id===s.tailRef.id&&(!same(r.outputRef,s.tailRef)||i!==s.ranges.length-1)
+   ||typeof r.payloadDigest!=='string'||!/^[0-9a-f]{64}$/.test(r.payloadDigest)||!Number.isSafeInteger(r.textBlocks)||r.textBlocks<1||(blocks+=r.textBlocks)>200
+   ||!Number.isSafeInteger(r.textBytes)||r.textBytes<1||r.textBytes>2097152)fail('INPUT_INVALID',422);seen.add(r.outputRef.id);
+ }
+ return s;
+}
+const rangePurpose='NORMAL_UNDERSTANDING_FIXED_RANGE_REQUEST',rangeStatus='NORMAL_UNDERSTANDING_RANGE_REQUESTED';
+function rangeSnapshot(raw:unknown,q:ProjectCommand,r:unknown){
+ const s=cloneV1(raw);
+ if(!recordV1(s,['schemaVersion','purpose','request','requestedBy','policyRef','state','sourceScope','createdAt','expiresAt'])||s.schemaVersion!==1||s.purpose!==rangePurpose
+  ||!same(s.request,q)||!same(s.sourceScope,q.payload.selection)||s.state!=='PENDING_SOURCE'||!refV1(r)||r.version!==1||hash(s)!==r.contentHash
+  ||!recordV1(s.requestedBy,['kind','userId','clientId','sessionId','credentialGeneration','controlGeneration'])||s.requestedBy.kind!=='HUMAN'
+  ||!['userId','clientId','sessionId'].every(k=>uuidV1(s.requestedBy[k]))||s.requestedBy.clientId!==q.clientId||s.requestedBy.controlGeneration!==q.controlGeneration
+  ||!Number.isSafeInteger(s.requestedBy.credentialGeneration)||s.requestedBy.credentialGeneration<1||!refV1(s.policyRef)
+  ||!isoV1(s.createdAt)||!isoV1(s.expiresAt)||Date.parse(s.expiresAt)<=Date.parse(s.createdAt)||Date.parse(s.expiresAt)-Date.parse(s.createdAt)>30000
+  ||Buffer.byteLength(canonicalJson(s))>2097152)return fail('NORMAL_UNDERSTANDING_RANGE_REPLAY_INVALID',409);
+ return s;
+}
+/** command.result_ref의 내부 원 snapshot은 HUMAN 응답으로 내보내지 않는다. */
+function rangeResponse(raw:any,q:ProjectCommand,snapshot:unknown){
+ const v=cloneV1(raw),d=v?.data;
+ if(!recordV1(v,['operationId','commandId','projectId','status','targetId','version','data','evidenceRefs','warnings','serverReceivedAt'])
+  ||!recordV1(d,['ref','status','requestRef','state','sourceAvailable','selectionAvailable','expiresAt','snapshot'])
+  ||!uuidV1(v.operationId)||v.commandId!==q.commandId||v.projectId!==q.projectId||v.status!=='APPLIED'||v.version!==1||v.targetId!==d.ref?.id
+  ||!refV1(d.ref)||!same(d.ref,d.requestRef)||d.status!==rangeStatus||d.state!=='PENDING_SOURCE'||d.sourceAvailable!==false||d.selectionAvailable!==false
+  ||!same(d.snapshot,snapshot)||d.expiresAt!==(snapshot as any)?.expiresAt||!isoV1(v.serverReceivedAt)
+  ||!Array.isArray(v.evidenceRefs)||v.evidenceRefs.length||!Array.isArray(v.warnings)||v.warnings.length)fail('NORMAL_UNDERSTANDING_RANGE_REPLAY_INVALID',409);
+ const {snapshot:_,...data}=d;return {...v,data};
 }
 function basis(value:unknown,q:ProjectCommand,at:number){
  const b=cloneV1(value);
@@ -65,6 +106,64 @@ function metadataProjection(raw:unknown,request:Record<string,unknown>,at:number
 export class NormalUnderstandingReadRequests{
  readonly #access:AccessRepository;
  constructor(access:AccessRepository){this.#access=access;}
+ /** 고정 범위는 HUMAN의 대기 요청일 뿐 원문/connector ticket/실행 권위가 아니다. */
+ async #rangeCommand(token:string,csrf:string,q:ProjectCommand){
+  const selected=fixedSelection(q.payload.selection);
+  let wall=Date.now(),mono=performance.now(),end=wall+30000,monoEnd=mono+30000;
+  const unknown=()=>fail('NORMAL_UNDERSTANDING_RANGE_OUTCOME_UNKNOWN',503);
+  const check=()=>{const w=Date.now(),m=performance.now();if(w<wall||m<mono||w>=end||m>=monoEnd||Object.getPrototypeOf(this.#access)!==AccessRepository.prototype
+   ||Object.hasOwn(this.#access,'authenticated')||Object.hasOwn(this.#access,'authenticateInTransaction')||AccessRepository.prototype.authenticated!==originalAuthenticated||AccessRepository.prototype.authenticateInTransaction!==originalAuthenticate)unknown();wall=w;mono=m;};
+  check();try{
+   const result=await this.#access.authenticated(token,csrf,async(db,actor)=>{
+    const query=db.query,identity=actorIdentity(actor),s=actor.authSession;let tx='',dbAt=-Infinity,clockWall=wall,clockMono=mono;
+    if(!s||!uuidV1(s.id))return unknown();
+    const clock=async()=>{check();const beforeWall=wall,beforeMono=mono;
+     if(db.query!==query||actorIdentity(actor)!==identity)return unknown();const {rows}=await db.query('SELECT clock_timestamp() AS at,txid_current()::text AS transaction_id');check();const r=rows.length===1?rows[0]:null;
+     if(db.query!==query||actorIdentity(actor)!==identity||!(r?.at instanceof Date)||!Number.isFinite(r.at.getTime())||r.at.getTime()<dbAt||typeof r.transaction_id!=='string'||!/^[1-9][0-9]{0,18}$/.test(r.transaction_id)||tx&&tx!==r.transaction_id)return unknown();
+     tx=r.transaction_id;dbAt=r.at.getTime();clockWall=beforeWall;clockMono=beforeMono;return dbAt;
+    };
+    const bound=(expiry:number)=>{if(!Number.isFinite(expiry)||expiry<=dbAt)return unknown();end=Math.min(end,clockWall+expiry-dbAt);monoEnd=Math.min(monoEnd,clockMono+expiry-dbAt);check();};
+    let policyRef:unknown;
+    const auth=async()=>{await clock();await currentProjectController(db,actor,q);const p=await authorizeMaterial(db,actor,q,true);await clock();
+     if(p.approvalRequired||policyRef!==undefined&&!same(policyRef,p.ref))fail('PROJECT_OPERATION_DENIED',403);policyRef=p.ref;
+     if(actor.reauthUntil!.getTime()<=dbAt)fail('REAUTHENTICATION_REQUIRED',412);
+     bound(Math.min(p.validUntil,Date.parse(s.idleExpiresAt),Date.parse(s.absoluteExpiresAt),actor.reauthUntil!.getTime()));return p;
+    };
+    const policy=await auth(),prior=await projectReplay(db,actor,q);await clock();
+    if(prior!==undefined){
+     const rows=(await db.query('SELECT * FROM anvil.fn09_normal_understanding_request_replay($1,$2,$3,$4,$5,$6)',[s.id,actor.actorId,actor.clientId,JSON.stringify(q),JSON.stringify(policy.ref),tx])).rows;
+     await clock();const r=rows.length===1?rows[0]:null;if(!r||r.complete!==true||!same(r.result_ref,prior))fail('NORMAL_UNDERSTANDING_RANGE_REPLAY_INVALID',409);
+     const saved=rangeSnapshot(r.snapshot_json,q,{id:r.id,version:1,contentHash:r.content_hash});
+     if(saved.requestedBy.userId!==actor.actorId||saved.requestedBy.sessionId!==s.id||saved.requestedBy.credentialGeneration!==actor.credentialGeneration)fail('NORMAL_UNDERSTANDING_RANGE_REPLAY_INVALID',409);
+     if(actorIdentity(await this.#access.authenticateInTransaction(db,token,csrf))!==identity)return unknown();await auth();check();return rangeResponse(prior,q,saved);
+    }
+    const inspect=async()=>{
+     await auth();const request={projectId:q.projectId,executionId:q.targetId,executionGeneration:q.expectedVersion,assignmentRef:q.payload.assignmentRef,preparationRef:q.payload.preparationRef,requestRef:selected.requestRef};
+     const rows=(await db.query('SELECT anvil.fn09_normal_understanding_metadata_current($1,$2,$3,$4,$5,$6) AS projection',[s.id,actor.actorId,actor.clientId,JSON.stringify({...request,controlGeneration:q.controlGeneration}),JSON.stringify(policy.ref),tx])).rows;
+     const v=metadataProjection(rows.length===1?rows[0]?.projection:null,request,await clock());
+     if(v.status!=='METADATA_STORED'||!same(v.resultRef,selected.resultRef)||!same(v.metadata.initConfirmationRef,selected.initConfirmationRef)||!same(v.metadata.tailRef,selected.tailRef)
+      ||!same(v.metadata.ranges.filter((r:any)=>r.sequence>=selected.firstSequence&&r.sequence<=selected.lastSequence),selected.ranges))fail('NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED',412);
+     bound(Date.parse(v.expiresAt));return v;
+    };
+    const first=await inspect(),now=await clock(),expiresAt=new Date(Math.min(now+30000,Date.parse(first.expiresAt),policy.validUntil,actor.reauthUntil!.getTime(),Date.parse(s.idleExpiresAt),Date.parse(s.absoluteExpiresAt))).toISOString();
+    bound(Date.parse(expiresAt));const snapshot={schemaVersion:1,purpose:rangePurpose,request:q,requestedBy:{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId,sessionId:s.id,credentialGeneration:actor.credentialGeneration,controlGeneration:q.controlGeneration},
+     policyRef:policy.ref,state:'PENDING_SOURCE',sourceScope:selected,createdAt:new Date(now).toISOString(),expiresAt};
+    const r={id:randomUUID(),version:1,contentHash:hash(snapshot)};rangeSnapshot(snapshot,q,r);
+    const receipt=await persistProjectReceipt(db,actor,q,r,{status:rangeStatus,requestRef:r,state:'PENDING_SOURCE',sourceAvailable:false,selectionAvailable:false,expiresAt,snapshot},policy.ref,'EXPLICIT_NORMAL_UNDERSTANDING_RANGE_REQUEST');
+    const rows=(await db.query('SELECT anvil.fn09_normal_understanding_request_insert($1,$2,$3,$4,$5,$6,$7,$8,$9) AS stored',[s.id,actor.actorId,actor.clientId,JSON.stringify(q),JSON.stringify(policy.ref),tx,JSON.stringify(r),JSON.stringify(snapshot),receipt.id])).rows;
+    await clock();if(rows.length!==1||!same(rows[0]?.stored,r))return unknown();
+    if(actorIdentity(await this.#access.authenticateInTransaction(db,token,csrf))!==identity)return unknown();const last=await inspect();
+    if(!same(first.resultRef,last.resultRef)||!same(first.metadata,last.metadata))return unknown();check();return rangeResponse(receipt.result,q,snapshot);
+   });check();return result;
+  }catch(error){
+   if(error instanceof AuthFailure)throw error;
+   if(error instanceof Error&&'code'in error&&error.code==='P0001'){
+    if(error.message==='PROJECT_STORAGE_QUOTA_EXCEEDED')fail(error.message,409);
+    if(error.message==='NORMAL_UNDERSTANDING_RANGE_PENDING'||error.message==='IDEMPOTENCY_CONFLICT')fail(error.message,409);
+    if(['NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED','PROJECT_STORAGE_QUOTA_UNVERIFIED'].includes(error.message))fail(error.message,412);
+   }return unknown();
+  }
+ }
  /** HUMAN current 메타 조회. 새 명령/nonce/정산을 만들지 않으며 원 거래 COMMIT 뒤에만 반환한다. */
  async current(token:string,csrf:string,raw:unknown){
   const selection=currentInput(raw),{controlGeneration,...request}=selection;
@@ -203,7 +302,8 @@ export class NormalUnderstandingReadRequests{
   }
  }
  async command(token:string,csrf:string,raw:unknown){
-  const q=input(raw),wall=Date.now(),mono=performance.now();let lastWall=wall,lastMono=mono,end=wall+30000,monoEnd=mono+30000;
+  const q=input(raw);if(Object.hasOwn(q.payload,'selection'))return this.#rangeCommand(token,csrf,q);
+  const wall=Date.now(),mono=performance.now();let lastWall=wall,lastMono=mono,end=wall+30000,monoEnd=mono+30000;
   const check=()=>{const at=Date.now(),mark=performance.now();if(at<lastWall||mark<lastMono||at>=end||mark>=monoEnd
    ||Object.getPrototypeOf(this.#access)!==AccessRepository.prototype||Object.hasOwn(this.#access,'authenticated')||Object.hasOwn(this.#access,'authenticateInTransaction')
    ||AccessRepository.prototype.authenticated!==originalAuthenticated||AccessRepository.prototype.authenticateInTransaction!==originalAuthenticate)fail('NORMAL_UNDERSTANDING_REQUEST_OUTCOME_UNKNOWN',503);lastWall=at;lastMono=mark;};

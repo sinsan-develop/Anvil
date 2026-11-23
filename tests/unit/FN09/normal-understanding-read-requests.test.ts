@@ -12,7 +12,7 @@ function fixture(reauthMode='CURRENT'){
  const pid=id(1),uid=id(2),cid=id(3),sid=id(4),eid=id(5),token='t'.repeat(43),csrf='c'.repeat(43);
  const at=new Date(),until=new Date(at.getTime()+60000),calls:string[]=[];
  let state:any={commands:[],requests:[]},backup:any,control=1,denied=false,failInsert=false,loseCommit=false,changed=false,changeAfterInsert=false,swapQuery=false,basisMissing=false;
- let candidates=1,locates=0,changeSelection=false;
+ let candidates=1,locates=0,changeSelection=false,preserveCommit=false;
  const rules:any[]=[{ruleId:'read-normal-understanding',subjectRef:{kind:'HUMAN',userId:uid},operations:['readNormalUnderstandingResponse'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',limitPolicyRef:null,expiresAt:until.toISOString()}];
  const context={projectId:pid,executionId:eid,executionGeneration:1,grantRef:ref(10),registrationRef:ref(11),connectorId:id(12),credentialGeneration:1,
   startCommandId:id(13),startCommandRef:ref(14),assignmentRef:ref(15),preparationRef:ref(16),contextBundleRef:ref(17),sessionBindingRef:ref(18)};
@@ -20,7 +20,7 @@ function fixture(reauthMode='CURRENT'){
  const db:any={query:async(sql:string,p:any[]=[])=>{
   calls.push(sql);const rows=(v:any[])=>({rows:v,rowCount:v.length});
   if(sql==='BEGIN'){backup=structuredClone(state);return{...rows([]),command:'BEGIN'};}
-  if(sql==='COMMIT'){if(loseCommit)throw Error('RAM_COMMIT_UNKNOWN');return{...rows([]),command:'COMMIT'};}
+  if(sql==='COMMIT'){if(loseCommit){if(preserveCommit)backup=structuredClone(state);throw Error('RAM_COMMIT_UNKNOWN');}return{...rows([]),command:'COMMIT'};}
   if(sql==='ROLLBACK'){state=backup;return{...rows([]),command:'ROLLBACK'};}
   if(sql.startsWith('SELECT s.*,u.id AS uid'))return rows([{id:sid,uid,client_id:cid,current_generation:1,credential_generation:1,user_status:'ACTIVE',user_revoked_at:null,client_revoked_at:null,revoked_at:null,idle_expires_at:until,absolute_expires_at:until,csrf_digest:createHash('sha256').update(csrf).digest('hex'),reauth_until:reauthMode==='NONE'?null:reauthMode==='EXPIRED'?new Date(at.getTime()-1):new Date(until),server_owner:false}]);
   if(sql.startsWith('SELECT clock_timestamp()'))return rows([{at,transaction_id:'17'}]);
@@ -43,14 +43,110 @@ function fixture(reauthMode='CURRENT'){
   if(sql.startsWith('SELECT anvil.fn09_normal_understanding_request_insert')){if(failInsert)throw Error('RAM_INSERT_FAILED');const s=JSON.parse(p[7]),r=JSON.parse(p[6]);state.requests.push({id:r.id,content_hash:r.contentHash,snapshot_json:s,commandId:request().commandId,result_ref:state.commands.at(-1).result_ref,complete:true});if(changeAfterInsert)changed=true;return rows([{stored:r}]);}
   throw Error('UNEXPECTED_RAM_SQL');
  },release:()=>{calls.push('RELEASE');}};
- const access=new AccessRepository({connect:async()=>db} as any,{installationId:id(40),key:Buffer.alloc(32,1)});
+ const pool={connect:async()=>db},access=new AccessRepository(pool as any,{installationId:id(40),key:Buffer.alloc(32,1)});
  const readiness=()=>new mod.NormalUnderstandingReadRequests(access).readiness(token,csrf,pid,{controlGeneration:1,...request().payload});
- return{access,db,calls,request,token,csrf,pid,context,rules,readiness,candidates:(count:number)=>{candidates=count;},changeSelection:()=>{changeSelection=true;},run:()=>{assert.equal(typeof mod.NormalUnderstandingReadRequests,'function');return new mod.NormalUnderstandingReadRequests(access).command(token,csrf,request());},state:()=>state,deny:()=>{denied=true;},stale:()=>{control=2;},fail:()=>{failInsert=true;},unknown:()=>{loseCommit=true;},change:()=>{changed=true;},lateChange:()=>{changeAfterInsert=true;},swap:()=>{swapQuery=true;},missing:()=>{basisMissing=true;}};
+ return{access,db,pool,calls,request,token,csrf,pid,context,rules,readiness,candidates:(count:number)=>{candidates=count;},changeSelection:()=>{changeSelection=true;},run:()=>{assert.equal(typeof mod.NormalUnderstandingReadRequests,'function');return new mod.NormalUnderstandingReadRequests(access).command(token,csrf,request());},state:()=>state,deny:()=>{denied=true;},stale:()=>{control=2;},fail:()=>{failInsert=true;},unknown:(keep=false)=>{loseCommit=true;preserveCommit=keep;},recover:()=>{loseCommit=false;},change:()=>{changed=true;},lateChange:()=>{changeAfterInsert=true;},swap:()=>{swapQuery=true;},missing:()=>{basisMissing=true;}};
 }
 test('FN09 metadata request uses original Access transaction and stores waiting only; identical replay writes nothing',async()=>{
  const f=fixture(),first=await f.run();assert.equal(first.data.status,'NORMAL_UNDERSTANDING_METADATA_REQUESTED');assert.equal(first.data.state,'PENDING_SOURCE');assert.equal(first.data.sourceAvailable,false);assert.equal(first.data.selectionAvailable,false);
  const s=f.state().requests[0].snapshot_json;assert.equal(s.sourceScope,null);assert.deepEqual(s.context,f.context);assert.equal(s.request.operation,'readNormalUnderstandingResponse');assert.equal(f.calls.filter(s=>s==='COMMIT').length,1);
  const writes=f.calls.filter(s=>s.startsWith('INSERT')||s.includes('request_insert')).length;assert.deepEqual(await f.run(),first);assert.equal(f.calls.filter(s=>s.startsWith('INSERT')||s.includes('request_insert')).length,writes);
+});
+
+function fixedRangeFixture(){
+ const f=fixture(),original=f.db.query;
+ const selection={requestRef:ref(60),resultRef:ref(61),initConfirmationRef:ref(62),tailRef:ref(64),firstSequence:3,lastSequence:4,
+  ranges:[{outputRef:ref(63),sequence:3,payloadDigest:'b'.repeat(64),textBlocks:1,textBytes:12},{outputRef:ref(64),sequence:4,payloadDigest:'c'.repeat(64),textBlocks:1,textBytes:14}]};
+ const q={...f.request(),payload:{...f.request().payload,selection}};
+ let charged=0n,backup=0n,storeCalls=0,current=false,afterStore=false,missing=false,cap=false,corrupt=false,preserveCommit=false;
+ const projection=()=>({status:'METADATA_STORED',request:{projectId:f.pid,executionId:q.targetId,executionGeneration:1,assignmentRef:q.payload.assignmentRef,preparationRef:q.payload.preparationRef,requestRef:selection.requestRef},
+  resultRef:selection.resultRef,currentness:'CURRENT',observedAt:new Date(Date.now()-1000).toISOString(),expiresAt:new Date(Date.now()+20000).toISOString(),selectionAvailable:false,
+  metadata:{contextBundleRef:f.context.contextBundleRef,initConfirmationRef:selection.initConfirmationRef,tailRef:selection.tailRef,attribution:'SESSION_ONLY',wholeConversationComplete:false,ranges:selection.ranges}});
+ f.db.query=async(sql:string,p:any[]=[])=>{
+  if(sql==='BEGIN'||sql==='COMMIT'&&preserveCommit)backup=charged;if(sql==='ROLLBACK')charged=backup;
+  if(sql.startsWith('SELECT anvil.fn09_normal_understanding_metadata_current')){
+   f.calls.push(sql);if(missing||current)throw Object.assign(Error('NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED'),{code:'P0001'});return{rows:[{projection:projection()}]};
+  }
+  if(sql.startsWith('SELECT anvil.fn09_normal_understanding_request_insert')&&JSON.parse(p[3]).payload.selection){
+   f.calls.push(sql);storeCalls++;if(cap)throw Object.assign(Error('PROJECT_STORAGE_QUOTA_EXCEEDED'),{code:'P0001'});
+   const saved=f.state().commands.at(-1),snapshot=JSON.parse(p[7]),r=JSON.parse(p[6]);assert.equal(snapshot.purpose,'NORMAL_UNDERSTANDING_FIXED_RANGE_REQUEST');assert.deepEqual(snapshot.sourceScope,selection);
+   assert.equal(r.contentHash,hash(snapshot));assert.deepEqual(saved.result_ref.data.snapshot,snapshot);
+   // 기존 목적 SQL 원자 저장/정산의 RAM 대역이며 실제 SQL/lock/ACL을 증명하지 않는다.
+   if(f.state().commands.some((c:any)=>c!==saved&&c.result_ref.data.snapshot?.sourceScope?.requestRef.id===selection.requestRef.id))throw Object.assign(Error('NORMAL_UNDERSTANDING_RANGE_PENDING'),{code:'P0001'});
+   charged+=BigInt(Buffer.byteLength(canonicalJson(saved.result_ref)));if(afterStore)current=true;
+   return{rows:[{stored:r}]};
+  }
+  if(sql.startsWith('SELECT * FROM anvil.fn09_normal_understanding_request_replay')&&JSON.parse(p[3]).payload.selection){
+   f.calls.push(sql);const saved=f.state().commands.find((c:any)=>c.command_key===JSON.parse(p[3]).commandId);
+   if(!saved)return{rows:[]};const snapshot=structuredClone(saved.result_ref.data.snapshot);if(corrupt)snapshot.sourceScope.lastSequence++;
+   return{rows:[{id:saved.result_ref.data.ref.id,content_hash:saved.result_ref.data.ref.contentHash,snapshot_json:snapshot,result_ref:saved.result_ref,complete:!corrupt}]};
+  }
+  return original(sql,p);
+ };
+ return{...f,q,selection,runRange:(value:unknown=q)=>new mod.NormalUnderstandingReadRequests(f.access).command(f.token,f.csrf,value),
+  charge:()=>charged,stores:()=>storeCalls,expire:()=>{current=true;},afterStore:()=>{afterStore=true;},cap:()=>{cap=true;},missing:()=>{missing=true;},corrupt:()=>{corrupt=true;},committedUnknown:()=>{preserveCommit=true;f.unknown(true);}};
+}
+test('FN09 fixed range saves only original metadata scope in C/A/U; same command reconfirmation has no extra charge or disclosure',async()=>{
+ const f=fixedRangeFixture(),first=await f.runRange();assert.equal(first.data.status,'NORMAL_UNDERSTANDING_RANGE_REQUESTED');assert.equal(first.data.state,'PENDING_SOURCE');
+ assert.equal(first.data.snapshot,undefined);assert.equal(first.data.sourceAvailable,false);assert.equal(first.data.selectionAvailable,false);assert.equal(f.state().requests.length,0);
+ const charged=f.charge();f.expire();assert.deepEqual(await f.runRange(),first);assert.equal(f.charge(),charged);assert.equal(f.stores(),1);
+ assert.equal(f.state().commands.length,1);assert.ok(!JSON.stringify(first).includes('sessionId'));
+});
+test('FN09 fixed range refuses skipped sequence, changed row/fullref and raw fields without adding a command',async()=>{
+ for(const alter of [(s:any)=>{s.ranges[1].sequence=5;s.lastSequence=5;},(s:any)=>{s.ranges[0].payloadDigest='d'.repeat(64);},
+  (s:any)=>{s.resultRef=ref(98);},(s:any)=>{s.ranges[0].outputRef=s.initConfirmationRef;},(s:any)=>{s.raw='forbidden';}]){
+  const f=fixedRangeFixture(),q=structuredClone(f.q);alter(q.payload.selection);await assert.rejects(f.runRange(q));assert.equal(f.state().commands.length,0);assert.equal(f.charge(),0n);
+ }
+ const f=fixedRangeFixture();await f.runRange();const other=structuredClone(f.q);other.payload.selection.lastSequence=3;other.payload.selection.ranges.pop();
+ await assert.rejects(f.runRange(other),{message:'IDEMPOTENCY_CONFLICT',statusCode:409});assert.equal(f.stores(),1);
+});
+test('FN09 fixed range current denial, unknown commit and partial charge never return pending success',async()=>{
+ for(const alter of [(f:ReturnType<typeof fixedRangeFixture>)=>f.deny(),(f:ReturnType<typeof fixedRangeFixture>)=>f.stale(),
+  (f:ReturnType<typeof fixedRangeFixture>)=>f.missing(),(f:ReturnType<typeof fixedRangeFixture>)=>f.cap(),
+  (f:ReturnType<typeof fixedRangeFixture>)=>f.afterStore(),(f:ReturnType<typeof fixedRangeFixture>)=>f.unknown()]){
+  const f=fixedRangeFixture();alter(f);await assert.rejects(f.runRange());assert.equal(f.state().commands.length,0);assert.equal(f.charge(),0n);assert.equal(f.calls.filter(s=>s==='BEGIN').length,1);
+ }
+ const f=fixedRangeFixture();await f.runRange();f.corrupt();await assert.rejects(f.runRange());assert.equal(f.stores(),1);
+});
+
+test('FN09 fixed range serializes competing HUMAN commands and exact replay on the original transaction port',async()=>{
+ for(const identical of [true,false]){
+  const f=fixedRangeFixture();let tail=Promise.resolve();
+  // RAM에서는 원 PoolClient 거래 전체를 직렬화한다. 실제 PG project FOR UPDATE/CAS는 정적 검산 및 별도 실행 대상이다.
+  f.pool.connect=async()=>{const before=tail;let unlock!:()=>void;tail=new Promise<void>(resolve=>{unlock=resolve;});await before;return {query:f.db.query,release:()=>{f.db.release();unlock();}};};
+  const second=structuredClone(f.q);if(!identical)second.commandId=id(90);
+  const results=await Promise.allSettled([f.runRange(),f.runRange(second)]);
+  assert.equal(results[0]!.status,'fulfilled');assert.equal(results[1]!.status,identical?'fulfilled':'rejected');
+  if(identical)assert.deepEqual((results[0] as PromiseFulfilledResult<any>).value,(results[1] as PromiseFulfilledResult<any>).value);
+  else assert.equal((results[1] as PromiseRejectedResult).reason.message,'NORMAL_UNDERSTANDING_RANGE_PENDING');
+  assert.equal(f.state().commands.length,1);assert.equal(f.state().requests.length,0);assert.ok(f.charge()>0n);
+  const charged=f.charge();assert.deepEqual(await f.runRange(),(results[0] as PromiseFulfilledResult<any>).value);assert.equal(f.charge(),charged);
+ }
+});
+
+test('FN09 fixed range lost COMMIT response never publishes success or retries; explicit same command recheck adds zero charge',async()=>{
+ const f=fixedRangeFixture();f.committedUnknown();
+ await assert.rejects(f.runRange(),{message:'NORMAL_UNDERSTANDING_RANGE_OUTCOME_UNKNOWN',statusCode:503});
+ assert.equal(f.state().commands.length,1);assert.equal(f.stores(),1);assert.equal(f.calls.filter(s=>s==='BEGIN').length,1);
+ const charged=f.charge();assert.ok(charged>0n);f.recover();f.expire();
+ const saved=await f.runRange();assert.equal(saved.data.status,'NORMAL_UNDERSTANDING_RANGE_REQUESTED');assert.equal(saved.data.snapshot,undefined);
+ assert.equal(f.stores(),1);assert.equal(f.state().commands.length,1);assert.equal(f.charge(),charged);
+});
+
+test('FN09 fixed range reaches the existing HUMAN POST and reconfirms only the same command without source text or private snapshot',async()=>{
+ const {buildApp}=await import('../../../apps/server/app.ts');const f=fixedRangeFixture(),app=buildApp({},undefined,{repository:f.access,origin:'https://anvil.test'});
+ const url=`/api/v1/projects/${f.pid}/executions/${f.q.targetId}/understanding-response-read-requests`,headers={host:'anvil.test',origin:'https://anvil.test',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf};
+ try{
+  const first=await app.inject({method:'POST',url,headers,payload:f.q});assert.equal(first.statusCode,200,first.body);assert.equal(first.headers['cache-control'],'no-store');
+  assert.equal(first.json().data.status,'NORMAL_UNDERSTANDING_RANGE_REQUESTED');assert.equal(first.json().data.snapshot,undefined);
+  const charge=f.charge();f.expire();const again=await app.inject({method:'POST',url,headers,payload:f.q});assert.equal(again.statusCode,200,again.body);assert.deepEqual(again.json(),first.json());assert.equal(f.charge(),charge);
+  for(const patch of [{url:url+'?extra=1'},{headers:{...headers,authorization:'Bearer ignored'}},{headers:{...headers,origin:'https://outside.test'}},
+   {headers:{host:headers.host,origin:headers.origin,cookie:headers.cookie}},{payload:{...f.q,targetId:id(99)}}]){
+   const count=f.calls.length,r=await app.inject({method:'POST',url,headers,payload:f.q,...patch});assert.ok(r.statusCode>=400,r.body);assert.equal(f.calls.length,count);
+  }
+  const q=structuredClone(f.q);q.payload.selection.ranges[0]!.textBytes++;const bad=await app.inject({method:'POST',url,headers,payload:q});assert.equal(bad.statusCode,409,bad.body);
+  assert.equal(f.stores(),1);assert.equal(f.state().requests.length,0);assert.ok(!first.body.includes('sessionId'));
+ }finally{await app.close();}
 });
 test('FN09 current DENY/control loss and REQUIRE_APPROVAL reject before request or receipt writes',async()=>{
  for(const alter of [(f:any)=>f.deny(),(f:any)=>f.stale(),(f:any)=>{f.rules[0].disposition='REQUIRE_APPROVAL';}]){const f=fixture();alter(f);await assert.rejects(f.run());assert.equal(f.calls.some(s=>s.startsWith('INSERT')||s.includes('request_insert')),false);}

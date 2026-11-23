@@ -43,7 +43,8 @@ export function registerNormalUnderstandingReadRoutes(app:FastifyInstance,option
     assignmentRef:{id:q.get('assignmentId'),version:version('assignmentVersion'),contentHash:q.get('assignmentHash')},
     preparationRef:{id:q.get('preparationId'),version:version('preparationVersion'),contentHash:q.get('preparationHash')}});
   });
-  route.post('/api/v1/projects/:pid/executions/:eid/understanding-response-read-requests',async(request,reply)=>{
+  route.post('/api/v1/projects/:pid/executions/:eid/understanding-response-read-requests',{bodyLimit:2*1024*1024},async(request,reply)=>{
+   reply.header('cache-control','no-store');
    if(header(request,'host')!==origin.host||header(request,'origin')!==options.origin||request.headers.authorization!==undefined
     ||request.headers['content-encoding']!==undefined||request.headers['transfer-encoding']!==undefined)throw new AuthFailure('NORMAL_UNDERSTANDING_REQUEST_CHANNEL_INVALID',403);
    const {token,csrf}=humanSession(request);
