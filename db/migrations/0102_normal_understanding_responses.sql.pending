@@ -215,6 +215,7 @@ CREATE FUNCTION anvil.fn09_normal_understanding_discovery(token text,b jsonb,sig
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE cr record;cur record;r anvil.normal_understanding_read_requests;cmd anvil.commands;basis jsonb;ref jsonb;ends timestamptz;n bigint;
 BEGIN
+ IF expected->>'purpose'='FIXED_RANGE' THEN RETURN anvil.fn09_normal_understanding_range_connector_current(token,b,signed_request_id,expected);END IF;
  IF signed_request_id IS NULL OR token !~ '^[0-9a-f]{64}$' OR NOT COALESCE(anvil.execution_json_shape(b,ARRAY['transport','mode','projectId','connectorId','executionId','executionGeneration','grantRef','scopeDigest','credentialGeneration','publicKeyFingerprint']),false)
   OR b->>'transport' IS DISTINCT FROM 'NORMAL_PROTECTED' OR b->>'mode' IS DISTINCT FROM 'EXECUTION' THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_DISCOVERY_DENIED';END IF;
  SELECT * INTO STRICT cr FROM anvil.normal_request_credential(token,(b->>'connectorId')::uuid,(b->>'executionId')::uuid,(b#>>'{grantRef,id}')::uuid,
@@ -416,11 +417,11 @@ DROP TRIGGER synthetic_execution_receipt_complete ON anvil.execution_receipts;
 CREATE TRIGGER synthetic_execution_receipt_guard BEFORE INSERT ON anvil.execution_receipts FOR EACH ROW
  WHEN (NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_CREDENTIAL_ISSUED' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_COMMAND_PAGE'
   AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_START_MATERIAL' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_START_PERMIT'
-  AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_OBSERVATIONS' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_INSTRUCTION_MATERIAL' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_INSTRUCTION_PERMIT' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_RESULT') EXECUTE FUNCTION anvil.guard_synthetic_execution_receipt();
+  AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_OBSERVATIONS' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_INSTRUCTION_MATERIAL' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_INSTRUCTION_PERMIT' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_RESULT' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_RANGE_ACQUIRED') EXECUTE FUNCTION anvil.guard_synthetic_execution_receipt();
 CREATE CONSTRAINT TRIGGER synthetic_execution_receipt_complete AFTER INSERT ON anvil.execution_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
  WHEN (NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_CREDENTIAL_ISSUED' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_COMMAND_PAGE'
   AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_START_MATERIAL' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_START_PERMIT'
-  AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_OBSERVATIONS' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_INSTRUCTION_MATERIAL' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_INSTRUCTION_PERMIT' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_RESULT') EXECUTE FUNCTION anvil.guard_execution_challenge_complete();
+  AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_OBSERVATIONS' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_INSTRUCTION_MATERIAL' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_INSTRUCTION_PERMIT' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_DISCOVERY_RESULT' AND NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_RANGE_ACQUIRED') EXECUTE FUNCTION anvil.guard_execution_challenge_complete();
 
 CREATE TRIGGER normal_understanding_acquisition_guard BEFORE INSERT ON anvil.execution_receipts FOR EACH ROW
  WHEN(NEW.snapshot_json->>'kind'='NORMAL_UNDERSTANDING_DISCOVERY_ACQUIRED') EXECUTE FUNCTION anvil.guard_fn09_normal_understanding_acquisition();
@@ -668,6 +669,7 @@ EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
 CREATE OR REPLACE FUNCTION anvil.quota_settled_complete(r anvil.project_storage_reservations) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
  -- FN09_METADATA_DISPATCH_BEGIN
+ IF r.part_kind='FN09_RANGE_TRANSPORT' OR r.plan_json->>'purpose'='FN09_RANGE_TRANSPORT_STORAGE' THEN RETURN anvil.fn09_normal_understanding_range_transport_complete(r);END IF;
  IF r.part_kind='FN09_FIXED_RANGE_REQUEST' OR r.part_key='fn09_fixed_range' OR r.plan_json->>'purpose'='FN09_FIXED_RANGE_REQUEST_STORAGE' THEN
   RETURN anvil.fn09_normal_understanding_range_storage_complete(r) IS TRUE;
  END IF;
@@ -744,9 +746,9 @@ REVOKE ALL ON FUNCTION anvil.guard_fn09_normal_understanding_result_consumption(
 DROP TRIGGER normal_page_consumption_guard ON anvil.execution_challenges;
 DROP TRIGGER normal_page_consumption_complete ON anvil.execution_challenges;
 CREATE TRIGGER normal_page_consumption_guard BEFORE INSERT ON anvil.execution_challenges FOR EACH ROW
- WHEN (NEW.version=2 AND NEW.snapshot_json#>>'{binding,transport}'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{request,purpose}'='EXECUTION_REQUEST' AND NOT (NEW.snapshot_json ? 'understandingResultBinding')) EXECUTE FUNCTION anvil.guard_normal_command_page();
+ WHEN (NEW.version=2 AND NEW.snapshot_json#>>'{binding,transport}'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{request,purpose}'='EXECUTION_REQUEST' AND NOT (NEW.snapshot_json ? 'understandingResultBinding') AND NOT (NEW.snapshot_json ? 'understandingRangeRequestRef')) EXECUTE FUNCTION anvil.guard_normal_command_page();
 CREATE CONSTRAINT TRIGGER normal_page_consumption_complete AFTER INSERT ON anvil.execution_challenges DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
- WHEN (NEW.version=2 AND NEW.snapshot_json#>>'{binding,transport}'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{request,purpose}'='EXECUTION_REQUEST' AND NOT (NEW.snapshot_json ? 'understandingResultBinding')) EXECUTE FUNCTION anvil.guard_normal_command_page();
+ WHEN (NEW.version=2 AND NEW.snapshot_json#>>'{binding,transport}'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{request,purpose}'='EXECUTION_REQUEST' AND NOT (NEW.snapshot_json ? 'understandingResultBinding') AND NOT (NEW.snapshot_json ? 'understandingRangeRequestRef')) EXECUTE FUNCTION anvil.guard_normal_command_page();
 CREATE TRIGGER fn09_understanding_result_consumption_guard BEFORE INSERT ON anvil.execution_challenges FOR EACH ROW
  WHEN (NEW.version=2 AND NEW.snapshot_json ? 'understandingResultBinding') EXECUTE FUNCTION anvil.guard_fn09_normal_understanding_result_consumption();
 CREATE CONSTRAINT TRIGGER fn09_understanding_result_consumption_complete AFTER INSERT ON anvil.execution_challenges DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
@@ -1125,12 +1127,28 @@ CREATE TRIGGER fn09_range_authorization_history BEFORE UPDATE OR DELETE ON anvil
 CREATE TRIGGER fn09_range_audit_history BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.guard_fn09_normal_understanding_range_history();
 
 -- 기존 table/role/cap만 사용한다. 새 purpose를 일반 quota API나 discovery GET으로 열지 않는다.
+CREATE FUNCTION anvil.fn09_normal_understanding_range_transport_plan_valid(p jsonb) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE k text;
+BEGIN
+ IF NOT COALESCE(anvil.execution_json_shape(p,ARRAY['schemaVersion','purpose','part','projectId','transactionId','coverageGeneration','rangeRequestRef','challengeRef','resultRef','recordsHash','bytes','commandId','commandHash','authorizationReceiptId','scopeDigest','authorizedUntil']),false)
+  OR p->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR p->>'purpose' IS DISTINCT FROM 'FN09_RANGE_TRANSPORT_STORAGE' OR COALESCE(p->>'part','') NOT IN('ISSUE','ACQUIRE')
+  OR jsonb_typeof(p->'transactionId') IS DISTINCT FROM 'string' OR p->>'transactionId' !~ '^[1-9][0-9]{0,18}$'
+  OR jsonb_typeof(p->'coverageGeneration') IS DISTINCT FROM 'string' OR p->>'coverageGeneration' !~ '^[1-9][0-9]{0,15}$' OR (p->>'coverageGeneration')::numeric>9007199254740991
+  OR anvil.quota_decimal(p->'bytes')<=0 OR anvil.quota_decimal(p->'bytes')>10737418240 OR NOT COALESCE(anvil.execution_iso_valid(p->'authorizedUntil'),false) THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['projectId','commandId','authorizationReceiptId'] LOOP IF jsonb_typeof(p->k) IS DISTINCT FROM 'string' OR (p->>k)::uuid::text IS DISTINCT FROM p->>k THEN RETURN false;END IF;END LOOP;
+ FOREACH k IN ARRAY ARRAY['rangeRequestRef','challengeRef','resultRef'] LOOP IF NOT COALESCE(anvil.execution_preparation_ref_valid(p->k),false) OR p->k->'version' IS DISTINCT FROM '1'::jsonb THEN RETURN false;END IF;END LOOP;
+ FOREACH k IN ARRAY ARRAY['recordsHash','commandHash','scopeDigest'] LOOP IF jsonb_typeof(p->k) IS DISTINCT FROM 'string' OR p->>k !~ '^[0-9a-f]{64}$' THEN RETURN false;END IF;END LOOP;RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
 ALTER TABLE anvil.project_storage_reservations DROP CONSTRAINT project_storage_reservations_operation_check;
-ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT project_storage_reservations_operation_check CHECK(operation IN('uploadArtifact','proposeDocumentChange','saveCheckpoint','createProject','linkDocumentSource','proposeDocumentSourceChange','prepareExecution','requestApproval','decideApproval','recordNodeDecision','revokeNodeDecision','registerExecutionStartOrigin','defineSourceContentPolicy') OR operation='readNormalUnderstandingResponse' AND part_kind IN('FN09_DISCOVERY_METADATA','FN09_FIXED_RANGE_REQUEST'));
+ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT project_storage_reservations_operation_check CHECK(operation IN('uploadArtifact','proposeDocumentChange','saveCheckpoint','createProject','linkDocumentSource','proposeDocumentSourceChange','prepareExecution','requestApproval','decideApproval','recordNodeDecision','revokeNodeDecision','registerExecutionStartOrigin','defineSourceContentPolicy') OR operation='readNormalUnderstandingResponse' AND part_kind IN('FN09_DISCOVERY_METADATA','FN09_FIXED_RANGE_REQUEST','FN09_RANGE_TRANSPORT'));
 ALTER TABLE anvil.project_storage_reservations DROP CONSTRAINT project_storage_reservations_part_kind_check;
-ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT project_storage_reservations_part_kind_check CHECK(part_kind IN('ARTIFACT','CHECKPOINT','ADOPTION','SOURCE_LINK_EVENT','PREPARATION_OPTIONS','PREPARATION_APPROVAL_REQUEST','PREPARATION_APPROVAL_DECISION','NODE_DECISION','EXECUTION_START_ORIGIN','ORIGIN_REUSE_APPROVAL_REQUEST','ORIGIN_REUSE_APPROVAL_DECISION','SOURCE_CONTENT_POLICY_MANAGEMENT') OR part_kind IN('FN09_DISCOVERY_METADATA','FN09_FIXED_RANGE_REQUEST') AND operation='readNormalUnderstandingResponse');
+ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT project_storage_reservations_part_kind_check CHECK(part_kind IN('ARTIFACT','CHECKPOINT','ADOPTION','SOURCE_LINK_EVENT','PREPARATION_OPTIONS','PREPARATION_APPROVAL_REQUEST','PREPARATION_APPROVAL_DECISION','NODE_DECISION','EXECUTION_START_ORIGIN','ORIGIN_REUSE_APPROVAL_REQUEST','ORIGIN_REUSE_APPROVAL_DECISION','SOURCE_CONTENT_POLICY_MANAGEMENT') OR part_kind IN('FN09_DISCOVERY_METADATA','FN09_FIXED_RANGE_REQUEST','FN09_RANGE_TRANSPORT') AND operation='readNormalUnderstandingResponse');
 ALTER TABLE anvil.project_storage_reservations DROP CONSTRAINT fn09_metadata_storage_closed;
 ALTER TABLE anvil.project_storage_reservations ADD CONSTRAINT fn09_metadata_storage_closed CHECK(CASE
+ WHEN part_kind='FN09_RANGE_TRANSPORT' OR part_key IN('fn09_range_issue','fn09_range_acquire') OR plan_json->>'purpose'='FN09_RANGE_TRANSPORT_STORAGE' THEN
+  (operation='readNormalUnderstandingResponse' AND part_kind='FN09_RANGE_TRANSPORT' AND part_key IN('fn09_range_issue','fn09_range_acquire') AND anvil.fn09_normal_understanding_range_transport_plan_valid(plan_json) IS TRUE
+   AND plan_hash=anvil.execution_json_hash(plan_json) AND plan_json->>'projectId'=project_id::text AND plan_json#>>'{resultRef,id}'=id::text AND plan_json->>'commandHash'=command_hash
+   AND plan_json->>'bytes'=reserved_bytes::text AND authorized_until=(plan_json->>'authorizedUntil')::timestamptz AND (part_key='fn09_range_issue')=(plan_json->>'part'='ISSUE')) IS TRUE
  WHEN part_kind='FN09_FIXED_RANGE_REQUEST' OR part_key='fn09_fixed_range' OR plan_json->>'purpose'='FN09_FIXED_RANGE_REQUEST_STORAGE' THEN
   (operation='readNormalUnderstandingResponse' AND part_kind='FN09_FIXED_RANGE_REQUEST' AND part_key='fn09_fixed_range' AND anvil.fn09_normal_understanding_range_plan_valid(plan_json) IS TRUE
    AND plan_hash=anvil.execution_json_hash(plan_json) AND plan_json->>'projectId'=project_id::text AND plan_json#>>'{requestRef,id}'=id::text AND plan_json->>'commandHash'=command_hash
@@ -1153,4 +1171,288 @@ ALTER FUNCTION anvil.fn09_normal_understanding_range_store(uuid,uuid,uuid,jsonb,
 ALTER FUNCTION anvil.fn09_normal_understanding_range_replay(uuid,uuid,uuid,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
 ALTER FUNCTION anvil.guard_fn09_normal_understanding_range_history() OWNER TO anvil_v3_migrator;
 REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_range_valid(jsonb),anvil.fn09_normal_understanding_range_authorize(uuid,uuid,uuid,jsonb,jsonb,text),anvil.fn09_normal_understanding_range_basis(uuid,uuid,uuid,jsonb,jsonb,text),anvil.fn09_normal_understanding_range_historical(anvil.commands),anvil.fn09_normal_understanding_range_plan(anvil.commands,bigint,text,timestamptz),anvil.fn09_normal_understanding_range_plan_valid(jsonb),anvil.fn09_normal_understanding_range_storage_complete(anvil.project_storage_reservations),anvil.fn09_normal_understanding_range_complete(anvil.commands),anvil.fn09_normal_understanding_range_final(anvil.commands),anvil.fn09_normal_understanding_range_store(uuid,uuid,uuid,jsonb,jsonb,text,jsonb,jsonb,uuid),anvil.fn09_normal_understanding_range_replay(uuid,uuid,uuid,jsonb,jsonb,text),anvil.guard_fn09_normal_understanding_range_history() FROM PUBLIC,anvil_v3_app;
+-- 고정 범위 connector는 0084의 auth SHARE -> project UPDATE 순서를 유지한다.
+-- 원 HUMAN 저장 helper의 auth 잠금 승격 없이 같은 사실을 SHARE로 검산한다.
+CREATE FUNCTION anvil.fn09_normal_understanding_range_connector_current(token text,b jsonb,signed_request_id uuid,expected jsonb)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE cr record;cur record;cmd anvil.commands;ss jsonb;x jsonb;rf jsonb;ctx jsonb;hs anvil.auth_sessions;pc anvil.project_control;
+ h anvil.normal_understanding_read_requests;parent anvil.execution_receipts;g anvil.execution_grants;start_row anvil.execution_commands;f jsonb;
+ pv anvil.permission_policy_versions;rule jsonb;n bigint;ends timestamptz;at timestamptz;allowed boolean=false;
+BEGIN
+ IF token IS NULL OR token !~ '^[0-9a-f]{64}$' OR signed_request_id IS NULL
+  OR NOT COALESCE(anvil.execution_json_shape(expected,ARRAY['purpose','requestRef']),false) OR expected->>'purpose' IS DISTINCT FROM 'FIXED_RANGE'
+  OR expected->'requestRef' IS DISTINCT FROM 'null'::jsonb AND (NOT COALESCE(anvil.execution_preparation_ref_valid(expected->'requestRef'),false) OR expected#>'{requestRef,version}' IS DISTINCT FROM '1'::jsonb)
+  OR NOT COALESCE(anvil.execution_json_shape(b,ARRAY['transport','mode','projectId','connectorId','executionId','executionGeneration','grantRef','scopeDigest','credentialGeneration','publicKeyFingerprint']),false)
+  OR b->>'transport' IS DISTINCT FROM 'NORMAL_PROTECTED' OR b->>'mode' IS DISTINCT FROM 'EXECUTION' THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+ SELECT * INTO STRICT cr FROM anvil.normal_request_credential(token,(b->>'connectorId')::uuid,(b->>'executionId')::uuid,(b#>>'{grantRef,id}')::uuid,(b#>>'{grantRef,version}')::bigint,b#>>'{grantRef,contentHash}',(b->>'credentialGeneration')::bigint);
+ SELECT * INTO STRICT cur FROM anvil.normal_exchange_current(cr.project_id,(b->>'connectorId')::uuid,(b->>'executionId')::uuid,(b#>>'{grantRef,id}')::uuid,(b#>>'{grantRef,version}')::bigint,b#>>'{grantRef,contentHash}',(b->>'credentialGeneration')::bigint);
+ IF cr.project_id::text IS DISTINCT FROM b->>'projectId' OR cur.binding IS DISTINCT FROM b THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+ SELECT count(*) INTO n FROM (SELECT z.id FROM anvil.commands z WHERE z.project_id=cr.project_id AND z.operation='readNormalUnderstandingResponse'
+  AND z.result_ref#>>'{data,snapshot,purpose}'='NORMAL_UNDERSTANDING_FIXED_RANGE_REQUEST'
+  AND z.result_ref#>>'{data,snapshot,request,targetId}'=b->>'executionId' AND z.result_ref#>'{data,snapshot,request,expectedVersion}'=b->'executionGeneration' LIMIT 2) candidates;
+ IF n=0 AND expected->'requestRef'='null'::jsonb THEN RETURN jsonb_build_object('status','NONE');END IF;
+ IF n<>1 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+ SELECT * INTO STRICT cmd FROM anvil.commands z WHERE z.project_id=cr.project_id AND z.operation='readNormalUnderstandingResponse'
+  AND z.result_ref#>>'{data,snapshot,purpose}'='NORMAL_UNDERSTANDING_FIXED_RANGE_REQUEST'
+  AND z.result_ref#>>'{data,snapshot,request,targetId}'=b->>'executionId' AND z.result_ref#>'{data,snapshot,request,expectedVersion}'=b->'executionGeneration' LIMIT 2;
+ ss=cmd.result_ref#>'{data,snapshot}';x=ss->'sourceScope';rf=cmd.result_ref#>'{data,ref}';
+ IF NOT COALESCE(anvil.fn09_normal_understanding_range_complete(cmd),false) OR expected->'requestRef' IS DISTINCT FROM 'null'::jsonb AND expected->'requestRef' IS DISTINCT FROM rf THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+ SELECT * INTO STRICT h FROM anvil.normal_understanding_read_requests WHERE project_id=cmd.project_id AND id=(x#>>'{requestRef,id}')::uuid;
+ SELECT * INTO STRICT parent FROM anvil.execution_receipts WHERE project_id=cmd.project_id AND id=(x#>>'{resultRef,id}')::uuid AND version=1;
+ SELECT hs0.* INTO STRICT hs FROM anvil.auth_sessions hs0 JOIN anvil.users u ON u.id=hs0.user_id JOIN anvil.clients cl ON cl.id=hs0.client_id AND cl.user_id=u.id
+  WHERE hs0.id::text=ss#>>'{requestedBy,sessionId}' AND hs0.user_id=cmd.actor_id AND hs0.client_id=cmd.client_id AND hs0.revoked_at IS NULL
+   AND u.status='ACTIVE' AND u.revoked_at IS NULL AND cl.revoked_at IS NULL AND hs0.credential_generation=u.credential_generation
+   AND to_jsonb(hs0.credential_generation)=ss#>'{requestedBy,credentialGeneration}' FOR SHARE OF hs0,u,cl;
+ SELECT pc0.* INTO STRICT pc FROM anvil.project_members m JOIN anvil.project_control pc0 ON pc0.project_id=m.project_id
+  WHERE m.project_id=cmd.project_id AND m.user_id=cmd.actor_id AND m.revoked_at IS NULL AND m.participation='OWNER'
+   AND pc0.actor_id=cmd.actor_id AND pc0.client_id=cmd.client_id AND pc0.revoked_at IS NULL AND pc0.generation=cmd.control_generation FOR SHARE OF m,pc0;
+ SELECT v.* INTO STRICT pv FROM anvil.permission_policies p JOIN anvil.permission_policy_versions v ON v.project_id=p.project_id AND v.policy_id=p.id AND v.version=p.head_version
+  WHERE p.project_id=cmd.project_id FOR SHARE OF p;
+ IF cmd.policy_ref IS DISTINCT FROM jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash)
+  OR pv.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('rules',pv.rules_json,'reason',pv.reason,'reviewRefs',pv.review_refs)) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+ at=clock_timestamp();IF hs.reauth_until IS NULL OR hs.reauth_until<=at THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+ ends=least((ss->>'expiresAt')::timestamptz,h.expires_at,(parent.snapshot_json->>'expiresAt')::timestamptz,cr.expires_at,cur.deadline,hs.idle_expires_at,hs.absolute_expires_at,hs.reauth_until);
+ FOR rule IN SELECT value FROM jsonb_array_elements(pv.rules_json) LOOP
+  IF rule#>>'{subjectRef,kind}'='HUMAN' AND rule#>>'{subjectRef,userId}'=cmd.actor_id::text AND rule->'operations' ? 'readNormalUnderstandingResponse'
+   AND EXISTS(SELECT 1 FROM jsonb_array_elements(rule->'targetScopes') t WHERE t->>'kind'='PROJECT' AND t->>'projectId'=cmd.project_id::text) AND (rule->>'expiresAt')::timestamptz>at THEN
+   IF rule->>'disposition' IS DISTINCT FROM 'AUTO' OR rule->'subjectRef' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',cmd.actor_id)
+    OR rule->'targetScopes' IS DISTINCT FROM jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',cmd.project_id)) OR rule->'limitPolicyRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+   allowed=true;ends=least(ends,(rule->>'expiresAt')::timestamptz);
+  END IF;
+ END LOOP;
+ IF NOT allowed THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+ SELECT * INTO STRICT g FROM anvil.execution_grants WHERE project_id=cmd.project_id AND id=(b#>>'{grantRef,id}')::uuid AND version=(b#>>'{grantRef,version}')::bigint AND content_hash=b#>>'{grantRef,contentHash}';
+ f=g.snapshot_json->'binding';
+ SELECT * INTO STRICT start_row FROM anvil.execution_commands WHERE project_id=cmd.project_id AND created_command_id=g.command_id AND execution_id=g.execution_id AND generation=g.generation
+  AND grant_id=g.id AND grant_version=g.version AND snapshot_json->>'operation'='START_SESSION';
+ ctx=jsonb_build_object('projectId',cmd.project_id,'executionId',g.execution_id,'executionGeneration',g.generation,'grantRef',b->'grantRef','registrationRef',f#>'{registration,ref}',
+  'connectorId',f#>'{registration,connectorId}','credentialGeneration',f#>'{executionCredentialReservation,generation}','startCommandId',start_row.snapshot_json#>'{envelope,commandId}',
+  'startCommandRef',jsonb_build_object('id',start_row.id,'version',start_row.version,'contentHash',start_row.content_hash),'assignmentRef',f#>'{intent,assignmentRef}',
+  'preparationRef',f->'preparationRef','contextBundleRef',f#>'{intent,contextBundleRef}','sessionBindingRef',f#>'{agentSession,sessionRef}');
+ IF h.snapshot_json->'context' IS DISTINCT FROM ctx OR ctx->'connectorId' IS DISTINCT FROM b->'connectorId' OR ctx->'credentialGeneration' IS DISTINCT FROM b->'credentialGeneration'
+  OR NOT anvil.normal_start_material_complete(cmd.project_id,g.command_id)
+  OR start_row.content_hash IS DISTINCT FROM anvil.execution_json_hash(start_row.snapshot_json-'envelope')
+  OR start_row.envelope_hash IS DISTINCT FROM anvil.execution_json_hash((start_row.snapshot_json->'envelope')-'envelopeHash') THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+ IF EXISTS(SELECT 1 FROM anvil.execution_challenges z WHERE z.project_id=cmd.project_id AND z.version=1 AND z.snapshot_json ? 'understandingRangeRequestRef'
+  AND z.snapshot_json#>>'{understandingRangeRequestRef,id}'=rf->>'id' AND (z.request_id IS DISTINCT FROM signed_request_id OR z.snapshot_json->'understandingRangeRequestRef' IS DISTINCT FROM rf)) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+ IF ends<=clock_timestamp() THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_EXPIRED';END IF;
+ RETURN jsonb_build_object('status','RANGE_REQUEST','requestRef',rf,'snapshot',ss,'context',ctx,'deadline',to_char(ends AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+END;$$;
+
+CREATE UNIQUE INDEX normal_understanding_range_challenge_once ON anvil.execution_challenges(project_id,((snapshot_json#>>'{understandingRangeRequestRef,id}')))
+ WHERE version=1 AND snapshot_json ? 'understandingRangeRequestRef';
+
+-- 원 v1과 선택 요청의 불변 결박이다. 역사 검산에는 현재 시각/세대/회수 판정을 넣지 않는다.
+CREATE FUNCTION anvil.fn09_normal_understanding_range_transport_valid(n anvil.execution_challenges,candidate anvil.execution_receipts)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE old anvil.execution_challenges;cmd anvil.commands;h anvil.normal_understanding_read_requests;credential anvil.execution_receipts;r anvil.execution_receipts;
+ s jsonb;req jsonb;b jsonb;p jsonb;rf jsonb;u jsonb;ctx jsonb;ss jsonb;
+BEGIN
+ IF n.id IS NULL OR n.version NOT IN(1,2) OR n.content_hash IS DISTINCT FROM anvil.execution_json_hash(n.snapshot_json) OR n.server_sequence NOT BETWEEN 1 AND 20000 THEN RETURN false;END IF;
+ IF n.version=1 THEN old=n;ELSE SELECT * INTO STRICT old FROM anvil.execution_challenges WHERE project_id=n.project_id AND id=n.id AND version=1;END IF;
+ s=old.snapshot_json;req=s->'request';b=s->'binding';p=s->'publicChallenge';rf=s->'understandingRangeRequestRef';
+ IF old.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) OR NOT COALESCE(anvil.execution_json_shape(s,ARRAY['sequence','credentialRef','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption','understandingRangeRequestRef']),false)
+  OR s->'sequence' IS DISTINCT FROM to_jsonb(old.server_sequence) OR s->'previousRef' IS DISTINCT FROM 'null'::jsonb OR s->'consumption' IS DISTINCT FROM 'null'::jsonb
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(rf),false) OR rf->'version' IS DISTINCT FROM '1'::jsonb
+  OR NOT COALESCE(anvil.execution_json_shape(b,ARRAY['transport','mode','projectId','connectorId','executionId','executionGeneration','grantRef','scopeDigest','credentialGeneration','publicKeyFingerprint']),false)
+  OR b->>'transport' IS DISTINCT FROM 'NORMAL_PROTECTED' OR b->>'mode' IS DISTINCT FROM 'EXECUTION' OR b->>'projectId' IS DISTINCT FROM old.project_id::text
+  OR b#>>'{grantRef,id}' IS DISTINCT FROM old.grant_id::text OR b#>'{grantRef,version}' IS DISTINCT FROM to_jsonb(old.grant_version)
+  OR NOT COALESCE(anvil.execution_json_shape(req,ARRAY['requestId','purpose','grantRef','credentialGeneration','target','clientNonce','issuedAt']),false)
+  OR req->>'purpose' IS DISTINCT FROM 'EXECUTION_REQUEST' OR req->'grantRef' IS DISTINCT FROM b->'grantRef' OR req->'credentialGeneration' IS DISTINCT FROM b->'credentialGeneration'
+  OR req->'target' IS DISTINCT FROM jsonb_build_object('method','GET','path','/api/v1/connectors/'||(b->>'connectorId')||'/executions/'||(b->>'executionId')||'/understanding-response-read/range','queryHash',anvil.execution_json_hash('{}'::jsonb),'bodyHash',anvil.execution_json_hash('null'::jsonb))
+  OR s->>'requestHash' IS DISTINCT FROM anvil.execution_json_hash(req) OR s->>'signedInputHash' IS DISTINCT FROM anvil.execution_json_hash(jsonb_build_object('purpose','EXECUTION_CHALLENGE_REQUEST','request',req))
+  OR NOT COALESCE(anvil.execution_nonce_valid(req->'clientNonce'),false) OR NOT COALESCE(anvil.execution_nonce_valid(p->'serverNonce'),false)
+  OR s->>'serverNonceDigest' IS DISTINCT FROM encode(sha256(decode(translate(p->>'serverNonce','-_','+/')||'=','base64')),'hex')
+  OR NOT COALESCE(anvil.execution_iso_valid(req->'issuedAt'),false) OR NOT COALESCE(anvil.execution_iso_valid(p->'issuedAt'),false) OR NOT COALESCE(anvil.execution_iso_valid(p->'expiresAt'),false)
+  OR (req->>'requestId')::uuid IS NULL OR p IS DISTINCT FROM jsonb_build_object('id',old.id,'requestId',req->'requestId','purpose','EXECUTION_REQUEST','grantRef',b->'grantRef',
+   'credentialGeneration',b->'credentialGeneration','scopeDigest',b->'scopeDigest','serverNonce',p->'serverNonce','clientNonce',req->'clientNonce','issuedAt',p->'issuedAt','expiresAt',p->'expiresAt')
+ THEN RETURN false;END IF;
+ SELECT * INTO STRICT cmd FROM anvil.commands WHERE project_id=old.project_id AND result_ref#>'{data,ref}'=rf;
+ IF NOT COALESCE(anvil.fn09_normal_understanding_range_complete(cmd),false) THEN RETURN false;END IF;ss=cmd.result_ref#>'{data,snapshot}';
+ SELECT * INTO STRICT h FROM anvil.normal_understanding_read_requests WHERE project_id=old.project_id AND id=(ss#>>'{sourceScope,requestRef,id}')::uuid;
+ ctx=h.snapshot_json->'context';
+ SELECT * INTO STRICT credential FROM anvil.execution_receipts WHERE project_id=old.project_id AND id=(s#>>'{credentialRef,id}')::uuid AND version=1;
+ IF credential.content_hash IS DISTINCT FROM anvil.execution_json_hash(credential.snapshot_json) OR s->'credentialRef' IS DISTINCT FROM jsonb_build_object('id',credential.id,'version',1,'contentHash',credential.content_hash)
+  OR credential.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_CREDENTIAL_ISSUED' OR credential.grant_id<>old.grant_id OR credential.grant_version<>old.grant_version OR credential.snapshot_json->'binding' IS DISTINCT FROM b
+  OR ctx->'grantRef' IS DISTINCT FROM b->'grantRef' OR ctx->'projectId' IS DISTINCT FROM b->'projectId' OR ctx->'executionId' IS DISTINCT FROM b->'executionId'
+  OR ctx->'executionGeneration' IS DISTINCT FROM b->'executionGeneration' OR ctx->'connectorId' IS DISTINCT FROM b->'connectorId' OR ctx->'credentialGeneration' IS DISTINCT FROM b->'credentialGeneration'
+  OR (p->>'issuedAt')::timestamptz<(ss->>'createdAt')::timestamptz OR (p->>'expiresAt')::timestamptz>(ss->>'expiresAt')::timestamptz
+  OR (p->>'expiresAt')::timestamptz<=(p->>'issuedAt')::timestamptz OR (p->>'expiresAt')::timestamptz>(p->>'issuedAt')::timestamptz+interval '30 seconds'
+  OR abs(extract(epoch FROM (req->>'issuedAt')::timestamptz-(p->>'issuedAt')::timestamptz))>30 THEN RETURN false;END IF;
+ IF n.version=1 THEN RETURN true;END IF;
+ u=n.snapshot_json->'consumption';
+ IF candidate.id IS NULL THEN SELECT * INTO STRICT r FROM anvil.execution_receipts WHERE project_id=n.project_id AND challenge_id=n.id AND version=1;ELSE r=candidate;END IF;
+ RETURN n.grant_id=old.grant_id AND n.grant_version=old.grant_version AND n.server_sequence>old.server_sequence
+  AND n.snapshot_json=(s||jsonb_build_object('sequence',n.server_sequence,'previousRef',jsonb_build_object('id',old.id,'version',1,'contentHash',old.content_hash),'consumption',u))
+  AND r.project_id=n.project_id AND r.grant_id=n.grant_id AND r.grant_version=n.grant_version AND r.challenge_id=n.id AND r.challenge_version=1 AND r.version=1
+  AND r.content_hash=anvil.execution_json_hash(r.snapshot_json) AND octet_length(anvil.execution_authority_canonical(r.snapshot_json))<=2097152
+  AND COALESCE(anvil.execution_json_shape(r.snapshot_json,ARRAY['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','rangeRequestRef','context','selection','observedAt','expiresAt']),false)
+  AND r.snapshot_json->>'kind'='NORMAL_UNDERSTANDING_RANGE_ACQUIRED' AND r.snapshot_json->'binding'=b AND r.snapshot_json->'credentialRef'=s->'credentialRef'
+  AND r.snapshot_json->'challengeRef'=n.snapshot_json->'previousRef' AND r.snapshot_json->'target'=req->'target' AND r.snapshot_json->'requestId'=req->'requestId'
+  AND r.snapshot_json->'rangeRequestRef'=rf AND r.snapshot_json->'context'=ctx AND r.snapshot_json->'selection'=ss->'sourceScope'
+  AND jsonb_typeof(r.snapshot_json->'packetHash')='string' AND r.snapshot_json->>'packetHash'~'^[0-9a-f]{64}$'
+  AND anvil.execution_iso_valid(r.snapshot_json->'observedAt') IS TRUE AND anvil.execution_iso_valid(r.snapshot_json->'expiresAt') IS TRUE
+  AND (r.snapshot_json->>'observedAt')::timestamptz>=(p->>'issuedAt')::timestamptz AND (r.snapshot_json->>'expiresAt')::timestamptz>(r.snapshot_json->>'observedAt')::timestamptz
+  AND (r.snapshot_json->>'expiresAt')::timestamptz<=(p->>'expiresAt')::timestamptz
+  AND u=jsonb_build_object('resultRef',jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash),'packetHash',r.snapshot_json->'packetHash','consumedAt',r.snapshot_json->'observedAt');
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+CREATE FUNCTION anvil.fn09_normal_understanding_range_transport_plan(n anvil.execution_challenges,coverage bigint,tx text,until_at timestamptz)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog SET TimeZone='UTC' AS $$
+DECLARE old anvil.execution_challenges;r anvil.execution_receipts;cmd anvil.commands;ar anvil.authorization_receipts;records jsonb;result_ref jsonb;part text;ends timestamptz;
+BEGIN
+ IF coverage IS NULL OR coverage<1 OR coverage>9007199254740991 OR tx IS NULL OR tx !~ '^[1-9][0-9]{0,18}$' OR until_at IS NULL
+  OR NOT COALESCE(anvil.fn09_normal_understanding_range_transport_valid(n,NULL::anvil.execution_receipts),false) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+ SELECT * INTO STRICT old FROM anvil.execution_challenges WHERE project_id=n.project_id AND id=n.id AND version=1;
+ SELECT * INTO STRICT cmd FROM anvil.commands WHERE project_id=n.project_id AND result_ref#>'{data,ref}'=old.snapshot_json->'understandingRangeRequestRef';
+ SELECT * INTO STRICT ar FROM anvil.authorization_receipts WHERE id=cmd.authorization_receipt_id AND command_id=cmd.id;
+ IF n.version=1 THEN
+  part='ISSUE';records=jsonb_build_object('v1',to_jsonb(n));result_ref=jsonb_build_object('id',n.id,'version',1,'contentHash',n.content_hash);ends=(n.snapshot_json#>>'{publicChallenge,expiresAt}')::timestamptz;
+ ELSE
+  SELECT * INTO STRICT r FROM anvil.execution_receipts WHERE project_id=n.project_id AND challenge_id=n.id AND version=1;
+  part='ACQUIRE';records=jsonb_build_object('v2',to_jsonb(n),'receipt',to_jsonb(r));result_ref=jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash);ends=(r.snapshot_json->>'expiresAt')::timestamptz;
+ END IF;
+ IF until_at IS DISTINCT FROM ends THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+ -- ISSUE는 새 v1만, ACQUIRE는 새 v2/영수증만 계산한다. 기존 range C/A/U와 parent metadata를 다시 청구하지 않는다.
+ RETURN jsonb_build_object('schemaVersion',1,'purpose','FN09_RANGE_TRANSPORT_STORAGE','part',part,'projectId',n.project_id,'transactionId',tx,'coverageGeneration',coverage::text,
+  'rangeRequestRef',old.snapshot_json->'understandingRangeRequestRef','challengeRef',jsonb_build_object('id',old.id,'version',1,'contentHash',old.content_hash),'resultRef',result_ref,
+  'recordsHash',anvil.execution_json_hash(records),'bytes',octet_length(anvil.execution_authority_canonical(records))::text,'commandId',cmd.id,'commandHash',cmd.request_hash,
+  'authorizationReceiptId',ar.id,'scopeDigest',ar.scope_digest,'authorizedUntil',to_char(until_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+END;$$;
+CREATE FUNCTION anvil.fn09_normal_understanding_range_transport_complete(q anvil.project_storage_reservations) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE n anvil.execution_challenges;cmd anvil.commands;expected jsonb;
+BEGIN
+ IF q.operation IS DISTINCT FROM 'readNormalUnderstandingResponse' OR q.part_kind IS DISTINCT FROM 'FN09_RANGE_TRANSPORT' OR q.part_key NOT IN('fn09_range_issue','fn09_range_acquire')
+  OR q.phase IS DISTINCT FROM 'SETTLED' OR q.start_fence<>1 OR q.started_at IS NULL OR q.settled_at IS NULL OR NOT COALESCE(anvil.fn09_normal_understanding_range_transport_plan_valid(q.plan_json),false) THEN RETURN false;END IF;
+ SELECT * INTO STRICT n FROM anvil.execution_challenges WHERE project_id=q.project_id AND id=(q.plan_json#>>'{challengeRef,id}')::uuid AND version=CASE WHEN q.part_key='fn09_range_issue' THEN 1 ELSE 2 END;
+ SELECT * INTO STRICT cmd FROM anvil.commands WHERE project_id=q.project_id AND id=q.server_command_id;
+ expected=anvil.fn09_normal_understanding_range_transport_plan(n,(q.plan_json->>'coverageGeneration')::bigint,q.plan_json->>'transactionId',q.authorized_until);
+ RETURN q.plan_json=expected AND q.plan_hash=anvil.execution_json_hash(expected) AND q.reserved_bytes=anvil.quota_decimal(expected->'bytes') AND q.settled_bytes=q.reserved_bytes
+  AND q.id::text=expected#>>'{resultRef,id}' AND q.actor_id=cmd.actor_id AND q.client_id=cmd.client_id AND q.external_command_id=cmd.command_id AND q.command_hash=cmd.request_hash
+  AND q.server_command_id::text=expected->>'commandId' AND q.authorization_receipt_id=cmd.authorization_receipt_id AND q.authorization_receipt_id::text=expected->>'authorizationReceiptId'
+  AND q.scope_digest=expected->>'scopeDigest' AND (q.part_key='fn09_range_issue')=(expected->>'part'='ISSUE');
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+
+-- 현재 입장 검산은 원 등록 proof marker/credential와 실제 원 명령을 같은 거래에서 다시 확인한다.
+CREATE FUNCTION anvil.fn09_normal_understanding_range_transport_admission(n anvil.execution_challenges,final_check boolean)
+RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE old anvil.execution_challenges;credential anvil.execution_receipts;q anvil.project_storage_reservations;
+ b jsonb;rf jsonb;d jsonb;marker text;token text;cr record;cur record;seq bigint;total bigint;recent bigint;live bigint;ends timestamptz;
+BEGIN
+ IF n.version=1 THEN old=n;marker=current_setting('anvil.normal_request_verified',true);token=split_part(marker,':',4);
+ ELSE SELECT * INTO STRICT old FROM anvil.execution_challenges WHERE project_id=n.project_id AND id=n.id AND version=1;marker=current_setting('anvil.normal_page_verified',true);token=split_part(marker,':',3);END IF;
+ b=old.snapshot_json->'binding';rf=old.snapshot_json->'understandingRangeRequestRef';
+ IF marker IS NULL OR token IS NULL OR token !~ '^[0-9a-f]{64}$' OR NOT COALESCE(anvil.fn09_normal_understanding_range_transport_valid(old,NULL::anvil.execution_receipts),false) THEN RETURN false;END IF;
+ SELECT * INTO STRICT credential FROM anvil.execution_receipts WHERE project_id=n.project_id AND id=(old.snapshot_json#>>'{credentialRef,id}')::uuid AND version=1;
+ IF n.version=1 THEN
+  IF marker IS DISTINCT FROM txid_current()::text||':'||n.content_hash||':'||(old.snapshot_json#>>'{credentialRef,contentHash}')||':'||token THEN RETURN false;END IF;
+ ELSE
+  IF marker IS DISTINCT FROM txid_current()::text||':'||(n.snapshot_json#>>'{consumption,resultRef,contentHash}')||':'||token OR n.grant_id<>old.grant_id OR n.grant_version<>old.grant_version
+   OR n.content_hash IS DISTINCT FROM anvil.execution_json_hash(n.snapshot_json) OR n.server_sequence<=old.server_sequence
+   OR n.snapshot_json IS DISTINCT FROM (old.snapshot_json||jsonb_build_object('sequence',n.server_sequence,'previousRef',jsonb_build_object('id',old.id,'version',1,'contentHash',old.content_hash),'consumption',n.snapshot_json->'consumption'))
+   OR NOT COALESCE(anvil.execution_json_shape(n.snapshot_json->'consumption',ARRAY['resultRef','packetHash','consumedAt']),false)
+   OR NOT COALESCE(anvil.execution_preparation_ref_valid(n.snapshot_json#>'{consumption,resultRef}'),false) OR n.snapshot_json#>'{consumption,resultRef,version}' IS DISTINCT FROM '1'::jsonb
+   OR jsonb_typeof(n.snapshot_json#>'{consumption,packetHash}') IS DISTINCT FROM 'string' OR n.snapshot_json#>>'{consumption,packetHash}' !~ '^[0-9a-f]{64}$'
+   OR NOT COALESCE(anvil.execution_iso_valid(n.snapshot_json#>'{consumption,consumedAt}'),false)
+   OR (n.snapshot_json#>>'{consumption,consumedAt}')::timestamptz<(old.snapshot_json#>>'{publicChallenge,issuedAt}')::timestamptz
+   OR (n.snapshot_json#>>'{consumption,consumedAt}')::timestamptz>clock_timestamp() THEN RETURN false;END IF;
+ END IF;
+ IF credential.snapshot_json->>'tokenDigest' IS DISTINCT FROM token THEN RETURN false;END IF;
+ SELECT * INTO STRICT cr FROM anvil.normal_request_credential(token,(b->>'connectorId')::uuid,(b->>'executionId')::uuid,n.grant_id,n.grant_version,b#>>'{grantRef,contentHash}',(b->>'credentialGeneration')::bigint);
+ SELECT * INTO STRICT cur FROM anvil.normal_exchange_current(n.project_id,(b->>'connectorId')::uuid,(b->>'executionId')::uuid,n.grant_id,n.grant_version,b#>>'{grantRef,contentHash}',(b->>'credentialGeneration')::bigint);
+ d=anvil.fn09_normal_understanding_range_connector_current(token,b,(old.snapshot_json#>>'{request,requestId}')::uuid,jsonb_build_object('purpose','FIXED_RANGE','requestRef',rf));
+ ends=least(cr.expires_at,cur.deadline,(d->>'deadline')::timestamptz);
+ IF cur.binding IS DISTINCT FROM b OR cr.credential_ref IS DISTINCT FROM old.snapshot_json->'credentialRef' OR d->'requestRef' IS DISTINCT FROM rf
+  OR (old.snapshot_json#>>'{publicChallenge,issuedAt}')::timestamptz>cur.observed_at OR (old.snapshot_json#>>'{publicChallenge,expiresAt}')::timestamptz>ends
+  OR (old.snapshot_json#>>'{publicChallenge,expiresAt}')::timestamptz<=clock_timestamp() THEN RETURN false;END IF;
+ SELECT coalesce(max(server_sequence),0)+1 INTO seq FROM anvil.execution_challenges WHERE project_id=n.project_id AND grant_id=n.grant_id AND grant_version=n.grant_version AND server_sequence<n.server_sequence;
+ IF n.server_sequence<>seq THEN RETURN false;END IF;
+ IF n.version=1 THEN
+  SELECT count(*) FILTER(WHERE z.version=1),count(*) FILTER(WHERE z.version=1 AND z.snapshot_json->'credentialRef'=old.snapshot_json->'credentialRef'
+   AND z.snapshot_json#>>'{publicChallenge,purpose}'='EXECUTION_REQUEST' AND (z.snapshot_json#>>'{publicChallenge,issuedAt}')::timestamptz>(old.snapshot_json#>>'{publicChallenge,issuedAt}')::timestamptz-interval '1 minute'),
+   count(*) FILTER(WHERE z.version=1 AND z.snapshot_json->'credentialRef'=old.snapshot_json->'credentialRef' AND z.snapshot_json#>>'{publicChallenge,purpose}'='EXECUTION_REQUEST'
+    AND (z.snapshot_json#>>'{publicChallenge,expiresAt}')::timestamptz>(old.snapshot_json#>>'{publicChallenge,issuedAt}')::timestamptz
+    AND NOT EXISTS(SELECT 1 FROM anvil.execution_challenges used WHERE used.project_id=z.project_id AND used.id=z.id AND used.version=2))
+   INTO total,recent,live FROM anvil.execution_challenges z WHERE z.project_id=n.project_id AND z.grant_id=n.grant_id AND z.grant_version=n.grant_version AND z.server_sequence<n.server_sequence;
+  IF total>=10000 OR recent>=60 OR live<>0 THEN RETURN false;END IF;
+ END IF;
+ IF final_check THEN
+  IF NOT COALESCE(anvil.fn09_normal_understanding_range_transport_valid(n,NULL::anvil.execution_receipts),false) THEN RETURN false;END IF;
+  SELECT * INTO STRICT q FROM anvil.project_storage_reservations WHERE project_id=n.project_id AND id=CASE WHEN n.version=1 THEN n.id ELSE (n.snapshot_json#>>'{consumption,resultRef,id}')::uuid END;
+  RETURN q.plan_json->>'transactionId'=txid_current()::text AND anvil.fn09_normal_understanding_range_transport_complete(q) IS TRUE AND q.authorized_until>clock_timestamp();
+ END IF;RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+
+CREATE FUNCTION anvil.fn09_normal_understanding_range_transport_charge(n anvil.execution_challenges)
+RETURNS void LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE cmd anvil.commands;ac anvil.project_storage_accounts;old anvil.execution_challenges;plan jsonb;records jsonb;charge bigint;ends timestamptz;key text;rid uuid;at timestamptz;tx text=txid_current()::text;
+BEGIN
+ IF NOT COALESCE(anvil.fn09_normal_understanding_range_transport_admission(n,false),false) OR NOT COALESCE(anvil.fn09_normal_understanding_range_transport_valid(n,NULL::anvil.execution_receipts),false) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+ SELECT * INTO STRICT old FROM anvil.execution_challenges WHERE project_id=n.project_id AND id=n.id AND version=1;
+ SELECT * INTO STRICT cmd FROM anvil.commands WHERE project_id=n.project_id AND result_ref#>'{data,ref}'=old.snapshot_json->'understandingRangeRequestRef';
+ IF n.version=1 THEN key='fn09_range_issue';rid=n.id;ends=(n.snapshot_json#>>'{publicChallenge,expiresAt}')::timestamptz;
+ ELSE key='fn09_range_acquire';rid=(n.snapshot_json#>>'{consumption,resultRef,id}')::uuid;SELECT (snapshot_json->>'expiresAt')::timestamptz INTO STRICT ends FROM anvil.execution_receipts WHERE project_id=n.project_id AND id=rid AND version=1;END IF;
+ SELECT * INTO STRICT ac FROM anvil.project_storage_accounts WHERE project_id=n.project_id FOR UPDATE;
+ IF ac.coverage_state IS DISTINCT FROM 'VERIFIED' OR NOT anvil.quota_complete(ac.project_id) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_UNVERIFIED';END IF;
+ IF EXISTS(SELECT 1 FROM anvil.project_storage_reservations WHERE plan_json->>'purpose'='FN09_RANGE_TRANSPORT_STORAGE' AND plan_json->>'transactionId'=tx) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_TRANSACTION_CONFLICT';END IF;
+ -- 원 canonical 행의 byte 수는 plan helper의 execution_authority_canonical 계산만 사용한다.
+ plan=anvil.fn09_normal_understanding_range_transport_plan(n,ac.generation,tx,ends);charge=anvil.quota_decimal(plan->'bytes');at=clock_timestamp();
+ IF ac.used_bytes+ac.held_bytes+charge>10737418240 THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_EXCEEDED';END IF;
+ IF ends<=at OR NOT COALESCE(anvil.fn09_normal_understanding_range_transport_admission(n,false),false) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_EXPIRED';END IF;
+ INSERT INTO anvil.project_storage_reservations(id,project_id,actor_id,client_id,external_command_id,operation,command_hash,part_key,part_kind,plan_json,plan_hash,reserved_bytes,settled_bytes,phase,authorized_until)
+ VALUES(rid,n.project_id,cmd.actor_id,cmd.client_id,cmd.command_id,'readNormalUnderstandingResponse',cmd.request_hash,key,'FN09_RANGE_TRANSPORT',plan,anvil.execution_json_hash(plan),charge,0,'RESERVED',ends);
+ UPDATE anvil.project_storage_accounts SET held_bytes=held_bytes+charge,updated_at=at WHERE project_id=n.project_id;
+ UPDATE anvil.project_storage_reservations SET phase='IO_STARTED',start_fence=1,started_at=at WHERE id=rid AND project_id=n.project_id;
+ UPDATE anvil.project_storage_reservations SET phase='SETTLED',settled_bytes=charge,server_command_id=cmd.id,authorization_receipt_id=cmd.authorization_receipt_id,scope_digest=plan->>'scopeDigest',settled_at=at WHERE id=rid AND project_id=n.project_id;
+ UPDATE anvil.project_storage_accounts SET held_bytes=held_bytes-charge,used_bytes=used_bytes+charge,updated_at=at WHERE project_id=n.project_id;
+ IF NOT anvil.quota_complete(n.project_id) OR NOT COALESCE(anvil.fn09_normal_understanding_range_transport_admission(n,true),false) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+END;$$;
+CREATE FUNCTION anvil.guard_fn09_range_challenge() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF NEW.version NOT IN(1,2) OR NOT (NEW.snapshot_json ? 'understandingRangeRequestRef')
+  OR NOT COALESCE(anvil.fn09_normal_understanding_range_transport_admission(NEW::anvil.execution_challenges,TG_WHEN='AFTER'),false)
+ THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED' USING ERRCODE='42501';END IF;RETURN NEW;
+END;$$;
+CREATE FUNCTION anvil.guard_fn09_range_receipt() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE n anvil.execution_challenges;
+BEGIN
+ SELECT * INTO STRICT n FROM anvil.execution_challenges WHERE project_id=NEW.project_id AND id=NEW.challenge_id AND version=2;
+ IF NEW.snapshot_json->>'kind' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_RANGE_ACQUIRED'
+  OR NOT COALESCE(anvil.fn09_normal_understanding_range_transport_valid(n,NEW::anvil.execution_receipts),false)
+  OR NOT COALESCE(anvil.fn09_normal_understanding_range_transport_admission(n,TG_WHEN='AFTER'),false)
+ THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED' USING ERRCODE='42501';END IF;RETURN NEW;
+END;$$;
+CREATE FUNCTION anvil.settle_fn09_range_transport() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE n anvil.execution_challenges;
+BEGIN
+ IF TG_TABLE_NAME='execution_challenges' THEN n=NEW::anvil.execution_challenges;
+ ELSE SELECT * INTO STRICT n FROM anvil.execution_challenges WHERE project_id=NEW.project_id AND id=NEW.challenge_id AND version=2;END IF;
+ PERFORM anvil.fn09_normal_understanding_range_transport_charge(n);RETURN NEW;
+END;$$;
+-- 기존 invoker guard에서 새 marker만 분리한다. 이 목적의 definer trigger가 현재 admission과 정산을 직접 소유한다.
+DROP TRIGGER normal_request_challenge_guard ON anvil.execution_challenges;
+DROP TRIGGER normal_request_challenge_complete ON anvil.execution_challenges;
+CREATE TRIGGER normal_request_challenge_guard BEFORE INSERT ON anvil.execution_challenges FOR EACH ROW
+ WHEN (NEW.version=1 AND NEW.snapshot_json#>>'{binding,transport}'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{request,purpose}'='EXECUTION_REQUEST' AND NOT (NEW.snapshot_json ? 'understandingRangeRequestRef')) EXECUTE FUNCTION anvil.guard_normal_request_challenge();
+CREATE CONSTRAINT TRIGGER normal_request_challenge_complete AFTER INSERT ON anvil.execution_challenges DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+ WHEN (NEW.version=1 AND NEW.snapshot_json#>>'{binding,transport}'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{request,purpose}'='EXECUTION_REQUEST' AND NOT (NEW.snapshot_json ? 'understandingRangeRequestRef')) EXECUTE FUNCTION anvil.guard_normal_request_challenge();
+CREATE TRIGGER fn09_range_challenge_guard BEFORE INSERT ON anvil.execution_challenges FOR EACH ROW WHEN (NEW.snapshot_json ? 'understandingRangeRequestRef') EXECUTE FUNCTION anvil.guard_fn09_range_challenge();
+CREATE CONSTRAINT TRIGGER fn09_range_challenge_complete AFTER INSERT ON anvil.execution_challenges DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.snapshot_json ? 'understandingRangeRequestRef') EXECUTE FUNCTION anvil.guard_fn09_range_challenge();
+CREATE TRIGGER fn09_range_issue_settle AFTER INSERT ON anvil.execution_challenges FOR EACH ROW WHEN (NEW.version=1 AND NEW.snapshot_json ? 'understandingRangeRequestRef') EXECUTE FUNCTION anvil.settle_fn09_range_transport();
+CREATE TRIGGER fn09_range_receipt_guard BEFORE INSERT ON anvil.execution_receipts FOR EACH ROW WHEN (NEW.snapshot_json->>'kind'='NORMAL_UNDERSTANDING_RANGE_ACQUIRED') EXECUTE FUNCTION anvil.guard_fn09_range_receipt();
+CREATE CONSTRAINT TRIGGER fn09_range_receipt_complete AFTER INSERT ON anvil.execution_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.snapshot_json->>'kind'='NORMAL_UNDERSTANDING_RANGE_ACQUIRED') EXECUTE FUNCTION anvil.guard_fn09_range_receipt();
+CREATE TRIGGER fn09_range_receipt_settle AFTER INSERT ON anvil.execution_receipts FOR EACH ROW WHEN (NEW.snapshot_json->>'kind'='NORMAL_UNDERSTANDING_RANGE_ACQUIRED') EXECUTE FUNCTION anvil.settle_fn09_range_transport();
+ALTER FUNCTION anvil.fn09_normal_understanding_range_connector_current(text,jsonb,uuid,jsonb) OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.fn09_normal_understanding_range_transport_valid(anvil.execution_challenges,anvil.execution_receipts) OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.fn09_normal_understanding_range_transport_plan(anvil.execution_challenges,bigint,text,timestamptz) OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.fn09_normal_understanding_range_transport_plan_valid(jsonb) OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.fn09_normal_understanding_range_transport_complete(anvil.project_storage_reservations) OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.fn09_normal_understanding_range_transport_admission(anvil.execution_challenges,boolean) OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.fn09_normal_understanding_range_transport_charge(anvil.execution_challenges) OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.guard_fn09_range_challenge() OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.guard_fn09_range_receipt() OWNER TO anvil_v3_migrator;
+ALTER FUNCTION anvil.settle_fn09_range_transport() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_range_connector_current(text,jsonb,uuid,jsonb),anvil.fn09_normal_understanding_range_transport_valid(anvil.execution_challenges,anvil.execution_receipts),
+ anvil.fn09_normal_understanding_range_transport_plan(anvil.execution_challenges,bigint,text,timestamptz),anvil.fn09_normal_understanding_range_transport_plan_valid(jsonb),
+ anvil.fn09_normal_understanding_range_transport_complete(anvil.project_storage_reservations),anvil.fn09_normal_understanding_range_transport_admission(anvil.execution_challenges,boolean),
+ anvil.fn09_normal_understanding_range_transport_charge(anvil.execution_challenges),anvil.guard_fn09_range_challenge(),anvil.guard_fn09_range_receipt(),anvil.settle_fn09_range_transport() FROM PUBLIC,anvil_v3_app;
 COMMIT;

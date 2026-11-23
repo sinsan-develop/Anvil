@@ -2,10 +2,10 @@ import {randomUUID} from 'node:crypto';
 import type {FastifyInstance} from 'fastify';
 import type {Pool,PoolClient} from 'pg';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {isoV1,recordV1,refV1,uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {isoV1,recordV1,refV1,uuidV1,hashV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AuthFailure} from '../access/repository.ts';
-import {executionTarget,verifyNormalCommandPageProof} from './execution-proof.ts';
-import {original,readCurrent} from './normal-exchange-challenge.ts';
+import {executionTarget,verifyNormalCommandPageProof,normalUnderstandingRangeTarget,normalUnderstandingRangeProofBytes,verifyNormalUnderstandingRangeProof} from './execution-proof.ts';
+import {original,originalRange,readCurrent} from './normal-exchange-challenge.ts';
 import {readPacket} from './normal-command-pages.ts';
 import {normalRequestBearerDigest,requestCredential} from './normal-request-challenge.ts';
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
@@ -13,10 +13,99 @@ const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const fail=(code='NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',status=503):never=>{throw new AuthFailure(code,status);};
 const contextKeys=['projectId','executionId','executionGeneration','grantRef','registrationRef','connectorId','credentialGeneration','startCommandId','startCommandRef','assignmentRef','preparationRef','contextBundleRef','sessionBindingRef'];
 const receiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','understandingRequestRef','context','observedAt','expiresAt'];
+const rangeReceiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','rangeRequestRef','context','selection','observedAt','expiresAt'];
+function rangeSelection(x:unknown){
+ if(!recordV1(x,['requestRef','resultRef','initConfirmationRef','tailRef','firstSequence','lastSequence','ranges'])
+  ||!['requestRef','resultRef','initConfirmationRef','tailRef'].every(k=>refV1(x[k])&&x[k].version===1)
+  ||!Number.isSafeInteger(x.firstSequence)||x.firstSequence<1||!Number.isSafeInteger(x.lastSequence)||x.lastSequence<x.firstSequence||x.lastSequence>10000
+  ||!Array.isArray(x.ranges)||x.ranges.length<1||x.ranges.length>200||x.ranges.length!==x.lastSequence-x.firstSequence+1)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');
+ let blocks=0;const seen=new Set<string>();
+ for(const [i,r]of x.ranges.entries()){
+  if(!recordV1(r,['outputRef','sequence','payloadDigest','textBlocks','textBytes'])||!refV1(r.outputRef)||r.outputRef.version!==1||seen.has(r.outputRef.id)
+   ||r.outputRef.id===x.initConfirmationRef.id||r.outputRef.id===x.tailRef.id&&(!same(r.outputRef,x.tailRef)||i!==x.ranges.length-1)
+   ||r.sequence!==x.firstSequence+i||!hashV1(r.payloadDigest)||!Number.isSafeInteger(r.textBlocks)||r.textBlocks<1||(blocks+=r.textBlocks)>200
+   ||!Number.isSafeInteger(r.textBytes)||r.textBytes<1||r.textBytes>2097152)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');seen.add(r.outputRef.id);
+ }return x;
+}
 /** 내부 SQL 목적 저장소. source/SELECT ticket이나 정상 출력의 FIRST/close를 발급하지 않는다. */
 export class NormalUnderstandingReadAcquisition {
  readonly pool:Pick<Pool,'connect'>;
  constructor(pool:Pick<Pool,'connect'>){this.pool=pool;}
+ /** 같은 등록의 current credential에서만 도출한다. SQL에서도 HUMAN auth 잠금을 UPDATE로 올리지 않는다. */
+ async rangeCurrent(db:PoolClient,token:string,binding:any,requestId:string,expected:unknown=null){
+  const rows=(await db.query('SELECT anvil.fn09_normal_understanding_discovery($1,$2,$3,$4) AS discovery',[token,JSON.stringify(binding),requestId,JSON.stringify({purpose:'FIXED_RANGE',requestRef:expected})])).rows;
+  const v=rows[0]?.discovery;
+  if(rows.length!==1) return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');
+  if(recordV1(v,['status'])&&v.status==='NONE'){if(expected!==null)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');return null;}
+  if(!recordV1(v,['status','requestRef','snapshot','context','deadline'])||v.status!=='RANGE_REQUEST'||!refV1(v.requestRef)||v.requestRef.version!==1||hash(v.snapshot)!==v.requestRef.contentHash
+   ||!recordV1(v.snapshot,['schemaVersion','purpose','request','requestedBy','policyRef','state','sourceScope','createdAt','expiresAt'])
+   ||v.snapshot.schemaVersion!==1||v.snapshot.purpose!=='NORMAL_UNDERSTANDING_FIXED_RANGE_REQUEST'||v.snapshot.state!=='PENDING_SOURCE'
+   ||!isoV1(v.snapshot.createdAt)||!isoV1(v.snapshot.expiresAt)||!isoV1(v.deadline)||v.deadline>v.snapshot.expiresAt||v.deadline<=v.snapshot.createdAt
+   ||!recordV1(v.context,contextKeys)||!same(v.context.grantRef,binding.grantRef)||v.context.projectId!==binding.projectId||v.context.executionId!==binding.executionId
+   ||v.context.executionGeneration!==binding.executionGeneration||v.context.connectorId!==binding.connectorId||v.context.credentialGeneration!==binding.credentialGeneration
+   ||!uuidV1(v.context.startCommandId)||!contextKeys.filter(k=>k.endsWith('Ref')).every(k=>refV1(v.context[k]))||expected!==null&&!same(expected,v.requestRef)
+   ||!same(v.snapshot.request?.payload?.selection,v.snapshot.sourceScope)||!same(v.snapshot.request?.payload?.assignmentRef,v.context.assignmentRef)||!same(v.snapshot.request?.payload?.preparationRef,v.context.preparationRef)
+   ||v.snapshot.request?.projectId!==binding.projectId||v.snapshot.request?.targetId!==binding.executionId||v.snapshot.request?.expectedVersion!==binding.executionGeneration
+   ||Buffer.byteLength(canonicalJson(v))>2097152)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');
+  return {requestRef:v.requestRef,context:v.context,selection:rangeSelection(v.snapshot.sourceScope),expiresAt:v.deadline};
+ }
+ /** 본문 없는 고정 범위 목적 거래. 기본 route/app에서는 조립하지 않는다. */
+ async acquireRange(connector:string,execution:string,token:string,rawFrame:unknown,signal:AbortSignal){
+  let frame:any;try{frame=JSON.parse(canonicalJson(rawFrame));if(Buffer.byteLength(canonicalJson(frame))>16384)throw Error();normalUnderstandingRangeProofBytes(frame.proof);}catch{return fail('INPUT_INVALID',400);}
+  if(!hashV1(token)||!(signal instanceof AbortSignal)||signal.aborted||!recordV1(frame,['schemaVersion','challengeRef','proof','signature'])||frame.schemaVersion!==1||!refV1(frame.challengeRef)||frame.challengeRef.version!==1)return fail('INPUT_INVALID',400);
+  const target=normalUnderstandingRangeTarget(connector,execution),pool=this.pool;
+  let wall=Date.now(),mono=performance.now(),wallEnd=wall+30000,monoEnd=mono+30000;
+  const check=()=>{const w=Date.now(),m=performance.now();if(signal.aborted||this.pool!==pool||!Number.isFinite(w)||!Number.isFinite(m)||w<wall||m<mono||w>=wallEnd||m>=monoEnd)return fail('NORMAL_UNDERSTANDING_RANGE_EXPIRED',412);wall=w;mono=m;};
+  const stamp=()=>{check();return {wall,mono};},bound=(s:{wall:number;mono:number},at:number,end:number)=>{if(!Number.isFinite(end)||end<=at)return fail('NORMAL_UNDERSTANDING_RANGE_EXPIRED',412);wallEnd=Math.min(wallEnd,s.wall+end-at);monoEnd=Math.min(monoEnd,s.mono+end-at);check();};
+  let db:PoolClient;try{db=await pool.connect();}catch{return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');}
+  let committing=false,committed=false,rolledBack=false,rollbackAttempted=false,discard:Error|undefined;const query=db.query;
+  try{
+   check();await db.query('BEGIN');await db.query("SET LOCAL statement_timeout='5s'; SET LOCAL lock_timeout='2s'");
+   const p=frame.proof,c=frame.challengeRef,g=p.grantRef,firstStamp=stamp(),cred=await requestCredential(db,token,connector,execution,p),cur=await readCurrent(db,cred.project,connector,execution,p),b=cur.binding,keys=[cred.project,g.id,g.version];check();
+   const rows=(await db.query('SELECT id,content_hash,snapshot_json FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND id=$4 AND version=1 AND content_hash=$5',[...keys,c.id,c.contentHash])).rows;
+   if(rows.length!==1)return fail('NORMAL_UNDERSTANDING_RANGE_DENIED',412);const old=rows[0],ch=originalRange(old,b,cred.ref).challenge;
+   verifyNormalUnderstandingRangeProof(cur.spki,frame.signature,p,b,ch);
+   const basis=await this.rangeCurrent(db,token,b,p.requestId,old.snapshot_json.understandingRangeRequestRef);if(!basis)return fail('NORMAL_UNDERSTANDING_RANGE_DENIED',412);
+   const expires=Math.min(cred.expiresAt,cur.deadline.getTime(),Date.parse(ch.expiresAt),Date.parse(basis.expiresAt));bound(firstStamp,cur.now.getTime(),expires);
+   if(cur.now.getTime()<Date.parse(ch.issuedAt))return fail('NORMAL_UNDERSTANDING_RANGE_DENIED',412);
+   const packetHash=hash({frame,target}),previous=(await db.query(`SELECT v.content_hash AS vhash,v.snapshot_json AS consumed,r.id,r.content_hash,r.snapshot_json AS receipt
+    FROM anvil.execution_challenges v LEFT JOIN anvil.execution_receipts r ON r.project_id=v.project_id AND r.challenge_id=v.id
+    WHERE v.project_id=$1 AND v.grant_id=$2 AND v.grant_version=$3 AND v.id=$4 AND v.version=2`,[...keys,c.id])).rows;
+   if(previous.length>1)return fail('NORMAL_UNDERSTANDING_RANGE_REPLAY_CONFLICT',409);const prior=previous[0],s=prior?.receipt;
+   if(prior&&(!recordV1(s,rangeReceiptKeys)||s.kind!=='NORMAL_UNDERSTANDING_RANGE_ACQUIRED'||!uuidV1(prior.id)||prior.content_hash!==hash(s)||prior.vhash!==hash(prior.consumed)
+    ||!Number.isSafeInteger(prior.consumed?.sequence)||prior.consumed.sequence<=old.snapshot_json.sequence||prior.consumed.sequence>20000
+    ||!same(prior.consumed,{...old.snapshot_json,sequence:prior.consumed.sequence,previousRef:c,consumption:{consumedAt:s.observedAt,resultRef:{id:prior.id,version:1,contentHash:prior.content_hash},packetHash:s.packetHash}})
+    ||!same(s.binding,b)||!same(s.credentialRef,cred.ref)||!same(s.challengeRef,c)||!same(s.rangeRequestRef,basis.requestRef)||!same(s.context,basis.context)||!same(s.selection,basis.selection)
+    ||s.packetHash!==packetHash||!same(s.target,target)||s.requestId!==p.requestId||!isoV1(s.observedAt)||!isoV1(s.expiresAt)||Date.parse(s.observedAt)<Date.parse(ch.issuedAt)
+    ||Date.parse(s.observedAt)>cur.now.getTime()||Date.parse(s.expiresAt)>expires||Date.parse(s.expiresAt)<=cur.now.getTime()))return fail('NORMAL_UNDERSTANDING_RANGE_REPLAY_CONFLICT',409);
+   const receipt=s??{kind:'NORMAL_UNDERSTANDING_RANGE_ACQUIRED',binding:b,credentialRef:cred.ref,challengeRef:c,packetHash,target,requestId:p.requestId,rangeRequestRef:basis.requestRef,
+    context:basis.context,selection:basis.selection,observedAt:cur.now.toISOString(),expiresAt:new Date(expires).toISOString()},ref={id:prior?.id??randomUUID(),version:1,contentHash:hash(receipt)};
+   if(Buffer.byteLength(canonicalJson(receipt))>2097152)return fail('INPUT_INVALID',400);
+   if(!prior){
+    const seq=(await db.query('SELECT COALESCE(max(server_sequence),0)::int+1 AS sequence FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3',keys)).rows[0]?.sequence;
+    if(!Number.isSafeInteger(seq)||seq<=old.snapshot_json.sequence||seq>20000)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');
+    const v2={...old.snapshot_json,sequence:seq,previousRef:c,consumption:{resultRef:ref,packetHash,consumedAt:receipt.observedAt}};
+    check();await db.query("SELECT set_config('anvil.normal_page_verified',txid_current()::text||':'||$1||':'||$2,true)",[ref.contentHash,token]);
+    if((await db.query('INSERT INTO anvil.execution_challenges(project_id,id,version,grant_id,grant_version,server_sequence,content_hash,snapshot_json) VALUES($1,$2,2,$3,$4,$5,$6,$7)',[cred.project,c.id,g.id,g.version,seq,hash(v2),JSON.stringify(v2)])).rowCount!==1)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');
+    if((await db.query('INSERT INTO anvil.execution_receipts(project_id,id,version,grant_id,grant_version,challenge_id,challenge_version,content_hash,snapshot_json) VALUES($1,$2,1,$3,$4,$5,1,$6,$7)',[cred.project,ref.id,g.id,g.version,c.id,ref.contentHash,JSON.stringify(receipt)])).rowCount!==1)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');
+   }
+   const finalStamp=stamp(),lastCred=await requestCredential(db,token,connector,execution,p),last=await readCurrent(db,cred.project,connector,execution,p),lastBasis=await this.rangeCurrent(db,token,last.binding,p.requestId,basis.requestRef);
+   if(db.query!==query||!same(cred,lastCred)||!same(b,last.binding)||last.spki!==cur.spki||!lastBasis||!same(lastBasis.context,basis.context)||!same(lastBasis.selection,basis.selection)||last.now<cur.now
+    ||Math.min(last.deadline.getTime(),lastCred.expiresAt,Date.parse(lastBasis.expiresAt))<Date.parse(receipt.expiresAt))return fail('NORMAL_UNDERSTANDING_RANGE_DENIED',412);
+   bound(finalStamp,last.now.getTime(),Date.parse(receipt.expiresAt));check();
+   if(prior){rollbackAttempted=true;discard=new Error('NORMAL_UNDERSTANDING_RANGE_ROLLBACK_UNKNOWN');if((await db.query('ROLLBACK')).command!=='ROLLBACK')return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');rolledBack=true;discard=undefined;}
+   else {committing=true;if((await db.query('COMMIT')).command!=='COMMIT')throw Error();committing=false;committed=true;}
+   if(signal.aborted||this.pool!==pool||db.query!==query||Date.now()<wall||Date.now()>=wallEnd||performance.now()<mono||performance.now()>=monoEnd)return fail('NORMAL_UNDERSTANDING_RANGE_DELIVERY_UNKNOWN');
+   return {transport:'NORMAL_PROTECTED',status:'RANGE_ACQUIRED',proofResultRef:ref,receipt,sourceAvailable:false,selectionAvailable:false,cacheControl:'no-store',nonceConsumed:true,executionAuthorized:false,dispatchPerformed:false};
+  }catch(error){
+   if(committed||rolledBack){if(error instanceof AuthFailure)throw error;return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');}
+   if(committing)discard=new Error('NORMAL_UNDERSTANDING_RANGE_COMMIT_UNKNOWN');
+   if(!rollbackAttempted){rollbackAttempted=true;try{if((await db.query('ROLLBACK')).command!=='ROLLBACK')discard??=new Error('NORMAL_UNDERSTANDING_RANGE_ROLLBACK_UNKNOWN');}catch{discard??=new Error('NORMAL_UNDERSTANDING_RANGE_ROLLBACK_UNKNOWN');}}
+   if(committing||discard)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');if(error instanceof AuthFailure)throw error;
+   if(error instanceof Error){if(/^NORMAL_UNDERSTANDING_RANGE_(DENIED|EXPIRED)$/.test(error.message))return fail(error.message,412);if(error.message==='PROJECT_STORAGE_QUOTA_EXCEEDED')return fail(error.message,409);if(error.message==='PROJECT_STORAGE_QUOTA_UNVERIFIED')return fail(error.message,412);}
+   return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');
+  }finally{db.release(discard);}
+ }
  async current(db:PoolClient,token:string,binding:any,requestId:string,expected:unknown=null){
   const rows=(await db.query('SELECT anvil.fn09_normal_understanding_discovery($1,$2,$3,$4) AS discovery',[token,JSON.stringify(binding),requestId,JSON.stringify(expected)])).rows;
   const v=rows[0]?.discovery;

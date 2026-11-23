@@ -12,10 +12,22 @@ import {buildApp} from '../../../apps/server/app.ts';
 import {AccessRepository} from '../../../apps/server/modules/access/repository.ts';
 import {reserveExecutionBudget} from '../../../apps/server/modules/executions/execution-budget.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
-import {executionChallengeRequestBytes,executionProofBytes} from '../../../apps/server/modules/executions/execution-proof.ts';
+import {executionChallengeRequestBytes,executionProofBytes,normalUnderstandingRangeChallengeBytes,normalUnderstandingRangeProofBytes} from '../../../apps/server/modules/executions/execution-proof.ts';
+import {NormalUnderstandingReadAcquisition} from '../../../apps/server/modules/executions/normal-understanding-read-acquisition.ts';
 import {publicKeyFingerprint} from '../../../apps/server/modules/connections/registration-proof.ts';
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
-function fixture(enabled=true){
+
+test('fixed range GET has a separate exact signed target; generic and synthetic proof paths remain closed',async()=>{
+ const m:any=await import('../../../apps/server/modules/executions/execution-proof.ts'),cid=randomUUID(),eid=randomUUID();
+ assert.equal(typeof m.normalUnderstandingRangeTarget,'function');
+ const target=m.normalUnderstandingRangeTarget(cid,eid);
+ assert.deepEqual(target,{method:'GET',path:`/api/v1/connectors/${cid}/executions/${eid}/understanding-response-read/range`,queryHash:hash({}),bodyHash:hash(null)});
+ assert.throws(()=>m.executionTarget('GET',target.path,[],null));assert.throws(()=>m.assertSyntheticExecutionTarget(target));
+ const request={requestId:randomUUID(),purpose:'EXECUTION_REQUEST',grantRef:{id:randomUUID(),version:1,contentHash:hash('grant')},credentialGeneration:1,target,clientNonce:randomBytes(32).toString('base64url'),issuedAt:new Date().toISOString()};
+ assert.throws(()=>m.executionChallengeRequestBytes('EXECUTION',request));assert.ok(m.normalUnderstandingRangeChallengeBytes(request).length);
+ for(const patch of [{path:target.path+'/'},{path:target.path+'?x=1'},{path:target.path.replace('/range','/%72ange')},{method:'POST'},{queryHash:hash({x:1})},{bodyHash:hash({})}])assert.throws(()=>m.normalUnderstandingRangeChallengeBytes({...request,target:{...target,...patch}}));
+});
+function fixture(enabled=true,rangeMode=false){
  const ref=()=>({id:randomUUID(),version:1,contentHash:hash(randomUUID())});
  const pid=randomUUID(),cid=randomUUID(),eid=randomUUID(),g=ref(),cred=ref(),start=Date.parse('2026-11-22T01:00:00Z'),origin='https://synthetic.invalid';
  const pair=generateKeyPairSync('ec',{namedCurve:'prime256v1'}),spki=pair.publicKey.export({format:'der',type:'spki'}).toString('base64url');
@@ -24,14 +36,19 @@ function fixture(enabled=true){
  const q={schemaVersion:1,projectId:pid,commandId:randomUUID(),clientId:randomUUID(),controlGeneration:1,operation:'readNormalUnderstandingResponse',targetId:eid,expectedVersion:1,baselineRefs:[],approvalRef:null,payload:{assignmentRef:context.assignmentRef,preparationRef:context.preparationRef}};
  const snapshot={schemaVersion:1,purpose:'NORMAL_UNDERSTANDING_METADATA_DISCOVERY',request:q,context,requestedBy:{kind:'HUMAN',userId:randomUUID(),clientId:q.clientId,sessionId:randomUUID(),credentialGeneration:1,controlGeneration:1},policyRef:ref(),state:'PENDING_SOURCE',sourceScope:null,createdAt:at,expiresAt};
  let human={id:randomUUID(),version:1,contentHash:hash(snapshot)},rows:any[]=[],receipts:any[]=[],lock=Promise.resolve();
- const state={now:start,none:false,denied:false,current:true,corrupt:false,commitUnknown:false,rollbackUnknown:false,rollbackThrow:false,afterInsert:false,releases:[] as boolean[],commits:0,rollbacks:0,queries:[] as string[]};
+ const selection={requestRef:human,resultRef:ref(),initConfirmationRef:ref(),tailRef:ref(),firstSequence:2,lastSequence:2,ranges:[{outputRef:ref(),sequence:2,payloadDigest:hash('payload'),textBlocks:1,textBytes:12}]};
+ selection.ranges[0]!.outputRef=selection.tailRef;
+ const {context:_context,...base}=snapshot,rangeSnapshot={...base,purpose:'NORMAL_UNDERSTANDING_FIXED_RANGE_REQUEST',request:{...q,payload:{...q.payload,selection}},sourceScope:selection};
+ if(rangeMode)human={...human,id:randomUUID(),contentHash:hash(rangeSnapshot)};
+ let charged=0n;
+ const state={now:start,none:false,denied:false,current:true,corrupt:false,commitUnknown:false,rollbackUnknown:false,rollbackThrow:false,afterInsert:false,rangeCount:1,unverified:false,overCap:false,failCharge:false,releases:[] as boolean[],commits:0,rollbacks:0,queries:[] as string[]};
  const ps={scope:{kind:'PROJECT',projectId:pid},state:'APPLIED',limits:{maxAttempts:3,maxCalls:50,maxConcurrentAssignments:1,maxElapsedMs:7200000,maxOfflineMs:300000,maxSpoolBytes:1073741824},decidedAt:at,expiresAt:new Date(start+240000).toISOString()};
  const policy={projectId:pid,ref:{...ref(),contentHash:hash(ps)},snapshot:ps};
  const reserve=reserveExecutionBudget([],policy as any,{projectId:pid,executionId:eid,executionGeneration:1,commandId:randomUUID(),assignmentRef:g,stageRef:{applicationRef:g,nodeId:'개발'},policyRef:policy.ref,operation:'START_SESSION',demand:{attempts:1,calls:1,spoolBytes:1,cost:null,costStatus:'VERIFIED_NO_CHARGE'}},at);
- const pool={async connect(){let unlock=()=>{},pending:any[]=[],rs:any[]=[];return{release(e?:Error){state.releases.push(!!e);},async query(sql:string,a:any[]=[]):Promise<any>{
+ const pool={async connect(){let unlock=()=>{},pending:any[]=[],rs:any[]=[],charge=0n;const account=(v:any)=>{if(state.unverified)throw Error('PROJECT_STORAGE_QUOTA_UNVERIFIED');if(state.overCap)throw Error('PROJECT_STORAGE_QUOTA_EXCEEDED');charge+=BigInt(Buffer.byteLength(canonicalJson(v)));if(state.failCharge)throw Error('RAM_PURPOSE_SETTLEMENT_FAILED');};return{release(e?:Error){state.releases.push(!!e);},async query(sql:string,a:any[]=[]):Promise<any>{
   state.queries.push(sql);
-  if(sql==='BEGIN'){const previous=lock;lock=new Promise<void>(r=>unlock=r);await previous;pending=structuredClone(rows);rs=structuredClone(receipts);return{command:'BEGIN',rows:[]};}
-  if(sql==='COMMIT'){rows=pending;receipts=rs;unlock();state.commits++;if(state.commitUnknown)throw Error('unexposed SQL details');return{command:'COMMIT',rows:[]};}
+  if(sql==='BEGIN'){const previous=lock;lock=new Promise<void>(r=>unlock=r);await previous;pending=structuredClone(rows);rs=structuredClone(receipts);charge=charged;return{command:'BEGIN',rows:[]};}
+  if(sql==='COMMIT'){rows=pending;receipts=rs;charged=charge;unlock();state.commits++;if(state.commitUnknown)throw Error('unexposed SQL details');return{command:'COMMIT',rows:[]};}
   if(sql==='ROLLBACK'){state.rollbacks++;unlock();if(state.rollbackThrow)throw Error('raw rollback');return{command:state.rollbackUnknown?'':'ROLLBACK',rows:[]};}
   if(sql.includes('SET LOCAL')||sql.includes('set_config'))return{rows:[]};
   if(sql.includes('normal_request_credential'))return{rows:[{project_id:pid,credential_ref:cred,expires_at:new Date(start+240000)}]};
@@ -40,17 +57,24 @@ function fixture(enabled=true){
   if(sql==='SELECT clock_timestamp() AS at')return{rows:[{at:new Date(state.now)}]};
   if(sql.includes('fn09_normal_understanding_discovery')){
    // SQL contract fixture only: this is not a real permission/lock proof.
-   if(state.denied)throw Error('NORMAL_UNDERSTANDING_DISCOVERY_DENIED');
-   if(state.now>=start+30000)throw Error('NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED');
+   if(state.denied)throw Error(rangeMode?'NORMAL_UNDERSTANDING_RANGE_DENIED':'NORMAL_UNDERSTANDING_DISCOVERY_DENIED');
+   if(state.now>=start+30000)throw Error(rangeMode?'NORMAL_UNDERSTANDING_RANGE_EXPIRED':'NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED');
    const expected=JSON.parse(a[3]);
+   if(rangeMode){
+    assert.equal(expected.purpose,'FIXED_RANGE');
+    if(state.none)return{rows:[{discovery:{status:'NONE'}}]};
+    if(state.rangeCount!==1||expected.requestRef!==null&&canonicalJson(expected.requestRef)!==canonicalJson(human))throw Error('NORMAL_UNDERSTANDING_RANGE_DENIED');
+    if(pending.some(x=>x.version===1&&x.snapshot_json.understandingRangeRequestRef&&x.snapshot_json.request.requestId!==a[2]))throw Error('NORMAL_UNDERSTANDING_RANGE_DENIED');
+    return{rows:[{discovery:{status:'RANGE_REQUEST',requestRef:human,snapshot:state.corrupt?{...rangeSnapshot,sourceScope:{unproven:true}}:rangeSnapshot,context,deadline:expiresAt}}]};
+   }
    if(expected!==null&&canonicalJson(expected)!==canonicalJson(human))throw Error('NORMAL_UNDERSTANDING_DISCOVERY_DENIED');
    if(pending.some(x=>x.version===1&&x.snapshot_json.understandingRequestRef&&x.snapshot_json.request.requestId!==a[2]))throw Error('NORMAL_UNDERSTANDING_DISCOVERY_DENIED');
    return{rows:[{discovery:state.none?{status:'NONE'}:{status:'REQUEST',requestRef:human,snapshot:state.corrupt?{...snapshot,sourceScope:{unproven:true}}:snapshot,deadline:expiresAt}}]};
   }
   if(sql.startsWith('INSERT INTO anvil.execution_challenges')){
-   const value=JSON.parse(a.at(-1)),version=value.consumption===null?1:2;pending.push({id:a[1],version,content_hash:hash(value),snapshot_json:value});if(state.afterInsert)state.current=false;return{rowCount:1,rows:[]};
+   const value=JSON.parse(a.at(-1)),version=value.consumption===null?1:2;pending.push({id:a[1],version,content_hash:hash(value),snapshot_json:value});if(rangeMode&&version===1)account(value);if(state.afterInsert)state.current=false;return{rowCount:1,rows:[]};
   }
-  if(sql.startsWith('INSERT INTO anvil.execution_receipts')){rs.push({id:a[1],challenge_id:a[4],content_hash:a[5],snapshot_json:JSON.parse(a[6])});return{rowCount:1,rows:[]};}
+  if(sql.startsWith('INSERT INTO anvil.execution_receipts')){const r=JSON.parse(a[6]);rs.push({id:a[1],challenge_id:a[4],content_hash:a[5],snapshot_json:r});if(rangeMode)account({v2:pending.at(-1).snapshot_json,receipt:r});return{rowCount:1,rows:[]};}
   if(sql.includes('count(*) FILTER')){const originals=pending.filter(x=>x.version===1);return{rows:[{total:originals.length,recent:originals.length,sequence:pending.length+1,live:originals.filter(x=>!pending.some(v=>v.version===2&&v.id===x.id)).length}]};}
   if(sql.startsWith('SELECT COALESCE(max'))return{rows:[{sequence:pending.length+1}]};
   if(sql.includes('LEFT JOIN anvil.execution_receipts'))return{rows:pending.filter(v=>v.version===2&&v.id===a[3]).map(v=>{const r=rs.find(r=>r.challenge_id===v.id);return{vhash:v.content_hash,consumed:v.snapshot_json,id:r?.id,content_hash:r?.content_hash,receipt:r?.snapshot_json};})};
@@ -62,15 +86,97 @@ function fixture(enabled=true){
  const app=buildApp({},undefined,enabled?access:undefined,undefined,undefined,undefined,undefined,null,undefined,undefined,undefined,{pool} as any,undefined,{origin});
  // RAM request socket only. No listener, TLS service, DB or private key input.
  app.addHook('onRequest',async r=>{Object.defineProperty(r.raw.socket,'encrypted',{value:true,configurable:true});});
- const path='/api/v1/connectors/'+cid+'/executions/'+eid,target={method:'GET',path:path+'/understanding-response-read',queryHash:hash({}),bodyHash:hash(null)};
+ const path='/api/v1/connectors/'+cid+'/executions/'+eid,target={method:'GET',path:path+'/understanding-response-read'+(rangeMode?'/range':''),queryHash:hash({}),bodyHash:hash(null)};
  const request={requestId:randomUUID(),purpose:'EXECUTION_REQUEST',grantRef:g,credentialGeneration:1,target,clientNonce:randomBytes(32).toString('base64url'),issuedAt:at};
  const signature=(bytes:Buffer)=>sign('sha256',bytes,{key:pair.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');
  const headers={host:'synthetic.invalid',authorization:'Bearer av3ex1_'+randomBytes(32).toString('base64url')};
- const issue=(r:any=request)=>app.inject({method:'POST',url:path+'/challenges',headers,payload:{...r,signature:signature(executionChallengeRequestBytes('EXECUTION',r))}});
- const packet=(issued:any)=>{const proof={requestId:issued.challenge.requestId,...target,grantRef:g,credentialGeneration:1,serverNonce:issued.challenge.serverNonce};return{schemaVersion:1,challengeRef:issued.ref,proof,signature:signature(executionProofBytes('EXECUTION_REQUEST_PROOF',proof))};};
+ const challengeBytes=(r:any)=>rangeMode?normalUnderstandingRangeChallengeBytes(r):executionChallengeRequestBytes('EXECUTION',r);
+ const issue=(r:any=request)=>app.inject({method:'POST',url:path+'/challenges',headers,payload:{...r,signature:signature(challengeBytes(r))}});
+ const packet=(issued:any)=>{const proof={requestId:issued.challenge.requestId,...target,grantRef:g,credentialGeneration:1,serverNonce:issued.challenge.serverNonce};return{schemaVersion:1,challengeRef:issued.ref,proof,signature:signature(rangeMode?normalUnderstandingRangeProofBytes(proof):executionProofBytes('EXECUTION_REQUEST_PROOF',proof))};};
  const get=(p:any)=>app.inject({method:'GET',url:target.path,headers:{...headers,'anvil-execution-auth':Buffer.from(canonicalJson(p)).toString('base64url')}});
- return{app,state,issue,packet,get,request,target,human:()=>human,replaceHuman:()=>{human={...human,id:randomUUID()};},rows:()=>rows,receipts:()=>receipts};
+ const source=new NormalUnderstandingReadAcquisition(pool as any),token=hash('RAM_RANGE_TOKEN'),signal=new AbortController().signal;
+ const issueRange=async(r:any=request)=>{const m:any=await import('../../../apps/server/modules/executions/normal-exchange-challenge.ts');return m.issueNormalUnderstandingRangeChallenge(pool,cid,eid,{...r,signature:signature(challengeBytes(r))},token,source,signal);};
+ return{app,state,issue,packet,get,request,target,source,selection,context,signal,issueRange,acquireRange:(frame:any)=>(source as any).acquireRange(cid,eid,token,frame,signal),charge:()=>charged,human:()=>human,replaceHuman:()=>{human={...human,id:randomUUID()};},rows:()=>rows,receipts:()=>receipts};
 }
+
+test('fixed range purpose derives one HUMAN request, settles v1 and acquisition separately, and exact concurrent replay adds zero bytes',async()=>{
+ const f=fixture(true,true);try{
+  assert.equal((await f.issue()).statusCode,503);assert.equal(f.state.queries.length,0);
+  const issued=await f.issueRange(),v1charge=f.charge();assert.ok(v1charge>0n);assert.deepEqual(f.rows()[0].snapshot_json.understandingRangeRequestRef,f.human());assert.equal(f.rows()[0].snapshot_json.understandingRequestRef,undefined);
+  const frame=f.packet(issued),[a,b]=await Promise.all([f.acquireRange(frame),f.acquireRange(frame)]);assert.deepEqual(a,b);
+  assert.equal(a.status,'RANGE_ACQUIRED');assert.deepEqual(a.receipt.rangeRequestRef,f.human());assert.deepEqual(a.receipt.selection,f.selection);assert.deepEqual(a.receipt.context,f.context);
+  assert.equal(a.sourceAvailable,false);assert.equal(a.selectionAvailable,false);assert.equal(f.rows().length,2);assert.equal(f.receipts().length,1);assert.ok(f.charge()>v1charge);
+  const charged=f.charge();f.state.now+=1000;assert.deepEqual(await f.acquireRange(frame),a);assert.equal(f.charge(),charged);
+  await assert.rejects(f.issueRange({...f.request,requestId:randomUUID(),clientNonce:randomBytes(32).toString('base64url')}));assert.equal(f.rows().length,2);assert.equal(f.charge(),charged);
+  assert.doesNotMatch(JSON.stringify(a),/requestedBy|humanSessionId|sourceScope|payloadRaw|sdkRaw|responsePartRefs/);
+ }finally{await f.app.close();}
+});
+
+test('fixed range purpose refuses absent ambiguity, bad parent, lost current and failed issue accounting before publishing a nonce',async()=>{
+ for(const mode of ['none','ambiguous','denied','expired','corrupt','afterInsert','unverified','overCap','failCharge'] as const){
+  const f=fixture(true,true);try{
+   if(mode==='none')f.state.none=true;else if(mode==='ambiguous')f.state.rangeCount=2;else if(mode==='expired')f.state.now+=30000;else f.state[mode]=true;
+   if(mode==='none'){const result=await f.issueRange();assert.equal(result.status,'NONE');assert.equal(result.challenge,null);}
+   else await assert.rejects(f.issueRange());
+   assert.equal(f.rows().length,0,mode);assert.equal(f.receipts().length,0,mode);assert.equal(f.charge(),0n,mode);
+  }finally{await f.app.close();}
+ }
+});
+
+test('fixed range acquisition refuses altered proof, metadata, current and partial accounting without changing the original v1 charge',async()=>{
+ for(const mode of ['proof','raw','human','denied','expired','corrupt','afterInsert','unverified','overCap','failCharge'] as const){
+  const f=fixture(true,true);try{
+   const issued=await f.issueRange(),frame=f.packet(issued),charge=f.charge();
+   if(mode==='proof')frame.proof.credentialGeneration++;
+   else if(mode==='raw')(frame as any).raw='forbidden';
+   else if(mode==='human')f.replaceHuman();else if(mode==='expired')f.state.now+=30000;else f.state[mode]=true;
+   await assert.rejects(f.acquireRange(frame));assert.equal(f.rows().length,1,mode);assert.equal(f.receipts().length,0,mode);assert.equal(f.charge(),charge,mode);
+  }finally{await f.app.close();}
+ }
+ const f=fixture(true,true);try{
+  const issued=await f.issueRange(),frame=f.packet(issued);await f.acquireRange(frame);const charged=f.charge();
+  f.receipts()[0].snapshot_json.selection.ranges[0].payloadDigest=hash('other');
+  await assert.rejects(f.acquireRange(frame));assert.equal(f.receipts().length,1);assert.equal(f.charge(),charged);
+ }finally{await f.app.close();}
+});
+
+test('fixed range unknown COMMIT retains the exact original event and explicit same-packet replay adds no records or charge',async()=>{
+ for(const phase of ['issue','acquire']){
+  const f=fixture(true,true);try{
+   if(phase==='issue'){
+    f.state.commitUnknown=true;await assert.rejects(f.issueRange(),{statusCode:503});assert.equal(f.rows().length,1);const charged=f.charge();assert.ok(charged>0n);
+    f.state.commitUnknown=false;const original=await f.issueRange();assert.deepEqual(original.ref,{id:f.rows()[0].id,version:1,contentHash:f.rows()[0].content_hash});assert.equal(f.charge(),charged);assert.equal(f.rows().length,1);
+   }else{
+    const issued=await f.issueRange(),frame=f.packet(issued);f.state.commitUnknown=true;await assert.rejects(f.acquireRange(frame),{statusCode:503});
+    assert.equal(f.rows().length,2);assert.equal(f.receipts().length,1);const charged=f.charge();f.state.commitUnknown=false;
+    const original=await f.acquireRange(frame);assert.equal(original.proofResultRef.id,f.receipts()[0].id);assert.equal(f.charge(),charged);assert.equal(f.rows().length,2);assert.equal(f.receipts().length,1);
+   }
+   assert.ok(f.state.releases.includes(true));
+  }finally{await f.app.close();}
+ }
+});
+
+test('fixed range unknown rollback overrides NONE or a known refusal and discards the original client once',async()=>{
+ for(const mode of ['none','denied','acquire'])for(const throws of [true,false]){
+  const f=fixture(true,true);try{
+   const issued=mode==='acquire'?await f.issueRange():undefined;f.state[throws?'rollbackThrow':'rollbackUnknown']=true;
+   if(mode==='none')f.state.none=true;else f.state.denied=true;
+   await assert.rejects(mode==='acquire'?f.acquireRange(f.packet(issued)):f.issueRange(),{statusCode:503});
+   assert.equal(f.state.releases.at(-1),true);assert.equal(f.state.rollbacks,1);assert.equal(f.receipts().length,0);
+  }finally{await f.app.close();}
+ }
+});
+
+test('fixed range holds the original monotonic deadline across known COMMIT without inventing a rollback',async t=>{
+ for(const phase of ['issue','acquire']){
+  const f=fixture(true,true);try{
+   const issued=phase==='acquire'?await f.issueRange():undefined,commits=f.state.commits,rollbacks=f.state.rollbacks;
+   t.mock.method(performance,'now',()=>f.state.commits>commits?40000:0);
+   await assert.rejects(phase==='issue'?f.issueRange():f.acquireRange(f.packet(issued)),{statusCode:503});
+   assert.equal(f.state.commits,commits+1);assert.equal(f.state.rollbacks,rollbacks);assert.equal(f.state.releases.at(-1),false);assert.ok(f.charge()>0n);
+  }finally{t.mock.restoreAll();await f.app.close();}
+ }
+});
 test('RAM app: same HUMAN request -> signed challenge -> one acquisition receipt, exact packet replay preserves original expiry',async()=>{
  const f=fixture();try{
   const issued=await f.issue();assert.equal(issued.statusCode,200,issued.body);assert.deepEqual(f.rows()[0].snapshot_json.understandingRequestRef,f.human());

@@ -9,23 +9,23 @@ import {hashV1,isoV1,recordV1,refV1,uuidV1} from '../../../../contracts/runtime/
 import {AuthFailure} from '../access/repository.ts';
 import {recheckExecutionBudgetDelivery} from './execution-budget.ts';
 import {canonicalBase64} from '../connections/registration-proof.ts';
-import {executionChallengeRequestBytes,verifyNormalExchangeRequest,verifyNormalCommandChallengeRequest} from './execution-proof.ts';
+import {executionChallengeRequestBytes,verifyNormalExchangeRequest,verifyNormalCommandChallengeRequest,normalUnderstandingRangeChallengeBytes,verifyNormalUnderstandingRangeChallenge,normalUnderstandingRangeTarget} from './execution-proof.ts';
 import {normalRequestBearerDigest,requestCredential,requestChallengeStats} from './normal-request-challenge.ts';
 
 export interface NormalExchangeOptions {pool:Pick<Pool,'connect'>}
 const fail=(code:string,status:number):never=>{throw new AuthFailure(code,status);};
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
-const signedInputHash=(request:unknown)=>createHash('sha256').update(executionChallengeRequestBytes('EXECUTION',request)).digest('hex');
+const signedInputHash=(request:unknown,range=false)=>createHash('sha256').update(range?normalUnderstandingRangeChallengeBytes(request):executionChallengeRequestBytes('EXECUTION',request)).digest('hex');
 const nonceDigest=(nonce:unknown)=>createHash('sha256').update(canonicalBase64(nonce,32)).digest('hex');
 type Purpose='CREDENTIAL_EXCHANGE'|'EXECUTION_REQUEST';
-function decode(body:unknown,purpose:Purpose){
+function decode(body:unknown,purpose:Purpose,range=false){
  if(!recordV1(body,['requestId','purpose','grantRef','credentialGeneration','target','clientNonce','issuedAt','signature'])
    ||body.purpose!==purpose)return fail('INPUT_INVALID',400);
  try{
   const {signature,...value}=body;
   canonicalBase64(signature,64);
-  const bytes=executionChallengeRequestBytes('EXECUTION',value);
+  const bytes=range?normalUnderstandingRangeChallengeBytes(value):executionChallengeRequestBytes('EXECUTION',value);
   return {request:JSON.parse(bytes.toString('utf8')).request,signature};
  }catch{return fail('INPUT_INVALID',400);}
 }
@@ -53,18 +53,21 @@ export async function readCurrent(db:PoolClient,project:string,connector:string,
  if(!(at instanceof Date)||!Number.isFinite(at.getTime())||at<c.observed_at||at>=c.deadline)return fail('EXECUTION_CHALLENGE_CURRENT_BINDING_REQUIRED',412);
  return {binding:b,spki:c.spki,now:at,deadline:c.deadline as Date};
 }
-export function original(row:any,binding:unknown,purpose:Purpose='CREDENTIAL_EXCHANGE',credentialRef?:unknown){
+export function original(row:any,binding:unknown,purpose:Purpose='CREDENTIAL_EXCHANGE',credentialRef?:unknown){return originalValue(row,binding,purpose,credentialRef,false);}
+export function originalRange(row:any,binding:any,credentialRef:unknown){return originalValue(row,binding,'EXECUTION_REQUEST',credentialRef,true);}
+function originalValue(row:any,binding:any,purpose:Purpose,credentialRef:unknown,range:boolean){
  const s=row.snapshot_json,p=s?.publicChallenge,request=s?.request;
  const discovery=purpose==='EXECUTION_REQUEST'&&request?.target?.method==='GET'&&request.target.path==='/api/v1/connectors/'+(binding as any)?.connectorId+'/executions/'+(binding as any)?.executionId+'/understanding-response-read';
  const resultPrefix='/api/v1/connectors/'+(binding as any)?.connectorId+'/executions/'+(binding as any)?.executionId+'/understanding-response-read/';
  const resultId=purpose==='EXECUTION_REQUEST'&&request?.target?.method==='POST'&&typeof request.target.path==='string'&&request.target.path.startsWith(resultPrefix)&&request.target.path.endsWith('/result')?request.target.path.slice(resultPrefix.length,-'/result'.length):'';
  const result=uuidV1(resultId)&&request.target.path===resultPrefix+resultId+'/result';
+ if(range&&(!same(request?.target,normalUnderstandingRangeTarget(binding.connectorId,binding.executionId))||!refV1(s?.understandingRangeRequestRef)||s.understandingRangeRequestRef.version!==1))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
  if(discovery&&!refV1(s?.understandingRequestRef))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
  if(result&&(!recordV1(s?.understandingResultBinding,['requestRef','acquisitionRef'])
   ||!refV1(s.understandingResultBinding.requestRef)||s.understandingResultBinding.requestRef.version!==1||s.understandingResultBinding.requestRef.id!==resultId
   ||!refV1(s.understandingResultBinding.acquisitionRef)||s.understandingResultBinding.acquisitionRef.version!==1
   ||request.target.queryHash!==digest({})||!hashV1(request.target.bodyHash)||request.target.bodyHash===digest(null)))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
- if(!recordV1(s,['sequence','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption',...(purpose==='EXECUTION_REQUEST'?['credentialRef']:[]),...(discovery?['understandingRequestRef']:[]),...(result?['understandingResultBinding']:[])])
+ if(!recordV1(s,['sequence','binding','request','requestHash','signedInputHash','serverNonceDigest','publicChallenge','previousRef','consumption',...(purpose==='EXECUTION_REQUEST'?['credentialRef']:[]),...(discovery?['understandingRequestRef']:[]),...(result?['understandingResultBinding']:[]),...(range?['understandingRangeRequestRef']:[])])
   ||(purpose==='EXECUTION_REQUEST'&&(!refV1(credentialRef)||!same(s.credentialRef,credentialRef)))
   ||s.previousRef!==null||s.consumption!==null||!Number.isSafeInteger(s.sequence)||Number(s.sequence)<1
   ||!same(s.binding,binding)||row.content_hash!==digest(s)||s.requestHash!==digest(request)
@@ -73,7 +76,7 @@ export function original(row:any,binding:unknown,purpose:Purpose='CREDENTIAL_EXC
   ||!same(p.grantRef,request.grantRef)||p.credentialGeneration!==request.credentialGeneration||p.scopeDigest!==s.binding.scopeDigest
   ||!isoV1(p.issuedAt)||!isoV1(p.expiresAt)||Date.parse(p.expiresAt)<=Date.parse(p.issuedAt)||Date.parse(p.expiresAt)>Date.parse(p.issuedAt)+(purpose==='EXECUTION_REQUEST'?30000:120000))
   return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
- if(s.signedInputHash!==signedInputHash(request)||s.serverNonceDigest!==nonceDigest(p.serverNonce))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
+ if(s.signedInputHash!==signedInputHash(request,range)||s.serverNonceDigest!==nonceDigest(p.serverNonce))return fail('EXECUTION_CHALLENGE_LEDGER_INVALID',503);
  return {ref:{id:row.id,version:1,contentHash:row.content_hash},challenge:p,credentialIssued:false,nonceConsumed:false,executionAuthorized:false,dispatchPerformed:false};
 }
 async function bootstrapReservation(db:PoolClient,b:any){
@@ -90,21 +93,26 @@ async function bootstrapReservation(db:PoolClient,b:any){
   return fail('EXECUTION_BOOTSTRAP_RESERVATION_INVALID',412);
  return {registrationRef:s.registrationRef,reservationRef:{id:row.id,version:1,contentHash:row.content_hash},expiresAt:s.expiresAt};
 }
-async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string,body:unknown,bearerDigest?:string,understandingSource?:NormalUnderstandingReadAcquisition,resultSource?:NormalUnderstandingReadResult,signal?:AbortSignal){
+async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string,body:unknown,bearerDigest?:string,understandingSource?:NormalUnderstandingReadAcquisition,resultSource?:NormalUnderstandingReadResult,signal?:AbortSignal,rangeSource?:NormalUnderstandingReadAcquisition){
+ const rangePath='/api/v1/connectors/'+connector+'/executions/'+execution+'/understanding-response-read/range';
+ const requestedRange=(body as any)?.target?.path===rangePath;
+ const range=requestedRange&&!!bearerDigest&&rangeSource?.pool===pool;
+ if(requestedRange&&!range)return fail('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE',503);
  const purpose:Purpose=bearerDigest?'EXECUTION_REQUEST':'CREDENTIAL_EXCHANGE';
- const {request,signature}=decode(body,purpose),ref=request.grantRef;
+ const {request,signature}=decode(body,purpose,range),ref=request.grantRef;
  if(!refV1(ref))return fail('INPUT_INVALID',400);
  // 원 HUMAN/GET와 같은 DB 목적 저장소가 없으면 새 경로의 nonce를 발행하지 않는다. SELECT는 닫혀 있다.
  const understanding='/api/v1/connectors/'+connector+'/executions/'+execution+'/understanding-response-read';
  const discovery=request.target.path===understanding&&request.target.method==='GET'&&!!bearerDigest&&understandingSource?.pool===pool;
  const resultId=request.target.method==='POST'&&request.target.path.startsWith(understanding+'/')&&request.target.path.endsWith('/result')?request.target.path.slice(understanding.length+1,-'/result'.length):'';
  const metadataResult=!!bearerDigest&&resultSource?.pool===pool&&uuidV1(resultId)&&request.target.path===understanding+'/'+resultId+'/result';
- if((request.target.path===understanding||request.target.path.startsWith(understanding+'/'))&&!discovery)
+ if((request.target.path===understanding||request.target.path.startsWith(understanding+'/'))&&!discovery&&!range)
   if(!metadataResult)return fail('NORMAL_UNDERSTANDING_RESPONSE_SOURCE_UNAVAILABLE',503);
- if(metadataResult&&(!signal||signal.aborted))return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
- let db:PoolClient;try{db=await pool.connect();}catch(error){if(metadataResult)return fail('NORMAL_UNDERSTANDING_RESULT_UNKNOWN',503);throw error;}
+ if((metadataResult||range)&&(!signal||signal.aborted))return fail(range?'NORMAL_UNDERSTANDING_RANGE_DENIED':'NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+ const wallStart=Date.now(),tickStart=performance.now();
+ let db:PoolClient;try{db=await pool.connect();}catch(error){if(range)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN',503);if(metadataResult)return fail('NORMAL_UNDERSTANDING_RESULT_UNKNOWN',503);throw error;}
  let committing=false,committed=false,noneRollback=false,discard:Error|undefined;
- const scoped=discovery||metadataResult,monoStart=performance.now();
+ const scoped=discovery||metadataResult||range,monoStart=range?tickStart:performance.now();
  try{
   await db.query('BEGIN');await db.query("SET LOCAL statement_timeout='5s'; SET LOCAL lock_timeout='2s'");
   const credential=bearerDigest?await requestCredential(db,bearerDigest,connector,execution,request):null;
@@ -114,18 +122,22 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   const current=await readCurrent(db,project,connector,execution,request);
   const reservation=credential?null:await bootstrapReservation(db,current.binding);
   let deadline=Math.min(current.deadline.getTime(),credential?.expiresAt??Infinity);
+  const checkRange=()=>{if(!range)return;const remaining=Math.min(30000,deadline-current.now.getTime()),w=Date.now(),m=performance.now();
+   if(signal?.aborted||rangeSource?.pool!==pool||!Number.isFinite(remaining)||!Number.isFinite(w)||!Number.isFinite(m)||w<wallStart||m<monoStart||w>=wallStart+remaining||m>=monoStart+remaining)return fail('NORMAL_UNDERSTANDING_RANGE_EXPIRED',412);};
+  checkRange();
   if(current.now.getTime()>=deadline)return fail('EXECUTION_CREDENTIAL_EXPIRED',412);
   const rows=(await db.query('SELECT id,content_hash,snapshot_json FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND version=1 AND (request_id=$4 OR client_nonce=$5) LIMIT 2',[...keys,request.requestId,request.clientNonce])).rows;
   const replay=rows.find(row=>row.snapshot_json?.request?.requestId===request.requestId);
   const identical=replay&&same(replay.snapshot_json.request,request);
-  const checked=identical?original(replay,current.binding,purpose,credential?.ref):null;
-  const verifyRequest=credential?verifyNormalCommandChallengeRequest:verifyNormalExchangeRequest;
+  const checked=identical?(range?originalRange(replay,current.binding,credential?.ref):original(replay,current.binding,purpose,credential?.ref)):null;
+  const verifyRequest=range?verifyNormalUnderstandingRangeChallenge:credential?verifyNormalCommandChallengeRequest:verifyNormalExchangeRequest;
   verifyRequest(current.spki,signature,request,current.binding,checked?new Date(checked.challenge.issuedAt):current.now);
   if(rows.length>1||replay&&!identical)return fail('IDEMPOTENCY_CONFLICT',409);
   if(rows.length&&!replay)return fail('EXECUTION_CHALLENGE_CLIENT_NONCE_REUSED',409);
-  const human=discovery?await understandingSource!.current(db,bearerDigest!,current.binding,request.requestId,checked?replay.snapshot_json.understandingRequestRef:null):null;
-  if(discovery&&!human){noneRollback=true;discard=new Error('NORMAL_UNDERSTANDING_DISCOVERY_ROLLBACK_UNKNOWN');if((await db.query('ROLLBACK')).command!=='ROLLBACK')return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);discard=undefined;return {transport:'NORMAL_PROTECTED',status:'NONE',challenge:null,nonceConsumed:false,executionAuthorized:false,dispatchPerformed:false};}
+  const human=range?await rangeSource!.rangeCurrent(db,bearerDigest!,current.binding,request.requestId,checked?replay.snapshot_json.understandingRangeRequestRef:null):discovery?await understandingSource!.current(db,bearerDigest!,current.binding,request.requestId,checked?replay.snapshot_json.understandingRequestRef:null):null;
+  if((discovery||range)&&!human){noneRollback=true;discard=new Error('NORMAL_UNDERSTANDING_DISCOVERY_ROLLBACK_UNKNOWN');if((await db.query('ROLLBACK')).command!=='ROLLBACK')return fail(range?'NORMAL_UNDERSTANDING_RANGE_UNKNOWN':'NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);discard=undefined;return {transport:'NORMAL_PROTECTED',status:'NONE',challenge:null,nonceConsumed:false,executionAuthorized:false,dispatchPerformed:false};}
   if(human){deadline=Math.min(deadline,Date.parse(human.expiresAt));if(current.now.getTime()>=deadline)return fail('NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED',412);}
+  checkRange();
   const resultBasis=metadataResult?await resultSource!.challengeBasis(db,bearerDigest!,current.binding,credential!.ref,request.target,current.now):null;
   if(resultBasis){deadline=Math.min(deadline,Date.parse(resultBasis.deadline));
    if(current.now.getTime()>=deadline)return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
@@ -142,15 +154,15 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
    const challenge={id:randomUUID(),requestId:request.requestId,purpose:request.purpose,grantRef:ref,credentialGeneration:request.credentialGeneration,
     scopeDigest:current.binding.scopeDigest,serverNonce:randomBytes(32).toString('base64url'),clientNonce:request.clientNonce,
     issuedAt:current.now.toISOString(),expiresAt:new Date(Math.min(current.now.getTime()+(credential?30000:120000),deadline)).toISOString()};
-   const candidate={sequence:stats.sequence,...(human?{understandingRequestRef:human.requestRef}:{}),...(credential?{credentialRef:credential.ref}:{}),binding:current.binding,request,requestHash:digest(request),signedInputHash:signedInputHash(request),serverNonceDigest:nonceDigest(challenge.serverNonce),publicChallenge:challenge,previousRef:null,consumption:null};
+   const candidate={sequence:stats.sequence,...(human?(range?{understandingRangeRequestRef:human.requestRef}:{understandingRequestRef:human.requestRef}):{}),...(credential?{credentialRef:credential.ref}:{}),binding:current.binding,request,requestHash:digest(request),signedInputHash:signedInputHash(request,range),serverNonceDigest:nonceDigest(challenge.serverNonce),publicChallenge:challenge,previousRef:null,consumption:null};
    const bound=metadataResult?await resultSource!.bindChallenge(db,bearerDigest!,current.binding,credential!.ref,{id:challenge.id,content_hash:digest(candidate),snapshot_json:candidate},current.now):null;
    const snapshot=bound?.snapshot_json??candidate,content=bound?.content_hash??digest(snapshot);
-   if(metadataResult&&signal?.aborted)return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+   if(metadataResult&&signal?.aborted)return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);checkRange();
    if(credential)await db.query("SELECT set_config('anvil.normal_request_verified',txid_current()::text||':'||$1||':'||$2||':'||$3,true)",[content,credential.ref.contentHash,bearerDigest]);
    else await db.query("SELECT set_config('anvil.normal_challenge_verified',txid_current()::text||':'||$1,true)",[content]);
    const inserted=await db.query('INSERT INTO anvil.execution_challenges(project_id,id,version,grant_id,grant_version,server_sequence,content_hash,snapshot_json) VALUES($1,$2,1,$3,$4,$5,$6,$7)',[project,challenge.id,ref.id,ref.version,stats.sequence,content,JSON.stringify(snapshot)]);
    if(inserted.rowCount!==1)return fail('EXECUTION_CHALLENGE_WRITE_FAILED',503);
-   result=original({id:challenge.id,content_hash:content,snapshot_json:snapshot},current.binding,purpose,credential?.ref);
+   result=range?originalRange({id:challenge.id,content_hash:content,snapshot_json:snapshot},current.binding,credential?.ref):original({id:challenge.id,content_hash:content,snapshot_json:snapshot},current.binding,purpose,credential?.ref);
   }
   const final=await readCurrent(db,project,connector,execution,request);
   if(credential&&bearerDigest){
@@ -162,8 +174,8 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   if(!same(final.binding,current.binding)||final.spki!==current.spki||final.now<current.now||Math.min(final.deadline.getTime(),credential?.expiresAt??Infinity)<expiry
     ||Date.parse(result.challenge.issuedAt)>current.now.getTime()||(!checked&&final.now.getTime()>=expiry))
     return fail('EXECUTION_CHALLENGE_CURRENT_BINDING_REQUIRED',412);
-  if(human){const finalHuman=await understandingSource!.current(db,bearerDigest!,final.binding,request.requestId,human.requestRef);
-   if(!finalHuman||!same(finalHuman.context,human.context)||Date.parse(finalHuman.expiresAt)<expiry||final.now.getTime()>=expiry)return fail('NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED',412);}
+  if(human){const finalHuman=range?await rangeSource!.rangeCurrent(db,bearerDigest!,final.binding,request.requestId,human.requestRef):await understandingSource!.current(db,bearerDigest!,final.binding,request.requestId,human.requestRef);
+   if(!finalHuman||!same(finalHuman.context,human.context)||range&&!same((finalHuman as any).selection,(human as any).selection)||Date.parse(finalHuman.expiresAt)<expiry||final.now.getTime()>=expiry)return fail(range?'NORMAL_UNDERSTANDING_RANGE_EXPIRED':'NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED',412);}
   if(resultBasis){
    const stored=(await db.query('SELECT id,content_hash,snapshot_json FROM anvil.execution_challenges WHERE project_id=$1 AND grant_id=$2 AND grant_version=$3 AND id=$4 AND version=1 AND content_hash=$5',[...keys,result.ref.id,result.ref.contentHash])).rows;
    if(stored.length!==1)return fail('NORMAL_UNDERSTANDING_RESULT_UNKNOWN',503);
@@ -181,12 +193,13 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
     reservationRef:last.reservationRef,publicKeyFingerprint:b.publicKeyFingerprint,checkedAt:final.now.toISOString(),expiresAt:new Date(end).toISOString()};
   }
   const monoEnd=monoStart+Math.min(deadline,Date.parse(result.challenge.expiresAt))-current.now.getTime();
-  if(metadataResult&&(signal?.aborted||!Number.isFinite(monoEnd)||performance.now()<monoStart||performance.now()>=monoEnd))return fail('NORMAL_UNDERSTANDING_RESULT_DENIED',412);
+  const rangeEnd=wallStart+Math.min(deadline,Date.parse(result.challenge.expiresAt))-current.now.getTime();
+  if((metadataResult||range)&&(signal?.aborted||!Number.isFinite(monoEnd)||performance.now()<monoStart||performance.now()>=monoEnd||range&&(Date.now()<wallStart||Date.now()>=rangeEnd)))return fail(range?'NORMAL_UNDERSTANDING_RANGE_EXPIRED':'NORMAL_UNDERSTANDING_RESULT_DENIED',412);
   committing=true;
   const completion=await db.query('COMMIT');
   if(completion?.command!=='COMMIT')throw new Error('EXECUTION_CHALLENGE_COMMIT_UNKNOWN');
   committing=false;committed=true;
-  if(metadataResult&&(signal?.aborted||performance.now()<monoStart||performance.now()>=monoEnd))return fail('NORMAL_UNDERSTANDING_RESULT_DELIVERY_UNKNOWN',503);
+  if((metadataResult||range)&&(signal?.aborted||performance.now()<monoStart||performance.now()>=monoEnd||range&&(rangeSource?.pool!==pool||Date.now()<wallStart||Date.now()>=rangeEnd)))return fail(range?'NORMAL_UNDERSTANDING_RANGE_DELIVERY_UNKNOWN':'NORMAL_UNDERSTANDING_RESULT_DELIVERY_UNKNOWN',503);
   return reservation?{...result,bootstrapBinding}:result;
  }catch(error){
   if(committed){if(error instanceof AuthFailure)throw error;return fail('NORMAL_UNDERSTANDING_RESULT_UNKNOWN',503);}
@@ -196,13 +209,19 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
    if(!noneRollback){const ended=await db.query('ROLLBACK');
     if(scoped&&ended?.command!=='ROLLBACK'){rollbackUnknown=true;discard??=new Error('EXECUTION_CHALLENGE_ROLLBACK_UNKNOWN');}}
   }catch{rollbackUnknown=true;discard??=new Error('EXECUTION_CHALLENGE_ROLLBACK_UNKNOWN');}
-  if(scoped&&rollbackUnknown)return fail(metadataResult?'NORMAL_UNDERSTANDING_RESULT_UNKNOWN':'NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);
+  if(scoped&&rollbackUnknown)return fail(range?'NORMAL_UNDERSTANDING_RANGE_UNKNOWN':metadataResult?'NORMAL_UNDERSTANDING_RESULT_UNKNOWN':'NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);
   if(committing)return fail('EXECUTION_CHALLENGE_COMMIT_UNKNOWN',503);
   if(noneRollback)return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);
   if(discovery&&!(error instanceof AuthFailure)){if(error instanceof Error&&/^NORMAL_UNDERSTANDING_DISCOVERY_(DENIED|EXPIRED)$/.test(error.message))return fail(error.message,412);return fail('NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);}
   if(metadataResult&&!(error instanceof AuthFailure)){if(error instanceof Error&&error.message==='NORMAL_UNDERSTANDING_RESULT_DENIED')return fail(error.message,412);return fail('NORMAL_UNDERSTANDING_RESULT_UNKNOWN',503);}
+  if(range&&!(error instanceof AuthFailure)){if(error instanceof Error&&/^NORMAL_UNDERSTANDING_RANGE_(DENIED|EXPIRED)$/.test(error.message))return fail(error.message,412);if(error instanceof Error&&error.message==='PROJECT_STORAGE_QUOTA_EXCEEDED')return fail(error.message,409);if(error instanceof Error&&error.message==='PROJECT_STORAGE_QUOTA_UNVERIFIED')return fail(error.message,412);return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN',503);}
   throw error;
  }finally{db.release(discard);}
+}
+/** 고정 목적 내부 조립이다. app/main 또는 기존 HTTP register에서는 호출하지 않는다. */
+export function issueNormalUnderstandingRangeChallenge(pool:Pick<Pool,'connect'>,connector:string,execution:string,body:unknown,token:string,source:NormalUnderstandingReadAcquisition,signal:AbortSignal){
+ if(!uuidV1(connector)||!uuidV1(execution)||!hashV1(token)||source.pool!==pool||!same((body as any)?.target,normalUnderstandingRangeTarget(connector,execution)))return fail('INPUT_INVALID',400);
+ return issue(pool,connector,execution,body,token,undefined,undefined,signal,source);
 }
 export function registerNormalExchangeChallenge(app:FastifyInstance,options:NormalExchangeOptions,requestOptions?:{origin:string;understanding?:NormalUnderstandingReadAcquisition;understandingResult?:NormalUnderstandingReadResult}){
  const origin=requestOptions?new URL(requestOptions.origin):null;

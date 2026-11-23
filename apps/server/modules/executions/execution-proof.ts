@@ -13,9 +13,12 @@ const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 /** 이 결과는 서명 문법/정확 binding뿐이다. nonce 소비·현재 DB/OS 허가·실행 성공은 별도다. */
 const verified=()=>({signatureVerified:true as const,nonceConsumed:false as const,currentAuthorityVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const});
 function copy(value:unknown){const text=canonicalJson(value);if(Buffer.byteLength(text)>2*1024*1024)return invalid();return JSON.parse(text);}
-function target(value:unknown,normalUnderstanding=true){
+function target(value:unknown,normalUnderstanding=true,range=false){
  if(!recordV1(value,['method','path','queryHash','bodyHash'])||!hashV1(value.queryHash)||!hashV1(value.bodyHash))return invalid();
- route(value.method,value.path,normalUnderstanding);return cloneV1(value);
+ if(range){
+  const p=typeof value.path==='string'&&/^\/api\/v1\/connectors\/([^/]+)\/executions\/([^/]+)\/understanding-response-read\/range$/.exec(value.path);
+  if(value.method!=='GET'||!p||!uuidV1(p[1])||!uuidV1(p[2])||value.queryHash!==contentHash(canonicalJson({}))||value.bodyHash!==contentHash(canonicalJson(null)))return invalid();
+ }else route(value.method,value.path,normalUnderstanding);return cloneV1(value);
 }
 function route(method:unknown,path:unknown,normalUnderstanding=true){
  if(typeof path!=='string'||typeof method!=='string'||!['GET','POST'].includes(method))return invalid();
@@ -53,7 +56,7 @@ export function executionTarget(method:unknown,path:unknown,query:unknown,bodyRa
   return{method,path,queryHash:contentHash(canonicalJson(q)),bodyHash:contentHash(canonicalJson(body))};
  }catch{return invalid();}
 }
-function proof(kind:unknown,value:unknown){
+function proof(kind:unknown,value:unknown,range=false){
  if(typeof kind!=='string'||!proofKinds.includes(kind))return invalid();const p=copy(value);
  const exchange=kind.endsWith('CREDENTIAL_EXCHANGE');
  if(exchange){
@@ -61,7 +64,7 @@ function proof(kind:unknown,value:unknown){
   canonicalBase64(p.clientNonce,32);
  }else{
   if(!recordV1(p,['requestId','method','path','queryHash','bodyHash','grantRef','credentialGeneration','serverNonce']))return invalid();
-  target({method:p.method,path:p.path,queryHash:p.queryHash,bodyHash:p.bodyHash});
+  target({method:p.method,path:p.path,queryHash:p.queryHash,bodyHash:p.bodyHash},true,range);
  }
  if(!uuidV1(p.requestId)||!refV1(p.grantRef)||!positive(p.credentialGeneration))return invalid();canonicalBase64(p.serverNonce,32);return p;
 }
@@ -69,14 +72,38 @@ function proof(kind:unknown,value:unknown){
 export function executionProofBytes(kind:ProofKind,value:unknown):Buffer {
  try{return Buffer.from(canonicalJson({purpose:kind,request:proof(kind,value)}),'utf8');}catch{return invalid();}
 }
-function challengeRequest(value:unknown){
+function challengeRequest(value:unknown,range=false){
  const p=copy(value);
  if(!recordV1(p,['requestId','purpose','grantRef','credentialGeneration','target','clientNonce','issuedAt'])||!uuidV1(p.requestId)
   ||!['CREDENTIAL_EXCHANGE','EXECUTION_REQUEST'].includes(p.purpose)||!refV1(p.grantRef)||!positive(p.credentialGeneration)||!isoV1(p.issuedAt))return invalid();
- target(p.target);canonicalBase64(p.clientNonce,32);return p;
+ target(p.target,true,range);canonicalBase64(p.clientNonce,32);return p;
 }
 export function executionChallengeRequestBytes(mode:Mode,value:unknown):Buffer {
  try{if(!['EXECUTION','RECOVERY'].includes(mode))return invalid();return Buffer.from(canonicalJson({purpose:mode==='RECOVERY'?'EXECUTION_RECOVERY_CHALLENGE_REQUEST':'EXECUTION_CHALLENGE_REQUEST',request:challengeRequest(value)}),'utf8');}catch{return invalid();}
+}
+/** 고정 범위 전용 문법이다. generic/synthetic target 및 기본 HTTP 발급을 열지 않는다. */
+export function normalUnderstandingRangeTarget(connector:unknown,execution:unknown){
+ if(!uuidV1(connector)||!uuidV1(execution))return invalid();
+ return {method:'GET',path:`/api/v1/connectors/${connector}/executions/${execution}/understanding-response-read/range`,queryHash:contentHash(canonicalJson({})),bodyHash:contentHash(canonicalJson(null))};
+}
+export function normalUnderstandingRangeChallengeBytes(value:unknown):Buffer {
+ const p=challengeRequest(value,true);if(p.purpose!=='EXECUTION_REQUEST')return invalid();
+ return Buffer.from(canonicalJson({purpose:'EXECUTION_CHALLENGE_REQUEST',request:p}),'utf8');
+}
+export function normalUnderstandingRangeProofBytes(value:unknown):Buffer {
+ return Buffer.from(canonicalJson({purpose:'EXECUTION_REQUEST_PROOF',request:proof('EXECUTION_REQUEST_PROOF',value,true)}),'utf8');
+}
+export function verifyNormalUnderstandingRangeChallenge(spki:unknown,sig:unknown,value:unknown,binding:any,at:Date){
+ const p=challengeRequest(value,true);
+ if(binding.transport!=='NORMAL_PROTECTED'||binding.mode!=='EXECUTION'||p.purpose!=='EXECUTION_REQUEST'
+  ||!same(p.target,normalUnderstandingRangeTarget(binding.connectorId,binding.executionId))||!Number.isFinite(at.getTime())||Math.abs(Date.parse(p.issuedAt)-at.getTime())>30000)return invalid();
+ exactSubject(p,binding);signature(spki,sig,normalUnderstandingRangeChallengeBytes(p),binding.publicKeyFingerprint);
+}
+export function verifyNormalUnderstandingRangeProof(spki:unknown,sig:unknown,value:unknown,binding:any,challenge:any){
+ const p=proof('EXECUTION_REQUEST_PROOF',value,true),t=normalUnderstandingRangeTarget(binding.connectorId,binding.executionId);
+ if(binding.transport!=='NORMAL_PROTECTED'||binding.mode!=='EXECUTION'||challenge.purpose!=='EXECUTION_REQUEST'
+  ||!same(p,{requestId:challenge.requestId,...t,grantRef:binding.grantRef,credentialGeneration:binding.credentialGeneration,serverNonce:challenge.serverNonce}))return invalid();
+ signature(spki,sig,normalUnderstandingRangeProofBytes(p),binding.publicKeyFingerprint);
 }
 function context(value:unknown,now:Date){
  const c=copy(value);
