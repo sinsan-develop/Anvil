@@ -15,7 +15,7 @@ import {confirmNormalLiveInputDelivery,takeFirstOutputOrigin,takeFirstSidOrigin,
 import type {NormalStartWire,NormalStartCurrent} from './normal-start-coordinator.ts';
 import type {RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {receiveProfiledEnvelope,type InboxFilePorts,type InboxLimits} from './receipt-inbox.ts';
-import {takeNormalUnderstandingDiscovery,type NormalUnderstandingDiscoveryTicket,takeNormalUnderstandingRead,type NormalUnderstandingReadTicket,type NormalProtectedGetClient} from './normal-protected-get-client.ts';
+import {takeNormalUnderstandingDiscovery,type NormalUnderstandingDiscoveryTicket,takeNormalUnderstandingRead,type NormalUnderstandingReadTicket,type NormalProtectedGetClient,type NormalUnderstandingRangeAcquisition} from './normal-protected-get-client.ts';
 import {readNormalUnderstandingDiscovery,type NormalUnderstandingDiscoveryProjection,readNormalUnderstandingResponse,type NormalUnderstandingResponseProjection} from './normal-understanding-response-source.ts';
 import type {NormalOwnedCredentialPort} from './normal-credential-bootstrap-client.ts';
 
@@ -591,7 +591,7 @@ export class OwnedSpoolRuntime {
    catch(error){unknown=true;throw error;}finally{reading=false;completed.resolve();}
   }};
  }
- outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>;readUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,post:NormalProtectedPostClient,readSignal:AbortSignal,current:Guard):Promise<DiscoveryReadResult>}{
+ outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;checkUnderstandingRangeAcquisition(context?:NormalUnderstandingRangeAcquisition['context']):void;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>;readUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,post:NormalProtectedPostClient,readSignal:AbortSignal,current:Guard):Promise<DiscoveryReadResult>}{
   const saved=this.#workers.get(worker),slot=this.external(this.#slot);
   if(this.#binding||!saved||saved.journal!==journal||!slot||!refV1(slot.receiptRef)||this.#owner.aborted||signal.aborted||
    isProxy(sdk)||!recordV1(sdk,['expiresAt','check','create','close','classify'])||
@@ -659,7 +659,21 @@ export class OwnedSpoolRuntime {
    try{await body({rowCount:rows.length,read:async sequence=>{guard();if(!active||!Number.isSafeInteger(sequence)||sequence<1||sequence>rows.length)invalid();return cloneV1(rows[sequence-1]);}});guard();}
    finally{active=false;rows.length=0;}
   },guard);};
-  return {source,port,readUnderstandingDiscovery:async(ticket,client,owned,post,readSignal,current)=>{
+  return {source,port,checkUnderstandingRangeAcquisition:context=>{
+   verify();if(!origin||!binding||this.#unknown||origin.signal.aborted)invalid();
+   this.external(origin.check);
+   const s=origin.scope;
+   if(byRef(s.slotRef)!==byRef(slot.receiptRef)||byRef(s.registrationRef)!==byRef(saved.registration)||byRef(s.grantRef)!==byRef(saved.grant)||
+    byRef(s.profileRef)!==byRef(binding.profile)||byRef(s.assignmentRef)!==byRef(binding.allocation)||s.projectId!==saved.scope.projectId||s.executionId!==saved.scope.executionId||s.generation!==saved.scope.executionGeneration)invalid();
+   if(context){
+    // origin의 assignmentRef는 물리 allocation이다. 업무 fullref/준비/queue ref는 원 서버 grant·영수증 검산을 유지한다.
+    if(context.projectId!==s.projectId||context.executionId!==s.executionId||context.executionGeneration!==s.generation||context.connectorId!==slot.scope.connectorId||
+     context.credentialGeneration!==slot.scope.credentialGeneration||byRef(context.registrationRef)!==byRef(s.registrationRef)||byRef(context.grantRef)!==byRef(s.grantRef)||
+     byRef(context.sessionBindingRef)!==byRef(s.sessionBindingRef)||context.startCommandId!==origin.start.startCommandId||
+     context.assignmentRef.id!==origin.start.assignmentId||byRef(context.contextBundleRef)!==byRef(origin.start.contextBundleRef))invalid();
+   }
+   verify();this.external(origin.check);
+  },readUnderstandingDiscovery:async(ticket,client,owned,post,readSignal,current)=>{
    verify();if(!origin||!binding||this.#unknown||byRef(owned.metadata)!==slotKey)invalid();
    const original=takeNormalUnderstandingDiscovery(ticket,client,owned,origin.scope,origin.start);
    const scopeSignal=AbortSignal.any([readSignal,origin.signal]);

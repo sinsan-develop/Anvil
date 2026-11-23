@@ -3,6 +3,18 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const root=new URL('../../../',import.meta.url);
 
+test('고정 범위 native는 전용 kind/target/원 영수증만 검산하고 SELECT·pickup·결과 권위를 만들지 않는다',()=>{
+ const s=readFileSync(new URL('apps/connector/native/NormalExecutionCredentialSource.cs',root),'utf8');
+ for(const name of ['UNDERSTANDING_RANGE_PREPARE','UNDERSTANDING_RANGE_REQUEST','ValidateUnderstandingRangeAcquisition','NORMAL_UNDERSTANDING_RANGE_ACQUIRED','NORMAL_UNDERSTANDING_RANGE_DENIED','NORMAL_UNDERSTANDING_RANGE_EXPIRED'])assert.ok(s.includes(name),name);
+ const range=s.slice(s.indexOf(' void ValidateUnderstandingRangeAcquisition('),s.indexOf(' void LoadUnderstandingCa('));
+ assert.match(range,/rangeRequestRef/);assert.match(range,/registrationRef/);assert.match(range,/credentialRef/);assert.match(range,/packetHash/);assert.match(range,/lastSequence/);
+ assert.match(range,/totalBytes\+=N\(row\["textBytes"\]\)\)>2097152/);
+ assert.ok(s.includes('budget-elapsed.Elapsed.TotalMilliseconds'));assert.ok(s.includes('range?(DateTime?)end:null'));
+ assert.doesNotMatch(range,/BindUnderstandingPickup|spoolProfile\.|SaveNormalOwned|Sign\(|Http\(/);
+ const target=s.slice(s.indexOf(' Dictionary<string,object> Target('),s.indexOf(' bool DiscoveryTarget('));
+ assert.doesNotMatch(target,/understanding-response-read\/range/);assert.ok(s.includes('req.AllowAutoRedirect=false'));
+});
+
 test('FIRST SID는 exact private 인계에서만 원 scope의 canonical 문자열 SHA와 대조하고 실행 권위를 발급하지 않는다',()=>{
  const s=readFileSync(new URL('apps/connector/native/NormalExecutionCredentialSource.cs',root),'utf8');
  const first=s.slice(s.indexOf('FirstInspection InspectFirstSource('),s.indexOf('Dictionary<string,object> SdkEnvelope('));
@@ -53,5 +65,6 @@ test('FN09 native Target은 TS와 같은 목적 literal/UUID·빈 query 및 기�
  assert.ok(target.includes('[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}'));
  assert.ok(target.includes('path!=basePath+"/commands"'));assert.ok(target.includes('(method=="GET"&&body!=null)'));assert.ok(target.includes('(body==null||query!="")'));
  assert.ok(target.includes('H(Parse(Encoding.UTF8.GetBytes(body)))'));assert.ok(s.includes('2097152'));
- assert.ok(s.indexOf('target=Target(scope,r,body)')<s.indexOf('var reply=Challenge(record,scope,request,S(slot,"credential")'));
+ const call=s.slice(s.indexOf(' object Call('),s.indexOf(' object Next('));
+ assert.ok(call.indexOf('target=')>=0&&call.indexOf('Target(scope,r,body)')>=0&&call.indexOf('Target(scope,r,body)')<call.indexOf('var reply=Challenge(record,scope,request,S(slot,"credential")'));
 });

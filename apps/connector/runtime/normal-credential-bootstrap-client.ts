@@ -161,6 +161,21 @@ export class NormalOwnedCredentialPort {
  constructor(channel:Channel,metadata:NormalOwnedMetadata,key:symbol){if(key!==secret)fail();this.#channel=channel;this.#metadata=cloneV1(metadata);known.add(this);}
  get metadata():NormalOwnedMetadata{return cloneV1(this.#metadata);}
  matches(origin:string,scope:NormalOwnedScope,expiresAt:string,ca:string|undefined){return known.has(this)&&typeof ca==='string'&&digest(ca)===this.#metadata.caHash&&origin===this.#metadata.origin&&same(scope,this.#metadata.scope)&&expiresAt===this.#metadata.expiresAt;}
+ /** 고정 범위 획득 전용. 일반 target 및 원문 읽기 권위를 열지 않는다. */
+ async prepareUnderstandingRange(signal:AbortSignal):Promise<{kind:'PACKET';packet:NormalOwnedPrepared}|{kind:'NOT_ACQUIRED';status:'NONE'|'DENIED'|'EXPIRED'}>{
+  const m=this.#metadata,r={method:'GET' as const,path:'/api/v1/connectors/'+m.scope.connectorId+'/executions/'+m.scope.executionId+'/understanding-response-read/range',query:'',body:null,auth:null,expiresAt:m.expiresAt};
+  const v=await this.#call('UNDERSTANDING_RANGE_PREPARE',r,signal);
+  try{if(v?.kind==='NORMAL_UNDERSTANDING_RANGE_NOT_ACQUIRED')return {kind:'NOT_ACQUIRED',status:this.#notAcquired(v,r,'PREPARE',true)};
+   return {kind:'PACKET',packet:this.#prepared(v,r)};
+  }catch{this.#channel.unknown=true;return fail('NORMAL_OWNED_UNKNOWN');}
+ }
+ async requestUnderstandingRange(request:NormalOwnedRequest,signal:AbortSignal):Promise<{kind:'RESPONSE';value:unknown}|{kind:'NOT_ACQUIRED';status:'DENIED'|'EXPIRED'}>{
+  const v=await this.#call('UNDERSTANDING_RANGE_REQUEST',request,signal);
+  try{if(v?.kind==='NORMAL_UNDERSTANDING_RANGE_NOT_ACQUIRED'){
+   const status=this.#notAcquired(v,request,'REQUEST',true),packet=parseWireJson(Buffer.from(request.auth!,'base64url').toString('utf8')) as any;
+   if(v.requestId!==packet?.proof?.requestId||status==='NONE')fail();return {kind:'NOT_ACQUIRED',status};
+  }return {kind:'RESPONSE',value:v};}catch{this.#channel.unknown=true;return fail('NORMAL_OWNED_UNKNOWN');}
+ }
  /** 목적 전용 응답은 Channel의 원 close가 확인된 다음에만 해석한다. */
  async prepareUnderstandingDiscovery(signal:AbortSignal):Promise<{kind:'PACKET';packet:NormalOwnedPrepared}|{kind:'NOT_ACQUIRED';status:'NONE'|'DENIED'|'EXPIRED'}>{
   const m=this.#metadata,r={method:'GET' as const,path:'/api/v1/connectors/'+m.scope.connectorId+'/executions/'+m.scope.executionId+'/understanding-response-read',query:'',body:null,auth:null,expiresAt:m.expiresAt};
@@ -170,8 +185,8 @@ export class NormalOwnedCredentialPort {
    return {kind:'PACKET',packet:this.#prepared(v,r)};
   }catch{this.#channel.unknown=true;return fail('NORMAL_OWNED_UNKNOWN');}
  }
- #notAcquired(v:any,r:NormalOwnedRequest,stage:'PREPARE'|'REQUEST'):'NONE'|'DENIED'|'EXPIRED'{
-  if(!recordV1(v,['kind','status','stage','path','query','requestId','slotRef','expiresAt'])||v.kind!=='NORMAL_UNDERSTANDING_NOT_ACQUIRED'||v.stage!==stage||v.path!==r.path||v.query!==''||!uuidV1(v.requestId)||!same(v.slotRef,this.#metadata.receiptRef)||!isoV1(v.expiresAt)||Date.parse(v.expiresAt)<=this.#channel.now()||Date.parse(v.expiresAt)>Date.parse(r.expiresAt)||Date.parse(v.expiresAt)>Date.parse(this.#metadata.expiresAt)||!(v.status==='DENIED'||v.status==='EXPIRED'||stage==='PREPARE'&&v.status==='NONE'))fail();
+ #notAcquired(v:any,r:NormalOwnedRequest,stage:'PREPARE'|'REQUEST',range=false):'NONE'|'DENIED'|'EXPIRED'{
+  if(!recordV1(v,['kind','status','stage','path','query','requestId','slotRef','expiresAt'])||v.kind!==(range?'NORMAL_UNDERSTANDING_RANGE_NOT_ACQUIRED':'NORMAL_UNDERSTANDING_NOT_ACQUIRED')||v.stage!==stage||v.path!==r.path||v.query!==''||!uuidV1(v.requestId)||!same(v.slotRef,this.#metadata.receiptRef)||!isoV1(v.expiresAt)||Date.parse(v.expiresAt)<=this.#channel.now()||Date.parse(v.expiresAt)>Date.parse(r.expiresAt)||Date.parse(v.expiresAt)>Date.parse(this.#metadata.expiresAt)||!(v.status==='DENIED'||v.status==='EXPIRED'||stage==='PREPARE'&&v.status==='NONE'))fail();
   return v.status;
  }
  async requestUnderstandingDiscovery(request:NormalOwnedRequest,signal:AbortSignal):Promise<{kind:'RESPONSE';value:unknown}|{kind:'NOT_ACQUIRED';status:'DENIED'|'EXPIRED'}>{
@@ -195,14 +210,16 @@ export class NormalOwnedCredentialPort {
   return v as unknown as NormalOwnedPrepared;
  }
  request(request:NormalOwnedRequest,signal:AbortSignal):Promise<unknown>{return this.#call('REQUEST',request,signal);}
- async #call(kind:'PREPARE'|'REQUEST',r:NormalOwnedRequest,signal:AbortSignal):Promise<any>{
+ async #call(kind:'PREPARE'|'REQUEST'|'UNDERSTANDING_RANGE_PREPARE'|'UNDERSTANDING_RANGE_REQUEST',r:NormalOwnedRequest,signal:AbortSignal):Promise<any>{
   const m=this.#metadata,c=this.#channel,base='/api/v1/connectors/'+m.scope.connectorId+'/executions/'+m.scope.executionId;
   if(!recordV1(r,['method','path','query','body','auth','expiresAt'])||!['GET','POST'].includes(r.method)||!r.path.startsWith(base+'/')||
    typeof r.query!=='string'||(r.body!==null&&typeof r.body!=='string')||!isoV1(r.expiresAt))fail();
   const suffix=r.path.slice(base.length),parts=suffix.split('/');
   // 등록 서명은 원 private read/close의 출처 증명이 아니다. 목적 증명 연결 전 raw 전송을 닫는다.
   if(r.method==='POST'&&parts.length===4&&parts[1]==='understanding-response-read'&&uuidV1(parts[2])&&parts[3]==='result')fail('NORMAL_OWNED_RESULT_UNAVAILABLE');
-  const allowed=r.method==='GET'&&(suffix==='/commands'||suffix==='/understanding-response-read'||parts.length===5&&parts[1]==='commands'&&uuidV1(parts[2])&&parts[3]==='materials'&&uuidV1(parts[4]))||
+  const range=kind==='UNDERSTANDING_RANGE_PREPARE'||kind==='UNDERSTANDING_RANGE_REQUEST';
+  if(range&&(r.method!=='GET'||suffix!=='/understanding-response-read/range'||r.query!==''||r.body!==null||(kind==='UNDERSTANDING_RANGE_PREPARE'?r.auth!==null:!base64url(r.auth))))fail();
+  const allowed=range||r.method==='GET'&&(suffix==='/commands'||suffix==='/understanding-response-read'||parts.length===5&&parts[1]==='commands'&&uuidV1(parts[2])&&parts[3]==='materials'&&uuidV1(parts[4]))||
    r.method==='POST'&&(suffix==='/observations'||parts.length===4&&parts[1]==='understanding-response-read'&&uuidV1(parts[2])&&parts[3]==='result'||parts.length===4&&parts[1]==='commands'&&uuidV1(parts[2])&&parts[3]==='permit');
   if(!allowed||parts[1]==='understanding-response-read'&&r.query!==''||r.method==='GET'&&r.body!==null||r.method==='POST'&&(r.body===null||r.query!==''))fail();
   const responseLimit=parts[1]==='understanding-response-read'?2097152:limit;

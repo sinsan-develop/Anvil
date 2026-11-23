@@ -170,6 +170,13 @@ test('result v2 deferred admission owns only its private definer trigger; invoke
  // 이 검산은 SQL 호출선/ACL의 정적 증거다. 실제 app COMMIT의 trigger 권한 실행을 대체하지 않는다.
 });
 
+test('fixed range aggregate text bound applies only to new/current admission, never historical accounting or exact HUMAN replay',()=>{
+ for(const name of ['fn09_normal_understanding_range_basis','fn09_normal_understanding_range_connector_current']){
+  const body=definition(name);assert.match(body,/sum\(\(r->>'textBytes'\)::bigint\)/);assert.match(body,/jsonb_array_elements\(x->'ranges'\)/);assert.match(body,/>2097152/);
+ }
+ for(const name of ['fn09_normal_understanding_range_valid','fn09_normal_understanding_range_historical','fn09_normal_understanding_range_replay','fn09_normal_understanding_range_plan','fn09_normal_understanding_range_complete'])assert.doesNotMatch(definition(name),/sum\(\(r->>'textBytes'\)::bigint\)/);
+});
+
 test('fixed range admission uses exact current parent and existing purpose RPC, with no discovery rows, connector nonce or new role grants',()=>{
  const valid=definition('fn09_normal_understanding_range_valid');
  for(const text of ["ARRAY['requestRef','resultRef','initConfirmationRef','tailRef','firstSequence','lastSequence','ranges']","BETWEEN 1 AND 200","to_jsonb((x->>'firstSequence')::bigint+i)","{initConfirmationRef,id}","{tailRef,id}",'blocks>200'])assert.ok(valid.includes(text),text);

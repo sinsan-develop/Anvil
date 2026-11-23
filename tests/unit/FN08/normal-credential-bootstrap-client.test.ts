@@ -13,6 +13,43 @@ const grant={kind:'EXECUTION',state:'GRANTED',transport:'NORMAL_PROTECTED',bindi
  factHash:hash(canonicalJson(binding)),scopeDigest:hash(canonicalJson({binding,allowedOperations:['START_SESSION'],expiresAt}))};
 const ref={id:id(4),version:1,contentHash:hash(canonicalJson(grant))};
 const scope={projectId:id(1),connectorId:id(2),executionId:id(3),executionGeneration:1,grantRef:ref,credentialGeneration:1};
+
+test('고정 범위 목적은 별도 kind만 사용하고 일반 prepare/request에서는 효과 없이 닫힌다',async()=>{
+ const f=fixture(1),signal=new AbortController().signal,p=await f.client.bootstrap(signal);
+ assert.equal(typeof p.prepareUnderstandingRange,'function');assert.equal(typeof p.requestUnderstandingRange,'function');
+ const path='/api/v1/connectors/'+id(2)+'/executions/'+id(3)+'/understanding-response-read/range';
+ const request={method:'GET' as const,path,query:'',body:null,auth:null,expiresAt};
+ const before=f.calls.length;await assert.rejects(p.prepare(request,signal));await assert.rejects(p.request({...request,auth:'proof'},signal));assert.equal(f.calls.length,before);
+ for(const bad of [{path:path+'/'},{path:path.replace('/range','/%72ange')},{path:path+'/result'},{path:path.replace('/range','')},{query:'?x=1'},{body:'{}'},{method:'POST' as const}])await assert.rejects(p.requestUnderstandingRange({...request,auth:'proof',...bad},signal));
+ assert.equal(f.calls.length,before);
+ let closes=0;const original=f.host.send;
+ f.host.send=async(op,arg)=>{
+  if(op!=='NORMAL_EXECUTION_CALL')return original(op,arg);
+  assert.equal(arg.kind,'UNDERSTANDING_RANGE_PREPARE');assert.equal(arg.request.path,path);
+  const value={kind:'NORMAL_UNDERSTANDING_RANGE_NOT_ACQUIRED',status:'NONE',stage:'PREPARE',path,query:'',requestId:id(41),slotRef:ref,expiresAt};
+  const bytes=Buffer.from(canonicalJson(value));closes++;
+  return {handle:id(9),offset:0,total:bytes.length,hash:hash(bytes),expiresAt,bytes:bytes.toString('base64url'),done:true};
+ };
+ assert.deepEqual(await p.prepareUnderstandingRange(signal),{kind:'NOT_ACQUIRED',status:'NONE'});assert.equal(closes,1);
+});
+
+test('고정 범위 원 packet의 명시 재확인은 같은 auth만 두 번 전송하며 자동 PREPARE·재시도는 없다',async()=>{
+ const f=fixture(1),signal=new AbortController().signal,p=await f.client.bootstrap(signal),path='/api/v1/connectors/'+id(2)+'/executions/'+id(3)+'/understanding-response-read/range';
+ const packet={path,query:'',auth:Buffer.from(canonicalJson({proof:{requestId:id(42)}})).toString('base64url'),challengeRef:{...ref,id:id(43)},requestId:id(42),expiresAt};
+ const receipt={status:'RANGE_ACQUIRED',requestRef:{...ref,id:id(44)}};const trace:any[]=[];
+ f.host.send=async(op,arg)=>{
+  trace.push([op,arg]);assert.equal(op,'NORMAL_EXECUTION_CALL');
+  const prepare=arg.kind==='UNDERSTANDING_RANGE_PREPARE';assert.ok(prepare||arg.kind==='UNDERSTANDING_RANGE_REQUEST');
+  if(!prepare)assert.equal(arg.request.auth,packet.auth);
+  const bytes=Buffer.from(canonicalJson(prepare?packet:receipt));return {handle:id(9),offset:0,total:bytes.length,hash:hash(bytes),expiresAt,bytes:bytes.toString('base64url'),done:true};
+ };
+ const prepared=await p.prepareUnderstandingRange(signal);assert.equal(prepared.kind,'PACKET');if(prepared.kind!=='PACKET')return;
+ const request={method:'GET' as const,path,query:'',body:null,auth:prepared.packet.auth,expiresAt};
+ assert.deepEqual(await p.requestUnderstandingRange(request,signal),{kind:'RESPONSE',value:receipt});
+ assert.deepEqual(await p.requestUnderstandingRange(request,signal),{kind:'RESPONSE',value:receipt});
+ assert.deepEqual(trace.map(([,v])=>v.kind),['UNDERSTANDING_RANGE_PREPARE','UNDERSTANDING_RANGE_REQUEST','UNDERSTANDING_RANGE_REQUEST']);
+ assert.equal(canonicalJson(trace[1][1]),canonicalJson(trace[2][1]));
+});
 function fixture(size=2800000){const calls:any[]=[],response=Buffer.from(canonicalJson({body:'x'.repeat(size)}));let offset=0;let mode='OK';
  const host={async send(op:string,p:any){calls.push([op,p]);if(mode==='HANG')return new Promise(()=>{});
   if(op==='NORMAL_EXECUTION_BOOTSTRAP')return {slotId:id(7),receiptRef:ref,scope,origin:'https://example.invalid',expiresAt,caHash:hash('RAM CA')};

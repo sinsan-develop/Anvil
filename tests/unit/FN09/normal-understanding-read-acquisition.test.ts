@@ -27,7 +27,7 @@ test('fixed range GET has a separate exact signed target; generic and synthetic 
  assert.throws(()=>m.executionChallengeRequestBytes('EXECUTION',request));assert.ok(m.normalUnderstandingRangeChallengeBytes(request).length);
  for(const patch of [{path:target.path+'/'},{path:target.path+'?x=1'},{path:target.path.replace('/range','/%72ange')},{method:'POST'},{queryHash:hash({x:1})},{bodyHash:hash({})}])assert.throws(()=>m.normalUnderstandingRangeChallengeBytes({...request,target:{...target,...patch}}));
 });
-function fixture(enabled=true,rangeMode=false,rangeHttp=false){
+function fixture(enabled=true,rangeMode=false,rangeHttp=false,rangeBytes=[12]){
  const ref=()=>({id:randomUUID(),version:1,contentHash:hash(randomUUID())});
  const pid=randomUUID(),cid=randomUUID(),eid=randomUUID(),g=ref(),cred=ref(),start=Date.parse('2026-11-22T01:00:00Z'),origin='https://synthetic.invalid';
  const pair=generateKeyPairSync('ec',{namedCurve:'prime256v1'}),spki=pair.publicKey.export({format:'der',type:'spki'}).toString('base64url');
@@ -36,8 +36,8 @@ function fixture(enabled=true,rangeMode=false,rangeHttp=false){
  const q={schemaVersion:1,projectId:pid,commandId:randomUUID(),clientId:randomUUID(),controlGeneration:1,operation:'readNormalUnderstandingResponse',targetId:eid,expectedVersion:1,baselineRefs:[],approvalRef:null,payload:{assignmentRef:context.assignmentRef,preparationRef:context.preparationRef}};
  const snapshot={schemaVersion:1,purpose:'NORMAL_UNDERSTANDING_METADATA_DISCOVERY',request:q,context,requestedBy:{kind:'HUMAN',userId:randomUUID(),clientId:q.clientId,sessionId:randomUUID(),credentialGeneration:1,controlGeneration:1},policyRef:ref(),state:'PENDING_SOURCE',sourceScope:null,createdAt:at,expiresAt};
  let human={id:randomUUID(),version:1,contentHash:hash(snapshot)},rows:any[]=[],receipts:any[]=[],lock=Promise.resolve();
- const selection={requestRef:human,resultRef:ref(),initConfirmationRef:ref(),tailRef:ref(),firstSequence:2,lastSequence:2,ranges:[{outputRef:ref(),sequence:2,payloadDigest:hash('payload'),textBlocks:1,textBytes:12}]};
- selection.ranges[0]!.outputRef=selection.tailRef;
+ const selection={requestRef:human,resultRef:ref(),initConfirmationRef:ref(),tailRef:ref(),firstSequence:2,lastSequence:rangeBytes.length+1,ranges:rangeBytes.map((textBytes,i)=>({outputRef:ref(),sequence:2+i,payloadDigest:hash('payload'+i),textBlocks:1,textBytes}))};
+ selection.ranges.at(-1)!.outputRef=selection.tailRef;
  const {context:_context,...base}=snapshot,rangeSnapshot={...base,purpose:'NORMAL_UNDERSTANDING_FIXED_RANGE_REQUEST',request:{...q,payload:{...q.payload,selection}},sourceScope:selection};
  if(rangeMode)human={...human,id:randomUUID(),contentHash:hash(rangeSnapshot)};
  let charged=0n;
@@ -100,6 +100,16 @@ function fixture(enabled=true,rangeMode=false,rangeHttp=false){
  const issueRange=async(r:any=request)=>{const m:any=await import('../../../apps/server/modules/executions/normal-exchange-challenge.ts');return m.issueNormalUnderstandingRangeChallenge(pool,cid,eid,{...r,signature:signature(challengeBytes(r))},token,source,signal);};
  return{app,state,issue,packet,get,request,target,source,selection,context,signal,issueRange,buildArgs,headers,wireRequest:(r:any=request)=>({...r,signature:signature(challengeBytes(r))}),acquireRange:(frame:any)=>(source as any).acquireRange(cid,eid,token,frame,signal),charge:()=>charged,human:()=>human,replaceHuman:()=>{human={...human,id:randomUUID()};},rows:()=>rows,receipts:()=>receipts};
 }
+
+test('fixed range current acquisition caps total selected bytes before nonce or transport charge, exact 2MiB replays without delta',async()=>{
+ for(const extra of [0,1]){
+  const f=fixture(true,true,false,[1048576,1048576+extra]);
+  try{
+   if(extra){await assert.rejects(f.issueRange());assert.equal(f.rows().length,0);assert.equal(f.receipts().length,0);assert.equal(f.charge(),0n);assert.equal(f.state.queries.some(s=>s.startsWith('INSERT INTO')),false);}
+   else{const issued=await f.issueRange(),packet=f.packet(issued),saved=await f.acquireRange(packet),charge=f.charge();assert.equal(saved.status,'RANGE_ACQUIRED');assert.ok(charge>0n);assert.deepEqual(await f.acquireRange(packet),saved);assert.equal(f.rows().length,2);assert.equal(f.receipts().length,1);assert.equal(f.charge(),charge);}
+  }finally{await f.app.close();}
+ }
+});
 
 test('fixed range HTTP is an explicit internal opt-in and performs one atomic acquisition with exact packet replay',async()=>{
  const f=fixture(true,true,true);try{

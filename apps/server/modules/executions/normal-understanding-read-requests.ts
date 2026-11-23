@@ -137,6 +137,8 @@ export class NormalUnderstandingReadRequests{
      if(saved.requestedBy.userId!==actor.actorId||saved.requestedBy.sessionId!==s.id||saved.requestedBy.credentialGeneration!==actor.credentialGeneration)fail('NORMAL_UNDERSTANDING_RANGE_REPLAY_INVALID',409);
      if(actorIdentity(await this.#access.authenticateInTransaction(db,token,csrf))!==identity)return unknown();await auth();check();return rangeResponse(prior,q,saved);
     }
+    // 기존 완결 명령의 재확인은 보존하고 신규 선택에만 원문 총량을 제한한다.
+    if(selected.ranges.reduce((bytes:number,row:any)=>bytes+row.textBytes,0)>2097152)fail('INPUT_INVALID',422);
     const inspect=async()=>{
      await auth();const request={projectId:q.projectId,executionId:q.targetId,executionGeneration:q.expectedVersion,assignmentRef:q.payload.assignmentRef,preparationRef:q.payload.preparationRef,requestRef:selected.requestRef};
      const rows=(await db.query('SELECT anvil.fn09_normal_understanding_metadata_current($1,$2,$3,$4,$5,$6) AS projection',[s.id,actor.actorId,actor.clientId,JSON.stringify({...request,controlGeneration:q.controlGeneration}),JSON.stringify(policy.ref),tx])).rows;

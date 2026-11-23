@@ -93,6 +93,27 @@ test('FN09 fixed range saves only original metadata scope in C/A/U; same command
  assert.equal(f.state().commands.length,1);assert.ok(!JSON.stringify(first).includes('sessionId'));
 });
 
+test('FN09 new fixed range caps selected text sum at 2MiB before any C/A/U or storage charge',async()=>{
+ for(const extra of [0,1]){
+  const f=fixedRangeFixture();f.selection.ranges[0]!.textBytes=1048576;f.selection.ranges[1]!.textBytes=1048576+extra;
+  if(extra){await assert.rejects(f.runRange(),{message:'INPUT_INVALID',statusCode:422});assert.equal(f.state().commands.length,0);assert.equal(f.stores(),0);assert.equal(f.charge(),0n);assert.equal(f.calls.some(s=>s.startsWith('INSERT INTO')),false);}
+  else{const saved=await f.runRange();assert.equal(saved.data.status,'NORMAL_UNDERSTANDING_RANGE_REQUESTED');assert.equal(f.stores(),1);assert.ok(f.charge()>0n);const charge=f.charge();assert.deepEqual(await f.runRange(),saved);assert.equal(f.stores(),1);assert.equal(f.charge(),charge);}
+ }
+});
+
+test('FN09 exact historical fixed-range command replay retains old selected sum and adds zero writes or charge',async()=>{
+ const f=fixedRangeFixture();await f.runRange();
+ // 이전 구현이 저장한 완결 행을 RAM에 구성한다. SQL 역사 검산/정산은 별도 정적 시험으로 유지한다.
+ f.selection.ranges[0]!.textBytes=1048576;f.selection.ranges[1]!.textBytes=1048577;
+ const saved=f.state().commands[0],snapshot=saved.result_ref.data.snapshot;
+ snapshot.request=structuredClone(f.q);snapshot.sourceScope=structuredClone(f.selection);
+ const reference={...saved.result_ref.data.ref,contentHash:hash(snapshot)};
+ saved.result_ref.data.ref=reference;saved.result_ref.data.requestRef=reference;saved.request_hash=hash(f.q);
+ f.expire();const charge=f.charge(),before=f.calls.length,result=await f.runRange();
+ assert.deepEqual(result.data.requestRef,reference);assert.equal(result.data.snapshot,undefined);assert.equal(f.stores(),1);assert.equal(f.charge(),charge);
+ assert.equal(f.calls.slice(before).some(s=>s.startsWith('INSERT INTO')||s.startsWith('SELECT anvil.fn09_normal_understanding_metadata_current')),false);
+});
+
 test('FN09 fixed range fixture keeps metadata on its original DB clock after scheduler delay',async t=>{
  const f=fixedRangeFixture(),{rows}=await f.db.query('SELECT clock_timestamp() AS at,txid_current()::text AS transaction_id');
  // 대기 이후 wall clock만 2초 진행해도 고정 DB 관측보다 미래인 metadata를 새로 만들면 안 된다.

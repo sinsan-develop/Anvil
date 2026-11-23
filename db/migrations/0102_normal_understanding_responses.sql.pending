@@ -955,6 +955,7 @@ RETURNS timestamptz LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=p
 DECLARE until_at timestamptz;v jsonb;x jsonb=q#>'{payload,selection}';expected jsonb;
 BEGIN
  until_at=anvil.fn09_normal_understanding_range_authorize(s,a,c,q,policy,expected_tx);
+ IF (SELECT COALESCE(sum((r->>'textBytes')::bigint),0) FROM jsonb_array_elements(x->'ranges') r)>2097152 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED';END IF;
  v=anvil.fn09_normal_understanding_metadata_current(s,a,c,jsonb_build_object('projectId',q->'projectId','executionId',q->'targetId','executionGeneration',q->'expectedVersion',
   'assignmentRef',q#>'{payload,assignmentRef}','preparationRef',q#>'{payload,preparationRef}','requestRef',x->'requestRef','controlGeneration',q->'controlGeneration'),policy,expected_tx);
  SELECT COALESCE(jsonb_agg(value ORDER BY (value->>'sequence')::bigint),'[]'::jsonb) INTO expected FROM jsonb_array_elements(v#>'{metadata,ranges}') WHERE (value->>'sequence')::bigint BETWEEN (x->>'firstSequence')::bigint AND (x->>'lastSequence')::bigint;
@@ -1197,6 +1198,7 @@ BEGIN
   AND z.result_ref#>>'{data,snapshot,request,targetId}'=b->>'executionId' AND z.result_ref#>'{data,snapshot,request,expectedVersion}'=b->'executionGeneration' LIMIT 2;
  ss=cmd.result_ref#>'{data,snapshot}';x=ss->'sourceScope';rf=cmd.result_ref#>'{data,ref}';
  IF NOT COALESCE(anvil.fn09_normal_understanding_range_complete(cmd),false) OR expected->'requestRef' IS DISTINCT FROM 'null'::jsonb AND expected->'requestRef' IS DISTINCT FROM rf THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
+ IF (SELECT COALESCE(sum((r->>'textBytes')::bigint),0) FROM jsonb_array_elements(x->'ranges') r)>2097152 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_DENIED';END IF;
  SELECT * INTO STRICT h FROM anvil.normal_understanding_read_requests WHERE project_id=cmd.project_id AND id=(x#>>'{requestRef,id}')::uuid;
  SELECT * INTO STRICT parent FROM anvil.execution_receipts WHERE project_id=cmd.project_id AND id=(x#>>'{resultRef,id}')::uuid AND version=1;
  SELECT hs0.* INTO STRICT hs FROM anvil.auth_sessions hs0 JOIN anvil.users u ON u.id=hs0.user_id JOIN anvil.clients cl ON cl.id=hs0.client_id AND cl.user_id=u.id

@@ -42,6 +42,14 @@ declare const discoveryTicket:unique symbol;
 export type NormalUnderstandingDiscoveryTicket=Readonly<{[discoveryTicket]:true}>;
 const discoveries=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;context:any;requestRef:Ref;acquisitionRef:Ref;observedAt:string;expiresAt:string;guard:()=>void;finish:()=>void}>();
 const originalDiscoveryPrepare=NormalOwnedCredentialPort.prototype.prepareUnderstandingDiscovery,originalDiscoveryRequest=NormalOwnedCredentialPort.prototype.requestUnderstandingDiscovery;
+const originalRangePrepare=NormalOwnedCredentialPort.prototype.prepareUnderstandingRange,originalRangeRequest=NormalOwnedCredentialPort.prototype.requestUnderstandingRange;
+declare const rangeAcquisition:unique symbol;
+/** 획득 메타만 담는다. SELECT/native read 및 결과 전송 ticket이 아니다. */
+export type NormalUnderstandingRangeAcquisition=Readonly<{[rangeAcquisition]:true;kind:'RANGE_ACQUIRED';rangeRequestRef:Ref;acquisitionRef:Ref;
+ context:Readonly<NormalProtectedGetScope&{registrationRef:Ref;startCommandId:string;startCommandRef:Ref;assignmentRef:Ref;preparationRef:Ref;contextBundleRef:Ref;sessionBindingRef:Ref}>;
+ selection:Readonly<{requestRef:Ref;resultRef:Ref;initConfirmationRef:Ref;tailRef:Ref;firstSequence:number;lastSequence:number;ranges:ReadonlyArray<Readonly<{outputRef:Ref;sequence:number;payloadDigest:string;textBlocks:number;textBytes:number}>>}>;
+ observedAt:string;expiresAt:string;sourceAvailable:false;selectionAvailable:false;executionAuthorized:false;dispatchPerformed:false}>;
+function freezeRange<T>(value:T):T{if(value&&typeof value==='object'){for(const child of Object.values(value))freezeRange(child);Object.freeze(value);}return value;}
 export function takeNormalUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,scope:NormalUnderstandingResponseRequest['scope'],start:{startCommandId:string;assignmentId:string;contextBundleRef:Ref}){
  const saved=discoveries.get(ticket);if(!saved)fail('NORMAL_GET_READ_TICKET_INVALID');discoveries.delete(ticket);
  try{
@@ -196,6 +204,34 @@ export class NormalProtectedGetClient{
    return {kind:'DISCOVERY',ticket};
   }catch(error){if(error instanceof NormalProtectedGetError)throw error;return fail('NORMAL_GET_RESPONSE_INVALID',0,true);}
   finally{if(!issued)finish();}
+ }
+ /** 명시 고정 범위 획득. 일반 signer, SELECT 및 source read로 전환하지 않는다. */
+ async receiveUnderstandingRangeAcquisition(signal:AbortSignal):Promise<NormalUnderstandingRangeAcquisition|{kind:'NOT_ACQUIRED';status:'NONE'|'DENIED'|'EXPIRED'}>{
+  if(!this.#owned||this.#understandingBusy||!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_GET_READ_UNAVAILABLE');
+  this.#understandingBusy=true;
+  const owned=this.#owned,metadata=owned.metadata,path=this.#base+'/understanding-response-read/range',wall=this.#clock(),tick=this.#tick();
+  let end=Math.min(wall+30000,this.#credentialExpiry),lastWall=wall,lastTick=tick;
+  const guard=()=>{const now=this.#clock(),mono=this.#tick();if(signal.aborted||this.#owned!==owned||owned.prepareUnderstandingRange!==originalRangePrepare||owned.requestUnderstandingRange!==originalRangeRequest||!same(owned.metadata,metadata)||now<lastWall||mono<lastTick||now>=end||mono-tick>=end-wall)fail('NORMAL_GET_READ_UNAVAILABLE');lastWall=now;lastTick=mono;};
+  try{
+   guard();const prepared=await owned.prepareUnderstandingRange(signal);guard();if(prepared.kind==='NOT_ACQUIRED')return prepared;
+   const packet=prepared.packet;if(packet.challengeRef.version!==1)fail('NORMAL_GET_RESPONSE_INVALID',200,true);end=Math.min(end,Date.parse(packet.expiresAt));guard();
+   const response=await owned.requestUnderstandingRange({method:'GET',path,query:'',body:null,auth:packet.auth,expiresAt:new Date(end).toISOString()},signal);guard();if(response.kind==='NOT_ACQUIRED')return response;
+   const v=boundedSdkObject(response.value,2*1024*1024).value,r=v.receipt,c=r?.context,b=r?.binding,x=r?.selection;
+   const hash=(value:unknown)=>contentHash(canonicalJson(value)),target={method:'GET',path,queryHash:hash({}),bodyHash:hash(null)},frame=parseWireJson(Buffer.from(packet.auth,'base64url').toString('utf8')) as any;
+   if(!recordV1(frame,['schemaVersion','challengeRef','proof','signature'])||frame.schemaVersion!==1||!same(frame.challengeRef,packet.challengeRef)||!recordV1(frame.proof,['requestId','method','path','queryHash','bodyHash','grantRef','credentialGeneration','serverNonce'])||!same(frame.proof,{...target,requestId:packet.requestId,grantRef:this.#scope.grantRef,credentialGeneration:this.#scope.credentialGeneration,serverNonce:frame.proof.serverNonce})||!base64(frame.signature,64)||!base64(frame.proof.serverNonce,32))fail('NORMAL_GET_RESPONSE_INVALID',200,true);
+   if(!recordV1(v,['transport','status','proofResultRef','receipt','sourceAvailable','selectionAvailable','cacheControl','nonceConsumed','executionAuthorized','dispatchPerformed'])||v.transport!=='NORMAL_PROTECTED'||v.status!=='RANGE_ACQUIRED'||v.sourceAvailable!==false||v.selectionAvailable!==false||v.cacheControl!=='no-store'||v.nonceConsumed!==true||v.executionAuthorized!==false||v.dispatchPerformed!==false||!refV1(v.proofResultRef)||v.proofResultRef.version!==1||
+    !recordV1(r,['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','rangeRequestRef','context','selection','observedAt','expiresAt'])||r.kind!=='NORMAL_UNDERSTANDING_RANGE_ACQUIRED'||v.proofResultRef.contentHash!==hash(r)||!same(r.credentialRef,metadata.receiptRef)||!same(r.challengeRef,packet.challengeRef)||r.requestId!==packet.requestId||r.packetHash!==hash({frame,target})||!same(r.target,target)||!refV1(r.rangeRequestRef)||r.rangeRequestRef.version!==1||!isoV1(r.observedAt)||!isoV1(r.expiresAt)||Date.parse(r.observedAt)>this.#clock()||Date.parse(r.expiresAt)<=Date.parse(r.observedAt)||Date.parse(r.expiresAt)>Date.parse(r.observedAt)+30000||Date.parse(r.expiresAt)>end)fail('NORMAL_GET_RESPONSE_INVALID',200,true);
+   if(!recordV1(b,['transport','mode','projectId','connectorId','executionId','executionGeneration','grantRef','scopeDigest','credentialGeneration','publicKeyFingerprint'])||b.transport!=='NORMAL_PROTECTED'||b.mode!=='EXECUTION'||!hashV1(b.scopeDigest)||!hashV1(b.publicKeyFingerprint)||!same({...this.#scope,transport:b.transport,mode:b.mode,scopeDigest:b.scopeDigest,publicKeyFingerprint:b.publicKeyFingerprint},b))fail('NORMAL_GET_RESPONSE_INVALID',200,true);
+   if(!recordV1(c,['projectId','executionId','executionGeneration','grantRef','registrationRef','connectorId','credentialGeneration','startCommandId','startCommandRef','assignmentRef','preparationRef','contextBundleRef','sessionBindingRef'])||!uuidV1(c.startCommandId)||!['grantRef','registrationRef','startCommandRef','assignmentRef','preparationRef','contextBundleRef','sessionBindingRef'].every(k=>refV1(c[k]))||!Object.keys(this.#scope).every(k=>same(c[k],this.#scope[k as keyof NormalProtectedGetScope])))fail('NORMAL_GET_RESPONSE_INVALID',200,true);
+   if(!recordV1(x,['requestRef','resultRef','initConfirmationRef','tailRef','firstSequence','lastSequence','ranges'])||!['requestRef','resultRef','initConfirmationRef','tailRef'].every(k=>refV1(x[k])&&x[k].version===1)||!Number.isSafeInteger(x.firstSequence)||x.firstSequence<1||!Number.isSafeInteger(x.lastSequence)||x.lastSequence<x.firstSequence||x.lastSequence>10000||!Array.isArray(x.ranges)||x.ranges.length<1||x.ranges.length>200||x.ranges.length!==x.lastSequence-x.firstSequence+1)fail('NORMAL_GET_RESPONSE_INVALID',200,true);
+   let blocks=0,totalBytes=0;const seen=new Set<string>();
+   for(const [i,row]of x.ranges.entries()){
+    if(!recordV1(row,['outputRef','sequence','payloadDigest','textBlocks','textBytes'])||!refV1(row.outputRef)||row.outputRef.version!==1||seen.has(row.outputRef.id)||row.outputRef.id===x.initConfirmationRef.id||row.outputRef.id===x.tailRef.id&&(!same(row.outputRef,x.tailRef)||i!==x.ranges.length-1)||row.sequence!==x.firstSequence+i||!hashV1(row.payloadDigest)||!Number.isSafeInteger(row.textBlocks)||row.textBlocks<1||(blocks+=row.textBlocks)>200||!Number.isSafeInteger(row.textBytes)||row.textBytes<1||(totalBytes+=row.textBytes)>2097152)fail('NORMAL_GET_RESPONSE_INVALID',200,true);seen.add(row.outputRef.id);
+   }
+   end=Math.min(end,Date.parse(r.expiresAt));guard();
+   return freezeRange({kind:'RANGE_ACQUIRED',rangeRequestRef:cloneV1(r.rangeRequestRef),acquisitionRef:cloneV1(v.proofResultRef),context:cloneV1(c),selection:cloneV1(x),observedAt:r.observedAt,expiresAt:r.expiresAt,sourceAvailable:false,selectionAvailable:false,executionAuthorized:false,dispatchPerformed:false}) as NormalUnderstandingRangeAcquisition;
+  }catch(error){if(error instanceof NormalProtectedGetError)throw error;return fail('NORMAL_GET_RESPONSE_INVALID',0,true);}
+  finally{this.#understandingBusy=false;}
  }
  /** 자료 ID는 직전에 검산한 명령 페이지 item의 descriptor에 있는 것만 받는다. */
  async prepareMaterial(item:NormalPageItem,materialId:string,signal:AbortSignal):Promise<PreparedMaterial>{

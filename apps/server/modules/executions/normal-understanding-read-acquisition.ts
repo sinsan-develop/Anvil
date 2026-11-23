@@ -31,12 +31,12 @@ function rangeSelection(x:unknown){
   ||!['requestRef','resultRef','initConfirmationRef','tailRef'].every(k=>refV1(x[k])&&x[k].version===1)
   ||!Number.isSafeInteger(x.firstSequence)||x.firstSequence<1||!Number.isSafeInteger(x.lastSequence)||x.lastSequence<x.firstSequence||x.lastSequence>10000
   ||!Array.isArray(x.ranges)||x.ranges.length<1||x.ranges.length>200||x.ranges.length!==x.lastSequence-x.firstSequence+1)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');
- let blocks=0;const seen=new Set<string>();
+ let blocks=0,totalBytes=0;const seen=new Set<string>();
  for(const [i,r]of x.ranges.entries()){
   if(!recordV1(r,['outputRef','sequence','payloadDigest','textBlocks','textBytes'])||!refV1(r.outputRef)||r.outputRef.version!==1||seen.has(r.outputRef.id)
    ||r.outputRef.id===x.initConfirmationRef.id||r.outputRef.id===x.tailRef.id&&(!same(r.outputRef,x.tailRef)||i!==x.ranges.length-1)
    ||r.sequence!==x.firstSequence+i||!hashV1(r.payloadDigest)||!Number.isSafeInteger(r.textBlocks)||r.textBlocks<1||(blocks+=r.textBlocks)>200
-   ||!Number.isSafeInteger(r.textBytes)||r.textBytes<1||r.textBytes>2097152)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');seen.add(r.outputRef.id);
+   ||!Number.isSafeInteger(r.textBytes)||r.textBytes<1||(totalBytes+=r.textBytes)>2097152)return fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN');seen.add(r.outputRef.id);
  }return x;
 }
 /** 내부 SQL 목적 저장소. source/SELECT ticket이나 정상 출력의 FIRST/close를 발급하지 않는다. */

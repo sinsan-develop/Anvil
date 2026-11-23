@@ -98,7 +98,8 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
    if(N(h["bodyLength"])<1||N(h["bodyLength"])+Encoding.UTF8.GetByteCount(S(h,"auth"))>2097152||!DesktopTrustKeyHostSource.IsHash(h["bodyHash"])||!DesktopTrustKeyHostSource.IsHash(h["preparedHash"]))throw Invalid();return;
   }
   Exact(h,inline?"attemptId,slotId,kind,request,bodyLength,bodyHash,bodyIsNull,body":"attemptId,slotId,kind,request,bodyLength,bodyHash,bodyIsNull");
-  Id(h,"attemptId");Id(h,"slotId");if(!new[]{"PREPARE","REQUEST"}.Contains(S(h,"kind"))||N(h["bodyLength"])>2097152||!DesktopTrustKeyHostSource.IsHash(h["bodyHash"])||!(h["bodyIsNull"] is bool))throw Invalid();
+  bool range=S(h,"kind")=="UNDERSTANDING_RANGE_PREPARE"||S(h,"kind")=="UNDERSTANDING_RANGE_REQUEST";
+  Id(h,"attemptId");Id(h,"slotId");if(!range&&!new[]{"PREPARE","REQUEST"}.Contains(S(h,"kind"))||N(h["bodyLength"])>2097152||!DesktopTrustKeyHostSource.IsHash(h["bodyHash"])||!(h["bodyIsNull"] is bool))throw Invalid();
   var r=Map(h["request"]);Exact(r,"method,path,query,body,auth,expiresAt");if(r["body"]!=null)throw Invalid();
  }
  Dictionary<string,object> LoadSlot(string id,Dictionary<string,object> record,bool renewal=false){
@@ -300,15 +301,17 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  string Sign(Dictionary<string,object> record,string purpose,Dictionary<string,object> request){
   Check();return ProtectedStore.SignNormalOwned(owner,Id(record,"pendingKeyId"),S(Map(record["key"]),"fingerprint"),B(new Dictionary<string,object>{{"purpose",purpose},{"request",request}}),current);
  }
- Dictionary<string,object> Challenge(Dictionary<string,object> record,Dictionary<string,object> scope,Dictionary<string,object> request,string token,string scopeDigest,int ttl){
+ Dictionary<string,object> Challenge(Dictionary<string,object> record,Dictionary<string,object> scope,Dictionary<string,object> request,string token,string scopeDigest,int ttl,DateTime? limitUntil=null){
   var signed=new Dictionary<string,object>(request);signed["signature"]=Sign(record,"EXECUTION_CHALLENGE_REQUEST",request);
   bool discovery=token!=null&&request.ContainsKey("target")&&DiscoveryTarget(scope,Map(request["target"]));
-  var reply=Http(record,"POST",Base(scope)+"/challenges","",J(signed),token,null,16384,discovery);
-  if(discovery&&DiscoveryStatus(reply,true)!=null)return reply;
+  bool range=token!=null&&request.ContainsKey("target")&&RangeTarget(scope,Map(request["target"]));
+  var reply=Http(record,"POST",Base(scope)+"/challenges","",J(signed),token,null,16384,discovery,range,limitUntil);
+  if((discovery||range)&&DiscoveryStatus(reply,true)!=null)return reply;
   Exact(reply,token==null?"ref,challenge,credentialIssued,nonceConsumed,executionAuthorized,dispatchPerformed,bootstrapBinding":"ref,challenge,credentialIssued,nonceConsumed,executionAuthorized,dispatchPerformed");
   foreach(string k in new[]{"credentialIssued","nonceConsumed","executionAuthorized","dispatchPerformed"})if(!(reply[k] is bool)||(bool)reply[k])throw Invalid();
   var r=DesktopTrustKeyHostSource.Ref(reply["ref"]);var c=Map(reply["challenge"]);
   Exact(c,"id,requestId,purpose,grantRef,credentialGeneration,scopeDigest,serverNonce,clientNonce,issuedAt,expiresAt");
+  if(range&&N(r["version"])!=1)throw Invalid();
   if(Id(c,"id")!=Id(r,"id")||Id(c,"requestId")!=Id(request,"requestId")||S(c,"purpose")!=S(request,"purpose")||J(c["grantRef"])!=J(scope["grantRef"])||
    N(c["credentialGeneration"])!=N(scope["credentialGeneration"])||S(c,"clientNonce")!=S(request,"clientNonce")||!DesktopTrustKeyHostSource.IsHash(c["scopeDigest"])||(scopeDigest!=null&&S(c,"scopeDigest")!=scopeDigest)||
    At(c,"expiresAt")<=clock()||At(c,"expiresAt")<=At(c,"issuedAt")||(At(c,"expiresAt")-At(c,"issuedAt")).TotalMilliseconds>ttl)throw Invalid();
@@ -330,6 +333,11 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   return new Dictionary<string,object>{{"method",method},{"path",path},{"queryHash",H(q)},{"bodyHash",body==null?H(Encoding.UTF8.GetBytes("null")):H(Parse(Encoding.UTF8.GetBytes(body)))}};
  }
  bool DiscoveryTarget(Dictionary<string,object> scope,Dictionary<string,object> target){return S(target,"method")=="GET"&&S(target,"path")==Base(scope)+"/understanding-response-read"&&S(target,"queryHash")==H(new Dictionary<string,object>())&&S(target,"bodyHash")==H(Encoding.UTF8.GetBytes("null"));}
+ bool RangeTarget(Dictionary<string,object> scope,Dictionary<string,object> target){return S(target,"method")=="GET"&&S(target,"path")==Base(scope)+"/understanding-response-read/range"&&S(target,"queryHash")==H(new Dictionary<string,object>())&&S(target,"bodyHash")==H(Encoding.UTF8.GetBytes("null"));}
+ Dictionary<string,object> UnderstandingRangeTarget(Dictionary<string,object> scope,Dictionary<string,object> request,string body){
+  if(S(request,"method")!="GET"||S(request,"path")!=Base(scope)+"/understanding-response-read/range"||S(request,"query")!=""||body!=null)throw Invalid();
+  return new Dictionary<string,object>{{"method","GET"},{"path",request["path"]},{"queryHash",H(new Dictionary<string,object>())},{"bodyHash",H(Encoding.UTF8.GetBytes("null"))}};
+ }
  sealed class DiscoveryRefusal:Dictionary<string,object>{internal readonly string Status;internal DiscoveryRefusal(string status){Status=status;}}
  string DiscoveryStatus(Dictionary<string,object> value,bool allowNone){
   if(value is DiscoveryRefusal)return ((DiscoveryRefusal)value).Status;
@@ -358,6 +366,32 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   foreach(string k in new[]{"grantRef","registrationRef","startCommandRef","assignmentRef","preparationRef","contextBundleRef","sessionBindingRef"})DesktopTrustKeyHostSource.Ref(context[k]);Id(context,"startCommandId");
   if(J(context["registrationRef"])!=J(Map(record["registration"])["registrationRef"]))throw Invalid();
   Check();spoolProfile.BindUnderstandingPickup(record,slot,requested,reference,context,At(receipt,"observedAt"),At(receipt,"expiresAt"),started);Check();
+ }
+ // 원 HTTPS/slot/등록을 검산한 획득 메타만 수거한다. 원문/SELECT/결과 서명 권위는 만들지 않는다.
+ void ValidateUnderstandingRangeAcquisition(Dictionary<string,object> answer,Dictionary<string,object> record,Dictionary<string,object> slot,Dictionary<string,object> packet,Dictionary<string,object> target,DateTime issued,DateTime end){
+  Check();Exact(answer,"transport,status,proofResultRef,receipt,sourceAvailable,selectionAvailable,cacheControl,nonceConsumed,executionAuthorized,dispatchPerformed");
+  if(S(answer,"transport")!="NORMAL_PROTECTED"||S(answer,"status")!="RANGE_ACQUIRED"||S(answer,"cacheControl")!="no-store"||!Object.Equals(answer["nonceConsumed"],true))throw Invalid();
+  foreach(string k in new[]{"sourceAvailable","selectionAvailable","executionAuthorized","dispatchPerformed"})if(!Object.Equals(answer[k],false))throw Invalid();
+  var receipt=Map(answer["receipt"]);Exact(receipt,"kind,binding,credentialRef,challengeRef,packetHash,target,requestId,rangeRequestRef,context,selection,observedAt,expiresAt");
+  var reference=DesktopTrustKeyHostSource.Ref(answer["proofResultRef"]);var requested=DesktopTrustKeyHostSource.Ref(receipt["rangeRequestRef"]);
+  if(N(reference["version"])!=1||N(requested["version"])!=1||S(reference,"contentHash")!=H(receipt)||S(receipt,"kind")!="NORMAL_UNDERSTANDING_RANGE_ACQUIRED"||
+   J(receipt["credentialRef"])!=J(slot["receiptRef"])||J(receipt["challengeRef"])!=J(packet["challengeRef"])||Id(receipt,"requestId")!=Id(Map(packet["proof"]),"requestId")||
+   S(receipt,"packetHash")!=H(new Dictionary<string,object>{{"frame",packet},{"target",target}})||J(receipt["target"])!=J(target)||At(receipt,"observedAt")<issued||At(receipt,"observedAt")>clock()||At(receipt,"expiresAt")<=clock()||At(receipt,"expiresAt")<=At(receipt,"observedAt")||At(receipt,"expiresAt")>end||At(receipt,"expiresAt")>At(receipt,"observedAt").AddSeconds(30))throw Invalid();
+  var scope=Map(slot["scope"]);var binding=Map(receipt["binding"]);Exact(binding,"transport,mode,projectId,connectorId,executionId,executionGeneration,grantRef,scopeDigest,credentialGeneration,publicKeyFingerprint");
+  if(S(binding,"transport")!="NORMAL_PROTECTED"||S(binding,"mode")!="EXECUTION"||S(binding,"scopeDigest")!=S(slot,"scopeDigest")||S(binding,"publicKeyFingerprint")!=S(Map(record["key"]),"fingerprint"))throw Invalid();
+  var context=Map(receipt["context"]);Exact(context,"projectId,executionId,executionGeneration,grantRef,registrationRef,connectorId,credentialGeneration,startCommandId,startCommandRef,assignmentRef,preparationRef,contextBundleRef,sessionBindingRef");
+  foreach(string k in scope.Keys)if(J(scope[k])!=J(binding[k])||J(scope[k])!=J(context[k]))throw Invalid();
+  foreach(string k in new[]{"grantRef","registrationRef","startCommandRef","assignmentRef","preparationRef","contextBundleRef","sessionBindingRef"})DesktopTrustKeyHostSource.Ref(context[k]);Id(context,"startCommandId");
+  if(J(context["registrationRef"])!=J(Map(record["registration"])["registrationRef"]))throw Invalid();
+  var selection=Map(receipt["selection"]);Exact(selection,"requestRef,resultRef,initConfirmationRef,tailRef,firstSequence,lastSequence,ranges");
+  foreach(string k in new[]{"requestRef","resultRef","initConfirmationRef","tailRef"})if(N(DesktopTrustKeyHostSource.Ref(selection[k])["version"])!=1)throw Invalid();
+  long first=N(selection["firstSequence"]),last=N(selection["lastSequence"]);var rows=selection["ranges"] as object[];
+  if(first<1||last<first||last>10000||rows==null||rows.Length<1||rows.Length>200||rows.Length!=last-first+1)throw Invalid();
+  var seen=new HashSet<string>();long blocks=0,totalBytes=0;
+  for(int i=0;i<rows.Length;i++){
+   var row=Map(rows[i]);Exact(row,"outputRef,sequence,payloadDigest,textBlocks,textBytes");var outputRef=DesktopTrustKeyHostSource.Ref(row["outputRef"]);string id=Id(outputRef,"id");
+   if(N(outputRef["version"])!=1||!seen.Add(id)||id==Id(Map(selection["initConfirmationRef"]),"id")||id==Id(Map(selection["tailRef"]),"id")&&(J(outputRef)!=J(selection["tailRef"])||i!=rows.Length-1)||N(row["sequence"])!=first+i||!DesktopTrustKeyHostSource.IsHash(row["payloadDigest"])||N(row["textBlocks"])<1||(blocks+=N(row["textBlocks"]))>200||N(row["textBytes"])<1||(totalBytes+=N(row["textBytes"]))>2097152)throw Invalid();
+  }Check();
  }
  void LoadUnderstandingCa(Dictionary<string,object> slot){
   byte[] ca=ProtectedStore.LoadNormalOwned(owner,Id(slot,"slotId"),"execution-ca",current);try{if(H(ca)!=S(slot,"caHash"))throw Invalid();activeCA=new UTF8Encoding(false,true).GetString(ca);}finally{Array.Clear(ca,0,ca.Length);}
@@ -413,34 +447,40 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  object Call(Dictionary<string,object> h,byte[] bodyBytes){
   if(bodyBytes.Length!=N(h["bodyLength"])||H(bodyBytes)!=S(h,"bodyHash"))throw Invalid();string body=(bool)h["bodyIsNull"]?null:new UTF8Encoding(false,true).GetString(bodyBytes);
   if(body==null&&bodyBytes.Length!=0)throw Invalid();var record=Record(Id(h,"attemptId"));string recordHash=H(record);
-  var slot=LoadSlot(Id(h,"slotId"),record);var scope=Map(slot["scope"]);var r=Map(h["request"]);var target=Target(scope,r,body);
+  var slot=LoadSlot(Id(h,"slotId"),record);var scope=Map(slot["scope"]);var r=Map(h["request"]);
+  bool range=S(h,"kind")=="UNDERSTANDING_RANGE_PREPARE"||S(h,"kind")=="UNDERSTANDING_RANGE_REQUEST";
+  var target=range?UnderstandingRangeTarget(scope,r,body):Target(scope,r,body);
   // S1 target 문법은 보존하되 원 close/body 출처 증명 없는 raw 목적 서명 및 HTTP는 금지한다.
   if(S(target,"method")=="POST"&&S(target,"path").StartsWith(Base(scope)+"/understanding-response-read/",StringComparison.Ordinal))throw Invalid();
   byte[] caBytes=ProtectedStore.LoadNormalOwned(owner,Id(h,"slotId"),"execution-ca",current);try{if(H(caBytes)!=S(slot,"caHash"))throw Invalid();activeCA=new UTF8Encoding(false,true).GetString(caBytes);}finally{Array.Clear(caBytes,0,caBytes.Length);}
   DateTime end=new[]{At(slot,"expiresAt"),At(r,"expiresAt")}.Min();if(end<=clock())throw Invalid();object result;
-  if(S(h,"kind")=="PREPARE"){
+  if(S(h,"kind")=="PREPARE"||S(h,"kind")=="UNDERSTANDING_RANGE_PREPARE"){
    if(r["auth"]!=null)throw Invalid();var request=ChallengeRequest(scope,"EXECUTION_REQUEST",target);
-   var reply=Challenge(record,scope,request,S(slot,"credential"),S(slot,"scopeDigest"),30000);
-   string status=DiscoveryTarget(scope,target)?DiscoveryStatus(reply,true):null;
-   if(status!=null)result=DiscoveryOutcome(status,"PREPARE",r,slot,Id(request,"requestId"),end);
+   var reply=Challenge(record,scope,request,S(slot,"credential"),S(slot,"scopeDigest"),30000,range?(DateTime?)end:null);
+   string status=range||DiscoveryTarget(scope,target)?DiscoveryStatus(reply,true):null;
+   if(status!=null)result=range?RangeOutcome(status,"PREPARE",r,slot,Id(request,"requestId"),end):DiscoveryOutcome(status,"PREPARE",r,slot,Id(request,"requestId"),end);
    else{var c=Map(reply["challenge"]);
    var proof=new Dictionary<string,object>(target);proof["requestId"]=request["requestId"];proof["grantRef"]=scope["grantRef"];proof["credentialGeneration"]=scope["credentialGeneration"];proof["serverNonce"]=c["serverNonce"];
    var packet=new Dictionary<string,object>{{"schemaVersion",1},{"challengeRef",reply["ref"]},{"proof",proof},{"signature",Sign(record,"EXECUTION_REQUEST_PROOF",proof)}};
    string auth=B64(B(packet));end=new[]{end,At(c,"expiresAt")}.Min();
    var saved=new Dictionary<string,object>{{"slotId",slot["slotId"]},{"target",target},{"authHash",H(Encoding.UTF8.GetBytes(auth))},{"expiresAt",Stamp(end)},{"recordHash",recordHash}};
+   if(range){saved.Add("purpose","UNDERSTANDING_RANGE");saved.Add("issuedAt",c["issuedAt"]);}
    ProtectedStore.SaveNormalOwned(owner,Id(request,"requestId"),"execution-proof",B(saved),current);
    result=new Dictionary<string,object>{{"path",r["path"]},{"query",r["query"]},{"auth",auth},{"challengeRef",reply["ref"]},{"requestId",request["requestId"]},{"expiresAt",Stamp(end)}};
    }
   }else{
    byte[] packetBytes=Decode(S(r,"auth"),4096);Dictionary<string,object> packet;try{packet=Parse(packetBytes);}finally{Array.Clear(packetBytes,0,packetBytes.Length);}
    Exact(packet,"schemaVersion,challengeRef,proof,signature");var proof=Map(packet["proof"]);
-   byte[] raw=ProtectedStore.LoadNormalOwned(owner,Id(proof,"requestId"),"execution-proof",current);
+   DateTime issued=DateTime.MinValue;byte[] raw=ProtectedStore.LoadNormalOwned(owner,Id(proof,"requestId"),"execution-proof",current);
    try{var saved=Parse(raw);if(S(saved,"slotId")!=Id(h,"slotId")||S(saved,"recordHash")!=recordHash||J(saved["target"])!=J(target)||
-    S(saved,"authHash")!=H(Encoding.UTF8.GetBytes(S(r,"auth")))||At(saved,"expiresAt")<=clock())throw Invalid();end=new[]{end,At(saved,"expiresAt")}.Min();}finally{Array.Clear(raw,0,raw.Length);}
-   bool discovery=DiscoveryTarget(scope,target);DateTime responseStarted=clock();var answer=Http(record,S(r,"method"),S(r,"path"),S(r,"query"),body,S(slot,"credential"),S(r,"auth"),discovery?2097152:Limit,discovery);
-   string status=discovery?DiscoveryStatus(answer,false):null;
+    S(saved,"authHash")!=H(Encoding.UTF8.GetBytes(S(r,"auth")))||At(saved,"expiresAt")<=clock())throw Invalid();end=new[]{end,At(saved,"expiresAt")}.Min();
+    if(range){Exact(saved,"slotId,target,authHash,expiresAt,recordHash,purpose,issuedAt");if(S(saved,"purpose")!="UNDERSTANDING_RANGE")throw Invalid();issued=At(saved,"issuedAt");}
+   }finally{Array.Clear(raw,0,raw.Length);}
+   bool discovery=DiscoveryTarget(scope,target);DateTime responseStarted=clock();var answer=Http(record,S(r,"method"),S(r,"path"),S(r,"query"),body,S(slot,"credential"),S(r,"auth"),discovery||range?2097152:Limit,discovery,range,range?(DateTime?)end:null);
+   string status=discovery||range?DiscoveryStatus(answer,false):null;
+   if(range&&status==null)ValidateUnderstandingRangeAcquisition(answer,record,slot,packet,target,issued,end);
    if(discovery&&status==null&&answer.ContainsKey("status")&&Object.Equals(answer["status"],"DISCOVERY_ACQUIRED"))ValidateUnderstandingPickup(answer,record,slot,packet,target,responseStarted,end);
-   result=status==null?(object)answer:DiscoveryOutcome(status,"REQUEST",r,slot,Id(proof,"requestId"),end);
+   result=status==null?(object)answer:range?RangeOutcome(status,"REQUEST",r,slot,Id(proof,"requestId"),end):DiscoveryOutcome(status,"REQUEST",r,slot,Id(proof,"requestId"),end);
   }
   if(H(Record(Id(h,"attemptId")))!=recordHash||clock()>=end)throw Invalid();output=B(result);if(output.Length<1||output.Length>Limit)throw Invalid();
   outputHandle=Guid.NewGuid().ToString("D");outputHash=H(output);outputOffset=0;outputExpiry=end;return Next();
@@ -448,27 +488,35 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  object Next(){Check();if(output==null||clock()>=outputExpiry)throw Invalid();int at=outputOffset,n=Math.Min(Chunk,output.Length-at);byte[] part=new byte[n];Buffer.BlockCopy(output,at,part,0,n);outputOffset+=n;
   try{var result=new Dictionary<string,object>{{"handle",outputHandle},{"offset",at},{"total",output.Length},{"hash",outputHash},{"expiresAt",Stamp(outputExpiry)},{"bytes",B64(part)},{"done",outputOffset==output.Length}};if(outputOffset==output.Length)ClearOutput();return result;}finally{Array.Clear(part,0,part.Length);}
  }
- Dictionary<string,object> Http(Dictionary<string,object> record,string method,string path,string query,string body,string token,string auth,int max,bool discovery=false){
+ object RangeOutcome(string status,string stage,Dictionary<string,object> r,Dictionary<string,object> slot,string requestId,DateTime end){
+  return new Dictionary<string,object>{{"kind","NORMAL_UNDERSTANDING_RANGE_NOT_ACQUIRED"},{"status",status},{"stage",stage},{"path",r["path"]},{"query",""},{"requestId",requestId},{"slotRef",slot["receiptRef"]},{"expiresAt",Stamp(end)}};
+ }
+ Dictionary<string,object> Http(Dictionary<string,object> record,string method,string path,string query,string body,string token,string auth,int max,bool discovery=false,bool range=false,DateTime? limitUntil=null){
+  // 새 목적의 최단 wall 기한은 원 host remaining 및 이 요청의 단조 시간과 함께 좁힌다.
+  var elapsed=System.Diagnostics.Stopwatch.StartNew();double budget=limitUntil.HasValue?(limitUntil.Value-clock()).TotalMilliseconds:Double.PositiveInfinity;
+  Func<int> left=()=>{Check();int original=remaining();if(!limitUntil.HasValue)return original;double ms=Math.Min((limitUntil.Value-clock()).TotalMilliseconds,budget-elapsed.Elapsed.TotalMilliseconds);if(ms<1)throw Invalid();return (int)Math.Min(original,Math.Min(Int32.MaxValue,ms));};
+  left();
   Check();var req=(HttpWebRequest)WebRequest.Create(S(record,"origin")+path+query);req.Method=method;req.AllowAutoRedirect=false;req.Proxy=null;req.UseDefaultCredentials=false;req.Credentials=null;
   req.SslProtocols=System.Security.Authentication.SslProtocols.Tls12;
   var pins=Pins(activeCA);req.ServerCertificateValidationCallback=(sender,certificate,chain,errors)=>Pinned(pins,certificate,chain,errors);
-  req.Timeout=remaining();req.ReadWriteTimeout=remaining();req.AutomaticDecompression=DecompressionMethods.None;req.Accept="application/json";req.KeepAlive=false;
+  req.Timeout=left();req.ReadWriteTimeout=left();req.AutomaticDecompression=DecompressionMethods.None;req.Accept="application/json";req.KeepAlive=false;
   if(token!=null)req.Headers[HttpRequestHeader.Authorization]="Bearer "+token;if(auth!=null)req.Headers["Anvil-Execution-Auth"]=auth;
   byte[] payload=body==null?null:Encoding.UTF8.GetBytes(body);
-  try{if(payload!=null){req.ContentType="application/json";req.ContentLength=payload.Length;using(var s=req.GetRequestStream()){Check();s.Write(payload,0,payload.Length);}}Check();
+  try{if(payload!=null){req.ContentType="application/json";req.ContentLength=payload.Length;using(var s=req.GetRequestStream()){left();s.Write(payload,0,payload.Length);}}left();
    HttpWebResponse original;
    try{original=(HttpWebResponse)req.GetResponse();}catch(WebException e){
     original=e.Response as HttpWebResponse;
-    if(!discovery||original==null||original.StatusCode!=HttpStatusCode.PreconditionFailed){if(original!=null)original.Dispose();throw Invalid();}
+    if((!discovery&&!range)||original==null||original.StatusCode!=HttpStatusCode.PreconditionFailed){if(original!=null)original.Dispose();throw Invalid();}
    }
    using(var response=original){
-    if((response.StatusCode!=HttpStatusCode.OK&&(!discovery||response.StatusCode!=HttpStatusCode.PreconditionFailed))||response.ResponseUri.AbsoluteUri!=S(record,"origin")+path+query||
+    if((response.StatusCode!=HttpStatusCode.OK&&((!discovery&&!range)||response.StatusCode!=HttpStatusCode.PreconditionFailed))||response.ResponseUri.AbsoluteUri!=S(record,"origin")+path+query||
      !response.ContentType.StartsWith("application/json",StringComparison.OrdinalIgnoreCase)||!String.IsNullOrEmpty(response.ContentEncoding)||response.ContentLength>max)throw Invalid();
     using(var stream=response.GetResponseStream())using(var bytes=new MemoryStream()){
-     byte[] part=new byte[8192];try{int n;while(true){Check();if(stream.CanTimeout)stream.ReadTimeout=remaining();n=stream.Read(part,0,part.Length);if(n==0)break;Check();if(bytes.Length+n>max)throw Invalid();bytes.Write(part,0,n);}Check();byte[] raw=bytes.ToArray();try{var parsed=Parse(raw);if(response.StatusCode==HttpStatusCode.OK)return parsed;
+     byte[] part=new byte[8192];try{int n;while(true){left();if(stream.CanTimeout)stream.ReadTimeout=left();n=stream.Read(part,0,part.Length);if(n==0)break;left();if(bytes.Length+n>max)throw Invalid();bytes.Write(part,0,n);}left();byte[] raw=bytes.ToArray();try{var parsed=Parse(raw);left();if(response.StatusCode==HttpStatusCode.OK)return parsed;
       Exact(parsed,"code,message,requestId,targetId,retryDisposition,details");string code=S(parsed,"code");
-      if((code!="NORMAL_UNDERSTANDING_DISCOVERY_DENIED"&&code!="NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED")||S(parsed,"message")!="요청을 처리하지 못했습니다"||S(parsed,"requestId").Length<1||S(parsed,"requestId").Length>128||parsed["targetId"]!=null||S(parsed,"retryDisposition")!="not-retryable")throw Invalid();if(Map(parsed["details"]).Count!=0)throw Invalid();
-      return new DiscoveryRefusal(code=="NORMAL_UNDERSTANDING_DISCOVERY_DENIED"?"DENIED":"EXPIRED");
+      string denied=range?"NORMAL_UNDERSTANDING_RANGE_DENIED":"NORMAL_UNDERSTANDING_DISCOVERY_DENIED",expired=range?"NORMAL_UNDERSTANDING_RANGE_EXPIRED":"NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED";
+      if((code!=denied&&code!=expired)||S(parsed,"message")!="요청을 처리하지 못했습니다"||S(parsed,"requestId").Length<1||S(parsed,"requestId").Length>128||parsed["targetId"]!=null||S(parsed,"retryDisposition")!="not-retryable")throw Invalid();if(Map(parsed["details"]).Count!=0)throw Invalid();
+      return new DiscoveryRefusal(code==denied?"DENIED":"EXPIRED");
      }finally{Array.Clear(raw,0,raw.Length);}}
      finally{Array.Clear(part,0,part.Length);if(bytes.Length>0)Array.Clear(bytes.GetBuffer(),0,(int)bytes.Length);}
     }
