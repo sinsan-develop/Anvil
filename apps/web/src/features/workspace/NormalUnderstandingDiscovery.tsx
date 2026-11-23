@@ -37,6 +37,7 @@ type RangeCommand=Omit<Command,'payload'>&{payload:Command['payload']&{selection
 type RangeRetained={command:RangeCommand;body:string;state:'SENDING'|'UNKNOWN'|'PENDING_SOURCE';requestRef?:PlanRef;expiresAt?:string};
 export type NormalUnderstandingRangeRequester=(draft:NormalUnderstandingRangeDraft,signal:AbortSignal,active:()=>boolean)=>Promise<PlanRef|void>;
 export type NormalUnderstandingRangeRecovery=(key:string,signal:AbortSignal)=>Promise<PlanRef|void>;
+/** expiresAt은 원 요청의 전달 기한이다. 정착 BODY의 새 조회 기한은 각 명시 호출에서 따로 고정한다. */
 export type NormalUnderstandingRangeReadRequest={request:NormalUnderstandingMetadataRequest;controlGeneration:number;expiresAt:string;selection:RangeSelection};
 type RangePart={outputRef:PlanRef;sequence:number;payloadDigest:string;blockIndex:number;kind:'ASSISTANT_TEXT';text:string;textHash:string};
 export type NormalUnderstandingRangeResult=
@@ -286,9 +287,9 @@ function rangeReadInput(raw:NormalUnderstandingRangeReadRequest){
 async function currentRange(raw:unknown,input:NormalUnderstandingRangeReadRequest,check:()=>void):Promise<NormalUnderstandingRangeResult>{
  check();const v:any=structuredClone(raw),r=input.request,s=input.selection,invalid=():never=>{throw new ApiError('RESPONSE_INVALID');};
  if(!v||!same(v.request,r))return invalid();
- if(v.status==='PENDING_SOURCE'||v.status==='CURRENT_UNAVAILABLE'){if(!exact(v,['status','request']))return invalid();return {status:v.status,request:r};}
+ if(v.status==='PENDING_SOURCE'||v.status==='CURRENT_UNAVAILABLE'){if(!exact(v,['status','request']))return invalid();return {status:v.status==='PENDING_SOURCE'&&Date.parse(input.expiresAt)<=Date.now()?'CURRENT_UNAVAILABLE':v.status,request:r};}
  if(!exact(v,['status','request','resultRef','responseRef','partRefs','currentness','observedAt','expiresAt','selectionAvailable','body'])||v.status!=='RANGE_STORED'||v.currentness!=='CURRENT'||v.selectionAvailable!==true
-  ||!ref(v.resultRef)||v.resultRef.version!==1||!ref(v.responseRef)||v.responseRef.version!==1||!instant(v.observedAt)||!instant(v.expiresAt)||Date.parse(v.expiresAt)>Date.parse(input.expiresAt)||Date.parse(v.expiresAt)<=Math.max(Date.now(),Date.parse(v.observedAt))||new TextEncoder().encode(ordered(v)).byteLength>2097152)return invalid();
+  ||!ref(v.resultRef)||v.resultRef.version!==1||!ref(v.responseRef)||v.responseRef.version!==1||!instant(v.observedAt)||!instant(v.expiresAt)||Date.parse(v.expiresAt)-Date.parse(v.observedAt)>30000||Date.parse(v.expiresAt)<=Math.max(Date.now(),Date.parse(v.observedAt))||new TextEncoder().encode(ordered(v)).byteLength>2097152)return invalid();
  const b=v.body;
  if(!exact(b,['schemaVersion','kind','attribution','projectId','executionId','executionGeneration','requestRef','acquisitionRef','sourceRequestRef','sourceResultRef','contextBundleRef','initConfirmationRef','tailRef','firstSequence','lastSequence','beforeRef','afterRef','parts','wholeConversationComplete','executionAuthorized'])
   ||b.schemaVersion!==1||b.kind!=='FIXED_RANGE_SELECTION'||b.attribution!=='SESSION_ONLY'||b.projectId!==r.projectId||b.executionId!==r.executionId||b.executionGeneration!==r.executionGeneration||!same(b.requestRef,r.requestRef)
@@ -319,12 +320,13 @@ async function currentRange(raw:unknown,input:NormalUnderstandingRangeReadReques
 export async function readNormalUnderstandingRange(client:ApiClient,session:DocumentSession,input:NormalUnderstandingRangeReadRequest,signal:AbortSignal,active:()=>boolean):Promise<NormalUnderstandingRangeResult>{
  const expected=rangeReadInput(input),owned=new AbortController();if(signal.aborted)owned.abort();
  const owner=channel(client,session,owned.signal,active),r=expected.request;
- let wall=Date.now(),mono=performance.now(),monoEnd=mono+Math.min(30000,Date.parse(expected.expiresAt)-wall);
- const check=()=>{owner.check();const w=Date.now(),m=performance.now();if(!same(expected,input)||w<wall||m<mono||m>=monoEnd||w>=Date.parse(expected.expiresAt))throw new ApiError('DISCOVERY_SCOPE_CHANGED');wall=w;mono=m;};
+ // 원 요청의 전달 기한은 pending에만 적용한다. 정착 원문의 명시 GET은 별도의 유한 호출이다.
+ let wall=Date.now(),mono=performance.now(),end=wall+30000,monoEnd=mono+30000;
+ const check=()=>{owner.check();const w=Date.now(),m=performance.now();if(!same(expected,input)||w<wall||m<mono||m>=monoEnd||w>=end)throw new ApiError('DISCOVERY_SCOPE_CHANGED');wall=w;mono=m;};
  const controlClient=new ApiClient((url,options)=>{check();return owner.transport.call(globalThis,url,{...options,signal:owned.signal});});
  let timer:ReturnType<typeof setTimeout>|undefined;
  const abort=()=>owned.abort();signal.addEventListener('abort',abort,{once:true});
- const arm=()=>{if(timer!==undefined)clearTimeout(timer);const remaining=Math.min(Date.parse(expected.expiresAt)-Date.now(),monoEnd-performance.now());
+ const arm=()=>{if(timer!==undefined)clearTimeout(timer);const remaining=Math.min(end-Date.now(),monoEnd-performance.now());
   if(remaining<=0)owned.abort();else timer=setTimeout(abort,Math.min(2147483647,remaining));};
  try{
   arm();check();
@@ -333,7 +335,7 @@ export async function readNormalUnderstandingRange(client:ApiClient,session:Docu
    assignmentId:r.assignmentRef.id,assignmentVersion:String(r.assignmentRef.version),assignmentHash:r.assignmentRef.contentHash,preparationId:r.preparationRef.id,preparationVersion:String(r.preparationRef.version),preparationHash:r.preparationRef.contentHash});
   const queryWall=wall,queryMono=mono;
   const value=await wire(owner,`/api/v1/projects/${r.projectId}/executions/${r.executionId}/understanding-response-read-requests/${r.requestRef.id}/range-current?${query}`,owned.signal,undefined,true,check);check();
-  if(value&&typeof value==='object'&&'expiresAt'in value&&instant(value.expiresAt)&&Date.parse(value.expiresAt)>wall)monoEnd=Math.min(monoEnd,queryMono+Date.parse(value.expiresAt)-queryWall);
+  if(value&&typeof value==='object'&&'expiresAt'in value&&instant(value.expiresAt)&&Date.parse(value.expiresAt)>wall){end=Math.min(end,Date.parse(value.expiresAt));monoEnd=Math.min(monoEnd,queryMono+Date.parse(value.expiresAt)-queryWall);}
   arm();check();
   const result=await currentRange(value,expected,check);check();const after=await documentControl(controlClient,r.projectId,session);check();if(after!==generation)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
   if(result.status==='RANGE_STORED'&&Date.parse(result.expiresAt)<=Date.now())throw new ApiError('RESPONSE_INVALID');return result;
@@ -501,24 +503,24 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
  const shownRange=rangeView?.owner===rangeReadOwner?rangeView:null;
  useEffect(()=>{
   if(!shownRange)return;const value=shownRange.value;if(typeof value!=='object'||value.status!=='RANGE_STORED')return;
-  const timer=setTimeout(()=>setRangeView(current=>current&&current===shownRange?{...current,value:{status:'CURRENT_UNAVAILABLE',request:value.request}}:current),Math.min(2147483647,Math.max(0,Math.min(Date.parse(value.expiresAt),Date.parse(shownRange.entry.expiresAt!))-Date.now(),(shownRange.monoEnd??0)-performance.now())));
+  const timer=setTimeout(()=>setRangeView(current=>current&&current===shownRange?{...current,value:{status:'CURRENT_UNAVAILABLE',request:value.request}}:current),Math.min(2147483647,Math.max(0,Math.min(Date.parse(value.expiresAt)-Date.now(),(shownRange.monoEnd??0)-performance.now()))));
   return()=>clearTimeout(timer);
  },[shownRange]);
  async function readRange(rangeKey:string,entry:RangeRetained){
   if(!rangeReader||busy||working||flight.current||metadataFlight.current||rangeFlight.current||rangeScope.current!==rangeReadOwner||scope.current!==owner||rangeRequests?.get(rangeKey)!==entry
-   ||entry.state!=='PENDING_SOURCE'||!ref(entry.requestRef)||!entry.expiresAt||Date.parse(entry.expiresAt)<=Date.now())return;
+   ||entry.state!=='PENDING_SOURCE'||!ref(entry.requestRef)||!entry.expiresAt||!instant(entry.expiresAt))return;
   const command=entry.command;if(command.projectId!==projectId||!same(command.payload.assignmentRef,assignmentRef)||entry.body!==JSON.stringify(command))return;
   const input=rangeReadInput({request:{projectId,executionId:command.targetId,executionGeneration:command.expectedVersion,assignmentRef:command.payload.assignmentRef,preparationRef:command.payload.preparationRef,requestRef:entry.requestRef},controlGeneration:command.controlGeneration,expiresAt:entry.expiresAt,selection:command.payload.selection});
   const fingerprint=ordered(entry),operation=new AbortController(),reading={owner:rangeReadOwner,controller:operation};
-  const readWall=Date.now(),readMono=performance.now();let monoEnd=readMono+Math.min(30000,Date.parse(input.expiresAt)-readWall);
+  const readWall=Date.now(),readMono=performance.now(),end=readWall+30000;let monoEnd=readMono+30000;
   rangeFlight.current=reading;setRangeView({owner:rangeReadOwner,key:rangeKey,entry,value:'READING'});
   const ownsRead=()=>active(operation)&&rangeScope.current===rangeReadOwner&&rangeFlight.current===reading&&rangeRequests?.get(rangeKey)===entry&&ordered(entry)===fingerprint;
-  const isCurrent=()=>ownsRead()&&Date.parse(input.expiresAt)>Date.now()&&performance.now()<monoEnd;
+  const isCurrent=()=>ownsRead()&&Date.now()<end&&performance.now()<monoEnd;
   const check=()=>{if(!isCurrent())throw new ApiError('DISCOVERY_SCOPE_CHANGED');};
   const publish=(value:NonNullable<typeof rangeView>['value'])=>{if(isCurrent())setRangeView({owner:rangeReadOwner,key:rangeKey,entry,value,monoEnd});};
   try{const response=await rangeReader(structuredClone(input),operation.signal);if(response.status==='RANGE_STORED'&&instant(response.expiresAt)&&Date.parse(response.expiresAt)>Date.now())monoEnd=Math.min(monoEnd,readMono+Date.parse(response.expiresAt)-readWall);check();publish(await currentRange(response,input,check));}
   catch(error){
-   if(ownsRead()&&(Date.parse(input.expiresAt)<=Date.now()||performance.now()>=monoEnd))setRangeView({owner:rangeReadOwner,key:rangeKey,entry,value:{status:'CURRENT_UNAVAILABLE',request:input.request}});
+   if(ownsRead()&&(Date.now()>=end||performance.now()>=monoEnd))setRangeView({owner:rangeReadOwner,key:rangeKey,entry,value:{status:'CURRENT_UNAVAILABLE',request:input.request}});
    else publish(error instanceof ApiError&&metadataAuthStatuses.get(error.code)===error.status?'AUTH_REQUIRED':'UNKNOWN');
   }
   finally{if(rangeFlight.current===reading)rangeFlight.current=null;}
@@ -593,11 +595,11 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
    {record.state==='SENDING'?<p role="status">원 명령 결과 확인 중</p>:null}
   </li>;})}</ul>:null}
   {retainedRanges.length?<ul aria-label="이해 자료 구간 요청">{retainedRanges.map(([rangeKey,entry])=>{const view=shownRange?.key===rangeKey&&shownRange.entry===entry?shownRange.value:null;
-   const source=typeof view==='object'&&view?.status==='RANGE_STORED'&&Date.parse(view.expiresAt)>now&&!!entry.expiresAt&&Date.parse(entry.expiresAt)>now&&performance.now()<(shownRange?.monoEnd??0)?view:null;
+   const source=typeof view==='object'&&view?.status==='RANGE_STORED'&&Date.parse(view.expiresAt)>now&&performance.now()<(shownRange?.monoEnd??0)?view:null;
    return <li key={rangeKey}>
    <p>원 명령 {entry.command.commandId} · 순번 {entry.command.payload.selection.firstSequence}–{entry.command.payload.selection.lastSequence}</p>
-   {entry.state==='PENDING_SOURCE'?<p role="status">구간 요청 보관 · {source?'원문 보관 확인':entry.expiresAt&&Date.parse(entry.expiresAt)>now?'원문 대기':'현재 원문 조회 불가'} · {entry.requestRef?.id}</p>:null}
-   {entry.state==='PENDING_SOURCE'&&rangeReader&&entry.requestRef?<button type="button" disabled={busy||working||!!rangeFlight.current||!entry.expiresAt||Date.parse(entry.expiresAt)<=now} onClick={()=>void readRange(rangeKey,entry)}>보관 원문 확인</button>:null}
+   {entry.state==='PENDING_SOURCE'?<p role="status">구간 요청 보관 · {source?'원문 보관 확인':entry.expiresAt&&Date.parse(entry.expiresAt)>now?'원문 대기':'전달 기한 경과'} · {entry.requestRef?.id}</p>:null}
+   {entry.state==='PENDING_SOURCE'&&rangeReader&&entry.requestRef?<button type="button" disabled={busy||working||!!rangeFlight.current||!entry.expiresAt||!instant(entry.expiresAt)} onClick={()=>void readRange(rangeKey,entry)}>보관 원문 확인</button>:null}
    {view==='READING'?<><p role="status">보관 원문 확인 중</p><button type="button" onClick={cancelRange}>원문 조회 취소</button></>:null}
    {view==='UNKNOWN'?<p role="status">원문 조회 결과 미확인</p>:null}
    {view==='AUTH_REQUIRED'?<p role="status">인증을 확인한 뒤 원문을 다시 조회하세요.</p>:null}

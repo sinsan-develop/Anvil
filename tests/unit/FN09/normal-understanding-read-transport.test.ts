@@ -28,7 +28,7 @@ function fixture(option:unknown=enabled,configure:{synthetic?:boolean;wrongPool?
  const ps={scope:{kind:'PROJECT',projectId:pid},state:'APPLIED',limits:{maxAttempts:3,maxCalls:50,maxConcurrentAssignments:1,maxElapsedMs:7200000,maxOfflineMs:300000,maxSpoolBytes:1073741824},decidedAt:iso(0),expiresAt:iso(240000)};
  const policy={projectId:pid,ref:{...ref(),contentHash:hash(ps)},snapshot:ps};
  const budget=reserveExecutionBudget([],policy as any,{projectId:pid,executionId:eid,executionGeneration:1,commandId:randomUUID(),assignmentRef:grant,stageRef:{applicationRef:grant,nodeId:'개발'},policyRef:policy.ref,operation:'START_SESSION',demand:{attempts:1,calls:1,spoolBytes:1,cost:null,costStatus:'VERIFIED_NO_CHARGE'}},iso(0));
- const state={now:start,connects:0,queries:[] as string[],denied:false,commitUnknown:false,rollbackUnknown:false,afterInsert:false,afterStore:false,used:0n,stores:0,releases:[] as boolean[],onCommit:()=>{},credentialRef:credential,bodyBasisChanged:false,rangeStores:0,rangeRpcs:0,rangeIssueCharges:0,quotaVerified:true,failRangeStore:false,privateBodies:0,rangeSnapshot:null as any,rangeRef:null as any,rangeSelection:null as any,rangeParts:null as any,transactionId:'17',mutateRange:(_v:any)=>{},connectFailure:false,uninstalled:false,abortBefore:false,cancelOnCommit:false,abort:()=>{}};
+ const state={now:start,connects:0,queries:[] as string[],denied:false,commitUnknown:false,rollbackUnknown:false,afterInsert:false,afterStore:false,used:0n,stores:0,releases:[] as boolean[],onCommit:()=>{},credentialRef:credential,bodyBasisChanged:false,rangeStores:0,rangeRpcs:0,rangeIssueCharges:0,quotaVerified:true,failRangeStore:false,privateBodies:0,rangeSnapshot:null as any,rangeRef:null as any,rangeSelection:null as any,rangeParts:null as any,transactionId:'17',mutateRange:(_v:any)=>{},mutateRangeCurrent:(_v:any)=>{},connectFailure:false,uninstalled:false,abortBefore:false,cancelOnCommit:false,abort:()=>{}};
  let rows:any[]=[],receipts:any[]=[],bodies=new Map<string,Buffer>(),lock=Promise.resolve();
  const pool={async connect(){state.connects++;if(state.connectFailure)throw Error('RAW_CONNECT_SECRET');let unlock=()=>{},pending:any[]=[],rs:any[]=[],bs=new Map<string,Buffer>(),used=0n,rangeWrites=0;return{release(e?:Error){state.releases.push(!!e);},async query(sql:string,a:any[]=[]):Promise<any>{
   state.queries.push(sql);const result=(rows:any[]=[],command?:string)=>({rows,command});
@@ -46,8 +46,12 @@ function fixture(option:unknown=enabled,configure:{synthetic?:boolean;wrongPool?
    const selection=JSON.parse(a[3]);assert.equal(selection.purpose,'FIXED_RANGE_CURRENT');assert.deepEqual(selection.requestRef,state.rangeRef);
    const {purpose:_,controlGeneration:__,...humanRequest}=selection;
    const r=rs.find(x=>x.snapshot_json.kind==='NORMAL_UNDERSTANDING_RANGE_RESULT'&&x.snapshot_json.rangeRequestRef.id===selection.requestRef.id),raw=r&&bs.get(r.id);
+   if(state.now>=start+240000)throw Object.assign(Error('UNDERSTANDING_NORMAL_CURRENT_REQUIRED'),{code:'P0001'});
+   if(!r&&!raw)return result([{projection:{status:state.now>=Date.parse(state.rangeSnapshot.expiresAt)?'CURRENT_UNAVAILABLE':'PENDING_SOURCE',request:humanRequest}}]);
    if(!r||!raw||hash(r.snapshot_json)!==r.content_hash||contentHash(raw)!==r.snapshot_json.responseRef.contentHash)throw Error('RAM_INCOMPLETE_BODY');
-   return result([{projection:normalUnderstandingRangeCurrentProjection(humanRequest,{id:r.id,version:1,contentHash:r.content_hash},r.snapshot_json,JSON.parse(raw.toString()),new Date(state.now).toISOString(),r.snapshot_json.expiresAt)}]);
+   // 현재 SQL의 committed 분기만 RAM으로 대역한다. 원 receipt/nonce/저장 기한은 수정하지 않는다.
+   const projection=normalUnderstandingRangeCurrentProjection(humanRequest,{id:r.id,version:1,contentHash:r.content_hash},r.snapshot_json,JSON.parse(raw.toString()),new Date(state.now).toISOString(),new Date(Math.min(state.now+30000,start+240000)).toISOString());
+   state.mutateRangeCurrent(projection);return result([{projection}]);
   }
   if(sql.includes('SET LOCAL')||sql.includes('set_config'))return result();
   if(sql.includes('normal_request_credential'))return result(a[0]===token?[{project_id:pid,credential_ref:state.credentialRef,expires_at:new Date(start+240000)}]:[]);
@@ -213,6 +217,23 @@ test('real HTTP signed GET acquisition -> fresh POST challenge -> atomic metadat
   const used=f.state.used,again=await f.send('POST',r.target.path,frame,b);assert.equal(again.statusCode,200,again.body);assert.deepEqual(again.json(),first.json());assert.equal(f.state.used,used);assert.equal(f.state.stores,1);
   assert.equal(f.rows().length,4);assert.equal(f.receipts().length,2);assert.equal(first.headers['cache-control'],'no-store');
  }finally{await f.app.close();}
+});
+
+test('정착 BODY의 +31초 HUMAN HTTP 재조회는 새 현재성 창만 쓰며 pending·새 만료/회수·응답 오염은 원문이나 추가 정산을 만들지 않는다',async()=>{
+ const f=fixture(null,{rangeAcquisition:true,rangeResult:rangeResultEnabled});
+ try{
+  const t=await f.rangeReady();assert.ok(t.frame);const stored=await f.send('POST',t.r.target.path,t.frame,t.value);assert.equal(stored.statusCode,200,stored.body);
+  const original=f.receipts().find(r=>r.snapshot_json.kind==='NORMAL_UNDERSTANDING_RANGE_RESULT');assert.ok(original);const originalExpiry=original.snapshot_json.expiresAt,before={used:f.state.used,stores:f.state.rangeStores,issues:f.state.rangeIssueCharges,rows:f.rows().length,receipts:f.receipts().length,bodies:f.bodies().size};
+  f.state.now+=31000;assert.ok(Date.parse(originalExpiry)<f.state.now);const read=await f.readRange();assert.equal(read.statusCode,200,read.body);
+  const v=read.json();assert.equal(v.status,'RANGE_STORED');assert.deepEqual(v.responseRef,original.snapshot_json.responseRef);assert.equal(v.observedAt,new Date(f.state.now).toISOString());assert.equal(Date.parse(v.expiresAt)-Date.parse(v.observedAt),30000);
+  assert.equal(f.receipts().find(r=>r.id===original.id).snapshot_json.expiresAt,originalExpiry);
+  assert.deepEqual({used:f.state.used,stores:f.state.rangeStores,issues:f.state.rangeIssueCharges,rows:f.rows().length,receipts:f.receipts().length,bodies:f.bodies().size},before);
+  for(const fault of ['too-long','expired']){f.state.mutateRangeCurrent=v=>{v.expiresAt=new Date(f.state.now+(fault==='expired'?-1:30001)).toISOString();};const bad=await f.readRange();assert.equal(bad.statusCode,503,bad.body);assert.ok(!bad.body.includes('RAM text'));}
+  f.state.mutateRangeCurrent=()=>{};f.state.denied=true;assert.equal((await f.readRange()).statusCode,403);f.state.denied=false;
+  f.state.now+=240000;const expired=await f.readRange();assert.equal(expired.statusCode,412,expired.body);assert.equal(expired.json().code,'NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED');
+  assert.deepEqual({used:f.state.used,stores:f.state.rangeStores,issues:f.state.rangeIssueCharges,rows:f.rows().length,receipts:f.receipts().length,bodies:f.bodies().size},before);
+ }finally{await f.app.close();}
+ const pending=fixture(null,{rangeAcquisition:true,rangeResult:rangeResultEnabled});try{await pending.rangeReady(false);pending.state.now+=31000;const r=await pending.readRange();assert.equal(r.statusCode,200,r.body);assert.equal(r.json().status,'CURRENT_UNAVAILABLE');assert.equal(pending.state.rangeStores,0);assert.equal(pending.state.privateBodies,0);}finally{await pending.app.close();}
 });
 
 test('configuration rejects getter/proxy witnesses without calling user code; configured challenge still needs an acquired original GET',async()=>{

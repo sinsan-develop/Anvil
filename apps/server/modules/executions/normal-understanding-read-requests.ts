@@ -112,7 +112,7 @@ function rangeProjection(raw:unknown,request:Record<string,any>,at:number){
  if(!same(v.request,request))return invalid();
  if(v.status==='PENDING_SOURCE'||v.status==='CURRENT_UNAVAILABLE'){if(!recordV1(v,['status','request']))return invalid();return v;}
  if(v.status!=='RANGE_STORED'||v.currentness!=='CURRENT'||v.selectionAvailable!==true||!full(v.resultRef)||!full(v.responseRef)
-  ||!isoV1(v.observedAt)||!isoV1(v.expiresAt)||Date.parse(v.observedAt)>at||Date.parse(v.expiresAt)<=Math.max(at,Date.parse(v.observedAt)))return invalid();
+  ||!isoV1(v.observedAt)||!isoV1(v.expiresAt)||Date.parse(v.observedAt)>at||Date.parse(v.expiresAt)-Date.parse(v.observedAt)>30000||Date.parse(v.expiresAt)<=Math.max(at,Date.parse(v.observedAt)))return invalid();
  const b=v.body;
  if(!recordV1(b,['schemaVersion','kind','attribution','projectId','executionId','executionGeneration','requestRef','acquisitionRef','sourceRequestRef','sourceResultRef','contextBundleRef','initConfirmationRef','tailRef','firstSequence','lastSequence','beforeRef','afterRef','parts','wholeConversationComplete','executionAuthorized'])
   ||b.schemaVersion!==1||b.kind!=='FIXED_RANGE_SELECTION'||b.attribution!=='SESSION_ONLY'||b.wholeConversationComplete!==false||b.executionAuthorized!==false
@@ -269,7 +269,7 @@ export class NormalUnderstandingReadRequests{
     if(range){
      if(error.message==='NORMAL_UNDERSTANDING_RANGE_NOT_FOUND')fail(error.message,404);
      if(error.message==='NORMAL_UNDERSTANDING_RANGE_RESPONSE_TOO_LARGE')fail(error.message,413);
-     if(['NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_EXPIRED'].includes(error.message))fail('NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED',412);
+     if(['NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_EXPIRED','UNDERSTANDING_NORMAL_CURRENT_REQUIRED'].includes(error.message))fail('NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED',412);
     }
     if(error.message==='NORMAL_UNDERSTANDING_METADATA_NOT_FOUND')fail(error.message,404);
     if(['NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_EXPIRED'].includes(error.message))fail('NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED',412);

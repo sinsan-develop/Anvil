@@ -50,6 +50,19 @@ test('FN09 고정 보관 원문 reader는 원 선택·hash와 같은 제어의 �
  assert.equal(new Headers(calls[1]!.init?.headers).get('x-anvil-csrf'),session.csrfToken);
 });
 
+test('FN09 정착 원문은 원 전달 +31초 뒤 명시 GET의 새 제어·30초 창을 쓰며 만료 pending이나 늦은 새 응답을 보존하지 않는다',async t=>{
+ const m=await load(),f=rangeSource(),start=Date.now();let now=start+31000,mode='stored',calls=0;
+ f.input.expiresAt=new Date(start+30000).toISOString();t.mock.method(Date,'now',()=>now);
+ const client=new ApiClient(async()=>{calls++;if(calls%3!==2)return Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}});
+  if(mode==='pending')return Response.json({status:'PENDING_SOURCE',request:f.input.request});
+  return Response.json({...f.result,observedAt:new Date(now).toISOString(),expiresAt:new Date(mode==='expired'?now-1:now+20000).toISOString()});});
+ try{
+  assert.equal((await m.readNormalUnderstandingRange(client,session,f.input,new AbortController().signal,()=>true)).status,'RANGE_STORED');assert.equal(calls,3);
+  mode='pending';assert.equal((await m.readNormalUnderstandingRange(client,session,f.input,new AbortController().signal,()=>true)).status,'CURRENT_UNAVAILABLE');assert.equal(calls,6);
+  mode='expired';await assert.rejects(m.readNormalUnderstandingRange(client,session,f.input,new AbortController().signal,()=>true),{code:'RESPONSE_INVALID'});assert.equal(calls,8);
+ }finally{t.mock.restoreAll();}
+});
+
 test('FN09 원문 reader는 source/part/경계 오염·UTF8·중복키와 현재성 변경을 원문 반환 전에 거절한다',async t=>{
  const m=await load();
  const changes=[(v:any)=>{v.request.requestRef=ref(90);},(v:any)=>{v.body.acquisitionRef=null;},(v:any)=>{v.body.sourceRequestRef=ref(90);},
@@ -111,20 +124,20 @@ test('FN09 원문 stream은 활성 read의 원 mono 만료 뒤 parse나 다음 �
   const raw=new TextEncoder().encode(JSON.stringify(f.result)),parse=JSON.parse;
   t.mock.method(performance,'now',()=>mono);t.mock.method(Date,'now',()=>wall);t.mock.method(JSON,'parse',(text:string,...rest:any[])=>{if(text.includes('FIXED_RANGE_SELECTION'))parsed++;return parse(text,...rest);});
   const client=new ApiClient(async()=>++calls===1?Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}):new Response(new ReadableStream({pull(c){if(++pulls===1)c.enqueue(raw.slice(0,100));else{
-   if(mode==='mono')mono+=1500;else if(mode==='wall')wall+=1500;else f.input.selection.ranges[0]!.payloadDigest='0'.repeat(64);
+   if(mode==='mono')mono+=31000;else if(mode==='wall')wall+=31000;else f.input.selection.ranges[0]!.payloadDigest='0'.repeat(64);
    late=raw.slice(100);c.enqueue(late);c.close();
   }}},{highWaterMark:0}),{headers:{'content-type':'application/json'}}));
   try{await assert.rejects(m.readNormalUnderstandingRange(client,session,f.input,new AbortController().signal,()=>true),{code:'DISCOVERY_SCOPE_CHANGED'});assert.equal(parsed,0);assert.equal(calls,2);assert.equal(pulls,2);assert.ok(late?.every(n=>n===0));}finally{t.mock.restoreAll();}
  }
 });
 
-test('FN09 원문 원 기한은 멈춘 read도 취소하고 종결 뒤 timer를 남기지 않는다',async t=>{
+test('FN09 원문의 새 30초 호출 기한은 멈춘 read도 취소하고 종결 뒤 timer를 남기지 않는다',async t=>{
  const m=await load(),f=rangeSource(),external=new AbortController();let mono=100,calls=0,cancelled=0,ready!:()=>void,outcome='PENDING';
  f.input.expiresAt=new Date(Date.now()+1000).toISOString();
  const started=new Promise<void>(resolve=>{ready=resolve;});t.mock.method(performance,'now',()=>mono);t.mock.timers.enable({apis:['setTimeout']});
  const client=new ApiClient(async()=>++calls===1?Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}):new Response(new ReadableStream({pull(){ready();},cancel(){cancelled++;}},{highWaterMark:0}),{headers:{'content-type':'application/json'}}));
  const operation=m.readNormalUnderstandingRange(client,session,f.input,external.signal,()=>true).then(()=>{outcome='OK';},e=>{outcome=e.code;});
- try{await started;mono+=1500;t.mock.timers.tick(1500);for(let i=0;i<3;i++)await new Promise<void>(resolve=>setImmediate(resolve));
+ try{await started;mono+=31000;t.mock.timers.tick(31000);for(let i=0;i<3;i++)await new Promise<void>(resolve=>setImmediate(resolve));
   assert.equal(outcome,'DISCOVERY_SCOPE_CHANGED');assert.equal(cancelled,1);assert.equal(calls,2);
  }finally{external.abort();await operation;t.mock.timers.reset();t.mock.restoreAll();}
 });
@@ -180,7 +193,8 @@ const reactMemory='data:text/javascript,'+encodeURIComponent(`
  export function unmount(key='default'){
   const root=roots.get(key);if(!root)return;
   for(const {clean} of root.effects.values())clean?.();roots.delete(key);
- }`);
+ }
+ export function snapshot(key='default'){return roots.get(key)?.slots;}`);
 type ElementNode={type?:unknown;props?:{children?:unknown;onClick?:()=>void;disabled?:boolean}};
 function button(tree:unknown,label:string):ElementNode['props']{
  if(Array.isArray(tree)){for(const item of tree){const found=button(item,label);if(found)return found;}return;}
@@ -227,6 +241,31 @@ test('FN09 UI04 원문은 원 구간 요청에서만 명시 조회하고 취소�
   click('보관 원문 확인');const authLate=calls.at(-1)!;projection={...session,csrfToken:'r'.repeat(43)};draw();assert.equal(authLate.signal.aborted,true);authLate.resolve(f.result);await settle();assert.doesNotMatch(markup(),/원 선택만/);
   projection=session;assert.doesNotMatch(markup(),/원 선택만/);assert.equal(posts.length,1);assert.ok(!posts[0]!.includes('원 선택만'));assert.ok(!JSON.stringify([...m.normalUnderstandingRecords(session,client)]).includes('원 선택만'));
  }finally{hooks.unmount();t.mock.timers.reset();}
+});
+
+test('FN09 UI04 원 전달 +31초의 클릭은 실제 reader로 새 OWNER 제어를 확인하고 같은 저장 원문만 보여 주며 추가 POST가 없다',async t=>{
+ const hooks=await import(reactMemory),m=await compile(reactMemory),f=rangeSource(),start=Date.now();let now=start,mono=100,mode='stored';const calls:{path:string;method:string}[]=[];
+ const client=new ApiClient(async(url,init)=>{const path=String(url);calls.push({path,method:init?.method??'GET'});
+  if(init?.method==='POST'){const q=JSON.parse(String(init.body));return Response.json({operationId:id(24),commandId:q.commandId,projectId,status:'APPLIED',targetId:f.input.request.requestRef.id,version:1,
+   data:{ref:f.input.request.requestRef,requestRef:f.input.request.requestRef,status:'NORMAL_UNDERSTANDING_RANGE_REQUESTED',state:'PENDING_SOURCE',sourceAvailable:false,selectionAvailable:false,expiresAt:f.input.expiresAt},evidenceRefs:[],warnings:[],serverReceivedAt:new Date(now).toISOString()});}
+  if(path===`/api/v1/projects/${projectId}`)return Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}});
+  assert.ok(path.includes('/range-current?'));return Response.json(mode==='stored'?{...f.result,observedAt:new Date(now).toISOString(),expiresAt:new Date(now+20000).toISOString()}:{status:'CURRENT_UNAVAILABLE',request:f.input.request});
+ });
+ const commands=m.createNormalUnderstandingRangeCommands(client,session,projectId,canonicalJson(assignmentRef),()=>true),s=f.input.selection;
+ await commands.request({request:{...f.input.request,requestRef:s.requestRef},resultRef:s.resultRef,contextBundleRef:f.result.body.contextBundleRef,initConfirmationRef:s.initConfirmationRef,tailRef:s.tailRef,firstSequence:s.firstSequence,lastSequence:s.lastSequence,ranges:s.ranges},new AbortController().signal,()=>true);
+ const before=calls.length,rangeReader:NonNullable<Parameters<UI['NormalUnderstandingDiscovery']>[0]['rangeReader']>=(input,signal)=>m.readNormalUnderstandingRange(client,session,input,signal,()=>true);
+ const draw=()=>hooks.draw(()=>m.NormalUnderstandingDiscovery({client,session,projectId,assignmentRef,preparations:[],busy:false,rangeRequester:commands.request,rangeRecovery:commands.recover,rangeReader}));
+ const waitFor=async(predicate:()=>boolean,label:string)=>{const end=process.hrtime.bigint()+10000000000n;while(!predicate()){assert.ok(process.hrtime.bigint()<end,label);await new Promise<void>(resolve=>setImmediate(resolve));}};
+ const settle=async(pattern:RegExp)=>{await waitFor(()=>pattern.test(renderToStaticMarkup(draw())),String(pattern));assert.match(renderToStaticMarkup(draw()),pattern);};
+ t.mock.method(Date,'now',()=>now);t.mock.method(performance,'now',()=>mono);t.mock.timers.enable({apis:['setTimeout']});
+ try{now=start+31000;assert.doesNotMatch(renderToStaticMarkup(draw()),/원 선택만/);const read=button(draw(),'보관 원문 확인');assert.ok(read?.onClick);assert.equal(read.disabled,false);read.onClick();
+  await settle(/선택 원문 보관 확인/);assert.match(renderToStaticMarkup(draw()),/&lt;script&gt;원 선택만/);assert.deepEqual(calls.slice(before).map(c=>c.method),['GET','GET','GET']);assert.equal(calls.filter(c=>c.method==='POST').length,1);
+  button(draw(),'보관 원문 확인')!.onClick!();await waitFor(()=>hooks.snapshot()?.some((slot:any)=>slot?.value?.status==='RANGE_STORED'),'원 reader 및 component hash 검산 뒤 publication');
+  mono+=10000;assert.match(renderToStaticMarkup(draw()),/선택 원문 보관 확인/);assert.ok(JSON.stringify(hooks.snapshot()).includes('원 선택만'));
+  mono+=10001;t.mock.timers.tick(10001);assert.ok(!JSON.stringify(hooks.snapshot()).includes('원 선택만'),'더 짧은 mono 표시 기한에 원문 state도 폐기한다');
+  mode='unavailable';button(draw(),'보관 원문 확인')!.onClick!();assert.doesNotMatch(renderToStaticMarkup(draw()),/원 선택만/);await settle(/현재 원문 조회 불가/);assert.doesNotMatch(renderToStaticMarkup(draw()),/원 선택만/);assert.equal(calls.filter(c=>c.method==='POST').length,1);
+  hooks.unmount();assert.doesNotMatch(renderToStaticMarkup(draw()),/원 선택만/);
+ }finally{hooks.unmount();t.mock.timers.reset();t.mock.restoreAll();}
 });
 
 test('FN09 range confirmation uses exact contiguous metadata and invalidates cancelled or replaced drafts',async()=>{
@@ -366,7 +405,7 @@ test('FN09 range provider preserves the exact uncertain command and only sends i
   mode='HISTORICAL';
   assert.deepEqual(await commands.request({...draft,request:{...draft.request,executionId:id(81),requestRef:ref(82)}},signal,()=>true),newRef);
   assert.equal(posts.length,3);assert.notEqual(JSON.parse(posts[2]!.body).commandId,original.commandId);
-  assert.match(markup(),/구간 요청 보관 · 현재 원문 조회 불가/);
+  assert.match(markup(),/구간 요청 보관 · 전달 기한 경과/);
   active=false;projection={...session,csrfToken:'r'.repeat(43)};assert.equal(markup(),'');
  }finally{resumeControl();resumePost();hooks.unmount();}
 });
