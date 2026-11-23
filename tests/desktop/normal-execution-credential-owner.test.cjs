@@ -179,7 +179,7 @@ test('이미 발송한 GET 도중 dispose는 늦은 응답을 성공으로 바�
  assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
 });
 
-for(const mode of ['OK','REPLAY_TIME','EXACT_BYTES','NONE','DENIED','EXPIRED','GET_DENIED','NO_SDK','NO_ORIGIN','START','BUNDLE','BUNDLE_HASH','SESSION','SESSION_HASH','SOURCE_CHANGED_BEFORE','SOURCE_CHANGED_CLOSE','SCOPE','REGISTRATION','ASSIGNMENT','PACKET','CREDENTIAL','RANGE_REF','SOURCE_REF','SEQUENCE','INIT_ALIAS','TAIL_ALIAS','BLOCKS','TOTAL_BYTES','EXTRA','DISCOVERY','CANCELLED','CLOSE_UNKNOWN','EXPIRED_CLOSE','REVOKED'])test('FN09 등록 실행기의 명시 고정 범위 획득·원 close 및 읽기0 '+mode,async()=>{
+for(const mode of ['READ_OK','READ_REPEAT','READ_FORGED','READ_BAD_HASH','READ_BAD_REF','READ_METADATA','READ_UNKNOWN','READ_NONORDINARY','READ_CLOSE_UNKNOWN','READ_DEADLINE','READ_PRE_BODY','READ_REVOKED','OK','REPLAY_TIME','EXACT_BYTES','NONE','DENIED','EXPIRED','GET_DENIED','NO_SDK','NO_ORIGIN','START','BUNDLE','BUNDLE_HASH','SESSION','SESSION_HASH','SOURCE_CHANGED_BEFORE','SOURCE_CHANGED_CLOSE','SCOPE','REGISTRATION','ASSIGNMENT','PACKET','CREDENTIAL','RANGE_REF','SOURCE_REF','SEQUENCE','INIT_ALIAS','TAIL_ALIAS','BLOCKS','TOTAL_BYTES','EXTRA','DISCOVERY','CANCELLED','CLOSE_UNKNOWN','EXPIRED_CLOSE','REVOKED'])test('FN09 등록 실행기의 명시 고정 범위 획득·원 close 및 읽기0 '+mode,async()=>{
  const q=await outputProfile(),x=await pollingFixture(q.profile,true,true),{wire:unused,...input}=x.input;
  q.bind(x);
  input.timeoutMs=2000;
@@ -204,6 +204,15 @@ for(const mode of ['OK','REPLAY_TIME','EXACT_BYTES','NONE','DENIED','EXPIRED','G
  const target={method:'GET',path,queryHash:hash({}),bodyHash:hash(null)},frame={schemaVersion:1,challengeRef:ref(5),proof:{...target,requestId:id(6),grantRef:scope.grantRef,credentialGeneration:scope.credentialGeneration,serverNonce:Buffer.alloc(32,1).toString('base64url')},signature:Buffer.alloc(64,2).toString('base64url')};
  const context={...scope,registrationRef:x.f.stored().registration.registrationRef,startCommandId:id(56),startCommandRef:ref(785),assignmentRef:ref(40),preparationRef:ref(784),contextBundleRef:ref(50),sessionBindingRef:ref(92)};
  const selection={requestRef:ref(777),resultRef:ref(778),initConfirmationRef:ref(779),tailRef:ref(781),firstSequence:3,lastSequence:3,ranges:[{outputRef:ref(780),sequence:3,payloadDigest:'d'.repeat(64),textBlocks:1,textBytes:20}]};
+ let rangeRows;
+ if(mode.startsWith('READ_')){
+  const files=[...q.local.files].filter(([p])=>require('node:path').basename(p).startsWith('sdk-session-output.')&&p.endsWith('.json')).sort(([a],[b])=>a.localeCompare(b));
+  rangeRows=files.map(([,f])=>JSON.parse(f.bytes));assert.equal(rangeRows.length,3);
+  const row=rangeRows[2];
+  if(mode==='READ_NONORDINARY'){row.snapshot.classification='QUARANTINED';row.ref.contentHash=hash(row.snapshot);files[2][1].bytes=Buffer.from(canonicalJson(row)+'\n');}
+  selection.initConfirmationRef=rangeRows[1].ref;selection.tailRef=row.ref;selection.ranges=[{outputRef:row.ref,sequence:3,payloadDigest:row.snapshot.payloadDigest,textBlocks:1,textBytes:Buffer.byteLength('선택된 이해 근거')}];
+ }
+
  if(mode==='SCOPE')context.executionGeneration++;if(mode==='REGISTRATION')context.registrationRef=ref(790);if(mode==='ASSIGNMENT')context.assignmentRef=ref(790);
  if(mode==='START')context.startCommandId=id(790);if(mode==='BUNDLE')context.contextBundleRef=ref(790);if(mode==='SESSION')context.sessionBindingRef=ref(790);
  if(mode==='BUNDLE_HASH')context.contextBundleRef.contentHash='e'.repeat(64);if(mode==='SESSION_HASH')context.sessionBindingRef.contentHash='e'.repeat(64);
@@ -226,6 +235,7 @@ for(const mode of ['OK','REPLAY_TIME','EXACT_BYTES','NONE','DENIED','EXPIRED','G
  const children=new Set(),concurrent=[];
  x.m.onFrame(v=>{
   const child=x.m.calls.at(-1).child;
+  if(mode==='READ_PRE_BODY'&&v.operation==='NORMAL_SPOOL_PROFILE_STATE')x.advance(3500);
   if(!children.has(child)){children.add(child);child.once('close',()=>{closes++;if(mode==='EXPIRED_CLOSE')x.advance(5000);if(mode==='SOURCE_CHANGED_CLOSE')sdk.expiresAt++;});}
   if(v.payload.kind==='UNDERSTANDING_RANGE_PREPARE'){
    concurrent.push(assert.rejects(worker.acquireUnderstandingRange(signal.signal)),assert.rejects(worker.run(signal.signal)),assert.rejects(worker.renew(signal.signal)));
@@ -235,21 +245,45 @@ for(const mode of ['OK','REPLAY_TIME','EXACT_BYTES','NONE','DENIED','EXPIRED','G
  if(mode==='REPLAY_TIME')x.advance(10);if(mode==='CANCELLED')signal.abort();if(mode==='REVOKED')x.f.owner.invalidate();
  if(mode==='SOURCE_CHANGED_BEFORE')sdk.expiresAt++;
  const files=canonicalJson([...q.local.files].map(([p,f])=>[p,f.bytes.toString('base64')]));
- if(['OK','REPLAY_TIME','EXACT_BYTES','NONE','DENIED','EXPIRED','GET_DENIED'].includes(mode)){
+ if(mode.startsWith('READ_')||['OK','REPLAY_TIME','EXACT_BYTES','NONE','DENIED','EXPIRED','GET_DENIED'].includes(mode)){
   if(terminal){assert.deepEqual(await worker.acquireUnderstandingRange(signal.signal),{kind:'NOT_ACQUIRED',status:mode==='GET_DENIED'?'DENIED':mode});terminal=false;}
   const result=await worker.acquireUnderstandingRange(signal.signal);assert.equal(result.kind,'RANGE_ACQUIRED');
   assert.deepEqual(result.rangeRequestRef,exact.receipt.rangeRequestRef);assert.deepEqual(result.selection,selection);assert.notDeepEqual(result.rangeRequestRef,selection.requestRef);
   assert.equal(Object.isFrozen(result),true);assert.equal(Object.isFrozen(result.selection.ranges[0]),true);assert.equal(closes,children.size);
   assert.equal(result.sourceAvailable,false);assert.equal(result.executionAuthorized,false);assert.equal('ticket'in result,false);assert.equal(/"text"|plannedSid|session_id|private|bodyHash/.test(JSON.stringify(result)),false);
   await assert.rejects(x.pair.get.send(result,signal.signal));await assert.rejects(x.pair.post.send(result,signal.signal));
+  if(mode.startsWith('READ_')){
+   assert.equal(typeof worker.readUnderstandingRange,'function');
+   const projection={schemaVersion:1,kind:'FIXED_RANGE_SELECTION',attribution:'SESSION_ONLY',projectId:scope.projectId,executionId:scope.executionId,executionGeneration:scope.executionGeneration,requestRef:result.rangeRequestRef,acquisitionRef:result.acquisitionRef,sourceRequestRef:selection.requestRef,sourceResultRef:selection.resultRef,contextBundleRef:context.contextBundleRef,initConfirmationRef:selection.initConfirmationRef,tailRef:selection.tailRef,firstSequence:3,lastSequence:3,beforeRef:rangeRows[1].ref,afterRef:null,parts:[{outputRef:rangeRows[2].ref,sequence:3,payloadDigest:rangeRows[2].snapshot.payloadDigest,blockIndex:0,kind:'ASSISTANT_TEXT',text:'선택된 이해 근거',textHash:contentHash('선택된 이해 근거')}],wholeConversationComplete:false,executionAuthorized:false};
+   const expectedHash=hash(projection),handle=q.profile.handle;let nativeReads=0;
+   q.profile.handle=(v,...args)=>{
+    if(v.operation==='NORMAL_SPOOL_CLOSE'&&v.payload.understandingRange){
+     nativeReads++;const received=v.payload.understandingRange;
+     assert.deepEqual(received,{requestRef:result.rangeRequestRef,acquisitionRef:result.acquisitionRef,selection,bodyHash:expectedHash});
+     if(mode==='READ_UNKNOWN')return {state:'UNKNOWN'};
+     const child=args[0];
+     if(mode==='READ_CLOSE_UNKNOWN')child.stdin.end=(_a,_b,done)=>{queueMicrotask(()=>{child.stdout.emit('end');child.emit('close',1);done?.();});};
+     if(mode==='READ_DEADLINE')child.once('close',()=>x.advance(5000));
+     if(mode==='READ_REVOKED')x.f.owner.invalidate();
+     return {state:'CLOSED_CONFIRMED',understandingRange:{state:mode==='READ_METADATA'?'NATIVE_METADATA_CLOSED':'NATIVE_RANGE_CLOSED',requestRef:result.rangeRequestRef,acquisitionRef:mode==='READ_BAD_REF'?ref(899):result.acquisitionRef,bodyHash:mode==='READ_BAD_HASH'?'f'.repeat(64):expectedHash}};
+    }return handle(v,...args);
+   };
+   const beforeRead=x.m.calls.length,read=()=>worker.readUnderstandingRange(mode==='READ_FORGED'?structuredClone(result):result,signal.signal);
+   if(['READ_OK','READ_REPEAT'].includes(mode)){const selected=await read();assert.deepEqual(selected,{kind:'RANGE_READ_VERIFIED',requestRef:result.rangeRequestRef,acquisitionRef:result.acquisitionRef,bodyHash:expectedHash,executionAuthorized:false,dispatchPerformed:false});assert.equal('projection'in selected,false);assert.equal(JSON.stringify(selected).includes('선택된 이해 근거'),false);assert.equal(nativeReads,1);assert.equal(/session_id|plannedSid|cwd|subjectBindingRef|basisRefs/.test(JSON.stringify(selected)),false);}
+   else await assert.rejects(read);
+   if(mode==='READ_FORGED')assert.equal(x.m.calls.length,beforeRead);
+   if(mode==='READ_PRE_BODY')assert.equal(x.m.calls.slice(beforeRead).some(v=>v.operation==='NORMAL_SPOOL_RESUME'||v.operation==='NORMAL_SPOOL_CLOSE'),false);
+   const count=x.m.calls.length;await assert.rejects(read);assert.equal(x.m.calls.length,count);
+  }
+
  }else{
   await assert.rejects(worker.acquireUnderstandingRange(signal.signal));const n=x.m.calls.length;
   await assert.rejects(worker.acquireUnderstandingRange(signal.signal));assert.equal(x.m.calls.length,n);
  }
  await Promise.all(concurrent);
- const calls=x.m.calls.slice(before);assert.ok(calls.every(v=>v.operation==='NORMAL_EXECUTION_READ'||v.operation==='NORMAL_EXECUTION_CALL'&&['UNDERSTANDING_RANGE_PREPARE','UNDERSTANDING_RANGE_REQUEST'].includes(v.payload.kind)));
+ const calls=x.m.calls.slice(before);assert.ok(calls.every(v=>v.operation==='NORMAL_EXECUTION_READ'||mode.startsWith('READ_')&&['NORMAL_SPOOL_PROFILE_STATE','NORMAL_SPOOL_RESUME','NORMAL_SPOOL_CLOSE'].includes(v.operation)||v.operation==='NORMAL_EXECUTION_CALL'&&['UNDERSTANDING_RANGE_PREPARE','UNDERSTANDING_RANGE_REQUEST'].includes(v.payload.kind)));
  if(['NO_SDK','NO_ORIGIN','SOURCE_CHANGED_BEFORE'].includes(mode))assert.equal(calls.length,0);
- assert.equal(calls.filter(v=>v.operation.startsWith('NORMAL_SPOOL_')||v.payload.request?.method==='POST').length,0);
+ assert.equal(calls.filter(v=>(!mode.startsWith('READ_')&&v.operation.startsWith('NORMAL_SPOOL_'))||['NORMAL_SPOOL_RESERVE','NORMAL_SPOOL_SETTLE'].includes(v.operation)||v.payload.request?.method==='POST'||v.operation.includes('UNDERSTANDING_RESULT')).length,0);
  assert.equal(canonicalJson([...q.local.files].map(([p,f])=>[p,f.bytes.toString('base64')])),files);
 });
 

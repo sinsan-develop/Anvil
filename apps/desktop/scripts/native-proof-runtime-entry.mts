@@ -1,8 +1,8 @@
-import { NormalProtectedGetClient, type NormalProtectedGetOptions } from '../../connector/runtime/normal-protected-get-client.ts';
+import { NormalProtectedGetClient, type NormalProtectedGetOptions,type NormalUnderstandingRangeAcquisition } from '../../connector/runtime/normal-protected-get-client.ts';
 import { NormalProtectedPostClient } from '../../connector/runtime/normal-protected-post-client.ts';
 import { NormalInstructionWire } from '../../connector/adapters/secondary/normal-instruction-wire.ts';
 import { NormalInstructionIntake } from '../../connector/runtime/normal-instruction-intake.ts';
-import { OwnedSpoolRuntime,prepareNormalUnderstandingResult,discardNormalUnderstandingResult,type WorkerSdkPorts } from '../../connector/runtime/normal-owned-spool-profile.ts';
+import { OwnedSpoolRuntime,prepareNormalUnderstandingResult,discardNormalUnderstandingResult,discardNormalUnderstandingRangeReadResult,type NormalUnderstandingRangeReadResult,type WorkerSdkPorts } from '../../connector/runtime/normal-owned-spool-profile.ts';
 import { NormalCredentialBootstrapClient, type NormalOwnedHostFactory, NormalOwnedCredentialPort } from '../../connector/runtime/normal-credential-bootstrap-client.ts';
 import { cloneV1, recordV1, refV1, type RuntimeRefV1 } from '../../../contracts/runtime/validation-v1.ts';
 import { canonicalJson } from '../../../contracts/canonical.ts';
@@ -154,6 +154,15 @@ export function createOwnedSpoolController(host: NormalOwnedHostFactory, attempt
        sdkWorker.checkUnderstandingRangeAcquisition(received.kind==='RANGE_ACQUIRED'?received.context:undefined);checkedClock();
        return received;
       }catch(error){understandingUnknown=true;throw error;}finally{readingUnderstanding=false;}
+    },readUnderstandingRange:async(acquired:NormalUnderstandingRangeAcquisition,requestSignal:AbortSignal)=>{
+      checkClients(active);checkedClock();
+      if(!worker||!sdkWorker||running||readingUnderstanding||understandingUnknown||!(requestSignal instanceof AbortSignal)||requestSignal.aborted||!latest||latest.pair!==active)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');
+      readingUnderstanding=true;let held:NormalUnderstandingRangeReadResult|undefined;
+      try{
+       const original=active,owned=latest.port,readSignal=AbortSignal.any([signal,requestSignal]);
+       const current=()=>{checkedClock();checkClients(original);if(understandingUnknown||active!==original||latest?.port!==owned||readSignal.aborted)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');};
+       current();held=await sdkWorker.readUnderstandingRange(acquired,original.get,owned,readSignal,current);current();return held;
+      }catch(error){if(held)discardNormalUnderstandingRangeReadResult(held);understandingUnknown=true;throw error;}finally{readingUnderstanding=false;}
     },discoverUnderstanding:async(requestSignal:AbortSignal)=>{
       checkClients(active);
       checkedClock();if(!sdkWorker||running||readingUnderstanding||understandingUnknown||requestSignal.aborted||!latest||latest.pair!==active)throw Error('NORMAL_UNDERSTANDING_SOURCE_UNAVAILABLE');

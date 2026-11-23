@@ -2,8 +2,29 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import {canonicalJson} from '../../../contracts/canonical.ts';
 
 const source = (name: string) => readFileSync(new URL('../../../apps/connector/native/' + name, import.meta.url), 'utf8');
+
+test('고정 범위 원 HTTPS pickup과 실제 delegated prefix/close는 metadata signing과 별개로 연결된다 · 정적',()=>{
+ const credential=source('NormalExecutionCredentialSource.cs'),profile=source('NormalExecutionSpoolProfileSource.cs');
+ assert.ok(credential.includes('spoolProfile.BindUnderstandingRangePickup('));
+ for(const literal of ['UNDERSTANDING_RANGE_PICKUP','UNDERSTANDING_RANGE_READ_STARTED','UNDERSTANDING_RANGE_READ_CLOSED','ReadUnderstandingRangeOutput','NATIVE_RANGE_CLOSED','selectionHash'])assert.ok(profile.includes(literal),literal);
+ const range=profile.slice(profile.indexOf(' Row ReadUnderstandingRangeOutput('),profile.indexOf(' static bool PendingUnderstanding('));
+ assert.ok(range.includes('Hash(bytes)'));assert.ok(range.includes('payloadDigest'));assert.ok(range.includes('ReadUnderstandingSdkBody(bytes)'));assert.ok(range.includes('FIXED_RANGE_SELECTION'));
+ assert.doesNotMatch(range,/J\(message\)|Sign|Prepared|SendUnderstanding/);
+});
+
+test('200행 유효 선택을 포함한 실제 supervisor frame 형상은 기존 64KiB 경계 안에 들어간다 · RAM',()=>{
+ const id=(n:number)=>'af090103-0000-4000-8000-'+String(n).padStart(12,'0'),h='a'.repeat(64),ref=(n:number)=>({id:id(n),version:1,contentHash:h});
+ const selection={requestRef:ref(1),resultRef:ref(2),initConfirmationRef:ref(3),tailRef:ref(4),firstSequence:9000,lastSequence:9199,ranges:Array.from({length:200},(_,i)=>({outputRef:ref(100+i),sequence:9000+i,payloadDigest:h,textBlocks:1,textBytes:10000}))};
+ const readBasis={recordHash:h,slotHash:h,attemptId:id(5),allocationKey:h,installationId:id(6),registrationRef:ref(7),slotId:id(8),slotReceiptRef:ref(9),projectId:id(10),connectorId:id(11),executionId:id(12),executionGeneration:1,grantRef:ref(13),readExpiresAt:'2030-01-01T00:00:30.000Z'};
+ const read={readBasis,request:{requestRef:ref(14),acquisitionRef:ref(15),selection,bodyHash:h},allocation:id(16),profileId:id(17),rootIdentity:h,namespaceIdentity:h,directoryIdentity:h,pickupHash:h,startedHash:h,summary:{count:10000,bytes:67108864,tail:h},logIdentity:h,anchorIdentity:h,ledgerSequence:10000,ledgerTail:h};
+ const frame={schemaVersion:1,purpose:'NORMAL_UNDERSTANDING_READER_V1',supervisorPid:2147483647,supervisorCreated:'9223372036854775807',anvilPid:2147483647,anvilCreated:'9223372036854775807',helperHash:h,expiresAt:'2030-01-01T00:00:30.000Z',remainingMs:10000,read};
+ assert.equal(selection.ranges.reduce((n,r)=>n+r.textBytes,0),2000000);assert.ok(Buffer.byteLength(canonicalJson(frame)+'\n')<=65536);
+ assert.match(source('NormalUnderstandingReadSupervisorSource.cs'),/if\(input.Length>65536\)/);
+ const profile=readFileSync(new URL('../../../apps/connector/runtime/normal-owned-spool-profile.ts',import.meta.url),'utf8');assert.match(profile,/rangeReadResults.set\(result,\{client,owned,projection,body,/);assert.match(profile,/body.fill\(0\);for\(const part of projection.parts\)part.text=''/);
+});
 
 test('FN09 reader 감독은 원 handle 종료와 보호 원장 재검산 후에만 봉인한다 (정적)', () => {
   const supervisor = source('NormalUnderstandingReadSupervisorSource.cs');
@@ -177,7 +198,8 @@ test('locked pickup/credential/registration/slot의 최솟값을 부모·child·
 test('final spool lock 안에서 원 parent 등록·slot을 재검산하고 reader의 실제 fd final path를 제한한다 (정적)', () => {
   const credential = source('NormalExecutionCredentialSource.cs'), profile = source('NormalExecutionSpoolProfileSource.cs');
   const spool = credential.slice(credential.indexOf('internal object Spool('), credential.indexOf('internal object Dispatch('));
-  assert.match(spool, /operation=="NORMAL_SPOOL_CLOSE"&&S\(value,"writer"\)=="NORMAL_EXECUTION"&&value.ContainsKey\("understanding"\)/);
+  assert.match(spool, /operation=="NORMAL_SPOOL_CLOSE"&&S\(value,"writer"\)=="NORMAL_EXECUTION"&&\(value.ContainsKey\("understanding"\)\|\|value.ContainsKey\("understandingRange"\)\)/);
+  assert.match(spool,/if\(!range\)understandingCloseAccepted=true/);
   assert.match(spool, /var live=Record\(attempt\);if\(H\(live\)!=recordHash\|\|H\(LoadSlot\(slotId,live\)\)!=slotHash\)throw Invalid\(\)/);
   const finish = profile.slice(profile.indexOf('Row FinishSupervisedUnderstanding('), profile.indexOf('// 이 함수는 현재 열린 할당'));
   assert.ok(finish.indexOf('Log(false') < finish.indexOf('liveParent()'));

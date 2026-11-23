@@ -2,6 +2,7 @@ import {isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {arrayV1,cloneV1,hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import {boundedSdkObject,maxSdkObjectBytes,sdkMessageShape} from '../adapters/secondary/schemas.ts';
+import type {NormalUnderstandingRangeAcquisition} from './normal-protected-get-client.ts';
 
 const MiB=1024*1024,scopeRefs=['registrationRef','profileRef','assignmentRef','slotRef','grantRef','startReadyRef','dispatchAttemptRef','sessionBindingRef'] as const;
 type Scope={projectId:string;executionId:string;generation:number;plannedSidDigest:string}&Record<typeof scopeRefs[number],Ref>;
@@ -14,6 +15,20 @@ export function readNormalUnderstandingSelection(raw:unknown,current:unknown,at:
  return {request:cloneV1(req) as NormalUnderstandingResponseRequest,binding:binding(current,req.scope,at)};
 }
 export interface NormalUnderstandingDiscoveryBinding {scope:Scope;requestRef:Ref;acquisitionRef:Ref;contextBundleRef:Ref;checkedAt:string;expiresAt:string}
+export interface NormalUnderstandingRangeBinding extends NormalUnderstandingDiscoveryBinding {selection:NormalUnderstandingRangeAcquisition['selection']}
+export interface NormalUnderstandingRangeProjection {schemaVersion:1;kind:'FIXED_RANGE_SELECTION';attribution:'SESSION_ONLY';projectId:string;executionId:string;executionGeneration:number;
+ requestRef:Ref;acquisitionRef:Ref;sourceRequestRef:Ref;sourceResultRef:Ref;contextBundleRef:Ref;initConfirmationRef:Ref;tailRef:Ref;firstSequence:number;lastSequence:number;beforeRef:Ref|null;afterRef:Ref|null;parts:Part[];wholeConversationComplete:false;executionAuthorized:false}
+function rangeBinding(raw:unknown,expected:Scope,at:number):NormalUnderstandingRangeBinding{
+ const v=boundedSdkObject(raw,MiB).value,x=v.selection;
+ if(!exact(v,['scope','requestRef','acquisitionRef','contextBundleRef','selection','checkedAt','expiresAt']))bad();
+ const {selection:_,...base}=v;discoveryBinding(base,expected,at);
+ if(!exact(x,['requestRef','resultRef','initConfirmationRef','tailRef','firstSequence','lastSequence','ranges'])||!['requestRef','resultRef','initConfirmationRef','tailRef'].every(k=>refV1(x[k])&&x[k].version===1)||!positive(x.firstSequence)||!positive(x.lastSequence)||x.lastSequence<x.firstSequence||x.lastSequence>10000||!arrayV1(x.ranges,200)||x.ranges.length!==x.lastSequence-x.firstSequence+1)bad();
+ let blocks=0,bytes=0;const ids=new Set<string>();for(const [i,r]of x.ranges.entries()){
+  if(!exact(r,['outputRef','sequence','payloadDigest','textBlocks','textBytes'])||!refV1(r.outputRef)||r.outputRef.version!==1||ids.has(r.outputRef.id)||r.outputRef.id===x.initConfirmationRef.id||r.outputRef.id===x.tailRef.id&&(!equal(r.outputRef,x.tailRef)||i!==x.ranges.length-1)||r.sequence!==x.firstSequence+i||!hashV1(r.payloadDigest)||!positive(r.textBlocks)||(blocks+=r.textBlocks)>200||!positive(r.textBytes)||(bytes+=r.textBytes)>2*MiB)bad();ids.add(r.outputRef.id);
+ }return v as NormalUnderstandingRangeBinding;
+}
+/** 원 획득의 private 인계에서만 사용한다. 이 순수 reader는 보호 권위를 발급하지 않는다. */
+export async function readNormalUnderstandingRange(raw:NormalUnderstandingRangeBinding,source:NormalUnderstandingResponseSource,signal:AbortSignal):Promise<NormalUnderstandingRangeProjection>{return await readSource(raw,source,signal,false,true) as NormalUnderstandingRangeProjection;}
 export interface NormalUnderstandingDiscoveryProjection {
  attribution:'SESSION_ONLY';projectId:string;executionId:string;executionGeneration:number;requestRef:Ref;acquisitionRef:Ref;contextBundleRef:Ref;
  initConfirmationRef:Ref;tailRef:Ref;ranges:{outputRef:Ref;sequence:number;payloadDigest:string;textBlocks:number;textBytes:number}[];
@@ -55,25 +70,25 @@ function binding(raw:unknown,expected:Scope,at:number):Binding{
  if(!exact(v,['scope','mode','bundleRef','subjectBindingRef','basisRefs','requiredPartRefs','receivedPartRefs','checkedAt','expiresAt'])||!scope(v.scope)||!equal(v.scope,expected)||v.mode!=='CONTEXT_REVIEW'||!refV1(v.bundleRef)||!refV1(v.subjectBindingRef)||!refs(v.basisRefs)||!refs(v.requiredPartRefs)||!refs(v.receivedPartRefs)||!v.requiredPartRefs.every((r:Ref)=>v.receivedPartRefs.some((p:Ref)=>equal(p,r)))||!isoV1(v.checkedAt)||!isoV1(v.expiresAt)||Date.parse(v.checkedAt)>at||at-Date.parse(v.checkedAt)>30000||Date.parse(v.expiresAt)<=at)bad();
  return v as Binding;
 }
-const stable=(v:Binding|NormalUnderstandingDiscoveryBinding)=>{const{checkedAt:_,expiresAt:__,...rest}=v;return rest;};
+const stable=(v:Binding|NormalUnderstandingDiscoveryBinding|NormalUnderstandingRangeBinding)=>{const{checkedAt:_,expiresAt:__,...rest}=v;return rest;};
 
 /** 동일 보호 read가 정상 종결한 뒤에만 고정 text projection을 반환한다.
  * 공급자의 실제 출처/HUMAN 정책/거래 권위는 별도 선행이며 기본 공급자·normal 인증 marker는 없다. */
 export async function readNormalUnderstandingResponse(raw:NormalUnderstandingResponseRequest,source:NormalUnderstandingResponseSource,signal:AbortSignal):Promise<NormalUnderstandingResponseProjection>{
  return await readSource(raw,source,signal,false) as NormalUnderstandingResponseProjection;
 }
-async function readSource(raw:NormalUnderstandingResponseRequest|NormalUnderstandingDiscoveryBinding,source:NormalUnderstandingResponseSource,signal:AbortSignal,discovery:boolean):Promise<NormalUnderstandingResponseProjection|NormalUnderstandingDiscoveryProjection>{
+async function readSource(raw:NormalUnderstandingResponseRequest|NormalUnderstandingDiscoveryBinding|NormalUnderstandingRangeBinding,source:NormalUnderstandingResponseSource,signal:AbortSignal,discovery:boolean,range=false):Promise<NormalUnderstandingResponseProjection|NormalUnderstandingDiscoveryProjection|NormalUnderstandingRangeProjection>{
  let timer:ReturnType<typeof setTimeout>|undefined,abort=()=>{},live=true;
  try{
   const req=boundedSdkObject(raw,MiB).value;
-  if((!discovery&&(!exact(req,['scope','initConfirmationRef','tailRef','firstSequence','lastSequence'])||!scope(req.scope)||!refV1(req.initConfirmationRef)||!refV1(req.tailRef)||!positive(req.firstSequence)||!positive(req.lastSequence)||req.lastSequence<req.firstSequence||req.lastSequence>10000||req.lastSequence-req.firstSequence>=200))||!exact(source,['clock','current','withRead'])||Object.values(source).some(v=>typeof v!=='function'||isProxy(v))||!(signal instanceof AbortSignal)||signal.aborted)bad();
-  const request=cloneV1(req) as NormalUnderstandingResponseRequest,ports={...source};
+  if((!discovery&&!range&&(!exact(req,['scope','initConfirmationRef','tailRef','firstSequence','lastSequence'])||!scope(req.scope)||!refV1(req.initConfirmationRef)||!refV1(req.tailRef)||!positive(req.firstSequence)||!positive(req.lastSequence)||req.lastSequence<req.firstSequence||req.lastSequence>10000||req.lastSequence-req.firstSequence>=200))||!exact(source,['clock','current','withRead'])||Object.values(source).some(v=>typeof v!=='function'||isProxy(v))||!(signal instanceof AbortSignal)||signal.aborted)bad();
+  const request=cloneV1(range?{scope:req.scope,initConfirmationRef:req.selection?.initConfirmationRef,tailRef:req.selection?.tailRef,firstSequence:req.selection?.firstSequence,lastSequence:req.selection?.lastSequence}:req) as NormalUnderstandingResponseRequest,ports={...source};
   let last=ports.clock(),end=last+30000,monoEnd=performance.now()+30000;
   if(!Number.isSafeInteger(last))bad();
-  const readBinding=discovery?discoveryBinding:binding;
-  if(discovery)discoveryBinding(req,req.scope,last);
+  const readBinding=range?rangeBinding:discovery?discoveryBinding:binding;
+  if(discovery||range)readBinding(req,req.scope,last);
   const initial=readBinding(ports.current(),request.scope,last),base=stable(initial);
-  if(discovery&&!equal(req,initial))bad();
+  if((discovery||range)&&!equal(req,initial))bad();
   const guard=()=>{
    if(!live||signal.aborted||!exact(source,['clock','current','withRead'])||source.clock!==ports.clock||source.current!==ports.current||source.withRead!==ports.withRead)bad();
    const at=ports.clock();if(!Number.isSafeInteger(at)||at<last)bad();last=at;
@@ -104,7 +119,7 @@ async function readSource(raw:NormalUnderstandingResponseRequest|NormalUnderstan
     if(n===request.firstSequence)beforeRef=cloneV1(previous);
     if(n===request.lastSequence+1)afterRef=cloneV1(r.ref);
     const selected=!discovery&&n>=request.firstSequence&&n<=request.lastSequence;
-    if(selected){selectionBytes+=Buffer.byteLength(canonicalJson(r))+1;if(selectionBytes>2*MiB)bad();}
+    if(selected){selectionBytes+=Buffer.byteLength(canonicalJson(r))+1;if(!range&&selectionBytes>2*MiB)bad();}
     if(s.state==='SESSION_INIT_CONFIRMED'){
      if(selected||confirmed||!exact(s,['schemaVersion','state','scope','sequence','previousRef','initOutputRef','observedSidDigest','prefixCount','tailRef','prefixDigest','observedAt'])||!discovery&&!equal(r.ref,request.initConfirmationRef)||lastFamily!=='SYSTEM_INIT'||!equal(s.initOutputRef,previous)||!equal(s.tailRef,previous)||s.prefixCount!==n-1||s.prefixDigest!==prefix||s.observedSidDigest!==request.scope.plannedSidDigest)bad();confirmed=true;discoveredInit=cloneV1(r.ref);
     }else{
@@ -128,6 +143,8 @@ async function readSource(raw:NormalUnderstandingResponseRequest|NormalUnderstan
       }
       if(selected){
        if(s.classification!=='ORDINARY'||type.family!=='ASSISTANT'||m.parent_tool_use_id!==null||Object.hasOwn(m,'error')||!arrayV1(m.message.content,200)||!m.message.content.length||Object.hasOwn(m.message,'role')&&m.message.role!=='assistant')bad();
+       if(range&&(Object.hasOwn(m,'subagent_type')||Object.hasOwn(m,'task_description')))bad();
+       if(range){const expected=(initial as NormalUnderstandingRangeBinding).selection.ranges[n-request.firstSequence];if(!expected||!equal(expected.outputRef,r.ref)||expected.payloadDigest!==s.payloadDigest||expected.textBlocks!==m.message.content.length||expected.textBytes!==m.message.content.reduce((total:number,b:any)=>total+(typeof b.text==='string'?Buffer.byteLength(b.text):0),0))bad();}
        for(let i=0;i<m.message.content.length;i++){
         const block=m.message.content[i];if(!exact(block,['type','text'])||block.type!=='text'||typeof block.text!=='string'||!block.text.trim())bad();
         const p:Part={outputRef:cloneV1(r.ref),sequence:n,payloadDigest:s.payloadDigest,blockIndex:i,kind:'ASSISTANT_TEXT',text:block.text,textHash:contentHash(block.text)};
@@ -146,6 +163,7 @@ async function readSource(raw:NormalUnderstandingResponseRequest|NormalUnderstan
    }catch{live=false;return bad();}
   });
   const closed=await Promise.race([read,expired]);guard();if(closed!==undefined||!called||!completed)bad();
+  if(range){const d=initial as NormalUnderstandingRangeBinding,result:NormalUnderstandingRangeProjection={schemaVersion:1,kind:'FIXED_RANGE_SELECTION',attribution:'SESSION_ONLY',projectId:request.scope.projectId,executionId:request.scope.executionId,executionGeneration:request.scope.generation,requestRef:d.requestRef,acquisitionRef:d.acquisitionRef,sourceRequestRef:d.selection.requestRef,sourceResultRef:d.selection.resultRef,contextBundleRef:d.contextBundleRef,initConfirmationRef:request.initConfirmationRef,tailRef:request.tailRef,firstSequence:request.firstSequence,lastSequence:request.lastSequence,beforeRef,afterRef,parts,wholeConversationComplete:false,executionAuthorized:false};if(Buffer.byteLength(canonicalJson(result))>2*MiB)bad();return result;}
   if(discovery){
    const d=initial as NormalUnderstandingDiscoveryBinding;
    if(!discoveredInit||!previous)bad();

@@ -48,7 +48,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   Check();if(spoolProfile==null)throw Invalid();string attempt=Id(value,"attemptId");var record=Record(attempt);
   var slot=S(value,"writer")=="NORMAL_EXECUTION"?LoadSlot(Id(value,"slotId"),record):null;
   Action understandingCurrent=null;Func<Func<Action,Dictionary<string,object>>,Dictionary<string,object>> understandingFinal=null;
-  if(operation=="NORMAL_SPOOL_CLOSE"&&S(value,"writer")=="NORMAL_EXECUTION"&&value.ContainsKey("understanding")){
+  if(operation=="NORMAL_SPOOL_CLOSE"&&S(value,"writer")=="NORMAL_EXECUTION"&&(value.ContainsKey("understanding")||value.ContainsKey("understandingRange"))){
    string recordHash=H(record),slotHash=H(slot),slotId=Id(value,"slotId");
    // 부모만 원 보호 등록/자격/slot을 읽는다. child에는 이 callback/원 token을 넘기지 않는다.
    understandingCurrent=()=>{Check();var live=Record(attempt);if(H(live)!=recordHash||H(LoadSlot(slotId,live))!=slotHash)throw Invalid();Check();};
@@ -61,7 +61,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   }
   Dictionary<string,object> answer;try{answer=spoolProfile.Control(operation,value,record,slot,understandingCurrent,understandingFinal);}
   catch(NormalExecutionSpoolProfileSource.SpoolCapacityException){if(operation!="NORMAL_SPOOL_RESERVE")throw;answer=new Dictionary<string,object>{{"state","CAPACITY_EXCEEDED"}};}
-  Check();if(H(Record(attempt))!=H(record)||(slot!=null&&At(slot,"expiresAt")<=clock()))throw Invalid();if(understandingCurrent!=null){if(S(answer,"state")!="CLOSED_CONFIRMED"||S(Map(answer["understanding"]),"state")!="NATIVE_METADATA_CLOSED")throw Invalid();understandingCloseAccepted=true;}return answer;
+  Check();if(H(Record(attempt))!=H(record)||(slot!=null&&At(slot,"expiresAt")<=clock()))throw Invalid();if(understandingCurrent!=null){bool range=value.ContainsKey("understandingRange");if(S(answer,"state")!="CLOSED_CONFIRMED"||S(Map(answer[range?"understandingRange":"understanding"]),"state")!=(range?"NATIVE_RANGE_CLOSED":"NATIVE_METADATA_CLOSED"))throw Invalid();if(!range)understandingCloseAccepted=true;}return answer;
  }
  internal object Dispatch(string operation,Dictionary<string,object> value){
   Check();try{
@@ -391,7 +391,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   for(int i=0;i<rows.Length;i++){
    var row=Map(rows[i]);Exact(row,"outputRef,sequence,payloadDigest,textBlocks,textBytes");var outputRef=DesktopTrustKeyHostSource.Ref(row["outputRef"]);string id=Id(outputRef,"id");
    if(N(outputRef["version"])!=1||!seen.Add(id)||id==Id(Map(selection["initConfirmationRef"]),"id")||id==Id(Map(selection["tailRef"]),"id")&&(J(outputRef)!=J(selection["tailRef"])||i!=rows.Length-1)||N(row["sequence"])!=first+i||!DesktopTrustKeyHostSource.IsHash(row["payloadDigest"])||N(row["textBlocks"])<1||(blocks+=N(row["textBlocks"]))>200||N(row["textBytes"])<1||(totalBytes+=N(row["textBytes"]))>2097152)throw Invalid();
-  }Check();
+  }Check();if(spoolProfile==null)throw Invalid();spoolProfile.BindUnderstandingRangePickup(record,slot,requested,reference,context,selection,At(receipt,"observedAt"),At(receipt,"expiresAt"));Check();
  }
  void LoadUnderstandingCa(Dictionary<string,object> slot){
   byte[] ca=ProtectedStore.LoadNormalOwned(owner,Id(slot,"slotId"),"execution-ca",current);try{if(H(ca)!=S(slot,"caHash"))throw Invalid();activeCA=new UTF8Encoding(false,true).GetString(ca);}finally{Array.Clear(ca,0,ca.Length);}

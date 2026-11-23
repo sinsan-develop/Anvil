@@ -15,14 +15,19 @@ import {confirmNormalLiveInputDelivery,takeFirstOutputOrigin,takeFirstSidOrigin,
 import type {NormalStartWire,NormalStartCurrent} from './normal-start-coordinator.ts';
 import type {RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {receiveProfiledEnvelope,type InboxFilePorts,type InboxLimits} from './receipt-inbox.ts';
-import {takeNormalUnderstandingDiscovery,type NormalUnderstandingDiscoveryTicket,takeNormalUnderstandingRead,type NormalUnderstandingReadTicket,type NormalProtectedGetClient,type NormalUnderstandingRangeAcquisition} from './normal-protected-get-client.ts';
-import {readNormalUnderstandingDiscovery,type NormalUnderstandingDiscoveryProjection,readNormalUnderstandingResponse,type NormalUnderstandingResponseProjection} from './normal-understanding-response-source.ts';
+import {takeNormalUnderstandingRangeAcquisition,takeNormalUnderstandingDiscovery,type NormalUnderstandingDiscoveryTicket,takeNormalUnderstandingRead,type NormalUnderstandingReadTicket,type NormalProtectedGetClient,type NormalUnderstandingRangeAcquisition} from './normal-protected-get-client.ts';
+import {readNormalUnderstandingRange,type NormalUnderstandingRangeProjection,readNormalUnderstandingDiscovery,type NormalUnderstandingDiscoveryProjection,readNormalUnderstandingResponse,type NormalUnderstandingResponseProjection} from './normal-understanding-response-source.ts';
 import type {NormalOwnedCredentialPort} from './normal-credential-bootstrap-client.ts';
 
 import type {NormalProtectedPostClient} from './normal-protected-post-client.ts';
 
 declare const resultSeal:unique symbol;
 export type NormalUnderstandingResultSeal=Readonly<{[resultSeal]:true}>;
+declare const rangeReadSeal:unique symbol;
+export type NormalUnderstandingRangeReadResult=Readonly<{[rangeReadSeal]:true;kind:'RANGE_READ_VERIFIED';requestRef:RuntimeRefV1;acquisitionRef:RuntimeRefV1;bodyHash:string;executionAuthorized:false;dispatchPerformed:false}>;
+const rangeReadResults=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;projection:NormalUnderstandingRangeProjection;body:Buffer;check:Guard;dispose:()=>void}>();
+/** 원문은 이 모듈의 단회 상태에만 남긴다. 폐기는 서명/전송 권위를 발급하지 않는다. */
+export function discardNormalUnderstandingRangeReadResult(result:NormalUnderstandingRangeReadResult){rangeReadResults.get(result)?.dispose();}
 type DiscoveryReadResult={metadata:NormalUnderstandingDiscoveryProjection;seal:NormalUnderstandingResultSeal};
 type ClosedUnderstanding={transmit(body:Buffer,binding:NormalUnderstandingResultBinding,signal:AbortSignal):Promise<void>};
 const discoveryResults=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;post:NormalProtectedPostClient;metadata:NormalUnderstandingDiscoveryProjection;closed?:ClosedUnderstanding;check:Guard;finish:Guard}>();
@@ -73,7 +78,7 @@ export type WorkerSdkPorts=Pick<NormalFirstSendSource,'expiresAt'|'create'|'clos
 type Hold=Awaited<ReturnType<OutputPorts['reserve']>>;
 type OutputTx=Parameters<OutputPorts['strictExclusive']>[1];
 type Handoff={reservation:string;challenge:string;scopeDigest:string;requestDigest:string};
-type PhaseControls={resume?:Handoff;readOnly?:boolean;closeReservation?:string;challenge?:string;understanding?:NormalUnderstandingResultBinding;resultDeadline?:number;closed?:ClosedUnderstanding;guard:()=>void};
+type PhaseControls={resume?:Handoff;readOnly?:boolean;closeReservation?:string;challenge?:string;understanding?:NormalUnderstandingResultBinding;range?:NormalUnderstandingResultBinding&{selection:NormalUnderstandingRangeAcquisition['selection']};resultDeadline?:number;closed?:ClosedUnderstanding;guard:()=>void};
 const outputBinders=new WeakMap<OutputPorts,(ticket:object)=>void>();
 const outputJournals=new WeakSet<ProfileJournalAccess>();
 type FirstSidBasis=Omit<Parameters<NormalFirstSendSource['check']>[0],'plannedSidDigest'>;
@@ -337,7 +342,7 @@ export class OwnedSpoolRuntime {
    const now=this.#clock(),wall=Math.min(now+10000,slot?Date.parse(slot.expiresAt):Infinity,phase?.resultDeadline??Infinity),mono=performance.now()+wall-now;
    if(wall<=now||this.#owner.aborted||signal.aborted)invalid();
    openingStarted=true;
-   host=phase?.understanding?await this.#openUnderstanding(signal,wall,mono,phase.guard,slot!):await this.external(()=>Reflect.apply(this.#open,this.#host,[signal]));
+   host=phase?.understanding||phase?.range?await this.#openUnderstanding(signal,wall,mono,phase.guard,slot!):await this.external(()=>Reflect.apply(this.#open,this.#host,[signal]));
    closePhysical=host.close;
    const purposeSend=phase?.understanding?host.sendUnderstandingResult:undefined;
    const prepare=typeof purposeSend==='function'?host.prepareUnderstandingResult:undefined;
@@ -366,8 +371,11 @@ export class OwnedSpoolRuntime {
    let denied=false;
    try{result=await this.#bounded(s,()=>this.#als.run(t,()=>body(t)));this.#check(s);if(t.child||s.borrowed)invalid();}catch(error){if(error!==capacity)throw error;denied=true;}finally{t.live=false;}
    phase?.guard();
-   const closed=await this.#frame(s,'NORMAL_SPOOL_CLOSE',{...auth,allocation:s.allocation,...(phase?.closeReservation?{reservation:phase.closeReservation}:phase?.understanding?{understanding:phase.understanding}:{})});
-   if(phase?.closeReservation){
+   const closed=await this.#frame(s,'NORMAL_SPOOL_CLOSE',{...auth,allocation:s.allocation,...(phase?.closeReservation?{reservation:phase.closeReservation}:phase?.range?{understandingRange:phase.range}:phase?.understanding?{understanding:phase.understanding}:{})});
+   if(phase?.range){
+    if(!recordV1(closed,['state','understandingRange'])||closed.state!=='CLOSED_CONFIRMED')invalid();const proof=closed.understandingRange;
+    if(!recordV1(proof,['state','requestRef','acquisitionRef','bodyHash'])||proof.state!=='NATIVE_RANGE_CLOSED'||byRef(proof.requestRef)!==byRef(phase.range.requestRef)||byRef(proof.acquisitionRef)!==byRef(phase.range.acquisitionRef)||proof.bodyHash!==phase.range.bodyHash)invalid();
+   }else if(phase?.closeReservation){
     if(!recordV1(closed,['state','challenge'])||closed.state!=='SDK_READ_CLOSED'||typeof closed.challenge!=='string'||!uuidV1(closed.challenge.slice(0,36))||!uuidV1(closed.challenge.slice(36)))invalid();
     phase.challenge=closed.challenge;
    }else if(phase?.understanding){
@@ -394,15 +402,15 @@ export class OwnedSpoolRuntime {
      const physical=host;
      const close=()=>this.external(()=>Reflect.apply(closePhysical!,physical,[success?'HOST_REQUEST_VALIDATED':'OPERATION_UNKNOWN']));
      if(physical.close!==closePhysical)invalid();
-     if(prepared&&s&&phase&&success){
+     if((prepared||phase?.range)&&s&&phase&&success){
       try{this.#check(s,false);phase.guard();}catch{success=false;}
      }
      const closing=close();
      void closing.catch(()=>{});
-     const closed=prepared&&s&&success?await this.#bounded(s,()=>closing,false):await closing;
+     const closed=(prepared||phase?.range)&&s&&success?await this.#bounded(s,()=>closing,false):await closing;
      if(closed?.state!=='CLOSED_CONFIRMED'||physical.close!==closePhysical)success=false;
      if(success&&s){
-      this.#check(s,false);
+      this.#check(s,false);if(phase?.range)phase.guard();
       if(prepared&&phase){
        const {wall,mono,scope,slot}=s,proof=prepared,binding=phase.understanding;
        if(!slot||!binding)invalid();
@@ -585,13 +593,13 @@ export class OwnedSpoolRuntime {
     const closed=await op.write;check();ongoing=undefined;return closed;
    }
   });
-  return {storage,read:async(body:OutputTx,guard:Guard)=>{
+  return {storage,read:async(body:OutputTx,guard:Guard,deadline?:number)=>{
    const b=check();guard();if(reading||ongoing||this.#als.getStore())invalid();reading=true;const completed=gate<void>();readFinished=completed.promise;
-   try{await this.#root('NORMAL_EXECUTION',b.signal,async t=>{guard();await inspect(t,body,true);guard();},{readOnly:true,guard:()=>{check();guard();}});guard();}
+   try{await this.#root('NORMAL_EXECUTION',b.signal,async t=>{guard();await inspect(t,body,true);guard();},{readOnly:true,resultDeadline:deadline,guard:()=>{check();guard();}});guard();}
    catch(error){unknown=true;throw error;}finally{reading=false;completed.resolve();}
   }};
  }
- outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;checkUnderstandingRangeAcquisition(context?:NormalUnderstandingRangeAcquisition['context']):void;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>;readUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,post:NormalProtectedPostClient,readSignal:AbortSignal,current:Guard):Promise<DiscoveryReadResult>}{
+ outputSource(worker:NormalStartWire,journal:NormalStartFileStore,sdk:WorkerSdkPorts,signal:AbortSignal):{source:NormalFirstSendSource;port:LiveInputPort;readUnderstandingRange(acquired:NormalUnderstandingRangeAcquisition,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,readSignal:AbortSignal,current:Guard):Promise<NormalUnderstandingRangeReadResult>;checkUnderstandingRangeAcquisition(context?:NormalUnderstandingRangeAcquisition['context']):void;readUnderstanding(ticket:NormalUnderstandingReadTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort):Promise<NormalUnderstandingResponseProjection>;readUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,post:NormalProtectedPostClient,readSignal:AbortSignal,current:Guard):Promise<DiscoveryReadResult>}{
   const saved=this.#workers.get(worker),slot=this.external(this.#slot);
   if(this.#binding||!saved||saved.journal!==journal||!slot||!refV1(slot.receiptRef)||this.#owner.aborted||signal.aborted||
    isProxy(sdk)||!recordV1(sdk,['expiresAt','check','create','close','classify'])||
@@ -654,12 +662,12 @@ export class OwnedSpoolRuntime {
    if(!inputStream||!query||original!==query||!origin||origin.signal.aborted)return Promise.reject(Error('NORMAL_WORKER_INPUT_UNAVAILABLE'));
    return inputStream.provide(input,signal,()=>confirmNormalLiveInputDelivery(input,worker,original,port));
   }});
-  const withRead=async(body:Parameters<Parameters<typeof readNormalUnderstandingResponse>[1]['withRead']>[0],guard:()=>void)=>{await output.read(async tx=>{
+  const withRead=async(body:Parameters<Parameters<typeof readNormalUnderstandingResponse>[1]['withRead']>[0],guard:()=>void,deadline?:number)=>{await output.read(async tx=>{
    guard();const rows=await tx.read();guard();let active=true;
    try{await body({rowCount:rows.length,read:async sequence=>{guard();if(!active||!Number.isSafeInteger(sequence)||sequence<1||sequence>rows.length)invalid();return cloneV1(rows[sequence-1]);}});guard();}
    finally{active=false;rows.length=0;}
-  },guard);};
-  return {source,port,checkUnderstandingRangeAcquisition:context=>{
+  },guard,deadline);};
+  const checkRange=(context?:NormalUnderstandingRangeAcquisition['context'])=>{
    verify();if(!origin||!binding||this.#unknown||origin.signal.aborted)invalid();
    this.external(origin.check);
    const s=origin.scope;
@@ -673,6 +681,29 @@ export class OwnedSpoolRuntime {
      context.assignmentRef.id!==origin.start.assignmentId||byRef(context.contextBundleRef)!==byRef(origin.start.contextBundleRef))invalid();
    }
    verify();this.external(origin.check);
+  };
+  return {source,port,checkUnderstandingRangeAcquisition:checkRange,readUnderstandingRange:async(acquired,client,owned,readSignal,current)=>{
+   checkRange();if(!origin||byRef(owned.metadata)!==slotKey)invalid();
+   const original=takeNormalUnderstandingRangeAcquisition(acquired,client,owned),v=original.value;
+   const scopeSignal=AbortSignal.any([readSignal,origin.signal]);
+   const guard=()=>{this.external(current);original.check();checkRange(v.context);if(scopeSignal.aborted)invalid();};
+   guard();const expected={scope:cloneV1(origin.scope),requestRef:v.rangeRequestRef,acquisitionRef:v.acquisitionRef,contextBundleRef:v.context.contextBundleRef,selection:v.selection,checkedAt:v.observedAt,expiresAt:v.expiresAt};
+   const projection=await readNormalUnderstandingRange(expected,{clock:()=>{guard();return this.#clock();},current:()=>{guard();return expected;},withRead:body=>withRead(body,guard,Date.parse(v.expiresAt))},scopeSignal);guard();
+   const body=Buffer.from(canonicalJson(projection));let transferred=false;
+   try{
+    if(body.length>2*1024*1024)invalid();const bodyHash=contentHash(body);
+    const phase:PhaseControls={readOnly:true,resultDeadline:Date.parse(v.expiresAt),range:{requestRef:v.rangeRequestRef,acquisitionRef:v.acquisitionRef,selection:v.selection,bodyHash},guard};
+    await this.#root('NORMAL_EXECUTION',scopeSignal,async()=>{guard();},phase);guard();
+    const result=Object.freeze({kind:'RANGE_READ_VERIFIED',requestRef:Object.freeze(cloneV1(v.rangeRequestRef)),acquisitionRef:Object.freeze(cloneV1(v.acquisitionRef)),bodyHash,executionAuthorized:false,dispatchPerformed:false}) as NormalUnderstandingRangeReadResult;
+    const delay=Math.max(1,Math.min(Date.parse(v.expiresAt),this.external(origin.check))-this.#clock());guard();
+    let timer:ReturnType<typeof setTimeout>|undefined,disposed=false;
+    const dispose=()=>{if(disposed)return;disposed=true;if(timer!==undefined)clearTimeout(timer);scopeSignal.removeEventListener('abort',dispose);rangeReadResults.delete(result);body.fill(0);for(const part of projection.parts)part.text='';projection.parts.length=0;};
+    try{
+     rangeReadResults.set(result,{client,owned,projection,body,check:()=>{if(disposed)invalid();guard();},dispose});
+     scopeSignal.addEventListener('abort',dispose,{once:true});timer=setTimeout(dispose,delay);timer.unref();
+     guard();if(disposed)invalid();transferred=true;return result;
+    }catch(error){dispose();throw error;}
+   }finally{if(!transferred){body.fill(0);for(const part of projection.parts)part.text='';projection.parts.length=0;}}
   },readUnderstandingDiscovery:async(ticket,client,owned,post,readSignal,current)=>{
    verify();if(!origin||!binding||this.#unknown||byRef(owned.metadata)!==slotKey)invalid();
    const original=takeNormalUnderstandingDiscovery(ticket,client,owned,origin.scope,origin.start);

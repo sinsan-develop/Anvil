@@ -47,6 +47,33 @@ function fixture(){
  const append=(id:string,text:string)=>message({type:'assistant',uuid:id,session_id:sid,parent_tool_use_id:null,message:{role:'assistant',content:[{type:'text',text}]}},confirmation);
  return{scope,rows,binding,request,state,source,signal,append,run:()=>readNormalUnderstandingResponse(request,source,signal.signal),rehash:(i:number)=>{rows[i]!.ref.contentHash=hash(rows[i]!.snapshot);}};
 }
+
+test('실제 고정 범위 획득 refs로 원 prefix를 읽고 같은 선택의 canonical bytes만 정상 close 뒤 반환한다',async()=>{
+ const {readNormalUnderstandingRange}=await import('../../../apps/connector/runtime/normal-understanding-response-source.ts');
+ assert.equal(typeof readNormalUnderstandingRange,'function');
+ for(const mode of ['OK','DECIMAL','SUBAGENT','APPEND','ROW','DIGEST','QUARANTINED','CLOSE','CURRENT']){
+  const f=fixture(),row=f.rows[2]!,selection={requestRef:ref(),resultRef:ref(),initConfirmationRef:f.request.initConfirmationRef,tailRef:f.request.tailRef,firstSequence:3,lastSequence:3,ranges:[{outputRef:row.ref,sequence:3,payloadDigest:row.snapshot.payloadDigest,textBlocks:1,textBytes:Buffer.byteLength('사람이 대조할 원 응답')}]};
+  if(mode==='DECIMAL'||mode==='SUBAGENT'){const payload=JSON.parse(Buffer.from(row.snapshot.body,'base64').toString());payload.message.usage={cost:0.25,latency:1e-7};if(mode==='SUBAGENT')payload.subagent_type='fixture';const bytes=Buffer.from(canonicalJson(payload));row.snapshot.body=bytes.toString('base64');row.snapshot.payloadDigest=contentHash(bytes);f.rehash(2);selection.tailRef=row.ref;selection.ranges[0]!.outputRef=row.ref;selection.ranges[0]!.payloadDigest=row.snapshot.payloadDigest;}
+  const binding={scope:f.scope,requestRef:ref(),acquisitionRef:ref(),contextBundleRef:ref(),selection,checkedAt:f.binding.checkedAt,expiresAt:f.binding.expiresAt};
+  if(mode==='APPEND')f.append('later','선택 밖');if(mode==='ROW')selection.ranges[0]!.outputRef=ref();if(mode==='DIGEST')selection.ranges[0]!.payloadDigest='f'.repeat(64);
+  if(mode==='QUARANTINED'){row.snapshot.classification='QUARANTINED';f.rehash(2);selection.tailRef=row.ref;selection.ranges[0]!.outputRef=row.ref;}
+  if(mode==='CLOSE')f.state.failClose=true;if(mode==='CURRENT')f.state.afterRead=()=>{f.state.active=false;};
+  const source={...f.source,current:()=>f.state.active?structuredClone(binding):null};
+  const run=()=>readNormalUnderstandingRange(binding,source,f.signal.signal);
+  if(['OK','DECIMAL','APPEND'].includes(mode)){const v=await run();assert.equal(v.kind,'FIXED_RANGE_SELECTION');assert.deepEqual(v.requestRef,binding.requestRef);assert.deepEqual(v.sourceResultRef,selection.resultRef);assert.equal(v.parts[0]!.text,'사람이 대조할 원 응답');assert.equal(f.state.reads,3);assert.equal(f.state.closed,1);assert.equal(/subjectBindingRef|basisRefs|private-path|session_id/.test(JSON.stringify(v)),false);}
+  else await assert.rejects(run);
+ }
+});
+
+test('고정 범위 200개 원 행과 200 text parts를 생략 없이 정상 소비한다 · RAM',async()=>{
+ const {readNormalUnderstandingRange}=await import('../../../apps/connector/runtime/normal-understanding-response-source.ts'),f=fixture();
+ for(let n=1;n<200;n++)f.append('selected-'+n,'검산한 선택');
+ const selection={requestRef:ref(),resultRef:ref(),initConfirmationRef:f.request.initConfirmationRef,tailRef:f.rows.at(-1)!.ref,firstSequence:3,lastSequence:202,
+  ranges:f.rows.slice(2).map(row=>{const m=JSON.parse(Buffer.from(row.snapshot.body,'base64').toString());return{outputRef:row.ref,sequence:row.snapshot.sequence,payloadDigest:row.snapshot.payloadDigest,textBlocks:1,textBytes:Buffer.byteLength(m.message.content[0].text)};})};
+ const binding={scope:f.scope,requestRef:ref(),acquisitionRef:ref(),contextBundleRef:ref(),selection,checkedAt:f.binding.checkedAt,expiresAt:f.binding.expiresAt};
+ const result=await readNormalUnderstandingRange(binding,{...f.source,current:()=>binding},f.signal.signal);
+ assert.equal(result.parts.length,200);assert.equal(f.state.reads,202);assert.equal(f.state.closed,1);assert.deepEqual(result.tailRef,selection.tailRef);
+});
 test('같은 보호 읽기의 정상 종결 뒤 고정 범위 text만 반환하고 권위·SID·SDK 메타를 반환하지 않는다',async()=>{
  const f=fixture(),v=await f.run();
  assert.equal(f.state.open,1);assert.equal(f.state.closed,1);assert.equal(f.state.reads,3);

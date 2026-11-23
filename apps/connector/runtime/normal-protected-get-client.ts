@@ -50,6 +50,12 @@ export type NormalUnderstandingRangeAcquisition=Readonly<{[rangeAcquisition]:tru
  selection:Readonly<{requestRef:Ref;resultRef:Ref;initConfirmationRef:Ref;tailRef:Ref;firstSequence:number;lastSequence:number;ranges:ReadonlyArray<Readonly<{outputRef:Ref;sequence:number;payloadDigest:string;textBlocks:number;textBytes:number}>>}>;
  observedAt:string;expiresAt:string;sourceAvailable:false;selectionAvailable:false;executionAuthorized:false;dispatchPerformed:false}>;
 function freezeRange<T>(value:T):T{if(value&&typeof value==='object'){for(const child of Object.values(value))freezeRange(child);Object.freeze(value);}return value;}
+const rangeAcquisitions=new WeakMap<object,{client:NormalProtectedGetClient;owned:NormalOwnedCredentialPort;guard:()=>void}>();
+/** 실제 원 GET/physical close가 만든 동일 객체만 한 번 소비한다. raw 메타는 증표가 아니다. */
+export function takeNormalUnderstandingRangeAcquisition(value:NormalUnderstandingRangeAcquisition,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort){
+ const saved=rangeAcquisitions.get(value);if(!saved)fail('NORMAL_GET_READ_TICKET_INVALID');rangeAcquisitions.delete(value);
+ if(saved.client!==client||saved.owned!==owned)fail('NORMAL_GET_READ_TICKET_INVALID');saved.guard();return {value:cloneV1(value),check:saved.guard};
+}
 export function takeNormalUnderstandingDiscovery(ticket:NormalUnderstandingDiscoveryTicket,client:NormalProtectedGetClient,owned:NormalOwnedCredentialPort,scope:NormalUnderstandingResponseRequest['scope'],start:{startCommandId:string;assignmentId:string;contextBundleRef:Ref}){
  const saved=discoveries.get(ticket);if(!saved)fail('NORMAL_GET_READ_TICKET_INVALID');discoveries.delete(ticket);
  try{
@@ -229,7 +235,8 @@ export class NormalProtectedGetClient{
     if(!recordV1(row,['outputRef','sequence','payloadDigest','textBlocks','textBytes'])||!refV1(row.outputRef)||row.outputRef.version!==1||seen.has(row.outputRef.id)||row.outputRef.id===x.initConfirmationRef.id||row.outputRef.id===x.tailRef.id&&(!same(row.outputRef,x.tailRef)||i!==x.ranges.length-1)||row.sequence!==x.firstSequence+i||!hashV1(row.payloadDigest)||!Number.isSafeInteger(row.textBlocks)||row.textBlocks<1||(blocks+=row.textBlocks)>200||!Number.isSafeInteger(row.textBytes)||row.textBytes<1||(totalBytes+=row.textBytes)>2097152)fail('NORMAL_GET_RESPONSE_INVALID',200,true);seen.add(row.outputRef.id);
    }
    end=Math.min(end,Date.parse(r.expiresAt));guard();
-   return freezeRange({kind:'RANGE_ACQUIRED',rangeRequestRef:cloneV1(r.rangeRequestRef),acquisitionRef:cloneV1(v.proofResultRef),context:cloneV1(c),selection:cloneV1(x),observedAt:r.observedAt,expiresAt:r.expiresAt,sourceAvailable:false,selectionAvailable:false,executionAuthorized:false,dispatchPerformed:false}) as NormalUnderstandingRangeAcquisition;
+   const acquired=freezeRange({kind:'RANGE_ACQUIRED',rangeRequestRef:cloneV1(r.rangeRequestRef),acquisitionRef:cloneV1(v.proofResultRef),context:cloneV1(c),selection:cloneV1(x),observedAt:r.observedAt,expiresAt:r.expiresAt,sourceAvailable:false,selectionAvailable:false,executionAuthorized:false,dispatchPerformed:false}) as NormalUnderstandingRangeAcquisition;
+   rangeAcquisitions.set(acquired,{client:this,owned,guard});return acquired;
   }catch(error){if(error instanceof NormalProtectedGetError)throw error;return fail('NORMAL_GET_RESPONSE_INVALID',0,true);}
   finally{this.#understandingBusy=false;}
  }
