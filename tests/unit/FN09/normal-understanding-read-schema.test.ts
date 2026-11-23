@@ -134,7 +134,7 @@ test('range result marker-only/receipt-only/body-only writes have exact BEFORE a
  const shape=history.match(/execution_json_shape\(s,ARRAY\[([^\]]+)\]/)?.[1];assert.ok(shape);assert.doesNotMatch(shape,/'(?:body|text|parts|auth|bodyBase64|sdk|sessionId)'/);
  assert.match(shape,/'responseRef','partRefs','bodyHash','bodyBytes'/);
  const section=sql.slice(sql.indexOf('-- FN09 A §4.3:'));
- const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,16);
+ const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,19);
  for(const [,name,args] of helpers){
   const signature=name+'('+args!.split(',').filter(Boolean).map(x=>x.trim().split(/\s+/).at(-1)).join(',')+')';
   assert.ok(section.includes('ALTER FUNCTION anvil.'+signature+' OWNER TO anvil_v3_migrator;'),signature);
@@ -381,4 +381,157 @@ test('range transport has private purpose triggers, current admission and immuta
  assert.match(sql,/CREATE TRIGGER fn09_range_issue_settle AFTER INSERT[^;]*NEW.version=1[^;]*settle_fn09_range_transport/);
  assert.match(sql,/CREATE TRIGGER fn09_range_receipt_settle AFTER INSERT[^;]*NORMAL_UNDERSTANDING_RANGE_ACQUIRED[^;]*settle_fn09_range_transport/);
  const shapeAt=sql.indexOf('CREATE FUNCTION anvil.fn09_normal_understanding_range_transport_plan_valid('),checkAt=sql.indexOf("WHEN part_kind='FN09_RANGE_TRANSPORT'");assert.ok(shapeAt>0&&shapeAt<checkAt);
+});
+
+test('최초 normal 검토 basis는 원 response의 현재 HUMAN custody와 원 준비/책임/맥락/모든 전달 부분에만 결박된다',()=>{
+ const source=definition('fn09_normal_understanding_review_source_basis'),context=definition('fn09_normal_understanding_review_context_basis');
+ assert.match(source,/range_current\(s,a,c,selection,policy,expected_tx\)/);assert.equal((source.match(/range_current\(s,a,c,selection,policy,expected_tx\)/g)??[]).length,2);
+ for(const token of ['response_ref',"'RANGE_STORED'",'review_context_basis',"'SOURCE_BASIS_ONLY'","'subjectBindingState','VERIFIED'","'reviewAvailable',false","'responsePartRefs'","'executionAuthorized',false"])assert.ok(source.includes(token),token);
+ for(const token of ['normal_start_material_complete','execution_preparations','role_bindings','agent_sessions','project_roles','context_bundles','context_items','assignment_draft_versions','execution_material_manifests','execution_materials',"'CONTEXT_BUNDLE'",'material_binding_complete',"'NORMAL_START_MATERIAL'",'LIMIT 2',"'requiredPartRefs'","'receivedPartRefs'","'basisRefs'","'latestInstructionRefs'"])assert.ok(context.includes(token),token);
+ assert.doesNotMatch(source+context,/INSERT INTO|UPDATE anvil|DELETE FROM|set_config|reviewUnderstanding|SYNTHETIC_ONLY/);
+ assert.ok(source.includes("'subjectBindingRef',ground->'roleBindingRef'"));assert.doesNotMatch(source,/'subjectBindingRef',ground->'(?:agentSessionRef|roleRef)'/);
+ for(const [name,args]of [['fn09_normal_understanding_review_context_basis','uuid,jsonb,jsonb'],['fn09_normal_understanding_review_source_basis','uuid,uuid,uuid,jsonb,jsonb,text,jsonb']]){
+  assert.ok(sql.includes('REVOKE ALL ON FUNCTION anvil.'+name+'('+args+') FROM PUBLIC,anvil_v3_app;'));assert.doesNotMatch(sql,new RegExp('GRANT[^;]*'+name));
+ }
+});
+
+test('최초 basis의 원 준비/role/session/context와 수신 검사는 다른 회차·첫 영수증·부분 수신으로 치환되지 않는다',async()=>{
+ const body=definition('fn09_normal_understanding_review_context_basis'),source=definition('fn09_normal_understanding_review_source_basis');
+ for(const token of ["f#>'{agentSession,bindingGeneration}' IS DISTINCT FROM to_jsonb(rb.version)","f#>'{agentSession,sessionRef}' IS DISTINCT FROM ctx->'sessionBindingRef'",
+  "ep.snapshot_json#>'{intent,roleBindingRef}'",'rb.snapshot_json->\'assignmentRef\'',"rb.snapshot_json->'connectionRef'",'newer.version>rb.version',
+  "ep.snapshot_json->'basisRefs' IS DISTINCT FROM basis","f->'latestInstructionRefs' IS DISTINCT FROM latest",'context_preparation_manifest_valid(p,bm)',"bm->'missingRequired'",'assignment_draft_basis_current',
+  "ctx->'startCommandRef' IS DISTINCT FROM cf","ctx->>'startCommandId' IS DISTINCT FROM d.command_id::text",'FOR part IN SELECT value FROM jsonb_array_elements(grp->\'parts\')',
+  "snapshot_json#>>'{materialRef,id}'=m.id::text LIMIT 2",'IF n<>1 THEN',"r.content_hash IS DISTINCT FROM anvil.execution_json_hash(rr)",'material_binding_complete(p,r.id)',
+  "rr->'manifestRef' IS DISTINCT FROM mf","rr->'materialRef' IS DISTINCT FROM rf","rr->'target' IS DISTINCT FROM target",'used.snapshot_json IS DISTINCT FROM old.snapshot_json||',"required IS DISTINCT FROM received"])
+  assert.ok(body.includes(token),token);
+ const append=body.indexOf('received=received||');assert.ok(body.indexOf('material_binding_complete(p,r.id)')<append);assert.ok(body.indexOf('FOR part IN')<body.indexOf('required=required||'));
+ assert.doesNotMatch(body,/rr->>'expiresAt'\)::timestamptz<=clock_timestamp|normal_start_material_valid\(/);
+ for(const token of ['old.grant_id IS DISTINCT FROM g.id','used.grant_version IS DISTINCT FROM g.version',"old.snapshot_json->'sequence' IS DISTINCT FROM to_jsonb(old.server_sequence)","publicChallenge,issuedAt","publicChallenge,expiresAt"])assert.ok(body.includes(token),token);
+ const returned=source.slice(source.indexOf('answer=ground||'));
+ assert.doesNotMatch(returned,/'body'|'text'|'snapshot'|'manifest'|'criteria'|'ACCEPTED'/);
+ assert.match(source,/ground IS DISTINCT FROM last_ground/);assert.match(source,/ends<=at/);assert.match(source,/2097152/);
+ const latest=await readFile(new URL('../../../db/migrations/0097_normal_instruction_dispatch.sql.pending',import.meta.url),'utf8');
+ assert.match(latest,/CREATE OR REPLACE FUNCTION anvil.material_binding_complete/);assert.match(latest,/proofResultRef.*materialRef/s);
+});
+
+test('검토 주체는 원 등록 책임 결박의 닫힌 형태·세대·예약 상태·작성자와 APPLIED 영수증을 모두 확인한 roleBindingRef만 사용한다',async()=>{
+ const body=definition('fn09_normal_understanding_review_context_basis'),source=definition('fn09_normal_understanding_review_source_basis');
+ const canonical=await readFile(new URL('../../../apps/server/modules/assignments/responsible-sessions.ts',import.meta.url),'utf8');
+ for(const key of ['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason','sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt','connectionKind'])assert.ok(canonical.includes("'"+key+"'"),key);
+ for(const token of [
+  'anvil.fn09_binding_variant(rb.snapshot_json)',
+  "anvil.execution_json_shape(ag.snapshot_json,ARRAY['roleRef','connectionRef','state','externalSessionHandleRef','reservedBy','reservedAt','connectionKind'])",
+  "rb.snapshot_json->'generation' IS DISTINCT FROM to_jsonb(rb.version)",
+  "f#>'{agentSession,bindingGeneration}' IS DISTINCT FROM to_jsonb(rb.version)",
+  "rb.snapshot_json->'connectionReadiness' IS DISTINCT FROM '\"REGISTERED_DEFINITION_ONLY\"'::jsonb",
+  "ag.snapshot_json->'connectionRef' IS DISTINCT FROM rb.snapshot_json->'connectionRef'",
+  "ag.snapshot_json->>'connectionKind' IS DISTINCT FROM 'REGISTERED_DEFINITION'",
+  "ag.snapshot_json->>'state' IS DISTINCT FROM 'RESERVED'",
+  "ag.snapshot_json->'externalSessionHandleRef' IS DISTINCT FROM 'null'::jsonb",
+  "rb.snapshot_json->'boundBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',rb.created_by)",
+  "ag.snapshot_json->'reservedBy' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',ag.created_by)",
+  "anvil.execution_iso_valid(rb.snapshot_json->'boundAt')", "anvil.execution_iso_valid(ag.snapshot_json->'reservedAt')",
+  'newer.version>rb.version',"rb.snapshot_json->'sessionRef' IS DISTINCT FROM f#>'{agentSession,sessionRef}'",
+  'bc.actor_id IS DISTINCT FROM rb.created_by','bc.client_id IS DISTINCT FROM rb.client_id',
+  "bc.operation IS DISTINCT FROM 'bindResponsibleSession'","bc.state IS DISTINCT FROM 'APPLIED'",
+  "bc.result_ref#>'{data,snapshot}' IS DISTINCT FROM rb.snapshot_json",
+  "sc.result_ref#>'{data,snapshot,sessionRef}' IS DISTINCT FROM f#>'{agentSession,sessionRef}'",
+  "sc.actor_id IS DISTINCT FROM ag.created_by",'sc.client_id IS DISTINCT FROM ag.client_id',
+  "origin.command_id=sc.id AND origin.version=1",
+ ])assert.ok(body.includes(token),token);
+ assert.ok(body.indexOf('fn09_binding_variant')<body.indexOf("RETURN jsonb_build_object('bundleRef'"));
+ assert.ok(source.includes("'subjectBindingRef',ground->'roleBindingRef'"));
+ assert.ok(source.indexOf('ground IS DISTINCT FROM last_ground')<source.indexOf("'subjectBindingRef'"));
+ assert.doesNotMatch(source,/'subjectBindingRef',(?:response_ref|selection|ground->'(?:agentSessionRef|roleRef)')/);
+ assert.match(source,/'SOURCE_BASIS_ONLY'/);assert.match(source,/'reviewAvailable',false/);
+ // 실제 PG 실행이 아닌 소스 음성 회귀: 각 오염 조건이 반환 전에 명시 거절 분기에 있어야 한다.
+ const rejection=body.slice(body.indexOf("IF ctx->'preparationRef'"),body.indexOf('SELECT * INTO STRICT cb'));
+ const gates={staleBinding:'EXISTS(SELECT 1 FROM anvil.role_bindings newer WHERE newer.project_id=p AND newer.role_id=rb.role_id AND newer.version>rb.version)',
+  wrongSession:"rb.snapshot_json->'sessionRef' IS DISTINCT FROM f#>'{agentSession,sessionRef}'",
+  wrongStoredGeneration:"rb.snapshot_json->'generation' IS DISTINCT FROM to_jsonb(rb.version)",
+  wrongStartGeneration:"f#>'{agentSession,bindingGeneration}' IS DISTINCT FROM to_jsonb(rb.version)",
+  wrongOriginalContext:"ep.snapshot_json#>'{intent,contextBundleRef}' IS DISTINCT FROM ctx->'contextBundleRef'"};
+ const requires=(text:string,gate:string)=>{assert.ok(text.includes(gate));assert.ok(text.indexOf(gate)<text.indexOf("THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_REVIEW_BASIS_INVALID'",text.indexOf(gate)));};
+ for(const [name,gate]of Object.entries(gates)){requires(rejection,gate);assert.throws(()=>requires(rejection.replace(gate,'false'),gate),name);}
+});
+
+test('원 책임 결박의 역사 요청·승인 소비는 당시 exact 원장으로 재구성하고 현재 만료나 GUC로 재승인하지 않는다',()=>{
+ const history=definition('fn09_normal_understanding_review_binding_history'),context=definition('fn09_normal_understanding_review_context_basis');
+ for(const token of ['fn09_responsible_payload','fn09_responsible_target','prior.version=hb.version-1',"target IS DISTINCT FROM jsonb_build_object('id',previous.binding_id",'h.expected_version IS DISTINCT FROM expected_version',
+  'h.request_hash IS DISTINCT FROM anvil.execution_json_hash(request)','h.approval_consumption_id IS NULL',"h.payload_ref IS NOT NULL",'approval_consumptions',
+  'u.command_id IS DISTINCT FROM h.id','u.decision_id IS DISTINCT FROM d.id','u.scope_digest IS DISTINCT FROM q.scope_digest',
+  'q.candidate_command_id IS DISTINCT FROM h.command_id','q.created_by IS DISTINCT FROM h.actor_id','q.client_id IS DISTINCT FROM h.client_id',
+  'd.client_id IS DISTINCT FROM h.client_id','d.decided_by IS DISTINCT FROM h.actor_id','d.control_generation IS DISTINCT FROM h.control_generation',
+  'q.scope_digest IS DISTINCT FROM anvil.execution_json_hash(q.action_scope_json)',"q.action_scope_json->'targetRef' IS DISTINCT FROM target",'q.content_hash IS DISTINCT FROM anvil.execution_json_hash(request_snapshot)',
+  'rc.request_hash IS DISTINCT FROM anvil.execution_json_hash(request_command)','dc.request_hash IS DISTINCT FROM anvil.execution_json_hash(decision_command)',
+  'd.content_hash IS DISTINCT FROM anvil.execution_json_hash(decision_snapshot)','u.consumed_at<d.decided_at','u.consumed_at>=q.expires_at',
+  'ar.approval_decision_ref IS NOT DISTINCT FROM decision_id','audit.approval_ref IS NOT DISTINCT FROM audit_approval',
+ ])assert.ok(history.includes(token),token);
+ assert.ok(context.includes('review_binding_history(p,bc.id)'));assert.ok(context.includes('review_binding_history(p,sc.id)'));
+ assert.doesNotMatch(history,/clock_timestamp|current_setting|fn09_responsible_approval_execution_valid|fn01_active|normal_exchange_current|INSERT INTO|UPDATE anvil|DELETE FROM/);
+ assert.match(sql,/REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_binding_history\(uuid,uuid\) FROM PUBLIC,anvil_v3_app/);
+ assert.doesNotMatch(sql,/GRANT[^;]*review_binding_history/);
+ // shared hash/scope만 함께 변조해도 snapshot에서 재구성한 원 요청 비교를 삭제할 수 없다.
+ for(const gate of ['h.request_hash IS DISTINCT FROM anvil.execution_json_hash(request)','q.scope_digest IS DISTINCT FROM anvil.execution_json_hash(q.action_scope_json)',
+  'u.decision_id IS DISTINCT FROM d.id','d.client_id IS DISTINCT FROM h.client_id']){
+  const check=(s:string)=>assert.ok(s.includes(gate));check(history);assert.throws(()=>check(history.replace(gate,'false')));
+ }
+});
+
+test('원 bind 요청 재구성 RAM 관계는 공동 request/scope 변조·다른 결정/client를 거절하고 당시 정상 만료 승인은 보존한다 · SQL 실행 아님',async()=>{
+ const {readResponsibleSessionBinding}=await import('../../../apps/server/modules/assignments/responsible-sessions.ts');
+ const {canonicalJson,contentHash}=await import('../../../contracts/canonical.ts');
+ const id=(n:number)=>'af090509-0000-4000-8000-'+String(n).padStart(12,'0'),ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)}),hash=(v:unknown)=>contentHash(canonicalJson(v));
+ const payload=readResponsibleSessionBinding({connectionKind:'REGISTERED_DEFINITION',assignmentRef:ref(1),roleRef:ref(2),connectionRef:ref(3),existingSessionBindingRef:null,reason:'원 책임 예약'});
+ const snapshot={...payload,sessionRef:ref(4),generation:1,state:'RESERVED',externalSessionHandleRef:null,connectionReadiness:'REGISTERED_DEFINITION_ONLY',executionAuthorized:false,dispatchPerformed:false,boundBy:{kind:'HUMAN',userId:id(5)},boundAt:'2020-01-01T00:00:02.000Z'};
+ const actionScope={operation:'bindResponsibleSession',targetRef:null,expectedVersion:0,payloadHash:hash(payload),baselineRefs:[],environmentRef:null,sourceScopes:[],limitsRef:null,requestedSubjectRef:{kind:'HUMAN',userId:id(5),clientId:id(6)},controlGeneration:2};
+ const approval={requestId:id(7),decisionId:id(8),scopeDigest:hash(actionScope)};
+ const command={schemaVersion:1,projectId:id(9),commandId:id(10),clientId:id(6),controlGeneration:2,operation:'bindResponsibleSession',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:approval,payload};
+ const base={command,requestHash:hash(command),authorizationScope:'',auditScope:'',approval,actionScope,decision:{id:id(8),clientId:id(6),decidedAt:'2020-01-01T00:00:01.000Z'},used:{decisionId:id(8),consumedAt:'2020-01-01T00:00:02.000Z'},expiresAt:'2020-01-01T00:00:03.000Z'};
+ const scope=(requestHash:string)=>hash({projectId:command.projectId,actorId:id(5),clientId:command.clientId,controlGeneration:2,requestHash,policyRef:ref(11),targetRef:ref(12)});base.authorizationScope=base.auditScope=scope(base.requestHash);
+ const verify=(v:typeof base)=>{
+  const {sessionRef:_,generation:__,state:___,externalSessionHandleRef:____,connectionReadiness:_____,executionAuthorized:______,dispatchPerformed:_______,boundBy:________,boundAt:_________,...input}=snapshot;
+  const original={...v.command,payload:readResponsibleSessionBinding(input),targetId:input.existingSessionBindingRef?.id??null,expectedVersion:input.existingSessionBindingRef?.version??0,approvalRef:v.approval};
+  assert.equal(v.requestHash,hash(original));assert.equal(v.authorizationScope,scope(v.requestHash));assert.equal(v.auditScope,v.authorizationScope);
+  assert.equal(v.approval.scopeDigest,hash(v.actionScope));assert.equal(v.actionScope.payloadHash,hash(original.payload));assert.equal(v.decision.id,v.approval.decisionId);assert.equal(v.used.decisionId,v.decision.id);assert.equal(v.decision.clientId,original.clientId);
+  assert.ok(Date.parse(v.decision.decidedAt)<=Date.parse(v.used.consumedAt)&&Date.parse(v.used.consumedAt)<Date.parse(v.expiresAt));
+ };
+ verify(base);assert.ok(Date.parse(base.expiresAt)<Date.now(),'기한이 지난 정상 과거 소비도 당시 구간으로만 검산한다');
+ for(const mode of ['shared-hash-scope','shared-payload-scope','wrong-decision','wrong-client']){
+  const v=structuredClone(base);
+  if(mode==='shared-hash-scope'){v.requestHash='f'.repeat(64);v.authorizationScope=v.auditScope=scope(v.requestHash);}
+  if(mode==='shared-payload-scope'){v.actionScope.payloadHash='f'.repeat(64);v.approval.scopeDigest=hash(v.actionScope);v.command.approvalRef=v.approval;v.requestHash=hash(v.command);v.authorizationScope=v.auditScope=scope(v.requestHash);}
+  if(mode==='wrong-decision')v.used.decisionId=id(99);if(mode==='wrong-client')v.decision.clientId=id(99);
+  assert.throws(()=>verify(v),mode);
+ }
+});
+
+test('원 CONTEXT_BUNDLE 자료 refs와 각 전달 영수증의 조합은 모두 필요하다 · 실제 descriptor/RAM 관계 검산, SQL 실행 아님',async()=>{
+ const {startMaterialDescriptor}=await import('../../../apps/server/modules/executions/normal-start-materials.ts');
+ const {canonicalJson,contentHash}=await import('../../../contracts/canonical.ts');
+ const id=(n:number)=>'af090503-0000-4000-8000-'+String(n).padStart(12,'0'),digest=(v:unknown)=>contentHash(canonicalJson(v)),ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)}),same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
+ const b={projectId:id(1),connectorId:id(2),executionId:id(3),executionGeneration:1,grantRef:ref(4),credentialGeneration:1},payload={contextBundleRef:ref(5),optionsRef:ref(6)},envelope={commandId:id(7),envelopeHash:'b'.repeat(64),payload};
+ const groups=['CONTEXT_BUNDLE','START_OPTIONS'].map((kind,i)=>{const payloadRef=i?payload.optionsRef:payload.contextBundleRef;return {kind,payloadRef,source:{sourceRef:payloadRef,bodyRef:payloadRef,originRef:payloadRef,contentHash:'c'.repeat(64),sourceBytes:8,mediaType:'application/json'},parts:[{materialId:id(20+i),partIndex:1,byteOffset:0,utf8Bytes:8,contentHash:'c'.repeat(64)}]};});
+ const manifest={schemaVersion:1,purpose:'START_CONTEXT_OPTIONS_MATERIAL_V1',id:id(8),sourceKind:'PROTECTED_START_REFERENCE_V1',scope:{mode:'EXECUTION',...b},commandId:envelope.commandId,payload,groups,expiresAt:new Date(Date.now()+20000).toISOString()};
+ const materials=groups.map((g,i)=>{const snapshot={projectId:b.projectId,executionId:b.executionId,executionGeneration:1,commandId:envelope.commandId,envelopeHash:envelope.envelopeHash,payloadRef:g.payloadRef,sourceRef:g.source.sourceRef,partIndex:1,partCount:1,byteOffset:0,sourceBytes:8,utf8Bytes:8,contentHash:'c'.repeat(64),mediaType:'application/json'};return {ref:{...ref(20+i),contentHash:digest(snapshot)},snapshot};});
+ const row={command_record_id:id(9),manifest_ref:{...ref(8),contentHash:digest(manifest)},manifest,materials};
+ const descriptor=startMaterialDescriptor(row,b,envelope),required=descriptor.groups[0]!.parts.map(p=>materials.find(m=>m.ref.id===p.materialId)!.ref);
+ const receipt=(i:number)=>{const snapshot={kind:'NORMAL_START_MATERIAL',binding:b,manifestRef:row.manifest_ref,materialRef:materials[i]!.ref,partContentHash:groups[i]!.parts[0]!.contentHash};return {ref:{...ref(30+i),contentHash:digest(snapshot)},snapshot};};
+ const original=[receipt(0),receipt(1)];let reads:string[]=[];
+ const delivered=(receipts:typeof original,bindings:typeof original)=>required.map(m=>{
+  const found=receipts.filter(r=>r.snapshot.kind==='NORMAL_START_MATERIAL'&&r.snapshot.materialRef.id===m.id);assert.equal(found.length,1);
+  const r=found[0]!;assert.equal(r.ref.contentHash,digest(r.snapshot));assert.ok(same(r.snapshot.binding,b)&&same(r.snapshot.materialRef,m)&&same(r.snapshot.manifestRef,row.manifest_ref));
+  reads.push(r.ref.id);assert.ok(bindings.some(bound=>same(bound,r)),'각 receipt의 실제 결박을 별도 확인하는 RAM 관계');return m;
+ });
+ assert.deepEqual(delivered(original,original),required);assert.deepEqual(reads,[original[0]!.ref.id]);assert.notEqual(required[0]!.contentHash,groups[0]!.parts[0]!.contentHash,'metadata ref hash와 payload hash를 혼용하지 않는다');
+ for(const mode of ['missing','options-only','duplicate','binding-missing','wrong-scope','wrong-fullref','wrong-hash','wrong-manifest']){
+  reads=[];let receipts=structuredClone(original),bindings=structuredClone(original);
+  if(mode==='missing')receipts=[];if(mode==='options-only')receipts=receipts.slice(1);if(mode==='duplicate')receipts.push(structuredClone(receipts[0]!));if(mode==='binding-missing')bindings=bindings.slice(1);
+  if(mode==='wrong-scope')receipts[0]!.snapshot.binding.executionGeneration=2;
+  if(mode==='wrong-fullref')receipts[0]!.snapshot.materialRef.contentHash='0'.repeat(64);
+  if(mode==='wrong-hash')receipts[0]!.ref.contentHash='0'.repeat(64);
+  if(mode==='wrong-manifest')receipts[0]!.snapshot.manifestRef=ref(99);
+  assert.throws(()=>delivered(receipts,bindings),mode);
+ }
+ for(const changed of [{...row,materials:materials.slice(1)},{...row,manifest:{...manifest,scope:{...manifest.scope,executionGeneration:2}}}])assert.throws(()=>startMaterialDescriptor(changed,b,envelope));
 });
