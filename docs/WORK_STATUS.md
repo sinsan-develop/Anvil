@@ -2,7 +2,9 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
-## 현재 작업 요약 — 2026-11-22 KST
+## 현재 작업 요약 — 2026-11-23 KST
+
+- **2026-11-23 FN09 고정 범위 요청 저장·UI04 연결:** 사라진 서버 작업 사본의 미커밋 변경을 `baseline_predispatch_task_review`가 보존된 적용 성공 패치 13개로 재구성했다. 서버·미적용 0102·시험 5경로 `84604b19`, 기존 UI04 `fb1fdefe`, 통합 `6906c5ba`. 기존 HUMAN 보호 POST에서 불변 범위·권한·원 출처와 정산을 검산한다. UI04는 구간을 명시 선택해 요청하고 결과 불명 시 원 명령만 재확인한다. 통합 시험은 UI04 실제 명령 함수와 Fastify inject, 메모리 DB를 연결해 정상 COMMIT 뒤 전송 응답 유실에도 동일 본문·동일 식별자·저장과 정산 1회를 확인했다. 병렬 시험에서 합성 시계 불일치로 HTTP 503 1건이 발생해 데이터 생성 시각을 같은 합성 DB 시계에 결박하고 2초 지연 회귀를 추가했다. 최종 집중·인접 87건 통과. 독립 서버 검수에서 차단 결함 없음. 실제 PostgreSQL·권한·키·서비스·Agent는 실행하지 않았다. 선택 원문 수송·보관과 6기준 검토는 후속이며 `FN09_FIXED_RANGE_SOURCE_TRANSPORT_IMPLEMENTATION.md`를 기준으로 한다.
 
 - **현재 판정:** 작업계획 전체 미완료. 기존 개발 브랜치 `codex/av3-normal-sdk-producer`의 읽기 감독 통합 기준은 `3a505b22`이며 UI04 `532739b6`을 포함한다. 원 native 출력 탐색 메타 검산·동일 GET 재확인·UI11 탐색 정책 선택에 이어 UI04 최초 탐색을 통합하고 로컬·원격 0/0을 확인했다. 실제 Agent 시동·결과 저장·첫 이해 검토 여정은 미검증이다.
 - **FN09 S2 결과 전송:** `developer_primary`의 native 원 CLOSE 근거·등록 결박 일회 PREPARE/SEND 소스(`7dee16fe`)와 `fn09_discovery_ui`의 원 호스트 정상종료 검산·한정 TypeScript 전송 소스(`3dd6b5a4`)를 `80e318e3`에 순차 통합했다. 통합 첫 시험은 C# 원문의 Windows 줄바꿈을 읽지 못해 45/46이었다. 판독식 두 곳만 LF/CRLF 허용으로 보정했고 필드·거절 기준은 유지했다. Main 단위·인접 합성 46건(4ee2ff), 데스크톱 원 등록 포트 합성 35건(2bfccb), 동결 TypeScript 독립 검수 C0/I0를 확인했다. 별도 데스크톱 연결 검수 I1은 `OPERATION_UNKNOWN` 뒤 다음 송신 자격 재사용 가능성이며 이 연결은 아직 통합하지 않았다. 기본 `SIGNING_UNAVAILABLE`을 유지한다. 실제 C#/Windows·서명·서버 저장·Agent 및 사용자 검수는 미실행이다.
