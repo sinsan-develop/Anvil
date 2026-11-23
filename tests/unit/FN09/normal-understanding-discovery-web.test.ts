@@ -5,6 +5,7 @@ import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {build} from 'vite';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 
 type UI=typeof import('../../../apps/web/src/features/workspace/NormalUnderstandingDiscovery.tsx');
 type Workspace=typeof import('../../../apps/web/src/features/workspace/WorkspaceResponsibleSessions.tsx');
@@ -27,6 +28,127 @@ async function compile(hooks?:string,entryFile='NormalUnderstandingDiscovery'):P
 const id=(n:number)=>`af090102-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)});
 const projectId=id(1),session={user:{id:id(2)},clientId:id(3),csrfToken:'c'.repeat(43)},assignmentRef=ref(5),preparationRef=ref(6);
+
+function rangeSource(){
+ const part={outputRef:ref(44),sequence:3,payloadDigest:'b'.repeat(64),blockIndex:0,kind:'ASSISTANT_TEXT' as const,text:'<script>원 선택만</script>',textHash:contentHash('<script>원 선택만</script>')};
+ const selection={requestRef:ref(40),resultRef:ref(41),initConfirmationRef:ref(42),tailRef:ref(45),firstSequence:3,lastSequence:3,ranges:[{outputRef:part.outputRef,sequence:3,payloadDigest:part.payloadDigest,textBlocks:1,textBytes:Buffer.byteLength(part.text)}]};
+ const request={projectId,executionId:id(8),executionGeneration:7,assignmentRef,preparationRef,requestRef:ref(46)};
+ const input={request,controlGeneration:9,expiresAt:new Date(Date.now()+25000).toISOString(),selection};
+ const body={schemaVersion:1 as const,kind:'FIXED_RANGE_SELECTION' as const,attribution:'SESSION_ONLY' as const,projectId,executionId:request.executionId,executionGeneration:7,requestRef:request.requestRef,acquisitionRef:ref(47),sourceRequestRef:selection.requestRef,sourceResultRef:selection.resultRef,contextBundleRef:{...ref(48),version:4},initConfirmationRef:selection.initConfirmationRef,tailRef:selection.tailRef,firstSequence:3,lastSequence:3,beforeRef:ref(49),afterRef:selection.tailRef,parts:[part],wholeConversationComplete:false as const,executionAuthorized:false as const};
+ const result={status:'RANGE_STORED' as const,request,resultRef:ref(50),responseRef:{...ref(51),contentHash:contentHash(canonicalJson(body))},partRefs:[{...ref(52),contentHash:contentHash(canonicalJson(part))}],currentness:'CURRENT' as const,observedAt:new Date().toISOString(),expiresAt:new Date(Date.now()+20000).toISOString(),selectionAvailable:true as const,body};
+ return {input,result};
+}
+
+test('FN09 고정 보관 원문 reader는 원 선택·hash와 같은 제어의 명시 same-origin GET만 반환한다',async()=>{
+ const m=await load(),f=rangeSource(),calls:{path:string;init?:RequestInit}[]=[];
+ const client=new ApiClient(async(url,init)=>{const path=String(url);calls.push({path,init});return path===`/api/v1/projects/${projectId}`?Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}):Response.json(f.result);});
+ const signal=new AbortController().signal;
+ assert.deepEqual(await m.readNormalUnderstandingRange(client,session,f.input,signal,()=>true),f.result);
+ assert.equal(calls.length,3);assert.ok(calls[1]!.path.includes('/'+f.input.request.requestRef.id+'/range-current?'));
+ assert.notEqual(calls[0]!.init?.signal,signal);assert.equal(calls[0]!.init?.signal?.aborted,false);
+ for(const call of calls){assert.equal(call.init?.method,'GET');assert.equal(call.init?.credentials,'same-origin');assert.equal(call.init?.cache,'no-store');assert.equal(call.init?.signal,calls[0]!.init?.signal);assert.equal(call.init?.body,undefined);}
+ assert.equal(new Headers(calls[1]!.init?.headers).get('x-anvil-csrf'),session.csrfToken);
+});
+
+test('FN09 원문 reader는 source/part/경계 오염·UTF8·중복키와 현재성 변경을 원문 반환 전에 거절한다',async t=>{
+ const m=await load();
+ const changes=[(v:any)=>{v.request.requestRef=ref(90);},(v:any)=>{v.body.acquisitionRef=null;},(v:any)=>{v.body.sourceRequestRef=ref(90);},
+  (v:any)=>{v.body.sourceResultRef=ref(90);},(v:any)=>{v.body.firstSequence=2;},(v:any)=>{v.body.contextBundleRef=null;},
+  (v:any)=>{v.body.parts[0].blockIndex=1;},(v:any)=>{v.body.parts[0].kind='SYSTEM_INIT';},(v:any)=>{v.body.parts[0].text+='changed';},
+  (v:any)=>{v.body.parts[0].textHash='0'.repeat(64);},(v:any)=>{v.partRefs[0].contentHash='0'.repeat(64);},(v:any)=>{v.partRefs[0].id=v.resultRef.id;},
+  (v:any)=>{v.responseRef.id=v.body.parts[0].outputRef.id;},(v:any)=>{v.body.beforeRef=v.body.parts[0].outputRef;},(v:any)=>{v.body.afterRef={...v.body.tailRef,contentHash:'0'.repeat(64)};},
+  (v:any)=>{v.body.parts[0].text='\ud800';},(v:any)=>{v.body.raw='private';},(v:any)=>{v.body.executionAuthorized=true;},(v:any)=>{v.currentness='HISTORICAL';},
+  (v:any)=>{v.expiresAt=new Date(0).toISOString();},(v:any)=>{v.responseRef.contentHash='0'.repeat(64);}];
+ for(const [i,change]of changes.entries()){const f=rangeSource();change(f.result);if(i!==changes.length-1&&f.result.body.parts[0]!.text.isWellFormed())f.result.responseRef.contentHash=contentHash(canonicalJson(f.result.body));let calls=0;const client=new ApiClient(async()=>++calls===1?Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}):Response.json(f.result));
+  await assert.rejects(m.readNormalUnderstandingRange(client,session,f.input,new AbortController().signal,()=>true),{code:'RESPONSE_INVALID'});assert.equal(calls,2);
+ }
+ for(const mode of ['duplicate','utf8','pending-raw','late401','changed-input','changed-transport','post-control','hash-current']){
+  const f=rangeSource();let calls=0,active=true;const transport:typeof fetch=async()=>{
+   calls++;if(calls!==2)return Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:mode==='post-control'&&calls===3?10:9,status:'HELD'}});
+   if(mode==='duplicate')return new Response(JSON.stringify(f.result).replace('{','{"status":"PENDING_SOURCE",'),{headers:{'content-type':'application/json'}});
+   if(mode==='utf8')return new Response(new Uint8Array([255]),{headers:{'content-type':'application/json'}});
+   if(mode==='pending-raw')return Response.json({status:'PENDING_SOURCE',request:f.input.request,body:f.result.body});
+   if(mode==='late401'){active=false;return Response.json({code:'AUTH_REQUIRED'},{status:401});}
+   if(mode==='changed-input')f.input.request.assignmentRef=ref(99);
+   if(mode==='changed-transport')client.transport=async()=>{throw Error('NEW_TRANSPORT_NOT_CALLED');};
+   return Response.json(f.result);
+  },client=new ApiClient(transport);
+  if(mode==='hash-current'){const digest=crypto.subtle.digest.bind(crypto.subtle);t.mock.method(crypto.subtle,'digest',async(...args:Parameters<typeof digest>)=>{active=false;return digest(...args);});}
+  try{const value=m.readNormalUnderstandingRange(client,session,f.input,new AbortController().signal,()=>active);
+   if(mode==='post-control')assert.equal((await value).status,'CURRENT_UNAVAILABLE');else await assert.rejects(value,{code:['late401','changed-input','changed-transport','hash-current'].includes(mode)?'DISCOVERY_SCOPE_CHANGED':'RESPONSE_INVALID'});
+   assert.equal(calls,mode==='post-control'?3:2);
+  }finally{t.mock.restoreAll();}
+ }
+});
+
+test('FN09 원문 HTTP 전체 2MiB는 실제 bytes로 수용하고 +1/끝없는 stream은 잘림 없이 취소한다',async()=>{
+ const m=await load();
+ for(const extra of [0,1]){const f=rangeSource(),p=f.result.body.parts[0]!;p.text='';p.textHash=contentHash('');
+  const size=Buffer.byteLength(canonicalJson(f.result));p.text='x'.repeat(2097152-size+extra);p.textHash=contentHash(p.text);f.input.selection.ranges[0]!.textBytes=Buffer.byteLength(p.text);
+  f.result.responseRef.contentHash=contentHash(canonicalJson(f.result.body));f.result.partRefs[0]!.contentHash=contentHash(canonicalJson(p));assert.equal(Buffer.byteLength(JSON.stringify(f.result)),2097152+extra);
+  let calls=0;const client=new ApiClient(async()=>++calls===2?Response.json(f.result):Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}));
+  if(extra)await assert.rejects(m.readNormalUnderstandingRange(client,session,f.input,new AbortController().signal,()=>true),{code:'RESPONSE_INVALID'});
+  else assert.deepEqual(await m.readNormalUnderstandingRange(client,session,f.input,new AbortController().signal,()=>true),f.result);
+  assert.equal(calls,extra?2:3);
+ }
+ const f=rangeSource();let calls=0,cancelled=0,pulls=0;
+ const client=new ApiClient(async()=>++calls===1?Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}):new Response(new ReadableStream({pull(c){pulls++;c.enqueue(new Uint8Array(700000));},cancel(){cancelled++;}}),{headers:{'content-type':'application/json','content-length':'1'}}));
+ await assert.rejects(m.readNormalUnderstandingRange(client,session,f.input,new AbortController().signal,()=>true),{code:'RESPONSE_INVALID'});assert.equal(calls,2);assert.equal(cancelled,1);assert.ok(pulls<=5);
+});
+
+test('FN09 원문 stream 중 취소는 원 reader를 닫고 늦은 body나 다음 제어 조회를 수용하지 않는다',async()=>{
+ const m=await load(),f=rangeSource(),controller=new AbortController();let calls=0,cancelled=0,streamed!:()=>void;
+ const started=new Promise<void>(resolve=>{streamed=resolve;});
+ const client=new ApiClient(async()=>++calls===1?Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}):new Response(new ReadableStream({start(c){c.enqueue(new TextEncoder().encode('{'));streamed();},cancel(){cancelled++;}}),{headers:{'content-type':'application/json'}}));
+ const pending=m.readNormalUnderstandingRange(client,session,f.input,controller.signal,()=>true);await started;controller.abort();
+ await assert.rejects(pending,{code:'DISCOVERY_SCOPE_CHANGED'});assert.equal(cancelled,1);assert.equal(calls,2);
+});
+
+test('FN09 원문 stream은 활성 read의 원 mono 만료 뒤 parse나 다음 제어 조회를 하지 않는다',async t=>{
+ const m=await load();
+ for(const mode of ['mono','wall','input']){const f=rangeSource();let mono=100,wall=Date.now(),calls=0,parsed=0,pulls=0,late:Uint8Array|undefined;
+  f.input.expiresAt=new Date(wall+1000).toISOString();f.result.expiresAt=f.input.expiresAt;
+  const raw=new TextEncoder().encode(JSON.stringify(f.result)),parse=JSON.parse;
+  t.mock.method(performance,'now',()=>mono);t.mock.method(Date,'now',()=>wall);t.mock.method(JSON,'parse',(text:string,...rest:any[])=>{if(text.includes('FIXED_RANGE_SELECTION'))parsed++;return parse(text,...rest);});
+  const client=new ApiClient(async()=>++calls===1?Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}):new Response(new ReadableStream({pull(c){if(++pulls===1)c.enqueue(raw.slice(0,100));else{
+   if(mode==='mono')mono+=1500;else if(mode==='wall')wall+=1500;else f.input.selection.ranges[0]!.payloadDigest='0'.repeat(64);
+   late=raw.slice(100);c.enqueue(late);c.close();
+  }}},{highWaterMark:0}),{headers:{'content-type':'application/json'}}));
+  try{await assert.rejects(m.readNormalUnderstandingRange(client,session,f.input,new AbortController().signal,()=>true),{code:'DISCOVERY_SCOPE_CHANGED'});assert.equal(parsed,0);assert.equal(calls,2);assert.equal(pulls,2);assert.ok(late?.every(n=>n===0));}finally{t.mock.restoreAll();}
+ }
+});
+
+test('FN09 원문 원 기한은 멈춘 read도 취소하고 종결 뒤 timer를 남기지 않는다',async t=>{
+ const m=await load(),f=rangeSource(),external=new AbortController();let mono=100,calls=0,cancelled=0,ready!:()=>void,outcome='PENDING';
+ f.input.expiresAt=new Date(Date.now()+1000).toISOString();
+ const started=new Promise<void>(resolve=>{ready=resolve;});t.mock.method(performance,'now',()=>mono);t.mock.timers.enable({apis:['setTimeout']});
+ const client=new ApiClient(async()=>++calls===1?Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}):new Response(new ReadableStream({pull(){ready();},cancel(){cancelled++;}},{highWaterMark:0}),{headers:{'content-type':'application/json'}}));
+ const operation=m.readNormalUnderstandingRange(client,session,f.input,external.signal,()=>true).then(()=>{outcome='OK';},e=>{outcome=e.code;});
+ try{await started;mono+=1500;t.mock.timers.tick(1500);for(let i=0;i<3;i++)await new Promise<void>(resolve=>setImmediate(resolve));
+  assert.equal(outcome,'DISCOVERY_SCOPE_CHANGED');assert.equal(cancelled,1);assert.equal(calls,2);
+ }finally{external.abort();await operation;t.mock.timers.reset();t.mock.restoreAll();}
+});
+
+test('FN09 원문 성공·실패 종결은 원 TTL timer와 외부 abort listener를 모두 회수한다',async t=>{
+ const m=await load();
+ for(const invalid of [false,true]){const f=rangeSource(),external=new AbortController();let calls=0,owned:AbortSignal|null|undefined;
+  t.mock.timers.enable({apis:['setTimeout']});
+  const client=new ApiClient(async(_url,options)=>{calls++;owned=options?.signal;return calls===2?Response.json(invalid?{status:'PENDING_SOURCE',request:f.input.request,body:{raw:'not-accepted'}}:{status:'PENDING_SOURCE',request:f.input.request}):Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}});});
+  try{const read=m.readNormalUnderstandingRange(client,session,f.input,external.signal,()=>true);if(invalid)await assert.rejects(read,{code:'RESPONSE_INVALID'});else assert.equal((await read).status,'PENDING_SOURCE');
+   assert.ok(owned);assert.notEqual(owned,external.signal);assert.equal(owned.aborted,false);external.abort();t.mock.timers.tick(30001);assert.equal(owned.aborted,false);assert.equal(calls,invalid?2:3);
+  }finally{t.mock.timers.reset();}
+ }
+});
+
+test('FN09 원문은 행별 원 textBytes와 조회 전 mono 기한도 독립 검산한다',async t=>{
+ const m=await load();
+ for(const mode of ['row-bytes','mono-expiry']){const f=rangeSource();let calls=0,mono=100;
+  if(mode==='row-bytes')f.input.selection.ranges[0]!.textBytes++;
+  else{f.result.expiresAt=new Date(Date.now()+1000).toISOString();t.mock.method(performance,'now',()=>mono);}
+  const client=new ApiClient(async()=>{calls++;if(calls!==2)return Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}});if(mode==='mono-expiry')mono+=1500;return Response.json(f.result);});
+  try{await assert.rejects(m.readNormalUnderstandingRange(client,session,f.input,new AbortController().signal,()=>true),{code:mode==='row-bytes'?'RESPONSE_INVALID':'DISCOVERY_SCOPE_CHANGED'});assert.equal(calls,2);}finally{t.mock.restoreAll();}
+ }
+});
 
 // Run the real click handlers in memory; the fixture owns hook state/effect cleanup and opens no browser.
 const reactMemory='data:text/javascript,'+encodeURIComponent(`
@@ -67,6 +189,45 @@ function button(tree:unknown,label:string):ElementNode['props']{
  if(node.type==='button'&&node.props?.children===label)return node.props;
  return button(node.props?.children,label);
 }
+
+test('FN09 UI04 원문은 원 구간 요청에서만 명시 조회하고 취소·실패·선택/reader/인증 변경과 만료 때 폐기한다',async t=>{
+ const hooks=await import(reactMemory),m=await compile(reactMemory),f=rangeSource(),posts:string[]=[];
+ const client=new ApiClient(async(_url,init)=>{
+  if(init?.method==='GET')return Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}});
+  posts.push(String(init?.body));const q=JSON.parse(String(init?.body));
+  return Response.json({operationId:id(24),commandId:q.commandId,projectId,status:'APPLIED',targetId:f.input.request.requestRef.id,version:1,
+   data:{ref:f.input.request.requestRef,requestRef:f.input.request.requestRef,status:'NORMAL_UNDERSTANDING_RANGE_REQUESTED',state:'PENDING_SOURCE',sourceAvailable:false,selectionAvailable:false,expiresAt:f.input.expiresAt},evidenceRefs:[],warnings:[],serverReceivedAt:new Date().toISOString()});
+ });
+ const commands=m.createNormalUnderstandingRangeCommands(client,session,projectId,canonicalJson(assignmentRef),()=>true),s=f.input.selection;
+ await commands.request({request:{...f.input.request,requestRef:s.requestRef},resultRef:s.resultRef,contextBundleRef:f.result.body.contextBundleRef,initConfirmationRef:s.initConfirmationRef,tailRef:s.tailRef,firstSequence:s.firstSequence,lastSequence:s.lastSequence,ranges:s.ranges},new AbortController().signal,()=>true);
+ type Reader=NonNullable<Parameters<UI['NormalUnderstandingDiscovery']>[0]['rangeReader']>;
+ const calls:{input:Parameters<Reader>[0];signal:AbortSignal;resolve:(v:Awaited<ReturnType<Reader>>)=>void;reject:(e:unknown)=>void}[]=[];
+ const original:Reader=(input,signal)=>new Promise((resolve,reject)=>calls.push({input,signal,resolve,reject}));let reader:Reader|undefined=original,projection=session,busy=false;
+ const draw=()=>hooks.draw(()=>m.NormalUnderstandingDiscovery({client,session:projection,projectId,assignmentRef,preparations:[],busy,rangeRequester:commands.request,rangeRecovery:commands.recover,rangeReader:reader}));
+ const markup=()=>renderToStaticMarkup(draw()),click=(label:string)=>{const b=button(draw(),label);assert.ok(b?.onClick);assert.equal(!!b.disabled,false);b.onClick();};
+ const settle=async()=>{for(let i=0;i<16;i++)await new Promise<void>(resolve=>setImmediate(resolve));};
+ const reveal=async()=>{click('보관 원문 확인');calls.at(-1)!.resolve(f.result);const until=performance.now()+2000;while(!markup().includes('선택 원문 보관 확인')&&performance.now()<until)await new Promise<void>(resolve=>setImmediate(resolve));assert.match(markup(),/선택 원문 보관 확인/);assert.match(markup(),/&lt;script&gt;원 선택만&lt;\/script&gt;/);assert.doesNotMatch(markup(),/<script>/);};
+ const findSelect=(tree:any):any=>Array.isArray(tree)?tree.map(findSelect).find(Boolean):tree&&typeof tree==='object'?(tree.type==='select'?tree:findSelect(tree.props?.children)):undefined;
+ t.mock.timers.enable({apis:['setTimeout']});
+ try{
+  assert.equal(calls.length,0);assert.match(markup(),/보관 원문 확인/);assert.doesNotMatch(markup(),/선택 원문 보관 확인/);
+  click('보관 원문 확인');assert.deepEqual(calls[0]!.input,f.input);assert.equal(button(draw(),'보관 원문 확인')?.disabled,true);
+  click('원문 조회 취소');assert.equal(calls[0]!.signal.aborted,true);calls[0]!.resolve(f.result);await settle();assert.doesNotMatch(markup(),/원 선택만/);
+  for(const status of ['PENDING_SOURCE','CURRENT_UNAVAILABLE'] as const){click('보관 원문 확인');calls.at(-1)!.resolve({status,request:f.input.request});await settle();assert.match(markup(),status==='PENDING_SOURCE'?/선택 원문 보관 대기/:/현재 원문 조회 불가/);}
+  await reveal();assert.match(markup(),/전체 대화가 아닙니다/);assert.match(markup(),/검토·승인·작업 실행을 뜻하지 않습니다/);
+  click('보관 원문 확인');assert.doesNotMatch(markup(),/원 선택만/);calls.at(-1)!.reject(Error('RAW_PRIVATE_DETAIL'));await settle();assert.match(markup(),/원문 조회 결과 미확인/);assert.doesNotMatch(markup(),/RAW_PRIVATE_DETAIL|원 선택만/);
+  await reveal();click('원문 닫기');assert.doesNotMatch(markup(),/원 선택만/);
+  await reveal();findSelect(draw()).props.onChange({target:{value:'changed'}});assert.doesNotMatch(markup(),/원 선택만/);
+  await reveal();reader=undefined;assert.doesNotMatch(markup(),/원 선택만/);reader=original;assert.doesNotMatch(markup(),/원 선택만/);
+  click('보관 원문 확인');const late=calls.at(-1)!;reader=async()=>{throw Error('NOT_AUTOMATIC');};draw();assert.equal(late.signal.aborted,true);reader=original;late.resolve(f.result);await settle();assert.doesNotMatch(markup(),/원 선택만/);
+  await reveal();busy=true;draw();busy=false;assert.doesNotMatch(markup(),/원 선택만/);
+  await reveal();draw();
+  // 새 조회로 화면 원문 timeout을 mock clock에 등록한다. network polling은 없다.
+  await reveal();draw();const count=calls.length;t.mock.timers.tick(25001);assert.doesNotMatch(markup(),/원 선택만/);assert.equal(calls.length,count);
+  click('보관 원문 확인');const authLate=calls.at(-1)!;projection={...session,csrfToken:'r'.repeat(43)};draw();assert.equal(authLate.signal.aborted,true);authLate.resolve(f.result);await settle();assert.doesNotMatch(markup(),/원 선택만/);
+  projection=session;assert.doesNotMatch(markup(),/원 선택만/);assert.equal(posts.length,1);assert.ok(!posts[0]!.includes('원 선택만'));assert.ok(!JSON.stringify([...m.normalUnderstandingRecords(session,client)]).includes('원 선택만'));
+ }finally{hooks.unmount();t.mock.timers.reset();}
+});
 
 test('FN09 range confirmation uses exact contiguous metadata and invalidates cancelled or replaced drafts',async()=>{
  const hooks=await import(reactMemory),m=await compile(reactMemory),f=fixture();
@@ -230,6 +391,22 @@ test('FN09 workspace keeps the metadata reader across equivalent owner projectio
   const req={projectId,executionId:id(8),executionGeneration:7,assignmentRef,preparationRef,requestRef:ref(26)},signal=new AbortController().signal;
   await assert.rejects(original(req,signal),{code:'DISCOVERY_SCOPE_CHANGED'});
   await assert.rejects(renewed({...req,assignmentRef:ref(39)},signal),{code:'DISCOVERY_SCOPE_CHANGED'});
+ }finally{hooks.unmount();}
+});
+
+test('FN09 실제 workspace의 원문 reader 공급은 OWNER 명시 호출만 허용하고 이전 소유자는 복귀해도 무효다',async()=>{
+ const hooks=await import(reactMemory),m=await compile(reactMemory,'WorkspaceResponsibleSessions'),f=rangeSource(),calls:string[]=[];
+ const client=new ApiClient(async(url)=>{calls.push(String(url));return String(url)===`/api/v1/projects/${projectId}`?Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}):Response.json(f.result);});
+ type Reader=NonNullable<Parameters<UI['NormalUnderstandingDiscovery']>[0]['rangeReader']>;
+ const find=(tree:any):Reader|undefined=>Array.isArray(tree)?tree.map(find).find(Boolean):tree&&typeof tree==='object'?(tree.props?.rangeReader??find(tree.props?.children)):undefined;
+ const draw=(owner=true,projection=session)=>hooks.draw(()=>m.WorkspaceResponsibleSessions({client,confirmed:{projectId,ref:{...assignmentRef}} as any,session:projection,owner,buffer:null,onChange:()=>{},busy:false,run:()=>{}}));
+ try{const first=find(draw());assert.ok(first);assert.equal(calls.length,0);assert.equal(find(draw(true,{...session,user:{...session.user}})),first);
+  assert.deepEqual(await first(f.input,new AbortController().signal),f.result);assert.equal(calls.length,3);
+  assert.equal(find(draw(false)),undefined);const fresh=find(draw());assert.ok(fresh);assert.notEqual(fresh,first);
+  await assert.rejects(first(f.input,new AbortController().signal),{code:'DISCOVERY_SCOPE_CHANGED'});
+  await assert.rejects(fresh({...f.input,request:{...f.input.request,assignmentRef:ref(99)}},new AbortController().signal),{code:'DISCOVERY_SCOPE_CHANGED'});assert.equal(calls.length,3);
+  const sameObject={...session,user:{...session.user}};draw(true,sameObject);sameObject.csrfToken='r'.repeat(43);
+  await assert.rejects(fresh(f.input,new AbortController().signal),{code:'DISCOVERY_SCOPE_CHANGED'});assert.equal(calls.length,3);
  }finally{hooks.unmount();}
 });
 

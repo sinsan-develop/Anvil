@@ -37,8 +37,15 @@ type RangeCommand=Omit<Command,'payload'>&{payload:Command['payload']&{selection
 type RangeRetained={command:RangeCommand;body:string;state:'SENDING'|'UNKNOWN'|'PENDING_SOURCE';requestRef?:PlanRef;expiresAt?:string};
 export type NormalUnderstandingRangeRequester=(draft:NormalUnderstandingRangeDraft,signal:AbortSignal,active:()=>boolean)=>Promise<PlanRef|void>;
 export type NormalUnderstandingRangeRecovery=(key:string,signal:AbortSignal)=>Promise<PlanRef|void>;
+export type NormalUnderstandingRangeReadRequest={request:NormalUnderstandingMetadataRequest;controlGeneration:number;expiresAt:string;selection:RangeSelection};
+type RangePart={outputRef:PlanRef;sequence:number;payloadDigest:string;blockIndex:number;kind:'ASSISTANT_TEXT';text:string;textHash:string};
+export type NormalUnderstandingRangeResult=
+ | {status:'PENDING_SOURCE'|'CURRENT_UNAVAILABLE';request:NormalUnderstandingMetadataRequest}
+ | {status:'RANGE_STORED';request:NormalUnderstandingMetadataRequest;resultRef:PlanRef;responseRef:PlanRef;partRefs:PlanRef[];currentness:'CURRENT';observedAt:string;expiresAt:string;selectionAvailable:true;
+    body:{schemaVersion:1;kind:'FIXED_RANGE_SELECTION';attribution:'SESSION_ONLY';projectId:string;executionId:string;executionGeneration:number;requestRef:PlanRef;acquisitionRef:PlanRef;sourceRequestRef:PlanRef;sourceResultRef:PlanRef;contextBundleRef:PlanRef;initConfirmationRef:PlanRef;tailRef:PlanRef;firstSequence:number;lastSequence:number;beforeRef:PlanRef|null;afterRef:PlanRef|null;parts:RangePart[];wholeConversationComplete:false;executionAuthorized:false}};
+export type NormalUnderstandingRangeReader=(request:Readonly<NormalUnderstandingRangeReadRequest>,signal:AbortSignal)=>Promise<NormalUnderstandingRangeResult>;
 type Props={client:ApiClient;session:DocumentSession;projectId:string;assignmentRef:PlanRef;preparations:PreparationRecord[];busy:boolean;
- metadataReader?:NormalUnderstandingMetadataReader;rangeRequester?:NormalUnderstandingRangeRequester;rangeRecovery?:NormalUnderstandingRangeRecovery};
+ metadataReader?:NormalUnderstandingMetadataReader;rangeRequester?:NormalUnderstandingRangeRequester;rangeRecovery?:NormalUnderstandingRangeRecovery;rangeReader?:NormalUnderstandingRangeReader};
 type SessionRecords={csrf:string;userId:string;clientId:string;commands:Map<string,Retained>};
 const clientRecords=new WeakMap<ApiClient,WeakMap<typeof fetch,SessionRecords[]>>();
 const ownerRangeRecords=new WeakMap<Map<string,Retained>,{records:Map<string,RangeRetained>;checkingControl:Set<string>}>();
@@ -72,18 +79,39 @@ function channel(client:ApiClient,session:DocumentSession,signal:AbortSignal,act
  return {check,transport,csrf};
 }
 
-async function wire(owner:ReturnType<typeof channel>,path:string,signal:AbortSignal,body?:string){
- owner.check();
+async function boundedRangeJson(response:Response,check:()=>void,signal:AbortSignal){
+ if(!response.body)throw Error();const reader=response.body.getReader(),chunks:Uint8Array[]=[];let size=0,bytes:Uint8Array|undefined;
+ let cancelled=false;
+ const abort=()=>{if(cancelled)return;cancelled=true;try{void reader.cancel().catch(()=>{});}catch{}};signal.addEventListener('abort',abort,{once:true});
+ try{
+  while(true){check();const r=await reader.read();try{check();}catch(error){if(!r.done)r.value.fill(0);throw error;}if(r.done)break;chunks.push(r.value);size+=r.value.byteLength;if(size>2097152)throw Error();}
+  check();
+  bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+  check();const raw=new TextDecoder('utf-8',{fatal:true}).decode(bytes);check();
+  const value:unknown=JSON.parse(raw),stack:{keys:Set<string>|null;key:boolean}[]=[];
+  for(const token of raw.match(/"(?:\\.|[^"\\])*"|[{}\[\],:]|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null/g)??[]){
+   if(token==='{'||token==='[')stack.push({keys:token==='{'?new Set():null,key:token==='{'});else if(token==='}'||token===']')stack.pop();else{
+    const frame=stack.at(-1);if(!frame?.keys)continue;if(token===',')frame.key=true;else if(token===':')frame.key=false;else if(frame.key&&token.startsWith('"')){const k=JSON.parse(token);if(frame.keys.has(k))throw Error();frame.keys.add(k);}
+   }
+  }
+  check();return value;
+ }finally{
+  signal.removeEventListener('abort',abort);try{abort();reader.releaseLock();}finally{bytes?.fill(0);for(const chunk of chunks)chunk.fill(0);}
+ }
+}
+async function wire(owner:ReturnType<typeof channel>,path:string,signal:AbortSignal,body?:string,bounded=false,rangeCheck?:()=>void){
+ const check=rangeCheck??owner.check;check();
  const headers:Record<string,string>={Accept:'application/json','X-Anvil-CSRF':owner.csrf};
  if(body!==undefined)headers['Content-Type']='application/json';
  let response:Response;
  try{response=await owner.transport.call(globalThis,path,{method:body===undefined?'GET':'POST',credentials:'same-origin',redirect:'error',cache:'no-store',headers,signal,body});}
- catch{owner.check();throw new ApiError('CONNECTION_LOST');}
- owner.check();
+ catch{check();throw new ApiError('CONNECTION_LOST');}
+ const cancel=()=>{if(bounded)try{void response.body?.cancel().catch(()=>{});}catch{}};
+ try{check();}catch(error){cancel();throw error;}
  let value:unknown;
- try{if(!/^application\/json\b/i.test(response.headers.get('content-type')??''))throw Error();value=await response.json();}
- catch{owner.check();throw new ApiError('RESPONSE_INVALID',response.status);}
- owner.check();
+ try{if(!/^application\/json\b/i.test(response.headers.get('content-type')??''))throw Error();value=bounded?await boundedRangeJson(response,check,signal):await response.json();}
+ catch{cancel();check();throw new ApiError('RESPONSE_INVALID',response.status);}
+ check();
  if(!response.ok){const body=value as {code?:unknown}|null;throw new ApiError(typeof body?.code==='string'&&/^[A-Z_]{1,64}$/.test(body.code)?body.code:'REQUEST_FAILED',response.status);}
  return value;
 }
@@ -241,6 +269,78 @@ export async function readNormalUnderstandingMetadata(client:ApiClient,session:D
  }
 }
 
+function rangeReadInput(raw:NormalUnderstandingRangeReadRequest){
+ const v=structuredClone(raw),r=v.request,s=v.selection;
+ if(!exact(v,['request','controlGeneration','expiresAt','selection'])||!version(v.controlGeneration)||!instant(v.expiresAt)||!exact(r,['projectId','executionId','executionGeneration','requestRef','assignmentRef','preparationRef'])||!uuid(r.projectId)||!uuid(r.executionId)||!version(r.executionGeneration)
+  ||!ref(r.requestRef)||r.requestRef.version!==1||!ref(r.assignmentRef)||!ref(r.preparationRef)
+  ||!exact(s,['requestRef','resultRef','initConfirmationRef','tailRef','firstSequence','lastSequence','ranges'])||!['requestRef','resultRef','initConfirmationRef','tailRef'].every(k=>ref((s as any)[k])&&(s as any)[k].version===1)
+  ||s.requestRef.id===r.requestRef.id||!version(s.firstSequence)||!version(s.lastSequence)||s.lastSequence<s.firstSequence||s.lastSequence>10000||!Array.isArray(s.ranges)||!s.ranges.length||s.ranges.length>200||s.ranges.length!==s.lastSequence-s.firstSequence+1)throw new ApiError('INPUT_INVALID',422);
+ let blocks=0,bytes=0;const ids=new Set<string>();
+ for(const [i,row]of s.ranges.entries()){
+  if(!exact(row,['outputRef','sequence','payloadDigest','textBlocks','textBytes'])||!ref(row.outputRef)||row.outputRef.version!==1||ids.has(row.outputRef.id)||row.outputRef.id===s.initConfirmationRef.id
+   ||row.outputRef.id===s.tailRef.id&&(!same(row.outputRef,s.tailRef)||i!==s.ranges.length-1)||row.sequence!==s.firstSequence+i||typeof row.payloadDigest!=='string'||!/^[a-f0-9]{64}$/.test(row.payloadDigest)
+   ||!version(row.textBlocks)||(blocks+=row.textBlocks)>200||!version(row.textBytes)||(bytes+=row.textBytes)>2097152)throw new ApiError('INPUT_INVALID',422);ids.add(row.outputRef.id);
+ }
+ return v;
+}
+async function currentRange(raw:unknown,input:NormalUnderstandingRangeReadRequest,check:()=>void):Promise<NormalUnderstandingRangeResult>{
+ check();const v:any=structuredClone(raw),r=input.request,s=input.selection,invalid=():never=>{throw new ApiError('RESPONSE_INVALID');};
+ if(!v||!same(v.request,r))return invalid();
+ if(v.status==='PENDING_SOURCE'||v.status==='CURRENT_UNAVAILABLE'){if(!exact(v,['status','request']))return invalid();return {status:v.status,request:r};}
+ if(!exact(v,['status','request','resultRef','responseRef','partRefs','currentness','observedAt','expiresAt','selectionAvailable','body'])||v.status!=='RANGE_STORED'||v.currentness!=='CURRENT'||v.selectionAvailable!==true
+  ||!ref(v.resultRef)||v.resultRef.version!==1||!ref(v.responseRef)||v.responseRef.version!==1||!instant(v.observedAt)||!instant(v.expiresAt)||Date.parse(v.expiresAt)>Date.parse(input.expiresAt)||Date.parse(v.expiresAt)<=Math.max(Date.now(),Date.parse(v.observedAt))||new TextEncoder().encode(ordered(v)).byteLength>2097152)return invalid();
+ const b=v.body;
+ if(!exact(b,['schemaVersion','kind','attribution','projectId','executionId','executionGeneration','requestRef','acquisitionRef','sourceRequestRef','sourceResultRef','contextBundleRef','initConfirmationRef','tailRef','firstSequence','lastSequence','beforeRef','afterRef','parts','wholeConversationComplete','executionAuthorized'])
+  ||b.schemaVersion!==1||b.kind!=='FIXED_RANGE_SELECTION'||b.attribution!=='SESSION_ONLY'||b.projectId!==r.projectId||b.executionId!==r.executionId||b.executionGeneration!==r.executionGeneration||!same(b.requestRef,r.requestRef)
+  ||!ref(b.acquisitionRef)||b.acquisitionRef.version!==1||!same(b.sourceRequestRef,s.requestRef)||!same(b.sourceResultRef,s.resultRef)||!ref(b.contextBundleRef)||!same(b.initConfirmationRef,s.initConfirmationRef)||!same(b.tailRef,s.tailRef)
+  ||b.firstSequence!==s.firstSequence||b.lastSequence!==s.lastSequence||b.wholeConversationComplete!==false||b.executionAuthorized!==false
+  ||![b.beforeRef,b.afterRef].every(x=>x===null||ref(x)&&x.version===1)||(s.firstSequence===1)!==(b.beforeRef===null)
+  ||s.ranges.some(row=>[ref(b.beforeRef)?b.beforeRef.id:null,ref(b.afterRef)?b.afterRef.id:null].includes(row.outputRef.id))||same(s.ranges.at(-1)?.outputRef,s.tailRef)&&b.afterRef!==null
+  ||ref(b.beforeRef)&&b.beforeRef.id===s.initConfirmationRef.id&&!same(b.beforeRef,s.initConfirmationRef)||ref(b.afterRef)&&b.afterRef.id===s.tailRef.id&&!same(b.afterRef,s.tailRef)
+  ||!Array.isArray(b.parts)||b.parts.length!==s.ranges.reduce((n,row)=>n+row.textBlocks,0)||!Array.isArray(v.partRefs)||v.partRefs.length!==b.parts.length)return invalid();
+ const digest=async(text:string)=>{check();const bytes=new TextEncoder().encode(text);try{const out=await crypto.subtle.digest('SHA-256',bytes);check();return [...new Uint8Array(out)].map(n=>n.toString(16).padStart(2,'0')).join('');}finally{bytes.fill(0);}};
+ const known=new Set<string>([r.requestRef.id,b.acquisitionRef.id,s.requestRef.id,s.resultRef.id,s.initConfirmationRef.id,s.tailRef.id,...s.ranges.map(row=>row.outputRef.id)]);
+ if(known.has(v.resultRef.id))return invalid();known.add(v.resultRef.id);if(known.has(v.responseRef.id))return invalid();known.add(v.responseRef.id);
+ if(await digest(ordered(b))!==v.responseRef.contentHash)return invalid();
+ let i=0;
+ for(const row of s.ranges){let bytes=0;
+  for(let block=0;block<row.textBlocks;block++,i++){
+   const p=b.parts[i],pr=v.partRefs[i];
+   if(!exact(p,['outputRef','sequence','payloadDigest','blockIndex','kind','text','textHash'])||!same(p.outputRef,row.outputRef)||p.sequence!==row.sequence||p.payloadDigest!==row.payloadDigest||p.blockIndex!==block||p.kind!=='ASSISTANT_TEXT'
+    ||typeof p.text!=='string'||!p.text.isWellFormed()||!ref(pr)||pr.version!==1||known.has(pr.id)||await digest(p.text)!==p.textHash||await digest(ordered(p))!==pr.contentHash)return invalid();
+   bytes+=new TextEncoder().encode(p.text).byteLength;known.add(pr.id);
+  }
+  if(bytes!==row.textBytes)return invalid();
+ }
+ check();if(Date.parse(v.expiresAt)<=Date.now())return invalid();return v as NormalUnderstandingRangeResult;
+}
+
+/** 저장 명령의 정확 범위만 명시 조회한다. 본문은 복구 원장에 보관하지 않는다. */
+export async function readNormalUnderstandingRange(client:ApiClient,session:DocumentSession,input:NormalUnderstandingRangeReadRequest,signal:AbortSignal,active:()=>boolean):Promise<NormalUnderstandingRangeResult>{
+ const expected=rangeReadInput(input),owned=new AbortController();if(signal.aborted)owned.abort();
+ const owner=channel(client,session,owned.signal,active),r=expected.request;
+ let wall=Date.now(),mono=performance.now(),monoEnd=mono+Math.min(30000,Date.parse(expected.expiresAt)-wall);
+ const check=()=>{owner.check();const w=Date.now(),m=performance.now();if(!same(expected,input)||w<wall||m<mono||m>=monoEnd||w>=Date.parse(expected.expiresAt))throw new ApiError('DISCOVERY_SCOPE_CHANGED');wall=w;mono=m;};
+ const controlClient=new ApiClient((url,options)=>{check();return owner.transport.call(globalThis,url,{...options,signal:owned.signal});});
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ const abort=()=>owned.abort();signal.addEventListener('abort',abort,{once:true});
+ const arm=()=>{if(timer!==undefined)clearTimeout(timer);const remaining=Math.min(Date.parse(expected.expiresAt)-Date.now(),monoEnd-performance.now());
+  if(remaining<=0)owned.abort();else timer=setTimeout(abort,Math.min(2147483647,remaining));};
+ try{
+  arm();check();
+  const generation=await documentControl(controlClient,r.projectId,session);check();if(generation!==expected.controlGeneration)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
+  const query=new URLSearchParams({controlGeneration:String(generation),executionGeneration:String(r.executionGeneration),requestVersion:String(r.requestRef.version),requestHash:r.requestRef.contentHash,
+   assignmentId:r.assignmentRef.id,assignmentVersion:String(r.assignmentRef.version),assignmentHash:r.assignmentRef.contentHash,preparationId:r.preparationRef.id,preparationVersion:String(r.preparationRef.version),preparationHash:r.preparationRef.contentHash});
+  const queryWall=wall,queryMono=mono;
+  const value=await wire(owner,`/api/v1/projects/${r.projectId}/executions/${r.executionId}/understanding-response-read-requests/${r.requestRef.id}/range-current?${query}`,owned.signal,undefined,true,check);check();
+  if(value&&typeof value==='object'&&'expiresAt'in value&&instant(value.expiresAt)&&Date.parse(value.expiresAt)>wall)monoEnd=Math.min(monoEnd,queryMono+Date.parse(value.expiresAt)-queryWall);
+  arm();check();
+  const result=await currentRange(value,expected,check);check();const after=await documentControl(controlClient,r.projectId,session);check();if(after!==generation)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
+  if(result.status==='RANGE_STORED'&&Date.parse(result.expiresAt)<=Date.now())throw new ApiError('RESPONSE_INVALID');return result;
+ }catch(error){check();if(error instanceof ApiError&&(metadataCurrentStatuses.get(error.code)===error.status||error.code==='NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED'&&error.status===412))return {status:'CURRENT_UNAVAILABLE',request:r};throw error;}
+ finally{signal.removeEventListener('abort',abort);if(timer!==undefined)clearTimeout(timer);}
+}
+
 function prepareRangeDraft(current:StoredMetadata,firstSequence:number,lastSequence:number):NormalUnderstandingRangeDraft|null{
  if(Date.parse(current.expiresAt)<=Date.now()||!version(firstSequence)||!version(lastSequence)||lastSequence<firstSequence||lastSequence-firstSequence>=200)return null;
  const ranges=current.metadata.ranges.filter(range=>range.sequence>=firstSequence&&range.sequence<=lastSequence);
@@ -307,7 +407,7 @@ function UnderstandingRangeSelection({current,requestRange,active,disabled,onSet
  </div>;
 }
 
-export function NormalUnderstandingDiscovery({client,session,projectId,assignmentRef,preparations,busy,metadataReader,rangeRequester,rangeRecovery}:Props){
+export function NormalUnderstandingDiscovery({client,session,projectId,assignmentRef,preparations,busy,metadataReader,rangeRequester,rangeRecovery,rangeReader}:Props){
  const [selection,setSelection]=useState(''),[basis,setBasis]=useState<Basis|null>(null),[notice,setNotice]=useState(''),[working,setWorking]=useState(false),[,render]=useState(0);
  const local=normalUnderstandingRecords(session,client),key=ordered([projectId,assignmentRef,session.user.id,session.clientId]);
  const scope=useRef({key,records:local}),flight=useRef<AbortController|null>(null);
@@ -359,6 +459,7 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
      local.get(writeKey)!==record||!ref(record.requestRef)||record.requestRef.version!==1)return;
   const command=record.command;
   if(command.projectId!==projectId||!same(command.payload.assignmentRef,assignmentRef))return;
+  cancelRange();
   const request=structuredClone({requestRef:record.requestRef,projectId,executionId:command.targetId,executionGeneration:command.expectedVersion,
    assignmentRef:command.payload.assignmentRef,preparationRef:command.payload.preparationRef});
   const operation=new AbortController(),reading={owner:readOwner,controller:operation};
@@ -384,8 +485,47 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
    Math.min(2147483647,Math.max(0,Date.parse(value.expiresAt)-Date.now())));
   return()=>clearTimeout(timer);
  },[shownMetadata]);
+ // 원문은 이 화면의 단일 조회 상태에만 둔다. 복구 WeakMap에는 원 command/선택 metadata만 남긴다.
+ const rangeRecordsKey=ordered(retainedRanges.map(([k,e])=>[k,e.command,e.requestRef??null,e.state,e.expiresAt??null]));
+ const rangeScope=useRef({owner,reader:rangeReader,metadataReader,selection,records:rangeRecordsKey,busy});
+ if(rangeScope.current.owner!==owner||rangeScope.current.reader!==rangeReader||rangeScope.current.metadataReader!==metadataReader||rangeScope.current.selection!==selection||rangeScope.current.records!==rangeRecordsKey||rangeScope.current.busy!==busy)
+  rangeScope.current={owner,reader:rangeReader,metadataReader,selection,records:rangeRecordsKey,busy};
+ const rangeReadOwner=rangeScope.current;
+ const [rangeView,setRangeView]=useState<{owner:typeof rangeReadOwner;key:string;entry:RangeRetained;monoEnd?:number;value:NormalUnderstandingRangeResult|'READING'|'UNKNOWN'|'AUTH_REQUIRED'}|null>(null);
+ const rangeFlight=useRef<{owner:typeof rangeReadOwner;controller:AbortController}|null>(null);
+ function cancelRange(){rangeFlight.current?.controller.abort();rangeFlight.current=null;setRangeView(null);}
+ useEffect(()=>{
+  setRangeView(null);
+  return()=>{if(rangeFlight.current?.owner===rangeReadOwner){rangeFlight.current.controller.abort();rangeFlight.current=null;}};
+ },[rangeReadOwner]);
+ const shownRange=rangeView?.owner===rangeReadOwner?rangeView:null;
+ useEffect(()=>{
+  if(!shownRange)return;const value=shownRange.value;if(typeof value!=='object'||value.status!=='RANGE_STORED')return;
+  const timer=setTimeout(()=>setRangeView(current=>current&&current===shownRange?{...current,value:{status:'CURRENT_UNAVAILABLE',request:value.request}}:current),Math.min(2147483647,Math.max(0,Math.min(Date.parse(value.expiresAt),Date.parse(shownRange.entry.expiresAt!))-Date.now(),(shownRange.monoEnd??0)-performance.now())));
+  return()=>clearTimeout(timer);
+ },[shownRange]);
+ async function readRange(rangeKey:string,entry:RangeRetained){
+  if(!rangeReader||busy||working||flight.current||metadataFlight.current||rangeFlight.current||rangeScope.current!==rangeReadOwner||scope.current!==owner||rangeRequests?.get(rangeKey)!==entry
+   ||entry.state!=='PENDING_SOURCE'||!ref(entry.requestRef)||!entry.expiresAt||Date.parse(entry.expiresAt)<=Date.now())return;
+  const command=entry.command;if(command.projectId!==projectId||!same(command.payload.assignmentRef,assignmentRef)||entry.body!==JSON.stringify(command))return;
+  const input=rangeReadInput({request:{projectId,executionId:command.targetId,executionGeneration:command.expectedVersion,assignmentRef:command.payload.assignmentRef,preparationRef:command.payload.preparationRef,requestRef:entry.requestRef},controlGeneration:command.controlGeneration,expiresAt:entry.expiresAt,selection:command.payload.selection});
+  const fingerprint=ordered(entry),operation=new AbortController(),reading={owner:rangeReadOwner,controller:operation};
+  const readWall=Date.now(),readMono=performance.now();let monoEnd=readMono+Math.min(30000,Date.parse(input.expiresAt)-readWall);
+  rangeFlight.current=reading;setRangeView({owner:rangeReadOwner,key:rangeKey,entry,value:'READING'});
+  const ownsRead=()=>active(operation)&&rangeScope.current===rangeReadOwner&&rangeFlight.current===reading&&rangeRequests?.get(rangeKey)===entry&&ordered(entry)===fingerprint;
+  const isCurrent=()=>ownsRead()&&Date.parse(input.expiresAt)>Date.now()&&performance.now()<monoEnd;
+  const check=()=>{if(!isCurrent())throw new ApiError('DISCOVERY_SCOPE_CHANGED');};
+  const publish=(value:NonNullable<typeof rangeView>['value'])=>{if(isCurrent())setRangeView({owner:rangeReadOwner,key:rangeKey,entry,value,monoEnd});};
+  try{const response=await rangeReader(structuredClone(input),operation.signal);if(response.status==='RANGE_STORED'&&instant(response.expiresAt)&&Date.parse(response.expiresAt)>Date.now())monoEnd=Math.min(monoEnd,readMono+Date.parse(response.expiresAt)-readWall);check();publish(await currentRange(response,input,check));}
+  catch(error){
+   if(ownsRead()&&(Date.parse(input.expiresAt)<=Date.now()||performance.now()>=monoEnd))setRangeView({owner:rangeReadOwner,key:rangeKey,entry,value:{status:'CURRENT_UNAVAILABLE',request:input.request}});
+   else publish(error instanceof ApiError&&metadataAuthStatuses.get(error.code)===error.status?'AUTH_REQUIRED':'UNKNOWN');
+  }
+  finally{if(rangeFlight.current===reading)rangeFlight.current=null;}
+ }
  async function run(work:(operation:AbortController)=>Promise<void>){
-  if(flight.current||metadataFlight.current||busy||scope.current!==owner)return;
+  if(flight.current||metadataFlight.current||rangeFlight.current||busy||scope.current!==owner)return;
+  cancelRange();
   const operation=new AbortController();flight.current=operation;setWorking(true);setNotice('');
   try{await work(operation);}catch(cause){if(active(operation)&&(!(cause instanceof ApiError)||cause.code!=='DISCOVERY_SCOPE_CHANGED'))setNotice(cause instanceof ApiError?cause.code:'RESPONSE_INVALID');}
   finally{if(flight.current===operation)flight.current=null;if(active(operation)){setWorking(false);render(value=>value+1);}}
@@ -417,7 +557,7 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
  if(!available.length&&!recordsForAssignment.length&&!retainedRanges.length)return null;
  return <section aria-label="최초 이해 자료 탐색"><h6>최초 이해 자료 탐색</h6>
   <fieldset disabled={busy||working}><legend>등록 실행 준비 선택</legend>
-   <select aria-label="이해 자료 탐색 준비" value={selection} onChange={event=>{cancelMetadata();setSelection(event.target.value);setBasis(null);setNotice('');}}>
+   <select aria-label="이해 자료 탐색 준비" value={selection} onChange={event=>{cancelMetadata();cancelRange();setSelection(event.target.value);setBasis(null);setNotice('');}}>
     <option value="">실행 준비 선택</option>{available.map(p=><option key={ordered(p.ref)} value={ordered(p.ref)}>준비 {p.ref.id} · v{p.ref.version}</option>)}
    </select>
    <button type="button" disabled={!selected} onClick={()=>void check()}>탐색 근거 확인</button>
@@ -452,15 +592,28 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
     <button type="button" disabled={busy||working} onClick={()=>void submit(writeKey)}>같은 탐색 명령 결과 확인</button></>:null}
    {record.state==='SENDING'?<p role="status">원 명령 결과 확인 중</p>:null}
   </li>;})}</ul>:null}
-  {retainedRanges.length?<ul aria-label="이해 자료 구간 요청">{retainedRanges.map(([rangeKey,entry])=><li key={rangeKey}>
+  {retainedRanges.length?<ul aria-label="이해 자료 구간 요청">{retainedRanges.map(([rangeKey,entry])=>{const view=shownRange?.key===rangeKey&&shownRange.entry===entry?shownRange.value:null;
+   const source=typeof view==='object'&&view?.status==='RANGE_STORED'&&Date.parse(view.expiresAt)>now&&!!entry.expiresAt&&Date.parse(entry.expiresAt)>now&&performance.now()<(shownRange?.monoEnd??0)?view:null;
+   return <li key={rangeKey}>
    <p>원 명령 {entry.command.commandId} · 순번 {entry.command.payload.selection.firstSequence}–{entry.command.payload.selection.lastSequence}</p>
-   {entry.state==='PENDING_SOURCE'?<p role="status">구간 요청 보관 · {entry.expiresAt&&Date.parse(entry.expiresAt)>now?'원문 대기':'현재 원문 조회 불가'} · {entry.requestRef?.id}</p>:null}
+   {entry.state==='PENDING_SOURCE'?<p role="status">구간 요청 보관 · {source?'원문 보관 확인':entry.expiresAt&&Date.parse(entry.expiresAt)>now?'원문 대기':'현재 원문 조회 불가'} · {entry.requestRef?.id}</p>:null}
+   {entry.state==='PENDING_SOURCE'&&rangeReader&&entry.requestRef?<button type="button" disabled={busy||working||!!rangeFlight.current||!entry.expiresAt||Date.parse(entry.expiresAt)<=now} onClick={()=>void readRange(rangeKey,entry)}>보관 원문 확인</button>:null}
+   {view==='READING'?<><p role="status">보관 원문 확인 중</p><button type="button" onClick={cancelRange}>원문 조회 취소</button></>:null}
+   {view==='UNKNOWN'?<p role="status">원문 조회 결과 미확인</p>:null}
+   {view==='AUTH_REQUIRED'?<p role="status">인증을 확인한 뒤 원문을 다시 조회하세요.</p>:null}
+   {typeof view==='object'&&view?.status==='PENDING_SOURCE'?<p role="status">선택 원문 보관 대기</p>:null}
+   {typeof view==='object'&&(view?.status==='CURRENT_UNAVAILABLE'||view?.status==='RANGE_STORED'&&!source)?<p role="status">현재 원문 조회 불가</p>:null}
+   {source?<div aria-label="보관된 선택 원문"><p role="status">선택 원문 보관 확인 · 결과 {source.responseRef.id} · 관측 {source.observedAt}</p>
+    <p>같은 세션의 고정 출력 순번 {source.body.firstSequence}–{source.body.lastSequence} · 전체 대화가 아닙니다. 고정 지점 이후 출력은 포함하지 않습니다. 이 조회는 검토·승인·작업 실행을 뜻하지 않습니다.</p>
+    {source.body.parts.map((part,index)=><div key={source.partRefs[index]!.id}><p>출력 순번 {part.sequence} · 텍스트 {part.blockIndex+1}</p><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{part.text}</pre></div>)}
+    <button type="button" onClick={cancelRange}>원문 닫기</button>
+   </div>:null}
    {entry.state==='SENDING'?<p role="status">구간 요청 확인 중</p>:null}
    {entry.state==='UNKNOWN'?<>
     <p role="status">구간 요청 결과 미확인 · 원 명령 보존</p>
     <button type="button" disabled={busy||working} onClick={()=>void run(async operation=>{await rangeRecovery?.(rangeKey,operation.signal);})}>같은 구간 명령 결과 확인</button>
    </>:null}
-  </li>)}</ul>:null}
+  </li>;})}</ul>:null}
   {working?<p role="status">확인 중</p>:null}
  </section>;
 }

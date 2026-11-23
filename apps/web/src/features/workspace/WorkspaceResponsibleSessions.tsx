@@ -9,7 +9,7 @@ import { listCandidates, readCandidate, type CandidateHit } from '../connections
 import { ordered } from '../knowledge/review-view.ts';
 import {readProviderClaimPageHistory,readProviderClaimReceiptHistory,type ProviderClaimPageHistory,type ProviderClaimHistory,type ProviderClaimHistoryQuery} from './provider-claim-receipt-api.ts';
 import {ClaimUnderstandingHistory} from './ClaimUnderstandingHistory.tsx';
-import {createNormalUnderstandingRangeCommands,NormalUnderstandingDiscovery,readNormalUnderstandingMetadata,type NormalUnderstandingMetadataReader} from './NormalUnderstandingDiscovery.tsx';
+import {createNormalUnderstandingRangeCommands,NormalUnderstandingDiscovery,readNormalUnderstandingMetadata,readNormalUnderstandingRange,type NormalUnderstandingMetadataReader,type NormalUnderstandingRangeReader} from './NormalUnderstandingDiscovery.tsx';
 import {ResponsibleSessionApprovalEditor} from './ResponsibleSessionApprovalEditor.tsx';
 import {checkResponsibleSessionApprovalBinding,markResponsibleSessionDispatch,settleResponsibleSessionWrite} from './responsible-session-approval.ts';
 import {updateResponsibleSessionApprovalBuffer} from './responsible-session-api.ts';
@@ -43,6 +43,20 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
     return reader;
   },[client,transport,userId,clientId,csrfToken,projectId,assignmentKey,showMetadata]);
   readerOwner.current=metadataReader;
+  const rangeReaderOwner=useRef<NormalUnderstandingRangeReader|undefined>(undefined);
+  const rangeReader=useMemo<NormalUnderstandingRangeReader|undefined>(()=>{
+    if(!showMetadata)return undefined;
+    const authorization={user:{id:userId},clientId,csrfToken};
+    const reader:NormalUnderstandingRangeReader=async(input,signal)=>{
+      const current=()=>alive.current&&rangeReaderOwner.current===reader&&client.transport===transport&&!signal.aborted
+        &&context.current.client===client&&context.current.owner&&context.current.session.user.id===userId&&context.current.session.clientId===clientId&&context.current.session.csrfToken===csrfToken
+        &&context.current.confirmed.projectId===projectId&&ordered(context.current.confirmed.ref)===assignmentKey;
+      if(!current()||input.request.projectId!==projectId||ordered(input.request.assignmentRef)!==assignmentKey)throw new ApiError('DISCOVERY_SCOPE_CHANGED');
+      return readNormalUnderstandingRange(client,authorization,input,signal,current);
+    };
+    return reader;
+  },[client,transport,userId,clientId,csrfToken,projectId,assignmentKey,showMetadata]);
+  rangeReaderOwner.current=rangeReader;
   const rangeOwner=useRef<ReturnType<typeof createNormalUnderstandingRangeCommands>|undefined>(undefined);
   const rangeCommands=useMemo(()=>{
     if(!showMetadata)return undefined;
@@ -152,7 +166,7 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
     </>:<p>역할·예약·준비 원문은 아직 조회 확인되지 않았습니다.</p>}
     {owner&&bound?<NormalUnderstandingDiscovery client={client} session={session} projectId={confirmed.projectId} assignmentRef={confirmed.ref}
      preparations={state&&stateStamp.current.epoch===epoch.current&&stateStamp.current.revision===stateRevision.current?state.preparations:[]}
-     busy={busy} metadataReader={metadataReader} rangeRequester={rangeCommands?.request} rangeRecovery={rangeCommands?.recover}/>:null}
+     busy={busy} metadataReader={metadataReader} rangeRequester={rangeCommands?.request} rangeRecovery={rangeCommands?.recover} rangeReader={rangeReader}/>:null}
   </section>;
 }
 
