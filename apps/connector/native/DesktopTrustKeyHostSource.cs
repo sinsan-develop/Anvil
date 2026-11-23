@@ -51,7 +51,7 @@ internal sealed class DesktopTrustKeyHostSource {
  }
  // FN07 B: 원 host의 kernel pipe/동일 helper/Anvil peer에서만 재구성하는 전용 감독 입구.
  internal async Task<int> RunSdkChildSupervisorAsync(){
-  if(used)throw Invalid();used=true;int exit=1;byte[] headerBytes=null;NamedPipeServerStream broker=null;IntPtr job=IntPtr.Zero;
+  if(used)throw Invalid();used=true;int exit=1;byte[] headerBytes=null,sdkIntentBytes=null;NamedPipeServerStream broker=null;IntPtr job=IntPtr.Zero;
   try{
    budget=new DesktopTrustKeyBudget(wall,mono);var basis=DesktopTrustKeyParentBasisSource.Read(resources);peer=DesktopTrustKeyPeerSource.OpenSdkSupervisor(basis,kernel,budget);peer.OpenStreams();Check();headerBytes=await Frame();if(headerBytes==null)throw Invalid();
    var h=Parse(headerBytes,true);Exact(h,"schemaVersion,purpose,originalPid,originalCreated,anvilPid,anvilCreated,helperHash,expiresAt,remainingMs,leaseId,endpointId,pipeName,brokerHandle,jobHandle,attemptId,slotId,sourceHash,bindingHash,totalBytes");
@@ -83,11 +83,33 @@ internal sealed class DesktopTrustKeyHostSource {
    // caller의 close bool이 아니라 원 부모 handle의 exit0를 supervisor 자신이 검산한다.
    while(!peer.AcceptSdkOriginalClose()){budget.Check();await Task.Delay(Math.Min(10,budget.Remaining()));}
    current();await WriteSdkBroker(broker,SdkBrokerMetadata(h,"NORMAL_SDK_BROKER_CONSUMED_V1"),current);
-   // 이 단위는 인계만 한다. PRESPAWN/CLI SPAWN·RESUME opcode는 제공하지 않는다.
-   var eof=Task.Run(()=>broker.ReadByte());await WaitSdk(eof,current);if(eof.Result!=-1)throw Invalid();current();exit=0;
+   // 같은 원 source/pins의 계획과 hook 비교만 소비한다. PRESPAWN 생산자 부재에서 실행은 닫힌다.
+   var intent=normalExecution.ReadPreparedSdkIntent();sdkIntentBytes=Encoding.UTF8.GetBytes(Canonical(intent,0));if(sdkIntentBytes.Length<1||sdkIntentBytes.Length>2097152)throw Invalid();
+   string intentHash=Hash(sdkIntentBytes);int offset=0,sequence=0;bool hookUsed=false,queryAttempted=false;
+   for(;;){
+    var line=Task.Run(()=>NormalSdkChildHostSource.ReadOptionalLine(broker,4096));await WaitSdk(line,current);byte[] requestBytes=line.Result;if(requestBytes==null){exit=0;break;}
+    try{
+     var request=Parse(requestBytes,true);string purpose=Text(request,"purpose");Exact(request,purpose=="NORMAL_SDK_INTENT_PART_V1"?"schemaVersion,purpose,leaseId,endpointId,sourceHash,bindingHash,sequence,index":purpose=="NORMAL_SDK_HOOK_VERIFY_V1"?"schemaVersion,purpose,leaseId,endpointId,sourceHash,bindingHash,sequence,hookHash":"schemaVersion,purpose,leaseId,endpointId,sourceHash,bindingHash,sequence");
+     foreach(string key in new[]{"leaseId","endpointId","sourceHash","bindingHash"})if(Canonical(request[key],0)!=Canonical(h[key],0))throw Invalid();
+     if(Positive(request["schemaVersion"])!=1||Positive(request["sequence"])!=++sequence||sequence>66)throw Invalid();current();
+     Dictionary<string,object> answer;
+     if(purpose=="NORMAL_SDK_INTENT_PART_V1"){
+      if(hookUsed||queryAttempted||offset>=sdkIntentBytes.Length||Nonnegative(request["index"])!=offset/32768)throw Invalid();int length=Math.Min(32768,sdkIntentBytes.Length-offset);
+      answer=SdkBrokerMetadata(h,"NORMAL_SDK_INTENT_PART_RESULT_V1");answer.Add("sequence",sequence);answer.Add("index",offset/32768);answer.Add("totalBytes",sdkIntentBytes.Length);answer.Add("intentHash",intentHash);answer.Add("data",Convert.ToBase64String(sdkIntentBytes,offset,length));offset+=length;answer.Add("final",offset==sdkIntentBytes.Length);
+     }else if(purpose=="NORMAL_SDK_HOOK_VERIFY_V1"){
+      if(offset!=sdkIntentBytes.Length||hookUsed||queryAttempted)throw Invalid();hookUsed=true;normalExecution.VerifyPreparedSdkHook(Text(request,"hookHash"));
+      answer=SdkBrokerMetadata(h,"NORMAL_SDK_HOOK_EFFECT_UNAVAILABLE_V1");answer.Add("sequence",sequence);answer.Add("hookHash",request["hookHash"]);answer.Add("reason","PRESPAWN_CURRENT_UNAVAILABLE");
+     }else if(purpose=="NORMAL_SDK_QUERY_ADMIT_V1"){
+      if(offset!=sdkIntentBytes.Length||queryAttempted)throw Invalid();queryAttempted=true;
+      answer=SdkBrokerMetadata(h,"NORMAL_SDK_QUERY_UNAVAILABLE_V1");answer.Add("sequence",sequence);answer.Add("reason","PRESPAWN_CURRENT_UNAVAILABLE");
+     }else throw Invalid();
+     current();await WriteSdkBroker(broker,answer,current,65536);current();
+    }finally{Array.Clear(requestBytes,0,requestBytes.Length);}
+   }
+
   }catch{unknown=true;exit=1;}
   finally{
-   active=false;if(headerBytes!=null)Array.Clear(headerBytes,0,headerBytes.Length);
+   active=false;if(headerBytes!=null)Array.Clear(headerBytes,0,headerBytes.Length);if(sdkIntentBytes!=null)Array.Clear(sdkIntentBytes,0,sdkIntentBytes.Length);
    if(normalExecution!=null)try{normalExecution.Dispose();}catch{unknown=true;}
    if(broker!=null)try{broker.Dispose();}catch{unknown=true;}
    if(root!=null)try{root.Dispose();if(!root.CleanupSettled)unknown=true;}catch{unknown=true;}
@@ -99,7 +121,11 @@ internal sealed class DesktopTrustKeyHostSource {
  static Dictionary<string,object> SdkSupervisorMetadata(Dictionary<string,object> h,string state){return new Dictionary<string,object>{{"state",state},{"leaseId",h["leaseId"]},{"endpointId",h["endpointId"]},{"sourceHash",h["sourceHash"]},{"bindingHash",h["bindingHash"]}};}
  static Dictionary<string,object> SdkBrokerMetadata(Dictionary<string,object> h,string purpose){return new Dictionary<string,object>{{"schemaVersion",1},{"purpose",purpose},{"leaseId",h["leaseId"]},{"endpointId",h["endpointId"]},{"sourceHash",h["sourceHash"]},{"bindingHash",h["bindingHash"]}};}
  async Task WaitSdk(Task operation,Action current){while(!operation.IsCompleted){current();await Task.WhenAny(operation,Task.Delay(Math.Min(20,budget.Remaining())));}current();await operation;current();}
- async Task WriteSdkBroker(Stream stream,object value,Action current){byte[] bytes=Encoding.UTF8.GetBytes(Canonical(value,0)+"\n");try{if(bytes.Length>4096)throw Invalid();await WaitSdk(Task.Run(()=>{stream.Write(bytes,0,bytes.Length);stream.Flush();}),current);}finally{Array.Clear(bytes,0,bytes.Length);}}
+ async Task WriteSdkBroker(Stream stream,object value,Action current,int maximum=4096){
+  current();byte[] bytes=Encoding.UTF8.GetBytes(Canonical(value,0)+"\n");if(bytes.Length>maximum){Array.Clear(bytes,0,bytes.Length);throw Invalid();}
+  await IO(bytes,async cancel=>{await stream.WriteAsync(bytes,0,bytes.Length,cancel);await stream.FlushAsync(cancel);return true;},result=>{current();return result;});
+ }
+
  [DllImport("kernel32.dll",EntryPoint="CloseHandle",SetLastError=true)]static extern bool CloseSdkJob(IntPtr handle);
 
  // 등록 전 전용 pipe: root/key/원장을 열지 않으며 SDK 실행권을 발급하지 않는다.

@@ -169,10 +169,10 @@ internal sealed class NormalExecutionConfigurationSource {
  }
  internal sealed class FirstConfiguration:IDisposable {
   readonly ProtectedRecords records;readonly Row fact,original,recipe;readonly string headHash;
-  readonly Row bound;readonly string boundHash,expectedHookHash;
+  readonly Row bound;readonly string boundHash,expectedHookHash;readonly string plannedSid,model;readonly long? maxTurns;
   readonly NormalSdkWorkerPackageSource package;readonly DirectoryPins pins;readonly Action check;bool closed;
   internal FirstConfiguration(DesktopTrustKeyRootSource root,DesktopTrustKeyPeerSource peer,Row originalRecord,Row originalFact,NormalSdkWorkerPackageSource originalPackage,Action guard,string sid,NormalExecutionSpoolProfileSource.SdkStartOptions options){
-   original=Clone(originalRecord);fact=Clone(originalFact);package=originalPackage;check=guard;
+   original=Clone(originalRecord);fact=Clone(originalFact);package=originalPackage;check=guard;plannedSid=sid;model=options.Model;maxTurns=options.MaxTurns;
    check();package.Check();recipe=package.ExecutionRecipe;records=new ProtectedRecords(root,original,check);
    Row envelope=records.UniqueFirstEnvelope(fact,original,recipe);headHash=Hash(envelope);Row record=Map(envelope["record"]);
    try{pins=new DirectoryPins(peer,S(Map(record["localRoot"]),"privateLocator"),record["relativeDirectory"] as string);pins.Require(envelope["physical"]);bound=BuildFirstInputs(package,pins,recipe,sid,options);boundHash=Hash(bound);expectedHookHash=FirstHookHash(bound);Check();}
@@ -186,6 +186,9 @@ internal sealed class NormalExecutionConfigurationSource {
   }
   // 원 native 검산 결과의 비교 지문이다. 경로/argv/env나 실행권을 반환하지 않는다.
   internal string OriginalBindingHash{get{Check();return Hash(new object[]{headHash,boundHash,expectedHookHash,package.ManifestHash});}}
+  // 동일 supervisor의 원 소유 객체만 읽는다. 이 계획 자체는 import/query/실행 허가가 아니다.
+  internal Row ReadSdkIntent(){Check();var value=new Row{{"sdkVersion","0.3.224"},{"sdkEntry",package.SdkEntry},{"runtime",package.Runtime},{"cli",package.Cli},{"manifestHash",package.ManifestHash},{"hookHash",expectedHookHash},{"plannedSid",plannedSid},{"model",model},{"maxTurns",maxTurns.HasValue?(object)maxTurns.Value:null},{"program",Clone(bound)}};Check();return value;}
+  internal void VerifySdkHook(string observed){Check();if(!DesktopTrustKeyHostSource.IsHash(observed)||observed!=expectedHookHash)throw Invalid();Check();}
   public void Dispose(){if(closed)return;closed=true;if(bound!=null)bound.Clear();pins.Dispose();}
  }
  internal sealed class DirectoryPins:IDisposable {

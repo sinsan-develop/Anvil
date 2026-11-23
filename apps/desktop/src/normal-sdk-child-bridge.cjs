@@ -168,6 +168,46 @@ function createChildStreams(port,signal,stopOriginal) {
     },
     on:events.on.bind(events),once:events.once.bind(events),off:events.off.bind(events)});
 }
+/** 원 hook의 실제 spec을 같은 UTF8 prefix로 관측한다. 실행 허가를 발급하지 않는다.
+ * @param {any} spec @param {AbortSignal} lifetime
+ */
+function observeSdkHook(spec,lifetime){
+  if(aborted(lifetime))throw unknown();
+  if(!spec||types.isProxy(spec)||Object.getPrototypeOf(spec)!==Object.prototype)throw unknown();
+  const keys=Reflect.ownKeys(spec);
+  if(keys.length!==5||!['signal','command','args','env','cwd'].every(k=>keys.includes(k)))throw unknown();
+  /** @param {object} obj @param {string} key */
+  const field=(obj,key)=>{
+    const d=Object.getOwnPropertyDescriptor(obj,key);
+    if(!d||!d.enumerable||!Object.hasOwn(d,'value'))throw unknown();
+    return d.value;
+  };
+  const originalSignal=field(spec,'signal');
+  if(aborted(originalSignal))throw unknown();
+  const signal=AbortSignal.any([lifetime,originalSignal]);
+  // 비교용 관측 지문만 전송한다. native가 원 구성과 독립 대조해야 한다.
+  const digest=createHash('sha256');let count=0;
+  /** @param {unknown} value */
+  const put=value=>{
+    if(typeof value!=='string'||value.length>chunkLimit||!value.isWellFormed()||value.includes('\0'))throw unknown();
+    const n=Buffer.byteLength(value),prefix=String(n)+':';
+    if((count+=n+prefix.length)>chunkLimit)throw unknown();
+    digest.update(prefix).update(value);
+  };
+  put('SDK_HOOK_OBSERVED_V1');put(field(spec,'command'));put(field(spec,'cwd'));
+  const args=field(spec,'args'),env=field(spec,'env');
+  if(!Array.isArray(args)||types.isProxy(args)||args.length>chunkLimit||Reflect.ownKeys(args).length!==args.length+1||
+     !env||typeof env!=='object'||types.isProxy(env)||![Object.prototype,null].includes(Object.getPrototypeOf(env)))throw unknown();
+  put(String(args.length));for(let i=0;i<args.length;i++)put(field(args,String(i)));
+  const names=Reflect.ownKeys(env);if(names.length>chunkLimit||names.some(k=>typeof k!=='string'))throw unknown();
+  put(String(names.length));
+  for(const key of names.sort()){
+    if(typeof key!=='string')throw unknown();
+    put(key);put(field(env,key));
+  }
+  return {hookHash:digest.digest('hex'),signal};
+}
+
 /** SDK worker 한 곳에서 동기 hook을 호출할 때 사용한다. broker/renderer에서는 대기하지 않는다.
  * @param {MessagePort} control @param {MessagePort} data @param {AbortSignal} lifetime
  * @param {number} expiresAt @param {number} monotonicEnd
@@ -203,41 +243,10 @@ function createSynchronousSpawn(control,data,lifetime,expiresAt,monotonicEnd) {
   return function spawnOriginalChild(spec) {
     if(used||aborted(lifetime))throw unknown();
     used=true;
-    if(!spec||types.isProxy(spec)||Object.getPrototypeOf(spec)!==Object.prototype)throw unknown();
-    const keys=Reflect.ownKeys(spec);
-    if(keys.length!==5||!['signal','command','args','env','cwd'].every(k=>keys.includes(k)))throw unknown();
-    /** @param {object} obj @param {string} key */
-    const field=(obj,key)=>{
-      const d=Object.getOwnPropertyDescriptor(obj,key);
-      if(!d||!d.enumerable||!Object.hasOwn(d,'value'))throw unknown();
-      return d.value;
-    };
-    const originalSignal=field(spec,'signal');
-    if(aborted(originalSignal))throw unknown();
-    const signal=AbortSignal.any([lifetime,originalSignal]);
-    // 비교용 관측 지문만 전송한다. native가 원 구성과 독립 대조해야 한다.
-    const digest=createHash('sha256');let count=0;
-    /** @param {unknown} value */
-    const put=value=>{
-      if(typeof value!=='string'||value.length>chunkLimit||!value.isWellFormed()||value.includes('\0'))throw unknown();
-      const n=Buffer.byteLength(value),prefix=String(n)+':';
-      if((count+=n+prefix.length)>chunkLimit)throw unknown();
-      digest.update(prefix).update(value);
-    };
-    put('SDK_HOOK_OBSERVED_V1');put(field(spec,'command'));put(field(spec,'cwd'));
-    const args=field(spec,'args'),env=field(spec,'env');
-    if(!Array.isArray(args)||types.isProxy(args)||args.length>chunkLimit||Reflect.ownKeys(args).length!==args.length+1||
-       !env||typeof env!=='object'||types.isProxy(env)||![Object.prototype,null].includes(Object.getPrototypeOf(env)))throw unknown();
-    put(String(args.length));for(let i=0;i<args.length;i++)put(field(args,String(i)));
-    const names=Reflect.ownKeys(env);if(names.length>chunkLimit||names.some(k=>typeof k!=='string'))throw unknown();
-    put(String(names.length));
-    for(const key of names.sort()){
-      if(typeof key!=='string')throw unknown();
-      put(key);put(field(env,key));
-    }
+    const {hookHash,signal}=observeSdkHook(spec,lifetime);
     Reflect.apply(addListener,signal,['abort',abandon,{once:true}]);
     try{
-      accept('SPAWN',digest.digest('hex'));
+      accept('SPAWN',hookHash);
       if(aborted(signal))throw unknown();
       const streams=createChildStreams(data,signal,()=>{
         if(stopped)return false;stopped=true;return accept('STOP',null);
@@ -249,4 +258,4 @@ function createSynchronousSpawn(control,data,lifetime,expiresAt,monotonicEnd) {
     }catch(error){Reflect.apply(removeListener,signal,['abort',abandon]);abandon();throw error;}
   };
 }
-module.exports={createChildStreams,createSynchronousSpawn};
+module.exports={createChildStreams,createSynchronousSpawn,observeSdkHook};

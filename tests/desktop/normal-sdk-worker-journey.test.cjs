@@ -528,16 +528,33 @@ test('실제 private host source 준비는 같은 원바이트만 native에 분�
 });
 
 
+function makeSdkIntent(sourceHash,bindingHash){
+ const program={application:'C:\\Anvil\\cli.exe',cwd:'C:\\project',args:['--session-id','synthetic-sid','--model','synthetic-model',...Array(8).fill('x'.repeat(3500))],env:{SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows',TEMP:'C:\\'+ 'x'.repeat(3800),TMP:'C:\\'+ 'y'.repeat(3800),CLAUDE_CODE_ENTRYPOINT:'sdk-ts',CLAUDE_AGENT_SDK_VERSION:'0.3.224'}};
+ const {hookHash}=require('../../apps/desktop/src/normal-sdk-child-bridge.cjs').observeSdkHook({command:program.application,cwd:program.cwd,args:program.args,env:program.env,signal:new AbortController().signal},new AbortController().signal);
+ return{sdkVersion:'0.3.224',sdkEntry:'C:\\Anvil\\sdk\\sdk.mjs',runtime:'C:\\Anvil\\node.exe',cli:program.application,manifestHash:'d'.repeat(64),hookHash,plannedSid:'synthetic-sid',model:'synthetic-model',maxTurns:null,program,sourceHash,bindingHash};
+}
+
 test('원 FIRST 전용 source→native 감독 준비→broker ACK→원 host 물리 close→opposite 소비는 실제 CJS와 TS를 단회 연결한다 · RAM',async()=>{
  const {prepareNormalSdkChildHandoff}=await import('../../apps/connector/runtime/normal-owned-spool-profile.ts');
- for(const kind of ['OK','CROSS','EXPIRED','ACK','CLOSE','EARLY','DUPLICATE','LOST','STALE']){
-  const trace=[];let spawned=0,socket,sourceHash,metadata,requested,sequence=0,current=true;
+ for(const kind of ['OK','CROSS','EXPIRED','ACK','CLOSE','EARLY','DUPLICATE','LOST','STALE','QUERY','HOOK','HOOK_ENV','INTENT_HASH','INTENT_CROSS','INTENT_LATE']){
+  const trace=[];let spawned=0,socket,sourceHash,metadata,requested,sequence=0,current=true,intentParts=0;
   const endpointId=randomUUID(),leaseId=randomUUID(),bindingHash='b'.repeat(64),ref=()=>({id:randomUUID(),version:1,contentHash:'a'.repeat(64)}),signal=new AbortController();
   const fixture=bootstrapCarrier(x=>x,true,{spawned:()=>spawned++,openSdkBroker:name=>{
    trace.push('BROKER_CONNECT');assert.equal(name,['','','.','pipe','anvil-sdk-'+endpointId].join(String.fromCharCode(92)));
    socket=new EventEmitter();socket.destroy=()=>{trace.push('BROKER_CLOSE');};
-   socket.write=(bytes,callback)=>{const ack=JSON.parse(bytes.toString());trace.push('BROKER_ACK');assert.equal(ack.purpose,'NORMAL_SDK_BROKER_ACK_V1');
-    queueMicrotask(()=>{callback();if(kind==='LOST'){signal.abort();return;}socket.emit('data',Buffer.from(canonicalJson({...ack,purpose:kind==='ACK'?'BAD_ACK':'NORMAL_SDK_BROKER_ACKED_V1',endpointId:kind==='ACK'?randomUUID():endpointId})+'\n'));});return true;};return socket;
+   socket.write=(bytes,callback)=>{const ack=JSON.parse(bytes.toString());
+    if(ack.purpose==='NORMAL_SDK_BROKER_ACK_V1'){
+     trace.push('BROKER_ACK');queueMicrotask(()=>{callback();if(kind==='LOST'){signal.abort();return;}socket.emit('data',Buffer.from(canonicalJson({...ack,purpose:kind==='ACK'?'BAD_ACK':'NORMAL_SDK_BROKER_ACKED_V1',endpointId:kind==='ACK'?randomUUID():endpointId})+'\n'));});return true;
+    }
+    assert(trace.includes('HOST_CLOSED'));trace.push(ack.purpose);const base={schemaVersion:1,leaseId,endpointId,sourceHash,bindingHash,sequence:ack.sequence};let answer;
+    if(ack.purpose==='NORMAL_SDK_INTENT_PART_V1'){
+     const value=makeSdkIntent(sourceHash,bindingHash),body=Buffer.from(canonicalJson(value)),offset=ack.index*32768,part=body.subarray(offset,offset+32768);intentParts++;
+     answer={...base,purpose:'NORMAL_SDK_INTENT_PART_RESULT_V1',sourceHash:kind==='INTENT_CROSS'?'e'.repeat(64):sourceHash,index:ack.index,totalBytes:body.length,intentHash:kind==='INTENT_HASH'?'e'.repeat(64):createHash('sha256').update(body).digest('hex'),data:part.toString('base64'),final:offset+part.length===body.length};
+    }else if(ack.purpose==='NORMAL_SDK_HOOK_VERIFY_V1'){
+     assert.equal(ack.hookHash,makeSdkIntent(sourceHash,bindingHash).hookHash);answer={...base,purpose:'NORMAL_SDK_HOOK_EFFECT_UNAVAILABLE_V1',hookHash:ack.hookHash,reason:'PRESPAWN_CURRENT_UNAVAILABLE'};
+    }else{assert.equal(ack.purpose,'NORMAL_SDK_QUERY_ADMIT_V1');answer={...base,purpose:'NORMAL_SDK_QUERY_UNAVAILABLE_V1',reason:'PRESPAWN_CURRENT_UNAVAILABLE'};}
+    queueMicrotask(()=>{callback();if(kind==='INTENT_LATE')signal.abort();socket.emit('data',Buffer.from(canonicalJson(answer)+'\n'));});return true;
+   };return socket;
   }});
   const end=fixture.lease.callExpiresAt(),slot={slotId:randomUUID(),receiptRef:ref(),expiresAt:end};
   const scope={slotRef:slot.receiptRef,plannedSidDigest:createHash('sha256').update(canonicalJson('synthetic-sid')).digest('hex')};
@@ -559,10 +576,20 @@ test('원 FIRST 전용 source→native 감독 준비→broker ACK→원 host 물
    const own=await channel.prepareSdkChildSource(raw);prepared=await channel.beginSdkChildSupervisor(own);return prepared;
   }};}};
   const ports={attemptId,slot,host:factory,now:Date.now,signal:signal.signal,check(){if(!current)throw Error('CONTEXT_CHANGED');}};
-  if(['OK','DUPLICATE'].includes(kind)){
+  if(['OK','DUPLICATE','QUERY','HOOK','HOOK_ENV','INTENT_HASH','INTENT_CROSS','INTENT_LATE'].includes(kind)){
    const owner=await prepareNormalSdkChildHandoff(handoff,ports);assert.equal(owner.read().sourceHash,sourceHash);assert.equal(owner.read().childCreated,false);assert.equal('handoff'in owner.read(),false);
    assert(trace.indexOf('NATIVE_INDEPENDENT_ACK')<trace.indexOf('HOST_END'));assert(trace.indexOf('HOST_CLOSED')>trace.indexOf('HOST_END'));
    if(kind==='DUPLICATE'){const n=sequence;await assert.rejects(prepared.acknowledge());await assert.rejects(prepared.afterClose());await assert.rejects(prepareNormalSdkChildHandoff(handoff,ports));assert.equal(sequence,n);}
+   if(['QUERY','INTENT_HASH','INTENT_CROSS','INTENT_LATE'].includes(kind)){
+    await assert.rejects(owner.inspectQueryAdmission(signal.signal));const n=trace.length;await assert.rejects(owner.inspectQueryAdmission(signal.signal));assert.equal(trace.length,n);
+    assert.equal(trace.filter(x=>x==='NORMAL_SDK_QUERY_ADMIT_V1').length,kind==='QUERY'?1:0);
+   }
+   if(['HOOK','HOOK_ENV'].includes(kind)){
+    const value=makeSdkIntent(sourceHash,bindingHash),program=value.program,spec={command:program.application,args:program.args,cwd:program.cwd,env:{...program.env},signal:signal.signal};if(kind==='HOOK_ENV')spec.env.TEMP='C:\\changed';
+    if(kind==='HOOK')assert.deepEqual(await owner.verifyHook(spec,signal.signal),{state:'SDK_HOOK_EFFECT_UNAVAILABLE',reason:'PRESPAWN_CURRENT_UNAVAILABLE'});else await assert.rejects(owner.verifyHook(spec,signal.signal));
+    assert.equal(trace.filter(x=>x==='NORMAL_SDK_HOOK_VERIFY_V1').length,kind==='HOOK'?1:0);await assert.rejects(owner.verifyHook(spec,signal.signal));
+   }
+   if(['QUERY','HOOK','HOOK_ENV'].includes(kind))assert.equal(intentParts,2);
    assert.deepEqual(await owner.close(),{state:'UNKNOWN'});assert.throws(()=>owner.read());
   }else await assert.rejects(prepareNormalSdkChildHandoff(handoff,ports));
   assert.equal(spawned,1);assert.equal(trace.some(x=>/CLI|SPAWN|RESUME/.test(x)),false);assert.equal(trace.filter(x=>x==='NORMAL_SDK_CHILD_SUPERVISOR_BEGIN').length,1);
@@ -591,4 +618,55 @@ test('SDK 감독의 원 host·peer·job·기한·회수는 전용 source에만 �
  assert.match(runtime,/finally\{if\(this.#sdkFirstOwner\)\{this.#unknown=true;await this.#sdkFirstOwner.close\(\);\}\}[\s\S]*SDK_CONFIGURATION_UNAVAILABLE/);
  assert.match(read('apps/desktop/src/trust-enrollment-owner.cjs'),/budget.frames<Math.ceil\(bytes.length\/32768\)\+2/);
  assert.doesNotMatch(read('apps/desktop/src/trust-key-host-client.cjs'),/spawn[^\n]*--normal-sdk-child/);
+});
+
+
+test('§C 원 supervisor intent의 preflight는 PRESPAWN 부재에서 원 caller의 query 전 멈춘다',()=>{
+ const entry=require('../../apps/desktop/src/normal-sdk-worker-entry.cjs');
+ assert.equal(typeof entry.createOwnedSdkQueryPreflight,'function');
+ assert.match(read('apps/connector/runtime/normal-owned-spool-profile.ts'),/inspectQueryAdmission\(life\)/);
+});
+
+
+test('§C preflight는 같은 원 native admission 거절과 변경·취소·재호출 차단만 제공한다 · RAM',async()=>{
+ const {createOwnedSdkQueryPreflight}=require('../../apps/desktop/src/normal-sdk-worker-entry.cjs');
+ for(const kind of ['UNAVAILABLE','UNEXPECTED_RETURN','CHANGED','ABORT','LATE']){
+  let reads=0,admissions=0,current=true;const signal=new AbortController();
+  const source={check(){if(!current)throw Error('CONTEXT_CHANGED');},async readIntent(){reads++;if(kind==='LATE')signal.abort();return makeSdkIntent('a'.repeat(64),'b'.repeat(64));},async verifyHook(){return{state:'SDK_HOOK_EFFECT_UNAVAILABLE',reason:'PRESPAWN_CURRENT_UNAVAILABLE'};},async admitQuery(){admissions++;if(kind==='UNEXPECTED_RETURN')return;throw Error('SDK_CONFIGURATION_UNAVAILABLE');},async close(){return{state:'UNKNOWN'};}};
+  const adapter=createOwnedSdkQueryPreflight(source);
+  if(kind==='CHANGED')current=false;if(kind==='ABORT')signal.abort();
+  await assert.rejects(adapter.inspectQueryAdmission(signal.signal));await assert.rejects(adapter.inspectQueryAdmission(signal.signal));assert.equal(admissions,['UNAVAILABLE','UNEXPECTED_RETURN'].includes(kind)?1:0);assert.equal(reads,['UNAVAILABLE','UNEXPECTED_RETURN','LATE'].includes(kind)?1:0);await adapter.close();
+ }
+});
+
+
+test('§C native intent·hook source는 원 준비 객체·기한에 닫히고 PRESPAWN admission 및 새 원장을 발급하지 않는다 · 정적',()=>{
+ const host=read('apps/connector/native/DesktopTrustKeyHostSource.cs'),credential=read('apps/connector/native/NormalExecutionCredentialSource.cs'),config=read('apps/connector/native/NormalExecutionConfigurationSource.cs'),child=read('apps/connector/native/NormalSdkChildHostSource.cs'),client=read('apps/desktop/src/trust-key-host-client.cjs');
+ assert.match(config,/ReadSdkIntent\(\)\{Check\(\);[\s\S]*package.SdkEntry[\s\S]*Clone\(bound\)[\s\S]*Check\(\);return value/);
+ assert.match(config,/VerifySdkHook\(string observed\)\{Check\(\);[\s\S]*observed!=expectedHookHash[\s\S]*Check\(\)/);
+ assert.match(credential,/ReadPreparedSdkIntent\(\)\{CheckPreparedSdkSource\(\);var value=preparedSdkSource.ReadSdkIntent\(\);CheckPreparedSdkSource\(\)/);
+ const branch=host.slice(host.indexOf('// 같은 원 source/pins의 계획'),host.indexOf('static Dictionary<string,object> SdkSupervisorMetadata'));
+ assert.match(branch,/sdkIntentBytes.Length>2097152[\s\S]*Math.Min\(32768[\s\S]*NORMAL_SDK_HOOK_VERIFY_V1[\s\S]*VerifyPreparedSdkHook/);
+ assert.match(branch,/NORMAL_SDK_QUERY_ADMIT_V1[\s\S]*NORMAL_SDK_QUERY_UNAVAILABLE_V1[\s\S]*PRESPAWN_CURRENT_UNAVAILABLE/);
+ assert.doesNotMatch(branch,/CreateSuspended|ResumeThread|CreateProcess|AppendAndSync|SignNormal|READY/);
+ assert.match(client,/contentHash\(owned\)!==expected[\s\S]*canonicalJson\(v\)!==text[\s\S]*v.sourceHash!==meta.sourceHash/);
+ assert.match(client,/NORMAL_SDK_QUERY_UNAVAILABLE_V1[\s\S]*SDK_CONFIGURATION_UNAVAILABLE/);
+ assert.match(child,/ReadSdkIntent\(\)\{Check\(\);var value=configuration.ReadSdkIntent/);
+});
+
+
+test('§C admission 거절은 기존 FIRST3 UNKNOWN 정착 뒤 reconcile-first하며 같은 SEND를 다시 공급하지 않는다 · RAM',async()=>{
+ const {firstSendFixture}=await import('../unit/FN07/normal-first-send-owner.test.ts'),{receiveNormalStart}=await import('../../apps/connector/runtime/normal-start-intake.ts'),{NormalStartCoordinator}=await import('../../apps/connector/runtime/normal-start-coordinator.ts');
+ const {takeNormalFirstPermitHandoff}=await import('../../apps/connector/runtime/normal-first-send-owner.ts'),{createOwnedSdkQueryPreflight}=require('../../apps/desktop/src/normal-sdk-worker-entry.cjs');
+ const f=await firstSendFixture();let creates=0,admissions=0;
+ f.source.create=async(request,prompt,signal)=>{
+  creates++;assert.ok(takeNormalFirstPermitHandoff(request,f.source));const adapter=createOwnedSdkQueryPreflight({check(){if(signal.aborted)throw Error('CONTEXT_CHANGED');},async readIntent(){return makeSdkIntent('a'.repeat(64),'b'.repeat(64));},async verifyHook(){assert.fail('no hook before query admission');},async admitQuery(){admissions++;throw Error('SDK_CONFIGURATION_UNAVAILABLE');},async close(){return{state:'UNKNOWN'};}});
+  try{return await adapter.inspectQueryAdmission(signal);}finally{await adapter.close();}
+ };
+ try{
+  const o=f.options(),start=f.page.items[0];await receiveNormalStart(f.get,o.start.intake,start,f.page.proofResultRef,f.signal);assert.equal((await new NormalStartCoordinator(o.start).startPage(start,f.signal)).state,'START_READY_RECORDED');await f.receive();
+  const c=f.make(),selection=c.selectFirstPermit(f.wire,f.signal),prepared=await c.prepare(f.item.envelope,f.signal,selection);
+  const result=await c.dispatch(f.item.envelope,prepared,f.wire,f.signal);assert.equal(result.state,'UNKNOWN');assert.equal(creates,1);assert.equal(admissions,1);assert.equal(f.effects.inputs.length,0);assert.equal(f.effects.rows.length,0);
+  const reopened=f.make(),saved=await reopened.prepare(f.item.envelope,f.signal);assert.equal(saved.state,'UNKNOWN');assert.deepEqual(saved.recordRef,result.recordRef);await assert.rejects(reopened.dispatch(f.item.envelope,saved,f.wire,f.signal));assert.equal(creates,1);assert.equal(admissions,1);
+ }finally{f.authority.abort();await f.h.close();}
 });

@@ -197,6 +197,36 @@ async function createSdkEnrollmentSession(bootstrap,session,context,version,dire
  return Object.freeze({getState:()=>safe(state),isBusy:()=>busy>0,handle:command,configuration:(/** @type {string} */action,/** @type {any} */value)=>command('CONFIGURATION',{action,value}),handleReceive:command,
   closeConfiguration:()=>{void command('CLOSE_CONFIGURATION',null).catch(close);},disposeReceive:()=>{void command('DISPOSE_RECEIVE',null).catch(close);},invalidate:close,close});
 }
-module.exports={createRegistrationSessionEndpoint,createRegistrationWorkerChannel,createWorkerRegistrationClient,createSdkEnrollmentSession};
+/** 같은 supervisor의 private source만 조립한다. 원 포트의 반환은 실행 허가가 아니다.
+ * @param {{check:()=>void,readIntent:()=>Promise<any>,verifyHook:(h:string)=>Promise<any>,admitQuery:()=>Promise<never>,close:()=>Promise<any>}} source
+ */
+function createOwnedSdkQueryPreflight(source){
+ if(!source||types.isProxy(source)||Object.getPrototypeOf(source)!==Object.prototype)fail();
+ const names=['check','readIntent','verifyHook','admitQuery','close'],methods=names.map(name=>{const d=Object.getOwnPropertyDescriptor(source,name);if(!d||!('value'in d)||typeof d.value!=='function'||types.isProxy(d.value))fail();return d.value;});
+ let attempted=false,hookAttempted=false,dead=false,intentPromise;
+ const guard=()=>{if(dead||names.some((name,i)=>Object.getOwnPropertyDescriptor(source,name)?.value!==methods[i]))fail('CONTEXT_CHANGED');methods[0]();};
+ const read=async()=>{guard();if(!intentPromise){intentPromise=(async()=>{const raw=await methods[1]();guard();return safeSdkIntent(raw);})();}return await intentPromise;};
+ const close=async()=>{if(dead)return{state:'UNKNOWN'};dead=true;intentPromise=null;return await methods[4]();};
+ const watch=signal=>{if(types.isProxy(signal)||!signal||Object.getPrototypeOf(signal)!==AbortSignal.prototype||['aborted','addEventListener','removeEventListener'].some(key=>Object.hasOwn(signal,key))||signal.aborted)fail('CONTEXT_CHANGED');const abort=()=>{void close().catch(()=>{});};EventTarget.prototype.addEventListener.call(signal,'abort',abort,{once:true});if(signal.aborted){abort();fail('CONTEXT_CHANGED');}return()=>EventTarget.prototype.removeEventListener.call(signal,'abort',abort);};
+ const verifyHook=async(spec,signal)=>{guard();if(hookAttempted)fail();hookAttempted=true;const unwatch=watch(signal);try{const v=await read();guard();if(signal.aborted)fail('CONTEXT_CHANGED');const {observeSdkHook}=require('./normal-sdk-child-bridge.cjs'),observed=observeSdkHook(spec,signal);if(observed.hookHash!==v.hookHash)fail('CONTEXT_CHANGED');const answer=await methods[2](observed.hookHash);guard();if(signal.aborted)fail('CONTEXT_CHANGED');return answer;}finally{unwatch();}};
+ return Object.freeze({verifyHook,close,inspectQueryAdmission:async(signal)=>{
+  guard();if(attempted)fail();attempted=true;const unwatch=watch(signal);
+  try{await read();guard();if(signal.aborted)fail('CONTEXT_CHANGED');
+   // 실제 PRESPAWN 생산자가 없는 현재 native 응답은 반드시 여기서 거절한다.
+   // 그 응답을 caller bool/함수 반환으로 실행 허가로 치환하지 않는다.
+   await methods[3]();guard();fail('PROTECTION_UNAVAILABLE');
+  }finally{unwatch();}
+ }});
+}
+/** @param {any} raw */
+function safeSdkIntent(raw){
+ const v=JSON.parse(canonicalJson(catalogueExact(raw,'sdkVersion,sdkEntry,runtime,cli,manifestHash,hookHash,plannedSid,model,maxTurns,program,sourceHash,bindingHash'))),p=catalogueExact(v.program,'application,cwd,args,env');
+ if(Buffer.byteLength(canonicalJson(v))>2097152||v.sdkVersion!=='0.3.224'||![v.sourceHash,v.bindingHash,v.manifestHash,v.hookHash].every(h=>typeof h==='string'&&/^[0-9a-f]{64}$/.test(h))||typeof v.plannedSid!=='string'||!v.plannedSid||v.plannedSid.length>512||typeof v.model!=='string'||!v.model||v.maxTurns!==null&&(!Number.isSafeInteger(v.maxTurns)||v.maxTurns<1)||typeof v.sdkEntry!=='string'||!v.sdkEntry.endsWith('\\sdk.mjs')||!Array.isArray(p.args)||p.args.length>200||!p.env||Object.keys(p.env).length>6)fail();
+ for(const path of [v.sdkEntry,v.runtime,v.cli,p.application,p.cwd])if(typeof path!=='string'||path.length>1024||!(/^[A-Za-z]:\\/).test(path)||path!==require('node:path').win32.normalize(path))fail();
+ for(const x of [...p.args,...Object.values(p.env)])if(typeof x!=='string'||x.length>4096||!x.isWellFormed()||/[\x00-\x1f\x7f]/.test(x))fail();
+ if(!Object.keys(p.env).every(k=>['SystemRoot','WINDIR','TEMP','TMP','CLAUDE_CODE_ENTRYPOINT','CLAUDE_AGENT_SDK_VERSION'].includes(k))||p.env.CLAUDE_CODE_ENTRYPOINT!=='sdk-ts'||p.env.CLAUDE_AGENT_SDK_VERSION!=='0.3.224')fail();
+ return v;
+}
+module.exports={createRegistrationSessionEndpoint,createRegistrationWorkerChannel,createWorkerRegistrationClient,createSdkEnrollmentSession,createOwnedSdkQueryPreflight};
 const thread=require('node:worker_threads');
 if(!thread.isMainThread&&thread.workerData?.purpose==='NORMAL_SDK_ENROLLMENT_OWNER_V1')runEnrollmentWorker(thread.workerData,thread.parentPort);

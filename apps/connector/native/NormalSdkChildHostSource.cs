@@ -37,6 +37,8 @@ internal sealed class NormalSdkChildHostSource:IDisposable {
   }
   internal void Check(){if(closed)throw Invalid();current();if(clock()>=end)throw Invalid();package.Check();configuration.Check();current();if(clock()>=end)throw Invalid();}
   internal Dictionary<string,object> Read(){Check();return new Dictionary<string,object>{{"state","SDK_CHILD_SOURCE_PREPARED"},{"leaseId",leaseId},{"sourceHash",sourceHash},{"bindingHash",bindingHash},{"expiresAt",end.ToString("yyyy-MM-ddTHH:mm:ss.fffZ",CultureInfo.InvariantCulture)},{"childCreated",false},{"executionAuthorized",false},{"dispatchPerformed",false}};}
+  internal Dictionary<string,object> ReadSdkIntent(){Check();var value=configuration.ReadSdkIntent();value.Add("sourceHash",sourceHash);value.Add("bindingHash",bindingHash);Check();return value;}
+  internal void VerifySdkHook(string observed){Check();configuration.VerifySdkHook(observed);Check();}
   internal Dictionary<string,object> BeginSupervisor(DesktopTrustKeyPeerSource peer,DesktopTrustKeyBudget budget){Check();if(begun||supervisor!=null)throw Invalid();begun=true;supervisor=new SupervisorProcess(this,peer,budget);return supervisor.Begin();}
   internal Dictionary<string,object> AcknowledgeSupervisor(Dictionary<string,object> value){Check();if(supervisor==null)throw Invalid();return supervisor.Acknowledge(value);}
   public void Dispose(){if(closed)return;closed=true;bool failed=false;
@@ -342,6 +344,7 @@ internal sealed class NormalSdkChildHostSource:IDisposable {
  }}
  // 원 등록 host가 직접 띄운 same-image supervisor만 소유한다. CLI 생성기와 다른 목적이다.
  internal const string SupervisorArgument="--normal-sdk-child";
+ internal static byte[] ReadOptionalLine(Stream stream,int max){var bytes=new byte[max];int at=0;try{while(at<max){int n=stream.Read(bytes,at,1);if(n==0&&at==0)return null;if(n!=1)throw Unknown();if(bytes[at++]==10){var value=new byte[at];Buffer.BlockCopy(bytes,0,value,0,at);return value;}}throw Unknown();}finally{Array.Clear(bytes,0,bytes.Length);}}
  internal static byte[] ReadLine(Stream stream,int max){var bytes=new byte[max];int at=0;try{while(at<max){int n=stream.Read(bytes,at,1);if(n!=1)throw Unknown();if(bytes[at++]==10){var answer=new byte[at];Buffer.BlockCopy(bytes,0,answer,0,at);return answer;}}throw Unknown();}finally{Array.Clear(bytes,0,bytes.Length);}}
  internal static void CheckSupervisorHandles(IntPtr broker,IntPtr job,uint originalPid,uint selfPid){uint pid,flags;Need(Valid(broker)&&Valid(job)&&broker!=job&&GetFileType(broker)==3&&GetNamedPipeInfo(broker,out flags,IntPtr.Zero,IntPtr.Zero,IntPtr.Zero)&&flags==1&&GetNamedPipeServerProcessId(broker,out pid)&&pid==originalPid);bool member;Need(IsProcessInJob(new IntPtr(-1),job,out member)&&member);RequireOneJob(job,selfPid);}
  internal static void CheckBrokerClient(IntPtr broker,uint expected){uint pid;Need(GetNamedPipeClientProcessId(broker,out pid)&&pid==expected);}

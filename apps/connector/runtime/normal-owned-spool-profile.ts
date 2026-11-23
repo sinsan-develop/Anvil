@@ -648,7 +648,7 @@ export class OwnedSpoolRuntime {
     const [request,first,life]=args;
     const handoff=takeNormalFirstPermitHandoff(request,source);
     if(handoff){
-     try{await this.#prepareSdkFirst(handoff,life,verify);}
+     try{await this.#prepareSdkFirst(handoff,life,verify);if(!this.#sdkFirstOwner?.inspectQueryAdmission)invalid('SDK_CONFIGURATION_UNAVAILABLE');await this.#sdkFirstOwner.inspectQueryAdmission(life);}
      finally{if(this.#sdkFirstOwner){this.#unknown=true;await this.#sdkFirstOwner.close();}}
      return invalid('SDK_CONFIGURATION_UNAVAILABLE');
     }

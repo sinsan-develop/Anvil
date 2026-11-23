@@ -114,7 +114,9 @@ async function beginSdkChildSupervisor(original){
    // 원 host의 실제 close와 supervisor 자신의 원 parent exit 검산이 모두 필요하다.
    if(!acknowledged||consumed||!closed||sticky||!ending)return uncertain();consumed=true;await broker.consumed();
    const {state:_state,pipeName:_pipe,...metadata}=meta;
-   return Object.freeze({read:()=>{broker.check();return JSON.parse(canonicalJson(metadata));},close:async()=>{broker.close();return{state:'UNKNOWN'};}});
+   const adapter=require('./normal-sdk-worker-entry.cjs').createOwnedSdkQueryPreflight(Object.freeze({check:()=>broker.check(),readIntent:()=>broker.readIntent(),verifyHook:hash=>broker.verifyHook(hash),admitQuery:()=>broker.admitQuery(),close:async()=>{broker.close();return{state:'UNKNOWN'};}}));
+   broker.onDispose(()=>{void adapter.close().catch(()=>{});});
+   return Object.freeze({read:()=>{broker.check();return JSON.parse(canonicalJson(metadata));},inspectQueryAdmission:adapter.inspectQueryAdmission,verifyHook:adapter.verifyHook,close:adapter.close});
   },discard:async()=>{broker.close();return{state:'UNKNOWN'};}});
  }catch(error){broker?.close();latch();throw error;}
 }
@@ -132,15 +134,28 @@ function createSdkSupervisorBroker(meta,connect,current){
  if(!Number.isFinite(end)||end<=started||end-started>10000)return unavailable();
  const socket=connect(meta.pipeName),on=method(socket,'on'),off=method(socket,'removeListener'),write=method(socket,'write'),destroy=method(socket,'destroy');
  let stop;const stopped=new Promise((resolve,reject)=>{stop=reject;});void stopped.catch(()=>{});
- let dead=false,ack=false,used=false,bytes=Buffer.alloc(0),pending=null,queued=[];const listeners=[];
- const close=()=>{if(dead)return;dead=true;stop(Error('OUTCOME_UNKNOWN'));clearTimeout(timer);for(const [event,fn] of listeners)off.call(socket,event,fn);bytes.fill(0);bytes=Buffer.alloc(0);queued=[];pending?.reject(Error('OUTCOME_UNKNOWN'));pending=null;try{destroy.call(socket);}catch{}};
+ let receiveLimit=4096,disposeCallback=null;let dead=false,ack=false,used=false,bytes=Buffer.alloc(0),pending=null,queued=[];const listeners=[];
+ const close=()=>{if(dead)return;dead=true;stop(Error('OUTCOME_UNKNOWN'));clearTimeout(timer);for(const [event,fn] of listeners)off.call(socket,event,fn);bytes.fill(0);bytes=Buffer.alloc(0);queued=[];pending?.reject(Error('OUTCOME_UNKNOWN'));pending=null;try{destroy.call(socket);}catch{}const callback=disposeCallback;disposeCallback=null;try{callback?.();}catch{}};
  const check=()=>{current();if(dead||Date.now()<started||Date.now()>=end||performance.now()>=monoEnd||method(socket,'write')!==write||method(socket,'destroy')!==destroy)return uncertain();};
- const equal=row=>{const r=catalogueExact(row,'schemaVersion,purpose,leaseId,endpointId,sourceHash,bindingHash');if(r.schemaVersion!==1||r.leaseId!==meta.leaseId||r.endpointId!==meta.endpointId||r.sourceHash!==meta.sourceHash||r.bindingHash!==meta.bindingHash)return uncertain();return r;};
+ const equal=row=>{const base='schemaVersion,purpose,leaseId,endpointId,sourceHash,bindingHash';const extra=row?.purpose==='NORMAL_SDK_INTENT_PART_RESULT_V1'?',sequence,index,totalBytes,intentHash,data,final':row?.purpose==='NORMAL_SDK_HOOK_EFFECT_UNAVAILABLE_V1'?',sequence,hookHash,reason':row?.purpose==='NORMAL_SDK_QUERY_UNAVAILABLE_V1'?',sequence,reason':'';const r=catalogueExact(row,base+extra);if(r.schemaVersion!==1||r.leaseId!==meta.leaseId||r.endpointId!==meta.endpointId||r.sourceHash!==meta.sourceHash||r.bindingHash!==meta.bindingHash)return uncertain();return r;};
  const fail=()=>close();const timer=setTimeout(close,Math.max(1,end-started));timer.unref?.();
- const data=raw=>{try{check();const b=copyBuffer(raw,4096-bytes.length);bytes=Buffer.concat([bytes,b]);b.fill(0);const at=bytes.indexOf(10);if(at<0)return;if(at!==bytes.length-1)return uncertain();const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes.subarray(0,at)),value=equal(JSON.parse(text));if(canonicalJson(value)!==text)return uncertain();bytes.fill(0);bytes=Buffer.alloc(0);if(pending){const p=pending;pending=null;p.resolve(value);}else{if(queued.length)return uncertain();queued.push(value);}}catch{close();}};
+ const data=raw=>{try{check();const b=copyBuffer(raw,receiveLimit-bytes.length);bytes=Buffer.concat([bytes,b]);b.fill(0);const at=bytes.indexOf(10);if(at<0)return;if(at!==bytes.length-1)return uncertain();const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes.subarray(0,at)),value=equal(JSON.parse(text));if(canonicalJson(value)!==text)return uncertain();bytes.fill(0);bytes=Buffer.alloc(0);if(pending){const p=pending;pending=null;p.resolve(value);}else{if(queued.length)return uncertain();queued.push(value);}}catch{close();}};
  for(const [event,fn] of [['data',data],['error',fail],['end',fail],['close',fail]]){on.call(socket,event,fn);listeners.push([event,fn]);}
  const receive=async purpose=>{check();const row=queued.length?queued.shift():await new Promise((resolve,reject)=>{if(pending)return reject(Error('OUTCOME_UNKNOWN'));pending={resolve,reject};});check();if(row.purpose!==purpose)return uncertain();return row;};
- return Object.freeze({check,close,acknowledge:async()=>{
+ let sequence=0,busy=false,intentRead=false,hookUsed=false,queryUsed=false;
+ const request=async(purpose,fields,resultPurpose)=>{check();if(!used||busy||sequence>=66)return unavailable();busy=true;receiveLimit=purpose==='NORMAL_SDK_INTENT_PART_V1'?65536:4096;const n=++sequence,frame=Buffer.from(canonicalJson({schemaVersion:1,purpose,leaseId:meta.leaseId,endpointId:meta.endpointId,sourceHash:meta.sourceHash,bindingHash:meta.bindingHash,sequence:n,...fields})+'\n');
+  try{if(frame.length>4096)return unavailable();await Promise.race([new Promise((resolve,reject)=>{write.call(socket,frame,error=>error?reject(error):resolve(null));}),stopped]);const r=await receive(resultPurpose);check();if(r.sequence!==n)return uncertain();return r;}catch(error){close();throw error;}finally{frame.fill(0);busy=false;receiveLimit=4096;}};
+ const readIntent=async()=>{check();if(intentRead||hookUsed||queryUsed)return unavailable();intentRead=true;let owned=null,total=0,expected=null,at=0;
+  try{for(let index=0;index<64;index++){
+   const p=await request('NORMAL_SDK_INTENT_PART_V1',{index},'NORMAL_SDK_INTENT_PART_RESULT_V1');
+   if(p.index!==index||!Number.isSafeInteger(p.totalBytes)||p.totalBytes<1||p.totalBytes>2097152||typeof p.intentHash!=='string'||!(/^[0-9a-f]{64}$/).test(p.intentHash)||typeof p.data!=='string'||p.data.length>43692||typeof p.final!=='boolean')return uncertain();
+   if(!owned){total=p.totalBytes;expected=p.intentHash;owned=Buffer.alloc(total);}if(total!==p.totalBytes||expected!==p.intentHash)return uncertain();
+   const part=Buffer.from(p.data,'base64');try{if(part.toString('base64')!==p.data||part.length!==Math.min(32768,total-at)||p.final!==(at+part.length===total))return uncertain();part.copy(owned,at);at+=part.length;}finally{part.fill(0);}
+   if(p.final){if(contentHash(owned)!==expected)return uncertain();const text=new TextDecoder('utf-8',{fatal:true}).decode(owned),v=JSON.parse(text);if(canonicalJson(v)!==text||v.sourceHash!==meta.sourceHash||v.bindingHash!==meta.bindingHash)return uncertain();check();return v;}
+  }return uncertain();}catch(error){close();throw error;}finally{owned?.fill(0);}};
+ const verifyHook=async hookHash=>{check();if(!intentRead||hookUsed||queryUsed||typeof hookHash!=='string'||!(/^[0-9a-f]{64}$/).test(hookHash))return unavailable();hookUsed=true;const r=await request('NORMAL_SDK_HOOK_VERIFY_V1',{hookHash},'NORMAL_SDK_HOOK_EFFECT_UNAVAILABLE_V1');if(r.hookHash!==hookHash||r.reason!=='PRESPAWN_CURRENT_UNAVAILABLE')return uncertain();return Object.freeze({state:'SDK_HOOK_EFFECT_UNAVAILABLE',reason:r.reason});};
+ const admitQuery=async()=>{check();if(!intentRead||queryUsed)return unavailable();queryUsed=true;const r=await request('NORMAL_SDK_QUERY_ADMIT_V1',{},'NORMAL_SDK_QUERY_UNAVAILABLE_V1');if(r.reason!=='PRESPAWN_CURRENT_UNAVAILABLE')return uncertain();throw Error('SDK_CONFIGURATION_UNAVAILABLE');};
+ return Object.freeze({check,close,onDispose:callback=>{check();if(disposeCallback||typeof callback!=='function')return unavailable();disposeCallback=callback;},readIntent,verifyHook,admitQuery,acknowledge:async()=>{
   check();if(ack)return unavailable();ack=true;const frame=Buffer.from(canonicalJson({schemaVersion:1,purpose:'NORMAL_SDK_BROKER_ACK_V1',leaseId:meta.leaseId,endpointId:meta.endpointId,sourceHash:meta.sourceHash,bindingHash:meta.bindingHash})+'\n');
   try{await Promise.race([new Promise((resolve,reject)=>{write.call(socket,frame,error=>error?reject(error):resolve(null));}),stopped]);check();await receive('NORMAL_SDK_BROKER_ACKED_V1');}finally{frame.fill(0);}
  },consumed:async()=>{check();if(!ack||used)return unavailable();used=true;await receive('NORMAL_SDK_BROKER_CONSUMED_V1');}});

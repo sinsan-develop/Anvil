@@ -24,7 +24,7 @@ export interface NormalOwnedHostSession {
  close(disposition:HostCloseDisposition):Promise<{state:string}>;
 }
 /** 원 native source가 발급한 endpoint의 수령자다. SDK 생성/일반 서명 권위가 아니다. */
-export interface NormalOwnedSdkSupervisor {read():{leaseId:string;endpointId:string;sourceHash:string;bindingHash:string;expiresAt:string;childCreated:false;executionAuthorized:false;dispatchPerformed:false};close():Promise<{state:'UNKNOWN'}>}
+export interface NormalOwnedSdkSupervisor {read():{leaseId:string;endpointId:string;sourceHash:string;bindingHash:string;expiresAt:string;childCreated:false;executionAuthorized:false;dispatchPerformed:false};inspectQueryAdmission?(signal:AbortSignal):Promise<never>;verifyHook?(spec:unknown,signal:AbortSignal):Promise<{state:'SDK_HOOK_EFFECT_UNAVAILABLE';reason:'PRESPAWN_CURRENT_UNAVAILABLE'}>;close():Promise<{state:'UNKNOWN'}>}
 export interface NormalOwnedSdkHandoff {acknowledge():Promise<void>;afterClose():Promise<NormalOwnedSdkSupervisor>;discard():Promise<{state:'UNKNOWN'}>}
 export interface NormalOwnedHostFactory {open(signal:AbortSignal,request?:Readonly<NormalOwnedMetadata>):Promise<NormalOwnedHostSession>}
 export interface NormalOwnedMetadata {slotId:string;receiptRef:Ref;origin:string;scope:NormalOwnedScope;expiresAt:string;caHash:string}

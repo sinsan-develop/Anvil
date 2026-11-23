@@ -290,6 +290,8 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  }
  internal Dictionary<string,object> AcknowledgeSdkSupervisor(Dictionary<string,object> value){Check();if(preparedSdkSource==null)throw Invalid();return preparedSdkSource.AcknowledgeSupervisor(value);}
  internal void CheckPreparedSdkSource(){Check();if(preparedSdkSource==null)throw Invalid();preparedSdkSource.Check();}
+ internal Dictionary<string,object> ReadPreparedSdkIntent(){CheckPreparedSdkSource();var value=preparedSdkSource.ReadSdkIntent();CheckPreparedSdkSource();return value;}
+ internal void VerifyPreparedSdkHook(string observed){CheckPreparedSdkSource();preparedSdkSource.VerifySdkHook(observed);CheckPreparedSdkSource();}
  internal void VerifyDelegatedSdkSource(Dictionary<string,object> expected,Dictionary<string,object> actual){
   Check();if(preparedSdkSource==null||S(actual,"state")!="SDK_CHILD_SOURCE_PREPARED")throw Invalid();
   var bound=preparedSdkSource.Read();foreach(string key in new[]{"sourceHash","bindingHash","expiresAt"})if(J(bound[key])!=J(expected[key])||J(actual[key])!=J(expected[key]))throw Invalid();
