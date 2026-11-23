@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN07 합성 PE 검산 재확인:** `baseline_predispatch_task_review`가 0fa8e4db에서 양성 1실패의 직접 원인을 `pe-library` 해석 실패로 분리했다(선택 실행 `1a4430`, 원 예외 `eb5c20`). 당시 import 실패에 가려진 음성 결과는 PE 검증으로 계산하지 않았다. Main이 desktop lock의 `pe-library@1.0.1` 공개 tarball 하나를 받아 SHA-512가 lock과 일치함을 확인했다(`f72452`). 보통 파일 44개를 검산한 뒤 해당 worktree의 무시되는 `apps/desktop/node_modules/pe-library`에만 복원하고 tarball을 제거했다. 패키지 설치 스크립트와 제품·시험·lock 수정은 0이다. 정상 fixture와 잘못된 resource/entry 3건, getter/Proxy 5건이 9/9·실패 및 skip 0으로 통과했다(`49459f`). 준비 중 JSON 파싱 형식과 archive 예상 항목 수 입력 오류는 각각 1회로, 시험 실패와 구분한다. 실제 C# 컴파일·등록·Windows 실행·SDK·DB·Agent는 미검증이다. FN08 물리 준비 권위 결정은 계속 대기 중이다.
+
 - **FN07 감독 프로세스의 실행 전 검산:** `baseline_predispatch_task_review`가 같은 원 감독 프로세스에서 고정 SDK 준비값과 spawn hook 지문을 검산하는 경로를 원 FIRST 흐름에 연결했다. 실제 준비 객체의 현재성 근거가 없으면 SDK 호출 전에 거절한다. 같은 SEND의 결과가 불명인 경우 기존 FIRST3 이력을 확인하며 원 요청을 다시 공급하지 않는다. 제품 10개·시험 1개, Main 합성·정적 61/61 실패·skip 0(`49eb21`), 작성자 타입 exit 0(`828457`), 독립 C0/I0/M0. SDK 로드·query·별도 SDK worker 연결 및 실제 Windows/C#·DB·Agent는 미완료 또는 미검증이다. 해당 커밋만 반전하면 감독 인계까지만 보존한다.
 
 - **FN08 PRESPAWN 결정 대기:** PMO와 기존 START_SESSION 명시 의사 및 queue 정착 뒤 성공 응답을 그대로 유지할 수 있음을 대조했다. 새 결정은 grant 전에 원 요청에 한정된 준비 객체 1회 생성·유한 보유·단회 인계의 소스 권위와 실패 결과다. 원 10초·관측당 2초 유지, 정착/종료 불명 시 재생성 차단이며 실제 효과는 미승인이다. 최초 queue에 쓰일 독립 source·writer 관측과 종단 시간은 증명되지 않았다.

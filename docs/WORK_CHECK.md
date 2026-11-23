@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN07의 남은 합성 PE 실패 해소:** `pe-library` 누락을 원인으로 확인하고 desktop lock의 해시가 맞는 의존성만 이 worktree에 복원했다. 원 제품·시험 그대로 PE 합성 9/9 통과(`49459f`). 실제 Windows 실행·C# 컴파일은 미검증이다.
+
 - **FN07 실행 전 검산:** 원 감독 프로세스에서 SDK 준비값·hook 지문을 대조하고 PRESPAWN 근거 부재 시 호출을 거절한다. Main 합성·정적 61/61, 작성자 타입, 독립 C0/I0/M0. 실제 SDK 호출·별도 worker·Windows 동작은 미완료 또는 미검증이다. FN08의 목적 한정 물리 준비 권위 결정은 대기 중이다.
 
 - **FN07 감독 인계:** 원 FIRST → 원 등록 host → 동일 helper supervisor → 원 Anvil broker의 단발 수령을 소스에 연결했다. Main 합성·정적 57/57, 작성자 타입, 독립 C0/I0/M0. 실제 Windows 실행·재시작 후 단회 소비·PRESPAWN·SDK는 미검증 또는 미구현이다.
