@@ -1,3 +1,4 @@
+import type {NormalInitialUnderstandingReviewStorage} from '../session-detail/understanding-review-write.ts';
 import {ReservedSessionConnectionDefinition} from './ReservedSessionConnectionDefinition.tsx';
 import {readDefinition} from '../connections/connection-definition-api.ts';
 import {RegisteredReservationRejected} from './responsible-session-api.ts';
@@ -15,7 +16,7 @@ import {checkResponsibleSessionApprovalBinding,markResponsibleSessionDispatch,se
 import {updateResponsibleSessionApprovalBuffer} from './responsible-session-api.ts';
 import { assertResponsibleSessionInputCurrent, canPrepareResponsibleSessionInput, prepareResponsibleSessionInput, prepareResponsibleSessionAction, readResponsibleSessionState, sendResponsibleSessionAction, type ResponsibleSessionAction, type ResponsibleSessionBuffer, type ResponsibleSessionState } from './responsible-session-api.ts';
 
-export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,onChange,owner,busy,run}:{client:ApiClient;confirmed:ConfirmedAssignmentView;session:DocumentSession;buffer:ResponsibleSessionBuffer|null;onChange:Dispatch<SetStateAction<ResponsibleSessionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
+export function WorkspaceResponsibleSessions({normalInitialReviews,client,confirmed,session,buffer,onChange,owner,busy,run}:{normalInitialReviews?:NormalInitialUnderstandingReviewStorage;client:ApiClient;confirmed:ConfirmedAssignmentView;session:DocumentSession;buffer:ResponsibleSessionBuffer|null;onChange:Dispatch<SetStateAction<ResponsibleSessionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
   const [state,setState]=useState<ResponsibleSessionState|null>(null),[candidates,setCandidates]=useState<CandidateHit[]>([]),[nextCursor,setNextCursor]=useState<string|null>(null),[notice,setNotice]=useState<string|null>(null);
   const stateStamp=useRef({epoch:-1,revision:-1}),stateRevision=useRef(0);
   const acknowledgements=useRef<Array<{next:ResponsibleSessionBuffer;ticket:number;resolve:(ok:boolean)=>void}>>([]);
@@ -164,7 +165,7 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
       {state.hasMorePreparations?<p>최신20건 표시 · 이전 준비가 더 있습니다.</p>:null}
       <p>새 실행 준비 저장은 유효한 예산·능력 참조 연결이 필요합니다. 미구현 참조를 가짜 값으로 대체하지 않습니다.</p>
     </>:<p>역할·예약·준비 원문은 아직 조회 확인되지 않았습니다.</p>}
-    {owner&&bound?<NormalUnderstandingDiscovery client={client} session={session} projectId={confirmed.projectId} assignmentRef={confirmed.ref}
+    {owner&&bound?<NormalUnderstandingDiscovery reviewStorage={normalInitialReviews} client={client} session={session} projectId={confirmed.projectId} assignmentRef={confirmed.ref}
      preparations={state&&stateStamp.current.epoch===epoch.current&&stateStamp.current.revision===stateRevision.current?state.preparations:[]}
      busy={busy} metadataReader={metadataReader} rangeRequester={rangeCommands?.request} rangeRecovery={rangeCommands?.recover} rangeReader={rangeReader}/>:null}
   </section>;

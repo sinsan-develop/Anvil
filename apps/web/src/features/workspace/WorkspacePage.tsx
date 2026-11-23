@@ -1,3 +1,4 @@
+import type {NormalInitialUnderstandingReviewStorage} from '../session-detail/understanding-review-write.ts';
 import {NodeDecisionPanel,type NodeDecisionStorage} from './NodeDecisionPanel.tsx';
 import type {MobilePane} from '../mobile/MobileNavigation.tsx';
 import type {Ref} from '../connections/api.ts';
@@ -18,7 +19,7 @@ import type {PlanTaskSelection} from '../../shell/routes.ts';
 import {NewStageDocumentForm} from '../design-trace/NewStageDocumentForm.tsx';
 import type {DocumentBuffer} from '../design-trace/editor-api.ts';
 
-export function WorkspacePage({nodeDecisions,mobilePane,providedHumanReportRef, client, projectId, session, documentPreparation, assignmentBuffer, requestedTask, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: { nodeDecisions?:NodeDecisionStorage;mobilePane?:MobilePane;providedHumanReportRef?:Ref|null;documentPreparation?:{available:boolean;onPrepared:(value:DocumentBuffer)=>void};client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
+export function WorkspacePage({normalInitialReviews,nodeDecisions,mobilePane,providedHumanReportRef, client, projectId, session, documentPreparation, assignmentBuffer, requestedTask, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: {normalInitialReviews?:NormalInitialUnderstandingReviewStorage; nodeDecisions?:NodeDecisionStorage;mobilePane?:MobilePane;providedHumanReportRef?:Ref|null;documentPreparation?:{available:boolean;onPrepared:(value:DocumentBuffer)=>void};client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [revision, setRevision] = useState(0);
   const [selectedStage, setSelectedStage] = useState<WorkspaceStageSelection | null>(null);
@@ -50,7 +51,7 @@ export function WorkspacePage({nodeDecisions,mobilePane,providedHumanReportRef, 
           <a href={routeHref('methodologies', projectId)}>방법론 원본·검토 열기</a><p className="meta">정의 조회와 실제 단계 수행은 별개입니다. 책임 세션·단계별 실제 상태는 아직 미연결입니다.</p>
         </section>
         <section className="status-card" aria-label="총괄 작업" hidden={mobilePane!==undefined&&mobilePane!=='chat'}><h3>총괄 작업</h3><h4>원하는 결과</h4><p>{project.desiredOutcome}</p>
-          <WorkspaceAssignments providedHumanReportRef={providedHumanReportRef??null} key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash, selectedStage?.applicationId, selectedStage?.nodeId].join(':')} client={client} project={project} session={session} stage={selectedStage} requestedTask={requestedTask} buffer={assignmentBuffer} onChange={onAssignmentChange} onAuthenticationLost={onAuthenticationLost} />
+          <WorkspaceAssignments normalInitialReviews={normalInitialReviews} providedHumanReportRef={providedHumanReportRef??null} key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash, selectedStage?.applicationId, selectedStage?.nodeId].join(':')} client={client} project={project} session={session} stage={selectedStage} requestedTask={requestedTask} buffer={assignmentBuffer} onChange={onAssignmentChange} onAuthenticationLost={onAuthenticationLost} />
           <h4>사용자 발언·지시 원문 보관</h4><p className="meta">프로젝트 공통 원문입니다. 아래 저장은 총괄·단계 세션이나 Agent에 지시를 전달하는 기능이 아닙니다.</p>
           {project.participation === 'OWNER' && project.controlState.status === 'HELD' && project.controlState.actorId === session.user.id && project.controlState.clientId === session.clientId
             ? <ConversationPanel key={[projectId,session.user.id,session.clientId].join(':')} client={client} projectId={projectId} session={session} buffer={conversationBuffer} onChange={onConversationChange} onAuthenticationLost={onAuthenticationLost}/>

@@ -1,3 +1,4 @@
+import type {NormalInitialUnderstandingReviewStorage} from '../session-detail/understanding-review-write.ts';
 import {applyExecutionPreparationBuffer} from './assignment-api.ts';
 import type {Ref} from '../connections/api.ts';
 import type {ExecutionPreparationChange} from './execution-preparation-api.ts';
@@ -23,7 +24,7 @@ import { AssignmentParentOriginal } from './AssignmentParentOriginal.tsx';
 import {AssignmentRevisionComparison} from './AssignmentRevisionComparison.tsx';
 import {AssignmentDraftRows} from './AssignmentDraftRows.ts';
 
-export function WorkspaceAssignments({providedHumanReportRef, client, project, session, stage, buffer, requestedTask, onChange, onAuthenticationLost }: { providedHumanReportRef?:Ref|null;client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
+export function WorkspaceAssignments({normalInitialReviews,providedHumanReportRef, client, project, session, stage, buffer, requestedTask, onChange, onAuthenticationLost }: {normalInitialReviews?:NormalInitialUnderstandingReviewStorage; providedHumanReportRef?:Ref|null;client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [plans, setPlans] = useState<WorkPlanPage | null>(null), [plan, setPlan] = useState<WorkPlanView | null>(null), [taskCode, setTaskCode] = useState('');
   const [drafts, setDrafts] = useState<AssignmentPage | null>(null), [opened, setOpened] = useState<AssignmentDraftView | null | undefined>(undefined), [error, setError] = useState<ApiError | null>(null), [busy, setBusy] = useState(false), [reread, setReread] = useState(false);
   const alive = useRef(true), flight = useRef(false);
@@ -161,7 +162,7 @@ export function WorkspaceAssignments({providedHumanReportRef, client, project, s
     {shown?.snapshot.definition.parentAssignmentRef ? <AssignmentParentOriginal key={['parent-original',project.id,session.user.id,session.clientId,ordered(shown.ref)].join(':')} client={client} session={session} child={shown} busy={busy} run={action=>void perform(action)} renderConditions={snapshot=><AssignmentConditions snapshot={snapshot}/>} /> : null}
     {shown?.snapshot.previousRef?<button disabled={busy} onClick={()=>void perform(()=>open(shown.snapshot.previousRef!))}>이전 임무 초안 원문 열기</button>:null}
     {shown?.snapshot.previousRef?<AssignmentRevisionComparison key={['revision',project.id,session.user.id,session.clientId,ordered(shown.ref)].join(':')} client={client} current={shown} busy={busy} run={action=>void perform(action)}/>:null}
-    {shown&&bound?<AssignmentContentDecision providedHumanReportRef={providedHumanReportRef??null} executionPreparationBuffer={buffer?.executionPreparation??null} onExecutionPreparationChange={executionPreparationChange} key={ordered(shown.ref)} client={client} session={session} draft={shown} buffer={buffer?.contentDecision??null} onChange={contentChange} contextBuffer={buffer?.contextPreparation??null} onContextChange={contextChange} responsibleBuffer={buffer?.responsibleSession??null} onResponsibleChange={responsibleChange} owner={owner&&(!buffer||!!buffer.result)&&!buffer?.pending} busy={busy} run={action=>void perform(action)}/>:null}
+    {shown&&bound?<AssignmentContentDecision normalInitialReviews={normalInitialReviews} providedHumanReportRef={providedHumanReportRef??null} executionPreparationBuffer={buffer?.executionPreparation??null} onExecutionPreparationChange={executionPreparationChange} key={ordered(shown.ref)} client={client} session={session} draft={shown} buffer={buffer?.contentDecision??null} onChange={contentChange} contextBuffer={buffer?.contextPreparation??null} onContextChange={contextChange} responsibleBuffer={buffer?.responsibleSession??null} onResponsibleChange={responsibleChange} owner={owner&&(!buffer||!!buffer.result)&&!buffer?.pending} busy={busy} run={action=>void perform(action)}/>:null}
   </section>;
 }
 

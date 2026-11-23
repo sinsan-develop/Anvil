@@ -1,3 +1,8 @@
+import {readUnderstandingApprovalCommand} from '../decisions/understanding-review-approval-api.ts';
+import {readNormalUnderstandingHistory,type NormalUnderstandingHistoryView,type UnderstandingHistoryScope} from './understanding-history-api.ts';
+import type {PlanRef} from '../design-trace/work-plan-api.ts';
+import type {PreparationRecord} from '../workspace/responsible-session-api.ts';
+import type {NormalUnderstandingRangeResult} from '../workspace/NormalUnderstandingDiscovery.tsx';
 import {understandingApprovalRef} from '../decisions/understanding-review-approval-api.ts';
 import type {ApprovalRequestWork} from '../decisions/api.ts';
 import {ApiClient,ApiError} from '../../api/client.ts';
@@ -37,5 +42,57 @@ export async function saveUnderstandingReview(client:ApiClient,raw:Understanding
  try{const history=await readStoredUnderstandingHistory(client,b.result,active);if(!history||!active())return null;const rows=history.items.filter(row=>row.snapshot.request.commandId===command.commandId),row=rows[0],d=receipt.data;
   if(rows.length!==1||!row||!same(row.snapshot.request,command)||!same(row.snapshot.input,command.payload)||row.snapshot.reviewer.userId!==session.user.id||row.snapshot.reviewer.clientId!==session.clientId||receipt.targetId!==row.ref.id||receipt.version!==row.ref.version||d?.status!=='SYNTHETIC_UNDERSTANDING_REVIEWED'||!same(d.ref,row.ref)||!same(d.snapshot,row.snapshot)||!same(Object.keys(d).sort(),['status','ref','snapshot'].sort()))throw new ApiError('UNDERSTANDING_REVIEW_RESPONSE_INVALID');
   return structuredClone(row);
+ }catch(cause){const e=cause instanceof ApiError?cause:new ApiError('UNDERSTANDING_REVIEW_RESPONSE_INVALID');throw new UnderstandingReadbackUnconfirmed(e.code,e.status);}
+}
+
+export interface NormalInitialUnderstandingBasis{scope:UnderstandingHistoryScope;assignmentRef:PlanRef;preparationRef:PlanRef;rangeRequestRef:PlanRef;bundleRef:PlanRef;subjectBindingRef:PlanRef;basisRefs:PlanRef[];responseRef:PlanRef;responsePartRefs:PlanRef[]}
+export type NormalInitialUnderstandingRecord=NormalUnderstandingHistoryView['items'][number];
+export interface NormalInitialUnderstandingReviewBuffer{ownerEpoch:string;bindingId:string;ownerUserId:string;ownerClientId:string;basis:NormalInitialUnderstandingBasis;form:UnderstandingReviewBuffer['form'];pending:DocumentWrite|null;stored:NormalInitialUnderstandingRecord|null;uncertain:boolean;failure:{code:string;status:number}|null;approval?:{work:ApprovalRequestWork|null;requestId:string}}
+export interface NormalInitialUnderstandingReviewStorage{buffers:Record<string,NormalInitialUnderstandingReviewBuffer|null>;read:(key:string)=>NormalInitialUnderstandingReviewBuffer|null;onChange:(key:string,change:(prior:NormalInitialUnderstandingReviewBuffer|null)=>NormalInitialUnderstandingReviewBuffer|null)=>void}
+const normalRef=(v:any):v is PlanRef=>!!v&&same(Object.keys(v).sort(),['contentHash','id','version'])&&uuid(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&typeof v.contentHash==='string'&&/^[a-f0-9]{64}$/.test(v.contentHash);
+const normalRefs=(v:any):v is PlanRef[]=>Array.isArray(v)&&v.length>0&&v.length<=200&&v.every(normalRef)&&new Set(v.map(ordered)).size===v.length;
+/** 보호 reader가 검산한 현재 BODY와 동일 EP 원형을 다시 대조한다. 반환/보존은 refs뿐이다. */
+export async function normalInitialUnderstandingBasis(source:Extract<NormalUnderstandingRangeResult,{status:'RANGE_STORED'}>,preparation:PreparationRecord,retainedPreparationRef:PlanRef,active:()=>boolean=()=>true):Promise<NormalInitialUnderstandingBasis>{
+ const check=()=>{if(!active()||source.status!=='RANGE_STORED'||source.currentness!=='CURRENT'||source.selectionAvailable!==true||Date.parse(source.expiresAt)<=Date.now()||!Number.isFinite(Date.parse(source.expiresAt)))fail();};check();
+ const r=source.request,p=preparation,s=p.snapshot,i=s?.intent,b=source.body;
+ const digest=async(value:unknown)=>{check();const bytes=new TextEncoder().encode(ordered(value));if(bytes.length>2097152){bytes.fill(0);fail();}try{const result=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');check();return result;}finally{bytes.fill(0);}};
+ if(!normalRef(p.ref)||p.ref.version!==1||!same(p.ref,retainedPreparationRef)||!same(p.ref,r.preparationRef)||p.projectId!==r.projectId||i?.projectId!==r.projectId||i?.mode!=='CONTEXT_REVIEW'||i?.connectionKind!=='REGISTERED_DEFINITION'||!same(i.assignmentRef,r.assignmentRef)||!normalRef(i.roleBindingRef)||!normalRef(i.contextBundleRef)||!same(b.contextBundleRef,i.contextBundleRef)||!normalRefs(s.basisRefs)||s.executionAuthorized!==false||s.dispatchPerformed!==false||!normalRef(source.responseRef)||source.responseRef.version!==1||!normalRefs(source.partRefs)||!Array.isArray(b.parts)||b.parts.length!==source.partRefs.length||b.projectId!==r.projectId||b.executionId!==r.executionId||b.executionGeneration!==r.executionGeneration||!normalRef(r.requestRef)||r.requestRef.version!==1||!same(b.requestRef,r.requestRef)||b.kind!=='FIXED_RANGE_SELECTION'||b.attribution!=='SESSION_ONLY'||b.wholeConversationComplete!==false||b.executionAuthorized!==false||!uuid(r.projectId)||!uuid(r.executionId)||!Number.isSafeInteger(r.executionGeneration)||r.executionGeneration<1||!normalRef(r.assignmentRef))fail();
+ if(await digest(s)!==p.ref.contentHash||await digest(b)!==source.responseRef.contentHash)fail();check();
+ for(const [n,part]of b.parts.entries()){if(source.partRefs[n]!.version!==1||await digest(part)!==source.partRefs[n]!.contentHash||part.kind!=='ASSISTANT_TEXT')fail();check();}
+ return structuredClone({scope:{projectId:r.projectId,executionId:r.executionId,executionGeneration:r.executionGeneration},assignmentRef:r.assignmentRef,preparationRef:p.ref,rangeRequestRef:r.requestRef,bundleRef:i.contextBundleRef,subjectBindingRef:i.roleBindingRef,basisRefs:s.basisRefs,responseRef:source.responseRef,responsePartRefs:source.partRefs});
+}
+// 인증 값은 이 모듈 밖으로 반환하거나 draft에 넣지 않는다. transport/인증 epoch마다 분리한다.
+const normalReviewOwners=new WeakMap<ApiClient,WeakMap<typeof fetch,{userId:string;clientId:string;csrf:string;epoch:string}[]>>();
+export function normalInitialUnderstandingOwner(client:ApiClient,s:DocumentSession){
+ if(!uuid(s.user.id)||!uuid(s.clientId)||!(/^[A-Za-z0-9_-]{43}$/).test(s.csrfToken))fail();
+ let transports=normalReviewOwners.get(client);if(!transports){transports=new WeakMap();normalReviewOwners.set(client,transports);}let owners=transports.get(client.transport);if(!owners){owners=[];transports.set(client.transport,owners);}
+ let owner=owners.find(v=>v.userId===s.user.id&&v.clientId===s.clientId&&v.csrf===s.csrfToken);if(!owner){owner={userId:s.user.id,clientId:s.clientId,csrf:s.csrfToken,epoch:crypto.randomUUID()};owners.push(owner);}return owner.epoch;
+}
+export function normalInitialUnderstandingReviewKey(b:NormalInitialUnderstandingBasis,s:DocumentSession,ownerEpoch:string){if(!uuid(ownerEpoch))fail();return ordered([ownerEpoch,s.user.id,s.clientId,b.scope,b.assignmentRef,b.preparationRef,b.rangeRequestRef,b.responseRef]);}
+export function beginNormalInitialUnderstandingReview(raw:NormalInitialUnderstandingBasis,s:DocumentSession,ownerEpoch:string):NormalInitialUnderstandingReviewBuffer{
+ const b=structuredClone(raw);if(!uuid(ownerEpoch)||!uuid(s.user.id)||!uuid(s.clientId)||!normalRefs(b.basisRefs)||!normalRefs(b.responsePartRefs)||![b.assignmentRef,b.preparationRef,b.rangeRequestRef,b.bundleRef,b.subjectBindingRef,b.responseRef].every(normalRef))fail();
+ return{ownerEpoch,bindingId:crypto.randomUUID(),ownerUserId:s.user.id,ownerClientId:s.clientId,basis:b,form:{bundleRef:b.bundleRef,responseRef:b.responseRef,subjectBindingRef:b.subjectBindingRef,criteriaVersion:1,items:['PURPOSE_REASON','BASELINE_AUTHORITY','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'].map(code=>({code:code as Input['items'][number]['code'],sourceRefs:[],responsePartRefs:[],judgement:'',reason:''})),reason:''},pending:null,stored:null,uncertain:false,failure:null};
+}
+export async function prepareNormalInitialUnderstandingReview(raw:NormalInitialUnderstandingReviewBuffer,s:DocumentSession,generation:number,ownerEpoch:string):Promise<DocumentWrite>{
+ const b=structuredClone(raw),basis=b.basis,i=b.form;
+ if(!uuid(ownerEpoch)||b.ownerEpoch!==ownerEpoch||b.ownerUserId!==s.user.id||b.ownerClientId!==s.clientId||!uuid(s.user.id)||!uuid(s.clientId)||!(/^[A-Za-z0-9_-]{43}$/).test(s.csrfToken)||!Number.isSafeInteger(generation)||generation<1||b.stored||!['bundleRef','responseRef','subjectBindingRef'].every(k=>same(i[k as keyof typeof i],basis[k as 'bundleRef']))||!normalRefs(basis.basisRefs)||!normalRefs(basis.responsePartRefs))fail();
+ for(const row of i.items){if(!normalRefs(row.sourceRefs)||!normalRefs(row.responsePartRefs)||!row.sourceRefs.every(r=>basis.basisRefs.some(v=>same(r,v)))||!row.responsePartRefs.every(r=>basis.responsePartRefs.some(v=>same(r,v))))fail();}
+ const scope=basis.scope,base={schemaVersion:1 as const,projectId:scope.projectId,clientId:s.clientId,controlGeneration:generation,operation:'reviewUnderstanding' as const,targetId:scope.executionId,expectedVersion:scope.executionGeneration,baselineRefs:[] as [],approvalRef:b.pending?.approvalRef??null,payload:i};
+ if(base.approvalRef!==null&&!understandingApprovalRef(base.approvalRef))fail();
+ const command={...base,commandId:b.pending?.commandId??crypto.randomUUID()};readUnderstandingApprovalCommand({...command,approvalRef:null});await hash(command);
+ if(b.pending&&!same(b.pending,command)||!b.pending&&b.uncertain)fail();return structuredClone(command) as DocumentWrite;
+}
+export function matchNormalInitialUnderstandingReview(raw:NormalUnderstandingHistoryView,b:NormalInitialUnderstandingReviewBuffer):NormalInitialUnderstandingRecord|null{
+ if(!b.pending||raw.items.length!==1||!same(raw.scope,b.basis.scope))return null;const row=raw.items[0]!,s=row.snapshot;
+ if(!same(s.request,b.pending)||!same(s.input,b.form)||s.reviewer.userId!==b.ownerUserId||s.reviewer.clientId!==b.ownerClientId||s.currentBinding.transport!=='NORMAL_PROTECTED'||!same(s.currentBinding.sourceBasis.preparationRef,b.basis.preparationRef)||!same(s.currentBinding.sourceBasis.requestRef,b.basis.rangeRequestRef)||!same(s.currentBinding.basisRefs,b.basis.basisRefs)||!same(s.currentBinding.responsePartRefs,b.basis.responsePartRefs)||row.ref.version!==1)return null;return structuredClone(row);
+}
+/** 정상 POST와 exact 이력 1행이 모두 같을 때만 저장 확인이다. 응답유실은 원명령을 보존한다. */
+export async function saveNormalInitialUnderstandingReview(client:ApiClient,raw:NormalInitialUnderstandingReviewBuffer,rawSession:DocumentSession,active:()=>boolean):Promise<NormalInitialUnderstandingRecord|null>{
+ const b=structuredClone(raw),s=structuredClone(rawSession),transport=client.transport,epoch=normalInitialUnderstandingOwner(client,s),check=()=>active()&&client.transport===transport&&same(rawSession,s)&&normalInitialUnderstandingOwner(client,rawSession)===epoch&&b.ownerEpoch===epoch;
+ if(!b.pending)fail();const command=await prepareNormalInitialUnderstandingReview(b,s,b.pending.controlGeneration,epoch);if(!check())return null;
+ const pinned=new ApiClient((...args)=>{if(!check())throw new ApiError('UNDERSTANDING_REVIEW_INPUT_INVALID');return transport.call(globalThis,...args);});
+ const receipt=await postDocumentCommand(pinned,command,s.csrfToken);if(!check())return null;
+ try{const history=await readNormalUnderstandingHistory(client,b.basis.scope,check);if(!history||!check())return null;const row=matchNormalInitialUnderstandingReview(history,b),d=receipt.data;
+  if(!row||receipt.targetId!==row.ref.id||receipt.version!==row.ref.version||!d||!same(Object.keys(d).sort(),['ref','snapshot','status'])||d.status!=='NORMAL_UNDERSTANDING_REVIEWED'||!same(d.ref,row.ref)||!same(d.snapshot,row.snapshot))throw new ApiError('UNDERSTANDING_REVIEW_RESPONSE_INVALID');return row;
  }catch(cause){const e=cause instanceof ApiError?cause:new ApiError('UNDERSTANDING_REVIEW_RESPONSE_INVALID');throw new UnderstandingReadbackUnconfirmed(e.code,e.status);}
 }
