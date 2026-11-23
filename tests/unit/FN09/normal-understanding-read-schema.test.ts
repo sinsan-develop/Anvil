@@ -134,7 +134,7 @@ test('range result marker-only/receipt-only/body-only writes have exact BEFORE a
  const shape=history.match(/execution_json_shape\(s,ARRAY\[([^\]]+)\]/)?.[1];assert.ok(shape);assert.doesNotMatch(shape,/'(?:body|text|parts|auth|bodyBase64|sdk|sessionId)'/);
  assert.match(shape,/'responseRef','partRefs','bodyHash','bodyBytes'/);
  const section=sql.slice(sql.indexOf('-- FN09 A §4.3:'));
- const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,19);
+ const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,27);
  for(const [,name,args] of helpers){
   const signature=name+'('+args!.split(',').filter(Boolean).map(x=>x.trim().split(/\s+/).at(-1)).join(',')+')';
   assert.ok(section.includes('ALTER FUNCTION anvil.'+signature+' OWNER TO anvil_v3_migrator;'),signature);
@@ -384,9 +384,10 @@ test('range transport has private purpose triggers, current admission and immuta
 });
 
 test('최초 normal 검토 basis는 원 response의 현재 HUMAN custody와 원 준비/책임/맥락/모든 전달 부분에만 결박된다',()=>{
- const source=definition('fn09_normal_understanding_review_source_basis'),context=definition('fn09_normal_understanding_review_context_basis');
- assert.match(source,/range_current\(s,a,c,selection,policy,expected_tx\)/);assert.equal((source.match(/range_current\(s,a,c,selection,policy,expected_tx\)/g)??[]).length,2);
- for(const token of ['response_ref',"'RANGE_STORED'",'review_context_basis',"'SOURCE_BASIS_ONLY'","'subjectBindingState','VERIFIED'","'reviewAvailable',false","'responsePartRefs'","'executionAuthorized',false"])assert.ok(source.includes(token),token);
+ const source=definition('fn09_normal_understanding_committed_basis'),context=definition('fn09_normal_understanding_review_context_basis');
+ assert.equal((source.match(/request_basis\(s,a,c,command,policy,expected_tx\)/g)??[]).length,2);
+ assert.match(definition('fn09_normal_understanding_review_source_basis'),/RETURN anvil.fn09_normal_understanding_committed_basis\(s,a,c,selection,policy,expected_tx,response_ref\)/);
+ for(const token of ['response_ref','review_response(p,response_ref)','review_context_basis',"'SOURCE_BASIS_ONLY'","'subjectBindingState','VERIFIED'","'reviewAvailable',false","'responsePartRefs'","'executionAuthorized',false"])assert.ok(source.includes(token),token);
  for(const token of ['normal_start_material_complete','execution_preparations','role_bindings','agent_sessions','project_roles','context_bundles','context_items','assignment_draft_versions','execution_material_manifests','execution_materials',"'CONTEXT_BUNDLE'",'material_binding_complete',"'NORMAL_START_MATERIAL'",'LIMIT 2',"'requiredPartRefs'","'receivedPartRefs'","'basisRefs'","'latestInstructionRefs'"])assert.ok(context.includes(token),token);
  assert.doesNotMatch(source+context,/INSERT INTO|UPDATE anvil|DELETE FROM|set_config|reviewUnderstanding|SYNTHETIC_ONLY/);
  assert.ok(source.includes("'subjectBindingRef',ground->'roleBindingRef'"));assert.doesNotMatch(source,/'subjectBindingRef',ground->'(?:agentSessionRef|roleRef)'/);
@@ -396,7 +397,7 @@ test('최초 normal 검토 basis는 원 response의 현재 HUMAN custody와 원 
 });
 
 test('최초 basis의 원 준비/role/session/context와 수신 검사는 다른 회차·첫 영수증·부분 수신으로 치환되지 않는다',async()=>{
- const body=definition('fn09_normal_understanding_review_context_basis'),source=definition('fn09_normal_understanding_review_source_basis');
+ const body=definition('fn09_normal_understanding_review_context_basis'),source=definition('fn09_normal_understanding_committed_basis');
  for(const token of ["f#>'{agentSession,bindingGeneration}' IS DISTINCT FROM to_jsonb(rb.version)","f#>'{agentSession,sessionRef}' IS DISTINCT FROM ctx->'sessionBindingRef'",
   "ep.snapshot_json#>'{intent,roleBindingRef}'",'rb.snapshot_json->\'assignmentRef\'',"rb.snapshot_json->'connectionRef'",'newer.version>rb.version',
   "ep.snapshot_json->'basisRefs' IS DISTINCT FROM basis","f->'latestInstructionRefs' IS DISTINCT FROM latest",'context_preparation_manifest_valid(p,bm)',"bm->'missingRequired'",'assignment_draft_basis_current',
@@ -415,7 +416,7 @@ test('최초 basis의 원 준비/role/session/context와 수신 검사는 다른
 });
 
 test('검토 주체는 원 등록 책임 결박의 닫힌 형태·세대·예약 상태·작성자와 APPLIED 영수증을 모두 확인한 roleBindingRef만 사용한다',async()=>{
- const body=definition('fn09_normal_understanding_review_context_basis'),source=definition('fn09_normal_understanding_review_source_basis');
+ const body=definition('fn09_normal_understanding_review_context_basis'),source=definition('fn09_normal_understanding_committed_basis');
  const canonical=await readFile(new URL('../../../apps/server/modules/assignments/responsible-sessions.ts',import.meta.url),'utf8');
  for(const key of ['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason','sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt','connectionKind'])assert.ok(canonical.includes("'"+key+"'"),key);
  for(const token of [
@@ -504,6 +505,64 @@ test('원 bind 요청 재구성 RAM 관계는 공동 request/scope 변조·다�
   if(mode==='wrong-decision')v.used.decisionId=id(99);if(mode==='wrong-client')v.decision.clientId=id(99);
   assert.throws(()=>verify(v),mode);
  }
+});
+
+test('normal 첫 검토는 원 response에서 도출한 scope/current와 별도 검토 정책·명시 여섯 판단만 기존 INSERT에서 소비한다',()=>{
+ const input=definition('fn09_normal_understanding_review_input_valid'),current=definition('fn09_normal_understanding_review_current'),history=definition('fn09_normal_understanding_review_historical');
+ for(const code of ['PURPOSE_REASON','BASELINE_AUTHORITY','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'])assert.ok(input.includes(code),code);
+ for(const token of ["'NORMAL_PROTECTED'","'MATCH','MISMATCH','INSUFFICIENT'",'understanding_refs_valid',"item->'sourceRefs'","item->'responsePartRefs'",'basisRefs','responsePartRefs','assignment_content_reason'])assert.ok(input.includes(token),token);
+ for(const token of ['fn01_active','FOR UPDATE','reauth_until','reviewUnderstanding','readNormalUnderstandingResponse','committed_basis','review_response','controlGeneration','review_binding','expiresAt','fn09_understanding_approval_valid'])assert.ok(current.includes(token),token);
+ assert.doesNotMatch(current,/understanding_input_valid|SYNTHETIC_ONLY|set_config|INSERT INTO|UPDATE anvil|DELETE FROM/);
+ for(const token of ["'NORMAL_UNDERSTANDING_REVIEWED'",'requestHash','authorization_receipts','audit_events','approval_consumption_id','fn09_understanding_approval_valid','normal_understanding_review_input_valid','sequence','previousRef'])assert.ok(history.includes(token),token);
+ assert.doesNotMatch(history,/clock_timestamp|fn01_active|review_source_basis|normal_exchange_current|review_current\(/);
+ assert.doesNotMatch(sql,/CREATE FUNCTION anvil.fn09_normal_understanding_review_append/);
+});
+
+test('정착 BODY의 새 HUMAN 조회와 첫 검토만 공통 현재성으로 재검산하며 전달 nonce/영수증 TTL은 역사 조건으로 보존한다',()=>{
+ const fresh=definition('fn09_normal_understanding_committed_basis'),read=definition('fn09_normal_understanding_range_current'),review=definition('fn09_normal_understanding_review_current');
+ for(const token of ['request_basis','review_response','review_context_basis','last_basis','last_ground','expected_tx','interval \'30 seconds\'','ground IS DISTINCT FROM last_ground','expiresAt'])assert.ok(fresh.includes(token),token);
+ assert.equal((fresh.match(/request_basis\(/g)??[]).length,2);assert.equal((fresh.match(/review_context_basis\(/g)??[]).length,2);
+ assert.doesNotMatch(fresh,/publicChallenge|storageExpiresAt|normal_request_credential|normal_understanding_range_current\(/);
+ assert.ok(read.indexOf('range_result_historical(v,r,body.body_bytes)')<read.indexOf('durable_basis=anvil.fn09_normal_understanding_committed_basis'));
+ assert.ok(read.includes("ends=least(call_started+interval '30 seconds',(basis->>'expiresAt')::timestamptz,(durable_basis->>'expiresAt')::timestamptz)"));
+ assert.match(read,/ends=least\(ends,\(old.snapshot_json#>>'\{publicChallenge,expiresAt\}'\)/);
+ assert.doesNotMatch(review,/review_source_basis\(/);assert.match(review,/committed_basis/);
+ const delivery=definition('fn09_normal_understanding_range_result_current');assert.match(delivery,/expiresAt/);assert.match(delivery,/range_result_basis/);
+});
+
+test('정착 후 +31초의 read/review는 새 current 창을 쓰고 원 explicit 판단·refs/replay를 보존한다 · RAM 관계이며 SQL 실행 아님',async()=>{
+ const {readUnderstandingReviewCommand}=await import('../../../apps/server/modules/executions/execution-understanding.ts');
+ const {canonicalJson,contentHash}=await import('../../../contracts/canonical.ts');
+ const id=(n:number)=>'af090510-0000-4000-8000-'+String(n).padStart(12,'0'),ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)}),hash=(v:unknown)=>contentHash(canonicalJson(v));
+ const started=Date.parse('2026-01-01T00:00:00.000Z'),sourceRefs=[ref(1),ref(2)],partRefs=[ref(3),ref(4)],basis={bundleRef:ref(5),responseRef:ref(6),subjectBindingRef:ref(7)};
+ const command={schemaVersion:1,projectId:id(8),commandId:id(9),clientId:id(10),controlGeneration:2,operation:'reviewUnderstanding',targetId:id(11),expectedVersion:1,baselineRefs:[],approvalRef:null,payload:{...basis,criteriaVersion:1,items:['PURPOSE_REASON','BASELINE_AUTHORITY','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'].map((code,i)=>({code,sourceRefs:[sourceRefs[i%2]!],responsePartRefs:[partRefs[i%2]!],judgement:i===4?'INSUFFICIENT':'MATCH',reason:'사람의 명시 대조'})),reason:'확정된 선택 부분만 검토'}};
+ const original=readUnderstandingReviewCommand(command),durable={responseRef:basis.responseRef,partRefs,selectionRef:ref(12),bodyHash:hash({parts:['유계 합성 원문']}),committed:true},receiptHash=hash(durable);
+ const current={session:true,owner:true,control:true,policyRead:true,policyReview:true,execution:true,grant:true,registration:true,credential:true,role:true,context:true,sourceExpiresAt:started+120000};
+ const enter=(kind:'read'|'review',now:number,e=durable,f=current)=>{
+  assert.equal(hash(e),receiptHash);assert.equal(e.committed,true);for(const [key,value]of Object.entries(f))if(key!=='sourceExpiresAt')assert.equal(value,true,key);
+  const expiresAt=Math.min(now+30000,f.sourceExpiresAt);assert.ok(expiresAt>now);
+  if(kind==='review'){const parsed=readUnderstandingReviewCommand(original),input=parsed.payload as typeof command.payload;assert.deepEqual(input.bundleRef,basis.bundleRef);assert.deepEqual(input.subjectBindingRef,basis.subjectBindingRef);assert.deepEqual(input.responseRef,e.responseRef);
+   for(const item of input.items){assert.ok(item.sourceRefs.every(r=>sourceRefs.some(s=>canonicalJson(r)===canonicalJson(s))));assert.ok(item.responsePartRefs.every(r=>partRefs.some(s=>canonicalJson(r)===canonicalJson(s))));}
+   return{expiresAt,requestHash:hash(parsed),outcome:input.items.every(i=>i.judgement==='MATCH')?'ACCEPTED':'NOT_ACCEPTED',responseRef:e.responseRef,partRefs:e.partRefs};}
+  return{expiresAt,responseRef:e.responseRef,partRefs:e.partRefs};
+ };
+ const later=started+31000;for(const kind of ['read','review'] as const){const result=enter(kind,later);assert.equal(result.expiresAt,later+30000);assert.deepEqual(result.responseRef,basis.responseRef);
+  for(const fault of ['session','owner','control','policyRead','policyReview','execution','grant','registration','credential','role','context'])assert.throws(()=>enter(kind,later,{...durable},{...current,[fault]:false}),fault);
+  assert.throws(()=>enter(kind,later,durable,{...current,sourceExpiresAt:later}));assert.throws(()=>enter(kind,later,{...durable,committed:false}));assert.throws(()=>enter(kind,later,{...durable,bodyHash:'f'.repeat(64)}));}
+ const first=enter('review',later);assert.equal(first.outcome,'NOT_ACCEPTED','불충분을 자동 MATCH로 바꾸지 않는다');const replay=structuredClone(first);assert.deepEqual(replay,first);assert.equal(hash(original),first.requestHash);
+ assert.throws(()=>enter('read',later,{...durable,selectionRef:ref(99)}));assert.ok(started+30000<later,'미정착 pending 발급 창은 +31초에 이미 만료다');
+ const read=definition('fn09_normal_understanding_range_current');assert.ok(read.indexOf('IF NOT FOUND THEN')<read.indexOf('durable_basis='));assert.match(read,/PENDING_SOURCE/);assert.match(read,/NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED/);
+});
+
+test('normal 첫 검토는 BEFORE와 모든 deferred companion을 닫고 기존 synthetic/역방향/승인 trigger의 본문과 ACL을 보존한다',async()=>{
+ const guard=definition('guard_fn09_normal_understanding_review'),final=definition('complete_fn09_normal_understanding_review');
+ for(const token of ['review_historical','review_current','UNDERSTANDING_NORMAL_FIRST_REQUIRED',"NEW.version<>1","TG_OP<>'INSERT'",'current_setting'])assert.ok(guard.includes(token),token);
+ for(const table of ['commands','authorization_receipts','audit_events','approval_consumptions','understanding_reviews','approval_requests','approval_decisions','understanding_review_approval_candidates'])assert.match(sql,new RegExp('CREATE CONSTRAINT TRIGGER fn09_normal_review_'+table+'[^;]*ON anvil\\.'+table+'[^;]*DEFERRABLE INITIALLY DEFERRED[^;]*complete_fn09_normal_understanding_review'));
+ assert.match(final,/TG_TABLE_NAME='understanding_reviews'/);assert.match(final,/review_current\(NEW\)/);assert.match(final,/review_historical/);
+ const originals=[['guard_understanding_review','0056_understanding_review_one_time_approval.sql.pending'],['fn09_understanding_complete','0101_source_content_policy_management_origins.sql.pending']] as const;
+ for(const [name,file]of originals){const old=await readFile(new URL('../../../db/migrations/'+file,import.meta.url),'utf8'),needle='CREATE OR REPLACE FUNCTION anvil.'+name+'()',from=old.indexOf(needle),to=old.indexOf('$$;',from)+3;assert.ok(from>=0);const start=sql.indexOf(needle),end=sql.indexOf('$$;',start)+3;assert.ok(start>=0);const before=old.slice(from,to),after=sql.slice(start,end).replace(/ -- FN09_NORMAL_REVIEW_DISPATCH_BEGIN\n[\s\S]*? -- FN09_NORMAL_REVIEW_DISPATCH_END\n/g,'');assert.equal(after,before,name);}
+ assert.doesNotMatch(sql,/DROP TRIGGER understanding_|GRANT[^;]*(?:review_append|review_current|review_input_valid|guard_fn09_normal_understanding_review)/);
+ const legacy=await readFile(new URL('../../../db/migrations/0019_understanding_reviews.sql',import.meta.url),'utf8');assert.match(legacy,/GRANT INSERT ON anvil.understanding_reviews TO anvil_v3_app/);assert.match(legacy,/understanding_command_complete AFTER INSERT/);
 });
 
 test('원 CONTEXT_BUNDLE 자료 refs와 각 전달 영수증의 조합은 모두 필요하다 · 실제 descriptor/RAM 관계 검산, SQL 실행 아님',async()=>{

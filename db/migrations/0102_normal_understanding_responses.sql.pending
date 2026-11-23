@@ -1899,7 +1899,7 @@ CREATE FUNCTION anvil.fn09_normal_understanding_range_current(s uuid,a uuid,c uu
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE p uuid;rid uuid;cmd anvil.commands;hs anvil.auth_sessions;parent anvil.execution_receipts;cred anvil.execution_receipts;
  old anvil.execution_challenges;v anvil.execution_challenges;r anvil.execution_receipts;body anvil.normal_understanding_range_result_bodies;q anvil.project_storage_reservations;
- request jsonb;command jsonb;basis jsonb;last_basis jsonb;ss jsonb;rf jsonb;answer jsonb;n bigint;at timestamptz;ends timestamptz;
+ request jsonb;command jsonb;basis jsonb;last_basis jsonb;durable_basis jsonb;ss jsonb;rf jsonb;answer jsonb;n bigint;at timestamptz;ends timestamptz;call_started timestamptz=clock_timestamp();
 BEGIN
  IF expected_tx IS DISTINCT FROM txid_current()::text OR NOT COALESCE(anvil.execution_json_shape(selection,ARRAY['projectId','executionId','executionGeneration','assignmentRef','preparationRef','requestRef','controlGeneration']),false)
   OR NOT COALESCE(anvil.execution_preparation_ref_valid(selection->'requestRef'),false) OR selection#>'{requestRef,version}' IS DISTINCT FROM '1'::jsonb
@@ -1978,7 +1978,9 @@ BEGIN
    IF r.snapshot_json->'rangeRequestRef' IS DISTINCT FROM rf OR r.snapshot_json->'context' IS DISTINCT FROM basis->'context'
     OR NOT COALESCE(anvil.fn09_normal_understanding_range_result_historical(v,r,body.body_bytes),false)
     OR NOT COALESCE(anvil.fn09_normal_understanding_range_result_complete(q),false) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
-   ends=least(ends,(r.snapshot_json->>'expiresAt')::timestamptz);
+   -- 정착 원문은 당시 전달 proof/TTL을 역사로 검산한 뒤 이번 HUMAN 호출의 현재성을 별도로 확인한다.
+   durable_basis=anvil.fn09_normal_understanding_committed_basis(s,a,c,selection,policy,expected_tx,body.response_ref);
+   ends=least(call_started+interval '30 seconds',(basis->>'expiresAt')::timestamptz,(durable_basis->>'expiresAt')::timestamptz);
    answer=anvil.fn09_normal_understanding_range_response(request,jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash),r.snapshot_json,convert_from(body.body_bytes,'UTF8')::jsonb,
     to_jsonb(to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),to_jsonb(to_char(ends AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')));
   END IF;
@@ -2229,30 +2231,337 @@ END;$$;
 ALTER FUNCTION anvil.fn09_normal_understanding_review_context_basis(uuid,jsonb,jsonb) OWNER TO anvil_v3_migrator;
 REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_context_basis(uuid,jsonb,jsonb) FROM PUBLIC,anvil_v3_app;
 
+-- 기존 private signature는 같은 목적의 공통 현재성 검산에 위임한다. 공개 입구가 아니다.
 CREATE FUNCTION anvil.fn09_normal_understanding_review_source_basis(s uuid,a uuid,c uuid,selection jsonb,policy jsonb,expected_tx text,response_ref jsonb)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE v jsonb;last_v jsonb;ground jsonb;last_ground jsonb;answer jsonb;p uuid;r anvil.execution_receipts;at timestamptz;ends timestamptz;
 BEGIN
- IF NOT COALESCE(anvil.execution_preparation_ref_valid(response_ref),false) OR response_ref->'version' IS DISTINCT FROM '1'::jsonb THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_REVIEW_BASIS_INVALID';END IF;
- v=anvil.fn09_normal_understanding_range_current(s,a,c,selection,policy,expected_tx);
- IF v->>'status' IS DISTINCT FROM 'RANGE_STORED' OR v->'responseRef' IS DISTINCT FROM response_ref THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_REVIEW_CURRENT_REQUIRED';END IF;
- p=(selection->>'projectId')::uuid;
- SELECT * INTO STRICT r FROM anvil.execution_receipts WHERE project_id=p AND id=(v#>>'{resultRef,id}')::uuid AND version=1 AND content_hash=v#>>'{resultRef,contentHash}';
- ground=anvil.fn09_normal_understanding_review_context_basis(p,r.snapshot_json->'context',r.snapshot_json->'binding');
- last_v=anvil.fn09_normal_understanding_range_current(s,a,c,selection,policy,expected_tx);
- last_ground=anvil.fn09_normal_understanding_review_context_basis(p,r.snapshot_json->'context',r.snapshot_json->'binding');
- IF (v-ARRAY['body','observedAt','expiresAt']) IS DISTINCT FROM (last_v-ARRAY['body','observedAt','expiresAt']) OR ground IS DISTINCT FROM last_ground THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_REVIEW_CURRENT_REQUIRED';END IF;
- at=clock_timestamp();ends=least((v->>'expiresAt')::timestamptz,(last_v->>'expiresAt')::timestamptz);
- IF ends<=at THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_REVIEW_CURRENT_REQUIRED';END IF;
- -- 채택된 normal 주체는 원 준비/맥락/세션/연결/세대까지 검산한 책임 결박만 사용한다. 공개 검토 저장은 열지 않는다.
- answer=ground||jsonb_build_object('status','SOURCE_BASIS_ONLY','subjectBindingState','VERIFIED','subjectBindingRef',ground->'roleBindingRef','reviewAvailable',false,
-  'scope',jsonb_build_object('projectId',p,'executionId',selection->'executionId','executionGeneration',selection->'executionGeneration'),
-  'requestRef',selection->'requestRef','responseRef',response_ref,'responsePartRefs',v->'partRefs',
-  'checkedAt',to_char(at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'expiresAt',to_char(ends AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-  'executionAuthorized',false,'dispatchPerformed',false);
- IF octet_length(anvil.execution_authority_canonical(answer))>2097152 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_REVIEW_BASIS_INVALID';END IF;
- RETURN answer;
+ RETURN anvil.fn09_normal_understanding_committed_basis(s,a,c,selection,policy,expected_tx,response_ref);
 END;$$;
 ALTER FUNCTION anvil.fn09_normal_understanding_review_source_basis(uuid,uuid,uuid,jsonb,jsonb,text,jsonb) OWNER TO anvil_v3_migrator;
 REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_source_basis(uuid,uuid,uuid,jsonb,jsonb,text,jsonb) FROM PUBLIC,anvil_v3_app;
+-- FN09 A 첫 normal HUMAN 검토. 기존 app INSERT만 실제 소비 입구이며 내부 helper는 직접 공개하지 않는다.
+CREATE FUNCTION anvil.fn09_normal_understanding_review_binding(ground jsonb,input jsonb)
+RETURNS jsonb LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
+ SELECT jsonb_build_object('transport','NORMAL_PROTECTED','scope',ground->'scope','bundleRef',ground->'bundleRef','responseRef',ground->'responseRef','subjectBindingRef',ground->'subjectBindingRef',
+ 'basisRefs',ground->'basisRefs','latestInstructionRefs',ground->'latestInstructionRefs','requiredPartRefs',ground->'requiredPartRefs','receivedPartRefs',ground->'receivedPartRefs','responsePartRefs',ground->'responsePartRefs',
+ 'criteria',(SELECT jsonb_agg(item-ARRAY['judgement','reason'] ORDER BY ord) FROM jsonb_array_elements(input->'items') WITH ORDINALITY items(item,ord)),
+ 'sourceState','AVAILABLE','responseSubject','EXTERNAL_AGENT','sourceBasis',ground-ARRAY['checkedAt','expiresAt']);
+$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_review_binding(jsonb,jsonb) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_binding(jsonb,jsonb) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn09_normal_understanding_review_input_valid(input jsonb,binding jsonb)
+RETURNS boolean LANGUAGE plpgsql IMMUTABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE item jsonb;criterion jsonb;codes text[]=ARRAY['PURPOSE_REASON','BASELINE_AUTHORITY','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'];seen text[]=ARRAY[]::text[];
+BEGIN
+ IF NOT COALESCE(anvil.execution_json_shape(input,ARRAY['bundleRef','responseRef','subjectBindingRef','criteriaVersion','items','reason']),false)
+  OR input->'criteriaVersion' IS DISTINCT FROM '1'::jsonb OR jsonb_typeof(input->'reason') IS DISTINCT FROM 'string' OR NOT COALESCE(anvil.assignment_content_reason(input->>'reason'),false)
+  OR NOT COALESCE(anvil.execution_json_shape(binding,ARRAY['transport','scope','bundleRef','responseRef','subjectBindingRef','basisRefs','latestInstructionRefs','requiredPartRefs','receivedPartRefs','responsePartRefs','criteria','sourceState','responseSubject','sourceBasis']),false)
+  OR binding->>'transport' IS DISTINCT FROM 'NORMAL_PROTECTED' OR binding->>'sourceState' IS DISTINCT FROM 'AVAILABLE' OR binding->>'responseSubject' IS DISTINCT FROM 'EXTERNAL_AGENT'
+  OR binding#>>'{sourceBasis,subjectBindingState}' IS DISTINCT FROM 'VERIFIED' OR binding#>'{sourceBasis,reviewAvailable}' IS DISTINCT FROM 'false'::jsonb
+  OR binding->'subjectBindingRef' IS DISTINCT FROM binding#>'{sourceBasis,roleBindingRef}' OR binding->'subjectBindingRef' IS DISTINCT FROM binding#>'{sourceBasis,subjectBindingRef}'
+  OR binding->'bundleRef' IS DISTINCT FROM binding#>'{sourceBasis,bundleRef}' OR binding->'responseRef' IS DISTINCT FROM binding#>'{sourceBasis,responseRef}' OR binding->'scope' IS DISTINCT FROM binding#>'{sourceBasis,scope}'
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(input->'bundleRef'),false) OR NOT COALESCE(anvil.execution_preparation_ref_valid(input->'responseRef'),false) OR NOT COALESCE(anvil.execution_preparation_ref_valid(input->'subjectBindingRef'),false)
+  OR input->'bundleRef' IS DISTINCT FROM binding->'bundleRef' OR input->'responseRef' IS DISTINCT FROM binding->'responseRef' OR input->'subjectBindingRef' IS DISTINCT FROM binding->'subjectBindingRef'
+  OR NOT COALESCE(anvil.understanding_refs_valid(binding->'basisRefs'),false) OR NOT COALESCE(anvil.understanding_refs_valid(binding->'requiredPartRefs'),false) OR NOT COALESCE(anvil.understanding_refs_valid(binding->'receivedPartRefs'),false) OR NOT COALESCE(anvil.understanding_refs_valid(binding->'responsePartRefs'),false)
+  OR binding->'basisRefs' IS DISTINCT FROM binding#>'{sourceBasis,basisRefs}' OR binding->'requiredPartRefs' IS DISTINCT FROM binding#>'{sourceBasis,requiredPartRefs}' OR binding->'receivedPartRefs' IS DISTINCT FROM binding#>'{sourceBasis,receivedPartRefs}' OR binding->'responsePartRefs' IS DISTINCT FROM binding#>'{sourceBasis,responsePartRefs}'
+  OR binding->'requiredPartRefs' IS DISTINCT FROM binding->'receivedPartRefs' OR binding->'latestInstructionRefs' IS DISTINCT FROM binding#>'{sourceBasis,latestInstructionRefs}'
+  OR jsonb_typeof(binding->'latestInstructionRefs') IS DISTINCT FROM 'array' OR jsonb_array_length(binding->'latestInstructionRefs')>200
+  OR EXISTS(SELECT 1 FROM jsonb_array_elements(binding->'latestInstructionRefs') it WHERE NOT COALESCE(anvil.execution_json_shape(it,ARRAY['kind','id','contentHash']),false) OR it->>'kind' IS DISTINCT FROM 'CONVERSATION' OR NOT COALESCE(anvil.execution_preparation_ref_valid(jsonb_build_object('id',it->'id','version',1,'contentHash',it->'contentHash')),false))
+  OR jsonb_typeof(input->'items') IS DISTINCT FROM 'array' OR jsonb_array_length(input->'items')<>6 OR jsonb_typeof(binding->'criteria') IS DISTINCT FROM 'array' OR jsonb_array_length(binding->'criteria')<>6
+ THEN RETURN false;END IF;
+ FOR item IN SELECT value FROM jsonb_array_elements(input->'items') LOOP
+  IF NOT COALESCE(anvil.execution_json_shape(item,ARRAY['code','sourceRefs','responsePartRefs','judgement','reason']),false) OR NOT COALESCE(item->>'code'=ANY(codes),false) OR item->>'code'=ANY(seen)
+   OR NOT COALESCE(item->>'judgement' IN('MATCH','MISMATCH','INSUFFICIENT'),false) OR jsonb_typeof(item->'reason') IS DISTINCT FROM 'string' OR NOT COALESCE(anvil.assignment_content_reason(item->>'reason'),false)
+   OR NOT COALESCE(anvil.understanding_refs_valid(item->'sourceRefs'),false) OR NOT COALESCE(anvil.understanding_refs_valid(item->'responsePartRefs'),false)
+   OR NOT ((binding->'basisRefs') @> (item->'sourceRefs')) OR NOT ((binding->'responsePartRefs') @> (item->'responsePartRefs')) THEN RETURN false;END IF;
+  SELECT value INTO STRICT criterion FROM jsonb_array_elements(binding->'criteria') WHERE value->>'code'=item->>'code';
+  IF criterion IS DISTINCT FROM item-ARRAY['judgement','reason'] THEN RETURN false;END IF;
+  seen=array_append(seen,item->>'code');
+ END LOOP;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_review_input_valid(jsonb,jsonb) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_input_valid(jsonb,jsonb) FROM PUBLIC,anvil_v3_app;
+
+-- responseRef만으로 같은 project의 원 immutable range selection을 도출한다. 본문은 반환하지 않는다.
+CREATE FUNCTION anvil.fn09_normal_understanding_review_response(p uuid,wanted_response_ref jsonb)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE body anvil.normal_understanding_range_result_bodies;r anvil.execution_receipts;v anvil.execution_challenges;q anvil.project_storage_reservations;cmd anvil.commands;n bigint;ctx jsonb;
+BEGIN
+ IF NOT COALESCE(anvil.execution_preparation_ref_valid(wanted_response_ref),false) OR wanted_response_ref->'version' IS DISTINCT FROM '1'::jsonb THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_RESPONSE_INVALID';END IF;
+ SELECT count(*) INTO n FROM (SELECT b.id FROM anvil.normal_understanding_range_result_bodies b WHERE b.project_id=p AND b.response_ref=wanted_response_ref LIMIT 2) found;
+ IF n<>1 THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_RESPONSE_INVALID';END IF;
+ SELECT b.* INTO STRICT body FROM anvil.normal_understanding_range_result_bodies b WHERE b.project_id=p AND b.response_ref=wanted_response_ref;
+ SELECT * INTO STRICT r FROM anvil.execution_receipts WHERE project_id=p AND id=body.id AND version=1;
+ SELECT * INTO STRICT v FROM anvil.execution_challenges WHERE project_id=p AND id=r.challenge_id AND version=2;
+ SELECT * INTO STRICT q FROM anvil.project_storage_reservations WHERE project_id=p AND id=r.id;
+ SELECT * INTO STRICT cmd FROM anvil.commands WHERE project_id=p AND operation='readNormalUnderstandingResponse' AND result_ref#>'{data,ref}'=body.range_request_ref;
+ IF NOT COALESCE(anvil.fn09_normal_understanding_range_result_historical(v,r,body.body_bytes),false) OR NOT COALESCE(anvil.fn09_normal_understanding_range_result_complete(q),false)
+  OR NOT COALESCE(anvil.fn09_normal_understanding_range_complete(cmd),false) OR body.response_ref IS DISTINCT FROM r.snapshot_json->'responseRef' OR body.range_request_ref IS DISTINCT FROM r.snapshot_json->'rangeRequestRef'
+  OR body.part_refs IS DISTINCT FROM r.snapshot_json->'partRefs' THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_RESPONSE_INVALID';END IF;
+ ctx=r.snapshot_json->'context';
+ RETURN jsonb_build_object('selection',jsonb_build_object('projectId',p,'executionId',ctx->'executionId','executionGeneration',ctx->'executionGeneration','assignmentRef',ctx->'assignmentRef','preparationRef',ctx->'preparationRef','requestRef',body.range_request_ref),
+  'context',ctx,'partRefs',body.part_refs,'resultRef',jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash));
+END;$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_review_response(uuid,jsonb) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_response(uuid,jsonb) FROM PUBLIC,anvil_v3_app;
+
+-- 이미 정착한 같은 BODY의 새 HUMAN read/review에만 쓴다. 발급/전달의 기한·nonce는 변경하지 않는다.
+CREATE FUNCTION anvil.fn09_normal_understanding_committed_basis(s uuid,a uuid,c uuid,selection jsonb,policy jsonb,expected_tx text,response_ref jsonb)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid=(selection->>'projectId')::uuid;src jsonb;command jsonb;basis jsonb;last_basis jsonb;ground jsonb;last_ground jsonb;answer jsonb;receipt anvil.execution_receipts;
+ at timestamptz;ends timestamptz;call_started timestamptz=clock_timestamp();
+BEGIN
+ IF expected_tx IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_CURRENT_REQUIRED';END IF;
+ command=jsonb_build_object('schemaVersion',1,'projectId',p,'commandId',selection#>'{requestRef,id}','clientId',c,'controlGeneration',selection->'controlGeneration','operation','readNormalUnderstandingResponse',
+  'targetId',selection->'executionId','expectedVersion',selection->'executionGeneration','baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('assignmentRef',selection->'assignmentRef','preparationRef',selection->'preparationRef'));
+ basis=anvil.fn09_normal_understanding_request_basis(s,a,c,command,policy,expected_tx);
+ src=anvil.fn09_normal_understanding_review_response(p,response_ref);
+ IF selection-'controlGeneration' IS DISTINCT FROM src->'selection' OR basis->'context' IS DISTINCT FROM src->'context' THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_CURRENT_REQUIRED';END IF;
+ SELECT * INTO STRICT receipt FROM anvil.execution_receipts WHERE project_id=p AND id=(src#>>'{resultRef,id}')::uuid AND version=1 AND content_hash=src#>>'{resultRef,contentHash}';
+ ground=anvil.fn09_normal_understanding_review_context_basis(p,src->'context',receipt.snapshot_json->'binding');
+ last_basis=anvil.fn09_normal_understanding_request_basis(s,a,c,command,policy,expected_tx);
+ last_ground=anvil.fn09_normal_understanding_review_context_basis(p,src->'context',receipt.snapshot_json->'binding');
+ IF basis->'context' IS DISTINCT FROM last_basis->'context' OR ground IS DISTINCT FROM last_ground THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_CURRENT_REQUIRED';END IF;
+ at=clock_timestamp();ends=least(call_started+interval '30 seconds',(basis->>'expiresAt')::timestamptz,(last_basis->>'expiresAt')::timestamptz);
+ IF ends<=at THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_CURRENT_REQUIRED';END IF;
+ answer=ground||jsonb_build_object('status','SOURCE_BASIS_ONLY','subjectBindingState','VERIFIED','subjectBindingRef',ground->'roleBindingRef','reviewAvailable',false,
+  'scope',jsonb_build_object('projectId',p,'executionId',selection->'executionId','executionGeneration',selection->'executionGeneration'),
+  'requestRef',selection->'requestRef','responseRef',response_ref,'responsePartRefs',src->'partRefs',
+  'checkedAt',to_char(at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'expiresAt',to_char(ends AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'executionAuthorized',false,'dispatchPerformed',false);
+ IF octet_length(anvil.execution_authority_canonical(answer))>2097152 THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_CURRENT_REQUIRED';END IF;
+ RETURN answer;
+END;$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_committed_basis(uuid,uuid,uuid,jsonb,jsonb,text,jsonb) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_committed_basis(uuid,uuid,uuid,jsonb,jsonb,text,jsonb) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn09_normal_understanding_review_historical(v anvil.understanding_reviews)
+RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE h anvil.commands;g anvil.execution_grants;ep anvil.execution_preparations;s jsonb=v.snapshot_json;req jsonb;r jsonb;b jsonb;original jsonb;ref jsonb;digest text;approval jsonb;src jsonb;
+BEGIN
+ req=s->'request';r=s->'reviewer';b=s->'currentBinding';ref=jsonb_build_object('id',v.id,'version',v.version,'contentHash',v.content_hash);
+ IF v.version<>1 OR NOT COALESCE(anvil.execution_json_shape(s,ARRAY['scope','sequence','previousRef','request','requestHash','reviewer','policyRef','currentBinding','input','outcome','recordedAt','executionAuthorized','dispatchPerformed']),false)
+  OR s->'sequence' IS DISTINCT FROM '1'::jsonb OR s->'previousRef' IS DISTINCT FROM 'null'::jsonb OR s->'scope' IS DISTINCT FROM jsonb_build_object('projectId',v.project_id,'executionId',v.execution_id,'executionGeneration',v.generation)
+  OR b->'scope' IS DISTINCT FROM s->'scope' OR s->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR s->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb OR v.content_hash IS DISTINCT FROM anvil.execution_json_hash(s)
+  OR NOT COALESCE(anvil.execution_iso_valid(s->'recordedAt'),false) OR octet_length(anvil.execution_authority_canonical(s))>2097152
+  OR NOT COALESCE(anvil.execution_json_shape(r,ARRAY['kind','userId','clientId','humanSessionId','credentialGeneration','controlGeneration']),false)
+  OR r->>'kind' IS DISTINCT FROM 'HUMAN' OR r->>'userId' IS DISTINCT FROM v.created_by::text OR r->>'clientId' IS DISTINCT FROM v.client_id::text
+  OR NOT COALESCE(anvil.fn09_understanding_command_valid(jsonb_set(req,'{approvalRef}','null'::jsonb)),false) OR req->'payload' IS DISTINCT FROM s->'input'
+  OR req->>'projectId' IS DISTINCT FROM v.project_id::text OR req->>'targetId' IS DISTINCT FROM v.execution_id::text OR req->'expectedVersion' IS DISTINCT FROM to_jsonb(v.generation)
+  OR req->>'clientId' IS DISTINCT FROM v.client_id::text OR r->'controlGeneration' IS DISTINCT FROM req->'controlGeneration' OR s->>'requestHash' IS DISTINCT FROM anvil.execution_json_hash(req)
+  OR NOT COALESCE(anvil.fn09_normal_understanding_review_input_valid(s->'input',b),false)
+  OR s->>'outcome' IS DISTINCT FROM (CASE WHEN NOT EXISTS(SELECT 1 FROM jsonb_array_elements(s#>'{input,items}') it WHERE it->>'judgement'<>'MATCH') THEN 'ACCEPTED' ELSE 'NOT_ACCEPTED' END)
+ THEN RETURN false;END IF;
+ SELECT * INTO STRICT h FROM anvil.commands WHERE project_id=v.project_id AND id=v.command_id;
+ IF h.operation IS DISTINCT FROM 'reviewUnderstanding' OR h.state IS DISTINCT FROM 'APPLIED' OR h.scope_kind IS DISTINCT FROM 'PROJECT' OR h.scope_id IS DISTINCT FROM v.project_id OR h.actor_id IS DISTINCT FROM v.created_by OR h.client_id IS DISTINCT FROM v.client_id
+  OR req->>'commandId' IS DISTINCT FROM h.command_id::text OR h.control_generation::text IS DISTINCT FROM req->>'controlGeneration' OR h.expected_version IS DISTINCT FROM v.generation OR h.request_hash IS DISTINCT FROM s->>'requestHash' OR h.policy_ref IS DISTINCT FROM s->'policyRef'
+  OR h.result_ref->>'status' IS DISTINCT FROM 'APPLIED' OR h.result_ref->>'projectId' IS DISTINCT FROM v.project_id::text OR h.result_ref->>'commandId' IS DISTINCT FROM h.command_id::text OR h.result_ref->>'operationId' IS DISTINCT FROM h.operation_id::text
+  OR h.result_ref->'targetId' IS DISTINCT FROM to_jsonb(v.id) OR h.result_ref->'version' IS DISTINCT FROM '1'::jsonb OR h.result_ref->'data' IS DISTINCT FROM jsonb_build_object('ref',ref,'status','NORMAL_UNDERSTANDING_REVIEWED','snapshot',s)
+ THEN RETURN false;END IF;
+ approval=req->'approvalRef';
+ IF h.approval_consumption_id IS NULL THEN
+  IF approval IS DISTINCT FROM 'null'::jsonb OR h.payload_ref IS NOT NULL OR EXISTS(SELECT 1 FROM anvil.approval_consumptions WHERE project_id=v.project_id AND command_id=h.id) THEN RETURN false;END IF;
+ ELSE
+  IF NOT COALESCE(anvil.fn09_understanding_approval_valid(v.project_id,h.id,(approval->>'decisionId')::uuid,true),false) THEN RETURN false;END IF;
+ END IF;
+ digest=anvil.execution_json_hash(jsonb_build_object('projectId',v.project_id,'actorId',v.created_by,'clientId',v.client_id,'controlGeneration',h.control_generation,'requestHash',h.request_hash,'policyRef',h.policy_ref,'targetRef',ref));
+ IF (SELECT count(*) FROM anvil.authorization_receipts WHERE command_id=h.id)<>1 OR (SELECT count(*) FROM anvil.audit_events WHERE command_id=h.id)<>1
+  OR NOT EXISTS(SELECT 1 FROM anvil.authorization_receipts ar JOIN anvil.audit_events audit ON audit.command_id=h.id
+   WHERE ar.id=h.authorization_receipt_id AND ar.command_id=h.id AND ar.scope_kind='PROJECT' AND ar.scope_id=v.project_id AND ar.policy_ref=h.policy_ref AND ar.scope_digest=digest AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',v.created_by,'clientId',v.client_id)
+   AND ar.approval_decision_ref IS NOT DISTINCT FROM (approval->>'decisionId')::uuid AND audit.project_id=v.project_id AND audit.operation_id=h.operation_id AND audit.outcome='APPLIED' AND audit.source_kind='HUMAN_COMMAND'
+   AND audit.scope_digest=digest AND audit.actor_ref=jsonb_build_object('kind','HUMAN','userId',v.created_by) AND audit.client_ref=v.client_id AND audit.policy_ref=h.policy_ref AND audit.target_ref=ref
+   AND audit.approval_ref IS NOT DISTINCT FROM (CASE WHEN approval='null'::jsonb THEN NULL ELSE approval END)) THEN RETURN false;END IF;
+ src=anvil.fn09_normal_understanding_review_response(v.project_id,b->'responseRef');
+ SELECT * INTO STRICT g FROM anvil.execution_grants WHERE project_id=v.project_id AND id=(src#>>'{context,grantRef,id}')::uuid AND version=(src#>>'{context,grantRef,version}')::bigint;
+ SELECT * INTO STRICT ep FROM anvil.execution_preparations WHERE project_id=v.project_id AND id=(src#>>'{context,preparationRef,id}')::uuid AND version=(src#>>'{context,preparationRef,version}')::bigint;
+ RETURN src#>'{context,executionId}'=to_jsonb(v.execution_id) AND src#>'{context,executionGeneration}'=to_jsonb(v.generation) AND b->'bundleRef'=src#>'{context,contextBundleRef}'
+  AND src#>'{context,grantRef}'=jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.content_hash) AND g.content_hash=anvil.execution_json_hash(g.snapshot_json)
+  AND src#>'{context,preparationRef}'=jsonb_build_object('id',ep.id,'version',ep.version,'contentHash',ep.content_hash) AND ep.content_hash=anvil.execution_json_hash(ep.snapshot_json)
+  AND b->'subjectBindingRef'=g.snapshot_json#>'{binding,agentSession,roleBindingRef}' AND b#>'{sourceBasis,requestRef}'=src#>'{selection,requestRef}' AND b->'responsePartRefs'=src->'partRefs'
+  AND b#>'{sourceBasis,preparationRef}'=src#>'{context,preparationRef}' AND b#>'{sourceBasis,grantRef}'=src#>'{context,grantRef}' AND b#>'{sourceBasis,startCommandRef}'=src#>'{context,startCommandRef}'
+  AND b#>'{sourceBasis,agentSessionRef}'=src#>'{context,sessionBindingRef}' AND b->'basisRefs'=ep.snapshot_json->'basisRefs' AND b->'latestInstructionRefs'=ep.snapshot_json->'latestInstructionRefs';
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_review_historical(anvil.understanding_reviews) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_historical(anvil.understanding_reviews) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn09_normal_understanding_review_current(v anvil.understanding_reviews)
+RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE h anvil.commands;hs anvil.auth_sessions;pc anvil.project_control;pv anvil.permission_policy_versions;s jsonb=v.snapshot_json;src jsonb;ground jsonb;selection jsonb;rule jsonb;allowed boolean=false;at timestamptz;ends timestamptz;approved boolean;call_started timestamptz=clock_timestamp();
+BEGIN
+ SELECT * INTO STRICT h FROM anvil.commands WHERE project_id=v.project_id AND id=v.command_id;
+ PERFORM anvil.fn01_active((s#>>'{reviewer,humanSessionId}')::uuid,v.created_by,v.client_id);
+ PERFORM id FROM anvil.projects WHERE id=v.project_id AND archived_at IS NULL FOR UPDATE;IF NOT FOUND THEN RETURN false;END IF;
+ SELECT * INTO STRICT hs FROM anvil.auth_sessions WHERE id=(s#>>'{reviewer,humanSessionId}')::uuid AND user_id=v.created_by AND client_id=v.client_id;
+ SELECT * INTO STRICT pc FROM anvil.project_control WHERE project_id=v.project_id FOR UPDATE;
+ IF pc.actor_id IS DISTINCT FROM v.created_by OR pc.client_id IS DISTINCT FROM v.client_id OR pc.generation IS DISTINCT FROM h.control_generation OR pc.revoked_at IS NOT NULL
+  OR s#>'{reviewer,credentialGeneration}' IS DISTINCT FROM to_jsonb(hs.credential_generation)
+  OR NOT EXISTS(SELECT 1 FROM anvil.project_members WHERE project_id=v.project_id AND user_id=v.created_by AND participation='OWNER' AND revoked_at IS NULL) THEN RETURN false;END IF;
+ SELECT ver.* INTO STRICT pv FROM anvil.permission_policies head JOIN anvil.permission_policy_versions ver ON ver.project_id=head.project_id AND ver.policy_id=head.id AND ver.version=head.head_version WHERE head.project_id=v.project_id FOR SHARE OF head;
+ IF h.policy_ref IS DISTINCT FROM jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash) OR pv.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('rules',pv.rules_json,'reason',pv.reason,'reviewRefs',pv.review_refs)) THEN RETURN false;END IF;
+ at=clock_timestamp();ends=least(call_started+interval '30 seconds',hs.idle_expires_at,hs.absolute_expires_at,hs.reauth_until);approved=h.approval_consumption_id IS NOT NULL;
+ IF hs.reauth_until IS NULL OR ends<=at OR (s->>'recordedAt')::timestamptz>at OR (s->>'recordedAt')::timestamptz<at-interval '30 seconds' THEN RETURN false;END IF;
+ FOR rule IN SELECT value FROM jsonb_array_elements(pv.rules_json) LOOP
+  IF rule#>>'{subjectRef,kind}'='HUMAN' AND rule#>>'{subjectRef,userId}'=v.created_by::text AND rule->'operations' ? 'reviewUnderstanding'
+   AND EXISTS(SELECT 1 FROM jsonb_array_elements(rule->'targetScopes') t WHERE t->>'kind'='PROJECT' AND t->>'projectId'=v.project_id::text) AND (rule->>'expiresAt')::timestamptz>at THEN
+   IF rule->>'disposition'='DENY' OR rule->'subjectRef' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',v.created_by)
+    OR rule->'targetScopes' IS DISTINCT FROM jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',v.project_id)) OR rule->'limitPolicyRef' IS DISTINCT FROM 'null'::jsonb
+    OR rule->>'disposition' NOT IN('AUTO','REQUIRE_APPROVAL') OR (rule->>'disposition'='REQUIRE_APPROVAL' AND NOT approved) THEN RETURN false;END IF;
+   IF rule->>'disposition'=(CASE WHEN approved THEN 'REQUIRE_APPROVAL' ELSE 'AUTO' END) THEN allowed=true;ends=least(ends,(rule->>'expiresAt')::timestamptz);END IF;
+  END IF;
+ END LOOP;
+ IF NOT allowed OR (approved AND NOT COALESCE(anvil.fn09_understanding_approval_valid(v.project_id,h.id,(s#>>'{request,approvalRef,decisionId}')::uuid,true),false)) THEN RETURN false;END IF;
+ src=anvil.fn09_normal_understanding_review_response(v.project_id,s#>'{input,responseRef}');selection=(src->'selection')||jsonb_build_object('controlGeneration',h.control_generation);
+ -- 검토 정책과 원 readNormalUnderstandingResponse 정책은 같은 head에서도 각각 별도 검산한다.
+ ground=anvil.fn09_normal_understanding_committed_basis(hs.id,v.created_by,v.client_id,selection,h.policy_ref,txid_current()::text,s#>'{input,responseRef}');
+ RETURN s->'currentBinding'=anvil.fn09_normal_understanding_review_binding(ground,s->'input') AND COALESCE(anvil.fn09_normal_understanding_review_input_valid(s->'input',s->'currentBinding'),false)
+  AND least(ends,(ground->>'expiresAt')::timestamptz)>clock_timestamp();
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_review_current(anvil.understanding_reviews) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_current(anvil.understanding_reviews) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.guard_fn09_normal_understanding_review()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE h anvil.commands;
+BEGIN
+ SELECT * INTO h FROM anvil.commands WHERE project_id=NEW.project_id AND id=NEW.command_id;
+ IF NEW.snapshot_json#>>'{currentBinding,transport}' IS DISTINCT FROM 'NORMAL_PROTECTED' AND h.result_ref#>>'{data,status}' IS DISTINCT FROM 'NORMAL_UNDERSTANDING_REVIEWED' THEN RETURN NEW;END IF;
+ IF TG_OP<>'INSERT' OR NEW.version<>1 OR NEW.command_id::text IS DISTINCT FROM current_setting('anvil.command_id',true)
+  OR NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true)
+  OR NOT COALESCE(anvil.fn09_normal_understanding_review_current(NEW),false) OR NOT COALESCE(anvil.fn09_normal_understanding_review_historical(NEW),false)
+  OR EXISTS(SELECT 1 FROM anvil.understanding_reviews WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND generation=NEW.generation)
+ THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_FIRST_REQUIRED' USING ERRCODE='42501';END IF;
+ IF octet_length(anvil.execution_authority_canonical(jsonb_build_array(jsonb_build_object('ref',jsonb_build_object('id',NEW.id,'version',NEW.version,'contentHash',NEW.content_hash),'snapshot',NEW.snapshot_json))))>2097152 THEN RAISE EXCEPTION 'UNDERSTANDING_HISTORY_QUOTA_REQUIRED';END IF;
+ RETURN NEW;
+END;$$;
+ALTER FUNCTION anvil.guard_fn09_normal_understanding_review() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.guard_fn09_normal_understanding_review() FROM PUBLIC,anvil_v3_app;
+CREATE TRIGGER fn09_normal_review_guard BEFORE INSERT ON anvil.understanding_reviews FOR EACH ROW EXECUTE FUNCTION anvil.guard_fn09_normal_understanding_review();
+
+CREATE FUNCTION anvil.complete_fn09_normal_understanding_review()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE raw jsonb=to_jsonb(NEW);p uuid;h anvil.commands;v anvil.understanding_reviews;
+BEGIN
+ p=(CASE WHEN TG_TABLE_NAME='authorization_receipts' THEN raw->>'scope_id' ELSE raw->>'project_id' END)::uuid;IF p IS NULL THEN RETURN NULL;END IF;
+ FOR h IN SELECT c.* FROM anvil.commands c WHERE c.project_id=p AND c.operation='reviewUnderstanding' AND
+  (c.result_ref#>>'{data,status}'='NORMAL_UNDERSTANDING_REVIEWED' OR EXISTS(SELECT 1 FROM anvil.understanding_reviews u WHERE u.project_id=p AND u.command_id=c.id AND u.snapshot_json#>>'{currentBinding,transport}'='NORMAL_PROTECTED')) LOOP
+  SELECT * INTO STRICT v FROM anvil.understanding_reviews WHERE project_id=p AND command_id=h.id;
+  IF NOT COALESCE(anvil.fn09_normal_understanding_review_historical(v),false)
+   OR (SELECT count(*) FROM anvil.understanding_reviews WHERE project_id=p AND execution_id=v.execution_id AND generation=v.generation)<>1 THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+ END LOOP;
+ -- 이 NEW는 실제 이번 transaction에서 삽입된 행이다. 과거 행에 현재 TTL을 재적용하지 않는다.
+ IF TG_TABLE_NAME='understanding_reviews' THEN
+  IF NEW.snapshot_json#>>'{currentBinding,transport}'='NORMAL_PROTECTED' AND NOT COALESCE(anvil.fn09_normal_understanding_review_current(NEW),false) THEN RAISE EXCEPTION 'UNDERSTANDING_NORMAL_CURRENT_REQUIRED' USING ERRCODE='42501';END IF;
+ END IF;
+ RETURN NULL;
+END;$$;
+ALTER FUNCTION anvil.complete_fn09_normal_understanding_review() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.complete_fn09_normal_understanding_review() FROM PUBLIC,anvil_v3_app;
+CREATE CONSTRAINT TRIGGER fn09_normal_review_commands AFTER INSERT OR UPDATE ON anvil.commands DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.complete_fn09_normal_understanding_review();
+CREATE CONSTRAINT TRIGGER fn09_normal_review_authorization_receipts AFTER INSERT OR UPDATE ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.complete_fn09_normal_understanding_review();
+CREATE CONSTRAINT TRIGGER fn09_normal_review_audit_events AFTER INSERT OR UPDATE ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.complete_fn09_normal_understanding_review();
+CREATE CONSTRAINT TRIGGER fn09_normal_review_approval_consumptions AFTER INSERT OR UPDATE ON anvil.approval_consumptions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.complete_fn09_normal_understanding_review();
+CREATE CONSTRAINT TRIGGER fn09_normal_review_understanding_reviews AFTER INSERT OR UPDATE ON anvil.understanding_reviews DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.complete_fn09_normal_understanding_review();
+CREATE CONSTRAINT TRIGGER fn09_normal_review_approval_requests AFTER INSERT OR UPDATE ON anvil.approval_requests DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.complete_fn09_normal_understanding_review();
+CREATE CONSTRAINT TRIGGER fn09_normal_review_approval_decisions AFTER INSERT OR UPDATE ON anvil.approval_decisions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.complete_fn09_normal_understanding_review();
+CREATE CONSTRAINT TRIGGER fn09_normal_review_understanding_review_approval_candidates AFTER INSERT OR UPDATE ON anvil.understanding_review_approval_candidates DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.complete_fn09_normal_understanding_review();
+CREATE OR REPLACE FUNCTION anvil.guard_understanding_review() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE s jsonb;req jsonb;r jsonb;binding jsonb;expected jsonb;scope jsonb;digest text;cmd anvil.commands%ROWTYPE;previous anvil.understanding_reviews%ROWTYPE;policy anvil.permission_policy_versions%ROWTYPE;at_time timestamptz=clock_timestamp();approval jsonb;
+BEGIN
+ -- FN09_NORMAL_REVIEW_DISPATCH_BEGIN
+ IF TG_OP='INSERT' AND NEW.snapshot_json#>>'{currentBinding,transport}'='NORMAL_PROTECTED'
+  AND EXISTS(SELECT 1 FROM anvil.commands c WHERE c.project_id=NEW.project_id AND c.id=NEW.command_id AND c.result_ref#>>'{data,status}'='NORMAL_UNDERSTANDING_REVIEWED') THEN RETURN NEW;END IF;
+ IF TG_OP='INSERT' AND EXISTS(SELECT 1 FROM anvil.understanding_reviews u WHERE u.project_id=NEW.project_id AND u.execution_id=NEW.execution_id AND u.generation=NEW.generation AND u.snapshot_json#>>'{currentBinding,transport}'='NORMAL_PROTECTED') THEN RAISE EXCEPTION 'UNDERSTANDING_TRANSPORT_MIXED';END IF;
+ -- FN09_NORMAL_REVIEW_DISPATCH_END
+ IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'UNDERSTANDING_HISTORY_IMMUTABLE' USING ERRCODE='42501';END IF;
+ PERFORM id FROM anvil.projects WHERE id=NEW.project_id AND archived_at IS NULL FOR UPDATE;
+ s=NEW.snapshot_json;req=s->'request';r=s->'reviewer';binding=s->'currentBinding';scope=jsonb_build_object('projectId',NEW.project_id,'executionId',NEW.execution_id,'executionGeneration',NEW.generation);
+ expected=jsonb_build_object('id',NEW.id,'version',NEW.version,'contentHash',NEW.content_hash);
+ SELECT * INTO cmd FROM anvil.commands WHERE project_id=NEW.project_id AND id=NEW.command_id;
+ SELECT pv.* INTO policy FROM anvil.permission_policy_versions pv JOIN anvil.permission_policies p ON p.project_id=pv.project_id AND p.id=pv.policy_id AND p.head_version=pv.version
+  WHERE p.project_id=NEW.project_id AND jsonb_build_object('id',p.id,'version',p.head_version,'contentHash',pv.content_hash)=s->'policyRef';
+ digest=anvil.execution_json_hash(jsonb_build_object('projectId',NEW.project_id,'actorId',NEW.created_by,'clientId',NEW.client_id,'controlGeneration',cmd.control_generation,'requestHash',cmd.request_hash,'policyRef',cmd.policy_ref,'targetRef',expected));
+ approval='null'::jsonb;
+ IF cmd.approval_consumption_id IS NULL THEN
+  IF cmd.payload_ref IS NOT NULL THEN RAISE EXCEPTION 'UNDERSTANDING_AUTO_LINK_REQUIRED';END IF;
+ ELSE
+  approval=req->'approvalRef';
+  IF NOT COALESCE(anvil.fn09_understanding_approval_valid(NEW.project_id,cmd.id,(approval->>'decisionId')::uuid,true),false) THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_COMPLETE_REQUIRED';END IF;
+ END IF;
+ IF NOT anvil.execution_json_shape(s,ARRAY['scope','sequence','previousRef','request','requestHash','reviewer','policyRef','currentBinding','input','outcome','recordedAt','executionAuthorized','dispatchPerformed'])
+  OR NOT anvil.execution_json_shape(req,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])
+  OR NOT anvil.execution_json_shape(r,ARRAY['kind','userId','clientId','humanSessionId','credentialGeneration','controlGeneration'])
+  OR s->'scope' IS DISTINCT FROM scope OR binding->'scope' IS DISTINCT FROM scope OR s->'sequence' IS DISTINCT FROM to_jsonb(NEW.version)
+  OR s->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR s->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
+  OR NEW.content_hash IS DISTINCT FROM anvil.execution_json_hash(s) OR octet_length(anvil.execution_authority_canonical(s))>2097152
+  OR cmd.id IS NULL OR policy.policy_id IS NULL OR cmd.scope_kind IS DISTINCT FROM 'PROJECT' OR cmd.scope_id IS DISTINCT FROM NEW.project_id OR cmd.state IS DISTINCT FROM 'APPLIED' OR cmd.operation IS DISTINCT FROM 'reviewUnderstanding'
+  OR NEW.command_id::text IS DISTINCT FROM current_setting('anvil.command_id',true) OR NEW.created_by::text IS DISTINCT FROM current_setting('anvil.actor_id',true) OR NEW.client_id::text IS DISTINCT FROM current_setting('anvil.client_id',true)
+  OR cmd.actor_id IS DISTINCT FROM NEW.created_by OR cmd.client_id IS DISTINCT FROM NEW.client_id
+  OR req->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR req->'projectId' IS DISTINCT FROM to_jsonb(NEW.project_id) OR req->'commandId' IS DISTINCT FROM to_jsonb(cmd.command_id)
+  OR req->'operation' IS DISTINCT FROM '"reviewUnderstanding"'::jsonb OR req->'targetId' IS DISTINCT FROM to_jsonb(NEW.execution_id) OR req->'expectedVersion' IS DISTINCT FROM to_jsonb(NEW.generation)
+  OR req->'clientId' IS DISTINCT FROM to_jsonb(NEW.client_id) OR req->'controlGeneration' IS DISTINCT FROM to_jsonb(cmd.control_generation) OR req->'approvalRef' IS DISTINCT FROM approval OR req->'baselineRefs' IS DISTINCT FROM '[]'::jsonb
+  OR cmd.expected_version IS DISTINCT FROM NEW.generation OR req->'payload' IS DISTINCT FROM s->'input' OR s->>'requestHash' IS DISTINCT FROM cmd.request_hash OR anvil.execution_json_hash(req) IS DISTINCT FROM cmd.request_hash
+  OR r->>'kind' IS DISTINCT FROM 'HUMAN' OR r->'userId' IS DISTINCT FROM to_jsonb(NEW.created_by) OR r->'clientId' IS DISTINCT FROM to_jsonb(NEW.client_id) OR r->'controlGeneration' IS DISTINCT FROM to_jsonb(cmd.control_generation)
+  OR cmd.policy_ref IS DISTINCT FROM s->'policyRef' OR cmd.result_ref->>'status' IS DISTINCT FROM 'APPLIED' OR cmd.result_ref->'projectId' IS DISTINCT FROM to_jsonb(NEW.project_id)
+  OR cmd.result_ref->'targetId' IS DISTINCT FROM to_jsonb(NEW.id) OR cmd.result_ref->'version' IS DISTINCT FROM to_jsonb(NEW.version) OR cmd.result_ref->'data'->'ref' IS DISTINCT FROM expected OR cmd.result_ref->'data'->'snapshot' IS DISTINCT FROM s OR cmd.result_ref->'data'->>'status' IS DISTINCT FROM 'SYNTHETIC_UNDERSTANDING_REVIEWED'
+  OR NOT anvil.execution_iso_valid(s->'recordedAt') OR (s->>'recordedAt')::timestamptz>at_time OR (s->>'recordedAt')::timestamptz<at_time-interval '30 seconds'
+  OR NOT anvil.understanding_input_valid(s->'input',binding)
+  OR s->>'outcome' IS DISTINCT FROM (CASE WHEN NOT EXISTS(SELECT 1 FROM jsonb_array_elements(s->'input'->'items')v WHERE v->>'judgement'<>'MATCH') THEN 'ACCEPTED' ELSE 'NOT_ACCEPTED' END)
+  OR NOT EXISTS(SELECT 1 FROM anvil.project_control pc JOIN anvil.project_members m ON m.project_id=pc.project_id AND m.user_id=pc.actor_id JOIN anvil.projects p ON p.id=pc.project_id WHERE pc.project_id=NEW.project_id AND pc.actor_id=NEW.created_by AND pc.client_id=NEW.client_id AND pc.generation=cmd.control_generation AND pc.revoked_at IS NULL AND m.revoked_at IS NULL AND m.participation='OWNER' AND p.archived_at IS NULL)
+  OR NOT EXISTS(SELECT 1 FROM anvil.auth_sessions a JOIN anvil.users u ON u.id=a.user_id JOIN anvil.clients cl ON cl.id=a.client_id AND cl.user_id=a.user_id WHERE a.id::text=r->>'humanSessionId' AND a.user_id=NEW.created_by AND a.client_id=NEW.client_id AND a.credential_generation=u.credential_generation AND to_jsonb(u.credential_generation)=r->'credentialGeneration' AND a.revoked_at IS NULL AND u.revoked_at IS NULL AND u.status='ACTIVE' AND cl.revoked_at IS NULL AND a.idle_expires_at>at_time AND a.absolute_expires_at>at_time)
+  OR NOT EXISTS(SELECT 1 FROM anvil.authorization_receipts ar JOIN anvil.audit_events a ON a.project_id=NEW.project_id AND a.command_id=cmd.id AND a.operation_id=cmd.operation_id WHERE ar.id=cmd.authorization_receipt_id AND ar.command_id=cmd.id AND ar.scope_kind='PROJECT' AND ar.scope_id=NEW.project_id AND ar.policy_ref=cmd.policy_ref AND ar.subject_ref=jsonb_build_object('kind','HUMAN','userId',NEW.created_by,'clientId',NEW.client_id) AND ar.scope_digest=digest AND ar.approval_decision_ref IS NOT DISTINCT FROM (approval->>'decisionId')::uuid AND a.approval_ref IS NOT DISTINCT FROM CASE WHEN approval='null'::jsonb THEN NULL ELSE approval END AND a.scope_digest=digest AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND')
+  OR NOT EXISTS(SELECT 1 FROM jsonb_array_elements(policy.rules_json)v WHERE v->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',NEW.created_by) AND v->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',NEW.project_id)) AND (v->'operations') ? 'reviewUnderstanding' AND v->>'disposition'=(CASE WHEN approval='null'::jsonb THEN 'AUTO' ELSE 'REQUIRE_APPROVAL' END) AND v->'limitPolicyRef'='null'::jsonb AND (v->>'expiresAt')::timestamptz>at_time)
+  OR EXISTS(SELECT 1 FROM jsonb_array_elements(policy.rules_json)v WHERE v->'subjectRef'=jsonb_build_object('kind','HUMAN','userId',NEW.created_by) AND v->'targetScopes'=jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',NEW.project_id)) AND (v->'operations') ? 'reviewUnderstanding' AND (v->>'disposition'='DENY' OR (approval='null'::jsonb AND v->>'disposition'='REQUIRE_APPROVAL')) AND (v->>'expiresAt')::timestamptz>at_time)
+  THEN RAISE EXCEPTION 'UNDERSTANDING_EXACT_HUMAN_RECEIPT_REQUIRED' USING ERRCODE='42501';END IF;
+ SELECT * INTO previous FROM anvil.understanding_reviews WHERE project_id=NEW.project_id AND execution_id=NEW.execution_id AND generation=NEW.generation ORDER BY version DESC LIMIT 1;
+ IF previous.id IS NULL THEN
+  IF NEW.version<>1 OR s->'previousRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'UNDERSTANDING_SEQUENCE_REQUIRED';END IF;
+ ELSIF NEW.id IS DISTINCT FROM previous.id OR NEW.version<>previous.version+1 OR s->'previousRef' IS DISTINCT FROM jsonb_build_object('id',previous.id,'version',previous.version,'contentHash',previous.content_hash) OR (s->>'recordedAt')::timestamptz<(previous.snapshot_json->>'recordedAt')::timestamptz THEN RAISE EXCEPTION 'UNDERSTANDING_SEQUENCE_REQUIRED';END IF;
+ IF octet_length(anvil.execution_authority_canonical(COALESCE((SELECT jsonb_agg(jsonb_build_object('ref',jsonb_build_object('id',v.id,'version',v.version,'contentHash',v.content_hash),'snapshot',v.snapshot_json) ORDER BY v.version) FROM anvil.understanding_reviews v WHERE v.project_id=NEW.project_id AND v.execution_id=NEW.execution_id AND v.generation=NEW.generation),'[]'::jsonb)||jsonb_build_array(jsonb_build_object('ref',expected,'snapshot',NEW.snapshot_json))))>2097152 THEN RAISE EXCEPTION 'UNDERSTANDING_HISTORY_QUOTA_REQUIRED';END IF;
+ RETURN NEW;
+EXCEPTION WHEN OTHERS THEN RAISE EXCEPTION 'UNDERSTANDING_EXACT_HUMAN_RECEIPT_REQUIRED' USING ERRCODE='42501';
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION anvil.fn09_understanding_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE pid uuid;raw jsonb=to_jsonb(NEW);c anvil.commands%ROWTYPE;b anvil.understanding_review_approval_candidates%ROWTYPE;v anvil.understanding_reviews%ROWTYPE;r anvil.approval_requests%ROWTYPE;
+BEGIN
+ -- FN03_MANAGEMENT_TRIGGER_BEGIN
+ IF TG_OP IN('INSERT','UPDATE') THEN
+  IF TG_TABLE_NAME='commands' THEN
+   IF NEW.operation='defineSourceContentPolicy' THEN PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;END IF;
+  ELSIF TG_TABLE_NAME='authorization_receipts' THEN
+   IF NEW.scope_kind='PROJECT' AND EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.scope_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  ELSIF TG_TABLE_NAME='audit_events' THEN
+   IF EXISTS(SELECT 1 FROM anvil.commands x WHERE x.project_id=NEW.project_id AND x.id=NEW.command_id AND x.operation='defineSourceContentPolicy') THEN
+    PERFORM anvil.fn03_management_dispatch(TG_TABLE_NAME,to_jsonb(NEW));RETURN NULL;
+   END IF;
+  END IF;
+ END IF;
+ -- FN03_MANAGEMENT_TRIGGER_END
+ pid=CASE WHEN TG_TABLE_NAME='authorization_receipts' THEN (raw->>'scope_id')::uuid ELSE (raw->>'project_id')::uuid END;
+ IF pid IS NULL THEN RETURN NULL;END IF;
+ FOR r IN SELECT * FROM anvil.approval_requests WHERE project_id=pid AND action_scope_json->>'operation'='reviewUnderstanding' LOOP
+  IF NOT COALESCE(anvil.fn09_understanding_candidate_valid(pid,r.id),false) THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_CANDIDATE_REQUIRED' USING ERRCODE='42501';END IF;
+ END LOOP;
+ FOR b IN SELECT * FROM anvil.understanding_review_approval_candidates WHERE project_id=pid LOOP
+  IF NOT COALESCE(anvil.fn09_understanding_candidate_valid(pid,b.request_id),false) THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_CANDIDATE_REQUIRED' USING ERRCODE='42501';END IF;
+ END LOOP;
+ FOR c IN SELECT * FROM anvil.commands WHERE project_id=pid AND scope_kind='PROJECT' AND operation='reviewUnderstanding' LOOP
+  SELECT * INTO v FROM anvil.understanding_reviews WHERE project_id=pid AND command_id=c.id;
+ -- FN09_NORMAL_REVIEW_DISPATCH_BEGIN
+  IF c.result_ref#>>'{data,status}'='NORMAL_UNDERSTANDING_REVIEWED' AND v.snapshot_json#>>'{currentBinding,transport}'='NORMAL_PROTECTED' THEN CONTINUE;END IF;
+ -- FN09_NORMAL_REVIEW_DISPATCH_END
+  IF v.command_id IS NULL OR v.snapshot_json->'requestHash' IS DISTINCT FROM to_jsonb(c.request_hash) OR anvil.execution_json_hash(v.snapshot_json->'request') IS DISTINCT FROM c.request_hash OR v.content_hash IS DISTINCT FROM anvil.execution_json_hash(v.snapshot_json) OR c.result_ref->'data'->'ref' IS DISTINCT FROM jsonb_build_object('id',v.id,'version',v.version,'contentHash',v.content_hash) OR c.result_ref->'data'->'snapshot' IS DISTINCT FROM v.snapshot_json THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+  IF c.approval_consumption_id IS NOT NULL THEN
+   IF NOT COALESCE(anvil.fn09_understanding_approval_valid(pid,c.id,(v.snapshot_json->'request'->'approvalRef'->>'decisionId')::uuid,true),false) THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+  ELSIF c.payload_ref IS NOT NULL OR v.snapshot_json->'request'->'approvalRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'UNDERSTANDING_AUTO_LINK_REQUIRED' USING ERRCODE='42501';END IF;
+ END LOOP;
+ IF EXISTS(SELECT 1 FROM anvil.understanding_reviews u LEFT JOIN anvil.commands c ON c.project_id=u.project_id AND c.id=u.command_id WHERE u.project_id=pid AND (c.id IS NULL OR c.operation<>'reviewUnderstanding')) THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+ IF EXISTS(SELECT 1 FROM anvil.approval_requests r LEFT JOIN anvil.approval_decisions d ON d.project_id=r.project_id AND d.request_id=r.id LEFT JOIN anvil.approval_consumptions ac ON ac.project_id=r.project_id AND ac.decision_id=d.id LEFT JOIN anvil.commands c ON c.project_id=r.project_id AND c.id=ac.command_id LEFT JOIN anvil.understanding_reviews u ON u.project_id=c.project_id AND u.command_id=c.id WHERE r.project_id=pid AND r.action_scope_json->>'operation'='reviewUnderstanding' AND ((r.status='CONSUMED' AND (ac.id IS NULL OR c.id IS NULL OR u.command_id IS NULL)) OR (ac.id IS NOT NULL AND (r.status<>'CONSUMED' OR c.operation IS DISTINCT FROM 'reviewUnderstanding' OR u.command_id IS NULL)))) THEN RAISE EXCEPTION 'UNDERSTANDING_APPROVAL_COMPLETE_REQUIRED' USING ERRCODE='42501';END IF;
+ RETURN NULL;
+END;
+$$;
 COMMIT;
