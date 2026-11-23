@@ -831,6 +831,9 @@ DECLARE p uuid;rid uuid;h anvil.normal_understanding_read_requests;r anvil.execu
  q anvil.project_storage_reservations;credential anvil.execution_receipts;basis jsonb;last_basis jsonb;request jsonb;command jsonb;m jsonb;
  n bigint;at timestamptz;ends timestamptz;
 BEGIN
+ -- FN09_RANGE_CURRENT_DISPATCH_BEGIN
+ IF selection->>'purpose'='FIXED_RANGE_CURRENT' THEN RETURN anvil.fn09_normal_understanding_range_current(s,a,c,selection-'purpose',policy,expected_tx);END IF;
+ -- FN09_RANGE_CURRENT_DISPATCH_END
  IF expected_tx IS DISTINCT FROM txid_current()::text
   OR NOT COALESCE(anvil.execution_json_shape(selection,ARRAY['projectId','executionId','executionGeneration','assignmentRef','preparationRef','requestRef','controlGeneration']),false)
   OR NOT COALESCE(anvil.execution_preparation_ref_valid(selection->'requestRef'),false) OR selection#>'{requestRef,version}' IS DISTINCT FROM '1'::jsonb
@@ -1670,6 +1673,10 @@ BEGIN
   IF n.version=2 THEN
    SELECT * INTO STRICT r FROM anvil.execution_receipts WHERE project_id=n.project_id AND id=(n.snapshot_json#>>'{consumption,resultRef,id}')::uuid AND version=1;
    IF (r.snapshot_json->>'expiresAt')::timestamptz<=clock_timestamp() OR (r.snapshot_json->>'expiresAt')::timestamptz>(d->>'deadline')::timestamptz THEN RETURN false;END IF;
+   SELECT * INTO STRICT body FROM anvil.normal_understanding_range_result_bodies WHERE project_id=n.project_id AND id=r.id AND version=1;
+   IF octet_length(anvil.execution_authority_canonical(anvil.fn09_normal_understanding_range_response(
+    jsonb_build_object('projectId',b->'projectId','executionId',b->'executionId','executionGeneration',b->'executionGeneration','assignmentRef',d#>'{context,assignmentRef}','preparationRef',d#>'{context,preparationRef}','requestRef',d->'rangeRequestRef'),
+    jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash),r.snapshot_json,convert_from(body.body_bytes,'UTF8')::jsonb,r.snapshot_json->'observedAt',r.snapshot_json->'expiresAt')))>2097152 THEN RETURN false;END IF;
   END IF;
  END IF;RETURN true;
 EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
@@ -1765,6 +1772,10 @@ BEGIN
  r.project_id=old.project_id;r.id=(result_ref->>'id')::uuid;r.version=1;r.grant_id=old.grant_id;r.grant_version=old.grant_version;r.challenge_id=old.id;r.challenge_version=1;r.content_hash=result_ref->>'contentHash';r.snapshot_json=snapshot;
  IF NOT COALESCE(anvil.fn09_normal_understanding_range_result_historical(v,r,raw),false) OR NOT COALESCE(anvil.fn09_normal_understanding_range_result_current(v,false),false)
   OR (snapshot->>'expiresAt')::timestamptz<=clock_timestamp() OR (snapshot->>'expiresAt')::timestamptz>(d->>'deadline')::timestamptz THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_RESULT_DENIED';END IF;
+ -- 역사 완결/과거 정산을 보존하고 신규 입장·명시 재확인에 최종 응답의 실제 바이트 상한을 적용한다.
+ IF octet_length(anvil.execution_authority_canonical(anvil.fn09_normal_understanding_range_response(
+  jsonb_build_object('projectId',b->'projectId','executionId',b->'executionId','executionGeneration',b->'executionGeneration','assignmentRef',d#>'{context,assignmentRef}','preparationRef',d#>'{context,preparationRef}','requestRef',d->'rangeRequestRef'),
+  result_ref,snapshot,convert_from(raw,'UTF8')::jsonb,snapshot->'observedAt',snapshot->'expiresAt')))>2097152 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_RESPONSE_TOO_LARGE';END IF;
  SELECT * INTO previous FROM anvil.execution_challenges WHERE project_id=v.project_id AND id=v.id AND version=2;
  IF FOUND THEN
   -- 정확 원 packet/receipt/ref/bytea만 재확인한다. 현재 권위는 위에서 다시 검산했고 추가 쓰기/정산은 0이다.
@@ -1874,4 +1885,113 @@ ALTER FUNCTION anvil.settle_fn09_range_result_issue() OWNER TO anvil_v3_migrator
 REVOKE ALL ON FUNCTION anvil.settle_fn09_range_result_issue() FROM PUBLIC,anvil_v3_app;
 ALTER FUNCTION anvil.fn09_range_body_immutable() OWNER TO anvil_v3_migrator;
 REVOKE ALL ON FUNCTION anvil.fn09_range_body_immutable() FROM PUBLIC,anvil_v3_app;
+-- 최종 HTTP 형상은 고정 영수증 refs와 원문만 사용한다. 관측/기한은 동일 ISO 24B 형식이다.
+CREATE FUNCTION anvil.fn09_normal_understanding_range_response(request jsonb,result_ref jsonb,receipt jsonb,body jsonb,observed_at jsonb,expires_at jsonb)
+RETURNS jsonb LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
+ SELECT jsonb_build_object('status','RANGE_STORED','request',request,'resultRef',result_ref,'responseRef',receipt->'responseRef','partRefs',receipt->'partRefs',
+  'currentness','CURRENT','observedAt',observed_at,'expiresAt',expires_at,'selectionAvailable',true,'body',body);
+$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_range_response(jsonb,jsonb,jsonb,jsonb,jsonb,jsonb) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_range_response(jsonb,jsonb,jsonb,jsonb,jsonb,jsonb) FROM PUBLIC,anvil_v3_app;
+
+-- 기존 app-callable CURRENT의 목적 분기에서만 진입한다. 직접 본문/함수 권한은 추가하지 않는다.
+CREATE FUNCTION anvil.fn09_normal_understanding_range_current(s uuid,a uuid,c uuid,selection jsonb,policy jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid;rid uuid;cmd anvil.commands;hs anvil.auth_sessions;parent anvil.execution_receipts;cred anvil.execution_receipts;
+ old anvil.execution_challenges;v anvil.execution_challenges;r anvil.execution_receipts;body anvil.normal_understanding_range_result_bodies;q anvil.project_storage_reservations;
+ request jsonb;command jsonb;basis jsonb;last_basis jsonb;ss jsonb;rf jsonb;answer jsonb;n bigint;at timestamptz;ends timestamptz;
+BEGIN
+ IF expected_tx IS DISTINCT FROM txid_current()::text OR NOT COALESCE(anvil.execution_json_shape(selection,ARRAY['projectId','executionId','executionGeneration','assignmentRef','preparationRef','requestRef','controlGeneration']),false)
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(selection->'requestRef'),false) OR selection#>'{requestRef,version}' IS DISTINCT FROM '1'::jsonb
+  OR NOT COALESCE(anvil.execution_preparation_ref_valid(selection->'assignmentRef'),false) OR NOT COALESCE(anvil.execution_preparation_ref_valid(selection->'preparationRef'),false)
+  OR selection->'executionGeneration' IS DISTINCT FROM to_jsonb((selection->>'executionGeneration')::bigint) OR (selection->>'executionGeneration')::bigint NOT BETWEEN 1 AND 9007199254740991
+  OR selection->'controlGeneration' IS DISTINCT FROM to_jsonb((selection->>'controlGeneration')::bigint) OR (selection->>'controlGeneration')::bigint NOT BETWEEN 1 AND 9007199254740991
+  OR octet_length(anvil.fn01_json(selection))>2048 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED';END IF;
+ p=(selection->>'projectId')::uuid;rid=(selection#>>'{requestRef,id}')::uuid;
+ IF p IS NULL OR rid IS NULL OR (selection->>'executionId')::uuid IS NULL THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED';END IF;
+ command=jsonb_build_object('schemaVersion',1,'projectId',p,'commandId',rid,'clientId',c,'controlGeneration',selection->'controlGeneration','operation','readNormalUnderstandingResponse',
+  'targetId',selection->'executionId','expectedVersion',selection->'executionGeneration','baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('assignmentRef',selection->'assignmentRef','preparationRef',selection->'preparationRef'));
+ -- 기존 HUMAN/auth/project/control/등록 잠금 순서와 현재 정책을 원문 접근 전후에 재사용한다.
+ basis=anvil.fn09_normal_understanding_request_basis(s,a,c,command,policy,expected_tx);
+ SELECT * INTO STRICT hs FROM anvil.auth_sessions WHERE id=s AND user_id=a AND client_id=c;
+ SELECT count(*) INTO n FROM (SELECT id FROM anvil.commands WHERE project_id=p AND operation='readNormalUnderstandingResponse'
+  AND result_ref#>>'{data,snapshot,purpose}'='NORMAL_UNDERSTANDING_FIXED_RANGE_REQUEST' AND result_ref#>>'{data,ref,id}'=rid::text LIMIT 2) found;
+ IF n=0 THEN
+  -- 같은 권한/프로젝트 잠금 안에서 목적이 손상된 원 명령이나 고아 정착을 정상 부재로 숨기지 않는다.
+  IF EXISTS(SELECT 1 FROM anvil.commands candidate WHERE candidate.project_id=p
+   AND (candidate.result_ref#>>'{data,ref,id}'=rid::text OR candidate.result_ref#>>'{data,requestRef,id}'=rid::text OR candidate.result_ref->>'targetId'=rid::text)
+   AND (candidate.result_ref#>>'{data,status}'='NORMAL_UNDERSTANDING_RANGE_REQUESTED' OR candidate.result_ref#>'{data,snapshot,request,payload}' ? 'selection'
+    OR candidate.result_ref#>'{data,snapshot,sourceScope}' ? 'ranges'
+    OR EXISTS(SELECT 1 FROM anvil.project_storage_reservations cq WHERE cq.project_id=p AND cq.server_command_id=candidate.id
+     AND (cq.part_kind='FN09_FIXED_RANGE_REQUEST' OR cq.plan_json->>'purpose'='FN09_FIXED_RANGE_REQUEST_STORAGE')
+     AND (cq.id=rid OR cq.plan_json#>>'{requestRef,id}'=rid::text))))
+   OR EXISTS(SELECT 1 FROM anvil.project_storage_reservations WHERE project_id=p AND (
+    ((part_kind='FN09_FIXED_RANGE_REQUEST' OR plan_json->>'purpose'='FN09_FIXED_RANGE_REQUEST_STORAGE') AND (id=rid OR plan_json#>>'{requestRef,id}'=rid::text))
+    OR ((part_kind IN('FN09_RANGE_TRANSPORT','FN09_RANGE_RESULT') OR plan_json->>'purpose' IN('FN09_RANGE_TRANSPORT_STORAGE','FN09_RANGE_RESULT_STORAGE')) AND plan_json#>>'{rangeRequestRef,id}'=rid::text)))
+   OR EXISTS(SELECT 1 FROM anvil.execution_challenges WHERE project_id=p AND (snapshot_json#>>'{understandingRangeRequestRef,id}'=rid::text OR snapshot_json#>>'{understandingRangeResultBinding,rangeRequestRef,id}'=rid::text))
+   OR EXISTS(SELECT 1 FROM anvil.execution_receipts WHERE project_id=p AND snapshot_json#>>'{rangeRequestRef,id}'=rid::text)
+   OR EXISTS(SELECT 1 FROM anvil.normal_understanding_range_result_bodies WHERE project_id=p AND range_request_ref->>'id'=rid::text)
+   THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+  RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_NOT_FOUND';
+ END IF;IF n<>1 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+ SELECT * INTO STRICT cmd FROM anvil.commands WHERE project_id=p AND operation='readNormalUnderstandingResponse' AND result_ref#>>'{data,snapshot,purpose}'='NORMAL_UNDERSTANDING_FIXED_RANGE_REQUEST' AND result_ref#>>'{data,ref,id}'=rid::text;
+ ss=cmd.result_ref#>'{data,snapshot}';rf=cmd.result_ref#>'{data,ref}';request=selection-'controlGeneration';
+ IF cmd.actor_id IS DISTINCT FROM a OR cmd.client_id IS DISTINCT FROM c OR ss#>>'{requestedBy,sessionId}' IS DISTINCT FROM s::text
+  OR ss#>'{requestedBy,credentialGeneration}' IS DISTINCT FROM to_jsonb(hs.credential_generation)
+  OR selection->'executionId' IS DISTINCT FROM ss#>'{request,targetId}' OR selection->'executionGeneration' IS DISTINCT FROM ss#>'{request,expectedVersion}'
+  OR selection->'assignmentRef' IS DISTINCT FROM ss#>'{request,payload,assignmentRef}' OR selection->'preparationRef' IS DISTINCT FROM ss#>'{request,payload,preparationRef}'
+  THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED';END IF;
+ IF selection->'requestRef' IS DISTINCT FROM rf OR NOT COALESCE(anvil.fn09_normal_understanding_range_complete(cmd),false) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+ SELECT * INTO STRICT parent FROM anvil.execution_receipts WHERE project_id=p AND id=(ss#>>'{sourceScope,resultRef,id}')::uuid AND version=1;
+ SELECT * INTO STRICT cred FROM anvil.execution_receipts WHERE project_id=p AND id=(parent.snapshot_json#>>'{credentialRef,id}')::uuid AND version=1;
+ IF basis->'context' IS DISTINCT FROM parent.snapshot_json->'context' THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED';END IF;
+ ends=least((basis->>'expiresAt')::timestamptz,(ss->>'expiresAt')::timestamptz,(parent.snapshot_json->>'expiresAt')::timestamptz,
+  (cred.snapshot_json->>'expiresAt')::timestamptz,(cred.snapshot_json->>'storageExpiresAt')::timestamptz);
+ SELECT count(*) INTO n FROM (SELECT id FROM anvil.execution_challenges WHERE project_id=p AND version=1 AND snapshot_json#>>'{understandingRangeResultBinding,rangeRequestRef,id}'=rid::text LIMIT 2) found;
+ IF n>1 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+ IF n=0 THEN
+  IF EXISTS(SELECT 1 FROM anvil.execution_challenges WHERE project_id=p AND version=2 AND snapshot_json#>>'{understandingRangeResultBinding,rangeRequestRef,id}'=rid::text)
+   OR EXISTS(SELECT 1 FROM anvil.execution_receipts WHERE project_id=p AND snapshot_json->>'kind'='NORMAL_UNDERSTANDING_RANGE_RESULT' AND snapshot_json#>>'{rangeRequestRef,id}'=rid::text)
+   OR EXISTS(SELECT 1 FROM anvil.normal_understanding_range_result_bodies WHERE project_id=p AND range_request_ref->>'id'=rid::text)
+   OR EXISTS(SELECT 1 FROM anvil.project_storage_reservations WHERE project_id=p AND part_kind='FN09_RANGE_RESULT' AND plan_json#>>'{rangeRequestRef,id}'=rid::text)
+   THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+  answer=jsonb_build_object('status','PENDING_SOURCE','request',request);
+ ELSE
+  SELECT * INTO STRICT old FROM anvil.execution_challenges WHERE project_id=p AND version=1 AND snapshot_json#>>'{understandingRangeResultBinding,rangeRequestRef,id}'=rid::text;
+  ends=least(ends,(old.snapshot_json#>>'{publicChallenge,expiresAt}')::timestamptz);
+  SELECT * INTO STRICT q FROM anvil.project_storage_reservations WHERE project_id=p AND id=old.id;
+  IF old.snapshot_json#>'{understandingRangeResultBinding,rangeRequestRef}' IS DISTINCT FROM rf OR NOT COALESCE(anvil.fn09_normal_understanding_range_result_challenge_history(old),false)
+   OR NOT COALESCE(anvil.fn09_normal_understanding_range_result_complete(q),false) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+  SELECT * INTO v FROM anvil.execution_challenges WHERE project_id=p AND id=old.id AND version=2;
+  IF NOT FOUND THEN
+   IF EXISTS(SELECT 1 FROM anvil.execution_receipts WHERE project_id=p AND snapshot_json->>'kind'='NORMAL_UNDERSTANDING_RANGE_RESULT' AND snapshot_json#>>'{rangeRequestRef,id}'=rid::text)
+    OR EXISTS(SELECT 1 FROM anvil.normal_understanding_range_result_bodies WHERE project_id=p AND range_request_ref->>'id'=rid::text)
+    OR EXISTS(SELECT 1 FROM anvil.project_storage_reservations WHERE project_id=p AND part_key='fn09_range_result_store' AND plan_json#>>'{rangeRequestRef,id}'=rid::text)
+    THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+   answer=jsonb_build_object('status','PENDING_SOURCE','request',request);
+  ELSE
+   SELECT * INTO STRICT r FROM anvil.execution_receipts WHERE project_id=p AND id=(v.snapshot_json#>>'{consumption,resultRef,id}')::uuid AND version=1;
+   SELECT * INTO STRICT body FROM anvil.normal_understanding_range_result_bodies WHERE project_id=p AND id=r.id AND version=1;
+   SELECT * INTO STRICT q FROM anvil.project_storage_reservations WHERE project_id=p AND id=r.id;
+   IF (SELECT count(*) FROM anvil.execution_receipts WHERE project_id=p AND snapshot_json->>'kind'='NORMAL_UNDERSTANDING_RANGE_RESULT' AND snapshot_json#>>'{rangeRequestRef,id}'=rid::text)<>1
+    OR (SELECT count(*) FROM anvil.normal_understanding_range_result_bodies WHERE project_id=p AND range_request_ref->>'id'=rid::text)<>1 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+   IF r.snapshot_json->'rangeRequestRef' IS DISTINCT FROM rf OR r.snapshot_json->'context' IS DISTINCT FROM basis->'context'
+    OR NOT COALESCE(anvil.fn09_normal_understanding_range_result_historical(v,r,body.body_bytes),false)
+    OR NOT COALESCE(anvil.fn09_normal_understanding_range_result_complete(q),false) THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED';END IF;
+   ends=least(ends,(r.snapshot_json->>'expiresAt')::timestamptz);
+   answer=anvil.fn09_normal_understanding_range_response(request,jsonb_build_object('id',r.id,'version',1,'contentHash',r.content_hash),r.snapshot_json,convert_from(body.body_bytes,'UTF8')::jsonb,
+    to_jsonb(to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),to_jsonb(to_char(ends AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')));
+  END IF;
+ END IF;
+ last_basis=anvil.fn09_normal_understanding_request_basis(s,a,c,command,policy,expected_tx);
+ IF last_basis->'context' IS DISTINCT FROM basis->'context' THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED';END IF;
+ at=clock_timestamp();ends=least(ends,(last_basis->>'expiresAt')::timestamptz);
+ IF least((basis->>'expiresAt')::timestamptz,(last_basis->>'expiresAt')::timestamptz)<=at THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED';END IF;
+ IF ends<=at THEN RETURN jsonb_build_object('status','CURRENT_UNAVAILABLE','request',request);END IF;
+ IF answer->>'status'='RANGE_STORED' THEN answer=answer||jsonb_build_object('observedAt',to_char(at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'expiresAt',to_char(ends AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));END IF;
+ IF octet_length(anvil.execution_authority_canonical(answer))>2097152 THEN RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_RESPONSE_TOO_LARGE';END IF;
+ RETURN answer;
+END;$$;
+ALTER FUNCTION anvil.fn09_normal_understanding_range_current(uuid,uuid,uuid,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_range_current(uuid,uuid,uuid,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
 COMMIT;

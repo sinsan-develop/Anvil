@@ -134,7 +134,7 @@ test('range result marker-only/receipt-only/body-only writes have exact BEFORE a
  const shape=history.match(/execution_json_shape\(s,ARRAY\[([^\]]+)\]/)?.[1];assert.ok(shape);assert.doesNotMatch(shape,/'(?:body|text|parts|auth|bodyBase64|sdk|sessionId)'/);
  assert.match(shape,/'responseRef','partRefs','bodyHash','bodyBytes'/);
  const section=sql.slice(sql.indexOf('-- FN09 A §4.3:'));
- const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,14);
+ const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,16);
  for(const [,name,args] of helpers){
   const signature=name+'('+args!.split(',').filter(Boolean).map(x=>x.trim().split(/\s+/).at(-1)).join(',')+')';
   assert.ok(section.includes('ALTER FUNCTION anvil.'+signature+' OWNER TO anvil_v3_migrator;'),signature);
@@ -323,7 +323,7 @@ test('fixed range forward retains exact original discovery, current metadata, ch
   fn09_normal_understanding_consumption_valid:'0cae65df8c1ab09b5a33424a363fbe0de5784346471417e3f2df1dbce9b67f63',
   fn09_normal_understanding_result_pair_historical:'6767b3e8a31a300b40872e7187dd02eef2e2beb1aa91e26bb3069ffa4c559720',
   fn09_normal_understanding_result_store:'c2aa2d863f425e6f04a0f7f7ecc92b93f09b8bbf507b00f6b2e2d5b6e12e9d03'};
- for(const [name,digest] of Object.entries(original))assert.equal(createHash('sha256').update(definition(name).replace(/\r\n/g,'\n').replace(/ -- FN09_RANGE_RESULT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_RESULT_DISPATCH_END\n/,'').replace(" IF expected->>'purpose'='FIXED_RANGE' THEN RETURN anvil.fn09_normal_understanding_range_connector_current(token,b,signed_request_id,expected);END IF;\n",'')).digest('hex'),digest,name);
+ for(const [name,digest] of Object.entries(original))assert.equal(createHash('sha256').update(definition(name).replace(/\r\n/g,'\n').replace(/ -- FN09_RANGE_CURRENT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_CURRENT_DISPATCH_END\n/,'').replace(/ -- FN09_RANGE_RESULT_DISPATCH_BEGIN\n[\s\S]*? -- FN09_RANGE_RESULT_DISPATCH_END\n/,'').replace(" IF expected->>'purpose'='FIXED_RANGE' THEN RETURN anvil.fn09_normal_understanding_range_connector_current(token,b,signed_request_id,expected);END IF;\n",'')).digest('hex'),digest,name);
 });
 
 test('range connector current preserves auth SHARE then project lock, exact settled parent and HUMAN policy without auth lock upgrade',()=>{
@@ -332,6 +332,38 @@ test('range connector current preserves auth SHARE then project lock, exact sett
  assert.doesNotMatch(body,/fn01_active|fn09_normal_understanding_range_basis|fn09_normal_understanding_metadata_current|FOR UPDATE OF (?:hs|u|cl)|INSERT INTO|UPDATE anvil|DELETE FROM/);
  const discovery=definition('fn09_normal_understanding_discovery');assert.match(discovery,/expected->>'purpose'='FIXED_RANGE'/);
  assert.match(sql,/CREATE UNIQUE INDEX normal_understanding_range_challenge_once/);
+});
+
+test('고정 범위 HUMAN current는 원 명령/동일 HUMAN 세션과 현재 등록·정산·private 원문을 사전 사후 조회로만 검산한다',()=>{
+ const current=definition('fn09_normal_understanding_range_current');
+ for(const token of ["selection-'controlGeneration'",'expected_tx IS DISTINCT FROM txid_current()::text','request_basis(s,a,c,command,policy,expected_tx)',
+  "cmd.actor_id IS DISTINCT FROM a","cmd.client_id IS DISTINCT FROM c","requestedBy,sessionId","hs.credential_generation",'selection->\'requestRef\' IS DISTINCT FROM rf',
+  "selection->'assignmentRef'","selection->'preparationRef'","selection->'executionGeneration'",'range_complete(cmd)',"basis->'context' IS DISTINCT FROM parent.snapshot_json->'context'",
+  'LIMIT 2',"'PENDING_SOURCE'","'CURRENT_UNAVAILABLE'",'NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED','range_result_challenge_history(old)',
+  'range_result_historical(v,r,body.body_bytes)','range_result_complete(q)','INTO STRICT body','normal_understanding_range_result_bodies',"ends<=at",'last_basis'])assert.ok(current.includes(token),token);
+ assert.equal((current.match(/request_basis\(s,a,c,command,policy,expected_tx\)/g)??[]).length,2);
+ assert.ok(current.indexOf('request_basis(')<current.indexOf('SELECT count(*)'));
+ assert.ok(current.indexOf('range_result_historical')<current.indexOf('answer=anvil.fn09_normal_understanding_range_response'));
+ const absent=current.slice(current.indexOf('IF n=0 THEN'),current.indexOf("END IF;IF n<>1"));
+ for(const token of ["result_ref#>>'{data,ref,id}'=rid::text","result_ref#>>'{data,requestRef,id}'=rid::text","result_ref->>'targetId'=rid::text",
+  'project_storage_reservations',"plan_json#>>'{rangeRequestRef,id}'=rid::text",'execution_challenges','execution_receipts','normal_understanding_range_result_bodies'])assert.ok(absent.includes(token),token);
+ assert.equal((absent.match(/WHERE project_id=p/g)??[]).length,4);assert.match(absent,/candidate.project_id=p/);assert.match(absent,/cq.project_id=p/);assert.doesNotMatch(absent,/actor_id=|user_id=/);
+ for(const token of ["candidate.result_ref#>>'{data,status}'='NORMAL_UNDERSTANDING_RANGE_REQUESTED'","{data,snapshot,request,payload}' ? 'selection'","{data,snapshot,sourceScope}' ? 'ranges'",'cq.server_command_id=candidate.id',"part_kind='FN09_FIXED_RANGE_REQUEST'","FN09_FIXED_RANGE_REQUEST_STORAGE","FN09_RANGE_TRANSPORT_STORAGE","FN09_RANGE_RESULT_STORAGE"])assert.ok(absent.includes(token),token);
+ assert.ok(absent.indexOf('NORMAL_UNDERSTANDING_RANGE_INTEGRITY_FAILED')<absent.indexOf('NORMAL_UNDERSTANDING_RANGE_NOT_FOUND'));
+ assert.doesNotMatch(current,/INSERT INTO|UPDATE anvil|DELETE FROM|set_config|normal_page_verified|normal_request_verified|range_result_store\(/);
+ const dispatcher=definition('fn09_normal_understanding_metadata_current');assert.match(dispatcher,/selection->>'purpose'='FIXED_RANGE_CURRENT'.*range_current\(s,a,c,selection-'purpose',policy,expected_tx\)/);
+ for(const name of ['range_current','range_response']){assert.match(sql,new RegExp('REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_'+name+'\\([^;]+FROM PUBLIC,anvil_v3_app'));assert.doesNotMatch(sql,new RegExp('GRANT[^;]+(?:range_current|range_response)'));}
+});
+
+test('최종 HUMAN envelope의 정확 2MiB는 store/replay 입장과 deferred current에서 검산하고 역사 정산에는 이월하지 않는다',()=>{
+ const store=definition('fn09_normal_understanding_range_result_store'),current=definition('fn09_normal_understanding_range_result_current'),human=definition('fn09_normal_understanding_range_current');
+ for(const body of [store,current,human]){assert.match(body,/2097152/);assert.match(body,/execution_authority_canonical/);assert.match(body,/range_response/);}
+ assert.ok(store.indexOf('NORMAL_UNDERSTANDING_RANGE_RESPONSE_TOO_LARGE')<store.indexOf('SELECT * INTO previous'));
+ assert.ok(store.indexOf('NORMAL_UNDERSTANDING_RANGE_RESPONSE_TOO_LARGE')<store.indexOf('INSERT INTO anvil.project_storage_reservations'));
+ for(const name of ['range_result_historical','range_result_complete','range_result_plan','range_complete'])assert.doesNotMatch(definition('fn09_normal_understanding_'+name),/range_response|RESPONSE_TOO_LARGE/);
+ const response=definition('fn09_normal_understanding_range_response');
+ for(const key of ['status','request','resultRef','responseRef','partRefs','currentness','observedAt','expiresAt','selectionAvailable','body'])assert.ok(response.includes("'"+key+"'"),key);
+ assert.doesNotMatch(response,/token|credentialRef|binding|auth|sdk|sessionId/);
 });
 
 test('range transport has private purpose triggers, current admission and immutable historical bytes for separate issue/acquisition charges',()=>{

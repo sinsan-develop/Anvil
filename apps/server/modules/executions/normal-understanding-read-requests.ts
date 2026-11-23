@@ -101,6 +101,49 @@ function metadataProjection(raw:unknown,request:Record<string,unknown>,at:number
  }
  return v;
 }
+/** 원 영수증의 고정 refs와 같은 wire 형상을 POST 입장/명시 HUMAN 조회 양쪽에서 사용한다. */
+export function normalUnderstandingRangeCurrentProjection(request:unknown,resultRef:unknown,receipt:Record<string,any>,body:unknown,observedAt:string,expiresAt:string){
+ return {status:'RANGE_STORED',request,resultRef,responseRef:receipt.responseRef,partRefs:receipt.partRefs,currentness:'CURRENT',observedAt,expiresAt,selectionAvailable:true,body};
+}
+/** private 목적 RPC가 검산한 원문도 HTTP 경계에서 닫힌 형상/해시/순서를 다시 대조한다. */
+function rangeProjection(raw:unknown,request:Record<string,any>,at:number){
+ const v=cloneV1(raw),invalid=()=>fail('NORMAL_UNDERSTANDING_RANGE_UNKNOWN',503),full=(r:any)=>refV1(r)&&r.version===1;
+ if(!recordV1(v,['status','request'])&&!recordV1(v,['status','request','resultRef','responseRef','partRefs','currentness','observedAt','expiresAt','selectionAvailable','body']))return invalid();
+ if(!same(v.request,request))return invalid();
+ if(v.status==='PENDING_SOURCE'||v.status==='CURRENT_UNAVAILABLE'){if(!recordV1(v,['status','request']))return invalid();return v;}
+ if(v.status!=='RANGE_STORED'||v.currentness!=='CURRENT'||v.selectionAvailable!==true||!full(v.resultRef)||!full(v.responseRef)
+  ||!isoV1(v.observedAt)||!isoV1(v.expiresAt)||Date.parse(v.observedAt)>at||Date.parse(v.expiresAt)<=Math.max(at,Date.parse(v.observedAt)))return invalid();
+ const b=v.body;
+ if(!recordV1(b,['schemaVersion','kind','attribution','projectId','executionId','executionGeneration','requestRef','acquisitionRef','sourceRequestRef','sourceResultRef','contextBundleRef','initConfirmationRef','tailRef','firstSequence','lastSequence','beforeRef','afterRef','parts','wholeConversationComplete','executionAuthorized'])
+  ||b.schemaVersion!==1||b.kind!=='FIXED_RANGE_SELECTION'||b.attribution!=='SESSION_ONLY'||b.wholeConversationComplete!==false||b.executionAuthorized!==false
+  ||b.projectId!==request.projectId||b.executionId!==request.executionId||b.executionGeneration!==request.executionGeneration||!same(b.requestRef,request.requestRef)
+  ||!['requestRef','acquisitionRef','sourceRequestRef','sourceResultRef','initConfirmationRef','tailRef'].every(k=>full(b[k]))||!refV1(b.contextBundleRef)
+  ||!Number.isSafeInteger(b.firstSequence)||b.firstSequence<1||!Number.isSafeInteger(b.lastSequence)||b.lastSequence<b.firstSequence||b.lastSequence>10000
+  ||![b.beforeRef,b.afterRef].every(r=>r===null||full(r))||(b.firstSequence===1)!==(b.beforeRef===null)
+  ||!Array.isArray(b.parts)||!b.parts.length||b.parts.length>200||!Array.isArray(v.partRefs)||v.partRefs.length!==b.parts.length||hash(b)!==v.responseRef.contentHash)return invalid();
+ let sequence=b.firstSequence,block=0,total=0;const rows=new Set<string>(),seen=new Set<string>([v.resultRef.id,v.responseRef.id]);
+ if(seen.size!==2)return invalid();
+ const forbidden=[b.requestRef,b.acquisitionRef,b.sourceRequestRef,b.sourceResultRef,b.initConfirmationRef,b.tailRef];
+ for(const [i,p]of b.parts.entries()){
+  if(!recordV1(p,['outputRef','sequence','payloadDigest','blockIndex','kind','text','textHash'])||!full(p.outputRef)
+   ||typeof p.payloadDigest!=='string'||!/^[a-f0-9]{64}$/.test(p.payloadDigest)||p.kind!=='ASSISTANT_TEXT'||typeof p.text!=='string'||!p.text.isWellFormed()||contentHash(p.text)!==p.textHash
+   ||!Number.isSafeInteger(p.sequence)||!Number.isSafeInteger(p.blockIndex)||p.blockIndex<0||p.outputRef.id===b.initConfirmationRef.id)return invalid();
+  if(i&&p.sequence===sequence+1){sequence++;block=0;}if(p.sequence!==sequence||p.blockIndex!==block++)return invalid();
+  if(p.blockIndex===0){if(rows.has(p.outputRef.id))return invalid();rows.add(p.outputRef.id);}else{
+   const prior=b.parts[i-1];if(!same(prior.outputRef,p.outputRef)||prior.payloadDigest!==p.payloadDigest)return invalid();
+  }
+  const pr=v.partRefs[i];if(!full(pr)||pr.contentHash!==hash(p)||seen.has(pr.id)||forbidden.some(r=>r.id===pr.id))return invalid();seen.add(pr.id);
+  total+=Buffer.byteLength(p.text);if(total>2097152)return invalid();
+ }
+ if(sequence!==b.lastSequence||[b.beforeRef,b.afterRef].some(r=>r!==null&&rows.has(r.id))||[...seen].some(id=>rows.has(id))
+  ||forbidden.some(r=>r.id===v.responseRef.id||r.id===v.resultRef.id)
+  ||b.beforeRef?.id===b.initConfirmationRef.id&&!same(b.beforeRef,b.initConfirmationRef)||b.afterRef?.id===b.tailRef.id&&!same(b.afterRef,b.tailRef)
+  ||rows.has(b.tailRef.id)&&(!same(b.parts.at(-1).outputRef,b.tailRef)||b.afterRef!==null))return invalid();
+ const response=normalUnderstandingRangeCurrentProjection(request,v.resultRef,v,b,v.observedAt,v.expiresAt);
+ if(!same(response,v))return invalid();
+ if(Buffer.byteLength(canonicalJson(response))>2097152)fail('NORMAL_UNDERSTANDING_RANGE_RESPONSE_TOO_LARGE',413);
+ return response;
+}
 /** 실제 HUMAN 인증 transaction 안의 메타 탐색 요청만 저장한다.
  * FIRST/slot/init/tail은 미공급이다. 이 결과는 S2 선택 ticket이나 connector challenge가 아니다. */
 export class NormalUnderstandingReadRequests{
@@ -168,9 +211,16 @@ export class NormalUnderstandingReadRequests{
  }
  /** HUMAN current 메타 조회. 새 명령/nonce/정산을 만들지 않으며 원 거래 COMMIT 뒤에만 반환한다. */
  async current(token:string,csrf:string,raw:unknown){
+  return this.#current(token,csrf,raw,false);
+ }
+ /** 원 고정 범위의 명시적 HUMAN 조회. 자동 선택·검토·새 보관은 수행하지 않는다. */
+ async currentRange(token:string,csrf:string,raw:unknown){
+  return this.#current(token,csrf,raw,true);
+ }
+ async #current(token:string,csrf:string,raw:unknown,range:boolean){
   const selection=currentInput(raw),{controlGeneration,...request}=selection;
   let wall=Date.now(),mono=performance.now(),end=wall+30000,monoEnd=mono+30000;
-  const unknown=()=>fail('NORMAL_UNDERSTANDING_METADATA_UNKNOWN',503);
+  const unknown=()=>fail(range?'NORMAL_UNDERSTANDING_RANGE_UNKNOWN':'NORMAL_UNDERSTANDING_METADATA_UNKNOWN',503);
   const check=()=>{const w=Date.now(),m=performance.now();if(w<wall||m<mono||w>=end||m>=monoEnd
    ||Object.getPrototypeOf(this.#access)!==AccessRepository.prototype||Object.hasOwn(this.#access,'authenticated')||Object.hasOwn(this.#access,'authenticateInTransaction')
    ||AccessRepository.prototype.authenticated!==originalAuthenticated||AccessRepository.prototype.authenticateInTransaction!==originalAuthenticate)unknown();wall=w;mono=m;};
@@ -194,10 +244,10 @@ export class NormalUnderstandingReadRequests{
      await clock();await currentProjectController(db,actor,q);await clock();const policy=await authorizeMaterial(db,actor,q,true);await clock();
      if(policy.approvalRequired||policyRef!==undefined&&!same(policyRef,policy.ref))fail('PROJECT_OPERATION_DENIED',403);policyRef=policy.ref;
      const rows=(await db.query('SELECT anvil.fn09_normal_understanding_metadata_current($1,$2,$3,$4,$5,$6) AS projection',
-      [s.id,actor.actorId,actor.clientId,JSON.stringify(selection),JSON.stringify(policy.ref),tx])).rows;
-     const at=await clock(),v=metadataProjection(rows.length===1?rows[0]?.projection:null,request,at);
+      [s.id,actor.actorId,actor.clientId,JSON.stringify(range?{...selection,purpose:'FIXED_RANGE_CURRENT'}:selection),JSON.stringify(policy.ref),tx])).rows;
+     const at=await clock(),v=(range?rangeProjection:metadataProjection)(rows.length===1?rows[0]?.projection:null,request,at);
      const expires=Math.min(policy.validUntil,Date.parse(s.idleExpiresAt),Date.parse(s.absoluteExpiresAt),actor.reauthUntil!.getTime(),
-      v.status==='METADATA_STORED'?Date.parse(v.expiresAt):Infinity);
+      v.status===(range?'RANGE_STORED':'METADATA_STORED')?Date.parse(v.expiresAt):Infinity);
      // DB snapshot의 남은 기한에 응답 수거 시간이 더해지지 않도록 쿼리 직전 양 clock에 결박한다.
      if(!Number.isFinite(expires)||expires<=at)return unknown();end=Math.min(end,clockWall+expires-at);monoEnd=Math.min(monoEnd,clockMono+expires-at);check();
      return v;
@@ -205,8 +255,9 @@ export class NormalUnderstandingReadRequests{
     const first=await inspect();if(actorIdentity(await this.#access.authenticateInTransaction(db,token,csrf))!==identity)return unknown();
     const last=await inspect();
     if(first.status!==last.status)return unknown();
-    if(first.status==='METADATA_STORED'){
-     if(!same(first.resultRef,last.resultRef)||!same(first.metadata,last.metadata))return unknown();
+    if(first.status===(range?'RANGE_STORED':'METADATA_STORED')){
+     if(range){if(!same({...first,observedAt:null,expiresAt:null},{...last,observedAt:null,expiresAt:null}))return unknown();}
+     else if(!('metadata'in first)||!('metadata'in last)||!same(first.resultRef,last.resultRef)||!same(first.metadata,last.metadata))return unknown();
      last.expiresAt=new Date(Math.min(Date.parse(first.expiresAt),Date.parse(last.expiresAt))).toISOString();
     }
     check();return last;
@@ -215,6 +266,11 @@ export class NormalUnderstandingReadRequests{
    if(error instanceof AuthFailure&&error.statusCode<500)throw error;
    // PostgreSQL의 고정 목적 오류만 분류하며 DB 원문은 응답에 포함하지 않는다.
    if(error instanceof Error&&'code'in error&&error.code==='P0001'){
+    if(range){
+     if(error.message==='NORMAL_UNDERSTANDING_RANGE_NOT_FOUND')fail(error.message,404);
+     if(error.message==='NORMAL_UNDERSTANDING_RANGE_RESPONSE_TOO_LARGE')fail(error.message,413);
+     if(['NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_EXPIRED'].includes(error.message))fail('NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED',412);
+    }
     if(error.message==='NORMAL_UNDERSTANDING_METADATA_NOT_FOUND')fail(error.message,404);
     if(['NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_CURRENT_REQUIRED','NORMAL_UNDERSTANDING_REQUEST_EXPIRED'].includes(error.message))fail('NORMAL_UNDERSTANDING_METADATA_CURRENT_REQUIRED',412);
     if(error.message==='PROJECT_OPERATION_DENIED'||error.message==='PROJECT_CONTROL_REQUIRED')fail(error.message,403);

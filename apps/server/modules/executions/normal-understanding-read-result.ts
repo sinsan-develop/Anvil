@@ -9,6 +9,7 @@ import {executionTarget,normalUnderstandingRangeTarget,verifyNormalCommandPagePr
 import {original,originalRange,originalRangeResult,readCurrent} from './normal-exchange-challenge.ts';
 import {normalRequestBearerDigest,requestCredential} from './normal-request-challenge.ts';
 import {readPacket} from './normal-command-pages.ts';
+import {normalUnderstandingRangeCurrentProjection} from './normal-understanding-read-requests.ts';
 
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
@@ -327,6 +328,11 @@ export class NormalUnderstandingReadResult {
    if(Buffer.byteLength(canonicalJson(receipt))>65536)fail('INPUT_INVALID',400);
    result={ref,receipt};consumed={...old.snapshot_json,sequence,previousRef:frame.challengeRef,consumption:{resultRef:ref,packetHash:receipt.packetHash,consumedAt:receipt.observedAt}};
   }
+  const currentRequest={projectId:source.context.projectId,executionId:source.context.executionId,executionGeneration:source.context.executionGeneration,
+   assignmentRef:source.context.assignmentRef,preparationRef:source.context.preparationRef,requestRef:source.requestRef};
+  const humanResponse=normalUnderstandingRangeCurrentProjection(currentRequest,result!.ref,result!.receipt,input.value,result!.receipt.observedAt,result!.receipt.expiresAt);
+  // 원문뿐 아니라 고정 refs를 포함한 최종 HUMAN 응답 전체의 실제 바이트를 제한한다.
+  if(Buffer.byteLength(canonicalJson(humanResponse))>2097152)fail('NORMAL_UNDERSTANDING_RANGE_RESPONSE_TOO_LARGE',413);
   const raw=Buffer.from(input.text);
   try{
    await db.query("SELECT set_config('anvil.normal_page_verified',txid_current()::text||':'||$1||':'||$2,true)",[result!.ref.contentHash,token]);

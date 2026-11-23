@@ -9,11 +9,12 @@ import {normalUnderstandingRangeChallengeBytes,normalUnderstandingRangeProofByte
 import {publicKeyFingerprint} from '../../../apps/server/modules/connections/registration-proof.ts';
 import {readNormalUnderstandingDiscovery} from '../../../apps/connector/runtime/normal-understanding-response-source.ts';
 import {readPreparedUnderstandingResult,frameUnderstandingResult} from '../../../apps/connector/runtime/normal-credential-bootstrap-client.ts';
+import {normalUnderstandingRangeCurrentProjection} from '../../../apps/server/modules/executions/normal-understanding-read-requests.ts';
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),copy=<T>(v:T):T=>JSON.parse(canonicalJson(v));
 const enabled={mode:'NORMAL_PROTECTED',purpose:'FN09_DISCOVERY_METADATA'};
 
 /** 실제 HTTP handler/서명 검산을 사용하는 RAM ledger다. native 파일·SQL/ACL/정산 실행 증거가 아니다. */
-function fixture(option:unknown=enabled,configure:{synthetic?:boolean;wrongPool?:boolean;wrongOrigin?:boolean;rangeResult?:unknown;rangeAcquisition?:boolean;contextVersion?:number;blocks?:1|2}={}){
+function fixture(option:unknown=enabled,configure:{synthetic?:boolean;wrongPool?:boolean;wrongOrigin?:boolean;rangeResult?:unknown;rangeAcquisition?:boolean;contextVersion?:number;blocks?:1|2;texts?:string[]}={}){
  const ref=()=>({id:randomUUID(),version:1,contentHash:hash(randomUUID())});
  const pid=randomUUID(),cid=randomUUID(),eid=randomUUID(),grant=ref(),credential=ref(),start=Date.parse('2026-11-22T01:00:00Z'),origin='https://synthetic.invalid';
  const pair=generateKeyPairSync('ec',{namedCurve:'prime256v1'}),spki=pair.publicKey.export({format:'der',type:'spki'}).toString('base64url');
@@ -34,6 +35,20 @@ function fixture(option:unknown=enabled,configure:{synthetic?:boolean;wrongPool?
   if(sql==='BEGIN'){const previous=lock;lock=new Promise<void>(r=>unlock=r);await previous;pending=copy(rows);rs=copy(receipts);bs=new Map([...bodies].map(([k,v])=>[k,Buffer.from(v)]));used=state.used;return result([],'BEGIN');}
   if(sql==='COMMIT'){rows=pending;receipts=rs;bodies=bs;state.privateBodies=bs.size;state.rangeStores+=rangeWrites;state.used=used;unlock();state.onCommit();if(state.cancelOnCommit)state.abort();return result([],state.commitUnknown?'':'COMMIT');}
   if(sql==='ROLLBACK'){unlock();return result([],state.rollbackUnknown?'':'ROLLBACK');}
+  // HUMAN endpoint도 실제 AccessRepository/정책을 사용한다. private SQL 함수의 본문 조회만 같은 RAM 원장을 읽는 대역이다.
+  if(sql.startsWith('SELECT s.*,u.id AS uid'))return result(a[0]===contentHash('h'.repeat(43))?[{id:snapshot.requestedBy.sessionId,uid:snapshot.requestedBy.userId,client_id:command.clientId,current_generation:1,credential_generation:1,user_status:'ACTIVE',user_revoked_at:null,client_revoked_at:null,revoked_at:null,
+   idle_expires_at:new Date('2099-01-01'),absolute_expires_at:new Date('2099-01-01'),reauth_until:new Date('2099-01-01'),csrf_digest:contentHash('c'.repeat(43)),server_owner:false}]:[]);
+  if(sql.startsWith('SELECT p.id,p.archived_at'))return result([{id:pid,participation:'OWNER',archived_at:null}]);
+  if(sql.startsWith('SELECT * FROM anvil.project_control'))return result([{actor_id:snapshot.requestedBy.userId,client_id:command.clientId,generation:1,revoked_at:null}]);
+  if(sql.includes('FROM anvil.permission_policies')){const value={rules:[{ruleId:'ram-human-range',subjectRef:{kind:'HUMAN',userId:snapshot.requestedBy.userId},operations:['readNormalUnderstandingResponse'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:state.denied?'DENY':'AUTO',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'}],reason:'RAM',reviewRefs:[]};return result([{id:snapshot.policyRef.id,head_version:1,rules_json:value.rules,reason:value.reason,review_refs:value.reviewRefs,content_hash:hash(value),created_at:new Date(state.now)}]);}
+  if(sql.includes('txid_current()::text AS transaction_id'))return result([{at:new Date(state.now),transaction_id:'17'}]);
+  if(sql.includes('fn09_normal_understanding_metadata_current')){
+   const selection=JSON.parse(a[3]);assert.equal(selection.purpose,'FIXED_RANGE_CURRENT');assert.deepEqual(selection.requestRef,state.rangeRef);
+   const {purpose:_,controlGeneration:__,...humanRequest}=selection;
+   const r=rs.find(x=>x.snapshot_json.kind==='NORMAL_UNDERSTANDING_RANGE_RESULT'&&x.snapshot_json.rangeRequestRef.id===selection.requestRef.id),raw=r&&bs.get(r.id);
+   if(!r||!raw||hash(r.snapshot_json)!==r.content_hash||contentHash(raw)!==r.snapshot_json.responseRef.contentHash)throw Error('RAM_INCOMPLETE_BODY');
+   return result([{projection:normalUnderstandingRangeCurrentProjection(humanRequest,{id:r.id,version:1,contentHash:r.content_hash},r.snapshot_json,JSON.parse(raw.toString()),new Date(state.now).toISOString(),r.snapshot_json.expiresAt)}]);
+  }
   if(sql.includes('SET LOCAL')||sql.includes('set_config'))return result();
   if(sql.includes('normal_request_credential'))return result(a[0]===token?[{project_id:pid,credential_ref:state.credentialRef,expires_at:new Date(start+240000)}]:[]);
   if(sql.includes('normal_exchange_current'))return result(state.denied?[]:[{binding,spki,deadline:new Date(start+240000),observed_at:new Date(state.now),budget_ref:budget.ref,budget_policy:policy}]);
@@ -112,16 +127,20 @@ function fixture(option:unknown=enabled,configure:{synthetic?:boolean;wrongPool?
  const body=(acq:any)=>({schemaVersion:1,kind:'DISCOVERY_METADATA',metadata:{attribution:'SESSION_ONLY',projectId:pid,executionId:eid,executionGeneration:1,requestRef:human,acquisitionRef:acq.proofResultRef,contextBundleRef:context.contextBundleRef,initConfirmationRef:ref(),tailRef:ref(),ranges:[{outputRef:ref(),sequence:2,payloadDigest:hash('payload'),textBlocks:1,textBytes:8}],wholeConversationComplete:false,executionAuthorized:false}});
  async function ready(){const acq=await acquire(),value=body(acq),r=request('POST',base+'/'+human.id+'/result',value),issued=await issue(r);assert.equal(issued.statusCode,200,issued.body);return{value,r,issued:issued.json(),frame:packet(r,issued.json())};}
  async function rangeReady(issuePost=true){
-  const original=await acquire(),m=body(original).metadata;m.ranges[0]!.textBlocks=configure.blocks??1;const selection={requestRef:human,resultRef:{...ref(),contentHash:hash({kind:'RAM_CURRENT_METADATA',metadata:m})},initConfirmationRef:m.initConfirmationRef,tailRef:m.tailRef,firstSequence:2,lastSequence:2,ranges:m.ranges};
+  const original=await acquire(),m=body(original).metadata,texts=configure.texts??(configure.blocks===2?['RAM ','text']:['RAM text']);m.ranges[0]!.textBlocks=texts.length;m.ranges[0]!.textBytes=texts.reduce((n,s)=>n+Buffer.byteLength(s),0);const selection={requestRef:human,resultRef:{...ref(),contentHash:hash({kind:'RAM_CURRENT_METADATA',metadata:m})},initConfirmationRef:m.initConfirmationRef,tailRef:m.tailRef,firstSequence:2,lastSequence:2,ranges:m.ranges};
   // 보호 SQL current/정산의 RAM 대역은 이 원 metadata를 가진 HUMAN 범위 요청을 반환한다. 실제 PG 이력 증거는 아니다.
   const requestBody={...command,commandId:randomUUID(),payload:{...command.payload,selection}},ss={schemaVersion:1,purpose:'NORMAL_UNDERSTANDING_FIXED_RANGE_REQUEST',request:requestBody,requestedBy:snapshot.requestedBy,policyRef:snapshot.policyRef,state:'PENDING_SOURCE',sourceScope:selection,createdAt:iso(0),expiresAt:iso(30000)};
   state.rangeSnapshot=ss;state.rangeRef={...ref(),contentHash:hash(ss)};state.rangeSelection=selection;
   const r=request('GET',base+'/range'),issued=await issue(r);assert.equal(issued.statusCode,200,issued.body);const acqReply=await send('GET',base+'/range',packet(r,issued.json()));assert.equal(acqReply.statusCode,200,acqReply.body);const acq=acqReply.json();
-  const parts=(configure.blocks===2?['RAM ','text']:['RAM text']).map((text,blockIndex)=>({outputRef:selection.ranges[0]!.outputRef,sequence:2,payloadDigest:selection.ranges[0]!.payloadDigest,blockIndex,kind:'ASSISTANT_TEXT',text,textHash:contentHash(text)}));state.rangeParts=parts;
+  const parts=texts.map((text,blockIndex)=>({outputRef:selection.ranges[0]!.outputRef,sequence:2,payloadDigest:selection.ranges[0]!.payloadDigest,blockIndex,kind:'ASSISTANT_TEXT',text,textHash:contentHash(text)}));state.rangeParts=parts;
   const value={schemaVersion:1,kind:'FIXED_RANGE_SELECTION',attribution:'SESSION_ONLY',projectId:pid,executionId:eid,executionGeneration:1,requestRef:state.rangeRef,acquisitionRef:acq.proofResultRef,sourceRequestRef:selection.requestRef,sourceResultRef:selection.resultRef,contextBundleRef:context.contextBundleRef,initConfirmationRef:selection.initConfirmationRef,tailRef:selection.tailRef,firstSequence:2,lastSequence:2,beforeRef:selection.initConfirmationRef,afterRef:selection.tailRef,parts,wholeConversationComplete:false,executionAuthorized:false};
   const post=request('POST',base+'/'+state.rangeRef.id+'/result',value);if(!issuePost)return {value,r:post,issued:null,frame:null,discovery:original};const ch=await issue(post);assert.equal(ch.statusCode,200,ch.body);return {value,r:post,issued:ch.json(),frame:packet(post,ch.json()),discovery:original};
  }
- return{app,state,path,base,human,context,binding,request,issue,packet,send,acquire,body,ready,rangeReady,headers,rows:()=>rows,receipts:()=>receipts,bodies:()=>bodies};
+ const readRange=()=>{
+  const r=state.rangeRef,q=new URLSearchParams({controlGeneration:'1',executionGeneration:'1',requestVersion:'1',requestHash:r.contentHash,assignmentId:context.assignmentRef.id,assignmentVersion:String(context.assignmentRef.version),assignmentHash:context.assignmentRef.contentHash,preparationId:context.preparationRef.id,preparationVersion:String(context.preparationRef.version),preparationHash:context.preparationRef.contentHash});
+  return app.inject({method:'GET',url:`/api/v1/projects/${pid}/executions/${eid}/understanding-response-read-requests/${r.id}/range-current?${q}`,headers:{host:'synthetic.invalid',cookie:'__Host-anvil.sid='+'h'.repeat(43),'x-anvil-csrf':'c'.repeat(43)}});
+ };
+ return{app,state,path,base,human,context,binding,request,issue,packet,send,acquire,body,ready,rangeReady,headers,readRange,rows:()=>rows,receipts:()=>receipts,bodies:()=>bodies};
 }
 
 test('TS discovery reader canonical bytes and purpose frame cross actual signed HTTP custody; native provenance remains synthetic',async()=>{
@@ -274,6 +293,27 @@ test('missing purpose SQL or connection has safe503 and no fallback nonce, resul
 });
 
 const rangeResultEnabled={mode:'NORMAL_PROTECTED',purpose:'FN09_FIXED_RANGE_SELECTION'};
+test('고정 범위 200 parts의 POST는 수용 크기여도 HUMAN 전체 응답 +1은 소비·보관·정산 전 거절하고 정확 경계는 재조회 가능하다',async()=>{
+ const shape=(f:ReturnType<typeof fixture>,value:any)=>{
+  const fixed={id:'00000000-0000-4000-8000-000000000000',version:1,contentHash:'a'.repeat(64)},receipt={responseRef:fixed,partRefs:value.parts.map(()=>fixed)};
+  return normalUnderstandingRangeCurrentProjection({projectId:f.binding.projectId,executionId:f.binding.executionId,executionGeneration:1,assignmentRef:f.context.assignmentRef,preparationRef:f.context.preparationRef,requestRef:value.requestRef},fixed,receipt,value,'2026-11-22T01:00:00.000Z','2026-11-22T01:00:30.000Z');
+ };
+ const base=fixture(null,{rangeAcquisition:true,rangeResult:rangeResultEnabled,texts:Array(200).fill('x')});let overhead:number;
+ try{const t=await base.rangeReady(false);overhead=Buffer.byteLength(canonicalJson(shape(base,t.value)))-200;}finally{await base.app.close();}
+ for(const extra of [0,1]){
+  const texts=['x'.repeat(2097152-overhead!-199+extra),...Array(199).fill('x')],f=fixture(null,{rangeAcquisition:true,rangeResult:rangeResultEnabled,texts});
+  try{const t=await f.rangeReady(),before=f.state.used;assert.ok(t.frame);assert.equal(t.value.parts.length,200);assert.equal(Buffer.byteLength(canonicalJson(shape(f,t.value))),2097152+extra);
+   assert.ok(Buffer.byteLength(canonicalJson(t.value))+Buffer.byteLength(canonicalJson(t.frame))<2097152,'실제 POST+proof는 기존 상한 안이다');
+   const reply=await f.send('POST',t.r.target.path,t.frame,t.value);assert.equal(reply.statusCode,extra?413:200,reply.body.slice(0,200));
+   if(extra){assert.equal(reply.json().code,'NORMAL_UNDERSTANDING_RANGE_RESPONSE_TOO_LARGE');assert.equal(f.state.rangeStores,0);assert.equal(f.state.rangeRpcs,0);assert.equal(f.bodies().size,0);assert.equal(f.state.used,before);const challengeId=t.frame.challengeRef.id;assert.equal(f.rows().filter(r=>r.id===challengeId&&r.version===2).length,0);}
+   else{const saved=f.receipts().find(r=>r.snapshot_json.kind==='NORMAL_UNDERSTANDING_RANGE_RESULT');assert.ok(saved);const value=normalUnderstandingRangeCurrentProjection((shape(f,t.value) as any).request,{id:saved.id,version:1,contentHash:saved.content_hash},saved.snapshot_json,t.value,saved.snapshot_json.observedAt,saved.snapshot_json.expiresAt);
+    assert.equal(Buffer.byteLength(canonicalJson(value)),2097152);assert.ok(f.bodies().get(saved.id)?.equals(Buffer.from(canonicalJson(value.body))));assert.equal(f.state.rangeStores,1);
+    const human=await f.readRange();assert.equal(human.statusCode,200,human.body.slice(0,200));assert.equal(human.headers['cache-control'],'no-store');assert.equal(Buffer.byteLength(human.body),2097152);assert.deepEqual(human.json(),value);
+    const used=f.state.used,replay=await f.send('POST',t.r.target.path,t.frame,t.value);assert.equal(replay.statusCode,200,replay.body);assert.equal(f.state.rangeStores,1);assert.equal(f.state.used,used);
+   }
+  }finally{await f.app.close();}
+ }
+});
 test('FN09 범위 목적 handler는 원 bytes를 분리 보관하고 COMMIT 응답 유실 재확인에서 원 refs·정산을 유지한다 · RAM PG',async()=>{
  for(const mode of ['stored','lost','context4','rangeOnly'] as const){const f=fixture(mode==='rangeOnly'?null:enabled,{rangeAcquisition:true,rangeResult:rangeResultEnabled,contextVersion:mode==='context4'?4:1,blocks:2});try{
   const t=await f.rangeReady(),before=f.state.used;assert.equal(f.state.rangeIssueCharges,1);assert.equal(f.state.rangeStores,0);
