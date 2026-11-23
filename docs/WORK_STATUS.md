@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN09 장기 원자료 START 검수:** Main이 807f71da에서 앞선 25초 추가 runner 한도에 걸린 원자료 검사 그룹 네 개를 정본과 같은 추가 한도 없는 별도 Node 실행으로 검증했다. domain INSERT 8곳 원자 rollback, 두 APPROVE의 실행 ID·writer 중복 소비 방지, quota 미확인·상한·불명·과대 settle의 rollback, exact8 성공 뒤 같은 요청의 추가 효과 0까지 16/16 실패·취소·skip 0(`f49719`, 약 192초). 직전 별도 원자료 두 사례 결과(`19f4c3`)와 중복 합산하지 않는다. 코드·시험 수정 0이며 장기 파일 전체를 한 번의 PASS로 표시하지 않는다. 실제 PostgreSQL·Windows·Agent 및 FN08 PRESPAWN 결정은 남아 있다.
+
 - **FN09 WORK·이력 읽기 회귀 검수:** `baseline_predispatch_task_review`가 선택적 정상 세션이 없는 이력 패널의 render 오류를 수정했다. 원 세션·client·transport·권한과 명시 조회 전 I/O 0은 유지한다. 정적 시험의 읽기 전용 native 메서드 범위를 바로 다음 SDK 메서드 선언에서 끝내 기존 금지 단언을 보존했다. 또 원자료 START rollback·명시 재시도 시험에서 실제 실행 시간 때문에 합성 세션이 만료되는 문제를 해당 시험의 Date로만 분리했다. 제품 인증 TTL, 단조 시계, 만료 음성, rollback과 동일 명령의 재소비 단언은 유지한다. 최초 FN09/UI04/UI08 묶음(`f63472`)은 추가 25초 제한을 넘긴 원자료 장기 사례와 정적·화면 실패가 있었으며 전체 통과로 계산하지 않는다. Main의 장기 파일 제외 묶음 715/715(`b1426d`), 작성자 인접 55/55(`ccdec0`), 별도 runner 제한 없는 원자료 두 사례 2/2(`19f4c3`), Main root 타입·diff exit 0(`289636`), 독립 C0/I0/M0. 제품 1개·시험 2개, 실제 PostgreSQL·Windows·Agent와 전체 장기 원자료 시험 파일은 미검증이다. FN08 PRESPAWN 권위 결정은 대기 중이다.
 
 - **Stage B 병렬 화면 시험 검수 복구:** `baseline_predispatch_task_review`가 UI01 참여권한·UI10 확정 영수증 시험의 이벤트 루프 반복 횟수 대기를 실제 요청·해시 완료와 부모 상태·화면 조건으로 대체했다. 원 digest는 시험 또는 fixture 정리에서 복원한다. 독립 검수에서 UI10 무한 대기 가능성을 지적해 여섯 시험에 시험 전용 15초 종료 한도를 명시했다. 늦은 200/401, ABA, `UNKNOWN`, 요청 수·권한 검산과 제품 시간 한도는 보존했다. Main 최종 4-worker 단위 531/531 실패/skip 0(`6309e5`), 작성자 plain 두 파일 11/11(`cb555f`), Main root 타입 exit 0(`c391ec`), 독립 최종 C0/I0/M0. 변경 시험 2개, 제품·권한·설정 변경 0. 실제 브라우저·PostgreSQL·서비스와 FN08 PRESPAWN는 여전히 별도 검증 또는 결정이 필요하다.
