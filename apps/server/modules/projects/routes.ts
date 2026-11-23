@@ -245,7 +245,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const connectorRegistrations = new ProjectConnectorRegistrations(options.repository);
   const registrationReads=new ProjectRegistrationReads(options.repository.installationId),registrationCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('HOST_TRUST_REGISTRATIONS:'+value));
   const normalInstructions=normalInstruction?new NormalInstructionCommands(options.repository,normalInstruction,new NormalInstructionSource(conversations),limitPolicies):undefined;
-  const normalReviews=normalUnderstandingReview?new NormalUnderstandingReviews(options.repository):null;
+  const normalReviews=normalUnderstandingReview?new NormalUnderstandingReviews(options.repository,normalUnderstandingReview):null;
   const normalStops=normalStop?new NormalStopCommands(options.repository):null,stopTargets=normalStop?new NormalStopTargets(options.repository):null;
   const normalRevocations=normalGrantRevocation?new NormalGrantRevocations(options.repository,limitPolicies):null;
   const normalQueue=normalExecution?new NormalInitialExecution(options.repository,{preparations:executionPreparations,contexts,definitions:connectionDefinitions,environments,sessions:responsibleSessions,registrations:registrationReads},normalExecution):undefined;

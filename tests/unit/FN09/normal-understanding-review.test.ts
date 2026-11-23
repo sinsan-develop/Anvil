@@ -16,7 +16,7 @@ const approvalRef=(n:number)=>({id:approvalId(n),version:1,contentHash:'a'.repea
 function reviewPayload(){return{bundleRef:approvalRef(10),responseRef:approvalRef(11),subjectBindingRef:approvalRef(12),criteriaVersion:1,items:codes.map(code=>({code,sourceRefs:[approvalRef(40)],responsePartRefs:[approvalRef(42)],judgement:'MATCH',reason:'원문 응답 대조'})),reason:'별도 사람 판단'};}
 const reviewCommand=(payload=reviewPayload()):any=>({schemaVersion:1,projectId:approvalPid,commandId:approvalId(30),clientId:approvalActor.clientId,controlGeneration:1,operation:'reviewUnderstanding',targetId:approvalId(70),expectedVersion:3,baselineRefs:[],approvalRef:null,payload});
 function reviewRule(disposition='REQUIRE_APPROVAL'){return{ruleId:'review',subjectRef:{kind:'HUMAN',userId:approvalActor.actorId},operations:['reviewUnderstanding','requestApproval','decideApproval'],targetScopes:[{kind:'PROJECT',projectId:approvalPid}],disposition,limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'};}
-function approvalFixture(){
+function approvalFixture(append=false){
  const state={calls:0,driftAt:Infinity,currentUnavailable:false,commitUnknown:false,authRevoked:false,memberRevoked:false,memberRole:'OWNER',revokeAfterHistory:false,historyDelay:0,historyCalls:0,releases:[] as boolean[],trace:[] as string[]};let backup:any,committed=false;
  let data:any={commands:[],receipts:[],audits:[],requests:[],decisions:[],consumptions:[],candidates:[],preparations:[],notifications:[],reviews:[]};
  const at=new Date();let clock=at;const live:any={...approvalActor,authSession:{id:approvalId(80),idleExpiresAt:'2099-01-01T00:00:00.000Z',absoluteExpiresAt:'2099-01-01T00:00:00.000Z'}};
@@ -38,7 +38,7 @@ function approvalFixture(){
     state.historyCalls++;assert.equal(p[4],null);assert.deepEqual(Object.keys(selection).sort(),['purpose','projectId','executionId','executionGeneration'].sort());
     if(state.memberRevoked)throw Object.assign(Error('NOT_FOUND'),{code:'P0001'});
     const found=data.reviews.filter((v:any)=>v.project_id===selection.projectId&&v.execution_id===selection.executionId&&v.generation===selection.executionGeneration);
-    assert.ok(found.length<=1,'normal history is exactly zero or one');
+    assert.ok(found.length<=1000,'normal history is bounded');found.sort((a:any,b:any)=>a.version-b.version);
     const items=found.map((v:any)=>{const h=data.commands.find((h:any)=>h.id===v.command_id),receipt=data.receipts.find((r:any)=>r.command_id===h?.id),audit=data.audits.find((r:any)=>r.command_id===h?.id);assert.ok(h&&receipt&&audit);assert.equal(v.content_hash,H(v.snapshot_json));assert.deepEqual(h.result_ref.data,{status:'NORMAL_UNDERSTANDING_REVIEWED',ref:{id:v.id,version:v.version,contentHash:v.content_hash},snapshot:v.snapshot_json});return {ref:{id:v.id,version:v.version,contentHash:v.content_hash},snapshot:v.snapshot_json};});
     if(state.revokeAfterHistory)state.memberRevoked=true;
     if(state.historyDelay)clock=new Date(clock.getTime()+state.historyDelay);
@@ -77,17 +77,21 @@ function approvalFixture(){
   throw Error('UNEXPECTED_PREPARE_QA_QUERY '+sql.slice(0,140));
  }};
  const atomic=async(fn:()=>Promise<any>)=>{const before=structuredClone(data);try{return await fn();}catch(e){data=before;throw e;}};
- const access=new AccessRepository({connect:async()=>Object.assign(db,{release:(e?:Error)=>state.releases.push(!!e)})} as any,{installationId:approvalPid,key:randomBytes(32)});
+ // 한 연결 RAM pool은 동일 프로젝트의 겹친 거래를 직렬화한다. 실제 PG 잠금 증거는 아니다.
+ let lease=Promise.resolve();
+ const access=new AccessRepository({connect:async()=>{const previous=lease;let unlock!:()=>void;lease=new Promise<void>(resolve=>{unlock=resolve;});await previous;let released=false;return{query:db.query,release:(e?:Error)=>{assert.equal(released,false);released=true;state.releases.push(!!e);unlock();}};}} as any,{installationId:approvalPid,key:randomBytes(32)});
  const policies=new ProjectPolicyRepository(access),approvals=new ProjectApprovals();
- const preparations=new NormalUnderstandingReviews(access);
+ const preparations=new NormalUnderstandingReviews(access,append?{mode:'NORMAL_PROTECTED',purpose:'FN09_NORMAL_FIRST_REVIEW',appendPurpose:'FN09_NORMAL_REVIEW_APPEND'}:undefined);
  const scope={operation:'reviewUnderstanding',targetRef:null,expectedVersion:3,payloadHash:H(input),baselineRefs:[],environmentRef:null,sourceScopes:[],limitsRef:null,requestedSubjectRef:{kind:'HUMAN',userId:approvalActor.actorId,clientId:approvalActor.clientId},controlGeneration:1};
  const details:any={candidateCommandId:approvalId(30),actionScope:scope,reason:'준비본 내용 검토',risks:{data:'자료 보존',security:'실권한 없음',cost:'호출 없음',interruption:'없음',unverified:'능력 예산 미검증'},rollback:{method:'전부 rollback',limitations:'실행 안함',evidenceRefs:[]},expiresAt:'2098-01-01T00:00:00.000Z'};
  const request:any={...reviewCommand(),commandId:approvalId(31),operation:'requestApproval',targetId:null,expectedVersion:0,payload:{details,candidatePayload:reviewCommand(input)}};
  const run=(c:any,handler:any)=>policies.command('t'.repeat(43),'c'.repeat(43),c,handler);
  const ask=()=>run(request,(d:any,a:any,p:any)=>approvals.request(d,a,request,p));
  const decide=(rid:string,decision='APPROVE')=>{const c:any={...reviewCommand(),commandId:approvalId(32),operation:'decideApproval',targetId:rid,expectedVersion:1,payload:{requestId:rid,expectedVersion:1,scopeDigest:H(scope),decision,reason:'별도 사람 결정'}};return run(c,(d:any,a:any,p:any)=>approvals.decide(d,a,c,p));};
+ const askFor=(candidate:any)=>{const actionScope={...scope,payloadHash:H(candidate.payload)},q:any={...request,commandId:approvalId(400+data.requests.length),payload:{details:{...details,candidateCommandId:candidate.commandId,actionScope},candidatePayload:{...candidate,approvalRef:null}}};return run(q,(d:any,a:any,p:any)=>approvals.request(d,a,q,p));};
+ const decideFor=(rid:string)=>{const r=data.requests.find((r:any)=>r.id===rid),q:any={...reviewCommand(),commandId:approvalId(500+data.decisions.length),operation:'decideApproval',targetId:rid,expectedVersion:1,payload:{requestId:rid,expectedVersion:1,scopeDigest:r.scope_digest,decision:'APPROVE',reason:'후속 판단에 대한 별도 명시 승인'}};return run(q,(d:any,a:any,p:any)=>approvals.decide(d,a,q,p));};
  const store=(c:any)=>preparations.command('t'.repeat(43),'c'.repeat(43),c);
- return{state,access,db,actor:live,input,control,policyRef,policyRow,details,request,approvals,preparations,ask,decide,store,atomic,run,get data(){return data;},advance:(at:Date)=>{clock=at;},fail:(prefix:string)=>{failAt=prefix;}};
+ return{state,access,db,actor:live,input,control,policyRef,policyRow,details,request,approvals,preparations,ask,decide,askFor,decideFor,store,atomic,run,get data(){return data;},advance:(at:Date)=>{clock=at;},fail:(prefix:string)=>{failAt=prefix;}};
 }
 
 const enabled={mode:'NORMAL_PROTECTED',purpose:'FN09_NORMAL_FIRST_REVIEW'} as const;
@@ -110,7 +114,7 @@ test('normal current drift/INSERT 실패는 기존 승인 소비·C/A/U까지 ro
 test('normal basis 출처/6기준·현재 권한 실패는 새 저장을 만들지 않는다 · RAM',async()=>{
  for(const mode of ['subject','parts','DENY','expired']){const f=approvalFixture();auto(f);const c=reviewCommand(f.input);if(mode==='subject')c.payload.subjectBindingRef=approvalRef(99);if(mode==='parts')c.payload.items[0].responsePartRefs=[approvalRef(99)];if(mode==='DENY'){f.policyRow.rules_json[0]!.disposition='DENY';f.policyRow.content_hash=H({rules:f.policyRow.rules_json,reason:f.policyRow.reason,reviewRefs:f.policyRow.review_refs});}if(mode==='expired')f.advance(new Date('2100-01-01'));await assert.rejects(f.store(c));assert.equal(f.data.reviews.length,0);assert.equal(f.data.commands.length,0);}
 });
-function app(f:ReturnType<typeof approvalFixture>,configured=true,synthetic?:any){const args:any[]=[{},undefined,{repository:f.access,origin:'https://normal.invalid',artifactRoot:resolve('RAM-NOT-USED'),exportRoot:resolve('RAM-NOT-USED')}];args[3]=synthetic;if(configured)args[26]=enabled;return buildApp(...args as Parameters<typeof buildApp>);}
+function app(f:ReturnType<typeof approvalFixture>,configured=true,synthetic?:any,append=false){const args:any[]=[{},undefined,{repository:f.access,origin:'https://normal.invalid',artifactRoot:resolve('RAM-NOT-USED'),exportRoot:resolve('RAM-NOT-USED')}];args[3]=synthetic;if(configured)args[26]=append?{...enabled,appendPurpose:'FN09_NORMAL_REVIEW_APPEND'}:enabled;return buildApp(...args as Parameters<typeof buildApp>);}
 test('명시 normal 구성에서만 기존 command HTTP가 실제 정상 provider까지 도달하고 기본·혼합·헤더는 닫힌다 · Fastify RAM',async()=>{
  for(const configured of [false,true]){const f=approvalFixture();auto(f);const a=app(f,configured),c=reviewCommand(f.input);try{const r=await a.inject({method:'POST',url:'/api/v1/projects/'+approvalPid+'/commands',headers:{host:'normal.invalid',origin:'https://normal.invalid',cookie:'__Host-anvil.sid='+'t'.repeat(43),'x-anvil-csrf':'c'.repeat(43),'idempotency-key':c.commandId},payload:c});assert.equal(r.statusCode,configured?200:400,r.body);assert.equal(f.data.reviews.length,configured?1:0);}finally{await a.close();}}
  const f=approvalFixture();assert.throws(()=>app(f,true,{}),/CONFIGURATION_INVALID/);let invoked=0;assert.throws(()=>readNormalUnderstandingReviewOptions(Object.defineProperty({mode:enabled.mode},'purpose',{enumerable:true,get(){invoked++;return enabled.purpose;}}) as any));assert.equal(invoked,0);
@@ -150,4 +154,85 @@ test('scope 전용 history는 stalled stream을 새 30초에 취소하고 원 tr
  for(const status of [200,401]){let reply!:(r:Response)=>void,started!:()=>void;const began=new Promise<void>(r=>{started=r;}),response=new Promise<Response>(r=>{reply=r;}),client=new ApiClient(async()=>{started();return response;}),result=readNormalUnderstandingHistory(client,historyScope,()=>true);await began;client.transport=async()=>{throw Error('new transport not called');};reply(new Response(JSON.stringify(status===200?v:{code:'AUTH_REQUIRED'}),{status,headers:{'content-type':'application/json'}}));assert.equal(await result,null);}
  const denied=new ApiClient(async()=>new Response(JSON.stringify({code:'AUTH_REQUIRED'}),{status:401,headers:{'content-type':'application/json'}}));await assert.rejects(readNormalUnderstandingHistory(denied,historyScope,()=>true),(e:any)=>e instanceof ApiError&&e.code==='AUTH_REQUIRED'&&e.status===401);
  let called=0;const unused=new ApiClient(async()=>{called++;throw Error('not reached');});assert.equal(await readNormalUnderstandingHistory(unused,historyScope,()=>false),null);assert.equal(called,0);
+});
+
+test('정상 후속 쓰기 구성은 추가 목적 literal만 받으며 기존 최초 구성은 그대로다',()=>{
+ const append={...enabled,appendPurpose:'FN09_NORMAL_REVIEW_APPEND'} as const;
+ assert.deepEqual(readNormalUnderstandingReviewOptions(append),append);assert.deepEqual(readNormalUnderstandingReviewOptions(enabled),enabled);
+ for(const value of [{...enabled,appendPurpose:true},{...enabled,appendPurpose:'FN09_NORMAL_FIRST_REVIEW'},{...enabled,appendPurpose:undefined},{...append,extra:true}])assert.throws(()=>readNormalUnderstandingReviewOptions(value as any));
+ let called=0;assert.throws(()=>readNormalUnderstandingReviewOptions(Object.defineProperty({...enabled},'appendPurpose',{enumerable:true,get(){called++;return append.appendPurpose;}}) as any));assert.equal(called,0);
+});
+
+const nextReview=(n:number)=>{const q=reviewCommand();q.commandId=approvalId(100+n);q.payload.reason='명시 후속 판단 '+n;q.payload.items[n%6].judgement='INSUFFICIENT';return q;};
+test('normal 후속 검토는 동일 id의 원자 latest/version/previous 체인을 저장하고 writer off에서도 N 이력·정확 과거 명령을 읽는다 · RAM',async()=>{
+ const f=approvalFixture(true);auto(f);const firstCommand=reviewCommand(),first=await f.store(firstCommand),secondCommand=nextReview(2),second=await f.store(secondCommand),third=await f.store(nextReview(3));
+ assert.equal(f.data.reviews.length,3);assert.equal(second.targetId,first.targetId);assert.equal(third.targetId,first.targetId);assert.equal(second.version,2);assert.equal(third.version,3);assert.deepEqual(second.data.snapshot.previousRef,first.data.ref);assert.deepEqual(third.data.snapshot.previousRef,second.data.ref);assert.equal(second.data.snapshot.sequence,2);assert.ok(second.data.snapshot.recordedAt>=first.data.snapshot.recordedAt);assert.equal(second.data.snapshot.outcome,'NOT_ACCEPTED');
+ const calls=f.state.calls,writes=[f.data.commands.length,f.data.receipts.length,f.data.audits.length,f.data.reviews.length];f.state.currentUnavailable=true;f.advance(new Date('2098-02-01'));
+ const off=new NormalUnderstandingReviews(f.access);assert.deepEqual(await off.command('t'.repeat(43),'c'.repeat(43),firstCommand),first);assert.deepEqual(await off.command('t'.repeat(43),'c'.repeat(43),secondCommand),second);assert.equal(f.state.calls,calls);assert.deepEqual([f.data.commands.length,f.data.receipts.length,f.data.audits.length,f.data.reviews.length],writes);
+ const a=app(f);try{const r=await a.inject({method:'GET',url:historyUrl,headers:historyHeaders});assert.equal(r.statusCode,200,r.body);assert.deepEqual(r.json().items.map((v:any)=>v.ref.version),[1,2,3]);
+  const {validateNormalUnderstandingHistory,validateUnderstandingHistory}=await import('../../../apps/web/src/features/session-detail/understanding-history-api.ts');assert.deepEqual(await validateNormalUnderstandingHistory(r.json(),historyScope),r.json());await assert.rejects(validateUnderstandingHistory(r.json(),historyScope));
+ }finally{await a.close();}
+ f.state.currentUnavailable=false;await assert.rejects(off.command('t'.repeat(43),'c'.repeat(43),nextReview(4)),{message:'UNDERSTANDING_NORMAL_FIRST_REQUIRED'});assert.equal(f.data.reviews.length,3);
+});
+
+test('normal 후속 HTTP는 추가 opt-in에서만 쓰며 두 동시 명령은 같은 RAM 연결에서 순차 latest에 붙는다 · 실제 PG 동시성 아님',async()=>{
+ const f=approvalFixture(true);auto(f);await f.store(reviewCommand());const a=app(f,true,undefined,true),headers={...historyHeaders,'x-anvil-csrf':'c'.repeat(43)};
+ try{const replies=await Promise.all([nextReview(2),nextReview(3)].map(q=>a.inject({method:'POST',url:'/api/v1/projects/'+approvalPid+'/commands',headers,payload:q})));for(const r of replies)assert.equal(r.statusCode,200,r.body);const values=replies.map(r=>r.json()).sort((a,b)=>a.version-b.version);assert.deepEqual(values.map(v=>v.version),[2,3]);assert.deepEqual(values[1].data.snapshot.previousRef,values[0].data.ref);assert.equal(new Set(f.data.reviews.map((v:any)=>v.id)).size,1);assert.equal(f.data.reviews.length,3);assert.equal(f.data.commands.length,3);
+ }finally{await a.close();}
+ const off=app(f);try{assert.equal((await off.inject({method:'POST',url:'/api/v1/projects/'+approvalPid+'/commands',headers,payload:nextReview(4)})).statusCode,412);assert.equal(f.data.reviews.length,3);}finally{await off.close();}
+});
+
+test('normal 후속 append는 새 current·별도 일회 승인·rollback 및 COMMIT 불명 뒤 정확 N 재확인을 유지한다 · RAM',async()=>{
+ const f=approvalFixture(true);auto(f);await f.store(reviewCommand());f.policyRow.rules_json[0]!.disposition='REQUIRE_APPROVAL';f.policyRow.content_hash=H({rules:f.policyRow.rules_json,reason:f.policyRow.reason,reviewRefs:f.policyRow.review_refs});
+ const q=nextReview(2),r=await f.askFor(q),d=await f.decideFor(r.data.ref.id);q.approvalRef={requestId:r.data.ref.id,decisionId:d.data.ref.id,scopeDigest:f.data.requests[0].scope_digest};
+ f.fail('INSERT INTO anvil.understanding_reviews');await assert.rejects(f.store(q));assert.equal(f.data.reviews.length,1);assert.equal(f.data.consumptions.length,0);assert.equal(f.data.requests[0].status,'APPROVED');f.fail('');
+ f.state.commitUnknown=true;await assert.rejects(f.store(q));assert.equal(f.data.reviews.length,2);assert.equal(f.data.consumptions.length,1);assert.equal(f.state.releases.at(-1),true);f.state.commitUnknown=false;f.state.currentUnavailable=true;f.advance(new Date('2098-02-01'));
+ const count=f.state.calls,saved=await f.store(q);assert.equal(saved.version,2);assert.equal(f.state.calls,count);assert.equal(f.data.consumptions.length,1);await assert.rejects(f.store({...q,commandId:approvalId(199)}));await assert.rejects(f.store({...q,payload:{...q.payload,reason:'같은 ID의 다른 원문'}}));assert.equal(f.data.reviews.length,2);
+});
+
+test('normal 후속은 gap·previous·다른 lineage/role/response·혼입·현재 변화에서 추가 command/행을 만들지 않는다 · RAM',async()=>{
+ for(const fault of ['GAP','PREVIOUS','ROLE','RESPONSE','SYNTHETIC','DUPLICATE','CURRENT']){
+  const f=approvalFixture(true);auto(f);await f.store(reviewCommand());const v=f.data.reviews[0],q=nextReview(2);
+  if(fault==='GAP'){v.version=2;v.snapshot_json.sequence=2;v.snapshot_json.previousRef={id:v.id,version:1,contentHash:'a'.repeat(64)};}
+  if(fault==='PREVIOUS')v.snapshot_json.previousRef=approvalRef(90);if(fault==='ROLE')q.payload.subjectBindingRef=approvalRef(90);if(fault==='RESPONSE')q.payload.responseRef=approvalRef(90);if(fault==='SYNTHETIC')v.snapshot_json.currentBinding.transport='SYNTHETIC_ONLY';if(fault==='DUPLICATE')f.data.reviews.push(structuredClone(v));if(fault==='CURRENT')f.state.driftAt=f.state.calls+3;
+  const count=f.data.reviews.length;await assert.rejects(f.store(q),fault);assert.equal(f.data.reviews.length,count);assert.equal(f.data.commands.length,1);
+ }
+});
+
+test('normal 누적 history 실제 wire 정확 2MiB는 저장·조회되고 +1은 새 C/A/U/행 전에 rollback한다 · RAM cap parity',async()=>{
+ for(const extra of [0,1]){
+  const f=approvalFixture(true);auto(f);const first=await f.store(reviewCommand()),items:any[]=[{ref:first.data.ref,snapshot:first.data.snapshot}],target=2097152+extra;
+  const wire=(entries:any[])=>({transport:'NORMAL_PROTECTED',scope:historyScope,items:entries,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false});
+  const predict=(q:any)=>{const previous=items.at(-1),snapshot={...structuredClone(previous.snapshot),sequence:items.length+1,previousRef:previous.ref,request:q,requestHash:H(q),policyRef:{...previous.snapshot.policyRef,version:f.policyRow.head_version},input:q.payload,outcome:q.payload.items.every((i:any)=>i.judgement==='MATCH')?'ACCEPTED':'NOT_ACCEPTED'};return {ref:{id:previous.ref.id,version:items.length+1,contentHash:H(snapshot)},snapshot};};
+  let q:any,proposal:any,filled=false;
+  for(let n=2;n<15;n++){
+   q=nextReview(n);q.payload.reason='x'.repeat(20000);for(const item of q.payload.items)item.reason='x'.repeat(20000);proposal=predict(q);
+   if(Buffer.byteLength(canonicalJson(wire([...items,proposal])))>=target){filled=true;break;}
+   const stored=await f.store(q);assert.deepEqual({ref:stored.data.ref,snapshot:stored.data.snapshot},proposal);items.push(proposal);
+  }
+  assert.equal(filled,true);q.payload.reason='x';for(const item of q.payload.items)item.reason='x';
+  let base=Buffer.byteLength(canonicalJson(wire([...items,predict(q)])));
+  // 원 policy의 유효한 버전 폭은 단일 snapshot 필드다. 2회 보관되는 사람 이유와 독립적으로 홀수 byte 경계도 검산한다.
+  if((target-base)%2!==0){f.policyRow.head_version=10;base=Buffer.byteLength(canonicalJson(wire([...items,predict(q)])));}
+  assert.ok(base<=target);assert.equal((target-base)%2,0);let remaining=(target-base)/2;
+  for(const entry of [q.payload,...q.payload.items]){const take=Math.min(19999,remaining);entry.reason+='x'.repeat(take);remaining-=take;}assert.equal(remaining,0);
+  proposal=predict(q);assert.equal(Buffer.byteLength(canonicalJson(wire([...items,proposal]))),target);
+  const before=[f.data.commands.length,f.data.receipts.length,f.data.audits.length,f.data.consumptions.length,f.data.reviews.length];
+  if(extra){await assert.rejects(f.store(q),{message:'UNDERSTANDING_HISTORY_QUOTA_REQUIRED'});assert.deepEqual([f.data.commands.length,f.data.receipts.length,f.data.audits.length,f.data.consumptions.length,f.data.reviews.length],before);}
+  else{const stored=await f.store(q);assert.deepEqual({ref:stored.data.ref,snapshot:stored.data.snapshot},proposal);const history=await f.preparations.list('t'.repeat(43),historyScope);assert.equal(Buffer.byteLength(canonicalJson(history)),2097152);assert.equal(f.data.reviews.length,items.length+1);}
+ }
+});
+
+test('normal vN server/web 역사 판독은 재해시한 gap·이전 hash·id·시각·role/response 교차와 중복 명령을 모두 거절한다',async()=>{
+ const f=approvalFixture(true);auto(f);await f.store(reviewCommand());await f.store(nextReview(2));const history=await f.preparations.list('t'.repeat(43),historyScope);
+ const {readNormalUnderstandingHistoryValue}=await import('../../../apps/server/modules/executions/normal-understanding-review.ts'),{validateNormalUnderstandingHistory}=await import('../../../apps/web/src/features/session-detail/understanding-history-api.ts');
+ for(const fault of ['GAP','PREVIOUS','ID','TIME','ROLE','RESPONSE','COMMAND','SYNTHETIC']){
+  const v:any=structuredClone(history),r=v.items[1],s=r.snapshot,c=s.currentBinding,g=c.sourceBasis;
+  if(fault==='GAP'){r.ref.version=3;s.sequence=3;s.previousRef.version=2;}if(fault==='PREVIOUS')s.previousRef.contentHash='0'.repeat(64);if(fault==='ID'){r.ref.id=approvalId(199);s.previousRef.id=r.ref.id;}if(fault==='TIME')s.recordedAt=new Date(Date.parse(v.items[0].snapshot.recordedAt)-1).toISOString();
+  if(fault==='ROLE'){s.input.subjectBindingRef=approvalRef(199);c.subjectBindingRef=s.input.subjectBindingRef;g.subjectBindingRef=s.input.subjectBindingRef;g.roleBindingRef=s.input.subjectBindingRef;}
+  if(fault==='RESPONSE'){s.input.responseRef=approvalRef(199);c.responseRef=s.input.responseRef;g.responseRef=s.input.responseRef;}
+  if(fault==='COMMAND')s.request.commandId=v.items[0].snapshot.request.commandId;if(fault==='SYNTHETIC')c.transport='SYNTHETIC_ONLY';s.request.payload=structuredClone(s.input);s.requestHash=H(s.request);r.ref.contentHash=H(s);
+  assert.throws(()=>readNormalUnderstandingHistoryValue(v,historyScope),fault);await assert.rejects(validateNormalUnderstandingHistory(v,historyScope),fault);
+ }
+ const tooMany={...history,items:Array(1001).fill(null)};assert.throws(()=>readNormalUnderstandingHistoryValue(tooMany,historyScope));await assert.rejects(validateNormalUnderstandingHistory(tooMany,historyScope));
 });

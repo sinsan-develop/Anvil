@@ -6,14 +6,15 @@ import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access
 import {authorizeMaterial,currentProjectController,persistProjectReceipt,projectReplay,projectMember,type ProjectCommand} from '../access/project-command.ts';
 import {readUnderstandingReviewCommand} from './execution-understanding.ts';
 
-export interface NormalUnderstandingReviewOptions{mode:'NORMAL_PROTECTED';purpose:'FN09_NORMAL_FIRST_REVIEW'}
+export interface NormalUnderstandingReviewOptions{mode:'NORMAL_PROTECTED';purpose:'FN09_NORMAL_FIRST_REVIEW';appendPurpose?:'FN09_NORMAL_REVIEW_APPEND'}
 export function readNormalUnderstandingReviewOptions(value:NormalUnderstandingReviewOptions):Readonly<NormalUnderstandingReviewOptions>{
  const fail=():never=>{throw Error('NORMAL_UNDERSTANDING_REVIEW_CONFIGURATION_INVALID');};
  if(!value||types.isProxy(value)||![Object.prototype,null].includes(Object.getPrototypeOf(value)))return fail();
  const fields=Object.getOwnPropertyDescriptors(value);
- if(Reflect.ownKeys(fields).length!==2||!fields.mode||!fields.purpose||![fields.mode,fields.purpose].every(d=>'value'in d&&d.enumerable)
-  ||fields.mode.value!=='NORMAL_PROTECTED'||fields.purpose.value!=='FN09_NORMAL_FIRST_REVIEW')return fail();
- return Object.freeze({mode:'NORMAL_PROTECTED',purpose:'FN09_NORMAL_FIRST_REVIEW'});
+ const append=Object.hasOwn(fields,'appendPurpose');
+ if(Reflect.ownKeys(fields).length!==(append?3:2)||!fields.mode||!fields.purpose||![fields.mode,fields.purpose,...(append?[fields.appendPurpose!]:[])].every(d=>'value'in d&&d.enumerable)
+  ||fields.mode.value!=='NORMAL_PROTECTED'||fields.purpose.value!=='FN09_NORMAL_FIRST_REVIEW'||append&&fields.appendPurpose!.value!=='FN09_NORMAL_REVIEW_APPEND')return fail();
+ return Object.freeze({mode:'NORMAL_PROTECTED',purpose:'FN09_NORMAL_FIRST_REVIEW',...(append?{appendPurpose:'FN09_NORMAL_REVIEW_APPEND' as const}:{})});
 }
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
 const failure=(code='NORMAL_UNDERSTANDING_REVIEW_UNKNOWN',status=503):never=>{throw new AuthFailure(code,status);};
@@ -42,8 +43,8 @@ function binding(v:Record<string,any>,q:ProjectCommand){return {transport:'NORMA
  criteria:(q.payload.items as any[]).map(({judgement:_,reason:__,...item})=>item),sourceState:'AVAILABLE',responseSubject:'EXTERNAL_AGENT',sourceBasis:stable(v)};}
 function record(raw:any,q:ProjectCommand,actor:Pick<AuthenticatedIdentity,'actorId'|'clientId'>){
  const v=cloneV1(raw),s=v?.snapshot,r=s?.reviewer;
- if(!recordV1(v,['ref','snapshot'])||!refV1(v.ref)||v.ref.version!==1||!recordV1(s,['scope','sequence','previousRef','request','requestHash','reviewer','policyRef','currentBinding','input','outcome','recordedAt','executionAuthorized','dispatchPerformed'])
-  ||!same(s.request,q)||s.requestHash!==hash(q)||!same(s.input,q.payload)||s.sequence!==1||s.previousRef!==null||!same(s.scope,{projectId:q.projectId,executionId:q.targetId,executionGeneration:q.expectedVersion})
+ if(!recordV1(v,['ref','snapshot'])||!refV1(v.ref)||v.ref.version>1000||!recordV1(s,['scope','sequence','previousRef','request','requestHash','reviewer','policyRef','currentBinding','input','outcome','recordedAt','executionAuthorized','dispatchPerformed'])
+  ||!same(s.request,q)||s.requestHash!==hash(q)||!same(s.input,q.payload)||s.sequence!==v.ref.version||(v.ref.version===1?s.previousRef!==null:!refV1(s.previousRef)||s.previousRef.id!==v.ref.id||s.previousRef.version!==v.ref.version-1)||!same(s.scope,{projectId:q.projectId,executionId:q.targetId,executionGeneration:q.expectedVersion})
   ||!recordV1(r,['kind','userId','clientId','humanSessionId','credentialGeneration','controlGeneration'])||r.kind!=='HUMAN'||r.userId!==actor.actorId||r.clientId!==actor.clientId||!uuidV1(r.humanSessionId)||!Number.isSafeInteger(r.credentialGeneration)||r.credentialGeneration<1||r.controlGeneration!==q.controlGeneration
   ||!refV1(s.policyRef)||!isoV1(s.recordedAt)||s.executionAuthorized!==false||s.dispatchPerformed!==false||v.ref.contentHash!==hash(s)
   ||s.outcome!==((q.payload.items as any[]).every(i=>i.judgement==='MATCH')?'ACCEPTED':'NOT_ACCEPTED')||s.currentBinding?.transport!=='NORMAL_PROTECTED')return failure();
@@ -55,10 +56,13 @@ export interface NormalUnderstandingHistoryScope{projectId:string;executionId:st
 /** 역사 내용은 원 저장 hash/refs만 검산한다. 원 검토자를 현재 조회자로 대체하지 않는다. */
 export function readNormalUnderstandingHistoryValue(raw:unknown,scope:NormalUnderstandingHistoryScope){
  const v=cloneV1(raw);
- if(!recordV1(v,['transport','scope','items','currentness','executionAuthorized','dispatchPerformed'])||v.transport!=='NORMAL_PROTECTED'||!same(v.scope,scope)||v.currentness!=='NOT_RECHECKED'||v.executionAuthorized!==false||v.dispatchPerformed!==false||!arrayV1(v.items,1)||Buffer.byteLength(canonicalJson(v))>2097152)return failure();
+ if(!recordV1(v,['transport','scope','items','currentness','executionAuthorized','dispatchPerformed'])||v.transport!=='NORMAL_PROTECTED'||!same(v.scope,scope)||v.currentness!=='NOT_RECHECKED'||v.executionAuthorized!==false||v.dispatchPerformed!==false||!arrayV1(v.items,1000)||Buffer.byteLength(canonicalJson(v))>2097152)return failure();
+ let previous:any=null;const commands=new Set<string>();
  for(const row of v.items){const q=readUnderstandingReviewCommand(row?.snapshot?.request),r=row?.snapshot?.reviewer;
   if(!same(row?.snapshot?.scope,scope)||!uuidV1(r?.userId)||!uuidV1(r?.clientId))return failure();
   record(row,q,{actorId:r.userId,clientId:r.clientId});
+  if(row.ref.version!==(previous?.ref.version??0)+1||!same(row.snapshot.previousRef,previous?.ref??null)||previous&&(row.ref.id!==previous.ref.id||Date.parse(row.snapshot.recordedAt)<Date.parse(previous.snapshot.recordedAt)||!same(row.snapshot.currentBinding.sourceBasis,previous.snapshot.currentBinding.sourceBasis))||commands.has(q.commandId))return failure();
+  commands.add(q.commandId);previous=row;
  }
  return v;
 }
@@ -67,7 +71,8 @@ export function readNormalUnderstandingHistoryValue(raw:unknown,scope:NormalUnde
 export class NormalUnderstandingReviews{
  readonly transport='NORMAL_PROTECTED' as const;
  readonly #access:AccessRepository;
- constructor(access:AccessRepository){this.#access=access;}
+ readonly #append:boolean;
+ constructor(access:AccessRepository,options?:NormalUnderstandingReviewOptions){this.#access=access;this.#append=options!==undefined&&readNormalUnderstandingReviewOptions(options).appendPurpose==='FN09_NORMAL_REVIEW_APPEND';}
  /** 회원의 읽기 거래다. 현재 OWNER/제어/옛 actor/원 수송 TTL은 요구하지 않는다. */
  async list(token:string,rawScope:unknown){
   const scope=cloneV1(rawScope);if(!recordV1(scope,['projectId','executionId','executionGeneration'])||!uuidV1(scope.projectId)||!uuidV1(scope.executionId)||!Number.isSafeInteger(scope.executionGeneration)||scope.executionGeneration<1)return failure('INPUT_INVALID',400);
@@ -114,26 +119,34 @@ export class NormalUnderstandingReviews{
    if(replay!==undefined){
     if(!recordV1(replay,['operationId','commandId','projectId','status','targetId','version','data','evidenceRefs','warnings','serverReceivedAt'])||!uuidV1(replay.operationId)||!isoV1(replay.serverReceivedAt)||!arrayV1(replay.evidenceRefs,0)||!arrayV1(replay.warnings,0))return failure();
     const v=record({ref:replay.data?.ref,snapshot:replay.data?.snapshot},q,actor);
-    if(replay.status!=='APPLIED'||replay.projectId!==q.projectId||replay.commandId!==q.commandId||replay.targetId!==v.ref.id||replay.version!==1||!same(replay.data,{ref:v.ref,status:'NORMAL_UNDERSTANDING_REVIEWED',snapshot:v.snapshot}))return failure();
+    if(replay.status!=='APPLIED'||replay.projectId!==q.projectId||replay.commandId!==q.commandId||replay.targetId!==v.ref.id||replay.version!==v.ref.version||!same(replay.data,{ref:v.ref,status:'NORMAL_UNDERSTANDING_REVIEWED',snapshot:v.snapshot}))return failure();
     const selection={purpose:'NORMAL_REVIEW_REPLAY',projectId:q.projectId,executionId:q.targetId,executionGeneration:q.expectedVersion,commandId:q.commandId,requestHash:hash(q),controlGeneration:q.controlGeneration};
     const rows=(await db.query('SELECT anvil.fn09_normal_understanding_metadata_current($1,$2,$3,$4,$5,$6) AS projection',[s.id,actor.actorId,actor.clientId,JSON.stringify(selection),JSON.stringify(policyRef),tx])).rows;
     if(rows.length!==1||!same(rows[0]?.projection,replay))return failure();
     if(identity(await this.#access.authenticateInTransaction(db,token,csrf))!==id)return failure();await currentProjectController(db,actor,q);const currentPolicy=await authorizeMaterial(db,actor,q,true);
     if(!same(currentPolicy.ref,policyRef)||currentPolicy.approvalRequired!==policy.approvalRequired)return failure('PROJECT_OPERATION_DENIED',403);await clock();check();return replay;
    }
-   const first=await inspect();
-   const prior=(await db.query('SELECT id FROM anvil.understanding_reviews WHERE project_id=$1 AND execution_id=$2 AND generation=$3 LIMIT 2',[q.projectId,q.targetId,q.expectedVersion])).rows;
-   if(prior.length)return failure('UNDERSTANDING_NORMAL_FIRST_REQUIRED',412);
+   const history=async()=>{check();const selection={purpose:'NORMAL_REVIEW_HISTORY',projectId:q.projectId,executionId:q.targetId,executionGeneration:q.expectedVersion};
+    const rows=(await db.query('SELECT anvil.fn09_normal_understanding_metadata_current($1,$2,$3,$4,$5,$6) AS projection',[s.id,actor.actorId,actor.clientId,JSON.stringify(selection),null,tx])).rows;await clock();if(rows.length!==1)return failure();return readNormalUnderstandingHistoryValue(rows[0]?.projection,{projectId:q.projectId,executionId:q.targetId!,executionGeneration:q.expectedVersion});};
+   const first=await inspect();let entries:any[]=[];
+   if(this.#append){entries=(await history()).items;if(entries.length>=1000)return failure('UNDERSTANDING_HISTORY_FULL',422);}
+   else{const prior=(await db.query('SELECT id FROM anvil.understanding_reviews WHERE project_id=$1 AND execution_id=$2 AND generation=$3 LIMIT 2',[q.projectId,q.targetId,q.expectedVersion])).rows;if(prior.length)return failure('UNDERSTANDING_NORMAL_FIRST_REQUIRED',412);}
+   const previous=entries.at(-1)??null;
+   if(previous&&!same(previous.snapshot.currentBinding.sourceBasis,stable(first)))return failure('UNDERSTANDING_CURRENT_CHANGED',412);
    if(identity(await this.#access.authenticateInTransaction(db,token,csrf))!==id)return failure();await clock();await currentProjectController(db,actor,q);policy=await authorizeMaterial(db,actor,q);if(!same(policy.ref,policyRef))return failure('UNDERSTANDING_CURRENT_CHANGED',412);
    const final=await inspect();if(!same(stable(first),stable(final)))return failure('UNDERSTANDING_CURRENT_CHANGED',412);
-   const at=await clock(),snapshot={scope:final.scope,sequence:1,previousRef:null,request:q,requestHash:hash(q),reviewer:{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId,humanSessionId:s.id,credentialGeneration:actor.credentialGeneration,controlGeneration:q.controlGeneration},policyRef,currentBinding:binding(final,q),input:q.payload,
+   if(this.#append&&!same((await history()).items,entries))return failure('UNDERSTANDING_CURRENT_CHANGED',412);
+   const at=await clock(),snapshot={scope:final.scope,sequence:entries.length+1,previousRef:previous?.ref??null,request:q,requestHash:hash(q),reviewer:{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId,humanSessionId:s.id,credentialGeneration:actor.credentialGeneration,controlGeneration:q.controlGeneration},policyRef,currentBinding:binding(final,q),input:q.payload,
     outcome:(q.payload.items as any[]).every(i=>i.judgement==='MATCH')?'ACCEPTED':'NOT_ACCEPTED',recordedAt:new Date(at).toISOString(),executionAuthorized:false,dispatchPerformed:false};
-   const v=record({ref:{id:randomUUID(),version:1,contentHash:hash(snapshot)},snapshot},q,actor);
-   if(Buffer.byteLength(canonicalJson([v]))>2097152)return failure('UNDERSTANDING_HISTORY_QUOTA_REQUIRED',422);
+   const v=record({ref:{id:previous?.ref.id??randomUUID(),version:entries.length+1,contentHash:hash(snapshot)},snapshot},q,actor);
+   if(previous&&Date.parse(snapshot.recordedAt)<Date.parse(previous.snapshot.recordedAt))return failure('UNDERSTANDING_CURRENT_CHANGED',412);
+   const prospective={transport:'NORMAL_PROTECTED',scope:final.scope,items:[...entries,v],currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};
+   if(Buffer.byteLength(canonicalJson(prospective))>2097152)return failure('UNDERSTANDING_HISTORY_QUOTA_REQUIRED',422);readNormalUnderstandingHistoryValue(prospective,final.scope);
+   if(this.#append)await db.query("SELECT set_config('anvil.fn09_normal_review_append','FN09_NORMAL_REVIEW_APPEND',true)");
    check();const receipt=await persistProjectReceipt(db,actor,q,v.ref,{status:'NORMAL_UNDERSTANDING_REVIEWED',snapshot},policyRef,'EXPLICIT_HUMAN_UNDERSTANDING_REVIEW');check();
-   const written=await db.query('INSERT INTO anvil.understanding_reviews(project_id,execution_id,generation,id,version,content_hash,snapshot_json,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[q.projectId,q.targetId,q.expectedVersion,v.ref.id,1,v.ref.contentHash,JSON.stringify(snapshot),actor.actorId,actor.clientId,receipt.id]);check();if(written.rowCount!==1)return failure();
+   const written=await db.query('INSERT INTO anvil.understanding_reviews(project_id,execution_id,generation,id,version,content_hash,snapshot_json,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',[q.projectId,q.targetId,q.expectedVersion,v.ref.id,v.ref.version,v.ref.contentHash,JSON.stringify(snapshot),actor.actorId,actor.clientId,receipt.id]);check();if(written.rowCount!==1)return failure();
    if(identity(await this.#access.authenticateInTransaction(db,token,csrf))!==id)return failure();await currentProjectController(db,actor,q);const afterPolicy=await authorizeMaterial(db,actor,q,true);if(!same(afterPolicy.ref,policyRef)||afterPolicy.approvalRequired!==policy.approvalRequired)return failure('UNDERSTANDING_CURRENT_CHANGED',412);
-   const after=await inspect();if(!same(stable(final),stable(after)))return failure('UNDERSTANDING_CURRENT_CHANGED',412);await clock();check();return receipt.result;
+   const after=await inspect();if(!same(stable(final),stable(after)))return failure('UNDERSTANDING_CURRENT_CHANGED',412);if(this.#append&&!same((await history()).items,prospective.items))return failure();await clock();check();return receipt.result;
   });check();return result;
   }catch(error){if(error instanceof AuthFailure&&error.statusCode<500)throw error;
    if(error instanceof Error&&'code'in error&&error.code==='P0001'){

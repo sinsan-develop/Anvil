@@ -83,8 +83,8 @@ export async function prepareNormalInitialUnderstandingReview(raw:NormalInitialU
  if(b.pending&&!same(b.pending,command)||!b.pending&&b.uncertain)fail();return structuredClone(command) as DocumentWrite;
 }
 export function matchNormalInitialUnderstandingReview(raw:NormalUnderstandingHistoryView,b:NormalInitialUnderstandingReviewBuffer):NormalInitialUnderstandingRecord|null{
- if(!b.pending||raw.items.length!==1||!same(raw.scope,b.basis.scope))return null;const row=raw.items[0]!,s=row.snapshot;
- if(!same(s.request,b.pending)||!same(s.input,b.form)||s.reviewer.userId!==b.ownerUserId||s.reviewer.clientId!==b.ownerClientId||s.currentBinding.transport!=='NORMAL_PROTECTED'||!same(s.currentBinding.sourceBasis.preparationRef,b.basis.preparationRef)||!same(s.currentBinding.sourceBasis.requestRef,b.basis.rangeRequestRef)||!same(s.currentBinding.basisRefs,b.basis.basisRefs)||!same(s.currentBinding.responsePartRefs,b.basis.responsePartRefs)||row.ref.version!==1)return null;return structuredClone(row);
+ if(!b.pending||!same(raw.scope,b.basis.scope))return null;const matches=raw.items.filter(row=>row.snapshot.request.commandId===b.pending!.commandId);if(matches.length!==1)return null;const row=matches[0]!,s=row.snapshot;
+ if(!same(s.request,b.pending)||!same(s.input,b.form)||s.reviewer.userId!==b.ownerUserId||s.reviewer.clientId!==b.ownerClientId||s.currentBinding.transport!=='NORMAL_PROTECTED'||!same(s.currentBinding.sourceBasis.preparationRef,b.basis.preparationRef)||!same(s.currentBinding.sourceBasis.requestRef,b.basis.rangeRequestRef)||!same(s.currentBinding.basisRefs,b.basis.basisRefs)||!same(s.currentBinding.responsePartRefs,b.basis.responsePartRefs)||row.ref.version!==1||s.sequence!==1||s.previousRef!==null)return null;return structuredClone(row);
 }
 /** 정상 POST와 exact 이력 1행이 모두 같을 때만 저장 확인이다. 응답유실은 원명령을 보존한다. */
 export async function saveNormalInitialUnderstandingReview(client:ApiClient,raw:NormalInitialUnderstandingReviewBuffer,rawSession:DocumentSession,active:()=>boolean):Promise<NormalInitialUnderstandingRecord|null>{

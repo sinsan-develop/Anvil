@@ -134,7 +134,7 @@ test('range result marker-only/receipt-only/body-only writes have exact BEFORE a
  const shape=history.match(/execution_json_shape\(s,ARRAY\[([^\]]+)\]/)?.[1];assert.ok(shape);assert.doesNotMatch(shape,/'(?:body|text|parts|auth|bodyBase64|sdk|sessionId)'/);
  assert.match(shape,/'responseRef','partRefs','bodyHash','bodyBytes'/);
  const section=sql.slice(sql.indexOf('-- FN09 A §4.3:'));
- const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,31);
+ const helpers=[...section.matchAll(/CREATE FUNCTION anvil\.([a-z0-9_]+)\(([^)]*)\)/g)];assert.equal(helpers.length,32);
  for(const [,name,args] of helpers){
   const signature=name+'('+args!.split(',').filter(Boolean).map(x=>x.trim().split(/\s+/).at(-1)).join(',')+')';
   assert.ok(section.includes('ALTER FUNCTION anvil.'+signature+' OWNER TO anvil_v3_migrator;'),signature);
@@ -558,7 +558,7 @@ test('normal 첫 검토는 BEFORE와 모든 deferred companion을 닫고 기존 
  const guard=definition('guard_fn09_normal_understanding_review'),final=definition('complete_fn09_normal_understanding_review');
  for(const token of ['review_historical','review_current','UNDERSTANDING_NORMAL_FIRST_REQUIRED',"NEW.version<>1","TG_OP<>'INSERT'",'current_setting'])assert.ok(guard.includes(token),token);
  for(const table of ['commands','authorization_receipts','audit_events','approval_consumptions','understanding_reviews','approval_requests','approval_decisions','understanding_review_approval_candidates'])assert.match(sql,new RegExp('CREATE CONSTRAINT TRIGGER fn09_normal_review_'+table+'[^;]*ON anvil\\.'+table+'[^;]*DEFERRABLE INITIALLY DEFERRED[^;]*complete_fn09_normal_understanding_review'));
- assert.match(final,/TG_TABLE_NAME='understanding_reviews'/);assert.match(final,/review_current\(NEW\)/);assert.match(final,/review_historical/);
+ assert.match(final,/TG_TABLE_NAME='understanding_reviews'/);assert.match(final,/review_current\(NEW\)/);assert.match(final,/review_chain/);assert.doesNotMatch(final,/review_historical\(/);
  const originals=[['guard_understanding_review','0056_understanding_review_one_time_approval.sql.pending'],['fn09_understanding_complete','0101_source_content_policy_management_origins.sql.pending']] as const;
  for(const [name,file]of originals){const old=await readFile(new URL('../../../db/migrations/'+file,import.meta.url),'utf8'),needle='CREATE OR REPLACE FUNCTION anvil.'+name+'()',from=old.indexOf(needle),to=old.indexOf('$$;',from)+3;assert.ok(from>=0);const start=sql.indexOf(needle),end=sql.indexOf('$$;',start)+3;assert.ok(start>=0);const before=old.slice(from,to),after=sql.slice(start,end).replace(/ -- FN09_NORMAL_REVIEW_DISPATCH_BEGIN\n[\s\S]*? -- FN09_NORMAL_REVIEW_DISPATCH_END\n/g,'');assert.equal(after,before,name);}
  assert.doesNotMatch(sql,/DROP TRIGGER understanding_|GRANT[^;]*(?:review_append|review_current|review_input_valid|guard_fn09_normal_understanding_review)/);
@@ -611,7 +611,7 @@ test('원 CONTEXT_BUNDLE 자료 refs와 각 전달 영수증의 조합은 모두
 
 test('normal review member history dispatch reuses immutable settlement and never current source/controller/original actor authority',()=>{
  const history=definition('fn09_normal_understanding_review_history');
- for(const token of ['txid_current()',"policy IS NOT NULL","ARRAY['projectId','executionId','executionGeneration']",'fn01_active(s,a,c)','anvil.project_members','revoked_at IS NULL FOR SHARE','LIMIT 2','n>1','review_historical(v)',"'NOT_RECHECKED'","'executionAuthorized',false","'dispatchPerformed',false",'2097152',"interval '30 seconds'",'hs.idle_expires_at','hs.absolute_expires_at'])assert.ok(history.includes(token),token);
+ for(const token of ['txid_current()',"policy IS NOT NULL","ARRAY['projectId','executionId','executionGeneration']",'fn01_active(s,a,c)','anvil.project_members','revoked_at IS NULL FOR SHARE','review_chain(p,eid,gen)',"'NOT_RECHECKED'","'executionAuthorized',false","'dispatchPerformed',false",'2097152',"interval '30 seconds'",'hs.idle_expires_at','hs.absolute_expires_at'])assert.ok(history.includes(token),token);
  assert.doesNotMatch(history,/participation='OWNER'|project_control|reauth_until|v.created_by\s*(?:=|IS)|normal_exchange_current|request_basis|committed_basis|review_current|INSERT |UPDATE anvil|body_bytes|GRANT /);
  assert.match(definition('fn09_normal_understanding_metadata_current'),/NORMAL_REVIEW_HISTORY.*review_history\(s,a,c,selection-'purpose',policy,expected_tx\)/);
  const historical=definition('fn09_normal_understanding_review_historical');for(const token of ['review_response','fn09_understanding_approval_valid','authorization_receipts','audit_events','execution_json_hash'])assert.ok(historical.includes(token),token);
@@ -632,4 +632,21 @@ test('history command 부재 probe는 고아 획득도 검출하되 정상 명�
  assert.equal((after.match(/execution_receipts WHERE project_id=p AND snapshot_json->>'kind'='NORMAL_UNDERSTANDING_RANGE_RESULT' AND snapshot_json#>>'\{rangeRequestRef,id\}'=rid::text/g)??[]).length,3);
  assert.doesNotMatch(after,/execution_receipts WHERE project_id=p AND snapshot_json#>>'\{rangeRequestRef,id\}'=rid::text/);
  assert.equal((after.match(/RAISE EXCEPTION 'NORMAL_UNDERSTANDING_RANGE_HISTORY_NOT_STORED'/g)??[]).length,2);
+});
+
+test('normal 후속 체인은 현재성 없는 private 역사 검산이며 동일 lineage·연속 head·1000행/누적 bytes를 닫는다',()=>{
+ const chain=definition('fn09_normal_understanding_review_chain'),row=definition('fn09_normal_understanding_review_historical'),guard=definition('guard_fn09_normal_understanding_review'),complete=definition('complete_fn09_normal_understanding_review');
+ for(const token of ['ORDER BY version LIMIT 1001','jsonb_array_length(items)>=1000','review_historical(v)','v.version<>jsonb_array_length(items)+1',"v.snapshot_json->'previousRef' IS DISTINCT FROM previous",'currentBinding,sourceBasis','recordedAt','ANY(seen)','2097152'])assert.ok(chain.includes(token),token);
+ assert.doesNotMatch(chain,/clock_timestamp|fn01_active|review_current|normal_exchange_current|GRANT |INSERT |UPDATE anvil/);
+ assert.match(row,/v.version NOT BETWEEN 1 AND 1000/);assert.match(row,/to_jsonb\(v.version\)/);assert.match(row,/previousRef,version/);assert.doesNotMatch(row,/clock_timestamp|review_current|normal_exchange_current/);
+ for(const token of ["current_setting('anvil.fn09_normal_review_append',true)","'FN09_NORMAL_REVIEW_APPEND'",'review_current(NEW)','review_historical(NEW)','review_chain(NEW.project_id,NEW.execution_id,NEW.generation)',"NEW.snapshot_json->'previousRef'",'NEW.version<>jsonb_array_length(prior)+1','currentBinding,sourceBasis',"'items',items",'2097152'])assert.ok(guard.includes(token),token);
+ assert.ok(guard.indexOf('review_current(NEW)')<guard.indexOf('review_chain(NEW.project_id'));
+ assert.match(complete,/review_chain\(p,v.execution_id,v.generation\)/);assert.match(complete,/command_id=h.id\)<>1/);
+ assert.match(sql,/REVOKE ALL ON FUNCTION anvil.fn09_normal_understanding_review_chain\(uuid,uuid,bigint\) FROM PUBLIC,anvil_v3_app/);assert.doesNotMatch(sql,/GRANT[^;]*review_chain/);
+});
+
+test('normal 후속 writer 설정과 무관한 history/replay는 기존 app 목적에서 exact N과 전체 체인만 읽는다',()=>{
+ const history=definition('fn09_normal_understanding_review_history'),replay=definition('fn09_normal_understanding_review_replay');
+ assert.match(history,/review_chain\(p,eid,gen\)/);assert.match(replay,/review_chain\(p,v.execution_id,v.generation\)/);assert.match(replay,/items->\(\(v.version-1\)::integer\)/);assert.match(replay,/RETURN h.result_ref/);
+ for(const text of [history,replay])assert.doesNotMatch(text,/fn09_normal_review_append|committed_basis|review_current|INSERT INTO|UPDATE anvil|body_bytes/);
 });
