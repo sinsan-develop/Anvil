@@ -27,9 +27,21 @@ export type NormalUnderstandingMetadataResult=
  | {status:'METADATA_STORED';request:NormalUnderstandingMetadataRequest;resultRef:PlanRef;currentness:'CURRENT';observedAt:string;expiresAt:string;
     metadata:{contextBundleRef:PlanRef;initConfirmationRef:PlanRef;tailRef:PlanRef;attribution:'SESSION_ONLY';wholeConversationComplete:false;ranges:MetadataRange[]};selectionAvailable:false};
 export type NormalUnderstandingMetadataReader=(request:Readonly<NormalUnderstandingMetadataRequest>,signal:AbortSignal)=>Promise<NormalUnderstandingMetadataResult>;
-type Props={client:ApiClient;session:DocumentSession;projectId:string;assignmentRef:PlanRef;preparations:PreparationRecord[];busy:boolean;metadataReader?:NormalUnderstandingMetadataReader};
+type StoredMetadata=Extract<NormalUnderstandingMetadataResult,{status:'METADATA_STORED'}>;
+export type NormalUnderstandingRangeDraft=Readonly<{
+ request:NormalUnderstandingMetadataRequest;resultRef:PlanRef;contextBundleRef:PlanRef;
+ initConfirmationRef:PlanRef;tailRef:PlanRef;firstSequence:number;lastSequence:number;ranges:ReadonlyArray<Readonly<MetadataRange>>;
+}>;
+type RangeSelection=Pick<NormalUnderstandingRangeDraft,'resultRef'|'initConfirmationRef'|'tailRef'|'firstSequence'|'lastSequence'|'ranges'>&{requestRef:PlanRef};
+type RangeCommand=Omit<Command,'payload'>&{payload:Command['payload']&{selection:RangeSelection}};
+type RangeRetained={command:RangeCommand;body:string;state:'SENDING'|'UNKNOWN'|'PENDING_SOURCE';requestRef?:PlanRef;expiresAt?:string};
+export type NormalUnderstandingRangeRequester=(draft:NormalUnderstandingRangeDraft,signal:AbortSignal,active:()=>boolean)=>Promise<PlanRef|void>;
+export type NormalUnderstandingRangeRecovery=(key:string,signal:AbortSignal)=>Promise<PlanRef|void>;
+type Props={client:ApiClient;session:DocumentSession;projectId:string;assignmentRef:PlanRef;preparations:PreparationRecord[];busy:boolean;
+ metadataReader?:NormalUnderstandingMetadataReader;rangeRequester?:NormalUnderstandingRangeRequester;rangeRecovery?:NormalUnderstandingRangeRecovery};
 type SessionRecords={csrf:string;userId:string;clientId:string;commands:Map<string,Retained>};
 const clientRecords=new WeakMap<ApiClient,WeakMap<typeof fetch,SessionRecords[]>>();
+const ownerRangeRecords=new WeakMap<Map<string,Retained>,{records:Map<string,RangeRetained>;checkingControl:Set<string>}>();
 
 // /session refreshes its projection without changing the cookie-derived CSRF. A login or
 // reauthentication changes clientId or CSRF and must never inherit an earlier command.
@@ -44,6 +56,14 @@ export function normalUnderstandingRecords(session:DocumentSession,client:ApiCli
  const commands=new Map<string,Retained>();owners.push({csrf,userId,clientId,commands});
  return commands;
 }
+function rangeLedger(session:DocumentSession,client:ApiClient){
+ const owner=normalUnderstandingRecords(session,client);
+ let ledger=ownerRangeRecords.get(owner);
+ if(!ledger){ledger={records:new Map(),checkingControl:new Set()};ownerRangeRecords.set(owner,ledger);}
+ return ledger;
+}
+const hasRangeRequest=(records:Map<string,RangeRetained>,scope:NormalUnderstandingMetadataRequest)=>[...records.values()].some(({command})=>
+ command.projectId===scope.projectId&&command.targetId===scope.executionId&&command.expectedVersion===scope.executionGeneration);
 
 function channel(client:ApiClient,session:DocumentSession,signal:AbortSignal,active:()=>boolean){
  const transport=client.transport,{csrfToken:csrf,clientId}=session,userId=session.user.id;
@@ -89,17 +109,79 @@ export function prepareNormalUnderstandingCommand(basis:Basis):Command{
   targetId:scope.executionId,expectedVersion:scope.executionGeneration,baselineRefs:[],approvalRef:null,payload:structuredClone({assignmentRef:scope.assignmentRef,preparationRef:scope.preparationRef})};
 }
 
-export async function sendNormalUnderstandingCommand(client:ApiClient,session:DocumentSession,command:Command,body:string,signal:AbortSignal,active=()=>true){
+async function sendUnderstandingCommandReceipt(client:ApiClient,session:DocumentSession,command:Command|RangeCommand,body:string,signal:AbortSignal,active:()=>boolean){
  if(command.clientId!==session.clientId||JSON.stringify(command)!==body||!uuid(command.projectId)||!uuid(command.targetId)||!uuid(command.commandId))throw new ApiError('INPUT_INVALID',422);
  const owner=channel(client,session,signal,active);
  const v=await wire(owner,`/api/v1/projects/${command.projectId}/executions/${command.targetId}/understanding-response-read-requests`,signal,body);
  if(!exact(v,['operationId','commandId','projectId','status','targetId','version','data','evidenceRefs','warnings','serverReceivedAt'])||!uuid(v.operationId)
   ||v.commandId!==command.commandId||v.projectId!==command.projectId||v.status!=='APPLIED'||!instant(v.serverReceivedAt)
   ||!Array.isArray(v.evidenceRefs)||v.evidenceRefs.length||!Array.isArray(v.warnings)||v.warnings.length
-  ||!exact(v.data,['ref','status','requestRef','state','sourceAvailable','selectionAvailable','expiresAt'])||v.data.status!=='NORMAL_UNDERSTANDING_METADATA_REQUESTED'
+  ||!exact(v.data,['ref','status','requestRef','state','sourceAvailable','selectionAvailable','expiresAt'])
+  ||v.data.status!==('selection' in command.payload?'NORMAL_UNDERSTANDING_RANGE_REQUESTED':'NORMAL_UNDERSTANDING_METADATA_REQUESTED')
   ||!ref(v.data.requestRef)||v.data.requestRef.version!==1||v.targetId!==v.data.requestRef.id||v.version!==1||!same(v.data.ref,v.data.requestRef)
+  ||'selection' in command.payload&&v.data.requestRef.id===command.payload.selection.requestRef.id
   ||!instant(v.data.expiresAt)||Date.parse(v.data.expiresAt)<=Date.parse(v.serverReceivedAt)||v.data.state!=='PENDING_SOURCE'||v.data.sourceAvailable!==false||v.data.selectionAvailable!==false)throw new ApiError('RESPONSE_INVALID');
- return v.data.requestRef;
+ return {requestRef:v.data.requestRef,expiresAt:v.data.expiresAt};
+}
+export async function sendNormalUnderstandingCommand(client:ApiClient,session:DocumentSession,command:Command,body:string,signal:AbortSignal,active=()=>true){
+ return (await sendUnderstandingCommandReceipt(client,session,command,body,signal,active)).requestRef;
+}
+
+export function createNormalUnderstandingRangeCommands(client:ApiClient,session:DocumentSession,projectId:string,assignmentKey:string,active:()=>boolean){
+ const ledger=rangeLedger(session,client),{records:retained,checkingControl}=ledger;
+ const activeOwner=()=>active()&&rangeLedger(session,client)===ledger;
+ const isAssignment=(command:RangeCommand)=>command.projectId===projectId&&ordered(command.payload.assignmentRef)===assignmentKey;
+ const readControl=(signal:AbortSignal,current:()=>boolean)=>{
+  const owner=channel(client,session,signal,current);
+  return documentControl(new ApiClient((input,options)=>{
+   owner.check();return owner.transport.call(globalThis,input,{...options,signal});
+  }),projectId,session);
+ };
+ async function transmit(key:string,pending:RangeRetained,signal:AbortSignal,current:()=>boolean){
+  const withOwner=()=>activeOwner()&&current()&&!signal.aborted&&retained.get(key)===pending;
+  try{
+   const {requestRef,expiresAt}=await sendUnderstandingCommandReceipt(client,session,pending.command,pending.body,signal,withOwner);
+   if(!withOwner())throw new ApiError('CONNECTION_LOST');
+   retained.set(key,{...pending,state:'PENDING_SOURCE',requestRef,expiresAt});return requestRef;
+  }catch(error){
+   if(retained.get(key)===pending)retained.set(key,{...pending,state:'UNKNOWN'});
+   throw error;
+  }
+ }
+ const request:NormalUnderstandingRangeRequester=async(draft,signal,selectionCurrent)=>{
+  const {request:origin,resultRef,initConfirmationRef,tailRef,firstSequence,lastSequence,ranges}=structuredClone(draft);
+  const current=()=>activeOwner()&&selectionCurrent()&&!signal.aborted;
+  if(!current()||origin.projectId!==projectId||ordered(origin.assignmentRef)!==assignmentKey)throw new ApiError('DISCOVERY_SCOPE_CHANGED');
+  const payload={assignmentRef:origin.assignmentRef,preparationRef:origin.preparationRef,
+   selection:{requestRef:origin.requestRef,resultRef,initConfirmationRef,tailRef,firstSequence,lastSequence,ranges}};
+  const key=ordered([origin.projectId,origin.executionId,origin.executionGeneration,payload]);
+  const previous=retained.get(key);
+  if(previous?.state==='PENDING_SOURCE')return structuredClone(previous.requestRef);
+  const scopeKey=ordered([origin.projectId,origin.executionId,origin.executionGeneration]);
+  if(checkingControl.has(scopeKey)||hasRangeRequest(retained,origin))throw new ApiError('NORMAL_UNDERSTANDING_RANGE_ORIGINAL_REQUIRED');
+  checkingControl.add(scopeKey);
+  try{
+   const controlGeneration=await readControl(signal,current);
+   if(!current())throw new ApiError('DISCOVERY_SCOPE_CHANGED');
+   if(hasRangeRequest(retained,origin))throw new ApiError('NORMAL_UNDERSTANDING_RANGE_ORIGINAL_REQUIRED');
+   const command:RangeCommand={schemaVersion:1,projectId,commandId:crypto.randomUUID(),clientId:session.clientId,controlGeneration,
+    operation:'readNormalUnderstandingResponse',targetId:origin.executionId,expectedVersion:origin.executionGeneration,baselineRefs:[],approvalRef:null,payload};
+   const pending:RangeRetained={command,body:JSON.stringify(command),state:'SENDING'};
+   retained.set(key,pending);
+   return await transmit(key,pending,signal,selectionCurrent);
+  }finally{checkingControl.delete(scopeKey);}
+ };
+ const recover:NormalUnderstandingRangeRecovery=async(key,signal)=>{
+  const saved=retained.get(key);
+  if(!activeOwner()||!saved||saved.state!=='UNKNOWN'||!isAssignment(saved.command))throw new ApiError('DISCOVERY_SCOPE_CHANGED');
+  const generation=await readControl(signal,activeOwner);
+  if(!activeOwner()||signal.aborted||retained.get(key)!==saved)throw new ApiError('DISCOVERY_SCOPE_CHANGED');
+  if(generation!==saved.command.controlGeneration)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
+  const pending:RangeRetained={...saved,state:'SENDING'};
+  retained.set(key,pending);
+  return transmit(key,pending,signal,activeOwner);
+ };
+ return {request,recover};
 }
 
 function currentMetadata(value:NormalUnderstandingMetadataResult,request:NormalUnderstandingMetadataRequest):NormalUnderstandingMetadataResult{
@@ -159,7 +241,73 @@ export async function readNormalUnderstandingMetadata(client:ApiClient,session:D
  }
 }
 
-export function NormalUnderstandingDiscovery({client,session,projectId,assignmentRef,preparations,busy,metadataReader}:Props){
+function prepareRangeDraft(current:StoredMetadata,firstSequence:number,lastSequence:number):NormalUnderstandingRangeDraft|null{
+ if(Date.parse(current.expiresAt)<=Date.now()||!version(firstSequence)||!version(lastSequence)||lastSequence<firstSequence||lastSequence-firstSequence>=200)return null;
+ const ranges=current.metadata.ranges.filter(range=>range.sequence>=firstSequence&&range.sequence<=lastSequence);
+ if(ranges.length!==lastSequence-firstSequence+1||ranges.some((range,index)=>range.sequence!==firstSequence+index)||
+    ranges.reduce((count,range)=>count+range.textBlocks,0)>200||ranges.reduce((bytes,range)=>bytes+range.textBytes,0)>2*1024*1024)return null;
+ const {request,resultRef,metadata:{contextBundleRef,initConfirmationRef,tailRef}}=current;
+ return structuredClone({request,resultRef,contextBundleRef,initConfirmationRef,tailRef,firstSequence,lastSequence,ranges});
+}
+
+function UnderstandingRangeSelection({current,requestRange,active,disabled,onSettled}:{current:StoredMetadata;requestRange:NormalUnderstandingRangeRequester;active:()=>boolean;disabled:boolean;onSettled:()=>void}){
+ const [first,setFirst]=useState(''),[last,setLast]=useState(''),[notice,setNotice]=useState('');
+ const ownerRef=useRef({current,requestRange});
+ if(ownerRef.current.current!==current||ownerRef.current.requestRange!==requestRange)ownerRef.current={current,requestRange};
+ const owner=ownerRef.current,view=useRef({owner,active,disabled});view.current={owner,active,disabled};
+ const firstOwner=useRef(owner),activeSelection=firstOwner.current===owner;
+ const inFlight=useRef<{owner:typeof owner;controller:AbortController}|null>(null);
+ const live=useRef(false);
+ const dispatched=useRef<{current:StoredMetadata;keys:Set<string>}>({current,keys:new Set()});
+ if(dispatched.current.current!==current)dispatched.current={current,keys:new Set()};
+ const range=activeSelection?prepareRangeDraft(current,Number(first),Number(last)):null;
+ const selection=useRef(range);selection.current=range;
+ useEffect(()=>{
+  live.current=true;firstOwner.current=owner;selection.current=null;setFirst('');setLast('');setNotice('');
+  return()=>{
+   live.current=false;selection.current=null;
+   if(inFlight.current?.owner===owner){inFlight.current.controller.abort();inFlight.current=null;}
+  };
+ },[owner]);
+ function cancel(){
+  if(ownerRef.current!==owner)return;
+  inFlight.current?.controller.abort();inFlight.current=null;
+  selection.current=null;setFirst('');setLast('');setNotice('');
+ }
+ async function confirm(){
+  if(!live.current||ownerRef.current!==owner||view.current.owner!==owner||!view.current.active()||view.current.disabled||inFlight.current||
+     !range||!selection.current||!same(selection.current,range))return;
+  const draft=prepareRangeDraft(current,range.firstSequence,range.lastSequence);
+  if(!draft||!same(draft,range))return;
+  const key=ordered([draft.firstSequence,draft.lastSequence]),used=dispatched.current.keys;
+  if(used.has(key))return;
+  used.add(key);
+  const flight={owner,controller:new AbortController()};inFlight.current=flight;setNotice('구간 요청 전달 중');
+  const isCurrent=()=>inFlight.current===flight&&ownerRef.current===owner&&view.current.active()&&!flight.controller.signal.aborted&&Date.parse(current.expiresAt)>Date.now();
+  try{const receipt=await requestRange(draft,flight.controller.signal,isCurrent);if(isCurrent())setNotice(receipt?'':'구간 요청 전달');}
+  catch{if(isCurrent())setNotice('구간 요청 결과 미확인');}
+  finally{if(inFlight.current===flight)inFlight.current=null;onSettled();}
+ }
+ const busy=inFlight.current?.owner===owner;
+ const used=range!==null&&dispatched.current.keys.has(ordered([range.firstSequence,range.lastSequence]));
+ return <div>
+  <fieldset disabled={disabled||busy}>
+   <legend>조회할 출력 구간</legend>
+   <label>시작 순번<select aria-label="출력 구간 시작 순번" value={activeSelection?first:''} onChange={event=>{selection.current=null;setFirst(event.target.value);setNotice('');}}>
+    <option value="">시작 순번 선택</option>{current.metadata.ranges.map(row=><option key={row.sequence} value={row.sequence}>{row.sequence}</option>)}
+   </select></label>
+   <label>끝 순번<select aria-label="출력 구간 끝 순번" value={activeSelection?last:''} onChange={event=>{selection.current=null;setLast(event.target.value);setNotice('');}}>
+    <option value="">끝 순번 선택</option>{current.metadata.ranges.map(row=><option key={row.sequence} value={row.sequence}>{row.sequence}</option>)}
+   </select></label>
+   {activeSelection&&first&&last&&!range?<p role="status">목록에 있는 연속 순번을 한도 안에서 선택하세요.</p>:null}
+   <button type="button" disabled={!range||used} onClick={()=>void confirm()}>선택 구간 조회 요청</button>
+  </fieldset>
+  {activeSelection&&(first||last||notice)?<button type="button" onClick={cancel}>구간 선택 취소</button>:null}
+  {activeSelection&&notice?<p role="status">{notice}</p>:null}
+ </div>;
+}
+
+export function NormalUnderstandingDiscovery({client,session,projectId,assignmentRef,preparations,busy,metadataReader,rangeRequester,rangeRecovery}:Props){
  const [selection,setSelection]=useState(''),[basis,setBasis]=useState<Basis|null>(null),[notice,setNotice]=useState(''),[working,setWorking]=useState(false),[,render]=useState(0);
  const local=normalUnderstandingRecords(session,client),key=ordered([projectId,assignmentRef,session.user.id,session.clientId]);
  const scope=useRef({key,records:local}),flight=useRef<AbortController|null>(null);
@@ -170,6 +318,17 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
  const available=preparations.filter(p=>p.projectId===projectId&&p.snapshot.intent?.mode==='CONTEXT_REVIEW'&&p.snapshot.intent?.connectionKind==='REGISTERED_DEFINITION'&&same(p.snapshot.intent?.assignmentRef,assignmentRef));
  const selected=available.find(p=>ordered(p.ref)===selection);
  const recordsForAssignment=[...local.entries()].filter(([,record])=>record.command.projectId===projectId&&same(record.command.payload.assignmentRef,assignmentRef));
+ const rangeRequests=rangeRecovery?rangeLedger(session,client).records:null;
+ const retainedRanges=rangeRequests?[...rangeRequests].filter(([,entry])=>entry.command.projectId===projectId&&same(entry.command.payload.assignmentRef,assignmentRef)):[];
+ const now=Date.now(),rangeExpiry=Math.min(Infinity,...retainedRanges.flatMap(([,entry])=>{
+  const expires=entry.expiresAt?Date.parse(entry.expiresAt):0;
+  return expires>now?[expires]:[];
+ }));
+ useEffect(()=>{
+  if(!Number.isFinite(rangeExpiry))return;
+  const timer=setTimeout(()=>render(value=>value+1),Math.min(2147483647,Math.max(0,rangeExpiry-Date.now())));
+  return()=>clearTimeout(timer);
+ },[rangeExpiry]);
  const picked=useRef<PlanRef|null>(null);picked.current=selected?.ref??null;
  const current=basis&&selected&&same(basis.scope.assignmentRef,assignmentRef)&&same(basis.scope.preparationRef,selected.ref)?basis:null;
  const selectedKey=current?ordered([key,current.scope.preparationRef,current.scope.executionId,current.scope.executionGeneration]):null;
@@ -180,9 +339,11 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
  const [metadata,setMetadata]=useState<{key:string;record:Retained;owner:typeof readOwner;
   value:NormalUnderstandingMetadataResult|'READING'|'UNKNOWN'|'AUTH_REQUIRED'}|null>(null);
  const metadataFlight=useRef<{owner:typeof readOwner;controller:AbortController}|null>(null);
+ const metadataView=useRef<typeof metadata>(null);
  function cancelMetadata(){
   metadataFlight.current?.controller.abort();
   metadataFlight.current=null;
+  metadataView.current=null;
   setMetadata(null);
  }
  useEffect(()=>{
@@ -202,6 +363,7 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
    assignmentRef:command.payload.assignmentRef,preparationRef:command.payload.preparationRef});
   const operation=new AbortController(),reading={owner:readOwner,controller:operation};
   metadataFlight.current=reading;
+  metadataView.current=null;
   const isCurrent=()=>active(operation)&&metadataScope.current===readOwner&&local.get(writeKey)===record;
   const publish=(value:NonNullable<typeof metadata>['value'])=>{if(isCurrent())setMetadata({key:writeKey,record,owner:readOwner,value});};
   publish('READING');
@@ -214,6 +376,7 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
   finally{if(metadataFlight.current===reading)metadataFlight.current=null;}
  }
  const shownMetadata=metadata?.owner===readOwner?metadata:null;
+ metadataView.current=shownMetadata;
  useEffect(()=>{
   const value=shownMetadata?.value;
   if(typeof value!=='object'||value.status!=='METADATA_STORED')return;
@@ -251,7 +414,7 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
    }
   });
  }
- if(!available.length&&!recordsForAssignment.length)return null;
+ if(!available.length&&!recordsForAssignment.length&&!retainedRanges.length)return null;
  return <section aria-label="최초 이해 자료 탐색"><h6>최초 이해 자료 탐색</h6>
   <fieldset disabled={busy||working}><legend>등록 실행 준비 선택</legend>
    <select aria-label="이해 자료 탐색 준비" value={selection} onChange={event=>{cancelMetadata();setSelection(event.target.value);setBasis(null);setNotice('');}}>
@@ -278,6 +441,9 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
      <p role="status">출력 메타데이터 보관 · 관측 {currentView.observedAt}</p>
      <p>같은 세션 · 출력 구간 {currentView.metadata.ranges.length}개 · 결과 {currentView.resultRef.id}</p>
      <ul>{currentView.metadata.ranges.map(range=><li key={range.outputRef.id}>순번 {range.sequence} · 출력 {range.outputRef.id} · 텍스트 {range.textBlocks}개 / {range.textBytes} 바이트</li>)}</ul>
+     {rangeRequester&&currentView.metadata.ranges.length&&!(rangeRequests&&hasRangeRequest(rangeRequests,currentView.request))?<UnderstandingRangeSelection current={currentView} requestRange={rangeRequester} disabled={busy||working}
+      active={()=>metadataScope.current===readOwner&&metadataView.current===shownMetadata&&local.get(writeKey)===record&&normalUnderstandingRecords(session,client)===local}
+      onSettled={()=>{if(scope.current===owner&&normalUnderstandingRecords(session,client)===local)render(value=>value+1);}}/>:null}
     </>:null}
    </>:null}
    {record.state==='DENIED'?<><p role="alert">탐색 요청 거절 · {record.code}</p>
@@ -286,6 +452,15 @@ export function NormalUnderstandingDiscovery({client,session,projectId,assignmen
     <button type="button" disabled={busy||working} onClick={()=>void submit(writeKey)}>같은 탐색 명령 결과 확인</button></>:null}
    {record.state==='SENDING'?<p role="status">원 명령 결과 확인 중</p>:null}
   </li>;})}</ul>:null}
+  {retainedRanges.length?<ul aria-label="이해 자료 구간 요청">{retainedRanges.map(([rangeKey,entry])=><li key={rangeKey}>
+   <p>원 명령 {entry.command.commandId} · 순번 {entry.command.payload.selection.firstSequence}–{entry.command.payload.selection.lastSequence}</p>
+   {entry.state==='PENDING_SOURCE'?<p role="status">구간 요청 보관 · {entry.expiresAt&&Date.parse(entry.expiresAt)>now?'원문 대기':'현재 원문 조회 불가'} · {entry.requestRef?.id}</p>:null}
+   {entry.state==='SENDING'?<p role="status">구간 요청 확인 중</p>:null}
+   {entry.state==='UNKNOWN'?<>
+    <p role="status">구간 요청 결과 미확인 · 원 명령 보존</p>
+    <button type="button" disabled={busy||working} onClick={()=>void run(async operation=>{await rangeRecovery?.(rangeKey,operation.signal);})}>같은 구간 명령 결과 확인</button>
+   </>:null}
+  </li>)}</ul>:null}
   {working?<p role="status">확인 중</p>:null}
  </section>;
 }

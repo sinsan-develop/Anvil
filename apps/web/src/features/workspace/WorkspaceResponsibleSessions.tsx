@@ -9,7 +9,7 @@ import { listCandidates, readCandidate, type CandidateHit } from '../connections
 import { ordered } from '../knowledge/review-view.ts';
 import {readProviderClaimPageHistory,readProviderClaimReceiptHistory,type ProviderClaimPageHistory,type ProviderClaimHistory,type ProviderClaimHistoryQuery} from './provider-claim-receipt-api.ts';
 import {ClaimUnderstandingHistory} from './ClaimUnderstandingHistory.tsx';
-import {NormalUnderstandingDiscovery,readNormalUnderstandingMetadata,type NormalUnderstandingMetadataReader} from './NormalUnderstandingDiscovery.tsx';
+import {createNormalUnderstandingRangeCommands,NormalUnderstandingDiscovery,readNormalUnderstandingMetadata,type NormalUnderstandingMetadataReader} from './NormalUnderstandingDiscovery.tsx';
 import {ResponsibleSessionApprovalEditor} from './ResponsibleSessionApprovalEditor.tsx';
 import {checkResponsibleSessionApprovalBinding,markResponsibleSessionDispatch,settleResponsibleSessionWrite} from './responsible-session-approval.ts';
 import {updateResponsibleSessionApprovalBuffer} from './responsible-session-api.ts';
@@ -43,6 +43,14 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
     return reader;
   },[client,transport,userId,clientId,csrfToken,projectId,assignmentKey,showMetadata]);
   readerOwner.current=metadataReader;
+  const rangeOwner=useRef<ReturnType<typeof createNormalUnderstandingRangeCommands>|undefined>(undefined);
+  const rangeCommands=useMemo(()=>{
+    if(!showMetadata)return undefined;
+    const commands=createNormalUnderstandingRangeCommands(client,{user:{id:userId},clientId,csrfToken},projectId,assignmentKey,
+      ()=>alive.current&&rangeOwner.current===commands&&client.transport===transport);
+    return commands;
+  },[client,transport,userId,clientId,csrfToken,projectId,assignmentKey,showMetadata]);
+  rangeOwner.current=rangeCommands;
   const update=(change:(b:ResponsibleSessionBuffer)=>ResponsibleSessionBuffer)=>{const binding=buffer?.bindingId;onChange(current=>current&&current.bindingId===binding?change(current):current);};
   const coordinator=state?.roles.find(r=>r.snapshot.kind==='COORDINATOR'),stage=state?.roles.find(r=>r.snapshot.kind==='STAGE_OWNER');
   const reservationKind=buffer?.reservationKind===undefined?'STAGE_OWNER':buffer.reservationKind,selectedRole=reservationKind==='COORDINATOR'?coordinator:reservationKind==='STAGE_OWNER'?stage:undefined,binding=state?.bindings.find(r=>ordered(r.snapshot.roleRef)===ordered(selectedRole?.ref??null));
@@ -144,7 +152,7 @@ export function WorkspaceResponsibleSessions({client,confirmed,session,buffer,on
     </>:<p>역할·예약·준비 원문은 아직 조회 확인되지 않았습니다.</p>}
     {owner&&bound?<NormalUnderstandingDiscovery client={client} session={session} projectId={confirmed.projectId} assignmentRef={confirmed.ref}
      preparations={state&&stateStamp.current.epoch===epoch.current&&stateStamp.current.revision===stateRevision.current?state.preparations:[]}
-     busy={busy} metadataReader={metadataReader}/>:null}
+     busy={busy} metadataReader={metadataReader} rangeRequester={rangeCommands?.request} rangeRecovery={rangeCommands?.recover}/>:null}
   </section>;
 }
 
