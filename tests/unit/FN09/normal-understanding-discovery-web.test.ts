@@ -6,6 +6,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {build} from 'vite';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {readNormalClaimRangeHistory} from '../../../apps/web/src/features/workspace/claim-understanding-history.ts';
 
 type UI=typeof import('../../../apps/web/src/features/workspace/NormalUnderstandingDiscovery.tsx');
 type Workspace=typeof import('../../../apps/web/src/features/workspace/WorkspaceResponsibleSessions.tsx');
@@ -816,5 +817,137 @@ test('현재·역사 공통 body 검산은 spoof 본문 SHA 및 result/response 
   let calls=0;const client=new ApiClient(async()=>++calls===1?Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}}):Response.json(value));
   const read=historical?m.readNormalUnderstandingRangeHistory:m.readNormalUnderstandingRange;
   await assert.rejects(read(client,session,f.input,new AbortController().signal,()=>true),{code:'RESPONSE_INVALID'});assert.equal(calls,2);
+ }
+});
+
+
+function normalClaimSource(){
+ const f=historicalSource(),scope={projectId,executionId:f.input.request.executionId,executionGeneration:f.input.request.executionGeneration},sessionRef=ref(64),subject=ref(65),basisRefs=[ref(66)],received=[ref(67)],at=new Date().toISOString();
+ const optionsBody=canonicalJson({claudeQueryParams:{model:'auto'}});
+ const snapshot={intent:{projectId,assignmentRef,roleBindingRef:subject,contextBundleRef:f.history.body.contextBundleRef,connectionRef:ref(68),environmentRef:ref(69),capabilityRef:ref(70),budgetPolicyRef:ref(71),sourceScopes:[{sourceRootRef:ref(72),mappingRef:null,observationRef:ref(73),baselineRef:ref(74),targets:[{relativePath:'src/main.ts',kind:'FILE',access:'READ',recursive:false}]}],mode:'CONTEXT_REVIEW',reason:'등록 준비 당시 원형',connectionKind:'REGISTERED_DEFINITION',optionsFormat:'CLAUDE_QUERY_DATA_V1'},basisRefs,latestInstructionRefs:[],checkedAt:at,missingConditions:['RESPONSIBLE_SESSION_RESERVED','CONNECTION_DEFINITION_ONLY','ENVIRONMENT_DEFINITION_ONLY','CAPABILITY_UNVERIFIED','BUDGET_POLICY_UNVERIFIED','SOURCE_AUTHORIZATION_UNVERIFIED','HOST_OS_FENCE_UNVERIFIED'],authorizationState:'NOT_AUTHORIZED',preparedBy:{kind:'HUMAN',userId:session.user.id},executionAuthorized:false,dispatchPerformed:false,options:{format:'CLAUDE_QUERY_DATA_V1',mediaType:'application/json',body:optionsBody,utf8Bytes:Buffer.byteLength(optionsBody),contentHash:contentHash(optionsBody)}};
+ const preparation={projectId,ref:{...preparationRef,contentHash:contentHash(canonicalJson(snapshot))},snapshot,currentness:'NOT_RECHECKED'};f.input.request.preparationRef=preparation.ref;
+ const codes=['PURPOSE_REASON','BASELINE_AUTHORITY','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'];
+ const input={bundleRef:f.history.body.contextBundleRef,responseRef:f.history.responseRef,subjectBindingRef:subject,criteriaVersion:1,items:codes.map(code=>({code,sourceRefs:basisRefs,responsePartRefs:f.history.partRefs,judgement:'INSUFFICIENT',reason:'당시 사람의 부족 판단'})),reason:'정확 보관 범위로 판단한 당시 기록'};
+ const request={schemaVersion:1,projectId,commandId:id(75),clientId:session.clientId,controlGeneration:9,operation:'reviewUnderstanding',targetId:scope.executionId,expectedVersion:scope.executionGeneration,baselineRefs:[],approvalRef:null,payload:input};
+ const ground={bundleRef:input.bundleRef,preparationRef:preparation.ref,grantRef:ref(76),startCommandRef:ref(77),manifestRef:ref(78),roleBindingRef:subject,agentSessionRef:sessionRef,roleRef:ref(79),subjectBindingRef:subject,requestRef:f.input.request.requestRef,responseRef:input.responseRef,basisRefs,requiredPartRefs:received,receivedPartRefs:received,deliveryReceiptRefs:[ref(80)],responsePartRefs:f.history.partRefs,latestInstructionRefs:[],status:'SOURCE_BASIS_ONLY',subjectBindingState:'VERIFIED',reviewAvailable:false,scope,executionAuthorized:false,dispatchPerformed:false};
+ const binding={transport:'NORMAL_PROTECTED',scope,bundleRef:input.bundleRef,responseRef:input.responseRef,subjectBindingRef:subject,basisRefs,latestInstructionRefs:[],requiredPartRefs:received,receivedPartRefs:received,responsePartRefs:f.history.partRefs,criteria:input.items.map(({judgement:_j,reason:_r,...item})=>item),sourceState:'AVAILABLE',responseSubject:'EXTERNAL_AGENT',sourceBasis:ground};
+ const review={scope,sequence:1,previousRef:null,request,requestHash:contentHash(canonicalJson(request)),reviewer:{kind:'HUMAN',userId:session.user.id,clientId:session.clientId,humanSessionId:id(81),credentialGeneration:1,controlGeneration:9},policyRef:ref(82),currentBinding:binding,input,outcome:'NOT_ACCEPTED',recordedAt:at,executionAuthorized:false,dispatchPerformed:false};
+ const normal={transport:'NORMAL_PROTECTED',scope,items:[{ref:{...ref(83),contentHash:contentHash(canonicalJson(review))},snapshot:review}],currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};
+ const claimRef=ref(84),query={projectId,agentSessionId:sessionRef.id,executionId:scope.executionId,generation:scope.executionGeneration,commandId:id(85),kind:'THREAD' as const,requestIdDigest:'b'.repeat(64),claimHash:claimRef.contentHash};
+ const receipt={claimRef:{...claimRef,version:1 as const},recordedAt:at,state:'PROVIDER_CLAIM_RECORDED' as const,sourceVerification:'PROVIDER_CLAIM_ONLY' as const,nonceConsumed:true as const,credentialIssued:false as const,executionAuthorized:false as const,dispatchPerformed:false as const,workAccepted:false as const},item={query,receipt};
+ const original={found:true,receipt,observedAt:at,historyOnly:true,executionAuthorized:false,dispatchPerformed:false};
+ const page={projectId,agentSessionId:sessionRef.id,agentSessionRef:sessionRef,items:[item],hasMore:false,nextCursor:null,observedAt:at,historyOnly:true,availability:'UNVERIFIED',executionAuthorized:false,dispatchPerformed:false};
+ return {...f,scope,sessionRef,preparation,normal,item,original,page};
+}
+
+test('새 로그인의 normal 참조 재발견은 exact claim→정상 판단 v1→정확 준비 버전만 GET하고 옛 선택·기한을 만들지 않는다',async()=>{
+ const f=normalClaimSource(),calls:string[]=[];
+ const client=new ApiClient(async(url,options)=>{calls.push(String(url));assert.equal(options?.method,'GET');return Response.json(calls.length===1?f.original:calls.length===2?f.normal:f.preparation);});
+ const result=await readNormalClaimRangeHistory(client,projectId,f.sessionRef,f.item,new AbortController().signal,()=>true);
+ assert.equal(result.status,'EXACT_NORMAL_RANGE_REFS');assert.equal(calls.length,3);assert.match(calls[0]!,/provider-session-claim-receipt\?/);assert.equal(calls[1],`/api/v1/projects/${projectId}/executions/${f.scope.executionId}/understanding-reviews?generation=7`);assert.equal(calls[2],`/api/v1/projects/${projectId}/execution-preparations/${preparationRef.id}/versions/1`);
+ if(result.status!=='EXACT_NORMAL_RANGE_REFS')assert.fail();assert.deepEqual(result.origin.request,f.input.request);assert.deepEqual(result.origin.responseRef,f.history.responseRef);assert.deepEqual(result.origin.partRefs,f.history.partRefs);assert.equal('selection'in result.origin,false);assert.equal('expiresAt'in result.origin,false);assert.ok(!JSON.stringify(result).includes('원 선택만'));
+ const m=await load();let rawCalls=0;const rawClient=new ApiClient(async(url,options)=>{rawCalls++;assert.equal(options?.method,'GET');return String(url).includes('/range-history?')?Response.json(f.history):Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:11,status:'HELD'}});});
+ assert.deepEqual(await m.readReviewedNormalUnderstandingRangeHistory(rawClient,{...session,csrfToken:'r'.repeat(43)},result.origin,new AbortController().signal,()=>true),f.history);assert.equal(rawCalls,3);
+});
+
+test('normal claim 탐색은 합성 혼입·제로·손상·다른 세션/준비/판단 scope를 원문 권위나 최신 대체로 바꾸지 않는다',async()=>{
+ for(const mode of ['EMPTY','SYNTHETIC','SESSION','PREP_HASH','PREP_ROLE','PREP_BUNDLE','PREP_BASIS','PREP_PATH','HISTORY_REF','MISSING','DENY']){
+  const f=normalClaimSource(),h:any=structuredClone(f.normal),p=structuredClone(f.preparation),o=structuredClone(f.original);let calls=0;
+  if(mode==='EMPTY')h.items=[];if(mode==='SYNTHETIC')h.transport='SYNTHETIC_ONLY';if(mode==='SESSION'){h.items[0].snapshot.currentBinding.sourceBasis.agentSessionRef=ref(99);h.items[0].ref.contentHash=contentHash(canonicalJson(h.items[0].snapshot));}if(mode==='HISTORY_REF')h.items[0].ref.contentHash='0'.repeat(64);if(mode==='MISSING'){o.found=false;(o as any).receipt=null;}
+  if(mode==='PREP_HASH')p.snapshot.intent.reason+='tamper';if(mode==='PREP_ROLE')p.snapshot.intent.roleBindingRef=ref(99);if(mode==='PREP_BUNDLE')p.snapshot.intent.contextBundleRef=ref(99);if(mode==='PREP_BASIS')p.snapshot.basisRefs=[ref(99)];if(mode==='PREP_PATH')p.snapshot.intent.sourceScopes[0]!.targets[0]!.relativePath='../private';
+  if(['PREP_ROLE','PREP_BUNDLE','PREP_BASIS','PREP_PATH'].includes(mode)){p.ref.contentHash=contentHash(canonicalJson(p.snapshot));h.items[0].snapshot.currentBinding.sourceBasis.preparationRef=p.ref;h.items[0].ref.contentHash=contentHash(canonicalJson(h.items[0].snapshot));}
+  const client=new ApiClient(async()=>{calls++;return mode==='DENY'?Response.json({code:'FORBIDDEN'},{status:403}):Response.json(calls===1?o:calls===2?h:p);});
+  const value=readNormalClaimRangeHistory(client,projectId,f.sessionRef,f.item,new AbortController().signal,()=>true);
+  if(mode==='EMPTY')assert.deepEqual(await value,{status:'NO_NORMAL_REVIEW'});else await assert.rejects(value,mode);
+  assert.equal(calls,['DENY','MISSING'].includes(mode)?1:['EMPTY','SYNTHETIC','SESSION','HISTORY_REF'].includes(mode)?2:3);
+ }
+});
+
+test('normal claim 탐색의 각 await 뒤 이탈·취소는 후속 GET0이고 원 transport와 선택 객체를 끝까지 고정한다',async()=>{
+ for(const stop of [1,2,3])for(const mode of ['OWNER','ABORT','ITEM','TRANSPORT']){
+  const f=normalClaimSource(),controller=new AbortController();let calls=0,active=true,replacement=0;
+  const client=new ApiClient(async()=>{calls++;if(calls===stop){if(mode==='OWNER')active=false;else if(mode==='ABORT')controller.abort();else if(mode==='ITEM')f.item.query.generation++;else client.transport=async()=>{replacement++;throw Error('WRONG_TRANSPORT');};}return Response.json(calls===1?f.original:calls===2?f.normal:f.preparation);});
+  await assert.rejects(readNormalClaimRangeHistory(client,projectId,f.sessionRef,f.item,controller.signal,()=>active));assert.equal(calls,stop);assert.equal(replacement,0);
+ }
+});
+
+
+test('실제 Provider claim 목록의 명시 버튼→normal exact 참조→별도 과거 원문은 새 로그인에서 원장 없이 GET만 수행한다',async()=>{
+ const hooks=await import(reactMemory),w=await compile(reactMemory,'WorkspaceResponsibleSessions'),f=normalClaimSource(),calls:{path:string;init?:RequestInit}[]=[];
+ let projection={...session,csrfToken:'r'.repeat(43)},active=true;
+ const client=new ApiClient(async(url,init)=>{
+  const path=String(url);calls.push({path,init});assert.equal(init?.method,'GET');
+  if(path.includes('/provider-session-claims?'))return Response.json(f.page);
+  if(path.includes('/provider-session-claim-receipt?'))return Response.json(f.original);
+  if(path.includes('/understanding-reviews?'))return Response.json(f.normal);
+  if(path.includes('/execution-preparations/'))return Response.json(f.preparation);
+  if(path.includes('/range-history?'))return Response.json(f.history);
+  assert.equal(path,`/api/v1/projects/${projectId}`);return Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:12,status:'HELD'}});
+ });
+ const find=(tree:any,pred:(n:any)=>boolean):any=>Array.isArray(tree)?tree.map(n=>find(n,pred)).find(Boolean):tree&&typeof tree==='object'?(pred(tree)?tree:find(tree.props?.children,pred)):undefined;
+ const draw=()=>hooks.draw(()=>w.ProviderClaimHistoryPanel({client,projectId,sessionRef:f.sessionRef,subjectKey:session.user.id+':'+session.clientId,normalSession:projection,normalActive:()=>active,onAuthenticationLost:()=>{throw Error('UNEXPECTED_AUTH_FAILURE');}}),'claim-list');
+ const normal=()=>find(draw(),n=>n.props?.entryOwner&&n.props?.item&&n.props?.session);
+ const drawNormal=()=>{const n=normal();assert.ok(n);return hooks.draw(()=>n.type(n.props),'claim-normal');};
+ const source=()=>find(drawNormal(),n=>n.props?.input?.kind==='NORMAL_REVIEW_HISTORY');
+ const raw=()=>{const n=source();assert.ok(n);return hooks.draw(()=>n.type(n.props),'claim-raw');};
+ const html=()=>renderToStaticMarkup(raw());
+ const until=async(check:()=>boolean)=>{const end=performance.now()+3000;while(!check()&&performance.now()<end)await new Promise<void>(r=>setImmediate(r));assert.ok(check());};
+ try{
+  draw();assert.equal(calls.length,0);button(draw(),'공급자 세션 기록 조회')!.onClick!();
+  await until(()=>!!find(draw(),n=>typeof n.props?.onNormalHistory==='function'));
+  const row=find(draw(),n=>typeof n.props?.onNormalHistory==='function'),tree=row.type(row.props);
+  assert.match(renderToStaticMarkup(tree),/이 실행의 이해 검토 이력/);
+  const choose=find(tree,n=>n.type==='button'&&String(n.props.children).includes('과거 원문 참조 확인'));assert.ok(choose);choose.props.onClick();drawNormal();
+  await until(()=>!!source());assert.equal(calls.length,4);assert.equal(source().props.input.kind,'NORMAL_REVIEW_HISTORY');assert.equal('selection'in source().props.input,false);assert.equal('expiresAt'in source().props.input,false);assert.doesNotMatch(renderToStaticMarkup(drawNormal()),/원 선택만/);
+  const selected=source().props.input;assert.deepEqual(selected.request,f.input.request);button(raw(),'과거 보관 원문 확인')!.onClick!();await until(()=>html().includes('현재 실행·검토 근거 없음'));
+  assert.equal(calls.length,7);assert.match(html(),/&lt;script&gt;원 선택만&lt;\/script&gt;/);assert.doesNotMatch(html(),/<script>|검토 명령|승인 요청/);
+  assert.match(calls[5]!.path,/range-history\?controlGeneration=12&/);assert.equal(new Headers(calls[5]!.init?.headers).get('x-anvil-csrf'),projection.csrfToken);
+  assert.ok(!JSON.stringify(hooks.snapshot('claim-list')).includes('원 선택만'));assert.ok(!JSON.stringify(hooks.snapshot('claim-normal')).includes('원 선택만'));
+  button(raw(),'과거 원문 닫기')!.onClick!();assert.doesNotMatch(html(),/원 선택만/);
+  button(drawNormal(),'과거 원문 참조 확인 취소·닫기')!.onClick!();assert.equal(normal(),undefined);hooks.unmount('claim-raw');hooks.unmount('claim-normal');
+  const before=calls.length;projection={...projection,csrfToken:'s'.repeat(43)};draw();assert.equal(find(draw(),n=>typeof n.props?.onNormalHistory==='function'),undefined);assert.equal(calls.length,before);
+  assert.ok(calls.every(c=>c.init?.method==='GET'&&c.init?.body===undefined));
+ }finally{hooks.unmount('claim-raw');hooks.unmount('claim-normal');hooks.unmount('claim-list');}
+});
+
+test('normal claim 다단계 await 중 same-value 선택 객체/owner ABA와 취소는 원 요청을 닫고 늦은 결과·후속 GET을 폐기한다',async()=>{
+ const hooks=await import(reactMemory),w=await compile(reactMemory,'WorkspaceResponsibleSessions');
+ for(const phase of [1,2,3]){
+  const f=normalClaimSource();let calls=0,active=true,release!:(r:Response)=>void,ready!:()=>void,owned:AbortSignal|null|undefined;
+  const waiting=new Promise<void>(r=>{ready=r;}),scopeOwner={},originalOwner={key:'choice'},originalItem=f.item;
+  let entryOwner=originalOwner,item=originalItem;
+  const value=()=>calls===1?f.original:calls===2?f.normal:f.preparation;
+  const client=new ApiClient(async(_url,init)=>{calls++;if(calls===phase){owned=init?.signal;ready();return new Promise<Response>(r=>{release=r;});}return Response.json(value());});
+  const draw=()=>hooks.draw(()=>w.NormalClaimRangeHistoryPanel({client,session,projectId,sessionRef:f.sessionRef,item,scopeOwner,entryOwner,active:()=>active,onClose:()=>{active=false;}}),'claim-await');
+  try{
+   draw();await waiting;assert.equal(calls,phase);active=false;item=structuredClone(originalItem);entryOwner={...originalOwner};draw();assert.equal(owned?.aborted,true);
+   item=originalItem;entryOwner=originalOwner;draw();release(Response.json(value()));for(let i=0;i<12;i++)await new Promise<void>(r=>setImmediate(r));
+   assert.equal(calls,phase);assert.doesNotMatch(renderToStaticMarkup(draw()),/과거 보관 원문 확인|원 선택만/);assert.ok(!JSON.stringify(hooks.snapshot('claim-await')).includes('원 선택만'));
+  }finally{hooks.unmount('claim-await');}
+ }
+});
+
+test('재발견 원문도 exact review body/part/bundle 및 공용 유한 prefix 문법 오염을 선택 payload 복원 없이 거절한다',async()=>{
+ const m=await load(),f=normalClaimSource();const basis=await readNormalClaimRangeHistory(new ApiClient(async(url)=>Response.json(String(url).includes('claim-receipt')?f.original:String(url).includes('understanding-reviews')?f.normal:f.preparation)),projectId,f.sessionRef,f.item,new AbortController().signal,()=>true);assert.equal(basis.status,'EXACT_NORMAL_RANGE_REFS');if(basis.status!=='EXACT_NORMAL_RANGE_REFS')assert.fail();
+ const changes=[(v:any)=>v.body.parts[0].sequence++,(v:any)=>v.body.parts[0].blockIndex++,(v:any)=>v.body.parts[0].kind='SYSTEM_INIT',(v:any)=>v.body.contextBundleRef=ref(99),(v:any)=>v.body.executionGeneration++,(v:any)=>v.partRefs[0]=ref(99),(v:any)=>v.body.beforeRef=null,(v:any)=>v.body.afterRef=v.body.parts[0].outputRef,(v:any)=>v.body.parts[0].text='\ud800',(v:any)=>v.responseRef.id=v.resultRef.id,(v:any)=>v.responseRef.contentHash='0'.repeat(64),(v:any)=>v.currentness='CURRENT'];
+ for(const [index,change] of changes.entries()){const v:any=structuredClone(f.history),input=structuredClone(basis.origin);change(v);
+  if(v.body.parts[0].text.isWellFormed()&&v.responseRef.contentHash!=='0'.repeat(64)){v.body.parts[0].textHash=contentHash(v.body.parts[0].text);v.partRefs[0].contentHash=contentHash(canonicalJson(v.body.parts[0]));v.responseRef.contentHash=contentHash(canonicalJson(v.body));if(input.responseRef.id===v.responseRef.id)input.responseRef=v.responseRef;if(input.partRefs[0]!.id===v.partRefs[0].id)input.partRefs=v.partRefs;}
+  await assert.rejects(m.verifyReviewedNormalUnderstandingRangeHistory(v,input,()=>{}),{code:'RESPONSE_INVALID'},'case '+index);
+ }
+});
+
+
+test('normal claim의 새 30초 탐색과 취소는 멈춘 각 원 fetch도 닫고 늦은 응답을 파싱하거나 후속 조회하지 않는다',async t=>{
+ for(const phase of [1,2,3])for(const mode of ['EXPIRE','ABORT']){
+  const f=normalClaimSource(),controller=new AbortController();let calls=0,cancelled=0,ready!:()=>void,release!:(r:Response)=>void,owned:AbortSignal|null|undefined;
+  const gate=new Promise<void>(r=>{ready=r;}),value=()=>calls===1?f.original:calls===2?f.normal:f.preparation;
+  const client=new ApiClient(async(_url,init)=>{calls++;if(calls===phase){owned=init?.signal;ready();return new Promise<Response>(r=>{release=r;});}return Response.json(value());});
+  t.mock.timers.enable({apis:['setTimeout']});
+  try{
+   const result=readNormalClaimRangeHistory(client,projectId,f.sessionRef,f.item,controller.signal,()=>true);await gate;const rejected=assert.rejects(result);
+   if(mode==='EXPIRE')t.mock.timers.tick(30000);else controller.abort();await rejected;assert.equal(owned?.aborted,true);assert.equal(calls,phase);
+   release(new Response(new ReadableStream({start(c){c.enqueue(new TextEncoder().encode(JSON.stringify(value())));},cancel(){cancelled++;}}),{headers:{'content-type':'application/json'}}));
+   for(let i=0;i<8;i++)await new Promise<void>(r=>setImmediate(r));assert.equal(cancelled,1);assert.equal(calls,phase);t.mock.timers.tick(30000);assert.equal(calls,phase);
+  }finally{controller.abort();t.mock.timers.reset();}
  }
 });

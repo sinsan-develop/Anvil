@@ -1,12 +1,12 @@
 import {useEffect,useRef,useState} from 'react';
 import {ApiError} from '../../api/client.ts';
 import {ordered} from '../knowledge/review-view.ts';
-import type {NormalUnderstandingRangeReadRequest,NormalUnderstandingRangeHistoryReader,NormalUnderstandingRangeHistoryResult} from './NormalUnderstandingDiscovery.tsx';
+import type {HistoricalRangeInput,NormalUnderstandingRangeHistoryResult} from './NormalUnderstandingDiscovery.tsx';
 
-type Verify=(raw:unknown,input:NormalUnderstandingRangeReadRequest,check:()=>void)=>Promise<NormalUnderstandingRangeHistoryResult>;
+type Verify<T extends HistoricalRangeInput>=(raw:unknown,input:T,check:()=>void)=>Promise<NormalUnderstandingRangeHistoryResult>;
 type Status='READING'|'UNKNOWN'|'UNAVAILABLE'|'NOT_STORED'|'NOT_FOUND'|null;
 /** 본문은 이 보기의 상태에만 둔다. 현재 선택/검토/승인으로 넘기는 출구는 없다. */
-export function NormalUnderstandingRangeHistory({input,reader,verify,active,disabled,scopeOwner,entryOwner}:{input:NormalUnderstandingRangeReadRequest;reader:NormalUnderstandingRangeHistoryReader;verify:Verify;active:()=>boolean;disabled:boolean;scopeOwner:object;entryOwner:object}){
+export function NormalUnderstandingRangeHistory<T extends HistoricalRangeInput>({input,reader,verify,active,disabled,scopeOwner,entryOwner}:{input:T;reader:(input:Readonly<T>,signal:AbortSignal)=>Promise<NormalUnderstandingRangeHistoryResult>;verify:Verify<T>;active:()=>boolean;disabled:boolean;scopeOwner:object;entryOwner:object}){
  const [shown,setShown]=useState<{owner:object;value:NormalUnderstandingRangeHistoryResult;wallEnd:number;monoEnd:number}|null>(null);
  const [status,setStatus]=useState<{owner:object;value:Status}|null>(null);
  const alive=useRef(true),live=useRef({active,disabled});live.current={active,disabled};

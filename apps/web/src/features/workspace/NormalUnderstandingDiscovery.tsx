@@ -1,3 +1,4 @@
+import {readBoundedUnderstandingHistoryJson as boundedRangeJson} from './claim-understanding-history.ts';
 import {NormalUnderstandingRangeHistory} from './NormalUnderstandingRangeHistory.tsx';
 import {NormalInitialUnderstandingReview} from './NormalInitialUnderstandingReview.tsx';
 import type {NormalInitialUnderstandingReviewStorage} from '../session-detail/understanding-review-write.ts';
@@ -49,6 +50,9 @@ export type NormalUnderstandingRangeResult=
     body:{schemaVersion:1;kind:'FIXED_RANGE_SELECTION';attribution:'SESSION_ONLY';projectId:string;executionId:string;executionGeneration:number;requestRef:PlanRef;acquisitionRef:PlanRef;sourceRequestRef:PlanRef;sourceResultRef:PlanRef;contextBundleRef:PlanRef;initConfirmationRef:PlanRef;tailRef:PlanRef;firstSequence:number;lastSequence:number;beforeRef:PlanRef|null;afterRef:PlanRef|null;parts:RangePart[];wholeConversationComplete:false;executionAuthorized:false}};
 export type NormalUnderstandingRangeReader=(request:Readonly<NormalUnderstandingRangeReadRequest>,signal:AbortSignal)=>Promise<NormalUnderstandingRangeResult>;
 export type NormalUnderstandingRangeHistoryResult={status:'RANGE_STORED_HISTORICAL';requestRef:PlanRef;resultRef:PlanRef;responseRef:PlanRef;partRefs:PlanRef[];currentness:'NOT_RECHECKED';observedAt:string;expiresAt:string;selectionAvailable:false;reviewAvailable:false;executionAuthorized:false;dispatchPerformed:false;body:Extract<NormalUnderstandingRangeResult,{status:'RANGE_STORED'}>['body']};
+/** 검산된 normal 최초 판단 이력에서 재발견한 참조다. 원 선택 payload/전송 기한은 만들지 않는다. */
+export type ReviewedNormalUnderstandingRangeHistoryRequest={kind:'NORMAL_REVIEW_HISTORY';request:NormalUnderstandingMetadataRequest;responseRef:PlanRef;partRefs:PlanRef[];bundleRef:PlanRef;subjectBindingRef:PlanRef};
+export type HistoricalRangeInput=NormalUnderstandingRangeReadRequest|ReviewedNormalUnderstandingRangeHistoryRequest;
 export type NormalUnderstandingRangeHistoryReader=(request:Readonly<NormalUnderstandingRangeReadRequest>,signal:AbortSignal)=>Promise<NormalUnderstandingRangeHistoryResult>;
 type Props={reviewStorage?:NormalInitialUnderstandingReviewStorage;client:ApiClient;session:DocumentSession;projectId:string;assignmentRef:PlanRef;preparations:PreparationRecord[];busy:boolean;
  metadataReader?:NormalUnderstandingMetadataReader;rangeRequester?:NormalUnderstandingRangeRequester;rangeRecovery?:NormalUnderstandingRangeRecovery;rangeReader?:NormalUnderstandingRangeReader;rangeHistoryReader?:NormalUnderstandingRangeHistoryReader};
@@ -85,26 +89,7 @@ function channel(client:ApiClient,session:DocumentSession,signal:AbortSignal,act
  return {check,transport,csrf};
 }
 
-async function boundedRangeJson(response:Response,check:()=>void,signal:AbortSignal){
- if(!response.body)throw Error();const reader=response.body.getReader(),chunks:Uint8Array[]=[];let size=0,bytes:Uint8Array|undefined;
- let cancelled=false;
- const abort=()=>{if(cancelled)return;cancelled=true;try{void reader.cancel().catch(()=>{});}catch{}};signal.addEventListener('abort',abort,{once:true});
- try{
-  while(true){check();const r=await reader.read();try{check();}catch(error){if(!r.done)r.value.fill(0);throw error;}if(r.done)break;chunks.push(r.value);size+=r.value.byteLength;if(size>2097152)throw Error();}
-  check();
-  bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
-  check();const raw=new TextDecoder('utf-8',{fatal:true}).decode(bytes);check();
-  const value:unknown=JSON.parse(raw),stack:{keys:Set<string>|null;key:boolean}[]=[];
-  for(const token of raw.match(/"(?:\\.|[^"\\])*"|[{}\[\],:]|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null/g)??[]){
-   if(token==='{'||token==='[')stack.push({keys:token==='{'?new Set():null,key:token==='{'});else if(token==='}'||token===']')stack.pop();else{
-    const frame=stack.at(-1);if(!frame?.keys)continue;if(token===',')frame.key=true;else if(token===':')frame.key=false;else if(frame.key&&token.startsWith('"')){const k=JSON.parse(token);if(frame.keys.has(k))throw Error();frame.keys.add(k);}
-   }
-  }
-  check();return value;
- }finally{
-  signal.removeEventListener('abort',abort);try{abort();reader.releaseLock();}finally{bytes?.fill(0);for(const chunk of chunks)chunk.fill(0);}
- }
-}
+
 async function wire(owner:ReturnType<typeof channel>,path:string,signal:AbortSignal,body?:string,bounded=false,rangeCheck?:()=>void){
  const check=rangeCheck??owner.check;check();
  const headers:Record<string,string>={Accept:'application/json','X-Anvil-CSRF':owner.csrf};
@@ -289,11 +274,23 @@ function rangeReadInput(raw:NormalUnderstandingRangeReadRequest){
  }
  return v;
 }
+const rangeBodyKeys=['schemaVersion','kind','attribution','projectId','executionId','executionGeneration','requestRef','acquisitionRef','sourceRequestRef','sourceResultRef','contextBundleRef','initConfirmationRef','tailRef','firstSequence','lastSequence','beforeRef','afterRef','parts','wholeConversationComplete','executionAuthorized'];
+/** 양쪽 과거 출처와 현재 판독이 공유하는 본문/부분 바이트와 참조 비중복 검사다. */
+async function verifyRangeHashes(v:any,r:NormalUnderstandingMetadataRequest,check:()=>void,invalid:()=>never){
+ const b=v.body,digest=async(text:string)=>{check();const bytes=new TextEncoder().encode(text);try{const out=await crypto.subtle.digest('SHA-256',bytes);check();return [...new Uint8Array(out)].map(n=>n.toString(16).padStart(2,'0')).join('');}finally{bytes.fill(0);}};
+ const known=new Set<string>([r.requestRef.id,b.acquisitionRef.id,b.sourceRequestRef.id,b.sourceResultRef.id,b.initConfirmationRef.id,b.tailRef.id,...b.parts.map((p:any)=>p?.outputRef?.id)]);
+ if(known.has(v.resultRef.id))return invalid();known.add(v.resultRef.id);if(known.has(v.responseRef.id))return invalid();known.add(v.responseRef.id);
+ if(await digest(ordered(b))!==v.responseRef.contentHash)return invalid();
+ for(let i=0;i<b.parts.length;i++){
+  const p=b.parts[i],pr=v.partRefs[i];
+  if(!exact(p,['outputRef','sequence','payloadDigest','blockIndex','kind','text','textHash'])||p.kind!=='ASSISTANT_TEXT'||typeof p.text!=='string'||!p.text.isWellFormed()||!ref(pr)||pr.version!==1||known.has(pr.id)||await digest(p.text)!==p.textHash||await digest(ordered(p))!==pr.contentHash)return invalid();known.add(pr.id);
+ }
+ check();
+}
 /** BODY의 원 선택·부분 해시만 대조한다. 조회 상태나 검토 자격을 만들지 않는다. */
 async function verifyRangeBody(v:any,input:NormalUnderstandingRangeReadRequest,check:()=>void,invalid:()=>never){
- check();const r=input.request,s=input.selection;
- const b=v.body;
- if(!exact(b,['schemaVersion','kind','attribution','projectId','executionId','executionGeneration','requestRef','acquisitionRef','sourceRequestRef','sourceResultRef','contextBundleRef','initConfirmationRef','tailRef','firstSequence','lastSequence','beforeRef','afterRef','parts','wholeConversationComplete','executionAuthorized'])
+ check();const r=input.request,s=input.selection,b=v.body;
+ if(!exact(b,rangeBodyKeys)
   ||b.schemaVersion!==1||b.kind!=='FIXED_RANGE_SELECTION'||b.attribution!=='SESSION_ONLY'||b.projectId!==r.projectId||b.executionId!==r.executionId||b.executionGeneration!==r.executionGeneration||!same(b.requestRef,r.requestRef)
   ||!ref(b.acquisitionRef)||b.acquisitionRef.version!==1||!same(b.sourceRequestRef,s.requestRef)||!same(b.sourceResultRef,s.resultRef)||!ref(b.contextBundleRef)||!same(b.initConfirmationRef,s.initConfirmationRef)||!same(b.tailRef,s.tailRef)
   ||b.firstSequence!==s.firstSequence||b.lastSequence!==s.lastSequence||b.wholeConversationComplete!==false||b.executionAuthorized!==false
@@ -301,22 +298,11 @@ async function verifyRangeBody(v:any,input:NormalUnderstandingRangeReadRequest,c
   ||s.ranges.some(row=>[ref(b.beforeRef)?b.beforeRef.id:null,ref(b.afterRef)?b.afterRef.id:null].includes(row.outputRef.id))||same(s.ranges.at(-1)?.outputRef,s.tailRef)&&b.afterRef!==null
   ||ref(b.beforeRef)&&b.beforeRef.id===s.initConfirmationRef.id&&!same(b.beforeRef,s.initConfirmationRef)||ref(b.afterRef)&&b.afterRef.id===s.tailRef.id&&!same(b.afterRef,s.tailRef)
   ||!Array.isArray(b.parts)||b.parts.length!==s.ranges.reduce((n,row)=>n+row.textBlocks,0)||!Array.isArray(v.partRefs)||v.partRefs.length!==b.parts.length)return invalid();
- const digest=async(text:string)=>{check();const bytes=new TextEncoder().encode(text);try{const out=await crypto.subtle.digest('SHA-256',bytes);check();return [...new Uint8Array(out)].map(n=>n.toString(16).padStart(2,'0')).join('');}finally{bytes.fill(0);}};
- const known=new Set<string>([r.requestRef.id,b.acquisitionRef.id,s.requestRef.id,s.resultRef.id,s.initConfirmationRef.id,s.tailRef.id,...s.ranges.map(row=>row.outputRef.id)]);
- if(known.has(v.resultRef.id))return invalid();known.add(v.resultRef.id);if(known.has(v.responseRef.id))return invalid();known.add(v.responseRef.id);
- if(await digest(ordered(b))!==v.responseRef.contentHash)return invalid();
- let i=0;
- for(const row of s.ranges){let bytes=0;
-  for(let block=0;block<row.textBlocks;block++,i++){
-   const p=b.parts[i],pr=v.partRefs[i];
-   if(!exact(p,['outputRef','sequence','payloadDigest','blockIndex','kind','text','textHash'])||!same(p.outputRef,row.outputRef)||p.sequence!==row.sequence||p.payloadDigest!==row.payloadDigest||p.blockIndex!==block||p.kind!=='ASSISTANT_TEXT'
-    ||typeof p.text!=='string'||!p.text.isWellFormed()||!ref(pr)||pr.version!==1||known.has(pr.id)||await digest(p.text)!==p.textHash||await digest(ordered(p))!==pr.contentHash)return invalid();
-   bytes+=new TextEncoder().encode(p.text).byteLength;known.add(pr.id);
-  }
-  if(bytes!==row.textBytes)return invalid();
- }
+ await verifyRangeHashes(v,r,check,invalid);let i=0;
+ for(const row of s.ranges){let bytes=0;for(let block=0;block<row.textBlocks;block++,i++){const p=b.parts[i];if(!same(p.outputRef,row.outputRef)||p.sequence!==row.sequence||p.payloadDigest!==row.payloadDigest||p.blockIndex!==block)return invalid();const raw=new TextEncoder().encode(p.text);bytes+=raw.byteLength;raw.fill(0);}if(bytes!==row.textBytes)return invalid();}
  check();
 }
+
 async function currentRange(raw:unknown,input:NormalUnderstandingRangeReadRequest,check:()=>void):Promise<NormalUnderstandingRangeResult>{
  check();const v:any=structuredClone(raw),r=input.request,s=input.selection,invalid=():never=>{throw new ApiError('RESPONSE_INVALID');};
  if(!v||!same(v.request,r))return invalid();
@@ -355,21 +341,47 @@ export async function readNormalUnderstandingRange(client:ApiClient,session:Docu
 }
 
 /** 역사 응답의 별도 닫힌 판독기다. current DTO로 변환하거나 editor에 전달하지 않는다. */
-export async function verifyNormalUnderstandingRangeHistory(raw:unknown,input:NormalUnderstandingRangeReadRequest,check:()=>void):Promise<NormalUnderstandingRangeHistoryResult>{
- check();const v:any=structuredClone(raw),expected=rangeReadInput(input),invalid=():never=>{throw new ApiError('RESPONSE_INVALID');};
+function historyEnvelope(raw:unknown,r:NormalUnderstandingMetadataRequest,check:()=>void):{v:any;invalid:()=>never}{
+ check();const v:any=structuredClone(raw),invalid=():never=>{throw new ApiError('RESPONSE_INVALID');};
  if(!exact(v,['status','requestRef','resultRef','responseRef','partRefs','currentness','observedAt','expiresAt','selectionAvailable','reviewAvailable','executionAuthorized','dispatchPerformed','body'])
   ||v.status!=='RANGE_STORED_HISTORICAL'||v.currentness!=='NOT_RECHECKED'||v.selectionAvailable!==false||v.reviewAvailable!==false||v.executionAuthorized!==false||v.dispatchPerformed!==false
-  ||!same(v.requestRef,expected.request.requestRef)||!ref(v.resultRef)||v.resultRef.version!==1||!ref(v.responseRef)||v.responseRef.version!==1
-  ||!instant(v.observedAt)||!instant(v.expiresAt)||Date.parse(v.expiresAt)<=Math.max(Date.now(),Date.parse(v.observedAt))||Date.parse(v.expiresAt)-Date.parse(v.observedAt)>30000
-  ||new TextEncoder().encode(ordered(v)).byteLength>2097152)return invalid();
- await verifyRangeBody(v,expected,check,invalid);check();if(Date.parse(v.expiresAt)<=Date.now())return invalid();return v as NormalUnderstandingRangeHistoryResult;
+  ||!same(v.requestRef,r.requestRef)||!ref(v.resultRef)||v.resultRef.version!==1||!ref(v.responseRef)||v.responseRef.version!==1||!instant(v.observedAt)||!instant(v.expiresAt)||Date.parse(v.expiresAt)<=Math.max(Date.now(),Date.parse(v.observedAt))||Date.parse(v.expiresAt)-Date.parse(v.observedAt)>30000||new TextEncoder().encode(ordered(v)).byteLength>2097152)return invalid();
+ return {v,invalid};
+}
+export async function verifyNormalUnderstandingRangeHistory(raw:unknown,input:NormalUnderstandingRangeReadRequest,check:()=>void):Promise<NormalUnderstandingRangeHistoryResult>{
+ const expected=rangeReadInput(input),{v,invalid}=historyEnvelope(raw,expected.request,check);await verifyRangeBody(v,expected,check,invalid);check();if(Date.parse(v.expiresAt)<=Date.now())return invalid();return v;
+}
+function reviewHistoryInput(raw:ReviewedNormalUnderstandingRangeHistoryRequest){
+ const v=structuredClone(raw),r=v?.request;
+ if(!exact(v,['kind','request','responseRef','partRefs','bundleRef','subjectBindingRef'])||v.kind!=='NORMAL_REVIEW_HISTORY'||!exact(r,['projectId','executionId','executionGeneration','assignmentRef','preparationRef','requestRef'])||!uuid(r.projectId)||!uuid(r.executionId)||!version(r.executionGeneration)||![r.assignmentRef,r.preparationRef,r.requestRef,v.responseRef,v.bundleRef,v.subjectBindingRef].every(ref)||r.requestRef.version!==1||r.preparationRef.version!==1||v.responseRef.version!==1||!Array.isArray(v.partRefs)||!v.partRefs.length||v.partRefs.length>200||!v.partRefs.every(p=>ref(p)&&p.version===1)||new Set(v.partRefs.map(p=>p.id)).size!==v.partRefs.length)throw new ApiError('INPUT_INVALID',422);return v;
+}
+/** 보관 판단의 exact body/부분 참조만 대조한다. 사라진 원 선택이나 전달 기한을 만들어내지 않는다. */
+export async function verifyReviewedNormalUnderstandingRangeHistory(raw:unknown,input:ReviewedNormalUnderstandingRangeHistoryRequest,check:()=>void):Promise<NormalUnderstandingRangeHistoryResult>{
+ const e=reviewHistoryInput(input),r=e.request,{v,invalid}=historyEnvelope(raw,r,check),b=v.body;
+ if(!same(v.responseRef,e.responseRef)||!same(v.partRefs,e.partRefs)||!exact(b,rangeBodyKeys)||b.schemaVersion!==1||b.kind!=='FIXED_RANGE_SELECTION'||b.attribution!=='SESSION_ONLY'||b.projectId!==r.projectId||b.executionId!==r.executionId||b.executionGeneration!==r.executionGeneration||!same(b.requestRef,r.requestRef)||!same(b.contextBundleRef,e.bundleRef)||!['acquisitionRef','sourceRequestRef','sourceResultRef','initConfirmationRef','tailRef'].every(k=>ref(b[k])&&b[k].version===1)||!version(b.firstSequence)||!version(b.lastSequence)||b.lastSequence<b.firstSequence||b.lastSequence-b.firstSequence>=200||b.wholeConversationComplete!==false||b.executionAuthorized!==false||!Array.isArray(b.parts)||!b.parts.length||b.parts.length>200||b.parts.length!==v.partRefs.length||![b.beforeRef,b.afterRef].every(x=>x===null||ref(x)&&x.version===1)||(b.firstSequence===1)!==(b.beforeRef===null))return invalid();
+ const body=b as Record<string,any>;
+ let previous:any=null,total=0;const outputs=new Set<string>();
+ for(const p of body.parts){
+  if(!p||!ref(p.outputRef)||p.outputRef.version!==1||!version(p.sequence)||!Number.isSafeInteger(p.blockIndex)||p.blockIndex<0||typeof p.payloadDigest!=='string'||!/^[a-f0-9]{64}$/.test(p.payloadDigest)||typeof p.text!=='string'||!p.text.isWellFormed())return invalid();
+  if(previous&&p.sequence===previous.sequence){if(!same(p.outputRef,previous.outputRef)||p.payloadDigest!==previous.payloadDigest||p.blockIndex!==previous.blockIndex+1)return invalid();}
+  else{if(p.sequence!==(previous?previous.sequence+1:body.firstSequence)||p.blockIndex!==0||outputs.has(p.outputRef.id)||p.outputRef.id===body.initConfirmationRef.id||[body.beforeRef?.id,body.afterRef?.id].includes(p.outputRef.id)||p.outputRef.id===body.tailRef.id&&!same(p.outputRef,body.tailRef))return invalid();outputs.add(p.outputRef.id);}
+  const bytes=new TextEncoder().encode(p.text);total+=bytes.byteLength;bytes.fill(0);if(total>2097152)return invalid();previous=p;
+ }
+ if(previous.sequence!==body.lastSequence||outputs.has(body.tailRef.id)&&(!same(previous.outputRef,body.tailRef)||body.afterRef!==null)||body.beforeRef?.id===body.initConfirmationRef.id&&!same(body.beforeRef,body.initConfirmationRef)||body.afterRef?.id===body.tailRef.id&&!same(body.afterRef,body.tailRef))return invalid();
+ await verifyRangeHashes(v,r,check,invalid);check();if(Date.parse(v.expiresAt)<=Date.now())return invalid();return v;
 }
 /** 원 요청의 전달 기한과 현재 실행 자격은 이 과거 읽기의 새 권위가 아니다. */
 export async function readNormalUnderstandingRangeHistory(client:ApiClient,session:DocumentSession,input:NormalUnderstandingRangeReadRequest,signal:AbortSignal,active:()=>boolean):Promise<NormalUnderstandingRangeHistoryResult>{
- const expected=rangeReadInput(input),owned=new AbortController();if(signal.aborted)owned.abort();
- const owner=channel(client,session,owned.signal,active),r=expected.request;
+ rangeReadInput(input);return readRangeHistory(client,session,input,signal,active,verifyNormalUnderstandingRangeHistory);
+}
+export async function readReviewedNormalUnderstandingRangeHistory(client:ApiClient,session:DocumentSession,input:ReviewedNormalUnderstandingRangeHistoryRequest,signal:AbortSignal,active:()=>boolean){
+ reviewHistoryInput(input);return readRangeHistory(client,session,input,signal,active,verifyReviewedNormalUnderstandingRangeHistory);
+}
+async function readRangeHistory<T extends HistoricalRangeInput>(client:ApiClient,session:DocumentSession,expected:T,signal:AbortSignal,active:()=>boolean,verify:(raw:unknown,input:T,check:()=>void)=>Promise<NormalUnderstandingRangeHistoryResult>){
+ const original=structuredClone(expected),owned=new AbortController();if(signal.aborted)owned.abort();
+ const owner=channel(client,session,owned.signal,active),r=original.request;
  let wall=Date.now(),mono=performance.now(),end=wall+30000,monoEnd=mono+30000;
- const check=()=>{owner.check();const w=Date.now(),m=performance.now();if(!same(expected,input)||w<wall||m<mono||w>=end||m>=monoEnd)throw new ApiError('DISCOVERY_SCOPE_CHANGED');wall=w;mono=m;};
+ const check=()=>{owner.check();const w=Date.now(),m=performance.now();if(!same(original,expected)||w<wall||m<mono||w>=end||m>=monoEnd)throw new ApiError('DISCOVERY_SCOPE_CHANGED');wall=w;mono=m;};
  const controlClient=new ApiClient((url,options)=>{check();return owner.transport.call(globalThis,url,{...options,signal:owned.signal});});
  let timer:ReturnType<typeof setTimeout>|undefined;
  const abort=()=>owned.abort();signal.addEventListener('abort',abort,{once:true});
@@ -386,7 +398,7 @@ export async function readNormalUnderstandingRangeHistory(client:ApiClient,sessi
    if(remaining>0&&remaining<=30000){const absolute=Date.parse(value.expiresAt);end=Math.min(end,absolute,queryWall+remaining);monoEnd=Math.min(monoEnd,queryMono+remaining,performance.now()+absolute-Date.now());}
   }
   arm();check();
-  const result=await verifyNormalUnderstandingRangeHistory(value,expected,check);check();
+  const result=await verify(value,original,check);check();
   const after=await documentControl(controlClient,r.projectId,session);check();
   if(after!==generation)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
   return result;
