@@ -1,3 +1,4 @@
+import {NormalUnderstandingRangeHistory} from './NormalUnderstandingRangeHistory.tsx';
 import {NormalInitialUnderstandingReview} from './NormalInitialUnderstandingReview.tsx';
 import type {NormalInitialUnderstandingReviewStorage} from '../session-detail/understanding-review-write.ts';
 import {useEffect,useRef,useState} from 'react';
@@ -47,8 +48,10 @@ export type NormalUnderstandingRangeResult=
  | {status:'RANGE_STORED';request:NormalUnderstandingMetadataRequest;resultRef:PlanRef;responseRef:PlanRef;partRefs:PlanRef[];currentness:'CURRENT';observedAt:string;expiresAt:string;selectionAvailable:true;
     body:{schemaVersion:1;kind:'FIXED_RANGE_SELECTION';attribution:'SESSION_ONLY';projectId:string;executionId:string;executionGeneration:number;requestRef:PlanRef;acquisitionRef:PlanRef;sourceRequestRef:PlanRef;sourceResultRef:PlanRef;contextBundleRef:PlanRef;initConfirmationRef:PlanRef;tailRef:PlanRef;firstSequence:number;lastSequence:number;beforeRef:PlanRef|null;afterRef:PlanRef|null;parts:RangePart[];wholeConversationComplete:false;executionAuthorized:false}};
 export type NormalUnderstandingRangeReader=(request:Readonly<NormalUnderstandingRangeReadRequest>,signal:AbortSignal)=>Promise<NormalUnderstandingRangeResult>;
+export type NormalUnderstandingRangeHistoryResult={status:'RANGE_STORED_HISTORICAL';requestRef:PlanRef;resultRef:PlanRef;responseRef:PlanRef;partRefs:PlanRef[];currentness:'NOT_RECHECKED';observedAt:string;expiresAt:string;selectionAvailable:false;reviewAvailable:false;executionAuthorized:false;dispatchPerformed:false;body:Extract<NormalUnderstandingRangeResult,{status:'RANGE_STORED'}>['body']};
+export type NormalUnderstandingRangeHistoryReader=(request:Readonly<NormalUnderstandingRangeReadRequest>,signal:AbortSignal)=>Promise<NormalUnderstandingRangeHistoryResult>;
 type Props={reviewStorage?:NormalInitialUnderstandingReviewStorage;client:ApiClient;session:DocumentSession;projectId:string;assignmentRef:PlanRef;preparations:PreparationRecord[];busy:boolean;
- metadataReader?:NormalUnderstandingMetadataReader;rangeRequester?:NormalUnderstandingRangeRequester;rangeRecovery?:NormalUnderstandingRangeRecovery;rangeReader?:NormalUnderstandingRangeReader};
+ metadataReader?:NormalUnderstandingMetadataReader;rangeRequester?:NormalUnderstandingRangeRequester;rangeRecovery?:NormalUnderstandingRangeRecovery;rangeReader?:NormalUnderstandingRangeReader;rangeHistoryReader?:NormalUnderstandingRangeHistoryReader};
 type SessionRecords={csrf:string;userId:string;clientId:string;commands:Map<string,Retained>};
 const clientRecords=new WeakMap<ApiClient,WeakMap<typeof fetch,SessionRecords[]>>();
 const ownerRangeRecords=new WeakMap<Map<string,Retained>,{records:Map<string,RangeRetained>;checkingControl:Set<string>}>();
@@ -286,12 +289,9 @@ function rangeReadInput(raw:NormalUnderstandingRangeReadRequest){
  }
  return v;
 }
-async function currentRange(raw:unknown,input:NormalUnderstandingRangeReadRequest,check:()=>void):Promise<NormalUnderstandingRangeResult>{
- check();const v:any=structuredClone(raw),r=input.request,s=input.selection,invalid=():never=>{throw new ApiError('RESPONSE_INVALID');};
- if(!v||!same(v.request,r))return invalid();
- if(v.status==='PENDING_SOURCE'||v.status==='CURRENT_UNAVAILABLE'){if(!exact(v,['status','request']))return invalid();return {status:v.status==='PENDING_SOURCE'&&Date.parse(input.expiresAt)<=Date.now()?'CURRENT_UNAVAILABLE':v.status,request:r};}
- if(!exact(v,['status','request','resultRef','responseRef','partRefs','currentness','observedAt','expiresAt','selectionAvailable','body'])||v.status!=='RANGE_STORED'||v.currentness!=='CURRENT'||v.selectionAvailable!==true
-  ||!ref(v.resultRef)||v.resultRef.version!==1||!ref(v.responseRef)||v.responseRef.version!==1||!instant(v.observedAt)||!instant(v.expiresAt)||Date.parse(v.expiresAt)-Date.parse(v.observedAt)>30000||Date.parse(v.expiresAt)<=Math.max(Date.now(),Date.parse(v.observedAt))||new TextEncoder().encode(ordered(v)).byteLength>2097152)return invalid();
+/** BODY의 원 선택·부분 해시만 대조한다. 조회 상태나 검토 자격을 만들지 않는다. */
+async function verifyRangeBody(v:any,input:NormalUnderstandingRangeReadRequest,check:()=>void,invalid:()=>never){
+ check();const r=input.request,s=input.selection;
  const b=v.body;
  if(!exact(b,['schemaVersion','kind','attribution','projectId','executionId','executionGeneration','requestRef','acquisitionRef','sourceRequestRef','sourceResultRef','contextBundleRef','initConfirmationRef','tailRef','firstSequence','lastSequence','beforeRef','afterRef','parts','wholeConversationComplete','executionAuthorized'])
   ||b.schemaVersion!==1||b.kind!=='FIXED_RANGE_SELECTION'||b.attribution!=='SESSION_ONLY'||b.projectId!==r.projectId||b.executionId!==r.executionId||b.executionGeneration!==r.executionGeneration||!same(b.requestRef,r.requestRef)
@@ -315,6 +315,15 @@ async function currentRange(raw:unknown,input:NormalUnderstandingRangeReadReques
   }
   if(bytes!==row.textBytes)return invalid();
  }
+ check();
+}
+async function currentRange(raw:unknown,input:NormalUnderstandingRangeReadRequest,check:()=>void):Promise<NormalUnderstandingRangeResult>{
+ check();const v:any=structuredClone(raw),r=input.request,s=input.selection,invalid=():never=>{throw new ApiError('RESPONSE_INVALID');};
+ if(!v||!same(v.request,r))return invalid();
+ if(v.status==='PENDING_SOURCE'||v.status==='CURRENT_UNAVAILABLE'){if(!exact(v,['status','request']))return invalid();return {status:v.status==='PENDING_SOURCE'&&Date.parse(input.expiresAt)<=Date.now()?'CURRENT_UNAVAILABLE':v.status,request:r};}
+ if(!exact(v,['status','request','resultRef','responseRef','partRefs','currentness','observedAt','expiresAt','selectionAvailable','body'])||v.status!=='RANGE_STORED'||v.currentness!=='CURRENT'||v.selectionAvailable!==true
+  ||!ref(v.resultRef)||v.resultRef.version!==1||!ref(v.responseRef)||v.responseRef.version!==1||!instant(v.observedAt)||!instant(v.expiresAt)||Date.parse(v.expiresAt)-Date.parse(v.observedAt)>30000||Date.parse(v.expiresAt)<=Math.max(Date.now(),Date.parse(v.observedAt))||new TextEncoder().encode(ordered(v)).byteLength>2097152)return invalid();
+ await verifyRangeBody(v,input,check,invalid);
  check();if(Date.parse(v.expiresAt)<=Date.now())return invalid();return v as NormalUnderstandingRangeResult;
 }
 
@@ -343,6 +352,45 @@ export async function readNormalUnderstandingRange(client:ApiClient,session:Docu
   if(result.status==='RANGE_STORED'&&Date.parse(result.expiresAt)<=Date.now())throw new ApiError('RESPONSE_INVALID');return result;
  }catch(error){check();if(error instanceof ApiError&&(metadataCurrentStatuses.get(error.code)===error.status||error.code==='NORMAL_UNDERSTANDING_RANGE_CURRENT_REQUIRED'&&error.status===412))return {status:'CURRENT_UNAVAILABLE',request:r};throw error;}
  finally{signal.removeEventListener('abort',abort);if(timer!==undefined)clearTimeout(timer);}
+}
+
+/** 역사 응답의 별도 닫힌 판독기다. current DTO로 변환하거나 editor에 전달하지 않는다. */
+export async function verifyNormalUnderstandingRangeHistory(raw:unknown,input:NormalUnderstandingRangeReadRequest,check:()=>void):Promise<NormalUnderstandingRangeHistoryResult>{
+ check();const v:any=structuredClone(raw),expected=rangeReadInput(input),invalid=():never=>{throw new ApiError('RESPONSE_INVALID');};
+ if(!exact(v,['status','requestRef','resultRef','responseRef','partRefs','currentness','observedAt','expiresAt','selectionAvailable','reviewAvailable','executionAuthorized','dispatchPerformed','body'])
+  ||v.status!=='RANGE_STORED_HISTORICAL'||v.currentness!=='NOT_RECHECKED'||v.selectionAvailable!==false||v.reviewAvailable!==false||v.executionAuthorized!==false||v.dispatchPerformed!==false
+  ||!same(v.requestRef,expected.request.requestRef)||!ref(v.resultRef)||v.resultRef.version!==1||!ref(v.responseRef)||v.responseRef.version!==1
+  ||!instant(v.observedAt)||!instant(v.expiresAt)||Date.parse(v.expiresAt)<=Math.max(Date.now(),Date.parse(v.observedAt))||Date.parse(v.expiresAt)-Date.parse(v.observedAt)>30000
+  ||new TextEncoder().encode(ordered(v)).byteLength>2097152)return invalid();
+ await verifyRangeBody(v,expected,check,invalid);check();if(Date.parse(v.expiresAt)<=Date.now())return invalid();return v as NormalUnderstandingRangeHistoryResult;
+}
+/** 원 요청의 전달 기한과 현재 실행 자격은 이 과거 읽기의 새 권위가 아니다. */
+export async function readNormalUnderstandingRangeHistory(client:ApiClient,session:DocumentSession,input:NormalUnderstandingRangeReadRequest,signal:AbortSignal,active:()=>boolean):Promise<NormalUnderstandingRangeHistoryResult>{
+ const expected=rangeReadInput(input),owned=new AbortController();if(signal.aborted)owned.abort();
+ const owner=channel(client,session,owned.signal,active),r=expected.request;
+ let wall=Date.now(),mono=performance.now(),end=wall+30000,monoEnd=mono+30000;
+ const check=()=>{owner.check();const w=Date.now(),m=performance.now();if(!same(expected,input)||w<wall||m<mono||w>=end||m>=monoEnd)throw new ApiError('DISCOVERY_SCOPE_CHANGED');wall=w;mono=m;};
+ const controlClient=new ApiClient((url,options)=>{check();return owner.transport.call(globalThis,url,{...options,signal:owned.signal});});
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ const abort=()=>owned.abort();signal.addEventListener('abort',abort,{once:true});
+ const arm=()=>{if(timer!==undefined)clearTimeout(timer);const remaining=Math.min(end-Date.now(),monoEnd-performance.now());if(remaining<=0)owned.abort();else timer=setTimeout(abort,Math.min(2147483647,remaining));};
+ try{
+  arm();check();
+  const generation=await documentControl(controlClient,r.projectId,session);check();
+  const query=new URLSearchParams({controlGeneration:String(generation),executionGeneration:String(r.executionGeneration),requestVersion:String(r.requestRef.version),requestHash:r.requestRef.contentHash,
+   assignmentId:r.assignmentRef.id,assignmentVersion:String(r.assignmentRef.version),assignmentHash:r.assignmentRef.contentHash,preparationId:r.preparationRef.id,preparationVersion:String(r.preparationRef.version),preparationHash:r.preparationRef.contentHash});
+  const queryWall=wall,queryMono=mono;
+  const value=await wire(owner,`/api/v1/projects/${r.projectId}/executions/${r.executionId}/understanding-response-read-requests/${r.requestRef.id}/range-history?${query}`,owned.signal,undefined,true,check);check();
+  if(value&&typeof value==='object'&&'expiresAt'in value&&'observedAt'in value&&instant(value.expiresAt)&&instant(value.observedAt)){
+   const remaining=Date.parse(value.expiresAt)-Date.parse(value.observedAt);
+   if(remaining>0&&remaining<=30000){const absolute=Date.parse(value.expiresAt);end=Math.min(end,absolute,queryWall+remaining);monoEnd=Math.min(monoEnd,queryMono+remaining,performance.now()+absolute-Date.now());}
+  }
+  arm();check();
+  const result=await verifyNormalUnderstandingRangeHistory(value,expected,check);check();
+  const after=await documentControl(controlClient,r.projectId,session);check();
+  if(after!==generation)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
+  return result;
+ }finally{signal.removeEventListener('abort',abort);if(timer!==undefined)clearTimeout(timer);}
 }
 
 function prepareRangeDraft(current:StoredMetadata,firstSequence:number,lastSequence:number):NormalUnderstandingRangeDraft|null{
@@ -411,7 +459,7 @@ function UnderstandingRangeSelection({current,requestRange,active,disabled,onSet
  </div>;
 }
 
-export function NormalUnderstandingDiscovery({reviewStorage,client,session,projectId,assignmentRef,preparations,busy,metadataReader,rangeRequester,rangeRecovery,rangeReader}:Props){
+export function NormalUnderstandingDiscovery({reviewStorage,client,session,projectId,assignmentRef,preparations,busy,metadataReader,rangeRequester,rangeRecovery,rangeReader,rangeHistoryReader}:Props){
  const [selection,setSelection]=useState(''),[basis,setBasis]=useState<Basis|null>(null),[notice,setNotice]=useState(''),[working,setWorking]=useState(false),[,render]=useState(0);
  const local=normalUnderstandingRecords(session,client),key=ordered([projectId,assignmentRef,session.user.id,session.clientId]);
  const scope=useRef({key,records:local}),flight=useRef<AbortController|null>(null);
@@ -559,7 +607,7 @@ export function NormalUnderstandingDiscovery({reviewStorage,client,session,proje
    }
   });
  }
- if(!available.length&&!recordsForAssignment.length&&!retainedRanges.length)return null;
+ if(!available.length&&!recordsForAssignment.length&&!retainedRanges.length)return rangeHistoryReader?<p role="status">이 로그인에 정확한 구간 요청 참조가 없어 과거 원문을 열 수 없습니다.</p>:null;
  return <section aria-label="최초 이해 자료 탐색"><h6>최초 이해 자료 탐색</h6>
   <fieldset disabled={busy||working}><legend>등록 실행 준비 선택</legend>
    <select aria-label="이해 자료 탐색 준비" value={selection} onChange={event=>{cancelMetadata();cancelRange();setSelection(event.target.value);setBasis(null);setNotice('');}}>
@@ -614,12 +662,16 @@ export function NormalUnderstandingDiscovery({reviewStorage,client,session,proje
     <button type="button" onClick={cancelRange}>원문 닫기</button>
    </div>:null}
    {reviewStorage&&entry.requestRef?<NormalInitialUnderstandingReview key={rangeKey} client={client} session={session} request={{projectId,executionId:entry.command.targetId,executionGeneration:entry.command.expectedVersion,assignmentRef:entry.command.payload.assignmentRef,preparationRef:entry.command.payload.preparationRef,requestRef:entry.requestRef}} preparation={available.find(p=>same(p.ref,entry.command.payload.preparationRef))??null} source={source} viewActive={()=>!!source&&scope.current===owner&&rangeScope.current===rangeReadOwner&&rangeRequests?.get(rangeKey)===entry&&rangeViewToken.current===rangeToken&&performance.now()<(shownRange?.monoEnd??0)&&Date.parse(source.expiresAt)>Date.now()} storage={reviewStorage} busy={busy||working||view==='READING'}/>:null}
+   {rangeHistoryReader&&entry.state==='PENDING_SOURCE'&&entry.requestRef&&entry.expiresAt&&instant(entry.expiresAt)?<NormalUnderstandingRangeHistory key={'history:'+rangeKey} reader={rangeHistoryReader} verify={verifyNormalUnderstandingRangeHistory} scopeOwner={owner} entryOwner={entry}
+    input={{request:{projectId,executionId:entry.command.targetId,executionGeneration:entry.command.expectedVersion,assignmentRef:entry.command.payload.assignmentRef,preparationRef:entry.command.payload.preparationRef,requestRef:entry.requestRef},controlGeneration:entry.command.controlGeneration,expiresAt:entry.expiresAt,selection:entry.command.payload.selection}}
+    active={()=>scope.current===owner&&normalUnderstandingRecords(session,client)===local&&rangeRequests?.get(rangeKey)===entry&&entry.body===JSON.stringify(entry.command)} disabled={busy||working}/>:null}
    {entry.state==='SENDING'?<p role="status">구간 요청 확인 중</p>:null}
    {entry.state==='UNKNOWN'?<>
     <p role="status">구간 요청 결과 미확인 · 원 명령 보존</p>
     <button type="button" disabled={busy||working} onClick={()=>void run(async operation=>{await rangeRecovery?.(rangeKey,operation.signal);})}>같은 구간 명령 결과 확인</button>
    </>:null}
   </li>;})}</ul>:null}
+  {rangeHistoryReader&&!retainedRanges.length?<p role="status">이 로그인에 정확한 구간 요청 참조가 없어 과거 원문을 열 수 없습니다.</p>:null}
   {working?<p role="status">확인 중</p>:null}
  </section>;
 }
