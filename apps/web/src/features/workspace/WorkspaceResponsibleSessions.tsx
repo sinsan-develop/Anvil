@@ -196,7 +196,7 @@ export function ProviderClaimHistoryRow({item,pending,onSelect,onUnderstanding,o
 
 export function ProviderClaimHistoryPanel({onWorkReviewScope,client,projectId,sessionRef,subjectKey,onAuthenticationLost,normalSession,normalActive}:{client:ApiClient;projectId:string;sessionRef:ProviderClaimPageHistory['agentSessionRef'];subjectKey:string;onAuthenticationLost:()=>void;normalSession?:DocumentSession;normalActive?:()=>boolean;onWorkReviewScope?:(scope:WorkReviewScope)=>void}){
  const scope=ordered([projectId,sessionRef,subjectKey]),current=useRef(scope),sequence=useRef(0),alive=useRef(true);current.current=scope;
- const auth=ordered([normalSession?.user.id,normalSession?.clientId,normalSession?.csrfToken]),ownerRef=useRef({client,transport:client.transport,scope,auth});
+ const auth=normalSession?ordered([normalSession.user.id,normalSession.clientId,normalSession.csrfToken]):'NO_NORMAL_SESSION',ownerRef=useRef({client,transport:client.transport,scope,auth});
  if(ownerRef.current.client!==client||ownerRef.current.transport!==client.transport||ownerRef.current.scope!==scope||ownerRef.current.auth!==auth)ownerRef.current={client,transport:client.transport,scope,auth};
  const panelOwner=ownerRef.current,normalLive=useRef(normalActive);normalLive.current=normalActive;
  const [normal,setNormal]=useState<{owner:object;item:ProviderClaimPageHistory['items'][number]}|null>(null);

@@ -1170,7 +1170,9 @@ test('원자료 START는 거절·변경요청 결정 또는 교차 명령에서 
  }finally{await j.app.close();}
 });
 
-test('원자료 START 정산 마지막 await의 source 교체는 rollback하고 같은 DB 다음 거래는 새 lease로만 소비한다',async()=>{
+test('원자료 START 정산 마지막 await의 source 교체는 rollback하고 같은 DB 다음 거래는 새 lease로만 소비한다',async t=>{
+ // fixture의 DB 시각과 같은 논리 시각으로 source 교체만 검사하며 원 인증 만료 규칙은 유지한다.
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});
  const j=await approvedOriginStartJourney(),source=j.queue.materials!.source,prior=Object.getOwnPropertyDescriptor(source,'readBody');let changed=false,attempts=0;
  try{const before=consumptionDomainCounts(j.f),request=structuredClone(j.f.tables.approvalRequests!.find(r=>r.id===j.command.approvalRef.requestId));
   j.f.modes.hook=sql=>{if(!changed&&sql.startsWith('SELECT * FROM anvil.fn09_origin_reuse_consumption_settle(')){changed=true;Object.defineProperty(source,'readBody',{configurable:true,value:async()=>{attempts++;throw Error('ALTERED_SOURCE_MUST_NOT_RUN');}});}};

@@ -101,7 +101,12 @@ test('동일 설치 native parent/원 Anvil/실제 ancestry가 아닌 PID·이�
 
 test('reader만 고정 exact 입력을 소비하며 create/key/일반 Dispatch 없이 원 root/원 Log를 닫는다 (정적)', () => {
   const host = source('DesktopTrustKeyHostSource.cs');
-  const reader = host.slice(host.indexOf('internal async Task<int> RunUnderstandingReaderAsync'), host.indexOf('// 등록 전 전용 pipe'));
+  const start = host.indexOf('internal async Task<int> RunUnderstandingReaderAsync(){');
+  const end = host.indexOf('internal async Task<int> RunSdkChildSupervisorAsync(){', start + 1);
+  assert.ok(start >= 0 && end > start, 'reader와 바로 다음 supervisor 메서드 선언 경계가 필요하다');
+  const reader = host.slice(start, end);
+  assert.match(reader, /^internal async Task<int> RunUnderstandingReaderAsync\(\)\{/);
+  assert.match(reader, /source\.ReadDelegatedUnderstanding\(Map\(f\["read"\]\)\)/);
   assert.match(reader, /OpenUnderstandingReader\(basis,kernel,budget\)/);
   assert.match(reader, /CheckUnderstandingDelegation/);
   assert.ok(reader.indexOf('byte[] tail=await Frame()') < reader.indexOf('OpenExistingForUnderstanding'));
