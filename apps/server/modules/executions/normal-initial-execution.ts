@@ -1,3 +1,4 @@
+import {readNormalWorkStartBasis,readNormalWorkStartReplay} from './normal-understanding-review.ts';
 import {startContextBody} from './normal-start-context-body.ts';
 export {startContextBody} from './normal-start-context-body.ts';
 import {randomUUID} from 'node:crypto';
@@ -103,7 +104,7 @@ async function protectedBasis(db:PoolClient,actor:AuthenticatedIdentity,request:
   if(Buffer.byteLength(body)+opt.utf8Bytes>2097152||opt.utf8Bytes<1)return reject();
   const host=env.snapshot.executionHostRef;
   if(host.kind!=='CONNECTOR_STATUS')return reject();
-  return {intent,host,stageRef:{applicationRef:task.applicationRef,nodeId:task.nodeId},sessionRef:binding.snapshot.sessionRef,bindingGeneration:binding.snapshot.generation,basisRefs:prep.snapshot.basisRefs,latestInstructionRefs:prep.snapshot.latestInstructionRefs,
+  return {...(prep.snapshot.understandingBasis?{understandingBasis:prep.snapshot.understandingBasis}:{}),intent,host,stageRef:{applicationRef:task.applicationRef,nodeId:task.nodeId},sessionRef:binding.snapshot.sessionRef,bindingGeneration:binding.snapshot.generation,basisRefs:prep.snapshot.basisRefs,latestInstructionRefs:prep.snapshot.latestInstructionRefs,
     materials:[{kind:'CONTEXT_BUNDLE',ref:ctx.ref,contentHash:contentHash(body),bytes:Buffer.byteLength(body)},
       {kind:'START_OPTIONS',ref:prep.ref,contentHash:opt.contentHash,bytes:opt.utf8Bytes}]};
 }
@@ -123,17 +124,37 @@ export class NormalInitialExecution {
       const auth=actor.authSession;
       if(!auth||!isoV1(auth.idleExpiresAt)||!isoV1(auth.absoluteExpiresAt))return reject();
       await currentProjectController(db,actor,request);
+      const previous=await projectReplay(db,actor,request);
+      let originalIntent:ReturnType<typeof readExecutionIntentV1>|undefined;
+      if(previous!==undefined){
+        const q=previous?.data?.snapshot,g=q?.grantRef;
+        if(previous?.data?.status!=='NORMAL_QUEUE_STORED'||q?.transport!==PRESENT||!refV1(g))return reject('IDEMPOTENCY_CONFLICT',409);
+        const rows=(await db.query('SELECT snapshot_json FROM anvil.execution_grants WHERE project_id=$1::uuid AND id=$2::uuid AND version=$3::bigint AND content_hash=$4::text LIMIT 2',[pid,g.id,g.version,g.contentHash])).rows;
+        const grant=rows.length===1?rows[0]?.snapshot_json:null,f=grant?.binding;
+        if(!grant||digest(grant)!==g.contentHash||grant.transport!==PRESENT||grant.factHash!==digest(f)||f?.projectId!==pid||f.executionId!==p.executionId||f.executionGeneration!==p.executionGeneration||!same(f.preparationRef,p.preparationRef)||!same(q.payload,p.payload))return reject('IDEMPOTENCY_CONFLICT',409);
+        originalIntent=readExecutionIntentV1(f.intent);
+        const stored=await this.#readers.preparations.read(db,actor,pid,p.preparationRef.id,p.preparationRef.version);
+        const {connectionKind:_,optionsFormat:__,...intent}=stored.snapshot.intent;
+        if(!same(stored.ref,p.preparationRef)||digest(stored.snapshot)!==p.preparationRef.contentHash||!same(intent,originalIntent))return reject('IDEMPOTENCY_CONFLICT',409);
+        if(originalIntent.mode==='WORK'&&stored.snapshot.understandingBasis){
+          if(!same(f.understandingReviewRef,stored.snapshot.understandingBasis.reviewRef)||!same(f.agentSession.sessionRef,stored.snapshot.understandingBasis.agentSessionRef))return reject('IDEMPOTENCY_CONFLICT',409);
+          const check=async()=>{await currentProjectController(db,actor,request);for(const operation of ['authorizeExecution','queueExecutionCommand'])await authorizeRuntimePolicy(db,actor,{...request,operation},{executionId:p.executionId,executionGeneration:p.executionGeneration,permissionPolicyRef:p.permissionPolicyRef,budgetPolicyRef:p.budgetPolicyRef,sourceScopes:originalIntent!.sourceScopes});};
+          await check();await readNormalWorkStartReplay(db,actor,request,stored.snapshot.understandingBasis);await check();
+          return previous;
+        }
+      }
       const scope:RequestScope={requestHash:digest(request),transactionId:await xid(db),projectId:pid,
         executionId:p.executionId,executionGeneration:p.executionGeneration,preparationRef:p.preparationRef,
         contextBundleRef:p.payload.contextBundleRef,actorId:actor.actorId,clientId:actor.clientId,humanSessionId:auth.id,
         controlGeneration:request.controlGeneration,credentialGeneration:actor.credentialGeneration};
       const read=()=>protectedBasis(db,actor,request,this.#readers,p),basis=await read(),{intent}=basis;
+      if(previous===undefined&&intent.mode==='WORK'&&(!basis.understandingBasis||!refV1(basis.understandingBasis.reviewRef)||basis.understandingBasis.scope.executionId===p.executionId))return reject('WORK_START_UNDERSTANDING_REQUIRED');
       const policyArgs={executionId:p.executionId,executionGeneration:p.executionGeneration,
-        permissionPolicyRef:p.permissionPolicyRef,budgetPolicyRef:p.budgetPolicyRef,sourceScopes:intent.sourceScopes};
+        permissionPolicyRef:p.permissionPolicyRef,budgetPolicyRef:p.budgetPolicyRef,sourceScopes:(originalIntent??intent).sourceScopes};
       const policies=async()=>[await authorizeRuntimePolicy(db,actor,{...request,operation:'authorizeExecution'},policyArgs),
         await authorizeRuntimePolicy(db,actor,request,policyArgs)];
       await policies();
-      const replay=await projectReplay(db,actor,request);
+      const replay=previous;
       if(replay!==undefined){
         if(replay.data?.status!=='NORMAL_QUEUE_STORED'||replay.data?.snapshot?.transport!==PRESENT)return reject('IDEMPOTENCY_CONFLICT',409);
         return replay;
@@ -153,8 +174,10 @@ export class NormalInitialExecution {
       if(!includes('capability',[intent.capabilityRef])||!includes('source',intent.sourceScopes.map(s=>s.observationRef))
         ||!same(first.stageRef,basis.stageRef)||!same(first.registrationRef,basis.host.registrationRef)
         ||!includes('basis',basis.basisRefs)||!basis.basisRefs.length
-        ||intent.mode==='WORK'&&(!refV1(first.understandingReviewRef)||!includes('understanding',[first.understandingReviewRef]))
+        ||intent.mode==='WORK'&&(!refV1(first.understandingReviewRef)||!same(first.understandingReviewRef,basis.understandingBasis?.reviewRef)||!includes('understanding',[first.understandingReviewRef]))
         ||intent.mode==='CONTEXT_REVIEW'&&intent.sourceScopes.some(s=>s.targets.some(t=>t.access!=='READ')))return reject();
+      const checkUnderstanding=async(value:ReturnType<typeof requireObservation>)=>{if(intent.mode==='WORK')await readNormalWorkStartBasis(db,actor,request,basis.understandingBasis,value.understandingReviewRef);};
+      await checkUnderstanding(first);
       const readRegistration=async()=>{
         const reg=await this.#readers.registrations.read(db,actor,pid,first.registrationRef.id);
         if(!same(reg.connectorRef,basis.host.connectorRef)||!same(reg.registrationRef,first.registrationRef)||!reg.basis.current||reg.state!=='ISSUED'||reg.connectorState!=='TRUSTED'
@@ -174,6 +197,7 @@ export class NormalInitialExecution {
         if(!same(basis,await read())||!same(reg,await readRegistration()))return reject();
         const current=await observe();
         if(!same(observationBinding(first),observationBinding(current))||Date.parse(current.checkedAt)<priorAt)return reject();
+        await checkUnderstanding(current);
         priorAt=Date.parse(current.checkedAt);
         return current;
       };

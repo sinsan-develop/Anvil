@@ -1,0 +1,172 @@
+-- FN09→WORK A: FRESH START/신규 permit의 정확 선택 소비. 미적용 SQL source.
+-- 0083/0089 본문·기존 synthetic/CONTEXT/legacy 이력·실제 실행 활성은 변경하지 않는다.
+BEGIN;
+
+-- 불변 준비·선택과 새 WORK 실행의 identity. 역사 경로에서는 현재 head/옛 수송 TTL을 요구하지 않는다.
+CREATE FUNCTION anvil.fn09_work_start_identity(p uuid,wanted jsonb,eid uuid,review_ref jsonb)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE ep anvil.execution_preparations;r anvil.project_storage_reservations;basis jsonb;
+BEGIN
+ IF NOT COALESCE(anvil.execution_preparation_ref_valid(wanted),false) OR wanted->'version' IS DISTINCT FROM '1'::jsonb OR eid IS NULL THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ SELECT * INTO STRICT ep FROM anvil.execution_preparations WHERE project_id=p AND id=(wanted->>'id')::uuid AND version=1;
+ basis=ep.snapshot_json->'understandingBasis';
+ IF wanted IS DISTINCT FROM jsonb_build_object('id',ep.id,'version',ep.version,'contentHash',ep.content_hash) OR ep.content_hash IS DISTINCT FROM anvil.execution_json_hash(ep.snapshot_json)
+  OR ep.snapshot_json#>>'{intent,mode}' IS DISTINCT FROM 'WORK' OR ep.snapshot_json#>>'{intent,connectionKind}' IS DISTINCT FROM 'REGISTERED_DEFINITION'
+  OR basis IS NULL OR basis->'reviewRef' IS DISTINCT FROM review_ref OR basis#>>'{scope,projectId}' IS DISTINCT FROM p::text OR basis#>>'{scope,executionId}'=eid::text
+  OR NOT COALESCE(anvil.fn09_registered_prepare_snapshot_valid(p,ep.snapshot_json),false) THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ SELECT * INTO STRICT r FROM anvil.project_storage_reservations WHERE project_id=p AND server_command_id=ep.command_id;
+ IF NOT COALESCE(anvil.fn09_registered_prepare_reservation_complete(r),false) OR basis IS DISTINCT FROM anvil.fn09_work_prepare_basis_history(p,review_ref) THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ RETURN jsonb_build_object('basis',basis,'intent',(ep.snapshot_json->'intent')-ARRAY['connectionKind','optionsFormat']);
+END;$$;
+ALTER FUNCTION anvil.fn09_work_start_identity(uuid,jsonb,uuid,jsonb) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_work_start_identity(uuid,jsonb,uuid,jsonb) FROM PUBLIC,anvil_v3_app;
+
+-- 기존 normal_exchange_current와 같은 auth SHARE→project UPDATE 순서다. permit에서 auth UPDATE로 승격하지 않는다.
+CREATE FUNCTION anvil.fn09_work_start_authority(s uuid,a uuid,c uuid,p uuid,q jsonb,i jsonb,policy jsonb,expected_tx text)
+RETURNS timestamptz LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE hs anvil.auth_sessions;pv anvil.permission_policy_versions;b anvil.limit_policy_versions;rule jsonb;allowed boolean=false;started timestamptz=clock_timestamp();ends timestamptz;d1 timestamptz;d2 timestamptz;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR expected_tx IS DISTINCT FROM txid_current()::text
+  OR NOT COALESCE(anvil.execution_json_shape(q,ARRAY['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload']),false)
+  OR q->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR q->>'projectId' IS DISTINCT FROM p::text OR q->>'clientId' IS DISTINCT FROM c::text OR q->>'operation' IS DISTINCT FROM 'queueExecutionCommand'
+  OR q->'targetId' IS DISTINCT FROM 'null'::jsonb OR q->'expectedVersion' IS DISTINCT FROM '0'::jsonb OR q->'approvalRef' IS DISTINCT FROM 'null'::jsonb OR q->'baselineRefs' IS DISTINCT FROM '[]'::jsonb
+  OR NOT COALESCE(anvil.execution_json_shape(q->'payload',ARRAY['operation','executionId','executionGeneration','preparationRef','permissionPolicyRef','budgetPolicyRef','payload']),false)
+  OR q#>>'{payload,operation}' IS DISTINCT FROM 'START_SESSION' OR q#>'{payload,budgetPolicyRef}' IS DISTINCT FROM i->'budgetPolicyRef' OR q#>'{payload,permissionPolicyRef}' IS DISTINCT FROM policy
+  OR NOT COALESCE(anvil.execution_json_shape(q#>'{payload,payload}',ARRAY['contextBundleRef','optionsRef']),false)
+  OR q#>'{payload,payload,contextBundleRef}' IS DISTINCT FROM i->'contextBundleRef' OR q#>'{payload,payload,optionsRef}' IS DISTINCT FROM q#>'{payload,preparationRef}' THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ PERFORM (q->>'commandId')::uuid;
+ IF jsonb_typeof(q#>'{payload,executionGeneration}') IS DISTINCT FROM 'number' OR (q#>>'{payload,executionGeneration}')::numeric NOT BETWEEN 1 AND 9007199254740991 OR trunc((q#>>'{payload,executionGeneration}')::numeric)<>(q#>>'{payload,executionGeneration}')::numeric THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ SELECT auth.* INTO hs FROM anvil.auth_sessions auth JOIN anvil.users u ON u.id=auth.user_id JOIN anvil.clients cl ON cl.id=auth.client_id AND cl.user_id=u.id
+ WHERE auth.id=s AND auth.user_id=a AND auth.client_id=c AND auth.revoked_at IS NULL AND u.revoked_at IS NULL AND u.status='ACTIVE' AND cl.revoked_at IS NULL
+  AND auth.credential_generation=u.credential_generation AND auth.idle_expires_at>started AND auth.absolute_expires_at>started FOR SHARE OF auth,u,cl;
+ IF hs.id IS NULL OR hs.reauth_until IS NULL OR hs.reauth_until<=started THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ PERFORM p.id FROM anvil.projects p JOIN anvil.project_members m ON m.project_id=p.id AND m.user_id=a JOIN anvil.project_control pc ON pc.project_id=p.id
+ WHERE p.id=fn09_work_start_authority.p AND p.archived_at IS NULL AND m.participation='OWNER' AND m.revoked_at IS NULL AND pc.actor_id=a AND pc.client_id=c AND pc.revoked_at IS NULL AND pc.generation::text=q->>'controlGeneration'
+ FOR UPDATE OF p FOR SHARE OF m,pc;
+ IF NOT FOUND THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ SELECT v.* INTO STRICT pv FROM anvil.permission_policies h JOIN anvil.permission_policy_versions v ON v.project_id=h.project_id AND v.policy_id=h.id AND v.version=h.head_version WHERE h.project_id=p FOR SHARE OF h;
+ IF policy IS DISTINCT FROM jsonb_build_object('id',pv.policy_id,'version',pv.version,'contentHash',pv.content_hash) OR pv.content_hash IS DISTINCT FROM anvil.fn01_hash(jsonb_build_object('rules',pv.rules_json,'reason',pv.reason,'reviewRefs',pv.review_refs)) THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ SELECT * INTO STRICT b FROM anvil.limit_policy_versions WHERE project_id=p AND scope_json=jsonb_build_object('kind','PROJECT','projectId',p) ORDER BY version DESC LIMIT 1;
+ IF q#>'{payload,budgetPolicyRef}' IS DISTINCT FROM jsonb_build_object('id',b.policy_id,'version',b.version,'contentHash',b.content_hash) OR b.snapshot_json->>'state' IS DISTINCT FROM 'APPLIED'
+  OR b.content_hash IS DISTINCT FROM anvil.execution_json_hash(b.snapshot_json) OR NOT COALESCE(anvil.limit_policy_limits_valid(b.snapshot_json->'limits'),false) OR (b.snapshot_json->>'expiresAt')::timestamptz<=started THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ d1=anvil.execution_policy_deadline(pv.rules_json,p,(q#>>'{payload,executionId}')::uuid,(q#>>'{payload,executionGeneration}')::bigint,a,'authorizeExecution',i->'budgetPolicyRef',i->'sourceScopes',started);
+ d2=anvil.execution_policy_deadline(pv.rules_json,p,(q#>>'{payload,executionId}')::uuid,(q#>>'{payload,executionGeneration}')::bigint,a,'queueExecutionCommand',i->'budgetPolicyRef',i->'sourceScopes',started);
+ IF d1 IS NULL OR d2 IS NULL THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ ends=least(started+interval '30 seconds',hs.idle_expires_at,hs.absolute_expires_at,hs.reauth_until,d1,d2,(b.snapshot_json->>'expiresAt')::timestamptz);
+ -- 원 판단의 작성자/client는 역사다. 현재 OWNER의 read AUTO는 별도로 재검산한다.
+ FOR rule IN SELECT value FROM jsonb_array_elements(pv.rules_json) LOOP
+  IF rule#>>'{subjectRef,kind}'='HUMAN' AND rule#>>'{subjectRef,userId}'=a::text AND rule->'operations'?'readNormalUnderstandingResponse'
+   AND EXISTS(SELECT 1 FROM jsonb_array_elements(rule->'targetScopes') t WHERE t->>'kind'='PROJECT' AND t->>'projectId'=p::text) AND (rule->>'expiresAt')::timestamptz>started THEN
+   IF rule->'subjectRef' IS DISTINCT FROM jsonb_build_object('kind','HUMAN','userId',a) OR rule->'targetScopes' IS DISTINCT FROM jsonb_build_array(jsonb_build_object('kind','PROJECT','projectId',p)) OR rule->>'disposition' IS DISTINCT FROM 'AUTO' OR rule->'limitPolicyRef' IS DISTINCT FROM 'null'::jsonb THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+   allowed=true;ends=least(ends,(rule->>'expiresAt')::timestamptz);
+  END IF;
+ END LOOP;
+ IF NOT allowed OR ends<=clock_timestamp() OR expected_tx IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ RETURN ends;
+END;$$;
+ALTER FUNCTION anvil.fn09_work_start_authority(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_work_start_authority(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn09_work_start_basis(s uuid,a uuid,c uuid,selection jsonb,policy jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid=(selection->>'projectId')::uuid;q jsonb=selection->'command';ep anvil.execution_preparations;data jsonb;basis jsonb;ends timestamptz;started timestamptz=clock_timestamp();
+BEGIN
+ IF NOT COALESCE(anvil.execution_json_shape(selection,ARRAY['projectId','command','understandingReviewRef']),false) THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ data=anvil.fn09_work_start_identity(p,q#>'{payload,preparationRef}',(q#>>'{payload,executionId}')::uuid,selection->'understandingReviewRef');basis=data->'basis';
+ ends=anvil.fn09_work_start_authority(s,a,c,p,q,data->'intent',policy,expected_tx);
+ SELECT * INTO STRICT ep FROM anvil.execution_preparations WHERE project_id=p AND id=(q#>>'{payload,preparationRef,id}')::uuid AND version=1 FOR SHARE;
+ IF basis IS DISTINCT FROM anvil.fn09_work_prepare_current_source(p,anvil.fn09_work_prepare_payload(ep.snapshot_json)) OR ends<=clock_timestamp() THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ RETURN jsonb_build_object('status','WORK_START_BASIS','basis',basis,'checkedAt',to_char(started AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'expiresAt',to_char(least(ends,started+interval '30 seconds') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+END;$$;
+ALTER FUNCTION anvil.fn09_work_start_basis(uuid,uuid,uuid,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_work_start_basis(uuid,uuid,uuid,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn09_work_start_replay(s uuid,a uuid,c uuid,selection jsonb,policy jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE p uuid=(selection->>'projectId')::uuid;q jsonb=selection->'command';h anvil.commands;g anvil.execution_grants;data jsonb;f jsonb;ends timestamptz;started timestamptz=clock_timestamp();
+BEGIN
+ IF NOT COALESCE(anvil.execution_json_shape(selection,ARRAY['projectId','command']),false) THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ SELECT * INTO STRICT h FROM anvil.commands WHERE project_id=p AND actor_id=a AND command_id=(q->>'commandId')::uuid;
+ SELECT * INTO STRICT g FROM anvil.execution_grants WHERE project_id=p AND command_id=h.id;
+ f=g.snapshot_json->'binding';
+ IF h.operation IS DISTINCT FROM 'queueExecutionCommand' OR h.client_id IS DISTINCT FROM c OR h.state IS DISTINCT FROM 'APPLIED' OR h.request_hash IS DISTINCT FROM anvil.execution_json_hash(q)
+  OR g.content_hash IS DISTINCT FROM anvil.execution_json_hash(g.snapshot_json) OR g.snapshot_json->>'transport' IS DISTINCT FROM 'NORMAL_PROTECTED'
+  OR q#>>'{payload,executionId}' IS DISTINCT FROM g.execution_id::text OR q#>'{payload,executionGeneration}' IS DISTINCT FROM to_jsonb(g.generation)
+  OR q#>'{payload,preparationRef}' IS DISTINCT FROM f->'preparationRef' OR NOT COALESCE(anvil.normal_start_material_complete(p,h.id),false) THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ data=anvil.fn09_work_start_identity(p,f->'preparationRef',g.execution_id,f->'understandingReviewRef');
+ IF f->'intent' IS DISTINCT FROM data->'intent' OR f#>'{agentSession,sessionRef}' IS DISTINCT FROM data#>'{basis,agentSessionRef}' OR f#>'{agentSession,roleBindingRef}' IS DISTINCT FROM data#>'{basis,roleBindingRef}' OR f->'basisRefs' IS DISTINCT FROM data#>'{basis,basisRefs}' OR f->'latestInstructionRefs' IS DISTINCT FROM data#>'{basis,latestInstructionRefs}' OR f#>'{agentSession,bindingGeneration}' IS DISTINCT FROM data#>'{basis,roleBindingRef,version}'
+  OR f#>>'{checks,understanding,state}' IS DISTINCT FROM 'VERIFIED_CURRENT' OR NOT COALESCE(f#>'{checks,understanding,evidenceRefs}' @> jsonb_build_array(data#>'{basis,reviewRef}'),false) THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ ends=anvil.fn09_work_start_authority(s,a,c,p,q,data->'intent',policy,expected_tx);
+ -- 재확인은 불변 graph만 대조하며 새 head/grant/nonce/승인 소비를 만들지 않는다.
+ RETURN jsonb_build_object('status','WORK_START_REPLAY','basis',data->'basis','checkedAt',to_char(started AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'expiresAt',to_char(least(ends,started+interval '30 seconds') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+END;$$;
+ALTER FUNCTION anvil.fn09_work_start_replay(uuid,uuid,uuid,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_work_start_replay(uuid,uuid,uuid,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+
+-- 새 grant/permit 행만 현재성을 검산한다. 원 관측 stamp를 새 현재 권위로 승격하지 않는다.
+CREATE FUNCTION anvil.fn09_work_start_fact_current(p uuid,f jsonb,cid uuid)
+RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE data jsonb;basis jsonb;ep anvil.execution_preparations;h anvil.commands;q jsonb;queue jsonb;ends timestamptz;hs anvil.auth_sessions;
+BEGIN
+ data=anvil.fn09_work_start_identity(p,f->'preparationRef',(f->>'executionId')::uuid,f->'understandingReviewRef');basis=data->'basis';
+ SELECT * INTO STRICT h FROM anvil.commands WHERE project_id=p AND id=cid;
+ SELECT * INTO STRICT ep FROM anvil.execution_preparations WHERE project_id=p AND id=(f#>>'{preparationRef,id}')::uuid AND version=1 FOR SHARE;
+ queue=h.result_ref#>'{data,snapshot}';
+ q=jsonb_build_object('schemaVersion',1,'projectId',p,'commandId',h.command_id,'clientId',h.client_id,'controlGeneration',h.control_generation,'operation','queueExecutionCommand','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,
+  'payload',jsonb_build_object('operation','START_SESSION','executionId',queue->'executionId','executionGeneration',queue->'executionGeneration','preparationRef',f->'preparationRef','permissionPolicyRef',f->'permissionPolicyRef','budgetPolicyRef',f#>'{intent,budgetPolicyRef}','payload',queue->'payload'));
+ IF h.operation IS DISTINCT FROM 'queueExecutionCommand' OR h.state IS DISTINCT FROM 'APPLIED' OR h.request_hash IS DISTINCT FROM anvil.execution_json_hash(q) OR h.policy_ref IS DISTINCT FROM f->'permissionPolicyRef'
+  OR f->>'projectId' IS DISTINCT FROM p::text OR f->>'executionId' IS DISTINCT FROM queue->>'executionId' OR f->'executionGeneration' IS DISTINCT FROM queue->'executionGeneration'
+  OR f#>>'{subject,userId}' IS DISTINCT FROM h.actor_id::text OR f#>>'{subject,clientId}' IS DISTINCT FROM h.client_id::text OR f#>'{subject,controlGeneration}' IS DISTINCT FROM to_jsonb(h.control_generation)
+  OR f->'intent' IS DISTINCT FROM data->'intent' OR f->'understandingReviewRef' IS DISTINCT FROM basis->'reviewRef'
+  OR f#>'{agentSession,sessionRef}' IS DISTINCT FROM basis->'agentSessionRef' OR f#>'{agentSession,roleBindingRef}' IS DISTINCT FROM basis->'roleBindingRef' OR f#>'{agentSession,bindingGeneration}' IS DISTINCT FROM basis#>'{roleBindingRef,version}'
+  OR f->'basisRefs' IS DISTINCT FROM basis->'basisRefs' OR f->'latestInstructionRefs' IS DISTINCT FROM basis->'latestInstructionRefs'
+  OR f#>>'{checks,understanding,state}' IS DISTINCT FROM 'VERIFIED_CURRENT' OR NOT COALESCE(f#>'{checks,understanding,evidenceRefs}' @> jsonb_build_array(basis->'reviewRef'),false)
+ THEN RETURN false;END IF;
+ ends=anvil.fn09_work_start_authority((f#>>'{subject,humanSessionId}')::uuid,h.actor_id,h.client_id,p,q,data->'intent',h.policy_ref,txid_current()::text);
+ SELECT * INTO STRICT hs FROM anvil.auth_sessions WHERE id=(f#>>'{subject,humanSessionId}')::uuid AND user_id=h.actor_id AND client_id=h.client_id;
+ RETURN f#>'{subject,credentialGeneration}'=to_jsonb(hs.credential_generation) AND basis=anvil.fn09_work_prepare_current_source(p,anvil.fn09_work_prepare_payload(ep.snapshot_json)) AND ends>clock_timestamp();
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+ALTER FUNCTION anvil.fn09_work_start_fact_current(uuid,jsonb,uuid) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_work_start_fact_current(uuid,jsonb,uuid) FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn09_work_start_grant_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF NOT COALESCE(anvil.fn09_work_start_fact_current(NEW.project_id,NEW.snapshot_json->'binding',NEW.command_id),false) THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ RETURN NEW;
+END;$$;
+ALTER FUNCTION anvil.fn09_work_start_grant_guard() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_work_start_grant_guard() FROM PUBLIC,anvil_v3_app;
+CREATE TRIGGER fn09_work_start_grant_guard BEFORE INSERT ON anvil.execution_grants FOR EACH ROW WHEN(NEW.snapshot_json->>'transport'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{binding,intent,mode}'='WORK') EXECUTE FUNCTION anvil.fn09_work_start_grant_guard();
+
+CREATE FUNCTION anvil.fn09_work_start_grant_complete() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF NOT COALESCE(anvil.normal_start_material_complete(NEW.project_id,NEW.command_id),false) OR NOT COALESCE(anvil.fn09_work_start_fact_current(NEW.project_id,NEW.snapshot_json->'binding',NEW.command_id),false) THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ RETURN NULL;
+END;$$;
+ALTER FUNCTION anvil.fn09_work_start_grant_complete() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_work_start_grant_complete() FROM PUBLIC,anvil_v3_app;
+CREATE CONSTRAINT TRIGGER fn09_work_start_grant_complete AFTER INSERT ON anvil.execution_grants DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN(NEW.snapshot_json->>'transport'='NORMAL_PROTECTED' AND NEW.snapshot_json#>>'{binding,intent,mode}'='WORK') EXECUTE FUNCTION anvil.fn09_work_start_grant_complete();
+
+CREATE FUNCTION anvil.fn09_work_start_permit_guard() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE g anvil.execution_grants;ep anvil.execution_preparations;original_ref jsonb;
+BEGIN
+ SELECT * INTO STRICT g FROM anvil.execution_grants WHERE project_id=NEW.project_id AND id=(NEW.snapshot_json#>>'{scope,grantRef,id}')::uuid AND version=(NEW.snapshot_json#>>'{scope,grantRef,version}')::bigint;
+ IF NEW.snapshot_json#>'{scope,grantRef}' IS DISTINCT FROM jsonb_build_object('id',g.id,'version',g.version,'contentHash',g.content_hash)
+  OR g.content_hash IS DISTINCT FROM anvil.execution_json_hash(g.snapshot_json) OR g.snapshot_json->>'transport' IS DISTINCT FROM 'NORMAL_PROTECTED'
+  OR NEW.execution_id IS DISTINCT FROM g.execution_id OR NEW.generation IS DISTINCT FROM g.generation OR NEW.snapshot_json#>'{currentFact,preparationRef}' IS DISTINCT FROM g.snapshot_json#>'{binding,preparationRef}'
+  OR NOT COALESCE(anvil.normal_start_material_complete(NEW.project_id,g.command_id),false) THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ -- caller의 currentFact marker가 아니라 정착 원 grant의 정확 preparation에서만 linked를 판별한다.
+ original_ref=g.snapshot_json#>'{binding,preparationRef}';
+ SELECT * INTO STRICT ep FROM anvil.execution_preparations WHERE project_id=NEW.project_id AND id=(original_ref->>'id')::uuid AND version=(original_ref->>'version')::bigint FOR SHARE;
+ IF original_ref IS DISTINCT FROM jsonb_build_object('id',ep.id,'version',ep.version,'contentHash',ep.content_hash) OR ep.content_hash IS DISTINCT FROM anvil.execution_json_hash(ep.snapshot_json)
+  OR ep.snapshot_json->'intent'-'connectionKind'-'optionsFormat' IS DISTINCT FROM g.snapshot_json#>'{binding,intent}' THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ -- 0104 이전의 unlinked WORK/기존 CONTEXT permit에는 신규 선택 조건을 소급하지 않는다.
+ IF g.snapshot_json#>>'{binding,intent,mode}'='WORK' AND ep.snapshot_json?'understandingBasis'
+  AND NOT COALESCE(anvil.fn09_work_start_fact_current(NEW.project_id,NEW.snapshot_json->'currentFact',g.command_id),false) THEN RAISE EXCEPTION 'WORK_START_UNDERSTANDING_CHANGED';END IF;
+ IF TG_WHEN='BEFORE' THEN RETURN NEW;END IF;RETURN NULL;
+END;$$;
+ALTER FUNCTION anvil.fn09_work_start_permit_guard() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn09_work_start_permit_guard() FROM PUBLIC,anvil_v3_app;
+CREATE TRIGGER fn09_work_start_permit_guard BEFORE INSERT ON anvil.execution_start_permits FOR EACH ROW WHEN(NEW.snapshot_json->>'state'='NORMAL_START_PERMITTED') EXECUTE FUNCTION anvil.fn09_work_start_permit_guard();
+CREATE CONSTRAINT TRIGGER fn09_work_start_permit_complete AFTER INSERT ON anvil.execution_start_permits DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN(NEW.snapshot_json->>'state'='NORMAL_START_PERMITTED') EXECUTE FUNCTION anvil.fn09_work_start_permit_guard();
+COMMIT;

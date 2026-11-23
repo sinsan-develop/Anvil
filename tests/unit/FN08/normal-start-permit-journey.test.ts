@@ -83,7 +83,8 @@ test('실제 제품 START 뒤 실행기가 일회 permit을 받고, 같은 packe
   const row=permits[0];assert.equal(row.snapshot_json.state,'NORMAL_START_PERMITTED');assert.equal(row.snapshot_json.executionAuthorized,true);
   assert.deepEqual(out.permit.ref,{id:row.id,version:1,contentHash:row.content_hash});
   // 재조회는 공급자를 다시 부르지 않는다
-  const callsBefore=opts.calls;const again=await p.send();assert.equal(again.statusCode,200);assert.deepEqual(again.json(),out);assert.equal(opts.calls,callsBefore);
+  const callsBefore=opts.calls;opts.fact=()=>{throw new Error('정착 permit 재확인에 새 현재 관측 금지');};
+  const again=await p.send();assert.equal(again.statusCode,200);assert.deepEqual(again.json(),out);assert.equal(opts.calls,callsBefore);assert.deepEqual(used(),[1,1,1]);
   // 공급자는 거래를 되돌린 뒤에만 불린다
   opts.events.forEach((e,i)=>{if(e==='PROVIDER')assert.ok(opts.events.slice(0,i).lastIndexOf('ROLLBACK')>opts.events.slice(0,i).lastIndexOf('COMMAND'),'공급자 호출 직전 거래 종료');});
   assert.ok(!JSON.stringify(h.store.sqlArgs).includes(h.token));

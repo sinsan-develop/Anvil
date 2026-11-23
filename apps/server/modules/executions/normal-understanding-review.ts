@@ -190,3 +190,25 @@ export async function readNormalWorkPreparationBasis(db:PoolClient,actor:Authent
  return readNormalWorkPreparationBasisValue(v.basis,input);
  }catch(error){if(error instanceof AuthFailure)throw error;return failure('WORK_PREPARATION_UNDERSTANDING_INVALID',503);}
 }
+
+
+/** 같은 HUMAN 거래의 exact 준비/원 START를 소비한다. FRESH와 역사 재확인의 목적을 섞지 않는다. */
+async function normalWorkStartLookup(purpose:'WORK_START_BASIS'|'WORK_START_REPLAY',db:PoolClient,actor:AuthenticatedIdentity,raw:ProjectCommand,expected:unknown,observed?:unknown){
+ const q=cloneV1(raw),basis=cloneV1(expected),query=db.query,key=identity(actor),from=performance.now();let tx:string|undefined,last=-Infinity;
+ const bad=(code='WORK_START_UNDERSTANDING_INVALID',status=503):never=>failure(code,status);
+ if(q.operation!=='queueExecutionCommand'||q.targetId!==null||q.expectedVersion!==0||q.approvalRef!==null||q.baselineRefs.length||q.clientId!==actor.clientId||q.payload.operation!=='START_SESSION'
+  ||!recordV1(basis,['kind','scope',...workBasisRefs,'basisRefs','latestInstructionRefs'])||basis.kind!=='NORMAL_UNDERSTANDING_WORK_BASIS'||!same(basis.scope?.projectId,q.projectId)
+  ||!refV1(basis.reviewRef)||!refV1(q.payload.preparationRef)||!uuidV1(q.payload.executionId)||basis.scope.executionId===q.payload.executionId
+  ||purpose==='WORK_START_BASIS'&&(!refV1(observed)||!same(observed,basis.reviewRef)))return bad('WORK_START_UNDERSTANDING_REQUIRED',412);
+ const stamp=async()=>{if(db.query!==query||identity(actor)!==key||performance.now()-from>=30000)return bad();const rows=(await Reflect.apply(query,db,['SELECT clock_timestamp() AS at,txid_current()::text AS tx'])).rows;
+  const r=rows.length===1?rows[0]:null,at=r?.at instanceof Date?r.at.getTime():NaN;if(!Number.isFinite(at)||at<last||typeof r?.tx!=='string'||!r.tx||tx!==undefined&&tx!==r.tx)return bad();tx=r.tx;last=at;return at;};
+ try{
+  const started=await stamp(),selection={purpose,projectId:q.projectId,command:q,...(purpose==='WORK_START_BASIS'?{understandingReviewRef:cloneV1(observed)}:{})};
+  const rows=(await Reflect.apply(query,db,['SELECT anvil.fn09_normal_understanding_metadata_current($1,$2,$3,$4,$5,$6) AS projection',[actor.authSession!.id,actor.actorId,actor.clientId,canonicalJson(selection),canonicalJson(q.payload.permissionPolicyRef),tx]])).rows;
+  const at=await stamp(),v=cloneV1(rows.length===1?rows[0]?.projection:null);
+  if(!recordV1(v,['status','basis','checkedAt','expiresAt'])||v.status!==purpose||!same(v.basis,basis)||!isoV1(v.checkedAt)||!isoV1(v.expiresAt)||Date.parse(v.checkedAt)<started||Date.parse(v.checkedAt)>at||Date.parse(v.expiresAt)<=at||Date.parse(v.expiresAt)-Date.parse(v.checkedAt)>30000)return bad();
+  return basis;
+ }catch(error){if(error instanceof AuthFailure)throw error;const e=error as {code?:string;message?:string};if(e.code==='P0001'&&e.message==='WORK_START_UNDERSTANDING_CHANGED')return bad(e.message,412);return bad();}
+}
+export function readNormalWorkStartBasis(db:PoolClient,actor:AuthenticatedIdentity,q:ProjectCommand,basis:unknown,observed:unknown){return normalWorkStartLookup('WORK_START_BASIS',db,actor,q,basis,observed);}
+export function readNormalWorkStartReplay(db:PoolClient,actor:AuthenticatedIdentity,q:ProjectCommand,basis:unknown){return normalWorkStartLookup('WORK_START_REPLAY',db,actor,q,basis);}

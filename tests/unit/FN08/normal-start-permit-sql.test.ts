@@ -34,3 +34,25 @@ test('0089가 옮겨 온 두 함수는 0088과 표시한 곳만 다르다',()=>{
  assert.ok(changed.includes("t->>'bodyHash'<>anvil.execution_json_hash('null'::jsonb)"));assert.ok(changed.includes("t->>'method'='GET' AND t->>'bodyHash'=anvil.execution_json_hash('null'::jsonb)"));
  assert.ok(lines(changed).length<=8);
 });
+
+test('0104는 신규 WORK grant·permit에만 최신 선택을 검산하고 원 permit의 읽기 재확인은 바꾸지 않는다',()=>{
+ const work=read('0104_normal_work_start_understanding.sql.pending');
+ for(const name of ['fn09_work_start_grant_guard','fn09_work_start_grant_complete','fn09_work_start_permit_guard','fn09_work_start_permit_complete']){
+  const line=work.split('\n').find(v=>v.startsWith('CREATE ')&&v.includes('TRIGGER '+name+' '));
+  assert.ok(line,name);assert.match(line,/INSERT ON anvil\.execution_(grants|start_permits)/);assert.doesNotMatch(line,/UPDATE|DELETE/);
+  if(name.includes('grant'))assert.match(line,/'WORK'/);else{assert.match(line,/'NORMAL_START_PERMITTED'/);assert.doesNotMatch(line,/currentFact,intent,mode/);}
+ }
+ assert.equal(work.split('\n').filter(v=>v.startsWith('CREATE CONSTRAINT TRIGGER')&&v.includes('DEFERRABLE INITIALLY DEFERRED')).length,2);
+ const guard=work.slice(work.indexOf('CREATE FUNCTION anvil.fn09_work_start_permit_guard()'));
+ for(const token of ["NEW.snapshot_json#>'{scope,grantRef}'",'NEW.execution_id IS DISTINCT FROM g.execution_id','NEW.generation IS DISTINCT FROM g.generation',"NEW.snapshot_json#>'{currentFact,preparationRef}'",'normal_start_material_complete',"NEW.snapshot_json->'currentFact'",'fn09_work_start_fact_current'])assert.ok(guard.includes(token),token);
+ // linked 판별 전 불변 원본을 검산한다. 원래 정상인 unlinked WORK에는 새 head를 요구하지 않는다.
+ const linked=guard.indexOf("IF g.snapshot_json#>>'{binding,intent,mode}'='WORK' AND ep.snapshot_json?'understandingBasis'");assert.ok(linked>0);
+ for(const token of ['SELECT * INTO STRICT g','g.content_hash IS DISTINCT FROM anvil.execution_json_hash(g.snapshot_json)','normal_start_material_complete',"original_ref=g.snapshot_json#>'{binding,preparationRef}'",'SELECT * INTO STRICT ep','ep.content_hash IS DISTINCT FROM anvil.execution_json_hash(ep.snapshot_json)'])assert.ok(guard.indexOf(token)>=0&&guard.indexOf(token)<linked,token);
+ assert.equal(guard.indexOf('fn09_work_start_fact_current'),guard.indexOf('fn09_work_start_fact_current',linked));
+ assert.doesNotMatch(work,/CREATE (?:OR REPLACE )?FUNCTION anvil\.(?:normal_start_permit_receipt_valid|normal_start_material_complete|guard_normal_start_permit)\(/);
+ // 원 START의 QUEUED/RESERVED/PENDING은 가변 실행 상태가 아니라 현재 source에서 불변 원 기록이다.
+ const queue=read('0017_execution_authority.sql'),normal=read('0083_normal_initial_execution.sql.pending');
+ assert.ok(queue.includes("IF TG_OP<>'INSERT' THEN RAISE EXCEPTION 'EXECUTION_QUEUE_HISTORY_IMMUTABLE'"));
+ assert.ok(queue.includes("ARRAY['executions','execution_grants','usage_reservations','writer_claims','execution_commands']"));
+ assert.ok(normal.includes("IF TG_OP<>'INSERT' AND OLD.kind='EXECUTION_NORMAL'"));assert.ok(normal.includes('NORMAL_OUTBOX_IMMUTABLE'));
+});

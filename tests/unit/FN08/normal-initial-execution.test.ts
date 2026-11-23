@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import { executionStartOriginFixture, installExecutionStartOriginMemoryFS } from '../FN09/execution-start-origin-fixture.ts';
 
 await installExecutionStartOriginMemoryFS();
@@ -27,9 +28,30 @@ test('normal 최초 START는 기존 명령의 보호된 입력을 검사하고 c
   } finally {await app.close();}
 });
 
-async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v=>v) {
+async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v=>v,work?:'LINKED'|'LEGACY') {
  const eid=randomUUID();
  const f=await executionStartOriginFixture({normalExecutionId:eid,connectorEnvironment:true,richContext:true,constitutionContext:true,environmentDependencies:true,snapshotRoot:true,originConsumptionStorage:true});
+ const workState={latest:null as any,fresh:0,history:0,deny:false};let workBasis:any;
+ if(work){
+  const original=f.preparation.data,ref=(n:number)=>({id:'a9040104-0000-4000-8000-'+String(n).padStart(12,'0'),version:1,contentHash:'a'.repeat(64)});
+  workBasis={kind:'NORMAL_UNDERSTANDING_WORK_BASIS',reviewRef:ref(1),scope:{projectId:f.pid,executionId:randomUUID(),executionGeneration:1},preparationRef:original.ref,
+   assignmentRef:original.snapshot.intent.assignmentRef,roleBindingRef:original.snapshot.intent.roleBindingRef,agentSessionRef:f.binding.data.snapshot.sessionRef,contextBundleRef:original.snapshot.intent.contextBundleRef,
+   connectionRef:original.snapshot.intent.connectionRef,environmentRef:original.snapshot.intent.environmentRef,responseRef:ref(2),requestRef:ref(3),basisRefs:original.snapshot.basisRefs,latestInstructionRefs:original.snapshot.latestInstructionRefs};
+  workState.latest=structuredClone(workBasis.reviewRef);const base=f.db.query;
+  f.db.query=(async(sql:string,a:any[]=[])=>{
+   if(sql==='SELECT clock_timestamp() AS at,txid_current()::text AS tx'){const r=await base('SELECT clock_timestamp() AS at');return{rows:[{at:r.rows[0].at,tx:String(f.modes.tx)}]};}
+   if(sql.includes('fn09_normal_understanding_metadata_current')){
+    const selection=JSON.parse(a[3]),now=(await base('SELECT clock_timestamp() AS at')).rows[0].at;
+    if(selection.purpose==='WORK_PREPARATION_HISTORY')return{rows:[{projection:{status:'WORK_PREPARATION_HISTORY',basis:workBasis}}]};
+    if(selection.purpose==='WORK_START_REPLAY')workState.history++;
+    if(selection.purpose==='WORK_START_BASIS'){workState.fresh++;if(workState.deny||canonicalJson(workState.latest)!==canonicalJson(workBasis.reviewRef))throw Object.assign(Error('WORK_START_UNDERSTANDING_CHANGED'),{code:'P0001'});}
+    return{rows:[{projection:{status:selection.purpose,basis:workBasis,checkedAt:now.toISOString(),expiresAt:new Date(now.getTime()+20000).toISOString()}}]};
+   }
+   return base(sql,a);
+  }) as typeof f.db.query;
+  const command={...f.originCommand(),operation:'prepareExecution',payload:{...original.snapshot.intent,mode:'WORK',...(work==='LINKED'?{understandingReviewRef:workBasis.reviewRef}:{})}};
+  f.preparation=await f.run(a=>f.preparations.save(f.db,a,command as any,f.policyRef)) as any;
+ }
  const prep=f.preparation.data,raw=prep.snapshot.intent,ref=prep.ref;
  const until=f.actor.authSession.idleExpiresAt,permissionPolicyRef=f.policyRef;
  const {registrationRef}=await import('../../../apps/server/modules/connections/project-registrations.ts');
@@ -40,7 +62,7 @@ async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v
    observations++;
    const value={scope,registrationRef:registrationRef(f.registration!.row as any),checkedAt:at.toISOString(),expiresAt:until,writerState:'NONE',
     stageRef:f.stage.data.snapshot.input.stageRef,demand:{attempts:1,calls:1,spoolBytes:1024,cost:null,costStatus:'VERIFIED_NO_CHARGE'},
-    understandingReviewRef:null,checks:{...Object.fromEntries(Object.entries(attested).map(([key,evidenceRefs])=>[key,{state:'VERIFIED_CURRENT',evidenceRefs}])),understanding:{state:'NOT_REQUIRED',evidenceRefs:[]}}};
+    understandingReviewRef:work?workBasis.reviewRef:null,checks:{...Object.fromEntries(Object.entries(attested).map(([key,evidenceRefs])=>[key,{state:'VERIFIED_CURRENT',evidenceRefs}])),understanding:work?{state:'VERIFIED_CURRENT',evidenceRefs:[workBasis.reviewRef]}:{state:'NOT_REQUIRED',evidenceRefs:[]}}};
    return transform(value,observations,signal);
  }};
  const app=buildApp({},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root},undefined,undefined,undefined,undefined,null,undefined,undefined,source);
@@ -48,7 +70,7 @@ async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v
    permissionPolicyRef,budgetPolicyRef:raw.budgetPolicyRef,payload:{contextBundleRef:raw.contextBundleRef,optionsRef:ref}}};
  const post=(payload=command)=>app.inject({method:'POST',url:'/api/v1/projects/'+f.pid+'/commands',payload,headers:{host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',
    cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf}});
- return {f,post,app,command,observations:()=>observations};
+ return {f,post,app,command,workBasis,workState,observations:()=>observations};
 }
 
 const graphTables=['executions','execution_grants','writer_claims','usage_reservations','execution_commands','delivery_outbox','execution_material_manifests','execution_materials'];
@@ -168,4 +190,24 @@ for(const name of ['basis','capability','source','storage','osFence','understand
  try{const r=await h.post();assert.equal(r.statusCode,412,r.body);assert.match(r.body,/NORMAL_START_CURRENT_REQUIRED/);
    for(const t of graphTables)assert.equal(h.f.tables[t]!.length,0,t);
  }finally{await h.app.close();}
+});
+
+
+test('linked WORK는 준비의 exact 선택을 DB 현재성에 결박하고 같은 명령 재확인은 새 head/observer를 소비하지 않는다',async()=>{
+ const h=await host(v=>v,'LINKED');try{
+  const r=await h.post();assert.equal(r.statusCode,200,r.body);assert.ok(h.workState.fresh>=3);
+  const fact=h.f.tables.execution_grants![0]!.snapshot_json.binding;assert.deepEqual(fact.understandingReviewRef,h.workBasis.reviewRef);assert.notEqual(fact.executionId,h.workBasis.scope.executionId);
+  const fresh=h.workState.fresh,observed=h.observations(),counts=graphTables.map(n=>h.f.tables[n]!.length);
+  h.workState.latest={...h.workBasis.reviewRef,version:2};h.workState.deny=true;h.f.modes.sourceHead=2;
+  const retry=await h.post();assert.equal(retry.statusCode,200,retry.body);assert.deepEqual(retry.json(),r.json());assert.equal(h.workState.fresh,fresh);assert.equal(h.observations(),observed);assert.equal(h.workState.history,1);assert.deepEqual(graphTables.map(n=>h.f.tables[n]!.length),counts);
+ }finally{await h.app.close();}
+});
+for(const change of ['LEGACY','SELECTOR','OLD_EXECUTION','STALE','LATE','AUTHORITY'])test('linked WORK 신규 START 거절과 원 거래 rollback '+change,async()=>{
+ const h=await host((v,n)=>{if(change==='SELECTOR')v.understandingReviewRef={...v.understandingReviewRef,version:2};return v;},change==='LEGACY'?'LEGACY':'LINKED');
+ const receipts=h.f.receipts.size,audits=h.f.audits.size;
+ if(change==='OLD_EXECUTION')h.command.payload.executionId=h.workBasis.scope.executionId;
+ if(change==='STALE')h.workState.latest={...h.workBasis.reviewRef,version:2};
+ if(change==='AUTHORITY')h.workState.deny=true;
+ if(change==='LATE')h.f.modes.hook=sql=>{if(sql.startsWith('INSERT INTO anvil.execution_materials('))h.workState.deny=true;};
+ try{const r=await h.post();assert.equal(r.statusCode,412,r.body);for(const n of graphTables)assert.equal(h.f.tables[n]!.length,0,n);assert.equal(h.f.receipts.size,receipts);assert.equal(h.f.audits.size,audits);}finally{await h.app.close();}
 });
