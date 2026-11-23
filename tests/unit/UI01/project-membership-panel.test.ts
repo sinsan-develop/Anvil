@@ -1,6 +1,25 @@
 import {before,after} from 'node:test';import {build} from 'vite';import {fileURLToPath} from 'node:url';import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import test from 'node:test';import assert from 'node:assert/strict';
 const uuid=(n:number)=>'aaaaaaaa-aaaa-4aaa-8aaa-'+String(n).padStart(12,'0');
+function completion(signal:AbortSignal,diagnostic:()=>string){
+ const observers=new Set<()=>void>();let revision=0,closed=false;
+ const changed=()=>{revision++;for(const notify of [...observers])notify();};
+ const subtle=crypto.subtle,digest=subtle.digest,descriptor=Object.getOwnPropertyDescriptor(subtle,'digest');
+ // 비동기 hash 완료 신호만 관찰하며 원 digest의 입력·반환·거절은 유지한다.
+ Object.defineProperty(subtle,'digest',{configurable:true,value:(algorithm:AlgorithmIdentifier,data:BufferSource)=>Reflect.apply(digest,subtle,[algorithm,data]).finally(changed)});
+ return{changed,close:()=>{if(closed)return;closed=true;if(descriptor)Object.defineProperty(subtle,'digest',descriptor);else Reflect.deleteProperty(subtle,'digest');changed();},async wait(check:()=>boolean){
+  while(true){
+   if(closed)throw Error(diagnostic());
+   const seen=revision;await ui.React.act(async()=>{});if(check())return;
+   if(revision!==seen)continue;
+   // 통지는 act 밖에서 기다려 React commit과 상호 대기하지 않는다.
+   await new Promise<void>((resolve,reject)=>{
+    const cleanup=()=>{observers.delete(notify);signal.removeEventListener('abort',abort);},notify=()=>{cleanup();resolve();},abort=()=>{cleanup();reject(Error(diagnostic()));};
+    if(signal.aborted){abort();return;}observers.add(notify);signal.addEventListener('abort',abort,{once:true});
+   });
+  }
+ }};
+}
 test('실제 sealed UNKNOWN 원명령은 같은 유효session에서도 승인요청/승인연결로 바꾸지 않고 IO0로 보존한다',async()=>{
  const m=await import('../../../apps/web/src/features/projects/membership-api.ts'),{ApiClient}=await import('../../../apps/web/src/api/client.ts');let calls=0,posts=0;
  const p={rules:[{ruleId:'membership',subjectRef:{kind:'HUMAN',userId:session.user.id},operations:['saveProjectMembership'],targetScopes:[{kind:'PROJECT',projectId:uuid(2)}],disposition:'AUTO',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'}],reason:'명시',reviewRefs:[]};
@@ -43,20 +62,21 @@ function project(){return{id:uuid(2),name:'프로젝트',purpose:'원문',desire
 const session={user:{id:uuid(3)},clientId:uuid(4),csrfToken:'C'.repeat(43)};
 function nodes(n:MemoryNode):MemoryNode[]{return[n,...n.childNodes.flatMap(nodes)];}
 function props(n:MemoryNode):any{const key=Object.keys(n).find(k=>k.startsWith('__reactProps$'));assert.ok(key);return(n as any)[key];}
-async function flush(){await ui.React.act(async()=>{for(let i=0;i<20;i++)await new Promise<void>(resolve=>setImmediate(resolve));});}
-test('실제 React는 명시 열기 전IO0/미허가 disabled를 유지하고 OWNER의 목록·입력·별도확인·응답유실 UNKNOWN을 소비한다',{timeout:10000},async()=>{
+test('실제 React는 명시 열기 전IO0/미허가 disabled를 유지하고 OWNER의 목록·입력·별도확인·응답유실 UNKNOWN을 소비한다',{timeout:10000},async t=>{
  const calls:string[]=[],posted:any[]=[];const policySnapshot={rules:[{ruleId:'membership',subjectRef:{kind:'HUMAN',userId:session.user.id},operations:['saveProjectMembership'],targetScopes:[{kind:'PROJECT',projectId:uuid(2)}],disposition:'AUTO',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'}],reason:'명시',reviewRefs:[]};
  const api=new ui.ApiClient(async(url:string,init:RequestInit)=>{calls.push(url);if(init.method==='POST'){posted.push(JSON.parse(String(init.body)));throw Error('MODEL_RESPONSE_LOST');}if(url.endsWith('/permission-policy'))return Response.json({configured:true,policy:{...policySnapshot,ref:{id:uuid(6),version:1,contentHash:contentHash(canonicalJson(policySnapshot))},createdAt:'2026-11-03T00:00:00.000Z'}});if(url.includes('/members?'))return Response.json({projectId:uuid(2),items:[],hasMore:false,nextCursor:null,observedAt:'2026-11-03T00:00:00.000Z'});return Response.json(project());});
  const buffers:Record<string,any>={};let root:any;const container=document.createElement('div');document.body.appendChild(container);
- const management={session,buffers,onChange:(pid:string,expected:any,next:any)=>{if((buffers[pid]??null)!==expected)return false;buffers[pid]=next;root.render(element(false));return true;},onApproval:()=>{throw Error('AUTO_APPROVAL0');}};
+ const progress=completion(t.signal,()=>container.textContent+' / '+JSON.stringify(calls));t.after(progress.close);
+ const management={session,buffers,onChange:(pid:string,expected:any,next:any)=>{if((buffers[pid]??null)!==expected)return false;buffers[pid]=next;root.render(element(false));progress.changed();return true;},onApproval:()=>{throw Error('AUTO_APPROVAL0');}};
  const element=(disabled:boolean)=>ui.React.createElement(ui.ProjectMembershipPanel,{client:api,projectId:uuid(2),management,disabled,onAuthenticationLost:()=>{throw Error('AUTH_LOST_UNEXPECTED');}});
  const html=ui.renderToStaticMarkup(element(true));assert.match(html,/disabled/);assert.equal(calls.length,0);
  await ui.React.act(async()=>{root=ui.createRoot(container);root.render(element(false));});assert.equal(calls.length,0);
  const find=(text:string)=>{const n=nodes(container).find(n=>n.tagName==='BUTTON'&&n.textContent===text);assert.ok(n,text);return n;};
- await ui.React.act(async()=>props(find('참여권한 관리 열기 · 명시 조회')).onClick());await flush();assert.ok(calls.some(v=>v.includes('/members?')));assert.equal(posted.length,0);
+ const wait=progress.wait;
+ await ui.React.act(async()=>props(find('참여권한 관리 열기 · 명시 조회')).onClick());await wait(()=>calls.some(v=>v.includes('/members?'))&&!nodes(container).some(n=>n.getAttribute('role')==='status'));assert.ok(calls.some(v=>v.includes('/members?')));assert.equal(posted.length,0);
  const input=nodes(container).find(n=>n.getAttribute('aria-label')==='기존 사용자 식별코드')!,reason=nodes(container).find(n=>n.getAttribute('aria-label')==='원 변경 사유')!;
- await ui.React.act(async()=>props(input).onChange({target:{value:uuid(8)}}));await ui.React.act(async()=>props(reason).onChange({target:{value:'원 참여권한 사유'}}));await ui.React.act(async()=>props(find('정확 참여권한 명령 준비')).onClick());await flush();assert.equal(buffers[uuid(2)]?.phase,'PREPARED');assert.equal(posted.length,0);assert.equal(find('참여권한 명시 저장').disabled,true);
- const ack=nodes(container).find(n=>n.getAttribute('aria-label')==='참여권한 변경을 별도로 확인합니다')!;await ui.React.act(async()=>props(ack).onChange({target:{checked:true}}));await ui.React.act(async()=>props(find('참여권한 명시 저장')).onClick());await flush();assert.equal(posted.length,1);assert.equal(buffers[uuid(2)].phase,'UNKNOWN');assert.equal(posted[0].commandId,buffers[uuid(2)].command.commandId);assert.equal(posted[0].payload.reason,'원 참여권한 사유');assert.ok(container.textContent.includes('원 명령 결과 재확인'));
+ await ui.React.act(async()=>props(input).onChange({target:{value:uuid(8)}}));await ui.React.act(async()=>props(reason).onChange({target:{value:'원 참여권한 사유'}}));await ui.React.act(async()=>props(find('정확 참여권한 명령 준비')).onClick());await wait(()=>buffers[uuid(2)]?.phase==='PREPARED'&&!nodes(container).some(n=>n.getAttribute('role')==='status'));assert.equal(buffers[uuid(2)]?.phase,'PREPARED');assert.equal(posted.length,0);assert.equal(find('참여권한 명시 저장').disabled,true);
+ const ack=nodes(container).find(n=>n.getAttribute('aria-label')==='참여권한 변경을 별도로 확인합니다')!;await ui.React.act(async()=>props(ack).onChange({target:{checked:true}}));await ui.React.act(async()=>props(find('참여권한 명시 저장')).onClick());await wait(()=>buffers[uuid(2)]?.phase==='UNKNOWN'&&container.textContent.includes('원 명령 결과 재확인')&&!nodes(container).some(n=>n.getAttribute('role')==='status'));assert.equal(posted.length,1);assert.equal(buffers[uuid(2)].phase,'UNKNOWN');assert.equal(posted[0].commandId,buffers[uuid(2)].command.commandId);assert.equal(posted[0].payload.reason,'원 참여권한 사유');assert.ok(container.textContent.includes('원 명령 결과 재확인'));
  await ui.React.act(async()=>props(find('관리 표시 닫기 · 원 명령 보존')).onClick());assert.equal(buffers[uuid(2)].phase,'UNKNOWN');assert.equal(posted.length,1);await ui.React.act(async()=>root.unmount());document.body.removeChild(container);
 });
 
@@ -79,15 +99,16 @@ test('POST 응답의 타project/다른원명령 snapshot 재hash는 성공 채�
  }
 });
 
-test('실제 UI08은 서버보관 대상·이전/새역할·원사유를 표시하고 명시 복귀로만 원 command에 승인ref를 연결한다',{timeout:10000},async()=>{
+test('실제 UI08은 서버보관 대상·이전/새역할·원사유를 표시하고 명시 복귀로만 원 command에 승인ref를 연결한다',{timeout:10000},async t=>{
  const p={rules:[{ruleId:'membership',subjectRef:{kind:'HUMAN',userId:session.user.id},operations:['saveProjectMembership'],targetScopes:[{kind:'PROJECT',projectId:uuid(2)}],disposition:'REQUIRE_APPROVAL',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'}],reason:'명시',reviewRefs:[]},policyRef={id:uuid(6),version:1,contentHash:contentHash(canonicalJson(p))};let view:any,posts=0;
  const api=new ui.ApiClient(async(url:string,init:RequestInit)=>{if(init.method==='POST'){posts++;throw Error('승인복귀의 저장POST0');}if(url.includes('/approvals/'))return Response.json(view);return url.endsWith('/permission-policy')?Response.json({configured:true,policy:{...p,ref:policyRef,createdAt:'2026-11-03T00:00:00.000Z'}}):Response.json(project());});
  const prepared=await ui.Membership.prepareMembership(api,uuid(2),session,{targetUserRef:{kind:'HUMAN',userId:uuid(8)},participation:'VIEWER',reason:'서버 보관 원 변경 사유'},{kind:'NEW'}),scope={operation:'saveProjectMembership',targetRef:null,expectedVersion:0,payloadHash:contentHash(canonicalJson(prepared.command.payload)),baselineRefs:[],environmentRef:null,sourceScopes:[],limitsRef:null,requestedSubjectRef:{kind:'HUMAN',userId:session.user.id,clientId:session.clientId},controlGeneration:1},scopeDigest=contentHash(canonicalJson(scope));
  const details={candidateCommandId:prepared.command.commandId,reason:'승인 요청 설명 · 원사유와 구분',risks:{data:'대상 확인',security:'역할 확인',cost:'비용 없음',interruption:'자동 실행 없음',unverified:'실DB 미실행'},rollback:{method:'후속 명시 변경',limitations:'과거 조회 회수 보장 없음',evidenceRefs:[]},expiresAt:'2098-01-01T00:00:00.000Z',actionScope:scope},snapshot={projectId:uuid(2),details,scopeDigest,requiredDecider:{kind:'HUMAN',userId:session.user.id},policyRef,requestedBy:{kind:'HUMAN',userId:session.user.id,clientId:session.clientId},controlGeneration:1,membershipCandidate:{schemaVersion:1,purpose:'PROJECT_MEMBERSHIP_APPROVAL_CANDIDATE',command:prepared.command,baseMembership:{kind:'NEW'}}},ref={id:uuid(20),version:1,contentHash:contentHash(canonicalJson(snapshot))},decisionBody={requestId:ref.id,requestVersion:1,requestRef:ref,scopeDigest,decision:'APPROVE',reason:'정확 대상 역할 확인',decidedBy:snapshot.requestedBy,controlGeneration:1,policyRef};
  view={request:{id:ref.id,version:1,status:'PENDING',...snapshot,createdAt:'2026-11-03T00:00:00.000Z'},requestRef:ref,currentVersion:2,storedStatus:'APPROVED',effectiveState:'APPROVED',decision:{ref:{id:uuid(21),version:1,contentHash:contentHash(canonicalJson(decisionBody))},id:uuid(21),...decisionBody,decidedAt:'2026-11-03T00:00:01.000Z'},consumption:null,expired:false,basisCurrent:true,executionAuthorized:false,observedAt:'2026-11-03T00:00:02.000Z'};
  const container=document.createElement('div');document.body.appendChild(container);let root:any,returned:any=null,returns=0;const buffer={projectId:uuid(2),ownerUserId:session.user.id,ownerClientId:session.clientId,selectedId:ref.id,request:null,decision:null};
+  const progress=completion(t.signal,()=>container.textContent);t.after(progress.close);
  await ui.React.act(async()=>{root=ui.createRoot(container);root.render(ui.React.createElement(ui.ApprovalsPage,{client:api,projectId:uuid(2),session,buffer,onChange:()=>{},candidate:null,onCandidateChange:()=>{},onAuthenticationLost:()=>{throw Error('AUTH0');},onMembershipReturn:async(id:string)=>{returns++;returned=await ui.Membership.bindMembershipApproval(prepared,session,id);return true;}}));});
- for(let i=0;i<40&&!container.textContent.includes('서버 보관 참여권한 변경 원문');i++)await flush();
+  await progress.wait(()=>container.textContent.includes('서버 보관 참여권한 변경 원문'));
  assert.ok(container.textContent.includes('서버 보관 참여권한 변경 원문'));assert.ok(container.textContent.includes(uuid(8)));assert.ok(container.textContent.includes('새 관계'));assert.ok(container.textContent.includes('VIEWER'));assert.ok(container.textContent.includes('서버 보관 원 변경 사유'));assert.equal(returns,0);assert.equal(posts,0);
- const button=nodes(container).find(n=>n.tagName==='BUTTON'&&n.textContent==='승인 연결 후 프로젝트 목록으로 돌아가기');assert.ok(button);await ui.React.act(async()=>props(button).onClick());for(let i=0;i<40&&!returned;i++)await flush();assert.equal(returns,1);assert.equal(returned.command.commandId,prepared.command.commandId);assert.deepEqual(JSON.parse(JSON.stringify({...returned.command,approvalRef:null})),JSON.parse(JSON.stringify(prepared.command)));assert.equal(returned.command.approvalRef.requestId,ref.id);assert.equal(prepared.command.approvalRef,null);assert.equal(posts,0);await ui.React.act(async()=>root.unmount());document.body.removeChild(container);
+  const button=nodes(container).find(n=>n.tagName==='BUTTON'&&n.textContent==='승인 연결 후 프로젝트 목록으로 돌아가기');assert.ok(button);await ui.React.act(async()=>props(button).onClick());await progress.wait(()=>!!returned);assert.equal(returns,1);assert.equal(returned.command.commandId,prepared.command.commandId);assert.deepEqual(JSON.parse(JSON.stringify({...returned.command,approvalRef:null})),JSON.parse(JSON.stringify(prepared.command)));assert.equal(returned.command.approvalRef.requestId,ref.id);assert.equal(prepared.command.approvalRef,null);assert.equal(posts,0);await ui.React.act(async()=>root.unmount());document.body.removeChild(container);
 });

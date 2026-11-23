@@ -1,10 +1,32 @@
-import test,{before,after} from 'node:test';
+import test,{before,after,type TestContext} from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
+function completion(signal:AbortSignal,diagnostic:()=>string){
+ const pending=new Set<Promise<unknown>>(),observers=new Set<()=>void>();let revision=0,closed=false;
+ const changed=()=>{revision++;for(const notify of [...observers])notify();};
+ // 이 fixture의 원 response gate와 hash promise만 수거한다.
+ const tracked=<T,>(work:()=>Promise<T>):Promise<T>=>{const task=work();pending.add(task);return task.finally(()=>{pending.delete(task);changed();});};
+ const subtle=crypto.subtle,digest=subtle.digest,descriptor=Object.getOwnPropertyDescriptor(subtle,'digest');
+ Object.defineProperty(subtle,'digest',{configurable:true,value:(algorithm:AlgorithmIdentifier,data:BufferSource)=>tracked(()=>Reflect.apply(digest,subtle,[algorithm,data]))});
+ return{changed,tracked,close:()=>{if(closed)return;closed=true;if(descriptor)Object.defineProperty(subtle,'digest',descriptor);else Reflect.deleteProperty(subtle,'digest');changed();},
+  settle:()=>ui.React.act(async()=>{while(pending.size)await Promise.allSettled([...pending]);}),async wait(check:()=>boolean){
+   while(true){
+    if(closed)throw Error(diagnostic());
+    const seen=revision;await ui.React.act(async()=>{});if(check())return;
+    if(revision!==seen)continue;
+    // 통지는 act 밖에서 기다려 React commit과 상호 대기하지 않는다.
+    await new Promise<void>((resolve,reject)=>{
+     const cleanup=()=>{observers.delete(notify);signal.removeEventListener('abort',abort);},notify=()=>{cleanup();resolve();},abort=()=>{cleanup();reject(Error(diagnostic()));};
+     if(signal.aborted){abort();return;}observers.add(notify);signal.addEventListener('abort',abort,{once:true});
+    });
+   }
+  }
+ };
+}
 class MemoryNode{
  nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
  constructor(name:string,type=1,owner?:any){this.nodeType=type;this.nodeName=type===1?name.toUpperCase():name;this.tagName=this.nodeName;this.localName=name;this.ownerDocument=owner;}
@@ -45,10 +67,11 @@ function draft(){
  const b=ui.decisions.newKnowledgeDecision(pid,target,session,1,'CONFIRM');b.acknowledged=true;b.reason='원 확정 이유';return b;
 }
 function deferred<T>(){let resolve!:(v:T)=>void;const promise=new Promise<T>(r=>resolve=r);return{promise,resolve};}
-async function fixture(){
+async function fixture(t:TestContext){
  let buffer:any=draft(),currentSession=structuredClone(session),visible=true,lost=0,changes=0,savedCount=0,stored:any;
  const writes:any[]=[],gets:string[]=[],controls={read:async()=>Response.json(stored)};
- const transport=async(path:string,init:any)=>{
+ const progress=completion(t.signal,()=>container.textContent+' / '+JSON.stringify({gets,writes:writes.length,savedCount}));t.after(progress.close);
+ const transport=(path:string,init:any)=>progress.tracked(async()=>{
   if(init?.method==='POST'){
    const c=JSON.parse(init.body);writes.push(c);
    const confirmation={eventId:id(7),reason:c.payload.reason,reviewRefs:c.payload.reviewRefs,actorRef:{kind:'HUMAN',userId:uid},recordedAt:at};
@@ -56,22 +79,21 @@ async function fixture(){
    return Response.json({operationId:id(9),commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:c.targetId,version:c.expectedVersion,data:{status:'CONFIRMED',eventId:id(7),confirmationId:id(7),reason:c.payload.reason,reviewRefs:c.payload.reviewRefs,ref:c.payload.versionRef},serverReceivedAt:at});
   }
   assert.equal(init.method,'GET');gets.push(path);return controls.read();
- };
+ });
  let client=new ui.ApiClient(transport);
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
- function render(){root.render(visible&&buffer?ui.React.createElement(ui.KnowledgeDecisionForm,{client,session:currentSession,buffer,onChange:(change:any)=>{changes++;buffer=typeof change==='function'?change(buffer):change;render();},onSaved(){savedCount++;},onAuthenticationLost(){lost++;}}):null);}
+ function render(){root.render(visible&&buffer?ui.React.createElement(ui.KnowledgeDecisionForm,{client,session:currentSession,buffer,onChange:(change:any)=>{changes++;buffer=typeof change==='function'?change(buffer):change;render();progress.changed();},onSaved(){savedCount++;progress.changed();},onAuthenticationLost(){lost++;progress.changed();}}):null);}
  const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
  const button=(name:string)=>{const b=nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===name);assert(b,name+' / '+container.textContent);return b;};
- const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});
- const wait=async(check:()=>boolean)=>{for(let n=0;n<100&&!check();n++)await settle();assert(check(),container.textContent);};
+ const {settle,wait}=progress;
  const click=async(name:string)=>{const b=button(name);assert(!b.disabled);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
  await ui.React.act(async()=>render());
- return{writes,gets,controls,container,nodes,button,click,wait,settle,buffer:()=>buffer,stored:()=>stored,lost:()=>lost,changes:()=>changes,savedCount:()=>savedCount,client:()=>client,session:()=>currentSession,replace:async(b:any)=>{buffer=b;await ui.React.act(async()=>render());},context:async(s:any)=>{currentSession=s;await ui.React.act(async()=>render());},clientChange:async(c:any)=>{client=c;await ui.React.act(async()=>render());},render:async()=>{await ui.React.act(async()=>render());},route:async(show:boolean)=>{visible=show;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{writes,gets,controls,container,nodes,button,click,wait,settle,buffer:()=>buffer,stored:()=>stored,lost:()=>lost,changes:()=>changes,savedCount:()=>savedCount,client:()=>client,session:()=>currentSession,replace:async(b:any)=>{buffer=b;await ui.React.act(async()=>render());},context:async(s:any)=>{currentSession=s;await ui.React.act(async()=>render());},clientChange:async(c:any)=>{client=c;await ui.React.act(async()=>render());},render:async()=>{await ui.React.act(async()=>render());},route:async(show:boolean)=>{visible=show;await ui.React.act(async()=>render());},close:async()=>{try{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}finally{progress.close();}}};
 }
 async function save(f:Awaited<ReturnType<typeof fixture>>){await f.click('지식 확정 저장');await f.wait(()=>!!f.buffer()?.savedId);await f.settle();}
 const open='저장된 지식 확정 사건 조회',detail='저장된 지식 확정 사건';
-test('실제 확정 POST 영수증 뒤 명시 고정 GET으로 같은 사건·이유·주체·선택 검토를 표시한다',async()=>{
- const f=await fixture();try{
+test('실제 확정 POST 영수증 뒤 명시 고정 GET으로 같은 사건·이유·주체·선택 검토를 표시한다',{timeout:15000},async t=>{
+ const f=await fixture(t);try{
   assert.equal(f.gets.length,0);assert(!f.nodes().some(n=>n.textContent===open));await save(f);assert.equal(f.writes.length,1);assert.equal(f.gets.length,0);
   const original=f.buffer(),before=JSON.stringify(original),changes=f.changes();await f.click(open);await f.wait(()=>f.nodes().some(n=>n.getAttribute('aria-label')===detail));
   assert.deepEqual(f.gets,[`/api/v1/projects/${pid}/knowledge/${original.target.ref.id}/versions/1`]);
@@ -79,9 +101,9 @@ test('실제 확정 POST 영수증 뒤 명시 고정 GET으로 같은 사건·�
   assert.equal(f.buffer(),original);assert.equal(JSON.stringify(original),before);assert.equal(f.changes(),changes);assert.equal(f.savedCount(),1);assert.equal(f.writes.length,1);assert(f.button('지식 확정 저장').disabled);
  }finally{await f.close();}
 });
-test('다른 사건·fullref·이유·주체·선택 검토는 원 reader와 영수증 대조에서 거절하며 재조회는 POST0이다',async()=>{
+test('다른 사건·fullref·이유·주체·선택 검토는 원 reader와 영수증 대조에서 거절하며 재조회는 POST0이다',{timeout:15000},async t=>{
  for(const mode of ['ID','HASH','VERSION','REASON','ACTOR','REVIEW','ABSENT','401','403','404','CONNECTION']as const){
-  const f=await fixture();try{
+  const f=await fixture(t);try{
    await save(f);const original=f.buffer(),before=JSON.stringify(original),view=structuredClone(f.stored());
    const confirmation=view.confirmation,event=view.history[1];
    if(mode==='ID'){confirmation.eventId=id(40);event.id=id(40);}
@@ -99,8 +121,8 @@ test('다른 사건·fullref·이유·주체·선택 검토는 원 reader와 영
   }finally{await f.close();}
  }
 });
-test('이후 제외·대체·새 검토가 있어도 당시 정확 확정 사건을 현재 권위로 바꾸지 않고 조회한다',async()=>{
- for(const mode of ['EXCLUDED','SUPERSEDED','REVIEW']as const){const f=await fixture();try{
+test('이후 제외·대체·새 검토가 있어도 당시 정확 확정 사건을 현재 권위로 바꾸지 않고 조회한다',{timeout:15000},async t=>{
+ for(const mode of ['EXCLUDED','SUPERSEDED','REVIEW']as const){const f=await fixture(t);try{
   await save(f);const v=structuredClone(f.stored());v.currentConfirmationValid=false;
   if(mode==='EXCLUDED'){v.state=mode;v.history.push({id:id(43),kind:'EXCLUDED',reason:'이후 제외',actorRef:{kind:'HUMAN',userId:uid},recordedAt:at});}
   if(mode==='SUPERSEDED'){v.state=mode;v.headVersion=2;}
@@ -108,8 +130,8 @@ test('이후 제외·대체·새 검토가 있어도 당시 정확 확정 사건
   f.controls.read=async()=>Response.json(v);await f.click(open);await f.wait(()=>f.nodes().some(n=>n.getAttribute('aria-label')===detail));assert(f.container.textContent.includes('현재 유효성·헌법 적용·Agent 전달을 뜻하지 않습니다.'));assert.equal(f.writes.length,1);
  }finally{await f.close();}}
 });
-test('같은 배치 중복 클릭 GET1·닫기와 재조회가 이전 결과를 숨기고 원 저장 입력은 보존한다',async()=>{
- const f=await fixture(),late=deferred<Response>();try{
+test('같은 배치 중복 클릭 GET1·닫기와 재조회가 이전 결과를 숨기고 원 저장 입력은 보존한다',{timeout:15000},async t=>{
+ const f=await fixture(t),late=deferred<Response>();try{
   await save(f);const original=f.buffer(),before=JSON.stringify(original);f.controls.read=()=>late.promise;
   const b=f.button(open);await ui.React.act(async()=>{b.dispatchEvent({type:'click',button:0});b.dispatchEvent({type:'click',button:0});});await f.wait(()=>f.gets.length===1);assert(f.button(open).disabled);
   await f.click('확정 사건 조회 닫기');late.resolve(Response.json(f.stored()));await f.settle();assert(!f.nodes().some(n=>n.getAttribute('aria-label')===detail));
@@ -118,9 +140,9 @@ test('같은 배치 중복 클릭 GET1·닫기와 재조회가 이전 결과를 
   assert.equal(f.buffer(),original);assert.equal(JSON.stringify(original),before);assert.equal(f.writes.length,1);
  }finally{late.resolve(Response.json({}));await f.close();}
 });
-test('프로젝트·주체·세션·client·transport·버퍼 전환/ABA와 이탈 뒤 늦은200/401은 폐기한다',async()=>{
+test('프로젝트·주체·세션·client·transport·버퍼 전환/ABA와 이탈 뒤 늦은200/401은 폐기한다',{timeout:15000},async t=>{
  for(const status of [200,401])for(const mode of ['PROJECT','USER','SESSION','CLIENT_ID','CLIENT','TRANSPORT','BUFFER','CLOSE','UNMOUNT']as const){
-  const f=await fixture(),late=deferred<Response>();try{
+  const f=await fixture(t),late=deferred<Response>();try{
    await save(f);const original=f.buffer(),originalSession=f.session(),originalClient=f.client();f.controls.read=()=>late.promise;await f.click(open);await f.wait(()=>f.gets.length===1);
    if(mode==='PROJECT'){await f.replace({...original,projectId:id(50)});await f.replace(original);}
    if(mode==='BUFFER'){await f.replace({...original});await f.replace(original);}
@@ -129,21 +151,21 @@ test('프로젝트·주체·세션·client·transport·버퍼 전환/ABA와 이�
    if(mode==='TRANSPORT'){const transport=originalClient.transport;originalClient.transport=async()=>{throw Error('unexpected');};await f.render();originalClient.transport=transport;await f.render();}
    if(mode==='CLOSE')await f.click('확정 사건 조회 닫기');
    if(mode==='UNMOUNT')await f.route(false);
-   late.resolve(status===200?Response.json(f.stored()):Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.settle();await f.settle();
+   late.resolve(status===200?Response.json(f.stored()):Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.settle();
    assert.equal(f.lost(),0,mode);assert(!f.nodes().some(n=>n.getAttribute('aria-label')===detail),mode);assert(!f.container.textContent.includes('확정 사건 조회 미확인'),mode);assert.equal(f.writes.length,1);assert.equal(f.gets.length,1);
    if(mode!=='UNMOUNT')assert(!f.button(open).disabled,mode);
   }finally{late.resolve(Response.json({}));await f.close();}
  }
 });
-test('저장·소유·원 target 입력 부적격은 GET0이며 해시 검산 대기 중 교체도 GET0이다',async()=>{
- const f=await fixture();try{
+test('저장·소유·원 target 입력 부적격은 GET0이며 해시 검산 대기 중 교체도 GET0이다',{timeout:15000},async t=>{
+ const f=await fixture(t);try{
   await save(f);const original=f.buffer();
   for(const patch of [{savedId:null},{pending:f.writes[0]},{uncertain:true},{dirty:true},{failure:{code:'RESPONSE_INVALID',status:0}},{kind:'REVIEW'},{ownerUserId:id(70)},{ownerClientId:id(71)},{target:{...original.target,ref:{...original.target.ref,contentHash:'f'.repeat(64)}}}]){
    await assert.rejects(()=>ui.decisions.readSavedKnowledgeConfirmation(f.client(),{...original,...patch},f.session(),()=>true));assert.equal(f.gets.length,0);
   }
-  const subtle=crypto.subtle,descriptor=Object.getOwnPropertyDescriptor(subtle,'digest'),digest=subtle.digest,gate=deferred<void>();let entered=false;
-  Object.defineProperty(subtle,'digest',{configurable:true,value:async(...args:any[])=>{const value=await Reflect.apply(digest,subtle,args);if(!entered){entered=true;await gate.promise;}return value;}});
-  try{await f.click(open);await f.wait(()=>entered);await f.replace({...original});gate.resolve();await f.settle();assert.equal(f.gets.length,0);assert.equal(f.writes.length,1);}
+  const subtle=crypto.subtle,descriptor=Object.getOwnPropertyDescriptor(subtle,'digest'),digest=subtle.digest,gate=deferred<void>(),entry=deferred<void>();let entered=false;
+  Object.defineProperty(subtle,'digest',{configurable:true,value:async(...args:any[])=>{const value=await Reflect.apply(digest,subtle,args);if(!entered){entered=true;entry.resolve();await gate.promise;}return value;}});
+  try{await f.click(open);await ui.React.act(async()=>entry.promise);assert.equal(entered,true);await f.replace({...original});gate.resolve();await f.settle();assert.equal(f.gets.length,0);assert.equal(f.writes.length,1);}
   finally{gate.resolve();if(descriptor)Object.defineProperty(subtle,'digest',descriptor);else Reflect.deleteProperty(subtle,'digest');}
  }finally{await f.close();}
 });
