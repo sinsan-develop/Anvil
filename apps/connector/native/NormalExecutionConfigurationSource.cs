@@ -184,6 +184,8 @@ internal sealed class NormalExecutionConfigurationSource {
    if(bound==null||Hash(bound)!=boundHash||S(bound,"cwd")!=pins.Cwd||S(bound,"application")!=(package.Kind=="IMAGE"?package.Cli:package.Runtime)||FirstHookHash(bound)!=expectedHookHash)throw Invalid();
    package.Check();pins.Check();check();
   }
+  // 원 native 검산 결과의 비교 지문이다. 경로/argv/env나 실행권을 반환하지 않는다.
+  internal string OriginalBindingHash{get{Check();return Hash(new object[]{headHash,boundHash,expectedHookHash,package.ManifestHash});}}
   public void Dispose(){if(closed)return;closed=true;if(bound!=null)bound.Clear();pins.Dispose();}
  }
  internal sealed class DirectoryPins:IDisposable {

@@ -76,10 +76,12 @@ test('START Options 원 SHA 뒤 닫힌 model·선택 숫자 검사와 바이트 
   '{"claudeQueryParams":{"model":"\\u0085"}}','{"claudeQueryParams":{"model":"\\ud800"}}','{"claudeQueryParams":{"model":"   "}}'])assert.throws(()=>readClaudeQueryParams(parseWireJson(raw)));
 });
 
-test('FIRST Options 검산은 최초 Inspect에서만 원 정착 intake를 읽고 결과/원문을 내보내지 않는다',()=>{
+test('기존 FIRST 읽기 Inspect의 Options 검산 1회와 원문 비반환은 별도 source 준비와 분리해 유지한다',()=>{
  const credential=read('apps/connector/native/NormalExecutionCredentialSource.cs');
  const spool=read('apps/connector/native/NormalExecutionSpoolProfileSource.cs');
- assert.equal((credential.match(/InspectFirstSource\(request,record,slot,true\)/g)||[]).length,1);
+ const inspection=credential.slice(credential.indexOf('internal object InspectSdkFirst('),credential.indexOf('object PrepareSdkChildSource('));
+ assert.equal((inspection.match(/InspectFirstSource\(request,record,slot,true\)/g)||[]).length,1);
+ assert.equal((credential.match(/InspectFirstSource\(request,record,slot,true\)/g)||[]).length,2);
  assert.match(credential,/ReadSdkFirstAttempt\(record,slot,request.Scope,request.StartId,request.SendId,h,out options,verifyOptions\)/);
  assert.match(credential,/InspectFirstSource\(RowRequest request,[^\n]*bool verifyOptions=false\)/);
  assert.match(spool,/if\(verifyOptions\)candidate=ReadSdkStartOptions\(rows,id,dir,scope,startCommand,handoff,startReceived\)/);
@@ -470,5 +472,46 @@ test('복사한 endpoint·다른 port 또는 폐쇄한 native 채널은 고정 w
   const native=f.host.createSdkBootstrapClient({path:'C:\\Anvil\\resources\\AnvilTrustKeyHost.exe',signerRef:{id:randomUUID(),version:1,contentHash:hash},helperHash:hash},{readImage:async()=>Buffer.from(image),companion:async()=>'ABSENT',environment:()=>({SystemRoot:'C:\\Windows',WINDIR:'C:\\Windows'}),uuid:randomUUID,spawn:()=>m.child});
   const original=await native.open(m.lease,4);await original.accept();const endpoint=f.host.createSdkBootstrapEndpoint(original);
   const other=new(require('node:worker_threads').MessageChannel)();try{if(kind==='closed')await original.close();await assert.rejects(f.host.launchSdkBootstrapWorker(original,kind==='copy'?{...endpoint}:kind==='port'?{...endpoint,port:other.port2}:endpoint,{origin:'https://project.invalid',identity:'view',authEpoch:1},'1.0.0'));assert.equal(f.instances.length,0);}finally{other.port1.close();other.port2.close();endpoint.close();await original.close();}
+ }
+});
+
+
+test('원 등록 native SOURCE_PREPARE는 INSPECT와 분리된 실제 분할 입구에서 FIRST·C·원 slot을 다시 검산하고 소유 pins를 보유한다 · 정적',()=>{
+ const host=read('apps/connector/native/DesktopTrustKeyHostSource.cs'),credential=read('apps/connector/native/NormalExecutionCredentialSource.cs'),configuration=read('apps/connector/native/NormalExecutionConfigurationSource.cs'),child=read('apps/connector/native/NormalSdkChildHostSource.cs');
+ assert.match(host,/operation=="NORMAL_SDK_CHILD_SOURCE_PREPARE"/);assert.match(host,/normalExecution.ReceiveSdkChildSourcePart\(value,peer\)/);
+ assert.match(credential,/return PrepareSdkChildSource\(request,peer\)/);
+ const prepare=credential.slice(credential.indexOf('object PrepareSdkChildSource('),credential.indexOf('internal sealed class RowRequest'));
+ assert.match(prepare,/InspectFirstSource\(request,record,slot,true\)/);assert.match(prepare,/source.PinFirst\(inspected,package\)/);
+ assert.match(prepare,/NormalSdkChildHostSource.OriginalLease.Bind/);assert.match(prepare,/preparedSdkSource=lease/);assert.doesNotMatch(prepare,/CreateSuspended|ResumeThread|SIGN_|SignNormal/);
+ assert.match(configuration,/internal string OriginalBindingHash/);assert.match(child,/internal sealed class OriginalLease/);
+ assert.match(child,/SDK_CHILD_SOURCE_PREPARED/);assert.match(child,/childCreated",false/);assert.match(child,/executionAuthorized",false/);
+ assert.match(child,/if\(failed\)\{lock\(unconfirmedLeases\)/);assert.match(child,/SDK_CHILD_SOURCE_CLEANUP_UNKNOWN/);assert.match(child,/재시작 소진 원장이 아니다/);
+ assert.doesNotMatch(prepare,/SaveNormalOwned|CreateProcess|ResumeThread|Append\(/);
+ assert.doesNotMatch(host,/OpenSdkSupervisor|OpenExistingForSdkSupervisor|--normal-sdk-child/);
+ const inspect=credential.slice(credential.indexOf('internal object InspectSdkFirst('),credential.indexOf('object PrepareSdkChildSource('));
+ assert.match(inspect,/SDK_CONFIGURATION_UNAVAILABLE/);assert.doesNotMatch(inspect,/OriginalLease.Bind|preparedSdkSource=/);
+});
+
+
+test('실제 private host source 준비는 같은 원바이트만 native에 분할 송신하고 비실행 opaque 결과·단회·UNKNOWN를 보존한다 · RAM',async()=>{
+ for(const kind of ['NORMAL','HASH','AUTHORITY','PART','UNKNOWN','EXPIRES']){
+  const raw={attemptId:randomUUID(),slotId:randomUUID(),startCommandId:randomUUID(),sendCommandId:randomUUID(),scope:{fixture:'scope-only'},handoff:{fixture:'C-source-only',padding:'x'.repeat(40000)}};
+  const body=Buffer.from(canonicalJson(raw)),sourceHash=createHash('sha256').update(body).digest('hex');let offset=0,parts=0;
+  const fixture=bootstrapCarrier(x=>x,true),frames=[];
+  fixture.child.stdin.write=(bytes,encoding,callback)=>{
+   const f=JSON.parse(bytes.toString());frames.push(f);assert.equal(f.operation,'NORMAL_SDK_CHILD_SOURCE_PREPARE');const p=f.payload;assert.equal(p.contentHash,sourceHash);assert.equal(p.index,parts++);assert.equal(p.attemptId,raw.attemptId);assert.equal(p.slotId,raw.slotId);const decoded=Buffer.from(p.data,'base64');assert.deepEqual(decoded,body.subarray(offset,offset+decoded.length));offset+=decoded.length;
+   const data=p.final?{state:'SDK_CHILD_SOURCE_PREPARED',leaseId:randomUUID(),sourceHash:kind==='HASH'?'f'.repeat(64):sourceHash,bindingHash:'b'.repeat(64),expiresAt:kind==='EXPIRES'?new Date(Date.now()+1000).toISOString():fixture.lease.callExpiresAt(),childCreated:false,executionAuthorized:kind==='AUTHORITY',dispatchPerformed:false}:{state:'PART_ACCEPTED',transferId:kind==='PART'?randomUUID():p.transferId,index:p.index};
+   if(p.final&&kind==='UNKNOWN')data.state='UNKNOWN';
+   queueMicrotask(()=>{callback();fixture.child.stdout.emit('data',Buffer.from(canonicalJson({schemaVersion:1,purpose:'DESKTOP_TRUST_KEY_RESULT_V1',requestId:f.requestId,sequence:f.sequence,rootIdentity:'SDK_FIXTURE_ROOT',data})+'\n'));});return true;
+  };
+  const channel=await fixture.client.open(fixture.lease);let source;
+  try{
+   if(['HASH','AUTHORITY','PART','UNKNOWN'].includes(kind)){await assert.rejects(channel.prepareSdkChildSource(raw),/OUTCOME_UNKNOWN/);const sent=frames.length;await assert.rejects(channel.prepareSdkChildSource(raw));assert.equal(frames.length,sent);}
+   else{source=await channel.prepareSdkChildSource(raw);assert.equal(source.read().sourceHash,sourceHash);assert.equal(source.read().executionAuthorized,false);assert.equal(source.read().childCreated,false);assert.equal(offset,body.length);assert.equal(parts,2);await assert.rejects(channel.prepareSdkChildSource(raw));assert.deepEqual(Object.keys(source),['read']);assert.equal('handoff' in source.read(),false);
+    if(kind==='EXPIRES'){const now=Date.now;try{const end=Date.parse(source.read().expiresAt);Date.now=()=>end;assert.throws(()=>source.read(),/PROTECTION_UNAVAILABLE/);}finally{Date.now=now;}}
+   }
+   assert.equal(frames.some(f=>f.operation==='NORMAL_SDK_FIRST_INSPECT'),false);
+  }finally{await channel.close();body.fill(0);}
+  if(source)assert.throws(()=>source.read());
  }
 });

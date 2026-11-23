@@ -153,6 +153,31 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   }catch{firstConsumed=true;unknown=true;ClearFirst();throw;}
  }
  void ClearFirst(){if(firstBytes!=null)Array.Clear(firstBytes,0,firstBytes.Length);firstBytes=null;}
+ byte[] sdkSourceBytes;string sdkSourceTransfer,sdkSourceHash,sdkSourceRecord,sdkSourceSlot,sdkSourceAttempt,sdkSourceSlotId;int sdkSourceOffset,sdkSourceIndex;bool sdkSourceConsumed;
+ internal bool HasSdkChildSourceTransfer {get{return sdkSourceTransfer!=null;}}
+ internal bool IncompleteSdkChildSourceTransfer {get{return sdkSourceTransfer!=null&&!sdkSourceConsumed;}}
+ internal object ReceiveSdkChildSourcePart(Dictionary<string,object> value,DesktopTrustKeyPeerSource peer){
+  try{
+   Check();Exact(value,"attemptId,slotId,transferId,totalBytes,contentHash,index,data,final");
+   string attempt=Id(value,"attemptId"),slotId=Id(value,"slotId"),transfer=Id(value,"transferId"),hash=S(value,"contentHash");
+   var record=Record(attempt);var slot=LoadSlot(slotId,record);int size=checked((int)N(value["totalBytes"])),index=checked((int)N(value["index"]));
+   if(sdkSourceConsumed||size<1||size>2097152||index>=64||!DesktopTrustKeyHostSource.IsHash(hash)||!(value["final"] is bool))throw Invalid();
+   if(sdkSourceTransfer==null){if(index!=0)throw Invalid();sdkSourceTransfer=transfer;sdkSourceHash=hash;sdkSourceRecord=H(record);sdkSourceSlot=H(slot);sdkSourceAttempt=attempt;sdkSourceSlotId=slotId;sdkSourceBytes=new byte[size];}
+   if(transfer!=sdkSourceTransfer||hash!=sdkSourceHash||attempt!=sdkSourceAttempt||slotId!=sdkSourceSlotId||H(record)!=sdkSourceRecord||H(slot)!=sdkSourceSlot||size!=sdkSourceBytes.Length||index!=sdkSourceIndex)throw Invalid();
+   string encoded=S(value,"data");if(encoded.Length<1||encoded.Length>43692)throw Invalid();byte[] part=Convert.FromBase64String(encoded);
+   try{
+    if(part.Length<1||part.Length>32768||Convert.ToBase64String(part)!=encoded||sdkSourceOffset>size-part.Length)throw Invalid();
+    bool final=(bool)value["final"];if(final!=(sdkSourceOffset+part.Length==size)||!final&&part.Length!=32768)throw Invalid();
+    Check();Array.Copy(part,0,sdkSourceBytes,sdkSourceOffset,part.Length);sdkSourceOffset+=part.Length;sdkSourceIndex++;
+    if(!final)return new Dictionary<string,object>{{"state","PART_ACCEPTED"},{"transferId",transfer},{"index",index}};
+    sdkSourceConsumed=true;if(H(sdkSourceBytes)!=sdkSourceHash)throw Invalid();var input=DesktopTrustKeyHostSource.Parse(sdkSourceBytes,false);
+    if(!sdkSourceBytes.SequenceEqual(B(input)))throw Invalid();var request=new RowRequest(input,true);
+    if(request.AttemptId!=sdkSourceAttempt||request.SlotId!=sdkSourceSlotId)throw Invalid();
+    return PrepareSdkChildSource(request,peer);
+   }finally{Array.Clear(part,0,part.Length);if(sdkSourceConsumed)ClearSdkSource();}
+  }catch{sdkSourceConsumed=true;unknown=true;ClearSdkSource();throw;}
+ }
+ void ClearSdkSource(){if(sdkSourceBytes!=null)Array.Clear(sdkSourceBytes,0,sdkSourceBytes.Length);sdkSourceBytes=null;}
  // 이 객체는 원 자료의 읽기 검산 결과일 뿐 lease/OS 현재 witness가 아니다. 외부로 반환하지 않는다.
  internal sealed class FirstInspection {
   internal readonly string Digest,CanonicalSource,RecordHash,SlotHash;
@@ -230,6 +255,30 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
    }
    package.Check();Check();
    return new Dictionary<string,object>{{"state","SDK_CONFIGURATION_UNAVAILABLE"}};
+  }
+ }
+ NormalSdkChildHostSource.OriginalLease preparedSdkSource;bool sdkPreparationAttempted,sdkSourceCleanupUnknown;
+ internal bool HasSdkChildSourceCleanupUnknown{get{return sdkSourceCleanupUnknown;}}
+ object PrepareSdkChildSource(RowRequest request,DesktopTrustKeyPeerSource peer){
+  if(sdkPreparationAttempted||preparedSdkSource!=null)throw Invalid();sdkPreparationAttempted=true;
+  Check();var record=Record(request.AttemptId);var slot=LoadSlot(request.SlotId,record);
+  if(spoolProfile==null||request.Handoff==null)throw Invalid();
+  FirstInspection inspected=InspectFirstSource(request,record,slot,true);
+  NormalSdkWorkerPackageSource package=null;NormalExecutionConfigurationSource.FirstConfiguration configuration=null;
+  try{
+   Action originalCheck=()=>{Check();if(clock()>=inspected.ExpiresAt||H(Record(request.AttemptId))!=inspected.RecordHash||H(LoadSlot(request.SlotId,record))!=inspected.SlotHash)throw Invalid();};
+   package=NormalSdkWorkerPackageSource.Acquire(peer);originalCheck();
+   var source=new NormalExecutionConfigurationSource(owner,peer,()=>Record(request.AttemptId),originalCheck,clock);
+   configuration=source.PinFirst(inspected,package);configuration.Check();var again=InspectFirstSource(request,record,slot);
+   if(again.Digest!=inspected.Digest||again.CanonicalSource!=inspected.CanonicalSource||again.RecordHash!=inspected.RecordHash||again.SlotHash!=inspected.SlotHash||again.ExpiresAt!=inspected.ExpiresAt)throw Invalid();
+   var until=new[]{inspected.ExpiresAt,clock().AddMilliseconds(remaining()),At(slot,"expiresAt")}.Min();
+   string sourceHash=H(new Dictionary<string,object>{{"attemptId",request.AttemptId},{"slotId",request.SlotId},{"startCommandId",request.StartId},{"sendCommandId",request.SendId},{"scope",request.Scope},{"handoff",request.Handoff}});
+   var lease=NormalSdkChildHostSource.OriginalLease.Bind(package,configuration,inspected,sourceHash,until,originalCheck,clock);
+   preparedSdkSource=lease;package=null;configuration=null;return lease.Read();
+  }finally{
+   bool failed=false;if(configuration!=null)try{configuration.Dispose();}catch{failed=true;}
+   if(package!=null)try{package.Dispose();}catch{failed=true;}
+   if(failed){sdkSourceCleanupUnknown=true;unknown=true;throw new InvalidOperationException("SDK_CHILD_SOURCE_CLEANUP_UNKNOWN");}
   }
  }
  internal sealed class RowRequest{
@@ -626,7 +675,9 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  }
  void ClearInput(){if(incoming!=null){if(incoming.Length>0)Array.Clear(incoming.GetBuffer(),0,(int)incoming.Length);incoming.Dispose();}incoming=null;upload=null;inputHandle=null;bootstrapInput=false;}
  void ClearOutput(){if(output!=null)Array.Clear(output,0,output.Length);output=null;outputOffset=0;outputHandle=null;}
- public void Dispose(){understandingCloseAccepted=false;unknown=true;ClearInput();ClearOutput();ClearFirst();}
+ public void Dispose(){understandingCloseAccepted=false;unknown=true;ClearInput();ClearOutput();ClearFirst();ClearSdkSource();
+  if(preparedSdkSource!=null)try{preparedSdkSource.Dispose();}catch{sdkSourceCleanupUnknown=true;throw;}
+ }
 }
 internal static partial class ProtectedStore {
  // 일반 Run/STORE_CREDENTIAL은 여전히 av3ct1_만 허용한다. 별도 kind와 DPAPI entropy로 normal 슬롯을 격리한다.

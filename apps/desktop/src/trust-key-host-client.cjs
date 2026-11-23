@@ -3,6 +3,7 @@ const path=require('node:path'),{types}=require('node:util'),{EventEmitter}=requ
 const {canonicalJson,contentHash,catalogueExact}=require('./runtime-catalogue-profile.cjs');
 const sdkBootstrapMode=Symbol('sdk-bootstrap');
 const sdkBootstrapEndpoints=new WeakMap();
+const sdkChildSources=new WeakMap();
 const liveChannels=new WeakMap(),sdkBootstrapWorkers=new WeakMap(),sdkBootstrapPorts=new WeakMap();
 const unconfirmedSdkWorkers=new Map();
 const intrinsicLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype),'byteLength')?.get;
@@ -65,7 +66,34 @@ async function executionConfiguration(action,attemptId,value){
   return result;
  }catch(error){if(dispatched)latch();throw error;}finally{bytes.fill(0);}
 }
-retained=Object.freeze({send,close,executionConfiguration,inspectionBudget:()=>{guard();stable();if(busy||sticky||closed||ending)return uncertain();return {frames:64-sequence,remainingMs:Math.max(0,Math.floor(remaining()))};}});liveChannels.set(retained,{check:()=>{guard();stable();if(sticky||closed||ending)return uncertain();},env});if(signal.aborted){abort();return uncertain();}guard();return retained;}
+/** 원 source bytes를 같은 등록 native host에 단회 전달한다. 반환은 비실행 준비의 opaque 소유자다.
+ * 보존은 현재 channel/process 한정이다. 재시작 소진·supervisor/child 실행을 보장하지 않는다.
+ * @param {unknown} raw
+ */
+async function prepareSdkChildSource(raw){
+ guard();stable();if(mode===sdkBootstrapMode||sdkChildSources.has(retained))return unavailable();
+ const value=JSON.parse(canonicalJson(catalogueExact(raw,'attemptId,slotId,startCommandId,sendCommandId,scope,handoff')));
+ const validId=v=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
+ if(![value.attemptId,value.slotId,value.startCommandId,value.sendCommandId].every(validId))return unavailable();
+ const bytes=Buffer.from(canonicalJson(value));let dispatched=false;
+ const state={closed:false,expiresAt:Infinity,check:()=>{guard();stable();if(state.closed||Date.now()>=state.expiresAt)return unavailable();}};
+ sdkChildSources.set(retained,state);
+ try{
+  if(bytes.length<1||bytes.length>2097152||sequence+Math.ceil(bytes.length/32768)>64)return unavailable();
+  const hash=contentHash(bytes),transferId=Reflect.apply(functions[4],ports,[]);if(!validId(transferId))return unavailable();let result;
+  for(let offset=0,index=0;offset<bytes.length;offset+=32768,index++){
+   state.check();const stop=Math.min(bytes.length,offset+32768),final=stop===bytes.length;
+   dispatched=true;result=await send('NORMAL_SDK_CHILD_SOURCE_PREPARE',{attemptId:value.attemptId,slotId:value.slotId,transferId,totalBytes:bytes.length,contentHash:hash,index,data:bytes.subarray(offset,stop).toString('base64'),final});state.check();
+   if(!final){const row=catalogueExact(result,'state,transferId,index');if(row.state!=='PART_ACCEPTED'||row.transferId!==transferId||row.index!==index)return uncertain();}
+  }
+  const r=catalogueExact(result,'state,leaseId,sourceHash,bindingHash,expiresAt,childCreated,executionAuthorized,dispatchPerformed');
+  if(r.state!=='SDK_CHILD_SOURCE_PREPARED'||!validId(r.leaseId)||r.sourceHash!==hash||typeof r.bindingHash!=='string'||!/^[a-f0-9]{64}$/.test(r.bindingHash)||r.childCreated!==false||r.executionAuthorized!==false||r.dispatchPerformed!==false||typeof r.expiresAt!=='string'||new Date(r.expiresAt).toISOString()!==r.expiresAt||Date.parse(r.expiresAt)<=Date.now()||Date.parse(r.expiresAt)>Date.parse(expiry()))return uncertain();
+  const metadata=JSON.parse(canonicalJson(r));state.expiresAt=Date.parse(r.expiresAt);state.check();
+  const prepared=Object.freeze({read:()=>{state.check();return JSON.parse(canonicalJson(metadata));}});
+  return prepared;
+ }catch(error){state.closed=true;if(dispatched)latch();throw error;}finally{bytes.fill(0);}
+}
+retained=Object.freeze({send,close,executionConfiguration,prepareSdkChildSource,inspectionBudget:()=>{guard();stable();if(busy||sticky||closed||ending)return uncertain();return {frames:64-sequence,remainingMs:Math.max(0,Math.floor(remaining()))};}});liveChannels.set(retained,{check:()=>{guard();stable();if(sticky||closed||ending)return uncertain();},env});if(signal.aborted){abort();return uncertain();}guard();return retained;}
 return Object.freeze({open,closeOwned:async()=>retained?retained.close():{state:'UNKNOWN'}});}
 
 /** 실제 driver는 명시 호출 때만 동작한다. 자동 fallback/재시작/재접속은 없다.

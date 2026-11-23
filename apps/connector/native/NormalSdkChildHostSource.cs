@@ -14,6 +14,29 @@ using Microsoft.Win32.SafeHandles;
 // C 원 packet·두 envelope·FIRST3·설정·slot을 검산한 원 인계 소비자가 연결되기 전에는
 // 이 private 생성기를 호출할 수 없다. 이 파일 자체는 실행 허가나 PRESPAWN 증거가 아니다.
 internal sealed class NormalSdkChildHostSource:IDisposable {
+ // 원 등록 host 안의 비실행 준비 소유자다. 단회/UNKNOWN 보존은 이 process 한정이며 재시작 소진 원장이 아니다.
+ // 실제 supervisor/child 생성·ACK·Consume/실행 lease를 발급하지 않는다. 원 source/pins를 JSON boolean으로 대체하지 않는다.
+ internal sealed class OriginalLease:IDisposable {
+  static readonly HashSet<OriginalLease> unconfirmedLeases=new HashSet<OriginalLease>();
+  readonly NormalSdkWorkerPackageSource package;readonly NormalExecutionConfigurationSource.FirstConfiguration configuration;
+  readonly Action current;readonly Func<DateTime> clock;readonly DateTime end;
+  readonly string sourceHash,bindingHash,leaseId;bool closed;
+  OriginalLease(NormalSdkWorkerPackageSource p,NormalExecutionConfigurationSource.FirstConfiguration c,NormalExecutionCredentialSource.FirstInspection i,string source,DateTime until,Action check,Func<DateTime> now){
+   package=p;configuration=c;current=check;clock=now;sourceHash=source;end=until;leaseId=Guid.NewGuid().ToString("D");
+   bindingHash=DesktopTrustKeyHostSource.Hash(Encoding.UTF8.GetBytes(DesktopTrustKeyHostSource.Canonical(new object[]{sourceHash,i.Digest,i.RecordHash,i.SlotHash,p.ManifestHash,c.OriginalBindingHash,end.ToString("yyyy-MM-ddTHH:mm:ss.fffZ",CultureInfo.InvariantCulture)},0)));Check();
+  }
+  internal static OriginalLease Bind(NormalSdkWorkerPackageSource p,NormalExecutionConfigurationSource.FirstConfiguration c,NormalExecutionCredentialSource.FirstInspection i,string source,DateTime until,Action check,Func<DateTime> now){
+   lock(unconfirmedLeases){if(unconfirmedLeases.Count!=0)throw new InvalidOperationException("SDK_CHILD_SOURCE_CLEANUP_UNKNOWN");}
+   if(p==null||c==null||i==null||check==null||now==null||!DesktopTrustKeyHostSource.IsHash(source)||until.Kind!=DateTimeKind.Utc||until>i.ExpiresAt)throw Invalid();
+   return new OriginalLease(p,c,i,source,until,check,now);
+  }
+  internal void Check(){if(closed)throw Invalid();current();if(clock()>=end)throw Invalid();package.Check();configuration.Check();current();if(clock()>=end)throw Invalid();}
+  internal Dictionary<string,object> Read(){Check();return new Dictionary<string,object>{{"state","SDK_CHILD_SOURCE_PREPARED"},{"leaseId",leaseId},{"sourceHash",sourceHash},{"bindingHash",bindingHash},{"expiresAt",end.ToString("yyyy-MM-ddTHH:mm:ss.fffZ",CultureInfo.InvariantCulture)},{"childCreated",false},{"executionAuthorized",false},{"dispatchPerformed",false}};}
+  public void Dispose(){if(closed)return;closed=true;bool failed=false;
+   try{configuration.Dispose();}catch{failed=true;}try{package.Dispose();}catch{failed=true;}
+   if(failed){lock(unconfirmedLeases){unconfirmedLeases.Add(this);}throw new InvalidOperationException("SDK_CHILD_SOURCE_CLEANUP_UNKNOWN");}
+  }
+ }
  const uint Suspended=0x4,UnicodeEnvironment=0x400,ExtendedStartup=0x80000,NoWindow=0x08000000;
  const uint WaitTimeout=258;
  readonly object gate=new object();
