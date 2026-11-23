@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **Stage B 계획·방법론·지식·승인 회귀 검수:** Main이 FN02/FN04/UI02/UI06 단위 818/818(`62696a`)을 확인했다. FN05/FN11/UI01/UI03/UI10 및 FN03 보호관측·참조 단위는 병렬 검사에서 두 오래된 시험 설정과 간헐적 화면 대기 실패가 드러났다(`5cda58`, `fd3ce0`). `baseline_predispatch_task_review`가 원 분리 승인 fixture에 현재 세션과 동일 거래의 요청·알림 검산을 추가하고, 지식 화면의 기대 선택 목록에 이미 제품에 있는 source 정책 연산 두 개를 반영했다. 제품·권한·시험 대기 한도는 그대로다. 화면 대기 시험은 각각 독립 6/6(`1b798f`)·5/5(`229122`)이고, 전체 관련 묶음은 한 worker에서 531/531 실패/skip 0(`7249ac`), 작성자 직접 17/17(`2aa805`), 독립 C0/I0/M0. 변경 시험 2개다. 병렬 화면 대기 재현 가능성, 실제 PostgreSQL·서비스·브라우저 및 PRESPAWN은 미검증 또는 결정 대기다.
+
 - **FN09 등록 owner 전체 RAM 검수:** `baseline_predispatch_task_review`가 DISCOVERY용 늦은 host 열기 주입을 실제 DISCOVERY 시작 이후로 한정했다. 기존 fixture는 앞선 START에서도 같은 slot을 가로채 정상 최초 작업을 `UNKNOWN`으로 끝냈다. 늦은 parent/next 두 경우의 host 정확 1회 회수, 단계 순서, POST·저장 0 및 원 기한은 보존했다. 초기 선택 실행은 129/134(`414336`), 이 중 모듈 mock 플래그 누락 4건은 올바른 명령에서 4/4(`326385`), 지연 parent 실패는 별도 재현(`17758d`) 후 fixture 1파일을 정정했다. 최종 Main 전체 138/138·실패/skip 0·약 274초(`037a3a`), 독립 C0/I0/M0. 제품·정책·기한 변화 0, 실제 native/C#/DB/Agent는 미검증이다.
 
 - **FN06/FN08 등록 owner와 번들 결합 재검수:** 데스크톱 회귀 보완 `d2692b58`에서 실제 등록 owner 소스와 메모리 host를 연결하는 4건을 15초 시험 한도로 선택 실행했다. 등록 bootstrap 및 매번 새 lease, 같은 번들의 보호 GET/POST, 다른 권위의 전송 전 거절, 같은 번들의 START/ACK까지 4/4·실패 및 skip 0(`bd1046`). 이전 전체 조합의 중단 기록은 유지하며 이번에 전체 owner 시험을 통과한 것으로 계산하지 않는다. 별도 코드 수정·실제 등록·키·Windows/DB·Agent 실행은 없다.
