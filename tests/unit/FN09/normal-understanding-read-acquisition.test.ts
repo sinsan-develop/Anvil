@@ -27,7 +27,7 @@ test('fixed range GET has a separate exact signed target; generic and synthetic 
  assert.throws(()=>m.executionChallengeRequestBytes('EXECUTION',request));assert.ok(m.normalUnderstandingRangeChallengeBytes(request).length);
  for(const patch of [{path:target.path+'/'},{path:target.path+'?x=1'},{path:target.path.replace('/range','/%72ange')},{method:'POST'},{queryHash:hash({x:1})},{bodyHash:hash({})}])assert.throws(()=>m.normalUnderstandingRangeChallengeBytes({...request,target:{...target,...patch}}));
 });
-function fixture(enabled=true,rangeMode=false){
+function fixture(enabled=true,rangeMode=false,rangeHttp=false){
  const ref=()=>({id:randomUUID(),version:1,contentHash:hash(randomUUID())});
  const pid=randomUUID(),cid=randomUUID(),eid=randomUUID(),g=ref(),cred=ref(),start=Date.parse('2026-11-22T01:00:00Z'),origin='https://synthetic.invalid';
  const pair=generateKeyPairSync('ec',{namedCurve:'prime256v1'}),spki=pair.publicKey.export({format:'der',type:'spki'}).toString('base64url');
@@ -41,7 +41,7 @@ function fixture(enabled=true,rangeMode=false){
  const {context:_context,...base}=snapshot,rangeSnapshot={...base,purpose:'NORMAL_UNDERSTANDING_FIXED_RANGE_REQUEST',request:{...q,payload:{...q.payload,selection}},sourceScope:selection};
  if(rangeMode)human={...human,id:randomUUID(),contentHash:hash(rangeSnapshot)};
  let charged=0n;
- const state={now:start,none:false,denied:false,current:true,corrupt:false,commitUnknown:false,rollbackUnknown:false,rollbackThrow:false,afterInsert:false,rangeCount:1,unverified:false,overCap:false,failCharge:false,releases:[] as boolean[],commits:0,rollbacks:0,queries:[] as string[]};
+ const state={now:start,rangeDeadline:start+30000,none:false,denied:false,current:true,corrupt:false,commitUnknown:false,rollbackUnknown:false,rollbackThrow:false,afterInsert:false,rangeCount:1,unverified:false,overCap:false,failCharge:false,releases:[] as boolean[],commits:0,rollbacks:0,queries:[] as string[]};
  const ps={scope:{kind:'PROJECT',projectId:pid},state:'APPLIED',limits:{maxAttempts:3,maxCalls:50,maxConcurrentAssignments:1,maxElapsedMs:7200000,maxOfflineMs:300000,maxSpoolBytes:1073741824},decidedAt:at,expiresAt:new Date(start+240000).toISOString()};
  const policy={projectId:pid,ref:{...ref(),contentHash:hash(ps)},snapshot:ps};
  const reserve=reserveExecutionBudget([],policy as any,{projectId:pid,executionId:eid,executionGeneration:1,commandId:randomUUID(),assignmentRef:g,stageRef:{applicationRef:g,nodeId:'개발'},policyRef:policy.ref,operation:'START_SESSION',demand:{attempts:1,calls:1,spoolBytes:1,cost:null,costStatus:'VERIFIED_NO_CHARGE'}},at);
@@ -65,7 +65,7 @@ function fixture(enabled=true,rangeMode=false){
     if(state.none)return{rows:[{discovery:{status:'NONE'}}]};
     if(state.rangeCount!==1||expected.requestRef!==null&&canonicalJson(expected.requestRef)!==canonicalJson(human))throw Error('NORMAL_UNDERSTANDING_RANGE_DENIED');
     if(pending.some(x=>x.version===1&&x.snapshot_json.understandingRangeRequestRef&&x.snapshot_json.request.requestId!==a[2]))throw Error('NORMAL_UNDERSTANDING_RANGE_DENIED');
-    return{rows:[{discovery:{status:'RANGE_REQUEST',requestRef:human,snapshot:state.corrupt?{...rangeSnapshot,sourceScope:{unproven:true}}:rangeSnapshot,context,deadline:expiresAt}}]};
+    return{rows:[{discovery:{status:'RANGE_REQUEST',requestRef:human,snapshot:state.corrupt?{...rangeSnapshot,sourceScope:{unproven:true}}:rangeSnapshot,context,deadline:new Date(state.rangeDeadline).toISOString()}}]};
    }
    if(expected!==null&&canonicalJson(expected)!==canonicalJson(human))throw Error('NORMAL_UNDERSTANDING_DISCOVERY_DENIED');
    if(pending.some(x=>x.version===1&&x.snapshot_json.understandingRequestRef&&x.snapshot_json.request.requestId!==a[2]))throw Error('NORMAL_UNDERSTANDING_DISCOVERY_DENIED');
@@ -83,7 +83,9 @@ function fixture(enabled=true,rangeMode=false){
   throw Error('Unexpected SQL '+sql);
  }}}};
  const access={repository:new AccessRepository(pool as any,{installationId:randomUUID(),key:Buffer.alloc(32,2)}),origin};
- const app=buildApp({},undefined,enabled?access:undefined,undefined,undefined,undefined,undefined,null,undefined,undefined,undefined,{pool} as any,undefined,{origin});
+ const buildArgs:Parameters<typeof buildApp>=[{},undefined,enabled?access:undefined,undefined,undefined,undefined,undefined,null,undefined,undefined,undefined,{pool} as any,undefined,{origin}];
+ if(rangeHttp)(buildArgs as any[])[24]={mode:'NORMAL_PROTECTED',purpose:'FN09_FIXED_RANGE_ACQUISITION'};
+ const app=buildApp(...buildArgs);
  // RAM request socket only. No listener, TLS service, DB or private key input.
  app.addHook('onRequest',async r=>{Object.defineProperty(r.raw.socket,'encrypted',{value:true,configurable:true});});
  const path='/api/v1/connectors/'+cid+'/executions/'+eid,target={method:'GET',path:path+'/understanding-response-read'+(rangeMode?'/range':''),queryHash:hash({}),bodyHash:hash(null)};
@@ -96,8 +98,71 @@ function fixture(enabled=true,rangeMode=false){
  const get=(p:any)=>app.inject({method:'GET',url:target.path,headers:{...headers,'anvil-execution-auth':Buffer.from(canonicalJson(p)).toString('base64url')}});
  const source=new NormalUnderstandingReadAcquisition(pool as any),token=hash('RAM_RANGE_TOKEN'),signal=new AbortController().signal;
  const issueRange=async(r:any=request)=>{const m:any=await import('../../../apps/server/modules/executions/normal-exchange-challenge.ts');return m.issueNormalUnderstandingRangeChallenge(pool,cid,eid,{...r,signature:signature(challengeBytes(r))},token,source,signal);};
- return{app,state,issue,packet,get,request,target,source,selection,context,signal,issueRange,acquireRange:(frame:any)=>(source as any).acquireRange(cid,eid,token,frame,signal),charge:()=>charged,human:()=>human,replaceHuman:()=>{human={...human,id:randomUUID()};},rows:()=>rows,receipts:()=>receipts};
+ return{app,state,issue,packet,get,request,target,source,selection,context,signal,issueRange,buildArgs,headers,wireRequest:(r:any=request)=>({...r,signature:signature(challengeBytes(r))}),acquireRange:(frame:any)=>(source as any).acquireRange(cid,eid,token,frame,signal),charge:()=>charged,human:()=>human,replaceHuman:()=>{human={...human,id:randomUUID()};},rows:()=>rows,receipts:()=>receipts};
 }
+
+test('fixed range HTTP is an explicit internal opt-in and performs one atomic acquisition with exact packet replay',async()=>{
+ const f=fixture(true,true,true);try{
+  const issue=await f.issue();assert.equal(issue.statusCode,200,issue.body);const frame=f.packet(issue.json()),charge=f.charge();assert.ok(charge>0n);
+  const [a,b]=await Promise.all([f.get(frame),f.get(frame)]);assert.equal(a.statusCode,200,a.body);assert.equal(b.statusCode,200,b.body);assert.deepEqual(a.json(),b.json());
+  assert.equal(a.headers['cache-control'],'no-store');assert.equal(a.json().status,'RANGE_ACQUIRED');assert.deepEqual(a.json().receipt.selection,f.selection);
+  assert.equal(f.rows().length,2);assert.equal(f.receipts().length,1);assert.ok(f.charge()>charge);const settled=f.charge();
+  f.state.now+=1000;const again=await f.get(frame);assert.equal(again.statusCode,200,again.body);assert.deepEqual(again.json(),a.json());assert.equal(f.charge(),settled);
+  assert.equal(a.json().sourceAvailable,false);assert.equal(a.json().selectionAvailable,false);assert.doesNotMatch(a.body,/requestedBy|responsePartRefs|sdkRaw|humanSessionId/);
+  f.state.denied=true;const denied=await f.get(frame);assert.equal(denied.statusCode,412,denied.body);assert.equal(denied.json().proofResultRef,undefined);assert.equal(f.charge(),settled);
+ }finally{await f.app.close();}
+});
+
+test('fixed range HTTP opt-in requires exact own internal descriptors and the original non-synthetic pool and origin',async()=>{
+ const m=await import('../../../apps/server/modules/executions/normal-understanding-read-acquisition.ts'),f=fixture(true,true);let getters=0;
+ const valid={mode:'NORMAL_PROTECTED',purpose:'FN09_FIXED_RANGE_ACQUISITION'} as const;
+ try{
+  const output=m.readNormalUnderstandingRangeOptions(valid);assert.deepEqual(output,valid);assert.ok(Object.isFrozen(output));assert.notEqual(output,valid);
+  for(const invalid of [null,false,[],{...valid,extra:true},{...valid,purpose:'FN09_DISCOVERY_METADATA'},Object.create(valid),new Proxy({...valid},{}),
+   Object.defineProperty({...valid},'extra',{value:true}),{...valid,[Symbol('extra')]:true},Object.defineProperty({...valid},'mode',{get(){getters++;return 'NORMAL_PROTECTED';}})]){
+   assert.throws(()=>m.readNormalUnderstandingRangeOptions(invalid as any),/NORMAL_UNDERSTANDING_RANGE_CONFIGURATION_INVALID/);
+  }
+  for(const modify of [(a:any[])=>{a[2]=undefined;},(a:any[])=>{a[3]={};},(a:any[])=>{a[11]={pool:{connect:async()=>{throw Error('must not connect');}}};},
+   (a:any[])=>{a[13]={origin:'https://other.invalid'};},(a:any[])=>{a[11]=undefined;},(a:any[])=>{a[13]=undefined;}]){
+   const args:Parameters<typeof buildApp>=[...f.buildArgs];(args as any[])[24]=valid;modify(args);assert.throws(()=>buildApp(...args),/NORMAL_UNDERSTANDING_RANGE_CONFIGURATION_INVALID/);
+  }
+  assert.equal(getters,0);assert.equal(f.state.queries.length,0);
+  const args:Parameters<typeof buildApp>=[...f.buildArgs];(args as any[])[23]={mode:'NORMAL_PROTECTED',purpose:'FN09_DISCOVERY_METADATA'};
+  const resultOnly=buildApp(...args);resultOnly.addHook('onRequest',async r=>{Object.defineProperty(r.raw.socket,'encrypted',{value:true,configurable:true});});
+  try{const response=await resultOnly.inject({method:'POST',url:f.target.path.slice(0,-'/understanding-response-read/range'.length)+'/challenges',headers:f.headers,payload:f.wireRequest()});assert.equal(response.statusCode,503,response.body);assert.equal(f.state.queries.length,0);}finally{await resultOnly.close();}
+ }finally{await f.app.close();}
+});
+
+test('fixed range HTTP rejects nonliteral paths, bodies, mixed identity and invalid or repeated proof headers before SQL',async()=>{
+ const f=fixture(true,true,true);try{
+  const issued=await f.issue();assert.equal(issued.statusCode,200,issued.body);const frame=f.packet(issued.json()),auth=Buffer.from(canonicalJson(frame)).toString('base64url'),headers={...f.headers,'anvil-execution-auth':auth};
+  for(const patch of [{url:f.target.path+'?x=1'},{url:f.target.path.replace('/range','/%72ange')},{url:f.target.path+'/'},{url:f.target.path+'/extra'},
+   {method:'HEAD'},{method:'POST'},{headers:{...headers,cookie:'__Host-anvil.sid='+'x'.repeat(43)}},{headers:{...headers,origin:'https://synthetic.invalid'}},
+   {headers:{...headers,'x-anvil-csrf':'c'.repeat(43)}},{headers:{...headers,'content-length':'0'}},{headers:{...headers,'content-type':'application/json'}},
+   {headers:{...headers,'content-encoding':'gzip'}},{headers:{...headers,host:'other.invalid'}},{headers:{...headers,authorization:['Bearer av3ex1_'+'x'.repeat(43),f.headers.authorization]}},
+   {headers:{...headers,'anvil-execution-auth':[auth,auth]}},{headers:{...headers,'anvil-execution-auth':auth+'='}},
+   {headers:{...headers,'anvil-execution-auth':Buffer.from(' '+canonicalJson(frame)).toString('base64url')}},
+   {headers:{...headers,'anvil-execution-auth':Buffer.from(canonicalJson({...frame,signature:'bad'})).toString('base64url')}},
+   {headers:{host:f.headers.host,'anvil-execution-auth':auth}},{headers:{...headers,authorization:'Bearer av3sr1_'+'x'.repeat(43)}}]){
+   const count=f.state.queries.length,response=await f.app.inject({method:'GET',url:f.target.path,headers,...patch} as any);assert.ok(response.statusCode>=400,response.body);assert.equal(f.state.queries.length,count,'rejected channel performed SQL');
+  }
+  const count=f.state.queries.length,badBody=await f.app.inject({method:'GET',url:f.target.path,headers:{...headers,'content-type':'application/json'},payload:{raw:'forbidden'}});
+  assert.ok(badBody.statusCode>=400);assert.equal(f.state.queries.length,count);assert.equal(f.rows().length,1);assert.equal(f.receipts().length,0);
+  const actual=await f.get(frame);assert.equal(actual.statusCode,200,actual.body);assert.equal(f.receipts().length,1);
+ }finally{await f.app.close();}
+});
+
+test('fixed range challenge reports its own expiry code when the returned HUMAN deadline is already behind the current sample',async()=>{
+ for(const http of [false,true]){
+  const f=fixture(true,true,http);try{
+   f.state.now+=1000;f.state.rangeDeadline=f.state.now-1;
+   // RPC 예외가 아니라 형식이 유효한 짧은 deadline 반환 뒤 challenge의 직접 비교 분기를 검증한다.
+   if(http){const response=await f.issue();assert.equal(response.statusCode,412,response.body);assert.equal(response.json().code,'NORMAL_UNDERSTANDING_RANGE_EXPIRED');}
+   else await assert.rejects(f.issueRange(),{message:'NORMAL_UNDERSTANDING_RANGE_EXPIRED',statusCode:412});
+   assert.ok(f.state.queries.some(q=>q.includes('fn09_normal_understanding_discovery')));assert.equal(f.rows().length,0);assert.equal(f.receipts().length,0);assert.equal(f.charge(),0n);
+  }finally{await f.app.close();}
+ }
+});
 
 test('fixed range purpose derives one HUMAN request, settles v1 and acquisition separately, and exact concurrent replay adds zero bytes',async()=>{
  const f=fixture(true,true);try{

@@ -1,4 +1,4 @@
-import {NormalUnderstandingReadAcquisition,registerNormalUnderstandingReadAcquisition} from './modules/executions/normal-understanding-read-acquisition.ts';
+import {NormalUnderstandingReadAcquisition,registerNormalUnderstandingReadAcquisition,registerNormalUnderstandingRangeAcquisition,readNormalUnderstandingRangeOptions,type NormalUnderstandingRangeOptions} from './modules/executions/normal-understanding-read-acquisition.ts';
 import {NormalUnderstandingReadResult,readNormalUnderstandingResultOptions,registerNormalUnderstandingReadResult,type NormalUnderstandingResultOptions} from './modules/executions/normal-understanding-read-result.ts';
 import {registerNormalUnderstandingReadRoutes} from './modules/executions/normal-understanding-read-routes.ts';
 import {readNormalStopOptions,type NormalStopOptions} from './modules/executions/normal-stop-target.ts';
@@ -49,7 +49,12 @@ import { registerControlHandoffRoutes, type ControlHandoffRoutesOptions } from '
 export interface NativeWorkerOwnershipOptions {store:NativeWorkerDeploymentStore}
 const connectOwnership=ProjectNativePreparations.prototype.connectNativeOwnershipReturn;
 
-export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource, normalExchange?:NormalExchangeOptions, normalCredentialExchange?:NormalCredentialExchangeOptions,normalRequestChallenge?:{origin:string},normalPages?:NormalCommandPagesOptions,normalMaterials?:NormalStartMaterialsOptions & { registeredContext?: RegisteredStartContextOptions },normalPermit?:NormalStartPermitOptions,normalObservations?:NormalObservationsOptions,workerDeployment:WorkerDeploymentReadSource|null=null,nativeOwnership?:NativeWorkerOwnershipOptions,normalGrantRevocation?:NormalGrantRevocationOptions,normalInstruction?:NormalInstructionOptions,normalStop?:NormalStopOptions,normalUnderstandingResult?:NormalUnderstandingResultOptions) {
+export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions } = {}, webRoot?: URL, access?: AccessRoutesOptions, syntheticExecution?:SyntheticHumanExecutionPorts, controlHandoff?: ControlHandoffRoutesOptions, writerAuthority?:WriterAuthorityRoutesOptions,nativePreparation?:NativePreparationRoutesOptions,runtimeCatalogue:RuntimeCatalogueReadSource|null=null,documentObservation?:DocumentSourceObservationPort,nativeReceive?:NativeFirstReceiveRoutesOptions, normalExecution?:NormalExecutionCurrentSource, normalExchange?:NormalExchangeOptions, normalCredentialExchange?:NormalCredentialExchangeOptions,normalRequestChallenge?:{origin:string},normalPages?:NormalCommandPagesOptions,normalMaterials?:NormalStartMaterialsOptions & { registeredContext?: RegisteredStartContextOptions },normalPermit?:NormalStartPermitOptions,normalObservations?:NormalObservationsOptions,workerDeployment:WorkerDeploymentReadSource|null=null,nativeOwnership?:NativeWorkerOwnershipOptions,normalGrantRevocation?:NormalGrantRevocationOptions,normalInstruction?:NormalInstructionOptions,normalStop?:NormalStopOptions,normalUnderstandingResult?:NormalUnderstandingResultOptions,normalUnderstandingRange?:NormalUnderstandingRangeOptions) {
+  if(normalUnderstandingRange!==undefined){
+    normalUnderstandingRange=readNormalUnderstandingRangeOptions(normalUnderstandingRange);
+    if(!access||syntheticExecution||!normalExchange||!normalRequestChallenge||access.origin!==normalRequestChallenge.origin||access.repository.pool!==normalExchange.pool)
+      throw Error('NORMAL_UNDERSTANDING_RANGE_CONFIGURATION_INVALID');
+  }
   if(normalUnderstandingResult!==undefined){
     normalUnderstandingResult=readNormalUnderstandingResultOptions(normalUnderstandingResult);
     if(!access||syntheticExecution||!normalExchange||!normalRequestChallenge||access.origin!==normalRequestChallenge.origin||access.repository.pool!==normalExchange.pool)
@@ -96,9 +101,11 @@ export function buildApp(options: FastifyServerOptions & { https?: HttpsOptions 
   if(normalRequestChallenge&&!normalExchange)throw Error('EXECUTION_CHALLENGE_STORE_REQUIRED');
   const understandingAcquisition=access&&normalExchange&&normalRequestChallenge&&access.origin===normalRequestChallenge.origin&&access.repository.pool===normalExchange.pool?new NormalUnderstandingReadAcquisition(normalExchange.pool):undefined;
   const understandingResult=normalUnderstandingResult?new NormalUnderstandingReadResult(normalExchange!.pool):undefined;
+  const understandingRange=normalUnderstandingRange?understandingAcquisition:undefined;
   if(understandingAcquisition)registerNormalUnderstandingReadAcquisition(app,understandingAcquisition,normalRequestChallenge!.origin);
   if(understandingResult)registerNormalUnderstandingReadResult(app,understandingResult,normalRequestChallenge!.origin);
-  if(normalExchange)registerNormalExchangeChallenge(app,normalExchange,normalRequestChallenge?{...normalRequestChallenge,understanding:understandingAcquisition,understandingResult}:undefined);
+  if(understandingRange)registerNormalUnderstandingRangeAcquisition(app,understandingRange,normalRequestChallenge!.origin);
+  if(normalExchange)registerNormalExchangeChallenge(app,normalExchange,normalRequestChallenge?{...normalRequestChallenge,understanding:understandingAcquisition,understandingResult,understandingRange}:undefined);
   if(normalCredentialExchange)registerNormalCredentialExchange(app,normalCredentialExchange);
   registerDesktopRuntimeCatalogue(app,runtimeCatalogue);
   registerWorkerDeploymentRoutes(app,workerDeployment);

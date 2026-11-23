@@ -1,19 +1,31 @@
 import {randomUUID} from 'node:crypto';
-import type {FastifyInstance} from 'fastify';
+import type {FastifyInstance,FastifyRequest} from 'fastify';
+import {isProxy} from 'node:util/types';
 import type {Pool,PoolClient} from 'pg';
-import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
+import {canonicalJson,contentHash,parseWireJson} from '../../../../contracts/canonical.ts';
 import {isoV1,recordV1,refV1,uuidV1,hashV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {AuthFailure} from '../access/repository.ts';
 import {executionTarget,verifyNormalCommandPageProof,normalUnderstandingRangeTarget,normalUnderstandingRangeProofBytes,verifyNormalUnderstandingRangeProof} from './execution-proof.ts';
 import {original,originalRange,readCurrent} from './normal-exchange-challenge.ts';
 import {readPacket} from './normal-command-pages.ts';
 import {normalRequestBearerDigest,requestCredential} from './normal-request-challenge.ts';
+import {canonicalBase64} from '../connections/registration-proof.ts';
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const fail=(code='NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',status=503):never=>{throw new AuthFailure(code,status);};
 const contextKeys=['projectId','executionId','executionGeneration','grantRef','registrationRef','connectorId','credentialGeneration','startCommandId','startCommandRef','assignmentRef','preparationRef','contextBundleRef','sessionBindingRef'];
 const receiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','understandingRequestRef','context','observedAt','expiresAt'];
 const rangeReceiptKeys=['kind','binding','credentialRef','challengeRef','packetHash','target','requestId','rangeRequestRef','context','selection','observedAt','expiresAt'];
+export interface NormalUnderstandingRangeOptions {mode:'NORMAL_PROTECTED';purpose:'FN09_FIXED_RANGE_ACQUISITION'}
+/** 명시 내부 구성은 원 HUMAN/등록 proof를 대신하지 않는다. */
+export function readNormalUnderstandingRangeOptions(value:NormalUnderstandingRangeOptions):Readonly<NormalUnderstandingRangeOptions>{
+ const invalid=():never=>{throw Error('NORMAL_UNDERSTANDING_RANGE_CONFIGURATION_INVALID');};
+ if(!value||isProxy(value)||![Object.prototype,null].includes(Object.getPrototypeOf(value)))return invalid();
+ const fields=Object.getOwnPropertyDescriptors(value);
+ if(Reflect.ownKeys(fields).length!==2||!fields.mode||!fields.purpose||![fields.mode,fields.purpose].every(d=>'value'in d&&d.enumerable)
+  ||fields.mode.value!=='NORMAL_PROTECTED'||fields.purpose.value!=='FN09_FIXED_RANGE_ACQUISITION')return invalid();
+ return Object.freeze({mode:'NORMAL_PROTECTED',purpose:'FN09_FIXED_RANGE_ACQUISITION'});
+}
 function rangeSelection(x:unknown){
  if(!recordV1(x,['requestRef','resultRef','initConfirmationRef','tailRef','firstSequence','lastSequence','ranges'])
   ||!['requestRef','resultRef','initConfirmationRef','tailRef'].every(k=>refV1(x[k])&&x[k].version===1)
@@ -179,5 +191,30 @@ export function registerNormalUnderstandingReadAcquisition(app:FastifyInstance,s
   const {cid,eid}=r.params,path='/api/v1/connectors/'+cid+'/executions/'+eid+'/understanding-response-read';
   if(!uuidV1(cid)||!uuidV1(eid)||r.raw.method!=='GET'||r.raw.url!==path)return reply.callNotFound();
   return source.acquire(cid,eid,normalRequestBearerDigest(r,host.host,true),readPacket(r),r.signal);
+ });
+}
+
+/** 기존 generic packet reader를 넓히지 않는 한 목적의 canonical 헤더 판독이다. */
+function rangePacket(request:FastifyRequest){
+ const names=request.raw.rawHeaders.filter((_,i)=>i%2===0).map(h=>h.toLowerCase()),raw=request.headers['anvil-execution-auth'];
+ const singleton=(name:string,value:unknown)=>typeof value==='string'&&names.filter(h=>h===name).length===1&&request.raw.rawHeaders[2*names.indexOf(name)+1]===value;
+ if(['cookie','origin','x-anvil-csrf','content-type','content-length','content-encoding','transfer-encoding'].some(h=>names.includes(h)||request.headers[h]!==undefined)||request.body!==undefined
+  ||!singleton('host',request.headers.host)||!singleton('authorization',request.headers.authorization)||!singleton('anvil-execution-auth',raw))return fail('EXECUTION_PAGE_CHANNEL_INVALID',403);
+ if(typeof raw!=='string'||raw.length>8192||!/^[A-Za-z0-9_-]+$/.test(raw))return fail('INPUT_INVALID',400);
+ try{
+  const bytes=Buffer.from(raw,'base64url');if(bytes.length>4096||bytes.toString('base64url')!==raw)throw Error();
+  const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes),frame=parseWireJson(text);
+  if(canonicalJson(frame)!==text||!recordV1(frame,['schemaVersion','challengeRef','proof','signature'])||frame.schemaVersion!==1||!refV1(frame.challengeRef)||frame.challengeRef.version!==1||typeof frame.signature!=='string')throw Error();
+  canonicalBase64(frame.signature,64);normalUnderstandingRangeProofBytes(frame.proof);return frame;
+ }catch{return fail('INPUT_INVALID',400);}
+}
+/** 명시 opt-in 앱 조립만 호출한다. 본문 없는 exact GET 한 개다. */
+export function registerNormalUnderstandingRangeAcquisition(app:FastifyInstance,source:NormalUnderstandingReadAcquisition,origin:string){
+ const host=new URL(origin);if(host.protocol!=='https:'||host.origin!==origin)throw Error('EXECUTION_PAGE_HOST_REQUIRED');
+ app.get<{Params:{cid:string;eid:string}}>('/api/v1/connectors/:cid/executions/:eid/understanding-response-read/range',{exposeHeadRoute:false,handlerTimeout:20000},async(request,reply)=>{
+  const {cid,eid}=request.params;
+  if(!uuidV1(cid)||!uuidV1(eid)||request.raw.method!=='GET'||request.raw.url!==`/api/v1/connectors/${cid}/executions/${eid}/understanding-response-read/range`)return reply.callNotFound();
+  const token=normalRequestBearerDigest(request,host.host,true),frame=rangePacket(request);
+  return source.acquireRange(cid,eid,token,frame,request.signal);
  });
 }

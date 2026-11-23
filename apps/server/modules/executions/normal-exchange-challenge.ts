@@ -136,7 +136,7 @@ async function issue(pool:Pick<Pool,'connect'>,connector:string,execution:string
   if(rows.length&&!replay)return fail('EXECUTION_CHALLENGE_CLIENT_NONCE_REUSED',409);
   const human=range?await rangeSource!.rangeCurrent(db,bearerDigest!,current.binding,request.requestId,checked?replay.snapshot_json.understandingRangeRequestRef:null):discovery?await understandingSource!.current(db,bearerDigest!,current.binding,request.requestId,checked?replay.snapshot_json.understandingRequestRef:null):null;
   if((discovery||range)&&!human){noneRollback=true;discard=new Error('NORMAL_UNDERSTANDING_DISCOVERY_ROLLBACK_UNKNOWN');if((await db.query('ROLLBACK')).command!=='ROLLBACK')return fail(range?'NORMAL_UNDERSTANDING_RANGE_UNKNOWN':'NORMAL_UNDERSTANDING_DISCOVERY_UNKNOWN',503);discard=undefined;return {transport:'NORMAL_PROTECTED',status:'NONE',challenge:null,nonceConsumed:false,executionAuthorized:false,dispatchPerformed:false};}
-  if(human){deadline=Math.min(deadline,Date.parse(human.expiresAt));if(current.now.getTime()>=deadline)return fail('NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED',412);}
+  if(human){deadline=Math.min(deadline,Date.parse(human.expiresAt));if(current.now.getTime()>=deadline)return fail(range?'NORMAL_UNDERSTANDING_RANGE_EXPIRED':'NORMAL_UNDERSTANDING_DISCOVERY_EXPIRED',412);}
   checkRange();
   const resultBasis=metadataResult?await resultSource!.challengeBasis(db,bearerDigest!,current.binding,credential!.ref,request.target,current.now):null;
   if(resultBasis){deadline=Math.min(deadline,Date.parse(resultBasis.deadline));
@@ -223,7 +223,7 @@ export function issueNormalUnderstandingRangeChallenge(pool:Pick<Pool,'connect'>
  if(!uuidV1(connector)||!uuidV1(execution)||!hashV1(token)||source.pool!==pool||!same((body as any)?.target,normalUnderstandingRangeTarget(connector,execution)))return fail('INPUT_INVALID',400);
  return issue(pool,connector,execution,body,token,undefined,undefined,signal,source);
 }
-export function registerNormalExchangeChallenge(app:FastifyInstance,options:NormalExchangeOptions,requestOptions?:{origin:string;understanding?:NormalUnderstandingReadAcquisition;understandingResult?:NormalUnderstandingReadResult}){
+export function registerNormalExchangeChallenge(app:FastifyInstance,options:NormalExchangeOptions,requestOptions?:{origin:string;understanding?:NormalUnderstandingReadAcquisition;understandingResult?:NormalUnderstandingReadResult;understandingRange?:NormalUnderstandingReadAcquisition}){
  const origin=requestOptions?new URL(requestOptions.origin):null;
  if(origin&&(origin.protocol!=='https:'||origin.origin!==requestOptions!.origin))throw Error('EXECUTION_CHALLENGE_ORIGIN_INVALID');
  app.register(async scope=>{
@@ -240,7 +240,7 @@ export function registerNormalExchangeChallenge(app:FastifyInstance,options:Norm
     ||[...(commandChallenge?[]:['authorization']),'cookie','origin','x-anvil-csrf','content-encoding'].some(h=>names.includes(h)||r.headers[h]!==undefined))
     throw new AuthFailure('EXECUTION_CHALLENGE_HEADER_REJECTED',403);
    if(!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(r.headers['content-type']??''))throw new AuthFailure('INPUT_INVALID',400);
-   try{return await issue(options.pool,cid,eid,r.body,commandChallenge?normalRequestBearerDigest(r,origin!.host):undefined,requestOptions?.understanding,requestOptions?.understandingResult,r.signal);}catch(error){
+   try{return await issue(options.pool,cid,eid,r.body,commandChallenge?normalRequestBearerDigest(r,origin!.host):undefined,requestOptions?.understanding,requestOptions?.understandingResult,r.signal,requestOptions?.understandingRange);}catch(error){
     if(error instanceof AuthFailure&&error.message==='NOT_FOUND')return reply.callNotFound();
     throw error;
    }
