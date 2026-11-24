@@ -7,6 +7,27 @@ import {normalStartPreparationRequestRef,normalStartPreparationResultPath} from 
 import {publicKeyFingerprint} from '../../../apps/server/modules/connections/registration-proof.ts';
 import {createNormalStartPreparationResultStore,connectNormalStartPreparationResultStore,reserveNormalStartPreparationDispatch} from '../../../apps/server/modules/executions/normal-start-preparation-result-store.ts';
 
+test('FRAME store 조립은 명시 원 service에만 reserve RPC를 연결하고 미구성 peer에서 새 거래0이다',async()=>{
+ const store=await import('../../../apps/server/modules/executions/normal-start-preparation-result-store.ts');
+ assert.equal(typeof store.connectNormalStartPreparationFrameStore,'function');
+ assert.throws(()=>store.connectNormalStartPreparationFrameStore({} as any));
+});
+
+test('FRAME admission은 명시 옵션과 원 메서드를 고정하고 협상 확인을 admit/receiver 대여보다 먼저 둔다',async()=>{
+ const {NativeFirstReceiveService}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts'),{NormalStartPreparationAdmissions}=await import('../../../apps/server/modules/executions/normal-start-preparation-admission.ts');
+ let reads=0;const receiver=new NativeFirstReceiveService({installationId:id(3),authenticated:async()=>{reads++;throw Error('NO_DB');}} as any);
+ assert.doesNotThrow(()=>new NormalStartPreparationAdmissions({} as any,{purpose:'NORMAL_START_PREPARATION_ADMISSION_V1',receiver},async()=>null));
+ assert.doesNotThrow(()=>new NormalStartPreparationAdmissions({} as any,{purpose:'NORMAL_START_PREPARATION_ADMISSION_V1',receiver,mode:'FRAME'},async()=>null));
+ for(const mode of [undefined,true,'FRAME '])assert.throws(()=>new NormalStartPreparationAdmissions({} as any,{purpose:'NORMAL_START_PREPARATION_ADMISSION_V1',receiver,mode} as any,async()=>null));
+ Object.defineProperty(receiver,'assertNormalStartPreparationFrame',{value:()=>true});
+ assert.throws(()=>new NormalStartPreparationAdmissions({} as any,{purpose:'NORMAL_START_PREPARATION_ADMISSION_V1',receiver,mode:'FRAME'},async()=>null));assert.equal(reads,0);
+ const s=readFileSync(new URL('../../../apps/server/modules/executions/normal-start-preparation-admission.ts',import.meta.url),'utf8');
+ assert(s.indexOf('this.#receiver.assertNormalStartPreparationFrame(scope)')<s.indexOf('custody=Reflect.apply(take'));
+ assert(s.indexOf('this.#receiver.assertNormalStartPreparationFrame(scope)')<s.indexOf('anvil.fn08_start_preparation_admit('));
+ const branch=s.slice(s.indexOf('if(this.#frame){',s.indexOf('const fixedScope')) ,s.indexOf('const claimed='));
+ assert(branch.includes('prepareNormalStartPreparationFrame'));assert(branch.includes('sendNormalStartPreparationFrame'));assert(branch.includes('return unavailable()'));assert.doesNotMatch(branch,/fn08_start_preparation_claim|verifyQueue|START_SESSION/);
+});
+
 test('normal result store는 기본 실행 없이 명시 원 service 조립과 세 목적 RPC만 제공한다',()=>{
  const source=createNormalStartPreparationResultStore();assert(Object.isFrozen(source));
  assert.deepEqual(Object.keys(source).sort(),['purpose','readRecordedResult','readResultBasis','recordResult']);

@@ -8,29 +8,33 @@ import type {ProjectCommand} from '../access/project-command.ts';
 import {NativeFirstReceiveStore} from './native-first-receive-store.ts';
 import {NativeFirstReceiveService,type NormalStartPreparationReceiver,type NormalStartPreparationReceiverScope} from './native-first-receive-service.ts';
 
-export interface NormalStartPreparationAdmissionOptions {purpose:'NORMAL_START_PREPARATION_ADMISSION_V1';receiver:NativeFirstReceiveService}
+export interface NormalStartPreparationAdmissionOptions {purpose:'NORMAL_START_PREPARATION_ADMISSION_V1';receiver:NativeFirstReceiveService;mode?:'FRAME'}
 export interface NormalStartPreparationOrigin {registrationRef:Ref;connectorRef:Ref;expiresAt:string}
 type Inspect=(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand)=>Promise<NormalStartPreparationOrigin|null>;
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const unavailable=():never=>{throw new AuthFailure('NORMAL_START_PREPARATION_OUTCOME_UNKNOWN',503);};
 const take=NativeFirstReceiveService.prototype.takeNormalStartPreparationReceiver;
+const frameMethods=['assertNormalStartPreparationFrame','prepareNormalStartPreparationFrame','sendNormalStartPreparationFrame'] as const;
+const frameFunctions=frameMethods.map(name=>NativeFirstReceiveService.prototype[name]);
 const readHuman=NativeFirstReceiveStore.prototype.readHuman;
 function configuration(value:NormalStartPreparationAdmissionOptions){
- if(!recordV1(value,['purpose','receiver'])||value.purpose!=='NORMAL_START_PREPARATION_ADMISSION_V1'
+ const frame=recordV1(value,['purpose','receiver','mode'])&&value.mode==='FRAME';
+ if(!(frame||recordV1(value,['purpose','receiver']))||value.purpose!=='NORMAL_START_PREPARATION_ADMISSION_V1'
   ||!(value.receiver instanceof NativeFirstReceiveService)||Object.getPrototypeOf(value.receiver)!==NativeFirstReceiveService.prototype
-  ||value.receiver.takeNormalStartPreparationReceiver!==take)return unavailable();
+  ||value.receiver.takeNormalStartPreparationReceiver!==take
+  ||frame&&frameMethods.some((name,i)=>Object.getOwnPropertyDescriptor(value.receiver,name)!==undefined||Object.getOwnPropertyDescriptor(NativeFirstReceiveService.prototype,name)?.value!==frameFunctions[i]))return unavailable();
  return value.receiver;
 }
 /** 기존 app/명시 서비스 구성만 소비한다. 공개 body·기본 구성·새 physical factory를 만들지 않는다. */
 export class NormalStartPreparationAdmissions {
- #access:AccessRepository;#options:NormalStartPreparationAdmissionOptions;#receiver:NativeFirstReceiveService;#inspect:Inspect;
+ #access:AccessRepository;#options:NormalStartPreparationAdmissionOptions;#receiver:NativeFirstReceiveService;#inspect:Inspect;readonly #frame:boolean;
  constructor(access:AccessRepository,options:NormalStartPreparationAdmissionOptions,inspect:Inspect){
   this.#receiver=configuration(options);if(typeof inspect!=='function')unavailable();
-  this.#access=access;this.#options=options;this.#inspect=inspect;
+  this.#access=access;this.#options=options;this.#inspect=inspect;this.#frame=options.mode==='FRAME';
  }
  #stable(){if(configuration(this.#options)!==this.#receiver||NativeFirstReceiveService.prototype.takeNormalStartPreparationReceiver!==take
-  ||NativeFirstReceiveStore.prototype.readHuman!==readHuman)return unavailable();}
+  ||NativeFirstReceiveStore.prototype.readHuman!==readHuman||(this.#options.mode==='FRAME')!==this.#frame)return unavailable();}
  async enter(token:string,csrf:string,request:ProjectCommand){
   this.#stable();const command=cloneV1(request),commandHash=hash(command),store=new NativeFirstReceiveStore();
   let custody:NormalStartPreparationReceiver|undefined,scope:NormalStartPreparationReceiverScope|undefined;
@@ -81,6 +85,8 @@ export class NormalStartPreparationAdmissions {
    const admitted=await this.#access.authenticated(token,csrf,async(db,actor)=>{
     check();const origin=await this.#inspect(db,actor,command);check();if(origin===null)return null;
     tighten(origin.expiresAt);scope=await slot(db,actor,origin);check();
+    // 협상/구성 실패는 원 receiver 대여와 admit/claim보다 앞에서 닫는다. legacy로 내려가지 않는다.
+    if(this.#frame){this.#receiver.assertNormalStartPreparationFrame(scope);check();}
     const transactionId=await tx(db);
     // SQL 행은 연결 증거가 아니다. 원 STREAM owner의 단회 provenance를 먼저 검산한다.
     custody=Reflect.apply(take,this.#receiver,[scope]);check();const provenance=custody.read(scope);check();tighten(provenance.expiresAt);
@@ -97,6 +103,13 @@ export class NormalStartPreparationAdmissions {
    check();if(admitted===null)return null;
    if(!scope||!custody)return unavailable();
    const fixedScope=scope,owner=custody;
+   if(this.#frame){
+    const provenance=owner.read(fixedScope);check();
+    const frame=await this.#receiver.prepareNormalStartPreparationFrame(token,csrf,command,admitted.ref,provenance);check();
+    await this.#receiver.sendNormalStartPreparationFrame(frame,new AbortController().signal);
+    // 원 frame EOF는 queue/물리 준비 성공이 아니다. 후속 결과/queue 소비 연결 전에는 기존 queue에 진입하지 않는다.
+    return unavailable();
+   }
    const claimed=await this.#access.authenticated(token,csrf,async(db,actor)=>{
     check();const origin=await this.#inspect(db,actor,command);check();if(!origin)return unavailable();tighten(origin.expiresAt);
     const selected=await slot(db,actor,origin);if(!same(selected,fixedScope))return unavailable();

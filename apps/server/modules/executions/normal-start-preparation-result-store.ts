@@ -67,6 +67,13 @@ export function connectNormalStartPreparationResultStore(service:NativeFirstRece
   &&service.connectNormalStartPreparationResultSource===NativeFirstReceiveService.prototype.connectNormalStartPreparationResultSource);
  const source=createNormalStartPreparationResultStore();service.connectNormalStartPreparationResultSource(source);return source;
 }
+/** 결과 store와 별도로 명시 연결한다. 실제 peer 협상/원 인증은 service가 검산하며 이 연결만으로 송신하지 않는다. */
+export function connectNormalStartPreparationFrameStore(service:NativeFirstReceiveService){
+ check(service instanceof NativeFirstReceiveService&&Object.getPrototypeOf(service)===NativeFirstReceiveService.prototype
+  &&service.connectNormalStartPreparationFrameSource===NativeFirstReceiveService.prototype.connectNormalStartPreparationFrameSource);
+ const source=Object.freeze({purpose:'NORMAL_START_PREPARATION_FRAME_SOURCE_V1' as const,reserve:reserveNormalStartPreparationDispatch});
+ service.connectNormalStartPreparationFrameSource(source);return source;
+}
 
 /** 사전 admission 이후의 별도 인증 거래 내부에서만 사용한다. 반환은 아직 COMMIT/전송/물리 준비 증거가 아니다. */
 export async function reserveNormalStartPreparationDispatch(db:ReceiveDb,actor:AuthenticatedIdentity,command:ProjectCommand,admissionRef:RuntimeRefV1,provenance:unknown,current:()=>void){

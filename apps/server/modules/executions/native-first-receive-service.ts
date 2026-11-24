@@ -48,7 +48,12 @@ function readReceiver(this:object,scope:NormalStartPreparationReceiverScope){
 function revokeReceiver(this:object){const entry=preparationReceivers.get(this);if(!entry)return;entry.revoke();}
 type PreparationStreamCustody={claimed:boolean;revoked:boolean;expires:number;monoEnd:number;lastWall:number;lastMono:number;token:object|null;timer:ReturnType<typeof setTimeout>|undefined;invalidate:()=>void;
  normalResult?:{requestHash:string;resultHash:string;proofHash:string;state:'IN_FLIGHT'|'SETTLED'|'UNKNOWN'}};
-type ReceiveStreamOwner={stream:PassThrough;close:()=>void;ownership:any;last:number;preparation:PreparationStreamCustody};
+type ReceiveStreamOwner={stream:PassThrough;close:()=>void;ownership:any;last:number;preparation:PreparationStreamCustody;normalFrameNegotiated:boolean;frameAttempt?:'RESERVING'|'COMMITTED'|'IN_FLIGHT'|'EOF'|'UNKNOWN'};
+type NormalFrameCandidate={broker:NativeFirstReceiveBroker;entry:ReceiveStreamOwner;scope:NormalStartPreparationReceiverScope};
+const normalFrameCandidates=new WeakMap<object,NormalFrameCandidate>();
+type NormalFrameCommit={service:NativeFirstReceiveService;candidate:object;request:NormalStartPreparationRequest;claimRef:ReceiveRef;used:boolean;current:()=>void};
+const normalFrameCommits=new WeakMap<object,NormalFrameCommit>();
+type NormalFrameTerminal={entry:ReceiveStreamOwner;request:NormalStartPreparationRequest;state:'SENDING'|'EOF'|'UNKNOWN';preparation:PreparationStreamCustody;current:()=>void};
 
 type AckBinding={windowRef:any;receiveSessionRef:any;bindingRef:any;armRef:any;deliveryRef:any;authorityRef:any;commandHash:string;metadataHash:string;expiresAt:string;operationFence:string};
 type AckWaiter={binding:AckBinding;phase:'WAITING';token:object;deadline:number;lastNow:number;check:()=>void;resolve:(value:unknown)=>void;reject:(error:Error)=>void;promise:Promise<unknown>;remove:()=>void};
@@ -62,10 +67,11 @@ const preEffectFailures=new WeakSet<object>();
 export function nativeReceivePreEffectFailure(error:unknown){const value=nativeReceiveClassifyFailure(error);if(!value.safe||value.authCode===null||value.status===null)return new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503);let code=value.authCode,status=value.status;if(code==='PERMISSION_POLICY_UNCONFIGURED'&&status===412||code==='NATIVE_SOURCE_UNAVAILABLE'&&status===503){code='NATIVE_RECEIVE_SOURCE_UNAVAILABLE';status=503;}const result=new AuthFailure(code,status);if(status===503&&['NATIVE_RECEIVE_SOURCE_UNAVAILABLE','NATIVE_RECEIVE_OWNER_UNAVAILABLE'].includes(code))preEffectFailures.add(result);return result;}
 export function nativeReceiveIsPreEffectFailure(error:unknown){return !!error&&typeof error==='object'&&preEffectFailures.has(error);}
 export class NativeFirstReceiveBroker{
+ readonly #normalResults=new Map<string,NormalFrameTerminal>();
  readonly instanceId:string;readonly #now:()=>number;readonly #timers:ReceiveWaiterTimers;#waiterClock=-Infinity;readonly #waiters=new Map<string,AckWaiter|AckTerminal>();readonly #streams=new Map<string,ReceiveStreamOwner>();
  constructor(instanceId:string,now:()=>number=Date.now,timers:ReceiveWaiterTimers=receiveWaiterTimers){if(!receiveUuid(instanceId))denied();this.instanceId=instanceId;this.#now=now;this.#timers=timers;}
  /** COMMIT·원 Pool 회수가 정착된 Store capability만 실제 통로를 연다. Delivery bytes는 여기서 만들지 않는다. */
- attachStream(capability:unknown,signal:AbortSignal,observe:()=>number=this.#now){
+ attachStream(capability:unknown,signal:AbortSignal,observe:()=>number=this.#now,accept:unknown=undefined){
   const at=observe(),owned=NativeFirstReceiveStore.takeStreamOwnership(capability,this.instanceId,at);
   if(signal.aborted||this.#streams.has(owned.receiveSessionRef.id))denied();
   const stream=new PassThrough(),deadline=Date.parse(owned.expiresAt),mono=performance.now();
@@ -84,10 +90,53 @@ export class NativeFirstReceiveBroker{
    if(!stream.destroyed)stream.destroy(new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503));
   };
   stream.on('error',invalidate);stream.once('end',invalidate);stream.once('finish',invalidate);stream.once('close',close);
-  this.#streams.set(owned.receiveSessionRef.id,{stream,close,ownership:owned,last:at,preparation});
+  // Accept는 형식 협상 metadata일 뿐이다. 원 capability/등록과 별도 claim 검산을 대신하지 않는다.
+  this.#streams.set(owned.receiveSessionRef.id,{stream,close,ownership:owned,last:at,preparation,normalFrameNegotiated:accept==='application/octet-stream'});
   signal.addEventListener('abort',close,{once:true});timer=setTimeout(close,Math.max(0,Math.floor(deadline-at)));timer.unref();
   preparation.timer=setTimeout(invalidate,Math.max(0,Math.floor(preparation.expires-at)));preparation.timer.unref();
   if(signal.aborted)close();return stream;
+ }
+ /** 실제 인증 STREAM의 같은 entry를 포착한다. 여기서는 claim·발급·송신을 하지 않는다. */
+ captureNormalStartPreparationFrame(raw:NormalStartPreparationReceiverScope){
+  const scope=receiverScope(raw),entry=this.#streams.get(scope.receiveSessionRef.id),origin=entry?.ownership.preparationOrigin;
+  if(!entry||!origin||!entry.normalFrameNegotiated||entry.frameAttempt||this.#normalResults.has(scope.receiveSessionRef.id))return denied();
+  const w=origin.window.snapshot,{authBindingHash,...binding}=w;
+  if(!receiveSame(origin.window.ref,scope.windowRef)||!receiveSame(origin.session.ref,scope.receiveSessionRef)||w.installationId!==scope.installationId||w.projectId!==scope.projectId
+   ||!receiveSame(w.registrationRef,scope.registrationRef)||!receiveSame(w.connectorRef,scope.connectorRef)||w.localReceiveAttemptId!==scope.localReceiveAttemptId
+   ||w.human.userId!==scope.actorId||w.human.clientId!==scope.clientId||w.human.credentialGeneration!==scope.credentialGeneration||w.human.controlGeneration!==scope.controlGeneration
+   ||receiveHash({authSessionId:scope.humanSessionId,window:binding})!==authBindingHash)return denied();
+  const candidate=Object.freeze(Object.defineProperty({},'toJSON',{value:()=>denied()}));normalFrameCandidates.set(candidate,{broker:this,entry,scope});this.checkNormalStartPreparationFrame(candidate);return candidate;
+ }
+ checkNormalStartPreparationFrame(raw:object){
+  const c=normalFrameCandidates.get(raw);if(!c||c.broker!==this)return denied();const {entry}=c,p=entry.preparation,wall=this.#now(),mono=performance.now();
+  if(!entry.normalFrameNegotiated||this.#streams.get(c.scope.receiveSessionRef.id)!==entry||entry.stream.destroyed||entry.stream.closed||entry.stream.readableEnded||entry.stream.writableEnded||p.revoked
+   ||!Number.isFinite(wall)||!Number.isFinite(mono)||wall<p.lastWall||mono<p.lastMono||wall>=p.expires||mono>=p.monoEnd)return denied();
+  this.requireBindingStream(entry.ownership);p.lastWall=wall;p.lastMono=mono;return c;
+ }
+ /** 원 claim COMMIT/release 뒤에만 생성된 비공개 token을 소비한다. caller JSON/Boolean은 수용하지 않는다. */
+ async supplyNormalStartPreparationFrame(raw:object,service:NativeFirstReceiveService,signal:AbortSignal){
+  const cap=normalFrameCommits.get(raw);if(!cap||cap.service!==service||cap.used)return denied();cap.used=true;
+  let c:NormalFrameCandidate;
+  try{cap.current();c=this.checkNormalStartPreparationFrame(cap.candidate);if(c.entry.frameAttempt!=='COMMITTED'||signal.aborted)throw Error();}
+  catch{const original=normalFrameCandidates.get(cap.candidate);if(original)original.entry.frameAttempt='UNKNOWN';throw new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503);}
+  const entry=c.entry;entry.frameAttempt='IN_FLIGHT';
+  const request=receiveCopy(cap.request),sid=request.receiveSessionRef.id,wall=this.#now(),mono=performance.now(),end=Math.min(Date.parse(request.expiresAt),entry.preparation.expires);
+  const p:PreparationStreamCustody={claimed:true,revoked:false,expires:end,monoEnd:Math.min(entry.preparation.monoEnd,mono+(end-wall)),lastWall:wall,lastMono:mono,token:null,timer:undefined,invalidate:()=>{}};
+  const terminal:NormalFrameTerminal={entry,request,state:'SENDING',preparation:p,current:cap.current};this.#normalResults.set(sid,terminal);
+  let frame:Buffer|null=null,done=false,finishSeen=false,endSeen=false;let resolve!:()=>void,reject!:(error:Error)=>void;const completed=new Promise<void>((a,b)=>{resolve=a;reject=b;});void completed.catch(()=>{});
+  const invalidate=()=>{if(p.revoked)return;p.revoked=true;terminal.state='UNKNOWN';entry.frameAttempt='UNKNOWN';if(!done){done=true;reject(new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503));}frame?.fill(0);frame=null;};p.invalidate=invalidate;
+  const clean=(retain=false)=>{entry.stream.off('finish',finish);entry.stream.off('end',readEnd);entry.stream.off('close',close);if(!retain){entry.stream.off('error',bad);signal.removeEventListener('abort',bad);}};
+  const expired=()=>{invalidate();clean();if(this.#normalResults.get(sid)===terminal)this.#normalResults.delete(sid);if(!entry.stream.destroyed)entry.close();};
+  const check=()=>{cap.current();const w=this.#now(),m=performance.now();if(signal.aborted||p.revoked||this.#normalResults.get(sid)!==terminal||!Number.isFinite(w)||!Number.isFinite(m)||w<p.lastWall||m<p.lastMono||w>=p.expires||m>=p.monoEnd)throw new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503);p.lastWall=w;p.lastMono=m;};
+  const maybe=()=>{try{check();if(!finishSeen||!endSeen)return;if(!entry.stream.readableEnded||!entry.stream.writableFinished||entry.stream.errored)throw Error();terminal.state='EOF';entry.frameAttempt='EOF';frame?.fill(0);frame=null;done=true;clean(true);resolve();}catch{bad();}};
+  const finish=()=>{finishSeen=true;maybe();},readEnd=()=>{endSeen=true;maybe();},bad=()=>{invalidate();clean();entry.close();},close=()=>{if(terminal.state!=='EOF')bad();};
+  try{
+   check();frame=encodeNormalStartPreparationFrame(request);check();
+   entry.stream.on('finish',finish);entry.stream.on('end',readEnd);entry.stream.on('error',bad);entry.stream.on('close',close);signal.addEventListener('abort',bad,{once:true});
+   p.timer=setTimeout(expired,Math.max(1,Math.floor(Math.min(p.expires-this.#now(),p.monoEnd-performance.now()))));p.timer.unref();
+   check();const supplied=frame;frame=null;entry.stream.end(supplied);await completed;check();
+   return Object.freeze({status:'NORMAL_START_PREPARATION_FRAME_EOF' as const,requestRef:normalStartPreparationRequestRef(request),executionAuthorized:false as const,dispatchPerformed:false as const});
+  }catch{bad();throw new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503);}
  }
  /** 정확 원 창/slot의 프로세스 내부 단회 대여다. 지속 admission/claim·목록·최신 선택·normal 송신은 없다. */
  takeNormalStartPreparationReceiver(raw:NormalStartPreparationReceiverScope,current:()=>void=()=>{}):NormalStartPreparationReceiver {
@@ -128,19 +177,21 @@ export class NativeFirstReceiveBroker{
  }
  /** 원 STREAM의 private 등록키/digest와 같은 창에 한정한다. 새 peer 등록·frame 송신·ACK는 발급하지 않는다. */
  normalStartPreparationResultOwner(sessionId:string,digest:string,result:NormalStartPreparationResult,proof:NormalStartPreparationResultProof){
-  const entry=this.#streams.get(sessionId),origin=entry?.ownership.preparationOrigin;
+  const terminal=this.#normalResults.get(sessionId),entry=terminal?.entry??this.#streams.get(sessionId),origin=entry?.ownership.preparationOrigin;
   if(!entry||!origin||typeof origin.publicKeySpki!=='string'||origin.credentialDigest!==digest)return denied();
-  const p=entry.preparation,w=origin.window.snapshot;
+  if(terminal?(terminal.state!=='EOF'||!receiveSame(result.requestRef,normalStartPreparationRequestRef(terminal.request))):entry.normalFrameNegotiated||entry.frameAttempt!==undefined)return denied();
+  const p=terminal?.preparation??entry.preparation,w=origin.window.snapshot;
   const check=()=>{
    const wall=this.#now(),mono=performance.now();
-   if(p.revoked||this.#streams.get(sessionId)!==entry||entry.stream.destroyed||entry.stream.closed||entry.stream.readableEnded||entry.stream.writableEnded
+   if(p.revoked||(terminal?(this.#normalResults.get(sessionId)!==terminal||terminal.state!=='EOF'||this.#streams.has(sessionId)&&this.#streams.get(sessionId)!==entry):(this.#streams.get(sessionId)!==entry||entry.stream.destroyed||entry.stream.closed||entry.stream.readableEnded||entry.stream.writableEnded))
     ||!Number.isFinite(wall)||!Number.isFinite(mono)||wall<p.lastWall||mono<p.lastMono||wall>=p.expires||mono>=p.monoEnd)return denied();
-   this.requireBindingStream(entry.ownership);p.lastWall=wall;p.lastMono=mono;
+   if(terminal)terminal.current();else this.requireBindingStream(entry.ownership);p.lastWall=wall;p.lastMono=mono;
   };
   check();let slot:PreparationStreamCustody['normalResult'];
   return Object.freeze({
    check,
    verify:(current:any,key:string,request:NormalStartPreparationRequest,proof:NormalStartPreparationResultProof,signature:string)=>{
+    if(terminal&&!receiveSame(request,terminal.request))throw new AuthFailure('NATIVE_RECEIVE_CONTEXT_CHANGED',409);
     check();if(current.phase!=='STREAMING'||!receiveSame(current.window,origin.window)||!receiveSame(current.session,origin.session)||key!==origin.publicKeySpki
      ||publicKeyFingerprint(key)!==w.hostPublicKeyFingerprint)throw new AuthFailure('NATIVE_RECEIVE_PURPOSE_DENIED',403);
     for(const name of ['installationId','projectId','registrationRef','connectorRef','profileRef','hostPublicKeyFingerprint','authBindingHash','localReceiveAttemptId'] as const)
@@ -223,7 +274,15 @@ export interface NormalStartPreparationResultSource{
  recordResult(db:ReceiveDb,material:Readonly<{request:NormalStartPreparationRequest;result:NormalStartPreparationResult;proof:NormalStartPreparationResultProof;signature:string;credentialDigest:string;transactionId:string}>,check:()=>void):Promise<unknown>;
  readRecordedResult(db:ReceiveDb,material:Readonly<{request:NormalStartPreparationRequest;result:NormalStartPreparationResult;proof:NormalStartPreparationResultProof;signature:string;credentialDigest:string;transactionId:string}>,check:()=>void):Promise<unknown>;
 }
+export interface NormalStartPreparationFrameSource{
+ purpose:'NORMAL_START_PREPARATION_FRAME_SOURCE_V1';
+ reserve(db:ReceiveDb,actor:AuthenticatedIdentity,command:ProjectCommand,admissionRef:ReceiveRef,provenance:unknown,check:()=>void):Promise<unknown>;
+}
 export class NativeFirstReceiveService{
+ #normalFrameSource:NormalStartPreparationFrameSource|null=null;
+ connectNormalStartPreparationFrameSource(source:NormalStartPreparationFrameSource){
+  if(this.#normalFrameSource||!receiveRecord(source,['purpose','reserve'])||source.purpose!=='NORMAL_START_PREPARATION_FRAME_SOURCE_V1'||typeof source.reserve!=='function')return denied();this.#normalFrameSource=source;
+ }
  #streamBroker:NativeFirstReceiveBroker|null=null;
  #normalStartResultSource:NormalStartPreparationResultSource|null=null;
  connectNormalStartPreparationResultSource(source:NormalStartPreparationResultSource){
@@ -239,6 +298,60 @@ export class NativeFirstReceiveService{
   return broker.takeNormalStartPreparationReceiver(expected,()=>{
    if(this.#streamBroker!==broker||this.#access.installationId!==installation||this.#access.pool!==pool)return denied();
   });
+ }
+ /** 협상/구성의 사전 검산이며 claim이나 peer 권위를 만들지 않는다. */
+ assertNormalStartPreparationFrame(scope:NormalStartPreparationReceiverScope){
+  if(!this.#normalFrameSource||!this.#normalStartResultSource||!this.#streamBroker||scope.installationId!==this.#access.installationId)return denied();
+  const c=this.#streamBroker.captureNormalStartPreparationFrame(scope);this.#streamBroker.checkNormalStartPreparationFrame(c);
+ }
+ /** 기존 authenticated의 확정 COMMIT와 release 반환 뒤에만 private 원 요청 token을 봉인한다. */
+ async prepareNormalStartPreparationFrame(token:string,csrf:string,command:ProjectCommand,admissionRef:ReceiveRef,provenance:unknown){
+  const source=this.#normalFrameSource,broker=this.#streamBroker,pool=this.#access.pool,auth=this.#access.authenticated,installation=this.#access.installationId;
+  if(!source||!this.#normalStartResultSource||!broker||!this.#origin||!receiveRef(admissionRef)||!receiveRecord(provenance,['purpose','scope','streamProofHash','streamChallengeRef','observedAt','expiresAt','executionAuthorized','dispatchPerformed'])
+   ||provenance.purpose!=='NORMAL_START_PREPARATION_RECEIVER_PROVENANCE'||provenance.executionAuthorized!==false||provenance.dispatchPerformed!==false||!receiveAt(provenance.expiresAt))return denied();
+  const scope=receiverScope(provenance.scope),candidate=broker.captureNormalStartPreparationFrame(scope),capture=broker.checkNormalStartPreparationFrame(candidate),entry=capture.entry,reserve=source.reserve;
+  if(scope.installationId!==installation||command.projectId!==scope.projectId||command.clientId!==scope.clientId||command.controlGeneration!==scope.controlGeneration||command.operation!=='queueExecutionCommand'||command.payload.operation!=='START_SESSION')return denied();
+  const q=receiveCopy(command),ar=receiveCopy(admissionRef),pv=receiveCopy(provenance),start=this.#now(),startMono=performance.now(),end=Math.min(start+10000,Date.parse(provenance.expiresAt)),monoEnd=startMono+(end-start);
+  let last=start,lastMono=startMono,issued=false,expired=false;let reject!: (error:Error)=>void;const lost=new Promise<never>((_resolve,r)=>{reject=r;});void lost.catch(()=>{});
+  const current=()=>{const at=this.#now(),m=performance.now();if(expired||this.#normalFrameSource!==source||source.reserve!==reserve||source.purpose!=='NORMAL_START_PREPARATION_FRAME_SOURCE_V1'||this.#streamBroker!==broker||this.#access.pool!==pool||this.#access.authenticated!==auth||this.#access.installationId!==installation
+    ||!Number.isFinite(at)||!Number.isFinite(m)||at<last||m<lastMono||at>=end||m>=monoEnd)throw new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503);last=at;lastMono=m;};
+  current();entry.frameAttempt='RESERVING';const timer=setTimeout(()=>{expired=true;reject(new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503));},Math.max(1,Math.floor(end-start)));timer.unref();
+  try{
+   const work=Reflect.apply(auth,this.#access,[token,csrf,async(db:PoolClient,actor:AuthenticatedIdentity)=>{
+    current();broker.checkNormalStartPreparationFrame(candidate);
+    if(!actor.authSession||actor.actorId!==scope.actorId||actor.clientId!==scope.clientId||actor.authSession.id!==scope.humanSessionId||actor.credentialGeneration!==scope.credentialGeneration)return denied();
+    const query=db.query;let transaction:string|null=null,rpc:unknown=null;
+    const owned:ReceiveDb=Object.freeze({query:async(text:string,args?:unknown[])=>{
+     current();broker.checkNormalStartPreparationFrame(candidate);if(db.query!==query)return denied();
+     if(text==='SELECT txid_current()::text AS transaction_id'){
+      const out=await Reflect.apply(query,db,[text,args]);current();if(out.rowCount!==1||out.rows.length!==1||!receiveRecord(out.rows[0],['transaction_id'])||typeof out.rows[0].transaction_id!=='string'||!/^[1-9][0-9]{0,18}$/.test(out.rows[0].transaction_id))return denied();transaction=out.rows[0].transaction_id;return out;
+     }
+     if(text!=='SELECT anvil.fn08_normal_start_preparation_dispatch_claim($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9) AS result'||issued||!transaction||!Array.isArray(args)||args.length!==9
+      ||!receiveSame(args.slice(0,7),[scope.humanSessionId,scope.actorId,scope.clientId,q.projectId,receiveCanonical(q),receiveCanonical(ar),receiveCanonical(pv)])||args[8]!==transaction)return denied();
+     issued=true;const out=await Reflect.apply(query,db,[text,args]);current();broker.checkNormalStartPreparationFrame(candidate);
+     if(out.rowCount!==1||out.rows.length!==1||!receiveRecord(out.rows[0],['result'])||Buffer.byteLength(receiveCanonical(out.rows[0].result))>8192)return denied();rpc=receiveCopy(out.rows[0].result);return out;
+    }});
+    const value=await Reflect.apply(reserve,source,[owned,actor,receiveCopy(q),receiveCopy(ar),receiveCopy(pv),current]);current();broker.checkNormalStartPreparationFrame(candidate);
+    if(!issued||!rpc||!receiveSame(value,rpc)||!receiveRecord(value,['disposition','request','claimRef','expiresAt','dispatchPerformed'])||value.disposition!=='FIRST_COMMIT'||value.dispatchPerformed!==false
+     ||!receiveRecord(value.request,['ref','snapshot'])||!receiveRef(value.claimRef)||!receiveAt(value.expiresAt))return denied();
+    const request=readNormalStartPreparationRequest(value.request.snapshot);
+    if(!receiveSame(value.request.ref,normalStartPreparationRequestRef(request))||!receiveSame(request.claimRef,value.claimRef)||!receiveSame(request.admissionRef,ar)||request.normalRequestHash!==receiveHash(q)||request.normalCommandId!==q.commandId
+     ||request.projectId!==scope.projectId||request.actorId!==scope.actorId||request.clientId!==scope.clientId||request.humanSessionId!==scope.humanSessionId||request.expiresAt!==value.expiresAt)return denied();
+    const origin=entry.ownership.preparationOrigin,w=origin.window.snapshot;
+    for(const k of ['installationId','projectId','registrationRef','connectorRef','windowRef','receiveSessionRef','localReceiveAttemptId','actorId','clientId','humanSessionId','credentialGeneration','controlGeneration']as const)
+     if(!receiveSame(request[k],scope[k]))return denied();
+    for(const k of ['profileRef','hostPublicKeyFingerprint','authBindingHash']as const)if(!receiveSame(request[k],w[k]))return denied();
+    if(!receiveSame(request.writerNoneRef,w.writerHeadRef)||request.executionId!==q.payload.executionId||request.executionGeneration!==q.payload.executionGeneration||!receiveSame(request.executionPreparationRef,q.payload.preparationRef)
+     ||Date.parse(request.issuedAt)<Date.parse(origin.session.snapshot.issuedAt)||Date.parse(request.expiresAt)>entry.preparation.expires)return denied();
+    return receiveCopy({request,claimRef:value.claimRef});
+   }]) as Promise<{request:NormalStartPreparationRequest;claimRef:ReceiveRef}>;
+   const value=await Promise.race([work,lost]);current();broker.checkNormalStartPreparationFrame(candidate);entry.frameAttempt='COMMITTED';
+   const committed=Object.freeze(Object.defineProperty({},'toJSON',{value:()=>denied()}));normalFrameCommits.set(committed,{service:this,candidate,request:value.request,claimRef:value.claimRef,used:false,current});return committed;
+  }catch{if(issued)entry.frameAttempt='UNKNOWN';else delete entry.frameAttempt;throw new AuthFailure(issued?'NATIVE_RECEIVE_OUTCOME_UNKNOWN':'NATIVE_RECEIVE_SOURCE_UNAVAILABLE',503);}
+  finally{clearTimeout(timer);}
+ }
+ async sendNormalStartPreparationFrame(capability:object,signal:AbortSignal){
+  if(!this.#streamBroker)return denied();return this.#streamBroker.supplyNormalStartPreparationFrame(capability,this,signal);
  }
  async nativeNormalStartPreparationResult(sessionId:string,credential:unknown,raw:unknown,rawProof:unknown,signature:unknown,signal:AbortSignal){
   let result:NormalStartPreparationResult,proof:NormalStartPreparationResultProof;
@@ -351,10 +464,10 @@ export class NativeFirstReceiveService{
   }catch(error){if(committed)throw new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503);throw nativeReceivePreEffectFailure(error);}finally{(secret as Buffer|null)?.fill(0);frame?.fill(0);}
  }
  connectNativeCommand(preparations:ProjectNativePreparations){if(preparations!==this.#preparations||preparations.access!==this.#access)denied();const stream=(db:ReceiveDb,lease:object,check:()=>void)=>{const broker=this.#streamBroker;if(!broker)throw new AuthFailure('NATIVE_SOURCE_UNAVAILABLE',503);broker.requireBindingStream(this.#store.bindingStreamOwnership(db,lease,check));};const source=Object.freeze({access:preparations.access,history:(db:ReceiveDb,actor:AuthenticatedIdentity,command:unknown,arm:unknown,previous:unknown,check:()=>void)=>this.#store.readNativeBindingHistory(db,actor,command,arm,previous,check),admit:async(db:ReceiveDb,actor:AuthenticatedIdentity,command:unknown,arm:unknown,check:()=>void)=>{const value=await this.#store.admitNativeBinding(db,actor,command,arm,check);stream(db,value.lease,check);return value;},reserve:async(db:ReceiveDb,lease:object,intent:unknown,check:()=>void,authorityVersion:1|2)=>{stream(db,lease,check);await this.#store.reserveNativeBinding(db,lease,intent,check,authorityVersion);stream(db,lease,check);return this.#store.nativeInsertCapacity(db,lease,preparations.store,check);},complete:async(db:ReceiveDb,lease:object,authority:unknown,eventRef:unknown,operationLease:unknown,check:()=>void)=>{stream(db,lease,check);const value=await this.#store.completeNativeBinding(db,lease,authority,eventRef,operationLease,check);stream(db,lease,check);return value;},prepareDelivery:async(db:ReceiveDb,lease:object,digest:string,operationLease:unknown,check:()=>void)=>{stream(db,lease,check);const value=await this.#store.prepareNativeDelivery(db,lease,digest,operationLease,check);stream(db,lease,check);return value;},deliver:async(capability:object,opaque:Uint8Array,check:()=>void,signal:AbortSignal,remainingMs:()=>number)=>{const broker=this.#streamBroker;if(!broker)throw new AuthFailure('NATIVE_SOURCE_UNAVAILABLE',503);this.#store.releaseNativeDelivery(capability,check);await broker.supplyDelivery(capability,opaque,check,signal,remainingMs);}});preparations.connectNativeReceiveBinding(source);}
- async nativeStream(sessionId:string,credential:unknown,rawProof:unknown,signature:unknown,signal:AbortSignal){
+ async nativeStream(sessionId:string,credential:unknown,rawProof:unknown,signature:unknown,signal:AbortSignal,accept:unknown=undefined){
   let proof:any;try{proof=readReceiveProof(rawProof);}catch{throw new AuthFailure('NATIVE_RECEIVE_INPUT_INVALID',400);}if(!receiveUuid(sessionId)||typeof credential!=='string'||!/^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/.test(credential))throw new AuthFailure('NATIVE_RECEIVE_AUTH_REQUIRED',401);if(proof.phase!=='STREAM'||proof.receiveSessionRef?.id!==sessionId||typeof signature!=='string'||!/^[A-Za-z0-9_-]{85}[AQgw]$/.test(signature)||!signal||typeof signal.aborted!=='boolean')throw new AuthFailure('NATIVE_RECEIVE_INPUT_INVALID',400);
   const pool=this.#access.pool,installation=this.#access.installationId;if(!pool||!this.#origin)throw nativeReceivePreEffectFailure(new AuthFailure('NATIVE_RECEIVE_SOURCE_UNAVAILABLE',503));const connect=pool.connect,broker=this.#streamBroker??(this.#streamBroker=new NativeFirstReceiveBroker(randomUUID(),this.#now));let operationExpires=Infinity;let settledRejection:AuthFailure|null=null;let effect=false,committed=false,replayed=false,last=-Infinity;const clock=()=>{if(this.#access.pool!==pool||pool.connect!==connect||this.#access.installationId!==installation||this.#streamBroker!==broker||signal.aborted)throw new AuthFailure(effect||committed?'NATIVE_RECEIVE_OUTCOME_UNKNOWN':'NATIVE_RECEIVE_CONTEXT_CHANGED',effect||committed?503:409);return this.#now();};const check=()=>{const at=clock();if(!Number.isFinite(at)||at<last||at<Date.parse(proof.issuedAt)||at>=Math.min(Date.parse(proof.expiresAt),operationExpires))throw new AuthFailure(effect||committed?'NATIVE_RECEIVE_OUTCOME_UNKNOWN':'NATIVE_RECEIVE_EXPIRED',effect||committed?503:412);last=at;};
-  try{check();const cap=await withNativeReceivePhaseTransaction(pool,sessionId,credential,{},proof,async(owned,current,consumed,rejected)=>{check();if(current.window.snapshot.installationId!==installation)throw new AuthFailure('NATIVE_RECEIVE_PURPOSE_DENIED',403);if(current.profileOrigin!==this.#origin)throw new AuthFailure('NATIVE_RECEIVE_PROFILE_UNAVAILABLE',412);if(rejected){if(['BOUND','ATTEMPTED'].includes(current.phase)){if(!this.#preparations)throw nativeReceivePreEffectFailure(new AuthFailure('NATIVE_RECEIVE_SOURCE_UNAVAILABLE',503));const bound=await this.#store.checkPhaseDenialCurrent(owned,this.#preparations,check);operationExpires=Math.min(operationExpires,Date.parse(bound.expiresAt));check();}return this.#store.readDeniedPhase(owned,signature,check);}if(!consumed&&current.phase!=='OPENED')throw new AuthFailure('NATIVE_RECEIVE_CONFLICT',409);let lease:object;try{lease=await verifyNativeReceivePhaseProof(owned,{window:current.window,session:current.session,challenge:current.challenge,proof,signature,body:{},publicKeySpki:current.publicKeySpki},clock);}catch(error){const failure=nativeReceiveClassifyFailure(error);if(!consumed&&failure.safe&&failure.authCode==='NATIVE_RECEIVE_PURPOSE_DENIED'&&failure.status===403){if(['BOUND','ATTEMPTED'].includes(current.phase)){if(!this.#preparations)throw nativeReceivePreEffectFailure(new AuthFailure('NATIVE_RECEIVE_SOURCE_UNAVAILABLE',503));const bound=await this.#store.checkPhaseDenialCurrent(owned,this.#preparations,check);operationExpires=Math.min(operationExpires,Date.parse(bound.expiresAt));check();}const rejection=await this.#store.recordPhaseDenial(owned,signature,check);if(rejection!==null){effect=true;return rejection;}}if(consumed&&failure.safe&&failure.authCode==='NATIVE_RECEIVE_PURPOSE_DENIED'&&failure.status===403){replayed=true;return this.#store.recordConsumedConflict(owned,signature,check);}throw error;}check();if(['BOUND','ATTEMPTED'].includes(current.phase)){if(!this.#preparations)throw nativeReceivePreEffectFailure(new AuthFailure('NATIVE_RECEIVE_SOURCE_UNAVAILABLE',503));const bound=await this.#store.checkBoundCurrent(owned,lease,this.#preparations,check);operationExpires=Math.min(operationExpires,Date.parse(bound.expiresAt));check();}if(consumed){replayed=true;return this.#store.readConsumedPhase(owned,lease,check,expiresAt=>{operationExpires=Math.min(operationExpires,expiresAt);check();});}effect=true;return this.#store.consumeStream(owned,lease,broker.instanceId,check);},clock,true);committed=true;check();settledRejection=NativeFirstReceiveStore.takeCommittedPhaseRejection(cap,last);if(settledRejection)throw settledRejection;if(replayed)return receiveCopy(cap);return broker.attachStream(cap,signal,()=>{check();return last;});}catch(error){if(settledRejection!==null&&error===settledRejection)throw settledRejection;if(effect||committed)throw new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503);throw nativeReceivePreEffectFailure(error);}
+  try{check();const cap=await withNativeReceivePhaseTransaction(pool,sessionId,credential,{},proof,async(owned,current,consumed,rejected)=>{check();if(current.window.snapshot.installationId!==installation)throw new AuthFailure('NATIVE_RECEIVE_PURPOSE_DENIED',403);if(current.profileOrigin!==this.#origin)throw new AuthFailure('NATIVE_RECEIVE_PROFILE_UNAVAILABLE',412);if(rejected){if(['BOUND','ATTEMPTED'].includes(current.phase)){if(!this.#preparations)throw nativeReceivePreEffectFailure(new AuthFailure('NATIVE_RECEIVE_SOURCE_UNAVAILABLE',503));const bound=await this.#store.checkPhaseDenialCurrent(owned,this.#preparations,check);operationExpires=Math.min(operationExpires,Date.parse(bound.expiresAt));check();}return this.#store.readDeniedPhase(owned,signature,check);}if(!consumed&&current.phase!=='OPENED')throw new AuthFailure('NATIVE_RECEIVE_CONFLICT',409);let lease:object;try{lease=await verifyNativeReceivePhaseProof(owned,{window:current.window,session:current.session,challenge:current.challenge,proof,signature,body:{},publicKeySpki:current.publicKeySpki},clock);}catch(error){const failure=nativeReceiveClassifyFailure(error);if(!consumed&&failure.safe&&failure.authCode==='NATIVE_RECEIVE_PURPOSE_DENIED'&&failure.status===403){if(['BOUND','ATTEMPTED'].includes(current.phase)){if(!this.#preparations)throw nativeReceivePreEffectFailure(new AuthFailure('NATIVE_RECEIVE_SOURCE_UNAVAILABLE',503));const bound=await this.#store.checkPhaseDenialCurrent(owned,this.#preparations,check);operationExpires=Math.min(operationExpires,Date.parse(bound.expiresAt));check();}const rejection=await this.#store.recordPhaseDenial(owned,signature,check);if(rejection!==null){effect=true;return rejection;}}if(consumed&&failure.safe&&failure.authCode==='NATIVE_RECEIVE_PURPOSE_DENIED'&&failure.status===403){replayed=true;return this.#store.recordConsumedConflict(owned,signature,check);}throw error;}check();if(['BOUND','ATTEMPTED'].includes(current.phase)){if(!this.#preparations)throw nativeReceivePreEffectFailure(new AuthFailure('NATIVE_RECEIVE_SOURCE_UNAVAILABLE',503));const bound=await this.#store.checkBoundCurrent(owned,lease,this.#preparations,check);operationExpires=Math.min(operationExpires,Date.parse(bound.expiresAt));check();}if(consumed){replayed=true;return this.#store.readConsumedPhase(owned,lease,check,expiresAt=>{operationExpires=Math.min(operationExpires,expiresAt);check();});}effect=true;return this.#store.consumeStream(owned,lease,broker.instanceId,check);},clock,true);committed=true;check();settledRejection=NativeFirstReceiveStore.takeCommittedPhaseRejection(cap,last);if(settledRejection)throw settledRejection;if(replayed)return receiveCopy(cap);return broker.attachStream(cap,signal,()=>{check();return last;},accept);}catch(error){if(settledRejection!==null&&error===settledRejection)throw settledRejection;if(effect||committed)throw new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503);throw nativeReceivePreEffectFailure(error);}
  }
  async nativeClose(sessionId:string,credential:unknown,rawBody:unknown,rawProof:unknown,signature:unknown,signal:AbortSignal){
   let body:any,proof:any;try{body=readNativeReceivePhaseBody('CLOSE',rawBody);proof=readReceiveProof(rawProof);}catch{throw new AuthFailure('NATIVE_RECEIVE_INPUT_INVALID',400);}if(!receiveUuid(sessionId)||typeof credential!=='string'||!/^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/.test(credential))throw new AuthFailure('NATIVE_RECEIVE_AUTH_REQUIRED',401);if(proof.phase!=='CLOSE'||proof.receiveSessionRef?.id!==sessionId||typeof signature!=='string'||!/^[A-Za-z0-9_-]{85}[AQgw]$/.test(signature)||!signal||typeof signal.aborted!=='boolean')throw new AuthFailure('NATIVE_RECEIVE_INPUT_INVALID',400);const pool=this.#access.pool,installation=this.#access.installationId;if(!pool||!this.#origin)throw nativeReceivePreEffectFailure(new AuthFailure('NATIVE_RECEIVE_SOURCE_UNAVAILABLE',503));const connect=pool.connect,broker=this.#streamBroker??(this.#streamBroker=new NativeFirstReceiveBroker(randomUUID(),this.#now));let operationExpires=Infinity;let settledRejection:AuthFailure|null=null;let effect=false,committed=false,replayed=false,last=-Infinity;const clock=()=>{if(this.#access.pool!==pool||pool.connect!==connect||this.#access.installationId!==installation||this.#streamBroker!==broker||signal.aborted)throw new AuthFailure(effect||committed?'NATIVE_RECEIVE_OUTCOME_UNKNOWN':'NATIVE_RECEIVE_CONTEXT_CHANGED',effect||committed?503:409);return this.#now();};const check=()=>{const at=clock();if(!Number.isFinite(at)||at<last||at<Date.parse(proof.issuedAt)||at>=Math.min(Date.parse(proof.expiresAt),operationExpires))throw new AuthFailure(effect||committed?'NATIVE_RECEIVE_OUTCOME_UNKNOWN':'NATIVE_RECEIVE_EXPIRED',effect||committed?503:412);last=at;};

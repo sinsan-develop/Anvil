@@ -361,9 +361,9 @@ test('원 E timer 종료 뒤 wall clock 역행으로 같은 Window를 다시 열
 });
 
 
-function normalPreparationReceiverScope(f:Awaited<ReturnType<typeof streamServiceFixture>>){
+function normalPreparationReceiverScope(f:Pick<Awaited<ReturnType<typeof streamServiceFixture>>,'window'|'session'>){
  const w=f.window.snapshot;
- return {purpose:'NORMAL_START_PREPARATION_RECEIVER_V1',installationId:w.installationId,projectId:w.projectId,
+ return {purpose:'NORMAL_START_PREPARATION_RECEIVER_V1' as const,installationId:w.installationId,projectId:w.projectId,
   registrationRef:w.registrationRef,connectorRef:w.connectorRef,windowRef:f.window.ref,receiveSessionRef:f.session.ref,
   localReceiveAttemptId:w.localReceiveAttemptId,actorId:w.human.userId,clientId:w.human.clientId,humanSessionId:id(8),
   credentialGeneration:w.human.credentialGeneration,controlGeneration:w.human.controlGeneration};
@@ -371,7 +371,7 @@ function normalPreparationReceiverScope(f:Awaited<ReturnType<typeof streamServic
 
 async function normalResultTransportFixture(mode='valid'){
  const f=await streamServiceFixture(),wire=await import('../../../contracts/runtime/normal-start-preparation-v1.ts'),crypto=await import('node:crypto');
- const stream=await f.service.nativeStream(f.session.ref.id,f.token,f.proof,f.signature,f.controller.signal) as import('node:stream').PassThrough;
+ const stream=await f.service.nativeStream(f.session.ref.id,f.token,f.proof,f.signature,f.controller.signal,mode.startsWith('frame-')&&mode!=='frame-legacy'?'application/octet-stream':undefined) as import('node:stream').PassThrough;
  assert.equal(f.calls.at(-1),'RELEASE');let bytes=0;stream.on('data',chunk=>{bytes+=chunk.length;});
  const scope=normalPreparationReceiverScope(f),w=f.window.snapshot,issuedAt=new Date(f.now()).toISOString(),expiresAt=new Date(f.now()+10000).toISOString();
  const request={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_REQUEST_V1',requestId:id(3200),attemptId:id(3201),installationId:w.installationId,projectId:w.projectId,registrationRef:w.registrationRef,connectorRef:w.connectorRef,
@@ -379,13 +379,15 @@ async function normalResultTransportFixture(mode='valid'){
   actorId:scope.actorId,clientId:scope.clientId,humanSessionId:scope.humanSessionId,credentialGeneration:scope.credentialGeneration,controlGeneration:scope.controlGeneration,
   admissionRef:ref(3202),claimRef:ref(3203),normalCommandId:id(3204),normalRequestHash:'d'.repeat(64),executionId:id(3205),executionGeneration:1,executionPreparationRef:ref(3206),writerNoneRef:w.writerHeadRef,
   serverNonce:Buffer.alloc(32,3).toString('base64url'),issuedAt,expiresAt};
+ const normalCommand={schemaVersion:1,projectId:request.projectId,commandId:request.normalCommandId,clientId:request.clientId,controlGeneration:request.controlGeneration,operation:'queueExecutionCommand',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{operation:'START_SESSION',executionId:request.executionId,executionGeneration:request.executionGeneration,preparationRef:request.executionPreparationRef,permissionPolicyRef:ref(3250),budgetPolicyRef:ref(3251),payload:{contextBundleRef:ref(3252),optionsRef:request.executionPreparationRef}}};
+ if(mode.startsWith('frame-'))request.normalRequestHash=receiveHash(normalCommand);
  const requestRef=wire.normalStartPreparationRequestRef(request),basisSnapshot={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_PROTECTED_BASIS_V1',basisId:id(3210),requestRef,attemptId:request.attemptId,
   objectRef:ref(3211),sourceRef:ref(3212),writerNoneRef:w.writerHeadRef,osFenceRef:ref(3213),issuedAt,expiresAt,executionAuthorized:false,dispatchPerformed:false};
  const snapshot={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_PEER_RECEIPT_V1',receiptId:id(3220),requestRef,attemptId:request.attemptId,outcome:'PREPARED',
   preparationBasis:{ref:{id:id(3210),version:1,contentHash:receiveHash(basisSnapshot)},snapshot:basisSnapshot},issuedAt,expiresAt,executionAuthorized:false,dispatchPerformed:false};
  const result={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_V1',requestRef,receipt:{ref:{id:id(3220),version:1,contentHash:receiveHash(snapshot)},snapshot}};
  // 실제 0106 adapter의 첫 소비는 보호 producer가 필요 없는, 원 peer가 서명한 명시 REJECTED다.
- if(mode==='actual-adapter'){snapshot.outcome='REJECTED';snapshot.preparationBasis=null as any;result.receipt.ref.contentHash=receiveHash(snapshot);}
+ if(mode==='actual-adapter'||mode.startsWith('frame-')){snapshot.outcome='REJECTED';snapshot.preparationBasis=null as any;result.receipt.ref.contentHash=receiveHash(snapshot);}
  const proof={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_PROOF_V1',requestRef,attemptId:request.attemptId,installationId:request.installationId,projectId:request.projectId,registrationRef:request.registrationRef,connectorRef:request.connectorRef,
   windowRef:f.window.ref,receiveSessionRef:f.session.ref,hostPublicKeyFingerprint:w.hostPublicKeyFingerprint,serverNonce:request.serverNonce,
   target:{method:'POST',path:wire.normalStartPreparationResultPath(f.session.ref.id),queryHash:receiveHash({}),bodyHash:receiveHash(result)},issuedAt,expiresAt:new Date(f.now()+(mode.startsWith('late-')?80:2000)).toISOString()};
@@ -433,14 +435,14 @@ async function normalResultTransportFixture(mode='valid'){
    if(mode==='swap-replay'){const value=structuredClone(out.rows[0].result);value.ref.id=id(3299);value.snapshot.recordId=value.ref.id;value.ref.contentHash=receiveHash(value.snapshot);return value;}
    return out.rows[0].result;},
  };
- if(mode==='actual-adapter'){
+ if(mode==='actual-adapter'||mode.startsWith('frame-')&&mode!=='frame-result-missing'){
   const {connectNormalStartPreparationResultStore}=await import('../../../apps/server/modules/executions/normal-start-preparation-result-store.ts');
   connectNormalStartPreparationResultStore(f.service);
- }else if(mode!=='missing')f.service.connectNormalStartPreparationResultSource(source);
+ }else if(mode!=='missing'&&mode!=='frame-result-missing')f.service.connectNormalStartPreparationResultSource(source);
  if(mode==='signature')signature=Buffer.alloc(64,1).toString('base64url');
  if(mode==='nonce'){proof.serverNonce=Buffer.alloc(32,9).toString('base64url');signature=sign();}
  const run=()=>f.service.nativeNormalStartPreparationResult(f.session.ref.id,f.token,result,proof,signature,new AbortController().signal);
- return{...f,stream,wire,request,result,proof,normalSignature:signature,repairSignature:()=>{signature=sign();},source,stored,run,current,lateRelease,state:()=>({records,reads,releases,commits,bytes,replays})};
+ return{...f,normalCommand,stream,wire,request,result,proof,normalSignature:signature,repairSignature:()=>{signature=sign();},source,stored,run,current,lateRelease,state:()=>({records,reads,releases,commits,bytes,replays})};
 }
 
 for(const mode of ['valid','actual-adapter'])test('normal result 전용 route/service는 원 signed STREAM·DB current SPKI·목적 receipt를 원 거래에 결박한다 '+mode,async()=>{
@@ -590,4 +592,105 @@ test('normal 준비 custody는 원 monotonic 기한·객체 메서드 identity�
   assert.throws(()=>custody.read(scope));assert.throws(()=>service.takeNormalStartPreparationReceiver(scope));
   assert.equal(stream.destroyed,false);
  }finally{f.controller.abort();}
+});
+
+async function normalFrameDispatchFixture(mode='frame-valid'){
+ const f=await normalResultTransportFixture(mode),{connectNormalStartPreparationFrameStore}=await import('../../../apps/server/modules/executions/normal-start-preparation-result-store.ts');
+ const scope=normalPreparationReceiverScope(f),order:string[]=[],old=f.db.query;let claims=0,authCalls=0;
+ const provenance={purpose:'NORMAL_START_PREPARATION_RECEIVER_PROVENANCE',scope,streamProofHash:'a'.repeat(64),streamChallengeRef:ref(3300),observedAt:f.request.issuedAt,expiresAt:f.request.expiresAt,executionAuthorized:false,dispatchPerformed:false};
+ if(mode==='frame-fake')f.service.connectNormalStartPreparationFrameSource({purpose:'NORMAL_START_PREPARATION_FRAME_SOURCE_V1',reserve:async()=>({disposition:'FIRST_COMMIT',request:{ref:f.result.requestRef,snapshot:f.request},claimRef:f.request.claimRef,expiresAt:f.request.expiresAt,dispatchPerformed:false})});
+ else if(mode!=='frame-unconfigured')connectNormalStartPreparationFrameStore(f.service);
+ const actor={actorId:scope.actorId,clientId:scope.clientId,credentialGeneration:scope.credentialGeneration,serverOwner:false,reauthUntil:new Date(f.request.expiresAt),authSession:{id:scope.humanSessionId,idleExpiresAt:f.request.expiresAt,absoluteExpiresAt:f.request.expiresAt}};
+ f.db.query=(async(sql:string,args:any[]=[])=>{
+  if(sql==='SELECT anvil.fn08_normal_start_preparation_dispatch_claim($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9) AS result'){
+   order.push('CLAIM_RPC');claims++;assert.equal(args[0],scope.humanSessionId);assert.deepEqual(JSON.parse(args[4]),f.normalCommand);assert.deepEqual(JSON.parse(args[5]),f.request.admissionRef);assert.deepEqual(JSON.parse(args[6]),provenance);assert.equal(args[8],'456');
+   const proposal=JSON.parse(args[7]);Object.assign(f.request,{requestId:proposal.requestId,attemptId:proposal.attemptId,serverNonce:proposal.serverNonce});if(mode==='frame-cross')f.request.windowRef=ref(3399);
+   Object.assign(f.result.requestRef,f.wire.normalStartPreparationRequestRef(f.request));f.result.receipt.snapshot.attemptId=proposal.attemptId;f.result.receipt.ref.contentHash=receiveHash(f.result.receipt.snapshot);
+   f.proof.attemptId=proposal.attemptId;f.proof.serverNonce=proposal.serverNonce;f.proof.target.bodyHash=receiveHash(f.result);f.repairSignature();
+   f.stored.snapshot.resultHash=receiveHash(f.result);f.stored.snapshot.proofHash=receiveHash(f.proof);f.stored.ref.contentHash=receiveHash(f.stored.snapshot);
+   if(mode==='frame-late')f.advance(10000);
+   return{rows:[{result:{disposition:mode==='frame-replay'?'REPLAY_ONLY':'FIRST_COMMIT',request:{ref:f.result.requestRef,snapshot:f.request},claimRef:f.request.claimRef,expiresAt:f.request.expiresAt,dispatchPerformed:false}}],rowCount:1};
+  }
+  return old(sql,args);
+ }) as any;
+ f.access.authenticated=(async(_token:string,_csrf:string,body:Function)=>{
+  authCalls++;order.push('AUTH_BEGIN');const out=await body(f.db,actor);order.push('AUTH_COMMIT');
+  if(mode==='frame-commit-lost')throw Error('RAM_COMMIT_UNKNOWN');
+  order.push('AUTH_RELEASE');if(mode==='frame-release-lost')throw Error('RAM_RELEASE_UNKNOWN');return out;
+ }) as any;
+ let bytes=0;const references:Buffer[]=[];f.stream.on('data',(chunk:Buffer)=>{order.push('FRAME_BYTES');assert(order.includes('AUTH_RELEASE'));bytes+=chunk.length;references.push(chunk);});
+ const prepare=()=>f.service.prepareNormalStartPreparationFrame('A'.repeat(43),'C'.repeat(43),f.normalCommand as any,f.request.admissionRef,provenance);
+ return{...f,scope,provenance,order,prepare,references,frameState:()=>({claims,authCalls,bytes})};
+}
+
+test('FRAME의 exact claim COMMIT/release 뒤 원 frame1·정상 EOF만 결과 owner로 보유하고 old receiver·재전송은 닫는다',async()=>{
+ const f=await normalFrameDispatchFixture();try{
+  f.service.assertNormalStartPreparationFrame(f.scope);assert.equal(f.frameState().claims,0,'협상은 새 marker를 만들지 않는다');
+  const before=f.calls.length;await assert.rejects(f.run());assert.equal(f.calls.length,before,'협상 직후 legacy result owner로 진입하지 않는다');
+  const cap=await f.prepare();assert.throws(()=>JSON.stringify(cap));assert.deepEqual(f.order,['AUTH_BEGIN','CLAIM_RPC','AUTH_COMMIT','AUTH_RELEASE']);assert.equal(f.frameState().bytes,0);
+  f.stream.pause();const sending=f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);sending.catch(()=>{});
+  await assert.rejects(f.run());assert.equal(f.state().records,0,'EOF 전 결과는 DB 결과 쓰기에 도달하지 않는다');
+  f.stream.resume();const eof=await sending;assert.equal(eof.status,'NORMAL_START_PREPARATION_FRAME_EOF');assert.equal(eof.executionAuthorized,false);
+  assert.equal(f.frameState().bytes,4+Buffer.byteLength(receiveCanonical(f.request)));assert.throws(()=>f.service.takeNormalStartPreparationReceiver(f.scope));
+  const value=await f.run();assert.equal(value.status,'NORMAL_START_PREPARATION_RESULT_STORED');assert.deepEqual(value.ref,f.stored.ref);assert.equal(f.state().records,1);
+  assert.equal(f.references.length,1);assert.equal(f.references[0]!.readUInt32BE(),Buffer.byteLength(receiveCanonical(f.request)));assert.deepEqual(JSON.parse(f.references[0]!.subarray(4).toString('utf8')),f.request,'EOF/결과 정착 뒤에도 downstream 원 Buffer 참조가 지워지지 않는다');
+  await assert.rejects(f.service.sendNormalStartPreparationFrame(cap,f.controller.signal));await assert.rejects(f.service.sendNormalStartPreparationFrame({} as any,f.controller.signal));await assert.rejects(f.prepare());
+  assert.equal(f.frameState().claims,1);assert.equal(f.frameState().authCalls,1);
+ }finally{f.controller.abort();}
+});
+
+test('FRAME 미구성·일반 STREAM은 claim 전 효과0이며 원 legacy 결과 경로를 가로채지 않는다',async()=>{
+ for(const mode of ['frame-unconfigured','frame-legacy','frame-result-missing']){
+  const f=await normalFrameDispatchFixture(mode);try{
+   assert.throws(()=>f.service.assertNormalStartPreparationFrame(f.scope));await assert.rejects(f.prepare());assert.deepEqual(f.frameState(),{claims:0,authCalls:0,bytes:0});
+   const custody=f.service.takeNormalStartPreparationReceiver(f.scope);assert.equal(custody.read(f.scope).executionAuthorized,false);custody.revoke();
+  }finally{f.controller.abort();}
+ }
+});
+
+test('FRAME COMMIT/회수 불명·기존 marker 재조회는 frame0·같은 원 시도 재생성0이며 caller raw capability를 받지 않는다',async()=>{
+ for(const mode of ['frame-commit-lost','frame-release-lost','frame-replay','frame-late','frame-cross']){
+  const f=await normalFrameDispatchFixture(mode);try{
+   await assert.rejects(f.prepare());await assert.rejects(f.prepare());assert.equal(f.frameState().claims,1);assert.equal(f.frameState().bytes,0);
+   await assert.rejects(f.service.sendNormalStartPreparationFrame({request:f.request,committed:true} as any,f.controller.signal));assert.equal(f.frameState().bytes,0);
+  }finally{f.controller.abort();}
+ }
+});
+
+test('FRAME의 실제 same-q RPC 없는 fabricated source는 committed token/frame을 발급하지 않는다',async()=>{
+ const f=await normalFrameDispatchFixture('frame-fake');try{
+  await assert.rejects(f.prepare());assert.equal(f.frameState().claims,0);assert.equal(f.frameState().bytes,0);
+  await assert.rejects(f.service.sendNormalStartPreparationFrame({request:f.request,claimRef:f.request.claimRef} as any,f.controller.signal));assert.equal(f.frameState().bytes,0);
+ }finally{f.controller.abort();}
+});
+
+test('FRAME 원 EOF 전 abort·close와 EOF 뒤 취소·기한·다른 body는 결과 정착을 만들지 않는다',async()=>{
+ for(const mode of ['ABORT_BEFORE','CLOSE_BEFORE','ABORT_AFTER','EXPIRED_AFTER','OTHER_BODY']){
+  const f=await normalFrameDispatchFixture();try{
+   const cap=await f.prepare();if(mode.endsWith('BEFORE'))f.stream.pause();
+   const sending=f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);sending.catch(()=>{});
+   if(mode==='ABORT_BEFORE')f.controller.abort();if(mode==='CLOSE_BEFORE')f.stream.destroy();
+   if(mode.endsWith('BEFORE'))await assert.rejects(sending);else{
+    await sending;if(mode==='ABORT_AFTER')f.controller.abort();if(mode==='EXPIRED_AFTER')f.advance(10000);
+    if(mode==='OTHER_BODY'){f.result.receipt.snapshot.receiptId=id(3390);f.result.receipt.ref.id=id(3390);f.result.receipt.ref.contentHash=receiveHash(f.result.receipt.snapshot);}
+    await assert.rejects(f.run());
+   }
+   assert.equal(f.state().records,0,mode);await assert.rejects(f.service.sendNormalStartPreparationFrame(cap,f.controller.signal));assert.equal(f.frameState().claims,1);
+  }finally{f.controller.abort();}
+ }
+});
+
+test('STREAM route의 exact 단일 Accept는 원 P-256/COMMIT 뒤 형식 후보만 표시하고 일반/생략/복수는 기존 흐름을 유지한다',async()=>{
+ const {default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts'),store=await import('../../../apps/server/modules/executions/normal-start-preparation-result-store.ts');
+ for(const accept of [undefined,'*/*','application/octet-stream, application/json','application/octet-stream','Application/Octet-Stream',' application/octet-stream ',['application/octet-stream','application/octet-stream']]){
+  const f=await streamServiceFixture(),app=Fastify(),original=f.service.nativeStream,scope=normalPreparationReceiverScope(f);let eligible=false;
+  store.connectNormalStartPreparationResultStore(f.service);store.connectNormalStartPreparationFrameStore(f.service);
+  f.service.nativeStream=(async(...args:any[])=>{const stream=await Reflect.apply(original,f.service,args);try{f.service.assertNormalStartPreparationFrame(scope);eligible=true;}catch{}if(stream instanceof(await import('node:stream')).PassThrough)stream.end();return stream;}) as any;
+  registerNativeFirstReceiveRoutes(app,{enabled:true,service:f.service},{origin:'https://anvil.example'} as any);
+  try{
+   const response=await app.inject({method:'GET',url:f.proof.target.path,headers:{host:'anvil.example',authorization:'AnvilReceive '+f.token,'x-anvil-native-receive-proof':Buffer.from(receiveCanonical(f.proof)).toString('base64url'),'x-anvil-native-receive-signature':f.signature,...(accept===undefined?{}:{accept})}});
+   assert.equal(response.statusCode,200);assert.equal(eligible,accept==='application/octet-stream',JSON.stringify(accept));
+   assert.equal(f.calls.filter(v=>v.includes('native_receive_stream_consume')).length,1);assert.equal(f.calls.some(v=>v.includes('normal_start_preparation_dispatch_claim')),false);
+  }finally{await app.close();f.controller.abort();}
+ }
 });
