@@ -268,6 +268,12 @@ internal sealed class NormalExecutionSpoolProfileSource {
     var output=R("state",first?"NORMAL_START_PREPARATION_CLAIMED":"NORMAL_START_PREPARATION_REPLAY_ONLY","requestRef",requestRef,"nativeClaimRef",EvidenceRef(S(back,"id"),back),"creationAuthorized",false,"executionAuthorized",false,"dispatchPerformed",false);NormalStartPreparationClaimCapability capability=first?new DurableNormalStartPreparationClaimCapability(record,request,image,back,now,imageCurrent):null;return new NormalStartPreparationClaimCommit(output,capability);
    }catch(SpoolCapacityException){if(appendStarted){blocked=true;throw Invalid();}return NormalStartPreparationClaimCommit.Unavailable();}catch{if(appendStarted)blocked=true;throw;}
  }
+ internal void ReadNormalStartPreparationClaimCurrent(NormalStartPreparationClaimMaterial material,Func<DateTime> now,Action current){
+  if(material==null||now==null||current==null)throw Invalid();DesktopTrustKeyHostSource.ReceiveRef(material.NativeClaimRef,true);DesktopTrustKeyHostSource.ReceiveRef(material.RequestRef,true);DesktopTrustKeyHostSource.ReceiveRef(material.ImageRef,true);
+  Action check=()=>{current();DateTime at=now();if(at.Kind!=DateTimeKind.Utc||material.ExpiresAt.Kind!=DateTimeKind.Utc||at>=material.ExpiresAt)throw Invalid();};check();
+  Log(false,(log,rows)=>{check();var matches=rows.Where(r=>S(r,"kind")==NormalPreparationClaim&&S(r,"id")==S(material.NativeClaimRef,"id")).ToArray();if(matches.Length!=1)throw Invalid();var match=matches[0];
+   if(H(match)!=S(material.NativeClaimRef,"contentHash")||J(match["requestRef"])!=J(material.RequestRef)||J(match["imageAssociationRef"])!=J(material.ImageRef)||DesktopTrustKeyHostSource.Time(match,"expiresAt")!=material.ExpiresAt)throw Invalid();check();return true;});check();
+ }
  const string RejectedAvailable="NORMAL_START_PREPARATION_REJECTED_AVAILABLE",SignClaimed="NORMAL_START_PREPARATION_SIGN_CLAIMED",SignedConfirmed="NORMAL_START_PREPARATION_SIGNED_CONFIRMED",ResultUnknown="NORMAL_START_PREPARATION_RESULT_UNKNOWN";
  static void ValidateNormalRejectedResults(List<Row> rows){
   var available=new Dictionary<string,Row>();var claimed=new Dictionary<string,Row>();var terminal=new HashSet<string>();var requestIds=new HashSet<string>();

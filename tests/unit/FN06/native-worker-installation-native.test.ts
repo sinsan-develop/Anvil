@@ -210,3 +210,18 @@ test('retained image lease는 claim metadata와 opaque owner를 같은 관측에
  assert.match(acquire,/var result=new Dictionary<string,object>\{\{"state","NORMAL_START_WORKER_IMAGE_VERIFIED"\}/);assert.match(acquire,/new NormalRetainedImageSource\(this,installedSource,retained,result\)/);
  assert.doesNotMatch(lease,/Path|Handle|byte\[\]/);
 });
+
+test('normal 전체 회수는 typed image close와 원 durable claim을 read-only로 같은 ref에 재결박한다',()=>{
+ const deployment=read('NativeWorkerDeploymentSource.cs'),spool=read('NormalExecutionSpoolProfileSource.cs'),host=read('DesktopTrustKeyHostSource.cs');
+ const transferred=deployment.slice(deployment.indexOf('private sealed class NormalTransferredImageSource'),deployment.indexOf('void Live('));
+ assert.match(deployment,/internal sealed class NormalTransferredImageCloseReceipt/);assert.match(deployment,/ReadTransferredNormalImageCloseReceipt\(/);
+ assert.match(transferred,/CloseOriginalNormalSource\(closing\)[\s\S]*ReleaseAfterClose\(closing,closeReceipt\)[\s\S]*ReleaseTransferredNormalImage/);
+ assert.match(transferred,/new NormalTransferredImageCloseReceipt\(this,closeReceipt\)/);assert.match(transferred,/Object\.ReferenceEquals\(transferredCloseReceipt,receipt\)/);
+ const current=spool.slice(spool.indexOf('internal void ReadNormalStartPreparationClaimCurrent('),spool.indexOf('const string RejectedAvailable'));
+ assert.ok(current.length>0);assert.match(current,/Log\(false/);assert.match(current,/NativeClaimRef/);assert.match(current,/RequestRef/);assert.match(current,/ImageRef/);assert.match(current,/ExpiresAt/);
+ assert.match(current,/S\(material\.NativeClaimRef,"id"\)/);assert.match(current,/H\(match\)!=S\(material\.NativeClaimRef,"contentHash"\)/);
+ assert.match(current,/J\(match\["requestRef"\]\)!=J\(material\.RequestRef\)/);assert.match(current,/J\(match\["imageAssociationRef"\]\)!=J\(material\.ImageRef\)/);
+ assert.doesNotMatch(current,/Append\(|RecordConfirmedRejected|RejectedAvailable|PREPARED|POST|queue/i);
+ const branch=host.slice(host.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'));
+ assert.match(branch,/budget\.Slice\(exact\.ExpiresAt,2000\)/);assert.match(branch,/ReadNormalStartPreparationClaimCurrent\(exact/);
+});

@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 같은 원 claim의 전체 회수 확인** — 담당 `c10_spec_review`, 기준 `ce019fc9`. 원 process와 thread의 종료·각 핸들 닫기, 같은 원 image의 닫기 확인, startup 환경·assignment 버퍼·Job 핸들 확인을 보유한 뒤 기존 durable claim의 원 hash·request·image를 읽기 전용으로 재대조한다. 일부 누락 또는 불명은 원 owner를 보존하고 성공/재시도/결과 저장으로 처리하지 않는다. 제품 4개·시험 2개. Main 정적/RAM 107/107 실패·취소·skip 0(c9b9a5), diff 검사 0. 독립 검수가 지적한 request 만료 뒤 회수 미완은 기존 §8.3.7의 원 최단기한 경계이며, PMO 대조 및 98e9021c 비교에서 새 만료 gate나 범위 완화 없이 기존 UNKNOWN을 보존함을 확인했다. 만료 후 추가 종료 효과는 이번 범위에서 승인·구현하지 않았다. 실제 C#·Windows/Job/파일·키·DB/권한·서비스·HTTPS·프로세스·Agent 실행 0. 실제 native 회수 결과 및 확정 거절 생산자·PREPARED/queue는 미완료다.
+
 - **FN09/UI05 WORK 준비 상세의 고정 이해 검토 참조** — 담당 `c11_quality_review`, 기준 `66445c08`. 기존 검산된 저장 이력에서 WORK 준비와 고정 이해 검토의 전체 참조, 원 실행 ID·세대를 상세 화면에 표시한다. 근거가 없는 구형 WORK와 그 밖의 모드를 구분하고, 원문·이유·옵션 및 실행 권한을 새로 내보내지 않는다. 제품 1개·시험 1개. 최초 RED 1건, Main 집중 7/7 실패·취소·skip 0(f6321c), 타입 0(b592cf), diff 검사·독립 C0/I0. 실제 브라우저·서비스·DB/권한·C#/키·Agent 실행 0.
 
 - **FN08 normal 이미지 원 핸들 회수** — 담당 `c10_spec_review`, 기준 `c31f2c26`. 기존 보호 경로와 읽기/공유/비상속 조건에서 연 normal 전용 원 파일·부모 핸들을 비소유 stream과 분리했다. image→root 순서로 한 번씩 OS close 반환을 확인하는 source를 작성했다. 손상·중복 핸들, 부분 open, 닫기 실패는 원 객체를 보존하며 다시 닫거나 재획득하지 않는다. 설치 저장·양도는 같은 원 객체의 내부 회수 확인 뒤에만 소유를 해제한다. legacy 경로의 NativeCloseVerified=false는 유지한다. 제품 3개·시험 1개. 최초 정적 RED 1건, cross-nested C# 접근과 중복 raw handle 처리 보완 뒤 Main 정적/RAM 40/40 실패·취소·skip 0(a6ba9b), diff 검사 0, 동결 독립 C0/I0. 실제 C#·Windows/파일·OS·DB/키/권한·서비스·Agent 실행 0. 다음은 원 Job/assignment/startup/process/image를 같은 요청에 결박한 전체 회수 확인이다.

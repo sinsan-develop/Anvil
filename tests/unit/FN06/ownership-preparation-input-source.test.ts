@@ -102,7 +102,7 @@ test('정적: exact normal image와 bound startup만 suspended process를 단회
  assert.doesNotMatch(normal,/ReadPreparedFactsSource|OwnershipEvidencePreparationPlan|WorkerInputCandidate|IImageOwnerCandidate|ProcessId=value|ThreadId=value|OpenProcess|GetProcessById|while\s*\(|for\s*\(/);
  const observation=process.slice(process.indexOf('internal sealed class NormalProcessOwnerObservation'),process.indexOf('private sealed partial class OwnedEmptyJob'));
  for(const flag of ['OsOwnershipVerified','ProcessCreated','ThreadCreated','ProcessCreationAuthorized','PreparationAuthorized','ExecutionAuthorized','DispatchPerformed'])assert.match(observation,new RegExp(flag+'\\{get\\{return false;\\}\\}'));
- assert.match(normal,/bool attempted,created,exitConfirmed,closed,cleanupAttempted,cleanupUnknown/);assert.match(normal,/original\.Process==original\.Thread\|\|original\.Pid==0\|\|original\.Tid==0\)\{cleanupUnknown=true;throw CleanupUnknown\(\);\}/);assert.match(normal,/if\(cleanupAttempted\|\|cleanupUnknown\)throw CleanupUnknown\(\)/);assert.match(normal,/if\(state==258\)\{wait=Remaining\(wait\);if\(!TerminateProcess/);assert.match(normal,/image\.Dispose\(\);image=null;Remaining\(2000\);original=default/);assert.equal((normal.match(/TerminateProcess\(/g)||[]).length,1);assert.equal((normal.match(/WaitForSingleObject\(/g)||[]).length,2);
+ assert.match(normal,/bool attempted,created,exitConfirmed,closed,cleanupAttempted,cleanupUnknown/);assert.match(normal,/original\.Process==original\.Thread\|\|original\.Pid==0\|\|original\.Tid==0\)\{cleanupUnknown=true;throw CleanupUnknown\(\);\}/);assert.match(normal,/if\(cleanupAttempted\|\|cleanupUnknown\)throw CleanupUnknown\(\)/);assert.match(normal,/if\(state==258\)\{wait=Remaining\(wait\);if\(!TerminateProcess/);assert.match(normal,/closingImage\.Dispose\(\);imageCloseReceipt=NativeWorkerDeploymentSource\.ReadTransferredNormalImageCloseReceipt\(closingImage\);image=null;Remaining\(2000\)/);assert.equal((normal.match(/TerminateProcess\(/g)||[]).length,1);assert.equal((normal.match(/WaitForSingleObject\(/g)||[]).length,3);
  assert.match(process,/NormalProcessOwner attempted=null/);assert.match(process,/normalProcessOwner=attempted=new NormalProcessOwner\(this,image\)/);assert.match(process,/if\(attempted!=null\)attempted\.Dispose\(\)/);assert.ok(process.indexOf('normalProcessOwner=attempted=new NormalProcessOwner(this,image)')<process.indexOf('WithTransferredNormalImageLaunch(image,Math.Min(timeoutMs,1000)'));
  assert.match(process,/if\(processOwner!=null\|\|normalProcessOwner!=null\|\|workerInput==null\|\|normalWorkerInput!=null\)throw Unavailable\(\)/);
  assert.match(process,/if\(normalProcessOwner!=null\|\|processOwner!=null\|\|normalWorkerInput==null\|\|workerInput!=null\)throw Unavailable\(\)/);
@@ -110,7 +110,30 @@ test('정적: exact normal image와 bound startup만 suspended process를 단회
  assert.match(producer,/BuildNormalStartSource/);assert.match(producer,/CreateEmptyJobSource/);assert.match(producer,/PrepareAtomicJobAssignmentSource/);assert.match(producer,/PrepareSuspendedStartupSource/);assert.match(producer,/BindNormalStartWorkerInvocationSource/);assert.match(producer,/CreateNormalSuspendedProcessSource/);
  assert.match(producer,/if\(used\|\|cleanupUnknown\|\|disposed\)throw Invalid\(\)/);assert.match(producer,/used=true/);assert.match(producer,/job\.Dispose\(\)/);assert.match(producer,/if\(cleanupAttempted\|\|cleanupUnknown\)throw Invalid\(\)/);
  assert.match(producer,/claim\.Consume\(record,request,imageMaterial,current\)/);assert.match(producer,/retained\.TransferToFactory\(Math\.Min\(1000,left\(\)\)\)/);
- assert.match(producer,/process=OwnershipEvidenceJobFactorySource\.CreateNormalSuspendedProcessSource[^;]+;processOwnerStarted=true;image=null/);assert.match(producer,/job\.Dispose\(\);if\(!processOwnerStarted&&image!=null\)image\.Dispose\(\)/);
+ assert.match(producer,/process=OwnershipEvidenceJobFactorySource\.CreateNormalSuspendedProcessSource[^;]+;processOwnerStarted=true;image=null/);assert.match(producer,/job\.Dispose\(\);if\(processOwnerStarted\)[\s\S]*else if\(image!=null\)image\.Dispose\(\)/);
  assert.match(host,/normalStartPreparationProducer\.Dispose\(\)/);assert.ok(host.indexOf('normalStartPreparationProducer.Dispose()')<host.indexOf('workerDeployment.Dispose()'));
  assert.match(host,/normalStartPreparationCleanupUnknown/);assert.match(host,/normalStartPreparationUnknownOwners\.Add\(this\)/);
+});
+
+test('정적: same-request 회수는 process/thread/image와 startup·assignment·Job 뒤 원 claim만 최종 판독한다',()=>{
+ const deployment=readFileSync(new URL('../../../apps/connector/native/NativeWorkerDeploymentSource.cs',import.meta.url),'utf8');
+ const process=readFileSync(new URL('../../../apps/connector/native/OwnershipEvidenceProcessOwnerSource.cs',import.meta.url),'utf8');
+ const host=readFileSync(new URL('../../../apps/connector/native/DesktopTrustKeyHostSource.cs',import.meta.url),'utf8');
+ const cleanup=process.slice(process.indexOf('internal sealed class NormalProcessCleanupReceipt'),process.indexOf('private sealed partial class OwnedEmptyJob'));
+ assert.ok(cleanup.length>0);for(const field of ['ImageRefJson','RequestRefJson','LocalClaimRefJson','LocalProcessId','LocalProcessGeneration','ExpiresAt'])assert.match(cleanup,new RegExp(field));
+ for(const flag of ['ProcessExitConfirmed','ThreadCloseConfirmed','ProcessCloseConfirmed','ImageCloseConfirmed'])assert.match(cleanup,new RegExp(flag+'\\{get\\{return true;\\}\\}'));
+ assert.doesNotMatch(cleanup,/\bProcessId\b|\bThreadId\b|IntPtr|Handle|Authorized\{get\{return true/);
+ const normal=process.slice(process.indexOf('private sealed class NormalProcessOwner:'),process.indexOf('private static readonly ConditionalWeakTable',process.indexOf('private sealed class NormalProcessOwner:')));
+ assert.match(normal,/originalObservation/);assert.match(normal,/var closingImage=image;closingImage\.Dispose\(\);imageCloseReceipt=NativeWorkerDeploymentSource\.ReadTransferredNormalImageCloseReceipt\(closingImage\)/);
+ assert.match(normal,/exitConfirmed=true[\s\S]*threadCloseSucceeded[\s\S]*processCloseSucceeded[\s\S]*imageCloseReceipt/);
+ assert.match(process,/ReadOriginalNormalSuspendedProcessCleanupSource\(/);assert.match(process,/normalReturnOwners\.TryGetValue\(candidate,out marker\)/);
+ const producer=host.slice(host.indexOf('internal abstract class NormalStartPreparationProducer'),host.indexOf('readonly NormalStartPreparationProducer'));
+ assert.match(producer,/ReadOriginalNormalSuspendedProcessCleanupSource\(process\)/);
+ assert.match(producer,/startup\.LocalEnvironmentReleased/);assert.match(producer,/assignment\.LocalBuffersReleased/);assert.match(producer,/job\.LocalHandleCloseConfirmed/);
+ assert.match(producer,/Canonical\(material\.ImageRef,0\)/);assert.match(producer,/Canonical\(material\.RequestRef,0\)/);assert.match(producer,/Canonical\(material\.NativeClaimRef,0\)/);
+ const jobAt=producer.indexOf('job.Dispose()'),processAt=producer.indexOf('ReadOriginalNormalSuspendedProcessCleanupSource(process)'),flagsAt=producer.indexOf('startup.LocalEnvironmentReleased'),claimAt=producer.indexOf('finalClaimCurrent(material)'),clearAt=producer.indexOf('job=null');
+ assert.ok(jobAt>=0&&jobAt<processAt&&processAt<flagsAt&&flagsAt<claimAt&&claimAt<clearAt);
+ assert.match(producer,/if\(cleanupAttempted\|\|cleanupUnknown\)throw Invalid\(\)/);assert.match(producer,/catch\{cleanupUnknown=true;throw Invalid\(\);\}/);
+ const dispose=producer.slice(producer.indexOf('public void Dispose()'));assert.doesNotMatch(dispose,/RecordConfirmedRejected|PREPARED|POST|queue/i);
+ assert.match(deployment,/NormalTransferredImageCloseReceipt/);
 });

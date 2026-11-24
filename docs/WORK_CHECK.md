@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 원 claim의 전체 회수 판독** — 원 process/thread/image와 startup·assignment·Job을 모두 대조한 뒤 기존 claim을 다시 읽는다. Main 107/107. 원기한 만료/불명은 UNKNOWN이며 실제 Windows와 만료 후 정리는 미검증·미완료다.
+
 - **FN09/UI05 WORK 준비 상세** — 검토 고정 참조와 원 실행·세대를 저장 상세에 표시했다. 집중 7/7·타입 통과, 실제 브라우저는 미검증이다.
 
 - **FN08 원 이미지 회수 소스** — 원 파일·부모 핸들의 순서·단회 close와 부분 실패 보존을 기존 설치·양도에 연결했다. Main 40/40. 실제 Windows 및 같은 요청의 Job 포함 전체 회수는 미검증·미완료다.
