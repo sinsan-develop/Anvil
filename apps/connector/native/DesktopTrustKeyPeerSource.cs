@@ -13,11 +13,17 @@ internal sealed class DesktopTrustKeyBudget {
  readonly Func<DateTime> wall;readonly Func<double> mono;DateTime rawLast,expiry;double observedMono,deadline,effectiveMilliseconds;int remaining;
  static double Milliseconds(DateTime value){return value.Ticks/(double)TimeSpan.TicksPerMillisecond;}
  internal DesktopTrustKeyBudget(Func<DateTime> utcNow,Func<double> monotonic){wall=utcNow;mono=monotonic;rawLast=wall();observedMono=mono();if(rawLast.Kind!=DateTimeKind.Utc||Double.IsNaN(observedMono)||Double.IsInfinity(observedMono))throw DesktopTrustKeyParentBasisSource.Invalid();effectiveMilliseconds=Milliseconds(rawLast);expiry=rawLast.AddSeconds(10);deadline=observedMono+10000;Check();}
+ DesktopTrustKeyBudget(DesktopTrustKeyBudget parent){wall=parent.wall;mono=parent.mono;rawLast=parent.rawLast;expiry=parent.expiry;observedMono=parent.observedMono;deadline=parent.deadline;effectiveMilliseconds=parent.effectiveMilliseconds;remaining=parent.remaining;}
  internal DateTime Now{get{Check();return rawLast;}}
  internal DateTime ExpiresAt{get{Check();return expiry;}}
  void BoundObserved(){deadline=Math.Min(deadline,observedMono+(Milliseconds(expiry)-effectiveMilliseconds));double value=Math.Min(deadline-observedMono,Milliseconds(expiry)-effectiveMilliseconds);if(Double.IsNaN(value)||Double.IsInfinity(value)||value<1||rawLast>=expiry||observedMono>=deadline)throw DesktopTrustKeyParentBasisSource.Invalid();remaining=(int)Math.Floor(value);}
  internal void Check(){DateTime w=wall();double m=mono();if(w.Kind!=DateTimeKind.Utc||Double.IsNaN(m)||Double.IsInfinity(m)||w<rawLast||m<observedMono)throw DesktopTrustKeyParentBasisSource.Invalid();effectiveMilliseconds=Math.Max(Milliseconds(w),effectiveMilliseconds+(m-observedMono));rawLast=w;observedMono=m;BoundObserved();}
  internal void Tighten(DateTime end,int suppliedRemaining){Check();if(end.Kind!=DateTimeKind.Utc||suppliedRemaining<1||suppliedRemaining>10000)throw DesktopTrustKeyParentBasisSource.Invalid();expiry=end<expiry?end:expiry;deadline=Math.Min(deadline,observedMono+suppliedRemaining);BoundObserved();}
+ // 부모 helper 수명을 바꾸지 않는 단일 관측 budget이다. 같은 호출에서 새 2초를 다시 발급하지 않는다.
+ internal DesktopTrustKeyBudget Slice(DateTime end,int suppliedRemaining){
+  Check();if(end.Kind!=DateTimeKind.Utc||suppliedRemaining<1||suppliedRemaining>10000)throw DesktopTrustKeyParentBasisSource.Invalid();
+  var child=new DesktopTrustKeyBudget(this);child.Tighten(end<expiry?end:expiry,Math.Min(suppliedRemaining,remaining));Check();child.Check();return child;
+ }
  // Check가 검산한 같은 관측 snapshot의 잔여만 반환한다. 새 clock 관측으로 창을 열지 않는다.
  internal int Remaining(){Check();return remaining;}
 }

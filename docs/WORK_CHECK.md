@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 같은 helper의 준비·결과·정리** — 같은 등록 operation으로 준비부터 결과·확정 닫기까지 조립했다. Main 217/217, desktop 타입·구문 통과. 합성 REJECTED 저장까지 확인했고 실제 보호 결과 producer·Windows·PREPARED/queue는 미완료다.
+
 - **FN08 새 claim과 native Job 연결** — 보호 원장의 새 단회 claim만 원 image·Job·startup·process 소스로 이어지도록 조립했다. Main 172/172, 독립 C0/I0. 실제 Windows/Job 검증, 등록 앱의 동일 host 보유, 결과 인계·queue는 미완료다.
 
 - **FN08 suspended process 소스** — 보호 image와 normal startup을 원 process/thread handle에 결박하는 내부 경로를 작성했다. 집중 35/35, 독립 C0/I0. 실제 Windows/Job과 종료 확인, host 조립·결과 인계·queue는 미완료다.
