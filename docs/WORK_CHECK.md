@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 실행 전 준비 연결:** 명시 공급자를 지정한 READ 전용 CONTEXT_REVIEW에서 같은 요청의 원 준비 객체를 거래에 연결했다. 커밋 확인 뒤 단회 인계하고, 결과 불명과 같은 명령 재확인에는 재생성·재인계가 없다. 합성 검수와 실제 어댑터 공급은 별도다. 실제 PostgreSQL·Windows·Agent 여정은 남아 있다.
+
 - **FN09 원자료 START 장기 단위 검수:** 25초 추가 runner 한도에 걸렸던 네 그룹의 rollback·중복 소비·quota·replay를 기존 시험으로 16/16 확인했다(`f49719`). 실제 PostgreSQL 거래와 Agent 검수는 별도다.
 
 - **FN09 WORK·이력 회귀:** 선택적 세션 부재의 화면 오류와 reader 정적 시험 범위를 수정하고, 원자료 rollback·재시도 시험의 합성 시계를 분리했다. Main 715/715, 작성자 원자료 두 사례 2/2, 루트 타입·독립 C0/I0/M0. 장기 원자료 파일 전체와 실제 DB·Windows·Agent는 미검증이다.

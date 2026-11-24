@@ -28,7 +28,7 @@ test('normal 최초 START는 기존 명령의 보호된 입력을 검사하고 c
   } finally {await app.close();}
 });
 
-async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v=>v,work?:'LINKED'|'LEGACY') {
+async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v=>v,work?:'LINKED'|'LEGACY',prepare:boolean|'UNDEFINED'|'GETTER'=false) {
  const eid=randomUUID();
  const f=await executionStartOriginFixture({normalExecutionId:eid,connectorEnvironment:true,richContext:true,constitutionContext:true,environmentDependencies:true,snapshotRoot:true,originConsumptionStorage:true});
  const workState={latest:null as any,fresh:0,history:0,deny:false};let workBasis:any;
@@ -57,23 +57,95 @@ async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v
  const {registrationRef}=await import('../../../apps/server/modules/connections/project-registrations.ts');
  const attested={basis:prep.snapshot.basisRefs,source:raw.sourceScopes.map((s:any)=>s.observationRef),capability:[raw.capabilityRef],osFence:[ref],storage:[ref]};
  let observations=0;
- const source={observe:async(scope:any,stamp:string,signal:AbortSignal)=>{
+  const observation=async(scope:any,stamp:string,signal:AbortSignal)=>{
    assert.ok(signal instanceof AbortSignal);assert.ok(!('query' in scope));const at=new Date(stamp);
    observations++;
    const value={scope,registrationRef:registrationRef(f.registration!.row as any),checkedAt:at.toISOString(),expiresAt:until,writerState:'NONE',
     stageRef:f.stage.data.snapshot.input.stageRef,demand:{attempts:1,calls:1,spoolBytes:1024,cost:null,costStatus:'VERIFIED_NO_CHARGE'},
     understandingReviewRef:work?workBasis.reviewRef:null,checks:{...Object.fromEntries(Object.entries(attested).map(([key,evidenceRefs])=>[key,{state:'VERIFIED_CURRENT',evidenceRefs}])),understanding:work?{state:'VERIFIED_CURRENT',evidenceRefs:[workBasis.reviewRef]}:{state:'NOT_REQUIRED',evidenceRefs:[]}}};
    return transform(value,observations,signal);
- }};
- const app=buildApp({},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root},undefined,undefined,undefined,undefined,null,undefined,undefined,source);
+  };
+  const preparation={creates:0,reads:0,handoffs:0,closes:0,closed:0,captures:0,fallback:0,aborted:0,failRead:false,hangRead:false,failHandoff:false,commits:[]as any[],owners:[]as any[],inputs:[]as any[]};
+  const source={observe:async(...args:Parameters<typeof observation>)=>{preparation.fallback++;return observation(...args);},...(prepare===true||prepare==='GETTER'?{preparation:{async create(input:any,signal:AbortSignal){
+   preparation.creates++;preparation.inputs.push(input);assert.equal(f.active(),true);assert(!signal.aborted);
+   assert.equal(input.commandId,command.commandId);assert.equal(input.scope.requestHash,contentHash(canonicalJson(command)));assert.deepEqual(input.registrationRef,registrationRef(f.registration!.row as any));
+   assert(f.trace.some(sql=>sql.includes('FROM anvil.connector_registrations r JOIN')));assert(f.trace.some(sql=>sql.includes('FROM anvil.permission_policies')));
+   const owner={async read(scope:any,stamp:string,readSignal:AbortSignal){
+    assert.equal(this,owner);assert.deepEqual(scope,input.scope);preparation.reads++;if(preparation.failRead)throw Error('RAM_READ_FAILED');
+    if(preparation.hangRead)return new Promise<never>((_resolve,reject)=>readSignal.addEventListener('abort',()=>{preparation.aborted++;reject(Error('RAM_READ_CANCELLED'));},{once:true}));
+    return{...await observation(scope,stamp,readSignal),expiresAt:input.expiresAt};
+   },async handoff(commit:any){assert.equal(this,owner);assert.equal(f.active(),false);assert(f.trace.includes('COMMIT'));preparation.handoffs++;preparation.commits.push(commit);if(preparation.failHandoff)throw Error('RAM_HANDOFF_UNKNOWN');return owner;},async close(){preparation.closes++;preparation.closed++;}};
+   preparation.owners.push(owner);return owner;
+  }}}:{})};
+  if(prepare==='UNDEFINED')Object.defineProperty(source,'preparation',{value:undefined,writable:true,configurable:true});
+  class PreparedCurrent{get preparation(){preparation.captures++;return source.preparation;}observe(...args:Parameters<typeof observation>){return source.observe(...args);}}
+  const configured=prepare==='GETTER'?new PreparedCurrent():source;
+  const app=buildApp({},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root},undefined,undefined,undefined,undefined,null,undefined,undefined,configured);
  const command={...f.originCommand(),operation:'queueExecutionCommand',approvalRef:null,payload:{operation:'START_SESSION',executionId:eid,executionGeneration:1,preparationRef:ref,
    permissionPolicyRef,budgetPolicyRef:raw.budgetPolicyRef,payload:{contextBundleRef:raw.contextBundleRef,optionsRef:ref}}};
  const post=(payload=command)=>app.inject({method:'POST',url:'/api/v1/projects/'+f.pid+'/commands',payload,headers:{host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',
    cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf}});
- return {f,post,app,command,workBasis,workState,observations:()=>observations};
+  return {f,post,app,command,workBasis,workState,preparation,source:configured,observations:()=>observations};
 }
 
 const graphTables=['executions','execution_grants','writer_claims','usage_reservations','execution_commands','delivery_outbox','execution_material_manifests','execution_materials'];
+
+test('optional 준비 own undefined는 미구성이고 class getter port는 한 번만 캡처해 같은 객체를 소비한다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});for(const mode of ['UNDEFINED','GETTER']as const){const h=await host(undefined,undefined,mode);try{
+  const response=await h.post();assert.equal(response.statusCode,200,response.body);assert.equal(h.preparation.creates,mode==='GETTER'?1:0);assert.equal(h.preparation.captures,mode==='GETTER'?1:0);assert.equal(h.preparation.handoffs,mode==='GETTER'?1:0);
+  const retry=await h.post();assert.equal(retry.statusCode,200,retry.body);assert.equal(h.preparation.captures,mode==='GETTER'?1:0);
+ }finally{await h.app.close();}}
+ const {NormalInitialExecution}=await import('../../../apps/server/modules/executions/normal-initial-execution.ts');
+ for(const preparation of [null,{},false])assert.throws(()=>new NormalInitialExecution({}as any,{}as any,{observe:async()=>null,preparation}as any),{message:'NORMAL_START_PREPARATION_REQUIRED'});
+});
+test('캡처 뒤 준비 port 교체는 구형 관측 fallback이나 다른 port 재생성으로 전환하지 않는다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});let swap=()=>{};const h=await host((value,count)=>{if(count===1)swap();return value;},undefined,true);try{
+  swap=()=>Object.defineProperty(h.source,'preparation',{value:undefined,writable:true,configurable:true});
+  const response=await h.post();assert.equal(response.statusCode,503,response.body);assert.equal(h.preparation.creates,1);assert.equal(h.preparation.fallback,0);assert.equal(h.preparation.handoffs,0);
+ }finally{await h.app.close();}
+});
+
+test('명시 원 시도 준비는 같은 거래 create1/read3 뒤 확정 COMMIT에서만 인계하고 정확 재조회 추가효과0이다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});const h=await host(undefined,undefined,true);try{
+  const response=await h.post();assert.equal(response.statusCode,200,response.body);const result=response.json(),p=h.preparation;
+  assert.equal(p.creates,1);assert(p.reads>=3);assert.equal(p.handoffs,1);assert.equal(p.closes,0);assert.equal(p.fallback,0);
+  assert.deepEqual(p.commits[0],{preparation:p.inputs[0],commandRef:result.data.ref,grantRef:result.data.snapshot.grantRef,envelopeHash:h.f.tables.execution_commands![0]!.envelope_hash});
+  assert(Date.parse(p.inputs[0].expiresAt)-Date.parse(p.inputs[0].createdAt)<=10000);
+  const calls=[p.creates,p.reads,p.handoffs],counts=graphTables.map(name=>h.f.tables[name]!.length);
+  const replay=await h.post();assert.equal(replay.statusCode,200,replay.body);assert.deepEqual(replay.json(),result);assert.deepEqual([p.creates,p.reads,p.handoffs],calls);assert.deepEqual(graphTables.map(name=>h.f.tables[name]!.length),counts);
+ }finally{await h.app.close();}
+});
+test('명시 준비의 source/writer 거절·거래 실패/COMMIT불명은 UNKNOWN이며 인계0/같은 port 재생성0이다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});for(const mode of ['READ','HANG','SOURCE','WRITER','INSERT','COMMIT']as const){const h=await host(v=>mode==='SOURCE'?{...v,checks:{...v.checks,source:{state:'UNKNOWN',evidenceRefs:[]}}}:mode==='WRITER'?{...v,writerState:'OWNED'}:v,undefined,true);try{
+  if(mode==='READ')h.preparation.failRead=true;
+  if(mode==='HANG')h.preparation.hangRead=true;
+  h.f.modes.hook=sql=>{if(mode==='INSERT'&&sql.startsWith('INSERT INTO anvil.executions')||mode==='COMMIT'&&sql==='COMMIT')throw Error('RAM_TRANSACTION_FAILED');};
+  const response=await h.post();assert.equal(response.statusCode,503,response.body);assert.equal(response.json().code??response.json().error?.code,'NORMAL_START_PREPARATION_OUTCOME_UNKNOWN');assert.equal(h.preparation.creates,1);assert.equal(h.preparation.handoffs,0);assert.equal(h.preparation.fallback,0);assert(h.f.trace.includes('ROLLBACK'));
+  assert.equal(h.preparation.closes,mode==='COMMIT'?0:1);assert.equal(h.preparation.closed,mode==='COMMIT'?0:1);
+  if(mode==='HANG')assert.equal(h.preparation.aborted,1);
+  h.f.modes.hook=null;h.preparation.failRead=false;const retry=await h.post();assert.equal(retry.statusCode,503,retry.body);assert.equal(h.preparation.creates,1);assert.equal(h.preparation.handoffs,0);
+ }finally{h.f.modes.hook=null;await h.app.close();}}
+});
+test('확정 queue 뒤 인계불명은 새 거절 거래 없이 보존하고 원 receipt 재확인도 인계 재시도0이다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});const h=await host(undefined,undefined,true);try{
+  const before=h.f.trace.length;h.preparation.failHandoff=true;const response=await h.post();assert.equal(response.statusCode,503,response.body);assert.equal(h.preparation.handoffs,1);assert.equal(h.preparation.closes,0);assert.equal(h.f.active(),false);
+  assert.equal(h.f.trace.slice(before).filter(sql=>sql==='BEGIN').length,1);assert.equal(h.f.trace.at(-1),'COMMIT');
+  Object.defineProperty(h.source,'preparation',{value:undefined,writable:true,configurable:true});
+  const trace=h.f.trace.length,counts=graphTables.map(name=>h.f.tables[name]!.length),retry=await h.post();assert.equal(retry.statusCode,200,retry.body);assert.deepEqual(graphTables.map(name=>h.f.tables[name]!.length),counts);assert.equal(h.preparation.creates,1);assert.equal(h.preparation.handoffs,1);assert(!h.f.trace.slice(trace).some(sql=>sql.startsWith('INSERT')));
+ }finally{await h.app.close();}
+});
+test('준비 생성 전 현재 인증·정책/등록·입력 거절은 port/관측/인계0이다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});for(const mode of ['AUTH','CONTROL','REGISTRATION','INPUT']as const){const h=await host(undefined,undefined,true);try{
+  if(mode==='AUTH')h.f.state.member=false;if(mode==='CONTROL')h.f.state.current=false;if(mode==='REGISTRATION')h.f.registration!.row.revoked_at=new Date();
+  const command=mode==='INPUT'?{...h.command,payload:{...h.command.payload,operation:'SEND_INSTRUCTION'}}:h.command,response=await h.post(command);
+  assert([401,403,409,412,422].includes(response.statusCode),response.body);assert.equal(h.preparation.creates,0);assert.equal(h.preparation.reads,0);assert.equal(h.preparation.handoffs,0);
+ }finally{await h.app.close();}}
+});
+test('명시 준비 port는 기존 linked WORK에 생성 권위나 대체 관측을 더하지 않는다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});const h=await host(undefined,'LINKED',true);try{
+  const response=await h.post();assert.equal(response.statusCode,200,response.body);assert.equal(h.preparation.creates,0);assert.equal(h.preparation.handoffs,0);assert(h.preparation.fallback>=3);
+ }finally{await h.app.close();}
+});
 
 test('실행 credential 예약 세대는 HUMAN 세대와 독립이며 manifest·자료가 서버의 같은 예약을 가리킨다',async()=>{
  const h=await host();try{

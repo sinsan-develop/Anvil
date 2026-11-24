@@ -1,4 +1,5 @@
 import {readNormalWorkStartBasis,readNormalWorkStartReplay} from './normal-understanding-review.ts';
+import {NormalStartPreparationAttempts,type NormalStartPreparationPort,type NormalStartPreparationScope} from './normal-start-preparation.ts';
 import {startContextBody} from './normal-start-context-body.ts';
 export {startContextBody} from './normal-start-context-body.ts';
 import {randomUUID} from 'node:crypto';
@@ -25,11 +26,27 @@ const reject=(code='NORMAL_START_CURRENT_REQUIRED',status=412):never=>{throw new
 
 type Readers={preparations:ProjectExecutionPreparations;contexts:ProjectContexts;definitions:ProjectConnectionDefinitions;
   environments:ProjectEnvironments;sessions:ResponsibleSessions;registrations:ProjectRegistrationReads};
-type RequestScope={requestHash:string;transactionId:string;projectId:string;executionId:string;executionGeneration:number;
-  preparationRef:Ref;contextBundleRef:Ref;actorId:string;clientId:string;humanSessionId:string;controlGeneration:number;credentialGeneration:number};
+type RequestScope=NormalStartPreparationScope;
 /** 서버가 구성한 보호 관측 공급자. HTTP에는 이 인터페이스나 관측 입력을 노출하지 않는다. */
 export interface NormalExecutionCurrentSource {
   observe(scope:Readonly<RequestScope>,observedAt:string,signal:AbortSignal):Promise<unknown>;
+  preparation?:NormalStartPreparationPort;
+}
+function preparationConfiguration(source:NormalExecutionCurrentSource){
+  // getter도 한 번만 읽는다. 이후에는 descriptor/원 prototype과 캡처한 port만 검사한다.
+  let port:NormalStartPreparationPort|undefined;
+  try{port=source.preparation;}catch{return reject('NORMAL_START_PREPARATION_REQUIRED',503);}
+  const chain:{object:object;parent:object|null;descriptor:PropertyDescriptor|undefined}[]=[];
+  for(let object:object|null=source;object;object=Object.getPrototypeOf(object)){
+    const descriptor=Object.getOwnPropertyDescriptor(object,'preparation');chain.push({object,parent:Object.getPrototypeOf(object),descriptor});if(descriptor)break;
+  }
+  return{port,current:()=>{
+    try{return chain.every(({object,parent,descriptor})=>{
+      const now=Object.getOwnPropertyDescriptor(object,'preparation');
+      return Object.getPrototypeOf(object)===parent&&(!descriptor?!now:!!now&&(!('value'in descriptor)||descriptor.value===port)
+        &&['value','get','set','writable','enumerable','configurable'].every(key=>now[key as keyof PropertyDescriptor]===descriptor[key as keyof PropertyDescriptor]));
+    });}catch{return false;}
+  }};
 }
 async function boundedObservation(source:NormalExecutionCurrentSource,scope:RequestScope,observedAt:string){
   const controller=new AbortController(),timeoutMs=2000,until=performance.now()+timeoutMs;
@@ -114,13 +131,19 @@ export class NormalInitialExecution {
   #source:NormalExecutionCurrentSource;
   #access:AccessRepository;
   #readers:Readers;
+  #configuration:()=>boolean;
+  #attempts:NormalStartPreparationAttempts|undefined;
   constructor(access:AccessRepository,readers:Readers,source:NormalExecutionCurrentSource){
     if(typeof source?.observe!=='function')reject('NORMAL_START_SOURCE_REQUIRED');
     this.#source=source;this.#access=access;this.#readers=readers;
+    const configuration=preparationConfiguration(source);this.#configuration=configuration.current;
+    if(configuration.port!==undefined)this.#attempts=new NormalStartPreparationAttempts(configuration.port);
   }
   async command(token:string,csrf:string,value:ProjectCommand){
     const request=cloneV1(value),p=checkedInput(request),pid=request.projectId;
-    try{return await this.#access.authenticated(token,csrf,async(db,actor)=>{
+    let held:Awaited<ReturnType<NormalStartPreparationAttempts['create']>>|undefined,preparing=false,bodyCompleted=false,handoffEnvelopeHash:string|undefined;
+    try{
+      const result=await this.#access.authenticated(token,csrf,async(db,actor)=>{
       const auth=actor.authSession;
       if(!auth||!isoV1(auth.idleExpiresAt)||!isoV1(auth.absoluteExpiresAt))return reject();
       await currentProjectController(db,actor,request);
@@ -153,20 +176,39 @@ export class NormalInitialExecution {
         permissionPolicyRef:p.permissionPolicyRef,budgetPolicyRef:p.budgetPolicyRef,sourceScopes:(originalIntent??intent).sourceScopes};
       const policies=async()=>[await authorizeRuntimePolicy(db,actor,{...request,operation:'authorizeExecution'},policyArgs),
         await authorizeRuntimePolicy(db,actor,request,policyArgs)];
-      await policies();
+      const initialPolicies=await policies();
       const replay=previous;
       if(replay!==undefined){
         if(replay.data?.status!=='NORMAL_QUEUE_STORED'||replay.data?.snapshot?.transport!==PRESENT)return reject('IDEMPOTENCY_CONFLICT',409);
         return replay;
       }
+      if(!this.#configuration())return reject('NORMAL_START_PREPARATION_OUTCOME_UNKNOWN',503);
       if((await db.query('SELECT id FROM anvil.writer_claims WHERE project_id=$1 AND reclaimed_at IS NULL',[pid])).rows.length)return reject('EXECUTION_WRITER_UNAVAILABLE',409);
       if((await db.query('SELECT id FROM anvil.executions WHERE project_id=$1 AND id=$2',[pid,p.executionId])).rows.length)return reject('EXECUTION_ALREADY_EXISTS',409);
       const originalQuery=db.query;
-      const checkTx=async()=>{if(db.query!==originalQuery||await xid(db)!==scope.transactionId||db.query!==originalQuery)return reject();};
+      const checkTx=async()=>{if(db.query!==originalQuery||await xid(db)!==scope.transactionId||db.query!==originalQuery
+        ||!this.#configuration())return reject();};
+      const readRegistration=async(ref:Ref)=>{
+        const reg=await this.#readers.registrations.read(db,actor,pid,ref.id);
+        if(!same(reg.connectorRef,basis.host.connectorRef)||!same(reg.registrationRef,ref)||!reg.basis.current||reg.state!=='ISSUED'||reg.connectorState!=='TRUSTED'
+          ||reg.revokedAt!==null||reg.credential.status!=='ACTIVE_STATUS_ONLY'||!reg.credential.expiresAt||!isoV1(reg.credential.expiresAt)
+          ||!hashV1(reg.observedHostFingerprint)||reg.observedHostFingerprint!==reg.expectedHostFingerprint)return reject();
+        return {registration:{ref:reg.registrationRef,connectorId:reg.connectorRef.id,generation:reg.connectorRef.version,
+          hostPublicKeyFingerprint:reg.observedHostFingerprint},until:Math.min(Date.parse(reg.expiresAt),Date.parse(reg.credential.expiresAt))};
+      };
+      if(this.#attempts&&intent.mode==='CONTEXT_REVIEW'){
+        if(intent.sourceScopes.some(s=>s.targets.some(t=>t.access!=='READ')))return reject();
+        await checkTx();const registered=await readRegistration(basis.host.registrationRef),at=await clock(db);
+        const until=Math.min(at.getTime()+10000,Date.parse(auth.idleExpiresAt),Date.parse(auth.absoluteExpiresAt),registered.until,...initialPolicies.map(v=>v!.validUntil));
+        await checkTx();if(until<=at.getTime())return reject();
+        preparing=true;
+        held=await this.#attempts.create({purpose:'NORMAL_START_PREPARATION_V1',commandId:request.commandId,scope,
+          connectorRef:basis.host.connectorRef,registrationRef:basis.host.registrationRef,createdAt:at.toISOString(),expiresAt:new Date(until).toISOString()});
+      }
       const observe=async()=>{
         await checkTx();
         const sampled=await clock(db);
-        const raw=await boundedObservation(this.#source,scope,sampled.toISOString());
+        const raw=await boundedObservation(held??this.#source,scope,sampled.toISOString());
         return requireObservation(raw,scope,(await clock(db)).getTime());
       };
       const first=await observe(),obs=first.checks;
@@ -178,15 +220,7 @@ export class NormalInitialExecution {
         ||intent.mode==='CONTEXT_REVIEW'&&intent.sourceScopes.some(s=>s.targets.some(t=>t.access!=='READ')))return reject();
       const checkUnderstanding=async(value:ReturnType<typeof requireObservation>)=>{if(intent.mode==='WORK')await readNormalWorkStartBasis(db,actor,request,basis.understandingBasis,value.understandingReviewRef);};
       await checkUnderstanding(first);
-      const readRegistration=async()=>{
-        const reg=await this.#readers.registrations.read(db,actor,pid,first.registrationRef.id);
-        if(!same(reg.connectorRef,basis.host.connectorRef)||!same(reg.registrationRef,first.registrationRef)||!reg.basis.current||reg.state!=='ISSUED'||reg.connectorState!=='TRUSTED'
-          ||reg.revokedAt!==null||reg.credential.status!=='ACTIVE_STATUS_ONLY'||!reg.credential.expiresAt||!isoV1(reg.credential.expiresAt)
-          ||!hashV1(reg.observedHostFingerprint)||reg.observedHostFingerprint!==reg.expectedHostFingerprint)return reject();
-        return {registration:{ref:reg.registrationRef,connectorId:reg.connectorRef.id,generation:reg.connectorRef.version,
-          hostPublicKeyFingerprint:reg.observedHostFingerprint},until:Math.min(Date.parse(reg.expiresAt),Date.parse(reg.credential.expiresAt))};
-      };
-      const reg=await readRegistration();
+      const reg=await readRegistration(first.registrationRef);
       const claim=readExecutionBudgetClaim({projectId:pid,executionId:p.executionId,executionGeneration:p.executionGeneration,
         commandId:request.commandId,assignmentRef:intent.assignmentRef,stageRef:first.stageRef,policyRef:p.budgetPolicyRef,operation:'START_SESSION',demand:first.demand});
       const budgets=new ProjectExecutionBudget(),{record:b}=await budgets.planReservation(db,actor,claim);
@@ -194,7 +228,7 @@ export class NormalInitialExecution {
       let priorAt=Date.parse(first.checkedAt);
       const inspect=async()=>{
         await checkTx();
-        if(!same(basis,await read())||!same(reg,await readRegistration()))return reject();
+        if(!same(basis,await read())||!same(reg,await readRegistration(first.registrationRef)))return reject();
         const current=await observe();
         if(!same(observationBinding(first),observationBinding(current))||Date.parse(current.checkedAt)<priorAt)return reject();
         await checkUnderstanding(current);
@@ -235,6 +269,7 @@ export class NormalInitialExecution {
           connectionRef:intent.connectionRef,environmentRef:intent.environmentRef,authorizationReceiptRef:receipt.authorizationReceiptRef,
           capabilityRef:intent.capabilityRef,budgetRef:b.ref,sourceScopes:intent.sourceScopes},operation:'START_SESSION',payload:p.payload};
       const envelope=readDispatchEnvelopeV1({...unsigned,envelopeHash:digest(unsigned)},at.getTime());
+      if(held)handoffEnvelopeHash=envelope.envelopeHash;
       const {id:cid}=receipt,eid=p.executionId,gen=p.executionGeneration;
       await db.query('INSERT INTO anvil.executions(project_id,id,generation,transport,state,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
         [pid,eid,gen,PRESENT,q.state,actor.actorId,actor.clientId,cid]);
@@ -285,7 +320,15 @@ export class NormalInitialExecution {
       const closingTime=(await clock(db)).getTime();
       requireObservation(final,scope,closingTime);
       if(Date.parse(final.expiresAt)<until||closingTime>=until)return reject();
+      if(held){held.beforeCommit();bodyCompleted=true;}
       return receipt.result;
-    });}catch(error){await recordProjectDenial(this.#access,token,pid,error);throw error;}
+    });
+      // authenticated는 정확 COMMIT tag를 확인한 경우에만 반환한다. 인계는 새 DB 거래가 아니다.
+      if(held){if(!this.#configuration())throw new AuthFailure('NORMAL_START_PREPARATION_OUTCOME_UNKNOWN',503);await held.committed(result,handoffEnvelopeHash!);}
+      return result;
+    }catch(error){
+      if(preparing){if(held){if(bodyCompleted)held.unknown();else await held.failedBody();}throw new AuthFailure('NORMAL_START_PREPARATION_OUTCOME_UNKNOWN',503);}
+      await recordProjectDenial(this.#access,token,pid,error);throw error;
+    }
   }
 }
