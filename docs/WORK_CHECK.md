@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 준비 발급·소진 후속 설계:** 서버 연결 `f29c454f` 이후 기존 별도 native 준비의 fullref·writer 예약·원 승인·전송 형상을 대조했다. 원 등록 인증과 저수준 factory를 재사용하고 사전 admission·단회 claim·새 queue 거래를 분리하는 방향을 후보 §8에 기록했다. 기존 stream의 새 목적 전달과 실제 지속 생산자는 미연결이다. PMO는 같은 권위 안의 코드·미적용 forward·합성 상세화를 11월 24일 승인 범위로 확인했다. 이번 정리는 문서만 변경했다.
+
 - **FN08 실행 전 준비 연결:** 명시 공급자를 지정한 READ 전용 CONTEXT_REVIEW에서 같은 요청의 원 준비 객체를 거래에 연결했다. 커밋 확인 뒤 단회 인계하고, 결과 불명과 같은 명령 재확인에는 재생성·재인계가 없다. 합성 검수와 실제 어댑터 공급은 별도다. 실제 PostgreSQL·Windows·Agent 여정은 남아 있다.
 
 - **FN09 원자료 START 장기 단위 검수:** 25초 추가 runner 한도에 걸렸던 네 그룹의 rollback·중복 소비·quota·replay를 기존 시험으로 16/16 확인했다(`f49719`). 실제 PostgreSQL 거래와 Agent 검수는 별도다.
@@ -22,7 +24,7 @@
 
 - **FN07의 남은 합성 PE 실패 해소:** `pe-library` 누락을 원인으로 확인하고 desktop lock의 해시가 맞는 의존성만 이 worktree에 복원했다. 원 제품·시험 그대로 PE 합성 9/9 통과(`49459f`). 실제 Windows 실행·C# 컴파일은 미검증이다.
 
-- **FN07 실행 전 검산:** 원 감독 프로세스에서 SDK 준비값·hook 지문을 대조하고 PRESPAWN 근거 부재 시 호출을 거절한다. Main 합성·정적 61/61, 작성자 타입, 독립 C0/I0/M0. 실제 SDK 호출·별도 worker·Windows 동작은 미완료 또는 미검증이다. FN08의 목적 한정 물리 준비 권위 결정은 대기 중이다.
+- **FN07 실행 전 검산:** 원 감독 프로세스에서 SDK 준비값·hook 지문을 대조하고 PRESPAWN 근거 부재 시 호출을 거절한다. Main 합성·정적 61/61, 작성자 타입, 독립 C0/I0/M0. 실제 SDK 호출·별도 worker·Windows 동작은 미완료 또는 미검증이다. 이후 승인된 FN08 서버 연결과 실제 SDK 실행기 연결 상태는 위 항목을 따른다.
 
 - **FN07 감독 인계:** 원 FIRST → 원 등록 host → 동일 helper supervisor → 원 Anvil broker의 단발 수령을 소스에 연결했다. Main 합성·정적 57/57, 작성자 타입, 독립 C0/I0/M0. 실제 Windows 실행·재시작 후 단회 소비·PRESPAWN·SDK는 미검증 또는 미구현이다.
 

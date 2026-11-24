@@ -106,3 +106,74 @@
 | 원 객체의 별도 감독 인계 | 10초 순서가 성립하지 않을 때만 별도 결정 후보가 된다. 원 객체와 원 handle을 같은 시도에서 한 번 인계하고, 독립 감독자의 확인·회수 책임과 좁은 목적 및 절대 기한을 고정해야 한다. 새 수치와 허용 보유 범위는 미정이다. 인계·종결 불명은 원 기록과 소유 상태를 보존하고 재인계·재생성·PID 재개방·자동 삭제를 하지 않는다. |
 
 두 방향 모두 기존 관측 의미와 queue/permit의 거절 조건을 보존한다. PMO는 최초 준비 worker의 별도 감독 권위가 이미 채택됐다는 근거를 확인하지 못했다. 현재 단계의 판단은 순서와 검증 근거를 정하는 데 한정한다. 새 endpoint·SQL·권한 또는 실행의 채택 질문은 원 물리 보유 근거와 적정 수명, 별도 writer/source 생산자의 접점을 고정한 뒤에만 발행한다.
+
+## 8. 동일 normal START 요청의 준비 발급·소진·인계 상세화 — 2026-11-24
+
+**상태와 범위.** 기준 소스는 `f29c454f`다. 신산님의 같은 요청에 한정한 준비 생성·짧은 보유·인계 승인과 후속 PMO 확인에 따라, 같은 root/등록 peer/actor/정책/credential 안의 내부 source·미적용 forward·합성으로 상세화할 수 있는 범위다. 이 절의 정확 private frame·원장·조립 형상은 아직 구현·검산·적용되지 않은 설계 후보이며, 전체 §3의 공개 요청·서명·관측 계약이나 실제 OS 실행을 채택했다는 뜻이 아니다. 새 사용자 행동·공개 API, 계정/역할·root/키·ACL, quota 면제, TTL 연장은 이 내부 상세화로 발급하지 않는다. 본 절 작성 중 제품·시험·SQL·Git 변경과 실제 DB/프로세스/키/서비스/Agent 실행은 없다.
+
+### 8.1. 현재 소스가 증명하는 것과 그대로 사용할 수 없는 것
+
+| 실제 근거 | 재사용 경계 |
+|---|---|
+| `project-native-preparations.ts:129–138`, `native-preparation-store.ts:22` | 기존 `preparationRef`는 저장된 실행 준비/Options가 아니라 `NATIVE_BOUNDARY_PREPARATION_INTENT`의 `intentId`와 그 snapshot hash다. native scope의 실행 ID도 별도 할당된다. 기존 native ref를 normal 실행준비 ref나 normal 실행 ID로 바꾸지 않는다. |
+| `project-native-preparations.ts:168–174`, `native-preparation-client.ts:25–30` | 기존 `requestHash`는 native consume proof hash다. normal queue 명령의 canonical request hash와 다르다. 원 native authority/consume receipt/event/permit/localAttempt ref와 각각의 hash를 별개 필드로 유지한다. |
+| `project-native-preparations.ts:132–137`, `native-preparation-current-source.ts::#root`, `NativePreparationRetainedFactorySource.cs::Authority` | native command는 EMPTY_AT/RECLAIMED_AT에서 자기 writer head를 RESERVED로 바꾸고, 현재 factory context도 그 exact RESERVED 계보를 요구한다. 이를 먼저 실행해 normal queue의 writer NONE을 깨는 안은 제외한다. normal writer_claims 부재와 원 native writer head를 이름이나 상태 문자열로 동일시하지 않는다. |
+| `native-first-receive-service.ts::NativeFirstReceiveBroker.attachStream/supplyDelivery`, `native-first-receive-client.ts`, `trust-enrollment-owner.cjs::receiveStream` | 기존 OPEN/STREAM의 등록·원 peer 인증은 normal grant 이전에도 구성할 수 있다. 그러나 현 stream은 exact native delivery metadata와 43-byte native credential, ARM/commandHash/ACK에만 결박된다. general frame hook이 없으며 임의 normal 요청을 끼워 넣을 수 없다. TLS/profile 검산·소유 stream·유계 frame·ACK·버퍼 소거의 원리는 재사용할 수 있지만 새 private 목적의 실제 생산/수신 연결은 없다. |
+| `native-preparation-factory-consumer.ts::consumeNativeFactoryCallContext`, `NativePreparationRetainedFactorySource.cs::Create` | 비직렬화 단회 ticket, 원 peer/설치 image·Job·startup·원 process 보유·회수 primitive는 재사용 후보다. 현재 exact native authority/consume context를 normal 객체로 가공하거나 기존 BOOTSTRAP signer를 새 목적에 호출하는 것은 재사용이 아니다. 별도 목적 분기에서 원 입력을 검산해야 한다. |
+| `native-preparation-protected-journal.ts`, `NativePreparationJournalSource.cs`, `NativePreparationJournalKernel.cs` | 기존 journal은 native authority/준비/writer ref를 exact 검산하며 row/existence marker와 sync/readback을 사용한다. 다만 Windows kernel의 `RequireDurabilitySupport()`가 `NATIVE_JOURNAL_DURABILITY_UNSUPPORTED`를 무조건 던지고 `Acquire`/`OpenNamespace` 모두 이를 요구한다. 따라서 현 실제 공급자를 지속 단회성 근거로 사용할 수 없다. RAM append 성공이나 DPAPI ciphertext 존재로 이 차단을 해제하지 않는다. |
+| `normal-initial-execution.ts:143–206/323–327`, `normal-start-preparation.ts` | 현재 명시 port는 한 원 시도에 한정해 인증 거래 안에서 생성→같은 객체의 세 번 이상 관측→확정 queue COMMIT 후 exact command/grant/envelopeHash 인계를 연결한다. 프로세스 내부 소진일 뿐이며 앱 전체 다중 시도나 재시작 소진 생산자는 아니다. 원 receipt와 공개 DTO는 객체 운반 경로가 아니다. |
+
+### 8.2. 새 내부 association과 목적의 최소 형상
+
+후속 source는 원 사용자 START 요청의 strict 본문을 바꾸지 않고 서버에서만 준비 association을 발급한다. 이름은 후보이며 공용 runtime intent나 원 native authority의 뜻을 변경하지 않는다.
+
+- **normal 원 요청:** installation/project, canonical START commandId/requestHash, 실행 ID·세대, 저장된 실행준비 fullref와 contextBundleRef, 정확 sourceScopes/hash, mode=CONTEXT_REVIEW와 전체 READ, 원 HUMAN actor/client/session·credential/control 세대, connector/registration fullref·키 지문, 기존 정책 fullrefs와 그 유효기한을 결박한다. grant/permit/queue receipt는 이때 아직 없으므로 선행 authority에 넣지 않는다.
+- **발급·소진:** 서버 생성 admissionRef/attemptRef, 원 등록의 private receive owner/slot identity, 발급 시각·절대 만료, 목적 discriminator와 frame/hash를 결박한다. 등록된 normal 실행 slot은 queue 뒤 발급되므로 선행값으로 만들지 않는다. 기존 registration attempt/receive-session slot과 나중 normal 실행 slot을 구분하고, 후자는 확정 queue 인계에서만 결합한다.
+- **native 원 계보:** 기존 authority/intent/consume receipt/event/permit/localAttempt refs가 실제로 있다면 그 원 뜻 그대로만 기록한다. 새 normal producer는 기존 RESERVED native authority 발급을 선행으로 요구하지 않으므로 그런 refs가 원천에 없으면 필수인 것처럼 지어내거나 normal ref를 대입하지 않는다. 새 목적의 발급/claim/원 객체 receipt를 별도로 검산하고 같은 저수준 factory의 원 peer·설치/이미지·객체 보유 근거를 연결한다.
+- **현재 읽기와 후행 인계:** 각 읽기에는 admissionRef/attemptRef와 같은 normal 요청, 그때의 queue transactionId·observedAt를 결박한다. admission 거래 xid와 queue 거래 xid는 서로 다르며 동치로 만들지 않는다. 물리 생성 때 아직 없는 queue xid는 서명되었다고 주장하지 않는다. queue 안의 새 private association 검산이 그 xid를 원 객체와 결합하며 원 producer는 source/writer/osFence의 독립 증거를 계속 공급해야 한다.
+- **정착 인계:** 기존 `NormalStartPreparationCommit`의 exact preparation 입력, 저장된 queue commandRef/grantRef/envelopeHash와 원 객체 identity를 검산한다. 공개 queue receipt에 새 임의 객체·PID·주소를 추가하지 않는다. 이 metadata는 실행/쓰기/SID/SDK lease 권한이 아니다.
+
+### 8.3. 잠금과 지속 소진을 보존하는 실제 호출 순서
+
+선택할 상세화 방향은 **짧은 사전 admission 거래 → 원 목적 claim·물리 준비 → 새 queue 거래**다. 현재 구현된 기능은 아니며 아래 단계를 실제 소비선까지 이어서 검증해야 한다.
+
+1. 기존 `NormalInitialExecution.command`의 strict 입력과 동일 현재 인증·HUMAN OWNER/제어·정책·원 승인/준비/등록·credential·READ 목적을 사용해 짧은 사전 admission 거래를 수행한다. exact 정착 queue replay이면 원 결과만 반환하고 준비 발급은 하지 않는다. 원 normal writer NONE과 필요한 원 current 근거를 확인하며, 독립 source/writer/osFence 증명까지 없는데 준비 단계만으로 queue 적합성을 발급하지 않는다. 원 저장명령이나 승인 소비를 이 단계에서 조기 정착시키지 않는다.
+2. **admission COMMIT과 원 PoolClient 회수 확인 뒤에만** 등록된 exact peer의 준비 전달을 시작한다. 소진/불명 보존행은 normal queue 거래와 독립적으로 정착해야 한다. 같은 원 commandId의 requestHash·실행 세대·실행준비·주체/등록을 유일 결박하고, 동일 ID의 변경 결박은 충돌이다. 임의 ref를 받는 범용 issuer나 다른 native 목적의 권한을 만들지 않는다.
+3. 준비 전용 claim 거래는 원 등록·HUMAN/제어/정책/credential/원 admission을 재검산하고 실제 factory에 도달하기 **전에** 원자 단회 claim을 정착한다. 확정 FIRST claim만 원 authenticated receiver/원 host에 한 번 전달한다. claim COMMIT 또는 전달 결과가 불명이면 성공 permit 재전송·새 attempt·새 객체 생성은 없다. 동일 packet의 명시 재확인은 원 기록만 반환하며 새로운 생성 capability는 0이다. 서버 기록만 받은 JSON을 native 원 권위로 올리지 않고 원 서버 인증 채널·원 receiver·host/peer의 출처를 검산해야 한다.
+4. 정확 목적의 원 host가 검산된 저수준 image/Job/startup/원 process를 한 번 만들고, 객체 identity와 원 요청·등록·기한을 묶은 immutable peer 준비 receipt를 확정한다. 이때도 normal/native writer를 확보하거나 자료 쓰기·Agent 실행을 수행하지 않는다. 준비 실패·회수 불명은 원 claim에 남기고 소진을 되돌리지 않는다. 실제 준비 receipt 정착/원 객체 생존이 확인되지 않으면 다음 단계는 없다.
+5. 이후 **새 normal queue 거래**에서 원 입력 hash·실행 세대·실행준비·주체/등록 및 새 인증·제어·정책/원 승인·기한과 association을 독립 재검산한다. 그 거래 xid에 같은 객체의 최초·저장 전·INSERT 뒤 관측을 결박하고 기존 source/writer NONE 등 모든 검사와 관측당 2초를 유지한다. 준비를 기다리는 동안 확보하지 않았던 권한을 과거 admission만으로 통과시키지 않는다.
+6. queue가 가진 auth/project/control 등 잠금 안의 `read`/회수 대기는 원 peer/원 객체만 읽는다. peer가 별도 HTTP/current/consume/등록/정산 DB 거래로 같은 잠금을 다시 요구하면 연결을 거절한다. 기존 `returnNativePreparationOwnership`의 registration.human/current, native host consume, ARM/STREAM phase source 재조회와 `supplyDelivery`를 그대로 이 대기 안에 넣지 않는다. queue 전에 필요한 source/protection과 durable claim을 끝내며, 기한·local peer current·원 객체 보호가 스스로 충분하지 않으면 성공을 만들지 않는다.
+7. queue 본문 실패는 원 객체를 원 기한 안에서 한 번 회수하고 확인/UNKNOWN을 구분한다. admission/claim 소진은 queue rollback과 함께 사라지지 않는다. 본문 완료 후 COMMIT 불명은 새 생성·새 DB 거절 기록·정상 인계가 없으며 원 소유자의 자기 만료와 UNKNOWN을 보존한다. `AccessRepository` 예외는 확정 rollback 증거가 아니다.
+8. 확정 queue COMMIT 뒤에만 같은 객체를 exact 저장 command/grant/envelopeHash와 한 번 인계한다. 원 keeper→반대편 실행기 owner의 ACK와 원 소유권 종료/이전이 불명이면 두 소유자의 경쟁 close·재인계·재생성은 없다. 확정 저장명령 재확인은 원 receipt만 반환한다. 원 물리 객체는 서버 재시작·PID 재열기로 복원하지 않는다.
+
+**비교 후 제외한 방향.** 기존 보호 peer journal을 생성 전 claim으로 쓰면 queue rollback과 분리할 수 있지만, 현재 kernel의 실제 durability 지원이 닫혀 있다. 이를 활성화된 원장으로 가정하지 않는다. queue 거래 안 소진 INSERT만 두는 안은 rollback 뒤 소진이 사라지므로 제외한다. queue 잠금을 유지한 채 별도 DB 역할·연결로 claim/current를 처리하는 안도 잠금 재진입/교착과 권한 우회 때문에 제외한다. 새 사전 admission 원장 역시 실제 forward 적용 전까지 RAM/정적 근거뿐이다.
+
+### 8.4. app·desktop·native 경계와 남아 있는 실제 carrier 공백
+
+서버의 현재 authenticated callback은 DB 거래를 보유하지만 desktop/native 객체를 소유하지 않는다. desktop의 등록 owner는 원 peer/키·설치/receiver를 보유하지만 사용자 명령 hash 사본만으로 서버 정책이나 준비 발급 권위를 만들 수 없다. 새 association이 이 둘을 잇되 일반 JSON·caller boolean·PID·임의 endpoint를 권위로 삼지 않는다.
+
+기존 인증된 OPEN/STREAM 연결을 저수준으로 재사용하는 것이 우선 후보다. 그러나 현 `NativeFirstReceiveBroker`/client decoder/desktop receiver는 native credential delivery만 허용한다. 따라서 **별도 normal 준비 private frame을 현재 연결이 실제 수용한다는 근거는 없고, 해당 frame의 원 서버 인증·목적 검산·단회 수신·원 host 소비 구현이 필요하다.** 기존 공개 HTTP DTO나 renderer/IPC에서 임의 frame을 넣는 방식은 제외한다. 새 public URL/nonce endpoint가 꼭 필요하다고 확인되면 그것은 이 내부안에 묵시 포함하지 않고 그 정확 delta만 별도로 보고한다. 기존 normal 실행 credential/slot은 후행이므로 이 carrier의 선행 인증에 쓰지 않는다.
+
+필요한 것은 새 내부 발급·원자 저장 형상과 private 전송/ACK 및 원 peer 결과의 검산이다. 같은 root/peer의 기존 등록 키·TLS profile·인증 세션을 재사용할 수 있다는 점과 기존 signer가 새 바이트를 이미 허용한다는 주장은 다르다. 현재 BOOTSTRAP/consume signer는 그대로 유지한다. 새로운 서명이 필요하면 정확 normal 준비 discriminator·원 요청·등록·claim·기한·객체 출처로 닫힌 바이트와 native 소비자를 함께 구현·검산한다. 임의 digest signer, 새 key/root/ACL/계정·역할은 필요하다고 입증되지 않았고 이 절에서 발급하지 않는다. durable 상태는 refs/hash/상태/시각만 보관하며 credential 원문·원문 자료·경로·SDK 입력을 관리 receipt에 남기지 않는다. 저장/원장 bytes는 기존 적용 가능한 한도·정산을 확인해야 하며 새 면제나 수치를 만들지 않는다.
+
+### 8.5. 첫 제품 단위의 정확 호출점·파일 후보와 완료선
+
+**첫 후속 단위는 사전 admission부터 등록 receiver의 목적별 소진·응답까지 이어지는 source/RAM 연결**이다. parser나 새 추상 port 한 개만 추가하고 준비 기능 완료로 표시하지 않는다. 다음은 Main이 실제 작성 범위를 고정할 때 사용할 파일 후보이며 이 절 자체는 제품 쓰기권이나 운영 설정을 켜지 않는다.
+
+| 경계 | 정확 파일·호출점 / 후속 소유 후보 |
+|---|---|
+| 사전 발급→기존 queue 재진입 | `apps/server/modules/executions/normal-initial-execution.ts::NormalInitialExecution.command`: 현재 authenticated queue callback 앞에 동일 요청의 별도 짧은 admission 단계를 배치하고, 새 callback의 protectedBasis/정책/등록/요청과 xid 재검산 뒤 기존 observe/저장 순서를 소비한다. 기존 `normal-start-preparation.ts`의 원 객체 read/COMMIT 인계·실패 의미를 재사용한다. |
+| 원장과 실제 issuer/claim 소비 | 신규 `apps/server/modules/executions/normal-start-preparation-admission.ts`, 신규 `db/migrations/0105_normal_start_preparation_admission.sql.pending` 후보(현 마지막 번호0104, 착수 때 중복 재확인). issuer/claim/readback은 실제 same-role PoolClient 거래에서 사용하고 원 queue rollback과 독립 소진한다. app 직접 접근 가능한 기존 권한·목적 RPC로 닫을 수 있는지 검산하고, 안 되면 정확 권한 delta를 보고한다. 기본 설정/새 공개 route는 열지 않는다. |
+| 폐쇄된 private frame | 신규 `contracts/runtime/normal-start-preparation-v1.ts` 후보에 distinct normal/native refs와 exact canonical 바이트를 고정한다. `apps/server/modules/executions/native-first-receive-service.ts`와 `apps/connector/runtime/native-first-receive-client.ts`의 원 stream 소유·bounded decode를 재사용하는 별도 목적 dispatch가 실제 등록 receiver까지 연결되는지 먼저 확인한다. 기존 delivery DTO/43-byte credential parser/ARM 의미를 바꾸거나 그 frame을 normal 값으로 해석하지 않는다. 새 일반 hook 대신 목적 한정 검산·ACK·취소만 둔다. |
+| 원 등록 receiver와 host | `apps/desktop/src/trust-enrollment-owner.cjs`의 원 등록 peer/current owner와 private receiver, `apps/desktop/src/trust-key-host-client.cjs`의 목적별 typed 호출, `apps/connector/native/DesktopTrustKeyHostSource.cs`의 별도 normal 준비 opcode 후보. 원 native authority/BOOTSTRAP OPEN을 alias하지 않고 새 목적 source→원 host 검산→저수준 factory의 실제 소비선을 닫는다. desktop에서 PID/image/argv를 공급하거나 Node가 준비 worker를 직접 만들지 않는다. |
+| 저수준 생산자/원 객체 | `apps/connector/native/NativePreparationRetainedFactorySource.cs`, `NativePreparationOwnershipReturnSource.cs`의 기존 의미는 보존한다. 목적을 분리한 신규 `apps/connector/native/NormalStartPreparationSource.cs` 후보가 기존 image/Job/startup/process primitive를 직접 소비하며 original keeper/read/close를 보유한다. 그 source가 실제 필요한 protected image/mapping/미재개·간섭배제 생산자를 못 얻으면 부분 준비/UNKNOWN 또는 효과 전 거절이며 성공 receipt0이다. 추가 build graph가 필수면 그 정확 경로를 쓰기 전에 보고한다. |
+
+첫 RED/RAM은 기존 `tests/unit/FN08/normal-initial-execution.test.ts`의 실제 command 거래와 `tests/desktop/normal-execution-credential-owner.test.cjs`의 원 등록 owner fixture를 연결하는 목적 case다. 신규 `tests/unit/FN08/normal-start-preparation-admission.test.ts` 후보에서 독립 durable 저장모델/claim 경쟁을 검증하고, `normal-start-preparation.test.ts`의 원 객체 수명/회수를 회귀한다. native는 실제 C# 실행 없이 exact source guard 정적 대조로 구분한다. 실제 carrier가 아직 없는데 임의 fixture가 위임한 `verified:true`나 factory permit을 주입해 종단 성공으로 계산하지 않는다.
+
+완료 기준은 동일 command/hash·실행 세대·준비·등록·주체의 admission 확정→원 단회 claim 정착→동일 receiver의 한 번 생성/원 객체 receipt→새 queue 거래 read 세 번 이상→확정 COMMIT 뒤 exact 인계 한 번이다. 다른 command/hash/ref/등록/세대/epoch, WORK/WRITE, 중복·교차 peer·만료·late/취소·claim 또는 queue COMMIT 불명·회수/인계 불명에서 생성/재생성/인계 허용 여부와 카운트를 각각 검증한다. queue rollback 뒤 claim 유지, 프로세스 재시작 뒤 consumed/UNKNOWN 무재생성, admission/queue xid 비동일·같은 요청 결박, queue 동안 DB callback0을 직접 단언한다. 새 grant/permit/SID/SDK/원문 쓰기0이며 기존 observe-only와 exact stored queue replay를 보존한다.
+
+### 8.6. 시간과 실제 미검증
+
+원 발급/admission에서 정한 **절대 기존 최대10초**와 auth/정책/등록/credential/원 host/물리 객체의 더 짧은 기한을 모두 누적 최솟값으로 유지한다. claim·queue 재진입·handoff·새 host에서 10초를 새로 시작하지 않는다. wall+monotonic을 읽기 전후와 효과 직전/ACK/회수·인계 반환 뒤 재검산하며 관측당 기존2초는 그대로다. 별도 감독의 장기 보유나 시간 연장은 이 안에 없다.
+
+현재 달성한 것은 불일치·잠금 순서·기본 차단과 내부 상세화 방향의 source 대조다. 별도 private frame의 원 인증 수용/실제 carrier, 미적용 admission/claim 원장의 거래·권한·동시성/재시작, 보호 image/OS 원 객체·외부 간섭 배제, 독립 source/writer current, 전체10초 내 종단 및 정상 실행기 인계는 미구현 또는 미검증이다. 실제 실행 승인을 기다린다는 이유로 내부 source 상세화를 미루지는 않지만, 이 미충족 사실을 JSON·RAM PASS나 오래된 receipt로 대체하지 않는다.
