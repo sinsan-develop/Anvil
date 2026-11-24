@@ -351,7 +351,9 @@ function harness(){
   async start(){calls.push('START');return containerId;},
   schema:{
    assertCurrent(){if(!current)throw Error('현재성 철회');},
-   async install(raw,row){calls.push('SQL:'+row.id);assert.deepEqual(Buffer.from(raw),data.sql[ledger.length]!.bytes);return 'SETTLED';},
+   async install(raw,row){calls.push('SQL:'+row.id);const source=data.sql[ledger.length]!.bytes;
+    const expected=row.id==='0076_native_first_receive'?Buffer.concat([source.subarray(0,384546),source.subarray(384554),source.subarray(384546,384554)]):source;
+    assert.deepEqual(Buffer.from(raw),expected);return 'SETTLED';},
    async appendLedger(row){calls.push('LEDGER:'+row.id);ledger.push({id:row.id,checksum:row.sha256});return 'SETTLED';},
    async readLedger(){calls.push('VERIFY_LEDGER');return ledger;},
   },

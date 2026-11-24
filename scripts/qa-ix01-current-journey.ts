@@ -6,7 +6,7 @@ import {performance} from 'node:perf_hooks';
 import {types} from 'node:util';
 import {canonicalJson,contentHash,parseWireJson} from '../contracts/canonical.ts';
 import {readCurrentSchemaManifest,verifyCurrentSchemaSources,type SchemaMigrationBaseline} from '../tests/integration/IX01/current-schema-baseline.ts';
-import {installCurrentSchema,type CurrentSchemaInstallationPorts,type CurrentSchemaInstallationResult} from '../tests/integration/IX01/current-schema-installation.ts';
+import {installCurrentSchema,verifyCurrentSchemaExecutionDelivery,type CurrentSchemaInstallationPorts,type CurrentSchemaInstallationResult} from '../tests/integration/IX01/current-schema-installation.ts';
 
 export const currentProfile=Object.freeze({
  source:'/home/daon/anvil-ix01-current-tc01-20261108-a14-qa',
@@ -737,6 +737,8 @@ function actualPorts(input:CurrentInput,auth:CurrentAuthorization):CurrentPorts{
   schema:{
    assertCurrent,
    async install(raw,row){
+    // fresh plan의 installer source와 원/실행 지문 쌍을 같은 stdin bytes에 결박한다.
+    verifyCurrentSchemaExecutionDelivery(raw,row);
     return runCurrentDdlInstall(()=>{sql(migrator,raw,30_000,row);installed.push(row.path);},legacy!);
    },
    async appendLedger(row){

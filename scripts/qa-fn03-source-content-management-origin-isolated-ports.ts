@@ -10,6 +10,7 @@ import {buildBuiltinMethodologies,builtinSourceHash} from '../apps/server/module
 import {seedBuiltinMethodologies} from '../apps/server/modules/methodologies/catalog-seed.ts';
 import {hashPassword} from '../apps/server/modules/access/service.ts';
 import {readManagementOriginSchemaManifest} from '../tests/integration/FN03/source-content-management-origin-schema.ts';
+import {currentSchemaExecutionBaseline,verifyCurrentSchemaExecutionDelivery} from '../tests/integration/IX01/current-schema-installation.ts';
 import {managementOriginInspectionSql} from '../tests/integration/FN03/source-content-management-origin-journey.ts';
 import {managementOriginProvisionInspectionSql} from './qa-fn03-source-content-management-origin.ts';
 import type {ManagementOriginAuthFixtureInput} from './qa-fn03-source-content-management-origin-auth-fixture.ts';
@@ -175,7 +176,8 @@ async function createIsolatedPorts(input:ManagementOriginIsolatedInput,providers
    else if(raw===expectedRevoke&&phase==='SECURED'){user=boot;next='REVOKED';}
    else if(raw===ledgerSql){check(phase==='BOOTSTRAPPED'&&appended===installed&&(installed===130&&ledgerReads===0||installed===132&&ledgerReads===1));next='LEDGER';}
    else if(typeof raw==='string'){check(phase==='BOOTSTRAPPED'&&installed===appended+1);const r=rows[appended]!;check(raw==="INSERT INTO anvil.schema_migrations(id,checksum) VALUES('"+r.id+"','"+r.sha256+"');");next='APPEND';}
-   else{check(phase==='BOOTSTRAPPED'&&installed===appended&&installed<132);const r=rows[installed]!;check(raw instanceof Uint8Array&&raw.length===r.bytes&&contentHash(raw)===r.sha256);path=r.path;sha=r.sha256;next='INSTALL';}
+   else{check(phase==='BOOTSTRAPPED'&&installed===appended&&installed<132);const r=rows[installed]!,execution=currentSchemaExecutionBaseline(r);
+    check(raw instanceof Uint8Array);verifyCurrentSchemaExecutionDelivery(raw,execution);path=r.path;sha=execution.sha256;next='INSTALL';}
    check(same(argv,legacy.buildPsqlArgs(cid,name,user,path,sha)));const result=sql(user,raw,ms,path,sha);
    if(next==='INSTALL')installed++;else if(next==='APPEND')appended++;else if(next==='LEDGER')ledgerReads++;
    else if(next==='ROLES_CHECKED'){const roles=roleEvidence(result,'SETTLED');expectedRevoke=currentRevokeSql(legacy,roles.memberships.map(r=>r.role),paths);phase=next;}

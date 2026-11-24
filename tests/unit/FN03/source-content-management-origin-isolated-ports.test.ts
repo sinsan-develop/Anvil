@@ -60,7 +60,9 @@ function harness(fault='',integrated=false){
     else if(args.includes('/var/lib/postgresql/data/pg_hba.conf'))out='local all all trust\nhost all all 0.0.0.0/0 scram-sha-256\nhost all all ::/0 reject\n';
     else if(args.includes('psql')){
      assert(args.includes('--dbname='+name)&&args.includes('--no-psqlrc')&&args.includes('--file=-'));const raw=call.input;
-     if(raw instanceof Uint8Array){const row=source.rows[count]!;assert.equal(raw.byteLength,row.bytes);assert.deepEqual(Buffer.from(raw),source.sql[count]!.bytes);assert.equal(args.includes('--single-transaction'),row.path.includes('/0037_'));if(fault==='ddl')throw Error('PRIVATE_DDL');count++;trace.push('DDL');}
+     if(raw instanceof Uint8Array){const row=source.rows[count]!,original=source.sql[count]!.bytes;
+      const expected=row.id==='0076_native_first_receive'?Buffer.concat([original.subarray(0,384546),original.subarray(384554),original.subarray(384546,384554)]):original;
+      assert.equal(raw.byteLength,row.bytes);assert.deepEqual(Buffer.from(raw),expected);assert.equal(args.includes('--single-transaction'),row.path.includes('/0037_'));if(fault==='ddl')throw Error('PRIVATE_DDL');count++;trace.push('DDL');}
      else if(typeof raw==='string'&&raw.startsWith('INSERT INTO anvil.schema_migrations')){const r=source.rows[ledger.length]!;ledger.push({id:r.id,checksum:r.sha256});}
      else if(typeof raw==='string'&&raw.startsWith('SELECT COALESCE'))out=JSON.stringify(ledger);
      else if(typeof raw==='string'&&raw.includes("'sessionUser'"))out=roles();

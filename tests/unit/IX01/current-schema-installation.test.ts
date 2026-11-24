@@ -3,7 +3,7 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {test} from 'node:test';
 import {fileURLToPath} from 'node:url';
-import {installCurrentSchema,type CurrentSchemaInstallationPorts} from '../../integration/IX01/current-schema-installation.ts';
+import {installCurrentSchema,currentSchemaExecutionBaseline,verifyCurrentSchemaExecutionDelivery,type CurrentSchemaInstallationPorts} from '../../integration/IX01/current-schema-installation.ts';
 
 const root=fileURLToPath(new URL('../../../',import.meta.url));
 const suffix=[
@@ -44,8 +44,10 @@ function harness(){
     async install(raw,row){
       trace.push('SQL:'+row.id);
       const expected=files[ledger.length]!;
-      assert.deepEqual(row,{id:expected.id,path:expected.path,sha256:hash(expected.bytes),bytes:expected.bytes.length});
-      assert.deepEqual(Buffer.from(raw),expected.bytes);
+      assert.deepEqual(row,currentSchemaExecutionBaseline({id:expected.id,path:expected.path,sha256:hash(expected.bytes),bytes:expected.bytes.length}));
+      const original=Buffer.from(expected.bytes),execution=expected.id===suffix[1]?Buffer.concat([original.subarray(0,384546),original.subarray(384554),original.subarray(384546,384554)]):original;
+      assert.deepEqual(Buffer.from(raw),execution);
+      assert.equal(verifyCurrentSchemaExecutionDelivery(raw,row),true);
       return 'SETTLED';
     },
     async appendLedger(row){trace.push('LEDGER:'+row.id);ledger.push({id:row.id,checksum:row.sha256});return 'SETTLED';},
@@ -53,9 +55,45 @@ function harness(){
   };
   return {tsv,files,trace,ledger,ports,checks:()=>checks};
 }
-const settled=(id:string)=>({id,sql:'SETTLED',ledger:'SETTLED'});
+const sourceHash='a8dc4ccdf2a603888dfb993f22712cf74677db59104fc59be80e0442c6ba1ba9',executionHash='f69ccce4ed9e87f8a70735201280842fe2d9a39decd5ca584dc3111c2522ceb6';
+const executionEvidence=(id:string)=>id===suffix[1]?{sourceSha256:sourceHash,executionSha256:executionHash}:{};
+const settled=(id:string)=>({id,sql:'SETTLED',ledger:'SETTLED',...executionEvidence(id)});
 
-test('IX01 원시 SQL 130개와 마지막 바이트를 원 순서로 전달하고 최종 원장만 수락한다',async()=>{
+test('IX01 0076 실행은 원 source 지문과 구분하고 exact 중간 COMMIT 8B만 끝으로 이동한다',async()=>{
+ const h=harness(),source=h.files.find(row=>row.id===suffix[1])!,original=Buffer.from(source.bytes);
+ const row={id:source.id,path:source.path,bytes:original.length,sha256:hash(original)};
+ assert.equal(original.length,529020);assert.equal(row.sha256,'a8dc4ccdf2a603888dfb993f22712cf74677db59104fc59be80e0442c6ba1ba9');
+ assert.equal(original.subarray(384546,384554).toString('ascii'),'COMMIT;\n');
+ const expected=Buffer.concat([original.subarray(0,384546),original.subarray(384554),original.subarray(384546,384554)]);
+ const execution=currentSchemaExecutionBaseline(row);
+ assert.equal(execution.sha256,'f69ccce4ed9e87f8a70735201280842fe2d9a39decd5ca584dc3111c2522ceb6');
+ assert.equal(execution.sourceSha256,row.sha256);assert.equal(execution.sourceBytes,row.bytes);
+ assert.equal(verifyCurrentSchemaExecutionDelivery(expected,execution),true);
+ assert.throws(()=>verifyCurrentSchemaExecutionDelivery(original,execution));
+ assert.throws(()=>verifyCurrentSchemaExecutionDelivery(expected,{...execution,sourceSha256:'0'.repeat(64)}));
+ assert.throws(()=>verifyCurrentSchemaExecutionDelivery(expected,{...execution,sha256:row.sha256}));
+ assert.throws(()=>verifyCurrentSchemaExecutionDelivery(expected,{...execution,transformation:'UNCHANGED'} as any));
+ const corrupted=Buffer.from(expected);corrupted[corrupted.length-1]=corrupted[corrupted.length-1]!^1;
+ assert.throws(()=>verifyCurrentSchemaExecutionDelivery(corrupted,execution));
+ assert.throws(()=>verifyCurrentSchemaExecutionDelivery(expected.subarray(0,-1),execution));
+ assert.throws(()=>currentSchemaExecutionBaseline({...row,sha256:execution.sha256}));
+ assert.throws(()=>currentSchemaExecutionBaseline({...row,bytes:row.bytes+1}));
+ let observed=false;const install=h.ports.install;
+ h.ports.install=async function(raw,delivered){
+  if(delivered.id!==source.id)return install.call(this,raw,delivered);
+  observed=true;assert.deepEqual(Buffer.from(raw),expected);assert.deepEqual(delivered,execution);
+  h.trace.push('SQL:'+delivered.id);return 'SETTLED';
+ };
+ const result=await installCurrentSchema(h.tsv,h.files,h.ports);assert.equal(result.status,'VERIFIED');assert(observed);
+ assert.equal(h.ledger.find(item=>item.id===source.id)!.checksum,row.sha256);
+ assert.deepEqual(Buffer.from(source.bytes),original,'보관 source bytes는 변하지 않는다');
+ const progress=result.progress.find(item=>item.id===source.id)!;
+ assert.equal(progress.sourceSha256,row.sha256);assert.equal(progress.executionSha256,execution.sha256);
+ assert.match(expected.toString('utf8'),/COMMIT;\n$/);
+ assert.equal(expected.toString('utf8').match(/^COMMIT;$/gm)?.length,1);
+});
+
+test('IX01 원 SQL 130개를 검산하고 129개 불변·0076 원자화 실행과 역사 원장을 구분한다',async()=>{
   const h=harness();
   const result=await installCurrentSchema(h.tsv,h.files,h.ports);
   assert.deepEqual(result,{status:'VERIFIED',progress:h.files.map(row=>settled(row.id))});
@@ -76,17 +114,37 @@ test('IX01 0076 끝의 바이트가 달라지면 첫 설치나 원장 효과도 
   assert.equal(h.checks(),0);
 });
 
-test('IX01 0076 전체 전달 후 명시 거절이면 해당 원장과 후속 읽기·설치가 없다',async()=>{
+test('IX01 0076 후행 DDL 거절·불명 합성은 해당 원장과 후속 효과0이며 실제 rollback 증거가 아니다',async()=>{
+ for(const failure of ['DDL_REJECTED','UNKNOWN','THROW'] as const){
   const h=harness(),install=h.ports.install;
   h.ports.install=async function(raw,row){
     await install.call(this,raw,row);
-    return row.id===suffix[1]?'DDL_REJECTED':'SETTLED';
+    if(row.id!==suffix[1])return 'SETTLED';
+    const text=Buffer.from(raw).toString('utf8');
+    assert.match(text,/COMMIT;\n$/);assert.equal(text.match(/^COMMIT;$/gm)?.length,1);
+    assert(text.includes('native_receive_phase_bound_material'),'원 중간 COMMIT 뒤의 함수/ACL도 같은 전달 bytes에 남는다');
+    if(failure==='THROW')throw Error('합성 후행 DDL 실패; 실제 PG를 호출하지 않았다');
+    return failure;
   };
-  const result=await installCurrentSchema(h.tsv,h.files,h.ports);
+  const result=await installCurrentSchema(h.tsv,h.files,h.ports),rejected=failure==='DDL_REJECTED';
   const earlier=h.files.slice(0,106);
-  assert.deepEqual(result,{status:'STOPPED',reason:'DDL_REJECTED',
-    progress:[...earlier.map(row=>settled(row.id)),{id:suffix[1],sql:'REJECTED',ledger:'NOT_STARTED'}]});
+  assert.deepEqual(result,{status:'STOPPED',reason:rejected?'DDL_REJECTED':'INSTALL_UNKNOWN',
+    progress:[...earlier.map(row=>settled(row.id)),{id:suffix[1],sql:rejected?'REJECTED':'UNKNOWN',ledger:'NOT_STARTED',...executionEvidence(suffix[1]!)}]});
   assert.deepEqual(h.trace,[...earlier.flatMap(row=>['SQL:'+row.id,'LEDGER:'+row.id]),'SQL:'+suffix[1]]);
+  assert.equal(h.ledger.some(row=>row.id===suffix[1]),false);
+  assert.equal(Object.hasOwn(result,'rollbackConfirmed'),false);
+ }
+});
+
+test('IX01 0076 source 길이·원 COMMIT·이미 변환된 bytes의 교차는 어떤 설치/원장 호출보다 먼저 거절한다',async()=>{
+ const base=harness(),index=base.files.findIndex(row=>row.id===suffix[1]),original=Buffer.from(base.files[index]!.bytes);
+ const changed=Buffer.from(original);changed[384546]=0x58;
+ const normalized=Buffer.concat([original.subarray(0,384546),original.subarray(384554),original.subarray(384546,384554)]);
+ for(const bytes of [original.subarray(0,-1),Buffer.concat([original,Buffer.from('\n')]),changed,normalized]){
+  const h=harness(),files=[...h.files];files[index]={...files[index]!,bytes};
+  await assert.rejects(installCurrentSchema(h.tsv,files,h.ports),{message:'IX01_CURRENT_SQL_BASELINE_INVALID'});
+  assert.deepEqual(h.trace,[]);assert.equal(h.checks(),0);
+ }
 });
 
 test('IX01 0078 설치 불명과 원장 반영 불명을 서로 구분하고 재시도하지 않는다',async()=>{
