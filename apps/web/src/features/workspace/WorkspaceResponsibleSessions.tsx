@@ -180,7 +180,14 @@ export function WorkspaceResponsibleSessions({onWorkReviewScope,normalInitialRev
       {buffer.pending&&buffer.failure&&!buffer.uncertain&&!buffer.responsibleApproval&&buffer.failure.code!=='APPROVAL_REQUIRED'&&buffer.pending.approvalRef===null?<button disabled={busy} onClick={()=>{if(confirm('명시 거절을 확인했습니다. 원 입력을 보존하며 명령만 해제할까요?'))update(b=>({...b,pending:null,failure:null}));}}>거절 확인 후 입력 수정</button>:null}
       </>:null}
       {nextCursor?<button disabled={busy} onClick={()=>run(()=>load(nextCursor))}>다음 연결 후보 조회</button>:null}
-      <h6>저장된 실행 준비</h6>{state.preparations.length?<ol>{state.preparations.map(p=><li key={p.ref.id}>준비 {p.ref.id} · NOT_AUTHORIZED · {p.snapshot.checkedAt}<ul>{p.snapshot.missingConditions.map((code:string)=><li key={code}>{code}</li>)}</ul></li>)}</ol>:<p>저장된 준비 없음</p>}
+      <h6>저장된 실행 준비</h6>
+      {state.preparations.length?<ol>{state.preparations.map(p=><li key={p.ref.id}>
+        준비 {p.snapshot.intent.mode==='WORK'?<code>{ordered(p.ref)}</code>:p.ref.id} · NOT_AUTHORIZED · {p.snapshot.checkedAt}
+        {p.snapshot.intent.mode==='WORK'?(p.snapshot.understandingBasis?
+          <p>정착 이해 판단 <code>{ordered(p.snapshot.understandingBasis.reviewRef)}</code> · 원 실행 {p.snapshot.understandingBasis.scope.executionId} · 세대 {p.snapshot.understandingBasis.scope.executionGeneration}</p>:
+          <p>정착 이해 근거 없음 · legacy 준비</p>):null}
+        <ul>{p.snapshot.missingConditions.map((code:string)=><li key={code}>{code}</li>)}</ul>
+      </li>)}</ol>:<p>저장된 준비 없음</p>}
       {state.hasMorePreparations?<p>최신20건 표시 · 이전 준비가 더 있습니다.</p>:null}
       <p>새 실행 준비 저장은 유효한 예산·능력 참조 연결이 필요합니다. 미구현 참조를 가짜 값으로 대체하지 않습니다.</p>
     </>:<p>역할·예약·준비 원문은 아직 조회 확인되지 않았습니다.</p>}

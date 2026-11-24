@@ -34,13 +34,21 @@ before(async()=>{
 after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[key,value]of saved)if(value)Object.defineProperty(globalThis,key,value);else Reflect.deleteProperty(globalThis,key);assert.equal(document.body.childNodes.length,0,'소유 container 회수');});
 const id=(n:number)=>`ab090101-0000-4000-8000-${String(n).padStart(12,'0')}`,pid=id(1),uid=id(2),cid=id(3),at='2026-11-01T00:00:00.000Z';
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)}),session={user:{id:uid},clientId:cid,csrfToken:'c'.repeat(43)};
-const confirmed:any={projectId:pid,ref:ref(4),snapshot:{definition:{taskRef:{applicationRef:ref(5),nodeId:'준비'},allowedScopes:[],parentAssignmentRef:null},contentConfirmed:true,executionAuthorized:false,dispatchPerformed:false}};
+const sourceScope={sourceRootRef:ref(50),mappingRef:null,observationRef:ref(51),baselineRef:ref(52),targets:[{relativePath:'src/work.ts',kind:'FILE',access:'WRITE',recursive:false}]};
+const confirmed:any={projectId:pid,ref:ref(4),snapshot:{definition:{taskRef:{applicationRef:ref(5),nodeId:'준비'},allowedScopes:[sourceScope],parentAssignmentRef:null},contentConfirmed:true,executionAuthorized:false,dispatchPerformed:false}};
 const roleSnapshot={kind:'COORDINATOR',stageRef:null,parentRoleRef:null,reason:'총괄 역할 원형',definedBy:{kind:'HUMAN',userId:uid},definedAt:at},coordinator={projectId:pid,ref:{...ref(6),contentHash:hash(roleSnapshot)},snapshot:roleSnapshot};
 const input={kind:'CONNECTION_CANDIDATE',candidate:{label:'합성 연결 후보'},candidateRef:null,policyRef:ref(7),expiresAt:'2027-01-01T00:00:00.000Z',reason:'후보 관측만'};
 const candidate={kind:'CONNECTION_CANDIDATE',input,readiness:{state:'NOT_READY',executionAuthorized:false,missingRequirements:[{field:'toolProduct',reason:'NOT_PROVIDED'}]},capabilities:['INSTRUCTION_SESSION','STATE_ORIGINAL','RESULT_EVIDENCE','TOOL_APPROVAL','STOP_RECLAIM','PATH_WRITE_CONTROL'].map(code=>({code,documentation:null,measurement:{state:'UNVERIFIED',toolVersion:null,environmentRef:null,executionRef:null,evidenceRefs:[]},controlLevel:'UNVERIFIED',limitations:['NO_AGENT_MEASUREMENT','NOT_EXECUTABLE_CANDIDATE']}))};
 const connectionRef={...ref(8),contentHash:hash(candidate)};
 const initialState={projectId:pid,assignmentRef:confirmed.ref,roles:[coordinator],bindings:[],preparations:[],hasMorePreparations:false,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};
 const definition={id:id(40),version:1,status:'NOT_READY',label:'보관 등록 정의',toolProduct:'Claude',toolVersion:'2.1.224',adapterKind:'SDK_OBJECT',connectorId:null,accountRef:null,modelOptions:{model:'auto'},environmentRef:null,policyRef:ref(7),capabilityReportRef:null},definitionRef={id:id(40),version:1,contentHash:hash(definition)};
+function workPreparation(linked=true){
+ const intent={projectId:pid,assignmentRef:confirmed.ref,roleBindingRef:ref(60),contextBundleRef:ref(61),connectionRef:ref(62),environmentRef:ref(63),capabilityRef:ref(64),budgetPolicyRef:ref(65),sourceScopes:[sourceScope],mode:'WORK',reason:'화면에 노출되면 안 되는 상세 준비 이유',connectionKind:'REGISTERED_DEFINITION',optionsFormat:'CLAUDE_QUERY_DATA_V1'},basisRefs=[ref(66)],body=canonicalJson({claudeQueryParams:{model:'private-model'}});
+ const understandingBasis={kind:'NORMAL_UNDERSTANDING_WORK_BASIS',scope:{projectId:pid,executionId:id(67),executionGeneration:3},reviewRef:ref(68),preparationRef:ref(69),assignmentRef:intent.assignmentRef,roleBindingRef:intent.roleBindingRef,agentSessionRef:ref(70),contextBundleRef:intent.contextBundleRef,connectionRef:intent.connectionRef,environmentRef:intent.environmentRef,responseRef:ref(71),requestRef:ref(72),basisRefs,latestInstructionRefs:[]};
+ const snapshot={intent,basisRefs,latestInstructionRefs:[],checkedAt:at,missingConditions:['RESPONSIBLE_SESSION_RESERVED','CONNECTION_DEFINITION_ONLY','ENVIRONMENT_DEFINITION_ONLY','CAPABILITY_UNVERIFIED','BUDGET_POLICY_UNVERIFIED','SOURCE_AUTHORIZATION_UNVERIFIED','HOST_OS_FENCE_UNVERIFIED','UNDERSTANDING_NOT_REVIEWED'],authorizationState:'NOT_AUTHORIZED',preparedBy:{kind:'HUMAN',userId:uid},executionAuthorized:false,dispatchPerformed:false,options:{format:'CLAUDE_QUERY_DATA_V1',mediaType:'application/json',body,utf8Bytes:Buffer.byteLength(body),contentHash:contentHash(body)},...(linked?{understandingBasis}:{})};
+ return{projectId:pid,ref:{...ref(linked?73:74),contentHash:hash(snapshot)},snapshot,currentness:'NOT_RECHECKED'};
+}
+function contextPreparation(){const preparation=workPreparation(false);preparation.snapshot.intent.mode='CONTEXT_REVIEW';preparation.ref.contentHash=hash(preparation.snapshot);return preparation;}
 function all(n:MemoryNode):MemoryNode[]{return[n,...n.childNodes.flatMap(all)];}
 async function settle(){await ui.React.act(async()=>{await new Promise<void>(r=>setImmediate(r));});}
 async function wait(check:()=>boolean){const end=Date.now()+2500;while(!check()&&Date.now()<end)await settle();assert.ok(check(),'실제 UI 비동기 조건 도달');}
@@ -82,6 +90,28 @@ test('기존 후보 UI 정상원형은 실제 역할/후보 조회→명시 예�
 
 test('실제 확정임무 역할/후보 조회 뒤 등록 정의 fullref 보호선택 진입이 제공된다',async()=>{
  const f=await fixture();try{assert.equal(f.calls.length,0);await click(f.button('현재 역할·예약·준비 이력 조회'));await wait(()=>f.container.textContent.includes('현재성 별도 재검사 필요'));assert(f.calls.some(c=>c.path.includes('/execution-preparation-state')));assert(f.calls.some(c=>c.path.includes('/connection-candidates?')));const role=all(f.container).find(n=>n.tagName==='SELECT'&&n.getAttribute('aria-label')==='예약 대상 역할');assert(role);await change(role,'COORDINATOR');assert.equal(f.posts.length,0);const inputs=all(f.container).filter(n=>n.tagName==='INPUT'&&n.getAttribute('aria-label')==='예약 등록 정의 ID');assert.equal(inputs.length,1,'후보 선택과 구분되는 기존 보호 정의 fullref 조회 진입');assert.equal(f.posts.length,0);
+ }finally{await f.close();}
+});
+
+test('저장된 WORK 준비는 정확 준비·검토 ref와 원 실행 세대만 표시하고 원 상세를 노출하지 않는다',async()=>{
+ const preparation=workPreparation(),f=await fixture({state:{...initialState,preparations:[preparation]}});try{
+  await click(f.button('현재 역할·예약·준비 이력 조회'));await wait(()=>f.container.textContent.includes(preparation.ref.id));
+  const basis=preparation.snapshot.understandingBasis;assert(basis);const text=f.container.textContent;assert(text.includes(preparation.ref.id));assert(text.includes(preparation.ref.contentHash));assert(text.includes(basis.reviewRef.id));assert(text.includes(basis.scope.executionId));assert(text.includes('세대 3'));
+  assert(!text.includes(preparation.snapshot.intent.reason));assert(!text.includes('private-model'));assert.equal(f.posts.length,0);
+ }finally{await f.close();}
+});
+
+test('이해 basis가 없는 legacy WORK 준비는 결박 없음으로 표시하고 검토 ref를 만들지 않는다',async()=>{
+ const preparation=workPreparation(false),f=await fixture({state:{...initialState,preparations:[preparation]}});try{
+  await click(f.button('현재 역할·예약·준비 이력 조회'));await wait(()=>f.container.textContent.includes(preparation.ref.id));
+  const text=f.container.textContent;assert(text.includes('정착 이해 근거 없음 · legacy 준비'));assert(text.includes(preparation.ref.contentHash));assert(!text.includes(id(68)));assert.equal(f.posts.length,0);
+ }finally{await f.close();}
+});
+
+test('기존 CONTEXT_REVIEW 준비는 원래 ID 표시를 유지하고 WORK full ref 형식으로 넓히지 않는다',async()=>{
+ const preparation=contextPreparation(),f=await fixture({state:{...initialState,preparations:[preparation]}});try{
+  await click(f.button('현재 역할·예약·준비 이력 조회'));await wait(()=>f.container.textContent.includes(preparation.ref.id));
+  const text=f.container.textContent;assert(!text.includes(preparation.ref.contentHash));assert(!text.includes('정착 이해 근거 없음'));assert.equal(f.posts.length,0);
  }finally{await f.close();}
 });
 
