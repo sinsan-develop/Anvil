@@ -70,8 +70,35 @@ test('native source 정적: 관리 설치는 legacy exact2와 분리해 원 requ
  assert.match(legacy,/Exact\(value,"attemptId,request"\)/);assert.match(legacy,/workerDeployment\.Install\(request\)/);
  const managed=host.slice(host.indexOf('if(operation=="INSTALL_WORKER_MANAGEMENT_V1")'),host.indexOf('if(operation=="READ_WORKER_INSTALLATION_SETTLEMENT_V1")'));
  assert.match(managed,/Exact\(value,"attemptId,installRequestId,selection,request"\)/);assert.match(managed,/NATIVE_WORKER_INSTALLATION_MANAGEMENT_SELECTION_V1/);assert.match(managed,/registrationRootIdentity.*root\.Identity/);assert.match(managed,/managementSelectionHash/);assert.match(managed,/workerDeployment\.InstallManagement/);
- const path=deployment.slice(deployment.indexOf('InstallManagement('),deployment.indexOf('ReadManagementSettlement('));assert.match(path,/store\.InstallManagement\(binding,factory\)/);assert.doesNotMatch(path,/Observe\(|ReadPackagedWorker/);
- const admission=store.slice(store.indexOf('ValidateManagementInstall('),store.indexOf('internal Dictionary<string,object> Install('));assert.match(admission,/managementSelectionHash/);assert.match(admission,/installRequestId/);assert.match(admission,/V\.Same\(selectedFactory,factory\)/);assert.ok(admission.indexOf('ValidateManagementInstall(binding,factory)')<admission.indexOf('io.RequireDurability()'));assert.match(admission,/NATIVE_WORKER_INSTALLATION_UNSUPPORTED/);
+ const path=deployment.slice(deployment.indexOf('InstallManagement('),deployment.indexOf('ReadManagementSettlement('));assert.match(path,/store\.ValidateManagementInstall\(binding,factory\)/);assert.match(path,/store\.InstallManagement\(bundle,V\.Map\(observed\.Value\["head"\]\),worker,DateTime\.UtcNow,binding,factory\)/);
+ const admission=store.slice(store.indexOf('ValidateManagementInstall('),store.indexOf('internal Dictionary<string,object> Install('));assert.match(admission,/managementSelectionHash/);assert.match(admission,/installRequestId/);assert.match(admission,/V\.Same\(selectedFactory,factory\)/);assert.ok(admission.indexOf('ValidateManagementInstall(binding,factory)')<admission.indexOf('InstallCore('));
+});
+
+test('native source 정적: 관리 설치는 지원 guard 뒤 실제 관측·worker 검산과 동일 InstallCore에만 연결된다',()=>{
+ const deployment=read('NativeWorkerDeploymentSource.cs'),store=read('NativeWorkerInstallationStoreSource.cs');
+ const path=deployment.slice(deployment.indexOf('InstallManagement('),deployment.indexOf('ReadManagementSettlement('));
+ let at=-1;for(const token of ['ValidateManagementInstall(binding,factory)','storage.RequireDurability()','Observe(factory)','ReadPackagedWorker(','store.InstallManagement(']){const next=path.indexOf(token,at+1);assert.ok(next>at,token);at=next;}
+ assert.doesNotMatch(path.slice(0,path.indexOf('storage.RequireDurability()')),/Observe\(|ReadPackagedWorker|File\.|Directory\.|Open\(/);
+ assert.match(path,/activeObservation=observed/);assert.match(path,/finally\{activeObservation=null;if\(worker!=null\)Array\.Clear/);
+ const managed=store.slice(store.indexOf('internal Dictionary<string,object> InstallManagement('),store.indexOf('internal Dictionary<string,object> Install('));
+ assert.match(managed,/ValidateManagementInstall\(binding,factory\)/);assert.match(managed,/InstallCore\(bundle,head,worker,now,null,binding\)/);
+});
+
+test('native source 정적: management lock은 같은 owned handle에 ACTIVE와 final을 남기고 legacy delete 경로와 분리된다',()=>{
+ const store=read('NativeWorkerInstallationStoreSource.cs');
+ assert.match(store,/BeginManagementSettlement\(/);assert.match(store,/AppendManagementSettlement\(/);assert.match(store,/ReleaseManagementSettlement\(/);
+ const core=store.slice(store.indexOf('Dictionary<string,object> InstallCore('),store.indexOf('static void ValidateScope('));
+ let at=-1;for(const token of ['old=Find(','if(old!=null)','BeginManagementSettlement(','CheckManagementBase(baseHash)','"state","ACTIVE"','AppendManagementSettlement(','Append(before,r)','r["state"]="INSTALLED"','settled["state"]="INSTALLATION_SETTLED"','ReleaseManagementSettlement(']){const next=core.indexOf(token,at+1);assert.ok(next>at,token);at=next;}
+ assert.doesNotMatch(core.slice(core.indexOf('if(old!=null)'),core.indexOf('var rows=')),/management/);assert.match(core,/"managementSelectionHash",V\.Text\(management,"managementSelectionHash"\)/);assert.match(core,/new Dictionary<string,object>\(active\)/);assert.doesNotMatch(core,/settled\["managementSelectionHash"\]\s*=/);assert.match(core,/baseContainerHash/);assert.match(core,/installedContainerHash/);assert.match(core,/workerDirectoryIdentity/);assert.match(core,/ManagementHeaderMaximum\+2L\*NativeWorkerInstallationKernel\.ManagementFrameMaximum/);
+ const kernel=store.slice(store.indexOf('internal sealed class WindowsNativeWorkerInstallationKernel'));
+ const begin=kernel.slice(kernel.indexOf('BeginManagementSettlement('),kernel.indexOf('AppendManagementSettlement('));
+ assert.match(begin,/ManagementHeaderMaximum\+2\*ManagementFrameMaximum/);assert.match(begin,/CreatePrivateFile\(Name\("installations\.v1\.lock"\)\)/);assert.match(begin,/WriteAndReadback\(lockFile,ManagementHeader\)/);assert.match(begin,/CheckManagementBase[\s\S]*ReadContainer\("installations\.v1"\)[\s\S]*ReadContainer\("installations\.v1\.previous"\)/);assert.doesNotMatch(begin,/File\.Delete|SetFileInformationByHandle/);
+ const append=kernel.slice(kernel.indexOf('AppendManagementSettlement('),kernel.indexOf('ReleaseManagementSettlement('));
+ assert.match(append,/AppendManagementFrame/);const sameHandle=kernel.slice(kernel.indexOf('void AppendManagementFrame('),kernel.indexOf('Dictionary<string,object> Container('));assert.match(sameHandle,/WriteFile\(lockFile\.Handle/);assert.match(sameHandle,/ReadFile\(lockFile\.Handle/);assert.doesNotMatch(sameHandle,/ReadPath\(/);
+ const metadata=kernel.slice(kernel.indexOf('internal override long MetadataBytes()'),kernel.indexOf('IEnumerable<string> Workers()'));assert.match(metadata,/name=="installations\.v1\.lock"[\s\S]*Identity\(held\)!=lockFile\.Identity[\s\S]*held\.Length/);
+ const release=kernel.slice(kernel.indexOf('ReleaseManagementSettlement('),kernel.indexOf('internal override void Release()'));
+ assert.match(release,/VerifyWorker[\s\S]*RequireLock\(\)[\s\S]*CloseOwnedFile\(lockFile\)/);const afterClose=release.slice(release.indexOf('CloseOwnedFile(lockFile)'));assert.doesNotMatch(afterClose,/VerifyWorker|ReadContainer|FileInfo|Shape\(/);assert.doesNotMatch(release,/SetFileInformationByHandle|File\.Delete/);
+ assert.match(kernel,/internal override void Release\([\s\S]*SetFileInformationByHandle/);
 });
 
 test('native 관측 source 정적: 요청 1초 closure가 원 worker 읽기와 첫 저장까지 이어진다',()=>{const s=read('NativeWorkerDeploymentSource.cs');assert.match(s,/sealed class Observation/);assert.match(s,/new NativeWorkerInstallationStoreSource\(storage,Bound\)/);assert.match(s,/ReadPackagedWorker\(V.Text\(d,"workerHash"\),Bound\)/);assert.match(s,/observed.Check\(\);[\s\S]*store.Install/);assert.match(s,/activeObservation=null/);});
