@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN07/FN08 현재 native 컴파일 계획의 source 수량 교정:** 담당 `baseline_predispatch_task_review`가 정본 목록 31개와 별도 순수 계획의 30개 제한 불일치를 보완했다. exact 순서·reference 5개·시간/격리·미실행 경계를 유지하며 누락·추가 입력을 거절한다. 소스 1개·시험 1개, 최초 4통과/2실패에서 최종 Main 6/6 실패·skip 0(b7029b), 정적 검사 및 독립 C0/I0. 이전 승인과 원 plan은 보존하며 현 합성 후보에는 새 지문이 생겼다. 실제 C# 컴파일·프로세스·키·DB·서비스는 실행하지 않았다. 다음 FN08 정상 준비는 같은 등록 package의 기존 보호 publisher가 발급하는 worker image 출처 연결이다.
+
 - **FN08 확정된 준비 거절의 명령 응답:** 담당 `baseline_predispatch_task_review`가 같은 FRAME 요청·등록·scope의 서명과 exact REJECTED 저장 COMMIT·연결 반환을 검산한 경우만 기존 오류 형상에 `NORMAL_START_PREPARATION_REJECTED`(412)를 반환하도록 연결했다. 나머지 시간 초과·다른 scope·COMMIT 불명은 UNKNOWN이며 다시 보내거나 queue·PREPARED로 진행하지 않는다. 원 소유권과 2초/원 10초의 더 짧은 기한을 service 반환 뒤 다시 검사한다. 제품 2개·시험 2개. Main 집중 16/16 실패·취소·skip 0(06fff7), 루트 타입 exit 0(6ca131), 작성자 인접 완료 후 마감 검증 통과, 독립 Critical 0 / Important 0. 초기 인접 명령에서 모킹 플래그 누락으로 파일이 시작 전 실패해 플래그 추가 후 해당 파일 35/35를 별도 수거했다. 실제 DB·HTTPS·키·프로세스·서비스·Agent 실행 0. 물리 준비는 기존 factory의 별도 허가/RESERVED·worker 이미지 계약, 미지원 Windows 지속 원장, 독립 OS 현재 근거 부재를 확인했다. 신규 정상 목적의 보호 image·생성 전 지속 소진·같은 suspended 객체 보유와 실물 관측이 남아 있다.
 
 - **FN08 원 등록 호스트의 전용 결과 서명:** 담당 `baseline_predispatch_task_review`가 기존 REGISTERED 연결에서 원 slot과 요청의 참조·시도·소유 세대만 native host에 넘기는 전용 목적 소스를 추가했다. 원 native 객체·등록 root·canonical 요청/결과/서명 입력을 다시 대조하고 지속 단회 소진 확정 뒤만 기존 보호키의 SHA-256/P1363 서명을 사용하도록 했다. 원장·소유·기한 불명은 재서명하지 않는다. 원 slot 생산자가 없으면 helper 효과·서명·결과·POST 0이다. 기존 서명 목적과 31개 source 허용 목록을 보존했다. 제품 2개·시험 2개. Main 195/195 실패·취소·skip 0(53cbd9), 루트 타입 및 CJS 검사 exit 0(e7dfc3), 작성자 desktop 타입 통과, 독립 Critical 0 / Important 0. 실제 준비 객체·보호 슬롯/지속 소진 공급자와 결과 기반 queue는 미연결이다. C# 컴파일, 실제 키·HTTPS·DB·권한·프로세스·서비스·Agent 실행 0.

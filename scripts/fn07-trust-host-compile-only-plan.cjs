@@ -45,7 +45,7 @@ function createCompileOnlyPlan(raw){
   const parent={schemaVersion:1,purpose:'DESKTOP_TRUST_SIGNER_PARENT_BASIS',namespace:'ANVIL_DESKTOP_TRUST_SIGNER_V1',signerId:input.attemptId,signerVersion:1,
    parentExeHash:hash('FN07_COMPILE_ONLY_SYNTHETIC_PARENT_EXE_V1'),parentAsarHash:hash('FN07_COMPILE_ONLY_SYNTHETIC_PARENT_ASAR_V1'),parentHeaderHash:hash('FN07_COMPILE_ONLY_SYNTHETIC_PARENT_HEADER_V1')};
   const compilation=createCompileInput(c,parent);
-  if(SOURCE_FILES.length!==30||REFERENCE_FILES.length!==5||within(root,compilation.workingDirectory)||within(compilation.workingDirectory,root)||
+  if(SOURCE_FILES.length!==31||REFERENCE_FILES.length!==5||within(root,compilation.workingDirectory)||within(compilation.workingDirectory,root)||
    [compilation.compiler,...compilation.references].some(f=>within(root,f.path)))invalid();
   const body={schemaVersion:1,state:'CANDIDATE_ONLY',purpose:'FN07_TRUST_HOST_COMPILE_ONLY_PLAN',attemptId:input.attemptId,sourceCommit:input.sourceCommit,qaRoot:root,window:input.window,
    parentBasisKind:'SYNTHETIC_NOT_ADMISSION',compilerIdentity:'UNVERIFIED',compilation,
