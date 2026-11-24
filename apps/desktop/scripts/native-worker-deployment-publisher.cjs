@@ -30,4 +30,19 @@ async function createWorkerPublication(input){
 /** 게시 실패/불명 후 자동 재발행하지 않는다. 원 request/hash 조회는 store.lookup에 별도 명시한다.
  * @param {any} store @param {string} requestId @param {unknown} product */
 async function publishWorkerDeployment(store,requestId,product){await readCurrentWorkerPublication(product);if(!store||typeof store.publish!=='function')fail();return store.publish(requestId,product);}
-module.exports={createWorkerPublication,readWorkerPublication,readCurrentWorkerPublication,publishWorkerDeployment};
+/** 원 게시 거래 확정 뒤 전달할 기대자료다. 프로세스 간 token/설치/실행 권위가 아니며,
+ * packaged owner는 기존 deployment GET와 native 보호 readback을 새로 수행해야 한다.
+ * @param {any} store @param {string} requestId @param {unknown} product */
+async function publishNormalStartWorkerDeployment(store,requestId,product){
+ const before=await readCurrentWorkerPublication(product),head=data(await publishWorkerDeployment(store,requestId,product));
+ const after=await readCurrentWorkerPublication(product);if(canonical(before)!==canonical(after))fail();
+ if(!head||Object.keys(head).sort().join(',')!=='ref,snapshot')fail();const h=head.snapshot,r=head.ref,b=after.bundle,d=b.descriptor.snapshot;
+ if(!h||Object.keys(h).sort().join(',')!=='descriptorRef,expiresAt,nativeFactoryRef,previousHeadRef,purpose,schemaVersion,sequence,state,updatedAt'
+  ||!r||Object.keys(r).sort().join(',')!=='contentHash,id,version'||typeof r.id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(r.id)||r.version!==1
+  ||h.schemaVersion!==1||h.purpose!=='NATIVE_WORKER_DEPLOYMENT_HEAD'||h.state!=='ACTIVE'||h.sequence!==1||h.previousHeadRef!==null
+  ||canonical(h.nativeFactoryRef)!==canonical(d.nativeFactoryRef)||canonical(h.descriptorRef)!==canonical(b.descriptor.ref)
+  ||r.contentHash!==createHash('sha256').update(canonical(h)).digest('hex')||!Number.isFinite(Date.parse(h.updatedAt))||new Date(h.updatedAt).toISOString()!==h.updatedAt
+  ||!Number.isFinite(Date.parse(h.expiresAt))||new Date(h.expiresAt).toISOString()!==h.expiresAt||Date.parse(h.updatedAt)<Date.parse(d.issuedAt)||Date.parse(h.expiresAt)>Date.parse(d.expiresAt)||Date.parse(h.expiresAt)<=Date.parse(h.updatedAt))fail();
+ return data({purpose:'NORMAL_START_WORKER_PUBLICATION_V1',bundle:after.bundle,head});
+}
+module.exports={createWorkerPublication,readWorkerPublication,readCurrentWorkerPublication,publishWorkerDeployment,publishNormalStartWorkerDeployment};

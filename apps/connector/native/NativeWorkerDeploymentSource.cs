@@ -14,7 +14,7 @@ internal sealed class NativeWorkerDeploymentSource:NativePreparationWorkerProven
  readonly Func<DesktopTrustKeyPeerSource> peer;readonly Func<Dictionary<string,object>> registration;readonly Func<int> remaining;readonly Action current;readonly NativeWorkerInstallationStoreSource store;readonly NativeWorkerInstallationKernel storage;
  readonly Dictionary<NativePreparationWorkerProvenanceSource.DeploymentRecord,Dictionary<string,object>> originals=new Dictionary<NativePreparationWorkerProvenanceSource.DeploymentRecord,Dictionary<string,object>>();
  sealed class Observation {internal readonly Dictionary<string,object> Value;internal readonly Action Check;internal Observation(Dictionary<string,object> value,Action check){Value=value;Check=check;}}
- Observation activeObservation;void Bound(){Live();if(activeObservation==null)throw Invalid();activeObservation.Check();}
+ Observation activeObservation;bool normalLookup;void Bound(){Live();if(activeObservation==null){if(!normalLookup)throw Invalid();return;}activeObservation.Check();}
  static readonly UTF8Encoding Utf8=new UTF8Encoding(false,true);bool installed,disposed;
  internal NativeWorkerDeploymentSource(Func<DesktopTrustKeyPeerSource> originalPeer,Func<Dictionary<string,object>> originalRegistration,Func<int> budget,Action check,DesktopTrustKeyRootKernel roots,NativeWorkerInstallationKernel installation=null){if(originalPeer==null||originalRegistration==null||budget==null||check==null||roots==null)throw Invalid();peer=originalPeer;registration=originalRegistration;remaining=budget;current=check;storage=installation??new WindowsNativeWorkerInstallationKernel(roots,check);store=new NativeWorkerInstallationStoreSource(storage,Bound);}
  static Exception Invalid(){return new InvalidOperationException("NATIVE_WORKER_DEPLOYMENT_UNAVAILABLE");}
@@ -46,6 +46,24 @@ internal sealed class NativeWorkerDeploymentSource:NativePreparationWorkerProven
   storage.RequireDurability(); // 실제 Windows는 첫 mutation/원 worker 파일 읽기 전에 UNSUPPORTED.
   var observed=Observe(factory);activeObservation=observed;byte[] worker=null;
   try{observed.Check();Equal(input["bundle"],observed.Value["bundle"]);Equal(input["head"],observed.Value["head"]);var bundle=V.Map(observed.Value["bundle"]);Bound();Parent(bundle);Bound();var d=V.Map(V.Map(bundle["descriptor"])["snapshot"]);worker=peer().ReadPackagedWorker(V.Text(d,"workerHash"),Bound);Bound();var result=store.Install(bundle,V.Map(observed.Value["head"]),worker,DateTime.UtcNow);Bound();var after=Observe(factory);observed.Check();after.Check();Equal(after.Value["bundle"],bundle);Equal(after.Value["head"],observed.Value["head"]);return result;}finally{activeObservation=null;if(worker!=null)Array.Clear(worker,0,worker.Length);}
+ }
+ // 새 목적 설치도 기존 공개 기대자료를 권위로 쓰지 않는다. 원 등록 scope와 독립 관측,
+ // 같은 package bytes/parent를 검산한 뒤 기존 설치 lock/CAS 안에만 결박한다.
+ internal Dictionary<string,object> InstallNormal(Dictionary<string,object> raw,Dictionary<string,object> scope){
+  if(installed)throw Invalid();installed=true;V.Exact(raw,"bundle,head");var input=Clone(raw);var supplied=V.Map(input["bundle"]);var factory=V.Ref(V.Map(V.Map(supplied["descriptor"])["snapshot"])["nativeFactoryRef"],false);
+  Live();Validate(supplied,V.Map(input["head"]),factory,DateTime.UtcNow);Equal(scope["packageRef"],V.Map(supplied["packageRecord"])["ref"]);storage.RequireDurability();
+  var observed=Observe(factory);activeObservation=observed;byte[] worker=null;
+  try{observed.Check();Equal(input["bundle"],observed.Value["bundle"]);Equal(input["head"],observed.Value["head"]);var bundle=V.Map(observed.Value["bundle"]);Bound();Parent(bundle);Bound();var d=V.Map(V.Map(bundle["descriptor"])["snapshot"]);worker=peer().ReadPackagedWorker(V.Text(d,"workerHash"),Bound);Bound();
+   var result=store.InstallNormal(bundle,V.Map(observed.Value["head"]),worker,DateTime.UtcNow,scope);Bound();var after=Observe(factory);observed.Check();after.Check();Equal(after.Value["bundle"],bundle);Equal(after.Value["head"],observed.Value["head"]);return result;
+  }finally{activeObservation=null;if(worker!=null)Array.Clear(worker,0,worker.Length);}
+ }
+ // caller factory/path 없이 동일 원 등록에 결박된 한 건만 찾는다. 이 metadata는
+ // request/claim/소진/OS 준비 권위가 아니며 별도의 normal producer가 그대로 재검산해야 한다.
+ internal Dictionary<string,object> ReadNormalImage(Dictionary<string,object> scope){
+  Live();storage.RequireDurability();byte[] worker=null;normalLookup=true;
+  try{var binding=store.ReadNormalBinding(scope,false);normalLookup=false;var factory=V.Ref(binding["factoryRef"],false);var observed=Observe(factory);activeObservation=observed;var bundle=V.Map(binding["bundle"]);Bound();Equal(bundle,observed.Value["bundle"]);Equal(binding["headRef"],V.Map(observed.Value["head"])["ref"]);Parent(bundle);Bound();
+   var checkedBinding=store.ReadNormalBinding(scope);Equal(binding,checkedBinding);worker=peer().ReadPackagedWorker(V.Text(binding,"workerHash"),Bound);Bound();var result=new Dictionary<string,object>{{"state","NORMAL_START_WORKER_IMAGE_VERIFIED"},{"associationRef",NativeWorkerInstallationStoreSource.NormalBindingRef(binding)},{"installationRef",binding["installationRef"]},{"factoryRef",factory},{"descriptorRef",binding["descriptorRef"]},{"packageRef",V.Map(bundle["packageRecord"])["ref"]},{"buildReceiptRef",V.Map(bundle["buildReceipt"])["ref"]},{"headRef",binding["headRef"]},{"workerHash",binding["workerHash"]}};Bound();return result;
+  }finally{normalLookup=false;activeObservation=null;if(worker!=null)Array.Clear(worker,0,worker.Length);}
  }
  internal override NativePreparationWorkerProvenanceSource.DeploymentRecord Read(string factoryKey,Func<int> callerRemaining,Action callerCurrent){
   callerCurrent();if(callerRemaining()<1)throw Invalid();var factory=V.Ref(DesktopTrustKeyHostSource.Parse(Utf8.GetBytes(factoryKey),false),false);storage.RequireDurability();var observed=Observe(factory);activeObservation=observed;

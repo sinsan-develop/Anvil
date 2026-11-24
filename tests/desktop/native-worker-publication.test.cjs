@@ -32,6 +32,17 @@ test('부모 없는 compiler 원결과→고정 package→원 factory→publicat
  const store=new NativeWorkerDeploymentStore({connect:async()=>db},{readOriginal:publisher.readCurrentWorkerPublication});assert.deepEqual(await publisher.publishWorkerDeployment(store,'ad140002-0000-4000-8000-000000000091',token),head);assert.equal(publishes,1);
 }, {beforeFactory:stagedWorker}));
 const awaitModel={assurance:'SOURCE_ONLY_MODEL',compilerExecuted:false};
+test('normal 게시 기대자료는 원 publication 재검산과 확정 게시 뒤 직렬화되며 runtime token이 아니다',async()=>withWorkerBuild(async f=>{
+ const p=require('../../apps/desktop/scripts/native-worker-deployment-publisher.cjs');
+ const token=await p.createWorkerPublication({compilation:f.staged.compilation,packageToken:f.staged.packageToken,factoryArtifact:f.artifact,configuration:f.config});
+ const bundle=p.readWorkerPublication(token).bundle,snapshot={schemaVersion:1,purpose:'NATIVE_WORKER_DEPLOYMENT_HEAD',nativeFactoryRef:bundle.descriptor.snapshot.nativeFactoryRef,descriptorRef:bundle.descriptor.ref,sequence:1,previousHeadRef:null,state:'ACTIVE',updatedAt:f.config.issuedAt,expiresAt:f.config.expiresAt};
+ const head={ref:{id:'ad140002-0000-4000-8000-000000000090',version:1,contentHash:hash(require('../../apps/desktop/src/runtime-catalogue-profile.cjs').canonicalJson(snapshot))},snapshot};let calls=0;
+ const store={publish:async(_id,actual)=>{calls++;assert.equal(actual,token);return structuredClone(head);}};
+ const value=await p.publishNormalStartWorkerDeployment(store,'ad140002-0000-4000-8000-000000000091',token);
+ assert.equal(calls,1);assert.deepEqual(JSON.parse(JSON.stringify(value)),{purpose:'NORMAL_START_WORKER_PUBLICATION_V1',bundle,head});
+ assert.throws(()=>p.readWorkerPublication(value));assert.equal(JSON.stringify(value).includes('C:\\WorkerQA'),false);
+ const wrong={publish:async()=>({...head,ref:{...head.ref,contentHash:'f'.repeat(64)}})};await assert.rejects(()=>p.publishNormalStartWorkerDeployment(wrong,'ad140002-0000-4000-8000-000000000092',token));
+},{beforeFactory:stagedWorker}));
 test('명시 Forge producer는 worker stage 뒤 기존 postPackage를 보존하고 같은 원 산출물만 한 번 게시한다',async()=>withWorkerBuild(async f=>{
  const publisher=require('../../apps/desktop/scripts/native-worker-deployment-publisher.cjs'),{NativeWorkerDeploymentStore}=await import('../../apps/server/modules/executions/native-worker-deployment-store.ts'),{nativeHash}=await import('../../contracts/runtime/native-preparation-authority-v1.ts');let count=0;
  const db={query:async(sql,args)=>{if(sql.includes('worker_deployment_publish')){count++;const b=JSON.parse(args[1]),snapshot={schemaVersion:1,purpose:'NATIVE_WORKER_DEPLOYMENT_HEAD',nativeFactoryRef:b.descriptor.snapshot.nativeFactoryRef,descriptorRef:b.descriptor.ref,sequence:1,previousHeadRef:null,state:'ACTIVE',updatedAt:f.config.issuedAt,expiresAt:f.config.expiresAt};return{rows:[{result:{ref:{id:'ad140002-0000-4000-8000-000000000090',version:1,contentHash:nativeHash(snapshot)},snapshot}}]};}return{rows:[],command:sql==='COMMIT'?'COMMIT':undefined};},release:()=>{}};

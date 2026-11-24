@@ -28,3 +28,21 @@ test('native source 정적: 원 REGISTERED binding에서 typed INSTALL_WORKER와
 });
 
 test('native 관측 source 정적: 요청 1초 closure가 원 worker 읽기와 첫 저장까지 이어진다',()=>{const s=read('NativeWorkerDeploymentSource.cs');assert.match(s,/sealed class Observation/);assert.match(s,/new NativeWorkerInstallationStoreSource\(storage,Bound\)/);assert.match(s,/ReadPackagedWorker\(V.Text\(d,"workerHash"\),Bound\)/);assert.match(s,/observed.Check\(\);[\s\S]*store.Install/);assert.match(s,/activeObservation=null/);});
+
+test('normal image 결박은 기존 설치 행과 분리되고 원 등록 host에서만 생성·정확 재조회된다',()=>{
+ const s=read('NativeWorkerInstallationStoreSource.cs'),d=read('NativeWorkerDeploymentSource.cs'),h=read('DesktopTrustKeyHostSource.cs');
+ assert.match(s,/NORMAL_START_WORKER_INSTALLATION_BINDING_V1/);assert.match(s,/InstallNormal\(/);assert.match(s,/ReadNormalBinding\(/);assert.match(s,/matches.Length!=1/);
+ assert.match(s,/registrationAttemptId/);assert.match(s,/registrationRootIdentity/);assert.match(s,/registrationRecordHash/);assert.match(s,/rows.Length\+needed>512/);
+ assert.match(d,/InstallNormal\(/);assert.match(d,/ReadNormalImage\(/);assert.match(h,/INSTALL_NORMAL_START_WORKER_V1/);assert.match(h,/READ_NORMAL_START_WORKER_IMAGE_V1/);
+ assert.match(h,/NormalWorkerScope\(/);assert.match(h,/root.Identity/);assert.match(d,/NATIVE_WORKER_INSTALLATION_UNSUPPORTED|storage.RequireDurability/);
+});
+
+test('명시 normal 설치는 기존 INSTALLED를 바꾸지 않고 새 검산 결박만 CAS 안에 한 번 정착한다',()=>{
+ const s=read('NativeWorkerInstallationStoreSource.cs'),d=read('NativeWorkerDeploymentSource.cs');
+ const start=s.indexOf('Dictionary<string,object> BindExisting('),end=s.indexOf('static Dictionary<string,object> Result(',start);assert.ok(start>=0&&end>start);const body=s.slice(start,end);
+ assert.match(body,/existing.Length>1/);assert.match(body,/existing.Length==1/);assert.match(body,/installationRef.*RowRef\(installed\)/);assert.match(body,/rows.Length\+1>512/);assert.match(body,/future>MetadataMaximum/);
+ assert.ok(body.indexOf('future>MetadataMaximum')<body.indexOf('io.Acquire()'));assert.match(body,/io.Acquire\(\);[\s\S]*V.Same\(before,locked\)/);assert.match(body,/io.VerifyWorker[\s\S]*Append\(locked,binding\)[\s\S]*io.Release\(\)/);
+ assert.doesNotMatch(body,/CreateWorker|\["state"\]\s*=/);assert.match(body,/unknown=true;io.Abandon\(\)/);
+ const core=s.slice(s.indexOf('Dictionary<string,object> InstallCore('),s.indexOf('static void ValidateScope('));assert.match(core,/ownerBindings.Length>1/);assert.match(core,/ownerBindings\[0\]\["factoryRef"\]/);assert.ok(core.indexOf('ownerBindings.Length>1')<core.indexOf('io.Acquire()'));assert.match(s,/NATIVE_WORKER_INSTALLATION"&&V.Same\(r\["factoryRef"\]/);
+ const normal=d.slice(d.indexOf('internal Dictionary<string,object> InstallNormal('),d.indexOf('internal Dictionary<string,object> ReadNormalImage('));assert.match(normal,/Parent\(bundle\)[\s\S]*ReadPackagedWorker[\s\S]*store.InstallNormal/);
+});

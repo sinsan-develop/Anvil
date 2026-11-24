@@ -291,6 +291,9 @@ internal sealed class DesktopTrustKeyHostSource {
   if(workerAttempt==null)return ReturnRecord();Check();var container=store.Read();Check();Dictionary<string,object> record=null;if(container!=null)foreach(object raw in (object[])container["rows"]){var candidate=Map(raw);if(Id(candidate,"attemptId")==workerAttempt)record=candidate;}
   if(record==null||Text(record,"state")!="REGISTERED")throw Invalid();var key=Map(record["key"]);var credential=Map(record["credential"]);var registration=Map(record["registration"]);if(Text(credential,"storageState")!="STORED"||Id(record,"pendingKeyId")!=Id(key,"keyId")||Text(key,"signerImageHash")!=peer.HelperHash)throw Invalid();budget.Tighten(new[]{Time(registration,"registrationExpiresAt"),Time(credential,"expiresAt")}.Min(),10000);Check();if(workerRecord!=null&&workerRecord!=Canonical(record,0))throw Invalid();return record;
  }
+ Dictionary<string,object> NormalWorkerScope(Dictionary<string,object> record,object packageRef){
+  Check();var registration=Map(record["registration"]);var scope=new Dictionary<string,object>{{"schemaVersion",1},{"purpose","NORMAL_START_WORKER_REGISTRATION_SCOPE_V1"},{"registrationRef",registration["registrationRef"]},{"connectorRef",registration["connectorRef"]},{"registrationAttemptId",Id(record,"attemptId")},{"registrationInstallationId",Id(registration,"installationId")},{"registrationRecordHash",Hash(Encoding.UTF8.GetBytes(Canonical(record,0)))},{"registrationRootIdentity",root.Identity},{"packageRef",packageRef}};Check();return scope;
+ }
  string configurationTransfer,configurationOperation,configurationHash;int configurationIndex,configurationLength,configurationReceived;byte[] configurationBytes;bool configurationConsumed;
  object ExecutionConfiguration(string operation,Dictionary<string,object> value){
   Exact(value,"attemptId,transferId,totalBytes,contentHash,index,data,final");string attempt=Id(value,"attemptId"),transfer=Id(value,"transferId");
@@ -315,6 +318,13 @@ internal sealed class DesktopTrustKeyHostSource {
   if(operation=="PREPARE_EXECUTION_CONFIGURATION"||operation=="CONFIRM_EXECUTION_CONFIGURATION"||operation=="REVOKE_EXECUTION_CONFIGURATION")return ExecutionConfiguration(operation,value);
   if(operation=="INSTALL_WORKER"){
    Exact(value,"attemptId,request");if(workerInstallAttempted)throw Invalid();workerInstallAttempted=true;workerAttempt=Id(value,"attemptId");workerRecord=Canonical(WorkerRecord(),0);var request=Map(value["request"]);Exact(request,"factoryRef,bundle,head");try{var result=workerDeployment.Install(request);WorkerRecord();return result;}catch(InvalidOperationException e){if(e.Message=="NATIVE_WORKER_INSTALLATION_UNSUPPORTED")return new Dictionary<string,object>{{"state","UNSUPPORTED"}};unknown=true;throw;}
+  }
+  if(operation=="INSTALL_NORMAL_START_WORKER_V1"||operation=="READ_NORMAL_START_WORKER_IMAGE_V1"){
+   Exact(value,operation=="INSTALL_NORMAL_START_WORKER_V1"?"attemptId,request":"attemptId");string attempt=Id(value,"attemptId");if(workerAttempt!=null&&workerAttempt!=attempt)throw Invalid();workerAttempt=attempt;var record=WorkerRecord();workerRecord=Canonical(record,0);
+   try{object result;if(operation=="INSTALL_NORMAL_START_WORKER_V1"){
+     if(workerInstallAttempted)throw Invalid();workerInstallAttempted=true;var request=Map(value["request"]);Exact(request,"bundle,head");var bundle=Map(request["bundle"]);result=workerDeployment.InstallNormal(request,NormalWorkerScope(record,Map(bundle["packageRecord"])["ref"]));
+    }else result=workerDeployment.ReadNormalImage(NormalWorkerScope(record,null));WorkerRecord();Check();return result;
+   }catch(InvalidOperationException e){if(e.Message=="NATIVE_WORKER_INSTALLATION_UNSUPPORTED")return new Dictionary<string,object>{{"state","UNSUPPORTED"}};unknown=true;throw;}
   }
 
   if(operation.StartsWith("NATIVE_JOURNAL_",StringComparison.Ordinal)){
