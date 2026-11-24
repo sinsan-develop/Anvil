@@ -623,6 +623,42 @@ async function normalFrameDispatchFixture(mode='frame-valid'){
  return{...f,scope,provenance,order,prepare,references,frameState:()=>({claims,authCalls,bytes})};
 }
 
+test('동일 STREAM의 DELIVERY 선점은 반대 normal capture·claim RPC를 차단한다',async(t)=>{
+ const {NativeFirstReceiveBroker}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts');
+ const original=NativeFirstReceiveBroker.prototype.captureNormalStartPreparationFrame;let broker:any;
+ t.mock.method(NativeFirstReceiveBroker.prototype,'captureNormalStartPreparationFrame',function(this:InstanceType<typeof NativeFirstReceiveBroker>,...args:any[]){broker=this;return Reflect.apply(original,this,args);});
+ const f=await normalFrameDispatchFixture();try{
+  f.service.assertNormalStartPreparationFrame(f.scope);
+  const raw={...f.streamIdentity,windowRef:f.window.ref,receiveSessionRef:f.session.ref,expiresAt:f.session.snapshot.expiresAt},lease={};
+  broker.reserveDeliveryStream(raw,lease);
+  assert.throws(()=>f.service.assertNormalStartPreparationFrame(f.scope));
+  await assert.rejects(f.prepare());
+  assert.equal(f.frameState().claims,0);assert.equal(f.frameState().authCalls,0);assert.equal(f.frameState().bytes,0);
+  assert.throws(()=>broker.reserveDeliveryStream(raw,{}),'다른 거래의 느린 continuation은 다시 선점하지 않는다');
+ }finally{f.controller.abort();}
+});
+
+test('동일 STREAM의 NORMAL 선점·COMMIT 불명은 느린 DELIVERY 예약과 재선택을 허용하지 않는다',async(t)=>{
+ const {NativeFirstReceiveBroker}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts');
+ const original=NativeFirstReceiveBroker.prototype.captureNormalStartPreparationFrame;let broker:any;
+ t.mock.method(NativeFirstReceiveBroker.prototype,'captureNormalStartPreparationFrame',function(this:InstanceType<typeof NativeFirstReceiveBroker>,...args:any[]){broker=this;return Reflect.apply(original,this,args);});
+ for(const mode of ['frame-valid','frame-commit-lost']){
+  const f=await normalFrameDispatchFixture(mode);let resume!:()=>void,entered!:()=>void;
+  const started=new Promise<void>(resolve=>{entered=resolve;}),held=new Promise<void>(resolve=>{resume=resolve;}),auth=f.access.authenticated;
+  f.access.authenticated=(async(...args:any[])=>{entered();await held;return Reflect.apply(auth,f.access,args);})as any;
+  try{
+   f.service.assertNormalStartPreparationFrame(f.scope);
+   const preparing=f.prepare();void preparing.catch(()=>{});await started;
+   const raw={...f.streamIdentity,windowRef:f.window.ref,receiveSessionRef:f.session.ref,expiresAt:f.session.snapshot.expiresAt};
+   assert.throws(()=>broker.reserveDeliveryStream(raw,{}));
+   assert.equal(f.frameState().claims,0,'원 NORMAL CAS 뒤에도 아직 DB mutation은 시작 전이다');
+   resume();if(mode==='frame-valid')await preparing;else await assert.rejects(preparing,/OUTCOME_UNKNOWN/);
+   assert.throws(()=>broker.reserveDeliveryStream(raw,{}));await assert.rejects(f.prepare());
+   assert.equal(f.frameState().claims,1);assert.equal(f.frameState().bytes,0);
+  }finally{resume();f.controller.abort();}
+ }
+});
+
 test('FRAME의 exact claim COMMIT/release 뒤 원 frame1·정상 EOF만 결과 owner로 보유하고 old receiver·재전송은 닫는다',async()=>{
  const f=await normalFrameDispatchFixture();try{
   f.service.assertNormalStartPreparationFrame(f.scope);assert.equal(f.frameState().claims,0,'협상은 새 marker를 만들지 않는다');
