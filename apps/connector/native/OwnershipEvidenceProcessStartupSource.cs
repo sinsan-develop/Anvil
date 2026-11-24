@@ -58,6 +58,18 @@ namespace Anvil.Native.OwnershipEvidence
                 if(assignment==null)throw Unavailable();
                 return assignment.PrepareStartup(timeoutMs);
             }
+            internal static void BindNormalStartWorkerInvocationFromCandidate(ISuspendedStartupCandidate candidate,OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationCandidate input,int timeoutMs)
+            {
+                var startup=candidate as JobAssignment.ProcessStartup;
+                if(startup==null)throw Unavailable();
+                startup.BindNormalStartWorkerInvocation(input,timeoutMs);
+            }
+            internal static OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationObservation ReadNormalStartWorkerInvocationFromCandidate(ISuspendedStartupCandidate candidate,int timeoutMs)
+            {
+                var startup=candidate as JobAssignment.ProcessStartup;
+                if(startup==null)throw Unavailable();
+                return startup.ReadNormalStartWorkerInvocation(timeoutMs);
+            }
             private sealed partial class JobAssignment
             {
                 private ProcessStartup startup;
@@ -92,6 +104,7 @@ namespace Anvil.Native.OwnershipEvidence
                     private StartupInfoEx info;
                     private IntPtr environment;
                     private OwnershipEvidenceWorkerInputSource.WorkerInputCandidate workerInput;
+                    private OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationCandidate normalWorkerInput;
                     private bool closed,cleaned;
                     internal ProcessStartup(JobAssignment parent){this.parent=parent;}
                     internal void Initialize(DateTime from,Stopwatch watch,int timeoutMs)
@@ -119,6 +132,7 @@ namespace Anvil.Native.OwnershipEvidence
                                 Read(parent.owner.job,from,watch,timeoutMs);
                                 if(info.Basic.Size!=(uint)Marshal.SizeOf(typeof(StartupInfoEx))||info.Basic.Flags!=0||info.Basic.Input!=IntPtr.Zero||info.Basic.Output!=IntPtr.Zero||info.Basic.Error!=IntPtr.Zero||Marshal.ReadInt16(environment,0)!=0||Marshal.ReadInt16(environment,2)!=0)throw Unavailable();
                                 if(workerInput!=null)workerInput.EnsureCurrentSource();
+                                if(normalWorkerInput!=null)normalWorkerInput.ReadCurrent(Math.Min(timeoutMs,2000));
                                 Budget(from,watch,timeoutMs);
                                 if(parent.owner.lifetime.ElapsedMilliseconds>=120000)throw Unavailable();
                                 return new SuspendedStartupObservation(from,DateTime.UtcNow,workerInput!=null);
@@ -133,12 +147,41 @@ namespace Anvil.Native.OwnershipEvidence
                             Cap(timeoutMs);DateTime from=DateTime.UtcNow;var watch=Stopwatch.StartNew();
                             lock(parent.owner.gate)
                             {
-                                if(workerInput!=null)throw Unavailable();
+                                if(workerInput!=null||normalWorkerInput!=null)throw Unavailable();
                                 ReadCurrent(timeoutMs);
                                 var candidate=OwnershipEvidenceWorkerInputSource.BuildSource(plan);
                                 ReadCurrent(timeoutMs);candidate.EnsureCurrentSource();
                                 Budget(from,watch,timeoutMs);
                                 workerInput=candidate; // 최종검사 전에는 기존 입력을 변경하지 않는다.
+                            }
+                        }
+                        catch{throw Unavailable();}
+                    }
+                    internal void BindNormalStartWorkerInvocation(OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationCandidate input,int timeoutMs)
+                    {
+                        try
+                        {
+                            if(input==null)throw Unavailable();Cap(timeoutMs);DateTime from=DateTime.UtcNow;var watch=Stopwatch.StartNew();
+                            lock(parent.owner.gate)
+                            {
+                                if(workerInput!=null||normalWorkerInput!=null)throw Unavailable();
+                                ReadCurrent(timeoutMs);input.ReadCurrent(timeoutMs);ReadCurrent(timeoutMs);input.ReadCurrent(timeoutMs);
+                                Budget(from,watch,timeoutMs);
+                                normalWorkerInput=input;
+                            }
+                        }
+                        catch{throw Unavailable();}
+                    }
+                    internal OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationObservation ReadNormalStartWorkerInvocation(int timeoutMs)
+                    {
+                        try
+                        {
+                            Cap(timeoutMs);DateTime from=DateTime.UtcNow;var watch=Stopwatch.StartNew();
+                            lock(parent.owner.gate)
+                            {
+                                if(workerInput!=null||normalWorkerInput==null)throw Unavailable();
+                                ReadCurrent(timeoutMs);var result=normalWorkerInput.ReadCurrent(timeoutMs);ReadCurrent(timeoutMs);
+                                Budget(from,watch,timeoutMs);return result;
                             }
                         }
                         catch{throw Unavailable();}
@@ -170,7 +213,7 @@ namespace Anvil.Native.OwnershipEvidence
                         DisposeCreatedProcessSource();
                         closed=true;
                         if(environment!=IntPtr.Zero){Marshal.FreeHGlobal(environment);environment=IntPtr.Zero;}
-                        info=default(StartupInfoEx);workerInput=null;cleaned=true;
+                        info=default(StartupInfoEx);workerInput=null;normalWorkerInput=null;cleaned=true;
                     }
                     public bool LocalEnvironmentReleased{get{lock(parent.owner.gate){return closed&&cleaned;}}}
                     public void Dispose()
@@ -189,6 +232,14 @@ namespace Anvil.Native.OwnershipEvidence
         {
             Cap(timeoutMs);
             return OwnedEmptyJob.PrepareStartupFromCandidate(candidate,timeoutMs);
+        }
+        internal static void BindNormalStartWorkerInvocationSource(ISuspendedStartupCandidate candidate,OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationCandidate input,int timeoutMs=2000)
+        {
+            if(timeoutMs>2000)throw Unavailable();Cap(timeoutMs);OwnedEmptyJob.BindNormalStartWorkerInvocationFromCandidate(candidate,input,timeoutMs);
+        }
+        internal static OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationObservation ReadNormalStartWorkerInvocationSource(ISuspendedStartupCandidate candidate,int timeoutMs=2000)
+        {
+            if(timeoutMs>2000)throw Unavailable();Cap(timeoutMs);return OwnedEmptyJob.ReadNormalStartWorkerInvocationFromCandidate(candidate,timeoutMs);
         }
     }
 }

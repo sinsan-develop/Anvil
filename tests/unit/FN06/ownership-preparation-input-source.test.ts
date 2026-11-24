@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
+import {readFileSync} from 'node:fs';
 import {ownershipPreparationReceiptFixture} from './ownership-preparation-receipt-fixture.ts';
 import {readOwnershipNativePreparationProfile} from '../../../apps/server/modules/executions/ownership-native-preparation-profile.ts';
 const m=await import(new URL('../../../apps/connector/runtime/ownership-preparation-input-source.ts',import.meta.url).href).catch(e=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
@@ -56,4 +57,31 @@ test('기존server원기록투영을source입력으로소비하되실채널로�
  const p=await readOwnershipNativePreparationProfile(f.db,f.access,f.token,f.csrf,f.prep.snapshot.scope,f.prep.ref),v=read(p,p.selection);
  assert.equal(v.selection.preparationId,f.prep.ref.id);assert.equal(v.selection.authorizationReceiptHash,f.prep.snapshot.authorizationReceiptRef.contentHash);assert.equal(v.serverAuthenticated,false);assert.equal(v.dispatchPerformed,false);
  t.mock.timers.tick(60001);rejected(p,p.selection);
+});
+test('정적: normal local worker 입력은 legacy plan과 분리된 exact 불변 source다',()=>{
+ const source=readFileSync(new URL('../../../apps/connector/native/OwnershipEvidenceWorkerInputSource.cs',import.meta.url),'utf8');
+ const start=source.indexOf('internal sealed class NormalStartWorkerInvocationCandidate'),end=source.indexOf('internal static WorkerInputCandidate BuildSource(',start),body=source.slice(start,end);
+ assert(start>0&&end>start);assert.match(body,/NORMAL_START_LOCAL_WORKER_INVOCATION_SOURCE_ONLY/);
+ for(const value of ['imageRefJson','requestRefJson','localClaimRefJson','localProcessId','localProcessGeneration','ExpiresAt'])assert.match(body,new RegExp('\\b'+value+'\\b'));
+ assert.match(body,/arguments=new\[\]\{localProcessId,localProcessGeneration\.ToString\(CultureInfo\.InvariantCulture\),end\.ToString\("yyyy-MM-dd'T'HH:mm:ss.fff'Z'",CultureInfo\.InvariantCulture\)\}/);
+ for(const forbidden of ['runId','authorizationReceipt','permit','RESERVED','OwnershipEvidencePreparationPlan'])assert.doesNotMatch(body,new RegExp(forbidden));
+ for(const flag of ['ProcessCreationAuthorized','PreparationAuthorized','ExecutionAuthorized','DispatchPerformed'])assert.match(body,new RegExp(flag+'\\{get\\{return false;\\}\\}'));
+ assert.match(body,/ReadCurrent\(int timeoutMs=2000\)/);assert.match(body,/timeoutMs<1\|\|timeoutMs>2000/);
+ assert.match(body,/private NormalStartWorkerInvocationCandidate\(/);assert.doesNotMatch(body,/internal NormalStartWorkerInvocationCandidate\(/);
+ assert.match(body,/V\.Ref\(imageRef,true\)/);assert.match(body,/V\.Ref\(requestRef,true\)/);assert.match(body,/V\.Ref\(localClaimRef,true\)/);
+ assert.match(body,/new\[\]\{imageId,requestId,claimId,localProcessId\}\.Distinct\(\)\.Count\(\)!=4/);
+ assert.match(body,/DateTime end=Time\(expiresAt\.ToString\("yyyy-MM-dd'T'HH:mm:ss.fff'Z'",CultureInfo\.InvariantCulture\)\)/);assert.match(body,/end<=now\|\|\(end-now\)\.TotalMilliseconds>10000/);
+ assert.match(source,/internal static NormalStartWorkerInvocationCandidate BuildNormalStartSource\(/);assert.match(source,/return NormalStartWorkerInvocationCandidate\.Create\(/);
+});
+test('정적: normal 입력은 legacy WorkerInputBound를 바꾸지 않고 private bind/current만 사용한다',()=>{
+ const source=readFileSync(new URL('../../../apps/connector/native/OwnershipEvidenceProcessStartupSource.cs',import.meta.url),'utf8');
+ assert.match(source,/private OwnershipEvidenceWorkerInputSource\.NormalStartWorkerInvocationCandidate normalWorkerInput;/);
+ assert.match(source,/internal static void BindNormalStartWorkerInvocationSource\(/);assert.match(source,/internal static OwnershipEvidenceWorkerInputSource\.NormalStartWorkerInvocationObservation ReadNormalStartWorkerInvocationSource\(/);
+ assert.match(source,/return new SuspendedStartupObservation\(from,DateTime\.UtcNow,workerInput!=null\)/,'legacy WorkerInputBound 의미는 old 입력에만 결박한다');
+ assert.match(source,/public SuspendedStartupObservation ReadCurrent\(int timeoutMs=10000\)/);assert.match(source,/normalWorkerInput\.ReadCurrent\(Math\.Min\(timeoutMs,2000\)\)/);
+ assert.match(source,/if\(workerInput!=null\|\|normalWorkerInput!=null\)throw Unavailable\(\)/);
+ assert.match(source,/normalWorkerInput=input;/);assert.match(source,/normalWorkerInput=null;/);
+ assert.match(source,/BindNormalStartWorkerInvocationSource\([^)]*int timeoutMs=2000\)/);assert.match(source,/ReadNormalStartWorkerInvocationSource\([^)]*int timeoutMs=2000\)/);
+ assert.equal((source.match(/if\(timeoutMs>2000\)throw Unavailable\(\)/g)||[]).length,2);
+ for(const invariant of ['private const uint SuspendedCreationFlags=0x08080404','InheritHandles=false,EmptyUnicodeEnvironment=true','Marshal.AllocHGlobal(4)','Marshal.WriteInt16(environment,0,0);Marshal.WriteInt16(environment,2,0)'])assert(source.includes(invariant),invariant);
 });
