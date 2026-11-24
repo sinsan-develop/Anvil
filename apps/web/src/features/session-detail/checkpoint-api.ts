@@ -75,7 +75,12 @@ async function validateCheckpointSnapshot(a:{projectId:string;ref:any;snapshot?:
 }
 export async function readStoredCheckpoint(client:ApiClient,rawAssignment:ConfirmedAssignmentView,rawRef:CheckpointStoredRef,active:()=>boolean){
  const a=structuredClone(rawAssignment),ref=structuredClone(rawRef);if(!storageRef(ref)||!active())return null;const v:any=await client.get(`/api/v1/projects/${a.projectId}/checkpoints/${ref.id}`);if(!active())return null;
- const recordText=await validateCheckpointSnapshot(a,ref,v.snapshot);if(!active())return null;if(!same(v.ref,ref)||v.projectId!==a.projectId||v.recordText!==recordText||!Number.isFinite(Date.parse(v.observedAt))||Date.parse(v.snapshot.recordedAt)>Date.parse(v.observedAt)||!Number.isSafeInteger(v.serverSequence)||v.serverSequence<1)fail();await digest(ordered(v));return active()?structuredClone(v):null;
+ const fixed=await validateStoredCheckpointView(a,ref,v);return active()?fixed:null;
+}
+/** GET 응답과 화면 내부 전달이 같은 서버 보관 기록 원문·ref/hash 검산을 사용한다. 현재 권한이나 로컬 파일 저장을 인증하지 않는다. */
+export async function validateStoredCheckpointView(rawAssignment:{projectId:string;ref:any;snapshot?:any},rawRef:CheckpointStoredRef,rawValue:unknown){
+ const a=structuredClone(rawAssignment),ref=structuredClone(rawRef),v:any=structuredClone(rawValue),recordText=await validateCheckpointSnapshot(a,ref,v?.snapshot);
+ if(!same(v?.ref,ref)||v?.projectId!==a.projectId||v?.recordText!==recordText||!Number.isFinite(Date.parse(v?.observedAt))||Date.parse(v.snapshot.recordedAt)>Date.parse(v.observedAt)||!Number.isSafeInteger(v?.serverSequence)||v.serverSequence<1)fail();await digest(ordered(v));return structuredClone(v);
 }
 export async function listStoredCheckpoints(client:ApiClient,rawAssignment:ConfirmedAssignmentView,cursor:string|null,active:()=>boolean){
  const a=structuredClone(rawAssignment),q=new URLSearchParams({assignmentId:a.ref.id,assignmentVersion:String(a.ref.version),assignmentHash:a.ref.contentHash,limit:'20'});if(cursor!==null)q.set('cursor',cursor);if(!active())return null;const v:any=await client.get(`/api/v1/projects/${a.projectId}/checkpoints?${q}`);if(!active())return null;

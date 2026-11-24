@@ -11,6 +11,9 @@ import {freezeCheckpointSave,checkpointBufferKey} from '../../../apps/web/src/fe
 import {emptyCheckpointForm} from '../../../apps/web/src/features/session-detail/checkpoint-form-restore.ts';
 import {capabilityNames} from '../../../apps/web/src/features/connections/api.ts';
 import {understandingHistoryFixture} from './understanding-history-fixture.ts';
+import {prepareCheckpointDraft} from '../../../apps/server/modules/checkpoints/checkpoint-input.ts';
+import {resultFixture} from './result-view-fixture.ts';
+import {observationJournalFor} from './observation-journal-fixture.ts';
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
 class MemoryNode{
  nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
@@ -52,7 +55,8 @@ export function fixture(tools=false){
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/SessionDetailPage.tsx',import.meta.url));
  const preparation=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/PreparationHistory.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage}from${JSON.stringify(entry)};import * as Preparation from${JSON.stringify(preparation)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{CheckpointEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointEditor.tsx',import.meta.url)))};export{React,createRoot,SessionDetailPage,Preparation,CheckpointEditor,ApiClient};`;}}]});
+ const comparison=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointJournalComparison.tsx',import.meta.url));
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage}from${JSON.stringify(entry)};import * as Preparation from${JSON.stringify(preparation)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{CheckpointEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointEditor.tsx',import.meta.url)))};import{CheckpointJournalComparison}from${JSON.stringify(comparison)};export{React,createRoot,SessionDetailPage,Preparation,CheckpointEditor,CheckpointJournalComparison,ApiClient};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return SessionContextTest;')();
@@ -84,6 +88,12 @@ test('정상 보호 원문 후 동일 App key의 새 CSRF 첫 commit은 이전 �
 
 test('부모 방어: 실제 child에서 직접 캡처한 callback은 unmount 후 무효이며 실제 child 도달 반례와 구분한다',async()=>{
  const f=await mount(true);let closed=false;try{const checkpoint=f.fiber('CheckpointEditor'),reader=f.fiber('CheckpointFileReader');assert.equal(typeof checkpoint.onUnavailable,'function');assert.equal(typeof reader.onRestore,'function');await f.close();closed=true;await ui.React.act(async()=>{checkpoint.onUnavailable('AUTH_REQUIRED');reader.onRestore(emptyCheckpointForm());});assert.deepEqual({lost:f.lost(),changes:f.mutations()},{lost:0,changes:0});}finally{if(!closed)await f.close();}
+});
+test('상세 부모는 현재 scope에서 검산된 서버 체크포인트만 결과 대조에 전달한다',async()=>{
+ const f=await mount(true);try{
+  const editor=f.fiber('CheckpointEditor'),stored={ref:{id:aid,version:1,contentHash:'9'.repeat(64)}};assert.equal(typeof editor.onStoredCheckpoint,'function');
+  await ui.React.act(async()=>editor.onStoredCheckpoint(stored));assert.deepEqual(f.fiber('SessionResults').checkpointStored,stored);
+ }finally{await f.close();}
 });
 
 
@@ -174,21 +184,21 @@ async function mountCheckpoint(replies: ('APPLIED'|'LOST'|'503'|'OK'|'HOLD')[]) 
   if(reply==='503')return Response.json({code:'CHECKPOINT_SOURCE_UNAVAILABLE'},{status:503});
   assert.equal(reply,'OK');return Response.json(detail);
  };
- let client=new ui.ApiClient(transport),currentSession=session,visible=true;
+ let client=new ui.ApiClient(transport),currentSession=session,visible=true,selectedCheckpoint:any=null;
  const container:MemoryNode=document.createElement('div');document.body.appendChild(container);
  const root=ui.createRoot(container),seed={...emptyCheckpointForm(),position:'원 입력 보존',serverWork:{pending,uncertain:false,rejected:null,storedRef:null}};
  let buffers:Record<string,any>={[key]:seed};
  function Host(){
   const [saved,setSaved]=ui.React.useState(buffers);buffers=saved;
   const storage={buffers:saved,onChange:(k:string,fn:Function)=>setSaved((prev:Record<string,any>)=>({...prev,[k]:fn(prev[k]??null)}))};
-  return visible?ui.React.createElement(ui.CheckpointEditor,{client,session:currentSession,assignment:f.assignment,storage,onUnavailable:(code:string)=>lost.push(code)}):null;
+  return visible?ui.React.createElement(ui.CheckpointEditor,{client,session:currentSession,assignment:f.assignment,storage,onUnavailable:(code:string)=>lost.push(code),onStoredCheckpoint:(value:any)=>{selectedCheckpoint=value;}}):null;
  }
  async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(Host)));}
  async function waitFor(check:()=>boolean){const until=Date.now()+2500;while(!check()&&Date.now()<until)await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});assert(check(),container.textContent);}
  function button(label:string,node=container):MemoryNode|undefined{if(node.tagName==='BUTTON'&&node.textContent===label)return node;for(const child of node.childNodes){const hit=button(label,child);if(hit)return hit;}}
  async function click(label:string){const b=button(label);assert(b,label);assert(!b.disabled,label);await ui.React.act(async()=>{b.dispatchEvent({type:'click',button:0,bubbles:true});});}
  await render();
- return {posts,gets,lost,pending,ref,record,container,button,click,waitFor,work:()=>buffers[key].serverWork,buffers:()=>buffers,
+ return {posts,gets,lost,pending,ref,record,container,button,click,waitFor,work:()=>buffers[key].serverWork,buffers:()=>buffers,selectedCheckpoint:()=>selectedCheckpoint,
   async show(value:boolean){visible=value;await render();},
   async replace(subject:'user'|'client'){if(subject==='user')currentSession={...session,user:{id:pid}};else client=new ui.ApiClient(transport);await render();},
   held:()=>!!release,async finish(ok:boolean){assert(release);await ui.React.act(async()=>release!(ok?Response.json(detail):Response.json({code:'AUTH_REQUIRED'},{status:401})));},
@@ -205,6 +215,43 @@ test('체크포인트 저장 영수증 후 GET503과 화면 왕복에도 원 참
   assert.equal(x.gets.length,2);assert.equal(x.gets[0],x.gets[1]);assert.equal(x.posts.length,1);
   assert.deepEqual(x.work(),{pending:null,uncertain:false,rejected:null,storedRef:x.ref});
  }finally{await x.close();}
+});
+
+test('검산된 서버 체크포인트 선택은 같은 원객체를 상위에 전달하고 닫기에서 즉시 폐기한다',async()=>{
+ const x=await mountCheckpoint(['APPLIED','OK']);try{
+  await x.click('서버 기록 명시 저장');await x.waitFor(()=>x.container.textContent.includes(x.record.recordText));
+  assert.deepEqual(x.selectedCheckpoint()?.ref,x.ref);assert.deepEqual(x.selectedCheckpoint()?.snapshot,x.record.snapshot);
+  await x.click('기록 닫기');assert.equal(x.selectedCheckpoint(),null);assert.equal(x.posts.length,1);assert.equal(x.gets.length,1);
+ }finally{await x.close();}
+});
+
+function checkpointComparisonFixture(){
+ const f=checkpointFixture(),result=resultFixture().entry;
+ result.snapshot.scope.projectId=f.assignment.projectId;result.snapshot.scope.assignmentRef=f.assignment.ref;result.snapshot.manifest.assignmentRef=f.assignment.ref;
+ f.input.state.executionRefs=[result.snapshot.scope.executionRef];
+ const prepared=prepareCheckpointDraft(f.assignment,f.input),record=createCheckpointRecord(prepared,f.by,f.at),checkpointRef={id:aid,version:1,contentHash:hash(record.snapshot)};
+ (result.snapshot.manifest as any).checkpointRef=checkpointRef;result.snapshot.manifestHash=hash(result.snapshot.manifest);result.ref.contentHash=hash(result.snapshot);
+ const stored={projectId:f.assignment.projectId,ref:checkpointRef,...record,serverSequence:1,observedAt:f.at},journal=observationJournalFor(result);
+ return{stored,result,journal};
+}
+
+async function mountCheckpointComparison(reply:'OK'|'HOLD'){
+ const f=checkpointComparisonFixture(),lost:string[]=[],container:MemoryNode=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);let release:((value:Response)=>void)|null=null,calls=0;
+ const transport:typeof fetch=async()=>{calls++;if(reply==='HOLD')return new Promise<Response>(resolve=>{release=resolve;});return Response.json(f.journal);},client=new ui.ApiClient(transport);
+ const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((child:MemoryNode)=>nodes(child))];
+ function Host(){return ui.React.createElement(ui.CheckpointJournalComparison,{client,file:null,stored:f.stored,result:f.result,onUnavailable:(code:string)=>lost.push(code)});}
+ async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(Host)));}
+ async function flush(){await ui.React.act(async()=>{await new Promise(resolve=>setImmediate(resolve));});}
+ async function click(){const buttons=nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent==='서버 기록과 보관 ACK 대조');assert.equal(buttons.length,1);assert(!buttons[0]!.disabled,'현재 transport 대조 버튼 복구');await ui.React.act(async()=>buttons[0]!.dispatchEvent({type:'click',button:0,bubbles:true}));}
+ await render();return{...f,client,container,lost,calls:()=>calls,click,render,flush,held:()=>!!release,finish(value:Response){assert(release);const send=release;release=null;return ui.React.act(async()=>send!(value));},async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+}
+
+test('체크포인트 비교는 동일 client transport 교체에서 이전 본문을 즉시 숨긴다',async()=>{
+ const f=await mountCheckpointComparison('OK');try{await f.click();const until=Date.now()+2000;while(!f.container.textContent.includes('보관 원장 조회 시각')&&Date.now()<until)await f.flush();assert(f.container.textContent.includes('보관 원장 조회 시각'));f.client.transport=async()=>Response.json(f.journal);await f.render();assert(!f.container.textContent.includes('보관 원장 조회 시각'));}finally{await f.close();}
+});
+
+test('체크포인트 비교는 무렌더 transport 교체 뒤 늦은 200·401을 폐기한다',async()=>{
+ for(const status of[200,401]){const f=await mountCheckpointComparison('HOLD');try{await f.click();const until=Date.now()+2000;while(!f.held()&&Date.now()<until)await f.flush();assert(f.held());let replacementCalls=0;f.client.transport=async()=>{replacementCalls++;return Response.json(f.journal);};await f.finish(status===200?Response.json(f.journal):Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.flush();assert(!f.container.textContent.includes('보관 원장 조회 시각'));assert(!f.container.textContent.includes('AUTH_REQUIRED'));assert.deepEqual(f.lost,[]);assert.equal(f.calls(),1);await f.click();const observed=Date.now()+2000;while(!f.container.textContent.includes('보관 원장 조회 시각')&&Date.now()<observed)await f.flush();assert(f.container.textContent.includes('보관 원장 조회 시각'));assert.equal(replacementCalls,1);}finally{await f.close();}}
 });
 
 test('체크포인트 지연 GET은 사용자·클라이언트 교체 및 화면 종료 후 원문·인증 상태를 변경하지 않는다',async()=>{
