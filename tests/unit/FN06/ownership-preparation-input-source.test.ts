@@ -162,3 +162,24 @@ test('정적: normal 원 suspended 최초 관측은 동일 producer에 결박하
  assert.ok(cleanup>=0&&cleanup<contradiction&&contradiction<cleared,'보유한 최초 관측이 있을 때만 cleanup receipt 대조 후 제거');
  assert.doesNotMatch(producer,/(?:internal|public) OwnershipEvidenceJobFactorySource\.NormalProcessOwnerObservation|PREPARED|queue/i);
 });
+
+test('정적: 성공 claim은 일반 응답 직전 같은 원 process·durable claim을 재검산하되 최초 관측을 교체하지 않는다',()=>{
+ const host=readFileSync(new URL('../../../apps/connector/native/DesktopTrustKeyHostSource.cs',import.meta.url),'utf8');
+ const producer=host.slice(host.indexOf('internal abstract class NormalStartPreparationProducer'),host.indexOf('readonly NormalStartPreparationProducer'));
+ const handler=host.slice(host.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'));
+ assert.match(producer,/internal void RecheckOwned\(NormalExecutionSpoolProfileSource\.NormalStartPreparationClaimMaterial consumed,Func<int> remaining,Action current,Action<NormalExecutionSpoolProfileSource\.NormalStartPreparationClaimMaterial> claimCurrent\)/);
+ const recheck=producer.slice(producer.indexOf('internal void RecheckOwned('),producer.indexOf('public void Dispose()'));
+ assert.match(recheck,/lock\(gate\)/);assert.match(recheck,/Object\.ReferenceEquals\(consumed,material\)/);
+ assert.match(recheck,/var latest=OwnershipEvidenceJobFactorySource\.ReadOriginalNormalSuspendedProcessSource\(process,Math\.Min\(2000,left\(\)\)\)/);
+ assert.match(recheck,/ValidProcessObservation\(latest\)/);assert.match(recheck,/SameProcessObservation\(first,latest\)/);
+ const same=producer.slice(producer.indexOf('static bool SameProcessObservation('),producer.indexOf('internal void CreateOwned('));
+ assert.match(same,/latest\.ObservedAt>=first\.ObservedAt/);
+ for(const field of ['ImageRefJson','RequestRefJson','LocalClaimRefJson','LocalProcessId','LocalProcessGeneration','ExpiresAt'])assert(same.includes('latest.'+field+'==first.'+field),field);
+ const readAt=recheck.indexOf('var latest=OwnershipEvidenceJobFactorySource.ReadOriginalNormalSuspendedProcessSource'),claimAt=recheck.indexOf('claimCurrent(material)',readAt),lastCurrent=recheck.indexOf('left();',claimAt);
+ assert.ok(readAt>=0&&readAt<claimAt&&claimAt<lastCurrent,'재관측 후 같은 call 내 durable claim read·최종 current');
+ assert.equal((producer.match(/processObservation=observed/g)||[]).length,1);assert.doesNotMatch(recheck,/processObservation\s*=(?!=)|Dispose\(|cleanupUnknown\s*=(?!=)/);
+ const capability=handler.indexOf('if(claim.Capability==null)return claim.Output'),rejected=handler.indexOf('if(rejected!=null)'),created=handler.indexOf('normalStartPreparationProducer.CreateOwned'),released=handler.indexOf('retained=null',created),reobserved=handler.indexOf('normalStartPreparationProducer.RecheckOwned',released),returned=handler.indexOf('return claim.Output',reobserved);
+ assert.ok(capability>=0&&capability<rejected&&rejected<created&&created<released&&released<reobserved&&reobserved<returned,'replay·REJECTED 조기 반환 후 성공 owner 이전→재관측→응답');
+ assert.match(handler,/RecheckOwned\(material,\(\)=>call\.Remaining\(\),ready,exact=>spoolProfile\.ReadNormalStartPreparationClaimCurrent\(exact,\(\)=>call\.Now,ready\)\)/);
+ assert.equal((handler.match(/RecheckOwned\(/g)||[]).length,1);assert.doesNotMatch(handler.slice(created,returned),/Dispose\(|cleanupUnknown\s*=/);
+});
