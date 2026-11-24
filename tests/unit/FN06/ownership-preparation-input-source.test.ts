@@ -167,7 +167,7 @@ test('정적: 성공 claim은 일반 응답 직전 같은 원 process·durable c
  const host=readFileSync(new URL('../../../apps/connector/native/DesktopTrustKeyHostSource.cs',import.meta.url),'utf8');
  const producer=host.slice(host.indexOf('internal abstract class NormalStartPreparationProducer'),host.indexOf('readonly NormalStartPreparationProducer'));
  const handler=host.slice(host.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'));
- assert.match(producer,/internal void RecheckOwned\(NormalExecutionSpoolProfileSource\.NormalStartPreparationClaimMaterial consumed,Func<int> remaining,Action current,Action<NormalExecutionSpoolProfileSource\.NormalStartPreparationClaimMaterial> claimCurrent\)/);
+ assert.match(producer,/internal void RecheckOwned\(NormalExecutionSpoolProfileSource\.NormalStartPreparationClaimMaterial consumed,Func<int> remaining,Action current,Action<NormalExecutionSpoolProfileSource\.NormalStartPreparationClaimMaterial> claimCurrent,Func</);
  const recheck=producer.slice(producer.indexOf('internal void RecheckOwned('),producer.indexOf('public void Dispose()'));
  assert.match(recheck,/lock\(gate\)/);assert.match(recheck,/Object\.ReferenceEquals\(consumed,material\)/);
  assert.match(recheck,/var latest=OwnershipEvidenceJobFactorySource\.ReadOriginalNormalSuspendedProcessSource\(process,Math\.Min\(2000,left\(\)\)\)/);
@@ -180,6 +180,51 @@ test('정적: 성공 claim은 일반 응답 직전 같은 원 process·durable c
  assert.equal((producer.match(/processObservation=observed/g)||[]).length,1);assert.doesNotMatch(recheck,/processObservation\s*=(?!=)|Dispose\(|cleanupUnknown\s*=(?!=)/);
  const capability=handler.indexOf('if(claim.Capability==null)return claim.Output'),rejected=handler.indexOf('if(rejected!=null)'),created=handler.indexOf('normalStartPreparationProducer.CreateOwned'),released=handler.indexOf('retained=null',created),reobserved=handler.indexOf('normalStartPreparationProducer.RecheckOwned',released),returned=handler.indexOf('return claim.Output',reobserved);
  assert.ok(capability>=0&&capability<rejected&&rejected<created&&created<released&&released<reobserved&&reobserved<returned,'replay·REJECTED 조기 반환 후 성공 owner 이전→재관측→응답');
- assert.match(handler,/RecheckOwned\(material,\(\)=>call\.Remaining\(\),ready,exact=>spoolProfile\.ReadNormalStartPreparationClaimCurrent\(exact,\(\)=>call\.Now,ready\)\)/);
+ assert.match(handler,/RecheckOwned\(material,\(\)=>call\.Remaining\(\),ready,exact=>spoolProfile\.ReadNormalStartPreparationClaimCurrent\(exact,\(\)=>call\.Now,ready\),\(exact,first,latest,processId,generation\)=>spoolProfile\.RecordNormalStartPreparationOwnerTerminal/);
  assert.equal((handler.match(/RecheckOwned\(/g)||[]).length,1);assert.doesNotMatch(handler.slice(created,returned),/Dispose\(|cleanupUnknown\s*=/);
+});
+
+test('정적: 같은 원 owner 재관측 terminal은 durable claim 원장에만 단회 기록되고 PREPARED나 권위로 승격하지 않는다',()=>{
+ const host=readFileSync(new URL('../../../apps/connector/native/DesktopTrustKeyHostSource.cs',import.meta.url),'utf8');
+ const spool=readFileSync(new URL('../../../apps/connector/native/NormalExecutionSpoolProfileSource.cs',import.meta.url),'utf8');
+ const producer=host.slice(host.indexOf('internal abstract class NormalStartPreparationProducer'),host.indexOf('readonly NormalStartPreparationProducer'));
+ const recheck=producer.slice(producer.indexOf('internal void RecheckOwned('),producer.indexOf('public void Dispose()'));
+ const handler=host.slice(host.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'));
+ assert.match(producer,/NormalStartPreparationOwnerTerminalCandidate ownerTerminal/);
+ assert.match(recheck,/Func<NormalExecutionSpoolProfileSource\.NormalStartPreparationClaimMaterial,DateTime,DateTime,string,long,NormalExecutionSpoolProfileSource\.NormalStartPreparationOwnerTerminalCandidate> terminal/);
+ const observed=recheck.indexOf('ReadOriginalNormalSuspendedProcessSource'),claimCurrent=recheck.indexOf('claimCurrent(material)',observed),recorded=recheck.indexOf('ownerTerminal=terminal(material,first.ObservedAt,latest.ObservedAt,localProcessId,localProcessGeneration)',claimCurrent);
+ assert.ok(observed>=0&&observed<claimCurrent&&claimCurrent<recorded,'원 process 재관측·claim current 후에만 terminal 기록');
+ assert.match(handler,/RecordNormalStartPreparationOwnerTerminal\(exact,first,latest,processId,generation,\(\)=>call\.Now,ready\)/);
+ assert.match(handler,/normalStartPreparationProducer\.RecheckOwned\([\s\S]*return claim\.Output/);
+ assert.doesNotMatch(handler,/PREPARED|POST|queue/);
+ assert.match(spool,/const string NormalPreparationOwnerTerminal="NORMAL_START_PREPARATION_OWNER_TERMINAL_V1"/);
+ assert.match(spool,/internal abstract class NormalStartPreparationOwnerTerminalCandidate/);
+ assert.match(spool,/internal NormalStartPreparationOwnerTerminalCandidate RecordNormalStartPreparationOwnerTerminal\(/);
+ const record=spool.slice(spool.indexOf('internal NormalStartPreparationOwnerTerminalCandidate RecordNormalStartPreparationOwnerTerminal('),spool.indexOf('const string RejectedAvailable='));
+ assert.match(record,/firstObservedAt<=observedAt/);assert.match(record,/observedAt<=recordedAt/);assert.match(record,/recordedAt<material\.ExpiresAt/);
+ assert.match(record,/kind==NormalPreparationOwnerTerminal&&S\(candidate,"key"\)==claimId\)conflict=true/);
+ assert.match(record,/Append\(log,rows,row,\(\)=>\{check\(\);appendStarted=true;\}\)/);
+ assert.match(record,/if\(appendStarted\)blocked=true/);
+ for(const flag of ['osOwnershipVerified','processCreationAuthorized','preparationAuthorized','executionAuthorized','dispatchPerformed'])assert.match(record,new RegExp('"'+flag+'",false'));
+ assert.doesNotMatch(record,/PREPARED|POST|queue|sourceRef|file/i);
+ assert.match(spool,/if\(k==NormalPreparationOwnerTerminal\)[\s\S]*resultStages\.Add\(claim,3\)/);
+ assert.match(spool,/ValidateNormalPreparationOwnerTerminals\(rows\)/);
+ const dispose=producer.slice(producer.indexOf('public void Dispose()'));
+ assert.match(dispose,/ownerTerminal\.CheckCurrent\(\)/);assert.match(dispose,/ownerTerminal=null/);
+});
+
+test('정적: owner terminal은 원 claim 후행이며 claim recordedAt 이후의 비후퇴 관측만 수용한다',()=>{
+ const spool=readFileSync(new URL('../../../apps/connector/native/NormalExecutionSpoolProfileSource.cs',import.meta.url),'utf8');
+ const validate=spool.slice(spool.indexOf('static void ValidateNormalPreparationOwnerTerminals('),spool.indexOf('// 같은 원 등록/요청의 생성 전 단회 소진이다'));
+ assert.match(validate,/var sourceRows=new Dictionary<string,Row>\(\),sourceIndexes=new Dictionary<string,int>\(\);var rejectedClaims=new HashSet<string>\(\)/);
+ assert.match(validate,/for\(int i=0;i<rows\.Count;i\+\+\)/);
+ assert.match(validate,/sourceIndexes\.Add\(S\(row,"id"\),i\)/);
+ assert.match(validate,/sourceIndexes\[claimId\]>=terminalIndex/,'전체 rows 어디에나 claim이 있는 것만으로는 부족');
+ assert.match(validate,/DateTime sourceRecordedAt=DesktopTrustKeyHostSource\.Time\(source,"recordedAt"\)/);
+ assert.match(validate,/sourceRecordedAt>first\|\|first>observed\|\|observed>recorded\|\|recorded>=expires/);
+ assert.match(validate,/rejectedClaims\.Contains\(claimId\)/);
+ const record=spool.slice(spool.indexOf('internal NormalStartPreparationOwnerTerminalCandidate RecordNormalStartPreparationOwnerTerminal('),spool.indexOf('const string RejectedAvailable='));
+ assert.match(record,/DateTime sourceRecordedAt=DesktopTrustKeyHostSource\.Time\(source,"recordedAt"\)/);
+ assert.match(record,/sourceRecordedAt>firstObservedAt/);
+ assert.match(record,/foreach\(var candidate in rows\)/,'writer도 원 시간·상호배타를 한 scan으로 검산');
 });
