@@ -77,6 +77,9 @@ internal sealed class NativeWorkerDeploymentSource:NativePreparationWorkerProven
   var observed=Observe(factory);activeObservation=observed;byte[] worker=null;
   try{observed.Check();Equal(input["bundle"],observed.Value["bundle"]);Equal(input["head"],observed.Value["head"]);var bundle=V.Map(observed.Value["bundle"]);Bound();Parent(bundle);Bound();var d=V.Map(V.Map(bundle["descriptor"])["snapshot"]);worker=peer().ReadPackagedWorker(V.Text(d,"workerHash"),Bound);Bound();var result=store.Install(bundle,V.Map(observed.Value["head"]),worker,DateTime.UtcNow);Bound();var after=Observe(factory);observed.Check();after.Check();Equal(after.Value["bundle"],bundle);Equal(after.Value["head"],observed.Value["head"]);return result;}finally{activeObservation=null;if(worker!=null)Array.Clear(worker,0,worker.Length);}
  }
+ internal Dictionary<string,object> InstallManagement(Dictionary<string,object> raw,Dictionary<string,object> binding){
+  if(installed)throw Invalid();installed=true;V.Exact(raw,"factoryRef,bundle,head");var input=Clone(raw);var factory=V.Ref(input["factoryRef"],false);Live();Validate(V.Map(input["bundle"]),V.Map(input["head"]),factory,DateTime.UtcNow);store.InstallManagement(binding,factory);throw Invalid();
+ }
  internal Dictionary<string,object> ReadManagementSettlement(Dictionary<string,object> raw){
   V.Exact(raw,"offerRef,commandId,commandHash,factoryRef,registrationAttemptId,registrationRecordHash");var input=Clone(raw);var offer=V.Ref(input["offerRef"],true);var factory=V.Ref(input["factoryRef"],false);Live();V.Id(input,"commandId");V.Id(input,"registrationAttemptId");V.RequireHash(V.Text(input,"commandHash"));V.RequireHash(V.Text(input,"registrationRecordHash"));if(offer==null||factory==null)throw Invalid();storage.RequireDurability();throw Invalid();
  }

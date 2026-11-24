@@ -64,6 +64,16 @@ test('native source 정적: 정착 관리 exact six는 기존 REGISTERED root에
  const start=deployment.indexOf('ReadManagementSettlement('),body=deployment.slice(start,deployment.indexOf('// 새 목적 설치',start));assert.ok(start>=0&&body.length>0);assert.match(body,/storage\.RequireDurability\(\)/);assert.doesNotMatch(body,/Install\(|InstallNormal\(|ReadNormalImage\(/);
 });
 
+test('native source 정적: 관리 설치는 legacy exact2와 분리해 원 request와 root-bound selection을 store guard까지 전달한다',()=>{
+ const host=read('DesktopTrustKeyHostSource.cs'),deployment=read('NativeWorkerDeploymentSource.cs'),store=read('NativeWorkerInstallationStoreSource.cs');
+ const legacy=host.slice(host.indexOf('if(operation=="INSTALL_WORKER")'),host.indexOf('if(operation=="INSTALL_WORKER_MANAGEMENT_V1")'));
+ assert.match(legacy,/Exact\(value,"attemptId,request"\)/);assert.match(legacy,/workerDeployment\.Install\(request\)/);
+ const managed=host.slice(host.indexOf('if(operation=="INSTALL_WORKER_MANAGEMENT_V1")'),host.indexOf('if(operation=="READ_WORKER_INSTALLATION_SETTLEMENT_V1")'));
+ assert.match(managed,/Exact\(value,"attemptId,installRequestId,selection,request"\)/);assert.match(managed,/NATIVE_WORKER_INSTALLATION_MANAGEMENT_SELECTION_V1/);assert.match(managed,/registrationRootIdentity.*root\.Identity/);assert.match(managed,/managementSelectionHash/);assert.match(managed,/workerDeployment\.InstallManagement/);
+ const path=deployment.slice(deployment.indexOf('InstallManagement('),deployment.indexOf('ReadManagementSettlement('));assert.match(path,/store\.InstallManagement\(binding,factory\)/);assert.doesNotMatch(path,/Observe\(|ReadPackagedWorker/);
+ const admission=store.slice(store.indexOf('ValidateManagementInstall('),store.indexOf('internal Dictionary<string,object> Install('));assert.match(admission,/managementSelectionHash/);assert.match(admission,/installRequestId/);assert.match(admission,/V\.Same\(selectedFactory,factory\)/);assert.ok(admission.indexOf('ValidateManagementInstall(binding,factory)')<admission.indexOf('io.RequireDurability()'));assert.match(admission,/NATIVE_WORKER_INSTALLATION_UNSUPPORTED/);
+});
+
 test('native 관측 source 정적: 요청 1초 closure가 원 worker 읽기와 첫 저장까지 이어진다',()=>{const s=read('NativeWorkerDeploymentSource.cs');assert.match(s,/sealed class Observation/);assert.match(s,/new NativeWorkerInstallationStoreSource\(storage,Bound\)/);assert.match(s,/ReadPackagedWorker\(V.Text\(d,"workerHash"\),Bound\)/);assert.match(s,/observed.Check\(\);[\s\S]*store.Install/);assert.match(s,/activeObservation=null/);});
 
 test('normal image 결박은 기존 설치 행과 분리되고 원 등록 host에서만 생성·정확 재조회된다',()=>{

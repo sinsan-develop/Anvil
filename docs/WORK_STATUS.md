@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 보호 설치 원 요청의 native 결박** — 담당 `c11_quality_review`, 기준 `4569931d`. 기존 명시 설치 호출에서 저장한 정확 원 요청 ID와 단일 현재 offer/등록의 6개 값이 한 번만 별도 내부 native 호출로 이어진다. 기존 `INSTALL_WORKER`와 준비 호출은 기존 형상을 유지한다. Native Host가 인증된 원 등록과 root를 넣어 canonical 선택 hash를 계산하고, Store가 같은 factory와 원 요청의 결박을 다시 검사한 뒤 기존 미지원 guard에서 닫는다. 제품 4개·시험 2개. 최초 RED 2건, Main 대상 2파일 158/158(a2636d)·타입 0(64d0ca)·diff 0(07b2ee), 독립 C0/I0. 실제 Windows/C#/파일·DB/키/권한·서비스·Agent 미실행. Task2의 원 요청 결박만 반영했으며 ACTIVE/최종 marker·재시작 read의 같은 hash 계산과 실제 Windows 검증은 남아 있다.
+
 - **FN08 보호 설치 관리 읽기 진입 연결** — 담당 `c11_quality_review`, 기준 `fd1a4e19`. 기존 관리 화면의 명시 읽기를 단일 현재 OFFER·REGISTERED owner, 기존 trust IPC와 pinned native의 읽기 전용 목적에 연결했다. 현재는 기본 Windows guard의 `UNSUPPORTED`만 허용하며 조작된 성공, 교차 요청, 늦은 응답 및 host close 불명을 폐쇄한다. 기존 설치 action과 단회 처리는 유지하고 과거 응답·설치·복구·실행 권위는 발급하지 않는다. 제품 7개·시험 4개·관리 읽기 WI 1개. 작성자 RED 43/50, Main 최종 관련 5파일 186/186(219173/e70836/b61283)·타입 0(071c2f)·diff 0(c99ed8), 독립 C0/I0. 실제 C#·Windows/host/marker·키·DB/권한·서비스·Agent 실행은 미검증이다. 같은 원 설치 marker writer와 existing-only reader(Task2~3)는 미구현이다.
 
 - **FN08 Windows 보호 설치 중단 판독 합성 계약** — 담당 `c11_quality_review`, 기준 `0fee32c4`. 제품 코드 없이 기존 시험 파일에서 정착 marker와 container·이전 prefix·원 설치 revision 2·같은 등록/패키지/worker의 관계를 메모리로 대조한다. 원 close 전후 동일 정착 사실에서도 과거 요청 UNKNOWN과 실행·정리 효과 0을 확인한다. 다른 root·SID·등록·descriptor, 재봉인한 이전 기록/잘못된 revision, partial/ACTIVE/배타 충돌 및 기존 metadata 상한을 거절한다. 시험 1파일, Main 최종 집중 4/4(5b2c81)·구문 0(49d6d4)·diff 0(c0d639), 독립 C0/I0. 제품·실제 Windows/키·권한·DB/서비스·Agent 변경 없이 현재 관리 호출선과 실제 Win32 저장 및 복구는 미완료다.
