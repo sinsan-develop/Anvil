@@ -143,7 +143,15 @@ export function SessionDetailContent({detail}:{detail:SessionDetail}){
   </section>
   <section className="status-card" aria-label="실행 준비 이력"><h3>저장된 실행 준비 이력</h3>
    {s===null?<p>실행 준비 이력 미조회 · 준비 기록이 없다는 판정이 아닙니다.</p>:<>
-   {s?.preparations.length?<ul>{s.preparations.map(p=><li key={p.ref.id}><dl><Reference label="준비 원본" value={p.ref}/></dl><p>{p.snapshot.intent.mode==='WORK'?'작업 준비':'맥락 확인 준비'} · 허가되지 않음 · <time dateTime={p.snapshot.checkedAt}>{p.snapshot.checkedAt}</time></p><p>부족 항목: {p.snapshot.missingConditions.join(', ')||'보고 없음 · 현재 준비 완료 판정 아님'}</p></li>)}</ul>:<p>확인된 실행 준비 기록 없음</p>}
+   {s?.preparations.length?<ul>{s.preparations.map(p=>{
+    const work=p.snapshot.intent.mode==='WORK',basis=work?p.snapshot.understandingBasis:null;
+    return <li key={p.ref.id}>
+     <dl><Reference label="준비 원본" value={p.ref}/>{basis?<Reference label="정착 이해 판단" value={basis.reviewRef}/>:null}</dl>
+     <p>{work?'작업 준비':'맥락 확인 준비'} · 허가되지 않음 · <time dateTime={p.snapshot.checkedAt}>{p.snapshot.checkedAt}</time></p>
+     {work?(basis?<p>원 실행 {basis.scope.executionId} · 세대 {basis.scope.executionGeneration}</p>:<p>정착 이해 근거 없음 · legacy 준비</p>):null}
+     <p>부족 항목: {p.snapshot.missingConditions.join(', ')||'보고 없음 · 현재 준비 완료 판정 아님'}</p>
+    </li>;
+   })}</ul>:<p>확인된 실행 준비 기록 없음</p>}
    </>}
    {s?.hasMorePreparations?<p>최근 20건 요약입니다. 전체 준비 이력에서 이전 기록을 명시적으로 조회할 수 있습니다.</p>:null}
   </section>

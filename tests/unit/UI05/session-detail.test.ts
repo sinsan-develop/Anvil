@@ -57,6 +57,22 @@ test('상세화면은고정임무·완료조건과누락증거를표시하고미
  }finally{await compiler.close();}
 });
 
+test('상세화면의 저장된 WORK 준비는 고정 검토 ref·원 실행 세대를 표시하고 legacy와 다른 모드를 섞지 않는다',async()=>{
+ const compiler=await createServer({configFile:fileURLToPath(new URL('../../../apps/web/vite.config.ts',import.meta.url)),server:{middlewareMode:true,hmr:false,watch:null},optimizeDeps:{noDiscovery:true},logLevel:'silent'});
+ try{
+  const screen=await compiler.ssrLoadModule('/src/features/session-detail/SessionDetailPage.tsx'),f=fixture(),detail=await mod.readSessionDetail(f.client,pid,f.draft.ref),before=f.calls.length;
+  const workRef={id:'55555555-5555-4555-8555-555555555555',version:1,contentHash:'d'.repeat(64)},reviewRef={id:'66666666-6666-4666-8666-666666666666',version:2,contentHash:'e'.repeat(64)},executionId='77777777-7777-4777-8777-777777777777';
+  const snapshot={intent:{mode:'WORK',reason:'표시하면 안 되는 준비 상세 이유'},checkedAt:at,missingConditions:[],options:{body:'표시하면 안 되는 옵션 원문'},understandingBasis:{reviewRef,scope:{projectId:pid,executionId,executionGeneration:3}}};
+  const legacyRef={id:'88888888-8888-4888-8888-888888888888',version:1,contentHash:'f'.repeat(64)},contextRef={id:'99999999-9999-4999-8999-999999999999',version:1,contentHash:'b'.repeat(64)};
+  detail.state.preparations=[{projectId:pid,ref:workRef,snapshot},{projectId:pid,ref:legacyRef,snapshot:{intent:{mode:'WORK'},checkedAt:at,missingConditions:[]}},{projectId:pid,ref:contextRef,snapshot:{intent:{mode:'CONTEXT_REVIEW'},checkedAt:at,missingConditions:[]}}];
+  const html=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail}));assert.equal(f.calls.length,before,'이력 표시는 자동 GET/POST를 추가하지 않는다');
+  assert(html.includes(`${workRef.id} · v1<br/>${workRef.contentHash}`),'준비 full ref');assert(html.includes(`${reviewRef.id} · v2<br/>${reviewRef.contentHash}`),'검토 full ref');
+  for(const value of [executionId,'세대 3','정착 이해 근거 없음 · legacy 준비','맥락 확인 준비',contextRef.contentHash])assert(html.includes(value),value);
+  assert.equal(html.split('정착 이해 근거 없음 · legacy 준비').length-1,1,'WORK legacy만 결박 없음으로 표시한다');
+  assert(!html.includes('표시하면 안 되는 준비 상세 이유'));assert(!html.includes('표시하면 안 되는 옵션 원문'));
+ }finally{await compiler.close();}
+});
+
 test('내용 미확정의 역할·예약·준비 미조회는 조회한 빈 이력과 구분한다',async()=>{
  const f=fixture();Object.assign(f.decision,{confirmedRef:null});
  const detail=await mod.readSessionDetail(f.client,pid,f.draft.ref);assert.equal(detail.state,null);assert.equal(detail.confirmed,null);assert.equal(f.calls.length,2);
