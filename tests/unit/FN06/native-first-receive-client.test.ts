@@ -356,6 +356,40 @@ test('전용 실제 client는 pre-EOF 후보 뒤 원 stream을 보유하고 정�
  }finally{f.client.disposeReceive();assert.equal(f.timers.size,0);}
 });
 
+test('정상 EOF의 원 준비 custody만 단회 소비하며 SOURCE_UNAVAILABLE 뒤 기존 REJECTED 결과는 보존한다',async()=>{
+ const {NativeFirstReceiveHumanClient:Client}=await import('../../../apps/connector/runtime/native-first-receive-client.ts'),f=await normalPreparationHttpFixture();let calls=0,ticket:unknown;
+ try{
+  await f.consume();assert.equal(typeof f.client.prepareNormalStartPreparation,'function');
+  const preparing=f.client.prepareNormalStartPreparation({prepareOwned:async(raw:unknown)=>{calls++;ticket=raw;assert.equal(f.stateNormal.stream.complete,true);assert.throws(()=>JSON.stringify(raw));
+   await assert.rejects(()=>Client.consumeNormalStartPreparationCustody({},async()=>({state:'SOURCE_UNAVAILABLE'})));
+   const result=await Client.consumeNormalStartPreparationCustody(raw,async original=>{assert.deepEqual(original.request,f.request);assert.deepEqual(original.window.ref,f.input.window.ref);assert.deepEqual(original.session.ref,f.request.receiveSessionRef);original.check();assert(original.remainingMs()<=2000);return{state:'SOURCE_UNAVAILABLE'};});
+   await assert.rejects(()=>Client.consumeNormalStartPreparationCustody(raw,async()=>({state:'SOURCE_UNAVAILABLE'})));return result;
+  }});
+  await Promise.resolve();assert.equal(calls,0);f.eof();assert.deepEqual(await preparing,{state:'SOURCE_UNAVAILABLE'});assert.equal(calls,1);assert.equal(f.stateNormal.posts,0);
+  await assert.rejects(()=>f.client.prepareNormalStartPreparation({prepareOwned:async()=>{calls++;return{state:'SOURCE_UNAVAILABLE'};}}));assert.equal(calls,1);
+  await assert.rejects(()=>Client.consumeNormalStartPreparationCustody(ticket,async()=>({state:'SOURCE_UNAVAILABLE'})));
+  assert.deepEqual(await f.client.sendNormalStartPreparationResult(f.sourceResult),f.stored);assert.equal(f.stateNormal.produced,1);assert.equal(f.stateNormal.posts,1);
+ }finally{f.client.disposeReceive();assert.equal(f.timers.size,0);}
+});
+
+test('준비 custody의 tail/abort/close/owner/2초 대기와 위조 수용은 native 소비·POST를 새로 만들지 않는다',async()=>{
+ const {NativeFirstReceiveHumanClient:Client}=await import('../../../apps/connector/runtime/native-first-receive-client.ts');
+ for(const mode of ['TAIL','ABORT','CLOSE','OWNER','WAIT','UNCONSUMED','LATE']){
+  const f=await normalPreparationHttpFixture();let calls=0,token:unknown,entered!:()=>void;const begun=new Promise<void>(resolve=>{entered=resolve;});
+  try{await f.consume();const pending=f.client.prepareNormalStartPreparation({prepareOwned:async(ticket:unknown)=>{calls++;token=ticket;entered();if(mode==='UNCONSUMED')return{state:'SOURCE_UNAVAILABLE'};return new Promise(()=>{});}});void pending.catch(()=>{});
+   if(mode==='TAIL')f.stateNormal.stream.emit('data',Buffer.from('tail'));
+   if(mode==='ABORT')f.stateNormal.stream.emit('aborted');
+   if(mode==='CLOSE')f.stateNormal.stream.emit('close');
+   if(mode==='OWNER'){f.state.deadline=f.state.now;f.eof();}
+   if(mode==='UNCONSUMED'||mode==='LATE'){f.eof();await begun;}
+   if(mode==='WAIT'||mode==='LATE'){f.state.now+=2000;for(const timer of [...f.timers.values()])if(timer.expires<=f.state.now)timer.callback();}
+   await assert.rejects(pending,/UNKNOWN/);assert.equal(calls,['UNCONSUMED','LATE'].includes(mode)?1:0,mode);assert.equal(f.stateNormal.posts,0);assert.equal(f.stateNormal.produced,0);
+   if(token)await assert.rejects(()=>Client.consumeNormalStartPreparationCustody(token,async()=>{assert.fail('늦은 custody 소비');}));
+   await assert.rejects(f.client.prepareNormalStartPreparation({prepareOwned:async()=>{calls++;return{state:'SOURCE_UNAVAILABLE'};}}));
+  }finally{f.client.disposeReceive();assert.equal(f.timers.size,0,mode);}
+ }
+});
+
 test('후보의 late tail·두번째 frame·abort·early close·owner 교체는 EOF 대기 중 producer/서명/POST0이며 재시도하지 않는다',async()=>{
  for(const mode of ['TAIL','SECOND','ABORT','CLOSE','OWNER','PARTIAL','EOF_HOLD']){
   const f=await normalPreparationHttpFixture();f.stateNormal.mode=mode;

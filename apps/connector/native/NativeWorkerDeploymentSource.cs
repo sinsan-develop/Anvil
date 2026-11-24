@@ -18,6 +18,7 @@ internal sealed class NativeWorkerDeploymentSource:NativePreparationWorkerProven
  static readonly UTF8Encoding Utf8=new UTF8Encoding(false,true);bool installed,disposed;
  internal NativeWorkerDeploymentSource(Func<DesktopTrustKeyPeerSource> originalPeer,Func<Dictionary<string,object>> originalRegistration,Func<int> budget,Action check,DesktopTrustKeyRootKernel roots,NativeWorkerInstallationKernel installation=null){if(originalPeer==null||originalRegistration==null||budget==null||check==null||roots==null)throw Invalid();peer=originalPeer;registration=originalRegistration;remaining=budget;current=check;storage=installation??new WindowsNativeWorkerInstallationKernel(roots,check);store=new NativeWorkerInstallationStoreSource(storage,Bound);}
  static Exception Invalid(){return new InvalidOperationException("NATIVE_WORKER_DEPLOYMENT_UNAVAILABLE");}
+ internal sealed class NormalImageNotStartedException:InvalidOperationException {internal NormalImageNotStartedException():base("NATIVE_WORKER_INSTALLATION_UNSUPPORTED"){} }
  void Live(){if(disposed||remaining()<1)throw Invalid();current();peer().Check();registration();}
  static Dictionary<string,object> Clone(object value){return DesktopTrustKeyHostSource.Parse(Utf8.GetBytes(V.Canonical(value,0)),false);}
  static void Equal(object a,object b){if(!V.Same(a,b))throw Invalid();}
@@ -59,10 +60,13 @@ internal sealed class NativeWorkerDeploymentSource:NativePreparationWorkerProven
  }
  // caller factory/path 없이 동일 원 등록에 결박된 한 건만 찾는다. 이 metadata는
  // request/claim/소진/OS 준비 권위가 아니며 별도의 normal producer가 그대로 재검산해야 한다.
- internal Dictionary<string,object> ReadNormalImage(Dictionary<string,object> scope){
-  Live();storage.RequireDurability();byte[] worker=null;normalLookup=true;
+ internal Dictionary<string,object> ReadNormalImage(Dictionary<string,object> scope){return WithNormalImageForPreparation(scope,(image,check)=>image);}
+ // 보호 image의 원 관측 수명 안에서만 metadata 소비자를 실행한다. callback에 경로/worker bytes를 주지 않는다.
+ internal T WithNormalImageForPreparation<T>(Dictionary<string,object> scope,Func<Dictionary<string,object>,Action,T> consume){
+  if(consume==null)throw Invalid();
+  Live();try{storage.RequireDurability();}catch(InvalidOperationException e){if(storage.GetType()==typeof(WindowsNativeWorkerInstallationKernel)&&e.Message=="NATIVE_WORKER_INSTALLATION_UNSUPPORTED")throw new NormalImageNotStartedException();throw;}byte[] worker=null;normalLookup=true;
   try{var binding=store.ReadNormalBinding(scope,false);normalLookup=false;var factory=V.Ref(binding["factoryRef"],false);var observed=Observe(factory);activeObservation=observed;var bundle=V.Map(binding["bundle"]);Bound();Equal(bundle,observed.Value["bundle"]);Equal(binding["headRef"],V.Map(observed.Value["head"])["ref"]);Parent(bundle);Bound();
-   var checkedBinding=store.ReadNormalBinding(scope);Equal(binding,checkedBinding);worker=peer().ReadPackagedWorker(V.Text(binding,"workerHash"),Bound);Bound();var result=new Dictionary<string,object>{{"state","NORMAL_START_WORKER_IMAGE_VERIFIED"},{"associationRef",NativeWorkerInstallationStoreSource.NormalBindingRef(binding)},{"installationRef",binding["installationRef"]},{"factoryRef",factory},{"descriptorRef",binding["descriptorRef"]},{"packageRef",V.Map(bundle["packageRecord"])["ref"]},{"buildReceiptRef",V.Map(bundle["buildReceipt"])["ref"]},{"headRef",binding["headRef"]},{"workerHash",binding["workerHash"]}};Bound();return result;
+   var checkedBinding=store.ReadNormalBinding(scope);Equal(binding,checkedBinding);worker=peer().ReadPackagedWorker(V.Text(binding,"workerHash"),Bound);Bound();var result=new Dictionary<string,object>{{"state","NORMAL_START_WORKER_IMAGE_VERIFIED"},{"associationRef",NativeWorkerInstallationStoreSource.NormalBindingRef(binding)},{"installationRef",binding["installationRef"]},{"factoryRef",factory},{"descriptorRef",binding["descriptorRef"]},{"packageRef",V.Map(bundle["packageRecord"])["ref"]},{"buildReceiptRef",V.Map(bundle["buildReceipt"])["ref"]},{"headRef",binding["headRef"]},{"workerHash",binding["workerHash"]}};Bound();var value=consume(result,Bound);Bound();return value;
   }finally{normalLookup=false;activeObservation=null;if(worker!=null)Array.Clear(worker,0,worker.Length);}
  }
  internal override NativePreparationWorkerProvenanceSource.DeploymentRecord Read(string factoryKey,Func<int> callerRemaining,Action callerCurrent){

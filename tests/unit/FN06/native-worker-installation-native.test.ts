@@ -46,3 +46,12 @@ test('명시 normal 설치는 기존 INSTALLED를 바꾸지 않고 새 검산 �
  const core=s.slice(s.indexOf('Dictionary<string,object> InstallCore('),s.indexOf('static void ValidateScope('));assert.match(core,/ownerBindings.Length>1/);assert.match(core,/ownerBindings\[0\]\["factoryRef"\]/);assert.ok(core.indexOf('ownerBindings.Length>1')<core.indexOf('io.Acquire()'));assert.match(s,/NATIVE_WORKER_INSTALLATION"&&V.Same\(r\["factoryRef"\]/);
  const normal=d.slice(d.indexOf('internal Dictionary<string,object> InstallNormal('),d.indexOf('internal Dictionary<string,object> ReadNormalImage('));assert.match(normal,/Parent\(bundle\)[\s\S]*ReadPackagedWorker[\s\S]*store.InstallNormal/);
 });
+
+test('native 원 pinned peer 입력은 동일 등록을 검산하고 physical producer 부재에서 claim/image/OS0이다',()=>{
+ const h=read('DesktopTrustKeyHostSource.cs'),start=h.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),end=h.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")',start);assert(start>=0&&end>start);const body=h.slice(start,end);
+ assert.match(body,/attemptId,window,session,request,contextEpoch/);assert.match(body,/NormalRecord\(\)/);assert.match(body,/SOURCE_UNAVAILABLE/);
+ assert.ok(body.indexOf('normalStartPreparationProducer==null')<body.indexOf('WithNormalImageForPreparation'));assert.match(body,/NormalStartRequest\(record,window,session,request,wall\(\)\)/);assert.match(body,/ClaimNormalStartPreparation\(record,request,image/);
+ assert.match(body,/consumerStarted=false/);assert.match(body,/catch\(NativeWorkerDeploymentSource.NormalImageNotStartedException\)/);assert.match(body,/if\(!consumerStarted\)return/);
+ assert.doesNotMatch(body,/ClaimOnce|ReservePreparation|\.Append\(|CreateSuspended|SignNormal|ServerCertificateValidationCallback/);
+ const image=read('NativeWorkerDeploymentSource.cs');assert.match(image,/storage.GetType\(\)==typeof\(WindowsNativeWorkerInstallationKernel\)/);assert.match(image,/var value=consume\(result,Bound\);Bound\(\)/);
+});

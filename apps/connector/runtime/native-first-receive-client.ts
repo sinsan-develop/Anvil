@@ -76,6 +76,8 @@ class NormalStartPreparationFrameDecoder{
 }
 
 type NormalCarrier={request:NormalStartPreparationRequest;complete:Promise<void>;check:()=>void;close:()=>void};
+type NormalRequestCustody={request:NormalStartPreparationRequest;window:any;session:any;signal:AbortSignal;check:()=>void;remainingMs:()=>number};
+const normalRequestCustodies=new WeakMap<object,{used:boolean;read:()=>NormalRequestCustody}>();
 type NormalPorts=NonNullable<Parameters<typeof NativePreparationHttpsChannel.openFirstReceive>[8]>;
 function normalSignature(spki:unknown,signature:unknown,proof:unknown,fingerprint:string){
  if(typeof spki!=='string'||!/^[A-Za-z0-9_-]{122}$/.test(spki)||typeof signature!=='string'||!/^[A-Za-z0-9_-]{85}[AQgw]$/.test(signature))throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
@@ -152,7 +154,14 @@ function normalPreparationPost(profile:any,request:NormalStartPreparationRequest
 
 /** main 소유 Electron Session receiver의 보호 HUMAN GET만 소비한다. 생성/import는 IO0이며 cookie/토큰 추출 포트가 없다. */
 export class NativeFirstReceiveHumanClient{
- #normalPreparation:{phase:'RECEIVING'|'RECEIVED'|'SENDING'|'SETTLED'|'UNKNOWN';request:NormalStartPreparationRequest|null;carrier:NormalCarrier|null;publicKeySpki:string|null;check:()=>number;close:()=>void}|null=null;
+ #normalPreparation:{phase:'RECEIVING'|'RECEIVED'|'PREPARING'|'SENDING'|'SETTLED'|'UNKNOWN';request:NormalStartPreparationRequest|null;carrier:NormalCarrier|null;publicKeySpki:string|null;check:()=>number;close:()=>void}|null=null;
+ #normalPreparationAttempted=false;
+ /** 원 TLS carrier의 정상 EOF 안에서만 유효한 단회 custody다. 같은 pinned peer의 private 입력으로만 연결한다. */
+ static async consumeNormalStartPreparationCustody(raw:unknown,consume:(original:NormalRequestCustody)=>Promise<unknown>){
+  if(!raw||typeof raw!=='object'||types.isProxy(raw)||typeof consume!=='function'||types.isProxy(consume))throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
+  const owned=normalRequestCustodies.get(raw);if(!owned||owned.used)throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
+  const value=owned.read();value.check();owned.used=true;const result=await consume(value);value.check();return result;
+ }
  readonly #session:any;readonly #fetch:Function;readonly #origin:string;readonly #lease:{signal:AbortSignal;check:()=>void};readonly #current:()=>void;readonly #now:()=>number;readonly #httpsPorts:NonNullable<Parameters<typeof NativePreparationHttpsChannel.openFirstReceive>[8]>;#receivePhase:'IDLE'|'OPENING'|'OPENED'|'FAILED'|'DISPOSED'='IDLE';#receiveSecret:Buffer|null=null;#receiveSession:any=null;#receiveWindow:any=null;#receiveProfile:any=null;#receiveDeadline=Infinity;readonly #receiveCalls=new Map<string,{issued:number;expires:number;signature:string}>();readonly #handoffCalls=new WeakMap<object,{issued:number;expires:number}>();#receiveClosed=false;#deliverySecret:Buffer|null=null;#deliveryFrame:Buffer|null=null;#deliveryReceived=false;#deliveryMetadata:any=null;#deliveryStreamKey:string|null=null;#deliveryHandoffComplete=false;#deliveryReceiver:any=null;#deliveryDispose:Function|null=null;#phaseController:AbortController|null=null;#streamController:AbortController|null=null;#streamStarted=false;#receiveUnknown=false;readonly #phaseAttempts=new Map<string,any>();#receiveTimer:ReturnType<typeof setTimeout>|undefined;#receiveClear:typeof clearTimeout=clearTimeout;readonly #receiveAbort=()=>this.disposeReceive();#last=-Infinity;
  readonly #currentSources=new Set<()=>void>();#deliverySourceIssued=false;readonly #preparedChallenges=new Map<string,any>();#preparedWindow:any=null;#preparedOpen:any=null;#controllerBasis:any=null;#preparedClose:any=null;
  constructor(session:unknown,origin:string,lease:{signal:AbortSignal;check:()=>void},current:()=>void,now:()=>number=Date.now,httpsPorts:NonNullable<Parameters<typeof NativePreparationHttpsChannel.openFirstReceive>[8]>={}){
@@ -266,7 +275,7 @@ export class NativeFirstReceiveHumanClient{
   if(!leaseEnd||!('value'in leaseEnd)||typeof leaseEnd.value!=='function'){call.close();return this.#phaseUnavailable();}
   const end=leaseEnd.value,until=Math.min(this.#receiveDeadline,Date.parse(profile.snapshot.expiresAt),Date.parse(session.snapshot.expiresAt),Date.parse(input.window.snapshot.expiresAt),Date.parse(Reflect.apply(end,this.#lease,[])));
   let closed=false,observed=false;const relay=()=>controller.abort();
-  const owned={phase:'RECEIVING' as 'RECEIVING'|'RECEIVED'|'SENDING'|'SETTLED'|'UNKNOWN',request:null as NormalStartPreparationRequest|null,carrier:null as NormalCarrier|null,publicKeySpki:null as string|null,
+  const owned={phase:'RECEIVING' as 'RECEIVING'|'RECEIVED'|'PREPARING'|'SENDING'|'SETTLED'|'UNKNOWN',request:null as NormalStartPreparationRequest|null,carrier:null as NormalCarrier|null,publicKeySpki:null as string|null,
    check:()=>{if(closed||controller.signal.aborted||this.#normalPreparation!==owned||this.#receivePhase!=='OPENED'||this.#receiveClosed||this.#receiveUnknown||this.#receiveSecret!==secret
      ||!receiveSame(this.#receiveWindow,input.window)||!receiveSame(this.#receiveSession,session)||!receiveSame(this.#receiveProfile,profile)||Object.getOwnPropertyDescriptor(this.#lease,'callExpiresAt')?.value!==end)throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');
     const currentEnd=Date.parse(Reflect.apply(end,this.#lease,[]));return this.#check(-Infinity,Math.min(until,currentEnd,owned.request?Date.parse(owned.request.expiresAt):Infinity));},
@@ -284,7 +293,36 @@ export class NativeFirstReceiveHumanClient{
   }catch{owned.close();throw Error('NATIVE_RECEIVE_OUTCOME_UNKNOWN');}
  }
 
- /** 후속 native 목적 producer 연결점이다. 현재 production은 미공급이며 존재 검산 전 서명/POST는 0이다. */
+ /** 명시 positive 준비 연결점이다. 원 carrier custody를 전달하되 native 원 근거 부재는 성공으로 바꾸지 않는다. */
+ async prepareNormalStartPreparation(source:unknown){
+  const owned=this.#normalPreparation;
+  if(!owned||owned.phase!=='RECEIVED'||!owned.request||!owned.carrier||this.#normalPreparationAttempted
+   ||!receiveRecord(source,['prepareOwned'])||typeof source.prepareOwned!=='function'||types.isProxy(source.prepareOwned))return this.#phaseUnavailable();
+  const prepare=source.prepareOwned,carrier=owned.carrier,request=receiveCopy(owned.request),window=receiveCopy(this.#receiveWindow),session=receiveCopy(this.#receiveSession);
+  owned.check();carrier.check();const started=this.#now(),call=this.#receiveCallBudget(Date.parse(request.issuedAt),Math.min(Date.parse(request.expiresAt),started+2000));
+  const check=()=>{owned.check();carrier.check();call.check();if(owned.phase!=='PREPARING'||!receiveRecord(source,['prepareOwned'])||source.prepareOwned!==prepare)throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');};
+  const streamSignal=this.#streamController?.signal,abort=()=>call.controller.abort();streamSignal?.addEventListener('abort',abort,{once:true});if(streamSignal?.aborted)abort();
+  this.#normalPreparationAttempted=true;owned.phase='PREPARING';let ticket:object|undefined,active=true;
+  try{
+   await this.#awaitReceiveCall(carrier.complete,call);check();
+   const originalTicket:object=Object.freeze(Object.defineProperty(Object.create(null),'toJSON',{value:()=>{throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');}}));ticket=originalTicket;
+   const current=()=>{if(!active)throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');check();};
+   const entry={used:false,read:()=>{current();return Object.freeze({request:receiveCopy(request),window:receiveCopy(window),session:receiveCopy(session),signal:call.controller.signal,check:current,remainingMs:()=>{current();return call.remaining();}});}};
+   normalRequestCustodies.set(originalTicket,entry);
+   const result=await this.#awaitReceiveCall(Reflect.apply(prepare,source,[ticket,call.controller.signal,(at:unknown)=>{check();call.narrow(at);}]),call);check();
+   if(!entry.used)throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
+   if(receiveRecord(result,['state'])&&result.state==='SOURCE_UNAVAILABLE'){owned.phase='RECEIVED';return{state:'SOURCE_UNAVAILABLE' as const};}
+   // 소진 metadata를 물리 준비/실행 허가로 바꾸지 않는다. 실제 소비자는 native 원장을 다시 검산해야 한다.
+   if(!receiveRecord(result,['state','requestRef','nativeClaimRef','creationAuthorized','executionAuthorized','dispatchPerformed'])
+    ||!['NORMAL_START_PREPARATION_CLAIMED','NORMAL_START_PREPARATION_REPLAY_ONLY'].includes(result.state)||!receiveRef(result.nativeClaimRef)||result.nativeClaimRef.version!==1
+    ||!receiveSame(result.requestRef,normalStartPreparationRequestRef(request))||[request.requestId,request.attemptId,request.admissionRef.id,request.claimRef.id].includes(result.nativeClaimRef.id)
+    ||result.creationAuthorized!==false||result.executionAuthorized!==false||result.dispatchPerformed!==false)throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
+   owned.phase='RECEIVED';return receiveCopy(result);
+  }catch{owned.close();throw Error('NATIVE_RECEIVE_OUTCOME_UNKNOWN');}
+  finally{active=false;if(ticket)normalRequestCustodies.delete(ticket);streamSignal?.removeEventListener('abort',abort);call.close();}
+ }
+
+ /** 기존 REJECTED를 포함하는 결과 경로다. positive 준비 custody가 자동 선행 조건이 되지 않는다. */
  async sendNormalStartPreparationResult(source:unknown){
   const owned=this.#normalPreparation;
   if(!owned||owned.phase!=='RECEIVED'||!owned.request||!owned.carrier||!this.#receiveSecret||!this.#receiveProfile

@@ -14,6 +14,18 @@ const ref=(n:number)=>({id:id(n),version:1,contentHash:'1'.repeat(64)});
 const grant=ref(4),profileId=id(3);
 const time=Date.parse('2026-11-16T00:00:00.000Z');
 
+test('normal 생성 전 claim source는 기존 관리 lock/DPAPI/anchor와 nonce 단회·미정착 여유를 보존한다',()=>{
+ const source=readFileSync('apps/connector/native/NormalExecutionSpoolProfileSource.cs','utf8'),start=source.indexOf('internal Row ClaimNormalStartPreparation('),end=source.indexOf('static Row EvidenceRef(',start);assert(start>0&&end>start);const claim=source.slice(start,end);
+ assert.match(source,/FileShare.None/);assert.match(source,/ProtectedData.Unprotect/);assert.match(source,/ValidateNormalPreparationClaims\(rows\);activeAnchor=anchor/);
+ assert.match(source,/k==NormalPreparationClaim\)dirs=checked\(dirs\+AdminHold\)/);assert.match(source,/log.Length\+4\+cipher.Length\+activeAnchor.Length\+32\+ManagementHold\(rows\)\)>AdminCap/);
+ assert.match(source,/if\(beforeWrite!=null\)beforeWrite\(\);long before=log.Length/);assert.match(source,/log.Flush\(true\)[\s\S]*activeAnchor.Flush\(true\)/);
+ assert.match(source,/NORMAL_START_PREPARATION_NONCE_V1/);assert.match(source,/!nonces.Add\(S\(r,"nonceDigest"\)\)/);assert.match(claim,/S\(r,"nonceDigest"\)==nonceDigest/);assert.match(claim,/prior.Length>1/);
+ assert.match(claim,/foreach\(string k in row.Keys.Where\(k=>k!="id"&&k!="recordedAt"\)\)/);assert.ok(claim.indexOf('prior.Length==1')<claim.indexOf('Append(log,rows,row'));
+ assert.match(claim,/Append\(log,rows,row,\(\)=>\{check\(\);appendStarted=true;\}\)/);assert.match(claim,/var back=Log\(false/);assert.match(claim,/J\(matches\[0\]\)!=J\(expected\)/);
+ assert.match(claim,/if\(appendStarted\)\{blocked=true;throw Invalid\(\);\}/);assert.match(claim,/NORMAL_START_PREPARATION_REPLAY_ONLY/);assert.match(claim,/"creationAuthorized",false,"executionAuthorized",false,"dispatchPerformed",false/);
+ assert.doesNotMatch(claim,/CreateSuspended|ReservePreparation|"RESERVED"|OsOwnershipVerified|NativeFactsVerified|SignNormal/);
+});
+
 // Synthetic native side. Sequence, registration and quota checks in C# are verified separately as source.
 function fixture(shared?:{remaining:number},generation=1){
  const localScope={...scope,executionGeneration:generation},allocation=id(200+generation);
@@ -261,7 +273,8 @@ test('원 intake Options는 실제 RAM 보관 형상의 RECEIVED ref와 부분/�
 
 test('native FIRST Options 읽기는 원 ref·정착·파일 소유·전체 상한을 유지하고 부분 버퍼를 폐기한다',()=>{
  const source=readFileSync(new URL('../../../apps/connector/native/NormalExecutionSpoolProfileSource.cs',import.meta.url),'utf8');
- const read=source.slice(source.indexOf('Row ReadSdkIntakeRow('),source.indexOf('static void RequireSdkFirst('));
+ const start=source.indexOf('Row ReadSdkIntakeRow('),stop=source.indexOf('internal sealed class SdkStartOptions',start),parserStart=source.indexOf('sealed class SdkOptionsReader',stop),parserEnd=source.indexOf('static void RequireSdkFirst(',parserStart);
+ assert(start>=0&&stop>start&&parserStart>stop&&parserEnd>parserStart);const read=source.slice(start,stop),parser=source.slice(parserStart,parserEnd);
  assert.match(read,/Unsettled\(rows\)[\s\S]*count<3\|\|count>201/);
  assert.match(read,/J\(entry\["ref"\]\)!=J\(receivedRef\)/);
  assert.match(read,/J\(group\["payloadRef"\]\)!=J\(payload\[g==0\?"contextBundleRef":"optionsRef"\]\)/);
@@ -277,4 +290,6 @@ test('native FIRST Options 읽기는 원 ref·정착·파일 소유·전체 상�
  assert.equal((read.match(/Inspect\(rows,Normal,allocation,dir,channel,summary\)/g)||[]).length,2);
  assert.equal((read.match(/H\(descriptor\)/g)||[]).length,1);
  assert.doesNotMatch(read,/Append\(|Reserve\(|Allocate\(|FileMode.Create|WriteAll|Console\.|Process|plannedSid|claudeQueryParams/);
+ assert.match(parser,/key!="claudeQueryParams"/);assert.match(parser,/!keys.Add\(key\)/);assert.match(parser,/key!="maxTurns"&&key!="maxBudgetUsd"/);assert.match(parser,/value>9007199254740991d/);assert.match(parser,/!keys.Contains\("model"\)/);assert.match(parser,/at!=text.Length/);
+ assert.doesNotMatch(parser,/Append\(|Reserve\(|Allocate\(|FileMode.Create|WriteAll|Console\.|Process|plannedSid/);
 });

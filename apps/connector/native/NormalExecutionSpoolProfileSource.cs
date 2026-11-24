@@ -109,21 +109,21 @@ internal sealed class NormalExecutionSpoolProfileSource {
     }
    }
    if(!create&&(rows.Count==0||S(rows[0],"kind")!="PROFILE"||(profileId!=null&&S(rows[0],"profileId")!=profileId)))throw Invalid();
-   if(anchor.Position!=anchor.Length)throw Invalid();activeAnchor=anchor;
+   if(anchor.Position!=anchor.Length)throw Invalid();ValidateNormalPreparationClaims(rows);activeAnchor=anchor;
    try{var result=act(log,rows);Check();return result;}finally{activeAnchor=null;}
   }
  }
  long ManagementHold(List<Row> rows){var holds=new HashSet<string>();long dirs=4096;
-  foreach(var r in rows){string k=S(r,"kind");if(k=="RESERVED")holds.Add(S(r,"id"));if(k=="SETTLED"&&!holds.Remove(S(r,"id")))throw Invalid();if(k=="ALLOCATING")dirs=checked(dirs+4096);}
+  foreach(var r in rows){string k=S(r,"kind");if(k=="RESERVED")holds.Add(S(r,"id"));if(k=="SETTLED"&&!holds.Remove(S(r,"id")))throw Invalid();if(k=="ALLOCATING")dirs=checked(dirs+4096);if(k==NormalPreparationClaim)dirs=checked(dirs+AdminHold);}
   foreach(string id in holds){long spent;dirs=checked(dirs+(outputCosts.TryGetValue(id,out spent)?OutputManagementWorst-spent:AdminHold));}return dirs;
  }
- void Append(FileStream log,List<Row> rows,Row row){
+ void Append(FileStream log,List<Row> rows,Row row,Action beforeWrite=null){
   if(understandingReadOnly)throw Invalid();Check();string path=Path.Combine(directory.Path,"management.v1");var wrap=R("purpose",Purpose,"sid",root.UserSid,"root",root.Identity,"namespaceId",directory.Identity,
    "fileId",FileIdentity(log,path),"headId",FileIdentity(activeAnchor,AnchorPath()),"sequence",rows.Count+1,"previous",rows.Count==0?null:H(rows[rows.Count-1]),"event",row);
   var plain=Encoding.UTF8.GetBytes(J(wrap));byte[] cipher=null;
   try{cipher=ProtectedData.Protect(plain,Entropy,DataProtectionScope.CurrentUser);if(cipher.Length>MaxEntry)throw Invalid();
    rows.Add(row);Account(row,cipher.Length);if(checked(log.Length+4+cipher.Length+activeAnchor.Length+32+ManagementHold(rows))>AdminCap)throw new SpoolCapacityException();
-   long before=log.Length;log.Position=before;using(var writer=new BinaryWriter(log,Encoding.UTF8,true)){writer.Write(cipher.Length);writer.Write(cipher);}
+   if(beforeWrite!=null)beforeWrite();long before=log.Length;log.Position=before;using(var writer=new BinaryWriter(log,Encoding.UTF8,true)){writer.Write(cipher.Length);writer.Write(cipher);}
    log.Flush(true);Check();log.Position=before;using(var reader=new BinaryReader(log,Encoding.UTF8,true)){if(reader.ReadInt32()!=cipher.Length||!reader.ReadBytes(cipher.Length).SequenceEqual(cipher)||log.Position!=log.Length)throw Invalid();}
    using(var sha=SHA256.Create()){
     var digest=sha.ComputeHash(cipher);long position=activeAnchor.Length;activeAnchor.Position=position;activeAnchor.Write(digest,0,digest.Length);activeAnchor.Flush(true);Check();
@@ -213,6 +213,36 @@ internal sealed class NormalExecutionSpoolProfileSource {
    var before=DesktopTrustKeyHostSource.Map(r["before"]);long used=observe();if(used<N(before["bytes"])||used-N(before["bytes"])>N(r["worst"]))throw Invalid();
    Append(log,rows,R("kind","SETTLED","writer",Preparation,"allocation",profileId,"channel","journal","id",reservation,"summary",R("bytes",used,"count",N(before["count"])+1,"tail",reservation)));owned.Remove(reservation);return true;
   });
+ }
+ const string NormalPreparationClaim="NORMAL_START_PREPARATION_CLAIM_V1";
+ static string NormalClaimKey(Row row){return H(R("registration",row["registration"],"requestRef",row["requestRef"],"serverClaimRef",row["serverClaimRef"],"imageHash",row["imageHash"],"nonceDigest",row["nonceDigest"],"contextEpoch",row["contextEpoch"]));}
+ static void ValidateNormalPreparationClaims(List<Row> rows){
+  var nonces=new HashSet<string>();var requests=new HashSet<string>();var claims=new HashSet<string>();var commands=new HashSet<string>();var ids=new HashSet<string>();var registered=new HashSet<string>(rows.Where(r=>S(r,"kind")=="REGISTERED").Select(r=>S(r,"key")));
+  foreach(var r in rows.Where(v=>S(v,"kind")==NormalPreparationClaim)){
+   DesktopTrustKeyHostSource.Exact(r,"kind,key,id,registration,requestRef,serverClaimRef,requestHash,normalCommandId,normalRequestHash,executionId,executionGeneration,preparationRef,imageAssociationRef,imageHash,nonceDigest,contextEpoch,issuedAt,expiresAt,recordedAt");
+   foreach(string k in new[]{"id","normalCommandId","executionId"})DesktopTrustKeyHostSource.ReceiveId(r,k);foreach(string k in new[]{"requestRef","serverClaimRef","imageAssociationRef"})DesktopTrustKeyHostSource.ReceiveRef(r[k],true);DesktopTrustKeyHostSource.ReceiveRef(r["preparationRef"]);
+   foreach(string k in new[]{"registration","requestHash","normalRequestHash","imageHash","nonceDigest","key"})if(!DesktopTrustKeyHostSource.IsHash(r[k]))throw Invalid();if(N(r["executionGeneration"])<1||N(r["contextEpoch"])<1||S(r,"key")!=NormalClaimKey(r)||S(DesktopTrustKeyHostSource.Map(r["requestRef"]),"contentHash")!=S(r,"requestHash"))throw Invalid();
+   var request=DesktopTrustKeyHostSource.Map(r["requestRef"]);var claim=DesktopTrustKeyHostSource.Map(r["serverClaimRef"]);if(!nonces.Add(S(r,"nonceDigest"))||!requests.Add(S(request,"id"))||!claims.Add(S(claim,"id"))||!commands.Add(S(r,"normalCommandId"))||!ids.Add(S(r,"id"))||new[]{S(request,"id"),S(claim,"id"),S(r,"normalCommandId"),S(r,"executionId"),S(DesktopTrustKeyHostSource.Map(r["imageAssociationRef"]),"id")}.Contains(S(r,"id")))throw Invalid();
+   var from=DesktopTrustKeyHostSource.Time(r,"issuedAt");var end=DesktopTrustKeyHostSource.Time(r,"expiresAt");var recorded=DesktopTrustKeyHostSource.Time(r,"recordedAt");if(end<=from||(end-from).TotalMilliseconds>10000||recorded<from||recorded>=end||!registered.Contains(S(r,"registration")))throw Invalid();
+  }
+ }
+ // 같은 원 등록/요청의 생성 전 단회 소진이다. RESERVED/old journal과 별개이며 PREPARED/실행 허가가 아니다.
+ // 기존 관리 총량 안에 실제 row와 후행 terminal용 AdminHold를 모두 남긴다. terminal producer는 아직 없다.
+ internal Row ClaimNormalStartPreparation(Row record,Row request,Row image,long epoch,Func<DateTime> now,Action imageCurrent){
+  if(record==null||request==null||image==null||now==null||imageCurrent==null||epoch<1)throw Invalid();DesktopTrustKeyBindingStoreSource.Record(record);if(S(record,"state")!="REGISTERED"||S(image,"state")!="NORMAL_START_WORKER_IMAGE_VERIFIED")throw Invalid();
+  var requestRef=EvidenceRef(DesktopTrustKeyHostSource.ReceiveId(request,"requestId"),request);var serverClaim=DesktopTrustKeyHostSource.ReceiveRef(request["claimRef"],true);var association=DesktopTrustKeyHostSource.ReceiveRef(image["associationRef"],true);string registration=H(record),materials=J(new object[]{record,request,image,epoch});string nonceDigest=H(R("purpose","NORMAL_START_PREPARATION_NONCE_V1","nonce",request["serverNonce"]));bool appendStarted=false;Row expected=null;bool first=false;
+  Action check=()=>{Check();imageCurrent();if(materials!=J(new object[]{record,request,image,epoch})||now()<DesktopTrustKeyHostSource.Time(request,"issuedAt")||now()>=DesktopTrustKeyHostSource.Time(request,"expiresAt"))throw Invalid();};
+  try{
+   Log(false,(log,rows)=>{check();if(!Has(rows,"REGISTERED",registration))throw Invalid();
+    var prior=rows.Where(r=>S(r,"kind")==NormalPreparationClaim&&(S(DesktopTrustKeyHostSource.Map(r["requestRef"]),"id")==S(requestRef,"id")||S(DesktopTrustKeyHostSource.Map(r["serverClaimRef"]),"id")==S(serverClaim,"id")||S(r,"normalCommandId")==S(request,"normalCommandId")||S(r,"nonceDigest")==nonceDigest)).ToArray();
+    var row=R("kind",NormalPreparationClaim,"key","", "id",Id(),"registration",registration,"requestRef",requestRef,"serverClaimRef",serverClaim,"requestHash",H(request),"normalCommandId",request["normalCommandId"],"normalRequestHash",request["normalRequestHash"],"executionId",request["executionId"],"executionGeneration",request["executionGeneration"],"preparationRef",request["executionPreparationRef"],"imageAssociationRef",association,"imageHash",H(image),"nonceDigest",nonceDigest,"contextEpoch",epoch,"issuedAt",request["issuedAt"],"expiresAt",request["expiresAt"],"recordedAt",now().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'"));row["key"]=NormalClaimKey(row);
+    if(prior.Length>1)throw Invalid();if(prior.Length==1){var old=prior[0];foreach(string k in row.Keys.Where(k=>k!="id"&&k!="recordedAt"))if(J(old[k])!=J(row[k]))throw Invalid();expected=old;return true;}
+    check();expected=row;Append(log,rows,row,()=>{check();appendStarted=true;});check();first=true;return true;
+   });
+   // 재개 때도 DPAPI·원 파일/anchor·순번/hash/모든 기존 소진을 다시 읽는다. 같은 요청의 새 id/재생성은 없다.
+   var back=Log(false,(log,rows)=>{check();var matches=rows.Where(r=>S(r,"kind")==NormalPreparationClaim&&S(r,"id")==S(expected,"id")).ToArray();if(matches.Length!=1||J(matches[0])!=J(expected))throw Invalid();return matches[0];});check();
+   return R("state",first?"NORMAL_START_PREPARATION_CLAIMED":"NORMAL_START_PREPARATION_REPLAY_ONLY","requestRef",requestRef,"nativeClaimRef",EvidenceRef(S(back,"id"),back),"creationAuthorized",false,"executionAuthorized",false,"dispatchPerformed",false);
+  }catch(SpoolCapacityException){if(appendStarted){blocked=true;throw Invalid();}return R("state","SOURCE_UNAVAILABLE");}catch{if(appendStarted)blocked=true;throw;}
  }
  static Row EvidenceRef(string id,Row fact){return R("id",id,"version",1,"contentHash",H(fact));}
  static Row OutputScope(Row raw,List<Row> rows,Row alloc,Row record,Row slot){
