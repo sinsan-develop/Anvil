@@ -8,6 +8,8 @@ const purpose='IX01_0076_ATOMICITY_NEGATIVE_STAGE' as const;
 const sourceId='0076_native_first_receive';
 const sourceSha256='a8dc4ccdf2a603888dfb993f22712cf74677db59104fc59be80e0442c6ba1ba9';
 const executionSha256='f69ccce4ed9e87f8a70735201280842fe2d9a39decd5ca584dc3111c2522ceb6';
+const parserPath='scripts/qa-ix01-schema-closure.sh';
+const parserSourceSha256='b7b730518bf917f0462ee48fbc2569444f50d141d1b28b49c94bec1680daf733';
 const signature='anvil.native_receive_phase_bound_material(uuid,uuid,uuid,jsonb,text)';
 const sentinelSql="BEGIN;CREATE FUNCTION "+signature+" RETURNS jsonb LANGUAGE sql VOLATILE SET search_path=pg_catalog AS 'SELECT NULL::jsonb';REVOKE ALL ON FUNCTION "+signature+" FROM PUBLIC,anvil_v3_app;COMMIT;";
 const replacementNames=Object.freeze(['connection_definition_capacity','native_preparation_capacity','quota_adopt_creation','quota_complete_before_source']);
@@ -30,12 +32,12 @@ const catalogSql=`SELECT json_build_object(
   encode(sha256(convert_to(pg_get_functiondef(p.oid),'UTF8')),'hex') AS "definitionHash",encode(sha256(convert_to(coalesce(p.proacl::text,'NULL'),'UTF8')),'hex') AS "aclHash"
   FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='anvil' AND p.proname IN(${literals(replacementNames)}) ORDER BY p.proname,p.oid LIMIT 5)x),'[]'::json),
  'ledger',coalesce((SELECT json_agg(json_build_object('id',id,'checksum',checksum) ORDER BY id) FROM(SELECT id,checksum FROM anvil.schema_migrations ORDER BY id LIMIT 131)x),'[]'::json))::text;`;
-const graphPaths=Object.freeze(['contracts/canonical.ts','contracts/runtime/validation-v1.ts','scripts/qa-ix01-0076-atomicity-negative.ts',
+const graphPaths=Object.freeze(['contracts/canonical.ts','contracts/runtime/validation-v1.ts','scripts/qa-ix01-0076-atomicity-negative.ts',parserPath,
  'tests/integration/IX01/current-schema-baseline.ts','tests/integration/IX01/current-schema-installation.ts']);
 
 /** 아직 실제 receiver/CLI가 없다. 이 계약과 결과는 실제 승인·PG 정착·rollback 증명이 아니다. */
 export const current0076NegativeContract=Object.freeze({purpose,sourceId,sourceBytes:529020,sourceSha256,executionSha256,
- signature,sentinelSql,sentinelSqlHash:contentHash(sentinelSql),catalogSql,catalogSqlHash:contentHash(catalogSql),graphPaths});
+ parserPath,parserSourceSha256,signature,sentinelSql,sentinelSqlHash:contentHash(sentinelSql),catalogSql,catalogSqlHash:contentHash(catalogSql),graphPaths});
 interface SourceInput{readonly id:string;readonly path:string;readonly bytes:Uint8Array}
 export interface NegativeStageInput{
  readonly planRaw:string;readonly planHash:string;readonly approvalRaw:string;readonly approvalHash:string;
@@ -45,6 +47,7 @@ interface Namespace{container:string;database:string;receipt:string;network:'non
 interface Binding{purpose:typeof purpose;attemptId:string;sourceHead:string;planHash:string;approvalHash:string;approvalId:string;graphHash:string;issuedAt:number;expiresAt:number;namespace:Namespace}
 export interface NegativeOwnedTarget{schemaVersion:1;purpose:'IX01_0076_NEGATIVE_OWNED_TARGET';attemptId:string;sourceHead:string;planHash:string;graphHash:string;namespace:Namespace;containerId:string}
 export interface NegativeCommandObservation{scopeHash:string;sqlHash:string;kind:'SETTLED'|'DDL_REJECTED'|'UNKNOWN';exitStatus:number|null;signal:string|null;sqlState:string|null;statementEndLine:number|null}
+export type NegativeFailureParserCapability=object;
 interface CatalogObservation{scopeHash:string;sqlHash:string;exitStatus:number;signal:null;raw:string}
 /** 포트 관측은 원 프로세스/대상 권위를 발급하지 않는다. 실제 공급은 별도 승인·보호 receiver가 필요하다. */
 export interface NegativeStagePorts{
@@ -67,6 +70,49 @@ export interface NegativeStageResult{
 }
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 function check(value:unknown):asserts value{if(!value)throw Error('IX01_0076_NEGATIVE_INVALID');}
+const negativeFailures=new WeakMap<object,{target:Readonly<NegativeOwnedTarget>;sqlHash:string}>();
+const parserCapabilities=new WeakMap<object,{DdlFailure:new(...args:never[])=>Error;parsePsqlFailure(error:unknown):unknown}>();
+function only(text:string,marker:string){const first=text.indexOf(marker);check(first>=0&&text.lastIndexOf(marker)===first);return first;}
+function declaration(text:string,marker:string){const start=only(text,marker),end=text.indexOf('\n',start);check(end>start);return text.slice(start,end+1);}
+/** exact R9 Git 원문의 세 정의만 평가하며 shell/CLI/controller에는 진입하지 않는다. */
+export async function load0076NegativeFailureParser(source:Uint8Array):Promise<NegativeFailureParserCapability>{
+ check(source instanceof Uint8Array&&!types.isProxy(source));const bytes=Buffer.from(source);
+ check(bytes.length===35588&&contentHash(bytes)===parserSourceSha256);let text:string;
+ try{text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch{throw Error('IX01_0076_NEGATIVE_INVALID');}
+ check(Buffer.from(text,'utf8').equals(bytes));
+ const begin=only(text,'// IX01_CONTROLLER_BEGIN\n'),end=only(text,'// IX01_CONTROLLER_END');check(begin<end);
+ const controller=text.slice(begin,end),unknown=declaration(controller,'export class UnknownOutcome extends Error'),ddl=declaration(controller,'export class DdlFailure extends Error');
+ const parserStart=only(controller,'export function parsePsqlFailure(error){'),parserEnd=only(controller,'export function makeCommandRunner');check(parserStart<parserEnd);
+ const body=unknown+ddl+controller.slice(parserStart,parserEnd);check(!/\b(?:process\.stdin|readFileSync|execFileSync|child_process|main\()/.test(body));
+ let loaded:Record<string,unknown>;
+ try{loaded=await import('data:text/javascript;base64,'+Buffer.from(body).toString('base64')) as Record<string,unknown>;}catch{throw Error('IX01_0076_NEGATIVE_INVALID');}
+ check(Object.keys(loaded).sort().join(',')==='DdlFailure,UnknownOutcome,parsePsqlFailure'&&typeof loaded.UnknownOutcome==='function'
+  &&typeof loaded.DdlFailure==='function'&&typeof loaded.parsePsqlFailure==='function');
+ const capability=Object.freeze(Object.create(null)) as object;
+ parserCapabilities.set(capability,{DdlFailure:loaded.DdlFailure as new(...args:never[])=>Error,parsePsqlFailure:loaded.parsePsqlFailure as (error:unknown)=>unknown});return capability;
+}
+function failureFields(raw:unknown){
+ check(!!raw&&typeof raw==='object'&&!types.isProxy(raw)&&[Object.prototype,Error.prototype,null].includes(Object.getPrototypeOf(raw)));
+ const d=Object.getOwnPropertyDescriptors(raw),status=d.status,signal=d.signal,stderr=d.stderr,code=d.code;
+ check(status&&'value'in status&&status.value===3&&signal&&'value'in signal&&signal.value===null
+  &&stderr&&'value'in stderr&&typeof stderr.value==='string'&&Buffer.byteLength(stderr.value)<=16384&&(!code||'value'in code&&!code.value));
+ return{status:status.value,signal:signal.value,stderr:stderr.value,code:code&&'value'in code?code.value:undefined};
+}
+/** R9 parser의 확정 거절을 음성 단계 내부 관측으로만 바꾼다. 실행·대상 권위를 발급하지 않는다. */
+export function observe0076DdlFailure(target:Readonly<NegativeOwnedTarget>,sqlHash:string,error:unknown,capability:NegativeFailureParserCapability):Readonly<NegativeCommandObservation>{
+ check(!types.isProxy(target)&&Object.isFrozen(target)&&Object.isFrozen(target.namespace)&&sqlHash===executionSha256);
+ check(!!capability&&typeof capability==='object'&&!types.isProxy(capability));const parser=parserCapabilities.get(capability);check(parser);
+ const before=failureFields(error),DdlFailure=parser.DdlFailure,parse=parser.parsePsqlFailure;let parsed:unknown;
+ try{parsed=parse.call(undefined,error);}catch{throw Error('IX01_0076_NEGATIVE_INVALID');}
+ const after=failureFields(error);check(before.status===after.status&&before.signal===after.signal&&before.stderr===after.stderr&&before.code===after.code
+  &&parserCapabilities.get(capability)===parser&&parser.DdlFailure===DdlFailure&&parser.parsePsqlFailure===parse
+  &&!!parsed&&typeof parsed==='object'&&!types.isProxy(parsed)&&parsed instanceof DdlFailure);
+ const d=Object.getOwnPropertyDescriptors(parsed);
+ check(d.sqlState&&'value'in d.sqlState&&d.sqlState.value==='42723'&&d.statementEndLine&&'value'in d.statementEndLine&&d.statementEndLine.value===2343
+  &&d.diagnostic&&'value'in d.diagnostic&&d.diagnostic.value===null);
+ const observed=Object.freeze({scopeHash:contentHash(canonicalJson(target)),sqlHash,kind:'DDL_REJECTED' as const,exitStatus:3,signal:null,sqlState:'42723',statementEndLine:2343});
+ negativeFailures.set(observed,{target,sqlHash});return observed;
+}
 function json(raw:unknown,sha:string,max:number){
  check(typeof raw==='string'&&raw.isWellFormed()&&Buffer.byteLength(raw)<=max&&hashV1(sha)&&contentHash(raw)===sha);
  const value=parseWireJson(raw);check(canonicalJson(value)===raw);return value;
@@ -86,14 +132,15 @@ function input(raw:NegativeStageInput,at:number){
   &&a.sourceHead===p.sourceHead&&a.planHash===raw.planHash&&a.graphHash===p.graphHash&&a.issuedAt===p.issuedAt&&a.expiresAt===p.expiresAt);
  const graph=json(raw.graphRaw,p.graphHash,2097152);
  check(recordV1(graph,['schemaVersion','sourceHead','files'])&&graph.schemaVersion===1&&graph.sourceHead===p.sourceHead&&arrayV1(graph.files,1000));
- let previous='';const paths=new Set<string>();let total=0;
+ let previous='',parserMatched=false;const paths=new Set<string>();let total=0;
  for(const row of graph.files){
   check(recordV1(row,['path','bytes','sha256'])&&typeof row.path==='string'&&/^[A-Za-z0-9_@.+/-]{1,400}$/.test(row.path)
    &&row.path>previous&&!row.path.startsWith('/')&&!row.path.split('/').some((v:string)=>v==='.'||v==='..'||v==='')
    &&Number.isSafeInteger(row.bytes)&&row.bytes>=0&&row.bytes<=16777216&&hashV1(row.sha256));
   previous=row.path;paths.add(row.path);total+=row.bytes;check(total<=268435456);
+  if(row.path===parserPath){check(row.bytes===35588&&row.sha256===parserSourceSha256);parserMatched=true;}
  }
- check(graphPaths.every(path=>paths.has(path)));
+ check(parserMatched&&graphPaths.every(path=>paths.has(path)));
  const rows=verifyCurrentSchemaSources(raw.historicalTsv,raw.sql);
  check(p.sourceManifestHash===contentHash(canonicalJson(rows))&&rows[106]?.id===sourceId);
  const tsv=new Uint8Array(raw.historicalTsv),sql=rows.map((r,i)=>({id:r.id,path:r.path,bytes:new Uint8Array(raw.sql[i]!.bytes)}));
@@ -105,7 +152,10 @@ function command(raw:unknown,target:Readonly<NegativeOwnedTarget>,sqlHash:string
  check(!types.isProxy(raw)&&recordV1(raw,['scopeHash','sqlHash','kind','exitStatus','signal','sqlState','statementEndLine'])
   &&raw.scopeHash===contentHash(canonicalJson(target))&&raw.sqlHash===sqlHash);
  if(raw.kind==='SETTLED')check(raw.exitStatus===0&&raw.signal===null&&raw.sqlState===null&&raw.statementEndLine===null);
- else if(raw.kind==='DDL_REJECTED')check(raw.exitStatus===3&&raw.signal===null&&typeof raw.sqlState==='string'&&/^[A-Z0-9]{5}$/.test(raw.sqlState)&&Number.isSafeInteger(raw.statementEndLine)&&raw.statementEndLine>0);
+ else if(raw.kind==='DDL_REJECTED'){
+  const bound=negativeFailures.get(raw);check(bound?.target===target&&bound.sqlHash===sqlHash&&raw.exitStatus===3&&raw.signal===null
+   &&raw.sqlState==='42723'&&raw.statementEndLine===2343);
+ }
  else check(raw.kind==='UNKNOWN');
  return raw as unknown as NegativeCommandObservation;
 }

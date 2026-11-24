@@ -6,9 +6,15 @@ import {fileURLToPath} from 'node:url';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {readCurrentSchemaManifest} from '../../integration/IX01/current-schema-baseline.ts';
 import {run0076AtomicityNegativeStage,current0076NegativeContract as contract,type NegativeStageInput,type NegativeStagePorts,type NegativeCommandObservation,type NegativeOwnedTarget} from '../../../scripts/qa-ix01-0076-atomicity-negative.ts';
+import * as negativeModule from '../../../scripts/qa-ix01-0076-atomicity-negative.ts';
+
+const cwd=fileURLToPath(new URL('../../../',import.meta.url));
+const r9Source=execFileSync('git',['cat-file','blob','HEAD:scripts/qa-ix01-schema-closure.sh'],{cwd}).toString('utf8');
+const loadParser=(negativeModule as any).load0076NegativeFailureParser as undefined|((source:Uint8Array)=>Promise<object>);
+const r9Capability=typeof loadParser==='function'?loadParser(Buffer.from(r9Source)):Promise.resolve(undefined);
+class ForgedDdlFailure extends Error{sqlState='42723';statementEndLine=2343;diagnostic=null}
 
 function load(){
- const cwd=fileURLToPath(new URL('../../../',import.meta.url));
  const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd,input,windowsHide:true,maxBuffer:16*1024*1024});
  const tsv=git(['cat-file','blob','HEAD:docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv']);
  const rows=readCurrentSchemaManifest(tsv),batch=git(['cat-file','--batch'],rows.map(r=>'HEAD:'+r.path).join('\n')+'\n');let cursor=0;
@@ -24,7 +30,7 @@ const clone=<T>(v:T):T=>JSON.parse(canonicalJson(v));
 function harness(mode=''){
  const data=cached??=load(),at=Date.parse('2026-11-24T00:00:00.000Z');let wall=at,mono=100,active=true;
  const graph={schemaVersion:1,sourceHead:'8'.repeat(40),files:contract.graphPaths.map(path=>{
-  const bytes=readFileSync(new URL('../../../'+path,import.meta.url));return{path,bytes:bytes.length,sha256:contentHash(bytes)};
+  const bytes=path===contract.parserPath?Buffer.from(r9Source):readFileSync(new URL('../../../'+path,import.meta.url));return{path,bytes:bytes.length,sha256:contentHash(bytes)};
  })};
  const namespace={container:'anvil-ix01-0076-negative-'+attemptId.replaceAll('-',''),database:'ix01_0076_negative_'+attemptId.replaceAll('-',''),receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-0076-negative-'+attemptId,network:'none'};
  const graphRaw=canonicalJson(graph);
@@ -66,12 +72,19 @@ function harness(mode=''){
    if(mode==='THROW')throw Error('합성 DDL receiver 유실');
    if(mode==='LATE'){wall+=600001;mono+=600001;}
    if(mode==='OWNER_LOST')active=false;
-   const observed=observation(owner,row.sha256,mode==='UNEXPECTED_SUCCESS'?'SETTLED':mode==='UNKNOWN'?'UNKNOWN':'DDL_REJECTED');
-   if(mode==='WRONG_LINE')observed.statementEndLine=2344;
-   if(mode==='WRONG_STATE')observed.sqlState='42710';
-   if(mode==='CROSS_TARGET')observed.scopeHash='0'.repeat(64);
-   if(mode==='CROSS_SQL')observed.sqlHash=contract.sourceSha256;
-   return observed;
+   if(mode==='UNEXPECTED_SUCCESS')return observation(owner,row.sha256,'SETTLED');
+   if(mode==='UNKNOWN')return observation(owner,row.sha256,'UNKNOWN');
+   if(mode==='PLAIN_REJECTION')return observation(owner,row.sha256,'DDL_REJECTED');
+   const state=mode==='WRONG_STATE'?'42710':'42723',line=mode==='WRONG_LINE'?2344:2343;
+   const failure=mode==='FAKE_CAPABILITY'
+    ?{status:3,signal:null,stderr:'NOT_A_PSQL_ERROR'}:mode==='PARSER_UNKNOWN'
+    ?{status:3,signal:'SIGTERM',stderr:`psql:<stdin>:${line}: ERROR:  ${state}: PRIVATE SQL discarded`}
+    :{status:3,signal:null,stderr:`psql:<stdin>:${line}: ERROR:  ${state}: PRIVATE SQL discarded`};
+   const capability=mode==='MISSING_PARSER'?Object.freeze({}):mode==='FAKE_CAPABILITY'
+    ?Object.freeze({sourceHash:contract.parserSourceSha256,DdlFailure:ForgedDdlFailure,parsePsqlFailure:()=>new ForgedDdlFailure()}):await r9Capability;
+   const adapt=(negativeModule as any).observe0076DdlFailure as (target:Readonly<NegativeOwnedTarget>,sqlHash:string,error:unknown,capability:unknown)=>NegativeCommandObservation;
+   const observed=adapt(mode==='CROSS_TARGET'?Object.freeze({...owner}):owner,mode==='CROSS_SQL'?contract.sourceSha256:row.sha256,failure,capability);
+   assert(!JSON.stringify(observed).includes('PRIVATE'));return observed;
   },
   async appendLedger(owner,row,ms){assert(ms>0&&ms<=10000);assert.notEqual(row.id,contract.sourceId);assert.equal(installed,ledger.length+1);assert.equal(row.sha256,data.rows[ledger.length]!.sha256);trace.push('LEDGER:'+row.id);ledger.push({id:row.id,checksum:row.sha256});return observation(owner,contentHash("INSERT INTO anvil.schema_migrations(id,checksum) VALUES('"+row.id+"','"+row.sha256+"');"));},
   async sentinel(owner,sql,ms){assert.equal(sql,contract.sentinelSql);assert(ms>0&&ms<=10000);trace.push('SENTINEL');assert.equal(catalogReads,1);assert.equal(sentinel,null);
@@ -89,7 +102,18 @@ test('0076 negative stage는 실제 receiver 기본값이나 기존 성공 runne
  assert.equal(contract.purpose,'IX01_0076_ATOMICITY_NEGATIVE_STAGE');
 });
 
+test('exact R9 Git 원문만 module-private parser capability를 발급한다',async()=>{
+ assert.equal(typeof loadParser,'function');const capability=await r9Capability;
+ assert(capability&&Object.isFrozen(capability));assert.deepEqual(Reflect.ownKeys(capability),[]);
+ const sideEffect='__ANVIL_IX01_0076_TAMPERED_R9_LOADED__';delete (globalThis as any)[sideEffect];
+ const marker='export function makeCommandRunner',poisoned=r9Source.replace(marker,`globalThis.${sideEffect}=true;\n${marker}`);
+ assert.notEqual(poisoned,r9Source);await assert.rejects(loadParser!(Buffer.from(poisoned)));assert.equal((globalThis as any)[sideEffect],undefined);
+ await assert.rejects(loadParser!(Buffer.from(r9Source.replaceAll('\n','\r\n'))));
+ await assert.rejects(loadParser!(Buffer.from('export class DdlFailure extends Error{}')));
+});
+
 test('명시 negative stage는 실제 교정 bytes→마지막 함수 42723→catalog 동일·원장0을 합성 검산한다',async()=>{
+ assert.equal(contentHash(r9Source),contract.parserSourceSha256);assert.equal(contract.graphPaths.includes('scripts/qa-ix01-schema-closure.sh'),true);
  const h=harness(),result=await run0076AtomicityNegativeStage(h.input,h.ports);
  assert.equal(result.status,'OBSERVATIONS_MATCHED');assert.equal(result.reason,null);assert.equal(result.evidence,'SOURCE_STAGE_ONLY');assert.equal(result.runtimeVerified,false);
  assert.equal(result.priorInstalled,106);assert.equal(result.priorLedgered,106);assert.equal(result.expectedSqlState,'42723');assert.equal(result.statementEndLine,2343);
@@ -109,7 +133,7 @@ test('각 원 객체·후기 함수/trigger·기존 ACL/정의·sentinel·원장
 });
 
 test('예상 DDL 성공/다른 오류·행/대상·SQL 또는 불명/늦음/owner 상실은 사후 probe·원장·재시도0이다',async()=>{
- for(const mode of ['UNEXPECTED_SUCCESS','WRONG_LINE','WRONG_STATE','CROSS_TARGET','CROSS_SQL','UNKNOWN','THROW','LATE','OWNER_LOST']){
+ for(const mode of ['UNEXPECTED_SUCCESS','WRONG_LINE','WRONG_STATE','CROSS_TARGET','CROSS_SQL','UNKNOWN','THROW','LATE','OWNER_LOST','PLAIN_REJECTION','MISSING_PARSER','PARSER_UNKNOWN','FAKE_CAPABILITY']){
   const h=harness(mode),result=await run0076AtomicityNegativeStage(h.input,h.ports);
   assert.equal(result.status,'STOPPED',mode);assert.equal(h.state().targetInstalls,1);assert.equal(h.state().catalogReads,2,mode);
   assert.equal(h.ledger.length,106);assert.equal(h.trace.at(-1),'SQL:'+contract.sourceId);assert.equal(result.catalogAfterHash,undefined);
@@ -126,6 +150,7 @@ test('새 목적/시도/graph/원·실행SHA/sentinel·probe 결박이 없으면
   (h:ReturnType<typeof harness>)=>{h.plan.sentinelSqlHash='0'.repeat(64);},
   (h:ReturnType<typeof harness>)=>{h.plan.catalogSqlHash='0'.repeat(64);},
   (h:ReturnType<typeof harness>)=>{h.plan.namespace.container='anvil-ix01-current-tc01-pg-20261108-a14';},
+  (h:ReturnType<typeof harness>)=>{h.graph.files.find(row=>row.path===contract.parserPath)!.sha256='0'.repeat(64);},
   (h:ReturnType<typeof harness>)=>{h.graph.files.pop();},
  ];
  for(const change of changes){
