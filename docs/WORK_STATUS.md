@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 Windows 보호 설치 중단 판독 합성 계약** — 담당 `c11_quality_review`, 기준 `0fee32c4`. 제품 코드 없이 기존 시험 파일에서 정착 marker와 container·이전 prefix·원 설치 revision 2·같은 등록/패키지/worker의 관계를 메모리로 대조한다. 원 close 전후 동일 정착 사실에서도 과거 요청 UNKNOWN과 실행·정리 효과 0을 확인한다. 다른 root·SID·등록·descriptor, 재봉인한 이전 기록/잘못된 revision, partial/ACTIVE/배타 충돌 및 기존 metadata 상한을 거절한다. 시험 1파일, Main 최종 집중 4/4(5b2c81)·구문 0(49d6d4)·diff 0(c0d639), 독립 C0/I0. 제품·실제 Windows/키·권한·DB/서비스·Agent 변경 없이 현재 관리 호출선과 실제 Win32 저장 및 복구는 미완료다.
+
 - **FN08 Windows 보호 설치 재시작 판독 작업지시서** — 담당 `c11_quality_review`, 기준 `f930a8a2`. 기존 8 MiB 설치 metadata에 삭제하지 않는 정착 marker를 결박하고, 같은 root·원 container/패키지/worker의 현재 재검산과 과거 응답 UNKNOWN을 분리한다. 기존 Win32 writer·reader의 권한과 공식 문헌 보장 범위, 단회·quota·v1 rollback 및 중단 시점별 판독을 정의했다. 현재 구현의 이중 `RequireDurability`로 인해 제품 연결 없이 먼저 메모리 계약만 검증한다. 문서 1개, 동결 `7BE82F0A…D10934`, 기준 파일 지문 대조·diff 검사 및 독립 최종 C0/I0. 실제 Windows/C#·DB·권한·서비스·Agent 실행과 원 설치 지원은 미검증이며 guard는 닫혀 있다. 다음은 원 hash·중간 정착·재시작의 합성 crash matrix와 안전한 목적 한정 실제 읽기 호출점 대조다.
 
 - **IX01 Windows 시험 원문 로딩 교정** — 담당 `c11_quality_review`, 기준 `d7f77c06`. Windows checkout CRLF 때문에 LF marker로 시험 controller를 로딩하지 못했다. 시험 파일 한 개에서 정확 세 경로의 Git HEAD blob을 읽어 기존 controller·R9·manifest 원문을 사용한다. 제품·SQL·실행안·검사 기대값은 동일하다. Main 집중 6/6(f09ebb), 타입 0(a948c8), diff 0(a7af5f), 독립 C0/I0. 작성자 전체 파일은 로딩된 뒤 31/37이며 현재 진단 시험과 과거 고정 hash 차이 6건은 잔여다. 별개 원장 검사의 0082 지문과 후속 0100~0106 누락 가정은 이번 범위 밖이다. 실제 WSL·Docker·PG·권한·서비스·Agent 실행 0.
