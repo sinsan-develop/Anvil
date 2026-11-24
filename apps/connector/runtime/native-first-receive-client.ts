@@ -1,6 +1,10 @@
 import {NativePreparationHttpsChannel,NativePreparationHttpsError} from './native-preparation-https.ts';
 import {types} from 'node:util';
+import {request as httpsRequest} from 'node:https';
+import type {ClientRequest,IncomingMessage} from 'node:http';
+import {createPublicKey,verify as verifySignature} from 'node:crypto';
 import {parseWireJson,contentHash} from '../../../contracts/canonical.ts';
+import {readNormalStartPreparationRequest,normalStartPreparationRequestRef,matchNormalStartPreparationResult,normalStartPreparationHeaders,type NormalStartPreparationRequest} from '../../../contracts/runtime/normal-start-preparation-v1.ts';
 import {receiveResultCanonical,receiveOfferCanonical,readNativeChannelProfile,readReceiveState,readReceiveArm,receiveAt,readReceivePhaseSigningCurrent,readReceivePhaseRegistrationCurrent,readReceiveSigningCurrent,readReceiveRegistrationCurrent,readReceiveWindow,readReceiveChallenge,readReceiveProof,receiveUuid,readReceiveSession,readNativePreparationReceiveDelivery,receiveRecord,receiveRef,receiveCanonical,receiveHash,receiveSame,receiveCopy,receiveLimits} from '../../../contracts/runtime/native-first-receive-v1.ts';
 function prepareFirstReceiveWindow(raw:unknown){if(!receiveRecord(raw,['ref','snapshot'])||!receiveRef(raw.ref)||raw.ref.version!==1)throw Error('NATIVE_RECEIVE_INPUT_INVALID');const snapshot=readReceiveWindow(raw.snapshot),window=receiveCopy(raw);if(window.ref.id!==snapshot.windowId||window.ref.contentHash!==receiveHash(snapshot))throw Error('NATIVE_RECEIVE_INPUT_INVALID');return window;}
 function prepareFirstReceiveOpenInput(rawWindow:unknown,rawChallenge:unknown,rawRequest:unknown,rawBody:unknown){  const window=prepareFirstReceiveWindow(rawWindow);if(!receiveRecord(rawChallenge,['ref','snapshot'])||!receiveRef(rawChallenge.ref)||rawChallenge.ref.version!==1)throw Error('NATIVE_RECEIVE_INPUT_INVALID');const challenge={ref:receiveCopy(rawChallenge.ref),snapshot:readReceiveChallenge(rawChallenge.snapshot)},request=readReceiveProof(rawRequest);if(!receiveRecord(rawBody,['schemaVersion','windowRef'])||rawBody.schemaVersion!==1||!receiveSame(rawBody.windowRef,window.ref))throw Error('NATIVE_RECEIVE_INPUT_INVALID');const body=receiveCopy(rawBody),w=window.snapshot,c=challenge.snapshot;if(challenge.ref.id!==c.challengeId||challenge.ref.contentHash!==receiveHash(c)||c.phase!=='OPEN'||request.phase!=='OPEN'||!receiveSame(c.windowRef,window.ref)||!receiveSame(request.windowRef,window.ref)||!receiveSame(request.challengeRef,challenge.ref)||request.requestId!==c.requestId||request.serverNonce!==c.serverNonce||!receiveSame(request.target,c.target)||request.target.bodyHash!==receiveHash(body)||request.target.queryHash!==receiveHash({})||request.target.method!=='POST'||request.target.path!=='/api/v1/native-first-receive/windows/'+w.windowId+'/open')throw Error('NATIVE_RECEIVE_INPUT_INVALID');for(const name of ['installationId','projectId','registrationRef','connectorRef','hostPublicKeyFingerprint','profileRef','localReceiveAttemptId','authBindingHash'] as const)if(!receiveSame(request[name],w[name]))throw Error('NATIVE_RECEIVE_INPUT_INVALID');for(const name of ['receiveSessionRef','offerRef','armRef','deliveryRef','authorityRef','commandHash'] as const)if(c[name]!==null||request[name]!==null)throw Error('NATIVE_RECEIVE_INPUT_INVALID');if(Date.parse(c.issuedAt)<Date.parse(w.issuedAt)||Date.parse(c.expiresAt)>Date.parse(w.expiresAt)||Date.parse(request.issuedAt)<Date.parse(c.issuedAt)||Date.parse(request.expiresAt)>Date.parse(c.expiresAt))throw Error('NATIVE_RECEIVE_INPUT_INVALID');return{window,challenge,request,body};
@@ -15,6 +19,8 @@ function prepareFirstReceivePhaseInput(rawWindow:unknown,rawChallenge:unknown,ra
 function prepareFirstReceivePhaseSigningFrame(rawWindow:unknown,rawChallenge:unknown,rawRequest:unknown,rawBody:unknown,keyId:string,contextEpoch:number){const input=prepareFirstReceivePhaseInput(rawWindow,rawChallenge,rawRequest,rawBody);if(!receiveUuid(keyId)||!Number.isSafeInteger(contextEpoch)||contextEpoch<1)throw Error('NATIVE_RECEIVE_INPUT_INVALID');return{...input,keyId,contextEpoch};}
 /** 이 parser는 TLS/서명/COMMIT/slot 수용의 증거를 만들지 않는다. 실제 transport가 EOF를 확인한 뒤에만 수거한다. */
 export class NativeFirstReceiveFrameDecoder{
+ /** 기존 OPEN/43B DELIVERY와 별도인, EOF 전 한 개의 후보만 수거하는 decoder다. 권위/정착을 발급하지 않는다. */
+ static normalStartPreparation(options:{window:unknown;session:unknown},now:()=>number=Date.now){return new NormalStartPreparationFrameDecoder(options,now);}
  readonly #window:any;readonly #now:()=>number;readonly #kind:"OPEN"|"DELIVERY";readonly #maximum:number;#last=-Infinity;#phase:'READING'|'FINISHED'|'FAILED'='READING';
  readonly #header=Buffer.alloc(4);#headerSize=0;#metadata:Buffer|null=null;#metadataSize=0;readonly #secret=Buffer.alloc(43);#secretSize=0;#total=0;
  constructor(options:{kind:'OPEN'|'DELIVERY';window:unknown},now:()=>number=Date.now){if(!receiveRecord(options,['kind','window'])||!['OPEN','DELIVERY'].includes(options.kind)||!receiveRecord(options.window,['ref','snapshot'])||!receiveRef(options.window.ref)||options.window.ref.version!==1)throw Error('NATIVE_RECEIVE_FRAME_INVALID');const window=readReceiveWindow(options.window.snapshot);if(options.window.ref.id!==window.windowId||options.window.ref.contentHash!==receiveHash(window))throw Error('NATIVE_RECEIVE_FRAME_INVALID');this.#window=receiveCopy(options.window);this.#kind=options.kind;this.#maximum=options.kind==='OPEN'?receiveLimits.openMetadata:receiveLimits.deliveryValue;this.#now=now;this.#check();}
@@ -40,8 +46,113 @@ export class NativeFirstReceiveFrameDecoder{
  cancel():void{this.#phase='FAILED';this.#wipe();}
 }
 
+class NormalStartPreparationFrameDecoder{
+ readonly #window:any;readonly #session:any;readonly #now:()=>number;#last=-Infinity;#failed=false;#complete=false;
+ readonly #prefix=Buffer.alloc(4);#prefixSize=0;#body:Buffer|null=null;#size=0;
+ constructor(options:{window:unknown;session:unknown},now:()=>number){
+  if(!receiveRecord(options,['window','session'])||!receiveRecord(options.session,['ref','snapshot'])||!receiveRef(options.session.ref)||options.session.ref.version!==1||typeof now!=='function')throw Error('NATIVE_RECEIVE_FRAME_INVALID');
+  this.#window=prepareFirstReceiveWindow(options.window);this.#session=receiveCopy(options.session);const s=readReceiveSession(this.#session.snapshot);
+  if(this.#session.ref.id!==s.sessionId||this.#session.ref.contentHash!==receiveHash(s)||!receiveSame(s.windowRef,this.#window.ref))throw Error('NATIVE_RECEIVE_FRAME_INVALID');this.#now=now;this.#check();
+ }
+ #fail():never{this.cancel();throw Error('NATIVE_RECEIVE_FRAME_INVALID');}
+ #check(){const at=this.#now();if(this.#failed||this.#complete||!Number.isFinite(at)||at<this.#last||at<Math.max(Date.parse(this.#window.snapshot.issuedAt),Date.parse(this.#session.snapshot.issuedAt))||at>=Math.min(Date.parse(this.#window.snapshot.expiresAt),Date.parse(this.#session.snapshot.expiresAt)))this.#fail();this.#last=at;return at;}
+ push(chunk:Uint8Array):{request:NormalStartPreparationRequest;requestRef:ReturnType<typeof normalStartPreparationRequestRef>}|undefined{
+  this.#check();if(types.isProxy(chunk)||!types.isUint8Array(chunk)||chunk.byteLength>8192-this.#prefixSize-this.#size)this.#fail();let offset=0;
+  try{
+   if(this.#prefixSize<4){const n=Math.min(4-this.#prefixSize,chunk.byteLength);this.#prefix.set(chunk.subarray(0,n),this.#prefixSize);this.#prefixSize+=n;offset+=n;
+    if(this.#prefixSize===4){const size=this.#prefix.readUInt32BE();if(size<2||size>8188)this.#fail();this.#body=Buffer.alloc(size);}}
+   if(offset<chunk.byteLength){if(!this.#body||chunk.byteLength-offset>this.#body.length-this.#size)this.#fail();this.#body.set(chunk.subarray(offset),this.#size);this.#size+=chunk.byteLength-offset;}
+   if(!this.#body||this.#size!==this.#body.length)return;
+   const text=new TextDecoder('utf-8',{fatal:true}).decode(this.#body),raw=parseWireJson(text);if(receiveCanonical(raw)!==text)this.#fail();const request=readNormalStartPreparationRequest(raw),w=this.#window.snapshot,s=this.#session.snapshot,{authBindingHash,...binding}=w,at=this.#check();
+   for(const k of ['installationId','projectId','registrationRef','connectorRef','profileRef','hostPublicKeyFingerprint','authBindingHash','localReceiveAttemptId']as const)if(!receiveSame(request[k],w[k]))this.#fail();
+   if(!receiveSame(request.windowRef,this.#window.ref)||!receiveSame(request.receiveSessionRef,this.#session.ref)||!receiveSame(request.writerNoneRef,w.writerHeadRef)
+    ||request.actorId!==w.human.userId||request.clientId!==w.human.clientId||request.credentialGeneration!==w.human.credentialGeneration||request.controlGeneration!==w.human.controlGeneration
+    ||authBindingHash!==receiveHash({authSessionId:request.humanSessionId,window:binding})||Date.parse(request.issuedAt)<Math.max(Date.parse(w.issuedAt),Date.parse(s.issuedAt))
+    ||at<Date.parse(request.issuedAt)||at>=Date.parse(request.expiresAt)||Date.parse(request.expiresAt)>Math.min(Date.parse(w.expiresAt),Date.parse(s.expiresAt)))this.#fail();
+   this.#complete=true;this.#prefix.fill(0);this.#body.fill(0);return{request,requestRef:normalStartPreparationRequestRef(request)};
+  }catch{this.#fail();}
+ }
+ cancel(){this.#failed=true;this.#prefix.fill(0);this.#body?.fill(0);this.#body=null;}
+}
+
+type NormalCarrier={request:NormalStartPreparationRequest;complete:Promise<void>;check:()=>void;close:()=>void};
+type NormalPorts=NonNullable<Parameters<typeof NativePreparationHttpsChannel.openFirstReceive>[8]>;
+function normalSignature(spki:unknown,signature:unknown,proof:unknown,fingerprint:string){
+ if(typeof spki!=='string'||!/^[A-Za-z0-9_-]{122}$/.test(spki)||typeof signature!=='string'||!/^[A-Za-z0-9_-]{85}[AQgw]$/.test(signature))throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
+ const raw=Buffer.from(spki,'base64url'),sig=Buffer.from(signature,'base64url');
+ try{const key=createPublicKey({key:raw,format:'der',type:'spki'});if(raw.length!==91||raw.toString('base64url')!==spki||contentHash(raw)!==fingerprint||key.asymmetricKeyType!=='ec'||key.asymmetricKeyDetails?.namedCurve!=='prime256v1'||sig.length!==64||sig.toString('base64url')!==signature||!verifySignature('sha256',Buffer.from(receiveCanonical(proof)),{key,dsaEncoding:'ieee-p1363'},sig))throw Error();}
+ catch{throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');}finally{raw.fill(0);sig.fill(0);}
+}
+/** 기존 EOF transport와 공유하지 않는 목적 전용 carrier다. 후보 뒤에도 원 data/close를 계속 감독한다. */
+function normalPreparationStream(profile:any,window:any,session:any,proof:any,signed:any,secret:Buffer,signal:AbortSignal,check:()=>void,remaining:()=>number,ports:NormalPorts,handshake:()=>void,accepted:()=>void,onClosed:()=>void):Promise<NormalCarrier>{
+  const port=(key:keyof NormalPorts,fallback:unknown)=>Object.hasOwn(ports,key)?Object.getOwnPropertyDescriptor(ports,key)?.value:fallback;
+  const driver=port('request',httpsRequest),set=port('setTimeout',setTimeout),clear=port('clearTimeout',clearTimeout);
+ if([driver,set,clear].some(v=>typeof v!=='function'))throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
+ return new Promise((resolve,reject)=>{
+  let req:ClientRequest|undefined,res:IncomingMessage|undefined,closed=false,published=false,ended=false,timer:ReturnType<typeof setTimeout>|undefined,frameEnd=Infinity;
+  let confirm!:()=>void,deny!:(error:Error)=>void;const complete=new Promise<void>((resolve,reject)=>{confirm=resolve;deny=reject;});void complete.catch(()=>{});
+  const now=Object.getOwnPropertyDescriptor(ports,'now')?.value??Date.now;
+  const parser=NativeFirstReceiveFrameDecoder.normalStartPreparation({window,session},()=>{check();return (Object.getOwnPropertyDescriptor(ports,'now')?.value??Date.now)();});
+  const headers:Record<string,string>={accept:'application/octet-stream',authorization:'AnvilReceive '+secret.toString('ascii'),
+   'x-anvil-native-receive-proof':Buffer.from(receiveCanonical(proof)).toString('base64url'),'x-anvil-native-receive-signature':signed.signature};
+  const quiet=(s:ClientRequest|IncomingMessage)=>s.on('error',()=>{});
+  const close=()=>{if(closed)return;closed=true;if(timer!==undefined)clear(timer);signal.removeEventListener('abort',bad);parser.cancel();delete headers.authorization;
+   if(res){res.off('data',data);res.off('end',end);res.off('close',physicalClose);res.off('aborted',bad);res.off('error',bad);quiet(res);res.destroy();}
+   if(req){req.off('close',physicalClose);req.off('error',bad);quiet(req);req.destroy();}
+   if(!ended)deny(Error('NATIVE_RECEIVE_OUTCOME_UNKNOWN'));
+   try{onClosed();}catch{}
+   if(!published)reject(Error('NATIVE_RECEIVE_OUTCOME_UNKNOWN'));
+  };
+  const bad=()=>close();
+  const live=()=>{if(closed||signal.aborted)throw Error('NATIVE_RECEIVE_OUTCOME_UNKNOWN');check();const left=Math.floor(Math.min(remaining(),frameEnd-now()));if(!Number.isSafeInteger(left)||left<1)throw Error('NATIVE_RECEIVE_OUTCOME_UNKNOWN');return left;};
+  const arm=()=>{if(timer!==undefined)clear(timer);let fired=false;const next=set(()=>{fired=true;bad();},Math.ceil(live()));if(fired||closed){clear(next);throw Error('NATIVE_RECEIVE_OUTCOME_UNKNOWN');}timer=next;};
+  const data=(raw:unknown)=>{try{live();if(types.isProxy(raw)||!types.isUint8Array(raw))throw Error();const candidate=parser.push(raw);if(candidate){if(published)throw Error();frameEnd=Date.parse(candidate.request.expiresAt);arm();published=true;resolve({request:candidate.request,complete,check:()=>{live();},close});}live();}catch{bad();}};
+  const end=()=>{try{live();if(ended||!published||!res||res.complete!==true||res.readableEnded!==true||res.aborted)throw Error();ended=true;confirm();}catch{bad();}};
+  const physicalClose=()=>{if(!ended)bad();};
+  const response=(incoming:IncomingMessage)=>{if(closed){quiet(incoming);incoming.destroy();return;}if(res){quiet(incoming);incoming.destroy();bad();return;}res=incoming;
+   try{live();handshake();if(res.statusCode!==200||!Array.isArray(res.rawHeaders)||res.rawHeaders.length%2||res.rawHeaders.length>200)throw Error();const names=new Set<string>();let contentType='';
+    for(let i=0;i<res.rawHeaders.length;i+=2){const k=res.rawHeaders[i]!,v=res.rawHeaders[i+1],name=k.toLowerCase();if(!/^[A-Za-z0-9-]+$/.test(k)||typeof v!=='string'||v.length>8192||/[\r\n]/.test(v)||names.has(name)||['set-cookie','location','content-encoding','content-length'].includes(name)||name.startsWith('x-anvil-native-'))throw Error();names.add(name);if(name==='content-type')contentType=v;}
+    if(contentType!=='application/octet-stream')throw Error();res.on('data',data);res.on('end',end);res.on('close',physicalClose);res.on('error',bad);res.on('aborted',bad);accepted();arm();
+   }catch{bad();}
+  };
+  try{live();handshake();signal.addEventListener('abort',bad,{once:true});arm();req=driver(new URL(proof.target.path,profile.origin),{method:'GET',ca:profile.caPem,servername:profile.serverName,minVersion:'TLSv1.2',rejectUnauthorized:true,agent:false,headers},response);
+   if(closed){quiet(req!);req!.destroy();return;}if(!req)throw Error();req.on('error',bad);req.on('close',physicalClose);live();req.end();
+  }catch{bad();}
+ });
+}
+
+/** 결과 POST만의 exact driver다. 원 STREAM 43B credential은 이 내부 header 외부로 나오지 않는다. */
+function normalPreparationPost(profile:any,request:NormalStartPreparationRequest,result:any,proof:any,signature:string,secret:Buffer,signal:AbortSignal,check:()=>void,remaining:()=>number,ports:NormalPorts):Promise<Buffer>{
+ const port=(key:keyof NormalPorts,fallback:unknown)=>Object.hasOwn(ports,key)?Object.getOwnPropertyDescriptor(ports,key)?.value:fallback;
+ const driver=port('request',httpsRequest),set=port('setTimeout',setTimeout),clear=port('clearTimeout',clearTimeout);
+ if([driver,set,clear].some(v=>typeof v!=='function'))throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
+ return new Promise((resolve,reject)=>{let req:ClientRequest|undefined,res:IncomingMessage|undefined,done=false,timer:ReturnType<typeof setTimeout>|undefined,total=0,length:number|null=null;const chunks:Buffer[]=[],body=Buffer.from(receiveCanonical(result));
+  const headers:Record<string,string|number>={accept:'application/json',authorization:'AnvilReceive '+secret.toString('ascii'),'content-type':'application/json','content-length':body.length,
+   [normalStartPreparationHeaders.proof]:Buffer.from(receiveCanonical(proof)).toString('base64url'),[normalStartPreparationHeaders.signature]:signature};
+  const quiet=(s:ClientRequest|IncomingMessage)=>s.on('error',()=>{});
+  const finish=(error?:unknown,value?:Buffer)=>{if(done){value?.fill(0);return;}done=true;if(timer!==undefined)clear(timer);signal.removeEventListener('abort',bad);body.fill(0);for(const c of chunks)c.fill(0);delete headers.authorization;
+   if(res){res.off('data',data);res.off('end',end);res.off('error',bad);res.off('aborted',bad);res.off('close',bad);quiet(res);}if(req){req.off('error',bad);req.off('close',bad);quiet(req);}
+   if(error){res?.destroy();req?.destroy();reject(Error('NATIVE_RECEIVE_OUTCOME_UNKNOWN'));}else resolve(value!);
+  },bad=()=>finish(Error('UNKNOWN'));
+  const live=()=>{if(done||signal.aborted)throw Error();check();const left=remaining();if(!Number.isSafeInteger(left)||left<1||left>2000)throw Error();return left;};
+  const data=(raw:unknown)=>{try{live();if(types.isProxy(raw)||!types.isUint8Array(raw)||raw.byteLength>8192-total)throw Error();total+=raw.byteLength;chunks.push(Buffer.from(raw));}catch{bad();}};
+  const end=()=>{let bytes:Buffer|undefined;try{live();if(!res||res.complete!==true||res.readableEnded!==true||res.aborted||length!==null&&length!==total)throw Error();bytes=Buffer.concat(chunks,total);live();finish(undefined,bytes);bytes=undefined;}catch{bad();}finally{bytes?.fill(0);}};
+  const response=(incoming:IncomingMessage)=>{if(done){quiet(incoming);incoming.destroy();return;}if(res){quiet(incoming);incoming.destroy();bad();return;}res=incoming;
+   try{live();if(res.statusCode!==200||!Array.isArray(res.rawHeaders)||res.rawHeaders.length%2||res.rawHeaders.length>200)throw Error();let contentType='';const names=new Set<string>();
+    for(let i=0;i<res.rawHeaders.length;i+=2){const k=res.rawHeaders[i]!,v=res.rawHeaders[i+1],name=k.toLowerCase();if(!/^[A-Za-z0-9-]+$/.test(k)||typeof v!=='string'||v.length>8192||/[\r\n]/.test(v)||names.has(name)||['set-cookie','location','content-encoding'].includes(name)||name.startsWith('x-anvil-native-'))throw Error();names.add(name);if(name==='content-type')contentType=v;if(name==='content-length'){if(!/^(0|[1-9][0-9]*)$/.test(v)||Number(v)>8192)throw Error();length=Number(v);}}
+    if(!/^application\/json(?:;\s*charset=utf-8)?$/i.test(contentType))throw Error();res.on('data',data);res.on('end',end);res.on('error',bad);res.on('aborted',bad);res.on('close',bad);
+   }catch{bad();}
+  };
+  try{live();if(body.length>8192||proof.target.path!=='/api/v1/native-first-receive/sessions/'+request.receiveSessionRef.id+'/normal-start-preparation-result')throw Error();signal.addEventListener('abort',bad,{once:true});let fired=false;const next=set(()=>{fired=true;bad();},Math.ceil(live()));if(fired||done){clear(next);return;}timer=next;
+   req=driver(new URL(proof.target.path,profile.origin),{method:'POST',ca:profile.caPem,servername:profile.serverName,minVersion:'TLSv1.2',rejectUnauthorized:true,agent:false,headers},response);
+   if(done){quiet(req!);req!.destroy();return;}if(!req)throw Error();req.on('error',bad);req.on('close',bad);live();req.end(body);
+  }catch{bad();}
+ });
+}
+
 /** main 소유 Electron Session receiver의 보호 HUMAN GET만 소비한다. 생성/import는 IO0이며 cookie/토큰 추출 포트가 없다. */
 export class NativeFirstReceiveHumanClient{
+ #normalPreparation:{phase:'RECEIVING'|'RECEIVED'|'SENDING'|'SETTLED'|'UNKNOWN';request:NormalStartPreparationRequest|null;carrier:NormalCarrier|null;publicKeySpki:string|null;check:()=>number;close:()=>void}|null=null;
  readonly #session:any;readonly #fetch:Function;readonly #origin:string;readonly #lease:{signal:AbortSignal;check:()=>void};readonly #current:()=>void;readonly #now:()=>number;readonly #httpsPorts:NonNullable<Parameters<typeof NativePreparationHttpsChannel.openFirstReceive>[8]>;#receivePhase:'IDLE'|'OPENING'|'OPENED'|'FAILED'|'DISPOSED'='IDLE';#receiveSecret:Buffer|null=null;#receiveSession:any=null;#receiveWindow:any=null;#receiveProfile:any=null;#receiveDeadline=Infinity;readonly #receiveCalls=new Map<string,{issued:number;expires:number;signature:string}>();readonly #handoffCalls=new WeakMap<object,{issued:number;expires:number}>();#receiveClosed=false;#deliverySecret:Buffer|null=null;#deliveryFrame:Buffer|null=null;#deliveryReceived=false;#deliveryMetadata:any=null;#deliveryStreamKey:string|null=null;#deliveryHandoffComplete=false;#deliveryReceiver:any=null;#deliveryDispose:Function|null=null;#phaseController:AbortController|null=null;#streamController:AbortController|null=null;#streamStarted=false;#receiveUnknown=false;readonly #phaseAttempts=new Map<string,any>();#receiveTimer:ReturnType<typeof setTimeout>|undefined;#receiveClear:typeof clearTimeout=clearTimeout;readonly #receiveAbort=()=>this.disposeReceive();#last=-Infinity;
  readonly #currentSources=new Set<()=>void>();#deliverySourceIssued=false;readonly #preparedChallenges=new Map<string,any>();#preparedWindow:any=null;#preparedOpen:any=null;#controllerBasis:any=null;#preparedClose:any=null;
  constructor(session:unknown,origin:string,lease:{signal:AbortSignal;check:()=>void},current:()=>void,now:()=>number=Date.now,httpsPorts:NonNullable<Parameters<typeof NativePreparationHttpsChannel.openFirstReceive>[8]>={}){
@@ -120,7 +231,7 @@ export class NativeFirstReceiveHumanClient{
  #awaitReceiveCall<T>(raw:PromiseLike<T>|T,call:{controller:AbortController}):Promise<T>{return new Promise<T>((resolve,reject)=>{const signal=call.controller.signal,abort=()=>{signal.removeEventListener('abort',abort);reject(Error('NATIVE_RECEIVE_CONTEXT_CHANGED'));};signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();void Promise.resolve(raw).then(value=>{signal.removeEventListener('abort',abort);resolve(value);},error=>{signal.removeEventListener('abort',abort);reject(error);});});}
  #clearReceiveLifetime(){if(this.#receiveTimer!==undefined){this.#receiveClear(this.#receiveTimer);this.#receiveTimer=undefined;}this.#lease.signal.removeEventListener('abort',this.#receiveAbort);}
  #armReceiveLifetime(deadline:number){this.#clearReceiveLifetime();const sd=Object.getOwnPropertyDescriptor(this.#httpsPorts,'setTimeout'),cd=Object.getOwnPropertyDescriptor(this.#httpsPorts,'clearTimeout'),set=sd?sd.value:setTimeout,clear=cd?cd.value:clearTimeout;if(typeof set!=='function'||typeof clear!=='function')throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');this.#receiveClear=clear;const left=deadline-this.#now();if(!Number.isFinite(left)||left<=0||this.#lease.signal.aborted)throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');this.#lease.signal.addEventListener('abort',this.#receiveAbort,{once:true});let fired=false;const timer=set(()=>{fired=true;this.disposeReceive();},Math.ceil(left));if(fired){clear(timer);throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');}this.#receiveTimer=timer;if(this.#lease.signal.aborted){this.disposeReceive();throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');}}
- disposeReceive(){this.#clearReceiveLifetime();for(const close of [...this.#currentSources])close();this.#currentSources.clear();this.#phaseController?.abort();this.#streamController?.abort();this.#deliverySecret?.fill(0);this.#deliverySecret=null;this.#deliveryFrame?.fill(0);this.#deliveryFrame=null;this.#deliveryMetadata=null;this.#deliveryStreamKey=null;this.#deliveryHandoffComplete=false;const receiver=this.#deliveryReceiver,dispose=this.#deliveryDispose;this.#deliveryReceiver=null;this.#deliveryDispose=null;if(receiver&&dispose){try{Reflect.apply(dispose,receiver,[]);}catch{}}this.#receiveSecret?.fill(0);this.#receiveSecret=null;this.#receiveSession=null;this.#receiveProfile=null;this.#receivePhase='DISPOSED';}
+ disposeReceive(){this.#normalPreparation?.close();this.#clearReceiveLifetime();for(const close of [...this.#currentSources])close();this.#currentSources.clear();this.#phaseController?.abort();this.#streamController?.abort();this.#deliverySecret?.fill(0);this.#deliverySecret=null;this.#deliveryFrame?.fill(0);this.#deliveryFrame=null;this.#deliveryMetadata=null;this.#deliveryStreamKey=null;this.#deliveryHandoffComplete=false;const receiver=this.#deliveryReceiver,dispose=this.#deliveryDispose;this.#deliveryReceiver=null;this.#deliveryDispose=null;if(receiver&&dispose){try{Reflect.apply(dispose,receiver,[]);}catch{}}this.#receiveSecret?.fill(0);this.#receiveSecret=null;this.#receiveSession=null;this.#receiveProfile=null;this.#receivePhase='DISPOSED';}
  #phaseValue(input:any,wire:{status:number;contentType:string;bytes:Buffer},replay:boolean,check:()=>number){
   if(input.request.phase==='STREAM'||input.request.phase==='CLOSE'){const decoder=new NativeFirstReceiveFrameDecoder({kind:'DELIVERY',window:input.window},check);try{const value=decoder.finishHttpResponse(wire.status,wire.contentType,wire.bytes,input.request.phase,input.request.receiveSessionRef);if(value.kind==='DELIVERY'){if(replay||this.#deliveryReceived){value.secret.fill(0);throw Error('NATIVE_RECEIVE_FRAME_INVALID');}this.#deliveryReceived=true;this.#deliverySecret?.fill(0);this.#deliverySecret=value.secret;this.#deliveryFrame=wire.bytes;this.#deliveryMetadata=receiveCopy(value.metadata);this.#deliveryStreamKey=receiveCanonical([input.window.ref,input.challenge.ref]);this.#receiveDeadline=Math.min(this.#receiveDeadline,Date.parse(value.metadata.snapshot.expiresAt));this.#armReceiveLifetime(this.#receiveDeadline);return{kind:'DELIVERY',metadata:value.metadata};}return input.request.phase==='CLOSE'?value.state:value;}finally{decoder.cancel();}}
   const raw=parseWireJson(new TextDecoder('utf-8',{fatal:true}).decode(wire.bytes));if(input.request.phase==='ARM'){if(!receiveRecord(raw,['ref','snapshot'])||!receiveRef(raw.ref)||raw.ref.version!==1)throw Error('NATIVE_RECEIVE_FRAME_INVALID');const value=readReceiveArm(raw.snapshot);if(raw.ref.id!==value.armId||raw.ref.contentHash!==receiveHash(value)||!receiveSame(value.windowRef,input.window.ref)||!receiveSame(value.receiveSessionRef,input.request.receiveSessionRef)||!receiveSame(value.offerRef,input.request.offerRef)||value.commandHash!==input.request.commandHash||Date.parse(value.issuedAt)<Date.parse(input.window.snapshot.issuedAt)||Date.parse(value.expiresAt)>Date.parse(this.#receiveSession.snapshot.expiresAt))throw Error('NATIVE_RECEIVE_FRAME_INVALID');this.#check(Date.parse(value.issuedAt),Math.min(this.#receiveDeadline,Date.parse(value.expiresAt)));check();return{ref:receiveCopy(raw.ref),snapshot:value};}
@@ -128,7 +239,7 @@ export class NativeFirstReceiveHumanClient{
  }
  #markReceiveFailed(){if(this.#receivePhase!=='DISPOSED')this.#receivePhase='FAILED';}
  #phaseUnavailable(){throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');}
- #phaseFailed(){this.#clearReceiveLifetime();for(const close of [...this.#currentSources])close();this.#currentSources.clear();this.#phaseController?.abort();this.#streamController?.abort();this.#receiveSecret?.fill(0);this.#receiveSecret=null;this.#deliverySecret?.fill(0);this.#deliverySecret=null;this.#deliveryFrame?.fill(0);this.#deliveryFrame=null;this.#deliveryMetadata=null;this.#deliveryStreamKey=null;this.#deliveryHandoffComplete=false;const receiver=this.#deliveryReceiver,dispose=this.#deliveryDispose;this.#deliveryReceiver=null;this.#deliveryDispose=null;if(receiver&&dispose){try{Reflect.apply(dispose,receiver,[]);}catch{}}this.#markReceiveFailed();}
+ #phaseFailed(){this.#normalPreparation?.close();this.#clearReceiveLifetime();for(const close of [...this.#currentSources])close();this.#currentSources.clear();this.#phaseController?.abort();this.#streamController?.abort();this.#receiveSecret?.fill(0);this.#receiveSecret=null;this.#deliverySecret?.fill(0);this.#deliverySecret=null;this.#deliveryFrame?.fill(0);this.#deliveryFrame=null;this.#deliveryMetadata=null;this.#deliveryStreamKey=null;this.#deliveryHandoffComplete=false;const receiver=this.#deliveryReceiver,dispose=this.#deliveryDispose;this.#deliveryReceiver=null;this.#deliveryDispose=null;if(receiver&&dispose){try{Reflect.apply(dispose,receiver,[]);}catch{}}this.#markReceiveFailed();}
  /** 고정 main CJS assembly가 원 owner identity를 검산한 뒤 호출한다. caller frame 입력과 수용 영수증 반환은 없다. */
  private async handoffReceiveDelivery(receiver:unknown){
   if(!this.#deliveryFrame||!this.#deliverySecret||this.#phaseController||this.#receivePhase!=='OPENED')return this.#phaseUnavailable();const frame=this.#deliveryFrame,secret=this.#deliverySecret;this.#deliveryFrame=null;this.#deliverySecret=null;let release:(()=>void)|undefined,acquired:AbortController|null=null;
@@ -144,6 +255,64 @@ export class NativeFirstReceiveHumanClient{
  /** main facade의 raw typed 입력 준비이며 clock/lease/IO가 없다. */
  prepareReceivePhase(rawWindow:unknown,rawChallenge:unknown,rawProof:unknown,rawBody:unknown){return prepareFirstReceivePhaseInput(rawWindow,rawChallenge,rawProof,rawBody);}
  /** 같은 OPEN 인스턴스의 private credential만 쓴다. current는 원 signPhase가 한 번만 조회한다. */
+ /** 기존 등록 owner의 명시 호출만 받는다. 기존 STREAM/43B delivery의 자동 선택이나 fallback이 아니다. */
+ async consumeNormalStartPreparationStream(rawWindow:unknown,rawChallenge:unknown,rawProof:unknown,rawBody:unknown,source:unknown){
+  const input=prepareFirstReceivePhaseInput(rawWindow,rawChallenge,rawProof,rawBody);
+  if(input.request.phase!=='STREAM'||this.#receivePhase!=='OPENED'||this.#receiveClosed||this.#receiveUnknown||this.#streamStarted||this.#streamController||this.#phaseController||this.#normalPreparation
+   ||!this.#receiveSecret||!this.#receiveProfile||!this.#receiveSession||!receiveSame(this.#receiveWindow,input.window)||!receiveSame(this.#receiveSession.ref,input.request.receiveSessionRef)
+   ||!receiveRecord(source,['signPhase'])||typeof source.signPhase!=='function'||types.isProxy(source.signPhase))return this.#phaseUnavailable();
+  const signer=source.signPhase,profile=receiveCopy(this.#receiveProfile),session=receiveCopy(this.#receiveSession),secret=this.#receiveSecret;
+  const call=this.#receiveCallBudget(Date.parse(input.request.issuedAt),Date.parse(input.request.expiresAt),input),controller=call.controller,leaseEnd=Object.getOwnPropertyDescriptor(this.#lease,'callExpiresAt');
+  if(!leaseEnd||!('value'in leaseEnd)||typeof leaseEnd.value!=='function'){call.close();return this.#phaseUnavailable();}
+  const end=leaseEnd.value,until=Math.min(this.#receiveDeadline,Date.parse(profile.snapshot.expiresAt),Date.parse(session.snapshot.expiresAt),Date.parse(input.window.snapshot.expiresAt),Date.parse(Reflect.apply(end,this.#lease,[])));
+  let closed=false,observed=false;const relay=()=>controller.abort();
+  const owned={phase:'RECEIVING' as 'RECEIVING'|'RECEIVED'|'SENDING'|'SETTLED'|'UNKNOWN',request:null as NormalStartPreparationRequest|null,carrier:null as NormalCarrier|null,publicKeySpki:null as string|null,
+   check:()=>{if(closed||controller.signal.aborted||this.#normalPreparation!==owned||this.#receivePhase!=='OPENED'||this.#receiveClosed||this.#receiveUnknown||this.#receiveSecret!==secret
+     ||!receiveSame(this.#receiveWindow,input.window)||!receiveSame(this.#receiveSession,session)||!receiveSame(this.#receiveProfile,profile)||Object.getOwnPropertyDescriptor(this.#lease,'callExpiresAt')?.value!==end)throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');
+    const currentEnd=Date.parse(Reflect.apply(end,this.#lease,[]));return this.#check(-Infinity,Math.min(until,currentEnd,owned.request?Date.parse(owned.request.expiresAt):Infinity));},
+   close:()=>{if(closed)return;closed=true;const unknown=owned.phase!=='SETTLED';if(unknown){owned.phase='UNKNOWN';this.#receiveUnknown=true;}this.#lease.signal.removeEventListener('abort',relay);owned.carrier?.close();call.close();controller.abort();if(this.#streamController===controller)this.#streamController=null;if(unknown)this.#phaseFailed();},
+  };
+  this.#normalPreparation=owned;this.#streamController=controller;this.#streamStarted=true;this.#lease.signal.addEventListener('abort',relay,{once:true});
+  try{
+   const handshake=()=>{owned.check();call.check();if(!receiveRecord(source,['signPhase'])||source.signPhase!==signer)throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');};
+   handshake();const signed=await this.#awaitReceiveCall(Reflect.apply(signer,source,[input.challenge,input.request,input.body,controller.signal,(at:unknown)=>{handshake();call.narrow(at);observed=true;}]),call);
+   handshake();if(!observed||!receiveRecord(signed,['keyId','publicKeySpki','fingerprint','requestHash','signature'])||!receiveUuid(signed.keyId)||signed.requestHash!==receiveHash(input.request)||signed.fingerprint!==input.window.snapshot.hostPublicKeyFingerprint)throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
+   normalSignature(signed.publicKeySpki,signed.signature,input.request,signed.fingerprint);owned.publicKeySpki=signed.publicKeySpki;
+   const carrier=await normalPreparationStream(profile.snapshot,input.window,session,input.request,signed,secret,controller.signal,()=>{owned.check();},()=>Math.floor(until-owned.check()),{...this.#httpsPorts,now:this.#now},handshake,()=>call.close(),()=>owned.close());
+   owned.carrier=carrier;owned.request=carrier.request;owned.check();carrier.check();owned.phase='RECEIVED';
+   return{kind:'NORMAL_START_PREPARATION' as const,requestRef:normalStartPreparationRequestRef(owned.request)};
+  }catch{owned.close();throw Error('NATIVE_RECEIVE_OUTCOME_UNKNOWN');}
+ }
+
+ /** 후속 native 목적 producer 연결점이다. 현재 production은 미공급이며 존재 검산 전 서명/POST는 0이다. */
+ async sendNormalStartPreparationResult(source:unknown){
+  const owned=this.#normalPreparation;
+  if(!owned||owned.phase!=='RECEIVED'||!owned.request||!owned.carrier||!this.#receiveSecret||!this.#receiveProfile
+   ||!receiveRecord(source,['prepareAndSign'])||typeof source.prepareAndSign!=='function'||types.isProxy(source.prepareAndSign))return this.#phaseUnavailable();
+  const prepare=source.prepareAndSign,request=receiveCopy(owned.request),carrier=owned.carrier,secret=this.#receiveSecret;
+  owned.check();carrier.check();const start=this.#now(),call=this.#receiveCallBudget(Date.parse(request.issuedAt),Math.min(Date.parse(request.expiresAt),start+2000));call.narrow(start+2000);
+  const check=()=>{owned.check();carrier.check();call.check();if(!receiveRecord(source,['prepareAndSign'])||source.prepareAndSign!==prepare)throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');};
+  const streamSignal=this.#streamController?.signal,abort=()=>call.controller.abort();streamSignal?.addEventListener('abort',abort,{once:true});if(streamSignal?.aborted)abort();
+  owned.phase='SENDING';let bytes:Buffer|undefined;
+  try{
+   // frame 후보만으로는 전송하지 않는다. 같은 원 응답의 정상 EOF가 2초 호출 창 안에서 확정돼야 한다.
+   await this.#awaitReceiveCall(carrier.complete,call);check();
+   check();const supplied=await this.#awaitReceiveCall(Reflect.apply(prepare,source,[request,call.controller.signal,(at:unknown)=>call.narrow(at)]),call);check();
+   if(!receiveRecord(supplied,['result','proof','signature'])||typeof supplied.signature!=='string'||!/^[A-Za-z0-9_-]{85}[AQgw]$/.test(supplied.signature)||Buffer.byteLength(receiveCanonical(supplied))>8192)throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
+   const packet=matchNormalStartPreparationResult(request,supplied.result,supplied.proof),signature=supplied.signature;
+   normalSignature(owned.publicKeySpki,signature,packet.proof,request.hostPublicKeyFingerprint);
+   call.narrow(Date.parse(packet.proof.expiresAt));check();if(this.#now()<Date.parse(packet.proof.issuedAt))throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');
+   bytes=await normalPreparationPost(this.#receiveProfile.snapshot,request,packet.result,packet.proof,signature,secret,call.controller.signal,check,()=>Math.floor(Math.min(call.remaining(),start+2000-this.#now())),this.#httpsPorts);check();
+   const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes),value=parseWireJson(text);if(receiveCanonical(value)!==text||!receiveRecord(value,['status','ref','snapshot'])||value.status!=='NORMAL_START_PREPARATION_RESULT_STORED'||!receiveRef(value.ref)||value.ref.version!==1
+    ||!receiveRecord(value.snapshot,['schemaVersion','purpose','recordId','requestRef','peerReceiptRef','resultHash','proofHash','recordedAt','executionAuthorized','dispatchPerformed']))throw Error('NATIVE_RECEIVE_FRAME_INVALID');
+   const s=value.snapshot;
+   if(s.schemaVersion!==1||s.purpose!=='NORMAL_START_PREPARATION_RESULT_RECORD_V1'||s.recordId!==value.ref.id||value.ref.id===request.requestId||value.ref.id===packet.result.receipt.ref.id||value.ref.contentHash!==receiveHash(s)
+    ||!receiveSame(s.requestRef,normalStartPreparationRequestRef(request))||!receiveSame(s.peerReceiptRef,packet.result.receipt.ref)||s.resultHash!==receiveHash(packet.result)||s.proofHash!==receiveHash(packet.proof)
+    ||!receiveAt(s.recordedAt)||Date.parse(s.recordedAt)<Date.parse(packet.proof.issuedAt)||Date.parse(s.recordedAt)>=Date.parse(packet.proof.expiresAt)||s.executionAuthorized!==false||s.dispatchPerformed!==false)throw Error('NATIVE_RECEIVE_FRAME_INVALID');
+   check();owned.phase='SETTLED';owned.close();return receiveCopy(value);
+  }catch{owned.close();throw Error('NATIVE_RECEIVE_OUTCOME_UNKNOWN');}finally{bytes?.fill(0);streamSignal?.removeEventListener('abort',abort);call.close();}
+ }
+
  async consumeReceivePhase(rawWindow:unknown,rawChallenge:unknown,rawProof:unknown,rawBody:unknown,source:unknown){
   const input=prepareFirstReceivePhaseInput(rawWindow,rawChallenge,rawProof,rawBody),stream=input.request.phase==='STREAM';if(this.#receivePhase!=='OPENED'||this.#receiveClosed||this.#receiveUnknown||(stream?this.#streamController||this.#streamStarted:this.#phaseController)||!this.#receiveSecret||!this.#receiveSession||!this.#receiveProfile||!receiveSame(this.#receiveWindow,input.window)||!receiveSame(this.#receiveSession.ref,input.request.receiveSessionRef)||!receiveRecord(source,['signPhase'])||typeof source.signPhase!=='function')return this.#phaseUnavailable();const key=receiveCanonical([input.window.ref,input.challenge.ref]);if(this.#phaseAttempts.has(key))throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');const narrowDescriptor=Object.getOwnPropertyDescriptor(this.#lease,'narrow'),expiryDescriptor=Object.getOwnPropertyDescriptor(this.#lease,'callExpiresAt');if(!narrowDescriptor||!('value'in narrowDescriptor)||typeof narrowDescriptor.value!=='function'||!expiryDescriptor||!('value'in expiryDescriptor)||typeof expiryDescriptor.value!=='function'||types.isProxy(source.signPhase))return this.#phaseUnavailable();const signer=source.signPhase,call=this.#receiveCallBudget(Math.max(Date.parse(input.window.snapshot.issuedAt),Date.parse(input.request.issuedAt)),Math.min(this.#receiveDeadline,Date.parse(input.request.expiresAt),Date.parse(input.challenge.snapshot.expiresAt)),input);if(stream){this.#streamController=call.controller;this.#streamStarted=true;}else this.#phaseController=call.controller;const check=()=>{if((stream?this.#streamController:this.#phaseController)!==call.controller||this.#receivePhase!=='OPENED'||Object.getOwnPropertyDescriptor(this.#lease,'narrow')?.value!==narrowDescriptor.value||Object.getOwnPropertyDescriptor(this.#lease,'callExpiresAt')?.value!==expiryDescriptor.value||!receiveRecord(source,['signPhase'])||source.signPhase!==signer)throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');return call.check();};const attempt:any={input,status:'SIGNING',signed:null,until:call.until()};this.#phaseAttempts.set(key,attempt);let observed=false,wire:Awaited<ReturnType<typeof NativePreparationHttpsChannel.sendReceivePhase>>|undefined;const narrow=(at:unknown)=>{check();call.narrow(at);attempt.until=call.until();observed=true;check();};
   try{check();const signed=await this.#awaitReceiveCall(Reflect.apply(signer,source,[input.challenge,input.request,input.body,call.controller.signal,narrow]),call);check();if(!observed)throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');attempt.signed=receiveCopy(signed);check();wire=await NativePreparationHttpsChannel.sendReceivePhase(this.#receiveProfile,input.window,input.request,input.body,attempt.signed,this.#receiveSecret,call.controller.signal,()=>{check();},call.remaining,{...this.#httpsPorts,now:this.#now});check();const value=this.#phaseValue(input,wire,false,check);check();attempt.status='SETTLED';attempt.until=call.until();if(input.request.phase==='CLOSE'){this.#receiveClosed=true;this.#streamController?.abort();}return value;}
