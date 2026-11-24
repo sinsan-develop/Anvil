@@ -12,7 +12,40 @@ import type {AccessRepository} from '../access/repository.ts';
 import {projectMember,currentGeneralProjectController,authorizeMaterial,projectReplay,persistProjectReceipt,type ProjectCommand} from '../access/project-command.ts';
 import {readNativeReceiveHumanCommand,receiveHumanCommandCanonical,readNativeReceiveChallengeInput,readNativeReceivePhaseBody,readNativeReceivePhaseCurrentInput,nativeReceiveClassifyFailure} from './native-first-receive-input.ts';
 import {AuthFailure} from '../access/repository.ts';
-import {receiveLimits,receiveRecord,receiveRef,receiveUuid,receiveSame,receiveCopy,receiveHash,receiveResultCanonical,readReceiveSlotReceipt,readReceiveWindow,readReceiveSigningCurrent,readReceiveChallenge,readReceiveProof,receiveCanonical} from '../../../../contracts/runtime/native-first-receive-v1.ts';
+import {receiveLimits,receiveRecord,receiveRef,receiveUuid,receiveSame,receiveCopy,receiveHash,receiveResultCanonical,readReceiveSlotReceipt,readReceiveWindow,readReceiveSigningCurrent,readReceiveChallenge,readReceiveProof,receiveCanonical,type ReceiveRef} from '../../../../contracts/runtime/native-first-receive-v1.ts';
+/** 원 인증 STREAM의 연결 출처만 증명한다. 준비 발급/normal 전송/실행 권한이 아니다. */
+export interface NormalStartPreparationReceiverScope {
+ purpose:'NORMAL_START_PREPARATION_RECEIVER_V1';installationId:string;projectId:string;
+ registrationRef:ReceiveRef;
+ connectorRef:ReceiveRef;
+ windowRef:ReceiveRef;
+ receiveSessionRef:ReceiveRef;
+ localReceiveAttemptId:string;actorId:string;clientId:string;humanSessionId:string;credentialGeneration:number;controlGeneration:number;
+}
+export interface NormalStartPreparationReceiver {
+ read(scope:NormalStartPreparationReceiverScope):Readonly<{purpose:'NORMAL_START_PREPARATION_RECEIVER_PROVENANCE';scope:NormalStartPreparationReceiverScope;
+  streamProofHash:string;streamChallengeRef:ReceiveRef;
+  observedAt:string;expiresAt:string;executionAuthorized:false;dispatchPerformed:false}>;
+ revoke():void;
+}
+type ReceiverLease={read:(scope:NormalStartPreparationReceiverScope)=>ReturnType<NormalStartPreparationReceiver['read']>;revoke:()=>void};
+const preparationReceivers=new WeakMap<object,ReceiverLease>();
+function receiverScope(raw:unknown):NormalStartPreparationReceiverScope {
+ if(!receiveRecord(raw,['purpose','installationId','projectId','registrationRef','connectorRef','windowRef','receiveSessionRef',
+  'localReceiveAttemptId','actorId','clientId','humanSessionId','credentialGeneration','controlGeneration'])
+  ||raw.purpose!=='NORMAL_START_PREPARATION_RECEIVER_V1'
+  ||!['installationId','projectId','localReceiveAttemptId','actorId','clientId','humanSessionId'].every(k=>receiveUuid(raw[k]))
+  ||!['registrationRef','connectorRef','windowRef','receiveSessionRef'].every(k=>receiveRef(raw[k]))
+  ||!['credentialGeneration','controlGeneration'].every(k=>Number.isSafeInteger(raw[k])&&raw[k]>0))return denied();
+ return receiveCopy(raw) as NormalStartPreparationReceiverScope;
+}
+function readReceiver(this:object,scope:NormalStartPreparationReceiverScope){
+ const entry=preparationReceivers.get(this);if(!entry)return denied();return entry.read(scope);
+}
+function revokeReceiver(this:object){const entry=preparationReceivers.get(this);if(!entry)return;entry.revoke();}
+type PreparationStreamCustody={claimed:boolean;revoked:boolean;expires:number;monoEnd:number;lastWall:number;lastMono:number;token:object|null;timer:ReturnType<typeof setTimeout>|undefined;invalidate:()=>void};
+type ReceiveStreamOwner={stream:PassThrough;close:()=>void;ownership:any;last:number;preparation:PreparationStreamCustody};
+
 type AckBinding={windowRef:any;receiveSessionRef:any;bindingRef:any;armRef:any;deliveryRef:any;authorityRef:any;commandHash:string;metadataHash:string;expiresAt:string;operationFence:string};
 type AckWaiter={binding:AckBinding;phase:'WAITING';token:object;deadline:number;lastNow:number;check:()=>void;resolve:(value:unknown)=>void;reject:(error:Error)=>void;promise:Promise<unknown>;remove:()=>void};
 type AckTerminal={phase:'CANDIDATE'|'UNKNOWN';token:object;deadline:number};
@@ -25,11 +58,69 @@ const preEffectFailures=new WeakSet<object>();
 export function nativeReceivePreEffectFailure(error:unknown){const value=nativeReceiveClassifyFailure(error);if(!value.safe||value.authCode===null||value.status===null)return new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503);let code=value.authCode,status=value.status;if(code==='PERMISSION_POLICY_UNCONFIGURED'&&status===412||code==='NATIVE_SOURCE_UNAVAILABLE'&&status===503){code='NATIVE_RECEIVE_SOURCE_UNAVAILABLE';status=503;}const result=new AuthFailure(code,status);if(status===503&&['NATIVE_RECEIVE_SOURCE_UNAVAILABLE','NATIVE_RECEIVE_OWNER_UNAVAILABLE'].includes(code))preEffectFailures.add(result);return result;}
 export function nativeReceiveIsPreEffectFailure(error:unknown){return !!error&&typeof error==='object'&&preEffectFailures.has(error);}
 export class NativeFirstReceiveBroker{
- readonly instanceId:string;readonly #now:()=>number;readonly #timers:ReceiveWaiterTimers;#waiterClock=-Infinity;readonly #waiters=new Map<string,AckWaiter|AckTerminal>();readonly #streams=new Map<string,{stream:PassThrough;close:()=>void;ownership:any;last:number}>();
+ readonly instanceId:string;readonly #now:()=>number;readonly #timers:ReceiveWaiterTimers;#waiterClock=-Infinity;readonly #waiters=new Map<string,AckWaiter|AckTerminal>();readonly #streams=new Map<string,ReceiveStreamOwner>();
  constructor(instanceId:string,now:()=>number=Date.now,timers:ReceiveWaiterTimers=receiveWaiterTimers){if(!receiveUuid(instanceId))denied();this.instanceId=instanceId;this.#now=now;this.#timers=timers;}
  /** COMMIT·원 Pool 회수가 정착된 Store capability만 실제 통로를 연다. Delivery bytes는 여기서 만들지 않는다. */
  attachStream(capability:unknown,signal:AbortSignal,observe:()=>number=this.#now){
-  const at=observe(),owned=NativeFirstReceiveStore.takeStreamOwnership(capability,this.instanceId,at);if(signal.aborted||this.#streams.has(owned.receiveSessionRef.id))denied();const stream=new PassThrough(),deadline=Date.parse(owned.expiresAt);let closed=false;let timer:ReturnType<typeof setTimeout>|undefined;const close=()=>{if(closed)return;closed=true;if(timer!==undefined)clearTimeout(timer);signal.removeEventListener('abort',close);this.#streams.delete(owned.receiveSessionRef.id);if(!stream.destroyed)stream.destroy(new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503));};stream.on('error',()=>{});stream.once('close',close);this.#streams.set(owned.receiveSessionRef.id,{stream,close,ownership:owned,last:at});signal.addEventListener('abort',close,{once:true});timer=setTimeout(close,Math.max(0,Math.floor(deadline-at)));timer.unref();if(signal.aborted)close();return stream;
+  const at=observe(),owned=NativeFirstReceiveStore.takeStreamOwnership(capability,this.instanceId,at);
+  if(signal.aborted||this.#streams.has(owned.receiveSessionRef.id))denied();
+  const stream=new PassThrough(),deadline=Date.parse(owned.expiresAt),mono=performance.now();
+  let closed=false,timer:ReturnType<typeof setTimeout>|undefined;
+  const preparation:PreparationStreamCustody={claimed:false,revoked:false,expires:deadline,
+   monoEnd:mono+(deadline-at),lastWall:at,lastMono:mono,token:null,timer:undefined,invalidate:()=>{}};
+  const invalidate=()=>{
+   if(preparation.revoked)return;preparation.revoked=true;
+   clearTimeout(preparation.timer);preparation.timer=undefined;
+   if(preparation.token)preparationReceivers.delete(preparation.token);preparation.token=null;
+  };preparation.invalidate=invalidate;
+  const close=()=>{
+   if(closed)return;closed=true;invalidate();
+   if(timer!==undefined)clearTimeout(timer);signal.removeEventListener('abort',close);
+   this.#streams.delete(owned.receiveSessionRef.id);
+   if(!stream.destroyed)stream.destroy(new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503));
+  };
+  stream.on('error',invalidate);stream.once('end',invalidate);stream.once('finish',invalidate);stream.once('close',close);
+  this.#streams.set(owned.receiveSessionRef.id,{stream,close,ownership:owned,last:at,preparation});
+  signal.addEventListener('abort',close,{once:true});timer=setTimeout(close,Math.max(0,Math.floor(deadline-at)));timer.unref();
+  preparation.timer=setTimeout(invalidate,Math.max(0,Math.floor(preparation.expires-at)));preparation.timer.unref();
+  if(signal.aborted)close();return stream;
+ }
+ /** 정확 원 창/slot의 프로세스 내부 단회 대여다. 지속 admission/claim·목록·최신 선택·normal 송신은 없다. */
+ takeNormalStartPreparationReceiver(raw:NormalStartPreparationReceiverScope,current:()=>void=()=>{}):NormalStartPreparationReceiver {
+  const scope=receiverScope(raw),entry=this.#streams.get(scope.receiveSessionRef.id);
+  if(!entry||typeof current!=='function')return denied();
+  const origin=entry.ownership.preparationOrigin;
+  if(!origin||!receiveSame(origin.window.ref,scope.windowRef)||!receiveSame(origin.session.ref,scope.receiveSessionRef))return denied();
+  const w=origin.window.snapshot,{authBindingHash,...windowWithoutBinding}=w;
+  if(w.installationId!==scope.installationId||w.projectId!==scope.projectId||w.localReceiveAttemptId!==scope.localReceiveAttemptId
+   ||!receiveSame(w.registrationRef,scope.registrationRef)||!receiveSame(w.connectorRef,scope.connectorRef)
+   ||w.human.userId!==scope.actorId||w.human.clientId!==scope.clientId||w.human.credentialGeneration!==scope.credentialGeneration
+   ||w.human.controlGeneration!==scope.controlGeneration||receiveHash({authSessionId:scope.humanSessionId,window:windowWithoutBinding})!==authBindingHash)return denied();
+  const p=entry.preparation;
+  const check=()=>{
+   try{
+    current();const wall=this.#now(),mono=performance.now();
+    if(p.revoked||this.#streams.get(scope.receiveSessionRef.id)!==entry||entry.stream.destroyed||entry.stream.closed
+     ||entry.stream.readableEnded||entry.stream.writableEnded||!Number.isFinite(wall)||!Number.isFinite(mono)
+     ||wall<p.lastWall||mono<p.lastMono||wall>=p.expires||mono>=p.monoEnd)return denied();
+    this.requireBindingStream({...entry.ownership,expiresAt:new Date(p.expires).toISOString()});
+    p.lastWall=wall;p.lastMono=mono;
+   }catch{p.invalidate();return denied();}
+  };
+  check();if(p.claimed)return denied();p.claimed=true;
+  const token=Object.freeze(Object.defineProperties({}, {
+   read:{value:readReceiver,enumerable:true},revoke:{value:revokeReceiver,enumerable:true},
+   toJSON:{value:()=>denied()}
+  })) as NormalStartPreparationReceiver;
+  p.token=token;preparationReceivers.set(token,{read:(value)=>{
+   try{
+    check();if(!receiveSame(receiverScope(value),scope))return denied();
+    return receiveCopy({purpose:'NORMAL_START_PREPARATION_RECEIVER_PROVENANCE' as const,scope,
+     streamProofHash:origin.proofHash,streamChallengeRef:origin.challengeRef,observedAt:entry.ownership.issuedAt,
+     expiresAt:new Date(p.expires).toISOString(),executionAuthorized:false as const,dispatchPerformed:false as const});
+   }catch{p.invalidate();return denied();}
+  },revoke:p.invalidate});
+  return token;
  }
  requireBindingStream(raw:any){const entry=this.#streams.get(raw.receiveSessionRef.id),at=this.#now();if(!entry||entry.stream.destroyed||entry.stream.closed||raw.brokerInstanceId!==this.instanceId||!receiveSame(entry.ownership.windowRef,raw.windowRef)||!receiveSame(entry.ownership.receiveSessionRef,raw.receiveSessionRef)||entry.ownership.operationFence!==raw.operationFence||!Number.isFinite(at)||at<entry.last||at>=Math.min(Date.parse(entry.ownership.expiresAt),Date.parse(raw.expiresAt)))throw new AuthFailure('NATIVE_SOURCE_UNAVAILABLE',503);entry.last=at;}
  /** 비밀은 원 command의 확정 COMMIT/release 뒤 한 frame에만 복사한다. */
@@ -85,6 +176,14 @@ export class NativeFirstReceiveService{
  #streamBroker:NativeFirstReceiveBroker|null=null;
  readonly #access:Pick<AccessRepository,'authenticated'|'installationId'>&Partial<Pick<AccessRepository,'pool'>>;readonly #store:NativeFirstReceiveStore;readonly #now:()=>number;readonly #preparations:ProjectNativePreparations|null;readonly #credential:()=>Buffer;readonly #origin:string|null;
  constructor(access:Pick<AccessRepository,'authenticated'|'installationId'>&Partial<Pick<AccessRepository,'pool'>>,store=new NativeFirstReceiveStore(),now:()=>number=Date.now,preparations:ProjectNativePreparations|null=null,credential:()=>Buffer=()=>{const value=randomBytes(32);try{return Buffer.from(value.toString('base64url'),'ascii');}finally{value.fill(0);}},serverOrigin:string|null=null){if(!receiveUuid(access.installationId)||preparations!==null&&!(preparations instanceof ProjectNativePreparations))denied();this.#access=access;this.#store=store;this.#now=now;this.#preparations=preparations;this.#credential=credential;this.#origin=serverOrigin;if(serverOrigin!==null){try{const origin=new URL(serverOrigin);if(origin.protocol!=='https:'||origin.origin!==serverOrigin||origin.username||origin.password)denied();}catch{denied();}}}
+ /** 명시 서버 내부 caller만 사용한다. HTTP/기본 app에는 노출하지 않으며 새 DB 권한 재검산은 admission의 책임이다. */
+ takeNormalStartPreparationReceiver(scope:NormalStartPreparationReceiverScope):NormalStartPreparationReceiver {
+  const expected=receiverScope(scope),broker=this.#streamBroker,installation=this.#access.installationId,pool=this.#access.pool;
+  if(!broker||expected.installationId!==installation)return denied();
+  return broker.takeNormalStartPreparationReceiver(expected,()=>{
+   if(this.#streamBroker!==broker||this.#access.installationId!==installation||this.#access.pool!==pool)return denied();
+  });
+ }
  async nativeOpen(wid:string,rawBody:unknown,rawProof:unknown,signature:unknown,signal?:AbortSignal){
   if(!receiveUuid(wid)||!receiveRecord(rawBody,['schemaVersion','windowRef'])||rawBody.schemaVersion!==1||!receiveRef(rawBody.windowRef)||rawBody.windowRef.version!==1||rawBody.windowRef.id!==wid||typeof signature!=='string'||!/^[A-Za-z0-9_-]{85}[AQgw]$/.test(signature))throw new AuthFailure('INPUT_INVALID',400);const proof=readReceiveProof(rawProof),body=receiveCopy(rawBody);if(proof.phase!=='OPEN'||!receiveSame(proof.windowRef,body.windowRef))throw new AuthFailure('INPUT_INVALID',400);const pool=this.#access.pool;if(!this.#origin||!pool||typeof pool.connect!=='function')throw nativeReceivePreEffectFailure(new AuthFailure('NATIVE_RECEIVE_SOURCE_UNAVAILABLE',503));let secret:Buffer|null=null,frame:Buffer|null=null,committed=false,effectEntered=false,last=-Infinity;let window:any;const clock=()=>{if(signal?.aborted)throw new AuthFailure(effectEntered||committed?'NATIVE_RECEIVE_OUTCOME_UNKNOWN':'NATIVE_RECEIVE_CONTEXT_CHANGED',effectEntered||committed?503:409);return this.#now();};const fresh=()=>{const now=clock(),limit=Math.min(Date.parse(proof.expiresAt),window?Date.parse(window.snapshot.expiresAt):Infinity);if(!Number.isFinite(now)||now<last||now<Date.parse(proof.issuedAt)||now>=limit)throw new AuthFailure(committed?'NATIVE_RECEIVE_OUTCOME_UNKNOWN':'NATIVE_RECEIVE_EXPIRED',committed?503:412);last=now;};
   try{fresh();const session=await withNativeReceiveOpenTransaction(pool,wid,body,proof,async(owned,current)=>{window=receiveCopy(current.window);fresh();if(current.profileOrigin!==this.#origin)throw new AuthFailure('NATIVE_RECEIVE_PROFILE_UNAVAILABLE',412);if(window.snapshot.installationId!==this.#access.installationId)throw new AuthFailure('NATIVE_RECEIVE_PURPOSE_DENIED',403);const lease=await verifyNativeReceiveOpenProof(owned,{window:current.window,challenge:current.challenge,publicKeySpki:current.publicKeySpki,proof,signature,body},clock);fresh();secret=this.#credential();if(!Buffer.isBuffer(secret)||secret.length!==43||!/^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/.test(secret.toString('utf8')))throw new AuthFailure('NATIVE_RECEIVE_SOURCE_UNAVAILABLE',503);fresh();effectEntered=true;return this.#store.consumeOpen(owned,lease,secret.toString('ascii'),fresh);},clock);committed=true;fresh();const metadata=Buffer.from(receiveCanonical({schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_CREDENTIAL',windowRef:body.windowRef,session}));if(metadata.length>receiveLimits.openMetadata||!secret)throw new AuthFailure('NATIVE_RECEIVE_OUTCOME_UNKNOWN',503);frame=Buffer.alloc(4+metadata.length+43);frame.writeUInt32BE(metadata.length);metadata.copy(frame,4);(secret as Buffer).copy(frame,4+metadata.length);fresh();const result=frame;frame=null;return result;

@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 원 등록 연결 검산:** 담당 `baseline_predispatch_task_review`가 기존 서명 STREAM의 COMMIT·연결 반환 뒤 원 broker 세션에서만 정확 등록·창·세션·사용자·client·세대에 결박된 비직렬화 단회 조회를 연결했다. 원 스트림 폐쇄·연결 교체·기한에 따라 폐기하고, 조회 폐기는 원 전송을 종료하지 않는다. 기존 스트림 기한을 사용한다. 제품 2개·기존 RAM 시험 1개, 신규 5건. 최초 신규 RED는 접근자 부재였으며, 원 monotonic 기한 계산을 보완했다. 작성자와 Main 각각 159/159(실패·취소·skip 0, Main f3c6d9), Main 타입 exit 0(d3ebe1), 독립 최종 Critical 0 / Important 0 / Minor 1(일부 결박값 변형 시험을 별도로 열거하지 않음). 인접 schema 시험 1건은 변경 전에도 0076 마지막 문장과 기존 COMMIT 말미 단언 불일치로 실패했다. 원 STREAM 출처 검산이며 사전 admission·지속 claim·새 목적 전송·물리 생성·START 인계는 남아 있다. 실제 DB·권한·키·프로세스·서비스·Agent 실행 0.
+
 - **FN08 준비 발급·소진 후속 설계:** 서버 연결 `f29c454f` 이후 기존 별도 native 준비의 fullref·writer 예약·원 승인·전송 형상을 대조했다. 원 등록 인증과 저수준 factory를 재사용하고 사전 admission·단회 claim·새 queue 거래를 분리하는 방향을 후보 §8에 기록했다. 기존 stream의 새 목적 전달과 실제 지속 생산자는 미연결이다. PMO는 같은 권위 안의 코드·미적용 forward·합성 상세화를 11월 24일 승인 범위로 확인했다. 이번 정리는 문서만 변경했다.
 
 - **FN08 실행 허가 전 준비 객체의 서버 연결:** 신산님의 2026-11-24 직접 승인으로 목적 한정 소스·합성 구현을 진행했다. 담당은 `baseline_predispatch_task_review`다. 현재 인증·제어·정책, 원 등록·credential, writer 부재를 검산한 CONTEXT_REVIEW의 READ 요청에만 거래·요청·실행 세대를 결박한 원 준비 객체를 한 번 요청한다. 같은 객체로 최초·저장 전·최종 관측을 수행하고 기존 관측당 2초와 원 준비 최대 10초 및 더 짧은 기한을 적용한다. 기존 queue COMMIT을 확인한 뒤 정확 command/grant ref와 envelope hash에 한 번만 인계한다. 본문 실패의 원 객체 회수 확인과 COMMIT·인계 불명의 보존을 구분하며 재생성·재인계·새 거절 거래를 하지 않는다. 동일 명령 재확인은 정착 영수증을 반환한다. 제품 2개·합성 시험 2개. 독립 검수 I1/I2로 비구성 호환과 원 기한 내 회수 확인을 보완했다. 작성자 최종 51/51, Main 직접·SQL 정적 42/42(aa97ea), Main 루트 타입 exit 0(6dbbc2)·diff 검사 통과. 동결 제품 해시 독립 Critical 0 / Important 0. 실제 DB·권한·키·프로세스·서비스·Agent 실행 0. 명시 주입한 원 시도 한 건의 서버 연결이며, 다음은 원 등록 peer의 실제 준비 공급·다중 시도 소진과 START 소비 경계다. 데스크톱/native 어댑터, 재시작의 지속 단회성, 실제 회수·통합 여정은 미검증이다.

@@ -212,7 +212,7 @@ test('STREAM service는 실제 proof·점유 Store·COMMIT와 release 뒤에만 
  if(mode==='valid'){const stream=await work;let bytes=0;stream.on('data',(v:Buffer)=>{bytes+=v.length;});assert.equal(calls.at(-1),'RELEASE');assert.equal(stream.destroyed,false);assert.equal(bytes,0);controller.abort();assert.equal(stream.destroyed,true);assert.equal(bytes,0);}else await assert.rejects(work,['lost','release','expired','handoff-rollback'].includes(mode)?/OUTCOME_UNKNOWN/:mode==='signature'?/PURPOSE_DENIED/:/PROFILE_UNAVAILABLE/);assert.equal(calls.filter(s=>s.includes('native_receive_stream_consume')).length,['signature','origin'].includes(mode)?0:1);}
 });
 
-async function streamServiceFixture(mode='valid'){const {NativeFirstReceiveService:Service}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts'),{NativeFirstReceiveStore:Store}=await import('../../../apps/server/modules/executions/native-first-receive-store.ts');const f=await phaseProofFixture('STREAM');let time=f.now(),next=1900,releasedReads=0;const calls:string[]=[],current={window:f.window,session:f.session,challenge:f.challenge,publicKeySpki:f.publicKeySpki,profileOrigin:mode==='origin'?'https://other.example':'https://anvil.example',transactionId:'123',phase:'OPENED',revision:2},state={schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_STATE',windowRef:f.window.ref,phase:'STREAMING',receiveSessionRef:f.session.ref,offerRef:null,armRef:null,bindingRef:null,deliveryRef:null,authorityRef:null,ackRef:null,terminalRef:null,current:{checkedAt:new Date(time).toISOString(),usable:true,reason:'CURRENT'},observedAt:new Date(time).toISOString(),expiresAt:f.session.snapshot.expiresAt,executionAuthorized:false},db={query:async(sql:string,args:any[]=[])=>{calls.push(sql);if(sql==='BEGIN'||sql==='COMMIT'){if(sql==='COMMIT'&&mode==='lost')throw Error('TEST_ONLY_COMMIT_LOST');return{rows:[],rowCount:0};}if(sql==='SELECT txid_current()::text AS transaction_id'||sql==='SELECT anvil.native_receive_open_transaction($1) AS transaction_id')return{rows:[{transaction_id:'123'}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_verification($1,$2,$3::jsonb,$4::jsonb) AS result'||sql==='SELECT anvil.native_receive_phase_entry($1,$2,$3::jsonb,$4::jsonb) AS result')return{rows:[{result:sql.includes('native_receive_phase_entry(')?{context:current,replay:false}:current}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_denial($1,$2::jsonb,$3::jsonb) AS result')return{rows:[{result:{code:'NATIVE_RECEIVE_PURPOSE_DENIED',requestHash:JSON.parse(args[1]).requestHash}}],rowCount:1};assert.equal(sql,'SELECT anvil.native_receive_stream_consume($1,$2::jsonb,$3::jsonb) AS result');const material=JSON.parse(args[1]),proposed=JSON.parse(args[2]);if(mode==='expired')time+=30000;return{rows:[{result:{state,requestHash:material.requestHash,brokerInstanceId:proposed.brokerInstanceId,operationFence:proposed.operationFence}}],rowCount:1};},release:()=>{calls.push('RELEASE');if(mode==='release')throw Error('TEST_ONLY_RELEASE_LOST');}},access={installationId:f.window.snapshot.installationId,pool:{connect:async()=>db},authenticated:async()=>{throw Error('NO_HUMAN_SESSION');}},clock=()=>{if(mode==='handoff-rollback'&&calls.at(-1)==='RELEASE'){releasedReads++;return releasedReads===1?time+1000:time;}return time;},service=new Service(access as any,new Store(()=>id(next++),clock),clock,null,undefined,'https://anvil.example'),controller=new AbortController();return{...f,service,controller,calls};}
+async function streamServiceFixture(mode='valid'){const {NativeFirstReceiveService:Service}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts'),{NativeFirstReceiveStore:Store}=await import('../../../apps/server/modules/executions/native-first-receive-store.ts');const f=await phaseProofFixture('STREAM');let time=f.now(),next=1900,releasedReads=0;const calls:string[]=[],current={window:f.window,session:f.session,challenge:f.challenge,publicKeySpki:f.publicKeySpki,profileOrigin:mode==='origin'?'https://other.example':'https://anvil.example',transactionId:'123',phase:'OPENED',revision:2},state={schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_STATE',windowRef:f.window.ref,phase:'STREAMING',receiveSessionRef:f.session.ref,offerRef:null,armRef:null,bindingRef:null,deliveryRef:null,authorityRef:null,ackRef:null,terminalRef:null,current:{checkedAt:new Date(time).toISOString(),usable:true,reason:'CURRENT'},observedAt:new Date(time).toISOString(),expiresAt:f.session.snapshot.expiresAt,executionAuthorized:false},db={query:async(sql:string,args:any[]=[])=>{calls.push(sql);if(sql==='BEGIN'||sql==='COMMIT'){if(sql==='COMMIT'&&mode==='lost')throw Error('TEST_ONLY_COMMIT_LOST');return{rows:[],rowCount:0};}if(sql==='SELECT txid_current()::text AS transaction_id'||sql==='SELECT anvil.native_receive_open_transaction($1) AS transaction_id')return{rows:[{transaction_id:'123'}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_verification($1,$2,$3::jsonb,$4::jsonb) AS result'||sql==='SELECT anvil.native_receive_phase_entry($1,$2,$3::jsonb,$4::jsonb) AS result')return{rows:[{result:sql.includes('native_receive_phase_entry(')?{context:current,replay:false}:current}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_denial($1,$2::jsonb,$3::jsonb) AS result')return{rows:[{result:{code:'NATIVE_RECEIVE_PURPOSE_DENIED',requestHash:JSON.parse(args[1]).requestHash}}],rowCount:1};assert.equal(sql,'SELECT anvil.native_receive_stream_consume($1,$2::jsonb,$3::jsonb) AS result');const material=JSON.parse(args[1]),proposed=JSON.parse(args[2]);if(mode==='expired')time+=30000;return{rows:[{result:{state,requestHash:material.requestHash,brokerInstanceId:proposed.brokerInstanceId,operationFence:proposed.operationFence}}],rowCount:1};},release:()=>{calls.push('RELEASE');if(mode==='release')throw Error('TEST_ONLY_RELEASE_LOST');}},access={installationId:f.window.snapshot.installationId,pool:{connect:async()=>db},authenticated:async()=>{throw Error('NO_HUMAN_SESSION');}},clock=()=>{if(mode==='handoff-rollback'&&calls.at(-1)==='RELEASE'){releasedReads++;return releasedReads===1?time+1000:time;}return time;},service=new Service(access as any,new Store(()=>id(next++),clock),clock,null,undefined,'https://anvil.example'),controller=new AbortController();return{...f,service,controller,calls,advance:(ms:number)=>{time+=ms;}};}
 
 test('STREAM HTTP는 raw GET 고정경로·body 없음·receive proof를 검산하며 실제 COMMIT 불명에 통로0이다',async()=>{
  const {default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes:register}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts');
@@ -358,4 +358,102 @@ test('waiter E는 원 remaining 밖이면 입장 전에 거절하고 후보의 �
 
 test('원 E timer 종료 뒤 wall clock 역행으로 같은 Window를 다시 열지 않고 원 E 이후에만 유한 표식을 회수한다',async()=>{
  const {NativeFirstReceiveBroker}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts'),f=fixture();let now=Date.parse(at);const tasks:(()=>void)[]=[],broker=new NativeFirstReceiveBroker(id(20),()=>now,{schedule:(fn)=>{tasks.push(fn);return fn;},cancel:()=>{}}),signal=new AbortController(),handle=broker.begin(f.binding,signal.signal,()=>{},10000);now=Date.parse(end)-1;tasks.shift()!();await assert.rejects(handle.wait(),/OUTCOME_UNKNOWN/);assert.throws(()=>broker.begin(f.binding,new AbortController().signal,()=>{},10000),'timer가 관측한 원 E보다 이전인 wall 시각에서 재입장0');now=Date.parse(end);const next=broker.begin({...f.binding,expiresAt:new Date(now+1000).toISOString()},signal.signal,()=>{},1000);signal.abort();await assert.rejects(next.wait(),/OUTCOME_UNKNOWN/);now+=1000;tasks.shift()!();assert.equal(tasks.length,0);
+});
+
+
+function normalPreparationReceiverScope(f:Awaited<ReturnType<typeof streamServiceFixture>>){
+ const w=f.window.snapshot;
+ return {purpose:'NORMAL_START_PREPARATION_RECEIVER_V1',installationId:w.installationId,projectId:w.projectId,
+  registrationRef:w.registrationRef,connectorRef:w.connectorRef,windowRef:f.window.ref,receiveSessionRef:f.session.ref,
+  localReceiveAttemptId:w.localReceiveAttemptId,actorId:w.human.userId,clientId:w.human.clientId,humanSessionId:id(8),
+  credentialGeneration:w.human.credentialGeneration,controlGeneration:w.human.controlGeneration};
+}
+
+test('normal 준비 custody는 실제 signed STREAM COMMIT/release와 같은 원 owner에서만 단회 빌린다',async()=>{
+ const f=await streamServiceFixture(),service=f.service as any,scope=normalPreparationReceiverScope(f);
+ assert.equal(typeof service.takeNormalStartPreparationReceiver,'function');
+ assert.throws(()=>service.takeNormalStartPreparationReceiver(scope));
+ const stream=await service.nativeStream(f.session.ref.id,f.token,f.proof,f.signature,f.controller.signal);
+ let bytes=0;stream.on('data',(chunk:Buffer)=>{bytes+=chunk.length;});
+ try{
+  assert.equal(f.calls.at(-1),'RELEASE');
+  for(const changed of [{actorId:id(88)},{clientId:id(89)},{humanSessionId:id(90)},{credentialGeneration:2},
+   {controlGeneration:2},{registrationRef:ref(91)},{windowRef:ref(92)},{receiveSessionRef:ref(93)},
+   {purpose:'NATIVE_PREPARATION_ONLY'}])assert.throws(()=>service.takeNormalStartPreparationReceiver({...scope,...changed}));
+  const custody=service.takeNormalStartPreparationReceiver(scope),before=f.calls.length,view=custody.read(scope);
+  assert.equal(view.purpose,'NORMAL_START_PREPARATION_RECEIVER_PROVENANCE');
+  assert.deepEqual(view.scope,scope);assert.equal(view.streamProofHash,receiveHash(f.proof));
+  assert.equal(view.executionAuthorized,false);assert.equal(view.dispatchPerformed,false);
+  assert.deepEqual(view.streamChallengeRef,f.challenge.ref);
+  assert.throws(()=>JSON.stringify(custody));
+  assert.throws(()=>service.takeNormalStartPreparationReceiver(scope));
+  assert.equal(f.calls.length,before,'원 custody read는 새 DB current/claim/nonce를 호출하지 않는다');
+  assert.equal(bytes,0,'normal/native frame·credential을 새로 보내지 않는다');
+  assert.deepEqual(Object.keys(custody).sort(),['read','revoke']);
+  custody.revoke();assert.throws(()=>custody.read(scope));
+  assert.equal(stream.destroyed,false,'evidence 폐기는 원 native delivery stream을 종료하지 않는다');
+  assert.throws(()=>service.takeNormalStartPreparationReceiver(scope),'같은 stream 권위를 재발급하지 않는다');
+ }finally{f.controller.abort();}
+});
+
+test('normal 준비 custody는 원 stream close/abort/finish와 다른 epoch에서 폐기되고 복제할 수 없다',async()=>{
+ for(const mode of ['abort','close','finish','epoch','copy']){
+  const f=await streamServiceFixture(),service=f.service as any,scope=normalPreparationReceiverScope(f);
+  const stream=await service.nativeStream(f.session.ref.id,f.token,f.proof,f.signature,f.controller.signal);
+  try{
+   const custody=service.takeNormalStartPreparationReceiver(scope);
+   if(mode==='abort')f.controller.abort();
+   if(mode==='close')stream.destroy();
+   if(mode==='finish')stream.end();
+   if(mode==='epoch')assert.throws(()=>custody.read({...scope,humanSessionId:id(97)}));
+   if(mode==='copy'){
+    assert.throws(()=>custody.read.call({...custody},scope));
+    assert.deepEqual(custody.read(scope).scope,scope,'복제의 거절은 원 evidence를 바꾸지 않는다');
+    custody.revoke();
+   }
+   assert.throws(()=>custody.read(scope));
+   assert.throws(()=>service.takeNormalStartPreparationReceiver(scope));
+  }finally{f.controller.abort();}
+ }
+});
+
+test('normal 준비 custody는 STREAM signature·COMMIT·release 불명에서 발급0이다',async()=>{
+ for(const mode of ['signature','lost','release','expired','handoff-rollback']){
+  const f=await streamServiceFixture(mode),service=f.service as any,scope=normalPreparationReceiverScope(f);
+  await assert.rejects(service.nativeStream(f.session.ref.id,f.token,f.proof,mode==='signature'?'A'.repeat(86):f.signature,f.controller.signal));
+  assert.throws(()=>service.takeNormalStartPreparationReceiver(scope));
+  f.controller.abort();
+ }
+});
+
+
+test('normal 준비 custody는 STREAM 원 기한을 보존하고 새 admission 10초를 미리 시작하지 않는다',async()=>{
+ const f=await streamServiceFixture(),service=f.service as any,scope=normalPreparationReceiverScope(f);
+ const stream=await service.nativeStream(f.session.ref.id,f.token,f.proof,f.signature,f.controller.signal);
+ try{
+  f.advance(10001);
+  const custody=service.takeNormalStartPreparationReceiver(scope),view=custody.read(scope);
+  assert.equal(view.expiresAt,f.proof.expiresAt);
+  assert.equal(view.observedAt,new Date(f.now()).toISOString());
+  f.advance(Date.parse(view.expiresAt)-f.now()-10001);
+  assert.throws(()=>custody.read(scope));
+  assert.throws(()=>service.takeNormalStartPreparationReceiver(scope));
+  assert.equal(stream.destroyed,false,'provenance 만료 자체로 원 stream을 임의 종료하지 않는다');
+ }finally{f.controller.abort();}
+});
+
+
+test('normal 준비 custody는 원 monotonic 기한·객체 메서드 identity를 검산하고 raw token을 소비하지 않는다',async(t)=>{
+ const f=await streamServiceFixture(),service=f.service as any,scope=normalPreparationReceiverScope(f);
+ let mono=performance.now();t.mock.method(performance,'now',()=>mono);
+ const stream=await service.nativeStream(f.session.ref.id,f.token,f.proof,f.signature,f.controller.signal);
+ try{
+  const custody=service.takeNormalStartPreparationReceiver(scope);
+  assert.throws(()=>custody.read.call({},scope));
+  assert.throws(()=>custody.read.call({...custody},scope));
+  const view=custody.read(scope),remaining=Date.parse(view.expiresAt)-f.now();
+  assert.ok(remaining>0);mono+=remaining;
+  assert.throws(()=>custody.read(scope));assert.throws(()=>service.takeNormalStartPreparationReceiver(scope));
+  assert.equal(stream.destroyed,false);
+ }finally{f.controller.abort();}
 });
