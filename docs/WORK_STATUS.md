@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-25 KST
 
+- **FN08 완료된 설치 기록 뒤 후속 명시 요청의 기록 추가 소스** — 담당 `c11_quality_review`, 기준 `f1aab72a`. 같은 관리 설치의 배타 marker 핸들로 완료된 모든 pair의 순서·원 요청·선택 지문·설치 원장 prefix를 검산한다. 첫 기록 이전의 기존 v1 원장과 함께, 기록 사이의 누락 및 기록 뒤에 별도로 추가된 원장 행이 있으면 쓰기 전에 중단한다. 기존 marker가 온전하고 단순 저장 한도 부족이면 변경 없이 원 핸들을 한 번 닫으며, ACTIVE 이후 불명은 보존한다. 제품 1개·시험 1개. Main 43/43(573cc5)·타입 0(0ebe80)·diff 0(58006c), 독립 C0/I0 및 정적 26/26. 실제 C#/Windows/DPAPI/파일·DB·권한·서비스·Agent는 미검증이다. 실제 설치를 활성화하지 않았으며 compiler/참조의 별도 준비 읽기는 결정 대기다.
+
 - **FN08 보호 설치 판독 결과 화면 연결** — 담당 `c11_quality_review`, 기준 `cd9f1f80`. 같은 원 native 응답을 coordinator·owner·화면에서 exact 형상과 과거 요청 UNKNOWN, 효과 false 3개로 검산한다. 원 host close 확정 뒤 현재 설치 파일 검산 또는 일치 기록 없음만 표시한다. 설치 성공·준비 완료·추가 권위로 승격하지 않으며 원 hash·경로·ref는 표시하지 않는다. 제품 3개·시험 2개. 최초 집중 RED 후 Main 161/161(97e061/f1ac62), 타입 0(599ce2), diff 0(073a55), 독립 C0/I0. 실제 C#/Windows native host·키/DB·권한·서비스·Agent 미검증, Windows 지원 guard는 UNSUPPORTED 유지. 31개 native 소스의 실제 컴파일을 준비하려고 정확한 시스템 파일 6개의 읽기 전용 지문 확인안을 조성했다. 읽기 승인·실행·컴파일은 미완료다.
 
 - **FN08 보호 설치 기록의 existing-only 판독 소스** — 담당 `c11_quality_review`, 기준 `c26d0f75`. Native Host의 read/write가 같은 등록 root와 원 offer의 canonical 선택을 계산한다. 배타 읽기 원 핸들에서 두 보호 frame과 현재 container·이전 prefix·RESERVED/INSTALLED·패키지 및 원 worker의 파일/디렉터리 신원을 대조한다. 새 root를 생성하지 않는다. 부재는 보호 ancestor와 경로를 전후 대조한 후 정확한 파일/디렉터리 부재만 인정하며, 기존 root의 marker 누락·부분·권한/경로 오류와 close 불명은 UNKNOWN을 유지한다. 제품 4개·시험 2개. Main 42/42(719b5b), 타입 0(bc1158), diff 0(846a6c), 독립 C0/I0. 기본 Windows guard는 닫혀 있고 화면은 양성 결과를 아직 수용하지 않는다. 실제 C#/Windows/DPAPI·파일/DB/권한·서비스·Agent는 미검증이며 반복 설치와 실제 보호 설치는 미완료다.
