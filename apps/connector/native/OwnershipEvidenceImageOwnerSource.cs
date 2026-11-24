@@ -85,6 +85,14 @@ namespace Anvil.Native.OwnershipEvidence
                     catch{throw Unavailable();}
                 }
             }
+            internal T WithNormalLaunch<T>(string workerHash,string directoryIdentity,string fileIdentity,int timeoutMs,Func<string,string,T> launch)
+            {
+                lock(gate)
+                {
+                    if(launch==null)throw Unavailable();Current();ReadNormal(workerHash,directoryIdentity,fileIdentity,timeoutMs);
+                    T result=launch(rootPath,imagePath);ReadNormal(workerHash,directoryIdentity,fileIdentity,timeoutMs);Current();return result;
+                }
+            }
             public void Dispose()
             {
                 lock(gate)
@@ -161,11 +169,16 @@ namespace Anvil.Native.OwnershipEvidence
             readonly object gate=new object();readonly ImageOwner original;readonly string associationRefJson,rootId,workerHash,namespaceRootIdentity,directoryIdentity,fileIdentity;readonly DateTime created;readonly Stopwatch age;bool disposed,closeAttempted,cleanupUnknown;
             internal NormalImageOwner(ImageOwner original,string associationRefJson,string rootId,string workerHash,string namespaceRootIdentity,string directoryIdentity,string fileIdentity,DateTime created,Stopwatch age){this.original=original;this.associationRefJson=associationRefJson;this.rootId=rootId;this.workerHash=workerHash;this.namespaceRootIdentity=namespaceRootIdentity;this.directoryIdentity=directoryIdentity;this.fileIdentity=fileIdentity;this.created=created;this.age=age;}
             public NormalImageObservation ReadCurrent(int timeoutMs=1000){lock(gate){if(disposed||timeoutMs<1||timeoutMs>1000||DateTime.UtcNow<created||age.ElapsedMilliseconds>=10000)throw Unavailable();var binding=original.ReadNormal(workerHash,directoryIdentity,fileIdentity,timeoutMs);if(DateTime.UtcNow<created||age.ElapsedMilliseconds>=10000)throw Unavailable();return new NormalImageObservation(associationRefJson,rootId,workerHash,namespaceRootIdentity,directoryIdentity,fileIdentity,binding.ObservedFrom,binding.ObservedAt);}}
+            internal T WithLaunch<T>(int timeoutMs,Func<string,string,T> launch){lock(gate){if(disposed||launch==null||timeoutMs<1||timeoutMs>1000||DateTime.UtcNow<created||age.ElapsedMilliseconds>=10000)throw Unavailable();T result=original.WithNormalLaunch(workerHash,directoryIdentity,fileIdentity,timeoutMs,launch);if(DateTime.UtcNow<created||age.ElapsedMilliseconds>=10000)throw Unavailable();return result;}}
             public void Dispose(){lock(gate){if(disposed)return;if(closeAttempted||cleanupUnknown)throw Unavailable();closeAttempted=true;try{original.Dispose();disposed=true;}catch{cleanupUnknown=true;throw Unavailable();}}}
         }
         internal static NormalImageObservation ReadOriginalNormalSource(INormalRetainedImageCandidate candidate,int timeoutMs=1000)
         {
             var original=candidate as NormalImageOwner;if(original==null)throw Unavailable();return original.ReadCurrent(timeoutMs);
+        }
+        internal static T WithOriginalNormalLaunchSource<T>(INormalRetainedImageCandidate candidate,int timeoutMs,Func<string,string,T> launch)
+        {
+            var original=candidate as NormalImageOwner;if(original==null||launch==null||timeoutMs<1||timeoutMs>1000)throw Unavailable();return original.WithLaunch(timeoutMs,launch);
         }
         // path는 이 private creation callback에만 들어오며 반환 owner/observation에는 포함하지 않는다.
         internal static INormalRetainedImageCandidate OpenNormalSourceOnly(string directory,string associationRefJson,string rootId,string workerHash,string namespaceRootIdentity,string directoryIdentity,string fileIdentity,int timeoutMs=1000)

@@ -48,6 +48,24 @@ namespace Anvil.Native.OwnershipEvidence
             internal ProcessOwnerObservation(OwnershipEvidenceHost.RetainedThreadQueryCandidate value)
             {ProcessId=value.ProcessId;ThreadId=value.ThreadId;ProcessStartTicks=value.ProcessStartTicks;ThreadStartTicks=value.ThreadStartTicks;ObservedAt=value.ObservedAt;}
         }
+        internal interface INormalSuspendedProcessCandidate:IDisposable
+        {
+            NormalProcessOwnerObservation ReadCurrent(int timeoutMs=2000);
+        }
+        internal sealed class NormalProcessOwnerObservation
+        {
+            internal readonly string Purpose="NORMAL_START_SUSPENDED_PROCESS_SOURCE_ONLY";
+            internal readonly string ImageRefJson,RequestRefJson,LocalClaimRefJson,LocalProcessId;
+            internal readonly long LocalProcessGeneration;internal readonly DateTime ExpiresAt,ObservedAt;
+            internal bool OsOwnershipVerified{get{return false;}}
+            internal bool ProcessCreated{get{return false;}}
+            internal bool ThreadCreated{get{return false;}}
+            internal bool ProcessCreationAuthorized{get{return false;}}
+            internal bool PreparationAuthorized{get{return false;}}
+            internal bool ExecutionAuthorized{get{return false;}}
+            internal bool DispatchPerformed{get{return false;}}
+            internal NormalProcessOwnerObservation(OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationObservation value){ImageRefJson=value.ImageRefJson;RequestRefJson=value.RequestRefJson;LocalClaimRefJson=value.LocalClaimRefJson;LocalProcessId=value.LocalProcessId;LocalProcessGeneration=value.LocalProcessGeneration;ExpiresAt=value.ExpiresAt;ObservedAt=value.ObservedAt;}
+        }
         private sealed partial class OwnedEmptyJob
         {
             // 이 source owner 안에서만 고정하는 상관 후보다. 인증된 OS Job ID가 아니다.
@@ -56,22 +74,31 @@ namespace Anvil.Native.OwnershipEvidence
             {
                 return JobAssignment.CreateFromStartup(candidate,image,timeoutMs);
             }
+            internal static INormalSuspendedProcessCandidate CreateNormalFromStartup(ISuspendedStartupCandidate candidate,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,int timeoutMs)
+            {
+                return JobAssignment.CreateNormalFromStartup(candidate,image,timeoutMs);
+            }
             private sealed partial class JobAssignment
             {
                 internal static IOriginalSuspendedProcessCandidate CreateFromStartup(ISuspendedStartupCandidate candidate,OwnershipEvidenceImageOwnerSource.IImageOwnerCandidate image,int timeoutMs)
                 {
                     var original=candidate as ProcessStartup;if(original==null)throw Unavailable();return original.CreateSource(image,timeoutMs);
                 }
+                internal static INormalSuspendedProcessCandidate CreateNormalFromStartup(ISuspendedStartupCandidate candidate,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,int timeoutMs)
+                {
+                    var original=candidate as ProcessStartup;if(original==null)throw Unavailable();return original.CreateNormalSource(image,timeoutMs);
+                }
                 private sealed partial class ProcessStartup
                 {
                     private ProcessOwner processOwner;
-                    private void DisposeCreatedProcessSource(){if(processOwner!=null)processOwner.Dispose();}
+                    private NormalProcessOwner normalProcessOwner;
+                    private void DisposeCreatedProcessSource(){if(processOwner!=null)processOwner.Dispose();if(normalProcessOwner!=null)normalProcessOwner.Dispose();}
                     internal IOriginalSuspendedProcessCandidate CreateSource(OwnershipEvidenceImageOwnerSource.IImageOwnerCandidate image,int timeoutMs)
                     {
                         Cap(timeoutMs);DateTime from=DateTime.UtcNow;var watch=Stopwatch.StartNew();
                         lock(parent.owner.gate)
                         {
-                            if(processOwner!=null||workerInput==null)throw Unavailable();ReadCurrent(timeoutMs);
+                            if(processOwner!=null||normalProcessOwner!=null||workerInput==null||normalWorkerInput!=null)throw Unavailable();ReadCurrent(timeoutMs);
                             // 시도 기록은 먼저 보유한다. 실패/기한초과 후 같은 startup에서 재생성하지 않는다.
                             processOwner=new ProcessOwner(this,image);
                             try
@@ -85,6 +112,27 @@ namespace Anvil.Native.OwnershipEvidence
                                 });
                             }
                             catch{processOwner.Dispose();throw Unavailable();}
+                        }
+                    }
+                    internal INormalSuspendedProcessCandidate CreateNormalSource(OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,int timeoutMs)
+                    {
+                        if(timeoutMs<1||timeoutMs>2000)throw Unavailable();DateTime from=DateTime.UtcNow;var watch=Stopwatch.StartNew();
+                        lock(parent.owner.gate)
+                        {
+                            if(normalProcessOwner!=null||processOwner!=null||normalWorkerInput==null||workerInput!=null)throw Unavailable();ReadCurrent(timeoutMs);
+                            // exact transferred owner를 받는 순간부터 이 startup이 image와 생성 시도를 함께 보유한다.
+                            NormalProcessOwner attempted=null;
+                            try
+                            {
+                                normalProcessOwner=attempted=new NormalProcessOwner(this,image);
+                                return NativeWorkerDeploymentSource.WithTransferredNormalImageLaunch(image,Math.Min(timeoutMs,1000),(directory,path)=>
+                                {
+                                    ReadCurrent(timeoutMs);normalWorkerInput.ReadCurrent(timeoutMs);Budget(from,watch,timeoutMs);
+                                    normalProcessOwner.Create(directory,path);Budget(from,watch,timeoutMs);
+                                    normalProcessOwner.ReadCurrent(timeoutMs);Budget(from,watch,timeoutMs);return (INormalSuspendedProcessCandidate)normalProcessOwner;
+                                });
+                            }
+                            catch{if(attempted!=null)attempted.Dispose();throw Unavailable();}
                         }
                     }
                     private sealed class ProcessOwner:IOriginalSuspendedProcessCandidate
@@ -182,10 +230,86 @@ namespace Anvil.Native.OwnershipEvidence
                         }
                         ~ProcessOwner(){try{Dispose();}catch{/* finalizer 성공은 실제 회수 증거가 아니다. */}}
                     }
+                    private sealed class NormalProcessOwner:INormalSuspendedProcessCandidate
+                    {
+                        readonly ProcessStartup startup;OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image;
+                        readonly DateTime createdAt,expiresAt;readonly Stopwatch lifetime;DateTime lastWall;
+                        ProcessInformation original;OriginalProcessHandle process,thread;string expectedPathDigest;
+                        bool attempted,created,exitConfirmed,closed,cleanupAttempted,cleanupUnknown;
+                        bool rawThreadCloseAttempted,rawThreadCloseSucceeded,rawProcessCloseAttempted,rawProcessCloseSucceeded;
+                        internal NormalProcessOwner(ProcessStartup startup,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image)
+                        {
+                            if(startup==null||image==null||startup.normalWorkerInput==null)throw Unavailable();this.startup=startup;this.image=image;createdAt=lastWall=DateTime.UtcNow;expiresAt=startup.normalWorkerInput.ExpiresAt;lifetime=Stopwatch.StartNew();if(expiresAt<=createdAt||(expiresAt-createdAt).TotalMilliseconds>10000)throw Unavailable();
+                        }
+                        static Exception CleanupUnknown(){return new InvalidOperationException("NORMAL_START_PROCESS_CLEANUP_UNKNOWN");}
+                        int Remaining(int timeoutMs)
+                        {
+                            if(timeoutMs<1||timeoutMs>2000)throw Unavailable();DateTime now=DateTime.UtcNow;
+                            if(now<lastWall||now>=expiresAt||lifetime.Elapsed.TotalMilliseconds>=10000)throw Unavailable();lastWall=now;
+                            int value=(int)Math.Floor(Math.Min(timeoutMs,Math.Min((expiresAt-now).TotalMilliseconds,10000-lifetime.Elapsed.TotalMilliseconds)));if(value<1)throw Unavailable();return value;
+                        }
+                        void Budget(DateTime from,Stopwatch watch,int timeoutMs){if(DateTime.UtcNow<from||watch.ElapsedMilliseconds>=timeoutMs)throw Unavailable();Remaining(timeoutMs);}
+                        internal void Create(string directory,string path)
+                        {
+                            if(attempted)throw Unavailable();attempted=true;string[] args=startup.normalWorkerInput.Arguments;
+                            var command=new StringBuilder("\""+path+"\" "+string.Join(" ",args));using(var sha=SHA256.Create())expectedPathDigest=BitConverter.ToString(sha.ComputeHash(new UTF8Encoding(false,true).GetBytes(path))).Replace("-","").ToLowerInvariant();
+                            int cap=Remaining(2000);startup.ReadCurrent(cap);var input=startup.normalWorkerInput.ReadCurrent(cap);var retained=NativeWorkerDeploymentSource.ReadTransferredNormalImage(image,Math.Min(cap,1000));if(input.ImageRefJson!=retained.AssociationRefJson)throw Unavailable();Remaining(cap);
+                            created=CreateProcessW(path,command,IntPtr.Zero,IntPtr.Zero,false,SuspendedCreationFlags,startup.environment,directory,ref startup.info,out original);
+                            if(!created){original=default(ProcessInformation);throw Unavailable();}
+                            if(original.Process==IntPtr.Zero||original.Process==new IntPtr(-1)||original.Thread==IntPtr.Zero||original.Thread==new IntPtr(-1)||original.Process==original.Thread||original.Pid==0||original.Tid==0){cleanupUnknown=true;throw CleanupUnknown();}
+                            process=new OriginalProcessHandle(original.Process);thread=new OriginalProcessHandle(original.Thread);
+                        }
+                        public NormalProcessOwnerObservation ReadCurrent(int timeoutMs=2000)
+                        {
+                            try
+                            {
+                                int cap=Remaining(timeoutMs);DateTime from=DateTime.UtcNow;var watch=Stopwatch.StartNew();
+                                lock(startup.parent.owner.gate)
+                                {
+                                    if(closed||!created||process==null||thread==null||startup.closed||startup.parent.closed||startup.parent.owner.disposed||startup.normalProcessOwner!=this)throw Unavailable();
+                                    startup.ReadCurrent(cap);var input=startup.normalWorkerInput.ReadCurrent(cap);var imageCurrent=NativeWorkerDeploymentSource.ReadTransferredNormalImage(image,Math.Min(cap,1000));
+                                    if(input.ImageRefJson!=imageCurrent.AssociationRefJson)throw Unavailable();Budget(from,watch,cap);
+                                    // 아래 legacy primitive의 내부 10초 상한은 normal 2초 증거가 아니다. 전후 monotonic cap으로 늦은 결과를 거절한다.
+                                    var first=OwnershipEvidenceHost.ReadRetainedHandleQuerySource(process,startup.parent.owner.job);Budget(from,watch,cap);
+                                    var current=OwnershipEvidenceHost.ReadRetainedThreadQuerySource(thread,process);Budget(from,watch,cap);
+                                    var last=OwnershipEvidenceHost.ReadRetainedHandleQuerySource(process,startup.parent.owner.job);Budget(from,watch,cap);
+                                    if(first.Pid!=original.Pid||last.Pid!=original.Pid||current.ProcessId!=original.Pid||current.ThreadId!=original.Tid||first.StartTicks!=last.StartTicks||last.StartTicks!=current.ProcessStartTicks||first.ObservedImagePathDigest!=expectedPathDigest||last.ObservedImagePathDigest!=expectedPathDigest)throw Unavailable();
+                                    var afterImage=NativeWorkerDeploymentSource.ReadTransferredNormalImage(image,Math.Min(cap,1000));var afterInput=startup.normalWorkerInput.ReadCurrent(cap);
+                                    if(afterInput.ImageRefJson!=input.ImageRefJson||afterInput.RequestRefJson!=input.RequestRefJson||afterInput.LocalClaimRefJson!=input.LocalClaimRefJson||afterInput.LocalProcessId!=input.LocalProcessId||afterInput.LocalProcessGeneration!=input.LocalProcessGeneration||afterImage.AssociationRefJson!=imageCurrent.AssociationRefJson)throw Unavailable();
+                                    Budget(from,watch,cap);return new NormalProcessOwnerObservation(input);
+                                }
+                            }
+                            catch{throw Unavailable();}
+                        }
+                        public void Dispose()
+                        {
+                            lock(startup.parent.owner.gate)
+                            {
+                                if(closed)return;if(cleanupAttempted||cleanupUnknown)throw CleanupUnknown();cleanupAttempted=true;
+                                try
+                                {
+                                    if(created&&!exitConfirmed)
+                                    {
+                                        int wait=Remaining(2000);uint state=WaitForSingleObject(original.Process,0);
+                                        if(state==258){wait=Remaining(wait);if(!TerminateProcess(original.Process,0xe1000002))throw CleanupUnknown();wait=Remaining(wait);state=WaitForSingleObject(original.Process,(uint)wait);}
+                                        if(state!=0)throw CleanupUnknown();exitConfirmed=true;
+                                    }
+                                    if(created){Remaining(2000);bool ok=true;
+                                        if(thread!=null){thread.Dispose();ok=thread.CloseSucceeded&&ok;}else if(original.Thread!=IntPtr.Zero){rawThreadCloseAttempted=true;rawThreadCloseSucceeded=CloseHandle(original.Thread);ok=rawThreadCloseSucceeded&&ok;}
+                                        if(process!=null){process.Dispose();ok=process.CloseSucceeded&&ok;}else if(original.Process!=IntPtr.Zero){rawProcessCloseAttempted=true;rawProcessCloseSucceeded=CloseHandle(original.Process);ok=rawProcessCloseSucceeded&&ok;}
+                                        if(!ok)throw CleanupUnknown();Remaining(2000);
+                                    }
+                                    image.Dispose();image=null;Remaining(2000);original=default(ProcessInformation);closed=true;
+                                }
+                                catch{cleanupUnknown=true;throw CleanupUnknown();}
+                            }
+                        }
+                    }
                 }
             }
         }
         private static readonly ConditionalWeakTable<IOriginalSuspendedProcessCandidate,object> originalReturnOwners=new ConditionalWeakTable<IOriginalSuspendedProcessCandidate,object>();
+        private static readonly ConditionalWeakTable<INormalSuspendedProcessCandidate,object> normalReturnOwners=new ConditionalWeakTable<INormalSuspendedProcessCandidate,object>();
         internal static OwnershipEvidencePreparedFactsSource.NativePreparedFactsSourceCandidate ReadOriginalPreparedReturnSource(IOriginalSuspendedProcessCandidate candidate,int timeoutMs)
         {
             object marker;Cap(timeoutMs);
@@ -197,6 +321,15 @@ namespace Anvil.Native.OwnershipEvidence
             Cap(timeoutMs);var candidate=OwnedEmptyJob.CreateFromStartup(startup,image,timeoutMs);
             try{originalReturnOwners.Add(candidate,new object());return candidate;}
             catch{candidate.Dispose();throw;}
+        }
+        internal static NormalProcessOwnerObservation ReadOriginalNormalSuspendedProcessSource(INormalSuspendedProcessCandidate candidate,int timeoutMs=2000)
+        {
+            object marker;if(timeoutMs<1||timeoutMs>2000||candidate==null||!normalReturnOwners.TryGetValue(candidate,out marker))throw Unavailable();return candidate.ReadCurrent(timeoutMs);
+        }
+        internal static INormalSuspendedProcessCandidate CreateNormalSuspendedProcessSource(ISuspendedStartupCandidate startup,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,int timeoutMs=2000)
+        {
+            if(timeoutMs<1||timeoutMs>2000)throw Unavailable();var candidate=OwnedEmptyJob.CreateNormalFromStartup(startup,image,timeoutMs);
+            try{normalReturnOwners.Add(candidate,new object());return candidate;}catch{candidate.Dispose();throw;}
         }
     }
 }
