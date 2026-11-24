@@ -8,6 +8,16 @@ test('normal admission은 실제 등록 service 없이는 구성되지 않고 ra
  }
 });
 
+test('normal FRAME 확정 거절은 문자열/외부 AuthFailure로 위조되지 않고 기존 오류 envelope만 사용한다',async()=>{
+ const {AuthFailure}=await import('../../../apps/server/modules/access/repository.ts');
+ const {NativeFirstReceiveService,isCommittedNormalStartPreparationRejection:committed}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts');
+ const service=new NativeFirstReceiveService({installationId:'11111111-1111-4111-8111-111111111111',authenticated:async()=>{throw Error('UNEXPECTED_IO');}}as any),command={commandId:'11111111-1111-4111-8111-111111111111'}as any;
+ for(const error of [new AuthFailure('NORMAL_START_PREPARATION_REJECTED',412),new AuthFailure('NORMAL_START_PREPARATION_PRODUCER_REQUIRED',503),new AuthFailure('NORMAL_START_PREPARATION_OUTCOME_UNKNOWN',503),{message:'NORMAL_START_PREPARATION_REJECTED',statusCode:412,committed:true}])assert.equal(committed(error,service,command,{}as any),false);
+ const source=readFileSync(new URL('../../../apps/server/modules/executions/normal-start-preparation-admission.ts',import.meta.url),'utf8');
+ assert(source.includes('waitNormalStartPreparationRejection(frame,'));assert(source.includes('isCommittedNormalStartPreparationRejection(error,this.#receiver,command,scope)){check();throw error;}'));
+ assert.doesNotMatch(source,/new AuthFailure\('NORMAL_START_PREPARATION_REJECTED'/,'admission 자체가 거절 권위를 만들지 않는다');
+});
+
 
 import {readFileSync} from 'node:fs';
 const sql=()=>readFileSync(new URL('../../../db/migrations/0105_normal_start_preparation_admission.sql.pending',import.meta.url),'utf8');

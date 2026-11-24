@@ -212,7 +212,7 @@ test('STREAM service는 실제 proof·점유 Store·COMMIT와 release 뒤에만 
  if(mode==='valid'){const stream=await work;let bytes=0;stream.on('data',(v:Buffer)=>{bytes+=v.length;});assert.equal(calls.at(-1),'RELEASE');assert.equal(stream.destroyed,false);assert.equal(bytes,0);controller.abort();assert.equal(stream.destroyed,true);assert.equal(bytes,0);}else await assert.rejects(work,['lost','release','expired','handoff-rollback'].includes(mode)?/OUTCOME_UNKNOWN/:mode==='signature'?/PURPOSE_DENIED/:/PROFILE_UNAVAILABLE/);assert.equal(calls.filter(s=>s.includes('native_receive_stream_consume')).length,['signature','origin'].includes(mode)?0:1);}
 });
 
-async function streamServiceFixture(mode='valid'){const {NativeFirstReceiveService:Service}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts'),{NativeFirstReceiveStore:Store}=await import('../../../apps/server/modules/executions/native-first-receive-store.ts');const f=await phaseProofFixture('STREAM');let time=f.now(),next=1900,releasedReads=0;const calls:string[]=[],current={window:f.window,session:f.session,challenge:f.challenge,publicKeySpki:f.publicKeySpki,profileOrigin:mode==='origin'?'https://other.example':'https://anvil.example',transactionId:'123',phase:'OPENED',revision:2},state={schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_STATE',windowRef:f.window.ref,phase:'STREAMING',receiveSessionRef:f.session.ref,offerRef:null,armRef:null,bindingRef:null,deliveryRef:null,authorityRef:null,ackRef:null,terminalRef:null,current:{checkedAt:new Date(time).toISOString(),usable:true,reason:'CURRENT'},observedAt:new Date(time).toISOString(),expiresAt:f.session.snapshot.expiresAt,executionAuthorized:false},db={query:async(sql:string,args:any[]=[])=>{calls.push(sql);if(sql==='BEGIN'||sql==='COMMIT'){if(sql==='COMMIT'&&mode==='lost')throw Error('TEST_ONLY_COMMIT_LOST');return{rows:[],rowCount:0};}if(sql==='SELECT txid_current()::text AS transaction_id'||sql==='SELECT anvil.native_receive_open_transaction($1) AS transaction_id')return{rows:[{transaction_id:'123'}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_verification($1,$2,$3::jsonb,$4::jsonb) AS result'||sql==='SELECT anvil.native_receive_phase_entry($1,$2,$3::jsonb,$4::jsonb) AS result')return{rows:[{result:sql.includes('native_receive_phase_entry(')?{context:current,replay:false}:current}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_denial($1,$2::jsonb,$3::jsonb) AS result')return{rows:[{result:{code:'NATIVE_RECEIVE_PURPOSE_DENIED',requestHash:JSON.parse(args[1]).requestHash}}],rowCount:1};assert.equal(sql,'SELECT anvil.native_receive_stream_consume($1,$2::jsonb,$3::jsonb) AS result');const material=JSON.parse(args[1]),proposed=JSON.parse(args[2]);if(mode==='expired')time+=30000;return{rows:[{result:{state,requestHash:material.requestHash,brokerInstanceId:proposed.brokerInstanceId,operationFence:proposed.operationFence}}],rowCount:1};},release:()=>{calls.push('RELEASE');if(mode==='release')throw Error('TEST_ONLY_RELEASE_LOST');}},access={installationId:f.window.snapshot.installationId,pool:{connect:async()=>db},authenticated:async()=>{throw Error('NO_HUMAN_SESSION');}},clock=()=>{if(mode==='handoff-rollback'&&calls.at(-1)==='RELEASE'){releasedReads++;return releasedReads===1?time+1000:time;}return time;},service=new Service(access as any,new Store(()=>id(next++),clock),clock,null,undefined,'https://anvil.example'),controller=new AbortController();return{...f,service,controller,calls,db,access,advance:(ms:number)=>{time+=ms;}};}
+async function streamServiceFixture(mode='valid'){const {NativeFirstReceiveService:Service}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts'),{NativeFirstReceiveStore:Store}=await import('../../../apps/server/modules/executions/native-first-receive-store.ts');const f=await phaseProofFixture('STREAM');let time=f.now(),next=1900,releasedReads=0;const streamIdentity={brokerInstanceId:"",operationFence:""};const calls:string[]=[],current={window:f.window,session:f.session,challenge:f.challenge,publicKeySpki:f.publicKeySpki,profileOrigin:mode==='origin'?'https://other.example':'https://anvil.example',transactionId:'123',phase:'OPENED',revision:2},state={schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_STATE',windowRef:f.window.ref,phase:'STREAMING',receiveSessionRef:f.session.ref,offerRef:null,armRef:null,bindingRef:null,deliveryRef:null,authorityRef:null,ackRef:null,terminalRef:null,current:{checkedAt:new Date(time).toISOString(),usable:true,reason:'CURRENT'},observedAt:new Date(time).toISOString(),expiresAt:f.session.snapshot.expiresAt,executionAuthorized:false},db={query:async(sql:string,args:any[]=[])=>{calls.push(sql);if(sql==='BEGIN'||sql==='COMMIT'){if(sql==='COMMIT'&&mode==='lost')throw Error('TEST_ONLY_COMMIT_LOST');return{rows:[],rowCount:0};}if(sql==='SELECT txid_current()::text AS transaction_id'||sql==='SELECT anvil.native_receive_open_transaction($1) AS transaction_id')return{rows:[{transaction_id:'123'}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_verification($1,$2,$3::jsonb,$4::jsonb) AS result'||sql==='SELECT anvil.native_receive_phase_entry($1,$2,$3::jsonb,$4::jsonb) AS result')return{rows:[{result:sql.includes('native_receive_phase_entry(')?{context:current,replay:false}:current}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_denial($1,$2::jsonb,$3::jsonb) AS result')return{rows:[{result:{code:'NATIVE_RECEIVE_PURPOSE_DENIED',requestHash:JSON.parse(args[1]).requestHash}}],rowCount:1};assert.equal(sql,'SELECT anvil.native_receive_stream_consume($1,$2::jsonb,$3::jsonb) AS result');const material=JSON.parse(args[1]),proposed=JSON.parse(args[2]);Object.assign(streamIdentity,{brokerInstanceId:proposed.brokerInstanceId,operationFence:proposed.operationFence});if(mode==='expired')time+=30000;return{rows:[{result:{state,requestHash:material.requestHash,brokerInstanceId:proposed.brokerInstanceId,operationFence:proposed.operationFence}}],rowCount:1};},release:()=>{calls.push('RELEASE');if(mode==='release')throw Error('TEST_ONLY_RELEASE_LOST');}},access={installationId:f.window.snapshot.installationId,pool:{connect:async()=>db},authenticated:async()=>{throw Error('NO_HUMAN_SESSION');}},clock=()=>{if(mode==='handoff-rollback'&&calls.at(-1)==='RELEASE'){releasedReads++;return releasedReads===1?time+1000:time;}return time;},service=new Service(access as any,new Store(()=>id(next++),clock),clock,null,undefined,'https://anvil.example'),controller=new AbortController();return{...f,service,controller,calls,db,access,streamIdentity,advance:(ms:number)=>{time+=ms;}};}
 
 test('STREAM HTTP는 raw GET 고정경로·body 없음·receive proof를 검산하며 실제 COMMIT 불명에 통로0이다',async()=>{
  const {default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes:register}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts');
@@ -442,7 +442,7 @@ async function normalResultTransportFixture(mode='valid'){
  if(mode==='signature')signature=Buffer.alloc(64,1).toString('base64url');
  if(mode==='nonce'){proof.serverNonce=Buffer.alloc(32,9).toString('base64url');signature=sign();}
  const run=()=>f.service.nativeNormalStartPreparationResult(f.session.ref.id,f.token,result,proof,signature,new AbortController().signal);
- return{...f,normalCommand,stream,wire,request,result,proof,normalSignature:signature,repairSignature:()=>{signature=sign();},source,stored,run,current,lateRelease,state:()=>({records,reads,releases,commits,bytes,replays})};
+ return{...f,normalCommand,stream,wire,request,result,proof,normalSignature:signature,repairSignature:()=>{signature=sign();return signature;},source,stored,run,current,lateRelease,state:()=>({records,reads,releases,commits,bytes,replays})};
 }
 
 for(const mode of ['valid','actual-adapter'])test('normal result 전용 route/service는 원 signed STREAM·DB current SPKI·목적 receipt를 원 거래에 결박한다 '+mode,async()=>{
@@ -637,6 +637,130 @@ test('FRAME의 exact claim COMMIT/release 뒤 원 frame1·정상 EOF만 결과 o
   await assert.rejects(f.service.sendNormalStartPreparationFrame(cap,f.controller.signal));await assert.rejects(f.service.sendNormalStartPreparationFrame({} as any,f.controller.signal));await assert.rejects(f.prepare());
   assert.equal(f.frameState().claims,1);assert.equal(f.frameState().authCalls,1);
  }finally{f.controller.abort();}
+});
+
+test('FRAME 원 EOF 뒤 같은 signed REJECTED의 exact RPC COMMIT/release만 확정 거절 brand를 깨운다',async()=>{
+ const f=await normalFrameDispatchFixture();try{
+  const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
+  assert.equal(typeof (f.service as any).waitNormalStartPreparationRejection,'function');
+  let settled=false;const waiting=(f.service as any).waitNormalStartPreparationRejection(cap,f.controller.signal).catch((e:unknown)=>{settled=true;return e;});
+  await Promise.resolve();assert.equal(settled,false,'EOF 자체는 실패/성공 정착이 아니다');
+  const stored=await f.run();assert.equal(stored.status,'NORMAL_START_PREPARATION_RESULT_STORED');
+  const error=await waiting,m=await import('../../../apps/server/modules/executions/native-first-receive-service.ts');
+  assert.equal(error.message,'NORMAL_START_PREPARATION_REJECTED');assert.equal(error.statusCode,412);
+  assert.equal((m as any).isCommittedNormalStartPreparationRejection(error,f.service,f.normalCommand,f.scope),true);
+  assert.equal((m as any).isCommittedNormalStartPreparationRejection(new Error(error.message),f.service,f.normalCommand,f.scope),false);
+  assert.equal((m as any).isCommittedNormalStartPreparationRejection(error,f.service,{...f.normalCommand,commandId:id(3391)},f.scope),false);
+  assert.equal((m as any).isCommittedNormalStartPreparationRejection(error,f.service,f.normalCommand,{...f.scope,receiveSessionRef:ref(3391)}),false);
+  assert.equal(f.state().records,1);assert.equal(f.state().commits,1);assert.equal(f.state().releases,1);assert.equal(f.frameState().claims,1);
+  await assert.rejects((f.service as any).waitNormalStartPreparationRejection(cap,f.controller.signal));
+ }finally{f.controller.abort();}
+});
+
+test('FRAME COMMIT 불명 뒤 같은 packet의 실제 durable readonly 재확인만 대기 중 원 거절을 확정하고 추가 record0이다',async()=>{
+ const f=await normalFrameDispatchFixture();try{
+  const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
+  let settled=false;const waiting=f.service.waitNormalStartPreparationRejection(cap,f.controller.signal).catch(e=>{settled=true;return e;}),query=f.db.query;let commits=0;
+  f.db.query=(async(sql:string,args:any[])=>{const value=await query(sql,args);if(sql==='COMMIT'&&++commits===1)throw Error('RAM_COMMITTED_RESPONSE_LOST');return value;})as any;
+  await assert.rejects(f.run());assert.equal(settled,false);assert.equal(f.state().records,1);
+  const replay=await f.run();assert.equal(replay.status,'NORMAL_START_PREPARATION_RESULT_STORED');assert.equal(f.state().records,1);assert.equal(f.state().replays,1);
+  const error=await waiting;assert.equal(error.message,'NORMAL_START_PREPARATION_REJECTED');assert.equal(error.statusCode,412);assert.equal(f.frameState().claims,1);
+ }finally{f.controller.abort();}
+});
+
+test('FRAME 확정 거절은 COMMIT 응답/원 release 전에는 공개되지 않고 선행 정착도 같은 원 요청에만 반환한다',async()=>{
+ for(const timing of ['COMMIT','RELEASE','ALREADY_STORED']){
+  const f=await normalFrameDispatchFixture();let unblock!:(v:any)=>void;const gate=new Promise<any>(r=>{unblock=r;});
+  try{
+   const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
+   const query=f.db.query,release=f.db.release;let entered=false,settled=false;
+   if(timing==='COMMIT')f.db.query=(async(sql:string,args:any[])=>{if(sql==='COMMIT'){entered=true;return gate;}return query(sql,args);})as any;
+   if(timing==='RELEASE')f.db.release=(()=>{entered=true;assert.equal(settled,false,'release 반환 전에는 확정 결과0');release();})as any;
+   if(timing==='ALREADY_STORED')await f.run();
+   const waiting=f.service.waitNormalStartPreparationRejection(cap,f.controller.signal).catch(e=>{settled=true;return e;});
+   if(timing!=='ALREADY_STORED'){
+    const storing=f.run();
+    if(timing==='COMMIT'){while(!entered)await new Promise<void>(r=>setImmediate(r));assert.equal(settled,false);unblock({rows:[],rowCount:0,command:'COMMIT'});}
+    await storing;
+   }
+   const error=await waiting;assert.equal(error.message,'NORMAL_START_PREPARATION_REJECTED');assert.equal(error.statusCode,412);
+   assert.equal(f.state().records,1);assert.equal(f.state().releases,1);assert.equal(f.frameState().claims,1);if(timing==='RELEASE')assert(entered);
+  }finally{f.controller.abort();unblock?.({rows:[],rowCount:0,command:'COMMIT'});}
+ }
+});
+
+test('FRAME 원 종료의 COMMIT/회수 불명·손상·서명/현재성 실패는 확정 거절 brand를 만들지 않는다',async()=>{
+ const {isCommittedNormalStartPreparationRejection:branded}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts');
+ for(const mode of ['COMMIT_UNKNOWN','RELEASE_UNKNOWN','WRONG_STORED','WRONG_RESULT','CURRENT_CHANGED']){
+  const f=await normalFrameDispatchFixture(),abort=new AbortController();try{
+   const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
+   const waiting=f.service.waitNormalStartPreparationRejection(cap,abort.signal).catch(e=>e);const query=f.db.query;
+   if(mode==='COMMIT_UNKNOWN')f.db.query=(async(sql:string,args:any[])=>{if(sql==='COMMIT')throw Error('RAM_COMMIT_UNKNOWN');return query(sql,args);})as any;
+   if(mode==='RELEASE_UNKNOWN')f.db.release=(()=>{throw Error('RAM_RELEASE_UNKNOWN');})as any;
+   if(mode==='WRONG_STORED')f.stored.snapshot.requestRef=ref(3390);
+   if(mode==='WRONG_RESULT'){f.result.receipt.ref.id=id(3390);f.result.receipt.snapshot.receiptId=id(3390);f.result.receipt.ref.contentHash=receiveHash(f.result.receipt.snapshot);}
+   if(mode==='CURRENT_CHANGED'){let reads=0;f.db.query=(async(sql:string,args:any[])=>{if(sql==='SELECT anvil.native_receive_session_current($1,$2) AS result'&&++reads===2)f.current.revision++;return query(sql,args);})as any;}
+   await assert.rejects(f.run(),mode);abort.abort();const error=await waiting;assert.equal(error.message,'NATIVE_RECEIVE_OUTCOME_UNKNOWN',mode);assert.equal(branded(error,f.service,f.normalCommand as any,f.scope),false);
+   await assert.rejects(f.service.waitNormalStartPreparationRejection(cap,new AbortController().signal));assert.equal(f.frameState().claims,1);assert.equal(f.references.length,1);
+  }finally{abort.abort();f.controller.abort();}
+ }
+});
+
+test('FRAME 원 결과 대기는 2초/짧은 원 기한·취소를 유지하고 다른 service/capability 및 late 정착을 되살리지 않는다',async(t)=>{
+ t.mock.timers.enable({apis:['setTimeout']});
+ for(const mode of ['TIMEOUT','ORIGINAL_END','ABORT','CROSS_SERVICE']){
+  const f=await normalFrameDispatchFixture(),abort=new AbortController();try{
+   const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
+   if(mode==='ORIGINAL_END')f.advance(9999);
+   const waiting=f.service.waitNormalStartPreparationRejection(cap,abort.signal).catch(e=>e);
+   if(mode==='CROSS_SERVICE'){const other=await normalFrameDispatchFixture();try{await assert.rejects(other.service.waitNormalStartPreparationRejection(cap,abort.signal));}finally{other.controller.abort();}abort.abort();}
+   else if(mode==='ABORT')abort.abort();
+   else{f.advance(mode==='TIMEOUT'?2000:1);t.mock.timers.tick(mode==='TIMEOUT'?2000:1);}
+   const error=await waiting;assert.equal(error.message,'NATIVE_RECEIVE_OUTCOME_UNKNOWN',mode);
+   if(mode==='TIMEOUT'||mode==='ORIGINAL_END'){await assert.rejects(f.run());assert.equal(f.state().records,0);}
+   await assert.rejects(f.service.waitNormalStartPreparationRejection(cap,new AbortController().signal));assert.equal(f.frameState().claims,1);assert.equal(f.references.length,1);
+  }finally{abort.abort();f.controller.abort();}
+ }
+});
+
+test('FRAME 실제 admission→claim COMMIT/release→원 EOF→결과 POST 정착은 같은 HUMAN 요청의 확정 거절만 반환하고 queue0이다',async(t)=>{
+ const f=await normalFrameDispatchFixture(),{NormalStartPreparationAdmissions}=await import('../../../apps/server/modules/executions/normal-start-preparation-admission.ts');
+ t.mock.timers.enable({apis:['Date'],now:f.now()});
+ const query=f.db.query;let admits=0,queue=0;
+ f.db.query=(async(sql:string,args:any[]=[])=>{
+  if(sql==='SELECT txid_current()::text AS transaction_id'&&admits===0)return{rows:[{transaction_id:'455'}],rowCount:1};
+  if(sql==='SELECT clock_timestamp() AS at')return{rows:[{at:new Date(f.now())}],rowCount:1};
+  if(sql==='SELECT anvil.native_receive_human_read($1,$2,$3,$4::jsonb,$5) AS result'){
+   assert.equal(args[0],f.scope.projectId);assert.equal(args[1],f.scope.humanSessionId);assert.equal(args[4],'455');
+   const observedAt=new Date(f.now()).toISOString(),value=args[2]==='ACTIVE'?{projectId:f.scope.projectId,registrationRef:f.scope.registrationRef,window:f.window,observedAt,executionAuthorized:false}:
+    {schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_STATE',windowRef:f.window.ref,phase:'STREAMING',receiveSessionRef:f.session.ref,offerRef:null,armRef:null,bindingRef:null,deliveryRef:null,authorityRef:null,ackRef:null,terminalRef:null,current:{checkedAt:observedAt,usable:true,reason:'CURRENT'},observedAt,expiresAt:f.request.expiresAt,executionAuthorized:false};
+   return{rows:[{result:{value,transactionId:'455',expiresAt:f.request.expiresAt}}],rowCount:1};
+  }
+  if(sql.includes('fn08_start_preparation_admit(')){
+   admits++;assert.equal(admits,1);assert.equal(args[6],'455');assert.deepEqual(JSON.parse(args[4]),f.normalCommand);
+   const input=JSON.parse(args[5]);Object.assign(f.provenance,input.provenance);
+   const snapshot={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_ADMISSION',admissionId:input.ids.admissionId,claimId:input.ids.claimId,request:f.normalCommand,requestHash:receiveHash(f.normalCommand),scope:input.scope,
+    provenance:input.provenance,...f.streamIdentity,transactionId:'455',recordedAt:new Date(f.now()).toISOString(),expiresAt:input.expiresAt,executionAuthorized:false,dispatchPerformed:false};
+   const r={id:input.ids.admissionId,version:1,contentHash:receiveHash(snapshot)};f.request.admissionRef=r;f.request.claimRef.id=input.ids.claimId;
+   return{rows:[{result:{disposition:'FIRST_COMMIT',ref:r,snapshot}}],rowCount:1};
+  }
+  if(sql.includes('fn08_start_preparation_queue(')||sql.includes('fn08_start_preparation_claim(')){queue++;throw Error('UNEXPECTED_LEGACY_QUEUE');}
+  return query(sql,args);
+ })as any;
+ const admission=new NormalStartPreparationAdmissions(f.access as any,{purpose:'NORMAL_START_PREPARATION_ADMISSION_V1',receiver:f.service,mode:'FRAME'},async()=>({registrationRef:f.scope.registrationRef,connectorRef:f.scope.connectorRef,expiresAt:f.request.expiresAt}));
+ let finished=false;const pending=admission.enter('A'.repeat(43),'C'.repeat(43),f.normalCommand as any).catch(e=>{finished=true;return e;});
+ const {default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts'),app=Fastify();
+ registerNativeFirstReceiveRoutes(app,{enabled:true,service:f.service},{origin:'https://anvil.example'}as any);
+ try{
+  while(!f.references.length&&!finished)await new Promise<void>(r=>setImmediate(r));assert.equal(finished,false,'정상 EOF만으로 완료하지 않는다');
+  const response=await app.inject({method:'POST',url:f.proof.target.path,headers:{host:'anvil.example','content-type':'application/json',authorization:'AnvilReceive '+f.token,
+   [f.wire.normalStartPreparationHeaders.proof]:Buffer.from(receiveCanonical(f.proof)).toString('base64url'),[f.wire.normalStartPreparationHeaders.signature]:f.repairSignature()},payload:receiveCanonical(f.result)});
+  assert.equal(response.statusCode,200,response.body);assert.equal(response.json().status,'NORMAL_START_PREPARATION_RESULT_STORED');
+  const error=await pending;assert.equal(error.message,'NORMAL_START_PREPARATION_REJECTED');assert.equal(error.statusCode,412);
+  assert.equal(admits,1);assert.equal(queue,0);assert.equal(f.frameState().claims,1);assert.equal(f.frameState().authCalls,2);assert.equal(f.state().records,1);
+  assert.deepEqual(f.order.filter(s=>s!=='FRAME_BYTES'),['AUTH_BEGIN','AUTH_COMMIT','AUTH_RELEASE','AUTH_BEGIN','CLAIM_RPC','AUTH_COMMIT','AUTH_RELEASE']);
+  assert.equal(f.references.length,1);
+ }finally{f.controller.abort();await pending;await app.close();}
 });
 
 test('FRAME 미구성·일반 STREAM은 claim 전 효과0이며 원 legacy 결과 경로를 가로채지 않는다',async()=>{
