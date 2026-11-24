@@ -361,6 +361,11 @@ internal sealed class DesktopTrustKeyHostSource {
   if(operation=="INSTALL_WORKER"){
    Exact(value,"attemptId,request");if(workerInstallAttempted)throw Invalid();workerInstallAttempted=true;workerAttempt=Id(value,"attemptId");workerRecord=Canonical(WorkerRecord(),0);var request=Map(value["request"]);Exact(request,"factoryRef,bundle,head");try{var result=workerDeployment.Install(request);WorkerRecord();return result;}catch(InvalidOperationException e){if(e.Message=="NATIVE_WORKER_INSTALLATION_UNSUPPORTED")return new Dictionary<string,object>{{"state","UNSUPPORTED"}};unknown=true;throw;}
   }
+  if(operation=="READ_WORKER_INSTALLATION_SETTLEMENT_V1"){
+   Exact(value,"attemptId,request");string attempt=Id(value,"attemptId");if(workerAttempt!=null&&workerAttempt!=attempt)throw Invalid();workerAttempt=attempt;var record=WorkerRecord();workerRecord=Canonical(record,0);var request=Map(value["request"]);Exact(request,"offerRef,commandId,commandHash,factoryRef,registrationAttemptId,registrationRecordHash");
+   var offer=Ref(request["offerRef"]);Ref(request["factoryRef"]);Id(request,"commandId");if(Positive(offer["version"])!=1||!IsHash(request["commandHash"])||Id(request,"registrationAttemptId")!=attempt||Text(request,"registrationRecordHash")!=Hash(Encoding.UTF8.GetBytes(Canonical(record,0))))throw Invalid();
+   try{var result=workerDeployment.ReadManagementSettlement(request);WorkerRecord();Check();return result;}catch(InvalidOperationException e){if(e.Message=="NATIVE_WORKER_INSTALLATION_UNSUPPORTED")return new Dictionary<string,object>{{"state","UNSUPPORTED"}};unknown=true;throw;}
+  }
   if(operation=="INSTALL_NORMAL_START_WORKER_V1"||operation=="READ_NORMAL_START_WORKER_IMAGE_V1"){
    Exact(value,operation=="INSTALL_NORMAL_START_WORKER_V1"?"attemptId,request":"attemptId");string attempt=Id(value,"attemptId");if(workerAttempt!=null&&workerAttempt!=attempt)throw Invalid();workerAttempt=attempt;var record=WorkerRecord();workerRecord=Canonical(record,0);
    try{object result;if(operation=="INSTALL_NORMAL_START_WORKER_V1"){

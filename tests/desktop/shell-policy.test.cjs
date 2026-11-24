@@ -36,3 +36,10 @@ test('첫 수신 exact5 IPC는 원 local sender·epoch·등록 attempt와 고정
  const {assertTrustIpc}=require('../../apps/desktop/src/policy.cjs'),id='11111111-1111-4111-8111-111111111111',frame={url:'anvil-local://shell/settings.html'},owner={mainFrame:frame},event={sender:owner,senderFrame:frame},ref={id,version:1,contentHash:'a'.repeat(64)};
  for(const action of ['begin','status','refresh','arm','close']){const input={...(action==='status'?{}:{requestId:id}),attemptId:id,epoch:1,...(action==='arm'?{offerRef:ref,confirmed:true}:action==='close'?{confirmed:true}:{})},name='native-receive-'+action;assert.deepEqual(assertTrustIpc(event,owner,name,input),input);assert.throws(()=>assertTrustIpc(event,owner,name,{...input,projectId:id}));assert.throws(()=>assertTrustIpc(event,owner,name,{...input,epoch:0}));assert.throws(()=>assertTrustIpc({sender:{},senderFrame:frame},owner,name,input));if(action==='arm'||action==='close')assert.throws(()=>assertTrustIpc(event,owner,name,{...input,confirmed:false}));if(action==='arm')assert.throws(()=>assertTrustIpc(event,owner,name,{...input,offerRef:{...ref,version:2}}));}
 });
+
+test('정착 관리 읽기는 기존 trust-act exact4 입력만 허용한다',()=>{
+ const {assertTrustIpc}=require('../../apps/desktop/src/policy.cjs'),id='11111111-1111-4111-8111-111111111111',frame={url:'anvil-local://shell/settings.html'},owner={mainFrame:frame},event={sender:owner,senderFrame:frame};
+ const input={requestId:id,attemptId:id,epoch:1,action:'READ_WORKER_INSTALLATION_SETTLEMENT'};
+ assert.deepEqual(assertTrustIpc(event,owner,'trust-act',input),input);
+ for(const extra of [{offerRef:{}},{factoryRef:{}},{rootIdentity:'forged'},{selectionHash:'a'.repeat(64)}])assert.throws(()=>assertTrustIpc(event,owner,'trust-act',{...input,...extra}));
+});

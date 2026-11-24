@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 보호 설치 관리 읽기 진입 연결** — 담당 `c11_quality_review`, 기준 `fd1a4e19`. 기존 관리 화면의 명시 읽기를 단일 현재 OFFER·REGISTERED owner, 기존 trust IPC와 pinned native의 읽기 전용 목적에 연결했다. 현재는 기본 Windows guard의 `UNSUPPORTED`만 허용하며 조작된 성공, 교차 요청, 늦은 응답 및 host close 불명을 폐쇄한다. 기존 설치 action과 단회 처리는 유지하고 과거 응답·설치·복구·실행 권위는 발급하지 않는다. 제품 7개·시험 4개·관리 읽기 WI 1개. 작성자 RED 43/50, Main 최종 관련 5파일 186/186(219173/e70836/b61283)·타입 0(071c2f)·diff 0(c99ed8), 독립 C0/I0. 실제 C#·Windows/host/marker·키·DB/권한·서비스·Agent 실행은 미검증이다. 같은 원 설치 marker writer와 existing-only reader(Task2~3)는 미구현이다.
+
 - **FN08 Windows 보호 설치 중단 판독 합성 계약** — 담당 `c11_quality_review`, 기준 `0fee32c4`. 제품 코드 없이 기존 시험 파일에서 정착 marker와 container·이전 prefix·원 설치 revision 2·같은 등록/패키지/worker의 관계를 메모리로 대조한다. 원 close 전후 동일 정착 사실에서도 과거 요청 UNKNOWN과 실행·정리 효과 0을 확인한다. 다른 root·SID·등록·descriptor, 재봉인한 이전 기록/잘못된 revision, partial/ACTIVE/배타 충돌 및 기존 metadata 상한을 거절한다. 시험 1파일, Main 최종 집중 4/4(5b2c81)·구문 0(49d6d4)·diff 0(c0d639), 독립 C0/I0. 제품·실제 Windows/키·권한·DB/서비스·Agent 변경 없이 현재 관리 호출선과 실제 Win32 저장 및 복구는 미완료다.
 
 - **FN08 Windows 보호 설치 재시작 판독 작업지시서** — 담당 `c11_quality_review`, 기준 `f930a8a2`. 기존 8 MiB 설치 metadata에 삭제하지 않는 정착 marker를 결박하고, 같은 root·원 container/패키지/worker의 현재 재검산과 과거 응답 UNKNOWN을 분리한다. 기존 Win32 writer·reader의 권한과 공식 문헌 보장 범위, 단회·quota·v1 rollback 및 중단 시점별 판독을 정의했다. 현재 구현의 이중 `RequireDurability`로 인해 제품 연결 없이 먼저 메모리 계약만 검증한다. 문서 1개, 동결 `7BE82F0A…D10934`, 기준 파일 지문 대조·diff 검사 및 독립 최종 C0/I0. 실제 Windows/C#·DB·권한·서비스·Agent 실행과 원 설치 지원은 미검증이며 guard는 닫혀 있다. 다음은 원 hash·중간 정착·재시작의 합성 crash matrix와 안전한 목적 한정 실제 읽기 호출점 대조다.

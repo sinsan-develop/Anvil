@@ -58,6 +58,12 @@ test('native source 정적: 원 REGISTERED binding에서 typed INSTALL_WORKER와
  const deployment=read('NativeWorkerDeploymentSource.cs');assert.doesNotMatch(deployment,/ServerCertificateValidationCallback|ServicePointManager/);assert.match(deployment,/storage.RequireDurability\(\);/);assert.match(deployment,/request.Abort\(\)/);assert.match(deployment,/originals.TryGetValue/);
 });
 
+test('native source 정적: 정착 관리 exact six는 기존 REGISTERED root에서 disabled deployment gate로만 이어진다',()=>{
+ const host=read('DesktopTrustKeyHostSource.cs'),deployment=read('NativeWorkerDeploymentSource.cs');
+ assert.match(host,/READ_WORKER_INSTALLATION_SETTLEMENT_V1/);assert.match(host,/offerRef,commandId,commandHash,factoryRef,registrationAttemptId,registrationRecordHash/);assert.match(host,/WorkerRecord\(\)/);assert.match(host,/workerDeployment\.ReadManagementSettlement/);
+ const start=deployment.indexOf('ReadManagementSettlement('),body=deployment.slice(start,deployment.indexOf('// 새 목적 설치',start));assert.ok(start>=0&&body.length>0);assert.match(body,/storage\.RequireDurability\(\)/);assert.doesNotMatch(body,/Install\(|InstallNormal\(|ReadNormalImage\(/);
+});
+
 test('native 관측 source 정적: 요청 1초 closure가 원 worker 읽기와 첫 저장까지 이어진다',()=>{const s=read('NativeWorkerDeploymentSource.cs');assert.match(s,/sealed class Observation/);assert.match(s,/new NativeWorkerInstallationStoreSource\(storage,Bound\)/);assert.match(s,/ReadPackagedWorker\(V.Text\(d,"workerHash"\),Bound\)/);assert.match(s,/observed.Check\(\);[\s\S]*store.Install/);assert.match(s,/activeObservation=null/);});
 
 test('normal image 결박은 기존 설치 행과 분리되고 원 등록 host에서만 생성·정확 재조회된다',()=>{
