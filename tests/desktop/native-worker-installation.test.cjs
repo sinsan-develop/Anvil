@@ -32,3 +32,15 @@ test('client 원 관측 표식은 복제·변조·다른client·기한 연장을
 test('설치 조정기는 전달 자료를 깊게 고정하고 응답 Proxy를 trap 없이 거절한다',async()=>{const {createWorkerInstallationCoordinator:create}=require('../../apps/desktop/src/native-worker-installation-coordinator.cjs');for(const mode of ['MUTATION','PROXY']){const f=fixture(),c=client(f,async inv=>response(f,inv.url));let traps=0,closes=0;const coord=create(c,async()=>({install:async p=>{if(mode==='MUTATION'){assert.ok(Object.isFrozen(p.bundle.descriptor.snapshot));assert.throws(()=>{p.bundle.descriptor.ref.contentHash='f'.repeat(64);});return{state:'UNSUPPORTED'};}return new Proxy({state:'UNSUPPORTED'},{ownKeys(t){traps++;return Reflect.ownKeys(t);}});},close:async()=>{closes++;return{state:'CLOSED_CONFIRMED'};}}));if(mode==='MUTATION')assert.equal((await coord.install(f.factory,lease())).state,'UNSUPPORTED');else await assert.rejects(coord.install(f.factory,lease()),/UNKNOWN/);await new Promise(r=>setImmediate(r));assert.equal(traps,0);assert.equal(closes,1);}});
 
 test('설치 조정기는 900ms 관측 뒤 200ms host 준비와 close 불명을 성공으로 반환하지 않는다',async()=>{const {createWorkerInstallationCoordinator:create}=require('../../apps/desktop/src/native-worker-installation-coordinator.cjs');for(const mode of ['EXPIRED','CLOSE_UNKNOWN']){const f=fixture(),c=client(f,async inv=>{f.mono=900;f.now+=900;return response(f,inv.url);});let calls=0,closes=0;const coord=create(c,async()=>{if(mode==='EXPIRED'){f.mono=1100;f.now+=200;}return{install:async()=>{calls++;return{state:'UNSUPPORTED'};},close:async()=>{closes++;return{state:mode==='CLOSE_UNKNOWN'?'UNKNOWN':'CLOSED_CONFIRMED'};}};});await assert.rejects(coord.install(f.factory,lease()),/UNKNOWN/);await assert.rejects(coord.install(f.factory,lease()));await new Promise(r=>setImmediate(r));assert.equal(calls,mode==='EXPIRED'?0:1);assert.equal(closes,1);}});
+
+test('normal publisher 기대자료는 실제 조정기의 목적 소비로만 이어지고 UNSUPPORTED/close 불명을 설치 완료로 올리지 않는다',async()=>{
+ const {createWorkerInstallationCoordinator:create}=require('../../apps/desktop/src/native-worker-installation-coordinator.cjs');
+ for(const state of ['CLOSED_CONFIRMED','UNKNOWN']){
+  const f=fixture();let reads=0,normal=0,legacy=0,closes=0;
+  const c=client(f,async inv=>{reads++;return response(f,inv.url);}),publication={purpose:'NORMAL_START_WORKER_PUBLICATION_V1',bundle:f.bundle,head:f.head};
+  const owner=create(c,async()=>({install:async()=>{legacy++;throw Error('이전 목적 소비 금지');},installNormal:async(value,budget)=>{budget.check();normal++;assert.deepEqual(value,{bundle:f.bundle,head:f.head});assert(budget.remainingMs()<=1000);return{state:'UNSUPPORTED'};},close:async()=>{closes++;return{state};}}));
+  if(state==='CLOSED_CONFIRMED')assert.deepEqual(await owner.installNormalStart(publication,lease()),{state:'UNSUPPORTED'});
+  else await assert.rejects(owner.installNormalStart(publication,lease()),/UNKNOWN/);
+  await assert.rejects(owner.installNormalStart(publication,lease()));assert.equal(reads,1);assert.equal(normal,1);assert.equal(legacy,0);assert.equal(closes,1);
+ }
+});

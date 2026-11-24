@@ -96,33 +96,162 @@ internal sealed class NativeWorkerInstallationStoreSource:IDisposable {
 
 internal sealed class WindowsNativeWorkerInstallationKernel:NativeWorkerInstallationKernel {
  readonly DesktopTrustKeyRootKernel roots;readonly Action current;NativeWorkerInstallationRootSource root;bool unknown;FileStream held;readonly List<Tuple<IntPtr,DesktopTrustKeyDirectoryFact>> directories=new List<Tuple<IntPtr,DesktopTrustKeyDirectoryFact>>();
+ sealed class OwnedFile {internal string Path,Identity;internal IntPtr Handle;internal FileStream Stream;internal bool CloseAttempted,CloseSettled;}
+ OwnedFile lockFile;string committedHash;bool releaseAttempted,disposeAttempted,cleanupSettled;readonly List<OwnedFile> files=new List<OwnedFile>();readonly List<Tuple<IntPtr,DesktopTrustKeyDirectoryFact>> metadataUnknown=new List<Tuple<IntPtr,DesktopTrustKeyDirectoryFact>>();
+ static readonly List<WindowsNativeWorkerInstallationKernel> unsettled=new List<WindowsNativeWorkerInstallationKernel>();
+ static bool blockedHost;
  static readonly byte[] Entropy=Encoding.UTF8.GetBytes("Anvil.NativeWorkers.Installation.v1");
  internal WindowsNativeWorkerInstallationKernel(DesktopTrustKeyRootKernel source,Action check){roots=source;current=check;}
  // 부모 metadata 정착과 불명 해제의 원 권위를 아직 보장하지 못한다. 첫 OS 변경 전에 거절한다.
  internal override void RequireDurability(){throw new InvalidOperationException("NATIVE_WORKER_INSTALLATION_UNSUPPORTED");}
- internal override void Open(bool create){RequireDurability();if(root!=null)throw Invalid();root=NativeWorkerInstallationRootSource.Open(roots,current,create);Check();}
+ internal override void Open(bool create){RequireDurability();if(root!=null||disposeAttempted)throw Invalid();lock(unsettled){if(blockedHost)throw Invalid();}try{root=NativeWorkerInstallationRootSource.Open(roots,current,create);root.SettleCreated(SettleFact);Check();}catch{KeepUnknown();throw Invalid();}}
  static Exception Invalid(){return new InvalidOperationException("NATIVE_WORKER_INSTALLATION_UNKNOWN");}
  static bool SameDirectory(DesktopTrustKeyDirectoryFact a,DesktopTrustKeyDirectoryFact b){return a!=null&&b!=null&&a.Exists&&b.Exists&&!a.Link&&!b.Link&&a.Path==b.Path&&a.Identity==b.Identity&&a.Owner==b.Owner&&a.Private&&b.Private;}
- internal override void Check(){if(unknown||root==null)throw Invalid();current();root.Check();foreach(var item in directories)if(!SameDirectory(item.Item2,roots.Observe(item.Item1))||!SameDirectory(item.Item2,roots.Inspect(item.Item2.Path)))throw Invalid();current();}
+ internal override void Check(){if(unknown||disposeAttempted||root==null)throw Invalid();current();root.Check();foreach(var item in directories)if(!SameDirectory(item.Item2,roots.Observe(item.Item1))||!SameDirectory(item.Item2,roots.Inspect(item.Item2.Path)))throw Invalid();current();}
  void RetainDirectory(string path){Check();if(directories.Any(x=>x.Item2.Path==path))return;var fact=roots.Inspect(path);if(fact==null||!fact.Exists||fact.Link||!fact.Private||fact.Owner!=root.UserSid||fact.Path!=path)throw Invalid();IntPtr handle=roots.Retain(path);if(handle==IntPtr.Zero||handle==new IntPtr(-1)||directories.Any(x=>x.Item1==handle))throw Invalid();directories.Add(Tuple.Create(handle,fact));Check();}
  void ValidateRootEntries(){Check();foreach(string entry in Directory.GetFileSystemEntries(root.PathValue)){string name=Path.GetFileName(entry);if(name=="packages"){RetainDirectory(entry);continue;}if(!new[]{"installations.v1","installations.v1.previous","installations.v1.lock"}.Contains(name)||Directory.Exists(entry)||name=="installations.v1.lock"&&held==null)throw Invalid();Shape(entry);}Check();}
  internal override string Sid{get{Check();return root.UserSid;}}internal override string RootIdentity{get{Check();return root.Identity;}}internal override bool Fresh{get{Check();return root.Created;}}
  string Name(string name){if(!new[]{"installations.v1","installations.v1.next","installations.v1.previous","installations.v1.lock"}.Contains(name))throw Invalid();Check();return Path.Combine(root.PathValue,name);}
  [StructLayout(LayoutKind.Sequential)]struct FT{internal uint Low,High;}[StructLayout(LayoutKind.Sequential)]struct FI{internal uint Attributes;internal FT Created,Accessed,Written;internal uint Volume,SizeHigh,SizeLow,Links,IndexHigh,IndexLow;}
  [DllImport("kernel32.dll",SetLastError=true)]static extern bool GetFileInformationByHandle(IntPtr h,out FI info);
+ [StructLayout(LayoutKind.Sequential)]struct SA{internal int Length;internal IntPtr Descriptor;internal int Inherit;}
+ [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true,ExactSpelling=true)]static extern IntPtr CreateFileW(string path,uint access,uint share,IntPtr security,uint disposition,uint flags,IntPtr template);
+ [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true,ExactSpelling=true,EntryPoint="CreateFileW")]static extern IntPtr CreatePrivateFileW(string path,uint access,uint share,ref SA security,uint disposition,uint flags,IntPtr template);
+ [DllImport("kernel32.dll",SetLastError=true)]static extern bool FlushFileBuffers(IntPtr handle);
+ [DllImport("kernel32.dll",SetLastError=true)]static extern bool CloseHandle(IntPtr handle);
+ [DllImport("kernel32.dll",SetLastError=true)]static extern bool SetFileInformationByHandle(IntPtr handle,int kind,byte[] bytes,uint length);
+ [DllImport("kernel32.dll",SetLastError=true)]static extern bool WriteFile(IntPtr handle,[In]byte[] bytes,uint count,out uint written,IntPtr overlapped);
+ [DllImport("kernel32.dll",SetLastError=true)]static extern bool ReadFile(IntPtr handle,[Out]byte[] bytes,uint count,out uint read,IntPtr overlapped);
+ [DllImport("kernel32.dll",SetLastError=true)]static extern bool SetFilePointerEx(IntPtr handle,long distance,out long position,uint origin);
+ // 원 host의 고정 root에 대한 sticky 차단이다. 재시작 영속 소진/회수 증거로 쓰지 않는다.
+ void KeepUnknown(){unknown=true;lock(unsettled){blockedHost=true;if(!cleanupSettled&&(root!=null||files.Any(x=>x.Handle!=IntPtr.Zero)||directories.Count!=0||metadataUnknown.Count!=0)&&!unsettled.Contains(this))unsettled.Add(this);}}
+ static bool SameMetadata(DesktopTrustKeyDirectoryFact a,DesktopTrustKeyDirectoryFact b){return a!=null&&b!=null&&a.Exists&&b.Exists&&!a.Link&&!b.Link&&a.Path==b.Path&&a.Identity==b.Identity&&a.Owner==b.Owner&&a.Private==b.Private;}
+ // 기존 retained fact와 같은 부모만 연다. 성공 bool은 실제 Flush/Close 응답이며 주입된 지원 표식이 아니다.
+ void SettleFact(DesktopTrustKeyDirectoryFact expected){
+  Check();if(expected==null||!SameMetadata(expected,roots.Inspect(expected.Path)))throw Invalid();
+  IntPtr handle=CreateFileW(expected.Path,0x40000000,7,IntPtr.Zero,3,0x02200000,IntPtr.Zero);
+  if(handle==IntPtr.Zero||handle==new IntPtr(-1))throw Invalid();bool closed=false;
+  try{if(!SameMetadata(expected,roots.Observe(handle))||!SameMetadata(expected,roots.Inspect(expected.Path)))throw Invalid();Check();if(!FlushFileBuffers(handle))throw Invalid();Check();}
+  finally{try{closed=roots.Close(handle);}catch{}if(!closed){metadataUnknown.Add(Tuple.Create(handle,expected));KeepUnknown();throw Invalid();}}
+  Check();
+ }
+ void SettleDirectory(string path){Check();var matches=directories.Where(x=>x.Item2.Path==path).ToArray();if(matches.Length==1)SettleFact(matches[0].Item2);else if(matches.Length==0)root.WithPinnedMetadata(path,SettleFact);else throw Invalid();Check();}
+ OwnedFile CreatePrivateFile(string path){
+  Check();var security=new FileSecurity();var user=new SecurityIdentifier(Sid);security.SetOwner(user);security.SetAccessRuleProtection(true,false);
+  foreach(var principal in new[]{user,new SecurityIdentifier("S-1-5-18")})security.AddAccessRule(new FileSystemAccessRule(principal,FileSystemRights.FullControl,AccessControlType.Allow));
+  byte[] bytes=security.GetSecurityDescriptorBinaryForm();IntPtr descriptor=Marshal.AllocHGlobal(bytes.Length);OwnedFile owner=null;
+  try{Marshal.Copy(bytes,0,descriptor,bytes.Length);var attributes=new SA{Length=Marshal.SizeOf(typeof(SA)),Descriptor=descriptor,Inherit=0};Check();
+   IntPtr handle=CreatePrivateFileW(path,0xC0000000,0,ref attributes,(uint)FileMode.CreateNew,0x80200080,IntPtr.Zero);if(handle==IntPtr.Zero||handle==new IntPtr(-1))throw Invalid();
+   owner=new OwnedFile{Path=path,Handle=handle};files.Add(owner);owner.Stream=new FileStream(new Microsoft.Win32.SafeHandles.SafeFileHandle(handle,false),FileAccess.ReadWrite,4096,false);owner.Identity=Identity(owner.Stream);Shape(path);Check();return owner;
+  }catch{KeepUnknown();throw;}finally{Marshal.FreeHGlobal(descriptor);Array.Clear(bytes,0,bytes.Length);}
+ }
+ // 빌린 wrapper와 실제 handle을 분리하여 원 CloseHandle을 정확 한 번 확인한다.
+ void CloseOwnedFile(OwnedFile file){
+  if(file==null||file.CloseAttempted||file.Handle==IntPtr.Zero)throw Invalid();file.CloseAttempted=true;bool wrapper=true,closed=false;
+  try{try{if(file.Stream!=null)file.Stream.Dispose();}catch{wrapper=false;}try{closed=CloseHandle(file.Handle);}catch{}if(closed)file.Handle=IntPtr.Zero;file.CloseSettled=wrapper&&closed;if(!file.CloseSettled){KeepUnknown();throw Invalid();}file.Stream=null;files.Remove(file);}
+  finally{if(!file.CloseSettled)KeepUnknown();}
+ }
+ void WriteAndReadback(OwnedFile file,byte[] bytes){
+  Check();if(file==null||file.CloseAttempted||bytes==null||bytes.Length<1||file.Stream.Length!=0||Identity(file.Stream)!=file.Identity)throw Invalid();
+  // cleanup Dispose가 만료 뒤 buffered write를 시작하지 않도록 원 handle의 동기 IO만 쓴다.
+  byte[] part=new byte[Math.Min(65536,bytes.Length)];try{
+   for(int at=0;at<bytes.Length;){Check();int n=Math.Min(part.Length,bytes.Length-at);Buffer.BlockCopy(bytes,at,part,0,n);uint written;if(!WriteFile(file.Handle,part,(uint)n,out written,IntPtr.Zero)||written!=n)throw Invalid();at+=n;Check();}
+   if(!FlushFileBuffers(file.Handle))throw Invalid();Check();if(file.Stream.Length!=bytes.Length||Identity(file.Stream)!=file.Identity)throw Invalid();long position;if(!SetFilePointerEx(file.Handle,0,out position,0)||position!=0)throw Invalid();
+   for(int at=0;at<bytes.Length;){Check();int n=Math.Min(part.Length,bytes.Length-at);uint count;if(!ReadFile(file.Handle,part,(uint)n,out count,IntPtr.Zero)||count!=n)throw Invalid();for(int i=0;i<n;i++)if(part[i]!=bytes[at+i])throw Invalid();at+=n;}
+   uint tail;if(!ReadFile(file.Handle,part,1,out tail,IntPtr.Zero)||tail!=0||Identity(file.Stream)!=file.Identity)throw Invalid();Check();
+  }finally{Array.Clear(part,0,part.Length);}
+ }
+ Dictionary<string,object> Container(byte[] cipher){
+  if(cipher==null||cipher.Length<1||cipher.Length>8388608)throw Invalid();byte[] plain=null;
+  try{plain=Unprotect(cipher);if(plain==null||plain.Length<1||plain.Length>8388608)throw Invalid();var c=DesktopTrustKeyHostSource.Parse(plain,false);V.Exact(c,"schemaVersion,purpose,sid,rootIdentity,sequence,previousHash,rows");V.One(c["schemaVersion"]);var rows=c["rows"]as object[];
+   if(V.Text(c,"purpose")!="NATIVE_WORKER_INSTALLATIONS"||V.Text(c,"sid")!=Sid||V.Text(c,"rootIdentity")!=RootIdentity||rows==null||rows.Length<1||rows.Length>512||V.Positive(c["sequence"])!=rows.Length||!plain.SequenceEqual(Encoding.UTF8.GetBytes(V.Canonical(c,0))))throw Invalid();Check();return c;
+  }finally{if(plain!=null)Array.Clear(plain,0,plain.Length);}
+ }
+ Dictionary<string,object> ReadContainer(string name){byte[] bytes=Read(name);try{return bytes==null?null:Container(bytes);}finally{if(bytes!=null)Array.Clear(bytes,0,bytes.Length);}}
+ static string ContainerHash(Dictionary<string,object> value){return value==null?null:V.Hash(Encoding.UTF8.GetBytes(V.Canonical(value,0)));}
+ Dictionary<string,object> RequireCommittedContainer(){Check();RequireLock();var c=ReadContainer("installations.v1");if(committedHash==null||ContainerHash(c)!=committedHash)throw Invalid();return c;}
+ void RequireLock(){Check();if(lockFile==null||held==null||releaseAttempted||lockFile.CloseAttempted||Identity(held)!=lockFile.Identity||held.Length!=0)throw Invalid();Shape(lockFile.Path);Check();}
+ Dictionary<string,object> RequireReservedWorker(string descriptorHash,byte[] bytes){
+  if(!System.Text.RegularExpressions.Regex.IsMatch(descriptorHash??"",@"\A[a-f0-9]{64}\z")||bytes==null||bytes.Length<1||bytes.Length>20971520)throw Invalid();var c=RequireCommittedContainer();var row=V.Map(((object[])c["rows"]).Last());
+  if(V.Text(row,"purpose")!="NATIVE_WORKER_INSTALLATION"||V.Text(row,"state")!="RESERVED"||V.Positive(row["revision"])!=1||row["fileIdentity"]!=null||V.Text(V.Ref(row["descriptorRef"],false),"contentHash")!=descriptorHash||V.Text(row,"workerHash")!=V.Hash(bytes)||V.Positive(row["bytes"])!=bytes.Length)throw Invalid();return row;
+ }
  string Identity(FileStream stream){FI f;if(!GetFileInformationByHandle(stream.SafeFileHandle.DangerousGetHandle(),out f)||f.Links!=1||(f.Attributes&0x410)!=0)throw Invalid();return String.Join(":",f.Volume,f.IndexHigh,f.IndexLow);}
  void Shape(string path){Check();var f=new FileInfo(path);if(!f.Exists||(f.Attributes&FileAttributes.ReparsePoint)!=0)throw Invalid();var s=f.GetAccessControl(AccessControlSections.Access|AccessControlSections.Owner);if(s.GetOwner(typeof(SecurityIdentifier)).Value!=Sid||!s.AreAccessRulesProtected)throw Invalid();var rules=s.GetAccessRules(true,true,typeof(SecurityIdentifier));if(rules.Count!=2)throw Invalid();var seen=new HashSet<string>();foreach(FileSystemAccessRule r in rules)if(r.IsInherited||r.AccessControlType!=AccessControlType.Allow||r.FileSystemRights!=FileSystemRights.FullControl||!seen.Add(r.IdentityReference.Value)||(r.IdentityReference.Value!=Sid&&r.IdentityReference.Value!="S-1-5-18"))throw Invalid();}
- byte[] ReadPath(string path,int max){Shape(path);using(var f=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.Read)){string identity=Identity(f);if(f.Length<1||f.Length>max)throw Invalid();byte[] b=new byte[(int)f.Length];bool ok=false;try{int at=0;while(at<b.Length){Check();int n=f.Read(b,at,Math.Min(65536,b.Length-at));if(n<=0)throw Invalid();at+=n;}if(f.ReadByte()!=-1||Identity(f)!=identity)throw Invalid();using(var again=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.Read))if(Identity(again)!=identity)throw Invalid();Shape(path);ok=true;return b;}finally{if(!ok)Array.Clear(b,0,b.Length);}}}
+ OwnedFile OpenReadFile(string path){
+  Check();Shape(path);IntPtr handle=CreateFileW(path,0x80000000,1,IntPtr.Zero,3,0x00200080,IntPtr.Zero);if(handle==IntPtr.Zero||handle==new IntPtr(-1))throw Invalid();
+  var owner=new OwnedFile{Path=path,Handle=handle};files.Add(owner);try{owner.Stream=new FileStream(new Microsoft.Win32.SafeHandles.SafeFileHandle(handle,false),FileAccess.Read,4096,false);owner.Identity=Identity(owner.Stream);Check();return owner;}catch{KeepUnknown();CloseOwnedFile(owner);throw Invalid();}
+ }
+ void RequireFileIdentity(string path,string identity){var file=OpenReadFile(path);try{if(file.Identity!=identity)throw Invalid();Check();}finally{CloseOwnedFile(file);}Check();}
+ byte[] ReadPath(string path,int max){
+  OwnedFile file=null,again=null;byte[] bytes=null;
+  try{file=OpenReadFile(path);var stream=file.Stream;if(stream.Length<1||stream.Length>max)throw Invalid();bytes=new byte[(int)stream.Length];int at=0;
+   while(at<bytes.Length){Check();int n=stream.Read(bytes,at,Math.Min(65536,bytes.Length-at));if(n<=0)throw Invalid();at+=n;}
+   if(stream.ReadByte()!=-1||Identity(stream)!=file.Identity)throw Invalid();again=OpenReadFile(path);if(again.Identity!=file.Identity)throw Invalid();
+   CloseOwnedFile(again);again=null;CloseOwnedFile(file);file=null;Shape(path);Check();var result=bytes;bytes=null;return result;
+  }catch{KeepUnknown();throw Invalid();}
+  finally{if(bytes!=null)Array.Clear(bytes,0,bytes.Length);bool failed=false;foreach(var owner in new[]{again,file})if(owner!=null&&!owner.CloseAttempted){try{CloseOwnedFile(owner);}catch{failed=true;}}if(failed){KeepUnknown();throw Invalid();}}
+ }
  internal override byte[] Read(string name){string p=Name(name);if(!File.Exists(p))return null;return ReadPath(p,8388608);}
  internal override long MetadataBytes(){ValidateRootEntries();long n=0;foreach(string name in new[]{"installations.v1","installations.v1.next","installations.v1.previous","installations.v1.lock"}){string p=Name(name);if(File.Exists(p)){Shape(p);n=checked(n+new FileInfo(p).Length);}}return n;}
  IEnumerable<string> Workers(){ValidateRootEntries();string packages=Path.Combine(root.PathValue,"packages");var entriesAtRoot=Directory.GetFileSystemEntries(root.PathValue);if(!entriesAtRoot.Contains(packages))return new string[0];RetainDirectory(packages);var result=new List<string>();foreach(string directory in Directory.GetFileSystemEntries(packages)){Check();if(!System.Text.RegularExpressions.Regex.IsMatch(Path.GetFileName(directory),@"\A[a-f0-9]{64}\z"))throw Invalid();RetainDirectory(directory);var entries=Directory.GetFileSystemEntries(directory);if(entries.Length!=1||Path.GetFileName(entries[0])!="OwnershipEvidenceWorker.exe"||Directory.Exists(entries[0]))throw Invalid();Shape(entries[0]);using(var stream=new FileStream(entries[0],FileMode.Open,FileAccess.Read,FileShare.Read)){Identity(stream);if(stream.Length<1||stream.Length>20971520)throw Invalid();}result.Add(entries[0]);}Check();return result;}
  internal override long WorkerBytes(){return Workers().Sum(p=>new FileInfo(p).Length);}internal override int WorkerCount(){return Workers().Count();}
- internal override void Acquire(){RequireDurability();Check();if(held!=null||File.Exists(Name("installations.v1.lock"))||File.Exists(Name("installations.v1.next")))throw Invalid();held=new FileStream(Name("installations.v1.lock"),FileMode.CreateNew,FileAccess.ReadWrite,FileShare.None);}
- internal override void Commit(string expectedHash,byte[] cipher){RequireDurability();Check();throw Invalid();/* 원 parent metadata 정착/닫힘 권위 구현 전에는 atomic CAS를 주장하지 않는다. */}
- internal override string CreateWorker(string descriptorHash,byte[] bytes){RequireDurability();Check();throw Invalid();}
- internal override string VerifyWorker(string descriptorHash,string workerHash,long bytes,string identity){string p=Path.Combine(WorkerDirectory(descriptorHash),"OwnershipEvidenceWorker.exe");byte[] b=ReadPath(p,20971520);try{if(b.Length!=bytes||V.Hash(b)!=workerHash)throw Invalid();using(var f=new FileStream(p,FileMode.Open,FileAccess.Read,FileShare.Read))if(Identity(f)!=identity)throw Invalid();Check();return identity;}finally{Array.Clear(b,0,b.Length);}}
+ internal override void Acquire(){
+  RequireDurability();Check();if(held!=null||lockFile!=null||releaseAttempted||File.Exists(Name("installations.v1.lock"))||File.Exists(Name("installations.v1.next")))throw Invalid();ValidateRootEntries();
+  try{lockFile=CreatePrivateFile(Name("installations.v1.lock"));held=lockFile.Stream;if(held.Length!=0||!FlushFileBuffers(lockFile.Handle))throw Invalid();RequireLock();SettleDirectory(root.PathValue);RequireLock();}
+  catch{KeepUnknown();throw Invalid();}
+ }
+ internal override void Commit(string expectedHash,byte[] cipher){
+  RequireDurability();RequireLock();if(cipher==null||cipher.Length<1||cipher.Length>8388608)throw Invalid();
+  string target=Name("installations.v1"),next=Name("installations.v1.next"),previous=Name("installations.v1.previous");
+  try{
+   if(File.Exists(next)||Directory.Exists(next))throw Invalid();var before=ReadContainer("installations.v1");var prior=ReadContainer("installations.v1.previous");
+   if(ContainerHash(before)!=expectedHash||before==null&&(!Fresh||prior!=null))throw Invalid();var after=Container(cipher);var rows=(object[])after["rows"];var old=before==null?new object[0]:(object[])before["rows"];
+   if(rows.Length!=old.Length+1||!Object.Equals(after["previousHash"],expectedHash))throw Invalid();for(int i=0;i<old.Length;i++)if(!V.Same(old[i],rows[i]))throw Invalid();string expectedNext=ContainerHash(after);
+   var staged=CreatePrivateFile(next);WriteAndReadback(staged,cipher);CloseOwnedFile(staged);Check();byte[] back=ReadPath(next,8388608);
+   try{if(!back.SequenceEqual(cipher)||ContainerHash(Container(back))!=expectedNext)throw Invalid();}finally{Array.Clear(back,0,back.Length);}
+   RequireLock();if(ContainerHash(ReadContainer("installations.v1"))!=expectedHash)throw Invalid();
+   if(before==null)File.Move(next,target);else File.Replace(next,target,previous,false);
+   Check();if(File.Exists(next)||ContainerHash(ReadContainer("installations.v1"))!=expectedNext||ContainerHash(ReadContainer("installations.v1.previous"))!=expectedHash)throw Invalid();
+   RequireFileIdentity(target,staged.Identity);
+   SettleDirectory(root.PathValue);RequireLock();if(ContainerHash(ReadContainer("installations.v1"))!=expectedNext)throw Invalid();committedHash=expectedNext;
+  }catch{KeepUnknown();throw Invalid();}
+ }
+ internal override string CreateWorker(string descriptorHash,byte[] bytes){
+  RequireDurability();RequireReservedWorker(descriptorHash,bytes);
+  if(WorkerCount()>=64||checked(WorkerBytes()+bytes.Length)>1073741824)throw Invalid();string packages=Path.Combine(root.PathValue,"packages"),directory=Path.Combine(packages,descriptorHash);
+  try{
+   var parent=roots.Inspect(packages);if(parent==null||!parent.Exists){if(!roots.CreatePrivateExclusive(packages,Sid))throw Invalid();RetainDirectory(packages);SettleDirectory(packages);SettleDirectory(root.PathValue);}else RetainDirectory(packages);
+   if(Directory.Exists(directory)||File.Exists(directory)||!roots.CreatePrivateExclusive(directory,Sid))throw Invalid();RetainDirectory(directory);SettleDirectory(directory);SettleDirectory(packages);
+   var file=CreatePrivateFile(Path.Combine(directory,"OwnershipEvidenceWorker.exe"));WriteAndReadback(file,bytes);CloseOwnedFile(file);Check();
+   string identity=file.Identity;VerifyWorker(descriptorHash,V.Hash(bytes),bytes.Length,identity);SettleDirectory(directory);SettleDirectory(packages);SettleDirectory(root.PathValue);RequireReservedWorker(descriptorHash,bytes);return identity;
+  }catch{KeepUnknown();throw Invalid();}
+ }
+ internal override string VerifyWorker(string descriptorHash,string workerHash,long bytes,string identity){string p=Path.Combine(WorkerDirectory(descriptorHash),"OwnershipEvidenceWorker.exe");byte[] b=ReadPath(p,20971520);try{if(b.Length!=bytes||V.Hash(b)!=workerHash)throw Invalid();RequireFileIdentity(p,identity);Check();return identity;}finally{Array.Clear(b,0,b.Length);}}
  internal override string WorkerDirectory(string descriptorHash){Check();if(!System.Text.RegularExpressions.Regex.IsMatch(descriptorHash??"",@"\A[a-f0-9]{64}\z"))throw Invalid();ValidateRootEntries();string packages=Path.Combine(root.PathValue,"packages");RetainDirectory(packages);string directory=Path.Combine(packages,descriptorHash);RetainDirectory(directory);Check();return directory;}
  internal override byte[] Protect(byte[] bytes){Check();return ProtectedData.Protect(bytes,Entropy,DataProtectionScope.CurrentUser);}internal override byte[] Unprotect(byte[] bytes){Check();return ProtectedData.Unprotect(bytes,Entropy,DataProtectionScope.CurrentUser);}
- internal override void Release(){RequireDurability();throw Invalid();}internal override void Abandon(){unknown=true;/* lock/next/previous는 삭제하거나 채택하지 않는다. */}
- public override void Dispose(){if(held!=null){held.Dispose();held=null;}bool failed=false;for(int i=directories.Count-1;i>=0;i--){try{if(!roots.Close(directories[i].Item1))failed=true;}catch{failed=true;}}directories.Clear();if(root!=null){root.Dispose();if(!root.CleanupSettled)failed=true;}if(failed){unknown=true;throw Invalid();}}
+ internal override void Release(){
+  RequireDurability();var c=RequireCommittedContainer();string receipt=ContainerHash(c);var rows=((object[])c["rows"]).Select(V.Map).ToArray();var last=rows.Last();
+  var installed=rows.LastOrDefault(x=>V.Text(x,"purpose")=="NATIVE_WORKER_INSTALLATION"&&V.Same(x["factoryRef"],last["factoryRef"]));
+  if(installed==null||V.Text(installed,"state")!="INSTALLED"||V.Positive(installed["revision"])!=2)throw Invalid();
+  var descriptor=V.Ref(installed["descriptorRef"],false);string descriptorHash=V.Text(descriptor,"contentHash"),workerHash=V.Text(installed,"workerHash"),identity=V.Text(installed,"fileIdentity");long size=V.Positive(installed["bytes"]);
+  if(V.Text(last,"purpose")=="NORMAL_START_WORKER_INSTALLATION_BINDING_V1"&&!V.Same(last["installationRef"],new Dictionary<string,object>{{"id",installed["installationId"]},{"version",2},{"contentHash",ContainerHash(installed)}}))throw Invalid();
+  try{
+   VerifyWorker(descriptorHash,workerHash,size,identity);SettleDirectory(WorkerDirectory(descriptorHash));SettleDirectory(root.PathValue);RequireLock();if(ContainerHash(ReadContainer("installations.v1"))!=receipt||File.Exists(Name("installations.v1.next")))throw Invalid();
+   releaseAttempted=true;CloseOwnedFile(lockFile);held=null;Check();if(!lockFile.CloseSettled||ContainerHash(ReadContainer("installations.v1"))!=receipt)throw Invalid();VerifyWorker(descriptorHash,workerHash,size,identity);SettleDirectory(root.PathValue);
+   // 확정된 원 close/설치/부모 뒤에만 그 동일 lock 파일을 handle로 지정한다. 불명 복구/삭제가 아니다.
+   // 이 뒤의 close/부모 정착 상실을 새 host가 구별할 지속 근거는 아직 없다. 지원 guard를 열지 않는다.
+   var removal=new OwnedFile{Path=Name("installations.v1.lock"),Handle=CreateFileW(Name("installations.v1.lock"),0x80010000,0,IntPtr.Zero,3,0x00200080,IntPtr.Zero)};
+   if(removal.Handle==IntPtr.Zero||removal.Handle==new IntPtr(-1))throw Invalid();files.Add(removal);removal.Stream=new FileStream(new Microsoft.Win32.SafeHandles.SafeFileHandle(removal.Handle,false),FileAccess.Read,4096,false);removal.Identity=Identity(removal.Stream);
+   if(removal.Identity!=lockFile.Identity||removal.Stream.Length!=0||ContainerHash(ReadContainer("installations.v1"))!=receipt)throw Invalid();Shape(removal.Path);Check();if(!SetFileInformationByHandle(removal.Handle,4,new byte[]{1},1))throw Invalid();CloseOwnedFile(removal);Check();SettleDirectory(root.PathValue);
+   if(File.Exists(Name("installations.v1.lock"))||Directory.Exists(Name("installations.v1.lock"))||ContainerHash(ReadContainer("installations.v1"))!=receipt)throw Invalid();Check();
+  }catch{KeepUnknown();throw Invalid();}
+ }
+ internal override void Abandon(){KeepUnknown();/* lock/next/previous는 삭제하거나 채택하지 않는다. */}
+ public override void Dispose(){
+  if(disposeAttempted){if(unknown)throw Invalid();return;}disposeAttempted=true;bool failed=false;
+  foreach(var file in files.ToArray()){if(file.CloseAttempted){if(!file.CloseSettled)failed=true;continue;}try{CloseOwnedFile(file);}catch{failed=true;}}held=null;
+  for(int i=directories.Count-1;i>=0;i--){try{if(!roots.Close(directories[i].Item1))failed=true;}catch{failed=true;}}
+  if(root!=null){root.Dispose();if(!root.CleanupSettled)failed=true;}if(metadataUnknown.Count!=0)failed=true;cleanupSettled=!failed;
+  if(cleanupSettled){directories.Clear();files.Clear();root=null;lock(unsettled){unsettled.Remove(this);}}if(failed||unknown){KeepUnknown();throw Invalid();}
+ }
 }
