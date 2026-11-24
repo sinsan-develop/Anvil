@@ -138,7 +138,7 @@ async function sessionChallengeFixture(mode='valid',phase='STREAM'){
 test('receive-only phase challenge service는 네 phase의 실제 목적 writer·COMMIT·원 요청 replay를 소비한다',async()=>{for(const phase of ['STREAM','ARM','STATE','CLOSE']){const x=await sessionChallengeFixture('valid',phase);assert.equal(typeof(x.service as any).sessionChallenge,'function');const first=await(x.service as any).sessionChallenge(x.session.ref.id,x.token,x.input),again=await(x.service as any).sessionChallenge(x.session.ref.id,x.token,x.input);assert.deepEqual(first,again);assert.equal(first.snapshot.phase,phase);assert.equal(x.issuedCount,1);assert.equal(x.calls.filter(q=>q.sql==='COMMIT').length,2);assert.ok(x.calls.every(q=>!JSON.stringify(q.args).includes(x.token)));}});
 test('receive-only challenge HTTP는 전용 bearer만 허용하고 profile 불일치·COMMIT 유실·지연 만료는 원문을 반환하지 않는다',async()=>{const x=await sessionChallengeFixture(),{default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes:register}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts'),app=Fastify(),url=`/api/v1/native-first-receive/sessions/${x.session.ref.id}/challenges`,headers={host:'anvil.example','content-type':'application/json',authorization:'AnvilReceive '+x.token};register(app,{enabled:true,service:x.service},{origin:'https://anvil.example'}as any);try{const bad=await app.inject({method:'POST',url,headers:{...headers,authorization:'Bearer '+x.token},payload:x.canonical()});assert.equal(bad.statusCode,401);assert.equal(x.calls.length,0);const good=await app.inject({method:'POST',url,headers,payload:x.canonical()});assert.equal(good.statusCode,200);assert.equal(good.json().snapshot.phase,'STREAM');assert.equal(good.body.includes(x.token),false);}finally{await app.close();}for(const mode of ['origin','lost','delayed']){const f=await sessionChallengeFixture(mode);await assert.rejects((f.service as any).sessionChallenge(f.session.ref.id,f.token,f.input),(e:any)=>e.message===(mode==='origin'?'NATIVE_RECEIVE_PROFILE_UNAVAILABLE':'NATIVE_RECEIVE_OUTCOME_UNKNOWN'));assert.equal(f.calls.at(-1)?.sql,'RELEASE_DESTROY');if(mode==='origin')assert.equal(f.calls.some(q=>q.sql.includes('native_receive_phase_challenge')),false);if(mode==='lost')assert.equal(f.calls.filter(q=>q.sql==='COMMIT').length,1);if(mode==='delayed')assert.equal(f.calls.filter(q=>q.sql==='COMMIT').length,0);}});
 async function phaseProofFixture(phase='STREAM'){
- const f=await sessionChallengeFixture('valid',phase),challenge=await(f.service as any).sessionChallenge(f.session.ref.id,f.token,f.input),base=await openSignedFixture(),crypto=await import('node:crypto'),runtime=await import('../../../contracts/runtime/native-first-receive-v1.ts'),window=base.frame.window,s=challenge.snapshot,body=phase==='STREAM'?{}:phase==='ARM'?{schemaVersion:1,windowRef:window.ref,offerRef:s.offerRef,commandHash:s.commandHash}:phase==='CLOSE'?{schemaVersion:1,windowRef:window.ref,reason:'USER_CANCELLED'}:{schemaVersion:1,windowRef:window.ref},proof={...base.frame.proof,phase,requestId:s.requestId,windowRef:window.ref,receiveSessionRef:f.session.ref,offerRef:s.offerRef,armRef:s.armRef,deliveryRef:s.deliveryRef,authorityRef:s.authorityRef,commandHash:s.commandHash,challengeRef:challenge.ref,serverNonce:s.serverNonce,target:s.target,issuedAt:s.issuedAt,expiresAt:s.expiresAt},b64=(v:string)=>Buffer.from(v,'hex').toString('base64url'),key=crypto.createPrivateKey({key:{kty:'EC',crv:'P-256',x:b64('60FED4BA255A9D31C961EB74C6356D68C049B8923B61FA6CE669622E60F29FB6'),y:b64('7903FE1008B8BC99A41AE9E95628BC64F2F1B20C2D7E9F5177A3C294D4462299'),d:b64('C9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721')},format:'jwk'}),signature=crypto.sign('sha256',Buffer.from(runtime.receiveCanonical(proof)),{key,dsaEncoding:'ieee-p1363'}).toString('base64url');assert.deepEqual(window.ref,f.session.snapshot.windowRef);return{session:f.session,window,proof,body,signature,token:f.token,challenge,now:()=>base.now,publicKeySpki:base.frame.publicKeySpki};
+ const f=await sessionChallengeFixture('valid',phase),challenge=await(f.service as any).sessionChallenge(f.session.ref.id,f.token,f.input),base=await openSignedFixture(),crypto=await import('node:crypto'),runtime=await import('../../../contracts/runtime/native-first-receive-v1.ts'),window=base.frame.window,s=challenge.snapshot,body=phase==='STREAM'?{}:phase==='ARM'?{schemaVersion:1,windowRef:window.ref,offerRef:s.offerRef,commandHash:s.commandHash}:phase==='CLOSE'?{schemaVersion:1,windowRef:window.ref,reason:'USER_CANCELLED'}:{schemaVersion:1,windowRef:window.ref},proof={...base.frame.proof,phase,requestId:s.requestId,windowRef:window.ref,receiveSessionRef:f.session.ref,offerRef:s.offerRef,armRef:s.armRef,deliveryRef:s.deliveryRef,authorityRef:s.authorityRef,commandHash:s.commandHash,challengeRef:challenge.ref,serverNonce:s.serverNonce,target:s.target,issuedAt:s.issuedAt,expiresAt:s.expiresAt},b64=(v:string)=>Buffer.from(v,'hex').toString('base64url'),key=crypto.createPrivateKey({key:{kty:'EC',crv:'P-256',x:b64('60FED4BA255A9D31C961EB74C6356D68C049B8923B61FA6CE669622E60F29FB6'),y:b64('7903FE1008B8BC99A41AE9E95628BC64F2F1B20C2D7E9F5177A3C294D4462299'),d:b64('C9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721')},format:'jwk'}),signature=crypto.sign('sha256',Buffer.from(runtime.receiveCanonical(proof)),{key,dsaEncoding:'ieee-p1363'}).toString('base64url');assert.deepEqual(window.ref,f.session.snapshot.windowRef);return{session:f.session,window,proof,body,signature,token:f.token,challenge,now:()=>base.now,publicKeySpki:base.frame.publicKeySpki,key};
 }
 test('네 phase 실제 proof owner는 원 Tx·고정 등록키 서명·private 단발 lease를 같은 효과 SQL에 결박한다',async()=>{
  const runtime:any=await import('../../../apps/server/modules/executions/native-first-receive-store.ts');assert.equal(typeof runtime.withNativeReceivePhaseTransaction,'function');assert.equal(typeof runtime.verifyNativeReceivePhaseProof,'function');assert.equal(typeof runtime.consumeNativeReceivePhaseProof,'function');
@@ -212,7 +212,7 @@ test('STREAM service는 실제 proof·점유 Store·COMMIT와 release 뒤에만 
  if(mode==='valid'){const stream=await work;let bytes=0;stream.on('data',(v:Buffer)=>{bytes+=v.length;});assert.equal(calls.at(-1),'RELEASE');assert.equal(stream.destroyed,false);assert.equal(bytes,0);controller.abort();assert.equal(stream.destroyed,true);assert.equal(bytes,0);}else await assert.rejects(work,['lost','release','expired','handoff-rollback'].includes(mode)?/OUTCOME_UNKNOWN/:mode==='signature'?/PURPOSE_DENIED/:/PROFILE_UNAVAILABLE/);assert.equal(calls.filter(s=>s.includes('native_receive_stream_consume')).length,['signature','origin'].includes(mode)?0:1);}
 });
 
-async function streamServiceFixture(mode='valid'){const {NativeFirstReceiveService:Service}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts'),{NativeFirstReceiveStore:Store}=await import('../../../apps/server/modules/executions/native-first-receive-store.ts');const f=await phaseProofFixture('STREAM');let time=f.now(),next=1900,releasedReads=0;const calls:string[]=[],current={window:f.window,session:f.session,challenge:f.challenge,publicKeySpki:f.publicKeySpki,profileOrigin:mode==='origin'?'https://other.example':'https://anvil.example',transactionId:'123',phase:'OPENED',revision:2},state={schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_STATE',windowRef:f.window.ref,phase:'STREAMING',receiveSessionRef:f.session.ref,offerRef:null,armRef:null,bindingRef:null,deliveryRef:null,authorityRef:null,ackRef:null,terminalRef:null,current:{checkedAt:new Date(time).toISOString(),usable:true,reason:'CURRENT'},observedAt:new Date(time).toISOString(),expiresAt:f.session.snapshot.expiresAt,executionAuthorized:false},db={query:async(sql:string,args:any[]=[])=>{calls.push(sql);if(sql==='BEGIN'||sql==='COMMIT'){if(sql==='COMMIT'&&mode==='lost')throw Error('TEST_ONLY_COMMIT_LOST');return{rows:[],rowCount:0};}if(sql==='SELECT txid_current()::text AS transaction_id'||sql==='SELECT anvil.native_receive_open_transaction($1) AS transaction_id')return{rows:[{transaction_id:'123'}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_verification($1,$2,$3::jsonb,$4::jsonb) AS result'||sql==='SELECT anvil.native_receive_phase_entry($1,$2,$3::jsonb,$4::jsonb) AS result')return{rows:[{result:sql.includes('native_receive_phase_entry(')?{context:current,replay:false}:current}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_denial($1,$2::jsonb,$3::jsonb) AS result')return{rows:[{result:{code:'NATIVE_RECEIVE_PURPOSE_DENIED',requestHash:JSON.parse(args[1]).requestHash}}],rowCount:1};assert.equal(sql,'SELECT anvil.native_receive_stream_consume($1,$2::jsonb,$3::jsonb) AS result');const material=JSON.parse(args[1]),proposed=JSON.parse(args[2]);if(mode==='expired')time+=30000;return{rows:[{result:{state,requestHash:material.requestHash,brokerInstanceId:proposed.brokerInstanceId,operationFence:proposed.operationFence}}],rowCount:1};},release:()=>{calls.push('RELEASE');if(mode==='release')throw Error('TEST_ONLY_RELEASE_LOST');}},access={installationId:f.window.snapshot.installationId,pool:{connect:async()=>db},authenticated:async()=>{throw Error('NO_HUMAN_SESSION');}},clock=()=>{if(mode==='handoff-rollback'&&calls.at(-1)==='RELEASE'){releasedReads++;return releasedReads===1?time+1000:time;}return time;},service=new Service(access as any,new Store(()=>id(next++),clock),clock,null,undefined,'https://anvil.example'),controller=new AbortController();return{...f,service,controller,calls,advance:(ms:number)=>{time+=ms;}};}
+async function streamServiceFixture(mode='valid'){const {NativeFirstReceiveService:Service}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts'),{NativeFirstReceiveStore:Store}=await import('../../../apps/server/modules/executions/native-first-receive-store.ts');const f=await phaseProofFixture('STREAM');let time=f.now(),next=1900,releasedReads=0;const calls:string[]=[],current={window:f.window,session:f.session,challenge:f.challenge,publicKeySpki:f.publicKeySpki,profileOrigin:mode==='origin'?'https://other.example':'https://anvil.example',transactionId:'123',phase:'OPENED',revision:2},state={schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_STATE',windowRef:f.window.ref,phase:'STREAMING',receiveSessionRef:f.session.ref,offerRef:null,armRef:null,bindingRef:null,deliveryRef:null,authorityRef:null,ackRef:null,terminalRef:null,current:{checkedAt:new Date(time).toISOString(),usable:true,reason:'CURRENT'},observedAt:new Date(time).toISOString(),expiresAt:f.session.snapshot.expiresAt,executionAuthorized:false},db={query:async(sql:string,args:any[]=[])=>{calls.push(sql);if(sql==='BEGIN'||sql==='COMMIT'){if(sql==='COMMIT'&&mode==='lost')throw Error('TEST_ONLY_COMMIT_LOST');return{rows:[],rowCount:0};}if(sql==='SELECT txid_current()::text AS transaction_id'||sql==='SELECT anvil.native_receive_open_transaction($1) AS transaction_id')return{rows:[{transaction_id:'123'}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_verification($1,$2,$3::jsonb,$4::jsonb) AS result'||sql==='SELECT anvil.native_receive_phase_entry($1,$2,$3::jsonb,$4::jsonb) AS result')return{rows:[{result:sql.includes('native_receive_phase_entry(')?{context:current,replay:false}:current}],rowCount:1};if(sql==='SELECT anvil.native_receive_phase_denial($1,$2::jsonb,$3::jsonb) AS result')return{rows:[{result:{code:'NATIVE_RECEIVE_PURPOSE_DENIED',requestHash:JSON.parse(args[1]).requestHash}}],rowCount:1};assert.equal(sql,'SELECT anvil.native_receive_stream_consume($1,$2::jsonb,$3::jsonb) AS result');const material=JSON.parse(args[1]),proposed=JSON.parse(args[2]);if(mode==='expired')time+=30000;return{rows:[{result:{state,requestHash:material.requestHash,brokerInstanceId:proposed.brokerInstanceId,operationFence:proposed.operationFence}}],rowCount:1};},release:()=>{calls.push('RELEASE');if(mode==='release')throw Error('TEST_ONLY_RELEASE_LOST');}},access={installationId:f.window.snapshot.installationId,pool:{connect:async()=>db},authenticated:async()=>{throw Error('NO_HUMAN_SESSION');}},clock=()=>{if(mode==='handoff-rollback'&&calls.at(-1)==='RELEASE'){releasedReads++;return releasedReads===1?time+1000:time;}return time;},service=new Service(access as any,new Store(()=>id(next++),clock),clock,null,undefined,'https://anvil.example'),controller=new AbortController();return{...f,service,controller,calls,db,access,advance:(ms:number)=>{time+=ms;}};}
 
 test('STREAM HTTP는 raw GET 고정경로·body 없음·receive proof를 검산하며 실제 COMMIT 불명에 통로0이다',async()=>{
  const {default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes:register}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts');
@@ -368,6 +368,135 @@ function normalPreparationReceiverScope(f:Awaited<ReturnType<typeof streamServic
   localReceiveAttemptId:w.localReceiveAttemptId,actorId:w.human.userId,clientId:w.human.clientId,humanSessionId:id(8),
   credentialGeneration:w.human.credentialGeneration,controlGeneration:w.human.controlGeneration};
 }
+
+async function normalResultTransportFixture(mode='valid'){
+ const f=await streamServiceFixture(),wire=await import('../../../contracts/runtime/normal-start-preparation-v1.ts'),crypto=await import('node:crypto');
+ const stream=await f.service.nativeStream(f.session.ref.id,f.token,f.proof,f.signature,f.controller.signal) as import('node:stream').PassThrough;
+ assert.equal(f.calls.at(-1),'RELEASE');let bytes=0;stream.on('data',chunk=>{bytes+=chunk.length;});
+ const scope=normalPreparationReceiverScope(f),w=f.window.snapshot,issuedAt=new Date(f.now()).toISOString(),expiresAt=new Date(f.now()+10000).toISOString();
+ const request={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_REQUEST_V1',requestId:id(3200),attemptId:id(3201),installationId:w.installationId,projectId:w.projectId,registrationRef:w.registrationRef,connectorRef:w.connectorRef,
+  windowRef:f.window.ref,receiveSessionRef:f.session.ref,profileRef:w.profileRef,hostPublicKeyFingerprint:w.hostPublicKeyFingerprint,authBindingHash:w.authBindingHash,localReceiveAttemptId:w.localReceiveAttemptId,
+  actorId:scope.actorId,clientId:scope.clientId,humanSessionId:scope.humanSessionId,credentialGeneration:scope.credentialGeneration,controlGeneration:scope.controlGeneration,
+  admissionRef:ref(3202),claimRef:ref(3203),normalCommandId:id(3204),normalRequestHash:'d'.repeat(64),executionId:id(3205),executionGeneration:1,executionPreparationRef:ref(3206),writerNoneRef:w.writerHeadRef,
+  serverNonce:Buffer.alloc(32,3).toString('base64url'),issuedAt,expiresAt};
+ const requestRef=wire.normalStartPreparationRequestRef(request),basisSnapshot={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_PROTECTED_BASIS_V1',basisId:id(3210),requestRef,attemptId:request.attemptId,
+  objectRef:ref(3211),sourceRef:ref(3212),writerNoneRef:w.writerHeadRef,osFenceRef:ref(3213),issuedAt,expiresAt,executionAuthorized:false,dispatchPerformed:false};
+ const snapshot={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_PEER_RECEIPT_V1',receiptId:id(3220),requestRef,attemptId:request.attemptId,outcome:'PREPARED',
+  preparationBasis:{ref:{id:id(3210),version:1,contentHash:receiveHash(basisSnapshot)},snapshot:basisSnapshot},issuedAt,expiresAt,executionAuthorized:false,dispatchPerformed:false};
+ const result={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_V1',requestRef,receipt:{ref:{id:id(3220),version:1,contentHash:receiveHash(snapshot)},snapshot}};
+ const proof={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_PROOF_V1',requestRef,attemptId:request.attemptId,installationId:request.installationId,projectId:request.projectId,registrationRef:request.registrationRef,connectorRef:request.connectorRef,
+  windowRef:f.window.ref,receiveSessionRef:f.session.ref,hostPublicKeyFingerprint:w.hostPublicKeyFingerprint,serverNonce:request.serverNonce,
+  target:{method:'POST',path:wire.normalStartPreparationResultPath(f.session.ref.id),queryHash:receiveHash({}),bodyHash:receiveHash(result)},issuedAt,expiresAt:new Date(f.now()+(mode.startsWith('late-')?80:2000)).toISOString()};
+ const sign=()=>crypto.sign('sha256',Buffer.from(receiveCanonical(proof)),{key:f.key,dsaEncoding:'ieee-p1363'}).toString('base64url');
+ let signature=sign(),records=0,reads=0,releases=0,commits=0,replays=0,committedRecord=false;let lateRelease!:(v:any)=>void;
+ const gate=new Promise<any>(resolve=>{lateRelease=resolve;}),oldQuery=f.db.query;
+ const current={window:f.window,session:f.session,phase:'STREAMING',revision:3,profileOrigin:'https://anvil.example'};
+ const rawCredentialDigest=crypto.createHash('sha256').update(f.token).digest('hex');
+ const sourceBasis={request:{ref:requestRef,snapshot:request},publicKeySpki:f.publicKeySpki,expiresAt};
+ const resultSnapshot={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_RECORD_V1',recordId:id(3230),requestRef,peerReceiptRef:result.receipt.ref,resultHash:receiveHash(result),proofHash:receiveHash(proof),recordedAt:issuedAt,executionAuthorized:false,dispatchPerformed:false};
+ const stored={ref:{id:id(3230),version:1,contentHash:receiveHash(resultSnapshot)},snapshot:resultSnapshot};
+ f.db.query=(async(sql:string,args:any[]=[])=>{
+  f.calls.push('RESULT:'+sql);
+  if(sql==='BEGIN'||sql==='ROLLBACK')return{rows:[],rowCount:0,command:sql};
+  if(sql==='COMMIT'){commits++;committedRecord=true;if(mode==='commit-lost'&&commits===1)throw Error('TEST_ONLY_RESULT_COMMIT_LOST');if(mode==='late-commit')return gate;return{rows:[],rowCount:0,command:'COMMIT'};}
+  if(sql==='SELECT txid_current()::text AS transaction_id')return{rows:[{transaction_id:'456'}],rowCount:1};
+  if(sql==='SELECT anvil.native_receive_session_current($1,$2) AS result'){
+   assert.equal(args[0],f.session.ref.id);assert.equal(args[1],rawCredentialDigest);if(mode==='late-query')return gate;
+   return{rows:[{result:structuredClone(current)}],rowCount:1};
+  }
+  if(sql==='SELECT anvil.fn08_normal_start_preparation_result_basis($1,$2,$3::jsonb,$4) AS result'){
+   reads++;assert.equal(args[0],f.session.ref.id);assert.equal(args[1],rawCredentialDigest);assert.deepEqual(JSON.parse(args[2]),requestRef);assert.equal(args[3],'456');
+   const basis=structuredClone(sourceBasis);if(mode==='key')basis.publicKeySpki='A'.repeat(20);if(mode==='current-swap'&&reads===2)basis.request.snapshot.normalRequestHash='e'.repeat(64);
+   return{rows:[{result:basis}],rowCount:1};
+  }
+  if(sql==='SELECT anvil.fn08_normal_start_preparation_result_commit($1,$2::jsonb,$3) AS result'){
+   records++;assert.equal(args[0],f.session.ref.id);assert.equal(args[2],'456');const material=JSON.parse(args[1]);assert.equal(material.credentialDigest,rawCredentialDigest);assert.equal(material.signature,signature);
+   assert.deepEqual(material.request,request);assert.deepEqual(material.result,result);assert.equal(JSON.stringify(args).includes(f.token),false);
+   if(mode==='late-record')return gate;return{rows:[{result:stored}],rowCount:1};
+  }
+  if(sql==='SELECT anvil.fn08_normal_start_preparation_result_replay($1,$2::jsonb,$3) AS result'){
+   replays++;const material=JSON.parse(args[1]);assert.equal(args[0],f.session.ref.id);assert.equal(args[2],'456');assert.equal(material.signature,signature);assert.deepEqual(material.result,result);
+   return{rows:[{result:committedRecord?stored:null}],rowCount:1};
+  }
+  return oldQuery(sql,args);
+ }) as any;
+ f.db.release=(()=>{releases++;if(mode==='release-lost')throw Error('TEST_ONLY_RESULT_RELEASE_LOST');}) as any;
+ if(mode==='late-connect')f.access.pool.connect=(()=>gate) as any;
+ const source={purpose:'NORMAL_START_PREPARATION_RESULT_SOURCE_V1' as const,
+  async readResultBasis(db:any,sid:string,digest:string,r:any,check:()=>void){check();const tx=await db.query('SELECT txid_current()::text AS transaction_id');const out=await db.query('SELECT anvil.fn08_normal_start_preparation_result_basis($1,$2,$3::jsonb,$4) AS result',[sid,digest,receiveCanonical(r),tx.rows[0].transaction_id]);check();return out.rows[0].result;},
+  async recordResult(db:any,material:any,check:()=>void){if(mode==='root-missing')return null;if(mode==='late-hook')await gate;check();const out=await db.query('SELECT anvil.fn08_normal_start_preparation_result_commit($1,$2::jsonb,$3) AS result',[f.session.ref.id,receiveCanonical(material),material.transactionId]);check();return out.rows[0].result;},
+  async readRecordedResult(db:any,material:any,check:()=>void){check();if(mode==='fake-replay')return structuredClone(stored);
+   if(mode==='write-in-replay')return(await db.query('SELECT anvil.fn08_normal_start_preparation_result_commit($1,$2::jsonb,$3) AS result',[f.session.ref.id,receiveCanonical(material),material.transactionId])).rows[0].result;
+   const out=await db.query('SELECT anvil.fn08_normal_start_preparation_result_replay($1,$2::jsonb,$3) AS result',[f.session.ref.id,receiveCanonical(material),material.transactionId]);check();
+   if(mode==='swap-replay'){const value=structuredClone(out.rows[0].result);value.ref.id=id(3299);value.snapshot.recordId=value.ref.id;value.ref.contentHash=receiveHash(value.snapshot);return value;}
+   return out.rows[0].result;},
+ };
+ if(mode!=='missing')f.service.connectNormalStartPreparationResultSource(source);
+ if(mode==='signature')signature=Buffer.alloc(64,1).toString('base64url');
+ if(mode==='nonce'){proof.serverNonce=Buffer.alloc(32,9).toString('base64url');signature=sign();}
+ const run=()=>f.service.nativeNormalStartPreparationResult(f.session.ref.id,f.token,result,proof,signature,new AbortController().signal);
+ return{...f,stream,wire,request,result,proof,normalSignature:signature,repairSignature:()=>{signature=sign();},source,stored,run,current,lateRelease,state:()=>({records,reads,releases,commits,bytes,replays})};
+}
+
+test('normal result 전용 route/service는 원 signed STREAM·DB current SPKI·목적 receipt를 원 거래에 결박한다',async()=>{
+ const f=await normalResultTransportFixture(),{default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts'),app=Fastify();
+ registerNativeFirstReceiveRoutes(app,{enabled:true,service:f.service},{origin:'https://anvil.example'} as any);
+ const call=()=>app.inject({method:'POST',url:f.proof.target.path,headers:{host:'anvil.example','content-type':'application/json',authorization:'AnvilReceive '+f.token,
+  [f.wire.normalStartPreparationHeaders.proof]:Buffer.from(receiveCanonical(f.proof)).toString('base64url'),[f.wire.normalStartPreparationHeaders.signature]:f.normalSignature},payload:receiveCanonical(f.result)});
+ try{
+  const response=await call();assert.equal(response.statusCode,200);const value=response.json();assert.equal(value.status,'NORMAL_START_PREPARATION_RESULT_STORED');assert.deepEqual(value.ref,f.stored.ref);
+  assert.deepEqual(f.state(),{records:1,reads:2,releases:1,commits:1,bytes:0,replays:0});assert.equal(JSON.stringify(value).includes(f.token),false);assert.equal(JSON.stringify(value).includes(f.publicKeySpki),false);
+  const again=await call();assert.equal(again.statusCode,200);assert.deepEqual(again.json(),value);assert.equal(f.state().records,1);assert.equal(f.state().replays,1);assert.equal(f.state().bytes,0,'new peer 개시 근거 없이 frame/ACK를 쓰지 않는다');
+ }finally{await app.close();f.controller.abort();}
+});
+
+test('normal result 비서명 거절은 원 attempt를 소진하지 않고 올바른 명시 후속 검산을 허용한다',async()=>{
+ const f=await normalResultTransportFixture('signature');try{
+  await assert.rejects(f.run());assert.equal(f.state().records,0);f.repairSignature();const value=await f.run();
+  assert.equal(value.status,'NORMAL_START_PREPARATION_RESULT_STORED');assert.equal(f.state().records,1);assert.equal(f.state().bytes,0);
+ }finally{f.controller.abort();}
+});
+
+test('normal result의 누락 producer·다른 key/nonce/signature·current 교체·COMMIT/회수 불명은 ACK/재시도0이다',async()=>{
+ for(const mode of ['missing','root-missing','key','nonce','signature','current-swap','commit-lost','release-lost']){
+  const f=await normalResultTransportFixture(mode);try{
+   await assert.rejects(f.run(),mode);assert.equal(f.state().records,['current-swap','commit-lost','release-lost'].includes(mode)?1:0,mode);assert.equal(f.state().bytes,0);assert(f.state().releases<=1,mode);
+   const records=f.state().records;
+   if(mode==='commit-lost'){const restored=await f.run();assert.equal(restored.status,'NORMAL_START_PREPARATION_RESULT_STORED');assert.equal(f.state().replays,1);}
+   else await assert.rejects(f.run());
+   assert.equal(f.state().records,records,mode);
+  }finally{f.controller.abort();}
+ }
+});
+
+test('normal result exact 재조회는 same-q replay RPC0·다른 원 응답·쓰기 hook이면 성공/추가 record0이다',async()=>{
+ for(const mode of ['fake-replay','swap-replay','write-in-replay']){
+  const f=await normalResultTransportFixture(mode);try{
+   assert.equal((await f.run()).status,'NORMAL_START_PREPARATION_RESULT_STORED');const before=f.state();
+   await assert.rejects(f.run());assert.equal(f.state().records,1,mode);assert.equal(f.state().bytes,0);assert.equal(f.state().commits,before.commits,mode);
+   assert.equal(f.state().replays,mode==='swap-replay'?1:0,mode);
+  }finally{f.controller.abort();}
+ }
+});
+
+test('normal result 공유 기한은 late connect/query/record/COMMIT의 다음 효과0과 원 release1을 보존한다',{timeout:15000},async()=>{
+ for(const mode of ['late-connect','late-query','late-record','late-hook','late-commit']){
+  const f=await normalResultTransportFixture(mode);try{
+   const began=performance.now();await assert.rejects(f.run(),/OUTCOME_UNKNOWN/);assert(performance.now()-began<1500,mode);
+   const before=f.state();assert.equal(before.bytes,0);assert.equal(f.calls.filter(v=>v==='RESULT:ROLLBACK').length,0,mode);
+   if(mode==='late-connect')f.lateRelease(f.db);
+   else if(mode==='late-query')f.lateRelease({rows:[{result:f.current}],rowCount:1});
+   else if(mode==='late-commit')f.lateRelease({rows:[],rowCount:0,command:'COMMIT'});
+   else if(mode==='late-record')f.lateRelease({rows:[{result:f.stored}],rowCount:1});
+   else f.lateRelease(undefined);
+   await new Promise<void>(resolve=>setImmediate(resolve));
+   assert.equal(f.state().releases,1,mode);assert.equal(f.state().records,before.records,mode);assert.equal(f.state().commits,before.commits,mode);
+   // 사전 read/connect 지연은 슬롯 소진이 아니다. 결과 쓰기 뒤에는 exact durable read만 가능하다.
+   let connects=0;f.access.pool.connect=(async()=>{connects++;throw Error('TEST_ONLY_NEW_OWNER_UNAVAILABLE');}) as any;
+   await assert.rejects(f.run());assert.equal(connects,1,mode);assert.equal(f.state().records,before.records,mode);assert.equal(f.state().releases,1,mode);
+  }finally{f.controller.abort();}
+ }
+});
 
 test('normal 준비 custody는 실제 signed STREAM COMMIT/release와 같은 원 owner에서만 단회 빌린다',async()=>{
  const f=await streamServiceFixture(),service=f.service as any,scope=normalPreparationReceiverScope(f);
