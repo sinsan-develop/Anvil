@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 Windows 보호 설치 재시작 판독 설계** — 기존 보호 root 내 marker의 정착과 과거 응답 불명을 구분하는 작업지시서를 검수했다. 독립 C0/I0. 제품 호출선·실제 Windows·설치 지원은 미완료다.
+
 - **IX01 Windows 시험 원문 로딩** — 고정 controller와 manifest를 Git blob 원문으로 읽어 CRLF 입력 오류를 고쳤다. Main 집중 6/6·타입·독립 C0/I0. 전체 파일의 고정 진단 지문 불일치와 실제 격리 실행은 남아 있다.
 
 - **IX01 0076 음성 오류 관측** — 기존 R9 파서와 동일 격리 대상·실행 SHA에 근거를 결박한다. Main 집중 7/7·타입·독립 C0/I0. 새 graph 후보이며 실제 receiver와 PG rollback은 미완료다.
