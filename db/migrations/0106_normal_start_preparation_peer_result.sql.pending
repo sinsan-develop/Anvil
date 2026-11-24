@@ -1,0 +1,386 @@
+-- FN08 목적 전용 요청/결과 source. 미적용이며 실제 송신·물리 준비·실행 권위를 발급하지 않는다.
+BEGIN;
+CREATE TABLE anvil.normal_start_preparation_dispatches(
+ project_id uuid NOT NULL,admission_id uuid NOT NULL,claim_id uuid NOT NULL,request_id uuid NOT NULL,attempt_id uuid NOT NULL,result_id uuid NOT NULL,
+ request_json jsonb NOT NULL,request_canonical text NOT NULL,content_hash text NOT NULL,canonical_bytes bigint NOT NULL,transaction_id text NOT NULL,
+ recorded_at text NOT NULL,expires_at text NOT NULL,
+ PRIMARY KEY(project_id,request_id),UNIQUE(request_id),UNIQUE(project_id,admission_id),UNIQUE(project_id,claim_id),UNIQUE(project_id,result_id),
+ FOREIGN KEY(project_id,admission_id) REFERENCES anvil.normal_start_preparation_admissions(project_id,id),
+ FOREIGN KEY(project_id,claim_id) REFERENCES anvil.normal_start_preparation_claims(project_id,id),
+ CHECK(request_canonical=anvil.execution_authority_canonical(request_json)),CHECK(content_hash=anvil.execution_json_hash(request_json)),CHECK(canonical_bytes=octet_length(request_canonical)),
+ CHECK(canonical_bytes<=8188),CHECK(transaction_id~'^[1-9][0-9]{0,18}$'),CHECK(anvil.execution_iso_valid(to_jsonb(recorded_at))),CHECK(anvil.execution_iso_valid(to_jsonb(expires_at)))
+);
+CREATE TABLE anvil.normal_start_preparation_peer_results(
+ project_id uuid NOT NULL,request_id uuid NOT NULL,id uuid NOT NULL,packet_json jsonb NOT NULL,packet_canonical text NOT NULL,packet_hash text NOT NULL,
+ snapshot_json jsonb NOT NULL,snapshot_canonical text NOT NULL,content_hash text NOT NULL,canonical_bytes bigint NOT NULL,transaction_id text NOT NULL,
+ PRIMARY KEY(project_id,request_id),UNIQUE(project_id,id),FOREIGN KEY(project_id,request_id) REFERENCES anvil.normal_start_preparation_dispatches(project_id,request_id),
+ CHECK(packet_canonical=anvil.execution_authority_canonical(packet_json)),CHECK(packet_hash=anvil.execution_json_hash(packet_json)),
+ CHECK(snapshot_canonical=anvil.execution_authority_canonical(snapshot_json)),CHECK(content_hash=anvil.execution_json_hash(snapshot_json)),
+ CHECK(canonical_bytes=octet_length(packet_canonical)+octet_length(snapshot_canonical)),CHECK(transaction_id~'^[1-9][0-9]{0,18}$')
+);
+ALTER TABLE anvil.normal_start_preparation_dispatches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.normal_start_preparation_dispatches FORCE ROW LEVEL SECURITY;
+ALTER TABLE anvil.normal_start_preparation_peer_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE anvil.normal_start_preparation_peer_results FORCE ROW LEVEL SECURITY;
+CREATE POLICY fn106_dispatches_migrator ON anvil.normal_start_preparation_dispatches FOR ALL TO anvil_v3_migrator USING(true) WITH CHECK(true);
+CREATE POLICY fn106_results_migrator ON anvil.normal_start_preparation_peer_results FOR ALL TO anvil_v3_migrator USING(true) WITH CHECK(true);
+REVOKE ALL ON anvil.normal_start_preparation_dispatches,anvil.normal_start_preparation_peer_results FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn106_frame(a anvil.normal_start_preparation_admissions,c anvil.normal_start_preparation_claims,rid uuid,attempt uuid,nonce text,issued text,expires text)
+RETURNS jsonb LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+DECLARE w jsonb;scope jsonb=a.snapshot_json->'scope';q jsonb=a.snapshot_json->'request';
+BEGIN
+ SELECT record_json INTO STRICT w FROM anvil.native_receive_records WHERE project_id=a.project_id AND window_id=a.window_id AND record_id=a.window_id AND record_kind='WINDOW';
+ RETURN jsonb_build_object('schemaVersion',1,'purpose','NORMAL_START_PREPARATION_REQUEST_V1','requestId',rid,'attemptId',attempt,
+  'installationId',scope->'installationId','projectId',a.project_id,'registrationRef',scope->'registrationRef','connectorRef',scope->'connectorRef',
+  'windowRef',scope->'windowRef','receiveSessionRef',scope->'receiveSessionRef','profileRef',w->'profileRef','hostPublicKeyFingerprint',w->'hostPublicKeyFingerprint',
+  'authBindingHash',w->'authBindingHash','localReceiveAttemptId',scope->'localReceiveAttemptId','actorId',a.actor_id,'clientId',a.client_id,'humanSessionId',scope->'humanSessionId',
+  'credentialGeneration',scope->'credentialGeneration','controlGeneration',scope->'controlGeneration','admissionRef',anvil.fn105_ref(a.id,a.snapshot_json),'claimRef',anvil.fn105_ref(c.id,c.snapshot_json),
+  'normalCommandId',q->'commandId','normalRequestHash',a.snapshot_json->'requestHash','executionId',q#>'{payload,executionId}','executionGeneration',q#>'{payload,executionGeneration}',
+  'executionPreparationRef',q#>'{payload,preparationRef}','writerNoneRef',w->'writerHeadRef','serverNonce',nonce,'issuedAt',issued,'expiresAt',expires);
+END;$$;
+CREATE FUNCTION anvil.fn106_nonce(v text) RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE raw bytea;
+BEGIN
+ IF v IS NULL OR v !~ '^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$' THEN RETURN false;END IF;
+ raw=decode(translate(v,'-_','+/')||'=','base64');RETURN octet_length(raw)=32 AND translate(rtrim(encode(raw,'base64'),'='),'+/','-_')=v;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+CREATE FUNCTION anvil.fn106_spki_hash(v text) RETURNS text LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog AS $$
+DECLARE raw bytea;
+BEGIN
+ IF v IS NULL OR octet_length(v)>4096 OR v !~ '^[A-Za-z0-9_-]+$' THEN RETURN NULL;END IF;
+ raw=decode(translate(v,'-_','+/')||repeat('=',(4-length(v)%4)%4),'base64');
+ IF translate(rtrim(replace(encode(raw,'base64'),E'\n',''),'='),'+/','-_')<>v THEN RETURN NULL;END IF;RETURN encode(sha256(raw),'hex');
+EXCEPTION WHEN OTHERS THEN RETURN NULL;END;$$;
+
+-- 저장 완결은 과거의 불변 graph만 검산한다. 현재 credential/짧은 수송 TTL을 회계에 역적용하지 않는다.
+CREATE FUNCTION anvil.fn106_packet_valid(d anvil.normal_start_preparation_dispatches,packet jsonb) RETURNS boolean LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+DECLARE req jsonb=d.request_json;r jsonb;receipt jsonb;s jsonb;b jsonb;basis jsonb;p jsonb;rr jsonb;v jsonb;k text;ids uuid[];
+BEGIN
+ IF NOT COALESCE(anvil.execution_json_shape(packet,ARRAY['request','result','proof','signature','credentialDigest']),false) OR packet->'request' IS DISTINCT FROM req
+  OR COALESCE(packet->>'credentialDigest' !~ '^[a-f0-9]{64}$',true) OR COALESCE(packet->>'signature' !~ '^[A-Za-z0-9_-]{85}[AQgw]$',true) THEN RETURN false;END IF;
+ r=packet->'result';p=packet->'proof';rr=anvil.fn105_ref(d.request_id,req);
+ IF NOT COALESCE(anvil.execution_json_shape(r,ARRAY['schemaVersion','purpose','requestRef','receipt']),false) OR r->'schemaVersion' IS DISTINCT FROM '1'::jsonb
+  OR r->>'purpose' IS DISTINCT FROM 'NORMAL_START_PREPARATION_RESULT_V1' OR r->'requestRef' IS DISTINCT FROM rr
+  OR NOT COALESCE(anvil.execution_json_shape(r->'receipt',ARRAY['ref','snapshot']),false) OR NOT anvil.fn76_ref(r#>'{receipt,ref}',true)
+  OR octet_length(anvil.execution_authority_canonical(r))>8192 OR octet_length(anvil.execution_authority_canonical(p))>8192 THEN RETURN false;END IF;
+ receipt=r->'receipt';s=receipt->'snapshot';
+ IF NOT COALESCE(anvil.execution_json_shape(s,ARRAY['schemaVersion','purpose','receiptId','requestRef','attemptId','outcome','preparationBasis','issuedAt','expiresAt','executionAuthorized','dispatchPerformed']),false)
+  OR s->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR s->>'purpose' IS DISTINCT FROM 'NORMAL_START_PREPARATION_PEER_RECEIPT_V1'
+  OR s->>'receiptId' IS DISTINCT FROM receipt#>>'{ref,id}' OR s->'requestRef' IS DISTINCT FROM rr OR s->'attemptId' IS DISTINCT FROM req->'attemptId'
+  OR receipt->'ref' IS DISTINCT FROM anvil.fn105_ref((s->>'receiptId')::uuid,s) OR (s->>'receiptId')::uuid IN(d.request_id,d.result_id)
+  OR COALESCE(s->>'outcome' NOT IN('PREPARED','REJECTED'),true) OR s->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR s->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
+  OR NOT anvil.execution_iso_valid(s->'issuedAt') OR NOT anvil.execution_iso_valid(s->'expiresAt')
+  OR (s->>'issuedAt')::timestamptz<(req->>'issuedAt')::timestamptz OR (s->>'expiresAt')::timestamptz>(req->>'expiresAt')::timestamptz
+  OR (s->>'expiresAt')::timestamptz<=(s->>'issuedAt')::timestamptz THEN RETURN false;END IF;
+ IF s->>'outcome'='REJECTED' THEN IF s->'preparationBasis' IS DISTINCT FROM 'null'::jsonb THEN RETURN false;END IF;
+ ELSE
+  basis=s->'preparationBasis';b=basis->'snapshot';
+  IF NOT COALESCE(anvil.execution_json_shape(basis,ARRAY['ref','snapshot']),false) OR NOT anvil.fn76_ref(basis->'ref',true)
+   OR NOT COALESCE(anvil.execution_json_shape(b,ARRAY['schemaVersion','purpose','basisId','requestRef','attemptId','objectRef','sourceRef','writerNoneRef','osFenceRef','issuedAt','expiresAt','executionAuthorized','dispatchPerformed']),false)
+   OR b->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR b->>'purpose' IS DISTINCT FROM 'NORMAL_START_PREPARATION_PROTECTED_BASIS_V1'
+   OR basis->'ref' IS DISTINCT FROM anvil.fn105_ref((b->>'basisId')::uuid,b) OR b->'requestRef' IS DISTINCT FROM rr OR b->'attemptId' IS DISTINCT FROM req->'attemptId'
+   OR b->'writerNoneRef' IS DISTINCT FROM req->'writerNoneRef' OR b->'executionAuthorized' IS DISTINCT FROM 'false'::jsonb OR b->'dispatchPerformed' IS DISTINCT FROM 'false'::jsonb
+   OR NOT anvil.execution_iso_valid(b->'issuedAt') OR NOT anvil.execution_iso_valid(b->'expiresAt')
+   OR (b->>'issuedAt')::timestamptz<(req->>'issuedAt')::timestamptz OR (b->>'expiresAt')::timestamptz>(req->>'expiresAt')::timestamptz
+   OR (b->>'expiresAt')::timestamptz<=(b->>'issuedAt')::timestamptz
+   OR (s->>'issuedAt')::timestamptz<(b->>'issuedAt')::timestamptz OR (s->>'expiresAt')::timestamptz>(b->>'expiresAt')::timestamptz THEN RETURN false;END IF;
+  ids=ARRAY[(b->>'basisId')::uuid];
+  FOREACH k IN ARRAY ARRAY['objectRef','sourceRef','osFenceRef'] LOOP
+   IF NOT anvil.fn76_ref(b->k,false) THEN RETURN false;END IF;ids=array_append(ids,(b#>>ARRAY[k,'id'])::uuid);
+  END LOOP;
+  IF (SELECT count(DISTINCT x) FROM unnest(ids)x)<>4 THEN RETURN false;END IF;
+  FOREACH k IN ARRAY ARRAY['registrationRef','connectorRef','windowRef','receiveSessionRef','profileRef','admissionRef','claimRef','executionPreparationRef','writerNoneRef'] LOOP
+   IF (req#>>ARRAY[k,'id'])::uuid=ANY(ids) THEN RETURN false;END IF;
+  END LOOP;
+  IF d.request_id=ANY(ids) OR d.attempt_id=ANY(ids) OR (req->>'normalCommandId')::uuid=ANY(ids) OR (req->>'executionId')::uuid=ANY(ids) OR (s->>'receiptId')::uuid=ANY(ids) THEN RETURN false;END IF;
+ END IF;
+ IF NOT COALESCE(anvil.execution_json_shape(p,ARRAY['schemaVersion','purpose','requestRef','attemptId','installationId','projectId','registrationRef','connectorRef','windowRef','receiveSessionRef','hostPublicKeyFingerprint','serverNonce','target','issuedAt','expiresAt']),false)
+  OR p->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR p->>'purpose' IS DISTINCT FROM 'NORMAL_START_PREPARATION_RESULT_PROOF_V1' OR p->'requestRef' IS DISTINCT FROM rr
+  OR p->'attemptId' IS DISTINCT FROM req->'attemptId' OR p->'serverNonce' IS DISTINCT FROM req->'serverNonce'
+  OR p->'target' IS DISTINCT FROM jsonb_build_object('method','POST','path','/api/v1/native-first-receive/sessions/'||(req#>>'{receiveSessionRef,id}')||'/normal-start-preparation-result','queryHash',anvil.execution_json_hash('{}'::jsonb),'bodyHash',anvil.execution_json_hash(r))
+  OR NOT anvil.execution_iso_valid(p->'issuedAt') OR NOT anvil.execution_iso_valid(p->'expiresAt')
+  OR (p->>'issuedAt')::timestamptz<(s->>'issuedAt')::timestamptz OR (p->>'expiresAt')::timestamptz>(s->>'expiresAt')::timestamptz
+  OR (p->>'expiresAt')::timestamptz<=(p->>'issuedAt')::timestamptz OR (p->>'expiresAt')::timestamptz>(p->>'issuedAt')::timestamptz+interval '2 seconds' THEN RETURN false;END IF;
+ FOREACH k IN ARRAY ARRAY['installationId','projectId','registrationRef','connectorRef','windowRef','receiveSessionRef','hostPublicKeyFingerprint'] LOOP IF p->k IS DISTINCT FROM req->k THEN RETURN false;END IF;END LOOP;
+ RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+
+CREATE FUNCTION anvil.fn106_complete(p uuid,rid uuid) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE d anvil.normal_start_preparation_dispatches;a anvil.normal_start_preparation_admissions;c anvil.normal_start_preparation_claims;r anvil.normal_start_preparation_peer_results;s jsonb;ss anvil.native_receive_records;
+BEGIN
+ SELECT * INTO STRICT d FROM anvil.normal_start_preparation_dispatches WHERE project_id=p AND request_id=rid;
+ SELECT * INTO STRICT a FROM anvil.normal_start_preparation_admissions WHERE project_id=p AND id=d.admission_id;
+ SELECT * INTO STRICT c FROM anvil.normal_start_preparation_claims WHERE project_id=p AND admission_id=a.id AND id=d.claim_id;
+ IF NOT anvil.fn105_complete(p,a.id) OR d.request_json IS DISTINCT FROM anvil.fn106_frame(a,c,d.request_id,d.attempt_id,d.request_json->>'serverNonce',d.recorded_at,d.expires_at)
+  OR d.request_canonical IS DISTINCT FROM anvil.execution_authority_canonical(d.request_json) OR d.content_hash IS DISTINCT FROM anvil.execution_json_hash(d.request_json)
+  OR d.canonical_bytes<>octet_length(d.request_canonical) OR d.canonical_bytes>8188 OR NOT anvil.fn106_nonce(d.request_json->>'serverNonce')
+  OR d.transaction_id=a.snapshot_json->>'transactionId' OR (d.recorded_at)::timestamptz<(c.snapshot_json->>'claimedAt')::timestamptz
+  OR (d.expires_at)::timestamptz>(a.snapshot_json->>'expiresAt')::timestamptz OR d.expires_at<>d.request_json->>'expiresAt'
+  OR d.expires_at::timestamptz<=d.recorded_at::timestamptz OR d.expires_at::timestamptz>d.recorded_at::timestamptz+interval '10 seconds' THEN RETURN false;END IF;
+ SELECT * INTO r FROM anvil.normal_start_preparation_peer_results WHERE project_id=p AND request_id=rid;
+ IF FOUND THEN
+  s=r.snapshot_json;
+  SELECT * INTO STRICT ss FROM anvil.native_receive_records WHERE project_id=p AND window_id=a.window_id AND record_id=a.session_id AND record_kind='SESSION';
+  IF r.id<>d.result_id OR NOT anvil.fn106_packet_valid(d,r.packet_json) OR r.packet_json#>>'{result,receipt,snapshot,outcome}' IS DISTINCT FROM 'REJECTED'
+   OR r.packet_json->>'credentialDigest' IS DISTINCT FROM ss.receive_credential_digest
+   OR r.packet_canonical IS DISTINCT FROM anvil.execution_authority_canonical(r.packet_json) OR r.packet_hash IS DISTINCT FROM anvil.execution_json_hash(r.packet_json)
+   OR s IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'purpose','NORMAL_START_PREPARATION_RESULT_RECORD_V1','recordId',r.id,'requestRef',anvil.fn105_ref(d.request_id,d.request_json),
+    'peerReceiptRef',r.packet_json#>'{result,receipt,ref}','resultHash',anvil.execution_json_hash(r.packet_json->'result'),'proofHash',anvil.execution_json_hash(r.packet_json->'proof'),
+    'recordedAt',s->'recordedAt','executionAuthorized',false,'dispatchPerformed',false)
+   OR r.snapshot_canonical IS DISTINCT FROM anvil.execution_authority_canonical(s) OR r.content_hash IS DISTINCT FROM anvil.execution_json_hash(s)
+   OR r.canonical_bytes<>octet_length(r.packet_canonical)+octet_length(r.snapshot_canonical) OR NOT anvil.execution_iso_valid(s->'recordedAt')
+   OR (s->>'recordedAt')::timestamptz<(r.packet_json#>>'{proof,issuedAt}')::timestamptz OR (s->>'recordedAt')::timestamptz>=(r.packet_json#>>'{proof,expiresAt}')::timestamptz
+   OR r.transaction_id=d.transaction_id OR octet_length(anvil.execution_authority_canonical(to_jsonb(r)))>anvil.fn106_result_max(d) THEN RETURN false;END IF;
+ END IF;RETURN true;
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+
+-- 현재 검산은 같은 원 native session/등록 key와 HUMAN 요청을 재사용한다. 반환 기한은 저장 시각 그대로다.
+CREATE FUNCTION anvil.fn106_current(sid uuid,digest_value text,request_ref jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v jsonb;now_scope jsonb;d anvil.normal_start_preparation_dispatches;a anvil.normal_start_preparation_admissions;spki text;p uuid;
+BEGIN
+ IF session_user<>'anvil_v3_app' OR expected_tx IS DISTINCT FROM txid_current()::text OR NOT COALESCE(anvil.fn76_ref(request_ref,true),false) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_PURPOSE_DENIED';END IF;
+ v=anvil.native_receive_session_current(sid,digest_value);p=(v#>>'{window,snapshot,projectId}')::uuid;
+ IF v->>'phase' IS DISTINCT FROM 'STREAMING' OR v#>>'{session,ref,id}' IS DISTINCT FROM sid::text THEN RAISE EXCEPTION 'NATIVE_RECEIVE_CONTEXT_CHANGED';END IF;
+ SELECT * INTO STRICT d FROM anvil.normal_start_preparation_dispatches WHERE project_id=p AND request_id=(request_ref->>'id')::uuid FOR SHARE;
+ SELECT * INTO STRICT a FROM anvil.normal_start_preparation_admissions WHERE project_id=p AND id=d.admission_id FOR SHARE;
+ IF request_ref IS DISTINCT FROM anvil.fn105_ref(d.request_id,d.request_json) OR NOT anvil.fn106_complete(p,d.request_id)
+  OR d.request_json->'windowRef' IS DISTINCT FROM v#>'{window,ref}' OR d.request_json->'receiveSessionRef' IS DISTINCT FROM v#>'{session,ref}' THEN RAISE EXCEPTION 'NATIVE_RECEIVE_CONTEXT_CHANGED';END IF;
+ now_scope=anvil.fn105_current((a.snapshot_json#>>'{scope,humanSessionId}')::uuid,a.actor_id,a.client_id,p,a.snapshot_json->'request',expected_tx);
+ IF a.snapshot_json->'scope' IS DISTINCT FROM now_scope->'scope' OR a.snapshot_json->'brokerInstanceId' IS DISTINCT FROM now_scope->'brokerInstanceId'
+  OR a.snapshot_json->'operationFence' IS DISTINCT FROM now_scope->'operationFence' OR a.snapshot_json#>'{provenance,streamProofHash}' IS DISTINCT FROM now_scope->'streamProofHash'
+  OR a.snapshot_json#>'{provenance,streamChallengeRef}' IS DISTINCT FROM now_scope->'streamChallengeRef'
+  OR d.expires_at::timestamptz<=clock_timestamp() OR (now_scope->>'expiresAt')::timestamptz<=clock_timestamp() THEN RAISE EXCEPTION 'NATIVE_RECEIVE_EXPIRED';END IF;
+ SELECT public_key_spki INTO STRICT spki FROM anvil.connectors WHERE project_id=p AND id=(d.request_json#>>'{connectorRef,id}')::uuid
+  AND registration_id=(d.request_json#>>'{registrationRef,id}')::uuid AND status='TRUSTED' AND revoked_at IS NULL FOR SHARE;
+ IF anvil.fn106_spki_hash(spki) IS DISTINCT FROM d.request_json->>'hostPublicKeyFingerprint' THEN RAISE EXCEPTION 'NATIVE_RECEIVE_SOURCE_UNAVAILABLE';END IF;
+ RETURN jsonb_build_object('request',jsonb_build_object('ref',request_ref,'snapshot',d.request_json),'publicKeySpki',spki,'expiresAt',d.expires_at);
+END;$$;
+
+-- 현재 수신 가능한 REJECTED의 폐쇄 형상에서 실제 저장 composite 최대폭을 계산한다.
+-- PREPARED는 독립 보호 근거 producer가 없으므로 아래 RPC에서 저장/ACK하지 않는다.
+CREATE FUNCTION anvil.fn106_result_max(d anvil.normal_start_preparation_dispatches) RETURNS bigint LANGUAGE plpgsql STABLE SET search_path=pg_catalog AS $$
+DECLARE rr jsonb=anvil.fn105_ref(d.request_id,d.request_json);r jsonb;peer jsonb;proof jsonb;packet jsonb;s jsonb;row_json jsonb;at_text text='9999-12-31T23:59:59.999Z';
+BEGIN
+ peer=jsonb_build_object('schemaVersion',1,'purpose','NORMAL_START_PREPARATION_PEER_RECEIPT_V1','receiptId',d.result_id,'requestRef',rr,'attemptId',d.attempt_id,
+  'outcome','REJECTED','preparationBasis',NULL,'issuedAt',at_text,'expiresAt',at_text,'executionAuthorized',false,'dispatchPerformed',false);
+ r=jsonb_build_object('schemaVersion',1,'purpose','NORMAL_START_PREPARATION_RESULT_V1','requestRef',rr,'receipt',jsonb_build_object('ref',anvil.fn105_ref(d.result_id,peer),'snapshot',peer));
+ proof=jsonb_build_object('schemaVersion',1,'purpose','NORMAL_START_PREPARATION_RESULT_PROOF_V1','requestRef',rr,'attemptId',d.attempt_id,
+  'installationId',d.request_json->'installationId','projectId',d.project_id,'registrationRef',d.request_json->'registrationRef','connectorRef',d.request_json->'connectorRef',
+  'windowRef',d.request_json->'windowRef','receiveSessionRef',d.request_json->'receiveSessionRef','hostPublicKeyFingerprint',d.request_json->'hostPublicKeyFingerprint','serverNonce',d.request_json->'serverNonce',
+  'target',jsonb_build_object('method','POST','path','/api/v1/native-first-receive/sessions/'||(d.request_json#>>'{receiveSessionRef,id}')||'/normal-start-preparation-result','queryHash',repeat('0',64),'bodyHash',repeat('0',64)),
+  'issuedAt',at_text,'expiresAt',at_text);
+ packet=jsonb_build_object('request',d.request_json,'result',r,'proof',proof,'signature',repeat('A',86),'credentialDigest',repeat('0',64));
+ s=jsonb_build_object('schemaVersion',1,'purpose','NORMAL_START_PREPARATION_RESULT_RECORD_V1','recordId',d.result_id,'requestRef',rr,'peerReceiptRef',anvil.fn105_ref(d.result_id,peer),
+  'resultHash',repeat('0',64),'proofHash',repeat('0',64),'recordedAt',at_text,'executionAuthorized',false,'dispatchPerformed',false);
+ row_json=jsonb_build_object('project_id',d.project_id,'request_id',d.request_id,'id',d.result_id,'packet_json',packet,'packet_canonical',anvil.execution_authority_canonical(packet),
+  'packet_hash',repeat('0',64),'snapshot_json',s,'snapshot_canonical',anvil.execution_authority_canonical(s),'content_hash',repeat('0',64),
+  'canonical_bytes',octet_length(anvil.execution_authority_canonical(packet))+octet_length(anvil.execution_authority_canonical(s)),'transaction_id','9223372036854775807');
+ RETURN octet_length(anvil.execution_authority_canonical(row_json));
+END;$$;
+CREATE FUNCTION anvil.fn106_storage_actual(p uuid) RETURNS bigint LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM anvil.normal_start_preparation_dispatches d WHERE d.project_id=p AND NOT anvil.fn106_complete(p,d.request_id)) THEN RAISE EXCEPTION 'NORMAL_START_PREPARATION_RESULT_INCOMPLETE';END IF;
+ RETURN coalesce((SELECT sum(octet_length(anvil.execution_authority_canonical(to_jsonb(d)))) FROM anvil.normal_start_preparation_dispatches d WHERE d.project_id=p),0)::bigint
+  +coalesce((SELECT sum(octet_length(anvil.execution_authority_canonical(to_jsonb(r)))) FROM anvil.normal_start_preparation_peer_results r WHERE r.project_id=p),0)::bigint;
+END;$$;
+CREATE FUNCTION anvil.fn106_storage_future(p uuid) RETURNS bigint LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT coalesce(sum(anvil.fn106_result_max(d)),0)::bigint FROM anvil.normal_start_preparation_dispatches d WHERE d.project_id=p
+  AND NOT EXISTS(SELECT 1 FROM anvil.normal_start_preparation_peer_results r WHERE r.project_id=p AND r.request_id=d.request_id)
+$$;
+
+CREATE FUNCTION anvil.fn08_normal_start_preparation_dispatch_claim(s uuid,a uuid,c uuid,p uuid,q jsonb,admission_ref jsonb,provenance jsonb,proposal jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE current jsonb;ad anvil.normal_start_preparation_admissions;cl anvil.normal_start_preparation_claims;d anvil.normal_start_preparation_dispatches;
+ j jsonb;claim_result jsonb;at timestamptz;ends timestamptz;before_actual bigint;before_future bigint;k text;ids uuid[];
+BEGIN
+ -- 기존 claim과 새 marker/결과 future가 같은 거래로 정착된다. 반환은 아직 COMMIT/전송 증거가 아니다.
+ claim_result=anvil.fn08_start_preparation_claim(s,a,c,p,q,admission_ref,provenance,expected_tx);
+ current=anvil.fn105_current(s,a,c,p,q,expected_tx);
+ SELECT * INTO STRICT ad FROM anvil.normal_start_preparation_admissions WHERE project_id=p AND id=(admission_ref->>'id')::uuid FOR UPDATE;
+ SELECT * INTO STRICT cl FROM anvil.normal_start_preparation_claims WHERE project_id=p AND admission_id=ad.id FOR UPDATE;
+ SELECT * INTO d FROM anvil.normal_start_preparation_dispatches WHERE project_id=p AND admission_id=ad.id;
+ IF FOUND THEN
+  IF d.claim_id<>cl.id OR NOT anvil.fn106_complete(p,d.request_id) OR d.expires_at::timestamptz<=clock_timestamp() THEN RAISE EXCEPTION 'NORMAL_START_PREPARATION_CONFLICT';END IF;
+  RETURN jsonb_build_object('disposition','REPLAY_ONLY','request',jsonb_build_object('ref',anvil.fn105_ref(d.request_id,d.request_json),'snapshot',d.request_json),
+   'claimRef',anvil.fn105_ref(cl.id,cl.snapshot_json),'expiresAt',d.expires_at,'dispatchPerformed',false);
+ END IF;
+ -- 이미 정착한 legacy claim은 새 outbound 시도로 전환하지 않는다.
+ IF claim_result->>'disposition' IS DISTINCT FROM 'FIRST_COMMIT' OR cl.snapshot_json->>'transactionId' IS DISTINCT FROM expected_tx THEN RAISE EXCEPTION 'NORMAL_START_PREPARATION_CONFLICT';END IF;
+ IF NOT COALESCE(anvil.execution_json_shape(proposal,ARRAY['requestId','attemptId','recordId','serverNonce']),false) OR NOT anvil.fn106_nonce(proposal->>'serverNonce') THEN RAISE EXCEPTION 'NORMAL_START_PREPARATION_CONFLICT';END IF;
+ ids=ARRAY[]::uuid[];
+ FOREACH k IN ARRAY ARRAY['requestId','attemptId','recordId'] LOOP
+  IF COALESCE(proposal->>k !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',true) THEN RAISE EXCEPTION 'NORMAL_START_PREPARATION_CONFLICT';END IF;
+  ids=array_append(ids,(proposal->>k)::uuid);
+ END LOOP;
+ IF (SELECT count(DISTINCT x) FROM unnest(ids)x)<>3 OR ad.id=ANY(ids) OR cl.id=ANY(ids) OR ad.window_id=ANY(ids) OR ad.session_id=ANY(ids)
+  OR (q->>'commandId')::uuid=ANY(ids) OR (q#>>'{payload,executionId}')::uuid=ANY(ids) THEN RAISE EXCEPTION 'NORMAL_START_PREPARATION_CONFLICT';END IF;
+ at=date_trunc('milliseconds',clock_timestamp());ends=date_trunc('milliseconds',least(at+interval '10 seconds',(ad.snapshot_json->>'expiresAt')::timestamptz,(current->>'expiresAt')::timestamptz));
+ IF ends<=at OR expected_tx=ad.snapshot_json->>'transactionId' THEN RAISE EXCEPTION 'NATIVE_RECEIVE_EXPIRED';END IF;
+ j=anvil.fn106_frame(ad,cl,ids[1],ids[2],proposal->>'serverNonce',anvil.fn105_time(at),anvil.fn105_time(ends));
+ PERFORM 1 FROM anvil.project_storage_accounts WHERE project_id=p FOR UPDATE;
+ IF NOT FOUND OR NOT anvil.quota_complete(p) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED';END IF;
+ before_actual=anvil.fn76_storage_actual(p);before_future=anvil.fn76_storage_future(p);
+ INSERT INTO anvil.normal_start_preparation_dispatches(project_id,admission_id,claim_id,request_id,attempt_id,result_id,request_json,request_canonical,content_hash,canonical_bytes,transaction_id,recorded_at,expires_at)
+ VALUES(p,ad.id,cl.id,ids[1],ids[2],ids[3],j,anvil.execution_authority_canonical(j),anvil.execution_json_hash(j),octet_length(anvil.execution_authority_canonical(j)),expected_tx,anvil.fn105_time(at),anvil.fn105_time(ends)) RETURNING * INTO d;
+ PERFORM anvil.fn76_project_quota_settle(p,before_actual,before_future);
+ current=anvil.fn105_current(s,a,c,p,q,expected_tx);
+ IF NOT anvil.fn106_complete(p,d.request_id) OR ad.snapshot_json->'scope' IS DISTINCT FROM current->'scope'
+  OR ad.snapshot_json->'brokerInstanceId' IS DISTINCT FROM current->'brokerInstanceId' OR ad.snapshot_json->'operationFence' IS DISTINCT FROM current->'operationFence'
+  OR ends<=clock_timestamp() OR (current->>'expiresAt')::timestamptz<=clock_timestamp() THEN RAISE EXCEPTION 'NATIVE_RECEIVE_CONTEXT_CHANGED';END IF;
+ RETURN jsonb_build_object('disposition','FIRST_COMMIT','request',jsonb_build_object('ref',anvil.fn105_ref(d.request_id,j),'snapshot',j),
+  'claimRef',anvil.fn105_ref(cl.id,cl.snapshot_json),'expiresAt',d.expires_at,'dispatchPerformed',false);
+END;$$;
+
+CREATE FUNCTION anvil.fn08_normal_start_preparation_result_basis(sid uuid,digest_value text,request_ref jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT anvil.fn106_current(sid,digest_value,request_ref,expected_tx)
+$$;
+
+-- 동일 서명 packet 재확인은 읽기 전용이다. 새 xid는 원 packet hash에 포함하지 않는다.
+CREATE FUNCTION anvil.fn106_result(sid uuid,material jsonb,expected_tx text,write_new boolean)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE basis jsonb;final_basis jsonb;d anvil.normal_start_preparation_dispatches;r anvil.normal_start_preparation_peer_results;packet jsonb;s jsonb;p uuid;at timestamptz;before_actual bigint;before_future bigint;
+BEGIN
+ IF NOT COALESCE(anvil.execution_json_shape(material,ARRAY['request','result','proof','signature','credentialDigest','transactionId']),false)
+  OR material->>'transactionId' IS DISTINCT FROM expected_tx OR expected_tx IS DISTINCT FROM txid_current()::text THEN RAISE EXCEPTION 'NATIVE_RECEIVE_PURPOSE_DENIED';END IF;
+ basis=anvil.fn106_current(sid,material->>'credentialDigest',material#>'{result,requestRef}',expected_tx);p=(basis#>>'{request,snapshot,projectId}')::uuid;
+ SELECT * INTO STRICT d FROM anvil.normal_start_preparation_dispatches WHERE project_id=p AND request_id=(basis#>>'{request,ref,id}')::uuid FOR UPDATE;
+ packet=material-'transactionId';
+ IF NOT anvil.fn106_packet_valid(d,packet) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_CONTEXT_CHANGED';END IF;
+ -- 서명/형상은 물리 근거 producer의 진위를 대신하지 않는다. 미공급 PREPARED는 정착/ACK0이다.
+ IF packet#>>'{result,receipt,snapshot,outcome}' IS DISTINCT FROM 'REJECTED' THEN RAISE EXCEPTION 'NATIVE_RECEIVE_SOURCE_UNAVAILABLE';END IF;
+ at=date_trunc('milliseconds',clock_timestamp());
+ IF at<(packet#>>'{proof,issuedAt}')::timestamptz OR at>=(packet#>>'{proof,expiresAt}')::timestamptz THEN RAISE EXCEPTION 'NATIVE_RECEIVE_EXPIRED';END IF;
+ SELECT * INTO r FROM anvil.normal_start_preparation_peer_results WHERE project_id=p AND request_id=d.request_id;
+ IF FOUND THEN
+  IF r.packet_json IS DISTINCT FROM packet OR NOT anvil.fn106_complete(p,d.request_id) THEN RAISE EXCEPTION 'NATIVE_RECEIVE_CONFLICT';END IF;
+ ELSIF NOT write_new THEN
+  final_basis=anvil.fn106_current(sid,material->>'credentialDigest',material#>'{result,requestRef}',expected_tx);
+  IF basis IS DISTINCT FROM final_basis OR clock_timestamp()>=(packet#>>'{proof,expiresAt}')::timestamptz THEN RAISE EXCEPTION 'NATIVE_RECEIVE_CONTEXT_CHANGED';END IF;
+  RETURN NULL;
+ ELSE
+  at=date_trunc('milliseconds',clock_timestamp());
+  IF at<(packet#>>'{proof,issuedAt}')::timestamptz OR at>=(packet#>>'{proof,expiresAt}')::timestamptz OR expected_tx=d.transaction_id THEN RAISE EXCEPTION 'NATIVE_RECEIVE_EXPIRED';END IF;
+  PERFORM 1 FROM anvil.project_storage_accounts WHERE project_id=p FOR UPDATE;
+  IF NOT FOUND OR NOT anvil.quota_complete(p) THEN RAISE EXCEPTION 'PROJECT_STORAGE_QUOTA_INTEGRITY_FAILED';END IF;
+  before_actual=anvil.fn76_storage_actual(p);before_future=anvil.fn76_storage_future(p);
+  s=jsonb_build_object('schemaVersion',1,'purpose','NORMAL_START_PREPARATION_RESULT_RECORD_V1','recordId',d.result_id,'requestRef',basis#>'{request,ref}',
+   'peerReceiptRef',packet#>'{result,receipt,ref}','resultHash',anvil.execution_json_hash(packet->'result'),'proofHash',anvil.execution_json_hash(packet->'proof'),
+   'recordedAt',anvil.fn105_time(at),'executionAuthorized',false,'dispatchPerformed',false);
+  INSERT INTO anvil.normal_start_preparation_peer_results(project_id,request_id,id,packet_json,packet_canonical,packet_hash,snapshot_json,snapshot_canonical,content_hash,canonical_bytes,transaction_id)
+  VALUES(p,d.request_id,d.result_id,packet,anvil.execution_authority_canonical(packet),anvil.execution_json_hash(packet),s,anvil.execution_authority_canonical(s),anvil.execution_json_hash(s),
+   octet_length(anvil.execution_authority_canonical(packet))+octet_length(anvil.execution_authority_canonical(s)),expected_tx) RETURNING * INTO r;
+  IF octet_length(anvil.execution_authority_canonical(to_jsonb(r)))>anvil.fn106_result_max(d) OR NOT anvil.fn106_complete(p,d.request_id) THEN RAISE EXCEPTION 'NORMAL_START_PREPARATION_RESULT_INCOMPLETE';END IF;
+  PERFORM anvil.fn76_project_quota_settle(p,before_actual,before_future);
+ END IF;
+ final_basis=anvil.fn106_current(sid,material->>'credentialDigest',material#>'{result,requestRef}',expected_tx);
+ IF basis IS DISTINCT FROM final_basis OR clock_timestamp()>=(packet#>>'{proof,expiresAt}')::timestamptz THEN RAISE EXCEPTION 'NATIVE_RECEIVE_CONTEXT_CHANGED';END IF;
+ RETURN jsonb_build_object('ref',anvil.fn105_ref(r.id,r.snapshot_json),'snapshot',r.snapshot_json);
+END;$$;
+CREATE FUNCTION anvil.fn08_normal_start_preparation_result_commit(sid uuid,material jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$ SELECT anvil.fn106_result(sid,material,expected_tx,true) $$;
+CREATE FUNCTION anvil.fn08_normal_start_preparation_result_replay(sid uuid,material jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$ SELECT anvil.fn106_result(sid,material,expected_tx,false) $$;
+
+-- 기존 collector/상한/OID/ACL을 보존하고 FN08 목적 소계만 추가한다.
+CREATE OR REPLACE FUNCTION anvil.fn76_storage_actual(p uuid) RETURNS bigint LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT COALESCE((SELECT sum(octet_length(anvil.fn01_json(r.projection))) FROM anvil.fn76_r_rows(p) r),0)::bigint+COALESCE((SELECT sum(octet_length(anvil.fn01_json(l.projection))) FROM anvil.fn76_l_rows(p) l),0)::bigint+anvil.fn105_storage_actual(p)+anvil.fn106_storage_actual(p)
+$$;
+CREATE OR REPLACE FUNCTION anvil.fn76_storage_future(p uuid) RETURNS bigint LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT anvil.fn76_profile_future(p)+COALESCE((SELECT sum(anvil.fn76_aggregate_max(to_jsonb(a))-anvil.fn76_projection_bytes('native_receive_security_aggregates',to_jsonb(a))) FROM anvil.native_receive_security_aggregates a WHERE a.project_id=p),0)::bigint+COALESCE((SELECT sum(x.n_bytes+x.r_bytes+x.l_bytes) FROM anvil.native_receive_storage_reservations r CROSS JOIN LATERAL anvil.fn76_reservation_remaining(r) x WHERE r.project_id=p),0)::bigint+anvil.fn105_storage_future(p)+anvil.fn106_storage_future(p)
+$$;
+CREATE OR REPLACE FUNCTION anvil.fn76_capacity_valid(p uuid) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r_bytes numeric;r_slots bigint;r_future numeric;r_future_slots bigint;n_bytes numeric;n_slots bigint;n_future numeric;n_future_slots bigint;
+BEGIN
+ SELECT COALESCE(sum(octet_length(anvil.fn01_json(projection))),0),count(*) INTO r_bytes,r_slots FROM anvil.fn76_r_rows(p);
+ SELECT anvil.fn76_profile_future(p)+COALESCE((SELECT sum(anvil.fn76_aggregate_max(to_jsonb(a))-anvil.fn76_projection_bytes('native_receive_security_aggregates',to_jsonb(a))) FROM anvil.native_receive_security_aggregates a WHERE a.project_id=p),0)+COALESCE(sum(x.r_bytes),0),COALESCE(sum(x.r_slots),0) INTO r_future,r_future_slots FROM anvil.native_receive_storage_reservations r CROSS JOIN LATERAL anvil.fn76_reservation_remaining(r) x WHERE r.project_id=p;
+ r_future_slots:=r_future_slots+(SELECT count(*) FROM anvil.native_channel_profile_heads h JOIN anvil.native_channel_profile_versions v ON v.project_id=h.project_id AND v.id=h.current_head_id AND v.version=h.current_head_version AND v.content_hash=h.current_head_hash WHERE h.project_id=p AND v.state='ACTIVE');
+ SELECT COALESCE(sum(canonical_bytes),0),count(*) INTO n_bytes,n_slots FROM(SELECT canonical_bytes FROM anvil.native_preparation_authorities WHERE project_id=p UNION ALL SELECT canonical_bytes FROM anvil.native_preparation_authority_events WHERE project_id=p) n;
+ SELECT COALESCE(sum(x.n_bytes),0),COALESCE(sum(x.n_slots),0) INTO n_future,n_future_slots FROM anvil.native_receive_storage_reservations r CROSS JOIN LATERAL anvil.fn76_reservation_remaining(r) x WHERE r.project_id=p;
+ -- FN08_PREPARATION_CAPACITY_BEGIN: 원 R 묶음의 기존 수치만 적용한다. N 식은 변경하지 않는다.
+ r_bytes:=r_bytes+anvil.fn105_storage_actual(p);
+ r_slots:=r_slots+(SELECT count(*) FROM anvil.normal_start_preparation_admissions WHERE project_id=p)+(SELECT count(*) FROM anvil.normal_start_preparation_claims WHERE project_id=p);
+ r_future:=r_future+anvil.fn105_storage_future(p);
+ r_future_slots:=r_future_slots+(SELECT count(*) FROM anvil.normal_start_preparation_admissions a WHERE a.project_id=p AND NOT EXISTS(SELECT 1 FROM anvil.normal_start_preparation_claims c WHERE c.project_id=p AND c.admission_id=a.id));
+ -- FN08_PREPARATION_CAPACITY_END
+ -- FN08_RESULT_CAPACITY_BEGIN
+ r_bytes:=r_bytes+anvil.fn106_storage_actual(p);
+ r_slots:=r_slots+(SELECT count(*) FROM anvil.normal_start_preparation_dispatches WHERE project_id=p)+(SELECT count(*) FROM anvil.normal_start_preparation_peer_results WHERE project_id=p);
+ r_future:=r_future+anvil.fn106_storage_future(p);
+ r_future_slots:=r_future_slots+(SELECT count(*) FROM anvil.normal_start_preparation_dispatches d WHERE d.project_id=p AND NOT EXISTS(SELECT 1 FROM anvil.normal_start_preparation_peer_results r WHERE r.project_id=p AND r.request_id=d.request_id));
+ -- FN08_RESULT_CAPACITY_END
+ RETURN r_slots+r_future_slots<=10000 AND r_bytes+r_future<=67108864 AND n_slots+n_future_slots<=10000 AND n_bytes+n_future<=67108864;
+END;$$;
+
+-- marker 없는 정착 legacy만 원 queue read 계약을 보존한다. 새 result queue producer는 미연결이다.
+CREATE OR REPLACE FUNCTION anvil.fn08_start_preparation_queue(s uuid,a uuid,c uuid,p uuid,q jsonb,admission_ref jsonb,claim_ref jsonb,expected_tx text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE row anvil.normal_start_preparation_admissions;claim anvil.normal_start_preparation_claims;current jsonb;
+BEGIN
+ current=anvil.fn105_current(s,a,c,p,q,expected_tx);
+ SELECT * INTO STRICT row FROM anvil.normal_start_preparation_admissions WHERE project_id=p AND id=(admission_ref->>'id')::uuid FOR SHARE;
+ SELECT * INTO STRICT claim FROM anvil.normal_start_preparation_claims WHERE project_id=p AND admission_id=row.id FOR SHARE;
+ -- FN08_RESULT_QUEUE_GATE_BEGIN: 같은 immutable claim 잠금 아래 새 marker의 old queue 우회를 닫는다.
+ IF EXISTS(SELECT 1 FROM anvil.normal_start_preparation_dispatches d WHERE d.project_id=p AND d.admission_id=row.id AND d.claim_id=claim.id) THEN RAISE EXCEPTION 'NORMAL_START_PREPARATION_RESULT_REQUIRED';END IF;
+ -- FN08_RESULT_QUEUE_GATE_END
+ IF admission_ref IS DISTINCT FROM anvil.fn105_ref(row.id,row.snapshot_json) OR claim_ref IS DISTINCT FROM anvil.fn105_ref(claim.id,claim.snapshot_json)
+  OR row.snapshot_json->'request' IS DISTINCT FROM q OR row.actor_id<>a OR row.client_id<>c OR row.snapshot_json->'scope' IS DISTINCT FROM current->'scope'
+  OR row.snapshot_json->'brokerInstanceId' IS DISTINCT FROM current->'brokerInstanceId' OR row.snapshot_json->'operationFence' IS DISTINCT FROM current->'operationFence'
+  OR expected_tx=row.snapshot_json->>'transactionId' OR expected_tx=claim.snapshot_json->>'transactionId'
+  OR NOT anvil.fn105_complete(p,row.id) OR clock_timestamp()>=(row.snapshot_json->>'expiresAt')::timestamptz THEN RAISE EXCEPTION 'NORMAL_START_PREPARATION_CONFLICT';END IF;
+ RETURN jsonb_build_object('admissionRef',admission_ref,'claimRef',claim_ref,'requestHash',row.snapshot_json->'requestHash','scope',current->'scope','transactionId',expected_tx,'expiresAt',row.snapshot_json->'expiresAt');
+END;$$;
+
+CREATE FUNCTION anvil.fn106_immutable() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN RAISE EXCEPTION 'NORMAL_START_PREPARATION_RESULT_IMMUTABLE';END;$$;
+CREATE FUNCTION anvil.fn106_final() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF NOT anvil.fn106_complete(NEW.project_id,NEW.request_id) OR NOT anvil.quota_complete(NEW.project_id) THEN RAISE EXCEPTION 'NORMAL_START_PREPARATION_RESULT_INCOMPLETE';END IF;RETURN NULL;
+END;$$;
+CREATE TRIGGER fn106_dispatches_immutable BEFORE UPDATE OR DELETE ON anvil.normal_start_preparation_dispatches FOR EACH ROW EXECUTE FUNCTION anvil.fn106_immutable();
+CREATE TRIGGER fn106_dispatches_no_truncate BEFORE TRUNCATE ON anvil.normal_start_preparation_dispatches FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn106_immutable();
+CREATE CONSTRAINT TRIGGER fn106_dispatches_complete AFTER INSERT ON anvil.normal_start_preparation_dispatches DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn106_final();
+CREATE TRIGGER fn106_peer_results_immutable BEFORE UPDATE OR DELETE ON anvil.normal_start_preparation_peer_results FOR EACH ROW EXECUTE FUNCTION anvil.fn106_immutable();
+CREATE TRIGGER fn106_peer_results_no_truncate BEFORE TRUNCATE ON anvil.normal_start_preparation_peer_results FOR EACH STATEMENT EXECUTE FUNCTION anvil.fn106_immutable();
+CREATE CONSTRAINT TRIGGER fn106_peer_results_complete AFTER INSERT ON anvil.normal_start_preparation_peer_results DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn106_final();
+
+-- 기존 앱 역할의 정확 RPC만 선언한다. 표/키/일반 helper 및 DML은 열지 않는다.
+ALTER FUNCTION anvil.fn106_frame(anvil.normal_start_preparation_admissions,anvil.normal_start_preparation_claims,uuid,uuid,text,text,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_frame(anvil.normal_start_preparation_admissions,anvil.normal_start_preparation_claims,uuid,uuid,text,text,text) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn106_nonce(text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_nonce(text) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn106_spki_hash(text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_spki_hash(text) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn106_packet_valid(anvil.normal_start_preparation_dispatches,jsonb) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_packet_valid(anvil.normal_start_preparation_dispatches,jsonb) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn106_complete(uuid,uuid) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_complete(uuid,uuid) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn106_current(uuid,text,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_current(uuid,text,jsonb,text) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn106_result_max(anvil.normal_start_preparation_dispatches) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_result_max(anvil.normal_start_preparation_dispatches) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn106_storage_actual(uuid) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_storage_actual(uuid) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn106_storage_future(uuid) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_storage_future(uuid) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn106_result(uuid,jsonb,text,boolean) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_result(uuid,jsonb,text,boolean) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn106_immutable() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_immutable() FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn106_final() OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn106_final() FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn08_normal_start_preparation_dispatch_claim(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn08_normal_start_preparation_dispatch_claim(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,jsonb,text) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn08_normal_start_preparation_result_basis(uuid,text,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn08_normal_start_preparation_result_basis(uuid,text,jsonb,text) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn08_normal_start_preparation_result_commit(uuid,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn08_normal_start_preparation_result_commit(uuid,jsonb,text) FROM PUBLIC,anvil_v3_app;
+ALTER FUNCTION anvil.fn08_normal_start_preparation_result_replay(uuid,jsonb,text) OWNER TO anvil_v3_migrator;
+REVOKE ALL ON FUNCTION anvil.fn08_normal_start_preparation_result_replay(uuid,jsonb,text) FROM PUBLIC,anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.fn08_normal_start_preparation_dispatch_claim(uuid,uuid,uuid,uuid,jsonb,jsonb,jsonb,jsonb,text) TO anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.fn08_normal_start_preparation_result_basis(uuid,text,jsonb,text) TO anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.fn08_normal_start_preparation_result_commit(uuid,jsonb,text) TO anvil_v3_app;
+GRANT EXECUTE ON FUNCTION anvil.fn08_normal_start_preparation_result_replay(uuid,jsonb,text) TO anvil_v3_app;
+COMMIT;

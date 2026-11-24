@@ -384,6 +384,8 @@ async function normalResultTransportFixture(mode='valid'){
  const snapshot={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_PEER_RECEIPT_V1',receiptId:id(3220),requestRef,attemptId:request.attemptId,outcome:'PREPARED',
   preparationBasis:{ref:{id:id(3210),version:1,contentHash:receiveHash(basisSnapshot)},snapshot:basisSnapshot},issuedAt,expiresAt,executionAuthorized:false,dispatchPerformed:false};
  const result={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_V1',requestRef,receipt:{ref:{id:id(3220),version:1,contentHash:receiveHash(snapshot)},snapshot}};
+ // 실제 0106 adapter의 첫 소비는 보호 producer가 필요 없는, 원 peer가 서명한 명시 REJECTED다.
+ if(mode==='actual-adapter'){snapshot.outcome='REJECTED';snapshot.preparationBasis=null as any;result.receipt.ref.contentHash=receiveHash(snapshot);}
  const proof={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_PROOF_V1',requestRef,attemptId:request.attemptId,installationId:request.installationId,projectId:request.projectId,registrationRef:request.registrationRef,connectorRef:request.connectorRef,
   windowRef:f.window.ref,receiveSessionRef:f.session.ref,hostPublicKeyFingerprint:w.hostPublicKeyFingerprint,serverNonce:request.serverNonce,
   target:{method:'POST',path:wire.normalStartPreparationResultPath(f.session.ref.id),queryHash:receiveHash({}),bodyHash:receiveHash(result)},issuedAt,expiresAt:new Date(f.now()+(mode.startsWith('late-')?80:2000)).toISOString()};
@@ -431,15 +433,18 @@ async function normalResultTransportFixture(mode='valid'){
    if(mode==='swap-replay'){const value=structuredClone(out.rows[0].result);value.ref.id=id(3299);value.snapshot.recordId=value.ref.id;value.ref.contentHash=receiveHash(value.snapshot);return value;}
    return out.rows[0].result;},
  };
- if(mode!=='missing')f.service.connectNormalStartPreparationResultSource(source);
+ if(mode==='actual-adapter'){
+  const {connectNormalStartPreparationResultStore}=await import('../../../apps/server/modules/executions/normal-start-preparation-result-store.ts');
+  connectNormalStartPreparationResultStore(f.service);
+ }else if(mode!=='missing')f.service.connectNormalStartPreparationResultSource(source);
  if(mode==='signature')signature=Buffer.alloc(64,1).toString('base64url');
  if(mode==='nonce'){proof.serverNonce=Buffer.alloc(32,9).toString('base64url');signature=sign();}
  const run=()=>f.service.nativeNormalStartPreparationResult(f.session.ref.id,f.token,result,proof,signature,new AbortController().signal);
  return{...f,stream,wire,request,result,proof,normalSignature:signature,repairSignature:()=>{signature=sign();},source,stored,run,current,lateRelease,state:()=>({records,reads,releases,commits,bytes,replays})};
 }
 
-test('normal result 전용 route/service는 원 signed STREAM·DB current SPKI·목적 receipt를 원 거래에 결박한다',async()=>{
- const f=await normalResultTransportFixture(),{default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts'),app=Fastify();
+for(const mode of ['valid','actual-adapter'])test('normal result 전용 route/service는 원 signed STREAM·DB current SPKI·목적 receipt를 원 거래에 결박한다 '+mode,async()=>{
+ const f=await normalResultTransportFixture(mode),{default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts'),app=Fastify();
  registerNativeFirstReceiveRoutes(app,{enabled:true,service:f.service},{origin:'https://anvil.example'} as any);
  const call=()=>app.inject({method:'POST',url:f.proof.target.path,headers:{host:'anvil.example','content-type':'application/json',authorization:'AnvilReceive '+f.token,
   [f.wire.normalStartPreparationHeaders.proof]:Buffer.from(receiveCanonical(f.proof)).toString('base64url'),[f.wire.normalStartPreparationHeaders.signature]:f.normalSignature},payload:receiveCanonical(f.result)});
