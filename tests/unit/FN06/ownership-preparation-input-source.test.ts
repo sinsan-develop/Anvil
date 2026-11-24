@@ -137,3 +137,28 @@ test('정적: same-request 회수는 process/thread/image와 startup·assignment
  const dispose=producer.slice(producer.indexOf('public void Dispose()'));assert.doesNotMatch(dispose,/RecordConfirmedRejected|PREPARED|POST|queue/i);
  assert.match(deployment,/NormalTransferredImageCloseReceipt/);
 });
+
+test('정적: normal 원 suspended 최초 관측은 동일 producer에 결박하고 cleanup 모순을 회수 확정으로 승격하지 않는다',()=>{
+ const host=readFileSync(new URL('../../../apps/connector/native/DesktopTrustKeyHostSource.cs',import.meta.url),'utf8');
+ const producer=host.slice(host.indexOf('internal abstract class NormalStartPreparationProducer'),host.indexOf('readonly NormalStartPreparationProducer'));
+ assert.match(producer,/NormalProcessOwnerObservation processObservation/);
+ assert.match(producer,/var observed=OwnershipEvidenceJobFactorySource\.ReadOriginalNormalSuspendedProcessSource\(process,Math\.Min\(2000,left\(\)\)\)/);
+ for(const exact of [
+  'observed.ImageRefJson==Canonical(material.ImageRef,0)',
+  'observed.RequestRefJson==Canonical(material.RequestRef,0)',
+  'observed.LocalClaimRefJson==Canonical(material.NativeClaimRef,0)',
+  'observed.LocalProcessId==localProcessId',
+  'observed.LocalProcessGeneration==localProcessGeneration',
+  'observed.ExpiresAt==material.ExpiresAt',
+  'observed.ObservedAt<observed.ExpiresAt',
+ ])assert(producer.includes(exact),exact);
+ for(const flag of ['OsOwnershipVerified','ProcessCreated','ThreadCreated','ProcessCreationAuthorized','PreparationAuthorized','ExecutionAuthorized','DispatchPerformed'])assert(producer.includes('observed.'+flag),flag);
+ const readAt=producer.indexOf('var observed=OwnershipEvidenceJobFactorySource.ReadOriginalNormalSuspendedProcessSource'),checked=producer.indexOf('if(!ValidProcessObservation(observed))',readAt),retained=producer.indexOf('processObservation=observed',checked),current=producer.indexOf('left();',retained);
+ assert.ok(readAt>=0&&readAt<checked&&checked<retained&&retained<current,'관측 검산 성공 후에만 보유·남은 기한 확인');
+ assert.match(producer,/bool ProcessObservationMatchesCleanup\(\)\{\s*return processObservation==null\|\|/);
+ for(const field of ['ImageRefJson','RequestRefJson','LocalClaimRefJson','LocalProcessId','LocalProcessGeneration','ExpiresAt'])assert(producer.includes('processCleanup.'+field+'==processObservation.'+field),field);
+ assert.doesNotMatch(producer,/processObservation==null\|\|!processCleanup\.ProcessExitConfirmed/,'관측 부재는 기존 물리 회수를 차단하지 않음');
+ const cleanup=producer.indexOf('processCleanup=OwnershipEvidenceJobFactorySource.ReadOriginalNormalSuspendedProcessCleanupSource(process)'),contradiction=producer.indexOf('!ProcessObservationMatchesCleanup()',cleanup),cleared=producer.indexOf('processObservation=null',contradiction);
+ assert.ok(cleanup>=0&&cleanup<contradiction&&contradiction<cleared,'보유한 최초 관측이 있을 때만 cleanup receipt 대조 후 제거');
+ assert.doesNotMatch(producer,/(?:internal|public) OwnershipEvidenceJobFactorySource\.NormalProcessOwnerObservation|PREPARED|queue/i);
+});
