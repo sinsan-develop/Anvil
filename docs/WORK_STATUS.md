@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **IX01 Windows 시험 원문 로딩 교정** — 담당 `c11_quality_review`, 기준 `d7f77c06`. Windows checkout CRLF 때문에 LF marker로 시험 controller를 로딩하지 못했다. 시험 파일 한 개에서 정확 세 경로의 Git HEAD blob을 읽어 기존 controller·R9·manifest 원문을 사용한다. 제품·SQL·실행안·검사 기대값은 동일하다. Main 집중 6/6(f09ebb), 타입 0(a948c8), diff 0(a7af5f), 독립 C0/I0. 작성자 전체 파일은 로딩된 뒤 31/37이며 현재 진단 시험과 과거 고정 hash 차이 6건은 잔여다. 별개 원장 검사의 0082 지문과 후속 0100~0106 누락 가정은 이번 범위 밖이다. 실제 WSL·Docker·PG·권한·서비스·Agent 실행 0.
+
 - **IX01 0076 음성 단계의 오류 근거 결박** — 담당 `c11_quality_review`, 기준 `556a8a64`. 기존 R9 원문 35,588바이트와 SHA를 고정하고 두 오류 class 및 `parsePsqlFailure` 정의만 메모리에서 평가한다. 모듈 내부 capability가 있는 확정 `42723`·문장 종료 2343행을 같은 격리 대상 객체와 교정 실행 SHA에 결박한다. 원문과 임의 포트 값을 결과에 넣지 않으며 위조·변조·불명은 사후 조회 없이 중단한다. 과거 graph/승인·SQL 원문과 양성 A14는 보존한다. 제품 1개·시험 1개. 최초 평문 거절과 parser 위조 반례를 보완한 뒤 Main 집중 7/7(6f8f47), 타입 0(09a98a), diff 0(007537), 최종 독립 C0/I0. 최종 보완 전 Main 인접 47/47(581720)은 시험용 로컬 Node 자식 종료 확인 1건을 포함한다. 작성자 더 넓은 선행 실행은 CRLF/옛 원장 기준선 3건 실패를 보고했다. 실제 PG·Docker·SSH·서비스·Agent와 0076 rollback은 미검증이며 실제 receiver도 미연결이다.
 
 - **FN08 원 suspended 객체의 응답 직전 재검산** — 담당 `c11_quality_review`, 기준 `a863c82f`. 성공한 최초 claim에서 원 이미지 소유를 넘긴 뒤 동일 원 process를 기존 호출의 잔여 2초와 원 최단기한 안에서 다시 읽는다. 최초 보유 관측 참조를 바꾸지 않고 고정 값 6종·관측 시각 비후퇴·기존 durable claim을 대조한다. 재확인·확정 거절·미구성에는 재관측이 없으며 실패 시 기존 단회 회수/UNKNOWN으로 간다. 제품 1개·시험 1개. RED 12/13, Main 집중 33/33(82ebe3), 타입 0(8cadf0), diff 0(4fb61a), 독립 C0/I0. 실제 C#/Windows·DB·키·서비스·Agent는 미검증이며 실제 준비 결과 보관·전용 회신·인계·queue는 미완료다.

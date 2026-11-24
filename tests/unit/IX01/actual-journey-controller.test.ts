@@ -1,13 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-const script=await readFile(new URL('../../../scripts/qa-ix01-actual-journey.sh',import.meta.url),'utf8');
-const body=script.split('// IX01_JOURNEY_CONTROLLER_BEGIN\n')[1]!.split('// IX01_JOURNEY_CONTROLLER_END')[0]!;
-const c:any=await import('data:text/javascript;base64,'+Buffer.from(body).toString('base64'));
+const gitBlobPaths=['scripts/qa-ix01-actual-journey.sh','scripts/qa-ix01-schema-closure.sh','docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv'] as const;
+type GitBlobPath=typeof gitBlobPaths[number];
+function readGitBlob(path:GitBlobPath){
+ assert(gitBlobPaths.includes(path));
+ return execFileSync('git',['cat-file','blob','HEAD:'+path],{cwd:process.cwd(),stdio:['ignore','pipe','pipe']});
+}
+async function importGitBlobModule(path:GitBlobPath,begin:string,end:string){
+ const source=readGitBlob(path).toString('utf8'),parts=source.split(begin+'\n');
+ assert.equal(parts.length,2);const endings=parts[1]!.split(end);assert.equal(endings.length,2);
+ return import('data:text/javascript;base64,'+Buffer.from(endings[0]!).toString('base64'));
+}
+const c:any=await importGitBlobModule('scripts/qa-ix01-actual-journey.sh','// IX01_JOURNEY_CONTROLLER_BEGIN','// IX01_JOURNEY_CONTROLLER_END');
+const legacy:any=await importGitBlobModule('scripts/qa-ix01-schema-closure.sh','// IX01_CONTROLLER_BEGIN','// IX01_CONTROLLER_END');
+const body=readGitBlob('scripts/qa-ix01-actual-journey.sh').toString('utf8').split('// IX01_JOURNEY_CONTROLLER_BEGIN\n')[1]!.split('// IX01_JOURNEY_CONTROLLER_END')[0]!;
 const sha=(s:string|Buffer)=>createHash('sha256').update(s).digest('hex');
 const now=Date.parse('2026-11-04T00:00:00.000Z'),cid='b'.repeat(64),nid='c'.repeat(64);
-const manifest=await readFile(new URL('../../../docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv',import.meta.url),'utf8');
+const manifest=readGitBlob('docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv').toString('utf8');
 const order=manifest.split('\n').filter(x=>x&&!x.startsWith('#')).slice(1).map(x=>x.split('\t')[0]!);
 const summary='TAP version 13\nok 1 - 격리 합성 source 시험\n1..1\n# tests 1\n# suites 0\n# pass 1\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1\n';
 function fixture(){
@@ -41,7 +53,6 @@ test('actual 공유operation은 원SQL bytes/hash와 ledger·0037 Tx를 실제CL
 
 test('순차 영수증은105 원순서와 각 SQL/ledger 정착 및 불명공백을 보존한다',async()=>{let f=fixture(),r=await c.runController(f.plan,f.ports);assert.deepEqual(r.receipts.map((x:any)=>x.path),order);assert(r.receipts.every((x:any)=>x.sql==='SETTLED'&&x.ledger==='SETTLED'));assert(Buffer.byteLength(JSON.stringify(r))<=65536);f=fixture();f.ports.ledger=async()=>{throw Error('LOST');};r=await c.runController(f.plan,f.ports);assert.equal(r.receipts.length,1);assert.equal(r.receipts[0].sql,'SETTLED');assert.equal(r.receipts[0].ledger,'UNKNOWN');assert.equal(r.receipts[0].path,order[0]);});
 test('actual 역할 mapper는 원 systemHash를 ordinary roles로 재계산하지 않는다',async()=>{
- const raw=await readFile(new URL('../../../scripts/qa-ix01-schema-closure.sh',import.meta.url),'utf8');const legacy:any=await import('data:text/javascript;base64,'+Buffer.from(raw.split('// IX01_CONTROLLER_BEGIN\n')[1]!.split('// IX01_CONTROLLER_END')[0]!).toString('base64'));
  const names=['pg_database_owner','pg_read_all_data','pg_write_all_data','pg_monitor','pg_read_all_settings','pg_read_all_stats','pg_stat_scan_tables','pg_read_server_files','pg_write_server_files','pg_execute_server_program','pg_signal_backend','pg_checkpoint'];
  const data={sessionUser:'anvil_v3_bootstrap',currentUser:'anvil_v3_bootstrap',roles:[...names,'anvil_v3_bootstrap'].map(name=>({name,superuser:name==='anvil_v3_bootstrap',inherit:true,createRole:name==='anvil_v3_bootstrap',createDb:name==='anvil_v3_bootstrap',replication:name==='anvil_v3_bootstrap',bypassRls:name==='anvil_v3_bootstrap',login:name==='anvil_v3_bootstrap',validUntil:null})),memberships:['pg_read_all_settings','pg_read_all_stats','pg_stat_scan_tables'].map(role=>({role,member:'pg_monitor',grantor:'anvil_v3_bootstrap',adminOption:false}))};
  const value=JSON.stringify(data),expected=legacy.verifyRoleMetadata(value,'PRISTINE',[],[],[]),mapped=c.mapVerifiedRoles(legacy,value,'PRISTINE',[],[],[]);assert.deepEqual(mapped,expected);assert.equal(mapped.systemHash,expected.systemHash);assert(!mapped.roles.some((r:any)=>r.name.startsWith('pg_')));assert.notEqual(mapped.systemHash,sha(JSON.stringify(mapped.roles)));
@@ -66,12 +77,10 @@ test('npm actual 공통검산은11.19.1·entrypoint와 package 원문지문만 �
 
 
 test('actual 공유readiness는 최종PID1 뒤 pg_isready0만 허용하고1/2에서는 SQL0이다',async()=>{
- const raw=await readFile(new URL('../../../scripts/qa-ix01-schema-closure.sh',import.meta.url),'utf8');const legacy:any=await import('data:text/javascript;base64,'+Buffer.from(raw.split('// IX01_CONTROLLER_BEGIN\n')[1]!.split('// IX01_CONTROLLER_END')[0]!).toString('base64'));
  for(const status of [0,1,2]){const commands:string[][]=[];let polls=0;const ready=await c.observeJourneyReady(cid,100,legacy,async(args:string[])=>{commands.push(args);if(args.includes('cat'))return 'postgres\n';if(status)throw{status,stdout:'discarded',stderr:'discarded'};return 'ready';},async()=>{polls++;});assert.equal(ready,status===0);assert.equal(commands.length,2);assert.deepEqual(commands[1],['exec','--user','999:999',cid,'pg_isready','--host=/var/run/postgresql','--username=anvil_v3_bootstrap','--dbname='+c.fixed.database]);assert.equal(polls,status===0?0:1);assert(!commands.some(args=>args.includes('psql')));}
  const commands:string[][]=[];assert.equal(await c.observeJourneyReady(cid,100,legacy,async(args:string[])=>{commands.push(args);return 'bash\n';},async()=>{}),false);assert.equal(commands.length,1);
 });
 test('readiness timeout/signal/이상exit는 재조회·roles·정리를 열지 않는다',async()=>{
- const raw=await readFile(new URL('../../../scripts/qa-ix01-schema-closure.sh',import.meta.url),'utf8');const legacy:any=await import('data:text/javascript;base64,'+Buffer.from(raw.split('// IX01_CONTROLLER_BEGIN\n')[1]!.split('// IX01_CONTROLLER_END')[0]!).toString('base64'));
  for(const error of [{status:1,signal:'SIGTERM'},{status:2,code:'ETIMEDOUT'},{status:3},{code:'ENOBUFS'}]){const f=fixture();let reads=0;f.ports.finalServer=async()=>c.observeJourneyReady(cid,100,legacy,async(args:string[])=>{reads++;if(args.includes('cat'))return 'postgres\n';throw error;},async()=>{throw Error('POLL_FORBIDDEN');});const r=await c.runController(f.plan,f.ports);assert.equal(r.status,'UNKNOWN');assert.equal(reads,2);assert(!f.calls.some(x=>x.startsWith('roles:')));assert(!f.calls.includes('remove'));}
  const f=fixture();let polls=0;f.ports.finalServer=async()=>{polls++;return false;};assert.equal((await c.runController(f.plan,f.ports)).status,'UNKNOWN');assert.equal(polls,40);assert(!f.calls.some(x=>x.startsWith('roles:')));
 });
@@ -79,7 +88,6 @@ test('readiness timeout/signal/이상exit는 재조회·roles·정리를 열지 
 
 test('actual finalServer 포트 자체는 postgres PID1만으로 roles 준비를 완료하지 않는다',async()=>{
  const source=body.split('finalServer:async(id,ms)=>')[1]!.split(',\n roles:')[0]!;
- const raw=await readFile(new URL('../../../scripts/qa-ix01-schema-closure.sh',import.meta.url),'utf8');const legacy:any=await import('data:text/javascript;base64,'+Buffer.from(raw.split('// IX01_CONTROLLER_BEGIN\n')[1]!.split('// IX01_CONTROLLER_END')[0]!).toString('base64'));
  const commands:string[][]=[];const ops={docker(args:string[]){commands.push(args);if(args.includes('cat'))return 'postgres\n';throw{status:1};}};
  const port=new Function('ops','legacy','observeJourneyReady','return async(id,ms)=>'+source)(ops,legacy,c.observeJourneyReady);
  assert.equal(await port(cid,100),false);assert.equal(commands.length,2);assert(commands[1]!.includes('pg_isready'));assert(!commands.some(x=>x.includes('psql')));

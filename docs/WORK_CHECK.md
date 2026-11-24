@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **IX01 Windows 시험 원문 로딩** — 고정 controller와 manifest를 Git blob 원문으로 읽어 CRLF 입력 오류를 고쳤다. Main 집중 6/6·타입·독립 C0/I0. 전체 파일의 고정 진단 지문 불일치와 실제 격리 실행은 남아 있다.
+
 - **IX01 0076 음성 오류 관측** — 기존 R9 파서와 동일 격리 대상·실행 SHA에 근거를 결박한다. Main 집중 7/7·타입·독립 C0/I0. 새 graph 후보이며 실제 receiver와 PG rollback은 미완료다.
 
 - **FN08 원 suspended 응답 전 재검산** — 성공한 최초 소진에서 같은 원 객체 및 기존 durable claim을 원기한 내에 대조한다. Main 33/33·타입·독립 C0/I0. 실제 Windows·결과 보관·인계·queue 미완료.
