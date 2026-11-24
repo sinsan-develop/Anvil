@@ -86,3 +86,34 @@ test('native 원 pinned peer 입력은 동일 등록을 검산하고 physical pr
  assert.doesNotMatch(body,/ClaimOnce|ReservePreparation|\.Append\(|CreateSuspended|SignNormal|ServerCertificateValidationCallback/);
  const image=read('NativeWorkerDeploymentSource.cs');assert.match(image,/storage.GetType\(\)==typeof\(WindowsNativeWorkerInstallationKernel\)/);assert.match(image,/var value=consume\(result,Bound\);Bound\(\)/);
 });
+
+test('normal 설치 원행은 path나 bytes를 노출하지 않는 단회 retained image owner로 전달된다',()=>{
+ const store=read('NativeWorkerInstallationStoreSource.cs'),deployment=read('NativeWorkerDeploymentSource.cs');
+ assert.match(store,/internal sealed class NormalInstalledImageSource/);assert.match(store,/private readonly string directory/);assert.match(store,/internal NormalInstalledImageSource ReadNormalInstalledImageSource\(/);
+ assert.match(store,/V\.Canonical\(NormalBindingRef\(binding\),0\)/);assert.match(store,/V\.Text\(installed,"workerHash"\)/);assert.match(store,/V\.Text\(installed,"fileIdentity"\)/);assert.match(store,/io\.RootIdentity/);assert.match(store,/io\.WorkerDirectoryIdentity\(/);
+ assert.match(store,/OwnershipEvidenceImageOwnerSource\.OpenNormalSourceOnly\(directory/);assert.doesNotMatch(store,/internal string (?:Path|Directory)\{get/);
+ assert.match(deployment,/internal sealed class NormalRetainedImageSource/);assert.match(deployment,/internal NormalRetainedImageSource AcquireNormalImageForPreparation\(/);assert.match(deployment,/ReadNormalInstalledImageSource\(scope\)/);
+ const acquire=deployment.slice(deployment.indexOf('internal NormalRetainedImageSource AcquireNormalImageForPreparation('));assert.ok(acquire.indexOf('storage.RequireDurability()')<acquire.indexOf('OpenRetainedImageSource('));assert.match(acquire,/ReadPackagedWorker\(V\.Text\(binding,"workerHash"\),Bound\)/);
+ assert.match(deployment,/internal OwnershipEvidenceImageOwnerSource\.INormalRetainedImageCandidate TransferToFactory\(/);assert.match(deployment,/ReadCurrent\(timeoutMs\)[\s\S]*TransferNormalImage\(this,source,image\)[\s\S]*image=null;transferred=true/);
+ assert.match(deployment,/private sealed class NormalTransferredImageSource:OwnershipEvidenceImageOwnerSource\.INormalRetainedImageCandidate/);assert.match(deployment,/readonly Observation original/);assert.match(deployment,/ReferenceEquals\(activeObservation,original\)/);assert.match(deployment,/source\.CheckCurrent\(\)[\s\S]*ReadOriginalNormalSource\(image,timeoutMs\)[\s\S]*source\.CheckCurrent\(\)/);
+ assert.match(deployment,/ReadTransferredNormalImage\(OwnershipEvidenceImageOwnerSource\.INormalRetainedImageCandidate candidate/);assert.match(deployment,/candidate as NormalTransferredImageSource/);
+ assert.doesNotMatch(deployment,/public .*Path|public .*Handle|public byte\[\]/);
+});
+
+test('normal retained image current는 namespace와 descriptor directory를 구분해 hash·fileId·1초를 대조한다',()=>{
+ const binding=read('OwnershipEvidenceImageBindingSource.cs'),owner=read('OwnershipEvidenceImageOwnerSource.cs'),deployment=read('NativeWorkerDeploymentSource.cs');
+ assert.match(binding,/ReadNormalInstalledSource\(/);assert.match(binding,/timeoutMs<1\|\|timeoutMs>1000/);assert.match(binding,/bytes\.ContentHash!=workerHash/);assert.match(binding,/SameNativeIdentity\(fileIdentity,bytes\.FileIdentityHint\)/);assert.match(binding,/SameNativeIdentity\(directoryIdentity,first\.RootIdentityHint\)/);
+ assert.doesNotMatch(binding,/first\.RootIdentityHint!=namespaceRootIdentity/);
+ assert.match(binding,/NumberStyles\.None,CultureInfo\.InvariantCulture/);assert.match(binding,/decimalCanonical!=installed/);assert.match(binding,/ToString\("x8",CultureInfo\.InvariantCulture\)/);assert.match(binding,/\[0-9a-f\]\{8\}:\[0-9a-f\]\{16\}/);
+ assert.match(owner,/internal interface INormalRetainedImageCandidate:IDisposable/);assert.match(owner,/internal static INormalRetainedImageCandidate OpenNormalSourceOnly\(/);assert.match(owner,/internal static NormalImageObservation ReadOriginalNormalSource\(/);
+ const normal=owner.slice(owner.indexOf('internal sealed class NormalImageObservation'));assert.doesNotMatch(normal,/WorkerInputCandidate|permit|authority|RESERVED/);
+ for(const flag of ['OsOwnershipVerified','PreparationAuthorized','ExecutionAuthorized','DispatchPerformed'])assert.match(normal,new RegExp(flag+'\\{get\\{return false;\\}\\}'));
+ assert.match(owner,/NamespaceRootIdentity=namespaceRootIdentity/);assert.match(owner,/DirectoryIdentity=directoryIdentity/);assert.match(owner,/original\.ReadNormal\(workerHash,directoryIdentity,fileIdentity,timeoutMs\)/);
+ assert.match(owner,/age\.ElapsedMilliseconds>=10000/);assert.match(owner,/timeoutMs<1\|\|timeoutMs>1000/);
+ const normalOwner=owner.slice(owner.indexOf('private sealed class NormalImageOwner:'),owner.indexOf('internal static NormalImageObservation ReadOriginalNormalSource'));
+ assert.match(normalOwner,/bool disposed,closeAttempted,cleanupUnknown/);assert.match(normalOwner,/if\(closeAttempted\|\|cleanupUnknown\)throw Unavailable\(\)/);assert.match(normalOwner,/closeAttempted=true;try\{original\.Dispose\(\);disposed=true;\}catch\{cleanupUnknown=true;throw Unavailable\(\);\}/);assert.match(owner,/NativeCloseVerified\{get\{return false;\}\}/);
+ const retained=deployment.slice(deployment.indexOf('internal sealed class NormalRetainedImageSource'),deployment.indexOf('void Live('));assert.equal((retained.match(/closeAttempted=true;try\{image\.Dispose\(\);image=null;/g)||[]).length,2);assert.equal((retained.match(/catch\{cleanupUnknown=true;throw;\}/g)||[]).length,2);assert.ok(retained.indexOf('owner.ReleaseNormalImage(this)')>retained.indexOf('image.Dispose()'));assert.ok(retained.indexOf('owner.ReleaseTransferredNormalImage(this,original)')>retained.lastIndexOf('image.Dispose()'));
+ assert.equal((retained.match(/source\.ReleaseAfterClose\(\)/g)||[]).length,2);assert.match(retained,/internal NormalTransferredImageSource\(/);
+ const installed=read('NativeWorkerInstallationStoreSource.cs'),normalSource=installed.slice(installed.indexOf('internal sealed class NormalInstalledImageSource'),installed.indexOf('static Exception Invalid()'));
+ assert.match(installed,/NormalInstalledImageSource normalImageSource/);assert.match(normalSource,/INormalRetainedImageCandidate unresolvedImage/);assert.match(normalSource,/opened=true/);assert.match(normalSource,/catch\{unresolvedImage=result;throw;\}/);assert.match(installed,/if\(normalImageSource!=null\)throw Invalid\(\)/);assert.match(installed,/Check\(\);normalImageSource=null/);assert.doesNotMatch(owner.slice(owner.indexOf('internal static INormalRetainedImageCandidate OpenNormalSourceOnly(')),/owned\.ReadCurrent/);
+});

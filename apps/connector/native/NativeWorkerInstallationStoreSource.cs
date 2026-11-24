@@ -7,6 +7,7 @@ using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
+using Anvil.Native.OwnershipEvidence;
 using V=NativePreparationProofSource;
 
 internal abstract class NativeWorkerInstallationKernel:IDisposable {
@@ -15,15 +16,23 @@ internal abstract class NativeWorkerInstallationKernel:IDisposable {
  internal abstract byte[] Read(string name);internal abstract long MetadataBytes();internal abstract long WorkerBytes();internal abstract int WorkerCount();
  internal abstract void Acquire();internal abstract void Commit(string expectedHash,byte[] cipher);internal abstract void Release();internal abstract void Abandon();
  internal abstract string CreateWorker(string descriptorHash,byte[] bytes);internal abstract string VerifyWorker(string descriptorHash,string workerHash,long bytes,string identity);
- internal abstract byte[] Protect(byte[] bytes);internal abstract byte[] Unprotect(byte[] bytes);internal abstract string WorkerDirectory(string descriptorHash);
+ internal abstract byte[] Protect(byte[] bytes);internal abstract byte[] Unprotect(byte[] bytes);internal abstract string WorkerDirectory(string descriptorHash);internal abstract string WorkerDirectoryIdentity(string descriptorHash);
  public abstract void Dispose();
 }
 
 // 저장 알고리즘과 Windows 지원 판정을 분리한다. RAM kernel은 Windows 내구성 증명이 아니다.
 internal sealed class NativeWorkerInstallationStoreSource:IDisposable {
  const int MetadataMaximum=8388608;const long WorkerMaximum=1073741824;const int SingleMaximum=20971520;
- readonly NativeWorkerInstallationKernel io;readonly Action current;bool unknown,opened,busy;static readonly UTF8Encoding Utf8=new UTF8Encoding(false,true);
+ readonly NativeWorkerInstallationKernel io;readonly Action current;NormalInstalledImageSource normalImageSource;bool unknown,opened,busy;static readonly UTF8Encoding Utf8=new UTF8Encoding(false,true);
  internal NativeWorkerInstallationStoreSource(NativeWorkerInstallationKernel kernel,Action check){if(kernel==null||check==null)throw Invalid();io=kernel;current=check;}
+ internal sealed class NormalInstalledImageSource {
+  readonly NativeWorkerInstallationStoreSource owner;readonly string scopeJson,associationRefJson,rootId,workerHash,namespaceRootIdentity,directoryIdentity,fileIdentity;
+  private readonly string directory;readonly object gate=new object();OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate unresolvedImage;bool opened;
+  internal NormalInstalledImageSource(NativeWorkerInstallationStoreSource owner,string scopeJson,string associationRefJson,string rootId,string workerHash,string namespaceRootIdentity,string directoryIdentity,string fileIdentity,string directory){this.owner=owner;this.scopeJson=scopeJson;this.associationRefJson=associationRefJson;this.rootId=rootId;this.workerHash=workerHash;this.namespaceRootIdentity=namespaceRootIdentity;this.directoryIdentity=directoryIdentity;this.fileIdentity=fileIdentity;this.directory=directory;}
+  internal void CheckCurrent(){owner.CheckNormalInstalledImageSource(this);}
+  internal OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate OpenRetainedImageSource(int timeoutMs=1000){lock(gate){if(opened||unresolvedImage!=null||timeoutMs<1||timeoutMs>1000)throw Invalid();CheckCurrent();opened=true;OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate result=null;try{result=OwnershipEvidenceImageOwnerSource.OpenNormalSourceOnly(directory,associationRefJson,rootId,workerHash,namespaceRootIdentity,directoryIdentity,fileIdentity,timeoutMs);CheckCurrent();OwnershipEvidenceImageOwnerSource.ReadOriginalNormalSource(result,timeoutMs);CheckCurrent();return result;}catch{if(result!=null)try{result.Dispose();ReleaseAfterClose();}catch{unresolvedImage=result;throw;}throw;}}}
+  internal void ReleaseAfterClose(){lock(gate){if(unresolvedImage!=null)throw Invalid();owner.ReleaseNormalInstalledImageSource(this);}}
+ }
  static Exception Invalid(){return new InvalidOperationException("NATIVE_WORKER_INSTALLATION_UNKNOWN");}
  static string Hash(object v){return V.Hash(Utf8.GetBytes(V.Canonical(v,0)));}
  void Check(){if(unknown)throw Invalid();current();io.Check();}
@@ -75,6 +84,15 @@ internal sealed class NativeWorkerInstallationStoreSource:IDisposable {
   if(installed==null||V.Text(installed,"state")!="INSTALLED"||!V.Same(RowRef(installed),binding["installationRef"]))throw Invalid();var descriptor=V.Ref(binding["descriptorRef"],false);
   if(verifyWorker)io.VerifyWorker(V.Text(descriptor,"contentHash"),V.Text(binding,"workerHash"),V.Positive(installed["bytes"]),V.Text(installed,"fileIdentity"));Check();return binding;
  }
+ internal NormalInstalledImageSource ReadNormalInstalledImageSource(Dictionary<string,object> scope){
+  if(normalImageSource!=null)throw Invalid();
+  var binding=ReadNormalBinding(scope,false);var installed=Find(Read(),binding["factoryRef"]);if(installed==null||!V.Same(RowRef(installed),binding["installationRef"]))throw Invalid();var descriptor=V.Ref(binding["descriptorRef"],false);string descriptorHash=V.Text(descriptor,"contentHash");string directory=io.WorkerDirectory(descriptorHash),directoryIdentity=io.WorkerDirectoryIdentity(descriptorHash);
+  var result=new NormalInstalledImageSource(this,V.Canonical(scope,0),V.Canonical(NormalBindingRef(binding),0),V.Text(installed,"rootId"),V.Text(installed,"workerHash"),io.RootIdentity,directoryIdentity,V.Text(installed,"fileIdentity"),directory);normalImageSource=result;result.CheckCurrent();return result;
+ }
+ void ReleaseNormalInstalledImageSource(NormalInstalledImageSource source){if(!Object.ReferenceEquals(normalImageSource,source))throw Invalid();Check();normalImageSource=null;}
+ void CheckNormalInstalledImageSource(NormalInstalledImageSource source){
+  if(source==null)throw Invalid();var scope=DesktopTrustKeyHostSource.Parse(Utf8.GetBytes(source.scopeJson),false);var binding=ReadNormalBinding(scope,false);var installed=Find(Read(),binding["factoryRef"]);if(installed==null||!V.Same(RowRef(installed),binding["installationRef"])||V.Canonical(NormalBindingRef(binding),0)!=source.associationRefJson||V.Text(installed,"rootId")!=source.rootId||V.Text(installed,"workerHash")!=source.workerHash||V.Text(installed,"fileIdentity")!=source.fileIdentity||io.RootIdentity!=source.namespaceRootIdentity)throw Invalid();var descriptor=V.Ref(binding["descriptorRef"],false);string descriptorHash=V.Text(descriptor,"contentHash");if(io.WorkerDirectory(descriptorHash)!=source.directory||io.WorkerDirectoryIdentity(descriptorHash)!=source.directoryIdentity)throw Invalid();Check();
+ }
  static Dictionary<string,object> NormalResult(Dictionary<string,object> installed,Dictionary<string,object> binding){var value=Result(installed);value["state"]="NORMAL_START_WORKER_INSTALLED";value["associationRef"]=BindingRef(binding);return value;}
  internal static object NormalBindingRef(Dictionary<string,object> binding){return BindingRef(binding);}
  // 옛 설치의 소유 이력을 다시 쓰지 않는다. 새 명시 호출의 독립 package/current/file
@@ -91,7 +109,7 @@ internal sealed class NativeWorkerInstallationStoreSource:IDisposable {
  }
  static Dictionary<string,object> Result(Dictionary<string,object> r){return new Dictionary<string,object>{{"state","INSTALLED"},{"installationRef",new Dictionary<string,object>{{"id",r["installationId"]},{"version",r["revision"]},{"contentHash",Hash(r)}}},{"descriptorRef",r["descriptorRef"]},{"headRef",r["headRef"]},{"workerHash",r["workerHash"]}};}
  internal string ReadInstalled(Dictionary<string,object> bundle,Dictionary<string,object> head){Open(false);var d=V.Map(V.Map(bundle["descriptor"])["snapshot"]);var r=Find(Read(),d["nativeFactoryRef"]);if(r==null||V.Text(r,"state")!="INSTALLED"||!V.Same(r["bundle"],bundle)||!V.Same(r["headRef"],head["ref"]))throw Invalid();var descriptor=V.Ref(r["descriptorRef"],false);io.VerifyWorker(V.Text(descriptor,"contentHash"),V.Text(r,"workerHash"),V.Positive(r["bytes"]),V.Text(r,"fileIdentity"));Check();return io.WorkerDirectory(V.Text(descriptor,"contentHash"));}
- public void Dispose(){io.Dispose();}
+ public void Dispose(){if(normalImageSource!=null)throw Invalid();io.Dispose();}
 }
 
 internal sealed class WindowsNativeWorkerInstallationKernel:NativeWorkerInstallationKernel {
@@ -228,6 +246,7 @@ internal sealed class WindowsNativeWorkerInstallationKernel:NativeWorkerInstalla
  }
  internal override string VerifyWorker(string descriptorHash,string workerHash,long bytes,string identity){string p=Path.Combine(WorkerDirectory(descriptorHash),"OwnershipEvidenceWorker.exe");byte[] b=ReadPath(p,20971520);try{if(b.Length!=bytes||V.Hash(b)!=workerHash)throw Invalid();RequireFileIdentity(p,identity);Check();return identity;}finally{Array.Clear(b,0,b.Length);}}
  internal override string WorkerDirectory(string descriptorHash){Check();if(!System.Text.RegularExpressions.Regex.IsMatch(descriptorHash??"",@"\A[a-f0-9]{64}\z"))throw Invalid();ValidateRootEntries();string packages=Path.Combine(root.PathValue,"packages");RetainDirectory(packages);string directory=Path.Combine(packages,descriptorHash);RetainDirectory(directory);Check();return directory;}
+ internal override string WorkerDirectoryIdentity(string descriptorHash){string directory=WorkerDirectory(descriptorHash);var matches=directories.Where(x=>x.Item2.Path==directory).ToArray();if(matches.Length!=1)throw Invalid();var observed=roots.Observe(matches[0].Item1);if(!SameDirectory(matches[0].Item2,observed))throw Invalid();Check();return observed.Identity;}
  internal override byte[] Protect(byte[] bytes){Check();return ProtectedData.Protect(bytes,Entropy,DataProtectionScope.CurrentUser);}internal override byte[] Unprotect(byte[] bytes){Check();return ProtectedData.Unprotect(bytes,Entropy,DataProtectionScope.CurrentUser);}
  internal override void Release(){
   RequireDurability();var c=RequireCommittedContainer();string receipt=ContainerHash(c);var rows=((object[])c["rows"]).Select(V.Map).ToArray();var last=rows.Last();

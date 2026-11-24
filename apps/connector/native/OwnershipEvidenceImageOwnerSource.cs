@@ -77,6 +77,14 @@ namespace Anvil.Native.OwnershipEvidence
                     catch{throw Unavailable();}
                 }
             }
+            internal OwnershipEvidenceImageBindingSource.NormalImageBindingCandidate ReadNormal(string workerHash,string directoryIdentity,string fileIdentity,int timeoutMs)
+            {
+                lock(gate)
+                {
+                    try{Current();var result=OwnershipEvidenceImageBindingSource.ReadNormalInstalledSource(root,image,workerHash,directoryIdentity,fileIdentity,timeoutMs);Current();return result;}
+                    catch{throw Unavailable();}
+                }
+            }
             public void Dispose()
             {
                 lock(gate)
@@ -132,6 +140,43 @@ namespace Anvil.Native.OwnershipEvidence
                     if(failed)throw Unavailable();
                 }
             }
+        }
+        internal sealed class NormalImageObservation
+        {
+            internal readonly string Purpose="NORMAL_START_RETAINED_IMAGE_SOURCE_ONLY";
+            internal readonly string AssociationRefJson,RootId,WorkerHash,NamespaceRootIdentity,DirectoryIdentity,FileIdentity;
+            internal readonly DateTime ObservedFrom,ObservedAt;
+            internal bool OsOwnershipVerified{get{return false;}}
+            internal bool PreparationAuthorized{get{return false;}}
+            internal bool ExecutionAuthorized{get{return false;}}
+            internal bool DispatchPerformed{get{return false;}}
+            internal NormalImageObservation(string associationRefJson,string rootId,string workerHash,string namespaceRootIdentity,string directoryIdentity,string fileIdentity,DateTime from,DateTime at){AssociationRefJson=associationRefJson;RootId=rootId;WorkerHash=workerHash;NamespaceRootIdentity=namespaceRootIdentity;DirectoryIdentity=directoryIdentity;FileIdentity=fileIdentity;ObservedFrom=from;ObservedAt=at;}
+        }
+        internal interface INormalRetainedImageCandidate:IDisposable
+        {
+            NormalImageObservation ReadCurrent(int timeoutMs=1000);
+        }
+        private sealed class NormalImageOwner:INormalRetainedImageCandidate
+        {
+            readonly object gate=new object();readonly ImageOwner original;readonly string associationRefJson,rootId,workerHash,namespaceRootIdentity,directoryIdentity,fileIdentity;readonly DateTime created;readonly Stopwatch age;bool disposed,closeAttempted,cleanupUnknown;
+            internal NormalImageOwner(ImageOwner original,string associationRefJson,string rootId,string workerHash,string namespaceRootIdentity,string directoryIdentity,string fileIdentity,DateTime created,Stopwatch age){this.original=original;this.associationRefJson=associationRefJson;this.rootId=rootId;this.workerHash=workerHash;this.namespaceRootIdentity=namespaceRootIdentity;this.directoryIdentity=directoryIdentity;this.fileIdentity=fileIdentity;this.created=created;this.age=age;}
+            public NormalImageObservation ReadCurrent(int timeoutMs=1000){lock(gate){if(disposed||timeoutMs<1||timeoutMs>1000||DateTime.UtcNow<created||age.ElapsedMilliseconds>=10000)throw Unavailable();var binding=original.ReadNormal(workerHash,directoryIdentity,fileIdentity,timeoutMs);if(DateTime.UtcNow<created||age.ElapsedMilliseconds>=10000)throw Unavailable();return new NormalImageObservation(associationRefJson,rootId,workerHash,namespaceRootIdentity,directoryIdentity,fileIdentity,binding.ObservedFrom,binding.ObservedAt);}}
+            public void Dispose(){lock(gate){if(disposed)return;if(closeAttempted||cleanupUnknown)throw Unavailable();closeAttempted=true;try{original.Dispose();disposed=true;}catch{cleanupUnknown=true;throw Unavailable();}}}
+        }
+        internal static NormalImageObservation ReadOriginalNormalSource(INormalRetainedImageCandidate candidate,int timeoutMs=1000)
+        {
+            var original=candidate as NormalImageOwner;if(original==null)throw Unavailable();return original.ReadCurrent(timeoutMs);
+        }
+        // path는 이 private creation callback에만 들어오며 반환 owner/observation에는 포함하지 않는다.
+        internal static INormalRetainedImageCandidate OpenNormalSourceOnly(string directory,string associationRefJson,string rootId,string workerHash,string namespaceRootIdentity,string directoryIdentity,string fileIdentity,int timeoutMs=1000)
+        {
+            ImageOwner original=null;NormalImageOwner owned=null;
+            try
+            {
+                if(timeoutMs<1||timeoutMs>1000||string.IsNullOrEmpty(associationRefJson)||string.IsNullOrEmpty(rootId)||string.IsNullOrEmpty(workerHash)||string.IsNullOrEmpty(namespaceRootIdentity)||string.IsNullOrEmpty(directoryIdentity)||string.IsNullOrEmpty(fileIdentity))throw Unavailable();
+                DateTime created=DateTime.UtcNow;var age=Stopwatch.StartNew();original=OpenSourceOnly(directory) as ImageOwner;if(original==null)throw Unavailable();owned=new NormalImageOwner(original,associationRefJson,rootId,workerHash,namespaceRootIdentity,directoryIdentity,fileIdentity,created,age);original=null;return owned;
+            }
+            catch{if(owned!=null)owned.Dispose();else if(original!=null)original.Dispose();throw Unavailable();}
         }
     }
 }
