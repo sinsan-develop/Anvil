@@ -23,10 +23,21 @@ internal sealed class DesktopTrustKeyHostSource {
  readonly Func<DesktopTrustKeyRootSource,string,Dictionary<string,object>,long,NormalStartPreparationResultSlot> normalStartResultSource;
  // 실제 normal 물리 source가 존재할 때만 준비 전 소진을 연결한다. JS 입력/Boolean으로 공급하지 않는다.
  internal abstract class NormalStartPreparationProducer:IDisposable {
+  // 원 producer가 이미 확정한 비효과 거절만 전달한다. 예외 문자열/지원 여부/임의 Boolean은 이 형식을 만들 수 없다.
+  internal sealed class ConfirmedRejectedObservation {
+   readonly Dictionary<string,object> evidence;readonly Action current;
+   // 현재 제품에는 이 ctor를 호출하는 보호 producer가 없다. 실제 원 snapshot reader가 연결될 때만 같은 enclosing source 안에서 개방한다.
+   private ConfirmedRejectedObservation(Dictionary<string,object> value,Action check){evidence=value;current=check;}
+   internal Dictionary<string,object> Evidence { get {return Copy(evidence);} }
+   internal void CheckCurrent(){current();}
+  }
   // 동기 local 원 소유/current 검산만 한다. profile lock 안에서 네트워크/별도 원장 재진입을 하지 않는다.
   internal abstract void CheckReady(DesktopTrustKeyRootSource originalRoot,Dictionary<string,object> originalRecord,Dictionary<string,object> window,Dictionary<string,object> session,Dictionary<string,object> request,long epoch);
-  readonly object gate=new object();NormalExecutionSpoolProfileSource.NormalStartPreparationClaimMaterial material;OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationCandidate input;OwnershipEvidenceJobFactorySource.IEmptyJobCandidate job;OwnershipEvidenceJobFactorySource.IAtomicJobAssignmentCandidate assignment;OwnershipEvidenceJobFactorySource.ISuspendedStartupCandidate startup;OwnershipEvidenceJobFactorySource.INormalSuspendedProcessCandidate process;OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image;string localProcessId;long localProcessGeneration;bool used,processOwnerStarted,cleanupAttempted,cleanupUnknown,disposed;
-  internal void CreateOwned(NormalExecutionSpoolProfileSource.NormalStartPreparationClaimCapability claim,NativeWorkerDeploymentSource.NormalRetainedImageSource retained,Dictionary<string,object> record,Dictionary<string,object> request,Dictionary<string,object> imageMaterial,Func<int> remaining,Action current){lock(gate){if(used||cleanupUnknown||disposed)throw Invalid();if(claim==null||retained==null||record==null||request==null||imageMaterial==null||remaining==null||current==null)throw Invalid();used=true;Func<int> left=()=>{current();int value=remaining();if(value<1||value>2000)throw Invalid();return value;};try{material=claim.Consume(record,request,imageMaterial,current);current();localProcessId=Guid.NewGuid().ToString("D");localProcessGeneration=1;input=OwnershipEvidenceWorkerInputSource.BuildNormalStartSource(material.ImageRef,material.RequestRef,material.NativeClaimRef,localProcessId,localProcessGeneration,material.ExpiresAt);image=retained.TransferToFactory(Math.Min(1000,left()));job=OwnershipEvidenceJobFactorySource.CreateEmptyJobSource(left());assignment=OwnershipEvidenceJobFactorySource.PrepareAtomicJobAssignmentSource(job,left());startup=OwnershipEvidenceJobFactorySource.PrepareSuspendedStartupSource(assignment,left());OwnershipEvidenceJobFactorySource.BindNormalStartWorkerInvocationSource(startup,input,Math.Min(2000,left()));process=OwnershipEvidenceJobFactorySource.CreateNormalSuspendedProcessSource(startup,image,Math.Min(2000,left()));processOwnerStarted=true;image=null;OwnershipEvidenceJobFactorySource.ReadOriginalNormalSuspendedProcessSource(process,Math.Min(2000,left()));current();}catch{try{Dispose();}catch{throw;}throw;}}}
+  // 기본 native producer에는 확정 거절 원자료가 없다. Windows 미지원/미구성/timeout은 거절로 승격하지 않는다.
+  internal ConfirmedRejectedObservation ReadConfirmedRejected(DesktopTrustKeyRootSource originalRoot,Dictionary<string,object> originalRecord,Dictionary<string,object> window,Dictionary<string,object> session,Dictionary<string,object> request,long epoch,NormalExecutionSpoolProfileSource.NormalStartPreparationClaimMaterial claim,Action current){return null;}
+  readonly object gate=new object();NormalExecutionSpoolProfileSource.NormalStartPreparationClaimMaterial material;OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationCandidate input;OwnershipEvidenceJobFactorySource.IEmptyJobCandidate job;OwnershipEvidenceJobFactorySource.IAtomicJobAssignmentCandidate assignment;OwnershipEvidenceJobFactorySource.ISuspendedStartupCandidate startup;OwnershipEvidenceJobFactorySource.INormalSuspendedProcessCandidate process;OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image;string localProcessId;long localProcessGeneration;bool claimConsumed,used,processOwnerStarted,cleanupAttempted,cleanupUnknown,disposed;
+  internal NormalExecutionSpoolProfileSource.NormalStartPreparationClaimMaterial ConsumeClaim(NormalExecutionSpoolProfileSource.NormalStartPreparationClaimCapability claim,Dictionary<string,object> record,Dictionary<string,object> request,Dictionary<string,object> imageMaterial,Action current){lock(gate){if(claimConsumed||used||disposed||cleanupUnknown||claim==null)throw Invalid();material=claim.Consume(record,request,imageMaterial,current);claimConsumed=true;return material;}}
+  internal void CreateOwned(NormalExecutionSpoolProfileSource.NormalStartPreparationClaimMaterial consumed,NativeWorkerDeploymentSource.NormalRetainedImageSource retained,Dictionary<string,object> record,Dictionary<string,object> request,Dictionary<string,object> imageMaterial,Func<int> remaining,Action current){lock(gate){if(used||cleanupUnknown||disposed)throw Invalid();if(!claimConsumed||!Object.ReferenceEquals(consumed,material)||consumed==null||retained==null||record==null||request==null||imageMaterial==null||remaining==null||current==null)throw Invalid();used=true;Func<int> left=()=>{current();int value=remaining();if(value<1||value>2000)throw Invalid();return value;};try{current();localProcessId=Guid.NewGuid().ToString("D");localProcessGeneration=1;input=OwnershipEvidenceWorkerInputSource.BuildNormalStartSource(material.ImageRef,material.RequestRef,material.NativeClaimRef,localProcessId,localProcessGeneration,material.ExpiresAt);image=retained.TransferToFactory(Math.Min(1000,left()));job=OwnershipEvidenceJobFactorySource.CreateEmptyJobSource(left());assignment=OwnershipEvidenceJobFactorySource.PrepareAtomicJobAssignmentSource(job,left());startup=OwnershipEvidenceJobFactorySource.PrepareSuspendedStartupSource(assignment,left());OwnershipEvidenceJobFactorySource.BindNormalStartWorkerInvocationSource(startup,input,Math.Min(2000,left()));process=OwnershipEvidenceJobFactorySource.CreateNormalSuspendedProcessSource(startup,image,Math.Min(2000,left()));processOwnerStarted=true;image=null;OwnershipEvidenceJobFactorySource.ReadOriginalNormalSuspendedProcessSource(process,Math.Min(2000,left()));current();}catch{try{Dispose();}catch{throw;}throw;}}}
   public void Dispose(){lock(gate){if(disposed)return;if(cleanupAttempted||cleanupUnknown)throw Invalid();cleanupAttempted=true;try{if(job!=null){job.Dispose();if(!processOwnerStarted&&image!=null)image.Dispose();job=null;assignment=null;startup=null;process=null;image=null;}else if(image!=null){image.Dispose();image=null;}disposed=true;}catch{cleanupUnknown=true;throw Invalid();}}}
  }
  readonly NormalStartPreparationProducer normalStartPreparationProducer;
@@ -47,7 +58,7 @@ internal sealed class DesktopTrustKeyHostSource {
   // process-local bool/기존 native delivery nonce는 이 근거를 대체할 수 없다.
   internal abstract void ClaimOnce(string slotHash,string proofHash);
   internal abstract void CheckClaim(string slotHash,string proofHash);
-  internal abstract void ConfirmSigned(string slotHash,string proofHash);
+  internal abstract void ConfirmSigned(string slotHash,string proofHash,Dictionary<string,object> signedPacket);
   internal abstract void PreserveUnknown();
  }
  readonly Dictionary<string,Dictionary<string,object>> issueProofs=new Dictionary<string,Dictionary<string,object>>();readonly HashSet<string> issueSigned=new HashSet<string>(),credentialStarted=new HashSet<string>(),credentialMatched=new HashSet<string>();readonly Dictionary<string,Dictionary<string,object>> credentialResults=new Dictionary<string,Dictionary<string,object>>();
@@ -392,18 +403,22 @@ internal sealed class DesktopTrustKeyHostSource {
    bool consumerStarted=false;NativeWorkerDeploymentSource.NormalRetainedImageSource retained=null;try{
     retained=workerDeployment.AcquireNormalImageForPreparation(NormalWorkerScope(record,null));consumerStarted=true;ready();var image=retained.ReadClaimImage(Math.Min(1000,call.Remaining()));
     var claim=spoolProfile.ClaimNormalStartPreparation(record,request,image,epoch,()=>call.Now,()=>{ready();retained.ReadCurrent(Math.Min(1000,call.Remaining()));});ready();
-    if(claim.Capability==null)return claim.Output;
-    normalStartPreparationProducer.CreateOwned(claim.Capability,retained,record,request,image,()=>call.Remaining(),ready);retained=null;return claim.Output;
+     if(claim.Capability==null)return claim.Output;
+     var material=normalStartPreparationProducer.ConsumeClaim(claim.Capability,record,request,image,ready);ready();
+     var rejected=normalStartPreparationProducer.ReadConfirmedRejected(root,record,window,session,request,epoch,material,ready);ready();
+     if(rejected!=null){spoolProfile.RecordConfirmedRejected(root,record,window,session,request,epoch,material,rejected,()=>call.Now,ready);return claim.Output;}
+     normalStartPreparationProducer.CreateOwned(material,retained,record,request,image,()=>call.Remaining(),ready);retained=null;return claim.Output;
    }catch(NativeWorkerDeploymentSource.NormalImageNotStartedException){if(!consumerStarted)return new Dictionary<string,object>{{"state","SOURCE_UNAVAILABLE"}};unknown=true;throw;}catch{unknown=true;throw;}finally{if(retained!=null)retained.Dispose();}
   }
   if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1"){
    Exact(value,"attemptId,slotRef,requestRef,contextEpoch");string attempt=Id(value,"attemptId");var selector=ReceiveRef(value["slotRef"],true);var requestRef=ReceiveRef(value["requestRef"],true);long epoch=Positive(value["contextEpoch"]);
-   if(normalStartResultSource==null)return new Dictionary<string,object>{{"state","SOURCE_UNAVAILABLE"}};
+    if(normalStartResultSource==null&&spoolProfile==null)return new Dictionary<string,object>{{"state","SOURCE_UNAVAILABLE"}};
    if(normalAttempt!=null&&normalAttempt!=attempt)throw Invalid();normalAttempt=attempt;
    var record=NormalRecord();var credential=Map(record["credential"]);if(Text(credential,"storageState")!="STORED")throw Invalid();
    // existing-only lookup이다. 여기에서 준비 객체/실패 영수증/새 slot을 발급하지 않는다.
     string recordHash=Hash(Encoding.UTF8.GetBytes(Canonical(record,0)));DateTime resultEnd=new[]{Time(credential,"expiresAt"),Time(Map(record["registration"]),"registrationExpiresAt")}.Min();var call=budget.Slice(resultEnd,2000);Action resultCurrent=()=>{Check();call.Check();if(Hash(Encoding.UTF8.GetBytes(Canonical(NormalRecord(),0)))!=recordHash)throw Invalid();};
-    var slot=normalStartResultSource(root,attempt,selector,epoch);resultCurrent();
+     NormalStartPreparationResultSlot slot=spoolProfile==null?null:spoolProfile.ReadConfirmedRejectedResultSlot(root,record,attempt,selector,epoch,()=>call.Now,resultCurrent);
+     if(slot==null&&normalStartResultSource!=null)slot=normalStartResultSource(root,attempt,selector,epoch);resultCurrent();
    if(slot==null)return new Dictionary<string,object>{{"state","SOURCE_UNAVAILABLE"}};
    var permit=new NormalStartResultPermit(slot,root,record,requestRef,selector,epoch,()=>call.Now,resultCurrent);call.Tighten(permit.ExpiresAt,call.Remaining());call.Check();
    try{permit.ClaimOnce();string signature=ProtectedStore.SignNormalStartPreparationResultOwned(root,Id(record,"pendingKeyId"),permit,()=>call.Remaining(),resultCurrent);resultCurrent();return permit.Finish(signature);}catch{permit.PreserveUnknown();throw;}
@@ -503,7 +518,7 @@ internal sealed class DesktopTrustKeyHostSource {
   internal byte[] ProofBytes(){Check(true);var bytes=Encoding.UTF8.GetBytes(Canonical(proof,0));if(bytes.Length>8192)throw Invalid();return bytes;}
   internal string Fingerprint { get {return fingerprint;} }
   Dictionary<string,object> Output(string signature){return new Dictionary<string,object>{{"state","NORMAL_START_PREPARATION_RESULT_SIGNED"},{"slotRef",Copy(selector)},{"requestRef",Copy(result["requestRef"])},{"result",Copy(result)},{"proof",Copy(proof)},{"signature",signature}};}
-  internal Dictionary<string,object> Finish(string signature){Check(true);if(!System.Text.RegularExpressions.Regex.IsMatch(signature,@"\A[A-Za-z0-9_-]{85}[AQgw]\z"))throw Invalid();slot.ConfirmSigned(slotHash,proofHash);Check(true);var answer=Output(signature);finished=true;return answer;}
+   internal Dictionary<string,object> Finish(string signature){Check(true);if(!System.Text.RegularExpressions.Regex.IsMatch(signature,@"\A[A-Za-z0-9_-]{85}[AQgw]\z"))throw Invalid();var answer=Output(signature);slot.ConfirmSigned(slotHash,proofHash,answer);Check(true);finished=true;return answer;}
   internal void PreserveUnknown(){if(attempted&&!finished){finished=true;try{slot.PreserveUnknown();}catch{}}}
  }
  internal static Dictionary<string,object> ValidateFirstReceiveFrame(Dictionary<string,object> frame,Dictionary<string,object> record,string helperHash,DateTime now){

@@ -135,6 +135,51 @@ test('normal durable FIRST readback만 비직렬 단회 capability를 발급하�
  assert.match(resultBranch,/var call=budget\.Slice\([^;]+,2000\)/);assert.doesNotMatch(resultBranch,/budget\.Tighten\(/);assert.match(resultBranch,/call\.Remaining\(\)/);
 });
 
+test('normal 확정 거절은 원 claim의 effect0 회수 증거만 durable slot으로 단회 승격한다',()=>{
+ const spool=read('NormalExecutionSpoolProfileSource.cs'),host=read('DesktopTrustKeyHostSource.cs');
+ assert.match(host,/internal sealed class ConfirmedRejectedObservation/);
+ assert.match(host,/private ConfirmedRejectedObservation\(/);
+ assert.match(host,/internal ConfirmedRejectedObservation ReadConfirmedRejected\([^)]*\)\{return null;\}/);
+ assert.doesNotMatch(host,/ReadConfirmedRejected\([^)]*(?:bool|string)\s+(?:rejected|error|message)/);
+ const claim=host.slice(host.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'));
+ assert.match(claim,/var material=normalStartPreparationProducer\.ConsumeClaim\(claim\.Capability/);
+ assert.ok(claim.indexOf('ReadConfirmedRejected')<claim.indexOf('CreateOwned'));
+ assert.match(claim,/RecordConfirmedRejected\(root,record,window,session,request,epoch,material,rejected/);
+ assert.doesNotMatch(claim,/catch\([^)]*(?:Exception|TimeoutException)[^)]*\)[\s\S]*RecordConfirmedRejected/);
+ assert.match(spool,/NORMAL_START_PREPARATION_REJECTED_AVAILABLE/);
+ assert.match(spool,/NORMAL_START_PREPARATION_SIGN_CLAIMED/);
+ assert.match(spool,/NORMAL_START_PREPARATION_SIGNED_CONFIRMED/);
+ assert.match(spool,/private sealed class DurableNormalStartPreparationResultSlot:DesktopTrustKeyHostSource\.NormalStartPreparationResultSlot/);
+ assert.match(spool,/effectState[^\n]*NONE_CONFIRMED/);
+ assert.match(spool,/cleanupState[^\n]*CLOSED_CONFIRMED/);
+ assert.match(spool,/reasonCode[^\n]*NORMAL_START_PREPARATION_REJECTED/);
+ assert.match(spool,/scopeHash[^\n]*RejectionScope\(request\)/);
+ assert.doesNotMatch(spool,/"record",C\(record\)/);
+ assert.doesNotMatch(spool,/"PREPARED"|preparationBasis",R\(/);
+ const durable=spool.slice(spool.indexOf('private sealed class DurableNormalStartPreparationResultSlot'));
+ assert.match(durable,/ClaimOnce[\s\S]*Append[\s\S]*SignClaimed/);
+ assert.match(durable,/ConfirmSigned[\s\S]*signedPacket[\s\S]*SignedConfirmed/);
+ assert.match(durable,/PreserveUnknown[\s\S]*ResultUnknown/);
+ assert.match(durable,/Log\(false[\s\S]*J\(saved\["signedPacket"\]\)!=J\(packet\)/);
+ const history=spool.slice(spool.indexOf('internal Row ReadConfirmedRejectedPacketHistory('),spool.indexOf('private sealed class DurableNormalStartPreparationResultSlot'));
+ assert.match(history,/SignedConfirmed[\s\S]*signedPacket/);assert.doesNotMatch(history,/Append\(|SignNormal|Guid\.NewGuid|Id\(\)/);
+});
+
+test('새 normal claim은 결과 3단계 최악 공간을 예약하고 각 durable append가 같은 예약을 소비한다',()=>{
+ const spool=read('NormalExecutionSpoolProfileSource.cs');
+ assert.match(spool,/NormalResultEntryWorst=MaxEntry\+36L/);
+ assert.match(spool,/NormalResultWorst=3\*NormalResultEntryWorst/);
+ const validation=spool.slice(spool.indexOf('static void ValidateNormalPreparationClaims('),spool.indexOf('// 같은 원 등록'));
+ assert.match(validation,/ContainsKey\("resultReservation"\)/);assert.match(validation,/N\(r\["resultReservation"\]\)!=NormalResultWorst/);
+ const claim=spool.slice(spool.indexOf('internal NormalStartPreparationClaimCommit ClaimNormalStartPreparation('),spool.indexOf('const string RejectedAvailable'));
+ assert.match(claim,/"resultReservation",NormalResultWorst/);
+ assert.ok(claim.indexOf('var back=Log(false')<claim.indexOf('new DurableNormalStartPreparationClaimCapability'));
+ const hold=spool.slice(spool.indexOf('long ManagementHold('),spool.indexOf('void Append('));
+ assert.match(hold,/resultReservation/);assert.match(hold,/RejectedAvailable/);assert.match(hold,/SignClaimed/);assert.match(hold,/SignedConfirmed/);assert.match(hold,/ResultUnknown/);
+ assert.match(hold,/remainingStages\*NormalResultEntryWorst/);
+ assert.match(hold,/AdminHold/); // marker 없는 기존 claim의 판독·기존 8KiB hold 보존
+});
+
 test('retained image lease는 claim metadata와 opaque owner를 같은 관측에서 결박하고 path·bytes를 노출하지 않는다',()=>{
  const deployment=read('NativeWorkerDeploymentSource.cs'),lease=deployment.slice(deployment.indexOf('internal sealed class NormalRetainedImageSource'),deployment.indexOf('private sealed class NormalTransferredImageSource'));
  assert.match(lease,/readonly Dictionary<string,object> claimImage/);assert.match(lease,/internal Dictionary<string,object> ReadClaimImage\(int timeoutMs=1000\)/);

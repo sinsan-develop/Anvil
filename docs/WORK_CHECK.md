@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 확정 거절 보관** — 원 요청의 서명 전·후 저장과 불명 보존의 소스를 연결했다. 기존 총 한도 안에서 후행 저장을 선점하며, 집중 163/163을 확인했다. 실제 무효과·회수 관측의 생산자와 PREPARED/queue는 미완료다.
+
 - **FN08 같은 helper의 준비·결과·정리** — 같은 등록 operation으로 준비부터 결과·확정 닫기까지 조립했다. Main 217/217, desktop 타입·구문 통과. 합성 REJECTED 저장까지 확인했고 실제 보호 결과 producer·Windows·PREPARED/queue는 미완료다.
 
 - **FN08 새 claim과 native Job 연결** — 보호 원장의 새 단회 claim만 원 image·Job·startup·process 소스로 이어지도록 조립했다. Main 172/172, 독립 C0/I0. 실제 Windows/Job 검증, 등록 앱의 동일 host 보유, 결과 인계·queue는 미완료다.
