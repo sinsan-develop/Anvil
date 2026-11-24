@@ -215,6 +215,25 @@ internal sealed class NormalExecutionSpoolProfileSource {
   });
  }
  const string NormalPreparationClaim="NORMAL_START_PREPARATION_CLAIM_V1";
+ internal sealed class NormalStartPreparationClaimMaterial {
+  internal readonly Row ImageRef,RequestRef,NativeClaimRef;internal readonly DateTime ExpiresAt;
+  internal NormalStartPreparationClaimMaterial(Row image,Row request,Row claim,DateTime end){ImageRef=image;RequestRef=request;NativeClaimRef=claim;ExpiresAt=end;}
+ }
+ internal abstract class NormalStartPreparationClaimCapability {
+  protected NormalStartPreparationClaimCapability(){}
+  internal NormalStartPreparationClaimMaterial Consume(Row record,Row request,Row image,Action current){var exact=this as DurableNormalStartPreparationClaimCapability;if(exact==null)throw Invalid();return exact.ConsumeExact(record,request,image,current);}
+ }
+ private sealed class DurableNormalStartPreparationClaimCapability:NormalStartPreparationClaimCapability {
+  readonly object gate=new object();readonly string recordJson,requestJson,imageJson;readonly Row requestRef,nativeClaimRef,imageRef;readonly DateTime expiresAt;readonly Func<DateTime> now;readonly Action originalCurrent;bool consumed;
+  internal DurableNormalStartPreparationClaimCapability(Row record,Row request,Row image,Row back,Func<DateTime> clock,Action current){recordJson=J(record);requestJson=J(request);imageJson=J(image);requestRef=C(DesktopTrustKeyHostSource.Map(back["requestRef"]));nativeClaimRef=EvidenceRef(S(back,"id"),back);imageRef=C(DesktopTrustKeyHostSource.Map(back["imageAssociationRef"]));expiresAt=DesktopTrustKeyHostSource.Time(back,"expiresAt");now=clock;originalCurrent=current;}
+  internal NormalStartPreparationClaimMaterial ConsumeExact(Row record,Row request,Row image,Action current){lock(gate){if(consumed)throw Invalid();consumed=true;}if(record==null||request==null||image==null||current==null)throw Invalid();current();originalCurrent();DateTime at=now();if(J(record)!=recordJson||J(request)!=requestJson||J(image)!=imageJson||at<DesktopTrustKeyHostSource.Time(request,"issuedAt")||at>=expiresAt)throw Invalid();originalCurrent();current();return new NormalStartPreparationClaimMaterial(C(imageRef),C(requestRef),C(nativeClaimRef),expiresAt);}
+ }
+ internal sealed class NormalStartPreparationClaimCommit {
+  internal readonly Row Output;internal readonly NormalStartPreparationClaimCapability Capability;
+  internal NormalStartPreparationClaimCommit(Row output,NormalStartPreparationClaimCapability capability){Output=output;Capability=capability;}
+  internal static NormalStartPreparationClaimCommit Unavailable(){return new NormalStartPreparationClaimCommit(R("state","SOURCE_UNAVAILABLE"),null);}
+ }
+ static Row C(Row value){return DesktopTrustKeyHostSource.Parse(Encoding.UTF8.GetBytes(J(value)),false);}
  static string NormalClaimKey(Row row){return H(R("registration",row["registration"],"requestRef",row["requestRef"],"serverClaimRef",row["serverClaimRef"],"imageHash",row["imageHash"],"nonceDigest",row["nonceDigest"],"contextEpoch",row["contextEpoch"]));}
  static void ValidateNormalPreparationClaims(List<Row> rows){
   var nonces=new HashSet<string>();var requests=new HashSet<string>();var claims=new HashSet<string>();var commands=new HashSet<string>();var ids=new HashSet<string>();var registered=new HashSet<string>(rows.Where(r=>S(r,"kind")=="REGISTERED").Select(r=>S(r,"key")));
@@ -228,7 +247,7 @@ internal sealed class NormalExecutionSpoolProfileSource {
  }
  // 같은 원 등록/요청의 생성 전 단회 소진이다. RESERVED/old journal과 별개이며 PREPARED/실행 허가가 아니다.
  // 기존 관리 총량 안에 실제 row와 후행 terminal용 AdminHold를 모두 남긴다. terminal producer는 아직 없다.
- internal Row ClaimNormalStartPreparation(Row record,Row request,Row image,long epoch,Func<DateTime> now,Action imageCurrent){
+ internal NormalStartPreparationClaimCommit ClaimNormalStartPreparation(Row record,Row request,Row image,long epoch,Func<DateTime> now,Action imageCurrent){
   if(record==null||request==null||image==null||now==null||imageCurrent==null||epoch<1)throw Invalid();DesktopTrustKeyBindingStoreSource.Record(record);if(S(record,"state")!="REGISTERED"||S(image,"state")!="NORMAL_START_WORKER_IMAGE_VERIFIED")throw Invalid();
   var requestRef=EvidenceRef(DesktopTrustKeyHostSource.ReceiveId(request,"requestId"),request);var serverClaim=DesktopTrustKeyHostSource.ReceiveRef(request["claimRef"],true);var association=DesktopTrustKeyHostSource.ReceiveRef(image["associationRef"],true);string registration=H(record),materials=J(new object[]{record,request,image,epoch});string nonceDigest=H(R("purpose","NORMAL_START_PREPARATION_NONCE_V1","nonce",request["serverNonce"]));bool appendStarted=false;Row expected=null;bool first=false;
   Action check=()=>{Check();imageCurrent();if(materials!=J(new object[]{record,request,image,epoch})||now()<DesktopTrustKeyHostSource.Time(request,"issuedAt")||now()>=DesktopTrustKeyHostSource.Time(request,"expiresAt"))throw Invalid();};
@@ -241,8 +260,8 @@ internal sealed class NormalExecutionSpoolProfileSource {
    });
    // 재개 때도 DPAPI·원 파일/anchor·순번/hash/모든 기존 소진을 다시 읽는다. 같은 요청의 새 id/재생성은 없다.
    var back=Log(false,(log,rows)=>{check();var matches=rows.Where(r=>S(r,"kind")==NormalPreparationClaim&&S(r,"id")==S(expected,"id")).ToArray();if(matches.Length!=1||J(matches[0])!=J(expected))throw Invalid();return matches[0];});check();
-   return R("state",first?"NORMAL_START_PREPARATION_CLAIMED":"NORMAL_START_PREPARATION_REPLAY_ONLY","requestRef",requestRef,"nativeClaimRef",EvidenceRef(S(back,"id"),back),"creationAuthorized",false,"executionAuthorized",false,"dispatchPerformed",false);
-  }catch(SpoolCapacityException){if(appendStarted){blocked=true;throw Invalid();}return R("state","SOURCE_UNAVAILABLE");}catch{if(appendStarted)blocked=true;throw;}
+    var output=R("state",first?"NORMAL_START_PREPARATION_CLAIMED":"NORMAL_START_PREPARATION_REPLAY_ONLY","requestRef",requestRef,"nativeClaimRef",EvidenceRef(S(back,"id"),back),"creationAuthorized",false,"executionAuthorized",false,"dispatchPerformed",false);NormalStartPreparationClaimCapability capability=first?new DurableNormalStartPreparationClaimCapability(record,request,image,back,now,imageCurrent):null;return new NormalStartPreparationClaimCommit(output,capability);
+   }catch(SpoolCapacityException){if(appendStarted){blocked=true;throw Invalid();}return NormalStartPreparationClaimCommit.Unavailable();}catch{if(appendStarted)blocked=true;throw;}
  }
  static Row EvidenceRef(string id,Row fact){return R("id",id,"version",1,"contentHash",H(fact));}
  static Row OutputScope(Row raw,List<Row> rows,Row alloc,Row record,Row slot){

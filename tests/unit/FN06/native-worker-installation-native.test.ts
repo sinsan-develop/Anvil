@@ -81,9 +81,9 @@ test('명시 normal 설치는 기존 INSTALLED를 바꾸지 않고 새 검산 �
 test('native 원 pinned peer 입력은 동일 등록을 검산하고 physical producer 부재에서 claim/image/OS0이다',()=>{
  const h=read('DesktopTrustKeyHostSource.cs'),start=h.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),end=h.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")',start);assert(start>=0&&end>start);const body=h.slice(start,end);
  assert.match(body,/attemptId,window,session,request,contextEpoch/);assert.match(body,/NormalRecord\(\)/);assert.match(body,/SOURCE_UNAVAILABLE/);
- assert.ok(body.indexOf('normalStartPreparationProducer==null')<body.indexOf('WithNormalImageForPreparation'));assert.match(body,/NormalStartRequest\(record,window,session,request,wall\(\)\)/);assert.match(body,/ClaimNormalStartPreparation\(record,request,image/);
+ assert.ok(body.indexOf('normalStartPreparationProducer==null')<body.indexOf('AcquireNormalImageForPreparation'));assert.match(body,/NormalStartRequest\(record,window,session,request,wall\(\)\)/);assert.match(body,/ClaimNormalStartPreparation\(record,request,image/);
  assert.match(body,/consumerStarted=false/);assert.match(body,/catch\(NativeWorkerDeploymentSource.NormalImageNotStartedException\)/);assert.match(body,/if\(!consumerStarted\)return/);
- assert.doesNotMatch(body,/ClaimOnce|ReservePreparation|\.Append\(|CreateSuspended|SignNormal|ServerCertificateValidationCallback/);
+ assert.doesNotMatch(body,/ClaimOnce|ReservePreparation|\.Append\(|SignNormal|ServerCertificateValidationCallback/);
  const image=read('NativeWorkerDeploymentSource.cs');assert.match(image,/storage.GetType\(\)==typeof\(WindowsNativeWorkerInstallationKernel\)/);assert.match(image,/var value=consume\(result,Bound\);Bound\(\)/);
 });
 
@@ -116,4 +116,26 @@ test('normal retained image current는 namespace와 descriptor directory를 구�
  assert.equal((retained.match(/source\.ReleaseAfterClose\(\)/g)||[]).length,2);assert.match(retained,/internal NormalTransferredImageSource\(/);
  const installed=read('NativeWorkerInstallationStoreSource.cs'),normalSource=installed.slice(installed.indexOf('internal sealed class NormalInstalledImageSource'),installed.indexOf('static Exception Invalid()'));
  assert.match(installed,/NormalInstalledImageSource normalImageSource/);assert.match(normalSource,/INormalRetainedImageCandidate unresolvedImage/);assert.match(normalSource,/opened=true/);assert.match(normalSource,/catch\{unresolvedImage=result;throw;\}/);assert.match(installed,/if\(normalImageSource!=null\)throw Invalid\(\)/);assert.match(installed,/Check\(\);normalImageSource=null/);assert.doesNotMatch(owner.slice(owner.indexOf('internal static INormalRetainedImageCandidate OpenNormalSourceOnly(')),/owned\.ReadCurrent/);
+});
+
+test('normal durable FIRST readback만 비직렬 단회 capability를 발급하고 replay와 UNKNOWN은 조립 권위를 얻지 않는다',()=>{
+ const spool=read('NormalExecutionSpoolProfileSource.cs'),host=read('DesktopTrustKeyHostSource.cs');
+ const begin=spool.indexOf('internal NormalStartPreparationClaimCommit ClaimNormalStartPreparation('),claim=spool.slice(begin,spool.indexOf('static Row EvidenceRef(',begin));
+ assert(begin>0&&claim.length>0);assert.match(spool,/internal abstract class NormalStartPreparationClaimCapability/);assert.match(spool,/private sealed class DurableNormalStartPreparationClaimCapability/);assert.match(spool,/var exact=this as DurableNormalStartPreparationClaimCapability/);assert.match(spool,/lock\(gate\)\{if\(consumed\)throw Invalid\(\);consumed=true;\}/);assert.match(spool,/internal sealed class NormalStartPreparationClaimCommit/);
+ assert.match(claim,/var back=Log\(false/);assert.ok(claim.indexOf('var back=Log(false')<claim.indexOf('new DurableNormalStartPreparationClaimCapability'));
+ assert.match(claim,/first\?new DurableNormalStartPreparationClaimCapability/);assert.match(claim,/new NormalStartPreparationClaimCommit\(output,capability\)/);
+ assert.match(claim,/catch\(SpoolCapacityException\)[\s\S]*NormalStartPreparationClaimCommit\.Unavailable/);assert.doesNotMatch(claim,/CreateEmptyJobSource|PrepareAtomicJobAssignmentSource|CreateNormalSuspendedProcessSource/);
+ const branch=host.slice(host.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'));
+ assert.match(branch,/var claim=spoolProfile\.ClaimNormalStartPreparation/);assert.match(branch,/if\(claim\.Capability==null\)return claim\.Output/);
+ assert.ok(branch.indexOf('ClaimNormalStartPreparation')<branch.indexOf('normalStartPreparationProducer.CreateOwned'));
+ assert.match(branch,/catch\{unknown=true;throw;\}/);assert.doesNotMatch(branch,/PREPARED|queue|executionAuthorized",true|dispatchPerformed",true/);
+});
+
+test('retained image lease는 claim metadata와 opaque owner를 같은 관측에서 결박하고 path·bytes를 노출하지 않는다',()=>{
+ const deployment=read('NativeWorkerDeploymentSource.cs'),lease=deployment.slice(deployment.indexOf('internal sealed class NormalRetainedImageSource'),deployment.indexOf('private sealed class NormalTransferredImageSource'));
+ assert.match(lease,/readonly Dictionary<string,object> claimImage/);assert.match(lease,/internal Dictionary<string,object> ReadClaimImage\(int timeoutMs=1000\)/);
+ assert.match(lease,/ReadCurrent\(timeoutMs\)[\s\S]*associationRef[\s\S]*Clone\(claimImage\)[\s\S]*ReadCurrent\(timeoutMs\)/);
+ const acquire=deployment.slice(deployment.indexOf('internal NormalRetainedImageSource AcquireNormalImageForPreparation('));
+ assert.match(acquire,/var result=new Dictionary<string,object>\{\{"state","NORMAL_START_WORKER_IMAGE_VERIFIED"\}/);assert.match(acquire,/new NormalRetainedImageSource\(this,installedSource,retained,result\)/);
+ assert.doesNotMatch(lease,/Path|Handle|byte\[\]/);
 });

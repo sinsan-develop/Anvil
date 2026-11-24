@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-24 KST
 
+- **FN08 새 claim과 native Job 연결** — 보호 원장의 새 단회 claim만 원 image·Job·startup·process 소스로 이어지도록 조립했다. Main 172/172, 독립 C0/I0. 실제 Windows/Job 검증, 등록 앱의 동일 host 보유, 결과 인계·queue는 미완료다.
+
 - **FN08 suspended process 소스** — 보호 image와 normal startup을 원 process/thread handle에 결박하는 내부 경로를 작성했다. 집중 35/35, 독립 C0/I0. 실제 Windows/Job과 종료 확인, host 조립·결과 인계·queue는 미완료다.
 
 - **FN08 원 설치 이미지 양도** — 동일 등록의 보호 원행과 원 handle 관측을 묶고 만료·닫기 불명 시 재획득하지 않는 내부 전달 소스를 작성했다. Main 25/25. 실제 Windows 지속성·물리 생성/보유·회수·결과 인계는 미완료다.

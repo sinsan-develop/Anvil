@@ -106,5 +106,11 @@ test('정적: exact normal image와 bound startup만 suspended process를 단회
  assert.match(process,/NormalProcessOwner attempted=null/);assert.match(process,/normalProcessOwner=attempted=new NormalProcessOwner\(this,image\)/);assert.match(process,/if\(attempted!=null\)attempted\.Dispose\(\)/);assert.ok(process.indexOf('normalProcessOwner=attempted=new NormalProcessOwner(this,image)')<process.indexOf('WithTransferredNormalImageLaunch(image,Math.Min(timeoutMs,1000)'));
  assert.match(process,/if\(processOwner!=null\|\|normalProcessOwner!=null\|\|workerInput==null\|\|normalWorkerInput!=null\)throw Unavailable\(\)/);
  assert.match(process,/if\(normalProcessOwner!=null\|\|processOwner!=null\|\|normalWorkerInput==null\|\|workerInput!=null\)throw Unavailable\(\)/);
- assert.doesNotMatch(host,/CreateNormalSuspendedProcessSource|WithTransferredNormalImageLaunch/);
+ const producer=host.slice(host.indexOf('internal abstract class NormalStartPreparationProducer'),host.indexOf('readonly NormalStartPreparationProducer'));
+ assert.match(producer,/BuildNormalStartSource/);assert.match(producer,/CreateEmptyJobSource/);assert.match(producer,/PrepareAtomicJobAssignmentSource/);assert.match(producer,/PrepareSuspendedStartupSource/);assert.match(producer,/BindNormalStartWorkerInvocationSource/);assert.match(producer,/CreateNormalSuspendedProcessSource/);
+ assert.match(producer,/if\(used\|\|cleanupUnknown\|\|disposed\)throw Invalid\(\)/);assert.match(producer,/used=true/);assert.match(producer,/job\.Dispose\(\)/);assert.match(producer,/if\(cleanupAttempted\|\|cleanupUnknown\)throw Invalid\(\)/);
+ assert.match(producer,/claim\.Consume\(record,request,imageMaterial,current\)/);assert.match(producer,/retained\.TransferToFactory\(Math\.Min\(1000,left\(\)\)\)/);
+ assert.match(producer,/process=OwnershipEvidenceJobFactorySource\.CreateNormalSuspendedProcessSource[^;]+;processOwnerStarted=true;image=null/);assert.match(producer,/job\.Dispose\(\);if\(!processOwnerStarted&&image!=null\)image\.Dispose\(\)/);
+ assert.match(host,/normalStartPreparationProducer\.Dispose\(\)/);assert.ok(host.indexOf('normalStartPreparationProducer.Dispose()')<host.indexOf('workerDeployment.Dispose()'));
+ assert.match(host,/normalStartPreparationCleanupUnknown/);assert.match(host,/normalStartPreparationUnknownOwners\.Add\(this\)/);
 });
