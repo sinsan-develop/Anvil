@@ -2,6 +2,10 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
+## 현재 작업 요약 — 2026-11-25 KST
+
+- **FN08 보호 설치 기록의 existing-only 판독 소스** — 담당 `c11_quality_review`, 기준 `c26d0f75`. Native Host의 read/write가 같은 등록 root와 원 offer의 canonical 선택을 계산한다. 배타 읽기 원 핸들에서 두 보호 frame과 현재 container·이전 prefix·RESERVED/INSTALLED·패키지 및 원 worker의 파일/디렉터리 신원을 대조한다. 새 root를 생성하지 않는다. 부재는 보호 ancestor와 경로를 전후 대조한 후 정확한 파일/디렉터리 부재만 인정하며, 기존 root의 marker 누락·부분·권한/경로 오류와 close 불명은 UNKNOWN을 유지한다. 제품 4개·시험 2개. Main 42/42(719b5b), 타입 0(bc1158), diff 0(846a6c), 독립 C0/I0. 기본 Windows guard는 닫혀 있고 화면은 양성 결과를 아직 수용하지 않는다. 실제 C#/Windows/DPAPI·파일/DB/권한·서비스·Agent는 미검증이며 반복 설치와 실제 보호 설치는 미완료다.
+
 ## 현재 작업 요약 — 2026-11-24 KST
 
 - **FN08 보호 설치 첫 정착 기록 작성 소스** — 담당 `c11_quality_review`, 기준 `10827030`. 관리 설치의 원 요청/selection을 검산하고 지원 검사 뒤 원 배포·worker를 대조하는 기존 설치 호출에 연결했다. 기존 설치 root의 배타 원 핸들에서 현재/이전 base 검산 뒤 ACTIVE를 기록하고, 기존 RESERVED/INSTALLED와 worker·directory 재검산 뒤 같은 요청·지문의 최종 기록을 덧붙이는 소스다. header와 두 보호 frame을 원 핸들에 예약·flush/readback하며 설치 원장 512개 한도는 중복 계산하지 않는다. 첫 기록만 지원하는 소스이며 기존 marker 재사용은 불명으로 닫는다. 기존 v1 설치 정보에는 소급 기록하지 않는다. 제품 2개·시험 2개. Main 40/40(f5ffc5), 타입 0(5522e3), diff 0(24758e), 독립 C0/I0. 실제 C#/Windows·키/DPAPI·파일/DB/권한·서비스·Agent와 원 close 내구성은 미검증이다. 기본 guard는 UNSUPPORTED이며 원 marker 재시작 판독·후속 설치는 미완료다.
