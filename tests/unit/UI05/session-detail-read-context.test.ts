@@ -10,6 +10,7 @@ import {createCheckpointRecord} from '../../../apps/server/modules/checkpoints/c
 import {freezeCheckpointSave,checkpointBufferKey} from '../../../apps/web/src/features/session-detail/checkpoint-api.ts';
 import {emptyCheckpointForm} from '../../../apps/web/src/features/session-detail/checkpoint-form-restore.ts';
 import {capabilityNames} from '../../../apps/web/src/features/connections/api.ts';
+import {understandingHistoryFixture} from './understanding-history-fixture.ts';
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
 class MemoryNode{
  nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
@@ -50,7 +51,8 @@ export function fixture(tools=false){
 
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/SessionDetailPage.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{CheckpointEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointEditor.tsx',import.meta.url)))};export{React,createRoot,SessionDetailPage,CheckpointEditor,ApiClient};`;}}]});
+ const preparation=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/PreparationHistory.tsx',import.meta.url));
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage}from${JSON.stringify(entry)};import * as Preparation from${JSON.stringify(preparation)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{CheckpointEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointEditor.tsx',import.meta.url)))};export{React,createRoot,SessionDetailPage,Preparation,CheckpointEditor,ApiClient};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return SessionContextTest;')();
@@ -104,6 +106,44 @@ test('정상 확정 child 표시·부모 buffer 참조와 bytes는 조회 세대
 
 test('원문 JSON 대기 중 CSRF 교체와 unmount는 옛 원문·후속 GET·인증 해제를 채택하지 않는다',async()=>{
  for(const mode of['CSRF','UNMOUNT']){const f=await mount();let closed=false;try{f.holdJson();await f.click('상세 원본 새로고침');const end=Date.now()+2000;while(!f.jsonRelease&&Date.now()<end)await f.flush();const release=f.jsonRelease;assert(release);if(mode==='CSRF'){f.props.criteria={...f.props.criteria,session:{...f.props.criteria.session,csrfToken:'d'.repeat(43)}};await f.render();await f.waitFor('등록된 임무 조회');}else{await f.close();closed=true;}const before=f.calls.length;await ui.React.act(async()=>release());await f.flush();assert.equal(f.calls.length,before);assert.equal(f.lost(),0);assert.equal(f.mutations(),0);}finally{if(!closed)await f.close();}}
+});
+
+function normalWorkReview(){
+ const f=understandingHistoryFixture(),history:any=structuredClone(f.history),row=history.items[0],binding=row.snapshot.currentBinding;
+ const extra=(n:number)=>({id:`22222222-2222-4222-8222-${String(n).padStart(12,'0')}`,version:1,contentHash:String(n%10).repeat(64)}),responseRef={...binding.responseRef,version:1},responsePartRef={...binding.responsePartRefs[0],version:1};
+ row.snapshot.input.responseRef=responseRef;for(const item of row.snapshot.input.items)item.responsePartRefs=[responsePartRef];row.snapshot.request.payload=structuredClone(row.snapshot.input);row.snapshot.requestHash=hash(row.snapshot.request);
+ history.transport='NORMAL_PROTECTED';binding.transport='NORMAL_PROTECTED';binding.responseRef=responseRef;binding.responsePartRefs=[responsePartRef];for(const item of binding.criteria)item.responsePartRefs=[responsePartRef];binding.sourceBasis={bundleRef:binding.bundleRef,preparationRef:extra(21),grantRef:extra(22),startCommandRef:extra(23),manifestRef:extra(24),roleBindingRef:binding.subjectBindingRef,agentSessionRef:extra(25),roleRef:extra(26),subjectBindingRef:binding.subjectBindingRef,requestRef:extra(27),responseRef:binding.responseRef,basisRefs:binding.basisRefs,requiredPartRefs:binding.requiredPartRefs,receivedPartRefs:binding.receivedPartRefs,deliveryReceiptRefs:[extra(28)],responsePartRefs:binding.responsePartRefs,latestInstructionRefs:binding.latestInstructionRefs,status:'SOURCE_BASIS_ONLY',subjectBindingState:'VERIFIED',reviewAvailable:false,scope:f.scope,executionAuthorized:false,dispatchPerformed:false};
+ row.ref.contentHash=hash(row.snapshot);return{history,scope:f.scope,reviewRef:row.ref};
+}
+async function mountWorkReview(){
+ assert.equal(typeof ui.Preparation.WorkPreparationUnderstandingSource,'function');const source=normalWorkReview(),calls:{path:string;method:string}[]=[],container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ let basis={scope:source.scope,reviewRef:source.reviewRef},mode:'OK'|'HOLD'|'AUTH'='OK',release:((value:Response)=>void)|null=null,lost=0;
+ const client=new ui.ApiClient(async(url:any,options:any)=>{calls.push({path:String(url),method:options?.method??'GET'});if(mode==='HOLD')return new Promise<Response>(resolve=>{release=resolve;});if(mode==='AUTH')return Response.json({code:'AUTH_REQUIRED'},{status:401});return Response.json(source.history);});
+ const originalTransport=client.transport;
+ const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))];
+ function Host(){return ui.React.createElement(ui.Preparation.WorkPreparationUnderstandingSource,{client,basis,onAuthenticationLost:()=>{lost++;}});}
+ async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(Host)));}
+ async function flush(){await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});}
+ async function waitFor(value:string){const end=Date.now()+2000;while(!container.textContent.includes(value)&&Date.now()<end)await flush();assert(container.textContent.includes(value),value);}
+ async function click(){const found=nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent==='정착 이해 판단 원문 검산');assert.equal(found.length,1);await ui.React.act(async()=>found[0]!.dispatchEvent({type:'click',button:0,bubbles:true}));}
+ await render();return{source,calls,container,nodes,click,flush,waitFor,lost:()=>lost,originalTransport,hold(){mode='HOLD';},auth(){mode='AUTH';},ok(){mode='OK';},replaceReview(reviewRef:any){basis={...basis,reviewRef};return render();},replaceTransport(transport:typeof fetch){client.transport=transport;return render();},finish(value=Response.json(source.history)){assert(release);const send=release;release=null;return ui.React.act(async()=>send!(value));},async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+}
+test('WORK 준비 정착 판단은 명시 클릭 1GET 후 6항목·이유·참조만 표시한다',async()=>{
+ const f=await mountWorkReview();try{assert.equal(f.calls.length,0);await f.click();await f.waitFor('과거 별도 사람 검토');assert.deepEqual(f.calls,[{path:`/api/v1/projects/${f.source.scope.projectId}/executions/${f.source.scope.executionId}/understanding-reviews?generation=1`,method:'GET'}]);for(const value of ['왜 이 일을 하는가','기준과 권한','결정과 이유','완료·현재 위치','실제 차이와 공백','다음 행동과 미확인','원문을 대조한 보관 판단 <img src=x>','현재 실행·재개 허가가 아닙니다'])assert(f.container.textContent.includes(value),value);assert(!f.nodes().some(n=>n.tagName==='IMG'));assert(!/currentBinding|CONVERSATION|claudeQueryParams|secret/i.test(f.container.textContent));assert(f.calls.every(c=>c.method==='GET'));}finally{await f.close();}
+});
+test('WORK 판단 재검산은 늦은 응답·fullref 불일치를 버리고 401은 이전 본문을 지운다',async()=>{
+ const f=await mountWorkReview();try{await f.click();await f.waitFor('과거 별도 사람 검토');f.hold();await f.click();assert(!f.container.textContent.includes('과거 별도 사람 검토'));
+  await f.replaceReview({...f.source.reviewRef,contentHash:'0'.repeat(64)});await f.finish();await f.flush();assert(!f.container.textContent.includes('과거 별도 사람 검토'));assert.equal(f.lost(),0);
+  f.ok();await f.click();await f.waitFor('UNDERSTANDING_HISTORY_RESPONSE_INVALID');assert(!f.container.textContent.includes('과거 별도 사람 검토'));
+  f.auth();await f.click();await f.waitFor('AUTH_REQUIRED');assert.equal(f.lost(),1);assert(!f.container.textContent.includes('과거 별도 사람 검토'));
+ }finally{await f.close();}
+});
+test('WORK 판단은 동일 client의 transport 교체·ABA에서 이전 본문과 늦은 응답을 채택하지 않는다',async()=>{
+ const f=await mountWorkReview();try{await f.click();await f.waitFor('과거 별도 사람 검토');const replacement:typeof fetch=async()=>Response.json(f.source.history);
+  await f.replaceTransport(replacement);assert(!f.container.textContent.includes('과거 별도 사람 검토'));
+  await f.replaceTransport(f.originalTransport);assert(!f.container.textContent.includes('과거 별도 사람 검토'));
+  f.hold();await f.click();await f.replaceTransport(replacement);await f.replaceTransport(f.originalTransport);await f.finish();await f.flush();assert(!f.container.textContent.includes('과거 별도 사람 검토'));assert(!f.container.textContent.includes('UNDERSTANDING_HISTORY_RESPONSE_INVALID'));assert.equal(f.lost(),0);
+ }finally{await f.close();}
 });
 
 async function mountCheckpoint(replies: ('APPLIED'|'LOST'|'503'|'OK'|'HOLD')[]) {

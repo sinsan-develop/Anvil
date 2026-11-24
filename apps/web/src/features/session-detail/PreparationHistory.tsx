@@ -2,12 +2,34 @@ import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import type {DocumentSession} from '../design-trace/editor-api.ts';
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
-import {readPreparationHistoryPage,readPreparationOriginal,type PreparationHistoryPage,type PreparationSummary,type PreparationOriginal} from './preparation-history-api.ts';
+import {readPreparationHistoryPage,readPreparationOriginal,type PreparationHistoryPage,type PreparationSummary,type PreparationOriginal,type WorkUnderstandingBasis} from './preparation-history-api.ts';
 import {ordered} from '../knowledge/review-view.ts';
 import {readCapabilityReport,type CapabilityReportView} from '../connections/capability-report-api.ts';
+import {readExactNormalUnderstandingReview,understandingLabels,type NormalUnderstandingReview} from './understanding-history-api.ts';
 type Position={cursor:string|null;history:(string|null)[]};
 const first=():Position=>({cursor:null,history:[]});
 const errorCode=(e:unknown)=>e instanceof ApiError&&/^[A-Z_]{1,80}$/.test(e.code)?e.code:'PREPARATION_HISTORY_RESPONSE_INVALID';
+type WorkReviewBasis=Pick<WorkUnderstandingBasis,'scope'|'reviewRef'>;
+const fullRef=(value:{id:string;version:number;contentHash:string})=>`${value.id} · v${value.version} · ${value.contentHash}`;
+export function WorkPreparationUnderstandingSource({client,basis,onAuthenticationLost}:{client:ApiClient;basis:WorkReviewBasis;onAuthenticationLost:()=>void}){
+ const key=ordered([basis.scope,basis.reviewRef]),transport=client.transport,context=useRef({key,client,transport,epoch:0});if(context.current.key!==key||context.current.client!==client||context.current.transport!==transport)context.current={key,client,transport,epoch:context.current.epoch+1};const owner=context.current;
+ const sequence=useRef(0),alive=useRef(false),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
+ const [loaded,setLoaded]=useState<{owner:typeof owner;pending:boolean;value:NormalUnderstandingReview|null;error:string|null}|null>(null),shown=loaded?.owner===owner?loaded:null;
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;sequence.current++;};},[]);
+ async function inspect(){
+  const ticket=++sequence.current,current=()=>alive.current&&context.current===owner&&sequence.current===ticket,active=()=>current()&&client.transport===owner.transport;
+  setLoaded({owner,pending:true,value:null,error:null});
+  try{const value=await readExactNormalUnderstandingReview(client,basis.scope,basis.reviewRef,active);if(!current())return;if(!value){setLoaded({owner,pending:false,value:null,error:'UNDERSTANDING_HISTORY_UNAVAILABLE'});return;}setLoaded({owner,pending:false,value,error:null});}
+  catch(cause){if(!current())return;const code=cause instanceof ApiError&&/^[A-Z_]{1,80}$/.test(cause.code)?cause.code:'UNDERSTANDING_HISTORY_RESPONSE_INVALID';setLoaded({owner,pending:false,value:null,error:code});if(cause instanceof ApiError&&cause.status===401)lost.current();}
+ }
+ const review=shown?.value?.snapshot;
+ return <section aria-label="정착 WORK 이해 판단 원문 검산"><h5>정착 이해 판단</h5><p>{fullRef(basis.reviewRef)}</p><p>명시한 과거 판단만 읽습니다. 현재 실행·재개 허가가 아닙니다.</p>
+  <button type="button" disabled={shown?.pending===true} onClick={()=>void inspect()}>정착 이해 판단 원문 검산</button>
+  {shown?.pending?<p role="status">정착 이해 판단 검산 중 · 이전 본문 숨김</p>:null}
+  {shown?.error?<p role="alert">{shown.error} · 지정한 판단 미확인 · 최신 판단으로 대체하지 않습니다.</p>:null}
+  {review?<article aria-label="정착 WORK 이해 판단 검산 결과"><p>{review.outcome==='ACCEPTED'?'정착 당시 6항목 적합':'정착 당시 불일치·부족 포함'} · 현재 판정 아님</p><p>정착 이유: {review.input.reason}</p><ul>{review.input.items.map(item=><li key={item.code}><h6>{understandingLabels[item.code]}</h6><p>{item.judgement} · {item.reason}</p><p>기준 검산 근거</p><ul>{item.sourceRefs.map(value=><li key={ordered(value)}>{fullRef(value)}</li>)}</ul><p>응답 검산 근거</p><ul>{item.responsePartRefs.map(value=><li key={ordered(value)}>{fullRef(value)}</li>)}</ul></li>)}</ul></article>:null}
+ </section>;
+}
 export function PreparationHistory({client,confirmed,session,onAuthenticationLost}:{client:ApiClient;confirmed:ConfirmedAssignmentView;session:DocumentSession;onAuthenticationLost:()=>void}){
  const key=ordered([confirmed.projectId,confirmed.ref,session.user.id,session.clientId]);
  const context=useRef({key,client,epoch:0});if(context.current.key!==key||context.current.client!==client)context.current={key,client,epoch:context.current.epoch+1};const owner=context.current;
@@ -46,6 +68,6 @@ export function PreparationHistory({client,confirmed,session,onAuthenticationLos
  {reportShown?.pending?<p role="status">사람 능력보고 조회 중 · 이전 보고 숨김</p>:null}
  {reportShown?.error?<p role="alert">{reportShown.error} · {reportShown.error==='HUMAN_CAPABILITY_NOT_CONFIRMED'?'해당 참조의 사람보고 미확인':reportShown.error==='HUMAN_CAPABILITY_TARGET_MISMATCH'?'선택 준비와 대상 불일치·미확인':'사람보고 미확인'} · 준비 원문은 유지됩니다.</p>:null}
  {reportShown?.value?<section aria-label="선택 준비 능력보고 원문"><h5>사람의 원주장 · 실측/실행 허가 아님</h5><p>{reportShown.value.ref.id} · v{reportShown.value.ref.version} · {reportShown.value.ref.contentHash}</p><p>서버: UNVERIFIED · CANDIDATE_ONLY · executionAuthorized=false · dispatchPerformed=false</p><p>보관 {reportShown.value.snapshot.recordedAt} · 관측 {reportShown.value.snapshot.claim.observedAt??'미확인'} · 기한 {reportShown.value.snapshot.claim.expiresAt}</p><p>연결 {ordered(reportShown.value.snapshot.claim.connectionRef)}<br/>환경 {ordered(reportShown.value.snapshot.claim.environmentRef)}</p><pre>{JSON.stringify(reportShown.value.snapshot.claim,null,2)}</pre><h6>현재성 · 원보고와 별도</h6><ul>{reportShown.value.currentnessIssues.map(issue=><li key={ordered(issue)}>{issue.code}</li>)}</ul></section>:null}
- </section><button type="button" onClick={()=>{originalSequence.current++;setSelection(null);setOriginal(null);}}>준비 원문 닫기</button></article>:null}</>}
+ </section>{shown.value.snapshot.intent.mode==='WORK'&&shown.value.snapshot.understandingBasis?<WorkPreparationUnderstandingSource key={ordered([shown.value.ref,shown.value.snapshot.understandingBasis])} client={client} basis={shown.value.snapshot.understandingBasis as WorkUnderstandingBasis} onAuthenticationLost={onAuthenticationLost}/>:null}<button type="button" onClick={()=>{originalSequence.current++;setSelection(null);setOriginal(null);}}>준비 원문 닫기</button></article>:null}</>}
  </section>;
 }

@@ -7,6 +7,7 @@ import type {UnderstandingRecord} from '../../../../server/modules/executions/ex
 export interface UnderstandingHistoryView{transport:'SYNTHETIC_ONLY';scope:{projectId:string;executionId:string;executionGeneration:number};items:UnderstandingRecord[];currentness:'NOT_RECHECKED';executionAuthorized:false;dispatchPerformed:false}
 export type UnderstandingHistoryScope=UnderstandingHistoryView['scope'];
 export interface NormalUnderstandingHistoryView{transport:'NORMAL_PROTECTED';scope:UnderstandingHistoryScope;items:{ref:UnderstandingRecord['ref'];snapshot:Omit<UnderstandingRecord['snapshot'],'currentBinding'>&{currentBinding:Omit<UnderstandingRecord['snapshot']['currentBinding'],'transport'>&{transport:'NORMAL_PROTECTED';sourceBasis:Record<string,unknown>}}}[];currentness:'NOT_RECHECKED';executionAuthorized:false;dispatchPerformed:false}
+export type NormalUnderstandingReview=NormalUnderstandingHistoryView['items'][number];
 export const understandingLabels={PURPOSE_REASON:'왜 이 일을 하는가',BASELINE_AUTHORITY:'기준과 권한',DECISIONS_REASON:'결정과 이유',CURRENT_POSITION:'완료·현재 위치',ACTUAL_GAPS:'실제 차이와 공백',NEXT_ACTION:'다음 행동과 미확인'} as const;
 const exact=(v:any,k:string[])=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...k].sort().join(','),uuid=(v:any)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v),positive=(v:any)=>Number.isSafeInteger(v)&&v>0,hex=(v:any)=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v),ref=(v:any)=>exact(v,['id','version','contentHash'])&&uuid(v.id)&&positive(v.version)&&hex(v.contentHash),refs=(v:any)=>Array.isArray(v)&&v.length>0&&v.length<=200&&v.every(ref)&&new Set(v.map(ordered)).size===v.length,same=(a:any,b:any)=>ordered(a)===ordered(b),text=(v:any)=>typeof v==='string'&&!!v.trim()&&v.length<=20000,date=(v:any)=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v;
 function fail():never{throw new ApiError('UNDERSTANDING_HISTORY_RESPONSE_INVALID');}
@@ -59,4 +60,12 @@ export async function readNormalUnderstandingHistory(client:ApiClient,rawScope:U
   const result=await validateNormalUnderstandingHistory(value,scope,()=>{check();return true;});check();return result;
  }catch(error){if(!active()||client.transport!==transport)return null;if(error instanceof ApiError)throw error;throw new ApiError('UNDERSTANDING_HISTORY_RESPONSE_INVALID');}
  finally{if(expire!==undefined)clearTimeout(expire);controller.abort();if(reader&&!done)void reader.cancel().catch(()=>{});try{reader?.releaseLock();}catch{}}
+}
+
+/** WORK 준비가 고정한 과거 판단 fullref만 선택한다. latest 대체나 현재 실행 권위를 만들지 않는다. */
+export async function readExactNormalUnderstandingReview(client:ApiClient,rawScope:UnderstandingHistoryScope,rawReviewRef:UnderstandingRecord['ref'],active:()=>boolean):Promise<NormalUnderstandingReview|null>{
+ const expected=structuredClone(rawReviewRef);if(!ref(expected))fail();
+ const history=await readNormalUnderstandingHistory(client,rawScope,active);if(!history||!active())return null;
+ const matches=history.items.filter(row=>same(row.ref,expected));if(matches.length!==1)fail();
+ return active()?structuredClone(matches[0]!):null;
 }
