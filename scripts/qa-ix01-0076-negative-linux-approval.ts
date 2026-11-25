@@ -7,6 +7,10 @@ import {current0076NegativeContract as stageContract,type NegativeStageInput} fr
 const selectionPurpose='IX01_0076_NEGATIVE_LINUX_APPROVAL_SELECTION' as const;
 const verifiedPurpose='IX01_0076_NEGATIVE_LINUX_APPROVAL_VERIFIED' as const;
 const dependencyPaths=Object.freeze([
+ 'contracts/canonical.ts',
+ 'contracts/runtime/validation-v1.ts',
+ 'scripts/qa-ix01-current-journey.ts',
+ 'scripts/qa-ix01-0076-atomicity-negative.ts',
  'scripts/qa-ix01-0076-negative-claim.ts',
  'scripts/qa-ix01-0076-atomicity-negative-receiver.ts',
  'scripts/qa-ix01-0076-negative-psql.ts',
@@ -17,6 +21,12 @@ const dependencyPaths=Object.freeze([
  'scripts/qa-ix01-0076-negative-linux-entry.ts',
  'scripts/qa-ix01-0076-negative-linux-host.ts',
  'scripts/qa-ix01-0076-negative-linux-r9.ts',
+ 'scripts/qa-ix01-0076-negative-linux-container.ts',
+ 'scripts/qa-ix01-0076-negative-linux-docker.ts',
+ 'scripts/qa-ix01-0076-negative-linux-native-docker.ts',
+ 'scripts/qa-ix01-0076-negative-linux-schema-stage.ts',
+ 'tests/integration/IX01/current-schema-baseline.ts',
+ 'tests/integration/IX01/current-schema-installation.ts',
 ] as const);
 const protectedSourcePaths=Object.freeze([...dependencyPaths,stageContract.parserPath] as const);
 const manifestPath='docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv' as const;

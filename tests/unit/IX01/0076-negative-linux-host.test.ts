@@ -34,7 +34,10 @@ function fixture(patch:{platform?:string;euid?:number;cwd?:string;nodeHash?:stri
 }
 
 test('고정 Linux host의 Node 물리 지문과 detached source HEAD만 source-only authority 근거로 검산한다',()=>{
- assert(current0076NegativeLinuxApprovalContract.dependencyPaths.includes('scripts/qa-ix01-0076-negative-linux-host.ts' as never));
+ for(const path of ['contracts/canonical.ts','contracts/runtime/validation-v1.ts','scripts/qa-ix01-current-journey.ts','scripts/qa-ix01-0076-atomicity-negative.ts',
+  'scripts/qa-ix01-0076-negative-linux-host.ts','scripts/qa-ix01-0076-negative-linux-container.ts','scripts/qa-ix01-0076-negative-linux-docker.ts',
+  'scripts/qa-ix01-0076-negative-linux-native-docker.ts','scripts/qa-ix01-0076-negative-linux-schema-stage.ts','tests/integration/IX01/current-schema-baseline.ts',
+  'tests/integration/IX01/current-schema-installation.ts'])assert(current0076NegativeLinuxApprovalContract.dependencyPaths.includes(path as never),path);
  const result=verify0076NegativeLinuxHostSource(selection,fixture());
  assert.deepEqual(result,{schemaVersion:1,purpose:'IX01_0076_NEGATIVE_LINUX_HOST_SOURCE_VERIFIED',attemptId,sourceHead:selection.sourceHead,sourceRoot,nodePath,nodeHash,
   evidence:'NODE_AND_DETACHED_HEAD_SOURCE_ONLY',gitToolVerified:false,runtimeVerified:false,executionAuthorized:false});

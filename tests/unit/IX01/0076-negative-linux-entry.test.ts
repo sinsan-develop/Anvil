@@ -41,9 +41,9 @@ function fixture(tamperApproval=false,expireClockRead=Number.MAX_SAFE_INTEGER){
  assert(current0076NegativeLinuxApprovalContract.dependencyPaths.includes(entryPath as never));
  const dependencies=current0076NegativeLinuxApprovalContract.dependencyPaths.map(path=>source(path));
  const protectedSourcePaths=current0076NegativeLinuxApprovalContract.protectedSourcePaths,r9Index=protectedSourcePaths.indexOf(stageContract.parserPath);
- const graphFiles=[...stageContract.graphPaths.map(path=>({path,bytes:path===stageContract.parserPath?r9:source(path)})),
-  ...current0076NegativeLinuxApprovalContract.dependencyPaths.map((path,index)=>({path,bytes:dependencies[index]!}))]
-  .sort((a,b)=>a.path.localeCompare(b.path)).map(row=>({path:row.path,bytes:row.bytes.byteLength,sha256:contentHash(row.bytes)}));
+ const graphSources=new Map<string,Uint8Array>();for(const path of stageContract.graphPaths)graphSources.set(path,path===stageContract.parserPath?r9:source(path));
+ for(const [index,path] of current0076NegativeLinuxApprovalContract.dependencyPaths.entries())graphSources.set(path,dependencies[index]!);
+ const graphFiles=[...graphSources].map(([path,bytes])=>({path,bytes:bytes.byteLength,sha256:contentHash(bytes)})).sort((a,b)=>a.path.localeCompare(b.path));
  const graphRaw=canonicalJson({schemaVersion:1,sourceHead,files:graphFiles}),graphHash=contentHash(graphRaw);
  const plan={schemaVersion:1,purpose:stageContract.purpose,attemptId,sourceHead,graphHash,issuedAt,expiresAt,namespace,sourceManifestHash:contentHash(canonicalJson(manifestRows)),
   sourceSha256:stageContract.sourceSha256,executionSha256:stageContract.executionSha256,sentinelSqlHash:stageContract.sentinelSqlHash,catalogSqlHash:stageContract.catalogSqlHash};
@@ -108,7 +108,7 @@ function fixture(tamperApproval=false,expireClockRead=Number.MAX_SAFE_INTEGER){
 test('보호 approval 원문에서만 claim authority를 만들고 106+0076 source-only stage를 한 번 조립한다',async()=>{
  const h=fixture(),result=await run0076NegativeLinuxEntry(h.selection,h.authority,Object.freeze({mode:'SYNTHETIC_SOURCE_ONLY',reader:h.readerSystem,journal:h.journalSystem,stage:h.stage}));
  assert.equal(result.status,'OBSERVATIONS_MATCHED');assert.equal(result.priorInstalled,106);assert.equal(result.priorLedgered,106);assert.equal(result.targetDispatched,true);
- assert.equal(h.protectedOpens,145);assert.equal(h.priorInstalls,106);assert.equal(h.receiverCalls,1);assert.equal(h.prepareCalls,1);assert.equal(h.ledger.length,106);
+ assert.equal(h.protectedOpens,3+current0076NegativeLinuxApprovalContract.protectedSourcePaths.length+1+130);assert.equal(h.priorInstalls,106);assert.equal(h.receiverCalls,1);assert.equal(h.prepareCalls,1);assert.equal(h.ledger.length,106);
  const receipt=h.journalFiles.get(h.receiptRoot+'/claim-v1.json')!;assert.equal(JSON.parse(Buffer.from(receipt).toString('utf8')).approvalId,h.approvalId);
  assert.deepEqual(h.journalTrace,['open','write','syncFile','close','open','syncDirectory','close','open','close']);assert(h.currentCalls>0);
 });

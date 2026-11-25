@@ -15,18 +15,19 @@ const manifestPath='docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_2
 const desiredDependencies=current0076NegativeLinuxApprovalContract.dependencyPaths;
 const protectedSourcePaths=current0076NegativeLinuxApprovalContract.protectedSourcePaths;
 const r9Bytes=new Uint8Array(Buffer.from(readFileSync(new URL(current0076NegativeContract.parserPath,sourceRoot),'utf8').replaceAll('\r\n','\n'),'utf8'));
+const trackedDependencyBytes=desiredDependencies.map(path=>new Uint8Array(readFileSync(new URL(path,sourceRoot))));
 const manifestBytes=new Uint8Array(Buffer.from(readFileSync(new URL(manifestPath,sourceRoot),'utf8').replaceAll('\r\n','\n'),'utf8'));
 const manifestRows=readCurrentSchemaManifest(manifestBytes);
 const sqlBytes=manifestRows.map(row=>new Uint8Array(readFileSync(new URL(row.path,sourceRoot))));
 
 let sequence=80;
-function fixture(patch:{plan?:Record<string,unknown>;approval?:Record<string,unknown>;graph?:Record<string,unknown>;sourceIndex?:number;sourceBytes?:Uint8Array;sqlIndex?:number;sqlBytes?:Uint8Array;now?:number;monotonic?:readonly number[];loseCurrent?:boolean;foreignCustody?:boolean;reply?:'PROXY'|'ACCESSOR';badGraphPath?:boolean;graphTotalOverflow?:boolean}={}){
+function fixture(patch:{plan?:Record<string,unknown>;approval?:Record<string,unknown>;graph?:Record<string,unknown>;sourceIndex?:number;sourceBytes?:Uint8Array;omitSourceIndex?:number;sqlIndex?:number;sqlBytes?:Uint8Array;now?:number;monotonic?:readonly number[];loseCurrent?:boolean;foreignCustody?:boolean;reply?:'PROXY'|'ACCESSOR';badGraphPath?:boolean;graphTotalOverflow?:boolean}={}){
  const attemptId='e7000000-0000-4000-8000-'+String(++sequence).padStart(12,'0'),sourceHead='a'.repeat(40),issuedAt=2_000_000,expiresAt=2_600_000;
- const graphDependencyBytes:Uint8Array[]=desiredDependencies.map((path,index)=>new Uint8Array(Buffer.from('dependency-'+index+'-'+path,'utf8'))),dependencyBytes:Uint8Array[]=graphDependencyBytes.map(value=>new Uint8Array(value));
+ const graphDependencyBytes:Uint8Array[]=trackedDependencyBytes.map(value=>new Uint8Array(value)),dependencyBytes:Uint8Array[]=graphDependencyBytes.map(value=>new Uint8Array(value));
  if(patch.sourceIndex!==undefined)dependencyBytes[patch.sourceIndex]=patch.sourceBytes??new Uint8Array([0]);
- let rows=[...current0076NegativeContract.graphPaths.map((path,index)=>path===current0076NegativeContract.parserPath?({path,bytes:r9Bytes.byteLength,sha256:contentHash(r9Bytes)}):({path,bytes:index+1,sha256:String(index+1).repeat(64).slice(0,64)})),
-  ...desiredDependencies.map((path,index)=>({path,bytes:graphDependencyBytes[index]!.byteLength,sha256:contentHash(graphDependencyBytes[index]!)}))]
-  .sort((a,b)=>a.path.localeCompare(b.path));
+ const graphSources=new Map<string,Uint8Array>();for(const path of current0076NegativeContract.graphPaths)graphSources.set(path,path===current0076NegativeContract.parserPath?r9Bytes:new Uint8Array(readFileSync(new URL(path,sourceRoot))));
+ for(const [index,path] of desiredDependencies.entries())graphSources.set(path,graphDependencyBytes[index]!);
+ let rows=[...graphSources].map(([path,bytes])=>({path,bytes:bytes.byteLength,sha256:contentHash(bytes)})).sort((a,b)=>a.path.localeCompare(b.path));
  if(patch.badGraphPath)rows=[{...rows[0]!,path:'/absolute/not-owned'},...rows.slice(1)].sort((a,b)=>a.path.localeCompare(b.path));
  if(patch.graphTotalOverflow)rows=[...rows,...Array.from({length:17},(_,index)=>({path:'zz-overflow-'+String(index).padStart(2,'0'),bytes:16777216,sha256:String((index%9)+1).repeat(64)}))].sort((a,b)=>a.path.localeCompare(b.path));
  const graph=Object.freeze({schemaVersion:1,sourceHead,files:Object.freeze(rows.map(Object.freeze)),...patch.graph}),graphRaw=canonicalJson(graph),graphHash=contentHash(graphRaw);
@@ -41,7 +42,8 @@ function fixture(patch:{plan?:Record<string,unknown>;approval?:Record<string,unk
  const receipt=namespace.receipt,custody=Object.freeze(Object.create(null)),foreign=Object.freeze(Object.create(null));
  const paths=Object.freeze([receipt+'-plan.json',receipt+'-approval.json',receipt+'-graph.json',...protectedSourcePaths,manifestPath]);
  const payloads=[new Uint8Array(Buffer.from(planRaw)),new Uint8Array(Buffer.from(approvalRaw)),new Uint8Array(Buffer.from(graphRaw)),...dependencyBytes,new Uint8Array(r9Bytes),manifestBytes];
- const observations=Object.freeze(paths.map((path,index)=>Object.freeze({path,bytes:payloads[index]!,custody:patch.foreignCustody&&index===paths.length-1?foreign:custody,fileIdentity:Object.freeze(Object.create(null)),closed:true as const})));
+ const observations=Object.freeze(paths.map((path,index)=>Object.freeze({path,bytes:payloads[index]!,custody:patch.foreignCustody&&index===paths.length-1?foreign:custody,fileIdentity:Object.freeze(Object.create(null)),closed:true as const}))
+  .filter((_,index)=>index!==patch.omitSourceIndex!+3));
  const deliveredSql:Uint8Array[]=sqlBytes.map(value=>new Uint8Array(value));if(patch.sqlIndex!==undefined)deliveredSql[patch.sqlIndex]=new Uint8Array(patch.sqlBytes??[0]);
  const sourceObservations=Object.freeze(manifestRows.map((row,index)=>Object.freeze({path:row.path,bytes:deliveredSql[index]!,custody,fileIdentity:Object.freeze(Object.create(null)),closed:true as const})));
  let reply:readonly typeof observations[number][]=observations;if(patch.reply==='PROXY')reply=new Proxy(observations,{});if(patch.reply==='ACCESSOR'){
@@ -54,11 +56,11 @@ function fixture(patch:{plan?:Record<string,unknown>;approval?:Record<string,unk
  return{selection,ports,paths,advance(ms:number){wall+=ms;monoOffset+=ms;},get reads(){return reads;},get current(){return current;}};
 }
 
-test('동일 보호 custody의 plan·approval·graph·신규 의존10개·R9와 고정 TSV·전체 130 SQL을 SOURCE_ONLY로 검산한다',async()=>{
+test('동일 보호 custody의 전체 local import closure·R9·고정 TSV·전체 130 SQL을 SOURCE_ONLY로 검산한다',async()=>{
  const h=fixture(),result=await verify0076NegativeLinuxApproval(h.selection,h.ports);
  assert.equal(h.reads,2);assert(h.current>=2);assert.equal(manifestRows.length,130);assert.deepEqual(result,{schemaVersion:1,purpose:'IX01_0076_NEGATIVE_LINUX_APPROVAL_VERIFIED',attemptId:h.selection.attemptId,
   sourceHead:h.selection.sourceHead,planHash:h.selection.planHash,approvalHash:h.selection.approvalHash,graphHash:h.selection.graphHash,
-  dependencyHashes:desiredDependencies.map((path,index)=>({path,bytes:Buffer.byteLength('dependency-'+index+'-'+path),sha256:contentHash(Buffer.from('dependency-'+index+'-'+path))})),
+  dependencyHashes:desiredDependencies.map((path,index)=>({path,bytes:trackedDependencyBytes[index]!.byteLength,sha256:contentHash(trackedDependencyBytes[index]!)})),
   evidence:'PROTECTED_READ_SOURCE_ONLY',runtimeVerified:false,executionAuthorized:false});
  let retained:any,retainedR9:Uint8Array|undefined;const count=await use0076NegativeLinuxProtectedStageInput(result,async(input,_fresh,protectedR9)=>{retained=input;retainedR9=protectedR9;assert.equal(contentHash(protectedR9),current0076NegativeContract.parserSourceSha256);assert.equal(input.planRaw.length>0,true);assert.equal(input.historicalTsv.byteLength,15807);assert.equal(input.sql.length,130);
   const loaded=await load0076NegativeLinuxR9(protectedR9,input);assert.deepEqual(loaded.legacy.daemonInfoArgs(),['info','--format','{"ID":{{json .ID}},"Name":{{json .Name}}}']);return input.sql.length;});
@@ -78,6 +80,7 @@ test('approval 결박·graph source 바이트·동일 custody·후행 current가
  for(const [h,expectedReads] of [
   [fixture({approval:{decision:'ALLOW_ONE_RUN'}}),1],
   [fixture({sourceIndex:2,sourceBytes:new Uint8Array([9])}),1],
+  [fixture({omitSourceIndex:desiredDependencies.indexOf('scripts/qa-ix01-0076-negative-linux-docker.ts')}),1],
   [fixture({sqlIndex:129,sqlBytes:new Uint8Array([9])}),2],
   [fixture({foreignCustody:true}),1],
   [fixture({loseCurrent:true}),1],
