@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-25 KST
 
+- **IX01 0076 격리 DB 준비 경로** — 담당 `c11_quality_review`, 기준 `4bb5dd5a`. 같은 단회 claim과 도구 보유를 전제로 고정 daemon·image·이름 부재→단회 생성·기동→같은 ID 검산→준비 및 역할 전이→최종 격리 확인을 연결했다. 불명은 같은 시도 재실행이나 정리 성공으로 바꾸지 않는다. Main 집중·인접 4/4(98187e), 타입 0(de376c), diff 0(26a1a8), 독립 C0/I0. 실제 Linux Docker 드라이버·보호 R9 공급·후속 SQL의 같은 도구 연결과 실제 PG 롤백은 미검증이며 WSL·권한·키·서비스·Agent 실행 0.
+
 - **IX01 0076 전용 격리 컨테이너 확인** — 담당 `c11_quality_review`, 기준 `421c7952`. 기존 Docker inspect 검산을 재사용해 원 시도의 ID·이름·고정 이미지/daemon·labels 및 none 네트워크·포트/외부 mount 부재·고정 보안 설정을 확인한다. 독립 지적을 반영해 정상 소수 monotonic을 수용하고 원 시한과 소유를 전후 재검산한다. Main 집중 2/2(5cf9f4), 타입 0(3e52ad), diff 0(fb341b), 독립 C0/I0. 실제 Docker/WSL·PG·키·권한·서비스·Agent를 실행하지 않았다. 네이티브 Docker 소유 공급과 실제 롤백 검수는 미완료다.
 
 - **IX01 0076 실행 호스트의 Node·HEAD 보호 판독** — 담당 `c11_quality_review`, 기준 `5b0b767e`. 시도 ID에서 전용 checkout을 파생하고 고정 Node 파일의 소유·길이·지문과 detached HEAD를 원 FD 및 원 경로에서 재확인한다. 독립 검수 중 A14 checkout 재사용, close 재시도, Node/HEAD의 변경 누락 및 조상 메타데이터 과잉 차단을 교정했다. 실행 경로를 열지 않으며 Main 직접·인접 16/16(2df369), 타입 0(3e9b00), diff 0(41cd94), 독립 C0/I0. 작성자 IX01 53/53. 실제 Linux 파일·WSL·SSH·PG·Docker·권한·서비스·Agent 미실행. 실제 Git/Docker 도구 지문·checkout 정합·격리 소유 검증과 롤백 시험은 미완료다.
