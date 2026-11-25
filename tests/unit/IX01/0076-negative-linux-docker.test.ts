@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
- prepare0076NegativeLinuxDocker,
+ prepare0076NegativeLinuxDocker,prepare0076NegativeLinuxDockerWithToolHandoff,
  type NegativeLinuxDockerAuthority,
  type NegativeLinuxDockerInvocation,
  type NegativeLinuxDockerLegacy,
@@ -71,4 +71,11 @@ test('claim 부재·create/close 불명에서는 후속 준비나 재시도 없�
  const unknownBinding=makeBinding('fd000000-0000-4000-8000-000000000004'),unknown=fixture('CREATE_UNKNOWN',unknownBinding),result=await prepare0076NegativeLinuxDocker(unknownBinding,unknown.authority,unknown.legacy,unknown.system);
  assert.deepEqual(result,{status:'UNKNOWN',containerId:null,resourceMayExist:true,toolCloseConfirmed:true});assert.equal(unknown.calls.filter(call=>call.argv[4]==='create').length,1);
  assert.equal(unknown.calls.some(call=>call.argv[4]==='start'),false);assert.equal(unknown.released,1);
+});
+
+test('native brand 없는 frozen handoff는 claim·pin·준비 효과 전에 거절한다',async()=>{
+ const ownedBinding=makeBinding('fe000000-0000-4000-8000-000000000005'),h=fixture('OK',ownedBinding),handoff=Object.freeze({recipient:h.system.recipient,
+  transfer(){return Object.freeze(Object.create(null));},owns(){return true;}});
+ await assert.rejects(prepare0076NegativeLinuxDockerWithToolHandoff(ownedBinding,h.authority,h.legacy,h.system,handoff));
+ assert.equal(h.pinCount,0);assert.equal(h.calls.length,0);assert.equal(h.released,0);
 });

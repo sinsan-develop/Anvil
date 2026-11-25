@@ -8,6 +8,7 @@ import {
  verifyContainerObservation,
 } from './qa-ix01-current-journey.ts';
 import {verify0076NegativeLinuxContainerSource} from './qa-ix01-0076-negative-linux-container.ts';
+import {is0076NegativeLinuxNativeDockerHandoff,is0076NegativeLinuxNativeDockerTransferredOwner} from './qa-ix01-0076-negative-linux-native-docker.ts';
 import type {NegativeOwnedTarget} from './qa-ix01-0076-atomicity-negative.ts';
 
 const bindingPurpose='IX01_0076_NEGATIVE_LINUX_DOCKER_BINDING' as const;
@@ -43,6 +44,10 @@ export interface NegativeLinuxDockerSystem{
  wait(this:object,timeoutMs:number):Promise<void>;
  release(this:object,pin:Readonly<NegativeLinuxDockerToolPin>):Promise<'CLOSED'|'UNKNOWN'>;
 }
+export interface NegativeLinuxDockerToolHandoff{
+ readonly recipient:object;
+ transfer(this:object,pin:Readonly<NegativeLinuxDockerToolPin>,target:Readonly<NegativeOwnedTarget>):object;
+}
 export interface NegativeLinuxDockerLegacy{
  /** 보호 approval graph가 고정한 원 R9 source에서만 공급한다. 임의 callable은 실행 권위가 아니다. */
  daemonInfoArgs():readonly string[];finalServerArgs(containerId:string):readonly string[];parseFinalServer(raw:string):boolean;
@@ -50,6 +55,9 @@ export interface NegativeLinuxDockerLegacy{
 }
 export type NegativeLinuxDockerPrepareResult=
  |Readonly<{status:'PREPARED';target:Readonly<NegativeOwnedTarget>;toolCloseConfirmed:true}>
+ |Readonly<{status:'UNKNOWN';containerId:string|null;resourceMayExist:boolean;toolCloseConfirmed:boolean}>;
+export type NegativeLinuxDockerTransferredPrepareResult=
+ |Readonly<{status:'PREPARED';target:Readonly<NegativeOwnedTarget>;toolOwner:object;toolCloseConfirmed:false}>
  |Readonly<{status:'UNKNOWN';containerId:string|null;resourceMayExist:boolean;toolCloseConfirmed:boolean}>;
 
 const invalid=():never=>{throw Error('IX01_0076_NEGATIVE_LINUX_DOCKER_INVALID');};
@@ -79,9 +87,10 @@ function psql(containerId:string,database:string,input:string){
   '--username=anvil_v3_bootstrap','--dbname='+database,'--set=ON_ERROR_STOP=on','--set=VERBOSITY=verbose','--set=SHOW_CONTEXT=never','--set=ECHO=none','--file=-'],input};
 }
 
-export async function prepare0076NegativeLinuxDocker(
+async function prepare(
  rawBinding:Readonly<NegativeLinuxDockerBinding>,rawAuthority:Readonly<NegativeLinuxDockerAuthority>,rawLegacy:Readonly<NegativeLinuxDockerLegacy>,rawSystem:Readonly<NegativeLinuxDockerSystem>,
-):Promise<Readonly<NegativeLinuxDockerPrepareResult>>{
+ rawHandoff:Readonly<NegativeLinuxDockerToolHandoff>|null,
+):Promise<Readonly<NegativeLinuxDockerPrepareResult|NegativeLinuxDockerTransferredPrepareResult>>{
  const compact=fixedBinding(rawBinding);
  const authorityKeys=['recipient','binding','assertClaimed','assertCurrent','wall','monotonic'] as const,legacyKeys=['daemonInfoArgs','finalServerArgs','parseFinalServer','bootstrapSql','roleMetadataSql','verifyPristineRoles','verifyInstallerRoles'] as const,
   systemKeys=['recipient','pin','current','run','wait','release'] as const;
@@ -89,14 +98,15 @@ export async function prepare0076NegativeLinuxDocker(
   ||typeof rawAuthority.assertClaimed!=='function'||typeof rawAuthority.assertCurrent!=='function'||typeof rawAuthority.wall!=='function'||typeof rawAuthority.monotonic!=='function'
   ||!exact(rawLegacy,legacyKeys)||!Object.isFrozen(rawLegacy)||legacyKeys.some(key=>typeof rawLegacy[key]!=='function')
   ||!exact(rawSystem,systemKeys)||!Object.isFrozen(rawSystem)||!rawSystem.recipient||typeof rawSystem.recipient!=='object'
-  ||typeof rawSystem.pin!=='function'||typeof rawSystem.current!=='function'||typeof rawSystem.run!=='function'||typeof rawSystem.wait!=='function'||typeof rawSystem.release!=='function')invalid();
+  ||typeof rawSystem.pin!=='function'||typeof rawSystem.current!=='function'||typeof rawSystem.run!=='function'||typeof rawSystem.wait!=='function'||typeof rawSystem.release!=='function'
+  ||rawHandoff!==null&&(!exact(rawHandoff,['recipient','transfer'])||!Object.isFrozen(rawHandoff)||rawHandoff.recipient!==rawSystem.recipient||typeof rawHandoff.transfer!=='function'||!is0076NegativeLinuxNativeDockerHandoff(rawSystem,rawHandoff)))invalid();
  const authorityRecipient=rawAuthority.recipient,systemRecipient=rawSystem.recipient;
  if(rawAuthority.assertClaimed.call(authorityRecipient,rawBinding)!==undefined)invalid();
  if(attempted.has(rawBinding.attemptId)||attempted.size>=maximumAttempts)invalid();attempted.add(rawBinding.attemptId);
  const startWall=rawAuthority.wall.call(authorityRecipient),startMonotonic=rawAuthority.monotonic.call(authorityRecipient),duration=rawBinding.expiresAt-startWall;
  if(!Number.isSafeInteger(startWall)||!Number.isFinite(startMonotonic)||startMonotonic<0||startWall<rawBinding.issuedAt||startWall>=rawBinding.expiresAt)invalid();
  let lastWall=startWall,lastMonotonic=startMonotonic,pin:Readonly<NegativeLinuxDockerToolPin>|null=null,containerId:string|null=null,createStarted=false,
-  prepared:Readonly<NegativeLinuxDockerPrepareResult>|null=null,closeConfirmed=false;
+   prepared:Readonly<NegativeLinuxDockerPrepareResult|NegativeLinuxDockerTransferredPrepareResult>|null=null,closeConfirmed=false,handoffStarted=false,transferred=false;
  const current=()=>{
   if(rawAuthority.assertCurrent.call(authorityRecipient,rawBinding)!==undefined)invalid();
   const wall=rawAuthority.wall.call(authorityRecipient),monotonic=rawAuthority.monotonic.call(authorityRecipient);
@@ -149,11 +159,30 @@ export async function prepare0076NegativeLinuxDocker(
   const containerPin=Object.freeze({recipient:authorityRecipient,target,startedWall:startWall,startedMonotonic:startMonotonic,expiresAt:rawBinding.expiresAt,
    current(this:object,found:NegativeOwnedTarget){if(this!==authorityRecipient||found!==target)invalid();current();},wall(this:object){if(this!==authorityRecipient)invalid();return lastWall;},
    monotonic(this:object){if(this!==authorityRecipient)invalid();return lastMonotonic;},async inspect(this:object,found:NegativeOwnedTarget){if(this!==authorityRecipient||found!==target)invalid();return Object.freeze({daemonRaw,containerRaw:finalRunningRaw,closed:true});}});
-  await verify0076NegativeLinuxContainerSource(target,containerPin);prepared=Object.freeze({status:'PREPARED',target,toolCloseConfirmed:true});
+   await verify0076NegativeLinuxContainerSource(target,containerPin);
+   if(rawHandoff===null)prepared=Object.freeze({status:'PREPARED',target,toolCloseConfirmed:true});
+   else{
+    current();if(rawSystem.current.call(systemRecipient,tool)!==undefined)unknown();handoffStarted=true;const toolOwner=rawHandoff.transfer.call(systemRecipient,tool,target);
+     if(!toolOwner||typeof toolOwner!=='object'||types.isProxy(toolOwner)||!Object.isFrozen(toolOwner)||!is0076NegativeLinuxNativeDockerTransferredOwner(rawSystem,rawHandoff,toolOwner,target))unknown();
+    transferred=true;prepared=Object.freeze({status:'PREPARED',target,toolOwner,toolCloseConfirmed:false});
+   }
  }catch{/* raw 오류를 반환하지 않고 원 resource/tool 불명을 보존한다. */}
  finally{
-  if(pin!==null)try{closeConfirmed=await rawSystem.release.call(systemRecipient,pin)==='CLOSED';}catch{closeConfirmed=false;}
+   if(pin!==null&&!handoffStarted)try{closeConfirmed=await rawSystem.release.call(systemRecipient,pin)==='CLOSED';}catch{closeConfirmed=false;}
  }
- if(prepared!==null&&closeConfirmed)return prepared;
+  if(prepared!==null&&(transferred||closeConfirmed))return prepared;
  return Object.freeze({status:'UNKNOWN',containerId,resourceMayExist:createStarted,toolCloseConfirmed:closeConfirmed});
+}
+
+export async function prepare0076NegativeLinuxDocker(
+ rawBinding:Readonly<NegativeLinuxDockerBinding>,rawAuthority:Readonly<NegativeLinuxDockerAuthority>,rawLegacy:Readonly<NegativeLinuxDockerLegacy>,rawSystem:Readonly<NegativeLinuxDockerSystem>,
+):Promise<Readonly<NegativeLinuxDockerPrepareResult>>{
+ return await prepare(rawBinding,rawAuthority,rawLegacy,rawSystem,null) as Readonly<NegativeLinuxDockerPrepareResult>;
+}
+
+/** 원 native owner가 발급한 비직렬 handoff만 소비한다. raw FD나 실행 권위를 반환하지 않는다. */
+export async function prepare0076NegativeLinuxDockerWithToolHandoff(
+ rawBinding:Readonly<NegativeLinuxDockerBinding>,rawAuthority:Readonly<NegativeLinuxDockerAuthority>,rawLegacy:Readonly<NegativeLinuxDockerLegacy>,rawSystem:Readonly<NegativeLinuxDockerSystem>,rawHandoff:Readonly<NegativeLinuxDockerToolHandoff>,
+):Promise<Readonly<NegativeLinuxDockerTransferredPrepareResult>>{
+ return await prepare(rawBinding,rawAuthority,rawLegacy,rawSystem,rawHandoff) as Readonly<NegativeLinuxDockerTransferredPrepareResult>;
 }

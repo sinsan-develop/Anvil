@@ -4,8 +4,9 @@ import {closeSync,constants,fstatSync,lstatSync,openSync,readlinkSync,readSync} 
 import {types} from 'node:util';
 import {hashV1,uuidV1} from '../contracts/runtime/validation-v1.ts';
 import type {
- NegativeLinuxDockerBinding,NegativeLinuxDockerCommandResult,NegativeLinuxDockerInvocation,NegativeLinuxDockerSystem,NegativeLinuxDockerToolPin,
+ NegativeLinuxDockerBinding,NegativeLinuxDockerCommandResult,NegativeLinuxDockerInvocation,NegativeLinuxDockerSystem,NegativeLinuxDockerToolHandoff,NegativeLinuxDockerToolPin,
 } from './qa-ix01-0076-negative-linux-docker.ts';
+import type {NegativeOwnedTarget} from './qa-ix01-0076-atomicity-negative.ts';
 
 const dockerPath='/usr/bin/docker',maximumToolBytes=160*1024*1024,chunkBytes=1024*1024,maximumAttempts=256;
 const image='sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f';
@@ -31,8 +32,11 @@ export interface NegativeLinuxNativeDockerSystem{
 export type NegativeLinuxNativeDockerOwnerCapability=object;
 
 interface Binding{owner:NegativeLinuxNativeDockerOwnerPorts;recipient:object;binding:Readonly<NegativeLinuxDockerBinding>;materials:Readonly<NegativeLinuxNativeDockerMaterials>;current:NegativeLinuxNativeDockerOwnerPorts['assertCurrent'];wall:NegativeLinuxNativeDockerOwnerPorts['wall'];monotonic:NegativeLinuxNativeDockerOwnerPorts['monotonic'];created:boolean;startWall:number;startMonotonic:number;lastWall:number;lastMonotonic:number}
-interface FileState{system:NegativeLinuxNativeDockerSystem;recipient:object;handle:object;stat:Readonly<NegativeLinuxNativeDockerFileStat>;pin:Readonly<NegativeLinuxDockerToolPin>|null;active:boolean;poisoned:boolean;phase:CommandPhase;containerId:string|null;finalServerAttempts:number;finalServerObserved:boolean;closeStarted:boolean;closeStatus:'OPEN'|'CLOSED'|'UNKNOWN'}
-const capabilities=new WeakMap<object,Binding>(),issuedAttempts=new Set<string>(),pins=new WeakMap<object,FileState>(),retainedFiles=new Set<FileState>(),retainedChildren=new Set<object>();
+interface FileState{system:NegativeLinuxNativeDockerSystem;recipient:object;handle:object;stat:Readonly<NegativeLinuxNativeDockerFileStat>;pin:Readonly<NegativeLinuxDockerToolPin>|null;active:boolean;poisoned:boolean;transferred:boolean;phase:CommandPhase;containerId:string|null;finalServerAttempts:number;finalServerObserved:boolean;closeStarted:boolean;closeStatus:'OPEN'|'CLOSED'|'UNKNOWN'}
+interface NativeSystemState{bound:Binding;system:Readonly<NegativeLinuxDockerSystem>;state():FileState|null;handoff:Readonly<NegativeLinuxDockerToolHandoff>|null}
+interface TransferredState{bound:Binding;state:FileState;target:Readonly<NegativeOwnedTarget>}
+export type NegativeLinuxNativeDockerTransferredOwner=object;
+const capabilities=new WeakMap<object,Binding>(),issuedAttempts=new Set<string>(),pins=new WeakMap<object,FileState>(),nativeSystems=new WeakMap<object,NativeSystemState>(),nativeHandoffs=new WeakMap<object,NativeSystemState>(),transferredOwners=new WeakMap<object,TransferredState>(),retainedFiles=new Set<FileState>(),retainedChildren=new Set<object>();
 const on=EventEmitter.prototype.on,off=EventEmitter.prototype.removeListener;
 const invalid=():never=>{throw Error('IX01_0076_NEGATIVE_LINUX_NATIVE_DOCKER_INVALID');};
 function exact(value:unknown,keys:readonly string[]){
@@ -71,8 +75,13 @@ function current(bound:Binding){
  if(!Number.isSafeInteger(wall)||!Number.isFinite(monotonic)||wall<bound.lastWall||monotonic<bound.lastMonotonic||wall>=bound.binding.expiresAt||monotonic-bound.startMonotonic>=duration)invalid();bound.lastWall=wall;bound.lastMonotonic=monotonic;
 }
 function systemCurrent(bound:Binding,state:FileState){
- current(bound);if(state.poisoned||state.closeStatus!=='OPEN'||state.system.recipient!==state.recipient)invalid();const found=statShape(state.system.stat.call(state.recipient,state.handle));if(!sameStat(found,state.stat))invalid();
+ current(bound);if(state.poisoned||state.closeStatus!=='OPEN'||state.system.recipient!==state.recipient)invalid();const found=statShape(state.system.stat.call(state.recipient,state.handle));if(!sameStat(found,state.stat))invalid();current(bound);
 }
+function targetShape(bound:Binding,state:FileState,target:Readonly<NegativeOwnedTarget>){
+ if(!exact(target,['schemaVersion','purpose','attemptId','sourceHead','planHash','graphHash','namespace','containerId'])||!Object.isFrozen(target)||target.schemaVersion!==1||target.purpose!=='IX01_0076_NEGATIVE_OWNED_TARGET'
+  ||target.attemptId!==bound.binding.attemptId||target.sourceHead!==bound.binding.sourceHead||target.planHash!==bound.binding.planHash||target.graphHash!==bound.binding.graphHash||target.namespace!==bound.binding.namespace||target.containerId!==state.containerId)invalid();
+}
+function transferred(owner:NegativeLinuxNativeDockerTransferredOwner):TransferredState{return transferredOwners.get(owner)??invalid();}
 function unknown():Readonly<NegativeLinuxDockerCommandResult>{return Object.freeze({status:null,signal:null,closed:false,stdout:'',stderr:''});}
 function closeFile(state:FileState){
  if(state.closeStarted)return state.closeStatus==='CLOSED'?'CLOSED' as const:'UNKNOWN' as const;state.closeStarted=true;
@@ -132,16 +141,16 @@ export function create0076NegativeLinuxNativeDocker(capability:NegativeLinuxNati
  const pin:NegativeLinuxDockerSystem['pin']=async function(path){
   if(this!==system.recipient||path!==dockerPath||pinStarted||!unchanged())invalid();pinStarted=true;current(bound);let local:FileState|null=null;
   try{
-   const handle=rawSystem.open.call(system.recipient,path);if(!handle||typeof handle!=='object'||types.isProxy(handle))invalid();local={system:rawSystem,recipient:system.recipient,handle,stat:Object.freeze({}) as never,pin:null,active:false,poisoned:false,phase:'INFO',containerId:null,finalServerAttempts:0,finalServerObserved:false,closeStarted:false,closeStatus:'OPEN'};retainedFiles.add(local);current(bound);
+    const handle=rawSystem.open.call(system.recipient,path);if(!handle||typeof handle!=='object'||types.isProxy(handle))invalid();local={system:rawSystem,recipient:system.recipient,handle,stat:Object.freeze({}) as never,pin:null,active:false,poisoned:false,transferred:false,phase:'INFO',containerId:null,finalServerAttempts:0,finalServerObserved:false,closeStarted:false,closeStatus:'OPEN'};retainedFiles.add(local);current(bound);
    const first=statShape(rawSystem.stat.call(system.recipient,handle)),digest=createHash('sha256');let offset=0;
    while(offset<first.size){current(bound);const length=Math.min(chunkBytes,first.size-offset),bytes=rawSystem.read.call(system.recipient,handle,offset,length);if(types.isProxy(bytes)||!types.isUint8Array(bytes)||types.isSharedArrayBuffer(bytes.buffer)||bytes.byteLength!==length)invalid();digest.update(bytes);offset+=bytes.byteLength;}
    current(bound);const after=statShape(rawSystem.stat.call(system.recipient,handle));if(!sameStat(first,after))invalid();const custody=Object.freeze(Object.create(null)),found=Object.freeze({path:first.path,realpath:first.realpath,kind:first.kind,dev:first.dev,ino:first.ino,uid:first.uid,mode:first.mode,nlink:first.nlink,size:first.size,mtimeMs:first.mtimeMs,ctimeMs:first.ctimeMs,sha256:digest.digest('hex'),custody}) satisfies Readonly<NegativeLinuxDockerToolPin>;
    local.stat=first;local.pin=found;pins.set(found,local);state=local;return found;
   }catch(error){if(local!==null)closeFile(local);throw error;}
  };
- const pinCurrent:NegativeLinuxDockerSystem['current']=function(found){if(this!==system.recipient||!unchanged())invalid();const foundState=pins.get(found);if(foundState===undefined)return invalid();const local:FileState=foundState;if(local!==state||local.pin!==found)invalid();systemCurrent(bound,local);};
+  const pinCurrent:NegativeLinuxDockerSystem['current']=function(found){if(this!==system.recipient||!unchanged())invalid();const foundState=pins.get(found);if(foundState===undefined)return invalid();const local:FileState=foundState;if(local!==state||local.pin!==found||local.transferred)invalid();systemCurrent(bound,local);};
  const run:NegativeLinuxDockerSystem['run']=async function(found,raw){
-  if(this!==system.recipient||!unchanged())return unknown();const local=pins.get(found);if(local===undefined||local!==state||local.pin!==found||local.active||local.poisoned||!invocationShape(raw,bound,local))return unknown();
+   if(this!==system.recipient||!unchanged())return unknown();const local=pins.get(found);if(local===undefined||local!==state||local.pin!==found||local.active||local.poisoned||local.transferred||!invocationShape(raw,bound,local))return unknown();
   try{systemCurrent(bound,local);}catch{return unknown();}let expired=false,timer:unknown,timerSet=false,spawnStarted=false,timeoutEffect=()=>{expired=true;},child:EventEmitter,input:EventEmitter&{end(value?:Uint8Array):void},stdout:EventEmitter,stderr:EventEmitter;
   try{timer=rawSystem.setTimeout.call(system.recipient,()=>timeoutEffect(),raw.timeoutMs);timerSet=true;systemCurrent(bound,local);if(expired){rawSystem.clearTimeout.call(system.recipient,timer);return unknown();}
    spawnStarted=true;const created=rawSystem.spawnPinned.call(system.recipient,local.handle,raw);if(!emitter(created))throw Error('IX01_0076_NEGATIVE_LINUX_NATIVE_DOCKER_INVALID');const stdinValue=Object.getOwnPropertyDescriptor(created,'stdin')?.value,stdoutValue=Object.getOwnPropertyDescriptor(created,'stdout')?.value,stderrValue=Object.getOwnPropertyDescriptor(created,'stderr')?.value;
@@ -166,9 +175,40 @@ export function create0076NegativeLinuxNativeDocker(capability:NegativeLinuxNati
    try{timeoutEffect=()=>finishUnknown(true);systemCurrent(bound,local);if(expired){finishUnknown(true);return;}input.end(raw.input===null?undefined:new Uint8Array(Buffer.from(raw.input,'utf8')));}catch{finishUnknown(true);}
   });
  };
- const wait:NegativeLinuxDockerSystem['wait']=async function(timeoutMs){if(this!==system.recipient||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10_000||state===null)return invalid();const local:FileState=state;systemCurrent(bound,local);await new Promise<void>((resolve,reject)=>{let handle:unknown;try{handle=rawSystem.setTimeout.call(system.recipient,()=>{try{systemCurrent(bound,local);resolve();}catch(error){reject(error);}},timeoutMs);}catch(error){reject(error);return;}void handle;});};
- const release:NegativeLinuxDockerSystem['release']=async function(found){if(this!==system.recipient||!unchanged())invalid();const local=pins.get(found);if(local===undefined||local!==state||local.pin!==found)return 'UNKNOWN';if(local.active){local.poisoned=true;return 'UNKNOWN';}return closeFile(local);};
- return Object.freeze({recipient:system.recipient,pin,current:pinCurrent,run,wait,release});
+  const wait:NegativeLinuxDockerSystem['wait']=async function(timeoutMs){if(this!==system.recipient||!Number.isSafeInteger(timeoutMs)||timeoutMs<1||timeoutMs>10_000||state===null)return invalid();const local:FileState=state;if(local.transferred)invalid();systemCurrent(bound,local);await new Promise<void>((resolve,reject)=>{let handle:unknown;try{handle=rawSystem.setTimeout.call(system.recipient,()=>{try{systemCurrent(bound,local);resolve();}catch(error){reject(error);}},timeoutMs);}catch(error){reject(error);return;}void handle;});};
+  const release:NegativeLinuxDockerSystem['release']=async function(found){if(this!==system.recipient||!unchanged())invalid();const local=pins.get(found);if(local===undefined||local!==state||local.pin!==found||local.transferred)return 'UNKNOWN';if(local.active){local.poisoned=true;return 'UNKNOWN';}return closeFile(local);};
+  const ports=Object.freeze({recipient:system.recipient,pin,current:pinCurrent,run,wait,release});nativeSystems.set(ports,{bound,system:ports,state:()=>state,handoff:null});return ports;
+}
+
+/** 기존 prepare와 분리된 보호 호출용이다. 같은 native state의 COMPLETE pin만 opaque owner로 한 번 이전한다. */
+export function create0076NegativeLinuxNativeDockerForTransfer(capability:NegativeLinuxNativeDockerOwnerCapability,rawSystem:NegativeLinuxNativeDockerSystem):Readonly<{system:Readonly<NegativeLinuxDockerSystem>;handoff:Readonly<NegativeLinuxDockerToolHandoff>} >{
+ const ports=create0076NegativeLinuxNativeDocker(capability,rawSystem),owned=nativeSystems.get(ports)??invalid(),recipient=ports.recipient;
+ const handoff=Object.freeze({recipient,transfer(this:object,found:Readonly<NegativeLinuxDockerToolPin>,target:Readonly<NegativeOwnedTarget>){
+  if(this!==recipient)invalid();const local=owned.state()??invalid();if(local.pin!==found||local.active||local.poisoned||local.transferred||local.phase!=='COMPLETE'||local.closeStatus!=='OPEN')invalid();
+  systemCurrent(owned.bound,local);targetShape(owned.bound,local,target);const owner=Object.freeze(Object.create(null)) as object;
+  transferredOwners.set(owner,{bound:owned.bound,state:local,target});local.transferred=true;return owner;
+ }});owned.handoff=handoff;nativeHandoffs.set(handoff,owned);return Object.freeze({system:ports,handoff});
+}
+
+/** generic prepare가 임의 callback을 native handoff로 오인하지 않도록 process-local brand만 확인한다. */
+export function is0076NegativeLinuxNativeDockerHandoff(system:Readonly<NegativeLinuxDockerSystem>,handoff:Readonly<NegativeLinuxDockerToolHandoff>):boolean{
+ const found=nativeSystems.get(system);return found!==undefined&&found.handoff===handoff&&nativeHandoffs.get(handoff)===found;
+}
+
+export function is0076NegativeLinuxNativeDockerTransferredOwner(system:Readonly<NegativeLinuxDockerSystem>,handoff:Readonly<NegativeLinuxDockerToolHandoff>,owner:object,target:Readonly<NegativeOwnedTarget>):boolean{
+ const foundSystem=nativeSystems.get(system),foundHandoff=nativeHandoffs.get(handoff),foundOwner=transferredOwners.get(owner);
+ if(foundSystem===undefined||foundSystem!==foundHandoff||foundSystem.handoff!==handoff||foundOwner===undefined||foundOwner.bound!==foundSystem.bound||foundOwner.state!==foundSystem.state()||!foundOwner.state.transferred||foundOwner.target!==target)return false;
+ try{systemCurrent(foundOwner.bound,foundOwner.state);return true;}catch{return false;}
+}
+
+/** raw FD를 노출하지 않고 같은 native module의 future SQL supplier가 재사용할 owner brand를 검산한다. */
+export function assert0076NegativeLinuxNativeDockerTransferredOwnerCurrent(owner:NegativeLinuxNativeDockerTransferredOwner,target:Readonly<NegativeOwnedTarget>):void{
+ const found=transferred(owner);if(found.target!==target)invalid();targetShape(found.bound,found.state,target);systemCurrent(found.bound,found.state);
+}
+
+/** 만료 뒤에도 원 handle 회수를 허용하되, 다른 target·중복 close는 새 native close를 만들지 않는다. */
+export async function close0076NegativeLinuxNativeDockerTransferredOwner(owner:NegativeLinuxNativeDockerTransferredOwner,target:Readonly<NegativeOwnedTarget>):Promise<'CLOSED'|'UNKNOWN'>{
+ const found=transferred(owner);if(found.target!==target)invalid();targetShape(found.bound,found.state,target);if(found.state.active)return 'UNKNOWN';return closeFile(found.state);
 }
 
 /** 고정 Docker 파일의 read-only same-FD 관측만 제공한다. same-FD exec는 미검증이므로 spawnPinned는 항상 닫혀 있다. */
