@@ -9,6 +9,7 @@ import {
  current0076NegativeLinuxFdProofCollectionContract,
  project0076NegativeLinuxFdProofCollectionCandidate,
  project0076NegativeLinuxFdProofCollectionCandidateForRam,
+ project0076NegativeLinuxFdProofLauncherWireForRam,
  project0076NegativeLinuxFdProofObservationCandidate,
  type NegativeLinuxFdProofLauncherCommand,
  type NegativeLinuxFdProofLauncherIntentPorts,
@@ -18,14 +19,14 @@ import {
 
 const scriptPath='/source/scripts/qa-ix01-0076-negative-linux-fd-proof-launcher.ts';
 const attemptId='00000000-0000-4000-8000-000000000711',approvalId='00000000-0000-4000-8000-000000000712';
-function fixture(receiptMode:'MATCH'|'MISSING'|'CHANGED'='MATCH'){
+function fixture(receiptMode:'MATCH'|'MISSING'|'CHANGED'='MATCH',mode:'--run'|'--collect'|'--wrong'='--run'){
  const evidence=Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_FD_PROOF_PROTECTED_START' as const,attemptId,approvalId,
   approvalRef:Object.freeze({id:approvalId,version:1,contentHash:'e'.repeat(64)}),approvalHash:'e'.repeat(64),sourceHead:'a'.repeat(40),planHash:'b'.repeat(64),sourceHash:'c'.repeat(64),graphHash:'d'.repeat(64),
   issuedAt:1000,expiresAt:9000,nodePath:'/opt/node-v24.22.1-linux-x64/bin/node' as const,nodeHash:'f'.repeat(64),launcherHash:'1'.repeat(64),issuerHash:'2'.repeat(64),entryHash:'3'.repeat(64),systemHash:'4'.repeat(64),
   loadedSourceRef:Object.freeze({id:'00000000-0000-4000-8000-000000000713',version:1,contentHash:'5'.repeat(64)})});
  const stdin=new TextEncoder().encode(canonicalJson(evidence)),stdinHash=createHash('sha256').update(stdin).digest('hex');
  const command=Object.freeze<NegativeLinuxFdProofLauncherCommand>({platform:'linux',uid:1000,execPath:evidence.nodePath,scriptPath,execArgv:Object.freeze([]),envKeys:Object.freeze([]),
-  argv:Object.freeze(['--run',attemptId,evidence.planHash,evidence.approvalHash,stdinHash]),stdin,now:()=>1000,monotonic:()=>10});
+  argv:Object.freeze([mode,attemptId,evidence.planHash,evidence.approvalHash,stdinHash]),stdin,now:()=>1000,monotonic:()=>10});
  const receiptRecipient=Object.freeze({}),recipient=Object.freeze({});let reads=0,settles=0;const order:string[]=[];
  const root=Object.freeze({kind:'DIRECTORY' as const,dev:1,ino:2,uid:1000,mode:0o40700});
  const receipt=Object.freeze<NegativeLinuxFdProofLauncherReceiptSystem>({recipient:receiptRecipient,read(this:object,path:string,maxBytes:number){assert.equal(this,receiptRecipient);assert.equal(path,`/home/daon/.local/share/anvil-v3-qa-receipts/ix01-0076-fd-proof-${attemptId}-start.json`);assert.equal(maxBytes,32768);reads++;if(receiptMode==='MISSING')throw Error('missing');const result=new Uint8Array(stdin);if(receiptMode==='CHANGED')result[result.length-1]=result[result.length-1]!^1;return result;},rootIdentity(this:object){assert.equal(this,receiptRecipient);if(reads!==1)throw Error('not read');return root;}});
@@ -38,6 +39,12 @@ test('exact CLI와 canonical approval stdin은 intent를 먼저 정착하지만 
  const h=fixture(),result=await run0076NegativeLinuxFdProofLauncherForRam(h.command,h.receipt,h.intent,scriptPath);
  assert.equal(result.status,'PROTECTED_START_EVIDENCE_UNAVAILABLE');assert.equal(result.nativeProviderSelected,false);assert.equal(result.effectsStarted,false);
  assert.deepEqual(h.order,['settled']);assert.equal(h.reads(),1);assert.equal(h.settles(),1);
+});
+
+test('명시 collection mode도 같은 원 receipt·intent를 단회 검산하지만 RAM은 native를 선택하지 않는다',async()=>{
+ const h=fixture('MATCH','--collect'),result=await run0076NegativeLinuxFdProofLauncherForRam(h.command,h.receipt,h.intent,scriptPath);
+ assert.equal(result.status,'PROTECTED_START_EVIDENCE_UNAVAILABLE');assert.equal(result.nativeProviderSelected,false);assert.equal(result.effectsStarted,false);assert.deepEqual(h.order,['settled']);assert.equal(h.reads(),1);assert.equal(h.settles(),1);
+ const wrong=fixture('MATCH','--wrong'),rejected=await run0076NegativeLinuxFdProofLauncherForRam(wrong.command,wrong.receipt,wrong.intent,scriptPath);assert.equal(rejected.status,'UNKNOWN');assert.equal(wrong.reads(),0);assert.equal(wrong.settles(),0);
 });
 
 test('argv 또는 protected stdin 불일치는 intent와 entry 전에 거절한다',async()=>{
@@ -107,4 +114,11 @@ test('교차 시도·기한 또는 불명 terminal은 collection 성공 데이�
  ]){const collection=project0076NegativeLinuxFdProofCollectionCandidateForRam(Object.freeze({...success,...(terminal?{terminal}: {})}),h.evidence,h.stdin);assert.deepEqual(collection,{status:'UNKNOWN',code:'IX01_0076_BENIGN_SAME_FD_COLLECTION_UNAVAILABLE',comparisonOnly:true,nativeEnableEligible:false,durableStored:false,runtimeVerified:false,executionAuthorized:false,pgAuthorized:false});}
  const terminal=Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1' as const,attemptId,issuedAt:1000,expiresAt:9000,child:Object.freeze({exitCode:null,signal:'SIGTERM' as const,closeConfirmed:true as const}),sourceFd:Object.freeze({closeConfirmed:true as const})});
  const otherSource=Object.freeze({...h.evidence,sourceHead:'b'.repeat(40),sourceHash:'c'.repeat(64)});assert.equal(project0076NegativeLinuxFdProofCollectionCandidateForRam(Object.freeze({...success,terminal}),h.evidence,h.stdin,otherSource).status,'UNKNOWN');
+});
+
+test('collection CLI 종료값은 proof 내부 성공이 아니라 실제 collection wire 성공을 따른다',()=>{
+ const h=fixture('MATCH','--collect'),terminal=Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1' as const,attemptId,issuedAt:1000,expiresAt:9000,child:Object.freeze({exitCode:null,signal:'SIGTERM' as const,closeConfirmed:true as const}),sourceFd:Object.freeze({closeConfirmed:true as const})});
+ const success=Object.freeze({status:'SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED' as const,evidence:'SOURCE_CANDIDATE_ONLY' as const,runtimeVerified:false as const,executionAuthorized:false as const,path:'/usr/bin/sleep',dev:8,ino:9,sha256:'a'.repeat(64),terminal});
+ const accepted=project0076NegativeLinuxFdProofLauncherWireForRam(success,h.evidence,h.stdin,'--collect');assert.equal(accepted.wire.status,'IX01_0076_BENIGN_SAME_FD_COLLECTION_CANDIDATE_NOT_RUNTIME_PASS');assert.equal(accepted.exitCode,0);
+ const unavailable=project0076NegativeLinuxFdProofLauncherWireForRam(Object.freeze({...success,terminal:Object.freeze({...terminal,expiresAt:8999})}),h.evidence,h.stdin,'--collect');assert.equal(unavailable.wire.status,'UNKNOWN');assert.equal(unavailable.exitCode,1);
 });

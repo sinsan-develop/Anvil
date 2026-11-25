@@ -21,7 +21,7 @@ const launcherPurpose='IX01_0076_NEGATIVE_LINUX_FD_PROOF_LAUNCH_INTENT' as const
 const receiptParent='/home/daon/.local/share/anvil-v3-qa-receipts';
 const nodePath='/opt/node-v24.22.1-linux-x64/bin/node';
 export const current0076NegativeLinuxFdProofLauncherContract=Object.freeze({launcherPurpose,nodePath,mode:'--run' as const,maxStdinBytes:32768,maxDurationMs:10000,
- approvalIssuedByLauncher:false as const,fixedSourceBytesVerifiedByExternalExecutor:true as const,loadedModuleBytesReverifiedInsideNode:false as const,actualExecutionPerformed:false as const});
+ collectionMode:'--collect' as const,approvalIssuedByLauncher:false as const,fixedSourceBytesVerifiedByExternalExecutor:true as const,loadedModuleBytesReverifiedInsideNode:false as const,actualExecutionPerformed:false as const});
 export const current0076NegativeLinuxFdProofCollectionContract=Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_BENIGN_SAME_FD_COLLECTION_V1' as const,
  evidence:'SOURCE_COLLECTION_CANDIDATE_ONLY' as const,comparisonOnly:true as const,nativeEnableEligible:false as const,durableStored:false as const,runtimeVerified:false as const,executionAuthorized:false as const,pgAuthorized:false as const});
 
@@ -50,7 +50,7 @@ function rootShape(raw:unknown):raw is Readonly<NegativeLinuxFdProofLauncherRoot
 
 function commandShape(raw:NegativeLinuxFdProofLauncherCommand,expectedScriptPath:string,evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>){
  const stdinHash=createHash('sha256').update(raw.stdin).digest('hex');if(!exact(raw,commandKeys)||!Object.isFrozen(raw)||raw.platform!=='linux'||raw.uid!==1000||raw.execPath!==nodePath||raw.scriptPath!==expectedScriptPath
-  ||!Array.isArray(raw.argv)||!Object.isFrozen(raw.argv)||raw.argv.length!==5||raw.argv[0]!=='--run'||raw.argv[1]!==evidence.attemptId||raw.argv[2]!==evidence.planHash||raw.argv[3]!==evidence.approvalHash||raw.argv[4]!==stdinHash
+  ||!Array.isArray(raw.argv)||!Object.isFrozen(raw.argv)||raw.argv.length!==5||![current0076NegativeLinuxFdProofLauncherContract.mode,current0076NegativeLinuxFdProofLauncherContract.collectionMode].includes(raw.argv[0] as never)||raw.argv[1]!==evidence.attemptId||raw.argv[2]!==evidence.planHash||raw.argv[3]!==evidence.approvalHash||raw.argv[4]!==stdinHash
   ||!Array.isArray(raw.execArgv)||!Object.isFrozen(raw.execArgv)||raw.execArgv.length||!Array.isArray(raw.envKeys)||!Object.isFrozen(raw.envKeys)||raw.envKeys.length
   ||!types.isUint8Array(raw.stdin)||types.isProxy(raw.stdin)||types.isSharedArrayBuffer(raw.stdin.buffer)||raw.stdin.byteLength<1||raw.stdin.byteLength>32768
   ||typeof raw.now!=='function'||typeof raw.monotonic!=='function')invalid();
@@ -136,11 +136,17 @@ export function project0076NegativeLinuxFdProofCollectionCandidate(result:Launch
 }
 /** 합성 검증 전용이다. 실제 launcher closure·보호 실행·수거 증거를 발급하지 않는다. */
 export function project0076NegativeLinuxFdProofCollectionCandidateForRam(result:LauncherResult,evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>,stdin:Uint8Array,projectedEvidence=evidence){if(projectedEvidence!==evidence)return collectionUnavailable();const settledIntent=intentBytes(evidence,stdin),raw=new TextDecoder('utf-8',{fatal:true}).decode(settledIntent),hash=createHash('sha256').update(settledIntent).digest('hex');bindCollection(result,evidence,settledIntent,raw,hash,'SYNTHETIC_RAM_ONLY');return project0076NegativeLinuxFdProofCollectionCandidate(result);}
+function wireExitCode(mode:'--run'|'--collect',result:LauncherResult,wire:Readonly<{status:string}>){return mode==='--collect'?(wire.status==='IX01_0076_BENIGN_SAME_FD_COLLECTION_CANDIDATE_NOT_RUNTIME_PASS'?0:1):(result.status==='SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED'?0:1);}
+function projectLauncherWire(result:LauncherResult,evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>,stdin:Uint8Array,mode:'--run'|'--collect'){
+ const wire=mode==='--collect'?project0076NegativeLinuxFdProofCollectionCandidate(result):project0076NegativeLinuxFdProofObservationCandidate(result,evidence,stdin);return Object.freeze({wire,exitCode:wireExitCode(mode,result,wire)});}
+/** CLI 분기 합성 검증 전용이다. collection은 실제 native evidence를 발급하지 않는다. */
+export function project0076NegativeLinuxFdProofLauncherWireForRam(result:LauncherResult,evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>,stdin:Uint8Array,mode:'--run'|'--collect'){
+ const wire=mode==='--collect'?project0076NegativeLinuxFdProofCollectionCandidateForRam(result,evidence,stdin):project0076NegativeLinuxFdProofObservationCandidate(result,evidence,stdin);return Object.freeze({wire,exitCode:wireExitCode(mode,result,wire)});}
 
 async function readStdin(){const chunks:Uint8Array[]=[];let total=0,expired=false;const timer=setTimeout(()=>{expired=true;process.stdin.destroy(Error('IX01_0076_NEGATIVE_LINUX_FD_PROOF_STDIN_TIMEOUT'));},10000);try{for await(const raw of process.stdin){if(expired)invalid();const chunk=typeof raw==='string'?new TextEncoder().encode(raw):new Uint8Array(raw);total+=chunk.byteLength;if(total>32768)invalid();chunks.push(chunk);}}finally{clearTimeout(timer);}if(expired)invalid();const result=new Uint8Array(total);let offset=0;for(const chunk of chunks){result.set(chunk,offset);offset+=chunk.byteLength;}return result;}
 async function main(){const expected=fileURLToPath(import.meta.url),stdin=await readStdin(),argv=Object.freeze(process.argv.slice(2)),execArgv=Object.freeze([...process.execArgv]),envKeys=Object.freeze(Object.keys(process.env));
  const command=Object.freeze<NegativeLinuxFdProofLauncherCommand>({platform:process.platform as 'linux',uid:process.geteuid?.() as 1000,execPath:process.execPath,scriptPath:process.argv[1]??'',argv,execArgv,envKeys,stdin,now:()=>Date.now(),monotonic:()=>performance.now()});
  const live=()=>{if(process.platform!=='linux'||process.geteuid?.()!==1000||process.execPath!==nodePath||process.argv[1]!==expected||process.argv.length!==7||process.argv.slice(2).some((value,index)=>value!==argv[index])||process.execArgv.length||Object.keys(process.env).length)invalid();};
- const result=await launch(command,nativeReceiptSystem,nativeIntentSystem,expected,true,live),evidence=parse0076NegativeLinuxFdProofProtectedEvidence(parseWireJson(new TextDecoder('utf-8',{fatal:true}).decode(stdin)));if(!evidence)return invalid();const wire=project0076NegativeLinuxFdProofObservationCandidate(result,evidence,stdin);
- process.stdout.write(canonicalJson(wire)+'\n');if(result.status!=='SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED')process.exitCode=1;}
+ const result=await launch(command,nativeReceiptSystem,nativeIntentSystem,expected,true,live),evidence=parse0076NegativeLinuxFdProofProtectedEvidence(parseWireJson(new TextDecoder('utf-8',{fatal:true}).decode(stdin)));if(!evidence)return invalid();const outcome=projectLauncherWire(result,evidence,stdin,argv[0] as '--run'|'--collect');
+ process.stdout.write(canonicalJson(outcome.wire)+'\n');if(outcome.exitCode)process.exitCode=1;}
 if(import.meta.main)void main().catch(()=>{process.stdout.write(canonicalJson(unavailable())+'\n');process.exitCode=1;});

@@ -9,7 +9,7 @@ import {types} from 'node:util';
 import {canonicalJson,parseWireJson} from '../contracts/canonical.ts';
 import {createSubnetObservationLocalHost,prepareSubnetObservationLocal} from './qa-ix01-subnet-observation-local-host.ts';
 import type {SubnetCollectionClock} from './qa-ix01-subnet-observation-supervisor.ts';
-import {current0076NegativeLinuxFdProofLauncherContract} from './qa-ix01-0076-negative-linux-fd-proof-launcher.ts';
+import {current0076NegativeLinuxFdProofCollectionContract,current0076NegativeLinuxFdProofLauncherContract} from './qa-ix01-0076-negative-linux-fd-proof-launcher.ts';
 import {parse0076NegativeLinuxFdProofProtectedEvidence,type NegativeLinuxFdProofProtectedEvidence} from './qa-ix01-0076-negative-linux-fd-proof-issuer.ts';
 
 const unknown=Object.freeze({status:'UNKNOWN',code:'WINDOWS_OBSERVATION_UNCONFIRMED'} as const);
@@ -150,12 +150,19 @@ const benignSshPrefix=Object.freeze(['-T','-o','BatchMode=yes','-o','StrictHostK
  '-o','ConnectionAttempts=1','-o','ConnectTimeout=8','-o','ServerAliveInterval=3','-o','ServerAliveCountMax=2','-o','LogLevel=ERROR','WSL-server']);
 const benignUnknown=Object.freeze({status:'UNKNOWN',code:'WINDOWS_BENIGN_FD_PROOF_UNCONFIRMED'} as const),hex64=(value:unknown):value is string=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 type BenignCandidate=Readonly<{status:'IX01_0076_BENIGN_SAME_FD_OBSERVATION_CANDIDATE_NOT_RUNTIME_PASS';attemptId:string;approvalRef:Readonly<{id:string;version:number;contentHash:string}>;intentDigest:string;observation:Readonly<{path:'/usr/bin/sleep';dev:number;ino:number;sha256:string}>;runtimeVerified:false;executionAuthorized:false;pgAuthorized:false}>;
+type BenignCollection=Readonly<{schemaVersion:1;purpose:typeof current0076NegativeLinuxFdProofCollectionContract.purpose;evidence:'SOURCE_COLLECTION_CANDIDATE_ONLY';status:'IX01_0076_BENIGN_SAME_FD_COLLECTION_CANDIDATE_NOT_RUNTIME_PASS';path:string;attemptId:string;
+ approvalRef:Readonly<{id:string;version:number;contentHash:string}>;sourceHead:string;approvalHash:string;planHash:string;sourceHash:string;graphHash:string;issuedAt:number;expiresAt:number;intent:Readonly<{path:string;raw:string;sha256:string}>;
+ observation:Readonly<{path:'/usr/bin/sleep';dev:number;ino:number;sha256:string}>;terminal:Readonly<{schemaVersion:1;purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1';attemptId:string;issuedAt:number;expiresAt:number;child:Readonly<{exitCode:null;signal:'SIGTERM';closeConfirmed:true}>;sourceFd:Readonly<{closeConfirmed:true}>}>;
+ collectionSource:'PRIVATE_LAUNCH_CLOSURE';comparisonOnly:true;nativeEnableEligible:false;durableStored:false;runtimeVerified:false;executionAuthorized:false;pgAuthorized:false}>;
+type BenignCarrier<T>=Readonly<{run(rawStdin:unknown):Promise<T|typeof benignUnknown>}>;
 
 function benignInput(raw:unknown){
  const bytes=ownBytes(raw,16384);if(!bytes.byteLength)return fail();let text:string,value:unknown;try{text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);value=parseWireJson(text);}catch{return fail();}
  const evidence=parse0076NegativeLinuxFdProofProtectedEvidence(value);if(!evidence||canonicalJson(evidence)!==text)return fail();return{bytes,evidence};
 }
 function benignIntentDigest(evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>,stdinSha256:string){return hash({schemaVersion:1,purpose:current0076NegativeLinuxFdProofLauncherContract.launcherPurpose,attemptId:evidence.attemptId,
+ approvalRef:evidence.approvalRef,approvalHash:evidence.approvalHash,planHash:evidence.planHash,graphHash:evidence.graphHash,stdinHash:stdinSha256,issuedAt:evidence.issuedAt,expiresAt:evidence.expiresAt});}
+function benignIntentRaw(evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>,stdinSha256:string){return canonicalJson({schemaVersion:1,purpose:current0076NegativeLinuxFdProofLauncherContract.launcherPurpose,attemptId:evidence.attemptId,
  approvalRef:evidence.approvalRef,approvalHash:evidence.approvalHash,planHash:evidence.planHash,graphHash:evidence.graphHash,stdinHash:stdinSha256,issuedAt:evidence.issuedAt,expiresAt:evidence.expiresAt});}
 function benignCandidate(raw:unknown,evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>,stdinSha256:string):BenignCandidate{
  const value=fields(raw,['status','attemptId','approvalRef','intentDigest','observation','runtimeVerified','executionAuthorized','pgAuthorized']),ref=fields(value.approvalRef,['id','version','contentHash']),observation=fields(value.observation,['path','dev','ino','sha256']);
@@ -165,12 +172,29 @@ function benignCandidate(raw:unknown,evidence:Readonly<NegativeLinuxFdProofProte
  return Object.freeze({status:value.status,attemptId:value.attemptId as string,approvalRef:Object.freeze({id:ref.id as string,version:ref.version as number,contentHash:ref.contentHash as string}),intentDigest:value.intentDigest as string,
   observation:Object.freeze({path:'/usr/bin/sleep',dev:observation.dev,ino:observation.ino,sha256:observation.sha256}),runtimeVerified:false,executionAuthorized:false,pgAuthorized:false});
 }
+function benignCollection(raw:unknown,evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>,stdinSha256:string):BenignCollection{
+ const value=fields(raw,['schemaVersion','purpose','evidence','status','path','attemptId','approvalRef','sourceHead','approvalHash','planHash','sourceHash','graphHash','issuedAt','expiresAt','intent','observation','terminal','collectionSource','comparisonOnly','nativeEnableEligible','durableStored','runtimeVerified','executionAuthorized','pgAuthorized']);
+ const ref=fields(value.approvalRef,['id','version','contentHash']),intent=fields(value.intent,['path','raw','sha256']),observation=fields(value.observation,['path','dev','ino','sha256']),terminal=fields(value.terminal,['schemaVersion','purpose','attemptId','issuedAt','expiresAt','child','sourceFd']),child=fields(terminal.child,['exitCode','signal','closeConfirmed']),sourceFd=fields(terminal.sourceFd,['closeConfirmed']);
+ const intentRaw=benignIntentRaw(evidence,stdinSha256),prefix='/home/daon/.local/share/anvil-v3-qa-receipts/ix01-0076-fd-proof-'+evidence.attemptId;
+ if(value.schemaVersion!==1||value.purpose!==current0076NegativeLinuxFdProofCollectionContract.purpose||value.evidence!=='SOURCE_COLLECTION_CANDIDATE_ONLY'||value.status!=='IX01_0076_BENIGN_SAME_FD_COLLECTION_CANDIDATE_NOT_RUNTIME_PASS'||value.path!==prefix+'-collection-v1.json'||value.attemptId!==evidence.attemptId
+  ||ref.id!==evidence.approvalRef.id||ref.version!==evidence.approvalRef.version||ref.contentHash!==evidence.approvalRef.contentHash||value.sourceHead!==evidence.sourceHead||value.approvalHash!==evidence.approvalHash||value.planHash!==evidence.planHash||value.sourceHash!==evidence.sourceHash||value.graphHash!==evidence.graphHash||value.issuedAt!==evidence.issuedAt||value.expiresAt!==evidence.expiresAt
+  ||intent.path!==prefix+'-intent-v1.json'||intent.raw!==intentRaw||intent.sha256!==createHash('sha256').update(intentRaw).digest('hex')||observation.path!=='/usr/bin/sleep'||typeof observation.dev!=='number'||!Number.isSafeInteger(observation.dev)||observation.dev<0||typeof observation.ino!=='number'||!Number.isSafeInteger(observation.ino)||observation.ino<1||!hex64(observation.sha256)
+  ||terminal.schemaVersion!==1||terminal.purpose!=='IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1'||terminal.attemptId!==evidence.attemptId||terminal.issuedAt!==evidence.issuedAt||terminal.expiresAt!==evidence.expiresAt||child.exitCode!==null||child.signal!=='SIGTERM'||child.closeConfirmed!==true||sourceFd.closeConfirmed!==true
+  ||value.collectionSource!=='PRIVATE_LAUNCH_CLOSURE'||value.comparisonOnly!==true||value.nativeEnableEligible!==false||value.durableStored!==false||value.runtimeVerified!==false||value.executionAuthorized!==false||value.pgAuthorized!==false)return fail();
+ return Object.freeze({schemaVersion:1,purpose:current0076NegativeLinuxFdProofCollectionContract.purpose,evidence:'SOURCE_COLLECTION_CANDIDATE_ONLY',status:'IX01_0076_BENIGN_SAME_FD_COLLECTION_CANDIDATE_NOT_RUNTIME_PASS',path:value.path as string,attemptId:evidence.attemptId,
+  approvalRef:Object.freeze({...evidence.approvalRef}),sourceHead:evidence.sourceHead,approvalHash:evidence.approvalHash,planHash:evidence.planHash,sourceHash:evidence.sourceHash,graphHash:evidence.graphHash,issuedAt:evidence.issuedAt,expiresAt:evidence.expiresAt,
+  intent:Object.freeze({path:intent.path as string,raw:intentRaw,sha256:intent.sha256 as string}),observation:Object.freeze({path:'/usr/bin/sleep',dev:observation.dev,ino:observation.ino,sha256:observation.sha256}),
+  terminal:Object.freeze({schemaVersion:1,purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1',attemptId:evidence.attemptId,issuedAt:evidence.issuedAt,expiresAt:evidence.expiresAt,child:Object.freeze({exitCode:null,signal:'SIGTERM',closeConfirmed:true}),sourceFd:Object.freeze({closeConfirmed:true})}),
+  collectionSource:'PRIVATE_LAUNCH_CLOSURE',comparisonOnly:true,nativeEnableEligible:false,durableStored:false,runtimeVerified:false,executionAuthorized:false,pgAuthorized:false});
+}
 
 /** 기존 IX01 actual Windows transport의 private native port만 재사용하는 benign 전용 단회 carrier다.
  * 승인·stored stdin·배치 검산은 외부 review 소유이며 이 factory는 승인이나 generic command capability를 발급하지 않는다. */
-export function create0076BenignFdProofWindowsCarrier(review:SubnetWindowsReview,ports?:SubnetWindowsPorts){
+function create0076BenignFdProofWindowsCarrierMode(review:SubnetWindowsReview,ports:SubnetWindowsPorts|undefined,mode:'--run'):BenignCarrier<BenignCandidate>;
+function create0076BenignFdProofWindowsCarrierMode(review:SubnetWindowsReview,ports:SubnetWindowsPorts|undefined,mode:'--collect'):BenignCarrier<BenignCollection>;
+function create0076BenignFdProofWindowsCarrierMode(review:SubnetWindowsReview,ports:SubnetWindowsPorts|undefined,mode:'--run'|'--collect'):BenignCarrier<BenignCandidate|BenignCollection>{
  const supplied=ports??nativePorts(review);let spent=false;
- return Object.freeze({async run(rawStdin:unknown):Promise<BenignCandidate|typeof benignUnknown>{
+ return Object.freeze({async run(rawStdin:unknown):Promise<BenignCandidate|BenignCollection|typeof benignUnknown>{
   if(spent)return benignUnknown;spent=true;let owned:Uint8Array|undefined,recordBytes:Uint8Array|undefined;
   try{
    if(typeof review!=='function'||types.isProxy(review))return benignUnknown;const p=fields(supplied,['clock','platform','review','openExclusive','write','flush','close','confirmClosed','spawn','end']),clock=fields(p.clock,['now','monotonic','setTimeout','clearTimeout']);
@@ -178,7 +202,7 @@ export function create0076BenignFdProofWindowsCarrier(review:SubnetWindowsReview
    const invoke=(key:string,args:unknown[])=>Reflect.apply(p[key] as Function,supplied,args),time=(key:string,args:unknown[]=[])=>Reflect.apply(clock[key] as Function,p.clock,args);
    if(invoke('platform',[])!=='win32')return benignUnknown;const parsed=benignInput(rawStdin);owned=parsed.bytes;const evidence=parsed.evidence,stdinSha256=createHash('sha256').update(owned).digest('hex'),compact=evidence.attemptId.replaceAll('-','');
    const sourceRoot='/home/daon/anvil-ix01-0076-negative-'+compact+'-qa',launcher=sourceRoot+'/scripts/qa-ix01-0076-negative-linux-fd-proof-launcher.ts';
-   const remote="cd '"+sourceRoot+"' && exec /usr/bin/env -i "+current0076NegativeLinuxFdProofLauncherContract.nodePath+" '"+launcher+"' --run "+evidence.attemptId+' '+evidence.planHash+' '+evidence.approvalHash+' '+stdinSha256;
+   const remote="cd '"+sourceRoot+"' && exec /usr/bin/env -i "+current0076NegativeLinuxFdProofLauncherContract.nodePath+" '"+launcher+"' "+mode+' '+evidence.attemptId+' '+evidence.planHash+' '+evidence.approvalHash+' '+stdinSha256;
    const args=Object.freeze([...benignSshPrefix,remote]),binding=Object.freeze({schemaVersion:1,purpose:benignPurpose,attemptId:evidence.attemptId,approvalRef:Object.freeze({...evidence.approvalRef}),sourceHead:evidence.sourceHead,planHash:evidence.planHash,approvalHash:evidence.approvalHash,
     sourceHash:evidence.sourceHash,graphHash:evidence.graphHash,issuedAt:evidence.issuedAt,expiresAt:evidence.expiresAt,stdinSha256,sourceRoot,launcher,command:Object.freeze({file,args,options:nativeOptions})});
    const bindingHash=hash(binding),startedWall=time('now'),startedMono=time('monotonic'),endWall=Math.min(evidence.expiresAt,startedWall+current0076NegativeLinuxFdProofLauncherContract.maxDurationMs),endMono=startedMono+endWall-startedWall;
@@ -194,13 +218,13 @@ export function create0076BenignFdProofWindowsCarrier(review:SubnetWindowsReview
     if(offset!==recordBytes.byteLength||invoke('flush',[token])!==true)return benignUnknown;current();closeAttempted=true;if(invoke('close',[token])!==true)return benignUnknown;current();if(invoke('confirmClosed',[token,recordBytes.byteLength])!==true)return benignUnknown;current();
    }finally{if(token&&!closeAttempted){closeAttempted=true;try{invoke('close',[token]);}catch{stopped=true;}}recordBytes.fill(0);}
    if(stopped)return benignUnknown;current();
-   return await new Promise<BenignCandidate|typeof benignUnknown>(resolve=>{let settled=false,ready=false,setup=true,fired=false,inputFinished=false,outputEnded=false,exited=false,closed=false,exitCode:unknown,exitSignal:unknown,closeCode:unknown,closeSignal:unknown,total=0,child:EventEmitter|undefined,stdin:EventEmitter|undefined,stdout:EventEmitter|undefined;const chunks:Buffer[]=[],listeners:[EventEmitter,string,(...args:any[])=>void][]=[];let timer:unknown;
+   return await new Promise<BenignCandidate|BenignCollection|typeof benignUnknown>(resolve=>{let settled=false,ready=false,setup=true,fired=false,inputFinished=false,outputEnded=false,exited=false,closed=false,exitCode:unknown,exitSignal:unknown,closeCode:unknown,closeSignal:unknown,total=0,child:EventEmitter|undefined,stdin:EventEmitter|undefined,stdout:EventEmitter|undefined;const chunks:Buffer[]=[],listeners:[EventEmitter,string,(...args:any[])=>void][]=[];let timer:unknown;
     const clearTimer=()=>{if(timer!==undefined){try{Reflect.apply(clock.clearTimeout as Function,p.clock,[timer]);}catch{}timer=undefined;}};
     const detachAll=()=>{clearTimer();for(const [target,event,fn]of listeners)target.removeListener(event,fn);};
     const retainUntilClose=()=>{clearTimer();for(const [target,event,fn]of listeners)if(event!=='error'&&!(child&&target===child&&event==='close'))target.removeListener(event,fn);};
-    const finish=(value:BenignCandidate|typeof benignUnknown)=>{if(settled)return;settled=true;if(value===benignUnknown&&child&&!closed)retainUntilClose();else detachAll();for(const chunk of chunks)chunk.fill(0);resolve(value);};
+    const finish=(value:BenignCandidate|BenignCollection|typeof benignUnknown)=>{if(settled)return;settled=true;if(value===benignUnknown&&child&&!closed)retainUntilClose();else detachAll();for(const chunk of chunks)chunk.fill(0);resolve(value);};
     const parse=()=>{if(settled||setup||!ready||!inputFinished||!outputEnded||!exited||!closed)return;if(exitCode!==0||exitSignal!==null||closeCode!==0||closeSignal!==null)return finish(benignUnknown);
-     try{current();const bytes=Buffer.concat(chunks,total),text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);bytes.fill(0);if(!text.endsWith('\n')||text.indexOf('\n')!==text.length-1)return finish(benignUnknown);const raw=parseWireJson(text.slice(0,-1)),candidate=benignCandidate(raw,evidence,stdinSha256);current();finish(candidate);}catch{finish(benignUnknown);}};
+     try{current();const bytes=Buffer.concat(chunks,total),text=new TextDecoder('utf-8',{fatal:true}).decode(bytes);bytes.fill(0);if(!text.endsWith('\n')||text.indexOf('\n')!==text.length-1)return finish(benignUnknown);const body=text.slice(0,-1),raw=parseWireJson(body);if(mode==='--collect'&&canonicalJson(raw)!==body)return finish(benignUnknown);const candidate=mode==='--collect'?benignCollection(raw,evidence,stdinSha256):benignCandidate(raw,evidence,stdinSha256);current();finish(candidate);}catch{finish(benignUnknown);}};
     const error=()=>finish(benignUnknown),inputFinish=()=>{if(inputFinished)return finish(benignUnknown);inputFinished=true;parse();},data=(value:unknown)=>{try{if(outputEnded||types.isProxy(value)||!types.isUint8Array(value))return finish(benignUnknown);const copy=Buffer.from(value as Uint8Array);if(total+copy.byteLength>16384){copy.fill(0);return finish(benignUnknown);}chunks.push(copy);total+=copy.byteLength;}catch{finish(benignUnknown);}},outputEnd=()=>{if(outputEnded)return finish(benignUnknown);outputEnded=true;parse();},exit=(code:unknown,signal:unknown)=>{if(exited)return finish(benignUnknown);exited=true;exitCode=code;exitSignal=signal;parse();},close=(code:unknown,signal:unknown)=>{if(closed)return finish(benignUnknown);closed=true;closeCode=code;closeSignal=signal;if(settled)return detachAll();parse();};
     try{
      current();const remaining=Math.floor(Math.min(endWall-lastWall,endMono-lastMono));if(remaining<=0)return finish(benignUnknown);timer=Reflect.apply(clock.setTimeout as Function,p.clock,[()=>{fired=true;finish(benignUnknown);},remaining]);if(timer===undefined||timer===null||fired||settled){clearTimer();return finish(benignUnknown);}current();
@@ -215,3 +239,7 @@ export function create0076BenignFdProofWindowsCarrier(review:SubnetWindowsReview
   }catch{return benignUnknown;}finally{owned?.fill(0);recordBytes?.fill(0);}
  }});
 }
+/** 기존 8필드 관측 stdout을 유지하는 기본 benign transport다. */
+export function create0076BenignFdProofWindowsCarrier(review:SubnetWindowsReview,ports?:SubnetWindowsPorts){return create0076BenignFdProofWindowsCarrierMode(review,ports,'--run');}
+/** 외부 실행담당자가 명시 선택할 때만 collection v1 stdout을 검산하는 닫힌 transport다. */
+export function create0076BenignFdProofCollectionWindowsCarrier(review:SubnetWindowsReview,ports?:SubnetWindowsPorts){return create0076BenignFdProofWindowsCarrierMode(review,ports,'--collect');}
