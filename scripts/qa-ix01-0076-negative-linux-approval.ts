@@ -14,6 +14,7 @@ const dependencyPaths=Object.freeze([
  'scripts/qa-ix01-0076-negative-linux-approval.ts',
  'scripts/qa-ix01-0076-negative-linux-protected-reader.ts',
  'scripts/qa-ix01-0076-negative-linux-journal.ts',
+ 'scripts/qa-ix01-0076-negative-linux-entry.ts',
 ] as const);
 const manifestPath='docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv' as const;
 const manifestBytes=15807,manifestSha256='0da3c8558445d7984731863d45261192a11c37337b93e3dd99941b00133745dd';
@@ -151,7 +152,7 @@ export async function verify0076NegativeLinuxApproval(rawSelection:Readonly<Nega
 }
 
 /** 다음 보호 entry가 동일 승인 projection의 원 입력을 한 번만 소비한다. callback 종료 뒤 byte 입력은 즉시 지운다. */
-export async function use0076NegativeLinuxProtectedStageInput<T>(projection:Readonly<NegativeLinuxApprovalProjection>,consume:(input:Readonly<NegativeStageInput>)=>Promise<T>):Promise<T>{
+export async function use0076NegativeLinuxProtectedStageInput<T>(projection:Readonly<NegativeLinuxApprovalProjection>,consume:(input:Readonly<NegativeStageInput>,fresh:()=>void)=>Promise<T>):Promise<T>{
  const retained=protectedInputs.get(projection);if(retained===undefined||typeof consume!=='function')throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');protectedInputs.delete(projection);const {input}=retained;
- try{retained.fresh();return await consume(input);}finally{input.historicalTsv.fill(0);for(const row of input.sql)row.bytes.fill(0);}
+ try{retained.fresh();return await consume(input,retained.fresh);}finally{input.historicalTsv.fill(0);for(const row of input.sql)row.bytes.fill(0);}
 }

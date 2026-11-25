@@ -51,7 +51,7 @@ function fixture(patch:{plan?:Record<string,unknown>;approval?:Record<string,unk
  return{selection,ports,paths,advance(ms:number){wall+=ms;monoOffset+=ms;},get reads(){return reads;},get current(){return current;}};
 }
 
-test('동일 보호 custody의 plan·approval·graph·신규 의존7개와 고정 TSV·전체 130 SQL을 SOURCE_ONLY로 검산한다',async()=>{
+test('동일 보호 custody의 plan·approval·graph·신규 의존8개와 고정 TSV·전체 130 SQL을 SOURCE_ONLY로 검산한다',async()=>{
  const h=fixture(),result=await verify0076NegativeLinuxApproval(h.selection,h.ports);
  assert.equal(h.reads,2);assert(h.current>=2);assert.equal(manifestRows.length,130);assert.deepEqual(result,{schemaVersion:1,purpose:'IX01_0076_NEGATIVE_LINUX_APPROVAL_VERIFIED',attemptId:h.selection.attemptId,
   sourceHead:h.selection.sourceHead,planHash:h.selection.planHash,approvalHash:h.selection.approvalHash,graphHash:h.selection.graphHash,
