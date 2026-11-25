@@ -5,8 +5,8 @@ import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {readCurrentSchemaManifest} from '../../integration/IX01/current-schema-baseline.ts';
 import {current0076NegativeContract} from '../../../scripts/qa-ix01-0076-atomicity-negative.ts';
 import {
- current0076NegativeLinuxApprovalContract,use0076NegativeLinuxProtectedStageInput,verify0076NegativeLinuxApproval,
- type NegativeLinuxApprovalReadPorts,type NegativeLinuxApprovalSelection,
+ bind0076NegativeLinuxApprovalPreflightSource,current0076NegativeLinuxApprovalContract,use0076NegativeLinuxProtectedStageInput,verify0076NegativeLinuxApproval,
+ type NegativeLinuxApprovalPreflightReadSource,type NegativeLinuxApprovalReadPorts,type NegativeLinuxApprovalSelection,
 } from '../../../scripts/qa-ix01-0076-negative-linux-approval.ts';
 import {load0076NegativeLinuxR9} from '../../../scripts/qa-ix01-0076-negative-linux-r9.ts';
 
@@ -53,7 +53,7 @@ function fixture(patch:{plan?:Record<string,unknown>;approval?:Record<string,unk
  const ports=Object.freeze({recipient,now(this:object){assert.equal(this,recipient);return wall;},monotonic(this:object){assert.equal(this,recipient);return patch.monotonic?.[mono++]??100+current+monoOffset;},
   assertCurrent(this:object,found:Readonly<NegativeLinuxApprovalSelection>){assert.equal(this,recipient);assert.equal(found,selection);current++;if(patch.loseCurrent&&current>1)throw Error('lost');},
   async read(this:object,found:readonly string[]){assert.equal(this,recipient);reads++;if(reads===1){assert.deepEqual(found,paths);return reply;}assert.deepEqual(found,manifestRows.map(row=>row.path));return sourceObservations;}}) satisfies NegativeLinuxApprovalReadPorts;
- return{selection,ports,paths,advance(ms:number){wall+=ms;monoOffset+=ms;},get reads(){return reads;},get current(){return current;}};
+ return{selection,ports,paths,approvalId,custody,advance(ms:number){wall+=ms;monoOffset+=ms;},get reads(){return reads;},get current(){return current;}};
 }
 
 test('동일 보호 custody의 전체 local import closure·R9·고정 TSV·전체 130 SQL을 SOURCE_ONLY로 검산한다',async()=>{
@@ -66,6 +66,30 @@ test('동일 보호 custody의 전체 local import closure·R9·고정 TSV·전�
   const loaded=await load0076NegativeLinuxR9(protectedR9,input);assert.deepEqual(loaded.legacy.daemonInfoArgs(),['info','--format','{"ID":{{json .ID}},"Name":{{json .Name}}}']);return input.sql.length;});
  assert.equal(count,130);assert(retained.historicalTsv.every((value:number)=>value===0));assert(retained.sql.every((row:{bytes:Uint8Array})=>row.bytes.every(value=>value===0)));assert(retainedR9!.every(value=>value===0));
  await assert.rejects(use0076NegativeLinuxProtectedStageInput(result,async()=>0));
+});
+
+test('외부 실행담당자의 고정 preflight 원문은 같은 approval custody에서만 단회 전달하고 실행 권위로 승격하지 않는다',async()=>{
+ const h=fixture(),path='/home/daon/.local/share/anvil-v3-qa-receipts/ix01-0076-negative-'+h.selection.attemptId+'/preflight-v1.json';
+ const raw=new Uint8Array(Buffer.from(canonicalJson({status:'IX01_0076_BENIGN_SAME_FD_OBSERVATION_CANDIDATE_NOT_RUNTIME_PASS',attemptId:h.selection.attemptId,
+  approvalRef:{id:h.approvalId,version:1,contentHash:h.selection.approvalHash},intentDigest:'b'.repeat(64),observation:{path:'/usr/bin/sleep',dev:8,ino:9,sha256:'c'.repeat(64)},
+  runtimeVerified:false,executionAuthorized:false,pgAuthorized:false})));
+ const sourceRecipient=Object.freeze(Object.create(null)),source=Object.freeze({recipient:sourceRecipient,async read(this:object,selection:Readonly<NegativeLinuxApprovalSelection>){
+  assert.equal(this,sourceRecipient);assert.equal(selection,h.selection);return Object.freeze({path,bytes:raw,custody:h.custody,fileIdentity:Object.freeze(Object.create(null)),closed:true as const});
+ }}) satisfies NegativeLinuxApprovalPreflightReadSource;
+ bind0076NegativeLinuxApprovalPreflightSource(h.ports,source);const result=await verify0076NegativeLinuxApproval(h.selection,h.ports);let retained:Uint8Array|undefined;
+ await use0076NegativeLinuxProtectedStageInput(result,async(_input,_fresh,_r9,_receiver,preflight)=>{assert(preflight);retained=preflight.raw;
+  assert.equal(preflight.path,path);assert.equal(preflight.intentDigest,'b'.repeat(64));assert.deepEqual(preflight.observation,{path:'/usr/bin/sleep',dev:8,ino:9,sha256:'c'.repeat(64)});
+  assert.equal(preflight.comparisonOnly,true);assert.equal(preflight.nativeEnableEligible,false);assert.equal(preflight.runtimeVerified,false);assert.equal(preflight.executionAuthorized,false);assert.equal(preflight.pgAuthorized,false);});
+ assert(retained?.every(value=>value===0));await assert.rejects(use0076NegativeLinuxProtectedStageInput(result,async()=>0));
+});
+
+test('다른 approval에 결박된 preflight 원문은 보호 callback과 실행 권위를 만들지 않는다',async()=>{
+ const h=fixture(),path='/home/daon/.local/share/anvil-v3-qa-receipts/ix01-0076-negative-'+h.selection.attemptId+'/preflight-v1.json';
+ const raw=new Uint8Array(Buffer.from(canonicalJson({status:'IX01_0076_BENIGN_SAME_FD_OBSERVATION_CANDIDATE_NOT_RUNTIME_PASS',attemptId:h.selection.attemptId,
+  approvalRef:{id:'e7100000-0000-4000-8000-999999999999',version:1,contentHash:h.selection.approvalHash},intentDigest:'b'.repeat(64),observation:{path:'/usr/bin/sleep',dev:8,ino:9,sha256:'c'.repeat(64)},
+  runtimeVerified:false,executionAuthorized:false,pgAuthorized:false})));
+ const recipient=Object.freeze(Object.create(null));bind0076NegativeLinuxApprovalPreflightSource(h.ports,Object.freeze({recipient,async read(this:object){assert.equal(this,recipient);return Object.freeze({path,bytes:raw,custody:h.custody,fileIdentity:Object.freeze(Object.create(null)),closed:true as const});}}));
+ await assert.rejects(verify0076NegativeLinuxApproval(h.selection,h.ports));
 });
 
 test('다른 목적·위조 selection·만료는 보호 read 전에 거절한다',async()=>{

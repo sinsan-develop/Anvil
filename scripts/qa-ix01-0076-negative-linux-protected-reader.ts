@@ -2,7 +2,7 @@ import {constants,closeSync,fstatSync,lstatSync,openSync,readSync,realpathSync,t
 import {types} from 'node:util';
 import {hashV1,recordV1,uuidV1} from '../contracts/runtime/validation-v1.ts';
 import {readCurrentSchemaManifest} from '../tests/integration/IX01/current-schema-baseline.ts';
-import {current0076NegativeLinuxApprovalContract,type NegativeLinuxApprovalReadObservation,type NegativeLinuxApprovalReadPorts,type NegativeLinuxApprovalSelection} from './qa-ix01-0076-negative-linux-approval.ts';
+import {bind0076NegativeLinuxApprovalPreflightSource,current0076NegativeLinuxApprovalContract,type NegativeLinuxApprovalPreflightReadSource,type NegativeLinuxApprovalReadObservation,type NegativeLinuxApprovalReadPorts,type NegativeLinuxApprovalSelection} from './qa-ix01-0076-negative-linux-approval.ts';
 
 const receiptParent='/home/daon/.local/share/anvil-v3-qa-receipts';
 const sourceRootPattern=/^\/home\/daon\/[A-Za-z0-9._-]{1,100}$/;
@@ -74,6 +74,7 @@ function parentPaths(path:string){
  for(const segment of path.split('/').filter(Boolean)){cursor+='/'+segment;result.push(cursor);}
  return result;
 }
+function exactMissing(error:unknown){if(!error||typeof error!=='object'||types.isProxy(error))return false;const descriptor=Object.getOwnPropertyDescriptor(error,'code');return !!descriptor&&Object.hasOwn(descriptor,'value')&&descriptor.value==='ENOENT';}
 
 /**
  * 기존 Linux approval validator에만 보호 read reply를 공급한다. 생성은 I/O를 하지 않으며 승인·실행 권위·기한을 발급하지 않는다.
@@ -117,16 +118,16 @@ export function create0076NegativeLinuxProtectedReader(rawAuthority:Readonly<Neg
   real(path);
  };
  const checkPins=()=>{for(const prior of pins.values()){const value=stat(prior.path);if(value.kind!=='DIRECTORY'||value.dev!==prior.dev||value.ino!==prior.ino||value.uid!==prior.uid||value.mode!==prior.mode)invalid();}};
- const custody=Object.freeze(Object.create(null)),identities=new Set<string>();let phase:0|1|2=0,sourceRequested:readonly string[]|undefined;
+ const custody=Object.freeze(Object.create(null)),identities=new Set<string>();let phase:0|1|2|3=0,sourceRequested:readonly string[]|undefined;
  let sourceManifest:ReturnType<typeof readCurrentSchemaManifest>|undefined;
  const recipient=Object.freeze(Object.create(null));
- const readPhase=async(logical:readonly string[],physical:readonly string[],phaseLimits:readonly number[])=>{
+ const readPhase=async(logical:readonly string[],physical:readonly string[],phaseLimits:readonly number[],privateFile=false,exactLengths=logical!==requested)=>{
   for(const path of physical.slice(logical===requested?3:0))pin(path.slice(0,path.lastIndexOf('/')),false);
   checkPins();const rows:Readonly<NegativeLinuxApprovalReadObservation>[]=[];
   for(let index=0;index<physical.length;index++){
    current();checkPins();const path=physical[index]!,before=stat(path),limit=phaseLimits[index]!;
-   const exactSize=logical!==requested||index===requested.length-1;
-   if(before.kind!=='FILE'||before.nlink!==1||before.uid!==1000||(before.mode&0o022)!==0||before.size<1||before.size>limit||exactSize&&before.size!==limit
+   const exactSize=exactLengths||index===requested.length-1;
+   if(before.kind!=='FILE'||before.nlink!==1||before.uid!==1000||(before.mode&0o022)!==0||before.size<1||before.size>limit||exactSize&&before.size!==limit||privateFile&&(before.mode&0o777)!==0o600
     ||logical===requested&&index<3&&(before.mode&0o777)!==0o600)invalid();
    const identity=before.dev+':'+before.ino;if(identities.has(identity))invalid();identities.add(identity);
    real(path);const handle=systemFunctions.open.call(systemRecipient,path,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
@@ -152,7 +153,7 @@ export function create0076NegativeLinuxProtectedReader(rawAuthority:Readonly<Neg
   monotonic(this:object){if(this!==recipient||!unchanged())invalid();return authorityFunctions.monotonic.call(authorityRecipient);},
   assertCurrent(this:object,found:Readonly<NegativeLinuxApprovalSelection>){if(this!==recipient||found!==selection)invalid();current();},
   async read(this:object,rawPaths:readonly string[]){
-   if(this!==recipient||phase===2)invalid();current();
+   if(this!==recipient||phase>=2)invalid();current();
    if(phase===0){ownDataArray(rawPaths,requested);phase=1;pin(authority.sourceRoot,'PRIVATE');pin(receiptParent,'RECEIPT');
     const rows=await readPhase(requested,actual,limits),manifest=rows.at(-1)?.bytes;if(!manifest)invalid();
     sourceManifest=readCurrentSchemaManifest(manifest);if(sourceManifest.length!==130)invalid();sourceRequested=Object.freeze(sourceManifest.map(row=>row.path));return rows;}
@@ -161,5 +162,15 @@ export function create0076NegativeLinuxProtectedReader(rawAuthority:Readonly<Neg
    return readPhase(logical,physical,Object.freeze(manifest.map(row=>row.bytes)));
   },
  }) satisfies NegativeLinuxApprovalReadPorts;
+ const preflightRecipient=Object.freeze(Object.create(null)),preflightPath=expectedReceipt+'/'+current0076NegativeLinuxApprovalContract.preflightBasename;
+ const preflight=Object.freeze({recipient:preflightRecipient,async read(this:object,found:Readonly<NegativeLinuxApprovalSelection>){
+  if(this!==preflightRecipient||found!==selection||phase!==2)invalid();phase=3;current();
+  try{stat(expectedReceipt);}catch(error){if(exactMissing(error)){checkPins();current();return undefined;}throw error;}
+  pin(expectedReceipt,'PRIVATE');checkPins();
+  try{stat(preflightPath);}catch(error){if(exactMissing(error)){checkPins();current();return undefined;}throw error;}
+  const rows=await readPhase(Object.freeze([preflightPath]),Object.freeze([preflightPath]),Object.freeze([current0076NegativeLinuxApprovalContract.preflightMaximumBytes]),true,false);
+  if(rows.length!==1)invalid();return rows[0];
+ }}) satisfies NegativeLinuxApprovalPreflightReadSource;
+ bind0076NegativeLinuxApprovalPreflightSource(ports,preflight);
  return ports;
 }

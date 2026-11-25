@@ -1,6 +1,6 @@
 import {types} from 'node:util';
 import {canonicalJson,contentHash,parseWireJson} from '../contracts/canonical.ts';
-import {arrayV1,hashV1,recordV1,uuidV1} from '../contracts/runtime/validation-v1.ts';
+import {arrayV1,hashV1,recordV1,refV1,uuidV1} from '../contracts/runtime/validation-v1.ts';
 import {readCurrentSchemaManifest,verifyCurrentSchemaSources} from '../tests/integration/IX01/current-schema-baseline.ts';
 import {current0076NegativeContract as stageContract,type NegativeStageInput} from './qa-ix01-0076-atomicity-negative.ts';
 
@@ -32,8 +32,9 @@ const dependencyPaths=Object.freeze([
 const protectedSourcePaths=Object.freeze([...dependencyPaths,stageContract.parserPath] as const);
 const manifestPath='docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv' as const;
 const manifestBytes=15807,manifestSha256='0da3c8558445d7984731863d45261192a11c37337b93e3dd99941b00133745dd';
+const preflightBasename='preflight-v1.json' as const,preflightMaximumBytes=4096;
 export const current0076NegativeLinuxApprovalContract=Object.freeze({selectionPurpose,verifiedPurpose,dependencyPaths,protectedSourcePaths,manifestPath,manifestBytes,manifestSha256,
- evidence:'PROTECTED_READ_SOURCE_ONLY' as const,runtimeVerified:false as const,executionAuthorized:false as const});
+ preflightBasename,preflightMaximumBytes,evidence:'PROTECTED_READ_SOURCE_ONLY' as const,runtimeVerified:false as const,executionAuthorized:false as const});
 
 export interface NegativeLinuxApprovalSelection{
  readonly schemaVersion:1;readonly purpose:typeof selectionPurpose;readonly attemptId:string;readonly sourceHead:string;
@@ -48,6 +49,17 @@ export interface NegativeLinuxApprovalReadPorts{
  assertCurrent(this:object,selection:Readonly<NegativeLinuxApprovalSelection>):void;
  read(this:object,paths:readonly string[]):Promise<readonly Readonly<NegativeLinuxApprovalReadObservation>[]>;
 }
+export interface NegativeLinuxApprovalPreflightReadSource{
+ readonly recipient:object;
+ read(this:object,selection:Readonly<NegativeLinuxApprovalSelection>):Promise<Readonly<NegativeLinuxApprovalReadObservation>|undefined>;
+}
+export interface NegativeLinuxApprovalPreflightSource{
+ readonly path:string;readonly raw:Uint8Array;readonly sha256:string;
+ readonly status:'IX01_0076_BENIGN_SAME_FD_OBSERVATION_CANDIDATE_NOT_RUNTIME_PASS';readonly attemptId:string;
+ readonly approvalRef:Readonly<{id:string;version:1;contentHash:string}>;readonly intentDigest:string;
+ readonly observation:Readonly<{path:'/usr/bin/sleep';dev:number;ino:number;sha256:string}>;
+ readonly comparisonOnly:true;readonly nativeEnableEligible:false;readonly runtimeVerified:false;readonly executionAuthorized:false;readonly pgAuthorized:false;
+}
 export interface NegativeLinuxApprovalProjection{
  readonly schemaVersion:1;readonly purpose:typeof verifiedPurpose;readonly attemptId:string;readonly sourceHead:string;
  readonly planHash:string;readonly approvalHash:string;readonly graphHash:string;
@@ -55,7 +67,8 @@ export interface NegativeLinuxApprovalProjection{
  readonly evidence:'PROTECTED_READ_SOURCE_ONLY';readonly runtimeVerified:false;readonly executionAuthorized:false;
 }
 
-const protectedInputs=new WeakMap<object,Readonly<{input:Readonly<NegativeStageInput>;r9:Uint8Array;receiver:Uint8Array;fresh:()=>void}>>();
+const protectedInputs=new WeakMap<object,Readonly<{input:Readonly<NegativeStageInput>;r9:Uint8Array;receiver:Uint8Array;preflight?:Readonly<NegativeLinuxApprovalPreflightSource>;fresh:()=>void}>>();
+const preflightSources=new WeakMap<object,Readonly<{recipient:object;read:NegativeLinuxApprovalPreflightReadSource['read']}>>();
 
 const invalid=():never=>{throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');};
 function exact(value:unknown,keys:readonly string[]){
@@ -72,6 +85,10 @@ function portsShape(raw:NegativeLinuxApprovalReadPorts){
  if(!recipient||typeof recipient!=='object'||types.isProxy(recipient)||!Object.isFrozen(recipient)||keys.slice(1).some(key=>typeof d[key]!.value!=='function'))invalid();
  return{recipient,now:d.now!.value as NegativeLinuxApprovalReadPorts['now'],monotonic:d.monotonic!.value as NegativeLinuxApprovalReadPorts['monotonic'],
   current:d.assertCurrent!.value as NegativeLinuxApprovalReadPorts['assertCurrent'],read:d.read!.value as NegativeLinuxApprovalReadPorts['read']};
+}
+function preflightSourceShape(raw:NegativeLinuxApprovalPreflightReadSource){
+ const keys=['recipient','read'];if(!exact(raw,keys)||!Object.isFrozen(raw))invalid();const d=Object.getOwnPropertyDescriptors(raw),recipient=d.recipient!.value as object,read=d.read!.value as NegativeLinuxApprovalPreflightReadSource['read'];
+ if(!recipient||typeof recipient!=='object'||types.isProxy(recipient)||!Object.isFrozen(recipient)||typeof read!=='function')invalid();return{recipient,read};
 }
 function clock(wall:unknown,monotonic:unknown){if(!Number.isSafeInteger(wall)||Number(wall)<0||!Number.isFinite(monotonic)||Number(monotonic)<0)invalid();return{wall:wall as number,monotonic:monotonic as number};}
 function owned(raw:unknown,max:number){
@@ -95,6 +112,11 @@ function exactArray(raw:unknown,length:number):readonly unknown[]{
 function namespace(attemptId:string){const compact=attemptId.replaceAll('-','');return Object.freeze({container:'anvil-ix01-0076-negative-'+compact,database:'ix01_0076_negative_'+compact,
  receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-0076-negative-'+attemptId,network:'none'});}
 
+/** 실제 protected reader가 같은 custody에서 읽은 선택적 preflight 원본만 기존 approval 검산에 결박한다. */
+export function bind0076NegativeLinuxApprovalPreflightSource(ports:NegativeLinuxApprovalReadPorts,rawSource:NegativeLinuxApprovalPreflightReadSource):void{
+ portsShape(ports);if(preflightSources.has(ports))invalid();preflightSources.set(ports,Object.freeze(preflightSourceShape(rawSource)));
+}
+
 /**
  * 보호 Linux entry가 공급한 동일 custody read를 검산한다. 이 함수는 POSIX read, 승인 발급, 실행 권위 또는 기한을 만들지 않는다.
  */
@@ -106,7 +128,7 @@ export async function verify0076NegativeLinuxApproval(rawSelection:Readonly<Nega
  const start=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));current();
  let rawRows:readonly Readonly<NegativeLinuxApprovalReadObservation>[]|undefined;try{rawRows=await ports.read.call(ports.recipient,paths);}catch{invalid();}
  const afterRead=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));if(afterRead.wall<start.wall||afterRead.monotonic<start.monotonic)invalid();current();
- const copies:Uint8Array[]=[],sourceCopies:Uint8Array[]=[],identities=new Set<object>();let custody:object|undefined;
+ const copies:Uint8Array[]=[],sourceCopies:Uint8Array[]=[],identities=new Set<object>();let custody:object|undefined,preflightRaw:Uint8Array|undefined,keepPreflight=false;
  const collect=(raw:unknown,expected:readonly string[],limits:readonly number[],target:Uint8Array[])=>{
   const rows=exactArray(raw,expected.length) as readonly Readonly<NegativeLinuxApprovalReadObservation>[];
   for(let index=0;index<rows.length;index++){
@@ -155,6 +177,22 @@ export async function verify0076NegativeLinuxApproval(rawSelection:Readonly<Nega
   collect(rawSources,sourcePaths,manifestRows.map(row=>row.bytes),sourceCopies);
   const sourceInput=Object.freeze(manifestRows.map((row,index)=>Object.freeze({id:row.id,path:row.path,bytes:sourceCopies[index]!})));
   const verifiedRows=verifyCurrentSchemaSources(manifest,sourceInput);if(verifiedRows.length!==130||verifiedRows[106]?.id!==stageContract.sourceId)invalid();
+  let preflight:Readonly<NegativeLinuxApprovalPreflightSource>|undefined;const preflightSource=preflightSources.get(rawPorts);preflightSources.delete(rawPorts);
+  if(preflightSource){current();let observation:Readonly<NegativeLinuxApprovalReadObservation>|undefined;try{observation=await preflightSource.read.call(preflightSource.recipient,selection);}catch{invalid();}
+   if(observation!==undefined){const preflightPath=receipt+'/'+preflightBasename,rows:Uint8Array[]=[];collect(Object.freeze([observation]),Object.freeze([preflightPath]),Object.freeze([preflightMaximumBytes]),rows);preflightRaw=rows[0]!;
+    const rawText=text(preflightRaw,preflightMaximumBytes);let value:unknown;try{value=parseWireJson(rawText);}catch{invalid();}if(!value||typeof value!=='object'||canonicalJson(value)!==rawText)invalid();
+    const candidate=value as Record<string,unknown>,approvalRef=candidate.approvalRef,observed=candidate.observation;
+    if(!recordV1(candidate,['status','attemptId','approvalRef','intentDigest','observation','runtimeVerified','executionAuthorized','pgAuthorized'])
+     ||candidate.status!=='IX01_0076_BENIGN_SAME_FD_OBSERVATION_CANDIDATE_NOT_RUNTIME_PASS'||candidate.attemptId!==selection.attemptId||!refV1(approvalRef)
+     ||approvalRef.id!==approval.approvalId||approvalRef.version!==1||approvalRef.contentHash!==selection.approvalHash||!hashV1(candidate.intentDigest)
+     ||!recordV1(observed,['path','dev','ino','sha256'])||observed.path!=='/usr/bin/sleep'||!Number.isSafeInteger(observed.dev)||Number(observed.dev)<0||!Number.isSafeInteger(observed.ino)||Number(observed.ino)<1||!hashV1(observed.sha256)
+     ||candidate.runtimeVerified!==false||candidate.executionAuthorized!==false||candidate.pgAuthorized!==false)invalid();
+    const exactApprovalRef=approvalRef as Readonly<{id:string;version:1;contentHash:string}>,exactObserved=observed as Readonly<{path:'/usr/bin/sleep';dev:number;ino:number;sha256:string}>;
+    preflight=Object.freeze({path:preflightPath,raw:preflightRaw,sha256:contentHash(preflightRaw),status:'IX01_0076_BENIGN_SAME_FD_OBSERVATION_CANDIDATE_NOT_RUNTIME_PASS' as const,attemptId:selection.attemptId,approvalRef:Object.freeze({id:exactApprovalRef.id,version:1 as const,contentHash:exactApprovalRef.contentHash}),
+     intentDigest:candidate.intentDigest as string,observation:Object.freeze({path:'/usr/bin/sleep' as const,dev:exactObserved.dev,ino:exactObserved.ino,sha256:exactObserved.sha256}),comparisonOnly:true as const,nativeEnableEligible:false as const,
+     runtimeVerified:false as const,executionAuthorized:false as const,pgAuthorized:false as const});
+   }
+  }
   current();const end=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));if(end.wall<afterSources.wall||end.monotonic<afterSources.monotonic||end.wall>=expiresAt
    ||end.monotonic-start.monotonic>=lifetime||issuedAt>end.wall)invalid();
   const projection=Object.freeze({schemaVersion:1,purpose:verifiedPurpose,attemptId:selection.attemptId,sourceHead:selection.sourceHead,planHash:selection.planHash,
@@ -164,12 +202,12 @@ export async function verify0076NegativeLinuxApproval(rawSelection:Readonly<Nega
   const fresh=()=>{current();const found=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));
    if(found.wall<end.wall||found.monotonic<end.monotonic||found.wall>=expiresAt||found.monotonic-start.monotonic>=lifetime)invalid();};
    const receiverIndex=dependencyPaths.indexOf('scripts/qa-ix01-0076-atomicity-negative-receiver.ts'),receiverSource=copies[receiverIndex+3];if(receiverIndex<0||receiverSource===undefined)return invalid();
-   protectedInputs.set(projection,Object.freeze({input,r9:new Uint8Array(r9),receiver:new Uint8Array(receiverSource),fresh}));return projection;
- }finally{for(const bytes of [...copies,...sourceCopies])bytes.fill(0);}
+   protectedInputs.set(projection,Object.freeze({input,r9:new Uint8Array(r9),receiver:new Uint8Array(receiverSource),...(preflight?{preflight}:{}),fresh}));keepPreflight=preflight!==undefined;return projection;
+ }finally{for(const bytes of [...copies,...sourceCopies])bytes.fill(0);if(!keepPreflight)preflightRaw?.fill(0);}
 }
 
 /** 다음 보호 entry가 동일 승인 projection의 원 입력을 한 번만 소비한다. callback 종료 뒤 byte 입력은 즉시 지운다. */
-export async function use0076NegativeLinuxProtectedStageInput<T>(projection:Readonly<NegativeLinuxApprovalProjection>,consume:(input:Readonly<NegativeStageInput>,fresh:()=>void,r9:Uint8Array,receiver:Uint8Array)=>Promise<T>):Promise<T>{
- const retained=protectedInputs.get(projection);if(retained===undefined||typeof consume!=='function')throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');protectedInputs.delete(projection);const {input,r9,receiver}=retained;
- try{retained.fresh();return await consume(input,retained.fresh,r9,receiver);}finally{r9.fill(0);receiver.fill(0);input.historicalTsv.fill(0);for(const row of input.sql)row.bytes.fill(0);}
+export async function use0076NegativeLinuxProtectedStageInput<T>(projection:Readonly<NegativeLinuxApprovalProjection>,consume:(input:Readonly<NegativeStageInput>,fresh:()=>void,r9:Uint8Array,receiver:Uint8Array,preflight?:Readonly<NegativeLinuxApprovalPreflightSource>)=>Promise<T>):Promise<T>{
+ const retained=protectedInputs.get(projection);if(retained===undefined||typeof consume!=='function')throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');protectedInputs.delete(projection);const {input,r9,receiver,preflight}=retained;
+ try{retained.fresh();return await consume(input,retained.fresh,r9,receiver,preflight);}finally{r9.fill(0);receiver.fill(0);preflight?.raw.fill(0);input.historicalTsv.fill(0);for(const row of input.sql)row.bytes.fill(0);}
 }

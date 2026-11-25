@@ -4,7 +4,7 @@ import {constants,readFileSync} from 'node:fs';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {current0076NegativeContract} from '../../../scripts/qa-ix01-0076-atomicity-negative.ts';
 import {readCurrentSchemaManifest} from '../../integration/IX01/current-schema-baseline.ts';
-import {current0076NegativeLinuxApprovalContract,verify0076NegativeLinuxApproval,type NegativeLinuxApprovalSelection} from '../../../scripts/qa-ix01-0076-negative-linux-approval.ts';
+import {current0076NegativeLinuxApprovalContract,use0076NegativeLinuxProtectedStageInput,verify0076NegativeLinuxApproval,type NegativeLinuxApprovalSelection} from '../../../scripts/qa-ix01-0076-negative-linux-approval.ts';
 import {
  create0076NegativeLinuxProtectedReader,
  type NegativeLinuxProtectedReaderAuthority,type NegativeLinuxProtectedReaderStat,type NegativeLinuxProtectedReaderSystem,
@@ -21,7 +21,7 @@ const manifestRows=readCurrentSchemaManifest(manifestBytes);
 const sourceBytes=manifestRows.map(row=>new Uint8Array(readFileSync(new URL(row.path,sourceRootUrl))));
 
 let sequence=120;
-function fixture(mode:'NORMAL'|'LINK'|'DRIFT'|'NESTED_DRIFT'|'TRUNCATED'|'CLOSE_UNKNOWN'|'ALIAS'|'FRACTIONAL'|'RECEIPT_0755'|'RECEIPT_ROOT_0755'|'RECEIPT_0775'|'RECEIPT_NULL'='NORMAL'){
+function fixture(mode:'NORMAL'|'LINK'|'DRIFT'|'NESTED_DRIFT'|'TRUNCATED'|'CLOSE_UNKNOWN'|'ALIAS'|'FRACTIONAL'|'RECEIPT_0755'|'RECEIPT_ROOT_0755'|'RECEIPT_0775'|'RECEIPT_NULL'|'PREFLIGHT'|'PREFLIGHT_MISMATCH'='NORMAL'){
  const attemptId='e7000000-0000-4000-8000-'+String(++sequence).padStart(12,'0'),compact=attemptId.replaceAll('-',''),sourceHead='a'.repeat(40),issuedAt=2_000_000,expiresAt=2_600_000;
  const sourceRoot='/home/daon/anvil-ix01-0076-negative-source',receiptRoot='/home/daon/.local/share/anvil-v3-qa-receipts/ix01-0076-negative-'+attemptId;
  const dependencies=trackedDependencyBytes.map(value=>new Uint8Array(value)),graphSources=new Map<string,Uint8Array>();
@@ -36,13 +36,19 @@ function fixture(mode:'NORMAL'|'LINK'|'DRIFT'|'NESTED_DRIFT'|'TRUNCATED'|'CLOSE_
  const selection=Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_APPROVAL_SELECTION' as const,attemptId,sourceHead,planHash,approvalHash,graphHash}) satisfies NegativeLinuxApprovalSelection;
  const requested=[receiptRoot+'-plan.json',receiptRoot+'-approval.json',receiptRoot+'-graph.json',...protectedSourcePaths,manifestPath],actual=[requested[0]!,requested[1]!,requested[2]!,...protectedSourcePaths.map(path=>sourceRoot+'/'+path),sourceRoot+'/'+manifestPath];
  const sourceRequested=manifestRows.map(row=>row.path),sourceActual=sourceRequested.map(path=>sourceRoot+'/'+path);
+ const preflightPath=receiptRoot+'/preflight-v1.json',preflightBytes=new Uint8Array(Buffer.from(canonicalJson({status:'IX01_0076_BENIGN_SAME_FD_OBSERVATION_CANDIDATE_NOT_RUNTIME_PASS',attemptId,
+  approvalRef:{id:mode==='PREFLIGHT_MISMATCH'?'e7100000-0000-4000-8000-999999999999':'e7100000-0000-4000-8000-'+String(sequence).padStart(12,'0'),version:1,contentHash:approvalHash},
+  intentDigest:'b'.repeat(64),observation:{path:'/usr/bin/sleep',dev:8,ino:9,sha256:'c'.repeat(64)},runtimeVerified:false,executionAuthorized:false,pgAuthorized:false})));
  const values=[new Uint8Array(Buffer.from(planRaw)),new Uint8Array(Buffer.from(approvalRaw)),new Uint8Array(Buffer.from(graphRaw)),...dependencies,r9Bytes,manifestBytes];
  const files=new Map<string,Uint8Array>();for(const [index,path] of actual.entries())files.set(path,values[index]!);for(const [index,path] of sourceActual.entries())files.set(path,sourceBytes[index]!);
+ if(mode==='PREFLIGHT'||mode==='PREFLIGHT_MISMATCH')files.set(preflightPath,preflightBytes);
  const directories=['/home','/home/daon',sourceRoot,'/home/daon/.local','/home/daon/.local/share','/home/daon/.local/share/anvil-v3-qa-receipts',
+  ...(mode==='PREFLIGHT'||mode==='PREFLIGHT_MISMATCH'?[receiptRoot]:[]),
   ...[...protectedSourcePaths,manifestPath,...sourceRequested].flatMap(path=>{const parts=path.split('/');return parts.slice(0,-1).map((_,index)=>sourceRoot+'/'+parts.slice(0,index+1).join('/'));})];
  let inode=10;const stamp=mode==='FRACTIONAL'?1.25:1,stats=new Map<string,NegativeLinuxProtectedReaderStat>();for(const path of new Set(directories))stats.set(path,Object.freeze({kind:'DIRECTORY' as const,dev:1,ino:inode++,uid:path==='/home'?0:1000,mode:path==='/home'?0o40755:0o40700,nlink:1,size:0,mtimeMs:stamp,ctimeMs:stamp}));
  if(['RECEIPT_0755','RECEIPT_ROOT_0755','RECEIPT_0775'].includes(mode))stats.set('/home/daon/.local/share/anvil-v3-qa-receipts',Object.freeze({...stats.get('/home/daon/.local/share/anvil-v3-qa-receipts')!,uid:mode==='RECEIPT_ROOT_0755'?0:1000,mode:mode==='RECEIPT_0775'?0o40775:0o40755}));
  for(const [index,path] of [...actual,...sourceActual].entries()){const bytes=files.get(path)!;stats.set(path,Object.freeze({kind:'FILE' as const,dev:1,ino:inode++,uid:1000,mode:index<3?0o100600:0o100644,nlink:1,size:bytes.byteLength,mtimeMs:stamp,ctimeMs:stamp}));}
+ if(mode==='PREFLIGHT'||mode==='PREFLIGHT_MISMATCH')stats.set(preflightPath,Object.freeze({kind:'FILE' as const,dev:1,ino:inode++,uid:1000,mode:0o100600,nlink:1,size:preflightBytes.byteLength,mtimeMs:stamp,ctimeMs:stamp}));
  if(mode==='ALIAS')stats.set(actual.at(-1)!,Object.freeze({...stats.get(actual[0]!)!,size:values.at(-1)!.byteLength,mode:0o100644}));
  const recipient=Object.freeze(Object.create(null)),handles=new Map<object,{path:string;offset:number}>();let opens=0,closes=0,closeAttempts=0,current=0,drifted=false;
  const system=Object.freeze({recipient,
@@ -56,7 +62,7 @@ function fixture(mode:'NORMAL'|'LINK'|'DRIFT'|'NESTED_DRIFT'|'TRUNCATED'|'CLOSE_
  const authorityRecipient=Object.freeze(Object.create(null));const authority=Object.freeze({recipient:authorityRecipient,selection,sourceRoot,receiptRoot,uid:1000,
   now(this:object){assert.equal(this,authorityRecipient);return 2_100_000;},monotonic(this:object){assert.equal(this,authorityRecipient);return 100+current;},
   assertCurrent(this:object,found:Readonly<NegativeLinuxApprovalSelection>){assert.equal(this,authorityRecipient);assert.equal(found,selection);current++;},}) satisfies NegativeLinuxProtectedReaderAuthority;
- return{selection,authority,system,requested,sourceRequested,get opens(){return opens;},get closes(){return closes;},get closeAttempts(){return closeAttempts;},get handles(){return handles.size;}};
+ return{selection,authority,system,requested,sourceRequested,preflightPath,get opens(){return opens;},get closes(){return closes;},get closeAttempts(){return closeAttempts;},get handles(){return handles.size;}};
 }
 
 test('exact protected paths를 same-FD O_NOFOLLOW로 읽어 기존 approval validator에 공급한다',async()=>{
@@ -66,6 +72,14 @@ test('exact protected paths를 same-FD O_NOFOLLOW로 읽어 기존 approval vali
  const fractional=fixture('FRACTIONAL');await verify0076NegativeLinuxApproval(fractional.selection,create0076NegativeLinuxProtectedReader(fractional.authority,fractional.system));
  const receipt0755=fixture('RECEIPT_0755');await verify0076NegativeLinuxApproval(receipt0755.selection,create0076NegativeLinuxProtectedReader(receipt0755.authority,receipt0755.system));
  const receiptRoot0755=fixture('RECEIPT_ROOT_0755');await verify0076NegativeLinuxApproval(receiptRoot0755.selection,create0076NegativeLinuxProtectedReader(receiptRoot0755.authority,receiptRoot0755.system));
+});
+
+test('고정 preflight 원본은 같은 reader owner·FD custody에서 읽어 SOURCE_ONLY callback에만 단회 전달한다',async()=>{
+ const h=fixture('PREFLIGHT'),reader=create0076NegativeLinuxProtectedReader(h.authority,h.system),result=await verify0076NegativeLinuxApproval(h.selection,reader);let retained:Uint8Array|undefined;
+ await use0076NegativeLinuxProtectedStageInput(result,async(_input,_fresh,_r9,_receiver,preflight)=>{assert(preflight);retained=preflight.raw;assert.equal(preflight.path,h.preflightPath);
+  assert.equal(preflight.status,'IX01_0076_BENIGN_SAME_FD_OBSERVATION_CANDIDATE_NOT_RUNTIME_PASS');assert.equal(preflight.runtimeVerified,false);assert.equal(preflight.executionAuthorized,false);});
+ assert(retained?.every(value=>value===0));assert.equal(h.opens,3+protectedSourcePaths.length+1+130+1);assert.equal(h.closes,h.opens);assert.equal(h.handles,0);
+ const mismatch=fixture('PREFLIGHT_MISMATCH');await assert.rejects(verify0076NegativeLinuxApproval(mismatch.selection,create0076NegativeLinuxProtectedReader(mismatch.authority,mismatch.system)));
 });
 
 test('일반 경로와 manifest 검산 전 SQL read 및 세 번째 read는 파일 open 전에 차단한다',async()=>{
