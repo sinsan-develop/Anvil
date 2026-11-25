@@ -16,17 +16,18 @@ import {
  type NegativeLinuxFdProofPlan,
  type NegativeLinuxFdProofResult,
 } from './qa-ix01-0076-negative-linux-fd-proof.ts';
+import {consume0076NegativeLinuxFdProofExecutionEvidence} from './qa-ix01-0076-negative-linux-fd-proof-launcher.ts';
 
 const candidatePurpose='IX01_0076_NEGATIVE_LINUX_FD_PROOF_SOURCE_CANDIDATE' as const;
 export const current0076NegativeLinuxFdProofEntryContract=Object.freeze({candidatePurpose,executable:'/usr/bin/sleep' as const,maxDurationMs:10000,
- protectedEvidenceConnected:false as const,nativeProviderDefault:false as const,runtimeVerified:false as const,executionAuthorized:false as const});
+ protectedEvidenceValidatorConnected:true as const,validatedExecutionLauncherConnected:true as const,protectedEvidenceConnected:true as const,nativeProviderDefault:false as const,
+ fixedSourceBytesVerifiedByExternalExecutor:true as const,loadedModuleBytesReverifiedInsideNode:false as const,runtimeVerified:false as const,executionAuthorized:false as const});
 
 export interface NegativeLinuxFdProofEntryCandidate{readonly schemaVersion:1;readonly purpose:typeof candidatePurpose;readonly attemptId:string;readonly sourceHead:string;readonly planHash:string;readonly sourceHash:string;readonly graphHash:string;readonly issuedAt:number;readonly expiresAt:number}
 export interface NegativeLinuxFdProofEntryAuthority{readonly recipient:object;readonly candidate:Readonly<NegativeLinuxFdProofEntryCandidate>;now():number;monotonic():number;assertCurrent(this:object,candidate:Readonly<NegativeLinuxFdProofEntryCandidate>):void}
 export interface NegativeLinuxFdProofEntryUnavailable{readonly status:'PROTECTED_START_EVIDENCE_UNAVAILABLE'|'UNKNOWN';readonly nativeProviderSelected:false;readonly effectsStarted:false;readonly runtimeVerified:false;readonly executionAuthorized:false}
 
 interface AuthorityBinding{readonly raw:NegativeLinuxFdProofEntryAuthority;readonly recipient:object;readonly candidate:Readonly<NegativeLinuxFdProofEntryCandidate>;readonly descriptors:ReturnType<typeof Object.getOwnPropertyDescriptors>;lastWall:number;lastMono:number;wallEnd:number;monoEnd:number}
-const protectedNativeCandidates=new WeakSet<object>();
 const invalid=():never=>{throw Error('IX01_0076_NEGATIVE_LINUX_FD_PROOF_ENTRY_INVALID');};
 function defined<T>(value:T|undefined):T{if(value===undefined)return invalid();return value;}
 function exact(raw:unknown,keys:readonly string[]){if(!raw||typeof raw!=='object'||types.isProxy(raw)||![Object.prototype,null].includes(Object.getPrototypeOf(raw)))return false;const descriptors=Object.getOwnPropertyDescriptors(raw);return Reflect.ownKeys(descriptors).length===keys.length&&keys.every(key=>!!descriptors[key]?.enumerable&&Object.hasOwn(descriptors[key]!,'value'));}
@@ -70,9 +71,9 @@ async function assemble(binding:AuthorityBinding,ports:NegativeLinuxFdProofNodeP
  const supplier=Object.freeze({recipient:supplierRecipient,attemptId:binding.candidate.attemptId,assertCurrent(this:object,contract:typeof current0076NegativeLinuxFdProofSystemContract){if(this!==supplierRecipient||contract.attemptId!==binding.candidate.attemptId||contract.executable!=='/usr/bin/sleep')invalid();current(binding);}});
  const system=create0076NegativeLinuxFdProofSystem(bind0076NegativeLinuxFdProofSystemSupplier(supplier),ports);return run0076NegativeLinuxFdProof(plan,authority,system);}
 
-/** 실제 protected evidence issuer는 아직 없다. 따라서 private native provider는 선택되지 않고 효과 전에 닫힌다. */
-export async function run0076NegativeLinuxFdProofEntry(rawAuthority:NegativeLinuxFdProofEntryAuthority):Promise<Readonly<NegativeLinuxFdProofEntryUnavailable|NegativeLinuxFdProofResult>>{let binding:AuthorityBinding;try{binding=authorityShape(rawAuthority);current(binding);}catch{return unavailable('UNKNOWN');}
- if(!protectedNativeCandidates.has(rawAuthority))return unavailable('PROTECTED_START_EVIDENCE_UNAVAILABLE');return assemble(binding,nativePorts);}
+/** purpose 전용 protected issuer의 native token만 private provider를 선택한다. token 부재·RAM token·중복은 효과 전에 닫힌다. */
+export async function run0076NegativeLinuxFdProofEntry(rawAuthority:NegativeLinuxFdProofEntryAuthority,rawEvidence?:unknown):Promise<Readonly<NegativeLinuxFdProofEntryUnavailable|NegativeLinuxFdProofResult>>{let binding:AuthorityBinding;try{binding=authorityShape(rawAuthority);current(binding);}catch{return unavailable('UNKNOWN');}
+ if(!consume0076NegativeLinuxFdProofExecutionEvidence(rawEvidence,rawAuthority))return unavailable('PROTECTED_START_EVIDENCE_UNAVAILABLE');try{current(binding);return await assemble(binding,nativePorts);}catch{return Object.freeze({status:'UNKNOWN',evidence:'SOURCE_CANDIDATE_ONLY',runtimeVerified:false,executionAuthorized:false});}}
 
 /** RAM 조립 검증 전용이다. 주입 포트를 실제 Linux 권위나 보호 evidence로 승격하지 않는다. */
 export async function assemble0076NegativeLinuxFdProofEntryForRam(rawAuthority:NegativeLinuxFdProofEntryAuthority,ports:NegativeLinuxFdProofNodePorts):Promise<Readonly<NegativeLinuxFdProofResult>>{try{return await assemble(authorityShape(rawAuthority),ports);}catch{return Object.freeze({status:'UNKNOWN',evidence:'SOURCE_CANDIDATE_ONLY',runtimeVerified:false,executionAuthorized:false});}}

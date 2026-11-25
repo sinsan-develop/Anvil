@@ -1,0 +1,123 @@
+import {createHash} from 'node:crypto';
+import {closeSync,constants,fstatSync,fsyncSync,lstatSync,openSync,readSync,realpathSync,writeSync,type Stats} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {performance} from 'node:perf_hooks';
+import {types} from 'node:util';
+import {canonicalJson,parseWireJson} from '../contracts/canonical.ts';
+import {
+ create0076NegativeLinuxFdProofProtectedIssuer,
+ parse0076NegativeLinuxFdProofProtectedEvidence,
+ type NegativeLinuxFdProofProtectedEvidence,
+ type NegativeLinuxFdProofProtectedReadSystem,
+} from './qa-ix01-0076-negative-linux-fd-proof-issuer.ts';
+import type {
+ NegativeLinuxFdProofEntryAuthority,
+ NegativeLinuxFdProofEntryCandidate,
+ NegativeLinuxFdProofEntryUnavailable,
+} from './qa-ix01-0076-negative-linux-fd-proof-entry.ts';
+import type {NegativeLinuxFdProofResult} from './qa-ix01-0076-negative-linux-fd-proof.ts';
+
+const launcherPurpose='IX01_0076_NEGATIVE_LINUX_FD_PROOF_LAUNCH_INTENT' as const;
+const receiptParent='/home/daon/.local/share/anvil-v3-qa-receipts';
+const nodePath='/opt/node-v24.22.1-linux-x64/bin/node';
+export const current0076NegativeLinuxFdProofLauncherContract=Object.freeze({launcherPurpose,nodePath,mode:'--run' as const,maxStdinBytes:32768,maxDurationMs:10000,
+ approvalIssuedByLauncher:false as const,fixedSourceBytesVerifiedByExternalExecutor:true as const,loadedModuleBytesReverifiedInsideNode:false as const,actualExecutionPerformed:false as const});
+
+export interface NegativeLinuxFdProofLauncherCommand{readonly platform:'linux';readonly uid:1000;readonly execPath:string;readonly scriptPath:string;readonly argv:readonly string[];readonly execArgv:readonly string[];readonly envKeys:readonly string[];readonly stdin:Uint8Array;now():number;monotonic():number}
+export interface NegativeLinuxFdProofLauncherRootIdentity{readonly kind:'DIRECTORY';readonly dev:number;readonly ino:number;readonly uid:1000;readonly mode:number}
+export interface NegativeLinuxFdProofLauncherReceiptSystem extends NegativeLinuxFdProofProtectedReadSystem{rootIdentity(this:object):Readonly<NegativeLinuxFdProofLauncherRootIdentity>}
+export interface NegativeLinuxFdProofLauncherIntentSystem{readonly recipient:object;settle(this:object,path:string,bytes:Uint8Array,current:()=>void,root:Readonly<NegativeLinuxFdProofLauncherRootIdentity>):Promise<'SETTLED'|'UNKNOWN'>}
+interface IntentFact{readonly kind:'FILE'|'DIRECTORY'|'OTHER';readonly dev:number;readonly ino:number;readonly uid:number;readonly mode:number;readonly nlink:number;readonly size:number;readonly mtimeMs:number;readonly ctimeMs:number}
+export interface NegativeLinuxFdProofLauncherIntentPorts{readonly recipient:object;statPath(this:object,path:string):Readonly<IntentFact>;realpath(this:object,path:string):string;open(this:object,path:string,flags:number,mode?:number):number;statFd(this:object,fd:number):Readonly<IntentFact>;write(this:object,fd:number,bytes:Uint8Array,offset:number):number;sync(this:object,fd:number):void;read(this:object,fd:number,bytes:Uint8Array,offset:number):number;close(this:object,fd:number):void}
+type LauncherResult=Readonly<NegativeLinuxFdProofEntryUnavailable|NegativeLinuxFdProofResult>;
+
+const commandKeys=['platform','uid','execPath','scriptPath','argv','execArgv','envKeys','stdin','now','monotonic'] as const;
+const retainedFds=new Set<number>();
+const issued=new WeakMap<object,{readonly authority:NegativeLinuxFdProofEntryAuthority;consumed:boolean}>(),trustedExecutionAttempts=new Set<string>();
+const invalid=():never=>{throw Error('IX01_0076_NEGATIVE_LINUX_FD_PROOF_LAUNCHER_INVALID');};
+function exact(raw:unknown,keys:readonly string[]){if(!raw||typeof raw!=='object'||types.isProxy(raw)||![Object.prototype,null].includes(Object.getPrototypeOf(raw)))return false;const d=Object.getOwnPropertyDescriptors(raw);return Reflect.ownKeys(d).length===keys.length&&keys.every(key=>!!d[key]?.enumerable&&Object.hasOwn(d[key]!,'value'));}
+function unavailable():Readonly<NegativeLinuxFdProofEntryUnavailable>{return Object.freeze({status:'UNKNOWN',nativeProviderSelected:false,effectsStarted:false,runtimeVerified:false,executionAuthorized:false});}
+export function consume0076NegativeLinuxFdProofExecutionEvidence(raw:unknown,authority:NegativeLinuxFdProofEntryAuthority){if(!raw||typeof raw!=='object'||types.isProxy(raw))return false;const found=issued.get(raw);if(!found||found.consumed||found.authority!==authority)return false;found.consumed=true;issued.delete(raw);return true;}
+async function withValidatedExecution(authority:NegativeLinuxFdProofEntryAuthority,evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>,consume:(token:object)=>Promise<LauncherResult>){if(trustedExecutionAttempts.has(evidence.attemptId))invalid();trustedExecutionAttempts.add(evidence.attemptId);const token=Object.freeze({});issued.set(token,{authority,consumed:false});try{return await consume(token);}finally{issued.delete(token);}}
+function bytesEqual(left:Uint8Array,right:Uint8Array){return left.byteLength===right.byteLength&&left.every((value,index)=>value===right[index]);}
+function fileFact(value:Stats):Readonly<IntentFact>{return Object.freeze({kind:value.isFile()?'FILE':value.isDirectory()?'DIRECTORY':'OTHER',dev:value.dev,ino:value.ino,uid:value.uid,mode:value.mode,nlink:value.nlink,size:value.size,mtimeMs:value.mtimeMs,ctimeMs:value.ctimeMs});}
+function sameFact(left:ReturnType<typeof fileFact>,right:ReturnType<typeof fileFact>){return (['dev','ino','uid','mode','nlink','size','mtimeMs','ctimeMs'] as const).every(key=>left[key]===right[key]);}
+function sameDirectory(left:Readonly<IntentFact>,right:Readonly<IntentFact>){return left.kind==='DIRECTORY'&&right.kind==='DIRECTORY'&&(['dev','ino','uid','mode'] as const).every(key=>left[key]===right[key]);}
+function rootShape(raw:unknown):raw is Readonly<NegativeLinuxFdProofLauncherRootIdentity>{if(!exact(raw,['kind','dev','ino','uid','mode'])||!Object.isFrozen(raw))return false;const value=raw as NegativeLinuxFdProofLauncherRootIdentity;return value.kind==='DIRECTORY'&&[value.dev,value.ino,value.mode].every(Number.isSafeInteger)&&value.uid===1000;}
+
+function commandShape(raw:NegativeLinuxFdProofLauncherCommand,expectedScriptPath:string,evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>){
+ const stdinHash=createHash('sha256').update(raw.stdin).digest('hex');if(!exact(raw,commandKeys)||!Object.isFrozen(raw)||raw.platform!=='linux'||raw.uid!==1000||raw.execPath!==nodePath||raw.scriptPath!==expectedScriptPath
+  ||!Array.isArray(raw.argv)||!Object.isFrozen(raw.argv)||raw.argv.length!==5||raw.argv[0]!=='--run'||raw.argv[1]!==evidence.attemptId||raw.argv[2]!==evidence.planHash||raw.argv[3]!==evidence.approvalHash||raw.argv[4]!==stdinHash
+  ||!Array.isArray(raw.execArgv)||!Object.isFrozen(raw.execArgv)||raw.execArgv.length||!Array.isArray(raw.envKeys)||!Object.isFrozen(raw.envKeys)||raw.envKeys.length
+  ||!types.isUint8Array(raw.stdin)||types.isProxy(raw.stdin)||types.isSharedArrayBuffer(raw.stdin.buffer)||raw.stdin.byteLength<1||raw.stdin.byteLength>32768
+  ||typeof raw.now!=='function'||typeof raw.monotonic!=='function')invalid();
+ return Object.getOwnPropertyDescriptors(raw);
+}
+function decode(raw:Uint8Array){let text:string,value:unknown;try{text=new TextDecoder('utf-8',{fatal:true}).decode(raw);value=parseWireJson(text);}catch{return invalid();}const evidence=parse0076NegativeLinuxFdProofProtectedEvidence(value);if(!evidence||canonicalJson(evidence)!==text)return invalid();return evidence;}
+function candidate(evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>):Readonly<NegativeLinuxFdProofEntryCandidate>{return Object.freeze({schemaVersion:1,purpose:'IX01_0076_NEGATIVE_LINUX_FD_PROOF_SOURCE_CANDIDATE',attemptId:evidence.attemptId,sourceHead:evidence.sourceHead,planHash:evidence.planHash,sourceHash:evidence.sourceHash,graphHash:evidence.graphHash,issuedAt:evidence.issuedAt,expiresAt:evidence.expiresAt});}
+function intentBytes(evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>,stdin:Uint8Array){return new TextEncoder().encode(canonicalJson({schemaVersion:1,purpose:launcherPurpose,attemptId:evidence.attemptId,approvalRef:evidence.approvalRef,
+ approvalHash:evidence.approvalHash,planHash:evidence.planHash,graphHash:evidence.graphHash,stdinHash:createHash('sha256').update(stdin).digest('hex'),issuedAt:evidence.issuedAt,expiresAt:evidence.expiresAt}));}
+
+async function launch(rawCommand:NegativeLinuxFdProofLauncherCommand,rawReceipt:NegativeLinuxFdProofLauncherReceiptSystem,rawIntent:NegativeLinuxFdProofLauncherIntentSystem,expectedScriptPath:string,native:boolean,liveCurrent:()=>void):Promise<LauncherResult>{
+ let evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>,descriptors:ReturnType<typeof Object.getOwnPropertyDescriptors>,receiptDescriptors:ReturnType<typeof Object.getOwnPropertyDescriptors>,receiptRecipient:object,intentDescriptors:ReturnType<typeof Object.getOwnPropertyDescriptors>,intentRecipient:object;
+ try{evidence=decode(rawCommand.stdin);descriptors=commandShape(rawCommand,expectedScriptPath,evidence);if(!exact(rawIntent,['recipient','settle'])||!Object.isFrozen(rawIntent))invalid();intentDescriptors=Object.getOwnPropertyDescriptors(rawIntent);intentRecipient=intentDescriptors.recipient?.value as object;
+  if(!intentRecipient||typeof intentRecipient!=='object'||types.isProxy(intentRecipient)||!Object.isFrozen(intentRecipient)||typeof intentDescriptors.settle?.value!=='function'||!exact(rawReceipt,['recipient','read','rootIdentity'])||!Object.isFrozen(rawReceipt))invalid();receiptDescriptors=Object.getOwnPropertyDescriptors(rawReceipt);receiptRecipient=receiptDescriptors.recipient?.value as object;
+  if(!receiptRecipient||typeof receiptRecipient!=='object'||types.isProxy(receiptRecipient)||!Object.isFrozen(receiptRecipient)||typeof receiptDescriptors.read?.value!=='function'||typeof receiptDescriptors.rootIdentity?.value!=='function')invalid();}catch{return unavailable();}
+ const fixedEvidence=evidence,fixedCandidate=candidate(evidence);let lastWall=-1,lastMono=-1,wallEnd=-1,monoEnd=-1;
+ const current=()=>{liveCurrent();if(commandKeys.some(key=>rawCommand[key]!==descriptors[key]!.value)||rawIntent.recipient!==intentDescriptors.recipient!.value||rawIntent.settle!==intentDescriptors.settle!.value)invalid();
+  const wall=(descriptors.now!.value as NegativeLinuxFdProofLauncherCommand['now']).call(rawCommand),mono=(descriptors.monotonic!.value as NegativeLinuxFdProofLauncherCommand['monotonic']).call(rawCommand);
+  if(!Number.isSafeInteger(wall)||!Number.isFinite(mono)||mono<0||wall<fixedEvidence.issuedAt||wall<lastWall||mono<lastMono)invalid();if(lastWall<0){wallEnd=Math.min(fixedEvidence.expiresAt,wall+10000);monoEnd=mono+(wallEnd-wall);}if(wall>=wallEnd||mono>=monoEnd)invalid();lastWall=wall;lastMono=mono;};
+ const authorityRecipient=Object.freeze({}),authority=Object.freeze<NegativeLinuxFdProofEntryAuthority>({recipient:authorityRecipient,candidate:fixedCandidate,now(){current();return lastWall;},monotonic(){current();return lastMono;},assertCurrent(this:object,found){if(this!==authorityRecipient||found!==fixedCandidate)invalid();current();}});
+ let root:Readonly<NegativeLinuxFdProofLauncherRootIdentity>;try{const issuerRecipient=Object.freeze({}),viewRecipient=Object.freeze({}),view=Object.freeze<NegativeLinuxFdProofProtectedReadSystem>({recipient:viewRecipient,read(this:object,path:string,maxBytes:number){if(this!==viewRecipient)invalid();return (receiptDescriptors.read!.value as NegativeLinuxFdProofProtectedReadSystem['read']).call(receiptRecipient,path,maxBytes);}}),issuer=create0076NegativeLinuxFdProofProtectedIssuer(Object.freeze({recipient:issuerRecipient,entryAuthority:authority,expected:fixedEvidence,now(){current();return lastWall;},monotonic(){current();return lastMono;},assertCurrent(this:object,found:Readonly<NegativeLinuxFdProofProtectedEvidence>){if(this!==issuerRecipient||found!==fixedEvidence)invalid();current();}}),view),verified=await issuer.issue();current();if(verified.status!=='SYNTHETIC_PROTECTED_EVIDENCE_VERIFIED_NOT_NATIVE')return unavailable();root=(receiptDescriptors.rootIdentity!.value as NegativeLinuxFdProofLauncherReceiptSystem['rootIdentity']).call(receiptRecipient);if(!rootShape(root))return unavailable();}catch{return unavailable();}
+ const path=receiptParent+'/ix01-0076-fd-proof-'+fixedEvidence.attemptId+'-intent-v1.json';try{current();const settled=await (intentDescriptors.settle!.value as NegativeLinuxFdProofLauncherIntentSystem['settle']).call(intentRecipient,path,intentBytes(fixedEvidence,rawCommand.stdin),current,root);current();if(settled!=='SETTLED')return unavailable();}catch{return unavailable();}
+ const {run0076NegativeLinuxFdProofEntry}=await import('./qa-ix01-0076-negative-linux-fd-proof-entry.ts');if(!native)return run0076NegativeLinuxFdProofEntry(authority);
+ try{return await withValidatedExecution(authority,fixedEvidence,token=>run0076NegativeLinuxFdProofEntry(authority,token));}catch{return unavailable();}
+}
+
+/** RAM은 exact command/intent 순서만 검증하며 native token을 발급하지 않는다. */
+export function run0076NegativeLinuxFdProofLauncherForRam(command:NegativeLinuxFdProofLauncherCommand,receipt:NegativeLinuxFdProofLauncherReceiptSystem,intent:NegativeLinuxFdProofLauncherIntentSystem,expectedScriptPath:string){return launch(command,receipt,intent,expectedScriptPath,false,()=>{});}
+
+const nativeReceiptRecipient=Object.freeze({});let nativeReceiptRoot:Readonly<NegativeLinuxFdProofLauncherRootIdentity>|undefined;
+const nativeReceiptSystem=Object.freeze<NegativeLinuxFdProofLauncherReceiptSystem>({recipient:nativeReceiptRecipient,read(this:object,path:string,maxBytes:number){if(this!==nativeReceiptRecipient||nativeReceiptRoot||!path.startsWith(receiptParent+'/ix01-0076-fd-proof-')||!path.endsWith('-start.json')||maxBytes!==32768)invalid();
+ let dirFd=-1,fd=-1;const closeOne=(slot:'dir'|'file')=>{const value=slot==='dir'?dirFd:fd;if(value<0)return true;if(slot==='dir')dirFd=-1;else fd=-1;try{closeSync(value);retainedFds.delete(value);return true;}catch{retainedFds.add(value);return false;}};
+ try{dirFd=openSync(receiptParent,constants.O_RDONLY|constants.O_DIRECTORY|constants.O_NOFOLLOW);retainedFds.add(dirFd);const parent=fileFact(fstatSync(dirFd));if(parent.kind!=='DIRECTORY'||parent.uid!==1000||(parent.mode&0o777)!==0o700||realpathSync('/proc/self/fd/'+dirFd)!==receiptParent)return invalid();
+  const basename=path.slice(receiptParent.length+1);if(!/^ix01-0076-fd-proof-[0-9a-f-]{36}-start\.json$/.test(basename))return invalid();const heldPath='/proc/self/fd/'+dirFd+'/'+basename;fd=openSync(heldPath,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);retainedFds.add(fd);const first=fileFact(fstatSync(fd));if(first.kind!=='FILE'||first.uid!==1000||(first.mode&0o777)!==0o600||first.nlink!==1||first.size<1||first.size>maxBytes)return invalid();
+  const bytes=new Uint8Array(first.size);let total=0;while(total<bytes.byteLength){const count=readSync(fd,bytes,total,bytes.byteLength-total,total);if(count<1)return invalid();total+=count;}if(!sameFact(first,fileFact(fstatSync(fd)))||!sameDirectory(parent,fileFact(fstatSync(dirFd)))||realpathSync('/proc/self/fd/'+dirFd)!==receiptParent||!closeOne('file')||!closeOne('dir'))return invalid();nativeReceiptRoot=Object.freeze({kind:'DIRECTORY',dev:parent.dev,ino:parent.ino,uid:1000,mode:parent.mode});return bytes;
+ }finally{closeOne('file');closeOne('dir');}},rootIdentity(this:object){if(this!==nativeReceiptRecipient||!nativeReceiptRoot)invalid();return nativeReceiptRoot as Readonly<NegativeLinuxFdProofLauncherRootIdentity>;}});
+
+const intentPortKeys=['recipient','statPath','realpath','open','statFd','write','sync','read','close'] as const;
+export function create0076NegativeLinuxFdProofLauncherIntentSystemForRam(rawPorts:NegativeLinuxFdProofLauncherIntentPorts):NegativeLinuxFdProofLauncherIntentSystem{
+ if(!exact(rawPorts,intentPortKeys)||!Object.isFrozen(rawPorts))invalid();const d=Object.getOwnPropertyDescriptors(rawPorts),portRecipient=d.recipient?.value as object;if(!portRecipient||typeof portRecipient!=='object'||types.isProxy(portRecipient)||!Object.isFrozen(portRecipient)||intentPortKeys.slice(1).some(key=>typeof d[key]?.value!=='function'))invalid();
+ const recipient=Object.freeze({});return Object.freeze({recipient,async settle(this:object,path:string,bytes:Uint8Array,current:()=>void,root:Readonly<NegativeLinuxFdProofLauncherRootIdentity>){if(this!==recipient||!rootShape(root)||!path.startsWith(receiptParent+'/ix01-0076-fd-proof-')||!path.endsWith('-intent-v1.json')||bytes.byteLength<1||bytes.byteLength>32768)return'UNKNOWN';
+  let fd=-1,dirFd=-1,readFd=-1;const closeOne=(slot:'fd'|'dirFd'|'readFd')=>{const value=slot==='fd'?fd:slot==='dirFd'?dirFd:readFd;if(value<0)return true;if(slot==='fd')fd=-1;else if(slot==='dirFd')dirFd=-1;else readFd=-1;
+   try{(d.close!.value as NegativeLinuxFdProofLauncherIntentPorts['close']).call(portRecipient,value);retainedFds.delete(value);return true;}catch{retainedFds.add(value);return false;}};
+  try{current();dirFd=(d.open!.value as NegativeLinuxFdProofLauncherIntentPorts['open']).call(portRecipient,receiptParent,constants.O_RDONLY|constants.O_DIRECTORY|constants.O_NOFOLLOW);retainedFds.add(dirFd);const parent=(d.statFd!.value as NegativeLinuxFdProofLauncherIntentPorts['statFd']).call(portRecipient,dirFd),dirPath='/proc/self/fd/'+dirFd;
+   if(parent.kind!=='DIRECTORY'||parent.uid!==1000||(parent.mode&0o777)!==0o700||parent.dev!==root.dev||parent.ino!==root.ino||parent.mode!==root.mode||(d.realpath!.value as NegativeLinuxFdProofLauncherIntentPorts['realpath']).call(portRecipient,dirPath)!==receiptParent)return'UNKNOWN';const basename=path.slice(receiptParent.length+1),heldPath=dirPath+'/'+basename;
+   fd=(d.open!.value as NegativeLinuxFdProofLauncherIntentPorts['open']).call(portRecipient,heldPath,constants.O_WRONLY|constants.O_CREAT|constants.O_EXCL|constants.O_NOFOLLOW|constants.O_SYNC,0o600);retainedFds.add(fd);const opened=(d.statFd!.value as NegativeLinuxFdProofLauncherIntentPorts['statFd']).call(portRecipient,fd);if(opened.kind!=='FILE'||opened.uid!==1000||(opened.mode&0o777)!==0o600||opened.nlink!==1||opened.size!==0)return'UNKNOWN';
+   let offset=0;while(offset<bytes.byteLength){current();const count=(d.write!.value as NegativeLinuxFdProofLauncherIntentPorts['write']).call(portRecipient,fd,bytes,offset);if(count<1||count>bytes.byteLength-offset)return'UNKNOWN';offset+=count;}(d.sync!.value as NegativeLinuxFdProofLauncherIntentPorts['sync']).call(portRecipient,fd);const written=(d.statFd!.value as NegativeLinuxFdProofLauncherIntentPorts['statFd']).call(portRecipient,fd);if(written.dev!==opened.dev||written.ino!==opened.ino||written.size!==bytes.byteLength||!closeOne('fd'))return'UNKNOWN';
+   (d.sync!.value as NegativeLinuxFdProofLauncherIntentPorts['sync']).call(portRecipient,dirFd);current();const afterFd=(d.statFd!.value as NegativeLinuxFdProofLauncherIntentPorts['statFd']).call(portRecipient,dirFd),afterPath=(d.statPath!.value as NegativeLinuxFdProofLauncherIntentPorts['statPath']).call(portRecipient,receiptParent);if(!sameDirectory(parent,afterFd)||!sameDirectory(parent,afterPath))return'UNKNOWN';
+   readFd=(d.open!.value as NegativeLinuxFdProofLauncherIntentPorts['open']).call(portRecipient,heldPath,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);retainedFds.add(readFd);const readFact=(d.statFd!.value as NegativeLinuxFdProofLauncherIntentPorts['statFd']).call(portRecipient,readFd);if(readFact.kind!=='FILE'||readFact.dev!==written.dev||readFact.ino!==written.ino||readFact.uid!==1000||(readFact.mode&0o777)!==0o600||readFact.nlink!==1||readFact.size!==bytes.byteLength)return'UNKNOWN';
+   const found=new Uint8Array(bytes.byteLength);let total=0;while(total<found.byteLength){current();const count=(d.read!.value as NegativeLinuxFdProofLauncherIntentPorts['read']).call(portRecipient,readFd,found,total);if(count<1||count>found.byteLength-total)return'UNKNOWN';total+=count;}if(!bytesEqual(found,bytes)||!sameFact(readFact,(d.statFd!.value as NegativeLinuxFdProofLauncherIntentPorts['statFd']).call(portRecipient,readFd))||!closeOne('readFd'))return'UNKNOWN';current();if(!closeOne('dirFd'))return'UNKNOWN';return'SETTLED';
+  }catch{return'UNKNOWN';}finally{closeOne('readFd');closeOne('fd');closeOne('dirFd');}}});
+}
+const nativeIntentPortsRecipient=Object.freeze({});
+const nativeIntentPorts=Object.freeze<NegativeLinuxFdProofLauncherIntentPorts>({recipient:nativeIntentPortsRecipient,
+ statPath(this:object,path:string){if(this!==nativeIntentPortsRecipient)invalid();return fileFact(lstatSync(path));},realpath(this:object,path:string){if(this!==nativeIntentPortsRecipient)invalid();return realpathSync(path);},
+ open(this:object,path:string,flags:number,mode?:number){if(this!==nativeIntentPortsRecipient)invalid();return openSync(path,flags,mode);},statFd(this:object,fd:number){if(this!==nativeIntentPortsRecipient)return invalid();return fileFact(fstatSync(fd));},
+ write(this:object,fd:number,bytes:Uint8Array,offset:number){if(this!==nativeIntentPortsRecipient)return invalid();return writeSync(fd,bytes,offset,bytes.byteLength-offset);},sync(this:object,fd:number){if(this!==nativeIntentPortsRecipient)return invalid();fsyncSync(fd);},
+ read(this:object,fd:number,bytes:Uint8Array,offset:number){if(this!==nativeIntentPortsRecipient)return invalid();return readSync(fd,bytes,offset,bytes.byteLength-offset,offset);},close(this:object,fd:number){if(this!==nativeIntentPortsRecipient)return invalid();closeSync(fd);},
+});
+const nativeIntentSystem=create0076NegativeLinuxFdProofLauncherIntentSystemForRam(nativeIntentPorts);
+
+export function project0076NegativeLinuxFdProofObservationCandidate(result:LauncherResult,evidence:Readonly<NegativeLinuxFdProofProtectedEvidence>,stdin:Uint8Array){if(result.status!=='SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED')return result;
+ if(result.path!=='/usr/bin/sleep'||!Number.isSafeInteger(result.dev)||!Number.isSafeInteger(result.ino)||typeof result.sha256!=='string'||!/^[a-f0-9]{64}$/.test(result.sha256))invalid();return Object.freeze({status:'IX01_0076_BENIGN_SAME_FD_OBSERVATION_CANDIDATE_NOT_RUNTIME_PASS' as const,
+  attemptId:evidence.attemptId,approvalRef:Object.freeze({...evidence.approvalRef}),intentDigest:createHash('sha256').update(intentBytes(evidence,stdin)).digest('hex'),observation:Object.freeze({path:result.path,dev:result.dev,ino:result.ino,sha256:result.sha256}),
+  runtimeVerified:false as const,executionAuthorized:false as const,pgAuthorized:false as const});}
+
+async function readStdin(){const chunks:Uint8Array[]=[];let total=0,expired=false;const timer=setTimeout(()=>{expired=true;process.stdin.destroy(Error('IX01_0076_NEGATIVE_LINUX_FD_PROOF_STDIN_TIMEOUT'));},10000);try{for await(const raw of process.stdin){if(expired)invalid();const chunk=typeof raw==='string'?new TextEncoder().encode(raw):new Uint8Array(raw);total+=chunk.byteLength;if(total>32768)invalid();chunks.push(chunk);}}finally{clearTimeout(timer);}if(expired)invalid();const result=new Uint8Array(total);let offset=0;for(const chunk of chunks){result.set(chunk,offset);offset+=chunk.byteLength;}return result;}
+async function main(){const expected=fileURLToPath(import.meta.url),stdin=await readStdin(),argv=Object.freeze(process.argv.slice(2)),execArgv=Object.freeze([...process.execArgv]),envKeys=Object.freeze(Object.keys(process.env));
+ const command=Object.freeze<NegativeLinuxFdProofLauncherCommand>({platform:process.platform as 'linux',uid:process.geteuid?.() as 1000,execPath:process.execPath,scriptPath:process.argv[1]??'',argv,execArgv,envKeys,stdin,now:()=>Date.now(),monotonic:()=>performance.now()});
+ const live=()=>{if(process.platform!=='linux'||process.geteuid?.()!==1000||process.execPath!==nodePath||process.argv[1]!==expected||process.argv.length!==7||process.argv.slice(2).some((value,index)=>value!==argv[index])||process.execArgv.length||Object.keys(process.env).length)invalid();};
+ const result=await launch(command,nativeReceiptSystem,nativeIntentSystem,expected,true,live),evidence=parse0076NegativeLinuxFdProofProtectedEvidence(parseWireJson(new TextDecoder('utf-8',{fatal:true}).decode(stdin)));if(!evidence)return invalid();const wire=project0076NegativeLinuxFdProofObservationCandidate(result,evidence,stdin);
+ process.stdout.write(canonicalJson(wire)+'\n');if(result.status!=='SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED')process.exitCode=1;}
+if(import.meta.main)void main().catch(()=>{process.stdout.write(canonicalJson(unavailable())+'\n');process.exitCode=1;});
