@@ -39,6 +39,8 @@ test('fixed descriptor 3의 /proc/self/fd 실행과 child exe identity가 원 FD
  const h=fixture(),result=await run0076NegativeLinuxFdProof(h.plan,h.authority,h.system);
  assert.equal(result.status,'SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED');assert.equal(result.runtimeVerified,false);assert.equal(result.executionAuthorized,false);
  assert.equal(result.path,'/usr/bin/sleep');assert.equal(result.dev,9);assert.equal(result.ino,10);assert.match(result.sha256!,/^[a-f0-9]{64}$/);
+ assert.deepEqual(result.terminal,{schemaVersion:1,purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1',attemptId:h.plan.attemptId,issuedAt:h.plan.issuedAt,expiresAt:h.plan.expiresAt,
+  child:{exitCode:null,signal:'SIGTERM',closeConfirmed:true},sourceFd:{closeConfirmed:true}});
  assert.deepEqual([h.opens,h.spawns,h.terminates,h.waits,h.closes],[1,1,1,1,1]);
 });
 
@@ -50,6 +52,7 @@ test('동기 timer·wait reject·timeout은 timer를 한 번 해제하고 child�
 
 test('identity mismatch·만료·close 불명은 권위나 재시도 없이 UNKNOWN이다',async()=>{
  for(const mode of ['IDENTITY','CLOSE_UNKNOWN','EXPIRED'] as const){const h=fixture(mode),result=await run0076NegativeLinuxFdProof(h.plan,h.authority,h.system);assert.equal(result.status,'UNKNOWN',mode);
+  assert.equal(result.terminal,undefined,mode);
   const before=[h.opens,h.spawns,h.terminates,h.waits,h.closes];assert.equal((await run0076NegativeLinuxFdProof(h.plan,h.authority,h.system)).status,'UNKNOWN');assert.deepEqual([h.opens,h.spawns,h.terminates,h.waits,h.closes],before,mode);}
 });
 

@@ -6,6 +6,9 @@ import {canonicalJson} from '../../../contracts/canonical.ts';
 import {
  run0076NegativeLinuxFdProofLauncherForRam,
  create0076NegativeLinuxFdProofLauncherIntentSystemForRam,
+ current0076NegativeLinuxFdProofCollectionContract,
+ project0076NegativeLinuxFdProofCollectionCandidate,
+ project0076NegativeLinuxFdProofCollectionCandidateForRam,
  project0076NegativeLinuxFdProofObservationCandidate,
  type NegativeLinuxFdProofLauncherCommand,
  type NegativeLinuxFdProofLauncherIntentPorts,
@@ -69,7 +72,39 @@ test('receipt 뒤 같은 경로의 다른 정상 directory identity는 O_EXCL in
 });
 
 test('성공 후보 projection은 원 attempt·approvalRef·intent digest와 file observation만 보존한다',()=>{
- const h=fixture(),result=Object.freeze({status:'SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED' as const,evidence:'SOURCE_CANDIDATE_ONLY' as const,runtimeVerified:false as const,executionAuthorized:false as const,path:'/usr/bin/sleep',dev:8,ino:9,sha256:'a'.repeat(64)});
+ const h=fixture(),result=Object.freeze({status:'SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED' as const,evidence:'SOURCE_CANDIDATE_ONLY' as const,runtimeVerified:false as const,executionAuthorized:false as const,path:'/usr/bin/sleep',dev:8,ino:9,sha256:'a'.repeat(64),
+  terminal:Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1' as const,attemptId,issuedAt:1000,expiresAt:9000,
+   child:Object.freeze({exitCode:null,signal:'SIGTERM' as const,closeConfirmed:true as const}),sourceFd:Object.freeze({closeConfirmed:true as const})})});
  const projected=project0076NegativeLinuxFdProofObservationCandidate(result,h.evidence,h.stdin);assert.equal(projected.status,'IX01_0076_BENIGN_SAME_FD_OBSERVATION_CANDIDATE_NOT_RUNTIME_PASS');assert.equal(projected.attemptId,attemptId);assert.deepEqual(projected.approvalRef,h.evidence.approvalRef);assert.equal(projected.intentDigest.length,64);assert.deepEqual(projected.observation,{path:'/usr/bin/sleep',dev:8,ino:9,sha256:'a'.repeat(64)});
+ assert.deepEqual(Object.keys(projected),['status','attemptId','approvalRef','intentDigest','observation','runtimeVerified','executionAuthorized','pgAuthorized']);
  const failed=Object.freeze({status:'UNKNOWN' as const,evidence:'SOURCE_CANDIDATE_ONLY' as const,runtimeVerified:false as const,executionAuthorized:false as const});assert.equal(project0076NegativeLinuxFdProofObservationCandidate(failed,h.evidence,h.stdin),failed);
+});
+
+test('별도 collection v1은 canonical intent와 proof terminal을 같은 원 승인·시도·기한에 결박하고 권위를 올리지 않는다',()=>{
+ const h=fixture(),terminal=Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1' as const,attemptId,issuedAt:1000,expiresAt:9000,
+  child:Object.freeze({exitCode:null,signal:'SIGTERM' as const,closeConfirmed:true as const}),sourceFd:Object.freeze({closeConfirmed:true as const})});
+ const result=Object.freeze({status:'SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED' as const,evidence:'SOURCE_CANDIDATE_ONLY' as const,runtimeVerified:false as const,executionAuthorized:false as const,
+  path:'/usr/bin/sleep',dev:8,ino:9,sha256:'a'.repeat(64),terminal});
+ assert.equal(project0076NegativeLinuxFdProofCollectionCandidate(result).status,'UNKNOWN');
+ const collection=project0076NegativeLinuxFdProofCollectionCandidateForRam(result,h.evidence,h.stdin);assert.equal(collection.status,'IX01_0076_BENIGN_SAME_FD_COLLECTION_CANDIDATE_NOT_RUNTIME_PASS');
+ assert.equal(collection.schemaVersion,1);assert.equal(collection.purpose,current0076NegativeLinuxFdProofCollectionContract.purpose);
+ assert.equal(collection.path,`/home/daon/.local/share/anvil-v3-qa-receipts/ix01-0076-fd-proof-${attemptId}-collection-v1.json`);
+ assert.deepEqual(collection.approvalRef,h.evidence.approvalRef);assert.equal(collection.sourceHead,h.evidence.sourceHead);assert.equal(collection.planHash,h.evidence.planHash);assert.equal(collection.sourceHash,h.evidence.sourceHash);assert.equal(collection.graphHash,h.evidence.graphHash);
+ const expectedIntent={schemaVersion:1,purpose:'IX01_0076_NEGATIVE_LINUX_FD_PROOF_LAUNCH_INTENT',attemptId,approvalRef:h.evidence.approvalRef,approvalHash:h.evidence.approvalHash,
+  planHash:h.evidence.planHash,graphHash:h.evidence.graphHash,stdinHash:createHash('sha256').update(h.stdin).digest('hex'),issuedAt:1000,expiresAt:9000};
+ assert.equal(collection.intent.raw,canonicalJson(expectedIntent));assert.equal(collection.intent.sha256,createHash('sha256').update(collection.intent.raw).digest('hex'));
+ assert.deepEqual(collection.terminal,terminal);assert.equal(collection.collectionSource,'SYNTHETIC_RAM_ONLY');assert.equal(collection.comparisonOnly,true);assert.equal(collection.nativeEnableEligible,false);assert.equal(collection.durableStored,false);
+ assert.equal(collection.runtimeVerified,false);assert.equal(collection.executionAuthorized,false);assert.equal(collection.pgAuthorized,false);
+});
+
+test('교차 시도·기한 또는 불명 terminal은 collection 성공 데이터를 반환하지 않는다',()=>{
+ const h=fixture(),success={status:'SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED' as const,evidence:'SOURCE_CANDIDATE_ONLY' as const,runtimeVerified:false as const,executionAuthorized:false as const,
+  path:'/usr/bin/sleep',dev:8,ino:9,sha256:'a'.repeat(64)};
+ for(const terminal of [
+  Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1' as const,attemptId:'00000000-0000-4000-8000-000000000799',issuedAt:1000,expiresAt:9000,child:Object.freeze({exitCode:null,signal:'SIGTERM' as const,closeConfirmed:true as const}),sourceFd:Object.freeze({closeConfirmed:true as const})}),
+  Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1' as const,attemptId,issuedAt:1000,expiresAt:8999,child:Object.freeze({exitCode:null,signal:'SIGTERM' as const,closeConfirmed:true as const}),sourceFd:Object.freeze({closeConfirmed:true as const})}),
+  undefined,
+ ]){const collection=project0076NegativeLinuxFdProofCollectionCandidateForRam(Object.freeze({...success,...(terminal?{terminal}: {})}),h.evidence,h.stdin);assert.deepEqual(collection,{status:'UNKNOWN',code:'IX01_0076_BENIGN_SAME_FD_COLLECTION_UNAVAILABLE',comparisonOnly:true,nativeEnableEligible:false,durableStored:false,runtimeVerified:false,executionAuthorized:false,pgAuthorized:false});}
+ const terminal=Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1' as const,attemptId,issuedAt:1000,expiresAt:9000,child:Object.freeze({exitCode:null,signal:'SIGTERM' as const,closeConfirmed:true as const}),sourceFd:Object.freeze({closeConfirmed:true as const})});
+ const otherSource=Object.freeze({...h.evidence,sourceHead:'b'.repeat(40),sourceHash:'c'.repeat(64)});assert.equal(project0076NegativeLinuxFdProofCollectionCandidateForRam(Object.freeze({...success,terminal}),h.evidence,h.stdin,otherSource).status,'UNKNOWN');
 });

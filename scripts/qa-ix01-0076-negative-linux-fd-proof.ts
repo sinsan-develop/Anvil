@@ -20,7 +20,9 @@ export interface NegativeLinuxFdProofSystem{
  wait(this:object,child:object):Promise<Readonly<{status:null;signal:'SIGTERM';closed:true}>>;setTimer(this:object,callback:()=>void,ms:number):object;
  clearTimer(this:object,timer:object):void;close(this:object,handle:object):'CLOSED'|'UNKNOWN';
 }
-export interface NegativeLinuxFdProofResult{readonly status:'SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED'|'UNKNOWN';readonly evidence:'SOURCE_CANDIDATE_ONLY';readonly runtimeVerified:false;readonly executionAuthorized:false;readonly path?:string;readonly dev?:number;readonly ino?:number;readonly sha256?:string}
+export interface NegativeLinuxFdProofTerminal{readonly schemaVersion:1;readonly purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1';readonly attemptId:string;readonly issuedAt:number;readonly expiresAt:number;
+ readonly child:Readonly<{readonly exitCode:null;readonly signal:'SIGTERM';readonly closeConfirmed:true}>;readonly sourceFd:Readonly<{readonly closeConfirmed:true}>}
+export interface NegativeLinuxFdProofResult{readonly status:'SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED'|'UNKNOWN';readonly evidence:'SOURCE_CANDIDATE_ONLY';readonly runtimeVerified:false;readonly executionAuthorized:false;readonly path?:string;readonly dev?:number;readonly ino?:number;readonly sha256?:string;readonly terminal?:Readonly<NegativeLinuxFdProofTerminal>}
 
 const usedAttempts=new Set<string>(),retainedHandles=new Set<object>(),retainedChildren=new Set<object>();
 const invalid=():never=>{throw Error('IX01_0076_NEGATIVE_LINUX_FD_PROOF_INVALID');};
@@ -35,7 +37,7 @@ function sameStat(a:Readonly<NegativeLinuxFdProofStat>,b:Readonly<NegativeLinuxF
 
 /** 고정 benign executable의 same-FD exec 기계 가능성만 관측한다. 0076 실행·승인·성공 receipt를 발급하지 않는다. */
 export async function run0076NegativeLinuxFdProof(rawPlan:Readonly<NegativeLinuxFdProofPlan>,rawAuthority:NegativeLinuxFdProofAuthorityPorts,rawSystem:NegativeLinuxFdProofSystem):Promise<Readonly<NegativeLinuxFdProofResult>>{
- const result=(status:NegativeLinuxFdProofResult['status'],stat?:Readonly<NegativeLinuxFdProofStat>,sha256?:string):Readonly<NegativeLinuxFdProofResult>=>Object.freeze({status,evidence:'SOURCE_CANDIDATE_ONLY',runtimeVerified:false,executionAuthorized:false,...(status.startsWith('SYNTHETIC_')&&stat&&sha256?{path:stat.path,dev:stat.dev,ino:stat.ino,sha256}:{})});
+ const result=(status:NegativeLinuxFdProofResult['status'],stat?:Readonly<NegativeLinuxFdProofStat>,sha256?:string,terminal?:Readonly<NegativeLinuxFdProofTerminal>):Readonly<NegativeLinuxFdProofResult>=>Object.freeze({status,evidence:'SOURCE_CANDIDATE_ONLY',runtimeVerified:false,executionAuthorized:false,...(status.startsWith('SYNTHETIC_')&&stat&&sha256&&terminal?{path:stat.path,dev:stat.dev,ino:stat.ino,sha256,terminal}:{})});
  if(!planShape(rawPlan)||usedAttempts.has(rawPlan.attemptId))return result('UNKNOWN');usedAttempts.add(rawPlan.attemptId);
  const authorityKeys=['recipient','now','monotonic','assertCurrent'] as const,systemKeys=['recipient','openReadOnly','stat','read','spawnFromInheritedFd','inspectChild','terminate','wait','setTimer','clearTimer','close'] as const;
  let ad:ReturnType<typeof Object.getOwnPropertyDescriptors>,sd:ReturnType<typeof Object.getOwnPropertyDescriptors>;try{ad=portShape(rawAuthority,authorityKeys);sd=portShape(rawSystem,systemKeys);}catch{return result('UNKNOWN');}
@@ -61,5 +63,7 @@ export async function run0076NegativeLinuxFdProof(rawPlan:Readonly<NegativeLinux
   if('timeout'in waited||!exact(waited,['status','signal','closed'])||waited.status!==null||waited.signal!=='SIGTERM'||waited.closed!==true)return result('UNKNOWN');childClosed=true;retainedChildren.delete(child);current();const after=(sd.stat!.value as NegativeLinuxFdProofSystem['stat']).call(systemRecipient,handle);if(!statShape(after)||!sameStat(first,after)||!identity)return closeKnown(false,first,hash.digest('hex'));
   return closeKnown(true,first,hash.digest('hex'));
  }catch{return result('UNKNOWN');}
- function closeKnown(success:boolean,stat:Readonly<NegativeLinuxFdProofStat>,sha256:string){if(!handle||child&&!childClosed)return result('UNKNOWN');let closed:'CLOSED'|'UNKNOWN';try{current();closed=(sd.close!.value as NegativeLinuxFdProofSystem['close']).call(systemRecipient,handle);}catch{return result('UNKNOWN');}if(closed!=='CLOSED')return result('UNKNOWN');const closedHandle=handle;retainedHandles.delete(closedHandle);handle=undefined;try{current();}catch{return result('UNKNOWN');}return result(success?'SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED':'UNKNOWN',stat,sha256);}
+ function closeKnown(success:boolean,stat:Readonly<NegativeLinuxFdProofStat>,sha256:string){if(!handle||child&&!childClosed)return result('UNKNOWN');let closed:'CLOSED'|'UNKNOWN';try{current();closed=(sd.close!.value as NegativeLinuxFdProofSystem['close']).call(systemRecipient,handle);}catch{return result('UNKNOWN');}if(closed!=='CLOSED')return result('UNKNOWN');const closedHandle=handle;retainedHandles.delete(closedHandle);handle=undefined;try{current();}catch{return result('UNKNOWN');}
+  if(!success)return result('UNKNOWN');const terminal=Object.freeze<NegativeLinuxFdProofTerminal>({schemaVersion:1,purpose:'IX01_0076_NEGATIVE_LINUX_SAME_FD_TERMINAL_V1',attemptId:rawPlan.attemptId,issuedAt:rawPlan.issuedAt,expiresAt:rawPlan.expiresAt,
+   child:Object.freeze({exitCode:null,signal:'SIGTERM',closeConfirmed:true}),sourceFd:Object.freeze({closeConfirmed:true})});return result('SYNTHETIC_SAME_FD_MECHANISM_VERIFIED_NOT_0076_AUTHORIZED',stat,sha256,terminal);}
 }
