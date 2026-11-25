@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-25 KST
 
+- **IX01 0076 전용 격리 컨테이너 확인** — 담당 `c11_quality_review`, 기준 `421c7952`. 기존 Docker inspect 검산을 재사용해 원 시도의 ID·이름·고정 이미지/daemon·labels 및 none 네트워크·포트/외부 mount 부재·고정 보안 설정을 확인한다. 독립 지적을 반영해 정상 소수 monotonic을 수용하고 원 시한과 소유를 전후 재검산한다. Main 집중 2/2(5cf9f4), 타입 0(3e52ad), diff 0(fb341b), 독립 C0/I0. 실제 Docker/WSL·PG·키·권한·서비스·Agent를 실행하지 않았다. 네이티브 Docker 소유 공급과 실제 롤백 검수는 미완료다.
+
 - **IX01 0076 실행 호스트의 Node·HEAD 보호 판독** — 담당 `c11_quality_review`, 기준 `5b0b767e`. 시도 ID에서 전용 checkout을 파생하고 고정 Node 파일의 소유·길이·지문과 detached HEAD를 원 FD 및 원 경로에서 재확인한다. 독립 검수 중 A14 checkout 재사용, close 재시도, Node/HEAD의 변경 누락 및 조상 메타데이터 과잉 차단을 교정했다. 실행 경로를 열지 않으며 Main 직접·인접 16/16(2df369), 타입 0(3e9b00), diff 0(41cd94), 독립 C0/I0. 작성자 IX01 53/53. 실제 Linux 파일·WSL·SSH·PG·Docker·권한·서비스·Agent 미실행. 실제 Git/Docker 도구 지문·checkout 정합·격리 소유 검증과 롤백 시험은 미완료다.
 
 - **IX01 0076 POSIX 배타 영수증의 Linux 진입 연결** — 담당 `c11_quality_review`, 기준 `6fc0ca9b`. 명시 보호 모드에서 Linux/euid 1000과 원 승인 입력을 검산한 뒤에만 비공개 POSIX 쓰기 공급을 선택한다. 합성 reader/journal의 혼합과 승인 전 쓰기를 막으며, 열린 FD는 정확한 원 보유자에 결박해 확정 닫힘 뒤에만 내부 참조를 해제한다. Main 집중 5/5(8e6530), 타입 0(cb0ec9), diff 0(dfe390), 독립 C0/I0. 작성자 인접 51/51. 실제 POSIX·WSL·DB·Docker·키·권한·서비스·Agent 실행 0. 검증된 호스트 진입·격리 컨테이너/프로세스 공급 및 실제 롤백은 미완료다.
