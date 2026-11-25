@@ -243,12 +243,19 @@ internal sealed class NormalExecutionSpoolProfileSource {
  // 이 후보는 같은 원 process/thread의 재관측이 durable claim 원장에 남았다는 내부 사실만 보유한다. PREPARED/OS fence/전송 권위가 아니다.
  internal abstract class NormalStartPreparationOwnerTerminalCandidate {
   protected NormalStartPreparationOwnerTerminalCandidate(){}
+  internal abstract Row ObjectRef{get;}
   internal abstract void CheckCurrent();
+  internal abstract void CheckCurrent(NormalStartPreparationClaimMaterial material,string localProcessId,long localProcessGeneration,Action ownerCurrent);
  }
  private sealed class DurableNormalStartPreparationOwnerTerminalCandidate:NormalStartPreparationOwnerTerminalCandidate {
-  readonly NormalExecutionSpoolProfileSource owner;readonly Row terminal;
-  internal DurableNormalStartPreparationOwnerTerminalCandidate(NormalExecutionSpoolProfileSource source,Row row){owner=source;terminal=C(row);}
-  internal override void CheckCurrent(){owner.Log(false,(log,rows)=>{var exact=rows.Where(r=>S(r,"kind")==NormalPreparationOwnerTerminal&&S(r,"key")==S(terminal,"key")).ToArray();if(exact.Length!=1||J(exact[0])!=J(terminal))throw Invalid();return true;});owner.Check();}
+  readonly NormalExecutionSpoolProfileSource owner;readonly Row terminal,objectRef;
+  internal DurableNormalStartPreparationOwnerTerminalCandidate(NormalExecutionSpoolProfileSource source,Row row){owner=source;terminal=C(row);objectRef=EvidenceRef(S(terminal,"localProcessId"),terminal);}
+  internal override Row ObjectRef{get{return C(objectRef);}}
+  Row ReadCurrent(){return owner.Log(false,(log,rows)=>{var exact=rows.Where(r=>S(r,"kind")==NormalPreparationOwnerTerminal&&S(r,"key")==S(terminal,"key")).ToArray();if(exact.Length!=1||J(exact[0])!=J(terminal))throw Invalid();return exact[0];});}
+  void Verify(NormalStartPreparationClaimMaterial material,string localProcessId,long localProcessGeneration){if(material==null||localProcessGeneration<1)throw Invalid();var found=ReadCurrent();
+   if(J(found["nativeClaimRef"])!=J(material.NativeClaimRef)||J(found["requestRef"])!=J(material.RequestRef)||J(found["imageRef"])!=J(material.ImageRef)||S(found,"localProcessId")!=localProcessId||N(found["localProcessGeneration"])!=localProcessGeneration||DesktopTrustKeyHostSource.Time(found,"expiresAt")!=material.ExpiresAt||S(objectRef,"id")!=localProcessId||S(objectRef,"contentHash")!=H(found))throw Invalid();owner.Check();}
+  internal override void CheckCurrent(){ReadCurrent();owner.Check();}
+  internal override void CheckCurrent(NormalStartPreparationClaimMaterial material,string localProcessId,long localProcessGeneration,Action ownerCurrent){if(ownerCurrent==null)throw Invalid();ownerCurrent();Verify(material,localProcessId,localProcessGeneration);}
  }
  static Row C(Row value){return DesktopTrustKeyHostSource.Parse(Encoding.UTF8.GetBytes(J(value)),false);}
  static string NormalClaimKey(Row row){return H(R("registration",row["registration"],"requestRef",row["requestRef"],"serverClaimRef",row["serverClaimRef"],"imageHash",row["imageHash"],"nonceDigest",row["nonceDigest"],"contextEpoch",row["contextEpoch"]));}

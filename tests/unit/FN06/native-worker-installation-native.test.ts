@@ -294,7 +294,7 @@ test('normal 전체 회수는 typed image close와 원 durable claim을 read-onl
  assert.match(deployment,/internal sealed class NormalTransferredImageCloseReceipt/);assert.match(deployment,/ReadTransferredNormalImageCloseReceipt\(/);
  assert.match(transferred,/CloseOriginalNormalSource\(closing\)[\s\S]*ReleaseAfterClose\(closing,closeReceipt\)[\s\S]*ReleaseTransferredNormalImage/);
  assert.match(transferred,/new NormalTransferredImageCloseReceipt\(this,closeReceipt\)/);assert.match(transferred,/Object\.ReferenceEquals\(transferredCloseReceipt,receipt\)/);
- const current=spool.slice(spool.indexOf('internal void ReadNormalStartPreparationClaimCurrent('),spool.indexOf('const string RejectedAvailable'));
+ const current=spool.slice(spool.indexOf('internal void ReadNormalStartPreparationClaimCurrent('),spool.indexOf('internal NormalStartPreparationOwnerTerminalCandidate RecordNormalStartPreparationOwnerTerminal('));
  assert.ok(current.length>0);assert.match(current,/Log\(false/);assert.match(current,/NativeClaimRef/);assert.match(current,/RequestRef/);assert.match(current,/ImageRef/);assert.match(current,/ExpiresAt/);
  assert.match(current,/S\(material\.NativeClaimRef,"id"\)/);assert.match(current,/H\(match\)!=S\(material\.NativeClaimRef,"contentHash"\)/);
  assert.match(current,/J\(match\["requestRef"\]\)!=J\(material\.RequestRef\)/);assert.match(current,/J\(match\["imageAssociationRef"\]\)!=J\(material\.ImageRef\)/);

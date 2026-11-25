@@ -228,3 +228,31 @@ test('정적: owner terminal은 원 claim 후행이며 claim recordedAt 이후�
  assert.match(record,/sourceRecordedAt>firstObservedAt/);
  assert.match(record,/foreach\(var candidate in rows\)/,'writer도 원 시간·상호배타를 한 scan으로 검산');
 });
+
+test('정적: 정착 terminal objectRef는 같은 private candidate에서 원 refs·세대·기한과 실제 process thread current를 함께 재검산한다',()=>{
+ const host=readFileSync(new URL('../../../apps/connector/native/DesktopTrustKeyHostSource.cs',import.meta.url),'utf8');
+ const spool=readFileSync(new URL('../../../apps/connector/native/NormalExecutionSpoolProfileSource.cs',import.meta.url),'utf8');
+ const candidate=spool.slice(spool.indexOf('internal abstract class NormalStartPreparationOwnerTerminalCandidate'),spool.indexOf('static Row C(Row value)'));
+ assert.match(candidate,/internal abstract Row ObjectRef\{get;\}/);
+ assert.match(candidate,/internal abstract void CheckCurrent\(NormalStartPreparationClaimMaterial material,string localProcessId,long localProcessGeneration,Action ownerCurrent\)/);
+ assert.match(candidate,/objectRef=EvidenceRef\(S\(terminal,"localProcessId"\),terminal\)/,'정착 row에서만 결정적 private fullref를 재구성');
+ assert.match(candidate,/internal override Row ObjectRef\{get\{return C\(objectRef\);\}\}/);
+ for(const invariant of [
+  'J(found["nativeClaimRef"])!=J(material.NativeClaimRef)',
+  'J(found["requestRef"])!=J(material.RequestRef)',
+  'J(found["imageRef"])!=J(material.ImageRef)',
+  'S(found,"localProcessId")!=localProcessId',
+  'N(found["localProcessGeneration"])!=localProcessGeneration',
+  'DesktopTrustKeyHostSource.Time(found,"expiresAt")!=material.ExpiresAt',
+  'S(objectRef,"contentHash")!=H(found)',
+ ])assert(candidate.includes(invariant),invariant);
+ assert.match(candidate,/ownerCurrent\(\);[\s\S]*Verify\(material,localProcessId,localProcessGeneration\)/);
+ const producer=host.slice(host.indexOf('internal abstract class NormalStartPreparationProducer'),host.indexOf('readonly NormalStartPreparationProducer'));
+ const recheck=producer.slice(producer.indexOf('internal void RecheckOwned('),producer.indexOf('public void Dispose()'));
+ const recorded=recheck.indexOf('ownerTerminal=terminal('),objectRef=recheck.indexOf('ownerTerminal.ObjectRef',recorded),candidateCurrent=recheck.indexOf('ownerTerminal.CheckCurrent(material,localProcessId,localProcessGeneration',objectRef),physical=recheck.indexOf('ReadOriginalNormalSuspendedProcessSource(process',candidateCurrent),finalCurrent=recheck.indexOf('left();',physical);
+ assert.ok(recorded>=0&&recorded<objectRef&&objectRef<candidateCurrent&&candidateCurrent<physical&&physical<finalCurrent,'정착 readback 뒤 candidate와 같은 원 process/thread를 응답 전에 재검산');
+ assert.match(recheck,/ReceiveRef\(terminalObjectRef,true\)/);
+ assert.match(recheck,/ValidProcessObservation\(terminalObservation\)/);assert.match(recheck,/SameProcessObservation\(first,terminalObservation\)/);
+ assert.match(recheck,/Object\.ReferenceEquals\(process,originalProcess\)/);assert.match(recheck,/Object\.ReferenceEquals\(processObservation,first\)/);
+ assert.doesNotMatch(candidate,/sourceRef|osFenceRef|PREPARED|POST|queue/);
+});
