@@ -16,10 +16,12 @@ const dependencyPaths=Object.freeze([
  'scripts/qa-ix01-0076-negative-linux-journal.ts',
  'scripts/qa-ix01-0076-negative-linux-entry.ts',
  'scripts/qa-ix01-0076-negative-linux-host.ts',
+ 'scripts/qa-ix01-0076-negative-linux-r9.ts',
 ] as const);
+const protectedSourcePaths=Object.freeze([...dependencyPaths,stageContract.parserPath] as const);
 const manifestPath='docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv' as const;
 const manifestBytes=15807,manifestSha256='0da3c8558445d7984731863d45261192a11c37337b93e3dd99941b00133745dd';
-export const current0076NegativeLinuxApprovalContract=Object.freeze({selectionPurpose,verifiedPurpose,dependencyPaths,manifestPath,manifestBytes,manifestSha256,
+export const current0076NegativeLinuxApprovalContract=Object.freeze({selectionPurpose,verifiedPurpose,dependencyPaths,protectedSourcePaths,manifestPath,manifestBytes,manifestSha256,
  evidence:'PROTECTED_READ_SOURCE_ONLY' as const,runtimeVerified:false as const,executionAuthorized:false as const});
 
 export interface NegativeLinuxApprovalSelection{
@@ -42,7 +44,7 @@ export interface NegativeLinuxApprovalProjection{
  readonly evidence:'PROTECTED_READ_SOURCE_ONLY';readonly runtimeVerified:false;readonly executionAuthorized:false;
 }
 
-const protectedInputs=new WeakMap<object,Readonly<{input:Readonly<NegativeStageInput>;fresh:()=>void}>>();
+const protectedInputs=new WeakMap<object,Readonly<{input:Readonly<NegativeStageInput>;r9:Uint8Array;fresh:()=>void}>>();
 
 const invalid=():never=>{throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');};
 function exact(value:unknown,keys:readonly string[]){
@@ -87,7 +89,7 @@ function namespace(attemptId:string){const compact=attemptId.replaceAll('-','');
  */
 export async function verify0076NegativeLinuxApproval(rawSelection:Readonly<NegativeLinuxApprovalSelection>,rawPorts:NegativeLinuxApprovalReadPorts):Promise<Readonly<NegativeLinuxApprovalProjection>>{
  const selection=selectionShape(rawSelection),ports=portsShape(rawPorts),receipt=namespace(selection.attemptId).receipt;
- const paths=Object.freeze([receipt+'-plan.json',receipt+'-approval.json',receipt+'-graph.json',...dependencyPaths,manifestPath]);
+ const paths=Object.freeze([receipt+'-plan.json',receipt+'-approval.json',receipt+'-graph.json',...protectedSourcePaths,manifestPath]);
  const unchanged=()=>rawPorts.recipient===ports.recipient&&rawPorts.now===ports.now&&rawPorts.monotonic===ports.monotonic&&rawPorts.assertCurrent===ports.current&&rawPorts.read===ports.read;
  const current=()=>{if(!unchanged()||ports.current.call(ports.recipient,selection)!==undefined)invalid();};
  const start=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));current();
@@ -105,7 +107,7 @@ export async function verify0076NegativeLinuxApproval(rawSelection:Readonly<Nega
   }
  };
  try{
-  collect(rawRows,paths,Object.freeze([32768,16384,2097152,...dependencyPaths.map(()=>4194304),manifestBytes]),copies);
+   collect(rawRows,paths,Object.freeze([32768,16384,2097152,...dependencyPaths.map(()=>4194304),35588,manifestBytes]),copies);
   const planRaw=text(copies[0]!,32768),approvalRaw=text(copies[1]!,16384),graphRaw=text(copies[2]!,2097152);
   const plan=json(planRaw,selection.planHash),approval=json(approvalRaw,selection.approvalHash),graph=json(graphRaw,selection.graphHash),expectedNamespace=namespace(selection.attemptId);
   const planIssuedAt=plan.issuedAt,planExpiresAt=plan.expiresAt;
@@ -131,7 +133,9 @@ export async function verify0076NegativeLinuxApproval(rawSelection:Readonly<Nega
   }
   for(const path of stageContract.graphPaths)if(!graphRows.has(path))invalid();
   const dependencyHashes=dependencyPaths.map((path,index)=>{const bytes=copies[index+3]!,row=graphRows.get(path);if(row===undefined)throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');if(row.bytes!==bytes.byteLength||row.sha256!==contentHash(bytes))invalid();return Object.freeze({path,bytes:bytes.byteLength,sha256:row.sha256});});
-  const manifest=copies[3+dependencyPaths.length]!;if(manifest.byteLength!==manifestBytes||contentHash(manifest)!==manifestSha256)invalid();
+   const r9=copies[3+dependencyPaths.length]!,r9Row=graphRows.get(stageContract.parserPath);
+   if(r9.byteLength!==35588||contentHash(r9)!==stageContract.parserSourceSha256||r9Row?.bytes!==r9.byteLength||r9Row.sha256!==stageContract.parserSourceSha256)invalid();
+   const manifest=copies[4+dependencyPaths.length]!;if(manifest.byteLength!==manifestBytes||contentHash(manifest)!==manifestSha256)invalid();
   const manifestRows=readCurrentSchemaManifest(manifest);if(manifestRows.length!==130||plan.sourceManifestHash!==contentHash(canonicalJson(manifestRows)))invalid();
   const sourcePaths=Object.freeze(manifestRows.map(row=>row.path));current();let rawSources:readonly Readonly<NegativeLinuxApprovalReadObservation>[]|undefined;
   try{rawSources=await ports.read.call(ports.recipient,sourcePaths);}catch{invalid();}
@@ -148,12 +152,12 @@ export async function verify0076NegativeLinuxApproval(rawSelection:Readonly<Nega
    sql:Object.freeze(manifestRows.map((row,index)=>Object.freeze({id:row.id,path:row.path,bytes:new Uint8Array(sourceCopies[index]!)})))}) satisfies Readonly<NegativeStageInput>;
   const fresh=()=>{current();const found=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));
    if(found.wall<end.wall||found.monotonic<end.monotonic||found.wall>=expiresAt||found.monotonic-start.monotonic>=lifetime)invalid();};
-  protectedInputs.set(projection,Object.freeze({input,fresh}));return projection;
+   protectedInputs.set(projection,Object.freeze({input,r9:new Uint8Array(r9),fresh}));return projection;
  }finally{for(const bytes of [...copies,...sourceCopies])bytes.fill(0);}
 }
 
 /** 다음 보호 entry가 동일 승인 projection의 원 입력을 한 번만 소비한다. callback 종료 뒤 byte 입력은 즉시 지운다. */
-export async function use0076NegativeLinuxProtectedStageInput<T>(projection:Readonly<NegativeLinuxApprovalProjection>,consume:(input:Readonly<NegativeStageInput>,fresh:()=>void)=>Promise<T>):Promise<T>{
- const retained=protectedInputs.get(projection);if(retained===undefined||typeof consume!=='function')throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');protectedInputs.delete(projection);const {input}=retained;
- try{retained.fresh();return await consume(input,retained.fresh);}finally{input.historicalTsv.fill(0);for(const row of input.sql)row.bytes.fill(0);}
+export async function use0076NegativeLinuxProtectedStageInput<T>(projection:Readonly<NegativeLinuxApprovalProjection>,consume:(input:Readonly<NegativeStageInput>,fresh:()=>void,r9:Uint8Array)=>Promise<T>):Promise<T>{
+ const retained=protectedInputs.get(projection);if(retained===undefined||typeof consume!=='function')throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');protectedInputs.delete(projection);const {input,r9}=retained;
+ try{retained.fresh();return await consume(input,retained.fresh,r9);}finally{r9.fill(0);input.historicalTsv.fill(0);for(const row of input.sql)row.bytes.fill(0);}
 }

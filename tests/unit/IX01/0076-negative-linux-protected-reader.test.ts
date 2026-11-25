@@ -13,6 +13,8 @@ import {
 const sourceRootUrl=new URL('../../../',import.meta.url);
 const manifestPath='docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv';
 const desiredDependencies=current0076NegativeLinuxApprovalContract.dependencyPaths;
+const protectedSourcePaths=current0076NegativeLinuxApprovalContract.protectedSourcePaths;
+const r9Bytes=new Uint8Array(Buffer.from(readFileSync(new URL(current0076NegativeContract.parserPath,sourceRootUrl),'utf8').replaceAll('\r\n','\n'),'utf8'));
 const manifestBytes=new Uint8Array(Buffer.from(readFileSync(new URL(manifestPath,sourceRootUrl),'utf8').replaceAll('\r\n','\n'),'utf8'));
 const manifestRows=readCurrentSchemaManifest(manifestBytes);
 const sourceBytes=manifestRows.map(row=>new Uint8Array(readFileSync(new URL(row.path,sourceRootUrl))));
@@ -22,7 +24,7 @@ function fixture(mode:'NORMAL'|'LINK'|'DRIFT'|'NESTED_DRIFT'|'TRUNCATED'|'CLOSE_
  const attemptId='e7000000-0000-4000-8000-'+String(++sequence).padStart(12,'0'),compact=attemptId.replaceAll('-',''),sourceHead='a'.repeat(40),issuedAt=2_000_000,expiresAt=2_600_000;
  const sourceRoot='/home/daon/anvil-ix01-0076-negative-source',receiptRoot='/home/daon/.local/share/anvil-v3-qa-receipts/ix01-0076-negative-'+attemptId;
  const dependencies=desiredDependencies.map((path,index)=>new Uint8Array(Buffer.from('protected-'+index+'-'+path)));
- const graphRows=[...current0076NegativeContract.graphPaths.map((path,index)=>({path,bytes:index+1,sha256:String(index+1).repeat(64).slice(0,64)})),
+ const graphRows=[...current0076NegativeContract.graphPaths.map((path,index)=>path===current0076NegativeContract.parserPath?({path,bytes:r9Bytes.byteLength,sha256:contentHash(r9Bytes)}):({path,bytes:index+1,sha256:String(index+1).repeat(64).slice(0,64)})),
   ...desiredDependencies.map((path,index)=>({path,bytes:dependencies[index]!.byteLength,sha256:contentHash(dependencies[index]!)}))].sort((a,b)=>a.path.localeCompare(b.path));
  const graphRaw=canonicalJson({schemaVersion:1,sourceHead,files:graphRows}),graphHash=contentHash(graphRaw),namespace={container:'anvil-ix01-0076-negative-'+compact,database:'ix01_0076_negative_'+compact,receipt:receiptRoot,network:'none'};
  const planRaw=canonicalJson({schemaVersion:1,purpose:current0076NegativeContract.purpose,attemptId,sourceHead,graphHash,issuedAt,expiresAt,namespace,sourceManifestHash:contentHash(canonicalJson(manifestRows)),
@@ -30,12 +32,12 @@ function fixture(mode:'NORMAL'|'LINK'|'DRIFT'|'NESTED_DRIFT'|'TRUNCATED'|'CLOSE_
  const planHash=contentHash(planRaw),approvalRaw=canonicalJson({schemaVersion:1,purpose:current0076NegativeContract.purpose+'_APPROVAL',decision:'ALLOW_ONE_ISOLATED_NEGATIVE_STAGE',
   approvalId:'e7100000-0000-4000-8000-'+String(sequence).padStart(12,'0'),attemptId,sourceHead,planHash,graphHash,issuedAt,expiresAt}),approvalHash=contentHash(approvalRaw);
  const selection=Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_APPROVAL_SELECTION' as const,attemptId,sourceHead,planHash,approvalHash,graphHash}) satisfies NegativeLinuxApprovalSelection;
- const requested=[receiptRoot+'-plan.json',receiptRoot+'-approval.json',receiptRoot+'-graph.json',...desiredDependencies,manifestPath],actual=[requested[0]!,requested[1]!,requested[2]!,...desiredDependencies.map(path=>sourceRoot+'/'+path),sourceRoot+'/'+manifestPath];
+ const requested=[receiptRoot+'-plan.json',receiptRoot+'-approval.json',receiptRoot+'-graph.json',...protectedSourcePaths,manifestPath],actual=[requested[0]!,requested[1]!,requested[2]!,...protectedSourcePaths.map(path=>sourceRoot+'/'+path),sourceRoot+'/'+manifestPath];
  const sourceRequested=manifestRows.map(row=>row.path),sourceActual=sourceRequested.map(path=>sourceRoot+'/'+path);
- const values=[new Uint8Array(Buffer.from(planRaw)),new Uint8Array(Buffer.from(approvalRaw)),new Uint8Array(Buffer.from(graphRaw)),...dependencies,manifestBytes];
+ const values=[new Uint8Array(Buffer.from(planRaw)),new Uint8Array(Buffer.from(approvalRaw)),new Uint8Array(Buffer.from(graphRaw)),...dependencies,r9Bytes,manifestBytes];
  const files=new Map<string,Uint8Array>();for(const [index,path] of actual.entries())files.set(path,values[index]!);for(const [index,path] of sourceActual.entries())files.set(path,sourceBytes[index]!);
  const directories=['/home','/home/daon',sourceRoot,'/home/daon/.local','/home/daon/.local/share','/home/daon/.local/share/anvil-v3-qa-receipts',
-  ...[...desiredDependencies,manifestPath,...sourceRequested].flatMap(path=>{const parts=path.split('/');return parts.slice(0,-1).map((_,index)=>sourceRoot+'/'+parts.slice(0,index+1).join('/'));})];
+  ...[...protectedSourcePaths,manifestPath,...sourceRequested].flatMap(path=>{const parts=path.split('/');return parts.slice(0,-1).map((_,index)=>sourceRoot+'/'+parts.slice(0,index+1).join('/'));})];
  let inode=10;const stamp=mode==='FRACTIONAL'?1.25:1,stats=new Map<string,NegativeLinuxProtectedReaderStat>();for(const path of new Set(directories))stats.set(path,Object.freeze({kind:'DIRECTORY' as const,dev:1,ino:inode++,uid:path==='/home'?0:1000,mode:path==='/home'?0o40755:0o40700,nlink:1,size:0,mtimeMs:stamp,ctimeMs:stamp}));
  if(['RECEIPT_0755','RECEIPT_ROOT_0755','RECEIPT_0775'].includes(mode))stats.set('/home/daon/.local/share/anvil-v3-qa-receipts',Object.freeze({...stats.get('/home/daon/.local/share/anvil-v3-qa-receipts')!,uid:mode==='RECEIPT_ROOT_0755'?0:1000,mode:mode==='RECEIPT_0775'?0o40775:0o40755}));
  for(const [index,path] of [...actual,...sourceActual].entries()){const bytes=files.get(path)!;stats.set(path,Object.freeze({kind:'FILE' as const,dev:1,ino:inode++,uid:1000,mode:index<3?0o100600:0o100644,nlink:1,size:bytes.byteLength,mtimeMs:stamp,ctimeMs:stamp}));}
@@ -57,7 +59,7 @@ function fixture(mode:'NORMAL'|'LINK'|'DRIFT'|'NESTED_DRIFT'|'TRUNCATED'|'CLOSE_
 
 test('exact protected paths를 same-FD O_NOFOLLOW로 읽어 기존 approval validator에 공급한다',async()=>{
  const h=fixture(),reader=create0076NegativeLinuxProtectedReader(h.authority,h.system),result=await verify0076NegativeLinuxApproval(h.selection,reader);
- assert.equal(result.evidence,'PROTECTED_READ_SOURCE_ONLY');assert.equal(result.executionAuthorized,false);assert.equal(manifestRows.length,130);assert.equal(h.opens,143);assert.equal(h.closes,143);assert.equal(h.handles,0);
+ assert.equal(result.evidence,'PROTECTED_READ_SOURCE_ONLY');assert.equal(result.executionAuthorized,false);assert.equal(manifestRows.length,130);assert.equal(h.opens,145);assert.equal(h.closes,145);assert.equal(h.handles,0);
  const fractional=fixture('FRACTIONAL');await verify0076NegativeLinuxApproval(fractional.selection,create0076NegativeLinuxProtectedReader(fractional.authority,fractional.system));
  const receipt0755=fixture('RECEIPT_0755');await verify0076NegativeLinuxApproval(receipt0755.selection,create0076NegativeLinuxProtectedReader(receipt0755.authority,receipt0755.system));
  const receiptRoot0755=fixture('RECEIPT_ROOT_0755');await verify0076NegativeLinuxApproval(receiptRoot0755.selection,create0076NegativeLinuxProtectedReader(receiptRoot0755.authority,receiptRoot0755.system));
@@ -67,11 +69,11 @@ test('일반 경로와 manifest 검산 전 SQL read 및 세 번째 read는 파�
  const h=fixture(),reader=create0076NegativeLinuxProtectedReader(h.authority,h.system);
  await assert.rejects(reader.read.call(reader.recipient,Object.freeze(['/etc/passwd'])));assert.equal(h.opens,0);
  await assert.rejects(reader.read.call(reader.recipient,Object.freeze(h.sourceRequested)));assert.equal(h.opens,0);
- const first=await reader.read.call(reader.recipient,Object.freeze(h.requested));assert.equal(first.length,13);assert.equal(h.opens,13);
- const second=await reader.read.call(reader.recipient,Object.freeze(h.sourceRequested));assert.equal(second.length,130);assert.equal(h.opens,143);
- await assert.rejects(reader.read.call(reader.recipient,Object.freeze(h.sourceRequested)));assert.equal(h.opens,143);
+ const first=await reader.read.call(reader.recipient,Object.freeze(h.requested));assert.equal(first.length,15);assert.equal(h.opens,15);
+ const second=await reader.read.call(reader.recipient,Object.freeze(h.sourceRequested));assert.equal(second.length,130);assert.equal(h.opens,145);
+ await assert.rejects(reader.read.call(reader.recipient,Object.freeze(h.sourceRequested)));assert.equal(h.opens,145);
  const badSelection=Object.freeze({...h.selection,attemptId:'../../etc/passwd'});
- assert.throws(()=>create0076NegativeLinuxProtectedReader(Object.freeze({...h.authority,selection:badSelection}) as unknown as NegativeLinuxProtectedReaderAuthority,h.system));assert.equal(h.opens,143);
+ assert.throws(()=>create0076NegativeLinuxProtectedReader(Object.freeze({...h.authority,selection:badSelection}) as unknown as NegativeLinuxProtectedReaderAuthority,h.system));assert.equal(h.opens,145);
 });
 
 test('parent drift·link·truncated read·close 불명은 보호 reply를 만들지 않는다',async()=>{

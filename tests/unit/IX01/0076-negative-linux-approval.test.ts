@@ -8,10 +8,13 @@ import {
  current0076NegativeLinuxApprovalContract,use0076NegativeLinuxProtectedStageInput,verify0076NegativeLinuxApproval,
  type NegativeLinuxApprovalReadPorts,type NegativeLinuxApprovalSelection,
 } from '../../../scripts/qa-ix01-0076-negative-linux-approval.ts';
+import {load0076NegativeLinuxR9} from '../../../scripts/qa-ix01-0076-negative-linux-r9.ts';
 
 const sourceRoot=new URL('../../../',import.meta.url);
 const manifestPath='docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv';
 const desiredDependencies=current0076NegativeLinuxApprovalContract.dependencyPaths;
+const protectedSourcePaths=current0076NegativeLinuxApprovalContract.protectedSourcePaths;
+const r9Bytes=new Uint8Array(Buffer.from(readFileSync(new URL(current0076NegativeContract.parserPath,sourceRoot),'utf8').replaceAll('\r\n','\n'),'utf8'));
 const manifestBytes=new Uint8Array(Buffer.from(readFileSync(new URL(manifestPath,sourceRoot),'utf8').replaceAll('\r\n','\n'),'utf8'));
 const manifestRows=readCurrentSchemaManifest(manifestBytes);
 const sqlBytes=manifestRows.map(row=>new Uint8Array(readFileSync(new URL(row.path,sourceRoot))));
@@ -21,7 +24,7 @@ function fixture(patch:{plan?:Record<string,unknown>;approval?:Record<string,unk
  const attemptId='e7000000-0000-4000-8000-'+String(++sequence).padStart(12,'0'),sourceHead='a'.repeat(40),issuedAt=2_000_000,expiresAt=2_600_000;
  const graphDependencyBytes:Uint8Array[]=desiredDependencies.map((path,index)=>new Uint8Array(Buffer.from('dependency-'+index+'-'+path,'utf8'))),dependencyBytes:Uint8Array[]=graphDependencyBytes.map(value=>new Uint8Array(value));
  if(patch.sourceIndex!==undefined)dependencyBytes[patch.sourceIndex]=patch.sourceBytes??new Uint8Array([0]);
- let rows=[...current0076NegativeContract.graphPaths.map((path,index)=>({path,bytes:index+1,sha256:String(index+1).repeat(64).slice(0,64)})),
+ let rows=[...current0076NegativeContract.graphPaths.map((path,index)=>path===current0076NegativeContract.parserPath?({path,bytes:r9Bytes.byteLength,sha256:contentHash(r9Bytes)}):({path,bytes:index+1,sha256:String(index+1).repeat(64).slice(0,64)})),
   ...desiredDependencies.map((path,index)=>({path,bytes:graphDependencyBytes[index]!.byteLength,sha256:contentHash(graphDependencyBytes[index]!)}))]
   .sort((a,b)=>a.path.localeCompare(b.path));
  if(patch.badGraphPath)rows=[{...rows[0]!,path:'/absolute/not-owned'},...rows.slice(1)].sort((a,b)=>a.path.localeCompare(b.path));
@@ -36,8 +39,8 @@ function fixture(patch:{plan?:Record<string,unknown>;approval?:Record<string,unk
  const approvalRaw=canonicalJson(approval),approvalHash=contentHash(approvalRaw);
  const selection=Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_APPROVAL_SELECTION' as const,attemptId,sourceHead,planHash,approvalHash,graphHash}) satisfies NegativeLinuxApprovalSelection;
  const receipt=namespace.receipt,custody=Object.freeze(Object.create(null)),foreign=Object.freeze(Object.create(null));
- const paths=Object.freeze([receipt+'-plan.json',receipt+'-approval.json',receipt+'-graph.json',...desiredDependencies,manifestPath]);
- const payloads=[new Uint8Array(Buffer.from(planRaw)),new Uint8Array(Buffer.from(approvalRaw)),new Uint8Array(Buffer.from(graphRaw)),...dependencyBytes,manifestBytes];
+ const paths=Object.freeze([receipt+'-plan.json',receipt+'-approval.json',receipt+'-graph.json',...protectedSourcePaths,manifestPath]);
+ const payloads=[new Uint8Array(Buffer.from(planRaw)),new Uint8Array(Buffer.from(approvalRaw)),new Uint8Array(Buffer.from(graphRaw)),...dependencyBytes,new Uint8Array(r9Bytes),manifestBytes];
  const observations=Object.freeze(paths.map((path,index)=>Object.freeze({path,bytes:payloads[index]!,custody:patch.foreignCustody&&index===paths.length-1?foreign:custody,fileIdentity:Object.freeze(Object.create(null)),closed:true as const})));
  const deliveredSql:Uint8Array[]=sqlBytes.map(value=>new Uint8Array(value));if(patch.sqlIndex!==undefined)deliveredSql[patch.sqlIndex]=new Uint8Array(patch.sqlBytes??[0]);
  const sourceObservations=Object.freeze(manifestRows.map((row,index)=>Object.freeze({path:row.path,bytes:deliveredSql[index]!,custody,fileIdentity:Object.freeze(Object.create(null)),closed:true as const})));
@@ -51,14 +54,15 @@ function fixture(patch:{plan?:Record<string,unknown>;approval?:Record<string,unk
  return{selection,ports,paths,advance(ms:number){wall+=ms;monoOffset+=ms;},get reads(){return reads;},get current(){return current;}};
 }
 
-test('동일 보호 custody의 plan·approval·graph·신규 의존9개와 고정 TSV·전체 130 SQL을 SOURCE_ONLY로 검산한다',async()=>{
+test('동일 보호 custody의 plan·approval·graph·신규 의존10개·R9와 고정 TSV·전체 130 SQL을 SOURCE_ONLY로 검산한다',async()=>{
  const h=fixture(),result=await verify0076NegativeLinuxApproval(h.selection,h.ports);
  assert.equal(h.reads,2);assert(h.current>=2);assert.equal(manifestRows.length,130);assert.deepEqual(result,{schemaVersion:1,purpose:'IX01_0076_NEGATIVE_LINUX_APPROVAL_VERIFIED',attemptId:h.selection.attemptId,
   sourceHead:h.selection.sourceHead,planHash:h.selection.planHash,approvalHash:h.selection.approvalHash,graphHash:h.selection.graphHash,
   dependencyHashes:desiredDependencies.map((path,index)=>({path,bytes:Buffer.byteLength('dependency-'+index+'-'+path),sha256:contentHash(Buffer.from('dependency-'+index+'-'+path))})),
   evidence:'PROTECTED_READ_SOURCE_ONLY',runtimeVerified:false,executionAuthorized:false});
- let retained:any;const count=await use0076NegativeLinuxProtectedStageInput(result,async input=>{retained=input;assert.equal(input.planRaw.length>0,true);assert.equal(input.historicalTsv.byteLength,15807);assert.equal(input.sql.length,130);return input.sql.length;});
- assert.equal(count,130);assert(retained.historicalTsv.every((value:number)=>value===0));assert(retained.sql.every((row:{bytes:Uint8Array})=>row.bytes.every(value=>value===0)));
+ let retained:any,retainedR9:Uint8Array|undefined;const count=await use0076NegativeLinuxProtectedStageInput(result,async(input,_fresh,protectedR9)=>{retained=input;retainedR9=protectedR9;assert.equal(contentHash(protectedR9),current0076NegativeContract.parserSourceSha256);assert.equal(input.planRaw.length>0,true);assert.equal(input.historicalTsv.byteLength,15807);assert.equal(input.sql.length,130);
+  const loaded=await load0076NegativeLinuxR9(protectedR9,input);assert.deepEqual(loaded.legacy.daemonInfoArgs(),['info','--format','{"ID":{{json .ID}},"Name":{{json .Name}}}']);return input.sql.length;});
+ assert.equal(count,130);assert(retained.historicalTsv.every((value:number)=>value===0));assert(retained.sql.every((row:{bytes:Uint8Array})=>row.bytes.every(value=>value===0)));assert(retainedR9!.every(value=>value===0));
  await assert.rejects(use0076NegativeLinuxProtectedStageInput(result,async()=>0));
 });
 

@@ -92,9 +92,9 @@ export function create0076NegativeLinuxProtectedReader(rawAuthority:Readonly<Neg
  const expectedReceipt=receiptParent+'/ix01-0076-negative-'+selection.attemptId;
  if(authority.receiptRoot!==expectedReceipt||typeof authority.now!=='function'||typeof authority.monotonic!=='function'||typeof authority.assertCurrent!=='function'
   ||typeof system.lstat!=='function'||typeof system.realpath!=='function'||typeof system.open!=='function'||typeof system.fstat!=='function'||typeof system.read!=='function'||typeof system.close!=='function')invalid();
- const requested=Object.freeze([expectedReceipt+'-plan.json',expectedReceipt+'-approval.json',expectedReceipt+'-graph.json',...current0076NegativeLinuxApprovalContract.dependencyPaths,current0076NegativeLinuxApprovalContract.manifestPath]);
- const actual=Object.freeze([requested[0]!,requested[1]!,requested[2]!,...current0076NegativeLinuxApprovalContract.dependencyPaths.map(path=>authority.sourceRoot+'/'+path),authority.sourceRoot+'/'+current0076NegativeLinuxApprovalContract.manifestPath]);
- const limits=Object.freeze([32768,16384,2097152,...current0076NegativeLinuxApprovalContract.dependencyPaths.map(()=>4194304),current0076NegativeLinuxApprovalContract.manifestBytes]);
+ const requested=Object.freeze([expectedReceipt+'-plan.json',expectedReceipt+'-approval.json',expectedReceipt+'-graph.json',...current0076NegativeLinuxApprovalContract.protectedSourcePaths,current0076NegativeLinuxApprovalContract.manifestPath]);
+ const actual=Object.freeze([requested[0]!,requested[1]!,requested[2]!,...current0076NegativeLinuxApprovalContract.protectedSourcePaths.map(path=>authority.sourceRoot+'/'+path),authority.sourceRoot+'/'+current0076NegativeLinuxApprovalContract.manifestPath]);
+ const limits=Object.freeze([32768,16384,2097152,...current0076NegativeLinuxApprovalContract.dependencyPaths.map(()=>4194304),35588,current0076NegativeLinuxApprovalContract.manifestBytes]);
  const authorityFunctions=Object.freeze({now:authority.now,monotonic:authority.monotonic,current:authority.assertCurrent});
  const systemFunctions=Object.freeze({lstat:system.lstat,realpath:system.realpath,open:system.open,fstat:system.fstat,read:system.read,close:system.close});
  const unchanged=()=>authority.selection===selection&&authority.sourceRoot===rawAuthority.sourceRoot&&authority.receiptRoot===expectedReceipt&&authority.uid===1000

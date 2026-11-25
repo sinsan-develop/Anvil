@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-25 KST
 
+- **IX01 0076 보호된 R9 준비 소스** — 담당 `c11_quality_review`, 기준 `2840dc8a`. 동일 보호 입력에서 R9 원문 35,588바이트와 선행 SQL 106건의 목록을 검산한다. 고정 DB 표식 두 곳만 원 시도의 DB명으로 치환하고, 원 R9 정의로 준비 전후 역할을 판독한다. 중간 합성 실패 1회는 export 비교 조건 반전을 교정했고 독립 검수 지적 1건은 보호 범위 밖 helper 의존을 제거해 닫았다. Main 집중·인접 18/18(6738cc), 타입 0(5ebf61), 독립 C0/I0. 다음은 같은 시도의 Linux Docker·Node child 공급 연결이다. 실제 SSH·WSL·Docker·PG·권한·키·서비스·Agent 실행 0이며, 실제 설치와 롤백은 미검증이다.
+
 - **IX01 0076 격리 DB 준비 경로** — 담당 `c11_quality_review`, 기준 `4bb5dd5a`. 같은 단회 claim과 도구 보유를 전제로 고정 daemon·image·이름 부재→단회 생성·기동→같은 ID 검산→준비 및 역할 전이→최종 격리 확인을 연결했다. 불명은 같은 시도 재실행이나 정리 성공으로 바꾸지 않는다. Main 집중·인접 4/4(98187e), 타입 0(de376c), diff 0(26a1a8), 독립 C0/I0. 실제 Linux Docker 드라이버·보호 R9 공급·후속 SQL의 같은 도구 연결과 실제 PG 롤백은 미검증이며 WSL·권한·키·서비스·Agent 실행 0.
 
 - **IX01 0076 전용 격리 컨테이너 확인** — 담당 `c11_quality_review`, 기준 `421c7952`. 기존 Docker inspect 검산을 재사용해 원 시도의 ID·이름·고정 이미지/daemon·labels 및 none 네트워크·포트/외부 mount 부재·고정 보안 설정을 확인한다. 독립 지적을 반영해 정상 소수 monotonic을 수용하고 원 시한과 소유를 전후 재검산한다. Main 집중 2/2(5cf9f4), 타입 0(3e52ad), diff 0(fb341b), 독립 C0/I0. 실제 Docker/WSL·PG·키·권한·서비스·Agent를 실행하지 않았다. 네이티브 Docker 소유 공급과 실제 롤백 검수는 미완료다.

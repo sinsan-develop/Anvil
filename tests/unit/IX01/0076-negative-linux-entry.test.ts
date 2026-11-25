@@ -40,6 +40,7 @@ function fixture(tamperApproval=false,expireClockRead=Number.MAX_SAFE_INTEGER){
  const namespace=Object.freeze({container:'anvil-ix01-0076-negative-'+compact,database:'ix01_0076_negative_'+compact,receipt:receiptRoot,network:'none' as const});
  assert(current0076NegativeLinuxApprovalContract.dependencyPaths.includes(entryPath as never));
  const dependencies=current0076NegativeLinuxApprovalContract.dependencyPaths.map(path=>source(path));
+ const protectedSourcePaths=current0076NegativeLinuxApprovalContract.protectedSourcePaths,r9Index=protectedSourcePaths.indexOf(stageContract.parserPath);
  const graphFiles=[...stageContract.graphPaths.map(path=>({path,bytes:path===stageContract.parserPath?r9:source(path)})),
   ...current0076NegativeLinuxApprovalContract.dependencyPaths.map((path,index)=>({path,bytes:dependencies[index]!}))]
   .sort((a,b)=>a.path.localeCompare(b.path)).map(row=>({path:row.path,bytes:row.bytes.byteLength,sha256:contentHash(row.bytes)}));
@@ -50,13 +51,14 @@ function fixture(tamperApproval=false,expireClockRead=Number.MAX_SAFE_INTEGER){
   approvalId,attemptId,sourceHead,planHash,graphHash,issuedAt,expiresAt},approvalRaw=canonicalJson(approval),approvalHash=contentHash(approvalRaw);
  const selection=Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_APPROVAL_SELECTION' as const,attemptId,sourceHead,planHash,approvalHash,graphHash}) satisfies NegativeLinuxApprovalSelection;
 
- const requested=[receiptRoot+'-plan.json',receiptRoot+'-approval.json',receiptRoot+'-graph.json',...current0076NegativeLinuxApprovalContract.dependencyPaths,manifestPath];
- const actual=[requested[0]!,requested[1]!,requested[2]!,...current0076NegativeLinuxApprovalContract.dependencyPaths.map(path=>sourceRoot+'/'+path),sourceRoot+'/'+manifestPath];
+ const requested=[receiptRoot+'-plan.json',receiptRoot+'-approval.json',receiptRoot+'-graph.json',...protectedSourcePaths,manifestPath];
+ const actual=[requested[0]!,requested[1]!,requested[2]!,...protectedSourcePaths.map(path=>sourceRoot+'/'+path),sourceRoot+'/'+manifestPath];
  const logicalSql=manifestRows.map(row=>row.path),actualSql=logicalSql.map(path=>sourceRoot+'/'+path);
- const fileValues=[new Uint8Array(Buffer.from(planRaw)),new Uint8Array(Buffer.from(tamperApproval?approvalRaw+' ':approvalRaw)),new Uint8Array(Buffer.from(graphRaw)),...dependencies,manifest];
+ const protectedValues=protectedSourcePaths.map((path,index)=>index===r9Index?r9:dependencies[index]!);
+ const fileValues=[new Uint8Array(Buffer.from(planRaw)),new Uint8Array(Buffer.from(tamperApproval?approvalRaw+' ':approvalRaw)),new Uint8Array(Buffer.from(graphRaw)),...protectedValues,manifest];
  const readerFiles=new Map<string,Uint8Array>();for(const [index,path] of actual.entries())readerFiles.set(path,fileValues[index]!);for(const [index,path] of actualSql.entries())readerFiles.set(path,sql[index]!);
  const parentDirectories=[sourceRoot,'/home','/home/daon','/home/daon/.local','/home/daon/.local/share','/home/daon/.local/share/anvil-v3-qa-receipts',
-  ...[...current0076NegativeLinuxApprovalContract.dependencyPaths,manifestPath,...logicalSql].flatMap(path=>{const parts=path.split('/');return parts.slice(0,-1).map((_,index)=>sourceRoot+'/'+parts.slice(0,index+1).join('/'));})];
+  ...[...protectedSourcePaths,manifestPath,...logicalSql].flatMap(path=>{const parts=path.split('/');return parts.slice(0,-1).map((_,index)=>sourceRoot+'/'+parts.slice(0,index+1).join('/'));})];
  let ino=20;const readerStats=new Map<string,NegativeLinuxProtectedReaderStat>();for(const path of new Set(parentDirectories))readerStats.set(path,Object.freeze({kind:'DIRECTORY',dev:1,ino:ino++,uid:path==='/home'?0:1000,mode:path==='/home'?0o40755:0o40700,nlink:1,size:0,mtimeMs:1,ctimeMs:1}));
  for(const [index,path] of [...actual,...actualSql].entries()){const bytes=readerFiles.get(path)!;readerStats.set(path,Object.freeze({kind:'FILE',dev:1,ino:ino++,uid:1000,mode:index<3?0o100600:0o100644,nlink:1,size:bytes.byteLength,mtimeMs:1,ctimeMs:1}));}
  const readerRecipient=Object.freeze(Object.create(null)),readerHandles=new Map<object,{path:string;offset:number}>();let protectedOpens=0,wall=issuedAt+1000,mono=100,currentCalls=0,clockReads=0;
@@ -106,7 +108,7 @@ function fixture(tamperApproval=false,expireClockRead=Number.MAX_SAFE_INTEGER){
 test('보호 approval 원문에서만 claim authority를 만들고 106+0076 source-only stage를 한 번 조립한다',async()=>{
  const h=fixture(),result=await run0076NegativeLinuxEntry(h.selection,h.authority,Object.freeze({mode:'SYNTHETIC_SOURCE_ONLY',reader:h.readerSystem,journal:h.journalSystem,stage:h.stage}));
  assert.equal(result.status,'OBSERVATIONS_MATCHED');assert.equal(result.priorInstalled,106);assert.equal(result.priorLedgered,106);assert.equal(result.targetDispatched,true);
- assert.equal(h.protectedOpens,143);assert.equal(h.priorInstalls,106);assert.equal(h.receiverCalls,1);assert.equal(h.prepareCalls,1);assert.equal(h.ledger.length,106);
+ assert.equal(h.protectedOpens,145);assert.equal(h.priorInstalls,106);assert.equal(h.receiverCalls,1);assert.equal(h.prepareCalls,1);assert.equal(h.ledger.length,106);
  const receipt=h.journalFiles.get(h.receiptRoot+'/claim-v1.json')!;assert.equal(JSON.parse(Buffer.from(receipt).toString('utf8')).approvalId,h.approvalId);
  assert.deepEqual(h.journalTrace,['open','write','syncFile','close','open','syncDirectory','close','open','close']);assert(h.currentCalls>0);
 });
