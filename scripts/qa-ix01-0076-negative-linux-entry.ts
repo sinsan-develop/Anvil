@@ -1,3 +1,4 @@
+import {closeSync,fstatSync,fsyncSync,lstatSync,openSync,readSync,realpathSync,writeSync,type Stats} from 'node:fs';
 import {types} from 'node:util';
 import {canonicalJson,contentHash,parseWireJson} from '../contracts/canonical.ts';
 import {recordV1,uuidV1} from '../contracts/runtime/validation-v1.ts';
@@ -18,10 +19,11 @@ import {create0076NegativeLinuxJournal,type NegativeLinuxJournalAuthority,type N
 
 const invalid=():never=>{throw Error('IX01_0076_NEGATIVE_LINUX_ENTRY_INVALID');};
 const stageKeys=['now','monotonic','assertCurrent','claim','prepare','install','appendLedger','sentinel','catalog'] as const;
+const retainedNativeJournalHandles=new Map<object,Readonly<{recipient:object;fd:number}>>();
 
-export interface NegativeLinuxEntrySystems{
- readonly reader:NegativeLinuxProtectedReaderSystem;readonly journal:NegativeLinuxJournalSystem;readonly stage:NegativeStagePorts;
-}
+export type NegativeLinuxEntrySystems=
+ | Readonly<{mode:'SYNTHETIC_SOURCE_ONLY';reader:NegativeLinuxProtectedReaderSystem;journal:NegativeLinuxJournalSystem;stage:NegativeStagePorts}>
+ | Readonly<{mode:'PROTECTED_NATIVE';stage:NegativeStagePorts}>;
 
 function exact(value:unknown,keys:readonly string[]){
  if(!value||typeof value!=='object'||types.isProxy(value)||![Object.prototype,null].includes(Object.getPrototypeOf(value)))return false;
@@ -39,9 +41,40 @@ function stageShape(raw:NegativeStagePorts){
  if(!exact(raw,stageKeys)||!Object.isFrozen(raw))invalid();const d=Object.getOwnPropertyDescriptors(raw);for(const key of stageKeys)if(typeof d[key]!.value!=='function')invalid();
  return Object.fromEntries(stageKeys.map(key=>[key,d[key]!.value])) as unknown as NegativeStagePorts;
 }
-function systemsShape(raw:Readonly<NegativeLinuxEntrySystems>){
- if(!exact(raw,['reader','journal','stage'])||!Object.isFrozen(raw))invalid();const d=Object.getOwnPropertyDescriptors(raw),reader=d.reader!.value as NegativeLinuxProtectedReaderSystem,journal=d.journal!.value as NegativeLinuxJournalSystem,stage=d.stage!.value as NegativeStagePorts;
- if(!reader||typeof reader!=='object'||!journal||typeof journal!=='object')invalid();return{reader,journal,stage:stageShape(stage)};
+function systemsShape(raw:Readonly<NegativeLinuxEntrySystems>):NegativeLinuxEntrySystems{
+ if(!raw||typeof raw!=='object'||types.isProxy(raw)||!Object.isFrozen(raw))invalid();
+ if(raw.mode==='SYNTHETIC_SOURCE_ONLY'){
+  if(!exact(raw,['mode','reader','journal','stage'])||!raw.reader||typeof raw.reader!=='object'||!raw.journal||typeof raw.journal!=='object')invalid();
+  return{mode:raw.mode,reader:raw.reader,journal:raw.journal,stage:stageShape(raw.stage)} as const;
+ }
+ if(raw.mode==='PROTECTED_NATIVE'){
+  if(!exact(raw,['mode','stage']))invalid();return{mode:raw.mode,stage:stageShape(raw.stage)} as const;
+ }
+ return invalid();
+}
+function stat(raw:Stats){
+ const kind=raw.isFile()?'FILE':raw.isDirectory()?'DIRECTORY':invalid();
+ return Object.freeze({kind,dev:raw.dev,ino:raw.ino,uid:raw.uid,mode:raw.mode,nlink:raw.nlink,size:raw.size,mtimeMs:raw.mtimeMs,ctimeMs:raw.ctimeMs});
+}
+/** 보호 approval 소비 뒤에만 생성되는 private POSIX 공급자다. 생성 자체는 I/O를 수행하지 않는다. */
+function nativeJournalSystem():NegativeLinuxJournalSystem{
+ const recipient=Object.freeze(Object.create(null)),timers=new WeakMap<object,ReturnType<typeof setTimeout>>();
+ const descriptor=(handle:object)=>{const found=retainedNativeJournalHandles.get(handle);if(!found||found.recipient!==recipient)return invalid();return found.fd;};
+ return Object.freeze({recipient,
+  lstat(this:object,path:string){if(this!==recipient)invalid();return stat(lstatSync(path));},
+  realpath(this:object,path:string){if(this!==recipient)invalid();return realpathSync.native(path);},
+  open(this:object,path:string,flags:number,mode?:number){if(this!==recipient)invalid();const fd=openSync(path,flags,mode),handle=Object.freeze(Object.create(null));retainedNativeJournalHandles.set(handle,Object.freeze({recipient,fd}));return handle;},
+  fstat(this:object,handle:object){if(this!==recipient)invalid();return stat(fstatSync(descriptor(handle)));},
+  write(this:object,handle:object,bytes:Uint8Array,offset:number){if(this!==recipient)invalid();return writeSync(descriptor(handle),bytes,0,bytes.byteLength,offset);},
+  read(this:object,handle:object,buffer:Uint8Array,offset:number,length:number){if(this!==recipient)invalid();return readSync(descriptor(handle),buffer,offset,length,null);},
+  sync(this:object,handle:object){if(this!==recipient)invalid();fsyncSync(descriptor(handle));},
+  close(this:object,handle:object){if(this!==recipient)invalid();const fd=descriptor(handle);closeSync(fd);retainedNativeJournalHandles.delete(handle);},
+  schedule(this:object,callback:()=>void,timeoutMs:number){if(this!==recipient)invalid();const token=Object.freeze(Object.create(null)),timer=setTimeout(callback,timeoutMs);timers.set(token,timer);return token;},
+  cancel(this:object,token:object){if(this!==recipient)invalid();const timer=timers.get(token)??invalid();clearTimeout(timer);timers.delete(token);},
+ });
+}
+function requireNativeHostBoundary(){
+ if(process.platform!=='linux'||typeof process.geteuid!=='function'||process.geteuid()!==1000)invalid();
 }
 function protectedBinding(raw:Readonly<NegativeStageInput>,projection:Readonly<NegativeLinuxApprovalProjection>){
  if(typeof raw.planRaw!=='string'||typeof raw.approvalRaw!=='string'||contentHash(raw.planRaw)!==projection.planHash||contentHash(raw.approvalRaw)!==projection.approvalHash)invalid();
@@ -60,7 +93,8 @@ function protectedBinding(raw:Readonly<NegativeStageInput>,projection:Readonly<N
 }
 
 /**
- * 보호 reader와 명시 주입된 Linux journal/stage 포트만 한 번 조립한다. 기본 syscall writer, child, CLI 또는 실행 권위를 만들지 않는다.
+ * 보호 reader가 원 approval를 검증한 뒤에만 private POSIX journal 공급자를 만든다. PROTECTED_NATIVE는 Linux/euid 1000만
+ * 최소 검산하며, 이후 exact launcher가 제공해야 할 원 host/source 권위 증거를 대신하지 않는다. child, CLI, Docker/PG 실행은 연결하지 않는다.
  */
 export async function run0076NegativeLinuxEntry(
  rawSelection:Readonly<NegativeLinuxApprovalSelection>,rawAuthority:Readonly<NegativeLinuxProtectedReaderAuthority>,rawSystems:Readonly<NegativeLinuxEntrySystems>,
@@ -68,9 +102,12 @@ export async function run0076NegativeLinuxEntry(
  const authority=authorityShape(rawAuthority),systems=systemsShape(rawSystems);
  if(rawSelection!==authority.selection)invalid();
  const unchanged=()=>authority.keys.every(key=>rawAuthority[key]===({recipient:authority.recipient,selection:authority.selection,sourceRoot:authority.sourceRoot,receiptRoot:authority.receiptRoot,uid:1000,now:authority.now,monotonic:authority.monotonic,assertCurrent:authority.current} as const)[key])
-  &&stageKeys.every(key=>rawSystems.stage[key]===systems.stage[key])&&rawSystems.reader===systems.reader&&rawSystems.journal===systems.journal;
+  &&rawSystems.mode===systems.mode&&stageKeys.every(key=>rawSystems.stage[key]===systems.stage[key])
+  &&(systems.mode==='PROTECTED_NATIVE'||rawSystems.mode==='SYNTHETIC_SOURCE_ONLY'&&rawSystems.reader===systems.reader&&rawSystems.journal===systems.journal);
  const current=()=>{if(!unchanged()||authority.current.call(authority.recipient,authority.selection)!==undefined)invalid();};
- const reader=create0076NegativeLinuxProtectedReader(rawAuthority,systems.reader),projection=await verify0076NegativeLinuxApproval(rawSelection,reader);
+ if(systems.mode==='PROTECTED_NATIVE')requireNativeHostBoundary();
+ const reader=systems.mode==='SYNTHETIC_SOURCE_ONLY'?create0076NegativeLinuxProtectedReader(rawAuthority,systems.reader):create0076NegativeLinuxProtectedReader(rawAuthority);
+ const projection=await verify0076NegativeLinuxApproval(rawSelection,reader);
  return use0076NegativeLinuxProtectedStageInput(projection,async(input,fresh)=>{
   const entryCurrent=()=>{fresh();current();};entryCurrent();const binding=protectedBinding(input,projection),receiptPath=binding.namespace.receipt+'/claim-v1.json';
   let authorityRead=false;const claimRecipient=Object.freeze(Object.create(null));
@@ -84,7 +121,7 @@ export async function run0076NegativeLinuxEntry(
   const journalAuthority=Object.freeze({recipient:journalRecipient,approval:projection,receiptRoot:binding.namespace.receipt,uid:1000 as const,
    assertCurrent(this:object,found:Readonly<NegativeLinuxApprovalProjection>){if(this!==journalRecipient||found!==projection)invalid();entryCurrent();},
   }) satisfies NegativeLinuxJournalAuthority;
-  const rawStage=rawSystems.stage,fixedStage=systems.stage;
+  const rawStage=rawSystems.stage,fixedStage=systems.stage,journalSystem=systems.mode==='SYNTHETIC_SOURCE_ONLY'?systems.journal:nativeJournalSystem();
   const stageCurrent=()=>{entryCurrent();if(stageKeys.some(key=>rawStage[key]!==fixedStage[key]))invalid();};
   const baseDefinition:NegativeStagePorts={
    now(){stageCurrent();return authority.now.call(authority.recipient);},monotonic(){stageCurrent();return authority.monotonic.call(authority.recipient);},
@@ -95,7 +132,7 @@ export async function run0076NegativeLinuxEntry(
    sentinel(target,sql,timeoutMs){stageCurrent();return fixedStage.sentinel.call(rawStage,target,sql,timeoutMs);},
    catalog(target,sql,timeoutMs){stageCurrent();return fixedStage.catalog.call(rawStage,target,sql,timeoutMs);},
   };const base=Object.freeze(baseDefinition);
-  const journal=create0076NegativeLinuxJournal(journalAuthority,systems.journal),claimed=create0076NegativeClaim(base,claimAuthority,journal);
+  const journal=create0076NegativeLinuxJournal(journalAuthority,journalSystem),claimed=create0076NegativeClaim(base,claimAuthority,journal);
   return run0076AtomicityNegativeStage(input,claimed);
  });
 }

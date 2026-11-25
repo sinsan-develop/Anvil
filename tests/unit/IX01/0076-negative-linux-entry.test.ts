@@ -104,7 +104,7 @@ function fixture(tamperApproval=false,expireClockRead=Number.MAX_SAFE_INTEGER){
 }
 
 test('보호 approval 원문에서만 claim authority를 만들고 106+0076 source-only stage를 한 번 조립한다',async()=>{
- const h=fixture(),result=await run0076NegativeLinuxEntry(h.selection,h.authority,Object.freeze({reader:h.readerSystem,journal:h.journalSystem,stage:h.stage}));
+ const h=fixture(),result=await run0076NegativeLinuxEntry(h.selection,h.authority,Object.freeze({mode:'SYNTHETIC_SOURCE_ONLY',reader:h.readerSystem,journal:h.journalSystem,stage:h.stage}));
  assert.equal(result.status,'OBSERVATIONS_MATCHED');assert.equal(result.priorInstalled,106);assert.equal(result.priorLedgered,106);assert.equal(result.targetDispatched,true);
  assert.equal(h.protectedOpens,142);assert.equal(h.priorInstalls,106);assert.equal(h.receiverCalls,1);assert.equal(h.prepareCalls,1);assert.equal(h.ledger.length,106);
  const receipt=h.journalFiles.get(h.receiptRoot+'/claim-v1.json')!;assert.equal(JSON.parse(Buffer.from(receipt).toString('utf8')).approvalId,h.approvalId);
@@ -112,12 +112,31 @@ test('보호 approval 원문에서만 claim authority를 만들고 106+0076 sour
 });
 
 test('approval 원문이 selection hash와 다르면 claim·journal·prepare·SQL 효과가 없다',async()=>{
- const h=fixture(true);await assert.rejects(run0076NegativeLinuxEntry(h.selection,h.authority,Object.freeze({reader:h.readerSystem,journal:h.journalSystem,stage:h.stage})));
+ const h=fixture(true);await assert.rejects(run0076NegativeLinuxEntry(h.selection,h.authority,Object.freeze({mode:'SYNTHETIC_SOURCE_ONLY',reader:h.readerSystem,journal:h.journalSystem,stage:h.stage})));
  assert.equal(h.journalTrace.length,0);assert.equal(h.prepareCalls,0);assert.equal(h.priorInstalls,0);assert.equal(h.receiverCalls,0);assert.equal(h.ledger.length,0);
 });
 
 test('보호 read 뒤 원 window가 만료되면 claim file 생성과 prepare·SQL 효과가 없다',async()=>{
- const h=fixture(false,7),result=await run0076NegativeLinuxEntry(h.selection,h.authority,Object.freeze({reader:h.readerSystem,journal:h.journalSystem,stage:h.stage}));
+ const h=fixture(false,7),result=await run0076NegativeLinuxEntry(h.selection,h.authority,Object.freeze({mode:'SYNTHETIC_SOURCE_ONLY',reader:h.readerSystem,journal:h.journalSystem,stage:h.stage}));
  assert.equal(result.status,'STOPPED');assert.equal(result.reason,'INPUT_INVALID');
  assert.equal(h.journalTrace.length,0);assert.equal(h.prepareCalls,0);assert.equal(h.priorInstalls,0);assert.equal(h.receiverCalls,0);assert.equal(h.ledger.length,0);
+});
+
+test('PROTECTED_NATIVE 경로는 외부 reader·journal callback을 함께 받을 수 없다',async()=>{
+ const h=fixture(),mixed=Object.freeze({mode:'PROTECTED_NATIVE',reader:h.readerSystem,journal:h.journalSystem,stage:h.stage});
+ await assert.rejects(run0076NegativeLinuxEntry(h.selection,h.authority,mixed as never));
+ assert.equal(h.protectedOpens,0);assert.equal(h.journalTrace.length,0);assert.equal(h.prepareCalls,0);assert.equal(h.receiverCalls,0);
+});
+
+test('PROTECTED_NATIVE 공급자는 Linux/euid와 보호 approval 뒤에만 private POSIX journal을 결박한다',()=>{
+ const body=readFileSync(new URL('../../../scripts/qa-ix01-0076-negative-linux-entry.ts',import.meta.url),'utf8');
+ const host=body.indexOf("if(systems.mode==='PROTECTED_NATIVE')requireNativeHostBoundary();");
+ const reader=body.indexOf("create0076NegativeLinuxProtectedReader(rawAuthority)");
+ const approval=body.indexOf('verify0076NegativeLinuxApproval(rawSelection,reader)');
+ const journal=body.indexOf("systems.mode==='SYNTHETIC_SOURCE_ONLY'?systems.journal:nativeJournalSystem()");
+ assert.ok(host>=0&&reader>host&&approval>reader&&journal>approval);
+ assert.match(body,/process\.platform!=='linux'.*process\.geteuid\(\)!==1000/);
+ assert.match(body,/retainedNativeJournalHandles=new Map<.*recipient:object;fd:number/);
+ assert.match(body,/if\(!found\|\|found\.recipient!==recipient\)return invalid\(\);return found\.fd/);
+ assert.match(body,/openSync\(path,flags,mode\).*fsyncSync\(descriptor\(handle\)\).*closeSync\(fd\)/s);
 });
