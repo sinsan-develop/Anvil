@@ -1,0 +1,81 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {EventEmitter} from 'node:events';
+import {contentHash} from '../../../contracts/canonical.ts';
+import {
+ bind0076NegativeLinuxNativeDockerOwner,create0076NegativeLinuxNativeDocker,create0076NegativeLinuxReadOnlyDockerSystem,
+ type NegativeLinuxNativeDockerOwnerPorts,type NegativeLinuxNativeDockerSystem,
+} from '../../../scripts/qa-ix01-0076-negative-linux-native-docker.ts';
+import {
+ prepare0076NegativeLinuxDocker,
+ type NegativeLinuxDockerAuthority,type NegativeLinuxDockerBinding,type NegativeLinuxDockerInvocation,type NegativeLinuxDockerLegacy,
+} from '../../../scripts/qa-ix01-0076-negative-linux-docker.ts';
+
+let sequence=0;
+const image='sha256:594290e91b09c09728ed945ff89db65cd0fafff251f7c03c3d99c00ae5d9442f',containerId='d'.repeat(64);
+const tmpfs={'/var/lib/postgresql/data':'rw,noexec,nosuid,size=268435456,uid=999,gid=999','/var/run/postgresql':'rw,noexec,nosuid,size=16777216,uid=999,gid=999','/tmp':'rw,noexec,nosuid,size=16777216,uid=999,gid=999'};
+function binding(){
+ const attemptId='fa000000-0000-4000-8000-'+String(++sequence).padStart(12,'0'),compact=attemptId.replaceAll('-','');
+ return Object.freeze({schemaVersion:1 as const,purpose:'IX01_0076_NEGATIVE_LINUX_DOCKER_BINDING' as const,attemptId,sourceHead:'1'.repeat(40),planHash:'2'.repeat(64),approvalHash:'3'.repeat(64),approvalId:'fb000000-0000-4000-8000-000000000001',graphHash:'4'.repeat(64),issuedAt:1000,expiresAt:10_000,
+  namespace:Object.freeze({container:'anvil-ix01-0076-negative-'+compact,database:'ix01_0076_negative_'+compact,receipt:'/home/daon/.local/share/anvil-v3-qa-receipts/ix01-0076-negative-'+attemptId,network:'none' as const})}) satisfies Readonly<NegativeLinuxDockerBinding>;
+}
+function invocation(found:Readonly<NegativeLinuxDockerBinding>,input:string|null=null):Readonly<NegativeLinuxDockerInvocation>{
+ return Object.freeze({file:'/usr/bin/docker' as const,argv:Object.freeze(['--config',found.namespace.receipt+'/docker-config','--host','unix:///var/run/docker.sock','info','--format','{"ID":{{json .ID}},"Name":{{json .Name}}}']),cwd:'/' as const,
+  env:Object.freeze({PATH:'/usr/bin:/bin',LANG:'C.UTF-8',LC_ALL:'C.UTF-8',HOME:found.namespace.receipt}),input,timeoutMs:5000,stdoutLimit:65536,stderrLimit:65536});
+}
+function inspected(found:Readonly<NegativeLinuxDockerBinding>,running:boolean){return{id:containerId,name:'/'+found.namespace.container,image,user:'999:999',labels:{'anvil.owner':'IX01_0076_NEGATIVE','anvil.instance':found.attemptId.replaceAll('-',''),'anvil.plan':found.planHash},running,
+ host:{Privileged:false,ReadonlyRootfs:true,NetworkMode:'none',LogConfig:{Type:'none',Config:{}},CapDrop:['ALL'],SecurityOpt:['no-new-privileges'],PidsLimit:64,Memory:536870912,NanoCpus:1000000000,PublishAllPorts:false,PortBindings:{},Binds:null,VolumesFrom:null,Tmpfs:{...tmpfs}},mounts:[],
+ networks:running?{none:{NetworkID:'f'.repeat(64),IPAddress:''}}:{none:{MacAddress:'',NetworkID:'',EndpointID:'',Gateway:'',IPAddress:'',IPv6Gateway:'',GlobalIPv6Address:'',GwPriority:0,IPPrefixLen:0,GlobalIPv6PrefixLen:0,IPAMConfig:null,Links:null,Aliases:null,DriverOpts:null,DNSNames:null}},ports:{'5432/tcp':null}};}
+class Stream extends EventEmitter{bytes=new Uint8Array();end(value?:Uint8Array){this.bytes=value?new Uint8Array(value):new Uint8Array();queueMicrotask(()=>this.emit('finish'));}}
+class Child extends EventEmitter{stdin=new Stream();stdout=new Stream();stderr=new Stream();}
+function fixture(mode:'NORMAL'|'OWNER_LOST'|'TOOL_CHANGED'|'SETUID_TOOL'|'CLOSE_UNKNOWN'|'TIMEOUT'|'SPAWN_THROW'|'AUTO_PREPARE'|'BAD_SERVER'|'NEVER_READY'|'ARBITRARY_SQL'='NORMAL'){
+ const expected=binding(),materials=Object.freeze({roleSql:'ROLE_SQL',bootstrapSql:'BOOTSTRAP_SQL',finalServerRaw:'postgres\n'}),toolBytes=new Uint8Array(Buffer.from('fixed docker executable bytes')),handle=Object.freeze(Object.create(null));let wall=2000,mono=10.25,opened=0,reads=0,statCalls=0,currentCalls=0,spawns=0,terminates=0,closes=0,inspectCount=0;
+ const stat=()=>Object.freeze({path:'/usr/bin/docker',realpath:'/usr/bin/docker',kind:'FILE' as const,dev:11,ino:12,uid:0,gid:0,mode:mode==='SETUID_TOOL'?0o104755:0o100755,nlink:1,size:toolBytes.byteLength,mtimeMs:1.25,ctimeMs:2.5});
+ const ownerRecipient=Object.freeze(Object.create(null));
+ const owner=Object.freeze({recipient:ownerRecipient,binding:expected,materials,assertCurrent(this:object,found:Readonly<NegativeLinuxDockerBinding>){currentCalls++;assert.equal(this,ownerRecipient);assert.equal(found,expected);if(mode==='OWNER_LOST'&&currentCalls>2)throw Error('lost');},wall(this:object){assert.equal(this,ownerRecipient);return wall;},monotonic(this:object){assert.equal(this,ownerRecipient);return mono;}}) satisfies NegativeLinuxNativeDockerOwnerPorts;
+ const children:Child[]=[],systemRecipient=Object.freeze(Object.create(null));
+ const system=Object.freeze({recipient:systemRecipient,open(this:object,path:string){assert.equal(this,systemRecipient);assert.equal(path,'/usr/bin/docker');opened++;return handle;},stat(this:object,found:object){assert.equal(this,systemRecipient);assert.equal(found,handle);statCalls++;const value=stat();return mode==='TOOL_CHANGED'&&statCalls>2?Object.freeze({...value,mtimeMs:9.5}):value;},read(this:object,found:object,offset:number,length:number){assert.equal(this,systemRecipient);assert.equal(found,handle);assert(length>0&&length<=1024*1024);reads++;return new Uint8Array(toolBytes.slice(offset,offset+length));},spawnPinned(this:object,found:object,raw:Readonly<NegativeLinuxDockerInvocation>){assert.equal(this,systemRecipient);assert.equal(found,handle);assert.equal(raw.file,'/usr/bin/docker');spawns++;if(mode==='SPAWN_THROW')throw Error('spawn');const child=new Child();children.push(child);
+   if(['AUTO_PREPARE','BAD_SERVER','NEVER_READY','ARBITRARY_SQL'].includes(mode)){const args=raw.argv.slice(4);let stdout='';if(args[0]==='info')stdout=JSON.stringify({ID:'e3349f1d-dbfc-478a-96d9-295bf6c6839e',Name:'SINSAN'});else if(args[0]==='image')stdout=JSON.stringify({id:image,volumes:{'/var/lib/postgresql/data':{}}});else if(args[0]==='container'&&args[1]==='ls')stdout='';else if(args[0]==='create')stdout=containerId+'\n';else if(args[0]==='container'&&args[1]==='inspect')stdout=JSON.stringify(inspected(expected,inspectCount++>0));else if(args[0]==='start')stdout=containerId+'\n';else if(args.includes('/proc/1/comm'))stdout=mode==='BAD_SERVER'?'bash\n':mode==='NEVER_READY'?'starting\n':'postgres\n';else if(args.includes('pg_isready'))stdout='READY\n';else if(args.includes('psql'))stdout=raw.input==='BOOTSTRAP_SQL'?'':'ROLE_OK';else assert.fail('unexpected '+JSON.stringify(args));queueMicrotask(()=>queueMicrotask(()=>{if(stdout)child.stdout.emit('data',Buffer.from(stdout));child.stdout.emit('end');child.stderr.emit('end');child.emit('exit',0,null);child.emit('close',0,null);}));}
+   return child;},terminate(this:object,child:object,signal:'SIGKILL'){assert.equal(this,systemRecipient);assert(children.includes(child as Child));assert.equal(signal,'SIGKILL');terminates++;},setTimeout(this:object,callback:()=>void,ms:number){assert.equal(this,systemRecipient);if(mode==='TIMEOUT'||['AUTO_PREPARE','BAD_SERVER','NEVER_READY','ARBITRARY_SQL'].includes(mode)&&ms===250)queueMicrotask(callback);return Object.freeze({ms});},clearTimeout(this:object){assert.equal(this,systemRecipient);},close(this:object,found:object){assert.equal(this,systemRecipient);assert.equal(found,handle);closes++;return mode==='CLOSE_UNKNOWN'?'UNKNOWN' as const:'CLOSED' as const;}}) satisfies NegativeLinuxNativeDockerSystem;
+ const capability=bind0076NegativeLinuxNativeDockerOwner(owner),ports=create0076NegativeLinuxNativeDocker(capability,system);
+ return{expected,toolBytes,owner,system,ports,children,get opened(){return opened;},get reads(){return reads;},get spawns(){return spawns;},get terminates(){return terminates;},get closes(){return closes;},setClock(nextWall:number,nextMono:number){wall=nextWall;mono=nextMono;}};
+}
+
+function legacy(h:ReturnType<typeof fixture>,options:Readonly<{roleSql?:string;bootstrapSql?:string;parseFinalServer?:(raw:string)=>boolean}>={}){
+ return Object.freeze({daemonInfoArgs(){return Object.freeze(['info','--format','{"ID":{{json .ID}},"Name":{{json .Name}}}']);},finalServerArgs(found:string){assert.equal(found,containerId);return Object.freeze(['exec','--user','999:999',found,'cat','/proc/1/comm']);},parseFinalServer(raw:string){return options.parseFinalServer?.(raw)??raw==='postgres\n';},bootstrapSql(found:string){assert.equal(found,h.expected.namespace.database);return options.bootstrapSql??'BOOTSTRAP_SQL';},roleMetadataSql(){return options.roleSql??'ROLE_SQL';},verifyPristineRoles(raw:string){assert.equal(raw,'ROLE_OK');},verifyInstallerRoles(raw:string){assert.equal(raw,'ROLE_OK');}}) satisfies NegativeLinuxDockerLegacy;
+}
+function authority(h:ReturnType<typeof fixture>){const recipient=Object.freeze(Object.create(null));return Object.freeze({recipient,binding:h.expected,assertClaimed(this:object,found:object){assert.equal(this,recipient);assert.equal(found,h.expected);},assertCurrent(this:object,found:object){assert.equal(this,recipient);assert.equal(found,h.expected);},wall(this:object){assert.equal(this,recipient);return 2000;},monotonic(this:object){assert.equal(this,recipient);return 10.25;}}) satisfies NegativeLinuxDockerAuthority;}
+
+test('원 closure 뒤 같은 Docker handle의 최초 bytes·identity와 원 child close만 결과로 반환한다',async()=>{
+ const h=fixture(),pin=await h.ports.pin.call(h.ports.recipient,'/usr/bin/docker');assert.equal(pin.sha256,contentHash(h.toolBytes));assert.deepEqual(Object.keys(pin),['path','realpath','kind','dev','ino','uid','mode','nlink','size','mtimeMs','ctimeMs','sha256','custody']);assert.equal(h.opened,1);h.ports.current.call(h.ports.recipient,pin);
+ const pending=h.ports.run.call(h.ports.recipient,pin,invocation(h.expected));assert.equal(h.spawns,1);const child=h.children[0]!;await Promise.resolve();assert.equal(child.stdin.bytes.byteLength,0);
+ child.stdout.emit('data',Buffer.from('ok\n'));child.stdout.emit('end');child.stderr.emit('end');child.emit('exit',0,null);child.emit('close',0,null);
+ assert.deepEqual(await pending,{status:0,signal:null,closed:true,stdout:'ok\n',stderr:''});assert.equal(await h.ports.release.call(h.ports.recipient,pin),'CLOSED');assert.equal(h.closes,1);
+});
+
+test('기존 Docker prepare는 exact pin 형상과 승인된 command 순서를 그대로 소비한다',async()=>{
+ const h=fixture('AUTO_PREPARE'),result=await prepare0076NegativeLinuxDocker(h.expected,authority(h),legacy(h),h.ports);assert.equal(result.status,'PREPARED');assert.equal(h.opened,1);assert.equal(h.closes,1);assert.equal(h.spawns,13);
+});
+
+test('보호 R9 재료·server 관측·40회 한도를 독립 검산해 임의 privileged SQL을 실행하지 않는다',async()=>{
+ const arbitrary=fixture('ARBITRARY_SQL'),arbitraryResult=await prepare0076NegativeLinuxDocker(arbitrary.expected,authority(arbitrary),legacy(arbitrary,{roleSql:'ALTER SYSTEM SET fsync=off'}),arbitrary.ports);assert.equal(arbitraryResult.status,'UNKNOWN');assert.equal(arbitrary.spawns,9);
+ const bootstrap=fixture('ARBITRARY_SQL'),bootstrapResult=await prepare0076NegativeLinuxDocker(bootstrap.expected,authority(bootstrap),legacy(bootstrap,{bootstrapSql:'DROP DATABASE postgres'}),bootstrap.ports);assert.equal(bootstrapResult.status,'UNKNOWN');assert.equal(bootstrap.spawns,10);
+ const stale=fixture('BAD_SERVER'),staleResult=await prepare0076NegativeLinuxDocker(stale.expected,authority(stale),legacy(stale,{parseFinalServer:()=>true}),stale.ports);assert.equal(staleResult.status,'UNKNOWN');assert.equal(stale.spawns,8);
+ const bounded=fixture('NEVER_READY'),boundedResult=await prepare0076NegativeLinuxDocker(bounded.expected,authority(bounded),legacy(bounded,{parseFinalServer:()=>false}),bounded.ports);assert.equal(boundedResult.status,'UNKNOWN');assert.equal(bounded.spawns,47);
+});
+
+test('owner·도구 current 상실과 만료는 stdin·spawn 또는 후속 command를 만들지 않는다',async()=>{
+ const lost=fixture('OWNER_LOST');await assert.rejects(lost.ports.pin.call(lost.ports.recipient,'/usr/bin/docker'));assert.equal(lost.opened,0);assert.equal(lost.spawns,0);
+ const changed=fixture('TOOL_CHANGED'),pin=await changed.ports.pin.call(changed.ports.recipient,'/usr/bin/docker');assert.throws(()=>changed.ports.current.call(changed.ports.recipient,pin));const result=await changed.ports.run.call(changed.ports.recipient,pin,invocation(changed.expected));assert.equal(result.closed,false);assert.equal(changed.spawns,0);
+ const expired=fixture();expired.setClock(10_000,8010.25);await assert.rejects(expired.ports.pin.call(expired.ports.recipient,'/usr/bin/docker'));assert.equal(expired.opened,0);
+ const setuid=fixture('SETUID_TOOL');await assert.rejects(setuid.ports.pin.call(setuid.ports.recipient,'/usr/bin/docker'));assert.equal(setuid.opened,1);assert.equal(setuid.closes,1);assert.equal(setuid.spawns,0);
+ const arbitrary=fixture(),arbitraryPin=await arbitrary.ports.pin.call(arbitrary.ports.recipient,'/usr/bin/docker'),base=invocation(arbitrary.expected),bad=Object.freeze({...base,argv:Object.freeze([...base.argv.slice(0,4),'container','rm','x'])});assert.equal((await arbitrary.ports.run.call(arbitrary.ports.recipient,arbitraryPin,bad)).closed,false);assert.equal(arbitrary.spawns,0);
+});
+
+test('close 불명·중복 pin·위조 capability는 재close·재open·실행 권위를 만들지 않는다',async()=>{
+ const h=fixture('CLOSE_UNKNOWN'),pin=await h.ports.pin.call(h.ports.recipient,'/usr/bin/docker');await assert.rejects(h.ports.pin.call(h.ports.recipient,'/usr/bin/docker'));assert.equal(h.opened,1);
+ assert.equal(await h.ports.release.call(h.ports.recipient,pin),'UNKNOWN');assert.equal(await h.ports.release.call(h.ports.recipient,pin),'UNKNOWN');assert.equal(h.closes,1);assert.equal(h.spawns,0);
+ assert.throws(()=>create0076NegativeLinuxNativeDocker(Object.freeze(Object.create(null)),h.system));
+ const native=create0076NegativeLinuxReadOnlyDockerSystem();assert.throws(()=>native.spawnPinned.call(native.recipient,Object.freeze(Object.create(null)),invocation(h.expected)),/SAME_FD_EXEC_UNVERIFIED/);
+ for(const mode of ['TIMEOUT','SPAWN_THROW'] as const){const failed=fixture(mode),failedPin=await failed.ports.pin.call(failed.ports.recipient,'/usr/bin/docker');assert.equal((await failed.ports.run.call(failed.ports.recipient,failedPin,invocation(failed.expected))).closed,false);const first=failed.spawns;assert.equal((await failed.ports.run.call(failed.ports.recipient,failedPin,invocation(failed.expected))).closed,false);assert.equal(failed.spawns,first);if(mode==='TIMEOUT'){assert.equal(await failed.ports.release.call(failed.ports.recipient,failedPin),'UNKNOWN');assert.equal(failed.closes,0);}}
+});
