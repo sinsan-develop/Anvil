@@ -1,6 +1,7 @@
 import {constants,closeSync,fstatSync,lstatSync,openSync,readSync,realpathSync,type Stats} from 'node:fs';
 import {types} from 'node:util';
 import {hashV1,recordV1,uuidV1} from '../contracts/runtime/validation-v1.ts';
+import {readCurrentSchemaManifest} from '../tests/integration/IX01/current-schema-baseline.ts';
 import {current0076NegativeLinuxApprovalContract,type NegativeLinuxApprovalReadObservation,type NegativeLinuxApprovalReadPorts,type NegativeLinuxApprovalSelection} from './qa-ix01-0076-negative-linux-approval.ts';
 
 const receiptParent='/home/daon/.local/share/anvil-v3-qa-receipts';
@@ -91,9 +92,9 @@ export function create0076NegativeLinuxProtectedReader(rawAuthority:Readonly<Neg
  const expectedReceipt=receiptParent+'/ix01-0076-negative-'+selection.attemptId;
  if(authority.receiptRoot!==expectedReceipt||typeof authority.now!=='function'||typeof authority.monotonic!=='function'||typeof authority.assertCurrent!=='function'
   ||typeof system.lstat!=='function'||typeof system.realpath!=='function'||typeof system.open!=='function'||typeof system.fstat!=='function'||typeof system.read!=='function'||typeof system.close!=='function')invalid();
- const requested=Object.freeze([expectedReceipt+'-plan.json',expectedReceipt+'-approval.json',expectedReceipt+'-graph.json',...current0076NegativeLinuxApprovalContract.dependencyPaths]);
- const actual=Object.freeze([requested[0]!,requested[1]!,requested[2]!,...current0076NegativeLinuxApprovalContract.dependencyPaths.map(path=>authority.sourceRoot+'/'+path)]);
- const limits=Object.freeze([32768,16384,2097152,...current0076NegativeLinuxApprovalContract.dependencyPaths.map(()=>4194304)]);
+ const requested=Object.freeze([expectedReceipt+'-plan.json',expectedReceipt+'-approval.json',expectedReceipt+'-graph.json',...current0076NegativeLinuxApprovalContract.dependencyPaths,current0076NegativeLinuxApprovalContract.manifestPath]);
+ const actual=Object.freeze([requested[0]!,requested[1]!,requested[2]!,...current0076NegativeLinuxApprovalContract.dependencyPaths.map(path=>authority.sourceRoot+'/'+path),authority.sourceRoot+'/'+current0076NegativeLinuxApprovalContract.manifestPath]);
+ const limits=Object.freeze([32768,16384,2097152,...current0076NegativeLinuxApprovalContract.dependencyPaths.map(()=>4194304),current0076NegativeLinuxApprovalContract.manifestBytes]);
  const authorityFunctions=Object.freeze({now:authority.now,monotonic:authority.monotonic,current:authority.assertCurrent});
  const systemFunctions=Object.freeze({lstat:system.lstat,realpath:system.realpath,open:system.open,fstat:system.fstat,read:system.read,close:system.close});
  const unchanged=()=>authority.selection===selection&&authority.sourceRoot===rawAuthority.sourceRoot&&authority.receiptRoot===expectedReceipt&&authority.uid===1000
@@ -116,41 +117,48 @@ export function create0076NegativeLinuxProtectedReader(rawAuthority:Readonly<Neg
   real(path);
  };
  const checkPins=()=>{for(const prior of pins.values()){const value=stat(prior.path);if(value.kind!=='DIRECTORY'||value.dev!==prior.dev||value.ino!==prior.ino||value.uid!==prior.uid||value.mode!==prior.mode)invalid();}};
- const custody=Object.freeze(Object.create(null));let used=false;
+ const custody=Object.freeze(Object.create(null)),identities=new Set<string>();let phase:0|1|2=0,sourceRequested:readonly string[]|undefined;
+ let sourceManifest:ReturnType<typeof readCurrentSchemaManifest>|undefined;
  const recipient=Object.freeze(Object.create(null));
+ const readPhase=async(logical:readonly string[],physical:readonly string[],phaseLimits:readonly number[])=>{
+  for(const path of physical.slice(logical===requested?3:0))pin(path.slice(0,path.lastIndexOf('/')),false);
+  checkPins();const rows:Readonly<NegativeLinuxApprovalReadObservation>[]=[];
+  for(let index=0;index<physical.length;index++){
+   current();checkPins();const path=physical[index]!,before=stat(path),limit=phaseLimits[index]!;
+   const exactSize=logical!==requested||index===requested.length-1;
+   if(before.kind!=='FILE'||before.nlink!==1||before.uid!==1000||(before.mode&0o022)!==0||before.size<1||before.size>limit||exactSize&&before.size!==limit
+    ||logical===requested&&index<3&&(before.mode&0o777)!==0o600)invalid();
+   const identity=before.dev+':'+before.ino;if(identities.has(identity))invalid();identities.add(identity);
+   real(path);const handle=systemFunctions.open.call(systemRecipient,path,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
+   if(!handle||typeof handle!=='object'||types.isProxy(handle))invalid();
+   let closeStarted=false,closed=false,buffer:Uint8Array|undefined;try{
+    if(!sameFile(before,statShape(systemFunctions.fstat.call(systemRecipient,handle))))invalid();
+    buffer=new Uint8Array(before.size+1);let total=0;
+    while(total<buffer.byteLength){current();const count=systemFunctions.read.call(systemRecipient,handle,buffer,total,buffer.byteLength-total);
+     if(!Number.isSafeInteger(count)||count<0||count>buffer.byteLength-total)invalid();if(count===0)break;total+=count;}
+    if(total!==before.size||!sameFile(before,statShape(systemFunctions.fstat.call(systemRecipient,handle)))||!sameFile(before,stat(path)))invalid();
+    real(path);closeStarted=true;systemFunctions.close.call(systemRecipient,handle);closed=true;
+    const bytes=new Uint8Array(buffer.subarray(0,total)),fileIdentity=Object.freeze({dev:before.dev,ino:before.ino});buffer.fill(0);
+    rows.push(Object.freeze({path:logical[index]!,bytes,custody,fileIdentity,closed:true as const}));
+   }finally{
+    buffer?.fill(0);
+    if(!closeStarted&&!closed)try{closeStarted=true;systemFunctions.close.call(systemRecipient,handle);closed=true;}catch{/* close 불명은 reply 없이 원 system custody에 남긴다. */}
+   }
+  }
+  checkPins();current();return Object.freeze(rows);
+ };
  const ports=Object.freeze({recipient,
   now(this:object){if(this!==recipient||!unchanged())invalid();return authorityFunctions.now.call(authorityRecipient);},
   monotonic(this:object){if(this!==recipient||!unchanged())invalid();return authorityFunctions.monotonic.call(authorityRecipient);},
   assertCurrent(this:object,found:Readonly<NegativeLinuxApprovalSelection>){if(this!==recipient||found!==selection)invalid();current();},
   async read(this:object,rawPaths:readonly string[]){
-   if(this!==recipient||used)invalid();ownDataArray(rawPaths,requested);used=true;current();
-   pin(authority.sourceRoot,'PRIVATE');pin(receiptParent,'RECEIPT');
-   for(const path of actual.slice(3))pin(path.slice(0,path.lastIndexOf('/')),false);
-   checkPins();
-   const rows:Readonly<NegativeLinuxApprovalReadObservation>[]=[];
-   const identities=new Set<string>();
-   for(let index=0;index<actual.length;index++){
-    current();checkPins();const path=actual[index]!,before=stat(path),limit=limits[index]!;
-    if(before.kind!=='FILE'||before.nlink!==1||before.uid!==1000||(before.mode&0o022)!==0||before.size<1||before.size>limit
-     ||index<3&&(before.mode&0o777)!==0o600)invalid();
-    const identity=before.dev+':'+before.ino;if(identities.has(identity))invalid();identities.add(identity);
-    real(path);const handle=systemFunctions.open.call(systemRecipient,path,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
-    if(!handle||typeof handle!=='object'||types.isProxy(handle))invalid();
-    let closeStarted=false,closed=false,buffer:Uint8Array|undefined;try{
-     if(!sameFile(before,statShape(systemFunctions.fstat.call(systemRecipient,handle))))invalid();
-     buffer=new Uint8Array(before.size+1);let total=0;
-     while(total<buffer.byteLength){current();const count=systemFunctions.read.call(systemRecipient,handle,buffer,total,buffer.byteLength-total);
-      if(!Number.isSafeInteger(count)||count<0||count>buffer.byteLength-total)invalid();if(count===0)break;total+=count;}
-     if(total!==before.size||!sameFile(before,statShape(systemFunctions.fstat.call(systemRecipient,handle)))||!sameFile(before,stat(path)))invalid();
-     real(path);closeStarted=true;systemFunctions.close.call(systemRecipient,handle);closed=true;
-     const bytes=new Uint8Array(buffer.subarray(0,total)),fileIdentity=Object.freeze({dev:before.dev,ino:before.ino});buffer.fill(0);
-     rows.push(Object.freeze({path:requested[index]!,bytes,custody,fileIdentity,closed:true as const}));
-    }finally{
-     buffer?.fill(0);
-     if(!closeStarted&&!closed)try{closeStarted=true;systemFunctions.close.call(systemRecipient,handle);closed=true;}catch{/* close 불명은 reply 없이 원 system custody에 남긴다. */}
-    }
-   }
-   checkPins();current();return Object.freeze(rows);
+   if(this!==recipient||phase===2)invalid();current();
+   if(phase===0){ownDataArray(rawPaths,requested);phase=1;pin(authority.sourceRoot,'PRIVATE');pin(receiptParent,'RECEIPT');
+    const rows=await readPhase(requested,actual,limits),manifest=rows.at(-1)?.bytes;if(!manifest)invalid();
+    sourceManifest=readCurrentSchemaManifest(manifest);if(sourceManifest.length!==130)invalid();sourceRequested=Object.freeze(sourceManifest.map(row=>row.path));return rows;}
+   const logical=sourceRequested,manifest=sourceManifest;if(logical===undefined||manifest===undefined)throw Error('IX01_0076_NEGATIVE_LINUX_PROTECTED_READ_INVALID');ownDataArray(rawPaths,logical);phase=2;
+   const physical=Object.freeze(logical.map(path=>authority.sourceRoot+'/'+path));
+   return readPhase(logical,physical,Object.freeze(manifest.map(row=>row.bytes)));
   },
  }) satisfies NegativeLinuxApprovalReadPorts;
  return ports;

@@ -1,7 +1,8 @@
 import {types} from 'node:util';
 import {canonicalJson,contentHash,parseWireJson} from '../contracts/canonical.ts';
 import {arrayV1,hashV1,recordV1,uuidV1} from '../contracts/runtime/validation-v1.ts';
-import {current0076NegativeContract as stageContract} from './qa-ix01-0076-atomicity-negative.ts';
+import {readCurrentSchemaManifest,verifyCurrentSchemaSources} from '../tests/integration/IX01/current-schema-baseline.ts';
+import {current0076NegativeContract as stageContract,type NegativeStageInput} from './qa-ix01-0076-atomicity-negative.ts';
 
 const selectionPurpose='IX01_0076_NEGATIVE_LINUX_APPROVAL_SELECTION' as const;
 const verifiedPurpose='IX01_0076_NEGATIVE_LINUX_APPROVAL_VERIFIED' as const;
@@ -11,8 +12,12 @@ const dependencyPaths=Object.freeze([
  'scripts/qa-ix01-0076-negative-psql.ts',
  'scripts/qa-ix01-0076-negative-linux-process.ts',
  'scripts/qa-ix01-0076-negative-linux-approval.ts',
+ 'scripts/qa-ix01-0076-negative-linux-protected-reader.ts',
+ 'scripts/qa-ix01-0076-negative-linux-journal.ts',
 ] as const);
-export const current0076NegativeLinuxApprovalContract=Object.freeze({selectionPurpose,verifiedPurpose,dependencyPaths,
+const manifestPath='docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv' as const;
+const manifestBytes=15807,manifestSha256='0da3c8558445d7984731863d45261192a11c37337b93e3dd99941b00133745dd';
+export const current0076NegativeLinuxApprovalContract=Object.freeze({selectionPurpose,verifiedPurpose,dependencyPaths,manifestPath,manifestBytes,manifestSha256,
  evidence:'PROTECTED_READ_SOURCE_ONLY' as const,runtimeVerified:false as const,executionAuthorized:false as const});
 
 export interface NegativeLinuxApprovalSelection{
@@ -34,6 +39,8 @@ export interface NegativeLinuxApprovalProjection{
  readonly dependencyHashes:readonly Readonly<{path:string;bytes:number;sha256:string}>[];
  readonly evidence:'PROTECTED_READ_SOURCE_ONLY';readonly runtimeVerified:false;readonly executionAuthorized:false;
 }
+
+const protectedInputs=new WeakMap<object,Readonly<{input:Readonly<NegativeStageInput>;fresh:()=>void}>>();
 
 const invalid=():never=>{throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');};
 function exact(value:unknown,keys:readonly string[]){
@@ -78,21 +85,25 @@ function namespace(attemptId:string){const compact=attemptId.replaceAll('-','');
  */
 export async function verify0076NegativeLinuxApproval(rawSelection:Readonly<NegativeLinuxApprovalSelection>,rawPorts:NegativeLinuxApprovalReadPorts):Promise<Readonly<NegativeLinuxApprovalProjection>>{
  const selection=selectionShape(rawSelection),ports=portsShape(rawPorts),receipt=namespace(selection.attemptId).receipt;
- const paths=Object.freeze([receipt+'-plan.json',receipt+'-approval.json',receipt+'-graph.json',...dependencyPaths]);
+ const paths=Object.freeze([receipt+'-plan.json',receipt+'-approval.json',receipt+'-graph.json',...dependencyPaths,manifestPath]);
  const unchanged=()=>rawPorts.recipient===ports.recipient&&rawPorts.now===ports.now&&rawPorts.monotonic===ports.monotonic&&rawPorts.assertCurrent===ports.current&&rawPorts.read===ports.read;
  const current=()=>{if(!unchanged()||ports.current.call(ports.recipient,selection)!==undefined)invalid();};
  const start=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));current();
  let rawRows:readonly Readonly<NegativeLinuxApprovalReadObservation>[]|undefined;try{rawRows=await ports.read.call(ports.recipient,paths);}catch{invalid();}
  const afterRead=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));if(afterRead.wall<start.wall||afterRead.monotonic<start.monotonic)invalid();current();
- const rows=exactArray(rawRows,paths.length) as readonly Readonly<NegativeLinuxApprovalReadObservation>[];
- const copies:Uint8Array[]=[],identities=new Set<object>();let custody:object|undefined;
- try{
+ const copies:Uint8Array[]=[],sourceCopies:Uint8Array[]=[],identities=new Set<object>();let custody:object|undefined;
+ const collect=(raw:unknown,expected:readonly string[],limits:readonly number[],target:Uint8Array[])=>{
+  const rows=exactArray(raw,expected.length) as readonly Readonly<NegativeLinuxApprovalReadObservation>[];
   for(let index=0;index<rows.length;index++){
-   const row=rows[index];if(row===undefined)throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');if(!exact(row,['path','bytes','custody','fileIdentity','closed'])||!Object.isFrozen(row)||row.path!==paths[index]||row.closed!==true)invalid();
+   const row=rows[index]!;
+   if(!exact(row,['path','bytes','custody','fileIdentity','closed'])||!Object.isFrozen(row)||row.path!==expected[index]||row.closed!==true)invalid();
    if(!row.custody||typeof row.custody!=='object'||types.isProxy(row.custody)||!Object.isFrozen(row.custody)||custody&&row.custody!==custody)invalid();custody??=row.custody;
    if(!row.fileIdentity||typeof row.fileIdentity!=='object'||types.isProxy(row.fileIdentity)||!Object.isFrozen(row.fileIdentity)||identities.has(row.fileIdentity))invalid();identities.add(row.fileIdentity);
-   copies.push(owned(row.bytes,index===0?32768:index===1?16384:index===2?2097152:4194304));
+   target.push(owned(row.bytes,limits[index]!));
   }
+ };
+ try{
+  collect(rawRows,paths,Object.freeze([32768,16384,2097152,...dependencyPaths.map(()=>4194304),manifestBytes]),copies);
   const planRaw=text(copies[0]!,32768),approvalRaw=text(copies[1]!,16384),graphRaw=text(copies[2]!,2097152);
   const plan=json(planRaw,selection.planHash),approval=json(approvalRaw,selection.approvalHash),graph=json(graphRaw,selection.graphHash),expectedNamespace=namespace(selection.attemptId);
   const planIssuedAt=plan.issuedAt,planExpiresAt=plan.expiresAt;
@@ -118,9 +129,29 @@ export async function verify0076NegativeLinuxApproval(rawSelection:Readonly<Nega
   }
   for(const path of stageContract.graphPaths)if(!graphRows.has(path))invalid();
   const dependencyHashes=dependencyPaths.map((path,index)=>{const bytes=copies[index+3]!,row=graphRows.get(path);if(row===undefined)throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');if(row.bytes!==bytes.byteLength||row.sha256!==contentHash(bytes))invalid();return Object.freeze({path,bytes:bytes.byteLength,sha256:row.sha256});});
-  current();const end=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));if(end.wall<afterRead.wall||end.monotonic<afterRead.monotonic||end.wall>=expiresAt
+  const manifest=copies[3+dependencyPaths.length]!;if(manifest.byteLength!==manifestBytes||contentHash(manifest)!==manifestSha256)invalid();
+  const manifestRows=readCurrentSchemaManifest(manifest);if(manifestRows.length!==130||plan.sourceManifestHash!==contentHash(canonicalJson(manifestRows)))invalid();
+  const sourcePaths=Object.freeze(manifestRows.map(row=>row.path));current();let rawSources:readonly Readonly<NegativeLinuxApprovalReadObservation>[]|undefined;
+  try{rawSources=await ports.read.call(ports.recipient,sourcePaths);}catch{invalid();}
+  const afterSources=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));if(afterSources.wall<afterRead.wall||afterSources.monotonic<afterRead.monotonic||afterSources.wall>=expiresAt
+   ||afterSources.monotonic-start.monotonic>=lifetime)invalid();current();
+  collect(rawSources,sourcePaths,manifestRows.map(row=>row.bytes),sourceCopies);
+  const sourceInput=Object.freeze(manifestRows.map((row,index)=>Object.freeze({id:row.id,path:row.path,bytes:sourceCopies[index]!})));
+  const verifiedRows=verifyCurrentSchemaSources(manifest,sourceInput);if(verifiedRows.length!==130||verifiedRows[106]?.id!==stageContract.sourceId)invalid();
+  current();const end=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));if(end.wall<afterSources.wall||end.monotonic<afterSources.monotonic||end.wall>=expiresAt
    ||end.monotonic-start.monotonic>=lifetime||issuedAt>end.wall)invalid();
-  return Object.freeze({schemaVersion:1,purpose:verifiedPurpose,attemptId:selection.attemptId,sourceHead:selection.sourceHead,planHash:selection.planHash,
+  const projection=Object.freeze({schemaVersion:1,purpose:verifiedPurpose,attemptId:selection.attemptId,sourceHead:selection.sourceHead,planHash:selection.planHash,
    approvalHash:selection.approvalHash,graphHash:selection.graphHash,dependencyHashes:Object.freeze(dependencyHashes),evidence:'PROTECTED_READ_SOURCE_ONLY',runtimeVerified:false,executionAuthorized:false});
- }finally{for(const bytes of copies)bytes.fill(0);}
+  const input=Object.freeze({planRaw,planHash:selection.planHash,approvalRaw,approvalHash:selection.approvalHash,graphRaw,historicalTsv:new Uint8Array(manifest),
+   sql:Object.freeze(manifestRows.map((row,index)=>Object.freeze({id:row.id,path:row.path,bytes:new Uint8Array(sourceCopies[index]!)})))}) satisfies Readonly<NegativeStageInput>;
+  const fresh=()=>{current();const found=clock(ports.now.call(ports.recipient),ports.monotonic.call(ports.recipient));
+   if(found.wall<end.wall||found.monotonic<end.monotonic||found.wall>=expiresAt||found.monotonic-start.monotonic>=lifetime)invalid();};
+  protectedInputs.set(projection,Object.freeze({input,fresh}));return projection;
+ }finally{for(const bytes of [...copies,...sourceCopies])bytes.fill(0);}
+}
+
+/** 다음 보호 entry가 동일 승인 projection의 원 입력을 한 번만 소비한다. callback 종료 뒤 byte 입력은 즉시 지운다. */
+export async function use0076NegativeLinuxProtectedStageInput<T>(projection:Readonly<NegativeLinuxApprovalProjection>,consume:(input:Readonly<NegativeStageInput>)=>Promise<T>):Promise<T>{
+ const retained=protectedInputs.get(projection);if(retained===undefined||typeof consume!=='function')throw Error('IX01_0076_NEGATIVE_LINUX_APPROVAL_INVALID');protectedInputs.delete(projection);const {input}=retained;
+ try{retained.fresh();return await consume(input);}finally{input.historicalTsv.fill(0);for(const row of input.sql)row.bytes.fill(0);}
 }
