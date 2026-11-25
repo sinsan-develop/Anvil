@@ -12,6 +12,10 @@ import {
  create0076AtomicityNegativeReceiver,load0076NegativeReceiverGraph,
  type NegativeReceiverPorts,
 } from '../../../scripts/qa-ix01-0076-atomicity-negative-receiver.ts';
+import {
+ create0076NegativeClaim,current0076NegativeClaimContract as claimContract,
+ type NegativeClaimAuthorityPorts,type NegativeClaimJournalPorts,
+} from '../../../scripts/qa-ix01-0076-negative-claim.ts';
 
 const root=new URL('../../../',import.meta.url);
 const receiverPath='scripts/qa-ix01-0076-atomicity-negative-receiver.ts';
@@ -91,18 +95,18 @@ test('원 install deadline은 검산 시간까지 포함하고 wall·monotonic e
  const result=isolated('RESULT_EQUAL');await result.connect();assert.equal((await result.adapter.install(result.target,corrected,row,30000)).kind,'UNKNOWN');assert.equal(result.receiverCalls,1);assert.equal((await result.adapter.install(result.target,corrected,row,30000)).kind,'UNKNOWN');assert.equal(result.receiverCalls,1);
 });
 
-test('실제 negative stage 한 번은 106건을 base에 전달하고 0076만 receiver로 결박한다',async()=>{
+test('실제 negative stage 한 번은 claim 정착 뒤 106건과 0076만 receiver로 결박한다',async()=>{
  const tsv=Buffer.from(source('docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv').toString('utf8').replaceAll('\r\n','\n'),'utf8');
  const rows=readCurrentSchemaManifest(tsv),sql=rows.map(found=>({id:found.id,path:found.path,bytes:source(found.path)}));
  const plan={schemaVersion:1,purpose:contract.purpose,attemptId,sourceHead,graphHash:contentHash(graphRaw),issuedAt:at,expiresAt:at+1800000,namespace,
   sourceManifestHash:contentHash(canonicalJson(rows)),sourceSha256:contract.sourceSha256,executionSha256:contract.executionSha256,sentinelSqlHash:contract.sentinelSqlHash,catalogSqlHash:contract.catalogSqlHash};
  const planRaw=canonicalJson(plan),planHash=contentHash(planRaw),approval={schemaVersion:1,purpose:contract.purpose+'_APPROVAL',decision:'ALLOW_ONE_ISOLATED_NEGATIVE_STAGE',approvalId,attemptId,sourceHead,planHash,graphHash:plan.graphHash,issuedAt:at,expiresAt:plan.expiresAt},approvalRaw=canonicalJson(approval);
  const input:NegativeStageInput={planRaw,planHash,approvalRaw,approvalHash:contentHash(approvalRaw),graphRaw,historicalTsv:new Uint8Array(tsv),sql};
- let baseInstalls=0,receiverCalls=0,sentinelValue:Record<string,unknown>|null=null;const ledger:{id:string;checksum:string}[]=[];
+ let prepareCalls=0,baseInstalls=0,receiverCalls=0,sentinelValue:Record<string,unknown>|null=null;const ledger:{id:string;checksum:string}[]=[];
  const replaced=['connection_definition_capacity','native_preparation_capacity','quota_adopt_creation','quota_complete_before_source'].map((name,i)=>({name,oid:String(100+i),owner:'anvil_v3_migrator',definitionHash:contentHash(name+' definition'),aclHash:contentHash(name+' ACL')}));
  const base:NegativeStagePorts={
   now:()=>at,monotonic:()=>100,assertCurrent(){},async claim(){return'CLAIMED';},
-  async prepare(binding){return{schemaVersion:1,purpose:'IX01_0076_NEGATIVE_OWNED_TARGET',attemptId:binding.attemptId,sourceHead:binding.sourceHead,planHash:binding.planHash,graphHash:binding.graphHash,namespace:{...binding.namespace},containerId:'c'.repeat(64)};},
+  async prepare(binding){prepareCalls++;return{schemaVersion:1,purpose:'IX01_0076_NEGATIVE_OWNED_TARGET',attemptId:binding.attemptId,sourceHead:binding.sourceHead,planHash:binding.planHash,graphHash:binding.graphHash,namespace:{...binding.namespace},containerId:'c'.repeat(64)};},
   async install(owner,_bytes,installedRow){baseInstalls++;return observation(owner,installedRow.sha256);},
   async appendLedger(owner,ledgerRow){ledger.push({id:ledgerRow.id,checksum:ledgerRow.sha256});return observation(owner,contentHash("INSERT INTO anvil.schema_migrations(id,checksum) VALUES('"+ledgerRow.id+"','"+ledgerRow.sha256+"');"));},
   async sentinel(owner,statement){sentinelValue={signature:contract.signature,oid:'500',owner:'anvil_v3_migrator',sourceHash:contentHash('SELECT NULL::jsonb'),definitionHash:contentHash('sentinel definition'),aclHash:contentHash('sentinel ACL'),appExecute:false,publicExecute:false,securityDefiner:false,language:'sql',volatility:'v',config:['search_path=pg_catalog']};return observation(owner,contentHash(statement));},
@@ -110,6 +114,34 @@ test('실제 negative stage 한 번은 106건을 base에 전달하고 0076만 re
  };
  const recipient=Object.freeze(Object.create(null));
  const receiver:NegativeReceiverPorts={recipient,schedule(callback){const id=setTimeout(callback,30000);return()=>clearTimeout(id);},async execute(this:object){receiverCalls++;assert.equal(this,recipient);return{kind:'DDL_FAILURE',error:{status:3,signal:null,stderr:'psql:<stdin>:2343: ERROR:  42723: PRIVATE SQL discarded'}};}};
- const result=await run0076AtomicityNegativeStage(input,create0076AtomicityNegativeReceiver(graphCapability,parserCapability,base,receiver));
- assert.equal(result.status,'OBSERVATIONS_MATCHED');assert.equal(result.priorInstalled,106);assert.equal(result.priorLedgered,106);assert.equal(baseInstalls,106);assert.equal(receiverCalls,1);assert.equal(ledger.some(found=>found.id===contract.sourceId),false);
+ const protectedClaim=(inner:NegativeStagePorts,failCreate=false)=>{
+  let fixed:Parameters<NegativeStagePorts['claim']>[0]|undefined,stored=new Uint8Array();
+  const metrics={authority:0,creates:0,writes:0,closes:0};
+  const authorityRecipient=Object.freeze(Object.create(null));
+  const authority:NegativeClaimAuthorityPorts={recipient:authorityRecipient,async read(this:object,binding){
+   metrics.authority++;assert.equal(this,authorityRecipient);fixed=binding;
+   return Object.freeze({schemaVersion:1 as const,purpose:claimContract.authorityPurpose,decision:'ALLOW_ONE_ISOLATED_NEGATIVE_STAGE' as const,
+    attemptId:binding.attemptId,approvalId:binding.approvalId,sourceHead:binding.sourceHead,planHash:binding.planHash,approvalHash:binding.approvalHash,
+    graphHash:binding.graphHash,issuedAt:binding.issuedAt,expiresAt:binding.expiresAt,receiptPath:binding.namespace.receipt+'/claim-v1.json'});
+  }};
+  const journalRecipient=Object.freeze(Object.create(null)),handle=Object.freeze(Object.create(null));
+  const journal:NegativeClaimJournalPorts={recipient:journalRecipient,
+   schedule(callback,timeoutMs){assert(timeoutMs>0&&timeoutMs<=600000);const id=setTimeout(callback,timeoutMs);return()=>clearTimeout(id);},
+   async createExclusive(this:object,path){metrics.creates++;assert.equal(this,journalRecipient);assert.equal(path,fixed!.namespace.receipt+'/claim-v1.json');return failCreate?Object.freeze({kind:'UNKNOWN' as const}):Object.freeze({kind:'CREATED' as const,handle});},
+   async write(this:object,found,bytes){metrics.writes++;assert.equal(this,journalRecipient);assert.equal(found,handle);stored=new Uint8Array(bytes);return'WRITTEN';},
+   async syncFile(this:object,found){assert.equal(this,journalRecipient);assert.equal(found,handle);return'SYNCED';},
+   async close(this:object,found){metrics.closes++;assert.equal(this,journalRecipient);assert.equal(found,handle);return'CLOSED';},
+   async syncDirectory(this:object,path){assert.equal(this,journalRecipient);assert.equal(path,fixed!.namespace.receipt);return'SYNCED';},
+   async readback(this:object,path){assert.equal(this,journalRecipient);assert.equal(path,fixed!.namespace.receipt+'/claim-v1.json');return new Uint8Array(stored);},
+  };
+  return{ports:create0076NegativeClaim(inner,authority,journal),metrics};
+ };
+ const receiverLayer=create0076AtomicityNegativeReceiver(graphCapability,parserCapability,base,receiver),normal=protectedClaim(receiverLayer);
+ const result=await run0076AtomicityNegativeStage(input,normal.ports);
+ assert.equal(result.status,'OBSERVATIONS_MATCHED');assert.deepEqual(normal.metrics,{authority:1,creates:1,writes:1,closes:1});assert.equal(prepareCalls,1);
+ assert.equal(result.priorInstalled,106);assert.equal(result.priorLedgered,106);assert.equal(baseInstalls,106);assert.equal(receiverCalls,1);assert.equal(ledger.some(found=>found.id===contract.sourceId),false);
+ const before=[prepareCalls,baseInstalls,receiverCalls,ledger.length],failed=protectedClaim(create0076AtomicityNegativeReceiver(graphCapability,parserCapability,base,receiver),true);
+ const stopped=await run0076AtomicityNegativeStage(input,failed.ports);
+ assert.equal(stopped.status,'STOPPED');assert.equal(stopped.reason,'CLAIM_UNCONFIRMED');assert.deepEqual(failed.metrics,{authority:1,creates:1,writes:0,closes:0});
+ assert.deepEqual([prepareCalls,baseInstalls,receiverCalls,ledger.length],before);
 });
