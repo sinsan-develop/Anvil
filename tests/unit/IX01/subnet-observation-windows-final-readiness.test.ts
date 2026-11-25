@@ -15,6 +15,7 @@ const fixture=original.split('const fixture=String.raw`')[1]!.split('`;')[0]!;
 const finalSourceHash='ad2254c843f97ff420eee2d35cf6968783f199694ee5b6404bdde69dd74cd3d8';
 const expectedBinding={attemptId:'11111111-1111-4111-8111-111111111111',approvalHash:'a'.repeat(64),planHash:'b'.repeat(64),sourceHash:finalSourceHash,issuedAt:1800000000000,expiresAt:1800000060000};
 const executionPlan=readFileSync(new URL('docs/work_packages/IX01_WINDOWS_FINAL_READINESS_EXECUTION_PLAN.md',base),'utf8');
+const currentPlan=readFileSync(new URL('docs/work_packages/IX01_CONDITIONAL_RESUMPTION_PLAN.md',base),'utf8');
 const command=executionPlan.split('```powershell')[1]!.split('```')[0]!;
 function ram(body:string){
  const source=paths.map(p=>pinnedSource(p).toString('utf8')).join('\n');
@@ -127,7 +128,13 @@ test('IX01 final readiness source: 원 순회 위임1·별도 config read/새 na
  assert(executionPlan.includes('ef52ba33a7db6ea9db5ffe0defc622091e8232dc'));
  for(const path of paths){const bytes=pinnedSource(path);assert(command.includes(`path='${path}';bytes=${bytes.length};hash='${createHash('sha256').update(bytes).digest('hex')}'`));}
  assert(command.includes("$approvalId='';$approvalHash='';$planHash='';$attemptId='';$approvalIssuedAtMs='';$approvalDeadlineMs=''"));
- assert(executionPlan.includes(createHash('sha256').update(readFileSync(new URL('scripts/qa-ix01-subnet-observation-windows-readiness-result.ts',base))).digest('hex').toUpperCase()));
+ const readerPath='scripts/qa-ix01-subnet-observation-windows-readiness-result.ts',historicalReader=spawnSync('git',['cat-file','blob','7abfc333:'+readerPath],{cwd:base,maxBuffer:65536,windowsHide:true});
+ assert.equal(historicalReader.error,undefined);assert.equal(historicalReader.status,0);const historicalReaderHash=createHash('sha256').update(historicalReader.stdout).digest('hex');
+ assert.equal(historicalReaderHash,'f4907e314fec4370f0532a4548861f23374fac8144e94478f56627b624fc1ab3');assert(executionPlan.includes(historicalReaderHash.toUpperCase()));
+ const pinnedCurrentReader=spawnSync('git',['cat-file','blob','5012a0d6:'+readerPath],{cwd:base,maxBuffer:65536,windowsHide:true});
+ assert.equal(pinnedCurrentReader.error,undefined);assert.equal(pinnedCurrentReader.status,0);const currentReader=readFileSync(new URL(readerPath,base)),currentReaderHash=createHash('sha256').update(currentReader).digest('hex');
+ assert.equal(createHash('sha256').update(pinnedCurrentReader.stdout).digest('hex'),'8214ac2a43116108b231de15b7a8116397d2dec72385123634460767533632c0');assert.equal(currentReaderHash,'8214ac2a43116108b231de15b7a8116397d2dec72385123634460767533632c0');
+ assert(currentPlan.includes('5012a0d68814c91f542b71861cdb6373cc216280'));assert(currentPlan.includes(currentReaderHash.toUpperCase()));
  const s=readFileSync(new URL(paths[3]!,base),'utf8');assert.equal((s.match(/Invoke-Ix01WindowsReadiness\s+-Binding/g)||[]).length,1);
  assert(!/Invoke-Ix01ConfigReadiness|Get-Item|Get-Acl|File\]::|Start-Process|Invoke-Expression/.test(s));
  assert.equal(createHash('sha256').update(pinnedSource(paths[1]!)).digest('hex'),'d972a785a99cc8c883b15ab716b8d939241e5e5663f56d67d73581ff0c15e09b');
