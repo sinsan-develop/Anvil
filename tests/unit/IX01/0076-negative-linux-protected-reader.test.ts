@@ -57,7 +57,7 @@ function fixture(mode:'NORMAL'|'LINK'|'DRIFT'|'NESTED_DRIFT'|'TRUNCATED'|'CLOSE_
 
 test('exact protected paths를 same-FD O_NOFOLLOW로 읽어 기존 approval validator에 공급한다',async()=>{
  const h=fixture(),reader=create0076NegativeLinuxProtectedReader(h.authority,h.system),result=await verify0076NegativeLinuxApproval(h.selection,reader);
- assert.equal(result.evidence,'PROTECTED_READ_SOURCE_ONLY');assert.equal(result.executionAuthorized,false);assert.equal(manifestRows.length,130);assert.equal(h.opens,142);assert.equal(h.closes,142);assert.equal(h.handles,0);
+ assert.equal(result.evidence,'PROTECTED_READ_SOURCE_ONLY');assert.equal(result.executionAuthorized,false);assert.equal(manifestRows.length,130);assert.equal(h.opens,143);assert.equal(h.closes,143);assert.equal(h.handles,0);
  const fractional=fixture('FRACTIONAL');await verify0076NegativeLinuxApproval(fractional.selection,create0076NegativeLinuxProtectedReader(fractional.authority,fractional.system));
  const receipt0755=fixture('RECEIPT_0755');await verify0076NegativeLinuxApproval(receipt0755.selection,create0076NegativeLinuxProtectedReader(receipt0755.authority,receipt0755.system));
  const receiptRoot0755=fixture('RECEIPT_ROOT_0755');await verify0076NegativeLinuxApproval(receiptRoot0755.selection,create0076NegativeLinuxProtectedReader(receiptRoot0755.authority,receiptRoot0755.system));
@@ -67,11 +67,11 @@ test('일반 경로와 manifest 검산 전 SQL read 및 세 번째 read는 파�
  const h=fixture(),reader=create0076NegativeLinuxProtectedReader(h.authority,h.system);
  await assert.rejects(reader.read.call(reader.recipient,Object.freeze(['/etc/passwd'])));assert.equal(h.opens,0);
  await assert.rejects(reader.read.call(reader.recipient,Object.freeze(h.sourceRequested)));assert.equal(h.opens,0);
- const first=await reader.read.call(reader.recipient,Object.freeze(h.requested));assert.equal(first.length,12);assert.equal(h.opens,12);
- const second=await reader.read.call(reader.recipient,Object.freeze(h.sourceRequested));assert.equal(second.length,130);assert.equal(h.opens,142);
- await assert.rejects(reader.read.call(reader.recipient,Object.freeze(h.sourceRequested)));assert.equal(h.opens,142);
+ const first=await reader.read.call(reader.recipient,Object.freeze(h.requested));assert.equal(first.length,13);assert.equal(h.opens,13);
+ const second=await reader.read.call(reader.recipient,Object.freeze(h.sourceRequested));assert.equal(second.length,130);assert.equal(h.opens,143);
+ await assert.rejects(reader.read.call(reader.recipient,Object.freeze(h.sourceRequested)));assert.equal(h.opens,143);
  const badSelection=Object.freeze({...h.selection,attemptId:'../../etc/passwd'});
- assert.throws(()=>create0076NegativeLinuxProtectedReader(Object.freeze({...h.authority,selection:badSelection}) as unknown as NegativeLinuxProtectedReaderAuthority,h.system));assert.equal(h.opens,142);
+ assert.throws(()=>create0076NegativeLinuxProtectedReader(Object.freeze({...h.authority,selection:badSelection}) as unknown as NegativeLinuxProtectedReaderAuthority,h.system));assert.equal(h.opens,143);
 });
 
 test('parent drift·link·truncated read·close 불명은 보호 reply를 만들지 않는다',async()=>{

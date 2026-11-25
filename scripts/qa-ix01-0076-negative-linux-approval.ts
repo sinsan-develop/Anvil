@@ -15,6 +15,7 @@ const dependencyPaths=Object.freeze([
  'scripts/qa-ix01-0076-negative-linux-protected-reader.ts',
  'scripts/qa-ix01-0076-negative-linux-journal.ts',
  'scripts/qa-ix01-0076-negative-linux-entry.ts',
+ 'scripts/qa-ix01-0076-negative-linux-host.ts',
 ] as const);
 const manifestPath='docs/04_test_reports/AV3/IX01/ACTUAL_JOURNEY_SQL_ALLOWLIST_20261104.tsv' as const;
 const manifestBytes=15807,manifestSha256='0da3c8558445d7984731863d45261192a11c37337b93e3dd99941b00133745dd';

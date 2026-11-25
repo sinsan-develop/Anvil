@@ -106,7 +106,7 @@ function fixture(tamperApproval=false,expireClockRead=Number.MAX_SAFE_INTEGER){
 test('보호 approval 원문에서만 claim authority를 만들고 106+0076 source-only stage를 한 번 조립한다',async()=>{
  const h=fixture(),result=await run0076NegativeLinuxEntry(h.selection,h.authority,Object.freeze({mode:'SYNTHETIC_SOURCE_ONLY',reader:h.readerSystem,journal:h.journalSystem,stage:h.stage}));
  assert.equal(result.status,'OBSERVATIONS_MATCHED');assert.equal(result.priorInstalled,106);assert.equal(result.priorLedgered,106);assert.equal(result.targetDispatched,true);
- assert.equal(h.protectedOpens,142);assert.equal(h.priorInstalls,106);assert.equal(h.receiverCalls,1);assert.equal(h.prepareCalls,1);assert.equal(h.ledger.length,106);
+ assert.equal(h.protectedOpens,143);assert.equal(h.priorInstalls,106);assert.equal(h.receiverCalls,1);assert.equal(h.prepareCalls,1);assert.equal(h.ledger.length,106);
  const receipt=h.journalFiles.get(h.receiptRoot+'/claim-v1.json')!;assert.equal(JSON.parse(Buffer.from(receipt).toString('utf8')).approvalId,h.approvalId);
  assert.deepEqual(h.journalTrace,['open','write','syncFile','close','open','syncDirectory','close','open','close']);assert(h.currentCalls>0);
 });

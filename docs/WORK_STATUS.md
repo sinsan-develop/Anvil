@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-25 KST
 
+- **IX01 0076 실행 호스트의 Node·HEAD 보호 판독** — 담당 `c11_quality_review`, 기준 `5b0b767e`. 시도 ID에서 전용 checkout을 파생하고 고정 Node 파일의 소유·길이·지문과 detached HEAD를 원 FD 및 원 경로에서 재확인한다. 독립 검수 중 A14 checkout 재사용, close 재시도, Node/HEAD의 변경 누락 및 조상 메타데이터 과잉 차단을 교정했다. 실행 경로를 열지 않으며 Main 직접·인접 16/16(2df369), 타입 0(3e9b00), diff 0(41cd94), 독립 C0/I0. 작성자 IX01 53/53. 실제 Linux 파일·WSL·SSH·PG·Docker·권한·서비스·Agent 미실행. 실제 Git/Docker 도구 지문·checkout 정합·격리 소유 검증과 롤백 시험은 미완료다.
+
 - **IX01 0076 POSIX 배타 영수증의 Linux 진입 연결** — 담당 `c11_quality_review`, 기준 `6fc0ca9b`. 명시 보호 모드에서 Linux/euid 1000과 원 승인 입력을 검산한 뒤에만 비공개 POSIX 쓰기 공급을 선택한다. 합성 reader/journal의 혼합과 승인 전 쓰기를 막으며, 열린 FD는 정확한 원 보유자에 결박해 확정 닫힘 뒤에만 내부 참조를 해제한다. Main 집중 5/5(8e6530), 타입 0(cb0ec9), diff 0(dfe390), 독립 C0/I0. 작성자 인접 51/51. 실제 POSIX·WSL·DB·Docker·키·권한·서비스·Agent 실행 0. 검증된 호스트 진입·격리 컨테이너/프로세스 공급 및 실제 롤백은 미완료다.
 
 - **IX01 0076 Linux 진입과 원 승인 수명 연결** — 담당 `c11_quality_review`, 기준 `0634952e`. 보호 읽기→원 입력 단회 소비→동일 승인 ID의 영수증과 claim→기존 단계 호출을 연결했다. 최초 승인 시간과 소유를 매 효과에 적용하며, 불일치·읽기 뒤 만료에서 영수증 생성·준비·SQL 호출 0을 확인했다. 진입 코드를 고정 그래프에 결박한다. Main 직접 12/12(786103), 타입 0(9ebd93), diff 0(c25f0c), 독립 C0/I0. 작성자 IX01 49/49. 실제 POSIX 쓰기·container owner·child 공급과 격리 PG 롤백은 미검증이며 실제 WSL·DB·키·권한·서비스·Agent 실행 0.
