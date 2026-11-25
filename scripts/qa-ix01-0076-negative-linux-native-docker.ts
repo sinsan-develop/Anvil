@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
+import {spawn as spawnChild} from 'node:child_process';
 import {EventEmitter} from 'node:events';
-import {closeSync,constants,fstatSync,lstatSync,openSync,readlinkSync,readSync} from 'node:fs';
+import {closeSync,constants,fstatSync,lstatSync,openSync,readlinkSync,readSync,statSync} from 'node:fs';
 import {types} from 'node:util';
 import {hashV1,uuidV1} from '../contracts/runtime/validation-v1.ts';
 import {contentHash} from '../contracts/canonical.ts';
@@ -36,6 +37,13 @@ export interface NegativeLinuxNativeDockerSystem{
  terminate(this:object,child:object,signal:'SIGKILL'):unknown;setTimeout(this:object,callback:()=>void,ms:number):unknown;clearTimeout(this:object,handle:unknown):void;
  close(this:object,handle:object):'CLOSED'|'UNKNOWN';
 }
+export interface NegativeLinuxNativeDockerSameFdSource{
+ readonly recipient:object;
+ open(this:object,path:string):object;stat(this:object,handle:object):Readonly<NegativeLinuxNativeDockerFileStat>;read(this:object,handle:object,offset:number,length:number):Uint8Array;
+ spawn(this:object,file:'/proc/self/fd/3',args:readonly string[],options:Readonly<{argv0:'/usr/bin/docker';cwd:'/';env:Readonly<Record<string,string>>;shell:false;detached:false;stdio:readonly ['pipe','pipe','pipe',object]}>):unknown;
+ childExecutable(this:object,child:object):Readonly<{dev:number;ino:number}>;terminate(this:object,child:object,signal:'SIGKILL'):unknown;
+ setTimeout(this:object,callback:()=>void,ms:number):unknown;clearTimeout(this:object,handle:unknown):void;close(this:object,handle:object):'CLOSED'|'UNKNOWN';
+}
 export type NegativeLinuxNativeDockerOwnerCapability=object;
 
 interface Binding{owner:NegativeLinuxNativeDockerOwnerPorts;recipient:object;binding:Readonly<NegativeLinuxDockerBinding>;materials:Readonly<NegativeLinuxNativeDockerMaterials>;prior:readonly Readonly<CurrentSchemaExecutionBaseline>[];current:NegativeLinuxNativeDockerOwnerPorts['assertCurrent'];wall:NegativeLinuxNativeDockerOwnerPorts['wall'];monotonic:NegativeLinuxNativeDockerOwnerPorts['monotonic'];created:boolean;startWall:number;startMonotonic:number;lastWall:number;lastMonotonic:number}
@@ -60,7 +68,7 @@ export interface NegativeLinuxNativeDockerSqlPorts{
  run(this:object,request:Readonly<NegativeLinuxNativeDockerSqlRequest>,signal:AbortSignal):Promise<Readonly<NegativeLinuxNativeDockerSqlResult>>;
  close(this:object):Promise<'CLOSED'|'UNKNOWN'>;
 }
-const capabilities=new WeakMap<object,Binding>(),protectedPriors=new WeakMap<object,readonly Readonly<CurrentSchemaExecutionBaseline>[]>(),issuedAttempts=new Set<string>(),pins=new WeakMap<object,FileState>(),nativeSystems=new WeakMap<object,NativeSystemState>(),nativeHandoffs=new WeakMap<object,NativeSystemState>(),transferredOwners=new WeakMap<object,TransferredState>(),retainedFiles=new Set<FileState>(),retainedChildren=new Set<object>();
+const capabilities=new WeakMap<object,Binding>(),protectedPriors=new WeakMap<object,readonly Readonly<CurrentSchemaExecutionBaseline>[]>(),issuedAttempts=new Set<string>(),pins=new WeakMap<object,FileState>(),nativeSystems=new WeakMap<object,NativeSystemState>(),nativeHandoffs=new WeakMap<object,NativeSystemState>(),transferredOwners=new WeakMap<object,TransferredState>(),retainedFiles=new Set<FileState>(),retainedChildren=new Set<object>(),retainedNativeDockerFds=new Set<number>();
 const on=EventEmitter.prototype.on,off=EventEmitter.prototype.removeListener;
 const invalid=():never=>{throw Error('IX01_0076_NEGATIVE_LINUX_NATIVE_DOCKER_INVALID');};
 function exact(value:unknown,keys:readonly string[]){
@@ -129,6 +137,8 @@ function retainChild(child:EventEmitter,raw:readonly unknown[]){
  const release=()=>{retainedChildren.delete(child);for(const stream of streams)try{off.call(stream,'error',sink);}catch{}try{off.call(child,'close',release);}catch{}};
  retainedChildren.add(child);for(const stream of streams)on.call(stream,'error',sink);on.call(child,'close',release);
 }
+function retainUnknownChild(child:object,raw:readonly unknown[]){if(emitter(child))retainChild(child,raw);else retainedChildren.add(child);}
+function ownChildStreams(child:object){const descriptors=Object.getOwnPropertyDescriptors(child);return['stdin','stdout','stderr'].map(key=>descriptors[key]).filter(row=>row!==undefined&&Object.hasOwn(row,'value')).map(row=>row!.value as unknown);}
 function sameArgs(found:readonly string[],expected:readonly string[]){return found.length===expected.length&&found.every((value,index)=>value===expected[index]);}
 function psqlArgs(binding:Readonly<NegativeLinuxDockerBinding>,containerId:string){return['exec','-i','--user','999:999',containerId,'psql','--no-psqlrc','--no-password','--quiet','--no-align','--tuples-only','--host=/var/run/postgresql','--username=anvil_v3_bootstrap','--dbname='+binding.namespace.database,'--set=ON_ERROR_STOP=on','--set=VERBOSITY=verbose','--set=SHOW_CONTEXT=never','--set=ECHO=none','--file=-'];}
 function invocationShape(raw:Readonly<NegativeLinuxDockerInvocation>,bound:Binding,state:FileState){
@@ -223,6 +233,78 @@ export function create0076NegativeLinuxNativeDockerForTransfer(capability:Negati
   systemCurrent(owned.bound,local);targetShape(owned.bound,local,target);const owner=Object.freeze(Object.create(null)) as object;
    transferredOwners.set(owner,{bound:owned.bound,state:local,target,sqlCreated:false,sqlBlocked:false,installed:0,ledgered:0,pending:null,catalogs:0,sentinel:false,negative:false});local.transferred=true;return owner;
  }});owned.handoff=handoff;nativeHandoffs.set(handoff,owned);return Object.freeze({system:ports,handoff});
+}
+
+/**
+ * 보호 entry가 선택한 비직렬 source만 고정 `/proc/self/fd/3` 실행으로 좁힌다.
+ * 이 adapter 자체는 native source를 생성하거나 PROTECTED_NATIVE 기본 경로를 열지 않는다.
+ */
+function create0076NegativeLinuxNativeDockerSameFdSystem(rawSource:NegativeLinuxNativeDockerSameFdSource):NegativeLinuxNativeDockerSystem{
+ const keys=['recipient','open','stat','read','spawn','childExecutable','terminate','setTimeout','clearTimeout','close'];
+ if(!exact(rawSource,keys)||!Object.isFrozen(rawSource))invalid();const descriptors=Object.getOwnPropertyDescriptors(rawSource),sourceRecipient=descriptors.recipient!.value as object;
+ if(!sourceRecipient||typeof sourceRecipient!=='object'||types.isProxy(sourceRecipient)||!Object.isFrozen(sourceRecipient)||keys.slice(1).some(key=>typeof descriptors[key]!.value!=='function'))invalid();
+ const open=descriptors.open!.value as NegativeLinuxNativeDockerSameFdSource['open'],stat=descriptors.stat!.value as NegativeLinuxNativeDockerSameFdSource['stat'],read=descriptors.read!.value as NegativeLinuxNativeDockerSameFdSource['read'];
+ const spawn=descriptors.spawn!.value as NegativeLinuxNativeDockerSameFdSource['spawn'],childExecutable=descriptors.childExecutable!.value as NegativeLinuxNativeDockerSameFdSource['childExecutable'];
+ const terminate=descriptors.terminate!.value as NegativeLinuxNativeDockerSameFdSource['terminate'],setTimer=descriptors.setTimeout!.value as NegativeLinuxNativeDockerSameFdSource['setTimeout'];
+ const clearTimer=descriptors.clearTimeout!.value as NegativeLinuxNativeDockerSameFdSource['clearTimeout'],close=descriptors.close!.value as NegativeLinuxNativeDockerSameFdSource['close'];
+ const recipient=Object.freeze(Object.create(null)),handles=new WeakSet<object>(),children=new WeakMap<object,object>(),stopped=new WeakSet<object>();
+ const unchanged=()=>rawSource.recipient===sourceRecipient&&rawSource.open===open&&rawSource.stat===stat&&rawSource.read===read&&rawSource.spawn===spawn&&rawSource.childExecutable===childExecutable&&rawSource.terminate===terminate&&rawSource.setTimeout===setTimer&&rawSource.clearTimeout===clearTimer&&rawSource.close===close;
+ const owned=(handle:object)=>{if(!handles.has(handle)||!unchanged())invalid();return handle;};
+ const stop=(child:object)=>{if(stopped.has(child))return;stopped.add(child);try{terminate.call(sourceRecipient,child,'SIGKILL');}catch{}};
+ return Object.freeze({
+  recipient,
+  open(this:object,path:string){if(this!==recipient||path!==dockerPath||!unchanged())invalid();const handle=open.call(sourceRecipient,path);if(!handle||typeof handle!=='object'||types.isProxy(handle)||handles.has(handle))invalid();handles.add(handle);return handle;},
+  stat(this:object,handle:object){if(this!==recipient)invalid();return stat.call(sourceRecipient,owned(handle));},
+  read(this:object,handle:object,offset:number,length:number){if(this!==recipient)invalid();return read.call(sourceRecipient,owned(handle),offset,length);},
+  spawnPinned(this:object,handle:object,invocation:Readonly<NegativeLinuxDockerInvocation>){
+   if(this!==recipient)invalid();const found=owned(handle),before=statShape(stat.call(sourceRecipient,found));let child:unknown;
+   try{
+    const options=Object.freeze({argv0:dockerPath,cwd:'/' as const,env:invocation.env,shell:false as const,detached:false as const,stdio:Object.freeze(['pipe','pipe','pipe',found] as const)});
+    child=spawn.call(sourceRecipient,'/proc/self/fd/3',invocation.argv,options);if(!child||typeof child!=='object'||types.isProxy(child))invalid();const childObject=child as object;
+    const observed=childExecutable.call(sourceRecipient,childObject),after=statShape(stat.call(sourceRecipient,found));
+    if(!exact(observed,['dev','ino'])||!Object.isFrozen(observed)||!Number.isSafeInteger(observed.dev)||!Number.isSafeInteger(observed.ino)||observed.dev!==before.dev||observed.ino!==before.ino||!sameStat(before,after))invalid();
+    children.set(childObject,found);return childObject;
+   }catch(error){if(child&&typeof child==='object'&&!types.isProxy(child)){const childObject=child as object;retainUnknownChild(childObject,ownChildStreams(childObject));stop(childObject);}throw error;}
+  },
+  terminate(this:object,child:object,signal:'SIGKILL'){if(this!==recipient||signal!=='SIGKILL'||!children.has(child)||!unchanged())invalid();stop(child);},
+  setTimeout(this:object,callback:()=>void,ms:number){if(this!==recipient||!unchanged())invalid();return setTimer.call(sourceRecipient,callback,ms);},
+  clearTimeout(this:object,handle:unknown){if(this!==recipient||!unchanged())invalid();clearTimer.call(sourceRecipient,handle);},
+  close(this:object,handle:object){if(this!==recipient)invalid();const found=owned(handle),status=close.call(sourceRecipient,found);if(status==='CLOSED')handles.delete(found);return status==='CLOSED'?'CLOSED' as const:'UNKNOWN' as const;},
+ });
+}
+
+/** raw same-FD system을 노출하지 않고 기존 owner/state-machine/transfer 경계에만 연결한다. */
+export function create0076NegativeLinuxNativeDockerSameFdForTransfer(capability:NegativeLinuxNativeDockerOwnerCapability,rawSource:NegativeLinuxNativeDockerSameFdSource):Readonly<{system:Readonly<NegativeLinuxDockerSystem>;handoff:Readonly<NegativeLinuxDockerToolHandoff>} >{
+ return create0076NegativeLinuxNativeDockerForTransfer(capability,create0076NegativeLinuxNativeDockerSameFdSystem(rawSource));
+}
+
+/** 다음 exact entry의 same-approval benign preflight와 원 intent가 같은 module 안에서 결박될 때만 선택할 private Node/Linux source다. */
+function create0076NegativeLinuxNativeDockerNodeSource():NegativeLinuxNativeDockerSameFdSource{
+ const recipient=Object.freeze(Object.create(null)),handles=new WeakMap<object,{fd:number;dev:number;ino:number}>(),children=new WeakSet<object>();
+ const handle=(raw:object):{fd:number;dev:number;ino:number}=>{const found=handles.get(raw);if(found===undefined)return invalid();return found;};
+ return Object.freeze({
+  recipient,
+  open(this:object,path:string){
+   if(this!==recipient||path!==dockerPath)invalid();const before=lstatSync(path);if(!before.isFile()||before.uid!==0||before.gid!==0||(before.mode&0o7777)!==0o755||before.nlink!==1)invalid();let fd:number|undefined;
+   try{fd=openSync(path,constants.O_RDONLY|constants.O_NONBLOCK|constants.O_NOFOLLOW);const after=fstatSync(fd),realpath=readlinkSync('/proc/self/fd/'+fd,'utf8');if(!after.isFile()||Number(after.dev)!==Number(before.dev)||Number(after.ino)!==Number(before.ino)||realpath!==dockerPath)invalid();const token=Object.freeze(Object.create(null));handles.set(token,{fd,dev:Number(after.dev),ino:Number(after.ino)});return token;}
+   catch(error){if(fd!==undefined)try{closeSync(fd);}catch{retainedNativeDockerFds.add(fd);}throw error;}
+  },
+  stat(this:object,raw:object){
+   if(this!==recipient)invalid();const found=handle(raw),value=fstatSync(found.fd),pathValue=lstatSync(dockerPath),realpath=readlinkSync('/proc/self/fd/'+found.fd,'utf8');
+   if(!value.isFile()||!pathValue.isFile()||Number(value.dev)!==found.dev||Number(value.ino)!==found.ino||Number(pathValue.dev)!==found.dev||Number(pathValue.ino)!==found.ino||realpath!==dockerPath)invalid();
+   return Object.freeze({path:dockerPath,realpath,kind:'FILE' as const,dev:Number(value.dev),ino:Number(value.ino),uid:value.uid,gid:value.gid,mode:value.mode,nlink:value.nlink,size:value.size,mtimeMs:value.mtimeMs,ctimeMs:value.ctimeMs});
+  },
+  read(this:object,raw:object,offset:number,length:number){if(this!==recipient||!Number.isSafeInteger(offset)||offset<0||!Number.isSafeInteger(length)||length<1||length>chunkBytes)invalid();const found=handle(raw),buffer=Buffer.allocUnsafe(length),readBytes=readSync(found.fd,buffer,0,length,offset);return new Uint8Array(buffer.subarray(0,readBytes));},
+  spawn(this:object,file:'/proc/self/fd/3',args:readonly string[],options:Readonly<{argv0:'/usr/bin/docker';cwd:'/';env:Readonly<Record<string,string>>;shell:false;detached:false;stdio:readonly ['pipe','pipe','pipe',object]}>){
+   if(this!==recipient||file!=='/proc/self/fd/3'||options.argv0!==dockerPath||options.cwd!=='/'||options.shell!==false||options.detached!==false||options.stdio.length!==4||options.stdio[0]!=='pipe'||options.stdio[1]!=='pipe'||options.stdio[2]!=='pipe')invalid();
+   const found=handle(options.stdio[3]),child=spawnChild(file,[...args],{argv0:options.argv0,cwd:options.cwd,env:{...options.env},shell:false,detached:false,stdio:['pipe','pipe','pipe',found.fd],windowsHide:true});children.add(child);return child;
+  },
+  childExecutable(this:object,child:object){if(this!==recipient||!children.has(child))invalid();const pid=Object.getOwnPropertyDescriptor(child,'pid')?.value;if(!Number.isSafeInteger(pid)||pid<1)invalid();const value=statSync('/proc/'+pid+'/exe');if(!value.isFile())invalid();return Object.freeze({dev:Number(value.dev),ino:Number(value.ino)});},
+  terminate(this:object,child:object,signal:'SIGKILL'){if(this!==recipient||signal!=='SIGKILL'||!children.has(child)||!emitter(child))invalid();const kill=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(child),'kill')?.value;if(typeof kill!=='function'||kill.call(child,signal)!==true)invalid();},
+  setTimeout(this:object,callback:()=>void,ms:number){if(this!==recipient)return invalid();return globalThis.setTimeout(callback,ms);},
+  clearTimeout(this:object,found:unknown){if(this!==recipient)return invalid();globalThis.clearTimeout(found as ReturnType<typeof setTimeout>);},
+  close(this:object,raw:object){if(this!==recipient)invalid();const found=handle(raw);try{closeSync(found.fd);handles.delete(raw);return 'CLOSED' as const;}catch{retainedNativeDockerFds.add(found.fd);return 'UNKNOWN' as const;}},
+ });
 }
 
 /** generic prepare가 임의 callback을 native handoff로 오인하지 않도록 process-local brand만 확인한다. */
