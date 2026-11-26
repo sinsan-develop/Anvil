@@ -47,6 +47,14 @@ export function takeNormalFirstPermitHandoff(request:object,source:NormalFirstSe
  const saved=firstPermitHandoffs.get(request);if(!saved||saved.source!==source)return fail();
  saved.check();firstPermitHandoffs.delete(request);return saved.value===null?null:cloneV1(saved.value);
 }
+type ConfirmFirstDelivery=(step:IteratorResult<unknown>,canReturn:()=>boolean)=>void;
+const firstDeliveryHandoffs=new WeakMap<object,{source:NormalFirstSendSource;worker:NormalStartWire;prompt:AsyncIterable<unknown>;life:AbortSignal;confirm:ConfirmFirstDelivery}>();
+/** 등록 worker가 실제 SDK-facing iterator를 만들 때만 소비하는 단회 통지다. */
+export function takeNormalFirstInputDelivery(request:object,source:NormalFirstSendSource,worker:NormalStartWire,prompt:AsyncIterable<unknown>,life:AbortSignal){
+ const saved=firstDeliveryHandoffs.get(request);
+ if(!saved||saved.source!==source||saved.worker!==worker||saved.prompt!==prompt||saved.life!==life||life.aborted)return fail();
+ firstDeliveryHandoffs.delete(request);return saved.confirm;
+}
 const normalizeNext=NormalSdkSessionOutput.prototype.next,consumeInit=NormalSdkSessionOutput.prototype.consumeInit;
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
 const fail=():never=>{throw Error('NORMAL_FIRST_SEND_UNKNOWN');};
@@ -107,7 +115,7 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
  let expiresAt=pinned.expiresAt,last=-Infinity,monoEnd=Infinity,readyToCommit=false,firstRequest:object|undefined;
  let ownerTimer:ReturnType<typeof setTimeout>|undefined;
  const abandon=()=>{
-  if(firstRequest)firstPermitHandoffs.delete(firstRequest);
+  if(firstRequest){firstPermitHandoffs.delete(firstRequest);firstDeliveryHandoffs.delete(firstRequest);}
   lease.state='UNKNOWN';lease.life.abort();clearTimeout(ownerTimer);pinned.ownerSignal.removeEventListener('abort',abandon);
   if(lease.query&&!lease.closeStarted){lease.closeStarted=true;try{void native(pinned.close.call(source,lease.query)).catch(()=>undefined);}catch{}}
  };
@@ -134,22 +142,37 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
   const message=boundedSdkObject({type:'user',message:{role:'user',content:text},parent_tool_use_id:null,session_id:plannedSid},maxSdkObjectBytes);
   if(supportedSdkUser(message.value)!=='SUPPORTED')return fail();
   const inputEvidence={dispatchAttemptRef:cloneV1(input.dispatchAttemptRef),instructionRef:cloneV1(e.payload.instructionRef),partsRef:cloneV1(e.payload.partsRef),instructionDigest:contentHash(input.instruction.bytes),messageDigest:message.digest};
-  let iterated=false,pulled=false,yielded=false,resolveYield!:()=>void;
+  // 원 profile이 SID를 발급한 source는 내부 prompt와 실제 SDK-facing iterator가 다르다.
+  const profileBoundary=ownedSid!==null;
+  let iterated=false,pulled=false,yielded=false,resolveYield!:()=>void,firstStep:IteratorResult<unknown>|undefined;
   const provided=new Promise<void>(resolve=>{resolveYield=resolve;});
   const prompt=Object.freeze({[Symbol.asyncIterator](){
    if(iterated)return fail();iterated=true;guard();
-   return Object.freeze({async next(){if(pulled)return{done:true,value:undefined};pulled=true;arm();const value=cloneV1(message.value);yielded=true;resolveYield();return{done:false,value};}});
+   return Object.freeze({async next(){
+    if(pulled)return{done:true,value:undefined};
+    pulled=true;arm();const step={done:false as const,value:cloneV1(message.value)};
+    if(profileBoundary)firstStep=step;else{yielded=true;resolveYield();}
+    return step;
+   }});
   }});
   const send={...cloneV1({...input,instruction:null}),instruction:{...cloneV1({...input.instruction,bytes:null}),bytes:new Uint8Array(input.instruction.bytes)}};
   if(NormalSdkSessionOutput.prototype.next!==normalizeNext||NormalSdkSessionOutput.prototype.consumeInit!==consumeInit)return fail();
   const request={start:copyNormalWorkerStart(parent.start),send,scope:cloneV1(scope),plannedSid};
   firstRequest=request;
+  if(profileBoundary)firstDeliveryHandoffs.set(request,{source,worker,prompt,life:lease.life.signal,confirm(step,canReturn){
+   if(leases.get(worker)!==lease||!firstStep||firstStep!==step||yielded||!canReturn())return fail();
+   arm();
+   // 동기 guard가 원 iterator를 닫을 수도 있어 반환 직전에 다시 검산한다.
+   if(!canReturn())return fail();
+   firstStep=undefined;yielded=true;resolveYield();
+  }});
   firstPermitHandoffs.set(request,{source,check:guard,value:firstPermit?cloneV1({startEnvelope:parent.start.envelope,sendEnvelope:input.envelope,
    grantRef:parent.grantRef,startReadyRef:parent.startReadyRef,localAttemptRef:input.localAttemptRef,dispatchAttemptRef:input.dispatchAttemptRef,
    permit:input.permit,proofResultRef:input.proofResultRef,scope,executionAuthority:firstPermit,plannedSid}):null});
+  const releaseHandoffs=()=>{firstPermitHandoffs.delete(request);firstDeliveryHandoffs.delete(request);};
   let pending:Promise<Query>;
-  try{pending=native(pinned.create.call(source,request,prompt,lease.life.signal));}catch(error){firstPermitHandoffs.delete(request);throw error;}
-  const created=pending.finally(()=>firstPermitHandoffs.delete(request)).then(query=>{
+  try{pending=native(pinned.create.call(source,request,prompt,lease.life.signal));}catch(error){releaseHandoffs();throw error;}
+  const created=pending.finally(releaseHandoffs).then(query=>{
    if(!query||typeof query!=='object'||isProxy(query)||issuedHandles.has(query))return fail();
    // 일반 영수증/accessor는 Query가 아니다. callable data descriptor를 확인한 뒤에만 소유한다.
    const iterate=queryIterator(query);

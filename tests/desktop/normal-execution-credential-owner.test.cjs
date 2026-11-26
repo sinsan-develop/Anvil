@@ -577,6 +577,65 @@ for(const mode of ['CALLER_SID','RNG_FAILURE','INVALID_UUID','EXPIRED','CANCELLE
  }finally{mocked.mock.restore();x.source.dispose();fixtures.setFiles(undefined);}
 });
 
+for(const mode of ['CLOSE_PENDING','CLOSE_DURING_CHECK','CLOSE_AFTER_RETURN'])test('첫 SDK next의 실제 반환과 독립 init을 함께 검산한다 '+mode,async()=>{
+ const q=await outputProfile(),x=await pollingFixture(q.profile,true,true);q.bind(x);
+ const {wire:unused,...input}=x.input;input.timeoutMs=1200;
+ let creates=0,firstRejected=0,outputs=0,ownQuery,closeDuringCheck;
+ const closes=[];
+ const sdk={expiresAt:x.clock()+4000,check(scope){
+   const close=closeDuringCheck;closeDuringCheck=undefined;close?.();
+   return{scopeDigest:contentHash(canonicalJson(scope)),expiresAt:x.clock()+4000};
+  },classify:()=> 'ORDINARY',close:async query=>{closes.push(query);},
+  async create(request,prompt){
+   creates++;
+   const input=prompt[Symbol.asyncIterator](),pending=input.next();
+   if(mode==='CLOSE_AFTER_RETURN'){
+    const first=await pending;assert.equal(first.done,false);assert.equal(first.value.message.content,'보호 출력 시험 입력');
+    assert.equal((await input.return()).done,true);
+    await assert.rejects(input.next(),/NORMAL_WORKER_INPUT_UNAVAILABLE/);
+   }else{
+    const rejected=assert.rejects(pending).then(()=>{firstRejected++;});
+    if(mode==='CLOSE_DURING_CHECK')closeDuringCheck=()=>{void input.return();};
+    else assert.equal((await input.return()).done,true);
+    await rejected;
+   }
+   const init={type:'system',subtype:'init',uuid:'init',session_id:request.plannedSid,apiKeySource:'none',claude_code_version:'2.1.224',cwd:'fixture',tools:[],mcp_servers:[],model:'fixture',permissionMode:'default',slash_commands:[],output_style:'fixture',skills:[],plugins:[]};
+   ownQuery={[Symbol.asyncIterator](){return {async next(){return outputs++?{done:true,value:undefined}:{done:false,value:init};}};}};
+   return ownQuery;
+  }};
+ try{
+  const poll=x.source.createWorkerStartPolling(x.pair,input,sdk),result=await poll.run(x.signal);
+  if(mode==='CLOSE_DURING_CHECK')assert.equal(closeDuringCheck,undefined,'마지막 동기 검산 중 SDK return을 실행했다');
+  const records=()=>[...q.local.files].filter(([key])=>key.endsWith('.json')).map(([,file])=>JSON.parse(file.bytes).snapshot?.state);
+  assert.ok(records().includes('SESSION_INIT_CONFIRMED'),'동일 원 Query의 독립 init은 보호 보관한다');
+  assert.ok(records().includes('SEND_DISPATCH_ATTEMPTED'));
+  if(mode==='CLOSE_AFTER_RETURN'){
+   assert.equal(firstRejected,0);assert.equal(result.state,'LIMIT_REACHED');assert.equal(result.cursor.afterSequence,2);
+   assert.ok(records().includes('FIRST_SEND_INPUT_AND_INIT_RECORDED'));
+   assert.ok(x.seen.events.some(e=>e.commandId===id(90)));
+   assert.equal(creates,1);return;
+  }
+  assert.equal(firstRejected,1);
+  assert.equal(result.state,'UNKNOWN',JSON.stringify({cursor:result.cursor,records:records(),events:x.seen.events}));
+  // START와 SEND를 한 page에서 읽으므로 보관 ACK가 있어도 page cursor는 처음 값에 남는다.
+  assert.equal(result.cursor.afterSequence,0,'페이지는 원 cursor에 남는다');
+  assert.ok(!records().includes('FIRST_SEND_INPUT_AND_INIT_RECORDED'));
+  const sendEvents=x.seen.events.filter(e=>e.commandId===id(90));
+  assert.deepEqual(sendEvents.map(e=>e.type),['RECEIVED','PREPARED','PERMIT_RECORDED','UNKNOWN'],'수신·허가·불명 이력만 ACK에 포함되고 입력 제공이나 응답은 정착하지 않는다');
+  assert.equal(sendEvents.at(-1).reasonCode,'RECORD_UNCERTAIN');
+  const readAcks=()=>[...q.local.files].filter(([key])=>/^acks\.[0-9]+\.json$/.test(path.basename(key))).sort(([a],[b])=>a.localeCompare(b)).map(([,file])=>JSON.parse(file.bytes));
+  const sentPermits=x.seen.permits,events=structuredClone(x.seen.events),acks=readAcks();
+  const last=acks.at(-1);
+  assert.ok(events.some(e=>e.commandId===id(56)&&e.type==='PERMIT_RECORDED'));
+  assert.equal(last?.snapshot.highestContiguous,events.length,'보관 ACK는 이미 기록된 관측만 대조한다');
+  assert.equal(last?.snapshot.storedCount,events.length);
+  const replay=await poll.run(x.signal);
+  assert.equal(replay.state,'UNKNOWN');assert.equal(replay.cursor.afterSequence,0);
+  assert.equal(creates,1);assert.equal(outputs,1);
+  assert.deepEqual(closes,[ownQuery]);assert.equal(x.seen.permits,sentPermits);assert.deepEqual(x.seen.events,events);assert.deepEqual(readAcks(),acks);
+ }finally{x.source.dispose();fixtures.setFiles(undefined);}
+});
+
 for(const mode of ['PULL','NO_PULL','DISPOSE','CURRENT_LOST','EARLY_RETURN'])test('동일 등록 Query가 실제 소비한 후속 입력만 정착한다 '+mode,async()=>{
  const q=await outputProfile(),x=await pollingFixture(q.profile,true,'FOLLOW');q.bind(x);
  const {wire:unused,...input}=x.input;input.timeoutMs=1200;

@@ -11,7 +11,7 @@ import {isOwnedSpoolPath,NormalStartFileStore,type NormalFilePorts,type NormalLo
 import {NormalStartIntake,type NormalStartStore} from './normal-start-intake.ts';
 import {NormalClaudeStartWire} from '../adapters/secondary/normal-start-wire.ts';
 import {boundedSdkObject,maxSdkObjectBytes,sdkOpaqueId} from '../adapters/secondary/schemas.ts';
-import {confirmNormalLiveInputDelivery,takeFirstOutputOrigin,takeFirstSidOrigin,takeNormalFirstPermitHandoff,type LiveInputPort,type NormalFirstSendSource} from './normal-first-send-owner.ts';
+import {confirmNormalLiveInputDelivery,takeNormalFirstInputDelivery,takeFirstOutputOrigin,takeFirstSidOrigin,takeNormalFirstPermitHandoff,type LiveInputPort,type NormalFirstSendSource} from './normal-first-send-owner.ts';
 import type {NormalStartWire,NormalStartCurrent} from './normal-start-coordinator.ts';
 import type {RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {receiveProfiledEnvelope,type InboxFilePorts,type InboxLimits} from './receipt-inbox.ts';
@@ -115,7 +115,7 @@ function gate<T>(){
  return {promise,resolve,reject};
 }
 // SDK 입력에는 첫 명령 한 개와 다음 명령을 기다리는 pull 한 개만 둔다.
-function workerInput(first:AsyncIterable<unknown>,life:AbortSignal,check:Guard){
+function workerInput(first:AsyncIterable<unknown>,life:AbortSignal,check:Guard,confirmFirst:ReturnType<typeof takeNormalFirstInputDelivery>){
  type Step=IteratorResult<unknown>;
  let taken=false,firstUsed=false,pulling=false,offered=false,closed=false;
  let demand=gate<void>(),request:ReturnType<typeof gate<Step>>|undefined;
@@ -132,7 +132,9 @@ function workerInput(first:AsyncIterable<unknown>,life:AbortSignal,check:Guard){
      live();
      if(!firstUsed){
       firstUsed=true;
-      return (async()=>{try{const value=await first[Symbol.asyncIterator]().next();live();if(value.done)throw error();return value;}
+      return (async()=>{try{const value=await first[Symbol.asyncIterator]().next();live();if(value.done)throw error();
+        confirmFirst(value,()=>!closed&&!life.aborted&&pulling);
+        return value;}
        catch(cause){close();throw cause;}finally{pulling=false;}})();
      }
      request=gate<Step>();demand.resolve();return request.promise;
@@ -652,7 +654,8 @@ export class OwnedSpoolRuntime {
      finally{if(this.#sdkFirstOwner){this.#unknown=true;await this.#sdkFirstOwner.close();}}
      return invalid('SDK_CONFIGURATION_UNAVAILABLE');
     }
-    const active=workerInput(first,life,()=>{verify();if(origin)this.external(origin.check);});inputStream=active;
+    const confirmFirst=takeNormalFirstInputDelivery(request,source,worker,first,life);
+    const active=workerInput(first,life,()=>{verify();if(origin)this.external(origin.check);},confirmFirst);inputStream=active;
     try{
      const result=this.external(()=>Reflect.apply(fixed.create,sdk,[request,active.stream,life]));
      if(isProxy(result)||!isPromise(result))invalid();

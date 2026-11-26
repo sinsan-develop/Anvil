@@ -5,6 +5,15 @@
 ## 현재 작업 요약 — 2026-11-27 KST
 
 
+### FN07 등록 실행기의 첫 입력 실제 반환 확인
+
+- 담당 `fn13_quota_diff_replay`, 독립 검수 `fn13_diff_contract_review`, 통합 어울. 기준 `15f7a95c`. `normal-first-send-owner.ts`, `normal-owned-spool-profile.ts`와 등록 실행기 desktop 합성 시험을 변경했다.
+- 내부 prompt 읽기로 첫 입력 제공을 판정하지 않고, 원 요청·실행기·소스·prompt·수명·첫 Step에 묶인 단회 통지를 SDK 쪽 iterator 반환 직전에 확인한다. 조기 return과 마지막 현재성 검사 중의 재진입 return에서는 같은 Query의 독립 init과 수신·허가·불명 관측은 보존하고, 성공 종단과 같은 페이지 커서 진전은 0이다. 정상 반환 뒤 return은 이미 제공된 사실을 유지한다. 같은 명령 재확인에서 추가 실행·허가·보호 ACK 0.
+- RED `7b9143`: 실제 SDK 측 next 거절에서도 성공 처리 1회. 작성자 최종 집중 3/3 및 인접 등록/후속 SEND 21/21, FN07 75/75. Main 최종 집중 3/3·타입/diff 통과, 독립 C0/I0/M0. 초안의 넓은 ACK 단언 문제 1차수는 수신·준비·허가·불명 관측과 성공 종단을 구분해 정정했다.
+- 실제 SDK 수락·native PRESPAWN·OS·DB·Agent 미검증. IX01 원 보호 승인 및 준비 결과의 실제 등록 근거는 아직 미확인이다.
+
+
+
 ### FN07 첫 SEND에서 스칼라 iterator 반환 시 원 Query 정리
 
 - 담당 `fn13_quota_diff_replay`, 독립 검수 `fn13_diff_contract_review`, 통합 어울. 기준 `79520cd6`. `normal-first-send-owner.ts`와 직접 합성 시험을 변경했다.
