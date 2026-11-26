@@ -10,6 +10,7 @@ import type {ResultEvidenceScope} from './result-evidence.ts';
 import {ProjectListCodec} from '../projects/service.ts';
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
 const fail=(code:string,status=503):never=>{throw new AuthFailure(code,status);};
+interface ResultReplay{request:ProjectCommand;result:unknown;actorId:string}
 /** 0025 결과 테이블을 사용하는 실제 PG adapter. caller의 인증 tx를 재사용한다.
  * Agent 실행기/현재 OS 관측은 연결하지 않으며 기존 합성 실행의 결과 제출도 WORKER_CLAIM으로만 보관한다. */
 export class ProjectResultSubmissions{
@@ -22,7 +23,7 @@ export class ProjectResultSubmissions{
   }catch{return fail('RESULT_SUBMISSION_LEDGER_INVALID');}
  }
  /** 현재 submitter 자격을 다시 발급하지 않고, 같은 프로젝트에서 정착한 원 제출만 검산한다. */
- async #verifyOrigins(db:PoolClient,projectId:string,entries:{entry:SyntheticSubmittedResult;commandId:string;clientId:string}[]){
+ async #verifyOrigins(db:PoolClient,projectId:string,entries:{entry:SyntheticSubmittedResult;commandId:string;clientId:string}[],replay?:ResultReplay){
   if(!entries.length)return;
   try{
    const ids=entries.map(e=>e.commandId);
@@ -57,6 +58,7 @@ WHERE c.project_id=$1 AND c.id=ANY($2::uuid[]) LIMIT $3`,[projectId,ids,ids.leng
      data:{ref:manifestRef,status:'RESULT_SUBMITTED',manifest:s.manifest,sourceKind:'WORKER_CLAIM',completionAccepted:false,executionAuthorized:false,dispatchPerformed:false},
      evidenceRefs:[],warnings:[],serverReceivedAt:s.submittedAt};
     if(c.request_hash!==requestHash||!same(c.result_ref,result)||!(c.completed_at instanceof Date)||c.completed_at.toISOString()!==s.submittedAt)return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+    if(replay&&(actorId!==replay.actorId||!same(original,replay.request)||!same(result,replay.result)))return fail('RESULT_SUBMISSION_LEDGER_INVALID');
     const ar=c.receipt,a=c.audit;
     if(!ar||ar.id!==c.authorization_receipt_id||ar.command_id!==commandId||ar.scope_kind!=='PROJECT'||ar.scope_id!==projectId
      ||!same(ar.subject_ref,{kind:'HUMAN',userId:actorId,clientId})||!same(ar.policy_ref,c.policy_ref)||ar.scope_digest!==scopeDigest||ar.approval_decision_ref!==null
@@ -67,6 +69,12 @@ WHERE c.project_id=$1 AND c.id=ANY($2::uuid[]) LIMIT $3`,[projectId,ids,ids.leng
      ||a.scope_digest!==scopeDigest||!(c.recorded_at instanceof Date)||c.recorded_at.toISOString()!==s.submittedAt)return fail('RESULT_SUBMISSION_LEDGER_INVALID');
    }
   }catch{return fail('RESULT_SUBMISSION_LEDGER_INVALID');}
+ }
+ async #assertCurrent(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,policyRef:RuntimeRefV1){
+  await currentProjectController(db,actor,request);
+  const final=await authorizeMaterial(db,actor,request),session=actor.authSession;
+  if(!session||!uuidV1(session.id)||!isoV1(session.idleExpiresAt)||!isoV1(session.absoluteExpiresAt)||final.approvalRequired||!same(final.ref,policyRef)
+   ||Date.parse(await this.#clock(db))>=Math.min(final.validUntil,Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt)))return fail('RESULT_SUBMISSION_CURRENT_CHANGED',409);
  }
  async submit(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,policyRef:RuntimeRefV1){
   request=cloneV1(request);policyRef=cloneV1(policyRef);
@@ -85,14 +93,25 @@ WHERE c.project_id=$1 AND c.id=ANY($2::uuid[]) LIMIT $3`,[projectId,ids,ids.leng
   await db.query("SELECT set_config('anvil.result_session_id',$1,true)",[session.id]);
   await db.query('INSERT INTO anvil.result_submissions(project_id,id,execution_id,generation,assignment_ref,execution_ref,manifest_ref,manifest_hash,submission_state,submitted_by,client_id,command_id,content_hash,snapshot_json,submitted_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)',[scope.projectId,id,scope.executionRef.id,scope.executionRef.version,JSON.stringify(scope.assignmentRef),JSON.stringify(scope.executionRef),JSON.stringify(manifestRef),prepared.contentHash,prepared.manifest.submissionState,actor.actorId,actor.clientId,receipt.id,entry.ref.contentHash,JSON.stringify(snapshot),snapshot.submittedAt]);
   const row=await this.#row(db,scope.projectId,id);if(!row||!same(this.#entry(row,scope,id,await this.#clock(db)),entry))return fail('RESULT_SUBMISSION_WRITE_UNCONFIRMED');
-  await currentProjectController(db,actor,request);const final=await authorizeMaterial(db,actor,request);if(final.approvalRequired||!same(final.ref,policyRef)||Date.parse(await this.#clock(db))>=Math.min(final.validUntil,Date.parse(session.idleExpiresAt),Date.parse(session.absoluteExpiresAt)))return fail('RESULT_SUBMISSION_CURRENT_CHANGED',409);
+  await this.#assertCurrent(db,actor,request,policyRef);
   return cloneV1(receipt.result);
+ }
+ async #stored(db:PoolClient,projectId:string,id:string,replay?:ResultReplay){
+  const row=await this.#row(db,projectId,id);if(!row)return replay?fail('RESULT_SUBMISSION_LEDGER_INVALID'):fail('NOT_FOUND',404);
+  const scope=row.snapshot_json?.scope;if(!scope||scope.projectId!==projectId)return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+  const entry=this.#entry(row,scope,id,await this.#clock(db));
+  try{await readPgResultExecution(db,entry.snapshot.scope);}catch(e){if(replay)return fail('RESULT_SUBMISSION_LEDGER_INVALID');throw e;}
+  await this.#verifyOrigins(db,projectId,[{entry,commandId:row.command_id,clientId:row.client_id}],replay);
+  return entry;
+ }
+ async verifyReplay(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,previous:unknown,policyRef:RuntimeRefV1){
+  if(request.operation!=='submitResult'||!uuidV1(request.projectId)||!uuidV1(request.targetId))return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+  await this.#stored(db,request.projectId,request.targetId,{request,result:previous,actorId:actor.actorId});
+  await this.#assertCurrent(db,actor,request,policyRef);
  }
  async read(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,id:string){
   if(!uuidV1(projectId)||!uuidV1(id))return fail('RESULT_SUBMISSION_INPUT_INVALID',400);await projectMember(db,actor,projectId);
-  const row=await this.#row(db,projectId,id);if(!row)return fail('NOT_FOUND',404);const scope=row.snapshot_json?.scope;
-  if(!scope||scope.projectId!==projectId)return fail('RESULT_SUBMISSION_LEDGER_INVALID');const entry=this.#entry(row,scope,id,await this.#clock(db));await readPgResultExecution(db,entry.snapshot.scope);
-  await this.#verifyOrigins(db,projectId,[{entry,commandId:row.command_id,clientId:row.client_id}]);
+  const entry=await this.#stored(db,projectId,id);
   await projectMember(db,actor,projectId);return cloneV1(entry);
  }
  async #assignmentRef(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,assignmentId:string,version:number){
