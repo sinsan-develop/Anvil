@@ -23,6 +23,7 @@ function startInput(raw:unknown){
  reason(raw.reason);for(const n of [raw.stageRef,raw.startNodeRef,raw.endBoundaryRef])if(!same(n.applicationRef,raw.methodologyApplicationRef))fail('STAGE_APPLICATION_MISMATCH',409);if(!same(raw.stageRef,raw.startNodeRef))fail();return cloneV1(raw);
 }
 const query=`SELECT q.*,c.result_ref,c.operation,c.operation_id command_operation_id,c.state,c.command_id command_external_id,c.actor_id command_actor,c.client_id command_client,c.control_generation,c.expected_version,c.policy_ref,c.payload_ref,c.request_hash,c.approval_consumption_id,c.scope_kind command_scope_kind,c.scope_id command_scope_id,ar.subject_ref authorization_subject_ref,ar.policy_ref authorization_policy_ref,ar.approval_decision_ref authorization_approval_decision,ar.scope_digest authorization_scope_digest,a.scope_digest audit_scope_digest,a.outcome audit_outcome,a.source_kind audit_source_kind,a.actor_ref audit_actor_ref,a.client_ref audit_client_ref,a.target_ref audit_target_ref,a.policy_ref audit_policy_ref,a.approval_ref audit_approval_ref,(SELECT count(*) FROM anvil.audit_events ac WHERE ac.command_id=c.id AND ac.project_id=c.project_id) audit_count FROM anvil.queue_requests q JOIN anvil.commands c ON c.project_id=q.project_id AND c.id=q.command_id  LEFT JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id LEFT JOIN anvil.audit_events a ON a.project_id=c.project_id AND a.command_id=c.id AND a.operation_id=c.operation_id `;
+const versionQuery=query+'WHERE q.project_id=$1 AND q.request_id=$2 AND q.version=$3';
 /** 승인된 단계 시작 요청의 WAITING 저장만 담당한다. scheduler/슬롯·writer/Agent dispatch는 연결하지 않는다. */
 export class ProjectStageQueue{
  readonly applications:Pick<ProjectMethodologies,'readApplication'>;readonly budgets:Pick<ProjectLimitPolicies,'resolveCurrent'>;
@@ -30,9 +31,26 @@ export class ProjectStageQueue{
  /** START 원자료 내부 접점. 기존 목록 DTO를 넓히지 않고 원 불변 version과 현재 head를 분리한다. */
  async readRequest(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,rawRef:unknown){
   const ref=copyControlData(rawRef,8192);if(!uuidV1(projectId)||!refV1(ref))fail('INPUT_INVALID',400);await projectMember(db,actor,projectId,true);
-  const rows=(await db.query(query+'WHERE q.project_id=$1 AND q.request_id=$2 AND q.version=$3',[projectId,ref.id,ref.version])).rows;if(!rows.length)fail('NOT_FOUND',404);if(rows.length!==1)fail('STAGE_QUEUE_LEDGER_INVALID',503);
+  const rows=(await db.query(versionQuery,[projectId,ref.id,ref.version])).rows;if(!rows.length)fail('NOT_FOUND',404);if(rows.length!==1)fail('STAGE_QUEUE_LEDGER_INVALID',503);
   const value=await this.#view(db,actor,rows[0],projectId);if(!same(value.ref,ref))fail('VERSION_CONFLICT',409);
-  const heads=(await db.query(query+'WHERE q.project_id=$1 AND q.request_id=$2 ORDER BY q.version DESC LIMIT 1',[projectId,ref.id])).rows;if(heads.length!==1)fail('STAGE_QUEUE_LEDGER_INVALID',503);const current=await this.#view(db,actor,heads[0],projectId);await projectMember(db,actor,projectId,true);
+  const heads=(await db.query(query+'WHERE q.project_id=$1 AND q.request_id=$2 ORDER BY q.version DESC LIMIT 1',[projectId,ref.id])).rows;
+  if(heads.length!==1)fail('STAGE_QUEUE_LEDGER_INVALID',503);
+  const current=await this.#view(db,actor,heads[0],projectId);
+  if(current.ref.id!==value.ref.id||current.ref.version<value.ref.version||
+   current.ref.version===value.ref.version&&!same(current.ref,value.ref))fail('STAGE_QUEUE_LEDGER_INVALID',503);
+  if(current.snapshot.state==='CANCELLED'){
+   let waiting=value;
+   if(value.ref.version!==1){
+    const previous=(await db.query(versionQuery,[projectId,ref.id,1])).rows;
+    if(previous.length!==1)fail('STAGE_QUEUE_LEDGER_INVALID',503);
+    waiting=await this.#view(db,actor,previous[0],projectId);
+   }
+   const {cancelledAt,cancelledBy,cancellationReason}=current.snapshot;
+   // 0036의 취소 불변식은 이 여섯 필드만 원 대기 스냅샷에서 바뀌도록 제한한다.
+   const expected={...waiting.snapshot,version:2,state:'CANCELLED',cancelledAt,cancelledBy,cancellationReason,previousRef:waiting.ref};
+   if(waiting.snapshot.state!=='WAITING'||!same(current.snapshot,expected))fail('STAGE_QUEUE_LEDGER_INVALID',503);
+  }
+  await projectMember(db,actor,projectId,true);
   return{projectId,...value,currentRef:current.ref,currentState:current.snapshot.state};
  }
  async #clock(db:PoolClient){const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;if(!(at instanceof Date)||!Number.isFinite(at.getTime()))fail('STAGE_QUEUE_CLOCK_INVALID',503);return at.toISOString();}
