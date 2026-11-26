@@ -4,6 +4,8 @@ import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {hash,resultFixture} from '../UI05/result-view-fixture.ts';
 import {stopHistoryFor} from '../UI05/stop-request-history-fixture.ts';
+import {assignmentPlanFixture} from '../UI05/assignment-plan-original-fixture.ts';
+import {parseRoute,sessionDetailHref} from '../../../apps/web/src/shell/routes.ts';
 
 class MemoryNode {
  parentNode:MemoryNode|null=null;
@@ -44,8 +46,9 @@ class MemoryNode {
  addEventListener(key:string,listener:Function){this.listeners.set(key,[...(this.listeners.get(key)??[]),listener]);}
  removeEventListener(key:string,listener:Function){this.listeners.set(key,(this.listeners.get(key)??[]).filter(v=>v!==listener));}
  dispatchClick(){
-  const event={type:'click',target:this,button:0,bubbles:true,preventDefault(){},stopPropagation(){}};
+  const event={type:'click',target:this,button:0,bubbles:true,defaultPrevented:false,preventDefault(){this.defaultPrevented=true;},stopPropagation(){}};
   for(let node:MemoryNode|null=this;node;node=node.parentNode)for(const listener of node.listeners.get('click')??[])listener(event);
+  return !event.defaultPrevented;
  }
 }
 
@@ -84,19 +87,29 @@ function updatedHistory(entry:ReturnType<typeof resultFixture>['entry'],change:(
  const {contentHash:_,...value}=stopHistoryFor(entry);change(value);return {...value,contentHash:hash(value)};
 }
 
-async function mount(strict=false){
+async function mount(strict=false,withAssignment=false){
  const original=resultFixture(),second=resultFixture();
+ const {detail}=assignmentPlanFixture();assert(detail.confirmed);
+ if(withAssignment)for(const f of [original,second]){
+  f.a=detail.confirmed.ref;f.entry.snapshot.scope.assignmentRef=f.a;f.entry.snapshot.manifest.assignmentRef=f.a;
+  f.entry.snapshot.manifestHash=hash(f.entry.snapshot.manifest);f.item.manifestRef.contentHash=f.entry.snapshot.manifestHash;
+  f.entry.ref.contentHash=hash(f.entry.snapshot);
+ }
  const later='55555555-5555-4555-8555-555555555555';
  second.entry.ref.id=later;second.item.manifestRef.id=later;
- const select=(f:typeof original)=>({assignmentRef:f.a,returnDraftRef:f.a,item:f.item});
+ const select=(f:typeof original)=>({assignmentRef:f.a,returnDraftRef:withAssignment?detail.draft.ref:f.a,item:f.item});
  const calls:{path:string;method:string}[]=[];
  const controls={readStops:(f:typeof original):Response|Promise<Response>=>Response.json(stopHistoryFor(f.entry)),
   readPages:():Response|Promise<Response>=>assert.fail('과거 페이지 자동 조회'),
-  readIssueBasis:():Response=>assert.fail('문제 근거 자동 조회')};
+  readIssueBasis:():Response=>assert.fail('문제 근거 자동 조회'),
+  readAssignment:(draft:boolean):Response|Promise<Response>=>Response.json(draft?detail.draft:detail.confirmed)};
  const transport:typeof fetch=async(url,init)=>{
   const path=String(url),method=init?.method??'GET';calls.push({path,method});
   assert.equal(method,'GET');assert.equal(init?.credentials,'same-origin');
   if(path.includes('/approvals?'))return Response.json({items:[],hasMore:false,nextCursor:null,observedAt:original.page.observedAt});
+  const prefix=`/api/v1/projects/${detail.projectId}`;
+  if(withAssignment&&path===`${prefix}/assignment-drafts/${detail.draft.ref.id}/versions/${detail.draft.ref.version}`)return controls.readAssignment(true);
+  if(withAssignment&&detail.confirmed&&path===`${prefix}/assignments/${detail.confirmed.ref.id}/versions/${detail.confirmed.ref.version}`)return controls.readAssignment(false);
   for(const f of [original,second]){
    const resultPath=`/api/v1/projects/${f.pid}/results/${f.entry.ref.id}`;
    if(path===resultPath)return Response.json(f.entry);
@@ -123,7 +136,7 @@ async function mount(strict=false){
  const wait=async(check:()=>boolean)=>{const end=performance.now()+3000;while(!check()&&performance.now()<end)await flush();assert(check(),element.textContent);};
  const report=async()=>{await click('선택 보고 원문 확인');await wait(()=>element.textContent.includes('검수 미실행'));};
  await render();
- return {original,second,controls,calls,report,click,button,wait,flush,render,client,transport,nodes,authLost:()=>authLost,text:()=>element.textContent,
+ return {original,second,detail,controls,calls,report,click,button,wait,flush,render,client,transport,nodes,authLost:()=>authLost,text:()=>element.textContent,
   async choose(f:typeof original){selection=select(f);await render();},
   async actor(field:'USER'|'CLIENT'){session=field==='USER'?{...session,user:{id:crypto.randomUUID()}}:{...session,clientId:crypto.randomUUID()};await render();},
   async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(element);},
@@ -137,6 +150,71 @@ async function mount(strict=false){
 const lookup='중지 요청 이력 조회';
 const stopPath=(f:ReturnType<typeof resultFixture>)=>`/api/v1/projects/${f.pid}/results/${f.entry.ref.id}/stop-requests`;
 const stopCalls=(f:Awaited<ReturnType<typeof mount>>)=>f.calls.filter(call=>call.path.endsWith('/stop-requests'));
+
+const assignmentLookup='고정 임무 조건 조회',transferLink='해당 임무 인계 기록 보기';
+const assignmentCalls=(f:Awaited<ReturnType<typeof mount>>)=>f.calls.filter(call=>/\/(assignment-drafts|assignments)\//.test(call.path));
+const transferAnchor=(f:Awaited<ReturnType<typeof mount>>)=>f.nodes().find(n=>n.tagName==='A'&&n.textContent===transferLink);
+
+test('문제 카드의 고정 임무 원문이 대조되어야 기존 인계 경로를 정확한 초안으로 연다',async()=>{
+ const f=await mount(false,true);
+ try{
+  await f.report();assert.equal(transferAnchor(f),undefined);assert.equal(assignmentCalls(f).length,0);
+  const back=f.nodes().find(n=>n.tagName==='A'&&n.textContent==='원 임무 상세로 돌아가기');
+  assert.equal(back?.getAttribute('href'),sessionDetailHref(f.detail.projectId,f.detail.draft.ref));
+  const lookupButton=f.button(assignmentLookup);
+  await f.act(()=>{lookupButton.dispatchClick();lookupButton.dispatchClick();});
+  await f.wait(()=>f.text().includes('고정 임무의 업무 원문 확인'));
+  const anchor=transferAnchor(f);assert(anchor);
+  assert.deepEqual(parseRoute(anchor.getAttribute('href')!),{screen:'transfers',projectId:f.detail.projectId,assignmentRef:f.detail.draft.ref});
+  const before=f.calls.length;await f.act(()=>assert.equal(anchor.dispatchClick(),true));assert.equal(f.calls.length,before);
+  assert.equal(assignmentCalls(f).length,2);
+  f.client.transport=async()=>assert.fail('폐기된 링크에서 조회');
+  await f.act(()=>assert.equal(anchor.dispatchClick(),false));
+  f.client.transport=f.transport;
+  await f.choose(f.second);assert.equal(transferAnchor(f),undefined);
+  await f.report();assert.equal(transferAnchor(f),undefined);assert.equal(assignmentCalls(f).length,2);
+ }finally{await f.close();}
+});
+
+test('다른 확정 임무나 보호 거절은 인계 링크를 숨기고 기존 돌아가기 경로를 유지한다',async()=>{
+ for(const mode of ['WRONG_HASH',401,403,404] as const){
+  const f=await mount(false,true);
+  try{
+   await f.report();await f.click(assignmentLookup);await f.wait(()=>!!transferAnchor(f));
+   f.controls.readAssignment=(draft)=>draft?Response.json(f.detail.draft):mode==='WRONG_HASH'?
+    Response.json({...f.detail.confirmed,ref:{...f.detail.confirmed!.ref,contentHash:'a'.repeat(64)}}):
+    Response.json({code:mode===401?'AUTH_REQUIRED':mode===403?'PROJECT_OPERATION_DENIED':'NOT_FOUND'},{status:mode});
+   await f.click('고정 임무 조건 다시 조회');await f.wait(()=>f.nodes().some(n=>n.getAttribute('role')==='alert'));
+   assert.equal(transferAnchor(f),undefined,String(mode));assert.equal(f.authLost(),mode===401?1:0);
+   assert.equal(f.nodes().find(n=>n.textContent==='원 임무 상세로 돌아가기')?.getAttribute('href'),sessionDetailHref(f.detail.projectId,f.detail.draft.ref));
+   assert.equal(assignmentCalls(f).length,4);
+  }finally{await f.close();}
+ }
+});
+
+test('보고를 닫거나 바꾼 뒤 늦은 고정 임무 응답은 링크와 인증을 바꾸지 않는다',async()=>{
+ for(const mode of ['LATE_SUCCESS','LATE_401','SAME_COMMIT_CLICK']){
+  const f=await mount(true,true);
+  let release:(reply:Response)=>void=()=>{};
+  try{
+   await f.report();
+   if(mode==='SAME_COMMIT_CLICK'){
+    await f.click(assignmentLookup);await f.wait(()=>!!transferAnchor(f));
+    const link=transferAnchor(f)!;const close=f.button('선택 보고 닫기');
+    await f.act(()=>{close.dispatchClick();assert.equal(link.dispatchClick(),false);});
+   }else{
+    f.controls.readAssignment=(draft)=>draft?Response.json(f.detail.draft):new Promise(resolve=>{release=resolve;});
+    await f.click(assignmentLookup);await f.wait(()=>assignmentCalls(f).length===2);
+    if(mode==='LATE_SUCCESS')await f.choose(f.second);
+    else await f.exit(()=>release(Response.json({code:'AUTH_REQUIRED'},{status:401})));
+    if(mode==='LATE_SUCCESS')release(Response.json(f.detail.confirmed));
+    await f.flush();
+   }
+   assert.equal(f.authLost(),0,mode);assert.equal(transferAnchor(f),undefined,mode);
+   assert.equal(assignmentCalls(f).length,2);
+  }finally{release(Response.json({}));await f.close();}
+ }
+});
 
 test('승인·문제 화면은 검산된 선택 보고에서만 보관 중지 이력을 명시 GET하며 보고 전환에 재조회하지 않는다',async()=>{
  const f=await mount();

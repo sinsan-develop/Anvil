@@ -47,7 +47,7 @@ function ReportedResultIssueContent({client,session,projectId,selection,onClose,
    <IssueBasisPanel key={'basis:'+key} client={client} result={shown.value} onUnavailable={hideUnavailable} onAuthenticationLost={authenticationLost}/>
    <StoredObservationJournal key={'observations:'+key} client={client} result={shown.value} onUnavailable={onHistoryUnavailable}/>
    <StoredStopRequests key={'stop-requests:'+key} client={client} result={shown.value} session={session} isCurrent={current} onUnavailable={onHistoryUnavailable}/>
-   <ReportedIssueAssignment key={JSON.stringify([shown.value.ref,selection.returnDraftRef])} client={client} result={shown.value} draftRef={selection.returnDraftRef} onUnavailable={hideUnavailable} onAuthenticationLost={authenticationLost}/>
+   <ReportedIssueAssignment key={JSON.stringify([shown.value.ref,selection.returnDraftRef])} client={client} result={shown.value} draftRef={selection.returnDraftRef} isCurrent={current} onUnavailable={hideUnavailable} onAuthenticationLost={authenticationLost}/>
   </>:null}</>:<p>단계책임자·실행 상세에서 제출 원문을 확인한 뒤 이 화면으로 가져오세요. 보고가 없다고 정상·완료로 판단하지 않습니다.</p>}
   <p>조회는 승인·보완 요청·Agent 교체·새 실행을 하지 않습니다. 실제 원인 분류와 조치 실행은 아직 연결 전입니다.</p>
  </section>;
