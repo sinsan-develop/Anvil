@@ -41,7 +41,7 @@ const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class
 
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultReviewSources.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:stored-rework',name:'StoredReviewTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'rework-memory-entry',transform(code,id){if(id.replaceAll('\\','/').endsWith('/ResultReviewSources.tsx'))return code+'\nexport {ResultReworkEditor};';},resolveId(id){if(id.endsWith('virtual:stored-rework'))return '\0stored-rework';},load(id){if(id==='\0stored-rework')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{flushSync}from'react-dom';import{ResultReworkEditor}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as writes from ${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-rework-write-api.ts',import.meta.url)))};import{ResultCriteriaEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultCriteriaEditor.tsx',import.meta.url)))};import * as criteriaWrites from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-criteria-api.ts',import.meta.url)))};import{ResultSubmissionEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultSubmissionEditor.tsx',import.meta.url)))};import * as submissionWrites from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-submission-write-api.ts',import.meta.url)))};import{ReviewReportedCoverage}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ReviewReportedCoverage.tsx',import.meta.url)))};export{React,createRoot,flushSync,ResultReworkEditor,ResultCriteriaEditor,ResultSubmissionEditor,ReviewReportedCoverage,ApiClient,writes,criteriaWrites,submissionWrites};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:stored-rework',name:'StoredReviewTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'rework-memory-entry',transform(code,id){if(id.replaceAll('\\','/').endsWith('/ResultReviewSources.tsx'))return code+'\nexport {ResultReworkEditor};';},resolveId(id){if(id.endsWith('virtual:stored-rework'))return '\0stored-rework';},load(id){if(id==='\0stored-rework')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{flushSync}from'react-dom';import{ResultReworkEditor}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as writes from ${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-rework-write-api.ts',import.meta.url)))};import{ResultCriteriaEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultCriteriaEditor.tsx',import.meta.url)))};import * as criteriaWrites from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-criteria-api.ts',import.meta.url)))};import{ResultSubmissionEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultSubmissionEditor.tsx',import.meta.url)))};import * as submissionWrites from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-submission-write-api.ts',import.meta.url)))};import{StoredResultReworkHistory}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/StoredResultReworkHistory.tsx',import.meta.url)))};import{ReviewReportedCoverage}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ReviewReportedCoverage.tsx',import.meta.url)))};export{React,createRoot,flushSync,ResultReworkEditor,ResultCriteriaEditor,ResultSubmissionEditor,ReviewReportedCoverage,StoredResultReworkHistory,ApiClient,writes,criteriaWrites,submissionWrites};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return StoredReviewTest;')();
@@ -50,36 +50,47 @@ after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k
 
 
 
-async function mount(){
+async function mount(withHistory=false){
  const f=reworkFixture(),binding:any=f.sources.binding,requests:{url:string;body:any}[]=[],container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
  const controls:(()=>void)[]=[],commits:(()=>void)[]=[];
- const state:{deferBuffer?:boolean;delayControl?:boolean;delay:boolean;release:(()=>void)|null;status:number;readbackStatus:number}={delay:false,release:null,status:200,readbackStatus:200};let stored:any=null,lost=0,unavailable=0,buffers:Record<string,any>={},drafts:Record<string,any>={};
+ const state:{deferBuffer?:boolean;delayControl?:boolean;delay:boolean;release:(()=>void)|null;status:number;readbackStatus:number;prepareStatus:number}={delay:false,release:null,status:200,readbackStatus:200,prepareStatus:200};let lost=0,unavailable=0,visible=true,buffers:Record<string,any>={},drafts:Record<string,any>={};
+ const storedByCommand=new Map<string,any>();
  const props:any={assignment:f.sources.assignment,result:f.sources.result,review:f.sources.review,responsibleState:{roles:[f.sources.role],bindings:[binding]},session:{user:{id:id(6)},clientId:id(24),csrfToken:'C'.repeat(43)},onAuthenticationLost:()=>lost++,onAccessUnavailable:()=>unavailable++};
  props.client=new ui.ApiClient(async(url:any,options:any)=>{
   const path=String(url),body=options?.body?JSON.parse(options.body):null;requests.push({url:path,body});let response:Response;
-  if(path.endsWith('/result-reworks/prepare'))response=Response.json(prepareResultRework(f.sources,body,f.now));
+  if(path.endsWith('/result-reworks/prepare'))response=state.prepareStatus===200?Response.json(prepareResultRework(f.sources,body,f.now)):Response.json({code:'PROJECT_OPERATION_DENIED'},{status:state.prepareStatus});
   else if(path.endsWith('/commands')){
-   const prepared=Object.values(buffers)[0]?.pending.prepared,at='2026-10-20T00:02:00.000Z',snapshot={scope:prepared.scope,input:body.payload,criteriaRef:prepared.criteriaRef,roleRef:prepared.roleRef,stageSessionRef:prepared.stageSessionRef,remainingMissingItems:prepared.remainingMissingItems,preservedItems:[],requestedBy:{kind:'HUMAN',userId:props.session.user.id,clientId:props.session.clientId},requestedAt:at,scopeVerification:prepared.scopeVerification,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};
-   const ref={id:id(40),version:1,contentHash:hash(snapshot)},data={ref,status:'RESULT_REWORK_DRAFT_STORED',snapshot,reworkStored:true,currentBindingVerified:false,currentAuthorityVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};stored={projectId:f.sources.assignment.projectId,...data,observedAt:at};
+   const prepared=Object.values(buffers).find(b=>b?.pending.command.commandId===body.commandId)?.pending.prepared;assert(prepared);const at='2026-10-20T00:02:00.000Z',snapshot={scope:prepared.scope,input:body.payload,criteriaRef:prepared.criteriaRef,roleRef:prepared.roleRef,stageSessionRef:prepared.stageSessionRef,remainingMissingItems:prepared.remainingMissingItems,preservedItems:[],requestedBy:{kind:'HUMAN',userId:props.session.user.id,clientId:props.session.clientId},requestedAt:at,scopeVerification:prepared.scopeVerification,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};
+   const ref={id:storedByCommand.get(body.commandId)?.ref.id??id(40+storedByCommand.size),version:1,contentHash:hash(snapshot)},data={ref,status:'RESULT_REWORK_DRAFT_STORED',snapshot,reworkStored:true,currentBindingVerified:false,currentAuthorityVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};if(state.status===200)storedByCommand.set(body.commandId,{projectId:f.sources.assignment.projectId,...data,observedAt:at});
    response=Response.json(state.status===200?{commandId:body.commandId,operationId:id(41),projectId:f.sources.assignment.projectId,targetId:ref.id,version:1,status:'APPLIED',serverReceivedAt:at,data}:{code:'ACCESS_DENIED'},{status:state.status});
    if(state.delay)return new Promise<Response>(resolve=>{state.release=()=>resolve(response);});
-  }else if(path.includes('/result-reworks/'))response=Response.json(state.readbackStatus===200?stored:{code:'ACCESS_DENIED'},{status:state.readbackStatus});
+  }else if(path.endsWith('/rework-pages')){
+   const items=[...storedByCommand.values()].reverse().map(({snapshot,ref,reworkStored,currentBindingVerified,currentAuthorityVerified,completionAccepted,formalFailureCounted,executionAuthorized,dispatchPerformed})=>({ref,reviewRef:snapshot.input.reviewRef,responsibleBindingRef:snapshot.input.responsibleBindingRef,stageSessionRef:snapshot.stageSessionRef,missingItems:snapshot.input.missingItems,remainingMissingItems:snapshot.remainingMissingItems,requestedBy:snapshot.requestedBy,requestedAt:snapshot.requestedAt,reworkStored,currentBindingVerified,currentAuthorityVerified,completionAccepted,formalFailureCounted,executionAuthorized,dispatchPerformed}));
+   response=Response.json({projectId:f.sources.assignment.projectId,resultRef:f.sources.result.ref,items,hasMore:false,nextCursor:null,selectionState:'NOT_SELECTED',observedAt:'2026-10-20T00:02:00.000Z'});
+  }else if(path.includes('/result-reworks/'))response=Response.json(state.readbackStatus===200?[...storedByCommand.values()].find(v=>path.endsWith('/'+v.ref.id)):{code:'ACCESS_DENIED'},{status:state.readbackStatus});
   else{assert.equal(path,'/api/v1/projects/'+f.sources.assignment.projectId);response=Response.json({id:f.sources.assignment.projectId,participation:'OWNER',controlState:{actorId:props.session.user.id,clientId:props.session.clientId,generation:3,status:'HELD'}});}
   if(state.delayControl&&path==='/api/v1/projects/'+f.sources.assignment.projectId)return new Promise<Response>(resolve=>controls.push(()=>resolve(response)));
   return response;
  });
- function render(){root.render(ui.React.createElement(ui.ResultReworkEditor,{...props,reworks:{buffers,onChange:(key:string,value:any)=>{const commit=()=>{buffers={...buffers,[key]:typeof value==='function'?value(buffers[key]??null):value};render();};if(state.deferBuffer)commits.push(commit);else commit();},form:{drafts,onChange:(key:string,value:any)=>{drafts={...drafts,[key]:typeof value==='function'?value(drafts[key]??null):value};render();}}}}));}
+ function render(){root.render(visible?ui.React.createElement(ui.React.Fragment,null,ui.React.createElement(ui.ResultReworkEditor,{...props,reworks:{buffers,onChange:(key:string,value:any)=>{const commit=()=>{buffers={...buffers,[key]:typeof value==='function'?value(buffers[key]??null):value};render();};if(state.deferBuffer)commits.push(commit);else commit();},form:{drafts,onChange:(key:string,value:any)=>{drafts={...drafts,[key]:typeof value==='function'?value(drafts[key]??null):value};render();}}}}),withHistory?ui.React.createElement(ui.StoredResultReworkHistory,props):null):null);}
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))];
  async function flush(){await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});}
- async function waitFor(check:()=>boolean){for(let n=0;n<100&&!check();n++)await flush();assert(check(),container.textContent);}
+ async function waitFor(check:()=>boolean){
+  const deadline=Date.now()+2000;
+  while(!check()&&Date.now()<deadline)await ui.React.act(async()=>{await new Promise(r=>setTimeout(r,2));});
+  assert(check(),container.textContent);
+ }
  const button=(text:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===text);
  async function click(text:string){const node=button(text);assert(node,text);assert(!node.disabled);await ui.React.act(async()=>node.dispatchEvent({type:'click',button:0,bubbles:true}));}
  function captureChange(label:string){const node=nodes().find(n=>n.attributes.get('aria-label')===label);assert(node,label);const key=Object.keys(node).find(k=>k.startsWith('__reactProps$'));assert(key);return (node as any)[key].onChange as (event:{target:{value?:string}})=>void;}
  async function change(label:string,value?:string){const change=captureChange(label);await ui.React.act(async()=>change({target:{value}}));}
- async function prepareDraft(){await change('보완 조건 save');await change('보완 대상 예약 세션',binding.ref.id);await change('보완 파일 '+f.input.sourceScopes[0]!.targets[0]!.relativePath);await change('보완 요청 이유',f.input.reason);await click('보완 초안 명시 준비');await waitFor(()=>!!button('보완 저장 명령 준비'));}
+ async function prepareDraft(condition='save',reason=f.input.reason){await change('보완 조건 '+condition);await change('보완 대상 예약 세션',binding.ref.id);await change('보완 파일 '+f.input.sourceScopes[0]!.targets[0]!.relativePath);await change('보완 요청 이유',reason);await click('보완 초안 명시 준비');await waitFor(()=>!!button('보완 저장 명령 준비'));}
  async function prepare(){await prepareDraft();await click('보완 저장 명령 준비');await waitFor(()=>!!Object.values(buffers)[0]);}
  await ui.React.act(async()=>render());
- return{f,props,requests,container,state,controls,commits,button,captureChange,change,click,prepare,prepareDraft,waitFor,flush,syncRender:()=>ui.flushSync(render),buffer:()=>Object.values(buffers)[0],replace:async(value:any)=>{await ui.React.act(async()=>{buffers={...buffers,[Object.keys(buffers)[0]!]:value};render();});},render:async()=>{await ui.React.act(async()=>render());},lost:()=>lost,unavailable:()=>unavailable,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{f,props,requests,container,state,controls,commits,button,captureChange,change,click,prepare,prepareDraft,waitFor,flush,
+  field:(label:string)=>{const node=nodes().find(n=>n.getAttribute('aria-label')===label),key=node&&Object.keys(node).find(k=>k.startsWith('__reactProps$'));return key?(node as any)[key]:null;},
+  hide:async()=>{visible=false;await ui.React.act(async()=>render());},show:async()=>{visible=true;await ui.React.act(async()=>render());},
+  allBuffers:()=>Object.values(buffers).filter(Boolean),syncRender:()=>ui.flushSync(render),buffer:()=>Object.values(buffers)[0],replace:async(value:any)=>{await ui.React.act(async()=>{buffers={...buffers,[Object.keys(buffers)[0]!]:value};render();});},render:async()=>{await ui.React.act(async()=>render());},lost:()=>lost,unavailable:()=>unavailable,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 const releaseLabel='미전송 보완 준비 해제 후 입력 수정';
 test('실제 보완 화면: 명시 해제 취소/확인→입력 보존→새 준비→기존 저장',async()=>{
@@ -329,4 +340,123 @@ for(const [mode,issue,count]of [['baseline','BASELINE_MISMATCH',0],['unmapped','
 });
 test('UI08 보고 대조는 정상 무경고를 보존하고 오염된 경고를 표시하지 않는다',async()=>{
  for(const mode of ['normal','invalid']as const){const m=await mountCoverage(mode);try{assert.equal(m.calls.length,0);await m.load();assert.equal(m.calls.length,1);if(mode==='normal'){assert(m.text().includes('대조 경고: 없음 · 합격 의미 아님'));assert(m.text().includes('등록 기준 밖 보고 · 0건'));}else{assert(m.text().includes('RESULT_COVERAGE_RESPONSE_INVALID'));assert(!m.text().includes('UNMAPPED_REPORTS'));assert(!m.text().includes('등록 기준 밖 보고'));}}finally{await m.close();}}
+});
+
+const differentDraft='다른 보완 초안 작성';
+test('보완 A의 보호 저장 확인 뒤 다른 부족 조건 B를 새로 작성하고 원 A 이력을 읽는다',async()=>{
+ const m=await mount(true);
+ try{
+  await m.prepare();const preparedA=m.buffer().pending;
+  assert(!m.button(differentDraft));
+  await m.click('보완 초안 명시 저장');await m.waitFor(()=>!!m.buffer().stored);
+  const storedA=structuredClone(m.buffer().stored),count=m.requests.length;
+  assert(m.button(differentDraft));
+  await m.click(differentDraft);
+  assert.equal(m.requests.length,count);
+  assert(!m.field('보완 조건 save'));assert.equal(m.field('보완 조건 denied')?.checked,false);
+  assert.equal(m.field('보완 요청 이유')?.value,'');
+  assert.equal(m.field('보완 대상 예약 세션')?.value,'');
+  assert.equal(m.field('보완 파일 '+m.f.input.sourceScopes[0]!.targets[0]!.relativePath)?.checked,false);
+  await m.hide();await m.show();
+  assert(!m.field('보완 조건 save'));assert.equal(m.field('보완 조건 denied')?.checked,false);
+  await m.prepareDraft('denied','다른 권한 확인 요청');
+  await m.click('보완 저장 명령 준비');await m.waitFor(()=>m.allBuffers().length===2);
+  const preparedB=m.allBuffers()[1].pending;
+  assert.notEqual(preparedB.command.commandId,preparedA.command.commandId);
+  assert.deepEqual(preparedB.command.payload.missingItems,['denied']);
+  assert.deepEqual(preparedB.command.payload.reviewRef,preparedA.command.payload.reviewRef);
+  await m.click('보완 초안 명시 저장');await m.waitFor(()=>!!m.allBuffers()[1]?.stored);
+  assert.deepEqual(m.buffer().stored,storedA);
+  assert(!m.button(differentDraft),'이 화면에서 보관을 확인한 두 조건은 새 선택에 표시하지 않는다');
+  await m.click('보관 보완 목록 조회');await m.waitFor(()=>!!m.button('보관 보완 원문 '+storedA.ref.id));
+  await m.click('보관 보완 원문 '+storedA.ref.id);await m.waitFor(()=>m.container.textContent.includes(storedA.snapshot.input.reason));
+  assert.deepEqual(m.requests.filter(r=>r.url.endsWith('/commands')).map(r=>r.body.commandId),[preparedA.command.commandId,preparedB.command.commandId]);
+ }finally{await m.close();}
+});
+
+test('다음 보완은 전송 중·불명·거절에서 열리지 않고 동일 원 명령을 보존한다',async()=>{
+ for(const status of [403,503,200]){
+  const m=await mount();
+  try{
+   await m.prepare();const pending=m.buffer().pending;
+   m.state.delay=true;m.state.status=status;if(status===200)m.state.readbackStatus=401;
+   await m.click('보완 초안 명시 저장');await m.waitFor(()=>!!m.state.release);
+   assert(!m.button(differentDraft));
+   await ui.React.act(async()=>m.state.release!());await m.waitFor(()=>!!m.buffer().failure);
+   assert(!m.button(differentDraft));assert(m.button('같은 보완 명령 재확인'));
+   assert.equal(m.buffer().pending,pending);
+   assert.equal(m.requests.filter(r=>r.url.endsWith('/commands')).length,1);
+  }finally{await m.close();}
+ }
+});
+
+test('다음 보완 CAS는 지연 적용 중 원 buffer ABA·기기/인증·검수 교체 또는 이탈에서 폐기된다',async()=>{
+ for(const mode of ['BUFFER','ABA','TRANSPORT','SESSION','REVIEW','UNMOUNT']){
+  const m=await mount();
+  try{
+   await m.prepare();await m.click('보완 초안 명시 저장');await m.waitFor(()=>!!m.buffer().stored);
+   const saved=m.buffer(),count=m.requests.length,originalTransport=m.props.client.transport;
+   m.state.deferBuffer=true;await m.click(differentDraft);
+   assert.equal(m.commits.length,1);
+   if(mode==='BUFFER'||mode==='ABA'){
+    await m.replace({...saved,bindingId:id(88)});
+    if(mode==='ABA')await m.replace(saved);
+   }
+   if(mode==='TRANSPORT')m.props.client.transport=async()=>Response.json({});
+   if(mode==='SESSION'){m.props.session={...m.props.session,csrfToken:'D'.repeat(43)};await m.render();}
+   if(mode==='REVIEW'){m.props.review={...m.props.review,ref:{...m.props.review.ref,contentHash:'d'.repeat(64)}};await m.render();}
+   if(mode==='UNMOUNT')await m.hide();
+   await ui.React.act(async()=>m.commits.shift()!());
+   assert.equal(m.requests.length,count);
+   assert.equal(m.lost(),0);
+   assert.equal(m.allBuffers().length,1);
+   assert.equal(m.buffer().nextDraft,undefined);
+   assert.deepEqual(m.buffer().stored,saved.stored);
+   m.props.client.transport=originalTransport;
+  }finally{await m.close();}
+ }
+});
+
+test('새 보완의 별도 준비 권한이 거절되면 원 A와 새 입력을 보존하고 명령은 만들지 않는다',async()=>{
+ const m=await mount();
+ try{
+  await m.prepare();await m.click('보완 초안 명시 저장');await m.waitFor(()=>!!m.buffer().stored);
+  const stored=m.buffer().stored;
+  await m.click(differentDraft);
+  await m.change('보완 조건 denied');
+  await m.change('보완 대상 예약 세션',m.f.sources.binding.ref.id);
+  await m.change('보완 파일 '+m.f.input.sourceScopes[0]!.targets[0]!.relativePath);
+  await m.change('보완 요청 이유','권한이 바뀐 다음 보완');
+  m.state.prepareStatus=403;await m.click('보완 초안 명시 준비');
+  await m.waitFor(()=>m.unavailable()===1);
+  assert.equal(m.field('보완 요청 이유').value,'권한이 바뀐 다음 보완');
+  assert(!m.button('보완 저장 명령 준비'));
+  assert.equal(m.allBuffers().length,1);
+  assert.equal(m.buffer().stored,stored);
+  assert.equal(m.requests.filter(r=>r.url.endsWith('/commands')).length,1);
+ }finally{await m.close();}
+});
+
+test('재확인한 A와 후속 B는 이전 거절 수정 클릭이나 지연 updater로 지워지지 않는다',async()=>{
+ for(const delayed of [false,true]){
+  const m=await mount();
+  try{
+   await m.prepare();m.state.status=403;await m.click('보완 초안 명시 저장');
+   await m.waitFor(()=>!!m.buffer().failure);
+   const stale=handler(m.button('확인된 거절 이후 보완 입력 수정'));
+   if(delayed){m.state.deferBuffer=true;await m.click('확인된 거절 이후 보완 입력 수정');m.state.deferBuffer=false;assert.equal(m.commits.length,1);}
+   m.state.status=200;await m.click('같은 보완 명령 재확인');await m.waitFor(()=>!!m.buffer().stored);
+   await m.click(differentDraft);
+   await m.prepareDraft('denied','독립 B 근거');
+   await m.click('보완 저장 명령 준비');await m.waitFor(()=>m.allBuffers().length===2);
+   const [a,b]=m.allBuffers(),count=m.requests.length;
+   await ui.React.act(async()=>{if(delayed)m.commits.shift()!();else stale();});
+   assert.equal(m.requests.length,count);
+   assert.equal(m.allBuffers().length,2);
+   assert.equal(m.buffer(),a);
+   assert.equal(m.allBuffers()[1],b);
+   assert(m.button('보완 초안 명시 저장'),'B 준비는 계속 정확 같은 명령을 보유한다');
+   assert.equal(m.lost(),0);
+  }finally{await m.close();}
+ }
 });

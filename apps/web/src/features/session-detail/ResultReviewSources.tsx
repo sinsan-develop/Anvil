@@ -57,40 +57,77 @@ function ReportedCompletionGap({coverage}:{coverage:ReportedCoverageView}){
  const gaps={NOT_REPORTED:'미보고',REPORTED_NOT_EXECUTED:'보고된 미실행',UNVERIFIED_EVIDENCE:'출처/실제 시험 미검증',DECLARATION_MISMATCH:'보고 결박 불일치'};
  return <section className="status-card" aria-label="완료 주장 점검"><h5>완료 주장 점검 · 검수 전</h5><p>{value.claimedComplete?'COMPLETED는 수행자 주장입니다. 완료 근거는 아직 확인되지 않았습니다.':value.submissionState+'는 제출자 상태 보고입니다. 작업 원인·완료를 확정하지 않습니다.'}</p><ul>{value.conditions.map(i=><li key={i.criterionId}>{i.criterionId} · {i.testId} · {i.requiredKind} · {gaps[i.gap]}</li>)}</ul><p>현재 중단 원인 미확인 · 공급자/OS 관측 미조회. 오류/거부/대기/쿼터로 추정하지 않습니다.</p><details><summary>선택 결과·기준/미확인 사실</summary><p>제출 {value.resultRef.id} · v{value.resultRef.version} · {value.resultRef.contentHash}</p><p>기준 {value.criteriaRef.id} · v{value.criteriaRef.version} · {value.criteriaRef.contentHash}</p><p>명령/exit·정확 commit·현재 환경은 미확인입니다. 파일 bytes 일치가 실제 시험 출처 검증은 아닙니다.</p></details><p>필요한 조건의 근거를 확인한 후 별도 검수하세요. 이 표시는 문제 사건·검수/완료·실패집계·재실행·writer 회수를 만들지 않습니다.</p></section>;
 }
+type ReworkEditorBuffer=ResultReworkBuffer&{nextDraft?:true};
+type ConfirmedRework=NonNullable<ResultReworkBuffer['stored']>;
+const verifiedReworkReads=new WeakMap<ConfirmedRework,string>();
+function reworkReadIdentity(pending:ResultReworkBuffer['pending'],stored:ConfirmedRework){
+ return ordered([pending.command.commandId,pending.command.payload,stored.ref,stored.projectId,stored.snapshot.scope,stored.snapshot.input,stored.snapshot.requestedBy]);
+}
 function ResultReworkEditor({client,assignment,result,review,responsibleState,session,reworks,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;result:SubmittedResultView;review:RecordedResultReview;responsibleState?:ResponsibleSessionState|null;session:DocumentSession;reworks?:ResultReworkBuffers;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
  const [localForms,setLocalForms]=useState<Record<string,ResultReworkFormDraft|null>>({}),[prepared,setPrepared]=useState<ResultReworkDraft|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),attempt=useRef(0),live=useRef(true),working=useRef<{mode:'PREPARE'|'SAVE'}|null>(null);
  const scopeKey=ordered([session,assignment.projectId,assignment.ref,assignment.snapshot.definition.allowedScopes,result.ref,result.snapshot.scope,review.ref,responsibleState??null]),scope=useRef({key:scopeKey,session,client,transport:client.transport}),releaseOwners=useRef(new WeakMap<object,object>());
  if(scope.current.key!==scopeKey||scope.current.session!==session||scope.current.client!==client||scope.current.transport!==client.transport)scope.current={key:scopeKey,session,client,transport:client.transport};
  const observedScope=scope.current;
- useEffect(()=>{attempt.current++;working.current=null;setBusy(false);setPrepared(null);setError(null);},[observedScope]);
- const formKey=resultReworkFormKey({userId:session.user.id,clientId:session.clientId,projectId:assignment.projectId,assignmentRef:assignment.ref,resultRef:result.ref,reviewRef:review.ref}),emptyForm:ResultReworkFormDraft={selected:[],files:[],bindingId:'',reason:''},form=reworks?.form,values=(form?form.drafts[formKey]:localForms[formKey])??emptyForm,{selected,files,bindingId,reason}=values;
+ const baseBufferKey=[session.user.id,session.clientId,assignment.projectId,ordered(result.ref),ordered(review.ref)].join(':');
+ const missing=review.snapshot.input.items.map(i=>i.criterionId);
+ const matches=(buffer:ResultReworkBuffer)=>buffer.pending.ownerUserId===session.user.id&&buffer.pending.command.clientId===session.clientId&&buffer.pending.command.projectId===assignment.projectId&&ordered(buffer.pending.prepared.scope.assignmentRef)===ordered(assignment.ref)&&ordered(buffer.pending.prepared.scope)===ordered(result.snapshot.scope)&&ordered(buffer.pending.command.payload.resultRef)===ordered(result.ref)&&ordered(buffer.pending.command.payload.reviewRef)===ordered(review.ref);
+ const savedSelection=(buffer:ResultReworkBuffer,remaining:string[])=>{
+  const saved=buffer.stored;
+  if(!saved||buffer.uncertain||buffer.dirty||buffer.failure||verifiedReworkReads.get(saved)!==reworkReadIdentity(buffer.pending,saved))return null;
+  const selected=buffer.pending.command.payload.missingItems;
+  return selected.length&&selected.every(id=>remaining.includes(id))?remaining.filter(id=>!selected.includes(id)):null;
+ };
+ // 이 App의 보호 저장 확인과 명시 전이만 따라간다. 서버 전체 이력의 충족 여부는 계산하지 않는다.
+ let remaining=missing,bufferKey=baseBufferKey,previous:PlanRef|null=null;
+ let buffer:ReworkEditorBuffer|null=reworks?.buffers[bufferKey]??null;
+ while(buffer?.nextDraft&&matches(buffer)){
+  const next=savedSelection(buffer,remaining);
+  if(!next?.length||!buffer.stored)break;
+  remaining=next;previous=buffer.stored.ref;
+  bufferKey=baseBufferKey+':after:'+ordered(previous);buffer=reworks?.buffers[bufferKey]??null;
+ }
+ const bound=buffer&&matches(buffer)?buffer:null,next=bound?savedSelection(bound,remaining):null;
+ const originalFormKey=resultReworkFormKey({userId:session.user.id,clientId:session.clientId,projectId:assignment.projectId,assignmentRef:assignment.ref,resultRef:result.ref,reviewRef:review.ref});
+ const formKey=previous?originalFormKey+':after:'+ordered(previous):originalFormKey,emptyForm:ResultReworkFormDraft={selected:[],files:[],bindingId:'',reason:''},form=reworks?.form,values=(form?form.drafts[formKey]:localForms[formKey])??emptyForm,{selected,files,bindingId,reason}=values;
  function setField<K extends keyof ResultReworkFormDraft>(field:K,value:ResultReworkFormDraft[K]|((previous:ResultReworkFormDraft[K])=>ResultReworkFormDraft[K])){const update=(current:ResultReworkFormDraft|null)=>{const previous=current??emptyForm;return{...previous,[field]:typeof value==='function'?value(previous[field]):value};};if(form)form.onChange(formKey,update);else setLocalForms(previous=>({...previous,[formKey]:update(previous[formKey]??null)}));}
  const setSelected=(value:string[]|((previous:string[])=>string[]))=>setField('selected',value),setFiles=(value:string[]|((previous:string[])=>string[]))=>setField('files',value),setBindingId=(value:string)=>setField('bindingId',value),setReason=(value:string)=>setField('reason',value);
- useEffect(()=>{live.current=true;return()=>{live.current=false;attempt.current++;};},[]);
+ useLayoutEffect(()=>{live.current=true;return()=>{live.current=false;attempt.current++;};},[]);
+ useLayoutEffect(()=>{attempt.current++;working.current=null;setBusy(false);setPrepared(null);setError(null);},[observedScope,bufferKey]);
  const task=assignment.snapshot.definition.taskRef,scopes=assignment.snapshot.definition.allowedScopes,bindings=(responsibleState?.bindings??[]).filter(b=>ordered(b.snapshot.assignmentRef)===ordered(assignment.ref)&&responsibleState?.roles.some(r=>ordered(r.ref)===ordered(b.snapshot.roleRef)&&r.snapshot.kind==='STAGE_OWNER'&&ordered(r.snapshot.stageRef)===ordered({applicationRef:task.applicationRef,nodeId:task.nodeId}))),binding=bindings.find(b=>b.ref.id===bindingId);
- const changed=()=>{if(!currentScope()||working.current?.mode==='SAVE')return false;if(working.current?.mode==='PREPARE')working.current=null;attempt.current++;setPrepared(null);setBusy(false);setError(null);return true;};
+ const changed=()=>{if(!currentScope()||latest.current.bufferKey!==bufferKey||latest.current.buffer||working.current?.mode==='SAVE')return false;if(working.current?.mode==='PREPARE')working.current=null;attempt.current++;setPrepared(null);setBusy(false);setError(null);return true;};
  const toggle=(values:string[],key:string)=>values.includes(key)?values.filter(v=>v!==key):[...values,key];
- const bufferKey=[session.user.id,session.clientId,assignment.projectId,ordered(result.ref),ordered(review.ref)].join(':'),buffer=reworks?.buffers[bufferKey]??null;
- const bound=buffer&&buffer.pending.ownerUserId===session.user.id&&buffer.pending.command.clientId===session.clientId&&buffer.pending.command.projectId===assignment.projectId&&ordered(buffer.pending.prepared.scope)===ordered(result.snapshot.scope)&&ordered(buffer.pending.command.payload.resultRef)===ordered(result.ref)&&ordered(buffer.pending.command.payload.reviewRef)===ordered(review.ref)?buffer:null;
  const writeOwner=useRef<{buffers:WeakMap<ResultReworkBuffer,string>;invalid:boolean}|null>(null);
  const previousBuffer=useRef({buffer,body:ordered(buffer)});
  if(previousBuffer.current.buffer!==buffer||previousBuffer.current.body!==ordered(buffer)){if(writeOwner.current&&(!buffer||writeOwner.current.buffers.get(buffer)!==ordered(buffer)))writeOwner.current.invalid=true;if(previousBuffer.current.buffer)releaseOwners.current.delete(previousBuffer.current.buffer.pending);previousBuffer.current={buffer,body:ordered(buffer)};}
+ const displayedBuffer=previousBuffer.current,continuation=useRef<{key:string;updated:ReworkEditorBuffer|null;committed:boolean;onCommit?:()=>void}|null>(null);
+ useLayoutEffect(()=>{
+  const step=continuation.current;
+  if(step&&reworks?.buffers[step.key]===step.updated){step.committed=true;continuation.current=null;step.onCommit?.();}
+ });
  const latest=useRef({buffer,bound,bufferKey,reworks});latest.current={buffer,bound,bufferKey,reworks};
  const currentScope=()=>live.current&&scope.current===observedScope&&client.transport===observedScope.transport&&ordered([session,assignment.projectId,assignment.ref,assignment.snapshot.definition.allowedScopes,result.ref,result.snapshot.scope,review.ref,responsibleState??null])===observedScope.key;
  const change=(value:ResultReworkBuffer)=>{const owner=writeOwner.current;owner?.buffers.set(value,ordered(value));reworks?.onChange(bufferKey,current=>owner&&!owner.invalid&&current&&owner.buffers.get(current)===ordered(current)?value:current);};
  const failure=(cause:unknown)=>{const e=cause instanceof ApiError?cause:new ApiError('RESULT_REWORK_INPUT_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REWORK_RESPONSE_INVALID';setError(code);if([401,403,404].includes(e.status))onAccessUnavailable(code);if(e.status===401)onAuthenticationLost();return{e,code};};
  async function write(mode:'PREPARE'|'SAVE'){
-  if(!currentScope()||working.current||!reworks)return;const lock={mode};working.current=lock;setBusy(true);setError(null);const b=bound,owner=mode==='SAVE'&&b?{buffers:new WeakMap([[b,ordered(b)]]),invalid:false}:null;writeOwner.current=owner;const turn=++attempt.current,active=()=>currentScope()&&working.current===lock&&attempt.current===turn&&(!owner||!owner.invalid&&writeOwner.current===owner&&!!latest.current.buffer&&owner.buffers.get(latest.current.buffer)===ordered(latest.current.buffer));
+  if(!currentScope()||working.current||!reworks)return;const lock={mode};working.current=lock;setBusy(true);setError(null);const b=bound,owner=mode==='SAVE'&&b?{buffers:new WeakMap([[b,ordered(b)]]),invalid:false}:null;writeOwner.current=owner;const turn=++attempt.current,active=()=>currentScope()&&latest.current.bufferKey===bufferKey&&working.current===lock&&attempt.current===turn&&(!owner||!owner.invalid&&writeOwner.current===owner&&!!latest.current.buffer&&owner.buffers.get(latest.current.buffer)===ordered(latest.current.buffer));
   try{
    if(mode==='PREPARE'){
-    if(buffer||!prepared)return;const generation=await documentControl(client,assignment.projectId,session);if(!active())return;
+    if(buffer||!prepared||prepared.missingItems.some(id=>!remaining.includes(id)))return;const generation=await documentControl(client,assignment.projectId,session);if(!active())return;
     const pending=await prepareResultReworkWrite(prepared,session,generation);if(active()){releaseOwners.current.set(pending,observedScope);reworks.onChange(bufferKey,current=>currentScope()&&attempt.current===turn?(current??{bindingId:crypto.randomUUID(),pending,stored:null,uncertain:false,dirty:true,failure:null}):current);}return;
    }
    if(!b||b.stored)return;change({...b,uncertain:true,failure:null});
-   const stored=await saveResultReworkWrite(client,b.pending,session,active);if(active()&&stored)change({...b,stored,dirty:false,uncertain:false,failure:null});
+   const stored=await saveResultReworkWrite(client,b.pending,session,active);if(active()&&stored){verifiedReworkReads.set(stored,reworkReadIdentity(b.pending,stored));change({...b,stored,dirty:false,uncertain:false,failure:null});}
   }catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_REWORK_INPUT_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REWORK_RESPONSE_INVALID';
    if(b)change({...b,failure:{code,status:e.status},uncertain:b.uncertain||e instanceof ReworkReadbackUnconfirmed||!isKnownDocumentRejection(e)});failure(e);
   }finally{if(working.current===lock){working.current=null;if(attempt.current===turn)setBusy(false);}if(writeOwner.current===owner)writeOwner.current=null;}
+ }
+ function startDifferent(){
+  const chosen=bound;
+  if(!chosen||!next?.length||!reworks||!currentScope()||latest.current.buffer!==chosen||latest.current.bufferKey!==bufferKey||previousBuffer.current!==displayedBuffer||busy||working.current)return;
+  const fingerprint=displayedBuffer.body,step={key:bufferKey,updated:{...chosen,nextDraft:true} as ReworkEditorBuffer,committed:false};
+  continuation.current=step;
+  reworks.onChange(bufferKey,current=>current===chosen&&ordered(current)===fingerprint&&
+   (step.committed||continuation.current===step&&currentScope()&&previousBuffer.current===displayedBuffer)?step.updated:current);
  }
  function releaseUnsent(){
   const chosen=bound;if(!chosen)return;const fingerprint=ordered(chosen),pending=chosen.pending;
@@ -102,12 +139,20 @@ function ResultReworkEditor({client,assignment,result,review,responsibleState,se
   reworks?.onChange(bufferKey,value=>currentScope()&&value===chosen&&ordered(value)===fingerprint?null:value);
  }
  function editRejected(){
-  if(!currentScope()||!bound||bound.uncertain||bound.stored||working.current||!isKnownDocumentRejection(bound.failure))return;
-  const p=bound.pending.prepared;setPrepared(p);setSelected([...p.missingItems]);setBindingId(p.responsibleBindingRef.id);setReason(p.reason);setError(null);
-  setFiles(scopes.flatMap((s,index)=>s.targets.flatMap((t,n)=>p.sourceScopes.some(a=>ordered(a.sourceRootRef)===ordered(s.sourceRootRef)&&a.targets.some(v=>ordered(v)===ordered(t)))?[index+':'+n]:[])));
-  reworks?.onChange(bufferKey,current=>current?.bindingId===bound.bindingId?null:current);
+  const chosen=bound;
+  if(!chosen||chosen.uncertain||chosen.stored||!reworks||!currentScope()||latest.current.buffer!==chosen||latest.current.bufferKey!==bufferKey||
+   previousBuffer.current!==displayedBuffer||ordered(chosen)!==displayedBuffer.body||busy||working.current||!isKnownDocumentRejection(chosen.failure))return;
+  const turn=++attempt.current,p=chosen.pending.prepared;
+  const step={key:bufferKey,updated:null,committed:false,onCommit:()=>{
+   if(!currentScope()||latest.current.bufferKey!==bufferKey||latest.current.buffer!==null||attempt.current!==turn)return;
+   setPrepared(p);setSelected([...p.missingItems]);setBindingId(p.responsibleBindingRef.id);setReason(p.reason);setError(null);
+   setFiles(scopes.flatMap((scope,index)=>scope.targets.flatMap((target,n)=>p.sourceScopes.some(a=>ordered(a.sourceRootRef)===ordered(scope.sourceRootRef)&&a.targets.some(v=>ordered(v)===ordered(target)))?[index+':'+n]:[])));
+  }};
+  continuation.current=step;
+  reworks.onChange(bufferKey,current=>current===chosen&&ordered(current)===displayedBuffer.body&&
+   (step.committed||continuation.current===step&&currentScope()&&previousBuffer.current===displayedBuffer&&attempt.current===turn&&!working.current)?null:current);
  }
- async function prepare(){if(!binding||!selected.length||!files.length||!reason.trim())return;const turn=++attempt.current,active=()=>currentScope()&&attempt.current===turn;setPrepared(null);setBusy(true);setError(null);
+ async function prepare(){if(!currentScope()||latest.current.bufferKey!==bufferKey||latest.current.buffer||!binding||!selected.length||selected.some(id=>!remaining.includes(id))||!files.length||!reason.trim())return;const turn=++attempt.current,active=()=>currentScope()&&latest.current.bufferKey===bufferKey&&!latest.current.buffer&&attempt.current===turn;setPrepared(null);setBusy(true);setError(null);
   const sourceScopes=scopes.map((s,index)=>({...s,targets:s.targets.filter((_,n)=>files.includes(index+':'+n))})).filter(s=>s.targets.length);
   try{const value=await prepareResultReworkDraft(client,assignment,result,review,binding,{resultRef:result.ref,reviewRef:review.ref,responsibleBindingRef:binding.ref,missingItems:selected,sourceScopes,reason},session,active);if(active()&&value)setPrepared(value);}catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_REWORK_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REWORK_RESPONSE_INVALID';setError(code);if([401,403,404].includes(e.status))onAccessUnavailable(code);if(e.status===401)onAuthenticationLost();}finally{if(active())setBusy(false);}
  }
@@ -115,17 +160,17 @@ function ResultReworkEditor({client,assignment,result,review,responsibleState,se
   {!bound?<p role="alert">RESULT_REWORK_BINDING_INVALID · 다른 주체/자료의 명령으로 대체하지 않습니다.</p>:<>
    {!bound.stored?<><details><summary>보완 초안 고정 명령</summary><pre>{JSON.stringify(bound.pending.command,null,2)}</pre></details><button type="button" disabled={busy} onClick={()=>void write('SAVE')}>{bound.uncertain||bound.failure?'같은 보완 명령 재확인':'보완 초안 명시 저장'}</button>{!bound.uncertain&&!bound.failure&&releaseOwners.current.get(bound.pending)===observedScope&&canReleaseUnsentRework(bound.pending,session)?<button type="button" disabled={busy} onClick={releaseUnsent}>미전송 보완 준비 해제 후 입력 수정</button>:null}{!bound.uncertain&&isKnownDocumentRejection(bound.failure)?<button type="button" disabled={busy} onClick={editRejected}>확인된 거절 이후 보완 입력 수정</button>:null}</>:null}
    {bound.uncertain?<p role="status">보완 저장 결과 미확인 · 고정 명령을 보존했습니다. 새 명령을 만들지 않고 같은 ID로만 확인합니다.</p>:null}
-   {bound.stored?<article aria-label="보완 저장 원문"><h5>보완 초안 고정 원문 확인 완료 · 실제 배정/실행 아님</h5><p>{bound.stored.ref.id} · {bound.stored.ref.contentHash}</p><details><summary>별도 보관 보완 원문</summary><pre>{JSON.stringify(bound.stored,null,2)}</pre></details></article>:null}
+   {bound.stored?<article aria-label="보완 저장 원문"><h5>보완 초안 고정 원문 확인 완료 · 실제 배정/실행 아님</h5><p>{bound.stored.ref.id} · {bound.stored.ref.contentHash}</p><details><summary>별도 보관 보완 원문</summary><pre>{JSON.stringify(bound.stored,null,2)}</pre></details>{next?.length&&!bound.nextDraft?<><p>이 화면에서 저장을 확인한 초안의 조건을 제외한 선택 가능 조건: {next.join(', ')} · 서버 전체 이력과 충족 여부 미확인</p><button type="button" disabled={busy} onClick={startDifferent}>다른 보완 초안 작성</button></>:null}</article>:null}
   </>}
   {error||bound?.failure?<p role="alert">{error??bound?.failure?.code} · 보완 저장 완료로 표시하지 않습니다.</p>:null}{busy?<p role="status">보완 명령·고정 원문 확인 중</p>:null}<p className="meta">화면왕복 준비 명령/미확인 결과는 App 메모리에 보존됩니다. 페이지 새로고침·종료 후 복원은 미제공입니다.</p>
  </section>;
  return <section className="status-card" aria-label="보완 초안 준비"><h5>부족 조건만 같은 단계 세션에 연결</h5><p>아직 미저장·실제 배정·Agent 실행 없음 · {form?'저장 명령 준비 전 입력도 같은 주체·정확 자료의 화면왕복 동안 App 메모리에 보존됩니다. 페이지 새로고침·종료 후 복원은 미제공입니다.':'저장 명령 준비 전 입력은 화면 이탈 시 사라집니다.'} 현재 예약/권한·OS 경로를 확인한 실행 허가가 아닙니다.</p>
-  <fieldset><legend>보완할 부족 조건</legend>{review.snapshot.input.items.map(i=><label key={i.criterionId}><input type="checkbox" aria-label={'보완 조건 '+i.criterionId} checked={selected.includes(i.criterionId)} onChange={()=>{if(!changed())return;setSelected(v=>toggle(v,i.criterionId));}}/>{i.criterionId} · {i.outcome==='REWORK'?'보완 필요':'차단'} · {i.reason}</label>)}</fieldset>
+  {previous?<p>이 화면에서 저장을 확인한 초안의 조건을 제외했습니다. 서버 전체 이력과 충족 여부는 미확인입니다.</p>:null}<fieldset><legend>보완할 부족 조건</legend>{review.snapshot.input.items.filter(i=>remaining.includes(i.criterionId)).map(i=><label key={i.criterionId}><input type="checkbox" aria-label={'보완 조건 '+i.criterionId} checked={selected.includes(i.criterionId)} onChange={()=>{if(!changed())return;setSelected(v=>toggle(v,i.criterionId));}}/>{i.criterionId} · {i.outcome==='REWORK'?'보완 필요':'차단'} · {i.reason}</label>)}</fieldset>
   <label>보완 대상 예약 세션<select aria-label="보완 대상 예약 세션" value={bindingId} onChange={e=>{if(!changed())return;setBindingId(e.target.value);}}><option value="">명시 선택</option>{bindings.map(b=><option key={b.ref.id} value={b.ref.id}>{b.ref.id} v{b.ref.version} · Anvil 세션 {b.snapshot.sessionRef.id}</option>)}</select></label>{bindings.length?null:<p>같은 확정 임무·단계책임자의 확인된 예약 없음 · 다른 세션으로 대체하지 않습니다.</p>}
   <fieldset><legend>허용된 파일 중 보완 범위 선택</legend>{scopes.map((s,index)=><div key={s.sourceRootRef.id}><p>소스 {s.sourceRootRef.id}</p>{s.targets.map((t,n)=><label key={t.relativePath}><input type="checkbox" aria-label={'보완 파일 '+t.relativePath} checked={files.includes(index+':'+n)} onChange={()=>{if(!changed())return;setFiles(v=>toggle(v,index+':'+n));}}/>{t.relativePath} · {t.access}</label>)}</div>)}</fieldset>
   <label>보완 요청 이유<textarea aria-label="보완 요청 이유" maxLength={20000} value={reason} onChange={e=>{if(!changed())return;setReason(e.target.value);}}/></label><button type="button" disabled={busy||!binding||!selected.length||!files.length||!reason.trim()} onClick={()=>void prepare()}>보완 초안 명시 준비</button>
   {busy?<p role="status">선택 원문과 범위 대조 중 · 이전 초안은 숨깁니다.</p>:null}{error?<p role="alert">{error} · 준비 미확인. 입력은 보존하며 다른 세션/범위로 대체하지 않습니다.</p>:null}
-  {prepared?<article aria-label="준비한 보완 초안"><h5>보완 초안 · 미저장/미실행</h5><p>선택 부족 조건: {prepared.missingItems.join(', ')}</p><p>남은 부족 조건: {prepared.remainingMissingItems.join(', ')||'없음 · 충족/완료 판정 아님'}</p><p>같은 Anvil 예약 세션: {prepared.stageSessionRef.id}</p><p>저장·실제 배정·Agent 실행 없음 · 실제 영향/OS·최신 예약·권한 미검증</p><details><summary>정확 원제출·검수·예약/범위 전체</summary><pre>{JSON.stringify(prepared,null,2)}</pre></details>{reworks?<button type="button" disabled={busy} onClick={()=>void write('PREPARE')}>보완 저장 명령 준비</button>:null}</article>:null}
+  {prepared?<article aria-label="준비한 보완 초안"><h5>보완 초안 · 미저장/미실행</h5><p>선택 부족 조건: {prepared.missingItems.join(', ')}</p><p>{previous?'이 화면에서 더 선택할 부족 조건':'남은 부족 조건'}: {prepared.remainingMissingItems.filter(id=>remaining.includes(id)).join(', ')||'없음 · 충족/완료 판정 아님'}</p><p>같은 Anvil 예약 세션: {prepared.stageSessionRef.id}</p><p>저장·실제 배정·Agent 실행 없음 · 실제 영향/OS·최신 예약·권한 미검증</p><details><summary>정확 원제출·검수·예약/범위 전체</summary><pre>{JSON.stringify(prepared,null,2)}</pre></details>{reworks?<button type="button" disabled={busy} onClick={()=>void write('PREPARE')}>보완 저장 명령 준비</button>:null}</article>:null}
  </section>;
 }
 /** 선택 원제출의 보관 검수 목록/원문만 읽는다. 최신 자동선택·기준 적용·실제 증거 검증은 없다. */
