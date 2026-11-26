@@ -4,6 +4,7 @@ import path from 'node:path';
 import {promisify} from 'node:util';
 import {execFile} from 'node:child_process';
 import {createHash} from 'node:crypto';
+import {canonicalJson} from '../../../../contracts/canonical.ts';
 import {AuthFailure} from '../access/repository.ts';
 import {createFileManifest} from './file-manifest.ts';
 import {createFileBundle} from './file-bundle.ts';
@@ -65,15 +66,72 @@ export class ProjectExportStore {
    this.check(deadline);if(!result.complete)fail('EXPORT_COPY_FAILED');
    await protectOwnedExportDirectories(jobRoot,jobIdentity,pid,deadline);
    await fs.writeFile(path.join(this.root,id,'export.json'),metadata,{flag:'wx',mode:0o600});this.check(deadline);
-   const reread=await this.read(pid,id,ref,deadline);if(inspectArtifact(reread).state==='SUSPECTED')fail('EXPORT_SENSITIVE_CONTENT_SUSPECTED');
-   if(!(await fs.readFile(path.join(this.root,id,'export.json'))).equals(metadata))fail('EXPORT_INTEGRITY_FAILED');this.check(deadline);
+   await this.read(pid,id,manifest,deadline);
   }finally{
    await handle!.close();const current=await fs.lstat(lock,{bigint:true});if(current.isFile()&&!current.isSymbolicLink()&&current.dev===owned.dev&&current.ino===owned.ino&&current.size===owned.size&&current.mtimeNs===owned.mtimeNs)await fs.unlink(lock);
   }
  }
- async read(pid:string,id:string,ref:ExportArtifactRef,deadline:number){
-  this.check(deadline);if(![pid,id,ref.artifactId].every(v=>uuid.test(v)))fail('EXPORT_INPUT_INVALID');await this.safe(this.root,deadline);
-  const dir=path.join(this.root,id,'bundle','payload','blobs',pid);await this.safe(dir,deadline);this.check(deadline);
+ async #readManifest(jobRoot:string,manifest:ExportManifest,deadline:number){
+  const integrity=()=>fail('EXPORT_INTEGRITY_FAILED');
+  const guarded=async<T>(read:()=>Promise<T>):Promise<T>=>{
+   try{return await read();}catch(error){if(error instanceof AuthFailure)throw error;return integrity();}
+  };
+  const posix=process.platform!=='win32',uid=BigInt(process.getuid?.()??0);
+  const privateEntry=(s:BigIntStats)=>!posix||s.uid===uid&&(s.mode&0o077n)===0n;
+  const sameFile=(a:BigIntStats,b:BigIntStats)=>b.isFile()&&!b.isSymbolicLink()&&a.dev===b.dev&&a.ino===b.ino
+   &&a.uid===b.uid&&a.gid===b.gid&&a.mode===b.mode&&a.nlink===b.nlink&&a.size===b.size&&a.mtimeNs===b.mtimeNs&&a.ctimeNs===b.ctimeNs;
+  const target=path.join(jobRoot,'export.json');
+  const directory=async()=>{
+   this.check(deadline);
+   const value=await fs.lstat(jobRoot,{bigint:true});
+   if(!value.isDirectory()||value.isSymbolicLink()||!privateEntry(value)||path.relative(jobRoot,await fs.realpath(jobRoot))!=='')integrity();
+   this.check(deadline);
+   return value;
+  };
+  return guarded(async()=>{
+   const length=Buffer.byteLength(JSON.stringify(manifest)),expected=canonicalJson(manifest);
+   const job=await directory();
+   const before=await fs.lstat(target,{bigint:true});
+   if(!before.isFile()||before.isSymbolicLink()||!privateEntry(before)||before.nlink!==1n||before.size!==BigInt(length)
+    ||path.relative(target,await fs.realpath(target))!=='')integrity();
+   const recheck=()=>guarded(async()=>{
+    if(!sameDirectory(job,await directory())||!sameFile(before,await fs.lstat(target,{bigint:true})))integrity();
+    this.check(deadline);
+   });
+   this.check(deadline);
+   const handle=await fs.open(target,constants.O_RDONLY|(constants.O_NOFOLLOW??0)|(posix?(constants.O_NONBLOCK??0):0));
+   try{
+    if(!sameFile(before,await handle.stat({bigint:true})))integrity();
+    await recheck();
+    const bytes=Buffer.alloc(length);
+    for(let offset=0;offset<length;){
+     this.check(deadline);
+     const {bytesRead}=await handle.read(bytes,offset,length-offset,offset);
+     if(bytesRead<=0||bytesRead>length-offset)integrity();
+     offset+=bytesRead;
+    }
+    this.check(deadline);
+    const value:unknown=JSON.parse(bytes.toString('utf8'));
+    // 구형 파일도 compact JSON으로 발행됐다. 재직렬화로 중복 키와 잘못된 UTF-8을 거절한다.
+    if(!bytes.equals(Buffer.from(JSON.stringify(value)))||canonicalJson(value)!==expected
+     ||!sameFile(before,await handle.stat({bigint:true})))integrity();
+   }finally{await handle.close();}
+   // 협력적 기한 및 경로/handle 관측 경계. OS 원자 snapshot이나 권한 침해 방어는 아니다.
+   await recheck();
+   return recheck;
+  });
+ }
+ async read(pid:string,id:string,manifest:ExportManifest,deadline:number){
+  const ref=manifest.selection.artifactRef;
+  this.check(deadline);if(manifest.projectId!==pid||![pid,id,ref.artifactId].every(v=>uuid.test(v)))fail('EXPORT_INPUT_INVALID');
+  await this.safe(this.root,deadline);
+  const jobRoot=path.join(this.root,id),verifyManifest=await this.#readManifest(jobRoot,manifest,deadline);
+  const bytes=await this.#readPayload(jobRoot,pid,ref,deadline);
+  await verifyManifest();
+  return bytes;
+ }
+ async #readPayload(jobRoot:string,pid:string,ref:ExportArtifactRef,deadline:number){
+  const dir=path.join(jobRoot,'bundle','payload','blobs',pid);await this.safe(dir,deadline);this.check(deadline);
   const target=path.join(dir,ref.artifactId),before=await fs.lstat(target,{bigint:true});if(before.isSymbolicLink()||!before.isFile()||before.nlink!==1n||before.size!==BigInt(ref.bytes))fail('EXPORT_INTEGRITY_FAILED');
   const h=await fs.open(target,constants.O_RDONLY|(constants.O_NOFOLLOW??0));try{const opened=await h.stat({bigint:true});if(opened.dev!==before.dev||opened.ino!==before.ino)fail('EXPORT_INTEGRITY_FAILED');const bytes=await h.readFile(),after=await h.stat({bigint:true}),final=await fs.lstat(target,{bigint:true});this.check(deadline);if(bytes.length!==ref.bytes||createHash('sha256').update(bytes).digest('hex')!==ref.contentHash||after.size!==before.size||after.mtimeNs!==before.mtimeNs||after.ctimeNs!==before.ctimeNs||final.ino!==before.ino||final.dev!==before.dev||final.isSymbolicLink())fail('EXPORT_INTEGRITY_FAILED');if(inspectArtifact(bytes).state==='SUSPECTED')fail('EXPORT_SENSITIVE_CONTENT_SUSPECTED');return bytes;}finally{await h.close();}
  }
