@@ -25,6 +25,7 @@ import {resolveReportedChangeDiff} from './reported-change-diff.ts';
 import {resolveReportedCommandOutput} from './reported-command-output.ts';
 import type {PlanRef} from '../design-trace/work-plan-api.ts';
 import {ReportedEvidenceFiles} from './ReportedEvidenceFiles.tsx';
+import type {ArtifactTraceDetail} from './artifact-task-trace-api.ts';
 import {reportedCompletionGap} from './reported-completion-gap.ts';
 import {NextActionBasisPanel} from './NextActionBasisPanel.tsx';
 import {ReportedCommandEvidenceFiles} from './ReportedCommandEvidenceFiles.tsx';
@@ -161,7 +162,7 @@ function StoredResultReviewHistory({client,result,assignment,session,responsible
  </section>;
 }
 /** 부모는 선택 원문/조회 세대로 key를 지정한다. 재조회 중에는 앞선 원문을 노출하지 않는다. */
-export function ResultReviewSources({client,projectId,result,assignment,onAuthenticationLost,onAccessUnavailable,criteria,responsibleState}:{client:ApiClient;projectId:string;result:SubmittedResultView;assignment:ConfirmedAssignmentView;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void;criteria:CriteriaEditorProps;responsibleState?:ResponsibleSessionState|null}){
+export function ResultReviewSources({client,projectId,result,assignment,onAuthenticationLost,onAccessUnavailable,criteria,responsibleState,traceDetail}:{client:ApiClient;projectId:string;result:SubmittedResultView;assignment:ConfirmedAssignmentView;traceDetail?:ArtifactTraceDetail;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void;criteria:CriteriaEditorProps;responsibleState?:ResponsibleSessionState|null}){
  const [revision,setRevision]=useState(0),[loaded,setLoaded]=useState<{revision:number;value:ResultReviewSourcesView|null;error:string|null}|null>(null),lost=useRef(onAuthenticationLost),unavailable=useRef(onAccessUnavailable);lost.current=onAuthenticationLost;unavailable.current=onAccessUnavailable;
  const shown=loaded?.revision===revision?loaded:null,pending=revision>0&&!shown;
  useEffect(()=>{if(!revision)return;let active=true;
@@ -182,11 +183,11 @@ export function ResultReviewSources({client,projectId,result,assignment,onAuthen
   <StoredResultReviewHistory key={result.ref.id+':'+result.ref.contentHash} client={client} result={result} assignment={assignment} session={criteria.session} responsibleState={responsibleState} reworks={criteria.reworks} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
   <StoredResultReworkHistory key={'reworks:'+result.ref.id+':'+result.ref.contentHash} client={client} result={result} assignment={assignment} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>
   {shown?.value?<ResultCriteriaEditor key={revision} client={client} assignment={shown.value.assignment} {...criteria} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
-  {shown?.value?<StoredCriteria key={'stored:'+revision} client={client} assignment={shown.value.assignment} result={shown.value.result} session={criteria.session} reviews={criteria.reviews} editor={criteria} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
+  {shown?.value?<StoredCriteria key={'stored:'+revision} traceDetail={traceDetail} client={client} assignment={shown.value.assignment} result={shown.value.result} session={criteria.session} reviews={criteria.reviews} editor={criteria} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
  </section>;
 }
 /** 별도 명시 목록/원문 조회다. 조회한 버전을 프로젝트의 활성 기준으로 적용하지 않는다. */
-export function StoredCriteria({client,assignment,result,session,reviews,editor,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;assignment:ConfirmedAssignmentView;result:SubmittedResultView;session:DocumentSession;reviews?:ResultReviewBuffers;editor?:CriteriaEditorProps;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
+export function StoredCriteria({client,assignment,result,session,reviews,editor,onAuthenticationLost,onAccessUnavailable,traceDetail}:{client:ApiClient;assignment:ConfirmedAssignmentView;result:SubmittedResultView;session:DocumentSession;traceDetail?:ArtifactTraceDetail;reviews?:ResultReviewBuffers;editor?:CriteriaEditorProps;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
  const [revision,setRevision]=useState(0),[loaded,setLoaded]=useState<{revision:number;value:StoredCriteriaList|null;error:string|null}|null>(null),[selected,setSelected]=useState<StoredCriteriaSummary|null>(null),[attempt,setAttempt]=useState(0),[original,setOriginal]=useState<{key:string;value:RegisteredCriteria|null;error:string|null}|null>(null),lost=useRef(onAuthenticationLost),unavailable=useRef(onAccessUnavailable);lost.current=onAuthenticationLost;unavailable.current=onAccessUnavailable;
  const shown=loaded?.revision===revision?loaded:null,key=selected?[revision,selected.ref.id,selected.ref.version,selected.ref.contentHash,attempt].join(':'):null,detail=key&&original?.key===key?original:null;
  const [preparing,setPreparing]=useState(false),[revisionError,setRevisionError]=useState<string|null>(null),working=useRef(false),alive=useRef(true);
@@ -229,7 +230,7 @@ export function StoredCriteria({client,assignment,result,session,reviews,editor,
   {comparison?.error?<p role="alert">{comparison.error} · 보고 대조 미확인</p>:null}
   {comparison?.value?<article aria-label="조건별 보고 대조"><h5>조건별 보고 대조 · 실제 검수·완료 판정 아님</h5><p>수행자 보고만 대조했습니다. 증거의 실제 관측·원본 바이트·합격 여부는 미검증입니다.</p><p>기준 {comparison.value.criteriaRef.id} v{comparison.value.criteriaRef.version} · 제출 {comparison.value.resultRef.id}</p><ul>{comparison.value.items.map(i=><li key={i.criterionId}><p>{i.criterionId} · {i.testId} · 필요 시험 {i.requiredKind}</p><strong>{({NOT_REPORTED:'미보고',REPORTED_NOT_EXECUTED:'보고된 미실행',REPORTED_ONLY:'수행자 보고만 있음',MISMATCH:'보고 불일치'})[i.state]}</strong><p>수행자 보고 상태: {i.reportedStatus??'없음'} · 증거 미검증</p><details><summary>조건별 이유·보고 원문</summary><pre>{JSON.stringify(i,null,2)}</pre></details></li>)}</ul><details><summary>등록 기준 밖 보고 · {comparison.value.unmapped.length}건</summary><pre>{JSON.stringify(comparison.value.unmapped,null,2)}</pre></details><p>대조 경고: {comparison.value.issues.join(', ')||'없음 · 합격 의미 아님'}</p><p>검수 저장·완료 인정·정식 실패 집계·실행 허가를 하지 않았습니다.</p></article>:null}
   {comparison?.value?<ReportedCompletionGap key={'gap:'+coverageKey} coverage={comparison.value}/>:null}
-  {detail?.value&&comparison?.value?<ReportedEvidenceFiles key={coverageKey} client={client} result={result} criteria={detail.value} coverage={comparison.value} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
+  {detail?.value&&comparison?.value?<ReportedEvidenceFiles key={coverageKey} traceDetail={traceDetail} session={session} client={client} result={result} criteria={detail.value} coverage={comparison.value} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
   {detail?.value&&reviews?<ResultReviewEditor key={resultReviewBufferKey(session,result,detail.value)} client={client} result={result} criteria={detail.value} session={session} reviews={reviews} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
  </section>;
 }
