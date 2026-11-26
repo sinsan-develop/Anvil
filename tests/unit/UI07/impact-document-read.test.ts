@@ -4,8 +4,14 @@ import {readDocument} from '../../../apps/web/src/features/design-trace/api.ts';
 import {contentHash} from '../../../contracts/canonical.ts';
 
 for(const mutation of ['TITLE','BODY_REFERENCE','SOURCE'])test('snapshot '+mutation+' 변조는 표시hash를 유지해도 보호본문GET0으로 거절한다',async()=>{
- const bytes=Buffer.from('다른 일관된 본문'),f=setup((kind,value)=>kind==='document'?mutation==='TITLE'?{...value,title:'다른 제목'}:mutation==='SOURCE'?{...value,content:{...value.content,sourceRefs:[{id:value.id}]}}:{...value,content:{...value.content,body:{...value.content.body,artifactId:'77777777-7777-4777-8777-777777777777',bytes:bytes.length,contentHash:contentHash(bytes)}}}:kind==='body'&&mutation==='BODY_REFERENCE'?bytes:value);
+ const bytes=Buffer.from('다른 일관된 본문'),sourceRefs=[{kind:'ARTIFACT',id:'77777777-7777-4777-8777-777777777777',contentHash:contentHash(bytes)}];
+ const f=setup((kind,value)=>kind==='document'?mutation==='TITLE'?{...value,title:'다른 제목'}:mutation==='SOURCE'?{...value,sourceRefs,content:{...value.content,sourceRefs}}:{...value,content:{...value.content,body:{...value.content.body,artifactId:'77777777-7777-4777-8777-777777777777',bytes:bytes.length,contentHash:contentHash(bytes)}}}:kind==='body'&&mutation==='BODY_REFERENCE'?bytes:value);
  await assert.rejects(call(f.client,f.selection,()=>true),{code:'DOCUMENT_REFERENCE_CHANGED'});assert.equal(f.calls.some(p=>p.includes('/files/')),false);
+});
+test('출처의 {id} 단독 형상은 해시 검산 전에 거절되고 보호본문GET0이다',async()=>{
+ const f=setup((kind,value)=>{if(kind!=='document')return value;const sourceRefs=[{id:value.id}];return{...value,sourceRefs,content:{...value.content,sourceRefs}};});
+ await assert.rejects(call(f.client,f.selection,()=>true),{code:'DOCUMENT_SOURCE_INVALID'});
+ assert.equal(f.calls.some(p=>p.includes('/files/')),false);
 });
 test('옵션없는 기존 문서읽기를 유지하고 응답도착 직후 이탈은 body취소·원문불채택이다',async()=>{const f=setup();assert.equal((await readDocument(f.client,f.selection.projectId,f.document.id,1)).body,f.body);let active=true,cancelled=0;const g=setup(),client=new ApiClient(async(url,init)=>{if(String(url).includes('/files/')){active=false;return new Response(new ReadableStream({cancel(){cancelled++;}}),{headers:{'content-type':'application/octet-stream'}});}return g.client.transport.call(globalThis,url,init);});await assert.rejects(call(client,g.selection,()=>active),{code:'DOCUMENT_READ_PAUSED'});assert.equal(cancelled,1);});
 function call(...args:any[]){assert.equal(typeof m.readImpactDocument,'function');return m.readImpactDocument(...args);}

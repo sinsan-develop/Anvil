@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState,type Dispatch,type SetStateAction} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState,type Dispatch,type SetStateAction} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
 import type {DesignChangePage} from './api.ts';
@@ -7,8 +7,47 @@ import {documentVersionHref} from '../../shell/routes.ts';
 import {readWorkPlan,type PlanRef} from '../design-trace/work-plan-api.ts';
 import {readWorkPlanDecision} from '../design-trace/work-plan-decision-api.ts';
 import {bindDesignActivationApproval} from '../decisions/design-activation-approval-api.ts';
+import {readDesignActivationDecision} from './design-activation-decision-read.ts';
 type Props={client:ApiClient;projectId:string;session:DocumentSession;page:DesignChangePage|null;selectionId:string;buffer:ActivationBuffer|null;onChange:Dispatch<SetStateAction<ActivationBuffer|null>>;onRequest:(buffer:ActivationBuffer)=>boolean;onAuthenticationLost:()=>void};
 type HistorySelection={active:()=>boolean;value:FixedActivation};
+type DecisionRead={owner:HistorySelection;busy:boolean;value:Awaited<ReturnType<typeof readDesignActivationDecision>>;error:string|null};
+function ActivatedDecisionReason({client,projectId,selection,onAuthenticationLost}:{
+ client:ApiClient;projectId:string;selection:HistorySelection;onAuthenticationLost:()=>void;
+}){
+ const owner=useRef<HistorySelection|null>(null),flight=useRef<object|null>(null);
+ const [read,setRead]=useState<DecisionRead|null>(null);
+ useLayoutEffect(()=>{owner.current=selection;return()=>{owner.current=null;flight.current=null;};},[selection]);
+ const shown=read?.owner===selection&&selection.active()?read:null;
+ async function load(){
+  if(owner.current!==selection||!selection.active()||flight.current||shown)return;
+  const ticket={},transport=client.transport;
+  const active=()=>owner.current===selection&&selection.active()&&flight.current===ticket&&client.transport===transport;
+  flight.current=ticket;
+  setRead({owner:selection,busy:true,value:null,error:null});
+  try{
+   const value=await readDesignActivationDecision(client,projectId,selection.value,active);
+   if(active()&&value)setRead({owner:selection,busy:false,value,error:null});
+  }catch(cause){
+   if(!active())return;
+   const e=cause instanceof ApiError?cause:new ApiError('DESIGN_ACTIVATION_DECISION_MISMATCH');
+   setRead({owner:selection,busy:false,value:null,error:/^[A-Z_]{1,80}$/.test(e.code)?e.code:'DESIGN_ACTIVATION_DECISION_MISMATCH'});
+   if(e.status===401)onAuthenticationLost();
+  }finally{if(flight.current===ticket)flight.current=null;}
+ }
+ return <section aria-label="당시 적용·승인 이유">
+  {!shown?<button type="button" onClick={()=>void load()}>당시 적용·승인 이유 확인</button>:<>
+   <button type="button" onClick={()=>{flight.current=null;setRead(null);}}>당시 적용·승인 이유 닫기</button>
+   {shown.busy?<p role="status">저장된 적용·승인 이유 조회 중</p>:null}
+   {shown.error?<p role="alert">{shown.error} · 당시 이유를 확인할 수 없습니다.</p>:null}
+   {shown.value?<><h5>적용 후보 이유</h5><pre>{shown.value.candidateReason}</pre>
+    <h5>승인 결정 이유</h5><pre>{shown.value.decisionReason}</pre>
+    <p>요청 {shown.value.requestRef.id} · SHA256 {shown.value.requestRef.contentHash}</p>
+    <p>승인 결정 {shown.value.decisionRef.id} · SHA256 {shown.value.decisionRef.contentHash}</p>
+    <p>적용 당시 소비된 승인 기록입니다. 현재 승인 권한이나 실행 허가를 뜻하지 않습니다.</p>
+   </>:null}
+  </>}
+ </section>;
+}
 function ActivatedPlanOriginal({client,selection,onAuthenticationLost}:{client:ApiClient;selection:HistorySelection;onAuthenticationLost:()=>void}){
  const owner=useRef(selection);owner.current=selection;
  const alive=useRef(true),flight=useRef<{selection:HistorySelection}|null>(null);
@@ -52,7 +91,7 @@ export function DesignActivationPanel({client,projectId,session,page,selectionId
   <button type="button" disabled={!page||busy||!!b&&!b.receipt} onClick={()=>void perform(begin)}>설계 변경 적용 준비</button>
    <button type="button" disabled={busy} onClick={()=>void perform(inspectCurrent)}>현재 적용 기준 확인</button>
    {shownCurrent?<section aria-label="현재 적용 기준">{shownCurrent.current.state==='NONE'?<p>최초 기준 등록 · 저장된 현재 기준과 적용 이력이 없습니다. 실제 실행·writer 부재를 뜻하지 않습니다.</p>:<><p>현재 적용 {shownCurrent.current.activationRef.id} · v{shownCurrent.current.activationRef.version} · SHA256 {shownCurrent.current.activationRef.contentHash}</p><button type="button" disabled={busy} onClick={()=>void perform(async active=>{if(shownCurrent.current.state==='PRESENT')await inspect(shownCurrent.current.activationRef,active);})}>적용 이력 원문 확인</button></>}<p>관측 {shownCurrent.observedAt} · 조회는 적용·실행 허가가 아닙니다.</p></section>:null}
-   {shownHistory?<section aria-label="고정 적용 이력"><h4>고정 적용 이력</h4><p>{shownHistory.ref.id} · v{shownHistory.ref.version} · SHA256 {shownHistory.ref.contentHash} · {shownHistory.isCurrent?'관측 시점 현재 기준':'보존된 과거 기준'}</p><pre>{JSON.stringify(shownHistory.snapshot,null,2)}</pre><a href={documentVersionHref(shownHistory.snapshot.projectId,shownHistory.snapshot.approvedDesignRef)}>당시 확정 설계 원문 보기</a><ActivatedPlanOriginal client={client} selection={history!} onAuthenticationLost={onAuthenticationLost}/><p>원 후보 이유는 별도 보호 조회에 보존됩니다. 이 적용 사실은 실제 실행·검수 합격의 증거가 아닙니다.</p>{shownHistory.snapshot.previousActivationRef?<button type="button" disabled={busy} onClick={()=>void perform(active=>inspect(shownHistory.snapshot.previousActivationRef!,active))}>직전 적용 이력 확인</button>:null}</section>:null}
+   {shownHistory?<section aria-label="고정 적용 이력"><h4>고정 적용 이력</h4><p>{shownHistory.ref.id} · v{shownHistory.ref.version} · SHA256 {shownHistory.ref.contentHash} · {shownHistory.isCurrent?'관측 시점 현재 기준':'보존된 과거 기준'}</p><pre>{JSON.stringify(shownHistory.snapshot,null,2)}</pre><a href={documentVersionHref(shownHistory.snapshot.projectId,shownHistory.snapshot.approvedDesignRef)}>당시 확정 설계 원문 보기</a><ActivatedPlanOriginal client={client} selection={history!} onAuthenticationLost={onAuthenticationLost}/><ActivatedDecisionReason client={client} projectId={projectId} selection={history!} onAuthenticationLost={onAuthenticationLost}/><p>이 적용 사실은 실제 실행·검수 합격의 증거가 아닙니다.</p>{shownHistory.snapshot.previousActivationRef?<button type="button" disabled={busy} onClick={()=>void perform(active=>inspect(shownHistory.snapshot.previousActivationRef!,active))}>직전 적용 이력 확인</button>:null}</section>:null}
   {b&&owned?<><p>변경 {b.input.changeRef.id} · v{b.input.changeRef.version} · SHA256 {b.input.changeRef.contentHash}</p><p>영향 {b.input.impactRef.id} · v{b.input.impactRef.version} · SHA256 {b.input.impactRef.contentHash}</p>{!selected?<p role="status">다른 선택의 원 입력·명령을 보존했습니다. 현재 선택에서는 실행하지 않습니다.</p>:null}
    <fieldset disabled={busy||!!b.pending||!selected}><legend>적용 후보 입력</legend>{(['approvedDesignRef','confirmedPlanRef'] as const).map((kind,index)=><div key={kind}><label>{index?'적용할 확정 계획 ID':'적용할 확정 설계 ID'}<input autoComplete="off" maxLength={36} value={b.input[kind].id} onChange={e=>edit(kind,'id',e.target.value)}/></label><label>{index?'적용할 계획 버전':'적용할 설계 버전'}<input type="number" min={1} value={b.input[kind].version||''} onChange={e=>edit(kind,'version',e.target.value)}/></label><label>{index?'적용할 계획 SHA256':'적용할 설계 SHA256'}<input autoComplete="off" maxLength={64} value={b.input[kind].contentHash} onChange={e=>edit(kind,'contentHash',e.target.value)}/></label></div>)}<label>기준 적용 이유<textarea maxLength={20000} value={b.input.reason} onChange={e=>{if(b.pending)return;update(b,{...b,input:{...b.input,reason:e.target.value}});setAck(false);}}/></label></fieldset>
    <label><input type="checkbox" disabled={busy||!!b.pending||!shownCurrent||!selected} checked={ack} onChange={e=>setAck(e.target.checked)}/>정확한 적용 후보와 현재 기준을 확인했습니다</label><button type="button" disabled={busy||!ack||!shownCurrent||!!b.pending||!selected} onClick={()=>{try{const pending=prepareDesignActivation(b,session);update(b,{...b,pending});setError(null);}catch(e){setError(e instanceof ApiError?e:new ApiError('RESPONSE_INVALID'));}}}>적용 후보 고정</button>
