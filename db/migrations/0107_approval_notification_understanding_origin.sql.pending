@@ -1,0 +1,66 @@
+-- 미적용 FN17: FN09 이해 검토 승인 요청의 정착 origin을 기존 IN_APP 검산에 연결한다.
+-- 같은 함수의 signature, 소유자와 실행 권한을 보존한다.
+BEGIN;
+
+CREATE OR REPLACE FUNCTION anvil.fn17_notification_origin_valid(pid uuid,rid uuid,source_id uuid,recipient uuid,occurred timestamptz,request_hash text) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE request anvil.approval_requests;r anvil.project_storage_reservations;
+BEGIN
+ SELECT * INTO request FROM anvil.approval_requests x WHERE x.project_id=pid AND x.id=rid;
+ IF request.action_scope_json->>'operation'='queueExecutionCommand' OR request.request_json ? 'originReuseEvidence' THEN
+  SELECT * INTO r FROM anvil.project_storage_reservations x WHERE x.project_id=pid AND x.id=source_id;
+  RETURN COALESCE(anvil.fn09_origin_reuse_request_record_valid(pid,rid,source_id)
+   AND request.created_by=recipient AND request.created_at=occurred AND request.content_hash=request_hash AND request.command_id=source_id
+   AND r.part_kind='ORIGIN_REUSE_APPROVAL_REQUEST' AND r.part_key='origin_reuse_request' AND r.phase IN('IO_STARTED','SETTLED') AND r.start_fence=1
+   AND r.plan_json->'requestRecord'=request.request_json AND r.plan_hash=anvil.fn01_hash(r.plan_json-'planHash'),false);
+ ELSIF request.action_scope_json->>'operation'='reviewUnderstanding' THEN
+  DECLARE
+   r anvil.approval_requests;c anvil.commands;ar anvil.authorization_receipts;
+   q jsonb;s jsonb;scope jsonb;ref jsonb;payload jsonb;candidate jsonb;original jsonb;digest text;
+  BEGIN
+   r:=request;
+   SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=source_id;
+   SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
+   q:=r.request_json;s:=q-ARRAY['id','version','status','createdAt'];scope:=q->'details'->'actionScope';ref:=jsonb_build_object('id',rid,'version',1,'contentHash',request_hash);
+   IF (r.id IS NOT NULL AND c.id IS NOT NULL AND ar.id IS NOT NULL AND r.command_id=source_id AND r.created_by=recipient
+   AND anvil.execution_json_shape(q,ARRAY['id','version','status','projectId','details','scopeDigest','requiredDecider','policyRef','requestedBy','controlGeneration','createdAt'])
+   AND q->>'id'=rid::text AND q->'version'='1'::jsonb AND q->>'status'='PENDING' AND q->>'projectId'=pid::text
+   AND q->>'createdAt'=to_char(occurred AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AND r.created_at=occurred
+   AND q->'details'=r.details_json AND scope=r.action_scope_json AND q->>'scopeDigest'=r.scope_digest
+   AND r.scope_digest=anvil.execution_json_hash(scope) AND r.content_hash=request_hash AND anvil.execution_json_hash(s)=request_hash
+   AND q->'requiredDecider'=jsonb_build_object('kind','HUMAN','userId',recipient) AND r.required_decider_ref=q->'requiredDecider'
+   AND q->'requestedBy'=jsonb_build_object('kind','HUMAN','userId',recipient,'clientId',r.client_id)
+   AND scope->'requestedSubjectRef'=q->'requestedBy' AND scope->'controlGeneration'=q->'controlGeneration'
+   AND (q->>'controlGeneration')::bigint=c.control_generation AND q->'policyRef'=r.policy_ref AND r.policy_ref=c.policy_ref
+   AND q->'details'->>'candidateCommandId'=r.candidate_command_id::text AND (q->'details'->>'expiresAt')::timestamptz=r.expires_at
+   AND c.scope_kind='PROJECT' AND c.scope_id=pid AND c.operation='requestApproval' AND c.state='APPLIED' AND c.expected_version=0
+   AND c.actor_id=recipient AND c.client_id=r.client_id AND c.payload_ref IS NULL AND c.approval_consumption_id IS NULL
+   AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.policy_ref=c.policy_ref AND ar.approval_decision_ref IS NULL
+   AND ar.subject_ref=q->'requestedBy' AND date_trunc('milliseconds',c.completed_at)=occurred) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+   IF NOT COALESCE(anvil.fn09_understanding_candidate_valid(pid,rid),false) THEN RETURN false;END IF;
+   -- 0056은 후보 명령 전체를 보관하고 actionScope.payloadHash는 내부 payload만 검산한다.
+   SELECT b.payload_json INTO candidate FROM anvil.understanding_review_approval_candidates b WHERE b.project_id=pid AND b.request_id=rid
+    AND b.request_command_id=source_id AND b.candidate_command_id=r.candidate_command_id
+    AND b.created_by=recipient AND b.client_id=r.client_id AND b.control_generation=c.control_generation AND b.policy_ref=c.policy_ref
+    AND b.payload_hash=scope->>'payloadHash';
+   IF candidate IS NULL OR anvil.execution_json_hash(candidate->'payload') IS DISTINCT FROM scope->>'payloadHash' THEN RETURN false;END IF;
+   payload:=jsonb_build_object('details',q->'details','candidatePayload',candidate);
+   original:=jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,
+    'operation','requestApproval','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',payload);
+   digest:=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',recipient,'clientId',c.client_id,'controlGeneration',c.control_generation,
+    'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',ref));
+   IF (c.request_hash=anvil.execution_json_hash(original) AND ar.scope_digest=digest
+   AND c.result_ref->>'commandId'=c.command_id::text AND c.result_ref->>'operationId'=c.operation_id::text AND c.result_ref->>'projectId'=pid::text
+   AND c.result_ref->>'status'='APPLIED' AND c.result_ref->>'targetId'=rid::text AND c.result_ref->'version'='1'::jsonb
+   AND c.result_ref->>'serverReceivedAt'=q->>'createdAt' AND c.result_ref->'data'=jsonb_build_object('ref',ref,'status','APPROVAL_REQUESTED','request',q)
+   AND (SELECT count(*)=1 AND count(*) FILTER (WHERE e.operation_id=c.operation_id
+    AND e.outcome='APPLIED' AND e.reason_code='EXPLICIT_ONE_TIME_APPROVAL_REQUEST' AND e.source_kind='HUMAN_COMMAND'
+    AND e.actor_ref=jsonb_build_object('kind','HUMAN','userId',recipient) AND e.client_ref=c.client_id AND e.target_ref=ref AND e.policy_ref=c.policy_ref
+    AND e.approval_ref IS NULL AND e.scope_digest=digest)=1
+    FROM anvil.audit_events e WHERE e.project_id=pid AND e.command_id=source_id AND e.correction_of IS NULL)) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+   RETURN true;
+  END;
+ END IF;
+ RETURN anvil.fn17_notification_origin_before_origin_reuse_request(pid,rid,source_id,recipient,occurred,request_hash);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+
+COMMIT;

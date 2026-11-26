@@ -10,3 +10,31 @@ test('내부cap은10000전체project·원command잠금문맥의void검사이며�
 
 test('잠금획득후현재성statement와deferred최종정책검사는분리되고cap10000재검산은없다',async()=>{const s=await source(),current=s.slice(s.indexOf('CREATE FUNCTION anvil.fn17_notification_current('),s.indexOf('CREATE FUNCTION anvil.fn17_notification_new_origin('));const lock=current.indexOf('FOR UPDATE OF pr,m,pc;'),post=current.indexOf('PERFORM 1 FROM anvil.projects',current.indexOf('PERFORM 1 FROM anvil.projects')+1);assert.ok(lock>0&&post>lock);assert.ok(current.indexOf('a.idle_expires_at>clock_timestamp()',post)>post);assert.ok(current.includes("original_rule->>'expiresAt'"));const complete=s.slice(s.indexOf('CREATE FUNCTION anvil.fn17_notification_complete()'),s.indexOf('CREATE CONSTRAINT TRIGGER notification_request_complete'));assert.ok(complete.includes("fn17_notification_current(NEW.project_id,NEW.command_id,'requestApproval')"));assert.ok(complete.includes('fn17_notification_new_origin(NEW.project_id,NEW.id,NEW.command_id)'));assert.equal(complete.includes('assert_approval_notification_capacity'),false);});
 test('쓰기cap은현재tx4원행xmin과불변원시각을함께결박하고역사조회에는소급하지않는다',async()=>{const s=await source(),fresh=s.slice(s.indexOf('CREATE FUNCTION anvil.fn17_notification_new_origin('),s.indexOf('CREATE FUNCTION anvil.assert_approval_notification_capacity('));for(const name of ['c','r','ar','e'])assert.ok(fresh.includes(name+'.xmin=pg_current_xact_id()::xid'));assert.ok(fresh.includes('c.received_at=transaction_timestamp()'));assert.ok(fresh.includes("r.created_at=date_trunc('milliseconds',transaction_timestamp())"));assert.ok(fresh.includes("r.request_json->>'createdAt'"));const cap=s.slice(s.indexOf('CREATE FUNCTION anvil.assert_approval_notification_capacity('),s.indexOf('CREATE FUNCTION anvil.fn17_notification_insert()'));assert.ok(cap.includes('fn17_notification_new_origin(pid,r.id,source_id)'));const history=s.slice(s.indexOf('CREATE FUNCTION anvil.fn17_notification_origin_valid('),s.indexOf('CREATE FUNCTION anvil.fn17_notification_current('));assert.equal(history.includes('xmin'),false);});
+
+test('0107은 기존 origin 함수 OID와 분기를 보존하고 이해 검토의 전체 후보 명령을 재검산한다',async()=>{
+ const sql=await readFile(new URL('../../../db/migrations/0107_approval_notification_understanding_origin.sql.pending',import.meta.url),'utf8');
+ const old=await readFile(new URL('../../../db/migrations/0082_fn09_origin_reuse_synthetic_start.sql.pending',import.meta.url),'utf8');
+ const flat=(v:string)=>v.replace(/--[^\n]*/g,'').replace(/\s+/g,' ').trim(),s=flat(sql),q=flat(old);
+ assert.match(s,/^BEGIN; CREATE OR REPLACE FUNCTION anvil\.fn17_notification_origin_valid\(pid uuid,rid uuid,source_id uuid,recipient uuid,occurred timestamptz,request_hash text\) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS \$\$/);
+ assert.match(s,/EXCEPTION WHEN OTHERS THEN RETURN false;END;\$\$; COMMIT;$/);
+ assert.equal((s.match(/\bCREATE\b/g)??[]).length,1);
+ assert.equal((s.match(/\bBEGIN;/g)??[]).length,1);assert.equal((s.match(/\bCOMMIT;/g)??[]).length,1);
+ assert.doesNotMatch(s,/\b(?:ALTER|DROP|GRANT|REVOKE|INSERT|UPDATE|DELETE|EXECUTE)\b/);
+ const arm="IF request.action_scope_json->>'operation'='queueExecutionCommand'",delegate='RETURN anvil.fn17_notification_origin_before_origin_reuse_request(pid,rid,source_id,recipient,occurred,request_hash);';
+ assert.equal(s.slice(s.indexOf(arm),s.indexOf(' ELSIF request.action_scope_json')).trim(),q.slice(q.indexOf(arm),q.indexOf(delegate)).trim().replace(/ END IF;$/,''));
+ assert.ok(s.includes(delegate));
+ assert.match(s,/ELSIF request\.action_scope_json->>'operation'='reviewUnderstanding' THEN/);
+ assert.match(s,/NOT COALESCE\(anvil\.fn09_understanding_candidate_valid\(pid,rid\),false\) THEN RETURN false;/);
+ assert.match(s,/SELECT b\.payload_json INTO candidate FROM anvil\.understanding_review_approval_candidates b WHERE b\.project_id=pid AND b\.request_id=rid/);
+ for(const fence of ['b.request_command_id=source_id','b.candidate_command_id=r.candidate_command_id','b.created_by=recipient','b.client_id=r.client_id','b.control_generation=c.control_generation','b.policy_ref=c.policy_ref',"b.payload_hash=scope->>'payloadHash'","anvil.execution_json_hash(candidate->'payload') IS DISTINCT FROM scope->>'payloadHash'","jsonb_build_object('details',q->'details','candidatePayload',candidate)"])assert.ok(s.includes(fence),fence);
+ const legacy=await source(),sharedStart='IF (r.id IS NOT NULL AND c.id IS NOT NULL AND ar.id IS NOT NULL',sharedEnd='payload:=jsonb_build_object';
+ assert.ok(s.includes(legacy.slice(legacy.indexOf(sharedStart),legacy.indexOf(sharedEnd,legacy.indexOf(sharedStart))).trim()),'기존 origin metadata/issuer/receipt 검산을 동일하게 유지한다');
+ const finalStart="original:=jsonb_build_object('schemaVersion',1,'projectId',pid",finalEnd='EXCEPTION WHEN OTHERS';
+ const originalGuard=legacy.slice(legacy.indexOf(finalStart),legacy.indexOf(finalEnd,legacy.indexOf(finalStart))).trim();
+ const exactAuditStart='AND (SELECT count(*)=1 FROM anvil.audit_events e WHERE e.project_id=pid AND e.command_id=source_id AND e.operation_id=c.operation_id';
+ const auditGuard=originalGuard
+  .replace(exactAuditStart,'AND (SELECT count(*)=1 AND count(*) FILTER (WHERE e.operation_id=c.operation_id')
+  .replace('AND e.approval_ref IS NULL AND e.scope_digest=digest))','AND e.approval_ref IS NULL AND e.scope_digest=digest)=1 FROM anvil.audit_events e WHERE e.project_id=pid AND e.command_id=source_id AND e.correction_of IS NULL))');
+ assert.notEqual(auditGuard,originalGuard);
+ assert.ok(s.includes(auditGuard),'명령/결과/hash 검산을 유지하고 정정 기록을 제외한 원감사의 총수와 일치 수가 각각 1이어야 한다');
+});

@@ -7,19 +7,44 @@ import {ProjectPolicyRepository} from '../../../apps/server/modules/access/proje
 import {AuthFailure,type AccessRepository} from '../../../apps/server/modules/access/repository.ts';
 import {DesignActivationApprovalCandidates} from '../../../apps/server/modules/approvals/design-activation-approval-candidate.ts';
 import {WorkPlanApprovalCandidates} from '../../../apps/server/modules/approvals/work-plan-approval-candidate.ts';
+import {understandingCodes} from '../../../apps/server/modules/executions/execution-understanding.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),error=(code:string,status:number)=>(e:unknown)=>e instanceof AuthFailure&&e.message===code&&e.statusCode===status;
 function request(operation='uploadArtifact',key=id(41)):any{const original=notificationFixture().source.request_json.details,details=structuredClone(original),ref={id:id(80),version:1,contentHash:'c'.repeat(64)},payload=operation==='activateDesignChange'?activationFixture().input:operation==='saveWorkPlanDraft'?{documentRef:ref,designRef:{...ref,id:id(81)},screenReviewRefs:[],tasks:[],reason:'보관할 계획'}:null;details.candidateCommandId=id(Number(key.slice(-2))+100);details.actionScope.operation=operation;details.actionScope.targetRef=operation==='activateDesignChange'?(payload as any).changeRef:null;details.actionScope.expectedVersion=details.actionScope.targetRef?.version??0;if(payload)details.actionScope.payloadHash=hash(payload);return{schemaVersion:1,projectId:pid,commandId:key,clientId:cid,controlGeneration:1,operation:'requestApproval',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{details,...(payload?{candidatePayload:payload}:{})}};}
+function understandingRequest(key=id(46)){
+ const c=request('reviewUnderstanding',key),details=c.payload.details;
+ const ref=(n:number)=>({id:id(n),version:1,contentHash:'c'.repeat(64)});
+ const payload={bundleRef:ref(81),responseRef:ref(82),subjectBindingRef:ref(83),criteriaVersion:1,items:understandingCodes.map(code=>({code,sourceRefs:[ref(84)],responsePartRefs:[ref(85)],judgement:'MATCH',reason:'합성 대조'})),reason:'합성 판단'};
+ const candidatePayload={schemaVersion:1,projectId:pid,commandId:details.candidateCommandId,clientId:cid,controlGeneration:1,operation:'reviewUnderstanding',targetId:id(86),expectedVersion:1,baselineRefs:[],approvalRef:null,payload};
+ details.actionScope.expectedVersion=candidatePayload.expectedVersion;
+ details.actionScope.payloadHash=hash(payload);
+ c.payload.candidatePayload=candidatePayload;
+ return c;
+}
 function inserted(sql:string,args:any[]){const match=/INSERT INTO anvil\.[a-z_]+\(([^)]+)\)\s*VALUES\(([^)]+)\)/.exec(sql);assert.ok(match,'관측 INSERT는 명시 column/value 계약이어야 한다');const names=match[1]!.split(',').map(v=>v.trim()),values=match[2]!.split(',').map(v=>v.trim());assert.equal(names.length,values.length);return Object.fromEntries(names.map((name,i)=>{const token=values[i]!;if(/^\$\d+$/.test(token))return[name,args[Number(token.slice(1))-1]];if(/^'.*'$/.test(token))return[name,token.slice(1,-1)];if(/^\d+$/.test(token))return[name,Number(token)];throw Error('UNEXPECTED_INSERT_VALUE:'+token);}));}
-function transactionFixture(){
+function transactionFixture(originModel:'BEFORE'|'AFTER'='AFTER'){
  const f=notificationFixture(),stored={requests:[] as any[],notifications:[] as any[],captures:[] as any[]},events:string[]=[],unexpected:string[]=[],priorRows={count:0},fault={mode:''},identity={value:structuredClone(actor)},raw=f.db.query.bind(f.db);let queue=Promise.resolve();
- f.rules.splice(0,f.rules.length,{...structuredClone(f.rules[0]!),ruleId:'request',operations:['requestApproval'],disposition:'AUTO'},{...structuredClone(f.rules[0]!),ruleId:'candidate',operations:['uploadArtifact','saveWorkPlanDraft','activateDesignChange'],disposition:'REQUIRE_APPROVAL'});
+ f.rules.splice(0,f.rules.length,{...structuredClone(f.rules[0]!),ruleId:'request',operations:['requestApproval'],disposition:'AUTO'},{...structuredClone(f.rules[0]!),ruleId:'candidate',operations:['uploadArtifact','saveWorkPlanDraft','activateDesignChange','reviewUnderstanding'],disposition:'REQUIRE_APPROVAL'});
  const db={query:async(sql:string,args:any[]=[])=>{events.push(sql);
   if(sql==='SELECT 1 FROM anvil.approval_requests WHERE project_id=$1 AND candidate_command_id=$2')return{rows:stored.requests.filter(r=>r.project_id===args[0]&&r.candidate_command_id===args[1]),rowCount:stored.requests.filter(r=>r.project_id===args[0]&&r.candidate_command_id===args[1]).length};
   if(sql.startsWith('INSERT INTO anvil.approval_requests')){stored.requests.push(inserted(sql,args));return{rows:[],rowCount:1};}
-  if(sql.startsWith('INSERT INTO anvil.work_plan_approval_candidates')||sql.startsWith('INSERT INTO anvil.design_activation_approval_candidates')){stored.captures.push({table:sql.includes('work_plan_')?'PLAN':'ACTIVATION',...inserted(sql,args)});return{rows:[],rowCount:1};}
+  if(sql.startsWith('INSERT INTO anvil.work_plan_approval_candidates')||sql.startsWith('INSERT INTO anvil.design_activation_approval_candidates')||sql.startsWith('INSERT INTO anvil.understanding_review_approval_candidates')){stored.captures.push({table:sql.includes('work_plan_')?'PLAN':sql.includes('design_activation_')?'ACTIVATION':'UNDERSTANDING',...inserted(sql,args)});return{rows:[],rowCount:1};}
   if(sql.startsWith('SELECT anvil.assert_approval_notification_capacity(')){assert.deepEqual(args,[pid]);assert.ok(events.some(q=>q.includes('FOR UPDATE OF p,m')),'원project/member잠금을선행한다');assert.ok(events.some(q=>q.includes('FROM anvil.project_control')));if(priorRows.count+stored.notifications.length>=10000)throw Object.assign(Error('NOTIFICATION_CAPACITY_EXCEEDED'),{code:'P0001'});if(fault.mode==='CAP_WAIT')f.clock=new Date(Date.parse(at)+20);return{rows:[],rowCount:1};}
-  if(sql.startsWith('INSERT INTO anvil.notifications')){if(fault.mode==='INSERT_WAIT')await new Promise(r=>setTimeout(r,30));if(fault.mode==='INSERT')throw Object.assign(Error('SYNTHETIC_PRIVATE_SQL'),{code:'42501'});if(fault.mode==='GUARD')throw Object.assign(Error('SYNTHETIC_PRIVATE_GUARD'),{code:'23514'});const row=inserted(sql,args),r=stored.requests.find(r=>r.id===row.approval_request_id),c=f.commands.find(c=>c.id===row.source_command_id);assert.ok(r&&c);assert.equal(row.source_command_id,r.command_id);assert.notEqual(row.source_command_id,c.command_id);assert.equal(row.recipient_user_id,uid);assert.equal(row.project_id,pid);assert.equal(Number(row.request_version),1);assert.equal(row.request_content_hash,r.content_hash);assert.equal(new Date(row.created_at).toISOString(),at);assert.ok(events.some(q=>q.startsWith('SELECT anvil.assert_approval_notification_capacity(')));stored.notifications.push(row);return{rows:[],rowCount:1};}
+  if(sql.startsWith('INSERT INTO anvil.notifications')){if(fault.mode==='INSERT_WAIT')await new Promise(r=>setTimeout(r,30));if(fault.mode==='INSERT')throw Object.assign(Error('SYNTHETIC_PRIVATE_SQL'),{code:'42501'});if(fault.mode==='GUARD')throw Object.assign(Error('SYNTHETIC_PRIVATE_GUARD'),{code:'23514'});const row=inserted(sql,args),r=stored.requests.find(r=>r.id===row.approval_request_id),c=f.commands.find(c=>c.id===row.source_command_id);assert.ok(r&&c);
+   // 저장된 실제 SQL 호출을 대상으로 한 RAM 검산 모델이며 PG trigger 실행은 아니다.
+   const details=JSON.parse(r.details_json);
+   if(details.actionScope.operation==='reviewUnderstanding'){
+    const b=stored.captures.find(b=>b.table==='UNDERSTANDING'&&b.project_id===r.project_id&&b.request_id===r.id);
+    const candidate=b&&fault.mode!=='MISSING_CANDIDATE'?JSON.parse(b.payload_json):null;
+    if(candidate&&fault.mode==='TAMPERED_CANDIDATE')candidate.payload.reason='변조된 이유';
+    const source=fault.mode==='OTHER_SOURCE'?id(97):row.source_command_id,recipient=fault.mode==='OTHER_RECIPIENT'?id(98):row.recipient_user_id;
+    const verified=candidate&&b.request_command_id===source&&b.created_by===recipient&&b.client_id===c.client_id&&b.control_generation===c.control_generation&&b.candidate_command_id===details.candidateCommandId&&b.command_hash===hash(candidate)&&b.payload_hash===hash(candidate.payload)&&b.payload_hash===details.actionScope.payloadHash;
+    const payload=originModel==='BEFORE'?{details}:{details,candidatePayload:candidate};
+    const original={schemaVersion:1,projectId:row.project_id,commandId:c.command_id,clientId:c.client_id,controlGeneration:c.control_generation,operation:'requestApproval',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload};
+    const originalAuditCount=f.audits+(fault.mode==='OTHER_ORIGINAL_AUDIT'?1:0);
+    if(!verified||originalAuditCount!==1||hash(original)!==c.request_hash)throw Object.assign(Error('SYNTHETIC_UNDERSTANDING_ORIGIN_REJECTED'),{code:'23514'});
+   }
+   assert.equal(row.source_command_id,r.command_id);assert.notEqual(row.source_command_id,c.command_id);assert.equal(row.recipient_user_id,uid);assert.equal(row.project_id,pid);assert.equal(Number(row.request_version),1);assert.equal(row.request_content_hash,r.content_hash);assert.equal(new Date(row.created_at).toISOString(),at);assert.ok(events.some(q=>q.startsWith('SELECT anvil.assert_approval_notification_capacity(')));stored.notifications.push(row);return{rows:[],rowCount:1};}
   if(sql.startsWith('SELECT r.*')&&sql.includes('FROM anvil.approval_requests r JOIN anvil.commands')){const r=stored.requests.find(r=>r.project_id===args[0]&&r.id===args[1]);if(!r)return{rows:[],rowCount:0};const c=f.commands.find(c=>c.id===r.command_id);return{rows:[{...r,request_json:JSON.parse(r.request_json),result_ref:c.result_ref,created_at:new Date(r.created_at),actor_id:c.actor_id,command_client:c.client_id,source_control_generation:c.control_generation,caller_command_id:c.command_id,scope_kind:'PROJECT',state:'APPLIED',command_project:pid,operation:'requestApproval'}],rowCount:1};}
   try{return await raw(sql,args);}catch(e){unexpected.push(sql);throw e;}
  }};
@@ -38,3 +63,38 @@ test('명확한원정책거절/다른payload의같은key는알림을만들지않
 test('cap대기후현재인증session/원request기한만료는원requestreceipt와감사를rollback한다',async()=>{for(const kind of ['SESSION','REQUEST']){const f=transactionFixture(),c=request();f.fault.mode='CAP_WAIT';if(kind==='SESSION')f.identity.value.authSession.idleExpiresAt='2026-10-27T00:00:00.010Z';else c.payload.details.expiresAt='2026-10-27T00:00:00.010Z';await assert.rejects(f.send(c),error(kind==='SESSION'?'AUTH_REQUIRED':'APPROVAL_INPUT_INVALID',kind==='SESSION'?401:422));assert.ok(f.events.some(q=>q.startsWith('SELECT anvil.assert_approval_notification_capacity(')));assert.equal(f.events.some(q=>q.startsWith('INSERT INTO anvil.notifications')),false);empty(f);}});
 
 test('원requestApproval AUTO최단기한은cap/INSERT지연뒤긴AUTO로연장되지않고전부rollback한다',async t=>{t.mock.timers.enable({apis:['Date'],now:Date.parse(at)});for(const mode of ['CAP_WAIT','INSERT_WAIT']){const f=transactionFixture();f.f.rules.push({...structuredClone(f.f.rules[0]!),ruleId:'short-request',expiresAt:new Date(Date.parse(at)+10).toISOString()});f.fault.mode=mode;await assert.rejects(f.send(request()),error('PROJECT_OPERATION_DENIED',403));assert.ok(f.events.some(q=>q.startsWith('SELECT anvil.assert_approval_notification_capacity(')));assert.equal(f.events.some(q=>q.startsWith('INSERT INTO anvil.notifications')),mode==='INSERT_WAIT');empty(f);}});
+
+test('이해 검토 전체 후보를 원 승인 요청에 결박해 cap 경계에서도 동일 재확인은 추가 저장이 없다',async()=>{
+ const c=understandingRequest(),legacy=transactionFixture('BEFORE');
+ await assert.rejects(legacy.send(c),error('NOTIFICATION_STORAGE_FAILED',503));
+ assert.ok(legacy.events.some(q=>q.startsWith('INSERT INTO anvil.understanding_review_approval_candidates')));
+ empty(legacy);
+
+ const f=transactionFixture();
+ f.priorRows.count=9999;
+ const first=await f.send(c);
+ const [captured]=f.stored.captures,[stored]=f.stored.requests,[notice]=f.stored.notifications;
+ assert.deepEqual(JSON.parse(captured.payload_json),c.payload.candidatePayload);
+ assert.equal(captured.payload_hash,hash(c.payload.candidatePayload.payload));
+ assert.equal(captured.command_hash,hash(c.payload.candidatePayload));
+ assert.notEqual(captured.payload_hash,captured.command_hash);
+ assert.equal(f.f.commands[0].request_hash,hash(c));
+ assert.equal(notice.source_command_id,stored.command_id);
+ assert.equal(notice.recipient_user_id,captured.created_by);
+ await assert.rejects(f.send(understandingRequest(id(47))),error('NOTIFICATION_CAPACITY_EXCEEDED',429));
+ assert.deepEqual(await f.send(c),first);
+ assert.equal(f.callbacks,2);
+ assert.equal(f.stored.captures.length,1);
+ assert.equal(f.stored.notifications.length,1);
+ assert.deepEqual(f.unexpected,[]);
+});
+
+test('이해 검토 후보 누락·변조, 다른 수신자/원 명령과 추가 원감사는 거래 전체를 되돌린다',async()=>{
+ for(const fault of ['MISSING_CANDIDATE','TAMPERED_CANDIDATE','OTHER_SOURCE','OTHER_RECIPIENT','OTHER_ORIGINAL_AUDIT']){
+  const f=transactionFixture();
+  f.fault.mode=fault;
+  await assert.rejects(f.send(understandingRequest()),error('NOTIFICATION_STORAGE_FAILED',503),fault);
+  assert.ok(f.events.some(q=>q.startsWith('INSERT INTO anvil.notifications')),fault);
+  empty(f);
+ }
+});
