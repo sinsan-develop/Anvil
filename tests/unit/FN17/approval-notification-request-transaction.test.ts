@@ -47,11 +47,20 @@ function membershipRequest(base:ReturnType<typeof membershipVersion>|null=null,k
  scope.payloadHash=hash(c.payload.candidatePayload);
  return c;
 }
+function environmentRequest(policyHash:string,key=id(54)){
+ const c=request('saveEnvironment',key),scope=c.payload.details.actionScope;
+ const ref=(n:number)=>({id:id(n),version:1,contentHash:'f'.repeat(64)});
+ const hostRef={kind:'HOST_DECLARATION',ref:ref(106)},sourceRootRef=ref(107);
+ const environment={sourceRoots:[{sourceRootId:sourceRootRef.id,hostId:hostRef.ref.id,displayLabel:'합성 소스',registeredPathRef:{kind:'SOURCE_ROOT_DECLARATION',sourceRootRef,hostRef},identityRef:null,permissionScope:{kind:'REQUESTED_SCOPE',targets:[{relativePath:'src/task.ts',kind:'FILE',access:'READ',recursive:false}]}}],executionHostRef:hostRef,targetHostRefs:[],commandProfileRefs:[{kind:'COMMAND_PROFILE_METADATA',ref:ref(108)}],secretRefs:[],policyRef:{id:id(8),version:1,contentHash:policyHash}};
+ c.payload.candidatePayload={environment,baseRef:null,reason:'합성 원 환경 승인'};
+ scope.payloadHash=hash(c.payload.candidatePayload);
+ return c;
+}
 function inserted(sql:string,args:any[]){const match=/INSERT INTO anvil\.[a-z_]+\(([^)]+)\)\s*VALUES\(([^)]+)\)/.exec(sql);assert.ok(match,'관측 INSERT는 명시 column/value 계약이어야 한다');const names=match[1]!.split(',').map(v=>v.trim()),values=match[2]!.split(',').map(v=>v.trim());assert.equal(names.length,values.length);return Object.fromEntries(names.map((name,i)=>{const token=values[i]!;if(/^\$\d+$/.test(token))return[name,args[Number(token.slice(1))-1]];if(/^'.*'$/.test(token))return[name,token.slice(1,-1)];if(/^\d+$/.test(token))return[name,Number(token)];throw Error('UNEXPECTED_INSERT_VALUE:'+token);}));}
-function transactionFixture(originModel:'BEFORE'|'BEFORE_BACKUP'|'BEFORE_MEMBERSHIP'|'AFTER'='AFTER'){
+function transactionFixture(originModel:'BEFORE'|'BEFORE_BACKUP'|'BEFORE_MEMBERSHIP'|'BEFORE_ENVIRONMENT'|'AFTER'='AFTER'){
  const f=notificationFixture(),stored={requests:[] as any[],notifications:[] as any[],captures:[] as any[]},events:string[]=[],unexpected:string[]=[],priorRows={count:0},fault={mode:''},identity={value:structuredClone(actor) as Omit<typeof actor,'reauthUntil'>&{reauthUntil:Date|null}},raw=f.db.query.bind(f.db);let queue=Promise.resolve();
- f.rules.splice(0,f.rules.length,{...structuredClone(f.rules[0]!),ruleId:'request',operations:['requestApproval'],disposition:'AUTO'},{...structuredClone(f.rules[0]!),ruleId:'candidate',operations:['uploadArtifact','saveWorkPlanDraft','activateDesignChange','reviewUnderstanding','saveBackupPolicy','saveProjectMembership'],disposition:'REQUIRE_APPROVAL'});
- let sourceId:string|undefined;
+ f.rules.splice(0,f.rules.length,{...structuredClone(f.rules[0]!),ruleId:'request',operations:['requestApproval'],disposition:'AUTO'},{...structuredClone(f.rules[0]!),ruleId:'candidate',operations:['uploadArtifact','saveWorkPlanDraft','activateDesignChange','reviewUnderstanding','saveBackupPolicy','saveProjectMembership','saveEnvironment'],disposition:'REQUIRE_APPROVAL'});
+ let sourceId:string|undefined,environmentContext=false;
  const auditSources:string[]=[];
  const membershipVersions:ReturnType<typeof membershipVersion>[]=[];
  const membershipHead={version:0};
@@ -79,19 +88,21 @@ function transactionFixture(originModel:'BEFORE'|'BEFORE_BACKUP'|'BEFORE_MEMBERS
  }
  function verifyCandidateOrigin(row:any,r:any,c:any,phase:'CAP'|'INSERT'|'HISTORY'){
   // 실제 후보 INSERT의 바이트를 검산하는 합성 대역이다.
-   const {version,status,details}=JSON.parse(r.request_json);
+   const {version,status,details,candidateKind}=JSON.parse(r.request_json);
    const understanding=details.actionScope.operation==='reviewUnderstanding',backupPolicy=details.actionScope.operation==='saveBackupPolicy',membership=details.actionScope.operation==='saveProjectMembership';
-   if(understanding||backupPolicy||membership){
+   const environment=details.actionScope.operation==='saveEnvironment'&&candidateKind==='ENVIRONMENT_DEFINITION';
+   if(understanding||backupPolicy||membership||environment){
     const project=phase==='INSERT'&&fault.mode==='OTHER_PROJECT'?id(96):row.project_id;
     const source=phase==='INSERT'&&fault.mode==='OTHER_SOURCE'?id(97):row.source_command_id,recipient=phase==='INSERT'&&fault.mode==='OTHER_RECIPIENT'?id(98):row.recipient_user_id;
-    const captures=stored.captures.filter(b=>b.table===(understanding?'UNDERSTANDING':'BACKUP_POLICY')&&b.project_id===project&&b.request_id===r.id);
+    const captures=stored.captures.filter(b=>b.table===(understanding?'UNDERSTANDING':environment?'ENVIRONMENT':'BACKUP_POLICY')&&b.project_id===project&&b.request_id===r.id);
     const b=captures[0],candidate=membership?verifiedMembership(r,project,source,recipient,c):b&&fault.mode!=='MISSING_CANDIDATE'?JSON.parse(b.payload_json):null;
     const content=understanding?candidate?.payload:candidate;
     if(content&&fault.mode==='TAMPERED_CANDIDATE')content.reason='변조된 이유';
     const exact=candidate&&captures.length===1&&b.request_command_id===source&&b.created_by===recipient&&b.client_id===c.client_id&&b.control_generation===c.control_generation&&b.candidate_command_id===details.candidateCommandId&&hash(JSON.parse(b.policy_ref))===hash(c.policy_ref)&&b.payload_hash===hash(content)&&b.payload_hash===details.actionScope.payloadHash;
-    const projection=exact&&backupPolicy?{projectId:project,requestId:r.id,requestCommandId:source,candidateCommandId:b.candidate_command_id,payloadHash:b.payload_hash,payload:candidate,createdBy:recipient,clientId:c.client_id,controlGeneration:c.control_generation,policyRef:c.policy_ref}:null;
-    const verified=membership?candidate!==null:exact&&(understanding?b.command_hash===hash(candidate):fault.mode!=='OTHER_PROJECTION'&&hash(JSON.parse(b.projection_json))===hash(projection)&&hash(candidate.previousRef)===hash(details.actionScope.targetRef));
-    const detailsOnly=originModel==='BEFORE'||backupPolicy&&originModel==='BEFORE_BACKUP';
+    const projection=exact&&(backupPolicy||environment)?{projectId:project,requestId:r.id,requestCommandId:source,candidateCommandId:b.candidate_command_id,payloadHash:b.payload_hash,payload:candidate,createdBy:recipient,clientId:c.client_id,controlGeneration:c.control_generation,policyRef:c.policy_ref}:null;
+    const verified=membership?candidate!==null:exact&&(understanding?b.command_hash===hash(candidate):fault.mode!=='OTHER_PROJECTION'&&hash(JSON.parse(b.projection_json))===hash(projection)&&hash(environment?candidate.baseRef:candidate.previousRef)===hash(details.actionScope.targetRef)
+     &&(!environment||environmentContext&&b.canonical_bytes===Buffer.byteLength(canonicalJson(projection))));
+    const detailsOnly=originModel==='BEFORE'||backupPolicy&&originModel==='BEFORE_BACKUP'||environment&&originModel==='BEFORE_ENVIRONMENT';
     const payload=detailsOnly?{details}:{details,candidatePayload:candidate};
     const original={schemaVersion:1,projectId:row.project_id,commandId:c.command_id,clientId:c.client_id,controlGeneration:c.control_generation,operation:'requestApproval',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload};
     const originalAuditCount=auditSources.filter(commandId=>commandId===source).length+(fault.mode==='OTHER_ORIGINAL_AUDIT'?1:0);
@@ -101,6 +112,22 @@ function transactionFixture(originModel:'BEFORE'|'BEFORE_BACKUP'|'BEFORE_MEMBERS
  const db={query:async(sql:string,args:any[]=[])=>{events.push(sql);
   if(sql.startsWith('SELECT set_config(')&&sql.includes("set_config('anvil.command_id',$3,true)"))sourceId=args[2];
   if(sql.startsWith('INSERT INTO anvil.audit_events')&&sql.includes("'APPLIED'"))auditSources.push(args[4]);
+  if(sql==='SELECT anvil.environment_configuration_context($1,$2,$3,$4)'){
+   assert.deepEqual(args,[identity.value.authSession.id,uid,cid,pid]);environmentContext=true;
+   return{rows:[],rowCount:1};
+  }
+  if(sql==='SELECT anvil.environment_approval_target($1,$2,$3,$4,$5,$6) AS valid'){
+   assert.deepEqual(args.slice(0,4),[identity.value.authSession.id,uid,cid,pid]);assert.equal(environmentContext,true);
+   return{rows:[{valid:true}],rowCount:1};
+  }
+  if(sql==='SELECT anvil.environment_approval_capture($1,$2,$3,$4,$5) AS captured'){
+   assert.deepEqual(args.slice(0,4),[identity.value.authSession.id,uid,cid,pid]);assert.equal(environmentContext,true);
+   const projection=JSON.parse(args[4]),c=f.commands.find(c=>c.id===projection.requestCommandId);
+   assert.equal(stored.requests.some(r=>r.id===projection.requestId),false,'환경 후보는 원 명령 정착 후 FK 지연검사로 원 요청 INSERT에 앞서 보관한다');
+   assert.equal(c.result_ref.data.request.candidateKind,'ENVIRONMENT_DEFINITION');
+   stored.captures.push({table:'ENVIRONMENT',project_id:projection.projectId,request_id:projection.requestId,request_command_id:projection.requestCommandId,candidate_command_id:projection.candidateCommandId,payload_hash:projection.payloadHash,payload_json:JSON.stringify(projection.payload),created_by:projection.createdBy,client_id:projection.clientId,control_generation:projection.controlGeneration,policy_ref:JSON.stringify(projection.policyRef),projection_json:JSON.stringify(projection),canonical_bytes:Buffer.byteLength(canonicalJson(projection))});
+   return{rows:[{captured:true}],rowCount:1};
+  }
   if(sql==='SELECT id,checksum FROM anvil.schema_migrations WHERE id=$1'){
    assert.deepEqual(args,[membershipMigration]);
    return{rows:[{id:membershipMigration,checksum:membershipChecksum}],rowCount:1};
@@ -141,7 +168,7 @@ function transactionFixture(originModel:'BEFORE'|'BEFORE_BACKUP'|'BEFORE_MEMBERS
   if(sql.startsWith('SELECT r.*')&&sql.includes('FROM anvil.approval_requests r JOIN anvil.commands')){const r=stored.requests.find(r=>r.project_id===args[0]&&r.id===args[1]);if(!r)return{rows:[],rowCount:0};const c=f.commands.find(c=>c.id===r.command_id);return{rows:[{...r,request_json:JSON.parse(r.request_json),result_ref:c.result_ref,created_at:new Date(r.created_at),actor_id:c.actor_id,command_client:c.client_id,source_control_generation:c.control_generation,caller_command_id:c.command_id,scope_kind:'PROJECT',state:'APPLIED',command_project:pid,operation:'requestApproval'}],rowCount:1};}
   try{return await raw(sql,args);}catch(e){unexpected.push(sql);throw e;}
  }};
- const access={signProjectCursor:sign,signMethodCursor:sign,authenticated:async(_token:string,_csrf:any,body:any)=>{let unlock:()=>void=()=>{};const beforeQueue=queue;queue=new Promise<void>(r=>{unlock=r;});await beforeQueue;sourceId=undefined;const auditLength=auditSources.length,before=structuredClone({commands:f.commands,reads:f.reads,audits:f.audits,receipts:f.receipts,...stored});try{return await body(db,identity.value);}catch(e){auditSources.length=auditLength;f.commands=before.commands;f.reads=before.reads;f.audits=before.audits;f.receipts=before.receipts;stored.requests=before.requests;stored.notifications=before.notifications;stored.captures=before.captures;throw e;}finally{unlock();}}} as unknown as AccessRepository;
+ const access={signProjectCursor:sign,signMethodCursor:sign,authenticated:async(_token:string,_csrf:any,body:any)=>{let unlock:()=>void=()=>{};const beforeQueue=queue;queue=new Promise<void>(r=>{unlock=r;});await beforeQueue;sourceId=undefined;environmentContext=false;const auditLength=auditSources.length,before=structuredClone({commands:f.commands,reads:f.reads,audits:f.audits,receipts:f.receipts,...stored});try{return await body(db,identity.value);}catch(e){auditSources.length=auditLength;f.commands=before.commands;f.reads=before.reads;f.audits=before.audits;f.receipts=before.receipts;stored.requests=before.requests;stored.notifications=before.notifications;stored.captures=before.captures;throw e;}finally{unlock();}}} as unknown as AccessRepository;
  const service=new ProjectApprovals(),repo=new ProjectPolicyRepository(access);let callbacks=0;
  return{f,stored,events,unexpected,priorRows,fault,identity,membershipVersions,membershipHead,verifyStoredCandidateNotification(row:any){
   const r=stored.requests.find(r=>r.project_id===row.project_id&&r.id===row.approval_request_id),c=f.commands.find(c=>c.id===row.source_command_id);
@@ -282,6 +309,45 @@ test('참여자 후보 또는 과거 버전 손상·교차 결박은 알림과 �
   await assert.rejects(f.send(membershipRequest(base)),error('NOTIFICATION_STORAGE_FAILED',503),mode);
   assert.ok(f.events.some(q=>q.startsWith('SELECT anvil.assert_approval_notification_capacity(')),mode);
   assert.equal(f.events.some(q=>q.startsWith('INSERT INTO anvil.notifications')),['OTHER_RECIPIENT','OTHER_SOURCE','DUPLICATE_SOURCE'].includes(mode),mode);
+  empty(f);
+ }
+});
+
+test('등록형 환경 후보는 실제 선행 capture 뒤 알림에 결박되고 구형 환경과 같은 명령 재확인을 보존한다',async()=>{
+ const legacy=transactionFixture('BEFORE_ENVIRONMENT'),old=environmentRequest(legacy.f.policyHash());
+ await assert.rejects(legacy.send(old),error('NOTIFICATION_STORAGE_FAILED',503));
+ assert.ok(legacy.events.some(q=>q.includes('anvil.environment_approval_capture')));
+ assert.ok(legacy.events.some(q=>q.startsWith('SELECT anvil.assert_approval_notification_capacity(')));
+ assert.equal(legacy.events.some(q=>q.startsWith('INSERT INTO anvil.notifications')),false);
+ empty(legacy);
+ const f=transactionFixture(),c=environmentRequest(f.f.policyHash());
+ f.priorRows.count=9999;
+ const first=await f.send(c),[capture]=f.stored.captures,[r]=f.stored.requests;
+ assert.equal(JSON.parse(r.request_json).candidateKind,'ENVIRONMENT_DEFINITION');
+ assert.deepEqual(JSON.parse(capture.payload_json),c.payload.candidatePayload);
+ assert.equal(capture.request_command_id,r.command_id);
+ const captureAt=f.events.findIndex(q=>q.includes('anvil.environment_approval_capture'));
+ const requestAt=f.events.findIndex(q=>q.startsWith('INSERT INTO anvil.approval_requests'));
+ const noticeAt=f.events.findIndex(q=>q.startsWith('INSERT INTO anvil.notifications'));
+ assert.ok(captureAt>=0&&captureAt<requestAt&&requestAt<noticeAt);
+ await assert.rejects(f.send(environmentRequest(f.f.policyHash(),id(55))),error('NOTIFICATION_CAPACITY_EXCEEDED',429));
+ assert.deepEqual(await f.send(c),first);
+ assert.equal(f.stored.notifications.length,1);
+ assert.equal(f.stored.captures.length,1);
+ assert.deepEqual(f.unexpected,[]);
+ const oldEnvironment=transactionFixture();
+ await oldEnvironment.send(request('saveEnvironment',id(56)));
+ assert.equal(JSON.parse(oldEnvironment.stored.requests[0].request_json).candidateKind,undefined);
+ assert.equal(oldEnvironment.stored.captures.length,0);
+ assert.equal(oldEnvironment.stored.notifications.length,1);
+ assert.equal(oldEnvironment.events.some(q=>q.includes('anvil.environment_configuration_context')),false);
+});
+test('등록형 환경의 원 후보 누락·변조와 알림 원천 교차는 전역 rollback이다',async()=>{
+ for(const mode of ['MISSING_CANDIDATE','TAMPERED_CANDIDATE','OTHER_PROJECTION','OTHER_ORIGINAL_AUDIT','OTHER_PROJECT','OTHER_SOURCE','OTHER_RECIPIENT','DUPLICATE_SOURCE']){
+  const f=transactionFixture();f.fault.mode=mode;
+  await assert.rejects(f.send(environmentRequest(f.f.policyHash())),error('NOTIFICATION_STORAGE_FAILED',503),mode);
+  assert.ok(f.events.some(q=>q.startsWith('SELECT anvil.assert_approval_notification_capacity(')),mode);
+  assert.equal(f.events.some(q=>q.startsWith('INSERT INTO anvil.notifications')),['OTHER_PROJECT','OTHER_SOURCE','OTHER_RECIPIENT','DUPLICATE_SOURCE'].includes(mode),mode);
   empty(f);
  }
 });

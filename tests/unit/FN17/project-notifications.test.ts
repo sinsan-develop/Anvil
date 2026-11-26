@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {fixture,actor,pid,nid,uid,id,command,access,sign,at} from './notification-fixture.ts';import {ProjectListCodec} from '../../../apps/server/modules/projects/service.ts';import {ProjectPolicyRepository} from '../../../apps/server/modules/access/project-command.ts';
+import test from 'node:test';import assert from 'node:assert/strict';import {fixture,actor,pid,nid,uid,cid,id,command,access,sign,at} from './notification-fixture.ts';import {ProjectListCodec} from '../../../apps/server/modules/projects/service.ts';import {ProjectPolicyRepository} from '../../../apps/server/modules/access/project-command.ts';
 async function service(){const m=await import('../../../apps/server/modules/notifications/project-notifications.ts').catch(()=>null);assert.ok(m,'알림 실제 저장/조회 service가 필요하다');return new m.ProjectNotifications();}
 test('현재 회원의 본인 사건은 승인 v3 뒤에도 원 v1/hash로 읽고 원문은 공개하지 않는다',async()=>{const s=await service(),f=fixture();f.participation='OBSERVER';f.control=false;const dto=await s.read(f.db,actor,pid,nid);assert.equal(dto.eventRef.requestRef.version,1);assert.equal(dto.readAt,null);assert.equal(Object.keys(dto).length,9);assert.equal(JSON.stringify(dto).includes('합성 비공개'),false);assert.equal(f.reads.length,0);await assert.rejects(()=>s.read(f.db,actor,pid,id(99)),/NOT_FOUND/);f.member=false;await assert.rejects(()=>s.read(f.db,actor,pid,nid),/NOT_FOUND/);});
 test('허가된 원 사건/영수증·hash 손상은 503이며 타수신자는 404로 숨긴다',async()=>{const s=await service();for(const mutate of [(f:any)=>f.source.state='FAILED',(f:any)=>f.source.result_ref.data.request.status='CONSUMED',(f:any)=>f.source.command_id=id(99),(f:any)=>f.row.content_hash='0'.repeat(64)]){const f=fixture();mutate(f);await assert.rejects(()=>s.read(f.db,actor,pid,nid),(e:any)=>e.statusCode===503&&e.message==='NOTIFICATION_INTEGRITY_FAILED');}const f=fixture();f.row.recipient_user_id=id(99);await assert.rejects(()=>s.read(f.db,actor,pid,nid),(e:any)=>e.statusCode===404);});
@@ -13,3 +13,75 @@ test('mark 권한의 실제 기존 오류명·상태와 현재 정책을 보존�
 test('목록 cursor는 실제 collection/project/수신자/상태/limit에 결박하고 만료·변조를 거절한다',async t=>{t.mock.timers.enable({apis:['Date'],now:Date.parse(at)});const s=await service(),f=fixture(),codec=new ProjectListCodec(sign),{canonicalJson}=await import('../../../contracts/canonical.ts'),binding={collection:'FN17_APPROVAL_IN_APP',projectId:pid,recipientUserId:uid,readState:'ALL',order:'CREATED_DESC_ID_DESC'},filter={query:canonicalJson(binding),archived:false,limit:50};const valid=codec.create(uid,filter,{at,id:nid},new Date(at));await s.list(f.db,actor,pid,{cursor:valid},codec);for(const changed of [{...binding,projectId:id(90)},{...binding,recipientUserId:id(90)},{...binding,readState:'READ'},{...binding,collection:'OTHER'}]){const cursor=codec.create(uid,{...filter,query:canonicalJson(changed)},{at,id:nid},new Date(at));await assert.rejects(()=>s.list(f.db,actor,pid,{cursor},codec),/CURSOR_INVALID/);}for(const cursor of [codec.create(id(90),filter,{at,id:nid},new Date(at)),codec.create(uid,{...filter,limit:51},{at,id:nid},new Date(at)),valid+'x',codec.create(uid,filter,{at,id:nid},new Date(Date.parse(at)-31*60_000))])await assert.rejects(()=>s.list(f.db,actor,pid,{cursor},codec),/CURSOR_INVALID/);});
 test('DB 잠금대기 뒤 정책 만료는 성공/replay 모두 기존 403이며 새 적용을 rollback한다',async t=>{t.mock.timers.enable({apis:['Date'],now:Date.parse(at)});const s=await service();for(const replay of [false,true]){const f=fixture(),c=command(f),repo=new ProjectPolicyRepository(access(f));if(replay)await repo.command('t','c',c,(db,a,p)=>s.mark(db,a,c,p));f.rules[0]!.expiresAt='2026-10-27T00:00:00.010Z';f.clock=new Date('2026-10-27T00:00:00.020Z');let calls=0;await assert.rejects(()=>repo.command('t','c',c,(db,a,p)=>{calls++;return s.mark(db,a,c,p);}),(e:any)=>e.statusCode===403&&e.message==='PROJECT_OPERATION_DENIED');assert.equal(calls,0);assert.equal(f.commands.length,replay?1:0);assert.equal(f.reads.length,replay?1:0);}});
 test('동일 범위 AUTO 하나가 만료되어도 다른 현재 AUTO가 남으면 성공과 replay를 허용한다',async t=>{t.mock.timers.enable({apis:['Date'],now:Date.parse(at)});const s=await service(),f=fixture(),c=command(f);f.rules[0]!.expiresAt='2026-10-27T00:00:01.000Z';f.rules.push({...structuredClone(f.rules[0]!),ruleId:'long',expiresAt:'2026-10-27T00:01:00.000Z'});f.clock=new Date('2026-10-27T00:00:02.000Z');const repo=new ProjectPolicyRepository(access(f));let calls=0;const mark=()=>repo.command('t','c',c,(db,a,p)=>{calls++;return s.mark(db,a,c,p);});const first:any=await mark();assert.equal(first.data.status,'NOTIFICATION_READ');assert.deepEqual(await mark(),first);assert.equal(calls,1);assert.equal(f.commands.length,1);});
+
+async function environmentNotification(marker=true,originClient=cid){
+ const {canonicalJson,contentHash}=await import('../../../contracts/canonical.ts'),hash=(value:unknown)=>contentHash(canonicalJson(value));
+ const f=fixture(),r=f.source,q=r.request_json;
+ q.details.actionScope.operation='saveEnvironment';q.requestedBy.clientId=originClient;q.details.actionScope.requestedSubjectRef.clientId=originClient;
+ r.client_id=originClient;r.command_client=originClient;
+ if(marker)q.candidateKind='ENVIRONMENT_DEFINITION';
+ q.scopeDigest=hash(q.details.actionScope);
+ const {id:requestId,version,status,createdAt,...snapshot}=q,ref={id:requestId,version,contentHash:hash(snapshot)};
+ r.content_hash=ref.contentHash;r.scope_digest=q.scopeDigest;r.result_ref.data.ref=ref;
+ f.row.request_content_hash=ref.contentHash;
+ f.row.content_hash=hash({id:nid,eventRef:{kind:'APPROVAL_REQUESTED',serverCommandId:r.command_id,requestRef:ref,channel:'IN_APP',occurredAt:at},recipientRef:{kind:'HUMAN',userId:uid},projectRef:{id:pid},severity:'ACTION_REQUIRED',reason:'APPROVAL_REQUESTED',authenticatedTarget:{kind:'APPROVAL_REQUEST',projectId:pid,approvalRequestId:requestId},deliveryState:'STORED_IN_APP'});
+ const contextArgs:unknown[][]=[],trace:string[]=[],raw=f.db.query.bind(f.db),effect={context:false,denied:false,expireDuringContext:false};
+ (f.db as any).query=async(sql:string,args:any[]=[])=>{
+  trace.push(sql);
+  if(sql==='SELECT anvil.environment_configuration_context($1,$2,$3,$4)'){
+   contextArgs.push(args);
+   if(effect.denied)throw Object.assign(Error('ENVIRONMENT_OWNER_REQUIRED'),{code:'42501'});
+   if(effect.expireDuringContext)f.clock=new Date('2100-01-01T00:00:00.000Z');
+   effect.context=true;
+   return{rows:[],rowCount:1};
+  }
+  if(sql.startsWith('INSERT INTO anvil.notification_reads')&&marker&&!effect.context)throw Object.assign(Error('SYNTHETIC_ENVIRONMENT_CONTEXT_MISSING'),{code:'23514'});
+  return raw(sql,args);
+ };
+ return{f,contextArgs,trace,effect};
+}
+test('등록형 환경 알림의 첫 읽음만 현재 사용자와 기기의 보호 문맥을 연결한다',async()=>{
+ // 승인 당시 기기는 이후 읽음 명령의 인증 기기가 될 필요가 없다.
+ const s=await service(),{f,contextArgs,trace,effect}=await environmentNotification(true,id(61));
+ const ctor=new ProjectPolicyRepository(access(f)),firstCommand=command(f),mark=(c:any)=>ctor.command('t','c',c,(db,a,p)=>s.mark(db,a,c,p));
+ const read=await s.read(f.db,actor,pid,nid),page=await s.list(f.db,actor,pid,{},new ProjectListCodec(sign));
+ assert.deepEqual(page.items,[read]);
+ assert.equal('candidateKind' in read,false);
+ assert.deepEqual(contextArgs,[]);
+ trace.length=0;
+ const first=await mark(firstCommand);
+ assert.deepEqual(contextArgs,[[actor.authSession.id,uid,cid,pid]]);
+ const lookup=trace.findIndex(sql=>sql.includes('FROM anvil.approval_requests r JOIN anvil.commands'));
+ const context=trace.indexOf('SELECT anvil.environment_configuration_context($1,$2,$3,$4)');
+ const write=trace.findIndex(sql=>sql.startsWith('INSERT INTO anvil.notification_reads'));
+ assert.ok(lookup>=0&&context>lookup&&write>context);
+ effect.context=false;
+ assert.deepEqual(await mark(firstCommand),first);
+ assert.equal((await mark(command(f,id(62))) as any).data.readAt,at);
+ assert.equal(contextArgs.length,1);
+ assert.equal(f.reads.length,1);
+});
+test('등록형 환경 문맥은 읽기 거절·legacy와 분리되고 첫 쓰기 실패는 되돌린다',async()=>{
+ const s=await service();
+ for(const mode of ['LEGACY','TAMPER','CROSS','DENY','WRONG_CLIENT','NO_OWNER','CONTEXT_DENIED','CONTEXT_EXPIRED','INSERT_FAILED'] as const){
+  const {f,contextArgs,effect}=await environmentNotification(mode!=='LEGACY'),c=command(f);
+  if(mode==='TAMPER')f.source.request_json.candidateKind='OTHER';
+  if(mode==='CROSS')f.row.recipient_user_id=id(63);
+  if(mode==='DENY')f.rules[0]!.disposition='DENY';
+  if(mode==='WRONG_CLIENT')c.clientId=id(64);
+  if(mode==='NO_OWNER')f.participation='OBSERVER';
+  if(mode==='CONTEXT_DENIED')effect.denied=true;
+  if(mode==='CONTEXT_EXPIRED')effect.expireDuringContext=true;
+  if(mode==='INSERT_FAILED')f.failRead=true;
+  const repo=new ProjectPolicyRepository(access(f)),mark=()=>repo.command('t','c',c,(db,a,p)=>s.mark(db,a,c,p));
+  if(mode==='LEGACY'){await mark();assert.equal(f.reads.length,1);assert.deepEqual(contextArgs,[]);continue;}
+  const expected={
+   TAMPER:['NOTIFICATION_INTEGRITY_FAILED',503],CROSS:['NOT_FOUND',404],DENY:['PROJECT_OPERATION_DENIED',403],
+   WRONG_CLIENT:['PROJECT_WRITE_DENIED',403],NO_OWNER:['PROJECT_WRITE_DENIED',403],CONTEXT_DENIED:['NOTIFICATION_STORAGE_NOT_READY',503],
+   CONTEXT_EXPIRED:['AUTH_REQUIRED',401],INSERT_FAILED:['NOTIFICATION_STORAGE_FAILED',503]
+  }[mode];
+  await assert.rejects(mark,(e:any)=>e.message===expected[0]&&e.statusCode===expected[1],mode);
+  assert.equal(contextArgs.length,['CONTEXT_DENIED','CONTEXT_EXPIRED','INSERT_FAILED'].includes(mode)?1:0,mode);
+  assert.equal(f.commands.length,0,mode);assert.equal(f.receipts,0,mode);assert.equal(f.audits,0,mode);assert.equal(f.reads.length,0,mode);
+ }
+});

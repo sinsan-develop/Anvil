@@ -88,3 +88,30 @@ test('0109는 참여자 변경 후보와 당시 고정 버전만 추가하고 �
  assert.doesNotMatch(branch,/fn74_candidate_valid|fn74_manager|current_setting|clock_timestamp|FROM anvil\.(?:project_members|project_control|users)\b/i);
  assert.doesNotMatch(branch,/\b(?:ALTER|DROP|GRANT|REVOKE|INSERT|UPDATE|DELETE|EXECUTE)\b/i);
 });
+
+test('0110 등록형 환경의 원 요청만 연결하고 원래 권한과 구형 환경 분기를 보존한다',async()=>{
+ const flat=(v:string)=>v.replace(/--[^\n]*/g,'').replace(/\s+/g,' ').trim();
+ const old=flat(await readFile(new URL('../../../db/migrations/0109_approval_notification_membership_origin.sql.pending',import.meta.url),'utf8'));
+ const next=flat(await readFile(new URL('../../../db/migrations/0110_approval_notification_environment_origin.sql.pending',import.meta.url),'utf8'));
+ const marker="ELSIF request.action_scope_json->>'operation'='saveEnvironment' AND request.request_json->>'candidateKind'='ENVIRONMENT_DEFINITION' THEN";
+ const start=next.indexOf(marker),end=next.indexOf(" ELSIF request.action_scope_json->>'operation' IN(",start);
+ assert.ok(start>0&&end>start);
+ assert.equal(next.slice(0,start-1)+next.slice(end),old);
+ const branch=next.slice(start,end);
+ for(const fence of [
+  'request.command_id=source_id','request.created_by=recipient','request.created_at=occurred','request.content_hash=request_hash',
+  'c.project_id=pid AND c.id=source_id','c.payload_ref IS NULL',"date_trunc('milliseconds',c.completed_at)=occurred",
+  "c.result_ref->>'serverReceivedAt'=request.request_json->>'createdAt'",
+  "request.request_json->>'createdAt'=to_char(occurred AT TIME ZONE 'UTC'",'anvil.environment_approval_complete(pid,rid)'
+ ])assert.ok(branch.includes(fence),fence);
+ const migrations=new URL('../../../db/migrations/',import.meta.url);
+ const prepare=flat(await readFile(new URL('0077_registered_execution_preparation_options.sql.pending',migrations),'utf8'));
+ const reused=flat(await readFile(new URL('0082_fn09_origin_reuse_synthetic_start.sql.pending',migrations),'utf8'));
+ const work=flat(await readFile(new URL('0103_work_preparation_understanding_basis.sql.pending',migrations),'utf8'));
+ assert.ok(next.includes('RETURN anvil.fn17_notification_origin_before_origin_reuse_request(pid,rid,source_id,recipient,occurred,request_hash);'));
+ assert.match(reused,/ALTER FUNCTION anvil\.fn17_notification_origin_valid\([^)]*\) RENAME TO fn17_notification_origin_before_origin_reuse_request;/);
+ assert.match(prepare,/ELSIF scope->>'operation'='prepareExecution' THEN SELECT payload_json INTO candidate FROM anvil\.execution_preparation_approval_candidates[^;]+fn09_prepare_payload_valid\(payload_json\)/);
+ assert.match(work,/CREATE OR REPLACE FUNCTION anvil\.fn09_prepare_payload_valid\(i jsonb\)[^$]+\$\$[^;]+/);
+ assert.ok(work.includes("i->'mode' IS DISTINCT FROM '\"WORK\"'::jsonb"));
+ assert.doesNotMatch(branch,/current_setting|current_owner|environment_configuration_context|FOR UPDATE|GRANT|REVOKE/i);
+});

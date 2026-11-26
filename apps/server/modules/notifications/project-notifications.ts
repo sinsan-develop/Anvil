@@ -1,5 +1,5 @@
 import {readApprovalDetails,readOriginReuseApprovalRequest} from '../approvals/approval-input.ts';
-import {recordV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {recordV1,uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {consumableOperations} from '../approvals/project-approvals.ts';
 import type {PoolClient} from 'pg';
 import {AuthFailure,type AuthenticatedIdentity} from '../access/repository.ts';
@@ -14,7 +14,7 @@ async function storage<T>(body:()=>Promise<T>):Promise<T>{try{return await body(
 async function notificationActorContext(db:PoolClient,a:AuthenticatedIdentity){await db.query("SELECT set_config('anvil.actor_id',$1,true),set_config('anvil.client_id',$2,true)",[a.actorId,a.clientId]);}
 export class ProjectNotifications {
  async #current(db:PoolClient,a:AuthenticatedIdentity,pid:string){await projectMember(db,a,pid,true);const before=performance.now(),at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;notificationSessionDeadline(a,at,before);return at as Date;}
- async #verify(db:PoolClient,a:AuthenticatedIdentity,pid:string,row:Record<string,any>):Promise<ApprovalNotification>{
+ async #verify(db:PoolClient,a:AuthenticatedIdentity,pid:string,row:Record<string,any>){
   if(row.project_id!==pid||row.recipient_user_id!==a.actorId)throw new AuthFailure('NOT_FOUND',404);
   const dto=notificationFromRow(row);
   const r=(await db.query('SELECT r.*,c.operation,c.scope_kind,c.state,c.project_id command_project,c.actor_id,c.client_id command_client,c.control_generation source_control_generation,c.command_id caller_command_id,c.request_hash caller_request_hash,c.result_ref FROM anvil.approval_requests r JOIN anvil.commands c ON c.id=r.command_id AND c.project_id=r.project_id WHERE r.project_id=$1 AND r.id=$2',[pid,dto.eventRef.requestRef.id])).rows[0];
@@ -37,21 +37,33 @@ export class ProjectNotifications {
     const c=(await db.query("SELECT c.*,ar.subject_ref,ar.scope_digest FROM anvil.commands c JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id WHERE c.project_id=$1 AND c.id=$2",[pid,row.read_command_id])).rows[0];
     if(!c||Number(c.expected_version)!==1||!Number.isSafeInteger(Number(c.control_generation))||Number(c.control_generation)<1||!isVersionRef(c.policy_ref)||c.result_ref?.commandId!==c.command_id||c.result_ref?.operationId!==c.operation_id||c.scope_digest!==contentHash(canonicalJson({projectId:pid,actorId:a.actorId,clientId:c.client_id,controlGeneration:Number(c.control_generation),requestHash:c.request_hash,policyRef:c.policy_ref,targetRef:notificationRef(dto)}))||c.scope_kind!=='PROJECT'||c.operation!=='markNotificationRead'||c.state!=='APPLIED'||c.actor_id!==a.actorId||c.client_id!==row.read_client_id||c.result_ref?.status!=='APPLIED'||c.result_ref.projectId!==pid||c.result_ref.targetId!==dto.id||c.result_ref.version!==1||c.result_ref.data?.status!=='NOTIFICATION_READ'||c.result_ref.data.readAt!==dto.readAt||canonicalJson(c.result_ref.data.ref)!==canonicalJson(notificationRef(dto))||canonicalJson(c.subject_ref)!==canonicalJson({kind:'HUMAN',userId:a.actorId,clientId:row.read_client_id}))throw Error();
    }
-  }catch{throw new AuthFailure('NOTIFICATION_INTEGRITY_FAILED',503);}return dto;
+   return{dto,registeredEnvironment:snapshot.details.actionScope.operation==='saveEnvironment'&&snapshot.candidateKind==='ENVIRONMENT_DEFINITION'};
+  }catch{throw new AuthFailure('NOTIFICATION_INTEGRITY_FAILED',503);}
  }
- async read(db:PoolClient,a:AuthenticatedIdentity,pid:string,id:string){return storage(async()=>{await projectMember(db,a,pid,true);await notificationActorContext(db,a);const row=(await db.query(selectNotification+' WHERE n.project_id=$1 AND n.recipient_user_id=$2 AND n.id=$3',[pid,a.actorId,id])).rows[0];if(!row)throw new AuthFailure('NOT_FOUND',404);const dto=await this.#verify(db,a,pid,row);await this.#current(db,a,pid);return dto;});}
+ async #readOne(db:PoolClient,a:AuthenticatedIdentity,pid:string,id:string){
+  await projectMember(db,a,pid,true);await notificationActorContext(db,a);
+  const row=(await db.query(selectNotification+' WHERE n.project_id=$1 AND n.recipient_user_id=$2 AND n.id=$3',[pid,a.actorId,id])).rows[0];if(!row)throw new AuthFailure('NOT_FOUND',404);
+  const origin=await this.#verify(db,a,pid,row);await this.#current(db,a,pid);return origin;
+ }
+ async read(db:PoolClient,a:AuthenticatedIdentity,pid:string,id:string){return storage(async()=>(await this.#readOne(db,a,pid,id)).dto);}
  async list(db:PoolClient,a:AuthenticatedIdentity,pid:string,q:Record<string,unknown>,codec:ProjectListCodec){return storage(async()=>{
   await projectMember(db,a,pid,true);await notificationActorContext(db,a);const input=readNotificationListQuery(q),filter={query:canonicalJson({collection:'FN17_APPROVAL_IN_APP',projectId:pid,recipientUserId:a.actorId,readState:input.readState,order:'CREATED_DESC_ID_DESC'}),archived:false,limit:input.limit};
   let pos:{at:string;id:string}|null=null;if(input.cursor!==undefined)try{pos=codec.read(input.cursor,a.actorId,filter);}catch{throw new AuthFailure('CURSOR_INVALID',400);}
   const rows=(await db.query(selectNotification+` WHERE n.project_id=$1 AND n.recipient_user_id=$2 AND ($3::text='ALL' OR ($3='READ' AND nr.read_at IS NOT NULL) OR ($3='UNREAD' AND nr.read_at IS NULL)) AND ($4::timestamptz IS NULL OR (n.created_at,n.id)<($4::timestamptz,$5::uuid)) ORDER BY n.created_at DESC,n.id DESC LIMIT $6`,[pid,a.actorId,input.readState,pos?.at??null,pos?.id??null,input.limit+1])).rows;
   // 다음 페이지 판단용 한 행도 검증해 손상된 사건을 조용히 누락하지 않는다.
-  const checked:ApprovalNotification[]=[];for(const row of rows)checked.push(await this.#verify(db,a,pid,row));
+  const checked:ApprovalNotification[]=[];for(const row of rows)checked.push((await this.#verify(db,a,pid,row)).dto);
   const observedAt=await this.#current(db,a,pid),hasMore=rows.length>input.limit,last=rows.slice(0,input.limit).at(-1);
   return{items:checked.slice(0,input.limit),hasMore,nextCursor:hasMore?codec.create(a.actorId,filter,{at:last!.cursor_at,id:last!.id},observedAt):null,observedAt:observedAt.toISOString(),baselineVersion:null};
  });}
  async mark(db:PoolClient,a:AuthenticatedIdentity,c:ProjectCommand,policyRef:VersionRef){return storage(async()=>{
   const ref=readNotificationMark(c.payload);if(c.operation!=='markNotificationRead'||c.targetId!==ref.id||c.expectedVersion!==1||c.baselineRefs.length||c.approvalRef!==null)throw new AuthFailure('NOTIFICATION_INPUT_INVALID',422);
-  const dto=await this.read(db,a,c.projectId,ref.id);if(canonicalJson(ref)!==canonicalJson(notificationRef(dto)))throw new AuthFailure('NOTIFICATION_REF_CONFLICT',409);
+  const {dto,registeredEnvironment}=await this.#readOne(db,a,c.projectId,ref.id);if(canonicalJson(ref)!==canonicalJson(notificationRef(dto)))throw new AuthFailure('NOTIFICATION_REF_CONFLICT',409);
+  if(dto.readAt===null&&registeredEnvironment){
+   if(c.clientId!==a.clientId)throw new AuthFailure('PROJECT_WRITE_DENIED',403);
+   const sessionId=a.authSession?.id;if(!uuidV1(sessionId))throw new AuthFailure('AUTH_REQUIRED',401);
+   // 최초 읽음 INSERT의 원 후보 검산에 이 인증 거래의 OWNER 문맥만 전달한다.
+   await db.query('SELECT anvil.environment_configuration_context($1,$2,$3,$4)',[sessionId,a.actorId,a.clientId,c.projectId]);
+  }
   const at=await this.#current(db,a,c.projectId),readAt=dto.readAt??at.toISOString();if(Date.parse(readAt)<Date.parse(dto.eventRef.occurredAt))throw new AuthFailure('NOTIFICATION_INTEGRITY_FAILED',503);
   const receipt=await persistProjectReceipt(db,a,c,ref,{status:'NOTIFICATION_READ',readAt},policyRef,'EXPLICIT_NOTIFICATION_READ');
   if(dto.readAt===null)await db.query('INSERT INTO anvil.notification_reads(project_id,notification_id,recipient_user_id,client_id,command_id,notification_content_hash,read_at) VALUES($1,$2,$3,$4,$5,$6,$7)',[c.projectId,dto.id,a.actorId,a.clientId,receipt.id,ref.contentHash,readAt]);
