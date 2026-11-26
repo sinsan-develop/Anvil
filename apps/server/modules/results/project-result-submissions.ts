@@ -21,6 +21,53 @@ export class ProjectResultSubmissions{
    if(row.project_id!==scope.projectId||row.execution_id!==scope.executionRef.id||Number(row.generation)!==scope.executionRef.version||!same(row.assignment_ref,scope.assignmentRef)||!same(row.execution_ref,scope.executionRef)||row.manifest_hash!==s.manifestHash||!same(row.manifest_ref,{id,version:1,contentHash:s.manifestHash})||row.submission_state!==s.manifest.submissionState||row.submitted_by!==s.submittedByRef.id||!uuidV1(row.client_id)||!uuidV1(row.command_id)||!(row.submitted_at instanceof Date)||row.submitted_at.toISOString()!==s.submittedAt)return fail('RESULT_SUBMISSION_LEDGER_INVALID');return entry;
   }catch{return fail('RESULT_SUBMISSION_LEDGER_INVALID');}
  }
+ /** 현재 submitter 자격을 다시 발급하지 않고, 같은 프로젝트에서 정착한 원 제출만 검산한다. */
+ async #verifyOrigins(db:PoolClient,projectId:string,entries:{entry:SyntheticSubmittedResult;commandId:string;clientId:string}[]){
+  if(!entries.length)return;
+  try{
+   const ids=entries.map(e=>e.commandId);
+   if(new Set(ids).size!==ids.length)return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+   // 감사 조건을 JOIN에서 걸러 내지 않는다. 유효 행 옆에 잘못된 행이 하나라도 있으면 중복이다.
+   const {rows}=await db.query(`
+SELECT c.id,c.project_id,c.scope_kind,c.scope_id,c.draft_id,c.actor_id,c.client_id,c.operation,c.state,c.command_id,
+ c.operation_id,c.authorization_receipt_id,c.policy_ref,c.expected_version,c.approval_consumption_id,c.payload_ref,
+ c.control_generation,c.request_hash,c.result_ref,c.completed_at,ar.authorized_at,a.recorded_at,
+ jsonb_build_object('id',ar.id,'command_id',ar.command_id,'scope_kind',ar.scope_kind,'scope_id',ar.scope_id,
+  'subject_ref',ar.subject_ref,'policy_ref',ar.policy_ref,'scope_digest',ar.scope_digest,'approval_decision_ref',ar.approval_decision_ref) AS receipt,
+ jsonb_build_object('project_id',a.project_id,'command_id',a.command_id,'operation_id',a.operation_id,'event_id',a.event_id,
+  'actor_ref',a.actor_ref,'client_ref',a.client_ref,'policy_ref',a.policy_ref,'target_ref',a.target_ref,'approval_ref',a.approval_ref,
+  'correction_of',a.correction_of,'outcome',a.outcome,'source_kind',a.source_kind,'reason_code',a.reason_code,'scope_digest',a.scope_digest) AS audit
+FROM anvil.commands c
+JOIN anvil.authorization_receipts ar ON ar.id=c.authorization_receipt_id AND ar.command_id=c.id
+JOIN anvil.audit_events a ON a.project_id=c.project_id AND a.command_id=c.id
+WHERE c.project_id=$1 AND c.id=ANY($2::uuid[]) LIMIT $3`,[projectId,ids,ids.length+1]);
+   const commands=new Map(rows.map(c=>[c.id,c]));
+   if(rows.length!==entries.length||commands.size!==entries.length)return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+   for(const {entry,commandId,clientId} of entries){
+    const s=entry.snapshot,manifestRef={id:entry.ref.id,version:1,contentHash:s.manifestHash},actorId=s.submittedByRef.id,c=commands.get(commandId);
+    if(!c||c.project_id!==projectId||c.scope_kind!=='PROJECT'||c.scope_id!==projectId||c.draft_id!==null||c.actor_id!==actorId||c.client_id!==clientId
+     ||c.operation!=='submitResult'||c.state!=='APPLIED'||!uuidV1(c.command_id)||!uuidV1(c.operation_id)||!uuidV1(c.authorization_receipt_id)
+     ||!refV1(c.policy_ref)||(c.expected_version!==0&&c.expected_version!=='0')||c.approval_consumption_id!==null||c.payload_ref!==null)return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+    const controlGeneration=Number(c.control_generation);
+    if((typeof c.control_generation!=='string'&&typeof c.control_generation!=='number')||!Number.isSafeInteger(controlGeneration)||controlGeneration<1||String(controlGeneration)!==String(c.control_generation))return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+    const original={schemaVersion:1,projectId,commandId:c.command_id,clientId,controlGeneration,operation:'submitResult',targetId:entry.ref.id,
+     expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{scope:s.scope,submissionId:entry.ref.id,manifest:s.manifest}};
+    const requestHash=hash(original),scopeDigest=hash({projectId,actorId,clientId,controlGeneration,requestHash,policyRef:c.policy_ref,targetRef:manifestRef});
+    const result={operationId:c.operation_id,commandId:c.command_id,projectId,status:'APPLIED',targetId:entry.ref.id,version:1,
+     data:{ref:manifestRef,status:'RESULT_SUBMITTED',manifest:s.manifest,sourceKind:'WORKER_CLAIM',completionAccepted:false,executionAuthorized:false,dispatchPerformed:false},
+     evidenceRefs:[],warnings:[],serverReceivedAt:s.submittedAt};
+    if(c.request_hash!==requestHash||!same(c.result_ref,result)||!(c.completed_at instanceof Date)||c.completed_at.toISOString()!==s.submittedAt)return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+    const ar=c.receipt,a=c.audit;
+    if(!ar||ar.id!==c.authorization_receipt_id||ar.command_id!==commandId||ar.scope_kind!=='PROJECT'||ar.scope_id!==projectId
+     ||!same(ar.subject_ref,{kind:'HUMAN',userId:actorId,clientId})||!same(ar.policy_ref,c.policy_ref)||ar.scope_digest!==scopeDigest||ar.approval_decision_ref!==null
+     ||!same(s.authorizationReceiptRef,{id:ar.id,version:1,contentHash:scopeDigest})||!(c.authorized_at instanceof Date)||c.authorized_at.toISOString()!==s.submittedAt
+     ||!a||a.project_id!==projectId||a.command_id!==commandId||a.operation_id!==c.operation_id||!uuidV1(a.event_id)
+     ||!same(a.actor_ref,{kind:'HUMAN',userId:actorId})||a.client_ref!==clientId||!same(a.policy_ref,c.policy_ref)||!same(a.target_ref,manifestRef)
+     ||a.approval_ref!==null||a.correction_of!==null||a.outcome!=='APPLIED'||a.source_kind!=='HUMAN_COMMAND'||a.reason_code!=='EXPLICIT_RESULT_CLAIM_ONLY'
+     ||a.scope_digest!==scopeDigest||!(c.recorded_at instanceof Date)||c.recorded_at.toISOString()!==s.submittedAt)return fail('RESULT_SUBMISSION_LEDGER_INVALID');
+   }
+  }catch{return fail('RESULT_SUBMISSION_LEDGER_INVALID');}
+ }
  async submit(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,policyRef:RuntimeRefV1){
   request=cloneV1(request);policyRef=cloneV1(policyRef);
   if(request.operation!=='submitResult'||request.approvalRef!==null||request.expectedVersion!==0||request.baselineRefs.length||!recordV1(request.payload,['scope','submissionId','manifest'])||!recordV1(request.payload.scope,['projectId','assignmentRef','executionRef'])||!uuidV1(request.payload.submissionId)||request.targetId!==request.payload.submissionId||request.projectId!==request.payload.scope.projectId)return fail('RESULT_SUBMISSION_INPUT_INVALID',422);
@@ -45,6 +92,7 @@ export class ProjectResultSubmissions{
   if(!uuidV1(projectId)||!uuidV1(id))return fail('RESULT_SUBMISSION_INPUT_INVALID',400);await projectMember(db,actor,projectId);
   const row=await this.#row(db,projectId,id);if(!row)return fail('NOT_FOUND',404);const scope=row.snapshot_json?.scope;
   if(!scope||scope.projectId!==projectId)return fail('RESULT_SUBMISSION_LEDGER_INVALID');const entry=this.#entry(row,scope,id,await this.#clock(db));await readPgResultExecution(db,entry.snapshot.scope);
+  await this.#verifyOrigins(db,projectId,[{entry,commandId:row.command_id,clientId:row.client_id}]);
   await projectMember(db,actor,projectId);return cloneV1(entry);
  }
  async #assignmentRef(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,assignmentId:string,version:number){
@@ -57,13 +105,15 @@ export class ProjectResultSubmissions{
  }
  async #summaries(db:PoolClient,projectId:string,assignmentRef:RuntimeRefV1,rows:any[],now:string){
   if(rows.length>21||new Set(rows.map(row=>row.id)).size!==rows.length)return fail('RESULT_SUBMISSION_LEDGER_INVALID');
-  const items=[];
+  const items=[],entries=[];
   for(const row of rows){
    const scope=row.snapshot_json?.scope;
    if(!scope||scope.projectId!==projectId||!same(scope.assignmentRef,assignmentRef))return fail('RESULT_SUBMISSION_LEDGER_INVALID');
    const entry=this.#entry(row,scope,row.id,now),s=entry.snapshot;await readPgResultExecution(db,scope);
+   entries.push({entry,commandId:row.command_id,clientId:row.client_id});
    items.push({ref:entry.ref,manifestRef:row.manifest_ref,executionRef:scope.executionRef,submissionState:s.manifest.submissionState,submittedByRef:s.submittedByRef,submittedAt:s.submittedAt,sourceKind:s.sourceKind,evidenceProvenanceVerified:false,completionAccepted:false});
   }
+  await this.#verifyOrigins(db,projectId,entries);
   return items;
  }
  /** 최근 목록의 no-query 계약은 유지하고 이전 이력은 별도 page로 제공한다. */
