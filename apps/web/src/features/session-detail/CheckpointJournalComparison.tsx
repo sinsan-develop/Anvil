@@ -28,7 +28,7 @@ function StoredResumeEvidence({value}:{value:ResumeEvidence}){
   <p>실제 프로세스 정지·파일 상태·쓰기 소유와 권한 회수 미확인 · 재개 불가</p>
  </section>;
 }
-export function CheckpointJournalComparison({client,file,stored,result,onUnavailable}:{client:ApiClient;file:CheckpointFileInspection|null;stored:CheckpointStoredInspection|null;result:SubmittedResultView;onUnavailable:(code:string)=>void}){
+export function CheckpointJournalComparison({client,file,stored,result,onUnavailable,isSourceCurrent,sourceMode}:{client:ApiClient;file:CheckpointFileInspection|null;stored:CheckpointStoredInspection|null;result:SubmittedResultView;onUnavailable:(code:string)=>void;isSourceCurrent?:()=>boolean;sourceMode?:'STORED_ONLY'}){
  const binding=ordered([result.snapshot.scope,result.ref,result.snapshot.manifest.checkpointRef,file?.prepared.recordFile.contentHash??null,stored?.projectId??null,stored?.ref??null]),
   generation=useRef(0),resumeGeneration=useRef(0),alive=useRef(false),unavailable=useRef(onUnavailable),owner=useRef<ComparisonOwner|null>(null);unavailable.current=onUnavailable;
  if(!owner.current||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.binding!==binding||
@@ -37,27 +37,28 @@ export function CheckpointJournalComparison({client,file,stored,result,onUnavail
  const [resume,setResume]=useState<{comparison:Comparison;pending:boolean;data?:ResumeEvidence;error?:string}|null>(null);
  useLayoutEffect(()=>{alive.current=true;return()=>{alive.current=false;generation.current++;resumeGeneration.current++;};},[]);
  useEffect(()=>{generation.current++;resumeGeneration.current++;setValue(null);setPending(null);setError(null);setResume(null);},[context]);
+ const sourceCurrent=()=>isSourceCurrent?.()!==false,storedOnly=sourceMode==='STORED_ONLY';
  const closeResume=()=>{resumeGeneration.current++;setResume(null);};
  const failure=(cause:unknown)=>{
   const e=cause instanceof ApiError?cause:new ApiError('CHECKPOINT_JOURNAL_RESPONSE_INVALID');
   return {status:e.status,code:/^[A-Z_]{1,80}$/.test(e.code)?e.code:'CHECKPOINT_JOURNAL_RESPONSE_INVALID'};
  };
  async function compare(source:'LOCAL'|'STORED'){
-  const selected=source==='LOCAL'?file:stored?{source:'SERVER_STORED_CHECKPOINT' as const,value:stored}:null;if(!selected)return;
-  const ticket=++generation.current,owned=()=>alive.current&&ticket===generation.current&&owner.current===context,active=()=>owned()&&client.transport===context.transport;
+  const selected=source==='LOCAL'?(storedOnly?null:file):stored?{source:'SERVER_STORED_CHECKPOINT' as const,value:stored}:null;if(!selected||!sourceCurrent()||!alive.current||owner.current!==context||client.transport!==context.transport)return;
+  const ticket=++generation.current,owned=()=>alive.current&&ticket===generation.current&&owner.current===context,active=()=>owned()&&sourceCurrent()&&client.transport===context.transport;
   closeResume();setPending(context);setValue(null);setError(null);
   try{const v=await compareCheckpointJournal(client,selected,result,active);if(active()&&v)setValue({owner:context,data:v});}
   catch(cause){if(!active())return;const {status,code}=failure(cause);setError({owner:context,code});if([401,403,404].includes(status))unavailable.current(status===401?'AUTH_REQUIRED':code);}
   finally{if(owned())setPending(null);}
  }
- const v=value?.owner===context?value.data:null,isPending=pending===context,visibleError=error?.owner===context?error.code:null;
+ const v=value?.owner===context&&sourceCurrent()?value.data:null,isPending=pending===context,visibleError=error?.owner===context?error.code:null;
  const canReadResume=!!stored&&!!v&&isCheckpointResumeComparison(v);
  const shownResume=canReadResume&&resume?.comparison===v?resume:null;
  async function readResume(){
-  if(!stored||!v||!canReadResume)return;
+  if(!stored||!v||!canReadResume||!sourceCurrent())return;
   const comparisonGeneration=generation.current,ticket=++resumeGeneration.current;
   const owned=()=>alive.current&&owner.current===context&&generation.current===comparisonGeneration&&resumeGeneration.current===ticket;
-  const current=()=>owned()&&client.transport===context.transport;
+  const current=()=>owned()&&sourceCurrent()&&client.transport===context.transport;
   if(!current())return;
   setResume({comparison:v,pending:true});
   try{const evidence=await readCheckpointResumeEvidence(client,v,stored,result,current);if(current()&&evidence)setResume({comparison:v,pending:false,data:evidence});}
@@ -66,7 +67,7 @@ export function CheckpointJournalComparison({client,file,stored,result,onUnavail
    if([401,403,404].includes(status))unavailable.current(status===401?'AUTH_REQUIRED':code);
   }finally{if(owned())setResume(previous=>previous?.comparison===v&&previous.pending?null:previous);}
  }
- return <section className="status-card" aria-label="현황 기록·보관 ACK 비교" lang="ko"><h4>현황 기록·보관 ACK 비교</h4><p>로컬 선택 파일 또는 검산된 서버 기록의 수행자 선언과 새로 조회한 서버 보관 합성 주장만 대조합니다. 자료를 덮거나 작업을 재개하지 않습니다.</p>{!file?<p>로컬 파일 대조는 위의 현황 기록 파일을 선택하고 ‘선택 기록 대조’를 먼저 실행하세요.</p>:null}{!stored?<p>서버 기록 대조는 보관 기록 원문을 명시 조회하세요.</p>:null}<button type="button" disabled={!file||isPending} onClick={()=>void compare('LOCAL')}>선택 기록과 보관 ACK 대조</button><button type="button" disabled={!stored||isPending} onClick={()=>void compare('STORED')}>서버 기록과 보관 ACK 대조</button>
+ return <section className="status-card" aria-label="현황 기록·보관 ACK 비교" lang="ko"><h4>현황 기록·보관 ACK 비교</h4><p>{storedOnly?'검산된 서버 기록':'로컬 선택 파일 또는 검산된 서버 기록'}의 수행자 선언과 새로 조회한 서버 보관 합성 주장만 대조합니다. 자료를 덮거나 작업을 재개하지 않습니다.</p>{!storedOnly&&!file?<p>로컬 파일 대조는 위의 현황 기록 파일을 선택하고 ‘선택 기록 대조’를 먼저 실행하세요.</p>:null}{!stored?<p>서버 기록 대조는 보관 기록 원문을 명시 조회하세요.</p>:null}{!storedOnly?<button type="button" disabled={!file||isPending} onClick={()=>void compare('LOCAL')}>선택 기록과 보관 ACK 대조</button>:null}<button type="button" disabled={!stored||isPending} onClick={()=>void compare('STORED')}>서버 기록과 보관 ACK 대조</button>
  {isPending?<p role="status">고정 파일·선택 제출 대조 중 · 이전 비교 숨김</p>:null}{visibleError?<p role="alert">{visibleError} · 대조 미확인. 같음/정상으로 추정하지 않습니다.</p>:null}
  {v?<><p>{v.localFileHash?<>선택 로컬 파일 SHA-256: {v.localFileHash} · 출처·실제 저장 미확인</>:<>서버 보관 기록 본문 SHA-256: {v.recordBodyHash} · 로컬 파일 바이트/저장 미확인</>}</p>{v.checkpointRef?<p>서버 체크포인트: {v.checkpointRef.id} · {v.checkpointRef.contentHash}</p>:null}<p>결과의 체크포인트 참조 대조: {v.checkpointReferenceComparison}</p><p>{v.executionMatched?'기록 선언에 같은 실행 참조 있음 · 실제 귀속 인증 아님':'기록에 같은 실행 참조 없음 · 숫자 비교하지 않음'}</p><p>기록 선언 로컬 순번: {v.declaredLocalSequence===null?'미확인':v.declaredLocalSequence}</p><p>기록 선언 ACK: {v.declaredAckSequence===null?'미확인':v.declaredAckSequence}</p><p>서버 보관 연속 ACK: {v.serverHighestContiguous===null?'미확인':v.serverHighestContiguous}</p><p>서버 보관 최대 순번: {v.serverMaxSequence===null?'미확인':v.serverMaxSequence}</p><p>ACK 참조 대조: {ackLabels[v.ackReferenceComparison]}</p><p>로컬 선언 대조: {localLabels[v.localComparison]}</p><p>기록 선언과 연속 ACK 순번 차이: {v.declaredContiguousAckDistance===null?'미확인':v.declaredContiguousAckDistance} · 보관된 비연속 순번도 포함</p><p>보관 범위 공백: {v.serverRead?v.serverGaps.map(g=>g.from+'~'+g.to).join(', ')||'기재 없음 · 실제 전송 완료 인증 아님':'미조회'}</p>{v.observedAt?<p>보관 원장 조회 시각: <time dateTime={v.observedAt}>{v.observedAt}</time></p>:null}<p>재개 불가 · 현재 파일/프로세스·쓰기 소유 미확인</p><details><summary>대조 원문·미확인 보기</summary><pre>{JSON.stringify(v,null,2)}</pre></details></>:null}
  {v?.changeComparison?<CheckpointChangeComparison value={v.changeComparison}/>:null}

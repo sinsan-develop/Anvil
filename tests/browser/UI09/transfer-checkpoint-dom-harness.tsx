@@ -6,10 +6,22 @@ async function transport(input:any,init?:RequestInit){const url=String(input),me
  const json=(v:any,status=200)=>{call.settled=true;return Response.json(v,{status});};
  if(key==='checkpoints'||key.startsWith('checkpoints/')){qa.next='NORMAL';if(mode==='DELAY')await new Promise<void>(r=>qa.release=r);if(['DENIED','AUTH','MISSING'].includes(mode))return json({code:mode==='AUTH'?'AUTH_REQUIRED':mode==='MISSING'?'NOT_FOUND':'PROJECT_READ_DENIED'},mode==='AUTH'?401:mode==='MISSING'?404:403);
  let value:any;if(key==='checkpoints'){const params=new URLSearchParams(path.split('?')[1]);if(params.get('assignmentHash')!==seed.fixture.confirmed.ref.contentHash||params.get('assignmentId')!==seed.fixture.confirmed.ref.id)throw Error('WRONG_CONFIRMED_SCOPE');value=params.has('cursor')?seed.pages[1]:seed.pages[0];}else{value=seed.records.find((r:any)=>r.ref.id===key.split('/')[1]);if(!value)throw Error('UNKNOWN_CHECKPOINT');}value=structuredClone(value);if(mode==='CORRUPT'){if(value.recordText)value.recordText+='손상';else value.items[0].assignmentRef.contentHash='f'.repeat(64);}if(mode==='DELAY_JSON')return{ok:true,status:200,headers:new Headers({'content-type':'application/json'}),json:async()=>{await new Promise<void>(r=>qa.release=r);call.settled=true;return value;}} as Response;return json(value);}
+ if(seed.resultResponses&&Object.hasOwn(seed.resultResponses,path)){
+  qa.next='NORMAL';
+  if(mode==='DELAY'||mode==='DELAY_AUTH')await new Promise<void>(r=>qa.release=r);
+  if(mode==='AUTH'||mode==='DELAY_AUTH')return json({code:'AUTH_REQUIRED'},401);
+  if(mode==='DENIED')return json({code:'PROJECT_READ_DENIED'},403);
+  if(mode==='MISSING')return json({code:'NOT_FOUND'},404);
+  return json(structuredClone(seed.resultResponses[path]));
+ }
  if(seed.fixture.responses[key])return json(seed.fixture.responses[key]);throw Error('UNEXPECTED_QA_GET:'+url);
 }
 const firstClient=new ApiClient(transport as typeof fetch);
-function Harness(){const[version,setVersion]=useState(0),[selection,setSelection]=useState('A'),[shown,setShown]=useState(true),[user,setUser]=useState('A');const client=useMemo(()=>version?new ApiClient(transport as typeof fetch):firstClient,[version]);let projectId=seed.fixture.draft.projectId,ref=structuredClone(seed.fixture.draft.ref);if(selection==='PROJECT')projectId=seed.otherProject;if(selection==='ASSIGNMENT')ref.version=2;if(selection==='REF')ref.contentHash='f'.repeat(64);
- qa.swapWithoutRender=()=>{client.transport=transport.bind(null) as typeof fetch;};qa.change=(v:string)=>flushSync(()=>{if(v==='NEW_CLIENT'){qa.clientCount++;setVersion(n=>n+1);}else if(v==='HIDE')setShown(false);else if(v==='SHOW')setShown(true);else if(v==='USER')setUser(n=>n==='A'?'B':'A');else setSelection(v);});
- return <main><button onClick={()=>qa.change('HIDE')}>QA 인계 화면 나가기</button><button onClick={()=>qa.change('SHOW')}>QA 인계 화면 돌아오기</button>{shown?<TransferPreparationPage key={user} client={client} projectId={projectId} assignmentRef={ref} onAuthenticationLost={()=>qa.authLost++}/>:null}</main>;
-}createRoot(document.getElementById('root')!).render(<Harness/>);
+function Harness(){const[version,setVersion]=useState(0),[selection,setSelection]=useState('A'),[shown,setShown]=useState(true),[user,setUser]=useState('A'),[csrf,setCsrf]=useState(0);const session=useMemo(()=>seed.session&&({...seed.session,csrfToken:csrf?'b'.repeat(43):seed.session.csrfToken}),[csrf]);const client=useMemo(()=>version?new ApiClient(transport as typeof fetch):firstClient,[version]);let projectId=seed.fixture.draft.projectId,ref=structuredClone(seed.fixture.draft.ref);if(selection==='PROJECT')projectId=seed.otherProject;if(selection==='ASSIGNMENT')ref.version=2;if(selection==='REF')ref.contentHash='f'.repeat(64);
+ qa.swapWithoutRender=()=>{client.transport=transport.bind(null) as typeof fetch;};qa.change=(v:string)=>flushSync(()=>{if(v==='NEW_CLIENT'){qa.clientCount++;setVersion(n=>n+1);}else if(v==='HIDE')setShown(false);else if(v==='SHOW')setShown(true);else if(v==='USER')setUser(n=>n==='A'?'B':'A');else if(v==='CSRF')setCsrf(n=>n+1);else setSelection(v);});
+ return <main><button onClick={()=>qa.change('HIDE')}>QA 인계 화면 나가기</button><button onClick={()=>qa.change('SHOW')}>QA 인계 화면 돌아오기</button>{shown?<TransferPreparationPage key={user} client={client} projectId={projectId} assignmentRef={ref} session={session} onAuthenticationLost={()=>qa.authLost++}/>:null}</main>;
+}
+const root=createRoot(document.getElementById('root')!);
+qa.mount=()=>root.render(<Harness/>);
+qa.unmount=()=>root.unmount();
+if(!seed.manualMount)qa.mount();
