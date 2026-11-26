@@ -8,10 +8,10 @@ import {NormalStartIntake} from './normal-start-intake.ts';
 import {captureInstructionInput} from './normal-instruction-intake.ts';
 import {readNormalStopItem,type NormalStopOriginal} from './normal-start-material-consumer.ts';
 import {NormalObservationSpool,type NormalLocalObservation} from './normal-observation-spool.ts';
-import type {NormalJournalTransaction} from './normal-start-file-store.ts';
+import type {NormalJournalTransaction,NormalLocalScope} from './normal-start-file-store.ts';
 export interface NormalStopStore{transport:'NORMAL_PROTECTED';exclusive<T>(key:ReceiptKeyV1,body:(tx:NormalJournalTransaction)=>Promise<T>):Promise<T>}
 export interface NormalStopHistoryPorts{intake:NormalStartIntake;store:NormalStopStore;original:NormalStopOriginal;clock:()=>number;timeoutMs:number}
-const originalStatus=NormalStartIntake.prototype.readStatus,originalRecord=NormalObservationSpool.prototype.record;
+const originalStatus=NormalStartIntake.prototype.readStatus,originalRecord=NormalObservationSpool.prototype.record,originalMatchesExecutionScope=NormalObservationSpool.prototype.matchesExecutionScope;
 const hash=(v:unknown)=>contentHash(canonicalJson(v)),same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const fail=(code='NORMAL_STOP_HISTORY_INVALID'):never=>{throw Error(code);};
 type StopHistoryRow={ref:Ref;snapshot:{state:'STOP_ATTEMPTED'|'STOP_UNCONFIRMED';recordedAt:string;requestedAt?:string}};
@@ -62,12 +62,16 @@ export class NormalStopCoordinator{
   check();return rows??fail();
  }
  observations(raw:unknown,signal:AbortSignal){return this.#history(raw,signal);}
- async #history(raw:unknown,signal:AbortSignal,worker?:NormalStartWire){
+ async #history(raw:unknown,signal:AbortSignal,worker?:NormalStartWire,checkScope?:(scope:NormalLocalScope)=>void){
   if(this.#busy)fail('NORMAL_STOP_BUSY');if(this.#unknown)fail('NORMAL_STOP_UNKNOWN');if(!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_STOP_CANCELLED');
   const input=captureInstructionInput(raw),item=readNormalStopItem(input,this.#p.original,Date.parse((input as any)?.envelope?.issuedAt));if(Date.parse(item.envelope.issuedAt)>this.#now())fail();
+  const {commandId:_,...scope}=receiptKeyV1(item.envelope);
+  checkScope?.(scope);
   this.#busy=true;
   try{
-   const value=await this.#bounded(signal,async(check,bounded)=>{
+   const value=await this.#bounded(signal,async(boundary,bounded)=>{
+    const check=()=>{boundary();checkScope?.(scope);};
+    check();
     const start=await originalStatus.call(this.#p.intake,this.#p.original.startEnvelope);check();if(start.state!=='RECEIVED')fail('NORMAL_STOP_START_NOT_RECEIVED');
     let rows=await this.#readRows(item,check);check();
     if(!rows.length){
@@ -86,8 +90,17 @@ export class NormalStopCoordinator{
   }catch(e){this.#unknown=true;throw e;}finally{this.#busy=false;}
  }
  async recordObservations(raw:unknown,spool:NormalObservationSpool,signal:AbortSignal,worker?:NormalStartWire){
-  const check=()=>{this.#ports();if(signal.aborted||isProxy(spool)||Object.getPrototypeOf(spool)!==NormalObservationSpool.prototype||spool.record!==originalRecord||NormalObservationSpool.prototype.record!==originalRecord)fail('NORMAL_STOP_OBSERVATION_PORT_INVALID');};
-  check();const source=await this.#history(raw,signal,worker),recordedRefs:Ref[]=[];
+  const check=()=>{
+   this.#ports();
+   if(!(signal instanceof AbortSignal)||signal.aborted||!spool||isProxy(spool)||Object.getPrototypeOf(spool)!==NormalObservationSpool.prototype
+    ||Object.hasOwn(spool,'record')||Object.getOwnPropertyDescriptor(NormalObservationSpool.prototype,'record')?.value!==originalRecord
+    ||Object.hasOwn(spool,'matchesExecutionScope')||Object.getOwnPropertyDescriptor(NormalObservationSpool.prototype,'matchesExecutionScope')?.value!==originalMatchesExecutionScope)fail('NORMAL_STOP_OBSERVATION_PORT_INVALID');
+  };
+  check();
+  const source=await this.#history(raw,signal,worker,scope=>{
+   check();
+   if(!originalMatchesExecutionScope.call(spool,scope))fail('NORMAL_STOP_OBSERVATION_SCOPE_INVALID');
+  }),recordedRefs:Ref[]=[];
   try{await this.#bounded(signal,async current=>{for(const input of source.inputs){check();current();const ref=await originalRecord.call(spool,input);check();current();recordedRefs.push(cloneV1(ref));}});}
   catch(e){this.#unknown=true;throw e;}
   return{state:source.state,recordedRefs,executionAuthorized:false as const,dispatchPerformed:false as const,actualExecutionVerified:false as const,writerReleaseVerified:false as const};

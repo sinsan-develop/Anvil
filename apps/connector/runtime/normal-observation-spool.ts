@@ -22,6 +22,11 @@ export class NormalObservationSpool{
    !Number.isSafeInteger(scope.executionGeneration)||scope.executionGeneration<1)fail();
   this.#store=store;this.#scope=cloneV1(scope);this.#clock=clock;
  }
+ /** 원 명령의 실행 범위만 대조한다. 원장 읽기·관측 저장·실행 효과가 없다. */
+ matchesExecutionScope(scope:NormalLocalScope){
+  return recordV1(scope,['projectId','executionId','executionGeneration'])&&scope.projectId===this.#scope.projectId
+   &&scope.executionId===this.#scope.executionId&&scope.executionGeneration===this.#scope.executionGeneration;
+ }
  #now(){const n=this.#clock();if(!Number.isSafeInteger(n))return fail();return n;}
  #event(e:any){
   if(!recordV1(e,['projectId','executionId','executionGeneration','sequence','eventId','type','commandId','envelopeHash','localRecordRef','processRef','occurredAt','reasonCode'])||

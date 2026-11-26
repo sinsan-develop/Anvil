@@ -103,3 +103,18 @@ test('STOP 두 행 정착 뒤 spool 쓰기 전 중단돼도 원 요청 시각과
   assert.equal(f.stopCalls.interrupt,1);assert.equal(f.effects.close,0);assert.equal(f.effects.create,1);
  }finally{f.authority.abort();await f.h.close();}
 });
+
+test('live STOP 페이지는 scope가 다른 정상 spool에서 interrupt와 관측 POST를 실행하지 않는다',async()=>{
+ const {liveStopFixture}=await import('../FN07/normal-first-send-owner.test.ts'),f=await liveStopFixture();
+ try{
+  assert.equal((await f.run()).state,'LIMIT_REACHED');
+  const journal=ramJournal(),wrong={...f.localScope,executionGeneration:f.localScope.executionGeneration+1};
+  const spool=new NormalObservationSpool(journal,wrong,f.clock),wire=stopTransport({scope:wrong,clock:f.clock,stopItem:f.stopItem});
+  const base=f.options(),poll=new NormalStartPolling({...base,start:{...base.start,spool},stop:f.stopPorts(),
+   clients:{get:wire.get,post:wire.post,expiresAt:base.clients.expiresAt} as any});
+  const result=await poll.run(f.signal);
+  assert.equal(result.state,'UNKNOWN');assert.equal(result.cursor.afterSequence,0);assert.equal(wire.reads(),1);
+  assert.equal(f.stopCalls.interrupt,0);assert.equal(wire.posts(),0);assert.equal(journal.data.size,0);assert.deepEqual(await f.stopRows(),[]);
+  await poll.run(f.signal);assert.equal(wire.reads(),1);assert.equal(f.stopCalls.interrupt,0);
+ }finally{f.authority.abort();await f.h.close();}
+});

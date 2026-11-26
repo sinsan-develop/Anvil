@@ -297,3 +297,21 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)test('
   assert.deepEqual((await f.stopRows()).map(row=>row.snapshot.state),['STOP_ATTEMPTED','STOP_UNCONFIRMED']);
  }finally{release.resolve();if(normal)await normal;f.authority.abort();await f.h.close();}
 });
+
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)test('보관 STOP과 scope가 다른 정상 spool은 원 역사 조회 전에 거절한다',async()=>{
+  const {NormalObservationSpool}=await import('../../../apps/connector/runtime/normal-observation-spool.ts');
+  const {ramJournal}=await import('./normal-start-local-fixture.ts');
+  const f=await stopFixture();try{
+   const rows=await f.seed();
+   for(const field of ['projectId','executionId','executionGeneration'] as const){
+    const wrong=structuredClone(f.scope);
+    if(field==='executionGeneration')wrong.executionGeneration++;
+    else wrong[field]=randomUUID();
+    const journal=ramJournal(),spool=new NormalObservationSpool(journal,wrong,f.clock),before=f.fs.mode.opens;
+    await assert.rejects(f.coordinator().recordObservations(f.stopItem,spool,f.signal),/NORMAL_STOP_OBSERVATION_SCOPE_INVALID/);
+    assert.equal(f.fs.mode.opens,before,field);assert.equal(journal.data.size,0,field);
+   }
+   const accepted=await f.coordinator().recordObservations(f.stopItem,f.make().spool,f.signal);
+   assert.equal(accepted.state,'STOP_UNCONFIRMED');assert.equal(accepted.recordedRefs.length,rows.length);
+  }finally{await f.h.app.close();}
+ });
