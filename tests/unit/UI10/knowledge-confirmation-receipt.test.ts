@@ -66,32 +66,91 @@ function draft(){
  const target={ref,entry,body,state:'PROPOSED',headVersion:1,supersedesRef:null,confirmation:null,currentConfirmationValid:false,contentReviewCriteria:criteria,contentReviews:[review],appliedAsConstitution:false,redactionState:'NOT_REDACTED',sensitiveInspection:'KNOWN_PATTERNS_ONLY',agentDelivery:'NOT_CONNECTED',history:[{id:id(8),kind:'PROPOSED',reason:entry.reason,actorRef:confirmation.actorRef,recordedAt:at}]};
  const b=ui.decisions.newKnowledgeDecision(pid,target,session,1,'CONFIRM');b.acknowledged=true;b.reason='원 확정 이유';return b;
 }
+function reviewDraft(outcome='ACCEPTED'){
+ const target=structuredClone(draft().target),b=ui.decisions.newKnowledgeDecision(pid,target,session,1,'REVIEW');
+ b.items=b.items.map((item:any,n:number)=>({...item,outcome,reason:`원 항목 ${n+1}`}));b.outcome=outcome;b.reason='원 검토 이유';return b;
+}
 function deferred<T>(){let resolve!:(v:T)=>void;const promise=new Promise<T>(r=>resolve=r);return{promise,resolve};}
-async function fixture(t:TestContext){
- let buffer:any=draft(),currentSession=structuredClone(session),visible=true,lost=0,changes=0,savedCount=0,stored:any;
- const writes:any[]=[],gets:string[]=[],controls={read:async()=>Response.json(stored)};
+async function fixture(t:TestContext,initial:any=draft()){
+ let buffer:any=initial,currentSession=structuredClone(session),visible=true,lost=0,changes=0,savedCount=0,stored:any;
+ const writes:any[]=[],gets:string[]=[],pendingChanges:any[]=[],controls={read:async()=>Response.json(stored),control:async()=>Response.json({id:pid,participation:'OWNER',controlState:{actorId:uid,clientId:cid,generation:2,status:'HELD'}}),deferChange:false};
  const progress=completion(t.signal,()=>container.textContent+' / '+JSON.stringify({gets,writes:writes.length,savedCount}));t.after(progress.close);
  const transport=(path:string,init:any)=>progress.tracked(async()=>{
   if(init?.method==='POST'){
    const c=JSON.parse(init.body);writes.push(c);
+   if(c.operation==='recordContentReview'){
+    const review={ref:{id:id(20),targetRef:c.payload.targetRef,criteriaVersion:1,outcome:c.payload.outcome},criteria:structuredClone(buffer.target.contentReviewCriteria),items:structuredClone(c.payload.items),reviewer:{kind:'HUMAN',userId:uid,sameAsTargetRecorder:true},sourceKind:'HUMAN_REVIEW',reason:c.payload.reason,reviewedAt:at,serverSequence:4};
+    stored={...structuredClone(buffer.target),contentReviews:[review,...structuredClone(buffer.target.contentReviews)]};
+    return Response.json({operationId:id(9),commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:c.targetId,version:c.expectedVersion,data:{status:'REVIEW_RECORDED',ref:c.payload.targetRef,reviewRef:review.ref},serverReceivedAt:at});
+   }
    const confirmation={eventId:id(7),reason:c.payload.reason,reviewRefs:c.payload.reviewRefs,actorRef:{kind:'HUMAN',userId:uid},recordedAt:at};
    stored={...structuredClone(buffer.target),state:'CONFIRMED',confirmation,currentConfirmationValid:true,history:[...structuredClone(buffer.target.history),{id:id(7),kind:'CONFIRMED',reason:confirmation.reason,reviewRefs:confirmation.reviewRefs,actorRef:confirmation.actorRef,recordedAt:at}]};
    return Response.json({operationId:id(9),commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:c.targetId,version:c.expectedVersion,data:{status:'CONFIRMED',eventId:id(7),confirmationId:id(7),reason:c.payload.reason,reviewRefs:c.payload.reviewRefs,ref:c.payload.versionRef},serverReceivedAt:at});
   }
-  assert.equal(init.method,'GET');gets.push(path);return controls.read();
+  assert.equal(init.method,'GET');gets.push(path);if(path===`/api/v1/projects/${pid}`)return controls.control();return controls.read();
  });
  let client=new ui.ApiClient(transport);
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
- function render(){root.render(visible&&buffer?ui.React.createElement(ui.KnowledgeDecisionForm,{client,session:currentSession,buffer,onChange:(change:any)=>{changes++;buffer=typeof change==='function'?change(buffer):change;render();progress.changed();},onSaved(){savedCount++;progress.changed();},onAuthenticationLost(){lost++;progress.changed();}}):null);}
+ const applyChange=(change:any)=>{changes++;buffer=typeof change==='function'?change(buffer):change;render();progress.changed();};
+ function render(){root.render(visible&&buffer?ui.React.createElement(ui.KnowledgeDecisionForm,{client,session:currentSession,buffer,onChange:(change:any)=>{if(controls.deferChange)pendingChanges.push(change);else applyChange(change);},onSaved(){savedCount++;progress.changed();},onAuthenticationLost(){lost++;progress.changed();}}):null);}
  const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
  const button=(name:string)=>{const b=nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===name);assert(b,name+' / '+container.textContent);return b;};
  const {settle,wait}=progress;
  const click=async(name:string)=>{const b=button(name);assert(!b.disabled);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
  await ui.React.act(async()=>render());
- return{writes,gets,controls,container,nodes,button,click,wait,settle,buffer:()=>buffer,stored:()=>stored,lost:()=>lost,changes:()=>changes,savedCount:()=>savedCount,client:()=>client,session:()=>currentSession,replace:async(b:any)=>{buffer=b;await ui.React.act(async()=>render());},context:async(s:any)=>{currentSession=s;await ui.React.act(async()=>render());},clientChange:async(c:any)=>{client=c;await ui.React.act(async()=>render());},render:async()=>{await ui.React.act(async()=>render());},route:async(show:boolean)=>{visible=show;await ui.React.act(async()=>render());},close:async()=>{try{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}finally{progress.close();}}};
+ return{writes,gets,controls,container,nodes,button,click,wait,settle,buffer:()=>buffer,stored:()=>stored,lost:()=>lost,changes:()=>changes,savedCount:()=>savedCount,client:()=>client,session:()=>currentSession,flushChange:async()=>{const change=pendingChanges.shift();assert(change);await ui.React.act(async()=>applyChange(change));},replace:async(b:any)=>{buffer=b;await ui.React.act(async()=>render());},context:async(s:any)=>{currentSession=s;await ui.React.act(async()=>render());},clientChange:async(c:any)=>{client=c;await ui.React.act(async()=>render());},render:async()=>{await ui.React.act(async()=>render());},route:async(show:boolean)=>{visible=show;await ui.React.act(async()=>render());},close:async()=>{try{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}finally{progress.close();}}};
 }
-async function save(f:Awaited<ReturnType<typeof fixture>>){await f.click('지식 확정 저장');await f.wait(()=>!!f.buffer()?.savedId);await f.settle();}
-const open='저장된 지식 확정 사건 조회',detail='저장된 지식 확정 사건';
+async function save(f:Awaited<ReturnType<typeof fixture>>){await f.click(f.buffer().kind==='REVIEW'?'지식 검토 저장':'지식 확정 저장');await f.wait(()=>!!f.buffer()?.savedId);await f.settle();}
+const open='저장된 지식 확정 사건 조회',detail='저장된 지식 확정 사건',reviewOpen='저장된 지식 검토 사건 조회',reviewDetail='저장된 지식 검토 사건';
+test('저장한 REVIEW 영수증의 정확 사건을 명시 조회하고 기존 별도 확정 입력으로 선택한다',{timeout:15000},async t=>{
+ const f=await fixture(t,reviewDraft());try{
+  assert.equal(f.gets.length,0);await save(f);assert.equal(f.writes.length,1);assert.equal(f.gets.length,0);
+  await f.click(reviewOpen);await f.wait(()=>f.nodes().some(n=>n.getAttribute('aria-label')===reviewDetail));
+  assert.deepEqual(f.gets,[`/api/v1/projects/${pid}/knowledge/${id(5)}/versions/1`]);
+  const panel=f.nodes().find(n=>n.getAttribute('aria-label')===reviewDetail)!;
+  for(const value of [id(20),id(5),f.buffer().target.ref.contentHash,'원 검토 이유',uid,'원 항목 1','KNOWLEDGE_PURPOSE','ACCEPTED','근거 없음'])assert(panel.textContent.includes(value),value);
+  await f.click('이 검토로 지식 별도 확정 준비');await f.wait(()=>f.buffer()?.kind==='CONFIRM');
+  assert.deepEqual(f.gets,[`/api/v1/projects/${pid}/knowledge/${id(5)}/versions/1`,`/api/v1/projects/${pid}`]);
+  assert.equal(f.buffer().savedId,null);assert.equal(f.buffer().target.contentReviews[0].ref.id,id(20));assert.equal(f.buffer().controlGeneration,2);assert.equal(f.writes.length,1);
+ }finally{await f.close();}
+});
+test('과거·부적합 검토는 사건만 표시하고 부재·복수·변조·현재401은 fail closed다',{timeout:15000},async t=>{
+ for(const mode of ['NOT_LATEST','SUPERSEDED','REWORK','ABSENT','DUPLICATE','ITEM','REASON','ACTOR','401']as const){
+  const f=await fixture(t,reviewDraft(mode==='REWORK'?'REWORK':'ACCEPTED'));try{
+   await save(f);const original=f.buffer(),view=structuredClone(f.stored()),saved=view.contentReviews[0];
+   if(mode==='NOT_LATEST'){const newer=structuredClone(saved);newer.ref.id=id(30);newer.serverSequence=5;view.contentReviews.unshift(newer);}
+   if(mode==='SUPERSEDED'){view.headVersion=2;view.state='SUPERSEDED';}
+   if(mode==='ABSENT')view.contentReviews.shift();
+   if(mode==='DUPLICATE'){const duplicate=structuredClone(saved);duplicate.serverSequence=3;view.contentReviews.push(duplicate);}
+   if(mode==='ITEM')saved.items[0].reason='다른 항목 이유';
+   if(mode==='REASON')saved.reason='다른 종합 이유';
+   if(mode==='ACTOR')saved.reviewer.userId=id(31);
+   f.controls.read=async()=>mode==='401'?Response.json({code:'AUTH_REQUIRED'},{status:401}):Response.json(view);
+   await f.click(reviewOpen);
+   if(['NOT_LATEST','SUPERSEDED','REWORK'].includes(mode)){await f.wait(()=>f.nodes().some(n=>n.getAttribute('aria-label')===reviewDetail));assert(!f.nodes().some(n=>n.textContent==='이 검토로 지식 별도 확정 준비'),mode);assert(f.container.textContent.includes('확인만 하며 확정 준비로 선택하지 않습니다.'),mode);}
+   else{await f.wait(()=>f.container.textContent.includes('검토 사건 조회 미확인'));assert(!f.nodes().some(n=>n.getAttribute('aria-label')===reviewDetail),mode);}
+   assert.equal(f.buffer(),original);assert.equal(f.writes.length,1);assert.equal(f.lost(),mode==='401'?1:0);
+  }finally{await f.close();}
+ }
+});
+test('검토 조회·제어권 재검산의 늦은 200/401과 문맥 ABA는 결과·인증·POST를 바꾸지 않는다',{timeout:15000},async t=>{
+ for(const status of [200,401])for(const phase of ['READ','CONTROL']as const){
+  const f=await fixture(t,reviewDraft()),late=deferred<Response>();try{
+   await save(f);const original=f.buffer(),originalClient=f.client();
+   if(phase==='READ'){f.controls.read=()=>late.promise;await f.click(reviewOpen);await f.wait(()=>f.gets.length===1);await f.replace({...original});await f.replace(original);}
+   else{await f.click(reviewOpen);await f.wait(()=>f.nodes().some(n=>n.getAttribute('aria-label')===reviewDetail));f.controls.control=()=>late.promise;await f.click('이 검토로 지식 별도 확정 준비');await f.wait(()=>f.gets.length===2);const transport=originalClient.transport;originalClient.transport=async()=>{throw Error('unexpected');};await f.render();originalClient.transport=transport;await f.render();}
+   late.resolve(status===200?(phase==='READ'?Response.json(f.stored()):Response.json({id:pid,participation:'OWNER',controlState:{actorId:uid,clientId:cid,generation:2,status:'HELD'}})):Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.settle();
+   assert.equal(f.buffer(),original,phase);assert.equal(f.buffer().kind,'REVIEW');assert.equal(f.lost(),0);assert.equal(f.writes.length,1);assert(!f.nodes().some(n=>n.getAttribute('aria-label')===reviewDetail),phase);
+  }finally{late.resolve(Response.json({}));await f.close();}
+ }
+});
+test('검산된 REVIEW 선택은 부모의 지연 functional updater에서도 현재 문맥에 한 번만 인계된다',{timeout:15000},async t=>{
+ const f=await fixture(t,reviewDraft());try{
+  await save(f);await f.click(reviewOpen);await f.wait(()=>f.nodes().some(n=>n.getAttribute('aria-label')===reviewDetail));f.controls.deferChange=true;
+  await f.click('이 검토로 지식 별도 확정 준비');await f.wait(()=>f.gets.length===2);await f.settle();assert.equal(f.buffer().kind,'REVIEW');
+  await f.flushChange();assert.equal(f.buffer().kind,'CONFIRM');assert.equal(f.buffer().controlGeneration,2);assert.equal(f.writes.length,1);
+ }finally{await f.close();}
+});
 test('실제 확정 POST 영수증 뒤 명시 고정 GET으로 같은 사건·이유·주체·선택 검토를 표시한다',{timeout:15000},async t=>{
  const f=await fixture(t);try{
   assert.equal(f.gets.length,0);assert(!f.nodes().some(n=>n.textContent===open));await save(f);assert.equal(f.writes.length,1);assert.equal(f.gets.length,0);

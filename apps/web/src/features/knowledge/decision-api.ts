@@ -60,6 +60,22 @@ export async function readSavedKnowledgeConfirmation(client:ApiClient,input:Know
  if(!confirmation||confirmation.eventId!==b.savedId||confirmation.reason!==b.reason||ordered(confirmation.actorRef)!==ordered({kind:'HUMAN',userId:b.ownerUserId})||ordered(confirmation.reviewRefs)!==ordered(p.reviewRefs))throw new ApiError('KNOWLEDGE_CONFIRMATION_RECEIPT_MISMATCH');
  return{ref:structuredClone(view.ref),confirmation:structuredClone(confirmation)};
 }
+/** 저장한 검토 사건 한 건을 원 입력과 대조한다. 과거 검토의 조회와 현재 확정 가능성은 분리한다. */
+export async function readSavedKnowledgeReview(client:ApiClient,input:KnowledgeDecisionBuffer,session:DocumentSession,active:()=>boolean){
+ const fingerprint=ordered(input),sessionFingerprint=ordered(session),b=structuredClone(input),s=structuredClone(session),transport=client.transport;
+ const current=()=>{if(!active()||client.transport!==transport||ordered(input)!==fingerprint||ordered(session)!==sessionFingerprint)throw new ApiError('KNOWLEDGE_DECISION_PAUSED');};
+ current();
+ if(b.kind!=='REVIEW'||!b.savedId||!uuid.test(b.savedId)||b.pending||b.uncertain||b.dirty||b.failure)throw new ApiError('KNOWLEDGE_REVIEW_RECEIPT_INVALID');
+ const p=await payload(b,s);current();
+ let view:KnowledgeView;
+ try{view=await readKnowledge(client,b.projectId,b.target.ref);}catch(error){current();throw error;}
+ current();const matches=view.contentReviews?.filter(review=>review.ref.id===b.savedId)??[];
+ if(matches.length!==1)throw new ApiError('KNOWLEDGE_REVIEW_RECEIPT_MISMATCH');
+ const review=matches[0]!;
+ if(ordered(review.ref.targetRef)!==ordered(b.target.ref)||review.ref.criteriaVersion!==1||review.ref.outcome!==b.outcome||ordered(review.criteria)!==ordered(b.target.contentReviewCriteria)||ordered(review.items)!==ordered(p.items)||review.reason!==b.reason||review.reviewer.kind!=='HUMAN'||review.reviewer.userId!==b.ownerUserId||review.sourceKind!=='HUMAN_REVIEW')throw new ApiError('KNOWLEDGE_REVIEW_RECEIPT_MISMATCH');
+ const confirmationEligible=view.state==='PROPOSED'&&view.headVersion===view.ref.version&&!view.confirmation&&ordered(view.contentReviews?.[0])===ordered(review)&&review.ref.outcome==='ACCEPTED'&&review.items.every(item=>item.outcome==='ACCEPTED'&&knowledgeReason(item.reason));
+ return{view:structuredClone(view),review:structuredClone(review),confirmationEligible};
+}
 export async function sendKnowledgeDecision(client:ApiClient,b:KnowledgeDecisionBuffer,s:DocumentSession,active:()=>boolean){
  const p=await payload(b,s),c=b.pending;if(!c||!uuid.test(c.commandId)||ordered(c)!==ordered(command(b,s,p,c.commandId)))throw new ApiError('KNOWLEDGE_DECISION_INPUT_INVALID');if(!active())throw new ApiError('KNOWLEDGE_DECISION_PAUSED');
  const r=await postDocumentCommand(client,c,s.csrfToken),d=r.data,ref=b.target.ref;
