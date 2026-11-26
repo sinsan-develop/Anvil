@@ -3,10 +3,13 @@ import {ordered} from '../knowledge/review-view.ts';
 import type {SubmittedResultView} from './result-api.ts';
 import {checkpointDownloadFile,validateStoredCheckpointView,type inspectCheckpointFile,type readStoredCheckpoint} from './checkpoint-api.ts';
 import {readStoredObservations} from './observation-journal-api.ts';
+import {readStoredStopRequests} from './stop-request-history-api.ts';
 export type CheckpointFileInspection=NonNullable<Awaited<ReturnType<typeof inspectCheckpointFile>>>;
 export type CheckpointStoredInspection=NonNullable<Awaited<ReturnType<typeof readStoredCheckpoint>>>;
 export type CheckpointStoredSource={source:'SERVER_STORED_CHECKPOINT';value:CheckpointStoredInspection};
 export type CheckpointComparisonSource=CheckpointFileInspection|CheckpointStoredSource;
+const resumeComparisons=new WeakMap<object,{client:ApiClient;transport:typeof fetch;current:()=>boolean;checkpointRef:CheckpointStoredInspection['ref'];resultRef:SubmittedResultView['ref'];scope:SubmittedResultView['snapshot']['scope']}>();
+const stopTypes=new Set(['STOP_REQUESTED','STOPPED','STOP_UNCONFIRMED']);
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b),integer=(n:unknown)=>Number.isSafeInteger(n)&&Number(n)>=0,ref=(r:any)=>r&&typeof r.id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(r.id)&&integer(r.version)&&r.version>0&&typeof r.contentHash==='string'&&/^[0-9a-f]{64}$/.test(r.contentHash);
 function fail():never{throw new ApiError('CHECKPOINT_JOURNAL_SCOPE_INVALID');}
 async function hash(v:unknown){const bytes=new TextEncoder().encode(ordered(v));if(bytes.length>2*1024*1024)fail();return[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');}
@@ -35,13 +38,47 @@ function changes(file:any[],result:any[]){
 }
 /** 선택한 로컬/서버 현황 기록의 선언과 보관 합성 ACK만 비교하며 실제 재개를 승인하지 않는다. */
 export async function compareCheckpointJournal(client:ApiClient,rawSource:CheckpointComparisonSource,rawResult:SubmittedResultView,active:()=>boolean){
+ const transport=client.transport,callerActive=active;
+ active=()=>callerActive()&&client.transport===transport;
  if(!active())return null;const source=await normalizeSource(rawSource);if(!active())return null;const r=structuredClone(rawResult),s=source.state,scope=r?.snapshot?.scope;
  if(source.projectId!==scope?.projectId||!same(s.assignmentRef,scope.assignmentRef)||!ref(s.assignmentRef)||!ref(scope.executionRef)||!ref(r.ref)||await hash(r.snapshot)!==r.ref.contentHash||!Array.isArray(s.executionRefs)||s.executionRefs.length>200||!s.executionRefs.every(ref)||s.lastLocalSequence!==null&&!integer(s.lastLocalSequence)||s.lastServerAck!==null&&(!integer(s.lastServerAck.sequence)||s.lastServerAck.batchRef!==null&&!ref(s.lastServerAck.batchRef)||s.lastServerAck.sequence>0&&s.lastServerAck.batchRef===null||s.lastLocalSequence!==null&&s.lastServerAck.sequence>s.lastLocalSequence))fail();
  const executionMatched=s.executionRefs.some((e:any)=>same(e,scope.executionRef)),manifestCheckpointRef=r.snapshot.manifest.checkpointRef,checkpointReferenceComparison=source.kind==='LOCAL_SELECTED_FILE'?'NOT_APPLICABLE_LOCAL_FILE' as const:manifestCheckpointRef===null?'RESULT_CHECKPOINT_NOT_REFERENCED' as const:same(manifestCheckpointRef,source.checkpointRef)?'SAME_STORED_REF' as const:'DIFFERENT_STORED_REF' as const,base={fileHash:source.localFileHash,localFileHash:source.localFileHash,recordBodyHash:source.recordBodyHash,fileDeclarationHash:source.declarationHash,checkpointRef:source.checkpointRef,checkpointReferenceComparison,resultRef:structuredClone(r.ref),executionRef:structuredClone(scope.executionRef),sourceState:source.sourceState,executionMatched,declaredLocalSequence:s.lastLocalSequence,declaredAckSequence:s.lastServerAck?.sequence??null,serverHighestContiguous:null as number|null,serverMaxSequence:null as number|null,serverGaps:[] as {from:number;to:number}[],ackReferenceComparison:'NOT_COMPARED' as 'NOT_COMPARED'|'SERVER_ACK_NOT_RECORDED'|'FILE_ACK_UNKNOWN'|'SAME_REF_AND_SEQUENCE'|'DIFFERENT_REF_OR_SEQUENCE',localComparison:'NOT_COMPARED' as 'NOT_COMPARED'|'LOCAL_SEQUENCE_UNKNOWN'|'SERVER_ACK_NOT_RECORDED'|'DECLARED_LOCAL_AHEAD'|'DECLARED_LOCAL_BEHIND_STORED_MAX'|'DECLARED_RANGE_EQUAL',declaredContiguousAckDistance:null as number|null,serverRead:false,observedAt:null as string|null,gaps:source.gaps,currentFactsVerified:false as const,checkpointStored:source.checkpointStored,recordFileStored:source.recordFileStored,writerReleaseVerified:false as const,readyForResume:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
  if(source.kind==='SERVER_STORED_CHECKPOINT'&&checkpointReferenceComparison!=='SAME_STORED_REF')return active()?{...base,changeComparison:null,gaps:[...base.gaps,'RESULT_CHECKPOINT_REFERENCE_MISMATCH']}:null;
  if(!executionMatched)return active()?{...base,changeComparison:null,gaps:[...base.gaps,'EXECUTION_NOT_DECLARED_IN_FILE']}:null;
- const journal=await readStoredObservations(client,r,active);if(!active()||!journal)return null;const ack=journal.ack,q=ack?.snapshot;return{...base,serverRead:true,observedAt:journal.observedAt,serverHighestContiguous:q?.highestContiguous??null,serverMaxSequence:q?.maxSequence??null,serverGaps:structuredClone(q?.gaps??[]),
+ const journal=await readStoredObservations(client,r,active);if(!active()||!journal)return null;const ack=journal.ack,q=ack?.snapshot;
+ const comparison={...base,serverRead:true,observedAt:journal.observedAt,serverHighestContiguous:q?.highestContiguous??null,serverMaxSequence:q?.maxSequence??null,serverGaps:structuredClone(q?.gaps??[]),
  ackReferenceComparison:!ack?'SERVER_ACK_NOT_RECORDED':s.lastServerAck===null?'FILE_ACK_UNKNOWN':same(s.lastServerAck.batchRef,ack.ref)&&s.lastServerAck.sequence===ack.snapshot.highestContiguous?'SAME_REF_AND_SEQUENCE':'DIFFERENT_REF_OR_SEQUENCE',
  localComparison:s.lastLocalSequence===null?'LOCAL_SEQUENCE_UNKNOWN':!q?'SERVER_ACK_NOT_RECORDED':s.lastLocalSequence>q.highestContiguous?'DECLARED_LOCAL_AHEAD':s.lastLocalSequence<q.maxSequence?'DECLARED_LOCAL_BEHIND_STORED_MAX':'DECLARED_RANGE_EQUAL',
- declaredContiguousAckDistance:s.lastLocalSequence===null||!q?null:Math.max(0,s.lastLocalSequence-q.highestContiguous),changeComparison:changes(s.changedFiles,r.snapshot.manifest.changes),gaps:[...base.gaps,...(s.lastLocalSequence===null?['LOCAL_SEQUENCE_UNKNOWN']:[]),...(!q?['SERVER_ACK_NOT_RECORDED']:[])]};
+ declaredContiguousAckDistance:s.lastLocalSequence===null||!q?null:Math.max(0,s.lastLocalSequence-q.highestContiguous),changeComparison:changes(s.changedFiles,r.snapshot.manifest.changes),gaps:[...base.gaps,...(s.lastLocalSequence===null?['LOCAL_SEQUENCE_UNKNOWN']:[]),...(!q?['SERVER_ACK_NOT_RECORDED']:[])]} as const;
+ if(source.kind==='SERVER_STORED_CHECKPOINT')resumeComparisons.set(comparison,{client,transport,current:active,checkpointRef:structuredClone(source.checkpointRef),resultRef:structuredClone(r.ref),scope:structuredClone(scope)});
+ return comparison;
+}
+
+export function isCheckpointResumeComparison(comparison:object){return resumeComparisons.has(comparison);}
+
+/** 일치한 서버 체크포인트의 비교 화면에서 원 보고의 두 보관 투영만 명시 조회한다. */
+export async function readCheckpointResumeEvidence(client:ApiClient,comparison:object,rawStored:CheckpointStoredInspection,rawResult:SubmittedResultView,active:()=>boolean){
+ const basis=resumeComparisons.get(comparison);
+ if(!basis||basis.client!==client) return fail();
+ const current=()=>active()&&basis.current()&&client.transport===basis.transport;
+ if(!current())return null;
+ const source=await normalizeSource({source:'SERVER_STORED_CHECKPOINT',value:rawStored}),result=structuredClone(rawResult);
+ if(!current())return null;
+ if(source.kind!=='SERVER_STORED_CHECKPOINT'||source.projectId!==basis.scope.projectId||!same(source.checkpointRef,basis.checkpointRef)||
+    !same(result.ref,basis.resultRef)||!same(result.snapshot.scope,basis.scope)||!same(result.snapshot.manifest.checkpointRef,basis.checkpointRef)||
+    !source.state.executionRefs.some((executionRef:unknown)=>same(executionRef,basis.scope.executionRef))||
+    await hash(result.snapshot)!==basis.resultRef.contentHash)fail();
+ if(!current())return null;
+ try{
+  const journal=await readStoredObservations(client,result,current);
+  if(!current()||!journal)return null;
+  const requests=await readStoredStopRequests(client,result,current);
+  if(!current()||!requests)return null;
+  return {
+   stopRequests:{items:requests.items,hasMore:requests.hasMore,observedAt:requests.observedAt},
+   observations:{items:journal.items.filter(entry=>stopTypes.has(entry.snapshot.event.type)),displayedCount:journal.items.length,storedCount:journal.storedCount,
+    hasMore:journal.hasMore,observedAt:journal.observedAt,highestContiguous:journal.ack?.snapshot.highestContiguous??null,gaps:journal.ack?.snapshot.gaps??[]},
+   readyForResume:false as const,writerReleaseVerified:false as const,currentFactsVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const
+  };
+ }catch(error){if(!current())return null;throw error;}
 }
