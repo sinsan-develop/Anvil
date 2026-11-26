@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
 import type {SubmittedResultView} from './result-api.ts';
@@ -236,29 +236,106 @@ export function StoredCriteria({client,assignment,result,session,reviews,editor,
 }
 /** 별도 명시 보완/차단 기록. 미확인 명령은 App 메모리에서 화면 이탈 뒤에도 같은 ID로 남긴다. */
 function ResultReviewEditor({client,result,criteria,session,reviews,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;result:SubmittedResultView;criteria:RegisteredCriteria;session:DocumentSession;reviews:ResultReviewBuffers;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
- const key=resultReviewBufferKey(session,result,criteria),buffer=reviews.buffers[key]??null,[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),live=useRef(true),working=useRef(false);useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
- const bound=buffer&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId&&JSON.stringify(buffer.resultRef)===JSON.stringify(result.ref)&&JSON.stringify(buffer.criteriaRef)===JSON.stringify(criteria.ref)?buffer:null;
+ const key=resultReviewBufferKey(session,result,criteria),buffer=reviews.buffers[key]??null;
+ const [busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[dispatchRevision,setDispatchRevision]=useState(0);
+ const working=useRef<object|null>(null),live=useRef(false);
+ const sessionKey=()=>ordered([session.user.id,session.clientId,session.csrfToken,result.ref,result.snapshot.scope,criteria.projectId,criteria.ref]);
+ const sessionBinding=sessionKey(),scope=useRef({client,transport:client.transport,session,key:sessionBinding});
+ if(scope.current.client!==client||scope.current.transport!==client.transport||scope.current.session!==session||scope.current.key!==sessionBinding)scope.current={client,transport:client.transport,session,key:sessionBinding};
+ const observed=scope.current,bufferOwner=useRef({value:buffer});
+ if(bufferOwner.current.value!==buffer)bufferOwner.current={value:buffer};
+ const currentScope=()=>live.current&&scope.current===observed&&observed.transport===client.transport&&observed.key===sessionKey();
+ type DispatchAck={next:ResultReviewBuffer;active:()=>boolean;resolve:(ok:boolean)=>void};
+ const acknowledgements=useRef<DispatchAck[]>([]);
+ useLayoutEffect(()=>{
+  live.current=true;setBusy(false);setError(null);
+  return()=>{live.current=false;working.current=null;for(const a of acknowledgements.current)a.resolve(false);acknowledgements.current=[];};
+ },[observed]);
+ useLayoutEffect(()=>{
+  const waiting=acknowledgements.current;acknowledgements.current=[];
+  for(const a of waiting)a.resolve(buffer===a.next&&a.active());
+ },[buffer,observed,dispatchRevision]);
+ const bound=buffer&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId&&ordered(buffer.resultRef)===ordered(result.ref)&&ordered(buffer.criteriaRef)===ordered(criteria.ref)?buffer:null;
  const latest=useRef({key,buffer,bound,busy,session,result,criteria});latest.current={key,buffer,bound,busy,session,result,criteria};
- const change=(v:ResultReviewBuffer)=>reviews.onChange(key,current=>current?.bindingId===v.bindingId?v:current);
- const edit=(v:ResultReviewBuffer)=>{if(!bound||bound.pending||bound.stored||working.current)return;setError(null);change({...v,dirty:true,failure:null});};
+ const change=(v:ResultReviewBuffer)=>{const original=bufferOwner.current,expected=ordered(bound);reviews.onChange(key,current=>currentScope()&&bufferOwner.current===original&&current===bound&&ordered(current)===expected?v:current);};
+ const edit=(v:ResultReviewBuffer)=>{if(!currentScope()||!bound||bound.pending||bound.stored||working.current)return;setError(null);change({...v,dirty:true,failure:null});};
  async function run(mode:'CREATE'|'PREPARE'|'SAVE'|'REBIND'){
-  if(working.current)return;working.current=true;setBusy(true);setError(null);const b=bound;let attempted=false;
-  try{const generation=await documentControl(client,result.snapshot.scope.projectId,session);if(!live.current)return;
-   if(mode==='CREATE'){if(b)return;const next:ResultReviewBuffer={bindingId:crypto.randomUUID(),ownerUserId:session.user.id,ownerClientId:session.clientId,resultRef:structuredClone(result.ref),criteriaRef:structuredClone(criteria.ref),controlGeneration:generation,rows:criteria.snapshot.items.map(i=>({criterionId:i.criterionId,outcome:'',reason:''})),outcome:'',reason:'',pending:null,stored:null,dirty:false,uncertain:false,failure:null};reviews.onChange(key,current=>current??next);return;}
-   if(mode==='REBIND'){if(!b||b.pending||b.stored||b.uncertain)throw new ApiError('RESULT_REVIEW_BINDING_INVALID');change({...b,controlGeneration:generation,failure:null});return;}
+  if(working.current||!currentScope())return;
+  const ticket={};working.current=ticket;setBusy(true);setError(null);
+  const b=bound,original=bufferOwner.current,before=ordered(buffer);
+  let expected=original,body=before,attempted=false;
+  const dispatchState:{latch:{previous:ResultReviewBuffer;next:ResultReviewBuffer;body:string}|null}={latch:null};
+  const active=()=>working.current===ticket&&currentScope();
+  const owned=()=>active()&&bufferOwner.current===expected&&ordered(expected.value)===body;
+  async function commit(next:ResultReviewBuffer){
+   if(!owned())return false;
+   const owner=expected,fingerprint=body,snapshot=ordered(next);
+   let accepted=false;
+   const committed=await new Promise<boolean>(resolve=>{
+    const waiter:DispatchAck={next,active,resolve:(ok)=>{accepted=ok;resolve(ok);}};
+    acknowledgements.current.push(waiter);
+    reviews.onChange(key,current=>current===owner.value&&ordered(current)===fingerprint
+     &&(accepted||acknowledgements.current.includes(waiter)&&owned())?next:current);
+    // 부모가 CAS를 거절해도 커밋에서 정확한 표시가 없었다는 응답을 받는다.
+    setDispatchRevision(value=>value+1);
+   });
+   if(!committed||!active()||bufferOwner.current.value!==next||ordered(next)!==snapshot)return false;
+   expected=bufferOwner.current;body=snapshot;
+   return owned();
+  }
+  async function update(next:ResultReviewBuffer){
+   const previous=expected.value,snapshot=ordered(next);
+   if(await commit(next))return;
+   reviews.onChange(key,current=>current===next&&ordered(current)===snapshot?previous:current);
+  }
+  try{
+   const generation=await documentControl(client,result.snapshot.scope.projectId,session);
+   if(!owned())return;
+   if(mode==='CREATE'){
+    if(buffer)return;
+    await update({bindingId:crypto.randomUUID(),ownerUserId:session.user.id,ownerClientId:session.clientId,resultRef:structuredClone(result.ref),criteriaRef:structuredClone(criteria.ref),controlGeneration:generation,rows:criteria.snapshot.items.map(i=>({criterionId:i.criterionId,outcome:'',reason:''})),outcome:'',reason:'',pending:null,stored:null,dirty:false,uncertain:false,failure:null});
+    return;
+   }
+   if(mode==='REBIND'){
+    if(!b||b.pending||b.stored||b.uncertain)throw new ApiError('RESULT_REVIEW_BINDING_INVALID');
+    await update({...b,controlGeneration:generation,failure:null});return;
+   }
    if(!b||b.stored||b.controlGeneration!==generation)throw new ApiError('PROJECT_CONTROL_CHANGED',409);
-   if(mode==='PREPARE'){if(b.pending||b.uncertain)return;const pending=await prepareResultReviewWrite(result,criteria,{resultRef:result.ref,criteriaRef:criteria.ref,outcome:b.outcome,items:b.rows.map(i=>({...i,evidenceRefs:[]})),reason:b.reason},session,generation);if(live.current)change({...b,pending,failure:null});return;}
-   if(!b.pending)return;attempted=true;change({...b,uncertain:true,failure:null});const stored=await saveResultReviewWrite(client,b.pending,session,()=>live.current);if(live.current&&stored)change({...b,stored,dirty:false,uncertain:false,failure:null});
-  }catch(cause){if(!live.current)return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_REVIEW_INPUT_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REVIEW_INPUT_INVALID';setError(code);if(b)change({...b,failure:{code,status:e.status},uncertain:b.uncertain||attempted&&(e instanceof ReviewReadbackUnconfirmed||!isKnownDocumentRejection(e))});if([401,403,404].includes(e.status))onAccessUnavailable(code);if(e.status===401)onAuthenticationLost();}
-  finally{working.current=false;if(live.current)setBusy(false);}
+   if(mode==='PREPARE'){
+    if(b.pending||b.uncertain)return;
+    const pending=await prepareResultReviewWrite(result,criteria,{resultRef:result.ref,criteriaRef:criteria.ref,outcome:b.outcome,items:b.rows.map(i=>({...i,evidenceRefs:[]})),reason:b.reason},session,generation);
+    if(owned())await update({...b,pending,failure:null});return;
+   }
+   if(!b.pending)return;
+   const stored=await saveResultReviewWrite(client,b.pending,session,owned,{
+    async commit(){
+     if(!owned())return false;
+     const next={...b,uncertain:true,failure:null};
+     dispatchState.latch={previous:b,next,body:ordered(next)};
+     return commit(next);
+    },
+    started(){attempted=true;}
+   });
+   if(owned()&&stored)await update({...b,stored,dirty:false,uncertain:false,failure:null});
+  }catch(cause){
+   if(!owned())return;
+   const e=cause instanceof ApiError?cause:new ApiError('RESULT_REVIEW_INPUT_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REVIEW_INPUT_INVALID';
+   if(b)await update({...b,failure:{code,status:e.status},uncertain:b.uncertain||attempted&&(e instanceof ReviewReadbackUnconfirmed||!isKnownDocumentRejection(e))});
+   if(!owned())return;
+   setError(code);if([401,403,404].includes(e.status))onAccessUnavailable(code);if(e.status===401)onAuthenticationLost();
+  }finally{
+   const unissued=dispatchState.latch;
+   if(!attempted&&unissued)reviews.onChange(key,current=>current===unissued.next&&ordered(current)===unissued.body?unissued.previous:current);
+   if(working.current===ticket){working.current=null;if(live.current)setBusy(false);}
+  }
  }
  const frozen=busy||!!bound?.pending||!!bound?.stored;
  function releaseUnsentPreparation(){
-  if(!bound?.pending||bound.uncertain||bound.stored||bound.failure||busy||working.current||!live.current)return;
+  if(!bound?.pending||bound.uncertain||bound.stored||bound.failure||busy||working.current||!currentScope())return;
   const chosen=bound,pending=bound.pending,command=pending.command,fingerprint=ordered(chosen),owner=session.user.id,clientId=session.clientId,projectId=result.snapshot.scope.projectId,resultRef=ordered(result.ref),criteriaRef=ordered(criteria.ref);
   const currentUnsent=(value:ResultReviewBuffer|null)=>{
    const now=latest.current;
-   return live.current&&!working.current&&!now.busy&&now.key===key&&now.buffer===chosen&&now.bound===chosen&&value===chosen&&value.pending===pending&&pending.command===command&&ordered(value)===fingerprint
+   return currentScope()&&!working.current&&!now.busy&&now.key===key&&now.buffer===chosen&&now.bound===chosen&&value===chosen&&value.pending===pending&&pending.command===command&&ordered(value)===fingerprint
     &&now.session.user.id===owner&&now.session.clientId===clientId&&now.result.snapshot.scope.projectId===projectId&&now.criteria.projectId===projectId&&ordered(now.result.ref)===resultRef&&ordered(now.criteria.ref)===criteriaRef
     &&value.ownerUserId===owner&&value.ownerClientId===clientId&&ordered(value.resultRef)===resultRef&&ordered(value.criteriaRef)===criteriaRef&&!value.uncertain&&!value.stored&&!value.failure
     &&pending.ownerUserId===owner&&command.clientId===clientId&&command.projectId===projectId&&command.controlGeneration===value.controlGeneration&&pending.result.snapshot.scope.projectId===projectId&&pending.criteria.projectId===projectId&&ordered(pending.result.ref)===resultRef&&ordered(pending.criteria.ref)===criteriaRef&&ordered(command.payload)===ordered({resultRef:value.resultRef,criteriaRef:value.criteriaRef,outcome:value.outcome,items:value.rows.map(i=>({...i,evidenceRefs:[]})),reason:value.reason});

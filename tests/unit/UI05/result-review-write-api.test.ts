@@ -10,3 +10,29 @@ function response(p:any,f:ReturnType<typeof fixture>){const at='2026-10-20T00:00
 test('보완/차단만 명시 준비하고 sameorigin 단일명령→고정GET로 저장을 확인한다',async()=>{const f=fixture(),p=await prepare(f),v=response(p,f),calls:any[]=[];const stored=await mod.saveResultReviewWrite(new ApiClient(async(url,o)=>{calls.push([String(url),o?.method,o?.credentials]);if(o?.method==='POST'){assert.equal(new Headers(o.headers).get('Idempotency-Key'),p.command.commandId);assert(typeof o.body==='string');assert.deepEqual(JSON.parse(o.body),p.command);return Response.json(v.receipt);}return Response.json(v.view);}),p,f.session,()=>true);assert.deepEqual(stored,v.view);assert.equal(stored.completionAccepted,false);assert.deepEqual(calls,[[`/api/v1/projects/${p.command.projectId}/commands`,'POST','same-origin'],[`/api/v1/projects/${p.command.projectId}/result-reviews/${v.view.ref.id}`,'GET','same-origin']]);});
 test('준비에서 합격/다른ref·누락을 막고 위조 저장·다른주체·승격flag를 거절한다',async()=>{for(const change of [(f:any)=>f.input.outcome='ACCEPTED',(f:any)=>f.input.items[0].evidenceRefs=[f.criteria.ref],(f:any)=>f.input.items=[],(f:any)=>f.input.resultRef={...f.input.resultRef,id:id(99)}]){const f=fixture();change(f);await assert.rejects(prepare(f),(e:any)=>e.code==='RESULT_REVIEW_INPUT_INVALID');}for(const change of [(v:any)=>v.snapshot.reviewedBy.userId=id(99),(v:any)=>v.snapshot.completionAccepted=true,(v:any)=>v.snapshot.sameAsSubmitter=!v.snapshot.sameAsSubmitter,(v:any)=>v.snapshot.input.reason='다른 이유']){const f=fixture(),p=await prepare(f),v=response(p,f);change(v.view);await assert.rejects(mod.saveResultReviewWrite(new ApiClient(async(_u,o)=>Response.json(o?.method==='POST'?v.receipt:v.view)),p,f.session,()=>true),(e:any)=>e.code==='RESULT_REVIEW_RESPONSE_INVALID');}});
 test('APPLIED 후 GET403·응답변형도 저장 확정거절로 바꾸지 않고 같은명령 재확인만 남긴다',async()=>{const f=fixture(),p=await prepare(f),v=response(p,f);await assert.rejects(mod.saveResultReviewWrite(new ApiClient(async(_u,o)=>o?.method==='POST'?Response.json(v.receipt):Response.json({code:'ACCESS_DENIED'},{status:403})),p,f.session,()=>true),(e:any)=>e.writeMayHaveApplied===true&&e.status===403);const broken={...v.view,completionAccepted:true};await assert.rejects(mod.saveResultReviewWrite(new ApiClient(async(_u,o)=>Response.json(o?.method==='POST'?v.receipt:broken)),p,f.session,()=>true),(e:any)=>e.writeMayHaveApplied===true);let active=true,calls=0;assert.equal(await mod.saveResultReviewWrite(new ApiClient(async()=>{calls++;active=false;return Response.json(v.receipt);}),p,f.session,()=>active),null);assert.equal(calls,1);assert.deepEqual(p.command.payload,f.input);await assert.rejects(mod.saveResultReviewWrite(new ApiClient(async()=>{throw Error('MUST_NOT_SEND');}),p,{...f.session,clientId:id(98)},()=>true),(e:any)=>e.code==='RESULT_REVIEW_BINDING_INVALID');});
+
+test('해시 검산 중 transport/CSRF 교체는 원 POST와 새 POST 모두 0이다',async()=>{
+ for(const mode of ['transport','csrf'] as const){
+  const f=fixture(),pending=await prepare(f),v=response(pending,f);let calls=0;
+  const transport:typeof fetch=async()=>{calls++;return Response.json(v.receipt);};
+  const client=new ApiClient(transport);
+  const saving=mod.saveResultReviewWrite(client,pending,f.session,()=>true);
+  if(mode==='transport')client.transport=async(...args)=>transport(...args);
+  else f.session.csrfToken='B'.repeat(43);
+  assert.equal(await saving,null);assert.equal(calls,0,mode);
+ }
+});
+
+test('POST 응답 본문을 읽는 동안 현재성이 바뀌면 늦은 401 및 새 readback이 없다',async()=>{
+ for(const mode of ['401','APPLIED'] as const){
+  const f=fixture(),pending=await prepare(f),v=response(pending,f);let calls=0,nextCalls=0;
+  const client=new ApiClient(async()=>{
+   calls++;
+   const result=mode==='401'?Response.json({code:'AUTH_REQUIRED'},{status:401}):Response.json(v.receipt),json=result.json.bind(result);
+   result.json=async()=>{client.transport=async()=>{nextCalls++;return Response.json(v.view);};return json();};
+   return result;
+  });
+  assert.equal(await mod.saveResultReviewWrite(client,pending,f.session,()=>true),null,mode);
+  assert.equal(calls,1);assert.equal(nextCalls,0);
+ }
+});

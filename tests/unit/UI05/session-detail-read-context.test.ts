@@ -382,3 +382,193 @@ test('체크포인트 POST 응답 유실은 고정 원명령과 해시를 보존
   assert.deepEqual(x.posts,[JSON.stringify(x.pending.command),JSON.stringify(x.pending.command)]);assert.equal(x.gets.length,1);
  }finally{await x.close();}
 });
+
+async function mountReviewWrite(pendingInitially:boolean){
+ const assignment=fixture(),definition=assignment.confirmed.snapshot.definition;
+ Object.assign(definition,{environmentRef:ref,baselineRefs:[ref]});
+ assignment.draft.ref.contentHash=hash(assignment.draft.snapshot);assignment.confirmed.ref.contentHash=hash(assignment.confirmed.snapshot);
+ const result=resultFixture();Object.assign(result.entry.snapshot.scope,{projectId:pid,assignmentRef:assignment.confirmed.ref});
+ Object.assign(result.entry.snapshot.manifest,{assignmentRef:assignment.confirmed.ref,baselineRefs:[ref]});
+ result.entry.snapshot.manifestHash=hash(result.entry.snapshot.manifest);result.entry.ref.contentHash=hash(result.entry.snapshot);
+ result.item.manifestRef.contentHash=result.entry.snapshot.manifestHash;
+ const {prepareResultReviewWrite,resultReviewBufferKey}=await import('../../../apps/web/src/features/session-detail/result-review-write-api.ts');
+ const {criteriaId}=await import('../FN12/result-criteria-fixture.ts');
+ const submitted=result.entry as Parameters<typeof prepareResultReviewWrite>[0];
+ const items=[{criterionId:'verify',testId:'VERIFY',kind:'INTEGRATION' as const,environmentRef:ref,required:true}];
+ const snapshot={assignmentRef:assignment.confirmed.ref,baselineRefs:[ref],items};
+ const criteriaRef={id:criteriaId(48),version:1,contentHash:hash(snapshot)};
+ const sources=[{field:'acceptanceCriteria',index:0,contentHash:hash(definition.acceptanceCriteria[0])},{field:'verificationRequirements',index:0,contentHash:hash(definition.verificationRequirements[0])}];
+ const flags={registryStored:true as const,reviewStored:false as const,completionAccepted:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+ const criteria={projectId:pid,ref:criteriaRef,snapshot,input:{assignmentRef:assignment.confirmed.ref,baseRef:null,items:[{criterionId:'verify',testId:'VERIFY',kind:'INTEGRATION' as const,environmentRef:ref,sources}],reason:'판정 기준'},sourceBindings:[{criterionId:'verify',sources}],createdBy:pid,registeredAt:at,observedAt:at,...flags};
+ let session={user:{id:pid},clientId:criteriaId(6),csrfToken:'C'.repeat(43)};
+ const key=resultReviewBufferKey(session,submitted,criteria as Parameters<typeof prepareResultReviewWrite>[1]);
+ const input={resultRef:result.entry.ref,criteriaRef,outcome:'BLOCKED' as const,items:[{criterionId:'verify',outcome:'BLOCKED' as const,reason:'증거 보완',evidenceRefs:[]}],reason:'근거 확인이 필요합니다'};
+ const pending=await prepareResultReviewWrite(submitted,criteria as Parameters<typeof prepareResultReviewWrite>[1],input,session,1);
+ const initial={bindingId:criteriaId(49),ownerUserId:pid,ownerClientId:session.clientId,resultRef:input.resultRef,criteriaRef,controlGeneration:1,
+  rows:input.items.map(({evidenceRefs,...item})=>item),outcome:'BLOCKED' as const,reason:input.reason,pending:pendingInitially?pending:null,stored:null,dirty:true,uncertain:false,failure:null};
+ const sourceTransport=assignment.client.transport;
+ const posts:{body:unknown;csrf:string|null;id:string|null}[]=[],reads:string[]=[];
+ let hold:'CONTROL'|'POST'|null=null,release:((value:Response)=>void)|null=null,readback:unknown,rendered=initial as any,visible=true,lost=0,ignoreUpdates=false,deferred:(()=>void)|null=null;
+ const base='/api/v1/projects/'+pid,container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ const transport:typeof fetch=async(url,options)=>{
+  const path=String(url),method=options?.method??'GET';
+  if(method==='POST'){
+   const body=JSON.parse(String(options?.body)),headers=new Headers(options?.headers);
+   posts.push({body,csrf:headers.get('X-Anvil-CSRF'),id:headers.get('Idempotency-Key')});
+   if(hold==='POST'){hold=null;return new Promise<Response>(resolve=>{release=resolve;});}
+   assert.equal(path,base+'/commands');
+   const snap={scope:result.entry.snapshot.scope,input:body.payload,reviewedBy:{kind:'HUMAN',userId:session.user.id,clientId:session.clientId},
+    sameAsSubmitter:true,reviewedAt:at,evidenceProvenanceVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};
+   const rr={id:criteriaId(52),version:1,contentHash:hash(snap)};
+   const record={ref:rr,snapshot:snap,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false};
+   readback={projectId:pid,...record,observedAt:at};
+   return Response.json({commandId:body.commandId,operationId:criteriaId(53),projectId:pid,status:'APPLIED',targetId:rr.id,version:1,data:{...record,status:'RESULT_REVIEW_RECORDED'},serverReceivedAt:at});
+  }
+  reads.push(path);
+  if(path===base){
+   if(hold==='CONTROL'){hold=null;return new Promise<Response>(resolve=>{release=resolve;});}
+   return control();
+  }
+  if(path.endsWith('/result-pages'))return Response.json({...result.page,assignmentRef:assignment.confirmed.ref,nextCursor:null,selectionState:'NOT_SELECTED'});
+  if(path===base+'/results/'+result.entry.ref.id)return Response.json(result.entry);
+  if(path.endsWith('/review-sources'))return Response.json({projectId:pid,result:result.entry,assignment:assignment.confirmed,
+   criteriaState:'TEXT_ONLY_NOT_MAPPED',issues:['TYPED_CRITERIA_NOT_REGISTERED'],reviewStored:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false});
+  if(path.endsWith('/result-criteria'))return Response.json({projectId:pid,assignmentRef:assignment.confirmed.ref,
+   items:[{ref:criteriaRef,createdBy:pid,registeredAt:at,conditionCount:items.length,...flags}],hasMore:false,selectionState:'NOT_SELECTED',observedAt:at});
+  if(path.endsWith('/result-criteria/'+criteriaRef.id+'/versions/1'))return Response.json(criteria);
+  if(path.endsWith('/result-reviews/'+criteriaId(52)))return Response.json(readback);
+  return sourceTransport(url,options);
+ };
+ const client=new ui.ApiClient(transport);
+ const control=()=>Response.json({id:pid,participation:'OWNER',controlState:{status:'HELD',actorId:session.user.id,clientId:session.clientId,generation:1}});
+ const updates:((value:unknown)=>unknown)[]=[];
+ let replacementOnUpdate:object|null=null,onMarker:(()=>void)|null=null,replace:(next:unknown)=>void=()=>{};
+ function Host(){
+  const [buffers,setBuffers]=ui.React.useState({[key]:initial});
+  rendered=buffers[key];replace=next=>setBuffers({...buffers,[key]:next});
+  ui.React.useLayoutEffect(()=>{if(rendered?.uncertain&&onMarker){const run=onMarker;onMarker=null;run();}});
+  const reviews={buffers,onChange:(k:string,update:(previous:unknown)=>unknown)=>{
+   updates.push(update);
+   const apply=()=>setBuffers((previous:Record<string,unknown>)=>{const next=update(previous[k]??null);return next===previous[k]?previous:{...previous,[k]:next};});
+   if(replacementOnUpdate){const next=replacementOnUpdate;replacementOnUpdate=null;setBuffers((previous:Record<string,unknown>)=>({...previous,[k]:next}));}
+   if(ignoreUpdates)deferred=apply;else apply();
+  }};
+  return visible?ui.React.createElement(ui.SessionDetailPage,{client,projectId:pid,assignmentRef:assignment.draft.ref,criteria:{session,reviews,buffer:null,onChange:()=>{}},
+   checkpoint:{buffers:{},onChange:()=>{}},onAuthenticationLost:()=>{lost++;}}):null;
+ }
+ const render=async()=>ui.React.act(async()=>root.render(ui.React.createElement(Host)));
+ const tick=async()=>ui.React.act(async()=>{await new Promise(done=>setImmediate(done));});
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
+ const button=(label:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===label);
+ const waitFor=async(check:()=>boolean)=>{const end=Date.now()+2000;while(!check()&&Date.now()<end)await tick();assert(check(),container.textContent);};
+ const click=async(label:string)=>{const n=button(label);assert.ok(n,label);assert(!n.disabled,label);await ui.React.act(async()=>n.dispatchEvent({type:'click',button:0,bubbles:true}));};
+ async function open(){
+ for(const label of ['제출 원문 '+result.entry.ref.id,'검수 기준 원문 조회','보관 기준 목록 조회','보관 기준 원문 '+criteriaRef.id+' v1']){
+  await waitFor(()=>!!button(label));await click(label);
+ }
+ }
+ await render();await open();await waitFor(()=>!!button(pendingInitially?'검수 기록 명시 저장':'검수 기록 저장 준비'));
+ return{posts,reads,button,waitFor,click,tick,pending,control,lost:()=>lost,current:()=>rendered,
+  replaceOnUpdate(value:object){replacementOnUpdate=value;},text:()=>container.textContent,
+  reopen:async()=>{await render();await open();},swapAfterCommit:()=>{onMarker=()=>{client.transport=transport.bind(null);};},replay:(previous:unknown)=>updates.reduce((value,change)=>change(value),previous),
+  wait(point:'CONTROL'|'POST'){hold=point;},waiting:()=>!!release,finish:async(value:Response)=>ui.React.act(async()=>{const done=release;assert.ok(done);release=null;done(value);}),
+  swap(){client.transport=(...args:Parameters<typeof fetch>)=>transport(...args);},setSession(update:Partial<typeof session>){Object.assign(session,update);},replace:async(value:unknown)=>ui.React.act(async()=>replace(value)),
+  defer(){ignoreUpdates=true;},queued:()=>!!deferred,flushDeferred:async()=>ui.React.act(async()=>{ignoreUpdates=false;const fn=deferred;assert.ok(fn);deferred=null;fn();}),
+  hide:async()=>{visible=false;await render();},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+}
+
+for(const mode of ['PREPARE_TRANSPORT','SAVE_TRANSPORT','SAVE_CSRF','SAVE_BUFFER','SAVE_UNMOUNT'] as const)
+test('검수 제어 조회 뒤 현재 문맥이 바뀌면 미발송 원 상태를 유지한다 '+mode,async()=>{
+ const isSave=mode!=='PREPARE_TRANSPORT',f=await mountReviewWrite(isSave);
+ try{
+  const before=f.current();f.wait('CONTROL');
+  await f.click(isSave?'검수 기록 명시 저장':'검수 기록 저장 준비');await f.waitFor(f.waiting);
+  if(mode.endsWith('TRANSPORT'))f.swap();
+  if(mode==='SAVE_CSRF')f.setSession({csrfToken:'D'.repeat(43)});
+  const replacement={...before,reason:'다른 작업의 버퍼'};
+  if(mode==='SAVE_BUFFER')await f.replace(replacement);
+  if(mode==='SAVE_UNMOUNT')await f.hide();
+  await f.finish(f.control());await f.tick();
+  assert.equal(f.current(),mode==='SAVE_BUFFER'?replacement:before);
+  assert.equal(f.posts.length,0);assert.equal(f.lost(),0);
+ }finally{await f.close();}
+});
+
+test('검수 명령 실제 POST 뒤 바뀐 연결은 늦은 401 없이 원명령을 남기고 현재 토큰으로 동일 명령만 재확인한다',async()=>{
+ const f=await mountReviewWrite(true);
+ try{
+  const original=f.current();f.wait('POST');
+  await f.click('검수 기록 명시 저장');await f.waitFor(f.waiting);
+  assert.ok(f.current().uncertain);assert.equal(f.current().pending,original.pending);
+  const count=f.reads.length;
+  f.swap();f.setSession({csrfToken:'D'.repeat(43)});
+  await f.finish(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.tick();
+  assert.equal(f.lost(),0);assert.equal(f.reads.length,count);assert.equal(f.posts.length,1);
+  assert.equal(f.current().pending,original.pending);assert.equal(f.current().uncertain,true);
+  await f.reopen();await f.waitFor(()=>!!f.button('같은 검수 기록 명령 재확인'));
+  await f.click('같은 검수 기록 명령 재확인');await f.waitFor(()=>!!f.current().stored);
+  assert.equal(f.current().stored.snapshot.input.outcome,'BLOCKED');
+  assert.equal(f.current().uncertain,false);
+  assert.equal(f.replay(original),f.current(),'부모의 이전 기반 재평가에도 확정 표시를 같은 객체로 재현한다');
+  assert.deepEqual(f.posts.map(p=>p.body),[original.pending.command,original.pending.command]);
+  assert.deepEqual(f.posts.map(p=>p.id),[original.pending.command.commandId,original.pending.command.commandId]);
+  assert.deepEqual(f.posts.map(p=>p.csrf),['C'.repeat(43),'D'.repeat(43)]);
+ }finally{await f.close();}
+});
+
+test('부모가 발송 전 exact 검수 버퍼 정착을 보류하면 POST와 늦은 updater 모두 효과가 없다',async()=>{
+ const f=await mountReviewWrite(true);
+ try{
+  const original=f.current();f.defer();await f.click('검수 기록 명시 저장');await f.waitFor(f.queued);
+  await f.waitFor(()=>!f.button('검수 기록 명시 저장')?.disabled);
+  assert.equal(f.posts.length,0);await f.flushDeferred();
+  assert.equal(f.current(),original);assert.equal(f.current().uncertain,false);assert.equal(f.posts.length,0);
+ }finally{await f.close();}
+});
+
+test('발송 표시 커밋 직후 transport가 교체되면 미발송 표시만 복구한다',async()=>{
+ const f=await mountReviewWrite(true);
+ try{
+  const original=f.current();f.swapAfterCommit();await f.click('검수 기록 명시 저장');
+  await f.waitFor(()=>f.current()===original&&!f.button('검수 기록 명시 저장')?.disabled);
+  assert.equal(f.posts.length,0);assert.equal(f.lost(),0);assert.equal(f.current().pending,original.pending);
+  assert.equal(f.replay(original),original);
+ }finally{await f.close();}
+});
+
+for(const status of [401,403,404])test('POST 실패 반영 대기와 같은 프레임의 교체 버퍼는 과거 접근 오류를 받지 않는다 '+status,async()=>{
+ const f=await mountReviewWrite(true);
+ try{
+  f.wait('POST');await f.click('검수 기록 명시 저장');await f.waitFor(f.waiting);
+  const replacement={...f.current(),reason:'별도 현재 작업',uncertain:false,failure:null};
+  f.replaceOnUpdate(replacement);
+  await f.finish(Response.json({code:'ACCESS_DENIED'},{status}));await f.tick();
+  assert.equal(f.current(),replacement);assert.equal(f.lost(),0);
+  assert.doesNotMatch(f.text(),/ACCESS_DENIED/);assert.equal(f.posts.length,1);
+ }finally{await f.close();}
+});
+
+test('현재 같은 검수 명령의 401은 기존 인증 종료로 전달한다',async()=>{
+ const f=await mountReviewWrite(true);
+ try{
+  f.wait('POST');await f.click('검수 기록 명시 저장');await f.waitFor(f.waiting);
+  await f.finish(Response.json({code:'AUTH_REQUIRED'},{status:401}));
+  await f.waitFor(()=>f.lost()===1);assert.equal(f.posts.length,1);assert.ok(f.current().pending);
+ }finally{await f.close();}
+});
+
+test('현재 검수 준비와 미전송 해제는 입력을 보존하고 POST하지 않는다',async()=>{
+ const f=await mountReviewWrite(false),saved=Object.getOwnPropertyDescriptor(globalThis,'confirm');
+ Object.defineProperty(globalThis,'confirm',{configurable:true,value:()=>true});
+ try{
+  const original=f.current();await f.click('검수 기록 저장 준비');
+  await f.waitFor(()=>!!f.current().pending&&!!f.button('미전송 검수 저장 준비 해제')&&!f.button('미전송 검수 저장 준비 해제')?.disabled);
+  assert.deepEqual(f.current().pending.command.payload,f.pending.command.payload);
+  assert.equal(f.current().bindingId,original.bindingId);
+  await f.click('미전송 검수 저장 준비 해제');await f.waitFor(()=>f.current().pending===null);
+  assert.deepEqual(f.current(),original);assert.equal(f.posts.length,0);assert.equal(f.lost(),0);
+ }finally{
+  if(saved)Object.defineProperty(globalThis,'confirm',saved);else Reflect.deleteProperty(globalThis,'confirm');
+  await f.close();
+ }
+});

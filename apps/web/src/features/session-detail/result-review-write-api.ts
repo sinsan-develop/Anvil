@@ -24,10 +24,42 @@ export async function prepareResultReviewWrite(result:SubmittedResultView,criter
 }
 function expectedSnapshot(p:ResultReviewWrite,at:string){return{scope:p.result.snapshot.scope,input:p.command.payload,reviewedBy:{kind:'HUMAN',userId:p.ownerUserId,clientId:p.command.clientId},sameAsSubmitter:p.ownerUserId===p.result.snapshot.submittedByRef.id,reviewedAt:at,evidenceProvenanceVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};}
 function data(snapshot:unknown,ref:PlanRef){return{ref,status:'RESULT_REVIEW_RECORDED',snapshot,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false};}
-export async function saveResultReviewWrite(client:ApiClient,pending:ResultReviewWrite,session:DocumentSession,active:()=>boolean):Promise<RecordedResultReview|null>{
- const p=structuredClone(pending),c=p.command;if(p.ownerUserId!==session.user.id||c?.clientId!==session.clientId||!uuid(c.commandId)||c.projectId!==p.result.snapshot.scope.projectId||c.schemaVersion!==1||c.operation!=='evaluateResult'||c.targetId!==null||c.expectedVersion!==0||!same(c.baselineRefs,[])||c.approvalRef!==null||!Number.isSafeInteger(c.controlGeneration)||c.controlGeneration<1)fail('RESULT_REVIEW_BINDING_INVALID');if(!same(c.payload,await inputFor(p.result,p.criteria,c.payload)))fail('RESULT_REVIEW_BINDING_INVALID');if(!active())return null;
- let response:Response;try{response=await client.transport.call(globalThis,`/api/v1/projects/${c.projectId}/commands`,{method:'POST',credentials:'same-origin',cache:'no-store',redirect:'error',headers:{Accept:'application/json','Content-Type':'application/json','X-Anvil-CSRF':session.csrfToken,'Idempotency-Key':c.commandId},body:JSON.stringify(c)});}catch{throw new ApiError('CONNECTION_LOST');}if(!active())return null;
- let v:any;try{if(!/^application\/json\b/i.test(response.headers.get('content-type')??''))throw Error();v=await response.json();}catch{fail('RESULT_REVIEW_RESPONSE_INVALID');}if(!response.ok)throw new ApiError(typeof v?.code==='string'&&/^[A-Z_]{1,80}$/.test(v.code)?v.code:'REQUEST_FAILED',response.status);
- const d=v?.data;if(v?.commandId!==c.commandId||!uuid(v.operationId)||v.projectId!==c.projectId||v.status!=='APPLIED'||!date(v.serverReceivedAt)||Date.parse(v.serverReceivedAt)<Date.parse(p.result.snapshot.submittedAt)||!ref(d?.ref)||d.ref.version!==1||v.targetId!==d.ref.id||v.version!==1||!same(d,data(expectedSnapshot(p,v.serverReceivedAt),d.ref))||await hash(d.snapshot)!==d.ref.contentHash)fail('RESULT_REVIEW_RESPONSE_INVALID');
- if(!active())return null;try{const value=await client.get<RecordedResultReview>(`/api/v1/projects/${c.projectId}/result-reviews/${d.ref.id}`);if(!active())return null;const expected={projectId:c.projectId,ref:d.ref,snapshot:expectedSnapshot(p,v.serverReceivedAt),reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false,observedAt:value?.observedAt};if(!date(value?.observedAt)||Date.parse(value.observedAt)<Date.parse(v.serverReceivedAt)||!same(value,expected)||await hash(value.snapshot)!==d.ref.contentHash)fail('RESULT_REVIEW_RESPONSE_INVALID');return active()?structuredClone(value):null;}catch(cause){const e=cause instanceof ApiError?cause:new ApiError('RESULT_REVIEW_RESPONSE_INVALID');throw new ReviewReadbackUnconfirmed(e.code,e.status);}
+interface ResultReviewDispatch {
+ commit:()=>Promise<boolean>;
+ started:()=>void;
+}
+export async function saveResultReviewWrite(client:ApiClient,pending:ResultReviewWrite,session:DocumentSession,active:()=>boolean,dispatch?:ResultReviewDispatch):Promise<RecordedResultReview|null>{
+ const p=structuredClone(pending),c=p.command,transport=client.transport,{clientId,csrfToken}=session,userId=session.user.id;
+ const current=()=>active()&&client.transport===transport&&session.user.id===userId&&session.clientId===clientId&&session.csrfToken===csrfToken;
+ if(p.ownerUserId!==userId||c?.clientId!==clientId||!uuid(c.commandId)||c.projectId!==p.result.snapshot.scope.projectId||c.schemaVersion!==1||c.operation!=='evaluateResult'||c.targetId!==null||c.expectedVersion!==0||!same(c.baselineRefs,[])||c.approvalRef!==null||!Number.isSafeInteger(c.controlGeneration)||c.controlGeneration<1)fail('RESULT_REVIEW_BINDING_INVALID');
+ if(!same(c.payload,await inputFor(p.result,p.criteria,c.payload)))fail('RESULT_REVIEW_BINDING_INVALID');
+ if(!current()||dispatch&&!await dispatch.commit()||!current())return null;
+ const base='/api/v1/projects/'+c.projectId;
+ let response:Response;
+ try{
+  dispatch?.started();
+  response=await transport.call(globalThis,base+'/commands',{method:'POST',credentials:'same-origin',cache:'no-store',redirect:'error',headers:{Accept:'application/json','Content-Type':'application/json','X-Anvil-CSRF':csrfToken,'Idempotency-Key':c.commandId},body:JSON.stringify(c)});
+ }catch{if(!current())return null;throw new ApiError('CONNECTION_LOST');}
+ if(!current())return null;
+ let v:any;
+ try{if(!/^application\/json\b/i.test(response.headers.get('content-type')??''))throw Error();v=await response.json();}
+ catch{if(!current())return null;return fail('RESULT_REVIEW_RESPONSE_INVALID');}
+ if(!current())return null;
+ if(!response.ok)throw new ApiError(typeof v?.code==='string'&&/^[A-Z_]{1,80}$/.test(v.code)?v.code:'REQUEST_FAILED',response.status);
+ const d=v?.data;
+ if(v?.commandId!==c.commandId||!uuid(v.operationId)||v.projectId!==c.projectId||v.status!=='APPLIED'||!date(v.serverReceivedAt)||Date.parse(v.serverReceivedAt)<Date.parse(p.result.snapshot.submittedAt)||!ref(d?.ref)||d.ref.version!==1||v.targetId!==d.ref.id||v.version!==1||!same(d,data(expectedSnapshot(p,v.serverReceivedAt),d.ref)))fail('RESULT_REVIEW_RESPONSE_INVALID');
+ const receiptHash=await hash(d.snapshot);
+ if(!current())return null;
+ if(receiptHash!==d.ref.contentHash)fail('RESULT_REVIEW_RESPONSE_INVALID');
+ try{
+  const value=await new ApiClient(transport).get<RecordedResultReview>(base+'/result-reviews/'+d.ref.id);
+  if(!current())return null;
+  const expected={projectId:c.projectId,ref:d.ref,snapshot:expectedSnapshot(p,v.serverReceivedAt),reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false,observedAt:value?.observedAt};
+  if(!date(value?.observedAt)||Date.parse(value.observedAt)<Date.parse(v.serverReceivedAt)||!same(value,expected)||await hash(value.snapshot)!==d.ref.contentHash)fail('RESULT_REVIEW_RESPONSE_INVALID');
+  return current()?structuredClone(value):null;
+ }catch(cause){
+  if(!current())return null;
+  const e=cause instanceof ApiError?cause:new ApiError('RESULT_REVIEW_RESPONSE_INVALID');
+  throw new ReviewReadbackUnconfirmed(e.code,e.status);
+ }
 }
