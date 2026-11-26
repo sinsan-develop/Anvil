@@ -38,7 +38,14 @@ export function ProjectAssignmentDrafts({client,projectId,name,disabled,onAuthen
   {shown?.error?<><p role="alert">{shown.error} · 저장 임무 미확인. 빈 목록/완료로 처리하지 않습니다.</p><button type="button" disabled={disabled||pending||shown.denied} onClick={()=>{if(request)start(request.target);}}>저장 임무 같은 페이지 다시 조회</button></>:null}
   {v&&successful?<><p>{successful.history.length+1}페이지 · 이 페이지 {v.items.length}건 · 전체 건수 미산정</p><p>저장 초안 변경시각 내림차순의 현재 페이지 · 초안 · 실행 상태 아님</p>
    <p className="meta">서버 목록 관측 {v.observedAt} · 관측 뒤 개정/권한이 달라질 수 있습니다.</p>
-   {v.items.length?<ul>{v.items.map(item=><li key={item.ref.id}><p>{item.goal||'목표 미입력'} · 업무 {item.taskRef.taskCode} · 저장 v{item.ref.version} · 기록된 준비 문제 {item.issueCount}건</p><p className="meta">초안 변경 {item.updatedAt} · 목록 metadata, 원문 무결성/현재 준비 미확인</p><a href={sessionDetailHref(projectId,item.ref)}>저장 임무 v{item.ref.version} 상세 조회</a></li>)}</ul>:<p>이 페이지에 저장 임무 초안 없음 · 실행/결과 이력 없음이라는 뜻은 아닙니다.</p>}
+   {v.items.length?<ul>{v.items.map(item=><li key={item.ref.id}>
+    <p>{item.goal||'목표 미입력'} · 저장 v{item.ref.version} · 기록된 준비 문제 {item.issueCount}건</p>
+    <p>저장 taskRef 관계 · 계획 업무 {item.taskRef.taskCode} → 단계 정의 {item.taskRef.nodeId}</p>
+    <p className="meta">저장 임무 {item.ref.id} · v{item.ref.version} · SHA256 {item.ref.contentHash}</p>
+    <p className="meta">고정 계획 {item.taskRef.planRef.id} · v{item.taskRef.planRef.version} · SHA256 {item.taskRef.planRef.contentHash}</p>
+    <p className="meta">단계 정의 {item.taskRef.applicationRef.id} · v{item.taskRef.applicationRef.version} · SHA256 {item.taskRef.applicationRef.contentHash} · nodeId {item.taskRef.nodeId}</p>
+    <p className="meta">초안 변경 {item.updatedAt} · 목록 metadata, 원문 무결성/현재 준비 미확인</p><a href={sessionDetailHref(projectId,item.ref)}>저장 임무 v{item.ref.version} 상세 조회</a>
+   </li>)}</ul>:<p>이 페이지에 저장 임무 초안 없음 · 실행/결과 이력 없음이라는 뜻은 아닙니다.</p>}
    {successful.history.length?<button type="button" disabled={disabled||pending} onClick={()=>start({cursor:successful.history.at(-1)!,history:successful.history.slice(0,-1)})}>저장 임무 이전 페이지</button>:null}
    {v.hasMore?<button type="button" disabled={disabled||pending} onClick={()=>start({cursor:v.nextCursor,history:[...successful.history,successful.cursor]})}>저장 임무 다음 페이지</button>:null}
    <p>상세 이동은 고정 원문을 다시 조회합니다. 확정·책임자 배정·Agent 시작은 하지 않습니다.</p>
