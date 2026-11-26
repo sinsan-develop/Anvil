@@ -273,7 +273,8 @@ export function App() {
     const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue='';};
     addEventListener('beforeunload',warn);return()=>removeEventListener('beforeunload',warn);
   },[controlBuffers]);
-  const [checkpointBuffers,setCheckpointBuffers]=useState<Record<string,CheckpointForm|null>>({});
+  const [checkpointBuffers,setCheckpointBuffersState]=useState<Record<string,CheckpointForm|null>>({});
+  function setCheckpointBuffers(change:Record<string,CheckpointForm|null>|((previous:Record<string,CheckpointForm|null>)=>Record<string,CheckpointForm|null>)){setCheckpointBuffersState(previous=>{const next=typeof change==='function'?change(previous):change,added=Object.keys(next).filter(key=>!Object.hasOwn(previous,key));return added.length>0&&added.every(key=>next[key]===null)&&Object.keys(previous).every(key=>next[key]===previous[key])&&Object.keys(next).length===Object.keys(previous).length+added.length?previous:next;});}
   useEffect(()=>{setCheckpointBuffers({});},[session?.user.id,session?.clientId]);
   useEffect(()=>{if(!session||!Object.values(checkpointBuffers).some(Boolean))return;const warn=(e:BeforeUnloadEvent)=>{e.preventDefault();e.returnValue='';};addEventListener('beforeunload',warn);return()=>removeEventListener('beforeunload',warn);},[checkpointBuffers,session]);
   const preparationRecords=useRef<Record<string,PreparationBuffer|null>>({}),[,refreshPreparationRecords]=useState(0);
