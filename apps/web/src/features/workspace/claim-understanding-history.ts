@@ -1,6 +1,6 @@
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {readProviderClaimReceiptHistory,type ProviderClaimPageHistory} from './provider-claim-receipt-api.ts';
-import {readNormalUnderstandingHistory,validateUnderstandingHistory,type UnderstandingHistoryView} from '../session-detail/understanding-history-api.ts';
+import {readNormalUnderstandingHistory,validateUnderstandingHistory,type UnderstandingHistoryScope,type UnderstandingHistoryView} from '../session-detail/understanding-history-api.ts';
 /** 제출 결과 없이, 선택된 보관 claim의 원결과가 존재할 때만 같은 실행의 검토 이력을 읽는다.
  * claim과 검토 응답의 직접 대응·현재 세션 가동/허가·의미 이해 수용은 검증하지 않는다. */
 export async function readClaimUnderstandingHistory(client:ApiClient,projectId:string,sessionRef:ProviderClaimPageHistory['agentSessionRef'],raw:ProviderClaimPageHistory['items'][number],active:()=>boolean):Promise<UnderstandingHistoryView|null>{
@@ -17,7 +17,14 @@ import {ordered} from '../knowledge/review-view.ts';
 import {readPreparationOriginalByRef} from '../session-detail/preparation-history-api.ts';
 import type {ReviewedNormalUnderstandingRangeHistoryRequest} from './NormalUnderstandingDiscovery.tsx';
 import type {PlanRef} from '../design-trace/work-plan-api.ts';
-export type NormalClaimRangeHistoryBasis={status:'EXACT_NORMAL_RANGE_REFS';origin:ReviewedNormalUnderstandingRangeHistoryRequest;reviewRef:PlanRef}|{status:'NO_NORMAL_REVIEW'};
+export interface ExactWorkReviewCandidate {
+ scope:UnderstandingHistoryScope;
+ reviewRef:PlanRef;
+ assignmentRef:PlanRef;
+ roleBindingRef:PlanRef;
+ agentSessionRef:PlanRef;
+}
+export type NormalClaimRangeHistoryBasis={status:'EXACT_NORMAL_RANGE_REFS';origin:ReviewedNormalUnderstandingRangeHistoryRequest;reviewRef:PlanRef;workCandidate:ExactWorkReviewCandidate|null}|{status:'NO_NORMAL_REVIEW'};
 /** 선택 claim은 실행의 탐색 입구다. 판단의 원문 참조와 현재 원문 읽기 권한을 대신하지 않는다. */
 export async function readNormalClaimRangeHistory(client:ApiClient,projectId:string,sessionRef:ProviderClaimPageHistory['agentSessionRef'],raw:ProviderClaimPageHistory['items'][number],signal:AbortSignal,active:()=>boolean):Promise<NormalClaimRangeHistoryBasis>{
  const selected=structuredClone(raw),session=structuredClone(sessionRef),transport=client.transport,owned=new AbortController();
@@ -44,7 +51,11 @@ export async function readNormalClaimRangeHistory(client:ApiClient,projectId:str
   const preparation=await readPreparationOriginalByRef(bounded,projectId,g.preparationRef as PlanRef,()=>{check();return true;});check();
   const p=preparation?.snapshot,i=p?.intent;
   if(!p||i.connectionKind!=='REGISTERED_DEFINITION'||i.mode!=='CONTEXT_REVIEW'||!same(i.contextBundleRef,c.bundleRef)||!same(i.roleBindingRef,c.subjectBindingRef)||!same(p.basisRefs,c.basisRefs)||!same(p.latestInstructionRefs,c.latestInstructionRefs))return fail();
-  return {status:'EXACT_NORMAL_RANGE_REFS',reviewRef:structuredClone(row.ref),origin:{kind:'NORMAL_REVIEW_HISTORY',request:{...scope,assignmentRef:structuredClone(i.assignmentRef),preparationRef:structuredClone(preparation!.ref),requestRef:structuredClone(g.requestRef as PlanRef)},responseRef:structuredClone(c.responseRef),partRefs:structuredClone(c.responsePartRefs),bundleRef:structuredClone(c.bundleRef),subjectBindingRef:structuredClone(c.subjectBindingRef)}};
+  const latest=history.items.at(-1)!;
+  const workCandidate=latest.snapshot.outcome==='ACCEPTED'
+   ?structuredClone({scope,reviewRef:latest.ref,assignmentRef:i.assignmentRef,roleBindingRef:i.roleBindingRef,agentSessionRef:session})
+   :null;
+  return {status:'EXACT_NORMAL_RANGE_REFS',workCandidate,reviewRef:structuredClone(row.ref),origin:{kind:'NORMAL_REVIEW_HISTORY',request:{...scope,assignmentRef:structuredClone(i.assignmentRef),preparationRef:structuredClone(preparation!.ref),requestRef:structuredClone(g.requestRef as PlanRef)},responseRef:structuredClone(c.responseRef),partRefs:structuredClone(c.responsePartRefs),bundleRef:structuredClone(c.bundleRef),subjectBindingRef:structuredClone(c.subjectBindingRef)}};
  }
  const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b);
  try{return await Promise.race([lookup(),expired]);}finally{if(timer!==undefined)clearTimeout(timer);signal.removeEventListener('abort',abort);owned.abort();}

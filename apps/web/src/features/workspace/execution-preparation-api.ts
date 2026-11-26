@@ -3,6 +3,7 @@ import {readEnvironmentConfiguration,type EnvironmentView} from '../connections/
 import {preparationPayloadValid,preparationOptionsValid,preparationUnderstandingBasisValid,readPreparationOriginalByRef,type WorkUnderstandingBasis} from '../session-detail/preparation-history-api.ts';
 import {normalInitialUnderstandingOwner} from '../session-detail/understanding-review-write.ts';
 import {readNormalUnderstandingHistory,type UnderstandingHistoryScope} from '../session-detail/understanding-history-api.ts';
+import type {ExactWorkReviewCandidate} from './claim-understanding-history.ts';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,postDocumentCommand,type DocumentSession,type DocumentWrite} from '../design-trace/editor-api.ts';
 import type {ConfirmedAssignmentView} from './assignment-confirmation-api.ts';
@@ -58,10 +59,11 @@ function preparationSnapshotMatches(snapshot:any,payload:any,expected?:WorkUnder
  return same(snapshot?.intent,intent)&&preparationUnderstandingBasisValid(snapshot)&&(understandingReviewRef===undefined?!Object.hasOwn(snapshot??{},'understandingBasis'):!!expected&&same(snapshot.understandingBasis,expected)&&same(snapshot.understandingBasis?.reviewRef,understandingReviewRef));
 }
 /** 이미 알려진 정상 실행의 최신 적합 판단과 원 EP만 읽는다. 원문·현재 실행 허가를 반환하지 않는다. */
-export async function selectNormalWorkUnderstanding(client:ApiClient,rawConfirmed:ConfirmedAssignmentView,sources:PreparationSources,rawScope:UnderstandingHistoryScope,session:DocumentSession,active:()=>boolean,expected?:WorkUnderstandingBasis){
- const c=structuredClone(rawConfirmed),scope=structuredClone(rawScope),transport=client.transport,epoch=normalInitialUnderstandingOwner(client,session),s=structuredClone(session);
+export async function selectNormalWorkUnderstanding(client:ApiClient,rawConfirmed:ConfirmedAssignmentView,sources:PreparationSources,rawScope:UnderstandingHistoryScope,session:DocumentSession,active:()=>boolean,rawExpected?:WorkUnderstandingBasis|ExactWorkReviewCandidate){
+ const c=structuredClone(rawConfirmed),scope=structuredClone(rawScope),expected=structuredClone(rawExpected),transport=client.transport,epoch=normalInitialUnderstandingOwner(client,session),s=structuredClone(session);
  const check=()=>{if(!active()||client.transport!==transport||!same(session,s)||normalInitialUnderstandingOwner(client,session)!==epoch)fail('EXECUTION_PREPARATION_CONTEXT_CHANGED',412);};check();
  if(scope.projectId!==c.projectId||sources.kind!=='REGISTERED_DEFINITION'||sources.context.currentCheck.state!=='MATCHED_METADATA'||sources.context.manifest.missingRequired.length)fail('WORK_PREPARATION_UNDERSTANDING_CHANGED',412);
+ if(expected&&(!same(expected.scope,scope)||!same(expected.assignmentRef,c.ref)||!same(expected.roleBindingRef,sources.binding.ref)||!same(expected.agentSessionRef,sources.binding.snapshot.sessionRef)))fail('WORK_PREPARATION_UNDERSTANDING_CHANGED',412);
  const history=await readNormalUnderstandingHistory(client,scope,()=>{check();return true;});check();const latest=history?.items.at(-1),binding=latest?.snapshot.currentBinding,g=binding?.sourceBasis as any;
  if(!latest||latest.snapshot.outcome!=='ACCEPTED'||latest.snapshot.input.items.length!==6||latest.snapshot.input.items.some(i=>i.judgement!=='MATCH')||!g||expected&&!same(latest.ref,expected.reviewRef))fail('WORK_PREPARATION_UNDERSTANDING_CHANGED',412);
  const original=await readPreparationOriginalByRef(client,c.projectId,g.preparationRef,()=>{check();return true;});check();const p=original?.snapshot,i=p?.intent;
@@ -69,7 +71,7 @@ export async function selectNormalWorkUnderstanding(client:ApiClient,rawConfirme
   ||!same(g.roleBindingRef,sources.binding.ref)||!same(g.agentSessionRef,sources.binding.snapshot.sessionRef)||!same(g.bundleRef,i.contextBundleRef)||!same(binding!.subjectBindingRef,i.roleBindingRef)||!same(p.basisRefs,binding!.basisRefs)||!same(p.latestInstructionRefs,binding!.latestInstructionRefs))fail('WORK_PREPARATION_UNDERSTANDING_CHANGED',412);
  const basis:WorkUnderstandingBasis={kind:'NORMAL_UNDERSTANDING_WORK_BASIS',reviewRef:structuredClone(latest.ref),scope,preparationRef:original!.ref,assignmentRef:i.assignmentRef,roleBindingRef:i.roleBindingRef,agentSessionRef:g.agentSessionRef,contextBundleRef:i.contextBundleRef,connectionRef:i.connectionRef,environmentRef:i.environmentRef,responseRef:binding!.responseRef,requestRef:g.requestRef,basisRefs:p.basisRefs,latestInstructionRefs:p.latestInstructionRefs};
  const finalHistory=await readNormalUnderstandingHistory(client,scope,()=>{check();return true;});check();if(!same(finalHistory?.items.at(-1)?.ref,latest.ref))fail('WORK_PREPARATION_UNDERSTANDING_CHANGED',412);
- if(expected&&!same(basis,expected))fail('WORK_PREPARATION_UNDERSTANDING_CHANGED',412);check();return {ownerEpoch:epoch,basis:structuredClone(basis)};
+ if(expected&&'kind'in expected&&!same(basis,expected))fail('WORK_PREPARATION_UNDERSTANDING_CHANGED',412);check();return {ownerEpoch:epoch,basis:structuredClone(basis)};
 }
 export async function assertNormalWorkPreparationCurrent(client:ApiClient,b:ExecutionPreparationBuffer,s:DocumentSession,active:()=>boolean,knownConfirmed?:ConfirmedAssignmentView){
  if(!b.understandingSelection)return;if(!executionPreparationOwned(client,b,s)||b.draft.mode!=='WORK'||!b.draft.roleBindingRef||!b.draft.contextBundleRef||!b.draft.capabilityRef)fail('EXECUTION_PREPARATION_CONTEXT_CHANGED',412);

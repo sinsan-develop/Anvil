@@ -1,4 +1,3 @@
-type WorkReviewScope={projectId:string;executionId:string;executionGeneration:number};
 import type {NormalInitialUnderstandingReviewStorage} from '../session-detail/understanding-review-write.ts';
 import {ReservedSessionConnectionDefinition} from './ReservedSessionConnectionDefinition.tsx';
 import {readDefinition} from '../connections/connection-definition-api.ts';
@@ -11,7 +10,7 @@ import { listCandidates, readCandidate, type CandidateHit } from '../connections
 import { ordered } from '../knowledge/review-view.ts';
 import {readProviderClaimPageHistory,readProviderClaimReceiptHistory,type ProviderClaimPageHistory,type ProviderClaimHistory,type ProviderClaimHistoryQuery} from './provider-claim-receipt-api.ts';
 import {ClaimUnderstandingHistory} from './ClaimUnderstandingHistory.tsx';
-import {readNormalClaimRangeHistory,type NormalClaimRangeHistoryBasis} from './claim-understanding-history.ts';
+import {readNormalClaimRangeHistory,type ExactWorkReviewCandidate,type NormalClaimRangeHistoryBasis} from './claim-understanding-history.ts';
 import {NormalUnderstandingRangeHistory} from './NormalUnderstandingRangeHistory.tsx';
 import {readReviewedNormalUnderstandingRangeHistory,verifyReviewedNormalUnderstandingRangeHistory,type ReviewedNormalUnderstandingRangeHistoryRequest} from './NormalUnderstandingDiscovery.tsx';
 import {createNormalUnderstandingRangeCommands,NormalUnderstandingDiscovery,readNormalUnderstandingMetadata,readNormalUnderstandingRange,readNormalUnderstandingRangeHistory,type NormalUnderstandingMetadataReader,type NormalUnderstandingRangeReader,type NormalUnderstandingRangeHistoryReader} from './NormalUnderstandingDiscovery.tsx';
@@ -20,7 +19,10 @@ import {checkResponsibleSessionApprovalBinding,markResponsibleSessionDispatch,se
 import {updateResponsibleSessionApprovalBuffer} from './responsible-session-api.ts';
 import { assertResponsibleSessionInputCurrent, canPrepareResponsibleSessionInput, prepareResponsibleSessionInput, prepareResponsibleSessionAction, readResponsibleSessionState, readSavedResponsibleSession, sendResponsibleSessionAction, type PreparationRecord, type ResponsibleSessionAction, type ResponsibleSessionBuffer, type ResponsibleSessionState } from './responsible-session-api.ts';
 
-export function WorkspaceResponsibleSessions({onWorkReviewScope,normalInitialReviews,client,confirmed,session,buffer,onChange,owner,busy,run}:{onWorkReviewScope?:(scope:WorkReviewScope)=>void;normalInitialReviews?:NormalInitialUnderstandingReviewStorage;client:ApiClient;confirmed:ConfirmedAssignmentView;session:DocumentSession;buffer:ResponsibleSessionBuffer|null;onChange:Dispatch<SetStateAction<ResponsibleSessionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
+type WorkReviewSubject=Pick<ExactWorkReviewCandidate,'assignmentRef'|'roleBindingRef'>;
+type SelectWorkReview=(candidate:ExactWorkReviewCandidate)=>void;
+
+export function WorkspaceResponsibleSessions({onWorkReviewCandidate,normalInitialReviews,client,confirmed,session,buffer,onChange,owner,busy,run}:{onWorkReviewCandidate?:SelectWorkReview;normalInitialReviews?:NormalInitialUnderstandingReviewStorage;client:ApiClient;confirmed:ConfirmedAssignmentView;session:DocumentSession;buffer:ResponsibleSessionBuffer|null;onChange:Dispatch<SetStateAction<ResponsibleSessionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
   const [state,setState]=useState<ResponsibleSessionState|null>(null),[candidates,setCandidates]=useState<CandidateHit[]>([]),[nextCursor,setNextCursor]=useState<string|null>(null),[notice,setNotice]=useState<string|null>(null);
   const stateStamp=useRef({epoch:-1,revision:-1}),stateRevision=useRef(0);
   const acknowledgements=useRef<Array<{next:ResponsibleSessionBuffer;ticket:number;resolve:(ok:boolean)=>void}>>([]);
@@ -171,7 +173,7 @@ export function WorkspaceResponsibleSessions({onWorkReviewScope,normalInitialRev
       <ul>{state.roles.map(role=><li key={role.ref.id}>{role.snapshot.kind==='COORDINATOR'?'총괄':'선택 단계 책임자'} 역할 · {role.ref.id} · v{role.ref.version}</li>)}</ul>
       {binding?<p>책임 세션 {binding.snapshot.sessionRef.id} · RESERVED · 결박 v{binding.ref.version}<br/>현재 결박 임무 {binding.snapshot.assignmentRef.id} · v{binding.snapshot.assignmentRef.version} · 도구 교체는 별도 이전 절차입니다.</p>:<p>선택 역할에 저장된 책임 세션 예약이 없습니다.</p>}
       {binding?.snapshot.connectionKind==='REGISTERED_DEFINITION'&&binding.snapshot.state==='RESERVED'&&stateStamp.current.epoch===epoch.current&&stateStamp.current.revision===stateRevision.current?<ReservedSessionConnectionDefinition client={client} projectId={confirmed.projectId} connectionRef={binding.snapshot.connectionRef} buffer={buffer} contextKey={ordered([definitionEpoch,definitionRevision,binding.ref,buffer])} disabled={busy||!bound} isCurrent={()=>active(definitionEpoch)&&stateRevision.current===definitionRevision&&currentBuffer.current===buffer} onAuthenticationLost={()=>run(async()=>{throw new ApiError('AUTH_REQUIRED',401);})}/>:null}
-      {binding&&owner?<ProviderClaimHistoryPanel onWorkReviewScope={onWorkReviewScope} key={ordered([confirmed.projectId,binding.snapshot.sessionRef,session.user.id,session.clientId])} client={client} projectId={confirmed.projectId} sessionRef={binding.snapshot.sessionRef} subjectKey={session.user.id+':'+session.clientId} normalSession={session} normalActive={()=>alive.current&&bound&&context.current.owner&&context.current.client===client&&context.current.transport===client.transport&&context.current.identity===identity()} onAuthenticationLost={()=>run(async()=>{throw new ApiError('AUTH_REQUIRED',401);})}/>:null}
+      {binding&&owner?<ProviderClaimHistoryPanel onWorkReviewCandidate={busy?undefined:onWorkReviewCandidate} workSubject={{assignmentRef:confirmed.ref,roleBindingRef:binding.ref}} key={ordered([confirmed.projectId,confirmed.ref,binding.ref,binding.snapshot.sessionRef,session.user.id,session.clientId])} client={client} projectId={confirmed.projectId} sessionRef={binding.snapshot.sessionRef} subjectKey={session.user.id+':'+session.clientId} normalSession={session} normalActive={()=>bound&&active(definitionEpoch)&&stateRevision.current===definitionRevision&&context.current.owner} onAuthenticationLost={()=>run(async()=>{throw new ApiError('AUTH_REQUIRED',401);})}/>:null}
       {buffer&&bound?<><fieldset disabled={locked}><legend>현재 임무 책임자 정의·예약</legend>
         <label>예약 대상 역할<select aria-label="예약 대상 역할" value={['COORDINATOR','STAGE_OWNER'].includes(reservationKind)?reservationKind:''} onChange={e=>{if(locked)return;const kind=e.target.value;if(kind!=='COORDINATOR'&&kind!=='STAGE_OWNER')return;const role=state.roles.find(r=>r.snapshot.kind===kind),existing=state.bindings.find(b=>ordered(b.snapshot.roleRef)===ordered(role?.ref??null));update(b=>{const {connectionKind,...rest}=b;return {...rest,reservationKind:kind,connectionRef:existing?structuredClone(existing.snapshot.connectionRef):null,...(existing?.snapshot.connectionKind==='REGISTERED_DEFINITION'?{connectionKind:'REGISTERED_DEFINITION' as const}:{}),dirty:true,failure:null};});}}><option value="STAGE_OWNER">선택 단계 책임자</option><option value="COORDINATOR">총괄</option></select></label>
         {selectedRole?<p>예약 대상 {reservationKind==='COORDINATOR'?'총괄':'선택 단계 책임자'} · {selectedRole.ref.id} · v{selectedRole.ref.version} · {selectedRole.ref.contentHash}</p>:<p>선택 역할 정의가 없거나 확인되지 않았습니다. 정의 저장과 예약은 별도 명령입니다.</p>}
@@ -215,7 +217,7 @@ export function ProviderClaimHistoryRow({item,pending,onSelect,onUnderstanding,o
  return <li>{item.query.kind} · 수신 기록 {item.receipt.claimRef.id} · v{item.receipt.claimRef.version} · {item.receipt.recordedAt}<button type="button" disabled={pending} onClick={()=>onSelect(item.query)}>이 기록의 원 결과 확인: {item.receipt.claimRef.id}</button>{onUnderstanding?<button type="button" disabled={pending} onClick={()=>onUnderstanding(item)}>이 실행의 이해 검토 이력: {item.receipt.claimRef.id}</button>:null}{onNormalHistory?<button type="button" disabled={pending} onClick={()=>onNormalHistory(item)}>이 기록의 과거 원문 참조 확인: {item.receipt.claimRef.id}</button>:null}</li>;
 }
 
-export function ProviderClaimHistoryPanel({onWorkReviewScope,client,projectId,sessionRef,subjectKey,onAuthenticationLost,normalSession,normalActive}:{client:ApiClient;projectId:string;sessionRef:ProviderClaimPageHistory['agentSessionRef'];subjectKey:string;onAuthenticationLost:()=>void;normalSession?:DocumentSession;normalActive?:()=>boolean;onWorkReviewScope?:(scope:WorkReviewScope)=>void}){
+export function ProviderClaimHistoryPanel({onWorkReviewCandidate,workSubject,client,projectId,sessionRef,subjectKey,onAuthenticationLost,normalSession,normalActive}:{client:ApiClient;projectId:string;sessionRef:ProviderClaimPageHistory['agentSessionRef'];subjectKey:string;onAuthenticationLost:()=>void;normalSession?:DocumentSession;normalActive?:()=>boolean;onWorkReviewCandidate?:SelectWorkReview;workSubject?:WorkReviewSubject}){
  const scope=ordered([projectId,sessionRef,subjectKey]),current=useRef(scope),sequence=useRef(0),alive=useRef(true);current.current=scope;
  const auth=normalSession?ordered([normalSession.user.id,normalSession.clientId,normalSession.csrfToken]):'NO_NORMAL_SESSION',ownerRef=useRef({client,transport:client.transport,scope,auth});
  if(ownerRef.current.client!==client||ownerRef.current.transport!==client.transport||ownerRef.current.scope!==scope||ownerRef.current.auth!==auth)ownerRef.current={client,transport:client.transport,scope,auth};
@@ -224,6 +226,7 @@ export function ProviderClaimHistoryPanel({onWorkReviewScope,client,projectId,se
  const [view,setView]=useState<{scope:string;owner:object;page:ProviderClaimPageHistory|null;receipt:ProviderClaimHistory|null;error:string|null;pending:boolean}|null>(null);
  const [understanding,setUnderstanding]=useState<{scope:string;item:ProviderClaimPageHistory['items'][number]}|null>(null);
  const shown=view?.scope===scope&&view.owner===panelOwner?view:null;
+ const viewTicket=sequence.current;
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;sequence.current++;};},[]);
  const active=(ticket:number,key:string)=>alive.current&&ownerRef.current===panelOwner&&sequence.current===ticket&&current.current===key;
  const failure=(cause:unknown)=>cause instanceof ApiError&&/^[A-Z0-9_]{1,100}$/.test(cause.code)?cause.code:'PROVIDER_CLAIM_HISTORY_INVALID';
@@ -246,22 +249,23 @@ export function ProviderClaimHistoryPanel({onWorkReviewScope,client,projectId,se
   {shown?.pending?<p role="status">조회 중 · 이전 원 결과 숨김</p>:null}
   {shown?.error?<p role="alert">{shown.error} · 조회 미확인 · 처음부터 다시 조회하세요.</p>:null}
   {shown?.page?<><p>조회 시각 {shown.page.observedAt} · 현재 허가·Agent 가동 확인 아님</p>
-   {shown.page.items.length?<ul>{shown.page.items.map(item=><ProviderClaimHistoryRow key={item.receipt.claimRef.id} item={item} pending={shown.pending} onSelect={query=>void original(query)} onUnderstanding={selected=>{setNormal(null);setUnderstanding({scope,item:structuredClone(selected)});}} onNormalHistory={normalSession?selected=>{setUnderstanding(null);setNormal({owner:panelOwner,item:selected});}:undefined}/>)}</ul>:<p>조회 범위의 기록 없음 · 당시 미저장 여부는 미확인</p>}
+   {shown.page.items.length?<ul>{shown.page.items.map(item=><ProviderClaimHistoryRow key={item.receipt.claimRef.id} item={item} pending={shown.pending} onSelect={query=>void original(query)} onUnderstanding={selected=>{if(!active(viewTicket,scope))return;sequence.current++;setNormal(null);setUnderstanding({scope,item:structuredClone(selected)});}} onNormalHistory={normalSession?selected=>{if(!active(viewTicket,scope))return;sequence.current++;setUnderstanding(null);setNormal({owner:panelOwner,item:selected});}:undefined}/>)}</ul>:<p>조회 범위의 기록 없음 · 당시 미저장 여부는 미확인</p>}
    {shown.page.hasMore&&shown.page.nextCursor?<button type="button" disabled={shown.pending} onClick={()=>void load(shown.page!.nextCursor)}>이전 공급자 기록 조회</button>:null}
   </>:null}
   {shown?.receipt?<article aria-label="공급자 기록 원 결과">{shown.receipt.found&&shown.receipt.receipt?<><p>PROVIDER_CLAIM_RECORDED · 공급자 주장만 보관 · 현재 사용 가능성 미확인</p><p>원 참조 {shown.receipt.receipt.claimRef.id} · v{shown.receipt.receipt.claimRef.version} · {shown.receipt.receipt.claimRef.contentHash}</p><p>원 기록 시각 {shown.receipt.receipt.recordedAt} · 조회 시각 {shown.receipt.observedAt}</p><p>새 실행 허가 없음 · 지시 전달 없음 · 업무 인수 아님</p></>:<p>정확 사건 원 결과 미발견 · 미저장·안전 판정 아님</p>}</article>:null}
- {normalSession&&normal?.owner===panelOwner&&!shown?.pending&&shown?.page?.items.includes(normal.item)?<NormalClaimRangeHistoryPanel onWorkReviewScope={onWorkReviewScope} client={client} session={normalSession} projectId={projectId} sessionRef={sessionRef} item={normal.item} scopeOwner={panelOwner} entryOwner={normal} active={()=>alive.current&&ownerRef.current===panelOwner&&normalLive.current?.()!==false&&shown?.page?.items.includes(normal.item)===true} onClose={()=>setNormal(null)}/>:null}
+ {normalSession&&normal?.owner===panelOwner&&!shown?.pending&&shown?.page?.items.includes(normal.item)?<NormalClaimRangeHistoryPanel onWorkReviewCandidate={onWorkReviewCandidate} workSubject={workSubject} client={client} session={normalSession} projectId={projectId} sessionRef={sessionRef} item={normal.item} scopeOwner={panelOwner} entryOwner={normal} active={()=>active(viewTicket,scope)&&normalLive.current?.()!==false&&shown?.page?.items.includes(normal.item)===true} onClose={()=>{if(active(viewTicket,scope)){sequence.current++;setNormal(null);}}}/>:null}
  {understanding?.scope===scope&&!shown?.pending&&shown?.page?.items.some(item=>ordered(item)===ordered(understanding.item))?<ClaimUnderstandingHistory key={ordered(understanding)} client={client} projectId={projectId} sessionRef={sessionRef} item={understanding.item} onClose={()=>setUnderstanding(null)} onAuthenticationLost={onAuthenticationLost}/>:null}
  </section>;
 }
 
 /** 명시 선택한 claim에서 참조를 재발견한다. 과거 판단이나 원문을 현재 검토 editor로 넘기지 않는다. */
-export function NormalClaimRangeHistoryPanel({onWorkReviewScope,client,session,projectId,sessionRef,item,scopeOwner,entryOwner,active,onClose}:{client:ApiClient;session:DocumentSession;projectId:string;sessionRef:ProviderClaimPageHistory['agentSessionRef'];item:ProviderClaimPageHistory['items'][number];scopeOwner:object;entryOwner:object;active:()=>boolean;onClose:()=>void;onWorkReviewScope?:(scope:WorkReviewScope)=>void}){
- const transport=client.transport,auth=ordered([session.user.id,session.clientId,session.csrfToken]),key=ordered([projectId,sessionRef,item]);
+export function NormalClaimRangeHistoryPanel({onWorkReviewCandidate,workSubject,client,session,projectId,sessionRef,item,scopeOwner,entryOwner,active,onClose}:{client:ApiClient;session:DocumentSession;projectId:string;sessionRef:ProviderClaimPageHistory['agentSessionRef'];item:ProviderClaimPageHistory['items'][number];scopeOwner:object;entryOwner:object;active:()=>boolean;onClose:()=>void;onWorkReviewCandidate?:SelectWorkReview;workSubject?:WorkReviewSubject}){
+ const transport=client.transport,auth=ordered([session.user.id,session.clientId,session.csrfToken]),key=ordered([projectId,sessionRef,item,workSubject??null]);
  const context=useRef({client,transport,auth,key,scopeOwner,entryOwner,item}),live=useRef(active);live.current=active;
  if(context.current.client!==client||context.current.transport!==transport||context.current.auth!==auth||context.current.key!==key||context.current.scopeOwner!==scopeOwner||context.current.entryOwner!==entryOwner||context.current.item!==item)context.current={client,transport,auth,key,scopeOwner,entryOwner,item};
  const owner=context.current,alive=useRef(true),[state,setState]=useState<{owner:object;basis:NormalClaimRangeHistoryBasis|null;error:boolean}|null>(null);
- const current=()=>alive.current&&context.current===owner&&client.transport===transport&&live.current()&&ordered([session.user.id,session.clientId,session.csrfToken])===auth&&ordered([projectId,sessionRef,item])===key;
+ const current=()=>alive.current&&context.current===owner&&client.transport===transport&&live.current()&&ordered([session.user.id,session.clientId,session.csrfToken])===auth&&ordered([projectId,sessionRef,item,workSubject??null])===key;
+ const selectReview=useRef(onWorkReviewCandidate);selectReview.current=onWorkReviewCandidate;
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
  useEffect(()=>{
   const controller=new AbortController();setState(null);
@@ -276,6 +280,8 @@ export function NormalClaimRangeHistoryPanel({onWorkReviewScope,client,session,p
   return (input:Readonly<ReviewedNormalUnderstandingRangeHistoryRequest>,signal:AbortSignal)=>readReviewedNormalUnderstandingRangeHistory(client,authorization,input,signal,()=>current()&&!signal.aborted);
  },[owner]);
  const shown=state?.owner===owner&&current()?state:null,basis=shown?.basis;
+ const candidate=basis?.status==='EXACT_NORMAL_RANGE_REFS'?basis.workCandidate:null;
+ const selectable=candidate&&workSubject&&ordered(candidate.assignmentRef)===ordered(workSubject.assignmentRef)&&ordered(candidate.roleBindingRef)===ordered(workSubject.roleBindingRef);
  return <section aria-label="선택 기록의 과거 원문 참조"><h6>선택 기록의 과거 원문</h6>
   <p>선택한 수신 사건과 같은 실행의 보관 판단에서 원문 참조를 대조합니다. 사건과 판단의 직접 대응이나 현재 실행·검토 자격을 뜻하지 않습니다.</p>
   <button type="button" onClick={onClose}>과거 원문 참조 확인 취소·닫기</button>
@@ -283,7 +289,7 @@ export function NormalClaimRangeHistoryPanel({onWorkReviewScope,client,session,p
   {shown?.error?<p role="alert">정확한 과거 원문 참조를 확인하지 못했습니다. 다른 실행이나 준비본으로 대체하지 않습니다.</p>:null}
   {basis?.status==='NO_NORMAL_REVIEW'?<p role="status">같은 실행의 보관된 정상 최초 판단이 없습니다. 현재 이해나 실행 여부의 판정이 아닙니다.</p>:null}
   {basis?.status==='EXACT_NORMAL_RANGE_REFS'?<><p>보관 판단 v{basis.reviewRef.version} · 과거 참조 대조만 완료</p>
-   {onWorkReviewScope?<button type="button" onClick={()=>{if(current())onWorkReviewScope(structuredClone({projectId:basis.origin.request.projectId,executionId:basis.origin.request.executionId,executionGeneration:basis.origin.request.executionGeneration}));}}>이 정상 실행을 WORK 준비 후보로 사용</button>:null}
+   {selectable&&onWorkReviewCandidate?<p>조회 시 최신 적합 판단 <code>{ordered(candidate.reviewRef)}</code> <button type="button" onClick={()=>{if(current())selectReview.current?.(structuredClone(candidate));}}>이 적합 판단을 WORK 준비 후보로 선택</button></p>:null}
    <NormalUnderstandingRangeHistory input={basis.origin} reader={reader} verify={verifyReviewedNormalUnderstandingRangeHistory} scopeOwner={owner} entryOwner={basis} active={current} disabled={false}/>
   </>:null}
  </section>;

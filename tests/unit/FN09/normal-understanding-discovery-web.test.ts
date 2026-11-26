@@ -840,6 +840,33 @@ function normalClaimSource(){
  return {...f,scope,sessionRef,preparation,normal,item,original,page};
 }
 
+function appendClaimReview(f:ReturnType<typeof normalClaimSource>,accepted:boolean){
+ const previous=f.normal.items.at(-1)!;
+ const snapshot=structuredClone(previous.snapshot);
+ snapshot.sequence++;
+ Object.assign(snapshot,{previousRef:previous.ref});
+ snapshot.input.items.forEach(item=>{item.judgement=accepted?'MATCH':'INSUFFICIENT';});
+ snapshot.request={...snapshot.request,commandId:id(90+snapshot.sequence),payload:snapshot.input};
+ snapshot.requestHash=contentHash(canonicalJson(snapshot.request));
+ snapshot.outcome=accepted?'ACCEPTED':'NOT_ACCEPTED';
+ const next={ref:{...previous.ref,version:snapshot.sequence,contentHash:contentHash(canonicalJson(snapshot))},snapshot};
+ f.normal.items.push(next);
+ return next;
+}
+
+test('보호 claim history는 v1 원문을 유지하고 최신 ACCEPTED의 전체 참조만 WORK 후보로 갖는다',async()=>{
+ for(const accepted of [true,false]){
+  const f=normalClaimSource();const v2=appendClaimReview(f,true);
+  if(!accepted)appendClaimReview(f,false);
+  const client=new ApiClient(async url=>Response.json(String(url).includes('claim-receipt')?f.original:String(url).includes('understanding-reviews')?f.normal:f.preparation));
+  const result=await readNormalClaimRangeHistory(client,projectId,f.sessionRef,f.item,new AbortController().signal,()=>true);
+  if(result.status!=='EXACT_NORMAL_RANGE_REFS')assert.fail();
+  assert.deepEqual(result.reviewRef,f.normal.items[0]!.ref);
+  assert.deepEqual(result.origin.responseRef,f.history.responseRef);
+  assert.deepEqual(result.workCandidate,accepted?{scope:f.scope,reviewRef:v2.ref,assignmentRef,roleBindingRef:f.preparation.snapshot.intent.roleBindingRef,agentSessionRef:f.sessionRef}:null);
+ }
+});
+
 test('새 로그인의 normal 참조 재발견은 exact claim→정상 판단 v1→정확 준비 버전만 GET하고 옛 선택·기한을 만들지 않는다',async()=>{
  const f=normalClaimSource(),calls:string[]=[];
  const client=new ApiClient(async(url,options)=>{calls.push(String(url));assert.equal(options?.method,'GET');return Response.json(calls.length===1?f.original:calls.length===2?f.normal:f.preparation);});
@@ -874,6 +901,7 @@ test('normal claim 탐색의 각 await 뒤 이탈·취소는 후속 GET0이고 �
 
 test('실제 Provider claim 목록의 명시 버튼→normal exact 참조→별도 과거 원문은 새 로그인에서 원장 없이 GET만 수행한다',async()=>{
  const hooks=await import(reactMemory),w=await compile(reactMemory,'WorkspaceResponsibleSessions'),f=normalClaimSource(),calls:{path:string;init?:RequestInit}[]=[];
+ const v2=appendClaimReview(f,true),selectedForWork:unknown[]=[];
  let projection={...session,csrfToken:'r'.repeat(43)},active=true;
  const client=new ApiClient(async(url,init)=>{
   const path=String(url);calls.push({path,init});assert.equal(init?.method,'GET');
@@ -885,7 +913,8 @@ test('실제 Provider claim 목록의 명시 버튼→normal exact 참조→별�
   assert.equal(path,`/api/v1/projects/${projectId}`);return Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:12,status:'HELD'}});
  });
  const find=(tree:any,pred:(n:any)=>boolean):any=>Array.isArray(tree)?tree.map(n=>find(n,pred)).find(Boolean):tree&&typeof tree==='object'?(pred(tree)?tree:find(tree.props?.children,pred)):undefined;
- const draw=()=>hooks.draw(()=>w.ProviderClaimHistoryPanel({client,projectId,sessionRef:f.sessionRef,subjectKey:session.user.id+':'+session.clientId,normalSession:projection,normalActive:()=>active,onAuthenticationLost:()=>{throw Error('UNEXPECTED_AUTH_FAILURE');}}),'claim-list');
+ let workSubject={assignmentRef,roleBindingRef:f.preparation.snapshot.intent.roleBindingRef};
+ const draw=()=>hooks.draw(()=>w.ProviderClaimHistoryPanel({client,projectId,sessionRef:f.sessionRef,subjectKey:session.user.id+':'+session.clientId,normalSession:projection,normalActive:()=>active,workSubject,onWorkReviewCandidate:(v:unknown)=>selectedForWork.push(v),onAuthenticationLost:()=>{throw Error('UNEXPECTED_AUTH_FAILURE');}}),'claim-list');
  const normal=()=>find(draw(),n=>n.props?.entryOwner&&n.props?.item&&n.props?.session);
  const drawNormal=()=>{const n=normal();assert.ok(n);return hooks.draw(()=>n.type(n.props),'claim-normal');};
  const source=()=>find(drawNormal(),n=>n.props?.input?.kind==='NORMAL_REVIEW_HISTORY');
@@ -899,12 +928,16 @@ test('실제 Provider claim 목록의 명시 버튼→normal exact 참조→별�
   assert.match(renderToStaticMarkup(tree),/이 실행의 이해 검토 이력/);
   const choose=find(tree,n=>n.type==='button'&&String(n.props.children).includes('과거 원문 참조 확인'));assert.ok(choose);choose.props.onClick();drawNormal();
   await until(()=>!!source());assert.equal(calls.length,4);assert.equal(source().props.input.kind,'NORMAL_REVIEW_HISTORY');assert.equal('selection'in source().props.input,false);assert.equal('expiresAt'in source().props.input,false);assert.doesNotMatch(renderToStaticMarkup(drawNormal()),/원 선택만/);
+  const panelHtml=renderToStaticMarkup(drawNormal());assert.match(panelHtml,/보관 판단 v1/);assert.ok(panelHtml.includes(v2.ref.contentHash));
+  const selectWork=button(drawNormal(),'이 적합 판단을 WORK 준비 후보로 선택')!.onClick!;
+  assert.deepEqual(selectedForWork,[]);selectWork();assert.equal(calls.length,4);
+  assert.deepEqual(selectedForWork,[{...workSubject,scope:f.scope,reviewRef:v2.ref,agentSessionRef:f.sessionRef}]);
   const selected=source().props.input;assert.deepEqual(selected.request,f.input.request);button(raw(),'과거 보관 원문 확인')!.onClick!();await until(()=>html().includes('현재 실행·검토 근거 없음'));
   assert.equal(calls.length,7);assert.match(html(),/&lt;script&gt;원 선택만&lt;\/script&gt;/);assert.doesNotMatch(html(),/<script>|검토 명령|승인 요청/);
   assert.match(calls[5]!.path,/range-history\?controlGeneration=12&/);assert.equal(new Headers(calls[5]!.init?.headers).get('x-anvil-csrf'),projection.csrfToken);
   assert.ok(!JSON.stringify(hooks.snapshot('claim-list')).includes('원 선택만'));assert.ok(!JSON.stringify(hooks.snapshot('claim-normal')).includes('원 선택만'));
   button(raw(),'과거 원문 닫기')!.onClick!();assert.doesNotMatch(html(),/원 선택만/);
-  button(drawNormal(),'과거 원문 참조 확인 취소·닫기')!.onClick!();assert.equal(normal(),undefined);hooks.unmount('claim-raw');hooks.unmount('claim-normal');
+  button(drawNormal(),'과거 원문 참조 확인 취소·닫기')!.onClick!();selectWork();assert.equal(selectedForWork.length,1);assert.equal(normal(),undefined);hooks.unmount('claim-raw');hooks.unmount('claim-normal');
   const before=calls.length;projection={...projection,csrfToken:'s'.repeat(43)};draw();assert.equal(find(draw(),n=>typeof n.props?.onNormalHistory==='function'),undefined);assert.equal(calls.length,before);
   assert.ok(calls.every(c=>c.init?.method==='GET'&&c.init?.body===undefined));
  }finally{hooks.unmount('claim-raw');hooks.unmount('claim-normal');hooks.unmount('claim-list');}
