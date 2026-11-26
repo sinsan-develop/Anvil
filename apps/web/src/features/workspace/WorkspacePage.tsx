@@ -18,6 +18,7 @@ import type { ConversationBuffer } from '../knowledge/conversation-api.ts';
 import type {PlanTaskSelection} from '../../shell/routes.ts';
 import {NewStageDocumentForm} from '../design-trace/NewStageDocumentForm.tsx';
 import type {DocumentBuffer} from '../design-trace/editor-api.ts';
+import {ProjectPermissionPolicyView} from '../../shell/ProjectPermissionPolicyView.tsx';
 
 export function WorkspacePage({normalInitialReviews,nodeDecisions,mobilePane,providedHumanReportRef, client, projectId, session, documentPreparation, assignmentBuffer, requestedTask, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: {normalInitialReviews?:NormalInitialUnderstandingReviewStorage; nodeDecisions?:NodeDecisionStorage;mobilePane?:MobilePane;providedHumanReportRef?:Ref|null;documentPreparation?:{available:boolean;onPrepared:(value:DocumentBuffer)=>void};client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
   const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
@@ -59,6 +60,7 @@ export function WorkspacePage({normalInitialReviews,nodeDecisions,mobilePane,pro
           <p>총괄·단계책임자 세션과 지시 전달은 미연결입니다.</p><p className="meta">이 화면을 열거나 자료를 조회해도 Agent를 호출하거나 작업을 시작하지 않습니다.</p>
           <button disabled>지시 전송 · 미연결</button>
           <h4>준비 상태</h4>{project.readinessIssues.length ? <ul>{project.readinessIssues.map((item, index) => <li key={index}>{issueLabel(item.code)}</li>)}</ul> : <p>프로젝트 조회에서 보고된 준비 부족 없음 · 실행 준비 완료 판정은 아닙니다.</p>}
+          <ProjectPermissionPolicyView key={JSON.stringify([projectId,session.user.id,session.clientId])} client={client} projectId={projectId} onAuthenticationLost={onAuthenticationLost}/>
           <p className="meta">원본 참여: {project.participation === 'OWNER' ? '소유자' : project.participation === 'VIEWER' ? '조회자' : '인계 가능 참여자'} · 원본 편집 제어: {project.controlState.status === 'HELD' ? '현재 사용자·기기' : project.controlState.status === 'OTHER_CLIENT' ? '다른 사용자·기기' : '미할당/회수됨'} · 실행 권한은 별도이며 이 화면에서는 지시할 수 없습니다.</p>
         </section>
         <section className="status-card" aria-label="프로젝트 자료" hidden={mobilePane!==undefined&&mobilePane!=='docs'}><h3>프로젝트 자료</h3><ul>

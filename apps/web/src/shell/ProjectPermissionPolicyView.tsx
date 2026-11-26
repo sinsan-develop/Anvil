@@ -28,8 +28,8 @@ function definedDisposition(rule: Record<string, unknown>): string {
 export function ProjectPermissionPolicyView({ client, projectId, onAuthenticationLost }: { client: ApiClient; projectId: string; onAuthenticationLost: () => void }) {
   const [view, setView] = useState<View>({ kind: 'closed' });
   const sequence = useRef(0), mounted = useRef(false), working = useRef(false);
-  const context = useRef({ client, projectId });
-  context.current = { client, projectId };
+  const context = useRef({ client, projectId, transport:client.transport });
+  context.current = { client, projectId, transport:client.transport };
   const lost = useRef(onAuthenticationLost);
   lost.current = onAuthenticationLost;
 
@@ -39,14 +39,14 @@ export function ProjectPermissionPolicyView({ client, projectId, onAuthenticatio
     working.current = false;
     setView({ kind: 'closed' });
     return () => { mounted.current = false; sequence.current++; working.current = false; };
-  }, [client, projectId]);
+  }, [client, client.transport, projectId]);
 
   function close() { sequence.current++; working.current = false; setView({ kind: 'closed' }); }
   async function read() {
     if (working.current) return;
     working.current = true;
-    const ticket = ++sequence.current, selectedClient = client, selectedProject = projectId;
-    const active = () => mounted.current && sequence.current === ticket && context.current.client === selectedClient && context.current.projectId === selectedProject;
+    const ticket = ++sequence.current, selectedClient = client, selectedProject = projectId, selectedTransport=client.transport;
+    const active = () => mounted.current && sequence.current === ticket && context.current.client === selectedClient && context.current.projectId === selectedProject && context.current.transport === selectedTransport && selectedClient.transport === selectedTransport;
     setView({ kind: 'loading' });
     try {
       const policy = await readCandidatePermissionPolicy(selectedClient, selectedProject);
