@@ -302,3 +302,27 @@ test('normal 전체 회수는 typed image close와 원 durable claim을 read-onl
  const branch=host.slice(host.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'));
  assert.match(branch,/budget\.Slice\(exact\.ExpiresAt,2000\)/);assert.match(branch,/ReadNormalStartPreparationClaimCurrent\(exact/);
 });
+
+test('정착: normal 원객체 cleanup terminal은 원 observation 후행·exact scope이며 재시작에서도 독립 current로 검산된다',()=>{
+ const spool=read('NormalExecutionSpoolProfileSource.cs');
+ assert.match(spool,/const string NormalPreparationOwnerCleanupTerminal="NORMAL_START_PREPARATION_OWNER_CLEANUP_TERMINAL_V1"/);
+ const candidate=spool.slice(spool.indexOf('internal abstract class NormalStartPreparationOwnerCleanupTerminalCandidate'),spool.indexOf('static Row C(Row value)'));
+ assert.match(candidate,/NormalPreparationOwnerCleanupTerminal/);assert.match(candidate,/NormalPreparationOwnerTerminal/);
+ for(const invariant of ['nativeClaimRef','requestRef','imageRef','localProcessId','localProcessGeneration','expiresAt','ownerTerminalRef'])assert.match(candidate,new RegExp(invariant));
+ assert.match(candidate,/S\(objectRef,"contentHash"\)!=H\(found\)/);
+ const validate=spool.slice(spool.indexOf('static void ValidateNormalPreparationOwnerTerminals('),spool.indexOf('// 같은 원 등록'));
+ assert.match(validate,/observationIndexes\[cleanupClaimId\]>=terminalIndex/);
+ assert.match(validate,/J\(observation\["nativeClaimRef"\]\)!=J\(r\["nativeClaimRef"\]\)/);
+ assert.match(validate,/J\(r\["ownerTerminalRef"\]\)!=J\(EvidenceRef\(S\(observation,"localProcessId"\),observation\)\)/);
+ assert.match(validate,/observationRecorded>recorded\|\|recorded>=expires/);
+ for(const flag of ['processExitConfirmed','threadExitConfirmed','threadCloseConfirmed','processCloseConfirmed','imageCloseConfirmed','startupEnvironmentReleased','assignmentBuffersReleased','jobHandleCloseConfirmed'])assert.match(validate,new RegExp(flag));
+ for(const flag of ['formalExecutionStopConfirmed','sourceWriteFenceIssued','writerReleaseVerified','claimReclaimed','resumeAuthorized'])assert.match(validate,new RegExp(flag));
+ const hold=spool.slice(spool.indexOf('long ManagementHold('),spool.indexOf('void Append('));
+ assert.match(hold,/if\(k==NormalPreparationOwnerCleanupTerminal\)/);assert.match(hold,/stage!=3/,'기존 owner terminal 종료 후에만 cleanup terminal 후행');
+ assert.match(spool,/NormalResultWorst=3\*NormalResultEntryWorst/,'기존 3-stage 예약과 구형 row 가용성을 변경하지 않음');
+ const record=spool.slice(spool.indexOf('internal NormalStartPreparationOwnerCleanupTerminalCandidate RecordNormalStartPreparationOwnerCleanupTerminal('),spool.indexOf('const string RejectedAvailable='));
+ assert.match(record,/NormalStartPreparationProducer\.ConfirmedOwnerCleanup cleanup/);assert.match(record,/var receipt=cleanup\.Receipt/);
+ for(const flag of ['StartupEnvironmentReleased','AssignmentBuffersReleased','JobHandleCloseConfirmed'])assert.match(record,new RegExp('cleanup\\.'+flag));
+ assert.doesNotMatch(record,/NormalProcessCleanupReceipt cleanup/);
+ assert.match(record,/Append\(log,rows,row,\(\)=>\{check\(\);appendStarted=true;\}\)/);assert.match(record,/catch\{if\(appendStarted\)blocked=true;throw;\}/,'후행 quota 부족은 write 전 거절, write 불명만 sticky blocked');
+});

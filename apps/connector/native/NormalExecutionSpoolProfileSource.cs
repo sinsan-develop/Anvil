@@ -114,9 +114,10 @@ internal sealed class NormalExecutionSpoolProfileSource {
    try{var result=act(log,rows);Check();return result;}finally{activeAnchor=null;}
   }
  }
- long ManagementHold(List<Row> rows){var holds=new HashSet<string>();var resultStages=new Dictionary<string,int>();var slotClaims=new Dictionary<string,string>();long dirs=4096;
+ long ManagementHold(List<Row> rows){var holds=new HashSet<string>();var resultStages=new Dictionary<string,int>();var slotClaims=new Dictionary<string,string>();var cleanupClaims=new HashSet<string>();long dirs=4096;
   foreach(var r in rows){string k=S(r,"kind");if(k=="RESERVED")holds.Add(S(r,"id"));if(k=="SETTLED"&&!holds.Remove(S(r,"id")))throw Invalid();if(k=="ALLOCATING")dirs=checked(dirs+4096);
    if(k==NormalPreparationOwnerTerminal){string claim=S(DesktopTrustKeyHostSource.Map(r["nativeClaimRef"]),"id");if(resultStages.ContainsKey(claim))throw Invalid();resultStages.Add(claim,3);}
+   if(k==NormalPreparationOwnerCleanupTerminal){string claim=S(DesktopTrustKeyHostSource.Map(r["nativeClaimRef"]),"id");int stage;if(!resultStages.TryGetValue(claim,out stage)||stage!=3||!cleanupClaims.Add(claim))throw Invalid();}
    if(k==RejectedAvailable){string claim=S(DesktopTrustKeyHostSource.Map(r["nativeClaimRef"]),"id"),slot=S(r,"key");if(resultStages.ContainsKey(claim)||slotClaims.ContainsKey(slot))throw Invalid();resultStages.Add(claim,1);slotClaims.Add(slot,claim);}
    if(k==SignClaimed||k==SignedConfirmed||k==ResultUnknown){string claim;if(!slotClaims.TryGetValue(S(r,"key"),out claim))throw Invalid();int expected=k==SignClaimed?1:2,stage;if(!resultStages.TryGetValue(claim,out stage)||stage!=expected)throw Invalid();resultStages[claim]=stage+1;}
   }
@@ -222,6 +223,7 @@ internal sealed class NormalExecutionSpoolProfileSource {
  }
  const string NormalPreparationClaim="NORMAL_START_PREPARATION_CLAIM_V1";
  const string NormalPreparationOwnerTerminal="NORMAL_START_PREPARATION_OWNER_TERMINAL_V1";
+ const string NormalPreparationOwnerCleanupTerminal="NORMAL_START_PREPARATION_OWNER_CLEANUP_TERMINAL_V1";
  internal sealed class NormalStartPreparationClaimMaterial {
   internal readonly Row ImageRef,RequestRef,NativeClaimRef;internal readonly DateTime ExpiresAt;
   internal NormalStartPreparationClaimMaterial(Row image,Row request,Row claim,DateTime end){ImageRef=image;RequestRef=request;NativeClaimRef=claim;ExpiresAt=end;}
@@ -257,6 +259,25 @@ internal sealed class NormalExecutionSpoolProfileSource {
   internal override void CheckCurrent(){ReadCurrent();owner.Check();}
   internal override void CheckCurrent(NormalStartPreparationClaimMaterial material,string localProcessId,long localProcessGeneration,Action ownerCurrent){if(ownerCurrent==null)throw Invalid();ownerCurrent();Verify(material,localProcessId,localProcessGeneration);}
  }
+ internal abstract class NormalStartPreparationOwnerCleanupTerminalCandidate {
+  protected NormalStartPreparationOwnerCleanupTerminalCandidate(){}
+  internal abstract Row ObjectRef{get;}
+  internal abstract void CheckCurrent();
+  internal abstract void CheckCurrent(NormalStartPreparationClaimMaterial material,string localProcessId,long localProcessGeneration);
+ }
+ private sealed class DurableNormalStartPreparationOwnerCleanupTerminalCandidate:NormalStartPreparationOwnerCleanupTerminalCandidate {
+  readonly NormalExecutionSpoolProfileSource owner;readonly Row terminal,objectRef;
+  internal DurableNormalStartPreparationOwnerCleanupTerminalCandidate(NormalExecutionSpoolProfileSource source,Row row){owner=source;terminal=C(row);objectRef=EvidenceRef(S(terminal,"id"),terminal);}
+  internal override Row ObjectRef{get{return C(objectRef);}}
+  Row ReadCurrent(){return owner.Log(false,(log,rows)=>{
+   var exact=rows.Where(r=>S(r,"kind")==NormalPreparationOwnerCleanupTerminal&&S(r,"id")==S(terminal,"id")).ToArray();if(exact.Length!=1||J(exact[0])!=J(terminal))throw Invalid();var found=exact[0];
+   var ownerRef=DesktopTrustKeyHostSource.Map(found["ownerTerminalRef"]);var observation=rows.Where(r=>S(r,"kind")==NormalPreparationOwnerTerminal&&S(r,"localProcessId")==S(ownerRef,"id")).ToArray();if(observation.Length!=1||H(observation[0])!=S(ownerRef,"contentHash"))throw Invalid();return found;
+  });}
+  void Verify(NormalStartPreparationClaimMaterial material,string localProcessId,long localProcessGeneration){if(material==null||localProcessGeneration<1)throw Invalid();var found=ReadCurrent();
+   if(J(found["nativeClaimRef"])!=J(material.NativeClaimRef)||J(found["requestRef"])!=J(material.RequestRef)||J(found["imageRef"])!=J(material.ImageRef)||S(found,"localProcessId")!=localProcessId||N(found["localProcessGeneration"])!=localProcessGeneration||DesktopTrustKeyHostSource.Time(found,"expiresAt")!=material.ExpiresAt||S(objectRef,"id")!=S(found,"id")||S(objectRef,"contentHash")!=H(found))throw Invalid();owner.Check();}
+  internal override void CheckCurrent(){ReadCurrent();owner.Check();}
+  internal override void CheckCurrent(NormalStartPreparationClaimMaterial material,string localProcessId,long localProcessGeneration){Verify(material,localProcessId,localProcessGeneration);}
+ }
  static Row C(Row value){return DesktopTrustKeyHostSource.Parse(Encoding.UTF8.GetBytes(J(value)),false);}
  static string NormalClaimKey(Row row){return H(R("registration",row["registration"],"requestRef",row["requestRef"],"serverClaimRef",row["serverClaimRef"],"imageHash",row["imageHash"],"nonceDigest",row["nonceDigest"],"contextEpoch",row["contextEpoch"]));}
  static void ValidateNormalPreparationClaims(List<Row> rows){
@@ -276,16 +297,27 @@ internal sealed class NormalExecutionSpoolProfileSource {
    if(kind==NormalPreparationClaim){string id=S(row,"id");if(sourceRows.ContainsKey(id))throw Invalid();sourceRows.Add(id,row);sourceIndexes.Add(S(row,"id"),i);}
    else if(kind==RejectedAvailable)rejectedClaims.Add(S(DesktopTrustKeyHostSource.Map(row["nativeClaimRef"]),"id"));
   }
-  var claims=new HashSet<string>();
+  var claims=new HashSet<string>();var observations=new Dictionary<string,Row>();var observationIndexes=new Dictionary<string,int>();var cleanupClaims=new HashSet<string>();
   for(int terminalIndex=0;terminalIndex<rows.Count;terminalIndex++){
-   var r=rows[terminalIndex];if(S(r,"kind")!=NormalPreparationOwnerTerminal)continue;
-   DesktopTrustKeyHostSource.Exact(r,"kind,key,nativeClaimRef,requestRef,imageRef,localProcessId,localProcessGeneration,firstObservedAt,observedAt,recordedAt,expiresAt,state,osOwnershipVerified,processCreationAuthorized,preparationAuthorized,executionAuthorized,dispatchPerformed");
-   var nativeRef=DesktopTrustKeyHostSource.ReceiveRef(r["nativeClaimRef"],true);var requestRef=DesktopTrustKeyHostSource.ReceiveRef(r["requestRef"],true);var imageRef=DesktopTrustKeyHostSource.ReceiveRef(r["imageRef"],true);string processId=DesktopTrustKeyHostSource.ReceiveId(r,"localProcessId");
-   string claimId=S(nativeRef,"id");Row source;if(!sourceRows.TryGetValue(claimId,out source)||sourceIndexes[claimId]>=terminalIndex)throw Invalid();
-   if(new[]{claimId,S(requestRef,"id"),S(imageRef,"id"),processId}.Distinct().Count()!=4||!source.ContainsKey("resultReservation")||N(source["resultReservation"])!=NormalResultWorst||H(source)!=S(nativeRef,"contentHash")||S(r,"key")!=claimId||!claims.Add(claimId)||J(source["requestRef"])!=J(r["requestRef"])||J(source["imageAssociationRef"])!=J(r["imageRef"])||N(r["localProcessGeneration"])<1||S(r,"state")!="SAME_OWNER_OBSERVATION_RECORDED")throw Invalid();
-   foreach(string flag in new[]{"osOwnershipVerified","processCreationAuthorized","preparationAuthorized","executionAuthorized","dispatchPerformed"})if(!Object.Equals(r[flag],false))throw Invalid();
-   DateTime sourceRecordedAt=DesktopTrustKeyHostSource.Time(source,"recordedAt"),first=DesktopTrustKeyHostSource.Time(r,"firstObservedAt"),observed=DesktopTrustKeyHostSource.Time(r,"observedAt"),recorded=DesktopTrustKeyHostSource.Time(r,"recordedAt"),expires=DesktopTrustKeyHostSource.Time(r,"expiresAt");
-   if(sourceRecordedAt>first||first>observed||observed>recorded||recorded>=expires||expires!=DesktopTrustKeyHostSource.Time(source,"expiresAt")||rejectedClaims.Contains(claimId))throw Invalid();
+   var r=rows[terminalIndex];string kind=S(r,"kind");
+   if(kind==NormalPreparationOwnerTerminal){
+    DesktopTrustKeyHostSource.Exact(r,"kind,key,nativeClaimRef,requestRef,imageRef,localProcessId,localProcessGeneration,firstObservedAt,observedAt,recordedAt,expiresAt,state,osOwnershipVerified,processCreationAuthorized,preparationAuthorized,executionAuthorized,dispatchPerformed");
+    var nativeRef=DesktopTrustKeyHostSource.ReceiveRef(r["nativeClaimRef"],true);var requestRef=DesktopTrustKeyHostSource.ReceiveRef(r["requestRef"],true);var imageRef=DesktopTrustKeyHostSource.ReceiveRef(r["imageRef"],true);string processId=DesktopTrustKeyHostSource.ReceiveId(r,"localProcessId");
+    string claimId=S(nativeRef,"id");Row source;if(!sourceRows.TryGetValue(claimId,out source)||sourceIndexes[claimId]>=terminalIndex)throw Invalid();
+    if(new[]{claimId,S(requestRef,"id"),S(imageRef,"id"),processId}.Distinct().Count()!=4||!source.ContainsKey("resultReservation")||N(source["resultReservation"])!=NormalResultWorst||H(source)!=S(nativeRef,"contentHash")||S(r,"key")!=claimId||!claims.Add(claimId)||J(source["requestRef"])!=J(r["requestRef"])||J(source["imageAssociationRef"])!=J(r["imageRef"])||N(r["localProcessGeneration"])<1||S(r,"state")!="SAME_OWNER_OBSERVATION_RECORDED")throw Invalid();
+    foreach(string flag in new[]{"osOwnershipVerified","processCreationAuthorized","preparationAuthorized","executionAuthorized","dispatchPerformed"})if(!Object.Equals(r[flag],false))throw Invalid();
+    DateTime sourceRecordedAt=DesktopTrustKeyHostSource.Time(source,"recordedAt"),first=DesktopTrustKeyHostSource.Time(r,"firstObservedAt"),observed=DesktopTrustKeyHostSource.Time(r,"observedAt"),recorded=DesktopTrustKeyHostSource.Time(r,"recordedAt"),expires=DesktopTrustKeyHostSource.Time(r,"expiresAt");
+    if(sourceRecordedAt>first||first>observed||observed>recorded||recorded>=expires||expires!=DesktopTrustKeyHostSource.Time(source,"expiresAt")||rejectedClaims.Contains(claimId))throw Invalid();observations.Add(claimId,r);observationIndexes.Add(claimId,terminalIndex);continue;
+   }
+   if(kind!=NormalPreparationOwnerCleanupTerminal)continue;
+   DesktopTrustKeyHostSource.Exact(r,"kind,key,id,ownerTerminalRef,nativeClaimRef,requestRef,imageRef,localProcessId,localProcessGeneration,recordedAt,expiresAt,state,processExitConfirmed,threadExitConfirmed,threadCloseConfirmed,processCloseConfirmed,imageCloseConfirmed,startupEnvironmentReleased,assignmentBuffersReleased,jobHandleCloseConfirmed,formalExecutionStopConfirmed,sourceWriteFenceIssued,writerReleaseVerified,claimReclaimed,resumeAuthorized,preparationAuthorized,executionAuthorized,dispatchPerformed");
+   var cleanupNativeRef=DesktopTrustKeyHostSource.ReceiveRef(r["nativeClaimRef"],true);var cleanupRequestRef=DesktopTrustKeyHostSource.ReceiveRef(r["requestRef"],true);var cleanupImageRef=DesktopTrustKeyHostSource.ReceiveRef(r["imageRef"],true);var ownerTerminalRef=DesktopTrustKeyHostSource.ReceiveRef(r["ownerTerminalRef"],true);string cleanupId=DesktopTrustKeyHostSource.ReceiveId(r,"id"),cleanupProcessId=DesktopTrustKeyHostSource.ReceiveId(r,"localProcessId"),cleanupClaimId=S(cleanupNativeRef,"id");
+   Row cleanupSource,observation;if(!sourceRows.TryGetValue(cleanupClaimId,out cleanupSource)||!observations.TryGetValue(cleanupClaimId,out observation)||sourceIndexes[cleanupClaimId]>=terminalIndex||observationIndexes[cleanupClaimId]>=terminalIndex)throw Invalid();
+   if(S(r,"key")!=cleanupClaimId||!cleanupClaims.Add(cleanupClaimId)||new[]{cleanupClaimId,S(cleanupRequestRef,"id"),S(cleanupImageRef,"id"),cleanupProcessId,cleanupId}.Distinct().Count()!=5||H(cleanupSource)!=S(cleanupNativeRef,"contentHash")||J(observation["nativeClaimRef"])!=J(r["nativeClaimRef"])||J(observation["requestRef"])!=J(r["requestRef"])||J(observation["imageRef"])!=J(r["imageRef"])||S(observation,"localProcessId")!=cleanupProcessId||N(observation["localProcessGeneration"])!=N(r["localProcessGeneration"])||J(r["ownerTerminalRef"])!=J(EvidenceRef(S(observation,"localProcessId"),observation))||S(ownerTerminalRef,"id")!=cleanupProcessId||S(r,"state")!="SAME_OWNER_PREPARATION_CLEANUP_RECORDED")throw Invalid();
+   foreach(string flag in new[]{"processExitConfirmed","threadExitConfirmed","threadCloseConfirmed","processCloseConfirmed","imageCloseConfirmed","startupEnvironmentReleased","assignmentBuffersReleased","jobHandleCloseConfirmed"})if(!Object.Equals(r[flag],true))throw Invalid();
+   foreach(string flag in new[]{"formalExecutionStopConfirmed","sourceWriteFenceIssued","writerReleaseVerified","claimReclaimed","resumeAuthorized","preparationAuthorized","executionAuthorized","dispatchPerformed"})if(!Object.Equals(r[flag],false))throw Invalid();
+   DateTime observationRecorded=DesktopTrustKeyHostSource.Time(observation,"recordedAt"),recorded=DesktopTrustKeyHostSource.Time(r,"recordedAt"),expires=DesktopTrustKeyHostSource.Time(r,"expiresAt");
+   if(observationRecorded>recorded||recorded>=expires||expires!=DesktopTrustKeyHostSource.Time(observation,"expiresAt")||expires!=DesktopTrustKeyHostSource.Time(cleanupSource,"expiresAt")||rejectedClaims.Contains(cleanupClaimId))throw Invalid();
   }
  }
  // 같은 원 등록/요청의 생성 전 단회 소진이다. RESERVED/old journal과 별개이며 PREPARED/실행 허가가 아니다.
@@ -326,6 +358,21 @@ internal sealed class NormalExecutionSpoolProfileSource {
     Append(log,rows,row,()=>{check();appendStarted=true;});return true;
    });
    var back=Log(false,(log,rows)=>{check();var exact=rows.Where(r=>S(r,"kind")==NormalPreparationOwnerTerminal&&S(r,"key")==S(row,"key")).ToArray();if(exact.Length!=1||J(exact[0])!=J(row))throw Invalid();return exact[0];});check();return new DurableNormalStartPreparationOwnerTerminalCandidate(this,back);
+  }catch{if(appendStarted)blocked=true;throw;}
+ }
+ internal NormalStartPreparationOwnerCleanupTerminalCandidate RecordNormalStartPreparationOwnerCleanupTerminal(NormalStartPreparationClaimMaterial material,NormalStartPreparationOwnerTerminalCandidate ownerTerminal,DesktopTrustKeyHostSource.NormalStartPreparationProducer.ConfirmedOwnerCleanup cleanup,string localProcessId,long localProcessGeneration,Func<DateTime> now,Action current){
+  if(material==null||ownerTerminal==null||cleanup==null||now==null||current==null||localProcessGeneration<1)throw Invalid();DesktopTrustKeyHostSource.ReceiveId(R("localProcessId",localProcessId),"localProcessId");DesktopTrustKeyHostSource.ReceiveRef(material.NativeClaimRef,true);DesktopTrustKeyHostSource.ReceiveRef(material.RequestRef,true);DesktopTrustKeyHostSource.ReceiveRef(material.ImageRef,true);var receipt=cleanup.Receipt;
+  if(receipt==null||!receipt.ProcessExitConfirmed||!receipt.ThreadExitConfirmed||!receipt.ThreadCloseConfirmed||!receipt.ProcessCloseConfirmed||!receipt.ImageCloseConfirmed||receipt.PreparationAuthorized||receipt.ExecutionAuthorized||receipt.DispatchPerformed||receipt.ImageRefJson!=J(material.ImageRef)||receipt.RequestRefJson!=J(material.RequestRef)||receipt.LocalClaimRefJson!=J(material.NativeClaimRef)||receipt.LocalProcessId!=localProcessId||receipt.LocalProcessGeneration!=localProcessGeneration||receipt.ExpiresAt!=material.ExpiresAt)throw Invalid();
+  DateTime recordedAt=now();if(recordedAt.Kind!=DateTimeKind.Utc||material.ExpiresAt.Kind!=DateTimeKind.Utc||recordedAt>=material.ExpiresAt)throw Invalid();Action check=()=>{current();DateTime at=now();if(at.Kind!=DateTimeKind.Utc||at<recordedAt||at>=material.ExpiresAt)throw Invalid();};check();ownerTerminal.CheckCurrent(material,localProcessId,localProcessGeneration,check);var ownerRef=ownerTerminal.ObjectRef;DesktopTrustKeyHostSource.ReceiveRef(ownerRef,true);
+  var row=R("kind",NormalPreparationOwnerCleanupTerminal,"key",S(material.NativeClaimRef,"id"),"id",Id(),"ownerTerminalRef",ownerRef,"nativeClaimRef",C(material.NativeClaimRef),"requestRef",C(material.RequestRef),"imageRef",C(material.ImageRef),"localProcessId",localProcessId,"localProcessGeneration",localProcessGeneration,"recordedAt",recordedAt.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'"),"expiresAt",material.ExpiresAt.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'"),"state","SAME_OWNER_PREPARATION_CLEANUP_RECORDED","processExitConfirmed",receipt.ProcessExitConfirmed,"threadExitConfirmed",receipt.ThreadExitConfirmed,"threadCloseConfirmed",receipt.ThreadCloseConfirmed,"processCloseConfirmed",receipt.ProcessCloseConfirmed,"imageCloseConfirmed",receipt.ImageCloseConfirmed,"startupEnvironmentReleased",cleanup.StartupEnvironmentReleased,"assignmentBuffersReleased",cleanup.AssignmentBuffersReleased,"jobHandleCloseConfirmed",cleanup.JobHandleCloseConfirmed,"formalExecutionStopConfirmed",false,"sourceWriteFenceIssued",false,"writerReleaseVerified",false,"claimReclaimed",false,"resumeAuthorized",false,"preparationAuthorized",false,"executionAuthorized",false,"dispatchPerformed",false);
+  bool appendStarted=false;try{
+   Log(false,(log,rows)=>{
+    check();string claimId=S(material.NativeClaimRef,"id");Row source=null,observation=null;bool conflict=false;
+    foreach(var candidate in rows){string kind=S(candidate,"kind");if(kind==NormalPreparationClaim&&S(candidate,"id")==claimId){if(source!=null)throw Invalid();source=candidate;}else if(kind==NormalPreparationOwnerTerminal&&S(candidate,"key")==claimId){if(observation!=null)throw Invalid();observation=candidate;}else if(kind==NormalPreparationOwnerCleanupTerminal&&S(candidate,"key")==claimId)conflict=true;else if(kind==RejectedAvailable&&S(DesktopTrustKeyHostSource.Map(candidate["nativeClaimRef"]),"id")==claimId)conflict=true;}
+    if(source==null||observation==null||conflict||H(source)!=S(material.NativeClaimRef,"contentHash")||J(source["requestRef"])!=J(material.RequestRef)||J(source["imageAssociationRef"])!=J(material.ImageRef)||J(EvidenceRef(S(observation,"localProcessId"),observation))!=J(ownerRef)||S(observation,"localProcessId")!=localProcessId||N(observation["localProcessGeneration"])!=localProcessGeneration||DesktopTrustKeyHostSource.Time(observation,"recordedAt")>recordedAt||DesktopTrustKeyHostSource.Time(observation,"expiresAt")!=material.ExpiresAt)throw Invalid();
+    Append(log,rows,row,()=>{check();appendStarted=true;});return true;
+   });
+   var back=Log(false,(log,rows)=>{check();var exact=rows.Where(r=>S(r,"kind")==NormalPreparationOwnerCleanupTerminal&&S(r,"id")==S(row,"id")).ToArray();if(exact.Length!=1||J(exact[0])!=J(row))throw Invalid();return exact[0];});check();var result=new DurableNormalStartPreparationOwnerCleanupTerminalCandidate(this,back);result.CheckCurrent(material,localProcessId,localProcessGeneration);return result;
   }catch{if(appendStarted)blocked=true;throw;}
  }
  const string RejectedAvailable="NORMAL_START_PREPARATION_REJECTED_AVAILABLE",SignClaimed="NORMAL_START_PREPARATION_SIGN_CLAIMED",SignedConfirmed="NORMAL_START_PREPARATION_SIGNED_CONFIRMED",ResultUnknown="NORMAL_START_PREPARATION_RESULT_UNKNOWN";

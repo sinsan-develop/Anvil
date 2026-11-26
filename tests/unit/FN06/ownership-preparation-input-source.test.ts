@@ -131,10 +131,11 @@ test('정적: same-request 회수는 process/thread/image와 startup·assignment
  assert.match(producer,/ReadOriginalNormalSuspendedProcessCleanupSource\(process\)/);
  assert.match(producer,/startup\.LocalEnvironmentReleased/);assert.match(producer,/assignment\.LocalBuffersReleased/);assert.match(producer,/job\.LocalHandleCloseConfirmed/);
  assert.match(producer,/Canonical\(material\.ImageRef,0\)/);assert.match(producer,/Canonical\(material\.RequestRef,0\)/);assert.match(producer,/Canonical\(material\.NativeClaimRef,0\)/);
- const jobAt=producer.indexOf('job.Dispose()'),processAt=producer.indexOf('ReadOriginalNormalSuspendedProcessCleanupSource(process)'),flagsAt=producer.indexOf('startup.LocalEnvironmentReleased'),claimAt=producer.indexOf('finalClaimCurrent(material)'),clearAt=producer.indexOf('job=null');
+ const dispose=producer.slice(producer.indexOf('public void Dispose()'));
+ const jobAt=dispose.indexOf('job.Dispose()'),processAt=dispose.indexOf('ReadOriginalNormalSuspendedProcessCleanupSource(process)'),flagsAt=dispose.indexOf('startup.LocalEnvironmentReleased'),claimAt=dispose.indexOf('finalClaimCurrent(material)'),clearAt=dispose.indexOf('job=null');
  assert.ok(jobAt>=0&&jobAt<processAt&&processAt<flagsAt&&flagsAt<claimAt&&claimAt<clearAt);
  assert.match(producer,/if\(cleanupAttempted\|\|cleanupUnknown\)throw Invalid\(\)/);assert.match(producer,/catch\{cleanupUnknown=true;throw Invalid\(\);\}/);
- const dispose=producer.slice(producer.indexOf('public void Dispose()'));assert.doesNotMatch(dispose,/RecordConfirmedRejected|PREPARED|POST|queue/i);
+ assert.doesNotMatch(dispose,/RecordConfirmedRejected|PREPARED|POST|queue/i);
  assert.match(deployment,/NormalTransferredImageCloseReceipt/);
 });
 
@@ -180,7 +181,7 @@ test('정적: 성공 claim은 일반 응답 직전 같은 원 process·durable c
  assert.equal((producer.match(/processObservation=observed/g)||[]).length,1);assert.doesNotMatch(recheck,/processObservation\s*=(?!=)|Dispose\(|cleanupUnknown\s*=(?!=)/);
  const capability=handler.indexOf('if(claim.Capability==null)return claim.Output'),rejected=handler.indexOf('if(rejected!=null)'),created=handler.indexOf('normalStartPreparationProducer.CreateOwned'),released=handler.indexOf('retained=null',created),reobserved=handler.indexOf('normalStartPreparationProducer.RecheckOwned',released),returned=handler.indexOf('return claim.Output',reobserved);
  assert.ok(capability>=0&&capability<rejected&&rejected<created&&created<released&&released<reobserved&&reobserved<returned,'replay·REJECTED 조기 반환 후 성공 owner 이전→재관측→응답');
- assert.match(handler,/RecheckOwned\(material,\(\)=>call\.Remaining\(\),ready,exact=>spoolProfile\.ReadNormalStartPreparationClaimCurrent\(exact,\(\)=>call\.Now,ready\),\(exact,first,latest,processId,generation\)=>spoolProfile\.RecordNormalStartPreparationOwnerTerminal/);
+ assert.match(handler,/RecheckOwned\(material,\(\)=>call\.Remaining\(\),ready,\s*exact=>spoolProfile\.ReadNormalStartPreparationClaimCurrent\(exact,\(\)=>call\.Now,ready\),\s*\(exact,first,latest,processId,generation\)=>spoolProfile\.RecordNormalStartPreparationOwnerTerminal/);
  assert.equal((handler.match(/RecheckOwned\(/g)||[]).length,1);assert.doesNotMatch(handler.slice(created,returned),/Dispose\(|cleanupUnknown\s*=/);
 });
 
@@ -255,4 +256,42 @@ test('정적: 정착 terminal objectRef는 같은 private candidate에서 원 re
  assert.match(recheck,/ValidProcessObservation\(terminalObservation\)/);assert.match(recheck,/SameProcessObservation\(first,terminalObservation\)/);
  assert.match(recheck,/Object\.ReferenceEquals\(process,originalProcess\)/);assert.match(recheck,/Object\.ReferenceEquals\(processObservation,first\)/);
  assert.doesNotMatch(candidate,/sourceRef|osFenceRef|PREPARED|POST|queue/);
+});
+
+test('정착: 원 준비 객체 cleanup 확정은 원 refs 해제 전 별도 spool terminal로 1회 정착한다',()=>{
+ const host=readFileSync(new URL('../../../apps/connector/native/DesktopTrustKeyHostSource.cs',import.meta.url),'utf8');
+ const spool=readFileSync(new URL('../../../apps/connector/native/NormalExecutionSpoolProfileSource.cs',import.meta.url),'utf8');
+ const producer=host.slice(host.indexOf('internal abstract class NormalStartPreparationProducer'),host.indexOf('readonly NormalStartPreparationProducer'));
+ const dispose=producer.slice(producer.indexOf('public void Dispose()'));
+ assert.match(producer,/NormalStartPreparationOwnerCleanupTerminalCandidate ownerCleanupTerminal/);
+ assert.match(producer,/Func<NormalExecutionSpoolProfileSource\.NormalStartPreparationClaimMaterial,NormalExecutionSpoolProfileSource\.NormalStartPreparationOwnerTerminalCandidate,ConfirmedOwnerCleanup,string,long,NormalExecutionSpoolProfileSource\.NormalStartPreparationOwnerCleanupTerminalCandidate> cleanupTerminal/);
+ const typed=producer.slice(producer.indexOf('internal sealed class ConfirmedOwnerCleanup'),producer.indexOf('// 동기 local 원 소유'));
+ assert.match(typed,/private ConfirmedOwnerCleanup\(/,'외부 spool·다른 caller가 cleanup 확정을 조립하지 못한다');
+ assert.match(typed,/internal static ConfirmedOwnerCleanup FromOwner\(NormalStartPreparationProducer owner/);
+ for(const member of ['processCleanup','startup','assignment','job'])assert.match(typed,new RegExp('Object\\.ReferenceEquals\\([^,]+,owner\\.'+member+'\\)'));
+ for(const source of ['startup.LocalEnvironmentReleased','assignment.LocalBuffersReleased','job.LocalHandleCloseConfirmed'])assert.match(typed,new RegExp(source.replace('.', '\\.')));
+ const receipt=dispose.indexOf('processCleanup=OwnershipEvidenceJobFactorySource.ReadOriginalNormalSuspendedProcessCleanupSource(process)');
+ const physical=dispose.indexOf('startup.LocalEnvironmentReleased',receipt);
+ const evidence=dispose.indexOf('var cleanupEvidence=ConfirmedOwnerCleanup.FromOwner(this,processCleanup,startup,assignment,job)',physical);
+ const claim=dispose.indexOf('finalClaimCurrent(material)',evidence);
+ const owner=dispose.indexOf('ownerTerminal.CheckCurrent()',claim);
+ const recorded=dispose.indexOf('ownerCleanupTerminal=ownerCleanupTerminalRecorder(material,ownerTerminal,cleanupEvidence,localProcessId,localProcessGeneration)',owner);
+ const readback=dispose.indexOf('ownerCleanupTerminal.CheckCurrent(material,localProcessId,localProcessGeneration)',recorded);
+ const released=dispose.indexOf('job=null',readback);
+ assert.ok(receipt>=0&&receipt<physical&&physical<evidence&&evidence<claim&&claim<owner&&owner<recorded&&recorded<readback&&readback<released,'확정 cleanup·원 current 후 정착/readback하고 원 참조를 해제');
+ for(const evidence of ['!processCleanup.ProcessExitConfirmed','!processCleanup.ThreadExitConfirmed','!processCleanup.ThreadCloseConfirmed','!processCleanup.ProcessCloseConfirmed','!processCleanup.ImageCloseConfirmed','!startup.LocalEnvironmentReleased','!assignment.LocalBuffersReleased','!job.LocalHandleCloseConfirmed'])assert.ok(dispose.indexOf(evidence,receipt)>=receipt&&dispose.indexOf(evidence,receipt)<recorded,evidence+' 유일 caller의 원 확인이 먼저다');
+ assert.match(dispose,/if\(ownerCleanupTerminal==null\)throw Invalid\(\)/);
+ assert.doesNotMatch(dispose,/ownerCleanupTerminal=null/,'회수 후에도 durable terminal current reader를 유지');
+ const record=spool.slice(spool.indexOf('internal NormalStartPreparationOwnerCleanupTerminalCandidate RecordNormalStartPreparationOwnerCleanupTerminal('),spool.indexOf('const string RejectedAvailable='));
+ assert.ok(record.length>0);assert.match(record,/NormalStartPreparationProducer\.ConfirmedOwnerCleanup cleanup/);assert.match(record,/var receipt=cleanup\.Receipt/);
+ for(const flag of ['ProcessExitConfirmed','ThreadExitConfirmed','ThreadCloseConfirmed','ProcessCloseConfirmed','ImageCloseConfirmed'])assert.match(record,new RegExp('receipt\\.'+flag));
+ for(const field of ['ImageRefJson','RequestRefJson','LocalClaimRefJson','LocalProcessId','LocalProcessGeneration','ExpiresAt'])assert.match(record,new RegExp('receipt\\.'+field));
+ for(const flag of ['StartupEnvironmentReleased','AssignmentBuffersReleased','JobHandleCloseConfirmed'])assert.match(record,new RegExp('cleanup\\.'+flag));
+ assert.doesNotMatch(record,/NormalProcessCleanupReceipt cleanup/,'spool 공개 경계는 raw receipt를 받지 않는다');
+ assert.match(record,/ownerTerminal\.CheckCurrent\(material,localProcessId,localProcessGeneration/);
+ assert.match(record,/kind==NormalPreparationOwnerCleanupTerminal&&S\(candidate,"key"\)==claimId\)conflict=true/);
+ assert.match(record,/Append\(log,rows,row,\(\)=>\{check\(\);appendStarted=true;\}\)/);
+ assert.match(record,/if\(appendStarted\)blocked=true/);
+ for(const flag of ['formalExecutionStopConfirmed','sourceWriteFenceIssued','writerReleaseVerified','claimReclaimed','resumeAuthorized','preparationAuthorized','executionAuthorized','dispatchPerformed'])assert.match(record,new RegExp('"'+flag+'",false'));
+ assert.doesNotMatch(record,/reclaimed_at|STOPPED|PREPARED|POST|queue|sourceRef|osFenceRef/i);
 });
