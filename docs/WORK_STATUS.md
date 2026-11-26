@@ -5,6 +5,14 @@
 ## 현재 작업 요약 — 2026-11-27 KST
 
 
+### 최신 제품 소스의 웹·설치형 메모리 빌드 검증
+
+- 담당 어울, 범위 사전 검토 `fn08_policy_decision_ready`, 기준 `e15aaf8b`. 제품 변경 없이 관련 정본 검증을 수행했다. Vite `build({configFile:false,root:'apps/web',build:{write:false,emptyOutDir:false}})`에서 현재 웹 소스 536개 모듈 변환 및 메모리 빌드 통과(`a09de3`).
+- IX06/FN18의 고정 CJS 집중 시험 1/1(`663138`)에서 소스 54개·exports 18개·builtin 8개와 로드 시 파일/네트워크/키 효과 0을 대조했다. 실제 Forge 복사 hook+RAM I/O의 정상·손상·링크·경합·잘못된 플랫폼·복사 중 소유 교체 6/6(`cdc869`)도 통과했다. normal first SEND 변경 파일 두 개는 고정 closure에 들어간다.
+- 실제 패키지 파일·설치·업데이트·제거 또는 SDK/PRESPAWN·실행기·HTTPS/DB 접근은 수행하지 않았다. IX06 전체 인수나 실제 설치가 아니다. IX01 보호 원문/준비 등록 및 FN12 실제 시험 증거 출처 결정은 별도 미충족이다.
+
+
+
 ### IX01 고정 130개 SQL의 기준 시험 교정
 
 - 담당 `fn13_quota_diff_replay`, 독립 검수 `fn13_diff_contract_review`, 통합 어울. 기준 `c1c7347d`. `tests/unit/IX01/current-schema-baseline.test.ts`만 변경했다.
