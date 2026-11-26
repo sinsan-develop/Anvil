@@ -18,7 +18,7 @@ export function revocationFixture(origin?:{grant:any;db:any}){
  const seal=()=>{const s=g.snapshot_json;s.factHash=hash(s.binding);s.scopeDigest=hash({binding:s.binding,allowedOperations:s.allowedOperations,expiresAt:s.expiresAt});g.content_hash=hash(s);};if(!origin)seal();
  const state={clock:at,control:2,authGeneration:3,quotaCount:0,quotaBytes:0,policy:true,budget:true,failed:false,lost:false,badTag:false,discarded:0,grantReads:0,afterWrite:()=>{},entries:[] as any[],commands:[] as any[],auth:[] as any[],audits:[] as any[]};
  let checkpoint:any,commandKey:string|undefined,lock=Promise.resolve();
- const rows=(values:any[])=>({rows:values});
+ const rows=(values:any[])=>({rows:values}),date=()=>new Date(state.clock);
  const db:any={release(error?:Error){if(error)state.discarded++;},async query(sql:string,p:any[]=[]){
   if(sql==='BEGIN'){checkpoint=structuredClone({entries:state.entries,commands:state.commands,auth:state.auth,audits:state.audits});commandKey=undefined;return rows([]);}
   if(sql==='COMMIT'){if(state.badTag){Object.assign(state,checkpoint);return{command:'ROLLBACK',rows:[]};}checkpoint=null;if(state.lost)throw Error('RAM_COMMIT_RESPONSE_LOST');return{command:'COMMIT',rows:[]};}
@@ -30,14 +30,31 @@ export function revocationFixture(origin?:{grant:any;db:any}){
   if(origin&&sql.includes('FROM anvil.limit_policy_versions'))return origin.db.query(sql,p);
   if(sql.startsWith('SELECT g.*')&&sql.includes('FROM anvil.execution_grants')){state.grantReads++;assert.deepEqual(p,[pid,eid,g.id,1]);return rows([structuredClone(g)]);}
   if(sql.startsWith('SELECT id,version,content_hash FROM anvil.execution_grant_revocations'))return rows(state.entries.filter(r=>r.created_command_id!==commandKey));
+  if(sql.includes('FROM anvil.execution_grant_revocations r')&&sql.includes('AS receipt')&&sql.includes('AS audit')){
+   assert.equal(p[0],pid);assert.equal(p.length,2);
+   const result=state.entries.filter(r=>r.project_id===p[0]&&r.id===p[1]).flatMap(r=>{
+    const c=state.commands.find(c=>c.id===r.created_command_id&&c.project_id===p[0]);
+    const rawReceipt=state.auth.find(v=>v[0]===c?.authorization_receipt_id&&v[2]===c?.id);
+    if(!c||!rawReceipt)return[];
+    const [id,scope_id,command_id,subject,policy,digest,approval,authorized_at]=rawReceipt;
+    const receipt={id,scope_kind:'PROJECT',scope_id,command_id,subject_ref:JSON.parse(subject),policy_ref:JSON.parse(policy),scope_digest:digest,approval_decision_ref:approval};
+    return state.audits.filter(a=>a[0]===p[0]&&a[4]===c.id).map(a=>{
+     const [project_id,event_id,actor,client_ref,command_id,operation_id,target,policy,approval,reason_code,scope_digest,recorded_at]=a;
+     const audit={project_id,event_id,actor_ref:JSON.parse(actor),client_ref,command_id,operation_id,target_ref:JSON.parse(target),
+      policy_ref:JSON.parse(policy),approval_ref:approval,reason_code,scope_digest,correction_of:null,outcome:'APPLIED',source_kind:'HUMAN_COMMAND'};
+     return {...r,...c,id:r.id,origin_id:c.id,client_id:r.client_id,command_client_id:c.client_id,receipt,audit,authorized_at,recorded_at};
+    });
+   });
+   return rows(structuredClone(result.slice(0,2)));
+  }
   if(sql.startsWith('SELECT count(*)'))return rows([{count:state.entries.length+state.quotaCount,total:state.quotaBytes+state.entries.reduce((n,r)=>n+Buffer.byteLength(canonicalJson(r)),0)}]);
   if(sql.startsWith('SELECT operation,request_hash,result_ref'))return rows(state.commands.filter(c=>c.command_key===p[2]));
   if(sql.startsWith('SELECT clock_timestamp()')||sql.startsWith('SELECT transaction_timestamp()'))return rows([{at:new Date(state.clock),transaction_id:'17'}]);
   if(sql.startsWith('SELECT set_config')){if(sql.includes('anvil.command_id'))commandKey=p[2];return rows([]);}
-  if(sql.startsWith('INSERT INTO anvil.commands')){state.commands.push({id:p[0],operation:p[4],command_key:p[5],request_hash:p[6],result_ref:JSON.parse(p[14])});return rows([]);}
-  if(sql.startsWith('INSERT INTO anvil.authorization_receipts')){state.auth.push(structuredClone(p));return rows([]);}
-  if(sql.startsWith('INSERT INTO anvil.audit_events')){state.audits.push(structuredClone(p));return rows([]);}
-  if(sql.startsWith('INSERT INTO anvil.execution_grant_revocations')){state.entries.push({id:p[1],version:1,content_hash:p[6],snapshot_json:JSON.parse(p[7]),created_command_id:p[10]});state.afterWrite();if(state.failed)throw Error('RAM_STORAGE_FAILURE');return{rowCount:1,rows:[]};}
+  if(sql.startsWith('INSERT INTO anvil.commands')){state.commands.push({id:p[0],scope_kind:'PROJECT',scope_id:p[1],project_id:p[1],draft_id:null,actor_id:p[2],client_id:p[3],operation:p[4],command_id:p[5],command_key:p[5],request_hash:p[6],operation_id:p[7],state:'APPLIED',authorization_receipt_id:p[8],approval_consumption_id:p[9],expected_version:p[10],control_generation:p[11],policy_ref:JSON.parse(p[12]),payload_ref:p[13],result_ref:JSON.parse(p[14]),completed_at:date()});return rows([]);}
+  if(sql.startsWith('INSERT INTO anvil.authorization_receipts')){state.auth.push([...structuredClone(p),date()]);return rows([]);}
+  if(sql.startsWith('INSERT INTO anvil.audit_events')){state.audits.push([...structuredClone(p),date()]);return rows([]);}
+  if(sql.startsWith('INSERT INTO anvil.execution_grant_revocations')){state.entries.push({project_id:p[0],id:p[1],version:1,execution_id:p[2],generation:p[3],grant_id:p[4],grant_version:p[5],content_hash:p[6],snapshot_json:JSON.parse(p[7]),created_by:p[8],client_id:p[9],created_command_id:p[10],created_at:date()});state.afterWrite();if(state.failed)throw Error('RAM_STORAGE_FAILURE');return{rowCount:1,rows:[]};}
   throw Error('UNEXPECTED_SQL '+sql);
  }};
  const access=new AccessRepository({connect:async()=>{const before=lock;let release=()=>{};lock=new Promise<void>(r=>release=r);await before;return{query:db.query,release:(e?:Error)=>{db.release(e);release();}};}} as any,{installationId:pid,key:randomBytes(32)});
@@ -53,6 +70,7 @@ test('다른 OWNER가 ACTIVE/EXPIRED normal grant를 회수하고 같은 원영�
   assert.equal(r.status,'APPLIED');assert.equal(r.data.status,'NORMAL_GRANT_REVOCATION_STORED');assert.equal(r.data.snapshot.state,'NORMAL_REVOCATION_STORED');assert.equal(r.data.snapshot.transport,'NORMAL_PROTECTED');
   assert.equal(r.data.snapshot.requestedBy.userId,f.uid);assert.equal(r.data.snapshot.currentBinding.grantSubject.userId,f.oldUser);assert.equal(r.data.snapshot.currentBinding.grantState,expired?'EXPIRED':'ACTIVE');
   for(const k of ['revocationEffectiveVerified','credentialRevocationVerified','writerReleaseVerified','executionAuthorized','dispatchPerformed']){assert.equal(r.data[k],false);assert.equal(r.data.snapshot[k],false);}
+  f.state.clock+=70000; // 원 grant와 과거 회수창이 모두 만료되어도 현재 재확인 권한은 별도로 검사한다.
   assert.deepEqual(await f.run(q),r);assert.equal(f.state.entries.length,1);assert.equal(f.state.commands.length,1);await assert.rejects(f.run(),/GRANT_ALREADY_REVOKED/);
  }
 });
@@ -77,7 +95,7 @@ test('동시 중복은 하나만 저장하고 같은 명령의 다른 내용은 
 test('정규 synthetic 생산자의 원영수증은 normal replay에서 표식/시각을 바꾸지 않는다',async()=>{
  const {ProjectExecutionGrantRevocations}=await import('../../../apps/server/modules/executions/execution-grant-revocation.ts');
  const f=revocationFixture();f.g.snapshot_json.transport='SYNTHETIC_ONLY';f.seal();const q=f.request();
- const port:any={transport:'SYNTHETIC_ONLY',async current(_db:any,_actor:any,scope:any){return{transport:'SYNTHETIC_ONLY',scope,grantRef:q.payload.grantRef,grantKind:'EXECUTION',grantSubject:f.g.snapshot_json.binding.subject,grantState:'ACTIVE',sourceScopes:f.g.snapshot_json.binding.intent.sourceScopes,permissionPolicyRef:q.payload.permissionPolicyRef,budgetPolicyRef:q.payload.budgetPolicyRef,checkedAt:new Date(f.state.clock).toISOString(),expiresAt:new Date(f.state.clock+30000).toISOString()};},async append(_db:any,_scope:any,entry:any,cid:string){f.state.entries.push({...entry,created_command_id:cid});}};
+ const port:any={transport:'SYNTHETIC_ONLY',async current(_db:any,_actor:any,scope:any){return{transport:'SYNTHETIC_ONLY',scope,grantRef:q.payload.grantRef,grantKind:'EXECUTION',grantSubject:f.g.snapshot_json.binding.subject,grantState:'ACTIVE',sourceScopes:f.g.snapshot_json.binding.intent.sourceScopes,permissionPolicyRef:q.payload.permissionPolicyRef,budgetPolicyRef:q.payload.budgetPolicyRef,checkedAt:new Date(f.state.clock).toISOString(),expiresAt:new Date(f.state.clock+30000).toISOString()};},async append(_db:any,scope:any,entry:any,commandId:string){f.state.entries.push({project_id:scope.projectId,id:entry.ref.id,version:entry.ref.version,execution_id:scope.executionId,generation:scope.executionGeneration,grant_id:q.payload.grantRef.id,grant_version:q.payload.grantRef.version,content_hash:entry.ref.contentHash,snapshot_json:entry.snapshot,created_by:f.uid,client_id:f.cid,created_command_id:commandId,created_at:new Date(f.state.clock)});}};
  const original=await new ProjectExecutionGrantRevocations(f.access,port,f.policies).command(f.token,f.csrf,q as any);
  assert.equal((original as any).data.status,'SYNTHETIC_GRANT_REVOCATION_STORED');f.state.clock+=31000;
  assert.deepEqual(await f.run(q),original);assert.equal(f.state.entries.length,1);
@@ -91,4 +109,28 @@ test('기존 receipt의 혼합 표식/참값은 거절하고 세대별 100건/2M
  for(const bytes of [false,true]){const f=revocationFixture();if(bytes)f.state.quotaBytes=2097152;else f.state.quotaCount=100;await assert.rejects(f.run(),/GRANT_REVOCATION_TOO_LARGE/);assert.equal(f.state.entries.length,0);}
 });
 
+test('같은 회수 명령의 원행·허가 영수증·단일 감사 손상은 재확인 503이다',async(t)=>{
+ for(const mode of ['MISSING_ROW','ROW_ACTOR','ROW_GENERATION','RESULT_REHASH','RESULT_OPERATION','MISSING_RECEIPT','RECEIPT_SCOPE','MISSING_AUDIT','AUDIT_DUPLICATE','AUDIT_TARGET'] as const){
+  await t.test(mode,async()=>{
+   const f=revocationFixture(),q=f.request();await f.run(q);
+   const row=f.state.entries[0],cmd=f.state.commands[0],receipt=f.state.auth[0],audit=f.state.audits[0];
+   if(mode==='MISSING_ROW')f.state.entries.length=0;
+   if(mode==='ROW_ACTOR')row.created_by=randomUUID();
+   if(mode==='ROW_GENERATION')row.generation=2;
+   if(mode==='RESULT_REHASH'){
+    cmd.result_ref.data.snapshot.requestedBy.humanSessionId=randomUUID();
+    cmd.result_ref.data.ref.contentHash=hash(cmd.result_ref.data.snapshot);
+   }
+   if(mode==='RESULT_OPERATION')cmd.result_ref.operationId=randomUUID();
+   if(mode==='MISSING_RECEIPT')f.state.auth.length=0;
+   if(mode==='RECEIPT_SCOPE')receipt[5]='e'.repeat(64);
+   if(mode==='MISSING_AUDIT')f.state.audits.length=0;
+   if(mode==='AUDIT_DUPLICATE'){const duplicate=structuredClone(audit);duplicate[1]=randomUUID();duplicate[9]='BAD_DUPLICATE';f.state.audits.push(duplicate);}
+   if(mode==='AUDIT_TARGET')audit[6]=JSON.stringify({id:randomUUID(),version:1,contentHash:'d'.repeat(64)});
+   const before=structuredClone({entries:f.state.entries,commands:f.state.commands,auth:f.state.auth,audits:f.state.audits});
+   await assert.rejects(f.run(q),{message:'GRANT_REVOCATION_RECORD_INVALID',statusCode:503});
+   assert.deepEqual({entries:f.state.entries,commands:f.state.commands,auth:f.state.auth,audits:f.state.audits},before);
+  });
+ }
+});
 }
