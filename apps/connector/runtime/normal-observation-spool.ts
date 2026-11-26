@@ -24,7 +24,7 @@ export class NormalObservationSpool{
  }
  /** 원 명령의 실행 범위만 대조한다. 원장 읽기·관측 저장·실행 효과가 없다. */
  matchesExecutionScope(scope:NormalLocalScope){
-  return recordV1(scope,['projectId','executionId','executionGeneration'])&&scope.projectId===this.#scope.projectId
+  return #scope in this&&recordV1(scope,['projectId','executionId','executionGeneration'])&&scope.projectId===this.#scope.projectId
    &&scope.executionId===this.#scope.executionId&&scope.executionGeneration===this.#scope.executionGeneration;
  }
  #now(){const n=this.#clock();if(!Number.isSafeInteger(n))return fail();return n;}
@@ -156,4 +156,13 @@ export class NormalObservationSpool{
   const packet=await client.prepareObservations(body,signal),reply=await client.send(packet,signal) as NormalObservationResult;
   if(reply.executionAuthorized!==false||!reply.ack)fail();return this.acceptAck(reply.ack);
  }
+}
+
+const originalMatchesExecutionScope=NormalObservationSpool.prototype.matchesExecutionScope;
+/** 호출자가 검산한 원 envelope에서 실행 범위를 가져와 생성 시 고정한 private 범위와 비교한다. */
+export function normalObservationScopeMatches(spool:unknown,context:NormalLocalScope){
+ if(!spool||typeof spool!=='object'||isProxy(spool)||Object.getPrototypeOf(spool)!==NormalObservationSpool.prototype
+  ||Object.hasOwn(spool,'matchesExecutionScope')||Object.getOwnPropertyDescriptor(NormalObservationSpool.prototype,'matchesExecutionScope')?.value!==originalMatchesExecutionScope)return false;
+ const {projectId,executionId,executionGeneration}=context;
+ return originalMatchesExecutionScope.call(spool,{projectId,executionId,executionGeneration});
 }

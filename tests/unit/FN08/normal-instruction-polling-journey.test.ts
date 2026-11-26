@@ -292,3 +292,46 @@ test('ACK가 정상 미완료인 원장은 다음 SEND를 차단하지 않고 �
   assert.equal((await f.spool.coverage()).covered,true);assert.equal(yields,1);
  }finally{f.authority.abort();await f.h.close();}
 });
+
+test('다른 범위의 정상 spool에서 단독 SEND 페이지는 원문·permit·wire·관측 저장을 시작하지 않는다',async()=>{
+ const {firstSendFixture}=await import('../FN07/normal-first-send-owner.test.ts');
+ const {NormalStartPolling}=await import('../../../apps/connector/runtime/normal-start-polling.ts');
+ const {NormalObservationSpool}=await import('../../../apps/connector/runtime/normal-observation-spool.ts');
+ const {ramJournal}=await import('./normal-start-local-fixture.ts');
+ let yields=0;const f=await firstSendFixture('yield-first',{async provide(_query,input){for await(const _ of input)yields++;}});
+ try{
+  const first=await f.run();assert.equal(first.state,'LIMIT_REACHED');assert.ok(first.cursor.afterCursor);
+  await f.h.queueFollowup('다른 실행 범위에 저장할 수 없는 지시');
+  // 앞 START를 되풀이하지 않도록 기존 확정 cursor의 다음 page만 실제 보호 client로 요청한다.
+  const prepare=f.get.prepareCommandPage.bind(f.get);
+  f.get.prepareCommandPage=(input,signal)=>prepare({...input,...first.cursor},signal);
+  const journal=ramJournal(),wrong={...f.localScope,executionId:randomUUID()},spool=new NormalObservationSpool(journal,wrong,f.clock);
+  const opts=f.options(),before=f.calls.length,permits=f.h.permits.length,observations=f.h.observations.length,local=[...f.fs.files.keys()];
+  const poll=new NormalStartPolling({...opts,start:{...opts.start,spool}}),result=await poll.run(f.signal);
+  assert.deepEqual(f.calls.slice(before).map(c=>c.path.split('/').at(-1)),['challenges','commands']);
+  assert.equal(result.state,'UNKNOWN');assert.equal(result.cursor.afterSequence,0);assert.equal(yields,0);
+  assert.equal(f.h.permits.length,permits);assert.equal(f.h.observations.length,observations);assert.deepEqual([...f.fs.files.keys()],local);assert.equal(journal.data.size,0);
+ }finally{f.authority.abort();await f.h.close();}
+});
+
+test('polling은 원 SEND item과 사용할 page proof의 Proxy/접근자를 실행하지 않는다',async()=>{
+ const {NormalStartPolling}=await import('../../../apps/connector/runtime/normal-start-polling.ts');
+ const f=await normalInstructionPollingFixture();try{
+  for(const boundary of ['ITEM_PROXY','ITEM_ACCESSOR','PROOF_PROXY','PROOF_ACCESSOR']){
+   let traps=0;
+   const trap=()=>{traps++;throw Error('합성 page 접근자 호출');};
+   const page={...f.page,items:[{...f.item}],hasMore:false};
+   if(boundary==='ITEM_PROXY')page.items[0]=new Proxy(f.item,{get:trap,ownKeys:trap});
+   if(boundary==='ITEM_ACCESSOR')Object.defineProperty(page.items[0]!,'sequence',{enumerable:true,get:trap});
+   if(boundary==='PROOF_PROXY')page.proofResultRef=new Proxy(f.page.proofResultRef,{get:trap,ownKeys:trap});
+   if(boundary==='PROOF_ACCESSOR')Object.defineProperty(page,'proofResultRef',{enumerable:true,get:trap});
+   const options=f.options(),calls=f.calls.length;
+   const get={prepareCommandPage:async()=>({}),send:async()=>page} as unknown as typeof options.clients.get;
+   const result=await new NormalStartPolling({...options,clients:{...options.clients,get}}).run(f.signal);
+   assert.equal(result.state,'UNKNOWN',boundary);assert.equal(result.cursor.afterSequence,0,boundary);
+   assert.equal(traps,0,boundary);assert.equal(f.calls.length,calls,boundary);
+   assert.deepEqual(f.effects,{start:0,send:0,sendFail:false},boundary);
+   assert.equal(f.fs.files.size,0,boundary);assert.equal(f.h.permits.length,0,boundary);
+  }
+ }finally{await f.h.close();}
+});

@@ -274,3 +274,23 @@ test('준비 permit 사건이 201번째이면 첫 200 ACK와 마지막 ACK 응�
   assert.equal(f.http.calls.slice(count).filter(v=>v.path.includes('/materials/')).length,0);
  }finally{await f.h.app.close();}
 });
+
+test('다른 범위의 정상 spool에서는 START 자료·permit·wire·관측 저장을 시작하지 않는다',async(t)=>{
+ const {NormalObservationSpool}=await import('../../../apps/connector/runtime/normal-observation-spool.ts');
+ const {ramJournal}=await import('./normal-start-local-fixture.ts');
+ for(const field of ['projectId','executionId','executionGeneration'] as const)await t.test(field,async()=>{
+  const f=await preparedExecution(Infinity,false);try{
+   const wrong=structuredClone(f.scope);
+   if(field==='executionGeneration')wrong.executionGeneration++;else wrong[field]=randomUUID();
+   const journal=ramJournal(),spool=new NormalObservationSpool(journal,wrong,f.clock),before=f.http.calls.length,opened=f.fs.mode.opens;
+   const start={...f.startPorts(),spool},direct=new NormalStartCoordinator({...start,post:f.post});
+   await assert.rejects(direct.start(f.e,f.signal),/NORMAL_START_OBSERVATION_SCOPE_INVALID/);
+   await assert.rejects(direct.startPage(f.item,f.signal),/NORMAL_START_OBSERVATION_SCOPE_INVALID/);
+   const p=new NormalStartPolling({...options(f),start}),result=await p.run(f.signal);
+   assert.deepEqual(f.http.calls.slice(before).map(c=>c.path.split('/').at(-1)),['challenges','commands']);
+   assert.equal(result.state,'UNKNOWN');assert.equal(result.cursor.afterSequence,0);
+   assert.equal(f.mode.currents,0);assert.equal(f.mode.wires,0);assert.equal(f.q.permits.length,0);assert.equal(f.q.observations.length,0);
+   assert.equal(f.fs.files.size,0);assert.equal(f.fs.mode.opens,opened);assert.equal(journal.data.size,0);
+  }finally{await f.h.app.close();}
+ });
+});

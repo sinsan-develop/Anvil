@@ -1,9 +1,11 @@
-import {cloneV1,refV1,type RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
+import {isProxy} from 'node:util/types';
+import {refV1,type RuntimeRefV1} from '../../../contracts/runtime/validation-v1.ts';
 import {NormalStopCoordinator,type NormalStopHistoryPorts} from './normal-stop-coordinator.ts';
 import {NormalInstructionCoordinator,type NormalInstructionWirePort} from './normal-instruction-coordinator.ts';
-import {receiveNormalInstruction} from './normal-instruction-intake.ts';
+import {captureInstructionInput,receiveNormalInstruction} from './normal-instruction-intake.ts';
 import {NormalStartCoordinator,type NormalStartPorts} from './normal-start-coordinator.ts';
 import {receiveNormalStart} from './normal-start-intake.ts';
+import {normalObservationScopeMatches} from './normal-observation-spool.ts';
 import type {NormalProtectedGetClient} from './normal-protected-get-client.ts';
 import type {NormalProtectedPostClient} from './normal-protected-post-client.ts';
 import type {NormalCommandPage} from './normal-start-material-consumer.ts';
@@ -102,20 +104,29 @@ export class NormalStartPolling{
     // host의 10초 한도를 서버 long-poll에 전부 쓰지 않는다. 대기는 host 밖에서 한다.
     const packet=await this.#call(s=>clients.get.prepareCommandPage({...this.#cursor,waitMs:0},s),signal);
     const page=await this.#call(s=>clients.get.send(packet,s),signal) as NormalCommandPage;
-    if(!Array.isArray(page.items)||page.items.length>50||typeof page.hasMore!=='boolean'||typeof page.nextCursor!=='string'||!page.nextCursor||page.nextCursor.length>4096)throw Error('PAGE_INVALID');
+    if(!page||isProxy(page)||!Array.isArray(page.items)||page.items.length>50||typeof page.hasMore!=='boolean'||typeof page.nextCursor!=='string'||!page.nextCursor||page.nextCursor.length>4096)throw Error('PAGE_INVALID');
+    let pageProof:RuntimeRefV1|undefined;
+    const readPageProof=()=>{
+     if(pageProof)return pageProof;
+     const property=Object.getOwnPropertyDescriptor(page,'proofResultRef');
+     if(!property||!('value' in property))throw Error('PAGE_INVALID');
+     const proof=captureInstructionInput(property.value);
+     if(!refV1(proof))throw Error('PAGE_INVALID');
+     return pageProof=proof;
+    };
     let sequence=this.#cursor.afterSequence;
-    for(const item of page.items){
-     if(!Number.isSafeInteger(item.sequence)||item.sequence<=sequence)throw Error('PAGE_INVALID');
+    for(const rawItem of page.items){
+     const item=captureInstructionInput(rawItem),itemSequence=item.sequence;
+     if(!Number.isSafeInteger(itemSequence)||itemSequence<=sequence)throw Error('PAGE_INVALID');
      if(item.materials===null&&!(item.envelope.operation==='REQUEST_STOP'&&this.#p.stop))throw Error('PAGE_INVALID');
      let state:string,readyAck:RuntimeRefV1|undefined;
      if(item.envelope.operation==='START_SESSION'&&item.materials!==null){
-      if(!refV1(page.proofResultRef))throw Error('PAGE_INVALID');
-      const startItem=cloneV1(item),proof=cloneV1(page.proofResultRef);
+      const proof=readPageProof();
       const coordinator=new NormalStartCoordinator({...this.#p.start,post:clients.post});
-      let result=await this.#call(s=>coordinator.startPage(startItem,s),signal,true,true);
+      let result=await this.#call(s=>coordinator.startPage(item,s),signal,true,true);
       if(!result){
-       const intake=await this.#call(s=>receiveNormalStart(clients.get,this.#p.start.intake,startItem,proof,s),signal,true,true);
-       result=await this.#call(s=>coordinator.startPage(startItem,s,intake.receivedRef),signal,true,true);
+       const intake=await this.#call(s=>receiveNormalStart(clients.get,this.#p.start.intake,item,proof,s),signal,true,true);
+       result=await this.#call(s=>coordinator.startPage(item,s,intake.receivedRef),signal,true,true);
       }
       if(!result)throw Error('NORMAL_START_RECEIPT_CONFLICT');
       state=result.state;
@@ -126,10 +137,12 @@ export class NormalStartPolling{
      }else if(item.envelope.operation==='SEND_INSTRUCTION'&&item.materials!==null&&this.#p.instruction){
       const ports=this.#p.instruction,{wire,...configuration}=ports,coordinator=new NormalInstructionCoordinator({...configuration,post:clients.post});
       let history=await this.#call(s=>coordinator.history(item,s),signal,true,true);
+      if(!normalObservationScopeMatches(this.#p.start.spool,item.envelope.context))throw Error('NORMAL_INSTRUCTION_OBSERVATION_SCOPE_INVALID');
       // 이어받은 원장은 SEND 효과 전에 검산한다. 정상 미ACK 관측은 아래에서 기존 방식으로 정착시킨다.
       if(history.state==='NOT_RECEIVED'||history.state==='NOT_PREPARED')await this.#call(()=>this.#p.start.spool.coverage(),signal,true,true);
       if(history.state==='NOT_RECEIVED'){
-       await this.#call(s=>receiveNormalInstruction(clients.get,ports.intake,item,page.proofResultRef,s),signal,true,true);
+       const proof=readPageProof();
+       await this.#call(s=>receiveNormalInstruction(clients.get,ports.intake,item,proof,s),signal,true,true);
        history=await this.#call(s=>coordinator.observations(item.envelope,s),signal,true,true);
       }
       state=history.state;
@@ -149,7 +162,7 @@ export class NormalStartPolling{
      if(!terminal)this.#unknown=true;
      await this.#syncThrough(clients.post,signal,readyAck);
      if(!terminal){this.#unknown=true;return this.#result('UNKNOWN',pages,commands,item.envelope.operation==='REQUEST_STOP'?'STOP_UNCONFIRMED':item.envelope.operation==='START_SESSION'?'START_UNKNOWN':'SEND_UNKNOWN');}
-     commands++;sequence=item.sequence;
+     commands++;sequence=itemSequence;
     }
     if(!page.items.length)await this.#call(s=>this.#p.start.spool.sync(clients.post,s),signal,true,true);
     this.#guard(signal);

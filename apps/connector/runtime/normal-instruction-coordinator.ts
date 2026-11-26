@@ -1,6 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {normalSendPermitRepresentation} from '../../../contracts/runtime/normal-send-permit-source-v1.ts';
-import {NormalObservationSpool,type NormalLocalObservation} from './normal-observation-spool.ts';
+import {NormalObservationSpool,normalObservationScopeMatches,type NormalLocalObservation} from './normal-observation-spool.ts';
 import {isNormalInstructionWire,isNormalFirstSendWire,consumeNormalFirstSendResult,abandonNormalFirstSendResult,normalWireLiveParent} from '../adapters/secondary/normal-instruction-wire.ts';
 import type {FirstSendSummary,FirstSendCompletion,LiveSendCompletion,LiveSendParent} from './normal-first-send-owner.ts';
 import {isProxy} from 'node:util/types';
@@ -160,9 +160,11 @@ export class NormalInstructionCoordinator{
   return this.observations(e,signal);
  }
  /** 완전한 원 intake/attempt 체인의 역사 조회. 결과는 dispatch eligibility를 만들지 않는다. */
- async observations(raw:unknown,signal:AbortSignal){
+ observations(raw:unknown,signal:AbortSignal){return this.#observations(raw,signal);}
+ async #observations(raw:unknown,signal:AbortSignal,spool?:NormalObservationSpool){
   if(this.#busy)fail('NORMAL_INSTRUCTION_BUSY');if(!(signal instanceof AbortSignal)||signal.aborted)fail('NORMAL_INSTRUCTION_CANCELLED');
   this.#ports();const input=captureInstructionInput(raw),e=readDispatchEnvelopeV1(input,Date.parse((input as any)?.issuedAt));if(e.operation!=='SEND_INSTRUCTION'||Date.parse(e.issuedAt)>this.#now())fail();
+  if(spool&&!normalObservationScopeMatches(spool,e.context))fail('NORMAL_INSTRUCTION_OBSERVATION_SCOPE_INVALID');
   this.#busy=true;
   try{
    const received=await originalObservations.call(this.#p.intake,e);this.#ports();if(signal.aborted)fail();
@@ -196,7 +198,7 @@ export class NormalInstructionCoordinator{
  }
  async recordObservations(raw:unknown,spool:NormalObservationSpool,signal:AbortSignal){
   const check=()=>{this.#ports();if(signal.aborted||isProxy(spool)||Object.getPrototypeOf(spool)!==NormalObservationSpool.prototype||spool.record!==originalRecord||NormalObservationSpool.prototype.record!==originalRecord)fail('NORMAL_INSTRUCTION_OBSERVATION_PORT_INVALID');};
-  check();const source=await this.observations(raw,signal),recordedRefs:Ref[]=[];check();
+  check();const source=await this.#observations(raw,signal,spool),recordedRefs:Ref[]=[];check();
   for(const input of source.inputs){check();const ref=await originalRecord.call(spool,input);check();recordedRefs.push(cloneV1(ref));}
   const first=source.state==='FIRST_SEND_INPUT_AND_INIT_RECORDED'||source.state==='LIVE_SEND_INPUT_YIELDED';
   if(first&&!same(source.inputs.map(v=>v.type),['RECEIVED','PREPARED','PERMIT_RECORDED']))fail();

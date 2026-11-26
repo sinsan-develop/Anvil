@@ -162,3 +162,17 @@ test('역사 관측은 hash를 다시 봉인한 다른 세대/세션/원수신 r
   }finally{await f.h.close();}
  }
 });
+
+test('SEND 원 관측 대조는 정상인 다른 scope spool을 조회와 보관 전에 거절한다',async()=>{
+ const {NormalObservationSpool}=await import('../../../apps/connector/runtime/normal-observation-spool.ts');
+ const {ramJournal}=await import('./normal-start-local-fixture.ts');
+ const f=await normalInstructionWireFixture();try{
+  const delivered=await f.c.dispatch(f.item.envelope,f.prepared,f.wire,f.signal);assert.equal(delivered.state,'RESPONSE_RECORDED');
+  const journal=ramJournal(),wrong={...f.localScope,projectId:randomUUID()},spool=new NormalObservationSpool(journal,wrong,f.clock),before=f.fs.mode.opens;
+  await assert.rejects(f.make().recordObservations(f.item.envelope,spool,f.signal),/NORMAL_INSTRUCTION_OBSERVATION_SCOPE_INVALID/);
+  assert.equal(f.fs.mode.opens,before);assert.equal(journal.data.size,0);assert.equal(f.driverCalls(),1);
+  const local=new NormalObservationSpool(journal,f.localScope,f.clock);
+  const recovered=await f.make().recordObservations(f.item.envelope,local,f.signal);
+  assert.equal(recovered.state,'RESPONSE_RECORDED');assert.equal(recovered.recordedRefs.length,4);assert.equal(f.driverCalls(),1);
+ }finally{await f.h.close();}
+});

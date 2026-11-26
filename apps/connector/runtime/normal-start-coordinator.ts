@@ -8,7 +8,7 @@ import {outsideOwnedSpoolCallback} from './normal-owned-spool-profile.ts';
 import {isNormalStartReadyWire,consumeNormalStartReady,copyNormalWorkerStart} from '../adapters/secondary/normal-start-wire.ts';
 import {NormalStartIntake} from './normal-start-intake.ts';
 import {NormalProtectedPostClient,type NormalPermitResult} from './normal-protected-post-client.ts';
-import {NormalObservationSpool} from './normal-observation-spool.ts';
+import {NormalObservationSpool,normalObservationScopeMatches} from './normal-observation-spool.ts';
 import type {NormalJournalStore,NormalJournalTransaction} from './normal-start-file-store.ts';
 import {originalNormalDispatchGrant,type NormalDispatchClaim} from './normal-instruction-coordinator.ts';
 type Materials=Awaited<ReturnType<NormalStartIntake['startMaterials']>>;
@@ -101,6 +101,7 @@ export class NormalStartCoordinator{
   const e=readDispatchEnvelopeV1(cloneV1(raw),Date.parse((raw as any)?.issuedAt));
   if(e.operation!=='START_SESSION'||Date.parse(e.issuedAt)>this.#now())fail('NORMAL_START_ENVELOPE_INVALID');
   const p=this.#p;
+  if(!normalObservationScopeMatches(p.spool,e.context))fail('NORMAL_START_OBSERVATION_SCOPE_INVALID');
   let freshReadyDeadline:number|undefined,unconfirmedReady:Ref|undefined,freshParent:SettledStart|undefined;
   const run=async(tx:NormalJournalTransaction)=>{
    let rows=this.#rows(await tx.read(),e);
