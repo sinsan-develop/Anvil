@@ -44,6 +44,6 @@ export function ReportedIssueAssignment({client,result,draftRef,isCurrent,onUnav
    <a href={transferPreparationHref(shown.value.detail.projectId,shown.value.detail.draft.ref)} onClick={event=>{if(!current()||revision.current!==shown.ticket)event.preventDefault();}}>해당 임무 인계 기록 보기</a>
    <AssignmentPlanOriginal key={'plan:'+shown.ticket} client={client} detail={shown.value.detail} onAuthenticationLost={onAuthenticationLost}/>
   </>:null}
-  {a&&shown?<ReportedIssueHistories key={shown.ticket} client={client} result={result} assignment={a} onUnavailable={onUnavailable} onAuthenticationLost={onAuthenticationLost}/>:null}
+  {a&&shown?<ReportedIssueHistories key={shown.ticket} client={client} result={result} assignment={a} isSourceCurrent={()=>current()&&revision.current===shown.ticket} onUnavailable={onUnavailable} onAuthenticationLost={onAuthenticationLost}/>:null}
  </section>;
 }

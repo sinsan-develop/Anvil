@@ -87,9 +87,37 @@ function updatedHistory(entry:ReturnType<typeof resultFixture>['entry'],change:(
  const {contentHash:_,...value}=stopHistoryFor(entry);change(value);return {...value,contentHash:hash(value)};
 }
 
-async function mount(strict=false,withAssignment=false){
+const reviewLookup='검수 이력 조회',olderReviews='더 이전 검수 목록 조회';
+const reviewId=(n:number)=>`${String(n).padStart(8,'0')}-1111-4111-8111-111111111111`;
+const reviewCursor=`root.${'a'.repeat(64)}.position.${'b'.repeat(64)}`;
+function reviewFixtures(result:ReturnType<typeof resultFixture>['entry'],detail:ReturnType<typeof assignmentPlanFixture>['detail']){
+ const a=detail.confirmed!;const d=a.snapshot.definition,at='2026-10-20T00:00:00.000Z';
+ const sources=(['acceptanceCriteria','verificationRequirements'] as const).map(field=>({field,index:0,contentHash:hash(d[field][0])}));
+ const fields={criterionId:'flow',testId:'FLOW-01',kind:'INTEGRATION',environmentRef:d.environmentRef};
+ const criteriaSnapshot={assignmentRef:a.ref,baselineRefs:d.baselineRefs,items:[{...fields,required:true}]},criteriaRef={id:reviewId(77),version:1,contentHash:hash(criteriaSnapshot)};
+ const criteria={projectId:a.projectId,ref:criteriaRef,snapshot:criteriaSnapshot,input:{assignmentRef:a.ref,baseRef:null,items:[{...fields,sources}],reason:'고정된 당시 검수 기준'},sourceBindings:[{criterionId:'flow',sources}],createdBy:a.projectId,registeredAt:at,observedAt:at,registryStored:true,reviewStored:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false};
+ const reviewedBy={kind:'HUMAN',userId:a.projectId,clientId:a.ref.id},sameAsSubmitter=reviewedBy.userId===result.snapshot.submittedByRef.id;
+ const flags={completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false};
+ const reviews=Array.from({length:21},(_,i)=>{
+  const reason=`보관 검수 원문 ${i+1}`,input={resultRef:result.ref,criteriaRef,outcome:'BLOCKED',items:[{criterionId:'flow',outcome:'BLOCKED',evidenceRefs:[],reason}],reason};
+  const snapshot={scope:result.snapshot.scope,input,reviewedBy,sameAsSubmitter,reviewedAt:at,...flags};
+  const ref={id:reviewId(90-i),version:1,contentHash:hash(snapshot)};
+  return {view:{projectId:a.projectId,ref,snapshot,observedAt:at,reviewStored:true,...flags},item:{ref,criteriaRef,outcome:input.outcome,reviewedBy,sameAsSubmitter,reviewedAt:at,reviewStored:true,...flags}};
+ });
+ const page=(cursor:string|null)=>({projectId:a.projectId,resultRef:result.ref,items:(cursor?reviews.slice(20):reviews.slice(0,20)).map(v=>v.item),hasMore:!cursor,nextCursor:cursor?null:reviewCursor,selectionState:'NOT_SELECTED',observedAt:at,pageSize:20,window:{startedAt:at,expiresAt:'2026-10-20T00:30:00.000Z'}});
+ const basis=(review:typeof reviews[number]['view'])=>({projectId:a.projectId,resultRef:result.ref,reviewRef:review.ref,assignmentRef:a.ref,applicationRef:d.taskRef.applicationRef,nodeId:d.taskRef.nodeId,nodeName:'고정된 당시 단계',action:'WAIT_HUMAN_UNBLOCK_DECISION',reviewOutcome:'BLOCKED',sourceAssurance:'SERVER_STORED_REVIEW_WITH_CURRENT_METHODOLOGY',resultTransport:'SYNTHETIC_ONLY',reviewObservedAt:at,applicationObservedAt:at,reasonCodes:['COMPLETION_NOT_ACCEPTED','RUNTIME_STATE_NOT_VERIFIED','CURRENT_AUTHORITY_BUDGET_NOT_REVALIDATED'],completionAccepted:false,runtimeStateVerified:false,automaticTransitionPerformed:false,executionAuthorized:false,dispatchPerformed:false});
+ return {reviews,page,criteria,basis};
+}
+
+async function mount(strict=false,withAssignment=false,withReviews=false){
  const original=resultFixture(),second=resultFixture();
  const {detail}=assignmentPlanFixture();assert(detail.confirmed);
+ if(withReviews){
+  const baseline=detail.draft.snapshot.definition.taskRef.applicationRef;
+  const definition={...detail.draft.snapshot.definition,environmentRef:baseline,baselineRefs:[baseline]};
+  detail.draft.snapshot.definition=definition;detail.draft.ref.contentHash=hash(detail.draft.snapshot);
+  detail.confirmed.snapshot={...detail.confirmed.snapshot,draftRef:detail.draft.ref,definition};detail.confirmed.ref.contentHash=hash(detail.confirmed.snapshot);
+ }
  if(withAssignment)for(const f of [original,second]){
   f.a=detail.confirmed.ref;f.entry.snapshot.scope.assignmentRef=f.a;f.entry.snapshot.manifest.assignmentRef=f.a;
   f.entry.snapshot.manifestHash=hash(f.entry.snapshot.manifest);f.item.manifestRef.contentHash=f.entry.snapshot.manifestHash;
@@ -99,10 +127,16 @@ async function mount(strict=false,withAssignment=false){
  second.entry.ref.id=later;second.item.manifestRef.id=later;
  const select=(f:typeof original)=>({assignmentRef:f.a,returnDraftRef:withAssignment?detail.draft.ref:f.a,item:f.item});
  const calls:{path:string;method:string}[]=[];
+ const stored=(f:typeof original)=>reviewFixtures(f.entry,detail);
  const controls={readStops:(f:typeof original):Response|Promise<Response>=>Response.json(stopHistoryFor(f.entry)),
   readPages:():Response|Promise<Response>=>assert.fail('과거 페이지 자동 조회'),
   readIssueBasis:():Response=>assert.fail('문제 근거 자동 조회'),
-  readAssignment:(draft:boolean):Response|Promise<Response>=>Response.json(draft?detail.draft:detail.confirmed)};
+  readAssignment:(draft:boolean):Response|Promise<Response>=>Response.json(draft?detail.draft:detail.confirmed),
+  readReviewPage:(f:typeof original,cursor:string|null):Response|Promise<Response>=>Response.json(stored(f).page(cursor)),
+  readReview:(view:ReturnType<typeof stored>['reviews'][number]['view']):Response|Promise<Response>=>Response.json(view),
+  readCriteria:(view:ReturnType<typeof stored>['criteria']):Response|Promise<Response>=>Response.json(view),
+  readCoverage:():Response|Promise<Response>=>assert.fail('조건별 보고 자동 조회'),
+  readBasis:(view:ReturnType<ReturnType<typeof stored>['basis']>):Response|Promise<Response>=>Response.json(view)};
  const transport:typeof fetch=async(url,init)=>{
   const path=String(url),method=init?.method??'GET';calls.push({path,method});
   assert.equal(method,'GET');assert.equal(init?.credentials,'same-origin');
@@ -116,6 +150,20 @@ async function mount(strict=false,withAssignment=false){
    if(path===resultPath+'/stop-requests')return controls.readStops(f);
    if(path===resultPath+'/stop-request-pages')return controls.readPages();
    if(path===resultPath+'/issue-basis')return controls.readIssueBasis();
+   if(withReviews&&path.startsWith(resultPath+'/review-pages'))return controls.readReviewPage(f,new URL(path,'https://test.invalid').searchParams.get('cursor'));
+   if(withReviews&&path===resultPath+'/reviews'){
+    const {nextCursor:_,pageSize:__,window:___,...legacy}=stored(f).page(null);return Response.json(legacy);
+   }
+   if(withReviews){
+    const reviews=stored(f);
+    if(path===`${resultPath}/criteria/${reviews.criteria.ref.id}/versions/${reviews.criteria.ref.version}/reported-coverage`)return controls.readCoverage();
+    if(path===`${prefix}/result-criteria/${reviews.criteria.ref.id}/versions/${reviews.criteria.ref.version}`)return controls.readCriteria(reviews.criteria);
+    for(const {view} of reviews.reviews){
+     const reviewPath=`${prefix}/result-reviews/${view.ref.id}`;
+     if(path===reviewPath)return controls.readReview(view);
+     if(path===reviewPath+'/next-action-basis')return controls.readBasis(reviews.basis(view));
+    }
+   }
   }
   assert.fail('허용되지 않은 조회 '+path);
  };
@@ -136,7 +184,7 @@ async function mount(strict=false,withAssignment=false){
  const wait=async(check:()=>boolean)=>{const end=performance.now()+3000;while(!check()&&performance.now()<end)await flush();assert(check(),element.textContent);};
  const report=async()=>{await click('선택 보고 원문 확인');await wait(()=>element.textContent.includes('검수 미실행'));};
  await render();
- return {original,second,detail,controls,calls,report,click,button,wait,flush,render,client,transport,nodes,authLost:()=>authLost,text:()=>element.textContent,
+ return {original,second,detail,stored,controls,calls,report,click,button,wait,flush,render,client,transport,nodes,authLost:()=>authLost,text:()=>element.textContent,
   async choose(f:typeof original){selection=select(f);await render();},
   async actor(field:'USER'|'CLIENT'){session=field==='USER'?{...session,user:{id:crypto.randomUUID()}}:{...session,clientId:crypto.randomUUID()};await render();},
   async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(element);},
@@ -154,6 +202,136 @@ const stopCalls=(f:Awaited<ReturnType<typeof mount>>)=>f.calls.filter(call=>call
 const assignmentLookup='고정 임무 조건 조회',transferLink='해당 임무 인계 기록 보기';
 const assignmentCalls=(f:Awaited<ReturnType<typeof mount>>)=>f.calls.filter(call=>/\/(assignment-drafts|assignments)\//.test(call.path));
 const transferAnchor=(f:Awaited<ReturnType<typeof mount>>)=>f.nodes().find(n=>n.tagName==='A'&&n.textContent===transferLink);
+
+async function openReviewList(f:Awaited<ReturnType<typeof mount>>){
+ await f.report();await f.click(assignmentLookup);await f.wait(()=>f.text().includes(reviewLookup));
+ await f.click(reviewLookup);await f.wait(()=>f.text().includes('검수 원문 '+reviewId(90)));
+}
+test('같은 보고의 처음 20개와 명시 다음 페이지의 21번째 검수 원문·기준·다음 근거를 연다',async()=>{
+ const f=await mount(false,true,true);
+ try{
+  await openReviewList(f);
+  const first=`/api/v1/projects/${f.original.pid}/results/${f.original.entry.ref.id}/review-pages`;
+  assert.equal(f.calls.at(-1)?.path,first);assert(!f.text().includes(reviewId(70)));
+  await f.click(olderReviews);await f.wait(()=>f.text().includes('검수 원문 '+reviewId(70)));
+  assert(!f.text().includes('검수 원문 '+reviewId(90)));assert(!f.text().includes('보관 검수 원문 21'));
+  assert.equal(f.calls.at(-1)?.path,first+'?cursor='+reviewCursor);
+  await f.click('검수 원문 '+reviewId(70));await f.wait(()=>f.text().includes('보관 검수 원문 21'));
+  await f.click('검수 기준·원조건 열기');await f.wait(()=>f.text().includes('고정된 당시 검수 기준'));
+  await f.click('다음 행동 근거 확인');await f.wait(()=>f.text().includes('고정된 당시 단계'));
+  assert.deepEqual(f.calls.slice(-3).map(c=>c.path),[
+   `/api/v1/projects/${f.original.pid}/result-reviews/${reviewId(70)}`,
+   `/api/v1/projects/${f.original.pid}/result-criteria/${reviewId(77)}/versions/1`,
+   `/api/v1/projects/${f.original.pid}/result-reviews/${reviewId(70)}/next-action-basis`,
+  ]);
+  assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+test('검수 다음 페이지의 다른 조회창·root·반복 cursor·교차 결과·겹친 경계는 선택하지 않는다',async()=>{
+ for(const mode of ['WINDOW','ROOT','REPEATED_CURSOR','RESULT','OVERLAP']){
+  const f=await mount(false,true,true);
+  try{
+   await openReviewList(f);
+   f.controls.readReviewPage=(result,cursor)=>{
+    assert.equal(cursor,reviewCursor);const page=f.stored(result).page(cursor);
+    if(mode==='WINDOW')page.window.expiresAt='2026-10-20T00:20:00.000Z';
+    else if(mode==='RESULT')page.resultRef={...page.resultRef,contentHash:'e'.repeat(64)};
+    else if(mode==='OVERLAP')page.items=f.stored(result).page(null).items.slice(-1);
+    else{
+     page.hasMore=true;page.nextCursor=mode==='ROOT'?reviewCursor.replace('root.','foreign.'):reviewCursor;
+     page.items=Array.from({length:20},(_,i)=>({...page.items[0]!,ref:{...page.items[0]!.ref,id:reviewId(70-i)}}));
+    }
+    return Response.json(page);
+   };
+   await f.click(olderReviews);await f.wait(()=>f.text().includes('RESULT_REVIEW_HISTORY_RESPONSE_INVALID'));
+   assert(!f.text().includes('검수 원문 '+reviewId(70)),mode);assert(!f.text().includes(olderReviews),mode);
+   assert.equal(f.calls.filter(c=>c.path.includes('/review-pages')).length,2);
+   assert.equal(f.calls.filter(c=>c.path.includes('/result-reviews/')).length,0);
+  }finally{await f.close();}
+ }
+});
+
+test('표시 시각이 같은 과거 페이지는 UUID 순서로 서버 cursor 위치를 재추정하지 않는다',async()=>{
+ const f=await mount(false,true,true);
+ try{
+  await openReviewList(f);
+  f.controls.readReviewPage=(result,cursor)=>{
+   const page=f.stored(result).page(cursor),item=page.items[0]!;
+   item.ref={...item.ref,id:reviewId(99)};
+   return Response.json(page);
+  };
+  await f.click(olderReviews);await f.wait(()=>f.text().includes('검수 원문 '+reviewId(99)));
+  assert.equal(f.calls.filter(c=>c.path.includes('/review-pages')).length,2);
+  assert(!f.calls.some(c=>c.path.includes('/result-reviews/')));
+ }finally{await f.close();}
+});
+
+test('현재 검수 페이지·원문·하위 근거의 접근 거절은 보고를 숨기고 현재 401만 인증을 알린다',async()=>{
+ for(const target of ['PAGE','DETAIL','CRITERIA','BASIS','COVERAGE'])for(const status of [401,403,404]){
+  const f=await mount(false,true,true);
+  const rejected=()=>Response.json({code:status===401?'AUTH_REQUIRED':status===403?'PROJECT_OPERATION_DENIED':'NOT_FOUND'},{status});
+  try{
+   await openReviewList(f);
+   if(target==='PAGE'){f.controls.readReviewPage=rejected;await f.click(olderReviews);}
+   else if(target==='DETAIL'){f.controls.readReview=rejected;await f.click('검수 원문 '+reviewId(90));}
+   else{
+    await f.click('검수 원문 '+reviewId(90));await f.wait(()=>f.text().includes('보관 검수 원문 1'));
+    if(target==='CRITERIA'){f.controls.readCriteria=rejected;await f.click('검수 기준·원조건 열기');}
+    else if(target==='BASIS'){f.controls.readBasis=rejected;await f.click('다음 행동 근거 확인');}
+    else{
+     await f.click('검수 기준·원조건 열기');await f.wait(()=>f.text().includes('고정된 당시 검수 기준'));
+     f.controls.readCoverage=rejected;await f.click('조건별 보고 부족 대조');
+    }
+   }
+   await f.wait(()=>f.text().includes('보고 원문 미확인'));
+   assert.equal(f.authLost(),status===401?1:0);assert(!f.text().includes(olderReviews));assert(!f.text().includes('선택한 보관 검수 원문'));
+   assert(f.calls.every(c=>c.method==='GET'));
+  }finally{await f.close();}
+ }
+});
+
+test('검수 부모 선택·transport·페이지 이동 뒤 지연된 원문과 근거는 새 맥락에 전파되지 않는다',async()=>{
+ for(const mode of ['PAGE_REPORT','PAGE_TRANSPORT','DETAIL_PAGE','CHILD_PAGE','CHILD_PENDING','COVERAGE_PAGE','COVERAGE_PENDING']){
+  const f=await mount(true,true,true);const releases:((value:Response)=>void)[]=[];
+  const hold=()=>new Promise<Response>(resolve=>releases.push(resolve));
+  try{
+   await openReviewList(f);
+   if(mode.startsWith('PAGE_')){
+    f.controls.readReviewPage=hold;await f.click(olderReviews);await f.wait(()=>releases.length===1);
+    if(mode==='PAGE_REPORT')await f.choose(f.second);
+    else f.client.transport=async()=>assert.fail('다른 transport의 추가 요청');
+   }else if(mode==='DETAIL_PAGE'){
+    f.controls.readReview=hold;await f.click('검수 원문 '+reviewId(90));await f.wait(()=>releases.length===1);
+    await f.click(olderReviews);
+   }else{
+    await f.click('검수 원문 '+reviewId(90));await f.wait(()=>f.text().includes('보관 검수 원문 1'));
+    const next=f.button(olderReviews),criteria=f.button('검수 기준·원조건 열기'),basis=f.button('다음 행동 근거 확인');
+    if(mode==='CHILD_PAGE')await f.act(()=>{next.dispatchClick();criteria.dispatchClick();basis.dispatchClick();});
+    else if(mode==='CHILD_PENDING'){
+     f.controls.readCriteria=hold;f.controls.readBasis=hold;
+     await f.act(()=>{criteria.dispatchClick();basis.dispatchClick();});await f.wait(()=>releases.length===2);
+     await f.click(olderReviews);
+    }else{
+     await f.click('검수 기준·원조건 열기');await f.wait(()=>f.text().includes('고정된 당시 검수 기준'));
+     const coverage=f.button('조건별 보고 부족 대조');
+     if(mode==='COVERAGE_PAGE')await f.act(()=>{next.dispatchClick();coverage.dispatchClick();});
+     else{
+      f.controls.readCoverage=hold;await f.click('조건별 보고 부족 대조');await f.wait(()=>releases.length===1);
+      await f.click(olderReviews);
+     }
+    }
+   }
+   for(const release of releases)release(Response.json({code:'AUTH_REQUIRED'},{status:401}));
+   if(!mode.startsWith('PAGE_'))await f.wait(()=>f.text().includes('검수 원문 '+reviewId(70)));
+   await f.flush();assert.equal(f.authLost(),0,mode);assert(!f.text().includes('AUTH_REQUIRED'),mode);
+   assert(!f.text().includes('보관 검수 원문 1'),mode);
+   if(mode==='CHILD_PAGE')assert(!f.calls.some(c=>c.path.includes('/result-criteria/')||c.path.endsWith('/next-action-basis')));
+   if(mode.startsWith('COVERAGE_'))assert.equal(f.calls.filter(c=>c.path.endsWith('/reported-coverage')).length,mode==='COVERAGE_PENDING'?1:0);
+   assert(f.calls.every(c=>c.method==='GET'));
+  }finally{for(const release of releases)release(Response.json({}));await f.close();}
+ }
+});
 
 test('문제 카드의 고정 임무 원문이 대조되어야 기존 인계 경로를 정확한 초안으로 연다',async()=>{
  const f=await mount(false,true);
