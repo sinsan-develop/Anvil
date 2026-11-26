@@ -5,6 +5,15 @@
 ## 현재 작업 요약 — 2026-11-27 KST
 
 
+### FN07 첫 SEND에서 스칼라 iterator 반환 시 원 Query 정리
+
+- 담당 `fn13_quota_diff_replay`, 독립 검수 `fn13_diff_contract_review`, 통합 어울. 기준 `79520cd6`. `normal-first-send-owner.ts`와 직접 합성 시험을 변경했다.
+- 원 Query 인수 뒤 iterator가 null 또는 원시값을 반환하면 기존 실패 경로에서 그 Query에만 정리 요청 1회. 함수·Proxy·이미 다른 소유자에 귀속된 iterator의 정리 권위는 확장하지 않았다. 결과 UNKNOWN, 출력·커서 진전 0, 같은 SEND의 추가 생성·정리 0.
+- 원 Query 정리 누락 RED 1회. 담당 인접 102/102와 Main 직접 26/26은 동일 제품·직전 시험, 호출 대상 기록을 보완한 최종 집중 시험 1/1은 양측 및 타입/diff 모두 통과. 독립 M1 해소 뒤 C0/I0/M0. 실제 SDK·native/OS 종료 미검증.
+- 다음은 원 Query에서 내부 입력을 읽은 시점과 바깥 SDK 입력 iterator가 값을 반환한 시점 사이의 경쟁이다. 실제 Query 초기화 관측이 오더라도 첫 입력 반환이 실패하면 승인된 종단 및 커서를 진전시키면 안 된다.
+
+
+
 ### FN12/UI05 같은 검수의 별도 보완 초안 작성
 
 - 담당 `fn13_quota_diff_replay`, 독립 검수 `fn13_diff_contract_review`, 통합 어울. 기준 `a1696241`. `ResultReviewSources.tsx`와 `result-rework-form.test.ts` 두 경로를 변경했다.

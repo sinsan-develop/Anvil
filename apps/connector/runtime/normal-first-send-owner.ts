@@ -165,8 +165,10 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
   }
   const iterate=lease.iterate;if(!iterate||queryIterator(query)!==iterate)return fail();
   const iterator=Reflect.apply(iterate,query,[]);
-  if(!iterator||typeof iterator!=='object'||isProxy(iterator)||(!Object.is(iterator,query)&&issuedHandles.has(iterator))){
-   // 같은 iterator를 이미 가진 다른 owner에 대한 close 권위를 추론하지 않는다.
+  // 참조가 없는 반환값은 인수한 원 Query만 기존 abandon 경로에서 정리한다.
+  if(iterator===null||(typeof iterator!=='object'&&typeof iterator!=='function'))return fail();
+  if(typeof iterator!=='object'||isProxy(iterator)||(!Object.is(iterator,query)&&issuedHandles.has(iterator))){
+   // 다른 owner의 handle일 수 있는 반환값에서는 close 권위를 추론하지 않는다.
    lease.closeStarted=true;return fail();
   }
   issuedHandles.add(iterator);lease.iterator=iterator;arm();

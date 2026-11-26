@@ -254,6 +254,40 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
  });
 }
 
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('원 Query의 scalar iterator는 같은 handle만 정리하고 함수·Proxy와 동일 SEND 재생성은 건드리지 않는다',async()=>{
+ let foreignTouches=0;
+ const foreign=()=>{foreignTouches++;throw Error('FOREIGN_ITERATOR_TOUCHED');};
+ const references=[foreign,new Proxy(foreign,{apply:foreign,get:foreign,getOwnPropertyDescriptor:foreign,getPrototypeOf:foreign}),new Proxy({},{get:foreign,getOwnPropertyDescriptor:foreign,getPrototypeOf:foreign})];
+ const malformed=[null,undefined,0,'비반복자',Symbol('non-iterator')];
+ for(const [returned,closeCount] of [...malformed.map(value=>[value,1] as const),...references.map(value=>[value,0] as const)]){
+  const f=await firstSendFixture(),create=f.source.create.bind(f.source);
+  let query:object|undefined;
+  const closed:unknown[]=[];
+  f.source.create=async(...args)=>{
+   await create(...args);
+   const own={
+    [Symbol.asyncIterator](){f.effects.iterate++;return returned as unknown as AsyncIterator<unknown>;}
+   };
+   query=own;return own as Awaited<ReturnType<typeof create>>;
+  };
+  f.source.close=async(target?:unknown)=>{closed.push(target);f.effects.close++;};
+  try{
+   const result=await f.run();
+   assert.equal(result.state,'UNKNOWN');assert.equal(result.cursor.afterSequence,0);
+   assert.deepEqual([f.effects.create,f.effects.iterate,f.effects.next,f.effects.close],[1,1,0,closeCount]);
+   assert.equal(closed.length,closeCount);
+   if(closeCount===1)assert.equal(closed[0],query);
+   assert.equal(f.effects.rows.length,0);assert.equal(f.lifetime()?.aborted,true);
+   assert.equal(f.h.observations.some((row:any)=>row.snapshot_json.event.type==='PROVIDER_RESPONSE_RECEIVED'),false);
+   assert.equal((await f.make().observations(f.item.envelope,f.signal)).state,'UNKNOWN');
+   const replay=await f.run();
+   assert.equal(replay.state,'UNKNOWN');assert.equal(replay.cursor.afterSequence,0);
+   f.authority.abort();assert.equal(foreignTouches,0);assert.equal(closed.length,closeCount);
+   assert.deepEqual([f.effects.create,f.effects.iterate,f.effects.next,f.effects.close],[1,1,0,closeCount]);
+  }finally{f.authority.abort();await f.h.close();}
+ }
+});
+
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('보호 scope 현재성 부재는 create 전 거절한다',async()=>{
  const f=await firstSendFixture();try{
   f.effects.current=false;const result=await f.run();assert.equal(result.state,'UNKNOWN');assert.equal(result.cursor.afterSequence,0);
