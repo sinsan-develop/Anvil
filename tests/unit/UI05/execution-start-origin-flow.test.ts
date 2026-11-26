@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {createHash,createHmac} from 'node:crypto';
+import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import type {OriginPage,OriginView} from '../../../apps/web/src/features/session-detail/execution-start-origin-api.ts';
+import type {PreparationOriginal} from '../../../apps/web/src/features/session-detail/preparation-history-api.ts';
 import {executionStartOriginFixture,installExecutionStartOriginMemoryFS} from '../FN09/execution-start-origin-fixture.ts';
 await installExecutionStartOriginMemoryFS();
 
-async function apiFixture(){const f=await executionStartOriginFixture(),{buildApp}=await import('../../../apps/server/app.ts'),{ApiClient}=await import('../../../apps/web/src/api/client.ts'),app=buildApp({},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root}),session={user:{id:f.uid},clientId:f.cid,csrfToken:f.csrf},sent:{path:string;body:any;init:any}[]=[],mode={getDenied:false,lost:false,controlDenied:false,extraReservation:'NONE',afterPost:null as null|(()=>Promise<void>)};let network=Promise.resolve();const client=new ApiClient(async(input:any,init:any={})=>{const path=String(input);assert(path.startsWith('/api/v1/'));assert.equal(init.credentials,'same-origin');assert.equal(init.redirect,'error');assert.equal(init.cache,'no-store');sent.push({path,body:init.body?JSON.parse(init.body):null,init});if(mode.getDenied&&path.includes('/execution-start-origins/'))return new Response(JSON.stringify({code:'PROJECT_OPERATION_DENIED'}),{status:403,headers:{'Content-Type':'application/json'}});const previous=network;let release!:()=>void;network=new Promise<void>(yes=>release=yes);await previous;let response;try{response=await app.inject({method:init.method??'GET',url:path,headers:{...init.headers,host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+f.token},...(init.body?{payload:JSON.parse(init.body)}:{})});}finally{release();}if(response.statusCode===503&&f.state.unsupported.length)throw Error('미지원 메모리 SQL: '+f.state.unsupported.at(-1));if(init.method==='POST'&&mode.afterPost)await mode.afterPost();if(mode.lost&&init.method==='POST')throw Error('원 응답 유실');let body=response.body;if(mode.extraReservation===(init.method==='POST'?'POST':'GET')&&response.statusCode===200&&(init.method==='POST'||path.includes('/execution-start-origins/'))){const value=JSON.parse(body),reservation=init.method==='POST'?value.data?.reservation:value.reservation;if(reservation)reservation.token='synthetic-forbidden-extra';body=JSON.stringify(value);}return new Response(body,{status:response.statusCode,headers:{'Content-Type':'application/json'}});});return{f,app,client,session,sent,mode,selection:{stageRequestRef:f.stage.data.ref,assignmentRef:f.confirmed.data.ref,preparationRef:f.preparation.data.ref,roleBindingRef:f.binding.data.ref}};}
+async function apiFixture(){const f=await executionStartOriginFixture(),{buildApp}=await import('../../../apps/server/app.ts'),{ApiClient}=await import('../../../apps/web/src/api/client.ts'),app=buildApp({},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root}),session={user:{id:f.uid},clientId:f.cid,csrfToken:f.csrf},sent:{path:string;body:any;init:any}[]=[],mode={getDenied:false,lost:false,controlDenied:false,extraReservation:'NONE',afterPost:null as null|(()=>Promise<void>),getOverride:null as null|((path:string)=>Response|Promise<Response>|undefined)};let network=Promise.resolve();const client=new ApiClient(async(input:any,init:any={})=>{const path=String(input);assert(path.startsWith('/api/v1/'));assert.equal(init.credentials,'same-origin');assert.equal(init.redirect,'error');assert.equal(init.cache,'no-store');sent.push({path,body:init.body?JSON.parse(init.body):null,init});if(init.method==='GET'){const projected=mode.getOverride?.(path);if(projected)return projected;}if(mode.getDenied&&path.includes('/execution-start-origins/'))return new Response(JSON.stringify({code:'PROJECT_OPERATION_DENIED'}),{status:403,headers:{'Content-Type':'application/json'}});const previous=network;let release!:()=>void;network=new Promise<void>(yes=>release=yes);await previous;let response;try{response=await app.inject({method:init.method??'GET',url:path,headers:{...init.headers,host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+f.token},...(init.body?{payload:JSON.parse(init.body)}:{})});}finally{release();}if(response.statusCode===503&&f.state.unsupported.length)throw Error('미지원 메모리 SQL: '+f.state.unsupported.at(-1));if(init.method==='POST'&&mode.afterPost)await mode.afterPost();if(mode.lost&&init.method==='POST')throw Error('원 응답 유실');let body=response.body;if(mode.extraReservation===(init.method==='POST'?'POST':'GET')&&response.statusCode===200&&(init.method==='POST'||path.includes('/execution-start-origins/'))){const value=JSON.parse(body),reservation=init.method==='POST'?value.data?.reservation:value.reservation;if(reservation)reservation.token='synthetic-forbidden-extra';body=JSON.stringify(value);}return new Response(body,{status:response.statusCode,headers:{'Content-Type':'application/json'}});});return{f,app,client,session,sent,mode,selection:{stageRequestRef:f.stage.data.ref,assignmentRef:f.confirmed.data.ref,preparationRef:f.preparation.data.ref,roleBindingRef:f.binding.data.ref}};}
 
 test('Web 원 packet은 실제 App 저장 receipt를 후행 GET보다 먼저 보존하고 원 hash·false를 검산한다',async()=>{const q=await apiFixture(),api=await import('../../../apps/web/src/features/session-detail/execution-start-origin-api.ts');try{const packet=await api.prepareOrigin(q.client,q.session,q.f.pid,q.selection,'명시 원자료 저장',()=>true);assert(packet);let receipt:any;const view=await api.sendOrigin(q.client,q.session,packet,()=>true,()=>true,r=>receipt=r);assert(receipt);assert(view);assert.deepEqual(view.snapshot,receipt.data.snapshot);assert.equal(view.executionAuthorized,false);assert.equal(q.sent.filter(v=>v.init.method==='POST').length,1);const page=await api.readOriginHistory(q.client,q.f.pid,q.f.confirmed.data.ref,null,()=>true);assert.deepEqual(page!.items[0]!.ref,view.ref);await assert.rejects(api.sendOrigin(q.client,q.session,packet,()=>true,()=>true,()=>{}),(error:any)=>error.code==='ORIGIN_PACKET_UNAVAILABLE');}finally{await q.app.close();}assert.equal(q.f.active(),false);assert.deepEqual(q.f.state.unsupported,[]);});
 
@@ -50,6 +53,205 @@ test('실제 App·SessionDetail·Panel은 명시 선택과 원 packet CAS로 저
 async function prepareInApp(q:Awaited<ReturnType<typeof mountApp>>){await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 저장'));await q.click('원자료 선택 목록 조회');await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='대기 요청'));await q.change('대기 요청',q.f.stage.data.ref.id);await q.change('등록 준비',q.f.preparation.data.ref.id);await q.change('책임 예약',q.f.binding.data.ref.id);await q.change('기록 이유','원 packet 이탈 검산');await q.click('등록 준비 고정');await q.wait(()=>q.container.textContent.includes('상태 PREPARED'));const check=q.nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent.includes('선택 원자료의 비실행 저장을 확인했습니다'));assert(check);const prop=Object.keys(check).find(k=>k.startsWith('__reactProps$'));assert.equal((check as any)[prop!].type,'checkbox');await q.ui.React.act(async()=>{(check as any)[prop!].onChange({target:{checked:true}});});}
 function detailHash(q:Awaited<ReturnType<typeof mountApp>>){const ref=q.f.confirmed.data.snapshot.draftRef;return `#/projects/${q.f.pid}/session/assignments/${ref.id}/versions/${ref.version}/${ref.contentHash}`;}
 function originPosts(q:Awaited<ReturnType<typeof mountApp>>){return q.sent.filter(v=>v.init.method==='POST'&&v.body.operation==='registerExecutionStartOrigin');}
+
+const recordHash=(value:unknown)=>contentHash(canonicalJson(value));
+const exampleRef=(n:number)=>({id:'89911122-2222-4222-8222-'+String(n).padStart(12,'0'),version:1,contentHash:String(n%10).repeat(64)});
+const hasPanel=(q:Awaited<ReturnType<typeof mountApp>>,label:string)=>q.nodes().some(node=>node.getAttribute('aria-label')===label);
+const linkedPreparationLabel='START에 보관된 준비 원문 검산';
+const linkedPreparationResult='START에 연결된 준비 원문 검산 결과';
+const originPanelLabel='START 원자료 보호 원문';
+async function saveAppOrigin(q:Awaited<ReturnType<typeof mountApp>>){
+ await prepareInApp(q);
+ await q.click('원자료 명시 저장');
+ await q.wait(()=>hasPanel(q,originPanelLabel));
+}
+
+test('실제 START 원자료는 명시 GET으로 정확 CONTEXT_REVIEW 준비만 표시하고 원 receipt를 그대로 둔다',async()=>{
+ const q=await mountApp();
+ try{
+  await saveAppOrigin(q);
+  const n=q.sent.length;
+  assert(!hasPanel(q,linkedPreparationResult));
+  await q.click(linkedPreparationLabel);
+  await q.wait(()=>hasPanel(q,linkedPreparationResult));
+  assert.deepEqual(q.sent.slice(n).map(v=>[v.init.method,v.path]),[['GET',`/api/v1/projects/${q.f.pid}/execution-preparations/${q.f.preparation.data.ref.id}/versions/1`]]);
+  assert.match(q.container.textContent,/CONTEXT_REVIEW · 연결된 준비 원문/);
+  assert.match(q.container.textContent,/확정 receipt 보존/);
+  assert.doesNotMatch(q.container.textContent,/정착 이해 판단 원문 검산/);
+  await q.click('연결된 준비 원문 닫기');assert(!hasPanel(q,linkedPreparationResult));assert(hasPanel(q,originPanelLabel));
+  assert.equal(originPosts(q).length,1);
+ }finally{await q.close();}
+});
+
+function fixedWorkProjection(origin:OriginView,preparation:PreparationOriginal,mode:string){
+ const s=origin.snapshot,prep=preparation.snapshot,intent=prep.intent;
+ const scope={projectId:origin.projectId,executionId:exampleRef(1).id,executionGeneration:4};
+ const reviewedRole=mode==='REVIEW_ROLE'?exampleRef(21):s.roleBindingRef;
+ const ground={
+  bundleRef:intent.contextBundleRef,preparationRef:exampleRef(2),grantRef:exampleRef(3),startCommandRef:exampleRef(4),manifestRef:exampleRef(5),
+  roleBindingRef:reviewedRole,agentSessionRef:s.sessionBindingRef,roleRef:exampleRef(6),subjectBindingRef:reviewedRole,
+  requestRef:exampleRef(7),responseRef:exampleRef(8),basisRefs:prep.basisRefs,latestInstructionRefs:prep.latestInstructionRefs,
+  requiredPartRefs:[exampleRef(9)],receivedPartRefs:[exampleRef(9)],deliveryReceiptRefs:[exampleRef(10)],responsePartRefs:[exampleRef(11)],
+  status:'SOURCE_BASIS_ONLY',subjectBindingState:'VERIFIED',reviewAvailable:false,scope,executionAuthorized:false,dispatchPerformed:false
+ };
+ const criteria=['PURPOSE_REASON','BASELINE_AUTHORITY','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION']
+  .map(code=>({code,sourceRefs:[ground.basisRefs[0]],responsePartRefs:ground.responsePartRefs}));
+ const binding={transport:'NORMAL_PROTECTED',scope,bundleRef:ground.bundleRef,responseRef:ground.responseRef,subjectBindingRef:ground.subjectBindingRef,
+  basisRefs:ground.basisRefs,latestInstructionRefs:ground.latestInstructionRefs,requiredPartRefs:ground.requiredPartRefs,receivedPartRefs:ground.receivedPartRefs,
+  responsePartRefs:ground.responsePartRefs,criteria,sourceState:'AVAILABLE',responseSubject:'EXTERNAL_AGENT',sourceBasis:ground};
+ const rows:any[]=[];
+ for(const version of [1,2]){
+  const input={bundleRef:binding.bundleRef,responseRef:binding.responseRef,subjectBindingRef:binding.subjectBindingRef,criteriaVersion:1,
+   items:criteria.map(c=>({...c,judgement:version===1?'MATCH':'MISMATCH',reason:version===1?'당시 근거 대조':'최신 판단의 별도 근거'})),
+   reason:version===1?'이 START 준비에 고정된 당시 판단':'더 새 판단으로 대체하면 안 됨'};
+  const request={schemaVersion:1,projectId:scope.projectId,commandId:exampleRef(11+version).id,clientId:s.subject.clientId,controlGeneration:s.subject.controlGeneration,
+   operation:'reviewUnderstanding',targetId:scope.executionId,expectedVersion:scope.executionGeneration,baselineRefs:[],approvalRef:null,payload:input};
+  const snapshot={scope,sequence:version,previousRef:rows[0]?.ref??null,request,requestHash:recordHash(request),reviewer:s.subject,policyRef:s.observedPolicyRef,
+   currentBinding:binding,input,outcome:version===1?'ACCEPTED':'NOT_ACCEPTED',recordedAt:s.recordedAt,executionAuthorized:false,dispatchPerformed:false};
+  rows.push({ref:{id:exampleRef(14).id,version,contentHash:recordHash(snapshot)},snapshot});
+ }
+ intent.mode='WORK';
+ prep.missingConditions=[...new Set([...prep.missingConditions,'UNDERSTANDING_NOT_REVIEWED'])];
+ s.unresolvedChecks=[...new Set([...s.unresolvedChecks,'UNDERSTANDING_NOT_REVIEWED'])];
+ if(mode!=='LEGACY')prep.understandingBasis={kind:'NORMAL_UNDERSTANDING_WORK_BASIS',scope,reviewRef:rows[0].ref,preparationRef:ground.preparationRef,
+  assignmentRef:intent.assignmentRef,roleBindingRef:intent.roleBindingRef,agentSessionRef:mode==='SESSION'?exampleRef(19):ground.agentSessionRef,
+  contextBundleRef:intent.contextBundleRef,connectionRef:intent.connectionRef,environmentRef:intent.environmentRef,responseRef:ground.responseRef,
+  requestRef:ground.requestRef,basisRefs:prep.basisRefs,latestInstructionRefs:prep.latestInstructionRefs};
+ if(mode==='MISMATCH_ROLE'){
+  intent.roleBindingRef=exampleRef(20);prep.understandingBasis.roleBindingRef=intent.roleBindingRef;
+ }
+ preparation.ref.contentHash=recordHash(prep);
+ s.preparationRef=preparation.ref;s.options.preparationRef=preparation.ref;
+ if(mode==='OPTIONS')s.options.utf8Bytes++;
+ const observation=s.sourceObservations.find((v:any)=>v.kind==='PREPARATION');observation.ref=preparation.ref;observation.observationHash=preparation.ref.contentHash;
+ origin.ref.contentHash=recordHash(s);
+ origin.reservation.snapshot.originRef=origin.ref;origin.reservation.ref.contentHash=recordHash(origin.reservation.snapshot);
+ if(mode==='VERSION')preparation.ref={...preparation.ref,version:2};
+ return {transport:'NORMAL_PROTECTED',scope,items:rows,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};
+}
+
+test('START 보호 상세의 WORK 준비는 당시 판단을 별도 검산하며 교차 역할·세션·options·버전을 차단한다',async()=>{
+ for(const mode of ['WORK','LEGACY','SESSION','MISMATCH_ROLE','OPTIONS','VERSION','DENIED','NOT_FOUND','REVIEW_ROLE']){
+  const q=await mountApp();
+  try{
+   await saveAppOrigin(q);
+   const {readOrigin,readOriginHistory}=await import('../../../apps/web/src/features/session-detail/execution-start-origin-api.ts');
+   const list=(await readOriginHistory(q.client,q.f.pid,q.f.confirmed.data.ref,null,()=>true)) as OriginPage;
+   const origin=(await readOrigin(q.client,q.f.pid,list.items[0]!.ref,q.f.confirmed.data.ref,()=>true)) as OriginView;
+   const preparation:PreparationOriginal={projectId:q.f.pid,...structuredClone(q.f.preparation.data),currentness:'NOT_RECHECKED'};
+   delete (preparation as any).status;
+   const history=fixedWorkProjection(origin,preparation,mode);
+   list.items[0]!.ref=origin.ref;
+   const preparationPath=`/api/v1/projects/${q.f.pid}/execution-preparations/${origin.snapshot.preparationRef.id}/versions/1`;
+   const historyPath=`/api/v1/projects/${q.f.pid}/executions/${history.scope.executionId}/understanding-reviews?generation=4`;
+   q.mode.getOverride=path=>{
+    if(path.endsWith('/execution-start-origins'))return Response.json(list);
+    if(path.includes('/execution-start-origins/'))return Response.json(origin);
+    if(path===preparationPath)return mode==='DENIED'?Response.json({code:'PROJECT_OPERATION_DENIED'},{status:403}):mode==='NOT_FOUND'?Response.json({code:'NOT_FOUND'},{status:404}):Response.json(preparation);
+    if(path===historyPath)return Response.json(history);
+   };
+   await q.click('보호 이력 조회');
+   await q.wait(()=>q.container.textContent.includes(origin.ref.id+' 원문 조회'));
+   await q.click(list.items[0]!.recordedAt+' · '+origin.ref.id+' 원문 조회');
+   await q.wait(()=>hasPanel(q,originPanelLabel));
+   let n=q.sent.length;
+   assert(!hasPanel(q,linkedPreparationResult));
+   await q.click(linkedPreparationLabel);
+   if(mode==='WORK'||mode==='LEGACY'||mode==='REVIEW_ROLE'){
+    await q.wait(()=>hasPanel(q,linkedPreparationResult));
+    assert.match(q.container.textContent,/WORK · 연결된 준비 원문/);
+   }else{
+    await q.wait(()=>q.container.textContent.includes('보관된 준비 원문 확인 실패'));
+    assert(!hasPanel(q,linkedPreparationResult));
+   }
+   assert.deepEqual(q.sent.slice(n).map(v=>[v.init.method,v.path]),[['GET',preparationPath]]);
+   if(mode==='REVIEW_ROLE'){
+    n=q.sent.length;
+    await q.click('정착 이해 판단 원문 검산');
+    await q.wait(()=>q.container.textContent.includes('UNDERSTANDING_HISTORY_RESPONSE_INVALID'));
+    assert.doesNotMatch(q.container.textContent,/이 START 준비에 고정된 당시 판단|당시 근거 대조/);
+    assert.deepEqual(q.sent.slice(n).map(v=>[v.init.method,v.path]),[['GET',historyPath]]);
+   }else if(mode==='WORK'){
+    n=q.sent.length;
+    await q.click('정착 이해 판단 원문 검산');
+    await q.wait(()=>q.container.textContent.includes('이 START 준비에 고정된 당시 판단'));
+    for(const label of ['왜 이 일을 하는가','기준과 권한','결정과 이유','완료·현재 위치','실제 차이와 공백','다음 행동과 미확인','당시 근거 대조',history.items[0]!.snapshot.currentBinding.responsePartRefs[0].contentHash])assert(q.container.textContent.includes(label),label);
+    assert.doesNotMatch(q.container.textContent,/더 새 판단으로 대체하면 안 됨/);
+    assert.deepEqual(q.sent.slice(n).map(v=>[v.init.method,v.path]),[['GET',historyPath]]);
+    for(const [close,status] of [['연결된 준비 원문 닫기',401],['보호 이력 조회',403]] as const){
+     const override:typeof q.mode.getOverride=q.mode.getOverride;
+     let release:(value:Response)=>void=()=>{},waiting=false;
+     const held=new Promise<Response>(resolve=>{release=resolve;});
+     q.mode.getOverride=path=>{if(path===historyPath){waiting=true;return held;}return override?.(path);};
+     try{
+      await q.click('정착 이해 판단 원문 검산');await q.wait(()=>waiting);
+      const closeButton=q.nodes().find(v=>v.tagName==='BUTTON'&&v.textContent===close)!;
+      await q.ui.React.act(async()=>{
+       closeButton.dispatchEvent({type:'click',button:0,bubbles:true});
+       release(Response.json({code:status===401?'AUTH_REQUIRED':'PROJECT_OPERATION_DENIED'},{status}));
+      });
+      await q.flush();
+      assert.doesNotMatch(q.container.textContent,/이 START 준비에 고정된 당시 판단|AUTH_REQUIRED|PROJECT_OPERATION_DENIED/);
+      assert.match(q.container.textContent,/확정 receipt 보존/);
+     }finally{release(Response.json(history));q.mode.getOverride=override;}
+     if(close==='보호 이력 조회'){
+      await q.wait(()=>q.container.textContent.includes(origin.ref.id+' 원문 조회'));
+      await q.click(list.items[0]!.recordedAt+' · '+origin.ref.id+' 원문 조회');
+      await q.wait(()=>hasPanel(q,originPanelLabel));
+     }
+     await q.click(linkedPreparationLabel);
+     await q.wait(()=>hasPanel(q,linkedPreparationResult));
+    }
+   }else assert.doesNotMatch(q.container.textContent,/정착 이해 판단 원문 검산/);
+   assert(hasPanel(q,originPanelLabel));assert.match(q.container.textContent,/확정 receipt 보존/);
+   assert.equal(originPosts(q).length,1);
+  }finally{await q.close();}
+ }
+});
+
+test('START에서 늦은 준비 GET은 닫기·페이지 전환 및 사용자/client/transport 교체 후 결과나 권한 오류를 반영하지 않는다',async()=>{
+ for(const mode of ['CLOSE','PAGE','USER','CLIENT','TRANSPORT','CURRENT_401']){
+  const q=await mountApp();
+  let release:(value:Response)=>void=()=>{};
+  try{
+   await saveAppOrigin(q);
+   const row=q.f.tables.origins![0]!,assignment={projectId:q.f.pid,...q.f.confirmed.data},transport=q.client.transport,client=new q.ui.ApiClient(transport);
+   let session=q.session;
+   const unavailable:string[]=[];
+   const storage={buffers:{},onChange:()=>assert.fail('읽기 중 상태 쓰기')};
+   const render=()=>q.ui.React.act(async()=>q.root.render(q.ui.React.createElement(q.ui.ExecutionStartOriginPanel,{client,assignment,session,storage,onUnavailable:(code:string)=>unavailable.push(code)})));
+   await render();
+   await q.click('보호 이력 조회');
+   await q.wait(()=>q.container.textContent.includes(row.origin_id+' 원문 조회'));
+   await q.click(row.recorded_at.toISOString()+' · '+row.origin_id+' 원문 조회');
+   await q.wait(()=>hasPanel(q,originPanelLabel));
+   const prepPath=`/api/v1/projects/${q.f.pid}/execution-preparations/${q.f.preparation.data.ref.id}/versions/1`;
+   let waiting=false;
+   const held=new Promise<Response>(resolve=>{release=resolve;});
+   q.mode.getOverride=path=>{if(path===prepPath){waiting=true;return held;}};
+   await q.click(linkedPreparationLabel);await q.wait(()=>waiting);
+   if(mode==='CLOSE')await q.click('START 원자료 보호 원문 닫기');
+   else if(mode==='PAGE'){await q.click('보호 이력 조회');await q.wait(()=>q.container.textContent.includes(row.origin_id+' 원문 조회'));}
+   else if(mode!=='CURRENT_401'){
+    if(mode==='USER')session={...q.session,user:{id:exampleRef(30).id}};
+    if(mode==='CLIENT')session={...q.session,clientId:exampleRef(31).id};
+    if(mode==='TRANSPORT')client.transport=async()=>assert.fail('교체 transport 요청');
+    await render();
+    session=q.session;client.transport=transport;
+    await render();
+   }
+   const n=q.sent.length;
+   await q.ui.React.act(async()=>release(Response.json({code:'AUTH_REQUIRED'},{status:401})));
+   await q.flush();
+   assert.equal(q.sent.length,n);
+   assert.equal(originPosts(q).length,1);
+   assert.deepEqual(unavailable,mode==='CURRENT_401'?['AUTH_REQUIRED']:[]);
+   assert(!hasPanel(q,linkedPreparationResult));
+   if(mode==='CURRENT_401')assert.match(q.container.textContent,/AUTH_REQUIRED/);
+   else assert.doesNotMatch(q.container.textContent,/AUTH_REQUIRED/);
+  }finally{release(Response.json({code:'AUTH_REQUIRED'},{status:401}));await q.close();}
+ }
+});
 
 test('실제 App은 POST 응답 HOLD 중 이탈·복귀의 늦은 성공을 새 본문으로 표시하지 않고 원 packet UNKNOWN을 보존한다',async()=>{const q=await mountApp();let release!:()=>void;const held=new Promise<void>(yes=>release=yes);try{await prepareInApp(q);q.mode.afterPost=()=>held;await q.click('원자료 명시 저장');await q.wait(()=>q.f.tables.origins!.length===1);const original=structuredClone(originPosts(q)[0]!.body);await q.navigate(`#/projects/${q.f.pid}`);await q.navigate(detailHash(q));await q.wait(()=>q.container.textContent.includes('상태 SENDING'));assert(!q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 보호 원문'));release();await q.wait(()=>q.container.textContent.includes('상태 UNKNOWN'));assert(q.container.textContent.includes(original.commandId));assert(!q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 보호 원문'));assert(!q.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='원자료 명시 저장'));assert.equal(originPosts(q).length,1);assert.deepEqual(originPosts(q)[0]!.body,original);assert.equal(q.f.tables.origins!.length,1);assert.deepEqual(q.f.state.unsupported,[]);}finally{release();await q.close();}assert.equal(q.f.active(),false);});
 

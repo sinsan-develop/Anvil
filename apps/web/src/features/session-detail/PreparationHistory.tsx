@@ -11,15 +11,21 @@ const first=():Position=>({cursor:null,history:[]});
 const errorCode=(e:unknown)=>e instanceof ApiError&&/^[A-Z_]{1,80}$/.test(e.code)?e.code:'PREPARATION_HISTORY_RESPONSE_INVALID';
 type WorkReviewBasis=Pick<WorkUnderstandingBasis,'scope'|'reviewRef'>;
 const fullRef=(value:{id:string;version:number;contentHash:string})=>`${value.id} · v${value.version} · ${value.contentHash}`;
-export function WorkPreparationUnderstandingSource({client,basis,onAuthenticationLost}:{client:ApiClient;basis:WorkReviewBasis;onAuthenticationLost:()=>void}){
+export function WorkPreparationUnderstandingSource({client,basis,onAuthenticationLost,isSourceCurrent,matchesSource}:{client:ApiClient;basis:WorkReviewBasis;onAuthenticationLost:()=>void;isSourceCurrent?:()=>boolean;matchesSource?:(review:NormalUnderstandingReview)=>boolean}){
  const key=ordered([basis.scope,basis.reviewRef]),transport=client.transport,context=useRef({key,client,transport,epoch:0});if(context.current.key!==key||context.current.client!==client||context.current.transport!==transport)context.current={key,client,transport,epoch:context.current.epoch+1};const owner=context.current;
- const sequence=useRef(0),alive=useRef(false),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
- const [loaded,setLoaded]=useState<{owner:typeof owner;pending:boolean;value:NormalUnderstandingReview|null;error:string|null}|null>(null),shown=loaded?.owner===owner?loaded:null;
+ const sequence=useRef(0),alive=useRef(false),lost=useRef(onAuthenticationLost),sourceCurrent=useRef(isSourceCurrent);lost.current=onAuthenticationLost;sourceCurrent.current=isSourceCurrent;
+ const [loaded,setLoaded]=useState<{owner:typeof owner;pending:boolean;value:NormalUnderstandingReview|null;error:string|null}|null>(null),shown=loaded?.owner===owner&&isSourceCurrent?.()!==false?loaded:null;
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;sequence.current++;};},[]);
  async function inspect(){
-  const ticket=++sequence.current,current=()=>alive.current&&context.current===owner&&sequence.current===ticket,active=()=>current()&&client.transport===owner.transport;
+  const ticket=++sequence.current,current=()=>alive.current&&context.current===owner&&sequence.current===ticket&&client.transport===owner.transport&&sourceCurrent.current?.()!==false;
+  if(!current())return;
   setLoaded({owner,pending:true,value:null,error:null});
-  try{const value=await readExactNormalUnderstandingReview(client,basis.scope,basis.reviewRef,active);if(!current())return;if(!value){setLoaded({owner,pending:false,value:null,error:'UNDERSTANDING_HISTORY_UNAVAILABLE'});return;}setLoaded({owner,pending:false,value,error:null});}
+  try{
+   const value=await readExactNormalUnderstandingReview(client,basis.scope,basis.reviewRef,current);if(!current())return;
+   if(!value){setLoaded({owner,pending:false,value:null,error:'UNDERSTANDING_HISTORY_UNAVAILABLE'});return;}
+   if(matchesSource&&!matchesSource(value))throw new ApiError('UNDERSTANDING_HISTORY_RESPONSE_INVALID');
+   setLoaded({owner,pending:false,value,error:null});
+  }
   catch(cause){if(!current())return;const code=cause instanceof ApiError&&/^[A-Z_]{1,80}$/.test(cause.code)?cause.code:'UNDERSTANDING_HISTORY_RESPONSE_INVALID';setLoaded({owner,pending:false,value:null,error:code});if(cause instanceof ApiError&&cause.status===401)lost.current();}
  }
  const review=shown?.value?.snapshot;
