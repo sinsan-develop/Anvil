@@ -228,6 +228,21 @@ export class ProjectAssignmentConfirmations {
       return { projectId, ref, snapshot, observedAt: new Date().toISOString() };
     } catch (error) { if (error instanceof AuthFailure && (error.statusCode === 404 || error.message === 'ASSIGNMENT_CHILD_DRAFT_ONLY')) throw error; throw new AuthFailure('ASSIGNMENT_CONFIRMATION_INTEGRITY_FAILED', 503); }
   }
+  /** UI06 추적에서 고정 계획 업무와 정확히 일치하는 확정 배정만 찾는다. 최신·근사 선택은 하지 않는다. */
+  async findTaskAssignment(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,planRef:VersionRef,taskCode:string){
+    await projectMember(db,actor,projectId);
+    if(!isVersionRef(planRef)||typeof taskCode!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(taskCode))throw new AuthFailure('INPUT_INVALID',400);
+    const exactRows=(await db.query("SELECT assignment_id,version FROM anvil.assignment_versions WHERE project_id=$1 AND version_json #> '{definition,taskRef,planRef}'=$2::jsonb AND version_json #>> '{definition,taskRef,taskCode}'=$3 ORDER BY assignment_id,version LIMIT 2",[projectId,JSON.stringify(planRef),taskCode])).rows;
+    if(exactRows.length>1)return{state:'ASSIGNMENT_AMBIGUOUS' as const,assignmentRef:null,draftRef:null};
+    if(!exactRows.length){
+      const mismatched=(await db.query("SELECT 1 FROM anvil.assignment_versions WHERE project_id=$1 AND version_json #>> '{definition,taskRef,planRef,id}'=$2 AND version_json #>> '{definition,taskRef,planRef,version}'=$3 AND version_json #>> '{definition,taskRef,taskCode}'=$4 LIMIT 1",[projectId,planRef.id,String(planRef.version),taskCode])).rows.length>0;
+      return{state:mismatched?'PLAN_REFERENCE_MISMATCH' as const:'ASSIGNMENT_NOT_FOUND' as const,assignmentRef:null,draftRef:null};
+    }
+    const row=exactRows[0],assignment=await this.readContent(db,actor,projectId,row.assignment_id,Number(row.version)),task=assignment.snapshot.definition.taskRef;
+    const draftRef=assignment.snapshot.draftRef;
+    if(!same(task.planRef,planRef)||task.taskCode!==taskCode||!isVersionRef(draftRef)||assignment.ref.id!==draftRef.id||assignment.ref.version!==draftRef.version)throw new AuthFailure('ASSIGNMENT_CONFIRMATION_INTEGRITY_FAILED',503);
+    return{state:'MATCHED' as const,assignmentRef:assignment.ref,draftRef};
+  }
   async decisionContent(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string, version: number) {
     const draft = await this.drafts.read(db, actor, projectId, id, version);
     if(draft.snapshot.definition.parentAssignmentRef===null)return this.decision(db,actor,projectId,id,version);

@@ -157,7 +157,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   });
   app.get<{Params:{projectId:string;id:string;version:string}}>('/api/v1/projects/:projectId/work-plans/:id/versions/:version/decision',{schema:{params:object({projectId:idSchema,id:idSchema,version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'}})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>workPlans.decision(db,actor,request.params.projectId,request.params.id,Number(request.params.version)));});
   const planCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('WORK_PLANS:'+value));
-  const traces=new ProjectTraces(documents),traceCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('TRACES:'+value));
+  const traceCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('TRACES:'+value));
   const knowledge=new ProjectKnowledge(documents),knowledgeCodec=new ProjectListCodec(value=>options.repository.signProjectCursor('KNOWLEDGE:'+value));
   const knowledgeShares=new ProjectKnowledgeShareRequests(options.repository,knowledge);
   const conversations=new ProjectConversations(documents);
@@ -170,6 +170,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
   const methodReviewReads=new ProjectMethodologyReviewReads(projectMethods,value=>options.repository.signProjectCursor('FN02_METHOD_REVIEW_HISTORY:'+value));
   const assignments = new ProjectAssignmentDrafts(workPlans, projectMethods), assignmentCodec = new ProjectListCodec(value => options.repository.signProjectCursor('ASSIGNMENT_DRAFTS:' + value));
   const assignmentConfirmations = new ProjectAssignmentConfirmations(assignments);
+  const traces=new ProjectTraces(documents,assignmentConfirmations);
   const checkpointPreparation=new ProjectCheckpointPreparation(assignmentConfirmations);
   const checkpoints=new ProjectCheckpoints(checkpointPreparation,value=>options.repository.signProjectCursor('FN13_CHECKPOINT_HISTORY:'+value));
   app.get<{Params:{projectId:string;id:string}}>('/api/v1/projects/:projectId/checkpoints/:id',{schema:{params:object({projectId:idSchema,id:idSchema}),querystring:object({})}},request=>{if(request.headers.host!==host)throw new AuthFailure('ORIGIN_INVALID',403);return options.repository.authenticated(token(request),null,(db,actor)=>checkpoints.read(db,actor,request.params.projectId,request.params.id));});
@@ -345,6 +346,7 @@ export function registerProjectRoutes(app: FastifyInstance, options: AccessRoute
       return options.repository.authenticated(token(request),null,(db,actor)=>limitPolicies.read(db,actor,request.params.projectId,request.params.id,Number(request.params.version)));
     });
     projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/work-plans',{schema:{params:object({projectId:idSchema})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>workPlans.list(db,actor,request.params.projectId,request.query,planCodec)));
+    projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/traces/task-evidence',{schema:{params:object({projectId:idSchema}),querystring:object({planId:idSchema,planVersion:{type:'string',pattern:'^[1-9][0-9]{0,14}$'},planHash:{type:'string',pattern:'^[0-9a-f]{64}$'},taskCode:{type:'string',pattern:'^[A-Za-z][A-Za-z0-9_-]{0,63}$'}},['planId','planVersion','planHash','taskCode'])}},request=>options.repository.authenticated(token(request),null,(db,actor)=>traces.taskEvidence(db,actor,request.params.projectId,request.query)));
     projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/api/v1/projects/:projectId/traces',{schema:{params:object({projectId:idSchema})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>traces.read(db,actor,request.params.projectId,request.query,traceCodec)));
     projects.get<{Params:{projectId:string;id:string;version:string}}>('/api/v1/projects/:projectId/work-plans/:id/versions/:version',{schema:{params:object({projectId:idSchema,id:idSchema,version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'}})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>workPlans.read(db,actor,request.params.projectId,request.params.id,Number(request.params.version))));
     projects.get<{Params:{projectId:string};Querystring:{documentId:string;version:string}}>('/api/v1/projects/:projectId/design-index',{schema:{params:object({projectId:idSchema}),querystring:object({documentId:idSchema,version:{type:'string',pattern:'^[1-9][0-9]{0,14}$'}})}},request=>options.repository.authenticated(token(request),null,(db,actor)=>designIndex.read(db,actor,request.params.projectId,request.query.documentId,Number(request.query.version))));

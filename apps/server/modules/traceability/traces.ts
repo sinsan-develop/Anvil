@@ -10,11 +10,13 @@ import {isVersionRef} from '../../../../contracts/references.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import type {VersionRef} from '../../../../contracts/generated-types.ts';
 import type {ProjectListCodec} from '../projects/service.ts';
+import type {ProjectAssignmentConfirmations} from '../assignments/project-assignment-confirmations.ts';
 type TraceRef={kind:string;id:string;versionRef:VersionRef;localCode?:string;anchor?:string};
 type Resolved={ref:TraceRef;title:string;designRefs:VersionRef[]};
 export class ProjectTraces{
   #documents:ProjectDocuments;#index:ProjectDesignIndex;#plans:ProjectWorkPlans;
-  constructor(documents:ProjectDocuments){this.#documents=documents;this.#index=new ProjectDesignIndex(documents);this.#plans=new ProjectWorkPlans(documents);}
+  #assignments:Pick<ProjectAssignmentConfirmations,'findTaskAssignment'>|null;
+  constructor(documents:ProjectDocuments,assignments:Pick<ProjectAssignmentConfirmations,'findTaskAssignment'>|null=null){this.#documents=documents;this.#index=new ProjectDesignIndex(documents);this.#plans=new ProjectWorkPlans(documents);this.#assignments=assignments;}
   async #resolve(db:PoolClient,actor:AuthenticatedIdentity,pid:string,value:unknown):Promise<Resolved>{
     if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!['kind','id','versionRef','localCode','anchor'].includes(k)))throw new AuthFailure('TRACE_REFERENCE_INVALID',422);
     const r=value as TraceRef;
@@ -79,5 +81,15 @@ export class ProjectTraces{
     const linked=new Set((await db.query("SELECT to_id FROM anvil.trace_edges WHERE project_id=$1 AND relation='IMPLEMENTS' AND to_kind='DESIGN_ITEM' AND design_refs @> $2::jsonb",[pid,JSON.stringify([index.documentRef])])).rows.map(r=>r.to_id));
     const hasMore=rows.length>limit,last=rows.slice(0,limit).at(-1);
     return{designRef:index.documentRef,direction,nodes:[...nodes.values()],edges,traversal:edges.map(e=>({edgeId:e.id,from:direction==='FORWARD'?e.from:e.to,to:direction==='FORWARD'?e.to:e.from})),missingLinks:index.items.filter(i=>!linked.has(i.id)).map(i=>({ref:{kind:'DESIGN_ITEM',id:i.id,versionRef:i.documentRef,localCode:i.localCode,anchor:i.anchor},code:'PLAN_TASK_LINK_MISSING'})),unknownEvidence:[{code:'EXECUTION_SOURCE_NOT_CONNECTED'},{code:'TEST_EVIDENCE_SOURCE_NOT_CONNECTED'}],baselineRef:null,hasMore,nextCursor:hasMore?codec.create(actor.actorId,filter,{at:last!.cursor_at,id:last!.id}):null,observedAt:new Date().toISOString()};
+  }
+  async taskEvidence(db:PoolClient,actor:AuthenticatedIdentity,pid:string,q:Record<string,unknown>){
+    if(!this.#assignments)throw new AuthFailure('TRACE_TASK_EVIDENCE_NOT_CONNECTED',412);
+    if(!q||Object.keys(q).sort().join(',')!==['planHash','planId','planVersion','taskCode'].sort().join(',')||!isVersionRef({id:q.planId,version:Number(q.planVersion),contentHash:q.planHash})||typeof q.planVersion!=='string'||!/^[1-9][0-9]{0,14}$/.test(q.planVersion)||typeof q.taskCode!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(q.taskCode))throw new AuthFailure('INPUT_INVALID',400);
+    const planRef={id:String(q.planId),version:Number(q.planVersion),contentHash:String(q.planHash)},plan=await this.#plans.read(db,actor,pid,planRef.id,planRef.version);
+    if(canonicalJson(plan.ref)!==canonicalJson(planRef))throw new AuthFailure('TRACE_REFERENCE_MISMATCH',409);
+    const tasks=plan.tasks.filter((task:any)=>task.taskCode===q.taskCode);
+    if(tasks.length!==1||plan.relationalProjection!=='STORED')throw new AuthFailure(tasks.length?'TRACE_SOURCE_AMBIGUOUS':'NOT_FOUND',tasks.length?409:404);
+    const evidence=await this.#assignments.findTaskAssignment(db,actor,pid,planRef,q.taskCode);
+    return{projectId:pid,planRef,taskCode:q.taskCode,...evidence,observedAt:new Date().toISOString()};
   }
 }

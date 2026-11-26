@@ -489,6 +489,36 @@ async function mountTraceUI(transport:typeof fetch){
  return {props,render,flush,until,click,container,lost:()=>lost,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 
+test('UI06 정방향 업무는 명시 클릭 exact assignment 1건만 기존 FN12 보호 화면에 연결하고 늦은 401은 폐기한다',async()=>{
+ const a=traceUIFixture(traceDesignA,705,'근거'),assignmentRef={id:id(709),version:1,contentHash:'c'.repeat(64)},draftRef={id:assignmentRef.id,version:1,contentHash:'d'.repeat(64)};
+ let deliver!:(response:Response)=>void,held=new Promise<Response>(resolve=>{deliver=resolve;}),evidenceCalls=0;
+ const f=await mountTraceUI(async(input,init)=>{
+  const path=String(input);assert.equal(init?.method,'GET');
+  if(path.startsWith('/api/v1/projects/'+pid+'/traces?'))return Response.json(a.page());
+  if(path.startsWith('/api/v1/projects/'+pid+'/traces/task-evidence?')){evidenceCalls++;return held;}
+  if(path.startsWith('/api/v1/projects/'+traceProjectB+'/traces?'))return Response.json(traceUIFixture(traceDesignB,706,'교체').page());
+  throw Error('UNEXPECTED_TRACE_EVIDENCE_REQUEST');
+ });
+ try{
+  await f.until(()=>f.container.textContent.includes(a.reason));assert.equal(evidenceCalls,0);
+  await f.click('결과·검수·원문 조회 연결 확인');assert.equal(evidenceCalls,1);
+  f.props.projectId=traceProjectB;f.props.designRef=traceDesignB;await f.render();
+  deliver(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.flush();assert.equal(f.lost(),0);assert.equal(f.container.textContent.includes('기존 결과·검수·원문 보호 조회 열기'),false);
+ }finally{deliver(Response.json({projectId:pid,planRef:a.plan.ref,taskCode:a.plan.tasks[0]!.taskCode,state:'MATCHED',assignmentRef,draftRef,observedAt:traceAt}));await f.close();}
+ let exactEvidenceCalls=0,exactTraceCalls=0;const exact=await mountTraceUI(async(input,init)=>{
+  const path=String(input);assert.equal(init?.method,'GET');
+  if(path.includes('/traces/task-evidence?')){exactEvidenceCalls++;return Response.json({projectId:pid,planRef:a.plan.ref,taskCode:a.plan.tasks[0]!.taskCode,state:'MATCHED',assignmentRef,draftRef,observedAt:traceAt});}
+  if(path.includes('/traces?')){exactTraceCalls++;const direction=new URL(path,'https://anvil.invalid').searchParams.get('direction')??'FORWARD';return Response.json(a.page(direction));}throw Error('UNEXPECTED_TRACE_EVIDENCE_REQUEST');
+ });
+ try{
+  await exact.until(()=>exact.container.textContent.includes(a.reason));assert.equal(exactEvidenceCalls,0);
+  await exact.click('결과·검수·원문 조회 연결 확인');await exact.until(()=>exact.container.textContent.includes(assignmentRef.contentHash));assert.match(exact.container.textContent,/기존 결과·검수·원문 보호 조회 열기/);assert.equal(exactEvidenceCalls,1);
+  await exact.click('업무 연결 새로고침');await exact.until(()=>exactTraceCalls===2&&exact.container.textContent.includes(a.reason));assert.equal(exactEvidenceCalls,1);assert.equal(exact.container.textContent.includes('기존 결과·검수·원문 보호 조회 열기'),false);
+  const visit=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(visit)],direction=visit(exact.container).find(n=>n.getAttribute('id')==='trace-direction');assert.ok(direction);const key=Object.keys(direction).find(k=>k.startsWith('__reactProps$'));assert.ok(key);
+  await ui.React.act(async()=>{(direction as any)[key].onChange({target:{value:'REVERSE'}});});await exact.until(()=>exactTraceCalls===3&&exact.container.textContent.includes('역방향 · 같은 저장 연결'));assert.equal(exactEvidenceCalls,1);assert.equal(exact.container.textContent.includes('기존 결과·검수·원문 보호 조회 열기'),false);
+ }finally{await exact.close();}
+});
+
 test('UI06 추적 범위를 바꾸면 새 조회 정착 전 옛 연결과 열린 계획 원문 및 조회를 회수한다',async()=>{
  const a=traceUIFixture(traceDesignA,710,'이전'),b=traceUIFixture(traceDesignB,720,'현재'),calls:string[]=[];
  let deliver!:(response:Response)=>void;

@@ -11,6 +11,7 @@ import {readTraceArtifactOriginal} from './trace-artifact-original.ts';
 import type {ScreenRegion} from './design-index-api.ts';
 import {TraceScreenLink} from './TraceScreenLink.tsx';
 import {traceReferenceKey as key} from './trace-reference-key.ts';
+import {TraceTaskEvidence} from './TraceTaskEvidence.tsx';
 type TraceViewerProps={client:ApiClient;projectId:string;designRef:PlanRef;bodyHash?:string;onAnchorSelect?:(selection:DesignAnchorSelection|null)=>void;onScreenOpen?:(source:PlanRef,region:ScreenRegion)=>void;onAuthenticationLost:()=>void};
 export function TraceViewer(props:TraceViewerProps){
  const {client,projectId,designRef:{id,version,contentHash},bodyHash}=props;
@@ -48,7 +49,7 @@ function TraceScope({client,projectId,designRef,bodyHash,onAnchorSelect,onScreen
  const anchors=(endpoints:TraceRef[])=>endpoints.map(endpoint=>{
   if(endpoint.kind==='ARTIFACT')return <div key={'artifact:'+key(endpoint)}><p className="meta">등록 산출물 참조 {endpoint.id} · v{endpoint.versionRef.version} · 원본 SHA256 {endpoint.versionRef.contentHash}</p><button disabled={loading} onClick={()=>{if(!live())return;setDocumentTarget(null);setPlanTarget(null);const request={target:structuredClone(endpoint),context:documentContext,serial:++artifactSerial.current};artifactRequest.current=request;setArtifactTarget(request);}}>{title(endpoint)} 등록 산출물 텍스트 원문 보기</button></div>;
   if(endpoint.kind==='DOCUMENT_VERSION')return <button key={key(endpoint)} disabled={loading} onClick={()=>{if(!live())return;clearArtifact();setPlanTarget(null);setDocumentTarget({client,context:documentContext,target:structuredClone(endpoint)});}}>{title(endpoint)} 연결 문서 원문 보기</button>;
-  if(endpoint.kind==='PLAN_TASK')return <button key={key(endpoint)} disabled={loading} onClick={()=>{if(!live())return;clearArtifact();setDocumentTarget(null);setPlanTarget(structuredClone(endpoint));}}>{endpoint.localCode} 연결 계획 업무 원문 보기</button>;
+  if(endpoint.kind==='PLAN_TASK')return <div key={key(endpoint)}><button disabled={loading} onClick={()=>{if(!live())return;clearArtifact();setDocumentTarget(null);setPlanTarget(structuredClone(endpoint));}}>{endpoint.localCode} 연결 계획 업무 원문 보기</button><TraceTaskEvidence client={client} projectId={projectId} target={endpoint} context={documentContext} onAuthenticationLost={onAuthenticationLost}/></div>;
   if(endpoint.kind==='SCREEN_REGION'&&onScreenOpen)return <TraceScreenLink key={'screen:'+key(endpoint)} client={client} projectId={projectId} sourceRef={designRef} target={endpoint} disabled={loading} onScreenOpen={openScreen!} onUnavailable={unavailable} scopeCurrent={live}/>;
   const selection=bodyHash&&onAnchorSelect?traceAnchorSelection({projectId,documentRef:designRef,bodyHash},endpoint):null;
   return selection&&onAnchorSelect?<button key={key(endpoint)} disabled={loading} onClick={()=>selectAnchor?.(selection)}>{endpoint.localCode} 연결 설계 원문 보기</button>:null;
