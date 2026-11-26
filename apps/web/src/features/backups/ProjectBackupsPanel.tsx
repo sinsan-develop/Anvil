@@ -1,19 +1,31 @@
 import {documentVersionHref} from '../../shell/routes.ts';
 import {ExportApprovalPanel} from './ExportApprovalPanel.tsx';
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import type {DocumentSession} from '../design-trace/editor-api.ts';
-import {listDocuments,type DocumentSummary} from '../design-trace/api.ts';
+import {listDocuments} from '../design-trace/api.ts';
 import {ExportScope,canReleaseUnsentExport,prepareUnsentExportRelease,markExportDispatch,markExportApprovalRequired,listExports,readExport,readCommandExport,exportDocument,prepareExport,sendExport,exportPendingMatches,exportFileHref,type ExportPending,type ExportJob,type ExportSelection} from './project-backups-api.ts';
 interface Props{client:ApiClient;session:DocumentSession;projectId:string|null;buffer:ExportPending|null;scope:ExportScope;onChange:(expected:string|null,next:ExportPending|null)=>boolean;onAuthenticationLost:()=>void}
 export function ProjectBackupsPanel({client,session,projectId,buffer,scope,onChange,onAuthenticationLost}:Props){
  const local=useRef(new ExportScope());local.current.bind(session,client,projectId);useEffect(()=>()=>local.current.dispose(),[]);
- const [docs,setDocs]=useState<DocumentSummary[]>([]),[docCursor,setDocCursor]=useState<string|null>(null),[docId,setDocId]=useState(''),[version,setVersion]=useState(''),[document,setDocument]=useState<Awaited<ReturnType<typeof exportDocument>>|null>(null),[artifactId,setArtifactId]=useState(''),[reason,setReason]=useState(''),[consent,setConsent]=useState(false),[jobs,setJobs]=useState<ExportJob[]|null>(null),[cursor,setCursor]=useState<string|null>(null),[selected,setSelected]=useState<{job:ExportJob;owner?:{buffer:ExportPending|null}}|null>(null),[error,setError]=useState<string|null>(null),[followup,setFollowup]=useState(false),[busy,setBusy]=useState(false);
- const [editReturn,setEditReturn]=useState<{session:DocumentSession;api:ApiClient;projectId:string;selection:ExportSelection}|null>(null);
+ const editorScope=useRef({session,client,projectId,scope,transport:client.transport,userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken});
+ const oldScope=editorScope.current;
+ if(oldScope.session!==session||oldScope.client!==client||oldScope.projectId!==projectId||oldScope.scope!==scope||oldScope.transport!==client.transport||oldScope.userId!==session.user.id||oldScope.clientId!==session.clientId||oldScope.csrf!==session.csrfToken)
+  editorScope.current={session,client,projectId,scope,transport:client.transport,userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken};
+ const editorOwner=editorScope.current,mounted=useRef(false);
+ useLayoutEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+ const editorCurrent=()=>mounted.current&&editorScope.current===editorOwner&&editorOwner.transport===client.transport&&editorOwner.userId===session.user.id&&editorOwner.clientId===session.clientId&&editorOwner.csrf===session.csrfToken;
+ type ListedDocuments={owner:typeof editorOwner;page:Awaited<ReturnType<typeof listDocuments>>;restoreEligible:boolean};
+ const [docPage,setDocPage]=useState<ListedDocuments|null>(null),docPageLive=useRef<ListedDocuments|null>(null);
+ function showDocPage(value:ListedDocuments|null){docPageLive.current=value;setDocPage(value);}
+ const [docId,setDocId]=useState(''),[version,setVersion]=useState(''),[document,setDocument]=useState<Awaited<ReturnType<typeof exportDocument>>|null>(null),[artifactId,setArtifactId]=useState(''),[reason,setReason]=useState(''),[consent,setConsent]=useState(false),[jobs,setJobs]=useState<ExportJob[]|null>(null),[cursor,setCursor]=useState<string|null>(null),[selected,setSelected]=useState<{job:ExportJob;owner?:{buffer:ExportPending|null}}|null>(null),[error,setError]=useState<string|null>(null),[followup,setFollowup]=useState(false),[busy,setBusy]=useState(false);
+ type EditReturn={owner:typeof editorOwner;selection:ExportSelection};
+ const [editReturn,setEditReturn]=useState<EditReturn|null>(null),editReturnLive=useRef<EditReturn|null>(null);
+ function showEditReturn(value:EditReturn|null){editReturnLive.current=value;setEditReturn(value);}
  type Ticket={local:ReturnType<ExportScope['ticket']>;owner:ReturnType<ExportScope['ticket']>};
  type Confirmation={pending:ExportPending;ticket:Ticket};const [confirmation,setConfirmation]=useState<Confirmation|null>(null),confirmLive=useRef<Confirmation|null>(null),busyLive=useRef(busy);busyLive.current=busy;
  const lock=useRef<Ticket|null>(null),visible=useRef<Ticket|null>(null);
- useEffect(()=>{confirmLive.current=null;setConfirmation(null);setEditReturn(null);lock.current=null;visible.current=null;setDocs([]);setDocCursor(null);setDocId('');setVersion('');setDocument(null);setArtifactId('');setReason('');setConsent(false);setJobs(null);setCursor(null);setSelected(null);setError(null);setFollowup(false);setBusy(false);},[projectId,session,session.user.id,session.clientId,session.csrfToken,client,client.transport]);
+ useEffect(()=>{confirmLive.current=null;setConfirmation(null);showEditReturn(null);lock.current=null;visible.current=null;showDocPage(null);setDocId('');setVersion('');setDocument(null);setArtifactId('');setReason('');setConsent(false);setJobs(null);setCursor(null);setSelected(null);setError(null);setFollowup(false);setBusy(false);},[projectId,session,session.user.id,session.clientId,session.csrfToken,client,client.transport]);
  const bufferScope=useRef({buffer});if(bufferScope.current.buffer!==buffer)bufferScope.current={buffer};
  const live=useRef({client,session,projectId,buffer});live.current={client,session,projectId,buffer};
  const matches=(t:Ticket)=>local.current.current(t.local)&&scope.current(t.owner)&&live.current.client===client&&live.current.session===session&&live.current.projectId===projectId;
@@ -21,15 +33,39 @@ export function ProjectBackupsPanel({client,session,projectId,buffer,scope,onCha
  function begin(){if(!projectId||lock.current&&matches(lock.current)||live.current.buffer!==buffer)return null;const t={local:local.current.ticket(),owner:scope.ticket()};lock.current=t;visible.current=t;setBusy(true);setError(null);setFollowup(false);return t;}
  function finish(t:Ticket){if(lock.current===t)lock.current=null;if(matches(t))setBusy(false);}
  function fail(cause:unknown,t:Ticket,isFollowup=false){if(!matches(t))return;const e=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setError(e.code);setFollowup(isFollowup);if([403,404].includes(e.status)){setSelected(null);setJobs(null);setDocument(null);const b=live.current.buffer;if(b)onChange(b.bindingId,{...b,accessLost:true});}if(e.status===401)onAuthenticationLost();}
- async function loadDocs(next=false){if(unresolved)return;const t=begin();if(!t)return;setDocument(null);setArtifactId('');setSelected(null);try{const page=await listDocuments(client,projectId!,next?docCursor:null);if(matches(t)){setDocs(page.items);setDocCursor(page.nextCursor);}}catch(e){fail(e,t);}finally{finish(t);}}
+ const listed=activeView&&docPage?.owner===editorOwner?docPage:null,docs=listed?.page.items??[],docCursor=listed?.page.nextCursor??null;
+ async function loadDocs(next=false){if(unresolved||!editorCurrent())return;const t=begin();if(!t)return;if(listed)showDocPage({...listed,restoreEligible:false});setDocument(null);setArtifactId('');setSelected(null);try{const page=await listDocuments(client,projectId!,next?docCursor:null);if(matches(t)&&editorCurrent())showDocPage({owner:editorOwner,page,restoreEligible:true});}catch(e){if(editorCurrent())fail(e,t);}finally{finish(t);}}
  function closeRelease(){confirmLive.current=null;setConfirmation(null);}
- const priorSelection=activeView&&editReturn?.session===session&&editReturn.api===client&&editReturn.projectId===projectId?editReturn.selection:null;
+ const priorSelection=activeView&&editReturn?.owner===editorOwner&&editReturnLive.current===editReturn?editReturn.selection:null;
  const canRelease=!!work&&bound&&!busy&&!lock.current&&live.current.buffer===work&&activeView&&canReleaseUnsentExport(client,work,session,()=>true);
  function releaseCurrent(p:ExportPending,t:Ticket){return matches(t)&&live.current.buffer===p&&!lock.current&&!busyLive.current;}
  function openRelease(){if(!work||!canRelease)return;const t={local:local.current.ticket(),owner:scope.ticket()},c={pending:work,ticket:t};visible.current=t;confirmLive.current=c;setConfirmation(c);setError(null);}
- function confirmRelease(){const c=confirmLive.current;if(!c||!releaseCurrent(c.pending,c.ticket))return;try{const edit=prepareUnsentExportRelease(client,c.pending,session,()=>confirmLive.current===c&&releaseCurrent(c.pending,c.ticket));if(!onChange(c.pending.bindingId,null))return;live.current.buffer=null;closeRelease();setEditReturn({session,api:client,projectId:c.pending.projectId,selection:edit.selection});setDocId(edit.selection.documentRef.id);setVersion(String(edit.selection.documentRef.version));setArtifactId(edit.selection.artifactRef.artifactId);setReason(edit.reason);setDocument(null);setConsent(false);setSelected(null);setFollowup(false);setError(null);}catch(cause){if(releaseCurrent(c.pending,c.ticket))setError(cause instanceof ApiError?cause.code:'EXPORT_CONTEXT_CHANGED');}}
+ function confirmRelease(){const c=confirmLive.current;if(!c||!releaseCurrent(c.pending,c.ticket))return;try{const edit=prepareUnsentExportRelease(client,c.pending,session,()=>confirmLive.current===c&&releaseCurrent(c.pending,c.ticket));if(!onChange(c.pending.bindingId,null))return;live.current.buffer=null;closeRelease();showEditReturn({owner:editorOwner,selection:edit.selection});setDocId(edit.selection.documentRef.id);setVersion(String(edit.selection.documentRef.version));setArtifactId(edit.selection.artifactRef.artifactId);setReason(edit.reason);setDocument(null);setConsent(false);setSelected(null);setFollowup(false);setError(null);}catch(cause){if(releaseCurrent(c.pending,c.ticket))setError(cause instanceof ApiError?cause.code:'EXPORT_CONTEXT_CHANGED');}}
  const shownConfirmation=confirmation&&confirmLive.current===confirmation&&canRelease&&releaseCurrent(confirmation.pending,confirmation.ticket)?confirmation:null;
- async function loadVersion(){if(unresolved||!docs.some(d=>d.id===docId)||!/^([1-9][0-9]*)$/.test(version))return;const t=begin();if(!t)return;setDocument(null);setArtifactId('');setConsent(false);try{const d=await exportDocument(client,projectId!,docId,Number(version));if(matches(t)){if(priorSelection&&docId===priorSelection.documentRef.id&&Number(version)===priorSelection.documentRef.version&&(d.ref.id!==priorSelection.documentRef.id||d.ref.version!==priorSelection.documentRef.version||d.ref.contentHash!==priorSelection.documentRef.contentHash||!d.artifacts.some(a=>a.ref.artifactId===priorSelection.artifactRef.artifactId&&a.ref.bytes===priorSelection.artifactRef.bytes&&a.ref.contentHash===priorSelection.artifactRef.contentHash&&a.ref.mediaType===priorSelection.artifactRef.mediaType)))throw new ApiError('EXPORT_CONTEXT_CHANGED');setDocument(d);if(priorSelection)setArtifactId(priorSelection.artifactRef.artifactId);}}catch(e){fail(e,t);}finally{finish(t);}}
+ const restoring=priorSelection&&docId===priorSelection.documentRef.id&&version===String(priorSelection.documentRef.version)?editReturn:null;
+ const inputVersion=Number(version);
+ const canReadVersion=!!listed&&!work&&activeView&&/^([1-9][0-9]*)$/.test(version)&&Number.isSafeInteger(inputVersion)
+  &&(docs.some(d=>d.id===docId)||listed.restoreEligible&&!!restoring);
+ const versionBufferOwner=bufferScope.current;
+ async function loadVersion(){
+  if(!canReadVersion||!editorCurrent()||bufferScope.current!==versionBufferOwner||visible.current&&!matches(visible.current)
+   ||docPageLive.current!==listed||restoring&&editReturnLive.current!==restoring)return;
+  const t=begin();if(!t)return;
+  const current=()=>matches(t)&&editorCurrent()&&bufferScope.current===versionBufferOwner&&live.current.buffer===versionBufferOwner.buffer
+   &&docPageLive.current===listed&&(!restoring||editReturnLive.current===restoring);
+  setDocument(null);setArtifactId('');setConsent(false);
+  try{
+   const d=await exportDocument(client,projectId!,docId,inputVersion);if(!current())return;
+   if(restoring){
+    const {documentRef,artifactRef}=restoring.selection;
+    if(d.ref.id!==documentRef.id||d.ref.version!==documentRef.version||d.ref.contentHash!==documentRef.contentHash
+     ||!d.artifacts.some(a=>a.ref.artifactId===artifactRef.artifactId&&a.ref.bytes===artifactRef.bytes&&a.ref.contentHash===artifactRef.contentHash&&a.ref.mediaType===artifactRef.mediaType))
+     throw new ApiError('EXPORT_CONTEXT_CHANGED');
+    setArtifactId(artifactRef.artifactId);
+   }
+   setDocument(d);
+  }catch(e){if(current())fail(e,t);}finally{finish(t);}
+ }
  async function prepare(){if(work||!activeView||!document||!consent||!reason.trim())return;const selected=document.artifacts.find(a=>a.ref.artifactId===artifactId);if(!selected)return;const selection:ExportSelection={kind:'DOCUMENT_ARTIFACT',documentRef:document.ref,artifactRef:selected.ref};const t=begin();if(!t)return;setSelected(null);try{const p=await prepareExport(client,projectId!,session,selection,reason,()=>matches(t));if(matches(t))onChange(null,p);}catch(e){fail(e,t);}finally{finish(t);}}
  async function send(){if(!work||!bound||work.receipt||work.accessLost||work.dispatchState==='REQUIRED')return;const t=begin();if(!t)return;setSelected(null);const sent=markExportDispatch(work);if(!onChange(work.bindingId,sent)){finish(t);return;}live.current.buffer=sent;try{const receipt=await sendExport(client,sent,session,()=>matches(t));if(!matches(t)||live.current.buffer!==sent)return;const confirmed={...sent,receipt};if(!onChange(sent.bindingId,confirmed))return;live.current.buffer=confirmed;bufferScope.current={buffer:confirmed};await readConfirmed(confirmed,t);}catch(e){if(matches(t)&&live.current.buffer===sent&&e instanceof ApiError&&e.code==='APPROVAL_REQUIRED'&&e.status===412&&sent.command.approvalRef===null&&sent.approvalEligible===true){const next=markExportApprovalRequired(sent);if(onChange(sent.bindingId,next))live.current.buffer=next;}fail(e,t);}finally{finish(t);}}
  async function readConfirmed(p:ExportPending,t:Ticket){
@@ -53,9 +89,9 @@ export function ProjectBackupsPanel({client,session,projectId,buffer,scope,onCha
  <p className="meta">전체 새로고침 후에는 메모리의 원명령을 복구하지 못합니다. 미확인 전송은 새 명령을 만들지 말고 같은 명령으로 재확인하세요. 저장소 미설정·미적용 상태는 서버 오류로 표시됩니다.</p>
  <button disabled={busy||unresolved} onClick={()=>void loadDocs()}>반출할 문서 조회</button>{docCursor?<button disabled={busy||unresolved} onClick={()=>void loadDocs(true)}>문서 다음 페이지</button>:null}
  <fieldset disabled={busy||!!work||!activeView}><legend>고정 원본 선택</legend>
- <label>반출 문서<select aria-label="반출 문서" value={activeView?docId:''} onChange={e=>{if(e.target.value!==priorSelection?.documentRef.id)setEditReturn(null);setDocId(e.target.value);setVersion('');setDocument(null);setArtifactId('');setConsent(false);}}><option value="">문서를 명시적으로 선택하세요</option>{priorSelection&&!docs.some(d=>d.id===priorSelection.documentRef.id)?<option value={priorSelection.documentRef.id}>이전 선택 {priorSelection.documentRef.id} · 원문 재조회 필요</option>:null}{activeView?docs.map(d=><option key={d.id} value={d.id}>{d.title} · 현재 {d.headVersion}판</option>):null}</select></label>
- <label>반출할 고정 버전<input inputMode="numeric" value={activeView?version:''} onChange={e=>{if(e.target.value!==String(priorSelection?.documentRef.version))setEditReturn(null);setVersion(e.target.value);setDocument(null);setArtifactId('');setConsent(false);}}/></label>
- <button disabled={!docId||!version||!docs.some(d=>d.id===docId)} onClick={()=>void loadVersion()}>고정 버전 조회</button>
+ <label>반출 문서<select aria-label="반출 문서" value={activeView?docId:''} onChange={e=>{if(e.target.value!==priorSelection?.documentRef.id)showEditReturn(null);setDocId(e.target.value);setVersion('');setDocument(null);setArtifactId('');setConsent(false);}}><option value="">문서를 명시적으로 선택하세요</option>{priorSelection&&!docs.some(d=>d.id===priorSelection.documentRef.id)?<option value={priorSelection.documentRef.id}>이전 선택 {priorSelection.documentRef.id} · 원문 재조회 필요</option>:null}{activeView?docs.map(d=><option key={d.id} value={d.id}>{d.title} · 현재 {d.headVersion}판</option>):null}</select></label>
+ <label>반출할 고정 버전<input inputMode="numeric" value={activeView?version:''} onChange={e=>{if(e.target.value!==String(priorSelection?.documentRef.version))showEditReturn(null);setVersion(e.target.value);setDocument(null);setArtifactId('');setConsent(false);}}/></label>
+ <button disabled={!canReadVersion} onClick={()=>void loadVersion()}>고정 버전 조회</button>
  {activeView&&document?<><p>{document.ref.id} / {document.ref.version}판 / {document.ref.contentHash}</p><label>원본 1개<select aria-label="원본 1개" value={artifactId} onChange={e=>{setArtifactId(e.target.value);setConsent(false);}}><option value="">본문 또는 첨부를 선택하세요</option>{document.artifacts.map((a,index)=><option key={index} value={a.ref.artifactId}>{a.label} · {a.ref.bytes} bytes · {a.ref.contentHash}</option>)}</select></label></>:null}
  <label>반출 이유<textarea aria-label="반출 이유" maxLength={20000} value={activeView?reason:''} onChange={e=>setReason(e.target.value)}/></label>
  <label className="check-label"><input type="checkbox" checked={activeView&&consent} onChange={e=>setConsent(e.target.checked)}/>선택 원본 1개만 보관하며 전체 백업·복원이 아님을 확인했습니다</label>
