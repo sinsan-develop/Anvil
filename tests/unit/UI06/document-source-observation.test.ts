@@ -512,11 +512,15 @@ test('UI06 정방향 업무는 명시 클릭 exact assignment 1건만 기존 FN1
  });
  try{
   await exact.until(()=>exact.container.textContent.includes(a.reason));assert.equal(exactEvidenceCalls,0);
+  assert.match(exact.container.textContent,/연결 자체로 실행·시험 결과를 자동 확정하지 않습니다/);assert.match(exact.container.textContent,/연결된 업무의 결과·검수·원문은 아래 명시 조회로 확인합니다/);
+  assert.equal(exact.container.textContent.includes('EXECUTION_SOURCE_NOT_CONNECTED'),false);assert.equal(exact.container.textContent.includes('TEST_EVIDENCE_SOURCE_NOT_CONNECTED'),false);
   await exact.click('결과·검수·원문 조회 연결 확인');await exact.until(()=>exact.container.textContent.includes(assignmentRef.contentHash));assert.match(exact.container.textContent,/기존 결과·검수·원문 보호 조회 열기/);assert.equal(exactEvidenceCalls,1);
   await exact.click('업무 연결 새로고침');await exact.until(()=>exactTraceCalls===2&&exact.container.textContent.includes(a.reason));assert.equal(exactEvidenceCalls,1);assert.equal(exact.container.textContent.includes('기존 결과·검수·원문 보호 조회 열기'),false);
   const visit=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(visit)],direction=visit(exact.container).find(n=>n.getAttribute('id')==='trace-direction');assert.ok(direction);const key=Object.keys(direction).find(k=>k.startsWith('__reactProps$'));assert.ok(key);
   await ui.React.act(async()=>{(direction as any)[key].onChange({target:{value:'REVERSE'}});});await exact.until(()=>exactTraceCalls===3&&exact.container.textContent.includes('역방향 · 같은 저장 연결'));assert.equal(exactEvidenceCalls,1);assert.equal(exact.container.textContent.includes('기존 결과·검수·원문 보호 조회 열기'),false);
  }finally{await exact.close();}
+ const none=await mountTraceUI(async(input,init)=>{assert.equal(init?.method,'GET');const page=a.page();return Response.json({...page,nodes:[],edges:[],traversal:[]});});
+ try{await none.until(()=>none.container.textContent.includes('저장된 업무 연결이 없습니다'));assert.match(none.container.textContent,/결과·검수 명시 조회 대상 업무가 없습니다/);assert.match(none.container.textContent,/실행·시험 결과 없음이나 완료를 뜻하지 않습니다/);assert.equal(none.container.textContent.includes('EXECUTION_SOURCE_NOT_CONNECTED'),false);}finally{await none.close();}
 });
 
 test('UI06 추적 범위를 바꾸면 새 조회 정착 전 옛 연결과 열린 계획 원문 및 조회를 회수한다',async()=>{
