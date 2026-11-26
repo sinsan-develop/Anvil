@@ -17,15 +17,30 @@ export function fixture(tools=false){
  const confirmedSnapshot={draftRef,definition,reviewRefs:[ref],reason:'과거 내용 확정',confirmedBy:{kind:'HUMAN',userId:pid},confirmedAt:at,contentConfirmed:true,readinessIssues:[],ready:false,executionAuthorized:false,dispatchPerformed:false},confirmedRef={id:aid,version:1,contentHash:hash(confirmedSnapshot)},confirmed={projectId:pid,ref:confirmedRef,snapshot:confirmedSnapshot,observedAt:at},decision={projectId:pid,draftRef,criteriaVersion:1,criteria:contentCriteria,reviews:[],hasMoreReviews:false,contentIssues:[],currentIssue:'REVIEW_REQUIRED',confirmedRef,latestReviewAccepted:false,readinessIssues:[],ready:false,executionAuthorized:false,dispatchPerformed:false,observedAt:at},state={projectId:pid,assignmentRef:confirmedRef,roles:[],bindings:[],preparations:[],hasMorePreparations:false,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false},calls:string[]=[];let fault='',after=()=>{};
  const input={kind:'CONNECTION_CANDIDATE',candidateRef:null,policyRef:ref,expiresAt:'2099-01-01T00:00:00.000Z',candidate:{label:'저장된 도구 후보',toolProduct:'합성 코딩 도구',toolVersion:'시험 버전',adapterKind:'CLI'},reason:'도구 표시'},candidate={kind:input.kind,input,readiness:{state:'NOT_READY',executionAuthorized:false,missingRequirements:[]},capabilities:Object.keys(capabilityNames).map(code=>({code,documentation:null,measurement:{state:'UNVERIFIED',toolVersion:null,environmentRef:null,executionRef:null,evidenceRefs:[]},controlLevel:'UNVERIFIED',limitations:[]}))},toolRef={...ref,id:'33333333-3333-4333-8333-333333333333',contentHash:hash(candidate)},tool={ref:toolRef,candidate,expired:false,createdAt:at,recordedBy:pid,executionAuthorized:false,observedAt:at};
  if(tools){const roleSnapshot={kind:'COORDINATOR',stageRef:null,parentRoleRef:null,reason:'총괄',definedBy:{kind:'HUMAN',userId:pid},definedAt:at},roleRef={...ref,contentHash:hash(roleSnapshot)},bindingSnapshot={assignmentRef:confirmedRef,roleRef,connectionRef:toolRef,existingSessionBindingRef:null,reason:'예약',sessionRef:ref,generation:1,state:'RESERVED',externalSessionHandleRef:null,connectionReadiness:'CANDIDATE_ONLY',executionAuthorized:false,dispatchPerformed:false,boundBy:{kind:'HUMAN',userId:pid},boundAt:at};(state.roles as any[]).push({projectId:pid,ref:roleRef,snapshot:roleSnapshot});(state.bindings as any[]).push({projectId:pid,ref:{...ref,id:'44444444-4444-4444-8444-444444444444',contentHash:hash(bindingSnapshot)},snapshot:bindingSnapshot});}
+ const registeredDefinition={id:toolRef.id,version:1,status:'NOT_READY',label:'예약 당시 보관한 정의',toolProduct:'등록형 합성 도구',toolVersion:'이전 버전',adapterKind:'CLI',connectorId:null,accountRef:null,modelOptions:{},environmentRef:null,policyRef:ref,capabilityReportRef:null};
+ const definitionRef={id:toolRef.id,version:1,contentHash:hash(registeredDefinition)},registered={projectId:pid,ref:definitionRef,definition:registeredDefinition,observedAt:at,currentStatus:{headVersion:2,configurationCurrent:false,support:'UNVERIFIED',executionAuthorized:false}};
+ function withRegisteredTool(sharedExactRef=false){
+  const existing=(state.roles as any[])[0],roleSnapshot=existing?{kind:'STAGE_OWNER',stageRef:{applicationRef:definition.taskRef.applicationRef,nodeId:definition.taskRef.nodeId},parentRoleRef:existing.ref,reason:'단계 세션',definedBy:{kind:'HUMAN',userId:pid},definedAt:at}:{kind:'COORDINATOR',stageRef:null,parentRoleRef:null,reason:'총괄',definedBy:{kind:'HUMAN',userId:pid},definedAt:at};
+  const roleRef={...ref,id:'55555555-5555-4555-8555-555555555555',contentHash:hash(roleSnapshot)};
+  const bindingSnapshot={assignmentRef:confirmedRef,roleRef,connectionKind:'REGISTERED_DEFINITION',connectionRef:definitionRef,existingSessionBindingRef:null,reason:'등록 예약',sessionRef:ref,generation:1,state:'RESERVED',externalSessionHandleRef:null,connectionReadiness:'REGISTERED_DEFINITION_ONLY',executionAuthorized:false,dispatchPerformed:false,boundBy:{kind:'HUMAN',userId:pid},boundAt:at};
+  if(sharedExactRef){const candidateBinding=(state.bindings as any[])[0];candidateBinding.snapshot.connectionRef=definitionRef;candidateBinding.ref.contentHash=hash(candidateBinding.snapshot);}
+  (state.roles as any[]).push({projectId:pid,ref:roleRef,snapshot:roleSnapshot});(state.bindings as any[]).push({projectId:pid,ref:{...ref,id:'66666666-6666-4666-8666-666666666666',contentHash:hash(bindingSnapshot)},snapshot:bindingSnapshot});
+ }
  const client=new ApiClient(async(url,options)=>{assert.equal(options?.method??'GET','GET');const path=String(url);calls.push(path);const base='/api/v1/projects/'+pid+'/';let value:any;
   if(path===base+'assignment-drafts/'+aid+'/versions/1')value=draft;
   else if(path===base+'assignment-drafts/'+aid+'/versions/1/decision')value=decision;
   else if(path===base+'assignments/'+aid+'/versions/1')value=confirmed;
   else if(path===base+'assignments/'+aid+'/versions/1/execution-preparation-state')value=state;
   else if(path===base+'connection-candidates/'+toolRef.id+'/versions/1'){if(fault==='TOOL_DENIED')return Response.json({code:'ACCESS_DENIED'},{status:403});if(fault==='TOOL_EXPIRED_AUTH')return Response.json({code:'AUTH_REQUIRED'},{status:401});value=tool;}
+  else if(path===base+'connections/'+definitionRef.id+'/versions/1'){
+   if(fault==='DEFINITION_DENIED')return Response.json({code:'ACCESS_DENIED'},{status:403});
+   if(fault==='DEFINITION_EXPIRED_AUTH')return Response.json({code:'AUTH_REQUIRED'},{status:401});
+   if(fault==='DEFINITION_NOT_FOUND')return Response.json({code:'NOT_FOUND'},{status:404});
+   value=fault==='DEFINITION_PROJECT'?{...registered,projectId:aid}:fault==='DEFINITION_HASH'?{...registered,definition:{...registeredDefinition,label:'오염 등록'}}:registered;
+  }
   else assert.fail('NO_UNREGISTERED_PATH');
   after();if(fault==='DENIED')return Response.json({error:{code:'FORBIDDEN'}},{status:403});if(fault==='HASH'&&value===confirmed)value={...confirmed,snapshot:{...confirmedSnapshot,reason:'변조'}};if(fault==='PROJECT'&&value===state)value={...state,projectId:aid};return Response.json(value);
- });return{client,draft,decision,confirmed,state,tool,calls,fault:(v:string)=>fault=v,after:(fn:()=>void)=>after=fn};
+ });return{client,draft,decision,confirmed,state,tool,registered,withRegisteredTool,calls,fault:(v:string)=>fault=v,after:(fn:()=>void)=>after=fn};
 }
 test('상세화면선택은프로젝트·임무고정버전/hash를URL에보존하고오염된경로를다른임무로대체하지않는다',()=>{
  assert.equal(typeof routes.sessionDetailHref,'function');const f=fixture(),url=routes.sessionDetailHref(pid,f.draft.ref),parsed=parseRoute(url);assert.deepEqual(parsed,{screen:'session',projectId:pid,assignmentRef:f.draft.ref});
@@ -53,6 +68,10 @@ test('상세화면은고정임무·완료조건과누락증거를표시하고미
  detail.state.bindings=[{ref, snapshot:{assignmentRef:{...ref,id:'33333333-3333-4333-8333-333333333333',contentHash:'c'.repeat(64)},roleRef:ref,connectionRef:ref,sessionRef:ref,generation:1}}];const other=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail}));assert(other.includes('다른 임무의 현재 예약'));assert(other.includes('33333333-3333-4333-8333-333333333333'));assert(other.includes('c'.repeat(64)));
  const empty=renderToStaticMarkup(createElement(screen.SessionDetailPage,{client:f.client,projectId:pid,onAuthenticationLost:()=>assert.fail('NO_AUTH_CHANGE')}));assert(empty.includes('프로젝트 작업에서 임무를 선택'));assert.equal(f.calls.length,before);
  const named=fixture(true),namedDetail=await mod.readSessionDetail(named.client,pid,named.draft.ref),namedHtml=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail:namedDetail}));for(const value of ['저장된 도구 후보','합성 코딩 도구','능력·실제 연결·가동 미확인'])assert(namedHtml.includes(value));
+ const registered=fixture(true);registered.withRegisteredTool(true);
+ const registeredDetail=await mod.readSessionDetail(registered.client,pid,registered.draft.ref),registeredHtml=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail:registeredDetail}));
+ for(const text of ['예약 당시 보관한 정의','등록형 합성 도구','과거 등록 정의','도구 후보 원문 미확인','실제 연결·가동 미확인'])assert(registeredHtml.includes(text),text);
+ assert(!registeredHtml.includes('저장된 도구 후보'));
  const denied=fixture(true);denied.fault('TOOL_DENIED');const deniedHtml=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail:await mod.readSessionDetail(denied.client,pid,denied.draft.ref)}));assert(deniedHtml.includes('도구 후보 원문 미확인'));assert(deniedHtml.includes('ACCESS_DENIED'));assert(!deniedHtml.includes('저장된 도구 후보'));
  }finally{await compiler.close();}
 });
@@ -84,4 +103,33 @@ test('내용 미확정의 역할·예약·준비 미조회는 조회한 빈 이�
   const observed=fixture(),empty=await mod.readSessionDetail(observed.client,pid,observed.draft.ref),emptyHtml=renderToStaticMarkup(createElement(screen.SessionDetailContent,{detail:empty}));
   for(const text of ['확인된 책임 역할 없음','확인된 세션 예약 없음','확인된 실행 준비 기록 없음'])assert.ok(emptyHtml.includes(text),text);
  }finally{await compiler.close();}
+});
+
+test('등록 예약의 과거 도구 고정 정의만 읽고 같은 ID·버전 및 같은 전체 참조의 후보와 분리한다',async()=>{
+ for(const sharedRef of [false,true]){
+  const f=fixture(true);f.withRegisteredTool(sharedRef);
+  const value=await mod.readSessionDetail(f.client,pid,f.draft.ref);
+  assert.deepEqual(f.calls.slice(4),[`/api/v1/projects/${pid}/connection-candidates/${f.tool.ref.id}/versions/1`,`/api/v1/projects/${pid}/connections/${f.registered.ref.id}/versions/1`]);
+  assert.equal(value.tools.length,2);
+  assert.equal(value.tools[0].kind,'CONNECTION_CANDIDATE');assert.deepEqual(value.tools[0].value,sharedRef?null:f.tool);
+  assert.equal(value.tools[1].kind,'REGISTERED_DEFINITION');assert.deepEqual(value.tools[1].value,f.registered);
+ }
+});
+
+test('등록 정의의 거절·다른 범위와 늦은 응답은 원문 표시나 후보 fallback을 만들지 않는다',async()=>{
+ for(const [fault,code] of [['DEFINITION_DENIED','ACCESS_DENIED'],['DEFINITION_NOT_FOUND','NOT_FOUND'],['DEFINITION_PROJECT','CONNECTION_RESPONSE_INVALID'],['DEFINITION_HASH','CONNECTION_RESPONSE_INVALID']] as const){
+  const f=fixture();f.withRegisteredTool();f.fault(fault);
+  const value=await mod.readSessionDetail(f.client,pid,f.draft.ref);
+  assert.deepEqual(f.calls.slice(4),[`/api/v1/projects/${pid}/connections/${f.registered.ref.id}/versions/1`],fault);
+  assert.deepEqual(value.tools,[{kind:'REGISTERED_DEFINITION',connectionRef:f.registered.ref,value:null,error:code}],fault);
+ }
+ const lost=fixture();lost.withRegisteredTool();lost.fault('DEFINITION_EXPIRED_AUTH');
+ await assert.rejects(mod.readSessionDetail(lost.client,pid,lost.draft.ref),{status:401});
+ const stale=fixture();stale.withRegisteredTool();
+ const transport=stale.client.transport;let entered!:()=>void,release!:()=>void;
+ const waiting=new Promise<void>(resolve=>entered=resolve),deferred=new Promise<void>(resolve=>release=resolve);
+ stale.client.transport=async(...args)=>{if(String(args[0]).includes('/connections/')){entered();await deferred;return Response.json({code:'AUTH_REQUIRED'},{status:401});}return transport(...args);};
+ const result=mod.readSessionDetail(stale.client,pid,stale.draft.ref);await Promise.race([waiting,result.then(()=>assert.fail('등록 정의 경로 누락'))]);
+ stale.client.transport=transport;release();assert.equal(await result,null,'이전 transport의 뒤늦은 401을 새 인증에 전달하지 않는다');
+ assert.equal(stale.calls.length,4);
 });

@@ -3,7 +3,7 @@ import type {PreparationStorage} from './preparation-record-api.ts';
 import type {DocumentSession} from '../design-trace/editor-api.ts';
 import {listStoredCheckpoints,readStoredCheckpoint} from '../session-detail/checkpoint-api.ts';
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {routeHref,sessionDetailHref} from '../../shell/routes.ts';
 import type {PlanRef} from '../design-trace/work-plan-api.ts';
@@ -22,7 +22,7 @@ export function TransferPreparationPage({client,projectId,assignmentRef,onAuthen
  const key=JSON.stringify([projectId,assignmentRef]),latest=useRef(key);latest.current=key;
  const owner=useRef({client,transport:client.transport,key,session,csrf:session?.csrfToken,epoch:0}),recordOwner=useRef<object|null>(null),contextOwner=useRef<object|null>(null);if(owner.current.client!==client||owner.current.transport!==client.transport||owner.current.key!==key||owner.current.session!==session||owner.current.csrf!==session?.csrfToken)owner.current={client,transport:client.transport,key,session,csrf:session?.csrfToken,epoch:owner.current.epoch+1};const scope=owner.current,owned=()=>owner.current===scope&&client.transport===scope.transport;
  const records=owned()&&recordOwner.current===scope?rawRecords:null,context=owned()&&contextOwner.current===scope?rawContext:null;
- useEffect(()=>{setPending(false);flight.current=false;return()=>{sequence.current++;flight.current=false;};},[scope]);
+ useLayoutEffect(()=>{setPending(false);flight.current=false;return()=>{sequence.current++;flight.current=false;};},[scope]);
  function begin(){const ticket=++sequence.current;flight.current=true;setPending(true);setError(null);return()=>owned()&&sequence.current===ticket&&latest.current===key;}
  function fail(cause:unknown,active:()=>boolean){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('TRANSFER_READ_INVALID');setRecords(null);setContext(null);setError(/^[A-Z_]{1,80}$/.test(e.code)?e.code:'TRANSFER_READ_INVALID');if(e.status===401)lost.current();}
  function finish(active:()=>boolean){if(active()){flight.current=false;setPending(false);}}

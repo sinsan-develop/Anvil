@@ -1,6 +1,6 @@
 import {ArtifactTaskTracePanel} from './ArtifactTaskTracePanel.tsx';
 import type {ArtifactTaskTraceStorage,ArtifactTraceDetail} from './artifact-task-trace-api.ts';
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {routeHref,transferPreparationHref} from '../../shell/routes.ts';
 import type {ResultIssueSelection} from '../decisions/ReportedResultIssue.tsx';
@@ -42,7 +42,7 @@ export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticati
  const scopeKey=JSON.stringify([key,criteria?.session?.user.id,criteria?.session?.clientId,criteria?.session?.csrfToken]),scopeRef=useRef<ReadScope>({key:scopeKey,client,transport:client.transport});
  if(scopeRef.current.key!==scopeKey||scopeRef.current.client!==client||scopeRef.current.transport!==client.transport)scopeRef.current={key:scopeKey,client,transport:client.transport};
  const mounted=useRef(true),currentRevision=useRef(revision);currentRevision.current=revision;
- useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+ useLayoutEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
  const scope=scopeRef.current,scopeCurrent=()=>mounted.current&&scopeRef.current===scope&&currentRevision.current===revision&&client.transport===scope.transport,[_transportRevision,setTransportRevision]=useState(0);
  const shown=loaded?.owner===scope&&loaded.key===key&&loaded.revision===revision?loaded:null,pending=!!assignmentRef&&!shown;
  const fileKey=key+':'+revision,checkpointFile=fileInspection?.owner===scope&&fileInspection.key===fileKey?fileInspection.value:null,checkpointStored=storedInspection?.owner===scope&&storedInspection.key===fileKey?storedInspection.value:null;
@@ -117,9 +117,14 @@ export function ResultContent({value}:{value:SubmittedResultView}){
  </article>;
 }
 function Reference({label,value}:{label:string;value:PlanRef|null}){return <div><dt>{label}</dt><dd>{value?<>{value.id} · v{value.version}<br/>{value.contentHash}</>:'미연결'}</dd></div>;}
-function Tool({detail,reference}:{detail:SessionDetail;reference:PlanRef}){
- const tool=detail.tools.find(t=>t.connectionRef.id===reference.id&&t.connectionRef.version===reference.version&&t.connectionRef.contentHash===reference.contentHash);
- if(!tool?.value)return <p>도구 후보 원문 미확인{tool?.error?' · '+tool.error:''} · 다른 후보로 대체하지 않습니다.</p>;
+function Tool({detail,reference,registered}:{detail:SessionDetail;reference:PlanRef;registered:boolean}){
+ const kind=registered?'REGISTERED_DEFINITION':'CONNECTION_CANDIDATE';
+ const tool=detail.tools.find(t=>t.kind===kind&&t.connectionRef.id===reference.id&&t.connectionRef.version===reference.version&&t.connectionRef.contentHash===reference.contentHash);
+ if(!tool?.value)return <p>{registered?'등록 정의 원문 미확인':'도구 후보 원문 미확인'}{tool?.error?' · '+tool.error:''} · {registered?'다른 정의나 후보로':'다른 후보로'} 대체하지 않습니다.</p>;
+ if(tool.kind==='REGISTERED_DEFINITION'){
+  const {definition,currentStatus}=tool.value;
+  return <div><p>{definition.label} · {currentStatus.configurationCurrent?'예약 당시 등록 정의':'예약 당시 과거 등록 정의'}</p><p>제품: {definition.toolProduct} · 버전: {definition.toolVersion} · 유형: {definition.adapterKind}</p><p>조회 시점 설정 head v{currentStatus.headVersion} · 능력·실제 연결·가동 미확인</p></div>;
+ }
  const c=tool.value.candidate.input.candidate;
  return <div><p>{c.label} · 사용자 등록 후보</p><p>제품: {typeof c.toolProduct==='string'&&c.toolProduct?c.toolProduct:'미기재'} · 버전: {typeof c.toolVersion==='string'&&c.toolVersion?c.toolVersion:'미기재'} · 유형: {typeof c.adapterKind==='string'&&c.adapterKind?c.adapterKind:'미기재'}</p><p>{tool.value.expired?'조회상 기한 경과':'조회상 기한 이내'} · 능력·실제 연결·가동 미확인</p></div>;
 }
@@ -137,7 +142,7 @@ export function SessionDetailContent({detail}:{detail:SessionDetail}){
   <section className="status-card" aria-label="책임 도구와 세션"><h3>책임 역할·예약 세션</h3>
    {s===null?<><p>책임 역할 미조회 · 역할이 없다는 판정이 아닙니다.</p><p>세션 예약 미조회 · 실제 외부 세션 유무는 미확인입니다.</p></>:<>
    {s?.roles.length?<ul>{s.roles.map(r=><li key={r.ref.id}>{r.snapshot.kind==='COORDINATOR'?'총괄':'단계책임자'} · {r.ref.id} · v{r.ref.version}</li>)}</ul>:<p>확인된 책임 역할 없음</p>}
-   {s?.bindings.length?<ul>{s.bindings.map(b=><li key={b.ref.id}>{detail.confirmed!==null&&b.snapshot.assignmentRef.id===detail.confirmed.ref.id&&b.snapshot.assignmentRef.version===detail.confirmed.ref.version&&b.snapshot.assignmentRef.contentHash===detail.confirmed.ref.contentHash?'선택 임무의 예약':'다른 임무의 현재 예약'} · 외부 Agent 세션 미생성<dl><Reference label="예약 대상 임무" value={b.snapshot.assignmentRef}/><Reference label="역할" value={b.snapshot.roleRef}/><Reference label="도구 연결 후보" value={b.snapshot.connectionRef}/><Reference label="Anvil 세션" value={b.snapshot.sessionRef}/></dl><Tool detail={detail} reference={b.snapshot.connectionRef}/><p>세대 {b.snapshot.generation} · 후보 연결이며 실제 가동 상태가 아닙니다.</p></li>)}</ul>:<p>확인된 세션 예약 없음 · 실제 외부 세션으로 추정하지 않습니다.</p>}
+   {s?.bindings.length?<ul>{s.bindings.map(b=>{const registered=b.snapshot.connectionKind==='REGISTERED_DEFINITION';return <li key={b.ref.id}>{detail.confirmed!==null&&b.snapshot.assignmentRef.id===detail.confirmed.ref.id&&b.snapshot.assignmentRef.version===detail.confirmed.ref.version&&b.snapshot.assignmentRef.contentHash===detail.confirmed.ref.contentHash?'선택 임무의 예약':'다른 임무의 현재 예약'} · 외부 Agent 세션 미생성<dl><Reference label="예약 대상 임무" value={b.snapshot.assignmentRef}/><Reference label="역할" value={b.snapshot.roleRef}/><Reference label={registered?"도구 연결 등록 정의":"도구 연결 후보"} value={b.snapshot.connectionRef}/><Reference label="Anvil 세션" value={b.snapshot.sessionRef}/></dl><Tool detail={detail} reference={b.snapshot.connectionRef} registered={registered}/><p>세대 {b.snapshot.generation} · {registered?"등록 정의 참조이며":"후보 연결이며"} 실제 가동 상태가 아닙니다.</p></li>;})}</ul>:<p>확인된 세션 예약 없음 · 실제 외부 세션으로 추정하지 않습니다.</p>}
    </>}
    <p>현재 권한·OS 소유·외부 도구 상태 미재검사</p>
   </section>

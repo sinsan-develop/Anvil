@@ -15,6 +15,7 @@ import {prepareCheckpointDraft} from '../../../apps/server/modules/checkpoints/c
 import {resultFixture} from './result-view-fixture.ts';
 import {observationJournalFor} from './observation-journal-fixture.ts';
 import {stopHistoryFor} from './stop-request-history-fixture.ts';
+import {transferFixture} from '../UI09/transfer-fixture.ts';
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
 class MemoryNode{
  nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
@@ -55,9 +56,10 @@ export function fixture(tools=false){
 
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/SessionDetailPage.tsx',import.meta.url));
+ const transfer=fileURLToPath(new URL('../../../apps/web/src/features/transfers/TransferPreparationPage.tsx',import.meta.url));
  const preparation=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/PreparationHistory.tsx',import.meta.url));
  const comparison=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointJournalComparison.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage,ResultContent}from${JSON.stringify(entry)};import * as Preparation from${JSON.stringify(preparation)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{CheckpointEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointEditor.tsx',import.meta.url)))};import{CheckpointJournalComparison}from${JSON.stringify(comparison)};export{React,createRoot,SessionDetailPage,ResultContent,Preparation,CheckpointEditor,CheckpointJournalComparison,ApiClient};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage,ResultContent}from${JSON.stringify(entry)};import{TransferPreparationPage}from${JSON.stringify(transfer)};import * as Preparation from${JSON.stringify(preparation)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{CheckpointEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointEditor.tsx',import.meta.url)))};import{CheckpointJournalComparison}from${JSON.stringify(comparison)};export{React,createRoot,SessionDetailPage,ResultContent,TransferPreparationPage,Preparation,CheckpointEditor,CheckpointJournalComparison,ApiClient};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return SessionContextTest;')();
@@ -593,4 +595,40 @@ test('제출 원문 네 형제는 서로 다른 키를 사용하고 고정 참�
   const duplicate=log.mock.calls.filter(call=>String(call.arguments[0]).includes('Encountered two children with the same key'));
   assert.equal(duplicate.length,0,'동일 제출의 형제들에 중복 React key가 남아 있다');
  }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+});
+
+test('UI09 인계 화면은 명시 GET의 과거 정의만 표시하고 이탈 뒤 늦은 401을 전달하지 않는다',async()=>{
+ for(const mode of ['ORIGINAL','CURRENT_401','UNMOUNT_401']){
+  const f=transferFixture(),at=f.draft.observedAt,reference=f.draft.ref;
+  const definition={id:'55555555-5555-4555-8555-555555555555',version:1,status:'NOT_READY',label:'인계 당시 고정 도구 원문',toolProduct:'합성 등록 도구',toolVersion:'v1',adapterKind:'CLI',connectorId:null,accountRef:null,modelOptions:{},environmentRef:null,policyRef:reference,capabilityReportRef:null};
+  const ref={id:definition.id,version:1,contentHash:hash(definition)},role={kind:'COORDINATOR',stageRef:null,parentRoleRef:null,reason:'총괄',definedBy:{kind:'HUMAN',userId:pid},definedAt:at};
+  const roleRef={...reference,contentHash:hash(role)},binding={assignmentRef:f.confirmed.ref,roleRef,connectionKind:'REGISTERED_DEFINITION',connectionRef:ref,existingSessionBindingRef:null,reason:'이전 예약',sessionRef:reference,generation:1,state:'RESERVED',externalSessionHandleRef:null,connectionReadiness:'REGISTERED_DEFINITION_ONLY',executionAuthorized:false,dispatchPerformed:false,boundBy:{kind:'HUMAN',userId:pid},boundAt:at};
+  Object.assign(f.state,{roles:[{projectId:pid,ref:roleRef,snapshot:role}],bindings:[{projectId:pid,ref:{id:'66666666-6666-4666-8666-666666666666',version:1,contentHash:hash(binding)},snapshot:binding}]});
+  const path=`connections/${ref.id}/versions/1`,view={projectId:pid,ref,definition,observedAt:at,currentStatus:{headVersion:2,configurationCurrent:false,support:'UNVERIFIED',executionAuthorized:false}};
+  const calls:string[]=[];let lost=0,release:((value:Response)=>void)|undefined;
+  const client=new ui.ApiClient(async(url:string,options:RequestInit)=>{
+   const base='/api/v1/projects/'+pid+'/';assert.equal(options?.method??'GET','GET');assert(String(url).startsWith(base));
+   const relative=new URL(String(url),'https://localhost:3830').pathname.slice(base.length);calls.push(relative);
+   if(relative===path)return new Promise<Response>(resolve=>release=resolve);
+   assert(Object.hasOwn(f.responses,relative),relative);return Response.json(f.responses[relative]);
+  });
+  const box=document.createElement('div');document.body.appendChild(box);const root=ui.createRoot(box);
+  const nodes=(n:MemoryNode=box):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
+  const waitFor=async(check:()=>boolean)=>{const end=Date.now()+2000;while(!check()&&Date.now()<end)await ui.React.act(async()=>new Promise(r=>setImmediate(r)));assert(check(),mode+': '+box.textContent);};
+  try{
+   await ui.React.act(async()=>root.render(ui.React.createElement(ui.TransferPreparationPage,{client,projectId:pid,assignmentRef:f.draft.ref,onAuthenticationLost:()=>{lost++;}})));
+   assert.equal(calls.length,0);
+   const button=nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='기존 인계 기록 조회');assert(button);
+   await ui.React.act(async()=>button.dispatchEvent({type:'click',button:0,bubbles:true}));await waitFor(()=>!!release);
+   assert.equal(calls.length,5);assert.equal(calls.at(-1),path);
+   if(mode==='UNMOUNT_401')await ui.React.act(async()=>root.render(ui.React.createElement('p',null,'이동한 화면')));
+   await ui.React.act(async()=>{
+    assert(release);
+    release(mode==='ORIGINAL'?Response.json(view):Response.json({code:'AUTH_REQUIRED'},{status:401}));
+   });
+   if(mode==='ORIGINAL'){await waitFor(()=>box.textContent.includes(definition.label));assert.match(box.textContent,/예약 당시 과거 등록 정의/);assert.equal(calls.at(-1),'context');}
+   if(mode==='CURRENT_401'){await waitFor(()=>lost===1);assert.match(box.textContent,/AUTH_REQUIRED/);assert.equal(calls.length,5);}
+   if(mode==='UNMOUNT_401'){assert.equal(box.textContent,'이동한 화면');assert.equal(lost,0);assert.equal(calls.length,5);}
+  }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(box);}
+ }
 });
