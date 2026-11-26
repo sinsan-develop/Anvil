@@ -30,11 +30,24 @@ export function TransferPreparationRecordPanel({client,session,confirmed,state,c
  async function save(){await run(async check=>{if(!b)return;let latest=b;try{latest=markPreparationDispatch(b);replace(b,latest);const next=await sendPreparation(client,session,confirmed,latest,check);if(!check())return;replace(latest,next);latest=next;const result=await readPreparationRecord(client,confirmed.projectId,next.pending!.receipt.data.ref,confirmed.ref,check);if(check())setView({owner:scope,value:result});}catch(cause){if(check()&&cause instanceof ApiError)replace(latest,failPreparation(latest,cause));throw cause;}});}
  function next(){if(!b||busy||!current()||flight.current===scope||lookupFlight.current?.owner===scope||activeBuffer.current!==b)return;try{replace(b,nextPreparation(client,session,confirmed,b));seq.current++;setView(null);setError(null);setRoleId('');setRoleVersion('1');setBindingId('');setBindingVersion('1');setTargetId('');setTargetVersion('1');setTargetHash('');}catch{setError({owner:scope,value:'TRANSFER_PREPARATION_COMMAND_PRESERVED'});}}
  async function read(){await run(async check=>{if(!b?.pending?.receipt)return;const result=await readPreparationRecord(client,confirmed.projectId,b.pending.receipt.data.ref,confirmed.ref,check);if(check())setView({owner:scope,value:result});});}
- async function selectHistoricalContext(reference:PlanRef,sourceCurrent:()=>boolean){
-  if(!b||b.pending||busy||!current()||!sourceCurrent()||activeBuffer.current!==b||flight.current===scope||lookupFlight.current?.owner===scope||displayed.current!==rawView||!rawView?.value.record.contextRef||!same(reference,rawView.value.record.contextRef))return;
-  const ticket=++seq.current,generation=bufferGeneration.current,check=()=>current()&&seq.current===ticket&&activeBuffer.current===b&&bufferGeneration.current===generation&&displayed.current===rawView&&sourceCurrent();
+ async function selectHistorical(field:'contextRef'|'targetConnectionRef',reference:PlanRef,sourceCurrent:()=>boolean){
+  const source=rawView,recordRef=source?.value.record[field];
+  if(!b||b.pending||busy||!current()||!sourceCurrent()||!preparationOwned(b,client,session,confirmed)||activeBuffer.current!==b||flight.current===scope||
+   lookupFlight.current?.owner===scope||!source||source.owner!==scope||displayed.current!==source||!recordRef||!same(reference,recordRef))return;
+  const wanted=structuredClone(reference),ticket=++seq.current,generation=bufferGeneration.current,viewGeneration=displayedGeneration.current;
+  const check=()=>current()&&seq.current===ticket&&flight.current===scope&&activeBuffer.current===b&&!b.pending&&preparationOwned(b,client,session,confirmed)&&
+   bufferGeneration.current===generation&&displayed.current===source&&displayedGeneration.current===viewGeneration&&
+   same(wanted,source.value.record[field])&&sourceCurrent();
   flight.current=scope;setWorking(scope);setError(null);
-  try{const value=await readTransferContext(client,confirmed.projectId,confirmed.ref,reference,check);if(check()&&value)replace(b,editPreparation(b,{contextRef:value.ref,contextSelected:true}));}
+  try{
+   const value=field==='contextRef'?await readTransferContext(client,confirmed.projectId,confirmed.ref,wanted,check):
+    await readDefinition(client,confirmed.projectId,wanted,check);
+   if(check()&&value){
+    if(!same(value.ref,wanted))throw new ApiError('TRANSFER_PREPARATION_REFERENCE_MISMATCH',412);
+    const patch=field==='contextRef'?{contextRef:value.ref,contextSelected:true}:{targetConnectionRef:value.ref,targetSelected:true};
+    replace(b,editPreparation(b,patch));
+   }
+  }
   catch(cause){if(!check())return;const e=cause instanceof ApiError?cause:new ApiError('TRANSFER_PREPARATION_RESPONSE_INVALID',503);setError({owner:scope,value:/^[A-Z_]{1,80}$/.test(e.code)?e.code:'TRANSFER_PREPARATION_RESPONSE_INVALID'});if(e.status===401)lost.current();}
   finally{if(current()&&seq.current===ticket&&flight.current===scope){flight.current=null;setWorking(null);}}
  }
@@ -59,8 +72,8 @@ export function TransferPreparationRecordPanel({client,session,confirmed,state,c
  </>}{b?.storedCommands?.map(saved=><section key={saved.command.commandId} aria-label="보존 준비기록 영수증"><p>보존 원명령 {saved.command.commandId} · {saved.receipt.data.ref.id} · v1 · {saved.receipt.data.ref.contentHash}</p><button type="button" disabled={busy} onClick={()=>void run(async check=>{const result=await readPreparationRecord(client,confirmed.projectId,saved.receipt.data.ref,confirmed.ref,check);if(check())setView({owner:scope,value:result});})}>보존 준비기록 {saved.receipt.data.ref.id} 고정 조회</button></section>)}{busy?<p role="status">고정 자료 대조 중</p>:null}{error?.owner===scope?<p role="alert">{error.value}</p>:b?.failure?<p role="alert">{b.failure.code}</p>:null}
  {view?<section aria-label="준비기록 고정 원문"><p>{view.ref.id} · v1 · {view.ref.contentHash}</p><p>보관 관측 {view.record.observedAt} · 의도 기한 {view.record.intentExpiresAt} · {view.currentStatus.intentExpired?'과거 기한 경과':'조회 시 기한 이내'} · 원자료 현재성 {view.currentStatus.sourceCurrentness} · 실제 인계 불가</p><p>미확인 공백: {view.record.gaps.join(', ')}</p><pre>{JSON.stringify(view.record,null,2)}</pre>
  {view.record.budgetRef?<HistoricalBudget key={JSON.stringify([view.ref,view.record.budgetRef])} client={client} projectId={confirmed.projectId} reference={view.record.budgetRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>한도 정책 참조 없음</p>}
- {view.record.targetConnectionRef?<HistoricalTarget key={JSON.stringify([displayedGeneration.current,view.ref,view.record.targetConnectionRef])} client={client} projectId={confirmed.projectId} reference={view.record.targetConnectionRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>대상 연결 참조 없음</p>}
- {view.record.contextRef?<HistoricalContext key={JSON.stringify([displayedGeneration.current,view.ref,view.record.contextRef])} client={client} projectId={confirmed.projectId} assignmentRef={confirmed.ref} reference={view.record.contextRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()} onSelect={b&&!locked?(ref,check)=>void selectHistoricalContext(ref,check):undefined} selecting={busy}/>:<p>당시 맥락 참조 없음</p>}
+ {view.record.targetConnectionRef?<HistoricalTarget key={JSON.stringify([displayedGeneration.current,view.ref,view.record.targetConnectionRef])} client={client} projectId={confirmed.projectId} reference={view.record.targetConnectionRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()} onSelect={b&&!locked?(ref,check)=>void selectHistorical('targetConnectionRef',ref,check):undefined} selecting={busy}/>:<p>대상 연결 참조 없음</p>}
+ {view.record.contextRef?<HistoricalContext key={JSON.stringify([displayedGeneration.current,view.ref,view.record.contextRef])} client={client} projectId={confirmed.projectId} assignmentRef={confirmed.ref} reference={view.record.contextRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()} onSelect={b&&!locked?(ref,check)=>void selectHistorical('contextRef',ref,check):undefined} selecting={busy}/>:<p>당시 맥락 참조 없음</p>}
  <HistoricalResponsibility key={JSON.stringify([displayedGeneration.current,view.ref,view.record.roleRef,view.record.oldBindingRef])} client={client} confirmed={confirmed} roleRef={view.record.roleRef} bindingRef={view.record.oldBindingRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>
  <button type="button" onClick={()=>setView(null)}>준비기록 원문 닫기</button></section>:null}
  </section>;
@@ -140,11 +153,13 @@ function HistoricalContext({client,projectId,assignmentRef,reference,current,onA
 }
 
 type TargetRead={state:'idle'|'loading'}|{state:'loaded';value:DefinitionView}|{state:'error';code:string};
-function HistoricalTarget({client,projectId,reference,current,onAuthenticationLost}:{
+function HistoricalTarget({client,projectId,reference,current,onAuthenticationLost,onSelect,selecting}:{
  client:ApiClient;projectId:string;reference:PlanRef;current:()=>boolean;onAuthenticationLost:()=>void;
+ onSelect?:(ref:PlanRef,current:()=>boolean)=>void;selecting:boolean;
 }){
  const [read,setRead]=useState<TargetRead>({state:'idle'});
  const sequence=useRef(0),inFlight=useRef(false);
+ const displayedTicket=sequence.current;
  useLayoutEffect(()=>()=>{sequence.current++;inFlight.current=false;},[]);
  async function load(){
   if(inFlight.current||!current())return;
@@ -167,6 +182,7 @@ function HistoricalTarget({client,projectId,reference,current,onAuthenticationLo
    <p>저장된 대상 연결 {read.value.ref.id} · v{read.value.ref.version} · {read.value.ref.contentHash}</p>
    <p>정의 상태 {read.value.definition.status} · 지원 상태 {read.value.currentStatus.support} · 실행 권한 없음</p>
    <pre>{JSON.stringify(read.value.definition,null,2)}</pre>
+   {onSelect?<button type="button" disabled={selecting} onClick={()=>onSelect(read.value.ref,()=>current()&&!inFlight.current&&sequence.current===displayedTicket)}>당시 대상 연결을 현재 새 준비기록에 선택</button>:null}
   </>:null}
  </section>;
 }

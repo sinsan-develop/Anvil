@@ -58,6 +58,7 @@ for(const mode of ['다시조회','주체ABA','프로젝트','transport'] as con
 });
 
 const targetButton='당시 대상 연결 정의 열기';
+const selectHistoricalTargetButton='당시 대상 연결을 현재 새 준비기록에 선택';
 const responsibilityButton='당시 역할·책임 결박 원문 열기';
 function historicalResponsibility(kind:'binding'|'role'|'none'='binding'){
  const f=seed();return receipt({commandId:id(92),payload:{assignmentRef:f.confirmed.ref,contextRef:null,roleRef:kind==='none'?null:f.stage.ref,oldBindingRef:kind==='binding'?f.binding.ref:null,targetConnectionRef:null,intentExpiresAt:new Date(Date.now()+600000).toISOString(),reason:'당시 책임 관계 보관'}}).data;
@@ -256,6 +257,123 @@ function recordWithTarget(targetConnectionRef:ReturnType<typeof historicalTarget
  const record=readPreparationSnapshot({...initial,targetConnectionRef,gaps:targetConnectionRef?initial.gaps.filter(g=>g!=='TARGET_NOT_SELECTED'):initial.gaps});
  return{ref:{id:recordId,version:1,contentHash:hash(record)},record};
 }
+async function openHistoricalTarget(f:Awaited<ReturnType<typeof host>>,data:ReturnType<typeof recordWithTarget>,target:ReturnType<typeof historicalTarget>){
+ await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));
+ assert.equal(f.buttons(selectHistoricalTargetButton).length,0);
+ await f.click(targetButton);await f.settle(()=>f.text().includes(target.definition.label));
+}
+test('보관 대상은 원문 조회 뒤 명시 재검산으로 선택하고 별도 저장 요청에 정확한 참조만 보낸다',async()=>{
+ const target=historicalTarget(),data=recordWithTarget(target.ref,id(96)),path=`/api/v1/projects/${pid}/connections/${target.ref.id}/versions/2`;
+ const f=await host({knownRecord:{data},historicalGet:p=>p===path?Response.json(target):undefined});
+ try{
+  await chooseNull(f);
+  const before=f.buffer(),original=canonicalJson(data);
+  await openHistoricalTarget(f,data,target);
+  assert.equal(f.buffer(),before);
+  assert.equal(f.calls.filter(c=>c.path===path).length,1);
+  await f.click(selectHistoricalTargetButton);
+  await f.settle(()=>f.buffer()?.targetConnectionRef?.id===target.ref.id);
+  assert.deepEqual(f.buffer().targetConnectionRef,target.ref);
+  assert.equal(f.buffer().targetSelected,true);
+  assert.equal(f.buffer().reason,before.reason);
+  assert.equal(f.buffer().pending,null);
+  assert.equal(canonicalJson(data),original);
+  assert(hasOriginal(f));
+  assert.equal(f.calls.filter(c=>c.path===path).length,2);
+  assert(f.calls.every(c=>c.method==='GET'));
+  await f.click('준비기록 원명령 준비');
+  await f.settle(()=>f.buffer().pending?.state==='PREPARED');
+  assert.deepEqual(f.buffer().pending.command.payload.targetConnectionRef,target.ref);
+  assert(f.calls.every(c=>c.method==='GET'));
+  await f.click('같은 준비기록 명령 저장·재확인');
+  await f.settle(()=>f.buffer()?.pending?.state==='STORED'&&hasOriginal(f));
+  const writes=f.calls.filter(c=>c.method==='POST');
+  assert.equal(writes.length,1);
+  const {operation,payload}=JSON.parse(writes[0]!.body!);
+  assert.equal(operation,'createTransferPreparationRecord');
+  assert.deepEqual(payload.targetConnectionRef,target.ref);
+  assert.deepEqual(Object.keys(payload).sort(),['assignmentRef','contextRef','intentExpiresAt','oldBindingRef','reason','roleRef','targetConnectionRef']);
+  assert.equal(canonicalJson(data),original);
+ }finally{await f.close();}
+});
+
+for(const mode of ['401','403','404','hash'] as const)test('보관 대상 선택 · '+mode+' 이후에도 현재 초안과 보관 원문을 보존한다',async()=>{
+ const target=historicalTarget(),data=recordWithTarget(target.ref),path=`/api/v1/projects/${pid}/connections/${target.ref.id}/versions/2`;
+ let reads=0;
+ const f=await host({knownRecord:{data},historicalGet:p=>{
+  if(p!==path)return;
+  if(++reads===1)return Response.json(target);
+  if(mode!=='hash')return Response.json({code:'ACCESS_DENIED'},{status:Number(mode)});
+  const corrupt=structuredClone(target);
+  corrupt.definition.label='다른 정의';
+  corrupt.ref.contentHash=hash(corrupt.definition);
+  return Response.json(corrupt);
+ }});
+ try{
+  await openHistoricalTarget(f,data,target);
+  const before=f.buffer();
+  await f.click(selectHistoricalTargetButton);
+  await f.settle(()=>!f.button(selectHistoricalTargetButton).disabled);
+  assert.equal(reads,2);
+  assert.equal(f.buffer(),before);
+  assert(hasOriginal(f));assert.match(f.text(),/저장된 원 대상 정의/);
+  assert.match(f.text(),/ACCESS_DENIED|CONNECTION_.*INVALID/);
+  assert.equal(f.lost(),mode==='401'?1:0);
+  assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+for(const replacement of ['close','reload','manual','draftABA','locked','actorABA','transportABA'] as const){
+ for(const status of [200,401])test(`보관 대상 선택 · ${replacement} 뒤 지연 ${status}와 연속 선택은 반영하지 않는다`,async()=>{
+  const target=historicalTarget(),data=recordWithTarget(target.ref),path=`/api/v1/projects/${pid}/connections/${target.ref.id}/versions/2`;
+  let reads=0,waiting=false,release=()=>{};
+  const f=await host({knownRecord:{data},historicalGet:p=>{
+   if(p!==path)return;
+   if(++reads!==2)return Response.json(target);
+   const response=Response.json(status===200?target:{code:'AUTH_REQUIRED'},{status}),json=response.json.bind(response);
+   response.json=async()=>{await new Promise<void>(resolve=>{release=resolve;waiting=true;});return json();};
+   return response;
+  }});
+  try{
+   await chooseNull(f);
+   await openHistoricalTarget(f,data,target);
+   const before=f.buffer(),button=f.button(selectHistoricalTargetButton),manual=f.button('등록 대상 보호 조회·선택'),prepare=f.button('준비기록 원명령 준비');
+   const reason=f.nodes().find(n=>n.getAttribute('aria-label')==='준비기록 이유')!;
+   const editReason=(reason as any)[Object.keys(reason).find(k=>k.startsWith('__reactProps'))!].onChange;
+   const invoke=(n:MemoryNode)=>(n as any)[Object.keys(n).find(k=>k.startsWith('__reactProps'))!].onClick();
+   await ui.React.act(async()=>{invoke(button);invoke(button);invoke(manual);invoke(prepare);});
+   await f.settle(()=>waiting);assert.equal(reads,2);
+   if(replacement==='close'){
+    await f.click('준비기록 원문 닫기');
+   }else if(replacement==='reload'){
+    await f.click(targetButton);await f.settle(()=>reads===3&&f.text().includes(target.definition.label));
+   }else if(replacement==='manual'){
+    // 잠금 렌더 전에 수집된 편집 이벤트가 적용되면 대기 중 선택이 그 초안을 덮을 수 없다.
+    await ui.React.act(async()=>editReason({target:{value:'대기 중 수기 입력'}}));
+    assert.equal(f.buffer().reason,'대기 중 수기 입력');
+   }else if(replacement==='draftABA'){
+    f.buffers[before.key]=ui.api.editPreparation(before,{reason:'교체 임시 초안'});await f.render();
+    f.buffers[before.key]=before;await f.render();
+   }else if(replacement==='locked'){
+    // 동일 초안이 저장 잠금을 획득한 경우의 상위 저장소 교체를 모사한다.
+    f.buffers[before.key]=await ui.api.prepareRecord(f.client,session,f.f.confirmed,before,()=>true);await f.render();
+    assert.equal(f.buttons(selectHistoricalTargetButton).length,0);
+   }else if(replacement==='actorABA'){
+    const original=f.props();await f.render({...original,session:{...session,clientId:id(98)}});await f.render(original);
+   }else{
+    const original=f.client.transport;
+    f.client.transport=(...args:any[])=>original(...args);await f.render();f.client.transport=original;await f.render();
+   }
+   const expected=f.buffers[before.key];
+   await ui.React.act(async()=>{release();await new Promise(resolve=>setImmediate(resolve));});
+   assert.equal(f.buffers[before.key],expected);
+   assert.equal(expected.targetConnectionRef,null);
+   assert.equal(f.lost(),0);
+   assert.doesNotMatch(f.text(),/AUTH_REQUIRED/);
+   assert(f.calls.every(c=>c.method==='GET'));
+  }finally{release();await f.close();}
+ });
+}
 test('과거 대상 연결 · 명시 클릭 1GET과 참조 부재 GET0',async()=>{
  for(const missing of [false,true]){
   const target=historicalTarget(),data=recordWithTarget(missing?null:target.ref);
@@ -339,7 +457,7 @@ function seed(){const f=transferFixture(),roleSnapshot={kind:'COORDINATOR',stage
  const bindingSnapshot={assignmentRef:f.confirmed.ref,roleRef:stage.ref,connectionRef:{id:id(5),version:1,contentHash:'e'.repeat(64)},existingSessionBindingRef:null,reason:'같은 임무의 과거 예약',sessionRef:{id:id(6),version:1,contentHash:'d'.repeat(64)},generation:1,state:'RESERVED',externalSessionHandleRef:null,connectionReadiness:'CANDIDATE_ONLY',executionAuthorized:false,dispatchPerformed:false,boundBy:{kind:'HUMAN',userId:pid},boundAt:at},binding={projectId:pid,ref:{id:id(7),version:1,contentHash:hash(bindingSnapshot)},snapshot:bindingSnapshot};
  f.state.roles.push(role as never,stage as never);f.state.bindings.push(binding as never);Object.assign(f.responses,{['project-roles/'+role.ref.id+'/versions/1']:role,['project-roles/'+stage.ref.id+'/versions/1']:stage,['role-bindings/'+binding.ref.id+'/versions/1']:binding});return{...f,role,stage,binding};}
 function receipt(command:any,recordId=id(20)){const payload=command.payload,observedAt=new Date().toISOString(),hasContext=payload.contextRef!==null;
- const gaps=[...permanentGaps,...(hasContext?['CONTEXT_REQUIRED_MISSING']:['CONTEXT_NOT_COLLECTED']),...(!payload.roleRef?['ROLE_NOT_SELECTED']:[]),...(!payload.oldBindingRef?['OLD_BINDING_NOT_COLLECTED']:[]),'TARGET_NOT_SELECTED','TARGET_CAPABILITIES_UNVERIFIED'];
+ const gaps=[...permanentGaps,...(hasContext?['CONTEXT_REQUIRED_MISSING']:['CONTEXT_NOT_COLLECTED']),...(!payload.roleRef?['ROLE_NOT_SELECTED']:[]),...(!payload.oldBindingRef?['OLD_BINDING_NOT_COLLECTED']:[]),...(!payload.targetConnectionRef?['TARGET_NOT_SELECTED']:[]),'TARGET_CAPABILITIES_UNVERIFIED'];
  const record=readPreparationSnapshot({schemaVersion:1,id:recordId,projectId:pid,version:1,kind:'TRANSFER_PREPARATION_RECORD',state:'PREPARATION_ONLY',...payload,baselineRefs:[],budgetRef:null,sourceRefs:[],requiredContext:['PURPOSE_REASON','RULES_SCOPE','LATEST_INSTRUCTIONS','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'].map(code=>({code,state:hasContext?'MISSING_OR_EXCLUDED':'NOT_COLLECTED'})),gaps,observedAt,preparationStored:true,manifestStored:false,bindingFrozen:false,ready:false,resumeAuthorized:false,executionAuthorized:false,dispatchPerformed:false});
  const ref={id:record.id,version:1,contentHash:hash(record)};return readPreparationReceipt({operationId:id(21),commandId:command.commandId,projectId:pid,status:'APPLIED',targetId:record.id,version:1,data:{ref,record,preparationStored:true,manifestStored:false},evidenceRefs:[],warnings:[],serverReceivedAt:observedAt}) as any;
 }
