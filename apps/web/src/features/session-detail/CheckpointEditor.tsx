@@ -9,11 +9,11 @@ import type {CheckpointObservationForm} from './checkpoint-observation-input.ts'
 import {CheckpointEvidenceFields} from './CheckpointEvidenceFields.tsx';
 import type {CheckpointEvidenceForm} from './checkpoint-evidence-input.ts';
 import {CheckpointWorkFields} from './CheckpointWorkFields.tsx';
-import type {CheckpointWorkDetails} from './checkpoint-work-input.ts';
+import type {CheckpointWorkDetails,CheckpointWorkRow,CheckpointWorkRows} from './checkpoint-work-input.ts';
 import {checkpointFormFromStoredCheckpoint,checkpointInputFromForm,emptyCheckpointForm,isEmptyCheckpointForm} from './checkpoint-form-restore.ts';
 import type {CheckpointStoredInspection} from './checkpoint-journal-comparison.ts';
 const fields=[['position','현재 작업 위치'],['completed','완료한 내용 · 수행자 주장'],['progress','진행 중인 작업'],['remaining','남은 작업'],['decisions','판단·승인 대기'],['next','다음 행동'],['forbidden','금지 행동'],['reason','기록 이유']] as const;
-export type CheckpointForm=Record<typeof fields[number][0],string>&{observations?:CheckpointObservationForm;evidence?:CheckpointEvidenceForm;workDetails?:CheckpointWorkDetails;serverWork?:CheckpointServerWork};
+export type CheckpointForm=Record<typeof fields[number][0],string>&{observations?:CheckpointObservationForm;evidence?:CheckpointEvidenceForm;workDetails?:CheckpointWorkDetails;workRows?:CheckpointWorkRows;attemptCountOrder?:string[];serverWork?:CheckpointServerWork};
 export interface CheckpointBuffers{buffers:Record<string,CheckpointForm|null>;onChange:(key:string,change:(previous:CheckpointForm|null)=>CheckpointForm|null)=>void}
 const empty=emptyCheckpointForm();
 export function CheckpointEditor({client,assignment,session,storage,onUnavailable,onStoredCheckpoint}:{client:ApiClient;assignment:ConfirmedAssignmentView;session:DocumentSession;storage:CheckpointBuffers;onUnavailable:(code:string)=>void;onStoredCheckpoint?:(value:CheckpointStoredInspection|null)=>void}){
@@ -25,12 +25,38 @@ export function CheckpointEditor({client,assignment,session,storage,onUnavailabl
  function changeObservations(observations:CheckpointObservationForm){generation.current++;setPending(false);setValue(null);setError(null);storage.onChange(bufferKey,previous=>({...previous??empty,observations}));}
  function changeEvidence(evidence:CheckpointEvidenceForm){generation.current++;setPending(false);setValue(null);setError(null);storage.onChange(bufferKey,previous=>({...previous??empty,evidence}));}
  function changeWorkDetails(workDetails:CheckpointWorkDetails){generation.current++;setPending(false);setValue(null);setError(null);storage.onChange(bufferKey,previous=>({...previous??empty,workDetails}));}
+ function changeRows(key:keyof CheckpointWorkRows,change:(rows:CheckpointWorkRow[],previous:CheckpointForm)=>CheckpointWorkRow[]){
+  generation.current++;setPending(false);setValue(null);setError(null);
+  storage.onChange(bufferKey,previous=>{
+   if(!previous?.workRows)return previous;
+   const old=previous.workRows[key],next=change(old,previous);
+   return old===next?previous:{...previous,workRows:{...previous.workRows,[key]:next}};
+  });
+ }
+ function addRow(key:keyof CheckpointWorkRows){
+  const id=crypto.randomUUID();
+  changeRows(key,(rows,previous)=>{
+   const used=Object.values(previous.workRows!).some(group=>group.some(row=>row.id===id))||previous.workDetails?.evidence.some(row=>row.itemId===id)||previous.workDetails?.decisions.some(row=>row.decisionId===id);
+   return rows.length>=200||used?rows:[...rows,{id,text:''}];
+  });
+ }
  async function prepare(){const ticket=++generation.current;setPending(true);setValue(null);setError(null);const active=()=>generation.current===ticket;
   try{const input=checkpointInputFromForm(assignment,form);input.baseRef=form.serverWork?.baseRef??null;
   const result=await prepareCheckpointRecord(client,assignment,input,session,active);if(active()&&result)setValue(result);}catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('CHECKPOINT_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'CHECKPOINT_RESPONSE_INVALID';setError(code);if([401,403,404].includes(e.status))unavailable.current(e.status===401?'AUTH_REQUIRED':code);}finally{if(active())setPending(false);}
  }
  async function download(){if(!value)return;const ticket=generation.current;try{const file=await checkpointDownloadFile(value);if(generation.current!==ticket)return;const url=URL.createObjectURL(new Blob([new Uint8Array(file.bytes).buffer],{type:'text/markdown;charset=utf-8'})),link=document.createElement('a');link.href=url;link.download=file.name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),0);}catch{if(generation.current===ticket)setError('CHECKPOINT_DOWNLOAD_INVALID');}}
- return <section className="status-card" aria-label="상세 작업현황 초안" lang="ko"><h3>상세 작업현황 초안</h3><p>선택한 확정 임무에 연결합니다. 완료·변경·시험은 수행자 기록이며 실제 검수나 안전 재개 판정이 아닙니다.</p><p>같은 사용자·기기·프로젝트·확정 임무의 화면 왕복 중 입력을 유지합니다. 새로고침·앱 종료 뒤 복원은 제공하지 않으므로 필요한 기록을 내려받으세요.</p><form onSubmit={e=>{e.preventDefault();void prepare();}}>{fields.map(([key,label])=><label key={key}>{label}<textarea value={form[key]} maxLength={20000} required={['position','next','reason'].includes(key)} rows={key==='position'?2:3} onChange={e=>change(key,e.target.value)}/></label>)}<CheckpointObservationFields value={form.observations} onChange={changeObservations}/><CheckpointEvidenceFields assignment={assignment} value={form.evidence} onChange={changeEvidence}/><CheckpointWorkFields text={form} value={form.workDetails} onChange={changeWorkDetails}/><p>목록은 한 줄에 한 항목입니다. 입력한 근거/변경·시험·오류는 실제 관측/검수를 인증하지 않으며 미입력을 ‘없음’으로 검증하지 않습니다. 초안을 준비한 뒤 별도 명령으로 서버 저장을 요청합니다.</p><button type="submit" disabled={pending}>{pending?'기록 준비 중':'기록 초안 준비'}</button></form>
+ return <section className="status-card" aria-label="상세 작업현황 초안" lang="ko"><h3>상세 작업현황 초안</h3><p>선택한 확정 임무에 연결합니다. 완료·변경·시험은 수행자 기록이며 실제 검수나 안전 재개 판정이 아닙니다.</p><p>같은 사용자·기기·프로젝트·확정 임무의 화면 왕복 중 입력을 유지합니다. 새로고침·앱 종료 뒤 복원은 제공하지 않으므로 필요한 기록을 내려받으세요.</p><form onSubmit={e=>{e.preventDefault();void prepare();}}>
+ {fields.map(([key,label])=>{
+  if(form.workRows&&key!=='position'&&key!=='next'&&key!=='reason'){
+   const rows=form.workRows[key];
+   return <fieldset key={key}><legend>{label}</legend>{rows.map(row=><div key={row.id}>
+    <label>{label} {row.id}<textarea value={row.text} maxLength={20000} required rows={3} onChange={e=>{const text=e.target.value;changeRows(key,previous=>previous.map(item=>item.id===row.id?{...item,text}:item));}}/></label>
+    <button type="button" onClick={()=>changeRows(key,previous=>previous.filter(item=>item.id!==row.id))}>{label} {row.id} 제거</button>
+   </div>)}<button type="button" disabled={rows.length>=200} onClick={()=>addRow(key)}>{label} 추가</button></fieldset>;
+  }
+  return <label key={key}>{label}<textarea value={form[key]} maxLength={20000} required={['position','next','reason'].includes(key)} rows={key==='position'?2:3} onChange={e=>change(key,e.target.value)}/></label>;
+ })}
+ <CheckpointObservationFields value={form.observations} onChange={changeObservations}/><CheckpointEvidenceFields assignment={assignment} value={form.evidence} onChange={changeEvidence}/><CheckpointWorkFields text={form} value={form.workDetails} onChange={changeWorkDetails}/><p>{form.workRows?'복원된 항목은 ID별로 편집합니다. ':'목록은 한 줄에 한 항목입니다. '}입력한 근거/변경·시험·오류는 실제 관측/검수를 인증하지 않으며 미입력을 ‘없음’으로 검증하지 않습니다. 초안을 준비한 뒤 별도 명령으로 서버 저장을 요청합니다.</p><button type="submit" disabled={pending}>{pending?'기록 준비 중':'기록 초안 준비'}</button></form>
  <CheckpointServerPanel client={client} assignment={assignment} session={session} form={form} storage={storage} prepared={value} onUnavailable={onUnavailable} onStoredCheckpoint={onStoredCheckpoint}/>
  {pending?<p role="status">정확 임무와 대조 중 · 이전 기록 숨김</p>:null}{error?<p role="alert">{error} · 기록 준비 미확인. 자동 저장·재시도하지 않습니다.</p>:null}
  {value?<section aria-label="준비된 현황 기록"><p>서버·파일 저장 미수행 · 완료/안전 재개 승인 아님</p><p>누락·미확인: {value.gaps.join(', ')}</p><p>기록 초안 {value.recordFile.bytes}바이트 · SHA-256 {value.recordFile.contentHash}</p><button type="button" onClick={()=>void download()}>기록 초안 내려받기</button><p>브라우저에 내려받기를 요청합니다. 로컬 저장 완료·서버 등록으로 확인하지 않습니다.</p><details><summary>작업현황 기록 초안 보기</summary><pre>{value.recordText}</pre></details></section>:null}
