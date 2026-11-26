@@ -12,6 +12,21 @@ const suffix=[
   '0078_start_execution_material_registration','0079_material_credential_namespace_binding','0080_node_decisions','0081_execution_start_origins','0082_fn09_origin_reuse_synthetic_start',
   '0083_normal_initial_execution','0084_normal_exchange_challenge','0085_normal_credential_exchange','0086_normal_request_challenge','0087_normal_command_pages','0088_normal_start_material_delivery','0089_normal_start_permit','0090_normal_observations','0091_normal_credential_reexchange','0092_native_preparation_ownership_return','0093_native_receive_authority_version','0094_native_host_storage_access','0095_native_worker_deployment','0096_normal_grant_revocation','0097_normal_instruction_dispatch','0098_normal_stop_target_page','0099_document_stage_output_item',
 ];
+const outsideBaseline=[
+  'db/migrations/0031_empty_project_methodology_application.sql.pending',
+  // 0100과 0101은 FN03의 별도 132개 프로필에 포함된다.
+  'db/migrations/0100_normal_send_permit_source.sql.pending',
+  'db/migrations/0101_source_content_policy_management_origins.sql.pending',
+  'db/migrations/0102_normal_understanding_responses.sql.pending',
+  'db/migrations/0103_work_preparation_understanding_basis.sql.pending',
+  'db/migrations/0104_normal_work_start_understanding.sql.pending',
+  'db/migrations/0105_normal_start_preparation_admission.sql.pending',
+  'db/migrations/0106_normal_start_preparation_peer_result.sql.pending',
+  'db/migrations/0107_approval_notification_understanding_origin.sql.pending',
+  'db/migrations/0108_approval_notification_backup_policy_origin.sql.pending',
+  'db/migrations/0109_approval_notification_membership_origin.sql.pending',
+  'db/migrations/0110_approval_notification_environment_origin.sql.pending',
+];
 const hash=(value:Uint8Array)=>createHash('sha256').update(value).digest('hex');
 const git=(args:string[],input?:string)=>execFileSync('git',args,{cwd:root,input,windowsHide:true,maxBuffer:16*1024*1024});
 let fixture:ReturnType<typeof loadFixture>|undefined;
@@ -107,16 +122,16 @@ test('IX01 원장 누락·추가·중복·다른 ID·체크섬·추가 필드 �
 test('IX01 역사 0082 Git 원문은 누락·중복·재배열·변조·CRLF를 허용하지 않는다',()=>{
  const {tsv,files,ledger}=model(),last=files[112]!;
  assert.equal(last.id,'0082_fn09_origin_reuse_synthetic_start');
- assert.equal(last.bytes.length,230239);
- assert.equal(hash(last.bytes),'4cbca6ad03aa9b4ac8b7ce485ca1dc9e34df8692cd7dc6a0b5de716101fa84b2');
+ assert.equal(last.bytes.length,230277);
+ assert.equal(hash(last.bytes),'3f32acd0f6f402e823bd3805b1948ae8f48d7ec98300e8dbdc2925923d49cfdf');
  const changed=Buffer.from(last.bytes);changed[changed.length-1]=changed[changed.length-1]!^1;
- for(const rows of [files.slice(0,112),[...files,last],replaceAt(files,111,last),
+ for(const rows of [files.filter((_,index)=>index!==112),[...files,last],replaceAt(files,111,last),
   [...files.slice(0,111),last,files[111]!,...files.slice(113)],replaceAt(files,112,{...last,path:last.path+'.other'}),
   replaceAt(files,112,{...last,bytes:changed}),
   replaceAt(files,112,{...last,bytes:Buffer.from(last.bytes.toString('utf8').replace(/\n/g,'\r\n'))})]){
   assert.throws(()=>verifyCurrentSchemaSources(tsv,rows),{message:'IX01_CURRENT_SQL_BASELINE_INVALID'});
  }
- for(const rows of [ledger.slice(0,112),[...ledger,ledger[112]!]]){
+ for(const rows of [ledger.filter((_,index)=>index!==112),[...ledger,ledger[112]!]]){
   assert.throws(()=>verifyCurrentSchemaLedger(tsv,rows),{message:'IX01_CURRENT_LEDGER_PROJECTION_INVALID'});
  }
 });
@@ -127,7 +142,17 @@ test('IX01 신규 0083~0099의 각 Git 바이트·순서·전체ID와 130 원장
  assert.equal(files[129]!.id,'0099_document_stage_output_item');assert.equal(files[129]!.bytes.length,5420);
  assert.equal(hash(files[129]!.bytes),'6155f65510c1785e75af4ae155603ddbbd4f1631e39302236692c71ec152341c');
  const tracked=git(['ls-files','db/migrations']).toString('utf8').trim().split('\n');
- assert.deepEqual(tracked.filter(path=>!files.some(row=>row.path===path)),['db/migrations/0031_empty_project_methodology_application.sql.pending']);
+ assert.deepEqual(tracked.filter(path=>!files.some(row=>row.path===path)),outsideBaseline);
+ for(const path of outsideBaseline){
+  const id=path.slice('db/migrations/'.length,-'.sql.pending'.length),bytes=git(['cat-file','blob','HEAD:'+path]);
+  const source={id,path,bytes},entry={id,checksum:hash(bytes)};
+  for(const candidate of [[...files,source],replaceAt(files,129,source)]){
+   assert.throws(()=>verifyCurrentSchemaSources(tsv,candidate),{message:'IX01_CURRENT_SQL_BASELINE_INVALID'},path);
+  }
+  for(const candidate of [[...ledger,entry],replaceAt(ledger,129,entry)]){
+   assert.throws(()=>verifyCurrentSchemaLedger(tsv,candidate),{message:'IX01_CURRENT_LEDGER_PROJECTION_INVALID'},path);
+  }
+ }
  for(let index=113;index<130;index++){
   const item=files[index]!,changed=Buffer.from(item.bytes);changed[changed.length-1]=changed[changed.length-1]!^1;
   const swapped=[...files];[swapped[index-1],swapped[index]]=[swapped[index]!,swapped[index-1]!];
