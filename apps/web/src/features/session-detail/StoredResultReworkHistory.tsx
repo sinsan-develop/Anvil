@@ -5,6 +5,7 @@ import type {SubmittedResultView} from './result-api.ts';
 import type {StoredResultRework} from './result-rework-write-api.ts';
 import {readStoredResultReworkPage,readStoredResultRework,type StoredResultReworkPage,type StoredReworkSummary} from './stored-result-reworks-api.ts';
 import {ReworkReviewOriginal} from './ReworkReviewOriginal.tsx';
+import {StoredReworkResponsibility} from './StoredReworkResponsibility.tsx';
 /** 기록 발견/명시선택만 한다. 현재 세션 배정·재개·실행 허가로 쓰지 않는다. */
 export function StoredResultReworkHistory({client,result,assignment,onAuthenticationLost,onAccessUnavailable}:{client:ApiClient;result:SubmittedResultView;assignment:ConfirmedAssignmentView;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void}){
  type Owner={key:string;client:ApiClient;transport:typeof fetch};
@@ -18,6 +19,8 @@ export function StoredResultReworkHistory({client,result,assignment,onAuthentica
  const selected=selection?.target===target&&shown?.value?selection.item:null,itemKey=selected&&selection?String(target!.revision)+':'+selection.attempt+':'+selected.ref.id:null,detail=selection&&selected&&original?.selection===selection?original:null;
  const current=(o:Owner)=>mounted.current&&owner.current===o&&client.transport===o.transport;
  const failure=(cause:unknown)=>{const e=cause instanceof ApiError?cause:new ApiError('RESULT_REWORK_HISTORY_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REWORK_HISTORY_RESPONSE_INVALID';if([401,403,404].includes(e.status))unavailable.current(code);if(e.status===401&&current(scope))lost.current();return code;};
+ const selectedCurrent=()=>!!target&&current(scope)&&latest.current===target&&sequence.current===target.revision&&selection?.attempt===detailSequence.current;
+ function detailUnavailable(error:ApiError){if(selectedCurrent()){detailSequence.current++;failure(error);setOriginal(null);setSelection(null);}}
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;sequence.current++;detailSequence.current++;};},[]);
  function load(cursor:string|null,index:number,history:(string|null)[]){if(!current(scope)||flight.current?.owner===scope&&latest.current===flight.current)return;const next={owner:scope,cursor,index,history,revision:++sequence.current};flight.current=next;setSelection(null);setOriginal(null);setTarget(next);}
  function select(item:StoredReworkSummary){if(!target||!shown?.value||busy||!current(scope))return;setOriginal(null);setSelection({target,item,attempt:++detailSequence.current});}
@@ -33,6 +36,9 @@ export function StoredResultReworkHistory({client,result,assignment,onAuthentica
   {nav&&(nav.index>0||shown?.error&&target&&target.index>nav.index)?<button type="button" disabled={busy} onClick={()=>{const index=shown?.error&&target&&target.index>nav.index?nav.index:nav.index-1;load(nav.history[index]!,index,nav.history);}}>더 최근 보완 목록 조회</button>:null}
   {shown?.error&&target?<button type="button" disabled={busy} onClick={()=>load(target.cursor,target.index,target.history)}>같은 보완 목록 다시 조회</button>:null}
   {selected&&!detail?<p role="status">선택 보완 고정 원문 대조 중 · 이전 원문은 숨깁니다.</p>:null}{detail?.error?<p role="alert">{detail.error} · 보완 원문 미확인</p>:null}
-  {detail?.value?<article aria-label="보관 보완 원문"><h5>보관 보완 원문 · 현재 예약/권한·실제 배정/실행 아님</h5><p>{detail.value.ref.id} · {detail.value.ref.contentHash}</p><p>{detail.value.snapshot.input.reason}</p><p>선택 부족 조건: {detail.value.snapshot.input.missingItems.join(', ')}</p><p>남은 부족 조건: {detail.value.snapshot.remainingMissingItems.join(', ')||'없음 · 완료 판정 아님'}</p><p>원 예약 세션 {detail.value.snapshot.stageSessionRef.id} · 업무 완료·정식 실패집계·실행 허가 없음</p><details><summary>보완 조건·원제출/검수/범위·요청자 전체 원문</summary><pre>{JSON.stringify(detail.value,null,2)}</pre></details><ReworkReviewOriginal key={itemKey} client={client} assignment={assignment} result={result} rework={detail.value} onUnavailable={e=>{if(target&&current(scope)&&latest.current===target&&selection?.attempt===detailSequence.current){failure(e);setOriginal(null);setSelection(null);}}}/></article>:null}
+  {detail?.value?<article aria-label="보관 보완 원문"><h5>보관 보완 원문 · 현재 예약/권한·실제 배정/실행 아님</h5><p>{detail.value.ref.id} · {detail.value.ref.contentHash}</p><p>{detail.value.snapshot.input.reason}</p><p>선택 부족 조건: {detail.value.snapshot.input.missingItems.join(', ')}</p><p>남은 부족 조건: {detail.value.snapshot.remainingMissingItems.join(', ')||'없음 · 완료 판정 아님'}</p><p>원 예약 세션 {detail.value.snapshot.stageSessionRef.id} · 업무 완료·정식 실패집계·실행 허가 없음</p><details><summary>보완 조건·원제출/검수/범위·요청자 전체 원문</summary><pre>{JSON.stringify(detail.value,null,2)}</pre></details>
+   <ReworkReviewOriginal key={itemKey} client={client} assignment={assignment} result={result} rework={detail.value} onUnavailable={detailUnavailable}/>
+   <StoredReworkResponsibility key={'responsibility:'+itemKey} client={client} assignment={assignment} result={result} rework={detail.value} current={selectedCurrent} onUnavailable={detailUnavailable}/>
+  </article>:null}
  </section>;
 }

@@ -26,7 +26,7 @@ const document:any=new MemoryNode('#document',9);document.ownerDocument=document
 const saved=new Map<string,PropertyDescriptor|undefined>();let ui:any;
 const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class OwnedChannel extends NativeChannel{constructor(){super();channels.push(this);}}
 
-function fixture(){const f=reworkFixture(),p=prepareResultRework(f.sources,f.input,f.now),at='2026-10-20T00:02:00.000Z',snapshot={scope:p.scope,input:f.input,criteriaRef:p.criteriaRef,roleRef:p.roleRef,stageSessionRef:p.stageSessionRef,remainingMissingItems:p.remainingMissingItems,preservedItems:[],requestedBy:{kind:'HUMAN',userId:id(6),clientId:id(24)},requestedAt:at,scopeVerification:'ASSIGNMENT_SUBSET_ONLY_NOT_OS_VERIFIED',completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false},ref={id:id(40),version:1,contentHash:hash(snapshot)},flags={reworkStored:true,currentBindingVerified:false,currentAuthorityVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false},stored={projectId:p.scope.projectId,ref,status:'RESULT_REWORK_DRAFT_STORED',snapshot,...flags,observedAt:at},item={ref,reviewRef:p.reviewRef,responsibleBindingRef:p.responsibleBindingRef,stageSessionRef:p.stageSessionRef,missingItems:p.missingItems,remainingMissingItems:p.remainingMissingItems,requestedBy:snapshot.requestedBy,requestedAt:at,...flags},list={projectId:p.scope.projectId,resultRef:p.originalResultRef,items:[item],hasMore:false,selectionState:'NOT_SELECTED',observedAt:at};return{...f,stored,item,list};}
+function fixture(registered=false){const f=reworkFixture();if(registered){Object.assign(f.sources.binding.snapshot,{connectionKind:'REGISTERED_DEFINITION',connectionReadiness:'REGISTERED_DEFINITION_ONLY'});f.sources.binding.ref.contentHash=hash(f.sources.binding.snapshot);f.input.responsibleBindingRef=structuredClone(f.sources.binding.ref);}const p=prepareResultRework(f.sources,f.input,f.now),at='2026-10-20T00:02:00.000Z',snapshot={scope:p.scope,input:f.input,criteriaRef:p.criteriaRef,roleRef:p.roleRef,stageSessionRef:p.stageSessionRef,remainingMissingItems:p.remainingMissingItems,preservedItems:[],requestedBy:{kind:'HUMAN',userId:id(6),clientId:id(24)},requestedAt:at,scopeVerification:'ASSIGNMENT_SUBSET_ONLY_NOT_OS_VERIFIED',completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false},ref={id:id(40),version:1,contentHash:hash(snapshot)},flags={reworkStored:true,currentBindingVerified:false,currentAuthorityVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false},stored={projectId:p.scope.projectId,ref,status:'RESULT_REWORK_DRAFT_STORED',snapshot,...flags,observedAt:at},item={ref,reviewRef:p.reviewRef,responsibleBindingRef:p.responsibleBindingRef,stageSessionRef:p.stageSessionRef,missingItems:p.missingItems,remainingMissingItems:p.remainingMissingItems,requestedBy:snapshot.requestedBy,requestedAt:at,...flags},list={projectId:p.scope.projectId,resultRef:p.originalResultRef,items:[item],hasMore:false,selectionState:'NOT_SELECTED',observedAt:at};return{...f,stored,item,list};}
 
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/StoredResultReworkHistory.tsx',import.meta.url));
@@ -37,13 +37,13 @@ before(async()=>{
 });
 after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k,v]of saved)if(v)Object.defineProperty(globalThis,k,v);else Reflect.deleteProperty(globalThis,k);});
 const cursor='signed_page.'+'a'.repeat(64);
-async function mount(){
- const f=fixture(),calls:{path:string;method:string}[]=[],requests:(string|null)[]=[],container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);let lost=0,unavailable:string[]=[];
- const state:{next:null|number|'DELAY'|'JSON';release:null|((r:Response)=>void);releaseJson:null|(()=>void)}={next:null,release:null,releaseJson:null};
+async function mount(registered=false){
+ const f=fixture(registered),calls:{path:string;method:string}[]=[],requests:(string|null)[]=[],container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);let lost=0,unavailable:string[]=[];
+ const state:{next:null|number|'DELAY'|'JSON';release:null|((r:Response)=>void);releaseJson:null|(()=>void);sessionEpoch:number;responsibility?:(kind:'role'|'binding')=>Response|Promise<Response>|undefined}={next:null,release:null,releaseJson:null,sessionEpoch:0};
  function page(next:string|null){return{...f.list,projectId:props.result.snapshot.scope.projectId,resultRef:props.result.ref,items:next?[{...f.item,ref:{...f.item.ref,id:id(20)}}]:Array.from({length:20},(_,n)=>({...f.item,ref:{...f.item.ref,id:id(40-n)}})),hasMore:next===null,nextCursor:next?null:cursor};}
- function client(){return new ui.ApiClient(async(url:any,options:any)=>{const path=String(url),method=options?.method??'GET';calls.push({path,method});assert.equal(method,'GET','POST0');const u=new URL(path,'https://anvil.invalid');if(u.pathname.endsWith('/rework-pages'))requests.push(u.searchParams.get('cursor'));const mode=state.next;state.next=null;if(mode==='DELAY')return new Promise<Response>(r=>{state.release=r;});if(typeof mode==='number')return Response.json({code:mode===401?'AUTH_REQUIRED':'ACCESS_DENIED'},{status:mode});if(u.pathname.endsWith('/rework-pages')){const next=u.searchParams.get('cursor');const response=Response.json(page(next));if(mode==='JSON'){const original=response.json.bind(response);response.json=async()=>{await new Promise<void>(resolve=>{state.releaseJson=resolve;});return original();};}return response;}if(u.pathname.includes('/result-reworks/'))return Response.json({...f.stored,ref:{...f.stored.ref,id:u.pathname.split('/').at(-1)}});if(u.pathname.includes('/result-reviews/'))return Response.json(f.sources.review);assert.fail('미모델 요청 '+path);});}
+ function client(){return new ui.ApiClient(async(url:any,options:any)=>{const path=String(url),method=options?.method??'GET';calls.push({path,method});assert.equal(method,'GET','POST0');const u=new URL(path,'https://anvil.invalid');if(u.pathname.endsWith('/rework-pages'))requests.push(u.searchParams.get('cursor'));const mode=state.next;state.next=null;if(mode==='DELAY')return new Promise<Response>(r=>{state.release=r;});if(typeof mode==='number')return Response.json({code:mode===401?'AUTH_REQUIRED':'ACCESS_DENIED'},{status:mode});if(u.pathname.endsWith('/rework-pages')){const next=u.searchParams.get('cursor');const response=Response.json(page(next));if(mode==='JSON'){const original=response.json.bind(response);response.json=async()=>{await new Promise<void>(resolve=>{state.releaseJson=resolve;});return original();};}return response;}if(u.pathname.includes('/result-reworks/'))return Response.json({...f.stored,ref:{...f.stored.ref,id:u.pathname.split('/').at(-1)}});if(u.pathname.includes('/result-reviews/'))return Response.json(f.sources.review);if(u.pathname.includes('/project-roles/'))return state.responsibility?.('role')??Response.json(f.sources.role);if(u.pathname.includes('/role-bindings/'))return state.responsibility?.('binding')??Response.json(f.sources.binding);assert.fail('미모델 요청 '+path);});}
  const props:any={client:client(),result:f.sources.result,assignment:f.sources.assignment,onAuthenticationLost:()=>{lost++;},onAccessUnavailable:(code:string)=>unavailable.push(code)};
- const commits:string[]=[];function Host(){ui.React.useLayoutEffect(()=>{commits.push(container.textContent);});return ui.React.createElement(ui.StoredResultReworkHistory,props);}
+ const commits:string[]=[];function Host(){ui.React.useLayoutEffect(()=>{commits.push(container.textContent);});return ui.React.createElement(ui.StoredResultReworkHistory,{...props,key:state.sessionEpoch});}
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))],buttons=(label:string)=>nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent===label);
  async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(Host)));}
  async function flush(){await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});}
@@ -55,6 +55,90 @@ async function mount(){
 
 test('실제 보관 보완 widget은 첫→더 이전→방금 본 더 최근 페이지로 기존 cursor GET을 왕복한다',async()=>{
  const f=await mount();try{assert.equal(f.calls.length,0);await f.click('보관 보완 목록 조회');await f.waitFor('보관 보완 1페이지');await f.click('더 이전 보완 목록 조회');await f.waitFor('보관 보완 2페이지');await f.click('더 최근 보완 목록 조회');await f.waitFor('보관 보완 1페이지');assert.deepEqual(f.requests,[null,cursor,null]);assert(f.calls.every(c=>c.method==='GET'));}finally{await f.close();}
+});
+
+const responsibilityButton='당시 책임 역할·예약 원문 열기',closeResponsibility='당시 책임 역할·예약 원문 닫기';
+async function openRework(f:Awaited<ReturnType<typeof mount>>){
+ await f.click('보관 보완 목록 조회');await f.waitFor('보관 보완 1페이지');
+ await f.click('보관 보완 원문 '+f.f.item.ref.id);await f.waitFor(f.f.input.reason);
+}
+const responsibilityCalls=(f:Awaited<ReturnType<typeof mount>>)=>f.calls.filter(c=>/\/(?:project-roles|role-bindings)\//.test(c.path));
+for(const registered of [false,true])test(`보완 당시 책임 원문 · ${registered?'등록 정의':'후보'}의 고정 역할과 예약을 명시 GET2로 표시한다`,async()=>{
+ const f=await mount(registered);
+ try{
+  await openRework(f);assert.equal(responsibilityCalls(f).length,0);
+  await f.click(responsibilityButton);await f.waitFor('같은 단계 예약');
+  const {role,binding}=f.f.sources;
+  assert.deepEqual(responsibilityCalls(f),[
+   {path:`/api/v1/projects/${role.projectId}/project-roles/${role.ref.id}/versions/${role.ref.version}`,method:'GET'},
+   {path:`/api/v1/projects/${binding.projectId}/role-bindings/${binding.ref.id}/versions/${binding.ref.version}`,method:'GET'}
+  ]);
+  assert.match(f.container.textContent,registered?/REGISTERED_DEFINITION_ONLY/:/CANDIDATE_ONLY/);
+  assert(f.container.textContent.includes(role.ref.contentHash));assert(f.container.textContent.includes(binding.ref.contentHash));
+  assert(f.container.textContent.includes(binding.snapshot.sessionRef.contentHash));
+  await f.click(closeResponsibility);assert.doesNotMatch(f.container.textContent,/같은 단계 예약/);
+  assert.equal(responsibilityCalls(f).length,2);assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+for(const mode of ['roleHash','coordinator','bindingHash','generation','session','project','401','403','404'] as const){
+ test(`보완 당시 책임 원문 · ${mode} 실패는 예약·역할 본문을 표시하지 않는다`,async()=>{
+  const f=await mount();
+  try{
+   const role=structuredClone(f.f.sources.role),binding=structuredClone(f.f.sources.binding);
+   if(mode==='roleHash'){role.snapshot.reason='다른 역할 이유';role.ref.contentHash=hash(role.snapshot);}
+   else if(mode==='coordinator'){
+    Object.assign(role.snapshot,{kind:'COORDINATOR',stageRef:null,parentRoleRef:null});
+    role.ref.contentHash=hash(role.snapshot);
+    f.f.stored.snapshot.roleRef=role.ref;f.f.stored.ref.contentHash=hash(f.f.stored.snapshot);
+   }else if(mode==='bindingHash'){binding.snapshot.reason='다른 예약 이유';binding.ref.contentHash=hash(binding.snapshot);}
+   else if(mode==='generation'){binding.snapshot.generation++;binding.ref.contentHash=hash(binding.snapshot);}
+   else if(mode==='session'){
+    const wrongSession={...binding.snapshot.sessionRef,contentHash:'d'.repeat(64)};
+    f.f.stored.snapshot.stageSessionRef=wrongSession;f.f.item.stageSessionRef=wrongSession;
+    f.f.stored.ref.contentHash=hash(f.f.stored.snapshot);
+   }else if(mode==='project')binding.projectId=id(99);
+   f.state.responsibility=(kind)=>['401','403','404'].includes(mode)&&kind==='binding'?
+    Response.json({code:mode==='401'?'AUTH_REQUIRED':'ACCESS_DENIED'},{status:Number(mode)}):Response.json(kind==='role'?role:binding);
+   await openRework(f);
+   await f.click(responsibilityButton);
+   if(['401','403','404'].includes(mode)){
+    const until=Date.now()+2000;
+    while(!f.unavailable().length&&Date.now()<until)await f.flush();
+    assert.equal(f.unavailable().length,1);
+   }else await f.waitFor('당시 책임 관계 미확인');
+   assert.doesNotMatch(f.container.textContent,/같은 단계 예약|다른 예약 이유|다른 역할 이유/);
+   assert.equal(responsibilityCalls(f).length,['roleHash','coordinator'].includes(mode)?1:2);
+   assert.equal(f.lost(),mode==='401'?1:0);assert(f.calls.every(c=>c.method==='GET'));
+  }finally{await f.close();}
+ });
+}
+
+for(const change of ['page','session','transport','close'] as const)for(const status of [200,401])test(`보완 당시 책임 원문 · ${change} 뒤 늦은 ${status}와 연속 클릭은 이전 원문·인증을 변경하지 않는다`,async()=>{
+ const f=await mount();let release:((response:Response)=>void)|undefined;
+ try{
+  await openRework(f);
+  const stage=change==='page'||change==='transport'?'role':'binding';
+  f.state.responsibility=kind=>kind===stage?new Promise<Response>(resolve=>{release=resolve;}):undefined;
+  const first=f.buttons(responsibilityButton)[0]!,eventKey=Object.keys(first).find(k=>k.startsWith('__reactProps'))!;
+  await ui.React.act(async()=>{(first as any)[eventKey].onClick();(first as any)[eventKey].onClick();});
+  const until=Date.now()+2000;
+  while(!release&&Date.now()<until)await f.flush();
+  assert(release);
+  const count=stage==='role'?1:2;assert.equal(responsibilityCalls(f).length,count);
+  if(change==='page'){await f.click('더 이전 보완 목록 조회');await f.waitFor('보관 보완 2페이지');}
+  else if(change==='session'){f.state.sessionEpoch++;await f.render();assert.equal(f.buttons('보관 보완 목록 조회').length,1);}
+  else if(change==='transport'){
+   const original=f.props.client.transport;f.props.client.transport=f.client().transport;await f.render();
+   f.props.client.transport=original;await f.render();
+  }else await f.click(closeResponsibility);
+  await ui.React.act(async()=>release!(Response.json(status===200?f.f.sources[stage]:{code:'AUTH_REQUIRED'},{status})));
+  await f.flush();
+  assert.equal(responsibilityCalls(f).length,count);
+  assert.doesNotMatch(f.container.textContent,/같은 단계 예약|AUTH_REQUIRED/);
+  assert.equal(f.lost(),0);assert.deepEqual(f.unavailable(),[]);
+  assert(f.calls.every(c=>c.method==='GET'));
+ }finally{release?.(Response.json(f.f.sources.binding));await f.close();}
 });
 
 
