@@ -2,14 +2,24 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {buildApp} from '../../../apps/server/app.ts';
 import {ProjectResultReviews} from '../../../apps/server/modules/results/project-result-reviews.ts';
 import {ProjectResultReviewSources} from '../../../apps/server/modules/results/project-result-review-sources.ts';
-import {ProjectMethodologies} from '../../../apps/server/modules/methodologies/project-methodologies.ts';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
 import {readNextActionBasis} from '../../../apps/web/src/features/session-detail/next-action-basis-api.ts';
 import {nextActionFixture} from '../UI05/next-action-basis-fixture.ts';
 const m:any=await import('../../../apps/server/modules/scheduling/project-next-action-basis.ts').catch((e:any)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 function fixture(outcome:'REWORK'|'BLOCKED'='REWORK'){
  const f=nextActionFixture(outcome),actor:any={actorId:f.id(90),clientId:f.id(91),credentialGeneration:1,serverOwner:false,reauthUntil:null,authSession:{id:f.id(92),idleExpiresAt:'2026-10-20T00:10:00.000Z',absoluteExpiresAt:'2026-10-20T12:00:00.000Z'}},calls:string[]=[];let member=true,afterApplication=()=>{};
- const db:any={query:async(sql:string,args:any[])=>{calls.push(sql);if(sql==='SELECT clock_timestamp() AS at')return{rows:[{at:new Date('2026-10-20T00:00:00.000Z')}]};assert(sql.includes('JOIN anvil.project_members'));assert.deepEqual(args,[f.pid,actor.actorId]);return{rows:member?[{id:f.pid,participation:'OWNER',archived_at:null}]:[]};}};
+ const db:any={query:async(sql:string,args:any[])=>{
+  calls.push(sql);
+  if(sql==='SELECT clock_timestamp() AS at')return{rows:[{at:new Date('2026-10-20T00:00:00.000Z')}]};
+  if(sql.includes('FROM anvil.project_methodologies')){
+   assert.deepEqual(args,[f.pid]);
+   const {applicationRef,snapshot}=f.application;
+   return {rows:[{id:applicationRef.id,project_id:f.pid,application_version:applicationRef.version,source_definition_id:snapshot.sourceRef.id,
+    source_version:snapshot.sourceRef.version,source_hash:snapshot.sourceRef.contentHash,snapshot_json:structuredClone(snapshot),snapshot_hash:applicationRef.contentHash}]};
+  }
+  assert(sql.includes('JOIN anvil.project_members'));assert.deepEqual(args,[f.pid,actor.actorId]);
+  return{rows:member?[{id:f.pid,participation:'OWNER',archived_at:null}]:[]};
+ }};
  const bound=(d:any,a:any,pid:string)=>{assert.equal(d,db);assert.deepEqual(a,actor);assert.equal(pid,f.pid);};
  const reviews={read:async(d:any,a:any,pid:string,id:string)=>{bound(d,a,pid);assert.equal(id,f.review.ref.id);return structuredClone(f.review);}};
  const sources={read:async(d:any,a:any,pid:string,id:string)=>{bound(d,a,pid);assert.equal(id,f.result.ref.id);return{projectId:pid,result:structuredClone(f.result),assignment:structuredClone(f.assignment)};}};
@@ -39,16 +49,17 @@ test('최종 적용본 교체와 인증 기한 경과는 최초 근거가 정상
 });
 test('인증된 새 GET는 기존 원 reader를 통해 근거만 반환하고 COMMIT 뒤 만료도 거절한다',async t=>{
  t.mock.timers.enable({apis:['Date'],now:Date.parse('2026-10-20T00:00:00.000Z')});const f=fixture();let late=false,auth=0;
- t.mock.method(ProjectResultReviews.prototype,'read',f.ports.reviews.read as any);t.mock.method(ProjectResultReviewSources.prototype,'read',f.ports.sources.read as any);t.mock.method(ProjectMethodologies.prototype,'readApplication',f.ports.applications.readApplication as any);
- const repository:any={signProjectCursor:()=>'',signMethodCursor:()=>'',authenticated:async(token:string,csrf:any,body:any)=>{auth++;assert.equal(token,'a'.repeat(43));assert.equal(csrf,null);const v=await body(f.db,f.actor);if(late)t.mock.timers.tick(600001);return v;}},app=buildApp({},undefined,{repository,origin:'https://localhost:3830'}),url=`/api/v1/projects/${f.pid}/result-reviews/${f.review.ref.id}/next-action-basis`;
+ t.mock.method(ProjectResultReviews.prototype,'read',f.ports.reviews.read as any);t.mock.method(ProjectResultReviewSources.prototype,'read',f.ports.sources.read as any);
+ const repository:any={installationId:f.id(93),signProjectCursor:()=>'',signMethodCursor:()=>'',authenticated:async(token:string,csrf:any,body:any)=>{auth++;assert.equal(token,'a'.repeat(43));assert.equal(csrf,null);const v=await body(f.db,f.actor);if(late)t.mock.timers.tick(600001);return v;}},app=buildApp({},undefined,{repository,origin:'https://localhost:3830'}),url=`/api/v1/projects/${f.pid}/result-reviews/${f.review.ref.id}/next-action-basis`;
  try{const r=await app.inject({method:'GET',url,headers:{host:'localhost:3830',cookie:'__Host-anvil.sid='+'a'.repeat(43)}});assert.equal(r.statusCode,200,r.body);assert.equal(r.headers['cache-control'],'no-store');assert.equal(r.json().action,'REVIEW_REWORK_FOR_SELECTED_STAGE');assert.equal(r.json().completionAccepted,false);assert.equal(Object.hasOwn(r.json(),'validUntil'),false);assert.equal(auth,1);
   const client=new ApiClient(async(path,options)=>{assert.equal(options?.method,'GET');assert.equal(options.credentials,'same-origin');const response=await app.inject({method:'GET',url:String(path),headers:{host:'localhost:3830',cookie:'__Host-anvil.sid='+'a'.repeat(43)}});return new Response(response.body,{status:response.statusCode,headers:{'content-type':String(response.headers['content-type'])}});});
   const displayed=await readNextActionBasis(client,f.result,f.assignment,f.review,()=>true);assert.equal(displayed?.nodeId,'review');assert.equal(displayed?.completionAccepted,false);assert.equal(displayed?.sourceAssurance,'SERVER_STORED_REVIEW_WITH_CURRENT_METHODOLOGY');
+  assert.equal(f.calls.filter(sql=>sql.includes('FROM anvil.project_methodologies')).length,4,'라우트는 실제 적용 방법론을 전후로 검산한다');
   late=true;const expired=await app.inject({method:'GET',url,headers:{host:'localhost:3830',cookie:'__Host-anvil.sid='+'a'.repeat(43)}});assert.equal(expired.statusCode,401);assert(!expired.body.includes('SERVER_STORED_REVIEW_WITH_CURRENT_METHODOLOGY'));
  }finally{await app.close();}
 });
 test('신규 근거 GET는 익명·중복쿠키/Bearer·다른host·추가query를 DB 전에 거절한다',async()=>{
- const f=fixture();let auth=0;const repository:any={signProjectCursor:()=>'',signMethodCursor:()=>'',authenticated:async()=>{auth++;throw Error('FORBIDDEN_DB');}},app=buildApp({},undefined,{repository,origin:'https://localhost:3830'}),url=`/api/v1/projects/${f.pid}/result-reviews/${f.review.ref.id}/next-action-basis`,cookie='__Host-anvil.sid='+'a'.repeat(43);
+ const f=fixture();let auth=0;const repository:any={installationId:f.id(93),signProjectCursor:()=>'',signMethodCursor:()=>'',authenticated:async()=>{auth++;throw Error('FORBIDDEN_DB');}},app=buildApp({},undefined,{repository,origin:'https://localhost:3830'}),url=`/api/v1/projects/${f.pid}/result-reviews/${f.review.ref.id}/next-action-basis`,cookie='__Host-anvil.sid='+'a'.repeat(43);
  try{for(const [path,headers,status]of [[url,{host:'localhost:3830'},401],[url,{host:'localhost:3830',cookie:cookie+'; '+cookie},401],[url,{host:'other.invalid',cookie},403],[url,{host:'localhost:3830',cookie,authorization:'Bearer av3ex1_'+'a'.repeat(43)},403],[url+'?execute=true',{host:'localhost:3830',cookie},400]] as const){const r=await app.inject({method:'GET',url:path,headers});assert.equal(r.statusCode,status,r.body);assert(!r.body.includes('FORBIDDEN_DB'));}assert.equal(auth,0);
  }finally{await app.close();}
 });

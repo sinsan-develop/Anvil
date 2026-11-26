@@ -60,9 +60,10 @@ function stageFixture(){
 
 function approvalFixture(command:ProjectCommand,actor:any,options:any={}){
  const pid=command.projectId,uid=actor.actorId,key=command.commandId,requestId=id(51),decisionId=id(52),serverId=id(53),consumptionId=id(54),documentId=id(55),at='2026-10-21T14:00:00.000Z',now=new Date(at);
-function approved(options:{stale?:boolean;targetChanged?:boolean;deny?:boolean;expired?:boolean;rejected?:boolean;candidateMissing?:boolean;viewer?:boolean;pending?:boolean}={}) {
+function approved(options:{stale?:boolean;targetChanged?:boolean;deny?:boolean;expired?:boolean;rejected?:boolean;candidateMissing?:boolean;viewer?:boolean;pending?:boolean;requestEnabled?:boolean}={}) {
  const ref={id:documentId,version:1,contentHash:'a'.repeat(64)},payload=structuredClone(command.payload);
  const rules=[{ruleId:'SAVE',subjectRef:{kind:'HUMAN',userId:uid},operations:['startStage'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:options.deny?'DENY':'REQUIRE_APPROVAL',limitPolicyRef:null,expiresAt:'2099-10-21T00:00:00.000Z'}];
+ if(options.requestEnabled)rules.push({...rules[0]!,ruleId:'REQUEST_APPROVAL',operations:['requestApproval'],disposition:'AUTO'});
  const policy={rules,reason:'한 초안 저장',reviewRefs:[]},policyRef={id:uid,version:1,contentHash:hash(policy)};
  const scope={operation:'startStage',targetRef:null,expectedVersion:0,payloadHash:hash(payload),baselineRefs:[],environmentRef:null,sourceScopes:[],limitsRef:null,requestedSubjectRef:{kind:'HUMAN',userId:uid,clientId:actor.clientId},controlGeneration:1};
  const scopeDigest=hash(scope),details={reason:'한 초안',risks:{data:'초안',security:'확인',cost:'없음',interruption:'없음',unverified:'합성'},rollback:{method:'과거 보존',limitations:'삭제 아님',evidenceRefs:[]},expiresAt:options.expired?'2026-10-20T00:00:00.000Z':'2099-10-21T00:00:00.000Z',actionScope:scope,candidateCommandId:key};
@@ -140,15 +141,38 @@ test('0047 정적 반례: 승인흔적이나operation을 UPDATE/DELETE로 지워
 });
 
 test('승인 요청 저장만으로 queue/소비를 쓰지 않고 별도 요청명령의 정확 scope를 보존한다',async()=>{
- const f=stageFixture(),a=approvalFixture(f.request,f.actor),stored:any[]=[],db:any={query:async(sql:string,args:any[]=[])=>{
+ const f=stageFixture(),a=approvalFixture(f.request,f.actor,{requestEnabled:true}),stored:any[]=[],notices:any[][]=[];
+ let capacityChecks=0;
+ const db:any={query:async(sql:string,args:any[]=[])=>{
   if(sql.startsWith('SELECT 1 FROM anvil.'))return{rows:[],rowCount:0};
   if(sql.includes('FROM anvil.permission_policies'))return a.db.query(sql,args);
   if(sql.startsWith('INSERT INTO anvil.approval_requests')){stored.push(args);return{rows:[],rowCount:1};}
+  if(sql==='SELECT anvil.assert_approval_notification_capacity($1)'){
+   assert.deepEqual(args,[f.pid]);assert.equal(stored.length,1);capacityChecks++;return{rows:[{}]};
+  }
+  if(sql.startsWith('INSERT INTO anvil.notifications')){
+   assert.equal(capacityChecks,1);notices.push(args);return{rows:[],rowCount:1};
+  }
   return f.db.query(sql,args);
  }};
  const c={...a.requestCommand,payload:{details:a.details}} as ProjectCommand,result:any=await new ProjectApprovals().request(db,f.actor,c,a.policyRef);
  assert.equal(result.data.status,'APPROVAL_REQUESTED');assert.equal(stored.length,1);assert.equal(f.rows.length,0);assert.equal(a.writes.length,0);assert.equal(result.data.request.details.candidateCommandId,f.request.commandId);assert.equal(result.data.request.details.actionScope.payloadHash,hash(f.request.payload));
  assert.equal(result.data.request.details.actionScope.targetRef,null);assert.equal(result.data.request.details.actionScope.limitsRef,null);assert.deepEqual(f.request.payload,a.command.payload);
+ assert.equal(f.commands.size,1);
+ const [requestCommandId]=f.commands.keys();
+ assert(requestCommandId);
+ const saved=f.commands.get(requestCommandId);
+ assert.equal(saved.operation,'requestApproval');assert.equal(saved.command_key,c.commandId);assert.equal(saved.request_hash,hash(c));
+ assert.equal(saved.audit_count,1);assert.equal(saved.audit_scope_digest,saved.authorization_scope_digest);
+ assert.deepEqual(saved.audit_target_ref,result.data.ref);assert.equal(saved.approval_consumption_id,null);
+ assert.equal(f.calls.some(sql=>sql.startsWith('INSERT INTO anvil.stage_runs')||sql.startsWith('INSERT INTO anvil.queue_requests')),false);
+ assert.equal(notices.length,1);
+ const notice=notices[0]!,notification={id:notice[0],eventRef:{kind:'APPROVAL_REQUESTED',serverCommandId:requestCommandId,
+  requestRef:result.data.ref,channel:'IN_APP',occurredAt:result.data.request.createdAt},recipientRef:{kind:'HUMAN',userId:f.actor.actorId},
+  projectRef:{id:f.pid},severity:'ACTION_REQUIRED',reason:'APPROVAL_REQUESTED',
+  authenticatedTarget:{kind:'APPROVAL_REQUEST',projectId:f.pid,approvalRequestId:result.data.ref.id},deliveryState:'STORED_IN_APP'};
+ assert.deepEqual(notice.slice(1),[f.pid,requestCommandId,result.data.ref.id,1,result.data.ref.contentHash,f.actor.actorId,
+  'APPROVAL_REQUESTED','IN_APP','ACTION_REQUIRED','APPROVAL_REQUESTED','STORED_IN_APP',result.data.request.createdAt,hash(notification)]);
 });
 
 test('AUTO 원장도 receipt/audit 누락·복수감사·주체/command/hash 혼합을 보호조회에서 거절한다',async()=>{
