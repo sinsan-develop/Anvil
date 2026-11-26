@@ -126,6 +126,33 @@ test('서버 관측 저장 뒤 ACK 응답 유실: 자료 GET이 차단돼도 원
   assert.equal((await f.startPorts().spool.coverage(pending.ref)).covered,true);
  }finally{await f.h.app.close();}
 });
+test('재접속의 정상 원 관측에 역순 ACK 원장이 있으면 새 실행·관측 POST·cursor 전진 없이 UNKNOWN이다',async()=>{
+ const f=await preparedExecution(Infinity,false);
+ try{
+  const first=await new NormalStartPolling(options(f)).run(f.signal);
+  assert.equal(first.commands,1);assert.equal(f.mode.wires,1);
+  const spool=f.startPorts().spool,old=await spool.latestAck();assert.ok(old);
+  await spool.record({type:'HEARTBEAT',commandId:f.e.commandId,envelopeHash:f.e.envelopeHash,
+   localRecordRef:{id:randomUUID(),version:1,contentHash:'a'.repeat(64)},processRef:null,occurredAt:new Date(f.clock()).toISOString(),reasonCode:'NONE'});
+  const events=(await spool.batch()).events,extra=events.at(-1)!;
+  assert.equal(extra.sequence,old.snapshot.highestContiguous+1);
+  const hash=(v:unknown)=>contentHash(canonicalJson(v)),newer={...old.snapshot,highestContiguous:extra.sequence,maxSequence:extra.sequence,storedCount:extra.sequence,
+   contiguousDigest:hash({previous:old.snapshot.contiguousDigest,eventHash:hash(extra)}),recordedAt:new Date(f.clock()).toISOString()};
+  await f.store.exclusive('acks',async tx=>{
+   const rows=await tx.read();assert.equal(rows.length,1);
+   await tx.appendAndSync({ref:{...old.ref,version:old.ref.version+1,contentHash:hash(newer)},snapshot:newer});
+   await tx.appendAndSync(old);
+  });
+  const before=f.http.calls.length,currents=f.mode.currents,permits=f.q.permits.length,observations=f.q.observations.length;
+  const replay=await new NormalStartPolling(options(f)).run(f.signal);
+  assert.equal(replay.state,'UNKNOWN');assert.equal(replay.commands,0);assert.equal(replay.cursor.afterSequence,0);
+  const later=f.http.calls.slice(before);
+  assert.deepEqual(later.map(call=>[call.method,call.path.split('/').at(-1)]),[['POST','challenges'],['GET','commands']]);
+  assert.equal(f.mode.wires,1);assert.equal(f.mode.currents,currents);assert.equal(f.q.permits.length,permits);assert.equal(f.q.observations.length,observations);
+  assert.deepEqual((await f.startPorts().spool.batch()).events,events);
+  assert.equal((await f.store.exclusive('acks',tx=>tx.read())).length,3);
+ }finally{await f.h.app.close();}
+});
 test('완전 수신과 정상 부분 수신만 있는 첫 START는 각각 기존 원문 검산 후 한 번 실행한다',async()=>{
  for(const partial of [false,true]){
   const f=await preparedExecution();try{

@@ -48,7 +48,7 @@ test('RESPONSE 기록 뒤 관측 일시 실패는 재시작 때 같은 ref/시�
   assert.equal((await first.coordinator.start(f.e,f.signal)).state,'UNKNOWN');assert.equal(f.mode.wires,1);
   const next=f.make();assert.equal((await next.coordinator.start(f.e,f.signal)).state,'RESPONSE_RECORDED');assert.equal(f.mode.wires,1);
   assert.deepEqual((await next.spool.batch()).events.map(e=>e.type),['RECEIVED','PREPARED','START_ATTEMPTED','PERMIT_RECORDED','PROVIDER_RESPONSE_RECEIVED']);
-  const ack=await next.spool.sync(f.post,f.signal);assert.equal(ack.snapshot.highestContiguous,5);
+  const ack=await next.spool.sync(f.post,f.signal);assert.ok(ack);assert.equal(ack.snapshot.highestContiguous,5);
  }finally{await f.h.app.close();}
 });
 test('attempt 기록 뒤 관측 실패는 재시작 복구하되 wire 재개 없이 UNKNOWN이다',async()=>{

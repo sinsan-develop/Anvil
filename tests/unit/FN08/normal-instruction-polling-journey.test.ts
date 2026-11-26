@@ -7,7 +7,7 @@ test('원 START/SEND 혼합 page에서 내구 관측 ACK 이후 cursor를 확정
  const f=await normalInstructionPollingFixture();try{
   const r=await f.poll().run(f.signal);assert.equal(r.state,'LIMIT_REACHED',JSON.stringify({r,effects:f.effects,observations:f.h.observations.length}));assert.equal(r.commands,2);assert.equal(r.cursor.afterSequence,f.item.sequence);
   assert.deepEqual(f.effects,{start:1,send:1,sendFail:false});assert.equal(f.h.startPermits.length,1);assert.equal(f.h.permits.length,1);
-  assert.equal(f.h.observations.length,9);assert.equal((await f.spool.latestAck()).snapshot.highestContiguous,9);
+  assert.equal(f.h.observations.length,9);const ack=await f.spool.latestAck();assert.ok(ack);assert.equal(ack.snapshot.highestContiguous,9);
   const replay=await f.poll().run(f.signal);assert.equal(replay.state,'LIMIT_REACHED');assert.equal(f.effects.start,1);assert.equal(f.effects.send,1);assert.equal(f.h.observations.length,9);
  }finally{await f.h.close();}
 });

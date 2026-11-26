@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
 import {isProxy} from 'node:util/types';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
-import {cloneV1,recordV1,refV1,hashV1,isoV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
+import {arrayV1,cloneV1,recordV1,refV1,hashV1,isoV1,uuidV1,type RuntimeRefV1 as Ref} from '../../../contracts/runtime/validation-v1.ts';
 import type {NormalJournalStore,NormalLocalScope} from './normal-start-file-store.ts';
 import type {NormalProtectedPostClient,NormalObservationResult} from './normal-protected-post-client.ts';
 export interface NormalLocalObservation{type:string;commandId:string;envelopeHash:string;localRecordRef:Ref;processRef:Ref|null;occurredAt:string;reasonCode:string}
@@ -10,6 +10,9 @@ const types=['RECEIVED','PREPARED','START_ATTEMPTED','PERMIT_RECORDED','PROVIDER
 const reasons=['NONE','UNVERIFIED_PROVIDER_CLAIM','PROVIDER_RESPONSE_LOST','RECORD_UNCERTAIN','STOP_UNCONFIRMED','REJECTED_BY_PROVIDER'];
 const fail=():never=>{throw Error('NORMAL_OBSERVATION_INVALID');};
 const integer=(n:unknown):n is number=>Number.isSafeInteger(n)&&Number(n)>=0&&Number(n)<=10000;
+type AckSnapshot={execution:NormalLocalScope;highestContiguous:number;maxSequence:number;contiguousDigest:string;gaps:{from:number;to:number}[];storedCount:number;
+ writerReleaseVerified:false;executionAuthorized:false;dispatchPerformed:false;recordedAt:string};
+type Ack={ref:Ref;snapshot:AckSnapshot};
 export class NormalObservationSpool{
  readonly executionAuthorized=false;readonly dispatchPerformed=false;
  #store:NormalJournalStore;#scope:NormalLocalScope;#clock:()=>number;
@@ -53,11 +56,11 @@ export class NormalObservationSpool{
    return{events,batchHash:hash(events)};
   });
  }
- #ack(raw:any,events:any[]){
-  const a=cloneV1(raw),v=a?.snapshot;
+ #ack(raw:unknown,eventCount:number,prefix:(highest:number)=>string){
+  const a=cloneV1(raw) as Ack,v=a?.snapshot;
   if(!recordV1(a,['ref','snapshot'])||!refV1(a.ref)||!recordV1(v,['execution','highestContiguous','maxSequence','contiguousDigest','gaps','storedCount','writerReleaseVerified','executionAuthorized','dispatchPerformed','recordedAt'])||
    a.ref.contentHash!==hash(v)||!same(v.execution,this.#scope)||!integer(v.highestContiguous)||!integer(v.maxSequence)||!integer(v.storedCount)||
-   v.highestContiguous>v.maxSequence||v.maxSequence<1||v.storedCount<1||v.maxSequence>events.length||!hashV1(v.contiguousDigest)||!Array.isArray(v.gaps)||v.gaps.length>10000||
+   v.highestContiguous>v.maxSequence||v.maxSequence<1||v.storedCount<1||v.maxSequence>eventCount||!hashV1(v.contiguousDigest)||!Array.isArray(v.gaps)||v.gaps.length>10000||
    v.writerReleaseVerified!==false||v.executionAuthorized!==false||v.dispatchPerformed!==false||!isoV1(v.recordedAt)||Date.parse(v.recordedAt)>this.#now())fail();
   let last=0,missing=0;for(const gap of v.gaps){
    if(!recordV1(gap,['from','to'])||!integer(gap.from)||!integer(gap.to)||gap.from<1||gap.from>gap.to||gap.to>=v.maxSequence||
@@ -65,37 +68,68 @@ export class NormalObservationSpool{
   }
   if(v.storedCount!==v.maxSequence-missing||v.highestContiguous<v.maxSequence&&v.gaps[0]?.from!==v.highestContiguous+1||
    v.highestContiguous===v.maxSequence&&v.gaps.length)fail();
-  let digest=hash([]);for(const e of events.slice(0,v.highestContiguous))digest=hash({previous:digest,eventHash:hash(e)});
-  if(v.contiguousDigest!==digest)fail();return a;
+  if(v.contiguousDigest!==prefix(v.highestContiguous))fail();return a;
+ }
+ #ackReader(events:any[]){
+  const digests=[hash([])];
+  const prefix=(highest:number)=>{
+   for(let i=digests.length;i<=highest;i++)digests.push(hash({previous:digests[i-1],eventHash:hash(events[i-1])}));
+   return digests[highest]!;
+  };
+  return (raw:unknown)=>this.#ack(raw,events.length,prefix);
  }
  async #withEvents<T>(body:(events:any[])=>Promise<T>){
   return this.#store.exclusive('observations',async tx=>body(this.#rows(await tx.read()).map(r=>r.snapshot.event)));
  }
  /** server append-only: 이전에 저장됐다고 한 순번은 뒤 ACK에서 빠질 수 없다. */
- #covers(newer:any,older:any){
-  if(older.maxSequence>newer.maxSequence)return false;
-  const bits=(v:any)=>{const out=new Uint8Array(v.maxSequence+1).fill(1);out[0]=0;
-   for(const gap of v.gaps)out.fill(0,gap.from,gap.to+1);return out;};
-  const a=bits(newer),b=bits(older);for(let n=1;n<b.length;n++)if(b[n]&&!a[n])return false;return true;
+ #covers(newer:AckSnapshot,older:AckSnapshot){
+  if(newer.maxSequence<older.maxSequence||newer.highestContiguous<older.highestContiguous||newer.storedCount<older.storedCount)return false;
+  // 이전 범위 안에서 새로 빠진 구간이 있다면 당시에도 같은 구간이 비어 있어야 한다.
+  let i=0;
+  for(const gap of newer.gaps){
+   if(gap.from>older.maxSequence)break;
+   while(older.gaps[i]&&older.gaps[i]!.to<gap.from)i++;
+   const previous=older.gaps[i];
+   if(!previous||previous.from>gap.from||previous.to<gap.to)return false;
+  }
+  return true;
+ }
+ #ackHistory(rows:unknown,read:(raw:unknown)=>Ack){
+  if(isProxy(rows)||!arrayV1(rows,10000))return fail();
+  const history:Ack[]=[];
+  for(const row of rows){
+   const ack=read(row),previous=history.at(-1);
+   if(previous&&(ack.ref.id!==previous.ref.id||ack.ref.version<=previous.ref.version||!this.#covers(ack.snapshot,previous.snapshot)))fail();
+   history.push(ack);
+  }
+  return history;
  }
  async acceptAck(raw:unknown){
   return this.#withEvents(events=>this.#store.exclusive('acks',async tx=>{
-   const ack=this.#ack(raw,events),prior=(await tx.read()).map(a=>this.#ack(a,events)),latest=prior.at(-1);
+   const read=this.#ackReader(events),prior=this.#ackHistory(await tx.read(),read),latest=prior.at(-1),ack=read(raw);
    if(latest){
-    if(same(latest.ref,ack.ref)){if(!same(latest,ack))fail();return cloneV1(latest);}
-    if(ack.snapshot.maxSequence<latest.snapshot.maxSequence||ack.ref.version<latest.ref.version){
-     // 최초 packet의 과거 ACK는 검증한 이력 prefix이며 최신 ACK를 덮어쓰지 않는다.
-     if(ack.ref.id!==latest.ref.id||!this.#covers(latest.snapshot,ack.snapshot)||ack.snapshot.highestContiguous>latest.snapshot.highestContiguous||ack.snapshot.storedCount>latest.snapshot.storedCount||prior.some(a=>a.ref.version===ack.ref.version&&!same(a,ack)))fail();return cloneV1(latest);
+    if(ack.ref.id!==latest.ref.id)fail();
+    const retained=prior.find(a=>a.ref.version===ack.ref.version);
+    if(retained){if(!same(retained,ack))fail();return cloneV1(latest);}
+    if(ack.ref.version<latest.ref.version){
+     // 저장본 사이에 늦게 도착한 ACK도 양쪽 범위 안에 있을 때 최신을 그대로 반환한다.
+     const nextIndex=prior.findIndex(a=>a.ref.version>ack.ref.version),next=prior[nextIndex]!,previous=prior[nextIndex-1];
+     if(!this.#covers(next.snapshot,ack.snapshot)||previous&&!this.#covers(ack.snapshot,previous.snapshot))fail();
+     return cloneV1(latest);
     }
-    if(!this.#covers(ack.snapshot,latest.snapshot)||ack.snapshot.highestContiguous<latest.snapshot.highestContiguous||ack.snapshot.storedCount<latest.snapshot.storedCount||
-     ack.ref.id!==latest.ref.id||ack.ref.version<=latest.ref.version)fail();
+    if(!this.#covers(ack.snapshot,latest.snapshot))fail();
    }
-   await tx.appendAndSync(ack);const reread=await tx.read();if(!same(reread.at(-1),ack))fail();return cloneV1(ack);
+   if(prior.length===10000)fail();
+   await tx.appendAndSync(ack);
+   const reread=await tx.read();
+   if(isProxy(reread)||!arrayV1(reread,10000)||reread.length!==prior.length+1||
+    prior.some((saved,i)=>!same(reread[i],saved))||!same(reread.at(-1),ack))fail();
+   return cloneV1(ack);
   }));
  }
  async latestAck(){
   return this.#withEvents(events=>this.#store.exclusive('acks',async tx=>{
-   const rows=await tx.read();return rows.length?this.#ack(rows.at(-1),events):null;
+   return this.#ackHistory(await tx.read(),this.#ackReader(events)).at(-1)??null;
   }));
  }
  /** 현재 원장 끝을 고정하거나 이미 고정한 원 관측 ref까지의 연속 ACK를 확인한다. 전송/권한 발급은 없다. */
@@ -105,7 +139,7 @@ export class NormalObservationSpool{
   return this.#store.exclusive('observations',async tx=>{
    const rows=this.#rows(await tx.read()),events=rows.map(r=>r.snapshot.event),target=ref===undefined?rows.at(-1):rows.find(r=>same(r.ref,ref));
    if(ref!==undefined&&!target)fail();
-   const latest=await this.#store.exclusive('acks',async a=>{const saved=await a.read();return saved.length?this.#ack(saved.at(-1),events):null;});
+   const latest=await this.#store.exclusive('acks',async a=>this.#ackHistory(await a.read(),this.#ackReader(events)).at(-1)??null);
    const sequence=target?.snapshot.sequence??0,highestContiguous=latest?.snapshot.highestContiguous??0;
    return{ref:target?cloneV1(target.ref):null,sequence,highestContiguous,covered:highestContiguous>=sequence,executionAuthorized:false as const,dispatchPerformed:false as const};
   });

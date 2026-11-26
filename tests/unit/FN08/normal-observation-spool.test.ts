@@ -69,3 +69,82 @@ test('coverage의 getter/proxy ref는 실행하지 않고 거절한다',async()=
  await assert.rejects(s.coverage(new Proxy({...ref},{getPrototypeOf(){reads++;return Object.prototype;}})));
  assert.equal(reads,0);
 });
+
+async function ackHistoryFixture(){
+ const journal=ramJournal(),spool=new m.NormalObservationSpool(journal,scope,()=>now),aid=randomUUID();
+ let last=ref;
+ for(let i=0;i<6;i++)last=await spool.record(event());
+ const digests=[hash([])];
+ for(const e of (await spool.batch()).events)digests.push(hash({previous:digests.at(-1),eventHash:hash(e)}));
+ const ack=(version:number,highestContiguous:number,maxSequence:number,gaps:{from:number;to:number}[]=[],id=aid)=>{
+  const snapshot={execution:scope,highestContiguous,maxSequence,gaps,contiguousDigest:digests[highestContiguous],
+   storedCount:maxSequence-gaps.reduce((n,g)=>n+g.to-g.from+1,0),recordedAt:new Date(now).toISOString(),
+   writerReleaseVerified:false,executionAuthorized:false,dispatchPerformed:false};
+  return {ref:{id,version,contentHash:hash(snapshot)},snapshot};
+ };
+ return{journal,spool,ack,last};
+}
+
+test('각 행의 hash가 유효해도 ACK 이력이 역순·교차 계열·범위 축소면 모든 소비 입구에서 실패한다',async()=>{
+ for(const mode of ['ORDER','FOREIGN','HIGHEST','SAME_MAX_GAP']){
+  const {journal,spool,ack,last}=await ackHistoryFixture();
+  const first=mode==='HIGHEST'?ack(1,2,4,[{from:3,to:3}]):ack(1,1,5,[{from:2,to:2},{from:4,to:4}]);
+  const second=mode==='ORDER'?ack(3,6,6):mode==='FOREIGN'?ack(3,6,6,[],randomUUID()):
+   mode==='HIGHEST'?ack(3,1,6,[{from:2,to:2}]):ack(3,1,5,[{from:2,to:3}]);
+  const rows=mode==='ORDER'?[second,first]:[first,second];
+  for(const item of rows){
+   const standalone=ramJournal();
+   standalone.data.set('observations',structuredClone(journal.data.get('observations')!));standalone.data.set('acks',[item]);
+   assert.deepEqual(await new m.NormalObservationSpool(standalone,scope,()=>now).latestAck(),item,mode);
+  }
+  journal.data.set('acks',structuredClone(rows));
+  let prepared=0,posted=0;
+  const client={async prepareObservations(){prepared++;return{};},async send(){posted++;return{executionAuthorized:false,ack:ack(9,6,6)};}};
+  await assert.rejects(spool.latestAck(),/NORMAL_OBSERVATION_INVALID/,mode);
+  await assert.rejects(spool.coverage(last),/NORMAL_OBSERVATION_INVALID/,mode);
+  await assert.rejects(spool.sync(client as any,new AbortController().signal),/NORMAL_OBSERVATION_INVALID/,mode);
+  await assert.rejects(spool.acceptAck(ack(9,6,6)),/NORMAL_OBSERVATION_INVALID/,mode);
+  assert.equal(prepared,0,mode);assert.equal(posted,0,mode);assert.deepEqual(journal.data.get('acks'),rows,mode);
+ }
+});
+
+test('새 버전의 낮은 max는 거절하고 정상 gap 보완과 exact older ACK는 원장 끝을 유지한다',async()=>{
+ const {journal,spool,ack}=await ackHistoryFixture();
+ const a=ack(2,1,5,[{from:2,to:2},{from:4,to:4}]),b=ack(4,5,5),c=ack(5,6,6);
+ await spool.acceptAck(a);
+ await assert.rejects(spool.acceptAck(ack(3,1,1)),/NORMAL_OBSERVATION_INVALID/);
+ await spool.acceptAck(b);await spool.acceptAck(c);
+ assert.deepEqual(await spool.acceptAck(a),c);assert.deepEqual(await spool.acceptAck(b),c);assert.deepEqual(await spool.acceptAck(c),c);
+ assert.deepEqual(await spool.acceptAck(ack(1,1,1)),c);
+ assert.deepEqual(await spool.acceptAck(ack(3,3,5,[{from:4,to:4}])),c);
+ await assert.rejects(spool.acceptAck(ack(4,4,4)),/NORMAL_OBSERVATION_INVALID/);
+ await assert.rejects(spool.acceptAck(ack(3,1,1)),/NORMAL_OBSERVATION_INVALID/);
+ await assert.rejects(spool.acceptAck(ack(3,6,6)),/NORMAL_OBSERVATION_INVALID/);
+ assert.deepEqual(await spool.latestAck(),c);assert.deepEqual(journal.data.get('acks'),[a,b,c]);
+});
+
+test('관측과 ACK가 10000행이어도 과거 재확인은 허용하고 새 append는 한도에서 차단한다',async()=>{
+ const journal=ramJournal(),aid=randomUUID();
+ const observations:unknown[]=[],acks:{ref:typeof ref;snapshot:Record<string,unknown>}[]=[];
+ let previousRef:typeof ref|null=null,digest=hash([]);
+ for(let sequence=1;sequence<=10000;sequence++){
+  const observed={...event(),...scope,sequence,eventId:randomUUID()};
+  const body={sequence,event:observed,previousRef};
+  const observationRef:typeof ref={id:randomUUID(),version:1,contentHash:hash(body)};
+  observations.push({ref:observationRef,snapshot:body});previousRef=observationRef;
+  digest=hash({previous:digest,eventHash:hash(observed)});
+  const snapshot={execution:scope,highestContiguous:sequence,maxSequence:sequence,contiguousDigest:digest,gaps:[],storedCount:sequence,
+   writerReleaseVerified:false,executionAuthorized:false,dispatchPerformed:false,recordedAt:new Date(now).toISOString()};
+  acks.push({ref:{id:aid,version:sequence,contentHash:hash(snapshot)},snapshot});
+ }
+ journal.data.set('observations',observations);journal.data.set('acks',acks);
+ let appends=0;
+ const spool=new m.NormalObservationSpool({transport:'NORMAL_PROTECTED',exclusive:(channel,work)=>journal.exclusive(channel,tx=>work({...tx,
+  appendAndSync:async(value:unknown)=>{appends++;await tx.appendAndSync(value);}
+ }))},scope,()=>now);
+ const tail=acks.at(-1)!;
+ assert.deepEqual(await spool.latestAck(),tail);
+ assert.deepEqual(await spool.acceptAck(acks[0]),tail);
+ await assert.rejects(spool.acceptAck({...tail,ref:{...tail.ref,version:tail.ref.version+1}}),/NORMAL_OBSERVATION_INVALID/);
+ assert.equal(appends,0);assert.equal(journal.data.get('acks')!.length,10000);
+});
