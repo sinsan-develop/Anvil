@@ -36,6 +36,20 @@ async function record(value:any,projectId:string) {
   if(!value||value.projectId!==projectId||!ref(value.ref)||!value.snapshot||typeof value.snapshot!=='object')throw new ApiError('RESPONSE_INVALID');
   await verifyHash(value.snapshot,value.ref);
 }
+async function savedBinding(value:any,confirmed:ConfirmedAssignmentView) {
+  await record(value,confirmed.projectId);const s=value.snapshot;
+  if(!exact(value,['projectId','ref','snapshot'])||!exact(s,[...['assignmentRef','roleRef','connectionRef','existingSessionBindingRef','reason','sessionRef','generation','state','externalSessionHandleRef','connectionReadiness','executionAuthorized','dispatchPerformed','boundBy','boundAt'],...(Object.hasOwn(s,'connectionKind')?['connectionKind']:[])])
+    ||Object.hasOwn(s,'connectionKind')&&s.connectionKind!=='REGISTERED_DEFINITION'||![s.assignmentRef,s.roleRef,s.connectionRef,s.sessionRef].every(ref)||s.existingSessionBindingRef!==null&&!ref(s.existingSessionBindingRef)
+    ||!same(s.assignmentRef,confirmed.ref)||s.generation!==value.ref.version||!text(s.reason)||!person(s.boundBy)||!date(s.boundAt)||s.state!=='RESERVED'||s.externalSessionHandleRef!==null
+    ||s.connectionReadiness!==(s.connectionKind==='REGISTERED_DEFINITION'?'REGISTERED_DEFINITION_ONLY':'CANDIDATE_ONLY')||s.executionAuthorized!==false||s.dispatchPerformed!==false)throw new ApiError('RESPONSE_INVALID');
+}
+export async function readSavedResponsibleSession(client:ApiClient,confirmed:ConfirmedAssignmentView,receipt:NonNullable<ResponsibleSessionBuffer['savedReceipt']>,active:()=>boolean):Promise<PreparationRecord|null> {
+  confirmedBinding(confirmed);const transport=client.transport,current=()=>active()&&client.transport===transport,expected={projectId:confirmed.projectId,ref:structuredClone(receipt.ref),snapshot:structuredClone(receipt.snapshot)};
+  if(!current())throw new ApiError('RESPONSIBLE_SESSION_INPUT_CHANGED',409);await savedBinding(expected,confirmed);if(!current())return null;
+  const value=await client.get<PreparationRecord>(`/api/v1/projects/${confirmed.projectId}/role-bindings/${expected.ref.id}/versions/${expected.ref.version}`);if(!current())return null;
+  if(!same(value?.ref,expected.ref)||!same(value?.snapshot?.assignmentRef,expected.snapshot.assignmentRef))throw new ApiError('RESPONSE_INVALID');
+  await savedBinding(value,confirmed);if(!current())return null;if(!same(value,expected))throw new ApiError('RESPONSE_INVALID');return structuredClone(value);
+}
 export async function readResponsibleSessionState(client:ApiClient,confirmed:ConfirmedAssignmentView):Promise<ResponsibleSessionState> {
   confirmedBinding(confirmed);const pid=confirmed.projectId,a=confirmed.ref,task=confirmed.snapshot.definition.taskRef;
   const v=await client.get<ResponsibleSessionState>('/api/v1/projects/'+pid+'/assignments/'+a.id+'/versions/'+a.version+'/execution-preparation-state');

@@ -18,7 +18,7 @@ import {createNormalUnderstandingRangeCommands,NormalUnderstandingDiscovery,read
 import {ResponsibleSessionApprovalEditor} from './ResponsibleSessionApprovalEditor.tsx';
 import {checkResponsibleSessionApprovalBinding,markResponsibleSessionDispatch,settleResponsibleSessionWrite} from './responsible-session-approval.ts';
 import {updateResponsibleSessionApprovalBuffer} from './responsible-session-api.ts';
-import { assertResponsibleSessionInputCurrent, canPrepareResponsibleSessionInput, prepareResponsibleSessionInput, prepareResponsibleSessionAction, readResponsibleSessionState, sendResponsibleSessionAction, type ResponsibleSessionAction, type ResponsibleSessionBuffer, type ResponsibleSessionState } from './responsible-session-api.ts';
+import { assertResponsibleSessionInputCurrent, canPrepareResponsibleSessionInput, prepareResponsibleSessionInput, prepareResponsibleSessionAction, readResponsibleSessionState, readSavedResponsibleSession, sendResponsibleSessionAction, type PreparationRecord, type ResponsibleSessionAction, type ResponsibleSessionBuffer, type ResponsibleSessionState } from './responsible-session-api.ts';
 
 export function WorkspaceResponsibleSessions({onWorkReviewScope,normalInitialReviews,client,confirmed,session,buffer,onChange,owner,busy,run}:{onWorkReviewScope?:(scope:WorkReviewScope)=>void;normalInitialReviews?:NormalInitialUnderstandingReviewStorage;client:ApiClient;confirmed:ConfirmedAssignmentView;session:DocumentSession;buffer:ResponsibleSessionBuffer|null;onChange:Dispatch<SetStateAction<ResponsibleSessionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
   const [state,setState]=useState<ResponsibleSessionState|null>(null),[candidates,setCandidates]=useState<CandidateHit[]>([]),[nextCursor,setNextCursor]=useState<string|null>(null),[notice,setNotice]=useState<string|null>(null);
@@ -36,6 +36,10 @@ export function WorkspaceResponsibleSessions({onWorkReviewScope,normalInitialRev
   const bound=sameOwner&&(!buffer||ordered(buffer.assignmentRef)===ordered(confirmed.ref));
   const projectId=confirmed.projectId,assignmentKey=ordered(confirmed.ref),transport=client.transport;
   const userId=session.user.id,{clientId,csrfToken}=session,showMetadata=owner&&bound;
+  const savedReservation=buffer?.savedReceipt?.snapshot?.state==='RESERVED'&&buffer.savedReceipt.snapshot.executionAuthorized===false&&buffer.savedReceipt.snapshot.dispatchPerformed===false?buffer.savedReceipt:null;
+  const savedScope=savedReservation&&bound?ordered([projectId,assignmentKey,userId,clientId,savedReservation.ref,savedReservation.snapshot]):null;
+  const savedOwner=useMemo(()=>({client,transport,scope:savedScope}),[client,transport,savedScope]),savedOwnerRef=useRef(savedOwner);savedOwnerRef.current=savedOwner;
+  const savedRequest=useRef<{owner:object}|null>(null),[savedOriginal,setSavedOriginal]=useState<{owner:object;record:PreparationRecord|null;error:string|null;pending:boolean}|null>(null);
   const readerOwner=useRef<NormalUnderstandingMetadataReader|undefined>(undefined);
   const metadataReader=useMemo<NormalUnderstandingMetadataReader|undefined>(()=>{
     if(!showMetadata)return undefined;
@@ -96,6 +100,14 @@ export function WorkspaceResponsibleSessions({onWorkReviewScope,normalInitialRev
     try{const [value,page]=await Promise.all([readResponsibleSessionState(client,confirmed),listCandidates(client,confirmed.projectId,'CONNECTION_CANDIDATE',cursor)]);
     if(!active(ticket))return;stateStamp.current={epoch:ticket,revision};setState(value);setCandidates(page.items);setNextCursor(page.nextCursor);}catch(e){if(active(ticket))throw e;}
   }
+  async function readSavedOriginal() {
+    if(!owner||!bound||!savedReservation||savedRequest.current?.owner===savedOwner)return;
+    const ticket=epoch.current,readOwner=savedOwner,original=structuredClone(savedReservation),request={owner:readOwner};savedRequest.current=request;setSavedOriginal({owner:readOwner,record:null,error:null,pending:true});
+    const current=()=>active(ticket)&&savedOwnerRef.current===readOwner&&ordered(currentBuffer.current?.savedReceipt)===ordered(original);
+    try{const record=await readSavedResponsibleSession(client,confirmed,original,current);if(record&&current())setSavedOriginal({owner:readOwner,record,error:null,pending:false});}
+    catch(cause){if(current()){const failure=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setSavedOriginal({owner:readOwner,record:null,error:failure.code,pending:false});throw failure;}}
+    finally{if(savedRequest.current===request){savedRequest.current=null;if(savedOwnerRef.current===readOwner)setSavedOriginal(value=>value?.owner===readOwner?{...value,pending:false}:value);}}
+  }
   async function prepare() {
     if(!owner||!canPrepareResponsibleSessionInput(buffer,confirmed,session))return;
     if(buffer?.dirty&&!confirm('미저장 책임 세션 입력을 버리고 새로 준비할까요?'))return;
@@ -148,7 +160,9 @@ export function WorkspaceResponsibleSessions({onWorkReviewScope,normalInitialRev
     <button disabled={busy||!owner||!canPrepareResponsibleSessionInput(buffer,confirmed,session)} onClick={()=>run(prepare)}>책임 세션 입력 준비</button>
     {!bound?<p role="alert">{sameOwner?'이전 임무 입력이 보관돼 있습니다. 미확인 명령이 없다면 입력 준비로 이 임무를 명시 선택하세요.':'다른 임무·주체의 미저장 입력/명령이 보관돼 있습니다. 원 대상으로 돌아가 확인하세요.'}</p>:null}
     {notice?<p role="status">{notice}</p>:null}
-    {buffer&&bound&&buffer.savedReceipt?<p role="status">책임 역할·예약 저장 영수증 보관 · {buffer.savedReceipt.ref.id} · v{buffer.savedReceipt.ref.version} · 정확 상태는 별도 조회 · 실제 Agent 실행 아님</p>:null}
+    {buffer&&bound&&buffer.savedReceipt?<><p role="status">책임 역할·예약 저장 영수증 보관 · {buffer.savedReceipt.ref.id} · v{buffer.savedReceipt.ref.version} · 정확 상태는 별도 조회 · 실제 Agent 실행 아님</p>{savedReservation?<button type="button" disabled={busy||!owner||savedRequest.current?.owner===savedOwner} onClick={()=>run(readSavedOriginal)}>저장 예약 원문 정확 조회</button>:null}</>:null}
+    {savedOriginal?.owner===savedOwner&&savedOriginal.error?<p role="alert">저장 예약 원문 확인 실패 · {savedOriginal.error} · 원 영수증 보존</p>:null}
+    {savedOriginal?.owner===savedOwner&&savedOriginal.record?<article aria-label="저장 예약 원문 정확 조회 결과"><p>저장 영수증과 동일한 RESERVED 원문 · 현재 head·실행·재개 증거 아님</p><p>프로젝트 {savedOriginal.record.projectId} · 원 ref {savedOriginal.record.ref.id} · v{savedOriginal.record.ref.version} · {savedOriginal.record.ref.contentHash}</p><p>원 임무 <code>{ordered(savedOriginal.record.snapshot.assignmentRef)}</code></p><p>원 역할 <code>{ordered(savedOriginal.record.snapshot.roleRef)}</code> · 예약 세션 <code>{ordered(savedOriginal.record.snapshot.sessionRef)}</code> · 연결 <code>{ordered(savedOriginal.record.snapshot.connectionRef)}</code></p><details><summary>원 예약 이유</summary><p>{savedOriginal.record.snapshot.reason}</p></details><p>실행 권위 false · 전달 false</p></article>:null}
     {buffer&&bound&&buffer.closedResponsibleApprovals?.length?<p>종결 승인 {buffer.closedResponsibleApprovals.length}건 · 원명령·요청 이력 보관 · 실행 허가 아님</p>:null}
     {buffer&&bound&&buffer.pending?<p>원 명령 {buffer.pending.commandId} · {buffer.uncertain?'결과 미확인 · 새 명령을 만들지 않습니다':'명시 거절 · 원 입력 보존'}</p>:null}
     {buffer&&bound&&buffer.failure?<p role="alert">{buffer.failure.code} · {buffer.uncertain?'적용 여부 미확인':'응답 계약 확인 필요'}</p>:null}
