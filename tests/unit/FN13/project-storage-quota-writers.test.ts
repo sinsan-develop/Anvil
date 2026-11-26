@@ -15,7 +15,8 @@ import {resolve} from 'node:path';
 import {ArtifactStore} from '../../../apps/server/storage/artifact-store.ts';
 import {registerProjectFileRoutes} from '../../../apps/server/modules/documents/project-files.ts';
 import {ProjectDocuments} from '../../../apps/server/modules/documents/project-documents.ts';
-import {ProjectPolicyRepository} from '../../../apps/server/modules/access/project-command.ts';
+import {persistProjectReceipt,ProjectPolicyRepository} from '../../../apps/server/modules/access/project-command.ts';
+import {stageProofQuery} from '../FN03/document-stage-receipt-fixture.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type {PoolClient} from 'pg';
@@ -111,6 +112,22 @@ class WriterAccess extends MemoryAccess{
    }
   }
   if(sql.startsWith('SELECT * FROM anvil.document_proposals')){this.trace.push(sql);return {rows:this.proposals.filter(r=>r.project_id===args[0]&&r.id===args[1])};}
+  if(stageProofQuery(sql)){
+   const v=this.documentRow;
+   if(!v||v.project_id!==args[0]||v.document_id!==args[1]||v.version!==args[2])return {rows:[]};
+   const targetRef={id:v.document_id,version:v.version,contentHash:v.content_hash};
+   const commands=this.commands.filter(c=>c.project_id===v.project_id&&c.id===v.command_id&&c.operation==='saveDocumentDraft'&&c.state==='APPLIED'
+    &&c.expected_version===v.version-1&&c.actor_id===v.author_ref_json.userId&&c.client_id===v.client_id);
+   return {rows:commands.flatMap(c=>this.receipts.filter(r=>r.id===c.authorization_receipt_id&&r.command_id===c.id&&r.project_id===v.project_id
+    &&h(r.subject_ref)===h({...v.author_ref_json,clientId:v.client_id})&&h(r.policy_ref)===h(c.policy_ref))
+    .flatMap(r=>this.audits.filter(a=>a.project_id===v.project_id&&a.command_id===c.id&&a.operation_id===c.operation_id
+     &&a.outcome==='APPLIED'&&a.source_kind==='HUMAN_COMMAND'&&a.client_ref===v.client_id&&a.scope_digest===r.scope_digest
+     &&h(a.actor_ref)===h(v.author_ref_json)&&h(a.policy_ref)===h(c.policy_ref)&&h(a.target_ref)===h(targetRef))
+     .map(a=>({...v,command_id:c.command_id,actor_id:c.actor_id,client_id:c.client_id,operation_id:c.operation_id,
+      control_generation:c.control_generation,request_hash:c.request_hash,policy_ref:c.policy_ref,payload_ref:c.payload_ref,
+      result_ref:c.result_ref,reason_code:a.reason_code,approval_ref:a.approval_ref,approval_decision_ref:r.approval_decision_ref,
+      scope_digest:r.scope_digest,approval_consumption_id:c.approval_consumption_id,consumed:null}))))};
+  }
   if(sql.includes('FROM anvil.document_proposal_selections'))return {rows:[]};
   if(sql.includes('FROM anvil.document_versions v JOIN anvil.documents'))return {rows:this.documentRow?[structuredClone(this.documentRow)]:[]};
   if(sql.includes('SELECT head_version FROM anvil.documents'))return {rows:this.documentRow?[{head_version:this.headVersion}]:[]};
@@ -121,7 +138,7 @@ class WriterAccess extends MemoryAccess{
   if(sql.startsWith('INSERT INTO anvil.commands')){this.trace.push(sql);this.commands.push({id:args[0],project_id:args[1],actor_id:args[2],client_id:args[3],operation:args[4],command_id:args[5],request_hash:args[6],operation_id:args[7],state:'APPLIED',authorization_receipt_id:args[8],approval_consumption_id:args[9],expected_version:args[10],control_generation:args[11],policy_ref:args[12]===null?null:JSON.parse(args[12] as string),payload_ref:args[13]===null?null:JSON.parse(args[13] as string),result_ref:JSON.parse(args[14] as string)});return {rows:[],rowCount:1};}
   if(sql.startsWith('INSERT INTO anvil.authorization_receipts')){this.trace.push(sql);this.receipts.push({id:args[0],project_id:args[1],command_id:args[2],subject_ref:JSON.parse(args[3] as string),policy_ref:JSON.parse(args[4] as string),scope_digest:args[5],approval_decision_ref:args[6]});return {rows:[],rowCount:1};}
   if(sql.startsWith('INSERT INTO anvil.audit_events')&&sql.includes("'SERVER_DENIAL'")){this.audits.push({project_id:args[0],event_id:args[1],actor_ref:JSON.parse(args[2] as string),client_ref:args[3],target_ref:JSON.parse(args[4] as string),outcome:'DENIED',source_kind:'SERVER_DENIAL',reason_code:args[5]});return {rows:[],rowCount:1};}
-  if(sql.startsWith('INSERT INTO anvil.audit_events')){this.trace.push(sql);this.audits.push({project_id:args[0],actor_ref:JSON.parse(args[2] as string),client_ref:args[3],command_id:args[4],operation_id:args[5],target_ref:JSON.parse(args[6] as string),policy_ref:JSON.parse(args[7] as string),scope_digest:args[10],source_kind:'HUMAN_COMMAND',outcome:'APPLIED'});return {rows:[],rowCount:1};}
+  if(sql.startsWith('INSERT INTO anvil.audit_events')){this.trace.push(sql);this.audits.push({project_id:args[0],actor_ref:JSON.parse(args[2] as string),client_ref:args[3],command_id:args[4],operation_id:args[5],target_ref:JSON.parse(args[6] as string),policy_ref:JSON.parse(args[7] as string),approval_ref:args[8]===null?null:JSON.parse(args[8] as string),reason_code:args[9],scope_digest:args[10],source_kind:'HUMAN_COMMAND',outcome:'APPLIED'});return {rows:[],rowCount:1};}
   if(sql.startsWith('INSERT INTO anvil.artifacts')){this.trace.push(sql);if(this.failArtifactInsert)throw Error('SIMULATED_DB_WRITE_FAILURE');if(this.lostOn==='OPERATE'){this.lostCommit=true;this.lostOn=null;}const upload=sql.includes('inspection_json');this.artifacts.push({id:args[0],project_id:args[1],bytes:args[2],content_hash:args[3],media_type:args[4],storage_key:args[5],state:upload?args[6]:'READY',created_by:args[upload?7:6],client_id:args[upload?8:7],command_id:args[upload?9:8],inspection_json:upload?JSON.parse(args[10] as string):null});return {rows:[],rowCount:1};}
   if(sql.includes('SELECT * FROM anvil.artifacts WHERE id=')){this.trace.push(sql);return {rows:this.artifacts.filter(r=>r.id===args[0]&&r.project_id===args[1]&&(args.length===2||r.content_hash===args[2]&&Number(r.bytes)===args[3]&&r.media_type===args[4]))};}
   if(sql.includes('transaction_timestamp()')){this.trace.push(sql);return {rows:[{at:new Date(this.now)}]};}
@@ -160,7 +177,16 @@ async function diffFixture(t:TestContext){
  const oldRef=before.json().data.artifactRef,newRef=after.json().data.artifactRef;
  const form={formCode:'SYNTHETIC',name:'합성 양식',purpose:'검증',scope:'SYSTEM',authorRole:'작성자',reviewerRole:'검토자',confirmerRole:'확정자',requiredInputs:[],items:[],authoringStandardRef:{id:id(50),version:1,contentHash:h('표준')}};
  f.access.form=form;const formRef={id:id(51),version:1,contentHash:h(form)},content={body:oldRef,attachments:[],sections:[],sourceRefs:[]},documentId=id(52),baseHash=h({title:'원문',formRef,stageNodeRef:null,content});
- f.access.documentRow={document_id:documentId,version:1,title:'원문',form_definition_id:formRef.id,form_version:1,form_hash:formRef.contentHash,content_json:content,content_hash:baseHash,stage_ref_json:null,source_refs_json:[],author_ref_json:{kind:'HUMAN',userId:actor.actorId},created_at:new Date('2026-01-01Z'),confirmed_version:null,validation_json:{}};
+ const draft:ProjectCommand={...request(),commandId:id(54),operation:'saveDocumentDraft',
+  payload:{title:'원문',formRef,stageNodeRef:null,content,importCandidateRef:null,reason:'합성 원문 초안'}};
+ const ref={id:documentId,version:1,contentHash:baseHash};
+ const receipt=await f.access.authenticated('t'.repeat(43),'c'.repeat(43),(db,author)=>persistProjectReceipt(
+  db,author,draft,ref,{status:'DRAFT',stageNodeRef:null,stageBinding:null,importCandidateRef:null,proposalRef:null,validation:{}},
+  policyRef,'EXPLICIT_DOCUMENT_DRAFT'));
+ f.access.documentRow={project_id:draft.projectId,document_id:documentId,version:1,title:draft.payload.title,form_definition_id:formRef.id,
+  form_version:1,form_hash:formRef.contentHash,content_json:content,content_hash:baseHash,stage_ref_json:null,source_refs_json:[],
+  author_ref_json:{kind:'HUMAN',userId:actor.actorId},client_id:draft.clientId,command_id:receipt.id,reason:draft.payload.reason,
+  created_at:new Date(f.access.now),confirmed_version:null,validation_json:{}};
  const c=request();c.commandId=id(53);c.operation='proposeDocumentChange';c.targetId=documentId;c.expectedVersion=1;c.payload={baseRef:{id:documentId,version:1,contentHash:baseHash},proposedContent:{body:newRef,attachments:[],sections:[],sourceRefs:[]},reason:'실제 diff 생성',sourceRefs:[]};
  const propose=()=>f.app.inject({method:'POST',url:`/api/v1/projects/${id(1)}/commands`,headers:{host:'anvil.synthetic.invalid',origin:'https://anvil.synthetic.invalid','content-type':'application/json','x-anvil-csrf':'c'.repeat(43),cookie:'__Host-anvil.sid='+'t'.repeat(43)},payload:c});return {...f,c,propose};
 }
