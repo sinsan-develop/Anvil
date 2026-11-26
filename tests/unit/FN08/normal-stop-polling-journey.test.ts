@@ -61,3 +61,45 @@ test('live STOP의 둘째 batch ACK 유실 뒤 같은 관측만 재전달하고 
   assert.equal((await spool.coverage()).covered,true);assert.equal(replays,1);assert.equal(f.stopCalls.interrupt,1);assert.equal(f.effects.close,0);assert.equal(f.effects.create,1);
  }finally{f.authority.abort();await f.h.close();}
 });
+
+test('STOP 두 행 정착 뒤 spool 쓰기 전 중단돼도 원 요청 시각과 첫 참조를 재시작에서 복구한다',async()=>{
+ const {liveStopFixture}=await import('../FN07/normal-first-send-owner.test.ts');
+ const {NormalStopCoordinator}=await import('../../../apps/connector/runtime/normal-stop-coordinator.ts');
+ const f=await liveStopFixture(),journal=ramJournal(),wire=stopTransport({scope:f.localScope,clock:f.clock,stopItem:f.stopItem});
+ try{
+  assert.equal((await f.run()).state,'LIMIT_REACHED');
+  let interruptAt=0;
+  f.stopHooks.interrupt=async()=>{interruptAt=f.clock();f.mode.wall+=37;};
+  const interruptedStore={transport:'NORMAL_PROTECTED' as const,async exclusive(channel:string){
+   assert.equal(channel,'observations');throw Error('RAM_RESTART_BEFORE_SPOOL_LOCK');
+  }};
+  const firstSpool=new NormalObservationSpool(interruptedStore,f.localScope,f.clock);
+  await assert.rejects(new NormalStopCoordinator(f.stopPorts()).recordObservations(f.stopItem,firstSpool,f.signal,f.worker),/RAM_RESTART_BEFORE_SPOOL_LOCK/);
+  const rows=await f.stopRows();
+  assert.equal(rows.length,2);assert.equal(f.stopCalls.interrupt,1);
+  const restartedSpool=new NormalObservationSpool(journal,f.localScope,f.clock);
+  assert.deepEqual((await restartedSpool.batch()).events,[]);
+  const options=()=>({...f.options(),clients:{get:wire.get,post:wire.post,expiresAt:f.options().clients.expiresAt} as any,
+   start:{...f.options().start,spool:restartedSpool},stop:f.stopPorts()});
+  let release!:()=>void,entered!:()=>void;
+  const beforeAck=new Promise<void>(resolve=>{entered=resolve;});
+  wire.before(()=>{entered();return new Promise<void>(resolve=>{release=resolve;});});
+  const run=new NormalStartPolling(options()).run(f.signal);
+  await Promise.race([beforeAck,run.then(()=>assert.fail('복구 관측을 ACK 포트로 전달하지 못함'))]);
+  const observed=(await restartedSpool.batch()).events;
+  const coverage=(await restartedSpool.coverage()).covered;
+  release();
+  const result=await run;
+  assert.equal(coverage,false);assert.equal(result.cursor.afterSequence,0);assert.equal(result.reason,'STOP_UNCONFIRMED');
+  assert.deepEqual(observed.map(e=>e.type),['STOP_UNCONFIRMED','STOP_REQUESTED','STOP_UNCONFIRMED']);
+  const requested=observed[1]!;
+  assert.deepEqual(requested.localRecordRef,rows[0].ref);
+  assert.equal(requested.occurredAt,rows[1].snapshot.requestedAt);
+  assert(Date.parse(requested.occurredAt)<=interruptAt);
+  assert(Date.parse(rows[1].snapshot.recordedAt)-Date.parse(requested.occurredAt)>=37);
+  const replay=await new NormalStartPolling(options()).run(f.signal);
+  assert.equal(replay.cursor.afterSequence,0);assert.equal(wire.posts(),1);
+  assert.deepEqual((await restartedSpool.batch()).events,observed);
+  assert.equal(f.stopCalls.interrupt,1);assert.equal(f.effects.close,0);assert.equal(f.effects.create,1);
+ }finally{f.authority.abort();await f.h.close();}
+});

@@ -271,12 +271,12 @@ export async function requestNormalLiveStop(worker:NormalStartWire,item:NormalSt
    checkedAt=Date.parse(projection.checkedAt);end=Math.min(end,Date.parse(projection.expiresAt));check();
   };
   const key=receiptKeyV1(item.envelope);
-  const makeRow=(sequence:1|2,state:'STOP_ATTEMPTED'|'STOP_UNCONFIRMED',previousRef:Ref|null)=>{
-   const snapshot={sequence,state,key,commandRef:item.commandRef,envelopeHash:item.envelope.envelopeHash,stopScopeRef:item.envelope.payload.stopScopeRef,target,previousRef,recordedAt:new Date(check()).toISOString()};
+  const makeRow=(sequence:1|2,state:'STOP_ATTEMPTED'|'STOP_UNCONFIRMED',previousRef:Ref|null,requestedAt?:string)=>{
+   const snapshot={sequence,state,key,commandRef:item.commandRef,envelopeHash:item.envelope.envelopeHash,stopScopeRef:item.envelope.payload.stopScopeRef,target,previousRef,recordedAt:new Date(check()).toISOString(),...(requestedAt===undefined?{}:{requestedAt})};
    return{ref:{id:randomUUID(),version:1,contentHash:digest(snapshot)},snapshot};
   };
-  const append=async(previous:ReturnType<typeof makeRow>|null)=>{
-   const expected=previous?[previous]:[],row=makeRow(previous?2:1,previous?'STOP_UNCONFIRMED':'STOP_ATTEMPTED',previous?.ref??null);
+  const append=async(previous:ReturnType<typeof makeRow>|null,requestedAt?:string)=>{
+   const expected=previous?[previous]:[],row=makeRow(previous?2:1,previous?'STOP_UNCONFIRMED':'STOP_ATTEMPTED',previous?.ref??null,requestedAt);
    let entered=false,readBack=false,closed=false;
    const active=()=>{if(closed)return unavailable();check();};
    try{
@@ -293,11 +293,12 @@ export async function requestNormalLiveStop(worker:NormalStartWire,item:NormalSt
    check();if(!readBack)return unavailable();return row;
   };
   await witness();const first=await append(null);
-  await witness();check();
-  const occurredAt=new Date(owner.now()).toISOString();
+  await witness();
+  const requestedAt=new Date(check()).toISOString();
   try{await native(Reflect.apply(owner.interrupt,query,[]));}catch{/* 호출 경계를 통과했다. 실제 종료는 여전히 미확인이다. */}
-  check();const second=await append(first);
-  return{rows:[first,second],requestedAt:occurredAt};
+  check();const terminal=await append(first,requestedAt);
+  // 두 번째 strict-close 이전에 같은 거래에서 검산한 정확 두 행만 반환한다.
+  return [first,terminal];
  }finally{if(!attempted&&owner.stopToken===token)owner.stopToken=null;}
 }
 

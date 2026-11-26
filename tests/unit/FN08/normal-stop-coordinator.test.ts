@@ -62,7 +62,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  });
  test('읽기 대기 중 취소·늦은 결과는 관측 append와 다음 시도를 열지 않는다',async()=>{
   const f=await stopFixture();try{const rows=await f.seed();let release!:(r:unknown[])=>void,entered!:()=>void;const ready=new Promise<void>(r=>{entered=r;});let calls=0;
-   const store={transport:'NORMAL_PROTECTED' as const,exclusive:async<T>(_key:any,body:(tx:any)=>Promise<T>)=>{calls++;return body({read:()=>{entered();return new Promise<unknown[]>(r=>{release=r;});},appendAndSync:async()=>assert.fail('새 시도 금지')});}};
+   const store={transport:'NORMAL_PROTECTED' as const,exclusive:async<T>(_key:any,body:(tx:any)=>Promise<T>)=>{calls++;return body({requireStartReadyClose(){},read:()=>{entered();return new Promise<unknown[]>(r=>{release=r;});},appendAndSync:async()=>assert.fail('새 시도 금지')});}};
    const c=new NormalStopCoordinator({...f.ports(),store}),abort=new AbortController(),run=c.observations(f.stopItem,abort.signal);await ready;abort.abort();await assert.rejects(run,/INTERRUPTED/);release(rows);await new Promise(r=>setImmediate(r));await assert.rejects(c.observations(f.stopItem,f.signal),/UNKNOWN/);assert.equal(calls,1);
   }finally{await f.h.app.close();}
  });
@@ -75,10 +75,54 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  });
  test('역사 시각 미래·hash 변경·STOPPED 전이·중복 ref는 정본 재해시 후에도 거절한다',async()=>{
   const f=await stopFixture();try{const rows=await f.seed(),cases=[(r:any[])=>r[1].snapshot.recordedAt=new Date(f.clock()+1).toISOString(),(r:any[])=>r[1].ref.contentHash='b'.repeat(64),(r:any[])=>r[1].snapshot.state='STOPPED',(r:any[])=>r[1].ref.id=r[0].ref.id];
-   for(const [i,mutate] of cases.entries()){const bad=structuredClone(rows);mutate(bad);if(i!==1)bad[1].ref.contentHash=hash(bad[1].snapshot);const store={transport:'NORMAL_PROTECTED' as const,exclusive:async<T>(_k:any,body:(t:any)=>Promise<T>)=>body({read:async()=>bad,appendAndSync:async()=>assert.fail('append0')})};await assert.rejects(new NormalStopCoordinator({...f.ports(),store}).observations(f.stopItem,f.signal));}
+   for(const [i,mutate] of cases.entries()){const bad=structuredClone(rows);mutate(bad);if(i!==1)bad[1].ref.contentHash=hash(bad[1].snapshot);const store={transport:'NORMAL_PROTECTED' as const,exclusive:async<T>(_k:any,body:(t:any)=>Promise<T>)=>body({requireStartReadyClose(){},read:async()=>bad,appendAndSync:async()=>assert.fail('append0')})};await assert.rejects(new NormalStopCoordinator({...f.ports(),store}).observations(f.stopItem,f.signal));}
   }finally{await f.h.app.close();}
  });
 
+ test('요청 시각은 terminal의 정확 첫 참조·요청 범위·기한 안에서만 복구한다',async()=>{
+  const f=await stopFixture();
+  try{
+   const rows=await f.seed(),at=Date.parse(rows[0].snapshot.recordedAt);
+   const valid=structuredClone(rows);valid[1].snapshot.requestedAt=rows[0].snapshot.recordedAt;valid[1].ref.contentHash=hash(valid[1].snapshot);
+   const key=receiptKeyV1(f.stopItem.envelope);
+   const reader=(values:unknown[])=>({transport:'NORMAL_PROTECTED' as const,async exclusive<T>(observed:unknown,body:(tx:any)=>Promise<T>){
+    assert.deepEqual(observed,key);let strict=false;
+    return body({requireStartReadyClose(v:unknown){assert.deepEqual(v,key);strict=true;},read:async()=>{assert(strict);return values;},appendAndSync:async()=>assert.fail('읽기 중 쓰기')});
+   }});
+   const good=await new NormalStopCoordinator({...f.ports(),store:reader(valid)}).observations(f.stopItem,f.signal);
+   assert.deepEqual(good.inputs.map(v=>v.type),['STOP_UNCONFIRMED','STOP_REQUESTED','STOP_UNCONFIRMED']);
+   assert.deepEqual(good.inputs[1]!.localRecordRef,rows[0].ref);
+   for(const mode of ['BEFORE','AFTER','SHAPE','ON_FIRST','PREVIOUS','COMMAND','ENVELOPE','GRANT','STOP_SCOPE','EXPIRY']){
+    const changed=structuredClone(valid),first=changed[0],terminal=changed[1];
+    if(mode==='BEFORE')terminal.snapshot.requestedAt=new Date(at-1).toISOString();
+    if(mode==='AFTER')terminal.snapshot.requestedAt=new Date(Date.parse(terminal.snapshot.recordedAt)+1).toISOString();
+    if(mode==='SHAPE')terminal.snapshot.requestedAt=null;
+    if(mode==='ON_FIRST'){first.snapshot.requestedAt=first.snapshot.recordedAt;first.ref.contentHash=hash(first.snapshot);terminal.snapshot.previousRef=first.ref;}
+    if(mode==='PREVIOUS')terminal.snapshot.previousRef={...first.ref,contentHash:'0'.repeat(64)};
+    if(mode==='COMMAND')terminal.snapshot.commandRef=ref();
+    if(mode==='ENVELOPE')terminal.snapshot.envelopeHash='0'.repeat(64);
+    if(mode==='GRANT')terminal.snapshot.target.grantRef=ref();
+    if(mode==='STOP_SCOPE')terminal.snapshot.stopScopeRef=ref();
+    if(mode==='EXPIRY'){f.h.store.mode.offset+=60000;terminal.snapshot.requestedAt=terminal.snapshot.recordedAt=f.stopItem.envelope.expiresAt;}
+    terminal.ref.contentHash=hash(terminal.snapshot);
+    const c=new NormalStopCoordinator({...f.ports(),store:reader(changed)});
+    await assert.rejects(c.observations(f.stopItem,f.signal),/NORMAL_STOP_HISTORY_INVALID/,mode);
+    await assert.rejects(c.observations(f.stopItem,f.signal),/NORMAL_STOP_UNKNOWN/,mode);
+   }
+   assert.equal(f.mode.wires,0);
+  }finally{await f.h.app.close();}
+ });
+
+ test('엄격 읽기에서 본문 실행이나 close가 확인되지 않으면 복구 관측을 만들지 않는다',async()=>{
+  const f=await stopFixture();try{
+   await f.seed();
+   const spool=f.make().spool;
+   const store={transport:'NORMAL_PROTECTED' as const,exclusive:async<T>(_key:any,_body:any)=>[] as T};
+   const c=new NormalStopCoordinator({...f.ports(),store});
+   await assert.rejects(c.recordObservations(f.stopItem,spool,f.signal),/NORMAL_STOP_HISTORY_INVALID/);
+   assert.deepEqual((await spool.batch()).events,[]);assert.equal(f.mode.wires,0);
+  }finally{await f.h.app.close();}
+ });
 }
 
 
@@ -87,13 +131,23 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)test('
  try{
   assert.equal((await f.run()).state,'LIMIT_REACHED');
   f.stopHooks.interrupt=async()=>{const rows=await f.stopRows();assert.deepEqual(rows.map(r=>r.snapshot.state),['STOP_ATTEMPTED']);};
+  const open=f.fs.fs.open.bind(f.fs.fs);let transactions=0;
+  f.fs.fs.open=async(path:string,flag:string)=>{
+   if(flag==='wx'&&path.endsWith('attempt-'+f.stopItem.envelope.commandId+'.lock'))transactions++;
+   return open(path,flag);
+  };
   const coordinator=()=>new NormalStopCoordinator(f.stopPorts());
   const value=await coordinator().recordObservations(f.stopItem,f.spool,f.signal,f.worker);
   assert.equal(f.stopCalls.interrupt,1);assert.equal(value.state,'STOP_UNCONFIRMED');assert.equal(value.writerReleaseVerified,false);
-  assert.deepEqual((await f.stopRows()).map(r=>r.snapshot.state),['STOP_ATTEMPTED','STOP_UNCONFIRMED']);
-  await coordinator().recordObservations(f.stopItem,f.spool,f.signal,f.worker);assert.equal(f.stopCalls.interrupt,1);
+  assert.equal(transactions,4,'최초 엄격 조회·두 append·interrupt fixture의 검사만 사용');
+  const rows=await f.stopRows();
+  assert.deepEqual(rows.map(r=>r.snapshot.state),['STOP_ATTEMPTED','STOP_UNCONFIRMED']);
+  assert(!Object.hasOwn(rows[0].snapshot,'requestedAt'));assert.equal(rows[1].ref.contentHash,hash(rows[1].snapshot));
+  assert.deepEqual(rows[1].snapshot.previousRef,rows[0].ref);
+  const replay=await coordinator().recordObservations(f.stopItem,f.spool,f.signal);assert.deepEqual(replay,value);assert.equal(f.stopCalls.interrupt,1);
   const events=(await f.spool.batch()).events.filter(e=>e.commandId===f.stopItem.envelope.commandId);
   assert.deepEqual(events.map(e=>e.type),['STOP_UNCONFIRMED','STOP_REQUESTED','STOP_UNCONFIRMED']);
+  assert.deepEqual(events[1]!.localRecordRef,rows[0].ref);assert.equal(events[1]!.occurredAt,rows[1].snapshot.requestedAt);
  }finally{f.authority.abort();await f.h.close();}
 });
 
@@ -152,6 +206,28 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
 
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
+ test('terminal STOP 정착의 close 불명은 원 lock과 두 행을 남기고 관측을 차단한다',async()=>{
+  const {liveStopFixture}=await import('../FN07/normal-first-send-owner.test.ts'),f=await liveStopFixture();
+  try{
+   assert.equal((await f.run()).state,'LIMIT_REACHED');
+   const commandId=f.stopItem.envelope.commandId,open=f.fs.fs.open.bind(f.fs.fs);
+   let transactions=0;
+   f.fs.fs.open=async(path:string,flag:string)=>{
+    const handle=await open(path,flag);
+    if(flag==='wx'&&path.endsWith('attempt-'+commandId+'.lock')&&++transactions===3){
+     handle.close=async()=>{throw Error('RAM_STOP_CLOSE_LOST');};
+    }
+    return handle;
+   };
+   const invoke=()=>new NormalStopCoordinator(f.stopPorts()).recordObservations(f.stopItem,f.spool,f.signal,f.worker);
+   await assert.rejects(invoke(),/LOCAL_STORAGE_UNAVAILABLE/);
+   await assert.rejects(invoke(),/LOCAL_BUSY/);
+   const owned=[...f.fs.files.keys()].filter(path=>path.includes(commandId));
+   assert.equal(owned.filter(path=>path.endsWith('.json')).length,2);assert(owned.some(path=>path.endsWith('.lock')));
+   assert.equal((await f.spool.batch()).events.filter(event=>event.commandId===commandId).length,0);
+   assert.equal(f.stopCalls.interrupt,1);assert.equal(f.effects.close,0);
+  }finally{f.authority.abort();await f.h.close();}
+ });
  test('interrupt 대기 중 취소 후 늦은 반환은 새 행·요청 관측·재호출을 만들지 않는다',async()=>{
   const {liveStopFixture}=await import('../FN07/normal-first-send-owner.test.ts'),f=await liveStopFixture(),abort=new AbortController();
   const entered=Promise.withResolvers<void>(),release=Promise.withResolvers<void>();
