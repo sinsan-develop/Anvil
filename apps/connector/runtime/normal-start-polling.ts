@@ -126,6 +126,8 @@ export class NormalStartPolling{
      }else if(item.envelope.operation==='SEND_INSTRUCTION'&&item.materials!==null&&this.#p.instruction){
       const ports=this.#p.instruction,{wire,...configuration}=ports,coordinator=new NormalInstructionCoordinator({...configuration,post:clients.post});
       let history=await this.#call(s=>coordinator.history(item,s),signal,true,true);
+      // 이어받은 원장은 SEND 효과 전에 검산한다. 정상 미ACK 관측은 아래에서 기존 방식으로 정착시킨다.
+      if(history.state==='NOT_RECEIVED'||history.state==='NOT_PREPARED')await this.#call(()=>this.#p.start.spool.coverage(),signal,true,true);
       if(history.state==='NOT_RECEIVED'){
        await this.#call(s=>receiveNormalInstruction(clients.get,ports.intake,item,page.proofResultRef,s),signal,true,true);
        history=await this.#call(s=>coordinator.observations(item.envelope,s),signal,true,true);

@@ -29,7 +29,16 @@ test('RESPONSE 뒤 부분 관측 실패를 새 owner가 원 ref/시각으로 보
   };
   const first=await f.poll().run(f.signal);assert.equal(first.state,'UNKNOWN');assert.equal(first.cursor.afterSequence,0);assert.equal(failed,true);assert.equal(f.effects.send,1);
   const history=await f.make().observations(f.item.envelope,f.signal);assert.equal(history.state,'RESPONSE_RECORDED');assert.equal(history.inputs.length,4);
+  const recoverOpen=f.fs.fs.open;
+  let sendHistory=false,supplemented=false,earlyAckReads=0;
+  f.fs.fs.open=async(path:string,flag:string)=>{
+   if(path.includes('attempt-'+f.item.envelope.commandId+'.')&&path.endsWith('.json'))sendHistory=true;
+   if(sendHistory&&!supplemented&&/acks\.\d+\.json$/.test(path))earlyAckReads++;
+   if(flag==='wx'&&path.endsWith('observations.000008.json')){assert.equal(sendHistory,true);supplemented=true;}
+   return recoverOpen(path,flag);
+  };
   const second=await f.poll().run(f.signal);assert.equal(second.state,'LIMIT_REACHED');assert.equal(second.cursor.afterSequence,f.item.sequence);assert.equal(f.effects.send,1);assert.equal(f.effects.start,1);
+  assert.equal(supplemented,true);assert.equal(earlyAckReads,0,'과거 SEND는 원 관측을 보충한 뒤 기존 ACK를 검산한다');
   const local=(await f.spool.batch()).events.filter((e:any)=>e.commandId===f.item.envelope.commandId);
   assert.deepEqual(local.map((e:any)=>[e.type,e.localRecordRef,e.occurredAt]),history.inputs.map(e=>[e.type,e.localRecordRef,e.occurredAt]));
  }finally{await f.h.close();}
@@ -228,5 +237,58 @@ test('후속 정상 이력은 부모 전체와 현재 자료·등록·init fullr
   await assert.rejects(substituted.history(item,f.signal));assert.equal(forged,1);
   f.fs.files.delete(path(t,5));const store=f.store.instructionAttempts(),legacy=f.make({store:{...store,exclusive:(key:any,body:any)=>store.exclusive(key,tx=>body({read:()=>tx.read(),appendAndSync:(v:unknown)=>tx.appendAndSync(v)}))}});
   await assert.rejects(legacy.history(item,f.signal));
+ }finally{f.authority.abort();await f.h.close();}
+});
+
+for(const mode of ['CORRUPT_ACK_BEFORE_INTAKE','ACK_READ_UNKNOWN_BEFORE_PERMIT'] as const)
+test('새 SEND는 손상 또는 읽기 불명 ACK 원장에서 원문·permit·wire·관측을 멈춘다 '+mode,async()=>{
+ const {firstSendFixture}=await import('../FN07/normal-first-send-owner.test.ts');
+ const {NormalStartPolling}=await import('../../../apps/connector/runtime/normal-start-polling.ts');
+ const {receiveNormalInstruction}=await import('../../../apps/connector/runtime/normal-instruction-intake.ts');
+ let yields=0;const f=await firstSendFixture('yield-first',{async provide(_query,input){for await(const _ of input)yields++;}});
+ try{
+  const poll=new NormalStartPolling(f.options()),first=await poll.run(f.signal);
+  assert.equal(first.state,'LIMIT_REACHED');assert.equal(first.cursor.afterSequence,f.item.sequence);
+  const second=await f.h.queueFollowup('새 지시 원장 gate');
+  if(mode==='ACK_READ_UNKNOWN_BEFORE_PERMIT'){
+   const page=await f.get.send(await f.get.prepareCommandPage({afterSequence:first.cursor.afterSequence,afterCursor:first.cursor.afterCursor,waitMs:0},f.signal),f.signal);
+   assert.equal(page.items.length,1);const item=page.items[0]!;
+   assert.ok(item.materials);assert.equal(item.envelope.commandId,second.commandId);
+   await receiveNormalInstruction(f.get,f.intake,item,page.proofResultRef,f.signal);
+   assert.equal((await f.make().observations(item.envelope,f.signal)).state,'NOT_PREPARED');
+  }
+  const ack=[...f.fs.files.keys()].find(key=>/acks\.\d+\.json$/.test(key));
+  assert.ok(ack,'실제 로컬 ACK 행');
+  if(mode==='CORRUPT_ACK_BEFORE_INTAKE')f.fs.files.get(ack)!.bytes=Buffer.from('{"partial":');
+  else{
+   const open=f.fs.fs.open;
+   f.fs.fs.open=async(target:string,flag:string)=>{if(target===ack)throw Object.assign(Error('합성 읽기 불명'),{code:'EACCES'});return open(target,flag);};
+  }
+  const before=f.calls.length,observations=f.h.observations.length,permits=f.h.permits.length,fsRecords=new Map([...f.fs.files].map(([path,file])=>[path,Buffer.from(file.bytes)]));
+  const result=await poll.run(f.signal);
+  assert.equal(result.state,'UNKNOWN');assert.equal(result.commands,0);assert.deepEqual(result.cursor,first.cursor);
+  assert.deepEqual(f.calls.slice(before).map(c=>c.path.split('/').at(-1)),['challenges','commands']);
+  assert.equal(f.h.observations.length,observations);assert.equal(f.h.permits.length,permits);
+  const added=[...f.fs.files.keys()].filter(path=>!fsRecords.has(path));
+  assert.deepEqual(added,[f.fs.path('acks.lock')],'원 읽기 불명 잠금만 기존 방식대로 보존한다');
+  for(const [path,bytes] of fsRecords)assert.deepEqual(f.fs.files.get(path)?.bytes,bytes);
+  assert.equal(yields,0);
+  assert.deepEqual((await poll.run(f.signal)).cursor,first.cursor);assert.equal(f.calls.length,before+2);
+ }finally{f.authority.abort();await f.h.close();}
+});
+
+test('ACK가 정상 미완료인 원장은 다음 SEND를 차단하지 않고 해당 page에서 원 순번을 ACK한다',async()=>{
+ const {firstSendFixture}=await import('../FN07/normal-first-send-owner.test.ts');
+ const {NormalStartPolling}=await import('../../../apps/connector/runtime/normal-start-polling.ts');
+ let yields=0;const f=await firstSendFixture('yield-first',{async provide(_query,input){for await(const _ of input)yields++;}});
+ try{
+  const poll=new NormalStartPolling(f.options()),first=await poll.run(f.signal);assert.equal(first.state,'LIMIT_REACHED');
+  await f.spool.record({type:'HEARTBEAT',commandId:f.item.envelope.commandId,envelopeHash:f.item.envelope.envelopeHash,
+   localRecordRef:{id:randomUUID(),version:1,contentHash:'c'.repeat(64)},processRef:null,occurredAt:new Date(f.clock()).toISOString(),reasonCode:'NONE'});
+  assert.equal((await f.spool.coverage()).covered,false);
+  await f.h.queueFollowup('원 순번이 아직 ACK되지 않은 상태의 새 지시');
+  const next=await poll.run(f.signal);
+  assert.equal(next.state,'LIMIT_REACHED');assert.equal(next.commands,1);assert.ok(next.cursor.afterSequence>first.cursor.afterSequence);
+  assert.equal((await f.spool.coverage()).covered,true);assert.equal(yields,1);
  }finally{f.authority.abort();await f.h.close();}
 });
