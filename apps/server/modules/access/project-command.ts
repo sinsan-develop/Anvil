@@ -418,6 +418,10 @@ export class ProjectPolicyRepository {
               if(!verifyMaterialReplay)throw new AuthFailure('RESULT_SUBMISSION_LEDGER_INVALID',503);
               await verifyMaterialReplay(db,actor,request,previous,policy.ref);
             }
+            if(request.operation==='evaluateResult'){
+              if(!verifyMaterialReplay)throw new AuthFailure('RESULT_REVIEW_LEDGER_INVALID',503);
+              await verifyMaterialReplay(db,actor,request,previous,policy.ref);
+            }
             if(request.operation==='prepareExecution' && request.payload.connectionKind==='REGISTERED_DEFINITION'){
               if(!verifyMaterialReplay)throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
               const result=await verifyMaterialReplay(db,actor,JSON.parse(canonicalJson(request)),JSON.parse(canonicalJson(previous)),policy.ref);

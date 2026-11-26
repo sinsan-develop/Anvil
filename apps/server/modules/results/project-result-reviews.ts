@@ -9,7 +9,19 @@ import type {ProjectResultCriteria} from './project-result-criteria.ts';
 import {prepareResultReview} from './result-review-input.ts';
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
 function fail(code:string,status=503):never{throw new AuthFailure(code,status);}
-const select="SELECT v.*,c.actor_id,c.client_id AS command_client_id,c.command_id AS original_command_id,c.operation,c.state,c.expected_version,c.control_generation,c.request_hash,c.policy_ref,c.authorization_receipt_id,c.result_ref,ar.subject_ref AS receipt_subject,ar.policy_ref AS receipt_policy_ref,ar.scope_digest,ar.approval_decision_ref,(SELECT count(*)::int FROM anvil.audit_events a WHERE a.command_id=c.id AND a.project_id=c.project_id AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.scope_digest=ar.scope_digest AND a.target_ref=c.result_ref->'data'->'ref') AS audit_count FROM anvil.result_reviews v JOIN anvil.commands c ON c.project_id=v.project_id AND c.id=v.command_id JOIN anvil.authorization_receipts ar ON ar.command_id=c.id AND ar.id=c.authorization_receipt_id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id ";
+const select=`SELECT v.*,c.actor_id,c.client_id AS command_client_id,c.command_id AS original_command_id,c.operation_id,
+ c.operation,c.state,c.expected_version,c.control_generation,c.request_hash,c.policy_ref,c.authorization_receipt_id,c.approval_consumption_id,c.payload_ref,c.result_ref,
+ ar.subject_ref AS receipt_subject,ar.policy_ref AS receipt_policy_ref,ar.scope_digest,ar.approval_decision_ref,
+ (SELECT count(*)::int FROM anvil.audit_events a WHERE a.project_id=c.project_id AND a.command_id=c.id) AS audit_total,
+ (SELECT count(*)::int FROM anvil.audit_events a WHERE a.project_id=c.project_id AND a.command_id=c.id
+  AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND'
+  AND a.scope_digest=ar.scope_digest AND a.target_ref=c.result_ref->'data'->'ref'
+  AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id) AND a.client_ref=c.client_id
+  AND a.policy_ref=c.policy_ref AND a.approval_ref IS NULL
+  AND a.reason_code='EXPLICIT_RESULT_REVIEW_NOT_ACCEPTANCE' AND a.correction_of IS NULL
+  AND a.recorded_at=c.completed_at) AS audit_count
+ FROM anvil.result_reviews v JOIN anvil.commands c ON c.project_id=v.project_id AND c.id=v.command_id
+ JOIN anvil.authorization_receipts ar ON ar.command_id=c.id AND ar.id=c.authorization_receipt_id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id `;
 /** 별도 명시 정책 아래 보완/차단 검수만 불변 보관한다. 실제 증거 검증/합격/보완 실행은 미연결이다. */
 export class ProjectResultReviews{
  readonly results:Pick<ProjectResultSubmissions,'read'>;readonly criteria:Pick<ProjectResultCriteria,'read'>;
@@ -25,17 +37,37 @@ export class ProjectResultReviews{
   if(policy.approvalRequired||!same(policy.ref,policyRef)||!s||!uuidV1(s.id)||!isoV1(s.idleExpiresAt)||!isoV1(s.absoluteExpiresAt)||Math.min(policy.validUntil,Date.parse(s.idleExpiresAt),Date.parse(s.absoluteExpiresAt))<=Date.parse(at))fail('RESULT_REVIEW_CURRENT_REQUIRED',409);
  }
  #data(snapshot:unknown){return{status:'RESULT_REVIEW_RECORDED',snapshot,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false};}
- async #view(db:PoolClient,actor:AuthenticatedIdentity,row:any,pid:string,id:string){
+ async #view(db:PoolClient,actor:AuthenticatedIdentity,row:any,pid:string,id:string,replay?:{request:ProjectCommand;result:unknown}){
   try{
    if(row.project_id!==pid||row.id!==id||!uuidV1(row.created_by)||!uuidV1(row.client_id)||!uuidV1(row.command_id)||!(row.created_at instanceof Date)||!recordV1(row.snapshot_json,['scope','input','reviewedBy','sameAsSubmitter','reviewedAt','evidenceProvenanceVerified','completionAccepted','formalFailureCounted','executionAuthorized','dispatchPerformed']))fail('RESULT_REVIEW_LEDGER_INVALID');
    const s=row.snapshot_json,at=row.created_at.toISOString(),{prepared:p,submitterId}=await this.#prepare(db,actor,pid,s.input,at),expected={scope:p.scope,input:p.input,reviewedBy:{kind:'HUMAN',userId:row.created_by,clientId:row.client_id},sameAsSubmitter:row.created_by===submitterId,reviewedAt:at,evidenceProvenanceVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false},ref={id,version:1,contentHash:row.content_hash};
-   if(!refV1(ref)||!same(s,expected)||ref.contentHash!==hash(s)||row.result_id!==p.input.resultRef.id||row.criteria_id!==p.input.criteriaRef.id||Number(row.criteria_version)!==p.input.criteriaRef.version||row.operation!=='evaluateResult'||row.state!=='APPLIED'||row.actor_id!==row.created_by||row.command_client_id!==row.client_id||Number(row.expected_version)!==0||!uuidV1(row.original_command_id)||!refV1(row.policy_ref)||!uuidV1(row.authorization_receipt_id)||row.approval_decision_ref!==null||Number(row.audit_count)!==1||!same(row.receipt_subject,{kind:'HUMAN',userId:row.created_by,clientId:row.client_id})||!same(row.receipt_policy_ref,row.policy_ref))fail('RESULT_REVIEW_LEDGER_INVALID');
+   if(!refV1(ref)||!same(s,expected)||ref.contentHash!==hash(s)||row.result_id!==p.input.resultRef.id||row.criteria_id!==p.input.criteriaRef.id||Number(row.criteria_version)!==p.input.criteriaRef.version||row.operation!=='evaluateResult'||row.state!=='APPLIED'||row.actor_id!==row.created_by||row.command_client_id!==row.client_id||Number(row.expected_version)!==0||!uuidV1(row.original_command_id)||!refV1(row.policy_ref)||!uuidV1(row.authorization_receipt_id)||row.approval_decision_ref!==null||Number(row.audit_total)!==1||Number(row.audit_count)!==1||!same(row.receipt_subject,{kind:'HUMAN',userId:row.created_by,clientId:row.client_id})||!same(row.receipt_policy_ref,row.policy_ref))fail('RESULT_REVIEW_LEDGER_INVALID');
+   if(row.approval_consumption_id!==null||row.payload_ref!==null)fail('RESULT_REVIEW_LEDGER_INVALID');
    const original={schemaVersion:1,projectId:pid,commandId:row.original_command_id,clientId:row.client_id,controlGeneration:Number(row.control_generation),operation:'evaluateResult',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:p.input};
    if(row.request_hash!==hash(original)||row.scope_digest!==hash({projectId:pid,actorId:row.created_by,clientId:row.client_id,controlGeneration:Number(row.control_generation),requestHash:row.request_hash,policyRef:row.policy_ref,targetRef:ref})||row.result_ref?.status!=='APPLIED'||row.result_ref.commandId!==row.original_command_id||row.result_ref.projectId!==pid||row.result_ref.targetId!==id||row.result_ref.version!==1||row.result_ref.serverReceivedAt!==at||!same(row.result_ref.data,{ref,...this.#data(s)}))fail('RESULT_REVIEW_LEDGER_INVALID');
+   if(replay){
+    const result={operationId:row.operation_id,commandId:row.original_command_id,projectId:pid,status:'APPLIED',targetId:id,version:1,
+     data:{ref,...this.#data(s)},evidenceRefs:[],warnings:[],serverReceivedAt:at};
+    if(row.created_by!==actor.actorId||!uuidV1(row.operation_id)||!same(original,replay.request)||!same(row.result_ref,result)||!same(replay.result,result))fail('RESULT_REVIEW_LEDGER_INVALID');
+   }
    return{projectId:pid,ref,snapshot:cloneV1(s),reviewStored:true as const,completionAccepted:false as const,formalFailureCounted:false as const,evidenceProvenanceVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const,observedAt:await this.#clock(db)};
   }catch(error){if(error instanceof AuthFailure&&error.statusCode===404)throw error;fail('RESULT_REVIEW_LEDGER_INVALID');}
  }
  async read(db:PoolClient,rawActor:AuthenticatedIdentity,pid:string,id:string){if(!uuidV1(pid)||!uuidV1(id))fail('RESULT_REVIEW_INPUT_INVALID',400);const actor=structuredClone(rawActor);await projectMember(db,actor,pid);const rows=(await db.query(select+'WHERE v.project_id=$1 AND v.id=$2 LIMIT 2',[pid,id])).rows;if(!rows.length)fail('NOT_FOUND',404);if(rows.length!==1)fail('RESULT_REVIEW_LEDGER_INVALID');const value=await this.#view(db,actor,rows[0],pid,id);await projectMember(db,actor,pid);return cloneV1(value);}
+ async verifyReplay(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,previous:unknown,policyRef:RuntimeRefV1){
+  const pid=request.projectId;
+  if(request.operation!=='evaluateResult'||!uuidV1(pid)||!uuidV1(request.commandId))fail('RESULT_REVIEW_LEDGER_INVALID');
+  const {rows}=await db.query(select+"WHERE v.project_id=$1 AND c.scope_kind='PROJECT' AND c.scope_id=v.project_id AND c.actor_id=$2 AND c.command_id=$3 LIMIT 2",[pid,actor.actorId,request.commandId]);
+  if(rows.length!==1)fail('RESULT_REVIEW_LEDGER_INVALID');
+  const row=rows[0];
+  try{await this.#view(db,actor,row,pid,row.id,{request,result:previous});}
+  catch(error){
+   if(!(error instanceof AuthFailure)||error.statusCode!==404)throw error;
+   await this.#authorized(db,actor,request,policyRef);
+   fail('RESULT_REVIEW_LEDGER_INVALID');
+  }
+  await this.#authorized(db,actor,request,policyRef);
+ }
  /** 재접속용 metadata 목록이며 최신 검수를 자동 선택/활성 판정하지 않는다. */
  async list(db:PoolClient,rawActor:AuthenticatedIdentity,pid:string,resultId:string){
   if(!uuidV1(pid)||!uuidV1(resultId))fail('RESULT_REVIEW_INPUT_INVALID',400);const actor=structuredClone(rawActor);await projectMember(db,actor,pid);const result=await this.results.read(db,structuredClone(actor),pid,resultId);if(result.ref.id!==resultId||result.snapshot.scope.projectId!==pid)fail('RESULT_REVIEW_SOURCE_INVALID');

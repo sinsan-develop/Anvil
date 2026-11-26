@@ -402,7 +402,9 @@ projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/a
         (db, actor, policyRef) => results.submit(db, actor, request.body, policyRef),
         (db, actor, command, previous, policyRef) => results.verifyReplay(db, actor, command, previous, policyRef));
       if (request.body.operation === 'saveResultCriteria') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => resultCriteria.save(db, actor, request.body, policyRef));
-      if (request.body.operation === 'evaluateResult') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => resultReviews.save(db, actor, request.body, policyRef));
+      if (request.body.operation === 'evaluateResult') return policies.command(token(request), csrf(request), request.body,
+        (db, actor, policyRef) => resultReviews.save(db, actor, request.body, policyRef),
+        (db, actor, command, previous, policyRef) => resultReviews.verifyReplay(db, actor, command, previous, policyRef));
       if (request.body.operation === 'requestRework') return policies.command(token(request), csrf(request), request.body,
         (db, actor, policyRef) => resultReworks.save(db, actor, request.body, policyRef),
         (db, actor, command, previous, policyRef) => resultReworks.verifyReplay(db, actor, command, previous, policyRef));
