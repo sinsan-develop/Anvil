@@ -78,14 +78,39 @@ function assertList(v:unknown,projectId:string,view:'OWN'|'CONTROLLER'):asserts 
  if(!exact(v,['projectId','view','limit','observedAt','items','hasMore','nextCursor','executionAuthorized','controlTransferred'])||v.projectId!==projectId||v.view!==view||v.limit!==50||!iso(v.observedAt)||!Array.isArray(v.items)||v.items.length>50||typeof v.hasMore!=='boolean'||!flags(v)||v.hasMore!==(typeof v.nextCursor==='string'&&v.nextCursor.length>0)||!v.hasMore&&v.nextCursor!==null||typeof v.nextCursor==='string'&&v.nextCursor.length>4096)return invalid();
  const ids=new Set<string>();for(const row of v.items){if(!exact(row,['requestRef','createdAt','expiresAt','storedState','current','executionAuthorized','controlTransferred'])||!ref(row.requestRef)||row.requestRef.version!==1||ids.has(row.requestRef.id)||!iso(row.createdAt)||!iso(row.expiresAt)||Date.parse(row.expiresAt)<=Date.parse(row.createdAt)||Date.parse(row.expiresAt)-Date.parse(row.createdAt)>30*60000||row.storedState!=='PENDING'||!current(row.current)||!flags(row))return invalid();ids.add(row.requestRef.id);}
 }
+export class ControlAcceptanceNotReady extends ApiError{
+ readonly commandId:string;
+ constructor(commandId:string,requestId:string){super('HANDOFF_NOT_READY',412,requestId);this.commandId=commandId;}
+}
+/** 최초 수락 POST의 정확한 서버 거절만 불명 결과와 구분한다. */
+async function confirmedAcceptanceRejection(response:Response,commandId:string):Promise<ControlAcceptanceNotReady|null>{
+ if(response.status!==412||!/^application\/json(?:\s*;|$)/i.test(response.headers.get('content-type')??''))return null;
+ const reader=response.body?.getReader();if(!reader)return null;
+ try{
+  const decoder=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true});let size=0,raw='';
+  for(;;){
+   const {done,value}=await reader.read();if(done)break;
+   size+=value.byteLength;if(size>4096){void reader.cancel().catch(()=>{});return null;}
+   raw+=decoder.decode(value,{stream:true});
+  }
+  const error=parseWire(raw+decoder.decode());
+  if(!exact(error,['code','message','requestId','targetId','retryDisposition','details'])||error.code!=='HANDOFF_NOT_READY'
+   ||error.message!=='요청을 처리하지 못했습니다'||error.targetId!==null||error.retryDisposition!=='not-retryable'
+   ||typeof error.requestId!=='string'||!/^[A-Za-z0-9_.:-]{1,200}$/.test(error.requestId)
+   ||!exact(error.details,['commandId'])||error.details.commandId!==commandId)return null;
+  return new ControlAcceptanceNotReady(commandId,error.requestId);
+ }catch{return null;}finally{reader.releaseLock();}
+}
 export class ControlApi{
  transport:typeof fetch;session:ControlSession;projectId:string;
  constructor(transport:typeof fetch,session:ControlSession,projectId:string){this.transport=transport;this.session=session;this.projectId=projectId;}
  private base():string{if(!uuid(this.projectId)||!uuid(this.session.user.id)||!uuid(this.session.clientId)||!/^[A-Za-z0-9_-]{43}$/.test(this.session.csrfToken))throw new ApiError('AUTH_REQUIRED',401);return '/api/v1/projects/'+this.projectId;}
  private path(request:ControlRef):string{if(!ref(request)||request.version!==1)return invalid();return this.base()+'/control-requests/'+request.id+'/versions/'+request.version;}
  private async wire(path:string,command?:ControlCommand|ControlAcceptCommand):Promise<unknown>{
+ const firstAcceptanceId=command?.operation==='acceptControl'?command.commandId:null;
  const headers:Record<string,string>={Accept:'application/json','X-Anvil-CSRF':this.session.csrfToken};if(command){headers['Content-Type']='application/json';headers['Idempotency-Key']=command.commandId;}
  let response:Response;try{response=await this.transport.call(globalThis,path,{method:command?'POST':'GET',credentials:'same-origin',redirect:'error',cache:'no-store',headers,...(command?{body:browserCanonical(command)}:{})});}catch{throw new ApiError('CONNECTION_LOST');}
+ if(firstAcceptanceId&&response.status===412){const rejection=await confirmedAcceptanceRejection(response,firstAcceptanceId);if(rejection)throw rejection;}
  // A default-OFF 404 may be a non-JSON framework response. Preserve its denial status.
  if(!response.ok){throw new ApiError(response.status===401?'AUTH_REQUIRED':response.status===404?'NOT_FOUND':response.status===503?'NOT_CONNECTED':'REQUEST_FAILED',response.status);}
  if(!/^application\/json\b/i.test(response.headers.get('content-type')??''))return invalid();
@@ -133,11 +158,17 @@ export class ControlApi{
  private acceptInput(command:ControlAcceptCommand,summary:ProtectedHandoffSummary){
   if(!exact(command,['schemaVersion','operation','commandId','projectId','clientId','payload'])||command.schemaVersion!==1||command.operation!=='acceptControl'||!uuid(command.commandId)||command.projectId!==this.projectId||command.clientId!==this.session.clientId||!exact(command.payload,['requestRef','summaryVersion','reason'])||!ref(command.payload.requestRef)||!positive(command.payload.summaryVersion)||typeof command.payload.reason!=='string'||!command.payload.reason.trim()||command.payload.reason.length>20000||!same(command.payload.requestRef,summary.snapshot.requestRef)||command.payload.summaryVersion!==summary.ref.version||summary.snapshot.targetActorRef.userId!==this.session.user.id||summary.snapshot.targetClientRef.userId!==this.session.user.id||summary.snapshot.targetClientRef.clientId!==this.session.clientId)return invalid();
  }
- async accept(command:ControlAcceptCommand,summary:ProtectedHandoffSummary):Promise<ControlAcceptanceChain['result']>{
-  const fixed=await readProtectedWire(summary,this.projectId,command.payload.requestRef);this.acceptInput(command,fixed);if(fixed.snapshot.transferState!=='READY'||Date.parse(fixed.snapshot.validUntil)<=Date.now())throw new ApiError('REQUEST_FAILED',412);return readAcceptanceWire(await this.wire(this.path(command.payload.requestRef)+'/acceptances',command),command,fixed,this.session);
+ async accept(command:ControlAcceptCommand,summary:ProtectedHandoffSummary,active:()=>boolean=()=>true):Promise<ControlAcceptanceChain['result']>{
+  const fixed=await readProtectedWire(summary,this.projectId,command.payload.requestRef);this.acceptInput(command,fixed);
+  if(fixed.snapshot.transferState!=='READY'||Date.parse(fixed.snapshot.validUntil)<=Date.now()||!active())throw new ApiError('REQUEST_FAILED',412);
+  return readAcceptanceWire(await this.wire(this.path(command.payload.requestRef)+'/acceptances',command),command,fixed,this.session);
  }
- async acceptanceResult(command:ControlAcceptCommand,summary:ProtectedHandoffSummary):Promise<ControlAcceptanceChain['result']>{
-  const fixed=await readProtectedWire(summary,this.projectId,command.payload.requestRef);this.acceptInput(command,fixed);return readAcceptanceWire(await this.wire(this.path(command.payload.requestRef)+'/acceptances/'+command.commandId+'?commandHash='+await wireHash(command)),command,fixed,this.session);
+ async acceptanceResult(command:ControlAcceptCommand,summary:ProtectedHandoffSummary,active:()=>boolean=()=>true):Promise<ControlAcceptanceChain['result']>{
+  const fixed=await readProtectedWire(summary,this.projectId,command.payload.requestRef);this.acceptInput(command,fixed);
+  if(!active())throw new ApiError('REQUEST_FAILED',412);
+  const digest=await wireHash(command);
+  if(!active())throw new ApiError('REQUEST_FAILED',412);
+  return readAcceptanceWire(await this.wire(this.path(command.payload.requestRef)+'/acceptances/'+command.commandId+'?commandHash='+digest),command,fixed,this.session);
  }
  async send(command:ControlCommand):Promise<ControlResult>{
  if(!exact(command,['schemaVersion','operation','commandId','projectId','clientId','payload'])||command.schemaVersion!==1||!uuid(command.commandId)||command.projectId!==this.projectId||command.clientId!==this.session.clientId)return invalid();

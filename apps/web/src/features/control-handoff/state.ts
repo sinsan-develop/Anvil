@@ -3,22 +3,36 @@ import type {ProtectedHandoffSummary} from '../../../../server/modules/control-h
 import {ApiError} from '../../api/errors.ts';
 import {basis,iso,same,uuid,type ControlCommand,type ControlSession,type ControlStateResult} from './api.ts';
 import type {ControlRequestCommand} from '../../../../server/modules/control-handoff/control-request-store.ts';
-export type ControlPending={bindingId:string;status:'READY'|'SENDING'|'UNKNOWN'|'CONFIRMED'}&({command:ControlCommand;kind?:'PROTECTED_PREPARE'}|{command:ControlAcceptCommand;kind:'ACCEPT';summary:ProtectedHandoffSummary});
+type ControlPendingStatus='READY'|'SENDING'|'UNKNOWN'|'CONFIRMED';
+export type ControlPending={bindingId:string}&({command:ControlCommand;kind?:'PROTECTED_PREPARE';status:ControlPendingStatus}|{command:ControlAcceptCommand;kind:'ACCEPT';summary:ProtectedHandoffSummary;status:ControlPendingStatus|'REJECTED'});
 export interface ControlBuffer {bindingId:string;ownerUserId:string;ownerClientId:string;projectId:string;reason:string;expiresAt:string;pending:ControlPending|null}
 export function emptyControlBuffer(session:ControlSession,projectId:string):ControlBuffer{return{bindingId:crypto.randomUUID(),ownerUserId:session.user.id,ownerClientId:session.clientId,projectId,reason:'',expiresAt:'',pending:null};}
+export function unresolvedControlPending(pending:ControlPending|null):boolean{return !!pending&&pending.status!=='CONFIRMED'&&pending.status!=='REJECTED';}
+const rejectedAcceptanceFrom=new WeakMap<ControlBuffer,ControlBuffer>();
+export function rejectControlAcceptance(sending:ControlBuffer,commandId:string):ControlBuffer{
+ const pending=sending.pending;
+ if(pending?.kind!=='ACCEPT'||pending.status!=='UNKNOWN'||pending.command.commandId!==commandId)throw new ApiError('REQUEST_FAILED');
+ const next:ControlBuffer={...sending,pending:{...pending,status:'REJECTED'}};
+ rejectedAcceptanceFrom.set(next,sending);return next;
+}
 export function mergeControlBuffer(current:ControlBuffer|null,expected:string|null,next:ControlBuffer):ControlBuffer|null{
  if((current?.bindingId??null)!==expected||current&&(current.projectId!==next.projectId||current.ownerUserId!==next.ownerUserId||current.ownerClientId!==next.ownerClientId))return current;
+ if(next.pending?.status==='REJECTED'&&next.pending!==current?.pending){
+  const sending=rejectedAcceptanceFrom.get(next);rejectedAcceptanceFrom.delete(next);
+  if(sending!==current)return current;
+ }
+ if(current?.pending?.status==='REJECTED'&&next.pending?.bindingId===current.pending.bindingId&&next.pending!==current.pending)return current;
  return next;
 }
 function freeze<T>(value:T):T{if(value&&typeof value==='object'){Object.freeze(value);for(const item of Object.values(value))freeze(item);}return value;}
 export function freezeControlCommand(buffer:ControlBuffer,command:ControlCommand):ControlBuffer{
- if(buffer.pending&&buffer.pending.status!=='CONFIRMED'||buffer.projectId!==command.projectId||buffer.ownerClientId!==command.clientId)throw new ApiError('REQUEST_FAILED');
+ if(unresolvedControlPending(buffer.pending)||buffer.projectId!==command.projectId||buffer.ownerClientId!==command.clientId)throw new ApiError('REQUEST_FAILED');
  const copy:ControlCommand=JSON.parse(JSON.stringify(command));return{...buffer,bindingId:crypto.randomUUID(),pending:{bindingId:crypto.randomUUID(),command:freeze(copy),status:'READY'}};
 }
 /** 수락은 고정 보호요약과 원 명령을 함께 App 소유 메모리에 선보존한다. 조회가 권한을 발급하지 않는다. */
 export function freezeControlAcceptance(buffer:ControlBuffer,command:ControlAcceptCommand,summary:ProtectedHandoffSummary):ControlBuffer{
  const s=summary.snapshot;
- if(buffer.pending&&buffer.pending.status!=='CONFIRMED'||buffer.projectId!==command.projectId||buffer.ownerClientId!==command.clientId||s.projectId!==command.projectId||s.transferState!=='READY'||Date.parse(s.validUntil)<=Date.now()||s.targetActorRef.userId!==buffer.ownerUserId||s.targetClientRef.clientId!==buffer.ownerClientId||!same(s.requestRef,command.payload.requestRef)||command.payload.summaryVersion!==summary.ref.version||!command.payload.reason.trim()||command.payload.reason.length>20000||!uuid(command.commandId))throw new ApiError('REQUEST_FAILED');
+ if(unresolvedControlPending(buffer.pending)||buffer.projectId!==command.projectId||buffer.ownerClientId!==command.clientId||s.projectId!==command.projectId||s.transferState!=='READY'||Date.parse(s.validUntil)<=Date.now()||s.targetActorRef.userId!==buffer.ownerUserId||s.targetClientRef.clientId!==buffer.ownerClientId||!same(s.requestRef,command.payload.requestRef)||command.payload.summaryVersion!==summary.ref.version||!command.payload.reason.trim()||command.payload.reason.length>20000||!uuid(command.commandId))throw new ApiError('REQUEST_FAILED');
  return{...buffer,bindingId:crypto.randomUUID(),pending:{bindingId:crypto.randomUUID(),kind:'ACCEPT',command:freeze(JSON.parse(JSON.stringify(command))),summary:freeze(JSON.parse(JSON.stringify(summary))),status:'READY'}};
 }
 export function selfRequestCommand(session:ControlSession,projectId:string,state:ControlStateResult,reason:string,expiresAt:string,commandId=crypto.randomUUID()):ControlRequestCommand{

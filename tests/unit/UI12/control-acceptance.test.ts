@@ -52,7 +52,7 @@ const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class
 
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/control-handoff/ControlAccessPage.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:control-acceptance',name:'ControlAcceptanceMemoryTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'rework-memory-entry',resolveId(id){if(id.endsWith('virtual:control-acceptance'))return '\0control-acceptance';},load(id){if(id==='\0control-acceptance')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{ControlAccessPage}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};export{React,createRoot,ControlAccessPage,ApiClient};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:control-acceptance',name:'ControlAcceptanceMemoryTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'rework-memory-entry',resolveId(id){if(id.endsWith('virtual:control-acceptance'))return '\0control-acceptance';},load(id){if(id==='\0control-acceptance')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{ControlAccessPage}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{mergeControlBuffer}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/control-handoff/state.ts',import.meta.url)))};export{React,createRoot,ControlAccessPage,ApiClient,mergeControlBuffer};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return ControlAcceptanceMemoryTest;')();
@@ -188,4 +188,133 @@ test('보존된 확정 수락의 명시 조회는 오류·다른 원명령을 �
   }
   assert.equal(changes,0);assert.deepEqual(buffer,original);
  }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+});
+
+const handoffNotReady=(commandId:string)=>({code:'HANDOFF_NOT_READY',message:'요청을 처리하지 못했습니다',requestId:'req-1',targetId:null,retryDisposition:'not-retryable',details:{commandId}});
+test('첫 수락 POST의 정확한 412만 명령 ID에 결박된 확정 거절이다',async()=>{
+ const summary=await protectedSummary(true),target={...session,user:{...session.user,id:requester},clientId:requesterClient};
+ const command={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:id(99),projectId,clientId:requesterClient,payload:{requestRef:request.requestRef,summaryVersion:1,reason:'명시 수락'}};
+ const original=handoffNotReady(command.commandId),savedNow=Date.now;Date.now=()=>Date.parse(now);
+ try{
+  const post=(body:Response)=>new ControlApi(async(_url,init)=>{assert.equal(init?.method,'POST');assert.equal(new Headers(init.headers).get('Idempotency-Key'),command.commandId);assert.deepEqual(JSON.parse(String(init.body)),command);return body;},target,projectId).accept(command,summary);
+  await assert.rejects(post(Response.json(original,{status:412})),{code:'HANDOFF_NOT_READY',status:412,commandId:command.commandId});
+  const invalid=[
+   Response.json(handoffNotReady(id(98)),{status:412}),Response.json({...original,targetId:id(98)},{status:412}),
+   Response.json({...original,retryDisposition:'reconcile-first'},{status:412}),Response.json({...original,details:{commandId:command.commandId,grantRef:{}}},{status:412}),
+   Response.json({...original,requestId:'x'.repeat(5000)},{status:412}),Response.json(original,{status:503}),
+   new Response(JSON.stringify(original).replace('"code":','"code":"HANDOFF_NOT_READY","code":'),{status:412,headers:{'content-type':'application/json'}}),
+   new Response(JSON.stringify(original),{status:412,headers:{'content-type':'text/plain'}})
+  ];
+  for(const response of invalid)await assert.rejects(post(response),(error:any)=>error.code!=='HANDOFF_NOT_READY');
+  const retry=new ControlApi(async(_url,init)=>{assert.equal(init?.method,'GET');return Response.json(original,{status:404});},target,projectId);
+  await assert.rejects(retry.acceptanceResult(command,summary),{code:'NOT_FOUND',status:404});
+ }finally{Date.now=savedNow;}
+});
+
+async function rejectedAcceptanceFixture(mode:'NOT_READY'|'HOLD'|'WRONG_ID',initialStatus:'READY'|'UNKNOWN'='READY'){
+ const summary=await protectedSummary(true),target={...session,user:{id:requester,displayName:'수락 대상'},clientId:requesterClient},savedNow=Date.now;
+ Date.now=()=>Date.parse(now);
+ const command={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:id(100),projectId,clientId:requesterClient,payload:{requestRef:request.requestRef,summaryVersion:1,reason:'이전 수락 원문'}};
+ const initial={bindingId:id(101),ownerUserId:requester,ownerClientId:requesterClient,projectId,reason:command.payload.reason,expiresAt:'',pending:{bindingId:id(102),kind:'ACCEPT',status:initialStatus,command,summary}};
+ let buffer:any=initial,selectedSession=target,lost=0,unmounted=false;
+ const calls:{path:string;method:string}[]=[],posted:unknown[]=[],pending=Promise.withResolvers<Response>(),fixed={projectId,requestRef:request.requestRef,snapshot:request.snapshot,observedAt:now,current:{expired:false,baseControlState:'MATCHED'},executionAuthorized:false,controlTransferred:false};
+ const client=new ui.ApiClient(async(path:string,init?:RequestInit)=>{
+  const method=init?.method??'GET',url=new URL(path,'https://test.invalid');calls.push({path,method});
+  if(method==='POST'&&url.pathname.endsWith('/acceptances')){
+   const sent=JSON.parse(String(init?.body));posted.push(sent);assert.equal(buffer.pending.status,'UNKNOWN');assert.deepEqual(sent,command);
+   return mode==='HOLD'?pending.promise:Response.json(handoffNotReady(mode==='WRONG_ID'?id(103):command.commandId),{status:412});
+  }
+  if(url.pathname.includes('/acceptances/'))return Response.json({code:'NOT_FOUND'},{status:404});
+  if(url.pathname.endsWith('/control-state'))return Response.json({schemaVersion:1,projectId,observedAt:now,actorId:requester,clientId:requesterClient,participation:'HANDOFF_ELIGIBLE',control:{state:'OTHER_CLIENT',basis:baseControl},executionAuthorized:false,controlTransferred:false});
+  if(url.pathname.endsWith('/control-requests'))return Response.json({projectId,view:'OWN',limit:50,observedAt:now,items:[{requestRef:request.requestRef,createdAt:request.snapshot.createdAt,expiresAt:request.snapshot.expiresAt,storedState:'PENDING',current:fixed.current,executionAuthorized:false,controlTransferred:false}],hasMore:false,nextCursor:null,executionAuthorized:false,controlTransferred:false});
+  if(url.pathname.endsWith('/protected-handoff-summaries/head'))return Response.json({schemaVersion:2,purpose:'CONTROL_HANDOFF_PROTECTED_HEAD',projectId,requestRef:request.requestRef,observedAt:now,head:{state:'AVAILABLE',summaryRef:summary.ref},executionAuthorized:false,dispatchPerformed:false,controlTransferred:false});
+  if(url.pathname.endsWith('/protected-handoff-summaries/1'))return Response.json(summary);
+  if(url.pathname.endsWith('/versions/1'))return Response.json(fixed);
+  throw Error('예상 밖 IO '+path);
+ });
+ const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ const render=()=>root.render(ui.React.createElement(ui.ControlAccessPage,{client,projectId,session:selectedSession,buffer,onChange:(expected:string|null,next:any)=>{
+  const merged=ui.mergeControlBuffer(buffer,expected,next);if(merged===buffer)return false;buffer=merged;render();return true;
+ },onAuthenticationLost:()=>{lost++;}}));
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))];
+ const button=(label:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===label);
+ const click=async(label:string)=>{const node=button(label);assert(node&&!node.disabled,label);await ui.React.act(async()=>node.dispatchEvent({type:'click',button:0}));};
+ const until=async(check:()=>boolean)=>{const deadline=performance.now()+2000;while(!check()&&performance.now()<deadline)await ui.React.act(async()=>new Promise(r=>setTimeout(r,2)));assert(check(),container.textContent);};
+ await ui.React.act(async()=>render());
+ return{client,command,calls,posted,button,click,until,text:()=>container.textContent,buffer:()=>buffer,lost:()=>lost,
+  async confirm(){const n=nodes().find(n=>n.tagName==='INPUT'&&Object.keys(n).some(k=>k.startsWith('__reactProps')&&(n as any)[k]?.type==='checkbox'));assert(n);const prop=Object.keys(n).find(k=>k.startsWith('__reactProps'));assert(prop);await ui.React.act(async()=>(n as any)[prop].onChange({target:{checked:true}}));},
+  async change(mode:string){
+   if(mode==='TRANSPORT'){client.transport=client.transport.bind(null);return;}
+   if(mode==='UNMOUNT'){await ui.React.act(async()=>root.unmount());unmounted=true;return;}
+   if(mode==='PARENT_CAS'){buffer={...buffer,pending:{...buffer.pending}};return;}
+   await ui.React.act(async()=>{if(mode==='CSRF')selectedSession={...selectedSession,csrfToken:'D'.repeat(43)};else buffer={...buffer,pending:{...buffer.pending}};render();});
+  },
+  resolve:()=>ui.React.act(async()=>pending.resolve(Response.json(handoffNotReady(command.commandId),{status:412}))),
+  async close(){Date.now=savedNow;if(!unmounted)await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+ };
+}
+
+test('수락 화면은 정확한 최초 거절만 닫고 새 현재 제어·보호요약을 확인하기 전에는 새 명령을 보존하지 않는다',async()=>{
+ const f=await rejectedAcceptanceFixture('NOT_READY');try{
+  await f.click('보존한 명령 전송');await f.until(()=>f.text().includes('수락 거절 확인'));
+  assert.equal(f.buffer().pending.status,'REJECTED');assert.deepEqual(f.buffer().pending.command,f.command);
+  assert(f.text().includes(f.command.commandId));assert(f.button('인수 수락 명령 보존')?.disabled);
+  assert.equal(f.button('같은 명령 결과 재확인'),undefined);assert.equal(f.button('보존한 명령 전송'),undefined);
+  assert.equal(f.calls.length,1);assert.equal(f.posted.length,1);assert(!f.text().includes('제어 전환 결과 확인'));
+  await f.click('현재 제어 조회');await f.until(()=>f.text().includes('OTHER_CLIENT'));
+  await f.click('내 요청 목록 조회');await f.until(()=>!!f.button('요청 1 원문 확인'));
+  await f.click('요청 1 원문 확인');await f.until(()=>!!f.button('최신 보호요약 고정 원문 조회'));
+  await f.click('최신 보호요약 고정 원문 조회');await f.until(()=>f.text().includes('보호 검산 READY'));
+  assert(f.button('인수 수락 명령 보존')?.disabled);
+  await f.confirm();await f.click('인수 수락 명령 보존');
+  assert.equal(f.buffer().pending.status,'READY');assert.notEqual(f.buffer().pending.command.commandId,f.command.commandId);
+  assert.equal(f.posted.length,1);assert.equal(f.calls.filter(c=>c.path.includes('/acceptances/')).length,0);
+ }finally{await f.close();}
+});
+
+test('다른 명령 412와 동일 명령 GET404는 원 수락 UNKNOWN을 보존한다',async()=>{
+ const f=await rejectedAcceptanceFixture('WRONG_ID');try{
+  await f.click('보존한 명령 전송');await f.until(()=>f.text().includes('현재 제어를 다시 조회하세요.'));
+  assert.equal(f.buffer().pending.status,'UNKNOWN');assert.deepEqual(f.buffer().pending.command,f.command);
+  await f.click('현재 제어 조회');await f.until(()=>f.text().includes('OTHER_CLIENT'));
+  await f.click('같은 명령 결과 재확인');await f.until(()=>f.text().includes('현재 제어를 다시 조회하세요.'));
+  assert.equal(f.buffer().pending.status,'UNKNOWN');assert.deepEqual(f.buffer().pending.command,f.command);
+  assert.equal(f.posted.length,1);assert.equal(f.calls.filter(c=>c.path.includes('/acceptances/')).length,1);
+ }finally{await f.close();}
+});
+
+test('늦은 정확한 수락 거절도 버퍼·transport·CSRF·화면 교체 후에는 반영하지 않는다',async()=>{
+ for(const mode of ['BUFFER','PARENT_CAS','TRANSPORT','CSRF','UNMOUNT']){
+  const f=await rejectedAcceptanceFixture('HOLD');try{
+   await f.click('보존한 명령 전송');await f.until(()=>f.posted.length===1);
+   await f.change(mode);const before=f.buffer();await f.resolve();
+   assert.equal(f.buffer(),before,mode);assert.equal(before.pending.status,'UNKNOWN',mode);
+   assert(!f.text().includes('수락 거절 확인'),mode);assert(!f.text().includes('현재 제어를 다시 조회하세요.'),mode);
+   assert.equal(f.lost(),0,mode);assert.equal(f.calls.length,1,mode);
+  }finally{await f.close();}
+ }
+});
+
+test('수락 원문 hash 대기 중 문맥이 바뀌면 첫 POST와 동일 명령 GET을 모두 보내지 않는다',async()=>{
+ for(const mode of ['POST','GET']){
+  const f=await rejectedAcceptanceFixture('NOT_READY',mode==='POST'?'READY':'UNKNOWN');
+  const subtle=crypto.subtle,digest=subtle.digest,descriptor=Object.getOwnPropertyDescriptor(subtle,'digest'),release=Promise.withResolvers<void>();
+  let waiting=false;
+  Object.defineProperty(subtle,'digest',{configurable:true,value:async(...args:Parameters<SubtleCrypto['digest']>)=>{
+   const raw=new TextDecoder().decode(args[1]);
+   if(!waiting&&(mode==='POST'||raw.includes('"operation":"acceptControl"'))){waiting=true;await release.promise;}
+   return digest.apply(subtle,args);
+  }});
+  try{
+   await f.click(mode==='POST'?'보존한 명령 전송':'같은 명령 결과 재확인');
+   await f.until(()=>waiting);assert.equal(f.buffer().pending.status,'UNKNOWN');
+   await f.change(mode==='POST'?'TRANSPORT':'BUFFER');const before=f.buffer();
+   await ui.React.act(async()=>{release.resolve();await new Promise(r=>setImmediate(r));});
+   assert.equal(f.calls.length,0,mode);assert.equal(f.buffer(),before,mode);assert.equal(f.lost(),0,mode);
+  }finally{
+   release.resolve();
+   if(descriptor)Object.defineProperty(subtle,'digest',descriptor);else Reflect.deleteProperty(subtle,'digest');
+   await f.close();
+  }
+ }
 });

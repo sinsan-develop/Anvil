@@ -1,11 +1,11 @@
 import type {ControlAcceptanceChain} from '../../../../server/modules/control-handoff/control-grant.ts';
 import type {ProtectedHandoffSummary} from '../../../../server/modules/control-handoff/control-handoff-protected-summary.ts';
-import {useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {useLayoutEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {routeHref} from '../../shell/routes.ts';
 import {ProjectAccessSummary} from '../projects/ProjectAccessSummary.tsx';
-import {ControlApi,same,type ControlSession,type ControlStateResult,type ControlRequestListResult,type ControlRequestReadResult,type HandoffSummaryReadResult,type ControlRef} from './api.ts';
-import {ControlScope,emptyControlBuffer,freezeControlCommand,freezeControlAcceptance,selfRequestCommand,type ControlBuffer,type ControlTicket} from './state.ts';
+import {ControlApi,ControlAcceptanceNotReady,same,type ControlSession,type ControlStateResult,type ControlRequestListResult,type ControlRequestReadResult,type HandoffSummaryReadResult,type ControlRef} from './api.ts';
+import {ControlScope,emptyControlBuffer,freezeControlCommand,freezeControlAcceptance,rejectControlAcceptance,unresolvedControlPending,selfRequestCommand,type ControlBuffer,type ControlTicket} from './state.ts';
 interface Props{client:ApiClient;projectId:string;session?:ControlSession;buffer?:ControlBuffer|null;onChange?:(expected:string|null,next:ControlBuffer)=>boolean;scope?:ControlScope;onAuthenticationLost:()=>void}
 interface View{acceptanceOwner?:ControlBuffer['pending'];state:ControlStateResult|null;list:ControlRequestListResult|null;request:ControlRequestReadResult|null;summary:HandoffSummaryReadResult|null;headNone:boolean;protectedSummary:ProtectedHandoffSummary|null;protectedHeadState:'NONE'|'UNKNOWN'|null;acceptance:ControlAcceptanceChain['result']|null;error:ApiError|null;busy:boolean}
 const emptyView=():View=>({state:null,list:null,request:null,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null,acceptance:null,error:null,busy:false});
@@ -18,12 +18,13 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  const context=useRef({session,projectId,client,transport:client.transport,csrf:session?.csrfToken});
  const navigation=useRef<{OWN:{cursors:(string|null)[];index:number};CONTROLLER:{cursors:(string|null)[];index:number};failed:{view:'OWN'|'CONTROLLER';cursor:string|null;index:number}|null}>({OWN:{cursors:[],index:-1},CONTROLLER:{cursors:[],index:-1},failed:null});
  const visibleContext=useRef<object|null>(null),ticketContexts=useRef(new WeakMap<ControlTicket,object>());if(context.current.session!==session||context.current.projectId!==projectId||context.current.client!==client||context.current.transport!==client.transport||context.current.csrf!==session?.csrfToken){context.current={session,projectId,client,transport:client.transport,csrf:session?.csrfToken};navigation.current={OWN:{cursors:[],index:-1},CONTROLLER:{cursors:[],index:-1},failed:null};scope.dispose();scope.bind(session??null,projectId);}
- useEffect(()=>()=>scope.dispose(),[scope]);
+ const mounted=useRef(false),renderOwner=context.current;
+ useLayoutEffect(()=>{mounted.current=true;scope.bind(session??null,projectId);return()=>{mounted.current=false;scope.dispose();};},[scope]);
  // Never show a prior scope's sensitive result in the render preceding an effect.
  const visible=useRef<{session:ControlSession|undefined;projectId:string;client:ApiClient}|null>(null);
  const currentView=visibleContext.current===context.current&&visible.current?.session===session&&visible.current?.projectId===projectId&&visible.current?.client===client?view:emptyView();
  const b=buffer&&session&&buffer.projectId===projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId?buffer:null;
- const pending=b?.pending??null,unresolved=!!pending&&pending.status!=='CONFIRMED';
+ const pending=b?.pending??null,unresolved=unresolvedControlPending(pending);
  const historyScope=useRef({context:context.current,binding:b?.bindingId,pending,revision:0});
  if(historyScope.current.context!==context.current||historyScope.current.binding!==b?.bindingId||historyScope.current.pending!==pending){
   historyScope.current={context:context.current,binding:b?.bindingId,pending,revision:historyScope.current.revision+1};
@@ -31,7 +32,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  const historyOwner=historyScope.current;
  const configured=!!session&&!!onChange;
  const matches=(ticket:ControlTicket,binding:string|null)=>{
-  if(!scope.current(ticket,binding)||ticketContexts.current.get(ticket)!==context.current)return false;
+  if(!mounted.current||!scope.current(ticket,binding)||ticketContexts.current.get(ticket)!==context.current)return false;
   if(context.current.transport!==client.transport||context.current.csrf!==session?.csrfToken){scope.dispose();setTicketRevision(v=>v+1);return false;}
   return live.current.session===session&&live.current.projectId===projectId&&live.current.client===client;
  };
@@ -74,14 +75,20 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  function prepareProtected(){const selected=currentView.request;if(!session||!onChange||!selected||!canPrepare)return;const old=b??emptyControlBuffer(session,projectId),next=freezeControlCommand(old,{schemaVersion:1,operation:'prepareControlHandoff',commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...selected.requestRef}}});if(next.pending&&next.pending.kind!=='ACCEPT')next.pending={...next.pending,kind:'PROTECTED_PREPARE'};onChange(b?.bindingId??null,next);}
  function prepareAcceptance(){try{if(!session||!onChange||!b||!canAccept||!currentView.protectedSummary)return;const summary=currentView.protectedSummary,command={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...summary.snapshot.requestRef},summaryVersion:summary.ref.version,reason:b.reason}};onChange(b.bindingId,freezeControlAcceptance(b,command,summary));}catch(e){setView(v=>({...v,error:e instanceof ApiError?e:new ApiError('REQUEST_FAILED')}));}}
  async function send(){
- const old=live.current.buffer,command=old?.pending;if(!old||!command||!session||!onChange||command.status==='SENDING'||command.status==='CONFIRMED'||old.ownerUserId!==session.user.id||old.ownerClientId!==session.clientId||old.projectId!==projectId)return;
+ const old=live.current.buffer,command=old?.pending;
+ if(!mounted.current||context.current!==renderOwner||client.transport!==renderOwner.transport||session?.csrfToken!==renderOwner.csrf
+  ||!old||!command||command!==pending||!session||!onChange||command.status!=='READY'&&command.status!=='UNKNOWN'
+  ||old.ownerUserId!==session.user.id||old.ownerClientId!==session.clientId||old.projectId!==projectId)return;
  const binding=command.bindingId,t=start(binding),sending={...old,pending:{...command,status:'UNKNOWN' as const}};
  // Parent synchronously CAS-preserves the exact payload before any transport call.
  if(!onChange(old.bindingId,sending)){scope.ticket();setView(v=>({...v,busy:false}));return;}
+ if(command.kind==='ACCEPT')live.current.buffer=sending;
  try{
  if(command.kind==='ACCEPT'){
-   const result=command.status==='UNKNOWN'?await api().acceptanceResult(command.command,command.summary):await api().accept(command.command,command.summary);if(!matches(t,binding))return;
-   const latest=live.current.buffer,confirmed={...command,status:'CONFIRMED' as const};if(!latest||latest.bindingId!==old.bindingId||latest.pending?.bindingId!==binding||!onChange(old.bindingId,{...latest,pending:confirmed}))return;
+   const current=()=>matches(t,binding)&&live.current.buffer===sending;
+   const result=command.status==='UNKNOWN'?await api().acceptanceResult(command.command,command.summary,current):await api().accept(command.command,command.summary,current);if(!matches(t,binding))return;
+   const latest=live.current.buffer,confirmed={...command,status:'CONFIRMED' as const};
+   if(latest!==sending||!onChange(old.bindingId,{...latest,pending:confirmed})){setView(v=>({...v,busy:false}));return;}
    try{const state=await api().state();if(matches(t,binding))setView({...emptyView(),state,acceptance:result,acceptanceOwner:confirmed});}
    catch(e){fail(e,t,binding);} // 수락 CAS가 확정된 뒤의 현재 상태 조회 오류만 처리한다.
    return;
@@ -98,6 +105,19 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  if('requestRef'in result){const request=await api().request(result.requestRef);if(matches(t,binding))setView(v=>({...v,request,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null,busy:false}));}
  else{const selected=currentView.request;if(!selected||command.command.operation!=='prepareControlHandoff'||!same(selected.requestRef,command.command.payload.requestRef)){setView(v=>({...v,busy:false}));return;}const summary=await api().summary(selected.requestRef,result.summaryRef,selected.snapshot.expiresAt);if(matches(t,binding))setView(v=>({...v,summary,busy:false}));}
  }catch(e){
+ if(command.kind==='ACCEPT'){
+  if(!matches(t,binding))return;
+  if(live.current.buffer!==sending){setView(v=>({...v,busy:false}));return;}
+  if(command.status==='READY'&&e instanceof ControlAcceptanceNotReady&&e.commandId===command.command.commandId){
+   const rejected=rejectControlAcceptance(sending,e.commandId);
+   if(onChange(old.bindingId,rejected)){
+    live.current.buffer=rejected;navigation.current.failed=null;setConfirmedSummary(null);setView(emptyView());
+   }else setView(v=>({...v,busy:false}));
+   return;
+  }
+  // 첫 CAS에 보존된 UNKNOWN을 재작성하거나 다른 버퍼로 옮기지 않는다.
+  fail(e,t,binding);return;
+ }
  // Preserve UNKNOWN in the App-owned store even after logout/navigation. Never repopulate an old screen.
  const latest=live.current.buffer;if(latest?.bindingId===old.bindingId&&latest.pending?.bindingId===binding&&latest.pending.status!=='CONFIRMED')onChange(old.bindingId,{...latest,pending:{...command,status:'UNKNOWN'}});
  fail(e,t,binding);
@@ -131,8 +151,9 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
   </section>
   {pending?<section aria-label="보존된 인계 명령"><h3>보존된 인계 명령</h3><p>{pending.kind==='ACCEPT'?'인수 수락':pending.kind==='PROTECTED_PREPARE'?'보호요약 준비':pending.command.operation==='requestControl'?'인수 요청':'미확인 요약 준비'} · {pending.status}</p>
    {pending.command.operation==='requestControl'?<p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>보존한 요청 이유: {pending.command.payload.reason} · 요청 만료 {pending.command.payload.expiresAt}</p>:pending.kind==='ACCEPT'?<p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>보존한 수락 이유: {pending.command.payload.reason} · 보호요약 {pending.summary.ref.version}</p>:<p>선택한 고정 요청의 요약 준비 명령입니다.</p>}
-   <p>결과가 불명이면 자동 재전송하지 않습니다. 같은 명령 확인은 원래 식별자와 본문을 사용합니다.</p>
-   <button type="button" disabled={!configured||currentView.busy||pending.status==='SENDING'||pending.status==='CONFIRMED'||!!currentView.error} onClick={()=>void send()}>{pending.status==='UNKNOWN'?'같은 명령 결과 재확인':'보존한 명령 전송'}</button>
+   {pending.status==='REJECTED'?<p role="status">수락 거절 확인 · 원명령 {pending.command.commandId}. 현재 제어를 다시 조회하고 최신 보호요약과 대상 기기를 확인한 뒤 새 수락 명령을 보존하세요.</p>:<>
+    <p>결과가 불명이면 자동 재전송하지 않습니다. 같은 명령 확인은 원래 식별자와 본문을 사용합니다.</p>
+    <button type="button" disabled={!configured||currentView.busy||pending.status==='SENDING'||pending.status==='CONFIRMED'||!!currentView.error} onClick={()=>void send()}>{pending.status==='UNKNOWN'?'같은 명령 결과 재확인':'보존한 명령 전송'}</button></>}
   </section>:null}
   <section aria-label="인수 요청 목록"><h3>인수 요청 목록</h3>
    <button type="button" disabled={!state||currentView.busy||!!currentView.error} onClick={()=>void loadList('OWN')}>내 요청 목록 조회</button>
@@ -160,10 +181,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
       live.current.buffer.bindingId===historyOwner.binding&&pending.status==='CONFIRMED'&&live.current.projectId===projectId&&
       session.user.id===b.ownerUserId&&session.clientId===b.ownerClientId&&live.current.session===session&&
       client.transport===historyOwner.context.transport&&session.csrfToken===historyOwner.context.csrf}
-     read={active=>new ControlApi((path,init)=>{
-      if(!active())throw new ApiError('REQUEST_FAILED',412);
-      return client.transport(path,init);
-     },session,projectId).acceptanceResult(pending.command,pending.summary)}
+     read={active=>new ControlApi(client.transport,session,projectId).acceptanceResult(pending.command,pending.summary,active)}
      onAuthenticationLost={onAuthenticationLost}/>:null}
   <a href={routeHref('workspace',projectId)}>프로젝트 작업으로 돌아가기</a>
  </section>;
