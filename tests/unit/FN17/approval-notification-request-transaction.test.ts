@@ -21,36 +21,76 @@ function understandingRequest(key=id(46)){
  c.payload.candidatePayload=candidatePayload;
  return c;
 }
+function backupPolicyRequest(key=id(48),previousRef=null as null|{id:string;version:number;contentHash:string}){
+ const c=request('saveBackupPolicy',key),scope=c.payload.details.actionScope;
+ const ref=(n:number)=>({id:id(n),version:1,contentHash:'d'.repeat(64)});
+ const policy={targetProtectedRef:ref(90),encryptionKeyRef:ref(91),retentionPolicyRef:ref(92),verificationPolicyRef:ref(93),include:{documents:true,conversations:false,knowledge:false,decisions:false,plans:false,results:false,artifacts:false,sourceSelection:{kind:'NONE'}},schedule:'MANUAL',maxBytes:1024};
+ const candidatePayload={policy,previousRef,reason:'수동 백업 정책의 합성 검토'};
+ scope.targetRef=previousRef;
+ scope.expectedVersion=previousRef?.version??0;
+ scope.payloadHash=hash(candidatePayload);
+ c.payload.candidatePayload=candidatePayload;
+ return c;
+}
 function inserted(sql:string,args:any[]){const match=/INSERT INTO anvil\.[a-z_]+\(([^)]+)\)\s*VALUES\(([^)]+)\)/.exec(sql);assert.ok(match,'관측 INSERT는 명시 column/value 계약이어야 한다');const names=match[1]!.split(',').map(v=>v.trim()),values=match[2]!.split(',').map(v=>v.trim());assert.equal(names.length,values.length);return Object.fromEntries(names.map((name,i)=>{const token=values[i]!;if(/^\$\d+$/.test(token))return[name,args[Number(token.slice(1))-1]];if(/^'.*'$/.test(token))return[name,token.slice(1,-1)];if(/^\d+$/.test(token))return[name,Number(token)];throw Error('UNEXPECTED_INSERT_VALUE:'+token);}));}
-function transactionFixture(originModel:'BEFORE'|'AFTER'='AFTER'){
+function transactionFixture(originModel:'BEFORE'|'BEFORE_BACKUP'|'AFTER'='AFTER'){
  const f=notificationFixture(),stored={requests:[] as any[],notifications:[] as any[],captures:[] as any[]},events:string[]=[],unexpected:string[]=[],priorRows={count:0},fault={mode:''},identity={value:structuredClone(actor)},raw=f.db.query.bind(f.db);let queue=Promise.resolve();
- f.rules.splice(0,f.rules.length,{...structuredClone(f.rules[0]!),ruleId:'request',operations:['requestApproval'],disposition:'AUTO'},{...structuredClone(f.rules[0]!),ruleId:'candidate',operations:['uploadArtifact','saveWorkPlanDraft','activateDesignChange','reviewUnderstanding'],disposition:'REQUIRE_APPROVAL'});
+ f.rules.splice(0,f.rules.length,{...structuredClone(f.rules[0]!),ruleId:'request',operations:['requestApproval'],disposition:'AUTO'},{...structuredClone(f.rules[0]!),ruleId:'candidate',operations:['uploadArtifact','saveWorkPlanDraft','activateDesignChange','reviewUnderstanding','saveBackupPolicy'],disposition:'REQUIRE_APPROVAL'});
+ let sourceId:string|undefined;
+ const auditSources:string[]=[];
+ function verifyCandidateOrigin(row:any,r:any,c:any,phase:'CAP'|'INSERT'|'HISTORY'){
+  // 실제 후보 INSERT의 바이트를 검산하는 합성 대역이다.
+   const {version,status,details}=JSON.parse(r.request_json);
+   const understanding=details.actionScope.operation==='reviewUnderstanding',backupPolicy=details.actionScope.operation==='saveBackupPolicy';
+   if(understanding||backupPolicy){
+    const project=phase==='INSERT'&&fault.mode==='OTHER_PROJECT'?id(96):row.project_id;
+    const source=phase==='INSERT'&&fault.mode==='OTHER_SOURCE'?id(97):row.source_command_id,recipient=phase==='INSERT'&&fault.mode==='OTHER_RECIPIENT'?id(98):row.recipient_user_id;
+    const captures=stored.captures.filter(b=>b.table===(understanding?'UNDERSTANDING':'BACKUP_POLICY')&&b.project_id===project&&b.request_id===r.id);
+    const b=captures[0],candidate=b&&fault.mode!=='MISSING_CANDIDATE'?JSON.parse(b.payload_json):null;
+    const content=understanding?candidate?.payload:candidate;
+    if(content&&fault.mode==='TAMPERED_CANDIDATE')content.reason='변조된 이유';
+    const exact=candidate&&captures.length===1&&b.request_command_id===source&&b.created_by===recipient&&b.client_id===c.client_id&&b.control_generation===c.control_generation&&b.candidate_command_id===details.candidateCommandId&&hash(JSON.parse(b.policy_ref))===hash(c.policy_ref)&&b.payload_hash===hash(content)&&b.payload_hash===details.actionScope.payloadHash;
+    const projection=exact&&backupPolicy?{projectId:project,requestId:r.id,requestCommandId:source,candidateCommandId:b.candidate_command_id,payloadHash:b.payload_hash,payload:candidate,createdBy:recipient,clientId:c.client_id,controlGeneration:c.control_generation,policyRef:c.policy_ref}:null;
+    const verified=exact&&(understanding?b.command_hash===hash(candidate):fault.mode!=='OTHER_PROJECTION'&&hash(JSON.parse(b.projection_json))===hash(projection)&&hash(candidate.previousRef)===hash(details.actionScope.targetRef));
+    const detailsOnly=originModel==='BEFORE'||backupPolicy&&originModel==='BEFORE_BACKUP';
+    const payload=detailsOnly?{details}:{details,candidatePayload:candidate};
+    const original={schemaVersion:1,projectId:row.project_id,commandId:c.command_id,clientId:c.client_id,controlGeneration:c.control_generation,operation:'requestApproval',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload};
+    const originalAuditCount=auditSources.filter(commandId=>commandId===source).length+(fault.mode==='OTHER_ORIGINAL_AUDIT'?1:0);
+    if(version!==1||status!=='PENDING'||!verified||originalAuditCount!==1||hash(original)!==c.request_hash)throw Object.assign(Error('SYNTHETIC_CANDIDATE_ORIGIN_REJECTED'),{code:phase==='CAP'?'42501':'23514'});
+   }
+ }
  const db={query:async(sql:string,args:any[]=[])=>{events.push(sql);
+  if(sql.startsWith('SELECT set_config(')&&sql.includes("set_config('anvil.command_id',$3,true)"))sourceId=args[2];
+  if(sql.startsWith('INSERT INTO anvil.audit_events')&&sql.includes("'APPLIED'"))auditSources.push(args[4]);
   if(sql==='SELECT 1 FROM anvil.approval_requests WHERE project_id=$1 AND candidate_command_id=$2')return{rows:stored.requests.filter(r=>r.project_id===args[0]&&r.candidate_command_id===args[1]),rowCount:stored.requests.filter(r=>r.project_id===args[0]&&r.candidate_command_id===args[1]).length};
   if(sql.startsWith('INSERT INTO anvil.approval_requests')){stored.requests.push(inserted(sql,args));return{rows:[],rowCount:1};}
+  if(sql==='SELECT id FROM anvil.projects WHERE id=$1::uuid FOR UPDATE'){assert.deepEqual(args,[pid]);return{rows:[{id:pid}],rowCount:1};}
+  if(sql.startsWith('SELECT count(*)::bigint AS rows,COALESCE(sum(octet_length(anvil.execution_authority_canonical(projection)))')){
+   assert.deepEqual(args,[pid]);
+   const projections=stored.captures.filter(b=>b.table==='BACKUP_POLICY').map(b=>b.projection_json as string);
+   return{rows:[{rows:projections.length,bytes:projections.reduce((n,projection)=>n+Buffer.byteLength(projection),0)}],rowCount:1};
+  }
+  if(sql.startsWith('INSERT INTO anvil.backup_policy_approval_candidates')){stored.captures.push({table:'BACKUP_POLICY',...inserted(sql,args)});return{rows:[],rowCount:1};}
   if(sql.startsWith('INSERT INTO anvil.work_plan_approval_candidates')||sql.startsWith('INSERT INTO anvil.design_activation_approval_candidates')||sql.startsWith('INSERT INTO anvil.understanding_review_approval_candidates')){stored.captures.push({table:sql.includes('work_plan_')?'PLAN':sql.includes('design_activation_')?'ACTIVATION':'UNDERSTANDING',...inserted(sql,args)});return{rows:[],rowCount:1};}
-  if(sql.startsWith('SELECT anvil.assert_approval_notification_capacity(')){assert.deepEqual(args,[pid]);assert.ok(events.some(q=>q.includes('FOR UPDATE OF p,m')),'원project/member잠금을선행한다');assert.ok(events.some(q=>q.includes('FROM anvil.project_control')));if(priorRows.count+stored.notifications.length>=10000)throw Object.assign(Error('NOTIFICATION_CAPACITY_EXCEEDED'),{code:'P0001'});if(fault.mode==='CAP_WAIT')f.clock=new Date(Date.parse(at)+20);return{rows:[],rowCount:1};}
+  if(sql.startsWith('SELECT anvil.assert_approval_notification_capacity(')){assert.deepEqual(args,[pid]);assert.ok(events.some(q=>q.includes('FOR UPDATE OF p,m')),'원project/member잠금을선행한다');assert.ok(events.some(q=>q.includes('FROM anvil.project_control')));
+   const r=stored.requests.find(r=>r.project_id===pid&&r.command_id===sourceId),c=f.commands.find(c=>c.id===sourceId);
+   assert.ok(r&&c,'cap은 현재 합성 거래의 원 요청과 명령을 사용한다');
+   verifyCandidateOrigin({project_id:r.project_id,source_command_id:r.command_id,recipient_user_id:r.created_by},r,c,'CAP');
+   if(priorRows.count+stored.notifications.length>=10000)throw Object.assign(Error('NOTIFICATION_CAPACITY_EXCEEDED'),{code:'P0001'});if(fault.mode==='CAP_WAIT')f.clock=new Date(Date.parse(at)+20);return{rows:[],rowCount:1};}
   if(sql.startsWith('INSERT INTO anvil.notifications')){if(fault.mode==='INSERT_WAIT')await new Promise(r=>setTimeout(r,30));if(fault.mode==='INSERT')throw Object.assign(Error('SYNTHETIC_PRIVATE_SQL'),{code:'42501'});if(fault.mode==='GUARD')throw Object.assign(Error('SYNTHETIC_PRIVATE_GUARD'),{code:'23514'});const row=inserted(sql,args),r=stored.requests.find(r=>r.id===row.approval_request_id),c=f.commands.find(c=>c.id===row.source_command_id);assert.ok(r&&c);
-   // 저장된 실제 SQL 호출을 대상으로 한 RAM 검산 모델이며 PG trigger 실행은 아니다.
-   const details=JSON.parse(r.details_json);
-   if(details.actionScope.operation==='reviewUnderstanding'){
-    const b=stored.captures.find(b=>b.table==='UNDERSTANDING'&&b.project_id===r.project_id&&b.request_id===r.id);
-    const candidate=b&&fault.mode!=='MISSING_CANDIDATE'?JSON.parse(b.payload_json):null;
-    if(candidate&&fault.mode==='TAMPERED_CANDIDATE')candidate.payload.reason='변조된 이유';
-    const source=fault.mode==='OTHER_SOURCE'?id(97):row.source_command_id,recipient=fault.mode==='OTHER_RECIPIENT'?id(98):row.recipient_user_id;
-    const verified=candidate&&b.request_command_id===source&&b.created_by===recipient&&b.client_id===c.client_id&&b.control_generation===c.control_generation&&b.candidate_command_id===details.candidateCommandId&&b.command_hash===hash(candidate)&&b.payload_hash===hash(candidate.payload)&&b.payload_hash===details.actionScope.payloadHash;
-    const payload=originModel==='BEFORE'?{details}:{details,candidatePayload:candidate};
-    const original={schemaVersion:1,projectId:row.project_id,commandId:c.command_id,clientId:c.client_id,controlGeneration:c.control_generation,operation:'requestApproval',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload};
-    const originalAuditCount=f.audits+(fault.mode==='OTHER_ORIGINAL_AUDIT'?1:0);
-    if(!verified||originalAuditCount!==1||hash(original)!==c.request_hash)throw Object.assign(Error('SYNTHETIC_UNDERSTANDING_ORIGIN_REJECTED'),{code:'23514'});
-   }
+   verifyCandidateOrigin(row,r,c,'INSERT');
+   if(fault.mode==='DUPLICATE_SOURCE'||stored.notifications.some(n=>n.project_id===row.project_id&&n.source_command_id===row.source_command_id))throw Object.assign(Error('SYNTHETIC_NOTIFICATION_SOURCE_DUPLICATE'),{code:'23505'});
    assert.equal(row.source_command_id,r.command_id);assert.notEqual(row.source_command_id,c.command_id);assert.equal(row.recipient_user_id,uid);assert.equal(row.project_id,pid);assert.equal(Number(row.request_version),1);assert.equal(row.request_content_hash,r.content_hash);assert.equal(new Date(row.created_at).toISOString(),at);assert.ok(events.some(q=>q.startsWith('SELECT anvil.assert_approval_notification_capacity(')));stored.notifications.push(row);return{rows:[],rowCount:1};}
   if(sql.startsWith('SELECT r.*')&&sql.includes('FROM anvil.approval_requests r JOIN anvil.commands')){const r=stored.requests.find(r=>r.project_id===args[0]&&r.id===args[1]);if(!r)return{rows:[],rowCount:0};const c=f.commands.find(c=>c.id===r.command_id);return{rows:[{...r,request_json:JSON.parse(r.request_json),result_ref:c.result_ref,created_at:new Date(r.created_at),actor_id:c.actor_id,command_client:c.client_id,source_control_generation:c.control_generation,caller_command_id:c.command_id,scope_kind:'PROJECT',state:'APPLIED',command_project:pid,operation:'requestApproval'}],rowCount:1};}
   try{return await raw(sql,args);}catch(e){unexpected.push(sql);throw e;}
  }};
- const access={signProjectCursor:sign,signMethodCursor:sign,authenticated:async(_token:string,_csrf:any,body:any)=>{let unlock:()=>void=()=>{};const beforeQueue=queue;queue=new Promise<void>(r=>{unlock=r;});await beforeQueue;const before=structuredClone({commands:f.commands,reads:f.reads,audits:f.audits,receipts:f.receipts,...stored});try{return await body(db,identity.value);}catch(e){f.commands=before.commands;f.reads=before.reads;f.audits=before.audits;f.receipts=before.receipts;stored.requests=before.requests;stored.notifications=before.notifications;stored.captures=before.captures;throw e;}finally{unlock();}}} as unknown as AccessRepository;
+ const access={signProjectCursor:sign,signMethodCursor:sign,authenticated:async(_token:string,_csrf:any,body:any)=>{let unlock:()=>void=()=>{};const beforeQueue=queue;queue=new Promise<void>(r=>{unlock=r;});await beforeQueue;sourceId=undefined;const auditLength=auditSources.length,before=structuredClone({commands:f.commands,reads:f.reads,audits:f.audits,receipts:f.receipts,...stored});try{return await body(db,identity.value);}catch(e){auditSources.length=auditLength;f.commands=before.commands;f.reads=before.reads;f.audits=before.audits;f.receipts=before.receipts;stored.requests=before.requests;stored.notifications=before.notifications;stored.captures=before.captures;throw e;}finally{unlock();}}} as unknown as AccessRepository;
  const service=new ProjectApprovals(),repo=new ProjectPolicyRepository(access);let callbacks=0;
- return{f,stored,events,unexpected,priorRows,fault,identity,get callbacks(){return callbacks;},send:(c:any)=>repo.command('t','c',c,(d,a,p)=>{callbacks++;return service.request(d,a,c,p);})};
+ return{f,stored,events,unexpected,priorRows,fault,identity,verifyStoredCandidateNotification(row:any){
+  const r=stored.requests.find(r=>r.project_id===row.project_id&&r.id===row.approval_request_id),c=f.commands.find(c=>c.id===row.source_command_id);
+  assert.ok(r&&c);
+  verifyCandidateOrigin(row,r,c,'HISTORY');
+ },get callbacks(){return callbacks;},send:(c:any)=>repo.command('t','c',c,(d,a,p)=>{callbacks++;return service.request(d,a,c,p);})};
 }
 function empty(f:ReturnType<typeof transactionFixture>){assert.equal(f.f.commands.length,0);assert.equal(f.f.audits,0);assert.equal(f.f.receipts,0);assert.deepEqual(f.stored,{requests:[],notifications:[],captures:[]});assert.deepEqual(f.unexpected,[]);}
 test('실제표준request transaction은 원receipt/request뒤알림1,동일replay/응답유실재확인은추가생산0이다',async()=>{const f=transactionFixture(),c=request(),result:any=await f.send(c);assert.equal(result.data.status,'APPROVAL_REQUESTED');assert.equal(f.stored.notifications.length,1);assert.equal(f.stored.requests.length,1);assert.equal(f.f.commands.length,1);assert.equal(f.callbacks,1);assert.deepEqual(await f.send(c),result);assert.equal(f.callbacks,1);assert.equal(f.stored.notifications.length,1);assert.deepEqual(f.unexpected,[]);assert.equal(f.events.some(q=>/\bCOMMIT\b/.test(q)),false,'domain은 별도COMMIT하지않는다');});
@@ -94,7 +134,52 @@ test('이해 검토 후보 누락·변조, 다른 수신자/원 명령과 추가
   const f=transactionFixture();
   f.fault.mode=fault;
   await assert.rejects(f.send(understandingRequest()),error('NOTIFICATION_STORAGE_FAILED',503),fault);
-  assert.ok(f.events.some(q=>q.startsWith('INSERT INTO anvil.notifications')),fault);
+  assert.ok(f.events.some(q=>q.startsWith('SELECT anvil.assert_approval_notification_capacity(')),fault);
+  assert.equal(f.events.some(q=>q.startsWith('INSERT INTO anvil.notifications')),['OTHER_PROJECT','OTHER_SOURCE','OTHER_RECIPIENT','DUPLICATE_SOURCE'].includes(fault),fault);
+  empty(f);
+ }
+});
+
+test('수동 백업 정책의 평면 후보는 전체 해시로 검산하고 cap 경계와 원 승인 재확인을 보존한다',async()=>{
+ const previousRef={id:id(94),version:2,contentHash:'e'.repeat(64)};
+ const c=backupPolicyRequest(id(48),previousRef),legacy=transactionFixture('BEFORE_BACKUP');
+ await assert.rejects(legacy.send(c),error('NOTIFICATION_STORAGE_FAILED',503));
+ assert.ok(legacy.events.some(q=>q.startsWith('INSERT INTO anvil.backup_policy_approval_candidates')));
+ assert.ok(legacy.events.some(q=>q.startsWith('SELECT anvil.assert_approval_notification_capacity(')));
+ assert.equal(legacy.events.some(q=>q.startsWith('INSERT INTO anvil.notifications')),false);
+ empty(legacy);
+
+ const f=transactionFixture();
+ f.priorRows.count=9999;
+ const first=await f.send(c);
+ const [capture]=f.stored.captures,[r]=f.stored.requests,[notice]=f.stored.notifications;
+ assert.deepEqual(JSON.parse(capture.payload_json),c.payload.candidatePayload);
+ assert.equal(capture.payload_hash,hash(c.payload.candidatePayload));
+ assert.equal(capture.payload_hash,c.payload.details.actionScope.payloadHash);
+ assert.deepEqual(JSON.parse(capture.payload_json).previousRef,previousRef);
+ assert.equal(notice.source_command_id,r.command_id);
+ assert.equal(notice.recipient_user_id,r.created_by);
+ assert.equal(f.f.commands[0].request_hash,hash(c));
+ await assert.rejects(f.send(backupPolicyRequest(id(49))),error('NOTIFICATION_CAPACITY_EXCEEDED',429));
+ // 현재 결정은 앞으로 진행해도 알림과 원 요청은 불변 v1을 보존한다.
+ r.version=3;r.status='CONSUMED';
+ assert.equal(JSON.parse(r.request_json).version,1);
+ assert.equal(notice.request_version,1);
+ f.verifyStoredCandidateNotification(notice);
+ assert.deepEqual(await f.send(c),first);
+ assert.equal(f.callbacks,2);
+ assert.equal(f.stored.captures.length,1);
+ assert.equal(f.stored.notifications.length,1);
+ assert.deepEqual(f.unexpected,[]);
+});
+
+test('백업 정책 후보 누락·변조·교차 결박 또는 중복 원 알림은 요청 전체를 rollback한다',async()=>{
+ for(const fault of ['MISSING_CANDIDATE','TAMPERED_CANDIDATE','OTHER_PROJECTION','OTHER_PROJECT','OTHER_SOURCE','OTHER_RECIPIENT','OTHER_ORIGINAL_AUDIT','DUPLICATE_SOURCE']){
+  const f=transactionFixture();
+  f.fault.mode=fault;
+  await assert.rejects(f.send(backupPolicyRequest()),error('NOTIFICATION_STORAGE_FAILED',503),fault);
+  assert.ok(f.events.some(q=>q.startsWith('SELECT anvil.assert_approval_notification_capacity(')),fault);
+  assert.equal(f.events.some(q=>q.startsWith('INSERT INTO anvil.notifications')),['OTHER_PROJECT','OTHER_SOURCE','OTHER_RECIPIENT','DUPLICATE_SOURCE'].includes(fault),fault);
   empty(f);
  }
 });

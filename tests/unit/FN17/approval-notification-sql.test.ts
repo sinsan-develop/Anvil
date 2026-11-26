@@ -38,3 +38,28 @@ test('0107은 기존 origin 함수 OID와 분기를 보존하고 이해 검토�
  assert.notEqual(auditGuard,originalGuard);
  assert.ok(s.includes(auditGuard),'명령/결과/hash 검산을 유지하고 정정 기록을 제외한 원감사의 총수와 일치 수가 각각 1이어야 한다');
 });
+
+test('0108은 0107의 보호와 기존 분기를 유지하고 백업 정책 평면 후보만 추가한다',async()=>{
+ const flat=(v:string)=>v.replace(/--[^\n]*/g,'').replace(/\s+/g,' ').trim();
+ const old=flat(await readFile(new URL('../../../db/migrations/0107_approval_notification_understanding_origin.sql.pending',import.meta.url),'utf8'));
+ const next=flat(await readFile(new URL('../../../db/migrations/0108_approval_notification_backup_policy_origin.sql.pending',import.meta.url),'utf8'));
+ const previousBranch="ELSIF request.action_scope_json->>'operation'='reviewUnderstanding' THEN";
+ const newBranch="ELSIF request.action_scope_json->>'operation' IN('reviewUnderstanding','saveBackupPolicy') THEN";
+ const validator="IF NOT COALESCE(anvil.fn09_understanding_candidate_valid(pid,rid),false) THEN RETURN false;END IF;";
+ const envelope="payload:=jsonb_build_object('details',q->'details','candidatePayload',candidate);";
+ const selector="IF request.action_scope_json->>'operation'='reviewUnderstanding' THEN";
+ const start=next.indexOf(selector),middle=next.indexOf(' ELSE ',start),end=next.indexOf(' END IF; '+envelope,middle);
+ assert.ok(start>0&&middle>start&&end>middle);
+ const understanding=next.slice(start+selector.length,middle).trim();
+ const expectedUnderstanding=old.slice(old.indexOf(validator),old.indexOf(envelope)).trim();
+ assert.equal(understanding,expectedUnderstanding);
+ assert.equal(next.slice(0,start).replace(newBranch,previousBranch)+understanding+' '+next.slice(end+' END IF; '.length),old);
+ const backup=next.slice(middle,end);
+ assert.match(backup,/NOT COALESCE\(anvil\.fn16_policy_candidate_valid\(pid,rid\),false\) THEN RETURN false;/);
+ for(const fence of [
+  'SELECT b.payload_json INTO candidate FROM anvil.backup_policy_approval_candidates b WHERE b.project_id=pid AND b.request_id=rid',
+  'b.request_command_id=source_id','b.candidate_command_id=r.candidate_command_id','b.created_by=recipient','b.client_id=r.client_id','b.control_generation=c.control_generation','b.policy_ref=c.policy_ref',
+  "b.payload_hash=scope->>'payloadHash'","candidate IS NULL OR anvil.execution_json_hash(candidate) IS DISTINCT FROM scope->>'payloadHash'"
+ ])assert.ok(backup.includes(fence),fence);
+ assert.doesNotMatch(backup,/\b(?:ALTER|DROP|GRANT|REVOKE|INSERT|UPDATE|DELETE|EXECUTE)\b/);
+});
