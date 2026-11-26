@@ -346,7 +346,7 @@ export class ProjectPolicyRepository {
       await check();return result;
     });}catch(error){await recordProjectDenial(this.#access,token,original.projectId,error);throw error;}
   }
-  async command(token: string, csrf: string, request: ProjectCommand, material?: (db: PoolClient, actor: AuthenticatedIdentity, policyRef: VersionRef, deadline?:number) => Promise<unknown>, registeredPreparationReplay?: (db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,result:unknown)=>Promise<void>, originReuseCapability?: import('../executions/execution-start-origin-reuse.ts').OriginReuseApprovalCapability) {
+  async command(token: string, csrf: string, request: ProjectCommand, material?: (db: PoolClient, actor: AuthenticatedIdentity, policyRef: VersionRef, deadline?:number) => Promise<unknown>, verifyMaterialReplay?: (db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,result:unknown,policyRef:VersionRef)=>Promise<void>, originReuseCapability?: import('../executions/execution-start-origin-reuse.ts').OriginReuseApprovalCapability) {
     if(request.operation==='readNormalUnderstandingResponse')throw new AuthFailure('NORMAL_UNDERSTANDING_REQUEST_ROUTE_REQUIRED',412);
     if(['defineSourceContentPolicy','readSourceContentPolicyManagementOrigin'].includes(request.operation))throw new AuthFailure('SOURCE_CONTENT_MANAGEMENT_NOT_CONNECTED',412);
     const observeReuse=isOriginReuseObservationRequest(request),inspectReuseDecision=request.operation==='decideApproval'&&originReuseCapability!==undefined,boundReuse=observeReuse||inspectReuseDecision;
@@ -410,9 +410,13 @@ export class ProjectPolicyRepository {
           };
           await checkNotificationDeadline();
           if (previous !== undefined){await checkCheckpoint();if(request.operation==='saveProjectMembership')await new ProjectMemberships().verifyReplay(db,actor,request,previous);
+            if(request.operation==='requestRework'){
+              if(!verifyMaterialReplay)throw new AuthFailure('RESULT_REWORK_LEDGER_INVALID',503);
+              await verifyMaterialReplay(db,actor,request,previous,policy.ref);
+            }
             if(request.operation==='prepareExecution' && request.payload.connectionKind==='REGISTERED_DEFINITION'){
-              if(!registeredPreparationReplay)throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
-              const result=await registeredPreparationReplay(db,actor,JSON.parse(canonicalJson(request)),JSON.parse(canonicalJson(previous)));
+              if(!verifyMaterialReplay)throw new AuthFailure('SOURCE_VERIFIER_NOT_CONNECTED',412);
+              const result=await verifyMaterialReplay(db,actor,JSON.parse(canonicalJson(request)),JSON.parse(canonicalJson(previous)),policy.ref);
               if(result!==undefined)throw new AuthFailure('EXECUTION_PREPARATION_INTEGRITY_FAILED',503);
             }
             return previous;}

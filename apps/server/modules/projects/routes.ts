@@ -401,7 +401,9 @@ projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/a
       if (request.body.operation === 'submitResult') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => results.submit(db, actor, request.body, policyRef));
       if (request.body.operation === 'saveResultCriteria') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => resultCriteria.save(db, actor, request.body, policyRef));
       if (request.body.operation === 'evaluateResult') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => resultReviews.save(db, actor, request.body, policyRef));
-      if (request.body.operation === 'requestRework') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => resultReworks.save(db, actor, request.body, policyRef));
+      if (request.body.operation === 'requestRework') return policies.command(token(request), csrf(request), request.body,
+        (db, actor, policyRef) => resultReworks.save(db, actor, request.body, policyRef),
+        (db, actor, command, previous, policyRef) => resultReworks.verifyReplay(db, actor, command, previous, policyRef));
       if (request.body.operation === 'saveBaselineDraft') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => baselines.save(db, actor, request.body, policyRef));
       if (request.body.operation === 'reviewBaselineContent') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => baselines.review(db, actor, request.body, policyRef));
       if (request.body.operation === 'confirmBaseline') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => baselines.confirm(db, actor, request.body, policyRef));

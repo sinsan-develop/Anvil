@@ -11,7 +11,8 @@ import type {ProjectListCodec} from '../projects/service.ts';
 type Prepared=Awaited<ReturnType<ProjectResultReworkPreparation['prepare']>>;
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b),hash=(v:unknown)=>contentHash(canonicalJson(v));
 function fail(code:string,status=503):never{throw new AuthFailure(code,status);}
-const select="SELECT v.*,c.actor_id,c.client_id AS command_client_id,c.command_id AS original_command_id,c.operation_id AS source_operation_id,c.operation,c.state,c.expected_version,c.control_generation,c.request_hash,c.policy_ref,c.authorization_receipt_id,c.result_ref,ar.subject_ref AS receipt_subject,ar.policy_ref AS receipt_policy_ref,ar.scope_digest,ar.approval_decision_ref,(SELECT count(*)::int FROM anvil.audit_events a WHERE a.command_id=c.id AND a.project_id=c.project_id AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.scope_digest=ar.scope_digest AND a.target_ref=c.result_ref->'data'->'ref') AS audit_count FROM anvil.result_rework_drafts v JOIN anvil.commands c ON c.project_id=v.project_id AND c.id=v.command_id JOIN anvil.authorization_receipts ar ON ar.command_id=c.id AND ar.id=c.authorization_receipt_id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id ";
+const replayAuditTotal="(SELECT count(*)::int FROM anvil.audit_events all_audits WHERE all_audits.command_id=c.id AND all_audits.project_id=c.project_id) AS audit_total, ";
+const select=(replay:boolean)=>"SELECT "+(replay?replayAuditTotal:"")+"v.*,c.actor_id,c.client_id AS command_client_id,c.command_id AS original_command_id,c.operation_id AS source_operation_id,c.operation,c.state,c.expected_version,c.control_generation,c.request_hash,c.policy_ref,c.authorization_receipt_id,c.result_ref,ar.subject_ref AS receipt_subject,ar.policy_ref AS receipt_policy_ref,ar.scope_digest,ar.approval_decision_ref,(SELECT count(*)::int FROM anvil.audit_events a WHERE a.command_id=c.id AND a.project_id=c.project_id AND a.operation_id=c.operation_id AND a.outcome='APPLIED' AND a.source_kind='HUMAN_COMMAND' AND a.scope_digest=ar.scope_digest AND a.target_ref=c.result_ref->'data'->'ref') AS audit_count FROM anvil.result_rework_drafts v JOIN anvil.commands c ON c.project_id=v.project_id AND c.id=v.command_id JOIN anvil.authorization_receipts ar ON ar.command_id=c.id AND ar.id=c.authorization_receipt_id AND ar.scope_kind='PROJECT' AND ar.scope_id=c.project_id ";
 /** 부족조건의 불변 초안만 기록한다. 새 임무/writer·dispatch·실패집계는 만들지 않는다. */
 export class ProjectResultReworks{
  readonly preparation:ProjectResultReworkPreparation;readonly sessions:Pick<ResponsibleSessions,'drafts'|'methods'>;
@@ -24,13 +25,30 @@ export class ProjectResultReworks{
  }
  #snapshot(p:Prepared,input:ResultReworkInput,userId:string,clientId:string,at:string){return{scope:p.scope,input,criteriaRef:p.criteriaRef,roleRef:p.roleRef,stageSessionRef:p.stageSessionRef,remainingMissingItems:p.remainingMissingItems,preservedItems:p.preservedItems,requestedBy:{kind:'HUMAN',userId,clientId},requestedAt:at,scopeVerification:p.scopeVerification,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};}
  #data<T>(snapshot:T){return{status:'RESULT_REWORK_DRAFT_STORED',snapshot,reworkStored:true,currentBindingVerified:false,currentAuthorityVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};}
- async read(db:PoolClient,rawActor:AuthenticatedIdentity,pid:string,id:string){if(!uuidV1(pid)||!uuidV1(id))fail('RESULT_REWORK_INPUT_INVALID',400);const actor=structuredClone(rawActor);await projectMember(db,actor,pid);const rows=(await db.query(select+'WHERE v.project_id=$1 AND v.id=$2 LIMIT 2',[pid,id])).rows;if(!rows.length)fail('NOT_FOUND',404);if(rows.length!==1)fail('RESULT_REWORK_LEDGER_INVALID');const row=rows[0];let value;
+ async verifyReplay(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,previous:unknown,policyRef:RuntimeRefV1){
+  if(!recordV1(previous,['operationId','commandId','projectId','status','targetId','version','data','evidenceRefs','warnings','serverReceivedAt'])
+   ||previous.status!=='APPLIED'||previous.commandId!==request.commandId||previous.projectId!==request.projectId||!uuidV1(previous.targetId)
+   ||!same(previous.evidenceRefs,[])||!same(previous.warnings,[]))fail('RESULT_REWORK_LEDGER_INVALID');
+  await this.#authorized(db,actor,request,policyRef);
+  await this.#read(db,actor,request.projectId,previous.targetId,{request,result:previous});
+  await this.#authorized(db,actor,request,policyRef);
+ }
+ async read(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string){return this.#read(db,actor,pid,id);}
+ async #read(db:PoolClient,rawActor:AuthenticatedIdentity,pid:string,id:string,replay?:{request:ProjectCommand;result:unknown}){if(!uuidV1(pid)||!uuidV1(id))fail('RESULT_REWORK_INPUT_INVALID',400);const actor=structuredClone(rawActor);await projectMember(db,actor,pid);const rows=(await db.query(select(replay!==undefined)+'WHERE v.project_id=$1 AND v.id=$2 LIMIT 2',[pid,id])).rows;if(!rows.length){if(replay)fail('RESULT_REWORK_LEDGER_INVALID');fail('NOT_FOUND',404);}if(rows.length!==1)fail('RESULT_REWORK_LEDGER_INVALID');const row=rows[0];let value;
   try{const s=row.snapshot_json;if(row.project_id!==pid||row.id!==id||!uuidV1(row.created_by)||!uuidV1(row.client_id)||!uuidV1(row.command_id)||!(row.created_at instanceof Date)||!recordV1(s,['scope','input','criteriaRef','roleRef','stageSessionRef','remainingMissingItems','preservedItems','requestedBy','requestedAt','scopeVerification','completionAccepted','formalFailureCounted','executionAuthorized','dispatchPerformed']))fail('RESULT_REWORK_LEDGER_INVALID');
    const p=await this.preparation.prepare(db,actor,pid,s.input),at=row.created_at.toISOString(),expected=this.#snapshot(p,s.input,row.created_by,row.client_id,at),ref={id,version:1,contentHash:row.content_hash};
    if(!refV1(ref)||ref.contentHash!==hash(s)||!same(s,expected)||row.result_id!==p.originalResultRef.id||row.review_id!==p.reviewRef.id||row.binding_id!==p.responsibleBindingRef.id||Number(row.binding_version)!==p.responsibleBindingRef.version||row.operation!=='requestRework'||row.state!=='APPLIED'||row.actor_id!==row.created_by||row.command_client_id!==row.client_id||Number(row.expected_version)!==0||!uuidV1(row.original_command_id)||!uuidV1(row.source_operation_id)||!refV1(row.policy_ref)||!uuidV1(row.authorization_receipt_id)||row.approval_decision_ref!==null||Number(row.audit_count)!==1||!same(row.receipt_subject,{kind:'HUMAN',userId:row.created_by,clientId:row.client_id})||!same(row.receipt_policy_ref,row.policy_ref))fail('RESULT_REWORK_LEDGER_INVALID');
    const original={schemaVersion:1,projectId:pid,commandId:row.original_command_id,clientId:row.client_id,controlGeneration:Number(row.control_generation),operation:'requestRework',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:s.input};
+   if(replay&&(Number(row.audit_total)!==1||row.created_by!==actor.actorId||!same(original,replay.request)||!same(row.result_ref,replay.result)))fail('RESULT_REWORK_LEDGER_INVALID');
    if(row.request_hash!==hash(original)||row.scope_digest!==hash({projectId:pid,actorId:row.created_by,clientId:row.client_id,controlGeneration:Number(row.control_generation),requestHash:row.request_hash,policyRef:row.policy_ref,targetRef:ref})||row.result_ref?.status!=='APPLIED'||row.result_ref.commandId!==row.original_command_id||row.result_ref.operationId!==row.source_operation_id||row.result_ref.projectId!==pid||row.result_ref.targetId!==id||row.result_ref.version!==1||row.result_ref.serverReceivedAt!==at||!same(row.result_ref.data,{ref,...this.#data(s)}))fail('RESULT_REWORK_LEDGER_INVALID');value={projectId:pid,ref,...this.#data(cloneV1(expected)),observedAt:await this.#clock(db)};
-  }catch(e){if(e instanceof AuthFailure&&e.statusCode===404)throw e;fail('RESULT_REWORK_LEDGER_INVALID');}
+  }catch(e){
+   if(e instanceof AuthFailure&&e.statusCode===404){
+    if(!replay)throw e;
+    // 원자료 조회 중 회원 접근도 회수되었으면 기존 보호 404를 보존한다.
+    await projectMember(db,actor,pid);
+   }
+   fail('RESULT_REWORK_LEDGER_INVALID');
+  }
   await projectMember(db,actor,pid);return cloneV1(value);
  }
  async #summaries(db:PoolClient,actor:AuthenticatedIdentity,pid:string,resultRef:RuntimeRefV1,rows:{id:string;content_hash:string}[]){
