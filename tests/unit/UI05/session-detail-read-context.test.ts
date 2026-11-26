@@ -57,7 +57,7 @@ before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/SessionDetailPage.tsx',import.meta.url));
  const preparation=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/PreparationHistory.tsx',import.meta.url));
  const comparison=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointJournalComparison.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage}from${JSON.stringify(entry)};import * as Preparation from${JSON.stringify(preparation)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{CheckpointEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointEditor.tsx',import.meta.url)))};import{CheckpointJournalComparison}from${JSON.stringify(comparison)};export{React,createRoot,SessionDetailPage,Preparation,CheckpointEditor,CheckpointJournalComparison,ApiClient};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage,ResultContent}from${JSON.stringify(entry)};import * as Preparation from${JSON.stringify(preparation)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{CheckpointEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointEditor.tsx',import.meta.url)))};import{CheckpointJournalComparison}from${JSON.stringify(comparison)};export{React,createRoot,SessionDetailPage,ResultContent,Preparation,CheckpointEditor,CheckpointJournalComparison,ApiClient};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return SessionContextTest;')();
@@ -571,4 +571,26 @@ test('현재 검수 준비와 미전송 해제는 입력을 보존하고 POST하
   if(saved)Object.defineProperty(globalThis,'confirm',saved);else Reflect.deleteProperty(globalThis,'confirm');
   await f.close();
  }
+});
+
+test('제출 원문 네 형제는 서로 다른 키를 사용하고 고정 참조가 바뀌면 펼친 내용을 초기화한다',async(t)=>{
+ const log=t.mock.method(console,'error'),f=resultFixture(),container=document.createElement('div');
+ document.body.appendChild(container);const root=ui.createRoot(container);
+ const render=async(value:unknown)=>ui.React.act(async()=>root.render(ui.React.createElement(ui.ResultContent,{value})));
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
+ const shown=(label:string)=>nodes().find(n=>n.getAttribute('aria-label')===label);
+ try{
+  await render(f.entry);
+  assert.ok(shown('선택 제출 원문'));
+  for(const label of ['제출 변경 파일 보고 탐색','제출 명령 보고 탐색','제출 시험 보고 탐색','제출 미실행 보고 탐색'])assert.ok(shown(label),label);
+  const button=nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='미실행 보고 1 · C1 / T1');
+  assert.ok(button);await ui.React.act(async()=>button.dispatchEvent({type:'click',button:0,bubbles:true}));
+  assert.ok(shown('미실행 보고 원문 1'));
+  await render(structuredClone(f.entry));assert.ok(shown('미실행 보고 원문 1'));
+  const next=structuredClone(f.entry);next.snapshot.manifest.unexecuted[0]!.reason='다른 고정 버전의 사유';
+  next.snapshot.manifestHash=hash(next.snapshot.manifest);next.ref.contentHash=hash(next.snapshot);
+  await render(next);assert.equal(shown('미실행 보고 원문 1'),undefined);
+  const duplicate=log.mock.calls.filter(call=>String(call.arguments[0]).includes('Encountered two children with the same key'));
+  assert.equal(duplicate.length,0,'동일 제출의 형제들에 중복 React key가 남아 있다');
+ }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
 });

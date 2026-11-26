@@ -102,15 +102,15 @@ function SessionResults({artifactTraces,traceDetail,client,projectId,confirmed,o
  </section>;
 }
 export function ResultContent({value}:{value:SubmittedResultView}){
- const s=value.snapshot,m=s.manifest;
+ const s=value.snapshot,m=s.manifest,resultKey=JSON.stringify([s.scope,value.ref]);
  return <article aria-label="선택 제출 원문"><h4>제출자 주장 · 검수 전</h4><p>제출 상태: {m.submissionState} · 합성 실행 연결 원문 · 증거 출처 미검증</p><dl><Reference label="제출 원문" value={value.ref}/><Reference label="제출 임무" value={s.scope.assignmentRef}/><Reference label="원 실행" value={s.scope.executionRef}/><Reference label="제출자" value={s.submittedByRef}/><Reference label="허가 영수증" value={s.authorizationReceiptRef}/></dl>
-  <ReportedFileChanges key={JSON.stringify([s.scope,value.ref])} changes={m.changes} artifacts={m.artifactRefs}/>
+  <ReportedFileChanges key={'files:'+resultKey} changes={m.changes} artifacts={m.artifactRefs}/>
   <h4>파일 변경</h4>{m.changes.length?<pre>{JSON.stringify(m.changes,null,2)}</pre>:<p>보고된 변경 없음 · 실제 파일 대조 미실행</p>}
-  <ReportedCommandResults key={JSON.stringify([s.scope,value.ref])} commands={m.commandResults} executionRef={s.scope.executionRef}/>
+  <ReportedCommandResults key={'commands:'+resultKey} commands={m.commandResults} executionRef={s.scope.executionRef}/>
   <h4>명령 결과</h4>{m.commandResults.length?<pre>{JSON.stringify(m.commandResults,null,2)}</pre>:<p>보고된 명령 결과 없음</p>}
-  <ReportedTestResults key={JSON.stringify([s.scope,value.ref])} tests={m.testResults}/>
+  <ReportedTestResults key={'tests:'+resultKey} tests={m.testResults}/>
   <h4>시험 결과 · 제출 원문, 실제 재검증 아님</h4>{m.testResults.length?<pre>{JSON.stringify(m.testResults,null,2)}</pre>:<p>보고된 시험 결과 없음</p>}
-  <UnexecutedReports key={JSON.stringify([s.scope,value.ref])} unexecuted={m.unexecuted} tests={m.testResults}/>
+  <UnexecutedReports key={'unexecuted:'+resultKey} unexecuted={m.unexecuted} tests={m.testResults}/>
   <h4>미실행</h4>{m.unexecuted.length?<pre>{JSON.stringify(m.unexecuted,null,2)}</pre>:<p>미실행 내역 보고 없음 · 모두 수행했다는 판정 아님</p>}
   <h4>잔여 위험</h4><pre>{JSON.stringify(m.risks,null,2)}</pre><h4>되돌리기</h4><p>{m.rollback||'미기재'}</p>
   <details><summary>전체 제출 원문·기준/산출물 참조</summary><pre>{JSON.stringify(value,null,2)}</pre></details><p>등록 산출물 텍스트·변경 diff/명령 출력 참조는 별도 명시 조회로 확인합니다. 보관 bytes/hash 일치는 실제 Git diff·명령/시험 출처의 증명이 아니며, 보완 초안 저장은 실제 재작업·검수 합격이 아닙니다. 실제 중지·쓰기 회수/이전 처리는 미확인입니다.</p>
