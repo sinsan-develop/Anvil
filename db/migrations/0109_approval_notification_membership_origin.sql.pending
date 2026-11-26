@@ -1,0 +1,110 @@
+-- 미적용 FN17: 참여자 변경 승인의 불변 후보와 당시 버전을 기존 알림 원 요청에 결박한다.
+-- 기존 함수의 서명, 소유자와 실행 권한을 보존한다.
+BEGIN;
+
+CREATE OR REPLACE FUNCTION anvil.fn17_notification_origin_valid(pid uuid,rid uuid,source_id uuid,recipient uuid,occurred timestamptz,request_hash text) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE request anvil.approval_requests;r anvil.project_storage_reservations;
+BEGIN
+ SELECT * INTO request FROM anvil.approval_requests x WHERE x.project_id=pid AND x.id=rid;
+ IF request.action_scope_json->>'operation'='queueExecutionCommand' OR request.request_json ? 'originReuseEvidence' THEN
+  SELECT * INTO r FROM anvil.project_storage_reservations x WHERE x.project_id=pid AND x.id=source_id;
+  RETURN COALESCE(anvil.fn09_origin_reuse_request_record_valid(pid,rid,source_id)
+   AND request.created_by=recipient AND request.created_at=occurred AND request.content_hash=request_hash AND request.command_id=source_id
+   AND r.part_kind='ORIGIN_REUSE_APPROVAL_REQUEST' AND r.part_key='origin_reuse_request' AND r.phase IN('IO_STARTED','SETTLED') AND r.start_fence=1
+   AND r.plan_json->'requestRecord'=request.request_json AND r.plan_hash=anvil.fn01_hash(r.plan_json-'planHash'),false);
+ ELSIF request.action_scope_json->>'operation' IN('reviewUnderstanding','saveBackupPolicy','saveProjectMembership') THEN
+  DECLARE
+   r anvil.approval_requests;c anvil.commands;ar anvil.authorization_receipts;
+   q jsonb;s jsonb;scope jsonb;ref jsonb;payload jsonb;candidate jsonb;original jsonb;digest text;
+  BEGIN
+   r:=request;
+   SELECT * INTO c FROM anvil.commands WHERE project_id=pid AND id=source_id;
+   SELECT * INTO ar FROM anvil.authorization_receipts WHERE id=c.authorization_receipt_id AND command_id=c.id;
+   q:=r.request_json;s:=q-ARRAY['id','version','status','createdAt'];scope:=q->'details'->'actionScope';ref:=jsonb_build_object('id',rid,'version',1,'contentHash',request_hash);
+   IF (r.id IS NOT NULL AND c.id IS NOT NULL AND ar.id IS NOT NULL AND r.command_id=source_id AND r.created_by=recipient
+   AND anvil.execution_json_shape(q,ARRAY['id','version','status','projectId','details','scopeDigest','requiredDecider','policyRef','requestedBy','controlGeneration','createdAt']
+    || CASE WHEN request.action_scope_json->>'operation'='saveProjectMembership' THEN ARRAY['membershipCandidate'] ELSE ARRAY[]::text[] END)
+   AND q->>'id'=rid::text AND q->'version'='1'::jsonb AND q->>'status'='PENDING' AND q->>'projectId'=pid::text
+   AND q->>'createdAt'=to_char(occurred AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AND r.created_at=occurred
+   AND q->'details'=r.details_json AND scope=r.action_scope_json AND q->>'scopeDigest'=r.scope_digest
+   AND r.scope_digest=anvil.execution_json_hash(scope) AND r.content_hash=request_hash AND anvil.execution_json_hash(s)=request_hash
+   AND q->'requiredDecider'=jsonb_build_object('kind','HUMAN','userId',recipient) AND r.required_decider_ref=q->'requiredDecider'
+   AND q->'requestedBy'=jsonb_build_object('kind','HUMAN','userId',recipient,'clientId',r.client_id)
+   AND scope->'requestedSubjectRef'=q->'requestedBy' AND scope->'controlGeneration'=q->'controlGeneration'
+   AND (q->>'controlGeneration')::bigint=c.control_generation AND q->'policyRef'=r.policy_ref AND r.policy_ref=c.policy_ref
+   AND q->'details'->>'candidateCommandId'=r.candidate_command_id::text AND (q->'details'->>'expiresAt')::timestamptz=r.expires_at
+   AND c.scope_kind='PROJECT' AND c.scope_id=pid AND c.operation='requestApproval' AND c.state='APPLIED' AND c.expected_version=0
+   AND c.actor_id=recipient AND c.client_id=r.client_id AND c.payload_ref IS NULL AND c.approval_consumption_id IS NULL
+   AND ar.scope_kind='PROJECT' AND ar.scope_id=pid AND ar.policy_ref=c.policy_ref AND ar.approval_decision_ref IS NULL
+   AND ar.subject_ref=q->'requestedBy' AND date_trunc('milliseconds',c.completed_at)=occurred) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+   IF request.action_scope_json->>'operation'='saveProjectMembership' THEN
+    DECLARE
+     membership jsonb;command jsonb;base jsonb;base_ref jsonb;target uuid;version_number bigint;version_snapshot jsonb;version_hash text;
+    BEGIN
+     membership:=q->'membershipCandidate';command:=membership->'command';base:=membership->'baseMembership';candidate:=command->'payload';
+     IF NOT COALESCE(anvil.checkpoint_keys(membership,ARRAY['schemaVersion','purpose','command','baseMembership']),false)
+      OR membership->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR membership->>'purpose' IS DISTINCT FROM 'PROJECT_MEMBERSHIP_APPROVAL_CANDIDATE'
+      OR NOT COALESCE(anvil.fn74_payload_valid(candidate),false) OR r.candidate_command_id=c.command_id THEN RETURN false;END IF;
+     target:=(candidate->'targetUserRef'->>'userId')::uuid;
+     -- 당시 버전만 읽는다. 현재 대상의 상태나 membership 관리 세션을 원래 요청에 소급하지 않는다.
+     IF base->>'kind'='NEW' THEN
+      IF NOT COALESCE(anvil.checkpoint_keys(base,ARRAY['kind']),false)
+       OR command->'targetId' IS DISTINCT FROM 'null'::jsonb OR command->'expectedVersion' IS DISTINCT FROM '0'::jsonb THEN RETURN false;END IF;
+      base_ref:='null'::jsonb;
+     ELSE
+      IF NOT COALESCE(anvil.checkpoint_keys(base,ARRAY['kind','ref','participation']),false) OR base->>'kind' IS DISTINCT FROM 'EXISTING' THEN RETURN false;END IF;
+      base_ref:=base->'ref';
+      SELECT v.version,v.snapshot_json,v.content_hash INTO version_number,version_snapshot,version_hash FROM anvil.project_membership_versions v
+       WHERE v.project_id=pid AND v.user_id=target AND v.version=(base_ref->>'version')::bigint;
+      IF version_snapshot IS NULL OR base_ref IS DISTINCT FROM jsonb_build_object('id',target,'version',version_number,'contentHash',version_hash)
+       OR version_snapshot->'schemaVersion' IS DISTINCT FROM '1'::jsonb OR version_snapshot->>'projectId' IS DISTINCT FROM pid::text
+       OR version_snapshot->>'userId' IS DISTINCT FROM target::text
+       OR version_snapshot->'version' IS DISTINCT FROM base_ref->'version'
+       OR version_snapshot->>'participation' IS NULL OR version_snapshot->>'participation' NOT IN('OWNER','VIEWER','HANDOFF_ELIGIBLE')
+       OR version_snapshot->'participation' IS DISTINCT FROM base->'participation' OR version_snapshot->'revokedAt' IS DISTINCT FROM 'null'::jsonb
+       OR anvil.fn01_hash(version_snapshot) IS DISTINCT FROM base_ref->>'contentHash' THEN RETURN false;END IF;
+     END IF;
+     IF command IS DISTINCT FROM jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',r.candidate_command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,
+       'operation','saveProjectMembership','targetId',base_ref->>'id','expectedVersion',COALESCE(base_ref->'version','0'::jsonb),'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',candidate)
+      OR octet_length(convert_to(anvil.fn01_json(command),'UTF8'))>2097152
+      OR scope IS DISTINCT FROM jsonb_build_object('operation','saveProjectMembership','targetRef',base_ref,'expectedVersion',command->'expectedVersion','payloadHash',anvil.fn01_hash(candidate),
+       'baselineRefs','[]'::jsonb,'environmentRef',NULL,'sourceScopes','[]'::jsonb,'limitsRef',NULL,'requestedSubjectRef',q->'requestedBy','controlGeneration',command->'controlGeneration') THEN RETURN false;END IF;
+    END;
+   ELSIF request.action_scope_json->>'operation'='reviewUnderstanding' THEN
+    IF NOT COALESCE(anvil.fn09_understanding_candidate_valid(pid,rid),false) THEN RETURN false;END IF;
+    -- 0056은 후보 명령 전체를 보관하고 actionScope.payloadHash는 내부 payload만 검산한다.
+    SELECT b.payload_json INTO candidate FROM anvil.understanding_review_approval_candidates b WHERE b.project_id=pid AND b.request_id=rid
+     AND b.request_command_id=source_id AND b.candidate_command_id=r.candidate_command_id
+     AND b.created_by=recipient AND b.client_id=r.client_id AND b.control_generation=c.control_generation AND b.policy_ref=c.policy_ref
+     AND b.payload_hash=scope->>'payloadHash';
+    IF candidate IS NULL OR anvil.execution_json_hash(candidate->'payload') IS DISTINCT FROM scope->>'payloadHash' THEN RETURN false;END IF;
+   ELSE
+    IF NOT COALESCE(anvil.fn16_policy_candidate_valid(pid,rid),false) THEN RETURN false;END IF;
+    -- 0063은 수동 백업 정책 후보 전체의 해시를 actionScope.payloadHash로 보관한다.
+    SELECT b.payload_json INTO candidate FROM anvil.backup_policy_approval_candidates b WHERE b.project_id=pid AND b.request_id=rid
+     AND b.request_command_id=source_id AND b.candidate_command_id=r.candidate_command_id
+     AND b.created_by=recipient AND b.client_id=r.client_id AND b.control_generation=c.control_generation AND b.policy_ref=c.policy_ref
+     AND b.payload_hash=scope->>'payloadHash';
+    IF candidate IS NULL OR anvil.execution_json_hash(candidate) IS DISTINCT FROM scope->>'payloadHash' THEN RETURN false;END IF;
+   END IF;
+   payload:=jsonb_build_object('details',q->'details','candidatePayload',candidate);
+   original:=jsonb_build_object('schemaVersion',1,'projectId',pid,'commandId',c.command_id,'clientId',c.client_id,'controlGeneration',c.control_generation,
+    'operation','requestApproval','targetId',NULL,'expectedVersion',0,'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',payload);
+   digest:=anvil.execution_json_hash(jsonb_build_object('projectId',pid,'actorId',recipient,'clientId',c.client_id,'controlGeneration',c.control_generation,
+    'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',ref));
+   IF (c.request_hash=anvil.execution_json_hash(original) AND ar.scope_digest=digest
+   AND c.result_ref->>'commandId'=c.command_id::text AND c.result_ref->>'operationId'=c.operation_id::text AND c.result_ref->>'projectId'=pid::text
+   AND c.result_ref->>'status'='APPLIED' AND c.result_ref->>'targetId'=rid::text AND c.result_ref->'version'='1'::jsonb
+   AND c.result_ref->>'serverReceivedAt'=q->>'createdAt' AND c.result_ref->'data'=jsonb_build_object('ref',ref,'status','APPROVAL_REQUESTED','request',q)
+   AND (SELECT count(*)=1 AND count(*) FILTER (WHERE e.operation_id=c.operation_id
+    AND e.outcome='APPLIED' AND e.reason_code='EXPLICIT_ONE_TIME_APPROVAL_REQUEST' AND e.source_kind='HUMAN_COMMAND'
+    AND e.actor_ref=jsonb_build_object('kind','HUMAN','userId',recipient) AND e.client_ref=c.client_id AND e.target_ref=ref AND e.policy_ref=c.policy_ref
+    AND e.approval_ref IS NULL AND e.scope_digest=digest)=1
+    FROM anvil.audit_events e WHERE e.project_id=pid AND e.command_id=source_id AND e.correction_of IS NULL)) IS DISTINCT FROM TRUE THEN RETURN false;END IF;
+   RETURN true;
+  END;
+ END IF;
+ RETURN anvil.fn17_notification_origin_before_origin_reuse_request(pid,rid,source_id,recipient,occurred,request_hash);
+EXCEPTION WHEN OTHERS THEN RETURN false;END;$$;
+
+COMMIT;

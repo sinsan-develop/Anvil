@@ -63,3 +63,28 @@ test('0108은 0107의 보호와 기존 분기를 유지하고 백업 정책 평�
  ])assert.ok(backup.includes(fence),fence);
  assert.doesNotMatch(backup,/\b(?:ALTER|DROP|GRANT|REVOKE|INSERT|UPDATE|DELETE|EXECUTE)\b/);
 });
+
+test('0109는 참여자 변경 후보와 당시 고정 버전만 추가하고 기존 원인 검산을 유지한다',async()=>{
+ const flat=(v:string)=>v.replace(/--[^\n]*/g,'').replace(/\s+/g,' ').trim();
+ const old=flat(await readFile(new URL('../../../db/migrations/0108_approval_notification_backup_policy_origin.sql.pending',import.meta.url),'utf8'));
+ const next=flat(await readFile(new URL('../../../db/migrations/0109_approval_notification_membership_origin.sql.pending',import.meta.url),'utf8'));
+ const membership="IF request.action_scope_json->>'operation'='saveProjectMembership' THEN",understanding=" ELSIF request.action_scope_json->>'operation'='reviewUnderstanding' THEN";
+ const begin=next.indexOf(membership),end=next.indexOf(understanding,begin);
+ assert.ok(begin>0&&end>begin);
+ const key="ARRAY['id','version','status','projectId','details','scopeDigest','requiredDecider','policyRef','requestedBy','controlGeneration','createdAt']";
+ const membershipKey=" || CASE WHEN request.action_scope_json->>'operation'='saveProjectMembership' THEN ARRAY['membershipCandidate'] ELSE ARRAY[]::text[] END";
+ assert.equal((next.slice(0,begin)+next.slice(end+1).replace('ELSIF','IF')).replace(",'saveProjectMembership') THEN",') THEN').replace(key+membershipKey,key),old);
+ const branch=next.slice(begin,end);
+ for(const fence of [
+  "q->'membershipCandidate'", 'anvil.fn74_payload_valid(candidate)', "'PROJECT_MEMBERSHIP_APPROVAL_CANDIDATE'",
+  "'commandId',r.candidate_command_id", 'r.candidate_command_id=c.command_id', "'clientId',c.client_id", "'controlGeneration',c.control_generation",
+  "'payloadHash',anvil.fn01_hash(candidate)", "'requestedSubjectRef',q->'requestedBy'", "'targetRef',base_ref",
+  "base->>'kind'='NEW'", "command->'targetId' IS DISTINCT FROM 'null'::jsonb", "command->'expectedVersion' IS DISTINCT FROM '0'::jsonb",
+  "base->>'kind' IS DISTINCT FROM 'EXISTING'", 'FROM anvil.project_membership_versions', 'v.project_id=pid AND v.user_id=target AND v.version=',
+  "version_snapshot->>'projectId' IS DISTINCT FROM pid::text", "version_snapshot->>'userId' IS DISTINCT FROM target::text",
+  "version_snapshot->'version' IS DISTINCT FROM base_ref->'version'", "version_snapshot->'participation' IS DISTINCT FROM base->'participation'",
+  "version_snapshot->'revokedAt' IS DISTINCT FROM 'null'::jsonb", "anvil.fn01_hash(version_snapshot) IS DISTINCT FROM base_ref->>'contentHash'"
+ ])assert.ok(branch.includes(fence),fence);
+ assert.doesNotMatch(branch,/fn74_candidate_valid|fn74_manager|current_setting|clock_timestamp|FROM anvil\.(?:project_members|project_control|users)\b/i);
+ assert.doesNotMatch(branch,/\b(?:ALTER|DROP|GRANT|REVOKE|INSERT|UPDATE|DELETE|EXECUTE)\b/i);
+});
