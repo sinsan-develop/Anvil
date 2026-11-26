@@ -62,8 +62,30 @@ async function fixture(){
  await render();await waitFor(()=>container.textContent.includes('저장 산출물 연결'));
  return{a,b,client,calls,controls,lost:()=>lost,props:()=>props,render,click,settle,waitFor,close,nodes,text:()=>container.textContent,files:()=>calls.filter(c=>c.path.includes('/files/'))};
 }
-test('등록 산출물은 명시 클릭 GET1 뒤 exact SHA의 원문을 plain text로 표시하고 실행 연결을 주장하지 않는다',async()=>{
- const f=await fixture();try{assert.equal(f.files().length,0);await f.click('산출물 A 등록 산출물 텍스트 원문 보기');await f.waitFor(()=>f.text().includes(body));assert.equal(f.files().length,1);assert.equal(f.files()[0]!.path,`/api/v1/projects/${id(1)}/files/${f.a.id}`);assert.equal(f.files()[0]!.options?.credentials,'same-origin');assert.equal(f.files()[0]!.options?.redirect,'error');assert.equal(f.files()[0]!.options?.cache,'no-store');assert.equal(f.nodes().filter(n=>n.tagName==='SCRIPT').length,0);assert(f.nodes().some(n=>n.tagName==='PRE'&&n.textContent===body));assert.match(f.text(),/실제 실행\/시험 증거는 아직 미연결/);await f.click('등록 산출물 원문 닫기');assert(!f.text().includes(body));assert.equal(f.files().length,1);}finally{await f.close();}
+test('등록 산출물은 명시 클릭 GET1로 원문을 표시하고 결과·검수 조회 및 결과 확정과 구분한다',async()=>{
+ const f=await fixture();
+ try{
+  assert.equal(f.files().length,0);
+  const initialRequests=f.calls.length;
+  await f.click('산출물 A 등록 산출물 텍스트 원문 보기');
+  await f.waitFor(()=>f.text().includes(body));
+  assert.equal(f.files().length,1);
+  assert.equal(f.files()[0]!.path,`/api/v1/projects/${id(1)}/files/${f.a.id}`);
+  assert.equal(f.files()[0]!.options?.credentials,'same-origin');
+  assert.equal(f.files()[0]!.options?.redirect,'error');
+  assert.equal(f.files()[0]!.options?.cache,'no-store');
+  assert.equal(f.nodes().filter(n=>n.tagName==='SCRIPT').length,0);
+  assert(f.nodes().some(n=>n.tagName==='PRE'&&n.textContent===body));
+  const original=f.nodes().find(n=>n.getAttribute('aria-label')==='등록 산출물 텍스트 원문');
+  assert(original);
+  assert.match(original.textContent,/파일·시험·diff의 실행 연동이나 완료 확인이 아닙니다/);
+  assert.match(f.text(),/연결 자체로 실행·시험 결과를 자동 확정하지 않습니다/);
+  assert.match(f.text(),/연결된 업무의 결과·검수·원문은 아래 명시 조회로 확인합니다/);
+  assert(f.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='결과·검수·원문 조회 연결 확인'&&!n.disabled));
+  await f.click('등록 산출물 원문 닫기');
+  assert(!f.text().includes(body));
+  assert.equal(f.calls.length,initialRequests+1);
+ }finally{await f.close();}
 });
 
 for(const status of [401,403,404])test('현재 산출물 GET '+status+'는 원문 비노출과 현재401만 인증 소실',async()=>{
