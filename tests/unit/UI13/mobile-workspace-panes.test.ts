@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
+import {fixture as existingApprovalFixture} from '../FN17/notification-fixture.ts';
 
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
 class MemoryNode{
@@ -29,6 +30,7 @@ const id=(n:number)=>`ab130031-0000-4000-8000-${String(n).padStart(12,'0')}`,pid
 const location={hash:`#/projects/${pid}/mobile`,protocol:'https:'};
 const calls:{path:string;method:string}[]=[];
 let identity={user:{id:uid,displayName:'합성 조회자'},clientId:cid,csrfToken:'c'.repeat(43)},denyNextProject=false,richProject=false,projectOwner=false;
+let approvalTransport:((path:string)=>Promise<Response>|Response|undefined)|null=null;
 const project={id:pid,name:'모바일 합성 프로젝트',purpose:'같은 작업영역 전환',desiredOutcome:'원입력 보존',version:1,createdAt:at,updatedAt:at,currentMethodologyRef:null,baselineRef:null,sourceMode:'EMPTY',sourceDeclaration:null,readinessIssues:[],viewerPermissions:['READ_PROJECT'],participation:'VIEWER',controlState:{actorId:null,clientId:null,generation:null,status:'UNASSIGNED'}};
 const transport:typeof fetch=async(input,init)=>{
  const path=String(input),method=init?.method??'GET';calls.push({path,method});assert.equal(method,'GET','시험은 조회만 허용한다');
@@ -36,6 +38,7 @@ const transport:typeof fetch=async(input,init)=>{
  if(/^\/api\/v1\/projects\/[0-9a-f-]+$/.test(path)){if(denyNextProject){denyNextProject=false;return Response.json({code:'AUTH_REQUIRED'},{status:401});}return Response.json({...project,id:path.split('/').at(-1),currentMethodologyRef:richProject?applicationRef:null,...(projectOwner?{participation:'OWNER',controlState:{actorId:identity.user.id,clientId:identity.clientId,generation:1,status:'HELD'}}:{})});}
  if(path===`/api/v1/projects/${pid}/methodology-application`)return Response.json({projectId:pid,applicationRef:richProject?applicationRef:null,snapshot:richProject?snapshot:null,observedAt:at,executionState:'NOT_CONNECTED'});
  if(path.startsWith(`/api/v1/projects/${pid}/conversations?`))return Response.json({items:[],hasMore:false,nextCursor:null,observedAt:at});
+ const stored=approvalTransport?.(path);if(stored)return stored;
  return Response.json({code:'SYNTHETIC_NOT_SELECTED'},{status:403});
 };
 before(async()=>{
@@ -54,7 +57,7 @@ function hidden(n:MemoryNode){for(let p:MemoryNode|null=n;p;p=p.parentNode)if(p.
 async function settle(){await ui.React.act(async()=>{await new Promise<void>(resolve=>setImmediate(resolve));});}
 async function wait(fn:()=>boolean){const end=Date.now()+2500;while(!fn()&&Date.now()<end)await settle();assert.ok(fn(),'실제 App/decoder 준비 완료');}
 async function fixture(methodology=false,owner=false){
- location.hash=`#/projects/${pid}/mobile`;identity={user:{id:uid,displayName:'합성 조회자'},clientId:cid,csrfToken:'c'.repeat(43)};denyNextProject=false;richProject=methodology;projectOwner=owner;calls.length=0;
+ location.hash=`#/projects/${pid}/mobile`;identity={user:{id:uid,displayName:'합성 조회자'},clientId:cid,csrfToken:'c'.repeat(43)};denyNextProject=false;richProject=methodology;projectOwner=owner;approvalTransport=null;calls.length=0;
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
  await ui.React.act(async()=>root.render(ui.React.createElement(ui.App)));
  await wait(()=>container.textContent.includes(project.name)&&all(container).some(n=>n.getAttribute('aria-label')==='총괄 작업'));
@@ -141,6 +144,163 @@ test('mobilePane 실제 App 승인 상세는 기존 exact 경로이고 앞3 선�
   await click(navItems(f.container)[1]!);await wait(()=>f.container.textContent.includes(project.name));assert.equal(location.hash,`#/projects/${pid}/mobile`);assert.equal(hidden(labelled(f.container,'개발 절차')),false);
   assert.ok(all(f.container).some(n=>n.getAttribute('href')===`#/projects/${pid}/methodologies`));assert.ok(all(f.container).some(n=>n.getAttribute('href')===`#/projects/${pid}/documents`));assert.equal(calls.filter(c=>c.method!=='GET').length,0);
  }finally{await f.close();}
+});
+
+function storedApproval(){
+ const original=existingApprovalFixture().source.request_json,{id:_id,version,status,createdAt,...snapshot}=original;
+ snapshot.projectId=pid;
+ snapshot.requestedBy={kind:'HUMAN',userId:uid,clientId:cid};snapshot.requiredDecider={kind:'HUMAN',userId:uid};
+ snapshot.details.actionScope.requestedSubjectRef=snapshot.requestedBy;
+ snapshot.scopeDigest=hash(snapshot.details.actionScope);
+ const requestRef={id:id(20),version:1,contentHash:hash(snapshot)},request={id:requestRef.id,version,status,...snapshot,createdAt};
+ const approval={request,requestRef,currentVersion:1,storedStatus:'PENDING',effectiveState:'PENDING',decision:null,consumption:null,
+  expired:false,basisCurrent:true,executionAuthorized:false,observedAt:at};
+ const notification={id:id(21),eventRef:{kind:'APPROVAL_REQUESTED',serverCommandId:id(22),requestRef,channel:'IN_APP',occurredAt:at},
+  recipientRef:{kind:'HUMAN',userId:uid},projectRef:{id:pid},severity:'ACTION_REQUIRED',reason:'APPROVAL_REQUESTED',
+  authenticatedTarget:{kind:'APPROVAL_REQUEST',projectId:pid,approvalRequestId:requestRef.id},deliveryState:'STORED_IN_APP',readAt:null};
+ const page={items:[notification],hasMore:false,nextCursor:null,observedAt:at,baselineVersion:null};
+ return {approval,notification,page,list:`/api/v1/projects/${pid}/notifications?limit=50&readState=ALL`,detail:`/api/v1/projects/${pid}/notifications/${notification.id}`,
+  approvalPath:`/api/v1/projects/${pid}/approvals/${request.id}`,mobile:`#/projects/${pid}/mobile/approvals/requests/${request.id}`,
+  pc:`#/projects/${pid}/approvals/requests/${request.id}`};
+}
+async function openMobileNotifications(root:MemoryNode){
+ await click(navItems(root)[3]!);
+ const disclosure=all(root).find(n=>n.tagName==='SUMMARY'&&n.textContent==='보관 승인 알림');
+ assert(disclosure,'모바일 승인 탭의 보관 알림');
+ await click(disclosure);
+ return labelled(root,'본인 프로젝트 승인 알림');
+}
+test('push_denied_in_app_fallback: 푸시 거부 시 실제 모바일 App의 보관 알림에서 같은 원 승인·위험·복구 내용을 조회한다',async()=>{
+ const f=await fixture(),stored=storedApproval();
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'Notification');
+ let pushCalls=0;
+ Object.defineProperty(globalThis,'Notification',{configurable:true,value:{permission:'denied',requestPermission:()=>{pushCalls++;throw Error('UNEXPECTED_PUSH_PROMPT');}}});
+ try{
+  approvalTransport=path=>path===stored.list?Response.json(stored.page):path===stored.detail?Response.json(stored.notification):
+   path===stored.approvalPath?Response.json(stored.approval):undefined;
+  const panel=await openMobileNotifications(f.container);
+  assert.equal(calls.filter(v=>v.path.includes('/notifications')||v.path===stored.approvalPath).length,0);
+  await click(button(panel,'알림 처음 조회'));await wait(()=>panel.textContent.includes('이번 응답 1건'));
+  assert(!all(panel).some(n=>n.getAttribute('href')===stored.mobile));
+  await click(button(panel,'알림 상세 조회'));await wait(()=>all(panel).some(n=>n.getAttribute('href')===stored.mobile));
+  const selected=labelled(panel,'선택한 승인 알림'),links=all(selected).filter(n=>n.tagName==='A');
+  assert.deepEqual(links.map(link=>link.getAttribute('href')),[stored.mobile]);
+  assert.match(selected.textContent,/미읽음/);assert.doesNotMatch(selected.textContent,/명시적으로 읽음 표시/);
+  assert.equal(calls.filter(v=>v.path===stored.approvalPath).length,0);
+  await click(links[0]!);
+  assert.equal(location.hash,stored.mobile);
+  await wait(()=>f.container.textContent.includes(stored.approval.request.details.reason));
+  const mobile=labelled(f.container,'승인 요청 상세').textContent;
+  for(const label of [stored.approval.request.id,stored.approval.request.details.reason,...Object.values(stored.approval.request.details.risks),
+   stored.approval.request.details.rollback.method,stored.approval.request.details.rollback.limitations])assert(mobile.includes(String(label)));
+  assert(!all(f.container).some(n=>n.getAttribute('aria-label')==='본인 프로젝트 승인 알림'));
+  await navigate(stored.pc);await wait(()=>f.container.textContent.includes(stored.approval.request.details.reason));
+  assert.equal(labelled(f.container,'승인 요청 상세').textContent,mobile);
+  const input=labelled(f.container,'결정 이유'),key=Object.keys(input).find(k=>k.startsWith('__reactProps'))!;
+  await ui.React.act(async()=>{(input as any)[key].onChange({target:{value:'보존할 확인 의견'}});});
+  await navigate(stored.mobile);await wait(()=>f.container.textContent.includes(stored.approval.request.details.reason));
+  assert.equal(labelled(f.container,'결정 이유').value,'보존할 확인 의견');
+  assert.deepEqual(calls.filter(v=>v.path.includes('/notifications')).map(v=>v.path),[stored.list,stored.detail]);
+  assert.equal(pushCalls,0);assert(calls.every(v=>v.method==='GET'));
+ }finally{
+  if(descriptor)Object.defineProperty(globalThis,'Notification',descriptor);else Reflect.deleteProperty(globalThis,'Notification');
+  approvalTransport=null;await f.close();
+ }
+});
+
+for(const mode of ['listUnavailable','listDenied','wrongProject','wrongRecipient','detailDenied','detailMissing','detailDisconnected','detailPrecondition','changedRequest','sessionExpired'] as const){
+ test(`모바일 보관 알림 · ${mode}에서는 원 승인 링크를 표시하지 않는다`,async()=>{
+  const f=await fixture(),stored=storedApproval();
+  try{
+   const detailFailure=['detailDenied','detailMissing','detailDisconnected','detailPrecondition','sessionExpired','changedRequest'].includes(mode);
+   const list=structuredClone(stored.page),detail=structuredClone(stored.notification);
+   if(mode==='wrongProject'){
+    list.items[0]!.projectRef.id=id(91);list.items[0]!.authenticatedTarget.projectId=id(91);
+   }else if(mode==='wrongRecipient')list.items[0]!.recipientRef.userId=id(92);
+   else if(mode==='changedRequest'){
+    detail.eventRef.requestRef.id=id(93);detail.authenticatedTarget.approvalRequestId=id(93);
+   }
+   const denied=(status:number)=>Response.json({code:status===401?'AUTH_REQUIRED':'ACCESS_DENIED'},{status});
+   approvalTransport=path=>{
+    if(path===stored.list)return mode==='listUnavailable'?denied(503):mode==='listDenied'?denied(403):Response.json(list);
+    if(path!==stored.detail)return;
+    if(mode==='detailDisconnected')throw Error('합성 연결 단절');
+    if(mode==='detailPrecondition')return denied(412);
+    return mode==='detailDenied'?denied(403):mode==='detailMissing'?denied(404):mode==='sessionExpired'?denied(401):Response.json(detail);
+   };
+   const panel=await openMobileNotifications(f.container);
+   await click(button(panel,'알림 처음 조회'));
+   if(detailFailure){
+    await wait(()=>panel.textContent.includes('이번 응답 1건'));
+    await click(button(panel,'알림 상세 조회'));
+   }
+   if(mode==='sessionExpired')await wait(()=>f.container.textContent.includes('로그인 확인 필요'));
+   else{
+    await wait(()=>all(panel).some(n=>n.getAttribute('role')==='alert'));
+    assert.doesNotMatch(panel.textContent,/조회된 알림이 없습니다/);
+    if(mode==='detailDisconnected'||mode==='detailPrecondition'){
+     assert.match(panel.textContent,/목록부터 다시 조회하세요/);
+     assert.doesNotMatch(panel.textContent,/같은 명령|읽음 정책/);
+    }
+   }
+   assert(!all(f.container).some(n=>n.getAttribute('aria-label')==='선택한 승인 알림'||n.getAttribute('href')===stored.mobile));
+   assert.deepEqual(calls.filter(v=>v.path.includes('/notifications')).map(v=>v.path),detailFailure?[stored.list,stored.detail]:[stored.list]);
+   assert.equal(calls.filter(v=>v.path===stored.approvalPath).length,0);
+   assert(calls.every(v=>v.method==='GET'));
+  }finally{approvalTransport=null;await f.close();}
+ });
+}
+
+for(const [phase,change,status] of [['list','project',200],['detail','direct',401],['detail','settings',200]] as const){
+ test(`모바일 보관 알림 · ${phase} 중 ${change} 이동 뒤 지연 ${status}를 폐기한다`,async()=>{
+  const f=await fixture(),stored=storedApproval();let release:((response:Response)=>void)|undefined;
+  try{
+   const gate=()=>new Promise<Response>(resolve=>{release=resolve;});
+   approvalTransport=path=>path===stored.list?phase==='list'?gate():Response.json(stored.page):
+    path===stored.detail?gate():path===stored.approvalPath?Response.json(stored.approval):undefined;
+   const panel=await openMobileNotifications(f.container);
+   await click(button(panel,'알림 처음 조회'));
+   if(phase==='detail'){
+    await wait(()=>panel.textContent.includes('이번 응답 1건'));
+    await click(button(panel,'알림 상세 조회'));
+   }
+   await wait(()=>!!release);
+   const destination=change==='project'?`#/projects/${id(96)}/mobile/approvals`:change==='settings'?`#/projects/${pid}/settings`:stored.mobile;
+   await navigate(destination);
+   if(change==='direct')await wait(()=>f.container.textContent.includes(stored.approval.request.details.reason));
+   await ui.React.act(async()=>release!(status===401?Response.json({code:'AUTH_REQUIRED'},{status}):Response.json(phase==='list'?stored.page:stored.notification)));
+   await settle();
+   assert.equal(location.hash,destination);
+   assert.doesNotMatch(f.container.textContent,/로그인 확인 필요|이번 응답 1건/);
+   assert(!all(f.container).some(n=>n.getAttribute('aria-label')==='선택한 승인 알림'));
+   assert(calls.every(v=>v.method==='GET'));
+  }finally{release?.(Response.json(stored.notification));approvalTransport=null;await f.close();}
+ });
+}
+
+test('모바일 직접 승인 링크는 재접속 후 같은 원문을 조회하고 설정의 기존 알림 동선을 보존한다',async()=>{
+ const f=await fixture(),stored=storedApproval();let authDenied=true;
+ try{
+  approvalTransport=path=>path===stored.approvalPath?authDenied?Response.json({code:'AUTH_REQUIRED'},{status:401}):Response.json(stored.approval):
+   path===stored.list?Response.json(stored.page):path===stored.detail?Response.json(stored.notification):undefined;
+  await navigate(stored.mobile);await wait(()=>f.container.textContent.includes('로그인 확인 필요'));
+  assert.equal(location.hash,stored.mobile);
+  authDenied=false;
+  await click(button(f.container,'접근 상태 다시 확인'));
+  await wait(()=>f.container.textContent.includes(stored.approval.request.details.reason));
+  assert.equal(location.hash,stored.mobile);
+  assert.equal(calls.filter(v=>v.path.includes('/notifications')).length,0);
+  assert.equal(calls.filter(v=>v.path==='/api/v1/session').length,2);
+  await navigate(`#/projects/${pid}/settings`);
+  const panel=labelled(f.container,'본인 프로젝트 승인 알림');
+  await click(button(panel,'알림 처음 조회'));await wait(()=>panel.textContent.includes('이번 응답 1건'));
+  await click(button(panel,'알림 상세 조회'));
+  await wait(()=>all(panel).some(n=>n.getAttribute('href')===stored.mobile));
+  const selected=labelled(panel,'선택한 승인 알림');
+  assert.deepEqual(all(selected).filter(n=>n.tagName==='A').map(n=>n.getAttribute('href')),[stored.pc,stored.mobile]);
+  assert(button(selected,'명시적으로 읽음 표시'));
+  assert(calls.every(v=>v.method==='GET'));
+ }finally{approvalTransport=null;await f.close();}
 });
 
 async function selectSecondStage(root:MemoryNode){await click(button(root,'적용 절차 조회'));await wait(()=>all(root).some(n=>n.getAttribute('aria-label')==='절차 정의: 둘째 단계'));await click(labelled(root,'절차 정의: 둘째 단계'));await settle();}
