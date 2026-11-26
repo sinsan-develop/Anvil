@@ -852,3 +852,61 @@ for(const stage of ['CONTEXT','BODY'] as const)for(const change of ['닫기','�
   }finally{release();await f.close();}
  });
 }
+
+function executionPreparationForTransfer(otherAssignment=false){
+ const f=transferFixture(),assignmentRef=f.confirmed.ref,preparationId=id(96),sourceScope={sourceRootRef:assignmentRef,mappingRef:null,observationRef:assignmentRef,baselineRef:assignmentRef,targets:[{relativePath:'src/main.ts',kind:'FILE',access:'READ',recursive:false}]};
+ const intent={projectId:pid,assignmentRef:otherAssignment?{...assignmentRef,contentHash:'a'.repeat(64)}:assignmentRef,roleBindingRef:assignmentRef,contextBundleRef:assignmentRef,connectionRef:assignmentRef,environmentRef:assignmentRef,capabilityRef:assignmentRef,budgetPolicyRef:assignmentRef,sourceScopes:[sourceScope],mode:'CONTEXT_REVIEW',reason:'이전 작업 당시 실행 준비',connectionKind:'REGISTERED_DEFINITION',optionsFormat:'CLAUDE_QUERY_DATA_V1'};
+ const missingConditions=['RESPONSIBLE_SESSION_RESERVED','CONNECTION_DEFINITION_ONLY','ENVIRONMENT_DEFINITION_ONLY','CAPABILITY_UNVERIFIED','BUDGET_POLICY_UNVERIFIED','SOURCE_AUTHORIZATION_UNVERIFIED','HOST_OS_FENCE_UNVERIFIED'];
+ const body=canonicalJson({claudeQueryParams:{model:'claude-history-only',maxTurns:3}}),options={format:'CLAUDE_QUERY_DATA_V1',mediaType:'application/json',body,utf8Bytes:Buffer.byteLength(body),contentHash:contentHash(body)};
+ const snapshot={intent,basisRefs:[assignmentRef],latestInstructionRefs:[],checkedAt:at,missingConditions,authorizationState:'NOT_AUTHORIZED',preparedBy:{kind:'HUMAN',userId:pid},executionAuthorized:false,dispatchPerformed:false,options};
+ const ref={id:preparationId,version:1,contentHash:hash(snapshot)};
+ const page={projectId:pid,assignmentRef,items:[{ref,mode:intent.mode,checkedAt:at,missingConditions}],nextCursor:null,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};
+ const original={projectId:pid,ref,snapshot,currentness:'NOT_RECHECKED'};
+ return{page,original,options,open:'전체 준비 이력 열기',item:'준비 원문 '+ref.id,
+  pagePath:`/api/v1/projects/${pid}/assignments/${assignmentRef.id}/versions/${assignmentRef.version}/execution-preparations`,
+  originalPath:`/api/v1/projects/${pid}/execution-preparations/${ref.id}/versions/${ref.version}`};
+}
+
+test('인계 화면의 검산된 확정 임무에서만 명시 GET으로 과거 실행 준비의 고정 Options를 조회한다',async()=>{
+ const q=executionPreparationForTransfer(),f=await host({empty:true,historicalGet:path=>path===q.pagePath?Response.json(q.page):path===q.originalPath?Response.json(q.original):undefined});
+ try{
+  assert(!f.calls.some(c=>c.path.includes('/execution-preparations')));
+  await f.click(q.open);await f.settle(()=>f.buttons(q.item).length===1);
+  assert.deepEqual(f.calls.filter(c=>c.path.includes('/execution-preparations')).map(c=>c.path),[q.pagePath]);
+  assert(!f.text().includes(q.options.contentHash));
+  await f.click(q.item);await f.settle(()=>f.text().includes(q.options.contentHash));
+  assert.match(f.text(),/준비 원문 · NOT_AUTHORIZED/);assert(f.text().includes(q.options.format));assert(f.text().includes(String(q.options.utf8Bytes)));assert(f.text().includes(q.original.ref.contentHash));
+  assert.deepEqual(f.calls.slice(-2).map(c=>[c.path,c.method]),[[q.pagePath,'GET'],[q.originalPath,'GET']]);assert.deepEqual(f.buffers,{});
+ }finally{await f.close();}
+});
+
+test('인계 실행 준비 원문의 다른 임무·다른 고정 ref와 현재 접근 거절은 Options를 표시하지 않는다',async()=>{
+ for(const mode of ['ASSIGNMENT','REF','403','401']){
+  const q=executionPreparationForTransfer(mode==='ASSIGNMENT'),f=await host({empty:true,historicalGet:path=>path===q.pagePath?Response.json(q.page):path!==q.originalPath?undefined:
+   mode==='401'||mode==='403'?Response.json({code:mode==='401'?'AUTH_REQUIRED':'ACCESS_DENIED'},{status:Number(mode)}):
+   Response.json(mode==='REF'?{...q.original,ref:{...q.original.ref,id:id(99)}}:q.original)});
+  try{
+   await f.click(q.open);await f.settle(()=>f.buttons(q.item).length===1);await f.click(q.item);
+   const error=mode==='403'?'ACCESS_DENIED':mode==='401'?'AUTH_REQUIRED':'PREPARATION_HISTORY_RESPONSE_INVALID';
+   await f.settle(()=>f.text().includes(error));assert(!f.text().includes(q.options.contentHash),mode);
+   assert.equal(f.lost(),mode==='401'?1:0,mode);assert(f.calls.every(c=>c.method==='GET'));assert.deepEqual(f.buffers,{});
+  }finally{await f.close();}
+ }
+});
+
+test('인계 실행 준비 대기 중 transport·CSRF·재조회·임무 이탈은 옛 응답과 인증 콜백을 폐기한다',async()=>{
+ for(const [scope,status] of [['TRANSPORT',200],['TRANSPORT',401],['CSRF',401],['REREAD',401],['LEAVE',401]] as const){
+  const q=executionPreparationForTransfer();let release:((response:Response)=>void)|undefined;
+  const f=await host({empty:true,historicalGet:path=>path===q.pagePath?Response.json(q.page):path===q.originalPath?new Promise(r=>release=r):undefined});
+  try{
+   await f.click(q.open);await f.settle(()=>f.buttons(q.item).length===1);await f.click(q.item);await f.settle(()=>!!release);
+   if(scope==='TRANSPORT')f.client.transport=f.client.transport.bind(null);
+   if(scope==='CSRF')await f.render({...f.props(),session:{...f.props().session,csrfToken:'D'.repeat(43)}});
+   if(scope==='REREAD'){await f.click('인계 기록 다시 조회');await f.settle(()=>f.buttons(q.open).length===1);}
+   if(scope==='LEAVE')await f.render({...f.props(),assignmentRef:undefined});
+   const prior=f.calls.length;
+   await ui.React.act(async()=>{assert(release);release(status===401?Response.json({code:'AUTH_REQUIRED'},{status}):Response.json(q.original));});
+   assert.equal(f.calls.length,prior,scope);assert.equal(f.lost(),0,scope);assert(!f.text().includes(q.options.contentHash),scope);assert(!f.text().includes('AUTH_REQUIRED'),scope);assert.deepEqual(f.buffers,{});
+  }finally{await f.close();}
+ }
+});

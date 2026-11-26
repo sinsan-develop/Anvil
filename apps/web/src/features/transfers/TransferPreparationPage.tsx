@@ -8,6 +8,7 @@ import {ApiClient,ApiError} from '../../api/client.ts';
 import {routeHref,sessionDetailHref} from '../../shell/routes.ts';
 import type {PlanRef} from '../design-trace/work-plan-api.ts';
 import {SessionDetailContent} from '../session-detail/SessionDetailPage.tsx';
+import {PreparationHistory} from '../session-detail/PreparationHistory.tsx';
 import {readTransferRecords,readTransferContext} from './transfer-read.ts';
 import {TransferContextOriginals} from './TransferContextOriginals.tsx';
 import {TransferTargetCandidates} from './TransferTargetCandidates.tsx';
@@ -26,7 +27,7 @@ export function TransferPreparationPage({client,projectId,assignmentRef,onAuthen
  function begin(){const ticket=++sequence.current;flight.current=true;setPending(true);setError(null);return()=>owned()&&sequence.current===ticket&&latest.current===key;}
  function fail(cause:unknown,active:()=>boolean){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('TRANSFER_READ_INVALID');setRecords(null);setContext(null);setError(/^[A-Z_]{1,80}$/.test(e.code)?e.code:'TRANSFER_READ_INVALID');if(e.status===401)lost.current();}
  function finish(active:()=>boolean){if(active()){flight.current=false;setPending(false);}}
- async function read(){if(!owned()||!assignmentRef||flight.current)return;const selected=structuredClone(assignmentRef),active=begin();setRecords(null);setContext(null);try{const v=await readTransferRecords(client,projectId,selected,active);if(active()&&v){recordOwner.current=scope;setRecords(v);}}catch(e){fail(e,active);}finally{finish(active);}}
+ async function read(){if(!owned()||!assignmentRef||flight.current)return;const selected=structuredClone(assignmentRef),active=begin();recordOwner.current=null;setRecords(null);setContext(null);try{const v=await readTransferRecords(client,projectId,selected,active);if(active()&&v){recordOwner.current=scope;setRecords(v);}}catch(e){fail(e,active);}finally{finish(active);}}
  async function inspect(ref:PlanRef){if(!owned()||!records?.detail.confirmed||flight.current)return;const expected=structuredClone(records.detail.confirmed.ref),selected=structuredClone(ref),active=begin();setContext(null);try{const v=await readTransferContext(client,projectId,expected,selected,active);if(active()&&v){contextOwner.current=scope;setContext(v);}}catch(e){fail(e,active);}finally{finish(active);}}
  return <section aria-label="읽기 인계 준비" lang="ko"><h2>읽기 인계 준비</h2>
   <p>단계책임자 임무의 기존 기록·대상 후보 조회입니다. 총괄/새 대상 채택·인계 확정·이해 대조·재개는 아직 미구현입니다.</p>
@@ -36,6 +37,7 @@ export function TransferPreparationPage({client,projectId,assignmentRef,onAuthen
   {assignmentRef?<><p>선택 임무 {assignmentRef.id} · v{assignmentRef.version} · {assignmentRef.contentHash}</p><button type="button" disabled={pending} onClick={()=>void read()}>{records||error?'인계 기록 다시 조회':'기존 인계 기록 조회'}</button></>:<p>임무 상세에서 고정 임무를 선택해 읽기 인계 준비로 이동하세요.</p>}
   {pending?<p role="status">고정 기록 조회 중 · 앞선 선택 원문 숨김</p>:null}{error?<p role="alert">{error} · 인계 기록 미확인. 다른 버전이나 빈 결과로 대체하지 않습니다.</p>:null}
   {records?<section aria-label="인계 기록 조회 결과"><SessionDetailContent detail={records.detail}/>
+   {records.detail.confirmed&&session?<PreparationHistory client={client} confirmed={records.detail.confirmed} session={session} onAuthenticationLost={()=>{if(owned()&&recordOwner.current===scope)lost.current();}}/>:null}
    <h3>보관 맥락 후보</h3><p>목록은 현재 의미 적합·전달 확인이 아닙니다. 현황 파일/실제 파일 차이·회수 공백은 임무 상세에서 별도 확인해야 합니다.</p>
    {!records.contexts?<p>내용 확정 임무 없음 · 맥락 후보를 추정하지 않습니다.</p>:<><p>조회 시각 {records.contexts.observedAt} · 읽은 후보 {records.contexts.items.length}개</p><ul>{records.contexts.items.map(item=><li key={item.ref.id}><p>{item.ref.id} · v{item.ref.version} · {item.ref.contentHash}</p><p>필수 누락 {item.missingRequired.length}개 · {item.currentCheck.state}</p><button type="button" disabled={pending} onClick={()=>void inspect(item.ref)}>고정 맥락 확인</button></li>)}</ul>{!records.contexts.items.length?<p>조회 범위의 맥락 후보 없음 · 인계 자료 완비나 작업 없음이 아닙니다.</p>:null}{records.contexts.hasMore?<p>이전 후보가 더 있습니다 · 최근50건만 조회, 전체 인계 이력 아님</p>:null}</>}
   </section>:null}
