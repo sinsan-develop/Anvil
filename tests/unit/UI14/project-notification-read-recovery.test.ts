@@ -40,9 +40,10 @@ function dto(readAt:string|null=null){return{id:nid,eventRef:{kind:'APPROVAL_REQ
 function deferred<T>(){let resolve!:(value:T)=>void;const promise=new Promise<T>(r=>resolve=r);return{promise,resolve};}
 async function fixture(pages?:{read:(path:string)=>Response|Promise<Response>}){
  let pending:any=null,shown=true,currentSession=session,projectId:string|null=pid,lost=0,postLost=false,read=false,readMode:string|null='503',hold:ReturnType<typeof deferred<Response>>|null=null;
+ let postReply:(()=>Response|Promise<Response>)|null=null;
  const posts:string[]=[],gets:string[]=[],unknown:string[]=[],scope=new ui.NotificationScope();
  const client=new ui.ApiClient(async(path:string,init:any)=>{
-  if(init?.method==='POST'){assert.equal(path,`/api/v1/projects/${pid}/commands`);posts.push(init.body);const c=JSON.parse(init.body);read=true;if(postLost){postLost=false;throw Error('response lost');}return Response.json({commandId:c.commandId,operationId:id(8),projectId:pid,status:'APPLIED',targetId:nid,version:1,data:{status:'NOTIFICATION_READ',ref:c.payload.notificationRef,readAt:at},evidenceRefs:[],warnings:[],serverReceivedAt:at});}
+  if(init?.method==='POST'){assert.equal(path,`/api/v1/projects/${pid}/commands`);posts.push(init.body);if(postReply)return postReply();const c=JSON.parse(init.body);read=true;if(postLost){postLost=false;throw Error('response lost');}return Response.json({commandId:c.commandId,operationId:id(8),projectId:pid,status:'APPLIED',targetId:nid,version:1,data:{status:'NOTIFICATION_READ',ref:c.payload.notificationRef,readAt:at},evidenceRefs:[],warnings:[],serverReceivedAt:at});}
   gets.push(path);
   if(path===`/api/v1/projects/${pid}`)return Response.json({id:pid,participation:'OWNER',controlState:{actorId:uid,clientId:cid,generation:3,status:'HELD'}});
   if(pages&&path.startsWith(`/api/v1/projects/${pid}/notifications?`))return pages.read(path);
@@ -56,8 +57,64 @@ async function fixture(pages?:{read:(path:string)=>Response|Promise<Response>}){
  const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));}),wait=async(check:()=>boolean)=>{for(let n=0;n<100&&!check();n++)await settle();assert(check(),container.textContent);};
  const click=async(name:string)=>{const b=button(name);assert(!b.disabled);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
  await ui.React.act(async()=>render());assert.equal(gets.length,0);await click('알림 처음 조회');await wait(()=>nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='알림 상세 조회'));await click('알림 상세 조회');await wait(()=>container.textContent.includes('선택한 승인 알림'));
- return{filter:async(value:string)=>{const n=nodes().find(n=>n.tagName==='SELECT')!,key=Object.keys(n).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>(n as any)[key].onChange({target:{value}}));},transport:async()=>{const old=client.transport;client.transport=(...args:Parameters<typeof fetch>)=>old(...args);await ui.React.act(async()=>render());},posts,gets,unknown,container,readVerified:()=>nodes().some(n=>n.tagName==='DD'&&n.textContent==='읽음 · '+at),button,click,wait,settle,pending:()=>pending,lost:()=>lost,mode:(mode:string|null)=>{readMode=mode;},losePost:()=>{postLost=true;},hold:()=>{hold=deferred<Response>();return hold;},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},context:async(s=session,p:string|null=pid)=>{currentSession=s;projectId=p;await ui.React.act(async()=>render());},replace:async(next:any=null)=>{pending=next;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{filter:async(value:string)=>{const n=nodes().find(n=>n.tagName==='SELECT')!,key=Object.keys(n).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>(n as any)[key].onChange({target:{value}}));},transport:async()=>{const old=client.transport;client.transport=(...args:Parameters<typeof fetch>)=>old(...args);await ui.React.act(async()=>render());},posts,gets,unknown,container,readVerified:()=>nodes().some(n=>n.tagName==='DD'&&n.textContent==='읽음 · '+at),button,click,wait,settle,pending:()=>pending,lost:()=>lost,mode:(mode:string|null)=>{readMode=mode;},losePost:()=>{postLost=true;},replyToPost:(reply:()=>Response|Promise<Response>)=>{postReply=reply;},hold:()=>{hold=deferred<Response>();return hold;},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},context:async(s=session,p:string|null=pid)=>{currentSession=s;projectId=p;await ui.React.act(async()=>render());},replace:async(next:any=null)=>{pending=next;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
+
+const readApprovalRequired='NOTIFICATION_READ_APPROVAL_NOT_CONNECTED';
+function rejectedRead(status=412,code=readApprovalRequired,details={}){
+ return Response.json({code,message:'요청을 처리하지 못했습니다',requestId:'req-1',targetId:null,retryDisposition:'not-retryable',details},{status});
+}
+test('첫 읽음 POST의 확정 승인 미연결 응답 뒤 보호 페이지와 상세 탐색이 다시 열린다',async()=>{
+ const f=await fixture({read:()=>Response.json(notificationPage())});
+ const reply=deferred<Response>();
+ try{
+  f.replyToPost(()=>reply.promise);await f.click('명시적으로 읽음 표시');await f.wait(()=>f.posts.length===1);
+  assert(f.pending());assert.equal(f.button('알림 다음 조회').disabled,true);assert.equal(f.button('상세 닫기').disabled,true);
+  const before=f.gets.length;reply.resolve(rejectedRead());await f.wait(()=>f.container.textContent.includes('읽음에 필요한 승인 연결이 없습니다.'));
+  assert.equal(f.pending(),null);assert.equal(f.gets.length,before);
+  assert(!f.readVerified());assert(!f.container.textContent.includes('같은 명령 결과 재확인'));
+  assert.equal(f.button('알림 상세 조회').disabled,false);assert.equal(f.button('상세 닫기').disabled,false);
+  await f.click('알림 다음 조회');await f.wait(()=>f.container.textContent.includes('이번 응답 1건'));
+  assert.match(f.gets.at(-1)!,/cursor=fixed-notification-cursor$/);assert.equal(f.posts.length,1);
+  await f.click('알림 상세 조회');await f.wait(()=>f.container.textContent.includes('선택한 승인 알림'));
+  await f.click('상세 닫기');assert.equal(f.posts.length,1);
+ }finally{reply.resolve(Response.json({}));await f.close();}
+});
+for(const [name,reply] of [
+ ['다른 412',()=>rejectedRead(412,'PERMISSION_POLICY_UNCONFIGURED')],
+ ['불완전 오류 봉투',()=>Response.json({code:readApprovalRequired},{status:412})],
+ ['503',()=>rejectedRead(503,'STORAGE_FAILED')],
+] as const)test(`${name}는 첫 쓰기에서도 원 명령을 보존한다`,async()=>{
+ const f=await fixture();try{
+  f.replyToPost(reply);await f.click('명시적으로 읽음 표시');await f.wait(()=>!f.container.textContent.includes('알림 조회·결과 확인 중'));
+  assert.equal(f.posts.length,1);assert.equal(f.pending().body,f.posts[0]);assert.equal(f.pending().receipt,null);
+  assert.equal(f.button('알림 처음 조회').disabled,true);assert(!f.readVerified());
+ }finally{await f.close();}
+});
+for(const status of [412,403])test(`선행 응답 유실 뒤 동일 명령 ${status}는 불명을 해제하지 않는다`,async()=>{
+ const f=await fixture();try{
+  f.losePost();await f.click('명시적으로 읽음 표시');await f.wait(()=>f.container.textContent.includes('처리 결과 미확인.'));
+  const original=f.pending();f.replyToPost(()=>rejectedRead(status,status===412?readApprovalRequired:'PROJECT_OPERATION_DENIED'));
+  await f.click('같은 명령 결과 재확인');await f.wait(()=>!f.container.textContent.includes('알림 조회·결과 확인 중'));
+  assert.equal(f.posts.length,2);assert.equal(f.posts[0],f.posts[1]);assert.equal(f.pending().command,original.command);
+  assert.equal(f.pending().receipt,null);assert.equal(f.button('알림 처음 조회').disabled,true);
+ }finally{await f.close();}
+});
+for(const context of ['UNMOUNT','ACTOR','TRANSPORT','BUFFER','BUFFER_ABA'] as const)test(`첫 거절의 지연 응답은 ${context} 뒤 원 명령을 해제하지 않는다`,async()=>{
+ const f=await fixture();const reply=deferred<Response>();
+ try{
+  f.replyToPost(()=>reply.promise);await f.click('명시적으로 읽음 표시');await f.wait(()=>f.posts.length===1);
+  const original=f.pending();let expected=original;
+  if(context==='UNMOUNT')await f.route(false);
+  else if(context==='ACTOR')await f.context({...session,user:{id:id(99)}});
+  else if(context==='TRANSPORT')await f.transport();
+  else if(context==='BUFFER'){expected={...original};await f.replace(expected);}
+  else{await f.replace();await f.replace(original);}
+  reply.resolve(rejectedRead());await f.settle();await f.settle();
+  assert.equal(f.pending(),expected);assert.equal(f.pending().receipt,null);assert.equal(f.lost(),0);
+  assert.equal(f.posts.length,1);assert(!f.container.textContent.includes('읽음에 필요한 승인 연결이 없습니다.'));
+ }finally{reply.resolve(Response.json({}));await f.close();}
+});
 test('읽음 POST확정 뒤 GET503은 원영수증 보존→명시 정확GET만으로 동일 readAt을 확인한다',async()=>{
  const f=await fixture();try{await f.click('명시적으로 읽음 표시');await f.wait(()=>f.container.textContent.includes('후속 조회 실패'));const original=f.pending(),before=f.gets.length;assert.equal(f.posts.length,1);assert.equal(original.receipt.readAt,at);
   f.mode(at);await f.click('읽음 원알림 다시 확인');await f.wait(()=>!f.container.textContent.includes('후속 조회 실패')&&f.readVerified());

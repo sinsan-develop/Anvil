@@ -3,7 +3,7 @@ import {ApiClient,ApiError} from '../api/client.ts';
 import type {DocumentSession} from '../features/design-trace/editor-api.ts';
 import {ApprovalRequestLinks} from '../features/mobile/ApprovalRequestLinks.ts';
 import {mobileApprovalRequestHref} from '../shell/routes.ts';
-import {NotificationScope,listNotifications,readNotification,prepareNotificationRead,sendNotificationRead,notificationPendingMatches,type NotificationPage,type NotificationPending,type NotificationTicket,type NotificationView,type ReadState} from './project-notifications-api.ts';
+import {NotificationScope,listNotifications,readNotification,prepareNotificationRead,sendNotificationRead,notificationPendingMatches,notificationReadRejection,type NotificationPage,type NotificationPending,type NotificationTicket,type NotificationView,type ReadState} from './project-notifications-api.ts';
 interface Ticket{local:NotificationTicket;owner:NotificationTicket}
 interface ListTarget{readState:ReadState;cursor:string|null}
 interface View{listRetry:ListTarget|null;listFailed:boolean;ticket:Ticket|null;page:NotificationPage|null;selected:NotificationView|null;busy:boolean;error:ApiError|null;followupFailed:boolean}
@@ -64,10 +64,16 @@ export function ProjectNotificationsPanel({client,session,projectId,buffer,scope
   try{
    if(!p){p=await prepareNotificationRead(client,projectId!,session,selected,active);if(!active())return;owned.add(p);if(!onChange(null,p))return;}
    // The App owns the original immutable command before any POST, including lost responses.
-   const receipt=await sendNotificationRead(client,p,session,active);if(!active())return;
+   const receipt=await sendNotificationRead(client,p,session,active,!work);if(!active())return;
    const confirmed={...p,receipt};owned.add(confirmed);if(!onChange(p.bindingId,confirmed))return;
    try{const value=await readNotification(client,projectId!,session.user.id,p.view.ref);if(value.notification.readAt!==receipt.readAt)throw new ApiError('RESPONSE_INVALID');if(active())setView(v=>({...v,ticket:t,selected:value,error:null,followupFailed:false}));}catch(e){if(active())fail(e,t,true);}
-  }catch(e){if(active())fail(e,t);}finally{finish(t);}
+  }catch(e){
+   if(!active())return;
+   const rejection=notificationReadRejection(e);
+   if(rejection&&live.current.buffer===p&&bufferEpoch.current.revision!==revision+1)return;
+   if(rejection&&p&&onChange(p.bindingId,rejection))setView(v=>({...v,error:asError(e)}));
+   else fail(e,t);
+  }finally{finish(t);}
  }
  const frozen=shown.busy||unresolved;
  return<section className={mobileReadOnly?undefined:'status-card'} aria-label="본인 프로젝트 승인 알림">

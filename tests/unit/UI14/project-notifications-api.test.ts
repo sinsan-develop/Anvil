@@ -35,3 +35,24 @@ test('상태 병합은 다른 actor/client/ref/명령/context 또는 확정 시�
  for(const patch of [{ownerUserId:id(99)},{ownerClientId:id(99)},{projectId:id(99)},{csrfToken:'D'.repeat(43)},{api:new ApiClient(client.transport)},{transport:async()=>json({})},{bindingId:id(99)},{body:pending.body+' '},{command:{...pending.command}},{view:{...pending.view}},{receipt:{...receipt,commandId:id(99)}},{receipt:{...receipt,readAt:'2026-10-27T00:01:00.000Z'}}])assert.equal(m.mergeNotificationPending(confirmed,pending.bindingId,{...confirmed,...patch}),confirmed);
  assert.equal(m.mergeNotificationPending(confirmed,id(99),{...pending,accessLost:true}),confirmed);
 });
+test('확정 거절 증표는 실제 첫 POST와 정확 pending CAS 한 번에만 쓴다',async()=>{
+ const m=await api(),view=await m.parseNotification(dto(),pid,uid);
+ const denial=()=>json({code:'NOTIFICATION_READ_APPROVAL_NOT_CONNECTED',message:'요청을 처리하지 못했습니다',requestId:'req-1',targetId:null,retryDisposition:'not-retryable',details:{}},412);
+ let posts=0,denyControl=false;
+ const client=new ApiClient(async(_path,init)=>{if(init?.method==='POST'){posts++;return denial();}return denyControl?denial():json(control());});
+ const p=await m.prepareNotificationRead(client,pid,session,view,()=>true);
+ const send=()=>m.sendNotificationRead(client,p,session,()=>true,true);
+ denyControl=true;
+ await assert.rejects(send,(e:ApiError)=>e.status===412&&m.notificationReadRejection(e)===null);
+ assert.equal(posts,0);
+ denyControl=false;
+ const error=await send().catch((e:unknown)=>e),update=m.notificationReadRejection(error);assert(update);assert.equal(posts,1);
+ const replacement={...p},confirmed={...p,receipt:{commandId:p.command.commandId,readAt:at}};
+ assert.equal(m.mergeNotificationPending(replacement,p.bindingId,update),replacement);
+ assert.equal(m.mergeNotificationPending(confirmed,p.bindingId,update),confirmed);
+ assert.equal(m.mergeNotificationPending(p,id(99),update),p);
+ assert.equal(m.mergeNotificationPending(p,p.bindingId,{...update})?.command,p.command);
+ assert.equal(m.mergeNotificationPending(p,p.bindingId,update),null);
+ await assert.rejects(send,(e:ApiError)=>e.status===412&&m.notificationReadRejection(e)===null);
+ assert.equal(posts,2);
+});

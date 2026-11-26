@@ -14,6 +14,17 @@ export interface NotificationPending{
  api:ApiClient;transport:typeof fetch;view:NotificationView;command:ProjectCommand;body:string;
  receipt:NotificationReceipt|null;accessLost?:boolean;
 }
+// Only the prepared object can qualify, and any POST attempt consumes that eligibility.
+const freshReads=new WeakMap<ProjectCommand,NotificationPending>();
+// Carry a verified first-POST rejection to the App CAS without treating it as a receipt.
+const rejectedReads=new WeakMap<NotificationPending,NotificationPending>();
+class NotificationReadNotStored extends ApiError{
+ readonly update:NotificationPending;
+ constructor(update:NotificationPending){super('NOTIFICATION_READ_APPROVAL_NOT_CONNECTED',412);this.update=update;}
+}
+export function notificationReadRejection(cause:unknown):NotificationPending|null{
+ return cause instanceof NotificationReadNotStored?cause.update:null;
+}
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
 const validRef=(v:unknown):v is VersionRef=>exact(v,['id','version','contentHash'])&&uuid(v.id)&&v.version===1&&typeof v.contentHash==='string'&&/^[a-f0-9]{64}$/.test(v.contentHash);
 const invalid=():never=>{throw new ApiError('RESPONSE_INVALID');};
@@ -54,25 +65,36 @@ export async function prepareNotificationRead(client:ApiClient,projectId:string,
  const checked=await parseNotification(view.notification,projectId,userId,view.ref);if(!active())return paused();
  const generation=await documentControl(client,projectId,session);if(!active())return paused();
  const command:ProjectCommand=freeze({schemaVersion:1,projectId,commandId:crypto.randomUUID(),clientId,controlGeneration:generation,operation:'markNotificationRead',targetId:checked.ref.id,expectedVersion:1,baselineRefs:[],approvalRef:null,payload:{notificationRef:checked.ref}});
- return{bindingId:crypto.randomUUID(),ownerUserId:userId,ownerClientId:clientId,projectId,csrfToken,api:client,transport,view:checked,command,body:browserCanonical(command),receipt:null};
+ const pending={bindingId:crypto.randomUUID(),ownerUserId:userId,ownerClientId:clientId,projectId,csrfToken,api:client,transport,view:checked,command,body:browserCanonical(command),receipt:null};
+ freshReads.set(command,pending);return pending;
 }
-export async function sendNotificationRead(client:ApiClient,pending:NotificationPending,session:DocumentSession,current:()=>boolean):Promise<NotificationReceipt>{
+export async function sendNotificationRead(client:ApiClient,pending:NotificationPending,session:DocumentSession,current:()=>boolean,firstSubmission=false):Promise<NotificationReceipt>{
  const p=pending,c=p.command;
  const active=()=>current()&&notificationPendingMatches(p,client,session,p.projectId);
  if(!active()||!exact(c,['schemaVersion','projectId','commandId','clientId','controlGeneration','operation','targetId','expectedVersion','baselineRefs','approvalRef','payload'])||!uuid(c.commandId)||c.schemaVersion!==1||c.projectId!==p.projectId||c.clientId!==p.ownerClientId||c.operation!=='markNotificationRead'||c.targetId!==p.view.ref.id||c.expectedVersion!==1||c.baselineRefs.length||c.approvalRef!==null||!exact(c.payload,['notificationRef'])||!same(c.payload.notificationRef,p.view.ref)||browserCanonical(c)!==p.body)return paused();
  await parseNotification(p.view.notification,p.projectId,p.ownerUserId,p.view.ref);if(!active())return paused();
  const generation=await documentControl(client,p.projectId,session);if(!active()||generation!==c.controlGeneration)return paused();
+ const firstPost=firstSubmission&&freshReads.get(c)===p;
+ freshReads.delete(c);
  let response:Response;
  try{response=await p.transport.call(globalThis,`/api/v1/projects/${p.projectId}/commands`,{method:'POST',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/json','Content-Type':'application/json','X-Anvil-CSRF':p.csrfToken,'Idempotency-Key':c.commandId},body:p.body});}catch{if(!active())return paused();throw new ApiError('CONNECTION_LOST');}
  if(!active())return paused();
  let v:unknown;try{if(!/^application\/json\b/i.test(response.headers.get('content-type')??''))throw Error();v=await response.json();}catch{throw new ApiError('RESPONSE_INVALID',response.status);}
  if(!active())return paused();
+ if(firstPost&&response.status===412&&exact(v,['code','message','requestId','targetId','retryDisposition','details'])&&v.code==='NOTIFICATION_READ_APPROVAL_NOT_CONNECTED'&&v.message==='요청을 처리하지 못했습니다'&&typeof v.requestId==='string'&&v.requestId.length>0&&v.requestId.length<=128&&v.targetId===null&&v.retryDisposition==='not-retryable'&&exact(v.details,[])){
+  const update={...p};rejectedReads.set(update,p);throw new NotificationReadNotStored(update);
+ }
  if(!response.ok){const code=v&&typeof v==='object'?(v as {code?:unknown}).code:null;throw new ApiError(typeof code==='string'&&/^[A-Z_]{1,64}$/.test(code)?code:'REQUEST_FAILED',response.status);}
  if(!exact(v,['commandId','operationId','projectId','status','targetId','version','data','evidenceRefs','warnings','serverReceivedAt'])||v.commandId!==c.commandId||!uuid(v.operationId)||v.projectId!==p.projectId||v.status!=='APPLIED'||v.targetId!==c.targetId||v.version!==1||!Array.isArray(v.evidenceRefs)||v.evidenceRefs.length!==0||!Array.isArray(v.warnings)||v.warnings.length!==0||!iso(v.serverReceivedAt)||!exact(v.data,['status','ref','readAt'])||v.data.status!=='NOTIFICATION_READ'||!validRef(v.data.ref)||!same(v.data.ref,p.view.ref)||!iso(v.data.readAt)||Date.parse(v.data.readAt)<Date.parse(p.view.notification.eventRef.occurredAt)||Date.parse(v.serverReceivedAt)<Date.parse(p.view.notification.eventRef.occurredAt))return invalid();
  return{commandId:c.commandId,readAt:v.data.readAt};
 }
 /** Same-command state updates retain a confirmed receipt even before React re-renders. */
 export function mergeNotificationPending(current:NotificationPending|null,expected:string|null,next:NotificationPending|null):NotificationPending|null{
+ const rejected=next&&rejectedReads.get(next);
+ if(next&&rejected){
+  if(current!==rejected||current.bindingId!==expected||current.receipt||current.accessLost)return current;
+  rejectedReads.delete(next);return null;
+ }
  if((current?.bindingId??null)!==expected||current&&!current.receipt&&next===null)return current;
  if(next&&current&&(next.bindingId!==current.bindingId||next.ownerUserId!==current.ownerUserId||next.ownerClientId!==current.ownerClientId||next.projectId!==current.projectId||next.csrfToken!==current.csrfToken||next.api!==current.api||next.transport!==current.transport||next.view!==current.view||next.command!==current.command||next.body!==current.body))return current;
  if(next?.receipt&&(!exact(next.receipt,['commandId','readAt'])||next.receipt.commandId!==next.command.commandId||!iso(next.receipt.readAt)||Date.parse(next.receipt.readAt)<Date.parse(next.view.notification.eventRef.occurredAt)))return current;
