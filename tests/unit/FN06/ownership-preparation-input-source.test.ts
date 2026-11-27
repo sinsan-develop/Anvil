@@ -329,3 +329,39 @@ test('정착: 원 준비 객체 cleanup 확정은 원 refs 해제 전 별도 spo
  for(const flag of ['formalExecutionStopConfirmed','sourceWriteFenceIssued','writerReleaseVerified','claimReclaimed','resumeAuthorized','preparationAuthorized','executionAuthorized','dispatchPerformed'])assert.match(record,new RegExp('"'+flag+'",false'));
  assert.doesNotMatch(record,/reclaimed_at|STOPPED|PREPARED|POST|queue|sourceRef|osFenceRef/i);
 });
+
+
+test('정적: normal owner 관측은 처음 invocation 시각 대신 마지막 보호 입력 뒤 최종 UTC 검산 시각을 반환한다',()=>{
+ const source=readFileSync(new URL('../../../apps/connector/native/OwnershipEvidenceProcessOwnerSource.cs',import.meta.url),'utf8'),start=source.indexOf('private sealed class NormalProcessOwner:'),normal=source.slice(start),read=normal.slice(normal.indexOf('public NormalProcessOwnerObservation ReadCurrent('),normal.indexOf('public void Dispose()'));
+ assert(start>0&&read.length>0);assert.match(read,/new NormalProcessOwnerObservation\(afterInput,observedAt\)/);assert.doesNotMatch(read,/new NormalProcessOwnerObservation\(input\)/);
+ const first=read.indexOf('var input=startup.normalWorkerInput.ReadCurrent(cap)'),handle=read.indexOf('var first=OwnershipEvidenceHost.ReadRetainedHandleQuerySource'),thread=read.indexOf('var current=OwnershipEvidenceHost.ReadRetainedThreadQuerySource'),last=read.indexOf('var last=OwnershipEvidenceHost.ReadRetainedHandleQuerySource'),image=read.indexOf('var afterImage=NativeWorkerDeploymentSource.ReadTransferredNormalImage'),after=read.indexOf('var afterInput=startup.normalWorkerInput.ReadCurrent(cap)'),result=read.indexOf('new NormalProcessOwnerObservation(afterInput,observedAt)');
+ assert(first>=0&&first<handle&&handle<thread&&thread<last&&last<image&&image<after&&after<result);
+ const identity=read.indexOf('if(afterInput.ImageRefJson!=input.ImageRefJson'),sample=read.indexOf('DateTime observedAt=DateTime.UtcNow'),guard=read.indexOf('if(input.ExpiresAt!=expiresAt'),finalBudget=read.indexOf('Budget(observedAt,watch,cap)');
+ assert(after<identity&&identity<sample&&sample<guard&&guard<finalBudget&&finalBudget<result,'최종 동일성 검산 뒤 UTC 표본·timeline·같은 stopwatch 예산을 마쳐 반환');
+ assert.match(read,/originalObservation\.ObservedAt>result\.ObservedAt/);assert.match(read,/Budget\(observedAt,watch,cap\);var result=new NormalProcessOwnerObservation\(afterInput,observedAt\)/);
+ assert.match(read,/if\(observed.Kind!=DateTimeKind.Utc\)throw Unavailable\(\)/);
+ for(const value of ['from','expiresAt','input.ExpiresAt','afterInput.ExpiresAt','input.ObservedAt','imageCurrent.ObservedFrom','imageCurrent.ObservedAt','first.ObservedFrom','first.ObservedAt','current.ObservedFrom','current.ObservedAt','last.ObservedFrom','last.ObservedAt','afterImage.ObservedFrom','afterImage.ObservedAt','afterInput.ObservedAt'])assert(read.includes(value),value);
+ assert.doesNotMatch(read,/ToString\(|AddSeconds|AddMilliseconds|DateTime\.MaxValue/,'관측 내부 tick과 원 절대기한을 바꾸지 않는다');
+ assert.match(normal,/timeoutMs<1\|\|timeoutMs>2000/);assert.match(normal,/watch.ElapsedMilliseconds>=timeoutMs/);assert.match(normal,/now<lastWall\|\|now>=expiresAt\|\|lifetime.Elapsed.TotalMilliseconds>=10000/);
+ const observation=source.slice(source.indexOf('internal sealed class NormalProcessOwnerObservation'),source.indexOf('internal sealed class NormalProcessCleanupReceipt'));
+ assert.match(observation,/ObservedAt=observedAt/);assert.match(observation,/observedAt.Kind!=DateTimeKind.Utc\|\|observedAt<value.ObservedAt\|\|observedAt>=value.ExpiresAt/);for(const flag of ['OsOwnershipVerified','ProcessCreated','ThreadCreated','ProcessCreationAuthorized','PreparationAuthorized','ExecutionAuthorized','DispatchPerformed'])assert(observation.includes(flag+'{get{return false;}}'),flag);
+});
+
+test('소스 조건식 RAM: normal owner 관측의 tick 역행·초 경계·원 만료와 마지막 검산 순서를 검증한다',()=>{
+ const source=readFileSync(new URL('../../../apps/connector/native/OwnershipEvidenceProcessOwnerSource.cs',import.meta.url),'utf8'),normal=source.slice(source.indexOf('private sealed class NormalProcessOwner:')),read=normal.slice(normal.indexOf('public NormalProcessOwnerObservation ReadCurrent('),normal.indexOf('public void Dispose()'));
+ const match=/if\((input\.ExpiresAt!=expiresAt[\s\S]*?)\)throw Unavailable\(\);/.exec(read);assert(match,'생산 코드의 원 시각 관계 조건식 필요');
+ // C# 실행이 아니다. 생산 소스의 숫자 비교식만 JS BigInt(100ns tick)로 평가한다.
+ assert.match(read,/Budget\(from,watch,cap\);DateTime observedAt=DateTime.UtcNow/);
+ const expression=match[1]!;assert(/^[A-Za-z.\s!=<>&|]+$/.test(expression));
+ const invalid=new Function('input','imageCurrent','first','current','last','afterImage','afterInput','from','expiresAt','observedAt','return ('+expression+');') as (...args:any[])=>boolean;
+ const base=638000000000000000n,make=()=>({from:base,expiresAt:base+20000000n,observedAt:base+13n,input:{ObservedAt:base+1n,ExpiresAt:base+20000000n},imageCurrent:{ObservedFrom:base+2n,ObservedAt:base+3n},first:{ObservedFrom:base+4n,ObservedAt:base+5n},current:{ObservedFrom:base+6n,ObservedAt:base+7n},last:{ObservedFrom:base+8n,ObservedAt:base+9n},afterImage:{ObservedFrom:base+10n,ObservedAt:base+11n},afterInput:{ObservedAt:base+12n,ExpiresAt:base+20000000n}}),check=(v:ReturnType<typeof make>)=>invalid(v.input,v.imageCurrent,v.first,v.current,v.last,v.afterImage,v.afterInput,v.from,v.expiresAt,v.observedAt);
+ assert.equal(check(make()),false);const equal=make();equal.observedAt=base;for(const row of [equal.input,equal.imageCurrent,equal.first,equal.current,equal.last,equal.afterImage,equal.afterInput])for(const key of Object.keys(row))if(key.startsWith('Observed'))(row as any)[key]=base;assert.equal(check(equal),false,'같은 tick은 역행 아님');
+ for(const field of ['input.ObservedAt','imageCurrent.ObservedFrom','imageCurrent.ObservedAt','first.ObservedFrom','first.ObservedAt','current.ObservedFrom','current.ObservedAt','last.ObservedFrom','last.ObservedAt','afterImage.ObservedFrom','afterImage.ObservedAt','afterInput.ObservedAt']){const v=make(),[name,key]=field.split('.');(v as any)[name!][key!]=base-1n;assert.equal(check(v),true,field+' 1tick 역행');}
+ const before=make();before.observedAt=before.afterInput.ObservedAt=before.expiresAt-1n;assert.equal(check(before),false,'원 만료 1tick 전');before.observedAt=before.expiresAt;assert.equal(check(before),true,'만료 exact 거절');
+ const backwards=make();backwards.observedAt=backwards.afterInput.ObservedAt-1n;assert.equal(check(backwards),true,'최종 UTC가 마지막 입력보다 1tick 역행');
+ const changed=make();changed.afterInput.ExpiresAt++;assert.equal(check(changed),true,'원 기한 교체 거절');
+ const budget=/void Budget\(DateTime from,Stopwatch watch,int timeoutMs\)\{if\(([^]*?)\)throw Unavailable\(\);Remaining\(timeoutMs\);\}/.exec(normal);assert(budget,'원 owner Budget 검사 필요');
+ const budgetExpression=budget[1]!.replace('DateTime.UtcNow','now');assert(/^[A-Za-z.\s<>=|]+$/.test(budgetExpression));const late=new Function('now','from','watch','timeoutMs','return ('+budgetExpression+');');
+ assert.equal(late(base,base,{ElapsedMilliseconds:1999},2000),false);assert.equal(late(base,base,{ElapsedMilliseconds:2000},2000),true,'2초 exact 거절');assert.equal(late(base,base,{ElapsedMilliseconds:1},1),true,'더 짧은 cap도 연장0');assert.equal(late(base-1n,base,{ElapsedMilliseconds:0},2000),true,'최종 UTC 이후 wall 역행 거절');
+ const crossing=make();crossing.from=base+9999999n;crossing.input.ObservedAt=base+9999999n;let n=10000000n;for(const row of [crossing.imageCurrent,crossing.first,crossing.current,crossing.last,crossing.afterImage]){row.ObservedFrom=base+n++;row.ObservedAt=base+n++;}crossing.afterInput.ObservedAt=base+n++;crossing.observedAt=base+n;assert.equal(check(crossing),false,'초 경계에서 truncation으로 역행시키지 않는다');
+});

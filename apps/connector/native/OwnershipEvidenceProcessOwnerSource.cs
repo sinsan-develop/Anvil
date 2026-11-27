@@ -65,7 +65,7 @@ namespace Anvil.Native.OwnershipEvidence
             internal bool PreparationAuthorized{get{return false;}}
             internal bool ExecutionAuthorized{get{return false;}}
             internal bool DispatchPerformed{get{return false;}}
-            internal NormalProcessOwnerObservation(OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationObservation value){ImageRefJson=value.ImageRefJson;RequestRefJson=value.RequestRefJson;LocalClaimRefJson=value.LocalClaimRefJson;LocalProcessId=value.LocalProcessId;LocalProcessGeneration=value.LocalProcessGeneration;ExpiresAt=value.ExpiresAt;ObservedAt=value.ObservedAt;}
+            internal NormalProcessOwnerObservation(OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationObservation value,DateTime observedAt){if(value==null||observedAt.Kind!=DateTimeKind.Utc||observedAt<value.ObservedAt||observedAt>=value.ExpiresAt)throw Unavailable();ImageRefJson=value.ImageRefJson;RequestRefJson=value.RequestRefJson;LocalClaimRefJson=value.LocalClaimRefJson;LocalProcessId=value.LocalProcessId;LocalProcessGeneration=value.LocalProcessGeneration;ExpiresAt=value.ExpiresAt;ObservedAt=observedAt;}
         }
         internal sealed class NormalProcessCleanupReceipt
         {
@@ -293,7 +293,17 @@ namespace Anvil.Native.OwnershipEvidence
                                     if(first.Pid!=original.Pid||last.Pid!=original.Pid||current.ProcessId!=original.Pid||current.ThreadId!=original.Tid||first.StartTicks!=last.StartTicks||last.StartTicks!=current.ProcessStartTicks||first.ObservedImagePathDigest!=expectedPathDigest||last.ObservedImagePathDigest!=expectedPathDigest)throw Unavailable();
                                     var afterImage=NativeWorkerDeploymentSource.ReadTransferredNormalImage(image,Math.Min(cap,1000));var afterInput=startup.normalWorkerInput.ReadCurrent(cap);
                                     if(afterInput.ImageRefJson!=input.ImageRefJson||afterInput.RequestRefJson!=input.RequestRefJson||afterInput.LocalClaimRefJson!=input.LocalClaimRefJson||afterInput.LocalProcessId!=input.LocalProcessId||afterInput.LocalProcessGeneration!=input.LocalProcessGeneration||afterImage.AssociationRefJson!=imageCurrent.AssociationRefJson)throw Unavailable();
-                                    Budget(from,watch,cap);var result=new NormalProcessOwnerObservation(input);if(originalObservation==null)originalObservation=result;else if(originalObservation.ImageRefJson!=result.ImageRefJson||originalObservation.RequestRefJson!=result.RequestRefJson||originalObservation.LocalClaimRefJson!=result.LocalClaimRefJson||originalObservation.LocalProcessId!=result.LocalProcessId||originalObservation.LocalProcessGeneration!=result.LocalProcessGeneration||originalObservation.ExpiresAt!=result.ExpiresAt)throw Unavailable();return result;
+                                    Budget(from,watch,cap);DateTime observedAt=DateTime.UtcNow;
+                                    // 입력 샘플과 원 Job/thread/image 판독을 모두 마친 뒤의 같은 owner UTC다. OS 소유/미재개 증명은 아니다.
+                                    foreach(DateTime observed in new[]{from,expiresAt,input.ExpiresAt,afterInput.ExpiresAt,input.ObservedAt,imageCurrent.ObservedFrom,imageCurrent.ObservedAt,first.ObservedFrom,first.ObservedAt,current.ObservedFrom,current.ObservedAt,last.ObservedFrom,last.ObservedAt,afterImage.ObservedFrom,afterImage.ObservedAt,afterInput.ObservedAt,observedAt})if(observed.Kind!=DateTimeKind.Utc)throw Unavailable();
+                                    if(input.ExpiresAt!=expiresAt||afterInput.ExpiresAt!=expiresAt||input.ObservedAt<from
+                                     ||imageCurrent.ObservedFrom<input.ObservedAt||imageCurrent.ObservedAt<imageCurrent.ObservedFrom
+                                     ||first.ObservedFrom<imageCurrent.ObservedAt||first.ObservedAt<first.ObservedFrom
+                                     ||current.ObservedFrom<first.ObservedAt||current.ObservedAt<current.ObservedFrom
+                                     ||last.ObservedFrom<current.ObservedAt||last.ObservedAt<last.ObservedFrom
+                                     ||afterImage.ObservedFrom<last.ObservedAt||afterImage.ObservedAt<afterImage.ObservedFrom
+                                     ||afterInput.ObservedAt<afterImage.ObservedAt||observedAt<afterInput.ObservedAt||observedAt>=expiresAt)throw Unavailable();
+                                    Budget(observedAt,watch,cap);var result=new NormalProcessOwnerObservation(afterInput,observedAt);if(originalObservation==null)originalObservation=result;else if(originalObservation.ImageRefJson!=result.ImageRefJson||originalObservation.RequestRefJson!=result.RequestRefJson||originalObservation.LocalClaimRefJson!=result.LocalClaimRefJson||originalObservation.LocalProcessId!=result.LocalProcessId||originalObservation.LocalProcessGeneration!=result.LocalProcessGeneration||originalObservation.ExpiresAt!=result.ExpiresAt||originalObservation.ObservedAt>result.ObservedAt)throw Unavailable();return result;
                                 }
                             }
                             catch{throw Unavailable();}
