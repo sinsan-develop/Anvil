@@ -1,3 +1,5 @@
+import type {DocumentSession} from '../design-trace/editor-api.ts';
+import {StopRequestPages} from './StoredStopRequests.tsx';
 import {ObservationJournalPages} from './ObservationJournalPages.tsx';
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
@@ -29,8 +31,8 @@ function StoredResumeEvidence({value}:{value:ResumeEvidence}){
   <p>실제 프로세스 정지·파일 상태·쓰기 소유와 권한 회수 미확인 · 재개 불가</p>
  </section>;
 }
-export function CheckpointJournalComparison({client,file,stored,result,onUnavailable,isSourceCurrent,sourceMode}:{client:ApiClient;file:CheckpointFileInspection|null;stored:CheckpointStoredInspection|null;result:SubmittedResultView;onUnavailable:(code:string)=>void;isSourceCurrent?:()=>boolean;sourceMode?:'STORED_ONLY'}){
- const binding=ordered([result.snapshot.scope,result.ref,result.snapshot.manifest.checkpointRef,file?.prepared.recordFile.contentHash??null,stored?.projectId??null,stored?.ref??null]),
+export function CheckpointJournalComparison({client,file,stored,result,session,onUnavailable,isSourceCurrent,sourceMode}:{client:ApiClient;file:CheckpointFileInspection|null;stored:CheckpointStoredInspection|null;result:SubmittedResultView;session?:DocumentSession;onUnavailable:(code:string)=>void;isSourceCurrent?:()=>boolean;sourceMode?:'STORED_ONLY'}){
+ const binding=ordered([result.snapshot.scope,result.ref,result.snapshot.manifest.checkpointRef,file?.prepared.recordFile.contentHash??null,stored?.projectId??null,stored?.ref??null,session?.user.id??null,session?.clientId??null,session?.csrfToken??null]),
   generation=useRef(0),resumeGeneration=useRef(0),alive=useRef(false),unavailable=useRef(onUnavailable),owner=useRef<ComparisonOwner|null>(null);unavailable.current=onUnavailable;
  if(!owner.current||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.binding!==binding||
     owner.current.file!==file||owner.current.stored!==stored||owner.current.result!==result||owner.current.route!==globalThis.location?.hash)owner.current={client,transport:client.transport,binding,file,stored,result,route:globalThis.location?.hash};
@@ -91,6 +93,10 @@ export function CheckpointJournalComparison({client,file,stored,result,onUnavail
   {shownResume?<button type="button" onClick={closeResume}>재개 전 중지 기록 닫기</button>:null}
   {shownResume?.pending?<p role="status">선택한 실행의 보관 중지 기록 조회 중</p>:null}
   {shownResume?.error?<p role="alert">{shownResume.error} · 보관 중지 기록 미확인</p>:null}
-  {shownResume?.data?<><StoredResumeEvidence value={shownResume.data}/>{shownResume.data.observations.hasMore&&pageCurrent()?<ObservationJournalPages key={comparisonTicket+':'+resumeTicket} client={client} result={result} stopOnly isSourceCurrent={pageCurrent} onOpen={()=>{}} onUnavailable={code=>{if(pageCurrent())unavailable.current(code);}}/>:null}</>:null}
+  {shownResume?.data?<>
+   <StoredResumeEvidence value={shownResume.data}/>
+   {shownResume.data.stopRequests.hasMore&&pageCurrent()?(session?<StopRequestPages key={'requests:'+comparisonTicket+':'+resumeTicket} client={client} result={result} session={session} isCurrent={pageCurrent} onUnavailable={code=>{if(pageCurrent())unavailable.current(code);}}/>:<p>현재 조회자 문맥 미확인 · 과거 중지 요청 페이지 조회 불가</p>):null}
+   {shownResume.data.observations.hasMore&&pageCurrent()?<ObservationJournalPages key={comparisonTicket+':'+resumeTicket} client={client} result={result} stopOnly isSourceCurrent={pageCurrent} onOpen={()=>{}} onUnavailable={code=>{if(pageCurrent())unavailable.current(code);}}/>:null}
+  </>:null}
  </div>:null}</section>;
 }

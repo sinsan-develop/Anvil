@@ -399,10 +399,19 @@ function checkpointComparisonFixture(){
  return{stored,result,journal};
 }
 
-async function mountCheckpointComparison(reply:'OK'|'HOLD',paged=false){
+function comparisonStopPages(result:ReturnType<typeof resultFixture>['entry']){
+ const base=stopHistoryFor(result),rows=Array.from({length:41},(_,i)=>({...base.items[0]!,ref:{...base.items[0]!.ref,id:String(41-i).padStart(8,'0')+'-1111-4111-8111-111111111111'},reason:'원 실행 중지 의도 '+(41-i)})),upper={ref:rows[0]!.ref,requestedAt:rows[0]!.requestedAt},issuedAt=base.observedAt,expiresAt=new Date(Date.parse(issuedAt)+1800000).toISOString();
+ const token=(before:unknown)=>Buffer.from(canonicalJson({schemaVersion:1,purpose:'RESULT_STOP_REQUEST_PAGE_V1',bindingHash:hash([result.snapshot.scope,result.ref]),snapshotUpper:upper,snapshotMaxAuditSequence:41,before,issuedAt,expiresAt})).toString('base64url')+'.'+'b'.repeat(64);
+ const {contentHash:_,...raw}=base,summaryBody={...raw,items:rows.slice(0,20),hasMore:true},summary={...summaryBody,contentHash:hash(summaryBody)};
+ const page=(cursor:string|null)=>{const before=cursor?JSON.parse(Buffer.from(cursor.split('.')[0]!,'base64url').toString()).before:null,items=rows.filter(r=>!before||r.requestedAt<before.requestedAt||r.requestedAt===before.requestedAt&&r.ref.id<before.id).slice(0,20),hasMore=items.at(-1)!==rows.at(-1),last=items.at(-1),body={...raw,items,hasMore,pageCursor:cursor??token(null),nextCursor:hasMore?token({requestedAt:last!.requestedAt,id:last!.ref.id}):null,snapshotUpper:upper,snapshotMaxAuditSequence:41,before,cursorIssuedAt:issuedAt,cursorExpiresAt:expiresAt};return{...body,contentHash:hash(body)};};
+ return{summary,page,rows};
+}
+
+async function mountCheckpointComparison(reply:'OK'|'HOLD',paged=false,stopPaged=false,withSession=true){
  const f=checkpointComparisonFixture(),lost:string[]=[],requests:string[]=[],container:MemoryNode=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
  let release:((value:Response)=>void)|null=null,result=f.result,stored=f.stored,key='original',show=true,holdPath:string|null=null,stopStatus=200;
- const stop=stopHistoryFor(f.result);
+ const stopPages=comparisonStopPages(f.result),stop=stopPaged?stopPages.summary:stopHistoryFor(f.result);
+ let session=withSession?{user:{id:pid},clientId:pid,csrfToken:'C'.repeat(43)}:undefined;
  const rows=Array.from({length:41},(_,i)=>{const row=structuredClone(f.journal.items[0]!);row.ref.id=String(41-i).padStart(8,'0')+'-1111-4111-8111-111111111111';row.snapshot.event.eventId=row.ref.id;row.snapshot.event.sequence=41-i;row.snapshot.event.type=i===20?'STOPPED':'HEARTBEAT';row.ref.contentHash=hash(row.snapshot);return row;});
  if(paged){Object.assign(f.journal,{items:rows.slice(0,20),storedCount:41,hasMore:true});Object.assign(f.journal.ack.snapshot,{highestContiguous:41,maxSequence:41,gaps:[],storedCount:41});f.journal.ack.ref.contentHash=hash(f.journal.ack.snapshot);}
  const page=(cursor:string|null)=>{
@@ -416,22 +425,24 @@ async function mountCheckpointComparison(reply:'OK'|'HOLD',paged=false){
   if(reply==='HOLD'||holdPath===path)return new Promise<Response>(resolve=>{release=resolve;});
   if(path==='observation-journal')return Response.json(f.journal);
   if(path.startsWith('observation-pages'))return Response.json(page(new URL(String(url),'https://anvil.invalid').searchParams.get('cursor')));
+  if(path.startsWith('stop-request-pages'))return Response.json(stopPages.page(new URL(String(url),'https://anvil.invalid').searchParams.get('cursor')));
   assert.equal(path,'stop-requests');
   return stopStatus===200?Response.json(stop):Response.json({code:stopStatus===401?'AUTH_REQUIRED':stopStatus===403?'PROJECT_OPERATION_DENIED':'NOT_FOUND'},{status:stopStatus});
  },client=new ui.ApiClient(transport);
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((child:MemoryNode)=>nodes(child))];
- function Host(){return show?ui.React.createElement(ui.CheckpointJournalComparison,{key,client,file:null,stored,result,isSourceCurrent:()=>sourceCurrent,onUnavailable:(code:string)=>lost.push(code)}):null;}
+ function Host(){return show?ui.React.createElement(ui.CheckpointJournalComparison,{key,client,file:null,stored,result,session,isSourceCurrent:()=>sourceCurrent,onUnavailable:(code:string)=>lost.push(code)}):null;}
  async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(Host)));}
  async function flush(){await ui.React.act(async()=>{await new Promise(resolve=>setImmediate(resolve));});}
  async function click(label='서버 기록과 보관 ACK 대조'){const buttons=nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent===label);assert.equal(buttons.length,1,label);assert(!buttons[0]!.disabled,label);await ui.React.act(async()=>buttons[0]!.dispatchEvent({type:'click',button:0,bubbles:true}));}
  async function waitFor(check:()=>boolean){const until=Date.now()+2000;while(!check()&&Date.now()<until)await flush();assert(check(),container.textContent);}
- await render();return{...f,client,container,lost,requests,page,nodes,calls:()=>requests.length,click,render,flush,waitFor,held:()=>!!release,
+ await render();return{...f,client,container,lost,requests,page,stopPages,nodes,calls:()=>requests.length,click,render,flush,waitFor,held:()=>!!release,
   hold(path:string){holdPath=path;},stopStatus(status:number){stopStatus=status;},async leave(mode:string){
    if(mode==='UNMOUNT')show=false;
    if(mode==='CALLER')sourceCurrent=false;
    if(mode==='OWNER')key='changed-owner';
    if(mode==='RESULT')result={...f.result,ref:{...f.result.ref,version:2}};
    if(mode==='CHECKPOINT')stored=structuredClone(f.stored);
+   if(mode==='SESSION')session={...session!,csrfToken:'D'.repeat(43)};
    await render();
   },finish(value:Response){assert(release);const send=release;release=null;return ui.React.act(async()=>send!(value));},async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
@@ -897,4 +908,116 @@ test('STOP pager 성립 전 비교·중지 GET의 raw route 이탈은 늦은200/
    assert(!f.container.textContent.includes('STOP 관측 페이지 탐색'));assert(!f.container.textContent.includes('사용자가 중지 요청'));assert.deepEqual(f.lost,[]);assert.equal(f.calls(),calls,'pager 성립 전 이탈의 후속GET0');
   }finally{if(f.held())await f.finish(Response.json({}));await f.close();}
  }}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+
+
+test('재개 전 정확 대조 뒤 STOP 요청 21번째는 독립 고정 페이지에서만 명시 조회한다',{timeout:15000},async()=>{
+ const f=await mountCheckpointComparison('OK',true,true);
+ try{
+  assert.equal(f.calls(),0);await f.click();await f.waitFor(()=>f.container.textContent.includes('재개 전 중지 기록 대조'));await f.click('재개 전 중지 기록 대조');await f.waitFor(()=>f.container.textContent.includes('원 실행 중지 의도 41'));
+  assert.deepEqual(f.requests,['observation-journal','observation-journal','stop-requests']);
+  assert(f.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='과거 중지 요청 페이지 탐색'),'대조 뒤 과거 중지 요청 조회 연결 없음');
+  await f.click('과거 중지 요청 페이지 탐색');await f.waitFor(()=>f.container.textContent.includes('보호 조회 페이지 1'));assert.equal(f.requests.at(-1),'stop-request-pages');
+  await f.click('더 이전 중지 요청 20건');await f.waitFor(()=>f.container.textContent.includes('원 실행 중지 의도 21'));assert(f.requests.at(-1)!.startsWith('stop-request-pages?cursor='));assert.equal(f.requests.filter(p=>p.startsWith('observation-pages')).length,0);
+  assert(f.container.textContent.includes('현재 실행 허가·실제 전달·중지·쓰기 회수: 미확인'));assert(f.container.textContent.includes('재개 불가'));
+  await f.click('STOP 관측 페이지 탐색');await f.waitFor(()=>f.container.textContent.includes('이 페이지에 STOP 관측 없음'));assert(f.container.textContent.includes('보호 조회 페이지 2'),'관측 snapshot이 요청 페이지를 교체하지 않음');
+  await f.click('중지 요청 페이지 닫기');assert(!f.container.textContent.includes('원 실행 중지 의도 21'));assert(f.container.textContent.includes('이 페이지에 STOP 관측 없음'));assert.deepEqual(f.lost,[]);
+ }finally{await f.close();}
+});
+
+
+test('중지 요청 뒤 페이지는 session 부재·교체·닫기·새 대조·주소 이탈 뒤 늦은200/401을 폐기한다',{timeout:15000},async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+pid+'/transfers'};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{
+  const absent=await mountCheckpointComparison('OK',false,true,false);try{await absent.click();await absent.waitFor(()=>absent.container.textContent.includes('재개 전 중지 기록 대조'));await absent.click('재개 전 중지 기록 대조');await absent.waitFor(()=>absent.container.textContent.includes('현재 조회자 문맥 미확인'));assert(!absent.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='과거 중지 요청 페이지 탐색'));assert.equal(absent.requests.filter(p=>p.startsWith('stop-request-pages')).length,0);}finally{await absent.close();}
+  for(const mode of ['CURRENT_403','CURRENT_401','CLOSE_PAGE','CLOSE_RESUME','COMPARE','RECOMPARE','CALLER','SESSION','CHECKPOINT','RESULT','OWNER','UNMOUNT','TRANSPORT','ROUTE','ROUTE_ABA'])for(const status of mode==='CURRENT_403'?[403]:mode==='CURRENT_401'?[401]:[200,401]){
+   location.hash='#/projects/'+pid+'/transfers';const f=await mountCheckpointComparison('OK',false,true);
+   try{
+    await f.click();await f.waitFor(()=>f.container.textContent.includes('재개 전 중지 기록 대조'));await f.click('재개 전 중지 기록 대조');await f.waitFor(()=>f.nodes().some(n=>n.textContent==='과거 중지 요청 페이지 탐색'));await f.click('과거 중지 요청 페이지 탐색');await f.waitFor(()=>f.container.textContent.includes('보호 조회 페이지 1'));
+    const next=f.stopPages.page(null).nextCursor!;
+    // URLSearchParams 직렬화 결과 그대로 고정해 다른 cursor나 snapshot 재발급을 허용하지 않는다.
+    f.hold('stop-request-pages?'+new URLSearchParams({cursor:next}));await f.click('더 이전 중지 요청 20건');await f.waitFor(f.held);
+    const stale=f.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='중지 요청 페이지 새 목록 조회')!,oldClick=(stale as any)[Object.keys(stale).find(k=>k.startsWith('__reactProps'))!].onClick;
+    if(mode==='CLOSE_PAGE')await f.click('중지 요청 페이지 닫기');if(mode==='CLOSE_RESUME')await f.click('재개 전 중지 기록 닫기');if(mode==='COMPARE')await f.click();if(mode==='RECOMPARE'){await f.click('재개 전 중지 기록 대조');await f.waitFor(()=>f.container.textContent.includes('과거 중지 요청 페이지 탐색'));}
+    if(['CALLER','SESSION','CHECKPOINT','RESULT','OWNER','UNMOUNT'].includes(mode))await f.leave(mode);
+    if(mode==='TRANSPORT'){f.client.transport=async()=>assert.fail('교체 포트 호출0');await f.render();}
+    if(mode==='ROUTE')location.hash='#/projects/'+pid+'/workspace';if(mode==='ROUTE_ABA'){location.hash='#/projects/'+pid+'/workspace';await f.render();location.hash='#/projects/'+pid+'/transfers';await f.render();}
+    const afterChange=f.calls();await f.finish(status===200?Response.json(f.stopPages.page(next)):Response.json({code:status===401?'AUTH_REQUIRED':'PROJECT_OPERATION_DENIED'},{status}));await f.flush();
+    assert(!f.container.textContent.includes('원 실행 중지 의도 21'),mode);assert.equal(f.calls(),afterChange,mode+' 자동/fallback GET0');
+    if(mode.startsWith('CURRENT_')){assert.deepEqual(f.lost,[status===401?'AUTH_REQUIRED':'PROJECT_OPERATION_DENIED']);assert(f.container.textContent.includes('페이지 미확인'));}
+    else{assert.deepEqual(f.lost,[],mode);assert(!f.container.textContent.includes('AUTH_REQUIRED'),mode);}
+    if(mode==='RECOMPARE'){await ui.React.act(async()=>oldClick());assert.equal(f.calls(),afterChange,'옛 세대 callback GET0');await f.click('과거 중지 요청 페이지 탐색');await f.waitFor(()=>f.container.textContent.includes('보호 조회 페이지 1'));assert.equal(f.requests.at(-1),'stop-request-pages');}
+   }finally{if(f.held())await f.finish(Response.json({}));await f.close();}
+  }
+ }finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+
+
+async function mountTransferStopComparison(){
+ const t=transferFixture(),c=checkpointFixture(),r=resultFixture(),session={user:{id:pid},clientId:pid,csrfToken:'C'.repeat(43)};
+ c.input.state.assignmentRef=t.confirmed.ref;c.input.state.currentPosition.taskRef=t.confirmed.snapshot.definition.taskRef;c.input.state.baselineRefs=t.confirmed.snapshot.definition.baselineRefs;c.input.state.executionRefs=[r.entry.snapshot.scope.executionRef];
+ const prepared=prepareCheckpointDraft(t.confirmed,c.input),record=createCheckpointRecord(prepared,c.by,c.at),ref={id:aid,version:1,contentHash:hash(record.snapshot)},stored={projectId:pid,ref,...record,serverSequence:1,observedAt:c.at};
+ r.entry.snapshot.scope.assignmentRef=t.confirmed.ref;r.entry.snapshot.manifest.assignmentRef=t.confirmed.ref;(r.entry.snapshot.manifest as any).checkpointRef=ref;r.entry.snapshot.manifestHash=hash(r.entry.snapshot.manifest);r.entry.ref.contentHash=hash(r.entry.snapshot);
+ Object.assign(r.item,{ref:r.entry.ref,manifestRef:{...r.entry.ref,contentHash:r.entry.snapshot.manifestHash}});const journal=observationJournalFor(r.entry),stops=comparisonStopPages(r.entry),calls:string[]=[],lost:string[]=[];
+ let holdPath:string|null=null,release:((value:Response)=>void)|null=null;
+ const client=new ui.ApiClient(async(url:string,init:RequestInit)=>{assert.equal(init?.method,'GET');const u=new URL(String(url),'https://anvil.invalid'),path=u.pathname.replace('/api/v1/projects/'+pid+'/','');calls.push(path+u.search);if(path===holdPath)return new Promise<Response>(resolve=>release=resolve);
+  if(path==='checkpoints')return Response.json({items:[{ref,assignmentRef:t.confirmed.ref,previousRef:null,recordedAt:c.at,serverSequence:1}],hasMore:false,nextCursor:null,observedAt:c.at});
+  if(path==='checkpoints/'+ref.id)return Response.json(stored);
+  if(path==='assignments/'+aid+'/versions/1/result-pages')return Response.json({...r.page,assignmentRef:t.confirmed.ref,items:[r.item],nextCursor:null,selectionState:'NOT_SELECTED'});
+  if(path==='results/'+r.entry.ref.id)return Response.json(r.entry);
+  if(path.endsWith('/observation-journal'))return Response.json(journal);
+  if(path.endsWith('/stop-requests'))return Response.json(stops.summary);
+  if(path.endsWith('/stop-request-pages'))return Response.json(stops.page(u.searchParams.get('cursor')));
+  assert(Object.hasOwn(t.responses,path),path);return Response.json(t.responses[path]);
+ });
+ const box=document.createElement('div');document.body.appendChild(box);const root=ui.createRoot(box),nodes=(n:MemoryNode=box):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
+ const wait=async(check:()=>boolean)=>{const until=Date.now()+2000;while(!check()&&Date.now()<until)await ui.React.act(async()=>new Promise(r=>setImmediate(r)));assert(check(),box.textContent);};
+ const click=async(label:string)=>{const b=nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent===label);assert.equal(b.length,1,label);assert(!b[0]!.disabled);await ui.React.act(async()=>b[0]!.dispatchEvent({type:'click',button:0,bubbles:true}));};
+ await ui.React.act(async()=>root.render(ui.React.createElement(ui.TransferPreparationPage,{client,projectId:pid,assignmentRef:t.draft.ref,session,onAuthenticationLost:()=>lost.push('AUTH_REQUIRED')})));
+ return{box,nodes,wait,click,calls,lost,ref,r,stored,hold(path:string){holdPath=path;},held:()=>!!release,async finish(value:Response){assert(release);const send=release;release=null;holdPath=null;await ui.React.act(async()=>send(value));},async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(box);}};
+}
+
+test('실제 UI09 이전 기록→정확 제출→보관 대조에서 같은 실행의 21번째 중지 요청을 별도 읽는다',{timeout:15000},async()=>{
+ const f=await mountTransferStopComparison(),{box,nodes,wait,click,calls,lost,ref,r}=f;
+ try{
+  assert.equal(calls.length,0);
+  await click('기존 인계 기록 조회');await wait(()=>box.textContent.includes('이전 작업현황 목록 조회'));await click('이전 작업현황 목록 조회');await wait(()=>box.textContent.includes('작업현황 원문 '+ref.id));await click('작업현황 원문 '+ref.id);await wait(()=>box.textContent.includes('체크포인트의 제출 결과 목록 조회'));await click('체크포인트의 제출 결과 목록 조회');await wait(()=>box.textContent.includes('제출 결과 원문 대조 '+r.entry.ref.id));await click('제출 결과 원문 대조 '+r.entry.ref.id);await wait(()=>box.textContent.includes('서버 기록과 보관 ACK 대조'));
+  await click('서버 기록과 보관 ACK 대조');await wait(()=>box.textContent.includes('재개 전 중지 기록 대조'));await click('재개 전 중지 기록 대조');await wait(()=>nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='과거 중지 요청 페이지 탐색'));assert.equal(calls.filter(p=>p.includes('stop-request-pages')).length,0);
+  await click('과거 중지 요청 페이지 탐색');await wait(()=>box.textContent.includes('보호 조회 페이지 1'));await click('더 이전 중지 요청 20건');await wait(()=>box.textContent.includes('원 실행 중지 의도 21'));
+  assert(calls.at(-1)!.startsWith('results/'+r.entry.ref.id+'/stop-request-pages?cursor='));assert(box.textContent.includes('현재 실행 허가·실제 전달·중지·쓰기 회수: 미확인'));assert(box.textContent.includes('재개 불가'));assert.deepEqual(lost,[]);
+ }finally{await f.close();}
+});
+
+
+test('대조 뒤 STOP 요청 페이지의 교차 실행·봉인 손상은 기존 보호 decoder에서 거절한다',{timeout:15000},async()=>{
+ for(const mode of ['SCOPE','HASH']){
+  const f=await mountCheckpointComparison('OK',false,true);
+  try{
+   await f.click();await f.waitFor(()=>f.container.textContent.includes('재개 전 중지 기록 대조'));await f.click('재개 전 중지 기록 대조');await f.waitFor(()=>f.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='과거 중지 요청 페이지 탐색'));
+   f.hold('stop-request-pages');await f.click('과거 중지 요청 페이지 탐색');await f.waitFor(f.held);const page=f.stopPages.page(null);
+   if(mode==='SCOPE'){page.executionRef={...page.executionRef,version:2};const {contentHash:_,...body}=page;page.contentHash=hash(body);}else page.contentHash='0'.repeat(64);
+   await f.finish(Response.json(page));await f.waitFor(()=>f.container.textContent.includes('RESULT_STOP_HISTORY_RESPONSE_INVALID'));assert(!f.container.textContent.includes('보호 조회 페이지 1'));assert.deepEqual(f.lost,[]);assert.equal(f.requests.filter(p=>p.startsWith('stop-request-pages')).length,1);
+  }finally{if(f.held())await f.finish(Response.json({}));await f.close();}
+ }
+});
+
+
+test('UI09 원 체크포인트·제출 대기에서 전달된 hashchange ABA는 늦은200/401을 버리고 명시 재선택만 연다',{timeout:15000},async()=>{
+ const names=['location','addEventListener','removeEventListener'] as const,descriptors=new Map(names.map(n=>[n,Object.getOwnPropertyDescriptor(globalThis,n)])),listeners=new Set<(event:any)=>void>(),location={hash:'#/projects/'+pid+'/transfers'},other='#/projects/'+pid+'/workspace';
+ Object.defineProperties(globalThis,{location:{value:location,configurable:true},addEventListener:{value:(name:string,fn:any)=>{assert.equal(name,'hashchange');listeners.add(fn);},configurable:true},removeEventListener:{value:(name:string,fn:any)=>{assert.equal(name,'hashchange');listeners.delete(fn);},configurable:true}});
+ try{for(const stage of ['CHECKPOINT','RESULT_PAGE','RESULT'])for(const status of [200,401]){
+  const f=await mountTransferStopComparison(),{box,click,wait,calls,lost,ref,r}=f;
+  try{
+   await click('기존 인계 기록 조회');await wait(()=>box.textContent.includes('이전 작업현황 목록 조회'));await click('이전 작업현황 목록 조회');await wait(()=>box.textContent.includes('작업현황 원문 '+ref.id));
+   if(stage==='CHECKPOINT')f.hold('checkpoints/'+ref.id);await click('작업현황 원문 '+ref.id);
+   if(stage!=='CHECKPOINT'){await wait(()=>box.textContent.includes('체크포인트의 제출 결과 목록 조회'));if(stage==='RESULT_PAGE')f.hold('assignments/'+aid+'/versions/1/result-pages');await click('체크포인트의 제출 결과 목록 조회');}
+   if(stage==='RESULT'){await wait(()=>box.textContent.includes('제출 결과 원문 대조 '+r.entry.ref.id));f.hold('results/'+r.entry.ref.id);await click('제출 결과 원문 대조 '+r.entry.ref.id);}
+   await wait(f.held);const count=calls.length;
+   // React 렌더를 사이에 허용하지 않고 실제 전달된 두 이벤트의 old/newURL을 검산한다.
+   await ui.React.act(async()=>{location.hash=other;location.hash='#/projects/'+pid+'/transfers';for(const event of [{oldURL:'https://anvil.invalid'+location.hash,newURL:'https://anvil.invalid'+other},{oldURL:'https://anvil.invalid'+other,newURL:'https://anvil.invalid'+location.hash}])for(const fn of [...listeners])fn(event);});
+   const value=stage==='CHECKPOINT'?f.stored:stage==='RESULT'?r.entry:{...r.page,assignmentRef:r.entry.snapshot.scope.assignmentRef,items:[r.item],nextCursor:null,selectionState:'NOT_SELECTED'};
+   await f.finish(status===200?Response.json(value):Response.json({code:'AUTH_REQUIRED'},{status:401}));await wait(()=>!box.textContent.includes('정확 확정 임무의 보관 기록 대조 중')&&!box.textContent.includes('보관 제출 결과 조회 중'));assert.deepEqual(lost,[],stage);assert.equal(calls.length,count,'늦은 결과 후속 GET0');assert(!box.textContent.includes('이전 작업현황 고정 원문'));assert(!box.textContent.includes('체크포인트의 제출 결과 목록 조회'));assert(!box.textContent.includes('서버 기록과 보관 ACK 대조'));assert(!box.textContent.includes('AUTH_REQUIRED'));
+   await click('이전 작업현황 목록 조회');await wait(()=>box.textContent.includes('작업현황 원문 '+ref.id));await click('작업현황 원문 '+ref.id);await wait(()=>box.textContent.includes('체크포인트의 제출 결과 목록 조회'));await click('체크포인트의 제출 결과 목록 조회');await wait(()=>box.textContent.includes('제출 결과 원문 대조 '+r.entry.ref.id));await click('제출 결과 원문 대조 '+r.entry.ref.id);await wait(()=>box.textContent.includes('서버 기록과 보관 ACK 대조'));assert.deepEqual(lost,[],'새 명시 선택은 정상');
+  }finally{if(f.held())await f.finish(Response.json({}));await f.close();assert.equal(listeners.size,0,'outer/비교 listener cleanup');}
+ }}finally{for(const name of names){const prior=descriptors.get(name);if(prior)Object.defineProperty(globalThis,name,prior);else Reflect.deleteProperty(globalThis,name);}}
 });

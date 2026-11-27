@@ -17,14 +17,14 @@ export function StoredStopRequests({client,result,session,onUnavailable,isCurren
 type StopPosition={cursor:string;before:StopRequestPageView['before']};
 type StopAnchor=Pick<StopRequestPageView,'snapshotUpper'|'snapshotMaxAuditSequence'|'cursorIssuedAt'|'cursorExpiresAt'>&{deadline:number};
 /** 기존 요약과 분리된 명시 보호 탐색. 성공한 이동만 확정한다. */
-function StopRequestPages({client,result,session,onUnavailable,isCurrent}:{client:ApiClient;result:SubmittedResultView;session:DocumentSession;onUnavailable:(code:string)=>void;isCurrent:()=>boolean}){
+export function StopRequestPages({client,result,session,onUnavailable,isCurrent}:{client:ApiClient;result:SubmittedResultView;session:DocumentSession;onUnavailable:(code:string)=>void;isCurrent:()=>boolean}){
  const identity=ordered({scope:result.snapshot.scope,resultRef:result.ref,userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken}),scope=useRef({identity,client,transport:client.transport});
  if(scope.current.identity!==identity||scope.current.client!==client||scope.current.transport!==client.transport)scope.current={identity,client,transport:client.transport};
  const owner=scope.current,sequence=useRef(0),alive=useRef(true),flight=useRef(false),committed=useRef<{positions:StopPosition[];index:number;anchor:StopAnchor}|null>(null),requested=useRef<{cursor:string|null;index:number;reset:boolean}|null>(null);
  const [loaded,setLoaded]=useState<{owner:object;page:StopRequestPageView;index:number}|null>(null),[pending,setPending]=useState(false),[error,setError]=useState<{owner:object;code:string}|null>(null),[opened,setOpened]=useState(false);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;sequence.current++;};},[]);
  useEffect(()=>{sequence.current++;flight.current=false;committed.current=null;requested.current=null;setLoaded(null);setPending(false);setError(null);setOpened(false);},[owner]);
- const shown=loaded?.owner===owner?loaded:null,failure=error?.owner===owner?error.code:null;
+ const visible=alive.current&&scope.current===owner&&client.transport===owner.transport&&isCurrent(),shown=visible&&loaded?.owner===owner?loaded:null,failure=visible&&error?.owner===owner?error.code:null;
  const current=(ticket:number)=>alive.current&&scope.current===owner&&client.transport===owner.transport&&ticket===sequence.current&&isCurrent();
  function expire(){sequence.current++;flight.current=false;committed.current=null;requested.current=null;setLoaded(null);setPending(false);setError({owner,code:'CURSOR_INVALID'});}
  useEffect(()=>{if(!shown)return;const deadline=committed.current?.anchor.deadline;if(deadline===undefined)return;const timer=setTimeout(()=>{if(isCurrent()&&scope.current===owner&&client.transport===owner.transport)expire();},Math.max(0,deadline-performance.now()));return()=>clearTimeout(timer);},[shown,owner]);
@@ -42,8 +42,8 @@ function StopRequestPages({client,result,session,onUnavailable,isCurrent}:{clien
  const page=shown?.page;
  return <section aria-label="과거 중지 요청 페이지"><h5>과거 중지 요청 페이지</h5><p>원제출의 고정 탐색 범위입니다. 요청 보관은 실제 중지·전달·쓰기 회수 확인이 아닙니다.</p>
  <button type="button" disabled={pending} onClick={()=>void load(null,0,true)}>{opened?'중지 요청 페이지 새 목록 조회':'과거 중지 요청 페이지 탐색'}</button>
- {opened?<button type="button" onClick={()=>{sequence.current++;flight.current=false;committed.current=null;requested.current=null;setLoaded(null);setPending(false);setError(null);setOpened(false);}}>중지 요청 페이지 닫기</button>:null}
- {pending?<p role="status">중지 요청 페이지 조회 중 · 이전 원문 숨김</p>:null}
+ {visible&&opened?<button type="button" onClick={()=>{sequence.current++;flight.current=false;committed.current=null;requested.current=null;setLoaded(null);setPending(false);setError(null);setOpened(false);}}>중지 요청 페이지 닫기</button>:null}
+ {visible&&pending?<p role="status">중지 요청 페이지 조회 중 · 이전 원문 숨김</p>:null}
  {failure?<><p role="alert">{failure} · 페이지 미확인. 없음·안전으로 추정하지 않습니다.</p>{requested.current?<button type="button" disabled={pending} onClick={()=>{const target=requested.current;if(target)void load(target.cursor,target.index,target.reset);}}>같은 중지 요청 페이지 재시도</button>:<p>현재 조회권한·기한을 확인한 뒤 새 목록을 명시 조회하세요.</p>}</>:null}
  {page&&shown?<><p>보호 조회 페이지 {shown.index+1} · 표시 요청 {page.items.length}건</p><p>탐색 기한 <time dateTime={page.cursorExpiresAt}>{page.cursorExpiresAt}</time> · 이동으로 연장하지 않습니다.</p>
  <button type="button" disabled={pending||shown.index===0} onClick={()=>{const state=committed.current,position=state?.positions[shown.index-1];if(position)void load(position.cursor,shown.index-1);}}>이후 중지 요청 20건</button>
