@@ -3,7 +3,7 @@ import {isKnownDocumentRejection} from '../design-trace/mutation-result.ts';
 import {ExecutionPreparationEditor} from './ExecutionPreparationEditor.tsx';
 import type {ExecutionPreparationBuffer,ExecutionPreparationChange} from './execution-preparation-api.ts';
 import type {Ref} from '../connections/api.ts';
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { documentControl, type DocumentSession } from '../design-trace/editor-api.ts';
 import { readAssignmentDraft, type AssignmentDraftView } from './assignment-api.ts';
@@ -16,12 +16,15 @@ import { WorkspaceResponsibleSessions } from './WorkspaceResponsibleSessions.tsx
 import { sessionDetailHref } from '../../shell/routes.ts';
 import type { ResponsibleSessionBuffer } from './responsible-session-api.ts';
 import type { ExactWorkReviewCandidate } from './claim-understanding-history.ts';
+import {StageStartPanel} from '../session-detail/StageStartPanel.tsx';
+import type {StageStartStorage} from '../session-detail/stage-start-api.ts';
+type WorkspaceStageStart={storage:StageStartStorage;generation:number;onAuthenticationLost:()=>void};
 
 const labels = { PURPOSE_SCOPE:'목적·범위', BASELINE_TASK:'설계·계획·업무·단계', INPUT_OUTPUT:'입출력·책임', COMPLETION_VERIFICATION:'완료·검증', BOUNDARIES:'미확인 경계', RECORD_RECOVERY:'기록·복구' };
 function StoredAssignmentReview({value}:{value:AssignmentReviewView}){
  return <details><summary>항목별 보관 검토 보기</summary><section aria-label={'보관 임무 검토 상세 '+value.ref.id}><p>보관된 사람 판단 · 독립 검수 증명 아님 · 현재 실행·배정 허가 아님</p><p>검토 원문: {value.ref.id} · v{value.ref.version} · {value.ref.contentHash}</p><p>대상 초안: {value.snapshot.draftRef.id} · v{value.snapshot.draftRef.version} · {value.snapshot.draftRef.contentHash}</p><p>당시 검토자: {value.snapshot.reviewedBy.userId} · <time dateTime={value.snapshot.reviewedAt}>{value.snapshot.reviewedAt}</time></p><p>보관된 종합 판단: {value.snapshot.outcome}</p><p>{value.snapshot.reason}</p><ol>{value.snapshot.items.map(item=><li key={item.criterionId}><h6>{labels[item.criterionId]} · {item.outcome}</h6><p>{item.reason}</p></li>)}</ol><p>추가 증거 참조 연결은 미지원 · 원문의 판단/이유를 표시하며 실제 근거 진위·현재 적합 여부를 다시 판정하지 않습니다.</p></section></details>;
 }
-export function AssignmentContentDecision({normalInitialReviews,providedHumanReportRef,executionPreparationBuffer,onExecutionPreparationChange,client,session,draft,buffer,onChange,contextBuffer,onContextChange,responsibleBuffer,onResponsibleChange,owner,busy,run}:{normalInitialReviews?:NormalInitialUnderstandingReviewStorage;providedHumanReportRef?:Ref|null;executionPreparationBuffer?:ExecutionPreparationBuffer|null;onExecutionPreparationChange?:(change:ExecutionPreparationChange)=>void;client:ApiClient;session:DocumentSession;draft:AssignmentDraftView;buffer:AssignmentDecisionBuffer|null;onChange:Dispatch<SetStateAction<AssignmentDecisionBuffer|null>>;contextBuffer:ContextPreparationBuffer|null;onContextChange:Dispatch<SetStateAction<ContextPreparationBuffer|null>>;responsibleBuffer?:ResponsibleSessionBuffer|null;onResponsibleChange?:Dispatch<SetStateAction<ResponsibleSessionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
+export function AssignmentContentDecision({normalInitialReviews,stageStart,providedHumanReportRef,executionPreparationBuffer,onExecutionPreparationChange,client,session,draft,buffer,onChange,contextBuffer,onContextChange,responsibleBuffer,onResponsibleChange,owner,busy,run}:{normalInitialReviews?:NormalInitialUnderstandingReviewStorage;stageStart?:WorkspaceStageStart;providedHumanReportRef?:Ref|null;executionPreparationBuffer?:ExecutionPreparationBuffer|null;onExecutionPreparationChange?:(change:ExecutionPreparationChange)=>void;client:ApiClient;session:DocumentSession;draft:AssignmentDraftView;buffer:AssignmentDecisionBuffer|null;onChange:Dispatch<SetStateAction<AssignmentDecisionBuffer|null>>;contextBuffer:ContextPreparationBuffer|null;onContextChange:Dispatch<SetStateAction<ContextPreparationBuffer|null>>;responsibleBuffer?:ResponsibleSessionBuffer|null;onResponsibleChange?:Dispatch<SetStateAction<ResponsibleSessionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
   const workEpoch=normalInitialUnderstandingOwner(client,session);
   const [workReviews,setWorkReviews]=useState<{context:object;epoch:string;items:ExactWorkReviewCandidate[]}|null>(null);
   const key=ordered({projectId:draft.projectId,ref:draft.ref,userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken,owner,generation:buffer?.controlGeneration??null});
@@ -32,6 +35,14 @@ export function AssignmentContentDecision({normalInitialReviews,providedHumanRep
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;sequence.current++;};},[]);
   useEffect(()=>{sequence.current++;setDecision(null);setConfirmed(null);setHidden(false);setViewOwner(null);},[context]);
   const visible=!hidden&&viewOwner===context,child=draft.snapshot.definition.parentAssignmentRef!==null;
+  const stageKey=stageStart&&confirmed&&visible&&!child&&owner?ordered([confirmed.ref,confirmed.snapshot.definition.taskRef,stageStart.generation]):null;
+  const stageOwner=useRef<{key:string|null;context:typeof context}|null>(null),stageSequence=sequence.current;
+  useLayoutEffect(()=>{
+    stageOwner.current={key:stageKey,context};
+    return ()=>{stageOwner.current=null;};
+  },[stageKey,context]);
+  const stageCurrent=()=>stageKey!==null&&stageOwner.current?.key===stageKey&&stageOwner.current.context===context&&
+    scope.current===context&&client.transport===context.transport&&sequence.current===stageSequence;
   function selectWorkReview(candidate:ExactWorkReviewCandidate){
     if(!owner||!visible||busy||!confirmed||!alive.current||scope.current!==context||normalInitialUnderstandingOwner(client,session)!==workEpoch||
        candidate.scope.projectId!==confirmed.projectId||ordered(candidate.assignmentRef)!==ordered(confirmed.ref))return;
@@ -86,6 +97,9 @@ export function AssignmentContentDecision({normalInitialReviews,providedHumanRep
     {confirmed&&visible?<section aria-label="내용 확정 임무"><h6>내용 확정 임무</h6><p>{confirmed.ref.id} · v{confirmed.ref.version} · {confirmed.ref.contentHash}</p><p>원 초안 hash {confirmed.snapshot.draftRef.contentHash}</p><p>실행 허가 없음 · Agent 전달 없음 · READY 아님</p>{!child?<a href={sessionDetailHref(draft.projectId,draft.ref)}>책임자·실행 상세</a>:<p>고정 부모 {draft.snapshot.definition.parentAssignmentRef!.id} · v{draft.snapshot.definition.parentAssignmentRef!.version} · {draft.snapshot.definition.parentAssignmentRef!.contentHash} · 부모 현재성 재검사 전 · 실행 권한 아님</p>}<pre>{JSON.stringify(confirmed.snapshot,null,2)}</pre></section>:null}
     {confirmed&&visible&&!child&&onExecutionPreparationChange?<ExecutionPreparationEditor exactWorkCandidates={workCandidates} normalInitialReviews={normalInitialReviews} savedContextBuffer={contextBuffer} client={client} confirmed={confirmed} session={session} providedHumanReportRef={providedHumanReportRef??null} buffer={executionPreparationBuffer??null} onChange={onExecutionPreparationChange} owner={owner} onAuthenticationLost={()=>run(async()=>{throw new ApiError('AUTH_REQUIRED',401);})}/>:null}
     {confirmed&&visible&&!child?<WorkspaceContextPreparation key={ordered(confirmed.ref)} client={client} confirmed={confirmed} session={session} buffer={contextBuffer} onChange={onContextChange} owner={owner} busy={busy} run={run}/>:null}
+    {stageStart&&confirmed&&stageKey!==null?<StageStartPanel key={stageKey} client={client} assignment={confirmed} session={session} storage={stageStart.storage}
+      isSourceCurrent={stageCurrent} expectedControlGeneration={stageStart.generation}
+      onUnavailable={code=>{if(code==='AUTH_REQUIRED'&&stageCurrent())stageStart.onAuthenticationLost();}}/>:null}
     {confirmed&&visible&&!child&&onResponsibleChange?<WorkspaceResponsibleSessions onWorkReviewCandidate={selectWorkReview} normalInitialReviews={normalInitialReviews} key={[ordered(confirmed.ref),session.user.id,session.clientId].join(':')} client={client} confirmed={confirmed} session={session} buffer={responsibleBuffer??null} onChange={onResponsibleChange} owner={owner} busy={busy} run={run}/>:null}
   </section>;
 }
