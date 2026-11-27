@@ -53,7 +53,7 @@ function stageFixture(){
  const request:any={schemaVersion:1,projectId:pid,commandId:id(9),clientId:actor.clientId,controlGeneration:1,operation:'startStage',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:input};
  const rule={ruleId:'QUEUE',subjectRef:{kind:'HUMAN',userId:actor.actorId},operations:['startStage','cancelQueuedRequest'],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'},policy={created_at:new Date(at),id:id(10),head_version:1,rules_json:[rule],reason:'대기요청만',review_refs:[],content_hash:hash({rules:[rule],reason:'대기요청만',reviewRefs:[]})},policyRef={id:policy.id,version:1,contentHash:policy.content_hash};
  const rows:any[]=[],commands=new Map<string,any>(),calls:string[]=[];let allowed=true,controlled=true,failAudit=false;
- const db:any={query:async(sql:string,p:any[]=[])=>{calls.push(sql);if(sql.includes('JOIN anvil.project_members'))return{rows:allowed?[{id:pid,participation:'OWNER',archived_at:null}]:[]};if(sql.includes('FROM anvil.project_control'))return{rows:controlled?[{actor_id:actor.actorId,client_id:actor.clientId,generation:1,revoked_at:null}]:[]};if(sql.includes('FROM anvil.permission_policies'))return{rows:[policy]};if(sql.includes('clock_timestamp()')||sql.includes('transaction_timestamp()'))return{rows:[{at:new Date(at)}]};if(sql.includes('COALESCE(MAX(sequence)'))return{rows:[{sequence:rows.filter(r=>r.version===1).length+1}]};if(sql.startsWith('SELECT operation,request_hash,result_ref FROM anvil.commands'))return{rows:[...commands.values()].filter(c=>c.actor_id===p[1]&&c.command_key===p[2])};if(sql.startsWith('INSERT INTO anvil.commands')){commands.set(p[0],{operation:p[4],operation_id:p[7],request_hash:p[6],command_key:p[5],actor_id:p[2],client_id:p[3],expected_version:p[10],control_generation:p[11],policy_ref:JSON.parse(p[12]),payload_ref:p[13]?JSON.parse(p[13]):null,approval_consumption_id:p[9],result_ref:JSON.parse(p[14])});return{rows:[]};}if(sql.startsWith('INSERT INTO anvil.authorization_receipts')){Object.assign(commands.get(p[2]),{authorization_subject_ref:JSON.parse(p[3]),authorization_policy_ref:JSON.parse(p[4]),authorization_scope_digest:p[5],authorization_approval_decision:p[6]});return{rows:[]};}if(sql.startsWith('SELECT set_config'))return{rows:[]};if(sql.startsWith('INSERT INTO anvil.audit_events')){if(failAudit)throw Error('AUDIT_FAILED');if(p.length<11)return{rows:[]};Object.assign(commands.get(p[4]),{audit_scope_digest:p[10],audit_count:1,audit_outcome:'APPLIED',audit_source_kind:'HUMAN_COMMAND',audit_actor_ref:JSON.parse(p[2]),audit_client_ref:p[3],audit_target_ref:JSON.parse(p[6]),audit_policy_ref:JSON.parse(p[7]),audit_approval_ref:p[8]?JSON.parse(p[8]):null});return{rows:[]};}if(sql.startsWith('INSERT INTO anvil.stage_runs'))return{rows:[]};if(sql.startsWith('INSERT INTO anvil.queue_requests')){rows.push({project_id:p[0],request_id:p[1],version:p[2],sequence:p[3],content_hash:p[4],snapshot_json:JSON.parse(p[5]),command_id:p[6]});return{rows:[],rowCount:1};}if(sql.includes('FROM anvil.queue_requests')){const selected=rows.filter(r=>r.project_id===p[0]&&(p[1]===undefined||r.request_id===p[1])).sort((a,b)=>b.version-a.version),heads=[...new Map(selected.map(r=>[r.request_id,selected.find(x=>x.request_id===r.request_id)])).values()].filter(r=>p[1]!==undefined||r.snapshot_json.state==='WAITING');return{rows:heads.map(r=>({...structuredClone(r),...structuredClone(commands.get(r.command_id)),command_id:r.command_id,command_external_id:commands.get(r.command_id).command_key,command_operation_id:commands.get(r.command_id).operation_id,command_actor:commands.get(r.command_id).actor_id,command_client:commands.get(r.command_id).client_id,state:commands.get(r.command_id).state??'APPLIED',command_scope_kind:'PROJECT',command_scope_id:pid}))};}throw Error('UNEXPECTED_QUERY:'+sql);}};
+ const db:any={query:async(sql:string,p:any[]=[])=>{calls.push(sql);if(sql.includes('JOIN anvil.project_members'))return{rows:allowed?[{id:pid,participation:'OWNER',archived_at:null}]:[]};if(sql.includes('FROM anvil.project_control'))return{rows:controlled?[{actor_id:actor.actorId,client_id:actor.clientId,generation:1,revoked_at:null}]:[]};if(sql.includes('FROM anvil.permission_policies'))return{rows:[policy]};if(sql.includes('clock_timestamp()')||sql.includes('transaction_timestamp()'))return{rows:[{at:new Date(at)}]};if(sql.includes('COALESCE(MAX(sequence)'))return{rows:[{sequence:rows.filter(r=>r.version===1).length+1}]};if(sql.startsWith('SELECT operation,request_hash,result_ref FROM anvil.commands'))return{rows:[...commands.values()].filter(c=>c.actor_id===p[1]&&c.command_key===p[2])};if(sql.startsWith('INSERT INTO anvil.commands')){commands.set(p[0],{operation:p[4],operation_id:p[7],request_hash:p[6],command_key:p[5],actor_id:p[2],client_id:p[3],expected_version:p[10],control_generation:p[11],policy_ref:JSON.parse(p[12]),payload_ref:p[13]?JSON.parse(p[13]):null,approval_consumption_id:p[9],result_ref:JSON.parse(p[14]),command_received_at:new Date(at)});return{rows:[]};}if(sql.startsWith('INSERT INTO anvil.authorization_receipts')){Object.assign(commands.get(p[2]),{authorization_subject_ref:JSON.parse(p[3]),authorization_policy_ref:JSON.parse(p[4]),authorization_scope_digest:p[5],authorization_approval_decision:p[6]});return{rows:[]};}if(sql.startsWith('SELECT set_config'))return{rows:[]};if(sql.startsWith('INSERT INTO anvil.audit_events')){if(failAudit)throw Error('AUDIT_FAILED');if(p.length<11)return{rows:[]};Object.assign(commands.get(p[4]),{audit_scope_digest:p[10],audit_count:1,audit_outcome:'APPLIED',audit_source_kind:'HUMAN_COMMAND',audit_actor_ref:JSON.parse(p[2]),audit_client_ref:p[3],audit_target_ref:JSON.parse(p[6]),audit_policy_ref:JSON.parse(p[7]),audit_approval_ref:p[8]?JSON.parse(p[8]):null});return{rows:[]};}if(sql.startsWith('INSERT INTO anvil.stage_runs'))return{rows:[]};if(sql.startsWith('INSERT INTO anvil.queue_requests')){rows.push({project_id:p[0],request_id:p[1],version:p[2],sequence:p[3],content_hash:p[4],snapshot_json:JSON.parse(p[5]),command_id:p[6]});return{rows:[],rowCount:1};}if(sql.includes('FROM anvil.queue_requests')){const selected=rows.filter(r=>r.project_id===p[0]&&(p[1]===undefined||r.request_id===p[1])&&(p[2]===undefined||r.version===p[2])).sort((a,b)=>b.version-a.version),heads=[...new Map(selected.map(r=>[r.request_id,selected.find(x=>x.request_id===r.request_id)])).values()].filter(r=>p[1]!==undefined||r.snapshot_json.state==='WAITING');return{rows:heads.map(r=>({...structuredClone(r),...structuredClone(commands.get(r.command_id)),command_id:r.command_id,command_external_id:commands.get(r.command_id).command_key,command_operation_id:commands.get(r.command_id).operation_id,command_actor:commands.get(r.command_id).actor_id,command_client:commands.get(r.command_id).client_id,state:commands.get(r.command_id).state??'APPLIED',command_scope_kind:'PROJECT',command_scope_id:pid}))};}throw Error('UNEXPECTED_QUERY:'+sql);}};
  const ports={applications:{readApplication:async()=>({projectId:pid,applicationRef:structuredClone(appRef),snapshot:structuredClone(snapshot),executionState:'NOT_CONNECTED'})},budgets:{resolveCurrent:async()=>({ref:ref(8),snapshot:{state:'APPLIED',expiresAt:'2099-01-01T00:00:00.000Z'}})}};
  assert.equal(typeof m.ProjectStageQueue,'function');const service=new m.ProjectStageQueue(ports);return{pid,at,actor,request,policy,policyRef,rows,commands,calls,service,db,ports,member:(v:boolean)=>allowed=v,control:(v:boolean)=>controlled=v,auditFailure:()=>failAudit=true};
 }
@@ -102,9 +102,94 @@ test('정확 일회 승인 소비와 WAITING 저장·역사 조회는 원 payloa
  }};
  const policy=await authorizeMaterial(db,f.actor,a.command);const r:any=await f.service.start(db,f.actor,a.command,policy.ref);assert.equal(r.data.queueState,'WAITING');assert.equal(a.writes.length,2);assert.equal(f.rows.length,1);assert.deepEqual(f.rows[0].snapshot_json.input,a.command.payload);
  const q=await f.service.read(db,f.actor,f.pid);assert.equal(q.items.length,1);assert.deepEqual(q.items[0].requestRef,r.data.ref);
- const repo=new ProjectPolicyRepository({authenticated:async(_token:string,_csrf:string,cb:any)=>cb(db,f.actor)} as any);assert.deepEqual(await repo.command('synthetic','synthetic',a.command,()=>{throw Error('REPLAY_MUST_NOT_WRITE');}),r);assert.equal(f.rows.length,1);assert.equal(a.writes.length,2);
- const originalReads=f.calls.length;f.control(false);await assert.rejects(repo.command('synthetic','synthetic',a.command,()=>{throw Error('REPLAY_MUST_NOT_WRITE');}),{message:'PROJECT_CONTROL_REQUIRED',statusCode:403});assert.equal((await f.service.read(db,f.actor,f.pid)).items.length,1,'현재 제어 진행은 당시 소비 역사를 위조로 만들지 않는다');assert.ok(f.calls.length>originalReads);
- f.rows[0].snapshot_json.executionAuthorized=true;await assert.rejects(f.service.read(db,f.actor,f.pid),{message:'STAGE_QUEUE_LEDGER_INVALID',statusCode:503});
+ const repo=new ProjectPolicyRepository({authenticated:async(_token:string,_csrf:string,cb:any)=>cb(db,f.actor)} as any);
+ const replay=()=>repo.command('synthetic','synthetic',a.command,()=>{throw Error('REPLAY_MUST_NOT_WRITE');},
+  (query,actor,command,result)=>f.service.verifyReplay(query,actor,command,result));
+ assert.deepEqual(await replay(),r);assert.equal(f.rows.length,1);assert.equal(a.writes.length,2);
+ const originalReads=f.calls.length;f.control(false);
+ await assert.rejects(replay(),{message:'PROJECT_CONTROL_REQUIRED',statusCode:403});
+ assert.equal((await f.service.read(db,f.actor,f.pid)).items.length,1,'현재 제어 변경은 당시 소비 역사를 위조로 만들지 않는다');assert.ok(f.calls.length>originalReads);
+ f.rows[0].snapshot_json.executionAuthorized=true;
+ await assert.rejects(f.service.read(db,f.actor,f.pid),{message:'STAGE_QUEUE_LEDGER_INVALID',statusCode:503});
+ f.control(true);
+ await assert.rejects(replay(),{message:'STAGE_QUEUE_LEDGER_INVALID',statusCode:503});
+ assert.equal(f.rows.length,1);assert.equal(a.writes.length,2);
+});
+
+test('시작과 취소의 동일 명령은 각 원 버전을 재확인하고 취소의 선행 원장 누락을 거절한다',async()=>{
+ const f=stageFixture();
+ const repo=new ProjectPolicyRepository({authenticated:async(_token:string,_csrf:string,cb:any)=>cb(f.db,f.actor)} as any);
+ let writes=0;
+ const send=(command:ProjectCommand)=>repo.command('synthetic','synthetic',command,(db,actor,policyRef)=>{
+  writes++;
+  return command.operation==='startStage'?f.service.start(db,actor,command,policyRef):f.service.cancel(db,actor,command,policyRef);
+ },(db,actor,original,result)=>f.service.verifyReplay(db,actor,original,result));
+ const waiting=await send(f.request);
+ const cancel:ProjectCommand={...f.request,operation:'cancelQueuedRequest',commandId:id(93),
+  targetId:waiting.data.ref.id,expectedVersion:1,payload:{requestRef:waiting.data.ref,reason:'검토 후 대기 취소'}};
+ const cancelled=await send(cancel);
+ assert.equal(waiting.data.queueState,'WAITING');assert.equal(cancelled.data.queueState,'CANCELLED');
+ assert.deepEqual(cancelled.data.snapshot.previousRef,waiting.data.ref);
+ const writeCount=()=>f.calls.filter(sql=>/^(INSERT|UPDATE|DELETE) /.test(sql)&&!sql.includes("'SERVER_DENIAL'")).length;
+ const settledWrites=writeCount();
+ assert.deepEqual(await send(f.request),waiting);
+ assert.deepEqual(await send(cancel),cancelled);
+ assert.equal((await f.service.readRequest(f.db,f.actor,f.pid,waiting.data.ref)).currentState,'CANCELLED');
+ await assert.rejects(send({...cancel,payload:{...cancel.payload,reason:'다른 취소 사유'}}),{message:'IDEMPOTENCY_CONFLICT',statusCode:409});
+ const cancelRow=f.rows[1];
+ const cancelCommand=f.commands.get(cancelRow.command_id);
+ cancelCommand.audit_count=0;
+ await assert.rejects(send(cancel),{message:'STAGE_QUEUE_LEDGER_INVALID',statusCode:503});
+ cancelCommand.audit_count=1;
+ const original=f.rows.shift();
+ assert(original);
+ await assert.rejects(send(cancel),{message:'STAGE_QUEUE_LEDGER_INVALID',statusCode:503});
+ await assert.rejects(send(f.request),{message:'STAGE_QUEUE_LEDGER_INVALID',statusCode:503});
+ f.rows.unshift(original);
+ assert.deepEqual(await send(cancel),cancelled);
+ const startCommand=f.commands.get(original.command_id);
+ for(const [key,bad] of [['warnings',['unsupported']],['evidenceRefs',null],['serverReceivedAt','2026-10-21T14:00:00Z'],['serverReceivedAt','2026-10-21T14:00:00.001Z']] as const){
+  const value=startCommand.result_ref[key];
+  startCommand.result_ref[key]=bad;
+  await assert.rejects(send(f.request),{message:'STAGE_QUEUE_LEDGER_INVALID',statusCode:503});
+  startCommand.result_ref[key]=value;
+ }
+ assert.deepEqual(await send(f.request),waiting);
+ f.policy.rules_json[0]!.disposition='DENY';
+ f.policy.content_hash=hash({rules:f.policy.rules_json,reason:f.policy.reason,reviewRefs:f.policy.review_refs});
+ await assert.rejects(send(f.request),{message:'PROJECT_OPERATION_DENIED',statusCode:403});
+ await assert.rejects(send(cancel),{message:'PROJECT_OPERATION_DENIED',statusCode:403});
+ assert.equal(writes,2);assert.equal(writeCount(),settledWrites);
+ assert.equal(f.commands.size,2);assert.equal(f.rows.length,2);
+});
+
+test('기존 HTTP 명령 경로가 시작·취소 재확인에서 같은 원장 검산을 호출한다',async t=>{
+ const f=stageFixture();
+ const waiting=await f.service.start(f.db,f.actor,f.request,f.policyRef);
+ const cancel:ProjectCommand={...f.request,operation:'cancelQueuedRequest',commandId:id(94),
+  targetId:waiting.data.ref.id,expectedVersion:1,payload:{requestRef:waiting.data.ref,reason:'검토 후 대기 취소'}};
+ const cancelled=await f.service.cancel(f.db,f.actor,cancel,f.policyRef);
+ const {buildApp}=await import('../../../apps/server/app.ts');
+ const host='anvil-synthetic.invalid',origin='https://'+host,token='a'.repeat(43),csrf='A'.repeat(43);
+ const repository={installationId:id(95),authenticated:async(gotToken:string,gotCsrf:string,body:any)=>{
+  assert.equal(gotToken,token);assert.equal(gotCsrf,csrf);
+  return body(f.db,f.actor);
+ }};
+ const app=buildApp({},undefined,{repository:repository as any,origin});
+ t.after(()=>app.close());
+ const post=(payload:ProjectCommand)=>app.inject({method:'POST',url:`/api/v1/projects/${f.pid}/commands`,
+  headers:{host,origin,cookie:'__Host-anvil.sid='+token,'x-anvil-csrf':csrf},payload});
+ const firstRead=f.calls.length;
+ for(const [command,expected] of [[f.request,waiting],[cancel,cancelled]] as const){
+  const response=await post(command);assert.equal(response.statusCode,200,response.body);assert.deepEqual(response.json(),expected);
+ }
+ f.rows[0].snapshot_json.executionAuthorized=true;
+ for(const command of [f.request,cancel]){
+  const response=await post(command);assert.equal(response.statusCode,503,response.body);
+  assert.equal(response.json().code,'STAGE_QUEUE_LEDGER_INVALID');
+ }
+ assert.ok(f.calls.length>firstRead);
+ assert.equal(f.calls.slice(firstRead).some(sql=>/^(INSERT|UPDATE|DELETE) /.test(sql)),false);
 });
 
 test('현재 정책/제어·기한·결정·원명령 변경은 일회소비 쓰기 없이 거절한다',async()=>{

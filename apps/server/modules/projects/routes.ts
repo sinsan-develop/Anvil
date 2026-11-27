@@ -390,8 +390,11 @@ projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/a
         return dispatchSyntheticHumanExecution(syntheticExecution,token(request),csrf(request),request.body);
       }
       if (request.body.operation === 'applyLimitPolicy') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => limitPolicies.apply(db, actor, request.body, policyRef));
-      if(request.body.operation==='startStage')return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>stageQueue.start(db,actor,request.body,policyRef));
-      if(request.body.operation==='cancelQueuedRequest')return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>stageQueue.cancel(db,actor,request.body,policyRef));
+      if(request.body.operation==='startStage'||request.body.operation==='cancelQueuedRequest'){
+        return policies.command(token(request),csrf(request),request.body,
+          (db,actor,policyRef)=>request.body.operation==='startStage'?stageQueue.start(db,actor,request.body,policyRef):stageQueue.cancel(db,actor,request.body,policyRef),
+          (db,actor,command,result)=>stageQueue.verifyReplay(db,actor,command,result));
+      }
       if (request.body.operation === 'revokeLimitPolicy') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => limitPolicies.revoke(db, actor, request.body, policyRef));
       if (request.body.operation === 'defineProjectRole') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => responsibleSessions.define(db, actor, request.body, policyRef));
       if (request.body.operation === 'bindResponsibleSession') return policies.command(token(request), csrf(request), request.body, (db, actor, policyRef) => responsibleSessions.bind(db, actor, request.body, policyRef));
