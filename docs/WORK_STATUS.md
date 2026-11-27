@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-27 KST
 
+- **Stage C / IX02 실제 인수의 고정 QA 입력** — 기준 `87b451ec`, 담당 `baseline_predispatch_task_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. [자료 원형](../tests/integration/IX02/fixtures/README.md) 6파일을 고정했다. QA A는 별도 격리 경로에 나중에 전달할 ASCII READY 함수·시험 두 파일이며, QA B는 별개 프로젝트의 4개 요구와 AF02/AF04 검토 범위만 보존한다. manifest에서 입력 3개와 계획·공통기준 2개의 원 바이트/해시를 대조. 줄바꿈 검수 지적 1건을 범위 내 Git 속성으로 교정했다. Node 구문 통과, 담당·Main 각각 메모리 3건 중 2통과·지정 공백 1실패(의도된 baseline RED), diff 통과. 실제 QA 프로젝트·Agent·DB·권한·서비스를 만들거나 실행하지 않았다. 실제 노드/Agent 버전·프로젝트 ID·기준 Git commit·정확 전체 참조·등록·제어·한도·실행 승인은 미확정이다.
+
 - **Stage C / IX02 QA A 누락 시험·완료 주장 음성 여정** — 기준 `8cdc90de`, 담당 `baseline_predispatch_task_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 실제 Fastify handlers와 UI05 API를 메모리 SQL에 연결했다. 같은 원 제출·기준에서 PASS 주장은 보고 전용, 빠진 시험은 미보고로 남는다. 근거 없는 ACCEPTED는 422이며 성공 명령·허가·검수 행 0이다. 명시 HUMAN REWORK만 저장해 정확한 원 제출·기준·검수자·사유를 보호 재조회했다. 시험 1파일, 준비 fixture SQL 투영 누락 1건 보완. 담당 99/99·최종 집중 1/1·Main 1/1·타입/diff 통과. 원 출력 바이트는 누락 조건으로 판독 0, 보호 출력의 실제 검증·브라우저·Agent·PG 인수는 미검증.
 
 - **Stage C / IX02 QA B 제안 반영→사람 검토 저장·재조회 단일 합성 여정** — 기준 `021efbe9`, 담당 `baseline_predispatch_task_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 실제 UI06 제안·문서·검토 컴포넌트를 사용한다. 미반영 원 제안을 명시 선택해 생성한 정확 미확정 초안의 링크를 열고, 사람 REWORK 검토 저장 뒤 별도 보호 조회에서 같은 문서·버전·해시와 검토자·시각·사유를 확인했다. 합성 기록은 `saveDocumentDraft`, `recordContentReview` 두 요청의 결과로만 생성됐고 확정·구현 요청 0이다. 시험 1파일, 전 담당 사용량 한도 1건은 변경 없이 종료되어 인계. 담당 82/82·Main 1/1·타입·diff 통과. 실제 브라우저·서버·DB에서 원 Agent 제안 생성과 사용자 인수는 미검증.

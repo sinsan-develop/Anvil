@@ -1,0 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { isReady } from '../src/ready-state.mjs';
+
+test('existing READY remains supported', () => {
+  assert.equal(isReady('READY'), true);
+});
+
+test('ASCII edge whitespace must preserve READY', () => {
+  for (const value of [' READY', 'READY ', ' \tREADY\r\n', '\nREADY\t']) {
+    assert.equal(isReady(value), true);
+  }
+});
+
+test('unsupported values remain false', () => {
+  for (const value of [
+    null, undefined, false, true, 0, 1, {}, [], ['READY'], new String('READY'),
+    '', ' \t\r\n', 'ready', 'Ready', 'NOT_READY', 'READY_NOW', 'RE ADY',
+    'READY!', 'READY READY', '\u00a0READY\u00a0'
+  ]) {
+    assert.equal(isReady(value), false);
+  }
+});

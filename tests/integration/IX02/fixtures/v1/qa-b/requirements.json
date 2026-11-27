@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "purpose": "IX02_QA_B_REQUIREMENTS_ONLY",
+  "fixtureVersion": "v1",
+  "title": "합성 도서 목록과 고정 상세의 설계·작업계획 제안",
+  "independentOfQaA": true,
+  "objective": "별도 QA B에서 읽기 전용 합성 도서 목록·제목 검색·선택한 고정 상세를 설명하는 AF02 설계 제안과 AF04 작업계획 제안을 받는다.",
+  "requirements": [
+    {
+      "id": "B-R01",
+      "text": "목록은 도서 식별자·고정 버전·제목을 보여 준다. 사용자가 명시한 제목 검색과 초기화를 설명한다. 실제 도서·사용자 자료는 사용하지 않는다."
+    },
+    {
+      "id": "B-R02",
+      "text": "사용자가 목록의 한 도서를 선택하면 같은 식별자·버전의 상세만 연다. 상세에는 제목·설명·출처를 표시한다. 다른 항목·최신 버전으로 조용히 대체하지 않는다."
+    },
+    {
+      "id": "B-R03",
+      "text": "최초·조회 중·정상 목록·검색 결과 없음·조회 오류·상세 표시·상세 조회 불가를 구분한다. 오류 이후 재조회는 사용자가 명시하며 이전 항목의 늦은 응답을 새 선택에 붙이지 않는다."
+    },
+    {
+      "id": "B-R04",
+      "text": "도서 추가·수정·삭제, 로그인 설계, 실제 외부 API·DB·서비스 연결과 코딩은 범위 밖이다. 제안 자체로 구현·기준 확정·적용·실행을 시작하지 않는다."
+    }
+  ],
+  "expectedProposalScope": {
+    "forms": ["AF02", "AF04"],
+    "screenDetailMustDescribe": ["목적", "진입·복귀", "표시 항목", "상태별 동작", "사용자 행동", "오류·재조회", "접근성·검수"],
+    "separateWorkKinds": ["SCREEN", "FUNCTION", "CONNECTION"],
+    "workMustDescribe": ["별도 고유 ID", "연결된 요구사항 ID", "선행·후행", "입력·산출물", "포함·제외 범위", "위임 허용 파일·역할", "완료 조건", "검수·시험", "원 설계·업무 추적", "변경 이유·원 출처"],
+    "requiredNegativeCases": ["필수 화면 상태 누락", "기능·화면·연결 업무 혼합 또는 연결 누락", "위임·검수 조건 누락", "다른 항목·버전·늦은 응답", "제안의 자동 확정·적용 또는 코딩 시작"],
+    "humanReviewRequired": true,
+    "missingItemsRemainRework": true,
+    "automaticAcceptanceAllowed": false
+  },
+  "boundaries": {
+    "allowedOutputs": ["QA B 전용 미확정 설계 제안", "QA B 전용 미확정 작업계획 제안"],
+    "reads": ["이 고정 요구사항", "별도 실행안에서 전체 참조로 고정할 문서작성 공통기준·양식·원 기준"],
+    "writes": ["별도 실행안에서 허용한 QA B 제안만"],
+    "codeChangesAllowed": false,
+    "implementationCommandsAllowed": false,
+    "confirmationAllowed": false,
+    "baselineApplicationAllowed": false,
+    "networkOrActualResourceSetupAllowed": false,
+    "qaAResultOrAuthorityReuseAllowed": false
+  }
+}

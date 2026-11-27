@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "purpose": "IX02_QA_ACCEPTANCE_INPUT_FIXTURES",
+  "fixtureVersion": "v1",
+  "anvilSourceCommit": "87b451ec417c43cc41190e7e6e8ae019cf7d6c10",
+  "sourceOnly": true,
+  "actualExecutionAuthorized": false,
+  "files": [
+    {
+      "path": "qa-a/ready-state.mjs.fixture",
+      "intendedQaPath": "src/ready-state.mjs",
+      "purpose": "QA_A_UNMODIFIED_FUNCTION_RED_BASELINE",
+      "bytes": 63,
+      "sha256": "bec57c71476b73a91b2cdace86be31064a495e8663501a0fdd3648a3bfb52e62",
+      "imports": [],
+      "expectedReads": [],
+      "expectedWrites": []
+    },
+    {
+      "path": "qa-a/ready-state.test.mjs.fixture",
+      "intendedQaPath": "test/ready-state.test.mjs",
+      "purpose": "QA_A_PRESCRIBED_TEST_INPUT",
+      "bytes": 728,
+      "sha256": "1fb5326c175b65ddf4ff8006827c2b8febbf369a6dc2af88ac3efeb2ec3d8e49",
+      "imports": [
+        "node:test",
+        "node:assert/strict",
+        "../src/ready-state.mjs"
+      ],
+      "expectedReads": [
+        "src/ready-state.mjs"
+      ],
+      "expectedWrites": [
+        "TEST_STDOUT_ONLY"
+      ]
+    },
+    {
+      "path": "qa-b/requirements.json",
+      "intendedQaPath": "input/requirements.json",
+      "purpose": "QA_B_FROZEN_REQUIREMENTS_NOT_AGENT_OUTPUT",
+      "bytes": 2981,
+      "sha256": "518cd507ef7c0ce60d1851c2ba7780f749fbb61f5656a1abaed95928e4fbd01f",
+      "imports": [],
+      "expectedReads": [],
+      "expectedWrites": []
+    }
+  ],
+  "sourceReferences": [
+    {
+      "path": "docs/work_packages/IX02_QA_ACCEPTANCE_PREPARATION.md",
+      "bytes": 13221,
+      "sha256": "8df07be5233f01d4573004312a6875d71c686927195c7e4766b914b6a47f06ae"
+    },
+    {
+      "path": "docs/design/문서작성_공통기준.md",
+      "bytes": 9067,
+      "sha256": "85ec190976ce45af49b4f57fb5745d193b41640cfc62f5cbd19aa4711cb03f07"
+    }
+  ],
+  "qaA": {
+    "prescribedArgv": [
+      "node",
+      "--test",
+      "test/ready-state.test.mjs"
+    ],
+    "expectedBaseline": {
+      "state": "EXPECTED_RED",
+      "tests": 3,
+      "pass": 2,
+      "fail": 1,
+      "failingTest": "ASCII edge whitespace must preserve READY"
+    },
+    "allowedFutureChangePaths": [
+      "src/ready-state.mjs",
+      "test/ready-state.test.mjs"
+    ],
+    "acceptedExtension": "String READY with leading/trailing ASCII SP HT CR LF only",
+    "unsupportedInputs": "All other values remain false",
+    "runtimeDependencies": [],
+    "networkAllowed": false,
+    "filesystemSideEffectsAllowed": false
+  },
+  "qaB": {
+    "inputPath": "qa-b/requirements.json",
+    "independentOfQaA": true,
+    "expectedForms": [
+      "AF02",
+      "AF04"
+    ],
+    "agentOutputsIncluded": false,
+    "codeChangesAllowed": false,
+    "humanReviewRequired": true,
+    "automaticAcceptanceAllowed": false
+  },
+  "unboundExecutionInputs": [
+    "QA A/B project identities and separate roots",
+    "QA repository baseline commits",
+    "Protected fullrefs for requirements/forms/methodology/source baseline",
+    "Registration/execution generation/session/control/environment",
+    "Actual product/version/model and approved time/resource/cost limits",
+    "Exact execution approval and evidence/cleanup ownership"
+  ]
+}
