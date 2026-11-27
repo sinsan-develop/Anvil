@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, useRef, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useState, useRef, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { getMethod, type MethodVersion } from './api.ts';
 import { emptyMethodBuffer, methodBuffer, writeCommonMethod, type MethodBuffer, type MethodCommand, type MethodGateway } from './common-api.ts';
@@ -16,9 +16,10 @@ import {readMethodDraftFile,importMethodDraft} from './method-draft-import.ts';
 import {MethodDraftExport} from './MethodDraftExport.tsx';
 import {DuplicateNodeRepair} from './DuplicateNodeRepair.tsx';
 
-export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, gateway, projectId,copySelection }: {
+export type CommittedProjectMethod={buffer:MethodBuffer;value:MethodVersion};
+export function CommonMethodEditor({ client, session, source, buffer, onChange, onAuthenticationLost, onSaved, onProjectSaved, gateway, projectId,copySelection }: {
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; source: MethodVersion | null;
-  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void; onSaved: () => void; gateway?: MethodGateway;projectId?:string;copySelection?:{source:MethodVersion;current:()=>boolean;clear:()=>void};
+  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void; onSaved: () => void; onProjectSaved?:(save:CommittedProjectMethod)=>void;gateway?: MethodGateway;projectId?:string;copySelection?:{source:MethodVersion;current:()=>boolean;clear:()=>void};
 }) {
   const fieldId = useId();
   const latestBuffer=useRef(buffer);latestBuffer.current=buffer;
@@ -33,6 +34,26 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
   const active=useRef(true),preparing=useRef<string|null>(null),latestChange=useRef(onChange);latestChange.current=onChange;
   useEffect(()=>()=>{active.current=false;const id=preparing.current;if(id)latestChange.current(previous=>previous.preparationId===id?{...previous,preparationId:null}:previous);},[]);
   const [copyName, setCopyName] = useState(''), [pending, setPending] = useState(false), [error, setError] = useState<ApiError | null>(null), [savedVersion, setSavedVersion] = useState<number | null>(null);
+  const projectKey=JSON.stringify([projectId??null,session.user.id,session.clientId,session.csrfToken]);
+  const projectScope=useRef({key:projectKey,client,transport:client.transport});
+  if(projectScope.current.key!==projectKey||projectScope.current.client!==client||projectScope.current.transport!==client.transport)projectScope.current={key:projectKey,client,transport:client.transport};
+  const projectOwner=projectScope.current,projectAlive=useRef(false);
+  const projectCurrent=()=>projectAlive.current&&projectScope.current===projectOwner&&client.transport===projectOwner.transport;
+  const [settledProject,setSettledProject]=useState<{owner:typeof projectOwner;buffer:MethodBuffer;value:MethodVersion}|null>(null);
+  const notifiedProject=useRef<typeof settledProject>(null);
+  useLayoutEffect(()=>{projectAlive.current=true;return()=>{projectAlive.current=false;};},[]);
+  useLayoutEffect(()=>{
+    if(!onProjectSaved||!settledProject||settledProject===notifiedProject.current||settledProject.owner!==projectOwner||!projectCurrent())return;
+    const expected=settledProject.buffer;
+    // The graph is a new object from the protected read. A rejected parent update cannot publish this save.
+    if(buffer.graph!==expected.graph||buffer.ownerUserId!==expected.ownerUserId||buffer.targetId!==expected.targetId||
+      buffer.version!==expected.version||buffer.name!==expected.name||buffer.purpose!==expected.purpose||buffer.validation!==expected.validation||
+      buffer.dirty||buffer.pending||buffer.preparationId||buffer.review?.pending||buffer.application?.pending||buffer.application?.preparationId)return;
+    notifiedProject.current=settledProject;
+    setSavedVersion(settledProject.value.ref.version);
+    onProjectSaved({buffer,value:settledProject.value});
+    onSaved();
+  },[buffer,settledProject,projectOwner,onProjectSaved,onSaved]);
   const selectedNodes = buffer.graph.nodes.filter(item => item.nodeId === buffer.nodeId);
   const node = selectedNodes.length === 1 ? selectedNodes[0] : undefined, editing = !!buffer.targetId || buffer.dirty;
   const [forms, setForms] = useState<FormSummary[]>([]), [formError, setFormError] = useState<ApiError | null>(null);
@@ -84,9 +105,10 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
     });setSavedVersion(null);
   }
   async function submit(command: MethodCommand, name: string, purpose: string,copyCurrent?:()=>boolean) {
+    const trackedProject=!!gateway&&!!onProjectSaved;
     const common = !gateway && command.payload.scope === 'USER_COMMON'
       && (command.operation === 'saveMethodologyDraft' || command.operation === 'copyMethodology');
-    if (pending || command.clientId !== session.clientId || copyCurrent&&!copyCurrent()) return;
+    if (pending || command.clientId !== session.clientId || copyCurrent&&!copyCurrent() || trackedProject&&!projectCurrent()) return;
     if (!gateway && (!common || commonSending.current || !commonCurrent() || latestBuffer.current.pending !== buffer.pending ||
         (buffer.pending && buffer.pending.request !== command))) return;
     if (common && command.operation === 'copyMethodology') {
@@ -97,10 +119,15 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
     }
     if (common) commonSending.current = true;
     setPending(true); setError(null); setSavedVersion(null);
+    if(trackedProject)setSettledProject(null);
     let ref = common ? buffer.pending?.storedRef : undefined;
     const preparationId = ref ? null : crypto.randomUUID();
     if (preparationId) { preparing.current=preparationId;onChange(previous=>({...previous,preparationId})); }
-    const current = () => active.current && (!common || commonCurrent()) && (!copyCurrent || copyCurrent());
+    const projectPending=()=>{
+      const previous=latestBuffer.current;
+      return previous===buffer||(preparationId!==null&&previous.preparationId===preparationId)||previous.pending?.request===command;
+    };
+    const current = () => (trackedProject?projectCurrent()&&projectPending():active.current) && (!common || commonCurrent()) && (!copyCurrent || copyCurrent());
     let applied = !!ref;
     try {
       if (!ref) {
@@ -116,15 +143,23 @@ export function CommonMethodEditor({ client, session, source, buffer, onChange, 
         }
         ref = storedRef;
       }
-      if(copyCurrent&&!copyCurrent())return;
+      if(trackedProject&&!current()||copyCurrent&&!copyCurrent())return;
       const value = gateway ? await gateway.read(ref, name, purpose) : await getMethod(client, { ref, name, purpose, scope: 'USER_COMMON', systemCode: null, status: 'DRAFT', sourceAvailable: false });
       if(!current())return;
-      onChange(previous => (!common || current()) && previous.pending?.request.commandId === command.commandId&&!previous.preparationId&&!previous.application?.pending&&!previous.application?.preparationId ? {...methodBuffer(value, session.user.id),...(common ? {review:previous.review} : {}),application:previous.application} : previous);
-      setSavedVersion(ref.version); onSaved();
+      if(trackedProject){
+        if(value.scope!=='PROJECT'||!('projectId' in value)||value.projectId!==projectId||command.projectId!==projectId)throw new ApiError('RESPONSE_INVALID');
+        const completed=methodBuffer(value,session.user.id);
+        onChange(previous=>current()&&previous.pending?.request===command&&!previous.preparationId&&!previous.review?.pending&&
+          !previous.application?.pending&&!previous.application?.preparationId?{...completed,application:previous.application}:previous);
+        setSettledProject({owner:projectOwner,buffer:completed,value});
+      }else{
+        onChange(previous => (!common || current()) && previous.pending?.request.commandId === command.commandId&&!previous.preparationId&&!previous.application?.pending&&!previous.application?.preparationId ? {...methodBuffer(value, session.user.id),...(common ? {review:previous.review} : {}),application:previous.application} : previous);
+        setSavedVersion(ref.version); onSaved();
+      }
     } catch (cause: unknown) {
       if(!current())return;
       const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
-      if (!applied && !(gateway && buffer.pending) && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => ({ ...previous, pending: null }));
+      if (!applied && !(gateway && buffer.pending) && failure.status >= 400 && failure.status < 500 && failure.code !== 'RESPONSE_INVALID') onChange(previous => !trackedProject||previous.pending?.request===command?{ ...previous, pending: null }:previous);
       if (failure.status === 401) onAuthenticationLost();
     } finally {
       if (preparationId) { onChange(previous=>previous.preparationId===preparationId?{...previous,preparationId:null}:previous);preparing.current=null; }

@@ -7,9 +7,9 @@ import type { MethodBuffer } from './common-api.ts';
 import {matchesReviewReceipt, reviewReceiptEvent, verifyReviewEvent, type FormReviewWork} from '../methodologies/form-editor-state.ts';
 
 const labels: Record<ReviewOutcome, string> = { ACCEPTED: '적합', REWORK: '보완 필요', BLOCKED: '판단 보류', NOT_EXECUTED: '미검토' };
-export function MethodReviewPanel({ client, session, source, buffer, onChange, onVerified, onAuthenticationLost, gateway, projectId }: {
+export function MethodReviewPanel({ client, session, source, buffer, onChange, onVerified, onAuthenticationLost, gateway, projectId, readOnly=false }: {
   client: ApiClient; session: { user: { id: string }; clientId: string; csrfToken: string }; source: MethodVersion;
-  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onVerified: (value: MethodVersion) => void; onAuthenticationLost: () => void; gateway?: MethodGateway; projectId?:string;
+  buffer: MethodBuffer; onChange: Dispatch<SetStateAction<MethodBuffer>>; onVerified: (value: MethodVersion) => void; onAuthenticationLost: () => void; gateway?: MethodGateway; projectId?:string;readOnly?:boolean;
 }) {
   const fieldId = useId();
   const active=useRef(true),preparing=useRef<string|null>(null),latestChange=useRef(onChange);latestChange.current=onChange;
@@ -21,12 +21,12 @@ export function MethodReviewPanel({ client, session, source, buffer, onChange, o
   const project=gateway ? projectId??null : null;
   const targetKey=JSON.stringify([source.ref.id,source.ref.version,source.ref.contentHash,criteria?.criteriaVersion,criteria?.items]);
   const context=useMemo(()=>({userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken,transport:client.transport,targetKey}),
-    [session,session.user.id,session.clientId,session.csrfToken,client,client.transport,targetKey,project,buffer.ownerUserId,!!gateway]);
+    [session,session.user.id,session.clientId,session.csrfToken,client,client.transport,targetKey,project,buffer.ownerUserId,!!gateway,readOnly]);
   const lastContext=useRef(context);lastContext.current=context;
   const current=()=>active.current && lastContext.current===context && session.user.id===context.userId &&
     session.clientId===context.clientId && session.csrfToken===context.csrf && client.transport===context.transport &&
     JSON.stringify([source.ref.id,source.ref.version,source.ref.contentHash,source.contentReviewCriteria?.criteriaVersion,source.contentReviewCriteria?.items])===context.targetKey;
-  const locked = pending || !!buffer.preparationId || !!work?.pending || !!buffer.pending || buffer.dirty || !!buffer.application?.pending || !!buffer.application?.preparationId;
+  const locked = readOnly || pending || !!buffer.preparationId || !!work?.pending || !!buffer.pending || buffer.dirty || !!buffer.application?.pending || !!buffer.application?.preparationId;
   const latest = source.contentReviews?.[0];
   function update(patch: Partial<FormReviewWork>) { onChange(previous => previous.review ? { ...previous, review: { ...previous.review, ...patch, dirty: true } } : previous); setRecorded(null); }
   function start() {
@@ -36,7 +36,7 @@ export function MethodReviewPanel({ client, session, source, buffer, onChange, o
     setError(null); setRecorded(null);
   }
   async function execute(request: MethodCommand) {
-    if (running.current || !matches || !current() || request.clientId!==session.clientId ||
+    if (readOnly || running.current || !matches || !current() || request.clientId!==session.clientId ||
         work.pending && work.pending!==request || gateway && (!project || work.pending && request.projectId!==project)) return;
     if (request.operation==='recordContentReview' ? request.payload.targetKind!=='METHODOLOGY' : request.operation!=='confirmMethodology') return;
     let event=work.receiptEvent;
@@ -121,7 +121,7 @@ export function MethodReviewPanel({ client, session, source, buffer, onChange, o
         <ul aria-label="확정 당시 검토 참조">{source.confirmation.reviewRefs.map((review,index)=><li key={JSON.stringify([index,review.id,review.targetRef])}><p>검토 ID {review.id}</p><p>기준 버전 {review.criteriaVersion} · 저장 판정 {review.outcome}</p><p>대상 ID {review.targetRef.id} · 대상 버전 {review.targetRef.version}</p><p>대상 내용 지문 {review.targetRef.contentHash}</p></li>)}</ul>
       </details></> : <p>이 버전의 사용자 확정 이력 없음</p>}
     {pending ? <p role="status">검토·확정 저장과 재조회를 확인하고 있습니다.</p> : null}
-    {work?.pending && !pending ? <><p role="alert">{work.receiptEvent?'검토·확정 저장 확인 · 원문 사건 조회 미확인':'검토·확정 결과 미확인 · 같은 명령만 다시 확인하세요.'}</p><button disabled={!matches || work.pending.clientId !== session.clientId || gateway && work.pending.projectId!==project || !!work.receiptEvent && !matchesReviewReceipt(work.receiptEvent,work.pending,source.ref,work.criteriaVersion,session.user.id,project)} onClick={() => { void execute(work.pending!); }}>{work.receiptEvent?'저장된 검토·확정 사건 다시 조회':'같은 검토·확정 명령 결과 확인'}</button></> : null}
+    {work?.pending && !pending ? <><p role="alert">{work.receiptEvent?'검토·확정 저장 확인 · 원문 사건 조회 미확인':'검토·확정 결과 미확인 · 같은 명령만 다시 확인하세요.'}</p><button disabled={readOnly || !matches || work.pending.clientId !== session.clientId || gateway && work.pending.projectId!==project || !!work.receiptEvent && !matchesReviewReceipt(work.receiptEvent,work.pending,source.ref,work.criteriaVersion,session.user.id,project)} onClick={() => { void execute(work.pending!); }}>{work.receiptEvent?'저장된 검토·확정 사건 다시 조회':'같은 검토·확정 명령 결과 확인'}</button></> : null}
     {error ? <p role="alert">{error.message} 검토 입력과 미확인 명령은 유지했습니다.</p> : null}
     {recorded===context ? <p role="status">서버 내용 검토 기록 확인</p> : null}
   </section>;

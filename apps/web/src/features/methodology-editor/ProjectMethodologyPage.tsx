@@ -1,11 +1,11 @@
 import {StoredMethodReviewRead} from './StoredMethodReviewRead.tsx';
 import type {MethodLookup} from './project-methodology-review-api.ts';
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { getMethod, listMethods, type MethodPage, type MethodVersion } from './api.ts';
 import { listProjectMethods, readProjectMethod, readProjectMethodAtVersion, readMethodApplicationRef, prepareProjectMethod, writeProjectMethod, type ProjectMethodPage } from './project-api.ts';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
-import { CommonMethodEditor } from './CommonMethodEditor.tsx';
+import { CommonMethodEditor, type CommittedProjectMethod } from './CommonMethodEditor.tsx';
 import { MethodReviewPanel } from './MethodReviewPanel.tsx';
 import { MethodGraphCanvas } from './MethodGraphCanvas.tsx';
 import type { MethodBuffer, MethodGateway } from './common-api.ts';
@@ -25,13 +25,57 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
   client: ApiClient; projectId: string; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: MethodBuffer;
   onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void;
 }) {
-  const [page, setPage] = useState<ProjectMethodPage | null>(null), [catalog, setCatalog] = useState<MethodPage | null>(null), [source, setSource] = useState<MethodVersion | null>(null);
+  const [page, setPage] = useState<ProjectMethodPage | null>(null), [catalog, setCatalog] = useState<MethodPage | null>(null);
   const [error, setError] = useState<ApiError | null>(null), [loading, setLoading] = useState(true), [revision, setRevision] = useState(0);
   const [navigation, setNavigation] = useState<ListNavigation>(firstLists), [position, setPosition] = useState<ListNavigation>(firstLists);
-  const selectionOwner=useRef({key:JSON.stringify([projectId,session.user.id,session.clientId]),client,transport:client.transport});
-  const selectionKey=JSON.stringify([projectId,session.user.id,session.clientId]);if(selectionOwner.current.key!==selectionKey||selectionOwner.current.client!==client||selectionOwner.current.transport!==client.transport)selectionOwner.current={key:selectionKey,client,transport:client.transport};
+  const selectionKey=JSON.stringify([projectId,session.user.id,session.clientId,session.csrfToken]);
+  const selectionOwner=useRef({key:selectionKey,client,transport:client.transport});
+  if(selectionOwner.current.key!==selectionKey||selectionOwner.current.client!==client||selectionOwner.current.transport!==client.transport)selectionOwner.current={key:selectionKey,client,transport:client.transport};
   const selectionContext=selectionOwner.current,selectionSequence=useRef(0),selectionAlive=useRef(true);
-  useEffect(()=>{selectionAlive.current=true;return()=>{selectionAlive.current=false;selectionSequence.current++;};},[]);
+  useLayoutEffect(()=>{selectionAlive.current=true;return()=>{selectionAlive.current=false;selectionSequence.current++;};},[]);
+  const pageCurrent=()=>selectionAlive.current&&selectionOwner.current===selectionContext&&client.transport===selectionContext.transport;
+  const [ordinarySource,setSource]=useState<{owner:typeof selectionContext;value:MethodVersion}|null>(null);
+  const bufferOwner=useRef({value:buffer});
+  if(bufferOwner.current.value!==buffer)bufferOwner.current={value:buffer};
+  type SavedCandidate=CommittedProjectMethod&{owner:typeof selectionContext;bufferOwner:typeof bufferOwner.current};
+  type SavedRead={candidate:SavedCandidate;value:MethodVersion|null;error:ApiError|null};
+  const [saved,setSaved]=useState<SavedCandidate|null>(null),savedRef=useRef<SavedCandidate|null>(null);
+  const [savedRead,setSavedRead]=useState<SavedRead|null>(null),savedTicket=useRef<object|null>(null);
+  const verifiedSave=saved?.owner===selectionContext?saved:null;
+  const readySave=verifiedSave?.bufferOwner===bufferOwner.current?verifiedSave:null;
+  const opened=savedRead?.candidate.owner===selectionContext?savedRead:null;
+  const source=opened?.value??(ordinarySource?.owner===selectionContext?ordinarySource.value:null);
+  const savedOpening=!!opened&&!opened.value&&!opened.error&&opened.candidate===readySave;
+  function clearSavedRead(){savedTicket.current=null;setSavedRead(null);}
+  function recordSaved(save:CommittedProjectMethod){
+    if(!pageCurrent()||bufferOwner.current.value!==save.buffer)return;
+    clearSavedRead();
+    const candidate={...save,owner:selectionContext,bufferOwner:bufferOwner.current};
+    savedRef.current=candidate;setSaved(candidate);
+  }
+  async function openSavedReview(candidate:SavedCandidate){
+    if(!pageCurrent()||savedTicket.current||savedRef.current!==candidate||bufferOwner.current!==candidate.bufferOwner)return;
+    const attempt={};
+    const current=()=>pageCurrent()&&savedTicket.current===attempt&&savedRef.current===candidate&&bufferOwner.current===candidate.bufferOwner;
+    const {ref,name,purpose}=candidate.value;
+    savedTicket.current=attempt;
+    setSavedRead({candidate,value:null,error:null});
+    try{
+      const value=await readProjectMethod(client,projectId,ref,name,purpose);
+      if(current()){setNodeId('');setSavedRead({candidate,value,error:null});}
+    }catch(cause){
+      if(!current())return;
+      const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');
+      if([401,403,404].includes(error.status)){setSource(null);setOverflow(null);setShowOverflow(false);}
+      setSavedRead({candidate,value:null,error});
+      if(error.status===401)onAuthenticationLost();
+    }finally{if(savedTicket.current===attempt)savedTicket.current=null;}
+  }
+  function replaceReviewed(value:MethodVersion){
+    if(!pageCurrent())return;
+    if(opened?.value)setSavedRead(previous=>previous===opened?{...opened,value}:previous);
+    else setSource(previous=>ordinarySource===previous?{owner:selectionContext,value}:previous);
+  }
   const [overflow,setOverflow]=useState<{owner:typeof selectionContext;lookup:MethodLookup}|null>(null),[showOverflow,setShowOverflow]=useState(false);
   const [nodeId, setNodeId] = useState('');
   const [applied, setApplied] = useState<{ owner: typeof selectionContext; ref: VersionRef | null } | null>(null);
@@ -52,10 +96,10 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
     if (!selectionAlive.current || selectionOwner.current !== selectionContext || client.transport !== selectionContext.transport || authorityRevision.current !== callbackAuthority) return;
     observeApplied(ref);
   }
-  function failed(cause: unknown) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if ([401, 403, 404].includes(failure.status)) { setSource(null); setPage(null); setCatalog(null); if (failure.status === 401) onAuthenticationLost(); } }
+  function failed(cause: unknown) { const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure); if ([401, 403, 404].includes(failure.status)) { clearSavedRead();setSource(null);setPage(null);setCatalog(null);if(failure.status===401)onAuthenticationLost(); } }
   useEffect(() => {
     let active = true;
-    const current = () => active && selectionOwner.current === selectionContext && client.transport === selectionContext.transport;
+    const current = () => active && pageCurrent();
 
     setLoading(true); setError(null);
     Promise.all([listProjectMethods(client, projectId, navigation.own.cursor), listMethods(client, { ...(navigation.catalog.cursor ? { cursor: navigation.catalog.cursor } : {}) }), readMethodApplicationRef(client, projectId)]).then(([own, common, ref]) => {
@@ -83,10 +127,13 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
   }
   const gateway: MethodGateway = { prepare: request => prepareProjectMethod(client, projectId, session, request), write: request => writeProjectMethod(client, request, session.csrfToken), read: (ref, name, purpose) => readProjectMethod(client, projectId, ref, name, purpose) };
   const headVersion = source && 'headVersion' in source ? Number(source.headVersion) : null;
+  const superseded=source?.scope==='PROJECT'&&!!verifiedSave&&source.ref.id===verifiedSave.value.ref.id&&source.ref.version<verifiedSave.value.ref.version;
+  const savedHistorical=!!opened?.value&&source?.ref.version!==headVersion;
+  const sourceUnavailable=opened?.value?false:loading||!!error||savedOpening;
   const selectedNode = source?.graph.nodes.find(node => node.nodeId === nodeId) ?? source?.graph.nodes.find(node => node.nodeId === source.graph.entryNodeId);
   const formAccess = source && selectedNode && !loading && !error ? { client, onAuthenticationLost, contextKey: JSON.stringify([session.user.id, session.clientId, projectId, source.ref, selectedNode.nodeId]) } : undefined;
   const limitAccess = source?.scope==='PROJECT' && 'projectId' in source && source.projectId===projectId && selectedNode && !loading && !error ? {client,projectId,userId:session.user.id,clientId:session.clientId,sourceRef:source.ref,onAuthenticationLost} : undefined;
-  async function select(load:()=>Promise<MethodVersion>,lookup?:MethodLookup){if(loading)return;const captured=lookup?structuredClone(lookup):null,ticket=++selectionSequence.current,current=()=>selectionAlive.current&&selectionOwner.current===selectionContext&&client.transport===selectionContext.transport&&ticket===selectionSequence.current;setLoading(true);setError(null);setSource(null);setOverflow(null);setShowOverflow(false);try{const value=await load();if(current())setSource(value);}catch(cause){if(current()){failed(cause);if(captured&&cause instanceof ApiError&&cause.code==='METHOD_REVIEW_PAGINATION_NOT_READY'&&cause.status===412)setOverflow({owner:selectionContext,lookup:captured});}}finally{if(current())setLoading(false);}}
+  async function select(load:()=>Promise<MethodVersion>,lookup?:MethodLookup){if(loading||!pageCurrent())return;clearSavedRead();const captured=lookup?structuredClone(lookup):null,ticket=++selectionSequence.current,current=()=>pageCurrent()&&ticket===selectionSequence.current;setLoading(true);setError(null);setSource(null);setOverflow(null);setShowOverflow(false);try{const value=await load();if(current())setSource({owner:selectionContext,value});}catch(cause){if(current()){failed(cause);if(captured&&cause instanceof ApiError&&cause.code==='METHOD_REVIEW_PAGINATION_NOT_READY'&&cause.status===412)setOverflow({owner:selectionContext,lookup:captured});}}finally{if(current())setLoading(false);}}
   return <>
     <section aria-label="프로젝트 전용 방법론 조회"><h2>프로젝트 전용 방법론</h2>
       <p className="meta">공통 원본과 기존 적용본은 유지됩니다. 저장·내용 검토·확정은 적용 전환이나 Agent 실행이 아닙니다.</p>
@@ -102,15 +149,19 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
       {loading ? <p role="status">방법론 원본 조회 중</p> : null}{error ? <><p role="alert">{error.message} 이전 목록은 현재 자료로 간주하지 않습니다.</p><button disabled={loading} onClick={() => { setLoading(true); setRevision(value => value + 1); }}>방법론 목록 다시 조회</button></> : null}
     </section>
     {overflow?.owner===selectionContext&&!loading&&error?.code==='METHOD_REVIEW_PAGINATION_NOT_READY'&&error.status===412?<><button onClick={()=>setShowOverflow(true)} disabled={showOverflow}>분리된 방법론 원본 조회</button>{showOverflow?<StoredMethodReviewRead client={client} projectId={projectId} userId={session.user.id} clientId={session.clientId} lookup={overflow.lookup} onClose={()=>setShowOverflow(false)} onAuthenticationLost={onAuthenticationLost}/>:null}</>:null}
-    {source ? <section aria-label="선택한 전용 원본" className="status-card"><h3>{source.name} · 버전 {source.ref.version}</h3><p>{source.purpose}</p><p className="meta">{source.scope === 'PROJECT' ? '프로젝트 전용' : source.scope === 'SYSTEM' ? '시스템 원본' : '내 공통 원본'} · {source.ref.contentHash}</p>
+    {source ? <section key={JSON.stringify(source.ref)} aria-label="선택한 전용 원본" className="status-card"><h3>{source.name} · 버전 {source.ref.version}</h3><p>{source.purpose}</p><p className="meta">{source.scope === 'PROJECT' ? '프로젝트 전용' : source.scope === 'SYSTEM' ? '시스템 원본' : '내 공통 원본'} · {source.ref.contentHash}</p>
       {source.scope === 'PROJECT' ? <div><button disabled={loading || source.ref.version <= 1} onClick={() => { void select(() => readProjectMethodAtVersion(client, projectId, source.ref.id, source.ref.version - 1),{id:source.ref.id,version:source.ref.version-1}); }}>이전 방법론 버전</button><button disabled={loading || !headVersion || source.ref.version >= headVersion} onClick={() => { void select(() => readProjectMethodAtVersion(client, projectId, source.ref.id, source.ref.version + 1),{id:source.ref.id,version:source.ref.version+1}); }}>다음 방법론 버전</button><p className="meta">현재 조회 {source.ref.version} / 최신 {headVersion} · 과거 원문과 확정 이력 보존</p></div> : null}
       <MethodGraphCanvas graph={source.graph} selectedId={source.graph.nodes.some(node => node.nodeId === nodeId) ? nodeId : source.graph.entryNodeId} onSelect={setNodeId} label="프로젝트 방법론 원본 흐름" />
       {selectedNode ? <section aria-label="전용 원본 선택 단계 상세"><StoredNodeDefinition node={selectedNode} formAccess={formAccess} limitAccess={limitAccess} /><StoredNodeRoutes graph={source.graph} nodeId={selectedNode.nodeId} /></section> : null}
-      <details><summary>절차 원문과 구조 검사</summary>{source.graph.nodes.map(node => <div key={node.nodeId}><h4>{node.name}</h4><p>{node.purpose}</p><ul>{node.completionCriteria.map((value, index) => <li key={index}>{value}</li>)}</ul></div>)}<StoredMethodValidation graph={source.graph} validation={source.validation} onSelect={setNodeId} /></details>
+      <details key={JSON.stringify(source.ref)} open={opened?.value?true:undefined}><summary>절차 원문과 구조 검사</summary>{source.graph.nodes.map(node => <div key={node.nodeId}><h4>{node.name}</h4><p>{node.purpose}</p><ul>{node.completionCriteria.map((value, index) => <li key={index}>{value}</li>)}</ul></div>)}<StoredMethodValidation graph={source.graph} validation={source.validation} onSelect={setNodeId} /></details>
+      {superseded||savedHistorical?<p>이 버전의 원문과 구조 검사 기록을 표시합니다. 내용 검토·확정·적용에는 최신 버전을 선택하세요.</p>:null}
       <p>{source.confirmation ? '이 버전의 확정 이력 있음 · 적용 여부와 별도' : '이 버전의 별도 확정 이력 없음'}</p></section> : null}
     {source?.scope==='PROJECT'&&headVersion?<MethodVersionComparison key={`${projectId}:${source.ref.id}:${source.ref.version}:${source.ref.contentHash}`} client={client} projectId={projectId} base={source} maxVersion={headVersion} onAuthenticationLost={onAuthenticationLost}/>:null}
-    <CommonMethodEditor client={client} projectId={projectId} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onAuthenticationLost={onAuthenticationLost} onSaved={() => resetLists(false)} />
-    {!loading && !error && source?.scope === 'PROJECT' ? <MethodReviewPanel projectId={projectId} client={client} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onVerified={setSource} onAuthenticationLost={onAuthenticationLost} /> : null}
-    <MethodApplicationPanel key={JSON.stringify([projectId,session.user.id,session.clientId,source?.ref??null])} client={client} projectId={projectId} session={session} source={source} appliedRef={appliedRef} unavailable={loading||!!error} buffer={buffer} onChange={onChange} onApplied={confirmApplied} onAuthenticationLost={onAuthenticationLost}/>
+    <CommonMethodEditor client={client} projectId={projectId} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} onAuthenticationLost={onAuthenticationLost} onSaved={() => resetLists(false)} onProjectSaved={recordSaved}/>
+    {readySave?<button type="button" disabled={savedOpening} onClick={()=>void openSavedReview(readySave)}>저장한 버전 검사·검토 열기</button>:null}
+    {savedOpening?<p role="status">저장한 버전의 보호 원문 확인 중</p>:null}
+    {opened?.error&&opened.candidate===readySave?<p role="alert">{opened.error.message} · 저장한 버전의 원문을 확인하지 못했습니다.</p>:null}
+    {!sourceUnavailable&&source?.scope === 'PROJECT' ? <MethodReviewPanel projectId={projectId} client={client} session={session} source={source} buffer={buffer} onChange={onChange} gateway={gateway} readOnly={superseded||savedHistorical} onVerified={replaceReviewed} onAuthenticationLost={onAuthenticationLost} /> : null}
+    <MethodApplicationPanel key={JSON.stringify([projectId,session.user.id,session.clientId,source?.ref??null])} client={client} projectId={projectId} session={session} source={source} appliedRef={appliedRef} unavailable={loading||!!error||savedOpening||superseded||savedHistorical} buffer={buffer} onChange={onChange} onApplied={confirmApplied} onAuthenticationLost={onAuthenticationLost}/>
   </>;
 }
