@@ -5,7 +5,7 @@ import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {createHash,createHmac} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
-import type {OriginPage,OriginView} from '../../../apps/web/src/features/session-detail/execution-start-origin-api.ts';
+import type {OriginBuffer,OriginPage,OriginView} from '../../../apps/web/src/features/session-detail/execution-start-origin-api.ts';
 import type {PreparationOriginal} from '../../../apps/web/src/features/session-detail/preparation-history-api.ts';
 import {executionStartOriginFixture,installExecutionStartOriginMemoryFS} from '../FN09/execution-start-origin-fixture.ts';
 await installExecutionStartOriginMemoryFS();
@@ -83,6 +83,64 @@ test('실제 App·SessionDetail·Panel은 명시 선택과 원 packet CAS로 저
 async function prepareInApp(q:Awaited<ReturnType<typeof mountApp>>){await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 저장'));await q.click('원자료 선택 목록 조회');await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='대기 요청'));await q.change('대기 요청',q.f.stage.data.ref.id);await q.change('등록 준비',q.f.preparation.data.ref.id);await q.change('책임 예약',q.f.binding.data.ref.id);await q.change('기록 이유','원 packet 이탈 검산');await q.click('등록 준비 고정');await q.wait(()=>q.container.textContent.includes('상태 PREPARED'));const check=q.nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent.includes('선택 원자료의 비실행 저장을 확인했습니다'));assert(check);const prop=Object.keys(check).find(k=>k.startsWith('__reactProps$'));assert.equal((check as any)[prop!].type,'checkbox');await q.ui.React.act(async()=>{(check as any)[prop!].onChange({target:{checked:true}});});}
 function detailHash(q:Awaited<ReturnType<typeof mountApp>>){const ref=q.f.confirmed.data.snapshot.draftRef;return `#/projects/${q.f.pid}/session/assignments/${ref.id}/versions/${ref.version}/${ref.contentHash}`;}
 function originPosts(q:Awaited<ReturnType<typeof mountApp>>){return q.sent.filter(v=>v.init.method==='POST'&&v.body.operation==='registerExecutionStartOrigin');}
+
+test('일반 미전송 원자료 PREPARED는 같은 App 재인증 뒤 명시 폐기로 새 보호 준비를 시작한다',{timeout:30000},async()=>{
+ const q=await mountApp();try{
+  await prepareInApp(q);const original=q.nodes().find(n=>n.tagName==='P'&&/원 명령 .*상태 PREPARED/.test(n.textContent))!.textContent;
+  q.mode.getOverride=path=>path.endsWith('/execution-start-origins')?Response.json({code:'AUTH_REQUIRED'},{status:401}):path==='/api/v1/auth/setup'?Response.json({setupRequired:false,policyVersion:1}):undefined;
+  await q.click('보호 이력 조회');await q.wait(()=>q.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='로그인'&&!n.disabled));
+  q.mode.getOverride=path=>path==='/api/v1/auth/setup'?Response.json({setupRequired:false,policyVersion:1}):undefined;
+  q.mode.login={user:{id:q.f.uid,displayName:'같은 사용자 재인증'},clientId:q.f.cid,csrfToken:'b'.repeat(43)};
+  const form=q.nodes().find(n=>n.tagName==='FORM')!;await q.ui.React.act(async()=>{await nodeProps(form).onSubmit({preventDefault(){}});});
+  await q.wait(()=>q.container.textContent.includes(original));assert.equal(originPosts(q).length,0);
+  const ack=q.nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent.includes('선택 원자료의 비실행 저장을 확인했습니다'))!;
+  await q.ui.React.act(async()=>nodeProps(ack).onChange({target:{checked:true}}));await q.click('원자료 명시 저장');await q.wait(()=>q.container.textContent.includes('ORIGIN_PACKET_UNAVAILABLE'));
+  assert(q.container.textContent.includes(original));assert.equal(originPosts(q).length,0);assert.equal(q.f.tables.origins!.length,0);
+  const before=q.sent.length;await q.click('미전송 원자료 준비 폐기');assert.equal(q.sent.length,before);assert(!q.container.textContent.includes(original));
+  await prepareInApp(q);assert(!q.container.textContent.includes(original));assert.equal(originPosts(q).length,0);
+  await q.click('원자료 명시 저장');await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 보호 원문'));
+  assert.equal(originPosts(q).length,1);assert.equal(originPosts(q)[0]!.init.headers['X-Anvil-CSRF'],'b'.repeat(43));assert.equal(q.f.tables.origins!.length,1);assert.deepEqual(q.f.state.unsupported,[]);
+ }finally{await q.close();}
+});
+
+test('일반 미전송 원자료 폐기는 현재 exact 부모 CAS 성공 뒤에만 동의·선택을 정리한다',{timeout:30000},async()=>{
+ const q=await mountApp();try{
+  const assignment={projectId:q.f.pid,...q.f.confirmed.data},session={...q.session,csrfToken:createHmac('sha256',Buffer.alloc(32,7)).update('csrf:'+q.f.token).digest('base64url')};
+  let buffer:OriginBuffer|null=null,reject=false,changes=0,key='';
+  function Host(){const[,refresh]=q.ui.React.useState(0);return q.ui.React.createElement(q.ui.ExecutionStartOriginPanel,{client:q.client,session,assignment,storage:{buffers:key?{[key]:buffer}:{},onChange:(nextKey:string,update:(prior:OriginBuffer|null)=>OriginBuffer|null)=>{const next=update(buffer);changes++;if(reject||next===buffer)return false;key=nextKey;buffer=next;refresh((n:number)=>n+1);return true;}},onUnavailable:()=>assert.fail('폐기는 인증 효과 없음')});}
+  await q.ui.React.act(async()=>q.root.render(q.ui.React.createElement(Host)));
+  await prepareInApp(q);const original=buffer as OriginBuffer|null;assert(original?.packet);const packet=original.packet;reject=true;changes=0;
+  const ack=()=>q.nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent.includes('선택 원자료의 비실행 저장을 확인했습니다'))!;
+  await q.ui.React.act(async()=>nodeProps(ack()).onChange({target:{checked:true}}));const before=q.sent.length;
+  await q.click('미전송 원자료 준비 폐기');assert.equal(changes,1);assert.equal(buffer,original);assert.equal(nodeProps(ack()).checked,true);assert.equal(q.sent.length,before);
+  reject=false;await q.click('미전송 원자료 준비 폐기');assert.equal(changes,2);assert.equal(buffer,null);assert(!q.container.textContent.includes(packet.command.commandId));assert.equal(q.sent.length,before);assert.equal(originPosts(q).length,0);
+ }finally{await q.close();}
+});
+
+for(const state of ['SENDING','UNKNOWN','SAVED'] as const)test('일반 원자료의 옛 폐기 클릭은 실제 '+state+' 원명령을 지우지 않는다',{timeout:30000},async()=>{
+ const q=await mountApp();let release!:()=>void;const held=new Promise<void>(resolve=>{release=resolve;});try{
+  await prepareInApp(q);const original=q.nodes().find(n=>n.tagName==='P'&&/원 명령 .*상태 PREPARED/.test(n.textContent))!.textContent,commandId=/원 명령 ([a-f0-9-]{36})/.exec(original)![1]!;
+  const discard=nodeProps(q.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='미전송 원자료 준비 폐기')!).onClick;
+  if(state==='SENDING')q.mode.afterPost=()=>held;if(state==='UNKNOWN')q.mode.lost=true;
+  await q.click('원자료 명시 저장');
+  if(state==='SENDING')await q.wait(()=>q.f.tables.origins!.length===1);else if(state==='SAVED')await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 보호 원문'));else await q.wait(()=>q.container.textContent.includes('상태 UNKNOWN'));
+  assert(q.container.textContent.includes('상태 '+state));const before=q.sent.length;
+  await q.ui.React.act(async()=>discard());await q.flush();assert.equal(q.sent.length,before);assert(q.container.textContent.includes(commandId));assert(q.container.textContent.includes('상태 '+state));assert.equal(originPosts(q).length,1);assert.equal(q.nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent==='미전송 원자료 준비 폐기').length,0);
+  if(state==='SENDING'){release();await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 보호 원문'));assert(q.container.textContent.includes('확정 receipt 보존'));}
+ }finally{release();await q.close();}
+});
+
+test('일반 원자료의 옛 폐기 클릭은 raw 이탈·이벤트 왕복과 새 packet을 바꾸지 않는다',{timeout:30000},async()=>{
+ const q=await mountApp();try{
+  await prepareInApp(q);const original=q.nodes().find(n=>n.tagName==='P'&&/원 명령 .*상태 PREPARED/.test(n.textContent))!.textContent;
+  const discard=nodeProps(q.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='미전송 원자료 준비 폐기')!).onClick,route=location.hash;
+  location.hash='#/projects/'+q.f.pid;const before=q.sent.length;await q.ui.React.act(async()=>discard());assert.equal(q.sent.length,before);assert(q.container.textContent.includes(original));
+  await q.ui.React.act(async()=>{await q.navigate(location.hash);await q.navigate(route);});await q.wait(()=>q.container.textContent.includes(original));
+  const count=q.sent.length;await q.ui.React.act(async()=>discard());assert.equal(q.sent.length,count);assert(q.container.textContent.includes(original));
+  await q.click('미전송 원자료 준비 폐기');await prepareInApp(q);const next=q.nodes().find(n=>n.tagName==='P'&&/원 명령 .*상태 PREPARED/.test(n.textContent))!.textContent;assert.notEqual(next,original);
+  const changed=q.sent.length;await q.ui.React.act(async()=>discard());assert.equal(q.sent.length,changed);assert(q.container.textContent.includes(next));assert.equal(originPosts(q).length,0);
+ }finally{await q.close();}
+});
 
 const recordHash=(value:unknown)=>contentHash(canonicalJson(value));
 const exampleRef=(n:number)=>({id:'89911122-2222-4222-8222-'+String(n).padStart(12,'0'),version:1,contentHash:String(n%10).repeat(64)});
