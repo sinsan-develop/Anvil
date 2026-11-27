@@ -1,10 +1,10 @@
 import {DocumentSourceRefs} from './DocumentSourceRefs.tsx';
 import type {SourceLinkBuffer,SourceLinkChange} from './source-link-command-api.ts';
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { listDocuments, readDocument, type DocumentPage, type DocumentSummary, type DocumentVersion } from './api.ts';
-import { documentControl, editDocument, type DocumentBuffer, type DocumentSession } from './editor-api.ts';
+import { documentControl, documentDraftHash, editDocument, type DocumentBuffer, type DocumentSession } from './editor-api.ts';
 import { DocumentEditor } from './DocumentEditor.tsx';
 import { NewDocumentForm } from './NewDocumentForm.tsx';
 import { newDocumentReview, type DocumentReviewBuffer } from './review-api.ts';
@@ -35,7 +35,7 @@ import {SourceDetachEditor} from './SourceDetachEditor.tsx';
 import type {SourceLinkView} from './source-links-api.ts';
 import {DocumentStageFilter} from './DocumentStageFilter.tsx';
 import {DocumentMarkdownPreview} from './DocumentMarkdownPreview.tsx';
-import {sameStageRef,type StageNodeRef} from './stage-api.ts';
+import {nullableStageRef,sameStageRef,type StageNodeRef} from './stage-api.ts';
 import type {DocumentVersionSelection} from '../../shell/routes.ts';
 
 export function DocumentsPage({ client, projectId, session, requestedDocument, createdOriginal, buffer, onChange, review, onReviewChange, confirmation, onConfirmationChange, sourceDetach = null, onSourceDetachChange, sourceLink = null, onSourceLinkChange, onAuthenticationLost }: { createdOriginal?:import('../../shell/routes.ts').CreatedOriginalSelection; requestedDocument?:DocumentVersionSelection; client: ApiClient; projectId: string; session: DocumentSession; buffer: DocumentBuffer | null; onChange: Dispatch<SetStateAction<DocumentBuffer | null>>; review: DocumentReviewBuffer | null; onReviewChange: Dispatch<SetStateAction<DocumentReviewBuffer | null>>; confirmation: DocumentConfirmationBuffer | null; onConfirmationChange: Dispatch<SetStateAction<DocumentConfirmationBuffer | null>>; sourceDetach?: SourceDetachBuffer | null; onSourceDetachChange?: (change: SourceDetachChange) => void; sourceLink?:SourceLinkBuffer|null;onSourceLinkChange?:(change:SourceLinkChange)=>void; onAuthenticationLost: () => void }) {
@@ -118,7 +118,7 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
     if (!sameScope() || saveGeneration !== generation.current) return;
     const request = ++generation.current;
     const active = () => sameScope() && request === generation.current;
-    setCursor(null); setRefresh(value => value + 1);
+    closeDesignPreparation(); setCursor(null); setRefresh(value => value + 1);
     setScreenOrigin(null); setShowSourceLinks(false); setRegisteredView(null); setAnchorSelection(null);
     setShowComparison(false); setShowDesignIndex(false); setSelected(null); setOpened(null); setReadError(null); setReading(true);
     try {
@@ -224,13 +224,134 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
     } catch(cause) { if(current === generation.current) { const error=cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setEditingError(error); if(error.status===401) onAuthenticationLost(); } }
     finally { setStarting(false); }
   }
-  async function beginWorkPlan(){
-    if(!opened||starting||reading||choosingForm||review||confirmation||buffer?.pending||buffer?.proposalState||(buffer?.designIndexState||buffer?.workPlanState||buffer?.designDependencyState)||buffer?.importState||buffer?.importPreparationId||buffer&&buffer.ownerUserId!==session.user.id)return;
-    if(buffer?.dirty&&!confirm('앞선 미저장 편집을 버리고 선택한 원문에서 작업계획을 작성할까요?'))return;
-    const current=generation.current;setStarting(true);setEditingError(null);
-    try{const[form,control]=await Promise.all([getPinnedForm(client,opened.document.formRef),documentControl(client,projectId,session)]);if(current!==generation.current)return;if(form.definition.formCode!=='AF04')throw new ApiError('WORK_PLAN_DOCUMENT_KIND_INVALID',422);const next=editDocument(projectId,opened,session.user.id,control);next.workPlanState=newWorkPlan(next);next.workPlanState.input.tasks=[blankPlanTask()];onChange(previous=>previous===buffer?next:previous);}
-    catch(cause){if(current===generation.current){const e=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setEditingError(e);if(e.status===401)onAuthenticationLost();}}
-    finally{setStarting(false);}
+  const planTransport = client.transport, planDocumentOccurrence = generation.current;
+  const planScope = useMemo(() => [client, planTransport, projectId, session.user.id, session.clientId, session.csrfToken,
+    planDocumentOccurrence, opened, version, selected, requestedDocument, stageFilter, refresh, reading, readError,
+    listError, choosingForm, buffer, review, confirmation] as const,
+  [client, planTransport, projectId, session.user.id, session.clientId, session.csrfToken, planDocumentOccurrence,
+    opened, version, selected, requestedDocument, stageFilter, refresh, reading, readError, listError, choosingForm, buffer, review, confirmation]);
+  const committedPlanScope = useRef<typeof planScope | null>(null);
+  useLayoutEffect(() => {
+    committedPlanScope.current = planScope;
+    return () => { committedPlanScope.current = null; };
+  }, [planScope]);
+  function planScopeCurrent(scope: typeof planScope) {
+    return committedPlanScope.current === scope && client.transport === scope[1] && generation.current === scope[6];
+  }
+  type DesignPreparation = { scope: typeof planScope; designRef: VersionRef; controlGeneration: number };
+  const [designPreparation, setDesignPreparation] = useState<DesignPreparation | null>(null);
+  const [planCandidate, setPlanCandidate] = useState({ id: '', version: '' });
+  const livePlanCandidate = useRef(planCandidate);
+  function selectPlanCandidate(next: typeof planCandidate) {
+    livePlanCandidate.current = next;
+    setPlanCandidate(next);
+  }
+  const liveDesignPreparation = useRef<DesignPreparation | null>(null);
+  const shownDesignPreparation = designPreparation && planScope === designPreparation.scope
+    ? designPreparation : null;
+  const candidateDocuments = page?.items.filter(item => item.id !== shownDesignPreparation?.designRef.id) ?? [];
+  const candidate = candidateDocuments.find(item => item.id === planCandidate.id);
+  const candidateVersion = Number(planCandidate.version);
+  const validCandidate = !!candidate && Number.isSafeInteger(candidateVersion) && candidateVersion >= 1 && candidateVersion <= candidate.headVersion;
+  function closeDesignPreparation() {
+    liveDesignPreparation.current = null;
+    setDesignPreparation(null);
+    selectPlanCandidate({ id: '', version: '' });
+  }
+  function canChangePlanCandidate(preparation: DesignPreparation) {
+    return liveDesignPreparation.current === preparation && planScopeCurrent(preparation.scope);
+  }
+  async function beginWorkPlan() {
+    if (!opened || starting || reading || choosingForm || review || confirmation || buffer?.pending || buffer?.proposalState
+      || buffer?.designIndexState || buffer?.workPlanState || buffer?.designDependencyState || buffer?.importState
+      || buffer?.importPreparationId || buffer && buffer.ownerUserId !== session.user.id) return;
+    const scope = planScope;
+    if (!planScopeCurrent(scope)) return;
+    const release = preparationGate.acquire();
+    if (!release) return;
+    closeDesignPreparation();
+    setStarting(true);
+    setEditingError(null);
+    try {
+      const [form, control] = await Promise.all([getPinnedForm(client, opened.document.formRef), documentControl(client, projectId, session)]);
+      if (!planScopeCurrent(scope)) return;
+      if (form.definition.formCode === 'AF02') {
+        if (readError || listError || loading || buffer && buffer.projectId !== projectId) return;
+        if (buffer?.dirty) throw new ApiError('WORK_PLAN_EDIT_IN_PROGRESS', 409);
+        if (!opened.document.confirmed) throw new ApiError('DESIGN_NOT_CONFIRMED', 422);
+        if (version !== String(opened.document.version) || selected && selected.id !== opened.document.id) return;
+        const designRef = { id: opened.document.id, version: opened.document.version, contentHash: opened.document.contentHash };
+        const preparation = { scope, designRef, controlGeneration: control };
+        liveDesignPreparation.current = preparation;
+        setDesignPreparation(preparation);
+        return;
+      }
+      if (form.definition.formCode !== 'AF04') throw new ApiError('WORK_PLAN_DOCUMENT_KIND_INVALID', 422);
+      if (buffer?.dirty && !confirm('앞선 미저장 편집을 버리고 선택한 원문에서 작업계획을 작성할까요?')) return;
+      const next = editDocument(projectId, opened, session.user.id, control);
+      next.workPlanState = newWorkPlan(next);
+      next.workPlanState.input.tasks = [blankPlanTask()];
+      onChange(previous => previous === buffer && planScopeCurrent(scope) ? next : previous);
+    } catch (cause) {
+      if (planScopeCurrent(scope)) {
+        const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+        setEditingError(error);
+        if (error.status === 401) onAuthenticationLost();
+      }
+    } finally {
+      release();
+      setStarting(false);
+    }
+  }
+  async function prepareFromDesign() {
+    const preparation = shownDesignPreparation;
+    if (!preparation || !candidate || !validCandidate || starting || loading || buffer?.dirty || !opened) return;
+    const { scope, designRef, controlGeneration } = preparation;
+    const active = () => liveDesignPreparation.current === preparation && livePlanCandidate.current === planCandidate && planScopeCurrent(scope);
+    if (!active()) return;
+    const release = preparationGate.acquire();
+    if (!release) return;
+    setStarting(true);
+    setEditingError(null);
+    try {
+      const design = await readDocument(client, projectId, designRef.id, designRef.version, { expectedContentHash: designRef.contentHash, active });
+      if (!active()) return;
+      if (!design.document.confirmed) throw new ApiError('DESIGN_NOT_CONFIRMED', 422);
+      const plan = await readDocument(client, projectId, candidate.id, candidateVersion, { active });
+      if (!active()) return;
+      const { document: target } = plan;
+      if (!nullableStageRef(target.stageNodeRef)) throw new ApiError('DOCUMENT_REFERENCE_CONNECTION_PENDING', 412);
+      const planHash = await documentDraftHash(target.title, target.formRef, target.content, target.stageNodeRef);
+      if (!active()) return;
+      if (planHash !== target.contentHash) throw new ApiError('DOCUMENT_REFERENCE_CHANGED');
+      const form = await getPinnedForm(client, target.formRef);
+      if (!active()) return;
+      if (form.definition.formCode !== 'AF04') throw new ApiError('WORK_PLAN_DOCUMENT_KIND_INVALID', 422);
+      const index = await readDesignIndex(client, projectId, designRef);
+      if (!active()) return;
+      const control = await documentControl(client, projectId, session);
+      if (!active()) return;
+      if (control !== controlGeneration) throw new ApiError('PROJECT_CONTROL_CHANGED', 409);
+      const next = editDocument(projectId, plan, session.user.id, control);
+      const state = newWorkPlan(next);
+      state.input.designRef = designRef;
+      state.input.tasks = [blankPlanTask()];
+      state.designDocumentId = designRef.id;
+      state.designVersion = String(designRef.version);
+      state.designIndex = index;
+      next.workPlanState = state;
+      onChange(previous => previous === buffer && active() ? next : previous);
+    } catch (cause) {
+      if (active()) {
+        const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+        closeDesignPreparation();
+        setEditingError(error);
+        if (error.status === 401) onAuthenticationLost();
+      }
+    } finally {
+      release();
+      setStarting(false);
+    }
   }
   async function beginDependency(relation:'DEPENDS_ON'|'REFINES'='DEPENDS_ON',targetKind?:'DOCUMENT_VERSION') {
     if(!opened||starting||reading||choosingForm||review||confirmation||buffer?.pending||buffer?.proposalState||buffer?.designIndexState||buffer?.workPlanState||buffer?.designDependencyState||buffer?.importState||buffer?.importPreparationId||buffer&&buffer.ownerUserId!==session.user.id)return;
@@ -254,7 +375,7 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
     finally{setStarting(false);}
   }
   return <section aria-label="프로젝트 문서 조회" className="document-workspace">
-    <aside className="status-card document-list"><h2>프로젝트 문서</h2><button disabled={loading} onClick={() => { setCursor(null); setRefresh(value => value + 1); }}>문서 목록 새로고침</button>
+    <aside className="status-card document-list"><h2>프로젝트 문서</h2><button disabled={loading} onClick={() => { closeDesignPreparation(); setCursor(null); setRefresh(value => value + 1); }}>문서 목록 새로고침</button>
       {stageFilter?<><p>목록 조회 조건: {stageFilter.name}</p><p className="meta">적용본 {stageFilter.ref.applicationId} · 단계 {stageFilter.ref.nodeId} · 미연결/다른 단계 문서 제외</p><button type="button" disabled={starting} onClick={()=>selectListStage(null)}>전체 단계 문서로 돌아가기</button></>:null}
       {opened&&!reading&&!readError&&!loading&&!listError?<DocumentStageFilter key={JSON.stringify([projectId,session.user.id,session.clientId,opened.document.id,opened.document.version,opened.document.contentHash,opened.document.formRef])} client={client} projectId={projectId} formRef={opened.document.formRef} disabled={starting} onSelect={selectListStage} onAuthenticationLost={onAuthenticationLost}/>:null}
       <button disabled={starting || !!confirmation || reviewing || !!review?.pending || choosingForm || !!buffer?.pending || !!buffer?.proposalState || !!(buffer?.designIndexState||buffer?.workPlanState||buffer?.designDependencyState) || !!buffer?.importState || !!buffer?.importPreparationId || !!buffer && buffer.ownerUserId !== session.user.id} onClick={() => { if (!buffer?.dirty || confirm('앞선 미저장 문서 편집을 버리고 새 문서를 작성할까요?')) { setEditingError(null); setChoosingForm(true); } }}>새 문서 작성</button>
@@ -287,6 +408,20 @@ export function DocumentsPage({ client, projectId, session, requestedDocument, c
         <button disabled={starting || reading || choosingForm || !!confirmation || reviewing || !!buffer?.dirty || !!buffer?.pending || !!(buffer?.designIndexState||buffer?.workPlanState||buffer?.designDependencyState) || !!review?.pending || !latestAcceptedDocumentReview(opened.document)} onClick={() => { void beginConfirmation(); }}>이 버전 확정 준비</button>
         <button disabled={reading} onClick={()=>{setAnchorSelection(null);setShowDesignIndex(v=>!v);}}>{showDesignIndex?'설계 추적 조회 닫기':'이 버전 설계 추적 조회'}</button>
         <button disabled={starting||reading||choosingForm||!!review||!!confirmation||!!buffer?.pending||!!buffer?.proposalState||!!(buffer?.designIndexState||buffer?.workPlanState||buffer?.designDependencyState)||!!buffer?.workPlanState||!!buffer?.importState||!!buffer?.importPreparationId||!!buffer&&buffer.ownerUserId!==session.user.id} onClick={()=>{void beginWorkPlan();}}>이 버전에서 작업계획 작성</button>
+        {shownDesignPreparation ? <section className="status-card" aria-label="설계에서 작업계획 준비">
+          <p>확정 설계 v{shownDesignPreparation.designRef.version} · {shownDesignPreparation.designRef.contentHash}</p>
+          <p>별도 문서와 버전을 선택하면 고정 AF04 양식을 확인합니다. 작업계획 원문이 없다면 ‘새 문서 작성’에서 AF04 문서를 먼저 작성하세요.</p>
+          <label>작업계획 원문 후보<select aria-label="작업계획 원문 후보" value={planCandidate.id} disabled={starting || loading}
+            onChange={event => { if (canChangePlanCandidate(shownDesignPreparation)) selectPlanCandidate({ id: event.target.value, version: '' }); }}>
+            <option value="">문서를 선택하세요</option>
+            {candidateDocuments.map(item => <option key={item.id} value={item.id}>{item.title} · 최신 v{item.headVersion}</option>)}
+          </select></label>
+          <label>작업계획 원문 버전<input aria-label="작업계획 원문 버전" type="number" min="1" max={candidate?.headVersion}
+            value={planCandidate.version} disabled={starting || !candidate}
+            onChange={event => { if (canChangePlanCandidate(shownDesignPreparation)) selectPlanCandidate({ ...livePlanCandidate.current, version: event.target.value }); }} /></label>
+          <button disabled={starting || loading || !validCandidate} onClick={() => { void prepareFromDesign(); }}>선택한 AF04 버전에서 작업계획 준비</button>
+          <button onClick={() => { if (canChangePlanCandidate(shownDesignPreparation)) closeDesignPreparation(); }}>작업계획 원문 선택 닫기</button>
+        </section> : null}
         <button disabled={starting||reading||choosingForm||!!review||!!confirmation||!!buffer?.pending||!!buffer?.proposalState||!!(buffer?.designIndexState||buffer?.workPlanState||buffer?.designDependencyState)||!!buffer?.importState||!!buffer?.importPreparationId||!!buffer&&buffer.ownerUserId!==session.user.id} onClick={()=>{void beginDesignIndex();}}>이 버전 설계 위치 등록</button>
         <button disabled={starting||reading||choosingForm||!!review||!!confirmation||!!buffer?.pending||!!buffer?.proposalState||!!buffer?.designIndexState||!!buffer?.workPlanState||!!buffer?.designDependencyState||!!buffer?.importState||!!buffer?.importPreparationId||!!buffer&&buffer.ownerUserId!==session.user.id} onClick={()=>{void beginDependency();}}>이 버전 설계 의존 관계 작성</button>
         <button disabled={starting||reading||choosingForm||!!review||!!confirmation||!!buffer?.pending||!!buffer?.proposalState||!!buffer?.designIndexState||!!buffer?.workPlanState||!!buffer?.designDependencyState||!!buffer?.importState||!!buffer?.importPreparationId||!!buffer&&buffer.ownerUserId!==session.user.id} onClick={()=>{void beginDependency('REFINES');}}>이 버전 화면 상세화 관계 작성</button>
