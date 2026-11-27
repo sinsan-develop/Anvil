@@ -61,7 +61,7 @@ before(async()=>{
  const transfer=fileURLToPath(new URL('../../../apps/web/src/features/transfers/TransferPreparationPage.tsx',import.meta.url));
  const preparation=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/PreparationHistory.tsx',import.meta.url));
  const comparison=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointJournalComparison.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage,ResultContent}from${JSON.stringify(entry)};import{TransferPreparationPage}from${JSON.stringify(transfer)};import * as Preparation from${JSON.stringify(preparation)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{CheckpointEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointEditor.tsx',import.meta.url)))};import{CheckpointJournalComparison}from${JSON.stringify(comparison)};export{React,createRoot,SessionDetailPage,ResultContent,TransferPreparationPage,Preparation,CheckpointEditor,CheckpointJournalComparison,ApiClient};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:session-context',name:'SessionContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'session-memory-entry',resolveId(id){if(id.endsWith('virtual:session-context'))return '\0session-context';},load(id){if(id==='\0session-context')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{SessionDetailPage,ResultContent}from${JSON.stringify(entry)};import{TransferPreparationPage}from${JSON.stringify(transfer)};import * as Preparation from${JSON.stringify(preparation)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import{CheckpointEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/CheckpointEditor.tsx',import.meta.url)))};import{CheckpointJournalComparison}from${JSON.stringify(comparison)};export {ResultArtifactTexts} from ${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultReviewSources.tsx',import.meta.url)))};export{React,createRoot,SessionDetailPage,ResultContent,TransferPreparationPage,Preparation,CheckpointEditor,CheckpointJournalComparison,ApiClient};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return SessionContextTest;')();
@@ -74,7 +74,7 @@ async function mount(confirmed=false,original?:{data:ReturnType<typeof assignmen
  if(original){const {draft,confirmed}=original.data.detail;Object.assign(f.draft,draft);Object.assign(f.confirmed,confirmed);Object.assign(f.decision,{draftRef:draft.ref,confirmedRef:confirmed!.ref});f.state.assignmentRef=confirmed!.ref;}
  f.client=new ui.ApiClient(f.client.transport);if(!confirmed)Object.assign(f.decision,{confirmedRef:null});const transport=f.client.transport;let delay=false,jsonDelay=false,jsonRelease:(()=>void)|null=null,release:((r:Response)=>void)|null=null,lost=0,mutations=0;
  const calls:{path:string;method:string}[]=[],commits:string[]=[],container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
- const wrap=()=>async(url:any,options:any)=>{const method=options?.method??'GET';calls.push({path:String(url),method});assert.equal(method,'GET');if(delay){delay=false;return new Promise<Response>(r=>{release=r;});}if(String(url).endsWith('/result-pages'))return Response.json({projectId:pid,assignmentRef:f.confirmed.ref,items:[],hasMore:false,nextCursor:null,selectionState:'NOT_SELECTED',observedAt:at});const protectedResponse=original?.read(String(url));if(protectedResponse)return protectedResponse;const response=await transport(url,options);if(jsonDelay){jsonDelay=false;const original=response.json.bind(response);response.json=async()=>{await new Promise<void>(resolve=>{jsonRelease=resolve;});return original();};}return response;};
+ const wrap=()=>async(url:any,options:any)=>{const method=options?.method??'GET';calls.push({path:String(url),method});assert.equal(method,'GET');if(delay){delay=false;return new Promise<Response>(r=>{release=r;});}const protectedResponse=original?.read(String(url));if(protectedResponse)return protectedResponse;if(String(url).endsWith('/result-pages'))return Response.json({projectId:pid,assignmentRef:f.confirmed.ref,items:[],hasMore:false,nextCursor:null,selectionState:'NOT_SELECTED',observedAt:at});const response=await transport(url,options);if(jsonDelay){jsonDelay=false;const original=response.json.bind(response);response.json=async()=>{await new Promise<void>(resolve=>{jsonRelease=resolve;});return original();};}return response;};
  f.client.transport=wrap();
  const session={user:{id:pid},clientId:pid,csrfToken:'c'.repeat(43)},props:any={client:f.client,projectId:pid,assignmentRef:f.draft.ref,criteria:{session},checkpoint:{buffers:{},onChange:()=>{mutations++;}},onAuthenticationLost:()=>{lost++;}};
  if(confirmed)props.checkpoint.buffers[checkpointBufferKey(session,pid,f.confirmed.ref)]={...emptyCheckpointForm(),position:'보존할 미완료 기록',next:'다음 검수',reason:'합성 입력 보존'};
@@ -751,4 +751,87 @@ test('UI09 인계 화면은 명시 GET의 과거 정의만 표시하고 이탈 �
    if(mode==='UNMOUNT_401'){assert.equal(box.textContent,'이동한 화면');assert.equal(lost,0);assert.equal(calls.length,5);}
   }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(box);}
  }
+});
+
+async function mountArtifactContext(kind:'DIFF'|'OUTPUT'){
+ const data=assignmentDesignFixture(),result=resultFixture(),text='동일 제출의 보호 '+kind+' 원문',artifactRef={id:'66300000-1111-4111-8111-111111111111',version:1,contentHash:contentHash(Buffer.from(text))};
+ result.entry.snapshot.scope.assignmentRef=data.detail.confirmed!.ref;result.entry.snapshot.manifest.assignmentRef=data.detail.confirmed!.ref;
+ result.entry.snapshot.manifest.artifactRefs.push(artifactRef as never);
+ if(kind==='DIFF')Object.assign(result.entry.snapshot.manifest.changes[0]!,{diffRef:artifactRef});
+ else (result.entry.snapshot.manifest.commandResults as unknown[]).push({profileRef:ref,argv:['node','--test'],cwdRef:ref,hostRef:ref,executionRef:result.entry.snapshot.scope.executionRef,startedAt:null,finishedAt:null,exitCode:0,outputRef:artifactRef,evidence:[]});
+ result.entry.snapshot.manifestHash=hash(result.entry.snapshot.manifest);result.entry.ref.contentHash=hash(result.entry.snapshot);result.item.manifestRef.contentHash=result.entry.snapshot.manifestHash;
+ const response={projectId:pid,resultRef:result.entry.ref,artifactRef,bytes:Buffer.byteLength(text),mediaType:'text/plain;charset=utf-8',text,sourceState:'REGISTERED_BYTES_ONLY',evidenceProvenanceVerified:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false,observedAt:'2026-11-27T00:00:00.000Z'};
+ const gate=Promise.withResolvers<Response>();let requested=false;
+ const f=await mount(true,{data,read:path=>{
+  if(path.endsWith('/result-pages'))return Response.json({...result.page,assignmentRef:data.detail.confirmed!.ref,nextCursor:null,selectionState:'NOT_SELECTED'});
+  if(path.endsWith('/results/'+result.entry.ref.id))return Response.json(result.entry);
+  if(path.endsWith('/artifacts/'+artifactRef.id+'/text')){requested=true;return gate.promise;}
+  return null;
+ }});
+ async function open(){
+  await f.waitFor('제출 원문 '+result.entry.ref.id);await f.click('제출 원문 '+result.entry.ref.id);await f.waitFor('변경 diff 1 원문 보기');await f.click(kind==='DIFF'?'변경 diff 1 원문 보기':'명령 출력 1 원문 보기');
+  const end=performance.now()+2000;while(!requested){assert(performance.now()<end,f.container.textContent);await f.flush();}
+ }
+ return{...f,text,response,gate,open};
+}
+test('현재 상세의 diff/출력 GET은 raw hash 이동 직후 렌더 전 늦은200/401을 원문·인증에 적용하지 않는다',{timeout:15000},async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+pid+'/session'};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{for(const kind of ['DIFF','OUTPUT'] as const)for(const status of [401,200]){
+  location.hash='#/projects/'+pid+'/session';const f=await mountArtifactContext(kind);
+  try{
+   await f.open();const calls=f.calls.length;location.hash='#/projects/'+pid+'/workspace';
+   await ui.React.act(async()=>{f.gate.resolve(status===200?Response.json(f.response):Response.json({code:'AUTH_REQUIRED'},{status:401}));await new Promise(r=>setImmediate(r));});await f.flush();
+   assert.equal(f.lost(),0,'렌더 전 옛401의 인증상실 callback0');assert(!f.container.textContent.includes(f.text),'렌더 전 옛 원문 표시0');assert.equal(f.calls.length,calls);assert.equal(f.mutations(),0);
+  }finally{f.gate.resolve(Response.json({}));await f.close();}
+ }}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+test('현재 diff/출력 원문200·401과 교차 응답/전송 실패는 기존 보호 읽기 의미를 유지한다',{timeout:15000},async()=>{
+ for(const kind of ['DIFF','OUTPUT'] as const)for(const mode of ['200','401','CROSS','TIMEOUT']){
+  const f=await mountArtifactContext(kind);
+  try{
+   await f.open();await ui.React.act(async()=>{
+    if(mode==='TIMEOUT')f.gate.reject(new DOMException('합성 전송 시간 초과','TimeoutError'));
+    else f.gate.resolve(mode==='401'?Response.json({code:'AUTH_REQUIRED'},{status:401}):Response.json(mode==='CROSS'?{...f.response,projectId:aid}:f.response));
+    await new Promise(r=>setImmediate(r));
+   });
+   await f.waitFor(mode==='200'?f.text:mode==='401'?'AUTH_REQUIRED':mode==='CROSS'?'RESULT_ARTIFACT_RESPONSE_INVALID':'CONNECTION_LOST');
+   assert.equal(f.lost(),mode==='401'?1:0);if(mode!=='200')assert(!f.container.textContent.includes(f.text));assert.equal(f.mutations(),0);assert(f.calls.every(c=>c.method==='GET'));
+  }finally{f.gate.resolve(Response.json({}));await f.close();}
+ }
+});
+test('보호 diff의 route/render ABA·부모 재조회·actor/client/CSRF·transport 교체는 옛200/401을 폐기한다',{timeout:15000},async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+pid+'/session'};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{for(const mode of ['ROUTE_ABA','PARENT','ACTOR','CLIENT','CSRF','TRANSPORT'])for(const status of [200,401]){
+  location.hash='#/projects/'+pid+'/session';const f=await mountArtifactContext('DIFF');
+  try{
+   await f.open();const actor=f.props.criteria.session,transport=f.f.client.transport,oldNode=f.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='변경 diff 1 원문 보기')!,oldClick=(oldNode as any)[Object.keys(oldNode).find(k=>k.startsWith('__reactProps'))!].onClick;
+   if(mode==='ROUTE_ABA'){location.hash='#/projects/'+pid+'/workspace';await f.render();location.hash='#/projects/'+pid+'/session';await f.render();}
+   if(mode==='PARENT')await f.click('상세 원본 새로고침');
+   if(['ACTOR','CLIENT','CSRF'].includes(mode)){
+    f.props.criteria.session=mode==='ACTOR'?{...actor,user:{id:aid}}:mode==='CLIENT'?{...actor,clientId:aid}:{...actor,csrfToken:'z'.repeat(43)};
+    await f.render();f.props.criteria.session=actor;await f.render();
+   }
+   if(mode==='TRANSPORT'){f.f.client.transport=(...args:Parameters<typeof fetch>)=>transport(...args);await f.render();f.f.client.transport=transport;await f.render();}
+   const artifactCalls=f.calls.filter(c=>c.path.includes('/artifacts/')).length;
+   await ui.React.act(async()=>{oldClick();f.gate.resolve(status===200?Response.json(f.response):Response.json({code:'AUTH_REQUIRED'},{status:401}));await new Promise(r=>setImmediate(r));});await f.flush();
+   assert.equal(f.calls.filter(c=>c.path.includes('/artifacts/')).length,artifactCalls,'옛 클릭·결과로 원문 재조회0');assert(!f.container.textContent.includes(f.text));assert.equal(f.lost(),0);assert.equal(f.mutations(),0);
+  }finally{f.gate.resolve(Response.json({}));await f.close();}
+ }}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+
+test('같은 산출물 child의 scope 교체는 실제 GET 없는 옛 선택의 로딩·다시조회 표시를 숨긴다',{timeout:15000},async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+pid+'/session'};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{for(const mode of ['ROUTE','CSRF','TRANSPORT','PARENT']){
+  location.hash='#/projects/'+pid+'/session';const result=resultFixture(),text='새 scope에 남으면 안 되는 원문',artifact={id:'66300000-1111-4111-8111-111111111111',version:1,contentHash:contentHash(Buffer.from(text))};result.entry.snapshot.manifest.artifactRefs.push(artifact as never);Object.assign(result.entry.snapshot.manifest.changes[0]!,{diffRef:artifact});result.entry.snapshot.manifestHash=hash(result.entry.snapshot.manifest);result.entry.ref.contentHash=hash(result.entry.snapshot);
+  const gate=Promise.withResolvers<Response>();let calls=0,lost=0,parent=true;const session={user:{id:pid},clientId:pid,csrfToken:'c'.repeat(43)},transport:typeof fetch=async()=>{calls++;return gate.promise;},client=new ui.ApiClient(transport);
+  const box=document.createElement('div');document.body.appendChild(box);const root=ui.createRoot(box),props={client,result:result.entry,session,isCurrent:()=>parent,onAuthenticationLost:()=>lost++,onAccessUnavailable:()=>{}};
+  const render=async()=>ui.React.act(async()=>root.render(ui.React.createElement(ui.ResultArtifactTexts,props))),nodes=(n:MemoryNode=box):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
+  try{
+   await render();const node=nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='변경 diff 1 원문 보기')!;await ui.React.act(async()=>node.dispatchEvent({type:'click',button:0}));
+   const end=performance.now()+2000;while(!calls){assert(performance.now()<end);await ui.React.act(async()=>new Promise(r=>setImmediate(r)));}assert(box.textContent.includes('산출물 bytes·hash·현재 조회 권한 대조 중'));
+   if(mode==='ROUTE')location.hash='#/projects/'+pid+'/workspace';if(mode==='CSRF')session.csrfToken='z'.repeat(43);if(mode==='TRANSPORT')client.transport=(...args:Parameters<typeof fetch>)=>transport(...args);if(mode==='PARENT')parent=false;
+   await render();assert(!box.textContent.includes('산출물 bytes·hash·현재 조회 권한 대조 중'));assert(!box.textContent.includes('선택 산출물 다시 조회'));assert.equal(calls,1,'scope 교체만으로 재GET0');if(mode==='PARENT'){parent=true;await render();assert(!box.textContent.includes('산출물 bytes·hash·현재 조회 권한 대조 중'),'parent ABA는 옛 선택을 부활시키지 않음');}
+   await ui.React.act(async()=>{gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await new Promise(r=>setImmediate(r));});assert.equal(lost,0);assert(!box.textContent.includes('AUTH_REQUIRED'));
+  }finally{gate.resolve(Response.json({}));await ui.React.act(async()=>root.unmount());document.body.removeChild(box);}
+ }}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
 });
