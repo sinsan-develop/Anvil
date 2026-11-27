@@ -45,8 +45,11 @@ export function DesignChangesPage({ client, projectId, session, buffer, onChange
   const requestGate:ChangeEditorGate={acquire,release,allowed:()=>!latest.current.reviewBuffer||!!latest.current.reviewBuffer.result};
   const reviewGate:ChangeEditorGate={acquire,release,allowed:()=>!latest.current.buffer||!!latest.current.buffer.result};
   useLayoutEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+  const storedRoute=globalThis.location?.hash;
+  const storedCurrent=()=>alive.current&&owner.current===scope&&client.transport===scope.transport&&!!shown&&
+    committedSelection.current===shown&&globalThis.location?.hash===storedRoute&&(!shown.origin||shown.origin.isCurrent());
   const storedAuthenticationLost=shown?.origin?()=>{
-    if(alive.current&&owner.current===scope&&client.transport===scope.transport&&committedSelection.current===shown&&shown.origin?.isCurrent())onAuthenticationLost();
+    if(storedCurrent())onAuthenticationLost();
   }:onAuthenticationLost;
   async function load(id: string, beforeVersion: number | null, origin?:ApprovalImpactHandoff) {
     if (!alive.current || owner.current !== scope || client.transport !== scope.transport || origin && !origin.isCurrent()) return;
@@ -95,7 +98,7 @@ export function DesignChangesPage({ client, projectId, session, buffer, onChange
       <div><dt>변경 전 설계</dt><dd>{reference(value.change.beforeRef)}</dd></div><div><dt>변경 후 수정 제안 ID · 원문은 별도 조회</dt><dd>{value.change.afterProposalRef}</dd></div>
     </dl><StoredChangeSources key={JSON.stringify([projectId,session.user.id,session.clientId,value.change.ref])} client={client} projectId={projectId} session={session} change={value.change} onAuthenticationLost={storedAuthenticationLost}/>
       <p>기준 미적용 · 이 조회는 승인·계획 개정·작업 재개를 실행하지 않습니다.</p>
-      <StoredChangeComparison key={value.change.ref.id+':'+value.change.ref.contentHash} client={client} projectId={projectId} change={value.change} onAuthenticationLost={storedAuthenticationLost}/>
+      <StoredChangeComparison key={value.change.ref.id+':'+value.change.ref.contentHash} client={client} projectId={projectId} change={value.change} isCurrent={storedCurrent} onAuthenticationLost={storedAuthenticationLost}/>
       <h3>영향 검토 이력</h3><p className="meta">최신 영향 참조: {reference(value.latestImpactRef)} · {before === null ? '최신부터 조회' : `v${before} 이전 구간`} · 관측 {value.observedAt}</p>
       {!value.impactVersions.length ? <p>이 구간에 저장된 이력 없음 · 영향 없음이라는 판정이 아닙니다.</p> : value.impactVersions.map((impact, index) => <details key={impact.ref.id + ':' + impact.ref.version} open={index === 0}>
         <summary>영향 v{impact.ref.version} · {impact.sourceKind === 'HUMAN_REVIEW' ? '사람 검토' : '기계적 연결 추적'}</summary>
