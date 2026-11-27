@@ -284,7 +284,7 @@ namespace Anvil.Native.OwnershipEvidence
                                 lock(startup.parent.owner.gate)
                                 {
                                     if(closed||!created||process==null||thread==null||startup.closed||startup.parent.closed||startup.parent.owner.disposed||startup.normalProcessOwner!=this)throw Unavailable();
-                                    startup.ReadCurrent(cap);var input=startup.normalWorkerInput.ReadCurrent(cap);var imageCurrent=NativeWorkerDeploymentSource.ReadTransferredNormalImage(image,Math.Min(cap,1000));
+                                    startup.ReadCurrentCore(this,cap);var input=startup.normalWorkerInput.ReadCurrent(cap);var imageCurrent=NativeWorkerDeploymentSource.ReadTransferredNormalImage(image,Math.Min(cap,1000));
                                     if(input.ImageRefJson!=imageCurrent.AssociationRefJson)throw Unavailable();Budget(from,watch,cap);
                                     // 아래 legacy primitive의 내부 10초 상한은 normal 2초 증거가 아니다. 전후 monotonic cap으로 늦은 결과를 거절한다.
                                     var first=OwnershipEvidenceHost.ReadRetainedHandleQuerySource(process,startup.parent.owner.job);Budget(from,watch,cap);

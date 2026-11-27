@@ -72,7 +72,7 @@ namespace Anvil.Native.OwnershipEvidence
         {
             if(user!=0||kernel!=0||periodUser!=0||periodKernel!=0||faults!=0||total!=0||active!=0||terminated!=0)throw Unavailable();
         }
-        private static void Read(SafeJob job,DateTime from,Stopwatch watch,int timeoutMs)
+        private static Accounting ReadAccounting(SafeJob job,DateTime from,Stopwatch watch,int timeoutMs)
         {
             Budget(from,watch,timeoutMs);
             if(job==null||job.IsClosed||job.IsInvalid)throw Unavailable();
@@ -81,7 +81,20 @@ namespace Anvil.Native.OwnershipEvidence
             if(!GetHandleInformation(job,out flags)||flags!=0)throw Unavailable();
             Budget(from,watch,timeoutMs);
             if(!QueryInformationJobObject(job,1,out value,size,out returned)||returned!=size)throw Unavailable();
+            Budget(from,watch,timeoutMs);
+            return value;
+        }
+        private static void Read(SafeJob job,DateTime from,Stopwatch watch,int timeoutMs)
+        {
+            var value=ReadAccounting(job,from,watch,timeoutMs);
             RequireEmptyAccountingSource(value.User,value.Kernel,value.PeriodUser,value.PeriodKernel,value.Faults,value.Total,value.Active,value.Terminated);
+            Budget(from,watch,timeoutMs);
+        }
+        private static void ReadNormalSingleton(SafeJob job,DateTime from,Stopwatch watch,int timeoutMs)
+        {
+            var value=ReadAccounting(job,from,watch,timeoutMs);
+            // 생성 후에는 같은 원 Job에 살아 있는 단일 process만 허용한다. 시간·fault는 빈 Job 값으로 제한하지 않는다.
+            if(value.Total!=1||value.Active!=1||value.Terminated!=0)throw Unavailable();
             Budget(from,watch,timeoutMs);
         }
         private sealed partial class OwnedEmptyJob:IEmptyJobCandidate

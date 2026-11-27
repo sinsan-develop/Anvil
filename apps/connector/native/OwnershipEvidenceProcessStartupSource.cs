@@ -122,6 +122,8 @@ namespace Anvil.Native.OwnershipEvidence
                         catch{Dispose();throw Unavailable();}
                     }
                     public SuspendedStartupObservation ReadCurrent(int timeoutMs=10000)
+                    {return ReadCurrentCore(null,timeoutMs);}
+                    private SuspendedStartupObservation ReadCurrentCore(NormalProcessOwner expected,int timeoutMs)
                     {
                         try
                         {
@@ -129,7 +131,14 @@ namespace Anvil.Native.OwnershipEvidence
                             lock(parent.owner.gate)
                             {
                                 if(closed||environment==IntPtr.Zero||parent.closed||!parent.initialized||parent.startup!=this||parent.owner.disposed||parent.owner.assignment!=parent||from<parent.owner.created||parent.owner.lifetime.ElapsedMilliseconds>=120000||info.Attributes!=parent.list||info.Attributes==IntPtr.Zero)throw Unavailable();
-                                Read(parent.owner.job,from,watch,timeoutMs);
+                                // 공개 판독과 생성 전 경로는 기존 빈 Job 검사를 그대로 수행한다.
+                                // 생성 후에는 private 원 owner만 진입하며, 원 process 판독이 같은 Job의 정확 단일 멤버를 이어 검산한다.
+                                if(expected==null)Read(parent.owner.job,from,watch,timeoutMs);
+                                else
+                                {
+                                    if(!Object.ReferenceEquals(normalProcessOwner,expected)||processOwner!=null||normalWorkerInput==null||workerInput!=null)throw Unavailable();
+                                    ReadNormalSingleton(parent.owner.job,from,watch,timeoutMs);
+                                }
                                 if(info.Basic.Size!=(uint)Marshal.SizeOf(typeof(StartupInfoEx))||info.Basic.Flags!=0||info.Basic.Input!=IntPtr.Zero||info.Basic.Output!=IntPtr.Zero||info.Basic.Error!=IntPtr.Zero||Marshal.ReadInt16(environment,0)!=0||Marshal.ReadInt16(environment,2)!=0)throw Unavailable();
                                 if(workerInput!=null)workerInput.EnsureCurrentSource();
                                 if(normalWorkerInput!=null)normalWorkerInput.ReadCurrent(Math.Min(timeoutMs,2000));

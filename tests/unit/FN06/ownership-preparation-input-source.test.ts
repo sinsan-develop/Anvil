@@ -85,6 +85,40 @@ test('정적: normal 입력은 legacy WorkerInputBound를 바꾸지 않고 priva
  assert.equal((source.match(/if\(timeoutMs>2000\)throw Unavailable\(\)/g)||[]).length,2);
  for(const invariant of ['private const uint SuspendedCreationFlags=0x08080404','InheritHandles=false,EmptyUnicodeEnvironment=true','Marshal.AllocHGlobal(4)','Marshal.WriteInt16(environment,0,0);Marshal.WriteInt16(environment,2,0)'])assert(source.includes(invariant),invariant);
 });
+test('정적: normal 생성 후 원 owner 관측은 빈 Job 대신 정확 singleton을 검산하고 생성 전·legacy 검사는 유지한다',()=>{
+ const startup=readFileSync(new URL('../../../apps/connector/native/OwnershipEvidenceProcessStartupSource.cs',import.meta.url),'utf8');
+ const process=readFileSync(new URL('../../../apps/connector/native/OwnershipEvidenceProcessOwnerSource.cs',import.meta.url),'utf8');
+ const job=readFileSync(new URL('../../../apps/connector/native/OwnershipEvidenceJobFactorySource.cs',import.meta.url),'utf8');
+ const host=readFileSync(new URL('../../../apps/connector/native/OwnershipEvidenceHost.cs',import.meta.url),'utf8');
+ assert.match(startup,/public SuspendedStartupObservation ReadCurrent\(int timeoutMs=10000\)\s*\{return ReadCurrentCore\(null,timeoutMs\);\}/);
+ assert.match(startup,/private SuspendedStartupObservation ReadCurrentCore\(NormalProcessOwner expected,int timeoutMs\)/);
+ assert.match(startup,/if\(expected==null\)Read\(parent\.owner\.job,from,watch,timeoutMs\);\s*else\s*\{\s*if\(!Object\.ReferenceEquals\(normalProcessOwner,expected\)\|\|processOwner!=null\|\|normalWorkerInput==null\|\|workerInput!=null\)throw Unavailable\(\)/);
+ assert.match(startup,/ReadNormalSingleton\(parent\.owner\.job,from,watch,timeoutMs\)/);
+ const accounting=job.slice(job.indexOf('private static Accounting ReadAccounting('),job.indexOf('private sealed partial class OwnedEmptyJob'));
+ assert.match(accounting,/if\(!GetHandleInformation\(job,out flags\)\|\|flags!=0\)throw Unavailable\(\)/);
+ assert.match(accounting,/QueryInformationJobObject\(job,1,out value,size,out returned\)\|\|returned!=size/);
+ assert.match(accounting,/private static void Read\([^]*ReadAccounting\(job,from,watch,timeoutMs\)[^]*RequireEmptyAccountingSource/);
+ const singleton=accounting.slice(accounting.indexOf('private static void ReadNormalSingleton('));
+ assert.match(singleton,/ReadAccounting\(job,from,watch,timeoutMs\)/);
+ assert.match(singleton,/if\(value\.Total!=1\|\|value\.Active!=1\|\|value\.Terminated!=0\)throw Unavailable\(\)/);
+ assert.doesNotMatch(singleton,/value\.(?:User|Kernel|PeriodUser|PeriodKernel|Faults)/,'생성 후 CPU 시간·fault는 0으로 제한하지 않는다');
+ for(const guard of ['parent.startup!=this','parent.owner.assignment!=parent','info.Attributes!=parent.list','info.Basic.Flags!=0','info.Basic.Input!=IntPtr.Zero','Marshal.ReadInt16(environment,2)!=0','normalWorkerInput.ReadCurrent(Math.Min(timeoutMs,2000))','Budget(from,watch,timeoutMs)'])assert(startup.includes(guard),guard);
+ const at=process.indexOf('private sealed class NormalProcessOwner:'),end=process.indexOf('private static readonly ConditionalWeakTable',at),normal=process.slice(at,end);
+ assert(at>0&&end>at);
+ const create=normal.slice(normal.indexOf('internal void Create('),normal.indexOf('public NormalProcessOwnerObservation ReadCurrent('));
+ assert.match(create,/startup\.ReadCurrent\(cap\)[\s\S]*created=CreateProcessW/,'생성 전에는 빈 Job 검사를 우회하지 않는다');
+ const current=normal.slice(normal.indexOf('public NormalProcessOwnerObservation ReadCurrent('),normal.indexOf('public void Dispose('));
+ assert.match(current,/startup\.normalProcessOwner!=this\)throw Unavailable\(\)/);
+ assert.match(current,/startup\.ReadCurrentCore\(this,cap\)/);assert.doesNotMatch(current,/startup\.ReadCurrent\(/);
+ assert.equal((current.match(/ReadRetainedHandleQuerySource\(process,startup\.parent\.owner\.job\)/g)||[]).length,2);
+ assert.match(current,/ReadRetainedThreadQuerySource\(thread,process\)/);
+ for(const guard of ['first.Pid!=original.Pid','last.Pid!=original.Pid','current.ProcessId!=original.Pid','current.ThreadId!=original.Tid','first.StartTicks!=last.StartTicks','last.StartTicks!=current.ProcessStartTicks','first.ObservedImagePathDigest!=expectedPathDigest','afterImage.AssociationRefJson!=imageCurrent.AssociationRefJson'])assert(current.includes(guard),guard);
+ assert.equal((process.match(/startup\.ReadCurrentCore\(this,cap\)/g)||[]).length,1,'원 normal owner만 생성 후 경로를 소비한다');
+ assert.match(job,/user!=0\|\|kernel!=0\|\|periodUser!=0\|\|periodKernel!=0\|\|faults!=0\|\|total!=0\|\|active!=0\|\|terminated!=0/);
+ assert.match(host,/Marshal\.ReadInt32\(buffer,0\)!=1\|\|Marshal\.ReadInt32\(buffer,4\)!=1/);assert.match(host,/if\(member!=pid\)throw Unavailable\(\)/);
+ assert.match(process,/OsOwnershipVerified\{get\{return false;\}\}/); // 판독 경로 변경이 새로운 권위 생산자가 되지 않는다.
+});
+
 test('정적: exact normal image와 bound startup만 suspended process를 단회 생성하고 UNKNOWN owner를 보존한다',()=>{
  const owner=readFileSync(new URL('../../../apps/connector/native/OwnershipEvidenceImageOwnerSource.cs',import.meta.url),'utf8');
  const deployment=readFileSync(new URL('../../../apps/connector/native/NativeWorkerDeploymentSource.cs',import.meta.url),'utf8');
