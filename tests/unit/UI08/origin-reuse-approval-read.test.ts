@@ -73,10 +73,10 @@ test('만료 보관 이력은 현재 실행 증명으로 승격하지 않고 원
  assert.equal((await readApproval(new ApiClient(async()=>Response.json(v)),pid,rid)).executionAuthorized,false);
  v.effectiveState='PENDING';await assert.rejects(readApproval(new ApiClient(async()=>Response.json(v)),pid,rid),{code:'RESPONSE_INVALID'});
 });
-async function mounted(transport:typeof fetch,providedSession:any=structuredClone(session),initialBuffer:any=null,parentMode?:'REJECT_PENDING'|'REPLACE_PENDING'){
+async function mounted(transport:typeof fetch,providedSession:any=structuredClone(session),initialBuffer:any=null,parentMode?:'REJECT_PENDING'|'REPLACE_PENDING'|'REJECT_FAILURE'){
  const container=document.createElement('main');document.body.appendChild(container);const root=ui.createRoot(container);let buffer:any=null,authLost=0,changes=0,setParent:((value:any)=>void)|undefined;
  const props:any={client:new ui.ApiClient(transport),projectId:pid,requestId:rid,session:providedSession,candidate:null,onCandidateChange(){throw Error('후보 변경 금지');},onAuthenticationLost(){authLost++;}};
- function Host(){const [value,set]=ui.React.useState(initialBuffer);buffer=value;setParent=set;return ui.React.createElement(ui.ApprovalsPage,{...props,buffer:value,onChange:(change:any)=>{changes++;if(!parentMode){set(change);return;}set((previous:any)=>{const next=typeof change==='function'?change(previous):change;if(next?.decision?.pending&&!previous?.decision?.pending){if(parentMode==='REJECT_PENDING')return previous;return{...previous,decision:{...previous.decision,reason:'부모의 별도 판단',acknowledged:false,pending:null}};}return next;});}});}
+ function Host(){const [value,set]=ui.React.useState(initialBuffer);buffer=value;setParent=set;return ui.React.createElement(ui.ApprovalsPage,{...props,buffer:value,onChange:(change:any)=>{changes++;if(!parentMode){set(change);return;}set((previous:any)=>{const next=typeof change==='function'?change(previous):change;if(parentMode==='REJECT_FAILURE')return next?.decision?.failure?previous:next;if(next?.decision?.pending&&!previous?.decision?.pending){if(parentMode==='REJECT_PENDING')return previous;return{...previous,decision:{...previous.decision,reason:'부모의 별도 판단',acknowledged:false,pending:null}};}return next;});}});}
  const render=async()=>{await ui.React.act(async()=>root.render(ui.React.createElement(Host)));};
  const flush=async()=>{await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});};
  const wait=async(check:()=>boolean)=>{for(let n=0;n<100&&!check();n++)await flush();assert(check(),'메모리 관측 정착 / '+container.textContent.slice(0,700));};
@@ -184,10 +184,10 @@ test('현재 원 요청의 명시 결정은 원 control·P2·scope만 가진 기
  assert.equal(c.operation,'decideApproval');assert.equal(c.targetId,rid);assert.equal(c.expectedVersion,1);assert.deepEqual(c.payload,{requestId:rid,expectedVersion:1,scopeDigest:v.request.scopeDigest,decision:'APPROVE',reason:'원 요청 명시 판단'});assert.equal(c.approvalRef,null);
 });
 
-function decisionReplies(options:{lost?:boolean;deny?:boolean;denyReadAfterPost?:boolean;controlStatus?:number;generation?:number;holdControl?:()=>Promise<void>;holdPost?:()=>Promise<void>;mutate?:(result:any)=>void}={}){
- let view=currentStoredView(),saved:any=null,originalBody:string|null=null,stored=0,controls=0;const bodies:string[]=[];
+function decisionReplies(options:{general?:boolean;beforePost?:(command:any)=>void;lost?:boolean;deny?:boolean;denyReadAfterPost?:boolean;controlStatus?:number;generation?:number;holdControl?:()=>Promise<void>;holdPost?:()=>Promise<void>;mutate?:(result:any)=>void}={}){
+ let view=options.general?generalView():currentStoredView(),saved:any=null,originalBody:string|null=null,stored=0,controls=0;const bodies:string[]=[];
  const transport:typeof fetch=async(url,init)=>{
-  if(init?.method==='POST'){assert.equal(url,`/api/v1/projects/${pid}/commands`);const body=String(init.body),c=JSON.parse(body);bodies.push(body);assert.equal(c.operation,'decideApproval');assert.equal(c.targetId,rid);await options.holdPost?.();if(options.deny)return Response.json({code:'PROJECT_OPERATION_DENIED'},{status:403});
+  if(init?.method==='POST'){assert.equal(url,`/api/v1/projects/${pid}/commands`);const body=String(init.body),c=JSON.parse(body);bodies.push(body);assert.equal(c.operation,'decideApproval');assert.equal(c.targetId,rid);assert.equal(new Headers(init.headers).get('Idempotency-Key'),c.commandId);options.beforePost?.(c);await options.holdPost?.();if(options.deny)return Response.json({code:'PROJECT_OPERATION_DENIED'},{status:403});
    if(!saved){originalBody=body;const{ref,decision}=storedDecision(view,c.payload.decision,c.payload.reason);saved={operationId:id(101),commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:ref.id,version:1,data:{ref,status:'APPROVAL_DECIDED',decision},evidenceRefs:[],warnings:[],serverReceivedAt:decision.decidedAt};view={...view,currentVersion:2,storedStatus:({APPROVE:'APPROVED',REJECT:'REJECTED',REQUEST_CHANGE:'CHANGE_REQUESTED'} as any)[decision.decision],effectiveState:({APPROVE:'APPROVED',REJECT:'REJECTED',REQUEST_CHANGE:'CHANGE_REQUESTED'} as any)[decision.decision],decision:{ref,...decision},observedAt:decision.decidedAt};stored++;if(options.lost)throw Error('응답 유실');}
    else assert.equal(body,originalBody,'원 결정 packet 동일');const result=structuredClone(saved);options.mutate?.(result);return Response.json(result);
   }
@@ -242,6 +242,111 @@ test('결정 준비·응답 hash 대기 중 scope 교체는 늦은 packet/영수
 test('결정 POST 대기 중 언마운트 후에는 원 packet 외 추가 callback·POST0',async()=>{
  let release!:()=>void;const hold=new Promise<void>(r=>release=r),q=decisionReplies({holdPost:()=>hold}),m=await mounted(q.transport);let closed=false;
  try{await m.wait(()=>m.container.textContent.includes('PENDING 요청 보관'));await m.click('이 요청 결정 준비');await m.fillDecision('원 요청 명시 판단');await m.click('이번만 승인');await m.wait(()=>q.bodies.length===1&&!!m.buffer?.decision?.pending);const packet=structuredClone(m.buffer.decision.pending),changes=m.changes;await m.close();closed=true;await ui.React.act(async()=>release());await m.flush();assert.equal(m.changes,changes);assert.deepEqual(m.buffer.decision.pending,packet);assert.equal(q.bodies.length,1);}finally{release();if(!closed)await m.close();}
+});
+
+for(const label of ['이번만 승인','거절'] as const)for(const mode of ['REJECT_PENDING','REPLACE_PENDING'] as const)test('일반 승인 '+label+'의 부모 '+mode+'는 원 pending commit 없이 POST하지 않는다',async()=>{
+ const q=decisionReplies({general:true}),m=await mounted(q.transport,structuredClone(session),null,mode);
+ try{
+  await m.wait(()=>m.container.textContent.includes('보관 요청 원문')&&!!m.buffer?.decision);await m.fillDecision('일반 요청 명시 판단');await m.click(label);await m.wait(()=>q.controls===1&&!m.busy());
+  assert.equal(q.bodies.length,0);assert.equal(q.stored,0);assert.equal(m.buffer.decision.pending,null);assert.equal(m.buffer.decision.resultId,null);assert.equal(m.buffer.decision.reason,mode==='REPLACE_PENDING'?'부모의 별도 판단':'일반 요청 명시 판단');assert.equal(m.authLost,0);
+ }finally{await m.close();}
+});
+for(const [choice,label]of [['APPROVE','이번만 승인'],['REJECT','거절'],['REQUEST_CHANGE','수정 요청']] as const)test('일반 '+choice+' 결정은 실제 부모의 exact pending commit 뒤에만 POST하고 원 결정을 읽는다',async()=>{
+ let m:Awaited<ReturnType<typeof mounted>>|undefined;
+ const q=decisionReplies({general:true,beforePost:command=>{assert(m);assert.deepEqual(m.buffer.decision.pending,command);assert.equal(m.buffer.decision.reason,command.payload.reason);assert.equal(m.buffer.selectedId,rid);}});
+ m=await mounted(q.transport);try{
+  await m.wait(()=>m!.container.textContent.includes('보관 요청 원문')&&!!m!.buffer?.decision);await m.fillDecision('일반 요청 명시 판단');await m.click(label);
+  await m.wait(()=>m!.buffer?.decision?.resultId===id(99)&&m!.container.textContent.includes('현재 v2'));assert.equal(q.bodies.length,1);assert.equal(q.stored,1);assert.equal(JSON.parse(q.bodies[0]!).payload.decision,choice);assert.equal(m.buffer.decision.uncertain,false);
+  assert(m.container.textContent.includes(q.view.decision.id));assert(m.container.textContent.includes('"decision": "'+choice+'"'));assert.equal(m.authLost,0);
+ }finally{await m.close();}
+});
+test('일반 결정의 응답 유실은 같은 부모 pending·본문·멱등키로만 명시 재확인한다',async()=>{
+ const q=decisionReplies({general:true,lost:true}),m=await mounted(q.transport);
+ try{
+  await m.wait(()=>!!m.buffer?.decision);await m.fillDecision('유실 뒤 같은 판단');await m.click('거절');await m.wait(()=>m.buffer?.decision?.uncertain===true);
+  const pending=structuredClone(m.buffer.decision.pending),body=q.bodies[0];assert(pending);assert.equal(q.stored,1);await m.lookup();await m.wait(()=>m.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='같은 결정 명령 결과 확인'));
+  assert.deepEqual(m.buffer.decision.pending,pending);assert.equal(q.bodies.length,1);await m.click('같은 결정 명령 결과 확인');await m.wait(()=>m.buffer?.decision?.resultId===id(99));
+  assert.equal(q.bodies.length,2);assert.equal(q.bodies[1],body);assert.deepEqual(m.buffer.decision.pending,pending);assert.equal(m.buffer.decision.uncertain,false);assert.equal(q.stored,1);
+ }finally{await m.close();}
+});
+test('일반 보존 pending은 폼의 옛 이유나 새 control 조회 없이 원 본문만 재확인한다',async()=>{
+ const view=generalView(),pending=await prepareApprovalDecision(pid,view,'REJECT','원 packet의 이유',session,1),decision={requestId:rid,reason:'과거 폼의 다른 이유',acknowledged:true,pending,resultId:null,failure:{code:'CONNECTION_LOST',status:0},uncertain:true};
+ const q=decisionReplies({general:true,controlStatus:401}),m=await mounted(q.transport,structuredClone(session),{projectId:pid,ownerUserId:uid,ownerClientId:cid,selectedId:rid,request:null,decision});
+ try{await m.wait(()=>m.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='같은 결정 명령 결과 확인'));await m.click('같은 결정 명령 결과 확인');await m.wait(()=>!m.busy());assert.equal(q.controls,0);assert.equal(q.bodies.length,1);assert.deepEqual(JSON.parse(q.bodies[0]!),pending);assert.equal(m.buffer.decision.resultId,id(99));assert.equal(m.authLost,0);}finally{await m.close();}
+});
+for(const rejectFailure of [false,true])test('일반 결정409는 정확 실패 부모 commit '+rejectFailure+'에 따라 보호 원문 재조회를 구분한다',async()=>{
+ const q=decisionReplies({general:true});let reads=0;const posts:string[]=[];
+ const m=await mounted(async(url,init)=>{if(init?.method==='POST'){posts.push(String(init.body));return Response.json({code:'VERSION_CONFLICT'},{status:409});}if(String(url)===`/api/v1/projects/${pid}/approvals/${rid}`)reads++;return q.transport(url,init);},structuredClone(session),null,rejectFailure?'REJECT_FAILURE':undefined);
+ try{await m.wait(()=>!!m.buffer?.decision);await m.fillDecision('409 원 판단');await m.click('거절');await m.wait(()=>!m.busy());await m.flush();assert.equal(posts.length,1);assert.equal(reads,rejectFailure?1:2);assert.deepEqual(m.buffer.decision.pending,JSON.parse(posts[0]!));assert.equal(m.buffer.decision.resultId,null);assert.equal(m.buffer.decision.failure?.code??null,rejectFailure?null:'VERSION_CONFLICT');assert.equal(m.authLost,0);}finally{await m.close();}
+});
+for(const mode of ['RAW','ABA','LOOKUP'] as const)test('일반 결정의 '+mode+' 원 조회 수명은 control·POST 전에 옛 클릭을 폐기한다',async()=>{
+ const route='#/projects/'+pid+'/approvals',location={hash:route},listeners=new Set<(event:HashChangeEvent)=>void>(),saved=new Map<string,PropertyDescriptor|undefined>();
+ for(const [key,value]of Object.entries({location,addEventListener:(type:string,f:any)=>{if(type==='hashchange')listeners.add(f);},removeEventListener:(type:string,f:any)=>{if(type==='hashchange')listeners.delete(f);}})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
+ try{const held=Promise.withResolvers<void>(),q=decisionReplies({general:true,holdControl:()=>held.promise}),m=await mounted(q.transport);try{
+  await m.wait(()=>!!m.buffer?.decision);await m.fillDecision('원 화면의 판단');const button=m.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='이번만 승인')!;const key=Object.keys(button).find(k=>k.startsWith('__reactProps$'))!,oldClick=(button as any)[key].onClick;
+  if(mode==='LOOKUP'){await m.lookup();await m.wait(()=>m.container.textContent.includes('보관 요청 원문'));await ui.React.act(async()=>oldClick());}
+  else{await m.click('이번만 승인');await m.wait(()=>q.controls===1);if(mode==='RAW')location.hash='#/projects/'+pid+'/workspace';else await ui.React.act(async()=>{const away='#/projects/'+pid+'/workspace';for(const event of [{oldURL:'https://anvil.invalid/'+route,newURL:'https://anvil.invalid/'+away},{oldURL:'https://anvil.invalid/'+away,newURL:'https://anvil.invalid/'+route}])for(const listener of [...listeners])listener(event as HashChangeEvent);});}
+  const before=structuredClone(m.buffer);held.resolve();await m.flush();await m.flush();assert.equal(q.bodies.length,0);assert.equal(q.controls,mode==='LOOKUP'?0:1);assert.deepEqual(m.buffer,before);assert.equal(m.authLost,0);
+ }finally{held.resolve();await m.close();}assert.equal(listeners.size,0);}finally{for(const [key,value]of saved)if(value)Object.defineProperty(globalThis,key,value);else Reflect.deleteProperty(globalThis,key);}
+});
+for(const outcome of ['STORED','CONFLICT'] as const)for(const routeMode of ['RAW','ABA'] as const)test('일반 결정 '+outcome+' 후 보호 재조회 '+routeMode+' 이탈의 늦은401은 원 명령·영수증과 인증을 바꾸지 않는다',async()=>{
+ const route='#/projects/'+pid+'/approvals',location={hash:route},listeners=new Set<(event:HashChangeEvent)=>void>(),saved=new Map<string,PropertyDescriptor|undefined>();
+ for(const [key,value]of Object.entries({location,addEventListener:(type:string,f:any)=>{if(type==='hashchange')listeners.add(f);},removeEventListener:(type:string,f:any)=>{if(type==='hashchange')listeners.delete(f);}})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
+ try{const q=decisionReplies({general:true}),held=Promise.withResolvers<Response>(),calls:string[]=[],posts:string[]=[];let waiting=false;
+  const m=await mounted(async(url,init)=>{calls.push(String(url));if(init?.method==='POST'){posts.push(String(init.body));if(outcome==='CONFLICT')return Response.json({code:'VERSION_CONFLICT'},{status:409});}if(init?.method==='GET'&&posts.length&&String(url)===`/api/v1/projects/${pid}/approvals/${rid}`){waiting=true;return held.promise;}return q.transport(url,init);});
+  try{await m.wait(()=>!!m.buffer?.decision);await m.fillDecision('후속 조회 이전 원 판단');await m.click('거절');await m.wait(()=>waiting);const original=structuredClone(m.buffer),count=calls.length,changes=m.changes;
+   assert.equal(original.decision.resultId,outcome==='STORED'?id(99):null);assert.equal(original.decision.failure?.code??null,outcome==='CONFLICT'?'VERSION_CONFLICT':null);assert.deepEqual(original.decision.pending,JSON.parse(posts[0]!));
+   await ui.React.act(async()=>{const away='#/projects/'+pid+'/workspace';if(routeMode==='RAW')location.hash=away;else for(const event of [{oldURL:'https://anvil.invalid/'+route,newURL:'https://anvil.invalid/'+away},{oldURL:'https://anvil.invalid/'+away,newURL:'https://anvil.invalid/'+route}])for(const listener of [...listeners])listener(event as HashChangeEvent);held.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));});await m.flush();
+   assert.equal(m.authLost,0);assert.deepEqual(m.buffer,original);assert.equal(m.changes,changes);assert.equal(posts.length,1);assert.equal(calls.length,count,'이탈한 후속 목록 GET0');
+  }finally{held.resolve(Response.json({}));await m.close();}
+  assert.equal(listeners.size,0);
+ }finally{for(const [key,value]of saved)if(value)Object.defineProperty(globalThis,key,value);else Reflect.deleteProperty(globalThis,key);}
+});
+for(const mode of ['CLIENT','TRANSPORT','SELECTION','PARENT_REMOVED'] as const)test('일반 결정 control 대기 중 '+mode+' 교체는 새 pending·POST를 만들지 않는다',async()=>{
+ const held=Promise.withResolvers<void>(),q=decisionReplies({general:true,holdControl:()=>held.promise}),m=await mounted(q.transport);
+ try{
+  await m.wait(()=>!!m.buffer?.decision);await m.fillDecision('대기 중 원 판단');await m.click('이번만 승인');await m.wait(()=>q.controls===1);
+  if(mode==='CLIENT')m.props.session={...m.props.session,clientId:id(80)};
+  if(mode==='TRANSPORT'){const transport=m.props.client.transport;m.props.client.transport=(...args:any[])=>Reflect.apply(transport,globalThis,args);}
+  if(mode==='SELECTION')m.props.requestId=id(80);
+  if(mode==='PARENT_REMOVED')await m.replaceDecision(null);else await m.render();
+  const before=structuredClone(m.buffer);held.resolve();await m.flush();await m.flush();assert.equal(q.bodies.length,0);assert.equal(q.stored,0);assert.deepEqual(m.buffer,before);assert.equal(m.authLost,0);
+ }finally{held.resolve();await m.close();}
+});
+for(const fromMobile of [false,true])test('같은 요청의 '+(fromMobile?'모바일→PC':'PC→모바일')+' 전환은 새 보호 상세 뒤 현재 결정만 허용한다',async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),href=(mobile:boolean)=>`#/projects/${pid}/${mobile?'mobile/':''}approvals/requests/${rid}`,location={hash:href(fromMobile)};
+ Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{const q=decisionReplies({general:true});let reads=0;const m=await mounted(async(url,init)=>{if(String(url)===`/api/v1/projects/${pid}/approvals/${rid}`)reads++;return q.transport(url,init);});try{
+  m.props.mobile=fromMobile;await m.render();await m.wait(()=>m.container.textContent.includes('보관 요청 원문')&&!!m.buffer?.decision);await m.fillDecision('양 화면의 같은 원 판단');
+  const node=m.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='거절')!,key=Object.keys(node).find(k=>k.startsWith('__reactProps$'))!,oldClick=(node as any)[key].onClick,before=reads;
+  location.hash=href(!fromMobile);m.props.mobile=!fromMobile;await m.render();await m.wait(()=>reads>before&&m.container.textContent.includes('보관 요청 원문'));
+  await ui.React.act(async()=>oldClick());assert.equal(q.controls,0);assert.equal(q.bodies.length,0);await m.click('거절');await m.wait(()=>m.buffer.decision.resultId===id(99));
+  assert.equal(q.bodies.length,1);assert.equal(q.controls,1);assert.equal(JSON.parse(q.bodies[0]!).targetId,rid);assert.equal(JSON.parse(q.bodies[0]!).payload.decision,'REJECT');assert.equal(m.authLost,0);
+ }finally{await m.close();}}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+test('raw 주소 이탈 중 원 작업 finally는 자기 busy만 풀고 같은 mount의 명시 결정을 복구한다',async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),route='#/projects/'+pid+'/approvals',location={hash:route};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{const held=Promise.withResolvers<void>(),q=decisionReplies({general:true,holdControl:()=>held.promise}),m=await mounted(q.transport);try{
+  await m.wait(()=>!!m.buffer?.decision);await m.fillDecision('이탈 후 다시 명시');await m.click('이번만 승인');await m.wait(()=>q.controls===1);location.hash='#/projects/'+pid+'/workspace';held.resolve();await m.flush();await m.flush();assert.equal(q.bodies.length,0);assert.equal(m.buffer.decision.pending,null);
+  location.hash=route;await m.render();assert.equal(m.busy(),false);await m.click('이번만 승인');await m.wait(()=>m.buffer.decision.resultId===id(99));assert.equal(q.bodies.length,1);assert.equal(q.controls,2);assert.equal(m.authLost,0);
+ }finally{held.resolve();await m.close();}}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+test('결정 후 목록의 raw 이탈 finally는 마지막 조회의 loading만 풀고 원 영수증을 보존한다',async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),route='#/projects/'+pid+'/approvals',location={hash:route};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{const q=decisionReplies({general:true}),held=Promise.withResolvers<Response>();let waiting=false,hold=true;const m=await mounted(async(url,init)=>{if(hold&&q.bodies.length&&String(url).includes('/approvals?')){waiting=true;return held.promise;}return q.transport(url,init);});try{
+  await m.wait(()=>!!m.buffer?.decision);await m.fillDecision('원 결정 뒤 목록');await m.click('거절');await m.wait(()=>waiting);const original=structuredClone(m.buffer);
+  location.hash='#/projects/'+pid+'/workspace';hold=false;held.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await m.flush();await m.flush();location.hash=route;await m.render();
+  const button=m.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='승인 목록 새로고침')!;assert.equal(button.disabled,false);assert(!m.container.textContent.includes('승인 확인 중'));assert.deepEqual(m.buffer,original);assert.equal(m.authLost,0);assert.equal(q.bodies.length,1);
+  await m.click('승인 목록 새로고침');await m.wait(()=>!m.container.textContent.includes('승인 확인 중'));assert.deepEqual(m.buffer,original);assert.equal(q.bodies.length,1);
+ }finally{held.resolve(Response.json({}));await m.close();}}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+test('이전 PC 결정의 finally는 새 모바일 결정이 소유한 busy를 풀지 않는다',async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:`#/projects/${pid}/approvals/requests/${rid}`};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{const first=Promise.withResolvers<void>(),second=Promise.withResolvers<void>();let calls=0;const q=decisionReplies({general:true,holdControl:()=>++calls===1?first.promise:second.promise}),m=await mounted(q.transport);try{
+  await m.wait(()=>!!m.buffer?.decision);await m.fillDecision('동일 주체의 원 판단');await m.click('이번만 승인');await m.wait(()=>q.controls===1);
+  location.hash=`#/projects/${pid}/mobile/approvals/requests/${rid}`;m.props.mobile=true;await m.render();await m.wait(()=>!m.busy()&&m.container.textContent.includes('보관 요청 원문'));await m.click('거절');await m.wait(()=>q.controls===2);assert.equal(m.busy(),true);
+  first.resolve();await m.flush();await m.flush();assert.equal(m.busy(),true);assert.equal(q.bodies.length,0);second.resolve();await m.wait(()=>m.buffer.decision.resultId===id(99));assert.equal(q.bodies.length,1);assert.equal(JSON.parse(q.bodies[0]!).payload.decision,'REJECT');assert.equal(m.authLost,0);
+ }finally{first.resolve();second.resolve();await m.close();}}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
 });
 
 test('부모가 pending 선보존을 실제 거부·교체하면 같은 scope에서도 원 결정 POST0',async t=>{

@@ -12,6 +12,10 @@ import {fixture as existingApprovalFixture} from '../FN17/notification-fixture.t
 class MemoryNode{
  nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
  constructor(name:string,type=1,owner?:any){this.nodeType=type;this.nodeName=type===1?name.toUpperCase():name;this.tagName=this.nodeName;this.localName=name;this.ownerDocument=owner;}
+ // textarea 기본값은 DOM textContent에도 반영되어 React의 새 mount 초기화가 실제 브라우저와 같게 동작한다.
+ private initialValue='';
+ get defaultValue(){return this.tagName==='TEXTAREA'?this.textContent:this.initialValue;}
+ set defaultValue(value:string){this.initialValue=String(value);if(this.tagName==='TEXTAREA')this.textContent=this.initialValue;}
  get options():MemoryNode[]{return this.childNodes.flatMap(n=>n.tagName==='OPTION'?[n]:n.options);}
  get firstChild():MemoryNode|null{return this.childNodes[0]??null;}get lastChild():MemoryNode|null{return this.childNodes.at(-1)??null;}get nextSibling():MemoryNode|null{const a=this.parentNode?.childNodes;return a?.[a.indexOf(this)+1]??null;}
  get nodeValue():string|null{return this.nodeType===3?this.data:null;}set nodeValue(v:string|null){if(this.nodeType===3)this.data=v??'';}
@@ -80,8 +84,8 @@ test('mobilePane 실제 App 기본 대화는 같은 Workspace의 절차·자료�
  }finally{await f.close();}
 });
 
-async function navigate(hash:string){await ui.React.act(async()=>{location.hash=hash;for(const fn of events.get('hashchange')??[])fn();});await settle();}
-async function click(n:MemoryNode){assert.equal(n.disabled,false);const priorHash=location.hash,e:any={type:'click',button:0};await ui.React.act(async()=>n.dispatchEvent(e));if(location.hash!==priorHash)await navigate(location.hash);if(n.tagName==='A'&&!e.defaultPrevented&&n.getAttribute('href')?.startsWith('#/'))await navigate(n.getAttribute('href')!);await settle();}
+async function navigate(hash:string,oldHash=location.hash){await ui.React.act(async()=>{location.hash=hash;const event={type:'hashchange',oldURL:'https://anvil.invalid/'+oldHash,newURL:'https://anvil.invalid/'+hash};for(const fn of events.get('hashchange')??[])fn(event);});await settle();}
+async function click(n:MemoryNode){assert.equal(n.disabled,false);const priorHash=location.hash,e:any={type:'click',button:0};await ui.React.act(async()=>n.dispatchEvent(e));if(location.hash!==priorHash)await navigate(location.hash,priorHash);if(n.tagName==='A'&&!e.defaultPrevented&&n.getAttribute('href')?.startsWith('#/'))await navigate(n.getAttribute('href')!);await settle();}
 function button(root:MemoryNode,text:string){const n=all(root).find(n=>n.tagName==='BUTTON'&&n.textContent===text);assert.ok(n,'실제 버튼: '+text);return n;}
 function navItems(root:MemoryNode){return labelled(root,'모바일 작업 탐색').childNodes.filter(n=>n.nodeType===1);}
 const hash=(value:unknown)=>contentHash(canonicalJson(value));
@@ -203,6 +207,9 @@ test('push_denied_in_app_fallback: 푸시 거부 시 실제 모바일 App의 보
   const input=labelled(f.container,'결정 이유'),key=Object.keys(input).find(k=>k.startsWith('__reactProps'))!;
   await ui.React.act(async()=>{(input as any)[key].onChange({target:{value:'보존할 확인 의견'}});});
   await navigate(stored.mobile);await wait(()=>f.container.textContent.includes(stored.approval.request.details.reason));
+  const restored=labelled(f.container,'결정 이유'),restoredKey=Object.keys(restored).find(k=>k.startsWith('__reactProps'))!;
+  assert.equal((restored as any)[restoredKey].value,'보존할 확인 의견');
+  assert.equal((restored as any).defaultValue,'보존할 확인 의견');
   assert.equal(labelled(f.container,'결정 이유').value,'보존할 확인 의견');
   assert.deepEqual(calls.filter(v=>v.path.includes('/notifications')).map(v=>v.path),[stored.list,stored.detail]);
   assert.equal(pushCalls,0);assert(calls.every(v=>v.method==='GET'));
