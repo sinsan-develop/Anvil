@@ -1,34 +1,64 @@
-import{useEffect,useRef,useState}from'react';import{ApiClient,ApiError}from'../../api/client.ts';import{documentControl,type DocumentSession}from'../design-trace/editor-api.ts';import{isKnownDocumentRejection}from'../design-trace/mutation-result.ts';import{prepareKnowledgeDecision,sendKnowledgeDecision,readSavedKnowledgeConfirmation,readSavedKnowledgeReview,newKnowledgeDecision,retireRejectedKnowledgeReview,type KnowledgeDecisionBuffer,type KnowledgeDecisionChange}from'./decision-api.ts';import{knowledgeOutcomes,ordered,type KnowledgeOutcome}from'./review-view.ts';
+import{useEffect,useLayoutEffect,useRef,useState}from'react';import{ApiClient,ApiError}from'../../api/client.ts';import{documentControl,type DocumentSession}from'../design-trace/editor-api.ts';import{isKnownDocumentRejection}from'../design-trace/mutation-result.ts';import{prepareKnowledgeDecision,sendKnowledgeDecision,readSavedKnowledgeConfirmation,readSavedKnowledgeReview,newKnowledgeDecision,retireRejectedKnowledgeReview,type KnowledgeDecisionBuffer,type KnowledgeDecisionChange}from'./decision-api.ts';import{knowledgeOutcomes,ordered,type KnowledgeOutcome}from'./review-view.ts';
 const labels={ACCEPTED:'적합',REWORK:'보완 필요',BLOCKED:'판단 불가',NOT_EXECUTED:'미검토'};
 export function KnowledgeDecisionForm({client,session,buffer,onChange,onSaved,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;buffer:KnowledgeDecisionBuffer;onChange:(change:KnowledgeDecisionChange)=>void;onSaved:(result:Awaited<ReturnType<typeof sendKnowledgeDecision>>)=>void;onAuthenticationLost:()=>void}){
- const[working,setWorking]=useState(false),alive=useRef(true),locked=useRef(false);useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+ const[working,setWorking]=useState(false),[dispatchRevision,setDispatchRevision]=useState(0),alive=useRef(true),locked=useRef(false),dispatch=useRef<object|null>(null);
+ type CommitAck={next:KnowledgeDecisionBuffer;active:()=>boolean;resolve:(ok:boolean)=>void};
+ const acknowledgements=useRef<CommitAck[]>([]);
+ useLayoutEffect(()=>{alive.current=true;return()=>{alive.current=false;dispatch.current=null;for(const waiting of acknowledgements.current)waiting.resolve(false);acknowledgements.current=[];};},[]);
  const[reopenError,setReopenError]=useState<string|null>(null),reopening=useRef(false),current=useRef({client,session,buffer,onChange,working});current.current={client,session,buffer,onChange,working};
  const identity=[client,client.transport,session.user.id,session.clientId,session.csrfToken,buffer.projectId],owner=useRef({identity});
  if(identity.some((value,index)=>value!==owner.current.identity[index]))owner.current={identity};
+ const route=useRef(globalThis.location?.hash).current,routeEpoch=useRef<object>({}),routeOwner=routeEpoch.current;
+ const[,refreshRoute]=useState(0);
+ useLayoutEffect(()=>{
+  const changed=(event?:HashChangeEvent)=>{
+   let departed=globalThis.location?.hash!==route;
+   for(const address of [event?.oldURL,event?.newURL])if(typeof address==='string'){try{if(new URL(address).hash!==route)departed=true;}catch{departed=true;}}
+   if(departed){routeEpoch.current={};refreshRoute(value=>value+1);}
+  };
+  globalThis.addEventListener?.('hashchange',changed);return()=>globalThis.removeEventListener?.('hashchange',changed);
+ },[route]);
+ const visible=()=>routeEpoch.current===routeOwner&&globalThis.location?.hash===route;
  const captured=owner.current,context=()=>owner.current===captured&&[current.current.client,client.transport,current.current.session.user.id,current.current.session.clientId,current.current.session.csrfToken,current.current.buffer.projectId].every((value,index)=>value===captured.identity[index]);
+ useLayoutEffect(()=>{const waiting=acknowledgements.current;acknowledgements.current=[];for(const a of waiting)a.resolve(buffer===a.next&&a.active());},[buffer,captured,routeOwner,dispatchRevision]);
  if(buffer.ownerUserId!==session.user.id||buffer.ownerClientId!==session.clientId)return<p role="alert">다른 사용자·기기의 판단 요청은 열거나 전송하지 않습니다.</p>;
- function edit(p:Partial<KnowledgeDecisionBuffer>){if(working||buffer.pending||buffer.savedId)return;onChange({...buffer,...p,dirty:true,failure:null});}
+ function edit(p:Partial<KnowledgeDecisionBuffer>){if(!alive.current||!visible()||!context()||current.current.buffer!==buffer||working||buffer.pending||buffer.savedId)return;onChange({...buffer,...p,dirty:true,failure:null});}
  async function save(){
-  if(locked.current||buffer.savedId)return;locked.current=true;setWorking(true);let b=buffer;
-  const owned=new WeakSet([buffer]);
-  const active=()=>alive.current&&context()&&owned.has(current.current.buffer);
+  if(!alive.current||!visible()||!context()||current.current.buffer!==buffer||locked.current||buffer.savedId)return;
+  const ticket={};dispatch.current=ticket;locked.current=true;setWorking(true);let b=buffer;
+  const originalFingerprint=ordered(buffer);
+  let expected=buffer,expectedFingerprint=originalFingerprint;
+  const active=()=>alive.current&&visible()&&dispatch.current===ticket&&context()&&current.current.buffer===expected&&ordered(expected)===expectedFingerprint;
+  async function commit(next:KnowledgeDecisionBuffer){
+   if(!active()||current.current.buffer!==buffer||ordered(buffer)!==originalFingerprint)return false;
+   const fingerprint=ordered(next);let accepted=false;
+   const committed=await new Promise<boolean>(resolve=>{
+    const waiting:CommitAck={next,active:()=>alive.current&&visible()&&dispatch.current===ticket&&context(),resolve:ok=>{accepted=ok;resolve(ok);}};
+    acknowledgements.current.push(waiting);
+    onChange(previous=>previous===buffer&&ordered(previous)===originalFingerprint&&(accepted||acknowledgements.current.includes(waiting)&&active())?next:previous);
+    setDispatchRevision(value=>value+1);
+   });
+   if(!committed||!alive.current||!visible()||dispatch.current!==ticket||!context()||current.current.buffer!==next||ordered(next)!==fingerprint)return false;
+   expected=next;expectedFingerprint=fingerprint;return true;
+  }
   // 동일 문맥의 원 dispatch 결과는 화면 이탈 뒤에도 보존한다. 부모의 지연 updater에서도 세대를 다시 확인한다.
-  const publish=(next:KnowledgeDecisionBuffer)=>{owned.add(next);onChange(previous=>context()&&previous&&owned.has(previous)?next:previous);};
+  const publish=(next:KnowledgeDecisionBuffer)=>{const prior=expected,fingerprint=expectedFingerprint;onChange(previous=>context()&&previous===prior&&ordered(previous)===fingerprint?next:previous);};
   try{
-   if(!b.pending){const pending=await prepareKnowledgeDecision(b,session);if(!active())return;b={...b,pending};publish(b);}
-   // 같은 명령 재확인도 이번 dispatch의 버퍼 객체로 결박한다.
-   if(!active())return;b={...b};publish(b);
-   const result=await sendKnowledgeDecision(client,b,session,active);
+   if(!b.pending){const pending=await prepareKnowledgeDecision(b,session);if(!active())return;b={...b,pending};}
+   // 부모의 실제 commit과 해당 명시 클릭의 ticket을 함께 확인한 원명령만 전송한다.
+   b={...b};if(!await commit(b))return;
+   const pendingFingerprint=ordered(b);
+   const result=await sendKnowledgeDecision(client,b,session,()=>active()&&current.current.buffer===b&&ordered(b)===pendingFingerprint);
    const applicationReceipt=result.kind==='APPLY'?{ref:{...result.applicationRef},commandId:b.pending!.commandId,ownerUserId:session.user.id,ownerClientId:session.clientId,csrfToken:session.csrfToken}:undefined;
    b={...b,pending:null,savedId:result.id,dirty:false,uncertain:false,failure:null,...(applicationReceipt?{applicationReceipt}:{})};publish(b);
    if(active())onSaved(result);
   }catch(e){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');if(a.code==='KNOWLEDGE_DECISION_PAUSED'&&!active())return;publish({...b,failure:{code:a.code,status:a.status},uncertain:b.uncertain||a.code!=='KNOWLEDGE_DECISION_PAUSED'&&!isKnownDocumentRejection(a)});if(a.status===401&&active())onAuthenticationLost();}
-  finally{locked.current=false;if(alive.current)setWorking(false);}
+  finally{if(dispatch.current===ticket){dispatch.current=null;locked.current=false;if(alive.current)setWorking(false);}}
  }
  async function reopenRejectedReview(){
   if(reopening.current||!alive.current||locked.current||working||buffer.kind!=='REVIEW'||buffer.uncertain||buffer.savedId||!buffer.pending||!isKnownDocumentRejection(buffer.failure))return;
   const fingerprint=ordered(buffer),sessionFingerprint=ordered(session);
-  const same=(previous:KnowledgeDecisionBuffer|null=buffer)=>{const now=current.current;try{return alive.current&&!locked.current&&!now.working&&now.client===client&&now.session===session&&now.onChange===onChange&&now.buffer===buffer&&previous===buffer&&ordered(previous)===fingerprint&&ordered(now.session)===sessionFingerprint;}catch{return false;}};
+  const same=(previous:KnowledgeDecisionBuffer|null=buffer)=>{const now=current.current;try{return alive.current&&visible()&&!locked.current&&!now.working&&now.client===client&&now.session===session&&now.onChange===onChange&&now.buffer===buffer&&previous===buffer&&ordered(previous)===fingerprint&&ordered(now.session)===sessionFingerprint;}catch{return false;}};
   if(!same())return;reopening.current=true;
   try{
    const next=await retireRejectedKnowledgeReview(buffer,session);
@@ -36,7 +66,7 @@ export function KnowledgeDecisionForm({client,session,buffer,onChange,onSaved,on
    onChange(previous=>same(previous)?next:previous);if(same())setReopenError(null);
   }catch(e){if(same())setReopenError(e instanceof ApiError?e.code:'RESPONSE_INVALID');}finally{reopening.current=false;}
  }
- function close(){if(working||buffer.uncertain||buffer.pending&&!isKnownDocumentRejection(buffer.failure))return;if((buffer.dirty||buffer.pending)&&!confirm('판단 입력과 명확히 거절된 명령만 닫을까요? 저장된 원문과 검토·확정 이력은 보존합니다.'))return;onChange(null);}
+ function close(){if(!alive.current||!visible()||!context()||current.current.buffer!==buffer||working||buffer.uncertain||buffer.pending&&!isKnownDocumentRejection(buffer.failure))return;if((buffer.dirty||buffer.pending)&&!confirm('판단 입력과 명확히 거절된 명령만 닫을까요? 저장된 원문과 검토·확정 이력은 보존합니다.'))return;onChange(null);}
  const review=buffer.kind==='REVIEW',apply=buffer.kind==='APPLY';return<section aria-label="지식 검토·확정 요청"><h3>{review?'내용 검토':apply?'헌법 프로젝트 적용':'별도 확정'}: {buffer.target.entry.title} · v{buffer.target.ref.version}</h3><pre aria-label="판단 대상 지식 원문">{buffer.target.body}</pre><p>{review?'항목별로 직접 판단한 이유를 남기세요. 검토 저장은 확정이나 독립 인수 검사가 아닙니다.':apply?'이 확정 헌법을 프로젝트 기준으로 별도 적용합니다. Agent 전달·준수 판정·업무 실행은 하지 않습니다.':'현재 버전과 최신 적합 검토에 대한 별도 확정입니다. 헌법 적용·Agent 전달을 실행하지 않습니다.'}</p>
  <fieldset disabled={working||!!buffer.pending||!!buffer.savedId}>{review?<>{buffer.target.contentReviewCriteria!.items.map((criterion,n)=><section key={criterion.criterionId}><h4>{criterion.title}</h4><label>결과<select aria-label={`지식 항목 ${n+1} 결과`} value={buffer.items[n]!.outcome} onChange={e=>edit({items:buffer.items.map((i,k)=>k===n?{...i,outcome:e.target.value as KnowledgeOutcome}:i)})}>{knowledgeOutcomes.map(o=><option key={o} value={o}>{labels[o]}</option>)}</select></label><label>판단 근거<textarea aria-label={`지식 항목 ${n+1} 이유`} rows={2} maxLength={20000} value={buffer.items[n]!.reason} onChange={e=>edit({items:buffer.items.map((i,k)=>k===n?{...i,reason:e.target.value}:i)})}/></label></section>)}<label>종합 결과<select aria-label="지식 종합 결과" value={buffer.outcome} onChange={e=>edit({outcome:e.target.value as KnowledgeOutcome})}>{knowledgeOutcomes.map(o=><option key={o} value={o}>{labels[o]}</option>)}</select></label></>:<><p>최신 검토: {buffer.target.contentReviews?.[0]?.ref.id} · 적합</p><label><input type="checkbox" checked={buffer.acknowledged} onChange={e=>edit({acknowledged:e.target.checked})}/>{apply?'이 확정 헌법을 프로젝트 기준으로 적용':'이 버전과 검토를 확인하고 지식만 확정'}</label></>}
  <label>판단 이유<textarea aria-label="지식 판단 이유" maxLength={20000} rows={3} value={buffer.reason} onChange={e=>edit({reason:e.target.value})}/></label></fieldset>

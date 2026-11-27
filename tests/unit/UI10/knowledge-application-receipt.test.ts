@@ -47,12 +47,12 @@ function draft(base=0){
 function deferred<T>(){let resolve!:(v:T)=>void;const promise=new Promise<T>(r=>resolve=r);return{promise,resolve};}
 async function fixture(){
  let store:any={buffers:{[pid]:draft()},applications:{},scope:null},scope={},shown=true,currentSession=session,currentProject=pid,lost=0,changes=0,constitution:any=null,hold:ReturnType<typeof deferred<Response>>|null=null,fail=false;
- const writes:any[]=[],gets:string[]=[],receipts:any[]=[],records:any[]=[],responses:Response[]=[];
+ const writes:any[]=[],packets:{body:string;key:string|null}[]=[],gets:string[]=[],receipts:any[]=[],records:any[]=[],responses:Response[]=[];
  let deferChanges=false;const queued:(()=>void)[]=[];
  const client=new ui.ApiClient(async(path:string,init:any)=>{
   if(init?.method==='POST'){
-   const c=JSON.parse(init.body);writes.push(c);
-   const b=store.buffers[pid],application={projectId:pid,...c.payload,reviewRef:b.target.contentReviews[0].ref,previousApplicationRef:b.applicationBaseRef,appliedBy:{kind:'HUMAN',userId:uid,clientId:cid},controlGeneration:1},ref={id:pid,version:c.expectedVersion+1,contentHash:hash(application)};receipts.push(ref);records.push({ref,application,appliedAt:at});
+   const c=JSON.parse(init.body);writes.push(c);packets.push({body:String(init.body),key:new Headers(init.headers).get('Idempotency-Key')});
+   const b=store.buffers[pid];assert.deepEqual(b.pending,c,'원 POST 전에 부모가 exact pending 명령을 실제 보관');const application={projectId:pid,...c.payload,reviewRef:b.target.contentReviews[0].ref,previousApplicationRef:b.applicationBaseRef,appliedBy:{kind:'HUMAN',userId:uid,clientId:cid},controlGeneration:1},ref={id:pid,version:c.expectedVersion+1,contentHash:hash(application)};receipts.push(ref);records.push({ref,application,appliedAt:at});
    const response=Response.json({operationId:id(9),commandId:c.commandId,projectId:pid,status:'APPLIED',targetId:pid,version:ref.version,data:{status:'CONSTITUTION_APPLIED',ref,application},serverReceivedAt:at});responses.push(response);
    if(hold){const wait=hold;hold=null;return wait.promise;}if(fail){fail=false;throw Error('transport');}return response;
   }
@@ -70,7 +70,7 @@ async function fixture(){
  const wait=async(check:()=>boolean)=>{for(let n=0;n<100&&!check();n++)await settle();assert(check(),container.textContent);};
  const click=async(name:string)=>{const b=button(name);assert(!b.disabled);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
  await ui.React.act(async()=>render());
- return{client,writes,gets,receipts,records,responses,defer:()=>{deferChanges=true;},flush:async()=>{deferChanges=false;await ui.React.act(async()=>{for(const apply of queued.splice(0))apply();});},setConstitution:(v:any)=>{constitution=v;},button,click,wait,settle,container,store:()=>store,lost:()=>lost,changes:()=>changes,fail:()=>{fail=true;},hold:()=>{hold=deferred<Response>();return hold;},replace:async(b:any)=>{store={...store,buffers:{...store.buffers,[pid]:b}};await ui.React.act(async()=>render());},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},context:async(s=session,p=pid)=>{if(s!==currentSession)scope={};currentSession=s;currentProject=p;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{client,writes,packets,gets,receipts,records,responses,defer:()=>{deferChanges=true;},flush:async()=>{deferChanges=false;await ui.React.act(async()=>{for(const apply of queued.splice(0))apply();});},setConstitution:(v:any)=>{constitution=v;},button,click,wait,settle,container,store:()=>store,lost:()=>lost,changes:()=>changes,fail:()=>{fail=true;},hold:()=>{hold=deferred<Response>();return hold;},replace:async(b:any)=>{store={...store,buffers:{...store.buffers,[pid]:b}};await ui.React.act(async()=>render());},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},context:async(s=session,p=pid)=>{if(s!==currentSession)scope={};currentSession=s;currentProject=p;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 test('APPLY 검산 fullref는 닫기와 화면 왕복 후 보존되어 현재 없음 GET을 거절한다',async()=>{
  const f=await fixture();try{await f.click('헌법 프로젝트 적용');await f.wait(()=>!!f.store().buffers[pid]?.savedId);
@@ -126,13 +126,14 @@ test('인증 세대 A→B→A 뒤 이전401은 부모 CAS와 별개인 인증소
  }finally{await f.close();}
 });
 
-for(const uncertain of [false,true])test(`부모 updater 지연 뒤 ${uncertain?'불명 원명령':'정상 저장'}을 보존하고 같은 render의 두 클릭은 POST1이다`,async()=>{
+for(const uncertain of [false,true])test(`부모 updater 보류 중 POST0이며 명시 재시도 뒤 ${uncertain?'불명 원명령':'정상 저장'}을 보존한다`,async()=>{
  const f=await fixture();try{f.defer();if(uncertain)f.fail();const button=f.button('헌법 프로젝트 적용');
   await ui.React.act(async()=>{button.dispatchEvent({type:'click',button:0,bubbles:true});button.dispatchEvent({type:'click',button:0,bubbles:true});});
-  await f.wait(()=>f.changes()>=3);await f.settle();assert.equal(f.writes.length,1);assert.equal(f.store().buffers[pid].pending,null);
-  await f.flush();await f.wait(()=>uncertain?f.store().buffers[pid].uncertain:!!f.store().buffers[pid].savedId);
+  await f.wait(()=>f.changes()>=1&&!f.button('헌법 프로젝트 적용').disabled);await f.settle();assert.equal(f.writes.length,0);assert.equal(f.store().buffers[pid].pending,null);
+  await f.flush();assert.equal(f.writes.length,0,'보류된 updater의 뒤늦은 반영만으로 전송0');
+  await f.click('헌법 프로젝트 적용');await f.wait(()=>uncertain?f.store().buffers[pid].uncertain:!!f.store().buffers[pid].savedId);
   if(uncertain){assert.deepEqual(f.store().buffers[pid].pending,f.writes[0]);assert.equal(f.store().buffers[pid].savedId,null);
-   await f.click('같은 지식 판단 명령 결과 확인');await f.wait(()=>!!f.store().buffers[pid].savedId);assert.deepEqual(f.writes[0],f.writes[1]);
+   await f.click('같은 지식 판단 명령 결과 확인');await f.wait(()=>!!f.store().buffers[pid].savedId);assert.deepEqual(f.writes[0],f.writes[1]);assert.deepEqual(f.packets[0],f.packets[1]);
   }else assert.deepEqual(f.store().applications[pid],f.receipts[0]);
   assert.equal(f.lost(),0);
  }finally{await f.close();}
@@ -193,4 +194,40 @@ test('실제 App의 저장→닫기→다른 화면→재진입은 영수증을 
   await nav('#/projects');await nav(`#/projects/${pid}/knowledge`);await wait(()=>container.textContent.includes('적용 영수증 · 세대 1'));const before=gets.filter(p=>p.includes('/constitution?')).length;
   await click('프로젝트 헌법 조회');await wait(()=>container.textContent.includes('CONSTITUTION_CURRENT_UNCONFIRMED'));assert.equal(gets.filter(p=>p.includes('/constitution?')).length,before+1);assert.equal(writes.length,1);assert.deepEqual(unknown,[]);
  }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);window.location=oldLocation;window.addEventListener=oldAdd;window.removeEventListener=oldRemove;ui=originalUi;for(const[key,value]of local)if(value)Object.defineProperty(globalThis,key,value);else Reflect.deleteProperty(globalThis,key);}
+});
+
+
+for(const mode of ['replacement','unmount','session'] as const)test('부모 pending 보류 뒤 '+mode+'는 이전 명시 저장을 전송하지 않는다',async()=>{
+ const f=await fixture();try{f.defer();await f.click('헌법 프로젝트 적용');await f.wait(()=>f.changes()>0);
+  const replacement=draft(1);if(mode==='replacement')await f.replace(replacement);else if(mode==='unmount')await f.route(false);else await f.context({...session,csrfToken:'d'.repeat(43)});
+  await f.flush();await f.settle();assert.equal(f.writes.length,0);assert.equal(f.lost(),0);if(mode==='replacement')assert.equal(f.store().buffers[pid],replacement);
+  if(mode==='unmount'){await f.route(true);await f.settle();assert.equal(f.writes.length,0,'복귀는 자동 전송0');}
+ }finally{await f.close();}
+});
+test('새 판단 buffer 렌더 뒤 옛 저장 callback은 pending/POST를 만들지 않는다',async()=>{
+ const f=await fixture();try{const button=f.button('헌법 프로젝트 적용'),key=Object.keys(button).find(k=>k.startsWith('__reactProps'));assert(key);const old=(button as any)[key].onClick,close=f.button('지식 판단 닫기'),closeKey=Object.keys(close).find(k=>k.startsWith('__reactProps'))!,oldClose=(close as any)[closeKey].onClick;const nodes=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(nodes)],reason=nodes(f.container).find(n=>n.getAttribute('aria-label')==='지식 판단 이유')!,reasonKey=Object.keys(reason).find(k=>k.startsWith('__reactProps'))!,oldEdit=(reason as any)[reasonKey].onChange,replacement=draft(1);await f.replace(replacement);const changes=f.changes();await ui.React.act(async()=>{old();oldClose();oldEdit({target:{value:'옛 입력 반영 금지'}});await new Promise(r=>setImmediate(r));});await f.settle();assert.equal(f.writes.length,0);assert.equal(f.changes(),changes);assert.equal(f.store().buffers[pid],replacement);}finally{await f.close();}
+});
+
+
+for(const aba of [false,true])test('부모 exact pending commit 뒤 payload 검산 중 '+(aba?'전달된 route ABA':'raw route 이탈')+'은 POST0·불명0이며 복귀도 명시 재확인한다',async t=>{
+ const events=new Map<string,Set<Function>>(),savedEvents=new Map(['addEventListener','removeEventListener'].map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
+ Object.defineProperty(globalThis,'addEventListener',{configurable:true,value:(name:string,fn:Function)=>{if(!events.has(name))events.set(name,new Set());events.get(name)!.add(fn);}});Object.defineProperty(globalThis,'removeEventListener',{configurable:true,value:(name:string,fn:Function)=>events.get(name)?.delete(fn)});
+ t.after(()=>{for(const[key,value]of savedEvents)if(value)Object.defineProperty(globalThis,key,value);else Reflect.deleteProperty(globalThis,key);});
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+pid+'/knowledge'};Object.defineProperty(globalThis,'location',{configurable:true,value:location});
+ t.after(()=>{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');});
+ const f=await fixture(),digest=crypto.subtle.digest;let release:(()=>void)|undefined,held=false;
+ const spy=t.mock.method(crypto.subtle,'digest',function(this:SubtleCrypto,...args:any[]){
+  if(!held&&f.store().buffers[pid]?.pending){held=true;const wait=deferred<void>();release=()=>wait.resolve();return wait.promise.then(()=>Reflect.apply(digest,this,args));}
+  return Reflect.apply(digest,this,args);
+ });
+ try{
+  const mountedForm=f.button('헌법 프로젝트 적용').parentNode;await f.click('헌법 프로젝트 적용');await f.wait(()=>held);const pending=structuredClone(f.store().buffers[pid].pending);assert(pending);assert.equal(f.writes.length,0);
+  await ui.React.act(async()=>{const a=location.hash,b='#/projects/'+pid+'/documents';location.hash=b;if(aba){for(const fn of events.get('hashchange')??[])fn({oldURL:'https://anvil.invalid/'+a,newURL:'https://anvil.invalid/'+b});location.hash=a;for(const fn of events.get('hashchange')??[])fn({oldURL:'https://anvil.invalid/'+b,newURL:'https://anvil.invalid/'+a});}release!();await new Promise(r=>setImmediate(r));});await f.wait(()=>f.writes.length>0||!f.button('같은 지식 판단 명령 결과 확인').disabled);assert.equal(f.writes.length,0);assert.equal(f.store().buffers[pid].uncertain,false);assert.equal(f.store().buffers[pid].failure,null);assert.deepEqual(f.store().buffers[pid].pending,pending);
+  if(!aba){await f.route(false);location.hash='#/projects/'+pid+'/knowledge';await f.route(true);}else assert.equal(f.button('같은 지식 판단 명령 결과 확인').parentNode,mountedForm,'ABA 복구는 동일 Form mount의 새 handler');await f.settle();assert.equal(f.writes.length,0);await f.click('같은 지식 판단 명령 결과 확인');await f.wait(()=>!!f.store().buffers[pid].savedId);assert.deepEqual(f.writes,[pending]);
+ }finally{release?.();spy.mock.restore();await f.close();assert([...events.values()].every(value=>value.size===0),'hashchange listener 회수');if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+
+
+test('실제 POST 뒤 부모가 같은 원 초안 객체를 다시 표시하면 늦은 결과가 덮지 않는다',async()=>{
+ const f=await fixture(),original=f.store().buffers[pid],late=f.hold();try{await f.click('헌법 프로젝트 적용');await f.wait(()=>f.writes.length===1);assert.notEqual(f.store().buffers[pid],original);await f.replace(original);const before=f.changes();late.resolve(f.responses[0]!);await f.wait(()=>f.changes()>before);assert.equal(f.store().buffers[pid],original);assert.equal(original.savedId,null);assert.equal(original.pending,null);assert.deepEqual(f.store().applications,{});assert.equal(f.writes.length,1);}finally{late.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.close();}
 });
