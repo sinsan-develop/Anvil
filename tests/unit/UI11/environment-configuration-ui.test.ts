@@ -1,4 +1,4 @@
-import {fixture as serverFixture,pid as serverPid,uid as serverUid,cid as serverCid,metadata as seedMetadata} from '../FN06/environment-configuration-fixture.ts';
+import {fixture as serverFixture,pid as serverPid,uid as serverUid,cid as serverCid,metadata as seedMetadata,environmentInput as seedEnvironmentInput,post as seedPost} from '../FN06/environment-configuration-fixture.ts';
 import {validateEnvironmentView,readEnvironmentConfiguration} from '../../../apps/web/src/features/connections/environment-configuration-api.ts';
 import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
@@ -136,4 +136,58 @@ for(const boundary of ['close','recordABA','input','project','session','transpor
  if(boundary==='transport'){const original=f.props.client.transport;f.props.client.transport=f.client().transport;await f.render();f.props.client.transport=original;await f.render();}
  await ui.React.act(async()=>{release!(Response.json(status===200?w.environment:{code:'SESSION_EXPIRED'},{status}));});release=null;await f.flush();assert(!f.container.textContent.includes('당시 소스 선언'));assert(!f.container.textContent.includes('저장 당시 환경 원형 검산'));assert.equal(f.lost(),0);assert.equal(f.getDefinition(),buffer);assert.equal(f.calls.filter(c=>c.url===w.path).length,1);assert(f.calls.every(c=>c.method==='GET'));
  }finally{if(release){await ui.React.act(async()=>release!(Response.json({code:'CANCELLED'},{status:503})));}await f.close();}
+});
+
+
+function environmentRoute(t:import('node:test').TestContext){
+ const keys=['location','addEventListener','removeEventListener'],saved=new Map(keys.map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)])),events=new Map<string,Set<Function>>(),a='#/projects/'+serverPid+'/connections',b='#/projects/'+serverPid+'/knowledge',location={hash:a};
+ Object.defineProperty(globalThis,'location',{configurable:true,value:location});Object.defineProperty(globalThis,'addEventListener',{configurable:true,value:(name:string,fn:Function)=>{if(!events.has(name))events.set(name,new Set());events.get(name)!.add(fn);}});Object.defineProperty(globalThis,'removeEventListener',{configurable:true,value:(name:string,fn:Function)=>events.get(name)?.delete(fn)});
+ t.after(()=>{for(const[key,value]of saved)if(value)Object.defineProperty(globalThis,key,value);else Reflect.deleteProperty(globalThis,key);});
+ return{location,a,b,depart(aba:boolean){location.hash=b;if(aba){for(const fn of events.get('hashchange')??[])fn({oldURL:'https://anvil.invalid/'+a,newURL:'https://anvil.invalid/'+b});location.hash=a;for(const fn of events.get('hashchange')??[])fn({oldURL:'https://anvil.invalid/'+b,newURL:'https://anvil.invalid/'+a});}},closed(){assert([...events.values()].every(v=>v.size===0),'원 화면 hashchange listener 회수');}};
+}
+function environmentHandler(button:MemoryNode){const key=Object.keys(button).find(k=>k.startsWith('__reactProps'));assert(key);return(button as any)[key].onClick as Function;}
+for(const aba of [false,true])test('환경 connected 저장의 '+(aba?'전달된 ABA':'raw 이탈')+' 옛 클릭은 첫 UNKNOWN CAS·POST0이며 같은 mount의 명시 복귀만 저장한다',{timeout:15000},async t=>{
+ const route=environmentRoute(t),f=await connected();try{
+  await fillHost(f);await f.click('환경 설정 원명령 준비');await until(f,()=>f.getEnvironment()?.pending?.state==='PREPARED');const original=f.getEnvironment(),body=original.pending.body,handler=environmentHandler(f.buttons('환경 설정 저장')[0]!);
+  await ui.React.act(async()=>{route.depart(aba);handler();});await until(f,()=>!f.container.textContent.includes('환경 설정 보호 자료 확인 중'));
+  assert.equal(f.posts.length,0);assert.equal(f.server.versions.length,0);assert.equal(f.getEnvironment(),original,'미전송은 PREPARED 원 객체 그대로');assert.equal(original.pending.state,'PREPARED');assert.equal(f.lost(),0);
+  route.location.hash=route.a;await f.render();assert.equal(f.posts.length,0,'복귀 자동 전송0');await f.click('환경 설정 저장');await until(f,()=>f.getEnvironment()?.pending?.state==='STORED');assert.equal(f.posts.length,1);assert.equal(f.posts[0]!.body,body);assert.equal(f.server.versions.length,1);assert(f.getEnvironment().pending.receipt);
+ }finally{await f.close();route.closed();}
+});
+
+
+for(const aba of [false,true])for(const status of [200,401])test('환경 valid POST 뒤 '+(aba?'전달 ABA':'raw 이탈')+' late'+status+'는 원 UNKNOWN과 exact 재확인을 보존한다',{timeout:15000},async t=>{
+ const route=environmentRoute(t),f=await connected(),packets:{body:string;key:string|null}[]=[];let release:((r?:Response)=>void)|undefined;
+ try{
+  const base=f.props.client.transport;let hold=true;f.props.client.transport=async(input:any,options:any)=>{if(options?.method==='POST')packets.push({body:String(options.body),key:new Headers(options.headers).get('Idempotency-Key')});const response=await base(input,options);if(options?.method==='POST'&&hold){hold=false;return new Promise<Response>(resolve=>{release=override=>resolve(override??response);});}return response;};await f.render();
+  await fillHost(f);await f.click('환경 설정 원명령 준비');await until(f,()=>f.getEnvironment()?.pending?.state==='PREPARED');const body=f.getEnvironment().pending.body;await f.click('환경 설정 저장');await until(f,()=>!!release);const original=f.getEnvironment();assert.equal(original.pending.state,'UNKNOWN');assert.equal(f.server.versions.length,1);
+  await ui.React.act(async()=>{route.depart(aba);release!(status===401?Response.json({code:'AUTH_REQUIRED'},{status:401}):undefined);await new Promise(r=>setImmediate(r));});await until(f,()=>!f.container.textContent.includes('환경 설정 보호 자료 확인 중'));assert.equal(f.getEnvironment(),original);assert.equal(f.getEnvironment().pending.body,body);assert.equal(f.lost(),0);assert.equal(f.posts.length,1);
+  route.location.hash=route.a;await f.render();assert.equal(f.posts.length,1,'복귀 자동 재전송0');await f.click('같은 환경 설정 명령 결과 재확인');await until(f,()=>f.getEnvironment()?.pending?.state==='STORED');assert.equal(f.server.versions.length,1);assert.equal(f.posts.length,2);assert.deepEqual(packets[1],packets[0]);assert.equal(packets[0]!.body,body);assert(f.getEnvironment().pending.receipt);
+ }finally{release?.(Response.json({code:'CANCELLED'},{status:503}));await f.close();route.closed();}
+});
+test('환경 저장 receipt 뒤 고정 GET의 raw 이탈 late401은 receipt를 지우거나 POST하지 않는다',{timeout:15000},async t=>{
+ const route=environmentRoute(t),f=await connected();try{
+  await fillHost(f);await f.click('환경 설정 원명령 준비');await until(f,()=>f.getEnvironment()?.pending?.state==='PREPARED');f.mode.holdSuffix='/versions/1';await f.click('환경 설정 저장');await until(f,()=>!!f.mode.release);const stored=f.getEnvironment();assert.equal(stored.pending.state,'STORED');assert(stored.pending.receipt);
+  await ui.React.act(async()=>{route.depart(false);f.mode.release!(Response.json({code:'AUTH_REQUIRED'},{status:401}));});await until(f,()=>!f.container.textContent.includes('환경 설정 보호 자료 확인 중'));assert.equal(f.getEnvironment(),stored);assert.equal(f.lost(),0);assert.equal(f.posts.length,1);
+  route.location.hash=route.a;await f.render();await f.click('저장 환경 설정 고정 조회');await until(f,()=>f.container.textContent.includes('저장 당시 원형 검산'));assert.equal(f.posts.length,1);assert.equal(f.server.versions.length,1);
+ }finally{await f.close();route.closed();}
+});
+
+for(const aba of [false,true])test('환경 옛 승인 작성·정의 선택 callback은 '+(aba?'전달 ABA':'raw 이탈')+' 뒤 App 버퍼를 바꾸지 않는다',{timeout:15000},async t=>{
+ const route=environmentRoute(t),f=await connected(async server=>{const m=await seedMetadata(server);return(await seedPost(server,'saveEnvironment',{environment:seedEnvironmentInput(server,m),baseRef:null,reason:'보호 metadata 환경의 RAM 저장'})).result.data.ref;});try{
+  f.server.setDisposition('saveEnvironmentHostDeclaration','REQUIRE_APPROVAL');await fillHost(f);await f.click('환경 설정 원명령 준비');await until(f,()=>f.getEnvironment()?.pending?.state==='REQUIRED');const original=f.getEnvironment(),approval=environmentHandler(f.buttons('환경 설정 일회 승인 요청 작성')[0]!);
+  await f.input('환경 설정 조회 ID',f.seeded.id);await f.input('환경 설정 조회 버전',String(f.seeded.version));await f.input('환경 설정 조회 hash',f.seeded.contentHash);await f.click('알려진 환경 설정 고정 조회');await until(f,()=>f.buttons('이 환경 버전을 연결 정의에 선택').length===1);const use=environmentHandler(f.buttons('이 환경 버전을 연결 정의에 선택')[0]!);
+  await ui.React.act(async()=>{route.depart(aba);approval();use();});assert.equal(f.getApproval(),null);assert.equal(f.getDefinition(),null);assert.equal(f.getEnvironment(),original);assert.equal(f.posts.length,0);assert.equal(f.lost(),0);
+  route.location.hash=route.a;await f.render();await f.click('환경 설정 일회 승인 요청 작성');await until(f,()=>!!f.getApproval()?.request);assert.equal(f.getEnvironment(),original);assert.equal(f.posts.length,0,'현재 명시 승인 작성도 아직 POST0');
+ }finally{await f.close();route.closed();}
+});
+
+for(const aba of [false,true])for(const status of [200,401])test('환경 소스 관측 grant 대기의 '+(aba?'전달 ABA':'raw 이탈')+' late'+status+'는 후속 snapshot GET0',{timeout:15000},async t=>{
+ const route=environmentRoute(t),f=await connected(seedMetadata);let release:((r:Response)=>void)|undefined;const reads:string[]=[];try{
+  const now=new Date().toISOString(),expiresAt=new Date(Date.now()+60000).toISOString(),ref=(n:number)=>({id:id(n),version:1,contentHash:'a'.repeat(64)}),scope={protocolVersion:1,purpose:'SOURCE_READ_OBSERVATION',installationId:id(90),projectId:serverPid,sourceRootRef:f.seeded.root,connectorRef:ref(77),registrationRef:ref(78),pathHintHash:contentHash('보관 경로 metadata'),hostFingerprint:'a'.repeat(64),userId:serverUid,clientId:serverCid,credentialGeneration:1,controlGeneration:1,policyRef:f.server.policyRef,requestedAt:now,expiresAt,targets:[{relativePath:'src/task.ts',kind:'FILE',access:'READ_ATTRIBUTES',recursive:false}],reason:'원 grant 응답 뒤 화면 소유 수명만 검산'},grantRef={id:id(79),version:1,contentHash:contentHash(canonicalJson(scope))},hit={projectId:serverPid,grantRef,snapshotRef:ref(80),scopeDigest:grantRef.contentHash,displayName:'합성 보관 관측 metadata',targetCount:1,storedState:'REPORT_STORED',effectiveState:'REPORTED_OS_UNVERIFIED',invalidReasons:[],expiresAt,observedAt:now,executionAuthorized:false,agentDispatchPerformed:false,baselineConfirmed:false},grant={...hit,rawAllowed:true,scope,declaredPathHint:'보관 경로 metadata'},base=f.props.client.transport;let hold=true;
+  f.props.client.transport=async(input:any,options:any)=>{const path=String(input);if(path.includes('/source-read-grants?'))return Response.json({view:'SOURCE_READ_GRANTS',items:[hit],hasMore:false,nextCursor:null,observedAt:now});if(path.endsWith('/source-read-grants/'+grantRef.id)){reads.push('grant');if(hold){hold=false;return new Promise<Response>(resolve=>release=resolve);}return Response.json(grant);}if(path.includes('/source-snapshots/')){reads.push('snapshot');return Response.json({code:'PROJECT_OPERATION_DENIED'},{status:403});}return base(input,options);};await f.render();
+  await f.click('새 환경 정의 작성');await f.click('보호 소스 행 추가');await until(f,()=>f.buttons('정확 버전 보호 조회·선택').length===1&&!f.container.textContent.includes('환경 설정 보호 자료 확인 중'));await f.click('정확 버전 보호 조회·선택');await until(f,()=>f.getEnvironment().input.sourceRoots.length===1);await f.click('보호 관측 경로 선택');await until(f,()=>f.buttons('정확 버전 보호 조회·선택').length===1&&!f.container.textContent.includes('환경 설정 보호 자료 확인 중'));await f.click('정확 버전 보호 조회·선택');await until(f,()=>!!release);const original=f.getEnvironment();
+  await ui.React.act(async()=>{route.depart(aba);release!(Response.json(status===200?grant:{code:'AUTH_REQUIRED'},{status}));});await until(f,()=>!f.container.textContent.includes('환경 설정 보호 자료 확인 중'));assert.deepEqual(reads,['grant']);assert.equal(f.getEnvironment(),original);assert.equal(f.lost(),0);assert.equal(f.posts.length,0);
+  route.location.hash=route.a;await f.render();await f.click('보호 관측 경로 선택');await until(f,()=>f.buttons('정확 버전 보호 조회·선택').length===1&&!f.container.textContent.includes('환경 설정 보호 자료 확인 중'));await f.click('정확 버전 보호 조회·선택');await until(f,()=>!f.container.textContent.includes('환경 설정 보호 자료 확인 중'));assert.deepEqual(reads,['grant','grant','snapshot'],'같은 mount의 새 명시 선택만 후속 GET');assert.equal(f.getEnvironment(),original);assert.equal(f.lost(),0);assert.equal(f.posts.length,0);
+ }finally{release?.(Response.json({code:'CANCELLED'},{status:503}));await f.close();route.closed();}
 });
