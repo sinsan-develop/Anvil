@@ -72,9 +72,9 @@ export function CheckpointJournalComparison({client,file,stored,result,session,o
   return selectedPageOwner.valid&&pageOwner.current===selectedPageOwner&&alive.current&&owner.current===context&&client.transport===context.transport&&sourceCurrent()&&generation.current===comparisonTicket&&resumeGeneration.current===resumeTicket&&displayedResume.current===shownResume;
  };
  async function readResume(){
-  if(!stored||!v||!canReadResume||!sourceCurrent())return;
-  const comparisonGeneration=generation.current,ticket=++resumeGeneration.current;
-  const owned=()=>alive.current&&owner.current===context&&generation.current===comparisonGeneration&&resumeGeneration.current===ticket;
+  if(!stored||!v||!canReadResume||shownResume?.pending||!pageCurrent())return;
+  const ticket=++resumeGeneration.current;
+  const owned=()=>alive.current&&owner.current===context&&generation.current===comparisonTicket&&resumeGeneration.current===ticket;
   const current=()=>owned()&&sourceCurrent()&&client.transport===context.transport;
   if(!current())return;
   displayedResume.current=null;setResume({comparison:v,pending:true});
@@ -90,7 +90,7 @@ export function CheckpointJournalComparison({client,file,stored,result,session,o
  {v?.changeComparison?<CheckpointChangeComparison value={v.changeComparison}/>:null}
  {canReadResume?<div>
   <button type="button" disabled={shownResume?.pending} onClick={()=>void readResume()}>재개 전 중지 기록 대조</button>
-  {shownResume?<button type="button" onClick={closeResume}>재개 전 중지 기록 닫기</button>:null}
+  {shownResume?<button type="button" onClick={()=>{if(pageCurrent())closeResume();}}>재개 전 중지 기록 닫기</button>:null}
   {shownResume?.pending?<p role="status">선택한 실행의 보관 중지 기록 조회 중</p>:null}
   {shownResume?.error?<p role="alert">{shownResume.error} · 보관 중지 기록 미확인</p>:null}
   {shownResume?.data?<>

@@ -467,6 +467,33 @@ test('보관 체크포인트 ACK 비교와 별도 중지 대조는 서로의 조
  }finally{await f.close();}
 });
 
+for(const mode of ['CLOSE_SHOWN','CLOSE_PENDING','READ_PENDING'] as const)test('재개 전 대조의 이전 '+mode+' 클릭은 같은 화면의 새 대조를 취소하지 않는다',async()=>{
+ const f=await mountCheckpointComparison('OK');
+ const read='재개 전 중지 기록 대조',close='재개 전 중지 기록 닫기',holding='선택한 실행의 보관 중지 기록 조회 중',reason='사용자가 중지 요청';
+ const hasButton=(label:string)=>f.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent===label&&!n.disabled);
+ try{
+  await f.click();await f.waitFor(()=>hasButton(read));
+  if(mode!=='READ_PENDING'){await f.click(read);await f.waitFor(()=>f.container.textContent.includes(reason));}
+  const button=f.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===(mode==='READ_PENDING'?read:close))!;
+  const props=Object.keys(button).find(key=>key.startsWith('__reactProps$'))!;
+  const oldClick=(button as any)[props].onClick;
+  await f.click();await f.waitFor(()=>hasButton(read));
+  if(mode!=='CLOSE_SHOWN')f.hold('stop-requests');
+  await f.click(read);
+  await f.waitFor(()=>mode==='CLOSE_SHOWN'?f.container.textContent.includes(reason):f.held()&&f.container.textContent.includes(holding));
+  const requests=f.requests.slice();
+  await ui.React.act(async()=>oldClick());
+  await f.flush();
+  assert.deepEqual(f.requests,requests);
+  assert(f.container.textContent.includes(mode==='CLOSE_SHOWN'?reason:holding));
+  if(f.held())await f.finish(Response.json(stopHistoryFor(f.result)));
+  await f.waitFor(()=>f.container.textContent.includes(reason));
+  assert.deepEqual(f.lost,[]);assert.deepEqual(f.requests,requests);
+  await f.click(close);assert(!f.container.textContent.includes(reason));
+  f.hold('');await f.click(read);await f.waitFor(()=>f.container.textContent.includes(reason));
+  assert.deepEqual(f.requests.slice(requests.length),['observation-journal','stop-requests']);
+ }finally{if(f.held())await f.finish(Response.json({}));await f.close();}
+});
 test('재개 전 대조에서 현재 보호 거절만 전달하며 이탈 후 늦은 401은 새 화면을 건드리지 않는다',async()=>{
  for(const mode of ['401','403','404','CLOSE','RESULT','CHECKPOINT','OWNER','UNMOUNT','TRANSPORT']){
   const f=await mountCheckpointComparison('OK');
