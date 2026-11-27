@@ -14,6 +14,7 @@ import {readApprovalRef,assertApprovalCandidate,type ApprovalDetails} from '../a
 import { persistProjectReceipt, projectMember, type ProjectCommand } from '../access/project-command.ts';
 import { exact, uuid } from '../knowledge/knowledge-entry.ts';
 import type { ProjectDocuments } from '../documents/project-documents.ts';
+import { documentStageOutputReceiptSql } from '../documents/document-stage.ts';
 import type { ProjectBaselineSources } from './baseline-sources.ts';
 import { readBaselineDraftInput, type BaselineDraftInput } from './baseline-input.ts';
 import { readBaselineContentReview, readBaselineConfirmation, type BaselineContentReview } from './baseline-decision-input.ts';
@@ -21,6 +22,11 @@ import type { ProjectListCodec } from './service.ts';
 
 const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
 const sourceReadRegistrationKeySpec={id:33,sql:'SELECT project_id,id,registration_id,public_key_spki FROM anvil.connectors WHERE project_id=$1 AND id=$2 AND registration_id=$3',columns:['project_id','id','registration_id','public_key_spki'],bigint:[],dates:[]};
+const documentStageOutputReceiptSpec={id:34,sql:documentStageOutputReceiptSql,
+ columns:['document_id','version','content_hash','stage_ref_json','title','content_json','reason','form_definition_id','form_version','form_hash','author_ref_json',
+  'command_id','client_id','actor_id','operation_id','control_generation','request_hash','policy_ref','payload_ref','result_ref','reason_code','approval_ref','approval_decision_ref',
+  'scope_digest','consumed','consumed_digest','approved_request','approval_consumption_id','import_id','proposal_id'],
+ bigint:['version','form_version','control_generation'],dates:[]};
 const flags = { sourceAuthorizationVerified: false as const, coverageVerified: false as const, executionAuthorized: false as const, dispatchPerformed: false as const };
 type BaselineDraftSnapshot = Pick<Awaited<ReturnType<ProjectBaselineSources['resolve']>>, 'input' | 'sourceBinding' | 'evidenceBindings' | 'issues'> & typeof flags & {
  schemaVersion: 1; contentConfirmed: false; recordedBy: { kind: 'HUMAN'; userId: string }; recordedAt: string;
@@ -360,7 +366,7 @@ export class ProjectBaselines {
    {"id":24,"sql":"SELECT clock_timestamp() at","columns":["at"],"bigint":[],"dates":["at"]},
    {"id":25,"sql":"SELECT project_id,id,head_version,created_by,client_id,created_at,updated_at FROM anvil.baseline_drafts WHERE project_id=$1 AND ($2::uuid IS NULL OR id>$2) ORDER BY id LIMIT 200","columns":["project_id","id","head_version","created_by","client_id","created_at","updated_at"],"bigint":["head_version"],"dates":["created_at","updated_at"]},
    {"id":26,"sql":"SELECT project_id,draft_id,version,content_hash,version_json,created_by,client_id,command_id,created_at FROM anvil.baseline_draft_versions WHERE project_id=$1 AND ($2::uuid IS NULL OR (draft_id,version)>($2::uuid,$3::bigint)) ORDER BY draft_id,version LIMIT 200","columns":["project_id","draft_id","version","content_hash","version_json","created_by","client_id","command_id","created_at"],"bigint":["version"],"dates":["created_at"]},
-   sourceReadRegistrationKeySpec
+   sourceReadRegistrationKeySpec,documentStageOutputReceiptSpec
   ];
   const normalize=(s:string)=>s.trim().replace(/\s+/g,' '),bySql=new Map(specs.map(v=>[normalize(v.sql),v]));
   const own=new WeakSet<AuthFailure>();let sticky:AuthFailure|undefined,cleanupUnknown=false,metadataUsed=0,authDeadline=Infinity,identity:AuthenticatedIdentity|undefined,budget:ArtifactBackupReadBudget|undefined=sharedBudget,baseFingerprint:string|undefined,proofFingerprint:string|undefined;
@@ -390,10 +396,12 @@ export class ProjectBaselines {
    async function data(sql:string,values:any[]=[]):Promise<{rows:any[]}>{
     if(authenticating)return plain(sql,values);check();const found=bySql.get(normalize(sql));if(!found)throw failure('FEATURE_BASELINE_DRAFT_HISTORY_QUERY_UNSUPPORTED');const spec=found;
     if(spec===sourceReadRegistrationKeySpec&&(values.length!==3||values[0]!==request.projectId||!uuid(values[1])||!uuid(values[2])))throw failure('FEATURE_BASELINE_DRAFT_HISTORY_QUERY_UNSUPPORTED');
+    if(spec===documentStageOutputReceiptSpec&&(values.length!==3||values[0]!==request.projectId||!uuid(values[1])||!Number.isSafeInteger(values[2])||values[2]<1))throw failure('FEATURE_BASELINE_DRAFT_HISTORY_QUERY_UNSUPPORTED');
     const remainingBytes=request.limits.metadataBytes-metadataUsed;if(remainingBytes<1)fail('FEATURE_BASELINE_DRAFT_HISTORY_LIMIT',413);
     let projection=spec.columns.map(c=>spec.bigint.includes(c)?`fn16_source.${c}::text AS ${c}`:spec.dates.includes(c)?`CASE WHEN fn16_source.${c} IS NULL THEN NULL WHEN EXTRACT(YEAR FROM fn16_source.${c} AT TIME ZONE 'UTC') BETWEEN 1 AND 9999 THEN to_char(fn16_source.${c} AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') ELSE 'OUT_OF_RANGE' END AS ${c}`:`fn16_source.${c}`).join(',');
     // Q18 originally orders by a non-returned timestamptz. Keep that SQL type/order internally, then remove it before the legacy row/JSON boundary.
-    const sourceSql=spec.id===18?sql.replace('SELECT p.id FROM','SELECT p.id,p.created_at AS fn16_proposal_created_at FROM'):sql;
+    // 두 원 영수증 행이면 원 판독기가 중복을 거부할 수 있다.
+    const sourceSql=spec.id===18?sql.replace('SELECT p.id FROM','SELECT p.id,p.created_at AS fn16_proposal_created_at FROM'):spec===documentStageOutputReceiptSpec?sql+' LIMIT 2':sql;
     if(spec.id===18)projection+=',fn16_source.fn16_proposal_created_at';
     const payloadJson=spec.id===18?"(to_jsonb(fn16_projected)-'fn16_proposal_created_at')":'to_jsonb(fn16_projected)';
     const ordering:Record<number,string>={15:'fn16_projected.server_sequence::numeric DESC',16:'fn16_projected.created_at,fn16_projected.id',18:'fn16_projected.fn16_proposal_created_at,fn16_projected.id',25:'fn16_projected.id',26:'fn16_projected.draft_id,fn16_projected.version::numeric'};
@@ -479,7 +487,7 @@ export class ProjectBaselines {
    {id:30,sql:"SELECT project_id,review_id,draft_id,draft_version,draft_hash,content_hash,review_json,created_by,client_id,command_id,created_at FROM anvil.baseline_content_reviews WHERE project_id=$1 AND ($2::uuid IS NULL OR review_id>$2) ORDER BY review_id LIMIT 200",columns:["project_id", "review_id", "draft_id", "draft_version", "draft_hash", "content_hash", "review_json", "created_by", "client_id", "command_id", "created_at"],bigint:["draft_version"],dates:["created_at"]},
    {id:31,sql:"SELECT id,project_id,version,source_snapshot_ref,content_json,content_hash,created_by,created_at,baseline_kind,draft_id,draft_version,command_id,client_id,source_snapshot_version,source_snapshot_hash FROM anvil.project_baselines WHERE project_id=$1 AND ($2::bigint IS NULL OR (version,id)>($2::bigint,$3::uuid)) ORDER BY version,id LIMIT 200",columns:["id", "project_id", "version", "source_snapshot_ref", "content_json", "content_hash", "created_by", "created_at", "baseline_kind", "draft_id", "draft_version", "command_id", "client_id", "source_snapshot_version", "source_snapshot_hash"],bigint:["version", "draft_version", "source_snapshot_version"],dates:["created_at"]},
    {id:32,sql:"SELECT project_id,baseline_id,baseline_version,baseline_hash FROM anvil.baseline_heads WHERE project_id=$1",columns:["project_id", "baseline_id", "baseline_version", "baseline_hash"],bigint:["baseline_version"],dates:[]},
-   sourceReadRegistrationKeySpec
+   sourceReadRegistrationKeySpec,documentStageOutputReceiptSpec
   ];
   const normalize=(s:string)=>s.trim().replace(/\s+/g,' '),bySql=new Map(specs.map(v=>[normalize(v.sql),v]));
   const own=new WeakSet<AuthFailure>();let sticky:AuthFailure|undefined,cleanupUnknown=false,metadataUsed=0,authDeadline=Infinity,identity:AuthenticatedIdentity|undefined,budget:ArtifactBackupReadBudget|undefined=sharedBudget,baseFingerprint:string|undefined,proofFingerprint:string|undefined;
@@ -511,10 +519,12 @@ export class ProjectBaselines {
    async function rawData(sql:string,values:any[]=[]):Promise<{rows:any[]}>{
     if(authenticating)return plain(sql,values);check();const found=bySql.get(normalize(sql));if(!found)throw failure('FEATURE_BASELINE_DECISION_HISTORY_QUERY_UNSUPPORTED');const spec=found;
     if(spec===sourceReadRegistrationKeySpec&&(values.length!==3||values[0]!==request.projectId||!uuid(values[1])||!uuid(values[2])))throw failure('FEATURE_BASELINE_DECISION_HISTORY_QUERY_UNSUPPORTED');
+    if(spec===documentStageOutputReceiptSpec&&(values.length!==3||values[0]!==request.projectId||!uuid(values[1])||!Number.isSafeInteger(values[2])||values[2]<1))throw failure('FEATURE_BASELINE_DECISION_HISTORY_QUERY_UNSUPPORTED');
     const remainingBytes=request.limits.metadataBytes-metadataUsed;if(remainingBytes<1)fail('FEATURE_BASELINE_DECISION_HISTORY_LIMIT',413);
     let projection=spec.columns.map(c=>spec.bigint.includes(c)?`fn16_source.${c}::text AS ${c}`:spec.dates.includes(c)?`CASE WHEN fn16_source.${c} IS NULL THEN NULL WHEN EXTRACT(YEAR FROM fn16_source.${c} AT TIME ZONE 'UTC') BETWEEN 1 AND 9999 THEN to_char(fn16_source.${c} AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') ELSE 'OUT_OF_RANGE' END AS ${c}`:`fn16_source.${c}`).join(',');
     // Q18 originally orders by a non-returned timestamptz. Keep that SQL type/order internally, then remove it before the legacy row/JSON boundary.
-    const sourceSql=spec.id===18?sql.replace('SELECT p.id FROM','SELECT p.id,p.created_at AS fn16_proposal_created_at FROM'):sql;
+    // 두 원 영수증 행이면 원 판독기가 중복을 거부할 수 있다.
+    const sourceSql=spec.id===18?sql.replace('SELECT p.id FROM','SELECT p.id,p.created_at AS fn16_proposal_created_at FROM'):spec===documentStageOutputReceiptSpec?sql+' LIMIT 2':sql;
     if(spec.id===18)projection+=',fn16_source.fn16_proposal_created_at';
     const payloadJson=spec.id===18?"(to_jsonb(fn16_projected)-'fn16_proposal_created_at')":'to_jsonb(fn16_projected)';
     const ordering:Record<number,string>={15:'fn16_projected.server_sequence::numeric DESC',16:'fn16_projected.created_at,fn16_projected.id',18:'fn16_projected.fn16_proposal_created_at,fn16_projected.id',26:'fn16_projected.server_sequence::numeric DESC',30:'fn16_projected.review_id',31:'fn16_projected.version::numeric,fn16_projected.id'};

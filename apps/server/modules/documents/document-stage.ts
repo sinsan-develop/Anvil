@@ -20,9 +20,7 @@ export function readStageOutputItem(value:unknown):StageOutputItem {
     throw new AuthFailure('DOCUMENT_STAGE_INPUT_INVALID',422);
   return {applicationRef:{...v.applicationRef},itemId:v.itemId};
 }
-/** 원 버전·명령·감사만 사용한다. 목록의 최신 명령이나 요청자의 현재 주체로 대체하지 않는다. */
-export async function storedStageOutput(db:PoolClient,projectId:string,id:string,version:number,revision?:{stage:StageNodeRef|null;form:VersionRef}){
-  const rows=(await db.query(`SELECT v.document_id,v.version,v.content_hash,v.stage_ref_json,v.title,v.content_json,v.reason,v.form_definition_id,v.form_version,v.form_hash,v.author_ref_json,
+export const documentStageOutputReceiptSql=`SELECT v.document_id,v.version,v.content_hash,v.stage_ref_json,v.title,v.content_json,v.reason,v.form_definition_id,v.form_version,v.form_hash,v.author_ref_json,
     c.command_id,c.client_id,c.actor_id,c.operation_id,c.control_generation,c.request_hash,c.policy_ref,c.payload_ref,c.result_ref,
     a.reason_code,a.approval_ref,ar.approval_decision_ref,ar.scope_digest,ac.id AS consumed,ac.scope_digest AS consumed_digest,ad.request_id AS approved_request,
     c.approval_consumption_id,i.import_id,s.proposal_id
@@ -39,7 +37,11 @@ export async function storedStageOutput(db:PoolClient,projectId:string,id:string
     LEFT JOIN anvil.approval_decisions ad ON ad.project_id=c.project_id AND ad.id=ac.decision_id AND ad.decision='APPROVE' AND ad.scope_digest=ac.scope_digest
     LEFT JOIN anvil.document_import_selections i ON i.project_id=v.project_id AND i.document_id=v.document_id AND i.version=v.version AND i.command_id=c.id
     LEFT JOIN anvil.document_proposal_selections s ON s.project_id=v.project_id AND s.document_id=v.document_id AND s.version=v.version AND s.command_id=c.id
-    WHERE v.project_id=$1 AND v.document_id=$2 AND v.version=$3`,[projectId,id,version])).rows;
+    WHERE v.project_id=$1 AND v.document_id=$2 AND v.version=$3`;
+
+/** 원 버전·명령·감사만 사용한다. 목록의 최신 명령이나 요청자의 현재 주체로 대체하지 않는다. */
+export async function storedStageOutput(db:PoolClient,projectId:string,id:string,version:number,revision?:{stage:StageNodeRef|null;form:VersionRef}){
+  const rows=(await db.query(documentStageOutputReceiptSql,[projectId,id,version])).rows;
   if(rows.length!==1)throw outputIntegrity();
   const r=rows[0],result=r.result_ref,data=result?.data,ref={id,version,contentHash:r.content_hash};
   if(!data||result.projectId!==projectId||result.targetId!==id||result.version!==version||result.operationId!==r.operation_id||
