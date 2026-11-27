@@ -30,7 +30,7 @@ const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/design-trace/MaterialLibrary.tsx',import.meta.url));
  const api=fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url));
- const result:any=await build({configFile:false,envFile:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:trace-artifact',name:'TraceArtifactTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'trace-memory-entry',resolveId(id){if(id.endsWith('virtual:trace-artifact'))return '\0trace-artifact';},load(id){if(id==='\0trace-artifact')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{MaterialLibrary}from${JSON.stringify(entry)};import{DocumentEditor}from${JSON.stringify(entry.replace('MaterialLibrary.tsx','DocumentEditor.tsx'))};import{ApiClient}from${JSON.stringify(api)};export{React,createRoot,MaterialLibrary,DocumentEditor,ApiClient};`;}}]});
+ const result:any=await build({configFile:false,envFile:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:trace-artifact',name:'TraceArtifactTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'trace-memory-entry',resolveId(id){if(id.endsWith('virtual:trace-artifact'))return '\0trace-artifact';},load(id){if(id==='\0trace-artifact')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{MaterialLibrary}from${JSON.stringify(entry)};import{DocumentEditor}from${JSON.stringify(entry.replace('MaterialLibrary.tsx','DocumentEditor.tsx'))};import{ApiClient}from${JSON.stringify(api)};import{DocumentsPage}from${JSON.stringify(entry.replace('MaterialLibrary.tsx','DocumentsPage.tsx'))};export{React,createRoot,MaterialLibrary,DocumentEditor,DocumentsPage,ApiClient};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:',hash:''}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,location:window.location,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return TraceArtifactTest;')();
@@ -61,7 +61,7 @@ function data(coverage=false,formCode='AF02'){
  const plan={ref:{id:id(11),version:3,contentHash:H(planSnapshot)},status:'DRAFT',...planSnapshot,executionEvidence:'NOT_CONNECTED',observedAt:at};
  return{files,proposal,document,plan,diff,designRef,old,next,baseRef,form};
 }
-async function fixture(coverage=false,formCode='AF02'){
+async function fixture(coverage=false,formCode='AF02',selectionJourney=false){
  const d=data(coverage,formCode),calls:{path:string;method:string;body?:string}[]=[],controls={lose:false,receiptFault:'',generation:4,hook:null as null|((path:string,options?:RequestInit)=>Promise<Response|null>|Response|null)};let lost=0,latest:any=null,external:any;
  const transport:typeof fetch=async(path,options)=>{const p=String(path),method=options?.method??'GET',body=typeof options?.body==='string'?options.body:undefined;calls.push({path:p,method,body});const intercepted=await controls.hook?.(p,options);if(intercepted)return intercepted;
  if(method==='POST'){assert.equal(p,`/api/v1/projects/${pid}/commands`);const c=JSON.parse(body!);assert.equal(c.operation,'linkTrace');assert.equal(c.projectId,pid);assert.equal(c.clientId,cid);assert.equal(c.controlGeneration,4);assert.equal(c.targetId,null);assert.equal(c.expectedVersion,0);assert.deepEqual(c.baselineRefs,[]);assert.equal(c.approvalRef,null);assert.deepEqual(c.payload,{from:{kind:'ARTIFACT',id:d.proposal.diffRef.artifactId,versionRef:{id:d.proposal.diffRef.artifactId,version:1,contentHash:d.proposal.diffRef.contentHash}},to:{kind:'PLAN_TASK',id:d.plan.ref.id,versionRef:d.plan.ref,localCode:'FN01'},relation:'IMPLEMENTS',reason:'변경 구간을 업무에 연결'});
@@ -83,7 +83,7 @@ async function fixture(coverage=false,formCode='AF02'){
  throw Error('UNMODELED_PROPOSAL_TRACE:'+p);
  };
  const client=new ui.ApiClient(transport),container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);let props={client,projectId:pid,session};
- function Parent(p:typeof props){const[b,setB]=ui.React.useState(null),[busy,setBusy]=ui.React.useState(false);latest=b;external=setB;return b?ui.React.createElement(ui.DocumentEditor,{client:p.client,session:p.session,buffer:b,onChange:setB,onSaved:()=>{throw Error('문서 저장 금지');},onAuthenticationLost:()=>{lost++;}}):ui.React.createElement(ui.MaterialLibrary,{...p,canPrepare:!busy,onPrepared:setB,onBusy:setBusy,onAuthenticationLost:()=>{lost++;}});}
+ function Parent(p:typeof props){const[b,setB]=ui.React.useState(null),[busy,setBusy]=ui.React.useState(false);latest=b;external=setB;return b?ui.React.createElement(ui.DocumentEditor,{client:p.client,session:p.session,buffer:b,onChange:setB,onSaved:()=>{if(!selectionJourney)throw Error('문서 저장 금지');setB(null);},onAuthenticationLost:()=>{lost++;}}):ui.React.createElement(ui.MaterialLibrary,{...p,canPrepare:!busy,onPrepared:setB,onBusy:setBusy,onAuthenticationLost:()=>{lost++;}});}
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))];
  const button=(label:string)=>{const found=nodes().filter(n=>n.tagName==='BUTTON'&&(n.textContent===label||n.getAttribute('aria-label')===label));assert.equal(found.length,1,label+' / '+container.textContent);return found[0]!;};
  const render=async(next=props)=>{props=next;await ui.React.act(async()=>root.render(ui.React.createElement(Parent,props)));};
@@ -93,7 +93,8 @@ async function fixture(coverage=false,formCode='AF02'){
  const wait=async(check:()=>boolean)=>{for(let n=0;!check()&&n<100;n++)await ui.React.act(async()=>{await new Promise(r=>setTimeout(r,2));});assert(check(),container.textContent);};
  const close=async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);};
  await render();await wait(()=>container.textContent.includes('보관 제안'));
- return{d,client,calls,controls,nodes,props:()=>props,buffer:()=>latest,lost:()=>lost,render,click,change,settle,wait,close,text:()=>container.textContent,button,setBuffer:async(f:any)=>ui.React.act(async()=>external(f)),open:async(proposalId=d.proposal.id)=>{await click('보관 제안 '+proposalId+' 열기');await wait(()=>container.textContent.includes('보관 제안 변경 구간')||nodes().some(n=>n.getAttribute('aria-label')==='보관 제안 변경 구간'));}};
+ const openDocument=async(ref:unknown)=>{function Page(){const[b,setB]=ui.React.useState(null),[review,setReview]=ui.React.useState(null);return ui.React.createElement(ui.DocumentsPage,{client,projectId:pid,session,requestedDocument:ref,buffer:b,onChange:setB,review,onReviewChange:setReview,confirmation:null,onConfirmationChange:()=>{throw Error('확정 금지');},onAuthenticationLost:()=>{lost++;}});}await ui.React.act(async()=>root.render(ui.React.createElement(Page)));};
+ return{openDocument,d,client,calls,controls,nodes,props:()=>props,buffer:()=>latest,lost:()=>lost,render,click,change,settle,wait,close,text:()=>container.textContent,button,setBuffer:async(f:any)=>ui.React.act(async()=>external(f)),open:async(proposalId=d.proposal.id)=>{await click('보관 제안 '+proposalId+' 열기');await wait(()=>container.textContent.includes('보관 제안 변경 구간')||nodes().some(n=>n.getAttribute('aria-label')==='보관 제안 변경 구간'));}};
 }
 test('보관 제안에서 명시 diff 업무 연결 준비는 실제 Editor로 이어지고 POST0이다',async()=>{const f=await fixture();try{
  await f.open();await f.click('서버 생성 diff를 고정 업무에 연결');await f.wait(()=>!!f.buffer()?.proposalState?.diffTrace);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);assert.match(f.text(),/문서 제안 diff와 고정 업무 연결/);assert.equal(f.buffer().proposalState.proposal.diffRef.artifactId,f.d.proposal.diffRef.artifactId);
@@ -285,6 +286,85 @@ for(const scope of ['route','project','transport','proposal','unmount'] as const
 });
 
 const selectedDraftAction='선택한 초안의 양식·사람 검토 열기';
+test('IX02 QA B4/B5 미반영 제안 선택 저장부터 같은 초안의 HUMAN REWORK 원문 재조회까지 연결된다',{timeout:15000},async()=>{
+ const f=await fixture(true,'AF02',true),rows=new Map<number,any>(),posts:any[]=[],readbacks:any[]=[];
+ const recordedAt=new Date(at).toISOString(),reviewedAt='2026-11-17T00:01:00.000Z',reason='빈 필수 항목과 연결하지 않은 항목을 보완해야 합니다';
+ const selectedPath=`/api/v1/projects/${pid}/documents/${f.d.baseRef.id}/versions/${f.d.baseRef.version+1}`;
+ const receipt=(c:any,when:string,data:unknown)=>Response.json({commandId:c.commandId,projectId:pid,status:'APPLIED',operationId:id(60+posts.length),serverReceivedAt:when,targetId:c.targetId,version:c.operation==='saveDocumentDraft'?c.expectedVersion+1:c.expectedVersion,data});
+ f.controls.hook=(path,options)=>{
+  assert(['GET','POST'].includes(options?.method??'GET'),'기존 보호 GET과 정확 두 POST 외 요청은 금지한다');
+  if(options?.method==='POST'){
+   assert.equal(path,`/api/v1/projects/${pid}/commands`);
+   const c=JSON.parse(String(options.body));posts.push(c);
+   assert.equal(c.projectId,pid);assert.equal(c.clientId,cid);assert.equal(c.controlGeneration,4);
+   assert.equal(new Headers(options.headers).get('X-Anvil-CSRF'),session.csrfToken);
+   assert.equal(new Headers(options.headers).get('Idempotency-Key'),c.commandId);
+   assert.deepEqual(c.baselineRefs,[]);assert.equal(c.approvalRef,null);
+   if(c.operation==='saveDocumentDraft'){
+    assert.equal(rows.size,0,'선택 POST 이전에는 새 초안 행이 없다');
+    assert.equal(c.targetId,f.d.baseRef.id);assert.equal(c.expectedVersion,f.d.baseRef.version);
+    assert.equal(c.payload.proposalRef,f.d.proposal.id);assert.equal(c.payload.importCandidateRef,null);
+    assert.deepEqual(c.payload.content,f.d.proposal.proposedContent);assert.deepEqual(c.payload.formRef,f.d.form.ref);
+    const {title,formRef,stageNodeRef,content}=c.payload,version=c.expectedVersion+1;
+    const draft={...structuredClone(f.d.document),version,title,formRef,stageNodeRef,content,contentHash:H({title,formRef,stageNodeRef,content}),authorRef:{kind:'HUMAN',userId:uid},createdAt:recordedAt,
+     statusHistory:[{kind:'DRAFT_SAVED',reason:c.payload.reason,at:recordedAt,actorRef:{kind:'HUMAN',userId:uid}}],
+     contentReviewCriteria:{criteriaVersion:1,formRef,items:f.d.form.definition.items.map(i=>({criterionId:i.itemId,title:i.title,reviewCriteria:i.reviewCriteria}))},contentReviews:[]};
+    rows.set(version,draft);
+    (f.d.proposal.selections as any[]).push({documentId:draft.id,version,selectedBy:uid,at:recordedAt});
+    return receipt(c,recordedAt,{status:'DRAFT',ref:{id:draft.id,version,contentHash:draft.contentHash},proposalRef:f.d.proposal.id});
+   }
+   assert.equal(c.operation,'recordContentReview','선택과 사람 검토 외 POST는 금지한다');
+   const draft=rows.get(c.expectedVersion);assert(draft);assert.equal(draft.contentReviews.length,0);assert.equal(c.targetId,draft.id);
+   assert.deepEqual(c.payload.targetRef,{id:draft.id,version:draft.version,contentHash:draft.contentHash});
+   assert.equal(c.payload.targetKind,'DOCUMENT');assert.equal(c.payload.criteriaVersion,1);assert.equal(c.payload.outcome,'REWORK');assert.equal(c.payload.reason,reason);
+   assert.deepEqual(c.payload.items,draft.contentReviewCriteria.items.map((i:any)=>({criterionId:i.criterionId,outcome:'REWORK',evidenceRefs:[],reason:i.title+' · 사람이 확인한 보완 필요'})));
+   const reviewRef={id:id(70),criteriaVersion:1,targetRef:structuredClone(c.payload.targetRef),outcome:'REWORK'};
+   draft.contentReviews.push({ref:reviewRef,items:structuredClone(c.payload.items),reviewer:{kind:'HUMAN',userId:uid,sameAsTargetRecorder:true},sourceKind:'HUMAN_REVIEW',reason,reviewedAt,serverSequence:1});
+   return receipt(c,reviewedAt,{status:'REVIEW_RECORDED',reviewRef});
+  }
+  if(path===selectedPath){const row=rows.get(f.d.baseRef.version+1);assert(row,'저장하지 않은 초안 원문을 제공하지 않는다');readbacks.push(structuredClone(row));return Response.json(row);}
+  if(path.includes('/documents?'))return Response.json({items:[...rows.values()].map(row=>({id:row.id,title:row.title,headVersion:row.version,confirmedVersion:null,updatedAt:recordedAt})),hasMore:false,nextCursor:null,observedAt:recordedAt});
+  if(path===coveragePath(f))return Response.json(f.d.form);
+  return null;
+ };
+ try{
+  assert.equal(f.d.proposal.status,'PENDING');assert.deepEqual(f.d.proposal.selections,[]);assert.equal(rows.size,0);
+  const change=(node:MemoryNode,event:unknown)=>{const key=Object.keys(node).find(k=>k.startsWith('__reactProps'))!;return (node as any)[key].onChange(event);};
+  await f.open();
+  const openCheck=f.nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent.includes('보관 제안의 차이를 확인했고'))!;assert(openCheck);
+  await ui.React.act(async()=>change(openCheck,{target:{checked:true}}));await f.click('보관 제안 반영 작업 열기');await f.wait(()=>!!f.buffer()?.proposalState?.comparison);
+  assert.equal(posts.length,0);assert.equal(rows.size,0);
+  const check=f.nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent.includes('원문·첨부·항목 차이를 확인했고'))!;assert(check);
+  await ui.React.act(async()=>change(check,{target:{checked:true}}));await f.click('이 제안으로 새 초안 저장');
+  await f.wait(()=>rows.size===1&&f.buffer()===null);
+  const draft=rows.get(3),ref={id:draft.id,version:draft.version,contentHash:draft.contentHash};
+  assert.equal(draft.confirmed,false);assert.deepEqual(draft.contentReviews,[]);assert.equal(f.d.proposal.status,'PENDING','제안 원형은 보존하고 선택 관계만 기록한다');
+  assert.deepEqual(f.d.proposal.selections,[{documentId:ref.id,version:ref.version,selectedBy:uid,at:recordedAt}]);
+  await f.open();await f.click('반영 결과 원문 보기');await f.wait(()=>f.nodes().some(n=>n.tagName==='A'&&n.textContent===selectedDraftAction));
+  const href=f.nodes().find(n=>n.tagName==='A'&&n.textContent===selectedDraftAction)!.getAttribute('href')!;
+  assert.equal(href,documentVersionHref(pid,ref));const route=parseRoute(href);assert.deepEqual(route,{screen:'documents',projectId:pid,documentRef:ref});
+  assert.equal(readbacks.length,1);assert.deepEqual(readbacks[0].content,draft.content);
+  await f.openDocument((route as any).documentRef);await f.wait(()=>f.text().includes('이 버전 내용 검토 작성'));
+  assert.match(f.text(),/형식 검사/);assert.match(f.text(),/아직 내용 검토가 기록되지 않았습니다/);
+  await f.click('이 버전 내용 검토 작성');await f.wait(()=>f.text().includes('문서 내용 검토 작성'));
+  for(const [i,item]of draft.contentReviewCriteria.items.entries()){
+   const outcome=f.nodes().find(n=>n.getAttribute('id')==='review-outcome-'+i)!,why=f.nodes().find(n=>n.getAttribute('id')==='review-reason-'+i)!;assert(outcome&&why);
+   await ui.React.act(async()=>change(outcome,{target:{value:'REWORK'}}));
+   await ui.React.act(async()=>change(why,{target:{value:item.title+' · 사람이 확인한 보완 필요'}}));
+  }
+  await ui.React.act(async()=>change(f.nodes().find(n=>n.getAttribute('id')==='document-review-outcome')!,{target:{value:'REWORK'}}));
+  await ui.React.act(async()=>change(f.nodes().find(n=>n.getAttribute('id')==='document-review-reason')!,{target:{value:reason}}));
+  await f.click('내용 검토 기록 저장');await f.wait(()=>f.text().includes('내용 검토 저장 확인'));
+  const readsBefore=readbacks.length;await f.click('저장된 검토 사건 조회');await f.wait(()=>f.text().includes('검토 사건 원문 일치'));
+  assert.equal(readbacks.length,readsBefore+1,'저장 응답과 별개의 보호 GET으로 같은 초안 검토를 재확인한다');
+  const fresh=readbacks.at(-1);assert.deepEqual({id:fresh.id,version:fresh.version,contentHash:fresh.contentHash},ref);
+  assert.deepEqual(fresh.content,f.d.proposal.proposedContent);assert.equal(fresh.confirmed,false);
+  assert.equal(fresh.contentReviews.length,1);assert.deepEqual(fresh.contentReviews[0].reviewer,{kind:'HUMAN',userId:uid,sameAsTargetRecorder:true});
+  assert.equal(fresh.contentReviews[0].reviewedAt,reviewedAt);assert.equal(fresh.contentReviews[0].reason,reason);assert.equal(fresh.contentReviews[0].ref.outcome,'REWORK');
+  assert.deepEqual(posts.map(c=>c.operation),['saveDocumentDraft','recordContentReview']);assert.equal(f.calls.filter(c=>c.method==='POST').length,2);assert.equal(f.lost(),0);
+  assert.equal(rows.size,1);assert.equal(f.d.document.version,2);assert.equal(f.d.document.confirmed,false);
+ }finally{await f.close();}
+});
 async function selectedDraftFixture(){
  const f=await fixture(true),version=f.d.baseRef.version+1;
  (f.d.proposal.selections as any[]).push({documentId:f.d.baseRef.id,version,selectedBy:uid,at});
