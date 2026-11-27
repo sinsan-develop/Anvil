@@ -6,9 +6,11 @@ import type {RegisteredCriteria} from './result-criteria-api.ts';
 import {readReviewCriteriaOriginal} from './review-criteria-original.ts';
 import type {SubmittedResultView} from './result-api.ts';
 import {ReviewReportedCoverage} from './ReviewReportedCoverage.tsx';
+import type {ArtifactTraceDetail} from './artifact-task-trace-api.ts';
+import type {DocumentSession} from '../design-trace/editor-api.ts';
 
 /** 보관 판정에서 고정 원조건으로 이동하는 읽기 전용 소비자. 현재 합격·실제 시험 판정은 하지 않는다. */
-type Props={client:ApiClient;assignment:ConfirmedAssignmentView;review:RecordedResultReview;result?:SubmittedResultView;isSourceCurrent?:()=>boolean;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void};
+type Props={client:ApiClient;assignment:ConfirmedAssignmentView;review:RecordedResultReview;result?:SubmittedResultView;session?:DocumentSession;traceDetail?:ArtifactTraceDetail;isSourceCurrent?:()=>boolean;onAuthenticationLost:()=>void;onAccessUnavailable:(code:string)=>void};
 export function ReviewCriteriaOriginal(props:Props){
  const {client,assignment,review,result}=props,binding=JSON.stringify([assignment,review.ref,review.snapshot.input.criteriaRef,result?.ref]);
  const scope=useRef({client,transport:client.transport,binding,serial:0});
@@ -16,11 +18,11 @@ export function ReviewCriteriaOriginal(props:Props){
  const context=scope.current;
  return <ReviewCriteriaScope key={context.serial} {...props} scopeCurrent={()=>scope.current===context&&client.transport===context.transport&&props.isSourceCurrent?.()!==false}/>;
 }
-function ReviewCriteriaScope({client,assignment,review,result,isSourceCurrent,onAuthenticationLost,onAccessUnavailable,scopeCurrent}:Props&{scopeCurrent:()=>boolean}){
+function ReviewCriteriaScope({client,assignment,review,result,session,traceDetail,isSourceCurrent,onAuthenticationLost,onAccessUnavailable,scopeCurrent}:Props&{scopeCurrent:()=>boolean}){
  const [open,setOpen]=useState(false),[attempt,setAttempt]=useState(0),[loaded,setLoaded]=useState<{attempt:number;value:RegisteredCriteria|null;error:string|null}|null>(null),epoch=useRef(0),lost=useRef(onAuthenticationLost),unavailable=useRef(onAccessUnavailable);lost.current=onAuthenticationLost;unavailable.current=onAccessUnavailable;
  const shown=open&&loaded?.attempt===attempt?loaded:null,criteriaEpoch=epoch.current;
  useEffect(()=>{if(!open)return;let active=true;const generation=epoch.current,valid=()=>active&&epoch.current===generation&&scopeCurrent();
-  readReviewCriteriaOriginal(client,assignment,review.snapshot.input.criteriaRef,valid).then(value=>{if(valid()&&value)setLoaded({attempt,value,error:null});}).catch(cause=>{if(!valid())return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_CRITERIA_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_CRITERIA_RESPONSE_INVALID';setLoaded({attempt,value:null,error:code});if([401,403,404].includes(e.status))unavailable.current(code);if(e.status===401)lost.current();});
+  readReviewCriteriaOriginal(client,assignment,review.snapshot.input.criteriaRef,valid).then(value=>{if(valid()&&value)setLoaded({attempt,value,error:null});}).catch(cause=>{if(!valid())return;const e=cause instanceof ApiError?cause:new ApiError('RESULT_CRITERIA_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_CRITERIA_RESPONSE_INVALID';setLoaded({attempt,value:null,error:code});if([401,403,404].includes(e.status))unavailable.current(code);if(e.status===401&&valid())lost.current();});
   return()=>{active=false;};
  },[attempt,open]);
  return <section className="status-card" aria-label="검수에 사용한 기준 원문"><h6>이 검수에 사용한 기준·원조건</h6>
@@ -33,6 +35,6 @@ function ReviewCriteriaScope({client,assignment,review,result,isSourceCurrent,on
     <p>보관 판정: {decision?decision.outcome==='REWORK'?'보완 필요':'차단':'해당 조건 기록 없음 · 미확인'}</p>{decision?<p>{decision.reason}</p>:null}</li>;})}</ul>
    <p>원조건 연결과 보관 판정을 조회한 것입니다. 현재 기준 적용·실제 시험·업무 완료·실행 허가를 확인하지 않습니다.</p><details><summary>기준·원조건 hash·환경 전체</summary><pre>{JSON.stringify(shown.value,null,2)}</pre></details>
   </article>:null}
-  {shown?.value&&result?<ReviewReportedCoverage key={JSON.stringify([result.ref,shown.value.ref,attempt])} client={client} result={result} criteria={shown.value} isSourceCurrent={isSourceCurrent?()=>scopeCurrent()&&epoch.current===criteriaEpoch:undefined} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
+  {shown?.value&&result?<ReviewReportedCoverage key={JSON.stringify([result.ref,shown.value.ref,attempt])} client={client} result={result} criteria={shown.value} session={session} traceDetail={traceDetail} isSourceCurrent={isSourceCurrent?()=>scopeCurrent()&&epoch.current===criteriaEpoch:undefined} onAuthenticationLost={onAuthenticationLost} onAccessUnavailable={onAccessUnavailable}/>:null}
  </section>;
 }

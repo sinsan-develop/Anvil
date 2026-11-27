@@ -13,6 +13,7 @@ interface Props {
  evidence:Extract<ReportedEvidenceArtifactView,{bytesState:'MATCHED_REGISTERED_BYTES'}>;
  result:SubmittedResultView;
  session:DocumentSession;
+ isSourceCurrent?:()=>boolean;
  onAuthenticationLost:()=>void;
  onAccessUnavailable:(code:string)=>void;
 }
@@ -29,7 +30,7 @@ interface View {
  error:string|null;
 }
 
-export function ReportedEvidenceTrace({client,detail,evidence,result,session,onAuthenticationLost,onAccessUnavailable}:Props){
+export function ReportedEvidenceTrace({client,detail,evidence,result,session,isSourceCurrent,onAuthenticationLost,onAccessUnavailable}:Props){
  const transport=client.transport,route=globalThis.location?.hash;
  const scope=useMemo(()=>({}),[client,transport,detail,evidence,result,session.user.id,session.clientId,session.csrfToken,route]);
  const committed=useRef<object|null>(null),owner=useRef<Ticket|null>(null),[view,setView]=useState<View|null>(null);
@@ -38,7 +39,7 @@ export function ReportedEvidenceTrace({client,detail,evidence,result,session,onA
   committed.current=scope;
   return ()=>{committed.current=null;owner.current=null;};
  },[scope]);
- const scopeCurrent=()=>committed.current===scope&&client.transport===transport&&globalThis.location?.hash===route;
+ const scopeCurrent=()=>committed.current===scope&&client.transport===transport&&globalThis.location?.hash===route&&isSourceCurrent?.()!==false;
  const active=(ticket:Ticket)=>owner.current===ticket&&scopeCurrent();
  async function read(ticket:Ticket,expected:ReportedEvidenceTracePage|null){
   if(!active(ticket)||ticket.pending||ticket.page!==expected)return;
