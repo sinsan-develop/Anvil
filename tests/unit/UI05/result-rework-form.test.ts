@@ -42,8 +42,8 @@ const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultReviewSources.tsx',import.meta.url));
  const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:stored-rework',name:'StoredReviewTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'rework-memory-entry',transform(code,id){if(id.replaceAll('\\','/').endsWith('/ResultReviewSources.tsx'))return code+'\nexport {ResultReworkEditor};';},resolveId(id){if(id.endsWith('virtual:stored-rework'))return '\0stored-rework';},load(id){if(id==='\0stored-rework')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{flushSync}from'react-dom';import{ResultReworkEditor}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as writes from ${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-rework-write-api.ts',import.meta.url)))};import{ResultCriteriaEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultCriteriaEditor.tsx',import.meta.url)))};import * as criteriaWrites from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-criteria-api.ts',import.meta.url)))};import{ResultSubmissionEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultSubmissionEditor.tsx',import.meta.url)))};import * as submissionWrites from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-submission-write-api.ts',import.meta.url)))};import{StoredResultReworkHistory}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/StoredResultReworkHistory.tsx',import.meta.url)))};import{ReviewReportedCoverage}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ReviewReportedCoverage.tsx',import.meta.url)))};export{React,createRoot,flushSync,ResultReworkEditor,ResultCriteriaEditor,ResultSubmissionEditor,ReviewReportedCoverage,StoredResultReworkHistory,ApiClient,writes,criteriaWrites,submissionWrites};`;}}]});
- const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
- for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
+ const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:',hash:''}};document.defaultView=window;
+ for(const[key,value]of Object.entries({window,document,location:window.location,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return StoredReviewTest;')();
 });
 after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k,v]of saved)if(v)Object.defineProperty(globalThis,k,v);else Reflect.deleteProperty(globalThis,k);});
@@ -271,19 +271,133 @@ async function mountSubmission(rejected=false){
  const scope={...f.entry.snapshot.scope,projectId:assignment.projectId,assignmentRef:assignment.ref},manifest={...f.entry.snapshot.manifest,assignmentRef:assignment.ref};
  let buffer=await ui.submissionWrites.prepareResultSubmissionFile(new TextEncoder().encode(JSON.stringify({scope,manifest})),assignment.projectId,assignment.ref,session,3);
  if(rejected){buffer.pending=await ui.submissionWrites.prepareResultSubmitCommand(buffer,session,true);buffer.failure={code:'ACCESS_DENIED',status:403};}
- const original=buffer,key=ui.submissionWrites.resultSubmissionKey(session,assignment.projectId,assignment.ref),updates:(()=>void)[]=[],controls:(()=>void)[]=[],requests:string[]=[],state={defer:false};let shown=true;
- const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container),props:any={assignment,session,onStored(){},onAuthenticationLost(){}};
- props.client=new ui.ApiClient(async(_url:any,options:any)=>{requests.push(options?.method??'GET');assert.notEqual(options?.method,'POST');return new Promise<Response>(resolve=>controls.push(()=>resolve(Response.json({code:'ACCESS_DENIED'},{status:403}))));});
+ const original=buffer,key=ui.submissionWrites.resultSubmissionKey(session,assignment.projectId,assignment.ref),updates:(()=>void)[]=[],controls:(()=>void)[]=[],requests:string[]=[];
+ const state={defer:false,grantControl:false,holdControl:false,holdPost:false,postEnabled:false};
+ const posts:{command:any;csrf:string|null;complete:(status?:number)=>void}[]=[],stored:any[]=[];
+ let shown=true,authLost=0;
+ const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container),props:any={assignment,session,onStored(){stored.push(buffer);},onAuthenticationLost(){authLost++;}};
+ props.client=new ui.ApiClient(async(url:any,options:any)=>{
+  requests.push(options?.method??'GET');
+  if(options?.method==='POST'){
+   assert.equal(state.postEnabled,true);
+   assert.equal(String(url),'/api/v1/projects/'+assignment.projectId+'/commands');
+   const command=JSON.parse(String(options.body)),headers=new Headers(options.headers);
+   assert.equal(headers.get('idempotency-key'),command.commandId);
+   const receipt=()=>Response.json({operationId:id(91),commandId:command.commandId,projectId:command.projectId,status:'APPLIED',targetId:command.targetId,version:1,serverReceivedAt:f.entry.snapshot.submittedAt,
+    data:{status:'RESULT_SUBMITTED',manifest:command.payload.manifest,sourceKind:'WORKER_CLAIM',completionAccepted:false,executionAuthorized:false,dispatchPerformed:false}});
+   return new Promise<Response>((resolve,reject)=>{
+    const complete=(status=200)=>status===0?reject(Error('합성 저장 응답 유실')):resolve(status===200?receipt():Response.json({code:'AUTH_REQUIRED'},{status}));
+    posts.push({command,csrf:headers.get('x-anvil-csrf'),complete});
+    if(!state.holdPost)complete();
+   });
+  }
+  const response=()=>state.grantControl?Response.json({id:assignment.projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:3,status:'HELD'}}):Response.json({code:'ACCESS_DENIED'},{status:403});
+  if(state.grantControl&&!state.holdControl)return response();
+  return new Promise<Response>(resolve=>controls.push(()=>resolve(response())));
+ });
  function render(){root.render(shown?ui.React.createElement(ui.ResultSubmissionEditor,{...props,storage:{buffers:{[key]:buffer},onChange:(chosenKey:string,change:any)=>{assert.equal(chosenKey,key);const commit=()=>{buffer=change(buffer);render();};if(state.defer)updates.push(commit);else commit();}}}):null);}
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))];const button=(label:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===label);
  await ui.React.act(async()=>render());
  // Explicit acknowledgement through the actual React handler, without selecting a file.
  if(!rejected)await ui.React.act(async()=>{const node=nodes().filter(n=>n.tagName==='INPUT').at(-1)!;const prop=Object.keys(node).find(k=>k.startsWith('__reactProps$'))!;(node as any)[prop].onChange({target:{checked:true}});});
- return{props,original,state,updates,requests,button,buffer:()=>buffer,render:()=>ui.React.act(async()=>render()),replace:(value:any)=>{buffer=value;},depart:()=>ui.flushSync(()=>{shown=false;render();}),
- close:async()=>{await ui.React.act(async()=>{for(const finish of controls)finish();await new Promise(resolve=>setImmediate(resolve));});await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{props,original,state,updates,requests,controls,posts,stored,authLost:()=>authLost,button,buffer:()=>buffer,render:()=>ui.React.act(async()=>render()),replace:(value:any)=>{buffer=value;},depart:()=>ui.flushSync(()=>{shown=false;render();}),
+ close:async()=>{await ui.React.act(async()=>{for(const finish of controls)finish();for(const post of posts)post.complete();await new Promise(resolve=>setImmediate(resolve));});await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 const submissionReset=(rejected:boolean)=>rejected?'결과 제출 거절 확인 후 준비로 돌아가기':'결과 준비 입력 비우기';
 const submissionSave=(rejected:boolean)=>rejected?'같은 결과 제출 명령 결과 확인':'결과 제출 내용 등록';
+test('정확한 결과 제출 버퍼가 부모에 반영되기 전에 최초 POST를 보내지 않는다',async()=>{
+ const m=await mountSubmission();try{
+  m.state.defer=true;m.state.grantControl=true;
+  await ui.React.act(async()=>handler(m.button(submissionSave(false)))());
+  const deadline=performance.now()+4000;
+  while(!m.requests.includes('POST')&&m.button(submissionSave(false))?.disabled&&performance.now()<deadline){
+   await ui.React.act(async()=>{await new Promise(resolve=>setImmediate(resolve));});
+  }
+  assert.ok(m.updates.length>0,'실제 submitResult 원명령 반영을 요청해야 한다');
+  assert.deepEqual(m.requests,['GET']);
+  assert.equal(m.buffer(),m.original);
+  await ui.React.act(async()=>m.updates[0]!());
+  assert.equal(m.buffer(),m.original,'부모 커밋 거절 뒤 오래된 updater는 명령을 만들지 않는다');
+  assert.deepEqual(m.requests,['GET']);
+ }finally{await m.close();}
+});
+async function waitSubmission(check:()=>boolean){
+ const deadline=performance.now()+4000;
+ while(!check()&&performance.now()<deadline)await ui.React.act(async()=>{await new Promise(resolve=>setImmediate(resolve));});
+ assert.ok(check());
+}
+test('결과 제출 제어 조회 동안 원 버퍼나 화면·인증·전송이 바뀌면 최초 POST가 없다',async()=>{
+ for(const edge of ['BUFFER','ROUTE','AUTH','TRANSPORT','UNMOUNT']){
+  const m=await mountSubmission(),route=location.hash;
+  try{
+   m.state.grantControl=true;m.state.holdControl=true;m.state.postEnabled=true;
+   await ui.React.act(async()=>handler(m.button(submissionSave(false)))());
+   await waitSubmission(()=>m.controls.length===1);
+   if(edge==='BUFFER'){m.replace({...m.original});await m.render();}
+   if(edge==='ROUTE')location.hash='#/different';
+   if(edge==='AUTH'){m.props.session={...m.props.session,csrfToken:'D'.repeat(43)};await m.render();}
+   if(edge==='TRANSPORT')m.props.client.transport=async()=>assert.fail('교체 transport 호출 금지');
+   if(edge==='UNMOUNT')await ui.React.act(async()=>{m.depart();});
+   const incumbent=m.buffer();
+   await ui.React.act(async()=>{m.controls[0]!();await new Promise(resolve=>setImmediate(resolve));});
+   assert.equal(m.buffer(),incumbent,edge);assert.deepEqual(m.requests,['GET'],edge);
+   assert.equal(m.stored.length,0,edge);assert.equal(m.authLost(),0,edge);
+  }finally{location.hash=route;await m.close();}
+ }
+});
+for(const status of [200,401])test('이미 전송한 결과 제출의 늦은 '+status+'는 새 로그인에서 같은 명령으로만 재확인한다',async()=>{
+ const m=await mountSubmission();try{
+  m.state.grantControl=true;m.state.postEnabled=true;m.state.holdPost=true;
+  await ui.React.act(async()=>handler(m.button(submissionSave(false)))());
+  await waitSubmission(()=>m.posts.length===1);
+  const issued=m.buffer(),first=m.posts[0]!;
+  assert.equal(issued.uncertain,true);assert.deepEqual(issued.pending,first.command);
+  m.props.session={...m.props.session,csrfToken:'D'.repeat(43)};await m.render();
+  await ui.React.act(async()=>{first.complete(status);await new Promise(resolve=>setImmediate(resolve));});
+  assert.equal(m.buffer(),issued);assert.equal(m.stored.length,0);assert.equal(m.authLost(),0);
+  m.state.holdPost=false;
+  await ui.React.act(async()=>handler(m.button(submissionSave(true)))());
+  await waitSubmission(()=>m.stored.length===1);
+  assert.equal(m.posts.length,2);assert.deepEqual(m.posts[1]!.command,first.command);
+  assert.equal(first.csrf,'A'.repeat(43));assert.equal(m.posts[1]!.csrf,'D'.repeat(43));
+  assert.equal(m.stored[0],m.buffer());assert.equal(m.buffer().pending,null);assert.equal(m.buffer().uncertain,false);
+  assert.equal(m.buffer().result.submissionId,first.command.targetId);assert.equal(m.buffer().result.completionAccepted,false);
+  assert.equal(m.authLost(),0);
+ }finally{await m.close();}
+});
+test('서버 저장 응답 뒤 부모가 결과를 반영하지 않으면 콜백 없이 정확한 재확인 명령을 보존한다',async()=>{
+ const m=await mountSubmission();try{
+  m.state.grantControl=true;m.state.postEnabled=true;m.state.holdPost=true;
+  await ui.React.act(async()=>handler(m.button(submissionSave(false)))());
+  await waitSubmission(()=>m.posts.length===1);
+  const issued=m.buffer();
+  m.state.defer=true;
+  await ui.React.act(async()=>m.posts[0]!.complete());
+  await waitSubmission(()=>m.updates.length===1&&!m.button(submissionSave(true))?.disabled);
+  assert.equal(m.stored.length,0);assert.equal(m.buffer(),issued);assert.equal(m.buffer().uncertain,true);
+  await ui.React.act(async()=>m.updates[0]!());
+  assert.equal(m.buffer(),issued,'뒤늦은 결과 반영은 부모 확인이 끝났으므로 폐기한다');
+  m.state.defer=false;m.state.holdPost=false;
+  await ui.React.act(async()=>handler(m.button(submissionSave(true)))());
+  await waitSubmission(()=>m.stored.length===1);
+  assert.deepEqual(m.posts.map(p=>p.command),[issued.pending,issued.pending]);assert.equal(m.stored[0],m.buffer());
+ }finally{await m.close();}
+});
+test('현재 로그인에서 실제 제출 호출 응답이 유실돼도 원명령을 한 번 명시 재확인한다',async()=>{
+ const m=await mountSubmission();try{
+  m.state.grantControl=true;m.state.postEnabled=true;m.state.holdPost=true;
+  await ui.React.act(async()=>handler(m.button(submissionSave(false)))());
+  await waitSubmission(()=>m.posts.length===1);
+  const issued=m.buffer().pending;
+  await ui.React.act(async()=>m.posts[0]!.complete(0));
+  await waitSubmission(()=>m.buffer().failure?.code==='CONNECTION_LOST'&&!m.button(submissionSave(true))?.disabled);
+  assert.equal(m.buffer().uncertain,true);assert.deepEqual(m.buffer().pending,issued);assert.equal(m.stored.length,0);
+  m.state.holdPost=false;
+  await ui.React.act(async()=>handler(m.button(submissionSave(true)))());
+  await waitSubmission(()=>m.stored.length===1);
+  assert.deepEqual(m.posts.map(p=>p.command),[issued,issued]);assert.equal(m.stored[0],m.buffer());assert.equal(m.authLost(),0);
+ }finally{await m.close();}
+});
 for(const rejected of [false,true]){
  test(`제출 ${rejected?'거절 복귀':'입력 비우기'} confirm 중 SAVE는 원 입력과 명령을 보존한다`,async()=>{
   const m=await mountSubmission(rejected),oldConfirm=globalThis.confirm;try{

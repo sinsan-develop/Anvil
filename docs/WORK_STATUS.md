@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-27 KST
 
+- **Stage C / IX02 UI05 결과 제출의 부모 반영·동일 명령 재확인** — 기준 `16195774`, 담당 `fn13_diff_contract_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 전송할 정확 원명령이 부모 버퍼에 반영된 뒤에만 현재 transport로 보내고 결과 버퍼 반영 후에만 저장 콜백을 호출한다. 부모 반영 거절·화면/인증/전송 교체 뒤 옛 요청과 401을 차단하고 전송 후 유실은 같은 원명령으로만 명시 재확인한다. 제품 2·합성 시험 1파일, 최초 RED 1건과 시험 act 경고 1건 교정, 직접·인접 94/94(최종 시험 보완 후 집중 6/6)·Main 최종 6/6·타입·diff 통과. 실제 브라우저·DB·Agent 및 정상 실행의 보호 제출 원천은 미검증.
+
 - **Stage C / IX02 FN09 WORK 준비 승인 거절·수정 요청 후 편집 복귀** — 기준 `bddc6c6d`, 담당 `fn13_diff_contract_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 현재 권한·제어와 동일 요청·명령·내용 해시를 보호 조회로 대조한다. 정상 WORK에서 미전송이 확인된 원명령에만 확정 REJECT/REQUEST_CHANGE의 명시 편집을 허용하고 원 결정·요청·명령을 이력에 보관한다. 승인·대기·오류·교차 요청·늦은 401 및 실제 전송 뒤 412는 편집을 해제하지 않는다. 제품 3·시험 1파일, 최초 RED 1, 직접·인접 80/80·Main 3/3·타입·diff 통과. 자동 저장·실행 효과 없음, 실제 브라우저·DB·Agent 미검증. 원 Windows·보호 설치와 실제 IX02 실행 조건은 여전히 미충족.
 
 - **Stage C / IX02 FN08 게시 자료→등록 소유자의 설치 요청 검산** — 기준 `9eec26be`, 담당 `baseline_predispatch_task_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 실제 소스의 정상 finalizer와 게시 store를 합성 거래로 호출하고 반환 JSON, 같은 package 지문의 REGISTERED 원 소유자, 독립 고정 origin 재조회, 동일 attempt 전용 opcode를 하나로 연결했다. 정상 전용 호출 1회는 합성 `UNSUPPORTED`이고 일반 head·회수 head는 설치 0이다. 제품 수정 없음, 합성 1파일 165/165·Main 1/1(3분기)·타입/구문/diff 통과. 실제 보호 키·OS·HTTPS·DB·Agent 설치/실행 및 기본 제품 진입점은 미검증이다. 원 등록 소유자에 입력을 전달하는 보호 제품 호출자는 계속 미연결이며 기존 사용자 승인 범위를 유지한다.

@@ -79,10 +79,24 @@ export async function prepareResultSubmitCommand(raw:ResultSubmissionBuffer,sess
  if(!uuid(command.commandId)||b.pending&&!same(b.pending,command))fail('RESULT_SUBMISSION_PENDING_CHANGED');
  return command;
 }
-export async function sendResultSubmission(client:ApiClient,buffer:ResultSubmissionBuffer,session:DocumentSession,active:()=>boolean):Promise<ResultSubmissionReceipt>{
- if(!buffer.pending)fail('RESULT_SUBMISSION_PENDING_REQUIRED');const chosen=structuredClone(buffer),selectedSession=structuredClone(session),command=await prepareResultSubmitCommand(chosen,selectedSession,true);
- if(!active())fail('RESULT_SUBMISSION_PAUSED');const receipt=await postDocumentCommand(client,command,selectedSession.csrfToken);if(!active())fail('RESULT_SUBMISSION_PAUSED');
+interface ResultSubmissionDispatch{commit:()=>Promise<boolean>;started:()=>void}
+export async function sendResultSubmission(client:ApiClient,buffer:ResultSubmissionBuffer,session:DocumentSession,active:()=>boolean,dispatch?:ResultSubmissionDispatch):Promise<ResultSubmissionReceipt>{
+ if(!buffer.pending)fail('RESULT_SUBMISSION_PENDING_REQUIRED');
+ const chosen=structuredClone(buffer),selectedSession=structuredClone(session),transport=client.transport;
+ const current=()=>active()&&client.transport===transport&&(!dispatch||same(session,selectedSession));
+ const command=await prepareResultSubmitCommand(chosen,selectedSession,true);
+ if(!current()||dispatch&&!await dispatch.commit()||!current())fail('RESULT_SUBMISSION_PAUSED');
+ const pinned=new ApiClient((url,options)=>{
+  if(!current())fail('RESULT_SUBMISSION_PAUSED');
+  dispatch?.started();
+  return transport.call(globalThis,url,options);
+ });
+ const receipt=await postDocumentCommand(pinned,command,selectedSession.csrfToken).catch(cause=>{
+  if(!current())fail('RESULT_SUBMISSION_PAUSED');
+  throw cause;
+ });
+ if(!current())fail('RESULT_SUBMISSION_PAUSED');
  const d=receipt.data;if(receipt.targetId!==chosen.submissionId||receipt.version!==1||d?.status!=='RESULT_SUBMITTED'||!same(d.manifest,chosen.manifest)||d.sourceKind!=='WORKER_CLAIM'||d.completionAccepted!==false||d.executionAuthorized!==false||d.dispatchPerformed!==false)fail('RESULT_SUBMISSION_RESPONSE_INVALID');
- const manifestRef={id:chosen.submissionId,version:1,contentHash:await digest(new TextEncoder().encode(ordered(chosen.manifest)))};if(!active())fail('RESULT_SUBMISSION_PAUSED');
+ const manifestRef={id:chosen.submissionId,version:1,contentHash:await digest(new TextEncoder().encode(ordered(chosen.manifest)))};if(!current())fail('RESULT_SUBMISSION_PAUSED');
  return {submissionId:chosen.submissionId,manifestRef,registeredAt:receipt.serverReceivedAt,sourceKind:'WORKER_CLAIM',completionAccepted:false,executionAuthorized:false,dispatchPerformed:false};
 }
