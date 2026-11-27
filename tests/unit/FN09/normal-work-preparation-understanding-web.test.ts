@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {definitionCapabilityReportSnapshot} from '../../../apps/server/modules/connections/definition-capability-report-input.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
 import {seed,clientFixture} from '../UI04/registered-preparation-options-fixture.ts';
@@ -412,5 +413,79 @@ test('실제 준비 editor의 명시 선택→freeze→내부 GET503은 미전�
   h.modes.historyFail=false;h.rejectNext();button('준비본 보관');await until(()=>text(draw()).includes('WORK_PREPARATION_UNDERSTANDING_CHANGED'));assert.equal(h.postCount(),0);assert.equal(b.uncertain,false);assert.deepEqual(b.pending,command);
   const calls=h.calls.length;session={...session,csrfToken:'b'.repeat(43)};assert.ok(!text(draw()).includes(command.commandId));assert.ok(!text(draw()).includes(h.row.ref.id));assert.equal(h.calls.length,calls);
  }finally{hooks.unmount();}
+ }
+});
+
+function definitionReportEditorFixture(){
+ const f=seed(true),base=clientFixture(f),snapshot=definitionCapabilityReportSnapshot({...f.report.snapshot.claim,schemaVersion:2,tool:{product:f.connection.definition.toolProduct,version:f.connection.definition.toolVersion,adapterVersion:'원 등록 어댑터'}},f.confirmed.projectId,id(91),{actorId:f.session.user.id,clientId:f.session.clientId},new Date(f.at));
+ const report:any={projectId:f.confirmed.projectId,ref:{id:id(91),version:1,contentHash:H(snapshot)},snapshot,currentnessIssues:[{code:'REGISTERED_DEFINITION_ONLY',target:null},{code:'HUMAN_CLAIM_UNVERIFIED',target:null}],effectiveForExecution:false,dispatchPerformed:false,checkedAt:f.at};
+ let reads=0,held:Promise<Response>|null=null;
+ const client=new ApiClient(async(url,options)=>{if(String(url).includes('/definition-capability-reports/')){reads++;return held?await held:Response.json(report);}return base.client.transport(url,options);});
+ return{f,base,client,report,reads:()=>reads,hold:(value:Promise<Response>|null)=>{held=value;}};
+}
+
+test('실제 editor는 v2 보고의 보호 pair를 선택하고 v1 복귀에서 v2만 원자적으로 해제한다',async()=>{
+ const h=definitionReportEditorFixture(),{component,hooks}=await loadExecutionPreparationEditor();let b=api.newExecutionPreparation(h.f.confirmed as any,h.f.session);
+ b.draft={roleBindingRef:h.f.binding.ref,contextBundleRef:h.f.context.ref,capabilityRef:null,sourceScopes:[h.f.scope],mode:'CONTEXT_REVIEW',reason:'보고는 실행 권위가 아닌 참조'};
+ const choice=api.definitionReportSelection(h.client,h.f.session,h.report);
+ const draw=()=>hooks.draw(()=>component.ExecutionPreparationEditor({client:h.client,confirmed:h.f.confirmed,session:h.f.session,providedHumanReportRef:h.f.report.ref,providedDefinitionReport:choice,buffer:b,onChange:(update:api.ExecutionPreparationChange)=>{b=update(b)!;},owner:true,onAuthenticationLost:()=>assert.fail('인증 상실 없음')}));
+ const button=(label:string)=>{const node=find(draw(),n=>n.type==='button'&&text(n)===label);assert(node,label);assert(!node.props.disabled);node.props.onClick();};
+ const until=async(check:()=>boolean)=>{const end=performance.now()+4000;while(!check()&&performance.now()<end){draw();await new Promise<void>(r=>setImmediate(r));}assert(check(),text(draw()));};
+ try{
+  button('보관 참조 목록 다시 조회');await until(()=>!find(draw(),n=>n.type==='button'&&text(n)==='이 등록 정의 보고를 보호 대조 후 선택').props.disabled);
+  button('이 등록 정의 보고를 보호 대조 후 선택');await until(()=>!!b.definitionReportSelection);
+  assert.deepEqual(b.draft.capabilityRef,h.report.ref);assert.equal(h.reads(),1);assert.equal(h.base.calls.filter(v=>v.method==='POST').length,0);
+  const original=b.definitionReportSelection;
+  find(draw(),n=>n.props?.['aria-label']==='준비 mode').props.onChange({target:{value:'WORK'}});assert.equal(canonicalJson(b.definitionReportSelection),canonicalJson(original));
+  find(draw(),n=>n.props?.['aria-label']==='준비 mode').props.onChange({target:{value:'CONTEXT_REVIEW'}});
+  button('이 능력 참조 명시 선택');assert.equal(b.definitionReportSelection,undefined);assert.deepEqual(b.draft.capabilityRef,h.f.report.ref);
+  button('의도 준비·입력 확인');await until(()=>!!b.pending);assert.deepEqual(b.pending!.payload.capabilityRef,h.f.report.ref);assert.equal(h.reads(),1);
+ }finally{hooks.unmount();}
+});
+
+test('실제 editor v2 새 선택은 현재 보고를 재대조한 뒤 기존 CAS·준비 POST·고정 재조회만 사용한다',async()=>{
+ const h=definitionReportEditorFixture(),{component,hooks}=await loadExecutionPreparationEditor();let b=api.newExecutionPreparation(h.f.confirmed as any,h.f.session);
+ b.draft={roleBindingRef:h.f.binding.ref,contextBundleRef:h.f.context.ref,capabilityRef:null,sourceScopes:[h.f.scope],mode:'CONTEXT_REVIEW',reason:'v2 보고로 준비본 저장'};
+ const choice=api.definitionReportSelection(h.client,h.f.session,h.report);
+ const draw=()=>hooks.draw(()=>component.ExecutionPreparationEditor({client:h.client,confirmed:h.f.confirmed,session:h.f.session,providedHumanReportRef:null,providedDefinitionReport:choice,buffer:b,onChange:(update:api.ExecutionPreparationChange)=>{b=update(b)!;},owner:true,onAuthenticationLost:()=>assert.fail('인증 상실 없음')}));
+ const button=(label:string)=>{const node=find(draw(),n=>n.type==='button'&&text(n)===label);assert(node,label);assert(!node.props.disabled);node.props.onClick();};
+ const until=async(check:()=>boolean)=>{const end=performance.now()+4000;while(!check()&&performance.now()<end){draw();await new Promise<void>(r=>setImmediate(r));}assert(check(),text(draw()));};
+ try{
+  button('이 등록 정의 보고를 보호 대조 후 선택');await until(()=>!!b.definitionReportSelection);
+  button('의도 준비·입력 확인');await until(()=>!!b.pending);assert.equal(b.preparationDispatchStarted,false);
+  find(draw(),n=>n.props?.['aria-label']==='준비 보관 확인').props.onChange({target:{checked:true}});
+  button('준비본 보관');await until(()=>!!b.result);assert.equal(h.reads(),3);const posts=h.base.calls.filter(v=>v.method==='POST');assert.equal(posts.length,1);const q=JSON.parse(posts[0]!.body!);
+  assert.equal(q.operation,'prepareExecution');assert.deepEqual(q.payload.capabilityRef,h.report.ref);assert(!Object.hasOwn(q.payload,'definitionReportSelection'));assert.equal(b.result!.snapshot.executionAuthorized,false);assert.equal(b.result!.snapshot.dispatchPerformed,false);assert.deepEqual(b.result!.snapshot.intent,q.payload);
+ }finally{hooks.unmount();}
+});
+
+test('v2 보고를 쓰는 linked WORK도 기존 exact 후보·별도 승인·저장 false를 유지한다',async()=>{
+ const h=fixture(),raw=h.client.transport,snapshot=definitionCapabilityReportSnapshot({...h.f.report.snapshot.claim,schemaVersion:2,tool:{product:h.f.connection.definition.toolProduct,version:h.f.connection.definition.toolVersion,adapterVersion:'보호 보고 어댑터'}},h.f.confirmed.projectId,id(91),{actorId:h.f.session.user.id,clientId:h.f.session.clientId},new Date(h.f.at));
+ const report:any={projectId:h.f.confirmed.projectId,ref:{id:id(91),version:1,contentHash:H(snapshot)},snapshot,currentnessIssues:[{code:'REGISTERED_DEFINITION_ONLY',target:null},{code:'HUMAN_CLAIM_UNVERIFIED',target:null}],effectiveForExecution:false,dispatchPerformed:false,checkedAt:h.f.at};let reads=0;
+ h.client.transport=async(url,options)=>{if(String(url).includes('/definition-capability-reports/')){reads++;return Response.json(report);}return raw(url,options);};
+ h.base.setPolicy('REQUIRE_APPROVAL');let b:api.ExecutionPreparationBuffer=await selected(h);b.draft.capabilityRef=report.ref;b.definitionReportSelection=api.definitionReportSelection(h.client,h.f.session,report);
+ b=await api.prepareExecutionCommand(h.client,b,h.f.confirmed as any,h.f.session,report.ref,()=>true);
+ const w=await newExecutionApproval(b,h.f.session,h.client);w.details={reason:'등록 보고는 실측이 아닌 참조',risks:{data:'원문 추가 없음',security:'보호 조회',cost:'기존 정산',interruption:'실행 없음',unverified:'전부 UNVERIFIED'},rollback:{method:'기록 보존',limitations:'실행 권리 없음',evidenceRefs:[]},expiresAt:new Date(Date.now()+1800000).toISOString()};
+ const command=await prepareExecutionApproval(h.client,b,w,h.f.session,()=>true);assert.ok(command.payload.candidatePayload);assert.deepEqual(command.payload.candidatePayload.capabilityRef,report.ref);assert.equal(command.payload.details.actionScope.payloadHash,H(b.pending!.payload));
+ const receipt=await sendApprovalCommand(h.client,command,h.f.session),requestId=receipt.data.ref.id;
+ await sendApprovalCommand(h.client,{schemaVersion:1,projectId:b.projectId,commandId:crypto.randomUUID(),clientId:h.f.session.clientId,controlGeneration:1,operation:'decideApproval',targetId:requestId,expectedVersion:1,baselineRefs:[],approvalRef:null,payload:{requestId,expectedVersion:1,scopeDigest:receipt.data.request.scopeDigest,decision:'APPROVE',reason:'별도 준비 보관 승인'}},h.f.session);
+ b.approval={request:{...w,pending:command,resultId:requestId},requestId,commandHash:null};const bound=await bindExecutionApproval(h.client,b,requestId,h.f.session,()=>true);
+ assert.deepEqual(bound.pending!.payload,b.pending!.payload);const result=await api.sendExecutionPreparation(h.client,bound,h.f.session,()=>true);
+ assert.equal(reads,4);assert.deepEqual(result.snapshot.intent.capabilityRef,report.ref);assert.deepEqual(result.snapshot.understandingBasis!.reviewRef,h.row.ref);assert.equal(result.snapshot.executionAuthorized,false);assert.equal(result.snapshot.dispatchPerformed,false);assert.equal(h.postCount(),1);
+});
+
+test('v2 선택 보호 GET 대기 중 인증·transport 교체와 ABA는 원 선택·늦은401을 폐기한다',async()=>{
+ for(const mode of ['CSRF','TRANSPORT']){
+  const h=definitionReportEditorFixture(),{component,hooks}=await loadExecutionPreparationEditor();let b=api.newExecutionPreparation(h.f.confirmed as any,h.f.session),session=h.f.session;
+  b.draft={roleBindingRef:h.f.binding.ref,contextBundleRef:h.f.context.ref,capabilityRef:null,sourceScopes:[h.f.scope],mode:'CONTEXT_REVIEW',reason:'늦은 선택 방어'};
+  const choice=api.definitionReportSelection(h.client,session,h.report);let lost=0,release!:(value:Response)=>void;h.hold(new Promise(resolve=>{release=resolve;}));
+  const draw=()=>hooks.draw(()=>component.ExecutionPreparationEditor({client:h.client,confirmed:h.f.confirmed,session,providedHumanReportRef:null,providedDefinitionReport:choice,buffer:b,onChange:(update:api.ExecutionPreparationChange)=>{b=update(b)!;},owner:true,onAuthenticationLost:()=>{lost++;}}));
+  try{
+   find(draw(),n=>n.type==='button'&&text(n)==='이 등록 정의 보고를 보호 대조 후 선택').props.onClick();
+   const end=performance.now()+4000;while(h.reads()===0&&performance.now()<end){draw();await new Promise(r=>setImmediate(r));}assert.equal(h.reads(),1);
+   const originalSession=session,originalTransport=h.client.transport;if(mode==='CSRF')session={...session,csrfToken:'b'.repeat(43)};else h.client.transport=async()=>assert.fail('교체 transport 자동 호출 없음');draw();
+   session=originalSession;h.client.transport=originalTransport;draw();release(Response.json({code:'AUTH_REQUIRED'},{status:401}));
+   await new Promise(r=>setImmediate(r));draw();assert.equal(lost,0);assert.equal(b.definitionReportSelection,undefined);assert.equal(b.draft.capabilityRef,null);assert.equal(h.base.calls.filter(v=>v.method==='POST').length,0);
+  }finally{release?.(Response.json({code:'AUTH_REQUIRED'},{status:401}));hooks.unmount();}
  }
 });

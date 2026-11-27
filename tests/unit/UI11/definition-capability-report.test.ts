@@ -65,6 +65,17 @@ test('실제 설정Page의 보호 정의 원문에서 명시 v2 HUMAN 보고 작
 });
 
 async function draftReport(f:any){const ref=f.stored().data.ref;await f.input('정의 조회 ID',ref.id);await f.input('정의 조회 버전','1');await f.input('정의 조회 hash',ref.contentHash);await f.click('알려진 연결 정의 조회');await f.wait('등록 정의 원문');await f.click('이 정의로 사람 보고 작성');await f.input('보고 adapterVersion','독립 어댑터 주장');for(const code of ['INSTRUCTION_SESSION','STATE_ORIGINAL','RESULT_EVIDENCE','TOOL_APPROVAL','STOP_RECLAIM','PATH_WRITE_CONTROL'])await f.input(code+' 한계','실측하지 않은 사람 주장');await f.input('보고 이유','설정에 결박된 원주장 보관');const checkbox=f.nodes().find((n:MemoryNode)=>n.tagName==='INPUT'&&Object.keys(n).some(k=>k.startsWith('__reactProps$')&&(n as any)[k].type==='checkbox')&&n.parentNode?.textContent.includes('실측·실행'));assert(checkbox);const key=Object.keys(checkbox).find(k=>k.startsWith('__reactProps$'));assert(key);await ui.React.act(async()=>(checkbox as any)[key].onChange({target:{checked:true}}));}
+
+test('v2 보호 보고는 명시 선택으로만 등록 준비에 전달하고 닫힌 상세의 이전 클릭은 전달하지 않는다',async()=>{
+ const f=await definitionMount(),selected:any[]=[];f.props.onDefinitionReportSelect=(value:any)=>selected.push(value);
+ try{
+  await draftReport(f);assert.equal(selected.length,0);await f.click('능력보고 보관');await f.wait('보관 확인');
+  const before=f.calls.length,button=f.buttons('이 등록 정의 보고를 준비 입력으로 선택')[0];assert(button,'v2 보호 GET 뒤 준비 입력 선택 진입 누락');
+  await f.click('이 등록 정의 보고를 준비 입력으로 선택');assert.equal(selected.length,1);assert.deepEqual(selected[0].ref,f.reportStored().data.ref);assert.equal(selected[0].effectiveForExecution,false);assert.equal(f.calls.length,before);
+  await f.click('보고 닫기');await ui.React.act(async()=>button.dispatchEvent({type:'click',button:0,bubbles:true}));assert.equal(selected.length,1);
+  assert.equal(f.calls.filter(v=>v.method==='POST').length,1);
+ }finally{await f.close();}
+});
 test('실제 UI11 작성 입력→명시 보관→v2 고정GET과 이력은 v1/정의 원문을 바꾸거나 실행하지 않는다',async()=>{const f=await definitionMount();try{const original=canonicalJson(f.stored());await draftReport(f);await f.click('능력보고 보관');await f.wait('보관 확인');const work=f.props.definitionReportBuffer;assert(work.receipt);assert.equal(work.result.id,id(80));assert.equal(work.draft.schemaVersion,2);assert.equal(work.draft.environmentRef,null);assert.equal(f.calls.filter(c=>c.method==='POST').length,1);const command=JSON.parse(f.calls.find(c=>c.method==='POST')!.body!);assert.equal(command.operation,'recordCapabilityReport');assert.equal(command.payload.schemaVersion,2);assert.equal(canonicalJson(f.stored()),original);await f.click('등록 정의 사람 보고 이력');await f.wait('NOT_RECHECKED');assert(f.calls.some(c=>c.path.includes('/definition-capability-reports?')));assert.equal(f.calls.filter(c=>c.method==='POST').length,1);}finally{await f.close();}});
 test('v2 STORED 뒤 고정GET403은 영수증/원명령을 보존하고 POST를 반복하지 않는다',async()=>{const f=await definitionMount();try{await draftReport(f);f.mode.get=403;await f.click('능력보고 보관');await f.wait('ACCESS_DENIED');const work=f.props.definitionReportBuffer;assert(work.receipt);assert(work.result);const body=work.body;assert.equal(f.calls.filter(c=>c.method==='POST').length,1);f.mode.get=200;await f.click('고정 보고 조회');await f.wait('보관 확인');assert.equal(f.props.definitionReportBuffer.body,body);assert.equal(f.calls.filter(c=>c.method==='POST').length,1);}finally{await f.close();}});
 

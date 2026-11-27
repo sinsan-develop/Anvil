@@ -7,10 +7,56 @@ import {planContextText} from '../../../apps/server/modules/context/context-text
 import {newContextPreparation} from '../../../apps/web/src/features/workspace/context-api.ts';
 import {readCandidateInput,candidateReadiness,candidateCapabilities,capabilityCodes} from '../../../apps/server/modules/connections/candidate-input.ts';
 import {capabilityReportSnapshot,readCapabilityReportClaim} from '../../../apps/server/modules/connections/capability-report-input.ts';
+import {definitionCapabilityReportSnapshot} from '../../../apps/server/modules/connections/definition-capability-report-input.ts';
+import {definitionReportSelection,type ExecutionPreparationBuffer} from '../../../apps/web/src/features/workspace/execution-preparation-api.ts';
 import assert from 'node:assert/strict';import {test} from 'node:test';
 import {newExecutionPreparation,validatePreparationScopes,preparationHash,assertPreparationCommand,loadPreparationChoices,prepareExecutionCommand,sendExecutionPreparation} from '../../../apps/web/src/features/workspace/execution-preparation-api.ts';
 const id='af040058-1111-4111-8111-000000000001',ref={id,version:1,contentHash:'a'.repeat(64)},scope={sourceRootRef:ref,mappingRef:null,observationRef:ref,baselineRef:ref,targets:[{relativePath:'src/main.ts',kind:'FILE',access:'READ',recursive:false}]};
 const confirmed:any={projectId:id,ref,snapshot:{definition:{allowedScopes:[scope],environmentRef:ref,budgetRef:ref},contentConfirmed:true,executionAuthorized:false,dispatchPerformed:false}},session:any={user:{id},clientId:id,csrfToken:'a'.repeat(43)};
+
+function registeredReportFixture(){
+ const f=seed(true),base=clientFixture(f),snapshot=definitionCapabilityReportSnapshot({...f.report.snapshot.claim,schemaVersion:2,tool:{product:f.connection.definition.toolProduct,version:f.connection.definition.toolVersion,adapterVersion:'원 등록 adapter'}},f.confirmed.projectId,f.report.ref.id,{actorId:f.session.user.id,clientId:f.session.clientId},new Date(f.at));
+ const report:any={projectId:f.confirmed.projectId,ref:{...f.report.ref,contentHash:contentHash(canonicalJson(snapshot))},snapshot,currentnessIssues:[{code:'REGISTERED_DEFINITION_ONLY',target:null},{code:'HUMAN_CLAIM_UNVERIFIED',target:null}],effectiveForExecution:false,dispatchPerformed:false,checkedAt:f.at};
+ let reportReads=0;
+ const client=new ApiClient(async(path,init)=>{if(String(path).includes('/definition-capability-reports/')){reportReads++;assert.equal(init?.method,'GET');return Response.json(report);}return base.client.transport(path,init);});
+ function draft(){const b=newExecutionPreparation(f.confirmed as any,f.session);b.draft={roleBindingRef:f.binding.ref,contextBundleRef:f.context.ref,capabilityRef:report.ref,sourceScopes:[f.scope],mode:'CONTEXT_REVIEW',reason:'등록 보고는 참조로만 선택'};b.definitionReportSelection=definitionReportSelection(client,f.session,report);return b;}
+ return{f,base,report,client,draft,reportReads:()=>reportReads};
+}
+
+test('v2 등록 보고는 같은 보호 binding·정의·환경을 재조회하고 기존 capabilityRef로만 준비·보관한다',async()=>{
+ const h=registeredReportFixture();let b=await prepareExecutionCommand(h.client,h.draft(),h.f.confirmed as any,h.f.session,h.report.ref,()=>true);
+ assert.equal(h.reportReads(),1);assert.equal(h.base.calls.filter(v=>v.method==='POST').length,0);assert.deepEqual(b.pending!.payload.capabilityRef,h.report.ref);assert(!Object.hasOwn(b.pending!.payload,'definitionReportSelection'));
+ const result=await sendExecutionPreparation(h.client,b,h.f.session,()=>true);assert.equal(h.reportReads(),2);assert.equal(result.snapshot.executionAuthorized,false);assert.equal(result.snapshot.dispatchPerformed,false);assert.deepEqual(result.snapshot.intent,b.pending!.payload);
+});
+
+test('v2 등록 보고의 다른 project·정의·환경·만료·불명 현재성은 새 준비와 POST를 만들지 않는다',async()=>{
+ for(const fault of ['PROJECT','CONNECTION','ENVIRONMENT','EXPIRED','ISSUE','BINDING','AUTH']){
+  const h=registeredReportFixture(),b=structuredClone(h.draft());
+  if(fault==='PROJECT')b.definitionReportSelection!.projectId=h.f.otherProject;
+  else if(fault==='BINDING'){h.f.binding.snapshot.connectionRef={...h.f.connection.ref,version:2};h.f.binding.ref.contentHash=contentHash(canonicalJson(h.f.binding.snapshot));b.draft.roleBindingRef=h.f.binding.ref;}
+  else if(fault==='AUTH')h.f.session.csrfToken='b'.repeat(43);
+  else if(fault==='ISSUE')h.report.currentnessIssues.push({code:'CURRENTNESS_UNAVAILABLE',target:{kind:'CONNECTION_DEFINITION',ref:h.f.connection.ref}});
+  else{if(fault==='CONNECTION')h.report.snapshot.claim.connectionRef={...h.f.connection.ref,version:2};if(fault==='ENVIRONMENT')h.report.snapshot.claim.environmentRef=null;if(fault==='EXPIRED')h.report.snapshot.claim.expiresAt=new Date(Date.now()-1).toISOString();h.report.snapshot.claimHash=contentHash(canonicalJson(h.report.snapshot.claim));h.report.ref.contentHash=contentHash(canonicalJson(h.report.snapshot));b.draft.capabilityRef={...h.report.ref};b.definitionReportSelection={...b.definitionReportSelection!,reportRef:{...h.report.ref}};if(fault==='ENVIRONMENT')h.report.currentnessIssues.push({code:'ENVIRONMENT_NOT_DEFINED',target:null});}
+  await assert.rejects(prepareExecutionCommand(h.client,b,h.f.confirmed as any,h.f.session,b.draft.capabilityRef!,()=>true),fault);assert.equal(h.base.calls.filter(v=>v.method==='POST').length,0,fault);
+ }
+});
+
+test('v2 선택을 포함한 저장 receipt·UNKNOWN 동일명령 재확인은 새 보고 현재성을 소급하지 않는다',async()=>{
+ const h=registeredReportFixture(),b=await prepareExecutionCommand(h.client,h.draft(),h.f.confirmed as any,h.f.session,h.report.ref,()=>true);
+ let receipt:any;await sendExecutionPreparation(h.client,b,h.f.session,()=>true,value=>{receipt=value;});assert(receipt);
+ const reads=h.reportReads(),body=b.pending;h.report.currentnessIssues.push({code:'REPORT_EXPIRED',target:{kind:'REPORT',ref:h.report.ref}});
+ const posts=h.base.calls.filter(v=>v.method==='POST').length;await sendExecutionPreparation(h.client,{...b,savedReceipt:receipt},h.f.session,()=>true);assert.equal(h.reportReads(),reads);assert.equal(h.base.calls.filter(v=>v.method==='POST').length,posts);
+ h.base.setPost('LOST');const unknown={...b,uncertain:true,preparationDispatchStarted:true};await assert.rejects(sendExecutionPreparation(h.client,unknown,h.f.session,()=>true));assert.equal(h.reportReads(),reads);assert.deepEqual(unknown.pending,body);const sent=h.base.calls.filter(v=>v.method==='POST');assert.deepEqual(sent.at(-1)!.body,sent[0]!.body);
+});
+
+test('v2 보고 기한이 최종 CAS await 중 지나면 원 transport와 저장 callback은 시작하지 않는다',async t=>{
+ const h=registeredReportFixture(),b=await prepareExecutionCommand(h.client,h.draft(),h.f.confirmed as any,h.f.session,h.report.ref,()=>true);let saved=0,dispatched=0;
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});
+ try{
+  await assert.rejects(sendExecutionPreparation(h.client,b,h.f.session,()=>true,()=>{saved++;},async()=>{await Promise.resolve();t.mock.timers.setTime(Date.parse(h.report.snapshot.claim.expiresAt)+1);return true;},()=>{dispatched++;}),{code:'EXECUTION_PREPARATION_REPORT_NOT_CURRENT'});
+  assert.equal(h.base.calls.filter(v=>v.method==='POST').length,0);assert.equal(dispatched,0);assert.equal(saved,0);assert.equal(b.uncertain,false);assert.equal(b.preparationDispatchStarted,false);
+ }finally{t.mock.timers.reset();}
+});
 test('새 실행의도 버퍼는 실제확정임무만 결박하고 참조·범위를 자동선택하지 않는다',()=>{const b=newExecutionPreparation(confirmed,session);assert.equal(b.draft.roleBindingRef,null);assert.equal(b.draft.contextBundleRef,null);assert.equal(b.draft.capabilityRef,null);assert.deepEqual(b.draft.sourceScopes,[]);assert.equal(b.pending,null);});
 test('명시 부분범위는 원fullref/대소문자 중복·경로문법·확장금지를 검사한다',()=>{assert.deepEqual(validatePreparationScopes([scope],[scope]),[scope]);for(const bad of [[{...scope,targets:[{...scope.targets[0],access:'WRITE'}]}],[{...scope,sourceRootRef:{...ref,version:2}}],[{...scope,targets:[{...scope.targets[0],relativePath:'../escape'}]}],[]])assert.throws(()=>validatePreparationScopes(bad,[scope]));});
 test('동결 원명령은 입력·주체·승인hash 변경을 전송전에 거절한다',async()=>{const b=newExecutionPreparation(confirmed,session);b.draft={roleBindingRef:ref,contextBundleRef:ref,capabilityRef:ref,sourceScopes:[scope],mode:'WORK',reason:'고정 원의도'};b.controlGeneration=1;b.pending={schemaVersion:1,projectId:id,commandId:id,clientId:id,controlGeneration:1,operation:'prepareExecution',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{projectId:id,assignmentRef:ref,roleBindingRef:ref,contextBundleRef:ref,connectionRef:ref,environmentRef:ref,capabilityRef:ref,budgetPolicyRef:ref,sourceScopes:[scope],mode:'WORK',reason:'고정 원의도'}};b.pendingHash=await preparationHash(b.pending);b.payloadHash=await preparationHash(b.pending.payload);assert.ok(await assertPreparationCommand(b,session));b.draft.reason='다른 입력';await assert.rejects(assertPreparationCommand(b,session));});
