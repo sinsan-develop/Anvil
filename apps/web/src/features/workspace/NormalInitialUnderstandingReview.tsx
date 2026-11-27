@@ -11,10 +11,12 @@ import {readNormalUnderstandingHistory,understandingLabels,type NormalUnderstand
 import {normalFollowUpUnderstandingLatest,normalFollowUpUnderstandingReviewKey,beginNormalFollowUpUnderstandingReview,prepareNormalFollowUpUnderstandingReview,saveNormalFollowUpUnderstandingReview,matchNormalFollowUpUnderstandingReview,normalInitialUnderstandingOwner,normalInitialUnderstandingBasis,beginNormalInitialUnderstandingReview,normalInitialUnderstandingReviewKey,prepareNormalInitialUnderstandingReview,saveNormalInitialUnderstandingReview,matchNormalInitialUnderstandingReview,UnderstandingReadbackUnconfirmed,type NormalInitialUnderstandingBasis,type NormalInitialUnderstandingReviewStorage,type NormalInitialUnderstandingReviewBuffer} from '../session-detail/understanding-review-write.ts';
 import type {PreparationRecord} from './responsible-session-api.ts';
 import type {NormalUnderstandingMetadataRequest,NormalUnderstandingRangeResult} from './NormalUnderstandingDiscovery.tsx';
+import type {ExactWorkReviewCandidate} from './claim-understanding-history.ts';
 type Source=Extract<NormalUnderstandingRangeResult,{status:'RANGE_STORED'}>;
+export type WorkReviewSelection=Pick<ExactWorkReviewCandidate,'roleBindingRef'|'agentSessionRef'>&{onSelect:(candidate:ExactWorkReviewCandidate)=>void};
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b);
 /** 이 컴포넌트만 현재 원문 view를 받는다. App 저장소에는 refs/사람 입력/명령/승인만 넘긴다. */
-export function NormalInitialUnderstandingReview({client,session,request,preparation,source,viewActive,storage,busy}:{client:ApiClient;session:DocumentSession;request:NormalUnderstandingMetadataRequest;preparation:PreparationRecord|null;source:Source|null;viewActive:()=>boolean;storage:NormalInitialUnderstandingReviewStorage;busy:boolean}){
+export function NormalInitialUnderstandingReview({client,session,request,preparation,source,viewActive,storage,busy,workSelection}:{client:ApiClient;session:DocumentSession;request:NormalUnderstandingMetadataRequest;preparation:PreparationRecord|null;source:Source|null;viewActive:()=>boolean;storage:NormalInitialUnderstandingReviewStorage;busy:boolean;workSelection?:WorkReviewSelection}){
  const [verified,setVerified]=useState<{sourceKey:string;owner:object;basis:NormalInitialUnderstandingBasis}|null>(null),[history,setHistory]=useState<{key:string;value:NormalUnderstandingHistoryView}|null>(null),[notice,setNotice]=useState(''),[working,setWorking]=useState(false),[ack,setAck]=useState(false);
  const [selected,setSelected]=useState<{owner:object;key:string}|null>(null);
  const epoch=normalInitialUnderstandingOwner(client,session),identity=ordered([request,epoch,session.user.id,session.clientId]),scope=useRef({identity,client,transport:client.transport}),alive=useRef(true),flight=useRef<symbol|null>(null),view=useRef({source,preparation,viewActive});view.current={source,preparation,viewActive};
@@ -22,12 +24,28 @@ export function NormalInitialUnderstandingReview({client,session,request,prepara
  const mountOwner=useRef(epoch);
  const current=()=>mountOwner.current===epoch&&alive.current&&scope.current===owner&&client.transport===owner.transport&&normalInitialUnderstandingOwner(client,session)===epoch;
  const shown=history?.key===identity?history.value:null;
+ const selectionRoute=useRef(0),selectionHistory=useRef<{value:NormalUnderstandingHistoryView;route:string|undefined;epoch:number}|null>(null);
+ useEffect(()=>{const invalidate=()=>{selectionRoute.current++;};globalThis.addEventListener?.('hashchange',invalidate);return()=>globalThis.removeEventListener?.('hashchange',invalidate);},[]);
  const sourceKey=source?ordered([source.request,source.responseRef,source.partRefs,source.observedAt,source.expiresAt,preparation?.ref??null]):'';
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;flight.current=null;};},[]);
  useEffect(()=>{setVerified(null);setHistory(null);setNotice('');setAck(false);},[owner]);
  useEffect(()=>{let live=true;setVerified(null);if(source&&preparation){const held=source;normalInitialUnderstandingBasis(held,preparation,request.preparationRef,()=>live&&current()&&view.current.viewActive()&&view.current.source===held&&view.current.preparation===preparation).then(basis=>{if(live&&current()&&view.current.source===held)setVerified({sourceKey,owner,basis});}).catch(()=>{});}return()=>{live=false;};},[source,preparation,owner]);
  const basis=verified?.sourceKey===sourceKey&&verified.owner===owner&&source&&viewActive()&&Date.parse(source.expiresAt)>Date.now()?verified.basis:null;
  const scopeValue={projectId:request.projectId,executionId:request.executionId,executionGeneration:request.executionGeneration};
+ const latest=shown?.items.at(-1),ground=latest?.snapshot.currentBinding.sourceBasis,intent=preparation?.snapshot.intent;
+ const workCandidate:ExactWorkReviewCandidate|null=workSelection&&latest?.snapshot.outcome==='ACCEPTED'&&ground
+  &&preparation?.projectId===request.projectId&&same(preparation.ref,request.preparationRef)&&same(ground.preparationRef,preparation.ref)&&same(ground.requestRef,request.requestRef)
+  &&intent?.mode==='CONTEXT_REVIEW'&&intent.connectionKind==='REGISTERED_DEFINITION'&&same(intent.assignmentRef,request.assignmentRef)&&same(intent.contextBundleRef,ground.bundleRef)
+  &&same(intent.roleBindingRef,workSelection.roleBindingRef)&&same(ground.roleBindingRef,workSelection.roleBindingRef)&&same(ground.agentSessionRef,workSelection.agentSessionRef)
+  &&(!source||same(source.responseRef,ground.responseRef)&&same(source.partRefs,ground.responsePartRefs))
+  ?{scope:scopeValue,reviewRef:latest.ref,assignmentRef:request.assignmentRef,roleBindingRef:workSelection.roleBindingRef,agentSessionRef:workSelection.agentSessionRef}:null;
+ const displayedChoice=useRef<object|null>(null),choice=workCandidate&&workSelection?{workCandidate,onSelect:workSelection.onSelect}:null;
+ displayedChoice.current=choice;
+ function chooseWorkReview(){
+  const held=selectionHistory.current;
+  if(!choice||displayedChoice.current!==choice||flight.current||busy||!current()||!held||held.value!==shown||held.epoch!==selectionRoute.current||held.route!==globalThis.location?.hash)return;
+  choice.onSelect(structuredClone(choice.workCandidate));
+ }
  const owned=Object.entries(storage.buffers).filter(([,v])=>v&&v.ownerEpoch===epoch&&v.ownerUserId===session.user.id&&v.ownerClientId===session.clientId&&same(v.basis.scope,scopeValue));
  const candidates=owned.filter(([,v])=>v&&same(v.basis.assignmentRef,request.assignmentRef)&&same(v.basis.preparationRef,request.preparationRef)&&same(v.basis.rangeRequestRef,request.requestRef));
  const open=candidates.filter(([,v])=>!v?.stored),kept=candidates.filter(([,v])=>v?.stored).sort((a,b)=>b[1]!.stored!.ref.version-a[1]!.stored!.ref.version);
@@ -45,9 +63,13 @@ export function NormalInitialUnderstandingReview({client,session,request,prepara
   if(flight.current||busy||!current())return;const attempt=Symbol(),captured=owner,original=b;flight.current=attempt;setWorking(true);setNotice('');
   const active=()=>current()&&scope.current===captured&&flight.current===attempt;
   const commit=(next:NormalInitialUnderstandingReviewBuffer,expected:NormalInitialUnderstandingReviewBuffer)=>{if(!key||!active()||storage.read(key)!==expected)return false;storage.onChange(key,prior=>active()&&prior===expected&&(!!next.stored||expected.uncertain||expected.approval?.work?.uncertain||!unresolved())?next:prior);return storage.read(key)===next;};
+  const commitStored=(stored:NonNullable<NormalInitialUnderstandingReviewBuffer['stored']>,expected:NormalInitialUnderstandingReviewBuffer)=>{
+   if(!same(selectionHistory.current?.value.items.at(-1)?.ref,stored.ref))selectionHistory.current=null;
+   commit({...expected,stored,uncertain:false,failure:null},expected);
+  };
   const sourceCheck=()=>{if(!active()||!sourceCurrent())throw new ApiError('UNDERSTANDING_CURRENT_REQUIRED',412);};
   const pinned=new ApiClient((...args)=>{if(!active())throw new ApiError('UNDERSTANDING_CURRENT_REQUIRED',412);return captured.transport.call(globalThis,...args);});
-  const read=async()=>{setHistory(null);const h=await readNormalUnderstandingHistory(client,scopeValue,active);if(!h||!active())throw new ApiError('UNDERSTANDING_HISTORY_UNAVAILABLE',503);setHistory({key:identity,value:h});return h;};
+  const read=async()=>{selectionHistory.current=null;setHistory(null);const route=globalThis.location?.hash,routeEpoch=selectionRoute.current;const h=await readNormalUnderstandingHistory(client,scopeValue,active);if(!h||!active())throw new ApiError('UNDERSTANDING_HISTORY_UNAVAILABLE',503);selectionHistory.current={value:h,route,epoch:routeEpoch};setHistory({key:identity,value:h});return h;};
   const requireHead=async(h:NormalUnderstandingHistoryView,buffer:NormalInitialUnderstandingReviewBuffer)=>{if(buffer.previousReviewRef){if(!same(await normalFollowUpUnderstandingLatest(buffer.basis,h,active),buffer.previousReviewRef))throw new ApiError('UNDERSTANDING_REVIEW_HEAD_CHANGED',409);}else if(h.items.length)throw new ApiError('UNDERSTANDING_FIRST_REVIEW_REQUIRED',409);};
   const requireResolved=()=>{if(unresolved())throw new ApiError('UNDERSTANDING_REVIEW_RECOVERY_REQUIRED',409);};
   let sent=false,latest=original;
@@ -161,14 +183,14 @@ export function NormalInitialUnderstandingReview({client,session,request,prepara
       catch(error){storage.onChange(key!,prior=>prior===next?original:prior);throw error;}
       held=next;latest=next;sent=true;return true;
      });
-    if(active()&&stored)commit({...held,stored,uncertain:false,failure:null},held);
+    if(active()&&stored)commitStored(stored,held);
     return;
    }
    if(!commit(next,original))return;
    latest=next;sent=true;
    const stored=await saveNormalInitialUnderstandingReview(client,next,session,
     ()=>active()&&storage.read(key!)===next&&(original.uncertain||sourceCurrent()));
-   if(active()&&stored)commit({...next,stored,uncertain:false,failure:null},next);
+   if(active()&&stored)commitStored(stored,next);
   }catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('UNDERSTANDING_REVIEW_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'UNDERSTANDING_REVIEW_RESPONSE_INVALID';setNotice(code);
    if(latest&&key&&storage.read(key)===latest){if(mode==='APPROVAL_SEND'&&latest.approval?.work){const w=latest.approval.work;commit({...latest,approval:{...latest.approval,work:{...w,failure:{code,status:e.status},uncertain:sent&&(w.uncertain||!isKnownDocumentRejection(e))}}},latest);}else commit({...latest,failure:{code,status:e.status},uncertain:latest.uncertain&&(original?.uncertain===true||sent&&(!isKnownDocumentRejection(e)||e instanceof UnderstandingReadbackUnconfirmed))},latest);}
   }finally{if(flight.current===attempt){flight.current=null;if(alive.current)setWorking(false);}}
@@ -179,6 +201,7 @@ export function NormalInitialUnderstandingReview({client,session,request,prepara
  <button type="button" disabled={locked} onClick={()=>void run('HISTORY')}>정상 이해 검토 이력 확인</button>
  {notice?<p role="alert">{notice} · 입력과 고정 명령을 보존합니다.</p>:null}{follow&&b?.failure?.code==='UNDERSTANDING_NORMAL_FIRST_REQUIRED'?<p role="status">서버가 최초 검토만 허용하여 후속 저장을 거절했습니다. 기존 입력·명령·승인은 보존됩니다.</p>:null}
  {shown?<>{shown.items.length===0?<p>보관된 최초 검토 없음</p>:shown.items.map(row=><article key={row.ref.contentHash}><h6>보관된 {row.ref.version===1?'최초':'후속'} 검토 · v{row.ref.version} · {row.snapshot.outcome==='ACCEPTED'?'보관 당시 적합':'보관 당시 미수용'}</h6><p>현재 기준·허가 미재검산 · {row.snapshot.recordedAt}</p><p>{row.snapshot.input.reason}</p><ul>{row.snapshot.input.items.map(item=><li key={item.code}>{understandingLabels[item.code]} · {item.judgement}<pre>{item.reason}</pre></li>)}</ul></article>)}</>:null}
+ {choice&&selectionHistory.current?.value===shown&&selectionHistory.current.epoch===selectionRoute.current&&selectionHistory.current.route===globalThis.location?.hash?<p>조회 시 최신 적합 판단 <code>{ordered(choice.workCandidate.reviewRef)}</code> <button type="button" disabled={locked} onClick={chooseWorkReview}>이 적합 판단을 WORK 준비 후보로 선택</button></p>:null}
  {candidates.length>1?<div aria-label="보존된 정상 검토 초안">{candidates.map(([k,v])=><button type="button" key={k} disabled={locked} onClick={()=>{if(current()&&storage.read(k)===v){setSelected({owner,key:k});setAck(false);}}}>{v!.previousReviewRef?'후속':'최초'} 초안 · {v!.stored?'저장 v'+v!.stored.ref.version:v!.uncertain?'결과 미확인':v!.pending?'고정 명령 보존':'입력 중'}{v!.pending?' · '+v!.pending.commandId:''}</button>)}</div>:null}
  {unresolved()?<p role="status">같은 실행의 미확정 명령 또는 승인 요청을 원 요청에서 먼저 재확인하세요. 새 후속 명령을 만들지 않습니다.</p>:null}
  {basis&&shown?.items.length&&!unresolved()?<button type="button" disabled={locked} onClick={()=>void run('FOLLOW_BEGIN')}>후속 이해 검토 입력 준비</button>:null}

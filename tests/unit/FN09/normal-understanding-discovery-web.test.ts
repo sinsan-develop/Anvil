@@ -854,6 +854,50 @@ function appendClaimReview(f:ReturnType<typeof normalClaimSource>,accepted:boole
  return next;
 }
 
+test('UI04 정상 보호 이력의 최신 적합 행만 정확 WORK 후보로 명시 전달한다',async()=>{
+ const hooks=await import(reactMemory),m=await compile(reactMemory),f=normalClaimSource(),accepted=appendClaimReview(f,true);
+ const requests:string[]=[],selected:unknown[]=[];let preparation=f.preparation,posts=0;
+ const client=new ApiClient(async(path,options)=>{
+  if(options?.method==='GET'){
+   requests.push(String(path));
+   if(String(path).includes('/understanding-reviews?'))return Response.json(f.normal);
+   return Response.json({id:projectId,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:9,status:'HELD'}});
+  }
+  assert.equal(options?.method,'POST');posts++;
+  const q=JSON.parse(String(options?.body));
+  assert.equal(q.operation,'readNormalUnderstandingResponse');
+  return Response.json({operationId:id(24),commandId:q.commandId,projectId,status:'APPLIED',targetId:f.input.request.requestRef.id,version:1,data:{ref:f.input.request.requestRef,requestRef:f.input.request.requestRef,status:'NORMAL_UNDERSTANDING_RANGE_REQUESTED',state:'PENDING_SOURCE',sourceAvailable:false,selectionAvailable:false,expiresAt:f.input.expiresAt},evidenceRefs:[],warnings:[],serverReceivedAt:new Date().toISOString()});
+ });
+ const commands=m.createNormalUnderstandingRangeCommands(client,session,projectId,canonicalJson(assignmentRef),()=>true),s=f.input.selection;
+ await commands.request({request:{...f.input.request,requestRef:s.requestRef},resultRef:s.resultRef,contextBundleRef:f.history.body.contextBundleRef,initConfirmationRef:s.initConfirmationRef,tailRef:s.tailRef,firstSequence:s.firstSequence,lastSequence:s.lastSequence,ranges:s.ranges},new AbortController().signal,()=>true);
+ const setupPosts=posts;assert.equal(setupPosts,1);
+ const storage={buffers:{},read:()=>null,onChange:()=>assert.fail('기존 검토 저장소를 변경하지 않습니다')};
+ let live=true;
+ const source={roleBindingRef:f.preparation.snapshot.intent.roleBindingRef,agentSessionRef:f.sessionRef,onSelect:(candidate:unknown)=>selected.push(candidate)};
+ const draw=()=>hooks.draw(()=>m.NormalUnderstandingDiscovery({client,session,projectId,assignmentRef,preparations:[preparation],busy:false,reviewStorage:storage,rangeRequester:commands.request,rangeRecovery:commands.recover,workSelection:live?source:undefined}),'WORK discovery');
+ const node=(t:any):any=>Array.isArray(t)?t.map(node).find(Boolean):t&&typeof t==='object'?(t.props?.storage===storage?t:node(t.props?.children)):undefined;
+ const review=()=>{const found=node(draw());assert.ok(found);return hooks.draw(()=>found.type(found.props),'WORK review');};
+ const wait=async(predicate:()=>boolean)=>{const end=performance.now()+5000;while(!predicate()){assert.ok(performance.now()<end,'정상 보호 이력 렌더 대기');await new Promise<void>(r=>setImmediate(r));}};
+ const selectLabel='이 적합 판단을 WORK 준비 후보로 선택';
+ try{
+  const before=requests.length;assert.equal(button(review(),selectLabel),undefined);
+  button(review(),'정상 이해 검토 이력 확인')!.onClick!();
+  await wait(()=>renderToStaticMarkup(review()).includes('보관 당시 적합'));
+  assert.equal(requests.length,before+1);assert.deepEqual(selected,[]);
+  const choice=button(review(),selectLabel);assert.ok(choice?.onClick);assert.equal(!!choice.disabled,false);
+  choice.onClick();assert.deepEqual(selected,[{scope:f.scope,reviewRef:accepted.ref,assignmentRef,roleBindingRef:source.roleBindingRef,agentSessionRef:f.sessionRef}]);
+  assert.equal(requests.length,before+1);
+  preparation={...preparation,snapshot:{...preparation.snapshot,intent:{...preparation.snapshot.intent,roleBindingRef:ref(999)}}};
+  assert.equal(button(review(),selectLabel),undefined);choice.onClick();assert.equal(selected.length,1);
+  preparation=f.preparation;live=false;assert.equal(button(review(),selectLabel),undefined);choice.onClick();assert.equal(selected.length,1);
+  live=true;appendClaimReview(f,false);
+  button(review(),'정상 이해 검토 이력 확인')!.onClick!();choice.onClick();assert.equal(selected.length,1);
+  await wait(()=>renderToStaticMarkup(review()).includes('후속 검토 · v3'));
+  assert.equal(button(review(),selectLabel),undefined);choice.onClick();assert.equal(selected.length,1);
+  assert.equal(posts,setupPosts,'보호 이력 조회·후보 선택·폐기된 클릭에서 POST가 추가되지 않습니다.');
+ }finally{hooks.unmount('WORK discovery');hooks.unmount('WORK review');}
+});
+
 test('보호 claim history는 v1 원문을 유지하고 최신 ACCEPTED의 전체 참조만 WORK 후보로 갖는다',async()=>{
  for(const accepted of [true,false]){
   const f=normalClaimSource();const v2=appendClaimReview(f,true);

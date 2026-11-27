@@ -209,6 +209,9 @@ export function WorkspaceResponsibleSessions({onWorkReviewCandidate,normalInitia
     </>:<p>역할·예약·준비 원문은 아직 조회 확인되지 않았습니다.</p>}
     {owner&&bound?<NormalUnderstandingDiscovery reviewStorage={normalInitialReviews} client={client} session={session} projectId={confirmed.projectId} assignmentRef={confirmed.ref}
      preparations={state&&stateStamp.current.epoch===epoch.current&&stateStamp.current.revision===stateRevision.current?state.preparations:[]}
+     workSelection={onWorkReviewCandidate&&!busy&&binding?.snapshot.connectionKind==='REGISTERED_DEFINITION'&&binding.snapshot.state==='RESERVED'&&stateStamp.current.epoch===definitionEpoch&&stateStamp.current.revision===definitionRevision?{
+      roleBindingRef:binding.ref,agentSessionRef:binding.snapshot.sessionRef,onSelect:candidate=>{if(active(definitionEpoch)&&stateRevision.current===definitionRevision)onWorkReviewCandidate(candidate);}
+     }:undefined}
      busy={busy} metadataReader={metadataReader} rangeRequester={rangeCommands?.request} rangeRecovery={rangeCommands?.recover} rangeReader={rangeReader} rangeHistoryReader={rangeHistoryReader}/>:null}
   </section>;
 }

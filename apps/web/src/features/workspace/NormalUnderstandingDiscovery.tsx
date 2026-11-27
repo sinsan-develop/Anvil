@@ -1,6 +1,6 @@
 import {readBoundedUnderstandingHistoryJson as boundedRangeJson} from './claim-understanding-history.ts';
 import {NormalUnderstandingRangeHistory} from './NormalUnderstandingRangeHistory.tsx';
-import {NormalInitialUnderstandingReview} from './NormalInitialUnderstandingReview.tsx';
+import {NormalInitialUnderstandingReview,type WorkReviewSelection} from './NormalInitialUnderstandingReview.tsx';
 import type {NormalInitialUnderstandingReviewStorage} from '../session-detail/understanding-review-write.ts';
 import {useEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
@@ -54,7 +54,7 @@ export type NormalUnderstandingRangeHistoryResult={status:'RANGE_STORED_HISTORIC
 export type ReviewedNormalUnderstandingRangeHistoryRequest={kind:'NORMAL_REVIEW_HISTORY';request:NormalUnderstandingMetadataRequest;responseRef:PlanRef;partRefs:PlanRef[];bundleRef:PlanRef;subjectBindingRef:PlanRef};
 export type HistoricalRangeInput=NormalUnderstandingRangeReadRequest|ReviewedNormalUnderstandingRangeHistoryRequest;
 export type NormalUnderstandingRangeHistoryReader=(request:Readonly<NormalUnderstandingRangeReadRequest>,signal:AbortSignal)=>Promise<NormalUnderstandingRangeHistoryResult>;
-type Props={reviewStorage?:NormalInitialUnderstandingReviewStorage;client:ApiClient;session:DocumentSession;projectId:string;assignmentRef:PlanRef;preparations:PreparationRecord[];busy:boolean;
+type Props={reviewStorage?:NormalInitialUnderstandingReviewStorage;workSelection?:WorkReviewSelection;client:ApiClient;session:DocumentSession;projectId:string;assignmentRef:PlanRef;preparations:PreparationRecord[];busy:boolean;
  metadataReader?:NormalUnderstandingMetadataReader;rangeRequester?:NormalUnderstandingRangeRequester;rangeRecovery?:NormalUnderstandingRangeRecovery;rangeReader?:NormalUnderstandingRangeReader;rangeHistoryReader?:NormalUnderstandingRangeHistoryReader};
 type SessionRecords={csrf:string;userId:string;clientId:string;commands:Map<string,Retained>};
 const clientRecords=new WeakMap<ApiClient,WeakMap<typeof fetch,SessionRecords[]>>();
@@ -471,7 +471,7 @@ function UnderstandingRangeSelection({current,requestRange,active,disabled,onSet
  </div>;
 }
 
-export function NormalUnderstandingDiscovery({reviewStorage,client,session,projectId,assignmentRef,preparations,busy,metadataReader,rangeRequester,rangeRecovery,rangeReader,rangeHistoryReader}:Props){
+export function NormalUnderstandingDiscovery({reviewStorage,workSelection,client,session,projectId,assignmentRef,preparations,busy,metadataReader,rangeRequester,rangeRecovery,rangeReader,rangeHistoryReader}:Props){
  const [selection,setSelection]=useState(''),[basis,setBasis]=useState<Basis|null>(null),[notice,setNotice]=useState(''),[working,setWorking]=useState(false),[,render]=useState(0);
  const local=normalUnderstandingRecords(session,client),key=ordered([projectId,assignmentRef,session.user.id,session.clientId]);
  const scope=useRef({key,records:local}),flight=useRef<AbortController|null>(null);
@@ -673,7 +673,8 @@ export function NormalUnderstandingDiscovery({reviewStorage,client,session,proje
     {source.body.parts.map((part,index)=><div key={source.partRefs[index]!.id}><p>출력 순번 {part.sequence} · 텍스트 {part.blockIndex+1}</p><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{part.text}</pre></div>)}
     <button type="button" onClick={cancelRange}>원문 닫기</button>
    </div>:null}
-   {reviewStorage&&entry.requestRef?<NormalInitialUnderstandingReview key={rangeKey} client={client} session={session} request={{projectId,executionId:entry.command.targetId,executionGeneration:entry.command.expectedVersion,assignmentRef:entry.command.payload.assignmentRef,preparationRef:entry.command.payload.preparationRef,requestRef:entry.requestRef}} preparation={available.find(p=>same(p.ref,entry.command.payload.preparationRef))??null} source={source} viewActive={()=>!!source&&scope.current===owner&&rangeScope.current===rangeReadOwner&&rangeRequests?.get(rangeKey)===entry&&rangeViewToken.current===rangeToken&&performance.now()<(shownRange?.monoEnd??0)&&Date.parse(source.expiresAt)>Date.now()} storage={reviewStorage} busy={busy||working||view==='READING'}/>:null}
+   {reviewStorage&&entry.requestRef?<NormalInitialUnderstandingReview key={rangeKey} client={client} session={session} request={{projectId,executionId:entry.command.targetId,executionGeneration:entry.command.expectedVersion,assignmentRef:entry.command.payload.assignmentRef,preparationRef:entry.command.payload.preparationRef,requestRef:entry.requestRef}} preparation={available.find(p=>same(p.ref,entry.command.payload.preparationRef))??null} source={source} viewActive={()=>!!source&&scope.current===owner&&rangeScope.current===rangeReadOwner&&rangeRequests?.get(rangeKey)===entry&&rangeViewToken.current===rangeToken&&performance.now()<(shownRange?.monoEnd??0)&&Date.parse(source.expiresAt)>Date.now()} storage={reviewStorage} busy={busy||working||view==='READING'}
+    workSelection={workSelection&&{...workSelection,onSelect:candidate=>{if(scope.current===owner&&normalUnderstandingRecords(session,client)===local&&rangeRequests?.get(rangeKey)===entry)workSelection.onSelect(candidate);}}}/>:null}
    {rangeHistoryReader&&entry.state==='PENDING_SOURCE'&&entry.requestRef&&entry.expiresAt&&instant(entry.expiresAt)?<NormalUnderstandingRangeHistory key={'history:'+rangeKey} reader={rangeHistoryReader} verify={verifyNormalUnderstandingRangeHistory} scopeOwner={owner} entryOwner={entry}
     input={{request:{projectId,executionId:entry.command.targetId,executionGeneration:entry.command.expectedVersion,assignmentRef:entry.command.payload.assignmentRef,preparationRef:entry.command.payload.preparationRef,requestRef:entry.requestRef},controlGeneration:entry.command.controlGeneration,expiresAt:entry.expiresAt,selection:entry.command.payload.selection}}
     active={()=>scope.current===owner&&normalUnderstandingRecords(session,client)===local&&rangeRequests?.get(rangeKey)===entry&&entry.body===JSON.stringify(entry.command)} disabled={busy||working}/>:null}
