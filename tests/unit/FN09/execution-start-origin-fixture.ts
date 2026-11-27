@@ -364,10 +364,14 @@ export async function executionStartOriginFixture(options:{normalStopPolicy?:boo
     const versions=tables.constitutionApplications!.filter(r=>r.project_id===a[0]).map(r=>r.application_version);
     return rows([{version:versions.length?Math.max(...versions):null}]);
    }
-   if(sql.startsWith('SELECT a.*,c.state command_state,c.operation,c.actor_id,c.client_id command_client,c.control_generation,c.expected_version,c.policy_ref,c.result_ref FROM anvil.constitution_applications'))return rows(tables.constitutionApplications!.filter(r=>r.project_id===a[0]&&r.application_version===a[1]).flatMap(r=>{
+   if(sql==='SELECT a.*,c.state command_state,c.operation,c.actor_id,c.client_id command_client,c.control_generation,c.expected_version,c.policy_ref,c.result_ref,c.command_id external_command_id,c.request_hash,c.scope_kind command_scope_kind,c.scope_id command_scope_id,c.operation_id command_operation_id,r.scope_kind receipt_scope_kind,r.scope_id receipt_scope_id,r.subject_ref receipt_subject,r.scope_digest receipt_scope_digest FROM anvil.constitution_applications a JOIN anvil.commands c ON c.id=a.command_id AND c.project_id=a.project_id JOIN anvil.authorization_receipts r ON r.id=c.authorization_receipt_id AND r.command_id=c.id AND r.policy_ref=c.policy_ref WHERE a.project_id=$1 AND a.application_version=$2')return rows(tables.constitutionApplications!.filter(r=>r.project_id===a[0]&&r.application_version===a[1]).flatMap(r=>{
     const c=f.commands.get(r.command_id),receipt=receipts.get(r.command_id);
     if(!c||c.project_id!==r.project_id||!receipt||receipt.id!==c.authorization_receipt_id||receipt.command_id!==c.id||H(receipt.policy_ref)!==H(c.policy_ref))return [];
-    return [{...r,command_state:c.state,operation:c.operation,actor_id:c.actor_id,command_client:c.client_id,control_generation:c.control_generation,expected_version:c.expected_version,policy_ref:c.policy_ref,result_ref:c.result_ref}];
+    return [{...r,command_state:c.state,operation:c.operation,actor_id:c.actor_id,command_client:c.client_id,
+     control_generation:c.control_generation,expected_version:c.expected_version,policy_ref:c.policy_ref,result_ref:c.result_ref,
+     external_command_id:c.command_id,request_hash:c.request_hash,command_scope_kind:c.scope_kind,command_scope_id:c.scope_id,
+     command_operation_id:c.operation_id,receipt_scope_kind:receipt.scope_kind,receipt_scope_id:receipt.scope_id,
+     receipt_subject:receipt.subject_ref,receipt_scope_digest:receipt.scope_digest}];
    }));
   }else if(sql.includes('FROM anvil.constitution_applications')||sql.includes('FROM anvil.project_constitutions'))return rows([]);
   if(sql.startsWith('SELECT content_hash FROM anvil.document_versions')){const r=f.docRows.get(a[1]);return rows(r?[{content_hash:r.content_hash}]:[]);}

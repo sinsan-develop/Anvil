@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {existsSync,readFileSync} from 'node:fs';
 
 test('normal 원자료 부모 forward는 기존 실행 PK/원 hash를 재사용하고 새 저장·공개 형상 없이 기존 app의 부모 boolean 조회만 연다',()=>{
  const sql=readFileSync(new URL('../../../db/migrations/0111_normal_start_origin_parent.sql.pending',import.meta.url),'utf8');
@@ -61,4 +61,36 @@ test('linked WORK forward는 정착 선택·새 실행 ID·현재 head와 원 ST
  const history=sql.slice(sql.indexOf('CREATE FUNCTION anvil.fn09_work_start_replay('),sql.indexOf('CREATE FUNCTION anvil.fn09_work_start_fact_current('));
  assert.ok(!/current_source|normal_initial_graph/.test(history));assert.ok(history.includes('normal_start_material_complete'));
  const metadata=readFileSync(new URL('../../../db/migrations/0102_normal_understanding_responses.sql.pending',import.meta.url),'utf8');assert.ok(metadata.includes("selection->>'purpose'='WORK_START_BASIS'"));assert.ok(metadata.includes("selection->>'purpose'='WORK_START_REPLAY'"));
+});
+
+test('linked WORK의 부모 포함 원 hash를 authority와 grant·permit이 같은 부모로 검산한다',()=>{
+ const file=new URL('../../../db/migrations/0112_normal_work_start_origin_parent.sql.pending',import.meta.url);
+ assert.ok(existsSync(file),'0111의 originParent를 WORK authority와 fact_current에 연결하는 forward가 필요하다');
+ const sql=readFileSync(file,'utf8');
+ const previous=readFileSync(new URL('../../../db/migrations/0104_normal_work_start_understanding.sql.pending',import.meta.url),'utf8');
+ const functionBody=(source:string,name:string)=>{
+  const start=source.indexOf(`FUNCTION anvil.${name}(`),open=source.indexOf('$$',start),end=source.indexOf('$$;',open+2);
+  assert(start>=0&&end>open,name);
+  return source.slice(start,end);
+ };
+ assert.match(sql,/^BEGIN;[\s\S]*^COMMIT;\s*$/m);
+ assert.equal((sql.match(/^COMMIT;/gm)??[]).length,1);
+ assert.deepEqual([...sql.matchAll(/^CREATE OR REPLACE FUNCTION anvil\.(\w+)/gm)].map(m=>m[1]),['fn09_work_start_authority','fn09_work_start_fact_current']);
+ assert.doesNotMatch(sql,/^GRANT\s|^CREATE (?:CONSTRAINT )?TRIGGER|^CREATE TABLE|^DROP|EXECUTE format\(/im);
+ const authority=functionBody(sql,'fn09_work_start_authority');
+ assert.match(authority,/execution_json_shape\(q->'payload',ARRAY\['operation','executionId','executionGeneration','preparationRef','permissionPolicyRef','budgetPolicyRef','payload','originParent'\]\)/);
+ assert.match(authority,/IF has_parent THEN[\s\S]*fn111_normal_parent\(p,q,a,c,s,false,NULL\)[\s\S]*ELSE[\s\S]*cmd\.command_id=\(q->>'commandId'\)::uuid[\s\S]*cmd\.request_hash=anvil\.execution_json_hash\(q\)[\s\S]*normal_start_material_complete\(p,stored_command\)/);
+ const locks=['FOR SHARE OF auth,u,cl','FOR UPDATE OF p FOR SHARE OF m,pc','FOR SHARE OF h','fn111_normal_parent(p,q,a,c,s,false,NULL)'].map(part=>authority.indexOf(part));
+ assert(locks[0]!>=0&&locks.every((at,n)=>n===0||locks[n-1]!<at),'현재 auth·project·policy 잠금 뒤에만 부모 원행을 잠근다');
+ const fact=functionBody(sql,'fn09_work_start_fact_current');
+ assert.match(fact,/IF h\.request_hash IS DISTINCT FROM anvil\.execution_json_hash\(q\) THEN[\s\S]*FROM anvil\.execution_start_origins[\s\S]*project_id=p[\s\S]*execution_id=\(q#>>'\{payload,executionId\}'\)::uuid[\s\S]*execution_generation=\(q#>>'\{payload,executionGeneration\}'\)::bigint[\s\S]*preparationRef[\s\S]*jsonb_set\(q,'\{payload,originParent\}',parent\)/);
+ assert.match(fact,/h\.request_hash IS DISTINCT FROM anvil\.execution_json_hash\(q\)[\s\S]*ends=anvil\.fn09_work_start_authority\(/);
+ assert.match(fact,/basis=anvil\.fn09_work_prepare_current_source\([\s\S]*ends>clock_timestamp\(\)/);
+ assert.doesNotMatch(fact,/fn111_normal_parent|FOR SHARE OF o|FROM anvil\.execution_start_origins[^;]*FOR (?:SHARE|UPDATE)/);
+ for(const name of ['fn09_work_start_authority','fn09_work_start_fact_current']){
+  assert.match(functionBody(sql,name),/SECURITY DEFINER SET search_path=pg_catalog/);
+  for(const line of previous.split(/\r?\n/).filter(line=>line.startsWith(`ALTER FUNCTION anvil.${name}(`)||line.startsWith(`REVOKE ALL ON FUNCTION anvil.${name}(`)))assert.ok(sql.includes(line),line);
+ }
+ assert.match(previous,/fn09_work_start_replay\([\s\S]*ends=anvil\.fn09_work_start_authority\(/);
+ assert.match(previous,/fn09_work_start_permit_guard\([\s\S]*fn09_work_start_fact_current\(/);
 });
