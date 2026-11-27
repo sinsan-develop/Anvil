@@ -48,6 +48,8 @@ export function DesignChangesPage({ client, projectId, session, buffer, onChange
   const storedRoute=globalThis.location?.hash;
   const storedCurrent=()=>alive.current&&owner.current===scope&&client.transport===scope.transport&&!!shown&&
     committedSelection.current===shown&&globalThis.location?.hash===storedRoute&&(!shown.origin||shown.origin.isCurrent());
+  const reviewSourceCurrent=()=>value?storedCurrent():alive.current&&owner.current===scope&&client.transport===scope.transport&&
+    !flight.current&&!busy&&committedSelection.current===selection&&globalThis.location?.hash===storedRoute;
   const storedAuthenticationLost=shown?.origin?()=>{
     if(storedCurrent())onAuthenticationLost();
   }:onAuthenticationLost;
@@ -87,7 +89,7 @@ export function DesignChangesPage({ client, projectId, session, buffer, onChange
   },[approvalImpact,scope]);
   return <section className="editor-page" aria-label="설계 변경 조회"><h2>변경 요청·영향 이력</h2>{!historical&&onActivationChange&&onActivationRequest?<DesignActivationPanel client={client} projectId={projectId} session={session} page={value} selectionId={requestId} buffer={activationBuffer??null} onChange={onActivationChange} onRequest={onActivationRequest} onAuthenticationLost={onAuthenticationLost}/>:null}
     {!historical?<><DesignChangeRequest client={client} projectId={projectId} session={session} buffer={buffer} onChange={onChange} gate={requestGate} reading={busy} blocked={editorBusy||!!reviewBuffer&&!reviewBuffer.result} onOpen={id=>{void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/>
-    <ImpactReviewEditor client={client} projectId={projectId} session={session} page={value} buffer={reviewBuffer} onChange={onReviewChange} gate={reviewGate} canPrepare={!buffer||!!buffer.result} reading={busy||editorBusy} onOpen={id=>{void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/></>:null}
+    <ImpactReviewEditor client={client} projectId={projectId} session={session} page={value} buffer={reviewBuffer} onChange={onReviewChange} gate={reviewGate} canPrepare={!buffer||!!buffer.result} reading={busy||editorBusy} isSourceCurrent={reviewSourceCurrent} onOpen={id=>{void load(id,null);}} onAuthenticationLost={onAuthenticationLost}/></>:null}
     <p className="meta">저장된 변경 요청 ID로 원문과 영향 검토 이력을 조회합니다. 기준 적용은 정확 후보의 별도 승인과 적용 절차를 따릅니다. 작업 재개는 실행하지 않습니다.</p>
     <form onSubmit={event => { event.preventDefault(); void load(requestId, null); }}><fieldset disabled={busy}><legend>저장된 요청 찾기</legend>
       <label>변경 요청 ID<input value={requestId} maxLength={36} autoComplete="off" spellCheck={false} onChange={event => { flight.current = null; committedSelection.current=null; setSelection({ scope, requestId: event.target.value, before: null, value: null, error: null, busy: false }); }} /></label><button type="submit" disabled={!requestId}>변경 요청 조회</button>

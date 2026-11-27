@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState,type Dispatch,type SetStateAction} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState,type Dispatch,type SetStateAction} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,documentDraftHash,type DocumentSession,type DocumentContent} from '../design-trace/editor-api.ts';
 import {listDocuments,readDocument,type DocumentPage} from '../design-trace/api.ts';
@@ -8,9 +8,18 @@ import type {DesignChangePage,ImpactTargetRef} from './api.ts';
 import {newImpactReview,prepareImpactReview,sendImpactReview,type ImpactReviewBuffer} from './impact-review-api.ts';
 import type {ChangeEditorGate} from './DesignChangesPage.tsx';
 
-export function ImpactReviewEditor({client,projectId,session,page,buffer,onChange,canPrepare,reading,gate,onOpen,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;page:DesignChangePage|null;buffer:ImpactReviewBuffer|null;onChange:Dispatch<SetStateAction<ImpactReviewBuffer|null>>;canPrepare:boolean;reading:boolean;gate:ChangeEditorGate;onOpen:(id:string)=>void;onAuthenticationLost:()=>void}){
+export function ImpactReviewEditor({client,projectId,session,page,buffer,onChange,canPrepare,reading,gate,isSourceCurrent,onOpen,onAuthenticationLost}:{client:ApiClient;projectId:string;session:DocumentSession;page:DesignChangePage|null;buffer:ImpactReviewBuffer|null;onChange:Dispatch<SetStateAction<ImpactReviewBuffer|null>>;canPrepare:boolean;reading:boolean;gate:ChangeEditorGate;isSourceCurrent:()=>boolean;onOpen:(id:string)=>void;onAuthenticationLost:()=>void}){
  const[busy,setBusy]=useState(false),[error,setError]=useState<ApiError|null>(null),[ack,setAck]=useState(false),[documents,setDocuments]=useState<DocumentPage|null>(null),[evidence,setEvidence]=useState<Awaited<ReturnType<typeof readDocument>>|null>(null);const alive=useRef(true),flight=useRef(false);
- useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);useEffect(()=>{setAck(false);setEvidence(null);setDocuments(null);},[buffer?.bindingId]);
+ const [dispatchRevision,setDispatchRevision]=useState(0);
+ const bufferOwner=useRef({value:buffer});if(bufferOwner.current.value!==buffer)bufferOwner.current={value:buffer};
+ const attempt=useRef<object|null>(null);
+ const waiting=useRef<{next:ImpactReviewBuffer;current:()=>boolean;resolve:(ok:boolean)=>void}|null>(null);
+ useLayoutEffect(()=>{alive.current=true;return()=>{alive.current=false;attempt.current=null;waiting.current?.resolve(false);waiting.current=null;};},[]);
+ useLayoutEffect(()=>{
+  const pending=waiting.current;if(!pending)return;
+  waiting.current=null;pending.resolve(buffer===pending.next&&pending.current());
+ },[buffer,dispatchRevision]);
+ useEffect(()=>{setAck(false);setEvidence(null);setDocuments(null);},[buffer?.bindingId]);
  const bound=!buffer||buffer.projectId===projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId,locked=busy||reading||!!buffer?.pending||!!buffer?.result||!bound;
  async function perform(action:()=>Promise<void>){if(flight.current||!gate.acquire())return;flight.current=true;setBusy(true);setError(null);try{await action();}catch(cause){if(!alive.current)return;const failure=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setError(failure);if(failure.status===401)onAuthenticationLost();}finally{flight.current=false;gate.release();if(alive.current)setBusy(false);}}
  const update=(change:(value:ImpactReviewBuffer)=>ImpactReviewBuffer)=>{const binding=buffer?.bindingId;onChange(current=>current&&current.bindingId===binding?change(current):current);};
@@ -19,7 +28,49 @@ export function ImpactReviewEditor({client,projectId,session,page,buffer,onChang
  async function inspect(id:string,version:number){setEvidence(null);const value=await readDocument(client,projectId,id,version),d=value.document;if(await documentDraftHash(d.title,d.formRef,d.content as DocumentContent,d.stageNodeRef as StageNodeRef|null)!==d.contentHash)throw new ApiError('DOCUMENT_INTEGRITY_FAILED');if(alive.current)setEvidence(value);}
  function item(index:number,change:(value:ImpactReviewBuffer['input']['items'][number])=>ImpactReviewBuffer['input']['items'][number]){if(locked)return;update(value=>({...value,dirty:true,failure:null,input:{...value.input,items:value.input.items.map((row,n)=>n===index?change(row):row)}}));}
  function addEvidence(index:number){if(!evidence||locked)return;const d=evidence.document,ref:ImpactTargetRef={kind:'DOCUMENT_VERSION',id:d.id,versionRef:{id:d.id,version:d.version,contentHash:d.contentHash}};item(index,value=>({...value,evidenceRefs:value.evidenceRefs.some(v=>ordered(v)===ordered(ref))?value.evidenceRefs:[...value.evidenceRefs,ref]}));}
- async function save(){if(!buffer||!bound||!gate.allowed())return;const binding=buffer.bindingId,previouslyUncertain=!!buffer.pending&&buffer.uncertain;try{const generation=await documentControl(client,projectId,session);if(!alive.current)return;if(!gate.allowed())throw new ApiError('CHANGE_EDITOR_CONFLICT',409);if(generation!==buffer.controlGeneration)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);const pending=prepareImpactReview(buffer,session,buffer.pending?true:ack),staged={...buffer,pending,uncertain:true,failure:null};onChange(current=>current?.bindingId===binding?staged:current);const result=await sendImpactReview(client,staged,session);if(!alive.current)return;onChange(current=>current?.bindingId===binding?{...current,pending:null,result,dirty:false,uncertain:false,failure:null}:current);}catch(cause){if(!alive.current)return;const failure=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');onChange(current=>current?.bindingId===binding?{...current,failure:{code:failure.code,status:failure.status},uncertain:previouslyUncertain||!!current.pending&&(failure.status===0||failure.status>=500||failure.code==='RESPONSE_INVALID')}:current);throw failure;}}
+ async function save(){
+  if(!buffer||!bound||reading||!gate.allowed()||!isSourceCurrent())return;
+  const ticket={};attempt.current=ticket;
+  const sourceCurrent=()=>alive.current&&attempt.current===ticket&&isSourceCurrent();
+  const original=bufferOwner.current,originalFingerprint=ordered(buffer),previouslyUncertain=!!buffer.pending&&buffer.uncertain;
+  let owner=original,fingerprint=originalFingerprint,staged:{value:ImpactReviewBuffer;fingerprint:string}|null=null,sent=false;
+  const owns=()=>sourceCurrent()&&bufferOwner.current===owner&&ordered(owner.value)===fingerprint;
+  const finish=(change:(value:ImpactReviewBuffer)=>ImpactReviewBuffer)=>{
+   const predecessor=owner,expected=fingerprint;
+   onChange(current=>current&&current===predecessor.value&&ordered(current)===expected&&owns()?change(current):current);
+  };
+  try{
+   if(page&&(ordered(page.change.ref)!==ordered(buffer.change.ref)||!buffer.pending&&ordered(page.latestImpactRef)!==ordered(buffer.base.ref)))throw new ApiError('IMPACT_REVIEW_LATEST_REQUIRED',409);
+   const generation=await documentControl(client,projectId,session);
+   if(!owns())return;
+   if(!gate.allowed())throw new ApiError('CHANGE_EDITOR_CONFLICT',409);
+   if(generation!==buffer.controlGeneration)throw new ApiError('CONTROL_GENERATION_CONFLICT',409);
+   const pending=prepareImpactReview(buffer,session,!!buffer.pending||ack);
+   const next={...buffer,pending,uncertain:true,failure:null},nextFingerprint=ordered(next);
+   staged={value:next,fingerprint:nextFingerprint};
+   const committed=await new Promise<boolean>(resolve=>{
+    let accepted=false;
+    const waiter={next,current:sourceCurrent,resolve:(ok:boolean)=>{accepted=ok;resolve(ok);}};waiting.current=waiter;
+    onChange(current=>current===buffer&&ordered(current)===originalFingerprint&&sourceCurrent()&&
+     (accepted?bufferOwner.current.value===next&&ordered(next)===nextFingerprint:waiting.current===waiter&&owns())?next:current);
+    setDispatchRevision(value=>value+1);
+   });
+   if(!committed||!sourceCurrent()||bufferOwner.current.value!==next||ordered(next)!==nextFingerprint||!gate.allowed())return;
+   owner=bufferOwner.current;fingerprint=nextFingerprint;
+   sent=true;
+   const result=await sendImpactReview(client,next,session);
+   if(owns())finish(current=>({...current,pending:null,result,dirty:false,uncertain:false,failure:null}));
+  }catch(cause){
+   if(!owns())return;
+   const failure=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');
+   finish(current=>({...current,failure:{code:failure.code,status:failure.status},uncertain:previouslyUncertain||!!current.pending&&(failure.status===0||failure.status>=500||failure.code==='RESPONSE_INVALID')}));
+   setError(failure);if(failure.status===401)onAuthenticationLost();
+  }finally{
+   // 이 호출이 전송하지 않은 정확한 표시만 이전 입력으로 돌린다.
+   const unsent=staged;
+   if(!sent&&unsent)onChange(current=>current===unsent.value&&ordered(current)===unsent.fingerprint?buffer:current);
+  }
+ }
  return<section aria-label="사람 영향 검토 입력"><h3>사람 영향 검토</h3><p className="meta">판단·이유·문서 근거를 새 이력으로 보존합니다. 미확인을 자동 무영향으로 바꾸지 않으며 검토 저장은 변경 승인·기준 적용·계획 개정·작업 재개가 아닙니다.</p>
   {error?<p role="alert">{error.code} · 입력·미확인 명령은 자동 재발행하지 않습니다.</p>:null}
   <button disabled={busy||reading||!page||!!buffer||!canPrepare} onClick={()=>void perform(prepare)}>사람 영향 검토 준비</button>{!canPrepare?<p>변경 요청 입력/미확인 명령을 먼저 마무리하거나 미전송 입력을 닫으세요.</p>:null}
