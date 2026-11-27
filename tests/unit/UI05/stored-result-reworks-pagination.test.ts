@@ -30,7 +30,7 @@ function fixture(registered=false){const f=reworkFixture();if(registered){Object
 
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/StoredResultReworkHistory.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:stored-rework',name:'StoredReworkTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'rework-memory-entry',resolveId(id){if(id.endsWith('virtual:stored-rework'))return '\0stored-rework';},load(id){if(id==='\0stored-rework')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{StoredResultReworkHistory}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};export{React,createRoot,StoredResultReworkHistory,ApiClient};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:stored-rework',name:'StoredReworkTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'rework-memory-entry',resolveId(id){if(id.endsWith('virtual:stored-rework'))return '\0stored-rework';},load(id){if(id==='\0stored-rework')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{StoredResultReworkHistory}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};export {ReportedIssueReviewHistory} from ${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/decisions/ReportedIssueReviewHistory.tsx',import.meta.url)))};export{React,createRoot,StoredResultReworkHistory,ApiClient};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return StoredReworkTest;')();
@@ -170,4 +170,84 @@ test('선택 원문 GET 대기 중 transport 교체도 옛403을 버리고 목�
 
 test('목록 JSON 대기 중 문맥 변경은 원문·위치·하위 조회를 부활시키지 않는다',async()=>{
  const f=await mount();try{f.state.next='JSON';await f.click('보관 보완 목록 조회');const end=Date.now()+2000;while(!f.state.releaseJson&&Date.now()<end)await f.flush();const release=f.state.releaseJson;assert(release);f.props.client=f.client();await f.render();assert.equal(f.buttons('보관 보완 목록 조회').length,1);await f.click('보관 보완 목록 조회');await f.waitFor('보관 보완 1페이지');const count=f.calls.length;await ui.React.act(async()=>release());await f.flush();assert.equal(f.calls.length,count);assert.equal(f.lost(),0);assert.deepEqual(f.unavailable(),[]);assert.equal(f.calls.filter(c=>c.path.includes('/result-reworks/')).length,0);}finally{await f.close();}
+});
+
+
+async function mountReportedReworks(outcome:'REWORK'|'BLOCKED'='REWORK'){
+ const f=fixture(true),review=f.sources.review,base=f.sources.result.snapshot.scope.projectId,rows=Array.from({length:20},(_,n)=>({...f.item,ref:{...f.item.ref,id:id(80-n)},reviewRef:{...review.ref,id:id(99)}}));
+ rows[0]!.reviewRef={...review.ref,contentHash:'a'.repeat(64)};
+ if(outcome==='BLOCKED'){review.snapshot.input.outcome='BLOCKED';review.snapshot.input.items=review.snapshot.input.items.map(i=>({...i,outcome:'BLOCKED'}));review.ref.contentHash=hash(review.snapshot);}
+ const flags={reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false},summary={ref:review.ref,criteriaRef:review.snapshot.input.criteriaRef,outcome,reviewedBy:review.snapshot.reviewedBy,sameAsSubmitter:review.snapshot.sameAsSubmitter,reviewedAt:review.snapshot.reviewedAt,...flags},window={startedAt:review.observedAt,expiresAt:'2026-10-20T00:31:00.000Z'},reviewPage={projectId:base,resultRef:f.sources.result.ref,items:[summary],hasMore:false,nextCursor:null,selectionState:'NOT_SELECTED',observedAt:review.observedAt,pageSize:20,window};
+ const calls:string[]=[],unavailable:string[]=[],container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);let lost=0,shown=true,sourceCurrent=true,key=0,holdPath:string|null=null,release:((v:Response)=>void)|null=null;
+ const reworkPage=(next:string|null)=>({...f.list,items:next?[f.item]:rows,hasMore:!next,nextCursor:next?null:cursor});
+ const controls={read:(path:string):Response=>{if(path.endsWith('/review-pages'))return Response.json(reviewPage);if(path.includes('/result-reviews/'))return Response.json(review);if(path.includes('/rework-pages'))return Response.json(reworkPage(new URL('https://anvil.invalid'+path).searchParams.get('cursor')));if(path.includes('/result-reworks/'))return Response.json(f.stored);if(path.includes('/project-roles/'))return Response.json(f.sources.role);if(path.includes('/role-bindings/'))return Response.json(f.sources.binding);assert.fail('미모델 GET '+path);}};
+ const client=new ui.ApiClient(async(url:string,options:RequestInit)=>{assert.equal(options.method,'GET','쓰기0');const path=String(url);calls.push(path);if(holdPath&&path.includes(holdPath))return new Promise<Response>(r=>release=r);return controls.read(path);});
+ const props:any={client,result:f.sources.result,assignment:f.sources.assignment,isSourceCurrent:()=>sourceCurrent,onUnavailable:(code:string)=>unavailable.push(code),onAuthenticationLost:()=>lost++};
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))],buttons=(label:string)=>nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent===label);
+ const render=async()=>ui.React.act(async()=>root.render(shown?ui.React.createElement(ui.ReportedIssueReviewHistory,{...props,key}):null)),flush=async()=>ui.React.act(async()=>new Promise(r=>setImmediate(r))),wait=async(check:()=>boolean)=>{const end=Date.now()+2000;while(!check()&&Date.now()<end)await flush();assert(check(),container.textContent);},click=async(label:string)=>{const b=buttons(label);assert.equal(b.length,1,label);assert(!b[0]!.disabled,label);await ui.React.act(async()=>b[0]!.dispatchEvent({type:'click',button:0,bubbles:true}));};
+ await render();return{f,review,props,calls,controls,reworkPage,container,nodes,buttons,render,flush,wait,click,lost:()=>lost,unavailable,hold(path:string){holdPath=path;},held:()=>!!release,async finish(v:Response){assert(release);const send=release;release=null;holdPath=null;await ui.React.act(async()=>send(v));await flush();},async leave(mode:string){if(mode==='SOURCE')sourceCurrent=false;if(mode==='KEY')key++;if(mode==='UNMOUNT')shown=false;if(mode==='RESULT')props.result={...props.result,ref:{...props.result.ref,version:2}};if(mode==='ASSIGNMENT')props.assignment={...props.assignment,ref:{...props.assignment.ref,version:2}};await render();},async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+}
+async function openReportedReview(f:Awaited<ReturnType<typeof mountReportedReworks>>){await f.click('검수 이력 조회');await f.wait(()=>f.buttons('검수 원문 '+f.review.ref.id).length===1);await f.click('검수 원문 '+f.review.ref.id);await f.wait(()=>f.container.textContent.includes(f.review.snapshot.input.reason));}
+
+test('UI08 exact REWORK 선택 뒤만 보완 초안을 원 cursor로 찾고 부족조건·당시 책임을 명시 조회한다',{timeout:15000},async()=>{
+ const f=await mountReportedReworks();try{
+  assert.equal(f.calls.length,0);await openReportedReview(f);assert.equal(f.calls.length,2);assert.equal(f.buttons('이 검수의 보완 목록 조회').length,1,'선택 검수의 보완 이력 연결 없음');
+  await f.click('이 검수의 보완 목록 조회');await f.wait(()=>f.container.textContent.includes('보관 보완 1페이지'));assert(f.container.textContent.includes('현재 페이지에 이 검수의 보완 없음'));assert(!f.container.textContent.includes('보관 보완 원문 '+id(80)));
+  await f.click('더 이전 보완 목록 조회');await f.wait(()=>f.buttons('보관 보완 원문 '+f.f.item.ref.id).length===1);assert(f.calls.at(-1)!.endsWith('/rework-pages?cursor='+cursor));
+  await f.click('보관 보완 원문 '+f.f.item.ref.id);await f.wait(()=>f.container.textContent.includes(f.f.input.reason));assert(f.container.textContent.includes('선택 부족 조건: save'));assert(f.container.textContent.includes('남은 부족 조건: denied'));assert.equal(f.calls.filter(p=>p.includes('/project-roles/')||p.includes('/role-bindings/')).length,0);
+  await f.click(responsibilityButton);await f.wait(()=>f.container.textContent.includes('같은 단계 예약'));assert(f.container.textContent.includes('REGISTERED_DEFINITION_ONLY'));assert(f.container.textContent.includes('실제 배정/실행 아님'));assert.equal(f.calls.filter(p=>p.includes('/project-roles/')||p.includes('/role-bindings/')).length,2);
+  await f.click('더 최근 보완 목록 조회');await f.wait(()=>f.container.textContent.includes('보관 보완 1페이지'));assert(!f.container.textContent.includes(f.f.input.reason));assert.equal(f.calls.at(-1),'/api/v1/projects/'+f.f.sources.result.snapshot.scope.projectId+'/results/'+f.f.sources.result.ref.id+'/rework-pages');assert.equal(f.lost(),0);
+ }finally{await f.close();}
+});
+
+
+test('UI08 다른 판정은 보완 자동조회0이며 exact 검수·조건과 다른 보완 원문은 거절한다',{timeout:15000},async()=>{
+ const blocked=await mountReportedReworks('BLOCKED');try{await openReportedReview(blocked);assert.equal(blocked.buttons('이 검수의 보완 목록 조회').length,0);assert.equal(blocked.calls.length,2);}finally{await blocked.close();}
+ for(const mode of ['CRITERIA','ITEMS','REVIEW_HASH']){
+  const f=await mountReportedReworks();try{
+   await openReportedReview(f);await f.click('이 검수의 보완 목록 조회');await f.wait(()=>f.container.textContent.includes('보관 보완 1페이지'));await f.click('더 이전 보완 목록 조회');await f.wait(()=>f.buttons('보관 보완 원문 '+f.f.item.ref.id).length===1);
+   if(mode==='CRITERIA')f.f.stored.snapshot.criteriaRef={...f.f.stored.snapshot.criteriaRef,contentHash:'d'.repeat(64)};
+   if(mode==='ITEMS'){f.f.stored.snapshot.input.missingItems=['foreign'];f.f.item.missingItems=['foreign'];}
+   if(mode==='REVIEW_HASH')f.f.stored.snapshot.input.reviewRef={...f.f.stored.snapshot.input.reviewRef,contentHash:'d'.repeat(64)};
+   f.f.stored.ref.contentHash=hash(f.f.stored.snapshot);
+   // SUMMARY와 원문을 함께 바꾸어도 선택한 원 검수/조건과의 관계 대조가 필요하다.
+   await f.click('더 최근 보완 목록 조회');await f.wait(()=>f.container.textContent.includes('보관 보완 1페이지'));await f.click('더 이전 보완 목록 조회');await f.wait(()=>f.buttons('보관 보완 원문 '+f.f.item.ref.id).length===1);await f.click('보관 보완 원문 '+f.f.item.ref.id);await f.wait(()=>f.container.textContent.includes('보완 원문 미확인'));assert(!f.container.textContent.includes(f.f.input.reason));assert.equal(f.lost(),0);assert.equal(f.calls.filter(p=>p.includes('/project-roles/')||p.includes('/role-bindings/')).length,0);
+  }finally{await f.close();}
+ }
+});
+
+
+async function reachReportedStage(f:Awaited<ReturnType<typeof mountReportedReworks>>,stage:string){
+ if(stage==='REVIEW_PAGE')f.hold('/review-pages');await f.click('검수 이력 조회');if(stage==='REVIEW_PAGE')return;
+ await f.wait(()=>f.buttons('검수 원문 '+f.review.ref.id).length===1);if(stage==='REVIEW')f.hold('/result-reviews/');await f.click('검수 원문 '+f.review.ref.id);if(stage==='REVIEW')return;
+ await f.wait(()=>f.buttons('이 검수의 보완 목록 조회').length===1);if(stage==='REWORK_PAGE')f.hold('/rework-pages');await f.click('이 검수의 보완 목록 조회');if(stage==='REWORK_PAGE')return;
+ await f.wait(()=>f.container.textContent.includes('보관 보완 1페이지'));await f.click('더 이전 보완 목록 조회');await f.wait(()=>f.buttons('보관 보완 원문 '+f.f.item.ref.id).length===1);if(stage==='REWORK')f.hold('/result-reworks/');await f.click('보관 보완 원문 '+f.f.item.ref.id);if(stage==='REWORK')return;
+ await f.wait(()=>f.container.textContent.includes(f.f.input.reason));f.hold(stage==='ROLE'?'/project-roles/':'/role-bindings/');await f.click(responsibilityButton);
+}
+
+test('UI08 원 검수부터 보완 책임까지 raw route 이탈·전달 ABA 후 늦은200/401과 옛 클릭은 효과0이다',{timeout:15000},async()=>{
+ const names=['location','addEventListener','removeEventListener'] as const,descriptors=new Map(names.map(n=>[n,Object.getOwnPropertyDescriptor(globalThis,n)])),listeners=new Set<(event:any)=>void>(),location={hash:'#/projects/'+id(1)+'/approvals'},route=location.hash,other='#/projects/'+id(1)+'/session';
+ Object.defineProperties(globalThis,{location:{value:location,configurable:true},addEventListener:{value:(type:string,fn:any)=>{assert.equal(type,'hashchange');listeners.add(fn);},configurable:true},removeEventListener:{value:(type:string,fn:any)=>{assert.equal(type,'hashchange');listeners.delete(fn);},configurable:true}});
+ try{for(const stage of ['REVIEW_PAGE','REVIEW','REWORK_PAGE','REWORK','ROLE','BINDING'])for(const mode of ['RAW','RENDER_ABA','EVENT_ABA'])for(const status of [200,401]){
+  location.hash=route;const f=await mountReportedReworks();try{
+   await reachReportedStage(f,stage);await f.wait(f.held);const path=f.calls.at(-1)!,count=f.calls.length,b=f.buttons('검수 이력 다시 조회')[0]!,oldClick=(b as any)[Object.keys(b).find(k=>k.startsWith('__reactProps'))!].onClick;
+   if(mode==='RAW')location.hash=other;
+   else if(mode==='RENDER_ABA'){location.hash=other;await f.render();location.hash=route;await f.render();}
+   else await ui.React.act(async()=>{location.hash=other;location.hash=route;for(const event of [{oldURL:'https://anvil.invalid'+route,newURL:'https://anvil.invalid'+other},{oldURL:'https://anvil.invalid'+other,newURL:'https://anvil.invalid'+route}])for(const fn of [...listeners])fn(event);});
+   await f.finish(status===200?f.controls.read(path):Response.json({code:'AUTH_REQUIRED'},{status:401}));assert.equal(f.calls.length,count,stage+' 후속GET0');assert.equal(f.lost(),0,stage);assert.deepEqual(f.unavailable,[]);assert(!f.container.textContent.includes('같은 단계 예약'));if(mode!=='RAW'||!['ROLE','BINDING'].includes(stage))assert(!f.container.textContent.includes(f.f.input.reason));assert(!f.container.textContent.includes('AUTH_REQUIRED'));
+   await ui.React.act(async()=>oldClick());assert.equal(f.calls.length,count,'옛 route callback GET0');
+   if(mode!=='RAW'){await f.click('검수 이력 조회');await f.wait(()=>f.buttons('검수 원문 '+f.review.ref.id).length===1);assert.equal(f.calls.length,count+1,'새 명시 조회만 복구');}
+  }finally{if(f.held())await f.finish(Response.json({}));await f.close();assert.equal(listeners.size,0,'원 listener cleanup');}
+ }}finally{for(const name of names){const descriptor=descriptors.get(name);if(descriptor)Object.defineProperty(globalThis,name,descriptor);else Reflect.deleteProperty(globalThis,name);}}
+});
+
+test('UI08 보완 상세의 close·검수/제출/주체·transport 교체는 late 결과와 책임 조회를 폐기한다',{timeout:15000},async()=>{
+ for(const mode of ['CLOSE_REWORK','CLOSE_REVIEW','RELOAD','SOURCE','RESULT','ASSIGNMENT','KEY','UNMOUNT','TRANSPORT'])for(const status of [200,401]){
+  const f=await mountReportedReworks();try{
+   await reachReportedStage(f,'REWORK');await f.wait(f.held);const count=f.calls.length;
+   if(mode==='CLOSE_REWORK')await f.click('보관 보완 이력 닫기');else if(mode==='CLOSE_REVIEW')await f.click('검수 원문 닫기');else if(mode==='RELOAD'){await f.click('검수 이력 다시 조회');await f.wait(()=>f.buttons('검수 원문 '+f.review.ref.id).length===1);}else if(mode==='TRANSPORT'){f.props.client.transport=async()=>assert.fail('교체 port GET0');await f.render();}else await f.leave(mode);
+   const after=f.calls.length;await f.finish(status===200?Response.json(f.f.stored):Response.json({code:'AUTH_REQUIRED'},{status:401}));assert.equal(f.calls.length,after);assert(!f.container.textContent.includes(f.f.input.reason));assert.equal(f.buttons(responsibilityButton).length,0);assert.equal(f.lost(),0);assert.deepEqual(f.unavailable,[]);assert.equal(after-count,mode==='RELOAD'?1:0,'명시 reload만 GET');
+  }finally{if(f.held())await f.finish(Response.json({}));await f.close();}
+ }
+ for(const status of [401,403]){const f=await mountReportedReworks();try{await reachReportedStage(f,'REWORK_PAGE');await f.wait(f.held);await f.finish(Response.json({code:status===401?'AUTH_REQUIRED':'ACCESS_DENIED'},{status}));await f.wait(()=>f.container.textContent.includes('보완 이력 미확인'));assert.equal(f.lost(),status===401?1:0);assert.deepEqual(f.unavailable,[status===401?'AUTH_REQUIRED':'ACCESS_DENIED']);}finally{await f.close();}}
 });

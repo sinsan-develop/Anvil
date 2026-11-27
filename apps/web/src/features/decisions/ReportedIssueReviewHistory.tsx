@@ -1,3 +1,4 @@
+import {StoredResultReworkHistory} from '../session-detail/StoredResultReworkHistory.tsx';
 import {useLayoutEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {ordered} from '../knowledge/review-view.ts';
@@ -9,18 +10,31 @@ import {NextActionBasisPanel} from '../session-detail/NextActionBasisPanel.tsx';
 import {ReviewCriteriaOriginal} from '../session-detail/ReviewCriteriaOriginal.tsx';
 /** 부모의 고정 보고·임무 및 사용자/client key 아래 보관 원문만 소비한다. */
 export function ReportedIssueReviewHistory({client,result,assignment,isSourceCurrent,onUnavailable,onAuthenticationLost}:{client:ApiClient;result:SubmittedResultView;assignment:ConfirmedAssignmentView;isSourceCurrent?:()=>boolean;onUnavailable:(code:string)=>void;onAuthenticationLost:()=>void}){
- const binding=JSON.stringify([result.snapshot.scope,result.ref,assignment.projectId,assignment.ref]),scope=useRef({client,transport:client.transport,binding});
- if(scope.current.client!==client||scope.current.transport!==client.transport||scope.current.binding!==binding)scope.current={client,transport:client.transport,binding};
+ const [routeRevision,setRouteRevision]=useState(0);
+ const binding=JSON.stringify([result.snapshot.scope,result.ref,assignment.projectId,assignment.ref,globalThis.location?.hash??null,routeRevision]),scope=useRef({client,transport:client.transport,binding,route:globalThis.location?.hash,valid:true});
+ if(scope.current.client!==client||scope.current.transport!==client.transport||scope.current.binding!==binding)scope.current={client,transport:client.transport,binding,route:globalThis.location?.hash,valid:true};
  const owner=scope.current,alive=useRef(false),sequence=useRef(0);
  type Request={owner:typeof owner;number:number;controller:AbortController};
  type Selection={request:Request;ticket:number};
  const latest=useRef<Request|null>(null),loading=useRef<Request|null>(null),choice=useRef<Selection|null>(null);
  const [page,setPage]=useState<{request:Request;value:StoredResultReviewPage|null;error:string|null}|null>(null),[original,setOriginal]=useState<{selection:Selection;value:RecordedResultReview|null;error:string|null}|null>(null),[reading,setReading]=useState<Selection|null>(null);
  const unavailable=useRef(onUnavailable),lost=useRef(onAuthenticationLost);unavailable.current=onUnavailable;lost.current=onAuthenticationLost;
- const current=()=>alive.current&&scope.current===owner&&client.transport===owner.transport&&isSourceCurrent?.()!==false;
- const shown=page?.request.owner===owner&&page.request===latest.current?page:null,busy=!!shown&&!shown.value&&!shown.error;
+ const current=()=>alive.current&&owner.valid&&globalThis.location?.hash===owner.route&&scope.current===owner&&client.transport===owner.transport&&isSourceCurrent?.()!==false;
+ const shown=current()&&page?.request.owner===owner&&page.request===latest.current?page:null,busy=!!shown&&!shown.value&&!shown.error;
  const selected=original&&original.selection===choice.current&&original.selection.request===shown?.request?original:null;
  useLayoutEffect(()=>{alive.current=true;return()=>{alive.current=false;latest.current?.controller.abort();latest.current=null;choice.current=null;};},[]);
+ useLayoutEffect(()=>{
+  const hash=(value:string)=>{try{return new URL(value).hash;}catch{return null;}};
+  const changed=(event:HashChangeEvent)=>{
+   if(scope.current!==owner||!owner.valid)return;
+   const before=event.oldURL?hash(event.oldURL):owner.route,after=event.newURL?hash(event.newURL):globalThis.location?.hash;
+   if(before!==owner.route||after!==owner.route||globalThis.location?.hash!==owner.route){
+    owner.valid=false;latest.current?.controller.abort();latest.current=null;loading.current=null;choice.current=null;sequence.current++;
+    setPage(null);setOriginal(null);setReading(null);setRouteRevision(n=>n+1);
+   }
+  };
+  globalThis.addEventListener?.('hashchange',changed);return()=>globalThis.removeEventListener?.('hashchange',changed);
+ },[owner]);
  function error(cause:unknown){const e=cause instanceof ApiError?cause:new ApiError('RESULT_REVIEW_HISTORY_RESPONSE_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REVIEW_HISTORY_RESPONSE_INVALID';if([401,403,404].includes(e.status))unavailable.current(code);if(e.status===401)lost.current();return code;}
  async function load(previous?:NonNullable<typeof shown>){
   if(!current()||loading.current?.owner===owner||previous&&latest.current!==previous.request)return;
@@ -59,6 +73,9 @@ export function ReportedIssueReviewHistory({client,result,assignment,isSourceCur
   {busy?<p role="status">이력 조회 중 · 이전 원문과 근거 숨김</p>:null}{shown?.error?<p role="alert">{shown.error} · 검수 이력 미확인</p>:null}
   {shown?.value?<><p>검수 {shown.request.number}페이지 · {shown.value.items.length}건. 원문을 직접 선택하세요.</p><p>조회창 <time>{shown.value.window.startedAt}</time> ~ <time>{shown.value.window.expiresAt}</time></p>{!shown.value.items.length?<p>조회 범위에 보관된 검수 없음</p>:null}<ul>{shown.value.items.map(item=><li key={item.ref.id}><span>{item.outcome} · {item.reviewedAt} · v{item.ref.version} · SHA256 {item.ref.contentHash}</span><button type="button" onClick={()=>void select(item)}>검수 원문 {item.ref.id}</button></li>)}</ul>{shown.value.nextCursor?<button type="button" onClick={()=>void load(shown)}>더 이전 검수 목록 조회</button>:null}</>:null}
   {reading&&reading===choice.current&&!selected?<p role="status">선택 원문 대조 중 · 이전 근거 숨김</p>:null}{selected?.error?<p role="alert">{selected.error} · 원문 미확인</p>:null}
-{review?<><article aria-label="선택한 보관 검수 원문"><p>{review.snapshot.input.outcome} · 검수 {review.ref.id} · v{review.ref.version} · SHA256 {review.ref.contentHash}</p><p>{review.snapshot.input.reason}</p><ul>{review.snapshot.input.items.map(item=><li key={item.criterionId}>{item.criterionId} · {item.outcome} · {item.reason}</li>)}</ul><p>검수자 {review.snapshot.reviewedBy.userId} · {review.snapshot.reviewedAt} · 제출자와 동일 {review.snapshot.sameAsSubmitter?'예':'아니오'}</p><p>보관 당시 근거이며 현재 권한·실행 상태·증거 출처의 진실성은 미확인입니다.</p></article><ReviewCriteriaOriginal key={'criteria:'+readKey} client={client} assignment={assignment} review={review} result={result} isSourceCurrent={reviewCurrent} onAuthenticationLost={reviewAuthenticationLost} onAccessUnavailable={reviewUnavailable}/><NextActionBasisPanel key={readKey} client={client} result={result} assignment={assignment} review={review} isSourceCurrent={reviewCurrent} onAuthenticationLost={reviewAuthenticationLost} onAccessUnavailable={reviewUnavailable} reworkPreparationAvailable={false}/></>:null}
+{review?<>
+ <button type="button" onClick={()=>{if(reviewCurrent()){choice.current=null;sequence.current++;setOriginal(null);setReading(null);}}}>검수 원문 닫기</button><article aria-label="선택한 보관 검수 원문"><p>{review.snapshot.input.outcome} · 검수 {review.ref.id} · v{review.ref.version} · SHA256 {review.ref.contentHash}</p><p>{review.snapshot.input.reason}</p><ul>{review.snapshot.input.items.map(item=><li key={item.criterionId}>{item.criterionId} · {item.outcome} · {item.reason}</li>)}</ul><p>검수자 {review.snapshot.reviewedBy.userId} · {review.snapshot.reviewedAt} · 제출자와 동일 {review.snapshot.sameAsSubmitter?'예':'아니오'}</p><p>보관 당시 근거이며 현재 권한·실행 상태·증거 출처의 진실성은 미확인입니다.</p></article><ReviewCriteriaOriginal key={'criteria:'+readKey} client={client} assignment={assignment} review={review} result={result} isSourceCurrent={reviewCurrent} onAuthenticationLost={reviewAuthenticationLost} onAccessUnavailable={reviewUnavailable}/>
+ {review.snapshot.input.outcome==='REWORK'?<StoredResultReworkHistory key={'reworks:'+readKey} client={client} result={result} assignment={assignment} review={review} isSourceCurrent={reviewCurrent} onAuthenticationLost={reviewAuthenticationLost} onAccessUnavailable={reviewUnavailable}/>:null}
+ <NextActionBasisPanel key={readKey} client={client} result={result} assignment={assignment} review={review} isSourceCurrent={reviewCurrent} onAuthenticationLost={reviewAuthenticationLost} onAccessUnavailable={reviewUnavailable} reworkPreparationAvailable={false}/></>:null}
  </section>;
 }
