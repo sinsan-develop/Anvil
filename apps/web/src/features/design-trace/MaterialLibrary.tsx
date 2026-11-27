@@ -5,6 +5,7 @@ import { verifyFormVersionIntegrity } from '../methodologies/form-version-read.t
 import type { DocumentBuffer, DocumentSession } from './editor-api.ts';
 import { listDocumentMaterials, prepareStoredImport, readImportUsageDocument, storedImportSelections, readStoredImport, type ImportUsageSelection, type ImportSummary, type MaterialPage, type ProposalSummary, type StoredImportView } from './materials-api.ts';
 import { prepareStoredProposalDiffTrace, readSelectedProposalDocument, readStoredProposal, resumeStoredProposal, selectedProposalVersion, type ProposalComparison } from './proposal-api.ts';
+import { documentVersionHref } from '../../shell/routes.ts';
 
 function requiredSectionCoverage(view: ProposalComparison, form: FormVersion) {
   if (!['AF02', 'AF04'].includes(form.definition.formCode)) throw new ApiError('PROPOSAL_FORM_UNSUPPORTED', 422);
@@ -46,9 +47,10 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
   const signature = shownProposal ? JSON.stringify({ proposal: shownProposal.proposal, base: { id: shownProposal.base.document.id, version: shownProposal.base.document.version, contentHash: shownProposal.base.document.contentHash, title: shownProposal.base.document.title, formRef: shownProposal.base.document.formRef, stageNodeRef: shownProposal.base.document.stageNodeRef } }) : '';
   const latest = useRef({ scope, view: shownProposal, signature, importView: shownImport, importSignature }); latest.current = { scope, view: shownProposal, signature, importView: shownImport, importSignature };
   const selectionGeneration = useRef(0), resultGeneration = useRef(0);
-  type ResultBinding = { scope: Scope; view: ProposalComparison; signature: string; value: Awaited<ReturnType<typeof readSelectedProposalDocument>> | null; loading: boolean; error: ApiError | null };
+  const resultRoute = globalThis.location?.hash;
+  type ResultBinding = { scope: Scope; view: ProposalComparison; signature: string; current: () => boolean; value: Awaited<ReturnType<typeof readSelectedProposalDocument>> | null; loading: boolean; error: ApiError | null };
   const [result, setResult] = useState<ResultBinding | null>(null);
-  const visibleResult = result?.scope === scope && result.view === shownProposal && result.signature === signature ? result : null;
+  const visibleResult = result?.scope === scope && result.view === shownProposal && result.signature === signature && result.current() ? result : null;
   const coverageGeneration = useRef(0), coverageFlight = useRef<(() => boolean) | null>(null);
   const coverageRoute = globalThis.location?.hash;
   type CoverageBinding = {
@@ -57,7 +59,7 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
   };
   const [coverage, setCoverage] = useState<CoverageBinding | null>(null);
   const visibleCoverage = coverage?.scope === scope && coverage.view === shownProposal && coverage.route === coverageRoute ? coverage : null;
-  useLayoutEffect(() => () => { coverageGeneration.current++; }, []);
+  useLayoutEffect(() => () => { coverageGeneration.current++; resultGeneration.current++; }, []);
   const usageGeneration = useRef(0);
   type UsageBinding = { scope: Scope; view: StoredImportView; signature: string; selection: ImportUsageSelection; value: Awaited<ReturnType<typeof readImportUsageDocument>> | null; loading: boolean; error: ApiError | null };
   const [usage, setUsage] = useState<UsageBinding | null>(null);
@@ -143,11 +145,13 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
   }
   async function readSelected() {
     const view = shownProposal;
-    if (!view || !selectedVersion || visibleResult?.loading) return;
-    const binding = { scope, view, signature }, generation = ++resultGeneration.current;
+    if (!view || !selectedVersion || running.current || visibleResult?.loading) return;
+    const generation = ++resultGeneration.current;
+    const selection = selectionGeneration.current;
     const accessCurrent = observeAccess();
-    if (!accessCurrent()) return;
-    const active = () => accessCurrent() && resultGeneration.current === generation && latest.current.view === binding.view && latest.current.signature === binding.signature;
+    const active = () => accessCurrent() && selectionGeneration.current === selection && resultGeneration.current === generation && resultRoute === globalThis.location?.hash && latest.current.view === view && latest.current.signature === signature;
+    if (!active()) return;
+    const binding = { scope, view, signature, current: active };
     setResult({ ...binding, value: null, loading: true, error: null });
     try {
       const value = await readSelectedProposalDocument(client, projectId, view, active);
@@ -158,6 +162,9 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
       if (detailAccessLost(error)) return;
       setResult({ ...binding, value: null, loading: false, error });
     }
+  }
+  function selectedNavigation(event: { preventDefault(): void }) {
+    if (running.current || !visibleResult?.value || visibleResult.value.document.confirmed !== false || !visibleResult.current()) event.preventDefault();
   }
   async function readUsage(selection: ImportUsageSelection) {
     const view = shownImport;
@@ -221,7 +228,9 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
       {selectedVersion ? <button disabled={visibleResult?.loading === true} onClick={() => { void readSelected(); }}>반영 결과 원문 보기</button> : null}
       {visibleResult?.loading ? <p role="status">반영 결과 원문 조회 중</p> : null}
       {visibleResult?.error ? <p role="alert">{visibleResult.error.message} · {visibleResult.error.code}</p> : null}
-      {visibleResult?.value ? <section aria-label="제안 반영 결과 원문"><h4>반영 결과 · 버전 {visibleResult.value.document.version}</h4><p>읽기 전용 · 문서 {visibleResult.value.document.id} · SHA256 {visibleResult.value.document.contentHash}</p><pre className="document-original" aria-label="반영 결과 원문">{visibleResult.value.body}</pre></section> : null}
+      {visibleResult?.value ? <section aria-label="제안 반영 결과 원문"><h4>반영 결과 · 버전 {visibleResult.value.document.version}</h4><p>읽기 전용 · 문서 {visibleResult.value.document.id} · SHA256 {visibleResult.value.document.contentHash}</p><pre className="document-original" aria-label="반영 결과 원문">{visibleResult.value.body}</pre>
+        {visibleResult.value.document.confirmed === false ? <a href={documentVersionHref(projectId, { id: visibleResult.value.document.id, version: visibleResult.value.document.version, contentHash: visibleResult.value.document.contentHash })} onClick={selectedNavigation} onAuxClick={selectedNavigation}>선택한 초안의 양식·사람 검토 열기</a> : null}
+      </section> : null}
       {!shownProposal.proposal.selections.length ? <><label><input type="checkbox" disabled={busy || !canPrepare} checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} />보관 제안의 차이를 확인했고 반영 작업을 열겠습니다</label><button disabled={busy || !canPrepare || !acknowledged} onClick={() => { void prepare('PROPOSAL'); }}>보관 제안 반영 작업 열기</button></> : null}
     </section> : null}
   </section>;

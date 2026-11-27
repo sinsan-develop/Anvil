@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {documentTextDiff} from '../../../apps/server/modules/documents/document-diff.ts';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
+import {parseRoute,documentVersionHref} from '../../../apps/web/src/shell/routes.ts';
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
 class MemoryNode{
  nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
@@ -92,7 +93,7 @@ async function fixture(coverage=false,formCode='AF02'){
  const wait=async(check:()=>boolean)=>{for(let n=0;!check()&&n<100;n++)await ui.React.act(async()=>{await new Promise(r=>setTimeout(r,2));});assert(check(),container.textContent);};
  const close=async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);};
  await render();await wait(()=>container.textContent.includes('보관 제안'));
- return{d,client,calls,controls,props:()=>props,buffer:()=>latest,lost:()=>lost,render,click,change,settle,wait,close,text:()=>container.textContent,button,setBuffer:async(f:any)=>ui.React.act(async()=>external(f)),open:async(proposalId=d.proposal.id)=>{await click('보관 제안 '+proposalId+' 열기');await wait(()=>container.textContent.includes('보관 제안 변경 구간')||nodes().some(n=>n.getAttribute('aria-label')==='보관 제안 변경 구간'));}};
+ return{d,client,calls,controls,nodes,props:()=>props,buffer:()=>latest,lost:()=>lost,render,click,change,settle,wait,close,text:()=>container.textContent,button,setBuffer:async(f:any)=>ui.React.act(async()=>external(f)),open:async(proposalId=d.proposal.id)=>{await click('보관 제안 '+proposalId+' 열기');await wait(()=>container.textContent.includes('보관 제안 변경 구간')||nodes().some(n=>n.getAttribute('aria-label')==='보관 제안 변경 구간'));}};
 }
 test('보관 제안에서 명시 diff 업무 연결 준비는 실제 Editor로 이어지고 POST0이다',async()=>{const f=await fixture();try{
  await f.open();await f.click('서버 생성 diff를 고정 업무에 연결');await f.wait(()=>!!f.buffer()?.proposalState?.diffTrace);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);assert.match(f.text(),/문서 제안 diff와 고정 업무 연결/);assert.equal(f.buffer().proposalState.proposal.diffRef.artifactId,f.d.proposal.diffRef.artifactId);
@@ -280,6 +281,102 @@ for(const scope of ['route','project','transport','proposal','unmount'] as const
   gate.resolve(response());
   location.hash=route;
   if(!unmounted)await f.close();
+ }
+});
+
+const selectedDraftAction='선택한 초안의 양식·사람 검토 열기';
+async function selectedDraftFixture(){
+ const f=await fixture(true),version=f.d.baseRef.version+1;
+ (f.d.proposal.selections as any[]).push({documentId:f.d.baseRef.id,version,selectedBy:uid,at});
+ const document={...f.d.document,version,content:f.d.proposal.proposedContent,contentHash:H({title:f.d.document.title,formRef:f.d.document.formRef,stageNodeRef:null,content:f.d.proposal.proposedContent})};
+ const path=`/api/v1/projects/${pid}/documents/${document.id}/versions/${version}`;
+ f.controls.hook=p=>p===path?Response.json(document):null;
+ return{...f,selectedDocument:document,selectedPath:path,links:()=>f.nodes().filter(n=>n.tagName==='A'&&n.textContent===selectedDraftAction)};
+}
+
+test('검산된 사람 선택 초안은 exact UI06 양식·별도 HUMAN 검토 경로로만 이어지고 자동 조회·쓰기는 없다',{timeout:15000},async()=>{
+ const f=await selectedDraftFixture();try{
+  await f.open();assert.equal(f.links().length,0);assert.equal(f.calls.filter(c=>c.path===f.selectedPath).length,0);
+  await f.click('반영 결과 원문 보기');await f.wait(()=>f.text().includes('반영 결과 · 버전 3'));
+  const links=f.links();assert.equal(links.length,1,'선택한 미확정 초안의 기존 UI06 진입 링크가 필요하다');
+  const ref={id:f.selectedDocument.id,version:3,contentHash:f.selectedDocument.contentHash},href=links[0]!.getAttribute('href');assert.equal(href,documentVersionHref(pid,ref));
+  assert.deepEqual(parseRoute(href!),{screen:'documents',projectId:pid,documentRef:ref});
+  assert.equal(links[0]!.dispatchEvent({type:'click',button:0,bubbles:true}),true,'현재 exact 선택의 기본 탐색은 막지 않는다');
+  assert.equal(f.calls.filter(c=>c.path===f.selectedPath).length,1);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);assert.equal(f.buffer(),null);
+ }finally{await f.close();}
+});
+
+test('미선택·다른 선택 관계·원문 hash/ID 손상·확정 문서는 선택 초안 검토 링크를 만들지 않는다',{timeout:15000},async()=>{
+ for(const fault of ['unselected','selection-id','selection-version','hash','document-id','confirmed']){
+  const f=await selectedDraftFixture();try{
+   const selection=(f.d.proposal.selections as any[])[0];
+   if(fault==='unselected')f.d.proposal.selections=[];
+   if(fault==='selection-id')selection.documentId=id(49);
+   if(fault==='selection-version')selection.version++;
+   if(fault==='hash')f.selectedDocument.contentHash='a'.repeat(64);
+   if(fault==='document-id')f.selectedDocument.id=id(49);
+   if(fault==='confirmed')f.selectedDocument.confirmed=true;
+   await f.open();
+   if(['unselected','selection-id','selection-version'].includes(fault)){
+    assert.equal(f.nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent==='반영 결과 원문 보기').length,0);assert.equal(f.calls.filter(c=>c.path===f.selectedPath).length,0);
+   }else{
+    await f.click('반영 결과 원문 보기');await f.wait(()=>fault==='confirmed'?f.text().includes('반영 결과 · 버전 3'):f.nodes().some(n=>n.getAttribute('role')==='alert'));
+   }
+   assert.equal(f.links().length,0,fault);assert.equal(f.buffer(),null);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+  }finally{await f.close();}
+ }
+});
+
+test('선택 초안의 이전 경로 버튼·link는 route 전환 직후 GET과 기본 탐색을 시작하지 않는다',{timeout:15000},async()=>{
+ const route=location.hash,f=await selectedDraftFixture();try{
+  await f.open();location.hash='#/other';await f.click('반영 결과 원문 보기');assert.equal(f.calls.filter(c=>c.path===f.selectedPath).length,0);
+  location.hash=route;await f.click('반영 결과 원문 보기');await f.wait(()=>f.links().length===1);
+  const link=f.links()[0]!,count=f.calls.length;location.hash='#/other';assert.equal(link.dispatchEvent({type:'click',button:0,bubbles:true}),false,'unmount 전 원 anchor도 늦은 탐색을 막는다');
+  assert.equal(link.dispatchEvent({type:'auxclick',button:1,bubbles:true}),false,'보조 클릭도 같은 원 선택과 경로를 검산한다');
+  await f.render();assert.equal(f.links().length,0);assert.equal(f.calls.length,count);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+ }finally{location.hash=route;await f.close();}
+});
+
+test('다른 제안 open의 동기 시작 뒤 이전 선택 결과 버튼은 commit 전에도 GET을 재시작하지 않는다',{timeout:15000},async()=>{
+ const f=await selectedDraftFixture(),gate=deferred<Response>();try{
+  await f.open();const oldButton=f.button('반영 결과 원문 보기'),nextButton=f.button('보관 제안 '+id(44)+' 열기');
+  const handler=(node:MemoryNode)=>{const key=Object.keys(node).find(k=>k.startsWith('__reactProps'))!;return(node as any)[key].onClick;};
+  f.controls.hook=p=>p.endsWith('/proposals/'+id(44))?gate.promise:p===f.selectedPath?Response.json(f.selectedDocument):null;
+  await ui.React.act(async()=>{handler(nextButton)();handler(oldButton)();});
+  assert.equal(f.calls.filter(c=>c.path===f.selectedPath).length,0);assert.equal(f.links().length,0);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+  gate.resolve(Response.json({...f.d.proposal,id:id(44)}));await f.settle();assert.equal(f.links().length,0);assert.equal(f.buffer(),null);
+ }finally{gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.close();}
+});
+
+test('선택 초안 결과 조회는 같은 선택의 trace 준비 중에도 완료되고 준비 실패 뒤 loading에 갇히지 않는다',{timeout:15000},async()=>{
+ const f=await selectedDraftFixture(),read=deferred<Response>(),prepare=deferred<Response>();try{
+  await f.open();f.controls.hook=p=>p===f.selectedPath?read.promise:p===`/api/v1/projects/${pid}`?prepare.promise:null;
+  await f.click('반영 결과 원문 보기');await f.wait(()=>f.calls.some(c=>c.path===f.selectedPath));
+  await f.click('서버 생성 diff를 고정 업무에 연결');await f.wait(()=>f.calls.some(c=>c.path===`/api/v1/projects/${pid}`));
+  read.resolve(Response.json(f.selectedDocument));await f.wait(()=>f.text().includes('반영 결과 · 버전 3'));
+  assert.equal(f.links()[0]!.dispatchEvent({type:'click',button:0,bubbles:true}),false,'trace 준비 중 탐색은 허용하지 않는다');
+  assert.equal(f.links()[0]!.dispatchEvent({type:'auxclick',button:1,bubbles:true}),false);
+  prepare.resolve(Response.json({code:'TRACE_PREPARE_UNAVAILABLE'},{status:503}));await f.wait(()=>!f.button('서버 생성 diff를 고정 업무에 연결').disabled);
+  assert.equal(f.links().length,1);assert.equal(f.links()[0]!.dispatchEvent({type:'click',button:0,bubbles:true}),true);assert.doesNotMatch(f.text(),/반영 결과 원문 조회 중/);
+  assert.equal(f.calls.filter(c=>c.path===f.selectedPath).length,1);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);assert.equal(f.buffer(),null);
+ }finally{read.resolve(Response.json(f.selectedDocument));prepare.resolve(Response.json({code:'TRACE_PREPARE_UNAVAILABLE'},{status:503}));await f.close();}
+});
+
+for(const status of [200,401])test('선택 초안 결과 지연 '+status+'는 route·project·proposal·인증·전송·unmount 교체 후 링크/인증효과0',{timeout:15000},async()=>{
+ for(const scope of ['route','project','proposal','csrf','transport','unmount']){
+  const f=await selectedDraftFixture(),route=location.hash,gate=deferred<Response>();let closed=false;
+  try{
+   await f.open();f.controls.hook=p=>p===f.selectedPath?gate.promise:null;await f.click('반영 결과 원문 보기');await f.wait(()=>f.calls.some(c=>c.path===f.selectedPath));
+   if(scope==='route')location.hash='#/other';
+   if(scope==='project')await f.render({...f.props(),projectId:id(42)});
+   if(scope==='proposal')await f.open(id(44));
+   if(scope==='csrf')await f.render({...f.props(),session:{...session,csrfToken:'D'.repeat(43)}});
+   if(scope==='transport')f.client.transport=async()=>{throw Error('교체된 transport에서 선택 원문 조회 금지');};
+   if(scope==='unmount'){await f.close();closed=true;}
+   const count=f.calls.length;gate.resolve(status===200?Response.json(f.selectedDocument):Response.json({code:'AUTH_REQUIRED'},{status}));await f.settle();
+   assert.equal(f.links().length,0,scope);assert.doesNotMatch(f.text(),/반영 결과 · 버전 3/);assert.equal(f.lost(),0,scope);
+   assert.equal(f.calls.slice(count).filter(c=>!c.path.includes('/imports?')&&!c.path.includes('/proposals?')).length,0,scope);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);assert.equal(f.buffer(),null);
+  }finally{gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));location.hash=route;if(!closed)await f.close();}
  }
 });
 
