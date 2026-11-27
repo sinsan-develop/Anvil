@@ -1,13 +1,18 @@
 import {StageStartApprovalEditor} from './StageStartApprovalEditor.tsx';
-import {readStageQueue} from './stage-queue-api.ts';
+import {readStageQueue,type QueueView} from './stage-queue-api.ts';
 import {ordered} from '../knowledge/review-view.ts';
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b);
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';import {isKnownDocumentRejection} from '../design-trace/mutation-result.ts';
 import {readWorkspaceMethodology} from '../workspace/api.ts';import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
 import {newStageStart,prepareStageStart,sendStageStart,stageStartKey,type StageStartStorage,type StageStartBuffer} from './stage-start-api.ts';
-export function StageStartPanel({client,assignment,session,storage,onUnavailable,isSourceCurrent,expectedControlGeneration}:{client:ApiClient;assignment:ConfirmedAssignmentView;session:DocumentSession;storage:StageStartStorage;onUnavailable:(code:string)=>void;isSourceCurrent?:()=>boolean;expectedControlGeneration?:number}){
- const [queueVerified,setQueueVerified]=useState(false);
+export type WaitingStageReceipt=NonNullable<StageStartBuffer['result']>;
+export function verifiedStageQueueItem(queue:QueueView,receipt:WaitingStageReceipt){
+ // readStageQueue already rejects duplicate request IDs and sequences.
+ return queue.items.find(item=>same(item.requestRef,receipt.ref)&&item.sequence===receipt.snapshot.sequence);
+}
+export function StageStartPanel({client,assignment,session,storage,onUnavailable,isSourceCurrent,expectedControlGeneration,continueHref}:{client:ApiClient;assignment:ConfirmedAssignmentView;session:DocumentSession;storage:StageStartStorage;onUnavailable:(code:string)=>void;isSourceCurrent?:()=>boolean;expectedControlGeneration?:number;continueHref?:string}){
+ const [queueVerified,setQueueVerified]=useState<{epoch:number;receipt:WaitingStageReceipt}|null>(null);
  const key=stageStartKey(session,assignment),buffer=storage.buffers[key]??null,[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[ack,setAck]=useState(false),working=useRef(false),live=useRef(true),current=useRef(buffer),changed=useRef(storage.onChange),unavailable=useRef(onUnavailable);current.current=buffer;changed.current=storage.onChange;unavailable.current=onUnavailable;
  const binding=useRef({client,session,transport:client.transport,key,epoch:0});if(binding.current.client!==client||binding.current.session!==session||binding.current.transport!==client.transport||binding.current.key!==key)binding.current={client,session,transport:client.transport,key,epoch:binding.current.epoch+1};const epoch=binding.current.epoch;
  const committed=useRef(false);
@@ -30,7 +35,19 @@ export function StageStartPanel({client,assignment,session,storage,onUnavailable
    if(active())changed.current(key,value=>value?.bindingId===prior.bindingId&&same(value.pending,prior.pending)?{...value,result,uncertain:false,failure:null}:value);
   }
   catch(cause){const e=failure(cause);if(sent&&active())changed.current(key,value=>value?.bindingId===prior.bindingId&&same(value.pending,prior.pending)?{...value,uncertain:prior.uncertain||!isKnownDocumentRejection(e),failure:{code:e.code,status:e.status}}:value);}finally{working.current=false;if(live.current)setBusy(false);}}
- async function verifyQueue(){const prior=buffer;if(!prior?.result||working.current||!sourceCurrent())return;const active=activeFor(prior);working.current=true;setBusy(true);setError(null);try{const queue=await readStageQueue(client,prior.projectId,active);if(!active()||!queue)return;const found=queue.items.find(i=>same(i.requestRef,prior.result!.ref)&&i.sequence===prior.result!.snapshot.sequence);if(!found)throw new ApiError('STAGE_START_QUEUE_NOT_FOUND',409);setQueueVerified(true);}catch(e){failure(e);}finally{working.current=false;if(live.current)setBusy(false);}}
+ async function verifyQueue(){
+  const prior=buffer,receipt=prior?.result;
+  if(!prior||!receipt||working.current||!sourceCurrent())return;
+  const buffered=activeFor(prior),active=()=>buffered()&&current.current?.result===receipt;
+  working.current=true;setBusy(true);setError(null);setQueueVerified(null);
+  try{
+   const queue=await readStageQueue(client,prior.projectId,active);
+   if(!active()||!queue)return;
+   if(!verifiedStageQueueItem(queue,receipt))throw new ApiError('STAGE_START_QUEUE_NOT_FOUND',409);
+   setQueueVerified({epoch,receipt});
+  }catch(e){if(active())failure(e);}finally{working.current=false;if(live.current)setBusy(false);}
+ }
+ const hasVerifiedQueue=queueVerified?.epoch===epoch&&queueVerified.receipt===buffer?.result&&client.transport===binding.current.transport;
  function closeBuffer(){if(sourceCurrent())changed.current(key,value=>sourceCurrent()&&value===buffer?null:value);}
  const controlChanged=!!buffer&&expectedControlGeneration!==undefined&&buffer.controlGeneration!==expectedControlGeneration;
  const writeLocked=busy||controlChanged;
@@ -43,7 +60,7 @@ export function StageStartPanel({client,assignment,session,storage,onUnavailable
    <label>끝 경계<select aria-label="단계 요청 끝 경계" value={buffer.input.endBoundaryRef.nodeId} disabled={writeLocked||!!buffer.pending||buffer.input.mode==='CASE_BY_CASE'} onChange={e=>update(buffer,{...buffer,input:{...buffer.input,endBoundaryRef:{...buffer.input.startNodeRef,nodeId:e.target.value}},failure:null})}>{nodes.map(n=><option key={n.nodeId} value={n.nodeId}>{n.name} ({n.nodeId})</option>)}</select></label>
    <label>요청 사유<textarea aria-label="단계 요청 사유" maxLength={20000} disabled={writeLocked||!!buffer.pending} value={buffer.input.reason} onChange={e=>update(buffer,{...buffer,input:{...buffer.input,reason:e.target.value},failure:null})}/></label>
    {!buffer.pending?<><button type="button" disabled={writeLocked||!buffer.input.reason.trim()} onClick={()=>void prepare()}>단계 요청 명령 준비</button><button type="button" disabled={busy} onClick={closeBuffer}>작성 입력 폐기</button></>:<><p>고정 명령 {buffer.pending.commandId} · 제어 세대 {buffer.controlGeneration}</p>
-    {buffer.result?<><p role="status">단계 요청 보관 영수증 확인 · WAITING / 실행·예약 아님</p><button type="button" disabled={busy} onClick={()=>void verifyQueue()}>같은 WAITING 요청 원장 재조회</button>{queueVerified?<p role="status">동일 WAITING 요청 원장 확인</p>:null}<ul>{buffer.result.snapshot.readinessIssues.map((code:string)=><li key={code}>{code}</li>)}</ul><button type="button" disabled={busy} onClick={closeBuffer}>시작 요청 영수증 닫기</button></>:<>
+    {buffer.result?<><p role="status">단계 요청 보관 영수증 확인 · WAITING / 실행·예약 아님</p><button type="button" disabled={busy} onClick={()=>void verifyQueue()}>같은 WAITING 요청 원장 재조회</button>{hasVerifiedQueue?<><p role="status">동일 WAITING 요청 원장 확인</p>{continueHref?<a href={continueHref} onClick={event=>{if(working.current||!viewCurrent()||current.current?.result!==queueVerified.receipt)event.preventDefault();}}>확인한 대기 요청으로 START 원자료 준비 열기</a>:null}</>:null}<ul>{buffer.result.snapshot.readinessIssues.map((code:string)=><li key={code}>{code}</li>)}</ul><button type="button" disabled={busy} onClick={closeBuffer}>시작 요청 영수증 닫기</button></>:<>
      {buffer.uncertain?<p>결과 미확인: 입력과 명령을 바꾸지 않고 같은 명령만 재확인합니다.</p>:<label><input type="checkbox" disabled={writeLocked} checked={ack} onChange={e=>setAck(e.target.checked)}/>대기 요청 보관만 수행하며 실행·예약이 아님을 확인합니다</label>}
      <button type="button" disabled={writeLocked||!buffer.uncertain&&!ack||!!buffer.failure&&!buffer.uncertain} onClick={()=>void send()}>{buffer.uncertain?'같은 시작 요청 명령 결과 재확인':'단계 대기 요청 등록'}</button>
      {buffer.failure&&!buffer.uncertain&&buffer.failure.code!=='APPROVAL_REQUIRED'&&!buffer.stageApproval?<button type="button" disabled={writeLocked} onClick={()=>{update(buffer,{...buffer,pending:null,failure:null});setAck(false);setError(null);}}>시작 요청 거절 확인 후 입력으로 돌아가기</button>:null}

@@ -8,7 +8,7 @@ import {sessionDetailHref} from '../../../apps/web/src/shell/routes.ts';
 import {stageQueueReasons} from '../../../apps/web/src/features/session-detail/stage-queue-api.ts';
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
 class MemoryNode{
- nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
+ nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';selected=false;checked=false;disabled=false;data='';
  constructor(name:string,type=1,owner?:any){this.nodeType=type;this.nodeName=type===1?name.toUpperCase():name;this.tagName=this.nodeName;this.localName=name;this.ownerDocument=owner;}
  get options():MemoryNode[]{return this.childNodes.flatMap(n=>n.tagName==='OPTION'?[n]:n.options);}
  get firstChild():MemoryNode|null{return this.childNodes[0]??null;}get lastChild():MemoryNode|null{return this.childNodes.at(-1)??null;}get nextSibling():MemoryNode|null{const a=this.parentNode?.childNodes;return a?.[a.indexOf(this)+1]??null;}
@@ -18,7 +18,7 @@ class MemoryNode{
  appendChild(n:MemoryNode){if(n.parentNode)n.parentNode.removeChild(n);n.parentNode=this;this.childNodes.push(n);return n;}
  insertBefore(n:MemoryNode,b:MemoryNode){if(n.parentNode)n.parentNode.removeChild(n);n.parentNode=this;const i=this.childNodes.indexOf(b);assert(i>=0);this.childNodes.splice(i,0,n);return n;}
  removeChild(n:MemoryNode){const i=this.childNodes.indexOf(n);assert(i>=0);this.childNodes.splice(i,1);n.parentNode=null;return n;}
- setAttribute(k:string,v:unknown){this.attributes.set(k,String(v));if(k==='disabled')this.disabled=true;}removeAttribute(k:string){this.attributes.delete(k);if(k==='disabled')this.disabled=false;}getAttribute(k:string){return this.attributes.get(k)??null;}
+ setAttribute(k:string,v:unknown){this.attributes.set(k,String(v));if(k==='disabled')this.disabled=true;if(k==='value'&&this.tagName==='OPTION')this.value=String(v);}removeAttribute(k:string){this.attributes.delete(k);if(k==='disabled')this.disabled=false;}getAttribute(k:string){return this.attributes.get(k)??null;}
  addEventListener(k:string,f:Function){this.listeners.set(k,[...(this.listeners.get(k)??[]),f]);}removeEventListener(k:string,f:Function){this.listeners.set(k,(this.listeners.get(k)??[]).filter(v=>v!==f));}
  contains(n:MemoryNode|null):boolean{return !!n&&(n===this||this.childNodes.some(c=>c.contains(n)));}focus(){this.ownerDocument.activeElement=this;}
  dispatchEvent(e:any){e.target=this;e.preventDefault??=()=>{e.defaultPrevented=true;};e.stopPropagation??=()=>{e.cancelBubble=true;};const chain:MemoryNode[]=[];for(let n:MemoryNode|null=this;n;n=n.parentNode)chain.push(n);for(const n of chain)for(const f of n.listeners.get(e.type)??[])f(e);return !e.defaultPrevented;}
@@ -51,7 +51,8 @@ function fixture(){
  f.confirmed.snapshot.definition=definition;f.confirmed.snapshot.draftRef=draft.ref;f.confirmed.ref.contentHash=H(f.confirmed.snapshot);
  f.state.assignmentRef=f.confirmed.ref;f.state.bindings=[];f.state.roles=[];
  const decision={projectId:pid,draftRef:draft.ref,criteriaVersion:1,criteria:['PURPOSE_SCOPE','BASELINE_TASK','INPUT_OUTPUT','COMPLETION_VERIFICATION','BOUNDARIES','RECORD_RECOVERY'],reviews:[],hasMoreReviews:false,contentIssues:[],currentIssue:null,confirmedRef:f.confirmed.ref,latestReviewAccepted:false,readinessIssues:[],ready:false,executionAuthorized:false,dispatchPerformed:false,observedAt:f.at};
- let participation='OWNER',holdControl:ReturnType<typeof deferred<Response>>|null=null,holdPolicy:ReturnType<typeof deferred<Response>>|null=null,approvalRequired=false,receipt:any=null;
+ let participation='OWNER',holdControl:ReturnType<typeof deferred<Response>>|null=null,holdPolicy:ReturnType<typeof deferred<Response>>|null=null,holdQueue:ReturnType<typeof deferred<Response>>|null=null,queueItems:any[]|null=null,approvalRequired=false,receipt:any=null;
+ const queueItem=()=>({requestRef:receipt.ref,state:'WAITING',sequence:receipt.snapshot.sequence,reasonCodes:stageQueueReasons,blockedBy:[],reservedBudgetRef:null});
  const project={id:pid,name:'합성 프로젝트',purpose:'App 단계 연결 검산',desiredOutcome:'정확 대기 요청',version:1,createdAt:f.at,updatedAt:f.at,currentMethodologyRef:applicationRef,baselineRef:null,sourceMode:'EMPTY',sourceDeclaration:null,readinessIssues:[],viewerPermissions:['READ_PROJECT'],controlState:{actorId:f.session.user.id,clientId:f.session.clientId,generation:1,status:'HELD'}};
  const q={calls:[] as {path:string;method:string}[],posts:[] as any[],unexpected:[] as string[]};
  const protectedTransport=clientFixture(f);
@@ -66,6 +67,8 @@ function fixture(){
   if(path.endsWith('/assignment-drafts/'+draft.ref.id+'/versions/1/decision'))return Response.json(decision);
   if(path.endsWith('/assignments/'+f.confirmed.ref.id+'/versions/1'))return Response.json(f.confirmed);
   if(path.includes('/result-pages'))return Response.json({projectId:pid,assignmentRef:f.confirmed.ref,items:[],hasMore:false,nextCursor:null,selectionState:'NOT_SELECTED',observedAt:f.at});
+  if(path.endsWith('/queue')){if(holdQueue){const held=holdQueue;holdQueue=null;return held.promise;}return Response.json({projectId:pid,items:queueItems??(receipt?[queueItem()]:[]),selection:'WAITING_ONLY',cancelledHistoryOmitted:true,observedAt:f.at,writerReservationPerformed:false,executionAuthorized:false,dispatchPerformed:false});}
+  if(path.endsWith('/execution-preparations'))return Response.json({projectId:pid,assignmentRef:f.confirmed.ref,items:[],nextCursor:null,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false});
   if(path.endsWith('/permission-policy')&&holdPolicy){const held=holdPolicy;holdPolicy=null;return held.promise;}
   if(path.endsWith('/commands')&&method==='POST'){
    const command=JSON.parse(String(init?.body));q.posts.push(command);assert.equal(command.operation,'startStage');
@@ -80,7 +83,7 @@ function fixture(){
   q.unexpected.push(path);return Response.json({code:'NOT_FOUND'},{status:404});
  };
  return{...q,pid,draft,f,applicationRef,sessionRoute:sessionDetailHref(pid,draft.ref),workspace:'#/projects/'+pid+'/workspace',mobile:'#/projects/'+pid+'/mobile',
-  hold(){holdControl=deferred<Response>();return holdControl;},holdPolicy(){holdPolicy=deferred<Response>();return holdPolicy;},requireApproval(){approvalRequired=true;},bumpGeneration(){project.controlState.generation++;},viewer(){participation='VIEWER';},receipt:()=>receipt};
+  hold(){holdControl=deferred<Response>();return holdControl;},holdPolicy(){holdPolicy=deferred<Response>();return holdPolicy;},holdQueue(){holdQueue=deferred<Response>();return holdQueue;},setQueueItems(value:any[]|null){queueItems=value;},queueItem,requireApproval(){approvalRequired=true;},bumpGeneration(){project.controlState.generation++;},viewer(){participation='VIEWER';},receipt:()=>receipt};
 }
 test('App UI04는 현재 단계의 확정 임무와 UI05의 동일 원 요청과 WAITING을 명시적으로 공유한다',async t=>{
  const q=fixture();location.hash=q.workspace;
@@ -136,6 +139,39 @@ test('App UI04는 현재 단계의 확정 임무와 UI05의 동일 원 요청과
   assert.equal(q.posts.length,2);assert.deepEqual(q.posts[0],q.posts[1]);
   assert.equal(q.receipt().snapshot.assignmentRef,null);
   for(const flag of ['slotReserved','writerReservationPerformed','executionAuthorized','dispatchPerformed'])assert.equal(q.receipt().snapshot[flag],false);
+  const continueLabel='확인한 대기 요청으로 START 원자료 준비 열기',hintLabel='이 영수증의 대기 요청 원장에서 확인·선택';
+  const continueLink=()=>nodes().find(n=>n.tagName==='A'&&n.textContent===continueLabel);
+  const stage=()=>nodes().find(n=>n.tagName==='SELECT'&&n.getAttribute('aria-label')==='대기 요청');
+  const selectedStage=()=>stage()?.options.find(n=>n.selected)?.value;
+  const queueReads=()=>q.calls.filter(c=>c.path.endsWith('/queue')).length;
+  const beforeHintRoute=queueReads();
+  await go(q.workspace);await openAssignment();assert(!continueLink());assert.equal(queueReads(),beforeHintRoute);
+  await click('같은 WAITING 요청 원장 재조회');await wait(()=>container.textContent.includes('동일 WAITING 요청 원장 확인'));
+  assert.equal(continueLink()?.getAttribute('href'),q.sessionRoute);
+  const good=q.queueItem(),other={...good,requestRef:{...good.requestRef,contentHash:'d'.repeat(64)}};
+  q.setQueueItems([other]);await click('같은 WAITING 요청 원장 재조회');
+  await wait(()=>container.textContent.includes('STAGE_START_QUEUE_NOT_FOUND'));assert(!continueLink());
+  q.setQueueItems(null);await click('같은 WAITING 요청 원장 재조회');await wait(()=>!!continueLink());
+  const beforeUI05=queueReads();
+  await go(continueLink()!.getAttribute('href')!);await wait(()=>!!button(hintLabel));
+  assert.equal(queueReads(),beforeUI05);assert(!stage());
+  for(const mismatch of [[],[other],[{...good,sequence:good.sequence+1}],[good,{...good,sequence:good.sequence+1}]]){
+   q.setQueueItems(mismatch);const before=q.calls.length;
+   await click(hintLabel);
+   await wait(()=>!button(hintLabel)?.disabled);
+   assert(!stage());assert(!button('등록 준비 고정'));
+   assert.deepEqual(q.calls.slice(before).map(c=>c.path),['/api/v1/projects/'+q.pid+'/queue']);
+  }
+  q.setQueueItems([good,{...good,requestRef:{...good.requestRef,id:q.f.decisionId},sequence:good.sequence+1}]);const beforeSelection=queueReads();
+  await click(hintLabel);await wait(()=>!!stage());
+  assert.equal(queueReads(),beforeSelection+1);assert.equal(selectedStage(),good.requestRef.id);
+  assert.deepEqual(stage()!.options.map(n=>n.value),['',good.requestRef.id]);
+  assert.equal(q.posts.length,2);
+  await click('원자료 선택 목록 조회');await wait(()=>!!stage()&&selectedStage()==='');
+  assert.deepEqual(stage()!.options.map(n=>n.value),['',good.requestRef.id,q.f.decisionId]);
+  const oldQueue=q.holdQueue();await click(hintLabel);await go(q.workspace);await openAssignment();
+  oldQueue.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await settle();
+  assert(button('같은 WAITING 요청 원장 재조회'),container.textContent);assert(!button('로그인'));assert.equal(q.posts.length,2);
   await go(q.mobile);await openAssignment();await wait(()=>container.textContent.includes('단계 요청 보관 영수증 확인'));
   await link('절차 상세');assert(!button('같은 WAITING 요청 원장 재조회'));
   await link('대화·작업');assert(button('같은 WAITING 요청 원장 재조회'));assert.equal(q.posts.length,2);
