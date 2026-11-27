@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-27 KST
 
+- **FN12 등록 시험 명령 직접 관측 후보** — `fn13_quota_diff_replay`가 `docs/contracts/FN12_REGISTERED_TEST_COMMAND_CAPTURE_CANDIDATE.md`를 작성했다. 확정 AF05 시험·등록 고정 프로필·원 WORK 현재성·단회 접수와 같은 원 핸들의 관측 근거를 연결하고, 이미 채택된 소스·합성 범위와 별도 목적 실행을 구분한다. 독립 검토의 시작·회수 선점, 하위 프로세스 격리, 호출 전용 출력 귀속 3건을 반영했다. 상대링크 12건과 diff 검사 통과. 실제 실행·원 보호 저장·현장 취소 경합은 미검증이다. 다음은 실제 명령 경로를 열기 전 원 시험·프로필·등록 결박과 단회 상태의 합성 검증이다.
+
 - **FN12/UI05 보관 검수 페이지 재조회 경계 보완** — `fn13_quota_diff_replay`가 `ResultReviewSources.tsx`와 `stored-result-reviews-pagination.test.ts`를 수정했다. 같은 조회창의 다른 root·동일 커서 반복·최근 복귀의 다른 root가 통과한 기존 RED 3건을 교정했다. 정상 21번째 검수 원문과 같은 root로 복귀, 최초·종단·원 서버 서명 검산은 유지했다. 담당 합성 37/37, Main 합성 30/30(각 skip 0), 타입·diff 통과, 독립 Critical/Important/Minor 각 0. 실제 브라우저·DB·서비스 시험 미실행. 별도 FN12 원 관측 경로 조사에서 현재 SDK 자식 종료 외에 개별 명령을 소유하는 제품 경로가 없음을 확인했다. 개별 명령 관측 재사용 시도는 소스 변경 0, 인접 집계 31 통과·1 취소로 기록한다. 다음은 확정 시험계획의 TC와 원 실행기 권한을 정확히 묶는 명령 관측 계약이다.
 
 - **FN12 최초 실행 근거 계약과 정규형 구현** — 신산님 채택에 따라 담당 `fn13_quota_diff_replay`가 `docs/contracts/FN12_NORMAL_EXECUTION_EVIDENCE.md`, `contracts/runtime/normal-result-execution-evidence-v1.ts`, `tests/unit/FN12/normal-result-execution-evidence.test.ts`를 작성·동결했다. 원 등록·실행 세대·전달 명령·개별 호출을 구별하며 관측 명령·종료 코드·환경·커밋·산출물 원시 바이트 해시를 정확 참조와 대조한다. 초기 RED 2건(모듈 부재/산출물 해시 불일치)을 해결했다. 담당 합성 75/75·Main 합성 68/68(각 skip 0), 양측 타입 검사 및 독립 검수 Critical/Important/Minor 각 0. 다음은 원 실행기 관측 → 보호 저장 및 입수 → 검수 화면 연결이다. 실제 실행·DB·키·서비스 및 실측 증거의 저장은 미검증이다. PMO에 IX01 동일 시도 보호 입력을 확인 요청했고 실제 발급자·보호 원문·Windows 준비 결과의 등록 근거는 아직 확인되지 않았다.
