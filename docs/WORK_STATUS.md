@@ -2,6 +2,10 @@
 
 <!-- CURRENT_WORK_ENTRY_START -->
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
+## 현재 작업 요약 — 2026-11-28 KST
+
+- **Stage B / IX01 FN05 헌법 적용 원명령 재확인 보호.** 기준 `703e061c2`, 담당 `baseline_predispatch_task_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0, 어울 검수·통합. 기존 현재 인증·기기·제어·정책 검사를 통과한 동일 명령은 같은 거래에서 정확 당시 적용 세대와 바로 전 불변 참조, 원 명령·저장 당시 허가 지문·영수증을 검산한 뒤 원 응답만 돌려준다. 후속 head가 있거나 당시와 다른 현재 AUTO 규칙이 있어도 역사 응답과 분리한다. 원 행 누락·교차 ID·별도 operation ID·stored generation·이전 참조·허가 지문 불일치에서 쓰기 없이 거절한다. 변경 `project-command.ts`, `projects/routes.ts`, `constitution-records.ts`, `constitution.test.ts`. 최초 RED 5건·추가 I 교정 RED 2건, 담당 60/60 및 타입, Main 직접 18/18·diff 통과. 실제 PG/권한·키·서비스·브라우저·Agent와 IX01 인수는 미검증. 다음은 UI10 원명령이 App에 반영되기 전에 전송 가능한 경합을 별도 검증한다.
+
 ## 현재 작업 요약 — 2026-11-27 KST
 
 - **Stage E / IX06 FN16 검증복원의 모호한 manifest 차단.** 기준 `34eb01a9b`, 담당 `baseline_predispatch_task_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0, 어울 검수·통합. 정상 값 뒤 덮어쓰기로 독립 canonical hash를 통과하던 중복 키를 원 보관본과 새 검증본의 JSON 판독에서 거절한다. 최상위·중첩의 일반·이스케이프 키 4종을 RED로 재현하고, 거절 뒤 payload 내용 읽기·복사·목적지 생성을 차단했다. 기존 내부 문자 표현과 공개 wire Unicode·숫자 검산, 원 기준 hash·크기 한도·정리 의미를 유지한다. `contracts/canonical.ts`, `file-restore-validation.ts`, `file-restore-validation.test.ts`. 담당 RAM 10/10·인접 26/26, Main 최종 RAM 10/10, 타입·diff 통과. 실제 파일·ACL·DB·권한·키·서비스·Agent·복원 미실행. 독립 보호 입력과 전체 프로젝트/공적 복원 보고 및 IX06 인수는 미완료다.

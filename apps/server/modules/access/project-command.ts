@@ -410,6 +410,10 @@ export class ProjectPolicyRepository {
           };
           await checkNotificationDeadline();
           if (previous !== undefined){await checkCheckpoint();if(request.operation==='saveProjectMembership')await new ProjectMemberships().verifyReplay(db,actor,request,previous);
+            if(request.operation==='applyConstitution'){
+              if(!verifyMaterialReplay)throw new AuthFailure('CONSTITUTION_INTEGRITY_FAILED',503);
+              await verifyMaterialReplay(db,actor,request,previous,policy.ref);
+            }
             if(request.operation==='requestRework'){
               if(!verifyMaterialReplay)throw new AuthFailure('RESULT_REWORK_LEDGER_INVALID',503);
               await verifyMaterialReplay(db,actor,request,previous,policy.ref);

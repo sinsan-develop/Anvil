@@ -1,3 +1,4 @@
+import {verifyConstitutionReplay} from '../knowledge/constitution-records.ts';
 import {NormalUnderstandingReviews,readNormalUnderstandingReviewOptions,type NormalUnderstandingReviewOptions} from '../executions/normal-understanding-review.ts';
 import {ProjectSourceContentPolicyManagement} from '../documents/project-source-content-policy-management.ts';
 import {NormalStopTargets,readNormalStopOptions,type NormalStopOptions} from '../executions/normal-stop-target.ts';
@@ -441,7 +442,7 @@ projects.get<{Params:{projectId:string};Querystring:Record<string,unknown>}>('/a
       if(request.body.operation==='linkTrace') return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>traces.link(db,actor,request.body,policyRef));
       if(request.body.operation==='requestKnowledgeShare')return knowledgeShares.command(token(request),csrf(request),request.body);
       if(request.body.operation==='saveKnowledge') return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>knowledge.save(db,actor,request.body,policyRef));
-      if(request.body.operation==='applyConstitution') return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>constitutions.apply(db,actor,request.body,policyRef));
+      if(request.body.operation==='applyConstitution') return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>constitutions.apply(db,actor,request.body,policyRef),(db,actor,command,result)=>verifyConstitutionReplay(db,actor,command,result));
       if(request.body.operation==='recordContentReview'&&request.body.payload.targetKind==='KNOWLEDGE') return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>knowledge.review(db,actor,request.body,policyRef));
       if(request.body.operation==='confirmKnowledge') return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>knowledge.confirm(db,actor,request.body,policyRef));
       if(request.body.operation==='correctKnowledge') return policies.command(token(request),csrf(request),request.body,(db,actor,policyRef)=>knowledge.correct(db,actor,request.body,policyRef));
