@@ -407,6 +407,24 @@ test('전용 실제 client는 pre-EOF 후보 뒤 원 stream을 보유하고 정�
  }finally{f.client.disposeReceive();assert.equal(f.timers.size,0);}
 });
 
+test('결과 서명 budget은 지연 EOF 이전의 2초 기한과 같은 단조 잔여를 보존한다',async()=>{
+ const f=await normalPreparationHttpFixture();let received=0,budget:{expiresAt:number;remainingMs:number}|undefined,expired=false;
+ try{
+  await f.consume();
+  const start=f.state.now,source={prepareAndSign:async(original:unknown,_signal:AbortSignal,_narrow:(end:number)=>void,readBudget:()=>{expiresAt:number;remainingMs:number})=>{
+   received++;budget=readBudget();
+   f.state.now=start+2000;
+   try{readBudget();}catch{expired=true;}
+   return f.sourceResult.prepareAndSign(original);
+  }};
+  const result=f.client.sendNormalStartPreparationResult(source);
+  f.state.now=start+1700;f.eof();await assert.rejects(result,/NATIVE_RECEIVE_OUTCOME_UNKNOWN/);
+  assert.equal(received,1);assert.ok(budget);assert.equal(budget.expiresAt,start+2000);assert(budget.remainingMs>0&&budget.remainingMs<=300);assert.equal(expired,true);
+  assert.equal(f.stateNormal.posts,0);assert.equal(f.state.deadline,start+10000);
+  await assert.rejects(f.client.sendNormalStartPreparationResult(source));assert.equal(received,1);
+ }finally{f.client.disposeReceive();assert.equal(f.timers.size,0);}
+});
+
 test('정상 EOF의 원 준비 custody만 단회 소비하며 SOURCE_UNAVAILABLE 뒤 기존 REJECTED 결과는 보존한다',async()=>{
  const {NativeFirstReceiveHumanClient:Client}=await import('../../../apps/connector/runtime/native-first-receive-client.ts'),f=await normalPreparationHttpFixture();let calls=0,ticket:unknown;
  try{

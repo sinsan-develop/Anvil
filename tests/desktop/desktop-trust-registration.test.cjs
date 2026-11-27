@@ -232,14 +232,21 @@ test('normal 준비 결과 private source는 원 STREAM 범위 검산 후 refs�
  const request={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_REQUEST_V1',requestId:id(4),attemptId:id(5),installationId:w.installationId,projectId:w.projectId,registrationRef:w.registrationRef,connectorRef:w.connectorRef,windowRef:window.ref,receiveSessionRef:session.ref,profileRef:w.profileRef,hostPublicKeyFingerprint:w.hostPublicKeyFingerprint,authBindingHash:w.authBindingHash,localReceiveAttemptId:w.localReceiveAttemptId,actorId:w.human.userId,clientId:w.human.clientId,humanSessionId:id(1),credentialGeneration:w.human.credentialGeneration,controlGeneration:w.human.controlGeneration,admissionRef:ref(6),claimRef:ref(7),normalCommandId:id(8),normalRequestHash:'e'.repeat(64),executionId:id(9),executionGeneration:1,executionPreparationRef:ref(10),writerNoneRef:w.writerHeadRef,serverNonce:Buffer.alloc(32,2).toString('base64url'),issuedAt:w.issuedAt,expiresAt:w.expiresAt};
  const selector=ref(11),locator=input=>{lookups++;assert.deepEqual(input,{attemptId:f.stored().attemptId,contextEpoch:7,requestRef:{id:request.requestId,version:1,contentHash:hash(request)}});return selector;};f.ports.normalStartPreparationSlot=locator;
  const operation=createTrustOperation(f.spec,f.ports,lease,f.stored());await operation.current();try{
-  await operation.readState();const source=operation.normalStartPreparationResultSource(window,session,7),before=f.writes.length,calls=f.calls(),beforeEffects=effects;
-  const wrong={...request,executionId:id(99),windowRef:ref(99)};await assert.rejects(source.prepareAndSign(wrong,new AbortController().signal,()=>{}));assert.equal(f.writes.length,before);assert.equal(lookups,0);
-  const abort=new AbortController();abort.abort();await assert.rejects(source.prepareAndSign(request,abort.signal,()=>{}));assert.equal(f.writes.length,before);
-  const replaced=operation.normalStartPreparationResultSource(window,session,7);f.ports.normalStartPreparationSlot=()=>selector;await assert.rejects(replaced.prepareAndSign(request,new AbortController().signal,()=>{}),/CONTEXT_CHANGED/);assert.equal(f.writes.length,before);f.ports.normalStartPreparationSlot=locator;
-  await assert.rejects(source.prepareAndSign(request,new AbortController().signal,()=>{}),/OUTCOME_UNKNOWN/);
+  await operation.readState();const source=operation.normalStartPreparationResultSource(window,session,7),before=f.writes.length,calls=f.calls(),beforeEffects=effects,ownerEnd=end;
+  const readBudget=()=>({expiresAt:now+1800,remainingMs:119});
+  const wrong={...request,executionId:id(99),windowRef:ref(99)};await assert.rejects(source.prepareAndSign(wrong,new AbortController().signal,()=>{},readBudget));assert.equal(f.writes.length,before);assert.equal(lookups,0);
+  const abort=new AbortController();abort.abort();await assert.rejects(source.prepareAndSign(request,abort.signal,()=>{},readBudget));assert.equal(f.writes.length,before);
+  const replaced=operation.normalStartPreparationResultSource(window,session,7);f.ports.normalStartPreparationSlot=()=>selector;await assert.rejects(replaced.prepareAndSign(request,new AbortController().signal,()=>{},readBudget),/CONTEXT_CHANGED/);assert.equal(f.writes.length,before);f.ports.normalStartPreparationSlot=locator;
+  await assert.rejects(source.prepareAndSign(request,new AbortController().signal,()=>{},readBudget),/OUTCOME_UNKNOWN/);
   const sent=f.writes.slice(before);assert.equal(sent.length,1);assert.equal(sent[0].operation,'SIGN_NORMAL_START_PREPARATION_RESULT_V1');assert.deepEqual(sent[0].payload,{attemptId:f.stored().attemptId,slotRef:selector,requestRef:{id:request.requestId,version:1,contentHash:hash(request)},contextEpoch:7});
+  assert.equal(sent[0].callExpiresAt,new Date(now+1800).toISOString());assert(sent[0].remainingMs>0&&sent[0].remainingMs<=119);
+  assert.equal(end,ownerEnd,'결과 호출의 축소 기한이 원 host 회수 예산을 변경하지 않는다');
   assert.equal(lookups,1);assert.equal(effects,beforeEffects+1);assert.equal(f.calls(),calls);assert.equal(sent.some(v=>['SIGN_PROOF','SIGN_NATIVE_FIRST_RECEIVE_PROOF','SIGN_NATIVE_PREPARATION_PROOF'].includes(v.operation)),false);
-  await assert.rejects(source.prepareAndSign(request,new AbortController().signal,()=>{}),/PROTECTION_UNAVAILABLE/);assert.equal(f.writes.length,before+1);assert.equal(lookups,1);
+  await assert.rejects(source.prepareAndSign(request,new AbortController().signal,()=>{},readBudget),/PROTECTION_UNAVAILABLE/);assert.equal(f.writes.length,before+1);assert.equal(lookups,1);
+  const lookupTimeout=operation.normalStartPreparationResultSource(window,session,7);
+  const expiredDuringLookup=()=>{if(lookups>1)throw Error('TEST_SIGN_CALL_EXPIRED');return readBudget();};
+  await assert.rejects(lookupTimeout.prepareAndSign(request,new AbortController().signal,()=>{},expiredDuringLookup),/TEST_SIGN_CALL_EXPIRED/);
+  assert.equal(lookups,2);assert.equal(f.writes.length,before+1);assert.equal(effects,beforeEffects+1);assert.equal(end,ownerEnd);
  }finally{await operation.close();}
 });
 
@@ -711,4 +718,44 @@ test('먼저 도착한 Delivery는 ARM 유실·원 E 만료·인증 ABA에서 UN
 });
 test('STREAM metadata UNKNOWN 뒤 원 ARM의 늦은 정상 HTTP 결과도 UNKNOWN을 ARMED로 덮지 않는다',async()=>{
  const oldNow=Date.now;let f;try{f=await receiveSettingsFixture();Date.now=f.dependencies.now;const v=await receiveArmPending(f);f.clock.streamJson();let before;for(let i=0;i<300;i++){before=await f.api.nativeReceiveStatus(v.attempt,v.epoch);if(before.value.phase==='UNKNOWN')break;await Promise.resolve();}assert.equal(before.value.phase,'UNKNOWN');f.clock.releaseArm(false);assert.equal((await v.pending).ok,false);const after=await f.api.nativeReceiveStatus(v.attempt,v.epoch);assert.deepEqual(after,before);assert.equal(f.clock.currentReads,0);assert.equal(f.clock.requests.filter(v=>v.path.endsWith('/arm')).length,1);assert.equal(f.writes.filter(v=>v.operation==='SIGN_NATIVE_FIRST_RECEIVE_PROOF').length,3);}finally{f?.dispose();if(f){await until(()=>f.receiveTimers.size===0);assert.equal(f.timers(),0);}Date.now=oldNow;}
+});
+
+test('normal 준비 결과 signer cap이 늦은 응답을 버려도 원 helper 종료는 한 번만 수거한다',async()=>{
+ const f=hostFixture(),now=Date.parse('2030-01-01T00:00:00.000Z'),end=now+10000;
+ let expired=false;const originalSpawn=f.ports.spawn,frames=[];
+ const ports={...f.ports,spawn:(...args)=>{
+  const child=originalSpawn(...args);
+  child.stdin.write=(bytes,encoding,done)=>{
+   const frame=JSON.parse(bytes.toString());assert.equal(frame.operation,'SIGN_NORMAL_START_PREPARATION_RESULT_V1');frames.push(frame);
+   queueMicrotask(()=>{
+    expired=true;
+    const raw={schemaVersion:1,purpose:'DESKTOP_TRUST_KEY_RESULT_V1',requestId:frame.requestId,sequence:frame.sequence,rootIdentity:'TEST_ONLY_ROOT',data:{state:'NORMAL_START_PREPARATION_RESULT_SIGNED'}};
+    child.stdout.emit('data',Buffer.from(canonicalJson(raw)+'\n'));done();
+   });return true;
+  };
+  return child;
+ }};
+ const attempts=[],host={signal:new AbortController().signal,check:()=>{},callExpiresAt:()=>new Date(end).toISOString(),remainingMs:()=>{attempts.push(end-now);return end-now;}};
+ const helper=contentHash(f.image),client=createTrustKeyHostClient({path:'C:\\Anvil\\resources\\AnvilTrustKeyHost.exe',signerRef:{id:ID,version:1,contentHash:helper},helperHash:helper},ports),channel=await client.open(host);
+ const budget=()=>{if(expired)throw Error('CALL_DEADLINE');return {expiresAt:now+1000,remainingMs:250};};
+ await assert.rejects(channel.send('SIGN_NORMAL_START_PREPARATION_RESULT_V1',{},budget),/OUTCOME_UNKNOWN/);
+ await assert.rejects(channel.send('SIGN_NORMAL_START_PREPARATION_RESULT_V1',{},budget),/OUTCOME_UNKNOWN/);
+ const beforeClose=attempts.length;assert.deepEqual(await channel.close(),{state:'UNKNOWN'});
+ assert.equal(attempts[beforeClose],10000);assert.equal(f.ends(),1);
+ assert.equal(frames.length,1);assert.equal(frames[0].callExpiresAt,new Date(now+1000).toISOString());assert.equal(frames[0].remainingMs,250);
+});
+
+test('normal 준비 결과의 native frame budget은 이미 열린 root의 서명에만 적용되고 물리 회수 부모를 보존한다',()=>{
+ const text=sourceFs.readFileSync(require('node:path').resolve(__dirname,'../../apps/connector/native/DesktopTrustKeyHostSource.cs'),'utf8');
+ const regular=text.slice(text.indexOf(' internal async Task<int> RunAsync()'),text.indexOf(' readonly HashSet<string> signedProofs'));
+ assert.match(regular,/String\.Equals\(operation,"SIGN_NORMAL_START_PREPARATION_RESULT_V1",StringComparison\.Ordinal\)\)\{if\(root==null\)throw Invalid\(\);resultFrame=budget\.Slice\(frameExpiry,Math\.Min\(2000,\(int\)remaining\)\);\}\s*else budget\.Tighten\(frameExpiry,\(int\)remaining\)/);
+ assert.match(regular,/resultFrame\?\.Check\(\);result=Dispatch\(operation,Map\(f\["payload"\]\),resultFrame\)/);
+ assert.match(regular,/await Reply\(reply,resultFrame\)/);
+ assert.match(regular,/finally\{if\(normalStartPreparationProducer!=null\)\{try\{normalStartPreparationProducer\.Dispose\(\);/);
+ const signer=text.slice(text.indexOf('  if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'),text.indexOf('  if(operation=="SIGN_NATIVE_FIRST_RECEIVE_PROOF")'));
+ assert.match(signer,/if\(resultFrame==null\)throw Invalid\(\);resultFrame\.Check\(\)/);
+ assert.match(signer,/call=resultFrame;call\.Tighten\(resultEnd,call\.Remaining\(\)\)/);
+ assert.match(signer,/call\.Tighten\(permit\.ExpiresAt,call\.Remaining\(\)\)/);
+ assert.match(signer,/SignNormalStartPreparationResultOwned\(root,Id\(record,"pendingKeyId"\),permit,\(\)=>call\.Remaining\(\),resultCurrent\)/);
+ assert.doesNotMatch(signer,/budget\.Tighten/);
 });

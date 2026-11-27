@@ -15,7 +15,7 @@ test('normal 준비 결과 signer는 native owned slot·durable ClaimOnce 뒤에
  const permit=s.slice(s.indexOf('internal sealed class NormalStartResultPermit'),s.indexOf('internal static Dictionary<string,object> ValidateFirstReceiveFrame'));
  assert(permit.includes('Materials()!=materials'));assert(permit.includes('slotAliases.Contains(slot.SlotId)'));assert(permit.includes('Text(selector,"contentHash")!=slotHash'));
  assert(permit.includes('Span(request,10000,at)'));assert(permit.includes('Span(proof,2000,at)'));assert(permit.includes('Digest(result)'));assert(permit.includes('"NORMAL_START_PREPARATION_RESULT_PROOF_V1"'));
- assert(permit.includes('slot.ClaimOnce(slotHash,proofHash);claimed=true;Check(true)'));assert(permit.includes('slot.ConfirmSigned(slotHash,proofHash);Check(true)'));assert(permit.includes('slot.PreserveUnknown()'));
+ assert(permit.includes('slot.ClaimOnce(slotHash,proofHash);claimed=true;Check(true)'));assert(permit.includes('var answer=Output(signature);slot.ConfirmSigned(slotHash,proofHash,answer);Check(true);finished=true;return answer;'));assert(permit.includes('slot.PreserveUnknown()'));
  assert(permit.includes('ReceiveId(receipt,"attemptId")!=ReceiveId(request,"attemptId")'));assert(!permit.includes('Id(request,"attemptId")!=slot.OriginalAttemptId'));
  assert(s.includes('NormalStartPreparationResultSlot> normalStartResultPort=null'));assert(!s.includes('new NormalStartPreparationResultSlot'));
 });

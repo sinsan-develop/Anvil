@@ -377,19 +377,21 @@ export class NativeFirstReceiveHumanClient{
   if(!owned||owned.phase!=='RECEIVED'||!owned.request||!owned.carrier||!this.#receiveSecret||!this.#receiveProfile
    ||!receiveRecord(source,['prepareAndSign'])||typeof source.prepareAndSign!=='function'||types.isProxy(source.prepareAndSign))return this.#phaseUnavailable();
   const prepare=source.prepareAndSign,request=receiveCopy(owned.request),carrier=owned.carrier,secret=this.#receiveSecret;
-  owned.check();carrier.check();const start=this.#now(),call=this.#receiveCallBudget(Date.parse(request.issuedAt),Math.min(Date.parse(request.expiresAt),start+2000));call.narrow(start+2000);
-  const check=()=>{owned.check();carrier.check();call.check();if(!receiveRecord(source,['prepareAndSign'])||source.prepareAndSign!==prepare)throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');};
+  owned.check();carrier.check();const start=this.#now(),startTick=performance.now(),call=this.#receiveCallBudget(Date.parse(request.issuedAt),Math.min(Date.parse(request.expiresAt),start+2000));call.narrow(start+2000);
+  const remaining=()=>Math.floor(Math.min(call.remaining(),startTick+call.until()-start-performance.now()));
+  const check=()=>{owned.check();carrier.check();if(remaining()<1||!receiveRecord(source,['prepareAndSign'])||source.prepareAndSign!==prepare)throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');};
+  const readBudget=()=>{check();const remainingMs=remaining();if(remainingMs<1)throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');return Object.freeze({expiresAt:call.until(),remainingMs});};
   const streamSignal=this.#streamController?.signal,abort=()=>call.controller.abort();streamSignal?.addEventListener('abort',abort,{once:true});if(streamSignal?.aborted)abort();
   owned.phase='SENDING';let bytes:Buffer|undefined;
   try{
    // frame 후보만으로는 전송하지 않는다. 같은 원 응답의 정상 EOF가 2초 호출 창 안에서 확정돼야 한다.
    await this.#awaitReceiveCall(carrier.complete,call);check();
-   check();const supplied=await this.#awaitReceiveCall(Reflect.apply(prepare,source,[request,call.controller.signal,(at:unknown)=>call.narrow(at)]),call);check();
+   check();const supplied=await this.#awaitReceiveCall(Reflect.apply(prepare,source,[request,call.controller.signal,(at:unknown)=>{check();call.narrow(at);check();},readBudget]),call);check();
    if(!receiveRecord(supplied,['result','proof','signature'])||typeof supplied.signature!=='string'||!/^[A-Za-z0-9_-]{85}[AQgw]$/.test(supplied.signature)||Buffer.byteLength(receiveCanonical(supplied))>8192)throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
    const packet=matchNormalStartPreparationResult(request,supplied.result,supplied.proof),signature=supplied.signature;
    normalSignature(owned.publicKeySpki,signature,packet.proof,request.hostPublicKeyFingerprint);
    call.narrow(Date.parse(packet.proof.expiresAt));check();if(this.#now()<Date.parse(packet.proof.issuedAt))throw Error('NATIVE_RECEIVE_CONTEXT_CHANGED');
-   bytes=await normalPreparationPost(this.#receiveProfile.snapshot,request,packet.result,packet.proof,signature,secret,call.controller.signal,check,()=>Math.floor(Math.min(call.remaining(),start+2000-this.#now())),this.#httpsPorts);check();
+   bytes=await normalPreparationPost(this.#receiveProfile.snapshot,request,packet.result,packet.proof,signature,secret,call.controller.signal,check,remaining,this.#httpsPorts);check();
    const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes),value=parseWireJson(text);if(receiveCanonical(value)!==text||!receiveRecord(value,['status','ref','snapshot'])||value.status!=='NORMAL_START_PREPARATION_RESULT_STORED'||!receiveRef(value.ref)||value.ref.version!==1
     ||!receiveRecord(value.snapshot,['schemaVersion','purpose','recordId','requestRef','peerReceiptRef','resultHash','proofHash','recordedAt','executionAuthorized','dispatchPerformed']))throw Error('NATIVE_RECEIVE_FRAME_INVALID');
    const s=value.snapshot;

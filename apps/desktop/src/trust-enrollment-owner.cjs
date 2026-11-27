@@ -677,7 +677,7 @@ const stable=()=>{lease.check();if(own(ports,'helperPath')!==helperPath||names.s
 const call=async(i,args)=>{stable();const v=await Reflect.apply(methods[i],ports,args);stable();return v;};
 
 /** @type {any} */let client=null;
-/** @type {{send:(operation:string,payload:any)=>Promise<any>,close:()=>Promise<any>,inspectionBudget:()=>{frames:number,remainingMs:number},executionConfiguration:(action:string,attemptId:string,value:unknown)=>Promise<unknown>,prepareSdkChildSource:(raw:unknown)=>Promise<import('./trust-key-host-client.cjs').PreparedSdkChildSource>,beginSdkChildSupervisor:(original:object,firstCurrent?:()=>void)=>Promise<import('./trust-key-host-client.cjs').PreparedSdkSupervisorHandoff>}|null} */let channel=null;
+/** @type {{send:(operation:string,payload:any,readBudget?:()=>{expiresAt:number,remainingMs:number})=>Promise<any>,close:()=>Promise<any>,inspectionBudget:()=>{frames:number,remainingMs:number},executionConfiguration:(action:string,attemptId:string,value:unknown)=>Promise<unknown>,prepareSdkChildSource:(raw:unknown)=>Promise<import('./trust-key-host-client.cjs').PreparedSdkChildSource>,beginSdkChildSupervisor:(original:object,firstCurrent?:()=>void)=>Promise<import('./trust-key-host-client.cjs').PreparedSdkSupervisorHandoff>}|null} */let channel=null;
 /** @type {{sequence:number,containerHash:string|null,catalogueHighWater:any,record:any}|null} */let state=null;
 /** @type {Record<string,any>|null} */let committed=null;
 /** @type {{profile:any,value:any}|null} */let material=null;
@@ -775,13 +775,13 @@ const normalStartPreparationResultSource=(rawWindow,rawSession,contextEpoch)=>{
   const at=Reflect.apply(methods[7],ports,[]);if(!Number.isFinite(at)||at<last||at>=Math.min(Date.parse(committed.credential.expiresAt),Date.parse(committed.registration.registrationExpiresAt)))return fail('DEADLINE');last=at;return at;
  };
  fresh();
- return Object.freeze({prepareAndSign:async(/** @type {unknown} */rawRequest,/** @type {AbortSignal} */signal,/** @type {(at:number)=>void} */narrow)=>{
+ return Object.freeze({prepareAndSign:async(/** @type {unknown} */rawRequest,/** @type {AbortSignal} */signal,/** @type {(at:number)=>void} */narrow,/** @type {()=>{expiresAt:number,remainingMs:number}} */readBudget)=>{
   let dispatched=false,parser,bytes;
   try{
    fresh();if(used)return fail('PROTECTION_UNAVAILABLE');
    const aborted=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted')?.get;
-   if(!aborted||types.isProxy(signal)||typeof narrow!=='function'||types.isProxy(narrow))return fail('CONTEXT_CHANGED');
-   const check=()=>{fresh();if(Reflect.apply(aborted,signal,[]))return fail('CONTEXT_CHANGED');};check();
+   if(!aborted||types.isProxy(signal)||typeof narrow!=='function'||types.isProxy(narrow)||typeof readBudget!=='function'||types.isProxy(readBudget))return fail('CONTEXT_CHANGED');
+   const check=()=>{fresh();if(Reflect.apply(aborted,signal,[]))return fail('CONTEXT_CHANGED');return readBudget();};check();
    const request=firstReceiveSnapshot(rawRequest),text=canonicalJson(request);if(Buffer.byteLength(text)>8188)return fail('PROTECTION_UNAVAILABLE');
    bytes=Buffer.alloc(Buffer.byteLength(text)+4);bytes.writeUInt32BE(Buffer.byteLength(text));bytes.write(text,4,'utf8');
    parser=Reflect.apply(methodDescriptor.value,Decoder,[{window,session},()=>fresh()]);const candidate=parser.push(bytes);check();
@@ -790,9 +790,9 @@ const normalStartPreparationResultSource=(rawWindow,rawSession,contextEpoch)=>{
     ||canonicalJson(candidate.request.connectorRef)!==canonicalJson(committed.registration.connectorRef))return fail('CONTEXT_CHANGED');
    const requestRef=fullref(candidate.requestRef),slotRef=fullref(Reflect.apply(locator,ports,[Object.freeze({attemptId:row.attemptId,contextEpoch,requestRef:Object.freeze({...requestRef})})]));check();
    if([requestRef.id,window.ref.id,session.ref.id,committed.registration.registrationRef.id,committed.registration.connectorRef.id].includes(slotRef.id))return fail('PROTECTION_UNAVAILABLE');
-    const end=Math.min(Date.parse(candidate.request.expiresAt),fresh()+2000);narrow(end);check();
+   narrow(Math.min(Date.parse(candidate.request.expiresAt),check().expiresAt));check();
    used=true;lease.markEffect();dispatched=true;
-   const reply=firstReceiveSnapshot(await originalChannel.send('SIGN_NORMAL_START_PREPARATION_RESULT_V1',{attemptId:row.attemptId,slotRef,requestRef,contextEpoch}));check();
+   const reply=firstReceiveSnapshot(await originalChannel.send('SIGN_NORMAL_START_PREPARATION_RESULT_V1',{attemptId:row.attemptId,slotRef,requestRef,contextEpoch},check));check();
    if(reply?.state==='SOURCE_UNAVAILABLE'){catalogueExact(reply,'state');return fail('PROTECTION_UNAVAILABLE');}
    const signed=catalogueExact(reply,'state,slotRef,requestRef,result,proof,signature');
    if(signed.state!=='NORMAL_START_PREPARATION_RESULT_SIGNED'||canonicalJson(signed.slotRef)!==canonicalJson(slotRef)||canonicalJson(signed.requestRef)!==canonicalJson(requestRef)
