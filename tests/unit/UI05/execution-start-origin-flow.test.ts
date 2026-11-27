@@ -737,3 +737,137 @@ test('UI04 영수증 경로도 원장을 다시 대조하며 지연한 이전 �
   assert.equal(q.sent.filter(v=>v.init.method==='POST').length,0);
  }finally{await q.close();}
 });
+
+/** 원 저장기/인증 거래가 만든 201개 WAITING이다. 원장·명령·영수증 행을 미리 쓰지 않는다. */
+async function fillWaitingQueue(q:Awaited<ReturnType<typeof mountApp>>,count=201){
+ const f=q.f,csrf=createHmac('sha256',Buffer.alloc(32,7)).update('csrf:'+f.token).digest('base64url');
+ const issue=async(operation:string,payload:any,targetId:string|null=null,expectedVersion=0)=>{
+  const command={schemaVersion:1 as const,projectId:f.pid,commandId:originalUuid(),clientId:f.cid,controlGeneration:1,operation,targetId,expectedVersion,baselineRefs:[],approvalRef:null,payload};
+  return f.access.authenticated(f.token,csrf,(db,actor)=>operation==='startStage'?f.queue.start(db,actor,command,f.policyRef):f.queue.cancel(db,actor,command,f.policyRef));
+ };
+ while(q.f.tables.queue!.length<count)await issue('startStage',{...f.stage.data.snapshot.input,reason:'201 WAITING 한도 검산'});
+ assert.equal(new Set(f.tables.queue!.map(r=>r.request_id)).size,count);
+ await assert.rejects(q.client.get('/api/v1/projects/'+f.pid+'/queue'),(e:any)=>e.status===413&&e.code==='QUEUE_VIEW_LIMIT_EXCEEDED');
+ return{cancel:()=>issue('cancelQueuedRequest',{requestRef:f.stage.data.ref,reason:'후행 보호 검산에서 취소 확인'},f.stage.data.ref.id,1)};
+}
+
+for(const outcome of ['SAVED','CANCELLED','LOST'] as const)test('실제 201 WAITING 영수증 후보는 '+outcome+'에서 기존 FRESH 저장 검산과 원명령을 지킨다',{timeout:45000},async()=>{
+ const q=await mountApp(),unavailable:string[]=[];
+ try{
+  const ledger=await fillWaitingQueue(q,outcome==='CANCELLED'?202:201);
+  const client=new q.ui.ApiClient(q.client.transport),session={...q.session,csrfToken:createHmac('sha256',Buffer.alloc(32,7)).update('csrf:'+q.f.token).digest('base64url')},assignment={projectId:q.f.pid,...q.f.confirmed.data};
+  function Host(){const [buffers,setBuffers]=q.ui.React.useState({}),current=q.ui.React.useRef(buffers);return q.ui.React.createElement(q.ui.ExecutionStartOriginPanel,{client,session,assignment,waitingHint:q.f.stage.data,storage:{buffers,onChange:(key:string,action:Function)=>{const prior=current.current[key]??null,next=action(prior);if(prior===next)return false;current.current={...current.current,[key]:next};setBuffers(current.current);return true;}},onUnavailable:(code:string)=>unavailable.push(code)});}
+  await q.ui.React.act(async()=>q.root.render(q.ui.React.createElement(Host)));
+  await q.click('이 영수증의 대기 요청 원장에서 확인·선택');
+  await q.wait(()=>q.container.textContent.includes('대기 요청 현재성 미검산 영수증 후보'));
+  assert(!q.container.textContent.includes('동일 WAITING 요청 원장 확인'));
+  await q.change('등록 준비',q.f.preparation.data.ref.id);await q.change('책임 예약',q.f.binding.data.ref.id);await q.change('기록 이유','201개 뒤 원 영수증만 명시 저장');
+  assert(q.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='등록 준비 고정')!.disabled);
+  await q.change('미검산 대기 영수증 후보 확인',true);
+  const before=q.sent.length;await q.click('등록 준비 고정');await q.wait(()=>q.container.textContent.includes('상태 PREPARED'));
+  const paths=q.sent.slice(before).map(v=>v.path);
+  assert(paths.includes(`/api/v1/projects/${q.f.pid}/execution-preparations/${q.f.preparation.data.ref.id}/versions/1`));
+  assert(paths.includes(`/api/v1/projects/${q.f.pid}/role-bindings/${q.f.binding.data.ref.id}/versions/1`));
+  assert.equal(originPosts(q).length,0);assert.equal(q.f.tables.origins!.length,0);
+  if(outcome==='CANCELLED'){await ledger.cancel();await assert.rejects(q.client.get('/api/v1/projects/'+q.f.pid+'/queue'),(e:any)=>e.status===413);}
+  if(outcome==='LOST')q.mode.lost=true;
+  const checkbox=q.nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent.includes('선택 원자료의 비실행 저장을 확인했습니다'))!,props=Object.keys(checkbox).find(k=>k.startsWith('__reactProps$'))!;
+  await q.ui.React.act(async()=>{(checkbox as any)[props].onChange({target:{checked:true}});});await q.click('원자료 명시 저장');
+  await q.wait(()=>outcome==='SAVED'?hasPanel(q,originPanelLabel):q.container.textContent.includes('상태 UNKNOWN'));
+  assert.equal(originPosts(q).length,1);assert.deepEqual(originPosts(q)[0]!.body.payload.stageRequestRef,q.f.stage.data.ref);
+  assert.equal(q.f.tables.origins!.length,outcome==='CANCELLED'?0:1);assert.deepEqual(unavailable,[]);
+  if(outcome==='CANCELLED')assert(q.container.textContent.includes('EXECUTION_START_ORIGIN_NOT_WAITING'));
+  if(outcome==='SAVED')assert.equal(q.f.tables.origins![0]!.snapshot_json.executionAuthorized,false);
+  if(outcome==='LOST'){assert(q.container.textContent.includes(originPosts(q)[0]!.body.commandId));assert(!q.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='원자료 명시 저장'));}
+  assert.deepEqual(q.f.state.unsupported,[]);
+ }finally{await q.close();}
+});
+
+const nodeProps=(node:MemoryNode)=>{const key=Object.keys(node).find(k=>k.startsWith('__reactProps$'));assert(key);return(node as any)[key];};
+async function mountReceiptCandidate(q:Awaited<ReturnType<typeof mountApp>>,postStatus=200){
+ const unavailable:string[]=[],original=q.f.stage.data,transport=q.client.transport;
+ const client=new q.ui.ApiClient(async(...args:Parameters<typeof transport>)=>{const response=await transport(...args);return args[1]?.method==='POST'&&postStatus!==200?Response.json({code:'AUTH_REQUIRED'},{status:postStatus}):response;});
+ const session={...q.session,csrfToken:createHmac('sha256',Buffer.alloc(32,7)).update('csrf:'+q.f.token).digest('base64url')},assignment={projectId:q.f.pid,...q.f.confirmed.data};
+ let hint:any=original,visible=true,latest:any={};
+ function Host(){const [buffers,setBuffers]=q.ui.React.useState({}),current=q.ui.React.useRef(buffers);latest=current.current;return visible?q.ui.React.createElement(q.ui.ExecutionStartOriginPanel,{client,session,assignment,waitingHint:hint,storage:{buffers,onChange:(key:string,action:Function)=>{const prior=current.current[key]??null,next=action(prior);if(prior===next)return false;current.current={...current.current,[key]:next};latest=current.current;setBuffers(current.current);return true;}},onUnavailable:(code:string)=>unavailable.push(code)}):null;}
+ const render=()=>q.ui.React.act(async()=>q.root.render(q.ui.React.createElement(Host)));
+ const queue=`/api/v1/projects/${q.f.pid}/queue`;
+ q.mode.getOverride=url=>url===queue?Response.json({code:'QUEUE_VIEW_LIMIT_EXCEEDED'},{status:413}):undefined;
+ await render();
+ return{client,original,unavailable,render,buffer:()=>Object.values(latest)[0] as any,setHint:async(value:any)=>{hint=value;await render();},remount:async()=>{visible=false;await render();visible=true;await render();}};
+}
+async function prepareReceiptCandidate(q:Awaited<ReturnType<typeof mountApp>>){
+ await q.click('이 영수증의 대기 요청 원장에서 확인·선택');await q.wait(()=>q.container.textContent.includes('대기 요청 현재성 미검산 영수증 후보'));
+ await q.change('등록 준비',q.f.preparation.data.ref.id);await q.change('책임 예약',q.f.binding.data.ref.id);await q.change('기록 이유','원 영수증 미검산 후보');
+ await q.change('미검산 대기 영수증 후보 확인',true);await q.click('등록 준비 고정');await q.wait(()=>q.container.textContent.includes('상태 PREPARED'));
+}
+const receiptSaveAck=(q:Awaited<ReturnType<typeof mountApp>>)=>q.nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent.includes('선택 원자료의 비실행 저장을 확인했습니다'))!;
+
+for(const fault of ['OTHER_413','WRONG_STATUS','AUTH401','AUTH403','NOT_FOUND','CANCELLED','HASH','ACTOR','ASSIGNMENT'] as const)test('영수증 후보의 '+fault+'는 예외로 승격하지 않는다',async()=>{
+ const q=await mountApp();try{
+  const v=await mountReceiptCandidate(q),hint=structuredClone(v.original),path=`/api/v1/projects/${q.f.pid}/queue`;
+  let status=413,code='QUEUE_VIEW_LIMIT_EXCEEDED';
+  if(fault==='OTHER_413')code='OTHER_LIMIT';if(fault==='WRONG_STATUS')status=409;
+  if(fault==='AUTH401'){status=401;code='AUTH_REQUIRED';}if(fault==='AUTH403'){status=403;code='PROJECT_OPERATION_DENIED';}if(fault==='NOT_FOUND'){status=404;code='NOT_FOUND';}
+  if(fault==='CANCELLED')hint.snapshot.state='CANCELLED';
+  if(fault==='ACTOR')hint.snapshot.requestedBy.userId=exampleRef(2201).id;
+  if(fault==='ASSIGNMENT')hint.snapshot.input.startNodeRef.nodeId='other';
+  if(['CANCELLED','ACTOR','ASSIGNMENT'].includes(fault))hint.ref.contentHash=recordHash(hint.snapshot);
+  if(fault==='HASH')hint.ref.contentHash='e'.repeat(64);
+  await v.setHint(hint);q.mode.getOverride=url=>url===path?Response.json({code},{status}):undefined;
+  const before=q.sent.length;await q.click('이 영수증의 대기 요청 원장에서 확인·선택');await q.wait(()=>q.nodes().some(n=>n.getAttribute('role')==='alert'));
+  assert(!q.container.textContent.includes('대기 요청 현재성 미검산 영수증 후보'));assert(!q.nodes().some(n=>n.getAttribute('aria-label')==='대기 요청'));
+  assert.deepEqual(q.sent.slice(before).map(v=>v.path),[path]);assert.equal(originPosts(q).length,0);assert(!v.buffer());
+  assert.deepEqual(v.unavailable,fault==='AUTH401'?['AUTH_REQUIRED']:fault==='AUTH403'?['PROJECT_OPERATION_DENIED']:fault==='NOT_FOUND'?['NOT_FOUND']:[]);
+ }finally{await q.close();}
+});
+
+for(const loss of ['HINT_REPLACED','HINT_REMOVED','ABA','REMOUNT'] as const)test('영수증 후보 PREPARED의 '+loss+'는 옛·새 ACK/저장을 막고 발행 전 명시 폐기만 허용한다',async()=>{
+ const q=await mountApp();try{
+  const v=await mountReceiptCandidate(q);await prepareReceiptCandidate(q);const original=v.buffer(),packet=original.packet;
+  const ack=nodeProps(receiptSaveAck(q)).onChange;await q.ui.React.act(async()=>ack({target:{checked:true}}));
+  const oldSave=nodeProps(q.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='원자료 명시 저장')!).onClick;
+  if(loss==='HINT_REPLACED')await v.setHint(structuredClone(v.original));if(loss==='HINT_REMOVED')await v.setHint(null);
+  if(loss==='ABA'){const hash=(globalThis as any).location.hash;await q.ui.React.act(async()=>{await q.navigate('#/projects/'+q.f.pid);await q.navigate(hash);});}
+  if(loss==='REMOUNT')await v.remount();
+  const before=q.sent.length;await q.ui.React.act(async()=>{ack({target:{checked:true}});oldSave();});
+  const current=q.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='원자료 명시 저장')!;assert(current.disabled);await q.ui.React.act(async()=>nodeProps(current).onClick());
+  assert.equal(q.sent.length,before);assert.equal(v.buffer(),original);assert.equal(v.buffer().packet,packet);assert.equal(v.buffer().phase,'PREPARED');assert.equal(originPosts(q).length,0);assert.deepEqual(v.unavailable,[]);
+  await q.click('미전송 영수증 후보 준비 폐기');await q.wait(()=>!v.buffer());await v.setHint(v.original);await prepareReceiptCandidate(q);
+  assert.notEqual(v.buffer().packet,packet);assert.notEqual(v.buffer().packet.command.commandId,packet.command.commandId);assert.equal(originPosts(q).length,0);
+ }finally{await q.close();}
+});
+
+test('영수증 후보 확인과 저장 ACK 철회는 렌더 전 및 보호 GET 대기 뒤에도 전송을 막는다',async()=>{
+ const q=await mountApp();let release!:(response:Response)=>void;
+ try{
+  const v=await mountReceiptCandidate(q);await q.click('이 영수증의 대기 요청 원장에서 확인·선택');await q.wait(()=>q.container.textContent.includes('대기 요청 현재성 미검산 영수증 후보'));
+  await q.change('등록 준비',q.f.preparation.data.ref.id);await q.change('책임 예약',q.f.binding.data.ref.id);await q.change('기록 이유','동기 확인 철회');await q.change('미검산 대기 영수증 후보 확인',true);
+  const confirm=nodeProps(q.nodes().find(n=>n.getAttribute('aria-label')==='미검산 대기 영수증 후보 확인')!).onChange,prepare=nodeProps(q.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='등록 준비 고정')!).onClick;
+  const before=q.sent.length;await q.ui.React.act(async()=>{confirm({target:{checked:false}});prepare();});assert.equal(q.sent.length,before);assert(!v.buffer());
+  const project=`/api/v1/projects/${q.f.pid}`,base=q.mode.getOverride;let held=new Promise<Response>(yes=>release=yes);
+  q.mode.getOverride=url=>url===project?held:base?.(url);
+  await q.change('미검산 대기 영수증 후보 확인',true);const start=q.sent.length;await q.click('등록 준비 고정');await q.wait(()=>q.sent.slice(start).some(v=>v.path===project));
+  await q.ui.React.act(async()=>confirm({target:{checked:false}}));release(Response.json({id:q.f.pid,participation:'OWNER',controlState:{status:'HELD',actorId:q.f.uid,clientId:q.f.cid,generation:1}}));await q.wait(()=>!q.container.textContent.includes('원 보호 자료 확인 중'));assert(!v.buffer());
+  q.mode.getOverride=base;await q.change('미검산 대기 영수증 후보 확인',true);await q.click('등록 준비 고정');await q.wait(()=>!!v.buffer());
+  const ack=nodeProps(receiptSaveAck(q)).onChange;await q.ui.React.act(async()=>ack({target:{checked:true}}));
+  const save=nodeProps(q.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='원자료 명시 저장')!).onClick;
+  const n=q.sent.length;await q.ui.React.act(async()=>{ack({target:{checked:false}});save();});assert.equal(q.sent.length,n);
+  await q.ui.React.act(async()=>ack({target:{checked:true}}));held=new Promise<Response>(yes=>release=yes);q.mode.getOverride=url=>url===project?held:base?.(url);
+  const end=q.sent.length;await q.click('원자료 명시 저장');await q.wait(()=>q.sent.slice(end).some(v=>v.path===project));await q.ui.React.act(async()=>ack({target:{checked:false}}));
+  release(Response.json({id:q.f.pid,participation:'OWNER',controlState:{status:'HELD',actorId:q.f.uid,clientId:q.f.cid,generation:1}}));await q.wait(()=>!q.container.textContent.includes('원 보호 자료 확인 중'));
+  assert.equal(originPosts(q).length,0);assert.equal(v.buffer().phase,'PREPARED');assert.deepEqual(v.unavailable,[]);
+ }finally{release?.(Response.json({}));await q.close();}
+});
+
+for(const loss of ['HINT','ABA'] as const)for(const status of [200,401])test('영수증 후보 POST 뒤 '+loss+' 폐기의 늦은 '+status+'는 원 UNKNOWN만 보존한다',async()=>{
+ const q=await mountApp();let release!:()=>void;const held=new Promise<void>(yes=>release=yes);
+ try{
+  const v=await mountReceiptCandidate(q,status);await prepareReceiptCandidate(q);const packet=v.buffer().packet;
+  await q.ui.React.act(async()=>nodeProps(receiptSaveAck(q)).onChange({target:{checked:true}}));q.mode.afterPost=()=>held;
+  await q.click('원자료 명시 저장');await q.wait(()=>q.f.tables.origins!.length===1);
+  if(loss==='HINT')await v.setHint(null);else{const hash=(globalThis as any).location.hash;await q.ui.React.act(async()=>{await q.navigate('#/projects/'+q.f.pid);await q.navigate(hash);});}
+  release();await q.wait(()=>v.buffer().phase==='UNKNOWN');assert.equal(v.buffer().packet,packet);assert.equal(originPosts(q).length,1);assert.deepEqual(v.unavailable,[]);
+  assert(!q.container.textContent.includes('AUTH_REQUIRED'));assert(!q.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='미전송 영수증 후보 준비 폐기'));
+ }finally{release();await q.close();}
+});

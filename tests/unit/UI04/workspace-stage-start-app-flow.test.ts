@@ -73,7 +73,7 @@ function fixture(){
   if(path.endsWith('/assignment-drafts/'+draft.ref.id+'/versions/1/decision'))return Response.json(decision);
   if(path.endsWith('/assignments/'+f.confirmed.ref.id+'/versions/1'))return Response.json(f.confirmed);
   if(path.includes('/result-pages'))return Response.json({projectId:pid,assignmentRef:f.confirmed.ref,items:[],hasMore:false,nextCursor:null,selectionState:'NOT_SELECTED',observedAt:f.at});
-  if(path.endsWith('/queue')){if(holdQueue){const held=holdQueue;holdQueue=null;return held.promise;}return Response.json({projectId:pid,items:queueItems??(receipt?[queueItem()]:[]),selection:'WAITING_ONLY',cancelledHistoryOmitted:true,observedAt:f.at,writerReservationPerformed:false,executionAuthorized:false,dispatchPerformed:false});}
+  if(path.endsWith('/queue')){if(holdQueue){const held=holdQueue;holdQueue=null;return held.promise;}if(queueItems&&queueItems.length>200)return Response.json({code:'QUEUE_VIEW_LIMIT_EXCEEDED'},{status:413});return Response.json({projectId:pid,items:queueItems??(receipt?[queueItem()]:[]),selection:'WAITING_ONLY',cancelledHistoryOmitted:true,observedAt:f.at,writerReservationPerformed:false,executionAuthorized:false,dispatchPerformed:false});}
   if(path.endsWith('/execution-preparations'))return Response.json({projectId:pid,assignmentRef:f.confirmed.ref,items:[],nextCursor:null,currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false});
   if(path.endsWith('/permission-policy')&&holdPolicy){const held=holdPolicy;holdPolicy=null;return held.promise;}
   if(path.endsWith('/commands')&&method==='POST'){
@@ -155,6 +155,36 @@ test('App UI04는 현재 단계의 확정 임무와 UI05의 동일 원 요청과
   await go(q.workspace);await openAssignment();assert(!continueLink());assert.equal(queueReads(),beforeHintRoute);
   await click('같은 WAITING 요청 원장 재조회');await wait(()=>container.textContent.includes('동일 WAITING 요청 원장 확인'));
   assert.equal(continueLink()?.getAttribute('href'),q.sessionRoute);
+  // App이 검산해 보관한 원 영수증만 전달한다. 이 fixture의 목록 한도는 서버 계약의 RAM 응답이다.
+  q.setQueueItems(Array.from({length:201},(_,i)=>({...q.queueItem(),requestRef:{...q.receipt().ref,id:'af040058-1111-4111-8111-'+String(500+i).padStart(12,'0')},sequence:i+1})));
+  await click('같은 WAITING 요청 원장 재조회');
+  const candidateLabel='원장 미검산 영수증으로 START 원자료 후보 열기';
+  await wait(()=>nodes().some(n=>n.tagName==='A'&&n.textContent===candidateLabel));
+  assert(!continueLink());assert(!container.textContent.includes('동일 WAITING 요청 원장 확인'));assert.equal(q.posts.length,2);
+  const candidate=nodes().find(n=>n.tagName==='A'&&n.textContent===candidateLabel)!;
+  const candidateProps=(candidate as any)[Object.keys(candidate).find(k=>k.startsWith('__reactProps'))!],refresh=button('같은 WAITING 요청 원장 재조회')!;
+  const heldCandidate=q.holdQueue();let prevented=false;
+  await ui.React.act(async()=>{(refresh as any)[Object.keys(refresh).find(k=>k.startsWith('__reactProps'))!].onClick();candidateProps.onClick({preventDefault(){prevented=true;}});});
+  assert(prevented,'재조회 시작은 React 반영 전 원 후보 링크를 소진한다');
+  heldCandidate.resolve(Response.json({code:'OTHER_LIMIT'},{status:413}));await wait(()=>container.textContent.includes('OTHER_LIMIT'));
+  assert(!nodes().some(n=>n.tagName==='A'&&n.textContent===candidateLabel));
+  for(const [status,code] of [[409,'QUEUE_VIEW_LIMIT_EXCEEDED'],[413,'OTHER_LIMIT']] as const){
+   const invalid=q.holdQueue();await click('같은 WAITING 요청 원장 재조회');invalid.resolve(Response.json({code},{status}));await wait(()=>!button('같은 WAITING 요청 원장 재조회')!.disabled);
+   assert(!nodes().some(n=>n.tagName==='A'&&n.textContent===candidateLabel));
+  }
+  const changedControl=q.hold();await click('같은 WAITING 요청 원장 재조회');changedControl.resolve(Response.json({...q.project,participation:'OWNER',controlState:{...q.project.controlState,generation:2}}));
+  await wait(()=>container.textContent.includes('PROJECT_CONTROL_CHANGED'));assert(!nodes().some(n=>n.tagName==='A'&&n.textContent===candidateLabel));
+  await click('같은 WAITING 요청 원장 재조회');await wait(()=>nodes().some(n=>n.tagName==='A'&&n.textContent===candidateLabel));
+  prevented=false;await ui.React.act(async()=>candidateProps.onClick({preventDefault(){prevented=true;}}));assert(prevented,'이전 후보 링크는 새 조회 결과를 채택하지 않는다');
+  const currentCandidate=nodes().find(n=>n.tagName==='A'&&n.textContent===candidateLabel)!,currentProps=(currentCandidate as any)[Object.keys(currentCandidate).find(k=>k.startsWith('__reactProps'))!];
+  const originalRoute=location.hash,beforeRoute=q.calls.length;location.hash=q.sessionRoute;prevented=false;
+  await ui.React.act(async()=>currentProps.onClick({preventDefault(){prevented=true;}}));assert(prevented);assert.equal(q.calls.length,beforeRoute);location.hash=originalRoute;
+  await go(candidate.getAttribute('href')!);await wait(()=>!!button(hintLabel));
+  await click(hintLabel);await wait(()=>container.textContent.includes('대기 요청 현재성 미검산 영수증 후보'));
+  assert.equal(selectedStage(),q.receipt().ref.id);assert.equal(q.posts.length,2);
+  assert(!container.textContent.includes('동일 WAITING 요청 원장 확인'));
+  await go(q.workspace);await openAssignment();q.setQueueItems(null);
+  await click('같은 WAITING 요청 원장 재조회');await wait(()=>!!continueLink());
   const good=q.queueItem(),other={...good,requestRef:{...good.requestRef,contentHash:'d'.repeat(64)}};
   q.setQueueItems([other]);await click('같은 WAITING 요청 원장 재조회');
   await wait(()=>container.textContent.includes('STAGE_START_QUEUE_NOT_FOUND'));assert(!continueLink());
