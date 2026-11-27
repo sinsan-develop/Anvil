@@ -258,3 +258,132 @@ test('실제 App은 POST 응답 HOLD 중 이탈·복귀의 늦은 성공을 새 
 test('실제 App은 응답 유실 UNKNOWN을 이탈·복귀 뒤 같은 명령으로 보존하고 자동 POST를 보내지 않는다',async()=>{const q=await mountApp();try{await prepareInApp(q);q.mode.lost=true;await q.click('원자료 명시 저장');await q.wait(()=>q.container.textContent.includes('상태 UNKNOWN'));const original=structuredClone(originPosts(q)[0]!.body);await q.navigate(`#/projects/${q.f.pid}`);await q.navigate(detailHash(q));await q.wait(()=>q.container.textContent.includes('상태 UNKNOWN'));assert(q.container.textContent.includes(original.commandId));assert(!q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 보호 원문'));assert(!q.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent==='원자료 명시 저장'));assert.equal(originPosts(q).length,1);assert.deepEqual(originPosts(q)[0]!.body,original);assert.deepEqual(q.f.state.unsupported,[]);}finally{await q.close();}assert.equal(q.f.active(),false);});
 test('실제 App은 확정 receipt 뒤 보호 GET 거절에도 원 receipt를 보존하고 복귀 후 원 ref GET만 재조회한다',async()=>{const q=await mountApp();try{await prepareInApp(q);q.mode.getDenied=true;await q.click('원자료 명시 저장');await q.wait(()=>q.container.textContent.includes('PROJECT_OPERATION_DENIED'));const original=structuredClone(originPosts(q)[0]!.body);assert(!q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 보호 원문'));await q.navigate(`#/projects/${q.f.pid}`);await q.navigate(detailHash(q));await q.wait(()=>q.container.textContent.includes('상태 SAVED'));assert(q.container.textContent.includes(original.commandId));assert(q.container.textContent.includes('확정 receipt 보존'));assert(!q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 보호 원문'));q.mode.getDenied=false;await q.click('저장 원문 다시 조회');await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 보호 원문'));assert(q.container.textContent.includes('원 packet 이탈 검산'));assert.equal(originPosts(q).length,1);assert.deepEqual(originPosts(q)[0]!.body,original);assert.deepEqual(q.f.state.unsupported,[]);}finally{await q.close();}assert.equal(q.f.active(),false);});
 test('실제 Panel은 주체·포트 교체와 원 문맥 복귀 뒤 늦은 응답을 본문에 귀속하지 않는다',async()=>{for(const mode of ['ACTOR','TRANSPORT']){const q=await mountApp();let release!:()=>void;const held=new Promise<void>(yes=>release=yes);try{await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 저장'));const baseSession={...q.session,csrfToken:createHmac('sha256',Buffer.alloc(32,7)).update('csrf:'+q.f.token).digest('base64url')},assignment={projectId:q.f.pid,...q.f.confirmed.data},transport=q.client.transport;let currentSession=baseSession;function Host(){const[state,setState]=q.ui.React.useState({}),live=q.ui.React.useRef(state);return q.ui.React.createElement(q.ui.ExecutionStartOriginPanel,{client:q.client,assignment,session:currentSession,storage:{buffers:state,onChange:(key:string,change:Function)=>{const prior=live.current[key]??null,next=change(prior);if(prior===next)return false;live.current={...live.current,[key]:next};setState(live.current);return true;}},onUnavailable:(code:string)=>{throw Error(code);}});}const render=()=>q.ui.React.act(async()=>q.root.render(q.ui.React.createElement(Host)));await render();await prepareInApp(q);q.mode.afterPost=()=>held;await q.click('원자료 명시 저장');await q.wait(()=>q.f.tables.origins!.length===1);const original=structuredClone(originPosts(q)[0]!.body);if(mode==='ACTOR')currentSession={...baseSession,user:{id:'00000000-0000-4000-8000-000000000999'}};else q.client.transport=async(...args:any[])=>Reflect.apply(transport,globalThis,args);await render();assert(!q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 보호 원문'));currentSession=baseSession;q.client.transport=transport;await render();release();await q.wait(()=>q.container.textContent.includes('상태 UNKNOWN'));assert(q.container.textContent.includes(original.commandId));assert(!q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 보호 원문'));assert(!q.container.textContent.includes('확정 receipt 보존'));assert.equal(originPosts(q).length,1);assert.deepEqual(originPosts(q)[0]!.body,original);assert.deepEqual(q.f.state.unsupported,[]);}finally{release();await q.close();}assert.equal(q.f.active(),false);}});
+
+async function selectOriginSources(q:Awaited<ReturnType<typeof mountApp>>){
+ await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='START 원자료 저장'));
+ await q.click('원자료 선택 목록 조회');
+ await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='대기 요청'));
+ await q.change('대기 요청',q.f.stage.data.ref.id);
+ await q.change('등록 준비',q.f.preparation.data.ref.id);
+ await q.change('책임 예약',q.f.binding.data.ref.id);
+ await q.change('기록 이유','대기 원자료의 최신 대조');
+}
+
+test('등록 준비는 원 대기 항목을 다시 읽고 취소·변경·중복을 로컬에서 거절한다',async()=>{
+ const q=await mountApp();try{
+  const pid=q.f.pid,path=`/api/v1/projects/${pid}/queue`;
+  const waiting={requestRef:q.f.stage.data.ref,state:'WAITING',sequence:q.f.stage.data.snapshot.sequence,reasonCodes:q.f.stage.data.snapshot.readinessIssues,blockedBy:[],reservedBudgetRef:null};
+  const variant=[
+   {items:[],code:'STAGE_START_QUEUE_NOT_FOUND'},
+   {items:[{...waiting,requestRef:{...waiting.requestRef,contentHash:'d'.repeat(64)}}],code:'STAGE_START_QUEUE_NOT_FOUND'},
+   {items:[{...waiting,sequence:waiting.sequence+1}],code:'STAGE_START_QUEUE_NOT_FOUND'},
+   {items:[waiting,waiting],code:'STAGE_QUEUE_RESPONSE_INVALID'},
+   {items:[{...waiting,state:'CANCELLED'}],code:'STAGE_QUEUE_RESPONSE_INVALID'},
+  ];
+  for(const {items,code} of variant){
+   q.mode.getOverride=null;
+   await selectOriginSources(q);
+   q.mode.getOverride=url=>url===path?Response.json({projectId:pid,items,selection:'WAITING_ONLY',cancelledHistoryOmitted:true,observedAt:q.f.stage.data.snapshot.queuedAt,writerReservationPerformed:false,executionAuthorized:false,dispatchPerformed:false}):undefined;
+   const begin=q.sent.length;
+   await q.click('등록 준비 고정');
+   await q.wait(()=>q.container.textContent.includes(code)||q.container.textContent.includes('상태 PREPARED'));
+   assert(q.container.textContent.includes(code),code+'를 준비 단계에서 표시해야 합니다.');
+   assert(!q.container.textContent.includes('상태 PREPARED'));
+   const calls=q.sent.slice(begin).map(v=>v.path);
+   assert(calls[0]?.includes('/execution-preparations/'));
+   assert(calls[1]?.includes('/role-bindings/'));
+   assert.deepEqual(calls.slice(2),[`/api/v1/projects/${pid}`,path]);
+   assert.equal(q.sent.filter(v=>v.init.method==='POST').length,0);
+  }
+  q.mode.getOverride=null;
+  await selectOriginSources(q);
+  const before=q.sent.length;
+  await q.click('등록 준비 고정');
+  await q.wait(()=>q.container.textContent.includes('상태 PREPARED'));
+  assert.equal(q.sent.slice(before).filter(v=>v.path===path).length,1);
+  assert.equal(q.sent.filter(v=>v.init.method==='POST').length,0);
+ }finally{await q.close();}
+});
+
+test('기존 제어 조회가 대기 중 취소된 요청은 제어 응답 뒤 다시 원장에서 확인한다',async()=>{
+ const q=await mountApp();let release!:(response:Response)=>void;const held=new Promise<Response>(resolve=>{release=resolve;});
+ try{
+  await selectOriginSources(q);
+  const project=`/api/v1/projects/${q.f.pid}`,queue=project+'/queue';
+  let cancels=false;
+  q.mode.getOverride=url=>{
+   if(url===project)return held;
+   if(url===queue&&cancels)return Response.json({projectId:q.f.pid,items:[],selection:'WAITING_ONLY',cancelledHistoryOmitted:true,observedAt:q.f.stage.data.snapshot.queuedAt,writerReservationPerformed:false,executionAuthorized:false,dispatchPerformed:false});
+  };
+  const begin=q.sent.length;
+  await q.click('등록 준비 고정');
+  await q.wait(()=>q.sent.slice(begin).some(v=>v.path===project));
+  assert(!q.sent.slice(begin).some(v=>v.path===queue),'제어 조회를 마친 뒤 원장을 한 번 읽습니다.');
+  cancels=true;
+  release(Response.json({id:q.f.pid,participation:'OWNER',controlState:{status:'HELD',actorId:q.f.uid,clientId:q.f.cid,generation:1}}));
+  await q.wait(()=>q.container.textContent.includes('STAGE_START_QUEUE_NOT_FOUND'));
+  assert.equal(q.sent.slice(begin).filter(v=>v.path===queue).length,1);
+  assert(!q.container.textContent.includes('상태 PREPARED'));
+  assert.equal(q.sent.filter(v=>v.init.method==='POST').length,0);
+ }finally{release(Response.json({}));await q.close();}
+});
+
+for(const loss of ['CURRENT','TRANSPORT','CLOSE','ROLE_TRANSPORT'] as const)test('원자료 준비 조회의 401은 '+loss+' 소유 범위에서만 전달한다',async()=>{
+ const q=await mountApp();let release!:(response:Response)=>void;const held=new Promise<Response>(resolve=>{release=resolve;});
+ const unavailable:string[]=[];
+ const session={...q.session,csrfToken:createHmac('sha256',Buffer.alloc(32,7)).update('csrf:'+q.f.token).digest('base64url')};
+ const assignment={projectId:q.f.pid,...q.f.confirmed.data},path=`/api/v1/projects/${q.f.pid}/queue`,transport=q.client.transport,client=new q.ui.ApiClient(transport);
+ let visible=true;const packets:unknown[]=[];
+ function Host(){return visible?q.ui.React.createElement(q.ui.ExecutionStartOriginPanel,{client,session,assignment,storage:{buffers:{},onChange:(_k:string,action:(previous:null)=>unknown)=>{packets.push(action(null));return true;}},onUnavailable:(code:string)=>unavailable.push(code)}):null;}
+ const render=()=>q.ui.React.act(async()=>q.root.render(q.ui.React.createElement(Host)));
+ try{
+  await render();await selectOriginSources(q);
+  const protectedPath=loss==='ROLE_TRANSPORT'?`/api/v1/projects/${q.f.pid}/role-bindings/${q.f.binding.data.ref.id}/versions/${q.f.binding.data.ref.version}`:path;
+  q.mode.getOverride=url=>url===protectedPath?held:undefined;
+  const begin=q.sent.length;
+  await q.click('등록 준비 고정');
+  await q.wait(()=>q.sent.slice(begin).some(x=>x.path===protectedPath));
+  if(loss==='TRANSPORT'||loss==='ROLE_TRANSPORT'){
+   client.transport=(...args:Parameters<typeof transport>)=>transport(...args);
+   await render();
+  }
+  if(loss==='CLOSE'){visible=false;await render();}
+  await q.ui.React.act(async()=>release(Response.json({code:'AUTH_REQUIRED'},{status:401})));
+  if(loss==='CURRENT')await q.wait(()=>!q.container.textContent.includes('원 보호 자료 확인 중'));
+  else for(let i=0;i<6;i++)await q.flush();
+  assert.deepEqual(unavailable,loss==='CURRENT'?['AUTH_REQUIRED']:[],q.container.textContent);
+  assert.equal(packets.length,0);assert.equal(q.sent.filter(v=>v.init.method==='POST').length,0);
+  if(loss==='ROLE_TRANSPORT')assert.equal(q.sent.slice(begin).filter(v=>v.path===path).length,0);
+  if(loss==='TRANSPORT'){
+   q.mode.getOverride=null;
+   await selectOriginSources(q);
+   await q.click('등록 준비 고정');
+   await q.wait(()=>packets.length===1);
+   const saved=packets.at(0);assert(saved&&typeof saved==='object'&&'phase' in saved);assert.equal(saved.phase,'PREPARED');
+  }
+ }finally{release(Response.json({}));await q.close();}
+});
+
+test('UI04 영수증 경로도 원장을 다시 대조하며 지연한 이전 저장 반영을 막는다',async()=>{
+ const q=await mountApp();
+ const session={...q.session,csrfToken:createHmac('sha256',Buffer.alloc(32,7)).update('csrf:'+q.f.token).digest('base64url')};
+ const assignment={projectId:q.f.pid,...q.f.confirmed.data},receipt=q.f.stage.data,path=`/api/v1/projects/${q.f.pid}/queue`;
+ const transport=q.client.transport,client=new q.ui.ApiClient(transport),updates:((previous:null)=>unknown)[]=[];
+ function Host(){return q.ui.React.createElement(q.ui.ExecutionStartOriginPanel,{client,session,assignment,waitingHint:receipt,storage:{buffers:{},onChange:(_k:string,action:(previous:null)=>unknown)=>{updates.push(action);return true;}},onUnavailable:(code:string)=>assert.fail(code)});}
+ const render=()=>q.ui.React.act(async()=>q.root.render(q.ui.React.createElement(Host)));
+ try{
+  await render();
+  const before=q.sent.length;
+  await q.click('이 영수증의 대기 요청 원장에서 확인·선택');
+  await q.wait(()=>q.nodes().some(v=>v.getAttribute('aria-label')==='대기 요청'));
+  await q.change('등록 준비',q.f.preparation.data.ref.id);
+  await q.change('책임 예약',q.f.binding.data.ref.id);
+  await q.change('기록 이유','검산한 UI04 원 영수증');
+  await q.click('등록 준비 고정');await q.wait(()=>updates.length===1);
+  assert.equal(q.sent.slice(before).filter(v=>v.path===path).length,2);
+  client.transport=(...args:Parameters<typeof transport>)=>transport(...args);
+  assert.equal(updates[0]!(null),null);
+  assert(!q.container.textContent.includes('상태 PREPARED'));
+  assert.equal(q.sent.filter(v=>v.init.method==='POST').length,0);
+ }finally{await q.close();}
+});

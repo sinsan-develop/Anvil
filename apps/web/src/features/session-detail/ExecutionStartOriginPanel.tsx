@@ -27,8 +27,9 @@ export function ExecutionStartOriginPanel({client,assignment,session,storage,onU
  const forPacket=(packet:OriginPacket)=>()=>active()&&current.current?.packet===packet;
  const detail=original?.owner===owner&&original.revision===originalRevision.current?original:null;
  const shown=detail?.value,list=history?.owner===owner?history.value:null,data=targets?.owner===owner&&(!targets.hint||targets.hint===hint)?targets:null,input=selection?.owner===owner?selection:null,locked=!!buffer?.packet;
+ const preparationChoice=useRef({data,input});preparationChoice.current={data,input};
  const failure=(cause:unknown)=>{const e=cause instanceof ApiError?cause:new ApiError('EXECUTION_START_ORIGIN_RESPONSE_INVALID');if(active()){clearOriginal();setError(/^[A-Z_]{1,80}$/.test(e.code)?e.code:'EXECUTION_START_ORIGIN_RESPONSE_INVALID');if([401,403,404].includes(e.status)){setTargets(null);setHistory(null);unavailable.current(e.status===401?'AUTH_REQUIRED':e.code);}}return e;};
- async function run(work:()=>Promise<void>,isCurrent=active){if(working.current||!isCurrent())return;working.current=true;setBusy(true);setError(null);try{await work();}catch(e){if(isCurrent())failure(e);}finally{working.current=false;if(active())setBusy(false);}}
+ async function run(work:()=>Promise<void>,isCurrent=active){if(working.current||!isCurrent())return;working.current=true;setBusy(true);setError(null);try{await work();}catch(e){if(isCurrent())failure(e);}finally{working.current=false;if(live.current)setBusy(false);}}
  async function choose(){await run(async()=>{clearOriginal();setTargets(null);const [queue,preparations,bindings]=await Promise.all([readStageQueue(client,pid,active),readPreparationHistoryPage(client,pid,assignment.ref,null,active),readResponsibleSessionState(client,assignment)]);if(!active()||!queue||!preparations)return;setTargets({owner,queue,preparations,bindings});setSelection({owner,stage:'',preparation:'',binding:'',reason:''});});}
  async function chooseHint(){
   const receipt=hint.receipt;
@@ -45,13 +46,33 @@ export function ExecutionStartOriginPanel({client,assignment,session,storage,onU
    setSelection({owner,stage:item.requestRef.id,preparation:'',binding:'',reason:''});
   },hintCurrent);
  }
- function edit(field:'stage'|'preparation'|'binding'|'reason',value:string){if(!input||locked||busy)return;setSelection({...input,[field]:value});clearOriginal();setAck(false);}
- async function prepare(){if(!input||!data||locked)return;
-  const isCurrent=data.hint?hintCurrent:active;
-  await run(async()=>{const stage=data.queue.items.find(v=>v.requestRef.id===input.stage),prep=data.preparations.items.find(v=>v.ref.id===input.preparation),binding=data.bindings.bindings.find(v=>v.ref.id===input.binding);if(!stage||!prep||!binding)throw new ApiError('SOURCE_REQUIRED',412);const selected=await readPreparationOriginal(client,pid,assignment.ref,prep,isCurrent);if(!isCurrent()||!selected)return;if(selected.snapshot.intent.connectionKind!=='REGISTERED_DEFINITION'||!same(selected.snapshot.intent.roleBindingRef,binding.ref))throw new ApiError('EXECUTION_START_ORIGIN_SOURCE_MISMATCH',409);
-   const exact=await client.get<PreparationRecord>(`/api/v1/projects/${pid}/role-bindings/${binding.ref.id}/versions/${binding.ref.version}`);if(!isCurrent())return;if(!same(exact,binding)||!same(exact.snapshot.assignmentRef,assignment.ref)||exact.snapshot.connectionKind!=='REGISTERED_DEFINITION'||exact.snapshot.state!=='RESERVED'||exact.snapshot.externalSessionHandleRef!==null)throw new ApiError('RESPONSE_INVALID');
-   const packet=await prepareOrigin(client,session,pid,{stageRequestRef:stage.requestRef,assignmentRef:assignment.ref,preparationRef:prep.ref,roleBindingRef:binding.ref},input.reason,isCurrent);if(!isCurrent()||!packet)return;change.current(key,prior=>prior?.packet?prior:{packet,phase:'PREPARED',receipt:null,failure:null});setAck(false);
-  },isCurrent);}
+ function edit(field:'stage'|'preparation'|'binding'|'reason',value:string){if(!input||locked||working.current||!active()||preparationChoice.current.input!==input)return;setSelection({...input,[field]:value});clearOriginal();setAck(false);}
+ async function prepare(){
+  if(!input||!data||locked)return;
+  const isCurrent=()=>(data.hint?hintCurrent():active())&&current.current===buffer
+   &&preparationChoice.current.data===data&&preparationChoice.current.input===input;
+  await run(async()=>{
+   const stage=data.queue.items.find(v=>v.requestRef.id===input.stage);
+   const prep=data.preparations.items.find(v=>v.ref.id===input.preparation);
+   const binding=data.bindings.bindings.find(v=>v.ref.id===input.binding);
+   if(!stage||!prep||!binding)throw new ApiError('SOURCE_REQUIRED',412);
+   const selected=await readPreparationOriginal(client,pid,assignment.ref,prep,isCurrent);
+   if(!isCurrent()||!selected)return;
+   if(selected.snapshot.intent.connectionKind!=='REGISTERED_DEFINITION'||!same(selected.snapshot.intent.roleBindingRef,binding.ref))throw new ApiError('EXECUTION_START_ORIGIN_SOURCE_MISMATCH',409);
+   const exact=await client.get<PreparationRecord>(`/api/v1/projects/${pid}/role-bindings/${binding.ref.id}/versions/${binding.ref.version}`);
+   if(!isCurrent())return;
+   if(!same(exact,binding)||!same(exact.snapshot.assignmentRef,assignment.ref)||exact.snapshot.connectionKind!=='REGISTERED_DEFINITION'||exact.snapshot.state!=='RESERVED'||exact.snapshot.externalSessionHandleRef!==null)throw new ApiError('RESPONSE_INVALID');
+   const packet=await prepareOrigin(client,session,pid,{stageRequestRef:stage.requestRef,assignmentRef:assignment.ref,preparationRef:prep.ref,roleBindingRef:binding.ref},input.reason,isCurrent,async()=>{
+    const queue=await readStageQueue(client,pid,isCurrent);
+    if(!isCurrent()||!queue)return false;
+    if(!queue.items.some(item=>same(item,stage)))throw new ApiError('STAGE_START_QUEUE_NOT_FOUND',409);
+    return true;
+   });
+   if(!isCurrent()||!packet)return;
+   change.current(key,prior=>prior===buffer&&!prior?.packet&&isCurrent()?{packet,phase:'PREPARED',receipt:null,failure:null}:prior);
+   setAck(false);
+  },isCurrent);
+ }
  async function save(){const packet=buffer?.packet;if(!packet||buffer.phase!=='PREPARED'||!ack)return;await run(async()=>{clearOriginal();const currentPacket=forPacket(packet);try{const view=await sendOrigin(client,session,packet,currentPacket,()=>change.current(key,prior=>prior?.packet===packet&&prior.phase==='PREPARED'?{...prior,phase:'SENDING',failure:null}:prior),receipt=>{change.current(key,prior=>prior?.packet===packet?{...prior,phase:'SAVED',receipt,failure:null}:prior);});if(currentPacket()&&view)setOriginal({owner,value:view,revision:originalRevision.current});}catch(cause){const e=failure(cause),phase=packetStatus(packet);change.current(key,prior=>prior?.packet===packet?{...prior,phase:phase==='SAVED'?'SAVED':phase==='UNKNOWN'?'UNKNOWN':'PREPARED',failure:e.code}:prior);throw e;}finally{if(packetStatus(packet)==='UNKNOWN')change.current(key,prior=>prior?.packet===packet&&prior.phase==='SENDING'?{...prior,phase:'UNKNOWN'}:prior);}});}
  async function reread(){const ref=buffer?.receipt?.data?.ref;if(originRef(ref))await open(ref);}
  async function page(cursor:string|null){await run(async()=>{clearOriginal();setHistory(null);const value=await readOriginHistory(client,pid,assignment.ref,cursor,active);if(active()&&value)setHistory({owner,value});});}
