@@ -9,3 +9,37 @@ function scope(c:NonNullable<ExecutionPreparationBuffer['pending']>,s:DocumentSe
 export async function newExecutionApproval(input:ExecutionPreparationBuffer,rawSession:DocumentSession,client?:ApiClient):Promise<ApprovalRequestWork>{const b=structuredClone(input),s=structuredClone(rawSession),c=await assertPreparationCommand(b,s);if(b.understandingSelection&&(!client||!executionPreparationOwned(client,b,s)))fail();if(c.approvalRef!==null||b.uncertain||b.result||b.savedReceipt||b.failure?.code!=='APPROVAL_REQUIRED')fail();return{projectId:b.projectId,ownerUserId:s.user.id,ownerClientId:s.clientId,controlGeneration:b.controlGeneration,candidate:c,details:{reason:'',risks:{data:'',security:'',cost:'',interruption:'',unverified:''},rollback:{method:'',limitations:'',evidenceRefs:[]},expiresAt:''},pending:null,resultId:null,failure:null,uncertain:false,dirty:false};}
 export async function prepareExecutionApproval(client:ApiClient,raw:ExecutionPreparationBuffer,work:ApprovalRequestWork,rawSession:DocumentSession,active:()=>boolean):Promise<ApprovalCommand>{const b=structuredClone(raw),w=structuredClone(work),s=structuredClone(rawSession),c=await assertPreparationCommand(b,s);if(!active())fail('EXECUTION_PREPARATION_CONTEXT_CHANGED',412);if(c.approvalRef!==null||w.pending||w.resultId||w.ownerUserId!==s.user.id||w.ownerClientId!==s.clientId||w.projectId!==b.projectId||!same(w.candidate,c))fail();await assertNormalWorkPreparationCurrent(client,b,s,active);const access=await preparationAccess(client,b.projectId,s,active);if(!access.approvalRequired||access.generation!==c.controlGeneration)fail('APPROVAL_NOT_REQUIRED',412);const payloadHash=await preparationHash(c.payload),details={...w.details,candidateCommandId:c.commandId,actionScope:scope(c,s,payloadHash)};if(!validApprovalDetails(details)||Date.parse(details.expiresAt)<=Date.now()||Date.parse(details.expiresAt)>access.expiresAt)fail('APPROVAL_INPUT_INVALID',422);if(!active())fail('EXECUTION_PREPARATION_CONTEXT_CHANGED',412);return{schemaVersion:1,projectId:b.projectId,commandId:crypto.randomUUID(),clientId:s.clientId,controlGeneration:c.controlGeneration,operation:'requestApproval',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{candidatePayload:structuredClone(c.payload),details}};}
 export async function bindExecutionApproval(client:ApiClient,raw:ExecutionPreparationBuffer,requestId:string,rawSession:DocumentSession,active:()=>boolean):Promise<ExecutionPreparationBuffer>{const b=structuredClone(raw),s=structuredClone(rawSession),c=await assertPreparationCommand(b,s);if(c.approvalRef!==null||b.uncertain||!requestId||b.approval?.request?.resultId&&b.approval.request.resultId!==requestId)fail();await assertNormalWorkPreparationCurrent(client,b,s,active);const access=await preparationAccess(client,b.projectId,s,active),v=await readApproval(client,b.projectId,requestId);if(!active())fail('EXECUTION_PREPARATION_CONTEXT_CHANGED',412);const r=v.request,expected=scope(c,s,await preparationHash(c.payload));if(!access.approvalRequired||access.generation!==c.controlGeneration||!same(r.policyRef,access.policyRef)||!same(r.details.actionScope,expected)||r.details.candidateCommandId!==c.commandId||!same(v.candidatePreparation?.payload,c.payload)||v.candidatePreparation?.candidateCommandId!==c.commandId||v.candidatePreparation.payloadHash!==b.payloadHash||v.effectiveState!=='APPROVED'||v.expired||!v.basisCurrent||v.consumption||v.decision?.decision!=='APPROVE'||Date.parse(r.details.expiresAt)<=Date.now()||Date.parse(r.details.expiresAt)>access.expiresAt)fail('APPROVAL_NOT_USABLE',412);const pending={...c,approvalRef:{requestId:r.id,decisionId:v.decision.id,scopeDigest:r.scopeDigest}},pendingHash=await preparationHash(pending);if(!active())fail('EXECUTION_PREPARATION_CONTEXT_CHANGED',412);return{...b,pending,pendingHash,approval:{request:b.approval?.request??null,requestId,commandHash:pendingHash,view:v},failure:null};}
+
+export function canCloseRejectedExecutionApproval(b:ExecutionPreparationBuffer):boolean{
+ const a=b.approval,r=a?.request;
+ return b.draft.mode==='WORK'&&!!b.understandingSelection&&b.preparationDispatchStarted===false&&b.pending?.approvalRef===null&&
+  !b.uncertain&&!b.result&&!b.savedReceipt&&b.failure?.code==='APPROVAL_REQUIRED'&&a?.commandHash===null&&
+  !!a.requestId&&r?.resultId===a.requestId&&!!r.pending&&!r.uncertain&&!r.failure;
+}
+
+/** 보호 조회에서 확인한 종결 결정으로 같은 미전송 준비의 로컬 이력만 정리한다. */
+export async function closeRejectedExecutionApproval(client:ApiClient,raw:ExecutionPreparationBuffer,rawSession:DocumentSession,active:()=>boolean):Promise<ExecutionPreparationBuffer>{
+ const b=structuredClone(raw),s=structuredClone(rawSession),transport=client.transport;
+ const current=()=>active()&&client.transport===transport&&same(s,rawSession)&&executionPreparationOwned(client,b,s);
+ if(!current()||!canCloseRejectedExecutionApproval(b))fail();
+ const c=await assertPreparationCommand(b,s),a=b.approval!,w=a.request!,q=w.pending!;
+ const details={...w.details,candidateCommandId:c.commandId,actionScope:scope(c,s,b.payloadHash!)};
+ if(!current()||!same(w.candidate,c)||w.projectId!==c.projectId||w.ownerUserId!==s.user.id||w.ownerClientId!==s.clientId||
+    w.controlGeneration!==c.controlGeneration||!same(b.understandingSelection!.basis.assignmentRef,b.assignmentRef)||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(q.commandId)||
+    !validApprovalDetails(details)||!same(q,{schemaVersion:1,projectId:c.projectId,commandId:q.commandId,clientId:s.clientId,
+      controlGeneration:c.controlGeneration,operation:'requestApproval',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,
+      payload:{candidatePayload:c.payload,details}}))fail();
+ const v=await readApproval(client,b.projectId,a.requestId),r=v.request,d=v.decision,candidate=v.candidatePreparation;
+ if(!current())fail('EXECUTION_PREPARATION_CONTEXT_CHANGED',412);
+ const terminal=d?.decision==='REJECT'?'REJECTED':d?.decision==='REQUEST_CHANGE'?'CHANGE_REQUESTED':null;
+ if(!terminal||v.effectiveState!==terminal||v.storedStatus!==terminal||v.currentVersion!==2||v.consumption!==null||!v.basisCurrent||
+    r.id!==a.requestId||r.controlGeneration!==c.controlGeneration||!same(r.details,details)||
+    !same(r.requestedBy,details.actionScope.requestedSubjectRef)||candidate?.candidateCommandId!==c.commandId||
+    candidate.payloadHash!==b.payloadHash||!same(candidate.payload,c.payload))fail('APPROVAL_NOT_USABLE',412);
+ const access=await preparationAccess(client,b.projectId,s,current);
+ if(!current())fail('EXECUTION_PREPARATION_CONTEXT_CHANGED',412);
+ if(!access.approvalRequired||access.generation!==c.controlGeneration||!same(r.policyRef,access.policyRef))fail('APPROVAL_NOT_USABLE',412);
+ return {...b,closedApprovals:[...b.closedApprovals,{command:c,request:w,requestId:r.id,view:v}],
+  approval:null,pending:null,pendingHash:null,payloadHash:null,failure:null};
+}

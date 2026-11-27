@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-27 KST
 
+- **Stage C / IX02 FN09 WORK 준비 승인 거절·수정 요청 후 편집 복귀** — 기준 `bddc6c6d`, 담당 `fn13_diff_contract_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 현재 권한·제어와 동일 요청·명령·내용 해시를 보호 조회로 대조한다. 정상 WORK에서 미전송이 확인된 원명령에만 확정 REJECT/REQUEST_CHANGE의 명시 편집을 허용하고 원 결정·요청·명령을 이력에 보관한다. 승인·대기·오류·교차 요청·늦은 401 및 실제 전송 뒤 412는 편집을 해제하지 않는다. 제품 3·시험 1파일, 최초 RED 1, 직접·인접 80/80·Main 3/3·타입·diff 통과. 자동 저장·실행 효과 없음, 실제 브라우저·DB·Agent 미검증. 원 Windows·보호 설치와 실제 IX02 실행 조건은 여전히 미충족.
+
 - **Stage C / IX02 FN08 게시 자료→등록 소유자의 설치 요청 검산** — 기준 `9eec26be`, 담당 `baseline_predispatch_task_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 실제 소스의 정상 finalizer와 게시 store를 합성 거래로 호출하고 반환 JSON, 같은 package 지문의 REGISTERED 원 소유자, 독립 고정 origin 재조회, 동일 attempt 전용 opcode를 하나로 연결했다. 정상 전용 호출 1회는 합성 `UNSUPPORTED`이고 일반 head·회수 head는 설치 0이다. 제품 수정 없음, 합성 1파일 165/165·Main 1/1(3분기)·타입/구문/diff 통과. 실제 보호 키·OS·HTTPS·DB·Agent 설치/실행 및 기본 제품 진입점은 미검증이다. 원 등록 소유자에 입력을 전달하는 보호 제품 호출자는 계속 미연결이며 기존 사용자 승인 범위를 유지한다.
 
 - **Stage C / IX02 FN08 보호 빌드 정상 worker 게시** — 기준 `90001671`, 담당 `fn13_diff_contract_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 명시 구성된 build producer가 원 컴파일·package token과 보호 factory를 검산한 뒤 기존 정상 publisher에서 확정 번들과 헤드를 반환한다. 기존 일반 게시와 단회 소진을 공유해 양방향 동시 호출·결과 불명·변조 후 재발행을 막는다. 제품·합성 각 1파일, 최초 RED 2건, 담당 desktop 42/42·FN06 13/13·Main 11/11, 루트/desktop 타입·diff 통과. 실제 컴파일·설치·등록·Windows 근거·DB·Agent 미실행. 원 등록 owner에 이 입력을 공급하고 명시 설치를 호출하는 실제 제품 진입점은 아직 없고 기본 보호 빌드 포트·설치 내구성도 남아 있다.

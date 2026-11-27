@@ -25,7 +25,7 @@ function fixture(){
  const currentBinding={transport:'NORMAL_PROTECTED',scope,bundleRef:ground.bundleRef,responseRef:ground.responseRef,subjectBindingRef:ground.subjectBindingRef,basisRefs:ground.basisRefs,latestInstructionRefs:[],requiredPartRefs:ground.requiredPartRefs,receivedPartRefs:ground.receivedPartRefs,responsePartRefs:ground.responsePartRefs,criteria:items.map(({judgement,reason,...v})=>v),sourceState:'AVAILABLE',responseSubject:'EXTERNAL_AGENT',sourceBasis:ground};
  const s={scope,sequence:1,previousRef:null,request,requestHash:H(request),reviewer:{kind:'HUMAN',userId:f.session.user.id,clientId:f.session.clientId,humanSessionId:id(12),credentialGeneration:1,controlGeneration:1},policyRef:ref(13),currentBinding,input,outcome:'ACCEPTED',recordedAt:f.at,executionAuthorized:false,dispatchPerformed:false};
  const row={ref:{...ref(14),contentHash:H(s)},snapshot:s},history={transport:'NORMAL_PROTECTED',scope,items:[row],currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};
- const calls:{url:string;method:string;body?:string}[]=[];let stored:any=null,lost=false,postCount=0;const modes={historyFail:false,loseApproval:false,onPolicy:null as (()=>void)|null,onPost:null as (()=>void)|null};
+ const calls:{url:string;method:string;body?:string}[]=[];let stored:any=null,lost=false,postCount=0;const modes={historyFail:false,loseApproval:false,rejectSentPreparation:false,onPolicy:null as (()=>void)|null,onPost:null as (()=>void)|null,onApprovalRead:null as ((response:Response)=>Response|Promise<Response>)|null};
  const basis={kind:'NORMAL_UNDERSTANDING_WORK_BASIS',reviewRef:row.ref,scope,preparationRef:original.ref,assignmentRef:intent.assignmentRef,roleBindingRef:intent.roleBindingRef,agentSessionRef:ground.agentSessionRef,contextBundleRef:intent.contextBundleRef,connectionRef:intent.connectionRef,environmentRef:intent.environmentRef,responseRef:ground.responseRef,requestRef:ground.requestRef,basisRefs:ground.basisRefs,latestInstructionRefs:[]};
  const client=new ApiClient(async(url,options)=>{
   calls.push({url:String(url),method:options?.method??'GET',body:options?.body as string|undefined});
@@ -34,11 +34,13 @@ function fixture(){
   if(String(url).includes('/understanding-reviews?'))return modes.historyFail?Response.json({code:'UNDERSTANDING_HISTORY_UNAVAILABLE'},{status:503}):Response.json(history);
   if(String(url).includes('/execution-preparations/'+original.ref.id+'/'))return Response.json(original);
   if(options?.method==='POST'&&JSON.parse(String(options.body)).operation==='prepareExecution'){
+   if(modes.rejectSentPreparation)return Response.json({code:'APPROVAL_REQUIRED'},{status:412});
    const q=JSON.parse(String(options.body));if(!stored){postCount++;const {understandingReviewRef,...savedIntent}=q.payload;const snap={...snapshot,intent:savedIntent,missingConditions:[...snapshot.missingConditions,'UNDERSTANDING_NOT_REVIEWED'],understandingBasis:structuredClone(basis)};const r={...ref(15),contentHash:H(snap)};stored={original:{projectId:scope.projectId,ref:r,snapshot:snap,currentness:'NOT_RECHECKED'},receipt:{operationId:id(16),commandId:q.commandId,projectId:scope.projectId,status:'APPLIED',targetId:r.id,version:1,data:{status:'EXECUTION_PREPARED',ref:r,snapshot:snap},evidenceRefs:[],warnings:[],serverReceivedAt:f.at}};}
    if(lost){lost=false;throw Error('합성 응답 유실');}return Response.json(stored.receipt);
   }
   if(stored&&String(url).includes('/execution-preparations/'+stored.original.ref.id+'/'))return Response.json(stored.original);
   const response=await base.client.transport(url,options);if(String(url).endsWith('/permission-policy'))modes.onPolicy?.();
+  if(options?.method==='GET'&&String(url).includes('/approvals/')&&modes.onApprovalRead)return modes.onApprovalRead(response);
   if(modes.loseApproval&&options?.method==='POST'&&JSON.parse(String(options.body)).operation==='requestApproval'){modes.loseApproval=false;throw Error('합성 승인 응답 유실');}
   return response;
  });
@@ -134,12 +136,156 @@ test('linked 준비의 별도 승인 후보 hash는 selector를 포함하고 같
 const hooksUrl='data:text/javascript,'+encodeURIComponent(`let cursor=0,slots=[],effects=new Map(),pending=[];export function useState(v){const n=cursor++;if(!(n in slots))slots[n]=v;return[slots[n],x=>slots[n]=typeof x==='function'?x(slots[n]):x];}export function useRef(v){return slots[cursor++]??={current:v};}export function useEffect(fn,deps){const n=cursor++,old=effects.get(n);if(!old||deps.some((x,i)=>x!==old.deps[i]))pending.push(()=>{old?.clean?.();effects.set(n,{deps,clean:fn()});});}export function draw(fn){cursor=0;const tree=fn();for(const f of pending.splice(0))f();return tree;}export function unmount(){for(const e of effects.values())e.clean?.();slots=[];effects=new Map();pending=[];}`);
 function find(tree:any,p:(n:any)=>boolean):any{if(Array.isArray(tree)){for(const n of tree){const v=find(n,p);if(v)return v;}return;}if(!tree||typeof tree!=='object')return;if(p(tree))return tree;return find(tree.props?.children,p);}
 function text(tree:any):string{return Array.isArray(tree)?tree.map(text).join(''):tree&&typeof tree==='object'?text(tree.props?.children):String(tree??'');}
-test('실제 준비 editor의 명시 선택→freeze→내부 GET503은 미전송 유지, 새 head 뒤 재시도 POST0·epoch 교체 접근0',async()=>{
+async function loadExecutionPreparationEditor(){
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/workspace/ExecutionPreparationEditor.tsx',import.meta.url));
  const result=await build({configFile:false,logLevel:'error',plugins:[{name:'원 실제 API 재사용',enforce:'pre',resolveId(source,importer){if(importer&&source.startsWith('.')&&source.endsWith('.ts'))return{id:pathToFileURL(resolve(dirname(importer),source)).href,external:true};}}],build:{write:false,lib:{entry,formats:['es']},rollupOptions:{external:['react','react/jsx-runtime']}}});
  const output=Array.isArray(result)?result[0]:result;assert.ok(output&&'output'in output);const chunk=output.output.find((v:any)=>v.type==='chunk');assert.ok(chunk&&chunk.type==='chunk');
  assert.ok(chunk.code.includes('file:///'),chunk.code.slice(0,1200));const code=chunk.code.replace(/(["'])(react(?:\/jsx-runtime)?)\1/g,(_m:string,_q:string,name:string)=>JSON.stringify(name==='react'?hooksUrl:import.meta.resolve(name)));
  const component=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64')),hooks=await import(hooksUrl);
+ return {component,hooks};
+}
+async function rejectionFixture(decision:'REJECT'|'REQUEST_CHANGE'|'APPROVE'|null){
+  const h=fixture();h.base.setPolicy('REQUIRE_APPROVAL');
+  let b:api.ExecutionPreparationBuffer=await api.prepareExecutionCommand(h.client,await selected(h),h.f.confirmed as any,h.f.session,h.f.report.ref,()=>true);
+  const request=await newExecutionApproval(b,h.f.session,h.client);
+  request.details={reason:'별도 보관 승인',risks:{data:'자료',security:'보호',cost:'기존',interruption:'없음',unverified:'미검증'},rollback:{method:'기록 보존',limitations:'실행 허가 없음',evidenceRefs:[]},expiresAt:new Date(Date.now()+1800000).toISOString()};
+  const pending=await prepareExecutionApproval(h.client,b,request,h.f.session,()=>true);
+  const receipt=await sendApprovalCommand(h.client,pending,h.f.session);
+  const requestId=receipt.data.ref.id as string;
+  b={...b,approval:{request:{...request,pending,resultId:requestId},requestId,commandHash:null}};
+  if(decision)await sendApprovalCommand(h.client,{
+   schemaVersion:1 as const,projectId:b.projectId,commandId:crypto.randomUUID(),clientId:h.f.session.clientId,controlGeneration:b.controlGeneration,
+   operation:'decideApproval' as const,targetId:requestId,expectedVersion:1,baselineRefs:[] as [],approvalRef:null,
+   payload:{requestId,expectedVersion:1,scopeDigest:receipt.data.request.scopeDigest,decision,reason:'준비 입력을 다시 검토'}
+  },h.f.session);
+  return {h,b,requestId};
+}
+const prepareCloseLabel='거절·수정 요청 확인 후 준비 수정';
+test('같은 WORK 준비의 확정 거절·수정 요청만 명시적으로 정리하고 편집을 연다',async()=>{
+ const {component,hooks}=await loadExecutionPreparationEditor();
+ for(const decision of ['REJECT','REQUEST_CHANGE'] as const){
+  const {h,requestId,b:prepared}=await rejectionFixture(decision);let b=prepared;
+  const original=structuredClone(b);
+  const afterDecision=h.calls.length;
+  const draw=()=>hooks.draw(()=>component.ExecutionPreparationEditor({
+   client:h.client,confirmed:h.f.confirmed,session:h.f.session,exactWorkCandidates:[exactCandidate(h)],providedHumanReportRef:h.f.report.ref,
+   buffer:b,onChange:(update:api.ExecutionPreparationChange)=>{b=update(b)!;},owner:true,onAuthenticationLost:()=>assert.fail('인증 소실 아님')
+  }));
+  const closeButton=()=>find(draw(),n=>n.type==='button'&&text(n)===prepareCloseLabel);
+  try{
+   assert.deepEqual(h.calls.slice(afterDecision),[]);
+   assert.ok(closeButton(),'확정 거절·수정 요청에 따라 원 입력으로 복귀할 수 있어야 한다');
+   find(draw(),n=>n.props?.['aria-label']==='준비 보관 확인').props.onChange({target:{checked:true}});
+   closeButton().props.onClick();
+   const until=performance.now()+4000;
+   while(b.pending&&performance.now()<until){draw();await new Promise<void>(resolve=>setImmediate(resolve));}
+   assert.equal(b.pending,null);assert.equal(b.approval,null);assert.equal(b.result,null);assert.equal(b.uncertain,false);
+   assert.equal(b.closedApprovals.length,1);
+   assert.deepEqual(b.closedApprovals[0]!.command,original.pending);
+   assert.deepEqual(b.closedApprovals[0]!.request,original.approval!.request);
+   assert.equal(b.closedApprovals[0]!.requestId,requestId);
+   assert.equal(b.closedApprovals[0]!.view?.decision?.decision,decision);
+   assert.deepEqual(b.understandingSelection,original.understandingSelection);
+   const input=find(draw(),n=>n.props?.['aria-label']==='준비 이유');
+   input.props.onChange({target:{value:'검토 요청을 반영한 새 이유'}});
+   assert.equal(b.draft.reason,'검토 요청을 반영한 새 이유');
+   find(draw(),n=>n.type==='button'&&text(n)==='의도 준비·입력 확인').props.onClick();
+   const freezeUntil=performance.now()+4000;
+   while(!b.pending&&performance.now()<freezeUntil){draw();await new Promise<void>(resolve=>setImmediate(resolve));}
+   const next:api.ExecutionPreparationBuffer=b;
+   assert.ok(next.pending);assert.notEqual(next.pending.commandId,original.pending!.commandId);
+   assert.equal(next.pending.approvalRef,null);assert.equal(next.preparationDispatchStarted,false);
+   assert.equal(find(draw(),n=>n.props?.['aria-label']==='준비 보관 확인').props.checked,false);
+   assert.deepEqual(next.closedApprovals[0]!.command,original.pending);
+   assert.equal(h.calls.slice(afterDecision).filter(c=>c.url.endsWith('/approvals/'+requestId)).length,1);
+   assert.equal(h.calls.slice(afterDecision).filter(c=>c.method!=='GET').length,0);
+  }finally{hooks.unmount();}
+ }
+});
+
+test('대기·승인·실패·교차 명령·현재 정책 변경·늦은 응답은 원 WORK 준비를 닫지 않는다',async()=>{
+ const {component,hooks}=await loadExecutionPreparationEditor();
+ for(const fault of ['PENDING','APPROVE','503','CROSS_COMMAND','POLICY','OWNER','BUFFER','STALE_401'] as const){
+  const {h,requestId,b:prepared}=await rejectionFixture(fault==='PENDING'?null:fault==='APPROVE'?'APPROVE':'REJECT');let b=prepared,owner=true;
+  const afterDecision=h.calls.length;
+  let release:(()=>void)|undefined, finished=false;
+  h.modes.onApprovalRead=async read=>{
+   if(fault==='POLICY')h.base.setPolicy('AUTO');
+   if(fault==='503')return Response.json({code:'APPROVAL_READ_UNAVAILABLE'},{status:503});
+   if(fault==='OWNER'||fault==='BUFFER'||fault==='STALE_401')await new Promise<void>(resolve=>{release=resolve;});
+   if(fault==='CROSS_COMMAND'){
+    const view=await read.json(),{id:_rid,version:_version,status:_status,createdAt:_createdAt,...request}=view.request;
+    request.details.candidateCommandId=id(96);
+    view.candidatePreparation.candidateCommandId=id(96);
+    view.requestRef.contentHash=H(request);
+    view.decision.requestRef=structuredClone(view.requestRef);
+    const {ref, id:_did, decidedAt:_at,...d}=view.decision;
+    ref.contentHash=H(d);
+    return Response.json(view);
+   }
+   finished=true;return fault==='STALE_401'?Response.json({code:'AUTH_REQUIRED'},{status:401}):read;
+  };
+  const draw=()=>hooks.draw(()=>component.ExecutionPreparationEditor({
+   client:h.client,confirmed:h.f.confirmed,session:h.f.session,providedHumanReportRef:h.f.report.ref,buffer:b,owner,
+   onChange:(update:api.ExecutionPreparationChange)=>{b=update(b)!;},onAuthenticationLost:()=>assert.fail('인증 소실 아님')
+  }));
+  const until=async(check:()=>boolean)=>{const end=performance.now()+4000;while(!check()&&performance.now()<end){draw();await new Promise<void>(resolve=>setImmediate(resolve));}assert.ok(check(),fault+': '+text(draw()).slice(-900));};
+  try{
+   const button=find(draw(),n=>n.type==='button'&&text(n)===prepareCloseLabel);
+   assert.ok(button);button.props.onClick();
+   if(fault==='OWNER'||fault==='BUFFER'||fault==='STALE_401'){
+    await until(()=>!!release);
+    if(fault==='BUFFER')b=structuredClone(b);else owner=false;
+    const incumbent=b;draw();release!();await until(()=>finished);
+    await new Promise<void>(resolve=>setImmediate(resolve));
+    assert.equal(b,incumbent);assert.doesNotMatch(text(draw()),/APPROVAL_NOT_USABLE/);
+   }else{
+    await until(()=>text(draw()).includes(fault==='503'?'APPROVAL_READ_UNAVAILABLE':'APPROVAL_NOT_USABLE'));
+    assert.equal(b,prepared);
+   }
+   assert.equal(b.closedApprovals.length,0);assert.deepEqual(b.pending,prepared.pending);assert.deepEqual(b.approval,prepared.approval);
+   assert.equal(h.calls.slice(afterDecision).filter(c=>c.url.endsWith('/approvals/'+requestId)).length,1);
+   assert.equal(h.calls.slice(afterDecision).filter(c=>c.method!=='GET').length,0);
+  }finally{release?.();hooks.unmount();}
+ }
+});
+
+test('실제 최초 전송 뒤 확정 APPROVAL_REQUIRED 응답이어도 같은 WORK 원명령을 미전송으로 되돌리지 않는다',async()=>{
+ const {component,hooks}=await loadExecutionPreparationEditor(),{h,requestId,b:prepared}=await rejectionFixture('REJECT');
+ let b=prepared;
+ const draw=()=>hooks.draw(()=>component.ExecutionPreparationEditor({
+  client:h.client,confirmed:h.f.confirmed,session:h.f.session,providedHumanReportRef:h.f.report.ref,buffer:b,owner:true,
+  onChange:(update:api.ExecutionPreparationChange)=>{b=update(b)!;},onAuthenticationLost:()=>assert.fail('인증 소실 아님')
+ }));
+ try{
+  assert.ok(find(draw(),n=>n.type==='button'&&text(n)===prepareCloseLabel));
+  const afterDecision=h.calls.length;
+  for(const withheld of [
+   {...prepared,preparationDispatchStarted:undefined},
+   {...prepared,uncertain:true},
+   {...prepared,savedReceipt:{commandId:prepared.pending!.commandId}},
+   {...prepared,pending:{...prepared.pending!,approvalRef:{requestId,decisionId:id(97),scopeDigest:'a'.repeat(64)}}},
+  ]){
+   b=withheld;
+   assert.equal(find(draw(),n=>n.type==='button'&&text(n)===prepareCloseLabel),undefined);
+  }
+  b=prepared;
+  h.base.setPolicy('AUTO');h.modes.rejectSentPreparation=true;
+  find(draw(),n=>n.props?.['aria-label']==='준비 보관 확인').props.onChange({target:{checked:true}});
+  find(draw(),n=>n.type==='button'&&text(n)==='준비본 보관').props.onClick();
+  const until=performance.now()+4000;
+  while(!text(draw()).includes('APPROVAL_REQUIRED')&&performance.now()<until)await new Promise<void>(resolve=>setImmediate(resolve));
+  const posts=h.calls.slice(afterDecision).filter(c=>c.method==='POST');
+  assert.equal(posts.length,1);assert.deepEqual(JSON.parse(posts[0]!.body!),prepared.pending);
+  assert.equal(b.preparationDispatchStarted,true);assert.equal(b.uncertain,false);assert.equal(b.failure?.code,'APPROVAL_REQUIRED');
+  h.base.setPolicy('REQUIRE_APPROVAL');
+  assert.equal(find(draw(),n=>n.type==='button'&&text(n)===prepareCloseLabel),undefined);
+  assert.equal(h.calls.slice(afterDecision).filter(c=>c.url.endsWith('/approvals/'+requestId)).length,0);
+  assert.deepEqual(b.pending,prepared.pending);assert.deepEqual(b.approval,prepared.approval);assert.equal(b.closedApprovals.length,0);
+ }finally{hooks.unmount();}
+});
+test('실제 준비 editor의 명시 선택→freeze→내부 GET503은 미전송 유지, 새 head 뒤 재시도 POST0·epoch 교체 접근0',async()=>{
+ const {component,hooks}=await loadExecutionPreparationEditor();
  for(const mode of ['SAVED','LOST','PREFLIGHT','CAS','EXACT','EXACT_ABA','EXACT_DENIED','PREP_OWNER','PREP_TRANSPORT','PREP_DISPATCH_TRANSPORT','APPROVAL_ABA','APPROVAL_PENDING','APPROVAL_LOST','APPROVAL_PARENT_IGNORED','APPROVAL_CAS','APPROVAL_OWNER','APPROVAL_TRANSPORT','APPROVAL_DISPATCH_OWNER']){const h=fixture();let b:any=api.newExecutionPreparation(h.f.confirmed as any,h.f.session);
  b.draft={roleBindingRef:h.f.binding.ref,contextBundleRef:h.f.context.ref,capabilityRef:h.f.report.ref,sourceScopes:[h.f.scope],mode:'WORK',reason:'화면에서 별도 WORK 준비'};
  let session=h.f.session,defer=false,deferred:((value:any)=>any)|null=null;const storage:any={buffers:{old:{ownerEpoch:normalInitialUnderstandingOwner(h.client,session),ownerUserId:session.user.id,ownerClientId:session.clientId,basis:{scope:h.scope,assignmentRef:h.f.confirmed.ref},stored:h.row}},read:()=>null,onChange:()=>{}};
