@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-27 KST
 
+- **Stage C / IX02 UI04 지시 원문·부분계획 연결** — 기준 `9bc5fbba`, 작성 `fn13_diff_contract_review`, 독립 `fn08_policy_decision_ready`. 보호 원문에서 선택한 사용자 지시만 기존 읽기 API로 부분계획과 고정 해시를 확인한다. 선택·목록·프로젝트·전송·경로 전환이나 닫기 뒤의 200/401은 폐기한다. 현재 404는 원문을 유지하고 현재 401만 인증 콜백을 호출한다. 제품·합성 시험 각 1파일. 최초 RED 1건, 경로 전환 검수 지적 1건과 시험 타입 1건을 보완했다. 병렬 인접 UI10에서 대기 시간 초과 1건, 최종 직렬 30/30·Main 직접 3/3·타입·diff 통과. 실제 브라우저·SEND·DB·Agent는 미검증이다. 다음은 UI11에서 새 등록 초안을 기존 등록 상세의 판단 동작과 격리하는 회귀 검증이다.
+
 - **IX02 FN09 START 전달 영수증 재현 / Main 어울 · 구현 fn13_diff_contract_review · 검수 fn08_policy_decision_ready.** `d9500fba` 기준으로 같은 맥락 부분의 별도 유효 challenge 두 건이 같은 바이트와 서로 다른 영수증을 정착시키고, 원 challenge 재확인은 영수증을 추가하지 않음을 기존 HTTP 경로의 합성 시험에서 확인했다. 0102의 정확 1건 조건과 이를 재사용하는 0103 WORK 준비 분기를 소스로 대조했다. 세 시험 파일과 [기술 기록](work_packages/FN09_START_MATERIAL_DELIVERY_LINEAGE_IX02.md)만 변경했다. 인접 86/86, Main 직접 1/1, 타입 검사·diff 검사 통과, 독립 검수 C0/I0/M0. 시험 준비 중 등록 fixture와 서명 키가 일치하지 않는 오류 1건은 같은 메모리 키의 서명 함수를 사용해 해소했다. 제품 소스·SQL은 변경 없으며 실제 PostgreSQL·Agent·사용자 화면은 미검증이다. 다음 조치는 원 실행기가 사용한 부분별 영수증을 기존 보호 전송 및 저장에 결박할 수 있는지 확정하는 것이다.
 
 - **Stage C / IX02 UI05 결과 근거에서 고정 설계·시안 재조회** — 기준 `c823e7c3`, 작성 `fn13_quota_diff_replay`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 제출에 등록된 산출물과 정확 확정 업무의 역추적을 모두 대조한 뒤에만 UI06의 프로젝트·문서·버전·해시를 연결한다. 페이지 진행 중·해시 불일치·권한 거절·다른 선택·닫기·지연 401에서 이전 원문 링크를 열지 않는다. 제품 1·시험 1, 최초 RED 1건, 담당 18/18·Main 직접 6/6, 타입·diff 통과. 실제 브라우저·DB·Agent 및 직접 관측 합격은 미검증. PREPARED 복구는 이미 동일 packet replay source를 보유하지만 양성 정착 입력과 확정 queue의 실제 peer 인계가 없어 별도 재조회 wrapper는 추가하지 않았다.

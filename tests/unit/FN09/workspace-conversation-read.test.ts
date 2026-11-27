@@ -130,7 +130,7 @@ class MemoryNode{
  contains(n:MemoryNode|null):boolean{return !!n&&(n===this||this.childNodes.some(c=>c.contains(n)));}focus(){this.ownerDocument.activeElement=this;}
  dispatchEvent(e:any){e.target=this;e.preventDefault??=()=>{e.defaultPrevented=true;};e.stopPropagation??=()=>{e.cancelBubble=true;};const chain:MemoryNode[]=[];for(let n:MemoryNode|null=this;n;n=n.parentNode)chain.push(n);for(const n of chain)for(const f of n.listeners.get(e.type)??[])f(e);return !e.defaultPrevented;}
 }
-test('작업대 답글의 원 발언 버튼은 성공한 조회 뒤에 표시되고 클릭하면 목록 밖 본문을 연다',async()=>{
+async function withWorkspaceDOM(run:(fixture:{ui:any;root:any;container:MemoryNode;button:(label:string)=>MemoryNode|undefined;click:(label:string)=>Promise<void>;until:(check:()=>boolean)=>Promise<void>})=>Promise<void>){
  const {build}=await import('vite');
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/workspace/WorkspaceConversationSources.tsx',import.meta.url));
  const clientEntry=fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url));
@@ -143,12 +143,12 @@ test('작업대 답글의 원 발언 버튼은 성공한 조회 뒤에 표시되
  doc.createElement=(n:string)=>new MemoryNode(n,1,doc);doc.createElementNS=(_ns:string,n:string)=>doc.createElement(n);
  doc.createTextNode=(value:string)=>{const n=new MemoryNode('#text',3,doc);n.data=value;return n;};
  doc.documentElement=doc.createElement('html');doc.body=doc.createElement('body');doc.documentElement.appendChild(doc.body);doc.activeElement=doc.body;
- doc.defaultView={document:doc,Node:MemoryNode,HTMLElement:MemoryNode,HTMLIFrameElement:class{},location:{protocol:'https:'}};
+ doc.defaultView={document:doc,Node:MemoryNode,HTMLElement:MemoryNode,HTMLIFrameElement:class{},location:{protocol:'https:',hash:'#/projects/'+pid+'/workspace'}};
  const saved=new Map<string,PropertyDescriptor|undefined>(),channels:MessageChannel[]=[];
  class OwnedChannel extends MessageChannel{constructor(){super();channels.push(this);}}
- const f=replyFixture(),{calls,transport}=replyTransport(f);let root:any,ui:any;const container=doc.createElement('div');doc.body.appendChild(container);
+ let root:any,ui:any;const container=doc.createElement('div');doc.body.appendChild(container);
  try{
-  for(const [key,value] of Object.entries({window:doc.defaultView,document:doc,Node:MemoryNode,HTMLElement:MemoryNode,MessageChannel:OwnedChannel,IS_REACT_ACT_ENVIRONMENT:true})){
+  for(const [key,value] of Object.entries({window:doc.defaultView,location:doc.defaultView.location,document:doc,Node:MemoryNode,HTMLElement:MemoryNode,MessageChannel:OwnedChannel,IS_REACT_ACT_ENVIRONMENT:true})){
    saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,configurable:true,writable:true});
   }
   const output=(Array.isArray(built)?built[0]:built) as import('rolldown').RolldownOutput;
@@ -156,16 +156,142 @@ test('작업대 답글의 원 발언 버튼은 성공한 조회 뒤에 표시되
   const nodes=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(nodes)];
   const button=(label:string)=>nodes(container).find(n=>n.tagName==='BUTTON'&&n.textContent===label);
   const click=async(label:string)=>{const b=button(label);assert.ok(b&&!b.disabled,label);await ui.React.act(async()=>{b.dispatchEvent({type:'click',button:0,bubbles:true});});};
-  async function until(check:()=>boolean){for(let i=0;i<100&&!check();i++)await ui.React.act(async()=>{await new Promise(r=>setTimeout(r,2));});assert.ok(check());}
+  async function until(check:()=>boolean){for(let i=0;i<100&&!check();i++)await ui.React.act(async()=>{await new Promise(r=>setTimeout(r,2));});assert.ok(check(),container.textContent);}
+  await run({ui,root,container,button,click,until});
+ }finally{
+  if(root)await ui.React.act(async()=>root.unmount());doc.body.removeChild(container);
+  for(const channel of channels){channel.port1.close();channel.port2.close();}
+  for(const [key,descriptor] of saved)if(descriptor)Object.defineProperty(globalThis,key,descriptor);else Reflect.deleteProperty(globalThis,key);
+ }
+}
+
+test('작업대 답글의 원 발언 버튼은 성공한 조회 뒤에 표시되고 클릭하면 목록 밖 본문을 연다',async()=>{
+ const f=replyFixture(),{calls,transport}=replyTransport(f);
+ await withWorkspaceDOM(async({ui,root,container,button,click,until})=>{
   const label='답글의 원 발언 열기';
   await ui.React.act(async()=>root.render(ui.React.createElement(ui.WorkspaceConversationSources,{client:new ui.ApiClient(transport),projectId:pid,onAuthenticationLost:()=>assert.fail('인증 콜백')})));
   assert.equal(button(label),undefined);assert.equal(calls.length,0);
   await click('사용자 대화 목록 조회');await click('대화 발언 목록 열기: '+cid);await click('발언 원문 열기: 2');await until(()=>!!button(label));
   assert.equal(calls.length,3);await click(label);await until(()=>container.textContent.includes(f.previous.body));
   assert.equal(button(label),undefined);assert.equal(calls.length,4);assert.equal(calls.at(-1),`/api/v1/projects/${pid}/conversations/${cid}/messages/${uid}`);
- }finally{
-  if(root)await ui.React.act(async()=>root.unmount());doc.body.removeChild(container);
-  for(const channel of channels){channel.port1.close();channel.port2.close();}
-  for(const [key,descriptor] of saved)if(descriptor)Object.defineProperty(globalThis,key,descriptor);else Reflect.deleteProperty(globalThis,key);
- }
+ });
+});
+
+function instructionPartsResponse(source:{sourceRef:{id:string;contentHash:string};message:{bodyRef:ReturnType<typeof fixture>['source']['message']['bodyRef']}}){
+ const bodyRef=source.message.bodyRef;
+ const plan={schemaVersion:1,purpose:'INSTRUCTION_PARTS_PLAN',algorithm:'UTF8_CODEPOINT_64K_V1',bodyRef,
+  limits:{maxSourceBytes:2097152,maxPartBytes:65536,maxParts:200},
+  parts:[{partIndex:1,byteOffset:0,utf8Bytes:bodyRef.bytes,contentHash:bodyRef.contentHash}]};
+ return {instructionRef:{id:source.sourceRef.id,version:1,contentHash:source.sourceRef.contentHash},
+  partsRef:{id:bodyRef.artifactId,version:1,contentHash:contentHash(canonicalJson(plan))},plan};
+}
+
+test('UI04 지시 부분계획은 보호 원문을 명시 선택한 사용자 지시에만 열리고 닫아 다시 읽을 수 있다',async()=>{
+ const f=replyFixture(),parts=instructionPartsResponse(f.source),requests:string[]=[];
+ const path=`/api/v1/projects/${pid}/conversations/${cid}/messages/${mid}/instruction-parts`;
+ const {calls,transport}=replyTransport(f);
+ await withWorkspaceDOM(async({ui,root,container,button,click,until})=>{
+  const client=new ui.ApiClient(async(input:string,init:RequestInit)=>{
+   if(input!==path)return transport(input,init);
+   requests.push(input);
+   assert.equal(init.method,'GET');assert.equal(init.credentials,'same-origin');assert.equal(init.body,undefined);
+   return Response.json(parts);
+  });
+  const lookup='지시 부분계획 조회';
+  await ui.React.act(async()=>root.render(ui.React.createElement(ui.WorkspaceConversationSources,{client,projectId:pid,onAuthenticationLost:()=>assert.fail('인증 콜백')})));
+  assert.equal(calls.length,0);assert.equal(button(lookup),undefined);
+  await click('사용자 대화 목록 조회');
+  await click('대화 발언 목록 열기: '+cid);
+  assert.equal(button(lookup),undefined);
+  await click('발언 원문 열기: 2');await until(()=>container.textContent.includes(f.body));
+  assert.equal(requests.length,0);assert(button(lookup),'확인된 지시만 부분계획을 열 수 있다');
+  await click(lookup);await until(()=>container.textContent.includes('부분 1개'));
+  assert(container.textContent.includes(parts.partsRef.contentHash));assert.deepEqual(requests,[path]);
+  await click('부분계획 닫기');assert(!container.textContent.includes(parts.partsRef.contentHash));
+  assert(container.textContent.includes(f.body));assert.deepEqual(requests,[path]);
+  await click(lookup);await until(()=>container.textContent.includes(parts.partsRef.contentHash));
+  await click('답글의 원 발언 열기');await until(()=>container.textContent.includes(f.previous.body));
+  assert.equal(button(lookup),undefined);assert(!container.textContent.includes(parts.partsRef.contentHash));
+  assert.deepEqual(requests,[path,path]);assert.equal(calls.length,4);
+ });
+});
+
+test('UI04 지시 부분계획의 늦은 결과와 401은 원문 재선택·목록·프로젝트 교체·화면 이탈 후 반영되지 않는다',async()=>{
+ const f=replyFixture(),parts=instructionPartsResponse(f.source);
+ const lookup='지시 부분계획 조회',message=`/api/v1/projects/${pid}/conversations/${cid}/messages/${mid}`;
+ const otherProject='55555555-5555-4555-8555-555555555555';
+ const {transport}=replyTransport(f);
+ await withWorkspaceDOM(async({ui,root,container,button,click,until})=>{
+  for(const mode of ['selection','list','project','transport','route','dispose','close'] as const){
+   for(const status of [200,401]){
+    globalThis.location.hash='#/projects/'+pid+'/workspace';
+    let resolve!:(value:Response)=>void,gets=0,auth=0;
+    const pending=new Promise<Response>(r=>{resolve=r;});
+    const client=new ui.ApiClient(async(path:string,init:RequestInit)=>{
+     if(path!==message+'/instruction-parts')return transport(path,init);
+     assert.equal(init.method,'GET');
+     return ++gets===1?pending:Response.json(parts);
+    });
+    const render=(projectId=pid)=>root.render(ui.React.createElement(ui.WorkspaceConversationSources,{client,projectId,onAuthenticationLost:()=>auth++}));
+    await ui.React.act(async()=>render());
+    await click('사용자 대화 목록 조회');
+    await click('대화 발언 목록 열기: '+cid);
+    await click('발언 원문 열기: 2');
+    await until(()=>!!button(lookup));
+    assert.equal(gets,0);await click(lookup);await until(()=>gets===1);
+    if(mode==='selection'){
+     await click('발언 원문 열기: 2');
+     await until(()=>!!button(lookup)&&!button(lookup)!.disabled);
+    }else if(mode==='list'){
+     await click('사용자 대화 목록 조회');
+     assert.equal(button(lookup),undefined);
+    }else if(mode==='project'){
+     await ui.React.act(async()=>render(otherProject));
+     assert.equal(button(lookup),undefined);
+    }else if(mode==='transport'){
+     client.transport=async()=>assert.fail('다른 전송으로 원 조회 금지');
+    }else if(mode==='route'){
+     globalThis.location.hash='#/projects/'+pid+'/knowledge';
+     assert(button(lookup),'App route replacement has not yet committed');
+    }else if(mode==='dispose'){
+     await ui.React.act(async()=>root.render(null));
+    }else{
+     await click('부분계획 닫기');
+     assert(container.textContent.includes(f.body));
+    }
+    await ui.React.act(async()=>resolve(status===200?Response.json(parts):Response.json({code:'AUTH_REQUIRED'},{status:401})));
+    assert.equal(auth,0,mode);assert.equal(gets,1,mode);assert(!container.textContent.includes(parts.partsRef.contentHash),mode);
+    if(mode==='selection'||mode==='close'){
+     await click(lookup);await until(()=>container.textContent.includes(parts.partsRef.contentHash));assert.equal(gets,2);
+    }
+    await ui.React.act(async()=>root.render(null));
+   }
+  }
+ });
+});
+
+test('UI04 현재 지시 부분계획의 401·404는 기존 거절을 표시하고 401만 인증 콜백을 사용한다',async()=>{
+ const f=replyFixture(),{calls,transport}=replyTransport(f);
+ await withWorkspaceDOM(async({ui,root,container,button,click,until})=>{
+  for(const [status,code] of [[401,'AUTH_REQUIRED'],[404,'NOT_FOUND']] as const){
+   let auth=0,gets=0;
+   const client=new ui.ApiClient(async(path:string,init:RequestInit)=>{
+    if(!path.endsWith('/instruction-parts'))return transport(path,init);
+    gets++;
+    return Response.json({code},{status});
+   });
+   const before=calls.length;
+   await ui.React.act(async()=>root.render(ui.React.createElement(ui.WorkspaceConversationSources,{client,projectId:pid,onAuthenticationLost:()=>auth++})));
+   await click('사용자 대화 목록 조회');
+   await click('대화 발언 목록 열기: '+cid);
+   await click('발언 원문 열기: 2');
+   await until(()=>!!button('지시 부분계획 조회'));
+   await click('지시 부분계획 조회');
+   await until(()=>container.textContent.includes(code));
+   assert(container.textContent.includes(f.body));
+   assert.equal(auth,status===401?1:0);
+   assert.equal(gets,1);assert.equal(calls.length-before,3);
+   await ui.React.act(async()=>root.render(null));
+  }
+ });
 });
