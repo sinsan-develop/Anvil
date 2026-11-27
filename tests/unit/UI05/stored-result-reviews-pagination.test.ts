@@ -125,18 +125,26 @@ async function mountReviewEvidence(fault='',withTrace=false){
  m.baselineRefs=structuredClone(criteria.snapshot.baselineRefs);m.artifactRefs=[artifact];m.unexecuted=[];
  m.testResults=[{criterionId:'save',testId:'SAVE-01',baselineRefs:m.baselineRefs,expected:'저장 확인',actual:'수행자 보고',status:'PASS',evidence:[{sourceKind:'TEST_ARTIFACT',ref:artifact,contentHash:artifact.contentHash,environmentRef:criteria.snapshot.items[0]!.environmentRef,recordedAt:result.snapshot.submittedAt}]}];
  result.snapshot.manifestHash=hash(m);result.ref.contentHash=hash(result.snapshot);review.snapshot.input.resultRef=structuredClone(result.ref);review.ref.contentHash=hash(review.snapshot);
- const calls:string[]=[],gate=Promise.withResolvers<Response>();let delayed=false,sourceCurrent=true;
+ const calls:string[]=[],methods:string[]=[],gate=Promise.withResolvers<Response>();let delayed=false,sourceCurrent=true;
  const prefix='/api/v1/projects/'+assignment.projectId,coveragePath=prefix+'/results/'+result.ref.id+'/criteria/'+criteria.ref.id+'/versions/1/reported-coverage',filePath=prefix+'/results/'+result.ref.id+'/artifacts/'+artifact.id+'/text';
  const planPath=prefix+'/work-plans/'+trace.plan.ref.id+'/versions/'+trace.plan.ref.version,tracePath=prefix+'/traces?designId='+trace.plan.designRef.id+'&version=1&direction=REVERSE&limit=50';
  const from={kind:'ARTIFACT',id:artifact.id,versionRef:artifact},task={kind:'PLAN_TASK',id:trace.plan.ref.id,versionRef:trace.plan.ref,localCode:trace.task.taskCode};
  const edges=[[from,task],[task,target]].map(([from,to],n)=>{const data={from,to,relation:'IMPLEMENTS',reason:'같은 합성 원문의 저장 연결',designRefs:[trace.plan.designRef]};return{id:id(147+n),...data,edgeHash:hash(data),createdAt:result.snapshot.submittedAt};});
  const tracePage={designRef:trace.plan.designRef,direction:'REVERSE',nodes:[from,task,target].map(ref=>({ref,title:ref.kind==='DESIGN_ITEM'?'고정 설계 항목':ref.kind,designRefs:ref.kind==='ARTIFACT'?[]:[trace.plan.designRef]})),edges,traversal:edges.map(e=>({edgeId:e.id,from:e.to,to:e.from})),missingLinks:[],unknownEvidence:[{code:'EXECUTION_SOURCE_NOT_CONNECTED'},{code:'TEST_EVIDENCE_SOURCE_NOT_CONNECTED'}],baselineRef:null,hasMore:false,nextCursor:null,observedAt:f.now};
+ const basisPath=prefix+'/result-reviews/'+review.ref.id+'/next-action-basis';
+ const basis={projectId:assignment.projectId,resultRef:result.ref,reviewRef:review.ref,assignmentRef:assignment.ref,
+  applicationRef:assignment.snapshot.definition.taskRef.applicationRef,nodeId:assignment.snapshot.definition.taskRef.nodeId,nodeName:'고정 개발 검토',
+  action:review.snapshot.input.outcome==='REWORK'?'REVIEW_REWORK_FOR_SELECTED_STAGE':'WAIT_HUMAN_UNBLOCK_DECISION',
+  reviewOutcome:review.snapshot.input.outcome,sourceAssurance:'SERVER_STORED_REVIEW_WITH_CURRENT_METHODOLOGY',resultTransport:result.snapshot.transport,
+  reviewObservedAt:review.observedAt,applicationObservedAt:f.now,reasonCodes:['COMPLETION_NOT_ACCEPTED','RUNTIME_STATE_NOT_VERIFIED','CURRENT_AUTHORITY_BUDGET_NOT_REVALIDATED'],
+  completionAccepted:false,runtimeStateVerified:false,automaticTransitionPerformed:false,executionAuthorized:false,dispatchPerformed:false};
  const coverage=()=>prepareReportedCoverage(result,{ref:criteria.ref,snapshot:criteria.snapshot},f.now);
  const file=()=>({projectId:assignment.projectId,resultRef:result.ref,artifactRef:artifact,bytes:Buffer.byteLength(text),mediaType:'text/plain;charset=utf-8',text,sourceState:'REGISTERED_BYTES_ONLY',evidenceProvenanceVerified:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false,observedAt:f.now});
  h.props.result=result;h.props.assignment=assignment;h.props.client=new ui.ApiClient(async(url:any,init:any)=>{
-  assert.equal(init.method,'GET');const path=String(url);calls.push(path);
+  methods.push(init.method);assert.equal(init.method,'GET');const path=String(url);calls.push(path);
   if(path.endsWith('/review-pages')){if(fault==='history401')return Response.json({code:'AUTH_REQUIRED'},{status:401});const page=h.page(null);return Response.json({...page,resultRef:result.ref,items:[{ref:review.ref,criteriaRef:criteria.ref,outcome:review.snapshot.input.outcome,reviewedBy:review.snapshot.reviewedBy,sameAsSubmitter:review.snapshot.sameAsSubmitter,reviewedAt:review.snapshot.reviewedAt,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false}],hasMore:false,nextCursor:null});}
   if(path===prefix+'/result-reviews/'+review.ref.id)return Response.json(review);
+  if(path===basisPath){if(fault==='basis-late'&&!delayed){delayed=true;return gate.promise;}return Response.json(basis);}
   if(path===prefix+'/result-criteria/'+criteria.ref.id+'/versions/1'){const value=structuredClone(criteria);if(fault==='criteria')value.ref.contentHash='f'.repeat(64);return Response.json(value);}
   if(path===coveragePath){if(fault==='403'||fault==='401')return Response.json({code:'ACCESS_DENIED'},{status:Number(fault)});if(fault.startsWith('late')){delayed=true;return gate.promise;}const value=coverage();if(fault==='result')value.resultRef={...value.resultRef,contentHash:'f'.repeat(64)};return Response.json(value);}
   if(path===filePath)return Response.json(file());
@@ -145,8 +153,67 @@ async function mountReviewEvidence(fault='',withTrace=false){
   assert.fail('승인되지 않은 합성 GET');
  });
  if(withTrace){h.props.projectId=assignment.projectId;h.props.traceDetail=fault==='trace-cross'?{...trace.detail,projectId:id(151)}:trace.detail;h.props.criteria={session:h.props.session};h.props.isCurrent=()=>sourceCurrent;}
- await h.render(withTrace?ui.ResultReviewSources:ui.StoredResultReviewHistory);return{...h,calls,text,review,criteria,coveragePath,filePath,planPath,tracePath,tracePage,target,gate,coverage,delayed:()=>delayed,invalidate:()=>{sourceCurrent=false;}};
+ await h.render(withTrace?ui.ResultReviewSources:ui.StoredResultReviewHistory);return{...h,calls,methods,text,review,criteria,coveragePath,filePath,planPath,tracePath,tracePage,target,gate,coverage,basisPath,basis,delayed:()=>delayed,invalidate:()=>{sourceCurrent=false;},restore:()=>{sourceCurrent=true;}};
 }
+async function openReviewBasis(h:Awaited<ReturnType<typeof mountReviewEvidence>>){
+ await h.click('보관 검수 목록 조회');await h.waitFor('보관 검수 1페이지');
+ await h.click('보관 검수 원문 '+h.review.ref.id);await h.waitFor('선택 검수 기준 다음 행동');
+}
+
+test('보관 검수의 이전 상세·경로에서 늦게 누른 다음 행동은 조회하지 않는다',async t=>{
+ for(const mode of ['DETAIL','ROUTE'] as const)await t.test(mode,async()=>{
+  const h=await mountReviewEvidence('',true);try{
+   await openReviewBasis(h);
+   const oldButton=h.buttons('다음 행동 근거 확인')[0]!;
+   await ui.React.act(async()=>{
+    if(mode==='DETAIL')h.buttons('보관 검수 원문 '+h.review.ref.id)[0]!.dispatchEvent({type:'click',button:0,bubbles:true});
+    else h.invalidate();
+    assert(h.container.contains(oldButton),'이전 상세 버튼이 아직 DOM에 있음');
+    oldButton.dispatchEvent({type:'click',button:0,bubbles:true});
+    // Commit 전에 기존 GET 전 해시 검산이 끝날 수 있도록 이벤트 루프를 비운다.
+    for(let n=0;n<100&&!h.calls.includes(h.basisPath);n++)await new Promise(r=>setImmediate(r));
+    assert(!h.calls.includes(h.basisPath),'이전 상세의 보호 근거 GET 0');
+   });
+   assert.equal(h.lost(),0);
+   if(mode==='DETAIL'){
+    await h.waitFor('선택 검수 기준 다음 행동');
+    assert.notEqual(h.buttons('다음 행동 근거 확인')[0],oldButton);
+    const before=h.calls.length;
+    await h.click('다음 행동 근거 확인');await h.waitFor('고정 단계 '+h.basis.nodeId+' · '+h.basis.nodeName);
+    assert.deepEqual(h.calls.slice(before),[h.basisPath]);
+    assert(h.container.textContent.includes('후속 단계로 이동하거나 Agent를 실행하지 않습니다.'));
+    for(const flag of ['completionAccepted','runtimeStateVerified','automaticTransitionPerformed','executionAuthorized','dispatchPerformed']){
+     assert(h.container.textContent.includes(`"${flag}": false`));
+    }
+   }
+   assert(h.methods.every(method=>method==='GET'));
+  }finally{await h.close();}
+ });
+});
+
+test('보관 검수 다음 행동의 늦은 401을 버리고 같은 경로 복귀에서 명시 재조회한다',async()=>{
+ const h=await mountReviewEvidence('basis-late',true);let unavailable=0;
+ try{
+  h.props.onAccessUnavailable=()=>{unavailable++;};await h.render(ui.ResultReviewSources);
+  await openReviewBasis(h);const button=h.buttons('다음 행동 근거 확인')[0]!;
+  await h.click('다음 행동 근거 확인');
+  for(let n=0;n<100&&!h.delayed();n++)await h.flush();
+  assert(h.delayed());assert.deepEqual(h.calls.filter(path=>path===h.basisPath),[h.basisPath]);
+  h.invalidate();
+  await ui.React.act(async()=>h.gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401})));
+  await h.flush();
+  assert.equal(h.lost(),0);assert.equal(unavailable,0);assert(!h.container.textContent.includes('AUTH_REQUIRED'));
+  h.restore();
+  assert.equal(h.buttons('다음 행동 근거 확인')[0],button,'기존 상세를 다시 마운트하지 않고 같은 위치로 복귀');
+  assert.equal(button.disabled,false);
+  assert.deepEqual(h.calls.filter(path=>path===h.basisPath),[h.basisPath],'자동 재조회 0');
+  await h.click('다음 행동 근거 확인');await h.waitFor('고정 단계 '+h.basis.nodeId+' · '+h.basis.nodeName);
+  assert.deepEqual(h.calls.filter(path=>path===h.basisPath),[h.basisPath,h.basisPath]);
+  assert.equal(h.lost(),0);assert.equal(unavailable,0);
+  assert(h.methods.every(method=>method==='GET'));
+ }finally{h.gate.resolve(Response.json(h.basis));await h.close();}
+});
+
 async function openReviewCriteria(h:Awaited<ReturnType<typeof mountReviewEvidence>>){
  assert.equal(h.calls.length,0);await h.click('보관 검수 목록 조회');await h.waitFor('보관 검수 1페이지');await h.click('보관 검수 원문 '+h.review.ref.id);await h.waitFor('검수 기준·원조건 열기');
  assert.equal(h.calls.length,2);await h.click('검수 기준·원조건 열기');await h.waitFor('조건별 실제 시험 계획');
