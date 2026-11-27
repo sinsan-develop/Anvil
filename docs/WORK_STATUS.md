@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-27 KST
 
+- **FN12 최초 실행 근거 계약과 정규형 구현** — 신산님 채택에 따라 담당 `fn13_quota_diff_replay`가 `docs/contracts/FN12_NORMAL_EXECUTION_EVIDENCE.md`, `contracts/runtime/normal-result-execution-evidence-v1.ts`, `tests/unit/FN12/normal-result-execution-evidence.test.ts`를 작성·동결했다. 원 등록·실행 세대·전달 명령·개별 호출을 구별하며 관측 명령·종료 코드·환경·커밋·산출물 원시 바이트 해시를 정확 참조와 대조한다. 초기 RED 2건(모듈 부재/산출물 해시 불일치)을 해결했다. 담당 합성 75/75·Main 합성 68/68(각 skip 0), 양측 타입 검사 및 독립 검수 Critical/Important/Minor 각 0. 다음은 원 실행기 관측 → 보호 저장 및 입수 → 검수 화면 연결이다. 실제 실행·DB·키·서비스 및 실측 증거의 저장은 미검증이다. PMO에 IX01 동일 시도 보호 입력을 확인 요청했고 실제 발급자·보호 원문·Windows 준비 결과의 등록 근거는 아직 확인되지 않았다.
+
 
 ### 최신 제품 소스의 웹·설치형 메모리 빌드 검증
 
