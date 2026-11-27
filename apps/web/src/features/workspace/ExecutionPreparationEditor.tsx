@@ -50,8 +50,10 @@ export function ExecutionPreparationEditor({normalInitialReviews,knownNormalScop
    const current=()=>active()&&client.transport===transport&&currentBuffer.current===original&&savedSelection.current===selection;
    try{const value=await readContextPreparation(client,confirmed.projectId,ref);if(!current())return;
     if(ordered(value.manifest.assignmentRef)!==ordered(confirmed.ref)||ordered(value.manifest.budgetRef)!==ordered(confirmed.snapshot.definition.budgetRef))throw new ApiError('EXECUTION_BINDING_MISMATCH');
-    const next=structuredClone(original);next.draft.contextBundleRef=structuredClone(value.ref);next.sources=null;next.dirty=true;
-    onChange(previous=>previous===original?next:previous);
+    const next=structuredClone(original);next.draft.contextBundleRef=structuredClone(value.ref);
+    if(ordered(original.draft.contextBundleRef)!==ordered(next.draft.contextBundleRef))delete next.understandingSelection;
+    next.sources=null;next.dirty=true;
+    onChange(previous=>previous===original&&current()?next:previous);
    }catch(e){if(current())throw e;}
   });
  }

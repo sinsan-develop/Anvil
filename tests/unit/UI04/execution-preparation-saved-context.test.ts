@@ -4,7 +4,7 @@ import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {seed,clientFixture} from './registered-preparation-options-fixture.ts';
-import {prepareExecutionCommand} from '../../../apps/web/src/features/workspace/execution-preparation-api.ts';
+import {prepareExecutionCommand,selectPreparationSources,type ExecutionPreparationBuffer} from '../../../apps/web/src/features/workspace/execution-preparation-api.ts';
 import {transferFixture} from '../UI09/transfer-fixture.ts';
 
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
@@ -29,7 +29,7 @@ const saved=new Map<string,PropertyDescriptor|undefined>();let ui:any,uiCode:str
 const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class OwnedChannel extends NativeChannel{constructor(){super();channels.push(this);}}
 before(async()=>{
  const src=(s:string)=>JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/'+s,import.meta.url)));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:saved-context',name:'SavedContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'saved-context-memory',resolveId(id){if(id.endsWith('virtual:saved-context'))return '\0saved-context';},load(id){if(id==='\0saved-context')return `export * as React from 'react';export {createRoot} from 'react-dom/client';export {AssignmentContentDecision} from ${src('features/workspace/AssignmentContentDecision.tsx')};export {ExecutionPreparationEditor} from ${src('features/workspace/ExecutionPreparationEditor.tsx')};export {ApiClient} from ${src('api/client.ts')};export {newContextPreparation} from ${src('features/workspace/context-api.ts')};export {newExecutionPreparation} from ${src('features/workspace/execution-preparation-api.ts')};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:saved-context',name:'SavedContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'saved-context-memory',resolveId(id){if(id.endsWith('virtual:saved-context'))return '\0saved-context';},load(id){if(id==='\0saved-context')return `export * as React from 'react';export {createRoot} from 'react-dom/client';export {AssignmentContentDecision} from ${src('features/workspace/AssignmentContentDecision.tsx')};export {ExecutionPreparationEditor} from ${src('features/workspace/ExecutionPreparationEditor.tsx')};export {ApiClient} from ${src('api/client.ts')};export {newContextPreparation} from ${src('features/workspace/context-api.ts')};export {newExecutionPreparation} from ${src('features/workspace/execution-preparation-api.ts')};export {normalInitialUnderstandingOwner} from ${src('features/session-detail/understanding-review-write.ts')};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const [key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  uiCode=(Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return SavedContextTest;';ui=new Function(uiCode)();
@@ -39,19 +39,20 @@ const label='저장한 맥락 원문 확인 후 선택';
 function deferred<T>(){let resolve!:(v:T)=>void;const promise=new Promise<T>(r=>resolve=r);return{promise,resolve};}
 async function fixture(){
  const f=seed(true),q=clientFixture(f),calls:{path:string;method:string}[]=[];
+ const queued:Array<(previous:ExecutionPreparationBuffer|null)=>ExecutionPreparationBuffer|null>=[];let deferChange=false;
  let session=f.session,confirmed=f.confirmed,shown=true,lost=0,next:Response|null=null,hold:ReturnType<typeof deferred<Response>>|null=null;
  let context=ui.newContextPreparation(f.confirmed,f.session,1);context.resultRef=f.context.ref;context.dirty=false;
  let buffer=ui.newExecutionPreparation(f.confirmed,f.session);buffer.draft={roleBindingRef:f.binding.ref,contextBundleRef:null,capabilityRef:f.report.ref,sourceScopes:[f.scope],mode:'CONTEXT_REVIEW',reason:'목록 밖 고정 맥락 선택'};
  const client=new ui.ApiClient(async(path:string,init:any)=>{calls.push({path,method:init?.method??'GET'});if(path.includes('/context/')){if(hold){const d=hold;hold=null;return d.promise;}if(next){const r=next;next=null;return r;}}if(path.includes('/context?'))return Response.json({projectId:f.confirmed.projectId,assignmentRef:f.confirmed.ref,items:[],hasMore:true,limit:50,ready:false,executionAuthorized:false,dispatchPerformed:false,observedAt:f.at});return q.client.transport(path,init);});
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
- function render(){root.render(shown?ui.React.createElement(ui.ExecutionPreparationEditor,{client,confirmed,session,providedHumanReportRef:f.report.ref,savedContextBuffer:context,buffer,onChange:(change:any)=>{buffer=typeof change==='function'?change(buffer):change;render();},owner:true,onAuthenticationLost:()=>lost++}):null);}
+ function render(){root.render(shown?ui.React.createElement(ui.ExecutionPreparationEditor,{client,confirmed,session,providedHumanReportRef:f.report.ref,savedContextBuffer:context,buffer,onChange:(change:any)=>{if(deferChange){queued.push(change);return;}buffer=typeof change==='function'?change(buffer):change;render();},owner:true,onAuthenticationLost:()=>lost++}):null);}
  const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
  const button=(name:string)=>{const b=nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===name);assert(b,name);return b;};
  const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});
  const wait=async(check:()=>boolean)=>{for(let i=0;i<100&&!check();i++)await settle();assert(check(),container.textContent);};
  const click=async(name:string)=>{const b=button(name);assert(!b.disabled);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
  await ui.React.act(async()=>render());
- return{f,calls,button,click,wait,settle,container,buffer:()=>buffer,context:()=>context,lost:()=>lost,next:(r:Response)=>next=r,hold:()=>{hold=deferred<Response>();return hold;},replace:async(b:any)=>{buffer=b;await ui.React.act(async()=>render());},contextChange:async(c:any)=>{context=c;await ui.React.act(async()=>render());},session:async(s:any)=>{session=s;await ui.React.act(async()=>render());},project:async()=>{confirmed={...confirmed,projectId:f.otherProject};await ui.React.act(async()=>render());},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{f,client,calls,queued,delayChange:()=>{deferChange=true;},applyChange:async()=>{const pending=queued.shift();assert(pending);await ui.React.act(async()=>{buffer=pending(buffer);render();});},button,click,wait,settle,container,buffer:()=>buffer,context:()=>context,lost:()=>lost,next:(r:Response)=>next=r,hold:()=>{hold=deferred<Response>();return hold;},replace:async(b:any)=>{buffer=b;await ui.React.act(async()=>render());},contextChange:async(c:any)=>{context=c;await ui.React.act(async()=>render());},session:async(s:any)=>{session=s;await ui.React.act(async()=>render());},project:async()=>{confirmed={...confirmed,projectId:f.otherProject};await ui.React.act(async()=>render());},route:async(show:boolean)=>{shown=show;await ui.React.act(async()=>render());},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 test('목록 밖 저장 맥락은 명시 GET 한 번 뒤 exact 준비 원명령에 결박·POST 0',async()=>{
  const q=await fixture();try{assert.equal(q.calls.length,0);await q.click('보관 참조 목록 다시 조회');await q.wait(()=>q.calls.length===2&&!q.button(label).disabled);assert.equal(q.buffer().draft.contextBundleRef,null);const n=q.calls.length;await q.click(label);await q.wait(()=>!!q.buffer().draft.contextBundleRef);assert.equal(q.calls.length,n+1);assert.deepEqual(q.buffer().draft.contextBundleRef,q.f.context.ref);await q.click('의도 준비·입력 확인');await q.wait(()=>!!q.buffer().pending);assert.equal(q.buffer().pending.operation,'prepareExecution');assert.deepEqual(q.buffer().pending.payload.contextBundleRef,q.f.context.ref);assert.deepEqual(q.buffer().pending.payload.assignmentRef,q.f.confirmed.ref);assert.equal(q.calls.filter(c=>c.method==='POST').length,0);}finally{await q.close();}
@@ -97,4 +98,78 @@ test('부모 확정 임무 화면의 저장 맥락 버퍼가 자식 명시 선�
  const wait=async(check:()=>boolean)=>{for(let i=0;i<100&&!check();i++)await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});assert(check(),container.textContent+' '+String(errors));};
  const click=async(name:string)=>{const b=nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===name);assert(b,name);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
  try{await ui.React.act(async()=>render());assert.equal(calls.length,0);await click('확정 임무 원본 재조회');await wait(()=>container.textContent.includes(label));assert.equal(calls.length,2);assert.equal(buffer.draft.contextBundleRef,null);await click(label);await wait(()=>!!buffer.draft.contextBundleRef);assert.deepEqual(buffer.draft.contextBundleRef,f.context.ref);assert.equal(calls.length,3);assert.deepEqual(errors,[]);}finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+});
+
+async function workWithUnderstanding(q:Awaited<ReturnType<typeof fixture>>, sameContext:boolean):Promise<ExecutionPreparationBuffer>{
+ const f=q.f,base=clientFixture(f),original:ExecutionPreparationBuffer=q.buffer();
+ const sources=await selectPreparationSources(base.client,f.confirmed as any,
+   {roleBindingRef:f.binding.ref,contextBundleRef:f.context.ref,capabilityRef:f.report.ref},f.report.ref,()=>true);
+ const originalContext=structuredClone(sources.context);
+ if(!sameContext){
+  originalContext.manifest.preparationInput.reason='앞서 선택한 동형 참조의 다른 맥락';
+  originalContext.ref.contentHash=contentHash(canonicalJson(originalContext.manifest));
+ }
+ const contextBundleRef=originalContext.ref;
+ return {...original,draft:{...original.draft,contextBundleRef,mode:'WORK'},
+   sources:{...sources,context:originalContext},understandingSelection:{
+    ownerEpoch:ui.normalInitialUnderstandingOwner(q.client,f.session),
+    basis:{kind:'NORMAL_UNDERSTANDING_WORK_BASIS',reviewRef:f.report.ref,scope:{projectId:f.confirmed.projectId,executionId:f.report.ref.id,executionGeneration:1},
+     preparationRef:f.report.ref,assignmentRef:f.confirmed.ref,roleBindingRef:f.binding.ref,agentSessionRef:f.binding.snapshot.sessionRef,
+     contextBundleRef,connectionRef:f.connection.ref,environmentRef:f.environment.ref,responseRef:f.report.ref,requestRef:f.report.ref,
+     basisRefs:[f.confirmed.ref],latestInstructionRefs:[]},
+   }};
+}
+
+for(const sameContext of [true,false])test('저장 맥락 선택은 전체 참조 일치 여부에 따라 WORK 판단을 보존한다 ('+sameContext+')',async()=>{
+ const q=await fixture();try{
+  const before=await workWithUnderstanding(q,sameContext);
+  await q.replace(before);
+  assert.match(q.container.textContent,/선택 판단/);
+  await q.click(label);
+  await q.wait(()=>q.buffer()!==before);
+  assert.deepEqual(q.buffer().draft.contextBundleRef,q.f.context.ref);
+  assert.deepEqual(q.buffer().understandingSelection,sameContext?before.understandingSelection:undefined);
+  assert.deepEqual(before.understandingSelection?.basis.contextBundleRef,before.draft.contextBundleRef);
+  assert.equal(q.buffer().sources,null);
+  assert.equal(q.buffer().dirty,true);
+  assert.deepEqual(q.calls.map(call=>call.method),['GET']);
+ }finally{await q.close();}
+});
+
+test('이전 저장 맥락 GET의 늦은 성공은 교체한 WORK 입력·판단을 보존한다',async()=>{
+ const q=await fixture();try{
+  const before=await workWithUnderstanding(q,false);
+  await q.replace(before);
+  const held=q.hold();await q.click(label);
+  const replacement={...before,draft:{...before.draft,reason:'새 사용자 입력'}};
+  await q.replace(replacement);
+  await ui.React.act(async()=>held.resolve(Response.json(q.f.context)));
+  for(let i=0;i<6;i++)await q.settle();
+  assert.equal(q.buffer(),replacement);
+  assert.deepEqual(q.buffer().understandingSelection,before.understandingSelection);
+  assert.deepEqual(q.calls.map(call=>call.method),['GET']);
+ }finally{await q.close();}
+});
+
+for(const change of ['CURRENT','SAVED_CONTEXT','TRANSPORT'] as const)test('지연 부모 반영은 현재 저장 맥락 조회에만 적용한다 · '+change,async()=>{
+ const q=await fixture();try{
+  const original=await workWithUnderstanding(q,false);await q.replace(original);
+  q.delayChange();
+  await q.click(label);
+  await q.wait(()=>q.queued.length===1);
+  if(change==='SAVED_CONTEXT')await q.contextChange({...q.context()});
+  if(change==='TRANSPORT'){
+   const transport=q.client.transport;
+   q.client.transport=(path:string,init:RequestInit)=>transport(path,init);
+  }
+  await q.applyChange();
+  if(change==='CURRENT'){
+   assert.deepEqual(q.buffer().draft.contextBundleRef,q.f.context.ref);
+   assert.equal(q.buffer().understandingSelection,undefined);
+  }else{
+   assert.equal(q.buffer(),original);
+   assert.deepEqual(q.buffer().understandingSelection,original.understandingSelection);
+  }
+  assert.deepEqual(q.calls.map(call=>call.method),['GET']);
+ }finally{await q.close();}
 });

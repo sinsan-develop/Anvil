@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-27 KST
 
+- **FN09/UI04 저장 맥락 변경의 WORK 판단 선택 정리** — 기준 `cbdb8a5f`, 작성 `fn13_quota_diff_replay`, 독립 `fn13_diff_contract_review`. 저장한 맥락을 명시 조회 후 선택할 때 전체 참조가 달라지면 이전 맥락의 WORK 이해 판단 선택만 해제하고 같은 참조에서는 보존한다. 원 검토 기록과 기존 수동 선택·서버 저장 검산은 유지한다. 늦은 조회 및 부모 상태 갱신 시 현재 맥락·전송·원 버퍼를 재확인한다. 해시만 다른 참조와 지연 갱신 RED를 교정했다. 제품 1·메모리 시험 1경로, 담당 55/55·Main 직접 26/26, 타입·diff 통과. 실제 실행·DB 미검증. IX01·FN12 차단 범위와 별개로 진행했다.
+
 - **원격 작업 브랜치 `f5f78832` 누적 합성 회귀** — 어울이 Node `--experimental-test-module-mocks --test --test-concurrency=2 --test-reporter=spec`으로 `baseline-adopted-evidence`, `project-methodology-saved-review`, `applied-stage-handoff`, `workspace-stage-start-app-flow`, `context-knowledge-scope-selection`, `design-to-plan-preparation`, `stored-plan-assignment-evidence`, `session-detail-read-context`, `project-result-reviews`, `work-plan-readiness-boundary`, `result-artifact-download-owner` 기존 11개 시험 파일을 같은 깨끗한 본에서 실행했다. 129/129·실패/취소/skip 각 0 (`6c34dd`), `npm run typecheck` exit0 (`2d2824`). 각 합성 경로의 누적 회귀이며 실제 IX01·Agent·DB·권한·설치·이전·복원은 미검증이다. UI14 설치 자원 페이지 후보는 실제 제품 TARGET 8·ENCRYPTION_KEY 32 및 각 head 한 건(현재 limit50)을 확인해 편집 전에 철회했다(파일/Git 쓰기 0). IX01 동일 시도 보호 승인 원본·Windows 준비 결과는 미확인이고 FN12 개별 시험의 별도 실행 권위 채택 결정도 기다린다.
 
 - **FN05/UI04 필수 헌법 슬롯의 현재 적용본 연결** — 기준 `6590e59e`, 작성 `fn13_quota_diff_replay`, 독립 `fn13_diff_contract_review`. 헌법·범위 슬롯은 기존 보호 조회에서 현재 적용 세대·원문 참조·사용 가능 상태를 검산하고, 같은 선택과 버퍼에서 사용자가 직접 눌렀을 때 고정 원문 참조 한 개만 추가한다. 과거·미적용·정정/제외·변조 원문·권한 거절·버퍼/슬롯 교체의 지연 결과는 추가하지 않는다. 기존 선택은 명시적으로 제거해야 하고 서버 저장의 현재본 재확인과 UI10/다른 슬롯은 유지한다. 일반 헌법 후보가 표시되던 RED, 제품 2·메모리 시험 1경로, 담당 합성 36/36·Main 9/9(각 skip 0), 타입·diff·독립 C0/I0/M0. 자동 교체/저장/Agent 전달/준수 판정 0, 실제 브라우저·DB·서비스·IX01 미검증이다.
