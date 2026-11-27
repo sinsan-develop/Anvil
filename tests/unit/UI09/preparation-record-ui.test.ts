@@ -461,7 +461,7 @@ function receipt(command:any,recordId=id(20)){const payload=command.payload,obse
  const record=readPreparationSnapshot({schemaVersion:1,id:recordId,projectId:pid,version:1,kind:'TRANSFER_PREPARATION_RECORD',state:'PREPARATION_ONLY',...payload,baselineRefs:[],budgetRef:null,sourceRefs:[],requiredContext:['PURPOSE_REASON','RULES_SCOPE','LATEST_INSTRUCTIONS','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'].map(code=>({code,state:hasContext?'MISSING_OR_EXCLUDED':'NOT_COLLECTED'})),gaps,observedAt,preparationStored:true,manifestStored:false,bindingFrozen:false,ready:false,resumeAuthorized:false,executionAuthorized:false,dispatchPerformed:false});
  const ref={id:record.id,version:1,contentHash:hash(record)};return readPreparationReceipt({operationId:id(21),commandId:command.commandId,projectId:pid,status:'APPLIED',targetId:record.id,version:1,data:{ref,record,preparationStored:true,manifestStored:false},evidenceRefs:[],warnings:[],serverReceivedAt:observedAt}) as any;
 }
-async function host(options:{targetDenied?:boolean;registered?:boolean;otherAssignment?:boolean;empty?:boolean;readerSession?:any;knownRecord?:any;controlDenied?:boolean;historicalGet?:(path:string)=>Promise<Response>|Response|undefined}={}){const f=seed();if(options.registered){Object.assign(f.binding.snapshot,{connectionKind:'REGISTERED_DEFINITION',connectionReadiness:'REGISTERED_DEFINITION_ONLY'});f.binding.ref.contentHash=hash(f.binding.snapshot);}if(options.otherAssignment){f.binding.snapshot.assignmentRef={...f.confirmed.ref,contentHash:'f'.repeat(64)};f.binding.ref.contentHash=hash(f.binding.snapshot);}const controlDenied=options.controlDenied,targetDenied=options.targetDenied,calls:{path:string;method:string;body?:string}[]=[],modes={post:'OK',get:'OK',control:'OK'},waiting:{release:((r:Response)=>void)|null;fixed:(()=>void)|null}={release:null,fixed:null};let saved:any=options.knownRecord??null,lost=0;
+async function host(options:{targetDenied?:boolean;registered?:boolean;registeredTarget?:ReturnType<typeof historicalTarget>;otherAssignment?:boolean;empty?:boolean;readerSession?:any;knownRecord?:any;controlDenied?:boolean;historicalGet?:(path:string)=>Promise<Response>|Response|undefined}={}){const f=seed();if(options.registered){Object.assign(f.binding.snapshot,{connectionKind:'REGISTERED_DEFINITION',connectionReadiness:'REGISTERED_DEFINITION_ONLY'});if(options.registeredTarget){f.binding.snapshot.connectionRef=options.registeredTarget.ref;f.responses['connections/'+options.registeredTarget.ref.id+'/versions/'+options.registeredTarget.ref.version]=options.registeredTarget;}f.binding.ref.contentHash=hash(f.binding.snapshot);}if(options.otherAssignment){f.binding.snapshot.assignmentRef={...f.confirmed.ref,contentHash:'f'.repeat(64)};f.binding.ref.contentHash=hash(f.binding.snapshot);}const controlDenied=options.controlDenied,targetDenied=options.targetDenied,calls:{path:string;method:string;body?:string}[]=[],modes={post:'OK',get:'OK',control:'OK'},waiting:{release:((r:Response)=>void)|null;fixed:(()=>void)|null}={release:null,fixed:null};let saved:any=options.knownRecord??null,lost=0;
  const historicalGet=options.historicalGet,records=new Map<string,any>(),commands=new Map<string,any>();
  const transport=async(url:any,options:any)=>{const path=new URL(String(url),'https://anvil.invalid').pathname,method=options?.method??'GET';calls.push({path,method,body:options?.body});if(method==='POST'){if(modes.post==='LOST')throw Error('합성 단절');if(modes.post==='409')return Response.json({code:'VERSION_CONFLICT'},{status:409});if(modes.post==='DELAY')return new Promise<Response>(r=>waiting.release=r);const command=JSON.parse(options.body);saved=commands.get(command.commandId)??receipt(command,id(20+commands.size));commands.set(command.commandId,saved);records.set(saved.data.ref.id,saved);return Response.json(saved);}
   const historical=historicalGet?.(path);if(historical)return historical;
@@ -1020,4 +1020,72 @@ for(const scenario of ['CLOSE','CHILD_RELOAD','DRAFT_ABA','TRANSPORT'] as const)
   assert.equal(f.buffers[before.key],before);assert.equal(f.calls.length,reads);assert.equal(f.lost(),0);
   assert(f.calls.every(c=>c.method==='GET'));
  }finally{release();await f.close();}
+});
+
+
+const bindingTargetButton='기존 결박의 등록 정의를 대상으로 선택';
+test('같은 도구 새 세션 준비는 보호 선택한 원 결박의 등록 정의만 명시 대상으로 고정한다',async()=>{
+ const target=historicalTarget(),f=await host({registered:true,registeredTarget:target});
+ try{
+  assert.equal(f.buttons(bindingTargetButton).length,0,'결박을 보호 선택하기 전 대상 추정 없음');
+  await selectRegisteredBinding(f);const before=f.calls.length,original=f.buffer();
+  assert.equal(f.buttons(bindingTargetButton).length,1,'원 registered binding에서 명시 대상 선택 진입 누락');
+  await f.click(bindingTargetButton);await f.settle(()=>f.buffer().targetConnectionRef!==null);
+  assert.deepEqual(f.buffer().targetConnectionRef,target.ref);assert.equal(f.buffer().targetSelected,true);assert.deepEqual(f.buffer().oldBindingRef,original.oldBindingRef);assert.deepEqual(f.buffer().roleRef,original.roleRef);
+  assert.deepEqual(f.calls.slice(before).map(v=>v.path),['/api/v1/projects/'+pid+'/project-roles/'+f.f.stage.ref.id+'/versions/1','/api/v1/projects/'+pid+'/role-bindings/'+f.f.binding.ref.id+'/versions/1','/api/v1/projects/'+pid+'/connections/'+target.ref.id+'/versions/'+target.ref.version]);
+  assert(f.calls.every(v=>v.method==='GET'),'초안 참조 선택은 POST 없음');
+  await f.click('준비기록 원명령 준비');await f.settle(()=>f.buffer().pending?.state==='PREPARED');
+  assert.deepEqual(f.buffer().pending.command.payload.targetConnectionRef,target.ref);assert.deepEqual(f.buffer().pending.command.payload.oldBindingRef,f.f.binding.ref);assert.equal(f.calls.filter(v=>v.method==='POST').length,0,'별도 저장 전 POST0');
+  await f.click('같은 준비기록 명령 저장·재확인');await f.settle(()=>f.buffer().pending?.state==='STORED');assert.equal(f.calls.filter(v=>v.method==='POST').length,1);
+  const stored=f.buffer().pending.receipt.data.record;assert.deepEqual(stored.targetConnectionRef,target.ref);for(const name of ['ready','resumeAuthorized','executionAuthorized','dispatchPerformed'])assert.equal(stored[name],false);assert(stored.gaps.includes('TARGET_CAPABILITIES_UNVERIFIED'));
+ }finally{await f.close();}
+});
+
+test('기존 결박 대상 선택은 후보·미수집과 보호403·교차·hash 손상에서 원 초안을 보존한다',async()=>{
+ for(const mode of ['CANDIDATE','MISSING','403','CROSS','HASH'] as const){
+  const target=historicalTarget();let selecting=false;
+  const f=await host({registered:mode!=='CANDIDATE',registeredTarget:target,historicalGet:path=>{
+   if(!selecting)return;
+   if(mode==='403'&&path.includes('/connections/'))return Response.json({code:'ACCESS_DENIED'},{status:403});
+   if(mode==='CROSS'&&path.includes('/role-bindings/')){const value=structuredClone(f.f.binding);value.snapshot.assignmentRef={...value.snapshot.assignmentRef,id:id(99)};value.ref.contentHash=hash(value.snapshot);return Response.json(value);}
+   if(mode==='HASH'&&path.includes('/connections/'))return Response.json({...target,ref:{...target.ref,contentHash:'f'.repeat(64)}});
+  }});
+  try{
+   await selectRegisteredBinding(f);
+   if(mode==='MISSING')await f.click('기존 결박 미수집 명시 선택');
+   const before=f.buffer(),calls=f.calls.length;
+   if(mode==='CANDIDATE'||mode==='MISSING'){assert.equal(f.buttons(bindingTargetButton).length,0);assert.equal(f.calls.length,calls);}
+   else{selecting=true;await f.click(bindingTargetButton);await f.settle(()=>/ACCESS_DENIED|TRANSFER_PREPARATION_BINDING_MISMATCH|CONNECTION_/.test(f.text()));assert.equal(f.buffer(),before);assert.equal(f.buffer().targetConnectionRef,null);assert.equal(f.lost(),0);if(mode==='CROSS')assert.equal(f.calls.slice(calls).filter(v=>v.path.includes('/connections/')).length,0);}
+   assert.equal(f.calls.filter(v=>v.method==='POST').length,0);
+  }finally{await f.close();}
+ }
+});
+
+test('기존 결박 대상 선택의 이탈 직전 클릭은 조회0이고 draft·owner ABA 뒤 늦은200·401도 적용하지 않는다',async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+pid+'/transfers'};
+ Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{
+  for(const mode of ['ROUTE','DRAFT_ABA','OWNER_ABA','TRANSPORT'] as const)for(const status of [200,401]){
+   const target=historicalTarget();let selecting=false,waiting=false,release=()=>{};
+   const f=await host({registered:true,registeredTarget:target,historicalGet:path=>{
+    if(!selecting||!path.includes('/role-bindings/'))return;
+    const response=Response.json(status===200?f.f.binding:{code:'AUTH_REQUIRED'},{status}),json=response.json.bind(response);
+    response.json=async()=>{await new Promise<void>(resolve=>{waiting=true;release=resolve;});return json();};return response;
+   }});
+   try{
+    await selectRegisteredBinding(f);const original=f.buffer(),before=f.calls.length,node=f.button(bindingTargetButton),prop=Object.keys(node).find(k=>k.startsWith('__reactProps'))!;
+    const click=()=>{(node as any)[prop].onClick();};
+    if(mode==='ROUTE'){
+     location.hash='#/projects/'+pid+'/workspace';await ui.React.act(async()=>click());assert.equal(f.calls.length,before);location.hash='#/projects/'+pid+'/transfers';continue;
+    }
+    selecting=true;await ui.React.act(async()=>{click();click();});await f.settle(()=>waiting);
+    assert.equal(f.calls.slice(before).filter(v=>v.path.includes('/role-bindings/')).length,1,'중복 클릭은 원 조회 하나');
+    if(mode==='DRAFT_ABA'){f.buffers[original.key]=ui.api.editPreparation(original,{reason:'초안 교체'});await f.render();f.buffers[original.key]=original;await f.render();}
+    if(mode==='OWNER_ABA'){const props=f.props();await f.render({...props,session:{...session,clientId:id(98)}});await f.render(props);}
+    if(mode==='TRANSPORT'){const transport=f.client.transport;f.client.transport=(...args:any[])=>transport(...args);await f.render();}
+    const current=f.buffers[original.key];await ui.React.act(async()=>{release();await new Promise(r=>setImmediate(r));});
+    assert.equal(f.buffers[original.key],current);assert.equal(current.targetConnectionRef,null);assert.equal(f.lost(),0);assert.equal(f.calls.slice(before).filter(v=>v.path.includes('/connections/')).length,0);assert.equal(f.calls.filter(v=>v.method==='POST').length,0);assert.doesNotMatch(f.text(),/AUTH_REQUIRED/);
+   }finally{release();await f.close();}
+  }
+ }finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
 });
