@@ -3,12 +3,12 @@ import type {StageStartStorage} from '../session-detail/stage-start-api.ts';
 import {NodeDecisionPanel,type NodeDecisionStorage} from './NodeDecisionPanel.tsx';
 import type {MobilePane} from '../mobile/MobileNavigation.tsx';
 import type {Ref} from '../connections/api.ts';
-import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { routeHref } from '../../shell/routes.ts';
 import { readWorkspaceProject, type WorkspaceProject, type WorkspaceStageSelection } from './api.ts';
 import { WorkspaceDocuments } from './WorkspaceDocuments.tsx';
-import { WorkspaceMethodology } from './WorkspaceMethodology.tsx';
+import { WorkspaceMethodology, type AppliedStageHandoff } from './WorkspaceMethodology.tsx';
 import { WorkspaceAssignments } from './WorkspaceAssignments.tsx';
 import type { AssignmentBuffer } from './assignment-api.ts';
 import type { DocumentSession } from '../design-trace/editor-api.ts';
@@ -21,11 +21,19 @@ import {NewStageDocumentForm} from '../design-trace/NewStageDocumentForm.tsx';
 import type {DocumentBuffer} from '../design-trace/editor-api.ts';
 import {ProjectPermissionPolicyView} from '../../shell/ProjectPermissionPolicyView.tsx';
 
-export function WorkspacePage({normalInitialReviews,stageStart,nodeDecisions,mobilePane,providedHumanReportRef, client, projectId, session, documentPreparation, assignmentBuffer, requestedTask, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: {normalInitialReviews?:NormalInitialUnderstandingReviewStorage;stageStart?:StageStartStorage;nodeDecisions?:NodeDecisionStorage;mobilePane?:MobilePane;providedHumanReportRef?:Ref|null;documentPreparation?:{available:boolean;onPrepared:(value:DocumentBuffer)=>void};client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
-  const [project, setProject] = useState<WorkspaceProject | null>(null), [error, setError] = useState<ApiError | null>(null);
+export function WorkspacePage({normalInitialReviews,stageStart,nodeDecisions,mobilePane,providedHumanReportRef, client, projectId, session, documentPreparation, assignmentBuffer, requestedTask, appliedStageHandoff, onAssignmentChange, conversationBuffer, onConversationChange, onAuthenticationLost }: {normalInitialReviews?:NormalInitialUnderstandingReviewStorage;stageStart?:StageStartStorage;nodeDecisions?:NodeDecisionStorage;mobilePane?:MobilePane;providedHumanReportRef?:Ref|null;documentPreparation?:{available:boolean;onPrepared:(value:DocumentBuffer)=>void};client: ApiClient; projectId: string; session: DocumentSession; assignmentBuffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection;appliedStageHandoff?:AppliedStageHandoff;onAssignmentChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; conversationBuffer: ConversationBuffer | null; onConversationChange: (value: ConversationBuffer | null) => void; onAuthenticationLost: () => void }) {
+  const [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [revision, setRevision] = useState(0);
   const [selectedStage, setSelectedStage] = useState<WorkspaceStageSelection | null>(null);
   const [preparingDocument,setPreparingDocument]=useState<string|null>(null);
+  const readKey=JSON.stringify([projectId,session.user.id,session.clientId,session.csrfToken,revision]);
+  const scope=useRef({key:readKey,client,transport:client.transport});
+  if(scope.current.key!==readKey||scope.current.client!==client||scope.current.transport!==client.transport)scope.current={key:readKey,client,transport:client.transport};
+  const owner=scope.current,alive=useRef(false);
+  const [loaded,setProject]=useState<{owner:typeof owner;project:WorkspaceProject}|null>(null);
+  useLayoutEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+  const currentProject=()=>alive.current&&scope.current===owner&&client.transport===owner.transport;
+  const project=loaded?.owner===owner?loaded.project:null,handoff=revision===0?appliedStageHandoff:undefined;
   const preparationKey=project?.currentMethodologyRef&&selectedStage?JSON.stringify([projectId,project.currentMethodologyRef.id,project.currentMethodologyRef.version,project.currentMethodologyRef.contentHash,selectedStage.applicationId,selectedStage.nodeId,revision]):null;
   function selectStage(value:WorkspaceStageSelection|null){
     if(!value||value.applicationId!==selectedStage?.applicationId||value.nodeId!==selectedStage?.nodeId)setPreparingDocument(null);
@@ -33,22 +41,25 @@ export function WorkspacePage({normalInitialReviews,stageStart,nodeDecisions,mob
   }
   useEffect(()=>{if(!documentPreparation?.available)setPreparingDocument(null);},[documentPreparation?.available]);
   useEffect(() => {
-    let current = true; setPending(true); setError(null); setProject(null); setSelectedStage(null); setPreparingDocument(null);
-    readWorkspaceProject(client, projectId).then(value => { if (current) setProject(value); }).catch((cause: unknown) => {
-      if (!current) return; const failure = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID'); setError(failure);
+    let active=true;
+    const linkedRead=handoff?.isCurrent()===true;
+    const current=()=>active&&currentProject()&&(!linkedRead||handoff!.isCurrent());
+    setPending(true); setError(null); setProject(null); setSelectedStage(null); setPreparingDocument(null);
+    readWorkspaceProject(client, projectId).then(value => { if(current())setProject({owner,project:value}); }).catch((cause: unknown) => {
+      if(!current())return;const failure=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setError(failure);
       if (failure.status === 401) onAuthenticationLost();
-    }).finally(() => { if (current) setPending(false); });
-    return () => { current = false; };
-  }, [client, projectId, revision]);
+    }).finally(()=>{if(current())setPending(false);});
+    return()=>{active=false;};
+  },[owner]);
   return <section aria-label="프로젝트 작업" lang="ko">
     <div className="project-toolbar"><button disabled={pending} onClick={() => setRevision(value => value + 1)}>프로젝트 원본 새로고침</button></div>
-    {pending ? <p role="status">프로젝트 원본 조회 중</p> : null}{error ? <p role="alert">{error.message} 프로젝트 원본은 현재 미확인입니다.</p> : null}
+    {pending ? <p role="status">프로젝트 원본 조회 중</p> : null}{error ? <p role="alert">{error.message} 프로젝트 원본은 현재 미확인입니다.{handoff?' 전달받은 단계를 선택하지 않았습니다.':''}</p> : null}
     {project && !pending && !error ? <>
       <header><h2>{project.name}</h2><p>{project.purpose}</p><p className="meta">원본 버전 {project.version} · 원본 변경 <time dateTime={project.updatedAt}>{new Date(project.updatedAt).toLocaleString('ko-KR')}</time> · 아래 내용은 프로젝트 조회 결과이며 실행 상태가 아닙니다.</p></header>
       <div className="project-workspace">
         <section className="status-card" aria-label="개발 절차" hidden={mobilePane!==undefined&&mobilePane!=='steps'}><h3>개발 절차</h3>
           {project.currentMethodologyRef ? <><p>고정 적용 참조 · 세대 {project.currentMethodologyRef.version}</p><p className="meta">{project.currentMethodologyRef.id}<br />{project.currentMethodologyRef.contentHash}</p></> : <p>확인된 방법론 적용본 없음</p>}
-          <WorkspaceMethodology key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash].join(':')} client={client} projectId={projectId} expectedRef={project.currentMethodologyRef} onAuthenticationLost={onAuthenticationLost} onStageChange={selectStage} />
+          <WorkspaceMethodology key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash].join(':')} client={client} projectId={projectId} expectedRef={project.currentMethodologyRef} handoff={handoff} isProjectCurrent={currentProject} onAuthenticationLost={onAuthenticationLost} onStageChange={selectStage} />
           {nodeDecisions&&selectedStage&&project.currentMethodologyRef&&selectedStage.applicationId===project.currentMethodologyRef.id?<NodeDecisionPanel key={JSON.stringify([projectId,session.user.id,session.clientId,project.currentMethodologyRef,selectedStage.nodeId,project.controlState.generation])} client={client} projectId={projectId} session={session} applicationRef={project.currentMethodologyRef} nodeId={selectedStage.nodeId} participation={project.participation} controlState={project.controlState} storage={nodeDecisions} onAuthenticationLost={onAuthenticationLost}/>:null}
           <a href={routeHref('methodologies', projectId)}>방법론 원본·검토 열기</a><p className="meta">정의 조회와 실제 단계 수행은 별개입니다. 책임 세션·단계별 실제 상태는 아직 미연결입니다.</p>
         </section>

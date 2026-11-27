@@ -15,15 +15,16 @@ import { StoredNodeDefinition } from './StoredNodeDefinition.tsx';
 import { StoredNodeRoutes } from './StoredNodeRoutes.tsx';
 import { MethodApplicationPanel } from './MethodApplicationPanel.tsx';
 import { AppliedMethodOriginal } from './AppliedMethodOriginal.tsx';
+import type {AppliedStageChoice} from '../workspace/WorkspaceMethodology.tsx';
 
 type CursorPosition = { cursor: string | null; history: (string | null)[] };
 type ListNavigation = { own: CursorPosition; catalog: CursorPosition };
 const firstPage = (): CursorPosition => ({ cursor: null, history: [] });
 const firstLists = (): ListNavigation => ({ own: firstPage(), catalog: firstPage() });
 
-export function ProjectMethodologyPage({ client, projectId, session, buffer, onChange, onAuthenticationLost }: {
+export function ProjectMethodologyPage({ client, projectId, session, buffer, onChange, onAuthenticationLost, onOpenAppliedStage }: {
   client: ApiClient; projectId: string; session: { user: { id: string }; clientId: string; csrfToken: string }; buffer: MethodBuffer;
-  onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void;
+  onChange: Dispatch<SetStateAction<MethodBuffer>>; onAuthenticationLost: () => void; onOpenAppliedStage?:(value:AppliedStageChoice)=>void;
 }) {
   const [page, setPage] = useState<ProjectMethodPage | null>(null), [catalog, setCatalog] = useState<MethodPage | null>(null);
   const [error, setError] = useState<ApiError | null>(null), [loading, setLoading] = useState(true), [revision, setRevision] = useState(0);
@@ -138,7 +139,11 @@ export function ProjectMethodologyPage({ client, projectId, session, buffer, onC
     <section aria-label="프로젝트 전용 방법론 조회"><h2>프로젝트 전용 방법론</h2>
       <p className="meta">공통 원본과 기존 적용본은 유지됩니다. 저장·내용 검토·확정은 적용 전환이나 Agent 실행이 아닙니다.</p>
       <section aria-label="고정 적용본 조회" className="status-card"><h3>현재 고정 적용본</h3>{appliedRef === undefined ? <p>적용본 조회 미확인</p> : appliedRef === null ? <p>확인된 적용본 없음</p> : <><p>적용 세대 {appliedRef.version}</p><p className="meta">{appliedRef.id} · {appliedRef.contentHash}</p><p className="meta">아래 편집·확정 후보와 별개인 적용 snapshot 참조입니다.</p></>}</section>
-      {!loading&&!error&&appliedRef?<AppliedMethodOriginal key={JSON.stringify([projectId,session.user.id,session.clientId,appliedRef])} client={client} projectId={projectId} expected={appliedRef} onAuthenticationLost={onAuthenticationLost}/>:null}
+      {!loading&&!error&&appliedRef?<AppliedMethodOriginal key={JSON.stringify([projectId,session.user.id,session.clientId,session.csrfToken,appliedRef])} client={client} projectId={projectId} expected={appliedRef}
+        onOpenStage={onOpenAppliedStage?choice=>{
+          const current=latestApplied.current,ref=choice.applicationRef;
+          if(pageCurrent()&&current?.owner===selectionContext&&current.ref.id===ref.id&&current.ref.version===ref.version&&current.ref.contentHash===ref.contentHash)onOpenAppliedStage(choice);
+        }:undefined} onAuthenticationLost={onAuthenticationLost}/>:null}
       <button disabled={loading} onClick={() => resetLists(true)}>전용 방법론 목록 갱신</button>
       {page?.items.map(item => <button disabled={loading} key={item.ref.id} onClick={() => { void select(() => readProjectMethod(client, projectId, item.ref, item.name, item.purpose),{id:item.ref.id,version:item.ref.version,targetHash:item.ref.contentHash}); }}>{item.name} v{item.ref.version} 열기</button>)}
       <button disabled={loading || !!error || !position.own.history.length} onClick={() => navigate('own', true)}>전용 방법론 이전 목록</button>

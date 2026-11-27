@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import type { VersionRef } from '../../../../../contracts/generated-types.ts';
 import type { MethodologyDocumentItem, MethodologyEdge, MethodologyNode } from '../../../../../contracts/methodologies.ts';
@@ -52,28 +52,61 @@ function DeclaredDocuments({ title, items, client, onAuthenticationLost }: { tit
     <WorkspaceForm key={[item.itemId, item.formRef.id, item.formRef.version, item.formRef.contentHash].join(':')} client={client} title={item.itemId} formRef={item.formRef} onAuthenticationLost={onAuthenticationLost} />
   </li>)}</ul> : <p>정의 없음</p>}</>;
 }
-export function WorkspaceMethodology({ client, projectId, expectedRef, onAuthenticationLost, onStageChange }: { client: ApiClient; projectId: string; expectedRef: VersionRef | null; onAuthenticationLost: () => void; onStageChange: (value: WorkspaceStageSelection | null) => void }) {
+export type AppliedStageChoice={applicationRef:VersionRef;nodeId:string};
+export type AppliedStageHandoff={choice:AppliedStageChoice;isCurrent:()=>boolean};
+const sameRef=(a:VersionRef|null,b:VersionRef)=>a?.id===b.id&&a.version===b.version&&a.contentHash===b.contentHash;
+export function WorkspaceMethodology({ client, projectId, expectedRef, handoff, isProjectCurrent, onAuthenticationLost, onStageChange }: { client: ApiClient; projectId: string; expectedRef: VersionRef | null; handoff?:AppliedStageHandoff;isProjectCurrent:()=>boolean;onAuthenticationLost: () => void; onStageChange: (value: WorkspaceStageSelection | null) => void }) {
   const [value, setValue] = useState<WorkspaceMethodology | null>(null), [error, setError] = useState<ApiError | null>(null);
   const [revision, setRevision] = useState(0), [pending, setPending] = useState(false), [selectedId, setSelectedId] = useState('');
+  const [notice,setNotice]=useState<string|null>(null),alive=useRef(false);
+  const firstRead=useRef<{handoff:AppliedStageHandoff;result:Promise<WorkspaceMethodology>}|null>(null);
+  useLayoutEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
   useEffect(() => {
-    if (!revision) return;
-    let current = true;
-    readWorkspaceMethodology(client, projectId, expectedRef).then(result => { if (current) { setValue(result); setSelectedId(result.snapshot?.graph.entryNodeId ?? ''); const first = result.snapshot?.graph.nodes.find(node => node.nodeId === result.snapshot?.graph.entryNodeId); onStageChange(first && result.applicationRef ? { applicationId: result.applicationRef.id, nodeId: first.nodeId, nodeName: first.name, requiredCapabilities: first.requirements?.capabilities.slice() ?? [] } : null); } }).catch((cause: unknown) => {
-      if (!current) return; const failure = cause instanceof ApiError ? cause : new ApiError('METHODOLOGY_APPLICATION_INTEGRITY_FAILED'); setError(failure); onStageChange(null);
-      if (failure.status === 401) onAuthenticationLost();
-    }).finally(() => { if (current) setPending(false); });
-    return () => { current = false; };
-  }, [client, projectId, expectedRef?.id, expectedRef?.version, expectedRef?.contentHash, revision]);
+    const arrival=revision===0?handoff:undefined;
+    if(!revision&&!arrival)return;
+    let listening=true;const transport=client.transport;
+    const current=()=>listening&&alive.current&&isProjectCurrent()&&client.transport===transport&&(!arrival||arrival.isCurrent());
+    if(!current()){
+      if(arrival)setNotice('조회 범위가 바뀌어 전달받은 단계를 선택하지 않았습니다.');
+      return;
+    }
+    if(arrival&&!sameRef(expectedRef,arrival.choice.applicationRef)){
+      setNotice('프로젝트의 현재 적용본이 바뀌어 전달받은 단계를 선택하지 않았습니다.');
+      return;
+    }
+    if(arrival&&firstRead.current?.handoff!==arrival)firstRead.current={handoff:arrival,result:readWorkspaceMethodology(client,projectId,expectedRef)};
+    const result=arrival?firstRead.current!.result:readWorkspaceMethodology(client,projectId,expectedRef);
+    setPending(true);
+    result.then(value=>{
+      if(!current())return;
+      const graph=value.snapshot?.graph,id=arrival?arrival.choice.nodeId:graph?.entryNodeId;
+      const node=graph?.nodes.find(node=>node.nodeId===id);
+      if(arrival&&(!value.applicationRef||!sameRef(value.applicationRef,arrival.choice.applicationRef)||!node)){
+        setNotice('현재 적용본의 단계가 일치하지 않아 전달받은 단계를 선택하지 않았습니다.');
+        return;
+      }
+      setValue(value);setSelectedId(node?.nodeId??'');
+      onStageChange(node&&value.applicationRef?{applicationId:value.applicationRef.id,nodeId:node.nodeId,nodeName:node.name,requiredCapabilities:node.requirements?.capabilities.slice()??[]}:null);
+    }).catch(cause=>{
+      if(!current())return;
+      const failure=cause instanceof ApiError?cause:new ApiError('METHODOLOGY_APPLICATION_INTEGRITY_FAILED');
+      setError(failure);onStageChange(null);
+      if(arrival)setNotice('현재 적용 절차를 확인하지 못해 전달받은 단계를 선택하지 않았습니다.');
+      if(failure.status===401)onAuthenticationLost();
+    }).finally(()=>{if(current())setPending(false);});
+    return()=>{listening=false;};
+  },[client,projectId,expectedRef?.id,expectedRef?.version,expectedRef?.contentHash,revision,handoff]);
   const snapshot = value?.snapshot, graph = snapshot?.graph, selected = graph?.nodes.find(node => node.nodeId === selectedId);
   const names = new Map(graph?.nodes.map(node => [node.nodeId, node.name]));
   return <section aria-label="적용된 개발 절차">
-    <button disabled={pending} onClick={() => { setValue(null); setError(null); setSelectedId(''); onStageChange(null); setPending(true); setRevision(previous => previous + 1); }}>{revision ? '적용 절차 새로고침' : '적용 절차 조회'}</button>
+    <button disabled={pending} onClick={() => { if(!isProjectCurrent())return;setValue(null); setError(null);setNotice(null);setSelectedId(''); onStageChange(null); setPending(true); setRevision(previous => previous + 1); }}>{revision||value ? '적용 절차 새로고침' : '적용 절차 조회'}</button>
     {pending ? <p role="status">고정 적용 절차 조회 중</p> : null}
+    {notice?<p role="status">{notice}</p>:null}
     {error ? <p role="alert">{error.code} · 적용 절차 미확인. 상단 프로젝트 원본을 새로고침한 뒤 다시 조회하세요.</p> : null}
     {value && !pending && !error ? snapshot && graph ? <>
       <h4>{snapshot.name}</h4><p>{snapshot.purpose}</p><p className="meta">정의 조회 · 실제 실행 상태 미연결 · 적용 세대 {value.applicationRef!.version} · 관측 {value.observedAt}</p>
       <p className="meta">원 정의 {snapshot.sourceRef.id} v{snapshot.sourceRef.version}. 적용 참조와 별개입니다. 목록 순서는 실행 순서가 아니며 연결 조건을 확인하세요.</p>
-      <div className="methodology-flow">{graph.nodes.map(node => <button key={node.nodeId} aria-label={`절차 정의: ${node.name}`} aria-pressed={selectedId === node.nodeId} onClick={() => { setSelectedId(node.nodeId); onStageChange({ applicationId: value.applicationRef!.id, nodeId: node.nodeId, nodeName: node.name, requiredCapabilities: node.requirements?.capabilities.slice() ?? [] }); }}>{node.name}{node.nodeId === graph.entryNodeId ? ' · 시작 정의' : graph.terminalNodeIds.includes(node.nodeId) ? ' · 종료 정의' : ''}</button>)}</div>
+      <div className="methodology-flow">{graph.nodes.map(node => <button key={node.nodeId} aria-label={`절차 정의: ${node.name}`} aria-pressed={selectedId === node.nodeId} onClick={() => { if(!isProjectCurrent())return;setSelectedId(node.nodeId); onStageChange({ applicationId: value.applicationRef!.id, nodeId: node.nodeId, nodeName: node.name, requiredCapabilities: node.requirements?.capabilities.slice() ?? [] }); }}>{node.name}{node.nodeId === graph.entryNodeId ? ' · 시작 정의' : graph.terminalNodeIds.includes(node.nodeId) ? ' · 종료 정의' : ''}</button>)}</div>
       {selected ? <section aria-label="선택한 절차 정의"><h4>{selected.name}</h4><p>{selected.purpose}</p>
         <p>{kindLabel[selected.kind]} · {roleLabel[selected.role]} · {selected.mode === 'AUTO' ? '정의상 자동 방식' : '정의상 건별 방식'}</p><p className="meta">책임 세션·도구 배정/시작 권한이 아니며 선택해도 실행하지 않습니다.</p>
         <JoinDefinition node={selected} nodes={graph.nodes} />
