@@ -26,6 +26,7 @@ export function WorkspacePage({providedDefinitionReport=null,normalInitialReview
   const [error, setError] = useState<ApiError | null>(null);
   const [pending, setPending] = useState(true), [revision, setRevision] = useState(0);
   const [selectedStage, setSelectedStage] = useState<WorkspaceStageSelection | null>(null);
+  const [observedAssignmentHandoff,setObservedAssignmentHandoff]=useState<AppliedStageHandoff|null>(null);
   const [preparingDocument,setPreparingDocument]=useState<string|null>(null);
   const readKey=JSON.stringify([projectId,session.user.id,session.clientId,session.csrfToken,revision]);
   const scope=useRef({key:readKey,client,transport:client.transport});
@@ -36,8 +37,15 @@ export function WorkspacePage({providedDefinitionReport=null,normalInitialReview
   const currentProject=()=>alive.current&&scope.current===owner&&client.transport===owner.transport;
   const project=loaded?.owner===owner?loaded.project:null,handoff=revision===0?appliedStageHandoff:undefined;
   const requestedAssignment=useMemo(()=>handoff?.assignment?{...handoff.assignment,isCurrent:handoff.isCurrent}:undefined,[handoff]);
+  const appliedRef=project?.currentMethodologyRef,expectedStage=handoff?.choice;
+  // 첫 자동 선택에는 같은 화면 키를 쓰되 단계 선택은 보호 조회가 끝난 뒤 반영한다.
+  const pendingStage=handoff?.assignment&&observedAssignmentHandoff!==handoff&&appliedRef&&expectedStage&&
+    appliedRef.id===expectedStage.applicationRef.id&&appliedRef.version===expectedStage.applicationRef.version&&appliedRef.contentHash===expectedStage.applicationRef.contentHash?expectedStage:null;
+  const assignmentStageKey=[projectId,appliedRef?.id,appliedRef?.version,appliedRef?.contentHash,
+    selectedStage?.applicationId??pendingStage?.applicationRef.id,selectedStage?.nodeId??pendingStage?.nodeId].join(':');
   const preparationKey=project?.currentMethodologyRef&&selectedStage?JSON.stringify([projectId,project.currentMethodologyRef.id,project.currentMethodologyRef.version,project.currentMethodologyRef.contentHash,selectedStage.applicationId,selectedStage.nodeId,revision]):null;
   function selectStage(value:WorkspaceStageSelection|null){
+    if(handoff?.assignment)setObservedAssignmentHandoff(handoff);
     if(!value||value.applicationId!==selectedStage?.applicationId||value.nodeId!==selectedStage?.nodeId)setPreparingDocument(null);
     setSelectedStage(value);
   }
@@ -66,7 +74,7 @@ export function WorkspacePage({providedDefinitionReport=null,normalInitialReview
           <a href={routeHref('methodologies', projectId)}>방법론 원본·검토 열기</a><p className="meta">정의 조회와 실제 단계 수행은 별개입니다. 책임 세션·단계별 실제 상태는 아직 미연결입니다.</p>
         </section>
         <section className="status-card" aria-label="총괄 작업" hidden={mobilePane!==undefined&&mobilePane!=='chat'}><h3>총괄 작업</h3><h4>원하는 결과</h4><p>{project.desiredOutcome}</p>
-          <WorkspaceAssignments requestedAssignment={requestedAssignment} mobile={mobilePane!==undefined} stageStart={mobilePane===undefined||mobilePane==='chat'?stageStart:undefined} normalInitialReviews={normalInitialReviews} providedDefinitionReport={providedDefinitionReport} providedHumanReportRef={providedHumanReportRef??null} key={[projectId, project.currentMethodologyRef?.id, project.currentMethodologyRef?.version, project.currentMethodologyRef?.contentHash, selectedStage?.applicationId, selectedStage?.nodeId].join(':')} client={client} project={project} session={session} stage={selectedStage} requestedTask={requestedTask} buffer={assignmentBuffer} onChange={onAssignmentChange} onAuthenticationLost={onAuthenticationLost} />
+          <WorkspaceAssignments requestedAssignment={requestedAssignment} mobile={mobilePane!==undefined} stageStart={mobilePane===undefined||mobilePane==='chat'?stageStart:undefined} normalInitialReviews={normalInitialReviews} providedDefinitionReport={providedDefinitionReport} providedHumanReportRef={providedHumanReportRef??null} key={assignmentStageKey} client={client} project={project} session={session} stage={selectedStage} requestedTask={requestedTask} buffer={assignmentBuffer} onChange={onAssignmentChange} onAuthenticationLost={onAuthenticationLost} />
           <h4>사용자 발언·지시 원문 보관</h4><p className="meta">프로젝트 공통 원문입니다. 아래 저장은 총괄·단계 세션이나 Agent에 지시를 전달하는 기능이 아닙니다.</p>
           {project.participation === 'OWNER' && project.controlState.status === 'HELD' && project.controlState.actorId === session.user.id && project.controlState.clientId === session.clientId
             ? <ConversationPanel key={[projectId,session.user.id,session.clientId].join(':')} client={client} projectId={projectId} session={session} buffer={conversationBuffer} onChange={onConversationChange} onAuthenticationLost={onAuthenticationLost}/>

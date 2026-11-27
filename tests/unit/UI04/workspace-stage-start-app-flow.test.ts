@@ -53,6 +53,7 @@ function fixture(){
  f.state.assignmentRef=f.confirmed.ref;f.state.bindings=[];f.state.roles=[];
  const decision={projectId:pid,draftRef:draft.ref,criteriaVersion:1,criteria:['PURPOSE_SCOPE','BASELINE_TASK','INPUT_OUTPUT','COMPLETION_VERIFICATION','BOUNDARIES','RECORD_RECOVERY'],reviews:[review],hasMoreReviews:false,contentIssues:[],currentIssue:null as string|null,confirmedRef:f.confirmed.ref,latestReviewAccepted:true,readinessIssues:[],ready:false,executionAuthorized:false,dispatchPerformed:false,observedAt:f.at};
  let holdDraft:ReturnType<typeof deferred<Response>>|null=null;
+ let holdMethodology:ReturnType<typeof deferred<Response>>|null=null;
  let participation='OWNER',holdControl:ReturnType<typeof deferred<Response>>|null=null,holdPolicy:ReturnType<typeof deferred<Response>>|null=null,holdQueue:ReturnType<typeof deferred<Response>>|null=null,queueItems:any[]|null=null,approvalRequired=false,receipt:any=null;
  const queueItem=()=>({requestRef:receipt.ref,state:'WAITING',sequence:receipt.snapshot.sequence,reasonCodes:stageQueueReasons,blockedBy:[],reservedBudgetRef:null});
  const project={id:pid,name:'합성 프로젝트',purpose:'App 단계 연결 검산',desiredOutcome:'정확 대기 요청',version:1,createdAt:f.at,updatedAt:f.at,currentMethodologyRef:applicationRef,baselineRef:null,sourceMode:'EMPTY',sourceDeclaration:null,readinessIssues:[],viewerPermissions:['READ_PROJECT'],controlState:{actorId:f.session.user.id,clientId:f.session.clientId,generation:1,status:'HELD'}};
@@ -62,7 +63,10 @@ function fixture(){
   const path=String(url),method=init?.method??'GET';q.calls.push({path,method});
   if(path==='/api/v1/session')return Response.json({...f.session,user:{...f.session.user,displayName:'합성 소유자'}});
   if(path==='/api/v1/projects/'+pid){if(holdControl){const held=holdControl;holdControl=null;return held.promise;}return Response.json({...project,participation});}
-  if(path.endsWith('/methodology-application'))return Response.json(application);
+  if(path.endsWith('/methodology-application')){
+   if(holdMethodology){const held=holdMethodology;holdMethodology=null;return held.promise;}
+   return Response.json(application);
+  }
   if(path.includes('/conversations?'))return Response.json({items:[],hasMore:false,nextCursor:null,observedAt:f.at});
   if(path.includes('/assignment-drafts?'))return Response.json({items:[{ref:draft.ref,status:'DRAFT',goal:definition.goal,taskRef:definition.taskRef,issueCount:0,updatedAt:f.at,ready:false,executionAuthorized:false}],hasMore:false,nextCursor:null,observedAt:f.at});
   if(path.endsWith('/assignment-drafts/'+draft.ref.id+'/versions/1')){if(holdDraft){const held=holdDraft;holdDraft=null;return held.promise;}return Response.json(draft);}
@@ -85,7 +89,7 @@ function fixture(){
   q.unexpected.push(path);return Response.json({code:'NOT_FOUND'},{status:404});
  };
  return{...q,pid,draft,f,project,decision,application,applicationRef,holdDraft(){holdDraft=deferred<Response>();return holdDraft;},role(mismatch=false){const fresh=seed(),roles=structuredClone(fresh.state.roles),binding=structuredClone(fresh.state.bindings[0]!);roles[1]!.snapshot.stageRef.applicationRef=applicationRef;roles[1]!.ref.contentHash=H(roles[1]!.snapshot);binding.snapshot.roleRef=roles[1]!.ref;binding.snapshot.assignmentRef=mismatch?{...f.confirmed.ref,contentHash:'f'.repeat(64)}:f.confirmed.ref;binding.snapshot.connectionRef=f.connection.ref;binding.ref.contentHash=H(binding.snapshot);f.state.roles=roles;f.state.bindings=[binding];},sessionRoute:sessionDetailHref(pid,draft.ref),workspace:'#/projects/'+pid+'/workspace',mobile:'#/projects/'+pid+'/mobile',
-  hold(){holdControl=deferred<Response>();return holdControl;},holdPolicy(){holdPolicy=deferred<Response>();return holdPolicy;},holdQueue(){holdQueue=deferred<Response>();return holdQueue;},setQueueItems(value:any[]|null){queueItems=value;},queueItem,requireApproval(){approvalRequired=true;},bumpGeneration(){project.controlState.generation++;},viewer(){participation='VIEWER';},receipt:()=>receipt};
+  hold(){holdControl=deferred<Response>();return holdControl;},holdMethodology(){holdMethodology=deferred<Response>();return holdMethodology;},holdPolicy(){holdPolicy=deferred<Response>();return holdPolicy;},holdQueue(){holdQueue=deferred<Response>();return holdQueue;},setQueueItems(value:any[]|null){queueItems=value;},queueItem,requireApproval(){approvalRequired=true;},bumpGeneration(){project.controlState.generation++;},viewer(){participation='VIEWER';},receipt:()=>receipt};
 }
 test('App UI04는 현재 단계의 확정 임무와 UI05의 동일 원 요청과 WAITING을 명시적으로 공유한다',async t=>{
  const q=fixture();location.hash=q.workspace;
@@ -214,6 +218,39 @@ async function mountAssignmentReturn(q:ReturnType<typeof fixture>){
  await ui.React.act(async()=>root.render(ui.React.createElement(ui.App)));await wait(()=>!!button('단계 요청 작성'));
  return{container,nodes,button,settle,wait,click,arrival,async close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
+
+test('App 전달 임무의 첫 조회를 자동 단계 선택 뒤에도 유지하고 수동 전환 때는 화면 상태를 초기화한다',{timeout:15000},async()=>{
+ const q=fixture(),v=await mountAssignmentReturn(q);
+ try{
+  const methodology=q.holdMethodology();
+  await v.arrival();
+  await v.wait(()=>v.container.textContent.includes('고정 적용 절차 조회 중'));
+  assert(!v.container.textContent.includes('선택 정의: 현재 단계'));
+  const originalButton=v.button('전달받은 임무 정확 재조회'),draft=q.holdDraft();
+  const start=q.calls.length;
+  await v.click('전달받은 임무 정확 재조회');
+  assert.equal(q.calls.length,start+1);
+  assert(q.calls.at(-1)?.path.endsWith(`/assignment-drafts/${q.draft.ref.id}/versions/${q.draft.ref.version}`));
+  methodology.resolve(Response.json(q.application));
+  await v.wait(()=>v.container.textContent.includes('선택 정의: 현재 단계'));
+  assert(v.button('전달받은 임무 정확 재조회')===originalButton,'자동 단계 선택은 진행 중인 임무 조회를 새 UI로 교체하지 않는다');
+  assert(originalButton?.disabled);
+  draft.resolve(Response.json(q.draft));
+  await v.wait(()=>v.container.textContent.includes('전달받은 정확 임무 원문'));
+  assert(v.container.textContent.includes(q.draft.ref.contentHash));
+  assert(v.container.textContent.includes('현재 적용·단계 대조 일치'));
+  assert.equal(q.calls.slice(start).filter(call=>call.path.endsWith(`/assignment-drafts/${q.draft.ref.id}/versions/${q.draft.ref.version}`)).length,1);
+  assert.equal(q.posts.length,0);
+  await v.click('임무 초안 목록 조회');
+  const draftListItem=`임무 버전 열기: ${q.draft.ref.version}`;
+  await v.wait(()=>!!v.button(draftListItem));
+  await v.click('절차 정의: 다른 단계');
+  await v.wait(()=>v.container.textContent.includes('선택 정의: 다른 단계'));
+  assert(!v.button(draftListItem));
+  assert(!v.container.textContent.includes('전달받은 정확 임무 원문'));
+  assert.equal(q.posts.length,0);assert.deepEqual(q.unexpected,[]);
+ }finally{await v.close();}
+});
 
 test('App UI05의 검산된 임무는 UI04에서 목록 없이 정확 원문·역할을 읽기 전용 재조회한다',{timeout:15000},async()=>{
  const q=fixture();q.role();const v=await mountAssignmentReturn(q);try{const before=q.calls.length;await v.arrival();await v.wait(()=>v.container.textContent.includes('선택 정의: 현재 단계'));assert(!q.calls.slice(before).some(c=>c.path.includes('/assignment-drafts?')));await v.click('전달받은 임무 정확 재조회');await v.wait(()=>v.container.textContent.includes('전달받은 정확 임무 원문'));assert(v.container.textContent.includes(q.draft.ref.contentHash));assert(v.container.textContent.includes('원 역할·책임 결박 ref 대조 일치'));assert(v.container.textContent.includes('검산한 초안 참조'));assert(v.container.textContent.includes('검산한 확정 참조'));assert(v.container.textContent.includes(q.f.confirmed.ref.contentHash));assert(!v.button('새 맥락 준비 입력'));assert(!v.button('확정 임무 원본 재조회'));assert(!v.button('단계 요청 작성'));assert(v.button('현재 버전으로 개정 준비')!.disabled);assert.equal(q.posts.length,0);assert(!q.calls.slice(before).some(c=>c.path.includes('/assignment-drafts?')));assert.deepEqual(q.unexpected,[]);}finally{await v.close();}
