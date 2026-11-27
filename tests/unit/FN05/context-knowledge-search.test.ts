@@ -20,6 +20,24 @@ test('조회거절·다른버전/변조본문은빈검색이나선택원문으�
  for(const status of [401,403,503])await assert.rejects(load(new ApiClient(async()=>Response.json({code:'ACCESS_DENIED'},{status})),pid,'PURPOSE_REASON','q',null),(e:any)=>e.status===status);
  for(const change of [(v:any)=>({...v,ref:{...v.ref,version:2}}),(v:any)=>({...v,body:'바뀐 본문'})]){const f=fixture();const page=await load(new ApiClient(async path=>Response.json(String(path).includes('/versions/')?change(f.view):{items:[f.hit],hasMore:false,nextCursor:null,searchScope:'TITLE_REASON',observedAt:'2026-10-19T00:00:00Z'})),pid,'PURPOSE_REASON','q',null);await assert.rejects(page.items[0].inspect());}
 });
+test('지식 후보 GET만 정확 단계·업무·공통 범위와 커서를 동결하고 원문은 같은 고정버전으로 읽는다',async()=>{
+ const f=fixture(),calls:URL[]=[];
+ const stageRef={applicationRef:{id:uid,version:2,contentHash:'a'.repeat(64)},nodeId:'검수'},taskRef={planRef:{id:pid,version:3,contentHash:'b'.repeat(64)},taskCode:'FN05'};
+ const scope={stageRef,taskRef,includeProjectWide:true};
+ const client=new ApiClient(async(path,init)=>{
+  assert.equal(init?.method,'GET');const url=new URL(String(path),'https://anvil.invalid');calls.push(url);
+  return Response.json(url.pathname.endsWith('/versions/1')?f.view:{items:[f.hit],hasMore:true,nextCursor:'scope-next',searchScope:'TITLE_REASON',observedAt:'2026-10-19T00:00:00Z'});
+ });
+ const first=await load(client,pid,'PURPOSE_REASON',' 검색 ',null,scope);
+ await load(client,pid,'PURPOSE_REASON',first.query,first.nextCursor,scope);
+ for(const call of calls){assert.deepEqual(JSON.parse(call.searchParams.get('scope')!),scope);assert.equal(call.searchParams.get('query'),'검색');}
+ assert.deepEqual(calls.map(u=>u.searchParams.get('cursor')),[null,'scope-next']);
+ assert.deepEqual((await first.items[0].inspect()).selection,{kind:'KNOWLEDGE_VERSION',versionRef:f.ref});
+ assert.equal(calls.at(-1)?.search,'');
+ const before=calls.length;
+ await assert.rejects(load(client,pid,'PURPOSE_REASON','검색',null,{...scope,taskRef:{...taskRef,planRef:{...taskRef.planRef,version:0}}}));
+ assert.equal(calls.length,before);
+});
 test('원문선택화면은제목·이유검색입력을제공하되지시슬롯에지식검색을섞지않는다',async()=>{
  const {createServer}=await import('vite'),{fileURLToPath}=await import('node:url'),{createElement}=await import('react'),{renderToStaticMarkup}=await import('react-dom/server');
  const compiler=await createServer({configFile:fileURLToPath(new URL('../../../apps/web/vite.config.ts',import.meta.url)),server:{middlewareMode:true,hmr:false,watch:null},optimizeDeps:{noDiscovery:true},logLevel:'silent'});
