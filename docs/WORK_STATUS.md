@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-27 KST
 
+- **Stage C / IX02 FN08 게시 자료→등록 소유자의 설치 요청 검산** — 기준 `9eec26be`, 담당 `baseline_predispatch_task_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 실제 소스의 정상 finalizer와 게시 store를 합성 거래로 호출하고 반환 JSON, 같은 package 지문의 REGISTERED 원 소유자, 독립 고정 origin 재조회, 동일 attempt 전용 opcode를 하나로 연결했다. 정상 전용 호출 1회는 합성 `UNSUPPORTED`이고 일반 head·회수 head는 설치 0이다. 제품 수정 없음, 합성 1파일 165/165·Main 1/1(3분기)·타입/구문/diff 통과. 실제 보호 키·OS·HTTPS·DB·Agent 설치/실행 및 기본 제품 진입점은 미검증이다. 원 등록 소유자에 입력을 전달하는 보호 제품 호출자는 계속 미연결이며 기존 사용자 승인 범위를 유지한다.
+
 - **Stage C / IX02 FN08 보호 빌드 정상 worker 게시** — 기준 `90001671`, 담당 `fn13_diff_contract_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 명시 구성된 build producer가 원 컴파일·package token과 보호 factory를 검산한 뒤 기존 정상 publisher에서 확정 번들과 헤드를 반환한다. 기존 일반 게시와 단회 소진을 공유해 양방향 동시 호출·결과 불명·변조 후 재발행을 막는다. 제품·합성 각 1파일, 최초 RED 2건, 담당 desktop 42/42·FN06 13/13·Main 11/11, 루트/desktop 타입·diff 통과. 실제 컴파일·설치·등록·Windows 근거·DB·Agent 미실행. 원 등록 owner에 이 입력을 공급하고 명시 설치를 호출하는 실제 제품 진입점은 아직 없고 기본 보호 빌드 포트·설치 내구성도 남아 있다.
 
 - **Stage C / IX02 QA B 선택한 초안의 기존 사람 검토 연결** — 기준 `1be289dd`, 담당 `baseline_predispatch_task_review`, 독립 `fn13_diff_contract_review` C0/I0/M0. 원 제안에 기록된 단일 선택과 원문을 검산한 미확정 초안만 고정 ID·버전·해시를 가진 기존 UI06 문서 경로로 연결한다. 기존 형식 확인, 별도 사람 검토·이력 조회 및 서버의 현재 버전 검사를 재사용한다. 경로·선택 전환 후 옛 좌·보조 클릭과 지연 응답을 폐기하고, 별도 추적 준비가 실패해도 원문 조회가 완료된다. 제품·합성 시험 각 1파일. 최초 RED 1과 검수 지적 2건 교정, 담당 86/86·Main 7/7·타입·diff 통과. 실제 브라우저·DB·Agent 작성과 사람 검토 저장·재조회 인수는 미검증. 다음은 FN08 보호 빌드의 정상 worker 게시 경로다.

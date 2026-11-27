@@ -21,9 +21,10 @@ function hostFixture(mode='NORMAL'){
  return{ports,image,writes,beforeNormalStartClaim:fn=>{normalClaimReply=fn;},beforeFirstReceiveReply:fn=>{firstReceiveReplyHook=fn;},creates:()=>creates,stored:()=>stored,calls:()=>calls,reads:()=>reads,ends:()=>ends,children};
 }
 function preloadFixture(invoke,on=()=>{}){let api;const source=sourceFs.readFileSync(require.resolve('../../apps/desktop/src/preload.cjs'),'utf8');vm.runInNewContext(source,{require:name=>{assert.equal(name,'electron');return{contextBridge:{exposeInMainWorld:(name,value)=>{assert.equal(name,'anvilDesktop');api=value;}},ipcRenderer:{invoke,on}};}});return api;}
-function enrollmentFixture(mode='NORMAL'){
+function enrollmentFixture(mode='NORMAL',packageBasis=null){
+ if(packageBasis!==null)for(const name of ['parentExeHash','parentAsarHash','parentHeaderHash'])assert.match(packageBasis[name],/^[0-9a-f]{64}$/);
  const f=hostFixture(mode),now=Date.parse('2030-01-01T00:00:00.000Z'),platform={os:'win32',arch:'x64',runtime:'NET_FRAMEWORK_4_X'},profile={schemaVersion:1,purpose:'RUNTIME_CATALOGUE_AUTHORITY_PROFILE',profileId:ID,profileVersion:1,publisherId:ID,origin:'https://publisher.invalid',endpointPrefix:'/api/v1/runtime-catalogue/desktop-trust/v1',tls:{mode:'SYSTEM_CHAIN_AND_HOSTNAME',minimumVersion:'TLSv1.2',rejectUnauthorized:true},roles:['DESKTOP_TRUST_KEY_HOST'],platform,maxResponseBytes:2097152,maxEntries:64,maxValidityMs:86400000};
- const ref={id:ID,version:1,contentHash:'a'.repeat(64)},parent={releaseId:ID,releaseVersion:1,exeName:'Anvil.exe',exeHash:'a'.repeat(64),asarPath:'resources/app.asar',asarHash:'b'.repeat(64),headerHash:'c'.repeat(64)},snapshot={releaseId:ID,releaseVersion:1,publisherId:ID,profileId:ID,parent,entries:[{role:'DESKTOP_TRUST_KEY_HOST',fileName:'AnvilTrustKeyHost.exe',bytes:f.image.length,sha256:contentHash(f.image),parentBasisHash:'d'.repeat(64),sourceClosureHash:'e'.repeat(64),toolchainHash:'f'.repeat(64),entryPoint:'DesktopTrustKeyHostSource',resourceName:'Anvil.Desktop.TrustKeyHost.ParentBasis.v1',platform}],buildEvidence:{sourceCommit:'a'.repeat(40),sourceClosureHash:'e'.repeat(64),compileInputHash:'1'.repeat(64),toolchainHash:'f'.repeat(64),buildReceiptRef:ref,verificationReceiptRef:ref},issuedAt:new Date(now).toISOString(),expiresAt:new Date(now+10000).toISOString(),state:'ACTIVE',rollbackOf:null},value={schemaVersion:1,purpose:'DESKTOP_RUNTIME_CATALOGUE',profileId:ID,sequence:1,previousRef:null,releaseRef:{id:ID,version:1,contentHash:contentHash(canonicalJson(snapshot))},snapshot};
+ const ref={id:ID,version:1,contentHash:'a'.repeat(64)},parent={releaseId:ID,releaseVersion:1,exeName:'Anvil.exe',exeHash:packageBasis?.parentExeHash??'a'.repeat(64),asarPath:'resources/app.asar',asarHash:packageBasis?.parentAsarHash??'b'.repeat(64),headerHash:packageBasis?.parentHeaderHash??'c'.repeat(64)},snapshot={releaseId:ID,releaseVersion:1,publisherId:ID,profileId:ID,parent,entries:[{role:'DESKTOP_TRUST_KEY_HOST',fileName:'AnvilTrustKeyHost.exe',bytes:f.image.length,sha256:contentHash(f.image),parentBasisHash:'d'.repeat(64),sourceClosureHash:'e'.repeat(64),toolchainHash:'f'.repeat(64),entryPoint:'DesktopTrustKeyHostSource',resourceName:'Anvil.Desktop.TrustKeyHost.ParentBasis.v1',platform}],buildEvidence:{sourceCommit:'a'.repeat(40),sourceClosureHash:'e'.repeat(64),compileInputHash:'1'.repeat(64),toolchainHash:'f'.repeat(64),buildReceiptRef:ref,verificationReceiptRef:ref},issuedAt:new Date(now).toISOString(),expiresAt:new Date(now+10000).toISOString(),state:'ACTIVE',rollbackOf:null},value={schemaVersion:1,purpose:'DESKTOP_RUNTIME_CATALOGUE',profileId:ID,sequence:1,previousRef:null,releaseRef:{id:ID,version:1,contentHash:contentHash(canonicalJson(snapshot))},snapshot};
  let ids=20,catalogueRequests=0,context={origin:'https://project.invalid',identity:'A'};const timers=new Map();
  const ports={...f.ports,helperPath:'C:\\Anvil\\resources\\AnvilTrustKeyHost.exe',request:async(i,b)=>{catalogueRequests++;b.check();assert.equal(i.url,'https://publisher.invalid'+profile.endpointPrefix+'/'+ID+'/'+ID);return{status:200,rawHeaders:['Content-Type','application/json'],body:Buffer.from(canonicalJson(value))};},observeParent:async()=>structuredClone(parent),now:()=>now};
  const spec={schemaVersion:1,purpose:'DESKTOP_TRUST_RUNTIME_PACKAGE',profile,parentReleaseId:ID,parentReleaseVersion:1,signerId:ID,signerVersion:1};
@@ -107,7 +108,7 @@ test('최초begin 동일request replay는 같은 KEY_READY 원결과·CREATE1을
 
 test('begin 기본보호부재의 원오류와 KEY_READY 원시도는 그대로 보존한다',async()=>{const owner=createTrustEnrollmentOwner(()=>({origin:'https://project.invalid',identity:'A'})),before=owner.getState();const denied=await owner.handle('trust-begin',{requestId:ID,epoch:1,label:'보호부재',confirmNewKey:true});assert.equal(denied.error.code,'PROTECTION_UNAVAILABLE');assert.deepEqual(owner.getState(),before);const f=await enrolledFixture(),state=(await f.api.trustStatus(null,null)).state,record=structuredClone(f.stored()),calls=f.calls();const result=await f.api.trustBegin(PAIR_ID,state.contextEpoch,'다른 준비',true);assert.equal(result.ok,false);assert.deepEqual((await f.api.trustStatus(null,null)).state,state);assert.deepEqual(f.stored(),record);assert.equal(f.calls(),calls);assert.equal(f.creates(),1);assert.equal(f.timers(),0);});
 
-async function liveNativeOwner(mode='NORMAL'){const f=enrollmentFixture(mode),e=electronFixture();e.electron.session.fromPartition('persist:anvil-web');const server=registrationServer(f,e),session=e.sessions.get('persist:anvil-web'),produced=factoryRegistrationInputs();f.dependencies.nonce=produced.deps.nonce;f.dependencies.connectorVersion=produced.deps.connectorVersion;f.dependencies.createRegistrationClient=lease=>require('../../apps/desktop/src/trust-registration-client.cjs').createTrustRegistrationClient(session,'https://project.invalid',lease,()=>lease.check());const owner=f.owner,api=preloadFixture((channel,input)=>owner.handle(channel.slice('anvil:'.length),structuredClone(input))),status=await api.trustStatus(null,null),ready=await api.trustBegin(ID,status.state.contextEpoch,'native 원키',true);assert.equal(ready.ok,true);const item={...f,owner,api,ready,server,session};assert.equal((await pair(item)).ok,true);server.decide('CONFIRMED');assert.equal((await api.trustAct(ACT_ID,ready.state.attemptId,ready.state.contextEpoch,'CHECK_CURRENT')).ok,true);assert.equal((await issue(item)).ok,true);assert.equal(f.stored().state,'REGISTERED');return item;}
+async function liveNativeOwner(mode='NORMAL',packageBasis=null){const f=enrollmentFixture(mode,packageBasis),e=electronFixture();e.electron.session.fromPartition('persist:anvil-web');const server=registrationServer(f,e),session=e.sessions.get('persist:anvil-web'),produced=factoryRegistrationInputs();f.dependencies.nonce=produced.deps.nonce;f.dependencies.connectorVersion=produced.deps.connectorVersion;f.dependencies.createRegistrationClient=lease=>require('../../apps/desktop/src/trust-registration-client.cjs').createTrustRegistrationClient(session,'https://project.invalid',lease,()=>lease.check());const owner=f.owner,api=preloadFixture((channel,input)=>owner.handle(channel.slice('anvil:'.length),structuredClone(input))),status=await api.trustStatus(null,null),ready=await api.trustBegin(ID,status.state.contextEpoch,'native 원키',true);assert.equal(ready.ok,true);const item={...f,owner,api,ready,server,session};assert.equal((await pair(item)).ok,true);server.decide('CONFIRMED');assert.equal((await api.trustAct(ACT_ID,ready.state.attemptId,ready.state.contextEpoch,'CHECK_CURRENT')).ok,true);assert.equal((await issue(item)).ok,true);assert.equal(f.stored().state,'REGISTERED');return item;}
 test('native 살아있는 REGISTERED producer는 main 내부 typed SIGN 소비선을 제공한다',async()=>{const f=await liveNativeOwner();assert.equal(typeof f.owner.createNativeProofSource,'function','REGISTERED 원키를 typed SIGN에 연결할 보호 caller 미구현');assert.equal(f.creates(),1);assert.equal(f.writes.filter(v=>v.operation==='STORE_CREDENTIAL').length,1);});
 
 test('normal image 내부 source는 기본 미구성·getter에서 설치와 새 helper를 시작하지 않는다',async()=>{
@@ -156,6 +157,55 @@ test('normal image 직렬 기대자료는 새 nonce 관측→원 REGISTERED host
    assert.equal(f.writes.slice(before).some(v=>v.operation.startsWith('SIGN_')||v.operation==='INSTALL_WORKER'),false);
   }finally{Module._load=load;await op.close();}
  }
+});
+
+test('원 normal finalizer 결과는 같은 package 등록 owner의 독립 재조회와 전용 설치 opcode까지 연결된다', {timeout:30000}, async()=>{
+ const {withWorkerBuild}=require('./native-worker-build.test.cjs'),{stagedWorker}=require('./native-worker-publication.test.cjs');
+ const {NativeWorkerDeploymentStore}=await import('../../apps/server/modules/executions/native-worker-deployment-store.ts');
+ const publisher=require('../../apps/desktop/scripts/native-worker-deployment-publisher.cjs'),Module=require('node:module'),deployment=require('../../apps/desktop/src/native-worker-deployment-client.cjs');
+ for(const mode of ['NORMAL','GENERIC','REVOKED'])await withWorkerBuild(async build=>{
+  const requestId='ad140002-0000-4000-8000-000000000095',headId='ad140002-0000-4000-8000-000000000096',sqlCalls=[];let authority=null,publishes=0,rereads=0,commits=0,releases=0;
+  // 실제 product store가 원 publication을 소비한다. 이 db는 시험 전용 RAM 거래이고 PG/권한 효과는 없다.
+  const db={query:async(sql,args)=>{
+   sqlCalls.push(sql);
+   if(sql==='SELECT anvil.worker_deployment_publish($1::uuid,$2::jsonb) AS result'){
+    assert.equal(args[0],requestId);assert.equal(authority,null);publishes++;const bundle=JSON.parse(args[1]),snapshot={schemaVersion:1,purpose:'NATIVE_WORKER_DEPLOYMENT_HEAD',nativeFactoryRef:bundle.descriptor.snapshot.nativeFactoryRef,descriptorRef:bundle.descriptor.ref,sequence:1,previousHeadRef:null,state:'ACTIVE',updatedAt:build.config.issuedAt,expiresAt:build.config.expiresAt};
+    authority={bundle,head:{ref:{id:headId,version:1,contentHash:contentHash(canonicalJson(snapshot))},snapshot},observedAt:build.config.issuedAt};return{rows:[{result:structuredClone(authority.head)}]};
+   }
+   if(sql==='SELECT anvil.worker_deployment_read($1::jsonb) AS result'){rereads++;assert.deepEqual(JSON.parse(args[0]),authority.bundle.descriptor.snapshot.nativeFactoryRef);return{rows:[{result:structuredClone(authority)}]};}
+   assert(['BEGIN',"SET LOCAL statement_timeout = '1000ms'",'COMMIT','ROLLBACK'].includes(sql),sql);if(sql==='COMMIT')commits++;return{rows:[],command:sql};
+  },release:()=>{releases++;}};
+  const store=new NativeWorkerDeploymentStore({connect:async()=>db},{readOriginal:publisher.readCurrentWorkerPublication}),producer=build.staged.producer;
+  const finalized=await producer[mode==='GENERIC'?'finalize':'finalizeNormalStart'](build.artifact,build.config,store,requestId);
+  assert.equal(publishes,1);assert.equal(commits,1);assert.equal(releases,1);assert.equal(sqlCalls.includes('ROLLBACK'),false);
+  const serialized=canonicalJson(finalized),publication=JSON.parse(serialized),basis=build.config.packageRecord.snapshot;
+  if(mode!=='GENERIC'){assert.deepEqual(publication,{purpose:'NORMAL_START_WORKER_PUBLICATION_V1',bundle:authority.bundle,head:authority.head});assert.throws(()=>publisher.readWorkerPublication(publication));}
+  // 부모 지문은 등록 전에 공급한다. 등록 이후 record/catalogue를 다른 package로 바꾸지 않는다.
+  const f=await liveNativeOwner('NORMAL',basis),parent=f.value.snapshot.parent,original=structuredClone(f.stored()),now=f.dependencies.now();
+  assert.deepEqual([parent.exeHash,parent.asarHash,parent.headerHash],[basis.parentExeHash,basis.parentAsarHash,basis.parentHeaderHash]);assert.equal(new Date(now).toISOString(),build.config.issuedAt);
+  assert.equal(f.value.releaseRef.contentHash,contentHash(canonicalJson(f.value.snapshot)));f.ports.normalStartWorkerPublication=publication;
+  let effects=0,reads=0,until=Math.min(now+10000,Date.parse(original.registration.registrationExpiresAt),Date.parse(original.credential.expiresAt));const epoch=f.owner.getState().contextEpoch,originalCatalogue=canonicalJson(f.value);
+  const current=()=>{assert.deepEqual(f.stored(),original);assert.equal(f.owner.getState().phase,'REGISTERED');assert.equal(f.owner.getState().contextEpoch,epoch);assert.equal(canonicalJson(f.value),originalCatalogue);assert(f.dependencies.now()<until);};
+  const lease={signal:new AbortController().signal,check:current,remainingMs:()=>{current();return until-f.dependencies.now();},callExpiresAt:()=>{current();return new Date(until).toISOString();},narrow:at=>{current();assert(Number.isSafeInteger(at));until=Math.min(until,at);current();},markEffect:()=>{current();effects++;}},op=createTrustOperation(f.spec,f.ports,lease,original);
+  await op.current();await op.readState();const before=f.writes.length,hosts=f.calls(),keyCreates=f.creates(),initialEffects=effects;
+  if(mode==='REVOKED'){const old=structuredClone(authority.head),snapshot={...old.snapshot,sequence:2,previousHeadRef:old.ref,state:'REVOKED'};authority.head={ref:{id:old.ref.id,version:2,contentHash:contentHash(canonicalJson(snapshot))},snapshot};}
+  const load=Module._load;
+  Module._load=function(name,parent,...args){
+   if(name==='./native-proof-runtime.cjs'&&parent?.filename.endsWith('native-worker-deployment-client.cjs'))return nativeRuntime;
+   if(name==='./native-worker-deployment-client.cjs'&&parent?.filename.endsWith('trust-enrollment-owner.cjs'))return{...deployment,createWorkerDeploymentClient:profile=>deployment.createWorkerDeploymentClient(profile,{now:()=>now,monotonic:()=>0,nonce:()=>Buffer.alloc(32,9),request:async(inv,budget)=>{
+    reads++;budget.check();const url=new URL(inv.url),factory=authority.bundle.descriptor.snapshot.nativeFactoryRef;assert.equal(url.origin,f.spec.profile.origin);assert.equal(url.pathname,`/api/v1/native-worker-deployments/${factory.id}/${factory.version}/${factory.contentHash}`);assert.ok(budget.remainingMs()<=1000);
+    const response=await store.read(factory,url.searchParams.get('nonce'),budget.signal);return{status:200,rawHeaders:['Content-Type','application/json','Cache-Control','no-store'],body:Buffer.from(canonicalJson(response))};
+   }})};return load.call(this,name,parent,...args);
+  };
+  try{
+   if(mode==='NORMAL')assert.deepEqual(await op.installNormalStartWorker(),{state:'UNSUPPORTED'});else await assert.rejects(()=>op.installNormalStartWorker());
+   const writes=f.writes.slice(before),installs=writes.filter(v=>v.operation==='INSTALL_NORMAL_START_WORKER_V1');assert.equal(installs.length,mode==='NORMAL'?1:0);
+   if(installs.length)assert.deepEqual(installs[0].payload,{attemptId:original.attemptId,request:{bundle:publication.bundle,head:publication.head}});
+   assert.equal(reads,mode==='GENERIC'?0:1);assert.equal(rereads,reads);assert.equal(publishes,1);assert.equal(f.calls(),hosts);assert.equal(f.creates(),keyCreates);assert.equal(effects-initialEffects,mode==='NORMAL'?1:0);
+   assert.equal(writes.some(v=>v.operation==='INSTALL_WORKER'||v.operation==='INSTALL_WORKER_MANAGEMENT_V1'||v.operation.startsWith('SIGN_')||v.operation==='CREATE_KEY'||v.operation==='STORE_CREDENTIAL'),false);
+   assert.equal(canonicalJson(publication),serialized);assert.deepEqual(f.stored(),original);await assert.rejects(()=>op.installNormalStartWorker());assert.equal(reads,mode==='GENERIC'?0:1);
+  }finally{Module._load=load;await op.close();}
+ },{beforeFactory:f=>stagedWorker(f,true)});
 });
 
 test('normal 준비 결과 private source는 기본 slot 부재·getter·Boolean에서 원 IO/helper/서명0이다',async()=>{
