@@ -135,7 +135,16 @@ export class ProjectWorkPlans {
   async #decisionFor(db:PoolClient,access:ReadAccess,pid:string,id:string,version:number){
     const view=await (access.kind!=='HUMAN'?this.readCore(db,access,pid,id,version):this.#protectedPlan?readProtectedPlan.call(this,db,access.actor,pid,id,version):this.read(db,access.actor,pid,id,version)),row=(await db.query('SELECT w.head_version,w.confirmed_version,v.created_by FROM anvil.work_plans w JOIN anvil.work_plan_versions v ON v.project_id=w.project_id AND v.plan_id=w.id AND v.version=$3 WHERE w.project_id=$1 AND w.id=$2',[pid,id,version])).rows[0],reviews=await workPlanReviews(db,pid,view.ref,row.created_by),validation=await this.#readinessFor(db,access,pid,view);
     const stored=(await db.query("SELECT f.*,c.result_ref,c.actor_id,c.client_id command_client,c.operation FROM anvil.work_plan_confirmations f JOIN anvil.commands c ON c.id=f.command_id AND c.project_id=f.project_id WHERE f.project_id=$1 AND f.plan_id=$2 AND f.version=$3",[pid,id,version])).rows[0];let confirmation=null;
-    if(stored){const d=stored.result_ref?.data;if(stored.operation!=='confirmWorkPlan'||stored.actor_id!==stored.confirmed_by||stored.command_client!==stored.client_id||stored.result_ref?.status!=='APPLIED'||d?.status!=='CONFIRMED'||d.confirmationId!==stored.id||canonicalJson(d.ref)!==canonicalJson(view.ref)||stored.target_hash!==view.ref.contentHash||canonicalJson(d.reviewRefs)!==canonicalJson(stored.review_refs)||canonicalJson(d.validation)!==canonicalJson(stored.validation_json)||d.activatedAsBaseline!==false)throw new AuthFailure('WORK_PLAN_CONFIRMATION_INTEGRITY_FAILED',503);confirmation={id:stored.id,planRef:view.ref,reviewRefs:stored.review_refs,validation:stored.validation_json,confirmedBy:{kind:'HUMAN',userId:stored.confirmed_by},confirmedAt:stored.created_at.toISOString()};}
+    if(stored){
+      const d=stored.result_ref?.data;
+      const originalValidation=canonicalJson({validForConfirmation:true,issues:[],sourceRefs:[view.documentRef,view.designRef],screenReviewRefs:view.screenReviewRefs});
+      if(stored.operation!=='confirmWorkPlan'||stored.actor_id!==stored.confirmed_by||stored.command_client!==stored.client_id||
+        stored.result_ref?.status!=='APPLIED'||d?.status!=='CONFIRMED'||d.confirmationId!==stored.id||
+        canonicalJson(d.ref)!==canonicalJson(view.ref)||stored.target_hash!==view.ref.contentHash||
+        canonicalJson(d.reviewRefs)!==canonicalJson(stored.review_refs)||canonicalJson(d.validation??null)!==originalValidation||
+        canonicalJson(stored.validation_json??null)!==originalValidation||d.activatedAsBaseline!==false)throw new AuthFailure('WORK_PLAN_CONFIRMATION_INTEGRITY_FAILED',503);
+      confirmation={id:stored.id,planRef:view.ref,reviewRefs:stored.review_refs,validation:stored.validation_json,confirmedBy:{kind:'HUMAN',userId:stored.confirmed_by},confirmedAt:stored.created_at.toISOString()};
+    }
     return{planRef:view.ref,headVersion:Number(row.head_version),confirmedVersion:row.confirmed_version===null?null:Number(row.confirmed_version),criteria:workPlanReviewCriteria,contentReviews:reviews,confirmation,validation,currentConfirmationValid:!!confirmation&&Number(row.head_version)===version&&Number(row.confirmed_version)===version&&reviews[0]?.ref.outcome==='ACCEPTED'&&validation.validForConfirmation,activatedAsBaseline:false,observedAt:new Date().toISOString()};
   }
   async read(db:PoolClient,actor:AuthenticatedIdentity,pid:string,id:string,version:number){

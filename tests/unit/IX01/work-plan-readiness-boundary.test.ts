@@ -15,7 +15,8 @@ const actor: AuthenticatedIdentity={actorId:id(6),clientId:id(7),serverOwner:fal
 const at=new Date('2026-11-07T00:00:00.000Z');
 const hash=(value:unknown)=>contentHash(canonicalJson(value));
 
-function fixture({designConfirmed=false,acceptedReview=false}={}){
+function fixture({designConfirmed=false,acceptedReview=false,storedConfirmation=false,validationPatch={} as Record<string,unknown>,
+  missingValidation=null as 'receipt'|'stored'|null}={}){
   const designText='# D01 문서 저장 설계',planText='# FN01 문서 저장';
   const documentRef={id:documentId,version:1,contentHash:hash(planText)},designRef={id:designId,version:1,contentHash:hash(designText)};
   const planForm={id:id(8),version:1,contentHash:hash('AF04')},designForm={id:id(9),version:1,contentHash:hash('AF02')};
@@ -42,6 +43,13 @@ function fixture({designConfirmed=false,acceptedReview=false}={}){
     criteria_snapshot_json:workPlanReviewCriteria,created_at:at,server_sequence:1,command_actor:actor.actorId,
     command_client:actor.clientId,command_operation:'recordContentReview',
     command_result:{status:'APPLIED',projectId,targetId:planId,version:1,data:{status:'REVIEW_RECORDED',ref:planRef,reviewRef,review}}};
+  const recordedValidation={validForConfirmation:true,issues:[],sourceRefs:[documentRef,designRef],screenReviewRefs:[],...validationPatch};
+  const confirmationRow={id:id(15),target_hash:planRef.contentHash,confirmed_by:actor.actorId,client_id:actor.clientId,
+    actor_id:actor.actorId,command_client:actor.clientId,operation:'confirmWorkPlan',review_refs:[reviewRef],created_at:at,
+    validation_json:recordedValidation,result_ref:{status:'APPLIED',data:{status:'CONFIRMED',confirmationId:id(15),ref:planRef,
+      reviewRefs:[reviewRef],validation:structuredClone(recordedValidation),activatedAsBaseline:false}}};
+  if(missingValidation==='receipt')Reflect.deleteProperty(confirmationRow.result_ref.data,'validation');
+  if(missingValidation==='stored')Reflect.deleteProperty(confirmationRow,'validation_json');
   const calls:string[]=[],writes:string[]=[];
   const db={
     async query(sql:string,args:unknown[]){
@@ -68,10 +76,11 @@ function fixture({designConfirmed=false,acceptedReview=false}={}){
         assert.deepEqual(args,[projectId,planId,1,planRef.contentHash]);return {rows:acceptedReview?[structuredClone(reviewRow)]:[]};
       }
       assert.deepEqual(args,[projectId,planId,1]);
-      if(sql.startsWith('SELECT w.head_version,w.confirmed_version,v.created_by'))return {rows:[{head_version:1,confirmed_version:null,created_by:actor.actorId}]};
+      if(sql.startsWith('SELECT w.head_version,w.confirmed_version,v.created_by'))return {rows:[{head_version:1,confirmed_version:storedConfirmation?1:null,created_by:actor.actorId}]};
       if(sql.startsWith('SELECT content_hash,version_json FROM anvil.work_plan_versions'))return {rows:[{content_hash:planRef.contentHash,version_json:{ref:planRef,status:'DRAFT',...snapshot}}]};
       if(sql.startsWith('SELECT task_code,card_json,card_hash FROM anvil.plan_tasks'))return {rows:[{task_code:task.taskCode,card_json:task,card_hash:hash(task)}]};
-      if(sql.startsWith('SELECT task_code,dependency_task_code,phase FROM anvil.plan_dependencies')||sql.includes('FROM anvil.work_plan_confirmations f'))return {rows:[]};
+      if(sql.includes('FROM anvil.work_plan_confirmations f'))return {rows:storedConfirmation?[structuredClone(confirmationRow)]:[]};
+      if(sql.startsWith('SELECT task_code,dependency_task_code,phase FROM anvil.plan_dependencies'))return {rows:[]};
       throw Error(`UNEXPECTED_SQL ${sql}`);
     },
   } as unknown as PoolClient;
@@ -129,4 +138,44 @@ test('IX01 동일 자료의 현재 설계 확정이 확인되면 준비 판정�
   assert.equal(result.currentConfirmationValid,false);
   assert.equal(result.activatedAsBaseline,false);
   assert.deepEqual(model.writes,[]);
+});
+
+test('IX01 복제된 확정 근거가 양쪽에서 일치해도 당시 고정 원문과 다르면 거절한다',async t=>{
+  const plan={id:documentId,version:1,contentHash:hash('# FN01 문서 저장')};
+  const design={id:designId,version:1,contentHash:hash('# D01 문서 저장 설계')};
+  const patches={
+    invalid:{validForConfirmation:false},
+    issues:{issues:[{code:'DESIGN_NOT_READY'}]},
+    extra:{extra:true},
+    plan:{sourceRefs:[{...plan,version:2},design]},
+    design:{sourceRefs:[plan,{...design,contentHash:hash('다른 설계 원문')}]},
+    screen:{screenReviewRefs:[{id:id(18),targetRef:design,criteriaVersion:1,outcome:'ACCEPTED'}]},
+  };
+  for(const [name,validationPatch]of Object.entries(patches))await t.test(name,async()=>{
+    const model=fixture({designConfirmed:true,acceptedReview:true,storedConfirmation:true,validationPatch});
+    await assert.rejects(model.decision(),{message:'WORK_PLAN_CONFIRMATION_INTEGRITY_FAILED',statusCode:503});
+    assert.deepEqual(model.writes,[]);
+  });
+});
+
+test('IX01 정상 과거 확정과 현재 설계 준비 상태를 각각 판독한다',async()=>{
+  for(const designConfirmed of [true,false]){
+    const model=fixture({designConfirmed,acceptedReview:true,storedConfirmation:true});
+    const result=await model.decision();
+    assert.equal(result.confirmation?.id,id(15));
+    assert.deepEqual(result.confirmation?.planRef,model.planRef);
+    assert.equal(result.confirmation?.validation.validForConfirmation,true);
+    assert.deepEqual(result.confirmation?.validation.issues,[]);
+    assert.equal(result.currentConfirmationValid,designConfirmed);
+    assert.equal(result.validation.validForConfirmation,designConfirmed);
+    assert.deepEqual(model.writes,[]);
+  }
+});
+
+test('IX01 원 영수증이나 보관 행에 확정 검증 필드가 없으면 기존 무결성 오류로 닫는다',async t=>{
+  for(const missingValidation of ['receipt','stored'] as const)await t.test(missingValidation,async()=>{
+    const model=fixture({designConfirmed:true,acceptedReview:true,storedConfirmation:true,missingValidation});
+    await assert.rejects(model.decision(),{message:'WORK_PLAN_CONFIRMATION_INTEGRITY_FAILED',statusCode:503});
+    assert.deepEqual(model.writes,[]);
+  });
 });
