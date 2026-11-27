@@ -2,6 +2,9 @@ import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
+import {HandoffBudget,createControlHandoffEvidenceSource} from '../../../apps/server/modules/control-handoff/control-handoff-evidence-source.ts';
+import {issueProtectedHandoffSummary} from '../../../apps/server/modules/control-handoff/control-handoff-protected-summary.ts';
+import {createControlRequestSnapshot} from '../../../apps/server/modules/control-handoff/control-request-snapshot.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {fixture as existingApprovalFixture} from '../FN17/notification-fixture.ts';
 
@@ -30,10 +33,11 @@ const id=(n:number)=>`ab130031-0000-4000-8000-${String(n).padStart(12,'0')}`,pid
 const location={hash:`#/projects/${pid}/mobile`,protocol:'https:'};
 const calls:{path:string;method:string}[]=[];
 let identity={user:{id:uid,displayName:'합성 조회자'},clientId:cid,csrfToken:'c'.repeat(43)},denyNextProject=false,richProject=false,projectOwner=false;
+let controlTransport:((path:string,init:RequestInit|undefined)=>Promise<Response>|Response|undefined)|null=null;
 let approvalTransport:((path:string)=>Promise<Response>|Response|undefined)|null=null;
 const project={id:pid,name:'모바일 합성 프로젝트',purpose:'같은 작업영역 전환',desiredOutcome:'원입력 보존',version:1,createdAt:at,updatedAt:at,currentMethodologyRef:null,baselineRef:null,sourceMode:'EMPTY',sourceDeclaration:null,readinessIssues:[],viewerPermissions:['READ_PROJECT'],participation:'VIEWER',controlState:{actorId:null,clientId:null,generation:null,status:'UNASSIGNED'}};
 const transport:typeof fetch=async(input,init)=>{
- const path=String(input),method=init?.method??'GET';calls.push({path,method});assert.equal(method,'GET','시험은 조회만 허용한다');
+ const path=String(input),method=init?.method??'GET';calls.push({path,method});const controlled=controlTransport?.(path,init);if(controlled)return controlled;assert.equal(method,'GET','시험은 조회만 허용한다');
  if(path==='/api/v1/session')return Response.json(identity);
  if(/^\/api\/v1\/projects\/[0-9a-f-]+$/.test(path)){if(denyNextProject){denyNextProject=false;return Response.json({code:'AUTH_REQUIRED'},{status:401});}return Response.json({...project,id:path.split('/').at(-1),currentMethodologyRef:richProject?applicationRef:null,...(projectOwner?{participation:'OWNER',controlState:{actorId:identity.user.id,clientId:identity.clientId,generation:1,status:'HELD'}}:{})});}
  if(path===`/api/v1/projects/${pid}/methodology-application`)return Response.json({projectId:pid,applicationRef:richProject?applicationRef:null,snapshot:richProject?snapshot:null,observedAt:at,executionState:'NOT_CONNECTED'});
@@ -57,7 +61,7 @@ function hidden(n:MemoryNode){for(let p:MemoryNode|null=n;p;p=p.parentNode)if(p.
 async function settle(){await ui.React.act(async()=>{await new Promise<void>(resolve=>setImmediate(resolve));});}
 async function wait(fn:()=>boolean){const end=Date.now()+2500;while(!fn()&&Date.now()<end)await settle();assert.ok(fn(),'실제 App/decoder 준비 완료');}
 async function fixture(methodology=false,owner=false){
- location.hash=`#/projects/${pid}/mobile`;identity={user:{id:uid,displayName:'합성 조회자'},clientId:cid,csrfToken:'c'.repeat(43)};denyNextProject=false;richProject=methodology;projectOwner=owner;approvalTransport=null;calls.length=0;
+ location.hash=`#/projects/${pid}/mobile`;identity={user:{id:uid,displayName:'합성 조회자'},clientId:cid,csrfToken:'c'.repeat(43)};denyNextProject=false;richProject=methodology;projectOwner=owner;approvalTransport=null;controlTransport=null;calls.length=0;
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
  await ui.React.act(async()=>root.render(ui.React.createElement(ui.App)));
  await wait(()=>container.textContent.includes(project.name)&&all(container).some(n=>n.getAttribute('aria-label')==='총괄 작업'));
@@ -373,4 +377,110 @@ test('mobilePane 실제 App 단계·새대화·PC 왕복 뒤 헌법과 대화출
   assert.equal(labelled(f.container,'대화 원문').value,'중복 패널 재현 합성 대화 초안','실App buffer 보존');assert.equal(labelled(f.container,'절차 정의: 둘째 단계').getAttribute('aria-pressed'),'true');
   assert.equal(count('프로젝트 적용 헌법'),1,'동일 Workspace 렌더 뒤 헌법 패널 중복0');assert.equal(count('사용자 발언·지시 원문 조회'),1,'대화출처 패널 중복0');assert.equal(calls.filter(c=>c.method!=='GET').length,0);
  }finally{await f.close();}
+});
+
+
+test('모바일 제어권 명시 진입은 기존 네 탐색과 같은 App 보호 화면을 사용한다',async()=>{
+ const f=await fixture();try{
+  const open=all(f.container).find(n=>n.tagName==='A'&&n.textContent==='제어권');assert(open,'모바일 별도 제어권 창');
+  assert.equal(navItems(f.container).length,4);const before=calls.length;
+  await click(open);await wait(()=>all(f.container).some(n=>n.getAttribute('aria-label')==='작업 권한 인계'));
+  assert.equal(location.hash,'#/projects/'+pid+'/mobile');assert.equal(all(f.container).filter(n=>n.getAttribute('aria-label')==='작업 권한 인계').length,1);
+  assert.equal(calls.filter(c=>c.path.includes('/control-')).length,0,'진입 자동 control GET0');assert.equal(calls.filter(c=>c.method==='POST').length,0);
+  assert(calls.length>=before);await click(navItems(f.container)[0]!);await wait(()=>all(f.container).some(n=>n.getAttribute('aria-label')==='총괄 작업'));
+  assert.equal(all(f.container).filter(n=>n.getAttribute('aria-label')==='작업 권한 인계').length,0);
+ }finally{await f.close();}
+});
+
+
+function handler(node:MemoryNode,name='onClick'){const key=Object.keys(node).find(k=>k.startsWith('__reactProps'));assert(key);return (node as any)[key][name] as Function;}
+function controlState(){return{schemaVersion:1,projectId:pid,actorId:uid,clientId:cid,observedAt:at,participation:'OWNER',control:{state:'OTHER_CLIENT',basis:{actorId:uid,clientId:id(70),generation:2,version:7}},executionAuthorized:false,controlTransferred:false};}
+async function openMobileControl(root:MemoryNode){const n=all(root).find(n=>n.tagName==='A'&&n.textContent==='제어권');assert(n);await click(n);await wait(()=>all(root).some(n=>n.getAttribute('aria-label')==='작업 권한 인계'));return labelled(root,'작업 권한 인계');}
+async function controlInput(root:MemoryNode,label:string,value:string){const parent=all(root).find(n=>n.tagName==='LABEL'&&n.textContent===label);assert(parent,label);const input=parent.childNodes.find(n=>['INPUT','TEXTAREA'].includes(n.tagName));assert(input);await ui.React.act(async()=>handler(input,'onChange')({target:{value}}));await settle();}
+for(const lost of [false,true])test('모바일·PC 제어권의 READY/UNKNOWN은 같은 원 요청과 App CAS를 보존 · '+lost,{timeout:15000},async()=>{
+ const f=await fixture(false,true),posts:{body:string;key:string|null}[]=[];let lose=lost,record:ReturnType<typeof createControlRequestSnapshot>|null=null;
+ try{
+  controlTransport=(path,init)=>{
+   if(path.endsWith('/control-state'))return Response.json(controlState());
+   if(path.endsWith('/control-requests')&&init?.method==='POST'){
+    const c=JSON.parse(String(init.body));posts.push({body:String(init.body),key:new Headers(init.headers).get('Idempotency-Key')});
+    assert.equal(c.operation,'requestControl');assert.equal(c.projectId,pid);assert.equal(c.clientId,cid);assert.deepEqual(c.payload.targetActorRef,{userId:uid});assert.deepEqual(c.payload.targetClientRef,{userId:uid,clientId:cid});
+    record=createControlRequestSnapshot({id:id(71),projectId:pid,requestedBy:{actorId:uid,clientId:cid},input:c.payload,createdAt:at});
+    const response=Response.json({...record,receipt:{schemaVersion:1,commandId:c.commandId,commandHash:hash(c),projectId:pid,actorId:uid,clientId:cid,requestRef:record.requestRef,outcome:'REQUEST_STORED'}});
+    if(lose){lose=false;return Promise.reject(new TypeError('합성 응답 유실'));}return response;
+   }
+   if(path.includes('/control-requests/')&&record)return Response.json({projectId:pid,...record,observedAt:at,current:{expired:false,baseControlState:'MATCHED'},executionAuthorized:false,controlTransferred:false});
+   return undefined;
+  };
+  let panel=await openMobileControl(f.container);assert.equal(posts.length,0);await click(button(panel,'현재 제어 조회'));await wait(()=>panel.textContent.includes('OTHER_CLIENT'));
+  await controlInput(panel,'인수 요청 이유','같은 원 기기의 명시 인수 요청');await controlInput(panel,'요청 만료 시각 (UTC)','2026-10-31T00:20:00.000Z');await click(button(panel,'인수 요청 명령 보존'));await wait(()=>panel.textContent.includes('인수 요청 · READY'));const oldSend=handler(button(panel,'보존한 명령 전송'));
+  location.hash='#/projects/'+pid+'/control';await ui.React.act(async()=>oldSend());assert.equal(posts.length,0,'raw 이탈·commit 전 READY 전송0');
+  await navigate(location.hash);await wait(()=>all(f.container).some(n=>n.getAttribute('aria-label')==='작업 권한 인계'));panel=labelled(f.container,'작업 권한 인계');assert.equal(all(f.container).filter(n=>n.getAttribute('aria-label')==='작업 권한 인계').length,1);assert.match(panel.textContent,/인수 요청 · READY/);assert.equal(posts.length,0);
+  await ui.React.act(async()=>oldSend());assert.equal(posts.length,0,'옛 모바일 callback 전송0');
+  await click(button(panel,'보존한 명령 전송'));await wait(()=>panel.textContent.includes(lost?'인수 요청 · UNKNOWN':'인수 요청 · CONFIRMED'));assert.equal(posts.length,1);const original=posts[0]!;
+  await navigate('#/projects/'+pid+'/mobile');panel=await openMobileControl(f.container);assert.match(panel.textContent,lost?/인수 요청 · UNKNOWN/:/인수 요청 · CONFIRMED/);assert.match(panel.textContent,/같은 원 기기의 명시 인수 요청/);assert.equal(posts.length,1);
+  if(lost){await click(button(panel,'같은 명령 결과 재확인'));await wait(()=>panel.textContent.includes('인수 요청 · CONFIRMED'));assert.deepEqual(posts[1],original,'같은 JSON·commandId·멱등키만 명시 재확인');}
+  assert.equal(button(panel,'인수 수락 명령 보존').disabled,true,'요청 저장은 수락·현재 권한이 아님');assert.match(panel.textContent,/미확인 자료로 권한을 부여하지 않습니다/);
+  const before=posts.length;await navigate('#/projects/'+id(95)+'/mobile');await openMobileControl(f.container);assert.doesNotMatch(labelled(f.container,'작업 권한 인계').textContent,/같은 원 기기의 명시 인수 요청/);assert.equal(posts.length,before,'타 프로젝트 버퍼/전송0');
+ }finally{controlTransport=null;await f.close();}
+});
+for(const status of [200,401])test('모바일 제어권 raw 주소 이탈의 늦은 '+status+'와 옛 읽기·편집·전송은 효과0',{timeout:15000},async()=>{
+ const f=await fixture(false,true);let release:((r:Response)=>void)|undefined;let reads=0;
+ try{
+  controlTransport=path=>path.endsWith('/control-state')?(reads++,new Promise<Response>(resolve=>{release=resolve;})):undefined;
+  const panel=await openMobileControl(f.container),oldRead=handler(button(panel,'현재 제어 조회'));
+  const label=all(panel).find(n=>n.tagName==='TEXTAREA')!,oldEdit=handler(label,'onChange');
+  await click(button(panel,'현재 제어 조회'));await wait(()=>!!release);assert.equal(reads,1);
+  location.hash='#/projects/'+pid+'/control'; // hashchange/React가 아직 이전 모바일 화면을 유지한다.
+  await ui.React.act(async()=>{oldRead();oldEdit({target:{value:'옛 편집 금지'}});release!(status===401?Response.json({code:'AUTH_REQUIRED'},{status:401}):Response.json(controlState()));await new Promise(r=>setImmediate(r));});
+  assert.equal(reads,1,'raw 이탈 뒤 옛 읽기 GET0');assert.doesNotMatch(f.container.textContent,/OTHER_CLIENT|옛 편집 금지|로그인 확인 필요/);assert.equal(calls.filter(c=>c.method==='POST').length,0);
+  await navigate(location.hash);await wait(()=>all(f.container).some(n=>n.getAttribute('aria-label')==='작업 권한 인계'));assert.doesNotMatch(labelled(f.container,'작업 권한 인계').textContent,/OTHER_CLIENT|옛 편집 금지/);
+  controlTransport=path=>path.endsWith('/control-state')?Response.json(controlState()):undefined;await click(button(f.container,'현재 제어 조회'));await wait(()=>f.container.textContent.includes('OTHER_CLIENT'));
+ }finally{release?.(Response.json(controlState()));controlTransport=null;await f.close();}
+});
+
+
+test('같은 모바일 App의 고정 보호요약 UNKNOWN은 명시 GET만이며 인수 수락을 열지 않는다',{timeout:15000},async()=>{
+ const f=await fixture(false,true),basis=controlState().control.basis,input={targetActorRef:{userId:uid},targetClientRef:{userId:uid,clientId:cid},baseControl:basis,reason:'보호요약의 원 요청',expiresAt:'2026-10-31T00:20:00.000Z'},request=createControlRequestSnapshot({id:id(80),projectId:pid,requestedBy:{actorId:uid,clientId:cid},input,createdAt:at});
+ const scope={projectId:pid,requestRef:request.requestRef,baseControl:basis,sessionId:id(81),actorId:uid,clientId:basis.clientId},lease=new HandoffBudget(30000,{now:()=>Date.parse(at),monotonic:()=>0});
+ const db={query:async()=>({rows:[{packet:{projectId:pid,requestRef:request.requestRef,baseControl:basis,writer:{head:null,events:[],commands:[],receipts:[],audits:[],approvals:[]},executions:[],pendingCommands:[],pendingApprovals:[],checkpoints:[],proofBasis:null}}]})};
+ try{
+  const evidence=await createControlHandoffEvidenceSource().collect(db as never,scope,lease),summary=issueProtectedHandoffSummary({scope,request:request.snapshot,version:1,observedAt:at,evidence},db,lease);await lease.close();assert.equal(summary.snapshot.transferState,'UNKNOWN');
+  controlTransport=(path,init)=>{
+   assert.notEqual(init?.method,'POST','보호요약 조회는 요청·준비·수락 자동 POST0');
+   if(path.endsWith('/control-state'))return Response.json(controlState());
+   if(path.includes('/control-requests?'))return Response.json({projectId:pid,view:'OWN',limit:50,observedAt:at,items:[{requestRef:request.requestRef,createdAt:at,expiresAt:input.expiresAt,storedState:'PENDING',current:{expired:false,baseControlState:'MATCHED'},executionAuthorized:false,controlTransferred:false}],hasMore:false,nextCursor:null,executionAuthorized:false,controlTransferred:false});
+   if(path.includes('/protected-handoff-summaries/head?'))return Response.json({schemaVersion:2,purpose:'CONTROL_HANDOFF_PROTECTED_HEAD',projectId:pid,requestRef:request.requestRef,observedAt:at,head:{state:'AVAILABLE',summaryRef:summary.ref},executionAuthorized:false,dispatchPerformed:false,controlTransferred:false});
+   if(path.includes('/protected-handoff-summaries/1?'))return Response.json(summary);
+   if(path.includes('/control-requests/'+request.requestRef.id+'/versions/1?'))return Response.json({projectId:pid,...request,observedAt:at,current:{expired:false,baseControlState:'MATCHED'},executionAuthorized:false,controlTransferred:false});
+   return undefined;
+  };
+  const panel=await openMobileControl(f.container);await click(button(panel,'현재 제어 조회'));await wait(()=>panel.textContent.includes('OTHER_CLIENT'));await click(button(panel,'내 요청 목록 조회'));await wait(()=>panel.textContent.includes('요청 1 원문 확인'));await click(button(panel,'요청 1 원문 확인'));await wait(()=>panel.textContent.includes(input.reason));
+  assert.equal(calls.filter(c=>c.path.includes('/protected-handoff-summaries')).length,0);await click(button(panel,'최신 보호요약 고정 원문 조회'));await wait(()=>panel.textContent.includes('보호 검산 UNKNOWN'));
+  assert.equal(calls.filter(c=>c.path.includes('/protected-handoff-summaries')).length,2);assert.equal(button(panel,'인수 수락 명령 보존').disabled,true);assert.equal(calls.filter(c=>c.method==='POST').length,0);assert.match(panel.textContent,/보관 원문 조회만으로 현재 수락 권한을 만들지 않습니다/);
+ }finally{await lease.close();controlTransport=null;await f.close();}
+});
+for(const status of [200,401])test('모바일 제어권 전달된 route ABA 뒤 옛 결과 '+status+'는 새 surface에 적용0',{timeout:15000},async()=>{
+ const f=await fixture(false,true);let release:((r:Response)=>void)|undefined;
+ try{
+  controlTransport=path=>path.endsWith('/control-state')?new Promise<Response>(r=>{release=r;}):undefined;
+  const panel=await openMobileControl(f.container);await click(button(panel,'현재 제어 조회'));await wait(()=>!!release);
+  await ui.React.act(async()=>{
+   location.hash='#/projects/'+pid+'/control';for(const fn of events.get('hashchange')??[])fn();
+   location.hash='#/projects/'+pid+'/mobile';for(const fn of events.get('hashchange')??[])fn();
+   release!(status===401?Response.json({code:'AUTH_REQUIRED'},{status:401}):Response.json(controlState()));await new Promise(r=>setImmediate(r));
+  });
+  assert.doesNotMatch(f.container.textContent,/OTHER_CLIENT|로그인 확인 필요/);assert.equal(calls.filter(c=>c.method==='POST').length,0);
+  controlTransport=path=>path.endsWith('/control-state')?Response.json(controlState()):undefined;await click(button(f.container,'현재 제어 조회'));await wait(()=>f.container.textContent.includes('OTHER_CLIENT'));
+ }finally{release?.(Response.json(controlState()));controlTransport=null;await f.close();}
+});
+
+
+test('현재 모바일 제어권 재선택은 진행 중 원 조회의 owner와 완료를 보존한다',{timeout:15000},async()=>{
+ const f=await fixture(false,true);let release:((r:Response)=>void)|undefined;let reads=0;
+ try{
+  controlTransport=path=>path.endsWith('/control-state')?(reads++,new Promise<Response>(r=>{release=r;})):undefined;
+  const panel=await openMobileControl(f.container);await click(button(panel,'현재 제어 조회'));await wait(()=>!!release);await openMobileControl(f.container);assert.equal(labelled(f.container,'작업 권한 인계'),panel,'동일 pane remount0');assert.equal(reads,1);
+  await ui.React.act(async()=>{release!(Response.json(controlState()));await new Promise(r=>setImmediate(r));});await wait(()=>panel.textContent.includes('OTHER_CLIENT'));assert.equal(button(panel,'현재 제어 조회').disabled,false);assert.equal(reads,1);assert.equal(calls.filter(c=>c.method==='POST').length,0);
+ }finally{release?.(Response.json(controlState()));controlTransport=null;await f.close();}
 });

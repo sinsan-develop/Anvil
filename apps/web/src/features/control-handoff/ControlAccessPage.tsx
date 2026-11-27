@@ -6,12 +6,13 @@ import {routeHref} from '../../shell/routes.ts';
 import {ProjectAccessSummary} from '../projects/ProjectAccessSummary.tsx';
 import {ControlApi,ControlAcceptanceNotReady,same,type ControlSession,type ControlStateResult,type ControlRequestListResult,type ControlRequestReadResult,type HandoffSummaryReadResult,type ControlRef} from './api.ts';
 import {ControlScope,emptyControlBuffer,freezeControlCommand,freezeControlAcceptance,rejectControlAcceptance,unresolvedControlPending,selfRequestCommand,type ControlBuffer,type ControlTicket} from './state.ts';
-interface Props{client:ApiClient;projectId:string;session?:ControlSession;buffer?:ControlBuffer|null;onChange?:(expected:string|null,next:ControlBuffer)=>boolean;scope?:ControlScope;onAuthenticationLost:()=>void}
+interface Props{isCurrent?:()=>boolean;client:ApiClient;projectId:string;session?:ControlSession;buffer?:ControlBuffer|null;onChange?:(expected:string|null,next:ControlBuffer)=>boolean;scope?:ControlScope;onAuthenticationLost:()=>void}
 interface View{acceptanceOwner?:ControlBuffer['pending'];state:ControlStateResult|null;list:ControlRequestListResult|null;request:ControlRequestReadResult|null;summary:HandoffSummaryReadResult|null;headNone:boolean;protectedSummary:ProtectedHandoffSummary|null;protectedHeadState:'NONE'|'UNKNOWN'|null;acceptance:ControlAcceptanceChain['result']|null;error:ApiError|null;busy:boolean}
 const emptyView=():View=>({state:null,list:null,request:null,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null,acceptance:null,error:null,busy:false});
 const labels={activeExecutions:'진행 작업',pendingCommands:'미결 명령',pendingApprovals:'미결 승인',sourceCheckpointRefs:'원본·체크포인트 참조'};
 /** 명시 조작만 원 명령을 보존해 전송한다. 실행 시작·자동 재전송은 하지 않는다. */
-export function ControlAccessPage({client,projectId,session,buffer=null,onChange,scope:parentScope,onAuthenticationLost}:Props){
+export function ControlAccessPage({isCurrent,client,projectId,session,buffer=null,onChange,scope:parentScope,onAuthenticationLost}:Props){
+ const sourceCurrent=()=>!isCurrent||isCurrent();
  const localScope=useRef(new ControlScope()),scope=parentScope??localScope.current;scope.bind(session??null,projectId);
  const live=useRef({client,projectId,session,buffer,onChange});live.current={client,projectId,session,buffer,onChange};
  const [view,setView]=useState<View>(emptyView),[ticketRevision,setTicketRevision]=useState(0),[confirmedSummary,setConfirmedSummary]=useState<{context:object;requestRef:ControlRef;summaryRef:ControlRef}|null>(null);
@@ -22,7 +23,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  useLayoutEffect(()=>{mounted.current=true;scope.bind(session??null,projectId);return()=>{mounted.current=false;scope.dispose();};},[scope]);
  // Never show a prior scope's sensitive result in the render preceding an effect.
  const visible=useRef<{session:ControlSession|undefined;projectId:string;client:ApiClient}|null>(null);
- const currentView=visibleContext.current===context.current&&visible.current?.session===session&&visible.current?.projectId===projectId&&visible.current?.client===client?view:emptyView();
+ const currentView=sourceCurrent()&&visibleContext.current===context.current&&visible.current?.session===session&&visible.current?.projectId===projectId&&visible.current?.client===client?view:emptyView();
  const b=buffer&&session&&buffer.projectId===projectId&&buffer.ownerUserId===session.user.id&&buffer.ownerClientId===session.clientId?buffer:null;
  const pending=b?.pending??null,unresolved=unresolvedControlPending(pending);
  const historyScope=useRef({context:context.current,binding:b?.bindingId,pending,revision:0});
@@ -32,7 +33,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
  const historyOwner=historyScope.current;
  const configured=!!session&&!!onChange;
  const matches=(ticket:ControlTicket,binding:string|null)=>{
-  if(!mounted.current||!scope.current(ticket,binding)||ticketContexts.current.get(ticket)!==context.current)return false;
+  if(!sourceCurrent()||!mounted.current||!scope.current(ticket,binding)||ticketContexts.current.get(ticket)!==context.current)return false;
   if(context.current.transport!==client.transport||context.current.csrf!==session?.csrfToken){scope.dispose();setTicketRevision(v=>v+1);return false;}
   return live.current.session===session&&live.current.projectId===projectId&&live.current.client===client;
  };
@@ -44,9 +45,10 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
    &&state?.projectId===projectId&&state.actorId===session.user.id&&state.clientId===session.clientId&&(state.participation==='OWNER'||state.participation==='HANDOFF_ELIGIBLE')
    &&state.control.state==='HELD'&&!!basis&&basis.actorId===session.user.id&&basis.clientId===session.clientId;
  }
- function api(){if(!session)throw new ApiError('AUTH_REQUIRED',401);return new ControlApi(client.transport,session,projectId);}
- async function loadState(){const t=start();setView({...emptyView(),busy:true});try{const state=await api().state();if(matches(t,null))setView({...emptyView(),state});}catch(e){fail(e,t);}}
+ function api(){if(!sourceCurrent()||!session)throw new ApiError('AUTH_REQUIRED',401);return new ControlApi(client.transport,session,projectId);}
+ async function loadState(){if(!sourceCurrent())return;const t=start();setView({...emptyView(),busy:true});try{const state=await api().state();if(matches(t,null))setView({...emptyView(),state});}catch(e){fail(e,t);}}
  async function loadList(view:'OWN'|'CONTROLLER',cursor:string|null=null,index=0,retry=false){
+  if(!sourceCurrent())return;
   const t=start();navigation.current.failed={view,cursor,index};
   setView(v=>({...v,list:null,request:null,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null}));
   try{
@@ -58,9 +60,10 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
    setView(v=>({...v,state,list,busy:false}));
   }catch(e){fail(e,t);}
  }
- async function select(requestRef:ControlRef){const t=start();setView(v=>({...v,request:null,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null}));try{const request=await api().request(requestRef);if(matches(t,null))setView(v=>({...v,request,busy:false}));}catch(e){fail(e,t);}}
- async function loadSummary(){const selected=currentView.request;if(!selected)return;const t=start();setView(v=>({...v,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null}));try{const head=await api().head(selected.requestRef);if(!matches(t,null))return;if(head.head.state==='NONE'){setView(v=>({...v,headNone:true,busy:false}));return;}const result=await api().summary(selected.requestRef,head.head.summaryRef,selected.snapshot.expiresAt);if(matches(t,null))setView(v=>({...v,summary:result,busy:false}));}catch(e){fail(e,t);}}
+ async function select(requestRef:ControlRef){if(!sourceCurrent())return;const t=start();setView(v=>({...v,request:null,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null}));try{const request=await api().request(requestRef);if(matches(t,null))setView(v=>({...v,request,busy:false}));}catch(e){fail(e,t);}}
+ async function loadSummary(){if(!sourceCurrent())return;const selected=currentView.request;if(!selected)return;const t=start();setView(v=>({...v,summary:null,headNone:false,protectedSummary:null,protectedHeadState:null}));try{const head=await api().head(selected.requestRef);if(!matches(t,null))return;if(head.head.state==='NONE'){setView(v=>({...v,headNone:true,busy:false}));return;}const result=await api().summary(selected.requestRef,head.head.summaryRef,selected.snapshot.expiresAt);if(matches(t,null))setView(v=>({...v,summary:result,busy:false}));}catch(e){fail(e,t);}}
  async function loadProtectedSummary(){
+  if(!sourceCurrent())return;
   const selected=currentView.request;if(!selected)return;const t=start();setView(v=>({...v,protectedSummary:null,protectedHeadState:null}));
   try{const head=await api().protectedHead(selected.requestRef);if(!matches(t,null))return;if(head.head.state!=='AVAILABLE'){const state=head.head.state;setView(v=>({...v,protectedHeadState:state,busy:false}));return;}
    const summary=await api().protectedSummary(selected.requestRef,head.head.summaryRef);if(!matches(t,null))return;
@@ -68,15 +71,15 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
    setView(v=>({...v,protectedSummary:summary,busy:false}));
   }catch(e){fail(e,t);}
  }
- function edit(field:'reason'|'expiresAt',value:string){if(!session||!onChange||unresolved)return;const old=b??emptyControlBuffer(session,projectId);onChange(b?.bindingId??null,{...old,[field]:value});}
- function preserve(command:Parameters<typeof freezeControlCommand>[1]){if(!session||!onChange||unresolved)return;const old=b??emptyControlBuffer(session,projectId);const next=freezeControlCommand(old,command);onChange(b?.bindingId??null,next);}
- function prepareRequest(){try{if(!session||!currentView.state||!b)return;preserve(selfRequestCommand(session,projectId,currentView.state,b.reason,b.expiresAt));}catch(e){setView(v=>({...v,error:e instanceof ApiError?e:new ApiError('REQUEST_FAILED')}));}}
- function prepareSummary(){const request=currentView.request,state=currentView.state;if(!session||!request||!currentController(state)||currentView.busy||!!currentView.error||unresolved||request.current.expired||request.current.baseControlState!=='MATCHED'||!same(state.control.basis,request.snapshot.baseControl))return;preserve({schemaVersion:1,operation:'prepareControlHandoff',commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...request.requestRef}}});}
- function prepareProtected(){const selected=currentView.request;if(!session||!onChange||!selected||!canPrepare)return;const old=b??emptyControlBuffer(session,projectId),next=freezeControlCommand(old,{schemaVersion:1,operation:'prepareControlHandoff',commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...selected.requestRef}}});if(next.pending&&next.pending.kind!=='ACCEPT')next.pending={...next.pending,kind:'PROTECTED_PREPARE'};onChange(b?.bindingId??null,next);}
- function prepareAcceptance(){try{if(!session||!onChange||!b||!canAccept||!currentView.protectedSummary)return;const summary=currentView.protectedSummary,command={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...summary.snapshot.requestRef},summaryVersion:summary.ref.version,reason:b.reason}};onChange(b.bindingId,freezeControlAcceptance(b,command,summary));}catch(e){setView(v=>({...v,error:e instanceof ApiError?e:new ApiError('REQUEST_FAILED')}));}}
+ function edit(field:'reason'|'expiresAt',value:string){if(!sourceCurrent()||!session||!onChange||unresolved)return;const old=b??emptyControlBuffer(session,projectId);onChange(b?.bindingId??null,{...old,[field]:value});}
+ function preserve(command:Parameters<typeof freezeControlCommand>[1]){if(!sourceCurrent()||!session||!onChange||unresolved)return;const old=b??emptyControlBuffer(session,projectId);const next=freezeControlCommand(old,command);onChange(b?.bindingId??null,next);}
+ function prepareRequest(){try{if(!sourceCurrent()||!session||!currentView.state||!b)return;preserve(selfRequestCommand(session,projectId,currentView.state,b.reason,b.expiresAt));}catch(e){setView(v=>({...v,error:e instanceof ApiError?e:new ApiError('REQUEST_FAILED')}));}}
+ function prepareSummary(){if(!sourceCurrent())return;const request=currentView.request,state=currentView.state;if(!session||!request||!currentController(state)||currentView.busy||!!currentView.error||unresolved||request.current.expired||request.current.baseControlState!=='MATCHED'||!same(state.control.basis,request.snapshot.baseControl))return;preserve({schemaVersion:1,operation:'prepareControlHandoff',commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...request.requestRef}}});}
+ function prepareProtected(){if(!sourceCurrent())return;const selected=currentView.request;if(!session||!onChange||!selected||!canPrepare)return;const old=b??emptyControlBuffer(session,projectId),next=freezeControlCommand(old,{schemaVersion:1,operation:'prepareControlHandoff',commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...selected.requestRef}}});if(next.pending&&next.pending.kind!=='ACCEPT')next.pending={...next.pending,kind:'PROTECTED_PREPARE'};onChange(b?.bindingId??null,next);}
+ function prepareAcceptance(){try{if(!sourceCurrent()||!session||!onChange||!b||!canAccept||!currentView.protectedSummary)return;const summary=currentView.protectedSummary,command={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:crypto.randomUUID(),projectId,clientId:session.clientId,payload:{requestRef:{...summary.snapshot.requestRef},summaryVersion:summary.ref.version,reason:b.reason}};onChange(b.bindingId,freezeControlAcceptance(b,command,summary));}catch(e){setView(v=>({...v,error:e instanceof ApiError?e:new ApiError('REQUEST_FAILED')}));}}
  async function send(){
  const old=live.current.buffer,command=old?.pending;
- if(!mounted.current||context.current!==renderOwner||client.transport!==renderOwner.transport||session?.csrfToken!==renderOwner.csrf
+ if(!sourceCurrent()||!mounted.current||context.current!==renderOwner||client.transport!==renderOwner.transport||session?.csrfToken!==renderOwner.csrf
   ||!old||!command||command!==pending||!session||!onChange||command.status!=='READY'&&command.status!=='UNKNOWN'
   ||old.ownerUserId!==session.user.id||old.ownerClientId!==session.clientId||old.projectId!==projectId)return;
  const binding=command.bindingId,t=start(binding),sending={...old,pending:{...command,status:'UNKNOWN' as const}};
@@ -172,12 +175,12 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
   </section>:null}
   {summary&&request?<ControlSummaryView summary={summary} requestExpiresAt={request.snapshot.expiresAt}/>:null}
   {currentView.protectedSummary?<section aria-label="고정 보호요약"><h3>고정 보호요약</h3><p>보호 검산 {currentView.protectedSummary.snapshot.transferState}</p><p>관측 {currentView.protectedSummary.snapshot.observedAt} · 기한 {currentView.protectedSummary.snapshot.validUntil}</p><dl>{(Object.keys(labels)as(keyof typeof labels)[]).map(key=><div key={key}><dt>{labels[key]}</dt><dd>{currentView.protectedSummary!.snapshot.collections[key].state} · 참조 {currentView.protectedSummary!.snapshot.collections[key].items.length}개</dd></div>)}</dl><p>미확인 항목: {currentView.protectedSummary.snapshot.gaps.join(', ')}</p>{!currentView.busy?<ProtectedSummaryDetails key={ticketRevision} summary={currentView.protectedSummary}/>:null}<p>보관 원문 조회만으로 현재 수락 권한을 만들지 않습니다.</p></section>:null}
-  {protectedSummary?<section aria-label="인수 수락 확인"><label>수락 이유<textarea maxLength={20000} value={b?.reason??''} disabled={!configured||unresolved} onChange={e=>edit('reason',e.target.value)}/></label><label><input type="checkbox" checked={summaryConfirmed} disabled={!configured||unresolved||currentView.busy} onChange={e=>{if(context.current!==confirmationContext||visibleContext.current!==confirmationContext||client.transport!==confirmationContext.transport||session?.csrfToken!==confirmationContext.csrf||!request)return;setConfirmedSummary(e.target.checked?{context:confirmationContext,requestRef:{...request.requestRef},summaryRef:{...protectedSummary.ref}}:null);}}/>요약과 대상 기기를 확인했습니다.</label></section>:null}
+  {protectedSummary?<section aria-label="인수 수락 확인"><label>수락 이유<textarea maxLength={20000} value={b?.reason??''} disabled={!configured||unresolved} onChange={e=>edit('reason',e.target.value)}/></label><label><input type="checkbox" checked={summaryConfirmed} disabled={!configured||unresolved||currentView.busy} onChange={e=>{if(!sourceCurrent()||context.current!==confirmationContext||visibleContext.current!==confirmationContext||client.transport!==confirmationContext.transport||session?.csrfToken!==confirmationContext.csrf||!request)return;setConfirmedSummary(e.target.checked?{context:confirmationContext,requestRef:{...request.requestRef},summaryRef:{...protectedSummary.ref}}:null);}}/>요약과 대상 기기를 확인했습니다.</label></section>:null}
    <button type="button" disabled={!canAccept} onClick={prepareAcceptance}>인수 수락 명령 보존</button>
    {session&&b&&pending?.kind==='ACCEPT'&&pending.status==='CONFIRMED'?
     <ConfirmedAcceptanceHistory client={client} session={session} projectId={projectId} key={historyOwner.revision} busy={currentView.busy}
      initial={currentView.acceptanceOwner===pending?currentView.acceptance:null}
-     current={()=>historyScope.current===historyOwner&&live.current.buffer?.pending===pending&&
+     current={()=>sourceCurrent()&&historyScope.current===historyOwner&&live.current.buffer?.pending===pending&&
       live.current.buffer.bindingId===historyOwner.binding&&pending.status==='CONFIRMED'&&live.current.projectId===projectId&&
       session.user.id===b.ownerUserId&&session.clientId===b.ownerClientId&&live.current.session===session&&
       client.transport===historyOwner.context.transport&&session.csrfToken===historyOwner.context.csrf}
