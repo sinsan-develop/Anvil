@@ -1059,3 +1059,34 @@ test('FN09 lower owned GET 동일 packet 명시 재확인은 원 응답·정상 
  assert.deepEqual(calls[0].payload,calls[1].payload);assert.equal(f.ends(),f.calls());assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
  const n=m.calls.length;offset=5001;await assert.rejects(port.requestUnderstandingDiscovery(target,signal));assert.equal(m.calls.length,n);
 });
+
+test('FIRST 정상 factory는 보호 source 획득 직후 원 기한이 끝나면 인계 대신 원 discard와 host close만 수행한다 · RAM',async()=>{
+ const f=await fixtures.liveNativeOwner(),m=model(f),signal=new AbortController().signal,trace=[];
+ let factory,source,current=true,host;
+
+ const create=f.dependencies.createOperation;
+ const firstCurrent=()=>{if(!current)throw Error('FIRST_EXPIRED');};
+ const slot={slotId:id(3),receiptRef:ref(4),origin:m.config.origin,scope:m.config.scope,expiresAt:m.expiresAt,caHash:contentHash(m.config.ca)};
+ const scope={slotRef:slot.receiptRef},raw={attemptId:f.stored().attemptId,slotId:slot.slotId,startCommandId:id(56),sendCommandId:id(90),scope,handoff:{scope}};
+ f.dependencies.createOperation=async(...args)=>{
+  const operation=await Reflect.apply(create,f.dependencies,args);
+  return Object.freeze({...operation,async normalSdkChildSource(value,check){
+   assert.deepEqual(value,raw);assert.equal(check,firstCurrent);args[0].check();
+   trace.push('PREPARED');current=false;assert.equal(signal.aborted,false);
+   return Object.freeze({async discard(){trace.push('DISCARD');return{state:'UNKNOWN'};},
+    async acknowledge(){trace.push('ACK');},async afterClose(){trace.push('ADMIT');}});
+  },async close(){trace.push('HOST_CLOSE');return operation.close();}});
+ };
+ syntheticResultOwner=captured=>{factory=captured;return captured;};
+ try{source=f.owner.createProfileExecutionClients(m.config);}finally{syntheticResultOwner=undefined;}
+ try{
+  assert.ok(factory);host=await factory.open(signal,slot,firstCurrent);
+  await assert.rejects(host.prepareSdkChildSource(raw),/FIRST_EXPIRED/);
+  assert.deepEqual(trace,['PREPARED','DISCARD']);
+  assert.deepEqual(await host.close('OPERATION_UNKNOWN'),{state:'UNKNOWN'});
+  await assert.rejects(host.prepareSdkChildSource(raw));
+  const opened=f.calls();await assert.rejects(factory.open(signal,slot,firstCurrent));assert.equal(f.calls(),opened);
+  assert.deepEqual(trace,['PREPARED','DISCARD','HOST_CLOSE']);
+  assert.equal(m.calls.length,0);assert.equal(f.ends(),f.calls());assert.equal(f.owner.isBusy(),false);assert.equal(f.timers(),0);
+ }finally{await host?.close('OPERATION_UNKNOWN');source.dispose();}
+});

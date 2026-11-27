@@ -36,7 +36,7 @@ test('FIRST SID는 exact private 인계에서만 원 scope의 canonical 문자�
  assert.match(spool,/finished=true;bytes.fill\(0\)/);
  const source=readFileSync(new URL('apps/connector/runtime/normal-first-send-owner.ts',root),'utf8');
  assert.match(source,/firstPermitHandoffs.delete\(request\)/);
- assert.match(source,/const releaseHandoffs=\(\)=>\{firstPermitHandoffs\.delete\(request\);firstDeliveryHandoffs\.delete\(request\);\}/);
+ assert.match(source,/const releaseHandoffs=\(\)=>\{firstPermitHandoffs\.delete\(request\);firstDeliveryHandoffs\.delete\(request\);firstRequest=undefined;\}/);
  assert.match(source,/catch\(error\)\{releaseHandoffs\(\);throw error;\}/);
  assert.match(source,/pending\.finally\(releaseHandoffs\)/);
 });

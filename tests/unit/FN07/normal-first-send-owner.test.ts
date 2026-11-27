@@ -19,9 +19,9 @@ async function readyFirst(f:Awaited<ReturnType<typeof firstSendFixture>>){
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('C FIRST native 읽기 수송은 원 자료와 slot을 보존하며 취소·교체·초과 뒤 추가 전송을 막는다',async()=>{
  const {takeNormalFirstPermitHandoff}=await import('../../../apps/connector/runtime/normal-first-send-owner.ts');
  const {inspectNormalFirstPermitHandoff}=await import('../../../apps/connector/runtime/normal-owned-spool-profile.ts');
- const f=await firstSendFixture();let handoff:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>|undefined;
+ const f=await firstSendFixture();let handoff:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>['value']|undefined;
  const create=f.source.create.bind(f.source);
- f.source.create=async(request,prompt,signal)=>{handoff=takeNormalFirstPermitHandoff(request,f.source)!;return create(request,prompt,signal);};
+ f.source.create=async(request,prompt,signal)=>{handoff=takeNormalFirstPermitHandoff(request,f.source)!.value;return create(request,prompt,signal);};
  try{
   const coordinator=await readyFirst(f),selection=coordinator.selectFirstPermit(f.wire,f.signal);
   const prepared=await coordinator.prepare(f.item.envelope,f.signal,selection);
@@ -29,7 +29,7 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('
   for(const mode of ['ok','unicode','input-change','multipart','partial-cancel','cancel','slot-change','bad-ack','close-unknown','expired','oversize','budget-missing','budget-exhausted','budget-preused','budget-time','old-shape','extra-key','sid-mismatch','sid-empty','sid-control','sid-surrogate','sid-long','slot-mismatch'] as const){
    const life=new AbortController(),frames:any[]=[],closed:string[]=[];let opens=0,now=f.clock();
    const slot={slotId:randomUUID(),receiptRef:structuredClone(handoff.scope.slotRef),origin:'https://anvil-synthetic.invalid',scope:structuredClone(f.scope),expiresAt:new Date(now+30000).toISOString(),caHash:'a'.repeat(64)};
-   const input:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>=structuredClone(handoff);
+   const input:NonNullable<ReturnType<typeof takeNormalFirstPermitHandoff>>['value']=structuredClone(handoff);
    if(mode==='old-shape')delete (input as any).plannedSid;
    if(mode==='extra-key')(input as any).extra='not-accepted';
    if(mode==='sid-mismatch')(input as any).plannedSid='different-session';
@@ -80,7 +80,7 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('
   assert.throws(()=>owner.takeNormalFirstPermitHandoff({...request},f.source));
   assert.throws(()=>owner.takeNormalFirstPermitHandoff(request,{...f.source}));
   request.plannedSid='changed-request-alias';
-  seen=owner.takeNormalFirstPermitHandoff(request,f.source);
+  seen=owner.takeNormalFirstPermitHandoff(request,f.source).value;
   assert.equal(seen.plannedSid,f.source.plannedSid);request.plannedSid=f.source.plannedSid;
   assert.throws(()=>owner.takeNormalFirstPermitHandoff(request,f.source));
   assert.equal(Object.hasOwn(request,'executionAuthority'),false);
@@ -513,4 +513,48 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('
   assert.throws(()=>takeFirstSidOrigin({},f.source,f.worker),/NORMAL_FIRST_SEND_UNKNOWN/);
   assert.equal(f.effects.create,0);assert.equal(f.effects.rows.length,0);
  }finally{f.authority.abort();await f.h.close();}
+});
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)test('C FIRST 인계 소비 뒤 원 현재성이 끝나면 다음 효과 없이 취득한 원 소유자만 닫는다',async()=>{
+ const {takeNormalFirstPermitHandoff}=await import('../../../apps/connector/runtime/normal-first-send-owner.ts');
+ const {prepareNormalSdkChildHandoff}=await import('../../../apps/connector/runtime/normal-owned-spool-profile.ts');
+ for(const mode of ['BEFORE_OPEN','AFTER_OPEN','AFTER_OWNER','DURING_CLOSE','LATE_OWNER'] as const){
+  const f=await firstSendFixture();const trace:string[]=[];
+  let entered=false,verified=false,releaseLateOwner:(()=>void)|undefined,finished!:()=>void;
+  const finishedCreate=new Promise<void>(resolve=>{finished=resolve;});
+  f.source.create=async(request,_prompt,life)=>{
+   const {value:handoff,check}=takeNormalFirstPermitHandoff(request,f.source)!;
+   const now=f.clock();
+   const slot={slotId:randomUUID(),receiptRef:structuredClone(handoff.scope.slotRef),origin:'https://anvil-synthetic.invalid',scope:structuredClone(f.scope),expiresAt:new Date(now+30000).toISOString(),caHash:'a'.repeat(64)};
+   const expire=()=>{descriptorDeadline=f.clock();assert.equal(life.aborted,false);};
+   if(mode==='BEFORE_OPEN')expire();
+   entered=true;
+   try{
+    const owner=await prepareNormalSdkChildHandoff(handoff,{attemptId:randomUUID(),slot,now:()=>now,signal:life,check,host:{async open(){
+    trace.push('OPEN');if(mode==='AFTER_OPEN')expire();
+    return {async send(){assert.fail('not a general request');},async close(disposition){trace.push(disposition);if(mode==='DURING_CLOSE')f.authority.abort();return {state:'CLOSED_CONFIRMED'};},
+     async prepareSdkChildSource(raw){trace.push('PREPARE');return {async acknowledge(){trace.push('ACK');},
+      async afterClose(){trace.push('AFTER_CLOSE');if(mode==='AFTER_OWNER')expire();const supervisor={read(){trace.push('READ_OWNER');return {
+       leaseId:randomUUID(),endpointId:randomUUID(),sourceHash:digest(raw),bindingHash:'a'.repeat(64),expiresAt:new Date(now+1000).toISOString(),childCreated:false as const,executionAuthorized:false as const,dispatchPerformed:false as const};},
+       async close(){trace.push('OWNER_CLOSE');return {state:'UNKNOWN' as const};}};
+       if(mode!=='LATE_OWNER')return supervisor;
+       return new Promise(resolve=>{releaseLateOwner=()=>resolve(supervisor);f.authority.abort();});},
+      async discard(){trace.push('DISCARD');releaseLateOwner?.();return {state:'UNKNOWN'};}};}};
+   }}});
+    await owner.close();verified=true;throw Error('UNEXPECTED_HANDOFF');
+   }finally{finished();}
+  };
+  let descriptorDeadline=Infinity;const originalCheck=f.source.check;
+  f.source.check=function(scope){const clocked=originalCheck.call(this,scope);return clocked&&{...clocked,expiresAt:Math.min(clocked.expiresAt,descriptorDeadline)};};
+  try{
+   const c=await readyFirst(f),selection=c.selectFirstPermit(f.wire,f.signal);
+   const prepared=await c.prepare(f.item.envelope,f.signal,selection);assert.equal(prepared.state,'PERMIT_RECORDED');
+   assert.equal((await c.dispatch(f.item.envelope,prepared,f.wire,f.signal)).state,'UNKNOWN');
+   assert.equal(entered,true);await finishedCreate;assert.equal(verified,false);
+   const acknowledged=['OPEN','PREPARE','ACK','HOST_REQUEST_VALIDATED'];
+   const expected={BEFORE_OPEN:[],AFTER_OPEN:['OPEN','OPERATION_UNKNOWN'],AFTER_OWNER:[...acknowledged,'AFTER_CLOSE','OWNER_CLOSE'],
+    DURING_CLOSE:[...acknowledged,'DISCARD'],LATE_OWNER:[...acknowledged,'AFTER_CLOSE','DISCARD','OWNER_CLOSE']};
+   assert.deepEqual(trace,expected[mode]);
+  }finally{f.authority.abort();await f.h.close();}
+ }
 });

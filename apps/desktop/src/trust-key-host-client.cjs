@@ -102,10 +102,10 @@ async function prepareSdkChildSource(raw){
  }catch(error){state.closed=true;if(dispatched)latch();throw error;}finally{bytes.fill(0);}
 }
 /** 원 host가 만든 endpoint만 연결한다. Node는 supervisor process를 시작하지 않는다.
- * @param {object} original @returns {Promise<PreparedSdkSupervisorHandoff>}
+ * @param {object} original @param {()=>void} [firstCurrent] @returns {Promise<PreparedSdkSupervisorHandoff>}
  */
-async function beginSdkChildSupervisor(original){
- guard();stable();const owned=preparedSdkChildOwners.get(original);if(!owned||owned.channel!==retained||owned.used)return unavailable();owned.used=true;owned.state.check();
+async function beginSdkChildSupervisor(original,firstCurrent){
+ guard();stable();firstCurrent?.();const owned=preparedSdkChildOwners.get(original);if(!owned||owned.channel!==retained||owned.used)return unavailable();owned.used=true;owned.state.check();
  const m=owned.metadata,v=owned.value,payload={attemptId:v.attemptId,slotId:v.slotId,leaseId:m.leaseId,sourceHash:m.sourceHash,bindingHash:m.bindingHash};
  /** @type {ReturnType<typeof createSdkSupervisorBroker>|undefined} */let broker;try{
   const raw=await send('NORMAL_SDK_CHILD_SUPERVISOR_BEGIN',payload);owned.state.check();
@@ -114,7 +114,7 @@ async function beginSdkChildSupervisor(original){
   if(meta.state!=='SDK_SUPERVISOR_ENDPOINT'||meta.leaseId!==m.leaseId||meta.sourceHash!==m.sourceHash||meta.bindingHash!==m.bindingHash||meta.expiresAt!==m.expiresAt||meta.childCreated!==false||meta.executionAuthorized!==false||meta.dispatchPerformed!==false||typeof meta.endpointId!=='string'||!(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/).test(meta.endpointId)||meta.pipeName!==['','','.','pipe','anvil-sdk-'+meta.endpointId].join(String.fromCharCode(92)))return uncertain();
   const descriptor=Object.getOwnPropertyDescriptor(ports,'openSdkBroker');if(descriptor&&!('value'in descriptor)||descriptor&&typeof descriptor.value!=='function')return unavailable();
   const connect=descriptor?.value??((/** @type {string} */name)=>require('node:net').createConnection({path:name}));
-  const originalBroker=createSdkSupervisorBroker(meta,connect,()=>{if(Object.getOwnPropertyDescriptor(ports,'openSdkBroker')?.value!==descriptor?.value)return unavailable();});broker=originalBroker;
+  const originalBroker=createSdkSupervisorBroker(meta,connect,()=>{firstCurrent?.();if(Object.getOwnPropertyDescriptor(ports,'openSdkBroker')?.value!==descriptor?.value)return unavailable();});broker=originalBroker;
   let acknowledged=false,consumed=false;
   return Object.freeze({acknowledge:async()=>{
    owned.state.check();if(acknowledged)return unavailable();acknowledged=true;await originalBroker.acknowledge();owned.state.check();
@@ -142,7 +142,7 @@ return Object.freeze({open,closeOwned:async()=>retained?retained.close():{state:
 function createSdkSupervisorBroker(meta,connect,current){
  const end=Date.parse(meta.expiresAt),started=Date.now(),mono=performance.now(),monoEnd=mono+end-started;
  if(!Number.isFinite(end)||end<=started||end-started>10000)return unavailable();
- const socket=connect(meta.pipeName),on=method(socket,'on'),off=method(socket,'removeListener'),write=method(socket,'write'),destroy=method(socket,'destroy');
+ current();const socket=connect(meta.pipeName),on=method(socket,'on'),off=method(socket,'removeListener'),write=method(socket,'write'),destroy=method(socket,'destroy');
  /** @type {(error:Error)=>void} */let stop;
  /** @type {Promise<never>} */const stopped=new Promise((resolve,reject)=>{stop=reject;});void stopped.catch(()=>{});
  let receiveLimit=4096;
@@ -164,7 +164,7 @@ function createSdkSupervisorBroker(meta,connect,current){
  let sequence=0,busy=false,intentRead=false,hookUsed=false,queryUsed=false;
  /** @param {string} purpose @param {Record<string,unknown>} fields @param {string} resultPurpose */
  const request=async(purpose,fields,resultPurpose)=>{check();if(!used||busy||sequence>=66)return unavailable();busy=true;receiveLimit=purpose==='NORMAL_SDK_INTENT_PART_V1'?65536:4096;const n=++sequence,frame=Buffer.from(canonicalJson({schemaVersion:1,purpose,leaseId:meta.leaseId,endpointId:meta.endpointId,sourceHash:meta.sourceHash,bindingHash:meta.bindingHash,sequence:n,...fields})+'\n');
-  try{if(frame.length>4096)return unavailable();await Promise.race([new Promise((resolve,reject)=>{write.call(socket,frame,(/** @type {Error|null|undefined} */error)=>error?reject(error):resolve(null));}),stopped]);const r=await receive(resultPurpose);check();if(r.sequence!==n)return uncertain();return r;}catch(error){close();throw error;}finally{frame.fill(0);busy=false;receiveLimit=4096;}};
+  try{if(frame.length>4096)return unavailable();await Promise.race([new Promise((resolve,reject)=>{check();write.call(socket,frame,(/** @type {Error|null|undefined} */error)=>error?reject(error):resolve(null));}),stopped]);const r=await receive(resultPurpose);check();if(r.sequence!==n)return uncertain();return r;}catch(error){close();throw error;}finally{frame.fill(0);busy=false;receiveLimit=4096;}};
  const readIntent=async()=>{check();if(intentRead||hookUsed||queryUsed)return unavailable();intentRead=true;/** @type {Buffer|null} */let owned=null;let total=0,at=0;/** @type {string|null} */let expected=null;
   try{for(let index=0;index<64;index++){
    const p=await request('NORMAL_SDK_INTENT_PART_V1',{index},'NORMAL_SDK_INTENT_PART_RESULT_V1');
@@ -178,7 +178,7 @@ function createSdkSupervisorBroker(meta,connect,current){
  const admitQuery=async()=>{check();if(!intentRead||queryUsed)return unavailable();queryUsed=true;const r=await request('NORMAL_SDK_QUERY_ADMIT_V1',{},'NORMAL_SDK_QUERY_UNAVAILABLE_V1');if(r.reason!=='PRESPAWN_CURRENT_UNAVAILABLE')return uncertain();throw Error('SDK_CONFIGURATION_UNAVAILABLE');};
  return Object.freeze({check,close,onDispose:(/** @type {()=>void} */callback)=>{check();if(disposeCallback||typeof callback!=='function')return unavailable();disposeCallback=callback;},readIntent,verifyHook,admitQuery,acknowledge:async()=>{
   check();if(ack)return unavailable();ack=true;const frame=Buffer.from(canonicalJson({schemaVersion:1,purpose:'NORMAL_SDK_BROKER_ACK_V1',leaseId:meta.leaseId,endpointId:meta.endpointId,sourceHash:meta.sourceHash,bindingHash:meta.bindingHash})+'\n');
-  try{await Promise.race([new Promise((resolve,reject)=>{write.call(socket,frame,(/** @type {Error|null|undefined} */error)=>error?reject(error):resolve(null));}),stopped]);check();await receive('NORMAL_SDK_BROKER_ACKED_V1');}finally{frame.fill(0);}
+  try{await Promise.race([new Promise((resolve,reject)=>{check();write.call(socket,frame,(/** @type {Error|null|undefined} */error)=>error?reject(error):resolve(null));}),stopped]);check();await receive('NORMAL_SDK_BROKER_ACKED_V1');}finally{frame.fill(0);}
  },consumed:async()=>{check();if(!ack||used)return unavailable();used=true;await receive('NORMAL_SDK_BROKER_CONSUMED_V1');}});
 }
 /** 원 인증 채널의 패키지 검산을 원 endpoint 1회에 결박한다. 일반 등록/SDK 권한은 발급하지 않는다.

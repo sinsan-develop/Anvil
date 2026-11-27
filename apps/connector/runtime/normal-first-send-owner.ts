@@ -43,9 +43,11 @@ type FirstPermitHandoff={startEnvelope:Parent['start']['envelope'];sendEnvelope:
  scope:Scope;executionAuthority:NonNullable<ReturnType<typeof takeNormalFirstPermitSource>>;plannedSid:string};
 const firstPermitHandoffs=new WeakMap<object,{source:NormalFirstSendSource;value:FirstPermitHandoff|null;check():void}>();
 /** 원 create 호출 중 한 번만 읽는 메모리 인계. native는 원 packet/원장/설정을 별도로 재검산해야 한다. */
-export function takeNormalFirstPermitHandoff(request:object,source:NormalFirstSendSource):FirstPermitHandoff|null{
+export function takeNormalFirstPermitHandoff(request:object,source:NormalFirstSendSource):Readonly<{value:FirstPermitHandoff;check():void}>|null{
  const saved=firstPermitHandoffs.get(request);if(!saved||saved.source!==source)return fail();
- saved.check();firstPermitHandoffs.delete(request);return saved.value===null?null:cloneV1(saved.value);
+ firstPermitHandoffs.delete(request);saved.check();
+ if(saved.value===null)return null;
+ const value=cloneV1(saved.value);saved.check();return Object.freeze({value,check:saved.check});
 }
 type ConfirmFirstDelivery=(step:IteratorResult<unknown>,canReturn:()=>boolean)=>void;
 const firstDeliveryHandoffs=new WeakMap<object,{source:NormalFirstSendSource;worker:NormalStartWire;prompt:AsyncIterable<unknown>;life:AbortSignal;confirm:ConfirmFirstDelivery}>();
@@ -166,10 +168,10 @@ export async function runNormalFirstSend(worker:NormalStartWire,claim:NormalDisp
    if(!canReturn())return fail();
    firstStep=undefined;yielded=true;resolveYield();
   }});
-  firstPermitHandoffs.set(request,{source,check:guard,value:firstPermit?cloneV1({startEnvelope:parent.start.envelope,sendEnvelope:input.envelope,
+  firstPermitHandoffs.set(request,{source,check:()=>{if(firstRequest!==request)return fail();guard();},value:firstPermit?cloneV1({startEnvelope:parent.start.envelope,sendEnvelope:input.envelope,
    grantRef:parent.grantRef,startReadyRef:parent.startReadyRef,localAttemptRef:input.localAttemptRef,dispatchAttemptRef:input.dispatchAttemptRef,
    permit:input.permit,proofResultRef:input.proofResultRef,scope,executionAuthority:firstPermit,plannedSid}):null});
-  const releaseHandoffs=()=>{firstPermitHandoffs.delete(request);firstDeliveryHandoffs.delete(request);};
+  const releaseHandoffs=()=>{firstPermitHandoffs.delete(request);firstDeliveryHandoffs.delete(request);firstRequest=undefined;};
   let pending:Promise<Query>;
   try{pending=native(pinned.create.call(source,request,prompt,lease.life.signal));}catch(error){releaseHandoffs();throw error;}
   const created=pending.finally(releaseHandoffs).then(query=>{
