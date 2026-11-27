@@ -9,8 +9,10 @@ import {originBufferKey,originRef,prepareOrigin,sendOrigin,readOrigin,readOrigin
 import {ordered} from '../knowledge/review-view.ts';
 import {StartOriginPreparationOriginal} from './StartOriginPreparationOriginal.tsx';
 import {verifiedStageQueueItem,type WaitingStageReceipt} from './StageStartPanel.tsx';
+import {NormalStartPanel} from './NormalStartPanel.tsx';
+import type {NormalStartStorage} from './normal-start-write-api.ts';
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b);
-export function ExecutionStartOriginPanel({client,assignment,session,storage,onUnavailable,waitingHint,isSourceCurrent}:{client:ApiClient;assignment:ConfirmedAssignmentView;session:DocumentSession;storage:OriginStorage;onUnavailable:(code:string)=>void;waitingHint?:WaitingStageReceipt|null;isSourceCurrent?:()=>boolean}){
+export function ExecutionStartOriginPanel({client,assignment,session,storage,onUnavailable,waitingHint,isSourceCurrent,normalStarts}:{client:ApiClient;assignment:ConfirmedAssignmentView;session:DocumentSession;storage:OriginStorage;onUnavailable:(code:string)=>void;waitingHint?:WaitingStageReceipt|null;isSourceCurrent?:()=>boolean;normalStarts?:NormalStartStorage}){
  const pid=assignment.projectId,key=originBufferKey(session,pid,assignment.ref),buffer=storage.buffers[key]??null,scope=useRef({key,client,transport:client.transport,session,csrf:session.csrfToken,epoch:0});
  if(scope.current.key!==key||scope.current.client!==client||scope.current.transport!==client.transport||scope.current.session!==session||scope.current.csrf!==session.csrfToken)scope.current={key,client,transport:client.transport,session,csrf:session.csrfToken,epoch:scope.current.epoch+1};
  const owner=scope.current,live=useRef(true),current=useRef(buffer),change=useRef(storage.onChange),unavailable=useRef(onUnavailable),working=useRef(false);current.current=buffer;change.current=storage.onChange;unavailable.current=onUnavailable;
@@ -87,5 +89,6 @@ export function ExecutionStartOriginPanel({client,assignment,session,storage,onU
    <StartOriginPreparationOriginal key={detail.revision} client={client} origin={shown} active={()=>active()&&originalRevision.current===detail.revision} onAuthenticationLost={()=>unavailable.current('AUTH_REQUIRED')}/>
    <button type="button" onClick={clearOriginal}>START 원자료 보호 원문 닫기</button>
   </article>:null}
+  {normalStarts?<NormalStartPanel client={client} session={session} assignment={assignment} selected={shown??null} selectionIdentity={detail} storage={normalStarts} isSourceCurrent={active} onAuthenticationLost={()=>{if(active())unavailable.current('AUTH_REQUIRED');}}/>:null}
  </section>;
 }
