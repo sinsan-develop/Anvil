@@ -8,7 +8,10 @@ export function BackupPolicyPanel({client,session,projectId,buffer,approvalReque
  const scope=useRef(new BackupReferenceScope());scope.current.bind(session,client,projectId);useEffect(()=>()=>scope.current.dispose(),[]);
  type Ticket=ReturnType<BackupReferenceScope['ticket']>;
  const live=useRef({client,transport:client.transport,session,projectId,buffer});live.current={client,transport:client.transport,session,projectId,buffer};
- const[busy,setBusy]=useState<Ticket|null>(null),[error,setError]=useState<{ticket:Ticket;code:string}|null>(null),[page,setPage]=useState<{ticket:Ticket;value:Awaited<ReturnType<typeof listBackupPolicies>>}|null>(null),[selected,setSelected]=useState<{ticket:Ticket;value:BackupPolicyView}|null>(null),[choices,setChoices]=useState<{ticket:Ticket;items:BackupReferenceView[];cursor:string|null}|null>(null),[field,setField]=useState<typeof policyFields[number]>('targetProtectedRef'),[fixedId,setFixedId]=useState(''),[fixedVersion,setFixedVersion]=useState('1'),[requestId,setRequestId]=useState('');
+ const[busy,setBusy]=useState<Ticket|null>(null),[error,setError]=useState<{ticket:Ticket;code:string}|null>(null),[page,setPage]=useState<{ticket:Ticket;value:Awaited<ReturnType<typeof listBackupPolicies>>}|null>(null),[selected,setSelected]=useState<{ticket:Ticket;value:BackupPolicyView;route:string|undefined}|null>(null),[choices,setChoices]=useState<{ticket:Ticket;items:BackupReferenceView[];cursor:string|null}|null>(null),[field,setField]=useState<typeof policyFields[number]>('targetProtectedRef'),[fixedId,setFixedId]=useState(''),[fixedVersion,setFixedVersion]=useState('1'),[requestId,setRequestId]=useState('');
+ const referenceSelection=useRef<{selection:typeof selected;valid:boolean}>({selection:selected,valid:true});
+ if(referenceSelection.current.selection!==selected)referenceSelection.current={selection:selected,valid:true};
+ if(selected&&globalThis.location?.hash!==selected.route)referenceSelection.current.valid=false;
  const lock=useRef<Ticket|null>(null);
  const current=(t:Ticket)=>scope.current.current(t)&&live.current.client===client&&live.current.transport===client.transport&&live.current.projectId===projectId&&live.current.session.user.id===session.user.id&&live.current.session.clientId===session.clientId&&live.current.session.csrfToken===session.csrfToken;
  const work=buffer&&projectId&&backupPolicyOwned(buffer,client,session,projectId)?buffer:null,unresolved=!!work?.pending&&!['DONE','REJECTED'].includes(work.pending.state),loading=!!busy&&current(busy),shown=selected&&current(selected.ticket)?selected.value:null,listed=page&&current(page.ticket)?page.value:null,options=choices&&current(choices.ticket)?choices:null;
@@ -40,7 +43,7 @@ export function BackupPolicyPanel({client,session,projectId,buffer,approvalReque
    fail(e,t);
   }finally{finish(t);}
  }
- async function fixed(ref?:BackupPolicyView['ref']){const t=start();if(!t)return;setSelected(null);try{const v=await readBackupPolicy(client,projectId!,ref?.id??fixedId,ref?.version??Number(fixedVersion),ref,()=>current(t));if(current(t))setSelected({ticket:t,value:v});}catch(e){fail(e,t);}finally{finish(t);}}
+ async function fixed(ref?:BackupPolicyView['ref']){const selectedRoute=globalThis.location?.hash,t=start();if(!t)return;setSelected(null);try{const v=await readBackupPolicy(client,projectId!,ref?.id??fixedId,ref?.version??Number(fixedVersion),ref,()=>current(t));if(current(t))setSelected({ticket:t,value:v,route:selectedRoute});}catch(e){fail(e,t);}finally{finish(t);}}
  async function prepare(){const b=ensure(),t=start();if(!b||!t)return;try{const next=await prepareBackupPolicy(client,b,session,()=>current(t)&&live.current.buffer===b);if(current(t))commit(b,next);}catch(e){fail(e,t);}finally{finish(t);}}
  async function send(){const b=work,t=start();if(!b||!t)return;let sent:BackupPolicyBuffer|null=null;try{sent=markBackupPolicyDispatch(b);if(!commit(b,sent))return;const original=sent,next=await sendBackupPolicy(client,original,session,()=>current(t)&&live.current.buffer===original);if(current(t))commit(original,next);}catch(e){if(sent&&current(t)&&live.current.buffer===sent)commit(sent,failBackupPolicy(sent,e instanceof ApiError?e:new ApiError('RESPONSE_INVALID')));fail(e,t);}finally{finish(t);}}
  async function bind(){const b=work,t=start();if(!b||!t)return;try{const next=await bindBackupPolicyApproval(client,b,session,requestId||approvalRequestId||'',()=>current(t)&&live.current.buffer===b);if(current(t))commit(b,next);}catch(e){fail(e,t);}finally{finish(t);}}
@@ -50,7 +53,7 @@ export function BackupPolicyPanel({client,session,projectId,buffer,approvalReque
  <button disabled={loading} onClick={()=>void list()}>수동 정책 목록 조회</button>{listed?.nextCursor?<button disabled={loading} onClick={()=>void list(true)}>다음 수동 정책 목록</button>:null}
  {listed?<ul>{listed.items.map(v=><li key={v.ref.id+':'+v.ref.version}><button disabled={loading} onClick={()=>void fixed(v.ref)}>{v.ref.id} · v{v.ref.version}</button></li>)}</ul>:null}
  <form onSubmit={e=>{e.preventDefault();void fixed();}}><label>정책 ID<input aria-label="정책 ID" value={fixedId} onChange={e=>setFixedId(e.target.value)}/></label><label>정책 버전<input aria-label="정책 버전" value={fixedVersion} onChange={e=>setFixedVersion(e.target.value)}/></label><button disabled={loading||!fixedId}>수동 정책 고정 조회</button></form>
- {shown?<section aria-label="보관 수동 정책"><h3>보관 정책 v{shown.ref.version}</h3><p>{shown.ref.contentHash} · {shown.createdAt}</p><pre>{JSON.stringify(shown.snapshot,null,2)}</pre><p>현재 신규 사용 {shown.current.eligible?'가능':'미확인/불가'} · {shown.current.reasonCodes.join(', ')} · {shown.current.observedAt}</p><p>포함 {shown.preview.includedGroups.join(', ')} · 제외 {shown.preview.excludedGroups.join(', ')} · 소스 미포함 · 백업 미생성 · 실행 허가 없음</p><button disabled={loading||unresolved} onClick={()=>begin(shown)}>보관 정책 개정 작성</button><button onClick={()=>{scope.current.ticket();setSelected(null);setBusy(null);}}>수동 정책 상세 닫기</button></section>:null}
+ {shown?<section aria-label="보관 수동 정책"><h3>보관 정책 v{shown.ref.version}</h3><p>{shown.ref.contentHash} · {shown.createdAt}</p><pre>{JSON.stringify(shown.snapshot,null,2)}</pre><p>현재 신규 사용 {shown.current.eligible?'가능':'미확인/불가'} · {shown.current.reasonCodes.join(', ')} · {shown.current.observedAt}</p><p>포함 {shown.preview.includedGroups.join(', ')} · 제외 {shown.preview.excludedGroups.join(', ')} · 소스 미포함 · 백업 미생성 · 실행 허가 없음</p>{referenceSelection.current.valid&&selected?.route===globalThis.location?.hash?<StoredPolicyReferences client={client} session={session} projectId={projectId} policy={shown} isCurrent={()=>!!selected&&referenceSelection.current.selection===selected&&referenceSelection.current.valid&&globalThis.location?.hash===selected.route&&current(selected.ticket)&&selected.value===shown} onAuthenticationLost={onAuthenticationLost}/>:null}<button disabled={loading||unresolved} onClick={()=>begin(shown)}>보관 정책 개정 작성</button><button onClick={()=>{scope.current.ticket();setSelected(null);setBusy(null);}}>수동 정책 상세 닫기</button></section>:null}
  {work?<><fieldset disabled={loading||!!work.pending}><legend>수동 정책 초안</legend><p>일정 MANUAL · 소스 선택 NONE</p>{policyGroups.map(k=><label key={k}><input type="checkbox" aria-label={'정책 포함 '+k} checked={work.draft.include[k]} onChange={e=>edit({include:{...work.draft.include,[k]:e.target.checked},acknowledged:false})}/>{k}</label>)}
  <label>수동 정책 한도 bytes<input aria-label="수동 정책 한도 bytes" value={work.draft.maxBytes} onChange={e=>edit({maxBytes:e.target.value,acknowledged:false})}/></label><label>수동 정책 이유<textarea aria-label="수동 정책 이유" value={work.draft.reason} maxLength={2000} onChange={e=>edit({reason:e.target.value,acknowledged:false})}/></label>
  <label>선택할 보호참조<select aria-label="정책 보호참조 종류" value={field} onChange={e=>{scope.current.ticket();setChoices(null);setField(e.target.value as typeof field);}}>{policyFields.map(k=><option key={k} value={k}>{k}</option>)}</select></label><button type="button" onClick={()=>void refs()}>정책 보호참조 목록 조회</button>
@@ -66,4 +69,42 @@ export function BackupPolicyPanel({client,session,projectId,buffer,approvalReque
  {work.failure?<p role="alert">{work.failure.code}</p>:null}</>:buffer?<p>다른 인증 맥락의 수동 정책 초안·원명령은 보존하고 편집·전송을 잠갔습니다.</p>:null}
  {error&&current(error.ticket)?<p role="alert">{error.code}</p>:null}</>}
  </section>;
+}
+
+const referenceKinds={targetProtectedRef:'TARGET',encryptionKeyRef:'ENCRYPTION_KEY',retentionPolicyRef:'RETENTION',verificationPolicyRef:'VERIFICATION'}as const;
+/** 보호 조회한 정책의 고정 참조 metadata만 읽는다. 실제 대상·키·설치 자원은 열지 않는다. */
+function StoredPolicyReferences({client,session,projectId,policy,isCurrent,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;projectId:string;policy:BackupPolicyView;isCurrent:()=>boolean;onAuthenticationLost:()=>void}){
+ const route=globalThis.location?.hash,identity=JSON.stringify([projectId,session.user.id,session.clientId,session.csrfToken,route??null]);
+ const owner=useRef({identity,client,transport:client.transport,session,policy});
+ if(owner.current.identity!==identity||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.session!==session||owner.current.policy!==policy)owner.current={identity,client,transport:client.transport,session,policy};
+ const scope=owner.current,alive=useRef(true),external=useRef(isCurrent);external.current=isCurrent;
+ type Request={owner:object;field:typeof policyFields[number];ref:BackupReferenceView['ref']};
+ const request=useRef<Request|null>(null),flight=useRef<Request|null>(null);
+ const [read,setRead]=useState<{selection:Request;value:BackupReferenceView|null;error:string|null;loading:boolean}|null>(null);
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;request.current=null;};},[]);
+ const active=()=>alive.current&&owner.current===scope&&client.transport===scope.transport&&JSON.stringify([projectId,session.user.id,session.clientId,session.csrfToken,globalThis.location?.hash??null])===identity&&external.current();
+ const shown=read&&read.selection.owner===scope&&request.current===read.selection&&active()?read:null;
+ async function inspect(field:typeof policyFields[number]){
+  if(!active()||flight.current?.owner===scope)return;
+  const selected={owner:scope,field,ref:{...policy.snapshot.policy[field]}};request.current=selected;flight.current=selected;
+  const check=()=>active()&&request.current===selected;
+  setRead({selection:selected,value:null,error:null,loading:true});
+  try{
+   const value=await readBackupReference(client,projectId,selected.ref.id,selected.ref.version,selected.ref,check);
+   if(!check())return;
+   if(value.snapshot.kind!==referenceKinds[field])throw new ApiError('BACKUP_REFERENCE_KIND_MISMATCH',503);
+   setRead({selection:selected,value,error:null,loading:false});
+  }catch(cause){
+   if(!check())return;
+   const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');
+   setRead({selection:selected,value:null,error:/^[A-Z_]{1,96}$/.test(error.code)?error.code:'RESPONSE_INVALID',loading:false});
+   if(error.status===401)onAuthenticationLost();
+  }finally{if(flight.current===selected)flight.current=null;}
+ }
+ function close(){if(!shown||request.current!==shown.selection||!active())return;request.current=null;flight.current=null;setRead(null);}
+ return <section aria-label="정책 고정 보호참조"><h4>정책의 보호참조</h4>
+ {policyFields.map(field=><button type="button" key={field} disabled={!!shown?.loading} onClick={()=>void inspect(field)}>{referenceKinds[field]} 고정 참조 원문 보기</button>)}
+ {shown?<section aria-label="정책 참조 metadata 원문"><button type="button" onClick={close}>정책 참조 원문 닫기</button>
+ {shown.loading?<p role="status">고정 보호참조 확인 중</p>:shown.error?<p role="alert">{shown.error} · 고정 참조를 확인하지 못했습니다.</p>:shown.value?<><h5>{shown.value.snapshot.kind} · {shown.value.snapshot.displayName}</h5><p>{shown.value.ref.id} · v{shown.value.ref.version} · {shown.value.ref.contentHash}</p><p>현재 신규 사용 {shown.value.current.eligible?'가능':'불가'} · {shown.value.current.reasonCodes.join(', ')} · {shown.value.current.observedAt}</p><pre>{JSON.stringify(shown.value.snapshot,null,2)}</pre></>:null}
+ </section>:null}</section>;
 }

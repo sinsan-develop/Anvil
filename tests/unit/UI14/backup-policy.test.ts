@@ -45,7 +45,7 @@ async function fixture(){
  const click=async(label:string)=>{const n=button(label);assert(!n.disabled,label);await ui.React.act(async()=>n.dispatchEvent({type:'click',button:0,bubbles:true}));};
  const change=async(label:string,value:string|boolean)=>{const n=nodes().find(n=>n.getAttribute('aria-label')===label)!;assert(n,label);const key=Object.keys(n).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>((n as any)[key].onChange({target:{value,checked:value}})));};
  const submitFixed=async()=>{const form=nodes().find(n=>n.tagName==='FORM');assert(form);await ui.React.act(async()=>form.dispatchEvent({type:'submit',bubbles:true}));};
- await render();return{root,api,calls,responses,lost:()=>lost,render,seed:async(value:any)=>{buffer=value;await render({...props,buffer:value});},props:()=>props,button,click,change,submitFixed,buffer:()=>buffer,text:()=>container.textContent,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ await render();return{root,api,calls,responses,nodes,lost:()=>lost,render,seed:async(value:any)=>{buffer=value;await render({...props,buffer:value});},props:()=>props,button,click,change,submitFixed,buffer:()=>buffer,text:()=>container.textContent,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 test('실제 React 패널은 별도 정책 초안과 미완성 입력을 보존하며 명시 조회 전 GET/POST0',async()=>{const f=await fixture();try{assert.equal(f.calls.length,0);await f.click('새 수동 정책 작성');await f.change('수동 정책 이유','[');await f.change('수동 정책 한도 bytes','x');assert.equal(f.buffer().draft.reason,'[');assert.equal(f.buffer().draft.maxBytes,'x');assert.equal(f.calls.length,0);await f.click('수동 정책 목록 조회');assert.equal(f.calls.length,1);assert(f.calls.every(c=>c.method==='GET'));assert.equal(f.buffer().draft.reason,'[');}finally{await f.close();}});
 test('느린 목록 JSON은 실제client/transport 교체와 닫힌 owner 이후 버리며 새 명시 조회를 회복한다',async()=>{for(const mode of ['CLIENT','TRANSPORT','ABA']){const f=await fixture();let resolve!:(v:any)=>void,started=false;const gate=new Promise(r=>resolve=r);try{f.responses.next=async()=>{const r=Response.json({});r.json=()=>{started=true;return gate;};return r;};await f.click('수동 정책 목록 조회');assert(started);const props=f.props(),old=f.api.transport,newTransport=async()=>Response.json({items:[],hasMore:false,nextCursor:null,observedAt:new Date().toISOString()});if(mode==='CLIENT')await f.render({...props,client:new ui.ApiClient(newTransport)});else{f.api.transport=newTransport;await f.render();if(mode==='ABA'){f.api.transport=old;await f.render();}}resolve({items:[],hasMore:false,nextCursor:null,observedAt:new Date().toISOString()});await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});assert(!f.button('수동 정책 목록 조회').disabled);assert(f.calls.every(c=>c.method==='GET'));}finally{resolve?.({});await f.close();}}});
@@ -269,4 +269,102 @@ for(const [scope,late] of [
   assert.deepEqual(f.calls.map(c=>[c.method,new URL('https://anvil.invalid'+c.path).searchParams.get('cursor')]),
    [['GET',null],['GET',policyCursor],['GET',null]]);
  }finally{pending.resolve(Response.json({}));await f.close();}
+});
+
+const protectedKinds=['TARGET','ENCRYPTION_KEY','RETENTION','VERIFICATION'] as const;
+const protectedLabel=(kind:string)=>kind+' 고정 참조 원문 보기';
+function storedPolicyReferences(api:ApiClient){
+ const policy=policyDetail(api,'원 참조 상세 확인'),refs=protectedKinds.map((kind,n)=>{
+  const rid=id(10+n),snapshot={kind,displayName:'정책에 고정된 '+kind,spec:kind==='RETENTION'?{automaticDeletion:false}:kind==='VERIFICATION'?{checks:['FILE_HASH'],limitsRef:{id:id(80),version:1,contentHash:'a'.repeat(64)}}:{installationResourceRef:{id:id(81+n),version:1,contentHash:'a'.repeat(64)}},reason:'참조 metadata 원문'};
+  const previousRef={id:rid,version:1,contentHash:'b'.repeat(64)},version=2;
+  return{ref:{id:rid,version,contentHash:contentHash(canonicalJson({projectId:pid,id:rid,version,snapshot,previousRef}))},snapshot,previousRef,createdAt:policy.createdAt,commandRecordId:id(90+n),clientCommandId:id(100+n),operationId:id(110+n),auditEventId:id(120+n),current:{eligible:kind!=='ENCRYPTION_KEY',reasonCodes:kind==='ENCRYPTION_KEY'?['REFERENCE_REVOKED']:[],observedAt:policy.createdAt}};
+ });
+ for(const [n,field]of ui.policyApi.policyFields.entries())(policy.snapshot.policy as any)[field]=refs[n]!.ref;
+ policy.ref.contentHash=contentHash(canonicalJson({projectId:pid,id:policy.ref.id,version:policy.ref.version,snapshot:policy.snapshot,previousRef:policy.previousRef}));return{policy,refs};
+}
+async function waitPolicy(f:Awaited<ReturnType<typeof fixture>>,check:()=>boolean){
+ const end=performance.now()+3000;while(!check()){assert(performance.now()<end,f.text());await ui.React.act(async()=>{await new Promise(resolve=>setImmediate(resolve));});}
+}
+async function readStoredPolicy(f:Awaited<ReturnType<typeof fixture>>,value:ReturnType<typeof policyDetail>){
+ f.responses.next=async()=>Response.json(value);await f.change('정책 ID',value.ref.id);await f.change('정책 버전',String(value.ref.version));await f.submitFixed();await waitPolicy(f,()=>!f.button(policyListLabel).disabled);
+}
+test('보호 조회한 수동 정책의 네 고정 참조는 항목별 명시 GET만 하고 회수 metadata도 초안 변경 없이 표시한다',{timeout:15000},async()=>{
+ const f=await fixture(),data=storedPolicyReferences(f.api);
+ try{
+  await f.click('새 수동 정책 작성');await f.change('수동 정책 이유','보존할 원 초안');const original=f.buffer();
+  assert.equal(f.calls.length,0);await readStoredPolicy(f,data.policy);assert.equal(f.calls.length,1,'정책 GET이 참조를 자동 조회하지 않음');
+  for(const [n,kind]of protectedKinds.entries()){
+   const value=data.refs[n]!;const before:number=f.calls.length;f.responses.next=async()=>Response.json(value);await f.click(protectedLabel(kind));await waitPolicy(f,()=>f.text().includes(value.snapshot.displayName));
+   assert.deepEqual(f.calls.slice(before),[{path:'/api/v1/projects/'+pid+'/backup-references/'+value.ref.id+'/versions/2',method:'GET'}]);
+   assert(f.text().includes(value.ref.contentHash));assert(f.text().includes(kind));if(kind==='ENCRYPTION_KEY')assert(f.text().includes('REFERENCE_REVOKED'));
+   assert.equal(f.buffer(),original,'보관 원문 조회는 초안 선택/개정을 하지 않음');
+  }
+  assert(f.calls.every(c=>c.method==='GET'));assert(!f.text().includes('수동 정책 저장·고정 조회 확인'));
+ }finally{await f.close();}
+});
+
+test('정책 고정 참조의 kind/id/version/hash·현재403/401 검산 실패는 원문·초안·쓰기 효과를 만들지 않는다',{timeout:15000},async()=>{
+ for(const mode of ['KIND','ID','VERSION','HASH','403','401']){
+  const f=await fixture(),data=storedPolicyReferences(f.api);try{
+   let value:any=structuredClone(data.refs[0]);
+   if(mode==='KIND'){
+    value=data.refs[2];data.policy.snapshot.policy.targetProtectedRef=value.ref;
+    data.policy.ref.contentHash=contentHash(canonicalJson({projectId:pid,id:data.policy.ref.id,version:1,snapshot:data.policy.snapshot,previousRef:null}));
+   }
+   if(mode==='ID')value.ref.id=id(200);
+   if(mode==='VERSION')value.ref.version=3;
+   if(mode==='HASH')value.snapshot.reason='오염된 원문은 표시하지 않음';
+   await readStoredPolicy(f,data.policy);const buffer=f.buffer();
+   f.responses.next=async()=>['403','401'].includes(mode)?Response.json({code:mode==='401'?'AUTH_REQUIRED':'ACCESS_DENIED'},{status:Number(mode)}):Response.json(value);
+   await f.click(protectedLabel('TARGET'));await waitPolicy(f,()=>/RESPONSE_INVALID|BACKUP_REFERENCE_KIND_MISMATCH|ACCESS_DENIED|AUTH_REQUIRED/.test(f.text()));
+   assert.equal(f.buffer(),buffer);assert(!f.text().includes(value.snapshot.displayName));assert(!f.text().includes('오염된 원문은 표시하지 않음'));assert.equal(f.lost(),mode==='401'?1:0);assert.equal(f.calls.length,2);assert(f.calls.every(c=>c.method==='GET'));
+  }finally{await f.close();}
+ }
+});
+test('정책 고정 참조는 전환·닫기·actor/client/CSRF·route/transport ABA 뒤 늦은200/401과 옛 클릭을 폐기한다',{timeout:15000},async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+pid+'/settings'};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{
+  for(const status of [200,401])for(const mode of ['POLICY','CLOSE','REFERENCE','ACTOR','CLIENT','CSRF','PROJECT','TRANSPORT','ROUTE']){
+   location.hash='#/projects/'+pid+'/settings';const f=await fixture(),data=storedPolicyReferences(f.api),gate=Promise.withResolvers<Response>();
+   try{
+    await f.seed(ui.policyApi.markBackupPolicyDispatch(policyPending(f.api)));const original=f.buffer(),body=original.pending.body;
+    await readStoredPolicy(f,data.policy);const node=f.button(protectedLabel('TARGET')),click=(node as any)[Object.keys(node).find(k=>k.startsWith('__reactProps'))!].onClick;
+    f.responses.next=()=>gate.promise;await f.click(protectedLabel('TARGET'));const originalProps=f.props(),transport=f.api.transport,calls=f.calls.length;
+    if(mode==='POLICY'){await f.click('수동 정책 상세 닫기');await readStoredPolicy(f,data.policy);}
+    if(mode==='CLOSE')await f.click('정책 참조 원문 닫기');
+    if(mode==='REFERENCE'){
+     await f.click('정책 참조 원문 닫기');f.responses.next=async()=>Response.json(data.refs[2]);await f.click(protectedLabel('RETENTION'));await waitPolicy(f,()=>f.text().includes(data.refs[2]!.snapshot.displayName));
+    }
+    if(['ACTOR','CLIENT','CSRF','PROJECT','TRANSPORT'].includes(mode)){
+     const next={...originalProps};
+     if(mode==='ACTOR')next.session={...session,user:{id:id(210)}};
+     if(mode==='CLIENT')next.session={...session,clientId:id(211)};
+     if(mode==='CSRF')next.session={...session,csrfToken:'z'.repeat(43)};
+     if(mode==='PROJECT')next.projectId=id(212);
+     if(mode==='TRANSPORT')f.api.transport=async()=>{throw Error('교체 전송은 호출하면 안 됨');};
+     await f.render(next);f.api.transport=transport;await f.render(originalProps);
+    }
+    if(mode==='ROUTE'){location.hash='#/projects/'+pid+'/workspace';await f.render();location.hash='#/projects/'+pid+'/settings';await f.render();}
+    const beforeLate=f.calls.length;
+    await ui.React.act(async()=>{gate.resolve(status===200?Response.json(data.refs[0]):Response.json({code:'AUTH_REQUIRED'},{status:401}));await new Promise(r=>setImmediate(r));});
+    await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});
+    assert.equal(f.calls.length,beforeLate);assert.equal(f.buffer(),original);assert.equal(f.buffer().pending.body,body);assert.equal(f.lost(),0);assert(!f.text().includes(data.refs[0]!.snapshot.displayName));assert(!f.text().includes('AUTH_REQUIRED'));if(mode==='REFERENCE')assert(f.text().includes(data.refs[2]!.snapshot.displayName));
+    // 닫기·같은 원문 재선택 외에는 옛 DOM 클릭을 새 소유 범위의 읽기로 재사용하지 않는다.
+    if(!['CLOSE','REFERENCE','POLICY'].includes(mode)){const before=f.calls.length;await ui.React.act(async()=>click());assert.equal(f.calls.length,before,'옛 scope 클릭GET0');}
+    assert(f.calls.every(c=>c.method==='GET'));assert(calls>=2);
+   }finally{gate.resolve(Response.json({}));await f.close();}
+  }
+ }finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+
+test('기존 정책 원문 조회의 인증 분기는 유지하고 다른 route에서 완료한 상세로 참조 읽기를 열지 않는다',{timeout:15000},async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+pid+'/settings'};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{for(const status of [200,401]){
+  location.hash='#/projects/'+pid+'/settings';const f=await fixture(),data=storedPolicyReferences(f.api),gate=Promise.withResolvers<Response>();
+  try{
+   f.responses.next=()=>gate.promise;await f.change('정책 ID',data.policy.ref.id);await f.submitFixed();assert.equal(f.calls.length,1);
+   location.hash='#/projects/'+pid+'/workspace';await ui.React.act(async()=>{gate.resolve(status===200?Response.json(data.policy):Response.json({code:'AUTH_REQUIRED'},{status:401}));await new Promise(r=>setImmediate(r));});
+   await f.render();location.hash='#/projects/'+pid+'/settings';await f.render();assert.equal(f.text().includes('보관 정책 v1'),status===200,'기존 정책 상세 조회 의미 유지');assert(!f.text().includes('TARGET 고정 참조 원문 보기'));assert.equal(f.lost(),status===401?1:0,'기존 원문 인증 오류 의미 유지');assert.equal(f.calls.length,1);
+  }finally{gate.resolve(Response.json({}));await f.close();}
+ }}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
 });
