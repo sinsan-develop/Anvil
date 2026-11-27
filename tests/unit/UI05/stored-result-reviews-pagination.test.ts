@@ -37,18 +37,27 @@ after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k
 
 const rootCursor='root.'+'a'.repeat(64),cursor=rootCursor+'.position.'+'b'.repeat(64);
 async function mount(){
- const result=resultFixture().entry,container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container),requests:(string|null)[]=[];let lost=0;
+ const result=resultFixture().entry,container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container),requests:(string|null)[]=[],originalRequests:string[]=[];let lost=0;
  const state:{many:boolean;mode:number|'DELAY'|null;release:((r:Response)=>void)|null}={many:false,mode:null,release:null};
- const page=(next:string|null)=>({projectId:props.result.snapshot.scope.projectId,resultRef:props.result.ref,items:Array.from({length:state.many?20:next&&next!==rootCursor?1:20},(_,n)=>({ref:{id:id(90-n),version:1,contentHash:hash(originalSnapshot)},criteriaRef:{id:id(20),version:1,contentHash:'b'.repeat(64)},outcome:'BLOCKED',reviewedBy:{kind:'HUMAN',userId:id(6),clientId:id(7)},sameAsSubmitter:id(6)===result.snapshot.submittedByRef.id,reviewedAt:'2026-10-20T00:00:00.000Z',reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false})),hasMore:state.many||next===null||next===rootCursor,nextCursor:state.many?rootCursor+'.position_'+requests.length+'.'+'b'.repeat(64):next&&next!==rootCursor?null:cursor,selectionState:'NOT_SELECTED',observedAt:'2026-10-20T00:01:00.000Z',pageSize:20,window:{startedAt:'2026-10-20T00:01:00.000Z',expiresAt:'2026-10-20T00:31:00.000Z'}});
+ const page=(next:string|null)=>{const last=!!next&&next!==rootCursor&&!state.many;return {projectId:props.result.snapshot.scope.projectId,resultRef:props.result.ref,items:Array.from({length:last?1:20},(_,n)=>{const key=id(last?70:90-n);return {ref:{id:key,version:1,contentHash:hash(snapshotFor(key))},criteriaRef:{id:id(20),version:1,contentHash:'b'.repeat(64)},outcome:'BLOCKED',reviewedBy:{kind:'HUMAN',userId:id(6),clientId:id(7)},sameAsSubmitter:id(6)===result.snapshot.submittedByRef.id,reviewedAt:'2026-10-20T00:00:00.000Z',reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false};}),hasMore:!last,nextCursor:state.many?rootCursor+'.position_'+requests.length+'.'+'b'.repeat(64):last?null:cursor,selectionState:'NOT_SELECTED',observedAt:'2026-10-20T00:01:00.000Z',pageSize:20,window:{startedAt:'2026-10-20T00:01:00.000Z',expiresAt:'2026-10-20T00:31:00.000Z'}};};
  const originalSnapshot={scope:result.snapshot.scope,input:{resultRef:result.ref,criteriaRef:{id:id(20),version:1,contentHash:'b'.repeat(64)},outcome:'BLOCKED',items:[{criterionId:'flow',outcome:'BLOCKED',evidenceRefs:[],reason:'보관 이유'}],reason:'선택 원문만 보존'},reviewedBy:{kind:'HUMAN',userId:id(6),clientId:id(7)},sameAsSubmitter:id(6)===result.snapshot.submittedByRef.id,reviewedAt:'2026-10-20T00:00:00.000Z',evidenceProvenanceVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};
- const client=()=>new ui.ApiClient(async(url:any,opts:any)=>{assert.equal(opts.method,'GET');const u=new URL(String(url),'https://anvil.invalid');if(u.pathname.includes('/result-reviews/'))return Response.json({projectId:result.snapshot.scope.projectId,ref:{id:id(90),version:1,contentHash:hash(originalSnapshot)},snapshot:originalSnapshot,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false,observedAt:'2026-10-20T00:01:00.000Z'});assert(u.pathname.endsWith('/review-pages'),'새 page endpoint 소비');const next=u.searchParams.get('cursor');requests.push(next);const mode=state.mode;state.mode=null;if(mode==='DELAY')return new Promise<Response>(resolve=>{state.release=resolve;});if(typeof mode==='number')return Response.json({code:'AUTH_REQUIRED'},{status:mode});return Response.json(page(next));});
+ const snapshotFor=(key:string)=>key===id(70)?{...originalSnapshot,input:{...originalSnapshot.input,reason:'21번째 검수 원문'}}:originalSnapshot;
+ const client=()=>new ui.ApiClient(async(url:any,opts:any)=>{
+  assert.equal(opts.method,'GET');const u=new URL(String(url),'https://anvil.invalid');
+  if(u.pathname.includes('/result-reviews/')){
+   const key=u.pathname.split('/').at(-1)!;originalRequests.push(key);const snapshot=snapshotFor(key);
+   return Response.json({projectId:result.snapshot.scope.projectId,ref:{id:key,version:1,contentHash:hash(snapshot)},snapshot,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false,observedAt:'2026-10-20T00:01:00.000Z'});
+  }
+  assert(u.pathname.endsWith('/review-pages'),'새 page endpoint 소비');const next=u.searchParams.get('cursor');requests.push(next);const mode=state.mode;state.mode=null;
+  if(mode==='DELAY')return new Promise<Response>(resolve=>{state.release=resolve;});if(typeof mode==='number')return Response.json({code:'AUTH_REQUIRED'},{status:mode});return Response.json(page(next));
+ });
  const props:any={client:client(),result,assignment:reworkFixture().sources.assignment,session:{user:{id:id(6)},clientId:id(7),csrfToken:'c'.repeat(43)},onAuthenticationLost:()=>lost++,onAccessUnavailable:()=>{}};
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))];const buttons=(text:string)=>nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent===text);
  async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(ui.StoredResultReviewHistory,props)));}
  async function flush(){await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});}
  async function waitFor(text:string){for(let i=0;i<100&&!container.textContent.includes(text);i++)await flush();assert(container.textContent.includes(text),'유한 도달: '+text);}
  async function click(text:string){const b=buttons(text);assert.equal(b.length,1,text);assert(!b[0]!.disabled);await ui.React.act(async()=>b[0]!.dispatchEvent({type:'click',button:0,bubbles:true}));}
- await render();return{props,state,requests,container,buttons,client,render,flush,waitFor,click,page,lost:()=>lost,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ await render();return{props,state,requests,originalRequests,container,buttons,client,render,flush,waitFor,click,page,lost:()=>lost,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 test('실제 검수 React는 첫/다음/이전 page를 명시 GET하고 실패 target을 보존한다',async()=>{const f=await mount();try{assert.equal(f.requests.length,0);await f.click('보관 검수 목록 조회');await f.waitFor('보관 검수 1페이지');f.state.mode=503;await f.click('더 이전 검수 목록 조회');await f.waitFor('검수 이력 미확인');assert(!f.container.textContent.includes('보관 검수 2페이지'));await f.click('같은 검수 목록 다시 조회');await f.waitFor('보관 검수 2페이지');await f.click('더 최근 검수 목록 조회');await f.waitFor('보관 검수 1페이지');assert.deepEqual(f.requests,[null,cursor,cursor,rootCursor]);}finally{await f.close();}});
 test('실제 검수 React는 session/client/transport ABA 뒤 옛401을 폐기한다',async()=>{for(const mode of ['SESSION','CLIENT','TRANSPORT']){const f=await mount();try{f.state.mode='DELAY';await f.click('보관 검수 목록 조회');for(let n=0;n<100&&!f.state.release;n++)await f.flush();assert(f.state.release);const release=f.state.release!,original={...f.props};if(mode==='SESSION')f.props.session={...f.props.session,csrfToken:'d'.repeat(43)};if(mode==='CLIENT')f.props.client=f.client();if(mode==='TRANSPORT')f.props.client.transport=f.client().transport;await f.render();if(mode!=='TRANSPORT')Object.assign(f.props,original);await f.render();await f.click('보관 검수 목록 조회');await f.waitFor('보관 검수 1페이지');await ui.React.act(async()=>release(Response.json({code:'AUTH_REQUIRED'},{status:401})));await f.flush();assert.equal(f.lost(),0);assert(f.container.textContent.includes('보관 검수 1페이지'));}finally{await f.close();}}});
@@ -57,6 +66,38 @@ test('실제 검수 페이지는 이전위치100을 넘기면 알리고 오래�
 test('실제 검수 원문은 명시 선택만 GET하고 페이지 이동/오류에 즉시 숨긴다',async()=>{const f=await mount();try{await f.click('보관 검수 목록 조회');await f.waitFor('보관 검수 1페이지');const before=f.requests.length;await f.click('보관 검수 원문 '+id(90));await f.waitFor('선택 원문만 보존');assert.equal(f.requests.length,before,'페이지 재조회0');f.state.mode='DELAY';await f.click('더 이전 검수 목록 조회');assert(!f.container.textContent.includes('선택 원문만 보존'));for(let n=0;n<100&&!f.state.release;n++)await f.flush();assert(f.state.release);await ui.React.act(async()=>f.state.release!(Response.json({code:'AUTH_REQUIRED'},{status:401})));await f.waitFor('검수 이력 미확인');assert.equal(f.lost(),1);assert(!f.container.textContent.includes('선택 원문만 보존'));}finally{await f.close();}});
 
 test('첫위치 root 복귀의 다른window 응답은 성공위치로 확정하지 않는다',async()=>{const f=await mount();try{await f.click('보관 검수 목록 조회');await f.waitFor('보관 검수 1페이지');await f.click('더 이전 검수 목록 조회');await f.waitFor('보관 검수 2페이지');f.state.mode='DELAY';await f.click('더 최근 검수 목록 조회');for(let n=0;n<100&&!f.state.release;n++)await f.flush();assert(f.state.release);const wrong=f.page(rootCursor);wrong.window={startedAt:'2026-10-20T00:00:00.000Z',expiresAt:'2026-10-20T00:30:00.000Z'};await ui.React.act(async()=>f.state.release!(Response.json(wrong)));await f.waitFor('검수 이력 미확인');assert(!f.container.textContent.includes('보관 검수 1페이지'));await f.click('같은 검수 목록 다시 조회');await f.waitFor('보관 검수 1페이지');assert.deepEqual(f.requests.slice(-2),[rootCursor,rootCursor]);}finally{await f.close();}});
+
+test('같은 window의 다른 root나 반복 cursor는 다음 위치와 원문 동선을 열지 않는다',async t=>{
+ for(const mode of ['NEXT_FOREIGN_ROOT','NEXT_REPEAT','BACK_FOREIGN_ROOT'] as const)await t.test(mode,async()=>{
+  const f=await mount();try{
+   await f.click('보관 검수 목록 조회');await f.waitFor('보관 검수 1페이지');
+   const back=mode==='BACK_FOREIGN_ROOT';
+   if(back){await f.click('더 이전 검수 목록 조회');await f.waitFor('보관 검수 2페이지');}
+   f.state.mode='DELAY';await f.click(back?'더 최근 검수 목록 조회':'더 이전 검수 목록 조회');
+   for(let n=0;n<100&&!f.state.release;n++)await f.flush();assert(f.state.release);
+   // 오류 응답은 기존 window·정상 페이지 형상을 유지하고 cursor만 바꾼다.
+   const wrong={...f.page(rootCursor),nextCursor:mode==='NEXT_REPEAT'?cursor:cursor.replace('root.','foreign.')};
+   await ui.React.act(async()=>f.state.release!(Response.json(wrong)));
+   await f.waitFor('RESULT_REVIEW_HISTORY_RESPONSE_INVALID');
+   assert.equal(f.buttons('더 이전 검수 목록 조회').length,0);
+   assert.equal(f.buttons('보관 검수 원문 '+id(90)).length,0);
+   assert.deepEqual(f.requests,back?[null,cursor,rootCursor]:[null,cursor]);
+   assert.deepEqual(f.originalRequests,[]);assert.equal(f.lost(),0);
+   await f.click('같은 검수 목록 다시 조회');await f.waitFor(back?'보관 검수 1페이지':'보관 검수 2페이지');
+   assert.equal(f.requests.at(-1),back?rootCursor:cursor);
+  }finally{await f.close();}
+ });
+});
+test('21번째 검수의 정확 원문을 선택하고 같은 root 두 분절로 최근 목록에 복귀한다',async()=>{
+ const f=await mount();try{
+  await f.click('보관 검수 목록 조회');await f.waitFor('보관 검수 1페이지');assert.equal(f.buttons('보관 검수 원문 '+id(70)).length,0);
+  await f.click('더 이전 검수 목록 조회');await f.waitFor('보관 검수 2페이지');assert.equal(f.buttons('더 이전 검수 목록 조회').length,0);
+  await f.click('보관 검수 원문 '+id(70));await f.waitFor('21번째 검수 원문');assert.deepEqual(f.originalRequests,[id(70)]);
+  await f.click('더 최근 검수 목록 조회');await f.waitFor('보관 검수 1페이지');
+  assert(!f.container.textContent.includes('21번째 검수 원문'));
+  assert.deepEqual(f.requests,[null,cursor,rootCursor]);assert.deepEqual(f.originalRequests,[id(70)]);
+ }finally{await f.close();}
+});
 
 async function mountReviewEvidence(fault=''){
  const h=await mount(),f=reworkFixture(),{assignment,result,criteria,review}=f.sources;

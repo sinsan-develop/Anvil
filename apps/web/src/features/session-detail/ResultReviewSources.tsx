@@ -191,7 +191,18 @@ function StoredResultReviewHistory({client,result,assignment,session,responsible
  function load(cursor:string|null,index:number,history:(string|null)[],offset=0,window:StoredResultReviewPage['window']|null=null){if(!current(scope)||flight.current?.owner===scope&&latest.current===flight.current)return;const next={owner:scope,cursor,index,history,offset,window,revision:++sequence.current};flight.current=next;setSelection(null);setOriginal(null);setTarget(next);}
  function select(item:StoredReviewSummary){if(!target||!shown?.value||busy||!current(scope))return;setOriginal(null);setSelection({target,item,attempt:++detailSequence.current});}
  useEffect(()=>{if(!target)return;let active=true;const controller=new AbortController(),check=()=>active&&current(target.owner)&&latest.current===target;
-  readStoredResultReviewPage(client,result,target.cursor,check,controller.signal).then(value=>{if(check()&&value){if(target.window&&ordered(value.window)!==ordered(target.window))throw new ApiError('RESULT_REVIEW_HISTORY_RESPONSE_INVALID');const history=[...target.history.slice(0,target.index),target.cursor??(value.nextCursor?storedReviewRootCursor(value.nextCursor):null)],drop=Math.max(0,history.length-101);setPosition({owner:target.owner,history:history.slice(drop),index:target.index-drop,offset:target.offset+drop});setLoaded({target,value,error:null});}}).catch(cause=>{if(check())setLoaded({target,value:null,error:failure(cause)});}).finally(()=>{if(flight.current===target)flight.current=null;if(mounted.current&&owner.current===target.owner&&latest.current===target&&client.transport!==target.owner.transport){setSelection(null);setOriginal(null);setTarget(null);}});return()=>{active=false;controller.abort();};
+  readStoredResultReviewPage(client,result,target.cursor,check,controller.signal).then(value=>{
+   if(!check()||!value)return;
+   if(target.window&&ordered(value.window)!==ordered(target.window))throw new ApiError('RESULT_REVIEW_HISTORY_RESPONSE_INVALID');
+   const nextRoot=value.nextCursor===null?null:storedReviewRootCursor(value.nextCursor);
+   if(target.cursor!==null&&nextRoot!==null){
+    // 첫 위치로 돌아갈 때는 검산된 두 분절의 root를, 다음 위치는 네 분절의 cursor를 사용한다.
+    const root=target.cursor.split('.').length===2?target.cursor:storedReviewRootCursor(target.cursor);
+    if(value.nextCursor===target.cursor||nextRoot!==root)throw new ApiError('RESULT_REVIEW_HISTORY_RESPONSE_INVALID');
+   }
+   const history=[...target.history.slice(0,target.index),target.cursor??nextRoot],drop=Math.max(0,history.length-101);
+   setPosition({owner:target.owner,history:history.slice(drop),index:target.index-drop,offset:target.offset+drop});setLoaded({target,value,error:null});
+  }).catch(cause=>{if(check())setLoaded({target,value:null,error:failure(cause)});}).finally(()=>{if(flight.current===target)flight.current=null;if(mounted.current&&owner.current===target.owner&&latest.current===target&&client.transport!==target.owner.transport){setSelection(null);setOriginal(null);setTarget(null);}});return()=>{active=false;controller.abort();};
  },[target]);
  useEffect(()=>{if(!selection||!selected||!target||!shown?.value)return;let active=true;const check=()=>active&&current(target.owner)&&latest.current===target&&detailSequence.current===selection.attempt;
   readStoredResultReview(client,result,selected,check).then(value=>{if(check()&&value)setOriginal({selection,value,error:null});}).catch(cause=>{if(check())setOriginal({selection,value:null,error:failure(cause)});}).finally(()=>{if(mounted.current&&owner.current===target.owner&&latest.current===target&&client.transport!==target.owner.transport){setSelection(null);setOriginal(null);setTarget(null);}});return()=>{active=false;};
