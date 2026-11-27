@@ -910,3 +910,114 @@ test('인계 실행 준비 대기 중 transport·CSRF·재조회·임무 이탈�
   }finally{await f.close();}
  }
 });
+
+const selectHistoricalResponsibilityButton='당시 역할·책임 결박을 현재 새 준비기록에 선택';
+async function openHistoricalResponsibility(f:Awaited<ReturnType<typeof host>>,data:ReturnType<typeof historicalResponsibility>){
+ await queryKnown(f,data.ref);await f.settle(()=>hasOriginal(f));
+ assert.equal(f.buttons(selectHistoricalResponsibilityButton).length,0);
+ await f.click(responsibilityButton);
+ await f.settle(()=>f.nodes().some(n=>n.getAttribute('aria-label')==='당시 책임 관계 고정 원문'));
+}
+test('보관 역할·결박은 명시 재검산으로 현재 초안에 함께 선택하고 준비 원명령의 두 정확 참조로 유지한다',async()=>{
+ const data=historicalResponsibility(),f=await host({knownRecord:{data}});
+ try{
+  await chooseNull(f);
+  const before=f.buffer(),original=canonicalJson(data);
+  await openHistoricalResponsibility(f,data);
+  assert.equal(f.buffer(),before);
+  const until=f.calls.length;
+  await f.click(selectHistoricalResponsibilityButton);
+  await f.settle(()=>f.buffer().roleRef!==null&&f.buffer().oldBindingRef!==null);
+  assert.deepEqual(f.calls.slice(until).map(c=>c.path),[`/api/v1/projects/${pid}/project-roles/${data.record.roleRef!.id}/versions/1`,`/api/v1/projects/${pid}/role-bindings/${data.record.oldBindingRef!.id}/versions/1`]);
+  assert.deepEqual(f.buffer().roleRef,data.record.roleRef);
+  assert.deepEqual(f.buffer().oldBindingRef,data.record.oldBindingRef);
+  assert.equal(f.buffer().roleSelected,true);assert.equal(f.buffer().bindingSelected,true);
+  for(const field of ['reason','minutes','contextRef','contextSelected','targetConnectionRef','targetSelected','pending'])assert.deepEqual(f.buffer()[field],before[field],field);
+  assert.equal(canonicalJson(data),original);
+  assert(hasOriginal(f));assert(f.calls.every(c=>c.method==='GET'));
+  await f.click('준비기록 원명령 준비');
+  await f.settle(()=>f.buffer().pending?.state==='PREPARED');
+  assert.deepEqual(f.buffer().pending.command.payload.roleRef,data.record.roleRef);
+  assert.deepEqual(f.buffer().pending.command.payload.oldBindingRef,data.record.oldBindingRef);
+  assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+test('보관 역할·결박 선택은 사용자 초안, 두 원문, 미전송 편집 상태가 있을 때만 제공된다',async()=>{
+ for(const mode of ['EMPTY','ROLE_ONLY','PENDING'] as const){
+  const data=historicalResponsibility(mode==='ROLE_ONLY'?'role':'binding');
+  const f=await host({empty:mode==='EMPTY',knownRecord:{data}});
+  try{
+   if(mode==='PENDING')await prepared(f);
+   const original=f.buffer();
+   await openHistoricalResponsibility(f,data);
+   assert.equal(f.buttons(selectHistoricalResponsibilityButton).length,0);
+   assert.equal(f.buffer(),original);
+   assert(f.calls.every(c=>c.method==='GET'));
+  }finally{await f.close();}
+ }
+});
+
+for(const mode of ['ROLE_HASH','BINDING_HASH','ASSIGNMENT','DENIED'] as const)test('보관 역할·결박 선택 · '+mode+'에서 현재 초안을 보존한다',async()=>{
+ const data=historicalResponsibility(),source=seed(),rolePath=`/api/v1/projects/${pid}/project-roles/${source.stage.ref.id}/versions/1`,bindingPath=`/api/v1/projects/${pid}/role-bindings/${source.binding.ref.id}/versions/1`;
+ let selecting=false;
+ const f=await host({knownRecord:{data},historicalGet:path=>{
+  if(path===rolePath&&selecting&&mode==='ROLE_HASH'){
+   const v=structuredClone(source.stage);v.snapshot.reason='다른 역할 원문';v.ref.contentHash=hash(v.snapshot);return Response.json(v);
+  }
+  if(path===bindingPath&&selecting){
+   if(mode==='DENIED')return Response.json({code:'ACCESS_DENIED'},{status:403});
+   const v=structuredClone(source.binding);
+   if(mode==='ASSIGNMENT')v.snapshot.assignmentRef={...v.snapshot.assignmentRef,contentHash:'d'.repeat(64)};
+   else v.snapshot.reason='다른 책임 결박';
+   v.ref.contentHash=hash(v.snapshot);return Response.json(v);
+  }
+ }});
+ try{
+  await openHistoricalResponsibility(f,data);
+  const before=f.buffer(),reads=f.calls.length;selecting=true;
+  await f.click(selectHistoricalResponsibilityButton);
+  await f.settle(()=>/TRANSFER_PREPARATION_(ROLE|BINDING)_MISMATCH|ACCESS_DENIED/.test(f.text()));
+  assert.deepEqual(f.calls.slice(reads).map(c=>c.path),mode==='ROLE_HASH'?[rolePath]:[rolePath,bindingPath]);
+  assert.equal(f.buffer(),before);assert(hasOriginal(f));assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+for(const scenario of ['CLOSE','CHILD_RELOAD','DRAFT_ABA','TRANSPORT'] as const)test('보관 역할·결박 선택 · '+scenario+' 뒤 지연 응답과 오래된 선택은 적용하지 않는다',async()=>{
+ const data=historicalResponsibility(),source=seed(),rolePath=`/api/v1/projects/${pid}/project-roles/${source.stage.ref.id}/versions/1`,bindingPath=`/api/v1/projects/${pid}/role-bindings/${source.binding.ref.id}/versions/1`;
+ let selecting=false,holding=false,release=()=>{};
+ const f=await host({knownRecord:{data},historicalGet:path=>{
+  const heldPath=scenario==='CLOSE'?rolePath:bindingPath;
+  if(path!==heldPath||!selecting||holding)return;
+  const response=Response.json(scenario==='TRANSPORT'?{code:'AUTH_REQUIRED'}:scenario==='CLOSE'?source.stage:source.binding,{status:scenario==='TRANSPORT'?401:200});
+  const json=response.json.bind(response);
+  response.json=async()=>{await new Promise<void>(resolve=>{release=resolve;holding=true;});return json();};
+  return response;
+ }});
+ try{
+  await openHistoricalResponsibility(f,data);
+  const before=f.buffer(),start=f.calls.length;selecting=true;
+  const button=f.button(selectHistoricalResponsibilityButton),props=Object.keys(button).find(k=>k.startsWith('__reactProps'))!;
+  const oldClick=(button as any)[props].onClick;
+  await ui.React.act(async()=>{oldClick();oldClick();});
+  await f.settle(()=>holding);
+  assert.deepEqual(f.calls.slice(start).map(v=>v.path),scenario==='CLOSE'?[rolePath]:[rolePath,bindingPath]);
+  if(scenario==='CLOSE')await f.click('준비기록 원문 닫기');
+  if(scenario==='CHILD_RELOAD'){
+   await f.click(responsibilityButton);
+   await f.settle(()=>!f.button(responsibilityButton).disabled);
+  }
+  if(scenario==='DRAFT_ABA'){
+   f.buffers[before.key]=ui.api.editPreparation(before,{reason:'교체 후 복귀'});
+   await f.render();f.buffers[before.key]=before;await f.render();
+  }
+  if(scenario==='TRANSPORT'){
+   const transport=f.client.transport;f.client.transport=(...args:any[])=>transport(...args);await f.render();
+  }
+  const reads=f.calls.length;
+  await ui.React.act(async()=>{release();await new Promise(resolve=>setImmediate(resolve));});
+  if(scenario!=='DRAFT_ABA')await ui.React.act(async()=>oldClick());
+  assert.equal(f.buffers[before.key],before);assert.equal(f.calls.length,reads);assert.equal(f.lost(),0);
+  assert(f.calls.every(c=>c.method==='GET'));
+ }finally{release();await f.close();}
+});
