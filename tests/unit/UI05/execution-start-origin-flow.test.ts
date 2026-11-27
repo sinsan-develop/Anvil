@@ -39,7 +39,7 @@ async function normalSourceFixture(f:Awaited<ReturnType<typeof executionStartOri
  const refs={basis:prep.snapshot.basisRefs,source:intent.sourceScopes.map((v:any)=>v.observationRef),capability:[intent.capabilityRef],osFence:[prep.ref],storage:[prep.ref]};
  return{async observe(scope:any,checkedAt:string,signal:AbortSignal){assert(f.active());assert(!signal.aborted);return{scope,checkedAt,expiresAt:f.actor.authSession.idleExpiresAt,registrationRef:registrationRef(f.registration!.row as any),writerState:'NONE',stageRef:f.stage.data.snapshot.input.stageRef,demand:{attempts:1,calls:1,spoolBytes:1024,cost:null,costStatus:'VERIFIED_NO_CHARGE'},understandingReviewRef:null,checks:{...Object.fromEntries(Object.entries(refs).map(([k,evidenceRefs])=>[k,{state:'VERIFIED_CURRENT',evidenceRefs}])),understanding:{state:'NOT_REQUIRED',evidenceRefs:[]}}};}};
 }
-async function apiFixture(normal=false){const eid=originalUuid(),f=await executionStartOriginFixture(normal?{normalExecutionId:eid,connectorEnvironment:true,richContext:true,constitutionContext:true,environmentDependencies:true,snapshotRoot:true,originConsumptionStorage:true}:{}),{buildApp}=await import('../../../apps/server/app.ts'),{ApiClient}=await import('../../../apps/web/src/api/client.ts'),normalSource=normal?await normalSourceFixture(f):undefined,app=buildApp({},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root},undefined,undefined,undefined,undefined,null,undefined,undefined,normalSource),session={user:{id:f.uid},clientId:f.cid,csrfToken:f.csrf},sent:{path:string;body:any;init:any}[]=[],mode={getDenied:false,lost:false,controlDenied:false,queueResponse:0,login:null as any,extraReservation:'NONE',afterPost:null as null|(()=>Promise<void>),getOverride:null as null|((path:string)=>Response|Promise<Response>|undefined)};let network=Promise.resolve();const client=new ApiClient(async(input:any,init:any={})=>{const path=String(input);assert(path.startsWith('/api/v1/'));assert.equal(init.credentials,'same-origin');assert.equal(init.redirect,'error');assert.equal(init.cache,'no-store');sent.push({path,body:init.body?JSON.parse(init.body):null,init});if(path==='/api/v1/auth/login'&&mode.login)return Response.json(mode.login);if(init.method==='GET'){const projected=mode.getOverride?.(path);if(projected)return projected;}if(mode.getDenied&&path.includes('/execution-start-origins/'))return new Response(JSON.stringify({code:'PROJECT_OPERATION_DENIED'}),{status:403,headers:{'Content-Type':'application/json'}});const previous=network;let release!:()=>void;network=new Promise<void>(yes=>release=yes);await previous;let response;try{if(normal&&init.method==='POST'&&JSON.parse(init.body).operation==='registerExecutionStartOrigin')originUuid={executionId:eid,calls:0};response=await app.inject({method:init.method??'GET',url:path,headers:{...init.headers,host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+f.token},...(init.body?{payload:JSON.parse(init.body)}:{})});}finally{originUuid=undefined;release();}if(response.statusCode===503&&f.state.unsupported.length)throw Error('미지원 메모리 SQL: '+f.state.unsupported.at(-1));if(init.method==='POST'&&mode.afterPost)await mode.afterPost();if(mode.lost&&init.method==='POST')throw Error('원 응답 유실');if(mode.queueResponse&&init.method==='POST'&&JSON.parse(init.body).operation==='queueExecutionCommand')return Response.json({code:'AUTH_REQUIRED'},{status:mode.queueResponse});let body=response.body;if(mode.extraReservation===(init.method==='POST'?'POST':'GET')&&response.statusCode===200&&(init.method==='POST'||path.includes('/execution-start-origins/'))){const value=JSON.parse(body),reservation=init.method==='POST'?value.data?.reservation:value.reservation;if(reservation)reservation.token='synthetic-forbidden-extra';body=JSON.stringify(value);}return new Response(body,{status:response.statusCode,headers:{'Content-Type':'application/json'}});});return{f,app,client,session,sent,mode,selection:{stageRequestRef:f.stage.data.ref,assignmentRef:f.confirmed.data.ref,preparationRef:f.preparation.data.ref,roleBindingRef:f.binding.data.ref}};}
+async function apiFixture(normal=false){const eid=originalUuid(),f=await executionStartOriginFixture(normal?{normalExecutionId:eid,connectorEnvironment:true,richContext:true,constitutionContext:true,environmentDependencies:true,snapshotRoot:true,originConsumptionStorage:true}:{}),{buildApp}=await import('../../../apps/server/app.ts'),{ApiClient}=await import('../../../apps/web/src/api/client.ts'),normalSource=normal?await normalSourceFixture(f):undefined,app=buildApp({},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root},undefined,undefined,undefined,undefined,null,undefined,undefined,normalSource),session={user:{id:f.uid},clientId:f.cid,csrfToken:f.csrf},sent:{path:string;body:any;init:any}[]=[],mode={getDenied:false,lost:false,controlDenied:false,queueResponse:0,queueOverride:null as null|(()=>Response|Promise<Response>),login:null as any,extraReservation:'NONE',afterPost:null as null|(()=>Promise<void>),getOverride:null as null|((path:string)=>Response|Promise<Response>|undefined)};let network=Promise.resolve();const client=new ApiClient(async(input:any,init:any={})=>{const path=String(input);assert(path.startsWith('/api/v1/'));assert.equal(init.credentials,'same-origin');assert.equal(init.redirect,'error');assert.equal(init.cache,'no-store');sent.push({path,body:init.body?JSON.parse(init.body):null,init});if(path==='/api/v1/auth/login'&&mode.login)return Response.json(mode.login);if(init.method==='GET'){const projected=mode.getOverride?.(path);if(projected)return projected;}if(mode.queueOverride&&init.method==='POST'&&JSON.parse(init.body).operation==='queueExecutionCommand')return mode.queueOverride();if(mode.getDenied&&path.includes('/execution-start-origins/'))return new Response(JSON.stringify({code:'PROJECT_OPERATION_DENIED'}),{status:403,headers:{'Content-Type':'application/json'}});const previous=network;let release!:()=>void;network=new Promise<void>(yes=>release=yes);await previous;let response;try{if(normal&&init.method==='POST'&&JSON.parse(init.body).operation==='registerExecutionStartOrigin')originUuid={executionId:eid,calls:0};response=await app.inject({method:init.method??'GET',url:path,headers:{...init.headers,host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+f.token},...(init.body?{payload:JSON.parse(init.body)}:{})});}finally{originUuid=undefined;release();}if(response.statusCode===503&&f.state.unsupported.length)throw Error('미지원 메모리 SQL: '+f.state.unsupported.at(-1));if(init.method==='POST'&&mode.afterPost)await mode.afterPost();if(mode.lost&&init.method==='POST')throw Error('원 응답 유실');if(mode.queueResponse&&init.method==='POST'&&JSON.parse(init.body).operation==='queueExecutionCommand')return Response.json({code:'AUTH_REQUIRED'},{status:mode.queueResponse});let body=response.body;if(mode.extraReservation===(init.method==='POST'?'POST':'GET')&&response.statusCode===200&&(init.method==='POST'||path.includes('/execution-start-origins/'))){const value=JSON.parse(body),reservation=init.method==='POST'?value.data?.reservation:value.reservation;if(reservation)reservation.token='synthetic-forbidden-extra';body=JSON.stringify(value);}return new Response(body,{status:response.statusCode,headers:{'Content-Type':'application/json'}});});return{f,app,client,session,sent,mode,selection:{stageRequestRef:f.stage.data.ref,assignmentRef:f.confirmed.data.ref,preparationRef:f.preparation.data.ref,roleBindingRef:f.binding.data.ref}};}
 
 test('Web 원 packet은 실제 App 저장 receipt를 후행 GET보다 먼저 보존하고 원 hash·false를 검산한다',async()=>{const q=await apiFixture(),api=await import('../../../apps/web/src/features/session-detail/execution-start-origin-api.ts');try{const packet=await api.prepareOrigin(q.client,q.session,q.f.pid,q.selection,'명시 원자료 저장',()=>true);assert(packet);let receipt:any;const view=await api.sendOrigin(q.client,q.session,packet,()=>true,()=>true,r=>receipt=r);assert(receipt);assert(view);assert.deepEqual(view.snapshot,receipt.data.snapshot);assert.equal(view.executionAuthorized,false);assert.equal(q.sent.filter(v=>v.init.method==='POST').length,1);const page=await api.readOriginHistory(q.client,q.f.pid,q.f.confirmed.data.ref,null,()=>true);assert.deepEqual(page!.items[0]!.ref,view.ref);await assert.rejects(api.sendOrigin(q.client,q.session,packet,()=>true,()=>true,()=>{}),(error:any)=>error.code==='ORIGIN_PACKET_UNAVAILABLE');}finally{await q.app.close();}assert.equal(q.f.active(),false);assert.deepEqual(q.f.state.unsupported,[]);});
 
@@ -258,9 +258,35 @@ test('실제 App 정상 START의 서버 현재성 412는 저장·실행 성공�
   await q.click('정상 START 명시 접수');await q.wait(()=>q.container.textContent.includes('접수 거절')||q.container.textContent.includes('접수 결과 불명'));
   assert.equal(normalPosts(q).length,1);assert.equal(q.f.tables.executions!.length,0);assert.equal(q.f.tables.execution_grants!.length,0);
   assert.match(q.container.textContent,/현재 준비·환경·등록·권한 조건을 확인하지 못했습니다/);assert.doesNotMatch(q.container.textContent,/정상 START 접수 저장 확인/);
+  assert(q.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent===normalStartRecheck));assert.doesNotMatch(q.container.textContent,/준비 거절 확정/);
  }finally{await q.close();}
 });
 
+const protectedRejectionBody={code:'NORMAL_START_PREPARATION_REJECTED',message:'요청을 처리하지 못했습니다',
+ requestId:'req-confirmed-rejection',targetId:null,retryDisposition:'not-retryable',details:{}};
+const normalStartRecheck='같은 START 원명령 재확인';
+test('실제 App은 확정 준비 거절을 보존하며 뒤늦은 옛 전송 버튼으로도 같은 요청을 다시 보내지 않는다',{timeout:30000},async()=>{
+ const q=await mountApp(true);
+ try{
+  await prepareAppNormal(q);
+  const start=q.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='정상 START 명시 접수')!;
+  const oldClick=nodeProps(start).onClick;
+  q.mode.queueOverride=()=>Response.json(protectedRejectionBody,{status:412});
+  await q.click('정상 START 명시 접수');
+  await q.wait(()=>q.container.textContent.includes('준비 거절 확정'));
+  assert.match(q.container.textContent,/NORMAL_START_PREPARATION_REJECTED/);
+  assert.equal(normalPosts(q).length,1);assert.equal(q.f.tables.executions!.length,0);
+  assert(!q.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent===normalStartRecheck));
+  const command=normalPosts(q)[0]!.body.commandId,network=q.sent.length;
+  q.mode.queueOverride=()=>Response.json({code:'NORMAL_START_PREPARATION_OUTCOME_UNKNOWN'},{status:503});
+  await q.ui.React.act(async()=>oldClick());await q.flush();
+  assert.equal(q.sent.length,network);assert(q.container.textContent.includes(command));
+  await q.navigate('#/projects/'+q.f.pid+'/session');await q.navigate(detailHash(q));
+  await q.wait(()=>q.container.textContent.includes('NORMAL_START_PREPARATION_REJECTED'));
+  assert(!q.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent===normalStartRecheck));
+  assert.equal(normalPosts(q).length,1);assert.doesNotMatch(q.container.textContent,/접수 결과 불명|현재 준비·환경·등록·권한 조건을 확인하지 못했습니다|정상 START 접수 저장 확인/);
+ }finally{await q.close();}
+});
 async function normalPacketFixture(){
  const q=await apiFixture(true),originApi=await import('../../../apps/web/src/features/session-detail/execution-start-origin-api.ts'),normal=await import('../../../apps/web/src/features/session-detail/normal-start-write-api.ts');
  const original=await originApi.prepareOrigin(q.client,q.session,q.f.pid,q.selection,'정상 START 호출 수명 검산',()=>true);assert(original);
@@ -269,6 +295,55 @@ async function normalPacketFixture(){
  const packet=await normal.prepareNormalStart(q.client,q.session,assignment,selected,()=>true);assert(packet);
  return{...q,normal,packet,selected};
 }
+test('정상 START의 exact 확정 412 뒤 직접 API는 같은 packet을 통신 전에 거절한다',{timeout:30000},async()=>{
+ const q=await normalPacketFixture(),hooks={beforeDispatch:()=>true,notSent:()=>{},stored:()=>assert.fail('정상 저장 없음'),unknown:()=>{}};
+ try{
+  q.mode.queueOverride=()=>Response.json(protectedRejectionBody,{status:412});
+  await assert.rejects(q.normal.sendNormalStart(q.client,q.session,q.packet,()=>true,hooks),{code:protectedRejectionBody.code});
+  assert.equal(q.normal.normalStartStatus(q.packet),'REJECTED');assert(q.normal.normalStartPreparationRejected(q.packet));
+  const network=q.sent.length;
+  q.mode.queueOverride=()=>assert.fail('확정 거절 이후의 POST 호출');
+  await assert.rejects(q.normal.sendNormalStart(q.client,q.session,q.packet,()=>true,hooks),{code:'NORMAL_START_PACKET_UNAVAILABLE'});
+  assert.equal(q.sent.length,network);assert.equal(normalPosts(q).length,1);assert.equal(q.f.tables.executions!.length,0);
+ }finally{await q.app.close();}
+});
+
+test('정상 START의 오류 코드 단독·일반 412 또는 선행 UNKNOWN은 확정 거절로 승격하지 않는다',{timeout:30000},async()=>{
+ for(const mode of ['CODE','ORDINARY','UNKNOWN'] as const){
+  const q=await normalPacketFixture(),hooks={beforeDispatch:()=>true,notSent:()=>{},stored:()=>assert.fail('정상 저장 없음'),unknown:()=>{}};
+  try{
+   if(mode==='UNKNOWN'){
+    q.mode.queueOverride=()=>Response.json({code:'NORMAL_START_PREPARATION_OUTCOME_UNKNOWN'},{status:503});
+    await assert.rejects(q.normal.sendNormalStart(q.client,q.session,q.packet,()=>true,hooks));
+    assert.equal(q.normal.normalStartStatus(q.packet),'UNKNOWN');
+   }
+   q.mode.queueOverride=()=>Response.json(mode==='CODE'?{code:protectedRejectionBody.code}:mode==='ORDINARY'
+    ?{...protectedRejectionBody,code:'PROJECT_OPERATION_DENIED'}:protectedRejectionBody,{status:412});
+   await assert.rejects(q.normal.sendNormalStart(q.client,q.session,q.packet,()=>true,hooks));
+   assert.equal(q.normal.normalStartStatus(q.packet),mode==='UNKNOWN'?'UNKNOWN':'REJECTED');
+   assert.equal(q.normal.normalStartPreparationRejected(q.packet),false);
+   const before=normalPosts(q).length,first=normalPosts(q)[0]!;
+   q.mode.queueOverride=()=>Response.json({code:'NORMAL_START_PREPARATION_OUTCOME_UNKNOWN'},{status:503});
+   await assert.rejects(q.normal.sendNormalStart(q.client,q.session,q.packet,()=>true,hooks));
+   assert.equal(normalPosts(q).length,before+1);assert.equal(normalPosts(q).at(-1)!.init.body,first.init.body);
+   assert.equal(normalPosts(q).at(-1)!.init.headers['Idempotency-Key'],first.init.headers['Idempotency-Key']);
+   assert.equal(q.normal.normalStartStatus(q.packet),'UNKNOWN');assert.equal(q.f.tables.executions!.length,0);
+  }finally{await q.app.close();}
+ }
+});
+
+test('처음 POST 뒤 화면 소유가 사라지면 늦은 exact 412도 원 packet UNKNOWN을 확정 거절로 바꾸지 못한다',{timeout:30000},async()=>{
+ const q=await normalPacketFixture(),entered=Promise.withResolvers<void>(),release=Promise.withResolvers<void>();let active=true,saved=0;
+ const hooks={beforeDispatch:()=>true,notSent:()=>{},stored:()=>{saved++;return true;},unknown:()=>{}};
+ q.mode.queueOverride=async()=>{entered.resolve();await release.promise;return Response.json(protectedRejectionBody,{status:412});};
+ const dispatched=q.normal.sendNormalStart(q.client,q.session,q.packet,()=>active,hooks);
+ try{
+  await Promise.race([entered.promise,dispatched.then(()=>assert.fail('POST 전 호출 종료'))]);
+  active=false;release.resolve();assert.equal(await dispatched,null);
+  assert.equal(q.normal.normalStartStatus(q.packet),'UNKNOWN');assert.equal(q.normal.normalStartPreparationRejected(q.packet),false);
+  assert.equal(saved,0);assert.equal(normalPosts(q).length,1);assert.equal(q.f.tables.executions!.length,0);
+ }finally{release.resolve();await dispatched.catch(()=>{});await q.app.close();}
+});
 test('정상 START 원 UNKNOWN은 같은 주체의 새 CSRF·transport에서 동일 JSON으로 회복하고 타 주체·위조 packet은 거절한다',{timeout:30000},async()=>{
  const q=await normalPacketFixture();let saved=0;
  const hooks={beforeDispatch:()=>true,notSent:()=>{},stored:()=>{saved++;return true;},unknown:()=>{}};

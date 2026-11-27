@@ -26,9 +26,10 @@ export function normalStartOwner(client:ApiClient,session:DocumentSession){
  if(!owner||owner.transport!==client.transport||owner.user!==session.user.id||owner.client!==session.clientId||owner.csrf!==session.csrfToken){owner={transport:client.transport,user:session.user.id,client:session.clientId,csrf:session.csrfToken,epoch:crypto.randomUUID()};owners.set(client,owner);}return owner.epoch;
 }
 export const normalStartKey=(packet:NormalStartPacket)=>ordered([packet.ownerUserId,packet.ownerClientId,packet.source.projectId,packet.source.assignmentDraftRef,packet.source.assignmentRef,packet.source.originRef,packet.source.reservationRef,packet.source.executionId,packet.source.executionGeneration]);
-type State={user:string;clientId:string;phase:NormalStartPhase;busy:boolean;listeners:Set<()=>void>};
+type State={user:string;clientId:string;phase:NormalStartPhase;busy:boolean;preparationRejected?:true;listeners:Set<()=>void>};
 const packets=new WeakMap<NormalStartPacket,State>();
 export const normalStartStatus=(packet:NormalStartPacket)=>packets.get(packet)?.phase??null;
+export const normalStartPreparationRejected=(packet:NormalStartPacket)=>packets.get(packet)?.preparationRejected===true;
 export function subscribeNormalStart(packet:NormalStartPacket,listener:()=>void){const state=packets.get(packet);state?.listeners.add(listener);return()=>{state?.listeners.delete(listener);};}
 function phase(state:State,value:NormalStartPhase){state.phase=value;for(const listener of state.listeners)listener();}
 
@@ -85,8 +86,14 @@ async function receipt(value:any,packet:NormalStartPacket):Promise<NormalStartRe
  if(!exact(q,['transport','state','executionId','executionGeneration','grantRef','reservationRef','executorRegistrationRef','operation','payload','humanSessionId','sourceScopes','budgetPolicyRef','queuedAt','executionAuthorized','dispatchPerformed'])||q.transport!=='NORMAL_PROTECTED'||q.state!=='QUEUED'||q.executionId!==s.executionId||q.executionGeneration!==s.executionGeneration||q.operation!=='START_SESSION'||!same(q.payload,c.payload.payload)||!same(q.budgetPolicyRef,s.budgetPolicyRef)||![q.grantRef,q.reservationRef,q.executorRegistrationRef].every(originRef)||q.grantRef.version!==1||q.reservationRef.version!==1||!uuid(q.humanSessionId)||!date(q.queuedAt)||q.executionAuthorized!==false||q.dispatchPerformed!==false||await digest(q)!==d.ref.contentHash||await digest(q.sourceScopes)!==s.sourceScopesHash)fail();
  return freeze({ref:d.ref,status:'NORMAL_QUEUE_STORED',executionId:q.executionId,executionGeneration:q.executionGeneration,grantRef:q.grantRef,reservationRef:q.reservationRef,executorRegistrationRef:q.executorRegistrationRef,queuedAt:q.queuedAt,executionAuthorized:false,dispatchPerformed:false});
 }
+function confirmedPreparationRejection(status:number,value:any){
+ return status===412&&exact(value,['code','message','requestId','targetId','retryDisposition','details'])
+  &&value.code==='NORMAL_START_PREPARATION_REJECTED'&&value.message==='요청을 처리하지 못했습니다'
+  &&typeof value.requestId==='string'&&value.requestId.length>0&&value.requestId.length<=128&&value.requestId.isWellFormed()
+  &&!/[\u0000-\u001f\u007f]/.test(value.requestId)&&value.targetId===null&&value.retryDisposition==='not-retryable'&&exact(value.details,[]);
+}
 export async function sendNormalStart(client:ApiClient,session:DocumentSession,packet:NormalStartPacket,active:()=>boolean,hooks:{beforeDispatch:()=>boolean;notSent:()=>void;stored:(receipt:NormalStartReceipt)=>boolean;unknown:(failure:{code:string;status:number})=>void},signal?:AbortSignal):Promise<NormalStartReceipt|null>{
- const state=packets.get(packet);if(!state||state.user!==session.user.id||state.clientId!==session.clientId||state.busy||!['PREPARED','UNKNOWN','REJECTED'].includes(state.phase))fail('NORMAL_START_PACKET_UNAVAILABLE',409);
+ const state=packets.get(packet);if(!state||state.user!==session.user.id||state.clientId!==session.clientId||state.busy||state.preparationRejected||!['PREPARED','UNKNOWN','REJECTED'].includes(state.phase))fail('NORMAL_START_PACKET_UNAVAILABLE',409);
  const op=operation(client,session,active,signal),originalPhase=state.phase;let dispatched=false;state.busy=true;
  try{
   op.check();if(packet.body!==JSON.stringify(packet.command)||await op.wait(digest(packet.command))!==packet.requestHash)fail('NORMAL_START_PACKET_UNAVAILABLE',409);
@@ -97,7 +104,14 @@ export async function sendNormalStart(client:ApiClient,session:DocumentSession,p
   op.check();if(state.phase!==originalPhase||!hooks.beforeDispatch())return null;op.check();
   const response=await op.response(`/api/v1/projects/${packet.source.projectId}/commands`,{method:'POST',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/json','Content-Type':'application/json','X-Anvil-CSRF':session.csrfToken,'Idempotency-Key':packet.command.commandId},body:packet.body},()=>{dispatched=true;phase(state,'SENDING');});op.check();
   let value:any;try{if(!/^application\/json\b/i.test(response.headers.get('content-type')??''))throw Error();value=await op.wait(response.json());}catch{return fail();}
-  if(!response.ok){if(originalPhase==='PREPARED'&&response.status>=400&&response.status<500)phase(state,'REJECTED');throw new ApiError(typeof value?.code==='string'&&/^[A-Z_]{1,80}$/.test(value.code)?value.code:'REQUEST_FAILED',response.status);}
+  if(!response.ok){
+   if(originalPhase==='PREPARED'&&response.status>=400&&response.status<500){
+    op.check();
+    if(dispatched&&state.phase==='SENDING'&&confirmedPreparationRejection(response.status,value))state.preparationRejected=true;
+    phase(state,'REJECTED');
+   }
+   throw new ApiError(typeof value?.code==='string'&&/^[A-Z_]{1,80}$/.test(value.code)?value.code:'REQUEST_FAILED',response.status);
+  }
   const saved=await op.wait(receipt(value,packet));op.check();if(!hooks.stored(saved))fail('NORMAL_START_PAUSED');phase(state,'STORED');return saved;
  }catch(cause){const error=cause instanceof ApiError?cause:new ApiError('CONNECTION_LOST');if(dispatched){if(state.phase!=='REJECTED')phase(state,'UNKNOWN');hooks.unknown({code:error.code,status:error.status});}if(!active()||signal?.aborted)return null;throw error;
  }finally{if(!dispatched)hooks.notSent();state.busy=false;op.close();for(const listener of state.listeners)listener();}

@@ -4,7 +4,7 @@ import type {DocumentSession} from '../design-trace/editor-api.ts';
 import type {ConfirmedAssignmentView} from '../workspace/assignment-confirmation-api.ts';
 import {ordered} from '../knowledge/review-view.ts';
 import type {OriginView} from './execution-start-origin-api.ts';
-import {normalStartKey,normalStartOwner,normalStartStatus,prepareNormalStart,sendNormalStart,subscribeNormalStart,type NormalStartBuffer,type NormalStartPacket,type NormalStartStorage} from './normal-start-write-api.ts';
+import {normalStartKey,normalStartOwner,normalStartPreparationRejected,normalStartStatus,prepareNormalStart,sendNormalStart,subscribeNormalStart,type NormalStartBuffer,type NormalStartPacket,type NormalStartStorage} from './normal-start-write-api.ts';
 
 const same=(a:unknown,b:unknown)=>ordered(a)===ordered(b);
 export function NormalStartPanel({client,session,assignment,selected,selectionIdentity,storage,isSourceCurrent,onAuthenticationLost}:{client:ApiClient;session:DocumentSession;assignment:ConfirmedAssignmentView;selected:OriginView|null;selectionIdentity:object|null;storage:NormalStartStorage;isSourceCurrent:()=>boolean;onAuthenticationLost:()=>void}){
@@ -39,6 +39,7 @@ export function NormalStartPanel({client,session,assignment,selected,selectionId
  }
  async function send(buffer:NormalStartBuffer){
   const packet=buffer.packet,key=normalStartKey(packet),original=source.current,status=normalStartStatus(packet),fresh=status==='PREPARED';
+  if(normalStartPreparationRejected(packet))return;
   if(fresh&&(ack!==packet||!original.selected||!same(packet.source.originRef,original.selected.ref)||!same(packet.source.reservationRef,original.selected.reservation.ref)))return;
   const current=()=>active()&&store.current.read(key)?.packet===packet&&(!fresh||source.current===original);
   let sending:NormalStartBuffer|null=null;
@@ -61,17 +62,17 @@ export function NormalStartPanel({client,session,assignment,selected,selectionId
      store.current.compareAndSet(key,sending,{...sending,phase:normalStartStatus(packet)==='REJECTED'?'REJECTED':'UNKNOWN',failure:error});
     }
    },signal);
-  },current);
+  },()=>current()&&!normalStartPreparationRejected(packet));
  }
  return <section aria-label="정상 START 접수"><h3>정상 START 접수 <span tabIndex={0} title="선택한 원자료의 고정 실행 ID로 접수 저장만 요청합니다. 실행 허가와 시작 완료는 별도입니다.">ⓘ</span></h3>
   {selected&&!selectedBuffer?<button type="button" disabled={busy} onClick={()=>void prepare()}>정상 START 접수 준비</button>:null}
-  {buffers.map(buffer=>{const packet=buffer.packet,status=normalStartStatus(packet)??buffer.phase,fresh=status==='PREPARED',chosen=!!selected&&same(packet.source.originRef,selected.ref)&&same(packet.source.reservationRef,selected.reservation.ref);return <article key={packet.id} aria-label="정상 START 접수 원명령">
+  {buffers.map(buffer=>{const packet=buffer.packet,status=normalStartStatus(packet)??buffer.phase,fresh=status==='PREPARED',preparationRejected=normalStartPreparationRejected(packet),chosen=!!selected&&same(packet.source.originRef,selected.ref)&&same(packet.source.reservationRef,selected.reservation.ref);return <article key={packet.id} aria-label="정상 START 접수 원명령">
    <p>고정 실행 {packet.source.executionId} · 세대 {packet.source.executionGeneration} · 원 명령 {packet.command.commandId}</p>
    {fresh?<><p>접수 준비 · 미전송</p><label><input type="checkbox" checked={ack===packet} disabled={busy||!chosen} onChange={event=>{if(active()&&!running.current)setAck(event.target.checked?packet:null);}}/>이 원자료와 고정 실행 ID로 접수 저장을 요청합니다</label><button type="button" disabled={busy||!chosen||ack!==packet} onClick={()=>void send(buffer)}>정상 START 명시 접수</button></>:null}
    {status==='SENDING'?<p role="status">접수 응답 확인 중 · 원 명령 보존</p>:null}
-   {status==='UNKNOWN'||status==='REJECTED'?<><p role="status">{status==='UNKNOWN'?'접수 결과 불명':'접수 거절'} · 원 명령·본문 보존</p><button type="button" disabled={busy} onClick={()=>void send(buffer)}>같은 START 원명령 재확인</button></>:null}
+   {status==='UNKNOWN'||status==='REJECTED'?<><p role="status">{status==='UNKNOWN'?'접수 결과 불명':preparationRejected?'준비 거절 확정':'접수 거절'} · 원 명령·본문 보존</p>{!preparationRejected?<button type="button" disabled={busy} onClick={()=>void send(buffer)}>같은 START 원명령 재확인</button>:null}</>:null}
    {buffer.receipt&&status==='STORED'?<p role="status">정상 START 접수 저장 확인 · {buffer.receipt.ref.id} · SHA {buffer.receipt.ref.contentHash} · 실행 허가·시작 완료는 별도</p>:null}
-   {buffer.failure?<p>{buffer.failure.code}{buffer.failure.status===412?' · 현재 준비·환경·등록·권한 조건을 확인하지 못했습니다.':''}</p>:null}
+   {buffer.failure?<p>{buffer.failure.code}{buffer.failure.status===412&&!preparationRejected?' · 현재 준비·환경·등록·권한 조건을 확인하지 못했습니다.':''}</p>:null}
   </article>;})}
   {busy?<p role="status">정상 접수의 원 보호 근거 확인 중</p>:null}
   {failure?<p role="alert">{failure.code}{failure.status===412?' · 현재 준비·환경·등록·권한 조건을 확인하지 못했습니다.':''}</p>:null}
