@@ -1,16 +1,20 @@
 import {canonicalJson} from '../../../contracts/canonical.ts';
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test,{after,mock} from 'node:test';
 import {criteriaFixture,criteriaHash as hash,criteriaId as id} from './result-criteria-fixture.ts';
 import {resultFixture} from '../UI05/result-view-fixture.ts';
-import {materialRules} from '../../../apps/server/modules/access/project-command.ts';
-import {buildApp} from '../../../apps/server/app.ts';
-import {AccessRepository,AuthFailure} from '../../../apps/server/modules/access/repository.ts';
-import {ProjectResultSubmissions} from '../../../apps/server/modules/results/project-result-submissions.ts';
-import {ProjectResultCriteria} from '../../../apps/server/modules/results/project-result-criteria.ts';
-import {ProjectResultReviewSources} from '../../../apps/server/modules/results/project-result-review-sources.ts';
-import {ProjectMethodologies} from '../../../apps/server/modules/methodologies/project-methodologies.ts';
+import {executionStartOriginFixture,installExecutionStartOriginMemoryFS,artifactCalls} from '../FN09/execution-start-origin-fixture.ts';
 import type {Pool} from 'pg';
+// 원 ArtifactStore를 import하기 전에 기존 RAM 전용 OS 포트를 설치한다. 다른 경로의 I/O는 fixture가 거절한다.
+await installExecutionStartOriginMemoryFS();
+after(()=>mock.restoreAll());
+const {materialRules}=await import('../../../apps/server/modules/access/project-command.ts');
+const {buildApp}=await import('../../../apps/server/app.ts');
+const {AccessRepository,AuthFailure}=await import('../../../apps/server/modules/access/repository.ts');
+const {ProjectResultSubmissions}=await import('../../../apps/server/modules/results/project-result-submissions.ts');
+const {ProjectResultCriteria}=await import('../../../apps/server/modules/results/project-result-criteria.ts');
+const {ProjectResultReviewSources}=await import('../../../apps/server/modules/results/project-result-review-sources.ts');
+const {ProjectMethodologies}=await import('../../../apps/server/modules/methodologies/project-methodologies.ts');
 const mod:any=await import('../../../apps/server/modules/results/project-result-reviews.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 function fixture(){const f=criteriaFixture(),r=resultFixture();let at='2026-10-20T00:01:00.000Z';r.entry.snapshot.scope.projectId=f.assignment.projectId;r.entry.snapshot.scope.assignmentRef=f.assignment.ref;r.entry.snapshot.manifest.assignmentRef=f.assignment.ref;r.entry.snapshot.manifestHash=hash(r.entry.snapshot.manifest);r.entry.ref.contentHash=hash(r.entry.snapshot);const snapshot={assignmentRef:f.assignment.ref,baselineRefs:f.d.baselineRefs,items:[{criterionId:'flow',testId:'FLOW-01',kind:'BROWSER',environmentRef:f.d.environmentRef,required:true}]},criteria:any={projectId:f.assignment.projectId,ref:{id:id(9),version:1,contentHash:hash(snapshot)},snapshot,registryStored:true,reviewStored:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false};
  const actor:any={actorId:id(6),clientId:id(20),credentialGeneration:1,authSession:{id:id(21),idleExpiresAt:'2099-10-20T01:00:00.000Z',absoluteExpiresAt:'2099-10-20T02:00:00.000Z'}},input={resultRef:structuredClone(r.entry.ref),criteriaRef:structuredClone(criteria.ref),outcome:'REWORK',items:[{criterionId:'flow',outcome:'REWORK',evidenceRefs:[],reason:'실제 흐름 시험 미확인'}],reason:'누락 근거만 보완'},request:any={schemaVersion:1,projectId:f.assignment.projectId,commandId:id(22),clientId:actor.clientId,controlGeneration:1,operation:'evaluateResult',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:input};
@@ -49,7 +53,7 @@ function service(f:ReturnType<typeof fixture>){assert.equal(typeof mod.ProjectRe
 function reviewRoutes(t:import('node:test').TestContext,f:ReturnType<typeof fixture>){
  const origin='https://localhost:3830',csrf='C'.repeat(43),token='T'.repeat(43);
  const repository=new AccessRepository({connect:()=>assert.fail('실제 PG 금지')} as unknown as Pool,{installationId:id(81),key:Buffer.alloc(32,1)});
- Object.defineProperty(repository,'authenticated',{value:async(session:string,c:string|null,handle:Parameters<AccessRepository['authenticated']>[2])=>{
+ Object.defineProperty(repository,'authenticated',{value:async(session:string,c:string|null,handle:Parameters<InstanceType<typeof AccessRepository>['authenticated']>[2])=>{
   if(session!==token)throw new AuthFailure('AUTH_REQUIRED',401);
   assert(c===null||c===csrf);return handle(f.db,f.actor);
  }});
@@ -58,6 +62,108 @@ function reviewRoutes(t:import('node:test').TestContext,f:ReturnType<typeof fixt
  const app=buildApp({},undefined,{repository,origin}),base=`/api/v1/projects/${f.request.projectId}`,headers={host:'localhost:3830',origin,cookie:`__Host-anvil.sid=${token}`};
  return{close:()=>app.close(),send:(payload=f.request)=>app.inject({method:'POST',url:base+'/commands',headers:{...headers,'x-anvil-csrf':csrf,'idempotency-key':payload.commandId},payload}),read:(key:string)=>app.inject({method:'GET',url:base+'/result-reviews/'+key,headers}),page:()=>app.inject({method:'GET',url:base+'/results/'+f.result.ref.id+'/review-pages',headers}),nextAction:(key:string)=>app.inject({method:'GET',url:base+'/result-reviews/'+key+'/next-action-basis',headers})};
 }
+test('IX02 QA A 실제 제출·기준·검수 HTTP와 UI05 재조회는 누락 시험/PASS 주장을 독립 증거로 승격하지 않는다',{timeout:30000},async()=>{
+ const readers=[ProjectResultSubmissions.prototype.read,ProjectResultCriteria.prototype.read];
+ // 원 임무는 기존 실제 RAM 생산·보호 reader를 사용한다. 제출/기준/검수 행은 아직 없다.
+ const f=await executionStartOriginFixture(),assignment=await f.run(a=>f.assignments.read(f.db,a,f.pid,f.confirmed.data.ref.id,1));
+ const {pgExecutionFixture}=await import('./result-execution-pg-fixture.ts');
+ const {planSyntheticExecutionGrant}=await import('../../../apps/server/modules/executions/execution-grants.ts');
+ const {readSyntheticResultExecutionReference}=await import('../../../apps/server/modules/results/result-execution-reference.ts');
+ // 기존 결과 reader가 지원하는 SYNTHETIC_ONLY 역사만 배치한다. normal/OS/PREPARED 권위가 아니다.
+ const base=pgExecutionFixture(),fact=structuredClone(base.f.grant.snapshot.binding);
+ fact.projectId=f.pid;fact.intent.projectId=f.pid;fact.intent.assignmentRef=assignment.ref;
+ Object.assign(fact.subject,{userId:f.uid,clientId:f.cid,humanSessionId:f.actor.authSession.id,controlGeneration:1,credentialGeneration:f.actor.credentialGeneration});
+ const grant={ref:structuredClone(base.f.grant.ref),snapshot:planSyntheticExecutionGrant(fact,base.f.grant.snapshot.plannedAt).snapshot};grant.ref.contentHash=hash(grant.snapshot);
+ const snapshot=structuredClone(base.f.command.snapshot);snapshot.grantRef=grant.ref;snapshot.humanSessionId=f.actor.authSession.id;
+ Object.assign(snapshot.envelope.context,{projectId:f.pid,assignmentId:assignment.ref.id});
+ const {envelope:_,...intent}=snapshot,commandRef={...base.f.command.ref,contentHash:hash(intent)},historical=structuredClone(base.row);
+ const c=historical.command,ar=historical.receipt;
+ Object.assign(c,{project_id:f.pid,scope_id:f.pid,actor_id:f.uid,client_id:f.cid,control_generation:1});
+ Object.assign(ar,{scope_id:f.pid,subject_ref:{kind:'HUMAN',userId:f.uid,clientId:f.cid},scope_digest:hash({projectId:f.pid,actorId:f.uid,clientId:f.cid,controlGeneration:1,requestHash:c.request_hash,policyRef:c.policy_ref,targetRef:commandRef})});
+ const authorizationRef={id:ar.id,version:1,contentHash:ar.scope_digest};snapshot.envelope.context.authorizationReceiptRef=authorizationRef;
+ const {envelopeHash:__,...unsigned}=snapshot.envelope;snapshot.envelope.envelopeHash=hash(unsigned);
+ Object.assign(historical.execution,{project_id:f.pid,created_by:f.uid,client_id:f.cid});
+ Object.assign(historical.grant,{project_id:f.pid,content_hash:grant.ref.contentHash,snapshot_json:grant.snapshot,created_by:f.uid,client_id:f.cid});
+ Object.assign(historical.queued,{project_id:f.pid,content_hash:commandRef.contentHash,snapshot_json:snapshot,envelope_hash:snapshot.envelope.envelopeHash,authorization_ref:authorizationRef});
+ c.result_ref={status:'APPLIED',projectId:f.pid,targetId:commandRef.id,version:1,data:{ref:commandRef,status:'SYNTHETIC_QUEUE_STORED',snapshot:intent,executionAuthorized:false,dispatchPerformed:false}};
+ const scope=readSyntheticResultExecutionReference({projectId:f.pid,assignmentRef:assignment.ref,executionId:historical.execution.id,executionGeneration:1},{command:{ref:commandRef,snapshot},grant}).scope;
+ const submissions:any[]=[],criteria:any[]=[],reviews:any[]=[],denials:any[]=[],calls:{sql:string;args:any[]}[]=[],commits:string[][]=[];
+ const raw=f.db.query;let saved:any,transaction=false,produced:string[]=[];
+ const rows=(value:any[])=>({rows:structuredClone(value)});
+ const joined=(row:any)=>{
+  const command=f.commands.get(row.command_id),receipt=f.receipts.get(row.command_id),audit=f.audits.get(row.command_id);assert(command&&receipt&&audit);
+  const matches=audit.operation_id===command.operation_id&&audit.outcome==='APPLIED'&&audit.source_kind==='HUMAN_COMMAND'&&audit.scope_digest===receipt.scope_digest&&hash(audit.target_ref)===hash(command.result_ref.data.ref)&&hash(audit.actor_ref)===hash({kind:'HUMAN',userId:command.actor_id})&&audit.client_ref===command.client_id&&hash(audit.policy_ref)===hash(command.policy_ref)&&audit.approval_ref===null&&audit.correction_of===null&&audit.recorded_at.getTime()===command.completed_at.getTime();
+  return{...row,...command,id:row.id,command_id:row.command_id,original_command_id:command.command_id,command_client_id:command.client_id,receipt_subject:receipt.subject_ref,receipt_policy_ref:receipt.policy_ref,scope_digest:receipt.scope_digest,approval_decision_ref:receipt.approval_decision_ref,audit_total:1,audit_count:matches?1:0};
+ };
+ f.db.query=async(sql:string,args:any[]=[])=>{
+  calls.push({sql,args:structuredClone(args)});
+  if(sql==='BEGIN'){assert.equal(transaction,false);saved=structuredClone({submissions,criteria,reviews});transaction=true;produced=[];}
+  if(sql==='ROLLBACK'){for(const[name,values]of Object.entries({submissions,criteria,reviews}))values.splice(0,values.length,...saved[name]);transaction=false;}
+  if(sql.includes('AS execution,to_jsonb(q)')){assert.deepEqual(args,[f.pid,scope.executionRef.id,1]);return rows([historical]);}
+  if(sql.startsWith('SELECT * FROM anvil.result_submissions'))return rows(submissions.filter(r=>r.project_id===args[0]&&r.id===args[1]));
+  if(sql.startsWith('INSERT INTO anvil.result_submissions')){
+   assert(transaction);assert.equal(submissions.length,0);submissions.push({project_id:args[0],id:args[1],execution_id:args[2],generation:args[3],assignment_ref:JSON.parse(args[4]),execution_ref:JSON.parse(args[5]),manifest_ref:JSON.parse(args[6]),manifest_hash:args[7],submission_state:args[8],submitted_by:args[9],client_id:args[10],command_id:args[11],content_hash:args[12],snapshot_json:JSON.parse(args[13]),submitted_at:new Date(args[14])});produced.push('submitResult');return{rows:[],rowCount:1};
+  }
+  if(sql.startsWith('INSERT INTO anvil.result_criteria_versions')){
+   assert(transaction);assert.equal(criteria.length,0);criteria.push({project_id:args[0],criteria_id:args[1],version:args[2],assignment_ref:JSON.parse(args[3]),content_hash:args[4],criteria_json:JSON.parse(args[5]),input_json:JSON.parse(args[6]),created_by:args[7],client_id:args[8],command_id:args[9],created_at:new Date(args[10])});produced.push('saveResultCriteria');return{rows:[],rowCount:1};
+  }
+  if(sql.startsWith('INSERT INTO anvil.result_reviews')){
+   assert(transaction);assert.equal(reviews.length,0);reviews.push({project_id:args[0],id:args[1],result_id:args[2],criteria_id:args[3],criteria_version:args[4],content_hash:args[5],snapshot_json:JSON.parse(args[6]),created_by:args[7],client_id:args[8],command_id:args[9],created_at:new Date(args[10])});produced.push('evaluateResult');return{rows:[],rowCount:1};
+  }
+  if(sql.includes('FROM anvil.result_criteria_versions v'))return rows(criteria.filter(r=>r.project_id===args[0]&&r.criteria_id===args[1]&&r.version===args[2]).map(joined));
+  if(sql.includes('FROM anvil.result_reviews v'))return rows(reviews.filter(r=>r.project_id===args[0]&&r.id===args[1]).map(joined));
+  if(sql.includes('FROM anvil.commands c')&&sql.includes('AS receipt')&&sql.includes('AS audit')){
+   assert.equal(args[0],f.pid);assert.equal(args[2],args[1].length+1);
+   return rows(args[1].flatMap((key:string)=>{const command=f.commands.get(key),receipt=f.receipts.get(key),audit=f.audits.get(key);return command&&receipt&&audit?[{...command,receipt,audit,authorized_at:receipt.authorized_at,recorded_at:audit.recorded_at}]:[];}));
+  }
+  if(sql.startsWith('INSERT INTO anvil.audit_events')&&sql.includes("'SERVER_DENIAL'")){assert(transaction);denials.push(structuredClone(args));return{rows:[],rowCount:1};}
+  if(sql.startsWith('SELECT set_config')&&sql.includes('anvil.result_'))return rows([]);
+  assert(!/^(?:INSERT INTO|UPDATE|DELETE FROM) anvil\.(?:executions|execution_grants|execution_commands|delivery_outbox|writer_claims|usage_reservations)\b/.test(sql),'결과 경로에서 실행 효과는 금지한다');
+  const value=await raw(sql,args);
+  if(sql.startsWith('INSERT INTO anvil.commands'))Object.assign(f.commands.get(args[0]),{draft_id:null,completed_at:new Date((await raw('SELECT transaction_timestamp() AS at',[])).rows[0].at)});
+  if(sql.startsWith('INSERT INTO anvil.authorization_receipts'))f.receipts.get(args[2]).authorized_at=new Date((await raw('SELECT transaction_timestamp() AS at',[])).rows[0].at);
+  if(sql.startsWith('INSERT INTO anvil.audit_events'))f.audits.get(args[4]).recorded_at=new Date((await raw('SELECT transaction_timestamp() AS at',[])).rows[0].at);
+  if(sql==='COMMIT'){assert(transaction);commits.push([...produced]);transaction=false;}
+  return value;
+ };
+ const app=buildApp({},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root}),http:{method:string;path:string;operation?:string;status:number}[]=[];
+ const {ApiClient}=await import('../../../apps/web/src/api/client.ts');
+ const client=new ApiClient(async(url,options)=>{
+  const path=String(url),method=options?.method??'GET';assert(path.startsWith(`/api/v1/projects/${f.pid}/`));assert(['GET','POST'].includes(method));assert.equal(options?.credentials,'same-origin');
+  const headers=Object.fromEntries(new Headers(options?.headers).entries()),body=options?.body;
+  const response=await app.inject({method:method as 'GET'|'POST',url:path,headers:{...headers,host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:`__Host-anvil.sid=${f.token}`},...(body===undefined?{}:{payload:String(body)})});
+  http.push({method,path,status:response.statusCode,...(method==='POST'?{operation:JSON.parse(String(body)).operation}:{})});return new Response(response.body,{status:response.statusCode,headers:response.headers as Record<string,string>});
+ });
+ const session={user:{id:f.uid},clientId:f.cid,csrfToken:f.csrf},writesBefore=f.commands.size,artifactBefore={...artifactCalls};
+ try{
+  assert.deepEqual([submissions.length,criteria.length,reviews.length],[0,0,0]);
+  const criteriaApi=await import('../../../apps/web/src/features/session-detail/result-criteria-api.ts'),submissionApi=await import('../../../apps/web/src/features/session-detail/result-submission-write-api.ts'),reviewApi=await import('../../../apps/web/src/features/session-detail/result-review-write-api.ts');
+  const mapped=criteriaApi.criteriaRows(assignment).map((r,i)=>({...r,criterionId:'C'+i,testId:'QA-'+i,kind:'BROWSER'}));assert(mapped.length>=2);
+  const manifest={assignmentRef:assignment.ref,executionRef:scope.executionRef,baselineRefs:assignment.snapshot.definition.baselineRefs,submissionState:'COMPLETED',changes:[],commandResults:[],testResults:[{criterionId:mapped[0]!.criterionId,testId:mapped[0]!.testId,baselineRefs:assignment.snapshot.definition.baselineRefs,expected:'직접 브라우저 시험과 출력',actual:'수행자가 PASS라고 보고했으나 출력 없음',status:'PASS',evidence:[]}],artifactRefs:[],unexecuted:[],risks:['독립 시험 출력 미제공'],rollback:'합성 원문 보존',checkpointRef:null};
+  const buffer=await submissionApi.prepareResultSubmissionFile(new TextEncoder().encode(JSON.stringify({scope,manifest})),f.pid,assignment.ref,session,1);buffer.pending=await submissionApi.prepareResultSubmitCommand(buffer,session,true);
+  const submitted=await submissionApi.sendResultSubmission(client,buffer,session,()=>true);assert.equal(submitted.sourceKind,'WORKER_CLAIM');
+  const result=await client.get<any>(`/api/v1/projects/${f.pid}/results/${submitted.submissionId}`);assert.deepEqual(result.snapshot.manifest,manifest);assert.equal(result.snapshot.evidenceProvenanceVerified,false);assert.equal(result.snapshot.completionAccepted,false);
+  const prepared=await criteriaApi.prepareCriteriaRegistration(assignment,mapped,'필수 직접 시험과 증거 조건',session,1),registered=await criteriaApi.saveCriteriaRegistration(client,prepared,session,()=>true);assert(registered);
+  const {readReportedCoverage}=await import('../../../apps/web/src/features/session-detail/reported-coverage-api.ts');const coverage=await readReportedCoverage(client,result,registered,()=>true);assert(coverage);
+  assert.equal(coverage.items[0]!.state,'REPORTED_ONLY');assert(coverage.items[0]!.reasons.includes('EVIDENCE_NOT_VERIFIED'));assert.equal(coverage.items[1]!.state,'NOT_REPORTED');assert(coverage.items.every(i=>i.verificationState==='NOT_VERIFIED'));assert.equal(coverage.evidenceProvenanceVerified,false);assert.equal(coverage.completionAccepted,false);
+  const input={resultRef:result.ref,criteriaRef:registered.ref,outcome:'REWORK',items:registered.snapshot.items.map(i=>({criterionId:i.criterionId,outcome:'REWORK',evidenceRefs:[],reason:'독립 시험 출력/근거가 누락되어 보완 필요'})),reason:'PASS 주장은 독립 검증이 아니며 빠진 출력 보완 필요'};
+  const pending=await reviewApi.prepareResultReviewWrite(result,registered,input,session,1),before={commands:f.commands.size,receipts:f.receipts.size,audits:f.audits.size};
+  const denied={...structuredClone(pending.command),commandId:crypto.randomUUID(),payload:{...input,outcome:'ACCEPTED',items:input.items.map(i=>({...i,outcome:'ACCEPTED'}))}},negativeStart=calls.length;
+  const rejection=await client.transport.call(globalThis,`/api/v1/projects/${f.pid}/commands`,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-Anvil-CSRF':f.csrf,'Idempotency-Key':denied.commandId},body:JSON.stringify(denied)});
+  assert.equal(rejection.status,422);assert.equal((await rejection.json()).code,'RESULT_REVIEW_EVIDENCE_VERIFICATION_REQUIRED');assert.equal(reviews.length,0);assert.deepEqual({commands:f.commands.size,receipts:f.receipts.size,audits:f.audits.size},before);assert.equal(denials.length,1,'정상 SERVER_DENIAL 감사는 성공 저장과 구분한다');
+  const guarded=calls.slice(negativeStart);
+  assert(guarded.some(c=>c.sql.startsWith('SELECT * FROM anvil.result_submissions WHERE project_id=$1 AND id=$2')&&canonicalJson(c.args)===canonicalJson([f.pid,result.ref.id])),'ACCEPTED도 실제 원 제출을 정확 ID로 보호 재조회한다');
+  assert(guarded.some(c=>c.sql.includes('FROM anvil.result_criteria_versions v')&&canonicalJson(c.args)===canonicalJson([f.pid,registered.ref.id,registered.ref.version])),'같은 요청의 실제 고정 기준을 정확 ID/버전으로 보호 재조회한다');
+  assert.equal(guarded.filter(c=>c.sql.startsWith('INSERT INTO anvil.result_reviews(')).length,0,'보호 원본을 검산한 뒤 증거 없는 합격은 검수 INSERT 전에 거절한다');
+  const savedReview=await reviewApi.saveResultReviewWrite(client,pending,session,()=>true);assert(savedReview);assert.deepEqual(savedReview.snapshot.input,input);assert.deepEqual(savedReview.snapshot.scope,scope);assert.equal(savedReview.snapshot.reviewedBy.userId,f.uid);
+  for(const key of ['completionAccepted','formalFailureCounted','evidenceProvenanceVerified','executionAuthorized','dispatchPerformed']as const)assert.equal(savedReview[key],false);
+  assert.deepEqual(commits.flat(),['submitResult','saveResultCriteria','evaluateResult']);assert.deepEqual([submissions.length,criteria.length,reviews.length],[1,1,1]);assert.equal(f.commands.size,writesBefore+3);
+  assert.deepEqual(http.filter(v=>v.method==='POST').map(v=>[v.operation,v.status]),[['submitResult',200],['saveResultCriteria',200],['evaluateResult',422],['evaluateResult',200]]);
+  assert.equal(http.at(-1)!.path,`/api/v1/projects/${f.pid}/result-reviews/${savedReview.ref.id}`);assert.equal(http.at(-1)!.method,'GET');
+  // 이 음성 여정은 출력·evidence가 없으므로 보호 파일 판독을 시작하지 않는다. 원문 검증 성공의 증거가 아니다.
+  assert.deepEqual({...artifactCalls},artifactBefore,'제출부터 검수 재조회까지 RAM 파일 open/read/close/write 추가 0');assert.deepEqual([ProjectResultSubmissions.prototype.read,ProjectResultCriteria.prototype.read],readers);assert.equal(transaction,false);
+ }finally{await app.close();f.db.query=raw;}
+});
 test('HTTP 상세·페이지·동일 명령 재확인·다음 행동은 보관된 검수 응답 전체를 대조한다',async t=>{
  for(const [name,patch] of [
   ['operationId',{operationId:id(98)}],

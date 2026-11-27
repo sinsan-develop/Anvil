@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-27 KST
 
+- **Stage C / IX02 QA A 누락 시험·완료 주장 음성 여정** — 기준 `8cdc90de`, 담당 `baseline_predispatch_task_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 실제 Fastify handlers와 UI05 API를 메모리 SQL에 연결했다. 같은 원 제출·기준에서 PASS 주장은 보고 전용, 빠진 시험은 미보고로 남는다. 근거 없는 ACCEPTED는 422이며 성공 명령·허가·검수 행 0이다. 명시 HUMAN REWORK만 저장해 정확한 원 제출·기준·검수자·사유를 보호 재조회했다. 시험 1파일, 준비 fixture SQL 투영 누락 1건 보완. 담당 99/99·최종 집중 1/1·Main 1/1·타입/diff 통과. 원 출력 바이트는 누락 조건으로 판독 0, 보호 출력의 실제 검증·브라우저·Agent·PG 인수는 미검증.
+
 - **Stage C / IX02 QA B 제안 반영→사람 검토 저장·재조회 단일 합성 여정** — 기준 `021efbe9`, 담당 `baseline_predispatch_task_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 실제 UI06 제안·문서·검토 컴포넌트를 사용한다. 미반영 원 제안을 명시 선택해 생성한 정확 미확정 초안의 링크를 열고, 사람 REWORK 검토 저장 뒤 별도 보호 조회에서 같은 문서·버전·해시와 검토자·시각·사유를 확인했다. 합성 기록은 `saveDocumentDraft`, `recordContentReview` 두 요청의 결과로만 생성됐고 확정·구현 요청 0이다. 시험 1파일, 전 담당 사용량 한도 1건은 변경 없이 종료되어 인계. 담당 82/82·Main 1/1·타입·diff 통과. 실제 브라우저·서버·DB에서 원 Agent 제안 생성과 사용자 인수는 미검증.
 
 - **Stage C / IX02 UI05 결과 제출의 부모 반영·동일 명령 재확인** — 기준 `16195774`, 담당 `fn13_diff_contract_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 전송할 정확 원명령이 부모 버퍼에 반영된 뒤에만 현재 transport로 보내고 결과 버퍼 반영 후에만 저장 콜백을 호출한다. 부모 반영 거절·화면/인증/전송 교체 뒤 옛 요청과 401을 차단하고 전송 후 유실은 같은 원명령으로만 명시 재확인한다. 제품 2·합성 시험 1파일, 최초 RED 1건과 시험 act 경고 1건 교정, 직접·인접 94/94(최종 시험 보완 후 집중 6/6)·Main 최종 6/6·타입·diff 통과. 실제 브라우저·DB·Agent 및 정상 실행의 보호 제출 원천은 미검증.
