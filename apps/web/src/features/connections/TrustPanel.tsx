@@ -16,7 +16,17 @@ export function TrustPanel({client,projectId,session,buffer,onChange,onAuthentic
  async function list(next:string|null=null){const seq=++listSequence.current;setLoading(true);try{const value=await listHumanRegistrations(client,projectId,next);if(alive.current&&seq===listSequence.current){setItems(value.items);setCursor(value.nextCursor);}}catch(e){if(alive.current&&seq===listSequence.current){setItems([]);setCursor(null);fail(e);}}finally{if(alive.current&&seq===listSequence.current)setLoading(false);}}
  async function inspect(id:string,preserveFirstCode=false){const seq=++detailSequence.current;setView(null);setAck(false);setFingerprint('');if(!preserveFirstCode)setPairing(null);try{const value=await readHumanRegistration(client,projectId,id);if(alive.current&&seq===detailSequence.current)setView(value);}catch(e){if(alive.current&&seq===detailSequence.current)fail(e);}}
  useEffect(()=>{void list();if(work?.resultRegistrationId)void inspect(work.resultRegistrationId);},[projectId,session.user.id,session.clientId]);
- async function begin(){if(lock.current||work?.pending)return;if(work&&!work.resultRegistrationId&&Object.values(work.draft).some(Boolean)&&!confirm('미저장 신뢰 입력을 닫고 새로 작성할까요? 새 등록은 자동 생성하지 않습니다.'))return;lock.current=true;setBusy(true);try{const a=await trustAccess(client,projectId,session,'registerConnector');if(!alive.current)return;onChange(newTrustBuffer(projectId,session,a.generation));setPairing(null);setError(null);}catch(e){if(alive.current)fail(e);}finally{lock.current=false;if(alive.current)setBusy(false);}}
+ async function begin(){
+  if(lock.current||work?.pending)return;
+  if(work&&!work.resultRegistrationId&&Object.values(work.draft).some(Boolean)&&!confirm('미저장 신뢰 입력을 닫고 새로 작성할까요? 새 등록은 자동 생성하지 않습니다.'))return;
+  lock.current=true;setBusy(true);
+  try{
+   const a=await trustAccess(client,projectId,session,'registerConnector');if(!alive.current)return;
+   detailSequence.current++;setView(null);setAck(false);setFingerprint('');setReason('');
+   onChange(newTrustBuffer(projectId,session,a.generation));setPairing(null);setError(null);
+  }catch(e){if(alive.current)fail(e);}
+  finally{lock.current=false;if(alive.current)setBusy(false);}
+ }
  async function send(current:TrustBuffer){
   try{const result=await sendTrustCommand(client,current,session),id=result.receipt.registrationRef?.id??current.resultRegistrationId;
    onChange(previous=>settleTrustBuffer(previous,current,{...current,pending:null,pendingHash:null,uncertain:false,failure:null,resultRegistrationId:id,approvalWork:null}));
@@ -29,6 +39,7 @@ export function TrustPanel({client,projectId,session,buffer,onChange,onAuthentic
  }catch(e){const a=errorOf(e);if(alive.current){onChange({...current,failure:{code:a.code,status:a.status}});fail(a);}}finally{lock.current=false;if(alive.current)setBusy(false);}}
  async function act(operation:'confirmConnectorRegistration'|'revokeConnector',decision:'APPROVE'|'REJECT'){
   if(!view||lock.current||work?.pending||!ack||!reason.trim()||operation==='confirmConnectorRegistration'&&fingerprint!==view.observedHostFingerprint)return;
+  if(work&&!work.resultRegistrationId&&Object.values(work.draft).some(Boolean)&&!confirm('미저장 신뢰 입력을 닫고 기존 등록의 결정을 진행할까요? 새 등록은 자동 생성하지 않습니다.'))return;
   lock.current=true;setBusy(true);try{const access=await trustAccess(client,projectId,session,operation);if(!alive.current)return;const next=newTrustBuffer(projectId,session,access.generation);await prepareTrustAction(client,next,session,view.registrationRef.id,operation,decision,reason,view);if(!alive.current)return;onChange(next);await send(next);}catch(e){if(alive.current){fail(e);if(errorOf(e).status===409)void inspect(view.registrationRef.id);}}finally{lock.current=false;if(alive.current)setBusy(false);}
  }
  function approvalBegin(){if(!work?.pending||work.pending.approvalRef!==null||work.approvalWork)return;onChange({...work,approvalWork:{details:{reason:'',risks:{data:'',security:'',cost:'',interruption:'',unverified:''},rollback:{method:'',limitations:'',evidenceRefs:[]},expiresAt:work.actionExpiresAt!},pending:null,requestId:null,uncertain:false}});}

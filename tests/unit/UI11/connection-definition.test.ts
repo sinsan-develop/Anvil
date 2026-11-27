@@ -61,12 +61,13 @@ test('기존 후보 목록이 정상인 실제 설정Page에는 별도 Connectio
  const f=await mount();try{assert.match(f.container.textContent,/첫 후보/);assert.equal(f.buttons('새 도구 후보').length,1,'후보 기능 보존');assert.equal(f.buttons('새 연결 정의 작성').length,1,'별도 설정 정의 작성 버튼');assert.equal(f.changes(),0);assert(f.calls.every(c=>c.method==='GET'));}finally{await f.close();}
 });
 
-async function definitionMount(projectOverride?:string,extra:Record<string,unknown>={}){
+async function definitionMount(projectOverride?:string,extra:Record<string,unknown>={},intercept?:(path:string,init:any)=>Response|null|Promise<Response|null>){
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container),calls:{path:string;method:string;body?:string}[]=[];let lost=0,stored:any=null;const mode:{post:string;get:number;policy:string;waiting:null|((r:Response)=>void)}={post:'OK',get:200,policy:'AUTO',waiting:null};
  const session={user:{id:id(2)},clientId:id(2),csrfToken:'c'.repeat(43)},pid=projectOverride??id(1);let tick:()=>void=()=>{};
  const policy=()=>{const rules=['registerConnection','readConnectionDefinition'].map((op,n)=>({ruleId:'R'+n,subjectRef:{kind:'HUMAN',userId:session.user.id},operations:[op],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:op==='registerConnection'?mode.policy:'AUTO',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'}));return{configured:true,policy:{ref:{id:id(9),version:1,contentHash:contentHash(canonicalJson({rules,reason:'정의 정책',reviewRefs:[]}))},rules,reason:'정의 정책',reviewRefs:[],createdAt:at}};};
- function client(){return new ui.ApiClient(async(url:any,init:any)=>{const path=String(url),method=init?.method??'GET';calls.push({path,method,body:init?.body});if(path.endsWith('/connection-candidates?limit=50'))return Response.json(page(null));if(path==='/api/v1/projects/'+pid)return Response.json({id:pid,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:1,status:'HELD'}});if(path.endsWith('/permission-policy'))return Response.json(policy());const relative=path.slice(('/api/v1/projects/'+pid+'/').length);if(Object.hasOwn(extra,relative))return Response.json(extra[relative]);if(method==='POST'){if(mode.post==='DELAY')return new Promise<Response>(r=>mode.waiting=r);if(mode.post==='LOST')throw Error('합성 응답 유실');const rejection={code:'VERSION_CONFLICT',message:'요청을 처리하지 못했습니다',requestId:'req-synthetic',targetId:null,retryDisposition:'not-retryable',details:{}};if(mode.post==='409')return Response.json(rejection,{status:409});if(mode.post==='ONLY_CODE_409')return Response.json({code:'VERSION_CONFLICT'},{status:409});if(mode.post==='NO_CODE_409'){const{code,...missing}=rejection;return Response.json(missing,{status:409});}if(mode.post==='HTML_409')return new Response('<html>proxy conflict</html>',{status:409,headers:{'content-type':'text/html'}});if(mode.post==='OVERSIZE_409')return new Response(' '.repeat(2097153)+JSON.stringify(rejection),{status:409,headers:{'content-type':'application/json'}});if(mode.post==='BAD_DTO_409')return Response.json({...rejection,details:[]},{status:409});const c=JSON.parse(init.body),definition={id:id(70),version:1,status:'NOT_READY',...c.payload.definition},ref={id:definition.id,version:1,contentHash:contentHash(canonicalJson(definition))};stored={operationId:id(71),projectId:pid,commandId:c.commandId,status:'APPLIED',targetId:ref.id,version:1,data:{ref,definition,status:'CONNECTION_DEFINITION_STORED',previousRef:null},serverReceivedAt:new Date().toISOString()};return Response.json(stored);}if(path.includes('/connections/')){if(mode.get!==200)return Response.json({code:'ACCESS_DENIED'},{status:mode.get});return Response.json({projectId:pid,ref:stored.data.ref,definition:stored.data.definition,observedAt:new Date().toISOString(),currentStatus:{headVersion:1,configurationCurrent:true,support:'UNVERIFIED',executionAuthorized:false}});}return Response.json({code:'PROJECT_OPERATION_DENIED'},{status:403});});}
+ function client(){return new ui.ApiClient(async(url:any,init:any)=>{const path=String(url),method=init?.method??'GET';calls.push({path,method,body:init?.body});if(intercept){const response=await intercept(path,init);if(response)return response;}if(path.endsWith('/connection-candidates?limit=50'))return Response.json(page(null));if(path==='/api/v1/projects/'+pid)return Response.json({id:pid,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:1,status:'HELD'}});if(path.endsWith('/permission-policy'))return Response.json(policy());const relative=path.slice(('/api/v1/projects/'+pid+'/').length);if(Object.hasOwn(extra,relative))return Response.json(extra[relative]);if(method==='POST'){if(mode.post==='DELAY')return new Promise<Response>(r=>mode.waiting=r);if(mode.post==='LOST')throw Error('합성 응답 유실');const rejection={code:'VERSION_CONFLICT',message:'요청을 처리하지 못했습니다',requestId:'req-synthetic',targetId:null,retryDisposition:'not-retryable',details:{}};if(mode.post==='409')return Response.json(rejection,{status:409});if(mode.post==='ONLY_CODE_409')return Response.json({code:'VERSION_CONFLICT'},{status:409});if(mode.post==='NO_CODE_409'){const{code,...missing}=rejection;return Response.json(missing,{status:409});}if(mode.post==='HTML_409')return new Response('<html>proxy conflict</html>',{status:409,headers:{'content-type':'text/html'}});if(mode.post==='OVERSIZE_409')return new Response(' '.repeat(2097153)+JSON.stringify(rejection),{status:409,headers:{'content-type':'application/json'}});if(mode.post==='BAD_DTO_409')return Response.json({...rejection,details:[]},{status:409});const c=JSON.parse(init.body),definition={id:id(70),version:1,status:'NOT_READY',...c.payload.definition},ref={id:definition.id,version:1,contentHash:contentHash(canonicalJson(definition))};stored={operationId:id(71),projectId:pid,commandId:c.commandId,status:'APPLIED',targetId:ref.id,version:1,data:{ref,definition,status:'CONNECTION_DEFINITION_STORED',previousRef:null},serverReceivedAt:new Date().toISOString()};return Response.json(stored);}if(path.includes('/connections/')){if(mode.get!==200)return Response.json({code:'ACCESS_DENIED'},{status:mode.get});return Response.json({projectId:pid,ref:stored.data.ref,definition:stored.data.definition,observedAt:new Date().toISOString(),currentStatus:{headVersion:1,configurationCurrent:true,support:'UNVERIFIED',executionAuthorized:false}});}return Response.json({code:'PROJECT_OPERATION_DENIED'},{status:403});});}
  const props:any={client:client(),projectId:pid,session,buffer:null,onChange:()=>{},onAuthenticationLost:()=>lost++,definitionBuffer:null,onDefinitionChange:(old:any,next:any)=>{if(props.definitionBuffer!==old)return false;props.definitionBuffer=next;tick();return true;},onDefinitionApproval:()=>true,definitionApprovalId:null};for(const k of ['trust','limit','policy','materialPolicy','preparationPolicy','resultPolicy','limitPolicy','sourceObservationPolicy','hostTrustPolicy','baselinePolicy','sourceDeclarationPolicy']){props[k+'Buffer']=null;props['on'+k[0]!.toUpperCase()+k.slice(1)+'Change']=()=>{};}
+ props.onTrustChange=(change:any)=>{props.trustBuffer=typeof change==='function'?change(props.trustBuffer):change;tick();};
  function Host(){const[,set]=ui.React.useState(0);tick=()=>set((n:number)=>n+1);return ui.React.createElement(ui.ConnectionsPage,props);}
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))],buttons=(label:string)=>nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent===label);
  async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(Host)));}
@@ -111,4 +112,79 @@ test('실제 FN14 Panel은 저장 정의를 보호 GET으로 명시 선택하고
 
 test('I2 동일409의 정확 오류DTO만 REJECTED이며 proxy/누락/상한/형식불일치는 UNKNOWN 원body를 보존한다',async()=>{
  for(const mode of ['409','ONLY_CODE_409','NO_CODE_409','HTML_409','OVERSIZE_409','BAD_DTO_409']){const f=await definitionMount();try{await f.draft();const body=f.props.definitionBuffer.pending.body;f.mode.post=mode;await f.click('연결 정의 저장');const expected=mode==='409'?'REJECTED':'UNKNOWN';assert.equal(f.props.definitionBuffer.pending.state,expected,mode);assert.equal(f.props.definitionBuffer.pending.body,body);assert.equal(f.calls.filter(c=>c.method==='POST').length,1);assert.equal(f.buttons('연결 정의 거절 확인 후 수정').length,mode==='409'?1:0);assert.equal(f.buttons('같은 연결 정의 명령 결과 재확인').length,mode==='409'?0:1);}finally{await f.close();}}
+});
+
+async function trustPanelMount(){
+ const pid=id(1),userId=id(2),registrationId=id(180),connectorId=id(181),fingerprint='d'.repeat(64),policyRef={id:id(182),version:1,contentHash:'e'.repeat(64)},expiresAt=new Date(Date.now()+300000).toISOString();
+ function view(state='PROVED_WAITING_CONFIRMATION',version=3,generation=1,rid=registrationId){
+  const scope={kind:'HOST_TRUST_REGISTRATION',installationId:id(183),projectId:pid,subject:{kind:'HUMAN',userId,clientId:userId,credentialGeneration:1,controlGeneration:1},policyRef,expectedHostFingerprint:fingerprint,hostLabel:'이전 등록 host',expiresAt,credentialScope:'REGISTRATION_STATUS_ONLY',grants:[]},scopeDigest=contentHash(canonicalJson(scope));
+  return{registrationRef:{id:rid,version,contentHash:contentHash(canonicalJson({registrationId:rid,version,state,scopeDigest}))},connectorRef:{id:connectorId,version:generation,contentHash:contentHash(canonicalJson({connectorId,registrationId:rid,scopeDigest,generation}))},hostLabel:scope.hostLabel,state,derivedExpired:false,expiresAt,proofedAt:state==='CREATED'?null:at,revokedAt:state==='REVOKED'?at:null,projectId:pid,connectorState:state==='REVOKED'?'REVOKED':'REGISTRATION_PENDING',expectedHostFingerprint:fingerprint,observedHostFingerprint:fingerprint,scopeDigest,scope,policyRef,createdAt:at,issuedAt:null,failedAttempts:0,credential:{issued:false,expiresAt:null,revokedAt:null,status:'NOT_ISSUED'},basis:{current:true,reasons:[]},confirmation:{allowed:state==='PROVED_WAITING_CONFIRMATION',reasons:state==='PROVED_WAITING_CONFIRMATION'?[]:['PROOF_NOT_READY']},grants:[],executionAuthorized:false,observedAt:new Date().toISOString()};
+ }
+ let current=view();const state={holdDetail:false,release:null as null|((response:Response)=>void),losePost:false},posts:any[]=[],receipts=new Map<string,any>();
+ const f=await definitionMount(undefined,{},async(path,init)=>{
+  if(path.endsWith('/permission-policy'))return Response.json({configured:true,policy:{ref:policyRef,rules:['registerConnector','confirmConnectorRegistration','revokeConnector'].map(operation=>({subjectRef:{kind:'HUMAN',userId},operations:[operation],targetScopes:[{kind:'PROJECT',projectId:pid}],disposition:'AUTO',expiresAt}))}});
+  if(path.endsWith('/connector-registrations?limit=50')){const {registrationRef,connectorRef,hostLabel,state,derivedExpired,expiresAt,proofedAt,revokedAt}=current;return Response.json({view:'HOST_TRUST_REGISTRATIONS_ONLY',items:[{registrationRef,connectorRef,hostLabel,state,derivedExpired,expiresAt,proofedAt,revokedAt}],hasMore:false,nextCursor:null,observedAt:new Date().toISOString()});}
+  if(path.includes('/connector-registrations/')){if(state.holdDetail){state.holdDetail=false;return new Promise<Response>(resolve=>{state.release=resolve;});}return Response.json(current);}
+  if(init?.method!=='POST')return null;
+  assert.equal(path,'/api/v1/projects/'+pid+'/commands');const command=JSON.parse(init.body);assert(['registerConnector','confirmConnectorRegistration','revokeConnector'].includes(command.operation));posts.push(command);let receipt=receipts.get(command.commandId);
+  if(!receipt){
+   const previousRef=command.operation==='revokeConnector'?current.connectorRef:current.registrationRef;
+   current=command.operation==='registerConnector'?view('CREATED',1,1,id(184)):command.operation==='revokeConnector'?view('REVOKED',3,2):view(command.payload.decision==='APPROVE'?'CONFIRMED':'REJECTED',4);
+   const data=command.operation==='registerConnector'?{status:'REGISTRATION_CREATED',registrationRef:current.registrationRef,connectorRef:current.connectorRef,oneTimeCode:null,secretDisposition:'ALREADY_ISSUED_RECONCILE',grants:[],executionAuthorized:false}:command.operation==='revokeConnector'?{status:'REVOKED',connectorRef:current.connectorRef,registrationId,previousRef,grants:[],executionAuthorized:false}:{status:command.payload.decision==='APPROVE'?'CONFIRMED':'REJECTED',registrationRef:current.registrationRef,previousRef,grants:[],executionAuthorized:false};
+   receipt={operationId:id(185),projectId:pid,commandId:command.commandId,status:'APPLIED',targetId:command.operation==='revokeConnector'?connectorId:current.registrationRef.id,version:command.operation==='revokeConnector'?current.connectorRef.version:current.registrationRef.version,serverReceivedAt:new Date().toISOString(),data};receipts.set(command.commandId,receipt);
+  }
+  if(state.losePost){state.losePost=false;throw Error('합성 신뢰 응답 유실');}return Response.json(receipt);
+ });
+ async function acknowledge(){await f.input('직접 비교한 공개키 지문',fingerprint);await f.input('신뢰 결정·회수 이유','원 등록 결정 이유');const box=f.nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent.includes('서버의 현재 지문'));assert(box);const key=Object.keys(box).find(k=>k.startsWith('__reactProps$'));assert(key);await ui.React.act(async()=>(box as any)[key].onChange({target:{checked:true}}));}
+ async function inspect(){await f.click('현재 신뢰 상세');await f.wait('서버 관측 지문 '+fingerprint);}
+ async function draft(){await f.click('신뢰 등록 요청');await f.input('신뢰 host 이름','보존할 새 host');await f.input('예상 공개키 지문 SHA256','b'.repeat(64));await f.input('신뢰 등록 만료 UTC',expiresAt);await f.input('신뢰 등록 이유','보존할 새 등록 이유');}
+ return{...f,state,posts,inspect,acknowledge,draft,detail:()=>structuredClone(current)};
+}
+
+test('신뢰 새 등록 작성은 이전 상세·확인 입력과 늦은 상세 응답을 분리한다',{timeout:15000},async(t)=>{
+ const original=Object.getOwnPropertyDescriptor(globalThis,'confirm');Object.defineProperty(globalThis,'confirm',{configurable:true,value:()=>true});t.after(()=>{if(original)Object.defineProperty(globalThis,'confirm',original);else Reflect.deleteProperty(globalThis,'confirm');});
+ for(const status of [200,401]){const f=await trustPanelMount();try{
+  await f.inspect();await f.acknowledge();await f.draft();
+  assert.equal(f.buttons('신뢰 지문 확인·승인').length,0,'이전 상세 결정을 새 작성 옆에 유지하지 않는다');
+  await f.inspect();
+  for(const label of ['직접 비교한 공개키 지문','신뢰 결정·회수 이유'])assert.equal(f.nodes().find(n=>n.attributes.get('aria-label')===label)!.value,'');
+  assert.equal(f.nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent.includes('서버의 현재 지문'))!.checked,false);
+  const draft=f.props.trustBuffer;f.state.holdDetail=true;await f.click('현재 신뢰 상세');assert(f.state.release);
+  const late=f.detail();await f.click('신뢰 등록 요청');
+  const reset=f.props.trustBuffer;assert.notEqual(reset,draft);await ui.React.act(async()=>{f.state.release!(Response.json(status===200?late:{code:'AUTH_REQUIRED'},{status}));});await f.flush();
+  assert.equal(f.buttons('신뢰 지문 확인·승인').length,0);assert.equal(f.props.trustBuffer,reset);assert.equal(f.posts.length,0);assert.equal(f.lost(),0,'새 작성 이전 상세의 늦은401은 새 인증 문맥을 종료하지 않는다');
+ }finally{await f.close();}}
+});
+
+test('이전 등록의 승인·거절·회수는 신규 미저장 입력을 기본 폐기하거나 전송하지 않는다',{timeout:15000},async(t)=>{
+ const original=Object.getOwnPropertyDescriptor(globalThis,'confirm');let confirmations=0;
+ Object.defineProperty(globalThis,'confirm',{configurable:true,value:()=>{confirmations++;return false;}});t.after(()=>{if(original)Object.defineProperty(globalThis,'confirm',original);else Reflect.deleteProperty(globalThis,'confirm');});
+ for(const label of ['신뢰 지문 확인·승인','신뢰 지문 확인·거절','신뢰 등록 회수']){
+  const f=await trustPanelMount();try{
+   await f.draft();await f.inspect();await f.acknowledge();const draft=f.props.trustBuffer,bytes=canonicalJson(draft),before=f.calls.length,count=confirmations;
+   await f.click(label);assert.equal(confirmations,count+1);assert.equal(f.props.trustBuffer,draft);assert.equal(canonicalJson(f.props.trustBuffer),bytes);assert.equal(f.calls.length,before);assert.equal(f.posts.length,0);
+  }finally{await f.close();}
+ }
+});
+
+test('신뢰 초안 교체에 명시 동의한 기존 등록 승인·거절·회수는 원 목적 명령 하나만 보낸다',{timeout:15000},async(t)=>{
+ const original=Object.getOwnPropertyDescriptor(globalThis,'confirm');let confirmations=0;
+ Object.defineProperty(globalThis,'confirm',{configurable:true,value:()=>{confirmations++;return true;}});t.after(()=>{if(original)Object.defineProperty(globalThis,'confirm',original);else Reflect.deleteProperty(globalThis,'confirm');});
+ for(const [label,operation,status] of [['신뢰 지문 확인·승인','confirmConnectorRegistration','CONFIRMED'],['신뢰 지문 확인·거절','confirmConnectorRegistration','REJECTED'],['신뢰 등록 회수','revokeConnector','REVOKED']]){
+  const f=await trustPanelMount();try{
+   await f.draft();await f.inspect();await f.acknowledge();const current=f.detail(),count=confirmations;
+   await f.click(label!);await f.wait(status!);assert.equal(confirmations,count+1);assert.equal(f.posts.length,1);
+   const command=f.posts[0];assert.equal(command.operation,operation);assert.equal(command.targetId,operation==='revokeConnector'?current.connectorRef.id:current.registrationRef.id);
+   assert.equal(command.expectedVersion,operation==='revokeConnector'?current.connectorRef.version:current.registrationRef.version);assert.equal(command.payload.reason,'원 등록 결정 이유');assert.equal(f.props.trustBuffer.pending,null);
+  }finally{await f.close();}
+ }
+});
+
+test('신뢰 등록 POST 응답 유실의 pending은 새 작성으로 교체하지 않고 동일 명령만 복구한다',{timeout:15000},async()=>{
+ const f=await trustPanelMount();try{
+  await f.draft();f.state.losePost=true;await f.click('신뢰 등록 저장');await f.wait('CONNECTION_LOST');
+  const pending=f.props.trustBuffer.pending,bytes=canonicalJson(pending);assert(pending);assert.equal(f.posts.length,1);assert.equal(f.props.trustBuffer.uncertain,true);assert.equal(f.buttons('신뢰 등록 요청')[0]!.disabled,true);
+  await f.click('같은 신뢰 명령 결과 확인');await f.wait('최초 코드 재조회 불가');
+  assert.equal(f.posts.length,2);assert.equal(canonicalJson(f.posts[0]),bytes);assert.equal(canonicalJson(f.posts[1]),bytes);assert.equal(f.props.trustBuffer.pending,null);assert.equal(f.props.trustBuffer.uncertain,false);assert.equal('oneTimeCode'in f.props.trustBuffer,false);
+ }finally{await f.close();}
 });
