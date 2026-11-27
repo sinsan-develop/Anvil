@@ -16,6 +16,8 @@ import {resultFixture} from './result-view-fixture.ts';
 import {observationJournalFor} from './observation-journal-fixture.ts';
 import {stopHistoryFor} from './stop-request-history-fixture.ts';
 import {transferFixture} from '../UI09/transfer-fixture.ts';
+import {assignmentDesignFixture} from './assignment-design-original-fixture.ts';
+import type {TraceEdge,TraceRef,TraceView} from '../../../apps/web/src/features/design-trace/trace-api.ts';
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
 class MemoryNode{
  nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
@@ -30,7 +32,7 @@ class MemoryNode{
  removeChild(n:MemoryNode){const i=this.childNodes.indexOf(n);assert(i>=0);this.childNodes.splice(i,1);n.parentNode=null;return n;}
  setAttribute(k:string,v:unknown){this.attributes.set(k,String(v));if(k==='disabled')this.disabled=true;}removeAttribute(k:string){this.attributes.delete(k);if(k==='disabled')this.disabled=false;}getAttribute(k:string){return this.attributes.get(k)??null;}
  addEventListener(k:string,f:Function){this.listeners.set(k,[...(this.listeners.get(k)??[]),f]);}removeEventListener(k:string,f:Function){this.listeners.set(k,(this.listeners.get(k)??[]).filter(v=>v!==f));}
- contains(n:MemoryNode|null):boolean{return !!n&&(n===this||this.childNodes.some(c=>c.contains(n)));}focus(){this.ownerDocument.activeElement=this;}
+ contains(n:MemoryNode|null):boolean{return !!n&&(n===this||this.childNodes.some(c=>c.contains(n)));}focus(){this.ownerDocument.activeElement=this;}scrollIntoView(){}
  dispatchEvent(e:any){e.target=this;e.preventDefault??=()=>{e.defaultPrevented=true;};e.stopPropagation??=()=>{e.cancelBubble=true;};const chain:MemoryNode[]=[];for(let n:MemoryNode|null=this;n;n=n.parentNode)chain.push(n);for(const n of chain)for(const f of n.listeners.get(e.type)??[])f(e);return !e.defaultPrevented;}
 }
 const document:any=new MemoryNode('#document',9);document.ownerDocument=document;document.createElement=(n:string)=>new MemoryNode(n,1,document);document.createElementNS=(_ns:string,n:string)=>document.createElement(n);document.createTextNode=(s:string)=>{const n=new MemoryNode('#text',3,document);n.data=s;return n;};document.documentElement=document.createElement('html');document.body=document.createElement('body');document.documentElement.appendChild(document.body);document.activeElement=document.body;
@@ -67,10 +69,12 @@ before(async()=>{
 after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k,v]of saved)if(v)Object.defineProperty(globalThis,k,v);else Reflect.deleteProperty(globalThis,k);});
 
 /** 현재 App.tsx:225/316과 같은 user/client/project/fullref key. 무key 단독 Page로 재현하지 않는다. */
-async function mount(confirmed=false){
- const f=fixture();f.client=new ui.ApiClient(f.client.transport);if(!confirmed)Object.assign(f.decision,{confirmedRef:null});const transport=f.client.transport;let delay=false,jsonDelay=false,jsonRelease:(()=>void)|null=null,release:((r:Response)=>void)|null=null,lost=0,mutations=0;
+async function mount(confirmed=false,original?:{data:ReturnType<typeof assignmentDesignFixture>;read:(path:string)=>Response|Promise<Response>|null}){
+ const f=fixture();
+ if(original){const {draft,confirmed}=original.data.detail;Object.assign(f.draft,draft);Object.assign(f.confirmed,confirmed);Object.assign(f.decision,{draftRef:draft.ref,confirmedRef:confirmed!.ref});f.state.assignmentRef=confirmed!.ref;}
+ f.client=new ui.ApiClient(f.client.transport);if(!confirmed)Object.assign(f.decision,{confirmedRef:null});const transport=f.client.transport;let delay=false,jsonDelay=false,jsonRelease:(()=>void)|null=null,release:((r:Response)=>void)|null=null,lost=0,mutations=0;
  const calls:{path:string;method:string}[]=[],commits:string[]=[],container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
- const wrap=()=>async(url:any,options:any)=>{const method=options?.method??'GET';calls.push({path:String(url),method});assert.equal(method,'GET');if(delay){delay=false;return new Promise<Response>(r=>{release=r;});}if(String(url).endsWith('/result-pages'))return Response.json({projectId:pid,assignmentRef:f.confirmed.ref,items:[],hasMore:false,nextCursor:null,selectionState:'NOT_SELECTED',observedAt:at});const response=await transport(url,options);if(jsonDelay){jsonDelay=false;const original=response.json.bind(response);response.json=async()=>{await new Promise<void>(resolve=>{jsonRelease=resolve;});return original();};}return response;};
+ const wrap=()=>async(url:any,options:any)=>{const method=options?.method??'GET';calls.push({path:String(url),method});assert.equal(method,'GET');if(delay){delay=false;return new Promise<Response>(r=>{release=r;});}if(String(url).endsWith('/result-pages'))return Response.json({projectId:pid,assignmentRef:f.confirmed.ref,items:[],hasMore:false,nextCursor:null,selectionState:'NOT_SELECTED',observedAt:at});const protectedResponse=original?.read(String(url));if(protectedResponse)return protectedResponse;const response=await transport(url,options);if(jsonDelay){jsonDelay=false;const original=response.json.bind(response);response.json=async()=>{await new Promise<void>(resolve=>{jsonRelease=resolve;});return original();};}return response;};
  f.client.transport=wrap();
  const session={user:{id:pid},clientId:pid,csrfToken:'c'.repeat(43)},props:any={client:f.client,projectId:pid,assignmentRef:f.draft.ref,criteria:{session},checkpoint:{buffers:{},onChange:()=>{mutations++;}},onAuthenticationLost:()=>{lost++;}};
  if(confirmed)props.checkpoint.buffers[checkpointBufferKey(session,pid,f.confirmed.ref)]={...emptyCheckpointForm(),position:'보존할 미완료 기록',next:'다음 검수',reason:'합성 입력 보존'};
@@ -81,8 +85,124 @@ async function mount(confirmed=false){
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))];
  async function click(label:string){const found=nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent===label);assert.equal(found.length,1,label);assert(!found[0]!.disabled);await ui.React.act(async()=>found[0]!.dispatchEvent({type:'click',button:0,bubbles:true}));}
  async function close(){await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
- await render();await waitFor('등록된 임무 조회');return{f,props,calls,commits,container,nodes,fiber(name:string){for(const n of nodes()){const key=Object.keys(n).find(k=>k.startsWith('__reactFiber$'));for(let fiber=key?(n as any)[key]:null;fiber;fiber=fiber.return)if(fiber.type?.name===name)return fiber.memoizedProps;}assert.fail('실제 child '+name);},render,flush,waitFor,click,close,wrap,lost:()=>lost,mutations:()=>mutations,hold(){delay=true;},holdJson(){jsonDelay=true;},get jsonRelease(){return jsonRelease;},get release(){return release;}};
+ await render();await waitFor(f.draft.snapshot.definition.goal);return{f,props,calls,commits,container,nodes,fiber(name:string){for(const n of nodes()){const key=Object.keys(n).find(k=>k.startsWith('__reactFiber$'));for(let fiber=key?(n as any)[key]:null;fiber;fiber=fiber.return)if(fiber.type?.name===name)return fiber.memoizedProps;}assert.fail('실제 child '+name);},render,flush,waitFor,click,close,wrap,lost:()=>lost,mutations:()=>mutations,hold(){delay=true;},holdJson(){jsonDelay=true;},get jsonRelease(){return jsonRelease;},get release(){return release;}};
 }
+
+function assignmentTraceFixture(){
+ const data=assignmentDesignFixture(),designRef=data.plan.designRef;
+ const id=(value:number)=>`45d00000-1111-4111-8111-${String(value).padStart(12,'0')}`;
+ const design:TraceRef={kind:'DESIGN_ITEM',id:id(1),versionRef:designRef,localCode:'DESIGN1',anchor:'line:1'};
+ const foreignDesign:TraceRef={...design,id:id(2),localCode:'OUTSIDE',anchor:'line:2'};
+ const screen:TraceRef={kind:'SCREEN_REGION',id:id(3),versionRef:{id:id(30),version:3,contentHash:'e'.repeat(64)},localCode:'SCREEN1',anchor:'line:7'};
+ data.task.designRefs=[design] as typeof data.task.designRefs;data.task.screenRefs=[screen] as typeof data.task.screenRefs;
+ const {ref:oldPlan,status,executionEvidence,observedAt,...planSnapshot}=data.plan;
+ data.plan.ref={...oldPlan,contentHash:hash(planSnapshot)};
+ const {draft,confirmed}=data.detail;
+ draft.snapshot.definition.taskRef.planRef=data.plan.ref;draft.snapshot.basis.planRef=data.plan.ref;draft.snapshot.basis.taskCardHash=hash(data.task);
+ draft.ref={...draft.ref,contentHash:hash(draft.snapshot)};confirmed!.snapshot.draftRef=draft.ref;confirmed!.ref={...confirmed!.ref,contentHash:hash(confirmed!.snapshot)};
+ const task:TraceRef={kind:'PLAN_TASK',id:data.plan.ref.id,versionRef:data.plan.ref,localCode:data.task.taskCode};
+ const edge=(n:number,from:TraceRef,to:TraceRef,relation:TraceEdge['relation']='IMPLEMENTS'):TraceEdge=>{
+  const entry={from,to,relation,reason:'보호 연결',designRefs:[designRef]};
+  return {id:id(n),edgeHash:hash(entry),createdAt:at,...entry};
+ };
+ const page=(edges:TraceEdge[],nextCursor:string|null):TraceView=>{
+  const refs=[...new Map(edges.flatMap(e=>[e.from,e.to]).map(r=>[canonicalJson(r),r])).values()];
+  return {designRef,direction:'REVERSE',nodes:refs.map(ref=>({ref,title:ref.localCode!,designRefs:[designRef]})),
+   edges,traversal:edges.map(e=>({edgeId:e.id,from:e.to,to:e.from})),missingLinks:[],
+   unknownEvidence:[{code:'EXECUTION_SOURCE_NOT_CONNECTED'},{code:'TEST_EVIDENCE_SOURCE_NOT_CONNECTED'}],baselineRef:null,
+   hasMore:nextCursor!==null,nextCursor,observedAt:at};
+ };
+ const cursor='opaque.page.2',first=page([
+  edge(10,{...task,versionRef:{...task.versionRef,version:1}},design),
+  edge(11,{...task,localCode:'OTHER'},design),edge(12,task,foreignDesign),
+  edge(13,task,{...design,versionRef:{...designRef,contentHash:'b'.repeat(64)}}),edge(14,design,task),
+  edge(15,task,design,'REFINES'),
+ ],cursor),last=page([edge(16,task,design),edge(17,task,screen)],null);
+ const item={documentRef:designRef,localCode:design.localCode,title:'원 설계 줄',anchor:design.anchor};
+ const region={designItemId:design.id,screenCode:screen.localCode,documentRef:screen.versionRef,anchor:screen.anchor,
+  artifactRef:{artifactId:id(31),bytes:50,contentHash:'a'.repeat(64),mediaType:'text/markdown;charset=utf-8'}};
+ const index={documentRef:designRef,status:'INDEXED',observedAt:at,items:[{id:design.id,...item,itemHash:hash(item)}],
+  screenRegions:[{id:screen.id,...region,regionHash:hash(region)}]};
+ let respond=(value:string|null):Response|Promise<Response>=>Response.json(value===null?first:last);
+ let readIndex=():Response|Promise<Response>=>Response.json(index);
+ return {data,first,last,index,cursor,page,setResponse(next:typeof respond){respond=next;},setIndexResponse(next:typeof readIndex){readIndex=next;},read(path:string){
+  const base=`/api/v1/projects/${pid}`;
+  if(path===`${base}/work-plans/${data.plan.ref.id}/versions/2`)return Response.json(data.plan);
+  if(path===`${base}/documents/${designRef.id}/versions/2`)return Response.json(data.document);
+  if(path===`${base}/files/${data.fileId}`)return new Response(data.bytes,{headers:{'content-type':'application/octet-stream'}});
+  if(path===`${base}/design-index?documentId=${designRef.id}&version=2`)return readIndex();
+  if(!path.startsWith(base+'/traces?'))return null;
+  const query=new URLSearchParams(path.split('?')[1]);assert.equal(query.get('designId'),designRef.id);assert.equal(query.get('version'),'2');assert.equal(query.get('direction'),'REVERSE');
+  const token=query.get('cursor');assert(token===null||token===cursor);return respond(token);
+ }};
+}
+
+async function openAssignmentTrace(f:Awaited<ReturnType<typeof mount>>){
+ await f.click('고정 계획 업무 원문 보기');await f.waitFor('고정 계획의 원 업무');
+ await f.click('고정 설계 원문 보기');await f.waitFor('임무에 고정된 설계 원문');
+}
+test('고정 업무의 보호 설계·시안 역추적은 일치한 원 연결만 표시한다',async()=>{
+ const qa=assignmentTraceFixture(),f=await mount(true,qa);
+ try{
+  const traces=()=>f.calls.filter(c=>c.path.includes('/traces?'));
+  assert.equal(traces().length,0);await openAssignmentTrace(f);assert.equal(traces().length,0);
+  await f.click('고정 업무의 설계 연결 조회');await f.waitFor('다음 설계 연결 페이지');
+  assert.equal(traces().length,1);assert(!f.container.textContent.includes('확인한 페이지에서 일치하는 연결 없음'));
+  assert(!f.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent.includes('원 설계 위치 보기')));
+  await f.click('다음 설계 연결 페이지');await f.waitFor('DESIGN1 원 설계 위치 보기');
+  assert.equal(traces().length,2);assert(!f.container.textContent.includes('OUTSIDE'));
+  await f.click('DESIGN1 원 설계 위치 보기');
+  assert.equal(f.nodes().find(n=>n.tagName==='MARK')?.textContent,'임무에 고정된 설계 원문');
+  assert.equal(f.nodes().filter(n=>n.tagName==='SCRIPT').length,0);
+  await f.click('SCREEN1 등록 시안 위치 확인');await f.waitFor('등록 시안 위치 · SCREEN1 · v3 · 7줄');
+  assert.equal(f.calls.filter(c=>c.path.includes('/design-index?')).length,1);
+  assert.equal(f.calls.filter(c=>c.path.includes('/files/')).length,1);
+  assert(f.container.textContent.includes('실제 실행·시험 근거 미확인'));
+  assert.equal(f.mutations(),0);assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+test('설계 역추적 반복 커서와 닫힌 원문에 온 401은 후속 조회와 인증 전환을 막는다',async()=>{
+ const qa=assignmentTraceFixture(),f=await mount(true,qa);
+ try{
+  await openAssignmentTrace(f);
+  qa.setResponse(cursor=>Response.json(cursor?{...qa.last,hasMore:true,nextCursor:qa.cursor}:qa.first));
+  await f.click('고정 업무의 설계 연결 조회');await f.waitFor('다음 설계 연결 페이지');
+  await f.click('다음 설계 연결 페이지');await f.waitFor('ASSIGNMENT_TRACE_PAGE_INVALID');
+  assert(!f.container.textContent.includes('다음 설계 연결 페이지'));assert(!f.container.textContent.includes('DESIGN1 원 설계 위치 보기'));
+  qa.setResponse(cursor=>Response.json(cursor?qa.page([{...qa.last.edges[0]!,id:qa.first.edges[0]!.id}],null):qa.first));
+  await f.click('고정 업무의 설계 연결 조회');await f.waitFor('다음 설계 연결 페이지');
+  await f.click('다음 설계 연결 페이지');await f.waitFor('ASSIGNMENT_TRACE_PAGE_INVALID');
+  assert(!f.container.textContent.includes('DESIGN1 원 설계 위치 보기'));
+  let release!: (value:Response)=>void;
+  qa.setResponse(()=>new Promise<Response>(resolve=>{release=resolve;}));
+  await f.click('고정 업무의 설계 연결 조회');assert(release);
+  await f.click('계획 업무 조회 닫기');
+  await ui.React.act(async()=>release(Response.json({code:'AUTH_REQUIRED'},{status:401})));await f.flush();
+  assert.equal(f.lost(),0);assert(!f.container.textContent.includes('등록 시안 위치'));assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+test('새 설계 조회 이후 과거 페이지 이벤트와 늦은 시안 확인은 보호 결과를 바꾸지 않는다',async()=>{
+ const qa=assignmentTraceFixture(),f=await mount(true,qa);
+ try{
+  await openAssignmentTrace(f);
+  qa.setResponse(()=>Response.json(qa.last));
+  await f.click('고정 업무의 설계 연결 조회');await f.waitFor('SCREEN1 등록 시안 위치 확인');
+  const screenButton=f.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='SCREEN1 등록 시안 위치 확인')!;
+  const reactProps=Object.keys(screenButton).find(k=>k.startsWith('__reactProps$'));assert(reactProps);
+  const openOldPage=(screenButton as any)[reactProps].onClick;
+  let release!: (value:Response)=>void;
+  qa.setIndexResponse(()=>new Promise<Response>(resolve=>{release=resolve;}));
+  await f.click('SCREEN1 등록 시안 위치 확인');assert(release);
+  await f.click('고정 설계 원문 다시 조회');await f.waitFor('임무에 고정된 설계 원문');
+  await ui.React.act(async()=>release(Response.json({code:'AUTH_REQUIRED'},{status:401})));await f.flush();
+  assert.equal(f.lost(),0);assert(!f.container.textContent.includes('등록 시안 위치 ·'));
+  const before=f.calls.length;
+  await ui.React.act(async()=>openOldPage());
+  assert.equal(f.calls.length,before);assert.equal(f.mutations(),0);
+ }finally{await f.close();}
+});
 
 async function mountCheckpointRestore(initial:ReturnType<typeof emptyCheckpointForm>|null=null,structured=false){
  const f=checkpointFixture(),input=structuredClone(f.input);input.state.completedItems[0].itemId='completed-1';input.state.remaining[0].itemId='remaining-1';
