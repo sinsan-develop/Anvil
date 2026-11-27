@@ -67,3 +67,42 @@ test('처음부터 inactive면 GET0·응답 뒤 이탈은 null이며 body reader
 test('stream 대기 중 이탈과 transport 교체는 bytes 성공을 폐기한다',async()=>{
  const run=reader(),f=fixture();for(const mode of ['inactive','transport']){let active=true;const s=stream([f.bytes],{beforeRead:()=>{if(mode==='inactive')active=false;else client.transport=async()=>response(f.bytes);}});const client=new ApiClient(async()=>s.value);assert.equal(await run(client,f.entry,f.ref,()=>active),null);assert.deepEqual(s.counts(),{cancelled:1,released:1});}
 });
+
+test('취소한 보호 GET의 늦은 401은 본문을 읽지 않고 reader를 한 번 취소·해제한다',async()=>{
+ const f=fixture(),controller=new AbortController(),s=stream([f.bytes],{beforeRead:()=>assert.fail('늦은 401 본문 읽기')});
+ const unauthorized={...s.value,ok:false,status:401} as Response;
+ let received:AbortSignal|null|undefined,started!:()=>void,respond!:(v:Response)=>void;
+ const entered=new Promise<void>(r=>started=r),headers=new Promise<Response>(r=>respond=r);
+ const client=new ApiClient(async(_path,options)=>{received=options?.signal;started();return headers;});
+ const pending=reader()(client,f.entry,f.ref,()=>true,controller.signal);
+ await entered;controller.abort();respond(unauthorized);
+ assert.equal(await pending,null);
+ assert.equal(received,controller.signal);
+ assert.deepEqual(s.counts(),{cancelled:1,released:1});
+});
+
+test('이미 취소된 요청은 GET 0이며 chunk 대기 중 취소와 transport 교체는 reader 정리 한 번',async()=>{
+ const f=fixture(),controller=new AbortController(),aborted=AbortSignal.abort();
+ const run=reader();
+ const missed=new ApiClient(async()=>assert.fail('취소된 보호 GET'));
+ assert.equal(await run(missed,f.entry,f.ref,()=>true,aborted),null);
+ let started!:()=>void;const entered=new Promise<void>(r=>started=r);
+ let returnChunk!:(v:ReadableStreamReadResult<Uint8Array>)=>void;
+ const chunk=new Promise<ReadableStreamReadResult<Uint8Array>>(r=>returnChunk=r);
+ let readCalls=0,cancelCalls=0,releaseCalls=0;
+ const body={getReader:()=>({
+  read(){readCalls++;started();return chunk;},
+  async cancel(){cancelCalls++;returnChunk({done:true,value:undefined});},
+  releaseLock(){releaseCalls++;},
+ })};
+ const client=new ApiClient(async()=>({ok:true,status:200,headers:new Headers({'content-type':'application/octet-stream'}),body}) as Response);
+ const pending=run(client,f.entry,f.ref,()=>true,controller.signal);
+ await entered;client.transport=async()=>assert.fail('새 전송에 원 GET 재시도');controller.abort();
+ // reader.cancel이 다음 chunk를 끝낸다. 실패 시 합성 pending을 회수해 종료한다.
+ await new Promise(r=>setImmediate(r));
+ const cancelledBeforeChunk=cancelCalls;
+ returnChunk({done:true,value:undefined});
+ assert.equal(await pending,null);
+ assert.equal(cancelledBeforeChunk,1);
+ assert.deepEqual({readCalls,cancelCalls,releaseCalls},{readCalls:1,cancelCalls:1,releaseCalls:1});
+});

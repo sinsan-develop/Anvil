@@ -19,16 +19,21 @@ export async function readResultArtifactText(client:ApiClient,original:Submitted
 
 export interface ResultArtifactDownload {artifactRef:PlanRef;bytes:Uint8Array<ArrayBuffer>;filename:string;mediaType:'application/octet-stream'}
 /** 선택 제출의 선언과 원본 bytes만 대조한다. 출처·시험/검수 합격은 확정하지 않는다. */
-export async function readResultArtifactDownload(client:ApiClient,original:SubmittedResultView,selected:PlanRef,active:()=>boolean):Promise<ResultArtifactDownload|null>{
- const r=structuredClone(original),wanted=structuredClone(selected),transport=client.transport,current=()=>active()&&client.transport===transport;
+export async function readResultArtifactDownload(client:ApiClient,original:SubmittedResultView,selected:PlanRef,active:()=>boolean,signal?:AbortSignal):Promise<ResultArtifactDownload|null>{
+ const transport=client.transport,current=()=>!signal?.aborted&&active()&&client.transport===transport;
+ if(signal?.aborted)return null;
+ const r=structuredClone(original),wanted=structuredClone(selected);
  const pid=r?.snapshot?.scope?.projectId,encoded=new TextEncoder().encode(ordered(r?.snapshot));
  if(!uuid(pid)||!ref(r.ref)||!ref(wanted)||wanted.version!==1||encoded.length>2*1024*1024||await digest(encoded)!==r.ref.contentHash||!Array.isArray(r.snapshot.manifest.artifactRefs)||r.snapshot.manifest.artifactRefs.filter(v=>v.id===wanted.id).length!==1||!r.snapshot.manifest.artifactRefs.some(v=>same(v,wanted)))fail();
  if(!current())return null;
  let response:Response;
- try{response=await transport.call(globalThis,`/api/v1/projects/${pid}/files/${wanted.id}`,{method:'GET',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/octet-stream'}});}catch{if(!current())return null;throw new ApiError('CONNECTION_LOST');}
- let reader:ReadableStreamDefaultReader<Uint8Array>|undefined,completed=false;
+ try{response=await transport.call(globalThis,`/api/v1/projects/${pid}/files/${wanted.id}`,{method:'GET',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/octet-stream'},...(signal?{signal}:{})});}catch{if(!current())return null;throw new ApiError('CONNECTION_LOST');}
+ let reader:ReadableStreamDefaultReader<Uint8Array>|undefined,completed=false,cancellation:Promise<void>|undefined;
+ const cancel=()=>cancellation??=Promise.resolve().then(()=>reader?.cancel()).catch(()=>{});
+ const abort=()=>{void cancel();};
  try{
   if(response.body)reader=response.body.getReader();
+  if(reader)signal?.addEventListener('abort',abort,{once:true});
   if(!current())return null;
   if(!response.ok)throw new ApiError('RESULT_ARTIFACT_DOWNLOAD_FAILED',response.status);
   if(response.headers.get('content-type')?.trim().toLowerCase()!=='application/octet-stream'||!reader)fail();
@@ -45,5 +50,8 @@ export async function readResultArtifactDownload(client:ApiClient,original:Submi
   const actual=await digest(bytes);if(!current())return null;if(actual!==wanted.contentHash)fail();
   completed=true;return{artifactRef:wanted,bytes,filename:`artifact-${wanted.id}.bin`,mediaType:'application/octet-stream'};
  }catch(cause){if(!current())return null;if(cause instanceof ApiError)throw cause;throw new ApiError('RESULT_ARTIFACT_RESPONSE_INVALID');}
- finally{if(reader){if(!completed)try{await reader.cancel();}catch{}try{reader.releaseLock();}catch{}}}
+ finally{
+  signal?.removeEventListener('abort',abort);
+  if(reader){if(!completed)await cancel();try{reader.releaseLock();}catch{}}
+ }
 }
