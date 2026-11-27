@@ -60,11 +60,11 @@ test('공유 fixture는 호출별 자료와 transport 상태를 분리하고 imp
 });
 
 
-test('실제 Editor의 등록 준비는 별도 승인 요청·결정·복귀 뒤 동일 원 명령만 저장한다',async()=>{
- const h=await mount();h.q.setPolicy('REQUIRE_APPROVAL');try{await h.freeze();const original=structuredClone(h.buffer().pending);await h.click('준비본 보관 승인 요청 준비');await h.wait(()=>!!h.buffer().approval?.request);await h.change('준비 승인 이유','등록 준비 보관만');for(const key of ['data','security','cost','interruption','unverified'])await h.change('준비 승인 위험 '+key,'원문 보존·미검증');await h.change('준비 승인 복구방법','원 기록 유지');await h.change('준비 승인 복구한계','실행 허가 아님');await h.change('준비 승인 기한',new Date(Date.now()+1800000).toISOString());await h.click('준비 승인 요청 명시 보관');await h.wait(()=>!!h.buffer().approval?.requestId);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,1);
+for(const mobile of [false,true])test('실제 Editor의 등록 준비는 별도 승인 요청·결정·복귀 뒤 동일 원 명령만 저장한다 · '+(mobile?'mobile':'PC'),async()=>{
+ const h=await mount();h.props.mobile=mobile;await h.render();h.q.setPolicy('REQUIRE_APPROVAL');try{await h.freeze();const original=structuredClone(h.buffer().pending);await h.click('준비본 보관 승인 요청 준비');await h.wait(()=>!!h.buffer().approval?.request);await h.change('준비 승인 이유','등록 준비 보관만');for(const key of ['data','security','cost','interruption','unverified'])await h.change('준비 승인 위험 '+key,'원문 보존·미검증');await h.change('준비 승인 복구방법','원 기록 유지');await h.change('준비 승인 복구한계','실행 허가 아님');await h.change('준비 승인 기한',new Date(Date.now()+1800000).toISOString());await h.click('준비 승인 요청 명시 보관');await h.wait(()=>!!h.buffer().approval?.requestId);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,1);
  const requestId=h.buffer().approval.requestId;
  const links=()=>{const walk=(node:MemoryNode):MemoryNode[]=>[node,...node.childNodes.flatMap(walk)];return walk(h.container).filter(n=>n.tagName==='A'&&n.textContent==='UI08에서 별도 결정');};
- const href='#/projects/'+h.f.confirmed.projectId+'/approvals/requests/'+requestId;
+ const href='#/projects/'+h.f.confirmed.projectId+(mobile?'/mobile':'')+'/approvals/requests/'+requestId;
  assert.deepEqual(links().map(n=>n.getAttribute('href')),[href]);
  await h.change('준비 결정 요청ID',h.f.otherProject);
  assert.deepEqual(links().map(n=>n.getAttribute('href')),[href]);
@@ -75,12 +75,12 @@ test('실제 Editor의 등록 준비는 별도 승인 요청·결정·복귀 뒤
 
 test('실제 Editor의 POST 전 현재 DENY는 명확 거절이며 UNKNOWN hold로 바뀌지 않는다',async()=>{const h=await mount();try{await h.freeze();const original=structuredClone(h.buffer().pending);h.q.setPolicy('DENY');await h.click('준비본 보관');await h.wait(()=>!!h.buffer().failure);assert.equal(h.q.calls.filter(v=>v.method==='POST').length,0);assert.equal(h.buffer().failure.code,'PROJECT_OPERATION_DENIED');assert.equal(h.buffer().uncertain,false);assert.equal(h.buffer().savedReceipt,undefined);assert.deepEqual(h.buffer().pending,original);}finally{await h.close();}});
 
-test('실제 UI08은 같은 승인 요청과 현재 원 준비만 작업공간 복귀 링크로 제공한다',async()=>{
+for(const mobile of [false,true])test('실제 UI08은 같은 승인 요청과 현재 원 준비만 작업공간 복귀 링크로 제공한다 · '+(mobile?'mobile':'PC'),async()=>{
  const h=await mount();h.q.setPolicy('REQUIRE_APPROVAL');
  const container=document.createElement('main');document.body.appendChild(container);const root=ui.createRoot(container);
  const findReturn=()=>{const walk=(node:MemoryNode):MemoryNode[]=>[node,...node.childNodes.flatMap(walk)];return walk(container).find(n=>n.tagName==='A'&&n.textContent==='원 준비를 이어갈 작업공간으로 돌아가기');};
  const projectId=h.f.confirmed.projectId,session=h.f.session;
- let preparation:any=null,wire:any=null,requestId='';
+ let preparation:any=null,wire:any=null,requestId='',returns=0;
  const client=new ui.ApiClient(async(url:string|URL|Request,init?:RequestInit)=>{
   assert.equal(init?.method,'GET');
   const path=String(url);
@@ -90,7 +90,7 @@ test('실제 UI08은 같은 승인 요청과 현재 원 준비만 작업공간 �
  });
  function Host(){
   const [buffer,setBuffer]=ui.React.useState(null);
-  return ui.React.createElement(ui.ApprovalsPage,{client,projectId,session,requestId,buffer,onChange:setBuffer,candidate:null,onCandidateChange:()=>assert.fail('후보 변경 금지'),executionPreparation:preparation,onAuthenticationLost:()=>assert.fail('인증 전환 없음')});
+  return ui.React.createElement(ui.ApprovalsPage,{mobile,onPreparationReturn:()=>returns++,client,projectId,session,requestId,buffer,onChange:setBuffer,candidate:null,onCandidateChange:()=>assert.fail('후보 변경 금지'),executionPreparation:preparation,onAuthenticationLost:()=>assert.fail('인증 전환 없음')});
  }
  const render=async(key:string)=>{await ui.React.act(async()=>root.render(ui.React.createElement(Host,{key})));};
  try{
@@ -111,9 +111,15 @@ test('실제 UI08은 같은 승인 요청과 현재 원 준비만 작업공간 �
   const approved=await ui.readApproval(h.props.client,projectId,requestId);
   wire=approved;await render('APPROVED');await h.wait(()=>container.textContent.includes('현재 v2 · 저장 APPROVED'));
   const link=findReturn();assert.ok(link);
-  assert.equal(link.getAttribute('href'),'#/projects/'+projectId+'/workspace');
+  assert.equal(link.getAttribute('href'),'#/projects/'+projectId+(mobile?'/mobile':'/workspace'));
+  for(const key of ['ctrlKey','metaKey','shiftKey','altKey']){await ui.React.act(async()=>assert.equal(link.dispatchEvent({type:'click',button:0,bubbles:true,[key]:true}),true));assert.equal(returns,0,'보조키 클릭 pane 변경0');}
+  await ui.React.act(async()=>assert.equal(link.dispatchEvent({type:'auxclick',button:1,bubbles:true}),true));assert.equal(returns,0);
   await ui.React.act(async()=>assert.equal(link.dispatchEvent({type:'click',button:0,bubbles:true}),true));
+  assert.equal(returns,mobile?1:0);
   assert.equal(container.textContent.includes(original.assignmentRef.contentHash),true);
+  const before=returns;original.uncertain=true;
+  await ui.React.act(async()=>assert.equal(link.dispatchEvent({type:'click',button:0,bubbles:true}),false));
+  assert.equal(returns,before,'부적합 old click의 pane callback0');original.uncertain=false;
   const variants=[
    ['NO_SOURCE',null],['PROJECT',{...original,projectId:h.f.otherProject}],['USER',{...original,ownerUserId:h.f.otherUser}],['CLIENT',{...original,ownerClientId:h.f.otherClient}],
    ['VERSION',{...original,assignmentRef:{...original.assignmentRef,version:original.assignmentRef.version+1}}],

@@ -74,7 +74,7 @@ function fixture(registered=false,intercept?:(path:string,init:RequestInit|undef
   if(pid===draft.projectId&&['/permission-policy','/execution-preparation-state','/role-bindings/','/context?','/context/','/connection-candidates/','/capability-reports/','/limit-policies/'].some(part=>path.includes(part)))return q.client.transport(url,init);
   unexpected.push(path);return Response.json({code:'NOT_FOUND'},{status:404});
  };
- return{f,draft,calls,unexpected,registeredReport};
+ return{f,draft,calls,unexpected,registeredReport,preparation:q};
 }
 test('실제 App의 보관 보고 GET→명시 선택→hash 이동→UI04 원 준비 입력과 route/project 선택 수명',async()=>{
  const q=fixture(),pid=q.f.confirmed.projectId;location.hash=`#/projects/${pid}/connections`;
@@ -163,7 +163,7 @@ test('실제 App의 등록 정의 명시 선택은 기존 임무 상세를 거�
  const wait=async(check:()=>boolean)=>{for(let i=0;i<150&&!check();i++)await settle();assert(check(),container.textContent);};
  const click=async(name:string)=>{const b=button(name);assert(b,name);assert(!b.disabled,name);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0}));await settle();};
  const change=async(name:string,value:string)=>{const n=nodes().find(n=>n.getAttribute('aria-label')===name);assert(n,name);const key=Object.keys(n).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>(n as any)[key].onChange({target:{value}}));await settle();};
- const go=async(hash:string,link=false)=>{if(link)await wait(()=>nodes().some(n=>n.tagName==='A'&&n.getAttribute('href')===hash));await ui.React.act(async()=>{location.hash=hash;for(const listener of events.get('hashchange')??[])listener();});await settle();};
+ const go=async(hash:string,link=false)=>{if(link)await wait(()=>nodes().some(n=>n.tagName==='A'&&n.getAttribute('href')===hash));await ui.React.act(async()=>{const oldURL=location.origin+location.hash;location.hash=hash;for(const listener of events.get('hashchange')??[])listener({oldURL,newURL:location.origin+hash});});await settle();};
  const select='이 등록 정의를 인계 준비 대상으로 선택',apply='선택한 등록 정의를 보호 대조 후 대상으로 선택';
  const targetPath='/api/v1/projects/'+pid+'/connections/'+reference.id+'/versions/1';
  const selectDefinition=async()=>{await wait(()=>!!button('알려진 연결 정의 조회'));await change('정의 조회 ID',reference.id);await change('정의 조회 버전','1');await change('정의 조회 hash',reference.contentHash);await click('알려진 연결 정의 조회');await wait(()=>!!button(select));const before=q.calls.length;await click(select);assert.equal(q.calls.length,before,'App에는 ref만 보관, 선택은 IO0');};
@@ -203,4 +203,55 @@ test('실제 App의 등록 정의 명시 선택은 기존 임무 상세를 거�
   assert.deepEqual(q.unexpected,[]);
  }finally{release();await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
  }
+});
+
+for(const arrival of ['chat','steps','requestLost'] as const)test('실제 mobile App 준비→정확 승인→원 대화 준비 복귀 · '+arrival,{timeout:15000},async()=>{
+ let oracle:ReturnType<typeof clientFixture>|undefined,lose=arrival==='requestLost';
+ const posts:{body:string;idempotency:string|null}[]=[];
+ const q=fixture(false,(path,init)=>{
+  if(init?.method==='POST'){
+   posts.push({body:String(init.body),idempotency:new Headers(init.headers).get('Idempotency-Key')});
+   const response=oracle!.client.transport(path,init);
+   if(lose){lose=false;return Promise.resolve(response).then(()=>{throw new TypeError('합성 응답 유실');});}
+   return response;
+  }
+  if(path.includes('/approvals/'))return oracle!.client.transport(path,init);
+  if(path.endsWith('/approvals?limit=50'))return Response.json({projectId:q.f.confirmed.projectId,items:[],hasMore:false,nextCursor:null,observedAt:q.f.at});
+ });
+ oracle=q.preparation;oracle.setPolicy('REQUIRE_APPROVAL');
+ const pid=q.f.confirmed.projectId;location.hash='#/projects/'+pid+'/connections';
+ const container=document.createElement('main');document.body.appendChild(container);const root=ui.createRoot(container);
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
+ const button=(text:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===text);
+ const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});
+ const wait=async(check:()=>boolean)=>{const end=Date.now()+4000;while(!check()&&Date.now()<end)await settle();assert(check(),container.textContent);};
+ const click=async(n:MemoryNode)=>{assert(n);assert(!n.disabled);const e:any={type:'click',button:0};await ui.React.act(async()=>n.dispatchEvent(e));if(n.tagName==='A'&&!e.defaultPrevented)await go(n.getAttribute('href')!);await settle();};
+ const press=async(text:string)=>{const n=button(text);assert(n,text);await click(n);};
+ const change=async(label:string,value:string|boolean)=>{const n=nodes().find(n=>n.getAttribute('aria-label')===label);assert(n,label);const key=Object.keys(n).find(k=>k.startsWith('__reactProps'));assert(key);await ui.React.act(async()=>(n as any)[key].onChange({target:{value,checked:value}}));await settle();};
+ const go=async(hash:string)=>{await ui.React.act(async()=>{const oldURL=location.origin+location.hash;location.hash=hash;for(const fn of events.get('hashchange')??[])fn({oldURL,newURL:location.origin+hash});});await settle();};
+ const open=async()=>{await wait(()=>!!button('임무 초안 목록 조회'));await press('임무 초안 목록 조회');await wait(()=>!!button('임무 버전 열기: 1'));await press('임무 버전 열기: 1');await wait(()=>!!button('확정 임무 원본 재조회'));await press('확정 임무 원본 재조회');await wait(()=>!!button('새 실행 의도 준비'));};
+ const link=(text:string)=>nodes().find(n=>n.tagName==='A'&&n.textContent===text);
+ try{
+  await ui.React.act(async()=>root.render(ui.React.createElement(ui.App)));await wait(()=>!!button('고정 보고 조회'));
+  await change('기존 보고 조회',JSON.stringify(q.f.report.ref));await press('고정 보고 조회');await wait(()=>!!button('이 보고를 실행 준비 입력으로 선택'));await press('이 보고를 실행 준비 입력으로 선택');
+  await go('#/projects/'+pid+'/mobile');await open();await press('새 실행 의도 준비');await wait(()=>!!button('이 사람보고 명시 선택'));await press('이 사람보고 명시 선택');
+  await change('준비 예약binding',q.f.binding.ref.id);await change('준비 맥락',q.f.context.ref.id);await change('준비 범위 src/main.ts READ',true);await change('준비 mode','CONTEXT_REVIEW');await change('준비 이유','모바일에서 보관한 동일 준비');await press('의도 준비·입력 확인');await wait(()=>!!button('준비본 보관 승인 요청 준비'));
+  await press('준비본 보관 승인 요청 준비');await wait(()=>!!button('준비 승인 요청 명시 보관'));
+  await change('준비 승인 이유','원 모바일 준비 보관만');for(const k of ['data','security','cost','interruption','unverified'])await change('준비 승인 위험 '+k,'실측·실행 미검증');await change('준비 승인 복구방법','원 자료 유지');await change('준비 승인 복구한계','실행 허가 아님');await change('준비 승인 기한',new Date(Date.now()+1800000).toISOString());
+  assert.equal(posts.length,0);await press('준비 승인 요청 명시 보관');
+  if(arrival==='requestLost'){
+   await wait(()=>!!button('같은 준비 승인 요청 재확인'));assert.equal(link('UI08에서 별도 결정'),undefined);assert.equal(posts.length,1);
+   await press('같은 준비 승인 요청 재확인');await wait(()=>!!link('UI08에서 별도 결정'));assert.deepEqual(posts[1],posts[0],'유실 재확인은 같은 JSON·멱등키');
+  }else await wait(()=>!!link('UI08에서 별도 결정'));
+  const approval=link('UI08에서 별도 결정')!,href='#/projects/'+pid+'/mobile/approvals/requests/'+q.f.requestId;
+  assert.equal(approval.getAttribute('href'),href);const original=JSON.parse(posts[0]!.body).payload.candidatePayload;
+  await click(approval);await wait(()=>!!button('이번만 승인'));
+  if(arrival==='steps'){
+   const steps=nodes().find(n=>n.tagName==='A'&&n.textContent==='절차 상세');assert(steps);await click(steps);await go(href);await wait(()=>!!button('이번만 승인'));
+  }
+  await change('결정 이유','준비본 저장만 명시 승인');const ack=nodes().find(n=>n.tagName==='LABEL'&&n.textContent==='정확 범위·위험·복구 한계를 확인했습니다')?.childNodes.find(n=>n.tagName==='INPUT');assert(ack);const ackProps=Object.keys(ack).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>(ack as any)[ackProps].onChange({target:{checked:true}}));await press('이번만 승인');await wait(()=>!!link('원 준비를 이어갈 작업공간으로 돌아가기'));
+  const back=link('원 준비를 이어갈 작업공간으로 돌아가기')!;assert.equal(back.getAttribute('href'),'#/projects/'+pid+'/mobile');const count=posts.length;await click(back);await open();
+  assert.equal(location.hash,'#/projects/'+pid+'/mobile');const chat=nodes().find(n=>n.getAttribute('aria-label')==='총괄 작업');assert(chat);assert(!chat.attributes.has('hidden'),'복귀는 원 작업 chat 표시');assert(button('별도 결정을 같은 준비 원명령에 결박'));assert.equal(posts.length,count,'복귀는 승인 결박·저장 자동 POST0');
+  const payloads=nodes().filter(n=>n.tagName==='PRE').map(n=>{try{return JSON.parse(n.textContent);}catch{return null;}});assert(payloads.some(v=>v&&canonicalJson(v)===canonicalJson(original)),'App의 원 준비 payload 불변');assert.deepEqual(posts.map(p=>JSON.parse(p.body).operation),arrival==='requestLost'?['requestApproval','requestApproval','decideApproval']:['requestApproval','decideApproval']);assert.deepEqual(q.unexpected,[]);
+ }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
 });
