@@ -3,8 +3,8 @@ import {ApiClient,ApiError} from '../../api/client.ts';
 import type {DocumentSession} from '../design-trace/editor-api.ts';
 import {definitionOwned,newDefinition,editDefinition,prepareDefinition,markDefinitionUnknown,sendDefinition,readDefinition,failDefinition,editRejectedDefinition,bindDefinitionApproval,type DefinitionBuffer,type DefinitionView} from './connection-definition-api.ts';
 import {readEnvironmentConfiguration,type EnvironmentView} from './environment-configuration-api.ts';
-interface Props{onHumanReport?:(v:DefinitionView)=>void;client:ApiClient;projectId:string;session:DocumentSession;buffer:DefinitionBuffer|null;onChange:(expected:DefinitionBuffer|null,next:DefinitionBuffer)=>boolean;onApprovalRequest:(b:DefinitionBuffer)=>boolean;approvalRequestId:string|null;onAuthenticationLost:()=>void}
-export function ConnectionDefinitionPanel({onHumanReport,client,projectId,session,buffer,onChange,onApprovalRequest,approvalRequestId,onAuthenticationLost}:Props){
+interface Props{onTransferTarget?:(v:DefinitionView)=>void;onHumanReport?:(v:DefinitionView)=>void;client:ApiClient;projectId:string;session:DocumentSession;buffer:DefinitionBuffer|null;onChange:(expected:DefinitionBuffer|null,next:DefinitionBuffer)=>boolean;onApprovalRequest:(b:DefinitionBuffer)=>boolean;approvalRequestId:string|null;onAuthenticationLost:()=>void}
+export function ConnectionDefinitionPanel({onTransferTarget,onHumanReport,client,projectId,session,buffer,onChange,onApprovalRequest,approvalRequestId,onAuthenticationLost}:Props){
  const identity=JSON.stringify([projectId,session.user.id,session.clientId,session.csrfToken]),owner=useRef({identity,client,transport:client.transport,session,sequence:0,pending:false});if(owner.current.identity!==identity||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.session!==session)owner.current={identity,client,transport:client.transport,session,sequence:0,pending:false};
  const scope=owner.current,alive=useRef(true);useEffect(()=>{alive.current=true;return()=>{alive.current=false;owner.current.sequence++;};},[]);
  const[jsonDraft,setJsonDraft]=useState<{owner:object;values:Record<string,string>;invalid:string[]}|null>(null);
@@ -26,9 +26,10 @@ export function ConnectionDefinitionPanel({onHumanReport,client,projectId,sessio
   finally{if(environmentRequest.current===ticket)environmentFlight.current=null;}
  }
  function closeEnvironment(){environmentRequest.current++;environmentFlight.current=null;setEnvironment(null);}
+ const renderedRoute=globalThis.location?.hash;
  const b=buffer&&definitionOwned(buffer,client,session,projectId)?buffer:null,busy=bub===scope,view=shown?.owner===scope?shown.view:null,locked=!!b?.pending;
  const live=useRef({buffer,session,client});live.current={buffer,session,client};
- const current=(sequence:number)=>alive.current&&owner.current===scope&&scope.sequence===sequence&&client.transport===scope.transport&&live.current.session===session;
+ const current=(sequence:number)=>alive.current&&owner.current===scope&&scope.sequence===sequence&&client.transport===scope.transport&&live.current.session===session&&globalThis.location?.hash===renderedRoute;
  function replace(old:DefinitionBuffer|null,next:DefinitionBuffer){if(owner.current!==scope||client.transport!==scope.transport||!onChange(old,next))throw new ApiError('CONNECTION_COMMAND_PRESERVED',412);}
  async function run(action:(check:()=>boolean)=>Promise<void>){if(scope.pending)return;scope.pending=true;const seq=++scope.sequence,check=()=>current(seq);setBusy(scope);setError(null);setShown(null);try{await action(check);}catch(e){if(check()){const a=e instanceof ApiError?e:new ApiError('RESPONSE_INVALID');setError({owner:scope,value:a.code});if(a.status===401)onAuthenticationLost();}}finally{scope.pending=false;if(owner.current===scope){setBusy(null);}}}
  function edit(field:string,value:any){if(!b||locked)return;setShown(null);try{replace(b,field==='reason'?editDefinition(b,{reason:value}):editDefinition(b,{definition:{...b.definition,[field]:value}}));}catch(e){setError({owner:scope,value:e instanceof ApiError?e.code:'CONNECTION_DEFINITION_INPUT_INVALID'});}}
@@ -57,6 +58,7 @@ export function ConnectionDefinitionPanel({onHumanReport,client,projectId,sessio
  {environmentShown.error?<p role="alert">{environmentShown.error}</p>:null}
  {environmentShown.view?<><p>저장 당시 환경 원형 검산 · {environmentShown.view.historyVerification}</p><p>{environmentShown.view.ref.id} · v{environmentShown.view.ref.version} · {environmentShown.view.ref.contentHash}</p><p>현재 구성 {environmentShown.view.current.configurationCurrentness} · 확인 {environmentShown.view.current.checkedAt}</p><p>{environmentShown.view.current.issues.map(issue=>issue.code).join(' · ')}</p><pre>{JSON.stringify(environmentShown.view.snapshot,null,2)}</pre><p>실제 실행 허가 false · 실제 관측 미확인</p></>:null}
  <button type="button" onClick={closeEnvironment}>당시 환경 원문 닫기</button></section>:null}
+ {onTransferTarget?<button type="button" disabled={busy} onClick={()=>{if(shown&&displayed.current===shown&&shown.owner===scope&&current(scope.sequence)&&!scope.pending&&globalThis.location?.hash===renderedRoute)onTransferTarget(view);}}>이 등록 정의를 인계 준비 대상으로 선택</button>:null}
  {onHumanReport?<button type="button" onClick={()=>onHumanReport(view)}>이 정의로 사람 보고 작성</button>:null}<button type="button" onClick={()=>setShown(null)}>연결 정의 원문 닫기</button></section>:null}
  </section>;
 }

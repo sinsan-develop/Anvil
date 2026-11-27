@@ -40,7 +40,7 @@ before(async()=>{
 });
 after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k,v]of saved)if(v)Object.defineProperty(globalThis,k,v);else Reflect.deleteProperty(globalThis,k);});
 const H=(v:unknown)=>contentHash(canonicalJson(v));
-function fixture(registered=false){
+function fixture(registered=false,intercept?:(path:string,init:RequestInit|undefined)=>Response|Promise<Response>|undefined){
  const f=seed(registered),definition={...f.confirmed.snapshot.definition,baselineRefs:[],recordingPolicyRef:null},task=definition.taskRef;
  const snapshot={definition,reason:'보관 임무',previousRef:null,basis:{...task,designRef:task.planRef,taskCardHash:'c'.repeat(64)},readinessIssues:[],status:'DRAFT',ready:false,executionAuthorized:false,dispatchPerformed:false};
  const draft={projectId:f.confirmed.projectId,ref:{...f.confirmed.ref,contentHash:H(snapshot)},snapshot,headVersion:1,sourceCurrentness:'NOT_RECHECKED',observedAt:f.at};
@@ -56,7 +56,7 @@ function fixture(registered=false){
  const reportSnapshot=registered?definitionCapabilityReportSnapshot({...f.report.snapshot.claim,schemaVersion:2,tool:{product:f.connection.definition.toolProduct,version:f.connection.definition.toolVersion,adapterVersion:'등록 어댑터의 사람 주장'},reason:'UI11에만 표시할 원주장 본문'},draft.projectId,'af040058-1111-4111-8111-000000000093',{actorId:f.session.user.id,clientId:f.session.clientId},new Date(f.at)):null;
  const registeredReport=reportSnapshot?{projectId:draft.projectId,ref:{id:reportSnapshot.reportId,version:1,contentHash:H(reportSnapshot)},snapshot:reportSnapshot,currentnessIssues:[{code:'REGISTERED_DEFINITION_ONLY',target:null},{code:'HUMAN_CLAIM_UNVERIFIED',target:null}],effectiveForExecution:false,dispatchPerformed:false,checkedAt:f.at}:null;
  currentTransport=async(url,init)=>{
-  const path=String(url),method=init?.method??'GET';calls.push({path,method});assert.equal(method,'GET','선택/준비만, 저장 명령 전송0');
+  const path=String(url),method=init?.method??'GET';calls.push({path,method});const overridden=intercept?.(path,init);if(overridden)return overridden;assert.equal(method,'GET','선택/준비만, 저장 명령 전송0');
   if(path==='/api/v1/session')return Response.json({...f.session,user:{...f.session.user,displayName:'합성 소유자'}});
   const pid=/^\/api\/v1\/projects\/([^/?]+)/.exec(path)?.[1];
   if(path===`/api/v1/projects/${pid}`)return Response.json(project(pid!));
@@ -138,4 +138,69 @@ test('같은 실제 App에서 UI11 v2 보호 보고를 명시 선택해 UI04 등
   assert.equal(q.calls.filter(c=>c.path.includes('/capability-reports/')).length,0,'v1 fallback 없음');assert.equal(q.calls.filter(c=>c.method!=='GET').length,0,'승인/저장/실행 POST 없음');assert.deepEqual(q.unexpected,[]);
   assert.equal(report.effectiveForExecution,false);assert.equal(report.dispatchPerformed,false);assert(report.snapshot.capabilities.every(v=>v.measurement.state==='UNVERIFIED'));
  }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+});
+
+test('실제 App의 등록 정의 명시 선택은 기존 임무 상세를 거쳐 UI09 초안 대상만 재검산한다',{timeout:15000},async()=>{
+ for(const scenario of ['GOOD','ROUTE','PROJECT','LATE200','LATE401','SOURCE_LATE200','SOURCE_LATE401']){
+ let target:any,mode='READ',release=()=>{},waiting=false,posted:any=null;
+ const q=fixture(true,(path,init)=>{
+  if(init?.method==='POST'){posted=JSON.parse(String(init.body));assert.equal(posted.operation,'createTransferPreparationRecord');return Response.json({code:'CONNECTION_LOST'},{status:503});}
+  if(target&&path.endsWith('/connections/'+target.ref.id+'/versions/1')){
+   if(mode==='403')return Response.json({code:'ACCESS_DENIED'},{status:403});
+   if(mode==='CROSS')return Response.json({...target,projectId:q.f.otherProject});
+   if(mode==='LATE200'||mode==='LATE401'){
+    const response=Response.json(mode==='LATE200'?target:{code:'AUTH_REQUIRED'},{status:mode==='LATE200'?200:401}),json=response.json.bind(response);
+    response.json=async()=>{await new Promise<void>(resolve=>{waiting=true;release=resolve;});return json();};return response;
+   }
+   return Response.json(target);
+  }
+ }),pid=q.f.confirmed.projectId;
+ const definition={...q.f.connection.definition,id:q.f.otherClient,label:'교체할 별도 등록 도구'},reference={id:definition.id,version:1,contentHash:H(definition)};
+ target={...q.f.connection,ref:reference,definition};location.hash='#/projects/'+pid+'/connections';
+ const container=document.createElement('main');document.body.appendChild(container);const root=ui.createRoot(container);
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))],button=(name:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===name);
+ const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});
+ const wait=async(check:()=>boolean)=>{for(let i=0;i<150&&!check();i++)await settle();assert(check(),container.textContent);};
+ const click=async(name:string)=>{const b=button(name);assert(b,name);assert(!b.disabled,name);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0}));await settle();};
+ const change=async(name:string,value:string)=>{const n=nodes().find(n=>n.getAttribute('aria-label')===name);assert(n,name);const key=Object.keys(n).find(k=>k.startsWith('__reactProps'))!;await ui.React.act(async()=>(n as any)[key].onChange({target:{value}}));await settle();};
+ const go=async(hash:string,link=false)=>{if(link)await wait(()=>nodes().some(n=>n.tagName==='A'&&n.getAttribute('href')===hash));await ui.React.act(async()=>{location.hash=hash;for(const listener of events.get('hashchange')??[])listener();});await settle();};
+ const select='이 등록 정의를 인계 준비 대상으로 선택',apply='선택한 등록 정의를 보호 대조 후 대상으로 선택';
+ const targetPath='/api/v1/projects/'+pid+'/connections/'+reference.id+'/versions/1';
+ const selectDefinition=async()=>{await wait(()=>!!button('알려진 연결 정의 조회'));await change('정의 조회 ID',reference.id);await change('정의 조회 버전','1');await change('정의 조회 hash',reference.contentHash);await click('알려진 연결 정의 조회');await wait(()=>!!button(select));const before=q.calls.length;await click(select);assert.equal(q.calls.length,before,'App에는 ref만 보관, 선택은 IO0');};
+ const openTransfer=async()=>{
+  await go('#/projects/'+pid+'/workspace',true);await wait(()=>!!button('임무 초안 목록 조회'));await click('임무 초안 목록 조회');await wait(()=>!!button('임무 버전 열기: 1'));await click('임무 버전 열기: 1');await wait(()=>!!button('확정 임무 원본 재조회'));await click('확정 임무 원본 재조회');
+  const sessionHref='#/projects/'+pid+'/session/assignments/'+q.draft.ref.id+'/versions/1/'+q.draft.ref.contentHash;await go(sessionHref,true);await wait(()=>!!button('상세 원본 새로고침'));
+  const transferHref=sessionHref.replace('/session/assignments/','/transfers/assignments/');await go(transferHref,true);await wait(()=>!!button('기존 인계 기록 조회'));await click('기존 인계 기록 조회');await wait(()=>!!button('새 준비기록 작성')||!!button('준비기록 원명령 준비'));if(button('새 준비기록 작성'))await click('새 준비기록 작성');
+ };
+ try{
+  await ui.React.act(async()=>root.render(ui.React.createElement(ui.App)));
+  if(scenario==='SOURCE_LATE200'||scenario==='SOURCE_LATE401'){
+   await wait(()=>!!button('알려진 연결 정의 조회'));await change('정의 조회 ID',reference.id);await change('정의 조회 hash',reference.contentHash);mode=scenario==='SOURCE_LATE200'?'LATE200':'LATE401';await click('알려진 연결 정의 조회');await wait(()=>waiting);
+   location.hash='#/no-such-screen';await ui.React.act(async()=>{release();await new Promise(r=>setImmediate(r));});await settle();assert(!button(select),'이탈 직전 늦은 원문을 선택하지 않음');assert(!container.textContent.includes('AUTH_REQUIRED'),'이탈한 원문401의 인증콜백0');assert.equal(q.calls.filter(c=>c.method==='POST').length,0);continue;
+  }
+  await selectDefinition();await openTransfer();
+  assert(button(apply),'UI11의 exact 선택 참조가 동일 인증의 UI09까지 도착');assert(!container.textContent.includes(definition.label),'선택한 정의 원문은 App에 보존하지 않음');
+  if(scenario==='ROUTE'){
+   const node=button(apply)!,prop=Object.keys(node).find(k=>k.startsWith('__reactProps'))!,before=q.calls.length;
+   location.hash='#/no-such-screen';await ui.React.act(async()=>(node as any)[prop].onClick());assert.equal(q.calls.length,before,'이탈 직전 옛 DOM 클릭은 보호GET0');continue;
+  }
+  if(scenario==='PROJECT'){
+   await go('#/projects/'+q.f.otherProject+'/connections');await wait(()=>!!button('알려진 연결 정의 조회'));
+   await go('#/projects/'+pid+'/transfers/assignments/'+q.draft.ref.id+'/versions/1/'+q.draft.ref.contentHash);await click('기존 인계 기록 조회');await wait(()=>!!button('준비기록 원명령 준비'));assert(!button(apply),'프로젝트 ABA는 옛 선택을 부활시키지 않음');assert.equal(q.calls.filter(c=>c.method==='POST').length,0);continue;
+  }
+  if(scenario==='LATE200'||scenario==='LATE401'){
+   mode=scenario;const before=q.calls.length;await click(apply);await wait(()=>waiting);
+   await go('#/projects/'+pid+'/workspace');await go('#/projects/'+pid+'/transfers/assignments/'+q.draft.ref.id+'/versions/1/'+q.draft.ref.contentHash);await click('기존 인계 기록 조회');await wait(()=>!!button('준비기록 원명령 준비'));
+   await ui.React.act(async()=>{release();await new Promise(r=>setImmediate(r));});await settle();
+   assert(!container.textContent.includes('대상 '+reference.id),'이탈·재진입 뒤 옛 대상 응답 적용0');assert(!container.textContent.includes('AUTH_REQUIRED'),'옛401이 현재 인증을 무효화하지 않음');assert(button(apply),'현재 같은 인증의 refs-only 선택은 재검산 가능');assert.equal(q.calls.slice(before).filter(c=>c.path===targetPath).length,1);assert.equal(q.calls.filter(c=>c.method==='POST').length,0);continue;
+  }
+  for(const failure of ['403','CROSS']){mode=failure;await click(apply);await wait(()=>/ACCESS_DENIED|CONNECTION_/.test(container.textContent));assert(!container.textContent.includes('대상 '+reference.id),'보호 재검산 실패는 원 초안 유지');}
+  mode='READ';const before=q.calls.length;await click(apply);await wait(()=>container.textContent.includes('대상 '+reference.id));assert.equal(q.calls.slice(before).filter(c=>c.path===targetPath).length,1);
+  await change('준비기록 이유','다른 등록 도구는 참조만 고정');await click('맥락 미수집 명시 선택');await click('역할 미선택 명시');await click('기존 결박 미수집 명시 선택');await click('준비기록 원명령 준비');await wait(()=>!!button('같은 준비기록 명령 저장·재확인'));
+  assert.equal(q.calls.filter(c=>c.method==='POST').length,0,'별도 저장 클릭 전 POST0');assert(!button(apply),'잠긴 원명령은 대상 교체 불가');await click('같은 준비기록 명령 저장·재확인');await wait(()=>container.textContent.includes('결과 미확인'));
+  assert.deepEqual(posted.payload.targetConnectionRef,reference);assert.deepEqual(posted.payload.assignmentRef,q.f.confirmed.ref);assert.equal(q.calls.filter(c=>c.method==='POST').length,1);
+  const body=JSON.stringify(posted);await go('#/projects/'+q.f.otherProject+'/connections');await wait(()=>!!button('알려진 연결 정의 조회'));await go('#/projects/'+pid+'/transfers/assignments/'+q.draft.ref.id+'/versions/1/'+q.draft.ref.contentHash);await click('기존 인계 기록 조회');await wait(()=>container.textContent.includes('결과 미확인'));assert(!button(apply));assert.equal(JSON.stringify(posted),body,'UNKNOWN 원명령 보존');assert.equal(q.calls.filter(c=>c.method==='POST').length,1);
+  assert.deepEqual(q.unexpected,[]);
+ }finally{release();await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+ }
 });
