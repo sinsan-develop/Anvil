@@ -144,13 +144,16 @@ internal sealed class NormalExecutionSpoolProfileSource {
    Log(false,(log,rows)=>{if(!Has(rows,"REGISTERED",key))Append(log,rows,R("kind","REGISTERED","key",key));return true;});
   }catch{blocked=true;} // 등록의 기존 결과와 새 profile 가용성은 별도다.
  }
- internal void BindSlot(Row record,Row slot){
+ internal void BindSlot(Row record,Row slot,Action exchangeCurrent){
+  exchangeCurrent();bool exchangeRejected=false;
+  Action beforeSlotAppend=()=>{try{exchangeCurrent();}catch{exchangeRejected=true;throw;}};
   try{string key=H(record);Log(false,(log,rows)=>{if(!Has(rows,"REGISTERED",key)||S(slot,"recordHash")!=key)throw Invalid();
    string previous=slot["previousSlotRef"]==null?null:DesktopTrustKeyHostSource.Id(DesktopTrustKeyHostSource.Map(slot["previousSlotRef"]),"slotId");
    if(previous!=null&&!Has(rows,"SLOT_ID",previous))throw Invalid();
    string id=DesktopTrustKeyHostSource.Id(slot,"slotId");if(Has(rows,"SLOT_ID",id))throw Invalid();
-   Append(log,rows,R("kind","SLOT_ID","key",id,"registration",key,"slotHash",H(slot)));return true;});
-  }catch{blocked=true;}
+   Append(log,rows,R("kind","SLOT_ID","key",id,"registration",key,"slotHash",H(slot)),beforeSlotAppend);return true;});
+  }catch{blocked=true;if(exchangeRejected)throw;}
+  exchangeCurrent();
  }
  Row Allocate(List<Row> rows,FileStream log,string writer,string tuple,bool resume){
   var match=rows.LastOrDefault(r=>S(r,"kind")=="ALLOCATING"&&S(r,"key")==tuple);

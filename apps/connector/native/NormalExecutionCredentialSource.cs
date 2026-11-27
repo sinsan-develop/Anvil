@@ -104,14 +104,14 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   Id(h,"attemptId");Id(h,"slotId");if(!range&&!new[]{"PREPARE","REQUEST"}.Contains(S(h,"kind"))||N(h["bodyLength"])>2097152||!DesktopTrustKeyHostSource.IsHash(h["bodyHash"])||!(h["bodyIsNull"] is bool))throw Invalid();
   var r=Map(h["request"]);Exact(r,"method,path,query,body,auth,expiresAt");if(r["body"]!=null)throw Invalid();
  }
- Dictionary<string,object> LoadSlot(string id,Dictionary<string,object> record,bool renewal=false){
-  var slot=ReadSlotChain(id,record);if(!renewal&&At(slot,"expiresAt")<=clock())throw Invalid();return slot;
+ Dictionary<string,object> LoadSlot(string id,Dictionary<string,object> record,bool renewal=false,Action check=null){
+  var slot=ReadSlotChain(id,record,check??current);if(!renewal&&At(slot,"expiresAt")<=clock())throw Invalid();return slot;
  }
- Dictionary<string,object> ReadSlotChain(string id,Dictionary<string,object> record){
+ Dictionary<string,object> ReadSlotChain(string id,Dictionary<string,object> record,Action slotCurrent){
   Dictionary<string,object> head=null,child=null;var visited=new HashSet<string>();
   while(true){
    if(!visited.Add(id)||visited.Count>1024)throw Invalid();
-  byte[] raw=ProtectedStore.LoadNormalOwned(owner,id,"execution",current);try{
+  byte[] raw=ProtectedStore.LoadNormalOwned(owner,id,"execution",slotCurrent);try{
    var s=Parse(raw);bool linked=s.ContainsKey("previousSlotRef");
    Exact(s,linked?"purpose,slotId,recordHash,origin,scope,scopeDigest,receiptRef,expiresAt,credential,caHash,previousSlotRef,markerId,issuedAt":"purpose,slotId,recordHash,origin,scope,scopeDigest,receiptRef,expiresAt,credential,caHash");
    if(S(s,"purpose")!="NORMAL_EXECUTION_SLOT_V1"||Id(s,"slotId")!=id||S(s,"recordHash")!=H(record)||S(s,"origin")!=S(record,"origin"))throw Invalid();
@@ -122,7 +122,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
    if(!linked){if(id!=Id(Map(Map(s["scope"])["grantRef"]),"id"))throw Invalid();return head;}
    var marker=Marker(Map(s["scope"]),s["previousSlotRef"]);string expected=s["previousSlotRef"]==null?Id(Map(Map(s["scope"])["grantRef"]),"id"):RenewalMarker(Map(s["scope"]),Map(s["previousSlotRef"])["receiptRef"]);
    if(Id(s,"markerId")!=expected||Id(Map(s["receiptRef"]),"id")!=id||At(s,"issuedAt")>=At(s,"expiresAt"))throw Invalid();
-   byte[] saved=ProtectedStore.LoadNormalOwned(owner,expected,"exchange",current);try{if(J(Parse(saved))!=J(marker))throw Invalid();}finally{Array.Clear(saved,0,saved.Length);}
+   byte[] saved=ProtectedStore.LoadNormalOwned(owner,expected,"exchange",slotCurrent);try{if(J(Parse(saved))!=J(marker))throw Invalid();}finally{Array.Clear(saved,0,saved.Length);}
    if(s["previousSlotRef"]==null)return head;child=s;id=Id(Map(s["previousSlotRef"]),"slotId");
   }finally{Array.Clear(raw,0,raw.Length);}
   }
@@ -319,11 +319,29 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   var gref=DesktopTrustKeyHostSource.Ref(scope["grantRef"]);var registration=Map(record["registration"]);
   if(Id(scope,"projectId")!=Id(record,"projectId")||Id(scope,"connectorId")!=Id(Map(registration["connectorRef"]),"id")||
    N(scope["executionGeneration"])<1||N(scope["credentialGeneration"])<1)throw Invalid();
-  string slotId=Id(gref,"id"),recordHash=H(record),basePath=Base(scope);
+  string slotId=Id(gref,"id"),recordHash=H(record),basePath=Base(scope),attempt=Id(v,"attemptId");
+  var exchangeElapsed=System.Diagnostics.Stopwatch.StartNew();
   object previousSlotRef=null;DateTime startedAt=clock();
+  DateTime exchangeDeadline=new[]{At(registration,"registrationExpiresAt"),At(Map(record["credential"]),"expiresAt")}.Min();
+  double exchangeBudget=(exchangeDeadline-startedAt).TotalMilliseconds;
+  Func<int> exchangeRemaining=()=>{
+   Check();double deadlineLeft=Math.Min((exchangeDeadline-clock()).TotalMilliseconds,exchangeBudget-exchangeElapsed.Elapsed.TotalMilliseconds);
+   if(deadlineLeft<1){exchangeBudget=0;throw Invalid();}
+   int hostLeft=remaining();if(hostLeft<1)throw Invalid();return (int)Math.Min(hostLeft,deadlineLeft);
+  };
+  Action exchangeCurrent=()=>{exchangeRemaining();};
+  // 새 서버 기한도 최초 wall/단조 원점에서 좁힌다. 벽시계 역행은 원 창을 연장하지 않는다.
+  Action<DateTime> tightenExchange=end=>{
+   exchangeDeadline=end<exchangeDeadline?end:exchangeDeadline;
+   double startBound=(exchangeDeadline-startedAt).TotalMilliseconds;
+   double observedBound=exchangeElapsed.Elapsed.TotalMilliseconds+(exchangeDeadline-clock()).TotalMilliseconds;
+   exchangeBudget=Math.Min(exchangeBudget,Math.Min(startBound,observedBound));
+   exchangeCurrent();
+  };
+  Action verifyExchangeOwner=()=>{exchangeCurrent();if(H(Record(attempt))!=recordHash)throw Invalid();exchangeCurrent();};
   if(renewal){
    var previous=Map(v["previous"]);Exact(previous,"slotId,receiptRef,origin,scope,expiresAt,caHash");
-   var old=LoadSlot(Id(previous,"slotId"),record,true);
+   var old=LoadSlot(Id(previous,"slotId"),record,true,exchangeCurrent);
    foreach(string k in new[]{"slotId","receiptRef","origin","scope","expiresAt","caHash"})if(J(previous[k])!=J(old[k]))throw Invalid();
    if(J(scope)!=J(old["scope"])||S(old,"caHash")!=H(Encoding.UTF8.GetBytes(activeCA))||At(old,"expiresAt")>startedAt)throw Invalid();
    previousSlotRef=new Dictionary<string,object>{{"slotId",old["slotId"]},{"receiptRef",old["receiptRef"]},{"contentHash",H(old)}};
@@ -331,25 +349,31 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   }
   string markerId=slotId;var marker=Marker(scope,previousSlotRef);
   // INSERT-only marker: 응답 유실/저장 실패를 재발급으로 바꾸지 않는다.
-  ProtectedStore.SaveNormalOwned(owner,markerId,"exchange",B(marker),current);
+  verifyExchangeOwner();
+  ProtectedStore.SaveNormalOwned(owner,markerId,"exchange",B(marker),exchangeCurrent);
   var target=new Dictionary<string,object>{{"method","POST"},{"path",basePath+"/credential-exchange"},{"queryHash",H(new Dictionary<string,object>())},{"bodyHash",H(new Dictionary<string,object>())}};
   var request=ChallengeRequest(scope,"CREDENTIAL_EXCHANGE",target);
-  var challenge=Challenge(record,scope,request,null,null,120000);
+  var challenge=Challenge(record,scope,request,null,null,120000,exchangeDeadline,exchangeRemaining);
   var c=Map(challenge["challenge"]);
   var bootstrap=Map(challenge["bootstrapBinding"]);CheckBootstrap(record,scope,c,bootstrap);
+  tightenExchange(new[]{At(bootstrap,"expiresAt"),At(c,"expiresAt")}.Min());verifyExchangeOwner();
   var proof=new Dictionary<string,object>{{"requestId",request["requestId"]},{"grantRef",gref},{"credentialGeneration",scope["credentialGeneration"]},{"scopeDigest",c["scopeDigest"]},{"serverNonce",c["serverNonce"]},{"clientNonce",c["clientNonce"]},{"expiresAt",c["expiresAt"]}};
-  var auth=new Dictionary<string,object>{{"schemaVersion",1},{"challengeRef",challenge["ref"]},{"proof",proof},{"signature",Sign(record,"EXECUTION_CREDENTIAL_EXCHANGE",proof)}};
-  CheckBootstrap(record,scope,c,bootstrap);if(H(Record(Id(v,"attemptId")))!=recordHash)throw Invalid();
-  var answer=Http(record,"POST",basePath+"/credential-exchange","","{}",null,B64(B(auth)),16384);
+  var auth=new Dictionary<string,object>{{"schemaVersion",1},{"challengeRef",challenge["ref"]},{"proof",proof},{"signature",Sign(record,"EXECUTION_CREDENTIAL_EXCHANGE",proof,exchangeCurrent)}};
+  CheckBootstrap(record,scope,c,bootstrap);verifyExchangeOwner();
+  var answer=Http(record,"POST",basePath+"/credential-exchange","","{}",null,B64(B(auth)),16384,limitUntil:exchangeDeadline,limitRemaining:exchangeRemaining);
   Exact(answer,"receiptRef,credential,expiresAt");DesktopTrustKeyHostSource.Ref(answer["receiptRef"]);Token(S(answer,"credential"));
-  DateTime end=At(answer,"expiresAt");CheckBootstrap(record,scope,c,bootstrap);if(end<=clock()||end>clock().AddMinutes(15)||H(Record(Id(v,"attemptId")))!=recordHash)throw Invalid();
+  DateTime end=At(answer,"expiresAt");CheckBootstrap(record,scope,c,bootstrap);if(end<=clock()||end>clock().AddMinutes(15))throw Invalid();
+  tightenExchange(end);verifyExchangeOwner();
   slotId=Id(Map(answer["receiptRef"]),"id");
   var slot=new Dictionary<string,object>{{"purpose","NORMAL_EXECUTION_SLOT_V1"},{"slotId",slotId},{"recordHash",recordHash},{"origin",record["origin"]},{"scope",scope},{"scopeDigest",bootstrap["scopeDigest"]},{"receiptRef",answer["receiptRef"]},{"expiresAt",answer["expiresAt"]},{"credential",answer["credential"]},{"caHash",H(Encoding.UTF8.GetBytes(activeCA))}};
   slot["previousSlotRef"]=previousSlotRef;slot["markerId"]=markerId;slot["issuedAt"]=Stamp(startedAt);
-  ProtectedStore.SaveNormalOwned(owner,slotId,"execution-ca",Encoding.UTF8.GetBytes(activeCA),current);
-  ProtectedStore.SaveNormalOwned(owner,slotId,"execution",B(slot),current);
-  var checkedSlot=LoadSlot(slotId,record);if(H(checkedSlot)!=H(slot))throw Invalid();if(spoolProfile!=null)spoolProfile.BindSlot(record,checkedSlot);
-  return new Dictionary<string,object>{{"slotId",slotId},{"receiptRef",answer["receiptRef"]},{"origin",record["origin"]},{"scope",scope},{"expiresAt",answer["expiresAt"]},{"caHash",slot["caHash"]}};
+  ProtectedStore.SaveNormalOwned(owner,slotId,"execution-ca",Encoding.UTF8.GetBytes(activeCA),exchangeCurrent);
+  verifyExchangeOwner();
+  ProtectedStore.SaveNormalOwned(owner,slotId,"execution",B(slot),exchangeCurrent);
+  var checkedSlot=LoadSlot(slotId,record,false,exchangeCurrent);if(H(checkedSlot)!=H(slot))throw Invalid();
+  verifyExchangeOwner();if(spoolProfile!=null)spoolProfile.BindSlot(record,checkedSlot,exchangeCurrent);
+  var result=new Dictionary<string,object>{{"slotId",slotId},{"receiptRef",answer["receiptRef"]},{"origin",record["origin"]},{"scope",scope},{"expiresAt",answer["expiresAt"]},{"caHash",slot["caHash"]}};
+  verifyExchangeOwner();return result;
  }
  void CheckBootstrap(Dictionary<string,object> record,Dictionary<string,object> scope,Dictionary<string,object> challenge,Dictionary<string,object> b){
   Check();Exact(b,"projectId,connectorId,executionId,executionGeneration,grantRef,credentialGeneration,scopeDigest,registrationRef,reservationRef,publicKeyFingerprint,checkedAt,expiresAt");
@@ -364,14 +388,15 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  Dictionary<string,object> ChallengeRequest(Dictionary<string,object> scope,string purpose,Dictionary<string,object> target){
   return new Dictionary<string,object>{{"requestId",Guid.NewGuid().ToString("D")},{"purpose",purpose},{"grantRef",scope["grantRef"]},{"credentialGeneration",scope["credentialGeneration"]},{"target",target},{"clientNonce",Nonce()},{"issuedAt",Stamp(clock())}};
  }
- string Sign(Dictionary<string,object> record,string purpose,Dictionary<string,object> request){
-  Check();return ProtectedStore.SignNormalOwned(owner,Id(record,"pendingKeyId"),S(Map(record["key"]),"fingerprint"),B(new Dictionary<string,object>{{"purpose",purpose},{"request",request}}),current);
+ string Sign(Dictionary<string,object> record,string purpose,Dictionary<string,object> request,Action check=null){
+  Check();return ProtectedStore.SignNormalOwned(owner,Id(record,"pendingKeyId"),S(Map(record["key"]),"fingerprint"),B(new Dictionary<string,object>{{"purpose",purpose},{"request",request}}),check??current);
  }
- Dictionary<string,object> Challenge(Dictionary<string,object> record,Dictionary<string,object> scope,Dictionary<string,object> request,string token,string scopeDigest,int ttl,DateTime? limitUntil=null){
-  var signed=new Dictionary<string,object>(request);signed["signature"]=Sign(record,"EXECUTION_CHALLENGE_REQUEST",request);
+ Dictionary<string,object> Challenge(Dictionary<string,object> record,Dictionary<string,object> scope,Dictionary<string,object> request,string token,string scopeDigest,int ttl,DateTime? limitUntil=null,Func<int> limitRemaining=null){
+  Action check=null;if(limitRemaining!=null)check=()=>{limitRemaining();};
+  var signed=new Dictionary<string,object>(request);signed["signature"]=Sign(record,"EXECUTION_CHALLENGE_REQUEST",request,check);
   bool discovery=token!=null&&request.ContainsKey("target")&&DiscoveryTarget(scope,Map(request["target"]));
   bool range=token!=null&&request.ContainsKey("target")&&RangeTarget(scope,Map(request["target"]));
-  var reply=Http(record,"POST",Base(scope)+"/challenges","",J(signed),token,null,16384,discovery,range,limitUntil);
+  var reply=Http(record,"POST",Base(scope)+"/challenges","",J(signed),token,null,16384,discovery,range,limitUntil,limitRemaining);
   if((discovery||range)&&DiscoveryStatus(reply,true)!=null)return reply;
   Exact(reply,token==null?"ref,challenge,credentialIssued,nonceConsumed,executionAuthorized,dispatchPerformed,bootstrapBinding":"ref,challenge,credentialIssued,nonceConsumed,executionAuthorized,dispatchPerformed");
   foreach(string k in new[]{"credentialIssued","nonceConsumed","executionAuthorized","dispatchPerformed"})if(!(reply[k] is bool)||(bool)reply[k])throw Invalid();
@@ -592,10 +617,10 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
  object RangeOutcome(string status,string stage,Dictionary<string,object> r,Dictionary<string,object> slot,string requestId,DateTime end){
   return new Dictionary<string,object>{{"kind","NORMAL_UNDERSTANDING_RANGE_NOT_ACQUIRED"},{"status",status},{"stage",stage},{"path",r["path"]},{"query",""},{"requestId",requestId},{"slotRef",slot["receiptRef"]},{"expiresAt",Stamp(end)}};
  }
- Dictionary<string,object> Http(Dictionary<string,object> record,string method,string path,string query,string body,string token,string auth,int max,bool discovery=false,bool range=false,DateTime? limitUntil=null){
+ Dictionary<string,object> Http(Dictionary<string,object> record,string method,string path,string query,string body,string token,string auth,int max,bool discovery=false,bool range=false,DateTime? limitUntil=null,Func<int> limitRemaining=null){
   // 새 목적의 최단 wall 기한은 원 host remaining 및 이 요청의 단조 시간과 함께 좁힌다.
   var elapsed=System.Diagnostics.Stopwatch.StartNew();double budget=limitUntil.HasValue?(limitUntil.Value-clock()).TotalMilliseconds:Double.PositiveInfinity;
-  Func<int> left=()=>{Check();int original=remaining();if(!limitUntil.HasValue)return original;double ms=Math.Min((limitUntil.Value-clock()).TotalMilliseconds,budget-elapsed.Elapsed.TotalMilliseconds);if(ms<1)throw Invalid();return (int)Math.Min(original,Math.Min(Int32.MaxValue,ms));};
+  Func<int> left=()=>{Check();int original=limitRemaining==null?remaining():Math.Min(remaining(),limitRemaining());if(original<1)throw Invalid();if(!limitUntil.HasValue)return original;double ms=Math.Min((limitUntil.Value-clock()).TotalMilliseconds,budget-elapsed.Elapsed.TotalMilliseconds);if(ms<1)throw Invalid();return (int)Math.Min(original,Math.Min(Int32.MaxValue,ms));};
   left();
   Check();var req=(HttpWebRequest)WebRequest.Create(S(record,"origin")+path+query);req.Method=method;req.AllowAutoRedirect=false;req.Proxy=null;req.UseDefaultCredentials=false;req.Credentials=null;
   req.SslProtocols=System.Security.Authentication.SslProtocols.Tls12;
@@ -603,7 +628,7 @@ internal sealed class NormalExecutionCredentialSource : IDisposable {
   req.Timeout=left();req.ReadWriteTimeout=left();req.AutomaticDecompression=DecompressionMethods.None;req.Accept="application/json";req.KeepAlive=false;
   if(token!=null)req.Headers[HttpRequestHeader.Authorization]="Bearer "+token;if(auth!=null)req.Headers["Anvil-Execution-Auth"]=auth;
   byte[] payload=body==null?null:Encoding.UTF8.GetBytes(body);
-  try{if(payload!=null){req.ContentType="application/json";req.ContentLength=payload.Length;using(var s=req.GetRequestStream()){left();s.Write(payload,0,payload.Length);}}left();
+  try{if(payload!=null){req.ContentType="application/json";req.ContentLength=payload.Length;left();using(var s=req.GetRequestStream()){left();s.Write(payload,0,payload.Length);}}left();
    HttpWebResponse original;
    try{original=(HttpWebResponse)req.GetResponse();}catch(WebException e){
     original=e.Response as HttpWebResponse;
@@ -701,6 +726,7 @@ internal static partial class ProtectedStore {
   lock(OwnedGate){current();owner.Check();string previous=Root;Root=owner.PathValue;byte[] encrypted=null;
    try{if(bytes.Length<1||bytes.Length>(kind=="execution-ca"?65536:8192))throw new Exception();var files=new DirectoryInfo(Root).GetFiles();if(files.Length>=1024||files.Sum(f=>f.Length)>16777216-bytes.Length*2)throw new Exception();
     CheckPath(Root,true);encrypted=ProtectedData.Protect(bytes,Utf8.GetBytes("ANVIL-V3:NORMAL:"+kind+":"+id),DataProtectionScope.CurrentUser);
+    current();owner.Check();
     using(var file=new FileStream(Path.Combine(Root,id+"."+kind),FileMode.CreateNew,FileAccess.Write,FileShare.None)){file.Write(encrypted,0,encrypted.Length);file.Flush(true);}current();owner.Check();
    }finally{Root=previous;if(encrypted!=null)Array.Clear(encrypted,0,encrypted.Length);Array.Clear(bytes,0,bytes.Length);}
   }
