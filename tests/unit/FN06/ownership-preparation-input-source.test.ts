@@ -296,7 +296,14 @@ test('정착: 원 준비 객체 cleanup 확정은 원 refs 해제 전 별도 spo
  const host=readFileSync(new URL('../../../apps/connector/native/DesktopTrustKeyHostSource.cs',import.meta.url),'utf8');
  const spool=readFileSync(new URL('../../../apps/connector/native/NormalExecutionSpoolProfileSource.cs',import.meta.url),'utf8');
  const producer=host.slice(host.indexOf('internal abstract class NormalStartPreparationProducer'),host.indexOf('readonly NormalStartPreparationProducer'));
+ const recheck=producer.slice(producer.indexOf('internal void RecheckOwned('),producer.indexOf('public void Dispose()'));
  const dispose=producer.slice(producer.indexOf('public void Dispose()'));
+ const settledOwner=recheck.indexOf('ReceiveRef(terminalObjectRef,true)');
+ const retainRecorder=recheck.indexOf('ownerCleanupTerminalRecorder=cleanupTerminal');
+ const finalObservation=recheck.indexOf('ownerTerminal.CheckCurrent(material,localProcessId,localProcessGeneration,');
+ assert.ok(settledOwner>=0&&settledOwner<retainRecorder&&retainRecorder<finalObservation,'정착한 원 terminal의 회수 기록 호출자는 마지막 live 관측 실패 전에도 유지한다');
+ assert.equal(recheck.match(/ownerCleanupTerminalRecorder=cleanupTerminal/g)?.length,1);
+ assert.match(dispose,/if\(disposed\)return;if\(cleanupAttempted\|\|cleanupUnknown\)throw Invalid\(\);cleanupAttempted=true/);
  assert.match(producer,/NormalStartPreparationOwnerCleanupTerminalCandidate ownerCleanupTerminal/);
  assert.match(producer,/Func<NormalExecutionSpoolProfileSource\.NormalStartPreparationClaimMaterial,NormalExecutionSpoolProfileSource\.NormalStartPreparationOwnerTerminalCandidate,ConfirmedOwnerCleanup,string,long,NormalExecutionSpoolProfileSource\.NormalStartPreparationOwnerCleanupTerminalCandidate> cleanupTerminal/);
  const typed=producer.slice(producer.indexOf('internal sealed class ConfirmedOwnerCleanup'),producer.indexOf('// 동기 local 원 소유'));
@@ -313,6 +320,7 @@ test('정착: 원 준비 객체 cleanup 확정은 원 refs 해제 전 별도 spo
  const readback=dispose.indexOf('ownerCleanupTerminal.CheckCurrent(material,localProcessId,localProcessGeneration)',recorded);
  const released=dispose.indexOf('job=null',readback);
  assert.ok(receipt>=0&&receipt<physical&&physical<evidence&&evidence<claim&&claim<owner&&owner<recorded&&recorded<readback&&readback<released,'확정 cleanup·원 current 후 정착/readback하고 원 참조를 해제');
+ assert.equal(dispose.match(/ownerCleanupTerminalRecorder\(material,ownerTerminal,cleanupEvidence,localProcessId,localProcessGeneration\)/g)?.length,1);
  for(const evidence of ['!processCleanup.ProcessExitConfirmed','!processCleanup.ThreadExitConfirmed','!processCleanup.ThreadCloseConfirmed','!processCleanup.ProcessCloseConfirmed','!processCleanup.ImageCloseConfirmed','!startup.LocalEnvironmentReleased','!assignment.LocalBuffersReleased','!job.LocalHandleCloseConfirmed'])assert.ok(dispose.indexOf(evidence,receipt)>=receipt&&dispose.indexOf(evidence,receipt)<recorded,evidence+' 유일 caller의 원 확인이 먼저다');
  assert.match(dispose,/if\(ownerCleanupTerminal==null\)throw Invalid\(\)/);
  assert.doesNotMatch(dispose,/ownerCleanupTerminal=null/,'회수 후에도 durable terminal current reader를 유지');
