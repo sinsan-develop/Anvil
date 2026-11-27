@@ -1,13 +1,21 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {requestBundle,projectId,baseControl,now,controller,controllerClient} from './control-handoff-summary-fixture.ts';
+import {requestBundle,projectId,baseControl,now,controller,controllerClient,requester,requesterClient} from './control-handoff-summary-fixture.ts';
 const load=()=>import('../../../apps/server/modules/control-handoff/control-acceptance.ts');
 function fixture(){
  let calls=0,releases=0,commitLost=false;const releaseErrors:unknown[]=[];const control=structuredClone(baseControl);const rows=new Map<string,Record<string,unknown>[]>(),request=requestBundle(),auth={actorId:controller,clientId:controllerClient,serverOwner:false,credentialGeneration:1,reauthUntil:new Date(Date.parse(now)+60000),authSession:{id:projectId,idleExpiresAt:new Date(Date.parse(now)+60000).toISOString(),absoluteExpiresAt:new Date(Date.parse(now)+120000).toISOString()}},logs:string[]=[];
  const db={release(error?:unknown){releases++;releaseErrors.push(error);},async query(sql:string,args:unknown[]=[]):Promise<{rows:any[];rowCount:number}>{calls++;logs.push(sql);
   if(['BEGIN','ROLLBACK'].includes(sql))return{rows:[],rowCount:0};if(sql==='COMMIT'){if(commitLost){commitLost=false;throw Error('COMMIT_REPLY_LOST');}return{rows:[],rowCount:0};}
-  if(sql.includes('schema_migrations')){const m=await load();return{rows:[{id:m.controlAcceptanceMigration,checksum:m.controlAcceptanceChecksum}],rowCount:1};}
+  if(sql.includes('to_regclass'))return{rows:[{ready:true}],rowCount:1};
+  if(sql.includes('schema_migrations')){
+   if(args[0]==='0041_control_handoff_source')return{rows:[{id:args[0],checksum:'c6bd081fc7a70f8eaa68ac673cce6f8e41549d98f2c3e5bb3c22833874b0e522'}],rowCount:1};
+   const m=await load();assert.equal(args[0],m.controlAcceptanceMigration);return{rows:[{id:m.controlAcceptanceMigration,checksum:m.controlAcceptanceChecksum}],rowCount:1};
+  }
   if(sql.includes('FROM anvil.projects'))return{rows:[{id:projectId,archived_at:null}],rowCount:1};
-  if(sql.includes('FROM anvil.project_members'))return{rows:[{project_id:projectId,user_id:auth.actorId,participation:auth.actorId===controller?'OWNER':'HANDOFF_ELIGIBLE',revoked_at:null}],rowCount:1};
+  if(sql.includes('FROM anvil.project_members')){
+   const [pid,actor]=args;
+   if(pid!==projectId||actor!==controller&&actor!==requester)return{rows:[],rowCount:0};
+   return{rows:[{project_id:projectId,user_id:actor,participation:actor===controller?'OWNER':'HANDOFF_ELIGIBLE',revoked_at:null}],rowCount:1};
+  }
   if(sql.includes('FROM anvil.project_control'))return{rows:[{project_id:projectId,actor_id:control.actorId,client_id:control.clientId,generation:control.generation,version:control.version,revoked_at:null}],rowCount:1};
   if(sql.startsWith('UPDATE anvil.project_control')){if(control.actorId!==args[6]||control.clientId!==args[7]||control.generation!==args[8]||control.version!==args[9])return{rows:[],rowCount:0};Object.assign(control,{actorId:args[1],clientId:args[2],generation:args[3],version:args[4]});return{rows:[],rowCount:1};}
   if(sql.includes('clock_timestamp'))return{rows:[{at:new Date(now)}],rowCount:1};
@@ -98,7 +106,7 @@ test('과거 성공 GET/POST replay도 실제 물리 receipt 누락을 거절하
 
 
 /** 실제 SQL/PG 대역임을 명시한다. private evidence factory/원 저장·CAS·물리 readback은 production source를 실행한다. */
-async function managedFixture(){
+async function managedPool(){
  const f=fixture(),g=await import('../../../apps/server/modules/control-handoff/control-grant.ts'),db=await f.pool.connect(),query=db.query.bind(db),names=["executions","execution_grants","usage_reservations","writer_claims","execution_commands","delivery_outbox","execution_credentials","execution_challenges","execution_receipts","execution_observations","execution_acknowledgements","execution_observation_results","execution_start_permits","execution_instruction_permits","execution_grant_revocations","project_writer_authority_events","project_writer_authority_heads","execution_ownership_events","execution_ownership_observations","execution_ownership_anchors","execution_ownership_bindings","execution_ownership_heads","native_preparation_authorities","native_preparation_authority_events","execution_preparations","execution_preparation_approval_candidates","understanding_reviews","stage_runs","queue_requests","project_storage_reservations","context_bundles","context_items","assignment_versions","source_roots","source_root_versions","project_source_declarations","project_roles","agent_sessions","role_bindings","execution_material_manifests","execution_materials","execution_material_proof_bindings"];
  db.query=async(sql:string,args:unknown[]=[])=>{if(!sql.includes('fn15_handoff_facts'))return query(sql,args);
   const result=await query(sql,args),packet=result.rows[0]!.packet,requestRef=JSON.parse(String(args[4])),subject={sessionId:args[0],actorId:args[1],clientId:args[2]};
@@ -110,11 +118,91 @@ async function managedFixture(){
  let tail:Promise<void>=Promise.resolve();f.pool.connect=async()=>{const previous=tail;let unlock!:()=>void;tail=new Promise<void>(r=>unlock=r);await previous;const before=structuredClone(f.rows),beforeControl=structuredClone(f.control);let commitAttempted=false;
   return{query:async(sql:string,args:unknown[]=[])=>{if(sql==='COMMIT')commitAttempted=true;if(sql==='ROLLBACK'&&!commitAttempted){f.rows.clear();for(const[k,v]of before)f.rows.set(k,v);Object.assign(f.control,beforeControl);}return db.query(sql,args);},release(error?:unknown){db.release(error);unlock();}};
  };
+ return f;
+}
+async function managedFixture(){
+ const f=await managedPool();
  const service=new(await load()).ControlAcceptanceService(f as never),prepare={schemaVersion:1 as const,operation:'prepareControlHandoff' as const,commandId:'88888888-8888-4888-8888-000000000071',projectId,clientId:controllerClient,payload:{requestRef:f.request.request.requestRef}},summary=await service.forSession('memory-token','memory-csrf',projectId).prepare(prepare);
  assert.equal(summary.snapshot.transferState,'READY');f.auth.actorId=f.request.request.snapshot.targetActorRef.userId;f.auth.clientId=f.request.request.snapshot.targetClientRef.clientId;f.auth.authSession.id='99999999-9999-4999-8999-000000000072';
  const accept={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:'88888888-8888-4888-8888-000000000073',projectId,clientId:f.auth.clientId,payload:{requestRef:f.request.request.requestRef,summaryVersion:summary.ref.version,reason:'명시 수락'}};
  return{...f,service,summary,accept};
 }
+test('수락 뒤 두 클라이언트의 보호 현재 조회는 각 인증 주체와 같은 새 제어권을 분리한다',async()=>{
+ const f=await managedPool();
+ const {buildApp}=await import('../../../apps/server/app.ts');
+ const {createControlHandoffPgSource}=await import('../../../apps/server/modules/control-handoff/control-handoff-pg.ts');
+ const origin='https://anvil.test',oldToken='o'.repeat(43),targetToken='t'.repeat(43);
+ const oldCsrf='c'.repeat(43),targetCsrf='d'.repeat(43);
+ const target={...structuredClone(f.auth),actorId:requester,clientId:requesterClient,
+  authSession:{...f.auth.authSession,id:'99999999-9999-4999-8999-000000000072'}};
+ const sessions=new Map([[oldToken,{identity:structuredClone(f.auth),csrf:oldCsrf}],[targetToken,{identity:target,csrf:targetCsrf}]]);
+ const originalSessions=structuredClone(sessions),authenticated:{sessionId:string;actorId:string;clientId:string}[]=[];
+ const access={async authenticateInTransaction(receiver:unknown,token:string,csrf:string){
+  assert(receiver&&typeof (receiver as {query?:unknown}).query==='function');
+  const session=sessions.get(token);assert(session);assert.equal(csrf,session.csrf);
+  const {identity}=session;
+  authenticated.push({sessionId:identity.authSession.id,actorId:identity.actorId,clientId:identity.clientId});
+  return structuredClone(identity);
+ }};
+ const source=createControlHandoffPgSource({pool:f.pool as never,access:access as never,enabled:true,clock:f.clock});
+ const app=buildApp({},undefined,undefined,undefined,{origin,source,enabled:true});
+ const headers=(token:string,csrf:string)=>({host:'anvil.test',origin,cookie:`__Host-anvil.sid=${token}`,'x-anvil-csrf':csrf,'content-type':'application/json'});
+ const old=headers(oldToken,oldCsrf),receiver=headers(targetToken,targetCsrf);
+ const projectPath=`/api/v1/projects/${projectId}`,requestRef=f.request.request.requestRef;
+ const requestPath=`${projectPath}/control-requests/${requestRef.id}/versions/${requestRef.version}`;
+ async function inject(method:'GET'|'POST',url:string,headers:Record<string,string>,payload?:object){
+  const before=authenticated.length;
+  const response=await app.inject({method,url,headers,payload});
+  const expected=originalSessions.get(headers===old?oldToken:targetToken)!.identity;
+  const calls=authenticated.slice(before);
+  assert(calls.length>0);
+  for(const call of calls)assert.deepEqual(call,{sessionId:expected.authSession.id,actorId:expected.actorId,clientId:expected.clientId});
+  return response;
+ }
+ const post=(url:string,headers:Record<string,string>,payload:object)=>inject('POST',url,headers,payload);
+ const readState=async(header:Record<string,string>)=>{
+  const response=await inject('GET',`${projectPath}/control-state`,header);
+  assert.equal(response.statusCode,200,response.body);return response.json();
+ };
+ const prepare={schemaVersion:1,operation:'prepareControlHandoff',commandId:'88888888-8888-4888-8888-000000000091',projectId,clientId:controllerClient,payload:{requestRef}};
+ const writes=(sql:string)=>/^(INSERT|UPDATE|DELETE|MERGE)\b/.test(sql)||sql.includes('fn15_control_storage_reserve')||sql.includes('fn15_control_storage_settle');
+ try{
+  const beforeInitialReads=f.logs.length,initialRows=structuredClone(f.rows);
+  const initialOld=await readState(old),initialTarget=await readState(receiver);
+  const observation={schemaVersion:1,projectId,observedAt:now,executionAuthorized:false,controlTransferred:false};
+  assert.deepEqual(initialOld,{...observation,actorId:controller,clientId:controllerClient,participation:'OWNER',control:{state:'HELD',basis:baseControl}});
+  assert.deepEqual(initialTarget,{...observation,actorId:requester,clientId:requesterClient,participation:'HANDOFF_ELIGIBLE',control:{state:'OTHER_CLIENT',basis:baseControl}});
+  assert(!f.logs.slice(beforeInitialReads).some(writes));assert.deepEqual(f.rows,initialRows);
+  const prepared=await post(`${requestPath}/protected-handoff-summaries`,old,prepare);
+  assert.equal(prepared.statusCode,201,prepared.body);
+  const summary=prepared.json();assert.deepEqual(summary.snapshot.requestRef,requestRef);assert.equal(summary.snapshot.transferState,'READY');
+  const command={schemaVersion:1,operation:'acceptControl',commandId:'88888888-8888-4888-8888-000000000092',
+   projectId,clientId:requesterClient,payload:{requestRef,summaryVersion:summary.ref.version,reason:'원 요청 인수'}};
+  const beforeAccept=f.logs.length;
+  const accepted=await post(`${requestPath}/acceptances`,receiver,command);
+  assert.equal(accepted.statusCode,201,accepted.body);
+  const result=accepted.json(),next={actorId:requester,clientId:requesterClient,generation:baseControl.generation+1,version:baseControl.version+1};
+  assert.deepEqual(result.previousControl,baseControl);assert.deepEqual(result.nextControl,next);assert.deepEqual(f.control,next);
+  assert.deepEqual(result.requestRef,requestRef);assert.deepEqual(result.summaryRef,summary.ref);assert.equal(result.commandId,command.commandId);
+  assert.equal(result.executionAuthorized,false);assert.equal(result.dispatchPerformed,false);assert.equal(result.controlTransferred,true);
+  assert.equal(f.logs.slice(beforeAccept).filter(sql=>sql.startsWith('UPDATE anvil.project_control')).length,1);
+  const audits=f.rows.get('control_handoff_acceptance_audits')??[],audit=audits.find(row=>row.command_id===command.commandId);
+  assert.deepEqual(audits.map(row=>row.command_id),[prepare.commandId,command.commandId]);
+  assert(audit);assert.equal(audit.id,result.auditRef.id);assert.equal(audit.content_hash,result.auditRef.contentHash);
+  const grant=f.rows.get('control_grant_events')??[];
+  assert.deepEqual(grant.map(row=>row.kind).sort(),['ISSUED','REVOKED']);assert(grant.every(row=>row.acceptance_id===result.acceptanceRef.id));
+  const settled=structuredClone(f.rows),beforeReads=f.logs.length;
+  assert.deepEqual(await readState(old),{...initialOld,control:{state:'OTHER_CLIENT',basis:next}});
+  assert.deepEqual(await readState(receiver),{...initialTarget,control:{state:'HELD',basis:next}});
+  const readQueries=f.logs.slice(beforeReads);
+  assert.equal(readQueries.filter(sql=>sql.includes('FROM anvil.control_handoffs h')&&sql.includes('h.next_generation=$2')&&sql.includes('control_handoff_acceptance_audits')).length,2);
+  assert(!readQueries.some(writes));assert.deepEqual(f.rows,settled);
+  const beforeDenied=f.logs.length;
+  const denied=await post(`${requestPath}/protected-handoff-summaries`,old,{...prepare,commandId:'88888888-8888-4888-8888-000000000093'});
+  assert.equal(denied.statusCode,403,denied.body);assert.equal(denied.json().code,'ACCESS_DENIED');
+  assert(!f.logs.slice(beforeDenied).some(writes));assert.deepEqual(f.rows,settled);assert.deepEqual(f.control,next);assert.deepEqual(sessions,originalSessions);
+ }finally{await app.close();}
+});
 test('고정 EMPTY source→READY 요약→실제 수락 저장/CAS/물리 readback과 replay를 한 메모리 호출선으로 연결한다',async()=>{
  const f=await managedFixture(),m=await load(),g=await import('../../../apps/server/modules/control-handoff/control-grant.ts'),session=f.service.forSession('memory-token','memory-csrf',projectId),result=await session.accept(f.accept);
  assert.equal(result.nextControl.actorId,f.auth.actorId);assert.equal(result.nextControl.generation,baseControl.generation+1);assert.deepEqual(f.control,result.nextControl);assert.equal(f.rows.get('control_handoffs')?.length,1);assert.equal(f.rows.get('control_grant_events')?.length,2);
