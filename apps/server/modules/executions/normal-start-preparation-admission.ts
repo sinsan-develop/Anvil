@@ -15,7 +15,7 @@ const hash=(v:unknown)=>contentHash(canonicalJson(v));
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const unavailable=():never=>{throw new AuthFailure('NORMAL_START_PREPARATION_OUTCOME_UNKNOWN',503);};
 const take=NativeFirstReceiveService.prototype.takeNormalStartPreparationReceiver;
-const frameMethods=['assertNormalStartPreparationFrame','prepareNormalStartPreparationFrame','sendNormalStartPreparationFrame','waitNormalStartPreparationRejection'] as const;
+const frameMethods=['assertNormalStartPreparationFrame','prepareNormalStartPreparationFrame','sendNormalStartPreparationFrame','waitNormalStartPreparationResult'] as const;
 const frameFunctions=frameMethods.map(name=>NativeFirstReceiveService.prototype[name]);
 const readHuman=NativeFirstReceiveStore.prototype.readHuman;
 function configuration(value:NormalStartPreparationAdmissionOptions){
@@ -107,8 +107,8 @@ export class NormalStartPreparationAdmissions {
     const provenance=owner.read(fixedScope);check();
     const frame=await this.#receiver.prepareNormalStartPreparationFrame(token,csrf,command,admitted.ref,provenance);check();
     await this.#receiver.sendNormalStartPreparationFrame(frame,new AbortController().signal);
-    // EOF만으로 정착을 주장하지 않는다. 같은 원 결과 거래의 확정 거절만 반환하며 queue에는 진입하지 않는다.
-    check();await this.#receiver.waitNormalStartPreparationRejection(frame,new AbortController().signal);return unavailable();
+    // EOF만으로 정착을 주장하지 않는다. 원 결과의 정착을 단회 수거하되 원 객체 재관측 없이 queue에는 진입하지 않는다.
+    check();await this.#receiver.waitNormalStartPreparationResult(frame,new AbortController().signal);return unavailable();
    }
    const claimed=await this.#access.authenticated(token,csrf,async(db,actor)=>{
     check();const origin=await this.#inspect(db,actor,command);check();if(!origin)return unavailable();tighten(origin.expiresAt);

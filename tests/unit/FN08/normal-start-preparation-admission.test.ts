@@ -14,8 +14,12 @@ test('normal FRAME 확정 거절은 문자열/외부 AuthFailure로 위조되지
  const service=new NativeFirstReceiveService({installationId:'11111111-1111-4111-8111-111111111111',authenticated:async()=>{throw Error('UNEXPECTED_IO');}}as any),command={commandId:'11111111-1111-4111-8111-111111111111'}as any;
  for(const error of [new AuthFailure('NORMAL_START_PREPARATION_REJECTED',412),new AuthFailure('NORMAL_START_PREPARATION_PRODUCER_REQUIRED',503),new AuthFailure('NORMAL_START_PREPARATION_OUTCOME_UNKNOWN',503),{message:'NORMAL_START_PREPARATION_REJECTED',statusCode:412,committed:true}])assert.equal(committed(error,service,command,{}as any),false);
  const source=readFileSync(new URL('../../../apps/server/modules/executions/normal-start-preparation-admission.ts',import.meta.url),'utf8');
- assert(source.includes('waitNormalStartPreparationRejection(frame,'));assert(source.includes('isCommittedNormalStartPreparationRejection(error,this.#receiver,command,scope)){check();throw error;}'));
+ assert.match(source,/await this\.#receiver\.waitNormalStartPreparationResult\(frame,[^;]+;return unavailable\(\);/);assert(source.includes('isCommittedNormalStartPreparationRejection(error,this.#receiver,command,scope)){check();throw error;}'));
  assert.doesNotMatch(source,/new AuthFailure\('NORMAL_START_PREPARATION_REJECTED'/,'admission 자체가 거절 권위를 만들지 않는다');
+ const commandPath=readFileSync(new URL('../../../apps/server/modules/executions/normal-initial-execution.ts',import.meta.url),'utf8').split('  async command(token:string,csrf:string,value:ProjectCommand){')[1];
+ assert(commandPath);
+ assert.match(commandPath,/const admitted=this\.#admissions\?await this\.#admissions\.enter\(token,csrf,request\):null;[^]*?const result=await this\.#access\.authenticated/);
+ assert(commandPath.indexOf('await this.#admissions.enter')<commandPath.indexOf('try{'),'FRAME의 UNKNOWN은 queue transaction/회수·인계에 들어가기 전에 전파된다');
 });
 
 

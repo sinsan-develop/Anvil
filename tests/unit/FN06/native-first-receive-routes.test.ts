@@ -721,11 +721,82 @@ test('PREPARED exact FRAME EOF만 실제 adapter의 기존 SQL producer gate까�
  }
 });
 
+test('같은 PREPARED 원 FRAME 대기는 exact route 저장 COMMIT과 release 뒤에만 단회 증빙을 수거한다',async()=>{
+ const f=await normalFrameDispatchFixture('frame-valid',true),{default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts'),app=Fastify();
+ const entered=Promise.withResolvers<void>(),commit=Promise.withResolvers<void>(),query=f.db.query;
+ const waitAbort=new AbortController();
+ f.db.query=(async(sql:string,args:any[])=>{if(sql==='COMMIT'){entered.resolve();await commit.promise;}return query(sql,args);})as any;
+ registerNativeFirstReceiveRoutes(app,{enabled:true,service:f.service},{origin:'https://anvil.example'}as any);
+ try{
+  const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
+  let observed=false;
+  const waiting=f.service.waitNormalStartPreparationResult(cap,waitAbort.signal).then(v=>{observed=true;return v;});void waiting.catch(()=>{});
+  await assert.rejects(f.service.waitNormalStartPreparationResult(cap,waitAbort.signal));
+  const call=()=>app.inject({method:'POST',url:f.proof.target.path,headers:{host:'anvil.example','content-type':'application/json',authorization:'AnvilReceive '+f.token,
+   [f.wire.normalStartPreparationHeaders.proof]:Buffer.from(receiveCanonical(f.proof)).toString('base64url'),[f.wire.normalStartPreparationHeaders.signature]:f.repairSignature()},payload:receiveCanonical(f.result)});
+  const running=call();await entered.promise;
+  assert.equal(observed,false);assert.equal(f.state().releases,0);assert.equal(f.state().records,1);
+  commit.resolve();
+  const response=await running;assert.equal(response.statusCode,200,response.body);
+  assert.deepEqual(response.json(),{status:'NORMAL_START_PREPARATION_RESULT_STORED',...f.stored});
+  assert.deepEqual(await waiting,{status:'NORMAL_START_PREPARATION_RESULT_OBSERVED',requestRef:f.result.requestRef,claimRef:f.request.claimRef,peerReceiptRef:f.result.receipt.ref,resultRecordRef:f.stored.ref,executionAuthorized:false,dispatchPerformed:false});
+  assert.equal(f.state().releases,1);
+  assert.equal((await call()).statusCode,200,'정확한 HTTP 재확인은 기존 보관본에 한정');
+  await assert.rejects(f.service.waitNormalStartPreparationResult(cap,waitAbort.signal));
+  await assert.rejects(f.service.sendNormalStartPreparationFrame(cap,f.controller.signal));
+  assert.equal(f.state().records,1);assert.equal(f.state().replays,1);assert.equal(f.frameState().claims,1);assert.equal(f.references.length,1);
+ }finally{commit.resolve();waitAbort.abort();f.controller.abort();await app.close();}
+});
+
+for(const mode of ['COMMIT_LOST','RELEASE_LOST','ABORT','EXPIRED'] as const)test('PREPARED '+mode+'는 보관 재확인으로 새 수거·frame을 만들지 않는다',async()=>{
+ const f=await normalFrameDispatchFixture('frame-valid',true),waitingOwner=new AbortController();
+ const query=f.db.query,release=f.db.release;
+ try{
+  const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
+  let published=false;
+  const waiting=f.service.waitNormalStartPreparationResult(cap,waitingOwner.signal).then(()=>{published=true;},error=>error);
+  if(mode==='COMMIT_LOST')f.db.query=(async(sql:string,args:any[])=>{const v=await query(sql,args);if(sql==='COMMIT')throw Error('RAM_COMMIT_RESPONSE_LOST');return v;})as any;
+  if(mode==='RELEASE_LOST')f.db.release=(()=>{release();throw Error('RAM_RELEASE_LOST');})as any;
+  if(mode==='ABORT')waitingOwner.abort();
+  if(mode==='EXPIRED')f.advance(2000);
+  const initial=f.run();
+  if(mode==='ABORT'){
+   assert.equal((await initial).status,'NORMAL_START_PREPARATION_RESULT_STORED','대기 취소가 원 POST의 이미 승인된 정착을 재작성하지 않는다');
+  }else{
+   await assert.rejects(initial,/UNKNOWN|EXPIRED/);
+  }
+  f.db.query=query;f.db.release=release;
+  if(mode!=='EXPIRED'){
+   assert.equal((await f.run()).status,'NORMAL_START_PREPARATION_RESULT_STORED','같은 원 보관본 조회만 가능');
+   assert.equal(f.state().records,1);assert.equal(f.state().replays,1);
+  }else{
+   assert.equal(f.state().records,0);assert.equal(f.state().replays,0);
+  }
+  waitingOwner.abort();
+  const failure=await waiting;assert.equal(failure.message,'NATIVE_RECEIVE_OUTCOME_UNKNOWN');assert.equal(published,false);
+  await assert.rejects(f.service.waitNormalStartPreparationResult(cap,new AbortController().signal));
+  await assert.rejects(f.service.sendNormalStartPreparationFrame(cap,f.controller.signal));
+  assert.equal(f.frameState().claims,1);assert.equal(f.references.length,1);
+ }finally{waitingOwner.abort();f.controller.abort();}
+});
+
+test('이미 PREPARED가 정착돼도 원 결과 기한이 지난 뒤 첫 대기에서 수거할 수 없다',async()=>{
+ const f=await normalFrameDispatchFixture('frame-valid',true);
+ try{
+  const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
+  assert.equal((await f.run()).status,'NORMAL_START_PREPARATION_RESULT_STORED');
+  f.advance(2000);
+  await assert.rejects(f.service.waitNormalStartPreparationResult(cap,f.controller.signal),/OUTCOME_UNKNOWN/);
+  await assert.rejects(f.service.waitNormalStartPreparationResult(cap,f.controller.signal));
+  assert.equal(f.state().records,1);assert.equal(f.frameState().claims,1);assert.equal(f.references.length,1);
+ }finally{f.controller.abort();}
+});
+
 test('FRAME 원 EOF 뒤 같은 signed REJECTED의 exact RPC COMMIT/release만 확정 거절 brand를 깨운다',async()=>{
  const f=await normalFrameDispatchFixture();try{
   const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
-  assert.equal(typeof (f.service as any).waitNormalStartPreparationRejection,'function');
-  let settled=false;const waiting=(f.service as any).waitNormalStartPreparationRejection(cap,f.controller.signal).catch((e:unknown)=>{settled=true;return e;});
+  assert.equal(typeof (f.service as any).waitNormalStartPreparationResult,'function');
+  let settled=false;const waiting=(f.service as any).waitNormalStartPreparationResult(cap,f.controller.signal).catch((e:unknown)=>{settled=true;return e;});
   await Promise.resolve();assert.equal(settled,false,'EOF 자체는 실패/성공 정착이 아니다');
   const stored=await f.run();assert.equal(stored.status,'NORMAL_START_PREPARATION_RESULT_STORED');
   const error=await waiting,m=await import('../../../apps/server/modules/executions/native-first-receive-service.ts');
@@ -735,14 +806,14 @@ test('FRAME 원 EOF 뒤 같은 signed REJECTED의 exact RPC COMMIT/release만 �
   assert.equal((m as any).isCommittedNormalStartPreparationRejection(error,f.service,{...f.normalCommand,commandId:id(3391)},f.scope),false);
   assert.equal((m as any).isCommittedNormalStartPreparationRejection(error,f.service,f.normalCommand,{...f.scope,receiveSessionRef:ref(3391)}),false);
   assert.equal(f.state().records,1);assert.equal(f.state().commits,1);assert.equal(f.state().releases,1);assert.equal(f.frameState().claims,1);
-  await assert.rejects((f.service as any).waitNormalStartPreparationRejection(cap,f.controller.signal));
+  await assert.rejects((f.service as any).waitNormalStartPreparationResult(cap,f.controller.signal));
  }finally{f.controller.abort();}
 });
 
 test('FRAME COMMIT 불명 뒤 같은 packet의 실제 durable readonly 재확인만 대기 중 원 거절을 확정하고 추가 record0이다',async()=>{
  const f=await normalFrameDispatchFixture();try{
   const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
-  let settled=false;const waiting=f.service.waitNormalStartPreparationRejection(cap,f.controller.signal).catch(e=>{settled=true;return e;}),query=f.db.query;let commits=0;
+  let settled=false;const waiting=f.service.waitNormalStartPreparationResult(cap,f.controller.signal).catch(e=>{settled=true;return e;}),query=f.db.query;let commits=0;
   f.db.query=(async(sql:string,args:any[])=>{const value=await query(sql,args);if(sql==='COMMIT'&&++commits===1)throw Error('RAM_COMMITTED_RESPONSE_LOST');return value;})as any;
   await assert.rejects(f.run());assert.equal(settled,false);assert.equal(f.state().records,1);
   const replay=await f.run();assert.equal(replay.status,'NORMAL_START_PREPARATION_RESULT_STORED');assert.equal(f.state().records,1);assert.equal(f.state().replays,1);
@@ -759,7 +830,7 @@ test('FRAME 확정 거절은 COMMIT 응답/원 release 전에는 공개되지 �
    if(timing==='COMMIT')f.db.query=(async(sql:string,args:any[])=>{if(sql==='COMMIT'){entered=true;return gate;}return query(sql,args);})as any;
    if(timing==='RELEASE')f.db.release=(()=>{entered=true;assert.equal(settled,false,'release 반환 전에는 확정 결과0');release();})as any;
    if(timing==='ALREADY_STORED')await f.run();
-   const waiting=f.service.waitNormalStartPreparationRejection(cap,f.controller.signal).catch(e=>{settled=true;return e;});
+   const waiting=f.service.waitNormalStartPreparationResult(cap,f.controller.signal).catch(e=>{settled=true;return e;});
    if(timing!=='ALREADY_STORED'){
     const storing=f.run();
     if(timing==='COMMIT'){while(!entered)await new Promise<void>(r=>setImmediate(r));assert.equal(settled,false);unblock({rows:[],rowCount:0,command:'COMMIT'});}
@@ -776,14 +847,14 @@ test('FRAME 원 종료의 COMMIT/회수 불명·손상·서명/현재성 실패�
  for(const mode of ['COMMIT_UNKNOWN','RELEASE_UNKNOWN','WRONG_STORED','WRONG_RESULT','CURRENT_CHANGED']){
   const f=await normalFrameDispatchFixture(),abort=new AbortController();try{
    const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
-   const waiting=f.service.waitNormalStartPreparationRejection(cap,abort.signal).catch(e=>e);const query=f.db.query;
+   const waiting=f.service.waitNormalStartPreparationResult(cap,abort.signal).catch(e=>e);const query=f.db.query;
    if(mode==='COMMIT_UNKNOWN')f.db.query=(async(sql:string,args:any[])=>{if(sql==='COMMIT')throw Error('RAM_COMMIT_UNKNOWN');return query(sql,args);})as any;
    if(mode==='RELEASE_UNKNOWN')f.db.release=(()=>{throw Error('RAM_RELEASE_UNKNOWN');})as any;
    if(mode==='WRONG_STORED')f.stored.snapshot.requestRef=ref(3390);
    if(mode==='WRONG_RESULT'){f.result.receipt.ref.id=id(3390);f.result.receipt.snapshot.receiptId=id(3390);f.result.receipt.ref.contentHash=receiveHash(f.result.receipt.snapshot);}
    if(mode==='CURRENT_CHANGED'){let reads=0;f.db.query=(async(sql:string,args:any[])=>{if(sql==='SELECT anvil.native_receive_session_current($1,$2) AS result'&&++reads===2)f.current.revision++;return query(sql,args);})as any;}
    await assert.rejects(f.run(),mode);abort.abort();const error=await waiting;assert.equal(error.message,'NATIVE_RECEIVE_OUTCOME_UNKNOWN',mode);assert.equal(branded(error,f.service,f.normalCommand as any,f.scope),false);
-   await assert.rejects(f.service.waitNormalStartPreparationRejection(cap,new AbortController().signal));assert.equal(f.frameState().claims,1);assert.equal(f.references.length,1);
+   await assert.rejects(f.service.waitNormalStartPreparationResult(cap,new AbortController().signal));assert.equal(f.frameState().claims,1);assert.equal(f.references.length,1);
   }finally{abort.abort();f.controller.abort();}
  }
 });
@@ -794,19 +865,19 @@ test('FRAME 원 결과 대기는 2초/짧은 원 기한·취소를 유지하고 
   const f=await normalFrameDispatchFixture(),abort=new AbortController();try{
    const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
    if(mode==='ORIGINAL_END')f.advance(9999);
-   const waiting=f.service.waitNormalStartPreparationRejection(cap,abort.signal).catch(e=>e);
-   if(mode==='CROSS_SERVICE'){const other=await normalFrameDispatchFixture();try{await assert.rejects(other.service.waitNormalStartPreparationRejection(cap,abort.signal));}finally{other.controller.abort();}abort.abort();}
+   const waiting=f.service.waitNormalStartPreparationResult(cap,abort.signal).catch(e=>e);
+   if(mode==='CROSS_SERVICE'){const other=await normalFrameDispatchFixture();try{await assert.rejects(other.service.waitNormalStartPreparationResult(cap,abort.signal));}finally{other.controller.abort();}abort.abort();}
    else if(mode==='ABORT')abort.abort();
    else{f.advance(mode==='TIMEOUT'?2000:1);t.mock.timers.tick(mode==='TIMEOUT'?2000:1);}
    const error=await waiting;assert.equal(error.message,'NATIVE_RECEIVE_OUTCOME_UNKNOWN',mode);
    if(mode==='TIMEOUT'||mode==='ORIGINAL_END'){await assert.rejects(f.run());assert.equal(f.state().records,0);}
-   await assert.rejects(f.service.waitNormalStartPreparationRejection(cap,new AbortController().signal));assert.equal(f.frameState().claims,1);assert.equal(f.references.length,1);
+   await assert.rejects(f.service.waitNormalStartPreparationResult(cap,new AbortController().signal));assert.equal(f.frameState().claims,1);assert.equal(f.references.length,1);
   }finally{abort.abort();f.controller.abort();}
  }
 });
 
-test('FRAME 실제 admission→claim COMMIT/release→원 EOF→결과 POST 정착은 같은 HUMAN 요청의 확정 거절만 반환하고 queue0이다',async(t)=>{
- const f=await normalFrameDispatchFixture(),{NormalStartPreparationAdmissions}=await import('../../../apps/server/modules/executions/normal-start-preparation-admission.ts');
+for(const prepared of [false,true])test('FRAME 실제 admission→claim COMMIT/release→원 EOF→결과 POST 뒤 queue0 '+(prepared?'PREPARED 정착':'REJECTED 확정'),async(t)=>{
+ const f=await normalFrameDispatchFixture('frame-valid',prepared),{NormalStartPreparationAdmissions}=await import('../../../apps/server/modules/executions/normal-start-preparation-admission.ts');
  t.mock.timers.enable({apis:['Date'],now:f.now()});
  const query=f.db.query;let admits=0,queue=0;
  f.db.query=(async(sql:string,args:any[]=[])=>{
@@ -838,7 +909,7 @@ test('FRAME 실제 admission→claim COMMIT/release→원 EOF→결과 POST 정�
   const response=await app.inject({method:'POST',url:f.proof.target.path,headers:{host:'anvil.example','content-type':'application/json',authorization:'AnvilReceive '+f.token,
    [f.wire.normalStartPreparationHeaders.proof]:Buffer.from(receiveCanonical(f.proof)).toString('base64url'),[f.wire.normalStartPreparationHeaders.signature]:f.repairSignature()},payload:receiveCanonical(f.result)});
   assert.equal(response.statusCode,200,response.body);assert.equal(response.json().status,'NORMAL_START_PREPARATION_RESULT_STORED');
-  const error=await pending;assert.equal(error.message,'NORMAL_START_PREPARATION_REJECTED');assert.equal(error.statusCode,412);
+  const error=await pending;assert.equal(error.message,prepared?'NORMAL_START_PREPARATION_OUTCOME_UNKNOWN':'NORMAL_START_PREPARATION_REJECTED');assert.equal(error.statusCode,prepared?503:412);
   assert.equal(admits,1);assert.equal(queue,0);assert.equal(f.frameState().claims,1);assert.equal(f.frameState().authCalls,2);assert.equal(f.state().records,1);
   assert.deepEqual(f.order.filter(s=>s!=='FRAME_BYTES'),['AUTH_BEGIN','AUTH_COMMIT','AUTH_RELEASE','AUTH_BEGIN','CLAIM_RPC','AUTH_COMMIT','AUTH_RELEASE']);
   assert.equal(f.references.length,1);
