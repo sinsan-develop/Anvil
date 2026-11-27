@@ -24,11 +24,14 @@ import type {PlanTaskSelection} from '../../shell/routes.ts';
 import { AssignmentChildTaskSelection } from './AssignmentChildTaskSelection.tsx';
 import { AssignmentParentOriginal } from './AssignmentParentOriginal.tsx';
 import {AssignmentRevisionComparison} from './AssignmentRevisionComparison.tsx';
+import {readSessionDetail} from '../session-detail/api.ts';
 import {AssignmentDraftRows} from './AssignmentDraftRows.ts';
 
-export function WorkspaceAssignments({mobile=false,providedDefinitionReport=null,normalInitialReviews,stageStart,providedHumanReportRef, client, project, session, stage, buffer, requestedTask, onChange, onAuthenticationLost }: {mobile?:boolean;normalInitialReviews?:NormalInitialUnderstandingReviewStorage;stageStart?:StageStartStorage;providedHumanReportRef?:Ref|null;providedDefinitionReport?:DefinitionReportSelection|null;client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
+export function WorkspaceAssignments({mobile=false,providedDefinitionReport=null,normalInitialReviews,stageStart,providedHumanReportRef, client, project, session, stage, buffer, requestedTask, requestedAssignment, onChange, onAuthenticationLost }: {mobile?:boolean;normalInitialReviews?:NormalInitialUnderstandingReviewStorage;stageStart?:StageStartStorage;providedHumanReportRef?:Ref|null;providedDefinitionReport?:DefinitionReportSelection|null;client: ApiClient; project: WorkspaceProject; session: DocumentSession; stage: WorkspaceStageSelection | null; buffer: AssignmentBuffer | null;requestedTask?:PlanTaskSelection;requestedAssignment?:{draftRef:PlanRef;confirmedRef:PlanRef;roleRefs:PlanRef[];bindingRefs:PlanRef[];isCurrent:()=>boolean}; onChange: Dispatch<SetStateAction<AssignmentBuffer | null>>; onAuthenticationLost: () => void }) {
   const [plans, setPlans] = useState<WorkPlanPage | null>(null), [plan, setPlan] = useState<WorkPlanView | null>(null), [taskCode, setTaskCode] = useState('');
   const [drafts, setDrafts] = useState<AssignmentPage | null>(null), [opened, setOpened] = useState<AssignmentDraftView | null | undefined>(undefined), [error, setError] = useState<ApiError | null>(null), [busy, setBusy] = useState(false), [reread, setReread] = useState(false);
+  const [linked,setLinked]=useState<{draft:AssignmentDraftView;arrival:NonNullable<typeof requestedAssignment>;sameRoles:boolean;bindingMatches:boolean;headCurrent:boolean;latestReviewAccepted:boolean;currentIssue:string|null;roleRefs:PlanRef[];bindingRefs:PlanRef[]}|null>(null);
+  const latestArrival=useRef(requestedAssignment);latestArrival.current=requestedAssignment;
   const alive = useRef(true), flight = useRef(false);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const owner = project.participation === 'OWNER' && project.controlState.status === 'HELD' && project.controlState.actorId === session.user.id && project.controlState.clientId === session.clientId;
@@ -66,8 +69,16 @@ export function WorkspaceAssignments({mobile=false,providedDefinitionReport=null
       throw failure;
     }
   }
-  async function open(ref: PlanRef) { setOpened(null); setReread(false); const value = await readAssignmentDraft(client, project.id, ref); if (alive.current) { setOpened(value); setReread(true); } }
+  async function open(ref: PlanRef) { if(linked&&ordered(ref)===ordered(linked.draft.ref)){await openRequested();return;}setLinked(null);setOpened(null); setReread(false); const value = await readAssignmentDraft(client, project.id, ref); if (alive.current) { setOpened(value); setReread(true); } }
+  async function openRequested(){
+    const arrival=requestedAssignment;if(!arrival?.isCurrent())return;const transport=client.transport,current=()=>alive.current&&latestArrival.current===arrival&&arrival.isCurrent()&&client.transport===transport;
+    let value:Awaited<ReturnType<typeof readSessionDetail>>;try{value=await readSessionDetail(client,project.id,arrival.draftRef,current);}catch(error){if(!current())return;throw error;}if(!current()||!value)return;
+    if(!value.confirmed||ordered(value.confirmed.ref)!==ordered(arrival.confirmedRef))throw new ApiError('ASSIGNMENT_BINDING_INVALID');
+    const role=value.state?.roles.find(r=>r.snapshot.kind==='STAGE_OWNER'),bindingMatches=!value.state?.bindings.some(b=>ordered(b.snapshot.roleRef)===ordered(role?.ref)&&ordered(b.snapshot.assignmentRef)!==ordered(value.confirmed!.ref)),roleRefs=value.state?.roles.map(r=>r.ref)??[],bindingRefs=value.state?.bindings.map(b=>b.ref)??[],sameRefs=(a:PlanRef[],b:PlanRef[])=>ordered(a.map(ordered).sort())===ordered(b.map(ordered).sort());
+    setLinked({draft:value.draft,arrival,sameRoles:!!value.state&&sameRefs(roleRefs,arrival.roleRefs)&&sameRefs(bindingRefs,arrival.bindingRefs),bindingMatches,headCurrent:value.draft.headVersion===value.draft.ref.version,latestReviewAccepted:value.decision.latestReviewAccepted,currentIssue:value.decision.currentIssue,roleRefs,bindingRefs});setOpened(value.draft);setReread(true);
+  }
   async function prepareChild(view: AssignmentDraftView) {
+    if(linkedCurrent)return;
     if (!owner || !bound || !safeToReplace()) return;
     const captured = buffer;
     setOpened(null); setReread(false);
@@ -89,6 +100,7 @@ export function WorkspaceAssignments({mobile=false,providedDefinitionReport=null
     onChange(current => current === captured ? value : current);
   }
   async function revise(view: AssignmentDraftView) {
+    if(linkedCurrent)return;
     if (!owner || !bound || !stage && view.snapshot.definition.parentAssignmentRef === null || !safeToReplace()) return;
     const captured = buffer;
     const latest = await readAssignmentDraft(client, project.id, view.ref); if (!alive.current) return;
@@ -102,6 +114,7 @@ export function WorkspaceAssignments({mobile=false,providedDefinitionReport=null
   // undefined는 새 저장영수증 보기, null은 명시 재조회/오류로 이전 원문을 감춘 상태다.
   const shown = opened === undefined ? (bound ? buffer?.result : null) ?? null : opened;
   const shownMatchesStage = !!shown && !!stage && ordered(shown.snapshot.definition.taskRef.applicationRef) === ordered(project.currentMethodologyRef) && shown.snapshot.definition.taskRef.applicationRef.id === stage.applicationId && shown.snapshot.definition.taskRef.nodeId === stage.nodeId;
+  const linkedCurrent=!!linked&&linked.draft===shown;
   const contentChange: Dispatch<SetStateAction<AssignmentDecisionBuffer|null>> = action => {
     if (!shown || !bound) return;
     onChange(current => {
@@ -131,6 +144,8 @@ export function WorkspaceAssignments({mobile=false,providedDefinitionReport=null
     });
   };
   return <section aria-label="임무 초안"><h4>임무 초안</h4><p className="meta">할 일·목적·검수 조건을 Anvil에 보관합니다. 저장은 확정·배정·Agent 실행이 아닙니다. 현재 확정계획·설계·단계는 저장 시 서버가 다시 검사합니다.</p>
+    {requestedAssignment?<button type="button" disabled={busy} onClick={()=>void perform(openRequested)}>전달받은 임무 정확 재조회</button>:null}
+    {linkedCurrent?<section aria-label="전달받은 임무의 읽기 전용 대조"><p>전달받은 정확 임무 원문 · 읽기 전용 · 새 준비·예약·실행 없음</p><p>검산한 초안 참조 {ordered(linked.draft.ref)}</p><p>검산한 확정 참조 {ordered(linked.arrival.confirmedRef)}</p><p>저장 head 대조 {linked.headCurrent?'일치':'다름'} · 조회된 최신 검토 {linked.latestReviewAccepted?'ACCEPTED':'적합 미확인'} · 현재 문제 {linked.currentIssue??'보고 없음'}</p><p>현재 적용·단계 대조 {shownMatchesStage?'일치':'다름 또는 미확인'} · 원 역할·책임 결박 ref 대조 {linked.sameRoles?'일치':'다름'} · 단계 결박의 임무 {linked.bindingMatches?'일치 또는 미예약':'다름'}</p><p>전달 당시 역할 {ordered(linked.arrival.roleRefs)} · 책임 결박 {ordered(linked.arrival.bindingRefs)}</p><p>이번 조회 역할 {ordered(linked.roleRefs)} · 책임 결박 {ordered(linked.bindingRefs)}</p><p>각각 보호 조회한 시점의 참조 대조이며 현재 실행 권한은 확인하지 않습니다. 기존 작성 입력과 미확인 명령은 보존합니다.</p></section>:null}
     {!stage ? <p>먼저 적용 절차를 조회하고 단계를 선택하세요.</p> : <p>선택 정의: {stage.nodeName} · 실제 수행 단계 아님</p>}
     {shown ? <p role="status" aria-label="보관 임무 단계 대조">{!stage ? '선택 단계 없음 · 보관 임무의 현재 단계 연계 미확인' : shownMatchesStage ? '보관 임무는 현재 선택 단계와 참조가 일치합니다.' : '보관 임무는 현재 선택 단계 또는 적용본과 다릅니다.'} 표시 대조일 뿐 현재 권한·실행 상태 확인이 아닙니다.</p> : null}
     {!owner ? <p>초안 변경은 현재 제어권을 가진 소유자만 가능합니다. 조회는 가능합니다.</p> : null}
@@ -158,13 +173,13 @@ export function WorkspaceAssignments({mobile=false,providedDefinitionReport=null
     <button disabled={busy} onClick={() => void perform(async () => { setOpened(null); setDrafts(null); const page = await listAssignmentDrafts(client, project.id, null); if (alive.current) setDrafts(page); })}>임무 초안 목록 조회</button>
     {drafts ? <AssignmentDraftRows items={drafts.items} busy={busy} currentApplicationRef={project.currentMethodologyRef} stage={stage} onOpen={ref=>void perform(()=>open(ref))}/> : null}
     {drafts?.hasMore ? <button disabled={busy} onClick={() => void perform(async () => { const cursor = drafts.nextCursor; setOpened(null); setDrafts(null); const page = await listAssignmentDrafts(client, project.id, cursor); if (alive.current) setDrafts(page); })}>임무 다음 목록</button> : null}
-    {shown ? <section aria-label="저장한 임무 초안">{buffer?.result ? <p role="status">임무 초안 저장 확인</p> : null}<p>고정 버전 {shown.ref.version} · {shown.ref.id}<br />{shown.ref.contentHash}</p><p>실제 배정·Agent 실행 아님 · 현재 원본 유효성은 미재검사</p><AssignmentConditions snapshot={shown.snapshot} /><ul>{shown.snapshot.readinessIssues.map((issue, index) => <li key={index}>{issue.code} · {issue.location}</li>)}</ul><button disabled={busy} onClick={() => void perform(() => open(shown.ref))}>저장 버전 재조회</button>{reread ? <p>저장 버전 재조회 확인</p> : <p>저장 영수증만 확인 · 현재 head 미확인</p>}<button disabled={busy || !owner || !!buffer?.pending} onClick={() => void perform(() => revise(shown))}>현재 버전으로 개정 준비</button></section> : null}
-    {shown && shown.snapshot.definition.parentAssignmentRef === null ? <button disabled={busy || !owner || !bound || !!buffer?.pending} onClick={() => void perform(() => prepareChild(shown))}>이 임무를 부모로 하위 초안 준비</button> : null}
+    {shown ? <section aria-label="저장한 임무 초안">{buffer?.result ? <p role="status">임무 초안 저장 확인</p> : null}<p>고정 버전 {shown.ref.version} · {shown.ref.id}<br />{shown.ref.contentHash}</p><p>실제 배정·Agent 실행 아님 · 현재 원본 유효성은 미재검사</p><AssignmentConditions snapshot={shown.snapshot} /><ul>{shown.snapshot.readinessIssues.map((issue, index) => <li key={index}>{issue.code} · {issue.location}</li>)}</ul><button disabled={busy} onClick={() => void perform(() => open(shown.ref))}>저장 버전 재조회</button>{reread ? <p>저장 버전 재조회 확인</p> : <p>저장 영수증만 확인 · 현재 head 미확인</p>}<button disabled={busy || !owner || linkedCurrent || !!buffer?.pending} onClick={() => void perform(() => revise(shown))}>현재 버전으로 개정 준비</button></section> : null}
+    {shown && shown.snapshot.definition.parentAssignmentRef === null ? <button disabled={busy || !owner || !bound || linkedCurrent || !!buffer?.pending} onClick={() => void perform(() => prepareChild(shown))}>이 임무를 부모로 하위 초안 준비</button> : null}
     {shown?.snapshot.definition.parentAssignmentRef ? <p>하위 임무는 사람 내용 검토·별도 확정·과거 원문 조회가 가능합니다. 책임자 배정·맥락·실행 허가는 아닙니다.</p> : null}
     {shown?.snapshot.definition.parentAssignmentRef ? <AssignmentParentOriginal key={['parent-original',project.id,session.user.id,session.clientId,ordered(shown.ref)].join(':')} client={client} session={session} child={shown} busy={busy} run={action=>void perform(action)} renderConditions={snapshot=><AssignmentConditions snapshot={snapshot}/>} /> : null}
     {shown?.snapshot.previousRef?<button disabled={busy} onClick={()=>void perform(()=>open(shown.snapshot.previousRef!))}>이전 임무 초안 원문 열기</button>:null}
     {shown?.snapshot.previousRef?<AssignmentRevisionComparison key={['revision',project.id,session.user.id,session.clientId,ordered(shown.ref)].join(':')} client={client} current={shown} busy={busy} run={action=>void perform(action)}/>:null}
-    {shown&&bound?<AssignmentContentDecision mobile={mobile} stageStart={stageStart&&shownMatchesStage&&owner&&project.controlState.generation!==null?{storage:stageStart,generation:project.controlState.generation,onAuthenticationLost}:undefined} normalInitialReviews={normalInitialReviews} providedDefinitionReport={providedDefinitionReport} providedHumanReportRef={providedHumanReportRef??null} executionPreparationBuffer={buffer?.executionPreparation??null} onExecutionPreparationChange={executionPreparationChange} key={ordered(shown.ref)} client={client} session={session} draft={shown} buffer={buffer?.contentDecision??null} onChange={contentChange} contextBuffer={buffer?.contextPreparation??null} onContextChange={contextChange} responsibleBuffer={buffer?.responsibleSession??null} onResponsibleChange={responsibleChange} owner={owner&&(!buffer||!!buffer.result)&&!buffer?.pending} busy={busy} run={action=>void perform(action)}/>:null}
+    {shown&&bound&&!linkedCurrent?<AssignmentContentDecision mobile={mobile} stageStart={stageStart&&shownMatchesStage&&owner&&project.controlState.generation!==null?{storage:stageStart,generation:project.controlState.generation,onAuthenticationLost}:undefined} normalInitialReviews={normalInitialReviews} providedDefinitionReport={providedDefinitionReport} providedHumanReportRef={providedHumanReportRef??null} executionPreparationBuffer={buffer?.executionPreparation??null} onExecutionPreparationChange={executionPreparationChange} key={ordered(shown.ref)} client={client} session={session} draft={shown} buffer={buffer?.contentDecision??null} onChange={contentChange} contextBuffer={buffer?.contextPreparation??null} onContextChange={contextChange} responsibleBuffer={buffer?.responsibleSession??null} onResponsibleChange={responsibleChange} owner={owner&&(!buffer||!!buffer.result)&&!buffer?.pending} busy={busy} run={action=>void perform(action)}/>:null}
   </section>;
 }
 

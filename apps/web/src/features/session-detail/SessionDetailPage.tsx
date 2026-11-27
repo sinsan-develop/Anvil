@@ -38,7 +38,7 @@ import {checkpointBufferKey} from './checkpoint-api.ts';
 import {emptyCheckpointForm,isEmptyCheckpointForm} from './checkpoint-form-restore.ts';
 type ReadScope={key:string;client:ApiClient;transport:typeof fetch;route:string|undefined};
 type Loaded={owner:ReadScope;key:string;revision:number;value:SessionDetail|null;error:string|null};
-export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticationLost,criteria,checkpoint,onIssueSelect,artifactTraces,startOrigins,normalStarts}:{client:ApiClient;startOrigins?:OriginStorage;normalStarts?:NormalStartStorage;artifactTraces?:ArtifactTaskTraceStorage;projectId:string;assignmentRef?:PlanRef;onAuthenticationLost:()=>void;criteria:CriteriaEditorProps;checkpoint:CheckpointBuffers;onIssueSelect?:(value:ResultIssueSelection)=>void}){
+export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticationLost,criteria,checkpoint,onIssueSelect,artifactTraces,startOrigins,normalStarts,onOpenWorkspace}:{client:ApiClient;onOpenWorkspace?:(value:SessionDetail)=>void;startOrigins?:OriginStorage;normalStarts?:NormalStartStorage;artifactTraces?:ArtifactTaskTraceStorage;projectId:string;assignmentRef?:PlanRef;onAuthenticationLost:()=>void;criteria:CriteriaEditorProps;checkpoint:CheckpointBuffers;onIssueSelect?:(value:ResultIssueSelection)=>void}){
  const [loaded,setLoaded]=useState<Loaded|null>(null),[revision,setRevision]=useState(0),[fileInspection,setFileInspection]=useState<{owner:ReadScope;key:string;value:CheckpointFileInspection}|null>(null),[storedInspection,setStoredInspection]=useState<{owner:ReadScope;key:string;value:CheckpointStoredInspection}|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
  const id=assignmentRef?.id,version=assignmentRef?.version,hash=assignmentRef?.contentHash,key=[projectId,id,version,hash].join(':');
  const scopeKey=JSON.stringify([key,criteria?.session?.user.id,criteria?.session?.clientId,criteria?.session?.csrfToken,globalThis.location?.hash??null]),scopeRef=useRef<ReadScope>({key:scopeKey,client,transport:client.transport,route:globalThis.location?.hash});
@@ -66,6 +66,7 @@ export function SessionDetailPage({client,projectId,assignmentRef,onAuthenticati
  },[scope,revision]);
  return <section aria-label="단계책임자·실행 상세" lang="ko">
   {assignmentRef?<a href={transferPreparationHref(projectId,assignmentRef)}>읽기 인계 준비</a>:null}
+  {onOpenWorkspace&&shown?.value?.confirmed?<button type="button" onClick={()=>{if(scopeCurrent())onOpenWorkspace(shown.value!);}}>작업공간에서 이 임무 대조</button>:null}
   <div className="project-toolbar"><a href={routeHref('workspace',projectId)}>프로젝트 작업으로 돌아가기</a>{assignmentRef?<button type="button" disabled={pending} onClick={()=>setRevision(v=>v+1)}>상세 원본 새로고침</button>:null}</div>
   {!assignmentRef?<p>프로젝트 작업에서 임무를 선택하고 확정 원본의 ‘책임자·실행 상세’로 이동하세요.</p>:null}
   {pending?<p role="status">선택 임무의 고정 원본·책임 역할 조회 중</p>:null}
