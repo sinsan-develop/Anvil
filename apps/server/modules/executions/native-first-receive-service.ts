@@ -211,6 +211,8 @@ export class NativeFirstReceiveBroker{
   const terminal=this.#normalResults.get(sessionId),entry=terminal?.entry??this.#streams.get(sessionId),origin=entry?.ownership.preparationOrigin;
   if(!entry||!origin||typeof origin.publicKeySpki!=='string'||origin.credentialDigest!==digest)return denied();
   if(terminal?(terminal.state!=='EOF'||!receiveSame(result.requestRef,normalStartPreparationRequestRef(terminal.request))):entry.normalFrameNegotiated||entry.frameAttempt!==undefined)return denied();
+  // PREPARED는 원 협상 frame의 정상 EOF 소유자만 소비한다. legacy REJECTED 경로는 그대로 보존한다.
+  if(result.receipt.snapshot.outcome==='PREPARED'&&(!terminal||!entry.normalFrameNegotiated||entry.frameAttempt!=='EOF'))return denied();
   const p=terminal?.preparation??entry.preparation,w=origin.window.snapshot;
   const check=()=>{
    const wall=this.#now(),mono=performance.now();

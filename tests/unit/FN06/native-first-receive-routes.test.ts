@@ -369,7 +369,7 @@ function normalPreparationReceiverScope(f:Pick<Awaited<ReturnType<typeof streamS
   credentialGeneration:w.human.credentialGeneration,controlGeneration:w.human.controlGeneration};
 }
 
-async function normalResultTransportFixture(mode='valid'){
+async function normalResultTransportFixture(mode='valid',prepared=false){
  const f=await streamServiceFixture(),wire=await import('../../../contracts/runtime/normal-start-preparation-v1.ts'),crypto=await import('node:crypto');
  const stream=await f.service.nativeStream(f.session.ref.id,f.token,f.proof,f.signature,f.controller.signal,mode.startsWith('frame-')&&mode!=='frame-legacy'?'application/octet-stream':undefined) as import('node:stream').PassThrough;
  assert.equal(f.calls.at(-1),'RELEASE');let bytes=0;stream.on('data',chunk=>{bytes+=chunk.length;});
@@ -386,8 +386,8 @@ async function normalResultTransportFixture(mode='valid'){
  const snapshot={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_PEER_RECEIPT_V1',receiptId:id(3220),requestRef,attemptId:request.attemptId,outcome:'PREPARED',
   preparationBasis:{ref:{id:id(3210),version:1,contentHash:receiveHash(basisSnapshot)},snapshot:basisSnapshot},issuedAt,expiresAt,executionAuthorized:false,dispatchPerformed:false};
  const result={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_V1',requestRef,receipt:{ref:{id:id(3220),version:1,contentHash:receiveHash(snapshot)},snapshot}};
- // 실제 0106 adapter의 첫 소비는 보호 producer가 필요 없는, 원 peer가 서명한 명시 REJECTED다.
- if(mode==='actual-adapter'||mode.startsWith('frame-')){snapshot.outcome='REJECTED';snapshot.preparationBasis=null as any;result.receipt.ref.contentHash=receiveHash(snapshot);}
+  // 거래·실패·재조회 시험은 원 peer의 명시 REJECTED를 사용한다. PREPARED는 별도 EOF/producer 경계를 검산한다.
+  if(!prepared){snapshot.outcome='REJECTED';snapshot.preparationBasis=null as any;result.receipt.ref.contentHash=receiveHash(snapshot);}
  const proof={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_PROOF_V1',requestRef,attemptId:request.attemptId,installationId:request.installationId,projectId:request.projectId,registrationRef:request.registrationRef,connectorRef:request.connectorRef,
   windowRef:f.window.ref,receiveSessionRef:f.session.ref,hostPublicKeyFingerprint:w.hostPublicKeyFingerprint,serverNonce:request.serverNonce,
   target:{method:'POST',path:wire.normalStartPreparationResultPath(f.session.ref.id),queryHash:receiveHash({}),bodyHash:receiveHash(result)},issuedAt,expiresAt:new Date(f.now()+(mode.startsWith('late-')?80:2000)).toISOString()};
@@ -416,6 +416,8 @@ async function normalResultTransportFixture(mode='valid'){
   if(sql==='SELECT anvil.fn08_normal_start_preparation_result_commit($1,$2::jsonb,$3) AS result'){
    records++;assert.equal(args[0],f.session.ref.id);assert.equal(args[2],'456');const material=JSON.parse(args[1]);assert.equal(material.credentialDigest,rawCredentialDigest);assert.equal(material.signature,signature);
    assert.deepEqual(material.request,request);assert.deepEqual(material.result,result);assert.equal(JSON.stringify(args).includes(f.token),false);
+    // 실제 PG 실행이 아니라, 기존 0106의 보호 producer 미공급 PREPARED 거절을 모델링한다.
+    if(mode==='frame-prepared'){assert.equal(material.result.receipt.snapshot.outcome,'PREPARED');throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');}
    if(mode==='late-record')return gate;return{rows:[{result:stored}],rowCount:1};
   }
   if(sql==='SELECT anvil.fn08_normal_start_preparation_result_replay($1,$2::jsonb,$3) AS result'){
@@ -454,6 +456,21 @@ for(const mode of ['valid','actual-adapter'])test('normal result 전용 route/se
   const response=await call();assert.equal(response.statusCode,200);const value=response.json();assert.equal(value.status,'NORMAL_START_PREPARATION_RESULT_STORED');assert.deepEqual(value.ref,f.stored.ref);
   assert.deepEqual(f.state(),{records:1,reads:2,releases:1,commits:1,bytes:0,replays:0});assert.equal(JSON.stringify(value).includes(f.token),false);assert.equal(JSON.stringify(value).includes(f.publicKeySpki),false);
   const again=await call();assert.equal(again.statusCode,200);assert.deepEqual(again.json(),value);assert.equal(f.state().records,1);assert.equal(f.state().replays,1);assert.equal(f.state().bytes,0,'new peer 개시 근거 없이 frame/ACK를 쓰지 않는다');
+ }finally{await app.close();f.controller.abort();}
+});
+
+test('PREPARED legacy live STREAM의 exact signed HTTP 결과는 EOF owner 없이 pool 진입0이다',async()=>{
+ const f=await normalResultTransportFixture('valid',true),{default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts'),app=Fastify();
+ let connects=0;const connect=f.access.pool.connect;
+ f.access.pool.connect=(async()=>{connects++;return Reflect.apply(connect,f.access.pool,[]);}) as any;
+ registerNativeFirstReceiveRoutes(app,{enabled:true,service:f.service},{origin:'https://anvil.example'} as any);
+ try{
+  const before=f.calls.length;
+  const response=await app.inject({method:'POST',url:f.proof.target.path,headers:{host:'anvil.example','content-type':'application/json',authorization:'AnvilReceive '+f.token,
+   [f.wire.normalStartPreparationHeaders.proof]:Buffer.from(receiveCanonical(f.proof)).toString('base64url'),[f.wire.normalStartPreparationHeaders.signature]:f.normalSignature},payload:receiveCanonical(f.result)});
+  assert.equal(response.statusCode,503);assert.equal(connects,0);assert.equal(f.calls.length,before);
+  assert.deepEqual(f.state(),{records:0,reads:0,releases:0,commits:0,bytes:0,replays:0});
+  assert.equal(f.stream.writableEnded,false,'원 legacy STREAM은 새 목적의 실패로 종료하지 않는다');
  }finally{await app.close();f.controller.abort();}
 });
 
@@ -594,8 +611,8 @@ test('normal 준비 custody는 원 monotonic 기한·객체 메서드 identity�
  }finally{f.controller.abort();}
 });
 
-async function normalFrameDispatchFixture(mode='frame-valid'){
- const f=await normalResultTransportFixture(mode),{connectNormalStartPreparationFrameStore}=await import('../../../apps/server/modules/executions/normal-start-preparation-result-store.ts');
+async function normalFrameDispatchFixture(mode='frame-valid',prepared=false){
+ const f=await normalResultTransportFixture(mode,prepared),{connectNormalStartPreparationFrameStore}=await import('../../../apps/server/modules/executions/normal-start-preparation-result-store.ts');
  const scope=normalPreparationReceiverScope(f),order:string[]=[],old=f.db.query;let claims=0,authCalls=0;
  const provenance={purpose:'NORMAL_START_PREPARATION_RECEIVER_PROVENANCE',scope,streamProofHash:'a'.repeat(64),streamChallengeRef:ref(3300),observedAt:f.request.issuedAt,expiresAt:f.request.expiresAt,executionAuthorized:false,dispatchPerformed:false};
  if(mode==='frame-fake')f.service.connectNormalStartPreparationFrameSource({purpose:'NORMAL_START_PREPARATION_FRAME_SOURCE_V1',reserve:async()=>({disposition:'FIRST_COMMIT',request:{ref:f.result.requestRef,snapshot:f.request},claimRef:f.request.claimRef,expiresAt:f.request.expiresAt,dispatchPerformed:false})});
@@ -605,7 +622,10 @@ async function normalFrameDispatchFixture(mode='frame-valid'){
   if(sql==='SELECT anvil.fn08_normal_start_preparation_dispatch_claim($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9) AS result'){
    order.push('CLAIM_RPC');claims++;assert.equal(args[0],scope.humanSessionId);assert.deepEqual(JSON.parse(args[4]),f.normalCommand);assert.deepEqual(JSON.parse(args[5]),f.request.admissionRef);assert.deepEqual(JSON.parse(args[6]),provenance);assert.equal(args[8],'456');
    const proposal=JSON.parse(args[7]);Object.assign(f.request,{requestId:proposal.requestId,attemptId:proposal.attemptId,serverNonce:proposal.serverNonce});if(mode==='frame-cross')f.request.windowRef=ref(3399);
-   Object.assign(f.result.requestRef,f.wire.normalStartPreparationRequestRef(f.request));f.result.receipt.snapshot.attemptId=proposal.attemptId;f.result.receipt.ref.contentHash=receiveHash(f.result.receipt.snapshot);
+    Object.assign(f.result.requestRef,f.wire.normalStartPreparationRequestRef(f.request));f.result.receipt.snapshot.attemptId=proposal.attemptId;
+    const basis=f.result.receipt.snapshot.preparationBasis;
+    if(basis){basis.snapshot.attemptId=proposal.attemptId;basis.ref.contentHash=receiveHash(basis.snapshot);}
+    f.result.receipt.ref.contentHash=receiveHash(f.result.receipt.snapshot);
    f.proof.attemptId=proposal.attemptId;f.proof.serverNonce=proposal.serverNonce;f.proof.target.bodyHash=receiveHash(f.result);f.repairSignature();
    f.stored.snapshot.resultHash=receiveHash(f.result);f.stored.snapshot.proofHash=receiveHash(f.proof);f.stored.ref.contentHash=receiveHash(f.stored.snapshot);
    if(mode==='frame-late')f.advance(10000);
@@ -673,6 +693,32 @@ test('FRAME의 exact claim COMMIT/release 뒤 원 frame1·정상 EOF만 결과 o
   await assert.rejects(f.service.sendNormalStartPreparationFrame(cap,f.controller.signal));await assert.rejects(f.service.sendNormalStartPreparationFrame({} as any,f.controller.signal));await assert.rejects(f.prepare());
   assert.equal(f.frameState().claims,1);assert.equal(f.frameState().authCalls,1);
  }finally{f.controller.abort();}
+});
+
+test('PREPARED exact FRAME EOF만 실제 adapter의 기존 SQL producer gate까지 도달하고 ACK는 없다',async()=>{
+ for(const mode of ['same','request']){
+  const f=await normalFrameDispatchFixture('frame-prepared',true),{default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts'),app=Fastify();
+  let connects=0;const connect=f.access.pool.connect;
+  f.access.pool.connect=(async()=>{connects++;return Reflect.apply(connect,f.access.pool,[]);}) as any;
+  registerNativeFirstReceiveRoutes(app,{enabled:true,service:f.service},{origin:'https://anvil.example'} as any);
+  const call=()=>app.inject({method:'POST',url:f.proof.target.path,headers:{host:'anvil.example','content-type':'application/json',authorization:'AnvilReceive '+f.token,
+   [f.wire.normalStartPreparationHeaders.proof]:Buffer.from(receiveCanonical(f.proof)).toString('base64url'),[f.wire.normalStartPreparationHeaders.signature]:f.repairSignature()},payload:receiveCanonical(f.result)});
+  try{
+   assert.equal((await call()).statusCode,503);assert.equal(connects,0,'협상만으로 PREPARED를 수용하지 않는다');
+   const cap=await f.prepare();f.stream.pause();const sending=f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);void sending.catch(()=>{});
+   assert.equal((await call()).statusCode,503);assert.equal(connects,0,'원 frame 전송 중에도 pool 진입0');
+   f.stream.resume();assert.equal((await sending).status,'NORMAL_START_PREPARATION_FRAME_EOF');
+   if(mode==='request'){
+    f.result.requestRef.contentHash='f'.repeat(64);
+    const basis=f.result.receipt.snapshot.preparationBasis!;basis.ref.contentHash=receiveHash(basis.snapshot);
+    f.result.receipt.ref.contentHash=receiveHash(f.result.receipt.snapshot);f.proof.target.bodyHash=receiveHash(f.result);
+   }
+   const before=f.calls.length,response=await call();assert.equal(response.statusCode,503);assert.equal(response.body.includes('RESULT_STORED'),false);
+   if(mode==='request'){assert.equal(connects,0);assert.equal(f.calls.length,before);assert.equal(f.state().records,0);}
+   else{assert.equal(connects,1);assert.equal(f.state().records,1,'실제 adapter가 동일 PREPARED로 기존 commit RPC를 요청했다');assert.ok(f.calls.includes('RESULT:ROLLBACK'));}
+   assert.equal(f.state().commits,0);assert.equal(f.state().replays,0);assert.equal(f.frameState().claims,1);assert.equal(f.references.length,1);
+  }finally{await app.close();f.controller.abort();}
+ }
 });
 
 test('FRAME 원 EOF 뒤 같은 signed REJECTED의 exact RPC COMMIT/release만 확정 거절 brand를 깨운다',async()=>{
