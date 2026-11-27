@@ -1,9 +1,13 @@
 import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
 import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import {documentTextDiff} from '../../../apps/server/modules/documents/document-diff.ts';
+import {buildOfficialForms} from '../../../apps/server/modules/documents/forms.ts';
+import type {DocumentVersion} from '../../../apps/web/src/features/design-trace/api.ts';
+import type {DocumentReviewCommand} from '../../../apps/web/src/features/design-trace/review-api.ts';
 import {ApiClient} from '../../../apps/web/src/api/client.ts';
 import {parseRoute,documentVersionHref} from '../../../apps/web/src/shell/routes.ts';
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
@@ -363,6 +367,98 @@ test('IX02 QA B4/B5 미반영 제안 선택 저장부터 같은 초안의 HUMAN 
   assert.equal(fresh.contentReviews[0].reviewedAt,reviewedAt);assert.equal(fresh.contentReviews[0].reason,reason);assert.equal(fresh.contentReviews[0].ref.outcome,'REWORK');
   assert.deepEqual(posts.map(c=>c.operation),['saveDocumentDraft','recordContentReview']);assert.equal(f.calls.filter(c=>c.method==='POST').length,2);assert.equal(f.lost(),0);
   assert.equal(rows.size,1);assert.equal(f.d.document.version,2);assert.equal(f.d.document.confirmed,false);
+ }finally{await f.close();}
+});
+test('IX02 QA A AF05 보호 원문을 사람이 검토하고 같은 원문 바이트와 검토 사건을 재확인한다',{timeout:15000},async()=>{
+ const [fixtureManifest,formSource,standardSource]=await Promise.all([
+  readFile(new URL('../../integration/IX02/fixtures/v1/manifest.json',import.meta.url),'utf8'),
+  readFile(new URL('../../../docs/design/공식산출물_양식정의.md',import.meta.url)),
+  readFile(new URL('../../../docs/design/문서작성_공통기준.md',import.meta.url)),
+ ]);
+ const {qaA,sourceOnly,actualExecutionAuthorized}=JSON.parse(fixtureManifest);
+ assert.equal(sourceOnly,true);assert.equal(actualExecutionAuthorized,false);
+ assert.deepEqual(qaA.prescribedArgv,['node','--test','test/ready-state.test.mjs']);
+ assert.deepEqual(qaA.expectedBaseline,{state:'EXPECTED_RED',tests:3,pass:2,fail:1,failingTest:'ASCII edge whitespace must preserve READY'});
+ const argv=JSON.stringify(qaA.prescribedArgv),expected=qaA.expectedBaseline;
+ const catalog=buildOfficialForms(formSource,standardSource),form=catalog.forms.find(entry=>entry.definition.formCode==='AF05');assert(form);
+ const sections=[
+  'IX02 QA A 합성 원형, 고정 업무와 시험 계획의 내용 확인 범위',
+  '별도 QA 대상과 실행 환경 미확정. 입력은 고정 manifest의 합성 자료',
+  `업무 IX02, 합성 TC IX02-QA-A-READY, 중요 실패 조건: ${expected.failingTest}`,
+  `재현 인자 ${argv} · 관측 위치: 지정 시험 출력 · 기대 기준 ${expected.state}, 전체 ${expected.tests}, 통과 ${expected.pass}, 실패 ${expected.fail}`,
+  '직접 실행 근거 미확인. 이 검토는 문서의 계획과 원문 일치만 확인',
+  '실제 실행·사용자 인수 미실행. 원본 자료를 그대로 보존',
+ ];
+ assert.equal(form.definition.items.length,sections.length);
+ const title='IX02 QA A 테스트계획 원형',body=Buffer.from(sections.join('\n')+'\n','utf8');
+ const content={body:{artifactId:id(81),bytes:body.length,contentHash:contentHash(body),mediaType:'text/plain;charset=utf-8'},attachments:[],sourceRefs:[],sections:form.definition.items.map((item,index)=>({itemId:item.itemId,anchor:`line:${index+1}`}))};
+ const ref={id:id(82),version:2,contentHash:H({title,formRef:form.ref,stageNodeRef:null,content})};
+ const criteria:DocumentVersion['contentReviewCriteria']={criteriaVersion:1,formRef:form.ref,items:form.definition.items.map(item=>({criterionId:item.itemId,title:item.title,reviewCriteria:item.reviewCriteria}))};
+ const document:DocumentVersion={...ref,title,confirmed:false,authorRef:{kind:'HUMAN',userId:id(80)},createdAt:new Date(at).toISOString(),formRef:form.ref,stageNodeRef:null,content,sourceRefs:[],validation:{validForConfirmation:false,issues:[]},statusHistory:[],contentReviewCriteria:criteria,contentReviews:[]};
+ const root=`/api/v1/projects/${pid}`,documentPath=`${root}/documents/${ref.id}/versions/${ref.version}`,artifactPath=`${root}/files/${content.body.artifactId}`;
+ const reason='고정 원형과 기대 결과를 대조했습니다. 실제 시험은 미실행입니다.',reviewedAt='2026-11-17T00:03:00.000Z';
+ const reviewRef={id:id(83),criteriaVersion:1,targetRef:ref,outcome:'ACCEPTED' as const};
+ const items=criteria.items.map((item,index)=>({criterionId:item.criterionId,outcome:'ACCEPTED',reason:sections[index]!,evidenceRefs:[]}));
+ const posts:DocumentReviewCommand[]=[],reads:DocumentVersion[]=[];
+ let corruptBody=false;
+ const f=await fixture();
+ f.controls.hook=(path,request)=>{
+  if(request?.method==='POST'){
+   assert.equal(path,`${root}/commands`);assert.equal(posts.length,0);
+   const command:DocumentReviewCommand=JSON.parse(String(request.body));
+   assert.equal(new Headers(request.headers).get('X-Anvil-CSRF'),session.csrfToken);
+   assert.equal(new Headers(request.headers).get('Idempotency-Key'),command.commandId);
+   const {commandId,...requestFields}=command;
+   assert.match(commandId,/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/);
+   assert.deepEqual(requestFields,{schemaVersion:1,projectId:pid,clientId:cid,controlGeneration:4,operation:'recordContentReview',targetId:ref.id,expectedVersion:ref.version,baselineRefs:[],approvalRef:null,payload:{targetKind:'DOCUMENT',targetRef:ref,criteriaVersion:1,items,outcome:'ACCEPTED',reason}});
+   posts.push(command);
+   document.contentReviews.push({ref:reviewRef,items:structuredClone(command.payload.items),reviewer:{kind:'HUMAN',userId:uid,sameAsTargetRecorder:false},sourceKind:'HUMAN_REVIEW',reason:command.payload.reason,reviewedAt,serverSequence:1});
+   return Response.json({commandId:command.commandId,projectId:pid,status:'APPLIED',operationId:id(84),serverReceivedAt:reviewedAt,targetId:ref.id,version:ref.version,data:{status:'REVIEW_RECORDED',reviewRef}});
+  }
+  assert.equal(request?.method??'GET','GET');
+  if(path===documentPath){reads.push(structuredClone(document));return Response.json(document);}
+  if(path===artifactPath){
+   assert.equal(new Headers(request?.headers).get('Accept'),'application/octet-stream');
+   const bytes=new Uint8Array(body);
+   if(corruptBody)bytes[0]=33;
+   return new Response(bytes,{headers:{'content-type':'application/octet-stream'}});
+  }
+  if(path===`/api/v1/forms/${form.ref.id}/versions/${form.ref.version}`)return Response.json({...form,authoringStandard:{ref:catalog.standard.ref,content:catalog.standard.body.toString('utf8')},validation:{formatOnly:true,contentReview:'NOT_PERFORMED',userAcceptance:'NOT_PERFORMED'}});
+  if(path.startsWith(`${root}/documents?`))return Response.json({items:[{id:ref.id,title,headVersion:ref.version,confirmedVersion:null,updatedAt:reviewedAt}],hasMore:false,nextCursor:null,observedAt:reviewedAt});
+  if(path===root)return null;
+  throw Error(`UNMODELED_AF05_QA_READ:${path}`);
+ };
+ try{
+  await f.openDocument(ref);await f.wait(()=>f.text().includes(argv)&&f.text().includes(expected.failingTest));
+  assert(f.text().includes(`통과 ${expected.pass}, 실패 ${expected.fail}`));
+  assert.equal(posts.length,0);assert.equal(reads.at(-1)?.contentReviews.length,0);
+  await f.click('이 버전 내용 검토 작성');await f.wait(()=>f.text().includes('문서 내용 검토 작성'));assert.equal(posts.length,0);
+  const change=async(field:string,value:string)=>{
+   const node=f.nodes().find(item=>item.getAttribute('id')===field);assert(node,field);
+   const propsKey=Object.keys(node).find(key=>key.startsWith('__reactProps'));assert(propsKey,field);
+   await ui.React.act(async()=>(node as unknown as Record<string,{onChange:(event:{target:{value:string}})=>void}>)[propsKey]!.onChange({target:{value}}));
+  };
+  for(const [index,item] of items.entries()){
+   await change(`review-outcome-${index}`,item.outcome);await change(`review-reason-${index}`,item.reason);
+  }
+  await change('document-review-outcome','ACCEPTED');await change('document-review-reason',reason);
+  await f.click('내용 검토 기록 저장');await f.wait(()=>f.text().includes(`검토자 ${uid}`));
+  assert(f.text().includes('내용 검토 저장 확인 · 문서 확정 아님'));assert(!f.text().includes('검토 사건 원문 일치'));
+  const verify=async(expectedText:string)=>{
+   const readCount=reads.length,callCount=f.calls.length;
+   await f.click('저장된 검토 사건 조회');await f.wait(()=>f.text().includes(expectedText));
+   assert.equal(reads.length,readCount+1);
+   assert.deepEqual(f.calls.slice(callCount).map(call=>[call.method,call.path]),[['GET',documentPath],['GET',artifactPath]]);
+  };
+  corruptBody=true;await verify('검토 사건 조회 미확인');assert(!f.text().includes('검토 사건 원문 일치'));
+  corruptBody=false;await verify('검토 사건 원문 일치');
+  const fresh=reads.at(-1)!;
+  assert.deepEqual({id:fresh.id,version:fresh.version,contentHash:fresh.contentHash},ref);
+  assert.deepEqual(fresh.content.body,content.body);assert.deepEqual(fresh.formRef,form.ref);
+  assert.notEqual(fresh.authorRef?.userId,uid);
+  assert.deepEqual(fresh.contentReviews,[{ref:reviewRef,items,reviewer:{kind:'HUMAN',userId:uid,sameAsTargetRecorder:false},sourceKind:'HUMAN_REVIEW',reason,reviewedAt,serverSequence:1}]);
+  assert.equal(fresh.confirmed,false);assert.deepEqual(posts.map(post=>post.operation),['recordContentReview']);
+  assert.equal(f.calls.filter(call=>call.method==='POST').length,1);assert.equal(f.lost(),0);
  }finally{await f.close();}
 });
 async function selectedDraftFixture(){
