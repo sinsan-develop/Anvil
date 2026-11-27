@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-27 KST
 
+- **FN05/UI10 보관 지식의 문서 출처 조회 수명** — 기준 `d8259449`, 작성 `fn13_quota_diff_replay`, 독립 `fn13_diff_contract_review`. 문서 원문 선택을 현재 지식 참조·로그인·전송·명시 요청에 결박한다. 같은 API 객체의 전송 교체 후 옛 200이 새 문서/파일 GET을 시작하거나 옛 401이 인증 상태를 바꾸던 RED 2건을 교정했다. 닫기·재선택·보기 교체·현재 401·명시 재열기 회귀 포함. 제품 1·메모리 시험 1경로, 담당 36/36·Main 14/14(각 skip 0), 타입·diff·독립 C0/I0/M0. 실제 브라우저·DB 미검증. 별도 FN17 `prepareExecution` 후보는 기존 0110→0082→0077 위임에서 불변 후보·원 명령/영수증/감사를 이미 검산함을 확인해 0111을 추가하지 않았다. 기존 정적/합성 26/26, 실제 SQL 적용 및 PostgreSQL 검증 미실행.
+
 - **FN09/UI04 저장 맥락 변경의 WORK 판단 선택 정리** — 기준 `cbdb8a5f`, 작성 `fn13_quota_diff_replay`, 독립 `fn13_diff_contract_review`. 저장한 맥락을 명시 조회 후 선택할 때 전체 참조가 달라지면 이전 맥락의 WORK 이해 판단 선택만 해제하고 같은 참조에서는 보존한다. 원 검토 기록과 기존 수동 선택·서버 저장 검산은 유지한다. 늦은 조회 및 부모 상태 갱신 시 현재 맥락·전송·원 버퍼를 재확인한다. 해시만 다른 참조와 지연 갱신 RED를 교정했다. 제품 1·메모리 시험 1경로, 담당 55/55·Main 직접 26/26, 타입·diff 통과. 실제 실행·DB 미검증. IX01·FN12 차단 범위와 별개로 진행했다.
 
 - **원격 작업 브랜치 `f5f78832` 누적 합성 회귀** — 어울이 Node `--experimental-test-module-mocks --test --test-concurrency=2 --test-reporter=spec`으로 `baseline-adopted-evidence`, `project-methodology-saved-review`, `applied-stage-handoff`, `workspace-stage-start-app-flow`, `context-knowledge-scope-selection`, `design-to-plan-preparation`, `stored-plan-assignment-evidence`, `session-detail-read-context`, `project-result-reviews`, `work-plan-readiness-boundary`, `result-artifact-download-owner` 기존 11개 시험 파일을 같은 깨끗한 본에서 실행했다. 129/129·실패/취소/skip 각 0 (`6c34dd`), `npm run typecheck` exit0 (`2d2824`). 각 합성 경로의 누적 회귀이며 실제 IX01·Agent·DB·권한·설치·이전·복원은 미검증이다. UI14 설치 자원 페이지 후보는 실제 제품 TARGET 8·ENCRYPTION_KEY 32 및 각 head 한 건(현재 limit50)을 확인해 편집 전에 철회했다(파일/Git 쓰기 0). IX01 동일 시도 보호 승인 원본·Windows 준비 결과는 미확인이고 FN12 개별 시험의 별도 실행 권위 채택 결정도 기다린다.
