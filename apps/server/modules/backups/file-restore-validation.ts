@@ -3,6 +3,7 @@ import {constants} from 'node:fs';
 import type {BigIntStats} from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
+import {parseJsonWithoutDuplicateKeys} from '../../../../contracts/canonical.ts';
 import {normalizeInput,validRelativePath} from './file-manifest-input.ts';
 import type {FileManifestInput,FileManifest,VerificationBaseline} from './file-manifest-input.ts';
 import {verifyFileManifest} from './file-manifest.ts';
@@ -155,7 +156,7 @@ export async function validateFileRestore(raw:FileRestoreValidationInput):Promis
     // 예상 밖/제외 payload는 metadata 파싱이나 payload 내용 읽기보다 먼저 거절한다.
     await inventory(bundle,originalInventory);
     const metadata=await readMetadata();
-    try {manifest=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(metadata.bytes)) as FileManifest;} catch {reject('METADATA_INVALID');}
+    try {manifest=parseJsonWithoutDuplicateKeys(new TextDecoder('utf-8',{fatal:true}).decode(metadata.bytes)) as FileManifest;} catch {reject('METADATA_INVALID');}
     await verify(payload);
     const result=await createFileBundle({source:remaining(payload),manifest:manifest!,baseline,destinationParent:parent,destinationName:name});
     cleanup=result.cleanup;
@@ -175,7 +176,7 @@ export async function validateFileRestore(raw:FileRestoreValidationInput):Promis
     if(!restoredMetadata.bytes.equals(Buffer.from(JSON.stringify(manifest),'utf8'))) reject('MANIFEST_INVALID');
     restoredInventory.set('manifest.json',restoredMetadata.stat);
     await inventory(destination,restoredInventory);
-    await verify(path.join(destination,'payload'),JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(restoredMetadata.bytes)));
+    await verify(path.join(destination,'payload'),parseJsonWithoutDuplicateKeys(new TextDecoder('utf-8',{fatal:true}).decode(restoredMetadata.bytes)));
     // 재읽기 후에도 정상 filesystem의 변경·unknown 추가·늦은 close/취소를 거절한다.
     await checkMetadata();await inventory(bundle,originalInventory);await inventory(destination,restoredInventory);
     budget();return {complete:true,state:'complete',manifest,issues:[],cleanup:[]};

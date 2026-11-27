@@ -43,7 +43,8 @@ export function contentHash(value: string | Uint8Array): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
-export function parseWireJson(raw: string): unknown {
+/** JSON의 decode된 키 중복만 거절한다. 내부 보관 자료의 기존 문자열 표현은 보존한다. */
+export function parseJsonWithoutDuplicateKeys(raw: string): unknown {
   let value: unknown;
   try { value = JSON.parse(raw); } catch { return invalid(); }
   const stack: { keys: Set<string> | null; expectKey: boolean }[] = [];
@@ -63,6 +64,11 @@ export function parseWireJson(raw: string): unknown {
       }
     }
   }
+  return value;
+}
+
+export function parseWireJson(raw: string): unknown {
+  const value = parseJsonWithoutDuplicateKeys(raw);
   canonicalJson(value);
   return value;
 }

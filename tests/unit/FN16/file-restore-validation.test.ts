@@ -1,4 +1,6 @@
-import test from 'node:test';
+import test,{type TestContext} from 'node:test';
+import {constants,type BigIntStats} from 'node:fs';
+import {canonicalJson,contentHash,parseWireJson} from '../../../contracts/canonical.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -231,4 +233,57 @@ test('builder 성공 뒤 새 목적지 metadata만 손상되어도 완료로 채
     assert.equal(await fs.readFile(path.join(input.bundleRoot,'payload/data.bin'),'utf8'),'original');
     assert.equal(await fs.readFile(restoredMetadata,'utf8'),'{}');
   });
+});
+
+
+/** 이 범위는 node:fs의 실제 자료/ACL을 열지 않는다. 기존 actual fixture 시험은 이름 필터로 제외한다. */
+async function ramRestore(t:TestContext,legacy=false){
+ type Entry={directory:boolean;bytes:Buffer;ino:bigint;stamp:bigint};
+ const root=path.resolve('Z:/fn16-manifest-ram'),bundleRoot=path.join(root,'bundle'),payload=path.join(bundleRoot,'payload'),validationParent=path.join(root,'validation');
+ const entries=new Map<string,Entry>(),io:{op:string;target:string}[]=[];let next=1n,opened=0,closed=0;
+ const add=(target:string,directory:boolean,bytes=Buffer.alloc(0))=>entries.set(target,{directory,bytes:Buffer.from(bytes),ino:next++,stamp:1n});
+ function directories(target:string){const parent=path.dirname(target);if(parent!==target&&!entries.has(parent))directories(parent);if(!entries.has(target))add(target,true);}
+ directories(payload);directories(validationParent);
+ const payloadBytes=Buffer.from([239,187,191,65,13,10,0,255]);add(path.join(payload,'data.bin'),false,payloadBytes);
+ const get=(target:string)=>{const entry=entries.get(target);if(!entry)throw Object.assign(new Error('RAM_MISSING'),{code:'ENOENT'});return entry;};
+ const stat=(entry:Entry)=>({dev:1n,ino:entry.ino,mode:entry.directory?0o40700n:0o100600n,nlink:1n,size:BigInt(entry.bytes.length),mtimeNs:entry.stamp,ctimeNs:entry.stamp,isSymbolicLink:()=>false,isDirectory:()=>entry.directory,isFile:()=>!entry.directory} as unknown as BigIntStats);
+ const children=(target:string)=>[...entries.keys()].filter(p=>p!==target&&path.dirname(p)===target);
+ t.mock.method(fs,'lstat',async(target:any)=>{const name=String(target);io.push({op:'lstat',target:name});return stat(get(name));});
+ t.mock.method(fs,'realpath',async(target:any)=>{const name=String(target);io.push({op:'realpath',target:name});get(name);return name;});
+ t.mock.method(fs,'opendir',async(target:any)=>{const name=String(target);io.push({op:'opendir',target:name});assert(get(name).directory);const list=children(name);let at=0;return{read:async()=>at===list.length?null:{name:path.basename(list[at++]!)},close:async()=>{}} as any;});
+ t.mock.method(fs,'readdir',async(target:any)=>{const name=String(target);io.push({op:'readdir',target:name});assert(get(name).directory);return children(name).map(p=>path.basename(p)) as any;});
+ t.mock.method(fs,'mkdir',async(target:any)=>{const name=String(target);io.push({op:'mkdir',target:name});assert(!entries.has(name));assert(get(path.dirname(name)).directory);add(name,true);});
+ t.mock.method(fs,'unlink',async(target:any)=>{const name=String(target);io.push({op:'unlink',target:name});assert(!get(name).directory);entries.delete(name);});
+ t.mock.method(fs,'rmdir',async(target:any)=>{const name=String(target);io.push({op:'rmdir',target:name});assert(get(name).directory);assert.equal(children(name).length,0);entries.delete(name);});
+ t.mock.method(fs,'open',async(target:any,flags:any)=>{
+  const name=String(target),writing=typeof flags==='number'&&(flags&constants.O_WRONLY)!==0;io.push({op:writing?'openWrite':'openRead',target:name});
+  if(writing){assert(flags&constants.O_CREAT);assert(flags&constants.O_EXCL);assert(!entries.has(name));assert(get(path.dirname(name)).directory);add(name,false);}
+  const entry=get(name);assert(!entry.directory);opened++;let position=0,done=false;
+  return{stat:async()=>{assert(!done);return stat(entry);},read:async(buffer:Buffer,offset:number,length:number)=>{assert(!done&&!writing);io.push({op:'read',target:name});const count=Math.min(length,entry.bytes.length-position);entry.bytes.copy(buffer,offset,position,position+count);position+=count;return{bytesRead:count,buffer};},write:async(buffer:Buffer,offset:number,length:number)=>{assert(!done&&writing);io.push({op:'write',target:name});entry.bytes=Buffer.concat([entry.bytes,buffer.subarray(offset,offset+length)]);entry.stamp++;return{bytesWritten:length,buffer};},close:async()=>{assert(!done);done=true;closed++;}} as any;
+ });
+ // 복사 엔진의 호출이 새 filesystem 지름길로 빠지면 RAM 경계에서 실패시킨다.
+ for(const name of ['readFile','writeFile','appendFile','copyFile','cp','rename','rm','symlink','link','chmod','chown','stat','readlink'] as const)t.mock.method(fs,name,async()=>assert.fail('RAM 밖 fs 호출 금지: '+name));
+ const selected={...selection('data.bin'),...(legacy?{reason:'보관한 \ud800 입력',versionRef:'version-\udfff'}:{reason:'한글 보관 🙂'})};
+ const limits={maxFiles:10,maxFileBytes:1024,maxTotalBytes:1024,maxDurationMs:10000},manifest=await createFileManifest({root:payload,selections:[selected],limits});assert(manifest.complete);
+ const metadata=path.join(bundleRoot,'manifest.json');add(metadata,false,Buffer.from(JSON.stringify(manifest),'utf8'));
+ const input:FileRestoreValidationInput={bundleRoot,baseline:{selections:[selected],expectedManifestHash:manifest.manifestHash},limits,maxMetadataBytes:8192,validationParent,validationName:'restored'};
+ const before=[...entries.keys()];io.length=0;const startingOpen=opened,startingClose=closed;
+ return{input,manifest,metadata,payload,payloadBytes,io,entries,before,replace(bytes:Buffer){get(metadata).bytes=Buffer.from(bytes);},get handles(){return{opened:opened-startingOpen,closed:closed-startingClose};}};
+}
+for(const scenario of ['outer','outerEscaped','nested','nestedEscaped'] as const)test('RAM manifest 중복 키 '+scenario+'는 마지막 정상값·독립 hash가 같아도 내용 읽기·복사0',async t=>{
+ const f=await ramRestore(t),raw=JSON.stringify(f.manifest),reason='"reason":'+JSON.stringify(f.manifest.entries[0]!.reason);
+ const altered=scenario==='outer'?raw.replace('"complete":true','"complete":false,"complete":true'):scenario==='outerEscaped'?raw.replace('"complete":true','"com\\u0070lete":false,"complete":true'):raw.replace(reason,(scenario==='nested'?'"reason"':'"re\\u0061son"')+':"discarded",'+reason);
+ assert.notEqual(altered,raw);assert.deepEqual(JSON.parse(altered),f.manifest,'일반 JSON.parse는 변조를 정상 마지막 값으로 접는다');assert.equal(contentHash(canonicalJson(JSON.parse(altered))),contentHash(canonicalJson(f.manifest)));f.replace(Buffer.from(altered,'utf8'));
+ const result=await validateFileRestore(f.input);assert.equal(result.complete,false);assert.equal(result.state,'failed');assert.equal(result.manifest,null);assert.deepEqual(result.issues,[{code:'METADATA_INVALID'}]);assert.deepEqual(result.cleanup,[]);
+ assert.equal(f.io.filter(v=>v.op==='read'&&v.target!==f.metadata).length,0);assert.equal(f.io.filter(v=>v.op==='openWrite'||v.op==='write'||v.op==='mkdir').length,0);assert.deepEqual([...f.entries.keys()],f.before);assert.deepEqual(f.handles,{opened:1,closed:1});
+});
+for(const scenario of ['utf8','legacy','invalidUtf8','limit','hash'] as const)test('RAM manifest 정상·기존 경계 '+scenario+'를 보존한다',async t=>{
+ const f=await ramRestore(t,scenario==='legacy');if(scenario==='invalidUtf8')f.replace(Buffer.from([0xc3,0x28]));if(scenario==='limit')f.input.maxMetadataBytes=1;if(scenario==='hash')f.input.baseline.expectedManifestHash='0'.repeat(64);
+ const result=await validateFileRestore(f.input),success=scenario==='utf8'||scenario==='legacy';assert.equal(result.complete,success);assert.equal(f.handles.opened,f.handles.closed);
+ if(success){assert.deepEqual(result.manifest,f.manifest);assert.deepEqual(result.issues,[]);assert.deepEqual(f.entries.get(path.join(f.input.validationParent,'restored/payload/data.bin'))!.bytes,f.payloadBytes);assert.deepEqual(f.entries.get(path.join(f.input.validationParent,'restored/manifest.json'))!.bytes,Buffer.from(JSON.stringify(f.manifest),'utf8'));}
+ else{assert.equal(result.issues[0]?.code,scenario==='invalidUtf8'?'METADATA_INVALID':scenario==='limit'?'METADATA_LIMIT':'MANIFEST_INVALID');assert.equal(f.io.filter(v=>v.op==='read'&&v.target!==f.metadata||['openWrite','write','mkdir'].includes(v.op)).length,0);assert.deepEqual([...f.entries.keys()],f.before);}
+});
+test('RAM manifest 보완 뒤 기존 공개 wire parser의 중복·Unicode 거절은 유지한다',()=>{
+ assert.deepEqual(parseWireJson('{"ok":"한글🙂"}'),{ok:'한글🙂'});
+ for(const raw of ['{"x":1,"x":2}','{"x":1,"\\u0078":2}','{"x":"\\ud800"}'])assert.throws(()=>parseWireJson(raw));
 });
