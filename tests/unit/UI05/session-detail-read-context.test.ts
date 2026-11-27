@@ -795,6 +795,59 @@ async function mountArtifactContext(kind:'DIFF'|'OUTPUT'){
  }
  return{...f,text,response,gate,open};
 }
+for(const source of ['STOP','ACK'] as const)test('결과 상세의 보호 '+source+' 이력은 이탈의 늦은 200/401을 버리고 현재 조회를 보존한다',{timeout:15000},async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),route='#/projects/'+pid+'/session',location={hash:route};
+ Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{
+  for(const mode of ['OLD_200','OLD_401','CURRENT_200'] as const){
+   location.hash=route;
+   const data=assignmentDesignFixture(),result=resultFixture(),assignmentRef=data.detail.confirmed!.ref;
+   result.entry.snapshot.scope.assignmentRef=assignmentRef;result.entry.snapshot.manifest.assignmentRef=assignmentRef;
+   result.entry.snapshot.manifestHash=hash(result.entry.snapshot.manifest);result.entry.ref.contentHash=hash(result.entry.snapshot);
+   result.item.manifestRef.contentHash=result.entry.snapshot.manifestHash;
+   const stop=stopHistoryFor(result.entry),observation=observationJournalFor(result.entry),path='/api/v1/projects/'+pid+'/results/'+result.entry.ref.id+(source==='STOP'?'/stop-requests':'/observation-journal');
+   const responseGate=Promise.withResolvers<Response>();let requested=false;
+   const f=await mount(true,{data,read:url=>{
+    if(url.endsWith('/result-pages'))return Response.json({...result.page,assignmentRef,nextCursor:null,selectionState:'NOT_SELECTED'});
+    if(url.endsWith('/results/'+result.entry.ref.id))return Response.json(result.entry);
+    if(url===path){requested=true;return responseGate.promise;}
+    return null;
+   }});
+   try{
+    const selected='제출 원문 '+result.entry.ref.id;
+    const label=source==='STOP'?'중지 요청 이력 조회':'보관 관측 조회',historyPanel=source==='STOP'?'보관 중지 요청':'보관 실행 관측·ACK';
+    const original=source==='STOP'?stop.items[0]!.reason:'관측 기록 원문 2';
+    await f.waitFor(selected);await f.click(selected);
+    const deadline=performance.now()+2000;
+    while(!f.nodes().some(n=>n.tagName==='BUTTON'&&n.textContent===label)){assert(performance.now()<deadline,f.container.textContent);await f.flush();}
+    await f.click(label);await f.waitFor(source==='STOP'?'같은 실행의 보관 요청 조회 중':'원제출에 고정된 관측 원장 조회 중');
+    while(!requested){assert(performance.now()<deadline,f.container.textContent);await f.flush();}
+    assert.equal(f.calls.at(-1)?.path,path);
+    const calls=f.calls.length;
+    if(mode!=='CURRENT_200')location.hash='#/projects/'+pid+'/workspace';
+    await ui.React.act(async()=>{
+     responseGate.resolve(mode==='OLD_401'?Response.json({code:'AUTH_REQUIRED'},{status:401}):Response.json(source==='STOP'?stop:observation));
+     await new Promise(r=>setTimeout(r,20));
+    });await f.flush();
+    if(mode==='CURRENT_200'){
+     await f.waitFor(original);
+     assert(f.container.textContent.includes(source==='STOP'?'실제 중지·쓰기 회수: 미확인':'서버 연속 수신 순번: 0'));
+     if(source==='ACK'){
+      await f.click(original);await f.waitFor('순번 2 · 공급자 주장 원문');
+      await f.click('관측 원문 닫기');assert(!f.container.textContent.includes('순번 2 · 공급자 주장 원문'));
+      location.hash='#/projects/'+pid+'/workspace';
+      await f.click(original);assert(!f.container.textContent.includes('순번 2 · 공급자 주장 원문'));
+     }
+    }else{
+     assert(!f.container.textContent.includes(original),mode+' 이전 원문 반영0');
+     assert(!f.container.textContent.includes('AUTH_REQUIRED'),mode+' 이전 접근 오류 반영0');
+     assert(f.container.textContent.includes(historyPanel),mode+' 결과 선택 유지');
+    }
+    assert.equal(f.lost(),0);assert.equal(f.mutations(),0);assert.equal(f.calls.length,calls);assert(f.calls.every(call=>call.method==='GET'));
+   }finally{responseGate.resolve(Response.json({}));await f.close();}
+  }
+ }finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
 test('현재 상세의 diff/출력 GET은 raw hash 이동 직후 렌더 전 늦은200/401을 원문·인증에 적용하지 않는다',{timeout:15000},async()=>{
  const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+pid+'/session'};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
  try{for(const kind of ['DIFF','OUTPUT'] as const)for(const status of [401,200]){
