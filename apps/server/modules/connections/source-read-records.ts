@@ -7,6 +7,7 @@ import {uuidV1,refV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {readRootDeclaration} from './source-root-input.ts';
 import {readSourceReadListQuery} from './source-read-input.ts';
 import {readSourceReadReportV1,type SourceReadReportV1} from '../../../../contracts/runtime/source-read-report-v1.ts';
+import {verifySourceReadReportProof} from './source-read-proof.ts';
 import type {ProjectListCodec} from '../projects/service.ts';
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const time=(v:unknown):v is Date=>v instanceof Date&&Number.isFinite(v.getTime());
@@ -69,8 +70,13 @@ export class SourceReadRecords{
    const c=credentials[0];
    if(credentials.length!==1||!uuidV1(c.id)||c.project_id!==pid||c.grant_id!==grant.grantRef.id||c.connector_id!==s.connectorRef.id||Number(c.connector_generation)!==s.connectorRef.version||c.scope!=='SOURCE_OBSERVE_READ_ONLY'||c.scope_digest!==grant.grantRef.contentHash||![c.issued_at,c.expires_at,c.consumed_at,row.observed_at,row.finished_at,row.received_at].every(time)||c.consumed_at.getTime()!==row.received_at.getTime())throw Error();
    if(row.project_id!==pid||row.id!==id||Number(row.version)!==1||row.grant_id!==grant.grantRef.id||row.source_root_id!==s.sourceRootRef.id||Number(row.source_root_version)!==s.sourceRootRef.version||row.connector_id!==s.connectorRef.id||Number(row.generation)!==s.connectorRef.version||row.scope_digest!==grant.grantRef.contentHash||row.evidence_class!=='CONNECTOR_REPORTED'||row.os_verification!=='UNVERIFIED')throw Error();
-   report=readSourceReadReportV1(row.report_json,{scope:s,grantRef:grant.grantRef,credentialIssuedAt:c.issued_at.toISOString(),credentialExpiresAt:c.expires_at.toISOString(),receivedAt:row.received_at.toISOString()});
+   const context={scope:s,grantRef:grant.grantRef,credentialIssuedAt:c.issued_at.toISOString(),credentialExpiresAt:c.expires_at.toISOString(),receivedAt:row.received_at.toISOString()};
+   report=readSourceReadReportV1(row.report_json,context);
    if(row.content_hash!==report.contentHash||row.signature!==report.signature||row.report_command_id!==report.commandId||row.observed_at.toISOString()!==report.observedAt||row.finished_at.toISOString()!==report.finishedAt)throw Error();
+   // 원 등록의 보존 공개키만 사용한다. 현재 generation·회수·기한을 과거 보고의 서명 적합성으로 소급하지 않는다.
+   const keys=(await db.query('SELECT project_id,id,registration_id,public_key_spki FROM anvil.connectors WHERE project_id=$1 AND id=$2 AND registration_id=$3',[pid,s.connectorRef.id,s.registrationRef.id])).rows;
+   if(keys.length!==1||keys[0].project_id!==pid||keys[0].id!==s.connectorRef.id||keys[0].registration_id!==s.registrationRef.id)throw Error();
+   verifySourceReadReportProof(keys[0].public_key_spki,report,context);
    const audit=(await db.query("SELECT EXISTS(SELECT 1 FROM anvil.audit_events WHERE project_id=$1 AND outcome='APPLIED' AND source_kind='SOURCE_OBSERVATION_PROTOCOL' AND reason_code='SOURCE_READ_REPORT_STORED' AND target_ref=$2::jsonb AND scope_digest=$3 AND actor_ref=$4::jsonb AND client_ref=$5 AND policy_ref=$6::jsonb) ok",[pid,JSON.stringify({id,version:1,contentHash:row.content_hash}),grant.grantRef.contentHash,JSON.stringify({kind:'CONNECTOR',connectorId:s.connectorRef.id,registrationId:s.registrationRef.id}),s.clientId,JSON.stringify(s.policyRef)])).rows[0]?.ok;
    if(audit!==true)throw Error();
   }catch{throw new AuthFailure('SOURCE_READ_INTEGRITY_FAILED',503);}

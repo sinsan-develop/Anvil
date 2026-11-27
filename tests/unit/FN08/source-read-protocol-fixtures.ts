@@ -25,6 +25,7 @@ export function protocolFixture(grantTtl=240000){
   const sql=typeof input==='string'?input:input.text;if(typeof input!=='string')args=input.values??[];
   if(['BEGIN','COMMIT','ROLLBACK'].includes(sql)){transactions.push(sql);return{rows:[]};}
   if(sql.startsWith('SET LOCAL'))return{rows:[]};
+  if(sql==='SELECT project_id,id,registration_id,public_key_spki FROM anvil.connectors WHERE project_id=$1 AND id=$2 AND registration_id=$3')return{rows:args[0]===registration.project_id&&args[1]===registration.connector_id&&args[2]===registration.id?[{project_id:registration.project_id,id:registration.connector_id,registration_id:registration.id,public_key_spki:registration.public_key_spki}]:[]};
   if(sql.includes('FROM anvil.source_read_grants g JOIN anvil.connectors'))return{rows:args[0]===grant.id&&args[1]===grant.connector_id?[{...grant,public_key_spki:spki}]:[]};
   if(sql.includes('FROM anvil.users u JOIN anvil.auth_sessions'))return{rows:[{id:scope.userId,credential_generation:2,session_generation:2,user_status:'ACTIVE',user_revoked_at:null,session_revoked_at:null,client_revoked_at:null,reauth_until:at(60000),absolute_expires_at:at(3600000),idle_expires_at:at(1800000)}]};
   if(sql.includes('FROM anvil.projects p JOIN anvil.project_members'))return{rows:[{id:scope.projectId,archived_at:null,participation:stored.viewer?'VIEWER':'OWNER'}]};

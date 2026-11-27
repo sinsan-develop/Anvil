@@ -1,7 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {H,artifactCalls,executionStartOriginFixture,installExecutionStartOriginMemoryFS} from './execution-start-origin-fixture.ts';
+import {H,id as originFixtureId,artifactCalls,executionStartOriginFixture,installExecutionStartOriginMemoryFS} from './execution-start-origin-fixture.ts';
 await installExecutionStartOriginMemoryFS();
+
+test('원자료 환경 fixture의 실제 서명은 통과하고 두 사본 서명 변조는 원키 재검산에서 쓰기 없이 거절한다',async()=>{
+ const f=await executionStartOriginFixture({connectorEnvironment:true,snapshotRoot:true});
+ const{SourceReadRecords}=await import('../../../apps/server/modules/connections/source-read-records.ts');
+ const records=new SourceReadRecords(f.access.installationId),snapshotId=originFixtureId(219);
+ const valid=await f.run(actor=>records.readSnapshot(f.db,actor,f.pid,snapshotId));
+ assert.equal(valid.rawAllowed,true);assert.equal(valid.osVerification,'UNVERIFIED');assert.equal(valid.executionAuthorized,false);
+ const query=f.db.query,before=f.commands.size;let keyReads=0;
+ f.db.query=async(sql:string,args:any[]=[])=>{
+  const result=await query(sql,args);
+  if(sql.startsWith('SELECT project_id,id,registration_id,public_key_spki FROM anvil.connectors'))keyReads++;
+  if(sql==='SELECT * FROM anvil.source_snapshots WHERE project_id=$1 AND id=$2 AND version=1')return{...result,rows:result.rows.map((row:any)=>{const value=structuredClone(row),bytes=Buffer.from(value.signature,'base64url');bytes[0]=bytes[0]!^1;value.signature=value.report_json.signature=bytes.toString('base64url');return value;})};
+  return result;
+ };
+ await assert.rejects(f.run(actor=>records.readSnapshot(f.db,actor,f.pid,snapshotId)),(e:any)=>e.message==='SOURCE_READ_INTEGRITY_FAILED'&&e.statusCode===503);
+ assert(keyReads>0);assert.equal(f.commands.size,before);
+});
 const {materialRules}=await import('../../../apps/server/modules/access/project-command.ts');
 const id=(n:number)=>`b2090000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 const rules=(operations:string[])=>[{ruleId:'origin',subjectRef:{kind:'HUMAN',userId:id(1)},operations,targetScopes:[{kind:'PROJECT',projectId:id(2)}],disposition:'AUTO',limitPolicyRef:null,expiresAt:'2099-01-01T00:00:00.000Z'}];

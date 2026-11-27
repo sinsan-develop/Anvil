@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {getEventListeners} from 'node:events';
+import {generateKeyPairSync,sign} from 'node:crypto';
+import {publicKeyFingerprint} from '../../../apps/server/modules/connections/registration-proof.ts';
+import {sourceReadReportProofBytesV1} from '../../../contracts/runtime/source-read-report-v1.ts';
+import {readSourceReadScopeV1} from '../../../contracts/runtime/source-read-observation-v1.ts';
 import {fixture as environmentFixture,post,metadata,environmentInput,pid,id,registrationHistory} from '../FN06/environment-configuration-fixture.ts';
 const module:any=await import('../../../apps/server/modules/connections/claude-process-profile-selector.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
@@ -10,15 +14,18 @@ import {ProjectEnvironments} from '../../../apps/server/modules/connections/proj
 import {ProjectRegistrationReads} from '../../../apps/server/modules/connections/project-registration-reads.ts';
 import {ProjectConnectionDefinitions} from '../../../apps/server/modules/connections/project-connection-definitions.ts';
 async function snapshotMetadata(f:any,m:any){
- const hostRef=await registrationHistory(f),registered=f.registrations.find((r:any)=>r.id===hostRef.registrationRef.id),priorQuery=f.db.query;registered.connector_state='TRUSTED';f.db.query=async(sql:string,args:any[]=[])=>{if(sql.startsWith('SELECT c.id FROM anvil.connectors c JOIN anvil.connector_registrations')){assert.deepEqual(args,[pid,hostRef.connectorRef.id]);assert.equal(registered.connector_state,'TRUSTED');assert.equal(registered.host_revoked_at,null);return{rows:[{id:registered.connector_id}]};}return priorQuery.call(f.db,sql,args);};const root=(await post(f,'saveSourceRoot',{declaration:{hostLabel:'합성 등록 host',displayName:'snapshot 원 소스',pathHint:'DECLARED_PATH_ONLY',reason:'메모리 원자료',connectorId:hostRef.connectorRef.id},baseRef:null,reason:'snapshot 원 소스 저장'})).result.data.ref;
+ const key=generateKeyPairSync('ec',{namedCurve:'prime256v1'}),spki=key.publicKey.export({format:'der',type:'spki'}).toString('base64url'),fingerprint=publicKeyFingerprint(spki);
+ const hostRef=await registrationHistory(f,110,fingerprint),registered=f.registrations.find((r:any)=>r.id===hostRef.registrationRef.id),priorQuery=f.db.query;registered.connector_state='TRUSTED';registered.public_key_spki=spki;registered.observed_host_fingerprint=fingerprint;f.db.query=async(sql:string,args:any[]=[])=>{if(sql.startsWith('SELECT c.id FROM anvil.connectors c JOIN anvil.connector_registrations')){assert.deepEqual(args,[pid,hostRef.connectorRef.id]);assert.equal(registered.connector_state,'TRUSTED');assert.equal(registered.host_revoked_at,null);return{rows:[{id:registered.connector_id}]};}return priorQuery.call(f.db,sql,args);};const root=(await post(f,'saveSourceRoot',{declaration:{hostLabel:'합성 등록 host',displayName:'snapshot 원 소스',pathHint:'DECLARED_PATH_ONLY',reason:'메모리 원자료',connectorId:hostRef.connectorRef.id},baseRef:null,reason:'snapshot 원 소스 저장'})).result.data.ref;
  const secret=(await post(f,'saveSecretReferenceMetadata',{definition:{label:'논리 비밀',hostRef,providerKind:'EXECUTOR_MANAGED',logicalName:'BUILD_REFERENCE',purpose:'비밀값 없음',policyRef:f.policyRef},baseRef:null,reason:'원 등록 host 결박'})).result.data.ref;
- const rawRoot=f.rootVersions.find((v:any)=>v.root_id===root.id),original=sourceReadFixture(),now=Date.now(),at=(n:number)=>new Date(now+n),scope={...original.scope,installationId:f.repository.installationId,projectId:pid,userId:f.actor.actorId,clientId:f.actor.clientId,credentialGeneration:1,controlGeneration:1,sourceRootRef:root,connectorRef:hostRef.connectorRef,registrationRef:hostRef.registrationRef,pathHintHash:contentHash(rawRoot.declaration_json.pathHint),policyRef:f.policyRef,requestedAt:at(-5000).toISOString(),expiresAt:at(60000).toISOString()},grantRef={id:id(700),version:1,contentHash:contentHash(canonicalJson(scope))};
- const report=rehashReport({...original.report,grantRef,scopeDigest:grantRef.contentHash,connectorRef:scope.connectorRef,hostFingerprint:scope.hostFingerprint,observedAt:at(-3000).toISOString(),finishedAt:at(-2000).toISOString(),root:{...original.report.root,facts:{...original.report.root.facts,declaredRootRef:root,canonicalPath:'C:\\OBSERVED_PRIVATE_PATH'}}});
- // 원 snapshot reader용 저장행 모델이며 report 서명의 실제 검증이나 OS 관측을 주장하지 않는다.
+ const rawRoot=f.rootVersions.find((v:any)=>v.root_id===root.id),original=sourceReadFixture(),now=Date.now(),at=(n:number)=>new Date(now+n),scope={...original.scope,installationId:f.repository.installationId,projectId:pid,userId:f.actor.actorId,clientId:f.actor.clientId,credentialGeneration:1,controlGeneration:1,sourceRootRef:root,connectorRef:hostRef.connectorRef,registrationRef:hostRef.registrationRef,pathHintHash:contentHash(rawRoot.declaration_json.pathHint),policyRef:f.policyRef,hostFingerprint:fingerprint,requestedAt:at(-5000).toISOString(),expiresAt:at(60000).toISOString()},grantRef={id:id(700),version:1,contentHash:contentHash(canonicalJson(scope))};
+ const unsigned=rehashReport({...original.report,grantRef,scopeDigest:grantRef.contentHash,connectorRef:scope.connectorRef,hostFingerprint:scope.hostFingerprint,observedAt:at(-3000).toISOString(),finishedAt:at(-2000).toISOString(),root:{...original.report.root,facts:{...original.report.root.facts,declaredRootRef:root,canonicalPath:'C:\\OBSERVED_PRIVATE_PATH'}}});
+ // 메모리 원 등록키로 보고 서명까지 검산한다. 실제 등록·OS 관측은 수행하지 않는다.
+ const report={...unsigned,signature:sign('sha256',sourceReadReportProofBytesV1(unsigned,{scope:readSourceReadScopeV1(scope),grantRef,credentialIssuedAt:at(-4000).toISOString(),credentialExpiresAt:at(50000).toISOString(),receivedAt:at(-1000).toISOString()}),{key:key.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url')};
  const snapshot={project_id:pid,id:id(701),version:1,grant_id:grantRef.id,source_root_id:root.id,source_root_version:root.version,connector_id:scope.connectorRef.id,generation:scope.connectorRef.version,scope_digest:grantRef.contentHash,evidence_class:'CONNECTOR_REPORTED',os_verification:'UNVERIFIED',report_json:report,content_hash:report.contentHash,signature:report.signature,report_command_id:report.commandId,observed_at:at(-3000),finished_at:at(-2000),received_at:at(-1000)};
  const grant:any={id:grantRef.id,version:1,project_id:pid,scope_json:scope,scope_digest:grantRef.contentHash,created_at:at(-5000),expires_at:at(60000),exchange_failures:0,source_root_id:root.id,source_root_version:root.version,source_root_hash:root.contentHash,connector_id:scope.connectorRef.id,connector_generation:scope.connectorRef.version,registration_id:scope.registrationRef.id,registration_version:scope.registrationRef.version,requested_by:scope.userId,client_id:scope.clientId,credential_generation:1,control_generation:1,policy_ref:f.policyRef,source_declaration_json:rawRoot.declaration_json,source_status:rawRoot.status,source_authority:rawRoot.authority,source_readiness:rawRoot.readiness,source_reason:rawRoot.reason,source_content_hash:root.contentHash,source_head_version:1,created_operation:'requestSourceReadObservation',created_state:'APPLIED',created_actor:scope.userId,created_client:scope.clientId,created_expected_version:0,created_result:{status:'APPLIED',targetId:grantRef.id,version:1,data:{status:'GRANT_RECORDED',ref:grantRef,grantRef,scopeDigest:grantRef.contentHash,scope,storedState:'CREATED',observationPermit:'NOT_ISSUED',executionAuthorized:false,agentDispatchPerformed:false,baselineConfirmed:false}},revoked_at:null,revoke_command_id:null};
  const credential={id:id(702),project_id:pid,grant_id:grantRef.id,connector_id:scope.connectorRef.id,connector_generation:scope.connectorRef.version,scope:'SOURCE_OBSERVE_READ_ONLY',scope_digest:grantRef.contentHash,issued_at:at(-4000),expires_at:at(50000),consumed_at:snapshot.received_at},state={snapshot,grant,credential,audit:true,reads:0},query=f.db.query;
  f.db.query=async(sql:string,args:any[]=[])=>{
+  if(sql==='SELECT project_id,id,registration_id,public_key_spki FROM anvil.connectors WHERE project_id=$1 AND id=$2 AND registration_id=$3'){assert.deepEqual(args,[pid,hostRef.connectorRef.id,hostRef.registrationRef.id]);return{rows:[{project_id:pid,id:registered.connector_id,registration_id:registered.id,public_key_spki:registered.public_key_spki}]};}
   if(sql.startsWith('SELECT * FROM anvil.source_snapshots')){assert.deepEqual(args,[pid,snapshot.id]);state.reads++;return{rows:[state.snapshot]};}
   if(sql.startsWith('SELECT g.*,c.operation created_operation')){assert.deepEqual(args,[pid,grantRef.id]);return{rows:[state.grant]};}
   if(sql.startsWith('SELECT id,project_id,grant_id,connector_id')){assert.deepEqual(args,[pid,grantRef.id]);return{rows:[state.credential]};}
@@ -41,6 +48,18 @@ test('보호 snapshot 경로와 identity는 실제 원 grant·등록·root를 �
 });
 
 function unavailable(work:Promise<unknown>){return assert.rejects(work,{message:'CLAUDE_PROCESS_PROFILE_UNAVAILABLE'});}
+
+test('원 snapshot의 정규형 서명 두 사본 변조는 실제 원 공개키 검산에서 후보 반환 없이 거절한다',async()=>{
+ const h=await fixture(true);
+ try{
+  const state=(h.m as any).state,bytes=Buffer.from(state.snapshot.signature,'base64url');bytes[0]=bytes[0]!^1;
+  state.snapshot.signature=state.snapshot.report_json.signature=bytes.toString('base64url');
+  const query=h.f.db.query,before=h.f.commands.length;let keyReads=0;
+  h.f.db.query=async(sql:string,args:any[])=>{if(sql.startsWith('SELECT project_id,id,registration_id,public_key_spki FROM anvil.connectors'))keyReads++;return query.call(h.f.db,sql,args);};
+  await unavailable(h.make().read(h.f.db,h.f.actor,pid,h.refs,h.call()));
+  assert(keyReads>0);assert.equal(h.f.commands.length,before);
+ }finally{await h.f.app.close();}
+});
 function holdFirst(h:any){let settle!:(v:any)=>void,entered!:()=>void;const ready=new Promise<void>(r=>entered=r),original=h.f.db.query;let held=false;h.f.db.query=async(sql:string,args:any[])=>{const value=await original.call(h.f.db,sql,args);if(!held){held=true;entered();return new Promise(r=>settle=()=>r(value));}return value;};return{ready,release:()=>settle(undefined)};}
 const drain=()=>new Promise<void>(r=>setImmediate(r));
 test('명시 fullref·다른 project·회원권·정책 거절은 원 보호 read에서 실패하고 추가 저장하지 않는다',async()=>{

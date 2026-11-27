@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,generateKeyPairSync,sign} from 'node:crypto';
+import {sourceReadReportProofBytesV1} from '../../../contracts/runtime/source-read-report-v1.ts';
+import {readSourceReadScopeV1} from '../../../contracts/runtime/source-read-observation-v1.ts';
 import {nodeDecisionFixture,H,id,artifactCalls} from '../FN10/node-decision-fixture.ts';
 export {H,id,artifactCalls};
 export {installNodeDecisionMemoryFS as installExecutionStartOriginMemoryFS} from '../FN10/node-decision-fixture.ts';
@@ -18,6 +20,7 @@ export async function executionStartOriginFixture(options:{normalStopPolicy?:boo
  if(options.originConsumptionStorage)for(const name of ['executions','execution_grants','usage_reservations','writer_claims','execution_commands','delivery_outbox','execution_material_manifests','execution_materials','execution_material_proof_bindings'])tables[name]=[];
  if(options.normalExecutionId)tables.execution_credentials=[];
  const richContext=options.connectorEnvironment===true&&options.richContext===true;
+ const observationKey=options.connectorEnvironment?generateKeyPairSync('ec',{namedCurve:'prime256v1'}):null;
  if(richContext)Object.assign(tables,{knowledgeHeads:[],knowledgeVersions:[],knowledgeEvents:[],knowledgeReviews:[],conversations:[],messages:[]});
  const approvedContext=richContext&&options.approvedContext===true;
  if(approvedContext)Object.assign(tables,{approvalRequests:[],approvalDecisions:[],approvalConsumptions:[],notifications:[]});
@@ -229,6 +232,10 @@ export async function executionStartOriginFixture(options:{normalStopPolicy?:boo
   if(registration&&sql.startsWith('SELECT s.id,s.idle_expires_at,s.absolute_expires_at,s.reauth_until FROM anvil.auth_sessions')){
    assert.deepEqual(a,[f.actor.authSession.id,uid,cid,f.actor.credentialGeneration]);
    return rows(f.state.member?[{id:a[0],idle_expires_at:new Date(f.actor.authSession.idleExpiresAt),absolute_expires_at:new Date(f.actor.authSession.absoluteExpiresAt),reauth_until:reauthUntil}]:[]);
+  }
+  if(registration&&sql==='SELECT project_id,id,registration_id,public_key_spki FROM anvil.connectors WHERE project_id=$1 AND id=$2 AND registration_id=$3'){
+   const {row,connector}=registration;assert.deepEqual(a,[pid,row.connector_id,row.id]);
+   return rows([{project_id:pid,id:row.connector_id,registration_id:row.id,public_key_spki:connector.public_key_spki}]);
   }
   if(registration&&sql.includes('FROM anvil.connector_registrations r JOIN')){
    const {row,connector}=registration,c=f.commands.get(row.created_command_id);
@@ -445,7 +452,7 @@ export async function executionStartOriginFixture(options:{normalStopPolicy?:boo
  const connectorHost=options.connectorEnvironment?await run(async actor=>{
   const {registrationRef,connectorRef}=await import('../../../apps/server/modules/connections/project-registrations.ts');
   const {publicKeyFingerprint}=await import('../../../apps/server/modules/connections/registration-proof.ts');
-  const publicKey=Buffer.from('3059301306072a8648ce3d020106082a8648ce3d030107034200046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5','hex').toString('base64url');
+   const publicKey=observationKey!.publicKey.export({format:'der',type:'spki'}).toString('base64url');
   const fingerprint=publicKeyFingerprint(publicKey),hostLabel='합성 등록 호스트';
   const expiresAt=f.actor.authSession.idleExpiresAt,createdAt=(await db.query('SELECT transaction_timestamp() AS at')).rows[0].at as Date;
   const scope={kind:'HOST_TRUST_REGISTRATION',installationId:access.installationId,projectId:pid,subject:{kind:'HUMAN',userId:uid,clientId:cid,credentialGeneration:actor.credentialGeneration,controlGeneration:1},policyRef,expectedHostFingerprint:fingerprint,hostLabel,expiresAt,credentialScope:'REGISTRATION_STATUS_ONLY',grants:[]};
@@ -490,10 +497,11 @@ export async function executionStartOriginFixture(options:{normalStopPolicy?:boo
    connector_id:scope.connectorRef.id,connector_generation:scope.connectorRef.version,registration_id:scope.registrationRef.id,registration_version:scope.registrationRef.version,
    requested_by:actor.actorId,client_id:actor.clientId,credential_generation:actor.credentialGeneration,control_generation:1,policy_ref:policyRef,scope_json:scope,scope_digest:grantRef.contentHash,
    created_command_id:receipt.id,created_at:observed,expires_at:time(60_000),revoked_at:null,revoke_command_id:null,exchange_failures:0};
-  // 교환과 보고 제출은 실행하지 않는다. 서명은 기존 합성 형식값이며, 실제 읽기는 저장 관계와 보고 해시를 검산한다.
-  const report=rehashReport({...snapshotTemplate.report,grantRef,scopeDigest:grantRef.contentHash,connectorRef:scope.connectorRef,hostFingerprint:scope.hostFingerprint,
+   // 교환과 보고 제출은 실행하지 않는다. 메모리 원 등록키로 보고 서명까지 재검산하며 실제 관측은 아니다.
+   const unsigned=rehashReport({...snapshotTemplate.report,grantRef,scopeDigest:grantRef.contentHash,connectorRef:scope.connectorRef,hostFingerprint:scope.hostFingerprint,
    observedAt:time(2).toISOString(),finishedAt:time(3).toISOString(),root:{...snapshotTemplate.report.root,facts:{...snapshotTemplate.report.root.facts,declaredRootRef:rootRef}},
    files:snapshotTemplate.report.files.map(file=>({...file,relativePath}))});
+   const report={...unsigned,signature:sign('sha256',sourceReadReportProofBytesV1(unsigned,{scope:readSourceReadScopeV1(scope),grantRef,credentialIssuedAt:time(1).toISOString(),credentialExpiresAt:time(30_000).toISOString(),receivedAt:time(4).toISOString()}),{key:observationKey!.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url')};
   const ref={id:id(219),version:1,contentHash:report.contentHash};
   const credential={id:id(220),project_id:pid,grant_id:grantRef.id,connector_id:scope.connectorRef.id,connector_generation:scope.connectorRef.version,scope:'SOURCE_OBSERVE_READ_ONLY',
    scope_digest:grantRef.contentHash,issued_at:time(1),expires_at:time(30_000),consumed_at:time(4)};
