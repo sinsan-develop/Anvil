@@ -80,7 +80,10 @@ export class ProjectStageQueue{
   if(r.operation==='cancelQueuedRequest'&&r.approvalRef!==null)fail('STAGE_QUEUE_APPROVAL_NOT_CONNECTED',412);
   if(r.approvalRef!==null)readApprovalRef(r.approvalRef);
   await currentProjectController(db,actor,r);const p=await authorizeMaterial(db,actor,r),at=await this.#clock(db),s=actor.authSession;
-  if(!same(p.ref,expected)||!s||!uuidV1(s.id)||!isoV1(s.idleExpiresAt)||!isoV1(s.absoluteExpiresAt)||Math.min(p.validUntil,Date.parse(s.idleExpiresAt),Date.parse(s.absoluteExpiresAt))<=Date.parse(at))fail('STAGE_QUEUE_CURRENT_REQUIRED',409);return at;
+  if(!same(p.ref,expected)||!s||!uuidV1(s.id)||!isoV1(s.idleExpiresAt)||!isoV1(s.absoluteExpiresAt))fail('STAGE_QUEUE_CURRENT_REQUIRED',409);
+  const validUntil=Math.min(p.validUntil,Date.parse(s.idleExpiresAt),Date.parse(s.absoluteExpiresAt));
+  if(validUntil<=Date.parse(at))fail('STAGE_QUEUE_CURRENT_REQUIRED',409);
+  return{at,validUntil};
  }
  async #view(db:PoolClient,actor:AuthenticatedIdentity,row:any,projectId:string){
   try{const s=row.snapshot_json,ref={id:row.request_id,version:Number(row.version),contentHash:row.content_hash};
@@ -112,8 +115,15 @@ export class ProjectStageQueue{
   if(input.mode==='AUTO'&&start.mode!=='AUTO'||input.mode==='CASE_BY_CASE'&&start.nodeId!==end.nodeId)fail('STAGE_MODE_BOUNDARY_INVALID',412);
   const visited=new Set<string>(),pending=[start.nodeId];while(pending.length){const id=pending.pop()!;if(visited.has(id))continue;visited.add(id);if(visited.size>200)fail();for(const e of graph.edges)if(e.fromNodeId===id&&!visited.has(e.toNodeId))pending.push(e.toNodeId);}if(!visited.has(end.nodeId))fail('STAGE_END_UNREACHABLE',412);
   const budget=await this.budgets.resolveCurrent(db,actor,r.projectId,input.budgetRef,{kind:'PROJECT',projectId:r.projectId});
-  const at=await this.#authorize(db,actor,r,policyRef);if(!same(budget.ref,input.budgetRef)||budget.snapshot.state!=='APPLIED'||!isoV1(budget.snapshot.expiresAt)||Date.parse(budget.snapshot.expiresAt)<=Date.parse(at))fail('LIMIT_POLICY_EXPIRED',412);
+  const authorized=await this.#authorize(db,actor,r,policyRef);
+  if(!same(budget.ref,input.budgetRef)||budget.snapshot.state!=='APPLIED'||!isoV1(budget.snapshot.expiresAt))fail('LIMIT_POLICY_EXPIRED',412);
+  const budgetUntil=Date.parse(budget.snapshot.expiresAt);
+  if(budgetUntil<=Date.parse(authorized.at))fail('LIMIT_POLICY_EXPIRED',412);
   const sequence=Number((await db.query('SELECT COALESCE(MAX(sequence),0)+1 AS sequence FROM anvil.stage_runs WHERE project_id=$1',[r.projectId])).rows[0]?.sequence);if(!Number.isSafeInteger(sequence)||sequence<1)fail('STAGE_QUEUE_SEQUENCE_INVALID',503);
+  // 순번 조회 사이에 흐른 시간만 반영한다. 현재 권한·예산은 같은 거래에서 검산했다.
+  const at=await this.#clock(db),now=Date.parse(at);
+  if(authorized.validUntil<=now)fail('STAGE_QUEUE_CURRENT_REQUIRED',409);
+  if(budgetUntil<=now)fail('LIMIT_POLICY_EXPIRED',412);
   const id=randomUUID(),snapshot={projectId:r.projectId,requestId:id,version:1,sequence,state:'WAITING',input,assignmentRef:null,readinessIssues:['ASSIGNMENT_BINDING_UNVERIFIED','BASELINE_STATE_UNVERIFIED','EXECUTION_STATE_UNVERIFIED','DISPATCH_NOT_CONNECTED'],queuedAt:at,cancelledAt:null,cancelledBy:null,cancellationReason:null,requestedBy:{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId},previousRef:null,slotReserved:false,writerReservationPerformed:false,executionAuthorized:false,dispatchPerformed:false},ref={id,version:1,contentHash:hash(snapshot)};
   if(r.approvalRef!==null)await db.query("SELECT set_config('anvil.stage_start_payload',$1,true)",[canonicalJson(r.payload)]);
   const receipt=await persistProjectReceipt(db,actor,r,ref,{queueState:'WAITING',snapshot},policyRef,'EXPLICIT_STAGE_QUEUE_WAITING');
@@ -124,7 +134,7 @@ export class ProjectStageQueue{
   const r=cloneV1(raw),p=r.payload;if(r.operation!=='cancelQueuedRequest'||!recordV1(p,['requestRef','reason'])||!refV1(p.requestRef)||r.targetId!==p.requestRef.id||r.expectedVersion!==p.requestRef.version)fail();reason(p.reason);
   await this.#authorize(db,actor,r,policyRef);
   const rows=(await db.query(query+'WHERE q.project_id=$1 AND q.request_id=$2 ORDER BY q.version DESC LIMIT 1',[r.projectId,p.requestRef.id])).rows;if(!rows.length)fail('NOT_FOUND',404);const prior=await this.#view(db,actor,rows[0],r.projectId);if(!same(prior.ref,p.requestRef)||prior.snapshot.state!=='WAITING')fail('QUEUE_REQUEST_NOT_CANCELLABLE',409);
-  const at=await this.#authorize(db,actor,r,policyRef);
+  const {at}=await this.#authorize(db,actor,r,policyRef);
   const snapshot:Record<string,any>={...prior.snapshot,version:2,state:'CANCELLED',cancelledAt:at,cancelledBy:{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId},cancellationReason:p.reason,previousRef:prior.ref},ref={id:prior.ref.id,version:2,contentHash:hash(snapshot)};
   const receipt=await persistProjectReceipt(db,actor,r,ref,{queueState:'CANCELLED',snapshot},policyRef,'EXPLICIT_UNSTARTED_QUEUE_CANCELLATION');
   await db.query('INSERT INTO anvil.queue_requests(project_id,request_id,version,sequence,content_hash,snapshot_json,command_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[r.projectId,ref.id,2,snapshot.sequence,ref.contentHash,JSON.stringify(snapshot),receipt.id]);return receipt.result;

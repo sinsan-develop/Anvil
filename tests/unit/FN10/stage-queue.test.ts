@@ -15,6 +15,49 @@ function fixture(){
  assert.equal(typeof m.ProjectStageQueue,'function');const service=new m.ProjectStageQueue(ports);return{pid,at,actor,request,policy,policyRef,rows,calls,service,db,ports,member:(v:boolean)=>allowed=v,control:(v:boolean)=>controlled=v,auditFailure:()=>failAudit=true};
 }
 test('명시 시작 요청은 WAITING·단조순번으로 저장/조회하고 예약·수행을 만들지 않는다',async()=>{const f=fixture(),r=await f.service.start(f.db,f.actor,f.request,f.policyRef);assert.equal(r.data.queueState,'WAITING');assert.equal(r.data.snapshot.executionAuthorized,false);assert.equal(r.data.snapshot.assignmentRef,null);assert(r.data.snapshot.readinessIssues.includes('ASSIGNMENT_BINDING_UNVERIFIED'));const q=await f.service.read(f.db,f.actor,f.pid);assert.equal(q.items.length,1);assert.equal(q.items[0].state,'WAITING');assert.equal(q.items[0].sequence,1);assert.equal(q.writerReservationPerformed,false);assert(!f.calls.some(s=>/INSERT INTO anvil.(usage_reservations|execution_outbox)/.test(s)));});
+for(const mode of ['IDLE','ABSOLUTE','POLICY','BUDGET','VALID'] as const)test('대기 시작은 보호 순번 조회 뒤 현재 기한을 확인한다 '+mode,async t=>{
+ const f=fixture(),from=Date.parse(f.at),cutoff=from+1000;
+ t.mock.timers.enable({apis:['Date'],now:from});
+ const expiresAt=new Date(cutoff).toISOString(),after=new Date(cutoff-(mode==='VALID'?1:0));
+ if(mode==='IDLE'||mode==='VALID')f.actor.authSession.idleExpiresAt=expiresAt;
+ if(mode==='ABSOLUTE')f.actor.authSession.absoluteExpiresAt=expiresAt;
+ if(mode==='POLICY'){
+  f.policy.rules_json[0]!.expiresAt=expiresAt;
+  f.policyRef.contentHash=f.policy.content_hash=hash({rules:f.policy.rules_json,reason:f.policy.reason,reviewRefs:f.policy.review_refs});
+ }
+ if(mode==='BUDGET'){
+  const resolve=f.ports.budgets.resolveCurrent;
+  f.ports.budgets.resolveCurrent=async()=>{const v=await resolve();return{...v,snapshot:{...v.snapshot,expiresAt}};};
+ }
+ const query=f.db.query,denialReasons:string[]=[];let maxRead=false,runTime:unknown;
+ const denialAudit=(sql:string)=>sql.startsWith('INSERT INTO anvil.audit_events')&&sql.includes("'DENIED',$6,'SERVER_DENIAL'");
+ f.db.query=async(sql:string,args:any[])=>{
+  if(denialAudit(sql))denialReasons.push(args[5]);
+  if(sql.startsWith('INSERT INTO anvil.stage_runs'))runTime=args[7];
+  const result=await query(sql,args);
+  if(sql==='SELECT COALESCE(MAX(sequence),0)+1 AS sequence FROM anvil.stage_runs WHERE project_id=$1'){
+   assert.deepEqual(args,[f.pid]);maxRead=true;
+  }
+  if(maxRead&&sql==='SELECT clock_timestamp() AS at')return{rows:[{at:after}]};
+  return result;
+ };
+ const access:any={authenticated:async(_token:string,_csrf:string,cb:any)=>cb(f.db,f.actor)},policies=new ProjectPolicyRepository(access);
+ const send=()=>policies.command('synthetic','synthetic',f.request,(db,actor,p)=>f.service.start(db,actor,f.request,p),
+  (db,actor,request,result)=>f.service.verifyReplay(db,actor,request,result));
+ if(mode==='VALID'){
+  const result=await send(),snapshot=result.data.snapshot;
+  assert.equal(snapshot.queuedAt,after.toISOString());assert.equal(runTime,snapshot.queuedAt);
+  assert.equal(snapshot.state,'WAITING');assert.equal(snapshot.sequence,1);
+  assert.equal(result.data.ref.contentHash,hash(snapshot));assert.deepEqual(f.rows[0].snapshot_json,snapshot);
+  assert.equal(f.rows.length,1);assert.deepEqual(denialReasons,[]);
+ }else{
+  const expected=mode==='BUDGET'?{message:'LIMIT_POLICY_EXPIRED',statusCode:412}:{message:'STAGE_QUEUE_CURRENT_REQUIRED',statusCode:409};
+  await assert.rejects(send(),expected);
+  assert.deepEqual(denialReasons,[expected.message]);assert.equal(runTime,undefined);assert.equal(f.rows.length,0);
+  assert.deepEqual(f.calls.filter(sql=>/^(INSERT|UPDATE) /.test(sql)&&!denialAudit(sql)),[]);
+ }
+ assert.equal(maxRead,true);
+});
 test('정확 WAITING ref만 취소하며 과거 버전·다른 hash는 취소하지 않는다',async()=>{const f=fixture(),r=await f.service.start(f.db,f.actor,f.request,f.policyRef),c={...f.request,commandId:id(11),operation:'cancelQueuedRequest',targetId:r.data.ref.id,expectedVersion:1,payload:{requestRef:r.data.ref,reason:'아직 시작 전 취소'}};const done=await f.service.cancel(f.db,f.actor,c,f.policyRef);assert.equal(done.data.queueState,'CANCELLED');assert.equal(done.data.snapshot.dispatchPerformed,false);assert.equal(done.data.snapshot.writerReservationPerformed,false);assert.equal((await f.service.read(f.db,f.actor,f.pid)).items.length,0);await assert.rejects(f.service.cancel(f.db,f.actor,{...c,commandId:id(12)},f.policyRef));assert.equal(f.rows.length,2);});
 for(const expired of [true,false])test('대기 취소는 보호 조회 뒤 현재 인증 기한을 재대조한다 '+(expired?'만료 경계':'만료 1ms 전'),async()=>{
  const f=fixture(),original=await f.service.start(f.db,f.actor,f.request,f.policyRef);
