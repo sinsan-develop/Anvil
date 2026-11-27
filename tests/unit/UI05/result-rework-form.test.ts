@@ -53,14 +53,14 @@ after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k
 async function mount(withHistory=false){
  const f=reworkFixture(),binding:any=f.sources.binding,requests:{url:string;body:any}[]=[],container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
  const controls:(()=>void)[]=[],commits:(()=>void)[]=[];
- const state:{deferBuffer?:boolean;delayControl?:boolean;delay:boolean;release:(()=>void)|null;status:number;readbackStatus:number;prepareStatus:number}={delay:false,release:null,status:200,readbackStatus:200,prepareStatus:200};let lost=0,unavailable=0,visible=true,buffers:Record<string,any>={},drafts:Record<string,any>={};
+ const state:{onPost?:(marker:any,body:string,key:string|undefined)=>void;rejectMarker?:boolean;deferBuffer?:boolean;delayControl?:boolean;delay:boolean;release:(()=>void)|null;status:number;readbackStatus:number;prepareStatus:number}={delay:false,release:null,status:200,readbackStatus:200,prepareStatus:200};let lost=0,unavailable=0,visible=true,buffers:Record<string,any>={},drafts:Record<string,any>={};
  const storedByCommand=new Map<string,any>();
  const props:any={assignment:f.sources.assignment,result:f.sources.result,review:f.sources.review,responsibleState:{roles:[f.sources.role],bindings:[binding]},session:{user:{id:id(6)},clientId:id(24),csrfToken:'C'.repeat(43)},onAuthenticationLost:()=>lost++,onAccessUnavailable:()=>unavailable++};
  props.client=new ui.ApiClient(async(url:any,options:any)=>{
   const path=String(url),body=options?.body?JSON.parse(options.body):null;requests.push({url:path,body});let response:Response;
   if(path.endsWith('/result-reworks/prepare'))response=state.prepareStatus===200?Response.json(prepareResultRework(f.sources,body,f.now)):Response.json({code:'PROJECT_OPERATION_DENIED'},{status:state.prepareStatus});
   else if(path.endsWith('/commands')){
-   const prepared=Object.values(buffers).find(b=>b?.pending.command.commandId===body.commandId)?.pending.prepared;assert(prepared);const at='2026-10-20T00:02:00.000Z',snapshot={scope:prepared.scope,input:body.payload,criteriaRef:prepared.criteriaRef,roleRef:prepared.roleRef,stageSessionRef:prepared.stageSessionRef,remainingMissingItems:prepared.remainingMissingItems,preservedItems:[],requestedBy:{kind:'HUMAN',userId:props.session.user.id,clientId:props.session.clientId},requestedAt:at,scopeVerification:prepared.scopeVerification,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};
+   const parent=Object.values(buffers).find(b=>b?.pending.command.commandId===body.commandId),prepared=parent?.pending.prepared;assert(prepared);state.onPost?.(parent,options.body,options.headers['Idempotency-Key']);const at='2026-10-20T00:02:00.000Z',snapshot={scope:prepared.scope,input:body.payload,criteriaRef:prepared.criteriaRef,roleRef:prepared.roleRef,stageSessionRef:prepared.stageSessionRef,remainingMissingItems:prepared.remainingMissingItems,preservedItems:[],requestedBy:{kind:'HUMAN',userId:props.session.user.id,clientId:props.session.clientId},requestedAt:at,scopeVerification:prepared.scopeVerification,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};
    const ref={id:storedByCommand.get(body.commandId)?.ref.id??id(40+storedByCommand.size),version:1,contentHash:hash(snapshot)},data={ref,status:'RESULT_REWORK_DRAFT_STORED',snapshot,reworkStored:true,currentBindingVerified:false,currentAuthorityVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};if(state.status===200)storedByCommand.set(body.commandId,{projectId:f.sources.assignment.projectId,...data,observedAt:at});
    response=Response.json(state.status===200?{commandId:body.commandId,operationId:id(41),projectId:f.sources.assignment.projectId,targetId:ref.id,version:1,status:'APPLIED',serverReceivedAt:at,data}:{code:'ACCESS_DENIED'},{status:state.status});
    if(state.delay)return new Promise<Response>(resolve=>{state.release=()=>resolve(response);});
@@ -72,7 +72,7 @@ async function mount(withHistory=false){
   if(state.delayControl&&path==='/api/v1/projects/'+f.sources.assignment.projectId)return new Promise<Response>(resolve=>controls.push(()=>resolve(response)));
   return response;
  });
- function render(){root.render(visible?ui.React.createElement(ui.React.Fragment,null,ui.React.createElement(ui.ResultReworkEditor,{...props,reworks:{buffers,onChange:(key:string,value:any)=>{const commit=()=>{buffers={...buffers,[key]:typeof value==='function'?value(buffers[key]??null):value};render();};if(state.deferBuffer)commits.push(commit);else commit();},form:{drafts,onChange:(key:string,value:any)=>{drafts={...drafts,[key]:typeof value==='function'?value(drafts[key]??null):value};render();}}}}),withHistory?ui.React.createElement(ui.StoredResultReworkHistory,props):null):null);}
+ function render(){root.render(visible?ui.React.createElement(ui.React.Fragment,null,ui.React.createElement(ui.ResultReworkEditor,{...props,reworks:{buffers,onChange:(key:string,value:any)=>{const commit=()=>{const before=buffers[key]??null,next=typeof value==='function'?value(before):value;if(state.rejectMarker&&next?.uncertain&&!before?.uncertain)return;buffers={...buffers,[key]:next};render();};if(state.deferBuffer)commits.push(commit);else commit();},form:{drafts,onChange:(key:string,value:any)=>{drafts={...drafts,[key]:typeof value==='function'?value(drafts[key]??null):value};render();}}}}),withHistory?ui.React.createElement(ui.StoredResultReworkHistory,props):null):null);}
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))];
  async function flush(){await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});}
  async function waitFor(check:()=>boolean){
@@ -192,6 +192,66 @@ test('이전 입력 이벤트는 진행 중 SAVE의 원 명령·잠금·결과 �
 });
 
 
+for(const mode of ['HELD','REJECTED','REPLACED','DEPARTED','SELECTION'] as const)test('보완 SAVE는 부모 전송 표식 미정착에서 POST하지 않는다 '+mode,async()=>{
+ const m=await mount();let selected=true;
+ const commands=()=>m.requests.filter(r=>r.url.endsWith('/commands'));
+ try{
+  m.props.isSourceCurrent=()=>selected;await m.render();await m.prepare();const original=m.buffer(),originalCommand=structuredClone(original.pending.command);
+  m.state.deferBuffer=mode!=='REJECTED';m.state.rejectMarker=mode==='REJECTED';m.state.delay=true;await m.click('보완 초안 명시 저장');
+  await m.waitFor(()=>(mode==='REJECTED'||m.commits.length>=1)&&(!!m.state.release||m.button('보완 초안 명시 저장')?.disabled===false));
+  assert.equal(commands().length,0,'부모가 전송 표식을 실제 적용하지 않았다');
+  const delayed=m.commits.shift();
+  if(mode==='REPLACED')await m.replace({...original,failure:{code:'PARENT_COMMAND_CHANGED',status:409}});
+  if(mode==='DEPARTED')await m.hide();
+  if(mode==='SELECTION')selected=false;
+  const incumbent=m.buffer();
+  await ui.React.act(async()=>delayed?.());
+  assert.equal(m.buffer(),incumbent);assert.equal(commands().length,0);assert.equal(m.lost(),0);
+  m.state.deferBuffer=false;m.state.rejectMarker=false;m.state.delay=false;
+  if(mode==='SELECTION')selected=true;
+  m.state.onPost=(marker,body,key)=>{
+   assert.equal(marker.uncertain,true);assert.equal(marker.pending,original.pending);
+   assert.equal(body,JSON.stringify(originalCommand));assert.equal(key,originalCommand.commandId);
+  };
+  if(mode==='DEPARTED')await m.show();
+  await m.click(mode==='REPLACED'?'같은 보완 명령 재확인':'보완 초안 명시 저장');
+  await m.waitFor(()=>!!m.buffer()?.stored);
+  assert.deepEqual(commands().map(r=>r.body),[originalCommand]);assert.equal(m.buffer().pending,original.pending);
+  assert.equal(m.buffer().uncertain,false);
+ }finally{m.state.release?.();await m.close();}
+});
+for(const mode of ['PARENT_RESTORED','SELECTION_EXPIRED'] as const)test('보완 SAVE의 전송 직전 digest 대기는 확정한 정확 표식과 원 선택을 다시 요구한다 '+mode,async t=>{
+ const m=await mount(),entered=Promise.withResolvers<void>(),release=Promise.withResolvers<void>();
+ let current=true;
+ const commands=()=>m.requests.filter(r=>r.url.endsWith('/commands'));
+ try{
+  m.props.isSourceCurrent=()=>current;await m.render();await m.prepare();
+  const original=m.buffer(),digest=crypto.subtle.digest.bind(crypto.subtle);
+  const gate=t.mock.method(crypto.subtle,'digest',async(...args:Parameters<SubtleCrypto['digest']>)=>{entered.resolve();await release.promise;return digest(...args);});
+  await m.click('보완 초안 명시 저장');await entered.promise;
+  assert.equal(m.buffer().uncertain,true);
+  if(mode==='PARENT_RESTORED')await m.replace(original);else current=false;
+  assert.equal(commands().length,0);
+  release.resolve();await m.waitFor(()=>m.button('보완 초안 명시 저장')?.disabled===false);
+  assert.equal(m.buffer(),original);assert.equal(commands().length,0);assert.equal(m.lost(),0);
+  gate.mock.restore();current=true;await m.render();assert(m.button(releaseLabel),'되돌린 같은 미전송 원 준비의 기존 해제 권위');
+  await m.click('보완 초안 명시 저장');await m.waitFor(()=>!!m.buffer()?.stored);
+  assert.deepEqual(commands().map(r=>r.body),[original.pending.command]);
+ }finally{release.resolve();await m.close();}
+});
+for(const status of [200,403])test('보완 SAVE의 지연 부모 결과는 원 전송 표식만 갱신한다 '+status,async()=>{
+ const m=await mount();
+ try{
+  await m.prepare();const original=m.buffer();
+  m.state.status=status;m.state.delay=true;await m.click('보완 초안 명시 저장');await m.waitFor(()=>!!m.state.release);
+  assert.equal(m.buffer().uncertain,true);assert.equal(m.buffer().pending,original.pending);
+  m.state.deferBuffer=true;await ui.React.act(async()=>m.state.release!());await m.waitFor(()=>m.commits.length>0);
+  const apply=m.commits.shift()!;
+  await m.replace(original);await ui.React.act(async()=>apply());
+  assert.equal(m.buffer(),original);assert.equal(m.buffer().stored,null);assert.equal(m.buffer().failure,null);assert.equal(m.lost(),0);
+  assert.deepEqual(m.requests.filter(r=>r.url.endsWith('/commands')).map(r=>r.body),[original.pending.command]);
+ }finally{m.state.release?.();await m.close();}
+});
 test('완료된 PREPARE의 지연 부모 updater는 잠금 회수 후에도 원 pending을 보존한다',async()=>{
  const m=await mount();try{
   await m.prepareDraft();m.state.deferBuffer=true;await m.click('보완 저장 명령 준비');
@@ -482,7 +542,7 @@ test('보완 A의 보호 저장 확인 뒤 다른 부족 조건 B를 새로 작�
   await m.click('보완 초안 명시 저장');await m.waitFor(()=>!!m.allBuffers()[1]?.stored);
   assert.deepEqual(m.buffer().stored,storedA);
   assert(!m.button(differentDraft),'이 화면에서 보관을 확인한 두 조건은 새 선택에 표시하지 않는다');
-  await m.click('보관 보완 목록 조회');await m.waitFor(()=>!!m.button('보관 보완 원문 '+storedA.ref.id));
+  await m.click('이 검수의 보완 목록 조회');await m.waitFor(()=>!!m.button('보관 보완 원문 '+storedA.ref.id));
   await m.click('보관 보완 원문 '+storedA.ref.id);await m.waitFor(()=>m.container.textContent.includes(storedA.snapshot.input.reason));
   assert.deepEqual(m.requests.filter(r=>r.url.endsWith('/commands')).map(r=>r.body.commandId),[preparedA.command.commandId,preparedB.command.commandId]);
  }finally{await m.close();}
