@@ -130,11 +130,21 @@ export async function sendBaselineUpload(client:ApiClient,b:BaselineBuffer,s:Doc
  if(result.data?.status!=='ARTIFACT_READY'||!artifact(a)||!same({bytes:a.bytes,contentHash:a.contentHash,mediaType:a.mediaType},c.payload)||result.targetId!==a.artifactId||result.version!==null)fail();
  return {...b,pending:null,upload:null,uploadApproval:undefined,dirty:true,uncertain:false,failure:null,input:{...b.input,items:b.input.items.map(i=>i.itemId===u.itemId?{...i,evidenceRefs:[...i.evidenceRefs.filter(e=>e.artifactId!==a.artifactId),a]}:i)}};
 }
-export async function readBaselineEvidence(client:ApiClient,pid:string,r:BaselineEvidenceRef):Promise<Uint8Array<ArrayBuffer>>{
+export async function readBaselineEvidence(client:ApiClient,pid:string,r:BaselineEvidenceRef,signal?:AbortSignal):Promise<Uint8Array<ArrayBuffer>>{
  if(!artifact(r))throw new ApiError('CLIENT_PATH_INVALID');let response:Response;
- try{response=await client.transport.call(globalThis,`${base(pid)}/files/${r.artifactId}`,{method:'GET',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/octet-stream'}});}catch{throw new ApiError('CONNECTION_LOST');}
+ const check=()=>{if(signal?.aborted)throw new ApiError('ARTIFACT_READ_ABORTED');};
+ check();
+ try{response=await client.transport.call(globalThis,`${base(pid)}/files/${r.artifactId}`,{method:'GET',credentials:'same-origin',redirect:'error',cache:'no-store',headers:{Accept:'application/octet-stream'},...(signal?{signal}:{})});}catch{check();throw new ApiError('CONNECTION_LOST');}
+ if(signal?.aborted){await response.body?.cancel().catch(()=>{});check();}
  if(!response.ok)throw new ApiError('ARTIFACT_READ_FAILED',response.status);const stream=response.body;if(!/^application\/octet-stream\b/i.test(response.headers.get('content-type')??'')||!stream)return fail();
  const reader=stream.getReader(),chunks:Uint8Array[]=[];let size=0;
- try{while(true){const v=await reader.read();if(v.done)break;size+=v.value.length;if(size>r.bytes){await reader.cancel();throw new ApiError('ARTIFACT_INTEGRITY_FAILED');}chunks.push(v.value);}}finally{reader.releaseLock();}
- const bytes=new Uint8Array(size);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.length;}if(size!==r.bytes||await digestBytes(bytes)!==r.contentHash)throw new ApiError('ARTIFACT_INTEGRITY_FAILED');return bytes;
+ let cancellation:Promise<void>|undefined;
+ const cancel=()=>cancellation??=reader.cancel().catch(()=>{});
+ const abort=()=>{void cancel();};
+ signal?.addEventListener('abort',abort,{once:true});
+ try{while(true){const v=await reader.read();check();if(v.done)break;size+=v.value.length;if(size>r.bytes){await cancel();throw new ApiError('ARTIFACT_INTEGRITY_FAILED');}chunks.push(v.value);}}
+ finally{signal?.removeEventListener('abort',abort);reader.releaseLock();}
+ const bytes=new Uint8Array(size);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.length;}
+ if(size!==r.bytes||await digestBytes(bytes)!==r.contentHash)throw new ApiError('ARTIFACT_INTEGRITY_FAILED');
+ check();return bytes;
 }
