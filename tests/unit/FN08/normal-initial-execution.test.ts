@@ -1,10 +1,21 @@
-import test from 'node:test';
+import test,{after,mock} from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import * as crypto from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 import { executionStartOriginFixture, installExecutionStartOriginMemoryFS } from '../FN09/execution-start-origin-fixture.ts';
 
 await installExecutionStartOriginMemoryFS();
+// 양성 RAM은 원 ID 발급 전에 그 exact ID의 정책이 존재하는 오라클이다.
+// 실제 발급 뒤 정책 변경의 환경/등록 현재성 순환은 별도 음성으로 보존한다.
+let originUuid:{executionId:string;calls:number}|undefined;
+const fixedRandomUUID=()=>{
+ const value=randomUUID();
+ return originUuid&&++originUuid.calls===7?originUuid.executionId:value;
+};
+const cryptoExports={...Object.fromEntries(Object.entries(crypto).filter(([key])=>key!=='default')),randomUUID:fixedRandomUUID};
+const cryptoModule=mock.module('node:crypto',{defaultExport:{...cryptoExports},namedExports:cryptoExports});
+after(()=>{originUuid=undefined;cryptoModule.restore();});
 const { buildApp } = await import('../../../apps/server/app.ts');
 
 test('normal 최초 START는 기존 명령의 보호된 입력을 검사하고 caller 승인·current 입력을 거절한다', async () => {
@@ -29,7 +40,7 @@ test('normal 최초 START는 기존 명령의 보호된 입력을 검사하고 c
 });
 
 async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v=>v,work?:'LINKED'|'LEGACY',prepare:boolean|'UNDEFINED'|'GETTER'=false,admission?:'valid'|'missing'|'claim-lost'|'admission-lost'|'queue-cross') {
- const eid=randomUUID();
+ let eid=randomUUID();
  const f=await executionStartOriginFixture({normalExecutionId:eid,connectorEnvironment:true,richContext:true,constitutionContext:true,environmentDependencies:true,snapshotRoot:true,originConsumptionStorage:true});
  const workState={latest:null as any,fresh:0,history:0,deny:false};let workBasis:any;
  if(work){
@@ -53,7 +64,7 @@ async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v
   f.preparation=await f.run(a=>f.preparations.save(f.db,a,command as any,f.policyRef)) as any;
  }
  const prep=f.preparation.data,raw=prep.snapshot.intent,ref=prep.ref;
- const until=f.actor.authSession.idleExpiresAt,permissionPolicyRef=f.policyRef;
+ const until=f.actor.authSession.idleExpiresAt,permissionPolicyRef=structuredClone(f.policyRef);
  const {registrationRef}=await import('../../../apps/server/modules/connections/project-registrations.ts');
  const attested={basis:prep.snapshot.basisRefs,source:raw.sourceScopes.map((s:any)=>s.observationRef),capability:[raw.capabilityRef],osFence:[ref],storage:[ref]};
  let observations=0;
@@ -82,14 +93,172 @@ async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v
   const admissionState=admission?await normalAdmissionSourceFixture(f,source,admission):null;
   const configured=prepare==='GETTER'?new PreparedCurrent():source;
   const app=buildApp({},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root},undefined,undefined,undefined,undefined,null,undefined,undefined,configured);
+ const originRequest={...f.originCommand(),payload:{...f.originCommand().payload,preparationRef:ref}};
+ originUuid={executionId:eid,calls:0};
+ const saved=await app.inject({method:'POST',url:'/api/v1/projects/'+f.pid+'/commands',payload:originRequest,headers:{host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf}}).finally(()=>{originUuid=undefined;});
+ assert.equal(saved.statusCode,200,saved.body);
+ const origin=saved.json().data;
+ assert.equal(origin.snapshot.execution.executionId,eid);
+ const parentState={reads:0,deny:false,fail:false,queries:[]as any[]};
+ const base=f.db.query;
+ f.db.query=(async(sql:string,a:any[]=[])=>{
+  if(sql==='SELECT anvil.fn111_normal_start_parent_current($1,$2,$3,$4,$5::jsonb,$6) AS valid'){
+   parentState.reads++;parentState.queries.push(structuredClone(a));assert(f.active());
+   if(parentState.fail)throw Error('RAM_PRIVATE_PARENT_SOURCE_UNAVAILABLE');
+   assert.deepEqual(a.slice(0,4),[f.actor.authSession.id,f.actor.actorId,f.actor.clientId,f.pid]);assert.equal(a[5],String(f.modes.tx));
+   const input=JSON.parse(a[4]);assert.equal(input.purpose,'NORMAL_START_ORIGIN_PARENT_CURRENT');assert(['DIRECT','ADMISSION','QUEUE'].includes(input.mode));
+   const q=input.request,p=q.payload,o=f.tables.origins!.find(row=>row.project_id===a[3]&&row.execution_id===p.executionId);
+   const previous=(f.tables.normalAdmissions??[]).some(row=>row.snapshot.request.payload.executionId===p.executionId&&row.snapshot.request.payload.executionGeneration===p.executionGeneration&&(input.mode==='DIRECT'||canonicalJson(row.snapshot.request)!==canonicalJson(q)));
+   const used=f.tables.executions!.some(row=>row.project_id===a[3]&&row.id===p.executionId&&(()=>{const c=f.commands.get(row.command_id);return !c||c.command_id!==q.commandId||c.actor_id!==a[1]||c.client_id!==a[2]||c.request_hash!==contentHash(canonicalJson(q));})());
+   return{rows:[{valid:!parentState.deny&&!!o&&o.execution_generation===p.executionGeneration&&canonicalJson(p.originParent)===canonicalJson({originRef:{id:o.origin_id,version:o.version,contentHash:o.content_hash},reservationRef:{id:o.credential_id,version:1,contentHash:o.reservation_hash}})&&!previous&&!used}]};
+  }
+  if(sql.startsWith('SELECT c.id AS command_id FROM anvil.executions e JOIN anvil.commands c'))return{rows:f.tables.executions!.filter(r=>r.project_id===a[0]&&r.id===a[1]&&r.generation===a[2]).flatMap(r=>{
+   const c=f.commands.get(r.command_id);
+   return c&&c.project_id===a[0]&&c.command_id===a[3]&&c.actor_id===a[4]&&c.client_id===a[5]&&c.request_hash===a[6]&&canonicalJson(c.result_ref)===a[7]?[{command_id:c.id}]:[];
+  })};
+  if(sql==='SELECT anvil.normal_start_material_complete($1,$2) AS complete'){
+   const c=f.commands.get(a[1]),x=f.tables.execution_commands!.filter(r=>r.project_id===a[0]&&r.created_command_id===a[1]),g=f.tables.execution_grants!.filter(r=>r.project_id===a[0]&&r.command_id===a[1]);
+   const {envelope:_,...snapshot}=x[0]?.snapshot_json??{};
+   return{rows:[{complete:!!c&&x.length===1&&g.length===1&&g[0].content_hash===contentHash(canonicalJson(g[0].snapshot_json))&&x[0].content_hash===contentHash(canonicalJson(snapshot))&&canonicalJson(snapshot)===canonicalJson(c.result_ref.data.snapshot)}]};
+  }
+  return base(sql,a);
+ })as typeof f.db.query;
  const command={...f.originCommand(),operation:'queueExecutionCommand',approvalRef:null,payload:{operation:'START_SESSION',executionId:eid,executionGeneration:1,preparationRef:ref,
-   permissionPolicyRef,budgetPolicyRef:raw.budgetPolicyRef,payload:{contextBundleRef:raw.contextBundleRef,optionsRef:ref}}};
+   permissionPolicyRef,budgetPolicyRef:raw.budgetPolicyRef,payload:{contextBundleRef:raw.contextBundleRef,optionsRef:ref},originParent:{originRef:origin.ref,reservationRef:origin.reservation.ref}}};
  const post=(payload=command)=>app.inject({method:'POST',url:'/api/v1/projects/'+f.pid+'/commands',payload,headers:{host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',
    cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf}});
-  return {f,post,app,command,workBasis,workState,preparation,source:configured,admissionState,observations:()=>observations};
+  return {f,post,app,command,origin,parentState,workBasis,workState,preparation,source:configured,admissionState,observations:()=>observations};
 }
 
 const graphTables=['executions','execution_grants','writer_claims','usage_reservations','execution_commands','delivery_outbox','execution_material_manifests','execution_materials'];
+
+test('새 normal START는 원자료 부모 없이 보호 관측·준비·queue를 시작하지 않는다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});
+ const h=await host(undefined,undefined,true);
+ try{
+  const before=graphTables.map(name=>h.f.tables[name]!.length);
+  const {originParent:_,...payload}=h.command.payload;
+  const response=await h.post({...h.command,payload}as typeof h.command);
+  assert.equal(response.statusCode,422,response.body);
+  assert.equal(response.json().code??response.json().error?.code,'NORMAL_START_ORIGIN_PARENT_REQUIRED');
+  assert.equal(h.observations(),0);
+  assert.equal(h.preparation.creates,0);
+  assert.equal(h.preparation.handoffs,0);
+  assert.deepEqual(graphTables.map(name=>h.f.tables[name]!.length),before);
+ }finally{await h.app.close();}
+});
+
+test('원 부모의 fullref·예약·고정 실행 ID 교체는 새 관측/객체/저장 없이 거절한다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});
+ const h=await host(undefined,undefined,true);
+ try{
+  const before=graphTables.map(name=>h.f.tables[name]!.length);
+  for(const change of ['ORIGIN','RESERVATION','EXECUTION','GENERATION']as const){
+   const c=structuredClone(h.command);
+   if(change==='ORIGIN')c.payload.originParent.originRef.contentHash='e'.repeat(64);
+   if(change==='RESERVATION')c.payload.originParent.reservationRef.id=randomUUID();
+   if(change==='EXECUTION')c.payload.executionId=randomUUID();
+   if(change==='GENERATION')c.payload.executionGeneration++;
+   const r=await h.post(c);assert.equal(r.statusCode,409,r.body);assert.match(r.body,/NORMAL_START_ORIGIN_PARENT_MISMATCH/);
+  }
+  assert.equal(h.observations(),0);assert.equal(h.preparation.creates,0);assert.equal(h.preparation.handoffs,0);
+  assert.deepEqual(graphTables.map(name=>h.f.tables[name]!.length),before);
+  assert.equal(h.origin.reservation.snapshot.state,'RESERVED_NOT_ISSUED');
+ }finally{await h.app.close();}
+});
+
+test('같은 거래 부모 current RPC의 실패는 독립 관측/준비 port 이전에 닫힌다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});const h=await host(undefined,undefined,true);
+ try{
+  h.parentState.deny=true;
+  const response=await h.post();assert.equal(response.statusCode,412,response.body);assert.match(response.body,/NORMAL_START_ORIGIN_PARENT_CURRENT_REQUIRED/);
+  assert.equal(h.parentState.reads,1);h.parentState.deny=false;h.parentState.fail=true;
+  const unavailable=await h.post();assert.equal(unavailable.statusCode,503,unavailable.body);assert.match(unavailable.body,/NORMAL_START_ORIGIN_PARENT_CURRENT_REQUIRED/);assert.doesNotMatch(unavailable.body,/RAM_PRIVATE_PARENT_SOURCE_UNAVAILABLE/);
+  assert.equal(h.parentState.reads,2);assert.equal(h.observations(),0);assert.equal(h.preparation.creates,0);assert.equal(h.preparation.handoffs,0);
+  for(const name of graphTables)assert.equal(h.f.tables[name]!.length,0,name);
+ }finally{await h.app.close();}
+});
+
+test('부모의 정착 재조회는 새 source/head 없이 원 저장을 검산하고 손상·모호한 원 execution을 거절한다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});const h=await host();
+ try{
+  const saved=await h.post();assert.equal(saved.statusCode,200,saved.body);
+  const observed=h.observations(),counts=graphTables.map(name=>h.f.tables[name]!.length);
+  h.f.modes.sourceHead=2;
+  const retry=await h.post();assert.equal(retry.statusCode,200,retry.body);assert.deepEqual(retry.json(),saved.json());assert.equal(h.observations(),observed);
+  const row=h.f.tables.origins![0]!,prior=structuredClone(row);row.reservation_json.state='ISSUED';
+  const corrupt=await h.post();assert.equal(corrupt.statusCode,503,corrupt.body);h.f.tables.origins![0]=prior;
+  const execution=h.f.tables.executions![0]!;h.f.tables.executions!.push(structuredClone(execution));
+  const ambiguous=await h.post();assert.equal(ambiguous.statusCode,503,ambiguous.body);assert.match(ambiguous.body,/NORMAL_START_ORIGIN_PARENT_INTEGRITY_FAILED/);h.f.tables.executions!.pop();
+  assert.equal(h.observations(),observed);assert.deepEqual(graphTables.map(name=>h.f.tables[name]!.length),counts);
+ }finally{await h.app.close();}
+});
+
+test('원 receipt와 다른 내부 execution command를 섞은 재조회는 완결 RPC 전에 거절한다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});const h=await host();
+ try{
+  const saved=await h.post();assert.equal(saved.statusCode,200,saved.body);
+  h.f.tables.executions![0]!.command_id=h.f.tables.origins![0]!.server_command_id;
+  const calls:string[]=[],query=h.f.db.query;
+  h.f.db.query=(async(sql:string,args:any[]=[])=>{calls.push(sql);return query(sql,args);})as typeof query;
+  const response=await h.post();assert.equal(response.statusCode,503,response.body);assert.match(response.body,/NORMAL_START_ORIGIN_PARENT_INTEGRITY_FAILED/);
+  assert(calls.some(sql=>sql.startsWith('SELECT c.id AS command_id FROM anvil.executions e JOIN anvil.commands c')));
+  assert(!calls.some(sql=>sql==='SELECT anvil.normal_start_material_complete($1,$2) AS complete'));
+ }finally{await h.app.close();}
+});
+
+test('원자료 뒤 정책 head 변경의 환경/등록 현재성은 여전히 거절하며 부모를 현재 허가로 승격하지 않는다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});const h=await host(undefined,undefined,true);
+ try{
+  h.f.modes.policyVersion++;
+  const environment=await h.f.run(actor=>h.f.environments.read(h.f.db,actor,h.f.pid,h.f.preparation.data.snapshot.intent.environmentRef.id,1));
+  assert.notEqual(environment.current.configurationCurrentness,'MATCHED');
+  assert(environment.current.issues.some((issue:any)=>issue.code==='POLICY_CHANGED'));
+  const response=await h.post();assert.equal(response.statusCode,412,response.body);assert.match(response.body,/EXECUTION_PREPARATION_SOURCE_NOT_CURRENT/);
+  assert.equal(h.observations(),0);assert.equal(h.preparation.creates,0);assert.equal(h.preparation.handoffs,0);
+  for(const name of graphTables)assert.equal(h.f.tables[name]!.length,0,name);
+ }finally{await h.app.close();}
+});
+
+test('원 부모/예약의 만료 뒤에는 원 객체 생성·ACK·queue 정착을 시작하지 않는다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});const h=await host(undefined,undefined,true);
+ try{
+  const end=Math.min(Date.parse(h.origin.snapshot.expiresAt),Date.parse(h.origin.reservation.snapshot.expiresAt));
+  h.f.advance(end-Date.now()+1);
+  const response=await h.post();assert.equal(response.statusCode,409,response.body);assert.match(response.body,/NORMAL_START_ORIGIN_PARENT_MISMATCH/);
+  assert.equal(h.observations(),0);assert.equal(h.preparation.creates,0);assert.equal(h.preparation.handoffs,0);
+  for(const name of graphTables)assert.equal(h.f.tables[name]!.length,0,name);
+ }finally{await h.app.close();}
+});
+
+test('준비 생성 직전 거래 재검산 await 중 원 부모 기한이 지나면 port 호출0이다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});const h=await host(undefined,undefined,true);
+ let transitions=0;
+ try{
+  const end=Math.min(Date.parse(h.origin.snapshot.expiresAt),Date.parse(h.origin.reservation.snapshot.expiresAt));
+  h.f.modes.hook=sql=>{
+   // 앞 두 쌍은 부모 판독→current RPC xid, 세 번째는 until 산출→create 직전 checkTx다.
+   if(sql==='SELECT txid_current()::text AS transaction_id'&&h.f.trace.at(-2)==='SELECT clock_timestamp() AS at'&&++transitions===3)h.f.advance(end-Date.now()+1);
+  };
+  const response=await h.post();assert.equal(response.statusCode,412,response.body);assert.equal(transitions,3);
+  assert.equal(h.preparation.creates,0);assert.equal(h.preparation.handoffs,0);assert.equal(h.observations(),0);
+  for(const name of graphTables)assert.equal(h.f.tables[name]!.length,0,name);
+ }finally{h.f.modes.hook=null;await h.app.close();}
+});
+
+test('기존 parentless 정상 원 명령은 과거 exact hash/영수증으로만 재조회하고 새 admission/객체를 발급하지 않는다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});const h=await host(undefined,undefined,true);
+ try{
+  const response=await h.post();assert.equal(response.statusCode,200,response.body);
+  // 0111 이전의 동일 공개 graph/영수증과 원 7키 명령 해시를 모델링한다. 새 발행에는 이 입력을 허용하지 않는다.
+  const {originParent:_,...payload}=h.command.payload,legacy={...h.command,payload};
+  const execution=h.f.tables.executions![0]!,command=h.f.commands.get(execution.command_id)!;
+  command.request_hash=contentHash(canonicalJson(legacy));
+  const before=[h.preparation.creates,h.preparation.reads,h.preparation.handoffs,h.observations()];
+  const replay=await h.post(legacy as typeof h.command);assert.equal(replay.statusCode,200,replay.body);assert.deepEqual(replay.json(),response.json());
+  assert.deepEqual([h.preparation.creates,h.preparation.reads,h.preparation.handoffs,h.observations()],before);
+ }finally{await h.app.close();}
+});
 
 test('optional 준비 own undefined는 미구성이고 class getter port는 한 번만 캡처해 같은 객체를 소비한다',async t=>{
  t.mock.timers.enable({apis:['Date'],now:Date.now()});for(const mode of ['UNDEFINED','GETTER']as const){const h=await host(undefined,undefined,mode);try{
@@ -253,7 +422,7 @@ test('동일 프로젝트의 동시 POST는 같은 영수증으로 수렴하며 
  try{
    const [a,b]=await Promise.all([h.post(),h.post()]);assert.equal(admissions,2);
    assert.equal(a.statusCode,200,a.body);assert.equal(b.statusCode,200,b.body);assert.deepEqual(a.json(),b.json());
-   const r=await h.post({...h.command,commandId:randomUUID()});assert.equal(r.statusCode,409,r.body);assert.match(r.body,/EXECUTION_WRITER_UNAVAILABLE/);
+   const observed=h.observations(),r=await h.post({...h.command,commandId:randomUUID()});assert.equal(r.statusCode,412,r.body);assert.match(r.body,/NORMAL_START_ORIGIN_PARENT_CURRENT_REQUIRED/);assert.equal(h.observations(),observed);
    for(const name of graphTables)assert.equal(h.f.tables[name]!.length,name==='execution_materials'?2:1,name);
  }finally{pool.connect=original;await h.app.close();}
 });
@@ -282,13 +451,12 @@ for(const change of ['LEGACY','SELECTOR','OLD_EXECUTION','STALE','LATE','AUTHORI
  if(change==='STALE')h.workState.latest={...h.workBasis.reviewRef,version:2};
  if(change==='AUTHORITY')h.workState.deny=true;
  if(change==='LATE')h.f.modes.hook=sql=>{if(sql.startsWith('INSERT INTO anvil.execution_materials('))h.workState.deny=true;};
- try{const r=await h.post();assert.equal(r.statusCode,412,r.body);for(const n of graphTables)assert.equal(h.f.tables[n]!.length,0,n);assert.equal(h.f.receipts.size,receipts);assert.equal(h.f.audits.size,audits);}finally{await h.app.close();}
+ try{const r=await h.post();assert.equal(r.statusCode,change==='OLD_EXECUTION'?409:412,r.body);if(change==='OLD_EXECUTION')assert.match(r.body,/NORMAL_START_ORIGIN_PARENT_MISMATCH/);for(const n of graphTables)assert.equal(h.f.tables[n]!.length,0,n);assert.equal(h.f.receipts.size,receipts);assert.equal(h.f.audits.size,audits);}finally{await h.app.close();}
 });
 
 
-// 공개 정상 DTO나 fabricated custody는 없다. 고정 TEST_ONLY d=1 키로 실제 등록 STREAM proof/owner를 거친다.
+// 공개 정상 DTO나 fabricated custody는 없다. fixture 원 등록의 RAM 키로 STREAM proof/owner를 거친다.
 async function normalAdmissionSourceFixture(f:Awaited<ReturnType<typeof executionStartOriginFixture>>,source:object,mode:string){
- const {createPrivateKey,sign}=await import('node:crypto');
  const {NativeFirstReceiveService}=await import('../../../apps/server/modules/executions/native-first-receive-service.ts');
  const {NativeFirstReceiveStore}=await import('../../../apps/server/modules/executions/native-first-receive-store.ts');
  const {receiveCanonical,receiveHash}=await import('../../../contracts/runtime/native-first-receive-v1.ts');
@@ -310,8 +478,7 @@ async function normalAdmissionSourceFixture(f:Awaited<ReturnType<typeof executio
   windowRef:window.ref,receiveSessionRef:session.ref,offerRef:null,armRef:null,bindingRef:undefined,deliveryRef:null,authorityRef:null,commandHash:null,
   authBindingHash:w.authBindingHash,challengeRef:challenge.ref,serverNonce:cs.serverNonce,target,issuedAt:at,expiresAt:end};
  delete (proof as any).bindingRef;
- const b64=(x:string)=>Buffer.from(x,'hex').toString('base64url'),key=createPrivateKey({key:{kty:'EC',crv:'P-256',x:b64('6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296'),y:b64('4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5'),d:b64('0'.repeat(63)+'1')},format:'jwk'});
- const signature=sign('sha256',Buffer.from(receiveCanonical(proof)),{key,dsaEncoding:'ieee-p1363'}).toString('base64url');
+ const signature=f.signConnectorBytes(Buffer.from(receiveCanonical(proof)));
  let streamOwner:any=null;
  const nativeTrace:string[]=[],state:any={schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_STATE',windowRef:window.ref,phase:'STREAMING',receiveSessionRef:session.ref,
   offerRef:null,armRef:null,bindingRef:null,deliveryRef:null,authorityRef:null,ackRef:null,terminalRef:null,current:{checkedAt:at,usable:true,reason:'CURRENT'},observedAt:at,expiresAt:end,executionAuthorized:false};
@@ -329,12 +496,14 @@ async function normalAdmissionSourceFixture(f:Awaited<ReturnType<typeof executio
  assert.equal(mode==='missing'?nativeTrace.length:nativeTrace.at(-1),mode==='missing'?0:'RELEASE');
  Object.defineProperty(source,'preparationAdmission',{value:{purpose:'NORMAL_START_PREPARATION_ADMISSION_V1',receiver},enumerable:true});
  const out={committed:null as any,claim:null as any,pending:null as any,pendingClaim:null as any,phase:'',admissions:0,claims:0,commits:[]as string[],queueReads:0,reads:[]as any[],used:0,held:0,close:()=>controller.abort()};
+ f.tables.normalAdmissions=[];
  const base=f.db.query;
  f.db.query=(async(sql:string,args:any[]=[])=>{
   if(sql==='BEGIN'){out.pending=structuredClone(out.committed);out.pendingClaim=structuredClone(out.claim);out.phase='';return base(sql,args);}
   if(sql==='ROLLBACK'){out.pending=structuredClone(out.committed);out.pendingClaim=structuredClone(out.claim);return base(sql,args);}
   if(sql==='COMMIT'){
    const result=await base(sql,args);out.committed=structuredClone(out.pending);out.claim=structuredClone(out.pendingClaim);out.commits.push(out.phase||'QUEUE');
+   if(out.phase==='ADMISSION'&&out.committed&&!f.tables.normalAdmissions!.some(row=>row.ref.id===out.committed.ref.id))f.tables.normalAdmissions!.push(structuredClone(out.committed));
    if(mode==='admission-lost'&&out.phase==='ADMISSION'||mode==='claim-lost'&&out.phase==='CLAIM')throw Error('RAM_COMMIT_REPLY_LOST');return result;
   }
   if(sql==='SELECT txid_current()::text AS transaction_id'){const result=await base(sql,args);return{rows:result.rows.map((r:any)=>({transaction_id:r.transaction_id})),rowCount:result.rows.length};}
@@ -398,4 +567,21 @@ test('normal admission의 부재/COMMIT 불명/교차 claim은 queue·원 객체
    const again=await h.post();assert.equal(again.statusCode,503,again.body);assert.equal(h.preparation.creates,0);assert.equal(a.admissions,mode==='missing'?0:1);
   }finally{h.admissionState?.close();await h.app.close();}
  }
+});
+
+test('durable claim의 COMMIT 불명 뒤 다른 명령/기존 port만의 우회도 새 접수·create 전에 거절한다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});const h=await host(undefined,undefined,true,'claim-lost');
+ let direct:ReturnType<typeof buildApp>|undefined;
+ try{
+  const first=await h.post();assert.equal(first.statusCode,503,first.body);assert.equal(h.admissionState!.admissions,1);assert.equal(h.admissionState!.claims,1);
+  const next={...h.command,commandId:randomUUID()};
+  const second=await h.post(next);assert.equal(second.statusCode,412,second.body);assert.match(second.body,/NORMAL_START_ORIGIN_PARENT_CURRENT_REQUIRED/);
+  direct=buildApp({},undefined,{repository:h.f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:h.f.root},undefined,undefined,undefined,undefined,null,undefined,undefined,{observe:h.source.observe.bind(h.source),preparation:h.source.preparation});
+  for(const payload of [h.command,next]){
+   const bypass:{statusCode:number;body:string}=await direct.inject({method:'POST',url:'/api/v1/projects/'+h.f.pid+'/commands',payload,headers:{host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+h.f.token,'x-anvil-csrf':h.f.csrf}});
+   assert.equal(bypass.statusCode,412,bypass.body);assert.match(bypass.body,/NORMAL_START_ORIGIN_PARENT_CURRENT_REQUIRED/);
+  }
+  assert.equal(h.admissionState!.admissions,1);assert.equal(h.admissionState!.claims,1);assert.equal(h.preparation.creates,0);assert.equal(h.preparation.handoffs,0);assert.equal(h.observations(),0);
+  for(const name of graphTables)assert.equal(h.f.tables[name]!.length,0,name);
+ }finally{h.admissionState?.close();await direct?.close();await h.app.close();}
 });

@@ -2,6 +2,7 @@ import test from 'node:test';
 import {pathToFileURL} from 'node:url';
 import assert from 'node:assert/strict';
 import {normalInstructionFixture} from './normal-instruction-dispatch-fixture.ts';
+import {prepareNormalStartOriginFixture} from './normal-request-challenge-fixture.ts';
 import {executionStartOriginFixture} from '../FN09/execution-start-origin-fixture.ts';
 import {randomUUID} from 'node:crypto';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
@@ -79,7 +80,8 @@ export async function stopFixture(){
  const source={async observe(scope:any,checkedAt:string){return{scope,registrationRef:reg,checkedAt,expiresAt:f.actor.authSession.idleExpiresAt,writerState:'NONE',stageRef:f.stage.data.snapshot.input.stageRef,demand:{attempts:1,calls:1,spoolBytes:1024,cost:null,costStatus:'VERIFIED_NO_CHARGE'},understandingReviewRef:null,checks:{...Object.fromEntries(Object.entries(evidence).map(([k,evidenceRefs])=>[k,{state:'VERIFIED_CURRENT',evidenceRefs}])),understanding:{state:'NOT_REQUIRED',evidenceRefs:[]}}};}};
  const args:any[]=[{},undefined,{repository:f.access,origin:'https://anvil-synthetic.invalid',artifactRoot:f.root}];args[7]=null;args[10]=source;
  const app=Reflect.apply(buildApp,undefined,args),headers={host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf};
- const startRequest={...f.originCommand(),operation:'queueExecutionCommand',approvalRef:null,payload:{operation:'START_SESSION',executionId:eid,executionGeneration:1,preparationRef:prep.ref,permissionPolicyRef:f.policyRef,budgetPolicyRef:intent.budgetPolicyRef,payload:{contextBundleRef:intent.contextBundleRef,optionsRef:prep.ref}}};
+ const origin=await prepareNormalStartOriginFixture(app,f,eid);
+ const startRequest={...f.originCommand(),operation:'queueExecutionCommand',approvalRef:null,payload:{operation:'START_SESSION',executionId:eid,executionGeneration:1,preparationRef:prep.ref,permissionPolicyRef:f.policyRef,budgetPolicyRef:intent.budgetPolicyRef,payload:{contextBundleRef:intent.contextBundleRef,optionsRef:prep.ref},originParent:{originRef:origin.ref,reservationRef:origin.reservation.ref}}};
  const response=await app.inject({method:'POST',url:'/api/v1/projects/'+f.pid+'/commands',headers,payload:startRequest});assert.equal(response.statusCode,200,response.body);
  const g=f.tables.execution_grants![0]!,start=f.tables.execution_commands![0]!,fact=g.snapshot_json.binding,raw=f.db.query;
  const grantRef={id:g.id,version:g.version,contentHash:g.content_hash};const mode={reads:0,revoked:false};

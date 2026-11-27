@@ -2,6 +2,33 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
+test('normal 원자료 부모 forward는 기존 실행 PK/원 hash를 재사용하고 새 저장·공개 형상 없이 기존 app의 부모 boolean 조회만 연다',()=>{
+ const sql=readFileSync(new URL('../../../db/migrations/0111_normal_start_origin_parent.sql.pending',import.meta.url),'utf8');
+ assert.ok(sql.trim().startsWith('-- FN08:'));
+ assert.match(sql,/BEGIN;[\s\S]*COMMIT;\s*$/);
+ assert.equal((sql.match(/^COMMIT;/gm)??[]).length,1);
+ assert.doesNotMatch(sql,/CREATE TABLE|DISABLE TRIGGER|ALTER FUNCTION.*RENAME|CREATE (?:OR REPLACE )?FUNCTION anvil\.guard_normal_outbox/);
+ for(const token of ['fn111_normal_parent','normal_start_origin_parent_complete','DEFERRABLE INITIALLY DEFERRED',"'originRef','reservationRef'",'FOR SHARE','own_command IS NULL OR e.command_id IS DISTINCT FROM own_command',"'RESERVED_NOT_ISSUED'",'fn09_execution_start_origin_complete(p)','fn09_execution_start_origin_source(p,v,fresh)','CREATE OR REPLACE FUNCTION anvil.fn105_current'])assert.ok(sql.includes(token),token);
+ assert.ok(!sql.includes("v->'observedPolicyRef' IS DISTINCT FROM q#>'{payload,permissionPolicyRef}'"));
+ assert.deepEqual(sql.match(/^GRANT .*$/gm),['GRANT EXECUTE ON FUNCTION anvil.fn111_normal_start_parent_current(uuid,uuid,uuid,uuid,jsonb,text) TO anvil_v3_app;']);
+ assert.ok(sql.includes('FOR SHARE OF auth,u,cl'));assert.ok(sql.includes('FOR UPDATE OF pr FOR SHARE OF m,pc'));
+ assert.ok(sql.includes("cmd.xmin=pg_current_xact_id()::xid"));
+ assert.ok(sql.includes("prior.snapshot_json#>>'{request,payload,executionId}'=o.execution_id::text"));
+ assert.ok(sql.includes("prior.snapshot_json->>'requestHash' IS DISTINCT FROM anvil.execution_json_hash(q)"));
+ assert.ok(sql.includes("least((o.snapshot_json->>'expiresAt')::timestamptz,(o.reservation_json->>'expiresAt')::timestamptz)"));
+ for(const name of ['normal_initial_graph','normal_start_material_complete']){
+  const start=sql.indexOf('CREATE OR REPLACE FUNCTION anvil.'+name+'('),open=sql.indexOf('$$',start),end=sql.indexOf('$$;',open+2),fn=sql.slice(start,end);
+  assert.ok(start>=0&&end>open);
+  assert.match(fn,/IF c\.request_hash IS DISTINCT FROM anvil\.execution_json_hash\(request\) THEN[\s\S]*jsonb_set\(request,'\{payload,originParent\}'/);
+  assert.match(fn,/origin\.credential_id::text=f#>>'\{executionCredentialReservation,id\}'/);
+  assert.match(fn,/sr\.phase='SETTLED'[\s\S]*sr\.part_kind='EXECUTION_START_ORIGIN'/);
+ }
+ const schema=readFileSync(new URL('../../../db/migrations/0017_execution_authority.sql',import.meta.url),'utf8');
+ assert.match(schema,/PRIMARY KEY\(project_id,id,generation\),UNIQUE\(project_id,command_id\)/);
+ const origin=readFileSync(new URL('../../../db/migrations/0081_execution_start_origins.sql.pending',import.meta.url),'utf8');
+ assert.match(origin,/execution_id uuid NOT NULL UNIQUE/);
+});
+
 test('normal 초기 graph와 START 자료는 새 forward에서 기존 0082 경로와 분리한다',()=>{
  const sql=readFileSync(new URL('../../../db/migrations/0083_normal_initial_execution.sql.pending',import.meta.url),'utf8');
  for(const fn of ['normal_queue_authorized','normal_initial_graph','normal_start_material_complete'])

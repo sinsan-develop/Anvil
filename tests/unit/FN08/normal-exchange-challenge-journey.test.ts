@@ -1,28 +1,23 @@
-import test from 'node:test';
+import test,{after,mock} from 'node:test';
+import * as crypto from 'node:crypto';
 import assert from 'node:assert/strict';
-import { createECDH, createPrivateKey, createPublicKey, randomBytes, randomUUID, sign } from 'node:crypto';
+import { createPublicKey, randomBytes, randomUUID } from 'node:crypto';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
 import { executionStartOriginFixture, installExecutionStartOriginMemoryFS } from '../FN09/execution-start-origin-fixture.ts';
 
 await installExecutionStartOriginMemoryFS();
+// 서버가 발급할 exact 시험 ID의 정책이 이미 있는 RAM 오라클이다. 실제 정책발급 순환의 해결 증거는 아니다.
+let originUuid:{executionId:string;calls:number}|undefined;
+const fixedRandomUUID=()=>{const value=randomUUID();return originUuid&&++originUuid.calls===7?originUuid.executionId:value;};
+const cryptoExports={...Object.fromEntries(Object.entries(crypto).filter(([key])=>key!=='default')),randomUUID:fixedRandomUUID};
+const cryptoModule=mock.module('node:crypto',{defaultExport:{...cryptoExports},namedExports:cryptoExports});
+after(()=>{originUuid=undefined;cryptoModule.restore();});
+
 const { buildApp } = await import('../../../apps/server/app.ts');
 const { registrationRef } = await import('../../../apps/server/modules/connections/project-registrations.ts');
 const { executionChallengeRequestBytes } = await import('../../../apps/server/modules/executions/execution-proof.ts');
 const digest = (value: unknown) => contentHash(canonicalJson(value));
 type Fixture = Awaited<ReturnType<typeof executionStartOriginFixture>>;
-
-// 시험 등록의 공개키가 P-256 표준 생성점인지 검산한다. 키 파일을 읽지 않는다.
-function fixtureSigner(spki: string) {
-  const scalar = Buffer.alloc(32);
-  scalar[31] = 1;
-  const curve = createECDH('prime256v1');
-  curve.setPrivateKey(scalar);
-  const point = curve.getPublicKey();
-  const key = createPrivateKey({ format: 'jwk', key: { kty: 'EC', crv: 'P-256',
-    x: point.subarray(1,33).toString('base64url'), y: point.subarray(33).toString('base64url'), d: scalar.toString('base64url') } });
-  assert.equal(createPublicKey(key).export({format:'der',type:'spki'}).toString('base64url'), spki);
-  return key;
-}
 
 // SQL 함수 실행은 별도 검증 범위다. 이 대역의 조회 원본은 앞선 제품 명령이 커밋한 행이다.
 function challengeStore(f: Fixture) {
@@ -116,9 +111,23 @@ test('기존 START 명령이 저장한 실행 세대 1 예약으로 challenge를
   try {
     assert.equal(f.tables.execution_grants!.length,0);
     assert.equal(f.tables.execution_credentials?.length ?? 0,0);
+    const originCommand=f.originCommand();
+    originUuid={executionId,calls:0};
+    const saved=await app.inject({method:'POST',url:'/api/v1/projects/'+f.pid+'/commands',payload:originCommand,headers:{host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf}}).finally(()=>{originUuid=undefined;});
+    assert.equal(saved.statusCode,200,saved.body);const origin=saved.json().data;assert.equal(origin.snapshot.execution.executionId,executionId);
+    const originQuery=f.db.query;
+    f.db.query=(async(sql:string,args:any[]=[])=>{
+      if(sql==='SELECT anvil.fn111_normal_start_parent_current($1,$2,$3,$4,$5::jsonb,$6) AS valid'){
+        assert(f.active());assert.deepEqual(args.slice(0,4),[f.actor.authSession.id,f.actor.actorId,f.actor.clientId,f.pid]);assert.equal(args[5],String(f.modes.tx));
+        const input=JSON.parse(args[4]),q=input.request,p=q.payload;assert.equal(input.purpose,'NORMAL_START_ORIGIN_PARENT_CURRENT');assert.equal(input.mode,'DIRECT');
+        const used=f.tables.executions!.some(row=>row.project_id===f.pid&&row.id===executionId&&f.commands.get(row.command_id)?.command_id!==q.commandId);
+        return{rows:[{valid:p.executionId===executionId&&p.executionGeneration===1&&canonicalJson(p.originParent)===canonicalJson({originRef:origin.ref,reservationRef:origin.reservation.ref})&&!used}]};
+      }
+      return originQuery(sql,args);
+    })as typeof f.db.query;
     const command = {...f.originCommand(),operation:'queueExecutionCommand',approvalRef:null,payload:{operation:'START_SESSION',executionId,
       executionGeneration:1,preparationRef:prep.ref,permissionPolicyRef:f.policyRef,budgetPolicyRef:intent.budgetPolicyRef,
-      payload:{contextBundleRef:intent.contextBundleRef,optionsRef:prep.ref}}};
+      payload:{contextBundleRef:intent.contextBundleRef,optionsRef:prep.ref},originParent:{originRef:origin.ref,reservationRef:origin.reservation.ref}}};
     const created = await app.inject({method:'POST',url:'/api/v1/projects/'+f.pid+'/commands',payload:command,headers:{
       host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf}});
     assert.equal(created.statusCode,200,created.body);
@@ -132,8 +141,9 @@ test('기존 START 명령이 저장한 실행 세대 1 예약으로 challenge를
     const request = {requestId:randomUUID(),purpose:'CREDENTIAL_EXCHANGE',grantRef:result.snapshot.grantRef,
       credentialGeneration:reservation.credential_generation,target:{method:'POST',path:path+'/credential-exchange',queryHash:digest({}),bodyHash:digest({})},
       clientNonce:randomBytes(32).toString('base64url'),issuedAt:store.now().toISOString()};
-    const key = fixtureSigner(registration.connector.public_key_spki);
-    const signature = sign('sha256',executionChallengeRequestBytes('EXECUTION',request),{key,dsaEncoding:'ieee-p1363'}).toString('base64url');
+    const publicKey=createPublicKey({key:Buffer.from(registration.connector.public_key_spki,'base64url'),format:'der',type:'spki'});
+    assert.equal(publicKey.asymmetricKeyDetails?.namedCurve,'prime256v1');
+    const signature = f.signConnectorBytes(executionChallengeRequestBytes('EXECUTION',request));
     const post = () => app.inject({method:'POST',url:path+'/challenges',payload:{...request,signature}});
     const first = await post(), replay = await post();
     assert.equal(first.statusCode,200,first.body);

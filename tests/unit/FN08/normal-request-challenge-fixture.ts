@@ -1,15 +1,44 @@
 import assert from 'node:assert/strict';
+import {after,mock} from 'node:test';
+import * as crypto from 'node:crypto';
 import inject from 'light-my-request';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
 import { executionStartOriginFixture, installExecutionStartOriginMemoryFS } from '../FN09/execution-start-origin-fixture.ts';
 
 await installExecutionStartOriginMemoryFS();
+// 서버가 발급할 exact 시험 ID의 정책이 이미 있는 RAM 오라클이다. 실제 정책발급 순환의 해결 증거는 아니다.
+let originUuid:{executionId:string;calls:number}|undefined;
+const fixedRandomUUID=()=>{const value=randomUUID();return originUuid&&++originUuid.calls===7?originUuid.executionId:value;};
+const cryptoExports={...Object.fromEntries(Object.entries(crypto).filter(([key])=>key!=='default')),randomUUID:fixedRandomUUID};
+const cryptoModule=mock.module('node:crypto',{defaultExport:{...cryptoExports},namedExports:cryptoExports});
+after(()=>{originUuid=undefined;cryptoModule.restore();});
+
 const { buildApp } = await import('../../../apps/server/app.ts');
 const { registrationRef } = await import('../../../apps/server/modules/connections/project-registrations.ts');
 const { executionChallengeRequestBytes, executionProofBytes } = await import('../../../apps/server/modules/executions/execution-proof.ts');
 export const digest = (value: unknown) => contentHash(canonicalJson(value));
 type Fixture = Awaited<ReturnType<typeof executionStartOriginFixture>>;
+
+/** 같은 발급기/UUID 오라클/보호 부모 판독만 재사용한다. 실제 실행·CURRENT 근거를 생산하지 않는다. */
+export async function prepareNormalStartOriginFixture(app:ReturnType<typeof buildApp>,f:Fixture,executionId:string){
+    const originCommand=f.originCommand();
+    originUuid={executionId,calls:0};
+    const saved=await app.inject({method:'POST',url:'/api/v1/projects/'+f.pid+'/commands',payload:originCommand,headers:{host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf}}).finally(()=>{originUuid=undefined;});
+    assert.equal(saved.statusCode,200,saved.body);const origin=saved.json().data;assert.equal(origin.snapshot.execution.executionId,executionId);
+    const originQuery=f.db.query;
+    f.db.query=(async(sql:string,args:any[]=[])=>{
+      if(sql==='SELECT anvil.fn111_normal_start_parent_current($1,$2,$3,$4,$5::jsonb,$6) AS valid'){
+        assert(f.active());assert.deepEqual(args.slice(0,4),[f.actor.authSession.id,f.actor.actorId,f.actor.clientId,f.pid]);assert.equal(args[5],String(f.modes.tx));
+        const input=JSON.parse(args[4]),q=input.request,p=q.payload;assert.equal(input.mode,'DIRECT');
+        const used=f.tables.executions!.some(row=>row.project_id===f.pid&&row.id===executionId&&f.commands.get(row.command_id)?.command_id!==q.commandId);
+        return{rows:[{valid:p.executionId===executionId&&p.executionGeneration===1&&canonicalJson(p.originParent)===canonicalJson({originRef:origin.ref,reservationRef:origin.reservation.ref})&&!used}]};
+      }
+      return originQuery(sql,args);
+    })as typeof f.db.query;
+    return origin;
+}
+
 
 // SQL 함수 실행은 별도 검증 범위다. 이 대역의 조회 원본은 앞선 제품 명령이 커밋한 행이다.
 export type PageSqlAdapter=(sql:string,args:any[],ctx:{f:Fixture,drafts:any[],issued:any[]})=>{rows:any[];rowCount?:number}|undefined;
@@ -169,9 +198,10 @@ export async function journey(pages?:{sql:PageSqlAdapter; cursors:import('../../
   try {
     assert.equal(f.tables.execution_grants!.length,0);
     assert.equal(f.tables.execution_credentials?.length ?? 0,0);
+    const origin=await prepareNormalStartOriginFixture(app,f,executionId);
     const command = {...f.originCommand(),operation:'queueExecutionCommand',approvalRef:null,payload:{operation:'START_SESSION',executionId,
       executionGeneration:1,preparationRef:prep.ref,permissionPolicyRef:f.policyRef,budgetPolicyRef:intent.budgetPolicyRef,
-      payload:{contextBundleRef:intent.contextBundleRef,optionsRef:prep.ref}}};
+      payload:{contextBundleRef:intent.contextBundleRef,optionsRef:prep.ref},originParent:{originRef:origin.ref,reservationRef:origin.reservation.ref}}};
     const created = await app.inject({method:'POST',url:'/api/v1/projects/'+f.pid+'/commands',payload:command,headers:{
       host:'anvil-synthetic.invalid',origin:'https://anvil-synthetic.invalid',cookie:'__Host-anvil.sid='+f.token,'x-anvil-csrf':f.csrf}});
     assert.equal(created.statusCode,200,created.body);

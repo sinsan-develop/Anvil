@@ -20,6 +20,8 @@ import {ResponsibleSessions} from '../assignments/responsible-sessions.ts';
 import {compileExecutionPreparationOptions} from './preparation-input.ts';
 import {authorizeRuntimePolicy} from './runtime-policy.ts';
 import {ProjectExecutionBudget,readExecutionBudgetClaim} from './execution-budget.ts';
+import {ExecutionStartOriginStore} from './execution-start-origin-store.ts';
+import {ProjectStageQueue} from '../scheduling/stage-queue.ts';
 
 const digest=(v:unknown)=>contentHash(canonicalJson(v));
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
@@ -31,6 +33,7 @@ type RequestScope=NormalStartPreparationScope;
 /** 서버가 구성한 보호 관측 공급자. HTTP에는 이 인터페이스나 관측 입력을 노출하지 않는다. */
 export interface NormalExecutionCurrentSource {
   observe(scope:Readonly<RequestScope>,observedAt:string,signal:AbortSignal):Promise<unknown>;
+  /** 기존 원 시도 내부 port다. process-local 소진을 재시작 durable 보장이나 실제 physical producer 권위로 승격하지 않는다. */
   preparation?:NormalStartPreparationPort;
   /** admission 경로의 preparation port는 이미 확보된 객체의 순수 인수만 맡는다. physical 생성 producer는 아직 미연결이다. */
   preparationAdmission?:NormalStartPreparationAdmissionOptions;
@@ -97,13 +100,47 @@ function requireObservation(value:unknown,scope:RequestScope,now:number) {
 function checkedInput(request:ProjectCommand){
   const p=request.payload;
   if(request.operation!=='queueExecutionCommand'||request.targetId!==null||request.expectedVersion!==0||request.approvalRef!==null
-    ||request.baselineRefs.length||!recordV1(p,['operation','executionId','executionGeneration','preparationRef','permissionPolicyRef','budgetPolicyRef','payload'])
+    ||request.baselineRefs.length||!(recordV1(p,['operation','executionId','executionGeneration','preparationRef','permissionPolicyRef','budgetPolicyRef','payload'])
+      ||recordV1(p,['operation','executionId','executionGeneration','preparationRef','permissionPolicyRef','budgetPolicyRef','payload','originParent']))
 ||p.operation!=='START_SESSION'||!uuidV1(p.executionId)||typeof p.executionGeneration!=='number'||!Number.isSafeInteger(p.executionGeneration)||p.executionGeneration<1
     ||!refV1(p.preparationRef)||!refV1(p.permissionPolicyRef)||!refV1(p.budgetPolicyRef)||!recordV1(p.payload,['contextBundleRef','optionsRef'])
     ||!refV1(p.payload.contextBundleRef)||!refV1(p.payload.optionsRef)||!same(p.preparationRef,p.payload.optionsRef)
-    ||same(p.preparationRef,p.payload.contextBundleRef))return reject('NORMAL_START_INPUT_INVALID',422);
+    ||same(p.preparationRef,p.payload.contextBundleRef)
+    ||Object.hasOwn(p,'originParent')&&(!recordV1(p.originParent,['originRef','reservationRef'])||!refV1(p.originParent.originRef)||!refV1(p.originParent.reservationRef)))return reject('NORMAL_START_INPUT_INVALID',422);
   return {executionId:p.executionId,executionGeneration:p.executionGeneration,preparationRef:p.preparationRef,permissionPolicyRef:p.permissionPolicyRef,
-    budgetPolicyRef:p.budgetPolicyRef,payload:{contextBundleRef:p.payload.contextBundleRef,optionsRef:p.payload.optionsRef}};
+    budgetPolicyRef:p.budgetPolicyRef,payload:{contextBundleRef:p.payload.contextBundleRef,optionsRef:p.payload.optionsRef},
+    originParent:Object.hasOwn(p,'originParent')?cloneV1(p.originParent) as {originRef:Ref;reservationRef:Ref}:undefined};
+}
+/** 원 S/Q는 부모의 저장 증거다. 새 credential·writer·OS/현재 실행 허가로 사용하지 않는다. */
+async function originParent(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,p:ReturnType<typeof checkedInput>,basis?:Awaited<ReturnType<typeof protectedBasis>>,fresh=basis!==undefined,mode:'DIRECT'|'ADMISSION'|'QUEUE'='DIRECT'){
+  if(!p.originParent)return reject('NORMAL_START_ORIGIN_PARENT_REQUIRED',422);
+  const stored=await new ExecutionStartOriginStore().read(db,request.projectId,p.originParent.originRef.id,p.originParent.originRef.version);
+  const {ref,snapshot:s,reservation}=stored.value;
+  if(!same(ref,p.originParent.originRef)||!same(reservation.ref,p.originParent.reservationRef)
+    ||s.execution.executionId!==p.executionId||s.execution.executionGeneration!==p.executionGeneration
+    ||!same(s.preparationRef,p.preparationRef)||!same(s.contextBundleRef,p.payload.contextBundleRef)||!same(s.budgetPolicyRef,p.budgetPolicyRef)
+    ||s.subject.userId!==actor.actorId||s.subject.clientId!==actor.clientId||s.subject.controlGeneration!==request.controlGeneration)
+    return reject('NORMAL_START_ORIGIN_PARENT_MISMATCH',409);
+  if(fresh&&(s.subject.humanSessionId!==actor.authSession?.id||s.subject.credentialGeneration!==actor.credentialGeneration
+      ||Math.min(Date.parse(s.expiresAt),Date.parse(reservation.snapshot.expiresAt))<=(await clock(db)).getTime()))return reject('NORMAL_START_ORIGIN_PARENT_MISMATCH',409);
+  if(fresh){
+    let rows:{valid?:unknown}[];
+    try{
+      rows=(await db.query('SELECT anvil.fn111_normal_start_parent_current($1,$2,$3,$4,$5::jsonb,$6) AS valid',
+        [actor.authSession!.id,actor.actorId,actor.clientId,request.projectId,canonicalJson({purpose:'NORMAL_START_ORIGIN_PARENT_CURRENT',mode,request}),await xid(db)])).rows;
+    }catch{return reject('NORMAL_START_ORIGIN_PARENT_CURRENT_REQUIRED',503);}
+    if(rows.length!==1||rows[0]?.valid!==true)return reject('NORMAL_START_ORIGIN_PARENT_CURRENT_REQUIRED');
+  }
+  if(basis){
+    const i=basis.intent;
+    if(!same(s.assignmentRef,i.assignmentRef)||!same(s.roleBindingRef,i.roleBindingRef)||!same(s.sessionBindingRef,basis.sessionRef)
+      ||!same(s.connectionRef,i.connectionRef)||!same(s.environmentRef,i.environmentRef)||!same(s.sourceScopes,i.sourceScopes)
+      ||!same(s.basisRefs,basis.basisRefs)||!same(s.latestInstructionRefs,basis.latestInstructionRefs))return reject('NORMAL_START_ORIGIN_PARENT_MISMATCH',409);
+    const stage=await new ProjectStageQueue().readRequest(db,actor,request.projectId,s.stageRequestRef);
+    if(!same(stage.ref,s.stageRequestRef)||!same(stage.currentRef,s.stageRequestRef)||stage.currentState!=='WAITING'
+      ||!same(stage.snapshot.input.startNodeRef,basis.stageRef))return reject('NORMAL_START_ORIGIN_NOT_WAITING',409);
+  }
+  return stored;
 }
 async function clock(db:PoolClient) {
   const at=(await db.query('SELECT clock_timestamp() AS at')).rows[0]?.at;
@@ -163,7 +200,10 @@ export class NormalInitialExecution {
     await currentProjectController(db,actor,request);
     // 이미 정착한 원 명령의 재확인은 기존 queue replay가 최종 검산한다. 새 물리 준비/claim은 없다.
     if(await projectReplay(db,actor,request)!==undefined)return null;
-    const p=checkedInput(request),basis=await protectedBasis(db,actor,request,this.#readers,p),intent=basis.intent;
+    const p=checkedInput(request);
+    await originParent(db,actor,request,p,undefined,true,'ADMISSION');
+    const basis=await protectedBasis(db,actor,request,this.#readers,p),intent=basis.intent;
+    const parent=await originParent(db,actor,request,p,basis,true,'ADMISSION');
     if(intent.mode!=='CONTEXT_REVIEW')return null;
     if(intent.sourceScopes.some(s=>s.targets.some(t=>t.access!=='READ')))return reject();
     const args={executionId:p.executionId,executionGeneration:p.executionGeneration,permissionPolicyRef:p.permissionPolicyRef,budgetPolicyRef:p.budgetPolicyRef,sourceScopes:intent.sourceScopes};
@@ -176,7 +216,7 @@ export class NormalInitialExecution {
      ||!reg.credential.expiresAt||!isoV1(reg.credential.expiresAt)||!hashV1(reg.observedHostFingerprint)
      ||reg.observedHostFingerprint!==reg.expectedHostFingerprint)return reject();
     const at=await clock(db),until=Math.min(at.getTime()+10000,Date.parse(auth.idleExpiresAt),Date.parse(auth.absoluteExpiresAt),
-     Date.parse(reg.expiresAt),Date.parse(reg.credential.expiresAt),...policies.map(v=>v!.validUntil));
+     Date.parse(reg.expiresAt),Date.parse(reg.credential.expiresAt),Date.parse(parent.value.snapshot.expiresAt),Date.parse(parent.value.reservation.snapshot.expiresAt),...policies.map(v=>v!.validUntil));
     if(until<=at.getTime()||!this.#configuration())return reject();
     return{registrationRef:reg.registrationRef,connectorRef:reg.connectorRef,expiresAt:new Date(until).toISOString()};
   }
@@ -193,6 +233,8 @@ export class NormalInitialExecution {
       if(!auth||!isoV1(auth.idleExpiresAt)||!isoV1(auth.absoluteExpiresAt))return reject();
       await currentProjectController(db,actor,request);
       const previous=await projectReplay(db,actor,request);
+      if(previous===undefined&&!p.originParent)return reject('NORMAL_START_ORIGIN_PARENT_REQUIRED',422);
+      if(previous===undefined)await originParent(db,actor,request,p,undefined,true,admitted?'QUEUE':'DIRECT');
       let originalIntent:ReturnType<typeof readExecutionIntentV1>|undefined;
       if(previous!==undefined){
         const q=previous?.data?.snapshot,g=q?.grantRef;
@@ -200,6 +242,14 @@ export class NormalInitialExecution {
         const rows=(await db.query('SELECT snapshot_json FROM anvil.execution_grants WHERE project_id=$1::uuid AND id=$2::uuid AND version=$3::bigint AND content_hash=$4::text LIMIT 2',[pid,g.id,g.version,g.contentHash])).rows;
         const grant=rows.length===1?rows[0]?.snapshot_json:null,f=grant?.binding;
         if(!grant||digest(grant)!==g.contentHash||grant.transport!==PRESENT||grant.factHash!==digest(f)||f?.projectId!==pid||f.executionId!==p.executionId||f.executionGeneration!==p.executionGeneration||!same(f.preparationRef,p.preparationRef)||!same(q.payload,p.payload))return reject('IDEMPOTENCY_CONFLICT',409);
+        if(p.originParent){
+          await originParent(db,actor,request,p);
+          const executions=await db.query('SELECT c.id AS command_id FROM anvil.executions e JOIN anvil.commands c ON c.project_id=e.project_id AND c.id=e.command_id WHERE e.project_id=$1 AND e.id=$2 AND e.generation=$3 AND c.command_id=$4 AND c.actor_id=$5 AND c.client_id=$6 AND c.request_hash=$7 AND c.result_ref=$8::jsonb',
+            [pid,p.executionId,p.executionGeneration,request.commandId,actor.actorId,actor.clientId,digest(request),canonicalJson(previous)]);
+          if(executions.rows.length!==1||!uuidV1(executions.rows[0]?.command_id))return reject('NORMAL_START_ORIGIN_PARENT_INTEGRITY_FAILED',503);
+          const complete=await db.query('SELECT anvil.normal_start_material_complete($1,$2) AS complete',[pid,executions.rows[0].command_id]);
+          if(complete.rows.length!==1||complete.rows[0]?.complete!==true)return reject('NORMAL_START_ORIGIN_PARENT_INTEGRITY_FAILED',503);
+        }
         originalIntent=readExecutionIntentV1(f.intent);
         const stored=await this.#readers.preparations.read(db,actor,pid,p.preparationRef.id,p.preparationRef.version);
         const {connectionKind:_,optionsFormat:__,...intent}=stored.snapshot.intent;
@@ -210,12 +260,18 @@ export class NormalInitialExecution {
           await check();await readNormalWorkStartReplay(db,actor,request,stored.snapshot.understandingBasis);await check();
           return previous;
         }
+        if(p.originParent){
+          const check=async()=>{await currentProjectController(db,actor,request);for(const operation of ['authorizeExecution','queueExecutionCommand'])await authorizeRuntimePolicy(db,actor,{...request,operation},{executionId:p.executionId,executionGeneration:p.executionGeneration,permissionPolicyRef:p.permissionPolicyRef,budgetPolicyRef:p.budgetPolicyRef,sourceScopes:originalIntent!.sourceScopes});};
+          await check();return previous;
+        }
       }
       const scope:RequestScope={requestHash:digest(request),transactionId:await xid(db),projectId:pid,
         executionId:p.executionId,executionGeneration:p.executionGeneration,preparationRef:p.preparationRef,
         contextBundleRef:p.payload.contextBundleRef,actorId:actor.actorId,clientId:actor.clientId,humanSessionId:auth.id,
         controlGeneration:request.controlGeneration,credentialGeneration:actor.credentialGeneration};
       const read=()=>protectedBasis(db,actor,request,this.#readers,p),basis=await read(),{intent}=basis;
+      const parent=previous===undefined?await originParent(db,actor,request,p,basis,true,admitted?'QUEUE':'DIRECT'):undefined;
+      const parentUntil=parent?Math.min(Date.parse(parent.value.snapshot.expiresAt),Date.parse(parent.value.reservation.snapshot.expiresAt)):Infinity;
       await admitted?.verifyQueue(db,actor,request,basis.host);
       if(previous===undefined&&intent.mode==='WORK'&&(!basis.understandingBasis||!refV1(basis.understandingBasis.reviewRef)||basis.understandingBasis.scope.executionId===p.executionId))return reject('WORK_START_UNDERSTANDING_REQUIRED');
       const policyArgs={executionId:p.executionId,executionGeneration:p.executionGeneration,
@@ -245,8 +301,10 @@ export class NormalInitialExecution {
       if(this.#attempts&&intent.mode==='CONTEXT_REVIEW'){
         if(intent.sourceScopes.some(s=>s.targets.some(t=>t.access!=='READ')))return reject();
         await checkTx();const registered=await readRegistration(basis.host.registrationRef),at=await clock(db);
-        const until=Math.min(at.getTime()+10000,...(admitted?[Date.parse(admitted.expiresAt)]:[]),Date.parse(auth.idleExpiresAt),Date.parse(auth.absoluteExpiresAt),registered.until,...initialPolicies.map(v=>v!.validUntil));
-        await checkTx();if(until<=at.getTime())return reject();
+        const until=Math.min(at.getTime()+10000,parentUntil,...(admitted?[Date.parse(admitted.expiresAt)]:[]),Date.parse(auth.idleExpiresAt),Date.parse(auth.absoluteExpiresAt),registered.until,...initialPolicies.map(v=>v!.validUntil));
+        await checkTx();
+        const creatingAt=await clock(db);
+        if(db.query!==originalQuery||until<=Math.max(creatingAt.getTime(),Date.now()))return reject();
         preparing=true;
         held=await this.#attempts.create({purpose:'NORMAL_START_PREPARATION_V1',commandId:request.commandId,scope,
           connectorRef:basis.host.connectorRef,registrationRef:basis.host.registrationRef,createdAt:at.toISOString(),expiresAt:new Date(until).toISOString()});
@@ -362,10 +420,12 @@ export class NormalInitialExecution {
       const currentBudget=await budgets.checkDelivery(db,identity,pid,b.ref);
       if(!same(currentBudget.record,b))return reject();
       const final=await inspect();
+      const finalParent=await originParent(db,identity,request,p,await read(),true,admitted?'QUEUE':'DIRECT');
+      if(!same(finalParent.value,parent.value))return reject('NORMAL_START_ORIGIN_PARENT_MISMATCH',409);
       await checkTx();
       const closingTime=(await clock(db)).getTime();
       requireObservation(final,scope,closingTime);
-      if(Date.parse(final.expiresAt)<until||closingTime>=until)return reject();
+      if(Date.parse(final.expiresAt)<until||closingTime>=until||closingTime>=parentUntil)return reject();
       if(held){held.beforeCommit();bodyCompleted=true;}
       return receipt.result;
     });
