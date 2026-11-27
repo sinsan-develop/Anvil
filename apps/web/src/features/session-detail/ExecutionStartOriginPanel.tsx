@@ -19,10 +19,14 @@ export function ExecutionStartOriginPanel({client,assignment,session,storage,onU
  const hintRef=useRef({receipt:waitingHint});
  if(hintRef.current.receipt!==waitingHint)hintRef.current={receipt:waitingHint};
  const hint=hintRef.current;
- const [busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[targets,setTargets]=useState<{owner:typeof owner;hint?:typeof hint;queue:QueueView;preparations:PreparationHistoryPage;bindings:ResponsibleSessionState}|null>(null),[selection,setSelection]=useState<{owner:typeof owner;stage:string;preparation:string;binding:string;reason:string}|null>(null),[original,setOriginal]=useState<{owner:typeof owner;value:OriginView;revision:number}|null>(null),[history,setHistory]=useState<{owner:typeof owner;value:OriginPage}|null>(null),[ack,setAck]=useState(false);
+ const pageRoute=useRef(0);
+ const pageScope=()=>({route:typeof location==='undefined'?'':location.hash,epoch:pageRoute.current});
+ const [busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[targets,setTargets]=useState<{owner:typeof owner;hint?:typeof hint;queue:QueueView;preparations:PreparationHistoryPage;bindings:ResponsibleSessionState;cursors:string[];pageScope:ReturnType<typeof pageScope>}|null>(null),[selection,setSelection]=useState<{owner:typeof owner;stage:string;preparation:string;binding:string;reason:string}|null>(null),[original,setOriginal]=useState<{owner:typeof owner;value:OriginView;revision:number}|null>(null),[history,setHistory]=useState<{owner:typeof owner;value:OriginPage}|null>(null),[ack,setAck]=useState(false);
  const originalRevision=useRef(0);
  const clearOriginal=()=>{originalRevision.current++;setOriginal(null);};
  useLayoutEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
+ // 명시 목록 조회의 페이지 연속성만 지킨다. 전달된 주소 왕복도 이전 cursor의 소유를 끝낸다.
+ useLayoutEffect(()=>{const depart=()=>{pageRoute.current++;};globalThis.addEventListener?.('hashchange',depart);return()=>globalThis.removeEventListener?.('hashchange',depart);},[]);
  useEffect(()=>{setOriginal(null);setTargets(null);setHistory(null);setSelection(null);setError(null);setAck(false);},[owner]);
  const active=()=>live.current&&scope.current===owner&&client.transport===owner.transport&&originBufferKey(session,pid,assignment.ref)===owner.key&&session.csrfToken===owner.csrf&&(!isSourceCurrent||isSourceCurrent());
  const hintCurrent=()=>active()&&hintRef.current===hint;
@@ -30,23 +34,39 @@ export function ExecutionStartOriginPanel({client,assignment,session,storage,onU
  const detail=original?.owner===owner&&original.revision===originalRevision.current?original:null;
  const shown=detail?.value,list=history?.owner===owner?history.value:null,data=targets?.owner===owner&&(!targets.hint||targets.hint===hint)?targets:null,input=selection?.owner===owner?selection:null,locked=!!buffer?.packet;
  const preparationChoice=useRef({data,input});preparationChoice.current={data,input};
+ const appliedPage=useRef<{data:typeof data;cursor:string}|null>(null);
  const failure=(cause:unknown)=>{const e=cause instanceof ApiError?cause:new ApiError('EXECUTION_START_ORIGIN_RESPONSE_INVALID');if(active()){clearOriginal();setError(/^[A-Z_]{1,80}$/.test(e.code)?e.code:'EXECUTION_START_ORIGIN_RESPONSE_INVALID');if([401,403,404].includes(e.status)){setTargets(null);setHistory(null);unavailable.current(e.status===401?'AUTH_REQUIRED':e.code);}}return e;};
  async function run(work:()=>Promise<void>,isCurrent=active){if(working.current||!isCurrent())return;working.current=true;setBusy(true);setError(null);try{await work();}catch(e){if(isCurrent())failure(e);}finally{working.current=false;if(live.current)setBusy(false);}}
- async function choose(){await run(async()=>{clearOriginal();setTargets(null);const [queue,preparations,bindings]=await Promise.all([readStageQueue(client,pid,active),readPreparationHistoryPage(client,pid,assignment.ref,null,active),readResponsibleSessionState(client,assignment)]);if(!active()||!queue||!preparations)return;setTargets({owner,queue,preparations,bindings});setSelection({owner,stage:'',preparation:'',binding:'',reason:''});});}
+ async function choose(){await run(async()=>{clearOriginal();setTargets(null);appliedPage.current=null;const source=pageScope();const [queue,preparations,bindings]=await Promise.all([readStageQueue(client,pid,active),readPreparationHistoryPage(client,pid,assignment.ref,null,active),readResponsibleSessionState(client,assignment)]);if(!active()||!queue||!preparations)return;setTargets({owner,queue,preparations,bindings,cursors:[],pageScope:source});setSelection({owner,stage:'',preparation:'',binding:'',reason:''});});}
  async function chooseHint(){
   const receipt=hint.receipt;
   if(!receipt||locked)return;
   await run(async()=>{
-   clearOriginal();setTargets(null);setSelection(null);
+   clearOriginal();setTargets(null);setSelection(null);appliedPage.current=null;
+   const source=pageScope();
    const queue=await readStageQueue(client,pid,hintCurrent);
    if(!hintCurrent()||!queue)return;
    const item=verifiedStageQueueItem(queue,receipt);
    if(!item)throw new ApiError('STAGE_START_QUEUE_NOT_FOUND',409);
    const [preparations,bindings]=await Promise.all([readPreparationHistoryPage(client,pid,assignment.ref,null,hintCurrent),readResponsibleSessionState(client,assignment)]);
    if(!hintCurrent()||!preparations)return;
-   setTargets({owner,hint,queue:{...queue,items:[item]},preparations,bindings});
+   setTargets({owner,hint,queue:{...queue,items:[item]},preparations,bindings,cursors:[],pageScope:source});
    setSelection({owner,stage:item.requestRef.id,preparation:'',binding:'',reason:''});
   },hintCurrent);
+ }
+ async function previousPreparations(){
+  if(!data||!input||locked||!data.preparations.nextCursor)return;
+  const cursor=data.preparations.nextCursor;
+  if(appliedPage.current?.data===data&&appliedPage.current.cursor===cursor)return;
+  const isCurrent=()=>(data.hint?hintCurrent():active())&&current.current===buffer&&preparationChoice.current.data===data&&preparationChoice.current.input===input&&same(data.pageScope,pageScope());
+  await run(async()=>{
+   if(data.cursors.includes(cursor))throw new ApiError('PREPARATION_HISTORY_RESPONSE_INVALID');
+   const page=await readPreparationHistoryPage(client,pid,assignment.ref,cursor,isCurrent);
+   if(!isCurrent()||!page)return;
+   if(page.items.some(item=>data.preparations.items.some(prior=>prior.ref.id===item.ref.id))||page.nextCursor!==null&&(page.nextCursor===cursor||data.cursors.includes(page.nextCursor)))throw new ApiError('PREPARATION_HISTORY_RESPONSE_INVALID');
+   appliedPage.current={data,cursor};
+   setTargets({...data,preparations:{...page,items:[...data.preparations.items,...page.items]},cursors:[...data.cursors,cursor]});
+  },isCurrent);
  }
  function edit(field:'stage'|'preparation'|'binding'|'reason',value:string){if(!input||locked||working.current||!active()||preparationChoice.current.input!==input)return;setSelection({...input,[field]:value});clearOriginal();setAck(false);}
  async function prepare(){
@@ -83,6 +103,7 @@ export function ExecutionStartOriginPanel({client,assignment,session,storage,onU
   {waitingHint?<button type="button" disabled={busy||locked} onClick={()=>void chooseHint()}>이 영수증의 대기 요청 원장에서 확인·선택</button>:null}
   <button type="button" disabled={busy||locked} onClick={()=>void choose()}>원자료 선택 목록 조회</button>
   {data&&input?<fieldset disabled={busy||locked}><label>대기 요청<select aria-label="대기 요청" value={input.stage} onChange={e=>edit('stage',e.target.value)}><option value="">명시 선택</option>{data.queue.items.map(v=><option key={v.requestRef.id} value={v.requestRef.id}>요청 {v.sequence} · {v.requestRef.id} · 임무 연결 미검산</option>)}</select></label><label>등록 준비<select aria-label="등록 준비" value={input.preparation} onChange={e=>edit('preparation',e.target.value)}><option value="">명시 선택</option>{data.preparations.items.map(v=><option key={v.ref.id} value={v.ref.id}>{v.mode} · {v.ref.id}</option>)}</select></label><label>책임 예약<select aria-label="책임 예약" value={input.binding} onChange={e=>edit('binding',e.target.value)}><option value="">명시 선택</option>{data.bindings.bindings.filter(v=>v.snapshot.connectionKind==='REGISTERED_DEFINITION'&&same(v.snapshot.assignmentRef,assignment.ref)).map(v=><option key={v.ref.id} value={v.ref.id}>{v.ref.id} · 논리 세션 예약</option>)}</select></label><label>기록 이유<textarea aria-label="기록 이유" value={input.reason} onChange={e=>edit('reason',e.target.value)}/></label><button type="button" onClick={()=>void prepare()}>등록 준비 고정</button></fieldset>:null}
+  {data?.preparations.nextCursor?<button type="button" disabled={busy||locked} onClick={()=>void previousPreparations()}>이전 등록 준비 조회</button>:null}
   {buffer?.packet?<div><p>원 명령 {buffer.packet.command.commandId} · 상태 {buffer.phase}</p>{buffer.phase==='PREPARED'?<><label><input type="checkbox" checked={ack} onChange={e=>setAck(e.target.checked)}/>선택 원자료의 비실행 저장을 확인했습니다</label><button type="button" disabled={busy||!ack} onClick={()=>void save()}>원자료 명시 저장</button></>:null}{buffer.phase==='UNKNOWN'?<p role="status">결과 불명 · 원 명령·본문 보존 · 새 저장을 보내지 않습니다. 보호 이력에서 확인하세요.</p>:null}{buffer.receipt?<><p>확정 receipt 보존 · {buffer.receipt.data.ref.id}</p><button type="button" disabled={busy} onClick={()=>void reread()}>저장 원문 다시 조회</button></>:null}</div>:null}
   <button type="button" disabled={busy} onClick={()=>void page(null)}>보호 이력 조회</button>{list?<div><ul>{list.items.map(v=><li key={v.ref.id}><button type="button" disabled={busy} onClick={()=>void open(v.ref)}>{v.recordedAt} · {v.ref.id} 원문 조회</button></li>)}</ul>{list.nextCursor?<button type="button" disabled={busy} onClick={()=>void page(list.nextCursor)}>이전 이력</button>:null}{!list.items.length?<p>저장된 원자료 없음</p>:null}</div>:null}
   {busy?<p role="status">원 보호 자료 확인 중</p>:null}{error?<p role="alert">{error}</p>:null}{detail&&shown?<article aria-label="START 원자료 보호 원문"><h4>원자료 저장 · credential 미발급</h4><p>실행 {shown.snapshot.execution.executionId} · 원자료 {shown.ref.id} · SHA {shown.ref.contentHash}</p><p>기록 이유: {shown.snapshot.reason}</p><p>원 기한 {shown.snapshot.expiresAt} · 현재 실행 상태 미검산</p><ul>{shown.snapshot.unresolvedChecks.map((v:string)=><li key={v}>{v}</li>)}</ul>

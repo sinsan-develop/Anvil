@@ -462,6 +462,163 @@ async function selectOriginSources(q:Awaited<ReturnType<typeof mountApp>>){
  await q.change('기록 이유','대기 원자료의 최신 대조');
 }
 
+/** 기존 저장기를 통과한 행만 사용한다. 검토 근거 RPC는 기존 계약의 RAM 모델이며 실제 판단/실행 권위가 아니다. */
+async function pagedOriginPreparations(q:Awaited<ReturnType<typeof mountApp>>){
+ const f=q.f,base=f.preparation.data.snapshot,query=f.db.query;
+ const basis={kind:'NORMAL_UNDERSTANDING_WORK_BASIS',scope:{projectId:f.pid,executionId:exampleRef(301).id,executionGeneration:1},reviewRef:exampleRef(302),preparationRef:f.preparation.data.ref,
+  assignmentRef:base.intent.assignmentRef,roleBindingRef:base.intent.roleBindingRef,agentSessionRef:exampleRef(303),contextBundleRef:base.intent.contextBundleRef,
+  connectionRef:base.intent.connectionRef,environmentRef:base.intent.environmentRef,responseRef:exampleRef(304),requestRef:exampleRef(305),basisRefs:base.basisRefs,latestInstructionRefs:base.latestInstructionRefs};
+ f.db.query=async(sql:string,a:any[]=[])=>{
+  if(sql==='SELECT txid_current()::text AS tx')return{rows:[{tx:String(f.modes.tx)}]};
+  if(sql==='SELECT clock_timestamp() AS at,txid_current()::text AS tx'){const r=await query('SELECT clock_timestamp() AS at');return{rows:[{at:r.rows[0]!.at,tx:String(f.modes.tx)}]};}
+  if(sql==='SELECT anvil.fn09_normal_understanding_metadata_current($1,$2,$3,$4,$5,$6) AS projection'){
+   assert(f.active());assert.deepEqual(a.slice(0,3),[f.actor.authSession.id,f.uid,f.cid]);assert.equal(a[5],String(f.modes.tx));
+   const selection=JSON.parse(a[3]);
+   if(selection.purpose==='WORK_PREPARATION_HISTORY'){
+    const row=f.tables.preparations!.find(r=>r.project_id===f.pid&&r.id===selection.preparationRef.id&&r.version===selection.preparationRef.version&&r.content_hash===selection.preparationRef.contentHash);
+    assert(row);assert.deepEqual(row.snapshot_json.understandingBasis,basis);return{rows:[{projection:{status:'WORK_PREPARATION_HISTORY',basis:row.snapshot_json.understandingBasis}}]};
+   }
+   assert.equal(selection.purpose,'WORK_PREPARATION_BASIS');assert.deepEqual(selection.command.payload.understandingReviewRef,basis.reviewRef);
+   const at=(await query('SELECT clock_timestamp() AS at')).rows[0]!.at;
+   return{rows:[{projection:{status:'WORK_PREPARATION_BASIS',basis,checkedAt:at.toISOString(),expiresAt:new Date(at.getTime()+20000).toISOString()}}]};
+  }
+  return query(sql,a);
+ };
+ const save=async(work:boolean)=>{
+  f.advance(1);
+  const request={schemaVersion:1 as const,projectId:f.pid,commandId:originalUuid(),clientId:f.cid,controlGeneration:1,operation:'prepareExecution',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,
+   payload:{...base.intent,mode:work?'WORK':'CONTEXT_REVIEW',reason:'페이지 원자료 검산',...(work?{understandingReviewRef:basis.reviewRef}:{})}};
+  const csrf=createHmac('sha256',Buffer.alloc(32,7)).update('csrf:'+f.token).digest('base64url');
+  return f.access.authenticated(f.token,csrf,(db,actor)=>f.preparations.save(db,actor,request,f.policyRef));
+ };
+ const work:any=await save(true);
+ for(let i=0;i<20;i++)await save(false);
+ assert.deepEqual(work.data.snapshot.understandingBasis,basis);assert.equal(work.data.snapshot.executionAuthorized,false);
+ return work.data;
+}
+
+test('실제 Panel은 명시 다음 페이지의 21번째 linked WORK를 원 역할과 고정하고 별도 저장만 보낸다',{timeout:30000},async()=>{
+ const q=await mountApp(true);
+ try{
+  const work=await pagedOriginPreparations(q);
+  await q.wait(()=>hasPanel(q,'START 원자료 저장'));await q.click('원자료 선택 목록 조회');
+  await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='등록 준비'));
+  const options=()=>q.nodes().find(n=>n.getAttribute('aria-label')==='등록 준비')!.options;
+  assert.equal(options().length,21);assert(!options().some(n=>n.value===work.ref.id||n.getAttribute('value')===work.ref.id));
+  await q.change('대기 요청',q.f.stage.data.ref.id);await q.change('책임 예약',q.f.binding.data.ref.id);await q.change('기록 이유','21번째 WORK 원자료');
+  const before=q.sent.length;assert.equal(originPosts(q).length,0);assert.equal(q.sent.filter(n=>n.path.includes('?cursor=')).length,0);
+  await q.click('이전 등록 준비 조회');
+  await q.wait(()=>options().some(n=>n.value===work.ref.id||n.getAttribute('value')===work.ref.id)||q.nodes().some(n=>n.getAttribute('role')==='alert'));
+  assert(options().some(n=>n.value===work.ref.id||n.getAttribute('value')===work.ref.id),q.nodes().find(n=>n.getAttribute('aria-label')==='START 원자료 저장')!.textContent);
+  assert.equal(q.sent.slice(before).filter(n=>n.path.includes('?cursor=')).length,1);
+  const selectedValue=(label:string)=>{const node=q.nodes().find(n=>n.getAttribute('aria-label')===label)!;return(node as any)[Object.keys(node).find(k=>k.startsWith('__reactProps$'))!].value;};
+  assert.equal(selectedValue('대기 요청'),q.f.stage.data.ref.id);assert.equal(selectedValue('책임 예약'),q.f.binding.data.ref.id);
+  await q.change('등록 준비',work.ref.id);const selected=q.sent.length;await q.click('등록 준비 고정');
+  await q.wait(()=>q.container.textContent.includes('상태 PREPARED'));
+  assert.deepEqual(q.sent.slice(selected,selected+2).map(v=>v.path),[`/api/v1/projects/${q.f.pid}/execution-preparations/${work.ref.id}/versions/1`,`/api/v1/projects/${q.f.pid}/role-bindings/${q.f.binding.data.ref.id}/versions/1`]);
+  assert.equal(q.sent.filter(v=>v.init.method==='POST').length,0);
+  const checkbox=q.nodes().find(n=>n.tagName==='INPUT'&&n.parentNode?.textContent.includes('선택 원자료의 비실행 저장을 확인했습니다'))!;
+  const props=Object.keys(checkbox).find(k=>k.startsWith('__reactProps$'))!;
+  await q.ui.React.act(async()=>{(checkbox as any)[props].onChange({target:{checked:true}});});
+  await q.click('원자료 명시 저장');await q.wait(()=>hasPanel(q,originPanelLabel));
+  assert.equal(originPosts(q).length,1);assert.deepEqual(originPosts(q)[0]!.body.payload.preparationRef,work.ref);
+  assert.deepEqual(originPosts(q)[0]!.body.payload.roleBindingRef,q.f.binding.data.ref);
+  assert.equal(originPosts(q)[0]!.body.payload.reason,'21번째 WORK 원자료');
+  assert.equal(q.f.tables.origins!.length,1);assert.deepEqual(q.f.tables.origins![0]!.snapshot_json.preparationRef,work.ref);
+  assert.deepEqual(q.f.state.unsupported,[]);
+ }finally{await q.close();}
+});
+
+function originPreparationPages(q:Awaited<ReturnType<typeof mountApp>>){
+ const s=q.f.preparation.data.snapshot,path=`/api/v1/projects/${q.f.pid}/assignments/${q.f.confirmed.data.ref.id}/versions/1/execution-preparations`;
+ const item={ref:q.f.preparation.data.ref,mode:s.intent.mode,checkedAt:s.checkedAt,missingConditions:s.missingConditions};
+ const page={projectId:q.f.pid,assignmentRef:q.f.confirmed.data.ref,items:Array.from({length:20},(_,n)=>({...item,ref:exampleRef(1000+n)})),nextCursor:'원 cursor +/=',currentness:'NOT_RECHECKED',executionAuthorized:false,dispatchPerformed:false};
+ const next={...page,items:[item],nextCursor:null};
+ return{path,url:path+'?cursor='+encodeURIComponent(page.nextCursor),page,next};
+}
+
+for(const fault of ['DUPLICATE','REPEAT','CYCLE','PROJECT','ASSIGNMENT','FLAGS','CURRENT_401'] as const)test('등록 준비 다음 페이지는 '+fault+'를 거절하고 선택·저장 효과를 보존한다',async()=>{
+ const q=await mountApp(),p=originPreparationPages(q),unavailable:string[]=[],client=new q.ui.ApiClient(q.client.transport);
+ const session={...q.session},assignment={projectId:q.f.pid,...q.f.confirmed.data};
+ function Host(){return q.ui.React.createElement(q.ui.ExecutionStartOriginPanel,{client,session,assignment,storage:{buffers:{},onChange:()=>assert.fail('저장 효과 없음')},onUnavailable:(code:string)=>unavailable.push(code)});}
+ try{
+  await q.ui.React.act(async()=>q.root.render(q.ui.React.createElement(Host)));
+  let response:any=structuredClone(p.next),queries=0;
+  if(fault==='DUPLICATE')response.items=[{...p.page.items[0],ref:{...p.page.items[0]!.ref,contentHash:'e'.repeat(64)}}];
+  if(fault==='REPEAT')response={...p.page,items:p.page.items.map((v,n)=>({...v,ref:exampleRef(1100+n)})),nextCursor:p.page.nextCursor};
+  if(fault==='CYCLE')response={...p.page,items:p.page.items.map((v,n)=>({...v,ref:exampleRef(1100+n)})),nextCursor:'두 번째 cursor'};
+  if(fault==='PROJECT')response.projectId=exampleRef(2000).id;
+  if(fault==='ASSIGNMENT')response.assignmentRef={...assignment.ref,contentHash:'f'.repeat(64)};
+  if(fault==='FLAGS')response.executionAuthorized=true;
+  q.mode.getOverride=url=>{
+   if(url===p.path)return Response.json(p.page);
+   if(url.startsWith(p.path+'?cursor=')){queries++;return fault==='CURRENT_401'?Response.json({code:'AUTH_REQUIRED'},{status:401}):Response.json(response);}
+  };
+  await q.click('원자료 선택 목록 조회');await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='등록 준비'));
+  await q.change('대기 요청',q.f.stage.data.ref.id);await q.change('등록 준비',p.page.items[0]!.ref.id);await q.change('책임 예약',q.f.binding.data.ref.id);await q.change('기록 이유','기존 선택 유지');
+  await q.click('이전 등록 준비 조회');
+  if(fault==='CYCLE'){
+   await q.wait(()=>q.nodes().find(n=>n.getAttribute('aria-label')==='등록 준비')!.options.length===41);
+   response={...p.page,items:p.page.items.map((v,n)=>({...v,ref:exampleRef(1200+n)})),nextCursor:p.page.nextCursor};
+   await q.click('이전 등록 준비 조회');
+  }
+  await q.wait(()=>q.container.textContent.includes(fault==='CURRENT_401'?'AUTH_REQUIRED':'PREPARATION_HISTORY_RESPONSE_INVALID'));
+  assert.equal(queries,fault==='CYCLE'?2:1);assert.equal(q.sent.filter(v=>v.init.method==='POST').length,0);
+  assert.deepEqual(unavailable,fault==='CURRENT_401'?['AUTH_REQUIRED']:[]);
+  if(fault!=='CURRENT_401'){
+   const node=q.nodes().find(n=>n.getAttribute('aria-label')==='등록 준비')!;
+   assert.equal((node as any)[Object.keys(node).find(k=>k.startsWith('__reactProps$'))!].value,p.page.items[0]!.ref.id);
+   assert.equal(node.options.length,fault==='CYCLE'?41:21);
+   response=p.next;await q.click('이전 등록 준비 조회');
+   await q.wait(()=>q.nodes().find(n=>n.getAttribute('aria-label')==='등록 준비')!.options.length===(fault==='CYCLE'?42:22));
+   assert.equal(queries,fault==='CYCLE'?3:2,'실패한 cursor는 명시적으로 재조회할 수 있습니다.');
+  }
+ }finally{await q.close();}
+});
+
+for(const loss of ['ROUTE','ABA','ASSIGNMENT','PROJECT','ACTOR','TRANSPORT','HINT','CLOSE'] as const)for(const status of [200,401])test('등록 준비 다음 페이지 '+loss+' 폐기 뒤 늦은 '+status+'와 옛 클릭은 효과가 없다',async()=>{
+ const q=await mountApp(),p=originPreparationPages(q),unavailable:string[]=[],transport=q.client.transport,client=new q.ui.ApiClient(transport);
+ let release!:(value:Response)=>void;const held=new Promise<Response>(yes=>release=yes);
+ let session={...q.session},assignment={projectId:q.f.pid,...q.f.confirmed.data},hint:any=loss==='HINT'?q.f.stage.data:null,visible=true,queries=0;
+ function Host(){return visible?q.ui.React.createElement(q.ui.ExecutionStartOriginPanel,{client,session,assignment,waitingHint:hint,storage:{buffers:{},onChange:()=>assert.fail('저장 효과 없음')},onUnavailable:(code:string)=>unavailable.push(code)}):null;}
+ const render=()=>q.ui.React.act(async()=>q.root.render(q.ui.React.createElement(Host)));
+ try{
+  await render();q.mode.getOverride=url=>{if(url===p.path)return Response.json(p.page);if(url===p.url){queries++;return held;}};
+  await q.click(loss==='HINT'?'이 영수증의 대기 요청 원장에서 확인·선택':'원자료 선택 목록 조회');await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='등록 준비'));
+  const node=q.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='이전 등록 준비 조회')!;
+  const old=(node as any)[Object.keys(node).find(k=>k.startsWith('__reactProps$'))!].onClick;
+  await q.click('이전 등록 준비 조회');await q.wait(()=>queries===1);
+  if(loss==='ROUTE')(globalThis as any).location.hash='#/projects/'+q.f.pid;
+  if(loss==='ABA'){const hash=(globalThis as any).location.hash;await q.navigate('#/projects/'+q.f.pid);await q.navigate(hash);}
+  if(loss==='ASSIGNMENT')assignment={...assignment,ref:{...assignment.ref,contentHash:'f'.repeat(64)}};
+  if(loss==='PROJECT')assignment={...assignment,projectId:exampleRef(2100).id};
+  if(loss==='ACTOR')session={...session,user:{id:exampleRef(2101).id}};
+  if(loss==='TRANSPORT')client.transport=(...args:Parameters<typeof transport>)=>transport(...args);
+  if(loss==='HINT')hint=structuredClone(q.f.stage.data);
+  if(loss==='CLOSE')visible=false;
+  if(!['ROUTE','ABA'].includes(loss))await render();
+  await q.ui.React.act(async()=>release(status===200?Response.json(p.next):Response.json({code:'AUTH_REQUIRED'},{status:401})));
+  await q.flush();await q.ui.React.act(async()=>old());await q.flush();
+  assert.equal(queries,1);assert.deepEqual(unavailable,[]);assert.equal(q.sent.filter(v=>v.init.method==='POST').length,0);
+  const select=q.nodes().find(n=>n.getAttribute('aria-label')==='등록 준비');
+  assert(!select||select.options.length===21);assert(!q.container.textContent.includes('AUTH_REQUIRED'));
+ }finally{release(Response.json({}));await q.close();}
+});
+
+test('등록 준비 다음 페이지 성공은 React 반영 전 같은 cursor 재클릭을 소진하고 새 목록은 독립이다',async()=>{
+ const q=await mountApp(),p=originPreparationPages(q);let queries=0;
+ try{
+  await q.wait(()=>hasPanel(q,'START 원자료 저장'));q.mode.getOverride=url=>{if(url===p.path)return Response.json(p.page);if(url===p.url){queries++;return Response.json(p.next);}};
+  await q.click('원자료 선택 목록 조회');await q.wait(()=>q.nodes().some(n=>n.getAttribute('aria-label')==='등록 준비'));
+  const node=q.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='이전 등록 준비 조회')!;
+  const old=(node as any)[Object.keys(node).find(k=>k.startsWith('__reactProps$'))!].onClick;
+  await q.ui.React.act(async()=>{old();await new Promise(yes=>setImmediate(yes));old();});
+  await q.wait(()=>q.nodes().find(n=>n.getAttribute('aria-label')==='등록 준비')!.options.length===22);assert.equal(queries,1);
+  await q.click('원자료 선택 목록 조회');await q.wait(()=>q.nodes().find(n=>n.getAttribute('aria-label')==='등록 준비')?.options.length===21);
+  await q.click('이전 등록 준비 조회');await q.wait(()=>queries===2);assert.equal(q.sent.filter(v=>v.init.method==='POST').length,0);
+ }finally{await q.close();}
+});
+
 test('등록 준비는 원 대기 항목을 다시 읽고 취소·변경·중복을 로컬에서 거절한다',async()=>{
  const q=await mountApp();try{
   const pid=q.f.pid,path=`/api/v1/projects/${pid}/queue`;
