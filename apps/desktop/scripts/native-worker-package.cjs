@@ -53,8 +53,18 @@ function nodePackageIO(){const fs=require('node:fs/promises'),id=(/** @type {any
 function createWorkerPackageProducer(input,ramPorts=null){let attempted=false,finalized=false;
  /** @type {object|null} */let compilation=null;
  /** @type {object|null} */let packageToken=null;
+ const finalizer=(/** @type {boolean} */normalStart)=>async(/** @type {any} */factoryArtifact,/** @type {any} */configuration,/** @type {any} */store,/** @type {string} */requestId)=>{
+  if(finalized||!compilation||!packageToken)fail();
+  finalized=true;
+  const publisher=require('./native-worker-deployment-publisher.cjs');
+  const product=await publisher.createWorkerPublication({compilation,packageToken,factoryArtifact,configuration});
+  return normalStart
+   ?publisher.publishNormalStartWorkerDeployment(store,requestId,product)
+   :publisher.publishWorkerDeployment(store,requestId,product);
+ };
  return Object.freeze({
  stage:async(/** @type {string} */root)=>{if(attempted)fail();attempted=true;const c=require('./native-worker-compiler.cjs');compilation=ramPorts?await c.runNativeWorkerCompiler(input,own(ramPorts,'compiler')):await c.runNodeNativeWorkerCompiler(input);packageToken=await packageNativeWorker(compilation,root,ramPorts?own(ramPorts,'package'):nodePackageIO());},
- finalize:async(/** @type {any} */factoryArtifact,/** @type {any} */configuration,/** @type {any} */store,/** @type {string} */requestId)=>{if(finalized||!compilation||!packageToken)fail();finalized=true;const publisher=require('./native-worker-deployment-publisher.cjs'),product=await publisher.createWorkerPublication({compilation,packageToken,factoryArtifact,configuration});return publisher.publishWorkerDeployment(store,requestId,product);}
+ finalize:finalizer(false),
+ finalizeNormalStart:finalizer(true)
  });}
 module.exports={packageNativeWorker,readWorkerPackage,fixedNativeWorkerForgeHooks,createWorkerPackageProducer,nodePackageIO,RELATIVE};

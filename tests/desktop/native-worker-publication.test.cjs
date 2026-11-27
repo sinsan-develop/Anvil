@@ -48,6 +48,83 @@ test('명시 Forge producer는 worker stage 뒤 기존 postPackage를 보존하�
  const db={query:async(sql,args)=>{if(sql.includes('worker_deployment_publish')){count++;const b=JSON.parse(args[1]),snapshot={schemaVersion:1,purpose:'NATIVE_WORKER_DEPLOYMENT_HEAD',nativeFactoryRef:b.descriptor.snapshot.nativeFactoryRef,descriptorRef:b.descriptor.ref,sequence:1,previousHeadRef:null,state:'ACTIVE',updatedAt:f.config.issuedAt,expiresAt:f.config.expiresAt};return{rows:[{result:{ref:{id:'ad140002-0000-4000-8000-000000000090',version:1,contentHash:nativeHash(snapshot)},snapshot}}]};}return{rows:[],command:sql==='COMMIT'?'COMMIT':undefined};},release:()=>{}};
  const store=new NativeWorkerDeploymentStore({connect:async()=>db},{readOriginal:publisher.readCurrentWorkerPublication});const head=await f.staged.producer.finalize(f.artifact,f.config,store,'ad140002-0000-4000-8000-000000000091');assert.equal(head.snapshot.state,'ACTIVE');assert.equal(count,1);await assert.rejects(()=>f.staged.producer.finalize(f.artifact,f.config,store,'ad140002-0000-4000-8000-000000000092'));assert.equal(count,1);await assert.rejects(()=>f.staged.hooks.postPackage({}, {platform:'win32',arch:'x64',outputPaths:['C:\\Other']}));
 },{beforeFactory:f=>stagedWorker(f,true)}));
+
+const requestId='ad140002-0000-4000-8000-000000000091';
+const otherRequestId='ad140002-0000-4000-8000-000000000092';
+function deploymentHead(bundle,config) {
+ const snapshot={schemaVersion:1,purpose:'NATIVE_WORKER_DEPLOYMENT_HEAD',nativeFactoryRef:bundle.descriptor.snapshot.nativeFactoryRef,descriptorRef:bundle.descriptor.ref,sequence:1,previousHeadRef:null,state:'ACTIVE',updatedAt:config.issuedAt,expiresAt:config.expiresAt};
+ return {ref:{id:'ad140002-0000-4000-8000-000000000090',version:1,contentHash:hash(require('../../apps/desktop/src/runtime-catalogue-profile.cjs').canonicalJson(snapshot))},snapshot};
+}
+
+test('보호 build producer의 normal과 generic 최종 발행이 원 단계의 단회 소진을 공유한다', async()=>{
+ for(const variant of ['finalizeNormalStart','finalize'])await withWorkerBuild(async f=>{
+  const publisher=require('../../apps/desktop/scripts/native-worker-deployment-publisher.cjs');
+  const {NativeWorkerDeploymentStore}=await import('../../apps/server/modules/executions/native-worker-deployment-store.ts');
+  const producer=f.staged.producer, other=variant==='finalize'?'finalizeNormalStart':'finalize';
+  let entered,release,published,head,calls=0;
+  const enteredStore=new Promise(resolve=>{entered=resolve;});
+  const settleStore=new Promise(resolve=>{release=resolve;});
+  const db={query:async(sql,args)=>{
+   if(sql.includes('worker_deployment_publish')){
+    calls++;
+    assert.equal(args[0],requestId);
+    published=JSON.parse(args[1]);
+    head=deploymentHead(published,f.config);
+    entered();
+    await settleStore;
+    return {rows:[{result:head}]};
+   }
+   return {rows:[],command:sql==='COMMIT'?'COMMIT':undefined};
+  },release:()=>{}};
+  const store=new NativeWorkerDeploymentStore({connect:async()=>db},{readOriginal:publisher.readCurrentWorkerPublication});
+  assert.equal(typeof producer[variant],'function');
+  assert.equal(typeof producer[other],'function');
+  const first=producer[variant](f.artifact,f.config,store,requestId);
+  try{
+   await Promise.race([enteredStore,first.then(()=>assert.fail('원 거래 진입 전에 발행 결과가 반환됨'))]);
+   await assert.rejects(()=>producer[other](f.artifact,f.config,store,otherRequestId),/NATIVE_WORKER_PACKAGE_INVALID/);
+   await assert.rejects(()=>producer[variant](f.artifact,f.config,store,requestId),/NATIVE_WORKER_PACKAGE_INVALID/);
+  }finally{release();}
+  const result=await first;
+  assert.equal(published.descriptor.snapshot.workerHash,hash(workerPE()));
+  if(variant==='finalizeNormalStart'){
+   assert.deepEqual(JSON.parse(JSON.stringify(result)),{purpose:'NORMAL_START_WORKER_PUBLICATION_V1',bundle:published,head});
+   assert.throws(()=>publisher.readWorkerPublication(result),/NATIVE_WORKER_PUBLICATION_INVALID/);
+   assert.doesNotMatch(JSON.stringify(result),/WorkerQA/);
+  }else assert.deepEqual(result,head);
+  await assert.rejects(()=>producer[other](f.artifact,f.config,store,otherRequestId),/NATIVE_WORKER_PACKAGE_INVALID/);
+  assert.equal(calls,1);
+ },{beforeFactory:f=>stagedWorker(f,true)});
+});
+
+test('normal 발행은 원자료 변조·저장 결과 불명·응답 변조 뒤 두 경로 모두 재발행하지 않는다',async()=>{
+ for(const scenario of ['FACTORY','CONFIGURATION','PACKAGE','STORE_UNKNOWN','HEAD','READBACK'])await withWorkerBuild(async f=>{
+  const p=require('../../apps/desktop/scripts/native-worker-deployment-publisher.cjs'),producer=f.staged.producer;
+  let artifact=f.artifact,configuration=f.config,calls=0;
+  const changedPackage=()=>{const path=[...f.files.keys()].find(p=>p.endsWith('\\resources\\native-workers\\OwnershipEvidenceWorker.exe'));assert.ok(path);f.files.set(path,Buffer.from('RAM altered package'));};
+  if(scenario==='FACTORY')artifact={...artifact};
+  if(scenario==='CONFIGURATION')configuration={...configuration,sourceHash:'f'.repeat(64)};
+  if(scenario==='PACKAGE')changedPackage();
+  const store={publish:async(id,token)=>{
+   calls++;
+   assert.equal(id,requestId);
+   const bundle=p.readWorkerPublication(token).bundle;
+   assert.equal(bundle.descriptor.snapshot.workerHash,hash(workerPE()));
+   if(scenario==='STORE_UNKNOWN')throw Error('RAM_STORE_UNKNOWN');
+   const head=deploymentHead(bundle,f.config);
+   if(scenario==='HEAD')head.ref.contentHash='f'.repeat(64);
+   if(scenario==='READBACK')changedPackage();
+   return head;
+  }};
+  const errors={FACTORY:'NATIVE_FACTORY_BUILD_INVALID',CONFIGURATION:'NATIVE_WORKER_PUBLICATION_INVALID',PACKAGE:'NATIVE_WORKER_PACKAGE_INVALID',STORE_UNKNOWN:'RAM_STORE_UNKNOWN',HEAD:'NATIVE_WORKER_PUBLICATION_INVALID',READBACK:'NATIVE_WORKER_PACKAGE_INVALID'};
+  await assert.rejects(()=>producer.finalizeNormalStart(artifact,configuration,store,requestId),{message:errors[scenario]});
+  const expectedCalls=['STORE_UNKNOWN','HEAD','READBACK'].includes(scenario)?1:0;
+  assert.equal(calls,expectedCalls);
+  await assert.rejects(()=>producer.finalizeNormalStart(f.artifact,f.config,store,requestId),/NATIVE_WORKER_PACKAGE_INVALID/);
+  await assert.rejects(()=>producer.finalize(f.artifact,f.config,store,otherRequestId),/NATIVE_WORKER_PACKAGE_INVALID/);
+  assert.equal(calls,expectedCalls);
+ },{beforeFactory:f=>stagedWorker(f,true)});
+});
 test('compiler 원 output/source 또는 package bytes 변경은 같은 원 token 재검산에서 거절한다',async()=>{
  for(const mode of ['OUTPUT','SOURCE','PACKAGE','PORT'])await withWorkerBuild(async f=>{
   const publisher=require('../../apps/desktop/scripts/native-worker-deployment-publisher.cjs');
