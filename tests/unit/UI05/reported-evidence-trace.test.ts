@@ -162,22 +162,24 @@ class MemoryNode{
 }
 const document:any=new MemoryNode('#document',9);document.ownerDocument=document;document.createElement=(n:string)=>new MemoryNode(n,1,document);document.createElementNS=(_ns:string,n:string)=>document.createElement(n);document.createTextNode=(s:string)=>{const n=new MemoryNode('#text',3,document);n.data=s;return n;};document.documentElement=document.createElement('html');document.body=document.createElement('body');document.documentElement.appendChild(document.body);document.activeElement=document.body;
 
+const location={hash:'#/projects/'+planProject+'/sessions'};
 let ui:any;const savedGlobals=new Map<string,PropertyDescriptor|undefined>(),channels:MessageChannel[]=[],NativeChannel=globalThis.MessageChannel;class OwnedChannel extends NativeChannel{constructor(){super();channels.push(this);}}
-before(async()=>{const component=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ReportedEvidenceFiles.tsx',import.meta.url)),api=fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url));const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:reported-evidence',name:'ReportedEvidenceTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'reported-evidence-memory',resolveId(id){if(id.endsWith('virtual:reported-evidence'))return '\0reported-evidence';},load(id){if(id==='\0reported-evidence')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{ReportedEvidenceFiles}from${JSON.stringify(component)};import{ApiClient}from${JSON.stringify(api)};export{React,createRoot,ReportedEvidenceFiles,ApiClient};`;}}]});const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){savedGlobals.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return ReportedEvidenceTest;')();});
+before(async()=>{const component=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ReportedEvidenceFiles.tsx',import.meta.url)),api=fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url));const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:reported-evidence',name:'ReportedEvidenceTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'reported-evidence-memory',resolveId(id){if(id.endsWith('virtual:reported-evidence'))return '\0reported-evidence';},load(id){if(id==='\0reported-evidence')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{ReportedEvidenceFiles}from${JSON.stringify(component)};import{ApiClient}from${JSON.stringify(api)};export{React,createRoot,ReportedEvidenceFiles,ApiClient};`;}}]});const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;for(const[key,value]of Object.entries({window,document,location,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){savedGlobals.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return ReportedEvidenceTest;')();});
 after(()=>{for(const channel of channels){channel.port1.close();channel.port2.close();}for(const[key,descriptor]of savedGlobals)if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete(globalThis as any)[key];});
 
 test('React 근거 파일에서만 명시 역추적, 다음 페이지, 닫기와 지연401 무효화를 확인한다',async()=>{
  const f=await fixture(),calls:string[]=[],container=document.createElement('div');
  document.body.appendChild(container);
  const root=ui.createRoot(container),nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(child=>nodes(child))];
- let traces=0,lost=0,unavailable=0,holdTrace=false,release:((value:Response)=>void)|undefined;
+ let traces=0,lost=0,unavailable=0,holdTrace=false,traceResponse:Response|null=null,release:((value:Response)=>void)|undefined;
  const client=new ui.ApiClient(async(path:string,init:RequestInit)=>{
   assert.equal(init.method,'GET');calls.push(path);
   if(path.endsWith('/text'))return Response.json(f.evidence.file);
   if(path.includes('/work-plans/'))return Response.json(f.plan);
   assert(path.includes('/traces?'));
   if(holdTrace)return new Promise<Response>(resolve=>{release=resolve;});
-  return Response.json(++traces===1?f.page([f.proof],'continue'):f.page([f.toDesign]));
+  if(traceResponse)return traceResponse;
+  return Response.json(++traces===1?f.page([f.proof],'continue'):f.page([f.toDesign,f.toScreen]));
  });
  const coverage={items:[{criterionId:'verify',testId:'T1',requiredKind:'UNIT',reports:[{evidence:[{}]}]}]};
  const session={user:{id:id(51)},clientId:id(52),csrfToken:'c'.repeat(43)};
@@ -191,6 +193,7 @@ test('React 근거 파일에서만 명시 역추적, 다음 페이지, 닫기와
   assert(check());
  };
  const open='시험 근거에서 원 설계 위치 확인',close='시험 근거 설계 위치 닫기';
+ const links=()=>nodes().filter(n=>n.tagName==='A');
  try{
   await render(false);
   assert.equal(calls.length,0);
@@ -204,12 +207,25 @@ test('React 근거 파일에서만 명시 역추적, 다음 페이지, 닫기와
   await settle(()=>!!button('다음 설계 연결 더 보기'));
   assert.equal(calls.length,3);
   assert.doesNotMatch(container.textContent,/line:23/);
+  assert.deepEqual(links(),[]);
   await click('다음 설계 연결 더 보기');
   await settle(()=>container.textContent.includes('line:23'));
   assert.equal(calls.length,4);
   assert.match(container.textContent,/고정 설계 항목/);
   assert.match(container.textContent,/출처·완료는 미검증/);
+  assert.deepEqual(links().map(link=>link.getAttribute('href')),[f.indexed,f.screen].map(({versionRef:r})=>'#/projects/'+planProject+'/documents/'+r.id+'/versions/'+r.version+'/'+r.contentHash));
+  const currentLinks=links();
+  for(const link of currentLinks)assert(link.dispatchEvent({type:'click',button:0,bubbles:true}));
+  const route=location.hash;location.hash='#/projects';
+  try{
+   for(const link of currentLinks){
+    assert.equal(link.dispatchEvent({type:'click',button:0,bubbles:true}),false);
+    assert.equal(link.dispatchEvent({type:'auxclick',button:1,bubbles:true}),false);
+   }
+  }finally{location.hash=route;}
+  assert.equal(calls.length,4);
   await click(close);
+  assert.deepEqual(links(),[]);
   assert.doesNotMatch(container.textContent,/line:23/);
   holdTrace=true;
   await click(open);
@@ -219,6 +235,15 @@ test('React 근거 파일에서만 명시 역추적, 다음 페이지, 닫기와
   assert.equal(calls.length,6);
   assert.equal(lost,0);assert.equal(unavailable,0);
   assert.doesNotMatch(container.textContent,/AUTH_REQUIRED|line:23/);
+  holdTrace=false;
+  traceResponse=Response.json({code:'ACCESS_DENIED'},{status:403});
+  await click(open);await settle(()=>container.textContent.includes('ACCESS_DENIED'));
+  assert.equal(unavailable,1);assert.deepEqual(links(),[]);
+  await click(close);
+  const wrongTarget={...f.indexed,versionRef:{...f.indexed.versionRef,contentHash:'b'.repeat(64)}};
+  traceResponse=Response.json(f.page([f.proof,f.edge(f.job,wrongTarget,16)]));
+  await click(open);await settle(()=>container.textContent.includes('REPORTED_EVIDENCE_TRACE_INCONSISTENT'));
+  assert.deepEqual(links(),[]);assert.equal(lost,0);assert.equal(calls.length,10);
  }finally{
   await ui.React.act(async()=>{release?.(Response.json(f.page([])));root.unmount();});
   document.body.removeChild(container);

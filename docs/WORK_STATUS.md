@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-27 KST
 
+- **Stage C / IX02 UI05 결과 근거에서 고정 설계·시안 재조회** — 기준 `c823e7c3`, 작성 `fn13_quota_diff_replay`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 제출에 등록된 산출물과 정확 확정 업무의 역추적을 모두 대조한 뒤에만 UI06의 프로젝트·문서·버전·해시를 연결한다. 페이지 진행 중·해시 불일치·권한 거절·다른 선택·닫기·지연 401에서 이전 원문 링크를 열지 않는다. 제품 1·시험 1, 최초 RED 1건, 담당 18/18·Main 직접 6/6, 타입·diff 통과. 실제 브라우저·DB·Agent 및 직접 관측 합격은 미검증. PREPARED 복구는 이미 동일 packet replay source를 보유하지만 양성 정착 입력과 확정 queue의 실제 peer 인계가 없어 별도 재조회 wrapper는 추가하지 않았다.
+
 - **Stage C / IX02 FN08 PREPARED 수신 경계** — 기준 `779438e3`, 작성 `baseline_predispatch_task_review`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 구형 live STREAM에서 정상 준비 PREPARED가 저장 경로에 들어가는 합성 HTTP RED를 교정했다. 원 협상 FRAME이 정상 EOF로 끝난 같은 요청만 기존 adapter를 호출한다. legacy·EOF 전·교차 요청은 pool 호출 0, 기존 REJECTED 거래·불명·재조회 동작은 보존. 정확 EOF가 기존 producer 거절 모델에서 ACK·COMMIT 0인지 확인했다. 제품/시험 2경로, 담당 111/111·Main 집중 2/2, 타입·diff 통과. 실제 PG·Windows 준비 증거·Agent·서비스 실행 없음. OS 근거 생산·PREPARED 성공 저장, 대기열 재관측과 확정 인계는 미완료.
 
 - **Stage C / IX02 인수 준비** — 기준 `90cddf00`; 작성 `fn13_quota_diff_replay`, 독립 `fn08_policy_decision_ready` C0/I0/M0. 업무 카드 TC03/05/09와 현황·체크·Git을 대조해 [두 QA 검증안](work_packages/IX02_QA_ACCEPTANCE_PREPARATION.md)을 작성했다. A는 기존 Claude Code 한 종류의 제한 코딩과 AF05, B는 별도 설계·계획 제안과 사용자 검토·재조회다. 상대 링크 8개·diff 통과. SDK 0.3.224는 고정 소스 기준이며 설치·모델·실행·인수는 미검증. FN10 `4ef9cc28` 게시 증거를 재사용한다. IX01 보호 입력은 별개. 정상 START의 기본 공급자, 원 Windows 간섭 배제, PREPARED/queue/COMMIT 인계가 미연결이며, FN12 직접 명령 권위와 READ 관측 결박의 한정 계약 선택을 요청했다. 실제 DB·권한·키·서비스·Agent·QA 실행 없음.

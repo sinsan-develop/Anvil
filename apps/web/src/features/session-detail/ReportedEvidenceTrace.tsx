@@ -1,5 +1,6 @@
-import {useLayoutEffect,useMemo,useRef,useState} from 'react';
+import {useLayoutEffect,useMemo,useRef,useState,type MouseEvent} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
+import {documentVersionHref} from '../../shell/routes.ts';
 import type {DocumentSession} from '../design-trace/editor-api.ts';
 import type {ArtifactTraceDetail} from './artifact-task-trace-api.ts';
 import type {ReportedEvidenceArtifactView} from './reported-evidence-artifact.ts';
@@ -29,15 +30,16 @@ interface View {
 }
 
 export function ReportedEvidenceTrace({client,detail,evidence,result,session,onAuthenticationLost,onAccessUnavailable}:Props){
- const transport=client.transport;
- const scope=useMemo(()=>({}),[client,transport,detail,evidence,result,session.user.id,session.clientId,session.csrfToken]);
+ const transport=client.transport,route=globalThis.location?.hash;
+ const scope=useMemo(()=>({}),[client,transport,detail,evidence,result,session.user.id,session.clientId,session.csrfToken,route]);
  const committed=useRef<object|null>(null),owner=useRef<Ticket|null>(null),[view,setView]=useState<View|null>(null);
- const shown=view?.ticket.scope===scope?view:null;
+ const shown=view?.ticket.scope===scope&&owner.current===view.ticket?view:null;
  useLayoutEffect(()=>{
   committed.current=scope;
   return ()=>{committed.current=null;owner.current=null;};
  },[scope]);
- const active=(ticket:Ticket)=>owner.current===ticket&&committed.current===scope&&client.transport===transport;
+ const scopeCurrent=()=>committed.current===scope&&client.transport===transport&&globalThis.location?.hash===route;
+ const active=(ticket:Ticket)=>owner.current===ticket&&scopeCurrent();
  async function read(ticket:Ticket,expected:ReportedEvidenceTracePage|null){
   if(!active(ticket)||ticket.pending||ticket.page!==expected)return;
   ticket.pending=true;
@@ -55,16 +57,22 @@ export function ReportedEvidenceTrace({client,detail,evidence,result,session,onA
    const code=/^[A-Z_]{1,80}$/.test(failure.code)?failure.code:'REPORTED_EVIDENCE_TRACE_INCONSISTENT';
    setView({ticket,pending:false,page:null,error:code});
    if([401,403,404].includes(failure.status))onAccessUnavailable(code);
-   if(failure.status===401)onAuthenticationLost();
+   if(failure.status===401&&active(ticket))onAuthenticationLost();
   }finally{ticket.pending=false;}
  }
  function open(){
-  if(committed.current!==scope||client.transport!==transport||owner.current||!detail.confirmed)return;
+  if(!scopeCurrent()||owner.current||!detail.confirmed)return;
   const ticket:Ticket={scope,pending:false,page:null,reader:createReportedEvidenceTrace(client,detail,result,evidence,()=>active(ticket))};
   owner.current=ticket;
   void read(ticket,null);
  }
- function close(){owner.current=null;setView(null);}
+ function close(){
+  if(!shown||!active(shown.ticket))return;
+  owner.current=null;setView(null);
+ }
+ function guardDocumentLink(event:MouseEvent<HTMLAnchorElement>){
+  if(!shown||!active(shown.ticket)||shown.ticket.pending||shown.ticket.page!==shown.page)event.preventDefault();
+ }
  const task=detail.confirmed?.snapshot.definition.taskRef;
  return <section aria-label="시험 근거의 설계 위치">
   {!shown?<button type="button" onClick={open}>시험 근거에서 원 설계 위치 확인</button>:<>
@@ -82,6 +90,10 @@ export function ReportedEvidenceTrace({client,detail,evidence,result,session,onA
      <ul>{shown.page.matches.map(match=><li key={match.targetEdgeId}>
       <strong>{match.target.localCode} · {match.title}</strong>
       <p>원 위치 {match.target.anchor} · {match.target.kind==='SCREEN_REGION'?'시안':'설계'} {match.target.versionRef.id} v{match.target.versionRef.version} · SHA256 {match.target.versionRef.contentHash}</p>
+      {match.target.kind==='DESIGN_ITEM'||match.target.kind==='SCREEN_REGION'?
+       <a href={documentVersionHref(result.snapshot.scope.projectId,match.target.versionRef)} onClick={guardDocumentLink} onAuxClick={guardDocumentLink}>
+        {match.target.kind==='SCREEN_REGION'?'고정 시안 원문 열기':'고정 설계 원문 열기'}
+       </a>:null}
       <p>산출물→업무 {match.artifactEdgeId} · SHA256 {match.artifactEdgeHash}</p>
       <p>업무→원 위치 {match.targetEdgeId} · SHA256 {match.targetEdgeHash}</p>
      </li>)}</ul>
