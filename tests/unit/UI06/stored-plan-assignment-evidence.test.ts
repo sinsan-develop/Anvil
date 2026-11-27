@@ -48,27 +48,28 @@ const plan=(n:number,tasks=[task('FN09'),task('FN10')],relationalProjection:'STO
  return {ref:{id:id(n),version:1,contentHash:contentHash(canonicalJson(snapshot))},status:'DRAFT',...snapshot,executionEvidence:'NOT_CONNECTED',observedAt:time};
 };
 const asg=staticRef(9),draft={...asg,contentHash:'b'.repeat(64)},openEvidence='결과·검수·원문 조회 연결 확인',linkLabel='기존 결과·검수·원문 보호 조회 열기';
-function decision(view:ReturnType<typeof plan>,kind:'HISTORICAL'|'NONE'|'BROKEN'){
+function decision(view:ReturnType<typeof plan>,kind:'HISTORICAL'|'NONE'|'BROKEN'|'BROKEN_SCREEN'){
  const criteria=workPlanReviewCriteria,reviewRef={id:id(7),targetRef:view.ref,criteriaVersion:1,outcome:'ACCEPTED'};
  const validation={validForConfirmation:true,issues:[],sourceRefs:[view.documentRef,view.designRef],screenReviewRefs:view.screenReviewRefs};
- const storedValidation=kind==='BROKEN'?{...validation,sourceRefs:[view.documentRef,staticRef(80)]}:validation;
+ const storedValidation=kind==='BROKEN'?{...validation,sourceRefs:[view.documentRef,staticRef(80)]}:kind==='BROKEN_SCREEN'?{...validation,screenReviewRefs:[staticRef(81)]}:validation;
  return {planRef:view.ref,headVersion:2,confirmedVersion:2,criteria,contentReviews:[],confirmation:kind==='NONE'?null:{id:id(8),planRef:view.ref,reviewRefs:[reviewRef],validation:storedValidation,confirmedBy:{kind:'HUMAN',userId:uid},confirmedAt:time},validation,currentConfirmationValid:false,activatedAsBaseline:false,observedAt:time};
 }
 function delayed<T>(){let resolve!:(value:T)=>void;const promise=new Promise<T>(r=>{resolve=r;});return {promise,resolve};}
-async function mount(first=plan(10)){
- const second=plan(11),items=[first,second],calls:{path:string;method:string}[]=[];
- let lost=0,prepared=0,visible=true,decisionKind:'HISTORICAL'|'NONE'|'BROKEN'='HISTORICAL';
+async function mount(first=plan(10),history?:ReturnType<typeof plan>){
+ const second=plan(11),items=[first,second],originals=[...items,...(history?[history]:[])],calls:{path:string;method:string}[]=[];
+ let lost=0,prepared=0,visible=true,decisionKind:'HISTORICAL'|'NONE'|'BROKEN'|'BROKEN_SCREEN'='HISTORICAL';
+ let decisionRead:((view:ReturnType<typeof plan>)=>Response|Promise<Response>)|null=null;
  let evidence=(view:ReturnType<typeof plan>,taskCode:string):Response|Promise<Response>=>Response.json({projectId:pid,planRef:view.ref,taskCode,state:'MATCHED',assignmentRef:asg,draftRef:draft,observedAt:time});
  const transport:typeof fetch=async(url,init)=>{
   const path=String(url),method=init?.method??'GET';calls.push({path,method});assert.equal(method,'GET');
-  if(path.startsWith(base+'/work-plans?'))return Response.json({items:items.map(i=>({ref:i.ref,status:'DRAFT',title:'계획 '+i.ref.id,documentRef:doc,designRef:design,issueCount:0,updatedAt:time,integrity:'NOT_RECHECKED'})),hasMore:false,nextCursor:null,observedAt:time});
-  for(const view of items){
+  if(path.startsWith(base+'/work-plans?'))return Response.json({items:items.map(i=>({ref:i.ref,status:'DRAFT',title:'계획 '+i.ref.id,documentRef:i.documentRef,designRef:i.designRef,issueCount:0,updatedAt:time,integrity:'NOT_RECHECKED'})),hasMore:false,nextCursor:null,observedAt:time});
+  for(const view of originals){
    const original=`${base}/work-plans/${view.ref.id}/versions/${view.ref.version}`;
    if(path===original)return Response.json(view);
-   if(path===original+'/decision')return Response.json(decision(view,decisionKind));
+   if(path===original+'/decision')return decisionRead?decisionRead(view):Response.json(decision(view,decisionKind));
   }
   if(path.startsWith(base+'/traces/task-evidence?')){
-   const q=new URLSearchParams(path.split('?')[1]),view=items.find(v=>q.get('planId')===v.ref.id);assert(view);
+   const q=new URLSearchParams(path.split('?')[1]),view=originals.find(v=>q.get('planId')===v.ref.id&&q.get('planVersion')===String(v.ref.version)&&q.get('planHash')===v.ref.contentHash);assert(view);
    assert.equal(q.get('planVersion'),String(view.ref.version));assert.equal(q.get('planHash'),view.ref.contentHash);
    const taskCode=q.get('taskCode')!;assert.equal(view.tasks.filter(t=>t.taskCode===taskCode).length,1);
    return evidence(view,taskCode);
@@ -82,16 +83,18 @@ async function mount(first=plan(10)){
  const until=async(condition:()=>boolean)=>{const end=Date.now()+2000;while(!condition()&&Date.now()<end)await flush();assert(condition(),container.textContent);};
  const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
  const button=(label:string)=>nodes().find(n=>n.tagName==='BUTTON'&&(n.textContent===label||n.getAttribute('aria-label')===label));
- const picker=()=>nodes().find(n=>n.tagName==='SELECT'&&n.getAttribute('aria-label')==='확정 임무를 찾을 업무');
+ const picker=(historical=false)=>nodes().find(n=>n.tagName==='SELECT'&&n.getAttribute('aria-label')===(historical?'과거 확정 임무를 찾을 업무':'확정 임무를 찾을 업무'));
  const link=()=>nodes().find(n=>n.tagName==='A'&&n.textContent===linkLabel);
  const click=async(label:string)=>{const node=button(label);assert(node&&!node.disabled,label);await ui.React.act(async()=>node.dispatchEvent({type:'click',button:0,bubbles:true}));};
- const choose=async(code:string)=>{const select=picker();assert(select);const react=Object.keys(select).find(key=>key.startsWith('__reactProps$'));assert(react);await ui.React.act(async()=>(select as any)[react].onChange({target:{value:code}}));};
+ const choose=async(code:string,historical=false)=>{const select=picker(historical);assert(select);const react=Object.keys(select).find(key=>key.startsWith('__reactProps$'));assert(react);await ui.React.act(async()=>(select as any)[react].onChange({target:{value:code}}));};
  const open=async(view=first)=>{await click('보관 계획 '+view.ref.id+' 열기');await until(()=>container.textContent.includes(view.ref.contentHash));};
  const openDecision=async()=>{await click('계획 검토·확정 상태 조회');await until(()=>container.textContent.includes('현재 확정 조건'));};
  const requests=()=>calls.filter(call=>call.path.includes('/traces/task-evidence?'));
+ const historyOpen=async()=>{await click('지정 보관 계획 버전 열기');await until(()=>container.textContent.includes('계획 v1')&&!!button('이 버전 검토·확정 이력 조회'));};
+ const historyDecision=async()=>{await click('이 버전 검토·확정 이력 조회');await until(()=>container.textContent.includes('현재 확정 유효하지 않음'));};
  await render();await until(()=>!!button('보관 계획 '+first.ref.id+' 열기'));
- return {props,transport,first,second,container,render,flush,until,open,openDecision,click,choose,picker,link,button,requests,calls,
-  lost:()=>lost,prepared:()=>prepared,decision(kind:typeof decisionKind){decisionKind=kind;},read(fn:typeof evidence){evidence=fn;},hide:async()=>{visible=false;await render();},
+ return {props,transport,first,second,container,historyOpen,historyDecision,render,flush,until,open,openDecision,click,choose,picker,link,button,requests,calls,
+  lost:()=>lost,prepared:()=>prepared,decision(kind:typeof decisionKind){decisionKind=kind;},decisionRead(fn:typeof decisionRead){decisionRead=fn;},read(fn:typeof evidence){evidence=fn;},hide:async()=>{visible=false;await render();},
   close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 
@@ -158,4 +161,59 @@ test('계획·업무·목록 발생·인증·전송 교체 및 닫기에서는 �
    assert.equal(f.lost(),0,mode);assert(!f.link(),mode);assert.equal(f.requests().length,1,mode);
   }finally{held.resolve(Response.json({}));await f.close();}
  }
+});
+
+
+test('동일 업무 코드의 과거 v1은 당시 확정 fullref로만 기존 상세 근거를 연다',{timeout:15000},async()=>{
+ const old=plan(10),current=plan(10,[{...task('FN09'),title:'현재 버전의 다른 업무'}]);current.ref.version=2;current.documentRef=staticRef(60);current.designRef=staticRef(61);const {ref:_ref,status:_status,executionEvidence:_execution,observedAt:_at,...snapshot}=current;current.ref.contentHash=contentHash(canonicalJson(snapshot));const f=await mount(current,old);
+ try{
+  f.read((view,taskCode)=>Response.json({projectId:pid,planRef:view.ref,taskCode,state:'MATCHED',assignmentRef:view.ref.version===1?asg:staticRef(90),draftRef:view.ref.version===1?draft:{...staticRef(90),contentHash:'b'.repeat(64)},observedAt:time}));
+  await f.open();await f.openDecision();await f.choose('FN09');await f.click(openEvidence);await f.until(()=>!!f.link());assert.equal(f.link()!.getAttribute('href'),sessionDetailHref(pid,{...staticRef(90),contentHash:'b'.repeat(64)}));assert.equal(new URLSearchParams(f.requests()[0]!.path.split('?')[1]).get('planVersion'),'2');await f.choose('');assert(!f.link());await f.historyOpen();assert(!f.picker(true));assert.equal(f.requests().length,1);
+  await f.historyDecision();assert(f.picker(true),'당시 확인한 확정 업무의 명시 선택');assert(!f.button(openEvidence));
+  await f.choose('FN09',true);assert.equal(f.requests().length,1);await f.click(openEvidence);await f.until(()=>!!f.link());
+  assert.equal(f.requests().length,2);const q=new URLSearchParams(f.requests()[1]!.path.split('?')[1]);assert.equal(q.get('planVersion'),'1');assert.equal(q.get('planHash'),old.ref.contentHash);assert.equal(q.get('taskCode'),'FN09');assert.equal(f.link()!.getAttribute('href'),sessionDetailHref(pid,draft));assert(f.container.textContent.includes(asg.id));assert(f.container.textContent.includes('현재 확정 조건: 미충족'));assert.equal(f.prepared(),0);assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+
+for(const kind of ['NONE','BROKEN','BROKEN_SCREEN','ISSUES_ONLY','DUPLICATE','INVALID_TASK'] as const)test('과거 업무 근거의 '+kind+'는 보호 증거 조회0',{timeout:15000},async()=>{
+ const old=kind==='ISSUES_ONLY'?plan(10,undefined,'ISSUES_ONLY'):kind==='DUPLICATE'?plan(10,[task('FN09'),task('FN09')]):plan(10),current=plan(10);current.ref.version=2;const f=await mount(current,old);
+ try{if(kind==='NONE'||kind==='BROKEN'||kind==='BROKEN_SCREEN')f.decision(kind);await f.open();await f.historyOpen();
+  if(kind==='BROKEN'||kind==='BROKEN_SCREEN'){await f.click('이 버전 검토·확정 이력 조회');await f.until(()=>f.container.textContent.includes('RESPONSE_INVALID'));}else await f.historyDecision();
+  if(kind==='INVALID_TASK'){assert(f.picker(true));await f.choose('OTHER_TASK',true);assert(!f.button(openEvidence));}else assert(!f.picker(true),kind);
+  assert(!f.link());assert.equal(f.requests().length,0);assert.equal(f.prepared(),0);assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+test('과거 업무 근거는 교차 계획·업무·프로젝트 응답을 상세 링크로 쓰지 않는다',{timeout:15000},async()=>{
+ const old=plan(10),current=plan(10);current.ref.version=2;const f=await mount(current,old);
+ try{await f.open();await f.historyOpen();await f.historyDecision();await f.choose('FN09',true);
+  for(const mismatch of ['PLAN','TASK','PROJECT']){f.read((view,taskCode)=>Response.json({projectId:mismatch==='PROJECT'?id(90):pid,planRef:mismatch==='PLAN'?current.ref:view.ref,taskCode:mismatch==='TASK'?'FN10':taskCode,state:'MATCHED',assignmentRef:asg,draftRef:draft,observedAt:time}));
+   const count=f.requests().length;await f.click(count?'같은 확정 배정 다시 확인':openEvidence);await f.until(()=>f.container.textContent.includes('TRACE_TASK_EVIDENCE_RESPONSE_INVALID'));assert(!f.link());assert.equal(f.requests().length,count+1);
+  }
+ }finally{await f.close();}
+});
+
+function historyRoute(t:import('node:test').TestContext){const keys=['location','addEventListener','removeEventListener'],saved=new Map(keys.map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)])),listeners=new Set<Function>(),a='#/projects/'+pid+'/documents',b='#/projects/'+pid+'/workspace',location={hash:a};Object.defineProperty(globalThis,'location',{configurable:true,value:location});Object.defineProperty(globalThis,'addEventListener',{configurable:true,value:(type:string,fn:Function)=>{if(type==='hashchange')listeners.add(fn);}});Object.defineProperty(globalThis,'removeEventListener',{configurable:true,value:(type:string,fn:Function)=>{if(type==='hashchange')listeners.delete(fn);}});t.after(()=>{try{assert.equal(listeners.size,0);}finally{for(const[key,descriptor]of saved)if(descriptor)Object.defineProperty(globalThis,key,descriptor);else Reflect.deleteProperty(globalThis,key);}});return{location,a,b,aba(){location.hash=b;for(const fn of listeners)fn({oldURL:'https://anvil.invalid/'+a,newURL:'https://anvil.invalid/'+b});location.hash=a;for(const fn of listeners)fn({oldURL:'https://anvil.invalid/'+b,newURL:'https://anvil.invalid/'+a});}};}
+for(const mode of ['TASK','CLOSE','VERSION_CLOSE','CSRF','TRANSPORT','RAW_ROUTE','ROUTE_ABA'] as const)for(const status of [200,401])test('과거 업무 근거 '+mode+' 뒤 late'+status+'는 링크·인증효과0',{timeout:15000},async t=>{
+ const route=historyRoute(t),old=plan(10),current=plan(10);current.ref.version=2;const f=await mount(current,old),held=delayed<Response>();
+ try{await f.open();await f.historyOpen();await f.historyDecision();await f.choose('FN09',true);const oldHandler=(()=>{const n=f.button(openEvidence)!;const key=Object.keys(n).find(k=>k.startsWith('__reactProps$'));assert(key);return(n as any)[key].onClick;})();f.read(()=>held.promise);await f.click(openEvidence);assert.equal(f.requests().length,1);
+  if(mode==='TASK')await f.choose('FN10',true);if(mode==='CLOSE')await f.click('이 버전 검토·확정 이력 닫기');if(mode==='VERSION_CLOSE')await f.click('과거 계획 원문 닫기');if(mode==='CSRF'){f.props.session={...f.props.session,csrfToken:'d'.repeat(43)};await f.render();}if(mode==='TRANSPORT')f.props.client.transport=f.transport.bind(null);if(mode==='RAW_ROUTE')route.location.hash=route.b;if(mode==='ROUTE_ABA')await ui.React.act(async()=>route.aba());
+  held.resolve(Response.json(status===200?{projectId:pid,planRef:old.ref,taskCode:'FN09',state:'MATCHED',assignmentRef:asg,draftRef:draft,observedAt:time}:{code:'AUTH_REQUIRED'},{status}));await f.flush();assert(!f.link());assert.equal(f.lost(),0);await ui.React.act(async()=>oldHandler());await f.flush();assert.equal(f.requests().length,1,'폐기한 선택의 옛 재조회0');assert.equal(f.prepared(),0);assert(f.calls.every(c=>c.method==='GET'));
+ }finally{held.resolve(Response.json({}));await f.close();}
+});
+
+for(const status of [401,403])test('과거 업무 근거의 현재 '+status+'는 기존 보호 오류 의미를 유지한다',{timeout:15000},async()=>{
+ const old=plan(10),current=plan(10);current.ref.version=2;const f=await mount(current,old);
+ try{await f.open();await f.historyOpen();await f.historyDecision();await f.choose('FN09',true);f.read(()=>Response.json({code:status===401?'AUTH_REQUIRED':'PROJECT_OPERATION_DENIED'},{status}));await f.click(openEvidence);await f.until(()=>f.container.textContent.includes(status===401?'AUTH_REQUIRED':'PROJECT_OPERATION_DENIED'));assert.equal(f.lost(),status===401?1:0);assert(!f.link());assert.equal(f.requests().length,1);assert(f.calls.every(c=>c.method==='GET'));}finally{await f.close();}
+});
+
+for(const aba of [false,true])for(const status of [200,401])test('과거 확정 선행 GET '+(aba?'전달 ABA':'raw 이탈')+' late'+status+' 폐기 뒤 같은 mount에서 명시 복구한다',{timeout:15000},async t=>{
+ const route=historyRoute(t),old=plan(10),current=plan(10);current.ref.version=2;const f=await mount(current,old),held=delayed<Response>();
+ try{await f.open();await f.historyOpen();f.decisionRead(()=>held.promise);await f.click('이 버전 검토·확정 이력 조회');assert.equal(f.calls.filter(c=>c.path.endsWith('/decision')).length,1);
+  const button=f.button('이 버전 검토·확정 이력 조회')!,key=Object.keys(button).find(k=>k.startsWith('__reactProps$'));assert(key);const oldClick=(button as any)[key].onClick;
+  await ui.React.act(async()=>{if(aba)route.aba();else route.location.hash=route.b;held.resolve(Response.json(status===200?decision(old,'HISTORICAL'):{code:'AUTH_REQUIRED'},{status}));});await f.flush();assert(!f.picker(true));assert(!f.link());assert.equal(f.lost(),0);assert.equal(f.requests().length,0);
+  await ui.React.act(async()=>oldClick());assert.equal(f.calls.filter(c=>c.path.endsWith('/decision')).length,1,'폐기된 조회 handler의 추가GET0');
+  route.location.hash=route.a;f.decisionRead(null);if(f.button('이 버전 검토·확정 이력 닫기'))await f.click('이 버전 검토·확정 이력 닫기');await f.historyDecision();assert(f.picker(true));assert.equal(f.calls.filter(c=>c.path.endsWith('/decision')).length,2);assert.equal(f.lost(),0);assert.equal(f.requests().length,0);await f.choose('FN09',true);await f.click(openEvidence);await f.until(()=>!!f.link());assert.equal(f.link()!.getAttribute('href'),sessionDetailHref(pid,draft));
+ }finally{held.resolve(Response.json({}));await f.close();}
 });
