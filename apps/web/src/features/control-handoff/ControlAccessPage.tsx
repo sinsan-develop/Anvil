@@ -175,7 +175,7 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
   {protectedSummary?<section aria-label="인수 수락 확인"><label>수락 이유<textarea maxLength={20000} value={b?.reason??''} disabled={!configured||unresolved} onChange={e=>edit('reason',e.target.value)}/></label><label><input type="checkbox" checked={summaryConfirmed} disabled={!configured||unresolved||currentView.busy} onChange={e=>{if(context.current!==confirmationContext||visibleContext.current!==confirmationContext||client.transport!==confirmationContext.transport||session?.csrfToken!==confirmationContext.csrf||!request)return;setConfirmedSummary(e.target.checked?{context:confirmationContext,requestRef:{...request.requestRef},summaryRef:{...protectedSummary.ref}}:null);}}/>요약과 대상 기기를 확인했습니다.</label></section>:null}
    <button type="button" disabled={!canAccept} onClick={prepareAcceptance}>인수 수락 명령 보존</button>
    {session&&b&&pending?.kind==='ACCEPT'&&pending.status==='CONFIRMED'?
-    <ConfirmedAcceptanceHistory key={historyOwner.revision} busy={currentView.busy}
+    <ConfirmedAcceptanceHistory client={client} session={session} projectId={projectId} key={historyOwner.revision} busy={currentView.busy}
      initial={currentView.acceptanceOwner===pending?currentView.acceptance:null}
      current={()=>historyScope.current===historyOwner&&live.current.buffer?.pending===pending&&
       live.current.buffer.bindingId===historyOwner.binding&&pending.status==='CONFIRMED'&&live.current.projectId===projectId&&
@@ -188,28 +188,78 @@ export function ControlAccessPage({client,projectId,session,buffer=null,onChange
 }
 
 type HistoricalResult=ControlAcceptanceChain['result'];
-function ConfirmedAcceptanceHistory({busy,initial,current,read,onAuthenticationLost}:{
- busy:boolean;initial:HistoricalResult|null;current:()=>boolean;read:(active:()=>boolean)=>Promise<HistoricalResult>;onAuthenticationLost:()=>void;
+function ConfirmedAcceptanceHistory({client,session,projectId,busy,initial,current,read,onAuthenticationLost}:{
+ client:ApiClient;session:ControlSession;projectId:string;busy:boolean;initial:HistoricalResult|null;current:()=>boolean;read:(active:()=>boolean)=>Promise<HistoricalResult>;onAuthenticationLost:()=>void;
 }){
- const ticket=useRef(0),pending=useRef(false);
+ const ticket=useRef(0),pending=useRef(false),displayed=useRef<HistoricalResult|null>(null),summaryRoute=useRef({route:globalThis.location?.hash,valid:true});
  const [history,setHistory]=useState<{result:HistoricalResult|null;error?:ApiError;loading?:boolean}|null>(null);
- useLayoutEffect(()=>()=>{ticket.current++;pending.current=false;},[]);
- function close(){ticket.current++;pending.current=false;setHistory({result:null});}
+ const [,refreshSummaryRoute]=useState(0);
+ useLayoutEffect(()=>{
+  const hash=(value:string)=>{try{return new URL(value).hash;}catch{return null;}};
+  const changed=(event:HashChangeEvent)=>{
+   const route=summaryRoute.current.route;
+   const before=event.oldURL?hash(event.oldURL):route,after=event.newURL?hash(event.newURL):globalThis.location?.hash;
+   if(before!==route||after!==route||globalThis.location?.hash!==route){summaryRoute.current.valid=false;refreshSummaryRoute(value=>value+1);}
+  };
+  globalThis.addEventListener?.('hashchange',changed);
+  return()=>{ticket.current++;pending.current=false;globalThis.removeEventListener?.('hashchange',changed);};
+ },[]);
+ function close(){ticket.current++;pending.current=false;displayed.current=null;setHistory({result:null});}
  async function query(){
   if(busy||pending.current||!current())return;
   const request=++ticket.current,active=()=>ticket.current===request&&current();
+  displayed.current=null;if(globalThis.location?.hash===summaryRoute.current.route)summaryRoute.current.valid=true;
   pending.current=true;setHistory({loading:true,result:null});
   try{const result=await read(active);if(active())setHistory({result});}
   catch(cause){if(active()){const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setHistory({result:null,error});if(error.status===401)onAuthenticationLost();}}
   finally{if(ticket.current===request)pending.current=false;}
  }
  const result=history===null?initial:history.result;
+ displayed.current=result;const resultTicket=ticket.current;
+ const summaryCurrent=()=>{
+  if(globalThis.location?.hash!==summaryRoute.current.route)summaryRoute.current.valid=false;
+  return summaryRoute.current.valid&&current()&&ticket.current===resultTicket&&displayed.current===result;
+ };
  return <section aria-label="보존한 수락 결과">
   <button type="button" disabled={busy||history?.loading} onClick={()=>void query()}>수락 결과 다시 조회</button>
   {history?.loading?<p role="status">수락 결과를 조회하고 있습니다.</p>:null}
   {history?.error?<p role="alert">수락 결과를 확인할 수 없습니다. ({history.error.status||history.error.code})</p>:null}
-  {result?<section aria-label="제어 전환 결과 확인"><h3>제어 전환 결과 확인</h3><p>수락 결과의 사용자·기기 {result.nextControl.actorId} / {result.nextControl.clientId} · 세대 {result.nextControl.generation}</p><p>원 결과는 과거 사실입니다. 현재 제어와 일반 작업 허가는 서버가 별도로 검산합니다.</p><AcceptanceRecordDetails result={result}/></section>:null}
+  {result?<section aria-label="제어 전환 결과 확인"><h3>제어 전환 결과 확인</h3><p>수락 결과의 사용자·기기 {result.nextControl.actorId} / {result.nextControl.clientId} · 세대 {result.nextControl.generation}</p><p>원 결과는 과거 사실입니다. 현재 제어와 일반 작업 허가는 서버가 별도로 검산합니다.</p><AcceptanceRecordDetails result={result}/>{summaryCurrent()?<AcceptedProtectedSummary client={client} session={session} projectId={projectId} result={result} current={summaryCurrent} onAuthenticationLost={onAuthenticationLost}/>:null}</section>:null}
   {result||history?.loading||history?.error?<button type="button" onClick={close}>수락 결과 닫기</button>:null}
+ </section>;
+}
+
+/** 이미 검산된 수락 결과의 두 원참조만 읽는다. 현재 보호 head·수락 조건은 갱신하지 않는다. */
+function AcceptedProtectedSummary({client,session,projectId,result,current,onAuthenticationLost}:{client:ApiClient;session:ControlSession;projectId:string;result:HistoricalResult;current:()=>boolean;onAuthenticationLost:()=>void}){
+ const identity=JSON.stringify([projectId,session.user.id,session.clientId,session.csrfToken,result.requestRef,result.summaryRef,globalThis.location?.hash??null]);
+ const owner=useRef({identity,client,transport:client.transport,session,result});
+ if(owner.current.identity!==identity||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.session!==session||owner.current.result!==result)owner.current={identity,client,transport:client.transport,session,result};
+ const scope=owner.current,alive=useRef(true),parent=useRef(current);parent.current=current;
+ const sequence=useRef(0),flight=useRef<object|null>(null),selected=useRef<object|null>(null);
+ const [view,setView]=useState<{owner:object;ticket:object;summary:ProtectedHandoffSummary|null;error:ApiError|null;loading:boolean}|null>(null);
+ useLayoutEffect(()=>{alive.current=true;return()=>{alive.current=false;sequence.current++;selected.current=null;};},[]);
+ const subject=()=>result.projectId===projectId&&result.nextControl.actorId===session.user.id&&result.nextControl.clientId===session.clientId;
+ const active=()=>alive.current&&owner.current===scope&&client.transport===scope.transport&&identity===JSON.stringify([projectId,session.user.id,session.clientId,session.csrfToken,result.requestRef,result.summaryRef,globalThis.location?.hash??null])&&subject()&&parent.current();
+ const shown=view?.owner===scope&&view.ticket===selected.current&&active()?view:null;
+ async function query(){
+  if(!active()||flight.current)return;
+  const ticket={},number=++sequence.current;flight.current=ticket;selected.current=ticket;
+  const check=()=>active()&&sequence.current===number&&selected.current===ticket;
+  setView({owner:scope,ticket,summary:null,error:null,loading:true});
+  try{
+   const summary=await new ControlApi(scope.transport,session,projectId).protectedSummary({...result.requestRef},{...result.summaryRef});
+   if(!check())return;
+   const snapshot=summary.snapshot;
+   if(!same(summary.ref,result.summaryRef)||!same(snapshot.requestRef,result.requestRef)||!same(snapshot.baseControl,result.previousControl)||snapshot.targetActorRef.userId!==session.user.id||snapshot.targetClientRef.userId!==session.user.id||snapshot.targetClientRef.clientId!==session.clientId)throw new ApiError('RESPONSE_INVALID');
+   setView({owner:scope,ticket,summary,error:null,loading:false});
+  }catch(cause){
+   if(!check())return;
+   const error=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setView({owner:scope,ticket,summary:null,error,loading:false});if(error.status===401)onAuthenticationLost();
+  }finally{if(flight.current===ticket)flight.current=null;}
+ }
+ function close(){if(!shown||!active()||selected.current!==shown.ticket)return;sequence.current++;selected.current=null;flight.current=null;setView(null);}
+ return <section aria-label="수락 결과의 과거 보호요약"><button type="button" disabled={!!shown?.loading} onClick={()=>void query()}>이 수락의 과거 보호요약 조회</button>
+ {shown?<><button type="button" onClick={close}>수락 당시 보호요약 닫기</button>{shown.loading?<p role="status">원 수락의 고정 보호요약 조회 중</p>:shown.error?<p role="alert">수락 당시 보호요약을 확인할 수 없습니다. ({shown.error.status||shown.error.code})</p>:shown.summary?<section aria-label="수락 당시 보호요약"><h4>수락 당시 보호요약</h4><p>{shown.summary.ref.id} · v{shown.summary.ref.version} · {shown.summary.ref.contentHash}</p><p>당시 관측 {shown.summary.snapshot.observedAt} · 당시 기한 {shown.summary.snapshot.validUntil} · {shown.summary.snapshot.transferState}</p><ProtectedSummaryDetails key={sequence.current} summary={shown.summary}/></section>:null}</>:null}
  </section>;
 }
 

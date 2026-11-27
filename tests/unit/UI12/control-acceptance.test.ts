@@ -318,3 +318,96 @@ test('수락 원문 hash 대기 중 문맥이 바뀌면 첫 POST와 동일 명�
   }
  }
 });
+
+const historicalSummaryLabel='이 수락의 과거 보호요약 조회';
+async function confirmedSummaryFixture(){
+ const summary=await protectedSummary(true),command={schemaVersion:1 as const,operation:'acceptControl' as const,commandId:id(130),projectId,clientId:requesterClient,payload:{requestRef:request.requestRef,summaryVersion:summary.ref.version,reason:'과거 보호요약 읽기'}};
+ const chain=createControlAcceptanceChain({projectId,command,requestRef:request.requestRef,summaryRef:summary.ref,before:baseControl,targetActorId:requester,recordedAt:now,ids:{acceptance:id(131),revocation:id(132),grant:id(133),receipt:id(134),audit:id(135)}});
+ const target={...session,user:{id:requester,displayName:'원 수락 대상'},clientId:requesterClient},buffer={bindingId:id(136),ownerUserId:requester,ownerClientId:requesterClient,projectId,reason:'불변 원 입력',expiresAt:'',pending:{bindingId:id(137),kind:'ACCEPT',status:'CONFIRMED',command,summary}};
+ const calls:{path:string;method:string}[]=[];let summaryReply=async()=>Response.json(summary),acceptanceReply=async()=>Response.json(chain.result),lost=0,changes=0;
+ const client=new ui.ApiClient(async(path:string,init:RequestInit)=>{
+  calls.push({path,method:init.method??'GET'});assert.equal(init.method,'GET','이력 열기는 POST0');
+  if(path.includes('/acceptances/'))return acceptanceReply();
+  if(path.includes('/protected-handoff-summaries/'+summary.ref.version+'?'))return summaryReply();
+  if(path.endsWith('/control-state'))return Response.json({schemaVersion:1,projectId,observedAt:now,actorId:requester,clientId:requesterClient,participation:'OWNER',control:{state:'HELD',basis:chain.result.nextControl},executionAuthorized:false,controlTransferred:false});
+  assert.fail('원 고정참조 외 head/목록/자동 조회 금지: '+path);
+ });
+ const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container),props:any={client,projectId,session:target,buffer,onChange:()=>{changes++;return false;},onAuthenticationLost:()=>lost++};
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))],button=(text:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===text);
+ const render=async(overrides={})=>ui.React.act(async()=>root.render(ui.React.createElement(ui.ControlAccessPage,{...props,...overrides})));
+ const tick=()=>ui.React.act(async()=>new Promise(resolve=>setImmediate(resolve)));
+ const until=async(check:()=>boolean)=>{const end=performance.now()+2000;while(!check()){assert(performance.now()<end,container.textContent);await tick();}};
+ const click=async(text:string)=>{const n=button(text);assert(n,text);assert(!n.disabled,text);await ui.React.act(async()=>n.dispatchEvent({type:'click',button:0}));};
+ await render();return{summary,chain,buffer,props,client,calls,container,nodes,button,render,tick,until,click,lost:()=>lost,changes:()=>changes,summaryReply:(read:()=>Promise<Response>)=>summaryReply=read,acceptanceReply:(read:()=>Promise<Response>)=>acceptanceReply=read,confirm:async()=>{await click('수락 결과 다시 조회');await until(()=>container.textContent.includes('제어 전환 결과 확인'));},close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+}
+test('현재 검산된 CONFIRMED 수락의 exact 과거 보호요약만 명시 GET1로 읽고 만료 당시값을 현재 권위로 바꾸지 않는다',{timeout:15000},async()=>{
+ const f=await confirmedSummaryFixture();try{
+  assert.equal(f.calls.length,0);assert.equal(f.button(historicalSummaryLabel),undefined);await f.confirm();const original=structuredClone(f.buffer),before=f.calls.length;
+  assert(f.button(historicalSummaryLabel),'검산된 수락에서 과거 보호요약 진입 누락');assert(Date.parse(f.summary.snapshot.validUntil)<Date.now(),'과거 만료 요약 fixture');await f.click(historicalSummaryLabel);await f.until(()=>f.container.textContent.includes(f.summary.ref.contentHash));
+  assert.deepEqual(f.calls.slice(before),[{path:'/api/v1/projects/'+projectId+'/control-requests/'+request.requestRef.id+'/versions/1/protected-handoff-summaries/'+f.summary.ref.version+'?requestHash='+request.requestRef.contentHash+'&summaryHash='+f.summary.ref.contentHash,method:'GET'}]);
+  assert(f.container.textContent.includes(f.summary.ref.contentHash));await f.click('항목별 인계 판정 펼치기');assert(f.container.textContent.includes('저장 당시 관측입니다.'));assert(f.container.textContent.includes('저장 당시 확인된 빈 목록'));assert.equal(f.changes(),0);assert.deepEqual(f.buffer,original);assert.equal(f.lost(),0);assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+test('수락 과거 보호요약의 교차 참조·범위/본문 오염·401/403/404는 현재 결과와 원명령을 바꾸지 않는다',{timeout:15000},async()=>{
+ for(const mode of ['REQUEST','HASH','PROJECT','TARGET','BASE','401','403','404']){
+  const f=await confirmedSummaryFixture();try{
+   await f.confirm();const original=structuredClone(f.buffer),value=structuredClone(f.summary);
+   if(mode==='REQUEST')value.snapshot.requestRef={...value.snapshot.requestRef,id:id(140)};
+   if(mode==='HASH')value.ref.contentHash='f'.repeat(64);
+   if(mode==='PROJECT')value.snapshot.projectId=id(141);
+   if(mode==='TARGET')value.snapshot.targetClientRef.clientId=id(142);
+   if(mode==='BASE')value.snapshot.baseControl.generation++;
+   f.summaryReply(async()=>['401','403','404'].includes(mode)?Response.json({code:'ACCESS_DENIED'},{status:Number(mode)}):Response.json(value));
+   await f.click(historicalSummaryLabel);await f.until(()=>f.container.textContent.includes('수락 당시 보호요약을 확인할 수 없습니다.'));
+   assert(!f.container.textContent.includes(f.summary.ref.contentHash));assert(f.container.textContent.includes('제어 전환 결과 확인'));assert.equal(f.lost(),mode==='401'?1:0);assert.equal(f.changes(),0);assert.deepEqual(f.buffer,original);assert.equal(f.calls.length,2);
+  }finally{await f.close();}
+ }
+});
+test('수락 과거 요약은 원 표시·close·재조회·route와 인증/transport ABA의 늦은200/401을 폐기한다',{timeout:15000},async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+projectId+'/control'};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{for(const mode of ['SUMMARY_CLOSE','SUMMARY_REQUERY','RESULT_CLOSE','RESULT_REQUERY','ACTOR','CLIENT','CSRF','TRANSPORT','ROUTE_RAW','ROUTE_ABA'])for(const status of [200,401]){
+  location.hash='#/projects/'+projectId+'/control';const f=await confirmedSummaryFixture(),gate=Promise.withResolvers<Response>(),second=Promise.withResolvers<Response>();
+  try{
+   await f.confirm();const original=structuredClone(f.buffer);f.summaryReply(()=>gate.promise);await f.click(historicalSummaryLabel);
+   const old=f.button(historicalSummaryLabel)!,oldClick=(old as any)[Object.keys(old).find(k=>k.startsWith('__reactProps'))!].onClick,oldClose=f.button('수락 당시 보호요약 닫기')!,oldCloseClick=(oldClose as any)[Object.keys(oldClose).find(k=>k.startsWith('__reactProps'))!].onClick;
+   if(mode==='SUMMARY_CLOSE'||mode==='SUMMARY_REQUERY')await f.click('수락 당시 보호요약 닫기');
+   if(mode==='SUMMARY_REQUERY'){f.summaryReply(()=>second.promise);await f.click(historicalSummaryLabel);}
+   if(mode==='RESULT_CLOSE')await f.click('수락 결과 닫기');
+   if(mode==='RESULT_REQUERY'){f.acceptanceReply(()=>second.promise);await f.click('수락 결과 다시 조회');}
+   if(['ACTOR','CLIENT','CSRF','TRANSPORT'].includes(mode)){
+    const changed:any={};if(mode==='ACTOR')changed.session={...f.props.session,user:{id:controller}};if(mode==='CLIENT')changed.session={...f.props.session,clientId:controllerClient};if(mode==='CSRF')changed.session={...f.props.session,csrfToken:'z'.repeat(43)};
+    const transport=f.client.transport;if(mode==='TRANSPORT')f.client.transport=async()=>{throw Error('대체 전송 호출 금지');};await f.render(changed);f.client.transport=transport;await f.render();
+   }
+   if(mode==='ROUTE_RAW')location.hash='#/projects/'+projectId+'/workspace';
+   if(mode==='ROUTE_ABA'){location.hash='#/projects/'+projectId+'/workspace';await f.render();location.hash='#/projects/'+projectId+'/control';await f.render();}
+   const before=f.calls.length;
+   if(!['SUMMARY_CLOSE','SUMMARY_REQUERY'].includes(mode))await ui.React.act(async()=>oldClick());
+   await ui.React.act(async()=>{gate.resolve(status===200?Response.json(f.summary):Response.json({code:'AUTH_REQUIRED'},{status:401}));await new Promise(r=>setImmediate(r));});await f.tick();
+   assert.equal(f.calls.length,before,'옛 클릭/응답으로 새 조회0');assert(!f.container.textContent.includes(f.summary.ref.contentHash));assert(!f.container.textContent.includes('수락 당시 보호요약을 확인할 수 없습니다.'));assert.equal(f.lost(),0);assert.deepEqual(f.buffer,original);assert.equal(f.changes(),0);
+   if(mode==='SUMMARY_REQUERY'){
+    await ui.React.act(async()=>{second.resolve(Response.json(f.summary));await new Promise(r=>setImmediate(r));});await f.until(()=>f.container.textContent.includes(f.summary.ref.contentHash));
+    await ui.React.act(async()=>oldCloseClick());assert(f.container.textContent.includes(f.summary.ref.contentHash),'옛 close가 새 조회 원문을 닫지 않음');
+   }
+  }finally{gate.resolve(Response.json({}));second.resolve(Response.json({}));await f.close();}
+ }}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+
+test('수락 과거요약은 렌더 없는 hashchange A→B→A 전달 뒤 늦은200/401을 폐기하고 listener를 정리한다',{timeout:15000},async()=>{
+ const keys=['location','addEventListener','removeEventListener'] as const,saved=new Map(keys.map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)])),route='#/projects/'+projectId+'/control',other='#/projects/'+projectId+'/workspace',location={hash:route},listeners=new Set<(event:any)=>void>();
+ Object.defineProperty(globalThis,'location',{value:location,configurable:true});Object.defineProperty(globalThis,'addEventListener',{value:(kind:string,callback:(event:any)=>void)=>{assert.equal(kind,'hashchange');listeners.add(callback);},configurable:true});Object.defineProperty(globalThis,'removeEventListener',{value:(kind:string,callback:(event:any)=>void)=>{assert.equal(kind,'hashchange');listeners.delete(callback);},configurable:true});
+ try{for(const status of [200,401]){
+  location.hash=route;const f=await confirmedSummaryFixture(),gate=Promise.withResolvers<Response>();
+  try{
+   await f.confirm();assert.equal(listeners.size,1);f.summaryReply(()=>gate.promise);await f.click(historicalSummaryLabel);const before=f.calls.length,original=structuredClone(f.buffer);
+   // 브라우저가 전달한 두 이벤트의 원 URL을 사용한다. 이벤트 전달 전 동기 왕복의 검출을 주장하지 않는다.
+   location.hash=other;location.hash=route;
+   await ui.React.act(async()=>{
+    for(const listener of listeners)listener({oldURL:'https://anvil.invalid/'+route,newURL:'https://anvil.invalid/'+other});
+    for(const listener of listeners)listener({oldURL:'https://anvil.invalid/'+other,newURL:'https://anvil.invalid/'+route});
+    gate.resolve(status===200?Response.json(f.summary):Response.json({code:'AUTH_REQUIRED'},{status:401}));await new Promise(r=>setImmediate(r));
+   });await f.tick();
+   assert(!f.container.textContent.includes(f.summary.ref.contentHash));assert(!f.container.textContent.includes('수락 당시 보호요약을 확인할 수 없습니다.'));assert.equal(f.lost(),0);assert.equal(f.calls.length,before);assert.deepEqual(f.buffer,original);assert.equal(f.changes(),0);
+  }finally{gate.resolve(Response.json({}));await f.close();assert.equal(listeners.size,0,'unmount의 exact hashchange listener 해제');}
+ }}finally{for(const key of keys){const value=saved.get(key);if(value)Object.defineProperty(globalThis,key,value);else Reflect.deleteProperty(globalThis,key);}}
+});
