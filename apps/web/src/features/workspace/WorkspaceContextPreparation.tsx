@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
 import { documentControl, type DocumentSession } from '../design-trace/editor-api.ts';
 import type { PlanRef } from '../design-trace/work-plan-api.ts';
@@ -72,7 +72,22 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
  }
  const locked = busy || !owner || !bound || !sameTarget || !!buffer?.pending || !!buffer?.uncertain || !!buffer?.resultRef;
  const selectionState=buffer?contextSourceSelectionState(buffer.input,selected):'SLOT_MISSING';
- function attach(selection: ContextSourceSelection) {if(locked)return;onChange(current=>appendContextSourceToBuffer(current,buffer,session,selected,selection));}
+ const rulesSource = useMemo(() => ({buffer, owner, bound, sameTarget, epoch, selected}), [buffer, owner, bound, sameTarget, epoch, selected]);
+ const committedRulesSource = useRef<typeof rulesSource | null>(null);
+ useLayoutEffect(() => {
+  committedRulesSource.current = rulesSource;
+  return () => { committedRulesSource.current = null; };
+ }, [rulesSource]);
+ const rulesSourceCurrent = useCallback(() => committedRulesSource.current === rulesSource && live.current.epoch === epoch
+  && client.transport === transport && rulesSource.selected === 'RULES_SCOPE' && rulesSource.owner && rulesSource.bound && rulesSource.sameTarget,
+ [rulesSource, epoch, client, transport]);
+ function attach(selection: ContextSourceSelection) {
+  if (locked) return;
+  if (selected === 'RULES_SCOPE') {
+   if (!rulesSourceCurrent()) return;
+   onChange(current => current === buffer && rulesSourceCurrent() ? appendContextSourceToBuffer(current,buffer,session,selected,selection) : current);
+  } else onChange(current => appendContextSourceToBuffer(current,buffer,session,selected,selection));
+ }
  return <section aria-label="임무 맥락 준비"><h6>임무 맥락 준비</h6><p>Agent 전달·실행 허가 아님 · 예산·선정의 의미·최신 관련 지시 전체성은 미확인입니다.</p>
   <button disabled={busy || !owner || !bound || !!buffer?.pending || !!buffer?.uncertain} onClick={() => run(prepare)}>새 맥락 준비 입력</button><button disabled={busy || !bound || !sameTarget} onClick={() => run(list)}>확정 임무의 준비 후보 목록</button>
   {!bound ? <p>보관 입력의 사용자·기기가 다릅니다. 원 입력과 미확인 명령은 유지합니다.</p> : !sameTarget ? <p>보관 준비의 확정 임무가 다릅니다. 원 임무로 돌아가세요.</p> : buffer ? <>
@@ -82,7 +97,7 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
     <label>{labels[slot.code]} 선택/미선택 이유<textarea maxLength={20000} value={slot.reason} onChange={event=>{const value=event.target.value;onChange(current=>editContextPreparationBuffer(current,buffer,session,{kind:'SLOT_REASON',code:slot.code,value}));}} /></label>
    </fieldset>)}<label>원문을 추가할 필수 슬롯<select value={selected} onChange={event => setSelected(event.target.value as keyof typeof labels)}>{Object.entries(labels).map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select></label>
     {selectionState==='SLOT_FULL'?<p role="status">이 슬롯은 원문 1개만 선택합니다. 조회는 가능하며, 다른 원문을 추가하려면 기존 선택을 먼저 해제하세요.</p>:selectionState==='TOTAL_FULL'?<p role="status">전체 원문 선택 200개에 도달했습니다. 조회는 가능하며, 추가하려면 기존 선택을 먼저 해제하세요.</p>:null}
-    <ContextSourcePicker key={selected + ':' + buffer.bindingId + ':' + epoch} client={client} projectId={confirmed.projectId} taskRef={confirmed.snapshot.definition.taskRef} code={selected} disabled={locked} selectionBlocked={selectionState!=='AVAILABLE'} run={run} onSelect={attach} />
+    <ContextSourcePicker key={selected + ':' + buffer.bindingId + ':' + epoch} client={client} projectId={confirmed.projectId} taskRef={confirmed.snapshot.definition.taskRef} code={selected} disabled={locked} isSourceCurrent={selected==='RULES_SCOPE'?rulesSourceCurrent:undefined} selectionBlocked={selectionState!=='AVAILABLE'} run={run} onSelect={attach} />
     <label>준비 이유<textarea maxLength={20000} value={buffer.input.reason} onChange={event=>{const value=event.target.value;onChange(current=>editContextPreparationBuffer(current,buffer,session,{kind:'PREPARATION_REASON',value}));}} /></label>
     <ContextDeliveryLimits limits={buffer.input.limits} disabled={locked} onChange={(limits,field)=>onChange(current=>editContextPreparationBuffer(current,buffer,session,{kind:'DELIVERY_LIMIT',field,value:limits[field]}))}/>
    </fieldset>

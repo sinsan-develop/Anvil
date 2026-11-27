@@ -8,6 +8,8 @@ import type {KnowledgeScope} from '../../../../server/modules/knowledge/knowledg
 import {KnowledgeScopeSummary} from '../knowledge/KnowledgeScopePicker.tsx';
 import type { KnowledgeSearchScope } from '../knowledge/knowledge-search-scope.ts';
 import { ordered } from '../knowledge/review-view.ts';
+import { readProjectConstitution, type ConstitutionView } from '../knowledge/constitution-api.ts';
+import { ConstitutionReadOnly } from '../knowledge/constitution-read-only.ts';
 import type { ConfirmedAssignmentView } from './assignment-confirmation-api.ts';
 
 interface Preview { selection: ContextSourceSelection; body: string; label: string;knowledgeScope?:KnowledgeScope }
@@ -19,7 +21,75 @@ type ScopeMode = keyof typeof scopeLabels;
 type KnowledgeFilter = {mode: ScopeMode; includeProjectWide: boolean};
 interface Candidate { key: string; label: string; inspect: (active: Active) => Promise<Preview | null> }
 interface List { kind: Kind; items: Candidate[]; query: string; next: ((active: Active) => Promise<void>) | null }
-export function ContextSourcePicker({ client, projectId, taskRef, code, disabled, selectionBlocked=false, run, onSelect }: { client: ApiClient; projectId: string; taskRef?:TaskRef; code: ContextSlotCode; disabled: boolean;selectionBlocked?:boolean; run: (action: () => Promise<void>) => void; onSelect: (selection: ContextSourceSelection) => void }) {
+interface PickerProps {
+ client: ApiClient;
+ projectId: string;
+ taskRef?: TaskRef;
+ code: ContextSlotCode;
+ disabled: boolean;
+ selectionBlocked?: boolean;
+ isSourceCurrent?: Active;
+ run: (action: () => Promise<void>) => void;
+ onSelect: (selection: ContextSourceSelection) => void;
+}
+
+function CurrentConstitutionPicker({client, projectId, disabled, selectionBlocked, isSourceCurrent, run, onSelect}: PickerProps) {
+ type Read = {view: ConstitutionView; active: Active};
+ const [shown, setShown] = useState<Read | null>(null);
+ const picked = useRef<Read | null>(null), request = useRef(0);
+ const transport = client.transport;
+ const controls = useRef({disabled, selectionBlocked});
+ useLayoutEffect(() => { controls.current = {disabled, selectionBlocked}; });
+ const owner = useRef<object | null>(null);
+ useLayoutEffect(() => {
+  owner.current = {};
+  setShown(null);
+  return () => { owner.current = null; picked.current = null; };
+ }, [client, transport, projectId, isSourceCurrent]);
+ function read() {
+  const bound = owner.current;
+  const inScope = () => !!bound && owner.current === bound && client.transport === transport && (isSourceCurrent?.() ?? true);
+  if (controls.current.disabled || !inScope()) return;
+  run(async () => {
+   if (!inScope()) return;
+   const ticket = ++request.current;
+   const active = () => inScope() && request.current === ticket;
+   picked.current = null;
+   setShown(null);
+   try {
+    const view = await readProjectConstitution(client, projectId);
+    if (!active()) return;
+    const result = {view, active};
+    picked.current = result;
+    setShown(result);
+   } catch (cause) {
+    if (active()) throw cause;
+   }
+  });
+ }
+ const current = shown?.view.current;
+ function add(read: Read) {
+  const constitution = read.view.current;
+  if (!constitution?.eligibility.usable || controls.current.disabled || controls.current.selectionBlocked
+    || picked.current !== read || !read.active()) return;
+  picked.current = null;
+  setShown(null);
+  onSelect({kind:'KNOWLEDGE_VERSION',versionRef:constitution.application.versionRef});
+ }
+ return <section aria-label="맥락 원문 선택">
+  <button type="button" disabled={disabled} onClick={read}>현재 적용 헌법 원문 조회</button>
+  {shown && !disabled && shown.active() ? <>
+   <ConstitutionReadOnly current={shown.view.current} observedAt={shown.view.observedAt}/>
+   {current?.eligibility.usable ? <button type="button" disabled={selectionBlocked} onClick={() => add(shown)}>이 정확 원문을 선택 슬롯에 추가</button> : null}
+  </> : null}
+ </section>;
+}
+
+export function ContextSourcePicker(props: PickerProps) {
+ return props.code === 'RULES_SCOPE' ? <CurrentConstitutionPicker {...props}/> : <OtherContextSourcePicker {...props}/>;
+}
+
+function OtherContextSourcePicker({ client, projectId, taskRef, code, disabled, selectionBlocked=false, run, onSelect }: PickerProps) {
  const [list, setList] = useState<List | null>(null), [preview, setPreview] = useState<{value:Preview;list:List;active:Active} | null>(null);
  const [knowledgeQuery, setKnowledgeQuery] = useState('');
  const [knowledgeFilter,setKnowledgeFilter]=useState<KnowledgeFilter>({mode:'PROJECT',includeProjectWide:false});

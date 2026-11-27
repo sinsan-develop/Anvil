@@ -61,10 +61,21 @@ test('UI04의 고정 임무는 선택한 단계·업무 범위에서만 후보�
  const ref={id:kitId,version:1,contentHash:hash(entry)},view={ref,entry,body,state:'PROPOSED',headVersion:1,supersedesRef:null,appliedAsConstitution:false,redactionState:'NOT_REDACTED',sensitiveInspection:'KNOWN_PATTERNS_ONLY',agentDelivery:'NOT_CONNECTED',history:[{id:bodyId,kind:'PROPOSED',reason:entry.reason,actorRef:{kind:'HUMAN',userId:session.user.id},recordedAt:at}]};
  const hit={versionRef:ref,title:entry.title,kind:'FACT',reasonSnippet:entry.reason,sourceRefs:[],state:'PROPOSED'};
  const reply=(items:unknown[]=[],nextCursor:string|null=null)=>Response.json({items,hasMore:!!nextCursor,nextCursor,searchScope:'TITLE_REASON',observedAt:at});
+ const constitutionBody='현재 적용 헌법의 보호 원문';
+ const constitutionEntry={...entry,kind:'CONSTITUTION',title:'현재 헌법',contentRef:{...entry.contentRef,bytes:Buffer.byteLength(constitutionBody),contentHash:contentHash(constitutionBody)},scope:{projectId:pid,stageRefs:[],taskRefs:[]}};
+ const constitutionRef={id:kitId,version:1,contentHash:hash(constitutionEntry)};
+ const criteria={criteriaVersion:1,knowledgeKind:'CONSTITUTION',items:['KNOWLEDGE_PURPOSE','KNOWLEDGE_SOURCE','KNOWLEDGE_REASON','KNOWLEDGE_SCOPE','KNOWLEDGE_LIMITS'].map(criterionId=>({criterionId,title:criterionId}))};
+ const review={ref:{id:'00000000-0000-4000-8000-000000000020',targetRef:constitutionRef,criteriaVersion:1,outcome:'ACCEPTED'},criteria,items:criteria.items.map(i=>({criterionId:i.criterionId,outcome:'ACCEPTED',reason:'확인',evidenceRefs:[]})),reviewer:{kind:'HUMAN',userId:session.user.id,sameAsTargetRecorder:true},sourceKind:'HUMAN_REVIEW',reason:'검토',reviewedAt:at,serverSequence:3};
+ const confirmation={eventId:'00000000-0000-4000-8000-000000000021',reviewRefs:[review.ref],reason:'확정',actorRef:{kind:'HUMAN',userId:session.user.id},recordedAt:at};
+ const application={projectId:pid,versionRef:constitutionRef,confirmationId:confirmation.eventId,reason:'현재 적용',acknowledged:true,reviewRef:review.ref,previousApplicationRef:null,appliedBy:{...confirmation.actorRef,clientId:session.clientId},controlGeneration:1};
+ const record={ref:{id:pid,version:1,contentHash:hash(application)},application,appliedAt:at};
+ const constitutionSource={...view,ref:constitutionRef,entry:constitutionEntry,body:constitutionBody,state:'CONFIRMED',confirmation,currentConfirmationValid:true,contentReviewCriteria:criteria,contentReviews:[review],appliedAsConstitution:true,constitutionApplication:record,history:[{id:bodyId,kind:'PROPOSED',reason:constitutionEntry.reason,actorRef:confirmation.actorRef,recordedAt:at},{id:confirmation.eventId,kind:'CONFIRMED',reason:confirmation.reason,actorRef:confirmation.actorRef,reviewRefs:confirmation.reviewRefs,recordedAt:at}]};
+ const constitution={current:{...record,source:constitutionSource,eligibility:{usable:true,reasons:[]}},history:[record],hasMore:false,nextBeforeVersion:null,agentDelivery:'NOT_CONNECTED',compliance:'NOT_ASSESSED',observedAt:at};
  const urls:URL[]=[],errors:unknown[]=[],actions:Promise<void>[]=[];let staged:ReturnType<typeof deferred<Response>>|null=null,badOriginal=false,updates=0,singleFlight=false,running=0;
  const transport:typeof fetch=async(path,init)=>{
   assert.equal(init?.method,'GET');const url=new URL(String(path),'https://anvil.invalid');urls.push(url);
   if(staged){const wait=staged;staged=null;return wait.promise;}
+  if(url.pathname===`/api/v1/projects/${pid}/constitution`)return Response.json(constitution);
   if(url.pathname===`/api/v1/projects/${pid}/knowledge/${kitId}/versions/1`)return Response.json(badOriginal?{...view,body:'다른 본문'}:view);
   if(url.pathname===`/api/v1/projects/${pid}/knowledge`){
    if(url.searchParams.get('kind')==='CONSTITUTION')return reply();
@@ -130,7 +141,72 @@ test('UI04의 고정 임무는 선택한 단계·업무 범위에서만 후보�
   assert.deepEqual(parseScope(urls.at(-1)!),{stageRef:{...stageRef,nodeId:'다음 단계'},taskRef:{planRef:{...task.planRef,version:2},taskCode:'T2'},includeProjectWide:false});
   assert.equal(buffer.input.slots.find(s=>s.code==='CURRENT_POSITION')?.sources.length,0);
   await change(slot(),{value:'RULES_SCOPE'});assert(!nodes().some(n=>n.getAttribute('aria-label')==='지식 검색 범위'));
-  await click('지식 원문 목록');await settle();assert.equal(urls.at(-1)?.searchParams.get('kind'),'CONSTITUTION');assert.equal(parseScope(urls.at(-1)!),null);
+  assert(!findButton('지식 원문 목록'),'일반 헌법 목록에서는 RULES_SCOPE를 선택할 수 없다');
+  const prior=urls.length,changes=updates;
+  await click('현재 적용 헌법 원문 조회');await settle();
+  assert.equal(urls.at(-1)?.pathname,`/api/v1/projects/${pid}/constitution`);
+  assert.equal(urls.length,prior+1);assert.equal(updates,changes);
+  assert(container.textContent.includes(constitutionBody));assert(container.textContent.includes(record.ref.contentHash));
+  const rules=()=>buffer.input.slots.find(s=>s.code==='RULES_SCOPE')?.sources;
+  const event=(node:MemoryNode)=>{const key=Object.keys(node).find(k=>k.startsWith('__reactProps'))!;return (node as any)[key].onClick as ()=>void;};
+  const originalAdd=findButton(selectLabel);assert(originalAdd);
+  const oldAdd=event(originalAdd);
+  await click(selectLabel);
+  assert.deepEqual(rules(),[{kind:'KNOWLEDGE_VERSION',versionRef:constitutionRef}]);
+  assert.equal(urls.length,prior+1);
+  assert(!JSON.stringify(buffer.input).includes(constitutionBody));
+  await click('현재 적용 헌법 원문 조회');await settle();
+  assert(findButton(selectLabel)?.disabled,'한 원문 제한은 명시 제거까지 유지');
+  await click('이 원문 선택 해제');
+  assert.deepEqual(rules(),[]);
+  const afterRemove=updates;
+  await act(async()=>oldAdd());
+  assert.equal(updates,afterRemove);assert.deepEqual(rules(),[]);
+
+  const responseViews=[
+   {...constitution,current:null,history:[]},
+   {...constitution,current:{...constitution.current,source:{...constitutionSource,state:'SUPERSEDED',headVersion:2,currentConfirmationValid:false},eligibility:{usable:false,reasons:['SUPERSEDED']}}},
+   {...constitution,current:{...constitution.current,source:{...constitutionSource,state:'EXCLUDED',currentConfirmationValid:false,history:[...constitutionSource.history,{id:'00000000-0000-4000-8000-000000000022',kind:'EXCLUDED',reason:'제외',actorRef:confirmation.actorRef,recordedAt:at}]},eligibility:{usable:false,reasons:['EXCLUDED']}}},
+  ];
+  for (const unavailable of responseViews) {
+   const rejectionCount:number=errors.length,waiting=hold();
+   await click('현재 적용 헌법 원문 조회');
+   waiting.resolve(Response.json(unavailable));await settle();
+   assert(!findButton(selectLabel));assert.deepEqual(rules(),[]);
+   assert.equal(errors.length,rejectionCount);
+   assert(container.textContent.includes(unavailable.current?'현재 사용 불가':'프로젝트 적용 헌법 없음'));
+  }
+  for (const rejection of [
+   Response.json({...constitution,current:{...constitution.current,source:{...constitutionSource,body:'변조 본문'}}}),
+   Response.json({...constitution,current:{...constitution.current,ref:{...record.ref,contentHash:'b'.repeat(64)}}}),
+   Response.json({code:'AUTH_REQUIRED'},{status:401}),
+   Response.json({code:'PROJECT_FORBIDDEN'},{status:403}),
+  ]) {
+   await click('현재 적용 헌법 원문 조회');await settle();assert(findButton(selectLabel));
+   const rejectionCount:number=errors.length,waiting=hold();
+   await click('현재 적용 헌법 원문 조회');
+   waiting.resolve(rejection);await settle();
+   assert(!findButton(selectLabel));assert.deepEqual(rules(),[]);assert.equal(errors.length,rejectionCount+1);
+  }
+  await click('현재 적용 헌법 원문 조회');await settle();
+  const addBeforeBufferChange=findButton(selectLabel);assert(addBeforeBufferChange);
+  const readBeforeBufferChange=findButton('현재 적용 헌법 원문 조회');assert(readBeforeBufferChange);
+  const staleAdd=event(addBeforeBufferChange),staleRead=event(readBeforeBufferChange);
+  const waiting=hold(),beforeStaleErrors=errors.length;
+  await click('현재 적용 헌법 원문 조회');
+  buffer={...buffer};
+  await act(async()=>render());
+  waiting.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await settle();
+  const beforeStaleRead=urls.length;
+  await act(async()=>{staleAdd();staleRead();});
+  assert(!findButton(selectLabel));assert.deepEqual(rules(),[]);
+  assert.equal(errors.length,beforeStaleErrors);assert.equal(urls.length,beforeStaleRead);
+
+  const oldRules=hold();await click('현재 적용 헌법 원문 조회');
+  await change(slot(),{value:'NEXT_ACTION'});await change(slot(),{value:'RULES_SCOPE'});
+  oldRules.resolve(Response.json(constitution));await settle();
+  assert(!findButton(selectLabel));assert.deepEqual(rules(),[]);
+  assert(!urls.some(url=>url.searchParams.get('kind')==='CONSTITUTION'));
   await change(slot(),{value:'LATEST_INSTRUCTIONS'});assert(!nodes().some(n=>n.getAttribute('aria-label')==='지식 검색 범위'));
   await click('사용자 지시 대화 목록');await settle();assert.equal(urls.at(-1)?.pathname,`/api/v1/projects/${pid}/conversations`);
   await flush();
