@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {existsSync,readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
+import {join,resolve} from 'node:path';
 const hash=(b:Uint8Array)=>createHash('sha256').update(b).digest('hex');
 async function api(){const u=new URL('../../../apps/server/storage/artifact-backup-budget-read.ts',import.meta.url);const m:any=existsSync(u)?await import(u.href):{};assert.equal(typeof m.createArtifactBackupReadBudget,'function','backup budget missing');assert.equal(typeof m.readOwnedArtifactBackupBytes,'function');return m;}
 const expected=(b:Uint8Array)=>({bytes:b.length,contentHash:hash(b)});
@@ -20,7 +21,58 @@ test('backup stat/read error and unsafe file close; failure buffers zero',async(
 test('backup cleanup failure overrides abort and poisons shared budget permanently',async()=>{const m=await api(),c=new AbortController(),b=budget(m,10,c.signal),f=fixture(Buffer.from('a'));f.state.readHook=buffer=>{buffer.fill(65);c.abort();throw Error('private-marker');};f.state.closeHook=()=>{throw Error('private-marker');};await assert.rejects(m.readOwnedArtifactBackupBytes(f.handle,expected(Buffer.from('a')),b),failure('ARTIFACT_BACKUP_CLEANUP_FAILED',503));const g=fixture(Buffer.from('b'));await assert.rejects(m.readOwnedArtifactBackupBytes(g.handle,expected(Buffer.from('b')),b),failure('ARTIFACT_BACKUP_CLEANUP_FAILED',503));assert.equal(g.state.stats,0);assert.equal(g.state.reads.length,0);assert.equal(g.state.closes,1);assert.equal(f.state.closes,1);zero(f);});
 test('backup close pending waits and late deadline destroys success Buffer',async()=>{const m=await api(),f=fixture(Buffer.from('a'));const original=performance.now;let now=0;Object.defineProperty(performance,'now',{configurable:true,value:()=>now});try{const b=m.createArtifactBackupReadBudget({maxBytes:10,deadlineMs:100},new AbortController().signal);f.state.closeHook=()=>{now=101;};await assert.rejects(m.readOwnedArtifactBackupBytes(f.handle,expected(Buffer.from('a')),b),failure('ARTIFACT_BACKUP_DEADLINE',413));assert.equal(f.state.closes,1);zero(f);}finally{Object.defineProperty(performance,'now',{configurable:true,value:original});}});
 test('backup rejects malformed budget and integer limits, never falls back',async()=>{const m=await api();for(const value of [0,-1,NaN,Infinity,Number.MAX_SAFE_INTEGER+1]){assert.throws(()=>m.createArtifactBackupReadBudget({maxBytes:value,deadlineMs:10},new AbortController().signal),failure('ARTIFACT_BACKUP_INPUT_INVALID',400));assert.throws(()=>m.createArtifactBackupReadBudget({maxBytes:10,deadlineMs:value},new AbortController().signal),failure('ARTIFACT_BACKUP_INPUT_INVALID',400));}const f=fixture(Buffer.from('a'));await assert.rejects(m.readOwnedArtifactBackupBytes(f.handle,expected(Buffer.from('a')),{}),failure('ARTIFACT_BACKUP_INPUT_INVALID',400));assert.equal(f.state.closes,1);assert.equal(f.state.stats,0);});
-test('backup actual store optional branch preserves original path and exact helper ownership',async()=>{await api();const s=readFileSync(new URL('../../../apps/server/storage/artifact-store.ts',import.meta.url),'utf8');assert.match(s,/backupBudget/);assert.match(s,/readOwnedArtifactBackupBytes/);assert.match(s,/assertArtifactBackupReadBudget/);assert.match(s,/return this\.#bytes\(join\(path, artifactId\), expected\)/);assert.match(s,/const bytes = await file\.readFile\(\)/);assert.match(s,/finally \{ await file\.close\(\); \}/);});
+test('backup actual store optional branch preserves original path and exact helper ownership',async()=>{await api();const s=readFileSync(new URL('../../../apps/server/storage/artifact-store.ts',import.meta.url),'utf8');assert.match(s,/backupBudget/);assert.match(s,/readOwnedArtifactBackupBytes/);assert.match(s,/assertArtifactBackupReadBudget/);assert.match(s,/return this\.#bytes\(join\(path, artifactId\), expected\)/);});
+
+test('project artifact store bounds the held handle read to the expected body and a one-byte EOF probe',async t=>{
+ const projectId='74000000-0000-4000-8000-000000000001',artifactId='74000000-0000-4000-8000-000000000002';
+ const root=resolve('synthetic-artifact-store'),artifactPath=join(root,'blobs',projectId,artifactId);
+ const body=Buffer.from('abcdef'),empty=Buffer.alloc(0);
+ const cases=[
+  {name:'grows',before:6,after:Buffer.from('abcdefghi'),read:[[0,6],[2,4],[4,2],[6,1]],error:'ARTIFACT_INTEGRITY_FAILED'},
+  {name:'partial',before:6,after:body,read:[[0,6],[2,4],[4,2],[6,1]]},
+  {name:'empty',before:0,after:empty,wanted:empty,read:[[0,1]]},
+  {name:'grows from empty',before:0,after:body,wanted:empty,read:[[0,1]],error:'ARTIFACT_INTEGRITY_FAILED'},
+  {name:'shrinks',before:6,after:Buffer.from('ab'),read:[[0,6],[2,4]],error:'ARTIFACT_INTEGRITY_FAILED'},
+  {name:'wrong hash',before:6,after:Buffer.from('fedcba'),read:[[0,6],[2,4],[4,2],[6,1]],error:'ARTIFACT_INTEGRITY_FAILED'},
+  {name:'size mismatch before read',before:7,after:Buffer.from('abcdefg'),read:[],error:'ARTIFACT_INTEGRITY_FAILED'},
+  {name:'over policy before read',before:20*1024*1024+1,after:body,read:[],error:'ARTIFACT_FILE_UNSAFE'},
+  {name:'close fails',before:6,after:body,read:[[0,6],[2,4],[4,2],[6,1]],error:'SYNTHETIC_CLOSE_FAILED'},
+ ];
+ let scenario:(typeof cases)[number];
+ let reads:number[][]=[],closes=0,unbounded=0,opens=0;
+ const deny=()=>{assert.fail('unexpected artifact file operation');};
+ const fs={
+  async lstat(path:string){return{isSymbolicLink:()=>false,isDirectory:()=>path!==artifactPath,mode:0o700,uid:process.getuid?.()??0};},
+  async realpath(path:string){return path;},
+  async open(path:string){
+   opens++;assert.equal(path,artifactPath);
+   return{
+    async stat(){return{isFile:()=>true,nlink:1,size:scenario.before,mode:0o600,uid:process.getuid?.()??0};},
+    async readFile(){unbounded++;return Buffer.from(scenario.after);},
+    async read(buffer:Buffer,offset:number,length:number,position:number){
+     reads.push([position,length]);
+     const bytesRead=Math.max(0,Math.min(length,2,scenario.after.length-position));
+     if(bytesRead)scenario.after.copy(buffer,offset,position,position+bytesRead);
+     return{bytesRead,buffer};
+    },
+    async close(){closes++;if(scenario.name==='close fails')throw Error('SYNTHETIC_CLOSE_FAILED');},
+   };
+  },
+  mkdir:deny,readdir:deny,copyFile:deny,unlink:deny,rmdir:deny,
+ };
+ t.mock.module('node:fs/promises',{exports:{...fs,default:fs}});
+ const {ArtifactStore}=await import('../../../apps/server/storage/artifact-store.ts');
+ for(const c of cases){
+  scenario=c;reads=[];closes=0;unbounded=0;opens=0;
+  const wanted=c.wanted??body;
+  const read=new ArtifactStore(root).read(projectId,artifactId,expected(wanted));
+  if(c.error)await assert.rejects(read,{message:c.error},c.name);else assert.deepEqual(await read,wanted,c.name);
+  assert.equal(unbounded,0,c.name);
+  assert.deepEqual(reads,c.read,c.name);
+  assert.equal(opens,1,c.name);
+  assert.equal(closes,1,c.name);
+ }
+});
 test('backup close failure destroys output and chunks; forged errors normalized',async()=>{const m=await api(),original=Buffer.alloc,allocations:Buffer[]=[];(Buffer as any).alloc=(...args:any[])=>{const b=(original as any)(...args);allocations.push(b);return b;};try{const f=fixture(Buffer.from('abc'));f.state.closeHook=()=>{throw Error('private-marker');};await assert.rejects(m.readOwnedArtifactBackupBytes(f.handle,expected(Buffer.from('abc')),budget(m)),failure('ARTIFACT_BACKUP_CLEANUP_FAILED',503));assert.ok(allocations.length>=2);assert.ok(allocations.every(b=>b.every(x=>x===0)));}finally{Buffer.alloc=original;}const f=fixture(Buffer.from('a'));const {AuthFailure}=await import('../../../apps/server/modules/access/repository.ts');f.state.statHook=()=>{throw new AuthFailure('ARTIFACT_BACKUP_private-marker',503);};await assert.rejects(m.readOwnedArtifactBackupBytes(f.handle,expected(Buffer.from('a')),budget(m)),failure('ARTIFACT_BACKUP_IO_FAILED',503));});
 test('backup close pending awaited; concurrent close failure poisons running read',async()=>{const m=await api(),b=budget(m);let entered!:()=>void,release!:()=>void;const start=new Promise<void>(r=>entered=r),gate=new Promise<void>(r=>release=r),f=fixture(Buffer.from('a'));f.state.closeHook=async()=>{entered();await gate;};let settled=false;const first=m.readOwnedArtifactBackupBytes(f.handle,expected(Buffer.from('a')),b).finally(()=>settled=true);await start;assert.equal(settled,false);const g=fixture(Buffer.from('b'));g.state.closeHook=()=>{throw Error('private-marker');};await assert.rejects(m.readOwnedArtifactBackupBytes(g.handle,expected(Buffer.from('b')),b),failure('ARTIFACT_BACKUP_CLEANUP_FAILED',503));assert.equal(g.state.stats,0);release();await assert.rejects(first,failure('ARTIFACT_BACKUP_CLEANUP_FAILED',503));zero(f);assert.equal(f.state.closes,1);});
 test('backup deadline after stat and read cooperates and prevents success',async()=>{const m=await api(),original=performance.now;let now=0;Object.defineProperty(performance,'now',{configurable:true,value:()=>now});try{for(const at of ['stat','read']){now=0;const f=fixture(Buffer.from('a')),b=m.createArtifactBackupReadBudget({maxBytes:10,deadlineMs:100},new AbortController().signal);if(at==='stat')f.state.statHook=()=>{now=101;return{isFile:()=>true,nlink:1,size:1,uid:process.getuid?.()??0,mode:0o600};};else f.state.readHook=buffer=>{buffer[0]=65;now=101;return{bytesRead:1,buffer};};await assert.rejects(m.readOwnedArtifactBackupBytes(f.handle,expected(Buffer.from('a')),b),failure('ARTIFACT_BACKUP_DEADLINE',413));assert.equal(f.state.closes,1);zero(f);}}finally{Object.defineProperty(performance,'now',{configurable:true,value:original});}});

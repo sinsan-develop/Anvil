@@ -340,6 +340,9 @@ async function memoryFiles(){
       const handle={
         stat:async()=>{trace('stat',path);return stat(path);},
         readFile:async()=>{trace('readFile',path);return Buffer.from(files.get(path)!);},
+        read:async(buffer:Buffer,offset:number,length:number,position:number)=>{
+          trace('read',path);return {bytesRead:files.get(path)!.copy(buffer,offset,position,position+length),buffer};
+        },
         close:async()=>{trace('close',path);assert.ok(handles.delete(handle));},
       };
       handles.add(handle);return handle;
@@ -376,7 +379,7 @@ if(artifactChild)test(attachmentTest,async()=>{
         {kind:'lstat',path:root},{kind:'realpath',path:root},
         {kind:'lstat',path:join(root,'blobs')},{kind:'realpath',path:join(root,'blobs')},
         {kind:'lstat',path:join(root,'blobs',owner.projectId)},{kind:'realpath',path:join(root,'blobs',owner.projectId)},
-        ...['lstat','open','stat','readFile','close'].map(kind=>({kind,path})),
+        ...['lstat','open','stat','read','read','close'].map(kind=>({kind,path})),
       ]);
       assert.equal(handles.size,0);
 
@@ -439,7 +442,8 @@ if(knowledgeChild)test(knowledgeTest,async()=>{
       const second=await get(owner.projectId,'공통',cursor);
       assert.equal(second.statusCode,200,second.body);
       assert.deepEqual(withoutObservedAt(second.json()),{items:[expectedItem(ownRows[1]!)],hasMore:false,nextCursor:null,searchScope:'TITLE_REASON'});
-      assert.deepEqual(fsCalls.slice(start).filter(call=>call.kind==='readFile').map(call=>call.path),[ownFile,ownFile,ownFile,ownFile]);
+      assert.deepEqual(fsCalls.slice(start).filter(call=>call.kind==='readFile'||call.kind==='read'),
+        Array.from({length:8},()=>({kind:'read',path:ownFile}))); // 네 원문마다 본문과 EOF를 확인한다.
       assert.equal(handles.size,0);
 
       const hiddenFs=fsCalls.length,hiddenSigns=running.cursorSigns();
@@ -499,7 +503,8 @@ if(documentChild)test(documentTest,async()=>{
         [['DRAFT_SAVED',own.authorRef],...(own.confirmed?[['CONFIRMED',own.authorRef]]:[])]);
       assert.deepEqual(running.calls.slice(start),[member(owner.projectId),document(owner.projectId,own.ref.id,1),
         ...['ARTIFACT','FORM','REVIEW','HISTORY','IMPORT','PROPOSAL'].map(value=>({kind:'DOCUMENT_PART',actorId:owner.userId,value}))]);
-      assert.deepEqual(fsCalls.slice(fsStart).filter(call=>call.kind==='readFile'||call.kind==='close'),[{kind:'readFile',path:ownFile},{kind:'close',path:ownFile}]);
+      assert.deepEqual(fsCalls.slice(fsStart).filter(call=>['readFile','read','close'].includes(call.kind)),
+        ['read','read','close'].map(kind=>({kind,path:ownFile})));
       assert.equal(handles.size,0);
 
       for(const [pid,did,version,canReadProject] of [[other.owner.projectId,other.ref.id,1,false],[missingId,other.ref.id,1,false],

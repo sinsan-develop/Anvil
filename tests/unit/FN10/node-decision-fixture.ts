@@ -12,7 +12,7 @@ async function memoryFS(){if(installed)return;const original=await import('node:
  const stat=(p:string)=>{if(!files.has(p)&&!dirs.has(p))throw Error('MEMORY_PATH_MISSING');return{isDirectory:()=>dirs.has(p),isFile:()=>files.has(p),isSymbolicLink:()=>false,nlink:1,size:files.get(p)?.length??0,uid:process.getuid?.()??0,mode:dirs.has(p)?0o40700:0o100600};};
  const check=(p:string)=>assert(p===root||p.startsWith(root+sep));
  const blocked=Object.fromEntries(Object.keys(original).filter(k=>k!=='default').map(k=>[k,bad]));
- const api={...blocked,lstat:async(p:string)=>{check(p);return stat(p);},realpath:async(p:string)=>{check(p);stat(p);return p;},open:async(p:string,flags:number)=>{check(p);assert.equal(flags&3,0);stat(p);artifactCalls.open++;return{stat:async()=>stat(p),readFile:async()=>{artifactCalls.read++;return Buffer.from(files.get(p)!);},close:async()=>{artifactCalls.close++;}};}};
+ const api={...blocked,lstat:async(p:string)=>{check(p);return stat(p);},realpath:async(p:string)=>{check(p);stat(p);return p;},open:async(p:string,flags:number)=>{check(p);assert.equal(flags&3,0);stat(p);artifactCalls.open++;return{stat:async()=>stat(p),readFile:async()=>{artifactCalls.read++;return Buffer.from(files.get(p)!);},read:async(buffer:Buffer,offset:number,length:number,position:number)=>{artifactCalls.read++;return{bytesRead:files.get(p)!.copy(buffer,offset,position,position+length),buffer};},close:async()=>{artifactCalls.close++;}};}};
  mock.module('node:fs/promises',{exports:{...api,default:api}});installed=true;dirs.add(root);dirs.add(join(root,'blobs'));
 }
 /** HTTP 포트만 합성한다. 보호 version/plan·원 service는 실제 구현을 소비한다. */

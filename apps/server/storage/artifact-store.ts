@@ -23,13 +23,21 @@ export class ArtifactStore {
     }
     return path;
   }
-  async #bytes(path: string, expected?: { bytes: number; contentHash: string }) {
+  async #bytes(path: string, expected: { bytes: number; contentHash: string }) {
     const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
     try {
       const stat = await file.stat();
       if (!stat.isFile() || stat.nlink !== 1 || stat.size > 20 * 1024 * 1024 || process.platform !== 'win32' && (stat.uid !== process.getuid!() || (stat.mode & 0o077) !== 0)) throw Error('ARTIFACT_FILE_UNSAFE');
-      const bytes = await file.readFile();
-      if (bytes.length !== stat.size || expected && (bytes.length !== expected.bytes || createHash('sha256').update(bytes).digest('hex') !== expected.contentHash)) throw Error('ARTIFACT_INTEGRITY_FAILED');
+      if (stat.size !== expected.bytes) throw Error('ARTIFACT_INTEGRITY_FAILED');
+      const bytes = Buffer.alloc(stat.size);
+      let offset = 0;
+      while (offset < bytes.length) {
+        const { bytesRead } = await file.read(bytes, offset, bytes.length - offset, offset);
+        if (bytesRead === 0) throw Error('ARTIFACT_INTEGRITY_FAILED');
+        offset += bytesRead;
+      }
+      const { bytesRead: extra } = await file.read(Buffer.alloc(1), 0, 1, bytes.length);
+      if (extra !== 0 || createHash('sha256').update(bytes).digest('hex') !== expected.contentHash) throw Error('ARTIFACT_INTEGRITY_FAILED');
       return bytes;
     } finally { await file.close(); }
   }
