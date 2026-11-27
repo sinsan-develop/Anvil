@@ -30,17 +30,26 @@ before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/design-trace/MaterialLibrary.tsx',import.meta.url));
  const api=fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url));
  const result:any=await build({configFile:false,envFile:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:trace-artifact',name:'TraceArtifactTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'trace-memory-entry',resolveId(id){if(id.endsWith('virtual:trace-artifact'))return '\0trace-artifact';},load(id){if(id==='\0trace-artifact')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{MaterialLibrary}from${JSON.stringify(entry)};import{DocumentEditor}from${JSON.stringify(entry.replace('MaterialLibrary.tsx','DocumentEditor.tsx'))};import{ApiClient}from${JSON.stringify(api)};export{React,createRoot,MaterialLibrary,DocumentEditor,ApiClient};`;}}]});
- const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
- for(const[key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
+ const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:',hash:''}};document.defaultView=window;
+ for(const[key,value]of Object.entries({window,document,location:window.location,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return TraceArtifactTest;')();
 });
 after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k,v]of saved)if(v)Object.defineProperty(globalThis,k,v);else Reflect.deleteProperty(globalThis,k);});
 const id=(n:number)=>`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,pid=id(1),uid=id(2),cid=id(3),at='2026-11-17T00:00:00Z',session={user:{id:uid},clientId:cid,csrfToken:'C'.repeat(43)};
 const H=(v:unknown)=>contentHash(canonicalJson(v));
 function deferred<T>(){let resolve!:(v:T)=>void;const promise=new Promise<T>(r=>resolve=r);return{promise,resolve};}
-function data(){
+function data(coverage=false,formCode='AF02'){
  const files=new Map<string,string>(),file=(n:number,text:string,mediaType='text/plain;charset=utf-8')=>{const ref={artifactId:id(n),bytes:Buffer.byteLength(text),contentHash:contentHash(Buffer.from(text)),mediaType};files.set(ref.artifactId,text);return ref;};
- const old='원 본문\n',next='제안 본문\n',formRef={id:id(4),version:1,contentHash:'f'.repeat(64)},before={body:file(5,old),attachments:[],sections:[],sourceRefs:[]},after={body:file(6,next),attachments:[],sections:[],sourceRefs:[]};
+ const standard='작성 기준',authoringStandardRef={id:id(41),version:1,contentHash:contentHash(Buffer.from(standard))};
+ const items=[['PRESENT','작성한 필수 항목',true],['EMPTY','빈 필수 항목',true],['MISSING','연결하지 않은 필수 항목',true],['OPTIONAL','선택 항목',false]]
+  .map(([itemId,title,required])=>({itemId,title,required,repeated:false,valueType:'TEXT',authoringRules:['작성'],reviewCriteria:['검토'],fields:[]}));
+ const definition={scope:'SYSTEM',formCode,name:formCode==='AF04'?'작업계획 양식':'설계 양식',purpose:'구조 확인',authorRole:'작성자',reviewerRole:'검토자',confirmerRole:'확정자',requiredInputs:['설계'],items,authoringStandardRef};
+ const formRef={id:id(4),version:1,contentHash:coverage?H(definition):'f'.repeat(64)};
+ const form={ref:formRef,definition,authoringStandard:{ref:authoringStandardRef,content:standard},validation:{formatOnly:true,contentReview:'NOT_PERFORMED',userAcceptance:'NOT_PERFORMED'}};
+ const complete=coverage&&formCode==='AF04';
+ const old='원 본문\n',next=complete?'본문 1\n본문 2\n본문 3\n':coverage?'필수 본문\r\n  \r\n선택 본문\r\n':'제안 본문\n';
+ const sections=complete?[{itemId:'PRESENT',anchor:'line:1'},{itemId:'EMPTY',anchor:'line:2'},{itemId:'MISSING',anchor:'line:3'}]:coverage?[{itemId:'OPTIONAL',anchor:'line:3'},{itemId:'EMPTY',anchor:'line:2'},{itemId:'PRESENT',anchor:'line:1'}]:[];
+ const before={body:file(5,old),attachments:[],sections:[],sourceRefs:[]},after={body:file(6,next),attachments:[],sections,sourceRefs:[]};
  const baseRef={id:id(7),version:2,contentHash:H({title:'원문',formRef,stageNodeRef:null,content:before})};
  const diff={...documentTextDiff(old,next),baseRef,baseBodyRef:before.body,proposedBodyRef:after.body,beforeContent:before,afterContent:after};
  const proposal={id:id(8),baseRef,proposedContentRef:after.body,diffRef:file(9,canonicalJson(diff),'application/json;charset=utf-8'),status:'PENDING',proposedContent:after,reason:'사람의 제안',createdAt:at,proposedBy:uid,selections:[]};
@@ -49,10 +58,10 @@ function data(){
  const task={taskCode:'FN01',type:'FUNCTION',title:'고정 업무',purpose:'수행',designRefs:[],screenRefs:[],ownerRole:'작업자',inputs:[],outputs:[],included:[],excluded:[],allowedFileRefs:[],startPrerequisites:[],acceptancePrerequisites:[],steps:[],acceptanceCriteria:[],evidenceRequirements:[],testCases:[],rollback:'복구',recoveryNotes:'기록'};
  const planSnapshot={documentRef:baseRef,designRef,screenReviewRefs:[],tasks:[task],dependencies:[],reason:'계획',issues:[],relationalProjection:'STORED'};
  const plan={ref:{id:id(11),version:3,contentHash:H(planSnapshot)},status:'DRAFT',...planSnapshot,executionEvidence:'NOT_CONNECTED',observedAt:at};
- return{files,proposal,document,plan,diff,designRef,old,next,baseRef};
+ return{files,proposal,document,plan,diff,designRef,old,next,baseRef,form};
 }
-async function fixture(){
- const d=data(),calls:{path:string;method:string;body?:string}[]=[],controls={lose:false,receiptFault:'',generation:4,hook:null as null|((path:string,options?:RequestInit)=>Promise<Response|null>|Response|null)};let lost=0,latest:any=null,external:any;
+async function fixture(coverage=false,formCode='AF02'){
+ const d=data(coverage,formCode),calls:{path:string;method:string;body?:string}[]=[],controls={lose:false,receiptFault:'',generation:4,hook:null as null|((path:string,options?:RequestInit)=>Promise<Response|null>|Response|null)};let lost=0,latest:any=null,external:any;
  const transport:typeof fetch=async(path,options)=>{const p=String(path),method=options?.method??'GET',body=typeof options?.body==='string'?options.body:undefined;calls.push({path:p,method,body});const intercepted=await controls.hook?.(p,options);if(intercepted)return intercepted;
  if(method==='POST'){assert.equal(p,`/api/v1/projects/${pid}/commands`);const c=JSON.parse(body!);assert.equal(c.operation,'linkTrace');assert.equal(c.projectId,pid);assert.equal(c.clientId,cid);assert.equal(c.controlGeneration,4);assert.equal(c.targetId,null);assert.equal(c.expectedVersion,0);assert.deepEqual(c.baselineRefs,[]);assert.equal(c.approvalRef,null);assert.deepEqual(c.payload,{from:{kind:'ARTIFACT',id:d.proposal.diffRef.artifactId,versionRef:{id:d.proposal.diffRef.artifactId,version:1,contentHash:d.proposal.diffRef.contentHash}},to:{kind:'PLAN_TASK',id:d.plan.ref.id,versionRef:d.plan.ref,localCode:'FN01'},relation:'IMPLEMENTS',reason:'변경 구간을 업무에 연결'});
  const snapshot={...c.payload,designRefs:[d.designRef]},edge={id:id(20),...snapshot,edgeHash:H(snapshot),createdAt:at},ref={id:edge.id,version:1,contentHash:edge.edgeHash};
@@ -62,8 +71,9 @@ async function fixture(){
  return Response.json({commandId:controls.receiptFault==='COMMAND'?id(29):c.commandId,projectId:pid,status:'APPLIED',operationId:id(21),serverReceivedAt:at,targetId:edge.id,version:1,data:{status:'TRACE_LINKED',ref,edge}});
  }
  if(p.includes('/imports?'))return Response.json({items:[],hasMore:false,nextCursor:null,observedAt:at});
- if(p.includes('/proposals?'))return Response.json({items:[{id:d.proposal.id,baseRef:d.baseRef,title:'보관 제안',status:'PENDING',proposedContentRef:d.proposal.proposedContentRef,diffRef:d.proposal.diffRef,integrity:'NOT_RECHECKED',createdAt:at}],hasMore:false,nextCursor:null,observedAt:at});
+ if(p.includes('/proposals?'))return Response.json({items:(coverage?[d.proposal.id,id(44)]:[d.proposal.id]).map(proposalId=>({id:proposalId,baseRef:d.baseRef,title:'보관 제안',status:'PENDING',proposedContentRef:d.proposal.proposedContentRef,diffRef:d.proposal.diffRef,integrity:'NOT_RECHECKED',createdAt:at})),hasMore:false,nextCursor:null,observedAt:at});
  if(p.endsWith('/proposals/'+d.proposal.id))return Response.json(d.proposal);
+ if(coverage&&p.endsWith('/proposals/'+id(44)))return Response.json({...d.proposal,id:id(44)});
  if(p.includes('/documents/'))return Response.json(d.document);
  if(p.includes('/files/')){const text=d.files.get(p.split('/').at(-1)!);assert.notEqual(text,undefined);return new Response(Buffer.from(text!),{headers:{'content-type':'application/octet-stream'}});}
  if(p.includes('/work-plans?'))return Response.json({items:[{ref:d.plan.ref,status:'DRAFT',title:'고정 계획',documentRef:d.plan.documentRef,designRef:d.designRef,issueCount:0,updatedAt:at,integrity:'NOT_RECHECKED'}],hasMore:false,nextCursor:null,observedAt:at});
@@ -82,7 +92,7 @@ async function fixture(){
  const wait=async(check:()=>boolean)=>{for(let n=0;!check()&&n<100;n++)await ui.React.act(async()=>{await new Promise(r=>setTimeout(r,2));});assert(check(),container.textContent);};
  const close=async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);};
  await render();await wait(()=>container.textContent.includes('보관 제안'));
- return{d,client,calls,controls,props:()=>props,buffer:()=>latest,lost:()=>lost,render,click,change,settle,wait,close,text:()=>container.textContent,button,setBuffer:async(f:any)=>ui.React.act(async()=>external(f)),open:async()=>{await click('보관 제안 '+d.proposal.id+' 열기');await wait(()=>container.textContent.includes('보관 제안 변경 구간')||nodes().some(n=>n.getAttribute('aria-label')==='보관 제안 변경 구간'));}};
+ return{d,client,calls,controls,props:()=>props,buffer:()=>latest,lost:()=>lost,render,click,change,settle,wait,close,text:()=>container.textContent,button,setBuffer:async(f:any)=>ui.React.act(async()=>external(f)),open:async(proposalId=d.proposal.id)=>{await click('보관 제안 '+proposalId+' 열기');await wait(()=>container.textContent.includes('보관 제안 변경 구간')||nodes().some(n=>n.getAttribute('aria-label')==='보관 제안 변경 구간'));}};
 }
 test('보관 제안에서 명시 diff 업무 연결 준비는 실제 Editor로 이어지고 POST0이다',async()=>{const f=await fixture();try{
  await f.open();await f.click('서버 생성 diff를 고정 업무에 연결');await f.wait(()=>!!f.buffer()?.proposalState?.diffTrace);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);assert.match(f.text(),/문서 제안 diff와 고정 업무 연결/);assert.equal(f.buffer().proposalState.proposal.diffRef.artifactId,f.d.proposal.diffRef.artifactId);
@@ -174,4 +184,123 @@ for(const stage of ['PREPARE','TRACE'])for(const status of [200,401])test(stage+
  const f=await fixture(),gate=deferred<Response>();try{let entered=false;if(stage==='PREPARE'){await f.open();f.controls.hook=p=>p.endsWith('/proposals/'+f.d.proposal.id)?(entered=true,gate.promise):null;await f.click('서버 생성 diff를 고정 업무에 연결');}else{await prepare(f);await f.click('제안 diff 업무 연결 저장');await f.wait(()=>!!f.buffer()?.proposalState?.diffTrace.result);f.controls.hook=p=>p.includes('/traces?')?(entered=true,gate.promise):null;await f.click('저장한 diff 연결 조회');}
  await f.wait(()=>entered);const count=f.calls.length,edge=stage==='TRACE'?structuredClone(f.buffer().proposalState.diffTrace.result):null;await f.render({...f.props(),session:{...session,csrfToken:'D'.repeat(43)}});gate.resolve(status===401?Response.json({code:'AUTH_REQUIRED'},{status}):Response.json(stage==='PREPARE'?f.d.proposal:traceView(edge,f.d.designRef)));await f.settle();assert.equal(f.lost(),0);assert.deepEqual(f.calls.slice(count).filter(c=>!c.path.includes('/imports?')&&!c.path.includes('/proposals?')),[]);if(stage==='PREPARE')assert.equal(f.buffer(),null);else assert(!f.text().includes('연결 '+edge.id+' · SHA256'));
  }finally{gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.close();}
+});
+
+const coverageAction='고정 양식 필수 항목 확인';
+const coveragePath=(f:Awaited<ReturnType<typeof fixture>>)=>`/api/v1/forms/${f.d.form.ref.id}/versions/${f.d.form.ref.version}`;
+test('미반영 제안의 고정 양식·실제 구간으로 필수 항목을 확인한다 · 읽기 전용',async()=>{
+ const f=await fixture(true);try{
+  await f.open();assert.equal(f.calls.filter(c=>c.path.includes('/forms')).length,0);
+  const path=coveragePath(f);
+  f.controls.hook=(actual,init)=>{
+   if(actual!==path)return null;
+   assert.equal(init?.method,'GET');assert.equal(init?.credentials,'same-origin');assert.equal(init?.body,undefined);
+   return Response.json(f.d.form);
+  };
+  await f.click(coverageAction);
+  await f.wait(()=>f.text().includes('필수 항목 3개 중 2개 누락'));
+  assert.match(f.text(),/EMPTY · 빈 필수 항목/);
+  assert.match(f.text(),/MISSING · 연결하지 않은 필수 항목/);
+  assert.doesNotMatch(f.text(),/PRESENT · 작성한 필수 항목|OPTIONAL · 선택 항목/);
+  assert.deepEqual(f.calls.filter(c=>c.path.includes('/forms')).map(c=>c.path),[path]);
+  assert.equal(f.buffer(),null);assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+ }finally{await f.close();}
+});
+
+for (const [fault, code, status] of [
+ ['missing','FORM_NOT_FOUND',404],
+ ['denied','FORM_ACCESS_DENIED',403],
+ ['wrongVersion','RESPONSE_INVALID',200],
+ ['wrongDefinition','RESPONSE_INVALID',200],
+ ['expired','AUTH_REQUIRED',401],
+] as const) test('고정 양식 ' + fault + ' · 다른 양식으로 바꾸지 않는다',async()=>{
+ const f=await fixture(true);try{
+  await f.open();
+  const path=coveragePath(f), form=structuredClone(f.d.form);
+  if(fault==='wrongVersion')form.ref.version++;
+  if(fault==='wrongDefinition')form.definition.items[0]!.required=false;
+  f.controls.hook=p=>p!==path?null:status===200?Response.json(form):Response.json({code},{status});
+  await f.click(coverageAction);
+  if(status===401)await f.wait(()=>f.lost()===1);
+  else {
+   await f.wait(()=>f.text().includes('필수 항목 확인 불가 · '+code));
+   assert.match(f.text(),/아직 반영하지 않은 제안입니다/);
+   assert.equal(f.lost(),0);
+  }
+  assert.doesNotMatch(f.text(),/개 누락|EMPTY · 빈 필수 항목/);
+  assert.deepEqual(f.calls.filter(c=>c.path.includes('/forms')).map(c=>c.path),[path]);
+  assert.equal(f.buffer(),null);
+  assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+ }finally{await f.close();}
+});
+
+test('고정 AF04 양식에서 모든 필수 구간이 작성된 경우 누락 0개를 보여준다',async()=>{
+ const f=await fixture(true,'AF04');try{
+  await f.open();
+  f.controls.hook=p=>p===coveragePath(f)?Response.json(f.d.form):null;
+  await f.click(coverageAction);
+  await f.wait(()=>f.text().includes('고정 양식 AF04 v1 · 필수 항목 3개 중 0개 누락'));
+  assert.equal(f.buffer(),null);
+  assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+ }finally{await f.close();}
+});
+
+test('경로 전환 직후 이전 화면 버튼은 고정 양식 요청을 시작하지 않는다',async()=>{
+ const f=await fixture(true), route=location.hash;try{
+  await f.open();
+  location.hash='#/different';
+  await f.click(coverageAction);
+  assert.equal(f.calls.filter(c=>c.path.includes('/forms')).length,0);
+  assert.equal(f.buffer(),null);
+ }finally{location.hash=route;await f.close();}
+});
+
+for(const scope of ['route','project','transport','proposal','unmount'] as const) for(const status of [200,401]) test('고정 양식 지연 '+status+' · '+scope+' 전환 뒤 결과·인증효과 없음',async()=>{
+ const f=await fixture(true), route=location.hash, gate=deferred<Response>();let unmounted=false;
+ const response=()=>status===200?Response.json(f.d.form):Response.json({code:'AUTH_REQUIRED'},{status});
+ try{
+  await f.open();
+  const path=coveragePath(f);
+  f.controls.hook=p=>p===path?gate.promise:null;
+  await f.click(coverageAction);
+  await f.wait(()=>f.calls.some(c=>c.path===path));
+  if(scope==='route')location.hash='#/different';
+  if(scope==='project')await f.render({...f.props(),projectId:id(42)});
+  if(scope==='transport')f.client.transport=async()=>{throw Error('새 transport에 고정 양식을 요청하지 않는다');};
+  if(scope==='proposal')await f.open(id(44));
+  if(scope==='unmount'){await f.close();unmounted=true;}
+  gate.resolve(response());
+  await f.settle();
+  assert.doesNotMatch(f.text(),/개 누락|필수 항목 확인 불가/);
+  assert.equal(f.lost(),0);
+  assert.deepEqual(f.calls.filter(c=>c.path.includes('/forms')).map(c=>c.path),[path]);
+  assert.equal(f.buffer(),null);
+  assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+ }finally{
+  gate.resolve(response());
+  location.hash=route;
+  if(!unmounted)await f.close();
+ }
+});
+
+test('원 양식 404 뒤 같은 제안에서 명시 재조회로 구조를 확인한다',async()=>{
+ const f=await fixture(true);try{
+  await f.open();
+  const path=coveragePath(f);
+  let attempt=0;
+  f.controls.hook=p=>p!==path?null:++attempt===1
+   ?Response.json({code:'FORM_NOT_FOUND'},{status:404})
+   :Response.json(f.d.form);
+  await f.click(coverageAction);
+  await f.wait(()=>f.text().includes('필수 항목 확인 불가 · FORM_NOT_FOUND'));
+  assert.equal(attempt,1);
+  await f.click(coverageAction);
+  await f.settle();
+  assert.equal(attempt,2);
+  await f.wait(()=>f.text().includes('필수 항목 3개 중 2개 누락'));
+  assert.doesNotMatch(f.text(),/FORM_NOT_FOUND/);
+  assert.deepEqual(f.calls.filter(c=>c.path.includes('/forms')).map(c=>c.path),[path,path]);
+  assert.equal(f.buffer(),null);
+  assert.equal(f.calls.filter(c=>c.method==='POST').length,0);
+ }finally{await f.close();}
 });

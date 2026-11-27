@@ -1,9 +1,32 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ApiClient, ApiError } from '../../api/client.ts';
-import { listForms, type FormSummary } from '../methodologies/forms-api.ts';
+import { getPinnedForm, listForms, type FormSummary, type FormVersion } from '../methodologies/forms-api.ts';
+import { verifyFormVersionIntegrity } from '../methodologies/form-version-read.ts';
 import type { DocumentBuffer, DocumentSession } from './editor-api.ts';
 import { listDocumentMaterials, prepareStoredImport, readImportUsageDocument, storedImportSelections, readStoredImport, type ImportUsageSelection, type ImportSummary, type MaterialPage, type ProposalSummary, type StoredImportView } from './materials-api.ts';
 import { prepareStoredProposalDiffTrace, readSelectedProposalDocument, readStoredProposal, resumeStoredProposal, selectedProposalVersion, type ProposalComparison } from './proposal-api.ts';
+
+function requiredSectionCoverage(view: ProposalComparison, form: FormVersion) {
+  if (!['AF02', 'AF04'].includes(form.definition.formCode)) throw new ApiError('PROPOSAL_FORM_UNSUPPORTED', 422);
+  const lines = view.proposedBody.split(/\r\n|\n|\r/);
+  const sections = view.proposal.proposedContent.sections;
+  if (!Array.isArray(sections) || sections.length > 200) throw new ApiError('PROPOSAL_SECTIONS_INVALID', 422);
+  const itemIds = new Set(form.definition.items.map(item => item.itemId));
+  const seenItems = new Set<string>(), seenStarts = new Set<number>();
+  const located = sections.map(({ itemId, anchor }) => {
+    const start = Number(anchor?.slice(5)) - 1;
+    if (!/^line:[1-9][0-9]{0,7}$/.test(anchor) || start >= lines.length ||
+        !itemIds.has(itemId) || seenItems.has(itemId) || seenStarts.has(start)) throw new ApiError('PROPOSAL_SECTIONS_INVALID', 422);
+    seenItems.add(itemId); seenStarts.add(start);
+    return { itemId, start };
+  }).sort((a, b) => a.start - b.start);
+  const covered = new Set(located.filter(({ start }, index) =>
+    lines.slice(start, located[index + 1]?.start ?? lines.length).some(line => line.trim() !== '')
+  ).map(item => item.itemId));
+  const required = form.definition.items.filter(item => item.required);
+  return { formRef: form.ref, formCode: form.definition.formCode, total: required.length,
+    missing: required.filter(item => !covered.has(item.itemId)).map(({ itemId, title }) => ({ itemId, title })) };
+}
 
 export function MaterialLibrary({ client, projectId, session, canPrepare, onPrepared, onBusy, onAuthenticationLost }: { client: ApiClient; projectId: string; session: DocumentSession; canPrepare: boolean; onPrepared: (buffer: DocumentBuffer) => void; onBusy: (busy: boolean) => void; onAuthenticationLost: () => void }) {
   const [imports, setImports] = useState<MaterialPage<ImportSummary> | null>(null), [proposals, setProposals] = useState<MaterialPage<ProposalSummary> | null>(null);
@@ -26,6 +49,15 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
   type ResultBinding = { scope: Scope; view: ProposalComparison; signature: string; value: Awaited<ReturnType<typeof readSelectedProposalDocument>> | null; loading: boolean; error: ApiError | null };
   const [result, setResult] = useState<ResultBinding | null>(null);
   const visibleResult = result?.scope === scope && result.view === shownProposal && result.signature === signature ? result : null;
+  const coverageGeneration = useRef(0), coverageFlight = useRef<(() => boolean) | null>(null);
+  const coverageRoute = globalThis.location?.hash;
+  type CoverageBinding = {
+    scope: Scope; view: ProposalComparison; route: string | undefined;
+    loading: boolean; value: ReturnType<typeof requiredSectionCoverage> | null; error: ApiError | null;
+  };
+  const [coverage, setCoverage] = useState<CoverageBinding | null>(null);
+  const visibleCoverage = coverage?.scope === scope && coverage.view === shownProposal && coverage.route === coverageRoute ? coverage : null;
+  useLayoutEffect(() => () => { coverageGeneration.current++; }, []);
   const usageGeneration = useRef(0);
   type UsageBinding = { scope: Scope; view: StoredImportView; signature: string; selection: ImportUsageSelection; value: Awaited<ReturnType<typeof readImportUsageDocument>> | null; loading: boolean; error: ApiError | null };
   const [usage, setUsage] = useState<UsageBinding | null>(null);
@@ -46,7 +78,7 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
     setError(e);
     if (![401,403,404].includes(e.status)) return;
     accessGeneration.current++; deniedScope.current = scope;
-    setImportView(null); setProposalView(null); setResult(null); setUsage(null);
+    setImportView(null); setProposalView(null); setResult(null); setUsage(null); setCoverage(null);
     setImports(null); setProposals(null); setImportLoading(false); setProposalLoading(false);
     if (e.status === 401) onAuthenticationLost();
   }
@@ -76,12 +108,38 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
     if (running.current || !accessCurrent()) return;
     const generation = ++selectionGeneration.current, openedScope = scope;
     const active = () => accessCurrent() && selectionGeneration.current === generation;
-    resultGeneration.current++; setResult(null); setProposalScope(null); usageGeneration.current++; setUsage(null); setImportScope(null);
+    resultGeneration.current++; coverageGeneration.current++; setCoverage(null); setResult(null); setProposalScope(null); usageGeneration.current++; setUsage(null); setImportScope(null);
     running.current = true; setBusy(true); setError(null); setAcknowledged(false); setImportView(null); setProposalView(null); setForms([]); setSelectedForm('');
     try {
       if (kind === 'IMPORT') { const view = await readStoredImport(client,projectId,id,{active}); if (!active()) return; const options = view.candidate.intendedFormRef === null && view.candidate.status === 'READY' ? (await listForms(client)).items : []; if (active()) { setImportView(view); setImportScope(openedScope); setForms(options); } }
       else { const view = await readStoredProposal(client,projectId,id); if (active()) { setProposalView(view); setProposalScope(openedScope); } }
     } catch (e) { if (active()) failed(e); } finally { if (selectionGeneration.current === generation) { running.current = false; if (mounted.current) setBusy(false); } }
+  }
+  async function readCoverage() {
+    const view = shownProposal;
+    if (!view || view.proposal.status !== 'PENDING' || view.proposal.selections.length || running.current || coverageFlight.current?.()) return;
+    const binding = { scope, view, route: coverageRoute };
+    const accessCurrent = observeAccess();
+    const selection = selectionGeneration.current, request = ++coverageGeneration.current;
+    const active = () => accessCurrent() && request === coverageGeneration.current &&
+      selection === selectionGeneration.current && binding.route === globalThis.location?.hash &&
+      latest.current.view === view && latest.current.signature === signature;
+    if (!active()) return;
+    coverageFlight.current = active;
+    setCoverage({ ...binding, loading: true, value: null, error: null });
+    try {
+      const form = await getPinnedForm(client, view.base.document.formRef);
+      if (!active()) return;
+      await verifyFormVersionIntegrity(form);
+      if (active()) setCoverage({ ...binding, loading: false, value: requiredSectionCoverage(view, form), error: null });
+    } catch (cause) {
+      if (!active()) return;
+      const error = cause instanceof ApiError ? cause : new ApiError('RESPONSE_INVALID');
+      if (error.status === 401) { failed(error); return; }
+      setCoverage({ ...binding, loading: false, value: null, error });
+    } finally {
+      if (coverageFlight.current === active) coverageFlight.current = null;
+    }
   }
   async function readSelected() {
     const view = shownProposal;
@@ -149,6 +207,16 @@ export function MaterialLibrary({ client, projectId, session, canPrepare, onPrep
       {shownImport.body !== null ? <><pre className="document-original" aria-label="보관 후보 원문">{shownImport.body}</pre>{!shownImport.candidate.intendedFormRef ? <><label htmlFor="stored-import-form">보관 후보 적용 양식</label><select id="stored-import-form" disabled={busy} value={selectedForm} onChange={e => setSelectedForm(e.target.value)}><option value="">양식 선택</option>{forms.map(f => <option value={f.ref.id} key={f.ref.id}>{f.name} · v{f.ref.version}</option>)}</select></> : <p>가져올 때 지정한 양식 v{shownImport.candidate.intendedFormRef.version}을 유지합니다.</p>}<label><input type="checkbox" disabled={busy || !canPrepare} checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} />보관 원문을 확인했고 새 문서 초안으로 준비하겠습니다</label><button disabled={busy || !canPrepare || !acknowledged || !shownImport.candidate.intendedFormRef && !selectedForm} onClick={() => { void prepare('IMPORT'); }}>보관 후보로 새 문서 준비</button></> : <p>미지원/확인 실패 원본은 보존하지만 본문으로 반영하지 않습니다.</p>}
     </section> : null}
     {shownProposal ? <section aria-label="보관 제안 원문 비교"><h3>{shownProposal.base.document.title} · 기준 {shownProposal.proposal.baseRef.version}</h3><pre className="document-original" aria-label="보관 제안 기준 원문">{shownProposal.base.body}</pre><pre className="document-original" aria-label="보관 제안 새 원문">{shownProposal.proposedBody}</pre><pre aria-label="보관 제안 변경 구간">{JSON.stringify(shownProposal.diff,null,2)}</pre><p>{shownProposal.proposal.selections.length ? `이미 반영한 버전 ${shownProposal.proposal.selections[0]!.version}` : '아직 반영하지 않은 제안입니다. 실제 반영 시 현재 기준을 다시 검사합니다.'}</p>
+      {shownProposal.proposal.status === 'PENDING' && !shownProposal.proposal.selections.length ? <>
+        <button type="button" disabled={busy || visibleCoverage?.loading} onClick={() => { void readCoverage(); }}>고정 양식 필수 항목 확인</button>
+        {visibleCoverage?.loading ? <p role="status">고정 양식 확인 중</p> : null}
+        {visibleCoverage?.error ? <p role="alert">필수 항목 확인 불가 · {visibleCoverage.error.code}</p> : null}
+        {visibleCoverage?.value ? <section aria-label="제안의 필수 항목 구조">
+          <p>고정 양식 {visibleCoverage.value.formCode} v{visibleCoverage.value.formRef.version} · 필수 항목 {visibleCoverage.value.total}개 중 {visibleCoverage.value.missing.length}개 누락</p>
+          <p>원문 위치와 구간의 공백 여부를 확인했습니다. 내용 검토·확정 판단은 별도입니다.</p>
+          {visibleCoverage.value.missing.length ? <ul>{visibleCoverage.value.missing.map(item => <li key={item.itemId}>{item.itemId} · {item.title}</li>)}</ul> : null}
+        </section> : null}
+      </> : null}
       <button disabled={busy||!canPrepare} onClick={()=>{void prepare('PROPOSAL_TRACE');}}>서버 생성 diff를 고정 업무에 연결</button>
       {selectedVersion ? <button disabled={visibleResult?.loading === true} onClick={() => { void readSelected(); }}>반영 결과 원문 보기</button> : null}
       {visibleResult?.loading ? <p role="status">반영 결과 원문 조회 중</p> : null}
