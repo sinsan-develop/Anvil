@@ -104,14 +104,14 @@ export class NormalStartPreparationAttempts {
      return result;
     }catch{this.#unknown(e);throw failure();}
    },
-   committed:async(result:any,envelopeHash:string)=>{
+   committed:async(result:any,envelopeHash:string,current:()=>void)=>{
     try{
-     this.#check(e);const d=result?.data,q=d?.snapshot;
+     current();this.#check(e);const d=result?.data,q=d?.snapshot;
      if(e.phase!=='COMMITTING'||result.commandId!==input.commandId||result.projectId!==s.projectId||d?.status!=='NORMAL_QUEUE_STORED'||!refV1(d.ref)||!refV1(q?.grantRef)
       ||q.transport!=='NORMAL_PROTECTED'||q.executionId!==s.executionId||q.executionGeneration!==s.executionGeneration||!same(q.executorRegistrationRef,input.registrationRef)||!hashV1(envelopeHash))throw failure();
      const commit=freeze(cloneV1({preparation:input,commandRef:d.ref,grantRef:q.grantRef,envelopeHash}));e.phase='HANDOFF_STARTED';e.transferring=true;
      const returned=await this.#race(e,Promise.resolve(Reflect.apply(e.handoff!,e.owner,[commit,e.controller.signal])));
-     this.#check(e);if(returned!==e.owner)throw failure();
+     current();this.#check(e);if(returned!==e.owner)throw failure();
      e.phase='HANDED_OFF';clearTimeout(e.timer);e.timer=undefined;this.#release(e);
     }catch{this.#unknown(e);throw failure();}
    }

@@ -14,8 +14,8 @@ test('원 객체는 exact 요청·등록·거래의 세 read와 확정 COMMIT �
  const m=await api(),f=fixture(),attempts=new m.NormalStartPreparationAttempts(f.port),b=input();
  const held=await attempts.create(b);for(let n=0;n<3;n++)await held.observe(b.scope,b.createdAt,new AbortController().signal);
  assert.deepEqual(f.events,['create','read','read','read']);assert.equal(f.sent.length,0);
- held.beforeCommit();await held.committed(receipt(b),'b'.repeat(64));assert.deepEqual(f.events,['create','read','read','read','handoff']);assert.deepEqual(f.sent[0],{preparation:b,commandRef:ref(11),grantRef:ref(12),envelopeHash:'b'.repeat(64)});assert.equal(f.closed.length,0);
- await assert.rejects(held.committed(receipt(b),'b'.repeat(64)));await assert.rejects(attempts.create({...b,scope:{...b.scope,transactionId:'2'}}));assert.equal(f.calls(),1);assert.equal(f.sent.length,1);
+ held.beforeCommit();await held.committed(receipt(b),'b'.repeat(64),()=>{});assert.deepEqual(f.events,['create','read','read','read','handoff']);assert.deepEqual(f.sent[0],{preparation:b,commandRef:ref(11),grantRef:ref(12),envelopeHash:'b'.repeat(64)});assert.equal(f.closed.length,0);
+ await assert.rejects(held.committed(receipt(b),'b'.repeat(64),()=>{}));await assert.rejects(attempts.create({...b,scope:{...b.scope,transactionId:'2'}}));assert.equal(f.calls(),1);assert.equal(f.sent.length,1);
 });
 test('원 요청의 다른 hash·세대·등록·거래 또는 교체된 port/owner는 read·인계·재생성0이다',async()=>{
  const m=await api();for(const mode of ['HASH','GENERATION','TRANSACTION','REGISTRATION','OWNER_READ','PORT']as const){const f=fixture(),attempts=new m.NormalStartPreparationAttempts(f.port),b=input(),held=await attempts.create(b);
@@ -38,7 +38,7 @@ test('거래 실패/COMMIT불명/인계 반환 불명·인계 뒤 만료는 동�
  const m=await api();t.mock.timers.enable({apis:['Date'],now:Date.now()});for(const mode of ['ROLLBACK','COMMIT_UNKNOWN','WRONG_OWNER','LATE']as const){const f=fixture(),b=input(),attempts=new m.NormalStartPreparationAttempts(f.port),held=await attempts.create(b);
   if(mode==='ROLLBACK')await held.failedBody();
   else if(mode==='COMMIT_UNKNOWN'){held.beforeCommit();held.unknown();}
-  else{held.beforeCommit();f.mode.handoff=mode;if(mode==='LATE')f.mode.duringHandoff=()=>t.mock.timers.tick(10001);await assert.rejects(held.committed(receipt(b),'b'.repeat(64)));}
+  else{held.beforeCommit();f.mode.handoff=mode;if(mode==='LATE')f.mode.duringHandoff=()=>t.mock.timers.tick(10001);await assert.rejects(held.committed(receipt(b),'b'.repeat(64),()=>{}));}
   await assert.rejects(attempts.create(b));assert.equal(f.calls(),1);assert.equal(f.sent.length,mode==='ROLLBACK'||mode==='COMMIT_UNKNOWN'?0:1);assert.equal(f.closed.length,mode==='ROLLBACK'?1:0);
  }
 });

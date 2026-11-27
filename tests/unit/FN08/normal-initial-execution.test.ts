@@ -76,7 +76,7 @@ async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v
     understandingReviewRef:work?workBasis.reviewRef:null,checks:{...Object.fromEntries(Object.entries(attested).map(([key,evidenceRefs])=>[key,{state:'VERIFIED_CURRENT',evidenceRefs}])),understanding:work?{state:'VERIFIED_CURRENT',evidenceRefs:[workBasis.reviewRef]}:{state:'NOT_REQUIRED',evidenceRefs:[]}}};
    return transform(value,observations,signal);
   };
-  const preparation={creates:0,reads:0,handoffs:0,closes:0,closed:0,captures:0,fallback:0,aborted:0,failRead:false,hangRead:false,failHandoff:false,commits:[]as any[],owners:[]as any[],inputs:[]as any[]};
+  const preparation={creates:0,reads:0,handoffs:0,closes:0,closed:0,captures:0,fallback:0,aborted:0,failRead:false,hangRead:false,failHandoff:false,handoffGate:undefined as (()=>Promise<void>)|undefined,commits:[]as any[],owners:[]as any[],inputs:[]as any[]};
   const source={observe:async(...args:Parameters<typeof observation>)=>{preparation.fallback++;return observation(...args);},...(prepare===true||prepare==='GETTER'?{preparation:{async create(input:any,signal:AbortSignal){
    preparation.creates++;preparation.inputs.push(input);assert.equal(f.active(),true);assert(!signal.aborted);
    assert.equal(input.commandId,command.commandId);assert.equal(input.scope.requestHash,contentHash(canonicalJson(command)));assert.deepEqual(input.registrationRef,registrationRef(f.registration!.row as any));
@@ -85,7 +85,7 @@ async function host(transform:(value:any,count:number,signal:AbortSignal)=>any=v
     assert.equal(this,owner);assert.deepEqual(scope,input.scope);preparation.reads++;if(preparation.failRead)throw Error('RAM_READ_FAILED');
     if(preparation.hangRead)return new Promise<never>((_resolve,reject)=>readSignal.addEventListener('abort',()=>{preparation.aborted++;reject(Error('RAM_READ_CANCELLED'));},{once:true}));
     return{...await observation(scope,stamp,readSignal),expiresAt:input.expiresAt};
-   },async handoff(commit:any){assert.equal(this,owner);assert.equal(f.active(),false);assert(f.trace.includes('COMMIT'));preparation.handoffs++;preparation.commits.push(commit);if(preparation.failHandoff)throw Error('RAM_HANDOFF_UNKNOWN');return owner;},async close(){preparation.closes++;preparation.closed++;}};
+   },async handoff(commit:any){assert.equal(this,owner);assert.equal(f.active(),false);assert(f.trace.includes('COMMIT'));preparation.handoffs++;preparation.commits.push(commit);if(preparation.failHandoff)throw Error('RAM_HANDOFF_UNKNOWN');await preparation.handoffGate?.();return owner;},async close(){preparation.closes++;preparation.closed++;}};
    preparation.owners.push(owner);return owner;
   }}}:{})};
   if(prepare==='UNDEFINED')Object.defineProperty(source,'preparation',{value:undefined,writable:true,configurable:true});
@@ -303,6 +303,40 @@ test('확정 queue 뒤 인계불명은 새 거절 거래 없이 보존하고 원
   Object.defineProperty(h.source,'preparation',{value:undefined,writable:true,configurable:true});
   const trace=h.f.trace.length,counts=graphTables.map(name=>h.f.tables[name]!.length),retry=await h.post();assert.equal(retry.statusCode,200,retry.body);assert.deepEqual(graphTables.map(name=>h.f.tables[name]!.length),counts);assert.equal(h.preparation.creates,1);assert.equal(h.preparation.handoffs,1);assert(!h.f.trace.slice(trace).some(sql=>sql.startsWith('INSERT')));
  }finally{await h.app.close();}
+});
+test('확정 queue 인계 응답을 기다리는 중 준비 설정이나 원 STREAM이 무효화되면 원 영수증은 재확인으로만 반환한다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});
+ for(const key of ['preparation','preparationAdmission'] as const){
+  const h=await host(undefined,undefined,true,key==='preparationAdmission'?'valid':undefined);
+  const entered=Promise.withResolvers<void>(),release=Promise.withResolvers<void>();
+  const original=Object.getOwnPropertyDescriptor(h.source,key)!;
+  assert(original);
+  h.preparation.handoffGate=()=>{entered.resolve();return release.promise;};
+  const pending=h.post();
+  try{
+   await Promise.race([entered.promise,pending.then(response=>assert.fail(response.body))]);
+   assert.equal(h.f.active(),false);
+   const stored=graphTables.map(name=>h.f.tables[name]!.length),trace=h.f.trace.length;
+   assert(stored[0]!>0);
+   assert(h.f.trace.includes('COMMIT'));
+   if(key==='preparationAdmission')h.admissionState!.close();else Object.defineProperty(h.source,key,{...original,value:undefined});
+   release.resolve();
+   const failed=await pending;
+   assert.equal(failed.statusCode,503,failed.body);
+   assert.equal(failed.json().code??failed.json().error?.code,'NORMAL_START_PREPARATION_OUTCOME_UNKNOWN');
+   assert.deepEqual(h.f.trace.slice(trace),[]);
+   assert.deepEqual(graphTables.map(name=>h.f.tables[name]!.length),stored);
+   assert.deepEqual([h.preparation.creates,h.preparation.handoffs,h.preparation.closes],[1,1,0]);
+   if(key==='preparation')Object.defineProperty(h.source,key,original);
+   const replay=await h.post();
+   assert.equal(replay.statusCode,200,replay.body);
+   assert.deepEqual(replay.json().data.ref,h.preparation.commits[0].commandRef);
+   assert.deepEqual(replay.json().data.snapshot.grantRef,h.preparation.commits[0].grantRef);
+   assert.deepEqual(graphTables.map(name=>h.f.tables[name]!.length),stored);
+   assert.deepEqual([h.preparation.creates,h.preparation.handoffs,h.preparation.closes],[1,1,0]);
+   assert(!h.f.trace.slice(trace).some(sql=>sql.startsWith('INSERT')));
+  }finally{release.resolve();await pending;await h.app.close();}
+ }
 });
 test('준비 생성 전 현재 인증·정책/등록·입력 거절은 port/관측/인계0이다',async t=>{
  t.mock.timers.enable({apis:['Date'],now:Date.now()});for(const mode of ['AUTH','CONTROL','REGISTRATION','INPUT']as const){const h=await host(undefined,undefined,true);try{

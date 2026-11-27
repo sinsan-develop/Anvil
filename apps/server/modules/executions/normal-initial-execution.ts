@@ -430,8 +430,13 @@ export class NormalInitialExecution {
       return receipt.result;
     });
       // authenticated는 정확 COMMIT tag를 확인한 경우에만 반환한다. 인계는 새 DB 거래가 아니다.
-      admitted?.check();
-      if(held){if(!this.#configuration())throw new AuthFailure('NORMAL_START_PREPARATION_OUTCOME_UNKNOWN',503);await held.committed(result,handoffEnvelopeHash!);}
+      if(held){
+        const handoffCurrent=()=>{
+          admitted?.check();
+          if(!this.#configuration())throw new AuthFailure('NORMAL_START_PREPARATION_OUTCOME_UNKNOWN',503);
+        };
+        await held.committed(result,handoffEnvelopeHash!,handoffCurrent);
+      }else admitted?.check();
       return result;
     }catch(error){
       if(preparing||admitted){if(held){if(bodyCompleted)held.unknown();else await held.failedBody();}throw new AuthFailure('NORMAL_START_PREPARATION_OUTCOME_UNKNOWN',503);}
