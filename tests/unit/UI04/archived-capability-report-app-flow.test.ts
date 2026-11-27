@@ -7,6 +7,7 @@ import {seed,clientFixture} from './registered-preparation-options-fixture.ts';
 import {newContextPreparation} from '../../../apps/web/src/features/workspace/context-api.ts';
 import {buildContextManifest} from '../../../apps/server/modules/context/context-manifest.ts';
 import {planContextText} from '../../../apps/server/modules/context/context-text-plan.ts';
+import {definitionCapabilityReportSnapshot} from '../../../apps/server/modules/connections/definition-capability-report-input.ts';
 /** 실제 ReactDOM의 요소/이벤트/effect를 실행하는 최소 메모리 DOM. 레이아웃·브라우저 보안·시각 검증은 아니다. */
 class MemoryNode{
  nodeType:number;nodeName:string;tagName:string;localName:string;namespaceURI='http://www.w3.org/1999/xhtml';parentNode:MemoryNode|null=null;childNodes:MemoryNode[]=[];ownerDocument:any;attributes=new Map<string,string>();style:Record<string,unknown>={};listeners=new Map<string,Function[]>();value='';checked=false;disabled=false;data='';
@@ -39,8 +40,8 @@ before(async()=>{
 });
 after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k,v]of saved)if(v)Object.defineProperty(globalThis,k,v);else Reflect.deleteProperty(globalThis,k);});
 const H=(v:unknown)=>contentHash(canonicalJson(v));
-function fixture(){
- const f=seed(),definition={...f.confirmed.snapshot.definition,baselineRefs:[],recordingPolicyRef:null},task=definition.taskRef;
+function fixture(registered=false){
+ const f=seed(registered),definition={...f.confirmed.snapshot.definition,baselineRefs:[],recordingPolicyRef:null},task=definition.taskRef;
  const snapshot={definition,reason:'보관 임무',previousRef:null,basis:{...task,designRef:task.planRef,taskCardHash:'c'.repeat(64)},readinessIssues:[],status:'DRAFT',ready:false,executionAuthorized:false,dispatchPerformed:false};
  const draft={projectId:f.confirmed.projectId,ref:{...f.confirmed.ref,contentHash:H(snapshot)},snapshot,headVersion:1,sourceCurrentness:'NOT_RECHECKED',observedAt:f.at};
  f.confirmed.snapshot.definition=definition;f.confirmed.snapshot.draftRef=draft.ref;f.confirmed.ref.contentHash=H(f.confirmed.snapshot);
@@ -51,6 +52,9 @@ function fixture(){
  const decision={projectId:draft.projectId,draftRef:draft.ref,criteriaVersion:1,criteria:['PURPOSE_SCOPE','BASELINE_TASK','INPUT_OUTPUT','COMPLETION_VERIFICATION','BOUNDARIES','RECORD_RECOVERY'],reviews:[],hasMoreReviews:false,contentIssues:[],currentIssue:null,confirmedRef:f.confirmed.ref,latestReviewAccepted:false,readinessIssues:[],ready:false,executionAuthorized:false,dispatchPerformed:false,observedAt:f.at};
  const project=(pid:string)=>({id:pid,name:'합성 프로젝트',purpose:'App 연결 검산',desiredOutcome:'보관 보고 명시 선택',version:1,createdAt:f.at,updatedAt:f.at,currentMethodologyRef:null,baselineRef:null,sourceMode:'EMPTY',sourceDeclaration:null,readinessIssues:[],viewerPermissions:['READ_PROJECT'],participation:'OWNER',controlState:{actorId:f.session.user.id,clientId:f.session.clientId,generation:1,status:'HELD'}});
  const q=clientFixture(f),calls:{path:string;method:string}[]=[],unexpected:string[]=[];
+ // 합성 보관 보고를 기존 v2 생산 함수로 구성한다. 실측·실행 권위나 실제 서버 저장 증거가 아니다.
+ const reportSnapshot=registered?definitionCapabilityReportSnapshot({...f.report.snapshot.claim,schemaVersion:2,tool:{product:f.connection.definition.toolProduct,version:f.connection.definition.toolVersion,adapterVersion:'등록 어댑터의 사람 주장'},reason:'UI11에만 표시할 원주장 본문'},draft.projectId,'af040058-1111-4111-8111-000000000093',{actorId:f.session.user.id,clientId:f.session.clientId},new Date(f.at)):null;
+ const registeredReport=reportSnapshot?{projectId:draft.projectId,ref:{id:reportSnapshot.reportId,version:1,contentHash:H(reportSnapshot)},snapshot:reportSnapshot,currentnessIssues:[{code:'REGISTERED_DEFINITION_ONLY',target:null},{code:'HUMAN_CLAIM_UNVERIFIED',target:null}],effectiveForExecution:false,dispatchPerformed:false,checkedAt:f.at}:null;
  currentTransport=async(url,init)=>{
   const path=String(url),method=init?.method??'GET';calls.push({path,method});assert.equal(method,'GET','선택/준비만, 저장 명령 전송0');
   if(path==='/api/v1/session')return Response.json({...f.session,user:{...f.session.user,displayName:'합성 소유자'}});
@@ -65,10 +69,12 @@ function fixture(){
   if(path===`/api/v1/projects/${draft.projectId}/assignment-drafts/${draft.ref.id}/versions/1`)return Response.json(draft);
   if(path===`/api/v1/projects/${draft.projectId}/assignment-drafts/${draft.ref.id}/versions/1/decision`)return Response.json(decision);
   if(path===`/api/v1/projects/${draft.projectId}/assignments/${f.confirmed.ref.id}/versions/1`)return Response.json(f.confirmed);
+  if(registeredReport&&path===`/api/v1/projects/${draft.projectId}/definition-capability-reports/${registeredReport.ref.id}/versions/1`)return Response.json(registeredReport);
+  if(registered&&pid===draft.projectId&&['/connections/','/environments/'].some(part=>path.includes(part)))return q.client.transport(url,init);
   if(pid===draft.projectId&&['/permission-policy','/execution-preparation-state','/role-bindings/','/context?','/context/','/connection-candidates/','/capability-reports/','/limit-policies/'].some(part=>path.includes(part)))return q.client.transport(url,init);
   unexpected.push(path);return Response.json({code:'NOT_FOUND'},{status:404});
  };
- return{f,draft,calls,unexpected};
+ return{f,draft,calls,unexpected,registeredReport};
 }
 test('실제 App의 보관 보고 GET→명시 선택→hash 이동→UI04 원 준비 입력과 route/project 선택 수명',async()=>{
  const q=fixture(),pid=q.f.confirmed.projectId;location.hash=`#/projects/${pid}/connections`;
@@ -93,5 +99,43 @@ test('실제 App의 보관 보고 GET→명시 선택→hash 이동→UI04 원 �
   await go(`#/projects/${pid}/connections`,true);await selectReport();await go(`#/projects/${q.f.otherProject}/connections`);await wait(()=>!!button('고정 보고 조회'));assert(!button('이 보고를 실행 준비 입력으로 선택'),'타 프로젝트로 보관 원문 누수0');
   await go(`#/projects/${pid}/workspace`);await openAssignment();assert(!button('이 사람보고 명시 선택'),'프로젝트 ABA 후 과거 선택 부활0');assert(button('준비본 보관'),'원 프로젝트의 준비 명령 자체는 보존');
   assert.equal(q.calls.filter(c=>c.method!=='GET').length,0);assert.deepEqual(q.unexpected,[]);
+ }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+});
+
+
+test('같은 실제 App에서 UI11 v2 보호 보고를 명시 선택해 UI04 등록 준비 capabilityRef에만 연결한다',{timeout:15000},async()=>{
+ const q=fixture(true),pid=q.f.confirmed.projectId,report=q.registeredReport!;location.hash='#/projects/'+pid+'/connections';
+ const container=document.createElement('main');document.body.appendChild(container);const root=ui.createRoot(container);
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
+ const button=(name:string,within=container)=>nodes(within).find(n=>n.tagName==='BUTTON'&&n.textContent===name);
+ const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});
+ const wait=async(check:()=>boolean)=>{for(let i=0;i<150&&!check();i++)await settle();assert(check(),container.textContent);};
+ const click=async(name:string,within=container)=>{const b=button(name,within);assert(b,name);assert(!b.disabled,name);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0}));await settle();};
+ const change=async(name:string,value:string|boolean,within=container)=>{const n=nodes(within).find(n=>n.getAttribute('aria-label')===name);assert(n,name);const key=Object.keys(n).find(k=>k.startsWith('__reactProps'));assert(key);await ui.React.act(async()=>(n as any)[key].onChange({target:{value,checked:value}}));await settle();};
+ const reportPath='/api/v1/projects/'+pid+'/definition-capability-reports/'+report.ref.id+'/versions/1';
+ try{
+  await ui.React.act(async()=>root.render(ui.React.createElement(ui.App)));
+  await wait(()=>nodes().some(n=>n.getAttribute('aria-label')==='등록 정의 사람 보고'));
+  const panel=nodes().find(n=>n.getAttribute('aria-label')==='등록 정의 사람 보고')!;
+  assert.equal(q.calls.filter(c=>c.path===reportPath).length,0);
+  await change('기존 보고 조회',JSON.stringify(report.ref),panel);await click('고정 보고 조회',panel);
+  await wait(()=>!!button('이 등록 정의 보고를 준비 입력으로 선택',panel));assert.equal(q.calls.filter(c=>c.path===reportPath).length,1);
+  assert(panel.textContent.includes(report.snapshot.claim.reason));const before=q.calls.length;
+  await click('이 등록 정의 보고를 준비 입력으로 선택',panel);assert.equal(q.calls.length,before,'refs-only 명시 선택은 추가 GET/POST 없음');
+  const href='#/projects/'+pid+'/workspace';assert(nodes().some(n=>n.tagName==='A'&&n.getAttribute('href')===href),'기존 동일 프로젝트 UI04 링크');
+  await ui.React.act(async()=>{location.hash=href;for(const listener of events.get('hashchange')??[])listener();});
+  await wait(()=>!!button('임무 초안 목록 조회'));await click('임무 초안 목록 조회');await wait(()=>!!button('임무 버전 열기: 1'));await click('임무 버전 열기: 1');
+  await wait(()=>!!button('확정 임무 원본 재조회'));await click('확정 임무 원본 재조회');await wait(()=>!!button('새 실행 의도 준비'));await click('새 실행 의도 준비');
+  await wait(()=>!!button('이 등록 정의 보고를 보호 대조 후 선택')&&nodes().some(n=>n.getAttribute('aria-label')==='준비 예약binding'));
+  assert(!button('이 사람보고 명시 선택'),'기존 v1 보고를 대신 공급하지 않음');assert(!container.textContent.includes(report.snapshot.claim.reason),'App·UI04에는 보고 원문을 보존하지 않음');
+  await change('준비 예약binding',q.f.binding.ref.id);await change('준비 맥락',q.f.context.ref.id);await click('이 등록 정의 보고를 보호 대조 후 선택');
+  await wait(()=>container.textContent.includes('고정한 등록 보고'));
+  await change('준비 범위 src/main.ts READ',true);await change('준비 mode','CONTEXT_REVIEW');await change('준비 이유','등록 보고는 준비 참조로만 보관');await click('의도 준비·입력 확인');await wait(()=>!!button('준비본 보관'));
+  const payload=nodes().filter(n=>n.tagName==='PRE').map(n=>{try{return JSON.parse(n.textContent);}catch{return null;}}).find(v=>v?.capabilityRef);
+  assert(payload);assert.deepEqual(payload.capabilityRef,report.ref);assert.deepEqual(payload.assignmentRef,q.f.confirmed.ref);assert.deepEqual(payload.roleBindingRef,q.f.binding.ref);assert.deepEqual(payload.connectionRef,q.f.connection.ref);assert.deepEqual(payload.environmentRef,q.f.environment.ref);
+  assert.equal(payload.connectionKind,'REGISTERED_DEFINITION');assert(!Object.hasOwn(payload,'definitionReportSelection'));
+  assert.equal(q.calls.filter(c=>c.path===reportPath).length,3,'UI11 고정GET·UI04 명시 선택·준비 동결의 보호 재대조');
+  assert.equal(q.calls.filter(c=>c.path.includes('/capability-reports/')).length,0,'v1 fallback 없음');assert.equal(q.calls.filter(c=>c.method!=='GET').length,0,'승인/저장/실행 POST 없음');assert.deepEqual(q.unexpected,[]);
+  assert.equal(report.effectiveForExecution,false);assert.equal(report.dispatchPerformed,false);assert(report.snapshot.capabilities.every(v=>v.measurement.state==='UNVERIFIED'));
  }finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
 });
