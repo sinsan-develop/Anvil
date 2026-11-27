@@ -7,16 +7,41 @@ import {activationHash,newDesignActivation,prepareDesignActivation,type Activati
 import type {ApprovalView} from '../../../apps/web/src/features/decisions/api.ts';
 import {workPlanReviewCriteria} from '../../../apps/server/modules/traceability/work-plan-reviews.ts';
 import {analyzeWorkPlanCards} from '../../../apps/server/modules/traceability/work-plan-card.ts';
+import {contentHash} from '../../../contracts/canonical.ts';
+import {documentDraftHash} from '../../../apps/web/src/features/design-trace/editor-api.ts';
 const nodes=(n:MemoryNode):MemoryNode[]=>[n,...n.childNodes.flatMap(nodes)];
 type ApprovalFixture=ApprovalView&{decision:NonNullable<ApprovalView['decision']>;consumption:NonNullable<ApprovalView['consumption']>;
  candidateActivation:{payload:ActivationInput}};
 async function settle(check:()=>boolean){for(let i=0;i<80;i++){if(check())return;await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});}assert.fail('RAM 정착 실패');}
-async function fixture(withBuffer=false,distinctDesign=false,withPlans=false,withDecisions=false){
+async function fixture(withBuffer=false,distinctDesign=false,withPlans=false,withDecisions=false,withCandidate=false,candidateFormMismatch=false){
  const f=activationFixture(),previous=f.record();
  if(distinctDesign){previous.snapshot.approvedDesignRef={...previous.snapshot.approvedDesignRef,version:1,contentHash:'b'.repeat(64)};previous.ref.contentHash=await activationHash(previous.snapshot);}
  const record=f.record(2,previous.ref),session={user:{id:actor.actorId},clientId:id(90),csrfToken:'C'.repeat(43)};
  const plans:any[]=[];
- if(withPlans){for(const [n,r] of [previous,record].entries()){
+ const designBody='확정 AF02 원문';
+ const originalFormRef={id:id(91),version:1,contentHash:'e'.repeat(64)};
+ const formRef=candidateFormMismatch?{...originalFormRef,id:id(97)}:originalFormRef;
+ const documentRef={...record.snapshot.approvedDesignRef};
+ const content={body:{artifactId:id(92),bytes:Buffer.byteLength(designBody),contentHash:contentHash(designBody),mediaType:'text/markdown;charset=utf-8'},attachments:[],sections:[],sourceRefs:[]};
+ const title='확정 설계';
+ const criteria={criteriaVersion:1,formRef,items:[{criterionId:'DESIGN',title:'설계',reviewCriteria:['원문 확인']}]};
+ documentRef.contentHash=await documentDraftHash(title,formRef,content,null);
+ const design={...documentRef,title,formRef,content,stageNodeRef:null,confirmed:true,validation:{validForConfirmation:true,issues:[]},statusHistory:[],contentReviewCriteria:criteria,
+  contentReviews:[{ref:{id:id(93),targetRef:documentRef,criteriaVersion:1,outcome:'ACCEPTED'},reviewer:{kind:'HUMAN',userId:actor.actorId,sameAsTargetRecorder:true},sourceKind:'HUMAN_REVIEW',reason:'검토',reviewedAt:at,serverSequence:1,items:[{criterionId:'DESIGN',outcome:'ACCEPTED',reason:'확인'}]}]};
+ const beforeBody='변경 이전의 AF02 원문',beforeContent={...content,body:{...content.body,artifactId:id(94),bytes:Buffer.byteLength(beforeBody),contentHash:contentHash(beforeBody)}};
+ const beforeRef={...documentRef,version:1,contentHash:await documentDraftHash(title,originalFormRef,beforeContent,null)};
+ const authorRef={kind:'HUMAN',userId:id(891)};
+ const before={...design,...beforeRef,content:beforeContent,formRef:originalFormRef,authorRef,confirmed:false,contentReviewCriteria:{...criteria,formRef:originalFormRef},contentReviews:[]};
+ const changeCore={beforeRef,afterProposalRef:f.relations.change.afterProposalRef,reason:'설계 최신 영향 대조',sourceRefs:[]};
+ const changeRef={...f.input.changeRef,contentHash:await activationHash(changeCore)};
+ const impactCore={changeRef,sourceKind:'MECHANICAL_TRACE',beforeRef,items:[],coverageGaps:[],requiresReview:true,inputs:{planRefs:[],indexedDesign:true}};
+ const impactRef={...f.input.impactRef,version:1,contentHash:await activationHash(impactCore)};
+ const changePage={change:{...changeCore,ref:changeRef,status:'PROPOSED',requestedBy:authorRef,createdAt:at},impactVersions:[{...impactCore,ref:impactRef,observedAt:at}],latestImpactRef:impactRef,hasMoreImpacts:false,nextBeforeVersion:null,activatedAsBaseline:false,observedAt:at};
+ if(withCandidate){
+  previous.snapshot.approvedDesignRef=beforeRef;previous.ref.contentHash=await activationHash(previous.snapshot);
+  Object.assign(record.snapshot,{approvedDesignRef:documentRef,changeRef,impactRef});
+ }
+ if(withPlans||withCandidate){for(const [n,r] of [previous,record].entries()){
   const card={taskCode:'FN01',type:'FUNCTION',title:'원문 읽기',purpose:'고정 원문 확인',ownerRole:'단계 책임자',designRefs:[{kind:'DESIGN_ITEM',id:id(72),versionRef:r.snapshot.approvedDesignRef,localCode:'FN01',anchor:'line:1'}],screenRefs:[],inputs:['고정 설계'],outputs:['확인 결과'],included:['원문 읽기'],excluded:['실행'],allowedFileRefs:['src/read.ts'],startPrerequisites:[],acceptancePrerequisites:[],steps:['원문 대조'],testCases:['NORMAL','IMPORTANT_FAILURE','DIRECT_IMPACT'].map((kind,i)=>({id:'TC'+i,kind,steps:['고정 참조 대조'],expected:'정확 원문',environment:'RAM'})),acceptanceCriteria:['일치'],evidenceRequirements:['고정 참조'],rollback:'원 입력 유지',recoveryNotes:'명시 재조회'};
   const analysis=analyzeWorkPlanCards([card]);assert.equal(analysis.issues.length,0);
   const snapshot={documentRef:{id:id(70),version:n+1,contentHash:(n?'c':'d').repeat(64)},designRef:r.snapshot.approvedDesignRef,screenReviewRefs:[],tasks:analysis.tasks,dependencies:analysis.dependencies,reason:'보관 계획 원문',issues:[],relationalProjection:'STORED'};
@@ -50,10 +75,31 @@ async function fixture(withBuffer=false,distinctDesign=false,withPlans=false,wit
    candidateActivation:{candidateCommandId:commandId,payloadHash,payload},currentVersion:3,storedStatus:'CONSUMED',effectiveState:'CONSUMED',
    expired:true,basisCurrent:false,executionAuthorized:false,observedAt:'2026-10-28T00:00:00.000Z'});
  }
- const current={projectId:pid,current:{state:'PRESENT' as const,activationRef:record.ref,designRef:record.snapshot.approvedDesignRef,planRef:record.snapshot.confirmedPlanRef},observedAt:at,executionAuthorized:false as const,dispatchPerformed:false as const};
- const calls:{path:string;method:string}[]=[];let mode='OK',planMode='OK',approvalMode='OK',release=()=>{},waiting=false,lost=0,changes=0,requests=0;
+ const activeRecord=withCandidate?previous:record;
+ const current={projectId:pid,current:{state:'PRESENT' as const,activationRef:activeRecord.ref,designRef:activeRecord.snapshot.approvedDesignRef,planRef:activeRecord.snapshot.confirmedPlanRef},observedAt:at,executionAuthorized:false as const,dispatchPerformed:false as const};
+ const calls:{path:string;method:string}[]=[];let mode='OK',planMode='OK',approvalMode='OK',designMode='OK',release=()=>{},waiting=false,lost=0,changes=0,requests=0;
  const api=new ui.ApiClient(async(path:string,options?:RequestInit)=>{
   calls.push({path,method:options?.method??'GET'});assert.equal(options?.method??'GET','GET');
+  if(path===`/api/v1/projects/${pid}/documents/${design.id}/versions/${design.version}`){
+   const selected=designMode;
+   if(selected.startsWith('WAIT')){waiting=true;await new Promise<void>(r=>release=r);}
+   if(selected==='401'||selected==='WAIT401'||selected==='403')return Response.json({code:'ACCESS_DENIED'},{status:selected==='403'?403:401});
+   if(selected==='HASH')return Response.json({...design,title:'변조된 원문'});
+   if(selected==='UNCONFIRMED')return Response.json({...design,confirmed:false});
+   if(selected==='INVALID')return Response.json({...design,validation:{...design.validation,validForConfirmation:false}});
+   if(selected==='REWORK')return Response.json({...design,contentReviews:[{...design.contentReviews[0],ref:{...design.contentReviews[0]!.ref,outcome:'REWORK'}}]});
+   return Response.json(design);
+  }
+  if(path===`/api/v1/projects/${pid}/files/${content.body.artifactId}`)return new Response(designBody,{headers:{'content-type':'application/octet-stream'}});
+  if(path===`/api/v1/projects/${pid}/design-changes/${changeRef.id}?limit=10`){
+   if(designMode!=='ADVANCED_IMPACT')return Response.json(changePage);
+   const reviewed={...impactCore,sourceKind:'HUMAN_REVIEW',baseImpactRef:impactRef,reason:'업데이트한 영향 검토',reviewer:authorRef};
+   const latestImpactRef={...impactRef,version:2,contentHash:await activationHash(reviewed)};
+   return Response.json({...changePage,latestImpactRef,impactVersions:[{...reviewed,ref:latestImpactRef,observedAt:at},...changePage.impactVersions]});
+  }
+  if(path===`/api/v1/projects/${pid}/documents/${before.id}/versions/${before.version}`)return Response.json(designMode==='BEFORE_HASH'?{...before,title:'변조된 이전 원문'}:before);
+  if(path===`/api/v1/projects/${pid}/files/${beforeContent.body.artifactId}`)return new Response(beforeBody,{headers:{'content-type':'application/octet-stream'}});
+  if(path.startsWith('/api/v1/forms/'))return Response.json({code:'FORM_NOT_FOUND'},{status:404});
   if(path.includes('/work-plans/')){
    const row=plans.find(p=>path.startsWith(`/api/v1/projects/${pid}/work-plans/${p.plan.ref.id}/versions/${p.plan.ref.version}`));assert(row,path);const decision=path.endsWith('/decision'),selected=planMode;
    if(selected.startsWith(decision?'WAIT_DECISION':'WAIT_PLAN')){waiting=true;await new Promise<void>(r=>release=r);}
@@ -74,15 +120,17 @@ async function fixture(withBuffer=false,distinctDesign=false,withPlans=false,wit
   const r=[record,previous].find(r=>path==='/api/v1/projects/'+pid+'/baseline-activations/'+r.ref.id+'/versions/'+r.ref.version);assert(r,path);
   return Response.json({projectId:pid,...r,currentActivationRef:record.ref,isCurrent:r===record,observedAt:at,executionAuthorized:false,dispatchPerformed:false});
  });
- let buffer=withBuffer?newDesignActivation(api,pid,session,1,f.input,null):null;
+ let buffer=withBuffer?newDesignActivation(api,pid,session,1,withCandidate?{...f.input,approvedDesignRef:documentRef,confirmedPlanRef:plans[1].plan.ref,changeRef,impactRef}:f.input,null):null;
+ const queued:Array<(old:typeof buffer)=>typeof buffer>=[];let postponeChange=false;
  const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
  let props:any={client:api,projectId:pid,session,page:null,selectionId:'',buffer,onRequest:()=>{requests++;return true;},onAuthenticationLost:()=>{lost++;}};
  const render=async(p=props)=>{props=p;await ui.React.act(async()=>root.render(ui.React.createElement(ui.DesignActivationPanel,props)));};
- props.onChange=(update:any)=>{changes++;buffer=typeof update==='function'?update(buffer):update;props={...props,buffer};root.render(ui.React.createElement(ui.DesignActivationPanel,props));};
+ const apply=(update:any)=>{buffer=typeof update==='function'?update(buffer):update;props={...props,buffer};root.render(ui.React.createElement(ui.DesignActivationPanel,props));};
+ props.onChange=(update:any)=>{changes++;if(postponeChange)queued.push(update);else apply(update);};
  const button=(label:string)=>{const found=nodes(container).filter(n=>n.tagName==='BUTTON'&&n.textContent===label);assert.equal(found.length,1,label);return found[0]!;};
  const click=async(label:string)=>{const b=button(label);assert(!b.disabled,label);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0}));};
  await render();
- return{f,record,previous,current,calls,api,session,plans,approvals,setApprovalMode:(v:string)=>{approvalMode=v;},setPlanMode:(v:string)=>{planMode=v;},buffer:()=>buffer,props:()=>props,render,button,click,text:()=>container.textContent,region:(label:string)=>nodes(container).filter(n=>n.getAttribute('aria-label')===label),setMode:(v:string)=>{mode=v;},waiting:()=>waiting,release:()=>release(),lost:()=>lost,changes:()=>changes,requests:()=>requests,replace:async(b:any)=>{buffer=b;await render({...props,buffer});},close:async()=>{release();await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ return{f,record,previous,current,calls,api,session,plans,approvals,design,before,changePage,queued,delayChange:()=>{postponeChange=true;},applyChange:async()=>{const update=queued.shift();assert(update);await ui.React.act(async()=>apply(update));},setDesignMode:(v:string)=>{designMode=v;},setApprovalMode:(v:string)=>{approvalMode=v;},setPlanMode:(v:string)=>{planMode=v;},buffer:()=>buffer,props:()=>props,render,button,click,text:()=>container.textContent,region:(label:string)=>nodes(container).filter(n=>n.getAttribute('aria-label')===label),setMode:(v:string)=>{mode=v;},waiting:()=>waiting,release:()=>release(),lost:()=>lost,changes:()=>changes,requests:()=>requests,replace:async(b:any)=>{buffer=b;await render({...props,buffer});},close:async()=>{release();await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 const planButton='당시 확정 계획 원문 확인',planLinks=(f:Awaited<ReturnType<typeof fixture>>)=>f.region('설계 변경 적용').flatMap(nodes).filter(n=>n.tagName==='A'&&n.textContent==='당시 확정 계획 작성 문서 보기');
 async function openHistory(f:Awaited<ReturnType<typeof fixture>>){await f.click('현재 적용 기준 확인');await settle(()=>f.region('현재 적용 기준').length===1);await f.click('적용 이력 원문 확인');await settle(()=>f.region('고정 적용 이력').length===1);}
@@ -270,15 +318,26 @@ for(const mode of ['PROJECT','PROJECT_ABA','USER','DEVICE','CSRF','SELECTION_ABA
 test('현재 기준 NONE도 조회 결과이며 준비나 승인 상태를 생성하지 않는다',async()=>{
  const f=await fixture();try{f.setMode('NONE');await f.click('현재 적용 기준 확인');await settle(()=>f.text().includes('최초 기준 등록'));assert.equal(f.buffer(),null);assert.equal(f.changes(),0);assert.equal(f.requests(),0);assert.equal(f.calls.length,1);}finally{await f.close();}
 });
-test('작성 중인 원 후보는 현재 기준을 갱신하지만 확인 체크 전 고정은 불가하다',async()=>{
- const f=await fixture(true);try{
+test('작성 중인 원 후보는 현재 기준과 실제 설계·계획을 대조한 뒤에만 고정한다',async()=>{
+ const f=await fixture(true,true,false,false,true);try{
+  await f.render({...f.props(),page:f.changePage});
   const original=f.buffer();await f.click('현재 적용 기준 확인');await settle(()=>!!f.buffer()?.current);
   assert.deepEqual(f.buffer()?.input,original?.input);assert.equal(f.buffer()?.bindingId,original?.bindingId);assert.equal(f.buffer()?.pending,null);assert.equal(f.button('적용 후보 고정').disabled,true);
   const checkbox=nodes(f.region('설계 변경 적용')[0]!).find(n=>n.tagName==='INPUT'&&Object.entries(n).some(([k,v])=>k.startsWith('__reactProps$')&&(v as any).type==='checkbox'));assert(checkbox);
   const props=Object.entries(checkbox).find(([k])=>k.startsWith('__reactProps$'))?.[1] as any;assert(props?.onChange);
   await ui.React.act(async()=>props.onChange({target:{checked:true}}));
   await f.click('적용 후보 고정');await settle(()=>!!f.buffer()?.pending);
-  assert.deepEqual(f.buffer()?.pending?.baselineRefs,[f.record.ref]);assert.deepEqual(f.buffer()?.pending?.payload,original?.input);assert.equal(f.requests(),0);assert.equal(f.calls.length,1);
+  assert.deepEqual(f.buffer()?.pending?.baselineRefs,[f.current.current.activationRef]);assert.deepEqual(f.buffer()?.pending?.payload,original?.input);assert.equal(f.requests(),0);
+  assert.deepEqual(f.calls.map(c=>c.path),[
+   `/api/v1/projects/${pid}/baseline-activations/current`,
+   `/api/v1/projects/${pid}/documents/${f.before.id}/versions/${f.before.version}`,
+   `/api/v1/projects/${pid}/files/${f.before.content.body.artifactId}`,
+   `/api/v1/projects/${pid}/documents/${f.design.id}/versions/${f.design.version}`,
+   `/api/v1/projects/${pid}/files/${f.design.content.body.artifactId}`,
+   `/api/v1/projects/${pid}/work-plans/${f.plans[1].plan.ref.id}/versions/${f.plans[1].plan.ref.version}`,
+   `/api/v1/projects/${pid}/work-plans/${f.plans[1].plan.ref.id}/versions/${f.plans[1].plan.ref.version}/decision`,
+   `/api/v1/projects/${pid}/baseline-activations/current`,
+  ]);
  }finally{await f.close();}
 });
 for(const state of ['PENDING','UNKNOWN','FOREIGN'])test('이력 조회는 '+state+' 원 버퍼·입력·명령을 변경하지 않는다',async()=>{
@@ -319,3 +378,107 @@ before(async()=>{
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return ControlAcceptanceMemoryTest;')();
 });
 after(()=>{for(const c of channels){c.port1.close();c.port2.close();}for(const[k,v]of saved)if(v)Object.defineProperty(globalThis,k,v);else Reflect.deleteProperty(globalThis,k);});
+
+async function acknowledgeCandidate(f:Awaited<ReturnType<typeof fixture>>){
+ const box=f.region('설계 변경 적용').flatMap(nodes).find(n=>n.tagName==='INPUT'&&Object.entries(n).some(([key,value])=>key.startsWith('__reactProps$')&&(value as any).type==='checkbox'));
+ assert(box&&!box.disabled);
+ const props=Object.entries(box).find(([key])=>key.startsWith('__reactProps$'))![1] as any;
+ await ui.React.act(async()=>props.onChange({target:{checked:true}}));
+}
+async function inspectCandidate(f:Awaited<ReturnType<typeof fixture>>){
+ await f.click('현재 적용 기준 확인');await settle(()=>!!f.buffer()?.current);await acknowledgeCandidate(f);
+}
+
+for(const mode of ['BEFORE_HASH','HASH','UNCONFIRMED','INVALID','REWORK','FORM_MISMATCH','STALE_PLAN','WRONG_PLAN','CONFIRM_SOURCES','CHANGED_POINTER','401','403'] as const)test('새 적용 후보 · '+mode+'는 명령 고정 전에 거절한다',async()=>{
+ const f=await fixture(true,true,false,false,true,mode==='FORM_MISMATCH');
+ try{
+  const latest=f.plans[1];
+  if(mode==='WRONG_PLAN'){
+   const {ref,status,executionEvidence,observedAt,...snapshot}=latest.plan;
+   snapshot.designRef=f.previous.snapshot.approvedDesignRef;
+   latest.plan={...snapshot,ref:{...ref,contentHash:await activationHash(snapshot)},status,executionEvidence,observedAt};
+   await f.replace({...f.buffer()!,input:{...f.buffer()!.input,confirmedPlanRef:latest.plan.ref}});
+  }
+  await inspectCandidate(f);
+  if(mode==='STALE_PLAN'){latest.decision.headVersion++;latest.decision.currentConfirmationValid=false;}
+  else if(mode==='CONFIRM_SOURCES')latest.decision.confirmation.validation={...latest.decision.confirmation.validation,sourceRefs:[latest.plan.documentRef,latest.plan.documentRef]};
+  else if(mode==='CHANGED_POINTER')f.setMode('NONE');
+  else if(mode!=='WRONG_PLAN')f.setDesignMode(mode);
+  const original=f.buffer(),begin=f.calls.length;
+  await f.click('적용 후보 고정');await settle(()=>f.text().includes('원 입력·명령은 보존했습니다'));
+  assert.equal(f.buffer(),original);assert.equal(f.buffer()?.pending,null);
+  assert.equal(f.lost(),mode==='401'?1:0);
+  const reads=f.calls.slice(begin);
+  assert.equal(reads.filter(c=>c.path.includes('/work-plans/')).length,mode==='WRONG_PLAN'?1:['STALE_PLAN','CONFIRM_SOURCES','CHANGED_POINTER'].includes(mode)?2:0);
+  assert.equal(reads.filter(c=>c.path.endsWith('/baseline-activations/current')).length,mode==='CHANGED_POINTER'?1:0);
+  assert(f.calls.every(c=>c.method==='GET'));
+  assert.equal(f.requests(),0);
+ }finally{await f.close();}
+});
+
+for(const scenario of ['TRANSPORT','DRAFT_ABA','IMPACT','CLOSE'] as const)test('새 적용 후보 · '+scenario+' 뒤 늦은 조회는 준비나 인증에 반영하지 않는다',async()=>{
+ const f=await fixture(true,true,false,false,true);let closed=false;
+ try{
+  const page=f.changePage;
+  if(scenario==='IMPACT')await f.render({...f.props(),page});
+  await inspectCandidate(f);
+  f.setDesignMode(scenario==='TRANSPORT'?'WAIT401':'WAIT200');
+  await f.click('적용 후보 고정');await settle(f.waiting);
+  const original=f.buffer(),prior=f.props(),count=f.calls.length;
+  if(scenario==='TRANSPORT'){const transport=f.api.transport;f.api.transport=(...args:any[])=>transport(...args);}
+  if(scenario==='DRAFT_ABA'){await f.replace({...original!,input:{...original!.input,reason:'교체 이유'}});await f.replace(original);}
+  if(scenario==='IMPACT')await f.render({...prior,page:{...page,latestImpactRef:{...page.latestImpactRef,version:page.latestImpactRef.version+1}}});
+  if(scenario==='CLOSE'){await f.close();closed=true;}
+  await ui.React.act(async()=>{f.release();await new Promise(r=>setImmediate(r));});
+  assert.equal(f.buffer(),original);assert.equal(f.buffer()?.pending,null);assert.equal(f.lost(),0);
+  assert.equal(f.calls.length,count);assert(f.calls.every(c=>c.method==='GET'));
+ }finally{if(!closed)await f.close();}
+});
+
+for(const mode of ['CURRENT','TRANSPORT','DRAFT'] as const)test('새 적용 후보 · 지연 상위 반영은 같은 입력과 전송 경로에만 적용한다 · '+mode,async()=>{
+ const f=await fixture(true,true,false,false,true);
+ try{
+  await inspectCandidate(f);f.delayChange();
+  await f.click('적용 후보 고정');await settle(()=>f.queued.length===1);
+  const original=f.buffer();
+  if(mode==='TRANSPORT'){const transport=f.api.transport;f.api.transport=(...args:any[])=>transport(...args);}
+  if(mode==='DRAFT')await f.replace({...original!,input:{...original!.input,reason:'새 명시 입력'}});
+  const current=f.buffer();const count=f.calls.length;
+  await f.applyChange();
+  if(mode==='CURRENT')assert.deepEqual(f.buffer()?.pending?.payload,original?.input);
+  else{assert.equal(f.buffer(),current);assert.equal(f.buffer()?.pending,null);}
+  assert.equal(f.calls.length,count);assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+test('개인 AF02 양식을 만든 사람과 다른 프로젝트 제어자는 보호 설계 원문으로 적용 후보를 고정한다',async()=>{
+ const f=await fixture(true,true,false,false,true);
+ try{
+  const page=f.changePage,creator=page.change.requestedBy.userId;
+  assert.notEqual(creator,f.session.user.id);
+  await f.render({...f.props(),page});
+  await inspectCandidate(f);
+  await f.click('적용 후보 고정');
+  await settle(()=>!!f.buffer()?.pending||f.text().includes('원 입력·명령은 보존했습니다'));
+  assert(f.buffer()?.pending,'프로젝트 보호 원문으로 읽을 수 있는 AF02에는 개인 양식 접근을 요구하지 않습니다.');
+  assert(!f.calls.some(c=>c.path.includes('/forms/')));
+  assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});
+
+for(const stale of [false,true])test('원 화면 재진입의 새 후보는 보호 변경의 동일 최신 영향만 사용한다 · '+stale,async()=>{
+ const f=await fixture(true,true,false,false,true);try{
+  assert.equal(f.props().page,null);
+  await inspectCandidate(f);
+  if(stale)f.setDesignMode('ADVANCED_IMPACT');
+  const begin=f.calls.length,original=f.buffer();
+  await f.click('적용 후보 고정');
+  await settle(()=>!!f.buffer()?.pending||f.text().includes('원 입력·명령은 보존했습니다'));
+  const paths=f.calls.slice(begin).map(c=>c.path);
+  assert.equal(paths[0],`/api/v1/projects/${pid}/design-changes/${f.changePage.change.ref.id}?limit=10`);
+  assert(!paths.some(p=>p.startsWith('/api/v1/forms/')));
+  if(stale){assert.deepEqual(paths,[paths[0]]);assert.equal(f.buffer(),original);assert.match(f.text(),/APPROVAL_TARGET_CHANGED/);}
+  else assert.deepEqual(f.buffer()?.pending?.payload,original?.input);
+  assert(f.calls.every(c=>c.method==='GET'));
+ }finally{await f.close();}
+});

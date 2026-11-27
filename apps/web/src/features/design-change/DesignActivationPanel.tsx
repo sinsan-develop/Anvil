@@ -1,8 +1,9 @@
-import {useEffect,useLayoutEffect,useRef,useState,type Dispatch,type SetStateAction} from 'react';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState,type Dispatch,type SetStateAction} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
-import type {DesignChangePage} from './api.ts';
-import {ActivationScope,activationOwned,activationSame,newDesignActivation,prepareDesignActivation,readCurrentActivation,readFixedActivation,sendDesignActivation,type ActivationBuffer,type CurrentActivation,type FixedActivation} from './activation-api.ts';
+import {readDocument} from '../design-trace/api.ts';
+import {readDesignChange,type DesignChangePage} from './api.ts';
+import {ActivationScope,activationOwned,activationSame,newDesignActivation,prepareDesignActivation,readActivationInput,readCurrentActivation,readFixedActivation,sendDesignActivation,type ActivationBuffer,type CurrentActivation,type FixedActivation} from './activation-api.ts';
 import {documentVersionHref} from '../../shell/routes.ts';
 import {readWorkPlan,type PlanRef} from '../design-trace/work-plan-api.ts';
 import {readWorkPlanDecision} from '../design-trace/work-plan-decision-api.ts';
@@ -76,9 +77,52 @@ export function DesignActivationPanel({client,projectId,session,page,selectionId
  const context=useRef({client,transport:client.transport,identity,generation:0});if(context.current.client!==client||context.current.transport!==client.transport||context.current.identity!==identity)context.current={client,transport:client.transport,identity,generation:context.current.generation+1};
  const [busy,setBusy]=useState(false),[error,setError]=useState<ApiError|null>(null),[ack,setAck]=useState(false),[requestId,setRequestId]=useState(''),[attempted,setAttempted]=useState(false),[blocked,setBlocked]=useState(false);
  const [current,setCurrent]=useState<{active:()=>boolean;value:CurrentActivation}|null>(null),[history,setHistory]=useState<{active:()=>boolean;value:FixedActivation}|null>(null);
- useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);useEffect(()=>{flight.current=false;setBusy(false);setAck(false);},[context.current.generation]);
+ useLayoutEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);useEffect(()=>{flight.current=false;setBusy(false);setAck(false);},[context.current.generation]);
  const selected=!!b&&(page?activationSame(b.input.changeRef,page.change.ref)&&activationSame(b.input.impactRef,page.latestImpactRef):!selectionId),owned=!!b&&b.ownerUserId===session.user.id&&b.ownerClientId===session.clientId&&b.csrfToken===session.csrfToken&&b.api===client&&b.transport===client.transport;
  const shownCurrent=current?.active()?current.value:null,shownHistory=history?.active()?history.value:null;
+ const candidateOwner=context.current;
+ const candidate=useMemo(()=>({owner:candidateOwner,draft:b,current,ack}),[candidateOwner,b,current,ack]);
+ const candidateLive=useRef<typeof candidate|null>(null);
+ useLayoutEffect(()=>{candidateLive.current=candidate;return()=>{candidateLive.current=null;};},[candidate]);
+ async function freezeCandidate(){
+  const inScope=()=>alive.current&&context.current===candidateOwner&&candidateLive.current===candidate&&client.transport===candidateOwner.transport;
+  if(!inScope()||!b||!owned||!selected||b.pending||b.receipt||b.uncertain||!ack||!b.current||!shownCurrent||
+   !activationSame(b.current.current,shownCurrent.current))return;
+  const baseline=structuredClone(b.current.current);
+  await perform(async active=>{
+   const isCurrent=()=>active()&&inScope();
+   try{
+    const input=readActivationInput(b.input),designRef=input.approvedDesignRef,planRef=input.confirmedPlanRef;
+    const change=page??await readDesignChange(client,projectId,input.changeRef.id,null);
+    if(!isCurrent())return;
+    if(!activationSame(change.change.ref,input.changeRef)||!activationSame(change.latestImpactRef,input.impactRef))throw new ApiError('APPROVAL_TARGET_CHANGED',409);
+    // 변경 보호 조회가 이전 설계의 AF02 양식을 확인한다. 두 고정 원문의 양식 참조를 프로젝트 범위에서 대조한다.
+    const before=change.change.beforeRef;
+    if(designRef.id!==before.id||designRef.version!==before.version+1)throw new ApiError('DESIGN_ACTIVATION_DESIGN_MISMATCH',409);
+    if(baseline.state==='PRESENT'&&!activationSame(before,baseline.designRef))throw new ApiError('VERSION_CONFLICT',409);
+    const original=await readDocument(client,projectId,before.id,before.version,{expectedContentHash:before.contentHash,active:isCurrent});
+    if(!isCurrent())return;
+    const {document}=await readDocument(client,projectId,designRef.id,designRef.version,{expectedContentHash:designRef.contentHash,active:isCurrent});
+    if(!isCurrent())return;
+    if(!activationSame(document.formRef,original.document.formRef)||document.title!==original.document.title||!activationSame(document.stageNodeRef,original.document.stageNodeRef))throw new ApiError('DESIGN_ACTIVATION_DESIGN_MISMATCH',409);
+    if(!document.confirmed||!document.validation.validForConfirmation||document.contentReviews[0]?.ref.outcome!=='ACCEPTED')throw new ApiError('DESIGN_ACTIVATION_DESIGN_NOT_CONFIRMED',412);
+    const plan=await readWorkPlan(client,projectId,planRef);
+    if(!isCurrent())return;
+    if(!activationSame(plan.designRef,designRef))throw new ApiError('DESIGN_ACTIVATION_PLAN_MISMATCH',409);
+    const decision=await readWorkPlanDecision(client,projectId,plan);
+    if(!isCurrent())return;
+    if(!decision.currentConfirmationValid||!decision.confirmation||
+     !activationSame(decision.confirmation.validation.sourceRefs,[plan.documentRef,plan.designRef])||
+     !activationSame(decision.confirmation.validation.screenReviewRefs,plan.screenReviewRefs))throw new ApiError('DESIGN_ACTIVATION_PLAN_CONFIRMATION_MISMATCH',412);
+    const latest=await readCurrentActivation(client,projectId,isCurrent);
+    if(!isCurrent()||!latest)return;
+    if(!activationSame(latest.current,baseline)){setAck(false);throw new ApiError('VERSION_CONFLICT',409);}
+    if(!activationSame(b.input,input)||!activationSame(b.current?.current,baseline))return;
+    const pending=prepareDesignActivation(b,session);
+    onChange(old=>old===b&&isCurrent()&&activationSame(old.input,input)&&activationSame(old.current?.current,baseline)?{...b,pending}:old);
+   }catch(cause){if(isCurrent())throw cause;}
+  });
+ }
  function update(expected:ActivationBuffer,next:ActivationBuffer){onChange(old=>old?.bindingId===expected.bindingId&&activationSame(old.pending,expected.pending)?next:old);}
  async function perform(run:(active:()=>boolean)=>Promise<void>){if(flight.current)return;flight.current=true;setBusy(true);setError(null);const token=scope.current.capture(),active=()=>alive.current&&token();try{await run(active);}catch(cause){if(!active())return;const e=cause instanceof ApiError?cause:new ApiError('RESPONSE_INVALID');setError(e);if([401,403,404].includes(e.status)){setCurrent(null);setHistory(null);setBlocked(true);}if(e.status===401)onAuthenticationLost();}finally{if(active()){flight.current=false;setBusy(false);}}}
  async function begin(active:()=>boolean){if(!page||b&&!b.receipt)throw new ApiError('DESIGN_ACTIVATION_INPUT_PRESERVED');const generation=await documentControl(client,projectId,session);if(!active())return;const blank={id:'',version:0,contentHash:''};onChange(old=>old&&!old.receipt?old:newDesignActivation(client,projectId,session,generation,{changeRef:page.change.ref,impactRef:page.latestImpactRef,approvedDesignRef:{...blank},confirmedPlanRef:{...blank},reason:''},null));setCurrent(null);setHistory(null);setAttempted(false);setBlocked(false);}
@@ -94,7 +138,7 @@ export function DesignActivationPanel({client,projectId,session,page,selectionId
    {shownHistory?<section aria-label="고정 적용 이력"><h4>고정 적용 이력</h4><p>{shownHistory.ref.id} · v{shownHistory.ref.version} · SHA256 {shownHistory.ref.contentHash} · {shownHistory.isCurrent?'관측 시점 현재 기준':'보존된 과거 기준'}</p><pre>{JSON.stringify(shownHistory.snapshot,null,2)}</pre><a href={documentVersionHref(shownHistory.snapshot.projectId,shownHistory.snapshot.approvedDesignRef)}>당시 확정 설계 원문 보기</a><ActivatedPlanOriginal client={client} selection={history!} onAuthenticationLost={onAuthenticationLost}/><ActivatedDecisionReason client={client} projectId={projectId} selection={history!} onAuthenticationLost={onAuthenticationLost}/><p>이 적용 사실은 실제 실행·검수 합격의 증거가 아닙니다.</p>{shownHistory.snapshot.previousActivationRef?<button type="button" disabled={busy} onClick={()=>void perform(active=>inspect(shownHistory.snapshot.previousActivationRef!,active))}>직전 적용 이력 확인</button>:null}</section>:null}
   {b&&owned?<><p>변경 {b.input.changeRef.id} · v{b.input.changeRef.version} · SHA256 {b.input.changeRef.contentHash}</p><p>영향 {b.input.impactRef.id} · v{b.input.impactRef.version} · SHA256 {b.input.impactRef.contentHash}</p>{!selected?<p role="status">다른 선택의 원 입력·명령을 보존했습니다. 현재 선택에서는 실행하지 않습니다.</p>:null}
    <fieldset disabled={busy||!!b.pending||!selected}><legend>적용 후보 입력</legend>{(['approvedDesignRef','confirmedPlanRef'] as const).map((kind,index)=><div key={kind}><label>{index?'적용할 확정 계획 ID':'적용할 확정 설계 ID'}<input autoComplete="off" maxLength={36} value={b.input[kind].id} onChange={e=>edit(kind,'id',e.target.value)}/></label><label>{index?'적용할 계획 버전':'적용할 설계 버전'}<input type="number" min={1} value={b.input[kind].version||''} onChange={e=>edit(kind,'version',e.target.value)}/></label><label>{index?'적용할 계획 SHA256':'적용할 설계 SHA256'}<input autoComplete="off" maxLength={64} value={b.input[kind].contentHash} onChange={e=>edit(kind,'contentHash',e.target.value)}/></label></div>)}<label>기준 적용 이유<textarea maxLength={20000} value={b.input.reason} onChange={e=>{if(b.pending)return;update(b,{...b,input:{...b.input,reason:e.target.value}});setAck(false);}}/></label></fieldset>
-   <label><input type="checkbox" disabled={busy||!!b.pending||!shownCurrent||!selected} checked={ack} onChange={e=>setAck(e.target.checked)}/>정확한 적용 후보와 현재 기준을 확인했습니다</label><button type="button" disabled={busy||!ack||!shownCurrent||!!b.pending||!selected} onClick={()=>{try{const pending=prepareDesignActivation(b,session);update(b,{...b,pending});setError(null);}catch(e){setError(e instanceof ApiError?e:new ApiError('RESPONSE_INVALID'));}}}>적용 후보 고정</button>
+   <label><input type="checkbox" disabled={busy||!!b.pending||!shownCurrent||!selected} checked={ack} onChange={e=>setAck(e.target.checked)}/>정확한 적용 후보와 현재 기준을 확인했습니다</label><button type="button" disabled={busy||!ack||!shownCurrent||!!b.pending||!selected} onClick={()=>void freezeCandidate()}>적용 후보 고정</button>
    {b.pending?<><details><summary>보존한 정확 적용 명령</summary><pre>{JSON.stringify(b.pending,null,2)}</pre></details><button type="button" disabled={busy||!selected||!!b.pending.approvalRef||b.uncertain||!!b.receipt} onClick={()=>{try{if(!onRequest(b))throw new ApiError('APPROVAL_REQUEST_IN_PROGRESS');}catch(e){setError(e instanceof ApiError?e:new ApiError('RESPONSE_INVALID'));}}}>이 설계 변경 승인 요청 작성</button><label>적용 승인 요청 ID<input autoComplete="off" maxLength={36} value={requestId} onChange={e=>setRequestId(e.target.value)}/></label><button type="button" disabled={busy||!selected||!requestId.trim()||!!b.pending.approvalRef||b.uncertain||!!b.receipt} onClick={()=>void perform(bind)}>승인 원문 결박</button><button type="button" disabled={busy||!selected||blocked||!b.pending.approvalRef||!!b.receipt} onClick={()=>void perform(apply)}>{attempted||b.failure||b.uncertain?'같은 적용 명령 결과 확인':'설계 변경 별도 적용'}</button></>:null}
    {b.receipt?<p role="status">기준 적용 저장 확인 · {b.receipt.data.ref.id} · v{b.receipt.data.ref.version}. 실제 업무 재개·Agent 실행과는 별개입니다.</p>:null}{b.uncertain?<p role="status">처리 결과 미확인 · 원 입력과 같은 명령을 보존했습니다.</p>:null}
   </>:null}{busy?<p role="status">정확 후보·기준 확인 중</p>:null}{error?<p role="alert">{error.code} · 원 입력·명령은 보존했습니다.</p>:null}
