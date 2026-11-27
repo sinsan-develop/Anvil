@@ -4,6 +4,7 @@ import {build} from 'vite';
 import {fileURLToPath} from 'node:url';
 import {hash,resultFixture} from '../UI05/result-view-fixture.ts';
 import {stopHistoryFor} from '../UI05/stop-request-history-fixture.ts';
+import {observationJournalFor} from '../UI05/observation-journal-fixture.ts';
 import {assignmentPlanFixture} from '../UI05/assignment-plan-original-fixture.ts';
 import {parseRoute,sessionDetailHref} from '../../../apps/web/src/shell/routes.ts';
 
@@ -128,7 +129,9 @@ async function mount(strict=false,withAssignment=false,withReviews=false){
  const select=(f:typeof original)=>({assignmentRef:f.a,returnDraftRef:withAssignment?detail.draft.ref:f.a,item:f.item});
  const calls:{path:string;method:string}[]=[];
  const stored=(f:typeof original)=>reviewFixtures(f.entry,detail);
- const controls={readStops:(f:typeof original):Response|Promise<Response>=>Response.json(stopHistoryFor(f.entry)),
+ const controls={readResult:(f:typeof original):Response|Promise<Response>=>Response.json(f.entry),
+  readObservations:(f:typeof original):Response|Promise<Response>=>Response.json(observationJournalFor(f.entry)),
+  readStops:(f:typeof original):Response|Promise<Response>=>Response.json(stopHistoryFor(f.entry)),
   readPages:():Response|Promise<Response>=>assert.fail('과거 페이지 자동 조회'),
   readIssueBasis:():Response=>assert.fail('문제 근거 자동 조회'),
   readAssignment:(draft:boolean):Response|Promise<Response>=>Response.json(draft?detail.draft:detail.confirmed),
@@ -146,7 +149,8 @@ async function mount(strict=false,withAssignment=false,withReviews=false){
   if(withAssignment&&detail.confirmed&&path===`${prefix}/assignments/${detail.confirmed.ref.id}/versions/${detail.confirmed.ref.version}`)return controls.readAssignment(false);
   for(const f of [original,second]){
    const resultPath=`/api/v1/projects/${f.pid}/results/${f.entry.ref.id}`;
-   if(path===resultPath)return Response.json(f.entry);
+   if(path===resultPath)return controls.readResult(f);
+   if(path===resultPath+'/observation-journal')return controls.readObservations(f);
    if(path===resultPath+'/stop-requests')return controls.readStops(f);
    if(path===resultPath+'/stop-request-pages')return controls.readPages();
    if(path===resultPath+'/issue-basis')return controls.readIssueBasis();
@@ -430,6 +434,83 @@ test('선택 보고의 보관 조회는 보호 거절 및 다시 해시한 다�
    assert.deepEqual(stopCalls(f),[{method:'GET',path:stopPath(f.original)}]);
   }finally{await f.close();}
  }
+});
+
+const clickProps=(node:MemoryNode)=>{const key=Object.keys(node).find(k=>k.startsWith('__reactProps$'));assert(key);return (node as any)[key] as {onClick:(event?:any)=>void};};
+for(const source of ['RESULT','STOP','ACK'] as const)for(const mode of ['OLD_200','OLD_401','CURRENT_401'] as const)test('문제 보고 '+source+' '+mode+'의 raw 주소 이탈·현재 조회와 옛 클릭을 대조한다',{timeout:15000},async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+resultFixture().pid+'/approvals'};
+ Object.defineProperty(globalThis,'location',{value:location,writable:true,configurable:true});
+ try{
+  location.hash='#/projects/'+resultFixture().pid+'/approvals';
+  const f=await mount(),held=Promise.withResolvers<Response>();let entered=false;
+  try{
+   if(source!=='RESULT')await f.report();
+   const read=()=>{entered=true;return held.promise;};
+   if(source==='RESULT')f.controls.readResult=read;else if(source==='STOP')f.controls.readStops=read;else f.controls.readObservations=read;
+   const label=source==='RESULT'?'선택 보고 원문 확인':source==='STOP'?lookup:'보관 관측 조회';
+   const oldRead=clickProps(f.button(label)).onClick,oldClose=clickProps(f.button('선택 보고 닫기')).onClick;
+   const link=f.nodes().find(n=>n.tagName==='A'&&n.textContent==='원 임무 상세로 돌아가기')!;assert(link);const oldLink=clickProps(link).onClick;
+   await f.click(label);await f.wait(()=>entered);const count=f.calls.length;
+   if(mode!=='CURRENT_401')location.hash='#/projects/'+f.original.pid+'/workspace';
+   await f.act(()=>held.resolve(mode==='OLD_200'?Response.json(source==='RESULT'?f.original.entry:source==='STOP'?stopHistoryFor(f.original.entry):observationJournalFor(f.original.entry)):Response.json({code:'AUTH_REQUIRED'},{status:401})));
+   await f.flush();
+   if(mode==='CURRENT_401'){await f.wait(()=>f.authLost()===1);assert.match(f.text(),/AUTH_REQUIRED/);}
+   else{
+    assert.equal(f.authLost(),0);assert.doesNotMatch(f.text(),/AUTH_REQUIRED|사용자가 중지 요청|서버 연속 수신 순번/);
+    if(source==='RESULT')assert.doesNotMatch(f.text(),/검수 미실행/);
+    let prevented=false;await f.act(()=>{oldRead();oldClose();oldLink({preventDefault(){prevented=true;}});});await f.flush();
+    assert(prevented,'이탈한 복귀 링크는 이동하지 않음');assert(f.text().includes('선택 제출 '+f.original.entry.ref.id),'이탈한 닫기는 App 선택을 지우지 않음');
+   }
+   assert.equal(f.calls.length,count);assert(f.calls.every(call=>call.method==='GET'));
+  }finally{held.resolve(Response.json({}));await f.close();}
+ }finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+test('문제 보고 A의 옛 닫기·조회·복귀는 같은 승인 화면의 B 선택을 지우거나 이동시키지 않는다',async()=>{
+ const f=await mount();try{
+  await f.report();const close=clickProps(f.button('선택 보고 닫기')).onClick,read=clickProps(f.button('선택 보고 원문 다시 확인')).onClick;
+  const link=clickProps(f.nodes().find(n=>n.tagName==='A'&&n.textContent==='원 임무 상세로 돌아가기')!).onClick;
+  await f.choose(f.second);await f.report();const count=f.calls.length;let prevented=false;
+  await f.act(()=>{close();read();link({preventDefault(){prevented=true;}});});await f.flush();
+  assert(f.text().includes('선택 제출 '+f.second.entry.ref.id));assert(f.text().includes('검수 미실행'));assert(prevented);assert.equal(f.calls.length,count);assert.equal(f.authLost(),0);
+ }finally{await f.close();}
+});
+for(const source of ['RESULT','STOP','ACK'] as const)test('문제 보고 '+source+'는 렌더 전 전달된 주소 왕복 뒤 옛401을 버리고 새 명시 조회만 연다',{timeout:15000},async()=>{
+ const route='#/projects/'+resultFixture().pid+'/approvals',location={hash:route},listeners=new Set<(event:HashChangeEvent)=>void>(),saved=new Map<string,PropertyDescriptor|undefined>();
+ const add=(type:string,listener:(event:HashChangeEvent)=>void)=>{if(type==='hashchange')listeners.add(listener);},remove=(type:string,listener:(event:HashChangeEvent)=>void)=>{if(type==='hashchange')listeners.delete(listener);};
+ for(const [key,value]of Object.entries({location,addEventListener:add,removeEventListener:remove})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
+ try{
+  const f=await mount(),held=Promise.withResolvers<Response>();let entered=false;
+  try{
+   if(source!=='RESULT')await f.report();
+   const read=()=>{entered=true;return held.promise;};
+   if(source==='RESULT')f.controls.readResult=read;else if(source==='STOP')f.controls.readStops=read;else f.controls.readObservations=read;
+   const label=source==='RESULT'?'선택 보고 원문 확인':source==='STOP'?lookup:'보관 관측 조회';
+   const oldRead=clickProps(f.button(label)).onClick,oldClose=clickProps(f.button('선택 보고 닫기')).onClick,oldLink=clickProps(f.nodes().find(n=>n.tagName==='A'&&n.textContent==='원 임무 상세로 돌아가기')!).onClick;
+   await f.click(label);await f.wait(()=>entered);const count=f.calls.length;let prevented=false;
+   await f.act(()=>{
+    const away='#/projects/'+f.original.pid+'/workspace';location.hash=route;
+    for(const event of [{oldURL:'https://anvil-synthetic.invalid/'+route,newURL:'https://anvil-synthetic.invalid/'+away},{oldURL:'https://anvil-synthetic.invalid/'+away,newURL:'https://anvil-synthetic.invalid/'+route}])for(const listener of [...listeners])listener(event as HashChangeEvent);
+    held.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));
+   });await f.flush();
+   assert.equal(f.authLost(),0);assert.equal(f.calls.length,count);assert(f.text().includes('선택 제출 '+f.original.entry.ref.id));assert.doesNotMatch(f.text(),/AUTH_REQUIRED|사용자가 중지 요청|서버 연속 수신 순번/);
+   await f.act(()=>{oldRead();oldClose();oldLink({preventDefault(){prevented=true;}});});assert(prevented);assert.equal(f.calls.length,count);assert(f.text().includes('선택 제출 '+f.original.entry.ref.id));
+   f.controls.readResult=result=>Response.json(result.entry);f.controls.readStops=result=>Response.json(stopHistoryFor(result.entry));f.controls.readObservations=result=>Response.json(observationJournalFor(result.entry));
+   await f.report();
+   if(source==='STOP'){await f.click(lookup);await f.wait(()=>f.text().includes('사용자가 중지 요청'));}
+   if(source==='ACK'){await f.click('보관 관측 조회');await f.wait(()=>f.text().includes('서버 연속 수신 순번: 0'));}
+   assert.equal(f.authLost(),0);assert(f.calls.every(call=>call.method==='GET'));
+  }finally{held.resolve(Response.json({}));await f.close();}
+  assert.equal(listeners.size,0,'원 owner의 주소 listener cleanup');
+ }finally{for(const [key,value]of saved)if(value)Object.defineProperty(globalThis,key,value);else Reflect.deleteProperty(globalThis,key);}
+});
+test('같은 문제 보고의 부모 재렌더는 이탈 주소를 새 조회 scope로 채택하지 않는다',async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),route='#/projects/'+resultFixture().pid+'/approvals',location={hash:route};
+ Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{const f=await mount();try{
+  await f.report();const count=f.calls.length;location.hash='#/projects/'+f.original.pid+'/workspace';await f.render();
+  const read=f.nodes().find(n=>n.tagName==='BUTTON'&&/^선택 보고 원문/.test(n.textContent))!;await f.act(()=>clickProps(read).onClick());await f.flush();assert.equal(f.calls.length,count);assert.equal(f.authLost(),0);
+  location.hash=route;await f.render();await f.report();assert.equal(f.calls.length,count+1);assert(f.text().includes('검수 미실행'));
+ }finally{await f.close();}}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
 });
 
 test('선택 닫기·새로 확인·다른 보고와 사용자/client/transport 전환 뒤 늦은 401은 인증과 새 보고를 건드리지 않는다',async()=>{
