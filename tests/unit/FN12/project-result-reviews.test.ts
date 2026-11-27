@@ -8,6 +8,8 @@ import {buildApp} from '../../../apps/server/app.ts';
 import {AccessRepository,AuthFailure} from '../../../apps/server/modules/access/repository.ts';
 import {ProjectResultSubmissions} from '../../../apps/server/modules/results/project-result-submissions.ts';
 import {ProjectResultCriteria} from '../../../apps/server/modules/results/project-result-criteria.ts';
+import {ProjectResultReviewSources} from '../../../apps/server/modules/results/project-result-review-sources.ts';
+import {ProjectMethodologies} from '../../../apps/server/modules/methodologies/project-methodologies.ts';
 import type {Pool} from 'pg';
 const mod:any=await import('../../../apps/server/modules/results/project-result-reviews.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});
 function fixture(){const f=criteriaFixture(),r=resultFixture();let at='2026-10-20T00:01:00.000Z';r.entry.snapshot.scope.projectId=f.assignment.projectId;r.entry.snapshot.scope.assignmentRef=f.assignment.ref;r.entry.snapshot.manifest.assignmentRef=f.assignment.ref;r.entry.snapshot.manifestHash=hash(r.entry.snapshot.manifest);r.entry.ref.contentHash=hash(r.entry.snapshot);const snapshot={assignmentRef:f.assignment.ref,baselineRefs:f.d.baselineRefs,items:[{criterionId:'flow',testId:'FLOW-01',kind:'BROWSER',environmentRef:f.d.environmentRef,required:true}]},criteria:any={projectId:f.assignment.projectId,ref:{id:id(9),version:1,contentHash:hash(snapshot)},snapshot,registryStored:true,reviewStored:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false};
@@ -45,7 +47,7 @@ function fixture(){const f=criteriaFixture(),r=resultFixture();let at='2026-10-2
 function service(f:ReturnType<typeof fixture>){assert.equal(typeof mod.ProjectResultReviews,'function','FN12 검수 판정 영속 제공자 미구현');return new mod.ProjectResultReviews(f.results,f.criterionReader);}
 
 function reviewRoutes(t:import('node:test').TestContext,f:ReturnType<typeof fixture>){
- const origin='https://localhost:3830',csrf='C'.repeat(43),token='synthetic-review-session';
+ const origin='https://localhost:3830',csrf='C'.repeat(43),token='T'.repeat(43);
  const repository=new AccessRepository({connect:()=>assert.fail('실제 PG 금지')} as unknown as Pool,{installationId:id(81),key:Buffer.alloc(32,1)});
  Object.defineProperty(repository,'authenticated',{value:async(session:string,c:string|null,handle:Parameters<AccessRepository['authenticated']>[2])=>{
   if(session!==token)throw new AuthFailure('AUTH_REQUIRED',401);
@@ -54,8 +56,55 @@ function reviewRoutes(t:import('node:test').TestContext,f:ReturnType<typeof fixt
  t.mock.method(ProjectResultSubmissions.prototype,'read',f.results.read);
  t.mock.method(ProjectResultCriteria.prototype,'read',f.criterionReader.read);
  const app=buildApp({},undefined,{repository,origin}),base=`/api/v1/projects/${f.request.projectId}`,headers={host:'localhost:3830',origin,cookie:`__Host-anvil.sid=${token}`};
- return{close:()=>app.close(),send:(payload=f.request)=>app.inject({method:'POST',url:base+'/commands',headers:{...headers,'x-anvil-csrf':csrf,'idempotency-key':payload.commandId},payload}),read:(key:string)=>app.inject({method:'GET',url:base+'/result-reviews/'+key,headers})};
+ return{close:()=>app.close(),send:(payload=f.request)=>app.inject({method:'POST',url:base+'/commands',headers:{...headers,'x-anvil-csrf':csrf,'idempotency-key':payload.commandId},payload}),read:(key:string)=>app.inject({method:'GET',url:base+'/result-reviews/'+key,headers}),page:()=>app.inject({method:'GET',url:base+'/results/'+f.result.ref.id+'/review-pages',headers}),nextAction:(key:string)=>app.inject({method:'GET',url:base+'/result-reviews/'+key+'/next-action-basis',headers})};
 }
+test('HTTP 상세·페이지·동일 명령 재확인·다음 행동은 보관된 검수 응답 전체를 대조한다',async t=>{
+ for(const [name,patch] of [
+  ['operationId',{operationId:id(98)}],
+  ['evidenceRefs',{evidenceRefs:[{id:id(98),version:1,contentHash:'e'.repeat(64)}]}],
+  ['warnings',{warnings:['추가된 경고']}],
+  ['additional key',{unexpected:true}],
+ ] as const)await t.test(name,async sub=>{
+  const f=fixture(),route=reviewRoutes(sub,f);
+  const source=sub.mock.method(ProjectResultReviewSources.prototype,'read',async()=>assert.fail('손상된 검수의 후속 원자료 조회'));
+  const application=sub.mock.method(ProjectMethodologies.prototype,'readApplication',async()=>assert.fail('손상된 검수의 후속 방법론 조회'));
+  try{
+   const first=await route.send();assert.equal(first.statusCode,200,first.body);
+   const review=first.json().data.ref,before=f.calls.length;
+   const read=await route.read(review.id),page=await route.page(),replay=await route.send();
+   assert.deepEqual([read.statusCode,page.statusCode,replay.statusCode],[200,200,200]);
+   assert.deepEqual(read.json().ref,review);assert.deepEqual(page.json().items.map((item:any)=>item.ref),[review]);
+   assert.deepEqual(replay.json(),first.json());
+   const command=f.commands.get(f.rows[0].command_id);command.result_ref={...command.result_ref,...patch};
+   const damaged=[await route.read(review.id),await route.page(),await route.send(),await route.nextAction(review.id)];
+   assert.deepEqual(damaged.map(response=>[response.statusCode,response.json().code]),
+    Array.from({length:4},()=>[503,'RESULT_REVIEW_LEDGER_INVALID']));
+   assert.equal(source.mock.callCount()+application.mock.callCount(),0);
+   assert(!f.calls.slice(before).some(sql=>/^(INSERT|UPDATE|DELETE)/.test(sql)));
+   assert.deepEqual([f.rows.length,f.commands.size,f.receipts.size,f.audits.length],[1,1,1,1]);
+  }finally{await route.close();}
+ });
+});
+
+test('보관 검수는 별도 현재 정책·제어 없이 다른 정상 VIEWER에게 당시 원 검수자를 보존한다',async()=>{
+ const f=fixture(),s=service(f),saved=await s.save(f.db,f.actor,f.request,f.policyRef);
+ const viewer={...f.actor,actorId:id(98),clientId:id(97)},before=f.calls.length,query=f.db.query;
+ f.controlled(false);f.policyHead(null);
+ f.db.query=async(sql:string,params:unknown[])=>{
+  const result=await query(sql,params);
+  if(sql.includes('JOIN anvil.project_members')){
+   assert.deepEqual(params,[f.request.projectId,viewer.actorId]);
+   for(const member of result.rows)member.participation='VIEWER';
+  }
+  return result;
+ };
+ const view=await s.read(f.db,viewer,f.request.projectId,saved.data.ref.id);
+ assert.deepEqual(view.ref,saved.data.ref);assert.equal(view.snapshot.reviewedBy.userId,f.actor.actorId);
+ assert(!f.calls.slice(before).some(sql=>sql.includes('project_control')||sql.includes('permission_policies')||/^(INSERT|UPDATE|DELETE)/.test(sql)));
+ f.member(false);
+ await assert.rejects(s.read(f.db,viewer,f.request.projectId,saved.data.ref.id),{message:'NOT_FOUND',statusCode:404});
+});
+
 test('HTTP 검수 재확인과 원문 조회는 정상 감사 옆에 추가된 다른 감사를 검출한다',async t=>{
  const f=fixture(),route=reviewRoutes(t,f);
  try{

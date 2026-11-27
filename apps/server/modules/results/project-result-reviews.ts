@@ -44,12 +44,10 @@ export class ProjectResultReviews{
    if(!refV1(ref)||!same(s,expected)||ref.contentHash!==hash(s)||row.result_id!==p.input.resultRef.id||row.criteria_id!==p.input.criteriaRef.id||Number(row.criteria_version)!==p.input.criteriaRef.version||row.operation!=='evaluateResult'||row.state!=='APPLIED'||row.actor_id!==row.created_by||row.command_client_id!==row.client_id||Number(row.expected_version)!==0||!uuidV1(row.original_command_id)||!refV1(row.policy_ref)||!uuidV1(row.authorization_receipt_id)||row.approval_decision_ref!==null||Number(row.audit_total)!==1||Number(row.audit_count)!==1||!same(row.receipt_subject,{kind:'HUMAN',userId:row.created_by,clientId:row.client_id})||!same(row.receipt_policy_ref,row.policy_ref))fail('RESULT_REVIEW_LEDGER_INVALID');
    if(row.approval_consumption_id!==null||row.payload_ref!==null)fail('RESULT_REVIEW_LEDGER_INVALID');
    const original={schemaVersion:1,projectId:pid,commandId:row.original_command_id,clientId:row.client_id,controlGeneration:Number(row.control_generation),operation:'evaluateResult',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:p.input};
-   if(row.request_hash!==hash(original)||row.scope_digest!==hash({projectId:pid,actorId:row.created_by,clientId:row.client_id,controlGeneration:Number(row.control_generation),requestHash:row.request_hash,policyRef:row.policy_ref,targetRef:ref})||row.result_ref?.status!=='APPLIED'||row.result_ref.commandId!==row.original_command_id||row.result_ref.projectId!==pid||row.result_ref.targetId!==id||row.result_ref.version!==1||row.result_ref.serverReceivedAt!==at||!same(row.result_ref.data,{ref,...this.#data(s)}))fail('RESULT_REVIEW_LEDGER_INVALID');
-   if(replay){
-    const result={operationId:row.operation_id,commandId:row.original_command_id,projectId:pid,status:'APPLIED',targetId:id,version:1,
-     data:{ref,...this.#data(s)},evidenceRefs:[],warnings:[],serverReceivedAt:at};
-    if(row.created_by!==actor.actorId||!uuidV1(row.operation_id)||!same(original,replay.request)||!same(row.result_ref,result)||!same(replay.result,result))fail('RESULT_REVIEW_LEDGER_INVALID');
-   }
+   const result={operationId:row.operation_id,commandId:row.original_command_id,projectId:pid,status:'APPLIED',targetId:id,version:1,
+    data:{ref,...this.#data(s)},evidenceRefs:[],warnings:[],serverReceivedAt:at};
+   if(row.request_hash!==hash(original)||row.scope_digest!==hash({projectId:pid,actorId:row.created_by,clientId:row.client_id,controlGeneration:Number(row.control_generation),requestHash:row.request_hash,policyRef:row.policy_ref,targetRef:ref})||!uuidV1(row.operation_id)||!same(row.result_ref,result))fail('RESULT_REVIEW_LEDGER_INVALID');
+   if(replay&&(row.created_by!==actor.actorId||!same(original,replay.request)||!same(replay.result,result)))fail('RESULT_REVIEW_LEDGER_INVALID');
    return{projectId:pid,ref,snapshot:cloneV1(s),reviewStored:true as const,completionAccepted:false as const,formalFailureCounted:false as const,evidenceProvenanceVerified:false as const,executionAuthorized:false as const,dispatchPerformed:false as const,observedAt:await this.#clock(db)};
   }catch(error){if(error instanceof AuthFailure&&error.statusCode===404)throw error;fail('RESULT_REVIEW_LEDGER_INVALID');}
  }
