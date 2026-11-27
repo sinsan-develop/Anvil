@@ -122,7 +122,9 @@ export class ProjectStageQueue{
  }
  async cancel(db:PoolClient,actor:AuthenticatedIdentity,raw:ProjectCommand,policyRef:RuntimeRefV1){
   const r=cloneV1(raw),p=r.payload;if(r.operation!=='cancelQueuedRequest'||!recordV1(p,['requestRef','reason'])||!refV1(p.requestRef)||r.targetId!==p.requestRef.id||r.expectedVersion!==p.requestRef.version)fail();reason(p.reason);
-  const at=await this.#authorize(db,actor,r,policyRef),rows=(await db.query(query+'WHERE q.project_id=$1 AND q.request_id=$2 ORDER BY q.version DESC LIMIT 1',[r.projectId,p.requestRef.id])).rows;if(!rows.length)fail('NOT_FOUND',404);const prior=await this.#view(db,actor,rows[0],r.projectId);if(!same(prior.ref,p.requestRef)||prior.snapshot.state!=='WAITING')fail('QUEUE_REQUEST_NOT_CANCELLABLE',409);
+  await this.#authorize(db,actor,r,policyRef);
+  const rows=(await db.query(query+'WHERE q.project_id=$1 AND q.request_id=$2 ORDER BY q.version DESC LIMIT 1',[r.projectId,p.requestRef.id])).rows;if(!rows.length)fail('NOT_FOUND',404);const prior=await this.#view(db,actor,rows[0],r.projectId);if(!same(prior.ref,p.requestRef)||prior.snapshot.state!=='WAITING')fail('QUEUE_REQUEST_NOT_CANCELLABLE',409);
+  const at=await this.#authorize(db,actor,r,policyRef);
   const snapshot:Record<string,any>={...prior.snapshot,version:2,state:'CANCELLED',cancelledAt:at,cancelledBy:{kind:'HUMAN',userId:actor.actorId,clientId:actor.clientId},cancellationReason:p.reason,previousRef:prior.ref},ref={id:prior.ref.id,version:2,contentHash:hash(snapshot)};
   const receipt=await persistProjectReceipt(db,actor,r,ref,{queueState:'CANCELLED',snapshot},policyRef,'EXPLICIT_UNSTARTED_QUEUE_CANCELLATION');
   await db.query('INSERT INTO anvil.queue_requests(project_id,request_id,version,sequence,content_hash,snapshot_json,command_id) VALUES($1,$2,$3,$4,$5,$6,$7)',[r.projectId,ref.id,2,snapshot.sequence,ref.contentHash,JSON.stringify(snapshot),receipt.id]);return receipt.result;

@@ -16,6 +16,54 @@ function fixture(){
 }
 test('명시 시작 요청은 WAITING·단조순번으로 저장/조회하고 예약·수행을 만들지 않는다',async()=>{const f=fixture(),r=await f.service.start(f.db,f.actor,f.request,f.policyRef);assert.equal(r.data.queueState,'WAITING');assert.equal(r.data.snapshot.executionAuthorized,false);assert.equal(r.data.snapshot.assignmentRef,null);assert(r.data.snapshot.readinessIssues.includes('ASSIGNMENT_BINDING_UNVERIFIED'));const q=await f.service.read(f.db,f.actor,f.pid);assert.equal(q.items.length,1);assert.equal(q.items[0].state,'WAITING');assert.equal(q.items[0].sequence,1);assert.equal(q.writerReservationPerformed,false);assert(!f.calls.some(s=>/INSERT INTO anvil.(usage_reservations|execution_outbox)/.test(s)));});
 test('정확 WAITING ref만 취소하며 과거 버전·다른 hash는 취소하지 않는다',async()=>{const f=fixture(),r=await f.service.start(f.db,f.actor,f.request,f.policyRef),c={...f.request,commandId:id(11),operation:'cancelQueuedRequest',targetId:r.data.ref.id,expectedVersion:1,payload:{requestRef:r.data.ref,reason:'아직 시작 전 취소'}};const done=await f.service.cancel(f.db,f.actor,c,f.policyRef);assert.equal(done.data.queueState,'CANCELLED');assert.equal(done.data.snapshot.dispatchPerformed,false);assert.equal(done.data.snapshot.writerReservationPerformed,false);assert.equal((await f.service.read(f.db,f.actor,f.pid)).items.length,0);await assert.rejects(f.service.cancel(f.db,f.actor,{...c,commandId:id(12)},f.policyRef));assert.equal(f.rows.length,2);});
+for(const expired of [true,false])test('대기 취소는 보호 조회 뒤 현재 인증 기한을 재대조한다 '+(expired?'만료 경계':'만료 1ms 전'),async()=>{
+ const f=fixture(),original=await f.service.start(f.db,f.actor,f.request,f.policyRef);
+ const command={...f.request,commandId:id(11),operation:'cancelQueuedRequest',targetId:original.data.ref.id,expectedVersion:1,
+  payload:{requestRef:original.data.ref,reason:'보호 조회 뒤 정확한 취소'}};
+ const cutoff=Date.parse(f.at)+1000,after=new Date(cutoff-(expired?0:1));
+ f.actor.authSession[expired?'idleExpiresAt':'absoluteExpiresAt']=new Date(cutoff).toISOString();
+ const query=f.db.query,denialReasons:string[]=[];let headRead=false;
+ const denialAudit=(sql:string)=>sql.startsWith('INSERT INTO anvil.audit_events')&&sql.includes("'DENIED',$6,'SERVER_DENIAL'");
+ f.db.query=async(sql:string,args:any[])=>{
+  if(denialAudit(sql))denialReasons.push(args[5]);
+  const result=await query(sql,args);
+  if(sql.endsWith('WHERE q.project_id=$1 AND q.request_id=$2 ORDER BY q.version DESC LIMIT 1')){
+   assert.deepEqual(args,[f.pid,original.data.ref.id]);
+   headRead=true;
+  }
+  if(headRead&&sql==='SELECT clock_timestamp() AS at')return{rows:[{at:after}]};
+  return result;
+ };
+ const access:any={authenticated:async(_token:string,_csrf:string,cb:any)=>cb(f.db,f.actor)},policies=new ProjectPolicyRepository(access);
+ const send=()=>policies.command('synthetic','synthetic',command,(db,actor,p)=>f.service.cancel(db,actor,command,p),
+  (db,actor,request,result)=>f.service.verifyReplay(db,actor,request,result));
+ const wrote=()=>f.calls.filter(sql=>sql.startsWith('INSERT INTO ')&&!denialAudit(sql));
+ const before=wrote();
+ if(expired){
+  await assert.rejects(send(),{message:'STAGE_QUEUE_CURRENT_REQUIRED',statusCode:409});
+  assert.equal(headRead,true);
+  assert.deepEqual(wrote(),before);
+  assert.deepEqual(denialReasons,['STAGE_QUEUE_CURRENT_REQUIRED']);
+  const waiting=await f.service.readRequest(f.db,f.actor,f.pid,original.data.ref);
+  assert.deepEqual(waiting.currentRef,original.data.ref);
+  assert.deepEqual(waiting.snapshot,original.data.snapshot);
+  assert.equal(waiting.currentState,'WAITING');
+ }else{
+  const result=await send(),snapshot=result.data.snapshot;
+  assert.equal(headRead,true);
+  assert.equal(snapshot.cancelledAt,after.toISOString());
+  assert.equal(snapshot.state,'CANCELLED');
+  assert.deepEqual(snapshot.previousRef,original.data.ref);
+  assert.equal(result.data.ref.contentHash,hash(snapshot));
+  assert.equal(f.rows.length,2);
+  const afterWrites=wrote();
+  f.actor.authSession={id:id(12),idleExpiresAt:'2099-01-01T00:00:00.000Z',absoluteExpiresAt:'2099-01-01T00:00:00.000Z'};
+  after.setTime(cutoff);
+  assert.deepEqual(await send(),result);
+  assert.deepEqual(wrote(),afterWrites);
+  assert.deepEqual(denialReasons,[]);
+ }
+});
 test('현재권한·제어·기준 및 예산 불일치를 대기 성공으로 치환하지 않는다',async()=>{for(const mode of ['MEMBER','CONTROL','APP','BUDGET','AUTO','APPROVAL']){const f=fixture();if(mode==='MEMBER')f.member(false);if(mode==='CONTROL')f.control(false);if(mode==='APP')f.request.payload.methodologyApplicationRef=ref(80);if(mode==='BUDGET')f.ports.budgets.resolveCurrent=async()=>{throw Error('LIMIT_POLICY_EXPIRED');};if(mode==='AUTO')f.request.payload.mode='AUTO';if(mode==='APPROVAL')f.request.approvalRef=ref(80);await assert.rejects(f.service.start(f.db,f.actor,f.request,f.policyRef));assert.equal(f.rows.length,0);}});
 test('감사 실패면 queue 행을 쓰지 않고 읽기에서 변조된 snapshot을 거절한다',async()=>{const f=fixture();f.auditFailure();await assert.rejects(f.service.start(f.db,f.actor,f.request,f.policyRef),/AUDIT_FAILED/);assert.equal(f.rows.length,0);const g=fixture();await g.service.start(g.db,g.actor,g.request,g.policyRef);g.rows[0].snapshot_json.executionAuthorized=true;await assert.rejects(g.service.read(g.db,g.actor,g.pid),/STAGE_QUEUE_LEDGER_INVALID/);});
 test('실제 공통 명령 계층의 exact replay는 추가 저장하지 않고 제어 회수 뒤 노출하지 않는다',async()=>{const f=fixture(),access:any={authenticated:async(_token:string,_csrf:string,cb:any)=>cb(f.db,f.actor)},policies=new ProjectPolicyRepository(access),send=(request:any=f.request)=>policies.command('synthetic','synthetic',request,(db,actor,p)=>f.service.start(db,actor,request,p),(db,actor,command,result)=>f.service.verifyReplay(db,actor,command,result));const first=await send(),second=await send();assert.deepEqual(second,first);assert.equal(f.rows.length,1);await assert.rejects(send({...f.request,payload:{...f.request.payload,reason:'내용 변경'}}),/IDEMPOTENCY_CONFLICT/);assert.equal(f.rows.length,1);f.control(false);await assert.rejects(send(),/PROJECT_CONTROL_REQUIRED/);assert.equal(f.rows.length,1);});

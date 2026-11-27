@@ -3,7 +3,25 @@ import {readFile} from 'node:fs/promises';import {execFileSync} from 'node:child
 const m:any=await import('../../../scripts/stage-queue-isolated-qa.ts').catch((e:NodeJS.ErrnoException)=>{if(e.code==='ERR_MODULE_NOT_FOUND')return{};throw e;});const fn=(n:string)=>{assert.equal(typeof m[n],'function');return m[n];};
 test('실제 QA seed 방법론은 적용본 reader의 확정 구조 검증을 만족한다',async()=>{const w:any=await import('../../../scripts/stage-queue-pg-workflow.ts'),{validateMethodologyGraph}=await import('../../../apps/server/modules/methodologies/service.ts');assert.equal(typeof w.stageQueueQaGraph,'function');const result=validateMethodologyGraph(w.stageQueueQaGraph(),[]);assert.deepEqual(result.issues.filter(i=>i.severity==='ERROR'),[]);assert.equal(result.validForConfirmation,true);});
 test('Git은 등록된 의존성 링크 한 개만 허용하고 다른 비추적/수정은 거절한다',()=>{fn('assertStageQaGitStatus')('?? node_modules');for(const v of['',' M scripts/stage-queue-isolated-qa.ts','?? node_modules\n?? extra','?? node_modules/other'])assert.throws(()=>fn('assertStageQaGitStatus')(v));});
-test('정리 wrapper는 조건문 안에서도 Docker/파일조회 오류 뒤 삭제하지 않는다',async()=>{const source=await readFile(new URL('../../../scripts/stage-queue-qa-launch.sh',import.meta.url),'utf8'),body=source.slice(source.indexOf('cleanup_checkout() {'),source.indexOf('\ncd "$root"\n'));assert(body.startsWith('cleanup_checkout() {'));assert(source.includes('/usr/bin/docker --host unix:///var/run/docker.sock'));for(const mode of['DOCKER','FIND']){const setup=`set -euo pipefail\nroot=/synthetic-qa; parent=/synthetic-parent; deps=/synthetic-deps; pg=qa-pg; net=qa-net; sha=aaa\ncd(){ :; }; docker_exact(){ ${mode==='DOCKER'?'return 12;':`if [[ "$*" == info* ]]; then echo e3349f1d-dbfc-478a-96d9-295bf6c6839e; fi;`} }; qa_bounded(){ local cmd=\${1##*/}; shift; "$cmd" "$@"; }; realpath(){ echo "$root"; }; stat(){ echo 1000; }; git(){ if [[ "$*" == *rev-parse* ]]; then echo aaa; else echo '?? node_modules'; fi; }; find(){ return 7; }; rm(){ echo FORBIDDEN_DELETE; }; lsof(){ return 1; };\n`;const out=execFileSync(process.platform==='win32'?'C:/Program Files/Git/bin/bash.exe':'/bin/bash',['-c',setup+body+'\nif ! cleanup_checkout; then echo PRESERVED; fi'],{encoding:'utf8',timeout:3000});assert.equal(out.trim(),'PRESERVED');}});
+function cleanupCheckoutFunction(source:string){
+ const lines=source.replace(/\r\n/g,'\n').split('\n');
+ const start=lines.indexOf('cleanup_checkout() {');
+ assert(start>=0&&lines.lastIndexOf('cleanup_checkout() {')===start,'정리 함수 경계');
+ const end=lines.indexOf('}',start+1);
+ assert(end>start&&lines[end+1]==='cd "$root"','정리 함수 뒤 wrapper 진입 경계');
+ return lines.slice(start,end+1).join('\n');
+}
+test('정리 함수 추출은 LF/CRLF에서 동일하고 경계 불일치나 wrapper 본문을 넘기지 않는다',async()=>{
+ const source=(await readFile(new URL('../../../scripts/stage-queue-qa-launch.sh',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
+ const body=cleanupCheckoutFunction(source);
+ assert.equal(cleanupCheckoutFunction(source.replace(/\n/g,'\r\n')),body);
+ assert(body.endsWith('\n}'));
+ assert.doesNotMatch(body,/^cd "\$root"$|^expires=|^issued=/m);
+ for(const malformed of [source.replace('cleanup_checkout() {','wrong_function() {'),source.replace('\n}\ncd "$root"\n','\n}\nUNEXPECTED_WRAPPER_TAIL\ncd "$root"\n'),source.replace('\ncd "$root"\n','\n')]){
+  assert.throws(()=>cleanupCheckoutFunction(malformed),/경계/);
+ }
+});
+test('정리 wrapper는 조건문 안에서도 Docker/파일조회 오류 뒤 삭제하지 않는다',async()=>{const source=await readFile(new URL('../../../scripts/stage-queue-qa-launch.sh',import.meta.url),'utf8'),body=cleanupCheckoutFunction(source);assert(source.includes('/usr/bin/docker --host unix:///var/run/docker.sock'));for(const mode of['DOCKER','FIND']){const setup=`set -euo pipefail\nroot=/synthetic-qa; parent=/synthetic-parent; deps=/synthetic-deps; pg=qa-pg; net=qa-net; sha=aaa\ncd(){ :; }; docker_exact(){ ${mode==='DOCKER'?'return 12;':`if [[ "$*" == info* ]]; then echo e3349f1d-dbfc-478a-96d9-295bf6c6839e; fi;`} }; qa_bounded(){ local cmd=\${1##*/}; shift; "$cmd" "$@"; }; realpath(){ echo "$root"; }; stat(){ echo 1000; }; git(){ if [[ "$*" == *rev-parse* ]]; then echo aaa; else echo '?? node_modules'; fi; }; find(){ return 7; }; rm(){ echo FORBIDDEN_DELETE; }; lsof(){ return 1; };\n`;const out=execFileSync(process.platform==='win32'?'C:/Program Files/Git/bin/bash.exe':'/bin/bash',['-c',setup+body+'\nif ! cleanup_checkout; then echo PRESERVED; fi'],{encoding:'utf8',timeout:3000});assert.equal(out.trim(),'PRESERVED');}});
 test('호출은 잔여창을 넘지 않고 만료 뒤 새 호출을 거절한다',()=>{assert.equal(fn('stageQaCallBudget')(150,100,80),50);assert.throws(()=>fn('stageQaCallBudget')(100,100,80));});
 test('풀 종료가 응답하지 않아도 유한 시간에 다음 자원 회수로 진행한다',async()=>{assert.equal(typeof m.closeStageQaPool,'function');assert.equal(await m.closeStageQaPool({end:()=>new Promise(()=>{})},20),false);assert.equal(await m.closeStageQaPool({end:async()=>{}},20),true);});
 test('두 번째 연결 획득 실패에도 첫 연결을 반환한다',async()=>{const w:any=await import('../../../scripts/stage-queue-pg-workflow.ts');assert.equal(typeof w.withStageQaPair,'function');let n=0,released=0;const pool={connect:async()=>{if(++n===2)throw Error('CONNECT_FAILED');return{release:()=>released++};}};await assert.rejects(w.withStageQaPair(pool,async()=>{}),/CONNECT_FAILED/);assert.equal(released,1);});
