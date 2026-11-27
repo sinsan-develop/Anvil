@@ -399,26 +399,36 @@ function checkpointComparisonFixture(){
  return{stored,result,journal};
 }
 
-async function mountCheckpointComparison(reply:'OK'|'HOLD'){
+async function mountCheckpointComparison(reply:'OK'|'HOLD',paged=false){
  const f=checkpointComparisonFixture(),lost:string[]=[],requests:string[]=[],container:MemoryNode=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
  let release:((value:Response)=>void)|null=null,result=f.result,stored=f.stored,key='original',show=true,holdPath:string|null=null,stopStatus=200;
  const stop=stopHistoryFor(f.result);
+ const rows=Array.from({length:41},(_,i)=>{const row=structuredClone(f.journal.items[0]!);row.ref.id=String(41-i).padStart(8,'0')+'-1111-4111-8111-111111111111';row.snapshot.event.eventId=row.ref.id;row.snapshot.event.sequence=41-i;row.snapshot.event.type=i===20?'STOPPED':'HEARTBEAT';row.ref.contentHash=hash(row.snapshot);return row;});
+ if(paged){Object.assign(f.journal,{items:rows.slice(0,20),storedCount:41,hasMore:true});Object.assign(f.journal.ack.snapshot,{highestContiguous:41,maxSequence:41,gaps:[],storedCount:41});f.journal.ack.ref.contentHash=hash(f.journal.ack.snapshot);}
+ const page=(cursor:string|null)=>{
+  const before=cursor===null||cursor==='page-root'?null:Number(cursor.slice(5)),visible=rows.filter(row=>before===null||row.snapshot.event.sequence<before),items=visible.slice(0,20),hasMore=visible.length>20;
+  return{...f.journal,items,hasMore,snapshotMaxSequence:41,snapshotDigest:hash(rows.map(row=>row.ref)),snapshotCount:41,beforeSequence:before,cursorExpiresAt:'2026-10-20T00:00:30.000Z',pageCursor:cursor??'page-root',nextCursor:hasMore?'page-'+items.at(-1)!.snapshot.event.sequence:null};
+ };
+ let sourceCurrent=true;
+
  const transport:typeof fetch=async(url,init)=>{
   const path=String(url).split('/').at(-1)!;requests.push(path);assert.equal(init?.method,'GET');
   if(reply==='HOLD'||holdPath===path)return new Promise<Response>(resolve=>{release=resolve;});
   if(path==='observation-journal')return Response.json(f.journal);
+  if(path.startsWith('observation-pages'))return Response.json(page(new URL(String(url),'https://anvil.invalid').searchParams.get('cursor')));
   assert.equal(path,'stop-requests');
   return stopStatus===200?Response.json(stop):Response.json({code:stopStatus===401?'AUTH_REQUIRED':stopStatus===403?'PROJECT_OPERATION_DENIED':'NOT_FOUND'},{status:stopStatus});
  },client=new ui.ApiClient(transport);
  const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((child:MemoryNode)=>nodes(child))];
- function Host(){return show?ui.React.createElement(ui.CheckpointJournalComparison,{key,client,file:null,stored,result,onUnavailable:(code:string)=>lost.push(code)}):null;}
+ function Host(){return show?ui.React.createElement(ui.CheckpointJournalComparison,{key,client,file:null,stored,result,isSourceCurrent:()=>sourceCurrent,onUnavailable:(code:string)=>lost.push(code)}):null;}
  async function render(){await ui.React.act(async()=>root.render(ui.React.createElement(Host)));}
  async function flush(){await ui.React.act(async()=>{await new Promise(resolve=>setImmediate(resolve));});}
  async function click(label='서버 기록과 보관 ACK 대조'){const buttons=nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent===label);assert.equal(buttons.length,1,label);assert(!buttons[0]!.disabled,label);await ui.React.act(async()=>buttons[0]!.dispatchEvent({type:'click',button:0,bubbles:true}));}
  async function waitFor(check:()=>boolean){const until=Date.now()+2000;while(!check()&&Date.now()<until)await flush();assert(check(),container.textContent);}
- await render();return{...f,client,container,lost,requests,calls:()=>requests.length,click,render,flush,waitFor,held:()=>!!release,
+ await render();return{...f,client,container,lost,requests,page,nodes,calls:()=>requests.length,click,render,flush,waitFor,held:()=>!!release,
   hold(path:string){holdPath=path;},stopStatus(status:number){stopStatus=status;},async leave(mode:string){
    if(mode==='UNMOUNT')show=false;
+   if(mode==='CALLER')sourceCurrent=false;
    if(mode==='OWNER')key='changed-owner';
    if(mode==='RESULT')result={...f.result,ref:{...f.result.ref,version:2}};
    if(mode==='CHECKPOINT')stored=structuredClone(f.stored);
@@ -833,5 +843,58 @@ test('같은 산출물 child의 scope 교체는 실제 GET 없는 옛 선택의 
    await render();assert(!box.textContent.includes('산출물 bytes·hash·현재 조회 권한 대조 중'));assert(!box.textContent.includes('선택 산출물 다시 조회'));assert.equal(calls,1,'scope 교체만으로 재GET0');if(mode==='PARENT'){parent=true;await render();assert(!box.textContent.includes('산출물 bytes·hash·현재 조회 권한 대조 중'),'parent ABA는 옛 선택을 부활시키지 않음');}
    await ui.React.act(async()=>{gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await new Promise(r=>setImmediate(r));});assert.equal(lost,0);assert(!box.textContent.includes('AUTH_REQUIRED'));
   }finally{gate.resolve(Response.json({}));await ui.React.act(async()=>root.unmount());document.body.removeChild(box);}
+ }}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+
+test('서버 체크포인트 대조 뒤 첫20개 비STOP의 다음 고정 페이지 STOP을 명시 조회한다',{timeout:15000},async()=>{
+ const f=await mountCheckpointComparison('OK',true),original=structuredClone({result:f.result,stored:f.stored});
+ try{
+  assert(!f.container.textContent.includes('STOP 관측 페이지 탐색'));await f.click();await f.waitFor(()=>f.container.textContent.includes('재개 전 중지 기록 대조'));
+  assert(!f.container.textContent.includes('STOP 관측 페이지 탐색'),'중지 근거 보호대조 전 페이지 열기0');await f.click('재개 전 중지 기록 대조');await f.waitFor(()=>f.container.textContent.includes('조회 범위에 보관 STOP 관측 없음'));
+  assert.deepEqual(f.requests,['observation-journal','observation-journal','stop-requests']);
+  assert(f.container.textContent.includes('STOP 관측 페이지 탐색'),'hasMore 뒤 페이지의 STOP 확인 경로 없음');const before=f.calls();await f.click('STOP 관측 페이지 탐색');await f.waitFor(()=>f.container.textContent.includes('페이지 1'));
+  assert(f.container.textContent.includes('이 페이지에 STOP 관측 없음'));assert(!f.container.textContent.includes('페이지 관측 원문 41'));assert.equal(f.calls(),before+1);assert.equal(f.requests.at(-1),'observation-pages');
+  await f.click('더 이전 관측 20건');await f.waitFor(()=>f.container.textContent.includes('페이지 관측 원문 21'));assert.equal(f.requests.at(-1),'observation-pages?cursor=page-22','표시 필터가 원 20건의 cursor를 바꾸지 않음');
+  await f.click('페이지 관측 원문 21');assert(f.container.textContent.includes('STOPPED'));assert(f.container.textContent.includes('원인·실제 수행·중지·쓰기 회수는 미확인'));assert(f.container.textContent.includes('재개 불가'));assert(f.container.textContent.includes('서버 보관 연속 ACK: 41'));
+  await f.click('이후 관측 페이지');await f.waitFor(()=>f.container.textContent.includes('페이지 1'));assert.equal(f.requests.at(-1),'observation-pages?cursor=page-root');assert(!f.container.textContent.includes('페이지 관측 원문 21'));assert.deepEqual({result:f.result,stored:f.stored},original);
+  const previous=f.nodes().find(n=>n.tagName==='BUTTON'&&n.textContent==='STOP 관측 페이지 새로 조회')!,oldClick=(previous as any)[Object.keys(previous).find(k=>k.startsWith('__reactProps'))!].onClick;await f.click('재개 전 중지 기록 닫기');await f.click('재개 전 중지 기록 대조');await f.waitFor(()=>f.container.textContent.includes('STOP 관측 페이지 탐색'));const beforeNew=f.calls();await ui.React.act(async()=>oldClick());assert.equal(f.calls(),beforeNew,'원 resume ticket의 옛 페이지 재조회0');await f.click('STOP 관측 페이지 탐색');await f.waitFor(()=>f.container.textContent.includes('페이지 1'));assert.equal(f.requests.at(-1),'observation-pages','새 명시 대조의 별도 snapshot은 첫 페이지부터');
+ }finally{await f.close();}
+});
+
+test('STOP 뒤 페이지의 현재403과 close·caller/범위/route 전환의 늦은200/401은 ACK 대조를 권위로 바꾸지 않는다',{timeout:15000},async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+pid+'/transfers'};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{for(const mode of ['403','401','CLOSE_PAGE','CLOSE_RESUME','COMPARE','RECOMPARE','CALLER','RESULT','CHECKPOINT','OWNER','UNMOUNT','TRANSPORT','ROUTE','ROUTE_ABA'])for(const status of mode==='403'||mode==='401'?[Number(mode)]:[200,401]){
+  location.hash='#/projects/'+pid+'/transfers';const f=await mountCheckpointComparison('OK',true);
+  try{
+   await f.click();await f.waitFor(()=>f.container.textContent.includes('재개 전 중지 기록 대조'));await f.click('재개 전 중지 기록 대조');await f.waitFor(()=>f.container.textContent.includes('STOP 관측 페이지 탐색'));await f.click('STOP 관측 페이지 탐색');await f.waitFor(()=>f.container.textContent.includes('페이지 1'));
+   f.hold('observation-pages?cursor=page-22');await f.click('더 이전 관측 20건');await f.waitFor(f.held);const pages=f.requests.filter(p=>p.startsWith('observation-pages')).length;
+   if(mode==='CLOSE_PAGE')await f.click('STOP 관측 페이지 닫기');
+   if(mode==='CLOSE_RESUME')await f.click('재개 전 중지 기록 닫기');
+   if(mode==='COMPARE')await f.click();
+   if(mode==='RECOMPARE'){await f.click('재개 전 중지 기록 대조');await f.waitFor(()=>f.container.textContent.includes('STOP 관측 페이지 탐색'));}
+   if(['CALLER','RESULT','CHECKPOINT','OWNER','UNMOUNT'].includes(mode))await f.leave(mode);
+   if(mode==='TRANSPORT'){f.client.transport=async()=>assert.fail('교체 포트 GET 금지');await f.render();}
+   if(mode==='ROUTE')location.hash='#/projects/'+pid+'/workspace';
+   if(mode==='ROUTE_ABA'){location.hash='#/projects/'+pid+'/workspace';await f.render();location.hash='#/projects/'+pid+'/transfers';await f.render();}
+   await f.finish(status===200?Response.json(f.page('page-22')):Response.json({code:status===401?'AUTH_REQUIRED':'PROJECT_OPERATION_DENIED'},{status}));await f.flush();
+   if(mode==='403'||mode==='401'){assert.deepEqual(f.lost,[mode==='401'?'AUTH_REQUIRED':'PROJECT_OPERATION_DENIED']);assert(f.container.textContent.includes('페이지 미확인'));}
+   else{assert.deepEqual(f.lost,[]);assert(!f.container.textContent.includes('AUTH_REQUIRED'));assert(!f.container.textContent.includes('페이지 관측 원문 21'));}
+   assert.equal(f.requests.filter(p=>p.startsWith('observation-pages')).length,pages,'새 snapshot/fallback/자동 재전송0');assert(!f.container.textContent.includes('재개 가능'));if(mode==='RECOMPARE'){assert(!f.container.textContent.includes('관측 페이지 조회 중'));await f.click('STOP 관측 페이지 탐색');await f.waitFor(()=>f.container.textContent.includes('페이지 1'));assert.equal(f.requests.at(-1),'observation-pages','같은 제출의 새 근거는 옛 cursor/flight를 계승하지 않음');}
+  }finally{if(f.held())await f.finish(Response.json({}));await f.close();}
+ }}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
+});
+
+test('STOP pager 성립 전 비교·중지 GET의 raw route 이탈은 늦은200/401과 후속 요청·인증효과를 폐기한다',{timeout:15000},async()=>{
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'location'),location={hash:'#/projects/'+pid+'/transfers'};Object.defineProperty(globalThis,'location',{value:location,configurable:true});
+ try{for(const stage of ['COMPARE','JOURNAL','STOP_REQUEST'])for(const status of [200,401]){
+  location.hash='#/projects/'+pid+'/transfers';const f=await mountCheckpointComparison('OK',true);
+  try{
+   if(stage==='COMPARE')f.hold('observation-journal');
+   await f.click();
+   if(stage!=='COMPARE'){await f.waitFor(()=>f.container.textContent.includes('재개 전 중지 기록 대조'));f.hold(stage==='JOURNAL'?'observation-journal':'stop-requests');await f.click('재개 전 중지 기록 대조');}
+   await f.waitFor(f.held);const calls=f.calls();location.hash='#/projects/'+pid+'/workspace';
+   await f.finish(status===200?Response.json(stage==='STOP_REQUEST'?stopHistoryFor(f.result):f.journal):Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.flush();
+   assert(!f.container.textContent.includes('STOP 관측 페이지 탐색'));assert(!f.container.textContent.includes('사용자가 중지 요청'));assert.deepEqual(f.lost,[]);assert.equal(f.calls(),calls,'pager 성립 전 이탈의 후속GET0');
+  }finally{if(f.held())await f.finish(Response.json({}));await f.close();}
  }}finally{if(descriptor)Object.defineProperty(globalThis,'location',descriptor);else Reflect.deleteProperty(globalThis,'location');}
 });

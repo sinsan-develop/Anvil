@@ -38,13 +38,13 @@ after(()=>{for(const channel of channels){channel.port1.close();channel.port2.cl
 const hash=(v:unknown)=>contentHash(canonicalJson(v));
 function deferred<T>(){let resolve!:(v:T)=>void;const promise=new Promise<T>(r=>resolve=r);return{resolve,promise};}
 
-async function fixture(){
+async function fixture(stopOnly=false){
  const result=resultFixture().entry,base=observationJournalFor(result);
- const rows=Array.from({length:41},(_,i)=>{const row=structuredClone(base.items[0]!);row.ref.id=`${String(41-i).padStart(8,'0')}-1111-4111-8111-111111111111`;row.snapshot.event.eventId=row.ref.id;row.snapshot.event.sequence=41-i;row.ref.contentHash=hash(row.snapshot);return row;});
+ const rows=Array.from({length:41},(_,i)=>{const row=structuredClone(base.items[0]!);row.ref.id=`${String(41-i).padStart(8,'0')}-1111-4111-8111-111111111111`;row.snapshot.event.eventId=row.ref.id;row.snapshot.event.sequence=41-i;if(stopOnly&&i===20)row.snapshot.event.type='STOPPED';row.ref.contentHash=hash(row.snapshot);return row;});
  const page=(cursor:string|null)=>{const before=cursor===null||cursor==='page-root'?null:Number(cursor.slice(5)),visible=rows.filter(r=>before===null||r.snapshot.event.sequence<before),items=visible.slice(0,20),hasMore=visible.length>20,ack=structuredClone(base.ack);Object.assign(ack.snapshot,{highestContiguous:41,maxSequence:41,gaps:[],storedCount:41});ack.ref.contentHash=hash(ack.snapshot);return{...base,items,ack,storedCount:41,hasMore,snapshotMaxSequence:41,snapshotDigest:hash(rows.map(r=>r.ref)),snapshotCount:41,beforeSequence:before,cursorExpiresAt:'2026-10-20T00:00:30.000Z',pageCursor:cursor??'page-root',nextCursor:hasMore?'page-'+items.at(-1)!.snapshot.event.sequence:null};};
- const calls:(string|null)[]=[],errors:string[]=[],controls={read:async(cursor:string|null)=>Response.json(page(cursor))};
+ const calls:(string|null)[]=[],errors:string[]=[],controls={current:true,read:async(cursor:string|null)=>Response.json(page(cursor))};
  const client=new ui.ApiClient(async(input:any,init:any)=>{assert.equal(init?.method,'GET');const cursor=new URL(String(input),'https://synthetic.invalid').searchParams.get('cursor');calls.push(cursor);return controls.read(cursor);});
- const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);let props:any={client,result,onOpen:()=>{},onUnavailable:(code:string)=>errors.push(code)};
+ const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);let props:any={client,result,stopOnly,isSourceCurrent:stopOnly?()=>controls.current:undefined,onOpen:()=>{},onUnavailable:(code:string)=>errors.push(code)};
  const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))],has=(text:string)=>nodes().some(n=>n.tagName==='BUTTON'&&n.textContent===text),button=(text:string)=>{const n=nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===text);assert.ok(n,'버튼 '+text);return n;};
  const render=async(next=props)=>{props=next;await ui.React.act(async()=>root.render(ui.React.createElement(ui.ObservationJournalPages,props)));};
  const click=async(text:string)=>{const b=button(text);assert(!b.disabled);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0}));};
@@ -74,4 +74,17 @@ test('재조회 대기 중 기한 소실은 GET0이며 현재 401 콜백은 기�
  if(mode==='RETRY_EXPIRED'){f.controls.read=async()=>{throw Error('transport');};await f.click('더 이전 관측 20건');await f.wait(()=>f.has(retry));const count=f.calls.length;offset=31000;await f.click(retry);assert.equal(f.calls.length,count);assert(!f.has(retry));assert(f.text().includes('CURSOR_EXPIRED'));}
  else{f.controls.read=()=>gate.promise;await f.click('더 이전 관측 20건');offset=31000;gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await f.wait(()=>f.errors.length===1);assert.deepEqual(f.errors,['AUTH_REQUIRED']);assert(!f.has(retry));}
  }finally{gate.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));if(descriptor)Object.defineProperty(performance,'now',descriptor);else Reflect.deleteProperty(performance,'now');await f.close();}}
+});
+
+test('STOP 표시만 좁힌 페이지도 전달된 hashchange ABA에서 옛 응답을 버리고 원 listener를 해제한다',{timeout:15000},async()=>{
+ const keys=['location','addEventListener','removeEventListener']as const,saved=new Map(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)])),route='#/projects/11111111-1111-4111-8111-111111111111/transfers',location={hash:route},listeners=new Set<(event:any)=>void>();
+ Object.defineProperty(globalThis,'location',{value:location,configurable:true});Object.defineProperty(globalThis,'addEventListener',{value:(kind:string,fn:(event:any)=>void)=>{assert.equal(kind,'hashchange');listeners.add(fn);},configurable:true});Object.defineProperty(globalThis,'removeEventListener',{value:(kind:string,fn:(event:any)=>void)=>{assert.equal(kind,'hashchange');listeners.delete(fn);},configurable:true});
+ try{for(const status of [200,401]){
+  location.hash=route;const f=await fixture(true),gate=deferred<Response>();
+  try{
+   await f.click('STOP 관측 페이지 탐색');await f.wait(()=>f.text().includes('페이지 1'));assert(!f.has('페이지 관측 원문 41'));f.controls.read=()=>gate.promise;await f.click('더 이전 관측 20건');assert.equal(listeners.size,1);
+   await ui.React.act(async()=>{for(const listener of listeners)listener({oldURL:'https://anvil.invalid/'+route,newURL:'https://anvil.invalid/#/elsewhere'});for(const listener of listeners)listener({oldURL:'https://anvil.invalid/#/elsewhere',newURL:'https://anvil.invalid/'+route});gate.resolve(status===200?Response.json(f.page('page-22')):Response.json({code:'AUTH_REQUIRED'},{status}));await new Promise(r=>setImmediate(r));});await f.settle();
+   assert.deepEqual(f.calls,[null,'page-22']);assert(!f.has('페이지 관측 원문 21'));assert.deepEqual(f.errors,[]);assert(f.button('STOP 관측 페이지 새로 조회').disabled);
+  }finally{gate.resolve(Response.json({}));await f.close();assert.equal(listeners.size,0);}
+ }}finally{for(const key of keys){const value=saved.get(key);if(value)Object.defineProperty(globalThis,key,value);else Reflect.deleteProperty(globalThis,key);}}
 });

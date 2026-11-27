@@ -1,3 +1,4 @@
+import {ObservationJournalPages} from './ObservationJournalPages.tsx';
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ApiClient,ApiError} from '../../api/client.ts';
 import type {SubmittedResultView} from './result-api.ts';
@@ -5,7 +6,7 @@ import {ordered} from '../knowledge/review-view.ts';
 import {compareCheckpointJournal,isCheckpointResumeComparison,readCheckpointResumeEvidence,type CheckpointFileInspection,type CheckpointStoredInspection} from './checkpoint-journal-comparison.ts';
 type Comparison=NonNullable<Awaited<ReturnType<typeof compareCheckpointJournal>>>;
 type ResumeEvidence=NonNullable<Awaited<ReturnType<typeof readCheckpointResumeEvidence>>>;
-type ComparisonOwner={client:ApiClient;transport:typeof fetch;binding:string;file:CheckpointFileInspection|null;stored:CheckpointStoredInspection|null;result:SubmittedResultView};
+type ComparisonOwner={client:ApiClient;transport:typeof fetch;binding:string;file:CheckpointFileInspection|null;stored:CheckpointStoredInspection|null;result:SubmittedResultView;route:string|undefined};
 const changeLabels:Record<string,string>={AMBIGUOUS_PATH:'경로가 중복돼 대응 미확인',FILE_ONLY:'현황 파일에만 기재',RESULT_ONLY:'제출 보고서에만 기재',RECORDS_DIFFER:'선언 내용 불일치',HASH_UNKNOWN:'비교할 hash 미확인',REFERENCE_UNKNOWN:'한쪽 diff 참조 미확인',DECLARED_FIELDS_EQUAL:'경로·선언 필드 일치 · 실제 파일 인증 아님'};
 function CheckpointChangeComparison({value}:{value:NonNullable<Comparison['changeComparison']>}){
  return <section aria-label="현황·제출 변경 선언 대조"><h5>현황·제출 변경 선언 대조</h5><p>소스 root·현재 디스크 내용 미확인 · 재개 근거로 사용하지 않습니다.</p><p>현황 파일과 선택 제출 보고서의 선언만 비교합니다. 한쪽에만 있다는 표시가 실제 파일의 존재·삭제를 뜻하지 않습니다.</p>{value.rows.length?<ul>{value.rows.map(row=><li key={row.path}><p>{row.path}</p><p>{changeLabels[row.state]}</p>{row.different.length?<p>다른 선언 필드: {row.different.join(', ')}</p>:null}<details><summary>양쪽 변경 선언 원문</summary><pre>{JSON.stringify({checkpoint:row.fileEntries,result:row.resultEntries},null,2)}</pre></details></li>)}</ul>:<p>양쪽 기록에 변경 선언 없음 · 실제 미변경 판정 아님</p>}</section>;
@@ -32,13 +33,19 @@ export function CheckpointJournalComparison({client,file,stored,result,onUnavail
  const binding=ordered([result.snapshot.scope,result.ref,result.snapshot.manifest.checkpointRef,file?.prepared.recordFile.contentHash??null,stored?.projectId??null,stored?.ref??null]),
   generation=useRef(0),resumeGeneration=useRef(0),alive=useRef(false),unavailable=useRef(onUnavailable),owner=useRef<ComparisonOwner|null>(null);unavailable.current=onUnavailable;
  if(!owner.current||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.binding!==binding||
-    owner.current.file!==file||owner.current.stored!==stored||owner.current.result!==result)owner.current={client,transport:client.transport,binding,file,stored,result};
+    owner.current.file!==file||owner.current.stored!==stored||owner.current.result!==result||owner.current.route!==globalThis.location?.hash)owner.current={client,transport:client.transport,binding,file,stored,result,route:globalThis.location?.hash};
  const context=owner.current,[value,setValue]=useState<{owner:ComparisonOwner;data:Comparison}|null>(null),[pending,setPending]=useState<ComparisonOwner|null>(null),[error,setError]=useState<{owner:ComparisonOwner;code:string}|null>(null);
  const [resume,setResume]=useState<{comparison:Comparison;pending:boolean;data?:ResumeEvidence;error?:string}|null>(null);
  useLayoutEffect(()=>{alive.current=true;return()=>{alive.current=false;generation.current++;resumeGeneration.current++;};},[]);
- useEffect(()=>{generation.current++;resumeGeneration.current++;setValue(null);setPending(null);setError(null);setResume(null);},[context]);
- const sourceCurrent=()=>isSourceCurrent?.()!==false,storedOnly=sourceMode==='STORED_ONLY';
- const closeResume=()=>{resumeGeneration.current++;setResume(null);};
+ useEffect(()=>{
+  const clear=()=>{generation.current++;resumeGeneration.current++;setValue(null);setPending(null);setError(null);setResume(null);};clear();
+  const hash=(value:string)=>{try{return new URL(value).hash;}catch{return null;}};
+  const changed=(event:HashChangeEvent)=>{if(owner.current===context&&((event.oldURL?hash(event.oldURL):context.route)!==context.route||(event.newURL?hash(event.newURL):globalThis.location?.hash)!==context.route))clear();};
+  globalThis.addEventListener?.('hashchange',changed);return()=>globalThis.removeEventListener?.('hashchange',changed);
+ },[context]);
+ const sourceCurrent=()=>isSourceCurrent?.()!==false&&globalThis.location?.hash===context.route,storedOnly=sourceMode==='STORED_ONLY';
+ const displayedResume=useRef<typeof resume>(null);
+ const closeResume=()=>{resumeGeneration.current++;displayedResume.current=null;setResume(null);};
  const failure=(cause:unknown)=>{
   const e=cause instanceof ApiError?cause:new ApiError('CHECKPOINT_JOURNAL_RESPONSE_INVALID');
   return {status:e.status,code:/^[A-Z_]{1,80}$/.test(e.code)?e.code:'CHECKPOINT_JOURNAL_RESPONSE_INVALID'};
@@ -53,14 +60,22 @@ export function CheckpointJournalComparison({client,file,stored,result,onUnavail
  }
  const v=value?.owner===context&&sourceCurrent()?value.data:null,isPending=pending===context,visibleError=error?.owner===context?error.code:null;
  const canReadResume=!!stored&&!!v&&isCheckpointResumeComparison(v);
- const shownResume=canReadResume&&resume?.comparison===v?resume:null;
+ const shownResume=canReadResume&&resume?.comparison===v?resume:null;displayedResume.current=shownResume;
+ const comparisonTicket=generation.current,resumeTicket=resumeGeneration.current;
+ const pageOwner=useRef({resume:shownResume,route:globalThis.location?.hash,valid:true});
+ if(pageOwner.current.resume!==shownResume)pageOwner.current={resume:shownResume,route:globalThis.location?.hash,valid:true};
+ const selectedPageOwner=pageOwner.current;
+ const pageCurrent=()=>{
+  if(globalThis.location?.hash!==selectedPageOwner.route)selectedPageOwner.valid=false;
+  return selectedPageOwner.valid&&pageOwner.current===selectedPageOwner&&alive.current&&owner.current===context&&client.transport===context.transport&&sourceCurrent()&&generation.current===comparisonTicket&&resumeGeneration.current===resumeTicket&&displayedResume.current===shownResume;
+ };
  async function readResume(){
   if(!stored||!v||!canReadResume||!sourceCurrent())return;
   const comparisonGeneration=generation.current,ticket=++resumeGeneration.current;
   const owned=()=>alive.current&&owner.current===context&&generation.current===comparisonGeneration&&resumeGeneration.current===ticket;
   const current=()=>owned()&&sourceCurrent()&&client.transport===context.transport;
   if(!current())return;
-  setResume({comparison:v,pending:true});
+  displayedResume.current=null;setResume({comparison:v,pending:true});
   try{const evidence=await readCheckpointResumeEvidence(client,v,stored,result,current);if(current()&&evidence)setResume({comparison:v,pending:false,data:evidence});}
   catch(cause){
    if(!current())return;const {status,code}=failure(cause);setResume({comparison:v,pending:false,error:code});
@@ -76,6 +91,6 @@ export function CheckpointJournalComparison({client,file,stored,result,onUnavail
   {shownResume?<button type="button" onClick={closeResume}>재개 전 중지 기록 닫기</button>:null}
   {shownResume?.pending?<p role="status">선택한 실행의 보관 중지 기록 조회 중</p>:null}
   {shownResume?.error?<p role="alert">{shownResume.error} · 보관 중지 기록 미확인</p>:null}
-  {shownResume?.data?<StoredResumeEvidence value={shownResume.data}/>:null}
+  {shownResume?.data?<><StoredResumeEvidence value={shownResume.data}/>{shownResume.data.observations.hasMore&&pageCurrent()?<ObservationJournalPages key={comparisonTicket+':'+resumeTicket} client={client} result={result} stopOnly isSourceCurrent={pageCurrent} onOpen={()=>{}} onUnavailable={code=>{if(pageCurrent())unavailable.current(code);}}/>:null}</>:null}
  </div>:null}</section>;
 }
