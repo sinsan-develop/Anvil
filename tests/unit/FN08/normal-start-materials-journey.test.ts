@@ -117,6 +117,55 @@ test('명령 페이지에서 발견한 두 자료를 보호 GET으로 받아 등
  }finally{await h.app.close();}
 });
 const used=(h:any)=>[h.store.events().filter((v:any)=>v.version===2).length,h.store.receipts().length];
+test('같은 START 맥락 부분을 새 challenge로 읽으면 별도 전달 영수증이 정상 정착한다 · 합성 HTTP',async()=>{
+ const {h,bindings,discover,material}=await setup();
+ try{
+  const {item,parts}=await discover(),part=parts.find(p=>p.kind==='CONTEXT_BUNDLE');
+  assert(part);
+  const entry=h.f.tables.execution_materials!.find(row=>row.id===part.materialId);
+  assert(entry);
+  const materialRef={id:entry.id,version:entry.version,contentHash:entry.content_hash};
+  const before=used(h),request=await material(item.envelope.commandId,part.materialId);
+  const first=await request.get();assert.equal(first.statusCode,200,first.body);
+  assert.deepEqual(used(h),[before[0]+1,before[1]+1]);
+  const receiptFilter=()=>h.store.receipts().filter(r=>r.snapshot_json.kind==='NORMAL_START_MATERIAL');
+  const [retained]=receiptFilter().map(row=>structuredClone(row));assert(retained);
+  const secondRequest=await material(item.envelope.commandId,part.materialId);
+  assert.notDeepEqual(secondRequest.frame.challengeRef,request.frame.challengeRef);
+  assert.notEqual(secondRequest.frame.proof.requestId,request.frame.proof.requestId);
+  const second=await secondRequest.get();assert.equal(second.statusCode,200,second.body);
+  assert.deepEqual(used(h),[before[0]+2,before[1]+2]);
+  const a=first.json(),b=second.json();
+  assert.notEqual(a.proofResultRef.id,b.proofResultRef.id);
+  assert.notEqual(a.proofResultRef.contentHash,b.proofResultRef.contentHash);
+  assert.deepEqual(b.material,a.material);
+  assert.equal(a.material.materialId,part.materialId);
+  assert.equal(a.material.contentHash,part.contentHash);
+  assert.equal(contentHash(Buffer.from(a.material.bytes,'base64url')),part.contentHash);
+  const receipts=receiptFilter();
+  assert.equal(receipts.length,2);
+  assert.deepEqual(receipts.find(r=>r.id===retained.id),retained);
+  for(const [packet,response] of [[request.frame,a],[secondRequest.frame,b]] as const){
+   const receipt=receipts.find(r=>r.id===response.proofResultRef.id);
+   assert(receipt);
+   const snapshot=receipt.snapshot_json;
+   assert.deepEqual(snapshot.challengeRef,packet.challengeRef);
+   assert.equal(snapshot.requestId,packet.proof.requestId);
+   assert.deepEqual(snapshot.commandRef,item.commandRef);
+   assert.equal(snapshot.envelopeHash,item.envelope.envelopeHash);
+   assert.deepEqual(snapshot.manifestRef,item.materials.manifestRef);
+   assert.deepEqual(snapshot.materialRef,materialRef);
+   assert.equal(snapshot.partContentHash,part.contentHash);
+   assert.deepEqual(response.proofResultRef,{id:receipt.id,version:1,contentHash:digest(snapshot)});
+  }
+  assert.deepEqual(bindings.map(row=>[row.proof_result_id,row.material_id]),[[a.proofResultRef.id,part.materialId],[b.proofResultRef.id,part.materialId]]);
+  const replay=await request.get();assert.equal(replay.statusCode,200,replay.body);
+  assert.deepEqual(replay.json(),a);
+  assert.deepEqual(used(h),[before[0]+2,before[1]+2]);
+  assert.equal(bindings.length,2);
+ }finally{await h.app.close();}
+});
+
 const denied=async(p:{get:(o?:any)=>any},o?:any)=>{const r=await p.get(o);assert.ok(r.statusCode>=400,r.body);assert.equal(r.json().material,undefined);return r;};
 test('서명 대상과 다른 경로·query·채널, 등록 행 변조, 회수는 원문을 내지 않고 nonce를 소비하지 않는다',async()=>{
  const {h,base,discover,material}=await setup();

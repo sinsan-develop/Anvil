@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import inject from 'light-my-request';
-import { createHash, createECDH, createPrivateKey, createPublicKey, randomBytes, randomUUID, sign } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { canonicalJson, contentHash } from '../../../contracts/canonical.ts';
 import { executionStartOriginFixture, installExecutionStartOriginMemoryFS } from '../FN09/execution-start-origin-fixture.ts';
 
@@ -10,19 +10,6 @@ const { registrationRef } = await import('../../../apps/server/modules/connectio
 const { executionChallengeRequestBytes, executionProofBytes } = await import('../../../apps/server/modules/executions/execution-proof.ts');
 export const digest = (value: unknown) => contentHash(canonicalJson(value));
 type Fixture = Awaited<ReturnType<typeof executionStartOriginFixture>>;
-
-// 시험 등록의 공개키가 P-256 표준 생성점인지 검산한다. 키 파일을 읽지 않는다.
-function fixtureSigner(spki: string) {
-  const scalar = Buffer.alloc(32);
-  scalar[31] = 1;
-  const curve = createECDH('prime256v1');
-  curve.setPrivateKey(scalar);
-  const point = curve.getPublicKey();
-  const key = createPrivateKey({ format: 'jwk', key: { kty: 'EC', crv: 'P-256',
-    x: point.subarray(1,33).toString('base64url'), y: point.subarray(33).toString('base64url'), d: scalar.toString('base64url') } });
-  assert.equal(createPublicKey(key).export({format:'der',type:'spki'}).toString('base64url'), spki);
-  return key;
-}
 
 // SQL 함수 실행은 별도 검증 범위다. 이 대역의 조회 원본은 앞선 제품 명령이 커밋한 행이다.
 export type PageSqlAdapter=(sql:string,args:any[],ctx:{f:Fixture,drafts:any[],issued:any[]})=>{rows:any[];rowCount?:number}|undefined;
@@ -198,10 +185,10 @@ export async function journey(pages?:{sql:PageSqlAdapter; cursors:import('../../
     const request = {requestId:randomUUID(),purpose:'CREDENTIAL_EXCHANGE',grantRef:result.snapshot.grantRef,
       credentialGeneration:reservation.credential_generation,target:{method:'POST',path:path+'/credential-exchange',queryHash:digest({}),bodyHash:digest({})},
       clientNonce:randomBytes(32).toString('base64url'),issuedAt:store.now().toISOString()};
-    const key = fixtureSigner(registration.connector.public_key_spki);
+    const signBytes = f.signConnectorBytes;
 
     const postChallenge=async(r=request)=>{
-      const sig=sign('sha256',executionChallengeRequestBytes('EXECUTION',r),{key,dsaEncoding:'ieee-p1363'}).toString('base64url');
+      const sig=signBytes(executionChallengeRequestBytes('EXECUTION',r));
       return app.inject({method:'POST',url:path+'/challenges',payload:{...r,signature:sig}});
     };
     const newChallenge=async(r=request)=>{const a=await postChallenge(r);assert.equal(a.statusCode,200);return a.json();};
@@ -209,27 +196,26 @@ export async function journey(pages?:{sql:PageSqlAdapter; cursors:import('../../
     const auth=(a=first,change:Record<string,unknown>={})=>{
       const c=a.challenge,proof={requestId:c.requestId,grantRef:c.grantRef,credentialGeneration:c.credentialGeneration,scopeDigest:c.scopeDigest,
         serverNonce:c.serverNonce,clientNonce:c.clientNonce,expiresAt:c.expiresAt,...change};
-      const signature=sign('sha256',executionProofBytes('EXECUTION_CREDENTIAL_EXCHANGE',proof),{key,dsaEncoding:'ieee-p1363'}).toString('base64url');
+      const signature=signBytes(executionProofBytes('EXECUTION_CREDENTIAL_EXCHANGE',proof));
       return {schemaVersion:1,challengeRef:a.ref,proof,signature};
     };
     const frame=bootstrap?undefined:auth();
     const exchange=(value=frame,body='{}')=>inject((req,rep)=>{Object.defineProperty(req.socket,'encrypted',{value:true});app.routing(req,rep);},
       {method:'POST',url:path+'/credential-exchange',payload:body,headers:{host:'anvil-synthetic.invalid','content-type':'application/json',
         'anvil-execution-auth':Buffer.from(canonicalJson(value)).toString('base64url')}});
-    const bootstrapResult=bootstrap?await bootstrap({f,app,store,request,signBytes:bytes=>sign('sha256',bytes,{key,dsaEncoding:'ieee-p1363'}).toString('base64url')}):undefined;
+    const bootstrapResult=bootstrap?await bootstrap({f,app,store,request,signBytes}):undefined;
     const minted=bootstrapResult?{statusCode:200,json:()=>bootstrapResult}:await exchange();
     assert.equal(minted.statusCode,200);
     const token=minted.json().credential as string;
     assert.ok(/^av3ex1_[A-Za-z0-9_-]{43}$/.test(token));
     const mk=()=>({...request,requestId:randomUUID(),purpose:'EXECUTION_REQUEST',clientNonce:randomBytes(32).toString('base64url'),issuedAt:store.now().toISOString(),
       target:{method:'GET',path:path+'/commands',queryHash:digest({waitMs:0}),bodyHash:digest(null)}});
-    const signed=(r:ReturnType<typeof mk>)=>({...r,signature:sign('sha256',executionChallengeRequestBytes('EXECUTION',r),{key,dsaEncoding:'ieee-p1363'}).toString('base64url')});
+    const signed=(r:ReturnType<typeof mk>)=>({...r,signature:signBytes(executionChallengeRequestBytes('EXECUTION',r))});
     const post=(payload:unknown,authorization='Bearer '+token,url=path+'/challenges')=>inject((req,rep)=>{
       Object.defineProperty(req.socket,'encrypted',{value:true});app.routing(req,rep);
     },{method:'POST',url,payload:JSON.stringify(payload),headers:{host:'anvil-synthetic.invalid','content-type':'application/json',authorization}});
-    const signProof=(proof:unknown)=>sign('sha256',executionProofBytes('EXECUTION_REQUEST_PROOF',proof),{key,dsaEncoding:'ieee-p1363'}).toString('base64url');
+    const signProof=(proof:unknown)=>signBytes(executionProofBytes('EXECUTION_REQUEST_PROOF',proof));
     // 실행기 클라이언트 시험용: 등록 키로 임의 서명 원문을 서명하는 포트와 credential 기한
-    const signBytes=(bytes:Buffer)=>sign('sha256',bytes,{key,dsaEncoding:'ieee-p1363'}).toString('base64url');
     return {f,app,store,mk,signed,post,token,signProof,signBytes,credentialExpiresAt:minted.json().expiresAt as string,credentialRef:minted.json().receiptRef,
       exchange,auth,newChallenge,exchangeRequest:request,first,frame};
   }catch(error){await app.close();throw error;}

@@ -581,7 +581,13 @@ export async function executionStartOriginFixture(options:{normalStopPolicy?:boo
  const preparation:any=await run(a=>preparations.save(db,a,command('prepareExecution',{projectId:pid,assignmentRef:confirmed.data.ref,roleBindingRef:binding.data.ref,contextBundleRef:context.data.ref,connectionRef:definitionRef,environmentRef,capabilityRef:f.design.ref,budgetPolicyRef:budget.data.ref,sourceScopes:scopes,mode:'CONTEXT_REVIEW',reason:'등록 준비',connectionKind:'REGISTERED_DEFINITION',optionsFormat:'CLAUDE_QUERY_DATA_V1'}),policyRef));
  const stage:any=await run(a=>queue.start(db,a,command('startStage',{stageRef:{applicationRef,nodeId:'choose'},methodologyApplicationRef:applicationRef,mode:'CASE_BY_CASE',startNodeRef:{applicationRef,nodeId:'choose'},endBoundaryRef:{applicationRef,nodeId:'choose'},baselineRefs:[f.plan.ref,applicationRef,f.design.ref,...(options.unrelatedStageBaseline?[f.planDoc.ref]:[])],budgetRef:budget.data.ref,reason:'원 대기 요청'}),policyRef));
  trace.length=0;const originCommand=()=>command('registerExecutionStartOrigin',{stageRequestRef:stage.data.ref,assignmentRef:confirmed.data.ref,preparationRef:preparation.data.ref,roleBindingRef:binding.data.ref,reason:'원자료 명시 결박'});
- return{...f,tables,receipts,audits,metadata,modes,trace,policy,policyRef,methods,plans,drafts,assignments,definitions,environments,candidates,limits,sessions,contexts,quota,preparations,queue,run,originCommand,stage,confirmed,binding,preparation,applicationRef,registration,...(richSources?{richSources}:{})};
+ function signConnectorBytes(bytes:Buffer){
+  assert(observationKey&&registration);
+  const spki=observationKey.publicKey.export({format:'der',type:'spki'}).toString('base64url');
+  assert.equal(registration.connector.public_key_spki,spki);
+  return sign('sha256',bytes,{key:observationKey.privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url');
+ }
+ return{...f,tables,receipts,audits,metadata,modes,trace,policy,policyRef,methods,plans,drafts,assignments,definitions,environments,candidates,limits,sessions,contexts,quota,preparations,queue,run,originCommand,stage,confirmed,binding,preparation,applicationRef,registration,signConnectorBytes,...(richSources?{richSources}:{})};
 }
 
 
