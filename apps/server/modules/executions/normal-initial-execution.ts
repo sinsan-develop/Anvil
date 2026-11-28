@@ -313,7 +313,9 @@ export class NormalInitialExecution {
         admitted?.check();await checkTx();
         const sampled=await clock(db);
         const raw=await boundedObservation(held??this.#source,scope,sampled.toISOString());
-        return requireObservation(raw,scope,(await clock(db)).getTime());
+        const observation=requireObservation(raw,scope,(await clock(db)).getTime());
+        if(Date.parse(observation.checkedAt)<sampled.getTime())return reject();
+        return observation;
       };
       const first=await observe(),obs=first.checks;
       const includes=(name:string,refs:Ref[])=>refs.every(ref=>obs[name].evidenceRefs.some((r:Ref)=>same(r,ref)));

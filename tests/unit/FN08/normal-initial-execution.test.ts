@@ -404,6 +404,37 @@ test('기존 POST가 보호 자료·grant·예산·영수증·outbox를 한 번 
  }finally{await app.close();}
 });
 
+for(const [phase,replayAt] of [['저장 전',2],['INSERT 뒤',3]] as const)test(phase+' 정상 큐 재관측은 같은 거래의 이전 표본을 재사용하면 원 객체를 인계하지 않는다',async t=>{
+ t.mock.timers.enable({apis:['Date'],now:Date.now()});
+ let previous:Record<string,any>|undefined,reused=false;
+ const h=await host((value,count)=>{
+  if(count===replayAt){
+   assert(previous);
+   assert.equal(Date.parse(value.checkedAt)-Date.parse(previous.checkedAt),1);
+   assert.deepEqual(previous.scope,value.scope);
+   reused=true;
+   return previous;
+  }
+  previous=structuredClone(value);
+  h.f.advance(1);
+  return value;
+ },undefined,true);
+ try{
+  const offset=h.f.trace.length,retained=[h.f.commands.size,h.f.receipts.size,h.f.audits.size];
+  const response=await h.post();
+  assert.equal(reused,true);
+  assert.equal(response.statusCode,503,response.body);
+  assert.match(response.body,/NORMAL_START_PREPARATION_OUTCOME_UNKNOWN/);
+  const trace=h.f.trace.slice(offset);
+  assert.equal(trace.some(sql=>sql.startsWith('INSERT INTO anvil.executions(')),replayAt===3);
+  assert(trace.includes('ROLLBACK'));
+  assert(!trace.includes('COMMIT'));
+  for(const name of [...graphTables,'execution_credentials'])assert.equal(h.f.tables[name]!.length,0,name);
+  assert.deepEqual([h.f.commands.size,h.f.receipts.size,h.f.audits.size],retained);
+  assert.deepEqual([h.preparation.creates,h.preparation.reads,h.preparation.handoffs,h.preparation.closes,h.preparation.fallback],[1,replayAt,0,1,0]);
+ }finally{await h.app.close();}
+});
+
 for(const change of ['osFence','capability','storage','registration','expiry','basisRef'])test('마지막 자료 저장 중 변경을 rollback한다 '+change,async()=>{
  let changed=false,materials=0;
  const {app,post,f}=await host(v=>{
