@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-28 KST
 
+- **Stage C / IX02 준비 claim 재확인의 새 서명·전송 차단** — 기준 `997e3189`, 담당 `fn08_policy_decision_ready`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 검산된 REPLAY_ONLY는 원 carrier/등록 helper를 정리하고 기존 claim 결과만 반환한다. 새 결과 선택·서명·POST 0, 정상 최초 claim과 별도 확정 REJECTED·보관 결과 재확인 유지. 제품 2·시험 2경로. TS·CJS RED 각 1건 교정. 기존 C#의 실제 custody→producer→조건부 root/peer 정리 순서에 맞춰 옛 정적 단언 1건 교정(제품 C# 변경 없음). 담당 217/217, 어울 인접 208/208(실패·취소·skip 0), 타입·diff 통과. 실제 Windows/C#·DB·권한·키·서비스·SDK·Agent 및 PREPARED/인계 미검증.
+
 - **Stage E / FN16 D2 독립 보관 바이트 재검산** — 기준 `1208332e`, 담당 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` 최종 C0/I0/M0. 수집 원행을 크기 제한 내 canonical UTF-8로 고정하고 독립 기대 프로젝트·job·문서·해시로 별도 재조회 바이트만 검산한다. 원 기대 해시는 reader에 넘기지 않는다. raw 해시·엄격 UTF-8·중복 키·canonical·V1–V4 관계와 BODY를 대조한다. 최초 검수의 무응답 대기 1건을 실제 기한·단회 취소 신호·늦은 반환 폐기로 교정했다. 제품 2·시험 1경로. 연결 부재 및 무응답 RED 각 1건에서 담당·어울 합성 65/65(실패·취소·skip 0), 타입·diff 통과. 실제 보호 입장/독립 저장소·IO 중단·PG/RLS·전체 백업 및 복원·Windows·키·권한·서비스·Agent 미검증.
 
 - **Stage C / IX02 전용 keeper의 원 객체 관측 기록** — 기준 `3e5c5c7e`, 담당 `fn08_policy_decision_ready`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 보호 claim과 같은 원 객체의 최초·후속 관측을 기존 단회 원장 기록기에 전달한다. 정확 읽어 검산 후 응답 직전에 같은 객체·세대와 비역행 시각을 다시 확인한다. Log 안에서 원장 재진입을 피하고 기한·부분 기록 불명·원 객체 회수 경로를 유지했다. 제품 2·시험 1경로. 원장 미연결 RED 1건 교정, 담당/어울 정적·합성 103/103(실패·취소·skip 0), 타입·diff 통과. 실제 설치 공급·C# 컴파일·Windows 원장 내구성·DB·키·권한·서비스·Agent, PREPARED와 인계 미검증.

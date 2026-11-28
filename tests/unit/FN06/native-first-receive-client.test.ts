@@ -441,6 +441,24 @@ test('정상 EOF의 원 준비 custody만 단회 소비하며 SOURCE_UNAVAILABLE
  }finally{f.client.disposeReceive();assert.equal(f.timers.size,0);}
 });
 
+for(const replay of [false,true])test('정상 준비 claim은 최초 소진만 결과 전송을 허용한다 '+(replay?'REPLAY_ONLY':'CLAIMED'),async()=>{
+ const {NativeFirstReceiveHumanClient:Client}=await import('../../../apps/connector/runtime/native-first-receive-client.ts');
+ const f=await normalPreparationHttpFixture();
+ const claim={state:replay?'NORMAL_START_PREPARATION_REPLAY_ONLY':'NORMAL_START_PREPARATION_CLAIMED',requestRef:f.requestRef,
+  nativeClaimRef:ref(9999),creationAuthorized:false,executionAuthorized:false,dispatchPerformed:false};
+ try{
+  await f.consume();
+  const preparing=f.client.prepareNormalStartPreparation({prepareOwned:(ticket:unknown)=>Client.consumeNormalStartPreparationCustody(ticket,async original=>{
+   assert.deepEqual(original.request,f.request);return claim;
+  })});
+  f.eof();assert.deepEqual(await preparing,claim);
+  if(replay)await assert.rejects(f.client.sendNormalStartPreparationResult(f.sourceResult),/SOURCE_UNAVAILABLE/);
+  else assert.deepEqual(await f.client.sendNormalStartPreparationResult(f.sourceResult),f.stored);
+  assert.equal(f.stateNormal.produced,replay?0:1);
+  assert.equal(f.stateNormal.posts,replay?0:1);
+ }finally{f.client.disposeReceive();assert.equal(f.timers.size,0);}
+});
+
 test('준비 custody의 tail/abort/close/owner/2초 대기와 위조 수용은 native 소비·POST를 새로 만들지 않는다',async()=>{
  const {NativeFirstReceiveHumanClient:Client}=await import('../../../apps/connector/runtime/native-first-receive-client.ts');
  for(const mode of ['TAIL','ABORT','CLOSE','OWNER','WAIT','UNCONSUMED','LATE']){

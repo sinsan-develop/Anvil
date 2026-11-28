@@ -381,7 +381,7 @@ async function createNativeFirstReceiveController(raw){
      try{opening=Promise.resolve().then(()=>fs[0](ownedLease,copy(row)));void opening.then(value=>{operation=value;if(done||owner.signal.aborted){void closeOriginal().then(result=>{if(canonicalJson(result)!=='{"state":"CLOSED_CONFIRMED"}')preserve();},preserve);}},()=>{});operation=await awaitOwned(opening);current();await awaitOwned(operation.current());current();const observed=await awaitOwned(operation.readState());current();if(canonicalJson(observed.record)!==canonicalJson(row))return fail('OUTCOME_UNKNOWN');const exactSource=/** @type {{prepareOwned:(custody:unknown,signal:AbortSignal,narrow:(at:number)=>void)=>Promise<any>}} */(operation.normalStartPreparationRequestSource(ownerEpoch));requestSource=exactSource;return await awaitOwned(exactSource.prepareOwned(custody,signal,narrow));}
     finally{if(prepareAbort)signal.removeEventListener('abort',prepareAbort);prepareAbort=null;prepareSignal=null;}
    }}));
-   current();if(claim?.state==='SOURCE_UNAVAILABLE'){await closeConfirmedOriginal();return claim;}
+   current();if(claim?.state==='SOURCE_UNAVAILABLE'||claim?.state==='NORMAL_START_PREPARATION_REPLAY_ONLY'){await closeConfirmedOriginal();return claim;}
    const paired=requestSource&&normalStartPreparationSourcePairs.get(requestSource);if(typeof paired!=='function')return fail('OUTCOME_UNKNOWN');const resultSource=Reflect.apply(paired,normalStartPreparationSourcePairs,[]);
    const result=await originalClient.sendNormalStartPreparationResult(resultSource);current();await closeConfirmedOriginal();return result;
   }catch(error){if(operation&&!closeConfirmed){try{await closeConfirmedOriginal();}catch{preserve();}}throw error;}
@@ -715,7 +715,9 @@ const normalStartPreparationRequestSource=(/** @type {number} */contextEpoch)=>{
    if(result?.state==='SOURCE_UNAVAILABLE'){catalogueExact(result,'state');return result;}
    catalogueExact(result,'state,requestRef,nativeClaimRef,creationAuthorized,executionAuthorized,dispatchPerformed');
    if(!['NORMAL_START_PREPARATION_CLAIMED','NORMAL_START_PREPARATION_REPLAY_ONLY'].includes(result.state)||result.creationAuthorized!==false||result.executionAuthorized!==false||result.dispatchPerformed!==false||canonicalJson(result.requestRef)!==canonicalJson({id:request.requestId,version:1,contentHash:contentHash(canonicalJson(request))}))return fail('OUTCOME_UNKNOWN');
-    const ref=catalogueExact(result.nativeClaimRef,'id,version,contentHash');if(!uuid(ref.id)||ref.version!==1||typeof ref.contentHash!=='string'||!/^[0-9a-f]{64}$/.test(ref.contentHash)||[request.requestId,request.attemptId,request.claimRef.id,request.admissionRef.id].includes(ref.id))return fail('OUTCOME_UNKNOWN');captured={window:copy(window),session:copy(session)};return result;
+    const ref=catalogueExact(result.nativeClaimRef,'id,version,contentHash');if(!uuid(ref.id)||ref.version!==1||typeof ref.contentHash!=='string'||!/^[0-9a-f]{64}$/.test(ref.contentHash)||[request.requestId,request.attemptId,request.claimRef.id,request.admissionRef.id].includes(ref.id))return fail('OUTCOME_UNKNOWN');
+    if(result.state==='NORMAL_START_PREPARATION_CLAIMED')captured={window:copy(window),session:copy(session)};
+    return result;
   }]);}catch(error){if(dispatched)return fail('OUTCOME_UNKNOWN');throw error;}
    }});normalStartPreparationSourcePairs.set(source,()=>{check();const exact=captured;if(!used||!exact)return fail('OUTCOME_UNKNOWN');return normalStartPreparationResultSource(exact.window,exact.session,contextEpoch);});return source;
 };

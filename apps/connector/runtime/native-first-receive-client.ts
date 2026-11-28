@@ -366,7 +366,11 @@ export class NativeFirstReceiveHumanClient{
     ||!['NORMAL_START_PREPARATION_CLAIMED','NORMAL_START_PREPARATION_REPLAY_ONLY'].includes(result.state)||!receiveRef(result.nativeClaimRef)||result.nativeClaimRef.version!==1
     ||!receiveSame(result.requestRef,normalStartPreparationRequestRef(request))||[request.requestId,request.attemptId,request.admissionRef.id,request.claimRef.id].includes(result.nativeClaimRef.id)
     ||result.creationAuthorized!==false||result.executionAuthorized!==false||result.dispatchPerformed!==false)throw Error('NATIVE_RECEIVE_SOURCE_UNAVAILABLE');
-   owned.phase='RECEIVED';return receiveCopy(result);
+   if(result.state==='NORMAL_START_PREPARATION_REPLAY_ONLY'){
+    // 보관된 claim은 이 carrier에서 새 결과를 만들거나 보낼 권한을 주지 않는다.
+    owned.phase='SETTLED';owned.close();
+   }else owned.phase='RECEIVED';
+   return receiveCopy(result);
   }catch{owned.close();throw Error('NATIVE_RECEIVE_OUTCOME_UNKNOWN');}
   finally{active=false;if(ticket)normalRequestCustodies.delete(ticket);streamSignal?.removeEventListener('abort',abort);call.close();}
  }
