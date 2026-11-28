@@ -6,9 +6,10 @@ import {analyzeWorkPlanCards,planText} from '../traceability/work-plan-card.ts';
 import {readWorkPlanReviewInput,workPlanReviewCriteria} from '../traceability/work-plan-reviews.ts';
 import {isVersionRef} from '../../../../contracts/references.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {cloneV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {arrayV1,cloneV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 import {readDocumentInventoryInput} from './document-inventory-input.ts';
+import {checkProjectHistoryOrigin,projectHistoryOriginColumns,readProjectHistoryOrigin} from './document-inventory.ts';
 
 type Row=Record<string,any>;
 const columns={
@@ -174,6 +175,147 @@ export function checkWorkPlanRelationHistoryRows(projectId:string,plan:RuntimeRe
  checkTaskRows(scope,expected.tasks,tasks);
  checkDependencyRows(scope,expected.dependencies,dependencies);
  return {taskCount:expected.tasks.length,dependencyCount:expected.dependencies.length,workPlanRelationsHash:hash({tasks,dependencies})};
+}
+
+type WorkPlanOrigin=Awaited<ReturnType<typeof readProjectHistoryOrigin>>;
+export interface WorkPlanConfirmationHistoryRows {
+ save:WorkPlanOrigin;
+ confirmation:{row:Row;origin:WorkPlanOrigin;latestBefore:Row;reviews:{row:Row;origin:WorkPlanOrigin}[]};
+}
+
+type WorkPlanProjection=ReturnType<typeof workPlanDocumentHistoryProjection>;
+function checkPlanSaveOrigin(projectId:string,plan:RuntimeRefV1,projection:WorkPlanProjection,origin:unknown){
+ const {row,value,snapshot}=projection,{documentRef,designRef,screenReviewRefs,tasks,reason}=snapshot;
+ return checkProjectHistoryOrigin(projectId,plan,origin,{operation:'saveWorkPlanDraft',reasonCode:'EXPLICIT_WORK_PLAN_DRAFT',
+  commandId:row.command_id,actorId:row.created_by,clientId:row.client_id,createdAt:row.created_at,
+  requestBinding:{targetId:plan.version===1?null:plan.id,expectedVersion:plan.version-1},
+  payload:{documentRef,designRef,screenReviewRefs,tasks,reason},resultData:{status:'WORK_PLAN_DRAFT_SAVED',workPlan:value}});
+}
+
+function checkPlanConfirmation(projectId:string,plan:RuntimeRefV1,confirmationId:string,projection:WorkPlanProjection,value:unknown){
+ const row=object(value,columns.work_plan_confirmations),{snapshot}=projection;
+ if(!uuidV1(confirmationId)||row.id!==confirmationId||row.project_id!==projectId||row.plan_id!==plan.id
+  ||integer(row.version,1)!==plan.version||row.target_hash!==plan.contentHash||snapshot.relationalProjection!=='STORED'
+  ||!arrayV1(snapshot.tasks,200)||!snapshot.tasks.length||!arrayV1(row.review_refs,200)||!row.review_refs.length)return bad();
+ const validation={validForConfirmation:true,issues:[],sourceRefs:[snapshot.documentRef,snapshot.designRef],screenReviewRefs:snapshot.screenReviewRefs};
+ if(!same(validation,row.validation_json))return bad();
+ const ids=new Set<string>();
+ const selected=row.review_refs.map(item=>{
+  const ref=object(item,['id','targetRef','criteriaVersion','outcome']);
+  if(!uuidV1(ref.id)||ids.has(ref.id)||!same(ref.targetRef,plan)||ref.criteriaVersion!==1||ref.outcome!=='ACCEPTED')return bad();
+  ids.add(ref.id);
+  return ref;
+ });
+ return {row,selected,validation};
+}
+function checkPlanConfirmationOrigin(projectId:string,plan:RuntimeRefV1,checked:ReturnType<typeof checkPlanConfirmation>,origin:unknown){
+ const {row,selected,validation}=checked;
+ return checkProjectHistoryOrigin(projectId,plan,origin,{operation:'confirmWorkPlan',reasonCode:'EXPLICIT_WORK_PLAN_CONFIRMATION',
+  commandId:row.command_id,actorId:row.confirmed_by,clientId:row.client_id,createdAt:row.created_at,
+  payload:{planRef:plan,reviewRefs:selected},resultData:{status:'CONFIRMED',confirmationId:row.id,reviewRefs:selected,validation,activatedAsBaseline:false}});
+}
+function selectedPlanReview(projectId:string,plan:RuntimeRefV1,selection:Row,recorderId:string,value:unknown){
+ const row=object(value,columns.content_reviews);
+ if(row.id!==selection.id||row.scope_kind!=='PROJECT'||row.scope_id!==projectId||row.project_id!==projectId||row.target_kind!=='WORK_PLAN'
+  ||row.target_id!==plan.id||integer(row.target_version,1)!==plan.version||row.target_hash!==plan.contentHash||row.outcome!=='ACCEPTED'
+  ||!uuidV1(row.reviewer_user_id)||integer(row.criteria_version,1)!==1||row.source_kind!=='HUMAN_REVIEW')return bad();
+ const payload=readWorkPlanReviewInput({targetKind:'WORK_PLAN',targetRef:plan,criteriaVersion:1,items:row.items_json,outcome:row.outcome,reason:row.reason},plan);
+ const reviewer={kind:'HUMAN',userId:row.reviewer_user_id,sameAsTargetRecorder:row.reviewer_user_id===recorderId};
+ if(!same(row.criteria_snapshot_json,workPlanReviewCriteria)||!same(row.reviewer_subject_ref,reviewer))return bad();
+ const review={ref:selection,criteria:workPlanReviewCriteria,items:payload.items,reviewer,sourceKind:'HUMAN_REVIEW',reason:payload.reason,reviewedAt:stamp(row.created_at)};
+ return {row,payload,review};
+}
+function checkPlanReviewOrigin(projectId:string,plan:RuntimeRefV1,checked:ReturnType<typeof selectedPlanReview>,origin:unknown){
+ const {row,payload,review}=checked;
+ return checkProjectHistoryOrigin(projectId,plan,origin,{operation:'recordContentReview',reasonCode:'EXPLICIT_WORK_PLAN_CONTENT_REVIEW',
+  commandId:row.command_id,actorId:row.reviewer_user_id,clientId:row.client_id,createdAt:row.created_at,
+  payload,resultData:{status:'REVIEW_RECORDED',reviewRef:review.ref,review}});
+}
+
+function checkLatestPlanReview(value:unknown,selected:Row[],saveSequence:number,confirmationSequence:number){
+ const row=object(value,['id','outcome','server_sequence']),sequence=integer(row.server_sequence,1);
+ if(!uuidV1(row.id)||row.outcome!=='ACCEPTED'||sequence<=saveSequence||sequence>=confirmationSequence
+  ||!selected.some(item=>item.id===row.id))return bad();
+ return {id:row.id,sequence};
+}
+
+/** 동일 원 저장 및 정확 확정의 선택 HUMAN 검토를 역사로 검산한다. */
+export function checkWorkPlanConfirmationHistoryRows(projectId:string,plan:RuntimeRefV1,documentRef:RuntimeRefV1,designDocumentRef:RuntimeRefV1,
+ versionRow:unknown,confirmationId:string,value:unknown){
+ const projection=workPlanDocumentHistoryProjection(projectId,plan,documentRef,versionRow,designDocumentRef);
+ const {save,confirmation}=object(value,['save','confirmation']);
+ const {row,origin,latestBefore,reviews}=object(confirmation,['row','origin','latestBefore','reviews']);
+ const checked=checkPlanConfirmation(projectId,plan,confirmationId,projection,row);
+ const saveSequence=checkPlanSaveOrigin(projectId,plan,projection,save).sequence;
+ const confirmationSequence=checkPlanConfirmationOrigin(projectId,plan,checked,origin).sequence;
+ const latest=checkLatestPlanReview(latestBefore,checked.selected,saveSequence,confirmationSequence);
+ if(!arrayV1(reviews,200)||reviews.length!==checked.selected.length)return bad();
+ const sequences=new Set<number>();
+ const chosen=checked.selected.map((selection,index)=>{
+  const evidence=object(reviews[index],['row','origin']);
+  const review=selectedPlanReview(projectId,plan,selection,projection.row.created_by,evidence.row);
+  const {sequence}=checkPlanReviewOrigin(projectId,plan,review,evidence.origin);
+  if(sequence<=saveSequence||sequence>latest.sequence||sequences.has(sequence))return bad();
+  sequences.add(sequence);
+  return {id:selection.id,sequence,projectionHash:hash(evidence)};
+ });
+ if(chosen.find(item=>item.id===latest.id)?.sequence!==latest.sequence)return bad();
+ safe({save,confirmation});
+ return {planConfirmationId:confirmationId,workPlanSaveProjectionHash:hash(save),
+  workPlanConfirmationProjectionHash:hash({row,origin}),workPlanSelectedReviewProjections:chosen.map(({id,projectionHash})=>({id,projectionHash}))};
+}
+
+/** 기존 목적 거래에서 고정 ID의 원행만 읽으며 최신 head·현재 정책을 계산하지 않는다. */
+export async function readWorkPlanConfirmationHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,plan:RuntimeRefV1,documentRef:RuntimeRefV1,
+ designDocumentRef:RuntimeRefV1,versionRow:unknown,confirmationId:string,metadataBytes:number):Promise<WorkPlanConfirmationHistoryRows>{
+ const projection=workPlanDocumentHistoryProjection(projectId,plan,documentRef,versionRow,designDocumentRef);
+ if(!uuidV1(confirmationId))return bad();
+ let remaining=metadataBytes;
+ async function fixed(from:string,fields:readonly string[],where:string,args:unknown[],latest=false){
+  if(!Number.isSafeInteger(remaining)||remaining<1)return bad('WORK_PLAN_INVENTORY_LIMIT',413);
+  const cap=args.length+1;
+  const rows=(await db.query(`/*FN16_D2_WORK_PLAN_CONFIRMATION*/ WITH material AS (
+   SELECT ${fields.join(',')} FROM ${from} WHERE ${where}${latest?' ORDER BY a.server_sequence DESC LIMIT 1':' LIMIT 2'}
+  ) SELECT CASE WHEN octet_length(to_jsonb(material)::text)<=$${cap}::bigint THEN to_jsonb(material) END AS inventory_data,
+   octet_length(to_jsonb(material)::text) AS row_bytes FROM material`,[...args,remaining])).rows;
+  if(rows.length!==1)return bad();
+  const envelope=object(rows[0],['inventory_data','row_bytes']),size=integer(envelope.row_bytes,1);
+  if(size>remaining)return bad('WORK_PLAN_INVENTORY_LIMIT',413);
+  const row=object(envelope.inventory_data,fields.map(field=>field.slice(field.indexOf('.')+1)));
+  if(Buffer.byteLength(canonicalJson(row))>size)return bad();
+  remaining-=size;
+  return cloneV1(row);
+ }
+ const readOrigin=(commandId:unknown,operation:'saveWorkPlanDraft'|'recordContentReview'|'confirmWorkPlan')=>readProjectHistoryOrigin((table,predicate,args)=>
+  fixed(`anvil.${table} t`,projectHistoryOriginColumns[table].map(column=>'t.'+column),
+   `${table==='authorization_receipts'?'t.scope_id':'t.project_id'}=$1::uuid AND ${predicate}`,[projectId,...args]),commandId,operation);
+ const save=await readOrigin(projection.row.command_id,'saveWorkPlanDraft');
+ const saveSequence=checkPlanSaveOrigin(projectId,plan,projection,save).sequence;
+ const row=await fixed('anvil.work_plan_confirmations t',columns.work_plan_confirmations.map(column=>'t.'+column),
+  't.project_id=$1::uuid AND t.id=$2::uuid AND t.plan_id=$3::uuid AND t.version=$4::bigint AND t.target_hash=$5::text',
+  [projectId,confirmationId,plan.id,plan.version,plan.contentHash]);
+ const checked=checkPlanConfirmation(projectId,plan,confirmationId,projection,row);
+ const origin=await readOrigin(row.command_id,'confirmWorkPlan');
+ const {sequence}=checkPlanConfirmationOrigin(projectId,plan,checked,origin);
+ // 당시 producer의 감사 순서를 재현하되, 정정행이 선택된 검토의 원 감사인지는 아래 독립 검산에서 구분한다.
+ const target="t.project_id=$1::uuid AND t.scope_kind='PROJECT' AND t.target_kind='WORK_PLAN' AND t.criteria_version=1 AND t.source_kind='HUMAN_REVIEW'";
+ const latestBefore=await fixed('anvil.content_reviews t JOIN anvil.audit_events a ON a.project_id=t.project_id AND a.command_id=t.command_id',
+  ['t.id','t.outcome','a.server_sequence'],`${target} AND t.target_id=$2::uuid AND t.target_version=$3::bigint AND t.target_hash=$4::text AND a.server_sequence<$5::bigint`,
+  [projectId,plan.id,plan.version,plan.contentHash,sequence],true);
+ checkLatestPlanReview(latestBefore,checked.selected,saveSequence,sequence);
+ const reviews=[];
+ for(const selection of checked.selected){
+  const review=await fixed('anvil.content_reviews t',columns.content_reviews.map(column=>'t.'+column),
+   `${target} AND t.id=$2::uuid AND t.target_id=$3::uuid AND t.target_version=$4::bigint AND t.target_hash=$5::text`,
+   [projectId,selection.id,plan.id,plan.version,plan.contentHash]);
+  const verified=selectedPlanReview(projectId,plan,selection,projection.row.created_by,review);
+  const evidence=await readOrigin(review.command_id,'recordContentReview');
+  checkPlanReviewOrigin(projectId,plan,verified,evidence);
+  reviews.push({row:review,origin:evidence});
+ }
+ const history={save,confirmation:{row,origin,latestBefore,reviews}};
+ checkWorkPlanConfirmationHistoryRows(projectId,plan,documentRef,designDocumentRef,versionRow,confirmationId,history);
+ return history;
 }
 
 /** 원문 접근 없는 내부 작업계획 metadata 관측이다. archive/복원·명령 실행 권한을 발급하지 않는다. */

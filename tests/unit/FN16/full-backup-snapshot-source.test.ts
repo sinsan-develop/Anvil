@@ -5,6 +5,7 @@ import type {AccessRepository,AuthenticatedIdentity} from '../../../apps/server/
 import {inspectArtifact} from '../../../apps/server/storage/sensitive-inspection.ts';
 import {collectDocumentBodySnapshot} from '../../../apps/server/modules/backups/full-backup-snapshot-source.ts';
 import * as historyVerification from '../../../apps/server/modules/backups/full-backup-history-verification.ts';
+import {workPlanReviewCriteria} from '../../../apps/server/modules/traceability/work-plan-reviews.ts';
 import {analyzeWorkPlanCards} from '../../../apps/server/modules/traceability/work-plan-card.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 
@@ -101,14 +102,17 @@ const confirmationOrigin=originFor(confirmation.command_id,'confirmDocument',{ve
 
 function fixture(mode='valid'){
  const confirmed=mode.startsWith('confirmed');
- const withRelations=mode.startsWith('relations-');
+ const withDecision=mode.startsWith('plan-decision-');
+ const withRelations=mode.startsWith('relations-')||withDecision;
  const withDesign=mode.startsWith('design-')||withRelations;
  const withPlan=mode.startsWith('plan-')||withDesign;
  const trace:string[]=[];
  const designBody=mode==='design-shared'?bodyRef:designBodyRef;
  const {source:designPayload,ref:designVersionRef}=designSource(designBody);
  const expectedDesignRef=mode==='design-plan-mismatch'?{...designVersionRef,contentHash:'e'.repeat(64)}:designVersionRef;
- const task=(taskCode:string)=>({taskCode,type:'FUNCTION',title:taskCode,purpose:'합성 관계',designRefs:[],screenRefs:[],ownerRole:'개발',
+ const task=(taskCode:string)=>({taskCode,type:'FUNCTION',title:taskCode,purpose:'합성 관계',
+  designRefs:withDecision?[{kind:'DESIGN_ITEM',id:id(406),versionRef:designVersionRef,localCode:'DESIGN-01',anchor:'line:1'}]:[],
+  screenRefs:[],ownerRole:'개발',
   inputs:['입력'],outputs:['출력'],included:['포함'],excluded:['제외'],allowedFileRefs:['one.ts'],startPrerequisites:[],acceptancePrerequisites:[],
   steps:['절차'],testCases:['NORMAL','IMPORTANT_FAILURE','DIRECT_IMPACT'].map(kind=>({id:kind,kind,steps:['절차'],expected:'기대',environment:'합성'})),
   acceptanceCriteria:['기준'],evidenceRequirements:['근거'],rollback:'되돌리기',recoveryNotes:'복구'});
@@ -118,13 +122,50 @@ function fixture(mode='valid'){
   ...issuesOnly?[]:[{taskCode:'Z',dependencyTaskCode:'A',phase:'START'}],
   {taskCode:'Z',dependencyTaskCode:'A',phase:'ACCEPTANCE'}
  ]:[];
- const designPlan={...workPlan,designRef:designVersionRef,...withRelations&&{tasks,dependencies,issues:analyzeWorkPlanCards(tasks).issues,relationalProjection:issuesOnly?'ISSUES_ONLY':'STORED'}};
- const rowScope={project_id:projectId,plan_id:workPlanRef.id,plan_version:workPlanRef.version};
+ const analysis=analyzeWorkPlanCards(tasks);
+ if(withDecision)assert.deepEqual(analysis.issues,[]);
+ const designPlan={...workPlan,designRef:designVersionRef,...withRelations&&{tasks,dependencies,issues:analysis.issues,relationalProjection:issuesOnly?'ISSUES_ONLY':'STORED'}};
+ const rowScope={project_id:projectId,plan_id:workPlanRef.id,plan_version:(mode==='plan-decision-first-plan'||mode==='plan-decision-wrong-target')?1:workPlanRef.version};
  const taskRows=[...tasks].reverse().map(t=>({...rowScope,task_code:t.taskCode,task_type:t.type,card_json:t,card_hash:hash(t),owner_role:t.ownerRole}));
  const dependencyRows=[...dependencies].reverse().map(d=>({...rowScope,task_code:d.taskCode,dependency_task_code:d.dependencyTaskCode,phase:d.phase}));
- const expectedPlanRef=withDesign?{...workPlanRef,contentHash:hash(designPlan)}:workPlanRef;
- const planRow=withDesign?{...workPlanRow,design_hash:designVersionRef.contentHash,content_hash:expectedPlanRef.contentHash,
+ const expectedPlanRef=withDesign?{...workPlanRef,version:(mode==='plan-decision-first-plan'||mode==='plan-decision-wrong-target')?1:workPlanRef.version,contentHash:hash(designPlan)}:workPlanRef;
+ const planConfirmationId=id(401);
+ const planRow=withDesign?{...workPlanRow,version:expectedPlanRef.version,design_hash:designVersionRef.contentHash,content_hash:expectedPlanRef.contentHash,
   version_json:{ref:expectedPlanRef,status:'DRAFT',...designPlan}}:workPlanRow;
+ function planProof(n:number,commandId:string,operation:string,reasonCode:string,payload:object,resultData:object,sequence:number,recordedAt:string,
+  targetId:string|null=expectedPlanRef.id,expectedVersion=expectedPlanRef.version){
+  const requestHash=hash({...request,commandId:id(n),targetId,expectedVersion,operation,payload});
+  const scopeDigest=hash({projectId,actorId,clientId,controlGeneration:1,requestHash,policyRef,targetRef:expectedPlanRef});
+  const c={...command,id:commandId,operation,command_id:id(n),operation_id:id(n+1),authorization_receipt_id:id(n+2),expected_version:expectedVersion,
+   request_hash:requestHash,received_at:recordedAt,completed_at:recordedAt,result_ref:{...command.result_ref,commandId:id(n),operationId:id(n+1),
+    targetId:expectedPlanRef.id,version:expectedPlanRef.version,data:{ref:expectedPlanRef,...resultData},serverReceivedAt:recordedAt}};
+  return {command:c,receipt:{...receipt,id:c.authorization_receipt_id,command_id:commandId,scope_digest:scopeDigest,authorized_at:recordedAt},
+   audit:{...audit,command_id:commandId,operation_id:id(n+1),event_id:id(n+3),target_ref:expectedPlanRef,recorded_at:recordedAt,
+    server_sequence:sequence,reason_code:reasonCode,scope_digest:scopeDigest}};
+ }
+ const reviewAt='2026-11-28T00:00:01.000Z',confirmedAt='2026-11-28T00:00:02.000Z';
+ const planReviews=[410,420].map((base,index)=>{
+  const ref={id:id(base),targetRef:expectedPlanRef,criteriaVersion:1,outcome:'ACCEPTED'};
+  const payload={targetKind:'WORK_PLAN',targetRef:expectedPlanRef,criteriaVersion:1,
+   items:workPlanReviewCriteria.items.map(({criterionId})=>({criterionId,outcome:'ACCEPTED',evidenceRefs:[],reason:'적합'})),outcome:'ACCEPTED',reason:'합성 계획 검토'};
+  const reviewer={kind:'HUMAN',userId:actorId,sameAsTargetRecorder:true};
+  const row={...review,id:ref.id,target_kind:'WORK_PLAN',target_id:expectedPlanRef.id,target_version:expectedPlanRef.version,target_hash:expectedPlanRef.contentHash,
+   criteria_snapshot_json:workPlanReviewCriteria,items_json:payload.items,reviewer_subject_ref:reviewer,reason:payload.reason,command_id:id(base+1),created_at:reviewAt};
+  const view={ref,criteria:workPlanReviewCriteria,items:payload.items,reviewer,sourceKind:'HUMAN_REVIEW',reason:payload.reason,reviewedAt:reviewAt};
+  return {ref,row,origin:planProof(base+2,row.command_id,'recordContentReview','EXPLICIT_WORK_PLAN_CONTENT_REVIEW',payload,
+   {status:'REVIEW_RECORDED',reviewRef:ref,review:view},11+index,reviewAt)};
+ });
+ const selected=mode==='plan-decision-not-selected'?[planReviews[0]!.ref]:[planReviews[1]!.ref,planReviews[0]!.ref];
+ const planValidation={validForConfirmation:true,issues:[],sourceRefs:[ref,designVersionRef],screenReviewRefs:[]};
+ const planConfirmation={id:planConfirmationId,project_id:projectId,plan_id:expectedPlanRef.id,version:expectedPlanRef.version,target_hash:expectedPlanRef.contentHash,
+  review_refs:selected,validation_json:planValidation,confirmed_by:actorId,client_id:clientId,command_id:id(402),created_at:confirmedAt};
+ const planSave=planProof(430,planRow.command_id,'saveWorkPlanDraft','EXPLICIT_WORK_PLAN_DRAFT',
+  {documentRef:ref,designRef:designVersionRef,screenReviewRefs:[],tasks,reason:designPlan.reason},
+  {status:'WORK_PLAN_DRAFT_SAVED',workPlan:planRow.version_json},10,at,
+  expectedPlanRef.version===1&&mode!=='plan-decision-wrong-target'?null:expectedPlanRef.id,expectedPlanRef.version-1);
+ const planDecision=planProof(440,planConfirmation.command_id,'confirmWorkPlan','EXPLICIT_WORK_PLAN_CONFIRMATION',
+  {planRef:expectedPlanRef,reviewRefs:selected},
+  {status:'CONFIRMED',confirmationId:planConfirmationId,reviewRefs:selected,validation:planValidation,activatedAsBaseline:false},14,confirmedAt);
  const designVersion={...original,document_id:designVersionRef.id,form_definition_id:designFormRef.id,form_hash:designFormRef.contentHash,
   body_artifact_id:designBody.artifactId,title:designPayload.title,content_json:designPayload.content,content_hash:designVersionRef.contentHash,command_id:id(316)};
  const designRequest={...request,commandId:id(317),
@@ -172,7 +213,7 @@ function fixture(mode='valid'){
     assert.match(sql,/LIMIT \$4::integer/);
     const planTasks=table==='plan_tasks';
     const expectedRows=planTasks?taskRows:dependencyRows;
-    assert.deepEqual(params,[projectId,workPlanRef.id,workPlanRef.version,issuesOnly?1:expectedRows.length+1,metadataBudget-(rowCharges[scope]??0)]);
+    assert.deepEqual(params,[projectId,expectedPlanRef.id,expectedPlanRef.version,issuesOnly?1:expectedRows.length+1,metadataBudget-(rowCharges[scope]??0)]);
     let selected:object[]=issuesOnly?[]:expectedRows;
     if(planTasks&&mode==='relations-duplicate-task')selected=[taskRows[0]!,taskRows[0]!];
     if(planTasks&&mode==='relations-cross-task')selected=[{...taskRows[0],plan_version:1},taskRows[1]!];
@@ -187,6 +228,52 @@ function fixture(mode='valid'){
     const charged=rows.reduce((sum,item)=>sum+item.row_bytes,0);
     rowCharges[scope]=(rowCharges[scope]??0)+charged;
     return {rows:charged>Number(params[4])?rows.map(row=>({...row,inventory_data:null})):rows};
+   }
+   if(withDecision&&sql.includes('FN16_D2_WORK_PLAN_CONFIRMATION')){
+    trace.push(`${scope}:plan-proof:${table}`);
+    const proof=[planSave,planDecision,...planReviews.map(item=>item.origin)].find(origin=>origin.command.id===params[1]||origin.receipt.id===params[1]);
+    if(table==='work_plan_confirmations'){
+     assert.deepEqual(params.slice(0,-1),[projectId,planConfirmationId,expectedPlanRef.id,expectedPlanRef.version,expectedPlanRef.contentHash]);
+     assert.doesNotMatch(sql,/head_version|confirmed_version/);
+     row=mode==='plan-decision-cross-confirmation'?{...planConfirmation,id:id(403)}:planConfirmation;
+    }else if(table==='content_reviews'){
+     if(sql.includes('ORDER BY a.server_sequence')){
+      assert.deepEqual(params.slice(0,-1),[projectId,expectedPlanRef.id,expectedPlanRef.version,expectedPlanRef.contentHash,14]);
+      assert.match(sql,/a\.server_sequence<\$5::bigint ORDER BY a\.server_sequence DESC LIMIT 1/);
+      const history=[...planReviews.map(item=>({id:item.ref.id,server_sequence:item.origin.audit.server_sequence,outcome:'ACCEPTED'})),
+       {id:id(450),outcome:'REWORK',server_sequence:15}];
+      row=history.filter(item=>item.server_sequence<Number(params[4])).at(-1)!;
+      if(mode==='plan-decision-latest-sequence')row={...row,server_sequence:13};
+      if(mode==='plan-decision-latest-rework')row={...row,id:id(451),server_sequence:13,outcome:'REWORK'};
+     }else{
+      const review=planReviews.find(item=>item.ref.id===params[1]);
+      assert.ok(review);
+      assert.deepEqual(params.slice(0,-1),[projectId,review.ref.id,expectedPlanRef.id,expectedPlanRef.version,expectedPlanRef.contentHash]);
+      row=mode==='plan-decision-wrong-review-criteria'?{...review.row,source_kind:'SYNTHETIC'}:review.row;
+     }
+    }else{
+     assert.ok(proof);
+     if(table==='commands'){
+      assert.match(sql,/t\.approval_consumption_id IS NULL AND t\.payload_ref IS NULL/);
+      assert.deepEqual(params.slice(0,-1),[projectId,proof.command.id]);
+      row=proof.command;
+      if(proof===planSave&&mode==='plan-decision-consumed')row={...row,approval_consumption_id:id(452)};
+      if(proof===planSave&&mode==='plan-decision-wrong-request')row={...row,request_hash:'e'.repeat(64)};
+     }else if(table==='authorization_receipts'){
+      assert.deepEqual(params.slice(0,-1),[projectId,proof.receipt.id,proof.command.id]);
+      assert.match(sql,/t\.approval_decision_ref IS NULL/);
+      row=mode==='plan-decision-wrong-tx'&&proof===planDecision?{...proof.receipt,authorized_at:at}:proof.receipt;
+     }else{
+      assert.equal(table,'audit_events');
+      assert.deepEqual(params.slice(0,-1),[projectId,proof.command.id]);
+      assert.match(sql,/t\.correction_of IS NULL/);
+      row=scope==='RC2'&&mode==='plan-decision-rc-drift'?{...proof.audit,event_id:id(453+proof.audit.server_sequence)}:proof.audit;
+      if(proof===planDecision&&mode==='plan-decision-audit-dup')return {rows:[envelope(row),envelope({...row,event_id:id(460)})]};
+     }
+    }
+    const projected=envelope(row);
+    rowCharges[scope]=(rowCharges[scope]??0)+projected.row_bytes;
+    return {rows:[projected.row_bytes>Number(params.at(-1))?{...projected,inventory_data:null}:projected]};
    }
    const lineage=[reviewOrigin,earlierReviewOrigin,confirmationOrigin].find(origin=>origin.command.id===params[1]||origin.receipt.id===params[1]);
    if(lineage&&['commands','authorization_receipts','audit_events'].includes(table??'')){
@@ -337,16 +424,17 @@ function fixture(mode='valid'){
    async close(){trace.push('body:close');if(mode==='close-unknown')throw Error('합성 close 불명');}};
  }};
  const admission={async readCurrent(_db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:{projectId:string;documentRef:typeof ref}){
-  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true}});assert(!liveRR);
+  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId}});assert(!liveRR);
   trace.push(`RC${rc}:admission`);
   if(mode==='policy-denied'||(mode==='policy-revoked'||mode==='design-revoked')&&rc===2)return null;
-  return {purpose:withRelations&&mode!=='relations-v6-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
+  return {purpose:withDecision&&mode!=='plan-decision-v7-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_ADMISSION_V8':withRelations&&mode!=='relations-v6-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
    projectId,documentRef:ref,actorId,clientId,sessionId,credentialGeneration:1,controlGeneration:1,
    ...confirmed&&{confirmationId:mode==='confirmed-admission-mismatch'?id(207):confirmationId},
    ...withPlan&&mode!=='plan-admission-missing'&&{workPlanRef:mode==='plan-admission-mismatch'?pinned(312):expectedPlanRef},
    ...withDesign&&{designDocumentRef:mode==='design-admission-mismatch'?ref:expectedDesignRef,
     designFormRef:mode==='design-form-mismatch'?formRef:designFormRef},
    ...withRelations&&mode!=='relations-v6-admission'&&{planRelations:true},
+   ...withDecision&&mode!=='plan-decision-v7-admission'&&{planConfirmationId:mode==='plan-decision-bad-admission'?id(999):planConfirmationId},
    jobRef:pinned(10),reservationRef:pinned(11),policyRef:pinned(mode==='new-policy'&&rc===2?19:12),targetProtectedRef:pinned(13),
    retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),
    formRef:mode==='foreign-admission-form'?pinned(103):formRef,expiresAt:'2026-11-28T00:00:09.000Z'};
@@ -355,11 +443,82 @@ function fixture(mode='valid'){
   metadataBudget=limits.metadataBytes;
   return collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',
   {...input,limits,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:mode==='plan-raw-invalid'?null:expectedPlanRef},
-   ...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true}},
+   ...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId}},
   mode==='unconfigured'?null:admission,reader,new AbortController().signal);
  };
  return {run,trace,expectedPlanRef,designVersionRef,rowCharges};
 }
+
+test('계획의 저장·선택 검토·확정을 한 스냅샷에서 검산한다',async()=>{
+ const limits={...input.limits,fileCount:2};
+ for(const mode of ['plan-decision-valid','plan-decision-first-plan']){
+  const f=fixture(mode),capture=await f.run(limits),{snapshot}=capture;
+  assert.equal(snapshot.kind,'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8');
+  if(snapshot.kind!=='FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8')throw Error('계획 확정 원형 누락');
+  const proof=snapshot.rows.workPlanConfirmation;
+  assert.equal(proof.save.command.expected_version,f.expectedPlanRef.version-1);
+  assert.deepEqual(proof.confirmation.reviews.map(item=>item.row.id),[id(420),id(410)]);
+  assert.equal(proof.confirmation.latestBefore.id,id(420));
+  assert.deepEqual(f.trace.filter(item=>/plan-proof:work_plan_confirmations|RR:rollback|body:open|RC2:commit/.test(item)),
+   ['RR:plan-proof:work_plan_confirmations','RR:rollback','body:open','design-body:open','RC2:plan-proof:work_plan_confirmations','RC2:commit']);
+  const expected={projectId,jobRef:snapshot.jobRef,documentRef:ref,workPlanRef:f.expectedPlanRef,designDocumentRef:f.designVersionRef,planRelations:true as const,
+   planConfirmationId:id(401),snapshot:snapshot.observation.snapshot,snapshotHash:capture.snapshotHash};
+  const readback={snapshotBytes:Buffer.from(capture.snapshotBytes),body:Buffer.from(capture.body),designBody:Buffer.from(capture.designBody!)};
+  const result=await historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async scope=>{
+   assert.equal(scope.planConfirmationId,id(401));
+   assert.equal(scope.confirmationId,undefined);
+   return readback;
+  });
+  assert.equal(result.kind,'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_VERIFICATION_V8');
+  if(result.kind!=='FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_VERIFICATION_V8')throw Error('계획 확정 검산 누락');
+  assert.equal(result.planConfirmationId,id(401));
+  assert.equal(result.workPlanSaveProjectionHash,hash(proof.save));
+  assert.deepEqual(result.workPlanSelectedReviewProjections.map(item=>item.id),[id(420),id(410)]);
+  assert.equal(result.workPlanAuthorityVerified,false);
+  assert.equal(result.restorable,false);
+  await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback({...expected,planConfirmationId:id(999)},limits,async()=>readback),
+   /FN16_D2_DOCUMENT_HISTORY_INVALID/);
+  const {planConfirmationId:_,...oldExpectation}=expected;
+  await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback(oldExpectation,limits,async()=>readback),
+   /FN16_D2_DOCUMENT_HISTORY_INVALID/);
+  const altered=structuredClone(snapshot);
+  altered.rows.workPlanConfirmation.confirmation.latestBefore.server_sequence=13;
+  const changedBytes=Buffer.from(canonicalJson(altered));
+  await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback({...expected,snapshotHash:contentHash(changedBytes)},limits,
+   async()=>({...readback,snapshotBytes:changedBytes})),/FN16_D2_DOCUMENT_HISTORY_INVALID/);
+ }
+});
+
+test('계획 증거의 별도 입장·원 명령·기록시각·당시 검토 결손을 원문 읽기 전에 거절한다',async()=>{
+ const limits={...input.limits,fileCount:2};
+ for(const mode of ['plan-decision-v7-admission','plan-decision-bad-admission','plan-decision-consumed','plan-decision-wrong-request','plan-decision-wrong-target',
+  'plan-decision-cross-confirmation','plan-decision-wrong-tx','plan-decision-latest-sequence','plan-decision-latest-rework',
+  'plan-decision-not-selected','plan-decision-wrong-review-criteria','plan-decision-audit-dup']){
+  const f=fixture(mode);
+  await assert.rejects(f.run(limits),/FN16_D2_SNAPSHOT_ADMISSION_DENIED|WORK_PLAN_INVENTORY_INTEGRITY_FAILED|DOCUMENT_INVENTORY_INTEGRITY_FAILED/,mode);
+  assert.equal(f.trace.some(item=>item.endsWith('body:open')),false,mode);
+  if(mode.endsWith('admission'))assert.equal(f.trace.includes('RR:begin'),false,mode);
+  if(['plan-decision-latest-rework','plan-decision-not-selected'].includes(mode))
+   assert.equal(f.trace.filter(item=>item==='RR:plan-proof:content_reviews').length,1,mode);
+  if(['plan-decision-consumed','plan-decision-wrong-request','plan-decision-wrong-target'].includes(mode))
+   assert.equal(f.trace.includes('RR:plan-proof:work_plan_confirmations'),false,mode);
+ }
+});
+
+test('계획 원 증빙의 합산 제한과 최종 원 감사 변경에서 부분 결과는 없다',async()=>{
+ const limits={...input.limits,fileCount:2};
+ const wide=fixture('plan-decision-valid');
+ await wide.run(limits);
+ const narrow=fixture('plan-decision-valid');
+ await assert.rejects(narrow.run({...limits,metadataBytes:wide.rowCharges.RR!-1}),/FN16_D2_SNAPSHOT_LIMIT|WORK_PLAN_INVENTORY_LIMIT/);
+ assert.equal(narrow.trace.includes('RR:plan-proof:work_plan_confirmations'),true);
+ assert.equal(narrow.trace.some(item=>item.endsWith('body:open')),false);
+ const late=fixture('plan-decision-rc-drift');
+ await assert.rejects(late.run(limits),/FN16_D2_SNAPSHOT_INVALID/);
+ assert.equal(late.trace.includes('body:close'),true);
+ assert.equal(late.trace.includes('design-body:close'),true);
+ assert.equal(late.trace.includes('RC2:commit'),false);
+});
 
 test('고정 작업계획의 저장 업무·의존 행을 AF02와 AF04와 함께 동결한다',async()=>{
  const stored=fixture('relations-valid'),limits={...input.limits,fileCount:2};
