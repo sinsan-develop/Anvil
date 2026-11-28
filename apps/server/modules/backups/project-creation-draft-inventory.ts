@@ -1,9 +1,10 @@
+import {types} from 'node:util';
 import type {PoolClient} from 'pg';
 import {AuthFailure,type AccessRepository,type AuthenticatedIdentity} from '../access/repository.ts';
 import {projectMember} from '../access/project-command.ts';
 import {notificationSessionDeadline} from '../notifications/notification-input.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {recordV1,uuidV1,refV1,isoV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {recordV1,uuidV1,refV1,isoV1,cloneV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {readDraftArtifactRefs,validDraftUploadCommand} from '../../../../contracts/draft-artifacts.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 import {readDocumentInventoryInput} from './document-inventory-input.ts';
@@ -26,6 +27,157 @@ function stamp(v:unknown):string{
  const offset=(offsetHour*60+offsetMinute)*(tz[0]==='-'?-1:1),utc=new Date(local.getTime()-offset*60000);if(!Number.isFinite(utc.getTime())||utc.getUTCFullYear()<1||utc.getUTCFullYear()>9999)return bad();return utc.toISOString().slice(0,19)+'.'+fraction+'Z';
 }
 function safe(v:unknown){if(inspectArtifact(Buffer.from(canonicalJson(v))).state==='SUSPECTED')bad('PROJECT_CREATION_DRAFT_INVENTORY_SENSITIVE_METADATA');}
+export interface OwnedSystemCreationScope{
+ sourceRef:RuntimeRefV1;creatorId:string;draftId:string;draftVersion:number;creationIntentId:string;
+}
+export function isOwnedSystemCreationScope(value:unknown):value is OwnedSystemCreationScope{
+ return !types.isProxy(value)&&recordV1(value,['sourceRef','creatorId','draftId','draftVersion','creationIntentId'])
+  &&!types.isProxy(value.sourceRef)&&refV1(value.sourceRef)&&uuidV1(value.creatorId)&&uuidV1(value.draftId)
+  &&Number.isSafeInteger(value.draftVersion)&&value.draftVersion>0&&uuidV1(value.creationIntentId);
+}
+const ownedDraftFields=['t.id','t.owner_user_id','t.client_id','t.version','t.consumed_project_id',
+ "t.input_json->'methodologySelection' AS selected_methodology"];
+const draftSelectionFields=['t.draft_id','t.draft_version','t.command_id','t.receipt_id'];
+const resultFields=(column:string)=>[`${column}->'id' AS result_project_id`,`${column}->'version' AS result_project_version`,
+ `${column}->'currentMethodologyRef' AS result_application_ref`,`${column}->'createdAt' AS result_project_created_at`];
+const intentFields=['t.id','t.draft_id','t.actor_id','t.client_id','t.external_command_id','t.expected_version','t.request_hash','t.request_json',
+ 't.target_project_id','t.state','t.attempt','t.project_command_id',...resultFields('t.result_json')];
+const commandFields=columns.commands.filter(field=>field!=='result_ref').map(field=>'t.'+field);
+const creationCommandFields=[...commandFields,...resultFields('t.result_ref')];
+const draftCommandFields=[...commandFields,"t.result_ref->'draftId' AS result_draft_id","t.result_ref->'version' AS result_draft_version",
+ "t.result_ref->'input'->'methodologySelection' AS selected_methodology"];
+const fieldNames=(fields:readonly string[])=>fields.map(f=>f.includes(' AS ')?f.split(' AS ')[1]!:f.slice(f.indexOf('.')+1));
+
+export interface OwnedSystemCreationRows{
+ draft:Row;selection:Row;draftCommand:Row;draftReceipt:Row;intent:Row;projectCommand:Row;projectReceipt:Row;projectAudit:Row;
+}
+function checkOwnedDraft(projectId:string,scope:OwnedSystemCreationScope,value:unknown){
+ const draft=object(value,fieldNames(ownedDraftFields));
+ if(draft.id!==scope.draftId||draft.owner_user_id!==scope.creatorId||draft.consumed_project_id!==projectId
+  ||number(draft.version,1)!==scope.draftVersion||!uuidV1(draft.client_id)
+  ||!same(draft.selected_methodology,{kind:'CONFIRMED_REFERENCE',versionRef:scope.sourceRef}))return bad();
+ return draft;
+}
+function checkOwnedDraftSelection(scope:OwnedSystemCreationScope,value:unknown){
+ const selection=object(value,fieldNames(draftSelectionFields));
+ if(selection.draft_id!==scope.draftId||number(selection.draft_version,1)!==scope.draftVersion
+  ||!uuidV1(selection.command_id)||!uuidV1(selection.receipt_id))return bad();
+ return selection;
+}
+function checkCreationResult(projectId:string,applicationRef:RuntimeRefV1,applicationCreatedAt:unknown,row:Row){
+ // #detail은 DB 시각을 Date.toISOString()으로 내보내므로 DTO에만 ms 정밀도를 적용한다.
+ const createdAt=stamp(applicationCreatedAt).replace(/(\.\d{3})\d+Z$/,'$1Z');
+ if(row.result_project_id!==projectId||row.result_project_version!==1||!same(row.result_application_ref,applicationRef)
+  ||row.result_project_created_at!==createdAt)return bad();
+}
+function checkIntent(projectId:string,scope:OwnedSystemCreationScope,applicationRef:RuntimeRefV1,applicationCreatedAt:unknown,draft:Row,value:unknown){
+ const intent=object(value,fieldNames(intentFields));
+ if(intent.id!==scope.creationIntentId||intent.draft_id!==scope.draftId||intent.actor_id!==scope.creatorId
+  ||intent.client_id!==draft.client_id||!uuidV1(intent.external_command_id)||!uuidV1(intent.project_command_id)
+  ||number(intent.expected_version,1)!==scope.draftVersion||intent.target_project_id!==projectId||intent.state!=='COMMITTED'
+  ||number(intent.attempt,1)<1)return bad();
+ const request=object(intent.request_json,['schemaVersion','commandId','clientId','draftId','draftVersion']);
+ if(!same(request,{schemaVersion:1,commandId:intent.external_command_id,clientId:draft.client_id,draftId:scope.draftId,draftVersion:scope.draftVersion})
+  ||hash(request)!==intent.request_hash)return bad();
+ checkCreationResult(projectId,applicationRef,applicationCreatedAt,intent);
+ return intent;
+}
+function checkCreationCommand(command:Row,creatorId:string,clientId:string){
+ if(command.actor_id!==creatorId||command.client_id!==clientId||command.state!=='APPLIED'||!uuidV1(command.id)||!uuidV1(command.command_id)
+  ||!uuidV1(command.operation_id)||!uuidV1(command.authorization_receipt_id)||!digest(command.request_hash)
+  ||command.policy_ref!==null||command.payload_ref!==null||command.approval_consumption_id!==null
+  ||command.completed_at!==command.received_at)return bad();
+ stamp(command.received_at);
+}
+function checkCreationReceipt(receipt:Row,command:Row,scopeDigest:string,subject:object){
+ if(receipt.id!==command.authorization_receipt_id||receipt.command_id!==command.id||receipt.scope_kind!==command.scope_kind
+  ||receipt.scope_id!==command.scope_id||!same(receipt.subject_ref,subject)||receipt.policy_ref!==null||receipt.approval_decision_ref!==null
+  ||receipt.scope_digest!==scopeDigest||receipt.authorized_at!==command.received_at)return bad();
+}
+
+/** 동일 creator의 소비 초안 선택과 프로젝트 최초 적용 결과의 원 정착만 검산한다. */
+export function checkOwnedSystemCreationRows(projectId:string,scope:OwnedSystemCreationScope,applicationRef:RuntimeRefV1,
+ applicationCreatedAt:unknown,value:unknown){
+ if(!uuidV1(projectId)||!isOwnedSystemCreationScope(scope)||!refV1(applicationRef)||applicationRef.version!==1)return bad();
+ const rows=object(value,['draft','selection','draftCommand','draftReceipt','intent','projectCommand','projectReceipt','projectAudit']);
+ const draft=checkOwnedDraft(projectId,scope,rows.draft),selection=checkOwnedDraftSelection(scope,rows.selection);
+ const {creatorId,draftId}=scope,clientId=draft.client_id,human={kind:'HUMAN',userId:creatorId};
+ const saved=object(rows.draftCommand,fieldNames(draftCommandFields));
+ checkCreationCommand(saved,creatorId,clientId);
+ if(saved.id!==selection.command_id||saved.authorization_receipt_id!==selection.receipt_id||saved.scope_kind!=='DRAFT'||saved.scope_id!==draftId
+  ||saved.draft_id!==draftId||saved.project_id!==null||saved.control_generation!==null
+  ||saved.operation!==(scope.draftVersion===1?'createProjectDraft':'saveProjectDraft')||number(saved.expected_version)!==scope.draftVersion-1
+  ||saved.result_draft_id!==draftId||saved.result_draft_version!==scope.draftVersion||!same(saved.selected_methodology,draft.selected_methodology))return bad();
+ checkCreationReceipt(object(rows.draftReceipt,columns.authorization_receipts),saved,
+  hash({kind:'DRAFT',draftId,operation:saved.operation,actorId:creatorId,clientId,requestHash:saved.request_hash}),human);
+ const intent=checkIntent(projectId,scope,applicationRef,applicationCreatedAt,draft,rows.intent);
+ const created=object(rows.projectCommand,fieldNames(creationCommandFields));
+ checkCreationCommand(created,creatorId,clientId);
+ if(created.id!==intent.project_command_id||created.scope_kind!=='PROJECT'||created.scope_id!==projectId||created.project_id!==projectId
+  ||created.draft_id!==null||created.operation!=='createProject'||created.command_id!==intent.external_command_id||created.request_hash!==intent.request_hash
+  ||number(created.expected_version)!==0||number(created.control_generation,1)!==1||created.received_at!==applicationCreatedAt)return bad();
+ checkCreationResult(projectId,applicationRef,applicationCreatedAt,created);
+ const scopeDigest=hash({operation:'createProject',draftId,draftVersion:scope.draftVersion,projectId,actorId:creatorId,clientId,requestHash:intent.request_hash});
+ checkCreationReceipt(object(rows.projectReceipt,columns.authorization_receipts),created,scopeDigest,{...human,clientId});
+ const audit=object(rows.projectAudit,columns.audit_events);
+ if(audit.project_id!==projectId||number(audit.server_sequence,1)!==1||!uuidV1(audit.event_id)||!same(audit.actor_ref,human)||audit.client_ref!==clientId
+  ||audit.command_id!==created.id||audit.operation_id!==created.operation_id||!same(audit.target_ref,{id:projectId,version:1})
+  ||audit.policy_ref!==null||audit.approval_ref!==null||audit.outcome!=='APPLIED'||audit.scope_digest!==scopeDigest
+  ||audit.reason_code!=='FIRST_PROJECT_FROM_OWNED_DRAFT'||audit.source_kind!=='HUMAN_COMMAND'||audit.correction_of!==null
+  ||audit.recorded_at!==created.received_at)return bad();
+ safe(rows);
+ return {sequence:1,draftSelectionRequestReconstructed:false as const};
+}
+
+/** 승인된 query-only 거래에서 기존 본인 소비 초안 범위의 필요한 열만 읽는다. */
+export async function readOwnedSystemCreationRows(db:Pick<PoolClient,'query'>,projectId:string,scope:OwnedSystemCreationScope,
+ applicationRef:RuntimeRefV1,applicationCreatedAt:unknown,metadataBytes:number):Promise<OwnedSystemCreationRows>{
+ if(!uuidV1(projectId)||!isOwnedSystemCreationScope(scope)||!refV1(applicationRef)||applicationRef.version!==1)return bad();
+ let remaining=metadataBytes;
+ async function read(table:Table,fields:readonly string[],where:string,args:unknown[]){
+  if(!Number.isSafeInteger(remaining)||remaining<1)return bad('PROJECT_CREATION_DRAFT_INVENTORY_LIMIT',413);
+  const cap=args.length+1;
+  const {rows}=await db.query(`/*FN16_D2_INITIAL_CREATION*/ WITH material AS (
+   SELECT ${fields.join(',')} FROM anvil.${table} t WHERE ${where} LIMIT 2
+  ) SELECT CASE WHEN octet_length(to_jsonb(material)::text)<=$${cap}::bigint THEN to_jsonb(material) END AS inventory_data,
+   octet_length(to_jsonb(material)::text) AS row_bytes FROM material`,[...args,remaining]);
+  if(rows.length!==1)return bad();
+  const envelope=object(rows[0],['inventory_data','row_bytes']),size=number(envelope.row_bytes,1);
+  if(size>remaining)return bad('PROJECT_CREATION_DRAFT_INVENTORY_LIMIT',413);
+  const row=object(envelope.inventory_data,fieldNames(fields));
+  if(Buffer.byteLength(canonicalJson(row))>size)return bad();
+  remaining-=size;
+  return cloneV1(row);
+ }
+ const draft=await read('project_drafts',ownedDraftFields,
+  't.id=$1::uuid AND t.owner_user_id=$2::uuid AND t.consumed_project_id=$3::uuid AND t.version=$4::bigint',
+  [scope.draftId,scope.creatorId,projectId,scope.draftVersion]);
+ checkOwnedDraft(projectId,scope,draft);
+ const selection=await read('draft_artifact_selection_versions',draftSelectionFields,'t.draft_id=$1::uuid AND t.draft_version=$2::bigint',
+  [scope.draftId,scope.draftVersion]);
+ checkOwnedDraftSelection(scope,selection);
+ const draftCommand=await read('commands',draftCommandFields,"t.id=$1::uuid AND t.scope_kind='DRAFT' AND t.draft_id=$2::uuid AND t.actor_id=$3::uuid",
+  [selection.command_id,scope.draftId,scope.creatorId]);
+ const receiptColumns=columns.authorization_receipts.map(field=>'t.'+field);
+ const draftReceipt=await read('authorization_receipts',receiptColumns,"t.id=$1::uuid AND t.command_id=$2::uuid AND t.scope_kind='DRAFT' AND t.scope_id=$3::uuid",
+  [selection.receipt_id,selection.command_id,scope.draftId]);
+ const intent=await read('draft_creation_intents',intentFields,
+  "t.id=$1::uuid AND t.target_project_id=$2::uuid AND t.actor_id=$3::uuid AND t.draft_id=$4::uuid AND t.expected_version=$5::bigint",
+  [scope.creationIntentId,projectId,scope.creatorId,scope.draftId,scope.draftVersion]);
+ checkIntent(projectId,scope,applicationRef,applicationCreatedAt,draft,intent);
+ const projectCommand=await read('commands',creationCommandFields,
+  "t.id=$1::uuid AND t.scope_kind='PROJECT' AND t.project_id=$2::uuid AND t.actor_id=$3::uuid AND t.operation='createProject'",
+  [intent.project_command_id,projectId,scope.creatorId]);
+ if(!uuidV1(projectCommand.authorization_receipt_id))return bad();
+ const projectReceipt=await read('authorization_receipts',receiptColumns,"t.id=$1::uuid AND t.command_id=$2::uuid AND t.scope_kind='PROJECT' AND t.scope_id=$3::uuid",
+  [projectCommand.authorization_receipt_id,projectCommand.id,projectId]);
+ const projectAudit=await read('audit_events',columns.audit_events.map(field=>'t.'+field),
+  't.project_id=$1::uuid AND t.command_id=$2::uuid AND t.correction_of IS NULL',[projectId,projectCommand.id]);
+ const rows={draft,selection,draftCommand,draftReceipt,intent,projectCommand,projectReceipt,projectAudit};
+ checkOwnedSystemCreationRows(projectId,scope,applicationRef,applicationCreatedAt,rows);
+ return rows;
+}
+
 /** 본인에게 속한 소비 초안의 선택·귀속 metadata다. 원문/쓰기/복원 권한을 발급하지 않는다. */
 export async function collectProjectCreationDraftInventory(access:AccessRepository,token:string,value:unknown,signal:AbortSignal):Promise<Row>{
  const request=readDocumentInventoryInput(value),started=performance.now();let authDeadline=Infinity,identity:AuthenticatedIdentity|undefined,metadataUsed=0;

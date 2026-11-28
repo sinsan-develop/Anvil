@@ -2,6 +2,7 @@ import type {PoolClient} from 'pg';
 import {AuthFailure,type AccessRepository,type AuthenticatedIdentity} from '../access/repository.ts';
 import {projectMember} from '../access/project-command.ts';
 import {notificationSessionDeadline} from '../notifications/notification-input.ts';
+import {builtinSourceHash} from '../methodologies/builtins.ts';
 import {readApplicationSnapshot} from '../methodologies/application-snapshot.ts';
 import {isVersionRef} from '../../../../contracts/references.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
@@ -9,6 +10,7 @@ import {cloneV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runt
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 import {readDocumentInventoryInput} from './document-inventory-input.ts';
 import {checkProjectHistoryOrigin,projectHistoryOriginColumns,readProjectHistoryOrigin} from './document-inventory.ts';
+import {checkOwnedSystemCreationRows,isOwnedSystemCreationScope,readOwnedSystemCreationRows,type OwnedSystemCreationRows,type OwnedSystemCreationScope} from './project-creation-draft-inventory.ts';
 type Row=Record<string,any>;
 const columns={
  project_methodologies:'id project_id application_version source_definition_id source_version source_hash snapshot_json snapshot_hash created_by created_at application_command_id'.split(' '),
@@ -158,6 +160,69 @@ export async function readExplicitApplicationHistoryRows(db:Pick<PoolClient,'que
   `${table==='authorization_receipts'?'t.scope_id':'t.project_id'}=$1::uuid AND ${predicate}`,[projectId,...args]),row.application_command_id,'applyMethodology');
  const history={source,previous,origin};
  checkExplicitApplicationHistoryRows(projectId,ref,sourceRef,application,assignmentDraftSequence,history);
+ return history;
+}
+
+const initialSystemFields=['d.project_id','d.owner_user_id','d.scope','d.system_code','v.definition_id','v.version',
+ 'v.name','v.purpose','v.graph_json','v.content_hash','v.origin_ref_json','v.created_by'];
+const initialSystemIdentity=new Map([
+ ['a6f20000-0000-4000-8000-000000000001',{code:'SYS-M01',name:'구조적 방법론'}],
+ ['a6f20000-0000-4000-8000-000000000002',{code:'SYS-M02',name:'객체지향 방법론'}],
+ ['a6f20000-0000-4000-8000-000000000003',{code:'SYS-M03',name:'애자일 방법론'}],
+]);
+export interface InitialSystemApplicationRows{source:Row;creation:OwnedSystemCreationRows;}
+
+function initialSystemApplication(projectId:string,ref:RuntimeRefV1,scope:OwnedSystemCreationScope,value:unknown){
+ if(!isOwnedSystemCreationScope(scope)||scope.sourceRef.version!==2||!initialSystemIdentity.has(scope.sourceRef.id)||ref.version!==1)return bad();
+ const {row,snapshot}=checkExactApplicationRow(projectId,ref,value);
+ if(row.created_by!==scope.creatorId||row.application_command_id!==null||Object.hasOwn(snapshot,'draftConfirmationRef')
+  ||!same(snapshot.sourceRef,scope.sourceRef))return bad();
+ return {row,snapshot};
+}
+
+function checkInitialSystemSource(scope:OwnedSystemCreationScope,snapshot:Row,value:unknown){
+ const row=object(value,initialSystemFields.map(f=>f.slice(f.indexOf('.')+1)));
+ const ref=scope.sourceRef,identity=initialSystemIdentity.get(ref.id);
+ if(!identity||row.scope!=='SYSTEM'||row.project_id!==null||row.owner_user_id!==null||row.created_by!==null
+  ||row.definition_id!==ref.id||integer(row.version,1)!==ref.version||row.system_code!==identity.code||row.name!==identity.name
+  ||row.content_hash!==ref.contentHash||hash(row.graph_json)!==ref.contentHash
+  ||!same(row.origin_ref_json,{kind:'P01_APPROVED_SOURCE',approvalRecord:'docs/04_test_reports/AV3/P01/REVIEW-01.md',
+   sourceHash:builtinSourceHash,implementationRevision:ref.version,productAcceptance:false})
+  ||!same(snapshot,{name:row.name,purpose:row.purpose,graph:row.graph_json,sourceRef:ref}))return bad();
+}
+
+/** 기본 제공 방법론의 최초 복제와 본인 프로젝트 생성 원장을 함께 검산한다. */
+export function checkInitialSystemApplicationRows(projectId:string,ref:RuntimeRefV1,scope:OwnedSystemCreationScope,application:unknown,
+ assignmentDraftSequence:unknown,value:unknown){
+ const {row,snapshot}=initialSystemApplication(projectId,ref,scope,application);
+ const {source,creation}=object(value,['source','creation']);
+ checkInitialSystemSource(scope,snapshot,source);
+ const origin=checkOwnedSystemCreationRows(projectId,scope,ref,row.created_at,creation);
+ if(origin.sequence>=integer(assignmentDraftSequence,1))return bad();
+ return {applicationSourceRef:scope.sourceRef,applicationOriginVerified:true as const,initialSystemApplicationProjectionHash:hash(value),
+  draftSelectionRequestReconstructed:origin.draftSelectionRequestReconstructed};
+}
+
+export async function readInitialSystemApplicationRows(db:Pick<PoolClient,'query'>,projectId:string,ref:RuntimeRefV1,scope:OwnedSystemCreationScope,
+ application:unknown,assignmentDraftSequence:unknown,metadataBytes:number):Promise<InitialSystemApplicationRows>{
+ const {row,snapshot}=initialSystemApplication(projectId,ref,scope,application);
+ if(!Number.isSafeInteger(metadataBytes)||metadataBytes<1)return bad('METHODOLOGY_APPLICATION_INVENTORY_LIMIT',413);
+ const sourceRef=scope.sourceRef;
+ const {rows}=await db.query(`/*FN16_D2_INITIAL_SYSTEM*/ WITH material AS (
+  SELECT ${initialSystemFields.join(',')} FROM anvil.methodology_definitions d JOIN anvil.methodology_versions v ON v.definition_id=d.id
+  WHERE d.id=$1::uuid AND v.version=$2::bigint AND v.content_hash=$3::text
+   AND d.scope='SYSTEM' AND d.owner_user_id IS NULL AND d.project_id IS NULL LIMIT 2
+ ) SELECT CASE WHEN octet_length(to_jsonb(material)::text)<=$4::bigint THEN to_jsonb(material) END AS inventory_data,
+  octet_length(to_jsonb(material)::text) AS row_bytes FROM material`,[sourceRef.id,sourceRef.version,sourceRef.contentHash,metadataBytes]);
+ if(rows.length!==1)return bad();
+ const envelope=object(rows[0],['inventory_data','row_bytes']),size=integer(envelope.row_bytes,1);
+ if(size>metadataBytes)return bad('METHODOLOGY_APPLICATION_INVENTORY_LIMIT',413);
+ checkInitialSystemSource(scope,snapshot,envelope.inventory_data);
+ if(Buffer.byteLength(canonicalJson(envelope.inventory_data))>size)return bad();
+ const source=cloneV1(envelope.inventory_data);
+ const creation=await readOwnedSystemCreationRows(db,projectId,scope,ref,row.created_at,metadataBytes-size);
+ const history={source,creation};
+ checkInitialSystemApplicationRows(projectId,ref,scope,application,assignmentDraftSequence,history);
  return history;
 }
 

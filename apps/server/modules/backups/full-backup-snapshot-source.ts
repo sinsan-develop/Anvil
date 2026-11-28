@@ -9,16 +9,17 @@ import {readDocumentInventoryInput} from './document-inventory-input.ts';
 import {checkDocumentSystemFormHistoryRows,readDocumentSystemFormHistoryRows} from './document-inventory.ts';
 import {isRootAssignmentHistoryScope,readRootAssignmentHistoryRows,type RootAssignmentHistoryScope} from './assignment-inventory.ts';
 import {readDesignIndexHistoryRows} from './design-trace-inventory.ts';
-import {readExplicitApplicationHistoryRows} from './methodology-application-inventory.ts';
+import {isOwnedSystemCreationScope,type OwnedSystemCreationScope} from './project-creation-draft-inventory.ts';
+import {readExplicitApplicationHistoryRows,readInitialSystemApplicationRows} from './methodology-application-inventory.ts';
 import {readWorkPlanConfirmationHistoryRows,readWorkPlanDocumentHistoryRow,readWorkPlanRelationHistoryRows} from './work-plan-inventory.ts';
-import {separateDesignHistoryBody,type DocumentConfirmationSnapshot,type DocumentSystemFormSnapshot,type DocumentWorkPlanConfirmationSnapshot,type DocumentWorkPlanDesignSnapshot,type DocumentWorkPlanDesignIndexSnapshot,type DocumentRootAssignmentSnapshot,type DocumentAppliedMethodologySnapshot,type DocumentWorkPlanRelationsSnapshot,type DocumentWorkPlanSnapshot} from './full-backup-history-verification.ts';
+import {separateDesignHistoryBody,type DocumentConfirmationSnapshot,type DocumentSystemFormSnapshot,type DocumentWorkPlanConfirmationSnapshot,type DocumentWorkPlanDesignSnapshot,type DocumentWorkPlanDesignIndexSnapshot,type DocumentRootAssignmentSnapshot,type DocumentAppliedMethodologySnapshot,type DocumentInitialSystemMethodologySnapshot,type DocumentWorkPlanRelationsSnapshot,type DocumentWorkPlanSnapshot} from './full-backup-history-verification.ts';
 
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const fail=(code='FN16_D2_SNAPSHOT_INVALID',status=503):never=>{throw new AuthFailure(code,status);};
 
 /** 내부 승인 백업 job의 실제 보호 입력 공급자 자리다. 등록된 기본 공급자는 아직 없다. */
 export interface FullBackupDocumentAdmission {
- readCurrent(db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:Readonly<{projectId:string;documentRef:RuntimeRefV1;confirmationId?:string;workPlanRef?:RuntimeRefV1;designDocumentRef?:RuntimeRefV1;planRelations?:true;planConfirmationId?:string;designIndex?:true;rootAssignment?:RootAssignmentHistoryScope;applicationSourceRef?:RuntimeRefV1}>):Promise<unknown>;
+ readCurrent(db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:Readonly<{projectId:string;documentRef:RuntimeRefV1;confirmationId?:string;workPlanRef?:RuntimeRefV1;designDocumentRef?:RuntimeRefV1;planRelations?:true;planConfirmationId?:string;designIndex?:true;rootAssignment?:RootAssignmentHistoryScope;applicationSourceRef?:RuntimeRefV1;initialApplication?:OwnedSystemCreationScope}>):Promise<unknown>;
 }
 
 /** 보호 입장 범위에서 문서 BODY와 원 관계를 수집한다. 현재 권한을 발급하지 않는다. */
@@ -32,7 +33,8 @@ export async function collectDocumentBodySnapshot(
   &&!recordV1(raw,[...inputKeys,'workPlanRef','designDocumentRef','planRelations','planConfirmationId'])
   &&!recordV1(raw,[...inputKeys,'workPlanRef','designDocumentRef','planRelations','planConfirmationId','designIndex'])
   &&!recordV1(raw,[...inputKeys,'workPlanRef','designDocumentRef','planRelations','planConfirmationId','designIndex','rootAssignment'])
-  &&!recordV1(raw,[...inputKeys,'workPlanRef','designDocumentRef','planRelations','planConfirmationId','designIndex','rootAssignment','applicationSourceRef']))return fail('INPUT_INVALID',400);
+  &&!recordV1(raw,[...inputKeys,'workPlanRef','designDocumentRef','planRelations','planConfirmationId','designIndex','rootAssignment','applicationSourceRef'])
+  &&!recordV1(raw,[...inputKeys,'workPlanRef','designDocumentRef','planRelations','planConfirmationId','designIndex','rootAssignment','initialApplication']))return fail('INPUT_INVALID',400);
  const confirmationId=Object.hasOwn(raw,'confirmationId')&&uuidV1(raw.confirmationId)?raw.confirmationId:undefined;
  const workPlanRef=Object.hasOwn(raw,'workPlanRef')&&refV1(raw.workPlanRef)?cloneV1(raw.workPlanRef):undefined;
  const designDocumentRef=Object.hasOwn(raw,'designDocumentRef')&&refV1(raw.designDocumentRef)?cloneV1(raw.designDocumentRef):undefined;
@@ -41,7 +43,8 @@ export async function collectDocumentBodySnapshot(
  const designIndex=Object.hasOwn(raw,'designIndex')&&raw.designIndex===true;
  const rootAssignment=Object.hasOwn(raw,'rootAssignment')&&isRootAssignmentHistoryScope(raw.rootAssignment)?cloneV1(raw.rootAssignment):undefined;
  const applicationSourceRef=Object.hasOwn(raw,'applicationSourceRef')&&refV1(raw.applicationSourceRef)?cloneV1(raw.applicationSourceRef):undefined;
- if((Object.hasOwn(raw,'applicationSourceRef')&&!applicationSourceRef)||(Object.hasOwn(raw,'rootAssignment')&&!rootAssignment)||(Object.hasOwn(raw,'designIndex')&&!designIndex)||(Object.hasOwn(raw,'planConfirmationId')&&!planConfirmationId)||(Object.hasOwn(raw,'planRelations')&&!planRelations)||(Object.hasOwn(raw,'designDocumentRef')&&!designDocumentRef)||(Object.hasOwn(raw,'confirmationId')&&!confirmationId)||(Object.hasOwn(raw,'workPlanRef')&&!workPlanRef)
+ const initialApplication=Object.hasOwn(raw,'initialApplication')&&isOwnedSystemCreationScope(raw.initialApplication)?cloneV1(raw.initialApplication):undefined;
+ if((Object.hasOwn(raw,'initialApplication')&&!initialApplication)||(Object.hasOwn(raw,'applicationSourceRef')&&!applicationSourceRef)||(Object.hasOwn(raw,'rootAssignment')&&!rootAssignment)||(Object.hasOwn(raw,'designIndex')&&!designIndex)||(Object.hasOwn(raw,'planConfirmationId')&&!planConfirmationId)||(Object.hasOwn(raw,'planRelations')&&!planRelations)||(Object.hasOwn(raw,'designDocumentRef')&&!designDocumentRef)||(Object.hasOwn(raw,'confirmationId')&&!confirmationId)||(Object.hasOwn(raw,'workPlanRef')&&!workPlanRef)
   ||!refV1(raw.documentRef)||typeof csrf!=='string')return fail('INPUT_INVALID',400);
  const {projectId,limits}=readDocumentInventoryInput({projectId:raw.projectId,limits:raw.limits});
  const documentRef=cloneV1(raw.documentRef);
@@ -111,6 +114,12 @@ export async function collectDocumentBodySnapshot(
         return {kind:'FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11' as const,
          rows:{...rows,workPlanVersion,designDocument,workPlanRelations,workPlanConfirmation,designIndexRows,rootAssignmentRows,explicitApplicationRows}};
        }
+       if(initialApplication){
+        const initialApplicationRows=await readInitialSystemApplicationRows(metered,projectId,rootAssignment.applicationRef,initialApplication,
+         rootAssignmentRows.application,rootAssignmentRows.draft.origin.audit.server_sequence,budget);
+        return {kind:'FN16_D2_INITIAL_SYSTEM_METHODOLOGY_SNAPSHOT_V12' as const,
+         rows:{...rows,workPlanVersion,designDocument,workPlanRelations,workPlanConfirmation,designIndexRows,rootAssignmentRows,initialApplicationRows}};
+       }
        return {kind:'FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10' as const,
         rows:{...rows,workPlanVersion,designDocument,workPlanRelations,workPlanConfirmation,designIndexRows,rootAssignmentRows}};
       }
@@ -125,7 +134,7 @@ export async function collectDocumentBodySnapshot(
   }
   return {kind:'FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5' as const,rows:{...rows,workPlanVersion}};
  }
- type Snapshot=DocumentSystemFormSnapshot|DocumentConfirmationSnapshot|DocumentWorkPlanSnapshot|DocumentWorkPlanDesignSnapshot|DocumentWorkPlanRelationsSnapshot|DocumentWorkPlanConfirmationSnapshot|DocumentWorkPlanDesignIndexSnapshot|DocumentRootAssignmentSnapshot|DocumentAppliedMethodologySnapshot;
+ type Snapshot=DocumentSystemFormSnapshot|DocumentConfirmationSnapshot|DocumentWorkPlanSnapshot|DocumentWorkPlanDesignSnapshot|DocumentWorkPlanRelationsSnapshot|DocumentWorkPlanConfirmationSnapshot|DocumentWorkPlanDesignIndexSnapshot|DocumentRootAssignmentSnapshot|DocumentAppliedMethodologySnapshot|DocumentInitialSystemMethodologySnapshot;
  async function rc(previous?:{snapshot:Snapshot;binding:unknown}){
   remaining();
   return access.authenticated(token,csrf,async(db,a)=>{
@@ -137,6 +146,7 @@ export async function collectDocumentBodySnapshot(
    if(settings.length!==1||settings[0]?.isolation!=='read committed'||!(settings[0].at instanceof Date))return fail();
    deadline=Math.min(deadline,notificationSessionDeadline(a,settings[0].at,before));
    await owner(scoped,a);
+   if(initialApplication&&a.actorId!==initialApplication.creatorId)return fail('NOT_FOUND',404);
    const controls=(await scoped.query('SELECT actor_id,client_id,generation,version,revoked_at FROM anvil.project_control WHERE project_id=$1',[projectId])).rows;
    const control=controls[0];
    if(controls.length!==1||control?.actor_id!==a.actorId||control.client_id!==a.clientId||control.revoked_at!==null
@@ -149,13 +159,14 @@ export async function collectDocumentBodySnapshot(
    const scope={projectId,documentRef:cloneV1(documentRef),...(confirmationId?{confirmationId}:{}),...(workPlanRef?{workPlanRef:cloneV1(workPlanRef)}:{}),
     ...(designDocumentRef?{designDocumentRef:cloneV1(designDocumentRef)}:{}),...(planRelations?{planRelations:true as const}:{}),
     ...(planConfirmationId?{planConfirmationId}:{}),...(designIndex?{designIndex:true as const}:{}),...(rootAssignment?{rootAssignment:cloneV1(rootAssignment)}:{}),
-    ...(applicationSourceRef?{applicationSourceRef:cloneV1(applicationSourceRef)}:{})};
+    ...(applicationSourceRef?{applicationSourceRef:cloneV1(applicationSourceRef)}:{}),
+    ...(initialApplication?{initialApplication:cloneV1(initialApplication)}:{})};
    const evidence=await Reflect.apply(readAdmission,admission,[scoped,a,scope]);
    const refs=['jobRef','reservationRef','policyRef','targetProtectedRef','retentionPolicyRef','encryptionKeyRef','verificationPolicyRef','formRef'];
-   const purpose=applicationSourceRef?'FN16_D2_APPLIED_METHODOLOGY_ADMISSION_V11':rootAssignment?'FN16_D2_ROOT_ASSIGNMENT_ADMISSION_V10':designIndex?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_ADMISSION_V9':planConfirmationId?'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_ADMISSION_V8':planRelations?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':designDocumentRef?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':workPlanRef?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':
+   const purpose=initialApplication?'FN16_D2_INITIAL_SYSTEM_METHODOLOGY_ADMISSION_V12':applicationSourceRef?'FN16_D2_APPLIED_METHODOLOGY_ADMISSION_V11':rootAssignment?'FN16_D2_ROOT_ASSIGNMENT_ADMISSION_V10':designIndex?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_ADMISSION_V9':planConfirmationId?'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_ADMISSION_V8':planRelations?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':designDocumentRef?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':workPlanRef?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':
     confirmationId?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3';
    if(!recordV1(evidence,['purpose','projectId','documentRef','actorId','clientId','sessionId','credentialGeneration','controlGeneration','expiresAt',
-    ...refs,...(confirmationId?['confirmationId']:[]),...(workPlanRef?['workPlanRef']:[]),...(designDocumentRef?['designDocumentRef','designFormRef']:[]),...(planRelations?['planRelations']:[]),...(planConfirmationId?['planConfirmationId']:[]),...(designIndex?['designIndex']:[]),...(rootAssignment?['rootAssignment']:[]),...(applicationSourceRef?['applicationSourceRef']:[])])
+    ...refs,...(confirmationId?['confirmationId']:[]),...(workPlanRef?['workPlanRef']:[]),...(designDocumentRef?['designDocumentRef','designFormRef']:[]),...(planRelations?['planRelations']:[]),...(planConfirmationId?['planConfirmationId']:[]),...(designIndex?['designIndex']:[]),...(rootAssignment?['rootAssignment']:[]),...(applicationSourceRef?['applicationSourceRef']:[]),...(initialApplication?['initialApplication']:[])])
     ||evidence.purpose!==purpose||evidence.projectId!==projectId||!same(evidence.documentRef,documentRef)
     ||(confirmationId&&evidence.confirmationId!==confirmationId)
     ||(workPlanRef&&(!refV1(evidence.workPlanRef)||!same(evidence.workPlanRef,workPlanRef)))
@@ -164,6 +175,7 @@ export async function collectDocumentBodySnapshot(
     ||(planConfirmationId&&evidence.planConfirmationId!==planConfirmationId)||(designIndex&&evidence.designIndex!==true)
     ||(rootAssignment&&(!isRootAssignmentHistoryScope(evidence.rootAssignment)||!same(evidence.rootAssignment,rootAssignment)))
     ||(applicationSourceRef&&(!refV1(evidence.applicationSourceRef)||!same(evidence.applicationSourceRef,applicationSourceRef)))
+    ||(initialApplication&&(!isOwnedSystemCreationScope(evidence.initialApplication)||!same(evidence.initialApplication,initialApplication)))
     ||evidence.actorId!==a.actorId||evidence.clientId!==a.clientId||evidence.sessionId!==session.id
     ||evidence.credentialGeneration!==a.credentialGeneration||evidence.controlGeneration!==Number(control.generation)
     ||!refs.every(k=>refV1(evidence[k]))||!isoV1(evidence.expiresAt)||admission!.readCurrent!==readAdmission)
@@ -258,7 +270,7 @@ export async function collectDocumentBodySnapshot(
   let designArtifact:typeof artifact|null=null;
   const withDesign=snapshot.kind==='FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6'||snapshot.kind==='FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7'
    ||snapshot.kind==='FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8'
-   ||snapshot.kind==='FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9'||snapshot.kind==='FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10'||snapshot.kind==='FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11';
+   ||snapshot.kind==='FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9'||snapshot.kind==='FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10'||snapshot.kind==='FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11'||snapshot.kind==='FN16_D2_INITIAL_SYSTEM_METHODOLOGY_SNAPSHOT_V12';
   if(withDesign){
    if(!designDocumentRef)return fail();
    const design=checkDocumentSystemFormHistoryRows(projectId,designDocumentRef,snapshot.rows.designDocument);
@@ -272,7 +284,8 @@ export async function collectDocumentBodySnapshot(
   remaining();
   const snapshotHash=contentHash(snapshotBytes);
   remaining();
-  const coverage=snapshot.kind==='FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11'?'ROOT_ASSIGNMENT_AND_EXPLICIT_APPLICATION_ORIGIN' as const:
+  const coverage=snapshot.kind==='FN16_D2_INITIAL_SYSTEM_METHODOLOGY_SNAPSHOT_V12'?'ROOT_ASSIGNMENT_AND_INITIAL_SYSTEM_APPLICATION_ORIGIN' as const:
+   snapshot.kind==='FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11'?'ROOT_ASSIGNMENT_AND_EXPLICIT_APPLICATION_ORIGIN' as const:
    snapshot.kind==='FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10'?'ROOT_ASSIGNMENT_WORK_PLAN_AND_APPLICATION_LINK' as const:
    snapshot.kind==='FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9'?'DOCUMENT_BODY_DRAFT_ORIGIN_SYSTEM_FORM_AND_WORK_PLAN_DESIGN_INDEX' as const:
    snapshot.kind==='FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8'?'DOCUMENT_BODY_DRAFT_ORIGIN_SYSTEM_FORM_AND_WORK_PLAN_CONFIRMATION' as const:
@@ -286,7 +299,7 @@ export async function collectDocumentBodySnapshot(
   body?.fill(0);
   designBody?.fill(0);
   snapshotBytes?.fill(0);
-  if(error instanceof AuthFailure&&/^(FN16_D2_|ARTIFACT_BYTES_|DOCUMENT_INVENTORY_|WORK_PLAN_INVENTORY_|DESIGN_TRACE_INVENTORY_|ASSIGNMENT_INVENTORY_|METHODOLOGY_APPLICATION_INTEGRITY_FAILED$|METHODOLOGY_APPLICATION_INVENTORY_|NOT_FOUND$|AUTH_REQUIRED$|CSRF_INVALID$|PROJECT_CONTROL_REQUIRED$)/.test(error.message))
+  if(error instanceof AuthFailure&&/^(FN16_D2_|ARTIFACT_BYTES_|DOCUMENT_INVENTORY_|WORK_PLAN_INVENTORY_|DESIGN_TRACE_INVENTORY_|ASSIGNMENT_INVENTORY_|PROJECT_CREATION_DRAFT_INVENTORY_|METHODOLOGY_APPLICATION_INTEGRITY_FAILED$|METHODOLOGY_APPLICATION_INVENTORY_|NOT_FOUND$|AUTH_REQUIRED$|CSRF_INVALID$|PROJECT_CONTROL_REQUIRED$)/.test(error.message))
    throw new AuthFailure(error.message,error.statusCode);
   return fail();
  }

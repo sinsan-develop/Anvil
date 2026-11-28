@@ -7,6 +7,7 @@ import {collectDocumentBodySnapshot} from '../../../apps/server/modules/backups/
 import * as historyVerification from '../../../apps/server/modules/backups/full-backup-history-verification.ts';
 import {readAssignmentDraftInput} from '../../../apps/server/modules/assignments/assignment-input.ts';
 import {assignmentContentCriteria} from '../../../apps/server/modules/assignments/assignment-confirmation-input.ts';
+import {builtinSourceHash} from '../../../apps/server/modules/methodologies/builtins.ts';
 import {workPlanReviewCriteria} from '../../../apps/server/modules/traceability/work-plan-reviews.ts';
 import {analyzeWorkPlanCards} from '../../../apps/server/modules/traceability/work-plan-card.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
@@ -104,8 +105,9 @@ const confirmationOrigin=originFor(confirmation.command_id,'confirmDocument',{ve
 
 function fixture(mode='valid'){
  const confirmed=mode.startsWith('confirmed');
+ const withInitialApplication=mode.startsWith('initial-method-');
  const withApplicationOrigin=mode.startsWith('apply-origin-');
- const withAssignment=mode.startsWith('root-assignment-')||withApplicationOrigin;
+ const withAssignment=mode.startsWith('root-assignment-')||withApplicationOrigin||withInitialApplication;
  const withIndex=mode.startsWith('design-index-')||withAssignment;
  const withDecision=mode.startsWith('plan-decision-')||withIndex;
  const withRelations=mode.startsWith('relations-')||withDecision;
@@ -202,8 +204,10 @@ function fixture(mode='valid'){
   outputs:[{itemId:'O1',formRef,required:true,reviewCriteria:['내용 확인']}],taskScope:{included:['개발'],excluded:['운영']},
   completionCriteria:['완료 확인'],approvalBoundary:['사람 확인'],mode:'CASE_BY_CASE',limitPolicyRef:pinned(574),recordRequirements:['기록']}],
   edges:[],entryNodeId:'N1',terminalNodeIds:['N1']};
- const methodologyRef={...pinned(573),contentHash:hash(graph)};
- const applicationSnapshot={name:'적용본',purpose:'합성 방법론',graph,sourceRef:methodologyRef};
+ const builtin=mode==='initial-method-oo'?{n:2,name:'객체지향 방법론'}:mode==='initial-method-ag'?{n:3,name:'애자일 방법론'}:{n:1,name:'구조적 방법론'};
+ const methodologyRef=withInitialApplication?{id:`a6f20000-0000-4000-8000-00000000000${builtin.n}`,version:2,contentHash:hash(graph)}:
+  {...pinned(573),contentHash:hash(graph)};
+ const applicationSnapshot={name:withInitialApplication?builtin.name:'적용본',purpose:'합성 방법론',graph,sourceRef:methodologyRef};
  const applicationRef={...pinned(572),version:withApplicationOrigin&&!['apply-origin-initial','apply-origin-first'].includes(mode)?2:1,
   contentHash:hash(applicationSnapshot)};
  const applicationSource={project_id:projectId,scope:'PROJECT',definition_id:methodologyRef.id,version:methodologyRef.version,
@@ -216,9 +220,41 @@ function fixture(mode='valid'){
   {methodologyRef,expectedApplicationVersion:applicationRef.version-1,reason:applyReason},
   {status:'METHODOLOGY_APPLIED',snapshot:applicationSnapshot,reason:applyReason,previousApplicationRef:applicationRef.version===1?null:previousAppRef},
   mode==='apply-origin-after-draft'?21:mode==='apply-origin-after-plan'?15:8,at,mode==='apply-origin-request-target'?applicationRef.id:projectId,applicationRef.version-1,applicationRef);
+ const initialCreatedAt=mode.startsWith('initial-method-micro-')?'2026-11-28T00:00:00.000123+00:00':at;
  const application={id:applicationRef.id,project_id:projectId,application_version:applicationRef.version,source_definition_id:methodologyRef.id,
   source_version:methodologyRef.version,source_hash:methodologyRef.contentHash,snapshot_json:applicationSnapshot,snapshot_hash:applicationRef.contentHash,
-  created_by:actorId,created_at:at,application_command_id:withApplicationOrigin&&mode!=='apply-origin-initial'?applyProof.command.id:null};
+  created_by:actorId,created_at:initialCreatedAt,application_command_id:withApplicationOrigin&&mode!=='apply-origin-initial'?applyProof.command.id:null};
+ const initialApplication={sourceRef:methodologyRef,creatorId:mode==='initial-method-other-creator'?id(999):actorId,
+  draftId:id(669),draftVersion:mode==='initial-method-oo'?2:1,creationIntentId:id(670)};
+ const systemSource={project_id:null,owner_user_id:null,scope:'SYSTEM',system_code:`SYS-M0${builtin.n}`,definition_id:methodologyRef.id,
+  version:methodologyRef.version,name:applicationSnapshot.name,purpose:applicationSnapshot.purpose,graph_json:graph,content_hash:methodologyRef.contentHash,
+  origin_ref_json:{kind:'P01_APPROVED_SOURCE',approvalRecord:'docs/04_test_reports/AV3/P01/REVIEW-01.md',sourceHash:builtinSourceHash,
+   implementationRevision:2,productAcceptance:false},created_by:null};
+ const selectionMethod={kind:'CONFIRMED_REFERENCE',versionRef:methodologyRef};
+ const creationDraft={id:initialApplication.draftId,owner_user_id:actorId,client_id:clientId,version:initialApplication.draftVersion,
+  consumed_project_id:projectId,selected_methodology:selectionMethod};
+ const draftSelection={draft_id:creationDraft.id,draft_version:creationDraft.version,command_id:id(675),receipt_id:id(676)};
+ const createRequest={schemaVersion:1,commandId:id(671),clientId,draftId:creationDraft.id,draftVersion:creationDraft.version};
+ const createResult={result_project_id:projectId,result_project_version:1,result_application_ref:applicationRef,
+  result_project_created_at:mode==='initial-method-micro-dto'?'2026-11-28T00:00:00.001Z':at};
+ const createIntent={id:initialApplication.creationIntentId,draft_id:creationDraft.id,actor_id:actorId,client_id:clientId,external_command_id:createRequest.commandId,
+  expected_version:creationDraft.version,request_hash:hash(createRequest),request_json:createRequest,target_project_id:projectId,
+  state:'COMMITTED',attempt:1,project_command_id:id(672),...createResult};
+ const {result_ref:_,...commandBase}=command;
+ const savedDraft={...commandBase,id:draftSelection.command_id,command_id:id(677),authorization_receipt_id:draftSelection.receipt_id,operation_id:id(678),
+  scope_kind:'DRAFT',scope_id:creationDraft.id,project_id:null,draft_id:creationDraft.id,operation:creationDraft.version===1?'createProjectDraft':'saveProjectDraft',
+  control_generation:null,policy_ref:null,request_hash:'a'.repeat(64),expected_version:creationDraft.version-1,
+  result_draft_id:creationDraft.id,result_draft_version:creationDraft.version,selected_methodology:selectionMethod};
+ const creationCommand={...commandBase,id:createIntent.project_command_id,command_id:createRequest.commandId,authorization_receipt_id:id(673),operation_id:id(674),
+  operation:'createProject',policy_ref:null,request_hash:createIntent.request_hash,expected_version:0,received_at:initialCreatedAt,completed_at:initialCreatedAt,...createResult};
+ const draftDigest=hash({kind:'DRAFT',draftId:creationDraft.id,operation:savedDraft.operation,actorId,clientId,requestHash:savedDraft.request_hash});
+ const projectDigest=hash({operation:'createProject',draftId:creationDraft.id,draftVersion:creationDraft.version,projectId,actorId,clientId,requestHash:createIntent.request_hash});
+ const savedReceipt={...receipt,id:savedDraft.authorization_receipt_id,command_id:savedDraft.id,scope_kind:'DRAFT',scope_id:creationDraft.id,
+  subject_ref:{kind:'HUMAN',userId:actorId},policy_ref:null,scope_digest:draftDigest};
+ const creationReceipt={...receipt,id:creationCommand.authorization_receipt_id,command_id:creationCommand.id,policy_ref:null,scope_digest:projectDigest,authorized_at:initialCreatedAt};
+ const creationAudit={...audit,event_id:id(679),command_id:creationCommand.id,operation_id:creationCommand.operation_id,target_ref:{id:projectId,version:1},
+  policy_ref:null,scope_digest:projectDigest,reason_code:'FIRST_PROJECT_FROM_OWNED_DRAFT',
+  recorded_at:mode==='initial-method-micro-db'?'2026-11-28T00:00:00.000124+00:00':initialCreatedAt};
  const assignmentApplication=mode==='root-assignment-app-scope'?pinned(998):applicationRef;
  const taskRef={planRef:expectedPlanRef,taskCode:'A',applicationRef:assignmentApplication,nodeId:mode==='root-assignment-missing-node'?'MISSING':'N1'};
  const definition={taskRef,baselineRefs:[expectedPlanRef,assignmentApplication,designVersionRef],purpose:'임무 목적',goal:'내용 완성',ownerRole:'개발',
@@ -287,10 +323,11 @@ function fixture(mode='valid'){
    if(sql.includes("'anvil.actor_id'")){assert.equal(scope,'RR');assert.deepEqual(params,[actorId,clientId]);trace.push('RR:rls');return {rows:[{actor_id:actorId,client_id:clientId}]};}
    if(sql.includes('FROM anvil.projects p')){assert.deepEqual(params,[projectId,actorId]);assert(scope==='RR'?liveRR:!liveRR);return {rows:[{id:projectId,archived_at:null,participation:scope==='RC2'&&mode==='revoked'?'VIEWER':'OWNER'}]};}
    if(sql.includes('FROM anvil.project_control')){assert.equal(params[0],projectId);return {rows:[{actor_id:actorId,client_id:clientId,generation:1,version:1,revoked_at:null}]};}
-   assert((sql.includes('FN16_D2_BODY')||sql.includes('FN16_D2_WORK_PLAN')||sql.includes('FN16_D2_DESIGN_INDEX')||sql.includes('FN16_D2_ROOT_ASSIGNMENT')||sql.includes('FN16_D2_ASSIGNMENT_APPLICATION')||sql.includes('FN16_D2_EXPLICIT_APPLY'))
+   assert((sql.includes('FN16_D2_BODY')||sql.includes('FN16_D2_WORK_PLAN')||sql.includes('FN16_D2_DESIGN_INDEX')||sql.includes('FN16_D2_ROOT_ASSIGNMENT')||sql.includes('FN16_D2_ASSIGNMENT_APPLICATION')||sql.includes('FN16_D2_EXPLICIT_APPLY')||sql.includes('FN16_D2_INITIAL_SYSTEM')||sql.includes('FN16_D2_INITIAL_CREATION'))
     &&(sql.includes('LIMIT 2')||sql.includes('ORDER BY a.server_sequence DESC LIMIT 1')||sql.includes('LIMIT $4::integer')||sql.includes('LIMIT 201')));
    const table=sql.match(/FROM anvil\.(\w+)/)?.[1];
-   if(!['form_definitions','authoring_standard_versions'].includes(table??''))assert.equal(params[0],projectId);
+   if(!['form_definitions','authoring_standard_versions'].includes(table??'')&&!/FN16_D2_INITIAL_(SYSTEM|CREATION)/.test(sql))
+    assert.equal(params[0],projectId);
    trace.push(`${scope}:${table}`);
    if(withDesign)assert.equal(params.at(-1),metadataBudget-(rowCharges[scope]??0));
    let row;
@@ -319,6 +356,46 @@ function fixture(mode='valid'){
     const charged=rows.reduce((sum,item)=>sum+item.row_bytes,0);
     rowCharges[scope]=(rowCharges[scope]??0)+charged;
     return {rows:charged>Number(params[4])?rows.map(row=>({...row,inventory_data:null})):rows};
+   }
+   if(withInitialApplication&&/FN16_D2_INITIAL_(SYSTEM|CREATION)/.test(sql)){
+    trace.push(`${scope}:initial:${table}`);
+    assert.match(sql,/LIMIT 2/);
+    assert(scope==='RR'?liveRR:!liveRR);
+    if(table==='methodology_definitions'){
+     assert.deepEqual(params.slice(0,-1),[methodologyRef.id,methodologyRef.version,methodologyRef.contentHash]);
+     assert.match(sql,/d\.scope='SYSTEM' AND d\.owner_user_id IS NULL AND d\.project_id IS NULL/);
+     row=mode==='initial-method-alias'?{...systemSource,system_code:'SYS-M99'}:mode==='initial-method-common'?{...systemSource,scope:'USER_COMMON'}:systemSource;
+    }else if(table==='project_drafts'){
+     assert.deepEqual(params.slice(0,-1),[creationDraft.id,actorId,projectId,creationDraft.version]);
+     assert.match(sql,/t\.input_json->'methodologySelection' AS selected_methodology/);
+     row=mode==='initial-method-foreign-draft'?{...creationDraft,owner_user_id:id(996)}:creationDraft;
+    }else if(table==='draft_artifact_selection_versions'){
+     assert.deepEqual(params.slice(0,-1),[creationDraft.id,creationDraft.version]);
+     assert.doesNotMatch(sql,/refs_json/);
+     row=draftSelection;
+    }else if(table==='draft_creation_intents'){
+     assert.deepEqual(params.slice(0,-1),[createIntent.id,projectId,actorId,creationDraft.id,creationDraft.version]);
+     assert.doesNotMatch(sql,/refs_json|sources_json/);
+     row=mode==='initial-method-wrong-intent-result'?{...createIntent,result_application_ref:methodologyRef}:
+      mode==='initial-method-uncommitted'?{...createIntent,state:'COPIES_VERIFIED'}:createIntent;
+    }else if(table==='commands'){
+     const isDraft=params[0]===savedDraft.id;
+     assert.deepEqual(params.slice(0,-1),isDraft?[savedDraft.id,creationDraft.id,actorId]:[creationCommand.id,projectId,actorId]);
+     row=isDraft?mode==='initial-method-wrong-selection'?{...savedDraft,selected_methodology:{...selectionMethod,versionRef:pinned(995)}}:savedDraft
+      :mode==='initial-method-wrong-result'?{...creationCommand,result_application_ref:methodologyRef}:creationCommand;
+    }else if(table==='authorization_receipts'){
+     const isDraft=params[0]===savedReceipt.id;
+     assert.deepEqual(params.slice(0,-1),isDraft?[savedReceipt.id,savedDraft.id,creationDraft.id]:[creationReceipt.id,creationCommand.id,projectId]);
+     row=isDraft?savedReceipt:mode==='initial-method-positive-policy'?{...creationReceipt,policy_ref:policyRef}:creationReceipt;
+    }else{
+     assert.equal(table,'audit_events');
+     assert.deepEqual(params.slice(0,-1),[projectId,creationCommand.id]);
+     assert.match(sql,/correction_of IS NULL/);
+     row=mode==='initial-method-rc-drift'&&scope==='RC2'?{...creationAudit,event_id:id(680)}:creationAudit;
+    }
+    const projected=envelope(row);
+    rowCharges[scope]=(rowCharges[scope]??0)+projected.row_bytes;
+    return {rows:[projected.row_bytes>Number(params.at(-1))?{...projected,inventory_data:null}:projected]};
    }
    if(withApplicationOrigin&&sql.includes('FN16_D2_EXPLICIT_APPLY')){
     trace.push(`${scope}:apply-origin:${table}`);
@@ -625,10 +702,10 @@ function fixture(mode='valid'){
    async close(){trace.push('body:close');if(mode==='close-unknown')throw Error('합성 close 불명');}};
  }};
  const admission={async readCurrent(_db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:{projectId:string;documentRef:typeof ref}){
-  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true},...withAssignment&&{rootAssignment},...withApplicationOrigin&&{applicationSourceRef:methodologyRef}});assert(!liveRR);
+  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true},...withAssignment&&{rootAssignment},...withApplicationOrigin&&{applicationSourceRef:methodologyRef},...withInitialApplication&&{initialApplication}});assert(!liveRR);
   trace.push(`RC${rc}:admission`);
-  if(mode==='policy-denied'||(mode==='policy-revoked'||mode==='design-revoked'||mode==='design-index-revoked'||mode==='root-assignment-revoked'||mode==='apply-origin-revoked')&&rc===2)return null;
-  return {purpose:withApplicationOrigin&&mode!=='apply-origin-v10-admission'?'FN16_D2_APPLIED_METHODOLOGY_ADMISSION_V11':withAssignment&&mode!=='root-assignment-v9-admission'?'FN16_D2_ROOT_ASSIGNMENT_ADMISSION_V10':withIndex&&mode!=='design-index-v8-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_ADMISSION_V9':withDecision&&mode!=='plan-decision-v7-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_ADMISSION_V8':withRelations&&mode!=='relations-v6-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
+  if(mode==='policy-denied'||(mode==='policy-revoked'||mode==='design-revoked'||mode==='design-index-revoked'||mode==='root-assignment-revoked'||mode==='apply-origin-revoked'||mode==='initial-method-revoked')&&rc===2)return null;
+  return {purpose:withInitialApplication&&mode!=='initial-method-v10-admission'?'FN16_D2_INITIAL_SYSTEM_METHODOLOGY_ADMISSION_V12':withApplicationOrigin&&mode!=='apply-origin-v10-admission'?'FN16_D2_APPLIED_METHODOLOGY_ADMISSION_V11':withAssignment&&mode!=='root-assignment-v9-admission'?'FN16_D2_ROOT_ASSIGNMENT_ADMISSION_V10':withIndex&&mode!=='design-index-v8-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_ADMISSION_V9':withDecision&&mode!=='plan-decision-v7-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_ADMISSION_V8':withRelations&&mode!=='relations-v6-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
    projectId,documentRef:ref,actorId,clientId,sessionId,credentialGeneration:1,controlGeneration:1,
    ...confirmed&&{confirmationId:mode==='confirmed-admission-mismatch'?id(207):confirmationId},
    ...withPlan&&mode!=='plan-admission-missing'&&{workPlanRef:mode==='plan-admission-mismatch'?pinned(312):expectedPlanRef},
@@ -640,6 +717,8 @@ function fixture(mode='valid'){
    ...withAssignment&&mode!=='root-assignment-v9-admission'&&{rootAssignment:
     mode==='root-assignment-bad-admission'?{...rootAssignment,assignmentConfirmationId:id(999)}:rootAssignment},
    ...withApplicationOrigin&&mode!=='apply-origin-v10-admission'&&{applicationSourceRef:mode==='apply-origin-other-admission'?pinned(648):methodologyRef},
+   ...withInitialApplication&&mode!=='initial-method-v10-admission'&&{initialApplication:
+    mode==='initial-method-other-intent'?{...initialApplication,creationIntentId:id(699)}:initialApplication},
    jobRef:pinned(10),reservationRef:pinned(11),policyRef:pinned(mode==='new-policy'&&rc===2?19:12),targetProtectedRef:pinned(13),
    retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),
    formRef:mode==='foreign-admission-form'?pinned(103):formRef,expiresAt:'2026-11-28T00:00:09.000Z'};
@@ -648,11 +727,121 @@ function fixture(mode='valid'){
   metadataBudget=limits.metadataBytes;
   return collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',
   {...input,limits,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:mode==='plan-raw-invalid'?null:expectedPlanRef},
-   ...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true},...withAssignment&&{rootAssignment},...withApplicationOrigin&&{applicationSourceRef:methodologyRef}},
+   ...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true},...withAssignment&&{rootAssignment},...withApplicationOrigin&&{applicationSourceRef:methodologyRef},
+   ...withInitialApplication&&{initialApplication}},
   mode==='unconfigured'?null:admission,reader,controller.signal);
  };
- return {run,trace,expectedPlanRef,designVersionRef,rowCharges,rootAssignment,methodologyRef,previousAppRef,applyReason};
+ return {run,trace,expectedPlanRef,designVersionRef,rowCharges,rootAssignment,methodologyRef,previousAppRef,applyReason,initialApplication};
 }
+
+test('기본 제공 방법론 최초 적용을 본인 소비 초안 및 실제 생성 결과에 결박한다',async()=>{
+ const limits={...input.limits,metadataBytes:128*1024,fileCount:2};
+ for(const [mode,code] of [['initial-method-valid','SYS-M01'],['initial-method-oo','SYS-M02'],['initial-method-ag','SYS-M03']] as const){
+  const f=fixture(mode),capture=await f.run(limits),{snapshot}=capture;
+  assert.equal(snapshot.kind,'FN16_D2_INITIAL_SYSTEM_METHODOLOGY_SNAPSHOT_V12');
+  if(snapshot.kind!=='FN16_D2_INITIAL_SYSTEM_METHODOLOGY_SNAPSHOT_V12')throw Error('최초 시스템 방법론 원행 누락');
+  const history=snapshot.rows.initialApplicationRows;
+  assert.equal(history.source.system_code,code);
+  assert.deepEqual(history.creation.draft.selected_methodology.versionRef,f.methodologyRef);
+  assert.deepEqual(history.creation.intent.result_application_ref,f.rootAssignment.applicationRef);
+  assert.deepEqual(history.creation.projectCommand.result_application_ref,f.rootAssignment.applicationRef);
+  assert.deepEqual(history.creation.projectAudit.target_ref,{id:projectId,version:1});
+  assert.equal(history.creation.draftCommand.operation,code==='SYS-M02'?'saveProjectDraft':'createProjectDraft');
+  assert.deepEqual(f.trace.filter(item=>/initial:project_drafts|RR:rollback|body:open|RC2:commit/.test(item)),
+   ['RR:initial:project_drafts','RR:rollback','body:open','design-body:open','RC2:initial:project_drafts','RC2:commit']);
+  const expected={projectId,jobRef:snapshot.jobRef,documentRef:ref,workPlanRef:f.expectedPlanRef,designDocumentRef:f.designVersionRef,planRelations:true as const,
+   planConfirmationId:id(401),designIndex:true as const,rootAssignment:f.rootAssignment,initialApplication:f.initialApplication,
+   snapshot:snapshot.observation.snapshot,snapshotHash:capture.snapshotHash};
+  const readback={snapshotBytes:Buffer.from(capture.snapshotBytes),body:Buffer.from(capture.body),designBody:Buffer.from(capture.designBody!)};
+  const result=await historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async scope=>{
+   assert.deepEqual(scope.initialApplication,f.initialApplication);
+   return readback;
+  });
+  assert.equal(result.kind,'FN16_D2_INITIAL_SYSTEM_METHODOLOGY_VERIFICATION_V12');
+  if(result.kind!=='FN16_D2_INITIAL_SYSTEM_METHODOLOGY_VERIFICATION_V12')throw Error('최초 시스템 방법론 원장 검산 누락');
+  assert.equal(result.applicationOriginVerified,true);
+  assert.equal(result.draftSelectionRequestReconstructed,false);
+  assert.equal(result.initialSystemApplicationProjectionHash,hash(history));
+  assert.equal(result.restorable,false);
+  assert.equal(result.executionAuthorized,false);
+  const {initialApplication:_,...oldExpected}=expected;
+  await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback(oldExpected,limits,async()=>readback),/FN16_D2_DOCUMENT_HISTORY_INVALID/);
+  const changed=structuredClone(snapshot);
+  changed.rows.initialApplicationRows.creation.projectCommand.result_application_ref=f.methodologyRef;
+  const snapshotBytes=Buffer.from(canonicalJson(changed));
+  await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback({...expected,snapshotHash:contentHash(snapshotBytes)},limits,
+   async()=>({...readback,snapshotBytes})),/FN16_D2_DOCUMENT_HISTORY_INVALID/);
+ }
+ for(const mode of ['root-assignment-valid','apply-origin-valid']){
+  const f=fixture(mode);
+  await f.run(limits);
+  assert.equal(f.trace.some(item=>item.includes(':initial:')),false,mode);
+ }
+});
+
+test('최초 생성 DTO는 ms 단위를 쓰고 같은 DB 거래의 원행은 microsecond까지 일치한다',async()=>{
+ const limits={...input.limits,metadataBytes:128*1024,fileCount:2};
+ const f=fixture('initial-method-micro-valid'),capture=await f.run(limits),{snapshot}=capture;
+ if(snapshot.kind!=='FN16_D2_INITIAL_SYSTEM_METHODOLOGY_SNAPSHOT_V12')throw Error('최초 생성 근거 누락');
+ const origin=snapshot.rows.initialApplicationRows.creation;
+ assert.equal(origin.projectCommand.received_at,'2026-11-28T00:00:00.000123+00:00');
+ assert.equal(origin.projectCommand.result_project_created_at,'2026-11-28T00:00:00.000Z');
+ assert.equal(origin.projectReceipt.authorized_at,origin.projectCommand.received_at);
+ assert.equal(origin.projectAudit.recorded_at,origin.projectCommand.received_at);
+ const expected={projectId,jobRef:snapshot.jobRef,documentRef:ref,workPlanRef:f.expectedPlanRef,designDocumentRef:f.designVersionRef,planRelations:true as const,
+  planConfirmationId:id(401),designIndex:true as const,rootAssignment:f.rootAssignment,initialApplication:f.initialApplication,
+  snapshot:snapshot.observation.snapshot,snapshotHash:capture.snapshotHash};
+ const readback={snapshotBytes:Buffer.from(capture.snapshotBytes),body:Buffer.from(capture.body),designBody:Buffer.from(capture.designBody!)};
+ assert.equal((await historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async()=>readback)).kind,
+  'FN16_D2_INITIAL_SYSTEM_METHODOLOGY_VERIFICATION_V12');
+ for(const offset of ['dto','db']){
+  const invalid=fixture('initial-method-micro-'+offset);
+  await assert.rejects(invalid.run(limits),/PROJECT_CREATION_DRAFT_INVENTORY_INTEGRITY_FAILED/,offset);
+  assert.equal(invalid.trace.includes('RR:rollback'),true);
+  assert.equal(invalid.trace.some(item=>item.endsWith('body:open')),false);
+  const changed=structuredClone(snapshot),rows=changed.rows.initialApplicationRows.creation;
+  if(offset==='dto'){
+   rows.intent.result_project_created_at='2026-11-28T00:00:00.001Z';
+   rows.projectCommand.result_project_created_at=rows.intent.result_project_created_at;
+  }else rows.projectAudit.recorded_at='2026-11-28T00:00:00.000124+00:00';
+  const snapshotBytes=Buffer.from(canonicalJson(changed));
+  await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback({...expected,snapshotHash:contentHash(snapshotBytes)},limits,
+   async()=>({...readback,snapshotBytes})),/FN16_D2_DOCUMENT_HISTORY_INVALID/,offset);
+ }
+});
+
+test('시스템 원본·본인 초안·정착 결과 또는 원장 불일치는 원문을 열기 전에 거절한다',async()=>{
+ const limits={...input.limits,metadataBytes:128*1024,fileCount:2};
+ for(const mode of ['initial-method-v10-admission','initial-method-other-creator','initial-method-other-intent','initial-method-common','initial-method-alias',
+  'initial-method-foreign-draft','initial-method-wrong-selection','initial-method-uncommitted','initial-method-wrong-intent-result',
+  'initial-method-wrong-result','initial-method-positive-policy']){
+  const f=fixture(mode);
+  await assert.rejects(f.run(limits),/FN16_D2_SNAPSHOT_ADMISSION_DENIED|NOT_FOUND|METHODOLOGY_APPLICATION_INVENTORY_INTEGRITY_FAILED|PROJECT_CREATION_DRAFT_INVENTORY_INTEGRITY_FAILED/,mode);
+  assert.equal(f.trace.some(item=>item.endsWith('body:open')),false,mode);
+  if(['initial-method-v10-admission','initial-method-other-creator','initial-method-other-intent'].includes(mode))assert.equal(f.trace.includes('RR:begin'),false,mode);
+  else assert.equal(f.trace.includes('RR:rollback'),true,mode);
+  if(mode==='initial-method-other-creator')assert.equal(f.trace.includes('RC1:admission'),false);
+  if(mode==='initial-method-alias'||mode==='initial-method-common')assert.equal(f.trace.includes('RR:initial:project_drafts'),false);
+ }
+});
+
+test('최초 적용의 공유 메타 한도와 최종 회수·원감사 변경 시 부분 결과가 없다',async()=>{
+ const limits={...input.limits,metadataBytes:128*1024,fileCount:2};
+ const valid=fixture('initial-method-valid');
+ await valid.run(limits);
+ const limited=fixture('initial-method-valid');
+ await assert.rejects(limited.run({...limits,metadataBytes:valid.rowCharges.RR!-1}),/FN16_D2_SNAPSHOT_LIMIT|PROJECT_CREATION_DRAFT_INVENTORY_LIMIT/);
+ assert.equal(limited.trace.includes('RR:initial:audit_events'),true);
+ assert.equal(limited.trace.some(item=>item.endsWith('body:open')),false);
+ for(const mode of ['initial-method-rc-drift','initial-method-revoked']){
+  const f=fixture(mode);
+  await assert.rejects(f.run(limits),/FN16_D2_SNAPSHOT_INVALID|FN16_D2_SNAPSHOT_ADMISSION_DENIED/,mode);
+  assert.equal(f.trace.includes('body:close'),true,mode);
+  assert.equal(f.trace.includes('design-body:close'),true,mode);
+  assert.equal(f.trace.includes('RC2:initial:project_drafts'),mode.endsWith('drift'),mode);
+  assert.equal(f.trace.includes('RC2:commit'),false,mode);
+ }
+});
 
 test('명시 적용 방법론의 원 버전·직전 적용과 원 명령을 함께 고정한다',async()=>{
  const limits={...input.limits,metadataBytes:128*1024,fileCount:2};
