@@ -50,6 +50,63 @@ function safeMetadata(value:unknown){if(inspectArtifact(Buffer.from(canonicalJso
 function tuple(row:Row,keys:string[]){return keys.map(k=>k==='version'?integer(row[k],1):row[k]);}
 function compare(a:unknown[],b:unknown[]){for(let i=0;i<a.length;i++){const x=a[i],y=b[i];if(typeof x==='number'&&typeof y==='number'){if(x!==y)return x<y?-1:1;}else{if(typeof x!=='string'||typeof y!=='string')return bad();if(x!==y)return x<y?-1:1;}}return 0;}
 
+export interface DocumentBodyHistoryRows {
+ readonly version: Row;
+ readonly link: Row;
+ readonly artifact: Row;
+}
+
+/** 원형과 BODY 관계만 검사한다. 현재 권한이나 전체 문서 역사의 완결을 표시하지 않는다. */
+export function checkDocumentBodyHistoryRows(projectId:string,ref:Ref,value:unknown){
+ if(!uuidV1(projectId)||!refV1(ref)||!recordV1(value,['version','link','artifact']))return bad();
+ const {version,link,artifact}=value;
+ const keys=(spec:Spec)=>spec.columns.map(c=>c.slice(c.indexOf('.')+1));
+ if(!recordV1(version,keys(specs.document_versions!))||!recordV1(link,keys(specs.document_artifact_links!))
+  ||!recordV1(artifact,keys(specs.artifacts!))||[version,link,artifact].some(row=>row.project_id!==projectId)
+  ||!same(rowRef(version,'document_id'),ref)||link.document_id!==ref.id||integer(link.version,1)!==ref.version||link.kind!=='BODY')return bad();
+ const formRef=exactRef({id:version.form_definition_id,version:integer(version.form_version,1),contentHash:version.form_hash});
+ const content=version.content_json;
+ if(typeof version.title!=='string'||!recordV1(content,['body','attachments','sections','sourceRefs'])||!isImportArtifact(content.body)
+  ||!same(version.sections_json,content.sections)||!same(version.source_refs_json,content.sourceRefs)
+  ||hash({title:version.title,formRef,stageNodeRef:version.stage_ref_json,content})!==ref.contentHash
+  ||version.body_artifact_id!==content.body.artifactId||link.artifact_id!==version.body_artifact_id)return bad();
+ const body={artifactId:artifact.id,bytes:integer(artifact.bytes),contentHash:artifact.content_hash,mediaType:artifact.media_type};
+ const inspection=artifact.inspection_json;
+ if(!same(body,content.body)||body.bytes>20*1024*1024||artifact.state!=='READY'
+  ||!recordV1(inspection,['policyVersion','method','complete','state','reasonCodes'])||inspection.policyVersion!==1
+  ||inspection.method!=='KNOWN_PATTERNS_RAW_BYTES'||inspection.complete!==false||inspection.state!=='NO_KNOWN_MARKER'
+  ||!same(inspection.reasonCodes,[]))return bad();
+ safeMetadata(value);
+ return body;
+}
+
+/** 호출자가 이미 보유한 보호 거래만 사용한다. 직접 인증, 연결, 거래 시작을 하지 않는다. */
+export async function readDocumentBodyHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,ref:Ref,metadataBytes:number):Promise<DocumentBodyHistoryRows>{
+ if(!uuidV1(projectId)||!refV1(ref)||!Number.isSafeInteger(metadataBytes)||metadataBytes<1)return bad();
+ let remaining=metadataBytes;
+ async function fixed(table:'document_versions'|'document_artifact_links'|'artifacts',predicate:string,args:unknown[]){
+  const spec=specs[table]!,cap=args.length+2;
+  const sql=`/*FN16_D2_BODY*/ WITH material AS (
+   SELECT ${spec.columns.join(',')} FROM ${spec.from} WHERE t.project_id=$1::uuid AND ${predicate} LIMIT 2
+  ) SELECT CASE WHEN octet_length(to_jsonb(material)::text)<=$${cap}::bigint THEN to_jsonb(material) END AS inventory_data,
+   octet_length(to_jsonb(material)::text) AS row_bytes FROM material`;
+  const {rows}=await db.query(sql,[projectId,...args,remaining]);
+  if(rows.length!==1||!recordV1(rows[0],['inventory_data','row_bytes']))return bad();
+  const count=integer(rows[0].row_bytes,1),row=rows[0].inventory_data;
+  if(count>remaining||!recordV1(row,spec.columns.map(c=>c.slice(c.indexOf('.')+1)))
+   ||Buffer.byteLength(canonicalJson(row))>count)return bad();
+  remaining-=count;
+  return cloneV1(row);
+ }
+ const version=await fixed('document_versions','t.document_id=$2::uuid AND t.version=$3::bigint AND t.content_hash=$4::text',[ref.id,ref.version,ref.contentHash]);
+ if(!uuidV1(version.body_artifact_id))return bad();
+ const link=await fixed('document_artifact_links',"t.document_id=$2::uuid AND t.version=$3::bigint AND t.kind='BODY'",[ref.id,ref.version]);
+ const artifact=await fixed('artifacts',"t.id=$2::uuid AND t.draft_id IS NULL AND t.storage_key='blobs/'||t.project_id::text||'/'||t.id::text",[version.body_artifact_id]);
+ const rows={version,link,artifact};
+ checkDocumentBodyHistoryRows(projectId,ref,rows);
+ return rows;
+}
+
 /** 내부 metadata 조회 구현이며 공개 route/job/백업 형식에는 연결하지 않는다. */
 export async function collectDocumentInventory(access:AccessRepository,token:string,value:unknown,signal:AbortSignal):Promise<Row>{
  const request=readDocumentInventoryInput(value),started=performance.now();let deadline=started+request.limits.deadlineMs,authDeadline=Infinity;
