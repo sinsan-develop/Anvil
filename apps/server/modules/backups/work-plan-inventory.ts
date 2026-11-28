@@ -6,7 +6,7 @@ import {analyzeWorkPlanCards,planText} from '../traceability/work-plan-card.ts';
 import {readWorkPlanReviewInput,workPlanReviewCriteria} from '../traceability/work-plan-reviews.ts';
 import {isVersionRef} from '../../../../contracts/references.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {cloneV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 import {readDocumentInventoryInput} from './document-inventory-input.ts';
 
@@ -42,6 +42,53 @@ function identitySnapshot(actor:AuthenticatedIdentity):AuthenticatedIdentity{
 }
 const identityKey=(a:AuthenticatedIdentity)=>[a.actorId,a.clientId,a.credentialGeneration,a.authSession!.id];
 function compare(a:(string|number)[],b:(string|number)[]){for(let i=0;i<a.length;i++){if(a[i]!==b[i])return a[i]!<b[i]!?-1:1;}return 0;}
+function safe(value:unknown){
+ if(inspectArtifact(Buffer.from(canonicalJson(value))).state==='SUSPECTED')bad('WORK_PLAN_INVENTORY_SENSITIVE_METADATA',503);
+}
+function readVersionProjection(row:Row,version:number){
+ const value=object(row.version_json,['ref','status','documentRef','designRef','screenReviewRefs','tasks','dependencies','reason','issues','relationalProjection']);
+ const {ref,status,...snapshot}=value;
+ if(!isVersionRef(ref)||ref.id!==row.plan_id||ref.version!==version||ref.contentHash!==row.content_hash||status!=='DRAFT'
+  ||hash(snapshot)!==row.content_hash||!isVersionRef(snapshot.documentRef)||!isVersionRef(snapshot.designRef)
+  ||!planText(snapshot.reason)||!snapshot.reason.trim())return bad();
+ safe(snapshot);
+ if(!same(snapshot.documentRef,{id:row.document_id,version:integer(row.document_version,1),contentHash:row.document_hash})
+  ||!same(snapshot.designRef,{id:row.design_id,version:integer(row.design_version,1),contentHash:row.design_hash})
+  ||!same(snapshot.screenReviewRefs,row.screen_review_refs))return bad();
+ return {value,ref,snapshot};
+}
+
+/** 정확 작업계획 버전과 원 AF04 문서의 불변 관계만 확인한다. */
+export function checkWorkPlanDocumentHistoryRow(projectId:string,workPlanRef:RuntimeRefV1,documentRef:RuntimeRefV1,value:unknown){
+ const row=object(value,columns.work_plan_versions);
+ if(!uuidV1(projectId)||!refV1(workPlanRef)||!refV1(documentRef)||row.project_id!==projectId
+  ||!uuidV1(row.created_by)||!uuidV1(row.client_id)||!uuidV1(row.command_id))return bad();
+ stamp(row.created_at);
+ const projection=readVersionProjection(row,integer(row.version,1));
+ if(!same(projection.ref,workPlanRef)||!same(projection.snapshot.documentRef,documentRef))return bad();
+ return {workPlanRef:projection.ref,workPlanProjectionHash:hash(row)};
+}
+
+/** 기존에 들어간 보호 거래만 사용한다. 계획의 head·다른 원문·관계표는 읽지 않는다. */
+export async function readWorkPlanDocumentHistoryRow(db:Pick<PoolClient,'query'>,projectId:string,workPlanRef:RuntimeRefV1,documentRef:RuntimeRefV1,metadataBytes:number){
+ if(!uuidV1(projectId)||!refV1(workPlanRef)||!refV1(documentRef))return bad();
+ if(!Number.isSafeInteger(metadataBytes)||metadataBytes<1)return bad('WORK_PLAN_INVENTORY_LIMIT',413);
+ const rows=(await db.query(`/*FN16_D2_WORK_PLAN*/ WITH material AS (
+  SELECT ${columns.work_plan_versions.map(k=>'t.'+k).join(',')} FROM anvil.work_plan_versions t
+  WHERE t.project_id=$1::uuid AND t.plan_id=$2::uuid AND t.version=$3::bigint AND t.content_hash=$4::text
+   AND t.document_id=$5::uuid AND t.document_version=$6::bigint AND t.document_hash=$7::text LIMIT 2
+ ) SELECT CASE WHEN octet_length(to_jsonb(material)::text)<=$8::bigint THEN to_jsonb(material) END AS inventory_data,
+  octet_length(to_jsonb(material)::text) AS row_bytes FROM material`,
+ [projectId,workPlanRef.id,workPlanRef.version,workPlanRef.contentHash,documentRef.id,documentRef.version,documentRef.contentHash,metadataBytes])).rows;
+ if(rows.length!==1)return bad();
+ const envelope=object(rows[0],['inventory_data','row_bytes']),size=integer(envelope.row_bytes,1);
+ if(size>metadataBytes)return bad('WORK_PLAN_INVENTORY_LIMIT',413);
+ const row=object(envelope.inventory_data,columns.work_plan_versions);
+ if(Buffer.byteLength(canonicalJson(row))>size)return bad();
+ checkWorkPlanDocumentHistoryRow(projectId,workPlanRef,documentRef,row);
+ return cloneV1(row);
+}
+
 /** 원문 접근 없는 내부 작업계획 metadata 관측이다. archive/복원·명령 실행 권한을 발급하지 않는다. */
 export async function collectWorkPlanInventory(access:AccessRepository,token:string,value:unknown,signal:AbortSignal):Promise<Row>{
  const request=readDocumentInventoryInput(value),started=performance.now();let authDeadline=Infinity,identity:AuthenticatedIdentity|undefined,metadataUsed=0;
@@ -98,15 +145,13 @@ export async function collectWorkPlanInventory(access:AccessRepository,token:str
    }
    const plans:Row[]=[],versions:Row[]=[],tasks:Row[]=[],dependencies:Row[]=[],reviews:Row[]=[],confirmations:Row[]=[],issues:Row[]=[],externalDependencies:Row[]=[];
    const heads=new Map<string,Row>(),versionMap=new Map<string,Row>(),externalKeys=new Set<string>(),taskMap=new Map<string,Row[]>(),dependencyMap=new Map<string,Row[]>(),reviewMap=new Map<string,Row>(),confirmationMap=new Map<string,Row>();
-   const key=(id:string,v:number)=>id+':'+v,safe=(v:unknown)=>{if(inspectArtifact(Buffer.from(canonicalJson(v))).state==='SUSPECTED')bad('WORK_PLAN_INVENTORY_SENSITIVE_METADATA',503);};
+   const key=(id:string,v:number)=>id+':'+v;
    function external(v:Row){safe(v);const k=canonicalJson(v);if(!externalKeys.has(k)){externalKeys.add(k);externalDependencies.push(structuredClone(v));}}
    const sourceIssues=new Set(['PLAN_DOCUMENT_NOT_CONFIRMED','DESIGN_NOT_CONFIRMED','SCREEN_REVIEW_MISSING','PLAN_SOURCE_TASK_MISSING']);
    for(const h of headRows){if(!uuidV1(h.created_by))bad();h.head_version=integer(h.head_version,1);h.confirmed_version=h.confirmed_version===null?null:integer(h.confirmed_version,1,h.head_version);heads.set(h.id,h);plans.push({id:h.id,headVersion:h.head_version,confirmedVersion:h.confirmed_version,createdAt:stamp(h.created_at),updatedAt:stamp(h.updated_at)});}
    for(const row of versionRows){
     check();const h=heads.get(row.plan_id),v=integer(row.version,1),prior=versionMap.get(key(row.plan_id,v-1));if(!h||v>h.head_version||v>1&&!prior||!uuidV1(row.created_by)||!uuidV1(row.client_id)||!digest(row.content_hash))bad();
-    const value=object(row.version_json,['ref','status','documentRef','designRef','screenReviewRefs','tasks','dependencies','reason','issues','relationalProjection']),{ref,status,...snapshot}=value;
-    if(!isVersionRef(ref)||ref.id!==row.plan_id||ref.version!==v||ref.contentHash!==row.content_hash||status!=='DRAFT'||hash(snapshot)!==row.content_hash||!isVersionRef(snapshot.documentRef)||!isVersionRef(snapshot.designRef)||!planText(snapshot.reason)||!snapshot.reason.trim())bad();safe(snapshot);
-    if(!same(snapshot.documentRef,{id:row.document_id,version:integer(row.document_version,1),contentHash:row.document_hash})||!same(snapshot.designRef,{id:row.design_id,version:integer(row.design_version,1),contentHash:row.design_hash})||!same(snapshot.screenReviewRefs,row.screen_review_refs))bad();
+    const {value,ref,snapshot}=readVersionProjection(row,v);
     const analysis=analyzeWorkPlanCards(snapshot.tasks);if(!same(snapshot.tasks,analysis.tasks)||!same(snapshot.dependencies,analysis.dependencies)||!Array.isArray(snapshot.issues))bad();
     const storedIssues:Row[]=[];for(const item of snapshot.issues){const i=object(item,['code','location','message']);if(![i.code,i.location,i.message].every(v=>planText(v)&&v.length>0))bad();storedIssues.push(i);}
     if(!same(storedIssues.filter(i=>!sourceIssues.has(i.code)),analysis.issues))bad();

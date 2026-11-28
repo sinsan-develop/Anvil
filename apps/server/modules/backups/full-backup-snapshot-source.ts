@@ -7,14 +7,15 @@ import {cloneV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../..
 import {verifyArtifactBytes,type ArtifactByteReader} from './artifact-byte-verification.ts';
 import {readDocumentInventoryInput} from './document-inventory-input.ts';
 import {checkDocumentSystemFormHistoryRows,readDocumentSystemFormHistoryRows} from './document-inventory.ts';
-import type {DocumentConfirmationSnapshot,DocumentSystemFormSnapshot} from './full-backup-history-verification.ts';
+import {readWorkPlanDocumentHistoryRow} from './work-plan-inventory.ts';
+import type {DocumentConfirmationSnapshot,DocumentSystemFormSnapshot,DocumentWorkPlanSnapshot} from './full-backup-history-verification.ts';
 
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const fail=(code='FN16_D2_SNAPSHOT_INVALID',status=503):never=>{throw new AuthFailure(code,status);};
 
 /** 내부 승인 백업 job의 실제 보호 입력 공급자 자리다. 등록된 기본 공급자는 아직 없다. */
 export interface FullBackupDocumentAdmission {
- readCurrent(db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:Readonly<{projectId:string;documentRef:RuntimeRefV1;confirmationId?:string}>):Promise<unknown>;
+ readCurrent(db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:Readonly<{projectId:string;documentRef:RuntimeRefV1;confirmationId?:string;workPlanRef?:RuntimeRefV1}>):Promise<unknown>;
 }
 
 /** 보호 입장 범위에서 문서 BODY와 원 관계를 수집한다. 현재 권한을 발급하지 않는다. */
@@ -22,9 +23,11 @@ export async function collectDocumentBodySnapshot(
  access:Pick<AccessRepository,'authenticated'|'pool'>,token:string,csrf:string,
  raw:unknown,admission:FullBackupDocumentAdmission|null,artifactReader:ArtifactByteReader,signal:AbortSignal){
  const inputKeys=['projectId','limits','documentRef'];
- if(!recordV1(raw,inputKeys)&&!recordV1(raw,[...inputKeys,'confirmationId']))return fail('INPUT_INVALID',400);
+ if(!recordV1(raw,inputKeys)&&!recordV1(raw,[...inputKeys,'confirmationId'])&&!recordV1(raw,[...inputKeys,'workPlanRef']))return fail('INPUT_INVALID',400);
  const confirmationId=Object.hasOwn(raw,'confirmationId')&&uuidV1(raw.confirmationId)?raw.confirmationId:undefined;
- if((Object.hasOwn(raw,'confirmationId')&&!confirmationId)||!refV1(raw.documentRef)||typeof csrf!=='string')return fail('INPUT_INVALID',400);
+ const workPlanRef=Object.hasOwn(raw,'workPlanRef')&&refV1(raw.workPlanRef)?cloneV1(raw.workPlanRef):undefined;
+ if((Object.hasOwn(raw,'confirmationId')&&!confirmationId)||(Object.hasOwn(raw,'workPlanRef')&&!workPlanRef)
+  ||!refV1(raw.documentRef)||typeof csrf!=='string')return fail('INPUT_INVALID',400);
  const {projectId,limits}=readDocumentInventoryInput({projectId:raw.projectId,limits:raw.limits});
  const documentRef=cloneV1(raw.documentRef);
  if(!admission||typeof admission.readCurrent!=='function')return fail('FN16_D2_SNAPSHOT_ADMISSION_UNAVAILABLE',412);
@@ -52,13 +55,29 @@ export async function collectDocumentBodySnapshot(
   const membership=await projectMember(db as PoolClient,actor,projectId);
   if(membership.id!==projectId||membership.archived_at!==null||membership.participation!=='OWNER')return fail('NOT_FOUND',404);
  }
- function readSystemFormRows(db:Pick<PoolClient,'query'>,formRef:RuntimeRefV1){
-  return readDocumentSystemFormHistoryRows(db,projectId,documentRef,formRef,limits.metadataBytes);
+ async function readCapturedRows(db:Pick<PoolClient,'query'>,formRef:RuntimeRefV1){
+  if(confirmationId)return {kind:'FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4' as const,
+   rows:await readDocumentSystemFormHistoryRows(db,projectId,documentRef,formRef,limits.metadataBytes,confirmationId)};
+  if(!workPlanRef)return {kind:'FN16_D2_DOCUMENT_SYSTEM_FORM_SNAPSHOT_V3' as const,
+   rows:await readDocumentSystemFormHistoryRows(db,projectId,documentRef,formRef,limits.metadataBytes)};
+  let budget=limits.metadataBytes;
+  // 각 원행 query의 PG 투영 바이트를 같은 예산에서 차감한다.
+  const metered={query:(async(sql:string,args?:unknown[])=>{
+   const result=await db.query(sql,args);
+   for(const row of result.rows){
+    const size=Number(row.row_bytes);
+    if(!Number.isSafeInteger(size)||size<1||size>budget)return fail('FN16_D2_SNAPSHOT_LIMIT',413);
+    budget-=size;
+   }
+   return result;
+  }) as PoolClient['query']};
+  const rows=await readDocumentSystemFormHistoryRows(metered,projectId,documentRef,formRef,limits.metadataBytes);
+  if(rows.systemForm.definition.form_code!=='AF04')return fail();
+  const workPlanVersion=await readWorkPlanDocumentHistoryRow(db,projectId,workPlanRef,documentRef,budget);
+  return {kind:'FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5' as const,rows:{...rows,workPlanVersion}};
  }
- function readConfirmationRows(db:Pick<PoolClient,'query'>,formRef:RuntimeRefV1,id:string){
-  return readDocumentSystemFormHistoryRows(db,projectId,documentRef,formRef,limits.metadataBytes,id);
- }
- async function rc(previous?:{snapshot:DocumentSystemFormSnapshot|DocumentConfirmationSnapshot;binding:unknown}){
+ type Snapshot=DocumentSystemFormSnapshot|DocumentConfirmationSnapshot|DocumentWorkPlanSnapshot;
+ async function rc(previous?:{snapshot:Snapshot;binding:unknown}){
   remaining();
   return access.authenticated(token,csrf,async(db,a)=>{
    const scoped=port(db),session=a.authSession;
@@ -78,14 +97,16 @@ export async function collectDocumentBodySnapshot(
    const anchor=performance.now();
    const at=(await scoped.query('SELECT clock_timestamp() AS at')).rows;
    if(at.length!==1||!(at[0]?.at instanceof Date)||!Number.isFinite(at[0].at.getTime()))return fail();
-   const scope={projectId,documentRef:cloneV1(documentRef),...(confirmationId?{confirmationId}:{})};
+   const scope={projectId,documentRef:cloneV1(documentRef),...(confirmationId?{confirmationId}:{}),...(workPlanRef?{workPlanRef:cloneV1(workPlanRef)}:{})};
    const evidence=await Reflect.apply(readAdmission,admission,[scoped,a,scope]);
    const refs=['jobRef','reservationRef','policyRef','targetProtectedRef','retentionPolicyRef','encryptionKeyRef','verificationPolicyRef','formRef'];
-   const purpose=confirmationId?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3';
+   const purpose=workPlanRef?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':
+    confirmationId?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3';
    if(!recordV1(evidence,['purpose','projectId','documentRef','actorId','clientId','sessionId','credentialGeneration','controlGeneration','expiresAt',
-    ...refs,...(confirmationId?['confirmationId']:[])])
+    ...refs,...(confirmationId?['confirmationId']:[]),...(workPlanRef?['workPlanRef']:[])])
     ||evidence.purpose!==purpose||evidence.projectId!==projectId||!same(evidence.documentRef,documentRef)
     ||(confirmationId&&evidence.confirmationId!==confirmationId)
+    ||(workPlanRef&&(!refV1(evidence.workPlanRef)||!same(evidence.workPlanRef,workPlanRef)))
     ||evidence.actorId!==a.actorId||evidence.clientId!==a.clientId||evidence.sessionId!==session.id
     ||evidence.credentialGeneration!==a.credentialGeneration||evidence.controlGeneration!==Number(control.generation)
     ||!refs.every(k=>refV1(evidence[k]))||!isoV1(evidence.expiresAt)||admission!.readCurrent!==readAdmission)
@@ -96,8 +117,8 @@ export async function collectDocumentBodySnapshot(
    const formRef=cloneV1(evidence.formRef as RuntimeRefV1);
    if(previous&&!same(previous.binding,binding))return fail('FN16_D2_SNAPSHOT_AUTH_CHANGED',403);
    if(previous){
-    const current=confirmationId?await readConfirmationRows(scoped,formRef,confirmationId):await readSystemFormRows(scoped,formRef);
-    if(!same(current,previous.snapshot.rows))return fail();
+    const current=await readCapturedRows(scoped,formRef);
+    if(current.kind!==previous.snapshot.kind||!same(current.rows,previous.snapshot.rows))return fail();
    }
    remaining();
    return {actor:a,binding,formRef,jobRef:cloneV1(evidence.jobRef as RuntimeRefV1)};
@@ -111,7 +132,7 @@ export async function collectDocumentBodySnapshot(
    ||!(observation.at instanceof Date)||!Number.isFinite(observation.at.getTime()))return fail();
   return {snapshot:observation.snapshot,at:observation.at.toISOString()};
  }
- async function collect(actor:AuthenticatedIdentity,jobRef:RuntimeRefV1,formRef:RuntimeRefV1):Promise<DocumentSystemFormSnapshot|DocumentConfirmationSnapshot>{
+ async function collect(actor:AuthenticatedIdentity,jobRef:RuntimeRefV1,formRef:RuntimeRefV1):Promise<Snapshot>{
   const db=await access.pool.connect();
   let begin=false,rollback=false,releaseError:Error|undefined;
   try{
@@ -122,8 +143,7 @@ export async function collectDocumentBodySnapshot(
    const rls=(await scoped.query("SELECT set_config('anvil.actor_id',$1,true) AS actor_id,set_config('anvil.client_id',$2,true) AS client_id",[actor.actorId,actor.clientId])).rows;
    if(rls.length!==1||rls[0]?.actor_id!==actor.actorId||rls[0]?.client_id!==actor.clientId)return fail();
    await owner(scoped,actor);
-   const captured=confirmationId?{kind:'FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4' as const,rows:await readConfirmationRows(scoped,formRef,confirmationId)}:
-    {kind:'FN16_D2_DOCUMENT_SYSTEM_FORM_SNAPSHOT_V3' as const,rows:await readSystemFormRows(scoped,formRef)};
+   const captured=await readCapturedRows(scoped,formRef);
    const end=await snapshotObservation(scoped);
    if(end.snapshot!==start.snapshot||end.at<start.at)return fail();
    rollback=true;
@@ -178,13 +198,14 @@ export async function collectDocumentBodySnapshot(
   remaining();
   const snapshotHash=contentHash(snapshotBytes);
   remaining();
-  const coverage=snapshot.kind==='FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4'
+  const coverage=snapshot.kind==='FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5'?'DOCUMENT_BODY_DRAFT_ORIGIN_SYSTEM_FORM_AND_WORK_PLAN_LINK' as const:
+   snapshot.kind==='FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4'
    ?'DOCUMENT_BODY_DRAFT_ORIGIN_SYSTEM_FORM_AND_CONFIRMATION' as const:'DOCUMENT_BODY_DRAFT_ORIGIN_AND_SYSTEM_FORM' as const;
   return {snapshot,snapshotBytes,body:bytes,snapshotHash,coverage,restorable:false as const,executionAuthorized:false as const};
  }catch(error){
   body?.fill(0);
   snapshotBytes?.fill(0);
-  if(error instanceof AuthFailure&&/^(FN16_D2_|ARTIFACT_BYTES_|DOCUMENT_INVENTORY_|NOT_FOUND$|AUTH_REQUIRED$|CSRF_INVALID$|PROJECT_CONTROL_REQUIRED$)/.test(error.message))
+  if(error instanceof AuthFailure&&/^(FN16_D2_|ARTIFACT_BYTES_|DOCUMENT_INVENTORY_|WORK_PLAN_INVENTORY_|NOT_FOUND$|AUTH_REQUIRED$|CSRF_INVALID$|PROJECT_CONTROL_REQUIRED$)/.test(error.message))
    throw new AuthFailure(error.message,error.statusCode);
   return fail();
  }

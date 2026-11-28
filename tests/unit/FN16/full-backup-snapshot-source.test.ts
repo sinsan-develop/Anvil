@@ -16,8 +16,8 @@ const at='2026-11-28T00:00:00.000Z';
 const bytes=Buffer.from('공개 합성 문서');
 const bodyRef={artifactId:bodyId,bytes:bytes.length,contentHash:contentHash(bytes),mediaType:'text/plain'};
 const standardRef=pinned(101);
-const formItem={itemId:'AF02-01',title:'목적',required:false,valueType:'TEXT',repeated:false,fields:[],authoringRules:[],reviewCriteria:['목적이 명확하다']};
-const definition={formCode:'AF02',name:'설계서',purpose:'공개 합성 양식',scope:'SYSTEM',authorRole:'작성자',reviewerRole:'검토자',confirmerRole:'사용자',
+const formItem={itemId:'AF04-01',title:'목적',required:false,valueType:'TEXT',repeated:false,fields:[],authoringRules:[],reviewCriteria:['목적이 명확하다']};
+const definition={formCode:'AF04',name:'작업계획서',purpose:'공개 합성 양식',scope:'SYSTEM',authorRole:'작성자',reviewerRole:'검토자',confirmerRole:'사용자',
  requiredInputs:[],items:[formItem],authoringStandardRef:standardRef};
 const formRef={id:id(7),version:1,contentHash:hash(definition)};
 const systemForm={id:formRef.id,scope:'SYSTEM',owner_user_id:null,project_id:null,form_code:definition.formCode,version:formRef.version,
@@ -26,6 +26,13 @@ const systemForm={id:formRef.id,scope:'SYSTEM',owner_user_id:null,project_id:nul
 const standard={id:standardRef.id,version:standardRef.version,content_hash:standardRef.contentHash,created_at:at};
 const content={body:bodyRef,attachments:[],sections:[],sourceRefs:[]};
 const ref={id:documentId,version:1,contentHash:hash({title:'합성',formRef,stageNodeRef:null,content})};
+const designRef=pinned(309);
+const workPlan={documentRef:ref,designRef,screenReviewRefs:[],tasks:[],dependencies:[],reason:'합성 작업계획',
+ issues:[{code:'TASKS_MISSING',location:'tasks',message:'업무 카드를 추가해야 합니다.'}],relationalProjection:'STORED'};
+const workPlanRef={id:id(310),version:2,contentHash:hash(workPlan)};
+const workPlanRow={project_id:projectId,plan_id:workPlanRef.id,version:workPlanRef.version,document_id:ref.id,document_version:ref.version,
+ document_hash:ref.contentHash,design_id:designRef.id,design_version:designRef.version,design_hash:designRef.contentHash,screen_review_refs:[],
+ content_hash:workPlanRef.contentHash,version_json:{ref:workPlanRef,status:'DRAFT',...workPlan},created_by:actorId,client_id:clientId,command_id:id(311),created_at:at};
 const original={project_id:projectId,document_id:documentId,version:1,form_definition_id:formRef.id,form_version:1,form_hash:formRef.contentHash,
  stage_ref_json:null,body_artifact_id:bodyId,title:'합성',content_json:content,source_refs_json:[],content_hash:ref.contentHash,sections_json:[],
  author_ref_json:{kind:'HUMAN',userId:actorId},validation_json:{validForConfirmation:true,issues:[],formatOnly:true,contentReview:'NOT_PERFORMED',userAcceptance:'NOT_PERFORMED'},reason:'합성',client_id:clientId,command_id:id(8),created_at:at};
@@ -83,7 +90,9 @@ const confirmationOrigin=originFor(confirmation.command_id,'confirmDocument',{ve
 
 function fixture(mode='valid'){
  const confirmed=mode.startsWith('confirmed');
+ const withPlan=mode.startsWith('plan-');
  const trace:string[]=[];
+ const rowCharges:Record<string,number>={};
  const person:AuthenticatedIdentity={actorId,clientId,serverOwner:false,credentialGeneration:1,reauthUntil:null,
   authSession:{id:sessionId,idleExpiresAt:'2026-11-28T00:01:00.000Z',absoluteExpiresAt:'2026-11-28T00:20:00.000Z'}};
  let rc=0,rr=0,obs=0;
@@ -100,7 +109,8 @@ function fixture(mode='valid'){
    if(sql.includes("'anvil.actor_id'")){assert.equal(scope,'RR');assert.deepEqual(params,[actorId,clientId]);trace.push('RR:rls');return {rows:[{actor_id:actorId,client_id:clientId}]};}
    if(sql.includes('FROM anvil.projects p')){assert.deepEqual(params,[projectId,actorId]);assert(scope==='RR'?liveRR:!liveRR);return {rows:[{id:projectId,archived_at:null,participation:scope==='RC2'&&mode==='revoked'?'VIEWER':'OWNER'}]};}
    if(sql.includes('FROM anvil.project_control')){assert.equal(params[0],projectId);return {rows:[{actor_id:actorId,client_id:clientId,generation:1,version:1,revoked_at:null}]};}
-   assert(sql.includes('FN16_D2_BODY')&&(sql.includes('LIMIT 2')||sql.includes('ORDER BY a.server_sequence DESC LIMIT 1')));
+   assert((sql.includes('FN16_D2_BODY')||sql.includes('FN16_D2_WORK_PLAN'))
+    &&(sql.includes('LIMIT 2')||sql.includes('ORDER BY a.server_sequence DESC LIMIT 1')));
    const table=sql.match(/FROM anvil\.(\w+)/)?.[1];
    if(!['form_definitions','authoring_standard_versions'].includes(table??''))assert.equal(params[0],projectId);
    trace.push(`${scope}:${table}`);
@@ -160,6 +170,17 @@ function fixture(mode='valid'){
     if(scope==='RC2'&&mode==='standard-missing')return {rows:[]};
     row=mode==='standard-mismatch'?{...standard,content_hash:'c'.repeat(64)}:standard;
    }
+   else if(table==='work_plan_versions'){
+    assert.deepEqual(params.slice(0,-1),[projectId,workPlanRef.id,workPlanRef.version,workPlanRef.contentHash,ref.id,ref.version,ref.contentHash]);
+    assert.equal(params[7],input.limits.metadataBytes-rowCharges[scope]!);
+    assert.doesNotMatch(sql,/head_version|confirmed_version|ORDER BY/);
+    assert(scope==='RR'?liveRR:!liveRR);
+    if(mode==='plan-missing')return {rows:[]};
+    if(mode==='plan-duplicate')return {rows:[envelope(workPlanRow),envelope(workPlanRow)]};
+    if(mode==='plan-metadata-limit')return {rows:[{inventory_data:null,row_bytes:Number(params[7])+1}]};
+    row=mode==='plan-cross-row'?{...workPlanRow,project_id:id(312)}:mode==='plan-cross-document'?{...workPlanRow,document_hash:'f'.repeat(64)}:
+     scope==='RC2'&&mode==='plan-drift'?{...workPlanRow,command_id:id(312)}:workPlanRow;
+   }
    else if(table==='document_confirmations'){
     assert.deepEqual(params.slice(0,-1),[projectId,confirmationId,ref.id,ref.version,ref.contentHash]);
     assert.doesNotMatch(sql,/confirmed_version|head_version/);
@@ -188,7 +209,13 @@ function fixture(mode='valid'){
     }
    }
    else throw Error('잘못된 조회');
-   return {rows:[envelope(row)]};
+   const projected=envelope(row);
+   if(withPlan&&table!=='work_plan_versions'){
+    // PostgreSQL의 행 JSON 투영이 compact canonical JSON보다 많은 바이트를 반환하는 경우.
+    projected.row_bytes+=5;
+    rowCharges[scope]=(rowCharges[scope]??0)+projected.row_bytes;
+   }
+   return {rows:[projected]};
   },release(error?:Error){trace.push(error?'RR:discard':'RR:release');}} as unknown as PoolClient;
  }
  const access:Pick<AccessRepository,'authenticated'|'pool'>={
@@ -207,19 +234,80 @@ function fixture(mode='valid'){
    async close(){trace.push('body:close');if(mode==='close-unknown')throw Error('합성 close 불명');}};
  }};
  const admission={async readCurrent(_db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:{projectId:string;documentRef:typeof ref}){
-  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId}});assert(!liveRR);
+  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef}});assert(!liveRR);
   trace.push(`RC${rc}:admission`);
   if(mode==='policy-denied'||mode==='policy-revoked'&&rc===2)return null;
-  return {purpose:confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
+  return {purpose:withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
    projectId,documentRef:ref,actorId,clientId,sessionId,credentialGeneration:1,controlGeneration:1,
    ...confirmed&&{confirmationId:mode==='confirmed-admission-mismatch'?id(207):confirmationId},
+   ...withPlan&&mode!=='plan-admission-missing'&&{workPlanRef:mode==='plan-admission-mismatch'?pinned(312):workPlanRef},
    jobRef:pinned(10),reservationRef:pinned(11),policyRef:pinned(mode==='new-policy'&&rc===2?19:12),targetProtectedRef:pinned(13),
    retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),
    formRef:mode==='foreign-admission-form'?pinned(103):formRef,expiresAt:'2026-11-28T00:00:09.000Z'};
  }};
- const run=(limits=input.limits)=>collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',{...input,limits,...confirmed&&{confirmationId}},mode==='unconfigured'?null:admission,reader,new AbortController().signal);
+ const run=(limits=input.limits)=>collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',
+  {...input,limits,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:mode==='plan-raw-invalid'?null:workPlanRef}},
+  mode==='unconfigured'?null:admission,reader,new AbortController().signal);
  return {run,trace};
 }
+
+test('고정 작업계획 버전의 AF04 원문 관계를 한 RR과 독립 보관 바이트에서 검산한다',async()=>{
+ const f=fixture('plan-valid'),capture=await f.run();
+ assert.equal(capture.snapshot.kind,'FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5');
+ const {snapshot}=capture;
+ const expected={projectId,jobRef:snapshot.jobRef,documentRef:ref,workPlanRef,snapshot:snapshot.observation.snapshot,snapshotHash:capture.snapshotHash};
+ const checked=await historyVerification.verifyDocumentBodyHistoryReadback(expected,input.limits,async(scope)=>{
+  assert.deepEqual(scope.workPlanRef,workPlanRef);
+  return {snapshotBytes:Buffer.from(capture.snapshotBytes),body:Buffer.from(capture.body)};
+ });
+ assert.equal(checked.kind,'FN16_D2_DOCUMENT_WORK_PLAN_VERIFICATION_V5');
+ if(checked.kind!=='FN16_D2_DOCUMENT_WORK_PLAN_VERIFICATION_V5')throw Error('작업계획 원 관계 누락');
+ assert.deepEqual(checked.workPlanRef,workPlanRef);
+ assert.equal(checked.workPlanProjectionHash,hash(workPlanRow));
+ assert.equal(checked.workPlanHistoryComplete,false);
+ assert.equal(checked.workPlanAuthorityVerified,false);
+ assert.deepEqual(f.trace.filter(item=>/work_plan_versions|RR:begin|RR:rollback|RC2:commit/.test(item)),
+  ['RR:begin','RR:work_plan_versions','RR:rollback','RC2:work_plan_versions','RC2:commit']);
+ assert.equal(checked.restorable,false);
+ const planSnapshot=structuredClone(snapshot);
+ if(planSnapshot.kind!=='FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5')throw Error('다른 스냅샷');
+ const row=planSnapshot.rows.workPlanVersion;
+ const changedDocRef={...ref,contentHash:'c'.repeat(64)};
+ const replacement={...workPlan,documentRef:changedDocRef};
+ const replacementRef={...workPlanRef,contentHash:hash(replacement)};
+ row.document_hash=changedDocRef.contentHash;
+ row.content_hash=replacementRef.contentHash;
+ row.version_json={ref:replacementRef,status:'DRAFT',...replacement};
+ const alteredBytes=Buffer.from(canonicalJson(planSnapshot));
+ await assert.rejects(()=>historyVerification.verifyDocumentBodyHistoryReadback(
+  {...expected,workPlanRef:replacementRef,snapshotHash:contentHash(alteredBytes)},input.limits,
+  async()=>({snapshotBytes:alteredBytes,body:capture.body})),/HISTORY_INVALID/);
+ const {workPlanRef:omitted,...noPlan}=expected;
+ assert.deepEqual(omitted,workPlanRef);
+ await assert.rejects(()=>verifyDocumentBodyHistory(noPlan,async()=>capture),/HISTORY_INVALID/);
+});
+
+test('작업계획 입장·원 참조의 누락과 최종 RC 변경은 수집 결과를 만들지 않는다',async()=>{
+ const invalid=fixture('plan-raw-invalid');
+ await assert.rejects(invalid.run,/INPUT_INVALID/);
+ assert.deepEqual(invalid.trace,[]);
+ for(const mode of ['plan-admission-missing','plan-admission-mismatch']){
+  const f=fixture(mode);
+  await assert.rejects(f.run,/SNAPSHOT_ADMISSION_DENIED/);
+  assert(!f.trace.includes('RR:begin')&&!f.trace.includes('body:open'),mode);
+ }
+ for(const mode of ['plan-missing','plan-duplicate','plan-cross-row','plan-cross-document']){
+  const f=fixture(mode);
+  await assert.rejects(f.run,/WORK_PLAN_INVENTORY_INTEGRITY_FAILED/);
+  assert(f.trace.includes('RR:rollback')&&!f.trace.includes('body:open'),mode);
+ }
+ const limited=fixture('plan-metadata-limit');
+ await assert.rejects(limited.run,/WORK_PLAN_INVENTORY_LIMIT/);
+ assert(limited.trace.includes('RR:rollback')&&!limited.trace.includes('body:open'));
+ const drift=fixture('plan-drift');
+ await assert.rejects(drift.run,/FN16_D2_SNAPSHOT_INVALID/);
+ assert(drift.trace.includes('body:close')&&drift.trace.includes('RC2:work_plan_versions')&&!drift.trace.includes('RC2:commit'));
+});
 
 test('정확한 확정과 당시 선택한 HUMAN 검토를 같은 스냅샷 및 최종 RC에서 검산한다',async()=>{
  const f=fixture('confirmed-valid'),capture=await f.run();
