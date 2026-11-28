@@ -208,6 +208,9 @@ internal sealed class NormalStartPreparationCustodySource {
   }
  }
 
+ internal delegate NormalExecutionSpoolProfileSource.NormalStartPreparationOwnerTerminalCandidate RecordOwnerTerminal(
+  NormalExecutionSpoolProfileSource.NormalStartPreparationClaimMaterial material,DateTime first,DateTime latest,string processId,long generation);
+
  internal sealed class Caller:IDisposable {
   readonly SignerChannel endpoint;
   DesktopTrustKeyBudget ownerClock;
@@ -231,14 +234,23 @@ internal sealed class NormalStartPreparationCustodySource {
    clock.Check();
    if(pin==null){pin=observed;binding=exact;ownerClock=clock;signerSource=readSigner;}
   }
-  internal void CreateAndRecheck(Binding exact,NormalExecutionSpoolProfileSource.NormalStartPreparationClaimMaterial consumed,Row image,Func<int> remaining,Action originalCurrent){
-   if(began||closeAttempted||binding==null||!binding.Same(exact))throw Unavailable();
+  internal void CreateAndRecheck(Binding exact,NormalExecutionSpoolProfileSource.NormalStartPreparationClaimMaterial consumed,Row image,Func<int> remaining,Action originalCurrent,RecordOwnerTerminal recordOwnerTerminal){
+   if(began||closeAttempted||binding==null||!binding.Same(exact)||recordOwnerTerminal==null)throw Unavailable();
    int Left(){originalCurrent();CheckReady(exact,ownerClock,signerSource);return Cap(remaining);}
    Left();claim=new Claim(exact,consumed,image);began=true;
    original=endpoint.Create(claim,Left);Left();
    if(original==null||!original.Matches(pin,claim,null))throw Unknown();
-   var current=endpoint.Recheck(claim,Left);Left();
-   if(current==null||!current.Matches(pin,claim,original))throw Unknown();
+   Observation Recheck(Observation previous){
+    Left();var current=endpoint.Recheck(claim,Left);Left();
+    if(current==null||!current.Matches(pin,claim,previous))throw Unknown();
+    return current;
+   }
+   var latest=Recheck(original);
+   var terminal=recordOwnerTerminal(consumed,original.At,latest.At,original.ObjectId,original.Generation);
+   if(terminal==null)throw Unknown();
+   DesktopTrustKeyHostSource.ReceiveRef(terminal.ObjectRef,true);
+   terminal.CheckCurrent(consumed,original.ObjectId,original.Generation,()=>{Recheck(latest);});
+   Left();
   }
   internal void CloseOriginal(){
    if(!began||closeAttempted)return;

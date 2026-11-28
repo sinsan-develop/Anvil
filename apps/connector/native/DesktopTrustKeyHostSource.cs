@@ -464,7 +464,9 @@ internal sealed class DesktopTrustKeyHostSource {
      if(custodyBinding!=null){
       var owned=claim.Capability.Consume(record,request,image,ready);
       Action readCurrent=()=>{ready();spoolProfile.ReadNormalStartPreparationClaimCurrent(owned,()=>call.Now,ready);};
-      readCurrent();normalPreparationCustody.CreateAndRecheck(custodyBinding,owned,image,()=>call.Remaining(),readCurrent);readCurrent();
+      // 기록기는 원장 잠금 안에서 claim을 자체 대조한다. 그 안에서 같은 원장을 다시 열지 않는다.
+      readCurrent();normalPreparationCustody.CreateAndRecheck(custodyBinding,owned,image,()=>call.Remaining(),readCurrent,
+       (exact,first,latest,processId,generation)=>spoolProfile.RecordNormalStartPreparationOwnerTerminal(exact,first,latest,processId,generation,()=>call.Now,ready));readCurrent();
       return claim.Output;
      }
      var material=normalStartPreparationProducer.ConsumeClaim(claim.Capability,record,request,image,ready);ready();

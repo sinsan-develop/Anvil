@@ -374,7 +374,7 @@ test('정적: 등록 host와 전용 원 owner의 준비·회수 호출은 보호
  assert.match(keeper,/endpoint\.CheckChannel|ReadCurrent\(endpoint,pin,true\)/);
  order(keeper,['internal Closed Close','!consumed||closeAttempted||!claim.Same(exact)','clock.Slice(exact.ExpiresAt,2000).Check()','internal void FinishOwner','if(consumed&&!closeAttempted)CloseOriginal()','closeAttempted=true','job.Dispose()','ReadOriginalNormalSuspendedProcessCleanupSource','catch{unknown=true;throw Unknown();}']);
  const signer=source.slice(source.indexOf('internal sealed class Caller:'),source.indexOf('static int Cap('));
- order(signer,['own.SignerImageHash!=exact.SignerImageHash','internal void CreateAndRecheck','if(began||closeAttempted','Left();claim=new Claim(exact,consumed,image);began=true','endpoint.Create(claim,Left);Left()','original.Matches(pin,claim,null)','endpoint.Recheck(claim,Left);Left()','current.Matches(pin,claim,original)','closeAttempted=true','endpoint.Close(claim,Left)','result.ObjectId!=original.ObjectId','finally{endpoint.Dispose();}']);
+ order(signer,['own.SignerImageHash!=exact.SignerImageHash','internal void CreateAndRecheck','if(began||closeAttempted','Left();claim=new Claim(exact,consumed,image);began=true','endpoint.Create(claim,Left);Left()','original.Matches(pin,claim,null)','endpoint.Recheck(claim,Left);Left()','current.Matches(pin,claim,previous)','var latest=Recheck(original)','closeAttempted=true','endpoint.Close(claim,Left)','result.ObjectId!=original.ObjectId','finally{endpoint.Dispose();}']);
  assert.doesNotMatch(source,/ResumeThread|DuplicateHandle|OpenProcess|GetProcessById|ProtectedStore|pendingKeyId|osOwnershipVerified.*true|EXECUTION_PERMIT/);
  assert.match(source,/ReadPinnedPeer\(\)\)\|\|!pin\.Same\(endpoint\.ReadLivePeer\(\)\)/);
  assert.match(source,/WindowsIdentity\.GetCurrent\(\)[\s\S]*identity\.User\.Value!=sid[\s\S]*RawSecurityDescriptor[\s\S]*Inherit=0/);
@@ -405,6 +405,30 @@ test('정적 및 조건식 RAM: 같은 이미지라도 다른 등록 signer SID�
  assert.match(signer,/int Left\(\)\{originalCurrent\(\);CheckReady\(exact,ownerClock,signerSource\);[\s\S]*endpoint\.Create\(claim,Left\);Left\(\);[\s\S]*endpoint\.Recheck\(claim,Left\);Left\(\);/);
  const cleanup=signer.slice(signer.indexOf('internal void CloseOriginal()'));
  assert.doesNotMatch(cleanup,/ReadSigner|SignerIdentity|CheckReady/);
+});
+
+test('정적 및 조건식 RAM: 전용 keeper의 동일 객체 관측만 원 claim 보호 terminal에 단회 정착한다',()=>{
+ const raw=(name:string)=>readFileSync(new URL('../../../apps/connector/native/'+name,import.meta.url),'utf8');
+ const host=raw('DesktopTrustKeyHostSource.cs'),source=raw('NormalStartPreparationCustodySource.cs'),spool=raw('NormalExecutionSpoolProfileSource.cs');
+ const branch=host.slice(host.indexOf('if(custodyBinding!=null){'),host.indexOf('var material=normalStartPreparationProducer.ConsumeClaim'));
+ assert.match(branch,/claim\.Capability\.Consume\(record,request,image,ready\)[\s\S]*ReadNormalStartPreparationClaimCurrent\(owned,\(\)=>call\.Now,ready\)[\s\S]*normalPreparationCustody\.CreateAndRecheck\(custodyBinding,owned,image,\(\)=>call\.Remaining\(\),readCurrent,[\s\S]*spoolProfile\.RecordNormalStartPreparationOwnerTerminal\(exact,first,latest,processId,generation,\(\)=>call\.Now,ready\)[\s\S]*readCurrent\(\);[\s\S]*return claim\.Output;/);
+ assert.doesNotMatch(branch,/ConfirmedOwnerCleanup|RecordNormalStartPreparationOwnerCleanupTerminal|NormalStartPreparationResultSlot|PREPARED/);
+ const caller=source.slice(source.indexOf('internal void CreateAndRecheck'),source.indexOf('internal void CloseOriginal(){\n   if(!began'));
+ assert.match(caller,/recordOwnerTerminal==null[\s\S]*Left\(\);claim=new Claim\(exact,consumed,image\);began=true;[\s\S]*endpoint\.Create\(claim,Left\);Left\(\);[\s\S]*!original\.Matches\(pin,claim,null\)[\s\S]*var latest=Recheck\(original\);[\s\S]*var terminal=recordOwnerTerminal\(consumed,original\.At,latest\.At,original\.ObjectId,original\.Generation\);[\s\S]*terminal\.CheckCurrent\(consumed,original\.ObjectId,original\.Generation,\(\)=>\{Recheck\(latest\);\}\);[\s\S]*Left\(\);/);
+ assert.match(caller,/Left\(\);var current=endpoint\.Recheck\(claim,Left\);Left\(\);[\s\S]*!current\.Matches\(pin,claim,previous\)/);
+ assert.equal(caller.match(/recordOwnerTerminal\(/g)?.length,1);
+ const start=spool.indexOf('internal NormalStartPreparationOwnerTerminalCandidate RecordNormalStartPreparationOwnerTerminal(');
+ const record=spool.slice(start,spool.indexOf('internal NormalStartPreparationOwnerCleanupTerminalCandidate RecordNormalStartPreparationOwnerCleanupTerminal(',start));
+ assert.match(record,/sourceRecordedAt>firstObservedAt\|\|conflict[\s\S]*Append\(log,rows,row,[\s\S]*var back=Log\(false[\s\S]*new DurableNormalStartPreparationOwnerTerminalCandidate/);
+ assert.match(record,/"SAME_OWNER_OBSERVATION_RECORDED","osOwnershipVerified",false,"processCreationAuthorized",false,"preparationAuthorized",false,"executionAuthorized",false,"dispatchPerformed",false/);
+ assert.match(record,/if\(appendStarted\)blocked=true;throw;/);
+ const expression=/\(previous==null\|\|([^;]+)\);/.exec(source)?.[1];
+ assert.equal(expression,'previous.ObjectId==ObjectId&&previous.Generation==Generation&&At>=previous.At');
+ const matches=new Function('previous','current','return '+expression!.replace(/==ObjectId/g,'==current.ObjectId').replace(/==Generation/g,'==current.Generation').replace(/&&At>=/g,'&&current.At>=')+';');
+ const original={ObjectId:'A',Generation:1,At:1000};
+ assert.equal(matches(original,{...original}),true);
+ assert.equal(matches(original,{...original,At:1001}),true);
+ for(const changed of [{ObjectId:'B'},{Generation:2},{At:999}])assert.equal(matches(original,{...original,...changed}),false);
 });
 
 test('소스 조건식 RAM: 전용 owner 피어와 원 준비 요청은 전체 값과 원 기한이 같아야 한다',()=>{
