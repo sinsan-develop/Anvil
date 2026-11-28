@@ -1,0 +1,116 @@
+-- FN14 인계본 소스 후보. 기존 준비 기록·영수증과 실제 적용 권한은 변경하지 않는다.
+BEGIN;
+CREATE TABLE anvil.transfer_manifests(
+ id uuid PRIMARY KEY,
+ project_id uuid NOT NULL REFERENCES anvil.projects(id) ON DELETE RESTRICT,
+ creator_user_id uuid NOT NULL,
+ creator_client_id uuid NOT NULL,
+ version integer NOT NULL CHECK(version=1),
+ preparation_id uuid NOT NULL,
+ preparation_version integer NOT NULL CHECK(preparation_version=1),
+ preparation_hash text NOT NULL CHECK(preparation_hash~'^[0-9a-f]{64}$'),
+ command_id uuid NOT NULL,
+ snapshot_json jsonb NOT NULL,
+ content_hash text NOT NULL CHECK(content_hash~'^[0-9a-f]{64}$'),
+ created_at timestamptz NOT NULL,
+ UNIQUE(project_id,preparation_id,preparation_version),UNIQUE(project_id,command_id),
+ FOREIGN KEY(creator_user_id,creator_client_id) REFERENCES anvil.clients(user_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,preparation_id) REFERENCES anvil.transfer_preparation_records(project_id,id) ON DELETE RESTRICT,
+ FOREIGN KEY(preparation_id,preparation_version) REFERENCES anvil.transfer_preparation_record_versions(record_id,version) ON DELETE RESTRICT,
+ FOREIGN KEY(project_id,command_id) REFERENCES anvil.commands(project_id,id) ON DELETE RESTRICT
+);
+REVOKE ALL ON anvil.transfer_manifests FROM PUBLIC,anvil_v3_app;
+
+CREATE FUNCTION anvil.fn14_manifest_complete(cid uuid) RETURNS boolean
+LANGUAGE plpgsql SET search_path=pg_catalog,anvil AS $$
+DECLARE c anvil.commands%ROWTYPE; m anvil.transfer_manifests%ROWTYPE;
+ p anvil.transfer_preparation_records%ROWTYPE; v anvil.transfer_preparation_record_versions%ROWTYPE;
+ r anvil.authorization_receipts%ROWTYPE; a anvil.audit_events%ROWTYPE;
+ parent_ref jsonb; target_ref jsonb; snapshot jsonb; packet jsonb; result jsonb; digest text;
+BEGIN
+ SELECT * INTO STRICT c FROM anvil.commands WHERE id=cid AND operation='createTransferManifest';
+ SELECT * INTO STRICT m FROM anvil.transfer_manifests WHERE project_id=c.project_id AND command_id=cid;
+ SELECT * INTO STRICT p FROM anvil.transfer_preparation_records WHERE project_id=m.project_id AND id=m.preparation_id;
+ SELECT * INTO STRICT v FROM anvil.transfer_preparation_record_versions
+  WHERE project_id=p.project_id AND record_id=p.id AND version=m.preparation_version;
+ SELECT * INTO STRICT r FROM anvil.authorization_receipts WHERE command_id=cid;
+ SELECT * INTO STRICT a FROM anvil.audit_events WHERE command_id=cid;
+ IF c.scope_kind IS DISTINCT FROM 'PROJECT' OR c.scope_id IS DISTINCT FROM m.project_id
+  OR c.draft_id IS NOT NULL OR c.actor_id IS DISTINCT FROM m.creator_user_id OR c.client_id IS DISTINCT FROM m.creator_client_id
+  OR c.state IS DISTINCT FROM 'APPLIED' OR c.expected_version IS DISTINCT FROM 0 OR c.approval_consumption_id IS NOT NULL
+  OR c.payload_ref IS NOT NULL OR NOT anvil.fn14_record_ref(c.policy_ref)
+  OR (c.control_generation BETWEEN 1 AND 9007199254740991) IS DISTINCT FROM true
+  OR p.creator_user_id IS DISTINCT FROM m.creator_user_id OR v.content_hash IS DISTINCT FROM m.preparation_hash
+  OR NOT anvil.fn14_record_complete(v.command_id)
+  OR m.created_at<p.created_at OR m.created_at>=(v.snapshot_json->>'intentExpiresAt')::timestamptz THEN RETURN false; END IF;
+ parent_ref=jsonb_build_object('id',p.id,'version',v.version,'contentHash',v.content_hash);
+ target_ref=jsonb_build_object('id',m.id,'version',m.version,'contentHash',m.content_hash);
+ snapshot=jsonb_build_object(
+  'schemaVersion',1,'id',m.id,'projectId',m.project_id,'version',1,'kind','TRANSFER_MANIFEST','preparationRef',parent_ref,
+  'assignmentRef',v.snapshot_json->'assignmentRef','contextRef',v.snapshot_json->'contextRef','roleRef',v.snapshot_json->'roleRef',
+  'oldBindingRef',v.snapshot_json->'oldBindingRef','targetRef',v.snapshot_json->'targetConnectionRef','baselineRefs',v.snapshot_json->'baselineRefs',
+  'budgetRef',v.snapshot_json->'budgetRef','sourceRefs',v.snapshot_json->'sourceRefs','requiredContext',v.snapshot_json->'requiredContext',
+  'gaps',(v.snapshot_json->'gaps')||'["COMPLETED_UNVERIFIED","UNFINISHED_UNVERIFIED","CURRENT_POSITION_UNVERIFIED","DECISIONS_WITH_REASONS_UNVERIFIED"]'::jsonb,
+  'completed','[]'::jsonb,'unfinished','[]'::jsonb,'currentPosition',NULL,'decisionsWithReasons','[]'::jsonb,'sourceDiffs','[]'::jsonb,
+  'recoveryState','UNVERIFIED','capabilities','UNVERIFIED','understandingState','NOT_REVIEWED',
+  'intentExpiresAt',v.snapshot_json->'intentExpiresAt','observedAt',to_char(m.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+  'manifestStored',true,'bindingFrozen',false,'ready',false,'transferConfirmed',false,'resumeAuthorized',false,'executionAuthorized',false,'dispatchPerformed',false);
+ IF snapshot IS DISTINCT FROM m.snapshot_json OR anvil.fn14_record_hash(snapshot) IS DISTINCT FROM m.content_hash THEN RETURN false; END IF;
+ packet=jsonb_build_object('schemaVersion',1,'projectId',m.project_id,'commandId',c.command_id,'clientId',c.client_id,
+  'controlGeneration',c.control_generation,'operation','createTransferManifest','targetId',NULL,'expectedVersion',0,
+  'baselineRefs','[]'::jsonb,'approvalRef',NULL,'payload',jsonb_build_object('preparationRef',parent_ref));
+ IF anvil.fn14_record_hash(packet) IS DISTINCT FROM c.request_hash THEN RETURN false; END IF;
+ digest=anvil.fn14_record_hash(jsonb_build_object('projectId',m.project_id,'actorId',c.actor_id,'clientId',c.client_id,
+  'controlGeneration',c.control_generation,'requestHash',c.request_hash,'policyRef',c.policy_ref,'targetRef',target_ref));
+ result=jsonb_build_object('operationId',c.operation_id,'commandId',c.command_id,'projectId',m.project_id,'status','APPLIED',
+  'targetId',m.id,'version',1,'data',jsonb_build_object('ref',target_ref,'manifest',snapshot,'manifestStored',true),
+  'evidenceRefs','[]'::jsonb,'warnings','[]'::jsonb,'serverReceivedAt',snapshot->'observedAt');
+ RETURN c.result_ref IS NOT DISTINCT FROM result
+  AND date_trunc('milliseconds',c.received_at)=m.created_at AND date_trunc('milliseconds',c.completed_at)=m.created_at
+  AND r.id IS NOT DISTINCT FROM c.authorization_receipt_id AND r.scope_kind='PROJECT' AND r.scope_id=m.project_id
+  AND r.subject_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id,'clientId',c.client_id) AND r.policy_ref=c.policy_ref
+  AND r.scope_digest=digest AND r.approval_decision_ref IS NULL AND date_trunc('milliseconds',r.authorized_at)=m.created_at
+  AND a.project_id=m.project_id AND a.operation_id=c.operation_id AND a.actor_ref=jsonb_build_object('kind','HUMAN','userId',c.actor_id)
+  AND a.client_ref=c.client_id AND a.target_ref=target_ref AND a.policy_ref=c.policy_ref AND a.approval_ref IS NULL
+  AND a.scope_digest=digest AND a.outcome='APPLIED' AND a.reason_code='EXPLICIT_TRANSFER_MANIFEST' AND a.source_kind='HUMAN_COMMAND'
+  AND a.server_sequence BETWEEN 1 AND 9007199254740991 AND date_trunc('milliseconds',a.recorded_at)=m.created_at;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END;$$;
+
+CREATE FUNCTION anvil.fn14_manifest_deferred() RETURNS trigger
+LANGUAGE plpgsql SET search_path=pg_catalog,anvil AS $$
+DECLARE cid uuid;
+BEGIN
+ IF TG_TABLE_NAME='commands' THEN cid=NEW.id; ELSE cid=NEW.command_id; END IF;
+ IF TG_TABLE_NAME IN ('authorization_receipts','audit_events') AND NOT EXISTS(
+  SELECT 1 FROM anvil.commands WHERE id=cid AND operation='createTransferManifest') THEN RETURN NULL; END IF;
+ IF anvil.fn14_manifest_complete(cid) IS DISTINCT FROM true THEN RAISE EXCEPTION 'TRANSFER_MANIFEST_INCOMPLETE'; END IF;
+ RETURN NULL;
+END;$$;
+CREATE CONSTRAINT TRIGGER fn14_manifest_complete AFTER INSERT ON anvil.transfer_manifests
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION anvil.fn14_manifest_deferred();
+CREATE CONSTRAINT TRIGGER fn14_manifest_command_complete AFTER INSERT OR UPDATE ON anvil.commands DEFERRABLE INITIALLY DEFERRED
+ FOR EACH ROW WHEN(NEW.operation='createTransferManifest') EXECUTE FUNCTION anvil.fn14_manifest_deferred();
+CREATE CONSTRAINT TRIGGER fn14_manifest_receipt_complete AFTER INSERT OR UPDATE ON anvil.authorization_receipts DEFERRABLE INITIALLY DEFERRED
+ FOR EACH ROW EXECUTE FUNCTION anvil.fn14_manifest_deferred();
+CREATE CONSTRAINT TRIGGER fn14_manifest_audit_complete AFTER INSERT OR UPDATE ON anvil.audit_events DEFERRABLE INITIALLY DEFERRED
+ FOR EACH ROW EXECUTE FUNCTION anvil.fn14_manifest_deferred();
+
+CREATE FUNCTION anvil.fn14_manifest_immutable() RETURNS trigger
+LANGUAGE plpgsql SET search_path=pg_catalog,anvil AS $$
+BEGIN
+ IF TG_TABLE_NAME='transfer_manifests' THEN RAISE EXCEPTION 'TRANSFER_MANIFEST_IMMUTABLE';
+ ELSIF TG_TABLE_NAME='commands' THEN
+  IF OLD.operation='createTransferManifest' THEN RAISE EXCEPTION 'TRANSFER_MANIFEST_IMMUTABLE'; END IF;
+ ELSIF EXISTS(SELECT 1 FROM anvil.commands WHERE id=OLD.command_id AND operation='createTransferManifest') THEN
+  RAISE EXCEPTION 'TRANSFER_MANIFEST_IMMUTABLE';
+ END IF;
+ IF TG_OP='DELETE' THEN RETURN OLD; END IF;
+ RETURN NEW;
+END;$$;
+CREATE TRIGGER fn14_manifest_immutable BEFORE UPDATE OR DELETE ON anvil.transfer_manifests FOR EACH ROW EXECUTE FUNCTION anvil.fn14_manifest_immutable();
+CREATE TRIGGER fn14_manifest_command_immutable BEFORE UPDATE OR DELETE ON anvil.commands FOR EACH ROW EXECUTE FUNCTION anvil.fn14_manifest_immutable();
+CREATE TRIGGER fn14_manifest_receipt_immutable BEFORE UPDATE OR DELETE ON anvil.authorization_receipts FOR EACH ROW EXECUTE FUNCTION anvil.fn14_manifest_immutable();
+CREATE TRIGGER fn14_manifest_audit_immutable BEFORE UPDATE OR DELETE ON anvil.audit_events FOR EACH ROW EXECUTE FUNCTION anvil.fn14_manifest_immutable();
+REVOKE ALL ON FUNCTION anvil.fn14_manifest_complete(uuid),anvil.fn14_manifest_deferred(),anvil.fn14_manifest_immutable() FROM PUBLIC,anvil_v3_app;
+COMMIT;

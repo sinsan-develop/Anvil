@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-28 KST
 
+- **Stage D / FN14 불변 인계본 1차** — 작성 시작 `e85b8bf1`, 통합 부모 `170cbb9a`, 구현 `fn08_policy_decision_ready`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 같은 인증 거래에서 정확 준비 버전·작성자·보호 자료를 다시 대조해 불변 인계본·명령·영수증·감사를 정착한다. 고정 `transfers/:id/manifest` 보호 조회를 연결했고 정착 응답 유실 후 같은 명령은 기존 보관본만 반환한다. 미검증 위치·능력·checkpoint·source diff는 공백으로 남겼다. 제품 3·미적용 SQL 1·시험 1경로. 담당 및 어울 직렬 FN14 58/58(실패·취소·skip 0), 타입·diff, 담당 SQL 구문 검사. 권한 닫힌 0114 적용·실제 PG/FK/ACL·새 대상 보호 응답과 6항목 비교·이전·재개·IX04 인수는 미검증이다. IX02 FN12는 같은 실행·세대에서 정착된 `captureRef`의 독립 기대값을 검수기에 제공하는 보호 조회가 미연결임을 읽기 확인했다. UI05의 산출물 바이트 검산을 실제 명령 관측으로 세지 않는다.
+
 - **Stage E / FN16 D2 문서 BODY 첫 수집·독립 검산** — 기준 `e85b8bf1`, 구현 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 목적 한정 입장과 HUMAN·OWNER·제어를 새 RC에서 고정하고, 같은 읽기 전용 RR 클라이언트에서 문서 버전·BODY 링크·산출물 원행을 수집한다. RR 종료 후 원 바이트 길이·EOF·해시·격리·close를 검산하고 새 RC에서 원 입장·제어·관계가 일치할 때만 내부 반환한다. 별도 기대 스냅샷·job·문서 전체 참조와 재조회 바이트를 독립 대조한다. 전용 입장 공급 미구성은 시작 전 거절한다. 제품 3·시험 1경로. 담당과 어울 각각 직렬 합성 37/37(실패·취소·skip 0), 타입·diff 검수. 실제 PG/권한·보호 입장·영속 저장 공급자, 전체 목록·복원, Windows·키·서비스·Agent는 미검증이다.
 
 - **IX02 / 설치 근거와 QA B 재대조** — 기준 `e85b8bf1`. 담당 `fn08_policy_decision_ready`가 보호 빌드·기본 컴파일 호출·native 고정 리소스를 대조했다. 기존 패키지 검사는 Anvil 이미지·app.asar 및 파일 상태를 확인한다. 별도 Windows 소유자의 SID와 원 설치의 동일성을 검증해 발급하는 보호 설치 자료는 현 공급자에서 확인되지 않았다. 가짜 pin 추가나 준비 guard 완화 없이 제품 호출선 추가 조사 중이다. 독립 `baseline_predispatch_task_review`가 별도 QA B의 고정 요구사항·B1–B5·UI06 합성 재조회는 재사용 가능하고 실제 Agent 산출물·사용자 검토는 미확인임을 대조했다. 실제 제안의 원 출력과 보호 저장 버전의 연결이 남았다. FN14 인계본과 FN16 D2 첫 문서 원형·검산을 경로별로 배정했다. 실제 Windows·DB·권한·키·서비스·Agent·IX01 실행 없음.
