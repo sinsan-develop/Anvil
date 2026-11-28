@@ -11,6 +11,7 @@ import { NormalStartIntake, type NormalStartStore } from '../../connector/runtim
 import { NormalObservationSpool } from '../../connector/runtime/normal-observation-spool.ts';
 import { NormalStartPolling, type NormalPollingClients,type NormalStartPollingOptions } from '../../connector/runtime/normal-start-polling.ts';
 import { isProxy } from 'node:util/types';
+export {verifyKeeperInstallationV1} from '../../../contracts/runtime/keeper-installation-v1.ts';
 
 const pairs = new WeakMap<NormalPollingClients, { port: NormalOwnedCredentialPort; scope: NormalProtectedGetOptions['scope'] }>();
 const getMethods = ['prepareCommandPage','prepareMaterial','send','receiveUnderstandingRead','receiveUnderstandingDiscovery','receiveUnderstandingRangeAcquisition'] as const;

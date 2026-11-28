@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-28 KST
 
+- **Stage C / IX02 keeper 설치 증빙의 보호 배포·최종 설치 교차 검산** — 기준 `1952409d`, 신산님 직접 지시, 담당 `fn08_policy_decision_ready`, 독립 `c09_spec_review` C0/I0/M0. 보호 릴리스의 독립 발행자 핀과 별도 설치 정착 기록을 확정된 외부 카탈로그·high-water·등록/epoch·정확 빌드 및 설치 원문과 대조한다. 두 보호 포트가 있는 조립에서 기존 native CLAIM 직전에 목적 검산을 호출한다. 일부 공급·취소·교체·회수에 쓰기 전에 거절하며 미구성 legacy 경로는 유지한다. 제품 3·시험 2경로. 첫 메서드 부재 RED 1건 교정, 담당·어울 각각 161/161(실패·취소·skip 0), 타입·diff 통과. PMO에서 실제 두 발행 담당과 보호 배포 레코드·실제 설치 슬롯 정착 여부 미확인(후보 ProgramData 위치만 유지). 실제 공급자·Windows 보호 loader·양성 PREPARED/인계·설치·DB·권한·키·서비스·Agent 실행 미검증. 조건부 1회 시험 승인 미사용.
+
 - **Stage C / IX02 keeper A안 채택 및 설치 증빙 서명 검산** — 기준 `bf527326`, 신산님 소스·합성 승인, 담당 `fn08_policy_decision_ready`, 독립 `c09_spec_review` C0/I0/M0. 보호 릴리스가 독립 고정한 단일 발행자 pin 및 설치 담당·설치/등록 epoch·서명자와 keeper SID·빌드와 원 파일 참조를 최대 8,192바이트 canonical UTF-8/P-256 증빙에서 검산한다. 첫 모듈 부재 RED 1건 교정, 담당·어울 각각 65/65(실패·취소·skip 0), 타입·diff 통과. 제품 소스 1·시험 1경로와 설계 §6. Windows 동일 객체는 인증해 보유한 수신 프로세스 핸들에 원 핸들을 비상속 복제하는 후보로 좁혔다. 현재 설치 발행자 등록/보호 caller·C#·Windows 복제 권한/Job 회수 및 기본 큐 인계는 미연결·미검증이다. 실제 설치·DB·권한·키·서비스·Agent 실행 0, 기존 1회 시험 승인 미사용.
 
 - **Stage C / IX02 keeper 설치 근거 발행과 원 준비 객체 인계 설계 후보** — 기준 `5c4fc053`, 신산님 설계안 요청, 담당 `fn08_policy_decision_ready`, 독립 `c09_spec_review` 최종 C0/I0/M0. 권장 A는 승인된 설치 담당자가 검산한 설치 자료를 ProgramData 아래 등록·epoch별 보호 슬롯에 정착하고 기존 등록 signer와 전용 keeper는 읽기만 하는 방식이다. 릴리스에 고정된 발행자와 현재 peer를 각각 검산한다. HTTP EOF 이후 사설 채널에서 같은 원 객체를 동일 큐 거래의 세 지점에서 관측한 뒤 확정 COMMIT/연결 반환 후 단회 인계한다. 보호 상태 CAS와 상태별 회수 담당, 응답 불명 보존을 명시했다. 첫 독립 검수 I2(발행 신뢰/판독, 소유권 확정/회수) 보완. 설계 1파일, UTF-8·상대 링크·diff 검사. 실제 발행 담당·pin·설치 권한이나 기초 Windows 인계 수단은 미확정. 구현·설치·실제 시험 0, 조건부 승인 미소진. [설계안](contracts/FN08_KEEPER_INSTALLATION_AND_HANDOFF_CANDIDATE.md)

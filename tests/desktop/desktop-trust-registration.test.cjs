@@ -13,6 +13,86 @@ test.before(async()=>{
 });
 const {canonicalJson,contentHash}=require('../../apps/desktop/src/runtime-catalogue-profile.cjs');
 const ID='11111111-1111-4111-8111-111111111111';
+function keeperInstallationFixture(f,epoch){
+ const now=f.dependencies.now(),row=f.stored();
+ const crypto=require('node:crypto'),scalar=Buffer.alloc(32);scalar[31]=1;
+ const ec=crypto.createECDH('prime256v1');ec.setPrivateKey(scalar);
+ const point=ec.getPublicKey(),key=crypto.createPrivateKey({format:'jwk',key:{kty:'EC',crv:'P-256',x:point.subarray(1,33).toString('base64url'),y:point.subarray(33).toString('base64url'),d:scalar.toString('base64url')}});
+ const spki=crypto.createPublicKey(key).export({type:'spki',format:'der'}),hash=value=>contentHash(canonicalJson(value));
+ const id=n=>'99999999-9999-4999-8999-'+String(n).padStart(12,'0'),ref=n=>({id:id(n),version:n,contentHash:'b'.repeat(64)});
+ const issuePurpose='NORMAL_START_KEEPER_INSTALLATION_V1';
+ const pin={purpose:issuePurpose,issuerId:id(1),publicKeySpki:spki.toString('base64url'),publicKeyFingerprint:contentHash(spki),notBefore:new Date(now-1).toISOString(),expiresAt:new Date(now+9000).toISOString()};
+ const policy={purpose:'NORMAL_START_KEEPER_RELEASE_AUTHORITY_V1',profileId:f.spec.profile.profileId,parentReleaseId:f.spec.parentReleaseId,parentReleaseVersion:f.spec.parentReleaseVersion,issuerPins:[pin]};
+ const authority={ref:{id:id(2),version:1,contentHash:hash(policy)},snapshot:policy};
+ const scope={installationId:row.registration.installationId,registrationRef:row.registration.registrationRef,
+  connectorRef:row.registration.connectorRef,epoch,installerId:id(3),signerSid:'S-1-5-21-100-200-300-1001',keeperSid:'S-1-5-21-100-200-300-1002',
+  installationRootRef:ref(4),installedArtifactRef:ref(5),releaseRef:f.value.releaseRef,packageRef:ref(6),buildRef:ref(7),endpointPolicyRef:ref(8),keeperArtifactHash:'c'.repeat(64)};
+ const original={schemaVersion:1,purpose:issuePurpose,...scope,issuerId:pin.issuerId,issuerKeyFingerprint:pin.publicKeyFingerprint,installedAt:new Date(now).toISOString()};
+ function settlement(overrides={},rawOverrides={}){
+  const bytes=Buffer.from(canonicalJson({...original,...rawOverrides}));
+  const snapshot={purpose:'NORMAL_START_KEEPER_INSTALLATION_SETTLEMENT_V1',releaseAuthorityRef:authority.ref,
+   catalogueReleaseRef:f.value.releaseRef,signerBuildReceiptRef:f.value.snapshot.buildEvidence.buildReceiptRef,
+   signerArtifactHash:f.value.snapshot.entries[0].sha256,scope,installationBytesHash:contentHash(bytes),...overrides};
+  return {ref:{id:id(9),version:1,contentHash:hash(snapshot)},snapshot,bytes,
+   signature:crypto.sign('sha256',bytes,{key,dsaEncoding:'ieee-p1363'}).toString('base64url')};
+ }
+ scalar.fill(0);
+ return {original,scope,policy,pin,authority,settlement,id,ref,hash};
+}
+test('keeper 설치 검산은 보호 릴리스와 같은 등록의 정착 readback을 exact 현재 카탈로그에 결박한다', async()=>{
+ const f=await liveNativeOwner(),now=f.dependencies.now(),row=f.stored(),controller=new AbortController();
+ const lease={signal:controller.signal,check:()=>{},remainingMs:()=>10000,callExpiresAt:()=>new Date(now+10000).toISOString(),narrow:()=>{},markEffect:()=>{}};
+ const {original,scope,policy,pin,authority,settlement,id,ref,hash}=keeperInstallationFixture(f,7);
+ let policyReads=0,settlementReads=0,binds=[],settlementValue=settlement(),authorityValue=authority,dropAuthority=false;
+ const ports={...f.ports,readKeeperReleaseAuthority:async()=>{policyReads++;return structuredClone(authorityValue);},
+  readKeeperInstallationSettlement:async input=>{settlementReads++;binds.push(input);if(dropAuthority)authorityValue=null;return settlementValue;}};
+ const op=createTrustOperation(f.spec,ports,lease,row);
+ await assert.rejects(op.verifyKeeperInstallation(7),/PROTECTION_UNAVAILABLE/);
+ assert.equal(policyReads+settlementReads,0);
+ await op.current();
+ const base=f.writes.length,view=await op.verifyKeeperInstallation(7);
+ assert.deepEqual(view,original);assert.equal(policyReads,2);assert.equal(settlementReads,2);
+ assert.deepEqual(binds[0],binds[1]);assert.equal(binds[0].epoch,7);assert.deepEqual(binds[0].releaseAuthorityRef,authority.ref);
+ assert.equal(f.writes.length,base);
+ for(const alternate of [
+  settlement({catalogueReleaseRef:{...f.value.releaseRef,contentHash:'0'.repeat(64)}}),
+  settlement({signerBuildReceiptRef:ref(11)}),settlement({signerArtifactHash:'0'.repeat(64)}),
+  settlement({scope:{...scope,installationId:id(12)}}),settlement({scope:{...scope,epoch:8}}),
+  settlement({scope:{...scope,packageRef:ref(13)}}),settlement(undefined,{keeperArtifactHash:'a'.repeat(64)}),
+  {...settlement(),signature:'A'.repeat(86)},settlement({installationBytesHash:'0'.repeat(64)}),
+ ]){
+  settlementValue=alternate;await assert.rejects(op.verifyKeeperInstallation(7),/PROTECTION_UNAVAILABLE/);
+ }
+ for(const issuerPins of [[],[pin,pin],[{...pin,publicKeyFingerprint:row.key.fingerprint}],[{...pin,purpose:'HOST_PROOF'}]]){
+  const snapshot={...policy,issuerPins};authorityValue={...authority,snapshot,ref:{...authority.ref,contentHash:hash(snapshot)}};
+  const before=settlementReads;
+  await assert.rejects(op.verifyKeeperInstallation(7),/PROTECTION_UNAVAILABLE/);
+  assert.equal(settlementReads,before);
+ }
+ authorityValue=authority;
+ assert.equal(f.writes.length,base);
+ settlementValue=settlement();
+ dropAuthority=true;
+ await assert.rejects(op.verifyKeeperInstallation(7),/PROTECTION_UNAVAILABLE/);
+ assert.equal(f.writes.length,base);
+ dropAuthority=false;authorityValue=authority;
+ const originalRead=ports.readKeeperInstallationSettlement;
+ ports.readKeeperInstallationSettlement=async input=>{ports.readKeeperInstallationSettlement=originalRead;return originalRead(input);};
+ const changed=createTrustOperation(f.spec,ports,lease,row);await changed.current();const beforeChange=f.writes.length;
+ await assert.rejects(changed.verifyKeeperInstallation(7),/CONTEXT_CHANGED/);
+ assert.equal(f.writes.length,beforeChange);
+ const unconfigured=createTrustOperation(f.spec,f.ports,lease,row);
+ await assert.rejects(unconfigured.verifyKeeperInstallation(7),/PROTECTION_UNAVAILABLE/);
+ let settle,entered;
+ const started=new Promise(resolve=>{entered=resolve;});
+ const held=new Promise(resolve=>{settle=resolve;});
+ const cancelled=createTrustOperation(f.spec,{...ports,readKeeperInstallationSettlement:async()=>{entered();return held;}},lease,row);
+ await cancelled.current();const beforeCancel=f.writes.length;
+ const pending=cancelled.verifyKeeperInstallation(7);
+ await started;controller.abort();await assert.rejects(pending,/CONTEXT_CHANGED/);
+ settle(settlement());await Promise.resolve();
+ assert.equal(f.writes.length,beforeCancel);
+});
 function hostFixture(mode='NORMAL'){
  const crypto=require('node:crypto'),image=Buffer.from('TEST_ONLY_KEY_HOST_MODEL'),writes=[],key={publicKeySpki:'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEYP7UuiVanTHJYet0xjVtaMBJuJI7Yfps5mliLmDyn7Z5A_4QCLi8maQa6elWKLxk8vGyDC1-n1F3o8KU1EYimQ',fingerprint:'5a7a78cca4a0f420d9bc62bb669c3c2759e39f723d3ae10dcbe0f0815a07ecd4'};let calls=0,reads=0,ends=0,creates=0,ids=0,stored=null,container=null;let firstReceiveReplyHook=()=>{};let normalClaimReply=()=>({state:"SOURCE_UNAVAILABLE"});const children=[],credentials=new Map();
  // RFC6979 A.2.5 공개 TEST_ONLY P256 키값 재사용. 키 생성/실사용 키 접근이 아니다.
@@ -427,25 +507,31 @@ async function registeredPhaseConsumer(mode='NORMAL',kind='STATE'){
 }
 test('원 CJS EOF custody→같은 REGISTERED private 채널은 claim·result·확정 close를 한 owner로 묶고 미구성은 효과0으로 닫는다',async()=>{
  const oldNow=Date.now;
-  try{for(const mode of ['UNAVAILABLE','CLAIM','LOST','RESOURCE','RESOURCE_RESULT','RESOURCE_POST','RESOURCE_OPEN_LOST','RESOURCE_REPLAY','RESOURCE_SLOT','RESOURCE_SLOT_REPLAY','RESOURCE_SLOT_ALIAS','RESOURCE_SLOT_CROSS','RESOURCE_SLOT_LATE']){
+  try{for(const mode of ['UNAVAILABLE','CLAIM','LOST','RESOURCE','RESOURCE_RESULT','RESOURCE_POST','RESOURCE_OPEN_LOST','RESOURCE_REPLAY','RESOURCE_SLOT','RESOURCE_SLOT_REPLAY','RESOURCE_SLOT_ALIAS','RESOURCE_SLOT_CROSS','RESOURCE_SLOT_LATE','KEEPER_READY','KEEPER_PARTIAL','KEEPER_REPLAY']){
   const v=await registeredPhaseConsumer('NORMAL','STREAM'),p=v.phase.frame,w=p.window.snapshot,hash=x=>contentHash(canonicalJson(x)),id=n=>'bfa00000-0000-4000-8000-'+String(n).padStart(12,'0'),ref=n=>({id:id(n),version:1,contentHash:'e'.repeat(64)});
   const request={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_REQUEST_V1',requestId:id(1),attemptId:id(2),installationId:w.installationId,projectId:w.projectId,registrationRef:w.registrationRef,connectorRef:w.connectorRef,windowRef:p.window.ref,receiveSessionRef:p.request.receiveSessionRef,profileRef:w.profileRef,hostPublicKeyFingerprint:w.hostPublicKeyFingerprint,authBindingHash:w.authBindingHash,localReceiveAttemptId:w.localReceiveAttemptId,actorId:w.human.userId,clientId:w.human.clientId,humanSessionId:v.native.authority.snapshot.subject.humanSessionId,credentialGeneration:w.human.credentialGeneration,controlGeneration:w.human.controlGeneration,admissionRef:ref(3),claimRef:ref(4),normalCommandId:id(5),normalRequestHash:'f'.repeat(64),executionId:id(6),executionGeneration:1,executionPreparationRef:ref(7),writerNoneRef:w.writerHeadRef,serverNonce:Buffer.alloc(32,7).toString('base64url'),issuedAt:p.request.issuedAt,expiresAt:new Date(Date.parse(p.request.issuedAt)+10000).toISOString()},requestRef={id:request.requestId,version:1,contentHash:hash(request)};
     const text=Buffer.from(canonicalJson(request)),frame=Buffer.alloc(text.length+4);frame.writeUInt32BE(text.length);text.copy(frame,4);let response,claimCalls=0,storedClaims=0,effects=0,postCalls=0,slotReads=0,openRelease,openCloses=0,positive=null;
     if(['RESOURCE_POST','RESOURCE_REPLAY','RESOURCE_SLOT'].includes(mode)){const peer={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_PEER_RECEIPT_V1',receiptId:id(12),requestRef,attemptId:request.attemptId,outcome:'REJECTED',preparationBasis:null,issuedAt:request.issuedAt,expiresAt:request.expiresAt,executionAuthorized:false,dispatchPerformed:false},result={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_V1',requestRef,receipt:{ref:{id:peer.receiptId,version:1,contentHash:hash(peer)},snapshot:peer}},proof={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_PROOF_V1',requestRef,attemptId:request.attemptId,installationId:request.installationId,projectId:request.projectId,registrationRef:request.registrationRef,connectorRef:request.connectorRef,windowRef:request.windowRef,receiveSessionRef:request.receiveSessionRef,hostPublicKeyFingerprint:request.hostPublicKeyFingerprint,serverNonce:request.serverNonce,target:{method:'POST',path:'/api/v1/native-first-receive/sessions/'+request.receiveSessionRef.id+'/normal-start-preparation-result',queryHash:hash({}),bodyHash:hash(result)},issuedAt:request.issuedAt,expiresAt:new Date(Date.parse(request.issuedAt)+2000).toISOString()},b64=h=>Buffer.from(h,'hex').toString('base64url'),privateKey=require('node:crypto').createPrivateKey({key:{kty:'EC',crv:'P-256',x:b64('60FED4BA255A9D31C961EB74C6356D68C049B8923B61FA6CE669622E60F29FB6'),y:b64('7903FE1008B8BC99A41AE9E95628BC64F2F1B20C2D7E9F5177A3C294D4462299'),d:b64('C9AFA9D845BA75166B5C215767B1D6934E50C3DB36E89B127B8A622B120F6721')},format:'jwk'}),record={schemaVersion:1,purpose:'NORMAL_START_PREPARATION_RESULT_RECORD_V1',recordId:id(13),requestRef,peerReceiptRef:result.receipt.ref,resultHash:hash(result),proofHash:hash(proof),recordedAt:request.issuedAt,executionAuthorized:false,dispatchPerformed:false};positive={signed:{state:'NORMAL_START_PREPARATION_RESULT_SIGNED',slotRef:ref(mode==='RESOURCE_SLOT'?14:11),requestRef,result,proof,signature:require('node:crypto').sign('sha256',Buffer.from(canonicalJson(proof)),{key:privateKey,dsaEncoding:'ieee-p1363'}).toString('base64url')},stored:{status:'NORMAL_START_PREPARATION_RESULT_STORED',ref:{id:record.recordId,version:1,contentHash:hash(record)},snapshot:record}};}
     v.clock.normalTransport=(url,options,callback)=>{if(options.method==='POST'){postCalls++;assert.ok(positive);assert.equal(url.pathname,positive.signed.proof.target.path);assert.equal(options.headers['x-anvil-native-normal-start-preparation-proof'],Buffer.from(canonicalJson(positive.signed.proof)).toString('base64url'));assert.equal(options.headers['x-anvil-native-normal-start-preparation-signature'],positive.signed.signature);assert.equal(options.body,undefined);const req=new EventEmitter();req.destroy=()=>req;req.end=body=>{assert.equal(body.toString(),canonicalJson(positive.signed.result));queueMicrotask(()=>{const res=new EventEmitter();res.statusCode=200;res.rawHeaders=['Content-Type','application/json'];res.destroy=()=>res;callback(res);queueMicrotask(()=>{res.emit('data',Buffer.from(canonicalJson(positive.stored)));res.complete=true;res.readableEnded=true;res.emit('end');});});};return req;}assert.equal(options.method,'GET');assert.equal(options.headers.accept,'application/octet-stream');assert.equal(url.pathname,p.request.target.path);const req=new EventEmitter();req.destroy=()=>req;req.end=()=>{queueMicrotask(()=>{response=new EventEmitter();response.statusCode=200;response.rawHeaders=['Content-Type','application/octet-stream'];response.destroy=()=>response;callback(response);queueMicrotask(()=>response.emit('data',frame));});};return req;};
    if(mode!=='RESOURCE')Object.defineProperty(v.f.ports,'normalStartPreparationSlot',{configurable:true,value:()=>{slotReads++;return ref(11);}});if(mode.startsWith('RESOURCE')&&mode!=='RESOURCE')Object.defineProperty(v.f.dependencies,'normalStartPreparationAvailable',{configurable:true,value:()=>true});
-   const operation=mode.startsWith('RESOURCE')?null:createTrustOperation(v.f.spec,v.f.ports,{...v.lease,markEffect:()=>{effects++;}},v.f.stored());if(operation){await operation.current();await operation.readState();}let resource=null;const initialEffects=effects;
-   v.f.beforeNormalStartClaim(payload=>{claimCalls++;if(mode.startsWith('RESOURCE'))assert.equal(v.f.owner.isBusy(),true);else assert.equal(effects,initialEffects+1,'잠재 원장 write 직전 원 latch');assert.deepEqual(payload.request,request);assert.deepEqual(payload.window,p.window);assert.deepEqual(payload.session.ref,p.request.receiveSessionRef);assert.equal(payload.contextEpoch,v.f.owner.getState().contextEpoch);
-    if(mode==='UNAVAILABLE'||mode==='RESOURCE')return{state:'SOURCE_UNAVAILABLE'};if(!['RESOURCE_REPLAY','RESOURCE_SLOT_REPLAY'].includes(mode))storedClaims++;if(mode==='LOST')return null;
+   let installerReads=0;
+    if(mode.startsWith('KEEPER')){
+      const keeper=keeperInstallationFixture(v.f,v.f.owner.getState().contextEpoch),installed=keeper.settlement();
+      v.f.ports.readKeeperReleaseAuthority=async()=>structuredClone(keeper.authority);
+      if(mode!=='KEEPER_PARTIAL')v.f.ports.readKeeperInstallationSettlement=async()=>{installerReads++;return installed;};
+    }
+    const operation=mode.startsWith('RESOURCE')?null:createTrustOperation(v.f.spec,v.f.ports,{...v.lease,markEffect:()=>{effects++;}},v.f.stored());if(operation){await operation.current();await operation.readState();}let resource=null;const initialEffects=effects;
+   v.f.beforeNormalStartClaim(payload=>{claimCalls++;if(mode.startsWith('KEEPER'))assert.equal(installerReads,2,'same protected record verified before native claim');if(mode.startsWith('RESOURCE'))assert.equal(v.f.owner.isBusy(),true);else assert.equal(effects,initialEffects+1,'잠재 원장 write 직전 원 latch');assert.deepEqual(payload.request,request);assert.deepEqual(payload.window,p.window);assert.deepEqual(payload.session.ref,p.request.receiveSessionRef);assert.equal(payload.contextEpoch,v.f.owner.getState().contextEpoch);
+    if(mode==='UNAVAILABLE'||mode==='RESOURCE')return{state:'SOURCE_UNAVAILABLE'};if(!['RESOURCE_REPLAY','RESOURCE_SLOT_REPLAY','KEEPER_REPLAY'].includes(mode))storedClaims++;if(mode==='LOST')return null;
    // native 계약의 RAM 응답 주입이다. C# 파일/소진/물리 준비 실행을 증명하지 않는다.
-   const stored={requestRef,serverClaimRef:request.claimRef,registration:hash(v.f.stored())};const reply={state:['RESOURCE_REPLAY','RESOURCE_SLOT_REPLAY'].includes(mode)?'NORMAL_START_PREPARATION_REPLAY_ONLY':'NORMAL_START_PREPARATION_CLAIMED',requestRef,nativeClaimRef:{id:id(8),version:1,contentHash:hash(stored)},creationAuthorized:false,executionAuthorized:false,dispatchPerformed:false};if(!mode.startsWith('RESOURCE_SLOT'))return reply;if(mode==='RESOURCE_SLOT_LATE')v.clock.offset=10000;return {...reply,requestRef:mode==='RESOURCE_SLOT_CROSS'?ref(16):requestRef,rejectedSlotRef:mode==='RESOURCE_SLOT_ALIAS'?reply.nativeClaimRef:ref(14)};
+   const stored={requestRef,serverClaimRef:request.claimRef,registration:hash(v.f.stored())};const reply={state:['RESOURCE_REPLAY','RESOURCE_SLOT_REPLAY','KEEPER_REPLAY'].includes(mode)?'NORMAL_START_PREPARATION_REPLAY_ONLY':'NORMAL_START_PREPARATION_CLAIMED',requestRef,nativeClaimRef:{id:id(8),version:1,contentHash:hash(stored)},creationAuthorized:false,executionAuthorized:false,dispatchPerformed:false};if(!mode.startsWith('RESOURCE_SLOT'))return reply;if(mode==='RESOURCE_SLOT_LATE')v.clock.offset=10000;return {...reply,requestRef:mode==='RESOURCE_SLOT_CROSS'?ref(16):requestRef,rejectedSlotRef:mode==='RESOURCE_SLOT_ALIAS'?reply.nativeClaimRef:ref(14)};
   });
   try{await v.client.consumeNormalStartPreparationStream(p.window,p.challenge,p.request,p.body,v.source);
      if(mode.startsWith('RESOURCE')){const session=v.f.session,fetch=session.fetch;session.fetch=async function(url,init){const response=await Reflect.apply(fetch,this,[url,init]);if(!url.endsWith('/connector-registrations/'+v.f.stored().registration.registrationId))return response;const value=await response.json();value.credential={issued:true,status:'ACTIVE_STATUS_ONLY',expiresAt:v.f.stored().credential.expiresAt,revokedAt:null};return new Response(canonicalJson(value),{headers:{'content-type':'application/json'}});};if(mode==='RESOURCE_OPEN_LOST'){const create=v.f.dependencies.createOperation;let creates=0;v.f.dependencies.createOperation=(...args)=>++creates===1?Reflect.apply(create,v.f.dependencies,args):new Promise(resolve=>{openRelease=()=>resolve({close:async()=>{openCloses++;return{state:'CLOSED_CONFIRMED'};}});});}if(['RESOURCE_POST','RESOURCE_REPLAY','RESOURCE_SLOT'].includes(mode)){const spawn=v.f.ports.spawn;v.f.ports.spawn=(...args)=>{const child=Reflect.apply(spawn,v.f.ports,args),write=child.stdin.write;child.stdin.write=(raw,encoding,done)=>{const value=JSON.parse(Buffer.from(raw).toString());if(value.operation!=='SIGN_NORMAL_START_PREPARATION_RESULT_V1')return Reflect.apply(write,child.stdin,[raw,encoding,done]);assert.deepEqual(value.payload.slotRef,positive.signed.slotRef);assert.deepEqual(value.payload.requestRef,requestRef);v.f.writes.push(value);queueMicrotask(()=>{child.stdout.emit('data',Buffer.from(canonicalJson({schemaVersion:1,purpose:'DESKTOP_TRUST_KEY_RESULT_V1',requestId:value.requestId,sequence:value.sequence,rootIdentity:'TEST_ONLY_ROOT',data:positive.signed})+'\n'));done();});return true;};return child;};}v.f.dependencies.createFirstReceiveClient=()=>v.client;resource=await v.f.owner.createNativeFirstReceiveController({attemptId:v.f.stored().attemptId,epoch:v.f.owner.getState().contextEpoch});assert.equal(resource.client,v.client);}
     const source=operation?.normalStartPreparationRequestSource(v.f.owner.getState().contextEpoch),prepare=()=>resource?resource.prepareNormalStartPreparation():v.client.prepareNormalStartPreparation(source),openedBefore=v.f.calls(),pending=prepare();void pending.catch(()=>{});await Promise.resolve();assert.equal(claimCalls,0);if(mode.startsWith('RESOURCE'))assert.equal(v.f.calls(),openedBefore,'정상 EOF 전 helper 생성0');response.complete=true;response.readableEnded=true;response.emit('end');response.emit('close');
     if(mode==='RESOURCE_OPEN_LOST'){for(let i=0;i<100&&!openRelease;i++)await Promise.resolve();assert.equal(typeof openRelease,'function');v.f.fireDeadline();for(let i=0;i<10;i++)await Promise.resolve();assert.equal(v.f.owner.isBusy(),true,'아직 열리는 원 operation은 UNKNOWN holder가 소유');openRelease();await assert.rejects(pending,/UNKNOWN|CONTEXT/);for(let i=0;i<10;i++)await Promise.resolve();assert.equal(openCloses,1,'늦게 열린 원 operation은 같은 holder가 단회 close');}
-    else if(['LOST','RESOURCE','RESOURCE_RESULT','RESOURCE_SLOT_REPLAY','RESOURCE_SLOT_ALIAS','RESOURCE_SLOT_CROSS','RESOURCE_SLOT_LATE'].includes(mode))await assert.rejects(pending,/UNKNOWN|UNAVAILABLE/);else{const result=await pending;if(['RESOURCE_POST','RESOURCE_SLOT'].includes(mode))assert.deepEqual(result,positive.stored);else{assert.equal(result.state,mode==='UNAVAILABLE'?'SOURCE_UNAVAILABLE':mode==='RESOURCE_REPLAY'?'NORMAL_START_PREPARATION_REPLAY_ONLY':'NORMAL_START_PREPARATION_CLAIMED');if(mode==='CLAIM'||mode==='RESOURCE_REPLAY'){assert.equal(result.creationAuthorized,false);assert.equal(result.executionAuthorized,false);assert.equal(result.dispatchPerformed,false);}}}
-    const unclaimed=['RESOURCE','RESOURCE_OPEN_LOST'].includes(mode);assert.equal(claimCalls,unclaimed?0:1,`claim:${mode}`);assert.equal(storedClaims,['UNAVAILABLE','RESOURCE','RESOURCE_OPEN_LOST','RESOURCE_REPLAY','RESOURCE_SLOT_REPLAY'].includes(mode)?0:1,`stored:${mode}`);if(['RESOURCE','RESOURCE_OPEN_LOST'].includes(mode))assert.equal(v.f.calls(),openedBefore,'미구성/late open은 helper를 새로 열지 않음');if(['RESOURCE_RESULT','RESOURCE_POST','RESOURCE_SLOT'].includes(mode))assert.equal(v.f.calls(),openedBefore+1,'claim과 result는 같은 helper operation을 사용');const opened=v.f.calls();await assert.rejects(prepare());assert.equal(v.f.calls(),opened);assert.equal(claimCalls,unclaimed?0:1,`repeat:${mode}`);if(!mode.startsWith('RESOURCE'))assert.equal(effects,initialEffects+1);assert.equal(v.f.writes.filter(x=>x.operation==='SIGN_NORMAL_START_PREPARATION_RESULT_V1').length,['RESOURCE_RESULT','RESOURCE_POST','RESOURCE_SLOT'].includes(mode)?1:0,`sign:${mode}`);assert.equal(postCalls,['RESOURCE_POST','RESOURCE_SLOT'].includes(mode)?1:0);if(mode.startsWith('RESOURCE_SLOT'))assert.equal(slotReads,0,mode);if(mode==='RESOURCE_POST')assert.equal(slotReads,1);if(mode==='RESOURCE_REPLAY'){assert.equal(slotReads,0);assert.equal(v.f.calls(),openedBefore+1);assert.equal(v.f.owner.isBusy(),false,'재확인 경로도 원 helper를 한 번 닫는다');}
+    else if(['LOST','RESOURCE','RESOURCE_RESULT','RESOURCE_SLOT_REPLAY','RESOURCE_SLOT_ALIAS','RESOURCE_SLOT_CROSS','RESOURCE_SLOT_LATE','KEEPER_PARTIAL'].includes(mode))await assert.rejects(pending,/UNKNOWN|UNAVAILABLE/);else{const result=await pending;if(['RESOURCE_POST','RESOURCE_SLOT'].includes(mode))assert.deepEqual(result,positive.stored);else{assert.equal(result.state,mode==='UNAVAILABLE'?'SOURCE_UNAVAILABLE':['RESOURCE_REPLAY','KEEPER_REPLAY'].includes(mode)?'NORMAL_START_PREPARATION_REPLAY_ONLY':'NORMAL_START_PREPARATION_CLAIMED');if(['CLAIM','RESOURCE_REPLAY','KEEPER_READY','KEEPER_REPLAY'].includes(mode)){assert.equal(result.creationAuthorized,false);assert.equal(result.executionAuthorized,false);assert.equal(result.dispatchPerformed,false);}}}
+    const unclaimed=['RESOURCE','RESOURCE_OPEN_LOST','KEEPER_PARTIAL'].includes(mode);assert.equal(claimCalls,unclaimed?0:1,`claim:${mode}`);assert.equal(storedClaims,['UNAVAILABLE','RESOURCE','RESOURCE_OPEN_LOST','RESOURCE_REPLAY','RESOURCE_SLOT_REPLAY','KEEPER_REPLAY','KEEPER_PARTIAL'].includes(mode)?0:1,`stored:${mode}`);if(['RESOURCE','RESOURCE_OPEN_LOST'].includes(mode))assert.equal(v.f.calls(),openedBefore,'미구성/late open은 helper를 새로 열지 않음');if(['RESOURCE_RESULT','RESOURCE_POST','RESOURCE_SLOT'].includes(mode))assert.equal(v.f.calls(),openedBefore+1,'claim과 result는 같은 helper operation을 사용');const opened=v.f.calls();await assert.rejects(prepare());assert.equal(v.f.calls(),opened);assert.equal(claimCalls,unclaimed?0:1,`repeat:${mode}`);if(!mode.startsWith('RESOURCE'))assert.equal(effects,initialEffects+(unclaimed?0:1));if(mode==='KEEPER_PARTIAL')assert.equal(installerReads,0);assert.equal(v.f.writes.filter(x=>x.operation==='SIGN_NORMAL_START_PREPARATION_RESULT_V1').length,['RESOURCE_RESULT','RESOURCE_POST','RESOURCE_SLOT'].includes(mode)?1:0,`sign:${mode}`);assert.equal(postCalls,['RESOURCE_POST','RESOURCE_SLOT'].includes(mode)?1:0);if(mode.startsWith('RESOURCE_SLOT'))assert.equal(slotReads,0,mode);if(mode==='RESOURCE_POST')assert.equal(slotReads,1);if(mode==='RESOURCE_REPLAY'){assert.equal(slotReads,0);assert.equal(v.f.calls(),openedBefore+1);assert.equal(v.f.owner.isBusy(),false,'재확인 경로도 원 helper를 한 번 닫는다');}
    }catch(error){if(error instanceof Error)error.message+=':'+mode;throw error;}finally{await operation?.close().catch(()=>{});resource?.close();v.client.disposeReceive();assert.equal(v.timers.size,0);}
  }}finally{Date.now=oldNow;}
 });
