@@ -5,7 +5,7 @@ import {notificationSessionDeadline} from '../notifications/notification-input.t
 import {readApplicationSnapshot} from '../methodologies/application-snapshot.ts';
 import {isVersionRef} from '../../../../contracts/references.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {cloneV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 import {readDocumentInventoryInput} from './document-inventory-input.ts';
 type Row=Record<string,any>;
@@ -36,6 +36,38 @@ function identitySnapshot(actor:AuthenticatedIdentity):AuthenticatedIdentity{
 const identityKey=(a:AuthenticatedIdentity)=>[a.actorId,a.clientId,a.credentialGeneration,a.authSession!.id];
 function compare(a:(string|number)[],b:(string|number)[]){for(let i=0;i<a.length;i++){if(a[i]!==b[i])return a[i]!<b[i]!?-1:1;}return 0;}
 /** 원문 접근 없는 내부 방법론 전체 적용 역사 metadata 관측이다. archive/복원·명령 실행 권한을 발급하지 않는다. */
+/** 현재 적용 head가 아니라 임무가 기록한 정확 역사 행과 노드를 검산한다. */
+export function checkAssignmentApplicationHistoryRow(projectId:string,ref:RuntimeRefV1,nodeId:string,value:unknown){
+ if(!uuidV1(projectId)||!refV1(ref))return bad();
+ const row=object(value,columns.project_methodologies);
+ if(integer(row.application_version,1)!==ref.version||!uuidV1(row.created_by)
+  ||(row.application_command_id===null?ref.version!==1:!uuidV1(row.application_command_id)))return bad();
+ stamp(row.created_at);
+ integer(row.source_version,1);
+ const parsed=readApplicationSnapshot(projectId,[row]);
+ if(!same(parsed.applicationRef,ref)||!parsed.snapshot)return bad();
+ const {nodes}=object(parsed.snapshot.graph,['nodes'],false);
+ if(!Array.isArray(nodes)||!nodes.some(node=>node.nodeId===nodeId))return bad();
+ if(inspectArtifact(Buffer.from(canonicalJson(row))).state==='SUSPECTED')return bad('METHODOLOGY_APPLICATION_INVENTORY_SENSITIVE_METADATA');
+ return row;
+}
+
+export async function readAssignmentApplicationHistoryRow(db:Pick<PoolClient,'query'>,projectId:string,ref:RuntimeRefV1,nodeId:string,metadataBytes:number){
+ if(!uuidV1(projectId)||!refV1(ref))return bad();
+ if(!Number.isSafeInteger(metadataBytes)||metadataBytes<1)return bad('METHODOLOGY_APPLICATION_INVENTORY_LIMIT',413);
+ const {rows}=await db.query(`/*FN16_D2_ASSIGNMENT_APPLICATION*/ WITH material AS (
+  SELECT ${columns.project_methodologies.join(',')} FROM anvil.project_methodologies
+  WHERE project_id=$1::uuid AND id=$2::uuid AND application_version=$3::bigint AND snapshot_hash=$4::text LIMIT 2
+ ) SELECT CASE WHEN octet_length(to_jsonb(material)::text)<=$5::bigint THEN to_jsonb(material) END AS inventory_data,
+  octet_length(to_jsonb(material)::text) AS row_bytes FROM material`,[projectId,ref.id,ref.version,ref.contentHash,metadataBytes]);
+ if(rows.length!==1)return bad();
+ const envelope=object(rows[0],['inventory_data','row_bytes']),size=integer(envelope.row_bytes,1);
+ if(size>metadataBytes)return bad('METHODOLOGY_APPLICATION_INVENTORY_LIMIT',413);
+ const row=checkAssignmentApplicationHistoryRow(projectId,ref,nodeId,envelope.inventory_data);
+ if(Buffer.byteLength(canonicalJson(row))>size)return bad();
+ return cloneV1(row);
+}
+
 export async function collectMethodologyApplicationInventory(access:AccessRepository,token:string,value:unknown,signal:AbortSignal):Promise<Row>{
  const request=readDocumentInventoryInput(value),started=performance.now();let authDeadline=Infinity,identity:AuthenticatedIdentity|undefined,metadataUsed=0;
  const check=()=>{if(signal.aborted)bad('METHODOLOGY_APPLICATION_INVENTORY_CANCELLED',409);if(performance.now()-started>=request.limits.deadlineMs||performance.now()>=authDeadline)bad('METHODOLOGY_APPLICATION_INVENTORY_DEADLINE',413);};

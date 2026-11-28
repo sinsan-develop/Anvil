@@ -5,6 +5,8 @@ import type {AccessRepository,AuthenticatedIdentity} from '../../../apps/server/
 import {inspectArtifact} from '../../../apps/server/storage/sensitive-inspection.ts';
 import {collectDocumentBodySnapshot} from '../../../apps/server/modules/backups/full-backup-snapshot-source.ts';
 import * as historyVerification from '../../../apps/server/modules/backups/full-backup-history-verification.ts';
+import {readAssignmentDraftInput} from '../../../apps/server/modules/assignments/assignment-input.ts';
+import {assignmentContentCriteria} from '../../../apps/server/modules/assignments/assignment-confirmation-input.ts';
 import {workPlanReviewCriteria} from '../../../apps/server/modules/traceability/work-plan-reviews.ts';
 import {analyzeWorkPlanCards} from '../../../apps/server/modules/traceability/work-plan-card.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
@@ -102,7 +104,8 @@ const confirmationOrigin=originFor(confirmation.command_id,'confirmDocument',{ve
 
 function fixture(mode='valid'){
  const confirmed=mode.startsWith('confirmed');
- const withIndex=mode.startsWith('design-index-');
+ const withAssignment=mode.startsWith('root-assignment-');
+ const withIndex=mode.startsWith('design-index-')||withAssignment;
  const withDecision=mode.startsWith('plan-decision-')||withIndex;
  const withRelations=mode.startsWith('relations-')||withDecision;
  const withDesign=mode.startsWith('design-')||withRelations;
@@ -137,14 +140,14 @@ function fixture(mode='valid'){
  const planRow=withDesign?{...workPlanRow,screen_review_refs:screenReviewRefs,version:expectedPlanRef.version,design_hash:designVersionRef.contentHash,content_hash:expectedPlanRef.contentHash,
   version_json:{ref:expectedPlanRef,status:'DRAFT',...designPlan}}:workPlanRow;
  function planProof(n:number,commandId:string,operation:string,reasonCode:string,payload:object,resultData:object,sequence:number,recordedAt:string,
-  targetId:string|null=expectedPlanRef.id,expectedVersion=expectedPlanRef.version){
+  targetId:string|null=expectedPlanRef.id,expectedVersion=expectedPlanRef.version,resultRef=expectedPlanRef){
   const requestHash=hash({...request,commandId:id(n),targetId,expectedVersion,operation,payload});
-  const scopeDigest=hash({projectId,actorId,clientId,controlGeneration:1,requestHash,policyRef,targetRef:expectedPlanRef});
+  const scopeDigest=hash({projectId,actorId,clientId,controlGeneration:1,requestHash,policyRef,targetRef:resultRef});
   const c={...command,id:commandId,operation,command_id:id(n),operation_id:id(n+1),authorization_receipt_id:id(n+2),expected_version:expectedVersion,
    request_hash:requestHash,received_at:recordedAt,completed_at:recordedAt,result_ref:{...command.result_ref,commandId:id(n),operationId:id(n+1),
-    targetId:expectedPlanRef.id,version:expectedPlanRef.version,data:{ref:expectedPlanRef,...resultData},serverReceivedAt:recordedAt}};
+    targetId:resultRef.id,version:resultRef.version,data:{ref:resultRef,...resultData},serverReceivedAt:recordedAt}};
   return {command:c,receipt:{...receipt,id:c.authorization_receipt_id,command_id:commandId,scope_digest:scopeDigest,authorized_at:recordedAt},
-   audit:{...audit,command_id:commandId,operation_id:id(n+1),event_id:id(n+3),target_ref:expectedPlanRef,recorded_at:recordedAt,
+   audit:{...audit,command_id:commandId,operation_id:id(n+1),event_id:id(n+3),target_ref:resultRef,recorded_at:recordedAt,
     server_sequence:sequence,reason_code:reasonCode,scope_digest:scopeDigest}};
  }
  const reviewAt='2026-11-28T00:00:01.000Z',confirmedAt='2026-11-28T00:00:02.000Z';
@@ -194,6 +197,53 @@ function fixture(mode='valid'){
  const indexRegion={id:region.id,project_id:projectId,design_item_id:region.designItemId,screen_code:region.screenCode,
   source_document_id:screenRef.id,source_version:screenRef.version,source_hash:screenRef.contentHash,artifact_id:region.artifactRef.artifactId,
   anchor:region.anchor,region_hash:region.regionHash,region_json:region,created_by:actorId,client_id:clientId,command_id:indexCommand.id,created_at:at};
+ const graph={nodes:[{nodeId:'N1',name:'공개 단계',purpose:'개발 목적',kind:'HUMAN',position:{x:0,y:0},role:'USER',inputs:[],
+  outputs:[{itemId:'O1',formRef,required:true,reviewCriteria:['내용 확인']}],taskScope:{included:['개발'],excluded:['운영']},
+  completionCriteria:['완료 확인'],approvalBoundary:['사람 확인'],mode:'CASE_BY_CASE',limitPolicyRef:pinned(574),recordRequirements:['기록']}],
+  edges:[],entryNodeId:'N1',terminalNodeIds:['N1']};
+ const methodologyRef={...pinned(573),contentHash:hash(graph)};
+ const applicationSnapshot={name:'적용본',purpose:'합성 방법론',graph,sourceRef:methodologyRef};
+ const applicationRef={...pinned(572),contentHash:hash(applicationSnapshot)};
+ const application={id:applicationRef.id,project_id:projectId,application_version:applicationRef.version,source_definition_id:methodologyRef.id,
+  source_version:methodologyRef.version,source_hash:methodologyRef.contentHash,snapshot_json:applicationSnapshot,snapshot_hash:applicationRef.contentHash,
+  created_by:actorId,created_at:at,application_command_id:null};
+ const assignmentApplication=mode==='root-assignment-app-scope'?pinned(998):applicationRef;
+ const taskRef={planRef:expectedPlanRef,taskCode:'A',applicationRef:assignmentApplication,nodeId:mode==='root-assignment-missing-node'?'MISSING':'N1'};
+ const definition={taskRef,baselineRefs:[expectedPlanRef,assignmentApplication,designVersionRef],purpose:'임무 목적',goal:'내용 완성',ownerRole:'개발',
+  integrationResponsibility:'별도 검수',inputs:['확정 설계'],outputs:['구현'],acceptanceCriteria:['검수'],verificationRequirements:['시험'],
+  included:['범위'],excluded:['운영'],requiredCapabilities:['CODE'],allowedScopes:[{sourceRootRef:pinned(575),mappingRef:null,
+   observationRef:pinned(576),baselineRef:pinned(577),targets:[{relativePath:'src/unit.ts',kind:'FILE',access:'WRITE',recursive:false}]}],
+  environmentRef:null,budgetRef:null,recordingPolicyRef:null,parentAssignmentRef:mode==='root-assignment-child'?pinned(598):null};
+ const draftInput={baseRef:null,definition,reason:'합성 임무 초안'};
+ const {readinessIssues}=readAssignmentDraftInput(draftInput);
+ const noAuthorization={ready:false,executionAuthorized:false,dispatchPerformed:false};
+ const draftSnapshot={definition,reason:draftInput.reason,previousRef:null,basis:{...taskRef,designRef:designVersionRef,
+  taskCardHash:mode==='root-assignment-card-hash'?'5'.repeat(64):hash(tasks[1]??null)},readinessIssues,status:'DRAFT',...noAuthorization};
+ const assignmentDraftRef={...pinned(570),contentHash:hash(draftSnapshot)};
+ const draftAt='2026-11-28T00:00:03.000Z',assignmentReviewAt='2026-11-28T00:00:04.000Z',assignmentAt='2026-11-28T00:00:05.000Z';
+ const rowBase={project_id:projectId,created_by:actorId,client_id:clientId};
+ const draftRow={...rowBase,draft_id:assignmentDraftRef.id,version:1,content_hash:assignmentDraftRef.contentHash,version_json:draftSnapshot,
+  command_id:id(580),created_at:draftAt};
+ const assignmentDraftProof=planProof(581,draftRow.command_id,'prepareAssignment','EXPLICIT_ASSIGNMENT_DRAFT_ONLY',draftInput,
+  {status:'ASSIGNMENT_DRAFT_STORED',snapshot:draftSnapshot},mode==='root-assignment-before-plan'?13:16,draftAt,null,0,assignmentDraftRef);
+ const assignmentReviewInput={draftRef:assignmentDraftRef,criteriaVersion:1,items:assignmentContentCriteria.map(criterionId=>
+  ({criterionId,outcome:'ACCEPTED',reason:'적합',evidenceRefs:[]})),outcome:'ACCEPTED',reason:'합성 임무 검토'};
+ const assignmentReviewSnapshot={...assignmentReviewInput,reviewedBy:{kind:'HUMAN',userId:actorId},reviewedAt:assignmentReviewAt,independence:'NOT_CLAIMED'};
+ const assignmentReviewRef={...pinned(585),contentHash:hash(assignmentReviewSnapshot)};
+ const assignmentReviewRow={...rowBase,review_id:assignmentReviewRef.id,draft_id:assignmentDraftRef.id,draft_version:1,draft_hash:assignmentDraftRef.contentHash,
+  content_hash:assignmentReviewRef.contentHash,review_json:assignmentReviewSnapshot,command_id:id(586),created_at:assignmentReviewAt};
+ const assignmentReviewProof=planProof(587,assignmentReviewRow.command_id,'reviewAssignmentContent','EXPLICIT_ASSIGNMENT_CONTENT_REVIEW',assignmentReviewInput,
+  {status:'ASSIGNMENT_CONTENT_REVIEWED',snapshot:assignmentReviewSnapshot},17,assignmentReviewAt,
+  mode==='root-assignment-review-target'?assignmentReviewRef.id:assignmentDraftRef.id,1,assignmentReviewRef);
+ const assignmentConfirmationId=id(571),assignmentInput={draftRef:assignmentDraftRef,reviewRefs:[assignmentReviewRef],reason:'별도 내용 확정',acknowledged:true};
+ const assignmentSnapshot={draftRef:assignmentDraftRef,definition,reviewRefs:assignmentInput.reviewRefs,reason:assignmentInput.reason,
+  confirmedBy:{kind:'HUMAN',userId:actorId},confirmedAt:assignmentAt,contentConfirmed:true,readinessIssues,...noAuthorization};
+ const assignmentRef={...assignmentDraftRef,contentHash:hash(assignmentSnapshot)};
+ const assignment={...rowBase,assignment_id:assignmentRef.id,version:1,content_hash:assignmentRef.contentHash,version_json:assignmentSnapshot,
+  command_id:id(591),created_at:assignmentAt,confirmation_id:assignmentConfirmationId};
+ const assignmentProof=planProof(592,assignment.command_id,'confirmAssignment','EXPLICIT_ASSIGNMENT_CONTENT_ONLY',assignmentInput,
+  {status:'ASSIGNMENT_CONTENT_CONFIRMED',confirmationId:assignmentConfirmationId,snapshot:assignmentSnapshot},18,assignmentAt,assignmentDraftRef.id,1,assignmentRef);
+ const rootAssignment={assignmentRef,assignmentConfirmationId,applicationRef};
  const designVersion={...original,document_id:designVersionRef.id,form_definition_id:designFormRef.id,form_hash:designFormRef.contentHash,
   body_artifact_id:designBody.artifactId,title:designPayload.title,content_json:designPayload.content,content_hash:designVersionRef.contentHash,command_id:id(316)};
  const designRequest={...request,commandId:id(317),
@@ -225,7 +275,7 @@ function fixture(mode='valid'){
    if(sql.includes("'anvil.actor_id'")){assert.equal(scope,'RR');assert.deepEqual(params,[actorId,clientId]);trace.push('RR:rls');return {rows:[{actor_id:actorId,client_id:clientId}]};}
    if(sql.includes('FROM anvil.projects p')){assert.deepEqual(params,[projectId,actorId]);assert(scope==='RR'?liveRR:!liveRR);return {rows:[{id:projectId,archived_at:null,participation:scope==='RC2'&&mode==='revoked'?'VIEWER':'OWNER'}]};}
    if(sql.includes('FROM anvil.project_control')){assert.equal(params[0],projectId);return {rows:[{actor_id:actorId,client_id:clientId,generation:1,version:1,revoked_at:null}]};}
-   assert((sql.includes('FN16_D2_BODY')||sql.includes('FN16_D2_WORK_PLAN')||sql.includes('FN16_D2_DESIGN_INDEX'))
+   assert((sql.includes('FN16_D2_BODY')||sql.includes('FN16_D2_WORK_PLAN')||sql.includes('FN16_D2_DESIGN_INDEX')||sql.includes('FN16_D2_ROOT_ASSIGNMENT')||sql.includes('FN16_D2_ASSIGNMENT_APPLICATION'))
     &&(sql.includes('LIMIT 2')||sql.includes('ORDER BY a.server_sequence DESC LIMIT 1')||sql.includes('LIMIT $4::integer')||sql.includes('LIMIT 201')));
    const table=sql.match(/FROM anvil\.(\w+)/)?.[1];
    if(!['form_definitions','authoring_standard_versions'].includes(table??''))assert.equal(params[0],projectId);
@@ -257,6 +307,49 @@ function fixture(mode='valid'){
     const charged=rows.reduce((sum,item)=>sum+item.row_bytes,0);
     rowCharges[scope]=(rowCharges[scope]??0)+charged;
     return {rows:charged>Number(params[4])?rows.map(row=>({...row,inventory_data:null})):rows};
+   }
+   if(withAssignment&&(sql.includes('FN16_D2_ROOT_ASSIGNMENT')||sql.includes('FN16_D2_ASSIGNMENT_APPLICATION'))){
+    trace.push(`${scope}:assignment:${table}`);
+    const proof=[assignmentDraftProof,assignmentReviewProof,assignmentProof].find(p=>p.command.id===params[1]||p.receipt.id===params[1]);
+    if(table==='assignment_versions'){
+     assert.deepEqual(params.slice(0,-1),[projectId,assignmentRef.id,assignmentRef.version,assignmentRef.contentHash,assignmentConfirmationId]);
+     row=assignment;
+    }else if(table==='assignment_draft_versions'){
+     assert.deepEqual(params.slice(0,-1),[projectId,assignmentDraftRef.id,assignmentDraftRef.version,assignmentDraftRef.contentHash]);
+     row=draftRow;
+    }else if(table==='assignment_content_reviews'){
+     if(sql.includes('ORDER BY a.server_sequence')){
+      assert.deepEqual(params.slice(0,-1),[projectId,assignmentDraftRef.id,1,18]);
+      assert.doesNotMatch(sql,/WHERE[^\n]*draft_hash\s*=/);
+      const history=[{review_id:assignmentReviewRef.id,content_hash:assignmentReviewRef.contentHash,draft_hash:assignmentDraftRef.contentHash,outcome:'ACCEPTED',server_sequence:17},
+       {review_id:id(599),content_hash:pinned(599).contentHash,draft_hash:assignmentDraftRef.contentHash,outcome:'REWORK',server_sequence:19}];
+      row=history.filter(item=>item.server_sequence<Number(params[3])).at(-1)!;
+      if(mode==='root-assignment-foreign-latest')row={...row,draft_hash:pinned(999).contentHash};
+      if(mode==='root-assignment-not-latest')row={...row,review_id:id(599),outcome:'REWORK'};
+     }else{
+      assert.deepEqual(params.slice(0,-1),[projectId,assignmentReviewRef.id,assignmentReviewRef.contentHash,assignmentDraftRef.id,1,assignmentDraftRef.contentHash]);
+      row=assignmentReviewRow;
+     }
+    }else if(table==='project_methodologies'){
+     assert.deepEqual(params.slice(0,-1),[projectId,applicationRef.id,applicationRef.version,applicationRef.contentHash]);
+     row=mode==='root-assignment-cross-project'?{...application,project_id:id(998)}:application;
+    }else{
+     assert.ok(proof);
+     if(table==='commands'){
+      assert.match(sql,/approval_consumption_id IS NULL/);
+      row=proof.command;
+     }else if(table==='authorization_receipts'){
+      assert.deepEqual(params.slice(0,-1),[projectId,proof.receipt.id,proof.command.id]);
+      row=proof.receipt;
+     }else{
+      assert.equal(table,'audit_events');
+      assert.match(sql,/correction_of IS NULL/);
+      row=proof===assignmentProof&&scope==='RC2'&&mode==='root-assignment-rc-drift'?{...proof.audit,event_id:id(597)}:proof.audit;
+     }
+    }
+    const projected=envelope(row);
+    rowCharges[scope]=(rowCharges[scope]??0)+projected.row_bytes;
+    return {rows:[projected.row_bytes>Number(params.at(-1))?{...projected,inventory_data:null}:projected]};
    }
    if(withIndex&&sql.includes('FN16_D2_DESIGN_INDEX')){
     trace.push(`${scope}:design-index:${table}`);
@@ -490,10 +583,10 @@ function fixture(mode='valid'){
    async close(){trace.push('body:close');if(mode==='close-unknown')throw Error('합성 close 불명');}};
  }};
  const admission={async readCurrent(_db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:{projectId:string;documentRef:typeof ref}){
-  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true}});assert(!liveRR);
+  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true},...withAssignment&&{rootAssignment}});assert(!liveRR);
   trace.push(`RC${rc}:admission`);
-  if(mode==='policy-denied'||(mode==='policy-revoked'||mode==='design-revoked'||mode==='design-index-revoked')&&rc===2)return null;
-  return {purpose:withIndex&&mode!=='design-index-v8-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_ADMISSION_V9':withDecision&&mode!=='plan-decision-v7-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_ADMISSION_V8':withRelations&&mode!=='relations-v6-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
+  if(mode==='policy-denied'||(mode==='policy-revoked'||mode==='design-revoked'||mode==='design-index-revoked'||mode==='root-assignment-revoked')&&rc===2)return null;
+  return {purpose:withAssignment&&mode!=='root-assignment-v9-admission'?'FN16_D2_ROOT_ASSIGNMENT_ADMISSION_V10':withIndex&&mode!=='design-index-v8-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_ADMISSION_V9':withDecision&&mode!=='plan-decision-v7-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_ADMISSION_V8':withRelations&&mode!=='relations-v6-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
    projectId,documentRef:ref,actorId,clientId,sessionId,credentialGeneration:1,controlGeneration:1,
    ...confirmed&&{confirmationId:mode==='confirmed-admission-mismatch'?id(207):confirmationId},
    ...withPlan&&mode!=='plan-admission-missing'&&{workPlanRef:mode==='plan-admission-mismatch'?pinned(312):expectedPlanRef},
@@ -502,6 +595,8 @@ function fixture(mode='valid'){
    ...withRelations&&mode!=='relations-v6-admission'&&{planRelations:true},
    ...withDecision&&mode!=='plan-decision-v7-admission'&&{planConfirmationId:mode==='plan-decision-bad-admission'?id(999):planConfirmationId},
    ...withIndex&&mode!=='design-index-v8-admission'&&{designIndex:true},
+   ...withAssignment&&mode!=='root-assignment-v9-admission'&&{rootAssignment:
+    mode==='root-assignment-bad-admission'?{...rootAssignment,assignmentConfirmationId:id(999)}:rootAssignment},
    jobRef:pinned(10),reservationRef:pinned(11),policyRef:pinned(mode==='new-policy'&&rc===2?19:12),targetProtectedRef:pinned(13),
    retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),
    formRef:mode==='foreign-admission-form'?pinned(103):formRef,expiresAt:'2026-11-28T00:00:09.000Z'};
@@ -510,11 +605,85 @@ function fixture(mode='valid'){
   metadataBudget=limits.metadataBytes;
   return collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',
   {...input,limits,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:mode==='plan-raw-invalid'?null:expectedPlanRef},
-   ...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true}},
+   ...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true},...withAssignment&&{rootAssignment}},
   mode==='unconfigured'?null:admission,reader,controller.signal);
  };
- return {run,trace,expectedPlanRef,designVersionRef,rowCharges};
+ return {run,trace,expectedPlanRef,designVersionRef,rowCharges,rootAssignment};
 }
+
+test('고정 확정 임무와 업무 카드 및 적용 방법론 노드를 함께 보존한다',async()=>{
+ const f=fixture('root-assignment-valid'),limits={...input.limits,metadataBytes:128*1024,fileCount:2};
+ const capture=await f.run(limits),{snapshot}=capture;
+ assert.equal(snapshot.kind,'FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10');
+ if(snapshot.kind!=='FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10')throw Error('임무 원행 누락');
+ const root=snapshot.rows.rootAssignmentRows;
+ assert.deepEqual(root.confirmation.row.version_json.draftRef,{id:root.draft.row.draft_id,version:1,contentHash:root.draft.row.content_hash});
+ assert.equal(root.latestBefore.review_id,root.reviews[0]!.row.review_id);
+ assert.deepEqual(f.trace.filter(item=>/assignment:assignment_versions|assignment:project_methodologies|RR:rollback|body:open|RC2:commit/.test(item)),
+  ['RR:assignment:assignment_versions','RR:assignment:project_methodologies','RR:rollback','body:open','design-body:open',
+   'RC2:assignment:assignment_versions','RC2:assignment:project_methodologies','RC2:commit']);
+ const expected={projectId,jobRef:snapshot.jobRef,documentRef:ref,workPlanRef:f.expectedPlanRef,designDocumentRef:f.designVersionRef,planRelations:true as const,
+  planConfirmationId:id(401),designIndex:true as const,rootAssignment:f.rootAssignment,snapshot:snapshot.observation.snapshot,snapshotHash:capture.snapshotHash};
+ const readback={snapshotBytes:Buffer.from(capture.snapshotBytes),body:Buffer.from(capture.body),designBody:Buffer.from(capture.designBody!)};
+ const result=await historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async scope=>{
+  assert.deepEqual(scope.rootAssignment,f.rootAssignment);
+  return readback;
+ });
+ assert.equal(result.kind,'FN16_D2_ROOT_ASSIGNMENT_VERIFICATION_V10');
+ if(result.kind!=='FN16_D2_ROOT_ASSIGNMENT_VERIFICATION_V10')throw Error('임무 원행 검산 누락');
+ assert.equal(result.taskCode,'A');
+ assert.equal(result.nodeId,'N1');
+ assert.equal(result.rootAssignmentProjectionHash,hash(root));
+ assert.equal(result.applicationOriginVerified,false);
+ assert.equal(result.executionAuthorized,false);
+ assert.equal(result.restorable,false);
+ const old=fixture('design-index-valid');
+ await old.run(limits);
+ assert.equal(old.trace.some(item=>item.includes(':assignment:')),false);
+ const {rootAssignment:_,...oldExpectation}=expected;
+ await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback(oldExpectation,limits,async()=>readback),
+  /FN16_D2_DOCUMENT_HISTORY_INVALID/);
+ for(const mode of ['application','audit']){
+  const changed=structuredClone(snapshot);
+  if(mode==='application')changed.rows.rootAssignmentRows.application.project_id=id(999);
+  else changed.rows.rootAssignmentRows.draft.origin.audit.server_sequence=14;
+  const snapshotBytes=Buffer.from(canonicalJson(changed));
+  await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback({...expected,snapshotHash:contentHash(snapshotBytes)},limits,
+   async()=>({...readback,snapshotBytes})),/FN16_D2_DOCUMENT_HISTORY_INVALID/);
+ }
+});
+
+test('임무의 정확 입장·업무 카드·노드·원장 검산이 실패하면 원문을 열지 않는다',async()=>{
+ const limits={...input.limits,metadataBytes:128*1024,fileCount:2};
+ for(const mode of ['root-assignment-v9-admission','root-assignment-bad-admission','root-assignment-app-scope','root-assignment-child',
+  'root-assignment-card-hash','root-assignment-before-plan','root-assignment-review-target','root-assignment-not-latest','root-assignment-foreign-latest',
+  'root-assignment-missing-node','root-assignment-cross-project']){
+  const f=fixture(mode);
+  await assert.rejects(f.run(limits),/FN16_D2_SNAPSHOT_ADMISSION_DENIED|ASSIGNMENT_INVENTORY_INTEGRITY_FAILED|DOCUMENT_INVENTORY_INTEGRITY_FAILED|METHODOLOGY_APPLICATION_INTEGRITY_FAILED|METHODOLOGY_APPLICATION_INVENTORY_INTEGRITY_FAILED/,mode);
+  assert.equal(f.trace.some(item=>item.endsWith('body:open')),false,mode);
+  if(mode.endsWith('admission'))assert.equal(f.trace.includes('RR:begin'),false,mode);
+  else assert.equal(f.trace.includes('RR:rollback'),true,mode);
+  assert.equal(f.trace.includes('RR:assignment:project_methodologies'),mode==='root-assignment-missing-node'||mode==='root-assignment-cross-project',mode);
+ }
+});
+
+test('임무·방법론 원행의 공유 한도와 최종 권한·원감사 변경에서 부분 결과가 없다',async()=>{
+ const limits={...input.limits,metadataBytes:128*1024,fileCount:2};
+ const valid=fixture('root-assignment-valid');
+ await valid.run(limits);
+ const small=fixture('root-assignment-valid');
+ await assert.rejects(small.run({...limits,metadataBytes:valid.rowCharges.RR!-1}),/FN16_D2_SNAPSHOT_LIMIT|METHODOLOGY_APPLICATION_INVENTORY_LIMIT/);
+ assert.equal(small.trace.includes('RR:assignment:project_methodologies'),true);
+ assert.equal(small.trace.some(item=>item.endsWith('body:open')),false);
+ for(const mode of ['root-assignment-rc-drift','root-assignment-revoked']){
+  const f=fixture(mode);
+  await assert.rejects(f.run(limits),/FN16_D2_SNAPSHOT_INVALID|FN16_D2_SNAPSHOT_ADMISSION_DENIED/,mode);
+  assert.equal(f.trace.includes('body:close'),true,mode);
+  assert.equal(f.trace.includes('design-body:close'),true,mode);
+  assert.equal(f.trace.includes('RC2:assignment:assignment_versions'),mode.endsWith('drift'),mode);
+  assert.equal(f.trace.includes('RC2:commit'),false,mode);
+ }
+});
 
 test('설계 원 색인과 고정 업무 카드의 참조를 동일 스냅샷에서 검산한다',async()=>{
  const f=fixture('design-index-valid'),limits={...input.limits,fileCount:2};

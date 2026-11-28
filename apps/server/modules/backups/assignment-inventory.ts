@@ -1,3 +1,4 @@
+import {types} from 'node:util';
 import type {PoolClient} from 'pg';
 import {AuthFailure,type AccessRepository,type AuthenticatedIdentity} from '../access/repository.ts';
 import {projectMember} from '../access/project-command.ts';
@@ -7,9 +8,11 @@ import {readAssignmentContentReview,readAssignmentConfirmation} from '../assignm
 import {inspectSourceScopeContainment} from '../assignments/source-scope-containment.ts';
 import {isVersionRef} from '../../../../contracts/references.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {arrayV1,cloneV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 import {readDocumentInventoryInput} from './document-inventory-input.ts';
+import {checkProjectHistoryOrigin,projectHistoryOriginColumns,readProjectHistoryOrigin} from './document-inventory.ts';
+import {checkAssignmentApplicationHistoryRow,readAssignmentApplicationHistoryRow} from './methodology-application-inventory.ts';
 type Row=Record<string,any>;
 const columns={
  assignment_drafts:'project_id id head_version created_by client_id created_at updated_at'.split(' '),
@@ -48,6 +51,173 @@ function identitySnapshot(actor:AuthenticatedIdentity):AuthenticatedIdentity{
 }
 const identityKey=(a:AuthenticatedIdentity)=>[a.actorId,a.clientId,a.credentialGeneration,a.authSession!.id];
 
+
+export interface RootAssignmentHistoryScope{
+ assignmentRef:RuntimeRefV1;assignmentConfirmationId:string;applicationRef:RuntimeRefV1;
+}
+export function isRootAssignmentHistoryScope(value:unknown):value is RootAssignmentHistoryScope{
+ return !types.isProxy(value)&&recordV1(value,['assignmentRef','assignmentConfirmationId','applicationRef'])
+  &&!types.isProxy(value.assignmentRef)&&refV1(value.assignmentRef)&&uuidV1(value.assignmentConfirmationId)
+  &&!types.isProxy(value.applicationRef)&&refV1(value.applicationRef);
+}
+type AssignmentOrigin=Awaited<ReturnType<typeof readProjectHistoryOrigin>>;
+type AssignmentEvent={row:Row;origin:AssignmentOrigin};
+export interface RootAssignmentHistoryRows{
+ confirmation:AssignmentEvent;draft:AssignmentEvent;latestBefore:Row;reviews:AssignmentEvent[];application:Row;
+}
+function noExecution(snapshot:Row){
+ return snapshot.ready===false&&snapshot.executionAuthorized===false&&snapshot.dispatchPerformed===false;
+}
+function assignmentConfirmation(projectId:string,scope:RootAssignmentHistoryScope,value:unknown){
+ const row=object(value,columns.assignment_versions),ref=scope.assignmentRef;
+ const snapshot=object(row.version_json,['draftRef','definition','reviewRefs','reason','confirmedBy','confirmedAt',
+  'contentConfirmed','readinessIssues','ready','executionAuthorized','dispatchPerformed']);
+ if(row.project_id!==projectId||row.assignment_id!==ref.id||integer(row.version,1)!==ref.version||row.content_hash!==ref.contentHash
+  ||row.confirmation_id!==scope.assignmentConfirmationId||hash(snapshot)!==ref.contentHash
+  ||snapshot.contentConfirmed!==true||!noExecution(snapshot)||snapshot.confirmedAt!==stamp(row.created_at)
+  ||!same(snapshot.confirmedBy,{kind:'HUMAN',userId:row.created_by})||Buffer.byteLength(canonicalJson(snapshot))>2097152)return bad();
+ const input=readAssignmentConfirmation({draftRef:snapshot.draftRef,reviewRefs:snapshot.reviewRefs,reason:snapshot.reason,acknowledged:true});
+ if(input.draftRef.id!==ref.id||input.draftRef.version!==ref.version)return bad();
+ return {row,snapshot,input};
+}
+function assignmentDraft(projectId:string,scope:RootAssignmentHistoryScope,planRef:RuntimeRefV1,designRef:RuntimeRefV1,
+ cardRows:unknown,confirmation:ReturnType<typeof assignmentConfirmation>,value:unknown){
+ const row=object(value,columns.assignment_draft_versions),ref=confirmation.input.draftRef;
+ const snapshot=object(row.version_json,['definition','reason','previousRef','basis','readinessIssues','status','ready','executionAuthorized','dispatchPerformed']);
+ if(row.project_id!==projectId||row.draft_id!==ref.id||integer(row.version,1)!==ref.version||row.content_hash!==ref.contentHash
+  ||hash(snapshot)!==ref.contentHash||snapshot.status!=='DRAFT'||!noExecution(snapshot)
+  ||!same(snapshot.definition,confirmation.snapshot.definition)||!same(snapshot.readinessIssues,confirmation.snapshot.readinessIssues))return bad();
+ const parsed=readAssignmentDraftInput({baseRef:snapshot.previousRef,definition:snapshot.definition,reason:snapshot.reason});
+ const {definition,baseRef}=parsed.input,{taskRef}=definition;
+ const basis=object(snapshot.basis,['planRef','applicationRef','designRef','taskCode','nodeId','taskCardHash']);
+ if(definition.parentAssignmentRef!==null||!same(taskRef.planRef,planRef)||!same(taskRef.applicationRef,scope.applicationRef)
+  ||(ref.version===1?baseRef!==null:!baseRef||baseRef.id!==ref.id||baseRef.version!==ref.version-1)
+  ||!arrayV1(cardRows,200)||definition.baselineRefs.some(r=>![planRef,scope.applicationRef,designRef].some(selected=>same(r,selected))))return bad();
+ const card=cardRows.find(card=>card?.task_code===taskRef.taskCode);
+ if(!card||card.project_id!==projectId||card.plan_id!==planRef.id||integer(card.plan_version,1)!==planRef.version
+  ||card.card_hash!==hash(card.card_json)
+  ||!same(basis,{planRef,applicationRef:scope.applicationRef,designRef,taskCode:taskRef.taskCode,nodeId:taskRef.nodeId,taskCardHash:card.card_hash}))return bad();
+ const issues=[...parsed.readinessIssues];
+ if(!definition.baselineRefs.some(r=>same(r,designRef)))issues.push({code:'BASELINE_REFERENCE_MISSING',location:'baselineRefs'});
+ if(!same(issues,snapshot.readinessIssues)||issues.some(i=>['REQUIRED_TEXT_MISSING','REQUIRED_LIST_MISSING','SOURCE_SCOPE_MISSING','BASELINE_REFERENCE_MISSING'].includes(i.code)))return bad();
+ return {row,snapshot,input:parsed.input,nodeId:taskRef.nodeId,taskCode:taskRef.taskCode};
+}
+function assignmentReview(projectId:string,draftRef:RuntimeRefV1,ref:RuntimeRefV1,value:unknown){
+ const row=object(value,columns.assignment_content_reviews);
+ const snapshot=object(row.review_json,['draftRef','criteriaVersion','items','outcome','reason','reviewedBy','reviewedAt','independence']);
+ if(row.project_id!==projectId||row.review_id!==ref.id||ref.version!==1||row.content_hash!==ref.contentHash
+  ||row.draft_id!==draftRef.id||integer(row.draft_version,1)!==draftRef.version||row.draft_hash!==draftRef.contentHash
+  ||hash(snapshot)!==ref.contentHash||!same(snapshot.draftRef,draftRef)||snapshot.outcome!=='ACCEPTED'
+  ||!same(snapshot.reviewedBy,{kind:'HUMAN',userId:row.created_by})||snapshot.reviewedAt!==stamp(row.created_at)
+  ||snapshot.independence!=='NOT_CLAIMED'||Buffer.byteLength(canonicalJson(snapshot))>2097152)return bad();
+ const input=readAssignmentContentReview({draftRef:snapshot.draftRef,criteriaVersion:snapshot.criteriaVersion,items:snapshot.items,
+  outcome:snapshot.outcome,reason:snapshot.reason});
+ return {row,snapshot,input};
+}
+function assignmentOrigin(projectId:string,ref:RuntimeRefV1,proof:unknown,row:Row,
+ command:{operation:'prepareAssignment'|'reviewAssignmentContent'|'confirmAssignment';reasonCode:string;payload:object;resultData:object;
+  requestBinding:{targetId:string|null;expectedVersion:number}}){
+ return checkProjectHistoryOrigin(projectId,ref,proof,{...command,commandId:row.command_id,actorId:row.created_by,clientId:row.client_id,createdAt:row.created_at}).sequence;
+}
+
+function checkAssignmentEvents(projectId:string,scope:RootAssignmentHistoryScope,planRef:RuntimeRefV1,designRef:RuntimeRefV1,
+ cardRows:unknown,planConfirmationSequence:unknown,history:Omit<RootAssignmentHistoryRows,'application'>){
+ const done=assignmentConfirmation(projectId,scope,history.confirmation.row),draftRef=done.input.draftRef;
+ const draft=assignmentDraft(projectId,scope,planRef,designRef,cardRows,done,history.draft.row);
+ const draftSequence=assignmentOrigin(projectId,draftRef,history.draft.origin,draft.row,{operation:'prepareAssignment',
+  reasonCode:'EXPLICIT_ASSIGNMENT_DRAFT_ONLY',payload:draft.input,resultData:{status:'ASSIGNMENT_DRAFT_STORED',snapshot:draft.snapshot},
+  requestBinding:{targetId:draftRef.version===1?null:draftRef.id,expectedVersion:draftRef.version-1}});
+ const anchor={targetId:draftRef.id,expectedVersion:draftRef.version};
+ const confirmationSequence=assignmentOrigin(projectId,scope.assignmentRef,history.confirmation.origin,done.row,{operation:'confirmAssignment',
+  reasonCode:'EXPLICIT_ASSIGNMENT_CONTENT_ONLY',payload:done.input,resultData:{status:'ASSIGNMENT_CONTENT_CONFIRMED',
+   confirmationId:scope.assignmentConfirmationId,snapshot:done.snapshot},requestBinding:anchor});
+ const latest=object(history.latestBefore,['review_id','content_hash','draft_hash','outcome','server_sequence']);
+ const latestSequence=integer(latest.server_sequence,1);
+ if(draftSequence<=integer(planConfirmationSequence,1)||draftSequence>=latestSequence||latestSequence>=confirmationSequence
+  ||latest.draft_hash!==draftRef.contentHash||latest.outcome!=='ACCEPTED'||!arrayV1(history.reviews,200)||history.reviews.length!==done.input.reviewRefs.length)return bad();
+ const sequences=new Set<number>();
+ const reviews=done.input.reviewRefs.map((ref,index)=>{
+  const evidence=object(history.reviews[index],['row','origin']);
+  const review=assignmentReview(projectId,draftRef,ref,evidence.row);
+  const sequence=assignmentOrigin(projectId,ref,evidence.origin,review.row,{operation:'reviewAssignmentContent',reasonCode:'EXPLICIT_ASSIGNMENT_CONTENT_REVIEW',
+   payload:review.input,resultData:{status:'ASSIGNMENT_CONTENT_REVIEWED',snapshot:review.snapshot},requestBinding:anchor});
+  if(sequence<=draftSequence||sequence>latestSequence||sequences.has(sequence))return bad();
+  sequences.add(sequence);
+  return {ref,sequence};
+ });
+ if(!reviews.some(item=>item.ref.id===latest.review_id&&item.ref.contentHash===latest.content_hash&&item.sequence===latestSequence))return bad();
+ return {taskCode:draft.taskCode,nodeId:draft.nodeId};
+}
+
+export function checkRootAssignmentHistoryRows(projectId:string,scope:RootAssignmentHistoryScope,planRef:RuntimeRefV1,designRef:RuntimeRefV1,
+ cardRows:unknown,planConfirmationSequence:unknown,value:unknown){
+ if(!uuidV1(projectId)||!isRootAssignmentHistoryScope(scope)||!refV1(planRef)||!refV1(designRef))return bad();
+ const {application,...events}=object(value,['confirmation','draft','latestBefore','reviews','application']) as unknown as RootAssignmentHistoryRows;
+ for(const event of [events.confirmation,events.draft])if(!recordV1(event,['row','origin']))return bad();
+ const {taskCode,nodeId}=checkAssignmentEvents(projectId,scope,planRef,designRef,cardRows,planConfirmationSequence,events);
+ checkAssignmentApplicationHistoryRow(projectId,scope.applicationRef,nodeId,application);
+ safeRootAssignmentHistory(value);
+ return {...scope,taskCode,nodeId,rootAssignmentProjectionHash:hash(value),applicationOriginVerified:false as const};
+}
+
+function safeRootAssignmentHistory(value:unknown){
+ if(inspectArtifact(Buffer.from(canonicalJson(value))).state==='SUSPECTED')return bad('ASSIGNMENT_INVENTORY_SENSITIVE_METADATA');
+}
+
+/** 목적·기한이 이미 고정된 읽기 거래에서 정확 확정 임무 한 건만 읽는다. */
+export async function readRootAssignmentHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,scope:RootAssignmentHistoryScope,planRef:RuntimeRefV1,
+ designRef:RuntimeRefV1,cardRows:unknown,planConfirmationSequence:unknown,metadataBytes:number):Promise<RootAssignmentHistoryRows>{
+ if(!uuidV1(projectId)||!isRootAssignmentHistoryScope(scope)||!refV1(planRef)||!refV1(designRef))return bad();
+ let remaining=metadataBytes;
+ async function fixed(from:string,fields:string[],where:string,args:unknown[],latest=false){
+  if(!Number.isSafeInteger(remaining)||remaining<1)return bad('ASSIGNMENT_INVENTORY_LIMIT',413);
+  const cap=args.length+1;
+  const {rows}=await db.query(`/*FN16_D2_ROOT_ASSIGNMENT*/ WITH material AS (
+   SELECT ${fields.join(',')} FROM ${from} WHERE ${where}${latest?' ORDER BY a.server_sequence DESC LIMIT 1':' LIMIT 2'}
+  ) SELECT CASE WHEN octet_length(to_jsonb(material)::text)<=$${cap}::bigint THEN to_jsonb(material) END AS inventory_data,
+   octet_length(to_jsonb(material)::text) AS row_bytes FROM material`,[...args,remaining]);
+  if(rows.length!==1)return bad();
+  const envelope=object(rows[0],['inventory_data','row_bytes']),size=integer(envelope.row_bytes,1);
+  if(size>remaining)return bad('ASSIGNMENT_INVENTORY_LIMIT',413);
+  const row=object(envelope.inventory_data,fields.map(f=>f.includes(' AS ')?f.split(' AS ')[1]!:f.slice(f.indexOf('.')+1)));
+  if(Buffer.byteLength(canonicalJson(row))>size)return bad();
+  remaining-=size;
+  return cloneV1(row);
+ }
+ const readOrigin=(id:unknown,operation:'prepareAssignment'|'reviewAssignmentContent'|'confirmAssignment')=>readProjectHistoryOrigin((table,predicate,args)=>
+  fixed(`anvil.${table} t`,projectHistoryOriginColumns[table].map(c=>'t.'+c),
+   `${table==='authorization_receipts'?'t.scope_id':'t.project_id'}=$1::uuid AND ${predicate}`,[projectId,...args]),id,operation);
+ const row=await fixed('anvil.assignment_versions t',columns.assignment_versions.map(c=>'t.'+c),
+  't.project_id=$1::uuid AND t.assignment_id=$2::uuid AND t.version=$3::bigint AND t.content_hash=$4::text AND t.confirmation_id=$5::uuid',
+  [projectId,scope.assignmentRef.id,scope.assignmentRef.version,scope.assignmentRef.contentHash,scope.assignmentConfirmationId]);
+ const done=assignmentConfirmation(projectId,scope,row),draftRef=done.input.draftRef;
+ const draftRow=await fixed('anvil.assignment_draft_versions t',columns.assignment_draft_versions.map(c=>'t.'+c),
+  't.project_id=$1::uuid AND t.draft_id=$2::uuid AND t.version=$3::bigint AND t.content_hash=$4::text',
+  [projectId,draftRef.id,draftRef.version,draftRef.contentHash]);
+ assignmentDraft(projectId,scope,planRef,designRef,cardRows,done,draftRow);
+ const draft={row:draftRow,origin:await readOrigin(draftRow.command_id,'prepareAssignment')};
+ const confirmation={row,origin:await readOrigin(row.command_id,'confirmAssignment')};
+ const sequence=integer(confirmation.origin.audit.server_sequence,1);
+ const latestBefore=await fixed("anvil.assignment_content_reviews t JOIN anvil.audit_events a ON a.project_id=t.project_id AND a.command_id=t.command_id AND a.outcome='APPLIED'",
+  ['t.review_id','t.content_hash','t.draft_hash',"t.review_json->>'outcome' AS outcome",'a.server_sequence'],
+  't.project_id=$1::uuid AND t.draft_id=$2::uuid AND t.draft_version=$3::bigint AND a.server_sequence<$4::bigint',
+  [projectId,draftRef.id,draftRef.version,sequence],true);
+ if(latestBefore.draft_hash!==draftRef.contentHash||latestBefore.outcome!=='ACCEPTED'||!done.input.reviewRefs.some(ref=>ref.id===latestBefore.review_id&&ref.contentHash===latestBefore.content_hash))return bad();
+ const reviews=[];
+ for(const selection of done.input.reviewRefs){
+  const review=await fixed('anvil.assignment_content_reviews t',columns.assignment_content_reviews.map(c=>'t.'+c),
+   't.project_id=$1::uuid AND t.review_id=$2::uuid AND t.content_hash=$3::text AND t.draft_id=$4::uuid AND t.draft_version=$5::bigint AND t.draft_hash=$6::text',
+   [projectId,selection.id,selection.contentHash,draftRef.id,draftRef.version,draftRef.contentHash]);
+  assignmentReview(projectId,draftRef,selection,review);
+  reviews.push({row:review,origin:await readOrigin(review.command_id,'reviewAssignmentContent')});
+ }
+ const events={draft,confirmation,latestBefore,reviews};
+ const {nodeId}=checkAssignmentEvents(projectId,scope,planRef,designRef,cardRows,planConfirmationSequence,events);
+ const application=await readAssignmentApplicationHistoryRow(db,projectId,scope.applicationRef,nodeId,remaining);
+ const history={...events,application};
+ safeRootAssignmentHistory(history);
+ return history;
+}
 
 /** 임무 초안·검토·확정의 내부 metadata 역사다. 현재 준비/실행/복원 권한을 발급하지 않는다. */
 export async function collectAssignmentInventory(access:AccessRepository,token:string,value:unknown,signal:AbortSignal):Promise<Row>{
