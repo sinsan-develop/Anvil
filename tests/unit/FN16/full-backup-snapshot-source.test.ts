@@ -26,7 +26,17 @@ const systemForm={id:formRef.id,scope:'SYSTEM',owner_user_id:null,project_id:nul
 const standard={id:standardRef.id,version:standardRef.version,content_hash:standardRef.contentHash,created_at:at};
 const content={body:bodyRef,attachments:[],sections:[],sourceRefs:[]};
 const ref={id:documentId,version:1,contentHash:hash({title:'합성',formRef,stageNodeRef:null,content})};
-const designRef=pinned(309);
+const designBytes=Buffer.from('합성 AF02 설계 원문');
+const designBodyRef={...bodyRef,artifactId:id(315),bytes:designBytes.length,contentHash:contentHash(designBytes)};
+const designDefinition={...definition,formCode:'AF02',name:'설계서',items:[{...formItem,itemId:'AF02-01'}]};
+const designFormRef={id:id(314),version:1,contentHash:hash(designDefinition)};
+const designForm={...systemForm,id:designFormRef.id,form_code:'AF02',definition_json:designDefinition,content_hash:designFormRef.contentHash};
+function designSource(body:typeof bodyRef){
+ const content={body,attachments:[],sections:[],sourceRefs:[]};
+ const source={title:'합성 설계',formRef:designFormRef,stageNodeRef:null,content};
+ return {source,ref:{id:id(309),version:1,contentHash:hash(source)}};
+}
+const {ref:designRef}=designSource(designBodyRef);
 const workPlan={documentRef:ref,designRef,screenReviewRefs:[],tasks:[],dependencies:[],reason:'합성 작업계획',
  issues:[{code:'TASKS_MISSING',location:'tasks',message:'업무 카드를 추가해야 합니다.'}],relationalProjection:'STORED'};
 const workPlanRef={id:id(310),version:2,contentHash:hash(workPlan)};
@@ -90,13 +100,34 @@ const confirmationOrigin=originFor(confirmation.command_id,'confirmDocument',{ve
 
 function fixture(mode='valid'){
  const confirmed=mode.startsWith('confirmed');
- const withPlan=mode.startsWith('plan-');
+ const withDesign=mode.startsWith('design-');
+ const withPlan=mode.startsWith('plan-')||withDesign;
  const trace:string[]=[];
+ const designBody=mode==='design-shared'?bodyRef:designBodyRef;
+ const {source:designPayload,ref:designVersionRef}=designSource(designBody);
+ const expectedDesignRef=mode==='design-plan-mismatch'?{...designVersionRef,contentHash:'e'.repeat(64)}:designVersionRef;
+ const designPlan={...workPlan,designRef:designVersionRef};
+ const expectedPlanRef=withDesign?{...workPlanRef,contentHash:hash(designPlan)}:workPlanRef;
+ const planRow=withDesign?{...workPlanRow,design_hash:designVersionRef.contentHash,content_hash:expectedPlanRef.contentHash,
+  version_json:{ref:expectedPlanRef,status:'DRAFT',...designPlan}}:workPlanRow;
+ const designVersion={...original,document_id:designVersionRef.id,form_definition_id:designFormRef.id,form_hash:designFormRef.contentHash,
+  body_artifact_id:designBody.artifactId,title:designPayload.title,content_json:designPayload.content,content_hash:designVersionRef.contentHash,command_id:id(316)};
+ const designRequest={...request,commandId:id(317),
+  payload:{...designPayload,reason:designVersion.reason,importCandidateRef:null}};
+ const designRequestHash=hash(designRequest);
+ const designScopeDigest=hash({projectId,actorId,clientId,controlGeneration:1,requestHash:designRequestHash,policyRef,targetRef:designVersionRef});
+ const designCommand={...command,id:designVersion.command_id,command_id:designRequest.commandId,request_hash:designRequestHash,
+  operation_id:id(318),authorization_receipt_id:id(319),result_ref:{...command.result_ref,operationId:id(318),
+   commandId:designRequest.commandId,targetId:designVersionRef.id,data:{...command.result_ref.data,ref:designVersionRef}}};
+ const designReceipt={...receipt,id:designCommand.authorization_receipt_id,command_id:designCommand.id,scope_digest:designScopeDigest};
+ const designAudit={...audit,event_id:id(320),server_sequence:2,command_id:designCommand.id,operation_id:designCommand.operation_id,
+  target_ref:designVersionRef,scope_digest:designScopeDigest};
  const rowCharges:Record<string,number>={};
  const person:AuthenticatedIdentity={actorId,clientId,serverOwner:false,credentialGeneration:1,reauthUntil:null,
   authSession:{id:sessionId,idleExpiresAt:'2026-11-28T00:01:00.000Z',absoluteExpiresAt:'2026-11-28T00:20:00.000Z'}};
  let rc=0,rr=0,obs=0;
  let liveRR=false;
+ let metadataBudget=input.limits.metadataBytes;
  function db(scope:string){
   return {async query(sql:string,params:unknown[]=[]){
    assert(!/\b(INSERT|UPDATE|DELETE|TRUNCATE|GRANT)\b/i.test(sql),'정상 운영 표 변경 0');
@@ -114,6 +145,7 @@ function fixture(mode='valid'){
    const table=sql.match(/FROM anvil\.(\w+)/)?.[1];
    if(!['form_definitions','authoring_standard_versions'].includes(table??''))assert.equal(params[0],projectId);
    trace.push(`${scope}:${table}`);
+   if(withDesign)assert.equal(params.at(-1),metadataBudget-(rowCharges[scope]??0));
    let row;
    const lineage=[reviewOrigin,earlierReviewOrigin,confirmationOrigin].find(origin=>origin.command.id===params[1]||origin.receipt.id===params[1]);
    if(lineage&&['commands','authorization_receipts','audit_events'].includes(table??'')){
@@ -126,7 +158,30 @@ function fixture(mode='valid'){
     if(mode==='confirmed-final-proof-drift'&&scope==='RC2'&&key==='audit'&&lineage===reviewOrigin)row={...row,event_id:id(308)};
     return {rows:[envelope(row)]};
    }
-   if(table==='document_versions'){assert.deepEqual(params.slice(1,-1),[documentId,1,ref.contentHash]);row=mode==='part'?{...original,stage_ref_json:{applicationId:id(86),nodeId:'PART'}}:original;}
+   if(withDesign&&table==='document_versions'&&params[1]===designVersionRef.id){
+    assert.deepEqual(params.slice(1,-1),[designVersionRef.id,designVersionRef.version,designVersionRef.contentHash]);
+    trace.push(`${scope}:AF02`);
+    row=mode==='design-cross-project'?{...designVersion,project_id:id(325)}:
+     mode==='design-phase'?{...designVersion,stage_ref_json:{applicationId:id(86),nodeId:'PART'}}:designVersion;
+   }
+   else if(withDesign&&table==='document_artifact_links'&&params[1]===designVersionRef.id){
+    assert.deepEqual(params.slice(1,-1),[designVersionRef.id,designVersionRef.version]);
+    row={project_id:projectId,document_id:designVersionRef.id,version:designVersionRef.version,kind:'BODY',artifact_id:designBody.artifactId};
+   }
+   else if(withDesign&&table==='artifacts'&&params[1]===designBodyRef.artifactId){
+    assert.match(sql,/draft_id IS NULL.*storage_key=/);
+    row={...artifact,id:designBody.artifactId,bytes:designBody.bytes,content_hash:designBody.contentHash,inspection_json:inspectArtifact(designBytes)};
+   }
+   else if(withDesign&&table==='commands'&&params[1]===designCommand.id){row=designCommand;}
+   else if(withDesign&&table==='authorization_receipts'&&params[1]===designReceipt.id){
+    assert.deepEqual(params.slice(1,-1),[designReceipt.id,designCommand.id]);row=designReceipt;
+   }
+   else if(withDesign&&table==='audit_events'&&params[1]===designCommand.id){row=designAudit;}
+   else if(withDesign&&table==='form_definitions'&&params[0]===designFormRef.id){
+    assert.deepEqual(params.slice(0,-1),[designFormRef.id,designFormRef.version,designFormRef.contentHash]);
+    row=mode==='design-rc-drift'&&scope==='RC2'?{...designForm,created_at:'2026-11-28T00:00:01.000Z'}:designForm;
+   }
+   else if(table==='document_versions'){assert.deepEqual(params.slice(1,-1),[documentId,1,ref.contentHash]);row=mode==='part'?{...original,stage_ref_json:{applicationId:id(86),nodeId:'PART'}}:original;}
    else if(table==='document_artifact_links'){assert.deepEqual(params.slice(1,-1),[documentId,1]);row={project_id:projectId,document_id:documentId,version:1,kind:'BODY',artifact_id:mode==='wrong-link'?id(30):bodyId};}
    else if(table==='artifacts'){assert.equal(params[1],bodyId);assert.match(sql,/draft_id IS NULL.*storage_key=/);row=scope==='RC2'&&mode==='current-artifact-change'?{...artifact,state:'QUARANTINED'}:artifact;}
    else if(table==='commands'){
@@ -171,15 +226,15 @@ function fixture(mode='valid'){
     row=mode==='standard-mismatch'?{...standard,content_hash:'c'.repeat(64)}:standard;
    }
    else if(table==='work_plan_versions'){
-    assert.deepEqual(params.slice(0,-1),[projectId,workPlanRef.id,workPlanRef.version,workPlanRef.contentHash,ref.id,ref.version,ref.contentHash]);
-    assert.equal(params[7],input.limits.metadataBytes-rowCharges[scope]!);
+    assert.deepEqual(params.slice(0,-1),[projectId,expectedPlanRef.id,expectedPlanRef.version,expectedPlanRef.contentHash,ref.id,ref.version,ref.contentHash]);
+    assert.equal(params[7],metadataBudget-rowCharges[scope]!);
     assert.doesNotMatch(sql,/head_version|confirmed_version|ORDER BY/);
     assert(scope==='RR'?liveRR:!liveRR);
     if(mode==='plan-missing')return {rows:[]};
     if(mode==='plan-duplicate')return {rows:[envelope(workPlanRow),envelope(workPlanRow)]};
     if(mode==='plan-metadata-limit')return {rows:[{inventory_data:null,row_bytes:Number(params[7])+1}]};
     row=mode==='plan-cross-row'?{...workPlanRow,project_id:id(312)}:mode==='plan-cross-document'?{...workPlanRow,document_hash:'f'.repeat(64)}:
-     scope==='RC2'&&mode==='plan-drift'?{...workPlanRow,command_id:id(312)}:workPlanRow;
+     scope==='RC2'&&mode==='plan-drift'?{...workPlanRow,command_id:id(312)}:planRow;
    }
    else if(table==='document_confirmations'){
     assert.deepEqual(params.slice(0,-1),[projectId,confirmationId,ref.id,ref.version,ref.contentHash]);
@@ -210,12 +265,12 @@ function fixture(mode='valid'){
    }
    else throw Error('잘못된 조회');
    const projected=envelope(row);
-   if(withPlan&&table!=='work_plan_versions'){
+   if(withPlan&&(table!=='work_plan_versions'||withDesign)){
     // PostgreSQL의 행 JSON 투영이 compact canonical JSON보다 많은 바이트를 반환하는 경우.
     projected.row_bytes+=5;
     rowCharges[scope]=(rowCharges[scope]??0)+projected.row_bytes;
    }
-   return {rows:[projected]};
+   return {rows:[projected.row_bytes>Number(params.at(-1))?{...projected,inventory_data:null}:projected]};
   },release(error?:Error){trace.push(error?'RR:discard':'RR:release');}} as unknown as PoolClient;
  }
  const access:Pick<AccessRepository,'authenticated'|'pool'>={
@@ -225,8 +280,15 @@ function fixture(mode='valid'){
   },
   pool:{async connect(){rr++;assert.equal(rr,1);return db('RR');}} as unknown as AccessRepository['pool']
  };
- const reader={async open(expected:unknown){
+ const reader={async open(expected:{artifactId:string}){
   assert(!liveRR);
+  if(withDesign&&expected.artifactId===designBodyRef.artifactId){
+   assert.deepEqual(expected,{projectId,artifactId:designBodyRef.artifactId,bytes:designBytes.length,contentHash:designBodyRef.contentHash});
+   trace.push('design-body:open');
+   let read=false;
+   return {async read(){if(read)return Buffer.alloc(0);read=true;return mode==='design-corrupt-body'?Buffer.alloc(designBytes.length):Buffer.from(designBytes);},
+    async close(){trace.push('design-body:close');}};
+  }
   assert.deepEqual(expected,{projectId,artifactId:bodyId,bytes:bytes.length,contentHash:bodyRef.contentHash});
   trace.push('body:open');
   let read=false;
@@ -234,22 +296,121 @@ function fixture(mode='valid'){
    async close(){trace.push('body:close');if(mode==='close-unknown')throw Error('합성 close 불명');}};
  }};
  const admission={async readCurrent(_db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:{projectId:string;documentRef:typeof ref}){
-  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef}});assert(!liveRR);
+  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef}});assert(!liveRR);
   trace.push(`RC${rc}:admission`);
-  if(mode==='policy-denied'||mode==='policy-revoked'&&rc===2)return null;
-  return {purpose:withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
+  if(mode==='policy-denied'||(mode==='policy-revoked'||mode==='design-revoked')&&rc===2)return null;
+  return {purpose:withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
    projectId,documentRef:ref,actorId,clientId,sessionId,credentialGeneration:1,controlGeneration:1,
    ...confirmed&&{confirmationId:mode==='confirmed-admission-mismatch'?id(207):confirmationId},
-   ...withPlan&&mode!=='plan-admission-missing'&&{workPlanRef:mode==='plan-admission-mismatch'?pinned(312):workPlanRef},
+   ...withPlan&&mode!=='plan-admission-missing'&&{workPlanRef:mode==='plan-admission-mismatch'?pinned(312):expectedPlanRef},
+   ...withDesign&&{designDocumentRef:mode==='design-admission-mismatch'?ref:expectedDesignRef,
+    designFormRef:mode==='design-form-mismatch'?formRef:designFormRef},
    jobRef:pinned(10),reservationRef:pinned(11),policyRef:pinned(mode==='new-policy'&&rc===2?19:12),targetProtectedRef:pinned(13),
    retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),
    formRef:mode==='foreign-admission-form'?pinned(103):formRef,expiresAt:'2026-11-28T00:00:09.000Z'};
  }};
- const run=(limits=input.limits)=>collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',
-  {...input,limits,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:mode==='plan-raw-invalid'?null:workPlanRef}},
+ const run=(limits=input.limits)=>{
+  metadataBudget=limits.metadataBytes;
+  return collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',
+  {...input,limits,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:mode==='plan-raw-invalid'?null:expectedPlanRef},
+   ...withDesign&&{designDocumentRef:expectedDesignRef}},
   mode==='unconfigured'?null:admission,reader,new AbortController().signal);
- return {run,trace};
+ };
+ return {run,trace,expectedPlanRef,designVersionRef,rowCharges};
 }
+
+test('작업계획의 AF02와 AF04를 같은 RR에서 읽고 독립 보관 바이트로 확인한다',async()=>{
+ const primary=fixture('design-valid'),limits={...input.limits,fileCount:2};
+ const captured=await primary.run(limits);
+ assert.equal(captured.snapshot.kind,'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6');
+ assert.deepEqual(captured.body,bytes);
+ assert.deepEqual(captured.designBody,designBytes);
+ assert.deepEqual(primary.trace.filter(item=>/work_plan_versions|AF02|^RR:rollback|body:open|RC2:commit/.test(item)),
+  ['RR:work_plan_versions','RR:AF02','RR:rollback','body:open','design-body:open','RC2:work_plan_versions','RC2:AF02','RC2:commit']);
+ const {snapshot}=captured;
+ const expected={projectId,jobRef:snapshot.jobRef,documentRef:ref,workPlanRef,designDocumentRef:designRef,
+  snapshot:snapshot.observation.snapshot,snapshotHash:captured.snapshotHash};
+ const readback={snapshotBytes:Buffer.from(captured.snapshotBytes),body:Buffer.from(captured.body),designBody:Buffer.from(captured.designBody!)};
+ const checked=await historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async(scope)=>{
+  assert.deepEqual(scope.designDocumentRef,designRef);
+  assert.deepEqual(scope.documentRef,ref);
+  return readback;
+ });
+ assert.equal(checked.kind,'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_VERIFICATION_V6');
+ if(checked.kind!=='FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_VERIFICATION_V6')throw Error('AF02 원 관계 누락');
+ assert.deepEqual(checked.designDocumentRef,designRef);
+ assert.equal(checked.designArtifact.contentHash,designBodyRef.contentHash);
+ assert.equal(checked.designBodyVerified,true);
+ assert.equal(checked.designDocumentHistoryComplete,false);
+ assert.equal(checked.executionAuthorized,false);
+ assert.equal(checked.restorable,false);
+ for(const [replayRef,replay] of [[ref,readback],[designRef,{...readback,designBody:readback.body}]] as const){
+  await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback({...expected,designDocumentRef:replayRef},limits,async()=>replay),
+   /FN16_D2_DOCUMENT_HISTORY_INVALID/);
+ }
+ await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback(expected,{...limits,fileCount:1},async()=>readback),
+  /FN16_D2_DOCUMENT_HISTORY_INVALID/);
+ await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback(expected,{...limits,inputBytes:bytes.length+designBytes.length-1},async()=>readback),
+  /FN16_D2_DOCUMENT_HISTORY_INVALID/);
+});
+
+test('AF02와 AF04가 동일 산출물을 참조하면 원 문서 관계 둘을 검산하고 BODY는 한 번만 읽는다',async()=>{
+ const shared=fixture('design-shared');
+ const limits={...input.limits,inputBytes:bytes.length};
+ const capture=await shared.run(limits);
+ assert.equal(capture.designBody,null);
+ assert.equal(shared.trace.filter(item=>item==='body:open').length,1);
+ const expected={projectId,jobRef:capture.snapshot.jobRef,documentRef:ref,workPlanRef:shared.expectedPlanRef,designDocumentRef:shared.designVersionRef,
+  snapshot:capture.snapshot.observation.snapshot,snapshotHash:capture.snapshotHash};
+ const readback={snapshotBytes:Buffer.from(capture.snapshotBytes),body:Buffer.from(capture.body),designBody:null};
+ const checked=await historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async()=>readback);
+ assert.equal(checked.kind,'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_VERIFICATION_V6');
+ await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async()=>({...readback,designBody:readback.body})),
+  /FN16_D2_DOCUMENT_HISTORY_INVALID/);
+});
+
+test('AF02 별도 입장·정확 계획 결박·프로젝트/단계·양식·두 BODY의 합산 한도는 보호 원문 열기 전에 거절한다',async()=>{
+ const limits={...input.limits,fileCount:2};
+ for(const [mode,error] of [
+  ['design-v5-purpose',/FN16_D2_SNAPSHOT_ADMISSION_DENIED/],
+  ['design-admission-mismatch',/FN16_D2_SNAPSHOT_ADMISSION_DENIED/],
+  ['design-plan-mismatch',/WORK_PLAN_INVENTORY/],
+  ['design-form-mismatch',/DOCUMENT_INVENTORY/],
+  ['design-cross-project',/DOCUMENT_INVENTORY/],
+  ['design-phase',/DOCUMENT_INVENTORY/],
+ ] as const){
+  const candidate=fixture(mode);
+  await assert.rejects(candidate.run(limits),error,mode);
+  assert.equal(candidate.trace.some(item=>item.endsWith('body:open')),false,mode);
+  if(mode==='design-plan-mismatch'||error.source.includes('ADMISSION_DENIED'))assert.equal(candidate.trace.includes('RR:AF02'),false,mode);
+ }
+ for(const tooSmall of [{...limits,fileCount:1},{...limits,inputBytes:bytes.length+designBytes.length-1}]){
+  const candidate=fixture('design-valid');
+  await assert.rejects(candidate.run(tooSmall),/FN16_D2_SNAPSHOT_LIMIT/);
+  assert.equal(candidate.trace.some(item=>item.endsWith('body:open')),false);
+ }
+ const complete=fixture('design-valid');
+ await complete.run(limits);
+ const candidate=fixture('design-valid');
+ await assert.rejects(candidate.run({...limits,metadataBytes:complete.rowCharges.RR!-1}),/FN16_D2_SNAPSHOT_LIMIT/);
+ assert.equal(candidate.trace.includes('RR:AF02'),true);
+ assert.equal(candidate.trace.some(item=>item.endsWith('body:open')),false);
+});
+
+test('AF02 두 번째 원문 실패 또는 최종 입장 회수·원행 변경에서는 부분 결과도 반환하지 않는다',async()=>{
+ for(const [mode,error] of [
+  ['design-corrupt-body',/ARTIFACT_BYTES_/],
+  ['design-revoked',/FN16_D2_SNAPSHOT_ADMISSION_DENIED/],
+  ['design-rc-drift',/FN16_D2_SNAPSHOT_INVALID/],
+ ] as const){
+  const candidate=fixture(mode);
+  await assert.rejects(candidate.run({...input.limits,fileCount:2}),error,mode);
+  assert.equal(candidate.trace.includes('body:close'),true,mode);
+  assert.equal(candidate.trace.includes('design-body:close'),true,mode);
+  assert.equal(candidate.trace.includes('RC2:commit'),false,mode);
+  assert.equal(candidate.trace.includes('RC2:AF02'),mode==='design-rc-drift',mode);
+ }
+});
 
 test('고정 작업계획 버전의 AF04 원문 관계를 한 RR과 독립 보관 바이트에서 검산한다',async()=>{
  const f=fixture('plan-valid'),capture=await f.run();

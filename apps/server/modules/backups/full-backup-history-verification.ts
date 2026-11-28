@@ -34,6 +34,10 @@ export interface DocumentWorkPlanSnapshot extends Omit<DocumentBodySnapshot,'kin
  kind:'FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5';
  rows:DocumentSystemFormHistoryRows&{workPlanVersion:Record<string,unknown>};
 }
+export interface DocumentWorkPlanDesignSnapshot extends Omit<DocumentBodySnapshot,'kind'|'rows'> {
+ kind:'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6';
+ rows:DocumentWorkPlanSnapshot['rows']&{designDocument:DocumentSystemFormHistoryRows};
+}
 
 export interface DocumentBodyHistoryExpectation {
  projectId:string;
@@ -43,6 +47,7 @@ export interface DocumentBodyHistoryExpectation {
  snapshotHash:string;
  confirmationId?:string;
  workPlanRef?:RuntimeRefV1;
+ designDocumentRef?:RuntimeRefV1;
 }
 
 function historyExpectation(expected:Readonly<DocumentBodyHistoryExpectation>){
@@ -50,12 +55,16 @@ function historyExpectation(expected:Readonly<DocumentBodyHistoryExpectation>){
  if(types.isProxy(expected))return invalid();
  const hasConfirmation=recordV1(expected,[...keys,'confirmationId'])&&uuidV1(expected.confirmationId);
  const hasPlan=recordV1(expected,[...keys,'workPlanRef'])&&!types.isProxy(expected.workPlanRef)&&refV1(expected.workPlanRef);
- if((!hasConfirmation&&!hasPlan&&!recordV1(expected,keys))
+ const hasDesign=recordV1(expected,[...keys,'workPlanRef','designDocumentRef'])
+  &&!types.isProxy(expected.workPlanRef)&&refV1(expected.workPlanRef)
+  &&!types.isProxy(expected.designDocumentRef)&&refV1(expected.designDocumentRef);
+ if((!hasConfirmation&&!hasPlan&&!hasDesign&&!recordV1(expected,keys))
   ||types.isProxy(expected.documentRef)||types.isProxy(expected.jobRef)||!refV1(expected.documentRef)||!refV1(expected.jobRef)
   ||!uuidV1(expected.projectId)||!hashV1(expected.snapshotHash)||typeof expected.snapshot!=='string'
   ||expected.snapshot.length>128*1024||!/^\d+:\d+:[\d,]*$/.test(expected.snapshot))return invalid();
  return {...expected,documentRef:Object.freeze({...expected.documentRef}),jobRef:Object.freeze({...expected.jobRef}),
-  ...(hasPlan&&expected.workPlanRef?{workPlanRef:Object.freeze({...expected.workPlanRef})}:{})};
+  ...((hasPlan||hasDesign)&&expected.workPlanRef?{workPlanRef:Object.freeze({...expected.workPlanRef})}:{}),
+  ...(hasDesign&&expected.designDocumentRef?{designDocumentRef:Object.freeze({...expected.designDocumentRef})}:{})};
 }
 
 const byteLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype),'byteLength')!.get!;
@@ -68,13 +77,28 @@ function boundedBytes(value:unknown,max:number){
  return bytes;
 }
 
-function verifyStoredHistory(wanted:Readonly<DocumentBodyHistoryExpectation>,snapshot:unknown,body:unknown,bodyLimit=20*1024*1024){
-  const {confirmationId,workPlanRef}=wanted;
+type HistoryBody=ReturnType<typeof checkDocumentBodyHistoryRows>;
+/** 같은 산출물은 정확한 동일 선언에만 한 payload로 재사용한다. */
+export function separateDesignHistoryBody(planBody:HistoryBody,designBody:HistoryBody){
+ if(planBody.artifactId!==designBody.artifactId)return designBody;
+ if(canonicalJson(planBody)!==canonicalJson(designBody))return invalid();
+ return null;
+}
+function verifyBodyBytes(body:unknown,artifact:HistoryBody){
+ const bytes=boundedBytes(body,artifact.bytes);
+ try{
+  if(bytes.length!==artifact.bytes||contentHash(bytes)!==artifact.contentHash||inspectArtifact(bytes).state!=='NO_KNOWN_MARKER')return invalid();
+ }finally{bytes.fill(0);}
+}
+function verifyStoredHistory(wanted:Readonly<DocumentBodyHistoryExpectation>,snapshot:unknown,body:unknown,designBody:unknown,
+ bodyLimit=40*1024*1024,fileLimit=2){
+  const {confirmationId,workPlanRef,designDocumentRef}=wanted;
   if(!recordV1(snapshot,['kind','projectId','jobRef','documentRef','observation','rows'])
    ||!['FN16_D2_DOCUMENT_BODY_SNAPSHOT_V1','FN16_D2_DOCUMENT_DRAFT_SNAPSHOT_V2','FN16_D2_DOCUMENT_SYSTEM_FORM_SNAPSHOT_V3',
-    'FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4','FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5'].includes(snapshot.kind)
+    'FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4','FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6'].includes(snapshot.kind)
    ||(snapshot.kind==='FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4')!==Boolean(confirmationId)
-   ||(snapshot.kind==='FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5')!==Boolean(workPlanRef)
+   ||['FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6'].includes(snapshot.kind)!==Boolean(workPlanRef)
+   ||(snapshot.kind==='FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6')!==Boolean(designDocumentRef)
    ||snapshot.projectId!==wanted.projectId||!refV1(snapshot.documentRef)
    ||!refV1(snapshot.jobRef)||canonicalJson(snapshot.jobRef)!==canonicalJson(wanted.jobRef)
    ||canonicalJson(snapshot.documentRef)!==canonicalJson(wanted.documentRef)
@@ -84,21 +108,27 @@ function verifyStoredHistory(wanted:Readonly<DocumentBodyHistoryExpectation>,sna
   const confirmation=confirmationId?checkDocumentConfirmationHistoryRows(wanted.projectId,wanted.documentRef,confirmationId,snapshot.rows):null;
   let workPlan:ReturnType<typeof checkWorkPlanDocumentHistoryRow>|null=null;
   let form:ReturnType<typeof checkDocumentSystemFormHistoryRows>|null=confirmation;
+  let design:ReturnType<typeof checkDocumentSystemFormHistoryRows>|null=null;
   if(workPlanRef){
-   if(!recordV1(snapshot.rows,['version','link','artifact','origin','systemForm','workPlanVersion']))return invalid();
-   const {workPlanVersion,...documentRows}=snapshot.rows;
+   if(!recordV1(snapshot.rows,['version','link','artifact','origin','systemForm','workPlanVersion',...(designDocumentRef?['designDocument']:[])]))return invalid();
+   const {workPlanVersion,designDocument,...documentRows}=snapshot.rows;
    form=checkDocumentSystemFormHistoryRows(wanted.projectId,wanted.documentRef,documentRows);
    if(documentRows.systemForm.definition.form_code!=='AF04')return invalid();
-   workPlan=checkWorkPlanDocumentHistoryRow(wanted.projectId,workPlanRef,wanted.documentRef,workPlanVersion);
+   workPlan=checkWorkPlanDocumentHistoryRow(wanted.projectId,workPlanRef,wanted.documentRef,workPlanVersion,designDocumentRef);
+   if(designDocumentRef){
+    design=checkDocumentSystemFormHistoryRows(wanted.projectId,designDocumentRef,designDocument);
+    if(designDocument.systemForm.definition.form_code!=='AF02')return invalid();
+   }
   }else if(snapshot.kind==='FN16_D2_DOCUMENT_SYSTEM_FORM_SNAPSHOT_V3'){
    form=checkDocumentSystemFormHistoryRows(wanted.projectId,wanted.documentRef,snapshot.rows);
   }
   const origin=form??(snapshot.kind==='FN16_D2_DOCUMENT_DRAFT_SNAPSHOT_V2'?checkDocumentDraftHistoryRows(wanted.projectId,wanted.documentRef,snapshot.rows):null);
   const artifact=origin?.body??checkDocumentBodyHistoryRows(wanted.projectId,wanted.documentRef,snapshot.rows);
-  const bytes=boundedBytes(body,Math.min(artifact.bytes,bodyLimit));
-  try{
-   if(bytes.length!==artifact.bytes||contentHash(bytes)!==artifact.contentHash||inspectArtifact(bytes).state!=='NO_KNOWN_MARKER')return invalid();
-  }finally{bytes.fill(0);}
+  const separate=design?separateDesignHistoryBody(artifact,design.body):null;
+  if(artifact.bytes+(separate?.bytes??0)>bodyLimit||(separate?2:1)>fileLimit)return invalid();
+  verifyBodyBytes(body,artifact);
+  if(separate)verifyBodyBytes(designBody,separate);
+  else if(design&&designBody!==null)return invalid();
   const result={projectId:wanted.projectId,
    jobRef:wanted.jobRef,documentRef:wanted.documentRef,snapshotHash:wanted.snapshotHash,artifact,
    bodyVerified:true as const,documentHistoryComplete:false as const,restorable:false as const,executionAuthorized:false as const};
@@ -108,8 +138,12 @@ function verifyStoredHistory(wanted:Readonly<DocumentBodyHistoryExpectation>,sna
   const systemForm={...draft,
    formRef:form.formRef,formProjectionHash:form.formProjectionHash,standardRef:form.standardRef,
    standardProjectionHash:form.standardProjectionHash,standardBodyVerified:false as const,formAuthorityVerified:false as const};
-  if(workPlan)return {kind:'FN16_D2_DOCUMENT_WORK_PLAN_VERIFICATION_V5' as const,...systemForm,...workPlan,
-   workPlanHistoryComplete:false as const,workPlanAuthorityVerified:false as const};
+  if(workPlan){
+   const relation={...systemForm,...workPlan,workPlanHistoryComplete:false as const,workPlanAuthorityVerified:false as const};
+   if(design&&designDocumentRef)return {kind:'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_VERIFICATION_V6' as const,...relation,
+    designDocumentRef,designArtifact:design.body,designBodyVerified:true as const,designDocumentHistoryComplete:false as const};
+   return {kind:'FN16_D2_DOCUMENT_WORK_PLAN_VERIFICATION_V5' as const,...relation};
+  }
   if(!confirmation)return {kind:'FN16_D2_DOCUMENT_SYSTEM_FORM_VERIFICATION_V3' as const,...systemForm};
   return {kind:'FN16_D2_DOCUMENT_CONFIRMATION_VERIFICATION_V4' as const,...systemForm,
    confirmationId:confirmation.confirmationId,confirmationProjectionHash:confirmation.confirmationProjectionHash,
@@ -118,11 +152,11 @@ function verifyStoredHistory(wanted:Readonly<DocumentBodyHistoryExpectation>,sna
 
 /** 이미 판독한 내부 역사 객체의 원 관계와 BODY를 검산한다. */
 export async function verifyDocumentBodyHistory(expected:Readonly<DocumentBodyHistoryExpectation>,
- read:()=>Promise<{snapshot:unknown;body:Uint8Array}>){
+ read:()=>Promise<{snapshot:unknown;body:Uint8Array;designBody?:Uint8Array|null}>){
  try{
   const wanted=historyExpectation(expected);
-  const {snapshot,body}=await read();
-  return verifyStoredHistory(wanted,snapshot,body);
+  const {snapshot,body,designBody}=await read();
+  return verifyStoredHistory(wanted,snapshot,body,designBody);
  }catch{return invalid();}
 }
 
@@ -161,13 +195,13 @@ export async function verifyDocumentBodyHistoryReadback(expected:Readonly<Docume
   // 이 경계는 바이트만 받는다. 취소를 무시한 reader의 후속 결과는 검산하지 않는다.
   const observed=await Promise.race([pending,timedOut]);
   if(remaining()<=0){controller.abort();return invalid();}
-  if(types.isProxy(observed)||!recordV1(observed,['snapshotBytes','body']))return invalid();
+  if(types.isProxy(observed)||!recordV1(observed,['snapshotBytes','body',...(scope.designDocumentRef?['designBody']:[])]))return invalid();
   snapshotBytes=boundedBytes(observed.snapshotBytes,request.limits.metadataBytes);
   if(contentHash(snapshotBytes)!==snapshotHash)return invalid();
   const text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(snapshotBytes);
   const snapshot=parseJsonWithoutDuplicateKeys(text);
   if(canonicalJson(snapshot)!==text)return invalid();
-  const result=verifyStoredHistory({...scope,snapshotHash},snapshot,observed.body,request.limits.inputBytes);
+  const result=verifyStoredHistory({...scope,snapshotHash},snapshot,observed.body,observed.designBody,request.limits.inputBytes,request.limits.fileCount);
   if(remaining()<=0)return invalid();
   return result;
  }catch{return invalid();}

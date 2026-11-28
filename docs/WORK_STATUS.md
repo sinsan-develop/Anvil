@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-28 KST
 
+- **Stage E / FN16 D2 원 작업계획에 결박된 AF02와 AF04** — 기준 `96b2fc20`, 담당 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 별도 목적 입장의 exact 설계/양식 참조를 원 plan.designRef와 대조한 뒤 동일 RR에서 SYSTEM AF02와 기존 AF04의 원행을 수집한다. 동일 metadata·원문·파일 수 상한을 적용하고 두 선언이 정확히 같은 산출물은 한 번 읽는다. 최종 RC 재대조와 독립 봉인 바이트/두 BODY 검산에서 다른 문서·권한 회수·두 번째 원문 실패 시 부분 반환 0. V1–V5 및 기존 목록 조회 유지. 제품 3·시험 1경로. 명시 V6 부재 RED 1건 교정, 담당 합성 115/115·어울 95/95(실패·취소·skip 0), 타입·diff 통과. 실제 보호 입장/PG/파일 저장·전체 복원, Windows·키·권한·서비스·Agent 미검증.
+
 - **Stage E / FN16 D2 보관 작업계획과 원 AF04 문서 버전** — 기준 `df4f455e`, 담당 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 목적 한정 입장에 고정 plan ref를 추가하고 동일 RR에서 SYSTEM AF04 문서의 원행과 그 참조를 가진 작업계획 버전 한 행만 수집한다. 원 ID·버전·해시와 관계를 최종 RC 및 독립 보관 바이트에서 다시 대조한다. 문서와 작업계획이 같은 metadata 상한을 적용받으며 교차·중복·누락은 거절한다. V1–V4 및 기존 목록 판독 유지. 제품 3·시험 1경로. 연결 부재 RED 1건 교정, 담당·어울 합성 91/91(실패·취소·skip 0), 타입·diff 통과. 원 작업계획 명령·관계표·외부 문서·현재 권한·전체 D2 저장/복원과 실제 PG·보호 공급/실자료·Windows·키·서비스·Agent는 미검증.
 
 - **Stage C / IX02 최초 보호 claim의 확정 거절 참조 운반** — 기준 `17710eb9`, 담당 `fn08_policy_decision_ready`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 기존 보호 원장의 확정 거절이 정착 후 정확 readback될 때만 원 구분자를 최초 비공개 응답에 넣는다. 등록·세션·요청·claim·기한을 고정하고 데스크톱 외부 반환에서 제거한다. 원 슬롯이 없거나 틀리면 교체·fallback·새 서명·POST를 차단한다. 기존 독립 SIGN·기본 미구성·재확인·PREPARED 차단 유지. 제품 3·시험 2경로. 연결 부재 RED 2건, 기존 private frame의 실제 기한 전달과 불일치한 정적 단언 1건 교정. 담당 정적·합성 325/325, 어울 인접 236/236(실패·취소·skip 0), 타입·diff 통과. 실제 확정 거절 근거 공급은 아직 없으며 Windows 원장·C#·DB·키·권한·서비스·Agent 및 양성 PREPARED·인계 미검증.

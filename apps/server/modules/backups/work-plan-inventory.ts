@@ -59,19 +59,20 @@ function readVersionProjection(row:Row,version:number){
 }
 
 /** 정확 작업계획 버전과 원 AF04 문서의 불변 관계만 확인한다. */
-export function checkWorkPlanDocumentHistoryRow(projectId:string,workPlanRef:RuntimeRefV1,documentRef:RuntimeRefV1,value:unknown){
+export function checkWorkPlanDocumentHistoryRow(projectId:string,workPlanRef:RuntimeRefV1,documentRef:RuntimeRefV1,value:unknown,designDocumentRef?:RuntimeRefV1){
  const row=object(value,columns.work_plan_versions);
  if(!uuidV1(projectId)||!refV1(workPlanRef)||!refV1(documentRef)||row.project_id!==projectId
   ||!uuidV1(row.created_by)||!uuidV1(row.client_id)||!uuidV1(row.command_id))return bad();
  stamp(row.created_at);
  const projection=readVersionProjection(row,integer(row.version,1));
- if(!same(projection.ref,workPlanRef)||!same(projection.snapshot.documentRef,documentRef))return bad();
+ if(!same(projection.ref,workPlanRef)||!same(projection.snapshot.documentRef,documentRef)
+  ||(designDocumentRef!==undefined&&(!refV1(designDocumentRef)||!same(projection.snapshot.designRef,designDocumentRef))))return bad();
  return {workPlanRef:projection.ref,workPlanProjectionHash:hash(row)};
 }
 
 /** 기존에 들어간 보호 거래만 사용한다. 계획의 head·다른 원문·관계표는 읽지 않는다. */
-export async function readWorkPlanDocumentHistoryRow(db:Pick<PoolClient,'query'>,projectId:string,workPlanRef:RuntimeRefV1,documentRef:RuntimeRefV1,metadataBytes:number){
- if(!uuidV1(projectId)||!refV1(workPlanRef)||!refV1(documentRef))return bad();
+export async function readWorkPlanDocumentHistoryRow(db:Pick<PoolClient,'query'>,projectId:string,workPlanRef:RuntimeRefV1,documentRef:RuntimeRefV1,metadataBytes:number,designDocumentRef?:RuntimeRefV1){
+ if(!uuidV1(projectId)||!refV1(workPlanRef)||!refV1(documentRef)||(designDocumentRef!==undefined&&!refV1(designDocumentRef)))return bad();
  if(!Number.isSafeInteger(metadataBytes)||metadataBytes<1)return bad('WORK_PLAN_INVENTORY_LIMIT',413);
  const rows=(await db.query(`/*FN16_D2_WORK_PLAN*/ WITH material AS (
   SELECT ${columns.work_plan_versions.map(k=>'t.'+k).join(',')} FROM anvil.work_plan_versions t
@@ -85,7 +86,7 @@ export async function readWorkPlanDocumentHistoryRow(db:Pick<PoolClient,'query'>
  if(size>metadataBytes)return bad('WORK_PLAN_INVENTORY_LIMIT',413);
  const row=object(envelope.inventory_data,columns.work_plan_versions);
  if(Buffer.byteLength(canonicalJson(row))>size)return bad();
- checkWorkPlanDocumentHistoryRow(projectId,workPlanRef,documentRef,row);
+ checkWorkPlanDocumentHistoryRow(projectId,workPlanRef,documentRef,row,designDocumentRef);
  return cloneV1(row);
 }
 
