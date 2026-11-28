@@ -422,7 +422,7 @@ const saved=new Map<string,PropertyDescriptor|undefined>();let ui:any;
 const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class OwnedChannel extends NativeChannel{constructor(){super();channels.push(this);}}
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/transfers/TransferPreparationPage.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:history-decision',name:'HistoryDecisionTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'history-memory-entry',resolveId(id){if(id.endsWith('virtual:history-decision'))return '\0history-decision';},load(id){if(id==='\0history-decision')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{TransferPreparationPage}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as api from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/transfers/preparation-record-api.ts',import.meta.url)))};import * as harness from${JSON.stringify(fileURLToPath(new URL('../../../tests/browser/UI09/preparation-record-dom-harness.tsx',import.meta.url)))};export{React,createRoot,TransferPreparationPage,ApiClient,api,harness};`;}}]});
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:history-decision',name:'HistoryDecisionTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'history-memory-entry',resolveId(id){if(id.endsWith('virtual:history-decision'))return '\0history-decision';},load(id){if(id==='\0history-decision')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{TransferPreparationPage}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as api from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/transfers/preparation-record-api.ts',import.meta.url)))};import * as harness from${JSON.stringify(fileURLToPath(new URL('../../../tests/browser/UI09/preparation-record-dom-harness.tsx',import.meta.url)))};import * as manifestApi from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/transfers/transfer-manifest-api.ts',import.meta.url)))};export{React,createRoot,TransferPreparationPage,ApiClient,api,harness,manifestApi};`;}}]});
  const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
  for(const [key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return HistoryDecisionTest;')();
@@ -461,9 +461,10 @@ function receipt(command:any,recordId=id(20)){const payload=command.payload,obse
  const record=readPreparationSnapshot({schemaVersion:1,id:recordId,projectId:pid,version:1,kind:'TRANSFER_PREPARATION_RECORD',state:'PREPARATION_ONLY',...payload,baselineRefs:[],budgetRef:null,sourceRefs:[],requiredContext:['PURPOSE_REASON','RULES_SCOPE','LATEST_INSTRUCTIONS','DECISIONS_REASON','CURRENT_POSITION','ACTUAL_GAPS','NEXT_ACTION'].map(code=>({code,state:hasContext?'MISSING_OR_EXCLUDED':'NOT_COLLECTED'})),gaps,observedAt,preparationStored:true,manifestStored:false,bindingFrozen:false,ready:false,resumeAuthorized:false,executionAuthorized:false,dispatchPerformed:false});
  const ref={id:record.id,version:1,contentHash:hash(record)};return readPreparationReceipt({operationId:id(21),commandId:command.commandId,projectId:pid,status:'APPLIED',targetId:record.id,version:1,data:{ref,record,preparationStored:true,manifestStored:false},evidenceRefs:[],warnings:[],serverReceivedAt:observedAt}) as any;
 }
-async function host(options:{targetDenied?:boolean;registered?:boolean;registeredTarget?:ReturnType<typeof historicalTarget>;otherAssignment?:boolean;empty?:boolean;readerSession?:any;knownRecord?:any;controlDenied?:boolean;historicalGet?:(path:string)=>Promise<Response>|Response|undefined}={}){const f=seed();if(options.registered){Object.assign(f.binding.snapshot,{connectionKind:'REGISTERED_DEFINITION',connectionReadiness:'REGISTERED_DEFINITION_ONLY'});if(options.registeredTarget){f.binding.snapshot.connectionRef=options.registeredTarget.ref;f.responses['connections/'+options.registeredTarget.ref.id+'/versions/'+options.registeredTarget.ref.version]=options.registeredTarget;}f.binding.ref.contentHash=hash(f.binding.snapshot);}if(options.otherAssignment){f.binding.snapshot.assignmentRef={...f.confirmed.ref,contentHash:'f'.repeat(64)};f.binding.ref.contentHash=hash(f.binding.snapshot);}const controlDenied=options.controlDenied,targetDenied=options.targetDenied,calls:{path:string;method:string;body?:string}[]=[],modes={post:'OK',get:'OK',control:'OK'},waiting:{release:((r:Response)=>void)|null;fixed:(()=>void)|null}={release:null,fixed:null};let saved:any=options.knownRecord??null,lost=0;
- const historicalGet=options.historicalGet,records=new Map<string,any>(),commands=new Map<string,any>();
- const transport=async(url:any,options:any)=>{const path=new URL(String(url),'https://anvil.invalid').pathname,method=options?.method??'GET';calls.push({path,method,body:options?.body});if(method==='POST'){if(modes.post==='LOST')throw Error('합성 단절');if(modes.post==='409')return Response.json({code:'VERSION_CONFLICT'},{status:409});if(modes.post==='DELAY')return new Promise<Response>(r=>waiting.release=r);const command=JSON.parse(options.body);saved=commands.get(command.commandId)??receipt(command,id(20+commands.size));commands.set(command.commandId,saved);records.set(saved.data.ref.id,saved);return Response.json(saved);}
+async function host(options:{targetDenied?:boolean;registered?:boolean;registeredTarget?:ReturnType<typeof historicalTarget>;otherAssignment?:boolean;empty?:boolean;readerSession?:any;knownRecord?:any;controlDenied?:boolean;historicalGet?:(path:string)=>Promise<Response>|Response|undefined;manifestPost?:(body:string,headers:Headers)=>Promise<Response>|Response;manifestGet?:(path:string)=>Promise<Response>|Response}={}){const f=seed();if(options.registered){Object.assign(f.binding.snapshot,{connectionKind:'REGISTERED_DEFINITION',connectionReadiness:'REGISTERED_DEFINITION_ONLY'});if(options.registeredTarget){f.binding.snapshot.connectionRef=options.registeredTarget.ref;f.responses['connections/'+options.registeredTarget.ref.id+'/versions/'+options.registeredTarget.ref.version]=options.registeredTarget;}f.binding.ref.contentHash=hash(f.binding.snapshot);}if(options.otherAssignment){f.binding.snapshot.assignmentRef={...f.confirmed.ref,contentHash:'f'.repeat(64)};f.binding.ref.contentHash=hash(f.binding.snapshot);}const controlDenied=options.controlDenied,targetDenied=options.targetDenied,calls:{path:string;method:string;body?:string}[]=[],modes={post:'OK',get:'OK',control:'OK'},waiting:{release:((r:Response)=>void)|null;fixed:(()=>void)|null}={release:null,fixed:null};let saved:any=options.knownRecord??null,lost=0;
+ const hostOptions=options,historicalGet=options.historicalGet,records=new Map<string,any>(),commands=new Map<string,any>();
+ const transport=async(url:any,options:any)=>{const path=new URL(String(url),'https://anvil.invalid').pathname,method=options?.method??'GET';calls.push({path,method,body:options?.body});if(method==='POST'){if(options.body&&JSON.parse(options.body).operation==='createTransferManifest'&&hostOptions.manifestPost)return hostOptions.manifestPost(options.body,new Headers(options.headers));if(modes.post==='LOST')throw Error('합성 단절');if(modes.post==='409')return Response.json({code:'VERSION_CONFLICT'},{status:409});if(modes.post==='DELAY')return new Promise<Response>(r=>waiting.release=r);const command=JSON.parse(options.body);saved=commands.get(command.commandId)??receipt(command,id(20+commands.size));commands.set(command.commandId,saved);records.set(saved.data.ref.id,saved);return Response.json(saved);}
+  if(path.includes('/transfers/')&&hostOptions.manifestGet)return hostOptions.manifestGet(String(url));
   const historical=historicalGet?.(path);if(historical)return historical;
   if(path==='/api/v1/projects/'+pid&&(controlDenied||modes.control==='403'))return Response.json({code:'PROJECT_CONTROL_REQUIRED'},{status:403});if(path==='/api/v1/projects/'+pid)return Response.json({id:pid,participation:'OWNER',controlState:{actorId:session.user.id,clientId:session.clientId,generation:3,status:'HELD'}});
   if(path.includes('/transfer-preparations/')){saved=records.get(path.split('/').at(-3)!)??saved;if(['WAIT200','WAIT401'].includes(modes.get)){const observedAt=new Date().toISOString(),value=modes.get==='WAIT401'?{code:'AUTH_REQUIRED'}:readPreparationGet({projectId:pid,ref:saved.data.ref,record:saved.data.record,observedAt,currentStatus:{intentExpired:Date.parse(saved.data.record.intentExpiresAt)<=Date.parse(observedAt),usableForTransfer:false,sourceCurrentness:'NOT_REVALIDATED'},preparationStored:true,manifestStored:false}),response=Response.json(value,{status:modes.get==='WAIT401'?401:200}),native=response.json.bind(response);response.json=async()=>{await new Promise<void>(resolve=>waiting.fixed=resolve);return native();};return response;}if(modes.get!=='OK')return Response.json({code:'ACCESS_DENIED'},{status:Number(modes.get)});const observedAt=new Date().toISOString();return Response.json(readPreparationGet({projectId:pid,ref:saved.data.ref,record:saved.data.record,observedAt,currentStatus:{intentExpired:Date.parse(saved.data.record.intentExpiresAt)<=Date.parse(observedAt),usableForTransfer:false,sourceCurrentness:'NOT_REVALIDATED'},preparationStored:true,manifestStored:false}));}
@@ -472,11 +473,272 @@ async function host(options:{targetDenied?:boolean;registered?:boolean;registere
  };
  const client=new ui.ApiClient(transport),container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container),buffers:Record<string,any>={};let props:any={client,projectId:pid,assignmentRef:f.draft.ref,session:options.readerSession??session,onAuthenticationLost:()=>{lost++;}};
  props.preparation={buffers,onChange:(expected:any,next:any)=>{const old=buffers[next.key]??null,merged=ui.api.mergePreparation(old,expected,next);if(merged===old)return false;buffers[next.key]=merged;root.render(ui.React.createElement(ui.TransferPreparationPage,props));return true;}};
+ const manifests:Record<string,any>={};
+ props.manifestStorage={buffers:manifests,onChange:(expected:any,next:any)=>{
+  const old=manifests[next.key]??null,merged=ui.manifestApi.mergeTransferManifest(old,expected,next);
+  if(!merged||merged===old)return false;
+  manifests[next.key]=merged;root.render(ui.React.createElement(ui.TransferPreparationPage,props));return true;
+ }};
  const render=async(p=props)=>{props=p;await ui.React.act(async()=>root.render(ui.React.createElement(ui.TransferPreparationPage,props)));},nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))],buttons=(label:string)=>nodes().filter(n=>n.tagName==='BUTTON'&&n.textContent===label),button=(label:string)=>{const n=buttons(label);assert.equal(n.length,1,label);return n[0]!;},click=async(label:string)=>{const n=button(label);assert(!n.disabled,label);await ui.React.act(async()=>n.dispatchEvent({type:'click',button:0,bubbles:true}));},change=async(label:string,value:string)=>{const n=nodes().find(n=>n.getAttribute('aria-label')===label);assert(n,label);const k=Object.keys(n).find(k=>k.startsWith('__reactProps'));assert(k,label);await ui.React.act(async()=>{(n as any)[k].onChange({target:{value}});});},settle=async(check:()=>boolean)=>{const end=Date.now()+2000;while(!check()&&Date.now()<end)await ui.React.act(async()=>{await new Promise(r=>setTimeout(r,2));});assert(check(),container.textContent.slice(-900));};
- await render();await click('기존 인계 기록 조회');await settle(()=>buttons('새 준비기록 작성').length===1);if(!options.empty)await click('새 준비기록 작성');return{f,client,calls,modes,waiting,buffers,props:()=>props,render,nodes,buttons,button,click,change,settle,text:()=>container.textContent,lost:()=>lost,buffer:()=>buffers[ui.api.preparationKey(props.session,pid,f.confirmed.ref)],close:async()=>{waiting.fixed?.();waiting.release?.(Response.json({code:'VERSION_CONFLICT'},{status:409}));await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+ await render();await click('기존 인계 기록 조회');await settle(()=>buttons('새 준비기록 작성').length===1);if(!options.empty)await click('새 준비기록 작성');return{f,client,calls,modes,waiting,buffers,manifests,props:()=>props,render,nodes,buttons,button,click,change,settle,text:()=>container.textContent,lost:()=>lost,buffer:()=>buffers[ui.api.preparationKey(props.session,pid,f.confirmed.ref)],close:async()=>{waiting.fixed?.();waiting.release?.(Response.json({code:'VERSION_CONFLICT'},{status:409}));await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 async function chooseNull(f:Awaited<ReturnType<typeof host>>){await f.change('준비기록 이유','정확 준비기록 선택');for(const label of['맥락 미수집 명시 선택','역할 미선택 명시','기존 결박 미수집 명시 선택','대상 미선택 명시'])await f.click(label);}
 async function prepared(f:Awaited<ReturnType<typeof host>>){await chooseNull(f);await f.click('준비기록 원명령 준비');await f.settle(()=>f.buffer()?.pending?.state==='PREPARED');}
+
+function manifestFixture(raw:string,basis:ReturnType<typeof historicalResponsibility>){
+ const command=JSON.parse(raw),s=basis.record;
+ assert.deepEqual(command,{schemaVersion:1,projectId:pid,commandId:command.commandId,clientId:session.clientId,controlGeneration:3,
+  operation:'createTransferManifest',targetId:null,expectedVersion:0,baselineRefs:[],approvalRef:null,payload:{preparationRef:basis.ref}});
+ const manifest={schemaVersion:1,id:id(120),projectId:pid,version:1,kind:'TRANSFER_MANIFEST',preparationRef:basis.ref,
+  assignmentRef:s.assignmentRef,contextRef:s.contextRef,roleRef:s.roleRef,oldBindingRef:s.oldBindingRef,targetRef:s.targetConnectionRef,baselineRefs:s.baselineRefs,
+  budgetRef:s.budgetRef,sourceRefs:s.sourceRefs,requiredContext:s.requiredContext,
+  gaps:[...s.gaps,'COMPLETED_UNVERIFIED','UNFINISHED_UNVERIFIED','CURRENT_POSITION_UNVERIFIED','DECISIONS_WITH_REASONS_UNVERIFIED'],
+  completed:[],unfinished:[],currentPosition:null,decisionsWithReasons:[],sourceDiffs:[],recoveryState:'UNVERIFIED',capabilities:'UNVERIFIED',
+  understandingState:'NOT_REVIEWED',intentExpiresAt:s.intentExpiresAt,observedAt:new Date().toISOString(),manifestStored:true,
+  bindingFrozen:false,ready:false,transferConfirmed:false,resumeAuthorized:false,executionAuthorized:false,dispatchPerformed:false};
+ const ref={id:manifest.id,version:1,contentHash:hash(manifest)};
+ return {operationId:id(121),commandId:command.commandId,projectId:pid,status:'APPLIED',targetId:ref.id,version:1,
+  data:{ref,manifest,manifestStored:true},evidenceRefs:[],warnings:[],serverReceivedAt:manifest.observedAt};
+}
+function manifestView(saved:ReturnType<typeof manifestFixture>,expired=false){
+ const {ref,manifest}=saved.data;
+ return {projectId:pid,ref,manifest:{...manifest,contentHash:ref.contentHash},
+  observedAt:expired?manifest.intentExpiresAt:manifest.observedAt,
+  currentStatus:{intentExpired:expired,usableForTransfer:false,sourceCurrentness:'NOT_REVALIDATED'}};
+}
+const createManifestLabel='선택한 준비기록으로 인계본 저장',retryManifestLabel='같은 인계본 명령 재확인',readManifestLabel='저장 인계본 고정 조회';
+test('고정 준비기록에서 사용자가 인계본 저장을 명시 선택한다',async()=>{
+ const basis=historicalResponsibility(),other=structuredClone(basis);
+ other.record.id=id(122);other.ref={...other.ref,id:other.record.id,contentHash:hash(other.record)};
+ let saved:ReturnType<typeof manifestFixture>|undefined,posts=0,reads=0;
+ const f=await host({empty:true,knownRecord:{data:basis},historicalGet:path=>{
+  if(path===`/api/v1/projects/${pid}/transfer-preparations/${other.ref.id}/versions/1`)
+   return Response.json({projectId:pid,ref:other.ref,record:other.record,observedAt:other.record.observedAt,
+    currentStatus:{intentExpired:false,usableForTransfer:false,sourceCurrentness:'NOT_REVALIDATED'},preparationStored:true,manifestStored:false});
+ },manifestPost:(body,headers)=>{
+  posts++;
+  assert.equal(headers.get('X-Anvil-CSRF'),session.csrfToken);
+  assert.equal(headers.get('Idempotency-Key'),JSON.parse(body).commandId);
+  saved??=manifestFixture(body,basis);
+  if(posts===1)throw Error('서버 정착 뒤 합성 응답 유실');
+  assert.equal(JSON.parse(body).commandId,saved.commandId);
+  return Response.json(saved);
+ },manifestGet:path=>{
+  assert(saved);
+  reads++;
+  assert.equal(path,`/api/v1/projects/${pid}/transfers/${saved.data.ref.id}/manifest?version=1&contentHash=${saved.data.ref.contentHash}`);
+  return Response.json(manifestView(saved,true));
+ }});
+ try{
+  await queryKnown(f,basis.ref);
+  await f.settle(()=>hasOriginal(f));
+  assert.equal(posts,0);
+  await f.click(createManifestLabel);
+  await f.settle(()=>posts===1&&f.nodes().some(n=>n.getAttribute('aria-label')==='불변 인계본'&&n.textContent.includes('CONNECTION_LOST')));
+  assert.equal(posts,1);
+  assert.equal(reads,0);
+  const active=f.props();
+  await f.render({...active,assignmentRef:undefined});
+  await f.render(active);
+  await f.click('기존 인계 기록 조회');
+  await f.settle(()=>f.buttons('알려진 준비기록 고정 조회').length===1);
+  await queryKnown(f,other.ref);
+  await f.settle(()=>hasOriginal(f)&&f.buttons(createManifestLabel).length===1);
+  assert.equal(f.buttons(retryManifestLabel).length,0);
+  await f.click('인계본 원 준비기록 '+basis.ref.id+' 다시 열기');
+  await f.settle(()=>f.buttons(retryManifestLabel).length===1);
+  assert.equal(posts,1);
+  const before=f.calls.length;
+  await f.click(retryManifestLabel);
+  await f.settle(()=>f.buttons(readManifestLabel).length===1);
+  assert.deepEqual(f.calls.slice(before).map(call=>call.method),['POST']);
+  const sent=f.calls.filter(call=>call.method==='POST');
+  assert.equal(sent.length,2);
+  assert.equal(sent[0]!.body,sent[1]!.body);
+  assert.equal(reads,0);
+  assert.ok(!f.nodes().some(n=>n.getAttribute('aria-label')==='인계본 고정 원문'));
+  await f.click(readManifestLabel);
+  await f.settle(()=>f.nodes().some(n=>n.getAttribute('aria-label')==='인계본 고정 원문'));
+  assert.equal(reads,1);
+  assert.match(f.text(),/과거 기한 경과.*원자료 현재성 재검증 없음.*실제 인계 불가/);
+  assert.match(f.text(),/CURRENT_POSITION_UNVERIFIED/);
+ }finally{await f.close();}
+});
+
+for(const status of [200,401])test(`인계본 생성 · 부모 원문을 닫은 뒤 늦은 ${status}는 표시하지 않는다`,async()=>{
+ const basis=historicalResponsibility(),pending=Promise.withResolvers<Response>();
+ let transmitted=0;
+ const f=await host({empty:true,knownRecord:{data:basis},manifestPost:raw=>{
+  transmitted++;
+  const value=manifestFixture(raw,basis);
+  return pending.promise.then(()=>Response.json(status===200?value:{code:'AUTH_REQUIRED'},{status}));
+ }});
+ try{
+  await queryKnown(f,basis.ref);
+  await f.settle(()=>hasOriginal(f));
+  await f.click(createManifestLabel);
+  await f.settle(()=>transmitted===1);
+  await f.click('준비기록 원문 닫기');
+  await ui.React.act(async()=>{pending.resolve(Response.json(null));await new Promise(resolve=>setImmediate(resolve));});
+  assert.equal(f.lost(),0);
+  assert.equal(f.buttons(readManifestLabel).length,0);
+  await f.click('인계본 원 준비기록 '+basis.ref.id+' 다시 열기');
+  await f.settle(()=>f.buttons(retryManifestLabel).length===1);
+  assert.equal(transmitted,1);
+ }finally{pending.resolve(Response.json(null));await f.close();}
+});
+
+test('인계본 생성 · 현재 부모 기한이 경과하면 POST와 제어 조회가 없다',async()=>{
+ const basis=historicalResponsibility();
+ let fixedReads=0;
+ const f=await host({empty:true,knownRecord:{data:basis},historicalGet:path=>{
+  if(!path.endsWith('/transfer-preparations/'+basis.ref.id+'/versions/1'))return;
+  if(++fixedReads===1)return;
+  return Response.json({projectId:pid,ref:basis.ref,record:basis.record,observedAt:basis.record.intentExpiresAt,
+   currentStatus:{intentExpired:true,usableForTransfer:false,sourceCurrentness:'NOT_REVALIDATED'},preparationStored:true,manifestStored:false});
+ }});
+ try{
+  await queryKnown(f,basis.ref);
+  await f.settle(()=>f.buttons(createManifestLabel).length===1);
+  const count=f.calls.length;
+  await f.click(createManifestLabel);
+  await f.settle(()=>f.text().includes('INTENT_EXPIRED'));
+  assert.equal(fixedReads,2);
+  assert.deepEqual(f.calls.slice(count).map(call=>call.method),['GET']);
+  assert.deepEqual(f.manifests,{});
+ }finally{await f.close();}
+});
+
+test('인계본 생성 · 제어 응답 전에 주소를 이동하면 이전 인증 오류와 POST가 없다',async()=>{
+ const basis=historicalResponsibility(),control=Promise.withResolvers<Response>();
+ let requested=false;
+ const f=await host({empty:true,knownRecord:{data:basis},historicalGet:path=>{
+  if(path!=='/api/v1/projects/'+pid)return;
+  requested=true;
+  return control.promise;
+ }});
+ const location=Object.getOwnPropertyDescriptor(globalThis,'location');
+ try{
+  await queryKnown(f,basis.ref);
+  await f.settle(()=>f.buttons(createManifestLabel).length===1);
+  await f.click(createManifestLabel);
+  await f.settle(()=>requested);
+  Object.defineProperty(globalThis,'location',{configurable:true,value:{hash:'#/projects/'+pid+'/documents'}});
+  await ui.React.act(async()=>{control.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401}));await new Promise(resolve=>setImmediate(resolve));});
+  assert.equal(f.lost(),0);
+  assert.equal(f.calls.filter(call=>call.method==='POST').length,0);
+  assert.deepEqual(f.manifests,{});
+ }finally{
+  if(location)Object.defineProperty(globalThis,'location',location);else Reflect.deleteProperty(globalThis,'location');
+  control.resolve(Response.json(null));
+  await f.close();
+ }
+});
+
+for(const status of [401,403,404])test(`인계본 고정 조회 · 현재 ${status}에서도 원 영수증을 보존한다`,async()=>{
+ const basis=historicalResponsibility();
+ const f=await host({empty:true,knownRecord:{data:basis},manifestPost:body=>Response.json(manifestFixture(body,basis)),
+  manifestGet:()=>Response.json({code:'ACCESS_DENIED'},{status})});
+ try{
+  await queryKnown(f,basis.ref);
+  await f.settle(()=>f.buttons(createManifestLabel).length===1);
+  await f.click(createManifestLabel);
+  await f.settle(()=>f.buttons(readManifestLabel).length===1);
+  const before=Object.values(f.manifests)[0],count=f.calls.length;
+  await f.click(readManifestLabel);
+  await f.settle(()=>f.text().includes('ACCESS_DENIED'));
+  assert.equal(f.lost(),status===401?1:0);
+  assert.ok(!f.nodes().some(n=>n.getAttribute('aria-label')==='인계본 고정 원문'));
+  assert.deepEqual(f.calls.slice(count).map(call=>call.method),['GET']);
+  assert.equal(Object.values(f.manifests)[0],before);
+ }finally{await f.close();}
+});
+
+test('인계본 생성 · 다른 부모에 결박된 재해시 응답과 409는 저장 표시를 열지 않는다',async()=>{
+ const basis=historicalResponsibility();
+ let posts=0;
+ const f=await host({empty:true,knownRecord:{data:basis},manifestPost:body=>{
+  if(++posts===2)return Response.json({code:'VERSION_CONFLICT'},{status:409});
+  const value=manifestFixture(body,basis);
+  value.data.manifest.preparationRef={...basis.ref,id:id(123)};
+  value.data.ref.contentHash=hash(value.data.manifest);
+  return Response.json(value);
+ }});
+ try{
+  await queryKnown(f,basis.ref);
+  await f.settle(()=>f.buttons(createManifestLabel).length===1);
+  await f.click(createManifestLabel);
+  await f.settle(()=>f.text().includes('TRANSFER_MANIFEST_RESPONSE_INVALID'));
+  await f.click(retryManifestLabel);
+  await f.settle(()=>f.text().includes('VERSION_CONFLICT'));
+  const commands=f.calls.filter(call=>call.method==='POST');
+  assert.equal(commands.length,2);
+  assert.equal(commands[0]!.body,commands[1]!.body);
+  assert.ok(!f.buttons(readManifestLabel).length);
+ }finally{await f.close();}
+});
+
+for(const [phase,status] of [['POST',200],['POST',401],['GET',200],['GET',401]] as const)
+test(`인계본 · 한 렌더에 합쳐진 주소 A→B→A는 늦은 ${phase} ${status} 응답을 폐기한다`,async()=>{
+ const basis=historicalResponsibility(),first=Promise.withResolvers<Response>();
+ const routeGeneration={current:0},events=new EventTarget();
+ const a='#/projects/'+pid+'/transfers',b='#/projects/'+pid+'/documents',locationState={hash:a};
+ const location=Object.getOwnPropertyDescriptor(globalThis,'location');
+ Object.defineProperty(globalThis,'location',{configurable:true,value:locationState});
+ events.addEventListener('hashchange',()=>{routeGeneration.current++;});
+ let posts=0,reads=0,saved:ReturnType<typeof manifestFixture>|undefined;
+ const f=await host({empty:true,knownRecord:{data:basis},manifestPost:body=>{
+  posts++;
+  saved??=manifestFixture(body,basis);
+  return phase==='POST'&&posts===1?first.promise:Response.json(saved);
+ },manifestGet:()=>{
+  reads++;
+  assert(saved);
+  return reads===1?first.promise:Response.json(manifestView(saved));
+ }});
+ try{
+  await f.render({...f.props(),manifestRouteGeneration:routeGeneration});
+  await queryKnown(f,basis.ref);
+  await f.settle(()=>f.buttons(createManifestLabel).length===1);
+  await f.click(createManifestLabel);
+  await f.settle(()=>posts===1);
+  if(phase==='GET'){
+   await f.settle(()=>f.buttons(readManifestLabel).length===1);
+   await f.click(readManifestLabel);
+   await f.settle(()=>reads===1);
+  }
+  // 주소 이벤트 두 건은 동기 전달되며 그 사이와 응답 전에는 Page를 렌더하지 않는다.
+  locationState.hash=b;events.dispatchEvent(new Event('hashchange'));
+  locationState.hash=a;events.dispatchEvent(new Event('hashchange'));
+  await ui.React.act(async()=>{
+   assert(saved);
+   first.resolve(Response.json(status===200?(phase==='POST'?saved:manifestView(saved)):{code:'AUTH_REQUIRED'},{status}));
+   await new Promise(resolve=>setImmediate(resolve));
+  });
+  assert.equal(f.lost(),0);
+  assert.deepEqual(Object.values(f.manifests)[0].ref,phase==='GET'?saved?.data.ref:null);
+  assert.ok(!f.nodes().some(n=>n.getAttribute('aria-label')==='인계본 고정 원문'));
+  assert.equal(posts,1);
+  await f.render();
+  if(phase==='GET'){
+   await f.click(readManifestLabel);
+   await f.settle(()=>f.nodes().some(n=>n.getAttribute('aria-label')==='인계본 고정 원문'));
+   assert.equal(posts,1);
+   assert.equal(reads,2);
+   return;
+  }
+  await f.settle(()=>f.buttons(retryManifestLabel).length===1);
+  await f.click(retryManifestLabel);
+  await f.settle(()=>f.buttons(readManifestLabel).length===1);
+  const commands=f.calls.filter(call=>call.method==='POST');
+  assert.equal(commands.length,2);
+  assert.equal(commands[0]!.body,commands[1]!.body);
+ }finally{
+  first.resolve(Response.json(null));
+  if(location)Object.defineProperty(globalThis,'location',location);else Reflect.deleteProperty(globalThis,'location');
+  await f.close();
+ }
+});
 
 test('독립 준비기록 · A 영수증을 보존하며 명시 B 저장과 각각 정확 조회',async()=>{
  const f=await host();try{

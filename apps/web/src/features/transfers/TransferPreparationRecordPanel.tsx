@@ -10,15 +10,18 @@ import {readContextPreparation} from '../workspace/context-api.ts';
 import {readTransferContext} from './transfer-read.ts';
 import {TransferContextOriginals} from './TransferContextOriginals.tsx';
 import {nextPreparation,newPreparation,preparationKey,preparationOwned,preparationSame as same,editPreparation,editRejectedPreparation,prepareRecord,markPreparationDispatch,sendPreparation,failPreparation,readPreparationRecord,readPreparationRole,readPreparationBinding,type PreparationBuffer,type PreparationStorage,type PreparationGet} from './preparation-record-api.ts';
+import {prepareTransferManifest,readTransferManifest,sendTransferManifest,transferManifestKey,transferManifestOwned,type TransferManifestStorage} from './transfer-manifest-api.ts';
 type HistoricalChoice = {field:'contextRef'|'targetConnectionRef';ref:PlanRef}|{field:'responsibility';roleRef:PlanRef;bindingRef:PlanRef};
-export function TransferPreparationRecordPanel({selectedTarget,client,session,confirmed,state,contexts,storage,onAuthenticationLost}:{selectedTarget?:{ref:PlanRef;current:()=>boolean}|null;client:ApiClient;session:DocumentSession;confirmed:ConfirmedAssignmentView;state:ResponsibleSessionState;contexts:PlanRef[];storage:PreparationStorage;onAuthenticationLost:()=>void}){
+export function TransferPreparationRecordPanel({selectedTarget,client,session,confirmed,state,contexts,storage,manifestStorage,manifestRouteGeneration,onAuthenticationLost}:{selectedTarget?:{ref:PlanRef;current:()=>boolean}|null;client:ApiClient;session:DocumentSession;confirmed:ConfirmedAssignmentView;state:ResponsibleSessionState;contexts:PlanRef[];storage:PreparationStorage;manifestStorage?:TransferManifestStorage;manifestRouteGeneration?:Readonly<{current:number}>;onAuthenticationLost:()=>void}){
+ const renderedRoute=globalThis.location?.hash;
+ const manifestRouteAtRender=manifestRouteGeneration?.current;
  const key=preparationKey(session,confirmed.projectId,confirmed.ref),owner=useRef({key,client,transport:client.transport,session,csrf:session.csrfToken});if(owner.current.key!==key||owner.current.client!==client||owner.current.transport!==client.transport||owner.current.session!==session||owner.current.csrf!==session.csrfToken)owner.current={key,client,transport:client.transport,session,csrf:session.csrfToken};const scope=owner.current,mounted=useRef(true),seq=useRef(0),flight=useRef<object|null>(null),lost=useRef(onAuthenticationLost);lost.current=onAuthenticationLost;
  const [working,setWorking]=useState<object|null>(null),[rawView,setRawView]=useState<{owner:object;value:PreparationGet}|null>(null),[error,setError]=useState<{owner:object;value:string}|null>(null),[roleId,setRoleId]=useState(''),[roleVersion,setRoleVersion]=useState('1'),[bindingId,setBindingId]=useState(''),[bindingVersion,setBindingVersion]=useState('1'),[targetId,setTargetId]=useState(''),[targetVersion,setTargetVersion]=useState('1'),[targetHash,setTargetHash]=useState('');
  const displayed=useRef(rawView),displayedGeneration=useRef(0);
  function setView(next:typeof rawView){displayedGeneration.current++;displayed.current=next;setRawView(next);}
  const [lookup,setLookup]=useState<{owner:object;id:string;hash:string}|null>(null),[lookupWorking,setLookupWorking]=useState<object|null>(null),[lookupError,setLookupError]=useState<{owner:object;code:string}|null>(null),lookupSeq=useRef(0),lookupFlight=useRef<{owner:object;ticket:number}|null>(null);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;seq.current++;};},[]);
- const current=()=>mounted.current&&owner.current===scope&&client.transport===scope.transport&&session.csrfToken===scope.csrf;
+ const current=()=>mounted.current&&owner.current===scope&&client.transport===scope.transport&&session.csrfToken===scope.csrf&&globalThis.location?.hash===renderedRoute;
  const stored=storage.buffers[key]??null,b=stored&&preparationOwned(stored,client,session,confirmed)?stored:null,busy=working===scope||lookupWorking===scope,view=current()&&rawView?.owner===scope?rawView.value:null;
  const activeBuffer=useRef(b),flightBuffer=useRef(b),bufferGeneration=useRef(0);if(activeBuffer.current!==b)bufferGeneration.current++;activeBuffer.current=b;
  const locked=!!b?.pending;
@@ -27,7 +30,6 @@ export function TransferPreparationRecordPanel({selectedTarget,client,session,co
  async function run(action:(check:()=>boolean)=>Promise<void>){if(!current()||flight.current===scope||lookupFlight.current?.owner===scope)return;flight.current=scope;flightBuffer.current=b;const ticket=++seq.current,check=()=>current()&&seq.current===ticket&&activeBuffer.current===flightBuffer.current;setWorking(scope);setError(null);setView(null);try{await action(check);}catch(cause){if(!check())return;const e=cause instanceof ApiError?cause:new ApiError('TRANSFER_PREPARATION_RESPONSE_INVALID',503);setError({owner:scope,value:/^[A-Z_]{1,80}$/.test(e.code)?e.code:'TRANSFER_PREPARATION_RESPONSE_INVALID'});if(e.status===401)lost.current();}finally{if(current()&&seq.current===ticket&&flight.current===scope){flight.current=null;setWorking(null);}}}
  async function selectRole(id:string,version:number,want?:PlanRef){await run(async check=>{if(!b||locked)return;const role=await readPreparationRole(client,confirmed,id,version,check);if(want&&!same(want,role.ref))throw new ApiError('TRANSFER_PREPARATION_ROLE_MISMATCH',412);if(check())replace(b,editPreparation(b,{roleRef:role.ref,roleSelected:true,oldBindingRef:null,bindingSelected:false}));});}
  async function selectBinding(id:string,version:number,want?:PlanRef){await run(async check=>{if(!b?.roleRef||locked)throw new ApiError('TRANSFER_PREPARATION_ROLE_REQUIRED',422);const role=await readPreparationRole(client,confirmed,b.roleRef.id,b.roleRef.version,check);if(!same(role.ref,b.roleRef))throw new ApiError('TRANSFER_PREPARATION_ROLE_MISMATCH',412);const binding=await readPreparationBinding(client,confirmed,role,id,version,check);if(want&&!same(want,binding.ref))throw new ApiError('TRANSFER_PREPARATION_BINDING_MISMATCH',412);if(check())replace(b,editPreparation(b,{oldBindingRef:binding.ref,bindingSelected:true}));});}
- const renderedRoute=globalThis.location?.hash;
  const targetSelection=useRef(selectedTarget);targetSelection.current=selectedTarget;
  async function selectOfferedTarget(){
   const selection=selectedTarget;
@@ -105,10 +107,15 @@ export function TransferPreparationRecordPanel({selectedTarget,client,session,co
  function changeLookup(patch:Partial<{id:string;hash:string}>){if(!current()||working===scope)return;lookupSeq.current++;lookupFlight.current=null;setLookupWorking(null);setLookupError(null);setView(null);setLookup(old=>({...(old?.owner===scope?old:{owner:scope,id:'',hash:''}),...patch,owner:scope}));}
  async function readKnown(){if(!current()||busy)return;const reference:PlanRef={id:known.id,version:1,contentHash:known.hash},ticket=++lookupSeq.current;lookupFlight.current={owner:scope,ticket};const check=()=>current()&&lookupSeq.current===ticket&&lookupFlight.current?.owner===scope&&lookupFlight.current.ticket===ticket;setLookupWorking(scope);setLookupError(null);setView(null);try{const value=await readPreparationRecord(client,confirmed.projectId,reference,confirmed.ref,check);if(check())setView({owner:scope,value});}catch(cause){if(!check())return;const e=cause instanceof ApiError?cause:new ApiError('TRANSFER_PREPARATION_RESPONSE_INVALID',503);setLookupError({owner:scope,code:/^[A-Z_]{1,80}$/.test(e.code)?e.code:'TRANSFER_PREPARATION_RESPONSE_INVALID'});if(e.status===401)lost.current();}finally{if(check()){lookupFlight.current=null;setLookupWorking(null);}}}
  const candidates=state.bindings.filter(v=>same(v.snapshot.assignmentRef,confirmed.ref)&&b?.roleRef&&same(v.snapshot.roleRef,b.roleRef));
+ const manifests=manifestStorage?Object.values(manifestStorage.buffers).filter(m=>m&&transferManifestOwned(m,client,session,confirmed.projectId,confirmed.ref)):[];
  const selectedBinding=b?.oldBindingRef?state.bindings.find(value=>same(value.ref,b.oldBindingRef)):null;
  const boundTargetAvailable=!!b?.roleSelected&&!!b.roleRef&&b.bindingSelected&&!!b.oldBindingRef&&(!selectedBinding||selectedBinding.snapshot.connectionKind==='REGISTERED_DEFINITION');
  return <section aria-label="인계 준비기록"><h3>인계 준비기록</h3><p>선택한 참조와 공백을 저장합니다. 실제 인계·중지·회수·이해 합격·재개 권한은 부여하지 않습니다.</p>
  <fieldset disabled={working===scope}><legend>알려진 준비기록 조회</legend><p>이미 알고 있는 정확 참조만 입력하세요. 목록 검색·새 기록 작성 없이 현재 보호 GET으로 대조합니다.</p><label>준비기록 ID<input aria-label="준비기록 조회 ID" value={known.id} onChange={e=>changeLookup({id:e.target.value})}/></label><label>버전<input aria-label="준비기록 조회 버전" value="1" readOnly/></label><label>내용 hash<input aria-label="준비기록 조회 hash" value={known.hash} onChange={e=>changeLookup({hash:e.target.value})}/></label><button type="button" disabled={busy} onClick={()=>void readKnown()}>알려진 준비기록 고정 조회</button></fieldset>{lookupError?.owner===scope?<p role="alert">{lookupError.code}</p>:null}
+ {manifests.map(m=>m&&!same(m.preparationRef,view?.ref??null)?<button type="button" key={m.key} disabled={busy} onClick={()=>void run(async check=>{
+  const fixed=await readPreparationRecord(client,confirmed.projectId,m.preparationRef,confirmed.ref,check);
+  if(check())setView({owner:scope,value:fixed});
+ })}>인계본 원 준비기록 {m.preparationRef.id} 다시 열기</button>:null)}
  {!b?<>{stored?<p role="alert">이전 연결의 원명령이 보존되어 있습니다. 동일 연결 문맥에서 확인하세요.</p>:<button type="button" disabled={busy} onClick={()=>{if(current())replace(null,newPreparation(client,session,confirmed));}}>새 준비기록 작성</button>}</>:<>
  <p>고정 확정 임무 {b.assignmentRef.id} · v{b.assignmentRef.version} · {b.assignmentRef.contentHash}</p>
  <fieldset disabled={locked||busy}><legend>준비기록 선택</legend>
@@ -123,11 +130,72 @@ export function TransferPreparationRecordPanel({selectedTarget,client,session,co
  {!b.pending?<button type="button" disabled={busy} onClick={()=>void prepare()}>준비기록 원명령 준비</button>:<><p>원명령 {b.pending.command.commandId} · {b.pending.state==='UNKNOWN'?'결과 미확인 · 원입력 잠금':b.pending.state}</p>{['PREPARED','UNKNOWN'].includes(b.pending.state)?<button type="button" disabled={busy} onClick={()=>void save()}>같은 준비기록 명령 저장·재확인</button>:null}{b.pending.state==='REJECTED'?<button type="button" disabled={busy} onClick={()=>replace(b,editRejectedPreparation(b))}>준비기록 거절 확인 후 수정</button>:null}{b.pending.receipt?<><p>저장 영수증 보존 {b.pending.receipt.data.ref.id} · v1 · {b.pending.receipt.data.ref.contentHash}</p><button type="button" disabled={busy} onClick={()=>void read()}>저장 준비기록 고정 조회</button><button type="button" disabled={busy} onClick={next}>다음 독립 준비기록 작성</button></>:null}</>}
  </>}{b?.storedCommands?.map(saved=><section key={saved.command.commandId} aria-label="보존 준비기록 영수증"><p>보존 원명령 {saved.command.commandId} · {saved.receipt.data.ref.id} · v1 · {saved.receipt.data.ref.contentHash}</p><button type="button" disabled={busy} onClick={()=>void run(async check=>{const result=await readPreparationRecord(client,confirmed.projectId,saved.receipt.data.ref,confirmed.ref,check);if(check())setView({owner:scope,value:result});})}>보존 준비기록 {saved.receipt.data.ref.id} 고정 조회</button></section>)}{busy?<p role="status">고정 자료 대조 중</p>:null}{error?.owner===scope?<p role="alert">{error.value}</p>:b?.failure?<p role="alert">{b.failure.code}</p>:null}
  {view?<section aria-label="준비기록 고정 원문"><p>{view.ref.id} · v1 · {view.ref.contentHash}</p><p>보관 관측 {view.record.observedAt} · 의도 기한 {view.record.intentExpiresAt} · {view.currentStatus.intentExpired?'과거 기한 경과':'조회 시 기한 이내'} · 원자료 현재성 {view.currentStatus.sourceCurrentness} · 실제 인계 불가</p><p>미확인 공백: {view.record.gaps.join(', ')}</p><pre>{JSON.stringify(view.record,null,2)}</pre>
+ {manifestStorage?<TransferManifestSelection key={`${displayedGeneration.current}:${manifestRouteAtRender}`} parent={view} client={client} session={session}
+  storage={manifestStorage} isCurrent={()=>current()&&displayed.current===rawView&&manifestRouteGeneration?.current===manifestRouteAtRender} onAuthenticationLost={()=>lost.current()}/>:null}
  {view.record.budgetRef?<HistoricalBudget key={JSON.stringify([view.ref,view.record.budgetRef])} client={client} projectId={confirmed.projectId} reference={view.record.budgetRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()}/>:<p>한도 정책 참조 없음</p>}
  {view.record.targetConnectionRef?<HistoricalTarget key={JSON.stringify([displayedGeneration.current,view.ref,view.record.targetConnectionRef])} client={client} projectId={confirmed.projectId} reference={view.record.targetConnectionRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()} onSelect={b&&!locked?(ref,check)=>void selectHistorical({field:'targetConnectionRef',ref},check):undefined} selecting={busy}/>:<p>대상 연결 참조 없음</p>}
  {view.record.contextRef?<HistoricalContext key={JSON.stringify([displayedGeneration.current,view.ref,view.record.contextRef])} client={client} projectId={confirmed.projectId} assignmentRef={confirmed.ref} reference={view.record.contextRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()} onSelect={b&&!locked?(ref,check)=>void selectHistorical({field:'contextRef',ref},check):undefined} selecting={busy}/>:<p>당시 맥락 참조 없음</p>}
  <HistoricalResponsibility key={JSON.stringify([displayedGeneration.current,view.ref,view.record.roleRef,view.record.oldBindingRef])} client={client} confirmed={confirmed} roleRef={view.record.roleRef} bindingRef={view.record.oldBindingRef} current={()=>current()&&displayed.current===rawView} onAuthenticationLost={()=>lost.current()} onSelect={b&&!locked?(roleRef,bindingRef,check)=>void selectHistorical({field:'responsibility',roleRef,bindingRef},check):undefined} selecting={busy}/>
  <button type="button" onClick={()=>setView(null)}>준비기록 원문 닫기</button></section>:null}
+ </section>;
+}
+
+function TransferManifestSelection({parent,client,session,storage,isCurrent,onAuthenticationLost}:{
+ parent:PreparationGet;client:ApiClient;session:DocumentSession;storage:TransferManifestStorage;isCurrent:()=>boolean;onAuthenticationLost:()=>void;
+}){
+ const key=transferManifestKey(session,parent.projectId,parent.record.assignmentRef,parent.ref);
+ const stored=storage.buffers[key]??null;
+ const buffer=stored&&transferManifestOwned(stored,client,session,parent.projectId,parent.record.assignmentRef)?stored:null;
+ const live=useRef(false),flight=useRef(false);
+ const [busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[view,setView]=useState<Awaited<ReturnType<typeof readTransferManifest>>|null>(null);
+ useLayoutEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
+ const current=()=>live.current&&isCurrent();
+ async function run(action:'SAVE'|'READ'){
+  if(!current()||flight.current||stored&&!buffer)return;
+  flight.current=true;setBusy(true);setView(null);setError(null);
+  let expected=buffer;
+  const check=()=>current()&&(storage.buffers[key]??null)===expected;
+  try{
+   if(action==='READ'){
+    if(!buffer?.ref)return;
+    const result=await readTransferManifest(client,parent,buffer.ref,check);
+    if(check())setView(result);
+    return;
+   }
+   if(buffer?.ref)return;
+   if(!expected){
+    if(parent.currentStatus.intentExpired)return;
+    const next=await prepareTransferManifest(client,session,parent,check);
+    if(!check()||!storage.onChange(null,next))return;
+    expected=next;
+   }
+   if(!check())return;
+   const result=await sendTransferManifest(client,session,parent,expected,check);
+   if(check())storage.onChange(expected,result);
+  }catch(cause){
+   if(!check())return;
+   const failure=cause instanceof ApiError?cause:new ApiError('TRANSFER_MANIFEST_RESPONSE_INVALID',503);
+   setError(/^[A-Z_]{1,80}$/.test(failure.code)?failure.code:'TRANSFER_MANIFEST_RESPONSE_INVALID');
+   if(failure.status===401)onAuthenticationLost();
+  }finally{
+   flight.current=false;
+   if(current())setBusy(false);
+  }
+ }
+ return <section aria-label="불변 인계본">
+  {stored&&!buffer?<p role="alert">다른 연결의 인계본 원명령이 보존되어 있습니다.</p>:
+   buffer?.ref?<><p>저장 영수증 {buffer.ref.id} · v1 · {buffer.ref.contentHash}</p>
+    <button type="button" disabled={busy} onClick={()=>void run('READ')}>저장 인계본 고정 조회</button></>:
+   buffer?<><p>인계본 원명령 {buffer.commandId} · 결과 미확인 · 같은 명령만 재확인</p>
+    <button type="button" disabled={busy} onClick={()=>void run('SAVE')}>같은 인계본 명령 재확인</button></>:
+   <button type="button" disabled={busy||parent.currentStatus.intentExpired} onClick={()=>void run('SAVE')}>선택한 준비기록으로 인계본 저장</button>}
+  {busy?<p role="status">인계본 확인 중</p>:null}{error?<p role="alert">{error}</p>:null}
+  {view&&current()?<section aria-label="인계본 고정 원문">
+   <p>인계본 {view.manifest.id} · v1 · {buffer?.ref?.contentHash} · 조회 시각 {view.observedAt}</p>
+   <p>{view.intentExpired?'과거 기한 경과':'조회 시 기한 이내'} · 원자료 현재성 재검증 없음 · 실제 인계 불가</p>
+   <p>미확인 공백: {view.manifest.gaps.join(', ')}</p><pre>{JSON.stringify(view.manifest,null,2)}</pre>
+   <button type="button" onClick={()=>setView(null)}>인계본 원문 닫기</button>
+  </section>:null}
  </section>;
 }
 

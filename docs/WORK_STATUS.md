@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-28 KST
 
+- **Stage D / UI09 불변 인계본 저장·같은 명령 확인·고정 조회** — 기준 `95657379`, 담당 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` 최종 C0/I0/M1(실제 App mount 미검증). 보호 준비기록을 명시 선택하고 서버 명령 200의 전체 영수증 및 부모·본문 해시를 대조한다. 원 명령 ID와 바이트를 메모리 App에 보존해 응답 유실·화면 복귀 뒤 동일 준비기록에서만 재확인한다. 별도 명시 고정 GET과 현재 권한 가림·기한 경과·미확인 공백 표시를 연결했다. 실제 App hashchange에서 전용 세대를 즉시 증가시켜 A→B→A에서도 늦은 200/401의 반영·인증 변경을 폐기한다. 기존 정책 편집 옵션 두 개만 추가하며 자동 부여 0. 제품 5·시험 2경로. CTA 부재와 이탈 RED 교정, 담당 합성 262/262, 어울 186/186(실패·취소·skip 0), 타입·diff 통과. 실제 App mount·브라우저/PG·0114·권한·키·서비스·새 대상 전달·이해 대조·이전·재개 미검증.
+
 - **Stage C / IX02 준비 claim 재확인의 새 서명·전송 차단** — 기준 `997e3189`, 담당 `fn08_policy_decision_ready`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 검산된 REPLAY_ONLY는 원 carrier/등록 helper를 정리하고 기존 claim 결과만 반환한다. 새 결과 선택·서명·POST 0, 정상 최초 claim과 별도 확정 REJECTED·보관 결과 재확인 유지. 제품 2·시험 2경로. TS·CJS RED 각 1건 교정. 기존 C#의 실제 custody→producer→조건부 root/peer 정리 순서에 맞춰 옛 정적 단언 1건 교정(제품 C# 변경 없음). 담당 217/217, 어울 인접 208/208(실패·취소·skip 0), 타입·diff 통과. 실제 Windows/C#·DB·권한·키·서비스·SDK·Agent 및 PREPARED/인계 미검증.
 
 - **Stage E / FN16 D2 독립 보관 바이트 재검산** — 기준 `1208332e`, 담당 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` 최종 C0/I0/M0. 수집 원행을 크기 제한 내 canonical UTF-8로 고정하고 독립 기대 프로젝트·job·문서·해시로 별도 재조회 바이트만 검산한다. 원 기대 해시는 reader에 넘기지 않는다. raw 해시·엄격 UTF-8·중복 키·canonical·V1–V4 관계와 BODY를 대조한다. 최초 검수의 무응답 대기 1건을 실제 기한·단회 취소 신호·늦은 반환 폐기로 교정했다. 제품 2·시험 1경로. 연결 부재 및 무응답 RED 각 1건에서 담당·어울 합성 65/65(실패·취소·skip 0), 타입·diff 통과. 실제 보호 입장/독립 저장소·IO 중단·PG/RLS·전체 백업 및 복원·Windows·키·권한·서비스·Agent 미검증.
