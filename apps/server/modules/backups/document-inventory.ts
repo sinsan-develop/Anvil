@@ -151,7 +151,7 @@ export function checkDocumentDraftHistoryRows(projectId:string,ref:Ref,value:unk
 }
 
 /** 호출자가 이미 보유한 보호 거래만 사용한다. 직접 인증, 연결, 거래 시작을 하지 않는다. */
-type ProjectHistoryOperation='saveDocumentDraft'|'recordContentReview'|'confirmDocument'|'saveWorkPlanDraft'|'confirmWorkPlan'|'indexDesignDocument'|'prepareAssignment'|'reviewAssignmentContent'|'confirmAssignment';
+type ProjectHistoryOperation='saveDocumentDraft'|'recordContentReview'|'confirmDocument'|'saveWorkPlanDraft'|'confirmWorkPlan'|'indexDesignDocument'|'prepareAssignment'|'reviewAssignmentContent'|'confirmAssignment'|'applyMethodology';
 type OriginTable=keyof typeof projectHistoryOriginColumns;
 
 /** 내부 scope·예산이 이미 적용되는 reader에서 별도 승인 소비 없는 원행만 읽는다. */

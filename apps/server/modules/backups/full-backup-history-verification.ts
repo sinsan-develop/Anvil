@@ -7,6 +7,7 @@ import {checkDocumentBodyHistoryRows,checkDocumentDraftHistoryRows,checkDocument
  type DocumentBodyHistoryRows,type DocumentDraftHistoryRows,type DocumentSystemFormHistoryRows,type DocumentConfirmationHistoryRows} from './document-inventory.ts';
 import {isRootAssignmentHistoryScope,checkRootAssignmentHistoryRows,type RootAssignmentHistoryRows,type RootAssignmentHistoryScope} from './assignment-inventory.ts';
 import {checkDesignIndexHistoryRows,type DesignIndexHistoryRows} from './design-trace-inventory.ts';
+import {checkExplicitApplicationHistoryRows,type ExplicitApplicationHistoryRows} from './methodology-application-inventory.ts';
 import {checkWorkPlanConfirmationHistoryRows,type WorkPlanConfirmationHistoryRows,checkWorkPlanDocumentHistoryRow,checkWorkPlanRelationHistoryRows,type WorkPlanRelationHistoryRows} from './work-plan-inventory.ts';
 
 const digest=(value:unknown)=>contentHash(canonicalJson(value));
@@ -61,6 +62,11 @@ export interface DocumentRootAssignmentSnapshot extends Omit<DocumentBodySnapsho
  rows:DocumentWorkPlanDesignIndexSnapshot['rows']&{rootAssignmentRows:RootAssignmentHistoryRows};
 }
 
+export interface DocumentAppliedMethodologySnapshot extends Omit<DocumentBodySnapshot,'kind'|'rows'> {
+ kind:'FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11';
+ rows:DocumentRootAssignmentSnapshot['rows']&{explicitApplicationRows:ExplicitApplicationHistoryRows};
+}
+
 export interface DocumentBodyHistoryExpectation {
  projectId:string;
  jobRef:RuntimeRefV1;
@@ -74,6 +80,7 @@ export interface DocumentBodyHistoryExpectation {
  planConfirmationId?:string;
  designIndex?:true;
  rootAssignment?:RootAssignmentHistoryScope;
+ applicationSourceRef?:RuntimeRefV1;
 }
 
 function historyExpectation(expected:Readonly<DocumentBodyHistoryExpectation>){
@@ -84,7 +91,10 @@ function historyExpectation(expected:Readonly<DocumentBodyHistoryExpectation>){
  const relationKeys=[...keys,'workPlanRef','designDocumentRef','planRelations'];
  const confirmationKeys=[...relationKeys,'planConfirmationId'];
  const indexKeys=[...confirmationKeys,'designIndex'];
- const hasRootAssignment=recordV1(expected,[...indexKeys,'rootAssignment'])&&isRootAssignmentHistoryScope(expected.rootAssignment);
+ const rootAssignmentKeys=[...indexKeys,'rootAssignment'];
+ const hasApplicationOrigin=recordV1(expected,[...rootAssignmentKeys,'applicationSourceRef'])
+  &&!types.isProxy(expected.applicationSourceRef)&&refV1(expected.applicationSourceRef);
+ const hasRootAssignment=(hasApplicationOrigin||recordV1(expected,rootAssignmentKeys))&&isRootAssignmentHistoryScope(expected.rootAssignment);
  const hasDesignIndex=(hasRootAssignment||recordV1(expected,indexKeys))&&expected.designIndex===true;
  const hasPlanConfirmation=(hasDesignIndex||recordV1(expected,confirmationKeys))&&uuidV1(expected.planConfirmationId);
  const hasRelations=(hasPlanConfirmation||recordV1(expected,relationKeys))&&expected.planRelations===true;
@@ -100,7 +110,8 @@ function historyExpectation(expected:Readonly<DocumentBodyHistoryExpectation>){
   ...(hasDesign&&expected.designDocumentRef?{designDocumentRef:Object.freeze({...expected.designDocumentRef})}:{}),
   ...(hasRootAssignment&&expected.rootAssignment?{rootAssignment:Object.freeze({
    assignmentRef:Object.freeze({...expected.rootAssignment.assignmentRef}),assignmentConfirmationId:expected.rootAssignment.assignmentConfirmationId,
-   applicationRef:Object.freeze({...expected.rootAssignment.applicationRef})})}:{})};
+   applicationRef:Object.freeze({...expected.rootAssignment.applicationRef})})}:{}),
+  ...(hasApplicationOrigin&&expected.applicationSourceRef?{applicationSourceRef:Object.freeze({...expected.applicationSourceRef})}:{})};
 }
 
 const byteLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype),'byteLength')!.get!;
@@ -128,17 +139,18 @@ function verifyBodyBytes(body:unknown,artifact:HistoryBody){
 }
 function verifyStoredHistory(wanted:Readonly<DocumentBodyHistoryExpectation>,snapshot:unknown,body:unknown,designBody:unknown,
  bodyLimit=40*1024*1024,fileLimit=2){
-  const {confirmationId,workPlanRef,designDocumentRef,planRelations,planConfirmationId,designIndex,rootAssignment}=wanted;
+  const {confirmationId,workPlanRef,designDocumentRef,planRelations,planConfirmationId,designIndex,rootAssignment,applicationSourceRef}=wanted;
   if(!recordV1(snapshot,['kind','projectId','jobRef','documentRef','observation','rows'])
    ||!['FN16_D2_DOCUMENT_BODY_SNAPSHOT_V1','FN16_D2_DOCUMENT_DRAFT_SNAPSHOT_V2','FN16_D2_DOCUMENT_SYSTEM_FORM_SNAPSHOT_V3',
-    'FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4','FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6','FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7','FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10'].includes(snapshot.kind)
+    'FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4','FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6','FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7','FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10','FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11'].includes(snapshot.kind)
    ||(snapshot.kind==='FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4')!==Boolean(confirmationId)
-   ||['FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6','FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7','FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10'].includes(snapshot.kind)!==Boolean(workPlanRef)
-   ||['FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6','FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7','FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10'].includes(snapshot.kind)!==Boolean(designDocumentRef)
-   ||['FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7','FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10'].includes(snapshot.kind)!==Boolean(planRelations)
-   ||['FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10'].includes(snapshot.kind)!==Boolean(planConfirmationId)
-   ||['FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10'].includes(snapshot.kind)!==Boolean(designIndex)
-   ||(snapshot.kind==='FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10')!==Boolean(rootAssignment)
+   ||['FN16_D2_DOCUMENT_WORK_PLAN_SNAPSHOT_V5','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6','FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7','FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10','FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11'].includes(snapshot.kind)!==Boolean(workPlanRef)
+   ||['FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_SNAPSHOT_V6','FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7','FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10','FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11'].includes(snapshot.kind)!==Boolean(designDocumentRef)
+   ||['FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7','FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10','FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11'].includes(snapshot.kind)!==Boolean(planRelations)
+   ||['FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_SNAPSHOT_V8','FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10','FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11'].includes(snapshot.kind)!==Boolean(planConfirmationId)
+   ||['FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9','FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10','FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11'].includes(snapshot.kind)!==Boolean(designIndex)
+   ||['FN16_D2_ROOT_ASSIGNMENT_SNAPSHOT_V10','FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11'].includes(snapshot.kind)!==Boolean(rootAssignment)
+   ||(snapshot.kind==='FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11')!==Boolean(applicationSourceRef)
    ||snapshot.projectId!==wanted.projectId||!refV1(snapshot.documentRef)
    ||!refV1(snapshot.jobRef)||canonicalJson(snapshot.jobRef)!==canonicalJson(wanted.jobRef)
    ||canonicalJson(snapshot.documentRef)!==canonicalJson(wanted.documentRef)
@@ -152,10 +164,11 @@ function verifyStoredHistory(wanted:Readonly<DocumentBodyHistoryExpectation>,sna
   let planConfirmation:ReturnType<typeof checkWorkPlanConfirmationHistoryRows>|null=null;
   let index:ReturnType<typeof checkDesignIndexHistoryRows>|null=null;
   let assignment:ReturnType<typeof checkRootAssignmentHistoryRows>|null=null;
+  let explicitApplication:ReturnType<typeof checkExplicitApplicationHistoryRows>|null=null;
   let design:ReturnType<typeof checkDocumentSystemFormHistoryRows>|null=null;
   if(workPlanRef){
-   if(!recordV1(snapshot.rows,['version','link','artifact','origin','systemForm','workPlanVersion',...(designDocumentRef?['designDocument']:[]),...(planRelations?['workPlanRelations']:[]),...(planConfirmationId?['workPlanConfirmation']:[]),...(designIndex?['designIndexRows']:[]),...(rootAssignment?['rootAssignmentRows']:[])]))return invalid();
-   const {workPlanVersion,designDocument,workPlanRelations,workPlanConfirmation,designIndexRows,rootAssignmentRows,...documentRows}=snapshot.rows;
+   if(!recordV1(snapshot.rows,['version','link','artifact','origin','systemForm','workPlanVersion',...(designDocumentRef?['designDocument']:[]),...(planRelations?['workPlanRelations']:[]),...(planConfirmationId?['workPlanConfirmation']:[]),...(designIndex?['designIndexRows']:[]),...(rootAssignment?['rootAssignmentRows']:[]),...(applicationSourceRef?['explicitApplicationRows']:[])]))return invalid();
+   const {workPlanVersion,designDocument,workPlanRelations,workPlanConfirmation,designIndexRows,rootAssignmentRows,explicitApplicationRows,...documentRows}=snapshot.rows;
    form=checkDocumentSystemFormHistoryRows(wanted.projectId,wanted.documentRef,documentRows);
    if(documentRows.systemForm.definition.form_code!=='AF04')return invalid();
    workPlan=checkWorkPlanDocumentHistoryRow(wanted.projectId,workPlanRef,wanted.documentRef,workPlanVersion,designDocumentRef);
@@ -169,8 +182,12 @@ function verifyStoredHistory(wanted:Readonly<DocumentBodyHistoryExpectation>,sna
      if(!planConfirmation)return invalid();
      index=checkDesignIndexHistoryRows(wanted.projectId,designDocumentRef,workPlanVersion,
       workPlanConfirmation.confirmation.origin.audit.server_sequence,designIndexRows);
-     if(rootAssignment)assignment=checkRootAssignmentHistoryRows(wanted.projectId,rootAssignment,workPlanRef,designDocumentRef,
-      workPlanRelations.tasks,workPlanConfirmation.confirmation.origin.audit.server_sequence,rootAssignmentRows);
+     if(rootAssignment){
+      assignment=checkRootAssignmentHistoryRows(wanted.projectId,rootAssignment,workPlanRef,designDocumentRef,
+       workPlanRelations.tasks,workPlanConfirmation.confirmation.origin.audit.server_sequence,rootAssignmentRows);
+      if(applicationSourceRef)explicitApplication=checkExplicitApplicationHistoryRows(wanted.projectId,rootAssignment.applicationRef,
+       applicationSourceRef,rootAssignmentRows.application,rootAssignmentRows.draft.origin.audit.server_sequence,explicitApplicationRows);
+     }
     }
    }
   }else if(snapshot.kind==='FN16_D2_DOCUMENT_SYSTEM_FORM_SNAPSHOT_V3'){
@@ -198,7 +215,11 @@ function verifyStoredHistory(wanted:Readonly<DocumentBodyHistoryExpectation>,sna
     const designRelation={...relation,designDocumentRef,designArtifact:design.body,designBodyVerified:true as const,designDocumentHistoryComplete:false as const};
     if(relations&&planConfirmation){
      const confirmed={...designRelation,...relations,...planConfirmation};
-     if(index&&assignment)return {kind:'FN16_D2_ROOT_ASSIGNMENT_VERIFICATION_V10' as const,...confirmed,...index,...assignment};
+     if(index&&assignment){
+      const rooted={...confirmed,...index,...assignment};
+      return explicitApplication?{kind:'FN16_D2_APPLIED_METHODOLOGY_VERIFICATION_V11' as const,...rooted,...explicitApplication}
+       :{kind:'FN16_D2_ROOT_ASSIGNMENT_VERIFICATION_V10' as const,...rooted};
+     }
      return index?{kind:'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_VERIFICATION_V9' as const,...confirmed,...index}
       :{kind:'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_VERIFICATION_V8' as const,...confirmed};
     }

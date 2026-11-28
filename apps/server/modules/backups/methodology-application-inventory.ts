@@ -8,6 +8,7 @@ import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
 import {cloneV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 import {readDocumentInventoryInput} from './document-inventory-input.ts';
+import {checkProjectHistoryOrigin,projectHistoryOriginColumns,readProjectHistoryOrigin} from './document-inventory.ts';
 type Row=Record<string,any>;
 const columns={
  project_methodologies:'id project_id application_version source_definition_id source_version source_hash snapshot_json snapshot_hash created_by created_at application_command_id'.split(' '),
@@ -36,8 +37,7 @@ function identitySnapshot(actor:AuthenticatedIdentity):AuthenticatedIdentity{
 const identityKey=(a:AuthenticatedIdentity)=>[a.actorId,a.clientId,a.credentialGeneration,a.authSession!.id];
 function compare(a:(string|number)[],b:(string|number)[]){for(let i=0;i<a.length;i++){if(a[i]!==b[i])return a[i]!<b[i]!?-1:1;}return 0;}
 /** 원문 접근 없는 내부 방법론 전체 적용 역사 metadata 관측이다. archive/복원·명령 실행 권한을 발급하지 않는다. */
-/** 현재 적용 head가 아니라 임무가 기록한 정확 역사 행과 노드를 검산한다. */
-export function checkAssignmentApplicationHistoryRow(projectId:string,ref:RuntimeRefV1,nodeId:string,value:unknown){
+function checkExactApplicationRow(projectId:string,ref:RuntimeRefV1,value:unknown){
  if(!uuidV1(projectId)||!refV1(ref))return bad();
  const row=object(value,columns.project_methodologies);
  if(integer(row.application_version,1)!==ref.version||!uuidV1(row.created_by)
@@ -46,7 +46,13 @@ export function checkAssignmentApplicationHistoryRow(projectId:string,ref:Runtim
  integer(row.source_version,1);
  const parsed=readApplicationSnapshot(projectId,[row]);
  if(!same(parsed.applicationRef,ref)||!parsed.snapshot)return bad();
- const {nodes}=object(parsed.snapshot.graph,['nodes'],false);
+ return {row,snapshot:parsed.snapshot};
+}
+
+/** 현재 적용 head가 아니라 임무가 기록한 정확 역사 행과 노드를 검산한다. */
+export function checkAssignmentApplicationHistoryRow(projectId:string,ref:RuntimeRefV1,nodeId:string,value:unknown){
+ const {row,snapshot}=checkExactApplicationRow(projectId,ref,value);
+ const {nodes}=object(snapshot.graph,['nodes'],false);
  if(!Array.isArray(nodes)||!nodes.some(node=>node.nodeId===nodeId))return bad();
  if(inspectArtifact(Buffer.from(canonicalJson(row))).state==='SUSPECTED')return bad('METHODOLOGY_APPLICATION_INVENTORY_SENSITIVE_METADATA');
  return row;
@@ -66,6 +72,93 @@ export async function readAssignmentApplicationHistoryRow(db:Pick<PoolClient,'qu
  const row=checkAssignmentApplicationHistoryRow(projectId,ref,nodeId,envelope.inventory_data);
  if(Buffer.byteLength(canonicalJson(row))>size)return bad();
  return cloneV1(row);
+}
+
+const explicitSourceFields=['d.project_id','d.scope','v.definition_id','v.version','v.name','v.purpose','v.graph_json','v.content_hash'];
+const previousFields=['project_id','id','application_version','snapshot_hash','source_definition_id','source_version','source_hash'];
+export interface ExplicitApplicationHistoryRows{
+ source:Row;
+ previous:Row|null;
+ origin:Awaited<ReturnType<typeof readProjectHistoryOrigin>>;
+}
+function explicitApplication(projectId:string,ref:RuntimeRefV1,sourceRef:RuntimeRefV1,value:unknown){
+ const {row,snapshot}=checkExactApplicationRow(projectId,ref,value);
+ if(!refV1(sourceRef)||!uuidV1(row.application_command_id)||Object.hasOwn(snapshot,'draftConfirmationRef')
+  ||!same(snapshot.sourceRef,sourceRef))return bad();
+ return {row,snapshot:object(snapshot,['name','purpose','graph','sourceRef'])};
+}
+function explicitApplicationSource(projectId:string,ref:RuntimeRefV1,snapshot:Row,value:unknown){
+ const row=object(value,explicitSourceFields.map(f=>f.slice(f.indexOf('.')+1)));
+ if(row.project_id!==projectId||row.scope!=='PROJECT'||row.definition_id!==ref.id||integer(row.version,1)!==ref.version
+  ||row.content_hash!==ref.contentHash||hash(row.graph_json)!==ref.contentHash
+  ||!same(snapshot,{name:row.name,purpose:row.purpose,graph:row.graph_json,sourceRef:ref}))return bad();
+}
+function previousApplicationRef(projectId:string,ref:RuntimeRefV1,sourceRef:RuntimeRefV1,value:unknown){
+ if(ref.version===1)return value===null?null:bad();
+ const row=object(value,previousFields);
+ const previous={id:row.id,version:integer(row.application_version,1),contentHash:row.snapshot_hash};
+ const previousSource={id:row.source_definition_id,version:integer(row.source_version,1),contentHash:row.source_hash};
+ if(row.project_id!==projectId||!refV1(previous)||!refV1(previousSource)||previous.id===ref.id||previous.version!==ref.version-1
+  ||same(previousSource,sourceRef))return bad();
+ return previous;
+}
+
+/** 명시 적용의 원 요청·정착만 검산한다. 초기 생성 원장은 이 범위를 사용하지 않는다. */
+export function checkExplicitApplicationHistoryRows(projectId:string,ref:RuntimeRefV1,sourceRef:RuntimeRefV1,application:unknown,
+ assignmentDraftSequence:unknown,value:unknown){
+ const {row,snapshot}=explicitApplication(projectId,ref,sourceRef,application);
+ const {source,previous,origin}=object(value,['source','previous','origin']);
+ explicitApplicationSource(projectId,sourceRef,snapshot,source);
+ const preceding=previousApplicationRef(projectId,ref,sourceRef,previous);
+ const {command}=object(origin,['command','receipt','audit']);
+ const cmd=object(command,['client_id','result_ref'],false);
+ const result=object(cmd.result_ref,['data'],false);
+ const {reason}=object(result.data,['ref','status','snapshot','reason','previousApplicationRef']);
+ if(!text(reason))return bad();
+ // apply()는 사용자 reason을 변환하지 않고 원 receipt data에도 그대로 남긴다.
+ const expectedApplicationVersion=ref.version-1;
+ const {sequence}=checkProjectHistoryOrigin(projectId,ref,origin,{operation:'applyMethodology',
+  reasonCode:'EXPLICIT_EMPTY_PROJECT_METHODOLOGY_APPLICATION',commandId:row.application_command_id,actorId:row.created_by,
+  clientId:cmd.client_id,createdAt:row.created_at,requestBinding:{targetId:projectId,expectedVersion:expectedApplicationVersion},
+  payload:{methodologyRef:sourceRef,expectedApplicationVersion,reason},
+  resultData:{status:'METHODOLOGY_APPLIED',snapshot,reason,previousApplicationRef:preceding}});
+ if(sequence>=integer(assignmentDraftSequence,1))return bad();
+ if(inspectArtifact(Buffer.from(canonicalJson(value))).state==='SUSPECTED')return bad('METHODOLOGY_APPLICATION_INVENTORY_SENSITIVE_METADATA');
+ return {applicationSourceRef:sourceRef,previousApplicationRef:preceding,applicationOriginVerified:true as const,
+  explicitApplicationProjectionHash:hash(value)};
+}
+
+export async function readExplicitApplicationHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,ref:RuntimeRefV1,sourceRef:RuntimeRefV1,
+ application:unknown,assignmentDraftSequence:unknown,metadataBytes:number):Promise<ExplicitApplicationHistoryRows>{
+ const {row,snapshot}=explicitApplication(projectId,ref,sourceRef,application);
+ let remaining=metadataBytes;
+ async function fixed(from:string,fields:readonly string[],predicate:string,args:unknown[]){
+  if(!Number.isSafeInteger(remaining)||remaining<1)return bad('METHODOLOGY_APPLICATION_INVENTORY_LIMIT',413);
+  const cap=args.length+1;
+  const {rows}=await db.query(`/*FN16_D2_EXPLICIT_APPLY*/ WITH material AS (
+   SELECT ${fields.join(',')} FROM ${from} WHERE ${predicate} LIMIT 2
+  ) SELECT CASE WHEN octet_length(to_jsonb(material)::text)<=$${cap}::bigint THEN to_jsonb(material) END AS inventory_data,
+   octet_length(to_jsonb(material)::text) AS row_bytes FROM material`,[...args,remaining]);
+  if(rows.length!==1)return bad();
+  const envelope=object(rows[0],['inventory_data','row_bytes']),size=integer(envelope.row_bytes,1);
+  if(size>remaining)return bad('METHODOLOGY_APPLICATION_INVENTORY_LIMIT',413);
+  const row=object(envelope.inventory_data,fields.map(f=>f.slice(f.indexOf('.')+1)));
+  if(Buffer.byteLength(canonicalJson(row))>size)return bad();
+  remaining-=size;
+  return cloneV1(row);
+ }
+ const source=await fixed('anvil.methodology_definitions d JOIN anvil.methodology_versions v ON v.definition_id=d.id',explicitSourceFields,
+  "d.project_id=$1::uuid AND d.scope='PROJECT' AND d.id=$2::uuid AND v.version=$3::bigint AND v.content_hash=$4::text",
+  [projectId,sourceRef.id,sourceRef.version,sourceRef.contentHash]);
+ explicitApplicationSource(projectId,sourceRef,snapshot,source);
+ const previous=ref.version===1?null:await fixed('anvil.project_methodologies t',previousFields.map(c=>'t.'+c),
+  't.project_id=$1::uuid AND t.application_version=$2::bigint',[projectId,ref.version-1]);
+ previousApplicationRef(projectId,ref,sourceRef,previous);
+ const origin=await readProjectHistoryOrigin((table,predicate,args)=>fixed(`anvil.${table} t`,projectHistoryOriginColumns[table].map(c=>'t.'+c),
+  `${table==='authorization_receipts'?'t.scope_id':'t.project_id'}=$1::uuid AND ${predicate}`,[projectId,...args]),row.application_command_id,'applyMethodology');
+ const history={source,previous,origin};
+ checkExplicitApplicationHistoryRows(projectId,ref,sourceRef,application,assignmentDraftSequence,history);
+ return history;
 }
 
 export async function collectMethodologyApplicationInventory(access:AccessRepository,token:string,value:unknown,signal:AbortSignal):Promise<Row>{

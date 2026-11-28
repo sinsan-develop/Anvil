@@ -104,7 +104,8 @@ const confirmationOrigin=originFor(confirmation.command_id,'confirmDocument',{ve
 
 function fixture(mode='valid'){
  const confirmed=mode.startsWith('confirmed');
- const withAssignment=mode.startsWith('root-assignment-');
+ const withApplicationOrigin=mode.startsWith('apply-origin-');
+ const withAssignment=mode.startsWith('root-assignment-')||withApplicationOrigin;
  const withIndex=mode.startsWith('design-index-')||withAssignment;
  const withDecision=mode.startsWith('plan-decision-')||withIndex;
  const withRelations=mode.startsWith('relations-')||withDecision;
@@ -203,10 +204,21 @@ function fixture(mode='valid'){
   edges:[],entryNodeId:'N1',terminalNodeIds:['N1']};
  const methodologyRef={...pinned(573),contentHash:hash(graph)};
  const applicationSnapshot={name:'적용본',purpose:'합성 방법론',graph,sourceRef:methodologyRef};
- const applicationRef={...pinned(572),contentHash:hash(applicationSnapshot)};
+ const applicationRef={...pinned(572),version:withApplicationOrigin&&!['apply-origin-initial','apply-origin-first'].includes(mode)?2:1,
+  contentHash:hash(applicationSnapshot)};
+ const applicationSource={project_id:projectId,scope:'PROJECT',definition_id:methodologyRef.id,version:methodologyRef.version,
+  name:applicationSnapshot.name,purpose:applicationSnapshot.purpose,graph_json:graph,content_hash:methodologyRef.contentHash};
+ const previousAppRef=pinned(630),previousMethodologyRef=pinned(631);
+ const previousApplication={project_id:projectId,id:previousAppRef.id,application_version:previousAppRef.version,snapshot_hash:previousAppRef.contentHash,
+  source_definition_id:previousMethodologyRef.id,source_version:previousMethodologyRef.version,source_hash:previousMethodologyRef.contentHash};
+ const applyReason='  원 방법론 적용 이유를 그대로 보존  ';
+ const applyProof=planProof(635,id(634),'applyMethodology','EXPLICIT_EMPTY_PROJECT_METHODOLOGY_APPLICATION',
+  {methodologyRef,expectedApplicationVersion:applicationRef.version-1,reason:applyReason},
+  {status:'METHODOLOGY_APPLIED',snapshot:applicationSnapshot,reason:applyReason,previousApplicationRef:applicationRef.version===1?null:previousAppRef},
+  mode==='apply-origin-after-draft'?21:mode==='apply-origin-after-plan'?15:8,at,mode==='apply-origin-request-target'?applicationRef.id:projectId,applicationRef.version-1,applicationRef);
  const application={id:applicationRef.id,project_id:projectId,application_version:applicationRef.version,source_definition_id:methodologyRef.id,
   source_version:methodologyRef.version,source_hash:methodologyRef.contentHash,snapshot_json:applicationSnapshot,snapshot_hash:applicationRef.contentHash,
-  created_by:actorId,created_at:at,application_command_id:null};
+  created_by:actorId,created_at:at,application_command_id:withApplicationOrigin&&mode!=='apply-origin-initial'?applyProof.command.id:null};
  const assignmentApplication=mode==='root-assignment-app-scope'?pinned(998):applicationRef;
  const taskRef={planRef:expectedPlanRef,taskCode:'A',applicationRef:assignmentApplication,nodeId:mode==='root-assignment-missing-node'?'MISSING':'N1'};
  const definition={taskRef,baselineRefs:[expectedPlanRef,assignmentApplication,designVersionRef],purpose:'임무 목적',goal:'내용 완성',ownerRole:'개발',
@@ -275,7 +287,7 @@ function fixture(mode='valid'){
    if(sql.includes("'anvil.actor_id'")){assert.equal(scope,'RR');assert.deepEqual(params,[actorId,clientId]);trace.push('RR:rls');return {rows:[{actor_id:actorId,client_id:clientId}]};}
    if(sql.includes('FROM anvil.projects p')){assert.deepEqual(params,[projectId,actorId]);assert(scope==='RR'?liveRR:!liveRR);return {rows:[{id:projectId,archived_at:null,participation:scope==='RC2'&&mode==='revoked'?'VIEWER':'OWNER'}]};}
    if(sql.includes('FROM anvil.project_control')){assert.equal(params[0],projectId);return {rows:[{actor_id:actorId,client_id:clientId,generation:1,version:1,revoked_at:null}]};}
-   assert((sql.includes('FN16_D2_BODY')||sql.includes('FN16_D2_WORK_PLAN')||sql.includes('FN16_D2_DESIGN_INDEX')||sql.includes('FN16_D2_ROOT_ASSIGNMENT')||sql.includes('FN16_D2_ASSIGNMENT_APPLICATION'))
+   assert((sql.includes('FN16_D2_BODY')||sql.includes('FN16_D2_WORK_PLAN')||sql.includes('FN16_D2_DESIGN_INDEX')||sql.includes('FN16_D2_ROOT_ASSIGNMENT')||sql.includes('FN16_D2_ASSIGNMENT_APPLICATION')||sql.includes('FN16_D2_EXPLICIT_APPLY'))
     &&(sql.includes('LIMIT 2')||sql.includes('ORDER BY a.server_sequence DESC LIMIT 1')||sql.includes('LIMIT $4::integer')||sql.includes('LIMIT 201')));
    const table=sql.match(/FROM anvil\.(\w+)/)?.[1];
    if(!['form_definitions','authoring_standard_versions'].includes(table??''))assert.equal(params[0],projectId);
@@ -307,6 +319,36 @@ function fixture(mode='valid'){
     const charged=rows.reduce((sum,item)=>sum+item.row_bytes,0);
     rowCharges[scope]=(rowCharges[scope]??0)+charged;
     return {rows:charged>Number(params[4])?rows.map(row=>({...row,inventory_data:null})):rows};
+   }
+   if(withApplicationOrigin&&sql.includes('FN16_D2_EXPLICIT_APPLY')){
+    trace.push(`${scope}:apply-origin:${table}`);
+    assert.match(sql,/LIMIT 2/);
+    assert.doesNotMatch(sql,/head_version|FOR UPDATE/);
+    if(table==='methodology_definitions'){
+     assert.deepEqual(params.slice(0,-1),[projectId,methodologyRef.id,methodologyRef.version,methodologyRef.contentHash]);
+     assert.match(sql,/d\.scope='PROJECT'/);
+     row=mode==='apply-origin-common'?{...applicationSource,scope:'COMMON'}:mode==='apply-origin-source-value'?{...applicationSource,name:'다른 이름'}:applicationSource;
+    }else if(table==='project_methodologies'){
+     assert.deepEqual(params.slice(0,-1),[projectId,applicationRef.version-1]);
+     assert.doesNotMatch(sql,/snapshot_json/);
+     row=mode==='apply-origin-other-previous'?{...previousApplication,id:id(649)}:previousApplication;
+    }else if(table==='commands'){
+     assert.deepEqual(params.slice(0,-1),[projectId,applyProof.command.id]);
+     assert.match(sql,/operation='applyMethodology'.*approval_consumption_id IS NULL/);
+     row=mode==='apply-origin-altered-reason'?{...applyProof.command,result_ref:{...applyProof.command.result_ref,
+      data:{...applyProof.command.result_ref.data,reason:applyReason.trim()}}}:applyProof.command;
+    }else if(table==='authorization_receipts'){
+     assert.deepEqual(params.slice(0,-1),[projectId,applyProof.receipt.id,applyProof.command.id]);
+     row=applyProof.receipt;
+    }else{
+     assert.equal(table,'audit_events');
+     assert.deepEqual(params.slice(0,-1),[projectId,applyProof.command.id]);
+     assert.match(sql,/correction_of IS NULL/);
+     row=mode==='apply-origin-rc-drift'&&scope==='RC2'?{...applyProof.audit,event_id:id(645)}:applyProof.audit;
+    }
+    const projected=envelope(row);
+    rowCharges[scope]=(rowCharges[scope]??0)+projected.row_bytes;
+    return {rows:[projected.row_bytes>Number(params.at(-1))?{...projected,inventory_data:null}:projected]};
    }
    if(withAssignment&&(sql.includes('FN16_D2_ROOT_ASSIGNMENT')||sql.includes('FN16_D2_ASSIGNMENT_APPLICATION'))){
     trace.push(`${scope}:assignment:${table}`);
@@ -583,10 +625,10 @@ function fixture(mode='valid'){
    async close(){trace.push('body:close');if(mode==='close-unknown')throw Error('합성 close 불명');}};
  }};
  const admission={async readCurrent(_db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:{projectId:string;documentRef:typeof ref}){
-  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true},...withAssignment&&{rootAssignment}});assert(!liveRR);
+  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true},...withAssignment&&{rootAssignment},...withApplicationOrigin&&{applicationSourceRef:methodologyRef}});assert(!liveRR);
   trace.push(`RC${rc}:admission`);
-  if(mode==='policy-denied'||(mode==='policy-revoked'||mode==='design-revoked'||mode==='design-index-revoked'||mode==='root-assignment-revoked')&&rc===2)return null;
-  return {purpose:withAssignment&&mode!=='root-assignment-v9-admission'?'FN16_D2_ROOT_ASSIGNMENT_ADMISSION_V10':withIndex&&mode!=='design-index-v8-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_ADMISSION_V9':withDecision&&mode!=='plan-decision-v7-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_ADMISSION_V8':withRelations&&mode!=='relations-v6-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
+  if(mode==='policy-denied'||(mode==='policy-revoked'||mode==='design-revoked'||mode==='design-index-revoked'||mode==='root-assignment-revoked'||mode==='apply-origin-revoked')&&rc===2)return null;
+  return {purpose:withApplicationOrigin&&mode!=='apply-origin-v10-admission'?'FN16_D2_APPLIED_METHODOLOGY_ADMISSION_V11':withAssignment&&mode!=='root-assignment-v9-admission'?'FN16_D2_ROOT_ASSIGNMENT_ADMISSION_V10':withIndex&&mode!=='design-index-v8-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_ADMISSION_V9':withDecision&&mode!=='plan-decision-v7-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_ADMISSION_V8':withRelations&&mode!=='relations-v6-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
    projectId,documentRef:ref,actorId,clientId,sessionId,credentialGeneration:1,controlGeneration:1,
    ...confirmed&&{confirmationId:mode==='confirmed-admission-mismatch'?id(207):confirmationId},
    ...withPlan&&mode!=='plan-admission-missing'&&{workPlanRef:mode==='plan-admission-mismatch'?pinned(312):expectedPlanRef},
@@ -597,6 +639,7 @@ function fixture(mode='valid'){
    ...withIndex&&mode!=='design-index-v8-admission'&&{designIndex:true},
    ...withAssignment&&mode!=='root-assignment-v9-admission'&&{rootAssignment:
     mode==='root-assignment-bad-admission'?{...rootAssignment,assignmentConfirmationId:id(999)}:rootAssignment},
+   ...withApplicationOrigin&&mode!=='apply-origin-v10-admission'&&{applicationSourceRef:mode==='apply-origin-other-admission'?pinned(648):methodologyRef},
    jobRef:pinned(10),reservationRef:pinned(11),policyRef:pinned(mode==='new-policy'&&rc===2?19:12),targetProtectedRef:pinned(13),
    retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),
    formRef:mode==='foreign-admission-form'?pinned(103):formRef,expiresAt:'2026-11-28T00:00:09.000Z'};
@@ -605,11 +648,82 @@ function fixture(mode='valid'){
   metadataBudget=limits.metadataBytes;
   return collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',
   {...input,limits,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:mode==='plan-raw-invalid'?null:expectedPlanRef},
-   ...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true},...withAssignment&&{rootAssignment}},
+   ...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true},...withAssignment&&{rootAssignment},...withApplicationOrigin&&{applicationSourceRef:methodologyRef}},
   mode==='unconfigured'?null:admission,reader,controller.signal);
  };
- return {run,trace,expectedPlanRef,designVersionRef,rowCharges,rootAssignment};
+ return {run,trace,expectedPlanRef,designVersionRef,rowCharges,rootAssignment,methodologyRef,previousAppRef,applyReason};
 }
+
+test('명시 적용 방법론의 원 버전·직전 적용과 원 명령을 함께 고정한다',async()=>{
+ const limits={...input.limits,metadataBytes:128*1024,fileCount:2};
+ for(const mode of ['apply-origin-valid','apply-origin-first','apply-origin-after-plan']){
+  const f=fixture(mode),capture=await f.run(limits),{snapshot}=capture;
+  assert.equal(snapshot.kind,'FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11');
+  if(snapshot.kind!=='FN16_D2_APPLIED_METHODOLOGY_SNAPSHOT_V11')throw Error('명시 적용 원 증빙 누락');
+  const origin=snapshot.rows.explicitApplicationRows;
+  assert.equal(origin.origin.command.result_ref.data.reason,f.applyReason);
+  assert.equal(f.trace.includes('RR:apply-origin:project_methodologies'),mode!=='apply-origin-first');
+  assert.deepEqual(f.trace.filter(item=>/apply-origin:methodology_definitions|RR:rollback|body:open|RC2:commit/.test(item)),
+   ['RR:apply-origin:methodology_definitions','RR:rollback','body:open','design-body:open','RC2:apply-origin:methodology_definitions','RC2:commit']);
+  const expected={projectId,jobRef:snapshot.jobRef,documentRef:ref,workPlanRef:f.expectedPlanRef,designDocumentRef:f.designVersionRef,
+   planRelations:true as const,planConfirmationId:id(401),designIndex:true as const,rootAssignment:f.rootAssignment,applicationSourceRef:f.methodologyRef,
+   snapshot:snapshot.observation.snapshot,snapshotHash:capture.snapshotHash};
+  const readback={snapshotBytes:Buffer.from(capture.snapshotBytes),body:Buffer.from(capture.body),designBody:Buffer.from(capture.designBody!)};
+  const checked=await historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async scope=>{
+   assert.deepEqual(scope.applicationSourceRef,f.methodologyRef);
+   return readback;
+  });
+  assert.equal(checked.kind,'FN16_D2_APPLIED_METHODOLOGY_VERIFICATION_V11');
+  if(checked.kind!=='FN16_D2_APPLIED_METHODOLOGY_VERIFICATION_V11')throw Error('명시 적용 원 검산 누락');
+  assert.equal(checked.applicationOriginVerified,true);
+  assert.equal(checked.explicitApplicationProjectionHash,hash(origin));
+  assert.deepEqual(checked.previousApplicationRef,mode==='apply-origin-first'?null:f.previousAppRef);
+  assert.equal(checked.restorable,false);
+  assert.equal(checked.executionAuthorized,false);
+  const {applicationSourceRef:_,...oldExpected}=expected;
+  await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback(oldExpected,limits,async()=>readback),/FN16_D2_DOCUMENT_HISTORY_INVALID/);
+  const changed=structuredClone(snapshot);
+  changed.rows.explicitApplicationRows.origin.audit.server_sequence=changed.rows.rootAssignmentRows.draft.origin.audit.server_sequence;
+  const snapshotBytes=Buffer.from(canonicalJson(changed));
+  await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback({...expected,snapshotHash:contentHash(snapshotBytes)},limits,
+   async()=>({...readback,snapshotBytes})),/FN16_D2_DOCUMENT_HISTORY_INVALID/);
+ }
+ const legacy=fixture('root-assignment-valid');
+ await legacy.run(limits);
+ assert.equal(legacy.trace.some(item=>item.includes(':apply-origin:')),false);
+});
+
+test('초기 생성·다른 출처·직전 참조·원 요청의 불일치는 원문 수집 전에 거절한다',async()=>{
+ const limits={...input.limits,metadataBytes:128*1024,fileCount:2};
+ for(const mode of ['apply-origin-v10-admission','apply-origin-other-admission','apply-origin-initial','apply-origin-common','apply-origin-source-value',
+  'apply-origin-other-previous','apply-origin-request-target','apply-origin-altered-reason','apply-origin-after-draft']){
+  const f=fixture(mode);
+  await assert.rejects(f.run(limits),/FN16_D2_SNAPSHOT_ADMISSION_DENIED|METHODOLOGY_APPLICATION_INVENTORY_INTEGRITY_FAILED|DOCUMENT_INVENTORY_INTEGRITY_FAILED/,mode);
+  assert.equal(f.trace.some(item=>item.endsWith('body:open')),false,mode);
+  if(mode.endsWith('admission'))assert.equal(f.trace.includes('RR:begin'),false,mode);
+  else assert.equal(f.trace.includes('RR:rollback'),true,mode);
+  if(mode==='apply-origin-initial')assert.equal(f.trace.some(item=>item.includes(':apply-origin:')),false);
+  if(mode==='apply-origin-common'||mode==='apply-origin-source-value')assert.equal(f.trace.includes('RR:apply-origin:commands'),false,mode);
+ }
+});
+
+test('명시 적용 원형의 공유 한도와 최종 회수·원감사 교체에서 부분 결과가 없다',async()=>{
+ const limits={...input.limits,metadataBytes:128*1024,fileCount:2};
+ const valid=fixture('apply-origin-valid');
+ await valid.run(limits);
+ const limited=fixture('apply-origin-valid');
+ await assert.rejects(limited.run({...limits,metadataBytes:valid.rowCharges.RR!-1}),/FN16_D2_SNAPSHOT_LIMIT|METHODOLOGY_APPLICATION_INVENTORY_LIMIT/);
+ assert.equal(limited.trace.includes('RR:apply-origin:audit_events'),true);
+ assert.equal(limited.trace.some(item=>item.endsWith('body:open')),false);
+ for(const mode of ['apply-origin-revoked','apply-origin-rc-drift']){
+  const f=fixture(mode);
+  await assert.rejects(f.run(limits),/FN16_D2_SNAPSHOT_ADMISSION_DENIED|FN16_D2_SNAPSHOT_INVALID/,mode);
+  assert.equal(f.trace.includes('body:close'),true,mode);
+  assert.equal(f.trace.includes('design-body:close'),true,mode);
+  assert.equal(f.trace.includes('RC2:apply-origin:methodology_definitions'),mode.endsWith('drift'),mode);
+  assert.equal(f.trace.includes('RC2:commit'),false,mode);
+ }
+});
 
 test('고정 확정 임무와 업무 카드 및 적용 방법론 노드를 함께 보존한다',async()=>{
  const f=fixture('root-assignment-valid'),limits={...input.limits,metadataBytes:128*1024,fileCount:2};
