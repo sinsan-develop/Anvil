@@ -139,9 +139,12 @@ export async function collectDocumentBodySnapshot(
    throw error;
   }finally{db.release(releaseError);}
  }
- let body:Buffer|undefined;
+ let body:Buffer|undefined,snapshotBytes:Buffer|undefined;
  try{
   const start=await rc(),snapshot=await collect(start.actor,start.jobRef,start.formRef);
+  const snapshotText=canonicalJson(snapshot);
+  if(Buffer.byteLength(snapshotText)>limits.metadataBytes)return fail('FN16_D2_SNAPSHOT_LIMIT',413);
+  snapshotBytes=Buffer.from(snapshotText,'utf8');
   const {version,link,artifact:bodyRow,origin,systemForm}=snapshot.rows;
   const {body:artifact}=checkDocumentSystemFormHistoryRows(projectId,documentRef,{version,link,artifact:bodyRow,origin,systemForm});
   if(artifact.bytes>limits.inputBytes)return fail('FN16_D2_SNAPSHOT_LIMIT',413);
@@ -173,12 +176,14 @@ export async function collectDocumentBodySnapshot(
   if(offset!==bytes.length||contentHash(bytes)!==artifact.contentHash)return fail();
   await rc({snapshot,binding:start.binding});
   remaining();
-  const snapshotHash=contentHash(canonicalJson(snapshot));
+  const snapshotHash=contentHash(snapshotBytes);
+  remaining();
   const coverage=snapshot.kind==='FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4'
    ?'DOCUMENT_BODY_DRAFT_ORIGIN_SYSTEM_FORM_AND_CONFIRMATION' as const:'DOCUMENT_BODY_DRAFT_ORIGIN_AND_SYSTEM_FORM' as const;
-  return {snapshot,body:bytes,snapshotHash,coverage,restorable:false as const,executionAuthorized:false as const};
+  return {snapshot,snapshotBytes,body:bytes,snapshotHash,coverage,restorable:false as const,executionAuthorized:false as const};
  }catch(error){
   body?.fill(0);
+  snapshotBytes?.fill(0);
   if(error instanceof AuthFailure&&/^(FN16_D2_|ARTIFACT_BYTES_|DOCUMENT_INVENTORY_|NOT_FOUND$|AUTH_REQUIRED$|CSRF_INVALID$|PROJECT_CONTROL_REQUIRED$)/.test(error.message))
    throw new AuthFailure(error.message,error.statusCode);
   return fail();

@@ -1,6 +1,8 @@
-import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
+import {types} from 'node:util';
+import {canonicalJson,contentHash,parseJsonWithoutDuplicateKeys} from '../../../../contracts/canonical.ts';
 import {hashV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
+import {readDocumentInventoryInput,type InventoryLimits} from './document-inventory-input.ts';
 import {checkDocumentBodyHistoryRows,checkDocumentDraftHistoryRows,checkDocumentSystemFormHistoryRows,checkDocumentConfirmationHistoryRows,
  type DocumentBodyHistoryRows,type DocumentDraftHistoryRows,type DocumentSystemFormHistoryRows,type DocumentConfirmationHistoryRows} from './document-inventory.ts';
 
@@ -37,15 +39,28 @@ export interface DocumentBodyHistoryExpectation {
  confirmationId?:string;
 }
 
-/** 독립 보관본에서 다시 읽은 바이트를 원 수집의 고정 기대값과 검산한다. */
-export async function verifyDocumentBodyHistory(expected:Readonly<DocumentBodyHistoryExpectation>,
- read:()=>Promise<{snapshot:unknown;body:Uint8Array}>){
- try{
-  const expectationKeys=['projectId','documentRef','jobRef','snapshot','snapshotHash'];
-  const confirmationId=recordV1(expected,[...expectationKeys,'confirmationId'])&&uuidV1(expected.confirmationId)?expected.confirmationId:null;
-  if((!confirmationId&&!recordV1(expected,expectationKeys))||!refV1(expected.documentRef)||!refV1(expected.jobRef)||!hashV1(expected.snapshotHash))return invalid();
-  const wanted={...expected,documentRef:{...expected.documentRef},jobRef:{...expected.jobRef}};
-  const {snapshot,body}=await read();
+function historyExpectation(expected:Readonly<DocumentBodyHistoryExpectation>){
+ const keys=['projectId','documentRef','jobRef','snapshot','snapshotHash'];
+ const confirmationId=!types.isProxy(expected)&&recordV1(expected,[...keys,'confirmationId'])&&uuidV1(expected.confirmationId)?expected.confirmationId:null;
+ if(types.isProxy(expected)||(!confirmationId&&!recordV1(expected,keys))
+  ||types.isProxy(expected.documentRef)||types.isProxy(expected.jobRef)||!refV1(expected.documentRef)||!refV1(expected.jobRef)
+  ||!uuidV1(expected.projectId)||!hashV1(expected.snapshotHash)||typeof expected.snapshot!=='string'
+  ||expected.snapshot.length>128*1024||!/^\d+:\d+:[\d,]*$/.test(expected.snapshot))return invalid();
+ return {...expected,documentRef:Object.freeze({...expected.documentRef}),jobRef:Object.freeze({...expected.jobRef})};
+}
+
+const byteLength=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype),'byteLength')!.get!;
+function boundedBytes(value:unknown,max:number){
+ if(!types.isUint8Array(value))return invalid();
+ const length=Number(Reflect.apply(byteLength,value,[]));
+ if(length>max)return invalid();
+ const bytes=Buffer.alloc(length);
+ bytes.set(value);
+ return bytes;
+}
+
+function verifyStoredHistory(wanted:Readonly<DocumentBodyHistoryExpectation>,snapshot:unknown,body:unknown,bodyLimit=20*1024*1024){
+  const confirmationId=wanted.confirmationId;
   if(!recordV1(snapshot,['kind','projectId','jobRef','documentRef','observation','rows'])
    ||!['FN16_D2_DOCUMENT_BODY_SNAPSHOT_V1','FN16_D2_DOCUMENT_DRAFT_SNAPSHOT_V2','FN16_D2_DOCUMENT_SYSTEM_FORM_SNAPSHOT_V3','FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4'].includes(snapshot.kind)
    ||(snapshot.kind==='FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4')!==Boolean(confirmationId)
@@ -53,17 +68,15 @@ export async function verifyDocumentBodyHistory(expected:Readonly<DocumentBodyHi
    ||!refV1(snapshot.jobRef)||canonicalJson(snapshot.jobRef)!==canonicalJson(wanted.jobRef)
    ||canonicalJson(snapshot.documentRef)!==canonicalJson(wanted.documentRef)
    ||!recordV1(snapshot.observation,['snapshot','startedAt','finishedAt'])||snapshot.observation.snapshot!==wanted.snapshot
-   ||typeof wanted.snapshot!=='string'||wanted.snapshot.length>128*1024||!/^\d+:\d+:[\d,]*$/.test(wanted.snapshot)
    ||!isoV1(snapshot.observation.startedAt)||!isoV1(snapshot.observation.finishedAt)||snapshot.observation.finishedAt<snapshot.observation.startedAt
    ||digest(snapshot)!==wanted.snapshotHash)return invalid();
   const confirmation=confirmationId?checkDocumentConfirmationHistoryRows(wanted.projectId,wanted.documentRef,confirmationId,snapshot.rows):null;
   const form=confirmation??(snapshot.kind==='FN16_D2_DOCUMENT_SYSTEM_FORM_SNAPSHOT_V3'?checkDocumentSystemFormHistoryRows(wanted.projectId,wanted.documentRef,snapshot.rows):null);
   const origin=form??(snapshot.kind==='FN16_D2_DOCUMENT_DRAFT_SNAPSHOT_V2'?checkDocumentDraftHistoryRows(wanted.projectId,wanted.documentRef,snapshot.rows):null);
   const artifact=origin?.body??checkDocumentBodyHistoryRows(wanted.projectId,wanted.documentRef,snapshot.rows);
-  if(!(body instanceof Uint8Array)||body.byteLength!==artifact.bytes)return invalid();
-  const bytes=Buffer.from(body);
+  const bytes=boundedBytes(body,Math.min(artifact.bytes,bodyLimit));
   try{
-   if(contentHash(bytes)!==artifact.contentHash||inspectArtifact(bytes).state!=='NO_KNOWN_MARKER')return invalid();
+   if(bytes.length!==artifact.bytes||contentHash(bytes)!==artifact.contentHash||inspectArtifact(bytes).state!=='NO_KNOWN_MARKER')return invalid();
   }finally{bytes.fill(0);}
   const result={projectId:wanted.projectId,
    jobRef:wanted.jobRef,documentRef:wanted.documentRef,snapshotHash:wanted.snapshotHash,artifact,
@@ -78,5 +91,65 @@ export async function verifyDocumentBodyHistory(expected:Readonly<DocumentBodyHi
   return {kind:'FN16_D2_DOCUMENT_CONFIRMATION_VERIFICATION_V4' as const,...systemForm,
    confirmationId:confirmation.confirmationId,confirmationProjectionHash:confirmation.confirmationProjectionHash,
    selectedReviewProjections:confirmation.selectedReviewProjections};
+}
+
+/** 이미 판독한 내부 역사 객체의 원 관계와 BODY를 검산한다. */
+export async function verifyDocumentBodyHistory(expected:Readonly<DocumentBodyHistoryExpectation>,
+ read:()=>Promise<{snapshot:unknown;body:Uint8Array}>){
+ try{
+  const wanted=historyExpectation(expected);
+  const {snapshot,body}=await read();
+  return verifyStoredHistory(wanted,snapshot,body);
  }catch{return invalid();}
+}
+
+type DocumentHistoryReadbackScope=Omit<DocumentBodyHistoryExpectation,'snapshotHash'>;
+type DocumentHistoryReadback=(scope:Readonly<DocumentHistoryReadbackScope>,limits:Readonly<InventoryLimits>,signal:AbortSignal)=>Promise<unknown>;
+
+/** 보호 reader가 공급하는 독립 재조회 바이트만 검산한다. 저장소의 물리적 독립성은 호출자가 보장한다. */
+export async function verifyDocumentBodyHistoryReadback(expected:Readonly<DocumentBodyHistoryExpectation>,
+ limits:Readonly<InventoryLimits>,read:DocumentHistoryReadback){
+ const started=performance.now();
+ let snapshotBytes:Buffer|undefined;
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ try{
+  const {snapshotHash,...scope}=historyExpectation(expected);
+  const request=readDocumentInventoryInput({projectId:scope.projectId,limits});
+  const remaining=()=>request.limits.deadlineMs-(performance.now()-started);
+  if(remaining()<=0)return invalid();
+  const controller=new AbortController();
+  const timedOut=new Promise<never>((_,reject)=>{
+   function arm(){
+    const ms=remaining();
+    if(ms<=0){
+     reject();
+     controller.abort();
+     return;
+    }
+    // Node timer 범위를 넘는 유한 기한은 1ms로 줄어들지 않게 다시 예약한다.
+    timer=setTimeout(arm,Math.min(Math.ceil(ms),2147483647));
+   }
+   arm();
+  });
+  const pending=Promise.resolve().then(()=>{
+   if(remaining()<=0)return invalid();
+   return read(Object.freeze(scope),request.limits,controller.signal);
+  });
+  // 이 경계는 바이트만 받는다. 취소를 무시한 reader의 후속 결과는 검산하지 않는다.
+  const observed=await Promise.race([pending,timedOut]);
+  if(remaining()<=0){controller.abort();return invalid();}
+  if(types.isProxy(observed)||!recordV1(observed,['snapshotBytes','body']))return invalid();
+  snapshotBytes=boundedBytes(observed.snapshotBytes,request.limits.metadataBytes);
+  if(contentHash(snapshotBytes)!==snapshotHash)return invalid();
+  const text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(snapshotBytes);
+  const snapshot=parseJsonWithoutDuplicateKeys(text);
+  if(canonicalJson(snapshot)!==text)return invalid();
+  const result=verifyStoredHistory({...scope,snapshotHash},snapshot,observed.body,request.limits.inputBytes);
+  if(remaining()<=0)return invalid();
+  return result;
+ }catch{return invalid();}
+ finally{
+  if(timer!==undefined)clearTimeout(timer);
+  snapshotBytes?.fill(0);
+ }
 }

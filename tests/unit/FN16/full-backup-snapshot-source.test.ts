@@ -4,10 +4,11 @@ import type {PoolClient} from 'pg';
 import type {AccessRepository,AuthenticatedIdentity} from '../../../apps/server/modules/access/repository.ts';
 import {inspectArtifact} from '../../../apps/server/storage/sensitive-inspection.ts';
 import {collectDocumentBodySnapshot} from '../../../apps/server/modules/backups/full-backup-snapshot-source.ts';
-import {verifyDocumentBodyHistory} from '../../../apps/server/modules/backups/full-backup-history-verification.ts';
+import * as historyVerification from '../../../apps/server/modules/backups/full-backup-history-verification.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 
 const id=(n:number)=>`b2000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
+const {verifyDocumentBodyHistory}=historyVerification;
 const pinned=(n:number)=>({id:id(n),version:1,contentHash:'b'.repeat(64)});
 const hash=(value:unknown)=>contentHash(canonicalJson(value));
 const projectId=id(1),documentId=id(2),bodyId=id(3),actorId=id(4),clientId=id(5),sessionId=id(6);
@@ -216,7 +217,7 @@ function fixture(mode='valid'){
    retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),
    formRef:mode==='foreign-admission-form'?pinned(103):formRef,expiresAt:'2026-11-28T00:00:09.000Z'};
  }};
- const run=()=>collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',{...input,...confirmed&&{confirmationId}},mode==='unconfigured'?null:admission,reader,new AbortController().signal);
+ const run=(limits=input.limits)=>collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',{...input,limits,...confirmed&&{confirmationId}},mode==='unconfigured'?null:admission,reader,new AbortController().signal);
  return {run,trace};
 }
 
@@ -307,6 +308,118 @@ test('한 RR의 보관 문서·BODY·원 명령 관계와 정확 바이트를 �
  await assert.rejects(()=>verifyDocumentBodyHistory({...expected,snapshotHash:hash(changedStandard.snapshot)},async()=>changedStandard),/HISTORY_INVALID/);
 });
 
+test('보호 재조회에서만 수거한 정규 스냅샷과 BODY 바이트를 고정 기대값으로 검산한다',async()=>{
+ const capture=await fixture('confirmed-valid').run();
+ assert.equal(typeof historyVerification.verifyDocumentBodyHistoryReadback,'function');
+ const snapshotBytes=Buffer.from(capture.snapshotBytes),archivedBody=Buffer.from(capture.body);
+ const {jobRef,documentRef,observation}=capture.snapshot;
+ const scope={projectId,jobRef,documentRef,snapshot:observation.snapshot,confirmationId};
+ const expected={...scope,snapshotHash:capture.snapshotHash};
+ assert.equal(snapshotBytes.toString('utf8'),canonicalJson(capture.snapshot));
+ assert.equal(contentHash(snapshotBytes),expected.snapshotHash);
+ capture.body.fill(0);
+ capture.snapshotBytes.fill(0);
+ const mutable=capture.snapshot.rows.version;
+ mutable.title='작성 중 메모리 값';
+ let reads=0;
+ const result=await historyVerification.verifyDocumentBodyHistoryReadback(expected,input.limits,async(wanted,limits)=>{
+  assert.deepEqual(wanted,scope);
+  assert.deepEqual(limits,input.limits);
+  reads++;
+  return {snapshotBytes:Uint8Array.from(snapshotBytes),body:Uint8Array.from(archivedBody)};
+ });
+ assert.equal(reads,1);
+ assert.equal(result.kind,'FN16_D2_DOCUMENT_CONFIRMATION_VERIFICATION_V4');
+ assert.equal(result.bodyVerified,true);
+ assert.equal(result.restorable,false);
+});
+
+test('바이트 재조회는 외부 기대값과 한도를 먼저 고정하고 잘못된 보관본을 거절한다',async()=>{
+ const capture=await fixture().run();
+ const {jobRef,documentRef,observation}=capture.snapshot;
+ const expected={projectId,jobRef,documentRef,snapshot:observation.snapshot,snapshotHash:capture.snapshotHash};
+ const original={snapshotBytes:capture.snapshotBytes,body:capture.body};
+ const readback=historyVerification.verifyDocumentBodyHistoryReadback;
+ const canonical=capture.snapshotBytes.toString('utf8');
+ const malformedUtf8=Buffer.from(capture.snapshotBytes);
+ const nonAscii=malformedUtf8.findIndex(byte=>byte>=128);
+ assert.ok(nonAscii>=0);
+ malformedUtf8[nonAscii]=255;
+ const malformed=[
+  malformedUtf8,
+  Buffer.concat([Buffer.from([239,187,191]),capture.snapshotBytes]),
+  Buffer.from(` ${canonical}`),
+  Buffer.from(canonical.replace(`"projectId":"${projectId}"`,`"project\\u0049d":"${projectId}","projectId":"${projectId}"`)),
+ ];
+ assert.notEqual(malformed[3]!.toString('utf8'),canonical);
+ for(const snapshotBytes of malformed){
+  // 잘못된 바이트 자체로 기대 지문을 재계산해도 형식 검산에서 거절한다.
+  await assert.rejects(()=>readback({...expected,snapshotHash:contentHash(snapshotBytes)},input.limits,
+   async()=>({...original,snapshotBytes})),/HISTORY_INVALID/);
+ }
+ const reread=async()=>original;
+ await assert.rejects(()=>readback({...expected,jobRef:pinned(307)},input.limits,reread),/HISTORY_INVALID/);
+ await assert.rejects(()=>readback({...expected,snapshotHash:'0'.repeat(64)},input.limits,reread),/HISTORY_INVALID/);
+ await assert.rejects(()=>readback(expected,{...input.limits,metadataBytes:capture.snapshotBytes.length-1},reread),/HISTORY_INVALID/);
+ await assert.rejects(()=>readback(expected,{...input.limits,inputBytes:capture.body.length-1},reread),/HISTORY_INVALID/);
+ await assert.rejects(()=>readback(expected,input.limits,async()=>({...original,body:Buffer.alloc(capture.body.length)})),/HISTORY_INVALID/);
+ await assert.rejects(()=>readback(expected,input.limits,async()=>capture),/HISTORY_INVALID/);
+ await assert.rejects(()=>readback(expected,input.limits,async()=>({snapshotBytes:capture.snapshot,body:capture.body})),/HISTORY_INVALID/);
+ await assert.rejects(()=>readback(expected,input.limits,async()=>{throw Error('독립 재조회 실패');}),/HISTORY_INVALID/);
+ let attempted=false;
+ await assert.rejects(()=>readback({...expected,projectId:'invalid'},input.limits,async()=>{attempted=true;return original;}),/HISTORY_INVALID/);
+ assert.equal(attempted,false);
+ const changeable={...expected,jobRef:{...expected.jobRef}},limit={...input.limits};
+ const verified=await readback(changeable,limit,async(scope,bounds)=>{
+  assert.ok(Object.isFrozen(scope)&&Object.isFrozen(scope.jobRef)&&Object.isFrozen(bounds));
+  assert.ok(!Object.hasOwn(scope,'snapshotHash'));
+  changeable.jobRef.id=id(310);
+  changeable.snapshotHash='0'.repeat(64);
+  limit.metadataBytes=1;
+  return original;
+ });
+ assert.equal(verified.kind,'FN16_D2_DOCUMENT_SYSTEM_FORM_VERIFICATION_V3');
+ assert.deepEqual(verified.jobRef,expected.jobRef);
+ assert.deepEqual(original.snapshotBytes,Buffer.from(canonical));
+ assert.deepEqual(original.body,bytes);
+ const bounded=fixture();
+ await assert.rejects(()=>bounded.run({...input.limits,metadataBytes:capture.snapshotBytes.length-1}),/FN16_D2_SNAPSHOT_LIMIT/);
+ assert.ok(bounded.trace.includes('RR:rollback')&&!bounded.trace.includes('body:open'));
+});
+
+test('무응답 바이트 reader는 기한에 한 번 취소하고 늦은 응답과 오류를 폐기한다',{timeout:2000},async()=>{
+ const capture=await fixture().run();
+ const expected={projectId,jobRef:capture.snapshot.jobRef,documentRef:ref,
+  snapshot:capture.snapshot.observation.snapshot,snapshotHash:capture.snapshotHash};
+ const limits={...input.limits,deadlineMs:60};
+ for(const settle of ['NONE','RESOLVE','REJECT']){
+  const port=Promise.withResolvers<unknown>();
+  let reads=0,aborts=0;
+  await assert.rejects(()=>historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async(_scope,_limits,signal)=>{
+   reads++;
+   signal.addEventListener('abort',()=>{aborts++;});
+   return port.promise;
+  }),/HISTORY_INVALID/);
+  assert.equal(reads,1);
+  assert.equal(aborts,1);
+  if(settle==='RESOLVE')port.resolve({snapshotBytes:capture.snapshotBytes,body:capture.body});
+  if(settle==='REJECT')port.reject(Error('기한 뒤 reader 오류'));
+  await new Promise<void>(resolve=>setImmediate(resolve));
+  assert.equal(reads,1);
+  assert.equal(aborts,1);
+ }
+ let completedSignal:AbortSignal|undefined;
+ const normal=await historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async(_scope,_bounds,signal)=>{
+  completedSignal=signal;
+  assert.equal(signal.aborted,false);
+  return {snapshotBytes:capture.snapshotBytes,body:capture.body};
+ });
+ assert.equal(normal.bodyVerified,true);
+ await new Promise<void>(resolve=>setTimeout(resolve,limits.deadlineMs+10));
+ assert.ok(completedSignal);
+ assert.equal(completedSignal.aborted,false);
+});
+
 test('기존 BODY v1과 초안 원 명령 v2는 각각 이전 검산 범위로 읽힌다',async()=>{
  const capture=await fixture().run();
  const {version,link,artifact}=capture.snapshot.rows;
@@ -321,6 +434,12 @@ test('기존 BODY v1과 초안 원 명령 v2는 각각 이전 검산 범위로 �
  const draft=await verifyDocumentBodyHistory({...expected,snapshotHash:hash(v2)},async()=>({snapshot:v2,body:bytes}));
  assert.equal(draft.kind,'FN16_D2_DOCUMENT_DRAFT_VERIFICATION_V2');
  assert(Object.hasOwn(draft,'receiptProjectionRef')&&!Object.hasOwn(draft,'formProjectionHash'));
+ for(const [snapshot,previous]of [[legacy,result],[v2,draft]]as const){
+  const snapshotBytes=Buffer.from(canonicalJson(snapshot));
+  const reread=await historyVerification.verifyDocumentBodyHistoryReadback({...expected,snapshotHash:contentHash(snapshotBytes)},
+   input.limits,async()=>({snapshotBytes,body:bytes}));
+  assert.deepEqual(reread,previous);
+ }
 });
 
 test('SYSTEM 양식이나 표준의 교차·변조·중복과 최신 RC 변경을 거절한다',async()=>{
