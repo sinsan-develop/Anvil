@@ -7,21 +7,24 @@ import {cloneV1,isoV1,recordV1,refV1,uuidV1,type RuntimeRefV1} from '../../../..
 import {verifyArtifactBytes,type ArtifactByteReader} from './artifact-byte-verification.ts';
 import {readDocumentInventoryInput} from './document-inventory-input.ts';
 import {checkDocumentSystemFormHistoryRows,readDocumentSystemFormHistoryRows} from './document-inventory.ts';
-import type {DocumentSystemFormSnapshot} from './full-backup-history-verification.ts';
+import type {DocumentConfirmationSnapshot,DocumentSystemFormSnapshot} from './full-backup-history-verification.ts';
 
 const same=(a:unknown,b:unknown)=>canonicalJson(a)===canonicalJson(b);
 const fail=(code='FN16_D2_SNAPSHOT_INVALID',status=503):never=>{throw new AuthFailure(code,status);};
 
 /** 내부 승인 백업 job의 실제 보호 입력 공급자 자리다. 등록된 기본 공급자는 아직 없다. */
 export interface FullBackupDocumentAdmission {
- readCurrent(db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:Readonly<{projectId:string;documentRef:RuntimeRefV1}>):Promise<unknown>;
+ readCurrent(db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:Readonly<{projectId:string;documentRef:RuntimeRefV1;confirmationId?:string}>):Promise<unknown>;
 }
 
-/** 내부 문서 BODY, 일반 초안의 원 명령, SYSTEM 양식 버전을 수집한다. 현재 권한을 발급하지 않는다. */
+/** 보호 입장 범위에서 문서 BODY와 원 관계를 수집한다. 현재 권한을 발급하지 않는다. */
 export async function collectDocumentBodySnapshot(
  access:Pick<AccessRepository,'authenticated'|'pool'>,token:string,csrf:string,
  raw:unknown,admission:FullBackupDocumentAdmission|null,artifactReader:ArtifactByteReader,signal:AbortSignal){
- if(!recordV1(raw,['projectId','limits','documentRef'])||!refV1(raw.documentRef)||typeof csrf!=='string')return fail('INPUT_INVALID',400);
+ const inputKeys=['projectId','limits','documentRef'];
+ if(!recordV1(raw,inputKeys)&&!recordV1(raw,[...inputKeys,'confirmationId']))return fail('INPUT_INVALID',400);
+ const confirmationId=Object.hasOwn(raw,'confirmationId')&&uuidV1(raw.confirmationId)?raw.confirmationId:undefined;
+ if((Object.hasOwn(raw,'confirmationId')&&!confirmationId)||!refV1(raw.documentRef)||typeof csrf!=='string')return fail('INPUT_INVALID',400);
  const {projectId,limits}=readDocumentInventoryInput({projectId:raw.projectId,limits:raw.limits});
  const documentRef=cloneV1(raw.documentRef);
  if(!admission||typeof admission.readCurrent!=='function')return fail('FN16_D2_SNAPSHOT_ADMISSION_UNAVAILABLE',412);
@@ -49,7 +52,13 @@ export async function collectDocumentBodySnapshot(
   const membership=await projectMember(db as PoolClient,actor,projectId);
   if(membership.id!==projectId||membership.archived_at!==null||membership.participation!=='OWNER')return fail('NOT_FOUND',404);
  }
- async function rc(previous?:{snapshot:DocumentSystemFormSnapshot;binding:unknown}){
+ function readSystemFormRows(db:Pick<PoolClient,'query'>,formRef:RuntimeRefV1){
+  return readDocumentSystemFormHistoryRows(db,projectId,documentRef,formRef,limits.metadataBytes);
+ }
+ function readConfirmationRows(db:Pick<PoolClient,'query'>,formRef:RuntimeRefV1,id:string){
+  return readDocumentSystemFormHistoryRows(db,projectId,documentRef,formRef,limits.metadataBytes,id);
+ }
+ async function rc(previous?:{snapshot:DocumentSystemFormSnapshot|DocumentConfirmationSnapshot;binding:unknown}){
   remaining();
   return access.authenticated(token,csrf,async(db,a)=>{
    const scoped=port(db),session=a.authSession;
@@ -69,10 +78,14 @@ export async function collectDocumentBodySnapshot(
    const anchor=performance.now();
    const at=(await scoped.query('SELECT clock_timestamp() AS at')).rows;
    if(at.length!==1||!(at[0]?.at instanceof Date)||!Number.isFinite(at[0].at.getTime()))return fail();
-   const evidence=await Reflect.apply(readAdmission,admission,[scoped,a,{projectId,documentRef:cloneV1(documentRef)}]);
+   const scope={projectId,documentRef:cloneV1(documentRef),...(confirmationId?{confirmationId}:{})};
+   const evidence=await Reflect.apply(readAdmission,admission,[scoped,a,scope]);
    const refs=['jobRef','reservationRef','policyRef','targetProtectedRef','retentionPolicyRef','encryptionKeyRef','verificationPolicyRef','formRef'];
-   if(!recordV1(evidence,['purpose','projectId','documentRef','actorId','clientId','sessionId','credentialGeneration','controlGeneration','expiresAt',...refs])
-    ||evidence.purpose!=='FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3'||evidence.projectId!==projectId||!same(evidence.documentRef,documentRef)
+   const purpose=confirmationId?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3';
+   if(!recordV1(evidence,['purpose','projectId','documentRef','actorId','clientId','sessionId','credentialGeneration','controlGeneration','expiresAt',
+    ...refs,...(confirmationId?['confirmationId']:[])])
+    ||evidence.purpose!==purpose||evidence.projectId!==projectId||!same(evidence.documentRef,documentRef)
+    ||(confirmationId&&evidence.confirmationId!==confirmationId)
     ||evidence.actorId!==a.actorId||evidence.clientId!==a.clientId||evidence.sessionId!==session.id
     ||evidence.credentialGeneration!==a.credentialGeneration||evidence.controlGeneration!==Number(control.generation)
     ||!refs.every(k=>refV1(evidence[k]))||!isoV1(evidence.expiresAt)||admission!.readCurrent!==readAdmission)
@@ -82,7 +95,10 @@ export async function collectDocumentBodySnapshot(
    const binding=[a.actorId,a.clientId,session.id,a.credentialGeneration,Number(control.generation),Number(control.version),cloneV1(evidence)];
    const formRef=cloneV1(evidence.formRef as RuntimeRefV1);
    if(previous&&!same(previous.binding,binding))return fail('FN16_D2_SNAPSHOT_AUTH_CHANGED',403);
-   if(previous&&!same(await readDocumentSystemFormHistoryRows(scoped,projectId,documentRef,formRef,limits.metadataBytes),previous.snapshot.rows))return fail();
+   if(previous){
+    const current=confirmationId?await readConfirmationRows(scoped,formRef,confirmationId):await readSystemFormRows(scoped,formRef);
+    if(!same(current,previous.snapshot.rows))return fail();
+   }
    remaining();
    return {actor:a,binding,formRef,jobRef:cloneV1(evidence.jobRef as RuntimeRefV1)};
   });
@@ -95,7 +111,7 @@ export async function collectDocumentBodySnapshot(
    ||!(observation.at instanceof Date)||!Number.isFinite(observation.at.getTime()))return fail();
   return {snapshot:observation.snapshot,at:observation.at.toISOString()};
  }
- async function collect(actor:AuthenticatedIdentity,jobRef:RuntimeRefV1,formRef:RuntimeRefV1):Promise<DocumentSystemFormSnapshot>{
+ async function collect(actor:AuthenticatedIdentity,jobRef:RuntimeRefV1,formRef:RuntimeRefV1):Promise<DocumentSystemFormSnapshot|DocumentConfirmationSnapshot>{
   const db=await access.pool.connect();
   let begin=false,rollback=false,releaseError:Error|undefined;
   try{
@@ -106,14 +122,14 @@ export async function collectDocumentBodySnapshot(
    const rls=(await scoped.query("SELECT set_config('anvil.actor_id',$1,true) AS actor_id,set_config('anvil.client_id',$2,true) AS client_id",[actor.actorId,actor.clientId])).rows;
    if(rls.length!==1||rls[0]?.actor_id!==actor.actorId||rls[0]?.client_id!==actor.clientId)return fail();
    await owner(scoped,actor);
-   const rows=await readDocumentSystemFormHistoryRows(scoped,projectId,documentRef,formRef,limits.metadataBytes);
+   const captured=confirmationId?{kind:'FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4' as const,rows:await readConfirmationRows(scoped,formRef,confirmationId)}:
+    {kind:'FN16_D2_DOCUMENT_SYSTEM_FORM_SNAPSHOT_V3' as const,rows:await readSystemFormRows(scoped,formRef)};
    const end=await snapshotObservation(scoped);
    if(end.snapshot!==start.snapshot||end.at<start.at)return fail();
    rollback=true;
    if((await db.query('ROLLBACK')).command!=='ROLLBACK')return fail('FN16_D2_SNAPSHOT_CLEANUP_UNKNOWN');
    remaining();
-   return {kind:'FN16_D2_DOCUMENT_SYSTEM_FORM_SNAPSHOT_V3',projectId,jobRef,documentRef,
-    observation:{snapshot:start.snapshot,startedAt:start.at,finishedAt:end.at},rows};
+   return {...captured,projectId,jobRef,documentRef,observation:{snapshot:start.snapshot,startedAt:start.at,finishedAt:end.at}};
   }catch(error){
    if(begin&&!rollback){
     try{if((await db.query('ROLLBACK')).command!=='ROLLBACK')throw Error();}
@@ -126,7 +142,8 @@ export async function collectDocumentBodySnapshot(
  let body:Buffer|undefined;
  try{
   const start=await rc(),snapshot=await collect(start.actor,start.jobRef,start.formRef);
-  const {body:artifact}=checkDocumentSystemFormHistoryRows(projectId,documentRef,snapshot.rows);
+  const {version,link,artifact:bodyRow,origin,systemForm}=snapshot.rows;
+  const {body:artifact}=checkDocumentSystemFormHistoryRows(projectId,documentRef,{version,link,artifact:bodyRow,origin,systemForm});
   if(artifact.bytes>limits.inputBytes)return fail('FN16_D2_SNAPSHOT_LIMIT',413);
   const bytes=Buffer.alloc(artifact.bytes);
   body=bytes;
@@ -157,7 +174,9 @@ export async function collectDocumentBodySnapshot(
   await rc({snapshot,binding:start.binding});
   remaining();
   const snapshotHash=contentHash(canonicalJson(snapshot));
-  return {snapshot,body:bytes,snapshotHash,coverage:'DOCUMENT_BODY_DRAFT_ORIGIN_AND_SYSTEM_FORM' as const,restorable:false as const,executionAuthorized:false as const};
+  const coverage=snapshot.kind==='FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4'
+   ?'DOCUMENT_BODY_DRAFT_ORIGIN_SYSTEM_FORM_AND_CONFIRMATION' as const:'DOCUMENT_BODY_DRAFT_ORIGIN_AND_SYSTEM_FORM' as const;
+  return {snapshot,body:bytes,snapshotHash,coverage,restorable:false as const,executionAuthorized:false as const};
  }catch(error){
   body?.fill(0);
   if(error instanceof AuthFailure&&/^(FN16_D2_|ARTIFACT_BYTES_|DOCUMENT_INVENTORY_|NOT_FOUND$|AUTH_REQUIRED$|CSRF_INVALID$|PROJECT_CONTROL_REQUIRED$)/.test(error.message))

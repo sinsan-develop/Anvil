@@ -9,6 +9,7 @@ import {readStageNodeRef,nodeUsesForm,documentDraftReason} from '../documents/do
 import {readDocumentSourceLinkHistory} from '../documents/document-source-link-history.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 import {isImportArtifact} from '../documents/project-imports.ts';
+import {documentReviewCriteria} from '../documents/project-content-review.ts';
 import {readDocumentInventoryInput,type DocumentInventoryRequest} from './document-inventory-input.ts';
 
 type Row=Record<string,any>;
@@ -61,6 +62,10 @@ export interface DocumentDraftHistoryRows extends DocumentBodyHistoryRows {
 export interface DocumentSystemFormHistoryRows extends DocumentDraftHistoryRows {
  readonly systemForm:{definition:Row;standard:Row};
 }
+type DocumentCommandOrigin=DocumentDraftHistoryRows['origin'];
+export interface DocumentConfirmationHistoryRows extends DocumentSystemFormHistoryRows {
+ readonly confirmation:{row:Row;origin:DocumentCommandOrigin;latestBefore:Row;reviews:{row:Row;origin:DocumentCommandOrigin}[]};
+}
 const systemFormProjection={
  from:specs.form_definitions!.from,
  columns:cols('d.id d.scope d.owner_user_id d.project_id d.form_code v.version v.definition_json v.content_hash v.authoring_standard_id v.authoring_standard_version v.authoring_standard_hash v.authoring_standard_ref v.created_by v.created_at')
@@ -71,6 +76,12 @@ const draftOriginColumns={
  authorization_receipts:cols('id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at'),
  audit_events:cols('project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of')
 };
+const confirmationOrderProjection={
+ from:'anvil.content_reviews t JOIN anvil.audit_events a ON a.project_id=t.project_id AND a.command_id=t.command_id',
+ columns:['t.id','t.outcome','a.server_sequence']
+};
+const projectDocumentReview="t.scope_kind='PROJECT' AND t.scope_id=$1::uuid AND t.target_kind='DOCUMENT' AND t.criteria_version=1 AND t.source_kind='HUMAN_REVIEW'";
+const projectDocumentReviewTarget='t.target_id=$2::uuid AND t.target_version=$3::bigint AND t.target_hash=$4::text';
 
 /** 원형과 BODY 관계만 검사한다. 현재 권한이나 전체 문서 역사의 완결을 표시하지 않는다. */
 export function checkDocumentBodyHistoryRows(projectId:string,ref:Ref,value:unknown){
@@ -140,13 +151,16 @@ export function checkDocumentDraftHistoryRows(projectId:string,ref:Ref,value:unk
 }
 
 /** 호출자가 이미 보유한 보호 거래만 사용한다. 직접 인증, 연결, 거래 시작을 하지 않는다. */
-export async function readDocumentSystemFormHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,ref:Ref,expectedFormRef:Ref,metadataBytes:number):Promise<DocumentSystemFormHistoryRows>{
- if(!uuidV1(projectId)||!refV1(ref)||!refV1(expectedFormRef)||!Number.isSafeInteger(metadataBytes)||metadataBytes<1)return bad();
+export async function readDocumentSystemFormHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,ref:Ref,expectedFormRef:Ref,metadataBytes:number,confirmationId:string):Promise<DocumentConfirmationHistoryRows>;
+export async function readDocumentSystemFormHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,ref:Ref,expectedFormRef:Ref,metadataBytes:number):Promise<DocumentSystemFormHistoryRows>;
+export async function readDocumentSystemFormHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,ref:Ref,expectedFormRef:Ref,metadataBytes:number,confirmationId?:string):Promise<DocumentSystemFormHistoryRows|DocumentConfirmationHistoryRows>{
+ if(!uuidV1(projectId)||!refV1(ref)||!refV1(expectedFormRef)||!Number.isSafeInteger(metadataBytes)||metadataBytes<1
+  ||confirmationId!==undefined&&!uuidV1(confirmationId))return bad();
  let remaining=metadataBytes;
- async function fixed(spec:{from:string;columns:string[]},predicate:string,args:unknown[]){
+ async function fixed(spec:{from:string;columns:string[]},predicate:string,args:unknown[],exactLatest=false){
   const cap=args.length+1;
   const sql=`/*FN16_D2_BODY*/ WITH material AS (
-   SELECT ${spec.columns.join(',')} FROM ${spec.from} WHERE ${predicate} LIMIT 2
+   SELECT ${spec.columns.join(',')} FROM ${spec.from} WHERE ${predicate}${exactLatest?' ORDER BY a.server_sequence DESC LIMIT 1':' LIMIT 2'}
   ) SELECT CASE WHEN octet_length(to_jsonb(material)::text)<=$${cap}::bigint THEN to_jsonb(material) END AS inventory_data,
    octet_length(to_jsonb(material)::text) AS row_bytes FROM material`;
   const {rows}=await db.query(sql,[...args,remaining]);
@@ -157,12 +171,20 @@ export async function readDocumentSystemFormHistoryRows(db:Pick<PoolClient,'quer
   remaining-=count;
   return cloneV1(row);
  }
- function projectRow(table:'document_versions'|'document_artifact_links'|'artifacts'|keyof typeof draftOriginColumns,predicate:string,args:unknown[]){
+ function projectRow(table:'document_versions'|'document_artifact_links'|'artifacts'|'document_confirmations'|'content_reviews'|keyof typeof draftOriginColumns,predicate:string,args:unknown[]){
   const projection=Object.hasOwn(draftOriginColumns,table)
    ?{from:`anvil.${table} t`,columns:draftOriginColumns[table as keyof typeof draftOriginColumns].map(c=>`t.${c}`)}
    :specs[table]!;
   const scope=table==='authorization_receipts'?'t.scope_id':'t.project_id';
   return fixed(projection,`${scope}=$1::uuid AND ${predicate}`,[projectId,...args]);
+ }
+ async function readOrigin(commandId:unknown,operation:'saveDocumentDraft'|'recordContentReview'|'confirmDocument'){
+  if(!uuidV1(commandId))return bad();
+  const command=await projectRow('commands',`t.id=$2::uuid AND t.scope_kind='PROJECT' AND t.draft_id IS NULL AND t.operation='${operation}' AND t.approval_consumption_id IS NULL AND t.payload_ref IS NULL`,[commandId]);
+  if(!uuidV1(command.authorization_receipt_id))return bad();
+  const receipt=await projectRow('authorization_receipts',"t.id=$2::uuid AND t.scope_kind='PROJECT' AND t.command_id=$3::uuid AND t.approval_decision_ref IS NULL",[command.authorization_receipt_id,commandId]);
+  const audit=await projectRow('audit_events','t.command_id=$2::uuid AND t.correction_of IS NULL',[commandId]);
+  return {command,receipt,audit};
  }
  const version=await projectRow('document_versions','t.document_id=$2::uuid AND t.version=$3::bigint AND t.content_hash=$4::text',[ref.id,ref.version,ref.contentHash]);
  if(!uuidV1(version.body_artifact_id)||!uuidV1(version.command_id)||version.stage_ref_json!==null)return bad();
@@ -171,11 +193,7 @@ export async function readDocumentSystemFormHistoryRows(db:Pick<PoolClient,'quer
  const link=await projectRow('document_artifact_links',"t.document_id=$2::uuid AND t.version=$3::bigint AND t.kind='BODY'",[ref.id,ref.version]);
  const artifact=await projectRow('artifacts',"t.id=$2::uuid AND t.draft_id IS NULL AND t.storage_key='blobs/'||t.project_id::text||'/'||t.id::text",[version.body_artifact_id]);
  checkDocumentBodyHistoryRows(projectId,ref,{version,link,artifact});
- const command=await projectRow('commands',"t.id=$2::uuid AND t.scope_kind='PROJECT' AND t.draft_id IS NULL AND t.operation='saveDocumentDraft' AND t.approval_consumption_id IS NULL AND t.payload_ref IS NULL",[version.command_id]);
- if(!uuidV1(command.authorization_receipt_id))return bad();
- const receipt=await projectRow('authorization_receipts',"t.id=$2::uuid AND t.scope_kind='PROJECT' AND t.command_id=$3::uuid AND t.approval_decision_ref IS NULL",[command.authorization_receipt_id,version.command_id]);
- const audit=await projectRow('audit_events','t.command_id=$2::uuid AND t.correction_of IS NULL',[version.command_id]);
- const rows={version,link,artifact,origin:{command,receipt,audit}};
+ const rows={version,link,artifact,origin:await readOrigin(version.command_id,'saveDocumentDraft')};
  checkDocumentDraftHistoryRows(projectId,ref,rows);
  const definition=await fixed(systemFormProjection,"d.id=$1::uuid AND v.version=$2::bigint AND v.content_hash=$3::text AND d.scope='SYSTEM' AND d.owner_user_id IS NULL AND d.project_id IS NULL",
   [formRef.id,formRef.version,formRef.contentHash]);
@@ -184,7 +202,27 @@ export async function readDocumentSystemFormHistoryRows(db:Pick<PoolClient,'quer
   [standardRef.id,standardRef.version,standardRef.contentHash]);
  const complete={...rows,systemForm:{definition,standard}};
  checkDocumentSystemFormHistoryRows(projectId,ref,complete);
- return complete;
+ if(confirmationId===undefined)return complete;
+ const confirmation=await projectRow('document_confirmations','t.id=$2::uuid AND t.document_id=$3::uuid AND t.version=$4::bigint AND t.target_hash=$5::text',
+  [confirmationId,ref.id,ref.version,ref.contentHash]);
+ const selected=checkConfirmationRow(projectId,ref,confirmationId,formRef,version,confirmation);
+ const origin=await readOrigin(confirmation.command_id,'confirmDocument');
+ const sequence=checkConfirmationOrigin(projectId,ref,confirmation,origin).sequence;
+ // 원 확정 쿼리의 정렬을 원 확정 sequence 직전으로 제한한다. 이후 검토·정정은 포함하지 않는다.
+ const latestBefore=await fixed(confirmationOrderProjection,
+  `t.project_id=$1::uuid AND ${projectDocumentReview} AND ${projectDocumentReviewTarget} AND a.server_sequence<$5::bigint`,
+  [projectId,ref.id,ref.version,ref.contentHash,sequence],true);
+ const reviews=[];
+ for(const selection of selected){
+  const row=await projectRow('content_reviews',
+   `t.id=$2::uuid AND ${projectDocumentReview} AND t.target_id=$3::uuid AND t.target_version=$4::bigint AND t.target_hash=$5::text`,
+   [selection.id,ref.id,ref.version,ref.contentHash]);
+  if(row.id!==selection.id||row.project_id!==projectId||!same(rowRef(row,'target_id','target_version','target_hash'),ref))return bad();
+  reviews.push({row,origin:await readOrigin(row.command_id,'recordContentReview')});
+ }
+ const confirmed={...complete,confirmation:{row:confirmation,origin,latestBefore,reviews}};
+ checkDocumentConfirmationHistoryRows(projectId,ref,confirmationId,confirmed);
+ return confirmed;
 }
 
 function checkSystemFormDefinition(row:unknown,ref:Ref){
@@ -211,6 +249,111 @@ export function checkDocumentSystemFormHistoryRows(projectId:string,ref:Ref,valu
  if(!recordV1(standard,standardProjection.columns.map(c=>c.slice(c.indexOf('.')+1)))||!same(rowRef(standard),standardRef))return bad();
  stamp(standard.created_at);
  return {...draft,formRef,formProjectionHash:hash(definition),standardRef,standardProjectionHash:hash(standard)};
+}
+
+function checkConfirmationRow(projectId:string,ref:Ref,confirmationId:string,formRef:Ref,version:Row,row:unknown){
+ if(!recordV1(row,cols('id project_id document_id version target_hash form_ref review_refs validation_json confirmed_by client_id command_id created_at'))
+  ||!uuidV1(confirmationId)||row.id!==confirmationId||row.project_id!==projectId||!same(rowRef(row,'document_id','version','target_hash'),ref)
+  ||!same(row.form_ref,formRef)||!same(row.validation_json,version.validation_json)||row.validation_json.validForConfirmation!==true
+  ||!arrayV1(row.review_refs,200)||row.review_refs.length===0)return bad();
+ const ids=new Set<string>();
+ for(const selected of row.review_refs){
+  if(!recordV1(selected,['id','targetRef','outcome','criteriaVersion'])||!uuidV1(selected.id)||ids.has(selected.id)
+   ||!same(selected.targetRef,ref)||selected.outcome!=='ACCEPTED'||selected.criteriaVersion!==1)return bad();
+  ids.add(selected.id);
+ }
+ return row.review_refs as {id:string;targetRef:Ref;outcome:'ACCEPTED';criteriaVersion:1}[];
+}
+
+function checkDocumentDecisionOrigin(projectId:string,ref:Ref,origin:unknown,source:{
+ operation:'recordContentReview'|'confirmDocument';reasonCode:string;commandId:unknown;actorId:unknown;clientId:unknown;createdAt:unknown;
+ payload:object;resultData:object;
+}){
+ if(!recordV1(origin,['command','receipt','audit']))return bad();
+ const {command,receipt,audit}=origin;
+ if(!recordV1(command,draftOriginColumns.commands)||!recordV1(receipt,draftOriginColumns.authorization_receipts)||!recordV1(audit,draftOriginColumns.audit_events)
+  ||![command.id,command.command_id,command.operation_id,command.actor_id,command.client_id,command.authorization_receipt_id,audit.event_id].every(uuidV1)
+  ||command.id!==source.commandId||command.actor_id!==source.actorId||command.client_id!==source.clientId
+  ||command.scope_kind!=='PROJECT'||command.scope_id!==projectId||command.project_id!==projectId||command.draft_id!==null
+  ||command.operation!==source.operation||command.state!=='APPLIED'||integer(command.expected_version,1)!==ref.version
+  ||command.approval_consumption_id!==null||command.payload_ref!==null||!refV1(command.policy_ref))return bad();
+ const {actor_id:actorId,client_id:clientId,policy_ref:policyRef}=command;
+ const controlGeneration=integer(command.control_generation,1);
+ // 일반 자료 명령의 baselineRefs는 빈 배열이고 이 보호 사본은 별도 승인 소비가 없는 원 요청만 포함한다.
+ const requestHash=hash({schemaVersion:1,projectId,commandId:command.command_id,clientId,controlGeneration,
+  operation:source.operation,targetId:ref.id,expectedVersion:ref.version,baselineRefs:[],approvalRef:null,payload:source.payload});
+ if(command.request_hash!==requestHash)return bad();
+ const scopeDigest=hash({projectId,actorId,clientId,controlGeneration,requestHash,policyRef,targetRef:ref});
+ const human={kind:'HUMAN',userId:actorId};
+ if(receipt.id!==command.authorization_receipt_id||receipt.command_id!==command.id||receipt.scope_kind!=='PROJECT'||receipt.scope_id!==projectId
+  ||receipt.approval_decision_ref!==null||!same(receipt.policy_ref,policyRef)||receipt.scope_digest!==scopeDigest
+  ||!same(receipt.subject_ref,{...human,clientId}))return bad();
+ if(!same(command.result_ref,{operationId:command.operation_id,commandId:command.command_id,projectId,
+  status:'APPLIED',targetId:ref.id,version:ref.version,data:{ref,...source.resultData},evidenceRefs:[],warnings:[],serverReceivedAt:stamp(command.received_at)}))return bad();
+ if(audit.project_id!==projectId||audit.command_id!==command.id||audit.operation_id!==command.operation_id
+  ||!same(audit.actor_ref,human)||audit.client_ref!==clientId||!same(audit.target_ref,ref)||!same(audit.policy_ref,policyRef)||audit.approval_ref!==null
+  ||audit.outcome!=='APPLIED'||audit.reason_code!==source.reasonCode||audit.source_kind!=='HUMAN_COMMAND'
+  ||audit.scope_digest!==scopeDigest||audit.correction_of!==null
+  ||![command.completed_at,receipt.authorized_at,audit.recorded_at,source.createdAt].every(at=>at===command.received_at))return bad();
+ return {sequence:integer(audit.server_sequence,1)};
+}
+
+function checkConfirmationOrigin(projectId:string,ref:Ref,row:Row,origin:unknown){
+ return checkDocumentDecisionOrigin(projectId,ref,origin,{operation:'confirmDocument',reasonCode:'EXPLICIT_DOCUMENT_CONFIRMATION',
+  commandId:row.command_id,actorId:row.confirmed_by,clientId:row.client_id,createdAt:row.created_at,
+  payload:{versionRef:ref,formRef:row.form_ref,reviewRefs:row.review_refs},resultData:{status:'CONFIRMED',confirmationId:row.id}});
+}
+
+function checkSelectedReview(projectId:string,ref:Ref,selected:Row,row:unknown,version:Row,criteria:ReturnType<typeof documentReviewCriteria>){
+ if(!recordV1(row,cols('id scope_kind scope_id project_id target_kind target_id target_version target_hash criteria_version criteria_snapshot_json items_json outcome reviewer_user_id client_id reviewer_subject_ref source_kind reason command_id created_at'))
+  ||row.id!==selected.id||row.project_id!==projectId||row.scope_kind!=='PROJECT'||row.scope_id!==projectId||row.target_kind!=='DOCUMENT'
+  ||!same(rowRef(row,'target_id','target_version','target_hash'),ref)||integer(row.criteria_version,1)!==1
+  ||row.outcome!=='ACCEPTED'||row.source_kind!=='HUMAN_REVIEW'||!same(row.criteria_snapshot_json,criteria)
+  ||!same(row.reviewer_subject_ref,{kind:'HUMAN',userId:row.reviewer_user_id,sameAsTargetRecorder:version.author_ref_json.userId===row.reviewer_user_id})
+  ||typeof row.reason!=='string'||row.reason.length>20_000||!row.reason.trim()||!arrayV1(row.items_json,200))return bad();
+ const criteriaIds=new Set(criteria.items.map(item=>item.criterionId));
+ if(criteriaIds.size!==criteria.items.length||row.items_json.length!==criteriaIds.size)return bad();
+ for(const item of row.items_json){
+  if(!recordV1(item,['criterionId','outcome','evidenceRefs','reason'])||!criteriaIds.delete(item.criterionId)
+   ||item.outcome!=='ACCEPTED'||!arrayV1(item.evidenceRefs,0)||typeof item.reason!=='string'||item.reason.length>20_000||!item.reason.trim())return bad();
+ }
+ return row;
+}
+
+/** 확정 원행과 당시 명시 선택만 검산한다. 현재 확정이나 복원 권위를 부여하지 않는다. */
+export function checkDocumentConfirmationHistoryRows(projectId:string,ref:Ref,confirmationId:string,value:unknown){
+ if(!recordV1(value,['version','link','artifact','origin','systemForm','confirmation'])
+  ||!recordV1(value.confirmation,['row','origin','latestBefore','reviews']))return bad();
+ const {confirmation,...systemRows}=value;
+ const form=checkDocumentSystemFormHistoryRows(projectId,ref,systemRows);
+ const {row,origin,latestBefore,reviews}=confirmation;
+ const selected=checkConfirmationRow(projectId,ref,confirmationId,form.formRef,systemRows.version,row);
+ const confirmationSequence=checkConfirmationOrigin(projectId,ref,row,origin).sequence;
+ const draftSequence=integer(systemRows.origin.audit.server_sequence,1);
+ if(!recordV1(latestBefore,['id','outcome','server_sequence'])||!uuidV1(latestBefore.id)||latestBefore.outcome!=='ACCEPTED'
+  ||!arrayV1(reviews,200)||reviews.length!==selected.length)return bad();
+ const latestSequence=integer(latestBefore.server_sequence,1);
+ if(latestSequence>=confirmationSequence)return bad();
+ const criteria=documentReviewCriteria(form.formRef,systemRows.systemForm.definition.definition_json);
+ const sequences=new Set<number>();
+ const chosen=selected.map((selection,index)=>{
+  if(!recordV1(reviews[index],['row','origin']))return bad();
+  const {row:review,origin:proof}=reviews[index];
+  const verified=checkSelectedReview(projectId,ref,selection,review,systemRows.version,criteria);
+  const {sequence}=checkDocumentDecisionOrigin(projectId,ref,proof,{operation:'recordContentReview',reasonCode:'EXPLICIT_DOCUMENT_CONTENT_REVIEW',
+   commandId:verified.command_id,actorId:verified.reviewer_user_id,clientId:verified.client_id,createdAt:verified.created_at,
+   payload:{targetKind:'DOCUMENT',targetRef:ref,criteriaVersion:1,items:verified.items_json,outcome:verified.outcome,reason:verified.reason},
+   resultData:{status:'REVIEW_RECORDED',reviewRef:selection}});
+  if(sequence<=draftSequence||sequence>latestSequence||sequences.has(sequence))return bad();
+  sequences.add(sequence);
+  return {id:selection.id,sequence,projectionHash:hash({row:review,origin:proof})};
+ });
+ const latest=chosen.find(review=>review.id===latestBefore.id);
+ // 보정 감사가 조회순서를 바꾸더라도 검토의 원 감사로 승격하지 않는다.
+ if(!latest||latest.sequence!==latestSequence)return bad();
+ safeMetadata(confirmation);
+ return {...form,confirmationId,confirmationProjectionHash:hash({row,origin}),
+  selectedReviewProjections:chosen.map(({id,projectionHash})=>({id,projectionHash}))};
 }
 
 /** 내부 metadata 조회 구현이며 공개 route/job/백업 형식에는 연결하지 않는다. */

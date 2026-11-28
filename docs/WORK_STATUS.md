@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-28 KST
 
+- **Stage E / FN16 D2 문서 확정과 선택 검토의 원 관계** — 기준 `a14c33df`, 담당 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 정확 확정 ID와 문서 버전을 별도 입장과 독립 기대값에 결박한다. 원 명령 해시·인가 영수증·원 감사·당시 선택 검토 순서 및 최신 검토의 정확 감사 순번을 동일 RR/최종 RC와 역사 판독에서 대조한다. 기존 V1–V3 및 공개 판독 유지. 제품 3·시험 1경로. 원 함수 부재 RED 1건 교정, 담당/어울 합성 62/62(실패·취소·skip 0), 타입·diff 통과. 당시 최신 후보가 보정 감사인 경우 및 별도 승인 소비의 역사는 이번 원형 범위 밖이다. 실제 보호 입장·PG/RLS·역사 저장/복원·전체 D2, Windows·키·권한·서비스·Agent 미검증.
+
 - **Stage C / IX02 정상 EOF 뒤 서명된 CLOSE** — 기준 `affd07fc`, 담당 `fn08_policy_decision_ready`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 원 CLOSE COMMIT·연결 반환이 확인된 뒤 같은 window/session/registration·broker·fence의 EOF 기록에서만 결과 대기를 무효화한다. 이미 보관된 결과와 정확 CLOSE 재확인은 보존한다. 다른 fence와 COMMIT·연결 반환 불명은 대기를 조기에 종료하지 않는다. 제품·시험 각 1경로. 집중 RED 3/4→GREEN 4/4, 담당·어울 인접 합성 124/124(실패·취소·skip 0), 타입·diff 통과. 실제 PG·Windows·키·권한·서비스·SDK·Agent, 원 객체 물리 종료·양성 PREPARED/인계 미검증.
 
 - **Stage C / IX02 정상 큐 재관측 시각 대조** — 기준 `a734153a`, 담당 `fn08_policy_decision_ready`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 재관측마다 반환 시각을 해당 호출 직전의 DB 표본과 대조한다. 같은 밀리초는 허용하고, 저장 전 또는 INSERT 뒤 이전 응답을 재사용하면 큐 정착·인계 없이 원 객체 회수 경로로 전환한다. 제품·시험 각 1경로. 고친 두 반례는 RED 2건에서 GREEN 2건으로 전환. 담당 정적·합성 59/59, 어울 다른 인접 저장소를 포함한 57/57(실패·취소·skip 0), 타입·diff 통과. 실제 DB·Windows·권한·키·서비스·SDK·Agent, PREPARED 생성과 실 인계는 미검증이다.

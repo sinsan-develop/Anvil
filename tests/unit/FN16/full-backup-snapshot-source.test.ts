@@ -15,8 +15,9 @@ const at='2026-11-28T00:00:00.000Z';
 const bytes=Buffer.from('공개 합성 문서');
 const bodyRef={artifactId:bodyId,bytes:bytes.length,contentHash:contentHash(bytes),mediaType:'text/plain'};
 const standardRef=pinned(101);
+const formItem={itemId:'AF02-01',title:'목적',required:false,valueType:'TEXT',repeated:false,fields:[],authoringRules:[],reviewCriteria:['목적이 명확하다']};
 const definition={formCode:'AF02',name:'설계서',purpose:'공개 합성 양식',scope:'SYSTEM',authorRole:'작성자',reviewerRole:'검토자',confirmerRole:'사용자',
- requiredInputs:[],items:[],authoringStandardRef:standardRef};
+ requiredInputs:[],items:[formItem],authoringStandardRef:standardRef};
 const formRef={id:id(7),version:1,contentHash:hash(definition)};
 const systemForm={id:formRef.id,scope:'SYSTEM',owner_user_id:null,project_id:null,form_code:definition.formCode,version:formRef.version,
  definition_json:definition,content_hash:formRef.contentHash,authoring_standard_id:standardRef.id,authoring_standard_version:standardRef.version,
@@ -48,8 +49,39 @@ const audit={project_id:projectId,server_sequence:1,event_id:id(85),actor_ref:or
  outcome:'APPLIED',reason_code:'EXPLICIT_DOCUMENT_DRAFT',scope_digest:scopeDigest,recorded_at:at,source_kind:'HUMAN_COMMAND',correction_of:null};
 const input={projectId,documentRef:ref,limits:{metadataBytes:65536,inputBytes:65536,fileCount:1,deadlineMs:10000}};
 const envelope=(row:unknown)=>({inventory_data:structuredClone(row),row_bytes:Buffer.byteLength(JSON.stringify(row))});
+const reviewRef={id:id(201),targetRef:ref,criteriaVersion:1,outcome:'ACCEPTED'};
+const earlierReviewRef={...reviewRef,id:id(205)};
+const confirmationId=id(202);
+const review={id:reviewRef.id,scope_kind:'PROJECT',scope_id:projectId,project_id:projectId,target_kind:'DOCUMENT',
+ target_id:ref.id,target_version:ref.version,target_hash:ref.contentHash,criteria_version:1,
+ criteria_snapshot_json:{criteriaVersion:1,formRef,items:[{criterionId:formItem.itemId,title:formItem.title,reviewCriteria:formItem.reviewCriteria}]},
+ items_json:[{criterionId:formItem.itemId,outcome:'ACCEPTED',evidenceRefs:[],reason:'기준에 맞음'}],outcome:'ACCEPTED',reviewer_user_id:actorId,
+ client_id:clientId,reviewer_subject_ref:{kind:'HUMAN',userId:actorId,sameAsTargetRecorder:true},source_kind:'HUMAN_REVIEW',reason:'합성 검토',
+ command_id:id(203),created_at:at};
+const earlierReview={...review,id:earlierReviewRef.id,command_id:id(206)};
+const confirmation={id:confirmationId,project_id:projectId,document_id:ref.id,version:ref.version,target_hash:ref.contentHash,
+ form_ref:formRef,review_refs:[reviewRef,earlierReviewRef],validation_json:original.validation_json,confirmed_by:actorId,client_id:clientId,
+ command_id:id(204),created_at:at};
+function originFor(commandId:string,operation:string,payload:object,data:object,reason:string,n:number){
+ const requestHash=hash({...request,commandId:id(n),targetId:ref.id,expectedVersion:ref.version,operation,payload});
+ const scopeDigest=hash({projectId,actorId,clientId,controlGeneration:1,requestHash,policyRef,targetRef:ref});
+ const originCommand={...command,id:commandId,operation,command_id:id(n),operation_id:id(n+1),authorization_receipt_id:id(n+2),expected_version:ref.version,
+  request_hash:requestHash,
+  result_ref:{...command.result_ref,commandId:id(n),operationId:id(n+1),data:{ref,...data}}};
+ return {command:originCommand,receipt:{...receipt,id:originCommand.authorization_receipt_id,command_id:commandId,scope_digest:scopeDigest},
+  audit:{...audit,command_id:commandId,operation_id:id(n+1),event_id:id(n+3),server_sequence:n,reason_code:reason,scope_digest:scopeDigest}};
+}
+const reviewOrigin=originFor(review.command_id,'recordContentReview',
+ {targetKind:'DOCUMENT',targetRef:ref,criteriaVersion:1,items:review.items_json,outcome:review.outcome,reason:review.reason},
+ {status:'REVIEW_RECORDED',reviewRef},'EXPLICIT_DOCUMENT_CONTENT_REVIEW',210);
+const earlierReviewOrigin=originFor(earlierReview.command_id,'recordContentReview',
+ {targetKind:'DOCUMENT',targetRef:ref,criteriaVersion:1,items:earlierReview.items_json,outcome:earlierReview.outcome,reason:earlierReview.reason},
+ {status:'REVIEW_RECORDED',reviewRef:earlierReviewRef},'EXPLICIT_DOCUMENT_CONTENT_REVIEW',200);
+const confirmationOrigin=originFor(confirmation.command_id,'confirmDocument',{versionRef:ref,formRef,reviewRefs:confirmation.review_refs},
+ {status:'CONFIRMED',confirmationId},'EXPLICIT_DOCUMENT_CONFIRMATION',220);
 
 function fixture(mode='valid'){
+ const confirmed=mode.startsWith('confirmed');
  const trace:string[]=[];
  const person:AuthenticatedIdentity={actorId,clientId,serverOwner:false,credentialGeneration:1,reauthUntil:null,
   authSession:{id:sessionId,idleExpiresAt:'2026-11-28T00:01:00.000Z',absoluteExpiresAt:'2026-11-28T00:20:00.000Z'}};
@@ -67,11 +99,22 @@ function fixture(mode='valid'){
    if(sql.includes("'anvil.actor_id'")){assert.equal(scope,'RR');assert.deepEqual(params,[actorId,clientId]);trace.push('RR:rls');return {rows:[{actor_id:actorId,client_id:clientId}]};}
    if(sql.includes('FROM anvil.projects p')){assert.deepEqual(params,[projectId,actorId]);assert(scope==='RR'?liveRR:!liveRR);return {rows:[{id:projectId,archived_at:null,participation:scope==='RC2'&&mode==='revoked'?'VIEWER':'OWNER'}]};}
    if(sql.includes('FROM anvil.project_control')){assert.equal(params[0],projectId);return {rows:[{actor_id:actorId,client_id:clientId,generation:1,version:1,revoked_at:null}]};}
-   assert(sql.includes('FN16_D2_BODY')&&sql.includes('LIMIT 2'));
+   assert(sql.includes('FN16_D2_BODY')&&(sql.includes('LIMIT 2')||sql.includes('ORDER BY a.server_sequence DESC LIMIT 1')));
    const table=sql.match(/FROM anvil\.(\w+)/)?.[1];
    if(!['form_definitions','authoring_standard_versions'].includes(table??''))assert.equal(params[0],projectId);
    trace.push(`${scope}:${table}`);
    let row;
+   const lineage=[reviewOrigin,earlierReviewOrigin,confirmationOrigin].find(origin=>origin.command.id===params[1]||origin.receipt.id===params[1]);
+   if(lineage&&['commands','authorization_receipts','audit_events'].includes(table??'')){
+    const key=table==='commands'?'command':table==='authorization_receipts'?'receipt':'audit';
+    if(key==='receipt')assert.deepEqual(params.slice(1,-1),[lineage.receipt.id,lineage.command.id]);
+    if(key==='audit')assert.match(sql,/correction_of IS NULL/);
+    row=lineage[key];
+    if(mode==='confirmed-review-audit'&&key==='audit'&&lineage===reviewOrigin)row={...row,reason_code:'WRONG_ORIGIN'};
+    if(mode==='confirmed-review-approval'&&key==='receipt'&&lineage===reviewOrigin)row={...row,approval_decision_ref:id(307)};
+    if(mode==='confirmed-final-proof-drift'&&scope==='RC2'&&key==='audit'&&lineage===reviewOrigin)row={...row,event_id:id(308)};
+    return {rows:[envelope(row)]};
+   }
    if(table==='document_versions'){assert.deepEqual(params.slice(1,-1),[documentId,1,ref.contentHash]);row=mode==='part'?{...original,stage_ref_json:{applicationId:id(86),nodeId:'PART'}}:original;}
    else if(table==='document_artifact_links'){assert.deepEqual(params.slice(1,-1),[documentId,1]);row={project_id:projectId,document_id:documentId,version:1,kind:'BODY',artifact_id:mode==='wrong-link'?id(30):bodyId};}
    else if(table==='artifacts'){assert.equal(params[1],bodyId);assert.match(sql,/draft_id IS NULL.*storage_key=/);row=scope==='RC2'&&mode==='current-artifact-change'?{...artifact,state:'QUARANTINED'}:artifact;}
@@ -116,6 +159,33 @@ function fixture(mode='valid'){
     if(scope==='RC2'&&mode==='standard-missing')return {rows:[]};
     row=mode==='standard-mismatch'?{...standard,content_hash:'c'.repeat(64)}:standard;
    }
+   else if(table==='document_confirmations'){
+    assert.deepEqual(params.slice(0,-1),[projectId,confirmationId,ref.id,ref.version,ref.contentHash]);
+    assert.doesNotMatch(sql,/confirmed_version|head_version/);
+    const other={...confirmation,id:id(309)};
+    const exact=[other,confirmation].find(candidate=>candidate.id===params[1])!;
+    if(mode==='confirmed-duplicate-row')return {rows:[envelope(exact),envelope(exact)]};
+    row=mode==='confirmed-duplicate-ref'?{...exact,review_refs:[reviewRef,reviewRef]}:
+     mode==='confirmed-change-choice'?{...exact,review_refs:[reviewRef]}:exact;
+   }
+   else if(table==='content_reviews'){
+    if(sql.includes('ORDER BY')){
+     assert.deepEqual(params.slice(0,-1),[projectId,ref.id,ref.version,ref.contentHash,confirmationOrigin.audit.server_sequence]);
+     assert.match(sql,/a\.server_sequence<\$5::bigint\s+ORDER BY a\.server_sequence DESC LIMIT 1/);
+     const observed=[{id:earlierReviewRef.id,outcome:'ACCEPTED',server_sequence:earlierReviewOrigin.audit.server_sequence},
+      {id:reviewRef.id,outcome:'ACCEPTED',server_sequence:reviewOrigin.audit.server_sequence},
+      {id:id(209),outcome:'REWORK',server_sequence:confirmationOrigin.audit.server_sequence+1}];
+     const before=observed.filter(candidate=>candidate.server_sequence<Number(params[4])).at(-1)!;
+     row=mode==='confirmed-not-selected'?{...before,id:id(207)}:
+      mode==='confirmed-latest-correction'?{...before,server_sequence:before.server_sequence+1}:before;
+    }else{
+     const found=[review,earlierReview].find(candidate=>candidate.id===params[1])!;
+     assert.ok(found);
+     assert.deepEqual(params.slice(0,-1),[projectId,found.id,ref.id,ref.version,ref.contentHash]);
+     if(mode==='confirmed-missing-review')return {rows:[]};
+     row=mode==='confirmed-cross-review'?{...found,target_id:id(207)}:found;
+    }
+   }
    else throw Error('잘못된 조회');
    return {rows:[envelope(row)]};
   },release(error?:Error){trace.push(error?'RR:discard':'RR:release');}} as unknown as PoolClient;
@@ -136,18 +206,66 @@ function fixture(mode='valid'){
    async close(){trace.push('body:close');if(mode==='close-unknown')throw Error('합성 close 불명');}};
  }};
  const admission={async readCurrent(_db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:{projectId:string;documentRef:typeof ref}){
-  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref});assert(!liveRR);
+  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId}});assert(!liveRR);
   trace.push(`RC${rc}:admission`);
   if(mode==='policy-denied'||mode==='policy-revoked'&&rc===2)return null;
-  return {purpose:mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
+  return {purpose:confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
    projectId,documentRef:ref,actorId,clientId,sessionId,credentialGeneration:1,controlGeneration:1,
+   ...confirmed&&{confirmationId:mode==='confirmed-admission-mismatch'?id(207):confirmationId},
    jobRef:pinned(10),reservationRef:pinned(11),policyRef:pinned(mode==='new-policy'&&rc===2?19:12),targetProtectedRef:pinned(13),
    retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),
    formRef:mode==='foreign-admission-form'?pinned(103):formRef,expiresAt:'2026-11-28T00:00:09.000Z'};
  }};
- const run=()=>collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',input,mode==='unconfigured'?null:admission,reader,new AbortController().signal);
+ const run=()=>collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',{...input,...confirmed&&{confirmationId}},mode==='unconfigured'?null:admission,reader,new AbortController().signal);
  return {run,trace};
 }
+
+test('정확한 확정과 당시 선택한 HUMAN 검토를 같은 스냅샷 및 최종 RC에서 검산한다',async()=>{
+ const f=fixture('confirmed-valid'),capture=await f.run();
+ assert.equal(capture.snapshot.kind,'FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4');
+ if(capture.snapshot.kind!=='FN16_D2_DOCUMENT_CONFIRMATION_SNAPSHOT_V4')throw Error('원 확정 수집 누락');
+ const {snapshot}=capture;
+ const expected={projectId,jobRef:snapshot.jobRef,documentRef:ref,
+  snapshot:snapshot.observation.snapshot,snapshotHash:capture.snapshotHash,confirmationId};
+ const independent=()=>({snapshot:structuredClone(snapshot),body:Buffer.from(capture.body)});
+ const verification=await verifyDocumentBodyHistory(expected,async()=>independent());
+ assert.equal(verification.kind,'FN16_D2_DOCUMENT_CONFIRMATION_VERIFICATION_V4');
+ if(verification.kind!=='FN16_D2_DOCUMENT_CONFIRMATION_VERIFICATION_V4')throw Error('원 확정 검산 누락');
+ assert.equal(verification.confirmationId,confirmationId);
+ assert.equal(verification.confirmationProjectionHash,hash({row:confirmation,origin:confirmationOrigin}));
+ assert.deepEqual(verification.selectedReviewProjections,[
+  {id:reviewRef.id,projectionHash:hash({row:review,origin:reviewOrigin})},
+  {id:earlierReviewRef.id,projectionHash:hash({row:earlierReview,origin:earlierReviewOrigin})}]);
+ assert.ok(f.trace.includes('RR:document_confirmations')&&f.trace.includes('RC2:document_confirmations'));
+ assert.equal(f.trace.filter(v=>v==='RR:content_reviews'||v==='RC2:content_reviews').length,6);
+ assert.equal(verification.documentHistoryComplete,false);
+ assert.equal(verification.restorable,false);
+ await assert.rejects(()=>verifyDocumentBodyHistory({...expected,confirmationId:id(309)},async()=>independent()),/HISTORY_INVALID/);
+ const reordered=independent();
+ reordered.snapshot.rows.confirmation.reviews.reverse();
+ await assert.rejects(()=>verifyDocumentBodyHistory({...expected,snapshotHash:hash(reordered.snapshot)},async()=>reordered),/HISTORY_INVALID/);
+ const altered=independent();
+ altered.snapshot.rows.confirmation.reviews[0]!.row.reason='원 요청과 다른 합성 이유';
+ await assert.rejects(()=>verifyDocumentBodyHistory({...expected,snapshotHash:hash(altered.snapshot)},async()=>altered),/HISTORY_INVALID/);
+ const resequenced=independent();
+ resequenced.snapshot.rows.confirmation.latestBefore.server_sequence=reviewOrigin.audit.server_sequence+1;
+ await assert.rejects(()=>verifyDocumentBodyHistory({...expected,snapshotHash:hash(resequenced.snapshot)},async()=>resequenced),/HISTORY_INVALID/);
+});
+
+test('입장·원 확정·선택·영수증·감사의 불일치와 최종 RC 변경을 거절한다',async()=>{
+ const unauthorized=fixture('confirmed-admission-mismatch');
+ await assert.rejects(unauthorized.run,/SNAPSHOT_ADMISSION_DENIED/);
+ assert.ok(!unauthorized.trace.includes('RR:begin'));
+ for(const mode of ['confirmed-duplicate-row','confirmed-duplicate-ref','confirmed-change-choice','confirmed-missing-review',
+  'confirmed-cross-review','confirmed-not-selected','confirmed-latest-correction','confirmed-review-audit','confirmed-review-approval']){
+  const f=fixture(mode);
+  await assert.rejects(f.run,/DOCUMENT_INVENTORY_INTEGRITY_FAILED/);
+  assert.ok(f.trace.includes('RR:rollback')&&!f.trace.includes('body:open'),mode);
+ }
+ const drift=fixture('confirmed-final-proof-drift');
+ await assert.rejects(drift.run,/FN16_D2_SNAPSHOT_INVALID/);
+ assert.ok(drift.trace.includes('body:close')&&drift.trace.includes('RC2:content_reviews')&&!drift.trace.includes('RC2:commit'));
+});
 
 test('한 RR의 보관 문서·BODY·원 명령 관계와 정확 바이트를 독립 재검산한다',async()=>{
  const f=fixture(),capture=await f.run();
