@@ -7,6 +7,9 @@ import type { ProjectAssignmentConfirmations } from '../assignments/project-assi
 import type { ResponsibleSessions } from '../assignments/responsible-sessions.ts';
 import type { ProjectExecutionPreparations } from './project-execution-preparations.ts';
 
+const maxExecutionStateBytes=2*1024*1024;
+const encodedBytes=(value:unknown)=>Buffer.byteLength(canonicalJson(value),'utf8');
+
 /** 승인 C1 원문 조회의 화면용 집계. 최신 조회는 현재 실행 허가나 OS 사실이 아니다. */
 export async function readExecutionPreparationState(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,id:string,version:number,
   dependencies:{assignments:Pick<ProjectAssignmentConfirmations,'read'>;sessions:Pick<ResponsibleSessions,'readRole'|'readBinding'>;preparations:Pick<ProjectExecutionPreparations,'read'>}) {
@@ -25,8 +28,19 @@ export async function readExecutionPreparationState(db:PoolClient,actor:Authenti
   for(const row of bindingRows)bindings.push(await dependencies.sessions.readBinding(db,actor,projectId,row.binding_id,Number(row.version)));
   const preparationRows=(await db.query('SELECT id,version FROM anvil.execution_preparations WHERE project_id=$1 AND assignment_id=$2 AND assignment_version=$3 ORDER BY created_at DESC,id DESC LIMIT 21',[projectId,id,version])).rows;
   const preparations:Awaited<ReturnType<ProjectExecutionPreparations['read']>>[]=[];
-  for(const row of preparationRows.slice(0,20))preparations.push(await dependencies.preparations.read(db,actor,projectId,row.id,Number(row.version)));
-  const result={projectId,assignmentRef:assignment.ref,roles,bindings,preparations,hasMorePreparations:preparationRows.length>20,currentness:'NOT_RECHECKED' as const,executionAuthorized:false as const,dispatchPerformed:false as const};
-  if(Buffer.byteLength(canonicalJson(result),'utf8')>2*1024*1024)throw new AuthFailure('EXECUTION_STATE_TOO_LARGE',503);
+  const result={projectId,assignmentRef:assignment.ref,roles,bindings,preparations,hasMorePreparations:preparationRows.length>0,currentness:'NOT_RECHECKED' as const,executionAuthorized:false as const,dispatchPerformed:false as const};
+  const baseBytes=encodedBytes(result);
+  let usedBytes=baseBytes,prefixFits=baseBytes<=maxExecutionStateBytes;
+  for(const row of preparationRows.slice(0,20)){
+    const preparation=await dependencies.preparations.read(db,actor,projectId,row.id,Number(row.version));
+    // 크기 때문에 반환하지 않는 원문도 기존 보호 조회에서 검산한다.
+    if(!prefixFits)continue;
+    const hasMore=preparations.length+1<preparationRows.length;
+    // 빈 배열의 괄호는 baseBytes에 들어 있다. 행 사이 쉼표와 true→false 길이만 더한다.
+    const nextBytes=usedBytes+encodedBytes(preparation)+(preparations.length?1:0)+(hasMore?0:1);
+    if(nextBytes>maxExecutionStateBytes){prefixFits=false;continue;}
+    preparations.push(preparation);usedBytes=nextBytes;result.hasMorePreparations=hasMore;
+  }
+  if(baseBytes>maxExecutionStateBytes)throw new AuthFailure('EXECUTION_STATE_TOO_LARGE',503);
   return result;
 }

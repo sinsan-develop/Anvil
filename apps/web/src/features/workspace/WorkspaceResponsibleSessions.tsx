@@ -203,8 +203,8 @@ export function WorkspaceResponsibleSessions({onWorkReviewCandidate,normalInitia
           <p>정착 이해 판단 <code>{ordered(p.snapshot.understandingBasis.reviewRef)}</code> · 원 실행 {p.snapshot.understandingBasis.scope.executionId} · 세대 {p.snapshot.understandingBasis.scope.executionGeneration}</p>:
           <p>정착 이해 근거 없음 · legacy 준비</p>):null}
         <ul>{p.snapshot.missingConditions.map((code:string)=><li key={code}>{code}</li>)}</ul>
-      </li>)}</ol>:<p>저장된 준비 없음</p>}
-      {state.hasMorePreparations?<p>최신20건 표시 · 이전 준비가 더 있습니다.</p>:null}
+      </li>)}</ol>:!state.hasMorePreparations?<p>저장된 준비 없음</p>:null}
+      {state.hasMorePreparations?<p>보관된 준비 중 이 요약에 표시되지 않은 기록이 있습니다.</p>:null}
       <p>새 실행 준비 저장은 유효한 예산·능력 참조 연결이 필요합니다. 미구현 참조를 가짜 값으로 대체하지 않습니다.</p>
     </>:<p>역할·예약·준비 원문은 아직 조회 확인되지 않았습니다.</p>}
     {owner&&bound?<NormalUnderstandingDiscovery reviewStorage={normalInitialReviews} client={client} session={session} projectId={confirmed.projectId} assignmentRef={confirmed.ref}
