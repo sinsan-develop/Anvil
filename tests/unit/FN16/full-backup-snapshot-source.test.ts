@@ -5,6 +5,7 @@ import type {AccessRepository,AuthenticatedIdentity} from '../../../apps/server/
 import {inspectArtifact} from '../../../apps/server/storage/sensitive-inspection.ts';
 import {collectDocumentBodySnapshot} from '../../../apps/server/modules/backups/full-backup-snapshot-source.ts';
 import * as historyVerification from '../../../apps/server/modules/backups/full-backup-history-verification.ts';
+import {analyzeWorkPlanCards} from '../../../apps/server/modules/traceability/work-plan-card.ts';
 import {canonicalJson,contentHash} from '../../../contracts/canonical.ts';
 
 const id=(n:number)=>`b2000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
@@ -100,13 +101,27 @@ const confirmationOrigin=originFor(confirmation.command_id,'confirmDocument',{ve
 
 function fixture(mode='valid'){
  const confirmed=mode.startsWith('confirmed');
- const withDesign=mode.startsWith('design-');
+ const withRelations=mode.startsWith('relations-');
+ const withDesign=mode.startsWith('design-')||withRelations;
  const withPlan=mode.startsWith('plan-')||withDesign;
  const trace:string[]=[];
  const designBody=mode==='design-shared'?bodyRef:designBodyRef;
  const {source:designPayload,ref:designVersionRef}=designSource(designBody);
  const expectedDesignRef=mode==='design-plan-mismatch'?{...designVersionRef,contentHash:'e'.repeat(64)}:designVersionRef;
- const designPlan={...workPlan,designRef:designVersionRef};
+ const task=(taskCode:string)=>({taskCode,type:'FUNCTION',title:taskCode,purpose:'합성 관계',designRefs:[],screenRefs:[],ownerRole:'개발',
+  inputs:['입력'],outputs:['출력'],included:['포함'],excluded:['제외'],allowedFileRefs:['one.ts'],startPrerequisites:[],acceptancePrerequisites:[],
+  steps:['절차'],testCases:['NORMAL','IMPORTANT_FAILURE','DIRECT_IMPACT'].map(kind=>({id:kind,kind,steps:['절차'],expected:'기대',environment:'합성'})),
+  acceptanceCriteria:['기준'],evidenceRequirements:['근거'],rollback:'되돌리기',recoveryNotes:'복구'});
+ const issuesOnly=mode.startsWith('relations-issues');
+ const tasks=withRelations?[{...task('Z'),startPrerequisites:issuesOnly?['MISSING']:['A'],acceptancePrerequisites:['A']},task('A')]:[];
+ const dependencies=withRelations?[
+  ...issuesOnly?[]:[{taskCode:'Z',dependencyTaskCode:'A',phase:'START'}],
+  {taskCode:'Z',dependencyTaskCode:'A',phase:'ACCEPTANCE'}
+ ]:[];
+ const designPlan={...workPlan,designRef:designVersionRef,...withRelations&&{tasks,dependencies,issues:analyzeWorkPlanCards(tasks).issues,relationalProjection:issuesOnly?'ISSUES_ONLY':'STORED'}};
+ const rowScope={project_id:projectId,plan_id:workPlanRef.id,plan_version:workPlanRef.version};
+ const taskRows=[...tasks].reverse().map(t=>({...rowScope,task_code:t.taskCode,task_type:t.type,card_json:t,card_hash:hash(t),owner_role:t.ownerRole}));
+ const dependencyRows=[...dependencies].reverse().map(d=>({...rowScope,task_code:d.taskCode,dependency_task_code:d.dependencyTaskCode,phase:d.phase}));
  const expectedPlanRef=withDesign?{...workPlanRef,contentHash:hash(designPlan)}:workPlanRef;
  const planRow=withDesign?{...workPlanRow,design_hash:designVersionRef.contentHash,content_hash:expectedPlanRef.contentHash,
   version_json:{ref:expectedPlanRef,status:'DRAFT',...designPlan}}:workPlanRow;
@@ -136,17 +151,43 @@ function fixture(mode='valid'){
    if(sql.includes("'statement_timeout'")){assert(Number(params[0])>0&&Number(params[0])<=input.limits.deadlineMs);return {rows:[{ms:params[0]}]};}
    if(sql.includes('pg_current_snapshot')){assert(liveRR);obs++;return {rows:[{snapshot:obs>1&&mode==='snapshot-changed'?'4:15:':'4:14:',at:new Date(at),read_only:'on',isolation:'repeatable read'}]};}
    if(sql.includes('transaction_isolation'))return {rows:[{isolation:'read committed',at:new Date(at)}]};
-   if(sql==='SELECT clock_timestamp() AS at')return {rows:[{at:new Date(at)}]};
+   if(sql==='SELECT clock_timestamp() AS at')return {rows:[{at:new Date(mode==='relations-expired'&&scope==='RC2'?'2026-11-28T00:00:10.000Z':at)}]};
    if(sql.includes("'anvil.actor_id'")){assert.equal(scope,'RR');assert.deepEqual(params,[actorId,clientId]);trace.push('RR:rls');return {rows:[{actor_id:actorId,client_id:clientId}]};}
    if(sql.includes('FROM anvil.projects p')){assert.deepEqual(params,[projectId,actorId]);assert(scope==='RR'?liveRR:!liveRR);return {rows:[{id:projectId,archived_at:null,participation:scope==='RC2'&&mode==='revoked'?'VIEWER':'OWNER'}]};}
    if(sql.includes('FROM anvil.project_control')){assert.equal(params[0],projectId);return {rows:[{actor_id:actorId,client_id:clientId,generation:1,version:1,revoked_at:null}]};}
    assert((sql.includes('FN16_D2_BODY')||sql.includes('FN16_D2_WORK_PLAN'))
-    &&(sql.includes('LIMIT 2')||sql.includes('ORDER BY a.server_sequence DESC LIMIT 1')));
+    &&(sql.includes('LIMIT 2')||sql.includes('ORDER BY a.server_sequence DESC LIMIT 1')||sql.includes('LIMIT $4::integer')));
    const table=sql.match(/FROM anvil\.(\w+)/)?.[1];
    if(!['form_definitions','authoring_standard_versions'].includes(table??''))assert.equal(params[0],projectId);
    trace.push(`${scope}:${table}`);
    if(withDesign)assert.equal(params.at(-1),metadataBudget-(rowCharges[scope]??0));
    let row;
+   if(table==='plan_tasks'||table==='plan_dependencies'){
+    assert(withRelations);
+    assert(scope==='RR'?liveRR:!liveRR);
+    assert.match(sql,/WHERE project_id=\$1::uuid AND plan_id=\$2::uuid AND plan_version=\$3::bigint ORDER BY/);
+    assert.match(sql,/ORDER BY task_code COLLATE "C"/);
+    if(table==='plan_dependencies')assert.match(sql,/dependency_task_code COLLATE "C",phase COLLATE "C"/);
+    assert.match(sql,/sum\(row_bytes\) OVER \(\)<=\$5::bigint/);
+    assert.match(sql,/LIMIT \$4::integer/);
+    const planTasks=table==='plan_tasks';
+    const expectedRows=planTasks?taskRows:dependencyRows;
+    assert.deepEqual(params,[projectId,workPlanRef.id,workPlanRef.version,issuesOnly?1:expectedRows.length+1,metadataBudget-(rowCharges[scope]??0)]);
+    let selected:object[]=issuesOnly?[]:expectedRows;
+    if(planTasks&&mode==='relations-duplicate-task')selected=[taskRows[0]!,taskRows[0]!];
+    if(planTasks&&mode==='relations-cross-task')selected=[{...taskRows[0],plan_version:1},taskRows[1]!];
+    if(planTasks&&mode==='relations-wrong-owner')selected=[{...taskRows[0],owner_role:'다른 역할'},taskRows[1]!];
+    if(planTasks&&mode==='relations-missing-task')selected=taskRows.slice(1);
+    if(planTasks&&mode==='relations-issues-orphan-task')selected=taskRows.slice(0,1);
+    if(!planTasks&&mode==='relations-issues-orphan-dependency')selected=dependencyRows;
+    if(!planTasks&&(mode==='relations-wrong-phase'||scope==='RC2'&&mode==='relations-rc-drift'))selected=[{...dependencyRows[0],phase:'START'},dependencyRows[1]!];
+    if(!planTasks&&mode==='relations-extra-dependency')selected=[...dependencyRows,{...dependencyRows[0],task_code:'A'}];
+    if(!planTasks&&mode==='relations-wrong-order')selected=[...dependencyRows].reverse();
+    const rows=selected.map(envelope);
+    const charged=rows.reduce((sum,item)=>sum+item.row_bytes,0);
+    rowCharges[scope]=(rowCharges[scope]??0)+charged;
+    return {rows:charged>Number(params[4])?rows.map(row=>({...row,inventory_data:null})):rows};
+   }
    const lineage=[reviewOrigin,earlierReviewOrigin,confirmationOrigin].find(origin=>origin.command.id===params[1]||origin.receipt.id===params[1]);
    if(lineage&&['commands','authorization_receipts','audit_events'].includes(table??'')){
     const key=table==='commands'?'command':table==='authorization_receipts'?'receipt':'audit';
@@ -296,15 +337,16 @@ function fixture(mode='valid'){
    async close(){trace.push('body:close');if(mode==='close-unknown')throw Error('합성 close 불명');}};
  }};
  const admission={async readCurrent(_db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:{projectId:string;documentRef:typeof ref}){
-  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef}});assert(!liveRR);
+  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true}});assert(!liveRR);
   trace.push(`RC${rc}:admission`);
   if(mode==='policy-denied'||(mode==='policy-revoked'||mode==='design-revoked')&&rc===2)return null;
-  return {purpose:withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
+  return {purpose:withRelations&&mode!=='relations-v6-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
    projectId,documentRef:ref,actorId,clientId,sessionId,credentialGeneration:1,controlGeneration:1,
    ...confirmed&&{confirmationId:mode==='confirmed-admission-mismatch'?id(207):confirmationId},
    ...withPlan&&mode!=='plan-admission-missing'&&{workPlanRef:mode==='plan-admission-mismatch'?pinned(312):expectedPlanRef},
    ...withDesign&&{designDocumentRef:mode==='design-admission-mismatch'?ref:expectedDesignRef,
     designFormRef:mode==='design-form-mismatch'?formRef:designFormRef},
+   ...withRelations&&mode!=='relations-v6-admission'&&{planRelations:true},
    jobRef:pinned(10),reservationRef:pinned(11),policyRef:pinned(mode==='new-policy'&&rc===2?19:12),targetProtectedRef:pinned(13),
    retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),
    formRef:mode==='foreign-admission-form'?pinned(103):formRef,expiresAt:'2026-11-28T00:00:09.000Z'};
@@ -313,11 +355,94 @@ function fixture(mode='valid'){
   metadataBudget=limits.metadataBytes;
   return collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',
   {...input,limits,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:mode==='plan-raw-invalid'?null:expectedPlanRef},
-   ...withDesign&&{designDocumentRef:expectedDesignRef}},
+   ...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true}},
   mode==='unconfigured'?null:admission,reader,new AbortController().signal);
  };
  return {run,trace,expectedPlanRef,designVersionRef,rowCharges};
 }
+
+test('고정 작업계획의 저장 업무·의존 행을 AF02와 AF04와 함께 동결한다',async()=>{
+ const stored=fixture('relations-valid'),limits={...input.limits,fileCount:2};
+ const capture=await stored.run(limits),{snapshot}=capture;
+ assert.equal(snapshot.kind,'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7');
+ if(snapshot.kind!=='FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7')throw Error('작업계획 관계 원행 누락');
+ const {workPlanRelations}=snapshot.rows;
+ assert.deepEqual(workPlanRelations.tasks.map(row=>row.task_code),['A','Z']);
+ assert.deepEqual(workPlanRelations.dependencies.map(row=>row.phase),['ACCEPTANCE','START']);
+ assert.deepEqual(stored.trace.filter(item=>/plan_tasks|plan_dependencies|^RR:rollback|body:open|RC2:commit/.test(item)),
+  ['RR:plan_tasks','RR:plan_dependencies','RR:rollback','body:open','design-body:open','RC2:plan_tasks','RC2:plan_dependencies','RC2:commit']);
+ const expected={projectId,jobRef:snapshot.jobRef,documentRef:ref,workPlanRef:stored.expectedPlanRef,designDocumentRef:stored.designVersionRef,
+  planRelations:true as const,snapshot:snapshot.observation.snapshot,snapshotHash:capture.snapshotHash};
+ const readback={snapshotBytes:Buffer.from(capture.snapshotBytes),body:Buffer.from(capture.body),designBody:Buffer.from(capture.designBody!)};
+ const checked=await historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async(scope)=>{
+  assert.equal(scope.planRelations,true);
+  assert.deepEqual(scope.workPlanRef,stored.expectedPlanRef);
+  return readback;
+ });
+ assert.equal(checked.kind,'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_VERIFICATION_V7');
+ if(checked.kind!=='FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_VERIFICATION_V7')throw Error('작업계획 관계 검산 누락');
+ assert.equal(checked.taskCount,2);
+ assert.equal(checked.dependencyCount,2);
+ assert.equal(checked.workPlanRelationsHash,hash(workPlanRelations));
+ assert.equal(checked.workPlanHistoryComplete,false);
+ assert.equal(checked.workPlanAuthorityVerified,false);
+ assert.equal(checked.restorable,false);
+ const {planRelations:_,...v6Expectation}=expected;
+ await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback(v6Expectation,limits,async()=>readback),
+  /FN16_D2_DOCUMENT_HISTORY_INVALID/);
+ const changed=structuredClone(snapshot);
+ changed.rows.workPlanRelations.dependencies[0]!.phase='START';
+ const changedBytes=Buffer.from(canonicalJson(changed));
+ // 분석 원문·두 BODY는 그대로 유지하며, 새 외부 snapshot hash도 맞춘 뒤 관계 판독 자체를 검사한다.
+ await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback({...expected,snapshotHash:contentHash(changedBytes)},limits,
+  async()=>({...readback,snapshotBytes:changedBytes})),/FN16_D2_DOCUMENT_HISTORY_INVALID/);
+});
+
+test('ISSUES_ONLY는 정확한 두 관계표의 0행만 보존하며 고아 행을 거절한다',async()=>{
+ const limits={...input.limits,fileCount:2};
+ const f=fixture('relations-issues-valid'),{snapshot}=await f.run(limits);
+ if(snapshot.kind!=='FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_SNAPSHOT_V7')throw Error('작업계획 관계 원행 누락');
+ assert.deepEqual(snapshot.rows.workPlanRelations,{tasks:[],dependencies:[]});
+ assert.deepEqual(f.trace.filter(item=>/RR:plan_tasks|RR:plan_dependencies/.test(item)),['RR:plan_tasks','RR:plan_dependencies']);
+ for(const mode of ['relations-issues-orphan-task','relations-issues-orphan-dependency']){
+  const suspect=fixture(mode);
+  await assert.rejects(suspect.run(limits),/WORK_PLAN_INVENTORY_INTEGRITY_FAILED/);
+  assert.equal(suspect.trace.includes('RR:plan_dependencies'),mode.endsWith('dependency'));
+  assert.equal(suspect.trace.some(item=>item.endsWith('body:open')),false);
+ }
+});
+
+test('업무·의존 행의 손상과 초과 예산을 원문 읽기 전에 거절한다',async()=>{
+ const limits={...input.limits,fileCount:2};
+ for(const mode of ['relations-duplicate-task','relations-cross-task','relations-wrong-owner','relations-missing-task',
+  'relations-wrong-phase','relations-extra-dependency','relations-wrong-order']){
+  const f=fixture(mode);
+  await assert.rejects(f.run(limits),/WORK_PLAN_INVENTORY_INTEGRITY_FAILED/,mode);
+  assert.equal(f.trace.includes('RR:plan_dependencies'),!mode.endsWith('task')&&mode!=='relations-wrong-owner',mode);
+  assert.equal(f.trace.some(item=>item.endsWith('body:open')),false);
+ }
+ const ok=fixture('relations-valid');
+ await ok.run(limits);
+ const smaller=fixture('relations-valid');
+ await assert.rejects(smaller.run({...limits,metadataBytes:ok.rowCharges.RR!-1}),/FN16_D2_SNAPSHOT_LIMIT|WORK_PLAN_INVENTORY_LIMIT/);
+ assert.equal(smaller.trace.includes('RR:plan_dependencies'),true);
+ assert.equal(smaller.trace.some(item=>item.endsWith('body:open')),false);
+});
+
+test('별도 관계 입장, 최종 관계 변경과 만료는 부분 결과를 반환하지 않는다',async()=>{
+ const limits={...input.limits,fileCount:2};
+ const earlier=fixture('relations-v6-admission');
+ await assert.rejects(earlier.run(limits),/FN16_D2_SNAPSHOT_ADMISSION_DENIED/);
+ assert.equal(earlier.trace.includes('RR:begin'),false);
+ for(const [mode,error] of [['relations-rc-drift',/WORK_PLAN_INVENTORY_INTEGRITY_FAILED/],['relations-expired',/FN16_D2_SNAPSHOT_DEADLINE/]] as const){
+  const f=fixture(mode);
+  await assert.rejects(f.run(limits),error);
+  assert.equal(f.trace.includes('body:close'),true);
+  assert.equal(f.trace.includes('design-body:close'),true);
+  assert.equal(f.trace.includes('RC2:plan_tasks'),mode==='relations-rc-drift');
+  assert.equal(f.trace.includes('RC2:commit'),false);
+ }
+});
 
 test('작업계획의 AF02와 AF04를 같은 RR에서 읽고 독립 보관 바이트로 확인한다',async()=>{
  const primary=fixture('design-valid'),limits={...input.limits,fileCount:2};

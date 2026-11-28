@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-28 KST
 
+- **Stage E / FN16 D2 원 업무 카드와 착수·검수 의존행** — 기준 `a9517eb3`, 담당 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 기존 계획 본문을 재분석해 같은 고정 버전의 두 관계표와 정확 집합·순서·카드 해시를 대조한다. STORED는 전체 관계, ISSUES_ONLY는 두 표 실제 0행이 필요하다. 동일 RR/최종 RC와 독립 봉인에서 검산하며 SQL 행·공유 메타 한도를 적용한다. V1–V6·기존 읽기 및 비권한 의미 유지. 제품 3·시험 1경로. 새 형상 부재 RED 1건 교정, 담당 합성 119/119·어울 99/99(실패·취소·skip 0), 타입·diff 통과. 실제 PG·보호 저장/공급·전체 백업과 복원, Windows·키·권한·서비스·Agent 미검증.
+
 - **Stage E / FN16 D2 원 작업계획에 결박된 AF02와 AF04** — 기준 `96b2fc20`, 담당 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 별도 목적 입장의 exact 설계/양식 참조를 원 plan.designRef와 대조한 뒤 동일 RR에서 SYSTEM AF02와 기존 AF04의 원행을 수집한다. 동일 metadata·원문·파일 수 상한을 적용하고 두 선언이 정확히 같은 산출물은 한 번 읽는다. 최종 RC 재대조와 독립 봉인 바이트/두 BODY 검산에서 다른 문서·권한 회수·두 번째 원문 실패 시 부분 반환 0. V1–V5 및 기존 목록 조회 유지. 제품 3·시험 1경로. 명시 V6 부재 RED 1건 교정, 담당 합성 115/115·어울 95/95(실패·취소·skip 0), 타입·diff 통과. 실제 보호 입장/PG/파일 저장·전체 복원, Windows·키·권한·서비스·Agent 미검증.
 
 - **Stage E / FN16 D2 보관 작업계획과 원 AF04 문서 버전** — 기준 `df4f455e`, 담당 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 목적 한정 입장에 고정 plan ref를 추가하고 동일 RR에서 SYSTEM AF04 문서의 원행과 그 참조를 가진 작업계획 버전 한 행만 수집한다. 원 ID·버전·해시와 관계를 최종 RC 및 독립 보관 바이트에서 다시 대조한다. 문서와 작업계획이 같은 metadata 상한을 적용받으며 교차·중복·누락은 거절한다. V1–V4 및 기존 목록 판독 유지. 제품 3·시험 1경로. 연결 부재 RED 1건 교정, 담당·어울 합성 91/91(실패·취소·skip 0), 타입·diff 통과. 원 작업계획 명령·관계표·외부 문서·현재 권한·전체 D2 저장/복원과 실제 PG·보호 공급/실자료·Windows·키·서비스·Agent는 미검증.

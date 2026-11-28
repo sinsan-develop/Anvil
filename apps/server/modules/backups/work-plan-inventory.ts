@@ -22,6 +22,8 @@ const columns={
  audit_events:'event_id project_id command_id server_sequence'.split(' ')
 };
 type Table=keyof typeof columns;
+const invalidRelationIssues=new Set(['DUPLICATE_TASK_CODE','DEPENDENCY_CYCLE','DEPENDENCY_TASK_NOT_FOUND',
+ 'SELF_DEPENDENCY','DUPLICATE_DEPENDENCY','DEPENDENCY_INPUT_INVALID']);
 const taskCode=(v:unknown):v is string=>typeof v==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(v);
 const ownErrors=new WeakSet<AuthFailure>();
 function bad(code='WORK_PLAN_INVENTORY_INTEGRITY_FAILED',status=503):never{const e=new AuthFailure(code,status);ownErrors.add(e);throw e;}
@@ -58,8 +60,7 @@ function readVersionProjection(row:Row,version:number){
  return {value,ref,snapshot};
 }
 
-/** 정확 작업계획 버전과 원 AF04 문서의 불변 관계만 확인한다. */
-export function checkWorkPlanDocumentHistoryRow(projectId:string,workPlanRef:RuntimeRefV1,documentRef:RuntimeRefV1,value:unknown,designDocumentRef?:RuntimeRefV1){
+function workPlanDocumentHistoryProjection(projectId:string,workPlanRef:RuntimeRefV1,documentRef:RuntimeRefV1,value:unknown,designDocumentRef?:RuntimeRefV1){
  const row=object(value,columns.work_plan_versions);
  if(!uuidV1(projectId)||!refV1(workPlanRef)||!refV1(documentRef)||row.project_id!==projectId
   ||!uuidV1(row.created_by)||!uuidV1(row.client_id)||!uuidV1(row.command_id))return bad();
@@ -67,7 +68,13 @@ export function checkWorkPlanDocumentHistoryRow(projectId:string,workPlanRef:Run
  const projection=readVersionProjection(row,integer(row.version,1));
  if(!same(projection.ref,workPlanRef)||!same(projection.snapshot.documentRef,documentRef)
   ||(designDocumentRef!==undefined&&(!refV1(designDocumentRef)||!same(projection.snapshot.designRef,designDocumentRef))))return bad();
- return {workPlanRef:projection.ref,workPlanProjectionHash:hash(row)};
+ return {row,...projection};
+}
+
+/** 정확 작업계획 버전과 원 AF04 문서의 불변 관계만 확인한다. */
+export function checkWorkPlanDocumentHistoryRow(projectId:string,workPlanRef:RuntimeRefV1,documentRef:RuntimeRefV1,value:unknown,designDocumentRef?:RuntimeRefV1){
+ const projection=workPlanDocumentHistoryProjection(projectId,workPlanRef,documentRef,value,designDocumentRef);
+ return {workPlanRef:projection.ref,workPlanProjectionHash:hash(projection.row)};
 }
 
 /** 기존에 들어간 보호 거래만 사용한다. 계획의 head·다른 원문·관계표는 읽지 않는다. */
@@ -88,6 +95,85 @@ export async function readWorkPlanDocumentHistoryRow(db:Pick<PoolClient,'query'>
  if(Buffer.byteLength(canonicalJson(row))>size)return bad();
  checkWorkPlanDocumentHistoryRow(projectId,workPlanRef,documentRef,row,designDocumentRef);
  return cloneV1(row);
+}
+
+export type WorkPlanRelationHistoryRows={tasks:Record<string,unknown>[];dependencies:Record<string,unknown>[]};
+
+function historicalRelations(projectId:string,workPlanRef:RuntimeRefV1,documentRef:RuntimeRefV1,designDocumentRef:RuntimeRefV1,versionRow:unknown){
+ const {snapshot}=workPlanDocumentHistoryProjection(projectId,workPlanRef,documentRef,versionRow,designDocumentRef);
+ const analysis=analyzeWorkPlanCards(snapshot.tasks);
+ const mode=analysis.issues.some(i=>invalidRelationIssues.has(i.code))?'ISSUES_ONLY':'STORED';
+ if(!same(snapshot.tasks,analysis.tasks)||!same(snapshot.dependencies,analysis.dependencies)||snapshot.relationalProjection!==mode)return bad();
+ return mode==='ISSUES_ONLY'?{tasks:[],dependencies:[]}:analysis;
+}
+
+type PlanAnalysis=ReturnType<typeof analyzeWorkPlanCards>;
+type RelationPlanScope={project_id:string;plan_id:string;plan_version:number};
+
+function checkTaskRows(scope:RelationPlanScope,expected:PlanAnalysis['tasks'],rows:unknown){
+ if(!Array.isArray(rows)||rows.length!==expected.length)return bad();
+ // 저장 행의 순서는 C 정렬 PK를 따른다. 원 JSON의 작성 순서와는 별개다.
+ const sorted=[...expected].sort((a,b)=>compare([a.taskCode],[b.taskCode]));
+ for(const [index,task] of sorted.entries()){
+  const row=object(rows[index],columns.plan_tasks);
+  if(integer(row.plan_version,1)!==scope.plan_version||!same(row,{...scope,plan_version:row.plan_version,
+    task_code:task.taskCode,task_type:task.type,card_json:task,card_hash:hash(task),owner_role:task.ownerRole}))return bad();
+ }
+}
+function checkDependencyRows(scope:RelationPlanScope,expected:PlanAnalysis['dependencies'],rows:unknown){
+ if(!Array.isArray(rows)||rows.length!==expected.length)return bad();
+ const key=({taskCode,dependencyTaskCode,phase}:PlanAnalysis['dependencies'][number])=>[taskCode,dependencyTaskCode,phase];
+ const sorted=[...expected].sort((a,b)=>compare(key(a),key(b)));
+ for(const [index,dependency] of sorted.entries()){
+  const row=object(rows[index],columns.plan_dependencies);
+  if(integer(row.plan_version,1)!==scope.plan_version||!same(row,{...scope,plan_version:row.plan_version,
+    task_code:dependency.taskCode,dependency_task_code:dependency.dependencyTaskCode,phase:dependency.phase}))return bad();
+ }
+}
+
+/** 같은 고정 버전의 원 카드·의존행만 보호 거래에서 읽는다. */
+export async function readWorkPlanRelationHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,plan:RuntimeRefV1,
+ documentRef:RuntimeRefV1,designDocumentRef:RuntimeRefV1,versionRow:unknown,metadataBytes:number):Promise<WorkPlanRelationHistoryRows>{
+ let remaining=metadataBytes;
+ const expected=historicalRelations(projectId,plan,documentRef,designDocumentRef,versionRow);
+ async function read(table:'plan_tasks'|'plan_dependencies',count:number,keys:readonly string[]){
+  if(!Number.isSafeInteger(remaining)||remaining<1)return bad('WORK_PLAN_INVENTORY_LIMIT',413);
+  const order=keys.map(k=>`${k} COLLATE "C"`).join(',');
+  const rows=(await db.query(`/*FN16_D2_WORK_PLAN_RELATIONS*/ WITH material AS (
+   SELECT ${columns[table].join(',')} FROM anvil.${table}
+   WHERE project_id=$1::uuid AND plan_id=$2::uuid AND plan_version=$3::bigint ORDER BY ${order} LIMIT $4::integer
+  ), measured AS (
+   SELECT ${columns[table].join(',')},octet_length(to_jsonb(material)::text) AS row_bytes FROM material
+  ) SELECT CASE WHEN sum(row_bytes) OVER ()<=$5::bigint THEN to_jsonb(measured)-'row_bytes' END AS inventory_data,
+   row_bytes FROM measured ORDER BY ${order}`,[projectId,plan.id,plan.version,count+1,remaining])).rows;
+  if(rows.length!==count)return bad();
+  const output:Record<string,unknown>[]=[];
+  for(const value of rows){
+   const envelope=object(value,['inventory_data','row_bytes']),size=integer(envelope.row_bytes,1);
+   if(size>remaining||envelope.inventory_data===null)return bad('WORK_PLAN_INVENTORY_LIMIT',413);
+   remaining-=size;
+   const row=object(envelope.inventory_data,columns[table]);
+   if(Buffer.byteLength(canonicalJson(row))>size)return bad();
+   output.push(cloneV1(row));
+  }
+  return output;
+ }
+ const scope={project_id:projectId,plan_id:plan.id,plan_version:plan.version};
+ const tasks=await read('plan_tasks',expected.tasks.length,['task_code']);
+ // 카드 표가 손상되면 의존 관계표를 더 읽지 않는다.
+ checkTaskRows(scope,expected.tasks,tasks);
+ const dependencies=await read('plan_dependencies',expected.dependencies.length,['task_code','dependency_task_code','phase']);
+ checkDependencyRows(scope,expected.dependencies,dependencies);
+ return {tasks,dependencies};
+}
+
+export function checkWorkPlanRelationHistoryRows(projectId:string,plan:RuntimeRefV1,documentRef:RuntimeRefV1,designDocumentRef:RuntimeRefV1,versionRow:unknown,value:unknown){
+ const expected=historicalRelations(projectId,plan,documentRef,designDocumentRef,versionRow);
+ const {tasks,dependencies}=object(value,['tasks','dependencies']);
+ const scope={project_id:projectId,plan_id:plan.id,plan_version:plan.version};
+ checkTaskRows(scope,expected.tasks,tasks);
+ checkDependencyRows(scope,expected.dependencies,dependencies);
+ return {taskCount:expected.tasks.length,dependencyCount:expected.dependencies.length,workPlanRelationsHash:hash({tasks,dependencies})};
 }
 
 /** 원문 접근 없는 내부 작업계획 metadata 관측이다. archive/복원·명령 실행 권한을 발급하지 않는다. */
@@ -156,7 +242,7 @@ export async function collectWorkPlanInventory(access:AccessRepository,token:str
     const analysis=analyzeWorkPlanCards(snapshot.tasks);if(!same(snapshot.tasks,analysis.tasks)||!same(snapshot.dependencies,analysis.dependencies)||!Array.isArray(snapshot.issues))bad();
     const storedIssues:Row[]=[];for(const item of snapshot.issues){const i=object(item,['code','location','message']);if(![i.code,i.location,i.message].every(v=>planText(v)&&v.length>0))bad();storedIssues.push(i);}
     if(!same(storedIssues.filter(i=>!sourceIssues.has(i.code)),analysis.issues))bad();
-    const ambiguous=analysis.issues.some(i=>['DUPLICATE_TASK_CODE','DEPENDENCY_CYCLE','DEPENDENCY_TASK_NOT_FOUND','SELF_DEPENDENCY','DUPLICATE_DEPENDENCY','DEPENDENCY_INPUT_INVALID'].includes(i.code));if(snapshot.relationalProjection!==(ambiguous?'ISSUES_ONLY':'STORED'))bad();
+    const ambiguous=analysis.issues.some(i=>invalidRelationIssues.has(i.code));if(snapshot.relationalProjection!==(ambiguous?'ISSUES_ONLY':'STORED'))bad();
     if(!Array.isArray(snapshot.screenReviewRefs)||snapshot.screenReviewRefs.length>200)bad();const screens=new Map<string,unknown>();for(const task of analysis.tasks)for(const s of task.screenRefs)screens.set(key(s.versionRef.id,s.versionRef.version),s.versionRef);
     for(const review of snapshot.screenReviewRefs){const r=object(review,['id','targetRef','criteriaVersion','outcome']);if(!uuidV1(r.id)||!isVersionRef(r.targetRef)||r.criteriaVersion!==1||r.outcome!=='ACCEPTED'||!same(screens.get(key(r.targetRef.id,r.targetRef.version))??null,r.targetRef))bad();external({kind:'SCREEN_REVIEW',ref:r,verification:'NOT_PERFORMED'});}
     const c=command(row,'saveWorkPlanDraft',ref,v-1,row.created_by,row.created_at);if(!same(c.result_ref.data,{ref,status:'WORK_PLAN_DRAFT_SAVED',workPlan:value}))bad();
