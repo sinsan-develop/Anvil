@@ -26,6 +26,13 @@ internal sealed class NormalStartPreparationCustodySource {
   internal bool Same(Peer p){return p!=null&&SignerSid==p.SignerSid&&KeeperSid==p.KeeperSid&&SignerImageHash==p.SignerImageHash&&KeeperImageHash==p.KeeperImageHash&&ChannelInstance==p.ChannelInstance&&SignerBirth==p.SignerBirth&&KeeperBirth==p.KeeperBirth;}
  }
 
+ internal sealed class SignerIdentity {
+  internal readonly string SignerSid,SignerImageHash;
+  internal readonly long SignerBirth;
+  internal SignerIdentity(string sid,string imageHash,long birth){SignerSid=sid;SignerImageHash=imageHash;SignerBirth=birth;}
+  internal bool Matches(Peer p){return p!=null&&SignerSid==p.SignerSid&&SignerImageHash==p.SignerImageHash&&SignerBirth==p.SignerBirth;}
+ }
+
  internal abstract class InstalledPeer {
   // 보호된 설치/실행 경로는 요청 본문 밖에서 원 채널과 피어를 고정한다.
   internal abstract Peer ReadPinnedPeer();
@@ -204,25 +211,29 @@ internal sealed class NormalStartPreparationCustodySource {
  internal sealed class Caller:IDisposable {
   readonly SignerChannel endpoint;
   DesktopTrustKeyBudget ownerClock;
+  Func<SignerIdentity> signerSource;
   Peer pin;
   Binding binding;
   Claim claim;
   Observation original;
   bool began,closeAttempted,disposed;
   internal Caller(SignerChannel source){endpoint=source??throw Unavailable();}
-  internal void CheckReady(Binding exact,DesktopTrustKeyBudget clock){
-   if(exact==null||clock==null||disposed||closeAttempted||binding!=null&&(!binding.Same(exact)||!Object.ReferenceEquals(ownerClock,clock)))throw Unavailable();
+  internal void CheckReady(Binding exact,DesktopTrustKeyBudget clock,Func<SignerIdentity> readSigner){
+   if(exact==null||clock==null||readSigner==null||disposed||closeAttempted||binding!=null&&(!binding.Same(exact)||!Object.ReferenceEquals(ownerClock,clock)||!Object.ReferenceEquals(signerSource,readSigner)))throw Unavailable();
+   // 채널의 pin/live 자기일치에 더해 실제 원 등록 호스트의 보유 신원을 확인한다.
+   clock.Check();var own=readSigner();
+   if(own==null||own.SignerImageHash!=exact.SignerImageHash)throw Unavailable();
+   var observed=pin??endpoint.ReadPinnedPeer();
+   if(!own.Matches(observed))throw Unavailable();
+   ReadCurrent(endpoint,observed,false);
+   var after=readSigner();
+   if(after==null||!after.Matches(observed))throw Unavailable();
    clock.Check();
-   if(pin==null){
-    var observed=ReadCurrent(endpoint,endpoint.ReadPinnedPeer(),false);
-    if(observed.SignerImageHash!=exact.SignerImageHash)throw Unavailable();
-    pin=observed;binding=exact;ownerClock=clock;
-   }
-   ReadCurrent(endpoint,pin,false);
+   if(pin==null){pin=observed;binding=exact;ownerClock=clock;signerSource=readSigner;}
   }
   internal void CreateAndRecheck(Binding exact,NormalExecutionSpoolProfileSource.NormalStartPreparationClaimMaterial consumed,Row image,Func<int> remaining,Action originalCurrent){
    if(began||closeAttempted||binding==null||!binding.Same(exact))throw Unavailable();
-   int Left(){originalCurrent();CheckReady(exact,ownerClock);return Cap(remaining);}
+   int Left(){originalCurrent();CheckReady(exact,ownerClock,signerSource);return Cap(remaining);}
    Left();claim=new Claim(exact,consumed,image);began=true;
    original=endpoint.Create(claim,Left);Left();
    if(original==null||!original.Matches(pin,claim,null))throw Unknown();

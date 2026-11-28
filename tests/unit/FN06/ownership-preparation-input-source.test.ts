@@ -361,7 +361,7 @@ test('정적: 등록 host와 전용 원 owner의 준비·회수 호출은 보호
  assert.match(source,/using Anvil\.Native\.OwnershipEvidence;/);
  const claim=host.slice(host.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'));
  const order=(s:string,parts:string[])=>{let prev=-1;for(const part of parts){const at=s.indexOf(part,prev+1);assert(at>prev,part);prev=at;}};
- order(claim,['normalPreparationCustody==null&&normalStartPreparationProducer==null','SOURCE_UNAVAILABLE','NormalStartRequest(record,window,session,request,budget.Now)','new NormalStartPreparationCustodySource.Binding(request,epoch,end,peer.HelperHash)','normalPreparationCustody.CheckReady(custodyBinding,budget)','AcquireNormalImageForPreparation','ClaimNormalStartPreparation','if(claim.Capability==null)return claim.Output','if(custodyBinding!=null)','claim.Capability.Consume','ReadNormalStartPreparationClaimCurrent','normalPreparationCustody.CreateAndRecheck','return claim.Output','normalStartPreparationProducer.CreateOwned']);
+ order(claim,['normalPreparationCustody==null&&normalStartPreparationProducer==null','SOURCE_UNAVAILABLE','NormalStartRequest(record,window,session,request,budget.Now)','new NormalStartPreparationCustodySource.Binding(request,epoch,end,peer.HelperHash)','normalPreparationCustody.CheckReady(custodyBinding,budget,custodySigner)','AcquireNormalImageForPreparation','ClaimNormalStartPreparation','if(claim.Capability==null)return claim.Output','if(custodyBinding!=null)','claim.Capability.Consume','ReadNormalStartPreparationClaimCurrent','normalPreparationCustody.CreateAndRecheck','return claim.Output','normalStartPreparationProducer.CreateOwned']);
  assert.match(host,/finally\{if\(normalPreparationCustody!=null\)\{try\{normalPreparationCustody\.Dispose\(\);\}catch\{normalStartPreparationCleanupUnknown=true;unknown=true/);
  const sign=host.slice(host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'),host.indexOf('if(operation=="SIGN_NATIVE_FIRST_RECEIVE_PROOF")'));
  order(sign,['new NormalStartResultPermit','normalPreparationCustody!=null&&permit.IsPrepared','permit.ClaimOnce()','ProtectedStore.SignNormalStartPreparationResultOwned']);
@@ -374,13 +374,37 @@ test('정적: 등록 host와 전용 원 owner의 준비·회수 호출은 보호
  assert.match(keeper,/endpoint\.CheckChannel|ReadCurrent\(endpoint,pin,true\)/);
  order(keeper,['internal Closed Close','!consumed||closeAttempted||!claim.Same(exact)','clock.Slice(exact.ExpiresAt,2000).Check()','internal void FinishOwner','if(consumed&&!closeAttempted)CloseOriginal()','closeAttempted=true','job.Dispose()','ReadOriginalNormalSuspendedProcessCleanupSource','catch{unknown=true;throw Unknown();}']);
  const signer=source.slice(source.indexOf('internal sealed class Caller:'),source.indexOf('static int Cap('));
- order(signer,['observed.SignerImageHash!=exact.SignerImageHash','internal void CreateAndRecheck','if(began||closeAttempted','Left();claim=new Claim(exact,consumed,image);began=true','endpoint.Create(claim,Left);Left()','original.Matches(pin,claim,null)','endpoint.Recheck(claim,Left);Left()','current.Matches(pin,claim,original)','closeAttempted=true','endpoint.Close(claim,Left)','result.ObjectId!=original.ObjectId','finally{endpoint.Dispose();}']);
+ order(signer,['own.SignerImageHash!=exact.SignerImageHash','internal void CreateAndRecheck','if(began||closeAttempted','Left();claim=new Claim(exact,consumed,image);began=true','endpoint.Create(claim,Left);Left()','original.Matches(pin,claim,null)','endpoint.Recheck(claim,Left);Left()','current.Matches(pin,claim,original)','closeAttempted=true','endpoint.Close(claim,Left)','result.ObjectId!=original.ObjectId','finally{endpoint.Dispose();}']);
  assert.doesNotMatch(source,/ResumeThread|DuplicateHandle|OpenProcess|GetProcessById|ProtectedStore|pendingKeyId|osOwnershipVerified.*true|EXECUTION_PERMIT/);
  assert.match(source,/ReadPinnedPeer\(\)\)\|\|!pin\.Same\(endpoint\.ReadLivePeer\(\)\)/);
  assert.match(source,/WindowsIdentity\.GetCurrent\(\)[\s\S]*identity\.User\.Value!=sid[\s\S]*RawSecurityDescriptor[\s\S]*Inherit=0/);
  assert.match(process,/else created=attributes\.Create\(\(processSecurity,threadSecurity\)=>CreateProcessW\(path,command,processSecurity,threadSecurity,false,SuspendedCreationFlags,startup\.environment,directory,ref startup\.info,out original\)\)/);
  assert.match(process,/tookImage\(\);return OwnershipEvidenceImageOwnerSource\.WithOriginalNormalLaunchSource/);
  assert.match(process,/OwnershipEvidenceImageOwnerSource\.CloseOriginalNormalSource\(closingImage\)[\s\S]*NormalProcessCleanupReceipt\(this,originalObservation,closingImage,receipt\)/);
+});
+
+test('정적 및 조건식 RAM: 같은 이미지라도 다른 등록 signer SID·출생시각은 전용 채널 준비 전에 거절한다',()=>{
+ const raw=(name:string)=>readFileSync(new URL('../../../apps/connector/native/'+name,import.meta.url),'utf8');
+ const host=raw('DesktopTrustKeyHostSource.cs'), source=raw('NormalStartPreparationCustodySource.cs');
+ const claim=host.slice(host.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'));
+ const signer=source.slice(source.indexOf('internal sealed class Caller:'),source.indexOf('static int Cap('));
+ assert.match(raw('DesktopTrustKeyPeerSource.cs'),/OriginalCreated\{get\{Check\(\);return ownInstance\.Created;/);
+ assert.match(raw('DesktopTrustKeyRootSource.cs'),/UserSid\{get\{Check\(\);return sid;/);
+ assert.match(claim,/new NormalStartPreparationCustodySource\.SignerIdentity\(root\.UserSid,peer\.HelperHash,peer\.OriginalCreated\)[\s\S]*CheckReady\(custodyBinding,budget,custodySigner\)[\s\S]*ready\(\);[\s\S]*AcquireNormalImageForPreparation/);
+ const identity=source.slice(source.indexOf('internal sealed class SignerIdentity'),source.indexOf('internal abstract class InstalledPeer'));
+ const expression=/bool Matches\(Peer p\)\{return ([^;]+);\}/.exec(identity)?.[1];
+ assert.equal(expression,'p!=null&&SignerSid==p.SignerSid&&SignerImageHash==p.SignerImageHash&&SignerBirth==p.SignerBirth');
+ const matches=new Function('signer','p','return '+expression!.replace(/\b(Signer[A-Za-z]+)==/g,'signer.$1==')+';');
+ const original={SignerSid:'S-1-5-21-1',SignerImageHash:'aa'.repeat(32),SignerBirth:1234};
+ assert.equal(matches(original,{...original}),true);
+ assert.equal(matches(original,{...original,SignerSid:'S-1-5-21-2'}),false);
+ assert.equal(matches(original,{...original,SignerBirth:1235}),false);
+ assert.equal(matches(original,{...original,SignerImageHash:'ab'.repeat(32)}),false);
+ assert.equal(matches(original,null),false);
+ assert.match(signer,/clock\.Check\(\);var own=readSigner\(\);[\s\S]*!own\.Matches\(observed\)[\s\S]*ReadCurrent\(endpoint,observed,false\);[\s\S]*!after\.Matches\(observed\)[\s\S]*pin=observed/);
+ assert.match(signer,/int Left\(\)\{originalCurrent\(\);CheckReady\(exact,ownerClock,signerSource\);[\s\S]*endpoint\.Create\(claim,Left\);Left\(\);[\s\S]*endpoint\.Recheck\(claim,Left\);Left\(\);/);
+ const cleanup=signer.slice(signer.indexOf('internal void CloseOriginal()'));
+ assert.doesNotMatch(cleanup,/ReadSigner|SignerIdentity|CheckReady/);
 });
 
 test('소스 조건식 RAM: 전용 owner 피어와 원 준비 요청은 전체 값과 원 기한이 같아야 한다',()=>{

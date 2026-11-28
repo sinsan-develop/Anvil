@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-28 KST
 
+- **Stage C / IX02 원 등록 signer 신원 결박** — 기준 `d8cf50281`, 담당 `fn08_policy_decision_ready`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 원 호스트가 검산한 보호 루트 SID·helper 이미지 해시·보유 self 프로세스 생성 시각을 같은 등록 host의 pin과 독립 대조한다. 생성/재관측 앞뒤 원 신원·기한을 재검산하고 기존 원 객체 회수는 유지한다. 제품 2·시험 1경로. 원 host 대조 누락 RED 1건, 담당/어울 인접 정적·합성 102/102(실패·취소·skip 0), 타입·diff 통과. 실제 보호 설치 자료 발급 및 endpoint, C# 컴파일·Windows·DB·권한·키·서비스·Agent, 양성 PREPARED/queue·인계·IX02 인수 미검증.
+
 - **Stage E / FN16 D2 문서 초안 원 명령·영수증·감사** — 기준 `1732771c`, 구현 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 일반 초안 원 버전의 내부 command ID로 같은 RR에서 명령·인가 영수증·보정 아닌 원 감사를 정확 조회하고, 별도 새 RC로 같은 여섯 원행/정책/주체를 대조한다. 독립 역사 판독에서 범위 digest와 원행 투영 해시를 구분하며 과거 BODY V1의 판독·의미를 유지한다. 제품 3·시험 1경로, 담당/어울 합성 39/39(실패·취소·skip 0), 타입·diff 통과. 단계·반입·제안·별도 승인 원형, 보호 V2 입장 공급자와 실제 PG·영속 저장·전체 백업/복원은 미검증이다. 실제 Windows·DB·권한·키·서비스·Agent 조작 없음.
 
 - **Stage D / FN14 6항목 이해 대조 내부 계산** — 기준 `b2a8bfdf`, 담당 `fn08_policy_decision_ready`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 고정 인계본/대상 연결/새 세션·세대/같은 전달·응답을 보호 관측과 대조한다. 원문과 사람 판정을 분리하고 정확 6기준·원 응답 구간·버전 없는 메시지 참조/원 대화 ID를 보존한다. 누락·교차·중복은 보완 또는 미검증이다. 완전 일치도 검토 제안까지만 반환한다. 제품·시험 각 1경로. 함수 부재 RED 4건, 실제 메시지 참조 형상 누락 RED 1건 교정. 담당/어울 직렬 합성 64/64(실패·취소·skip 0), 타입·diff 통과. 실제 보호 응답 생산자 및 제품 호출·정착 검토·확정/이전/재개와 실제 Windows·DB·권한·키·서비스·Agent는 미검증. IX02 FN12 고정 시험 프로필 단회 접수는 기존 관측·검수 승인과 다른 계약 부분만 신산님에게 결정 요청했다.
