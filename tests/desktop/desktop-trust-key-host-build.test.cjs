@@ -3,12 +3,12 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const build=require('../../apps/desktop/scripts/desktop-trust-key-host-build.cjs');
 function input(){return {signerId:'11111111-1111-4111-8111-111111111111',signerVersion:1,compiler:{path:'C:\\Tools\\csc.exe'.replaceAll('\\\\','\\'),sha256:'a'.repeat(64)},references:build.REFERENCE_FILES.map(x=>({path:'C:\\Reference\\'+x,sha256:'b'.repeat(64)})),sources:build.SOURCE_FILES.map(x=>({path:x,sha256:'c'.repeat(64)})),repoRoot:'C:\\Anvil',basisPath:'C:\\Work\\ParentBasis.json',outputPath:'C:\\Work\\AnvilTrustKeyHost.exe'};}
 function basis(){return {schemaVersion:1,purpose:'DESKTOP_TRUST_SIGNER_PARENT_BASIS',namespace:'ANVIL_DESKTOP_TRUST_SIGNER_V1',signerId:'11111111-1111-4111-8111-111111111111',signerVersion:1,parentExeHash:'d'.repeat(64),parentAsarHash:'e'.repeat(64),parentHeaderHash:'f'.repeat(64)};}
-// 승인된 기존 30개와 이번 이해 reader 감독 1개. 제품 목록에서 기대값을 유도하지 않는다.
+// 고정 signer 입력에는 전용 준비 객체 소유 경계의 원 소스도 포함한다.
 const expectedSources=[
  'DesktopTrustKeyHostSource.cs','DesktopTrustKeyParentBasisSource.cs','DesktopTrustKeyPeerSource.cs',
  'DesktopTrustKeyRootSource.cs','DesktopTrustKeyBindingStoreSource.cs','ProtectedStore.cs',
  'NativePreparationProofSource.cs','NormalExecutionCredentialSource.cs','NormalSdkWorkerPackageSource.cs',
- 'NormalSdkChildHostSource.cs','NormalExecutionConfigurationSource.cs','NormalExecutionSpoolProfileSource.cs','NormalUnderstandingReadSupervisorSource.cs',
+ 'NormalSdkChildHostSource.cs','NormalExecutionConfigurationSource.cs','NormalExecutionSpoolProfileSource.cs','NormalUnderstandingReadSupervisorSource.cs','NormalStartPreparationCustodySource.cs',
  'OwnershipEvidenceJobFactorySource.cs','OwnershipEvidenceJobAssignmentSource.cs','OwnershipEvidenceProcessStartupSource.cs',
  'OwnershipEvidenceProcessOwnerSource.cs','OwnershipEvidenceWorkerInputSource.cs','OwnershipEvidencePreparedFactsSource.cs',
  'OwnershipEvidenceImageOwnerSource.cs','OwnershipEvidenceImageBindingSource.cs','OwnershipEvidenceRootSource.cs',
@@ -16,8 +16,9 @@ const expectedSources=[
  'NativePreparationJournalSource.cs','NativePreparationRetainedFactorySource.cs','NativePreparationWorkerProvenanceSource.cs',
  'NativeWorkerInstallationRootSource.cs','NativeWorkerInstallationStoreSource.cs','NativeWorkerDeploymentSource.cs',
 ].map(name=>'apps/connector/native/'+name);
-test('fixed signer closure produces exact entry and private resource input',()=>{const c=build.createCompileInput(input(),basis());assert.ok(c.arguments.includes('/main:DesktopTrustKeyHostSource'));assert.ok(c.arguments.some(x=>x.endsWith(',Anvil.Desktop.TrustKeyHost.ParentBasis.v1,private')));assert.deepEqual(c.sources.map(s=>s.path),expectedSources);assert.equal(new Set(c.sources.map(s=>s.path)).size,31);assert.equal(c.references.length,5);assert.equal(c.workingDirectory,'C:\\Anvil');
+test('fixed signer closure produces exact entry and private resource input',()=>{const c=build.createCompileInput(input(),basis());assert.ok(c.arguments.includes('/main:DesktopTrustKeyHostSource'));assert.ok(c.arguments.some(x=>x.endsWith(',Anvil.Desktop.TrustKeyHost.ParentBasis.v1,private')));assert.deepEqual(c.sources.map(s=>s.path),expectedSources);assert.equal(new Set(c.sources.map(s=>s.path)).size,32);assert.equal(c.references.length,5);assert.equal(c.workingDirectory,'C:\\Anvil');
  const missing=input();missing.sources=missing.sources.filter(s=>!s.path.endsWith('/NormalSdkChildHostSource.cs'));assert.throws(()=>build.createCompileInput(missing,basis()));
+ const noCustody=input();noCustody.sources=noCustody.sources.filter(s=>!s.path.endsWith('/NormalStartPreparationCustodySource.cs'));assert.throws(()=>build.createCompileInput(noCustody,basis()));
  const duplicate=input();duplicate.sources[9]={...duplicate.sources[8]};assert.throws(()=>build.createCompileInput(duplicate,basis()));
  const substituted=input();substituted.sources[9]={...substituted.sources[9],path:'apps/connector/native/OtherChild.cs'};assert.throws(()=>build.createCompileInput(substituted,basis()));
 });

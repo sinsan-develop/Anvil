@@ -67,13 +67,18 @@ namespace Anvil.Native.OwnershipEvidence
             internal bool DispatchPerformed{get{return false;}}
             internal NormalProcessOwnerObservation(OwnershipEvidenceWorkerInputSource.NormalStartWorkerInvocationObservation value,DateTime observedAt){if(value==null||observedAt.Kind!=DateTimeKind.Utc||observedAt<value.ObservedAt||observedAt>=value.ExpiresAt)throw Unavailable();ImageRefJson=value.ImageRefJson;RequestRefJson=value.RequestRefJson;LocalClaimRefJson=value.LocalClaimRefJson;LocalProcessId=value.LocalProcessId;LocalProcessGeneration=value.LocalProcessGeneration;ExpiresAt=value.ExpiresAt;ObservedAt=observedAt;}
         }
+        internal abstract class DedicatedCreationAttributes {
+            internal abstract bool Create(Func<IntPtr,IntPtr,bool> create);
+        }
         internal sealed class NormalProcessCleanupReceipt
         {
-            readonly object original;readonly NativeWorkerDeploymentSource.NormalTransferredImageCloseReceipt imageReceipt;
+            readonly object original,imageReceipt;
             internal readonly string ImageRefJson,RequestRefJson,LocalClaimRefJson,LocalProcessId;internal readonly long LocalProcessGeneration;internal readonly DateTime ExpiresAt;
             internal NormalProcessCleanupReceipt(object owner,NormalProcessOwnerObservation value,NativeWorkerDeploymentSource.NormalTransferredImageCloseReceipt image)
             {if(owner==null||value==null||image==null||!image.ImageCloseConfirmed)throw Unavailable();original=owner;imageReceipt=image;ImageRefJson=value.ImageRefJson;RequestRefJson=value.RequestRefJson;LocalClaimRefJson=value.LocalClaimRefJson;LocalProcessId=value.LocalProcessId;LocalProcessGeneration=value.LocalProcessGeneration;ExpiresAt=value.ExpiresAt;}
-            internal bool Matches(object owner,NativeWorkerDeploymentSource.NormalTransferredImageCloseReceipt image){return Object.ReferenceEquals(original,owner)&&Object.ReferenceEquals(imageReceipt,image);}
+            internal NormalProcessCleanupReceipt(object owner,NormalProcessOwnerObservation value,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,OwnershipEvidenceImageOwnerSource.NormalImageCloseReceipt receipt)
+            {OwnershipEvidenceImageOwnerSource.RequireOriginalNormalCloseReceipt(image,receipt);if(owner==null||value==null)throw Unavailable();original=owner;imageReceipt=receipt;ImageRefJson=value.ImageRefJson;RequestRefJson=value.RequestRefJson;LocalClaimRefJson=value.LocalClaimRefJson;LocalProcessId=value.LocalProcessId;LocalProcessGeneration=value.LocalProcessGeneration;ExpiresAt=value.ExpiresAt;}
+            internal bool Matches(object owner,object image){return Object.ReferenceEquals(original,owner)&&Object.ReferenceEquals(imageReceipt,image);}
             internal bool ProcessExitConfirmed{get{return true;}}
             internal bool ThreadExitConfirmed{get{return true;}}
             internal bool ThreadCloseConfirmed{get{return true;}}
@@ -95,6 +100,10 @@ namespace Anvil.Native.OwnershipEvidence
             {
                 return JobAssignment.CreateNormalFromStartup(candidate,image,timeoutMs);
             }
+            internal static INormalSuspendedProcessCandidate CreateDedicatedNormalFromStartup(ISuspendedStartupCandidate candidate,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,DedicatedCreationAttributes attributes,Action tookImage,int timeoutMs)
+            {
+                return JobAssignment.CreateDedicatedNormalFromStartup(candidate,image,attributes,tookImage,timeoutMs);
+            }
             private sealed partial class JobAssignment
             {
                 internal static IOriginalSuspendedProcessCandidate CreateFromStartup(ISuspendedStartupCandidate candidate,OwnershipEvidenceImageOwnerSource.IImageOwnerCandidate image,int timeoutMs)
@@ -104,6 +113,10 @@ namespace Anvil.Native.OwnershipEvidence
                 internal static INormalSuspendedProcessCandidate CreateNormalFromStartup(ISuspendedStartupCandidate candidate,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,int timeoutMs)
                 {
                     var original=candidate as ProcessStartup;if(original==null)throw Unavailable();return original.CreateNormalSource(image,timeoutMs);
+                }
+                internal static INormalSuspendedProcessCandidate CreateDedicatedNormalFromStartup(ISuspendedStartupCandidate candidate,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,DedicatedCreationAttributes attributes,Action tookImage,int timeoutMs)
+                {
+                    var original=candidate as ProcessStartup;if(original==null||attributes==null||tookImage==null)throw Unavailable();return original.CreateNormalSource(image,timeoutMs,attributes,tookImage);
                 }
                 private sealed partial class ProcessStartup
                 {
@@ -131,7 +144,7 @@ namespace Anvil.Native.OwnershipEvidence
                             catch{processOwner.Dispose();throw Unavailable();}
                         }
                     }
-                    internal INormalSuspendedProcessCandidate CreateNormalSource(OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,int timeoutMs)
+                    internal INormalSuspendedProcessCandidate CreateNormalSource(OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,int timeoutMs,DedicatedCreationAttributes attributes=null,Action tookImage=null)
                     {
                         if(timeoutMs<1||timeoutMs>2000)throw Unavailable();DateTime from=DateTime.UtcNow;var watch=Stopwatch.StartNew();
                         lock(parent.owner.gate)
@@ -141,13 +154,15 @@ namespace Anvil.Native.OwnershipEvidence
                             NormalProcessOwner attempted=null;
                             try
                             {
-                                normalProcessOwner=attempted=new NormalProcessOwner(this,image);
-                                return NativeWorkerDeploymentSource.WithTransferredNormalImageLaunch(image,Math.Min(timeoutMs,1000),(directory,path)=>
+                                normalProcessOwner=attempted=attributes==null?new NormalProcessOwner(this,image):new NormalProcessOwner(this,image,attributes);
+                                INormalSuspendedProcessCandidate Launch(string directory,string path)
                                 {
                                     ReadCurrent(timeoutMs);normalWorkerInput.ReadCurrent(timeoutMs);Budget(from,watch,timeoutMs);
                                     normalProcessOwner.Create(directory,path);Budget(from,watch,timeoutMs);
                                     normalProcessOwner.ReadCurrent(timeoutMs);Budget(from,watch,timeoutMs);return (INormalSuspendedProcessCandidate)normalProcessOwner;
-                                });
+                                }
+                                if(attributes==null)return NativeWorkerDeploymentSource.WithTransferredNormalImageLaunch(image,Math.Min(timeoutMs,1000),Launch);
+                                tookImage();return OwnershipEvidenceImageOwnerSource.WithOriginalNormalLaunchSource(image,Math.Min(timeoutMs,1000),Launch);
                             }
                             catch{if(attempted!=null)attempted.Dispose();throw Unavailable();}
                         }
@@ -250,14 +265,17 @@ namespace Anvil.Native.OwnershipEvidence
                     private sealed class NormalProcessOwner:INormalSuspendedProcessCandidate
                     {
                         readonly ProcessStartup startup;OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image;
+                        readonly DedicatedCreationAttributes attributes;
                         readonly DateTime createdAt,expiresAt;readonly Stopwatch lifetime;DateTime lastWall;
-                        ProcessInformation original;OriginalProcessHandle process,thread;string expectedPathDigest;NormalProcessOwnerObservation originalObservation;NativeWorkerDeploymentSource.NormalTransferredImageCloseReceipt imageCloseReceipt;NormalProcessCleanupReceipt cleanupReceipt;
+                        ProcessInformation original;OriginalProcessHandle process,thread;string expectedPathDigest;NormalProcessOwnerObservation originalObservation;object imageCloseReceipt;NormalProcessCleanupReceipt cleanupReceipt;
                         bool attempted,created,exitConfirmed,closed,cleanupAttempted,cleanupUnknown;
                         bool threadExitConfirmed,threadCloseSucceeded,processCloseSucceeded,rawThreadCloseAttempted,rawThreadCloseSucceeded,rawProcessCloseAttempted,rawProcessCloseSucceeded;
-                        internal NormalProcessOwner(ProcessStartup startup,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image)
+                        internal NormalProcessOwner(ProcessStartup startup,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,DedicatedCreationAttributes attributes=null)
                         {
-                            if(startup==null||image==null||startup.normalWorkerInput==null)throw Unavailable();this.startup=startup;this.image=image;createdAt=lastWall=DateTime.UtcNow;expiresAt=startup.normalWorkerInput.ExpiresAt;lifetime=Stopwatch.StartNew();if(expiresAt<=createdAt||(expiresAt-createdAt).TotalMilliseconds>10000)throw Unavailable();
+                            if(startup==null||image==null||startup.normalWorkerInput==null)throw Unavailable();this.startup=startup;this.image=image;this.attributes=attributes;createdAt=lastWall=DateTime.UtcNow;expiresAt=startup.normalWorkerInput.ExpiresAt;lifetime=Stopwatch.StartNew();if(expiresAt<=createdAt||(expiresAt-createdAt).TotalMilliseconds>10000)throw Unavailable();
                         }
+                        OwnershipEvidenceImageOwnerSource.NormalImageObservation ReadImage(int cap)
+                        {return attributes==null?NativeWorkerDeploymentSource.ReadTransferredNormalImage(image,Math.Min(cap,1000)):OwnershipEvidenceImageOwnerSource.ReadOriginalNormalSource(image,Math.Min(cap,1000));}
                         static Exception CleanupUnknown(){return new InvalidOperationException("NORMAL_START_PROCESS_CLEANUP_UNKNOWN");}
                         int Remaining(int timeoutMs)
                         {
@@ -270,8 +288,9 @@ namespace Anvil.Native.OwnershipEvidence
                         {
                             if(attempted)throw Unavailable();attempted=true;string[] args=startup.normalWorkerInput.Arguments;
                             var command=new StringBuilder("\""+path+"\" "+string.Join(" ",args));using(var sha=SHA256.Create())expectedPathDigest=BitConverter.ToString(sha.ComputeHash(new UTF8Encoding(false,true).GetBytes(path))).Replace("-","").ToLowerInvariant();
-                            int cap=Remaining(2000);startup.ReadCurrent(cap);var input=startup.normalWorkerInput.ReadCurrent(cap);var retained=NativeWorkerDeploymentSource.ReadTransferredNormalImage(image,Math.Min(cap,1000));if(input.ImageRefJson!=retained.AssociationRefJson)throw Unavailable();Remaining(cap);
-                            created=CreateProcessW(path,command,IntPtr.Zero,IntPtr.Zero,false,SuspendedCreationFlags,startup.environment,directory,ref startup.info,out original);
+                            int cap=Remaining(2000);startup.ReadCurrent(cap);var input=startup.normalWorkerInput.ReadCurrent(cap);var retained=ReadImage(cap);if(input.ImageRefJson!=retained.AssociationRefJson)throw Unavailable();Remaining(cap);
+                            if(attributes==null)created=CreateProcessW(path,command,IntPtr.Zero,IntPtr.Zero,false,SuspendedCreationFlags,startup.environment,directory,ref startup.info,out original);
+                            else created=attributes.Create((processSecurity,threadSecurity)=>CreateProcessW(path,command,processSecurity,threadSecurity,false,SuspendedCreationFlags,startup.environment,directory,ref startup.info,out original));
                             if(!created){original=default(ProcessInformation);throw Unavailable();}
                             if(original.Process==IntPtr.Zero||original.Process==new IntPtr(-1)||original.Thread==IntPtr.Zero||original.Thread==new IntPtr(-1)||original.Process==original.Thread||original.Pid==0||original.Tid==0){cleanupUnknown=true;throw CleanupUnknown();}
                             process=new OriginalProcessHandle(original.Process);thread=new OriginalProcessHandle(original.Thread);
@@ -284,14 +303,14 @@ namespace Anvil.Native.OwnershipEvidence
                                 lock(startup.parent.owner.gate)
                                 {
                                     if(closed||!created||process==null||thread==null||startup.closed||startup.parent.closed||startup.parent.owner.disposed||startup.normalProcessOwner!=this)throw Unavailable();
-                                    startup.ReadCurrentCore(this,cap);var input=startup.normalWorkerInput.ReadCurrent(cap);var imageCurrent=NativeWorkerDeploymentSource.ReadTransferredNormalImage(image,Math.Min(cap,1000));
+                                    startup.ReadCurrentCore(this,cap);var input=startup.normalWorkerInput.ReadCurrent(cap);var imageCurrent=ReadImage(cap);
                                     if(input.ImageRefJson!=imageCurrent.AssociationRefJson)throw Unavailable();Budget(from,watch,cap);
                                     // 아래 legacy primitive의 내부 10초 상한은 normal 2초 증거가 아니다. 전후 monotonic cap으로 늦은 결과를 거절한다.
                                     var first=OwnershipEvidenceHost.ReadRetainedHandleQuerySource(process,startup.parent.owner.job);Budget(from,watch,cap);
                                     var current=OwnershipEvidenceHost.ReadRetainedThreadQuerySource(thread,process);Budget(from,watch,cap);
                                     var last=OwnershipEvidenceHost.ReadRetainedHandleQuerySource(process,startup.parent.owner.job);Budget(from,watch,cap);
                                     if(first.Pid!=original.Pid||last.Pid!=original.Pid||current.ProcessId!=original.Pid||current.ThreadId!=original.Tid||first.StartTicks!=last.StartTicks||last.StartTicks!=current.ProcessStartTicks||first.ObservedImagePathDigest!=expectedPathDigest||last.ObservedImagePathDigest!=expectedPathDigest)throw Unavailable();
-                                    var afterImage=NativeWorkerDeploymentSource.ReadTransferredNormalImage(image,Math.Min(cap,1000));var afterInput=startup.normalWorkerInput.ReadCurrent(cap);
+                                    var afterImage=ReadImage(cap);var afterInput=startup.normalWorkerInput.ReadCurrent(cap);
                                     if(afterInput.ImageRefJson!=input.ImageRefJson||afterInput.RequestRefJson!=input.RequestRefJson||afterInput.LocalClaimRefJson!=input.LocalClaimRefJson||afterInput.LocalProcessId!=input.LocalProcessId||afterInput.LocalProcessGeneration!=input.LocalProcessGeneration||afterImage.AssociationRefJson!=imageCurrent.AssociationRefJson)throw Unavailable();
                                     Budget(from,watch,cap);DateTime observedAt=DateTime.UtcNow;
                                     // 입력 샘플과 원 Job/thread/image 판독을 모두 마친 뒤의 같은 owner UTC다. OS 소유/미재개 증명은 아니다.
@@ -326,8 +345,14 @@ namespace Anvil.Native.OwnershipEvidence
                                         if(process!=null){process.Dispose();processCloseSucceeded=process.CloseSucceeded;ok=processCloseSucceeded&&ok;}else if(original.Process!=IntPtr.Zero){rawProcessCloseAttempted=true;rawProcessCloseSucceeded=CloseHandle(original.Process);processCloseSucceeded=rawProcessCloseSucceeded;ok=processCloseSucceeded&&ok;}
                                         if(!ok)throw CleanupUnknown();Remaining(2000);
                                     }
-                                    var closingImage=image;closingImage.Dispose();imageCloseReceipt=NativeWorkerDeploymentSource.ReadTransferredNormalImageCloseReceipt(closingImage);image=null;Remaining(2000);
-                                    if(originalObservation!=null&&exitConfirmed&&threadExitConfirmed&&threadCloseSucceeded&&processCloseSucceeded&&imageCloseReceipt.ImageCloseConfirmed)cleanupReceipt=new NormalProcessCleanupReceipt(this,originalObservation,imageCloseReceipt);
+                                    var closingImage=image;
+                                    if(attributes==null){
+                                        closingImage.Dispose();var receipt=NativeWorkerDeploymentSource.ReadTransferredNormalImageCloseReceipt(closingImage);imageCloseReceipt=receipt;image=null;Remaining(2000);
+                                        if(originalObservation!=null&&exitConfirmed&&threadExitConfirmed&&threadCloseSucceeded&&processCloseSucceeded&&receipt.ImageCloseConfirmed)cleanupReceipt=new NormalProcessCleanupReceipt(this,originalObservation,receipt);
+                                    }else{
+                                        var receipt=OwnershipEvidenceImageOwnerSource.CloseOriginalNormalSource(closingImage);imageCloseReceipt=receipt;image=null;Remaining(2000);
+                                        if(originalObservation!=null&&exitConfirmed&&threadExitConfirmed&&threadCloseSucceeded&&processCloseSucceeded)cleanupReceipt=new NormalProcessCleanupReceipt(this,originalObservation,closingImage,receipt);
+                                    }
                                     original=default(ProcessInformation);closed=true;
                                 }
                                 catch{cleanupUnknown=true;throw CleanupUnknown();}
@@ -363,6 +388,11 @@ namespace Anvil.Native.OwnershipEvidence
         internal static INormalSuspendedProcessCandidate CreateNormalSuspendedProcessSource(ISuspendedStartupCandidate startup,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,int timeoutMs=2000)
         {
             if(timeoutMs<1||timeoutMs>2000)throw Unavailable();var candidate=OwnedEmptyJob.CreateNormalFromStartup(startup,image,timeoutMs);
+            try{normalReturnOwners.Add(candidate,new object());return candidate;}catch{candidate.Dispose();throw;}
+        }
+        internal static INormalSuspendedProcessCandidate CreateDedicatedNormalSuspendedProcessSource(ISuspendedStartupCandidate startup,OwnershipEvidenceImageOwnerSource.INormalRetainedImageCandidate image,DedicatedCreationAttributes attributes,Action tookImage,int timeoutMs)
+        {
+            if(timeoutMs<1||timeoutMs>2000)throw Unavailable();var candidate=OwnedEmptyJob.CreateDedicatedNormalFromStartup(startup,image,attributes,tookImage,timeoutMs);
             try{normalReturnOwners.Add(candidate,new object());return candidate;}catch{candidate.Dispose();throw;}
         }
     }

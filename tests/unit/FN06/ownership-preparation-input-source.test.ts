@@ -131,13 +131,13 @@ test('정적: exact normal image와 bound startup만 suspended process를 단회
  assert.match(process,/internal interface INormalSuspendedProcessCandidate:IDisposable/);assert.match(process,/internal static INormalSuspendedProcessCandidate CreateNormalSuspendedProcessSource\(ISuspendedStartupCandidate startup,OwnershipEvidenceImageOwnerSource\.INormalRetainedImageCandidate image,int timeoutMs=2000\)/);
  assert.match(process,/var original=candidate as ProcessStartup/);assert.match(process,/return original\.CreateNormalSource\(image,timeoutMs\)/);
  const normal=process.slice(process.indexOf('private sealed class NormalProcessOwner:'),process.indexOf('private static readonly ConditionalWeakTable',process.indexOf('private sealed class NormalProcessOwner:')));assert(normal.length>0);
- assert.match(normal,/startup\.normalWorkerInput\.Arguments/);assert.match(normal,/var input=startup\.normalWorkerInput\.ReadCurrent\(cap\)/);assert.match(normal,/var retained=NativeWorkerDeploymentSource\.ReadTransferredNormalImage\(image,Math\.Min\(cap,1000\)\)/);assert.match(normal,/input\.ImageRefJson!=retained\.AssociationRefJson/);assert.match(normal,/retained\.AssociationRefJson\)throw Unavailable\(\);Remaining\(cap\);\s*created=CreateProcessW\(path,command,IntPtr\.Zero,IntPtr\.Zero,false,SuspendedCreationFlags,startup\.environment,directory,ref startup\.info,out original\)/);
+ assert.match(normal,/startup\.normalWorkerInput\.Arguments/);assert.match(normal,/var input=startup\.normalWorkerInput\.ReadCurrent\(cap\)/);assert.match(normal,/var retained=ReadImage\(cap\)/);assert.match(normal,/input\.ImageRefJson!=retained\.AssociationRefJson/);assert.match(normal,/retained\.AssociationRefJson\)throw Unavailable\(\);Remaining\(cap\);\s*if\(attributes==null\)created=CreateProcessW\(path,command,IntPtr\.Zero,IntPtr\.Zero,false,SuspendedCreationFlags,startup\.environment,directory,ref startup\.info,out original\)/);
  assert.match(normal,/NativeWorkerDeploymentSource\.ReadTransferredNormalImage/);assert.match(normal,/input\.ImageRefJson!=imageCurrent\.AssociationRefJson/);assert.match(normal,/timeoutMs<1\|\|timeoutMs>2000/);
  assert.doesNotMatch(normal,/ReadPreparedFactsSource|OwnershipEvidencePreparationPlan|WorkerInputCandidate|IImageOwnerCandidate|ProcessId=value|ThreadId=value|OpenProcess|GetProcessById|while\s*\(|for\s*\(/);
  const observation=process.slice(process.indexOf('internal sealed class NormalProcessOwnerObservation'),process.indexOf('private sealed partial class OwnedEmptyJob'));
  for(const flag of ['OsOwnershipVerified','ProcessCreated','ThreadCreated','ProcessCreationAuthorized','PreparationAuthorized','ExecutionAuthorized','DispatchPerformed'])assert.match(observation,new RegExp(flag+'\\{get\\{return false;\\}\\}'));
- assert.match(normal,/bool attempted,created,exitConfirmed,closed,cleanupAttempted,cleanupUnknown/);assert.match(normal,/original\.Process==original\.Thread\|\|original\.Pid==0\|\|original\.Tid==0\)\{cleanupUnknown=true;throw CleanupUnknown\(\);\}/);assert.match(normal,/if\(cleanupAttempted\|\|cleanupUnknown\)throw CleanupUnknown\(\)/);assert.match(normal,/if\(state==258\)\{wait=Remaining\(wait\);if\(!TerminateProcess/);assert.match(normal,/closingImage\.Dispose\(\);imageCloseReceipt=NativeWorkerDeploymentSource\.ReadTransferredNormalImageCloseReceipt\(closingImage\);image=null;Remaining\(2000\)/);assert.equal((normal.match(/TerminateProcess\(/g)||[]).length,1);assert.equal((normal.match(/WaitForSingleObject\(/g)||[]).length,3);
- assert.match(process,/NormalProcessOwner attempted=null/);assert.match(process,/normalProcessOwner=attempted=new NormalProcessOwner\(this,image\)/);assert.match(process,/if\(attempted!=null\)attempted\.Dispose\(\)/);assert.ok(process.indexOf('normalProcessOwner=attempted=new NormalProcessOwner(this,image)')<process.indexOf('WithTransferredNormalImageLaunch(image,Math.Min(timeoutMs,1000)'));
+ assert.match(normal,/bool attempted,created,exitConfirmed,closed,cleanupAttempted,cleanupUnknown/);assert.match(normal,/original\.Process==original\.Thread\|\|original\.Pid==0\|\|original\.Tid==0\)\{cleanupUnknown=true;throw CleanupUnknown\(\);\}/);assert.match(normal,/if\(cleanupAttempted\|\|cleanupUnknown\)throw CleanupUnknown\(\)/);assert.match(normal,/if\(state==258\)\{wait=Remaining\(wait\);if\(!TerminateProcess/);assert.match(normal,/closingImage\.Dispose\(\);var receipt=NativeWorkerDeploymentSource\.ReadTransferredNormalImageCloseReceipt\(closingImage\);imageCloseReceipt=receipt;image=null;Remaining\(2000\)/);assert.equal((normal.match(/TerminateProcess\(/g)||[]).length,1);assert.equal((normal.match(/WaitForSingleObject\(/g)||[]).length,3);
+ assert.match(process,/NormalProcessOwner attempted=null/);assert.match(process,/normalProcessOwner=attempted=attributes==null\?new NormalProcessOwner\(this,image\):new NormalProcessOwner\(this,image,attributes\)/);assert.match(process,/if\(attempted!=null\)attempted\.Dispose\(\)/);assert.ok(process.indexOf('normalProcessOwner=attempted=attributes==null?new NormalProcessOwner(this,image)')<process.indexOf('WithTransferredNormalImageLaunch(image,Math.Min(timeoutMs,1000)'));
  assert.match(process,/if\(processOwner!=null\|\|normalProcessOwner!=null\|\|workerInput==null\|\|normalWorkerInput!=null\)throw Unavailable\(\)/);
  assert.match(process,/if\(normalProcessOwner!=null\|\|processOwner!=null\|\|normalWorkerInput==null\|\|workerInput!=null\)throw Unavailable\(\)/);
  const producer=host.slice(host.indexOf('internal abstract class NormalStartPreparationProducer'),host.indexOf('readonly NormalStartPreparationProducer'));
@@ -158,7 +158,7 @@ test('정적: same-request 회수는 process/thread/image와 startup·assignment
  for(const flag of ['ProcessExitConfirmed','ThreadCloseConfirmed','ProcessCloseConfirmed','ImageCloseConfirmed'])assert.match(cleanup,new RegExp(flag+'\\{get\\{return true;\\}\\}'));
  assert.doesNotMatch(cleanup,/\bProcessId\b|\bThreadId\b|IntPtr|Handle|Authorized\{get\{return true/);
  const normal=process.slice(process.indexOf('private sealed class NormalProcessOwner:'),process.indexOf('private static readonly ConditionalWeakTable',process.indexOf('private sealed class NormalProcessOwner:')));
- assert.match(normal,/originalObservation/);assert.match(normal,/var closingImage=image;closingImage\.Dispose\(\);imageCloseReceipt=NativeWorkerDeploymentSource\.ReadTransferredNormalImageCloseReceipt\(closingImage\)/);
+ assert.match(normal,/originalObservation/);assert.match(normal,/var closingImage=image;\s*if\(attributes==null\)\{\s*closingImage\.Dispose\(\);var receipt=NativeWorkerDeploymentSource\.ReadTransferredNormalImageCloseReceipt\(closingImage\);imageCloseReceipt=receipt/);
  assert.match(normal,/exitConfirmed=true[\s\S]*threadCloseSucceeded[\s\S]*processCloseSucceeded[\s\S]*imageCloseReceipt/);
  assert.match(process,/ReadOriginalNormalSuspendedProcessCleanupSource\(/);assert.match(process,/normalReturnOwners\.TryGetValue\(candidate,out marker\)/);
  const producer=host.slice(host.indexOf('internal abstract class NormalStartPreparationProducer'),host.indexOf('readonly NormalStartPreparationProducer'));
@@ -342,7 +342,7 @@ test('정착: 원 준비 객체 cleanup 확정은 원 refs 해제 전 별도 spo
 test('정적: normal owner 관측은 처음 invocation 시각 대신 마지막 보호 입력 뒤 최종 UTC 검산 시각을 반환한다',()=>{
  const source=readFileSync(new URL('../../../apps/connector/native/OwnershipEvidenceProcessOwnerSource.cs',import.meta.url),'utf8'),start=source.indexOf('private sealed class NormalProcessOwner:'),normal=source.slice(start),read=normal.slice(normal.indexOf('public NormalProcessOwnerObservation ReadCurrent('),normal.indexOf('public void Dispose()'));
  assert(start>0&&read.length>0);assert.match(read,/new NormalProcessOwnerObservation\(afterInput,observedAt\)/);assert.doesNotMatch(read,/new NormalProcessOwnerObservation\(input\)/);
- const first=read.indexOf('var input=startup.normalWorkerInput.ReadCurrent(cap)'),handle=read.indexOf('var first=OwnershipEvidenceHost.ReadRetainedHandleQuerySource'),thread=read.indexOf('var current=OwnershipEvidenceHost.ReadRetainedThreadQuerySource'),last=read.indexOf('var last=OwnershipEvidenceHost.ReadRetainedHandleQuerySource'),image=read.indexOf('var afterImage=NativeWorkerDeploymentSource.ReadTransferredNormalImage'),after=read.indexOf('var afterInput=startup.normalWorkerInput.ReadCurrent(cap)'),result=read.indexOf('new NormalProcessOwnerObservation(afterInput,observedAt)');
+ const first=read.indexOf('var input=startup.normalWorkerInput.ReadCurrent(cap)'),handle=read.indexOf('var first=OwnershipEvidenceHost.ReadRetainedHandleQuerySource'),thread=read.indexOf('var current=OwnershipEvidenceHost.ReadRetainedThreadQuerySource'),last=read.indexOf('var last=OwnershipEvidenceHost.ReadRetainedHandleQuerySource'),image=read.indexOf('var afterImage=ReadImage(cap)'),after=read.indexOf('var afterInput=startup.normalWorkerInput.ReadCurrent(cap)'),result=read.indexOf('new NormalProcessOwnerObservation(afterInput,observedAt)');
  assert(first>=0&&first<handle&&handle<thread&&thread<last&&last<image&&image<after&&after<result);
  const identity=read.indexOf('if(afterInput.ImageRefJson!=input.ImageRefJson'),sample=read.indexOf('DateTime observedAt=DateTime.UtcNow'),guard=read.indexOf('if(input.ExpiresAt!=expiresAt'),finalBudget=read.indexOf('Budget(observedAt,watch,cap)');
  assert(after<identity&&identity<sample&&sample<guard&&guard<finalBudget&&finalBudget<result,'최종 동일성 검산 뒤 UTC 표본·timeline·같은 stopwatch 예산을 마쳐 반환');
@@ -353,6 +353,52 @@ test('정적: normal owner 관측은 처음 invocation 시각 대신 마지막 �
  assert.match(normal,/timeoutMs<1\|\|timeoutMs>2000/);assert.match(normal,/watch.ElapsedMilliseconds>=timeoutMs/);assert.match(normal,/now<lastWall\|\|now>=expiresAt\|\|lifetime.Elapsed.TotalMilliseconds>=10000/);
  const observation=source.slice(source.indexOf('internal sealed class NormalProcessOwnerObservation'),source.indexOf('internal sealed class NormalProcessCleanupReceipt'));
  assert.match(observation,/ObservedAt=observedAt/);assert.match(observation,/observedAt.Kind!=DateTimeKind.Utc\|\|observedAt<value.ObservedAt\|\|observedAt>=value.ExpiresAt/);for(const flag of ['OsOwnershipVerified','ProcessCreated','ThreadCreated','ProcessCreationAuthorized','PreparationAuthorized','ExecutionAuthorized','DispatchPerformed'])assert(observation.includes(flag+'{get{return false;}}'),flag);
+});
+
+test('정적: 등록 host와 전용 원 owner의 준비·회수 호출은 보호 입력 뒤에만 연결된다',()=>{
+ const raw=(name:string)=>readFileSync(new URL('../../../apps/connector/native/'+name,import.meta.url),'utf8');
+ const host=raw('DesktopTrustKeyHostSource.cs'),process=raw('OwnershipEvidenceProcessOwnerSource.cs'),source=raw('NormalStartPreparationCustodySource.cs');
+ assert.match(source,/using Anvil\.Native\.OwnershipEvidence;/);
+ const claim=host.slice(host.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'));
+ const order=(s:string,parts:string[])=>{let prev=-1;for(const part of parts){const at=s.indexOf(part,prev+1);assert(at>prev,part);prev=at;}};
+ order(claim,['normalPreparationCustody==null&&normalStartPreparationProducer==null','SOURCE_UNAVAILABLE','NormalStartRequest(record,window,session,request,budget.Now)','new NormalStartPreparationCustodySource.Binding(request,epoch,end,peer.HelperHash)','normalPreparationCustody.CheckReady(custodyBinding,budget)','AcquireNormalImageForPreparation','ClaimNormalStartPreparation','if(claim.Capability==null)return claim.Output','if(custodyBinding!=null)','claim.Capability.Consume','ReadNormalStartPreparationClaimCurrent','normalPreparationCustody.CreateAndRecheck','return claim.Output','normalStartPreparationProducer.CreateOwned']);
+ assert.match(host,/finally\{if\(normalPreparationCustody!=null\)\{try\{normalPreparationCustody\.Dispose\(\);\}catch\{normalStartPreparationCleanupUnknown=true;unknown=true/);
+ const sign=host.slice(host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'),host.indexOf('if(operation=="SIGN_NATIVE_FIRST_RECEIVE_PROOF")'));
+ order(sign,['new NormalStartResultPermit','normalPreparationCustody!=null&&permit.IsPrepared','permit.ClaimOnce()','ProtectedStore.SignNormalStartPreparationResultOwned']);
+ const main=host.slice(host.indexOf('static int Main('),host.indexOf('static int Main(')+900);
+ assert.match(main,/new DesktopTrustKeyHostSource\(\)\.RunAsync/);
+ assert.doesNotMatch(main,/new NormalStartPreparationCustodySource|RunInstalled\(/);
+ const keeper=source.slice(source.indexOf('internal sealed class Keeper {'),source.indexOf('internal sealed class Caller:'));
+ order(keeper,['RunInstalled','clock.Slice(binding.ExpiresAt,2000)','endpoint.ReadCommand(Left)','if(input==null)return','Operation.CreateSuspended','Operation.RecheckOriginal','Operation.CloseOriginal','finally{FinishOwner();}']);
+ order(keeper,['internal Observation Create','if(consumed||closed||unknown','clock.Slice(exact.ExpiresAt,Cap(remaining))','Left();','consumed=true;claim=exact','endpoint.OpenInstalledImage','ReadOriginalNormalSource','seen.AssociationRefJson!=exact.ImageRef||seen.WorkerHash!=exact.WorkerHash','CreateEmptyJobSource','PrepareAtomicJobAssignmentSource','PrepareSuspendedStartupSource','BindNormalStartWorkerInvocationSource','CreateDedicatedNormalSuspendedProcessSource(startup,image,authority,()=>image=null,Left())','first=Observe(exact,Left)']);
+ assert.match(keeper,/endpoint\.CheckChannel|ReadCurrent\(endpoint,pin,true\)/);
+ order(keeper,['internal Closed Close','!consumed||closeAttempted||!claim.Same(exact)','clock.Slice(exact.ExpiresAt,2000).Check()','internal void FinishOwner','if(consumed&&!closeAttempted)CloseOriginal()','closeAttempted=true','job.Dispose()','ReadOriginalNormalSuspendedProcessCleanupSource','catch{unknown=true;throw Unknown();}']);
+ const signer=source.slice(source.indexOf('internal sealed class Caller:'),source.indexOf('static int Cap('));
+ order(signer,['observed.SignerImageHash!=exact.SignerImageHash','internal void CreateAndRecheck','if(began||closeAttempted','Left();claim=new Claim(exact,consumed,image);began=true','endpoint.Create(claim,Left);Left()','original.Matches(pin,claim,null)','endpoint.Recheck(claim,Left);Left()','current.Matches(pin,claim,original)','closeAttempted=true','endpoint.Close(claim,Left)','result.ObjectId!=original.ObjectId','finally{endpoint.Dispose();}']);
+ assert.doesNotMatch(source,/ResumeThread|DuplicateHandle|OpenProcess|GetProcessById|ProtectedStore|pendingKeyId|osOwnershipVerified.*true|EXECUTION_PERMIT/);
+ assert.match(source,/ReadPinnedPeer\(\)\)\|\|!pin\.Same\(endpoint\.ReadLivePeer\(\)\)/);
+ assert.match(source,/WindowsIdentity\.GetCurrent\(\)[\s\S]*identity\.User\.Value!=sid[\s\S]*RawSecurityDescriptor[\s\S]*Inherit=0/);
+ assert.match(process,/else created=attributes\.Create\(\(processSecurity,threadSecurity\)=>CreateProcessW\(path,command,processSecurity,threadSecurity,false,SuspendedCreationFlags,startup\.environment,directory,ref startup\.info,out original\)\)/);
+ assert.match(process,/tookImage\(\);return OwnershipEvidenceImageOwnerSource\.WithOriginalNormalLaunchSource/);
+ assert.match(process,/OwnershipEvidenceImageOwnerSource\.CloseOriginalNormalSource\(closingImage\)[\s\S]*NormalProcessCleanupReceipt\(this,originalObservation,closingImage,receipt\)/);
+});
+
+test('소스 조건식 RAM: 전용 owner 피어와 원 준비 요청은 전체 값과 원 기한이 같아야 한다',()=>{
+ const source=readFileSync(new URL('../../../apps/connector/native/NormalStartPreparationCustodySource.cs',import.meta.url),'utf8');
+ function matcher(signature:string,other:string,keys:string[]){
+  const start=source.indexOf(signature);assert(start>=0,signature);
+  const expression=/\{return ([^;]+);\}/.exec(source.slice(start,start+1024))?.[1];assert(expression);
+  assert.equal(expression,[other+'!=null',...keys.map(k=>k+'=='+other+'.'+k)].join('&&'));
+  return new Function('a',other,'return '+expression.replace(/\b([A-Z][a-zA-Z]+)==/g,'a.$1==')+';') as (a:Record<string,unknown>,b:unknown)=>boolean;
+ }
+ for(const [signature,other,keys] of [
+  ['internal bool Same(Peer p)','p',['SignerSid','KeeperSid','SignerImageHash','KeeperImageHash','ChannelInstance','SignerBirth','KeeperBirth']],
+  ['internal bool Same(Binding b)','b',['Registration','Attempt','Window','Session','Request','ServerClaim','Nonce','Epoch','ExpiresAt','SignerImageHash']],
+ ] as const){
+  const exact=matcher(signature,other,[...keys]),value=Object.fromEntries(keys.map((k,i)=>[k,i+1]));
+  assert.equal(exact(value,{...value}),true);assert.equal(exact(value,null),false);
+  for(const key of keys)assert.equal(exact(value,{...value,[key]:-1}),false,key);
+ }
 });
 
 test('소스 조건식 RAM: normal owner 관측의 tick 역행·초 경계·원 만료와 마지막 검산 순서를 검증한다',()=>{
