@@ -37,12 +37,14 @@ class MemoryNode{
 }
 const document:any=new MemoryNode('#document',9);document.ownerDocument=document;document.createElement=(n:string)=>new MemoryNode(n,1,document);document.createElementNS=(_ns:string,n:string)=>document.createElement(n);document.createTextNode=(s:string)=>{const n=new MemoryNode('#text',3,document);n.data=s;return n;};document.documentElement=document.createElement('html');document.body=document.createElement('body');document.documentElement.appendChild(document.body);document.activeElement=document.body;
 const saved=new Map<string,PropertyDescriptor|undefined>();let ui:any;
+const reviewRouteListeners=new Set<EventListenerOrEventListenerObject>();
 const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class OwnedChannel extends NativeChannel{constructor(){super();channels.push(this);}}
 
 before(async()=>{
  const entry=fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultReviewSources.tsx',import.meta.url));
- const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:stored-rework',name:'StoredReviewTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'rework-memory-entry',transform(code,id){if(id.replaceAll('\\','/').endsWith('/ResultReviewSources.tsx'))return code+'\nexport {ResultReworkEditor};';},resolveId(id){if(id.endsWith('virtual:stored-rework'))return '\0stored-rework';},load(id){if(id==='\0stored-rework')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{flushSync}from'react-dom';import{ResultReworkEditor}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as writes from ${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-rework-write-api.ts',import.meta.url)))};import{ResultCriteriaEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultCriteriaEditor.tsx',import.meta.url)))};import * as criteriaWrites from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-criteria-api.ts',import.meta.url)))};import{ResultSubmissionEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultSubmissionEditor.tsx',import.meta.url)))};import * as submissionWrites from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-submission-write-api.ts',import.meta.url)))};import{StoredResultReworkHistory}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/StoredResultReworkHistory.tsx',import.meta.url)))};import{ReviewReportedCoverage}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ReviewReportedCoverage.tsx',import.meta.url)))};export{React,createRoot,flushSync,ResultReworkEditor,ResultCriteriaEditor,ResultSubmissionEditor,ReviewReportedCoverage,StoredResultReworkHistory,ApiClient,writes,criteriaWrites,submissionWrites};`;}}]});
- const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:',hash:''}};document.defaultView=window;
+ const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:stored-rework',name:'StoredReviewTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'rework-memory-entry',transform(code,id){if(id.replaceAll('\\','/').endsWith('/ResultReviewSources.tsx'))return code+'\nexport {ResultReworkEditor,ResultReviewEditor};';},resolveId(id){if(id.endsWith('virtual:stored-rework'))return '\0stored-rework';},load(id){if(id==='\0stored-rework')return `import * as React from 'react';import{createRoot}from'react-dom/client';import{flushSync}from'react-dom';import{ResultReworkEditor,ResultReviewEditor}from${JSON.stringify(entry)};import{ApiClient}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/api/client.ts',import.meta.url)))};import * as reviewWrites from ${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-review-write-api.ts',import.meta.url)))};import * as writes from ${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-rework-write-api.ts',import.meta.url)))};import{ResultCriteriaEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultCriteriaEditor.tsx',import.meta.url)))};import * as criteriaWrites from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-criteria-api.ts',import.meta.url)))};import{ResultSubmissionEditor}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ResultSubmissionEditor.tsx',import.meta.url)))};import * as submissionWrites from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/result-submission-write-api.ts',import.meta.url)))};import{StoredResultReworkHistory}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/StoredResultReworkHistory.tsx',import.meta.url)))};import{ReviewReportedCoverage}from${JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/features/session-detail/ReviewReportedCoverage.tsx',import.meta.url)))};export{React,createRoot,flushSync,ResultReworkEditor,ResultReviewEditor,reviewWrites,ResultCriteriaEditor,ResultSubmissionEditor,ReviewReportedCoverage,StoredResultReworkHistory,ApiClient,writes,criteriaWrites,submissionWrites};`;}}]});
+ const routeEvents=new EventTarget();
+ const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(type:string,listener:EventListenerOrEventListenerObject){if(type==='hashchange')reviewRouteListeners.add(listener);routeEvents.addEventListener(type,listener);},removeEventListener(type:string,listener:EventListenerOrEventListenerObject){if(type==='hashchange')reviewRouteListeners.delete(listener);routeEvents.removeEventListener(type,listener);},dispatchEvent:routeEvents.dispatchEvent.bind(routeEvents),getComputedStyle:()=>({}),location:{protocol:'https:',hash:''}};document.defaultView=window;
  for(const[key,value]of Object.entries({window,document,location:window.location,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  ui=new Function((Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return StoredReviewTest;')();
 });
@@ -93,6 +95,96 @@ async function mount(withHistory=false){
   allBuffers:()=>Object.values(buffers).filter(Boolean),syncRender:()=>ui.flushSync(render),buffer:()=>Object.values(buffers)[0],replace:async(value:any)=>{await ui.React.act(async()=>{buffers={...buffers,[Object.keys(buffers)[0]!]:value};render();});},render:async()=>{await ui.React.act(async()=>render());},lost:()=>lost,unavailable:()=>unavailable,close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
 }
 const releaseLabel='미전송 보완 준비 해제 후 입력 수정';
+
+async function mountConfirmedReview(){
+ const f=criteriaFixture(),r=resultFixture(),calls:{path:string;method:string}[]=[],container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ r.entry.snapshot.scope.projectId=f.assignment.projectId;r.entry.snapshot.scope.assignmentRef=f.assignment.ref;r.entry.snapshot.manifest.assignmentRef=f.assignment.ref;r.entry.snapshot.manifestHash=hash(r.entry.snapshot.manifest);r.entry.ref.contentHash=hash(r.entry.snapshot);
+ const snapshot={assignmentRef:f.assignment.ref,baselineRefs:f.d.baselineRefs,items:[{criterionId:'save',testId:'SAVE-01',kind:'BROWSER',environmentRef:f.d.environmentRef,required:true}]};
+ const criteria={projectId:f.assignment.projectId,ref:{id:id(9),version:1,contentHash:hash(snapshot)},snapshot,registryStored:true,reviewStored:false,completionAccepted:false,executionAuthorized:false,dispatchPerformed:false};
+ const props:any={result:r.entry,criteria,session:{user:{id:id(6)},clientId:id(7),csrfToken:'A'.repeat(43)},onAuthenticationLost:()=>lost++,onAccessUnavailable:()=>unavailable++};
+ const input={resultRef:r.entry.ref,criteriaRef:criteria.ref,outcome:'REWORK',items:[{criterionId:'save',outcome:'REWORK',evidenceRefs:[],reason:'미실행'}],reason:'보완'};
+ const pending=await ui.reviewWrites.prepareResultReviewWrite(r.entry,criteria,input,props.session,3),key=ui.reviewWrites.resultReviewBufferKey(props.session,r.entry,criteria);
+ let buffer:any={bindingId:'review-binding',ownerUserId:props.session.user.id,ownerClientId:props.session.clientId,resultRef:r.entry.ref,criteriaRef:criteria.ref,controlGeneration:3,rows:[{criterionId:'save',outcome:'REWORK',reason:'미실행'}],outcome:'REWORK',reason:'보완',pending,stored:null,dirty:true,uncertain:false,failure:null},visible=true,lost=0,unavailable=0;
+ const state={readStatus:503,delay:false,release:null as null|(()=>void),postLoss:false,controlStatus:200,defer:false},commits:(()=>void)[]=[];
+ const at='2026-10-20T00:00:00.000Z',review={scope:r.entry.snapshot.scope,input,reviewedBy:{kind:'HUMAN',userId:props.session.user.id,clientId:props.session.clientId},sameAsSubmitter:r.entry.snapshot.submittedByRef.id===props.session.user.id,reviewedAt:at,evidenceProvenanceVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false},ref={id:id(30),version:1,contentHash:hash(review)},flags={reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false};
+ props.client=new ui.ApiClient(async(url:string,options:any)=>{
+  const path=String(url),method=options?.method??'GET';calls.push({path,method});
+  if(path.endsWith('/commands')){if(state.postLoss)throw Error('synthetic loss');return Response.json({commandId:pending.command.commandId,operationId:id(31),projectId:pending.command.projectId,status:'APPLIED',targetId:ref.id,version:1,data:{ref,status:'RESULT_REVIEW_RECORDED',snapshot:review,...flags},serverReceivedAt:at});}
+  if(path.includes('/result-reviews/')){const response=state.readStatus===200?Response.json({projectId:pending.command.projectId,ref,snapshot:review,...flags,observedAt:at}):Response.json({code:state.readStatus===401?'AUTH_REQUIRED':'READ_UNAVAILABLE'},{status:state.readStatus});if(state.delay)await new Promise<void>(resolve=>state.release=resolve);return response;}
+  assert.equal(path,'/api/v1/projects/'+pending.command.projectId);return state.controlStatus===200?Response.json({id:pending.command.projectId,participation:'OWNER',controlState:{actorId:props.session.user.id,clientId:props.session.clientId,generation:3,status:'HELD'}}):Response.json({code:'PROJECT_CONTROL_CHANGED'},{status:409});
+ });
+ function render(){root.render(visible?ui.React.createElement(ui.ResultReviewEditor,{...props,reviews:{buffers:{[key]:buffer},onChange:(_key:string,change:any)=>{const commit=()=>{buffer=typeof change==='function'?change(buffer):change;render();};if(state.defer)commits.push(commit);else commit();}}}):null);}
+ const nodes=(n=container):MemoryNode[]=>[n,...n.childNodes.flatMap((c:MemoryNode)=>nodes(c))];
+ const button=(text:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===text);
+ async function waitFor(check:()=>boolean){const deadline=Date.now()+2000;while(!check()&&Date.now()<deadline)await ui.React.act(async()=>{await new Promise(r=>setTimeout(r,2));});assert(check(),container.textContent);}
+ async function click(text:string){const n=button(text);assert(n,text);assert(!n.disabled);await ui.React.act(async()=>handler(n)());}
+ await ui.React.act(async()=>render());
+ return{props,calls,state,commits,button,click,waitFor,buffer:()=>buffer,text:()=>container.textContent,lost:()=>lost,unavailable:()=>unavailable,
+  replace:async(value:any)=>{buffer=value;await ui.React.act(async()=>render());},render:async()=>{await ui.React.act(async()=>render());},
+  hide:async()=>{visible=false;await ui.React.act(async()=>render());},show:async()=>{visible=true;await ui.React.act(async()=>render());},
+  close:async()=>{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}};
+}
+const reviewReadLabel='확인된 검수 기록 고정 재조회';
+test('검수 확정 영수증 뒤 조회 실패는 같은 ref 명시 GET으로만 복구한다',async()=>{
+ const m=await mountConfirmedReview();try{
+  await m.click('검수 기록 명시 저장');await m.waitFor(()=>!!m.buffer().failure);
+  assert(m.button(reviewReadLabel),'APPLIED 뒤 GET-only 복구 버튼이 필요하다');assert(m.buffer().confirmed);assert.equal(m.buffer().uncertain,false);assert.equal(m.buffer().stored,null);
+  const before=m.calls.length;m.state.readStatus=200;m.state.controlStatus=409;
+  await m.click(reviewReadLabel);await m.waitFor(()=>!!m.buffer().stored);
+  assert.deepEqual(m.calls.slice(before),[{path:'/api/v1/projects/'+m.props.result.snapshot.scope.projectId+'/result-reviews/'+id(30),method:'GET'}]);
+  assert.equal(m.calls.filter(c=>c.method==='POST').length,1);assert.equal(m.buffer().stored.completionAccepted,false);assert.equal(m.buffer().stored.executionAuthorized,false);
+ }finally{await m.close();}
+});
+test('검수 POST 불명은 GET 복구로 바꾸지 않고 같은 명령 재확인을 유지한다',async()=>{
+ const m=await mountConfirmedReview();try{m.state.postLoss=true;await m.click('검수 기록 명시 저장');await m.waitFor(()=>!!m.buffer().failure);assert(!m.button(reviewReadLabel));assert(m.button('같은 검수 기록 명령 재확인'));assert(!m.buffer().confirmed);assert(m.buffer().uncertain);}finally{await m.close();}
+});
+test('고정 검수 GET의 현재 권한 거절은 증빙을 유지하고 수정·재저장으로 전환하지 않는다',async()=>{
+ const m=await mountConfirmedReview();try{
+  await m.click('검수 기록 명시 저장');await m.waitFor(()=>!!m.buffer().confirmed);const confirmed=m.buffer().confirmed,unavailable=m.unavailable();
+  m.state.readStatus=403;await m.click(reviewReadLabel);await m.waitFor(()=>m.unavailable()>unavailable);
+  assert.equal(m.buffer().confirmed,confirmed);assert.equal(m.buffer().uncertain,false);assert.equal(m.buffer().stored,null);assert(!m.button('확인된 거절 이후 검수 입력 수정'));assert(!m.button('같은 검수 기록 명령 재확인'));
+  m.state.readStatus=200;await m.click(reviewReadLabel);await m.waitFor(()=>!!m.buffer().stored);assert.equal(m.calls.filter(c=>c.method==='POST').length,1);
+ }finally{await m.close();}
+});
+for(const navigation of ['B','ABA'])test('옛 검수 READ 콜백은 렌더 전 경로 '+navigation+'에서 GET을 시작하지 않는다',async()=>{
+ const m=await mountConfirmedReview(),route=location.hash;try{
+  await m.click('검수 기록 명시 저장');await m.waitFor(()=>!!m.buffer().confirmed);
+  const stale=handler(m.button(reviewReadLabel)!),original=m.buffer(),before=m.calls.length,lost=m.lost(),unavailable=m.unavailable();
+  location.hash='#other';
+  if(navigation==='ABA'){window.dispatchEvent(new Event('hashchange'));location.hash=route;window.dispatchEvent(new Event('hashchange'));}
+  m.state.readStatus=401;
+  await ui.React.act(async()=>{stale();await new Promise(r=>setTimeout(r,30));});
+  assert.equal(m.calls.length,before,'stale READ must issue zero GET');assert.equal(m.buffer(),original);assert.equal(m.lost(),lost);assert.equal(m.unavailable(),unavailable);
+ }finally{location.hash=route;await m.close();}
+});
+
+test('검수 READ 경로 listener는 준비부터 추적하고 미정착 GET의 언마운트에도 제거된다',async()=>{
+ const before=reviewRouteListeners.size,m=await mountConfirmedReview();try{
+  assert.equal(reviewRouteListeners.size,before+1);
+  await m.click('검수 기록 명시 저장');await m.waitFor(()=>!!m.buffer().confirmed);
+  m.state.delay=true;await m.click(reviewReadLabel);await m.waitFor(()=>!!m.state.release);
+  assert.equal(reviewRouteListeners.size,before+1);await m.hide();assert.equal(reviewRouteListeners.size,before);
+  await ui.React.act(async()=>{m.state.release!();await new Promise(r=>setImmediate(r));});assert.equal(reviewRouteListeners.size,before);
+ }finally{await m.close();assert.equal(reviewRouteListeners.size,before);}
+});
+
+test('고정 검수 재조회 중 이탈·재선택·인증·scope·generation ABA 뒤 늦은 성공과 401은 폐기한다',async()=>{
+ for(const kind of ['routeABA','selection','session','transport','route','scope','generation'])for(const status of [200,401]){
+  const m=await mountConfirmedReview(),route=globalThis.location.hash;try{
+   await m.click('검수 기록 명시 저장');await m.waitFor(()=>!!m.buffer().failure);assert(m.button(reviewReadLabel));
+   const original=m.buffer(),lost=m.lost(),unavailable=m.unavailable();m.state.readStatus=status;m.state.delay=true;await m.click(reviewReadLabel);await m.waitFor(()=>!!m.state.release);
+   if(kind==='selection'){await m.hide();await m.show();}
+   if(kind==='session'){const old=m.props.session;m.props.session={...old,csrfToken:'B'.repeat(43)};await m.render();m.props.session=old;await m.render();}
+   if(kind==='transport'){const old=m.props.client.transport;m.props.client.transport=async()=>Response.json({});await m.render();m.props.client.transport=old;await m.render();}
+   if(kind==='route')globalThis.location.hash='#other';
+   if(kind==='routeABA'){globalThis.location.hash='#other';window.dispatchEvent(new Event('hashchange'));globalThis.location.hash=route;window.dispatchEvent(new Event('hashchange'));}
+   if(kind==='scope'){const old=m.props.result;m.props.result={...old,snapshot:{...old.snapshot,scope:{...old.snapshot.scope,executionRef:{...old.snapshot.scope.executionRef,version:99}}}};await m.render();m.props.result=old;await m.render();}
+   if(kind==='generation'){await m.replace({...original,controlGeneration:4});await m.replace(original);}
+   await ui.React.act(async()=>{m.state.release!();await new Promise(r=>setImmediate(r));});
+   assert.equal(m.buffer(),original,kind);assert.equal(m.lost(),lost,kind);assert.equal(m.unavailable(),unavailable,kind);assert.equal(m.calls.filter(c=>c.method==='POST').length,1);
+  }finally{globalThis.location.hash=route;await m.close();}
+ }
+});
 test('실제 보완 화면: 명시 해제 취소/확인→입력 보존→새 준비→기존 저장',async()=>{
  const m=await mount();const oldConfirm=globalThis.confirm;try{
   await m.prepare();const original=m.buffer(),oldId=original.pending.command.commandId;assert(m.button(releaseLabel));

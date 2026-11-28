@@ -6,12 +6,19 @@ import type {SubmittedResultView} from './result-api.ts';
 import type {RegisteredCriteria} from './result-criteria-api.ts';
 import type {ResultReviewInput} from '../../../../server/modules/results/result-review-input.ts';
 export type ReviewOutcome='REWORK'|'BLOCKED';
-export interface ResultReviewBuffer{bindingId:string;ownerUserId:string;ownerClientId:string;resultRef:PlanRef;criteriaRef:PlanRef;controlGeneration:number;rows:{criterionId:string;outcome:ReviewOutcome|'';reason:string}[];outcome:ReviewOutcome|'';reason:string;pending:ResultReviewWrite|null;stored:RecordedResultReview|null;dirty:boolean;uncertain:boolean;failure:{code:string;status:number}|null}
+export interface ResultReviewBuffer{bindingId:string;ownerUserId:string;ownerClientId:string;resultRef:PlanRef;criteriaRef:PlanRef;controlGeneration:number;rows:{criterionId:string;outcome:ReviewOutcome|'';reason:string}[];outcome:ReviewOutcome|'';reason:string;pending:ResultReviewWrite|null;stored:RecordedResultReview|null;confirmed?:ConfirmedResultReviewReadback;dirty:boolean;uncertain:boolean;failure:{code:string;status:number}|null}
 export interface ResultReviewBuffers{buffers:Record<string,ResultReviewBuffer|null>;onChange:(key:string,change:ResultReviewBuffer|((value:ResultReviewBuffer|null)=>ResultReviewBuffer|null))=>void}
 export function resultReviewBufferKey(session:DocumentSession,result:SubmittedResultView,criteria:RegisteredCriteria){return[session.user.id,session.clientId,result.snapshot.scope.projectId,ordered(result.ref),ordered(criteria.ref)].join(':');}
 export interface ResultReviewWrite{ownerUserId:string;result:SubmittedResultView;criteria:RegisteredCriteria;command:{schemaVersion:1;projectId:string;commandId:string;clientId:string;controlGeneration:number;operation:'evaluateResult';targetId:null;expectedVersion:0;baselineRefs:[];approvalRef:null;payload:ResultReviewInput}}
 export interface RecordedResultReview{projectId:string;ref:PlanRef;snapshot:{scope:SubmittedResultView['snapshot']['scope'];input:ResultReviewInput;reviewedBy:{kind:'HUMAN';userId:string;clientId:string};sameAsSubmitter:boolean;reviewedAt:string;evidenceProvenanceVerified:false;completionAccepted:false;formalFailureCounted:false;executionAuthorized:false;dispatchPerformed:false};reviewStored:true;completionAccepted:false;formalFailureCounted:false;evidenceProvenanceVerified:false;executionAuthorized:false;dispatchPerformed:false;observedAt:string}
-export class ReviewReadbackUnconfirmed extends ApiError{readonly writeMayHaveApplied=true;}
+export interface ConfirmedResultReviewReadback{readonly ref:Readonly<PlanRef>;readonly reviewedAt:string}
+// Local evidence only: a cloned/caller-created reference is not a verified receipt.
+const confirmedReadbacks=new WeakMap<ConfirmedResultReviewReadback,string>();
+export class ReviewReadbackUnconfirmed extends ApiError{
+ readonly writeMayHaveApplied=true;
+ readonly confirmed:ConfirmedResultReviewReadback;
+ constructor(code:string,status:number,confirmed:ConfirmedResultReviewReadback){super(code,status);this.confirmed=confirmed;}
+}
 const exact=(v:any,k:string[])=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).sort().join(',')===[...k].sort().join(','),same=(a:unknown,b:unknown)=>ordered(a)===ordered(b),uuid=(v:unknown)=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v),ref=(v:any)=>exact(v,['id','version','contentHash'])&&uuid(v.id)&&Number.isSafeInteger(v.version)&&v.version>0&&typeof v.contentHash==='string'&&/^[a-f0-9]{64}$/.test(v.contentHash),date=(v:unknown)=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v,text=(v:unknown)=>typeof v==='string'&&!!v.trim()&&v.length<=20000;
 function fail(code='RESULT_REVIEW_INPUT_INVALID'):never{throw new ApiError(code);}
 async function hash(v:unknown){const bytes=new TextEncoder().encode(ordered(v));if(bytes.length>2*1024*1024)fail();return[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');}
@@ -24,6 +31,24 @@ export async function prepareResultReviewWrite(result:SubmittedResultView,criter
 }
 function expectedSnapshot(p:ResultReviewWrite,at:string){return{scope:p.result.snapshot.scope,input:p.command.payload,reviewedBy:{kind:'HUMAN',userId:p.ownerUserId,clientId:p.command.clientId},sameAsSubmitter:p.ownerUserId===p.result.snapshot.submittedByRef.id,reviewedAt:at,evidenceProvenanceVerified:false,completionAccepted:false,formalFailureCounted:false,executionAuthorized:false,dispatchPerformed:false};}
 function data(snapshot:unknown,ref:PlanRef){return{ref,status:'RESULT_REVIEW_RECORDED',snapshot,reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false};}
+function readbackBinding(p:ResultReviewWrite){return ordered([p.ownerUserId,p.command,p.result.ref,p.criteria.ref]);}
+async function readReviewReadback(transport:typeof fetch,p:ResultReviewWrite,confirmed:ConfirmedResultReviewReadback,current:()=>boolean):Promise<RecordedResultReview|null>{
+ if(!current())return null;
+ const value=await new ApiClient(transport).get<RecordedResultReview>('/api/v1/projects/'+p.command.projectId+'/result-reviews/'+confirmed.ref.id);
+ if(!current())return null;
+ const expected={projectId:p.command.projectId,ref:confirmed.ref,snapshot:expectedSnapshot(p,confirmed.reviewedAt),reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false,observedAt:value?.observedAt};
+ if(!date(value?.observedAt)||Date.parse(value.observedAt)<Date.parse(confirmed.reviewedAt)||!same(value,expected)||await hash(value.snapshot)!==confirmed.ref.contentHash)fail('RESULT_REVIEW_RESPONSE_INVALID');
+ return current()?structuredClone(value):null;
+}
+/** Explicit protected read only. No control acquisition or command replay. */
+export async function readConfirmedResultReview(client:ApiClient,pending:ResultReviewWrite,confirmed:ConfirmedResultReviewReadback,session:DocumentSession,active:()=>boolean):Promise<RecordedResultReview|null>{
+ const p=structuredClone(pending),transport=client.transport,{clientId,csrfToken}=session,userId=session.user.id;
+ const current=()=>active()&&client.transport===transport&&session.user.id===userId&&session.clientId===clientId&&session.csrfToken===csrfToken;
+ if(p.ownerUserId!==userId||p.command.clientId!==clientId||confirmedReadbacks.get(confirmed)!==readbackBinding(p))fail('RESULT_REVIEW_BINDING_INVALID');
+ if(!same(p.command.payload,await inputFor(p.result,p.criteria,p.command.payload)))fail('RESULT_REVIEW_BINDING_INVALID');
+ try{return await readReviewReadback(transport,p,confirmed,current);}
+ catch(cause){if(!current())return null;throw cause;}
+}
 interface ResultReviewDispatch {
  commit:()=>Promise<boolean>;
  started:()=>void;
@@ -51,15 +76,13 @@ export async function saveResultReviewWrite(client:ApiClient,pending:ResultRevie
  const receiptHash=await hash(d.snapshot);
  if(!current())return null;
  if(receiptHash!==d.ref.contentHash)fail('RESULT_REVIEW_RESPONSE_INVALID');
+ const confirmed=Object.freeze({ref:Object.freeze({...d.ref}) as Readonly<PlanRef>,reviewedAt:v.serverReceivedAt as string});
+ confirmedReadbacks.set(confirmed,readbackBinding(p));
  try{
-  const value=await new ApiClient(transport).get<RecordedResultReview>(base+'/result-reviews/'+d.ref.id);
-  if(!current())return null;
-  const expected={projectId:c.projectId,ref:d.ref,snapshot:expectedSnapshot(p,v.serverReceivedAt),reviewStored:true,completionAccepted:false,formalFailureCounted:false,evidenceProvenanceVerified:false,executionAuthorized:false,dispatchPerformed:false,observedAt:value?.observedAt};
-  if(!date(value?.observedAt)||Date.parse(value.observedAt)<Date.parse(v.serverReceivedAt)||!same(value,expected)||await hash(value.snapshot)!==d.ref.contentHash)fail('RESULT_REVIEW_RESPONSE_INVALID');
-  return current()?structuredClone(value):null;
+  return await readReviewReadback(transport,p,confirmed,current);
  }catch(cause){
   if(!current())return null;
   const e=cause instanceof ApiError?cause:new ApiError('RESULT_REVIEW_RESPONSE_INVALID');
-  throw new ReviewReadbackUnconfirmed(e.code,e.status);
+  throw new ReviewReadbackUnconfirmed(e.code,e.status,confirmed);
  }
 }

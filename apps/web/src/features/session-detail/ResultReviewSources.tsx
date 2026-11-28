@@ -8,7 +8,7 @@ import {readStoredCriteriaList,readStoredCriteria,type StoredCriteriaList,type S
 import {readReportedCoverage,type ReportedCoverageView} from './reported-coverage-api.ts';
 import {documentControl,type DocumentSession} from '../design-trace/editor-api.ts';
 import {isKnownDocumentRejection} from '../design-trace/mutation-result.ts';
-import {prepareResultReviewWrite,saveResultReviewWrite,ReviewReadbackUnconfirmed,resultReviewBufferKey,type ResultReviewBuffer,type ResultReviewBuffers,type ReviewOutcome} from './result-review-write-api.ts';
+import {prepareResultReviewWrite,saveResultReviewWrite,readConfirmedResultReview,ReviewReadbackUnconfirmed,resultReviewBufferKey,type ResultReviewBuffer,type ResultReviewBuffers,type ReviewOutcome} from './result-review-write-api.ts';
 import {storedReviewRootCursor,readStoredResultReviewPage,readStoredResultReview,type StoredResultReviewPage,type StoredReviewSummary} from './stored-result-reviews-api.ts';
 import type {RecordedResultReview} from './result-review-write-api.ts';
 import type {ResponsibleSessionState} from '../workspace/responsible-session-api.ts';
@@ -361,6 +361,14 @@ function ResultReviewEditor({client,result,criteria,session,reviews,onAuthentica
  const key=resultReviewBufferKey(session,result,criteria),buffer=reviews.buffers[key]??null;
  const [busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[dispatchRevision,setDispatchRevision]=useState(0);
  const working=useRef<object|null>(null),live=useRef(false);
+ const readRouteEpoch=useRef(0),renderedReadEpoch=readRouteEpoch.current,renderedReadRoute=globalThis.location?.hash;
+ // READ 전용: 렌더 당시 경로와 이탈 이력을 결박해 옛 콜백의 새 경로 채택을 막는다.
+ const currentReadRoute=()=>readRouteEpoch.current===renderedReadEpoch&&globalThis.location?.hash===renderedReadRoute;
+ useLayoutEffect(()=>{
+  const departed=()=>{readRouteEpoch.current++;};
+  window.addEventListener('hashchange',departed);
+  return()=>window.removeEventListener('hashchange',departed);
+ },[]);
  const sessionKey=()=>ordered([session.user.id,session.clientId,session.csrfToken,result.ref,result.snapshot.scope,criteria.projectId,criteria.ref]);
  const sessionBinding=sessionKey(),scope=useRef({client,transport:client.transport,session,key:sessionBinding});
  if(scope.current.client!==client||scope.current.transport!==client.transport||scope.current.session!==session||scope.current.key!==sessionBinding)scope.current={client,transport:client.transport,session,key:sessionBinding};
@@ -381,13 +389,13 @@ function ResultReviewEditor({client,result,criteria,session,reviews,onAuthentica
  const latest=useRef({key,buffer,bound,busy,session,result,criteria});latest.current={key,buffer,bound,busy,session,result,criteria};
  const change=(v:ResultReviewBuffer)=>{const original=bufferOwner.current,expected=ordered(bound);reviews.onChange(key,current=>currentScope()&&bufferOwner.current===original&&current===bound&&ordered(current)===expected?v:current);};
  const edit=(v:ResultReviewBuffer)=>{if(!currentScope()||!bound||bound.pending||bound.stored||working.current)return;setError(null);change({...v,dirty:true,failure:null});};
- async function run(mode:'CREATE'|'PREPARE'|'SAVE'|'REBIND'){
-  if(working.current||!currentScope())return;
+ async function run(mode:'CREATE'|'PREPARE'|'SAVE'|'REBIND'|'READ'){
+  if(working.current||!currentScope()||mode==='READ'&&!currentReadRoute())return;
   const ticket={};working.current=ticket;setBusy(true);setError(null);
   const b=bound,original=bufferOwner.current,before=ordered(buffer);
   let expected=original,body=before,attempted=false;
   const dispatchState:{latch:{previous:ResultReviewBuffer;next:ResultReviewBuffer;body:string}|null}={latch:null};
-  const active=()=>working.current===ticket&&currentScope();
+  const active=()=>working.current===ticket&&currentScope()&&(mode!=='READ'||currentReadRoute());
   const owned=()=>active()&&bufferOwner.current===expected&&ordered(expected.value)===body;
   async function commit(next:ResultReviewBuffer){
    if(!owned())return false;
@@ -411,6 +419,12 @@ function ResultReviewEditor({client,result,criteria,session,reviews,onAuthentica
    reviews.onChange(key,current=>current===next&&ordered(current)===snapshot?previous:current);
   }
   try{
+   if(mode==='READ'){
+    if(!b?.pending||!b.confirmed||b.stored||b.controlGeneration!==b.pending.command.controlGeneration||ordered(b.pending.result.snapshot.scope)!==ordered(result.snapshot.scope))throw new ApiError('RESULT_REVIEW_BINDING_INVALID');
+    const stored=await readConfirmedResultReview(client,b.pending,b.confirmed,session,owned);
+    if(owned()&&stored)await update({...b,stored,dirty:false,uncertain:false,failure:null});
+    return;
+   }
    const generation=await documentControl(client,result.snapshot.scope.projectId,session);
    if(!owned())return;
    if(mode==='CREATE'){
@@ -428,7 +442,7 @@ function ResultReviewEditor({client,result,criteria,session,reviews,onAuthentica
     const pending=await prepareResultReviewWrite(result,criteria,{resultRef:result.ref,criteriaRef:criteria.ref,outcome:b.outcome,items:b.rows.map(i=>({...i,evidenceRefs:[]})),reason:b.reason},session,generation);
     if(owned())await update({...b,pending,failure:null});return;
    }
-   if(!b.pending)return;
+   if(!b.pending||b.confirmed)return;
    const stored=await saveResultReviewWrite(client,b.pending,session,owned,{
     async commit(){
      if(!owned())return false;
@@ -442,7 +456,8 @@ function ResultReviewEditor({client,result,criteria,session,reviews,onAuthentica
   }catch(cause){
    if(!owned())return;
    const e=cause instanceof ApiError?cause:new ApiError('RESULT_REVIEW_INPUT_INVALID'),code=/^[A-Z_]{1,80}$/.test(e.code)?e.code:'RESULT_REVIEW_INPUT_INVALID';
-   if(b)await update({...b,failure:{code,status:e.status},uncertain:b.uncertain||attempted&&(e instanceof ReviewReadbackUnconfirmed||!isKnownDocumentRejection(e))});
+   const confirmed=e instanceof ReviewReadbackUnconfirmed?e.confirmed:b?.confirmed;
+   if(b)await update({...b,...(confirmed?{confirmed,dirty:false}:{}),failure:{code,status:e.status},uncertain:confirmed?false:b.uncertain||attempted&&!isKnownDocumentRejection(e)});
    if(!owned())return;
    setError(code);if([401,403,404].includes(e.status))onAccessUnavailable(code);if(e.status===401)onAuthenticationLost();
   }finally{
@@ -453,7 +468,7 @@ function ResultReviewEditor({client,result,criteria,session,reviews,onAuthentica
  }
  const frozen=busy||!!bound?.pending||!!bound?.stored;
  function releaseUnsentPreparation(){
-  if(!bound?.pending||bound.uncertain||bound.stored||bound.failure||busy||working.current||!currentScope())return;
+  if(!bound?.pending||bound.confirmed||bound.uncertain||bound.stored||bound.failure||busy||working.current||!currentScope())return;
   const chosen=bound,pending=bound.pending,command=pending.command,fingerprint=ordered(chosen),owner=session.user.id,clientId=session.clientId,projectId=result.snapshot.scope.projectId,resultRef=ordered(result.ref),criteriaRef=ordered(criteria.ref);
   const currentUnsent=(value:ResultReviewBuffer|null)=>{
    const now=latest.current;
@@ -471,8 +486,9 @@ function ResultReviewEditor({client,result,criteria,session,reviews,onAuthentica
    {bound.rows.map((row,index)=><fieldset key={row.criterionId} disabled={frozen}><legend>{row.criterionId}</legend><label>조건 판정 {index+1}<select aria-label={'조건 판정 '+(index+1)} value={row.outcome} onChange={e=>edit({...bound,rows:bound.rows.map((r,i)=>i===index?{...r,outcome:e.target.value as ReviewOutcome|''}:r)})}><option value="">직접 선택</option><option value="REWORK">보완 필요</option><option value="BLOCKED">차단</option></select></label><label>조건 판정 이유 {index+1}<textarea maxLength={20000} value={row.reason} onChange={e=>edit({...bound,rows:bound.rows.map((r,i)=>i===index?{...r,reason:e.target.value}:r)})}/></label></fieldset>)}
    <label>검수 총판정 이유<textarea disabled={frozen} maxLength={20000} value={bound.reason} onChange={e=>edit({...bound,reason:e.target.value})}/></label>
    {!bound.pending&&!bound.stored?<><button type="button" disabled={busy||bound.uncertain} onClick={()=>void run('PREPARE')}>검수 기록 저장 준비</button><button type="button" disabled={busy||bound.uncertain} onClick={()=>void run('REBIND')}>현재 제어로 미전송 검수 입력 재결박</button></>:null}
-   {bound.pending&&!bound.stored?<><details><summary>검수 기록 고정 명령</summary><pre>{JSON.stringify(bound.pending.command,null,2)}</pre></details><button type="button" disabled={busy} onClick={()=>void run('SAVE')}>{bound.uncertain||bound.failure?'같은 검수 기록 명령 재확인':'검수 기록 명시 저장'}</button>{!bound.uncertain&&isKnownDocumentRejection(bound.failure)?<button type="button" disabled={busy} onClick={()=>change({...bound,pending:null,dirty:true,failure:null})}>확인된 거절 이후 검수 입력 수정</button>:null}</>:null}
-   {bound.pending&&!bound.stored&&!bound.uncertain&&!bound.failure?<button type="button" disabled={busy} onClick={releaseUnsentPreparation}>미전송 검수 저장 준비 해제</button>:null}
+   {bound.pending&&!bound.stored?<><details><summary>검수 기록 고정 명령</summary><pre>{JSON.stringify(bound.pending.command,null,2)}</pre></details><button type="button" disabled={busy} onClick={()=>void run(bound.confirmed?'READ':'SAVE')}>{bound.confirmed?'확인된 검수 기록 고정 재조회':bound.uncertain||bound.failure?'같은 검수 기록 명령 재확인':'검수 기록 명시 저장'}</button>{!bound.confirmed&&!bound.uncertain&&isKnownDocumentRejection(bound.failure)?<button type="button" disabled={busy} onClick={()=>change({...bound,pending:null,dirty:true,failure:null})}>확인된 거절 이후 검수 입력 수정</button>:null}</>:null}
+   {bound.pending&&!bound.stored&&!bound.confirmed&&!bound.uncertain&&!bound.failure?<button type="button" disabled={busy} onClick={releaseUnsentPreparation}>미전송 검수 저장 준비 해제</button>:null}
+   {bound.confirmed&&!bound.stored?<p role="status">저장 영수증 검산 완료 · 고정 원문 조회 미확인. 명시 재조회는 같은 검수 참조만 읽으며 저장 명령을 다시 보내지 않습니다. 합격·권한·실제 증거 확인은 아닙니다.</p>:null}
    {bound.uncertain?<p role="status">검수 기록 저장 결과 미확인 · 고정 명령을 보존했습니다. 새 명령을 만들지 않고 같은 ID로만 확인합니다.</p>:null}
    {bound.stored?<article aria-label="검수 기록 원문"><h5>검수 기록 원문 확인 완료 · 업무 완료/실행 허가 아님</h5><p>검수자와 제출자: {bound.stored.snapshot.sameAsSubmitter?'동일 주체 · 독립 검수 아님':'다른 주체 · 독립성 인증은 아님'}</p><p>{bound.stored.ref.id} · {bound.stored.ref.contentHash}</p><details><summary>별도 보관 검수 원문</summary><pre>{JSON.stringify(bound.stored,null,2)}</pre></details></article>:null}
   </>}
