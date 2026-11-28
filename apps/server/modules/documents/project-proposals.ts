@@ -9,6 +9,7 @@ import { canonicalJson, contentHash } from '../../../../contracts/canonical.ts';
 import { isImportArtifact, importUuid, type ImportArtifact } from './project-imports.ts';
 import { documentTextDiff } from './document-diff.ts';
 import { documentStageBinding } from './document-stage.ts';
+import { verifyQaBDocumentResultProvenanceV1, type QaBDocumentResultExpectationV1 } from '../../../../contracts/runtime/qa-b-document-result-provenance-v1.ts';
 interface Content { body: ImportArtifact; attachments: ImportArtifact[]; sections: { itemId: string; anchor: string }[]; sourceRefs: SourceRef[] }
 interface BaseDocument { id: string; version: number; contentHash: string; title: string; formRef: VersionRef; stageNodeRef: unknown; stageOutputItem?:import('./document-stage.ts').StageOutputItem; content: Omit<Content,'sourceRefs'>&{sourceRefs:SourceRef[]}; contentReviewCriteria: { items: { criterionId: string }[] } }
 export interface DocumentProposal { id: string; baseRef: VersionRef; proposedContentRef: ImportArtifact; diffRef: ImportArtifact; status: 'PENDING' }
@@ -16,23 +17,41 @@ type Read = (db: PoolClient, pid: string, ref: ImportArtifact) => Promise<Buffer
 type Put = (pid: string, id: string, bytes: Buffer) => Promise<string>;
 const exact = (v: unknown, keys: string[]): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).sort().join(',') === [...keys].sort().join(',');
 const text = (bytes: Buffer) => { try { return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes); } catch { throw new AuthFailure('DOCUMENT_UTF8_INVALID', 422); } };
-export interface DocumentProposalPlan { proposal:DocumentProposal; content:Content; reason:string; diff:Buffer }
-export async function prepareDocumentProposal(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, base: BaseDocument, read: Read, fixedIds?:{artifactId:string;proposalId:string}):Promise<DocumentProposalPlan> {
+/** 이 입력은 선택한 증거를 읽은 서버 내부 계획 호출용이다. 원 HTTP 본문에 포함하지 않는다. */
+interface QaBMaterial {baseRef:VersionRef;formRef:VersionRef;expected:QaBDocumentResultExpectationV1;input:unknown;result:unknown}
+export interface DocumentProposalPlan { proposal:DocumentProposal; content:Content; reason:string; diff:Buffer; qaBSource?:ReturnType<typeof verifyQaBDocumentResultProvenanceV1> }
+export async function prepareDocumentProposal(db: PoolClient, actor: AuthenticatedIdentity, request: ProjectCommand, base: BaseDocument, read: Read, fixedIds?:{artifactId:string;proposalId:string},qaB?:QaBMaterial):Promise<DocumentProposalPlan> {
   if(request.payload.baseRef&&isVersionRef(request.payload.baseRef)&&(request.payload.baseRef.id!==request.targetId||request.payload.baseRef.version!==request.expectedVersion))throw new AuthFailure('PROPOSAL_INPUT_INVALID',422);
-  return prepareDocumentProposalMaterial(db,actor,request.projectId,request.payload,base,read,fixedIds);
+  return prepareDocumentProposalMaterial(db,actor,request.projectId,request.payload,base,read,fixedIds,qaB);
 }
 /** 부모 명령을 만들지 않는 내부 계획 계산. 실제 저장 귀속은 원 receipt를 별도 소비한다. */
-export async function prepareDocumentProposalMaterial(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,p:Record<string,unknown>,base:BaseDocument,read:Read,fixedIds?:{artifactId:string;proposalId:string}):Promise<DocumentProposalPlan>{
+export async function prepareDocumentProposalMaterial(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,p:Record<string,unknown>,base:BaseDocument,read:Read,fixedIds?:{artifactId:string;proposalId:string},qaB?:QaBMaterial):Promise<DocumentProposalPlan>{
   p=documentSourceSnapshot(p);
   if (!exact(p, ['baseRef','proposedContent','reason','sourceRefs']) || !isVersionRef(p.baseRef) || p.baseRef.id !== base.id || p.baseRef.version !== base.version || typeof p.reason !== 'string' || !p.reason.trim() || p.reason.length > 20_000 || !Array.isArray(p.sourceRefs) || !exact(p.proposedContent, ['body','attachments','sections','sourceRefs']) || !isImportArtifact(p.proposedContent.body) || !Array.isArray(p.proposedContent.attachments) || p.proposedContent.attachments.length > 200 || !p.proposedContent.attachments.every(isImportArtifact) || !Array.isArray(p.proposedContent.sections) || p.proposedContent.sections.length > 200 || !Array.isArray(p.proposedContent.sourceRefs)) throw new AuthFailure('PROPOSAL_INPUT_INVALID', 422);
   if (p.sourceRefs.length) throw new AuthFailure('DOCUMENT_REFERENCE_CONNECTION_PENDING', 412);
+  const sourceInvalid=()=>new AuthFailure('QA_B_DOCUMENT_RESULT_PROVENANCE_INVALID',412);
+  let protectedSource:QaBMaterial|undefined;
+  if(qaB!==undefined){
+    try{
+      protectedSource=documentSourceSnapshot(qaB);
+      if(!exact(protectedSource,['baseRef','formRef','expected','input','result'])||protectedSource.expected?.binding?.projectId!==projectId||
+        canonicalJson(protectedSource.baseRef)!==canonicalJson(p.baseRef)||canonicalJson(protectedSource.formRef)!==canonicalJson(base.formRef))throw sourceInvalid();
+    }catch{throw sourceInvalid();}
+  }
   await documentStageBinding(db, projectId, base.stageNodeRef, base.formRef, false,base.stageOutputItem);
   const current = (await db.query('SELECT head_version FROM anvil.documents WHERE project_id=$1 AND id=$2 FOR SHARE', [projectId, base.id])).rows[0];
   if (!current || Number(current.head_version) !== base.version || base.contentHash !== p.baseRef.contentHash) throw new AuthFailure('VERSION_CONFLICT', 409);
   const content = p.proposedContent as unknown as Content;
   content.sourceRefs=readDocumentSourceRefs(content.sourceRefs);
   if (!['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(content.body.mediaType) || content.body.bytes > 2 * 1024 * 1024) throw new AuthFailure('DOCUMENT_TEXT_FORMAT_NOT_SUPPORTED', 412);
-  const proposed = text(await read(db, projectId, content.body)), original = text(await read(db, projectId, base.content.body));
+  const proposedBody=await read(db,projectId,content.body);
+  let qaBSource:DocumentProposalPlan['qaBSource'];
+  if(protectedSource){
+    try{qaBSource=verifyQaBDocumentResultProvenanceV1(protectedSource.input,protectedSource.result,protectedSource.expected,proposedBody);}
+    catch{throw sourceInvalid();}
+    if(qaBSource.bodyHash!==content.body.contentHash||qaBSource.bodyBytes!==content.body.bytes)throw sourceInvalid();
+  }
+  const proposed=text(proposedBody),original=text(await read(db,projectId,base.content.body));
   const ids = new Set([content.body.artifactId]);
   for (const ref of content.attachments) { if (ids.has(ref.artifactId)) throw new AuthFailure('DUPLICATE_ARTIFACT', 422); ids.add(ref.artifactId); await read(db, projectId, ref); }
   const mapped = new Set<string>(), lines = proposed.split(/\r\n|\r|\n/).length;
@@ -45,9 +64,13 @@ export async function prepareDocumentProposalMaterial(db:PoolClient,actor:Authen
   if (diff.length > 20 * 1024 * 1024) throw new AuthFailure('PROPOSAL_DIFF_TOO_LARGE', 413);
   const diffRef = { artifactId: fixedIds?.artifactId??randomUUID(), bytes: diff.length, contentHash: contentHash(diff), mediaType: 'application/json;charset=utf-8' };
   const proposal: DocumentProposal = { id: fixedIds?.proposalId??randomUUID(), baseRef: p.baseRef, proposedContentRef: content.body, diffRef, status: 'PENDING' };
-  return {proposal,content,reason:p.reason,diff:Buffer.from(diff)};
+  return {proposal,content,reason:p.reason,diff:Buffer.from(diff),...(qaBSource?{qaBSource}:{})};
+}
+function requireManualProposal(plan:DocumentProposalPlan){
+  if(plan.qaBSource!==undefined)throw new AuthFailure('QA_B_DOCUMENT_PROVENANCE_STORAGE_UNAVAILABLE',412);
 }
 export async function storeDocumentProposal(db:PoolClient,actor:AuthenticatedIdentity,request:ProjectCommand,policyRef:VersionRef,plan:DocumentProposalPlan,storageKey:string){
+  requireManualProposal(plan);
   const {proposal,content,reason}=plan,diffRef=proposal.diffRef,p={baseRef:proposal.baseRef,reason};
   const receipt = await persistProjectReceipt(db, actor, request, p.baseRef, { status: 'PROPOSAL_RECORDED', proposal }, policyRef, 'EXPLICIT_DOCUMENT_PROPOSAL');
   await storeDocumentProposalMaterial(db,actor,request.projectId,receipt.id,plan,storageKey);
@@ -55,6 +78,7 @@ export async function storeDocumentProposal(db:PoolClient,actor:AuthenticatedIde
 }
 /** 원 부모 receipt의 id만 저장한다. 별도 command/승인/감사 발급은 없다. */
 export async function storeDocumentProposalMaterial(db:PoolClient,actor:AuthenticatedIdentity,projectId:string,commandId:string,plan:DocumentProposalPlan,storageKey:string){
+  requireManualProposal(plan);
  const {proposal,content,reason}=plan,diffRef=proposal.diffRef,p={baseRef:proposal.baseRef,reason};
   await db.query("INSERT INTO anvil.artifacts(id,project_id,bytes,content_hash,media_type,storage_key,state,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,'READY',$7,$8,$9)", [diffRef.artifactId, projectId, diffRef.bytes, diffRef.contentHash, diffRef.mediaType, storageKey, actor.actorId, actor.clientId, commandId]);
   await db.query('INSERT INTO anvil.document_proposals(id,project_id,document_id,base_version,base_hash,body_artifact_id,diff_artifact_id,content_json,proposal_json,content_hash,reason,created_by,client_id,command_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)', [proposal.id, projectId, proposal.baseRef.id, proposal.baseRef.version, proposal.baseRef.contentHash, content.body.artifactId, diffRef.artifactId, JSON.stringify(content), JSON.stringify(proposal), contentHash(canonicalJson({ proposal, content, reason: p.reason })), p.reason, actor.actorId, actor.clientId, commandId]);

@@ -70,7 +70,9 @@ export class ProjectDocuments {
   async imported(db: PoolClient, actor: AuthenticatedIdentity, projectId: string, id: string) {
     return readDocumentImport(db, actor, projectId, id, (client, pid, ref) => this.#artifact(client, pid, ref));
   }
-  async proposeCommand(access:AccessRepository,policies:ProjectPolicyRepository,token:string,csrf:string,raw:ProjectCommand){
+  async proposeCommand(access:AccessRepository,policies:ProjectPolicyRepository,token:string,csrf:string,raw:ProjectCommand,qaBSelection?:Readonly<{inputRef:VersionRef;resultRef:VersionRef}>){
+    // 기존 HTTP route는 이 인자를 받지 않는다. 보호 공급자가 없는 출처 선택을 수동 저장으로 돌리지 않는다.
+    if(qaBSelection!==undefined)throw new AuthFailure('QA_B_DOCUMENT_PROVENANCE_SOURCE_UNAVAILABLE',412);
     const request=cloneV1(raw),quota=new ProjectStorageQuota(access,this.#store??undefined,this);let plan:DocumentProposalPlan|undefined;
     const prepared=await quota.prepare(token,csrf,request,async(db,actor,fixed,existing)=>{
       if(!fixed.targetId)throw new AuthFailure('PROPOSAL_INPUT_INVALID',422);
