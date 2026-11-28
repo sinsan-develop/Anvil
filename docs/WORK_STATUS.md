@@ -4,6 +4,8 @@
 <!-- ANVIL_CURRENT_SUMMARY_V2 -->
 ## 현재 작업 요약 — 2026-11-28 KST
 
+- **Stage E / FN16 D2 문서의 고정 SYSTEM 양식 버전** — 기준 `2fd39937`, 담당 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 별도 목적 입장과 문서 원 양식 ref를 먼저 대조하고 동일 RR에서 고정 SYSTEM 양식 정의와 canonical 해시, 작성 표준 참조를 검산한다. 최종 RC의 같은 원행 대조와 독립 역사 검산을 추가했다. 최신 head·개인 양식·작성 표준 본문·승인 원문은 소비하지 않는다. V1·V2 판독 호환 유지. 제품 3·시험 1경로, 담당/어울 합성 40/40(실패·취소·skip 0), 타입·diff 통과. 실제 보호 입장/저장·PG/RLS·전체 문서 및 백업·복원, Windows·키·서비스·Agent는 미검증.
+
 - **Stage C / IX02 원 등록 signer 신원 결박** — 기준 `d8cf50281`, 담당 `fn08_policy_decision_ready`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 원 호스트가 검산한 보호 루트 SID·helper 이미지 해시·보유 self 프로세스 생성 시각을 같은 등록 host의 pin과 독립 대조한다. 생성/재관측 앞뒤 원 신원·기한을 재검산하고 기존 원 객체 회수는 유지한다. 제품 2·시험 1경로. 원 host 대조 누락 RED 1건, 담당/어울 인접 정적·합성 102/102(실패·취소·skip 0), 타입·diff 통과. 실제 보호 설치 자료 발급 및 endpoint, C# 컴파일·Windows·DB·권한·키·서비스·Agent, 양성 PREPARED/queue·인계·IX02 인수 미검증.
 
 - **Stage E / FN16 D2 문서 초안 원 명령·영수증·감사** — 기준 `1732771c`, 구현 `fn13_diff_contract_review`, 독립 `baseline_predispatch_task_review` C0/I0/M0. 일반 초안 원 버전의 내부 command ID로 같은 RR에서 명령·인가 영수증·보정 아닌 원 감사를 정확 조회하고, 별도 새 RC로 같은 여섯 원행/정책/주체를 대조한다. 독립 역사 판독에서 범위 digest와 원행 투영 해시를 구분하며 과거 BODY V1의 판독·의미를 유지한다. 제품 3·시험 1경로, 담당/어울 합성 39/39(실패·취소·skip 0), 타입·diff 통과. 단계·반입·제안·별도 승인 원형, 보호 V2 입장 공급자와 실제 PG·영속 저장·전체 백업/복원은 미검증이다. 실제 Windows·DB·권한·키·서비스·Agent 조작 없음.

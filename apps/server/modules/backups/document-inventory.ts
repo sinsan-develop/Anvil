@@ -58,6 +58,14 @@ export interface DocumentBodyHistoryRows {
 export interface DocumentDraftHistoryRows extends DocumentBodyHistoryRows {
  readonly origin:{command:Row;receipt:Row;audit:Row};
 }
+export interface DocumentSystemFormHistoryRows extends DocumentDraftHistoryRows {
+ readonly systemForm:{definition:Row;standard:Row};
+}
+const systemFormProjection={
+ from:specs.form_definitions!.from,
+ columns:cols('d.id d.scope d.owner_user_id d.project_id d.form_code v.version v.definition_json v.content_hash v.authoring_standard_id v.authoring_standard_version v.authoring_standard_hash v.authoring_standard_ref v.created_by v.created_at')
+};
+const standardProjection=specs.authoring_standard_versions!;
 const draftOriginColumns={
  commands:cols('id project_id draft_id scope_kind scope_id actor_id client_id operation command_id request_hash operation_id state authorization_receipt_id approval_consumption_id expected_version control_generation policy_ref payload_ref result_ref received_at completed_at'),
  authorization_receipts:cols('id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at'),
@@ -132,20 +140,16 @@ export function checkDocumentDraftHistoryRows(projectId:string,ref:Ref,value:unk
 }
 
 /** 호출자가 이미 보유한 보호 거래만 사용한다. 직접 인증, 연결, 거래 시작을 하지 않는다. */
-export async function readDocumentDraftHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,ref:Ref,metadataBytes:number):Promise<DocumentDraftHistoryRows>{
- if(!uuidV1(projectId)||!refV1(ref)||!Number.isSafeInteger(metadataBytes)||metadataBytes<1)return bad();
+export async function readDocumentSystemFormHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,ref:Ref,expectedFormRef:Ref,metadataBytes:number):Promise<DocumentSystemFormHistoryRows>{
+ if(!uuidV1(projectId)||!refV1(ref)||!refV1(expectedFormRef)||!Number.isSafeInteger(metadataBytes)||metadataBytes<1)return bad();
  let remaining=metadataBytes;
- async function fixed(table:'document_versions'|'document_artifact_links'|'artifacts'|keyof typeof draftOriginColumns,predicate:string,args:unknown[]){
-  const spec=Object.hasOwn(draftOriginColumns,table)
-   ?{from:`anvil.${table} t`,columns:draftOriginColumns[table as keyof typeof draftOriginColumns].map(c=>`t.${c}`)}
-   :specs[table]!;
-  const scope=table==='authorization_receipts'?'t.scope_id':'t.project_id';
-  const cap=args.length+2;
+ async function fixed(spec:{from:string;columns:string[]},predicate:string,args:unknown[]){
+  const cap=args.length+1;
   const sql=`/*FN16_D2_BODY*/ WITH material AS (
-   SELECT ${spec.columns.join(',')} FROM ${spec.from} WHERE ${scope}=$1::uuid AND ${predicate} LIMIT 2
+   SELECT ${spec.columns.join(',')} FROM ${spec.from} WHERE ${predicate} LIMIT 2
   ) SELECT CASE WHEN octet_length(to_jsonb(material)::text)<=$${cap}::bigint THEN to_jsonb(material) END AS inventory_data,
    octet_length(to_jsonb(material)::text) AS row_bytes FROM material`;
-  const {rows}=await db.query(sql,[projectId,...args,remaining]);
+  const {rows}=await db.query(sql,[...args,remaining]);
   if(rows.length!==1||!recordV1(rows[0],['inventory_data','row_bytes']))return bad();
   const count=integer(rows[0].row_bytes,1),row=rows[0].inventory_data;
   if(count>remaining||!recordV1(row,spec.columns.map(c=>c.slice(c.indexOf('.')+1)))
@@ -153,18 +157,60 @@ export async function readDocumentDraftHistoryRows(db:Pick<PoolClient,'query'>,p
   remaining-=count;
   return cloneV1(row);
  }
- const version=await fixed('document_versions','t.document_id=$2::uuid AND t.version=$3::bigint AND t.content_hash=$4::text',[ref.id,ref.version,ref.contentHash]);
+ function projectRow(table:'document_versions'|'document_artifact_links'|'artifacts'|keyof typeof draftOriginColumns,predicate:string,args:unknown[]){
+  const projection=Object.hasOwn(draftOriginColumns,table)
+   ?{from:`anvil.${table} t`,columns:draftOriginColumns[table as keyof typeof draftOriginColumns].map(c=>`t.${c}`)}
+   :specs[table]!;
+  const scope=table==='authorization_receipts'?'t.scope_id':'t.project_id';
+  return fixed(projection,`${scope}=$1::uuid AND ${predicate}`,[projectId,...args]);
+ }
+ const version=await projectRow('document_versions','t.document_id=$2::uuid AND t.version=$3::bigint AND t.content_hash=$4::text',[ref.id,ref.version,ref.contentHash]);
  if(!uuidV1(version.body_artifact_id)||!uuidV1(version.command_id)||version.stage_ref_json!==null)return bad();
- const link=await fixed('document_artifact_links',"t.document_id=$2::uuid AND t.version=$3::bigint AND t.kind='BODY'",[ref.id,ref.version]);
- const artifact=await fixed('artifacts',"t.id=$2::uuid AND t.draft_id IS NULL AND t.storage_key='blobs/'||t.project_id::text||'/'||t.id::text",[version.body_artifact_id]);
+ const formRef=exactRef({id:version.form_definition_id,version:integer(version.form_version,1),contentHash:version.form_hash});
+ if(!same(formRef,expectedFormRef))return bad();
+ const link=await projectRow('document_artifact_links',"t.document_id=$2::uuid AND t.version=$3::bigint AND t.kind='BODY'",[ref.id,ref.version]);
+ const artifact=await projectRow('artifacts',"t.id=$2::uuid AND t.draft_id IS NULL AND t.storage_key='blobs/'||t.project_id::text||'/'||t.id::text",[version.body_artifact_id]);
  checkDocumentBodyHistoryRows(projectId,ref,{version,link,artifact});
- const command=await fixed('commands',"t.id=$2::uuid AND t.scope_kind='PROJECT' AND t.draft_id IS NULL AND t.operation='saveDocumentDraft' AND t.approval_consumption_id IS NULL AND t.payload_ref IS NULL",[version.command_id]);
+ const command=await projectRow('commands',"t.id=$2::uuid AND t.scope_kind='PROJECT' AND t.draft_id IS NULL AND t.operation='saveDocumentDraft' AND t.approval_consumption_id IS NULL AND t.payload_ref IS NULL",[version.command_id]);
  if(!uuidV1(command.authorization_receipt_id))return bad();
- const receipt=await fixed('authorization_receipts',"t.id=$2::uuid AND t.scope_kind='PROJECT' AND t.command_id=$3::uuid AND t.approval_decision_ref IS NULL",[command.authorization_receipt_id,version.command_id]);
- const audit=await fixed('audit_events','t.command_id=$2::uuid AND t.correction_of IS NULL',[version.command_id]);
+ const receipt=await projectRow('authorization_receipts',"t.id=$2::uuid AND t.scope_kind='PROJECT' AND t.command_id=$3::uuid AND t.approval_decision_ref IS NULL",[command.authorization_receipt_id,version.command_id]);
+ const audit=await projectRow('audit_events','t.command_id=$2::uuid AND t.correction_of IS NULL',[version.command_id]);
  const rows={version,link,artifact,origin:{command,receipt,audit}};
  checkDocumentDraftHistoryRows(projectId,ref,rows);
- return rows;
+ const definition=await fixed(systemFormProjection,"d.id=$1::uuid AND v.version=$2::bigint AND v.content_hash=$3::text AND d.scope='SYSTEM' AND d.owner_user_id IS NULL AND d.project_id IS NULL",
+  [formRef.id,formRef.version,formRef.contentHash]);
+ const standardRef=checkSystemFormDefinition(definition,formRef);
+ const standard=await fixed(standardProjection,'t.id=$1::uuid AND t.version=$2::bigint AND t.content_hash=$3::text',
+  [standardRef.id,standardRef.version,standardRef.contentHash]);
+ const complete={...rows,systemForm:{definition,standard}};
+ checkDocumentSystemFormHistoryRows(projectId,ref,complete);
+ return complete;
+}
+
+function checkSystemFormDefinition(row:unknown,ref:Ref){
+ if(!recordV1(row,systemFormProjection.columns.map(c=>c.slice(c.indexOf('.')+1)))||!same(rowRef(row),ref)
+  ||row.scope!=='SYSTEM'||row.owner_user_id!==null||row.project_id!==null||row.created_by!==null)return bad();
+ const definition=row.definition_json;
+ if(!recordV1(definition,['formCode','name','purpose','scope','authorRole','reviewerRole','confirmerRole','requiredInputs','items','authoringStandardRef'])
+  ||definition.scope!=='SYSTEM'||typeof row.form_code!=='string'||!/^AF0[1-8]$/.test(row.form_code)||definition.formCode!==row.form_code
+  ||hash(definition)!==ref.contentHash)return bad();
+ stamp(row.created_at);
+ const standardRef=exactRef({id:row.authoring_standard_id,version:integer(row.authoring_standard_version,1),contentHash:row.authoring_standard_hash});
+ if(!same(row.authoring_standard_ref,standardRef)||!same(definition.authoringStandardRef,standardRef))return bad();
+ safeMetadata(row);
+ return standardRef;
+}
+
+/** 시스템 양식 버전의 원 정의와 작성 표준의 참조 투영을 검산한다. 표준 본문·효력은 증명하지 않는다. */
+export function checkDocumentSystemFormHistoryRows(projectId:string,ref:Ref,value:unknown){
+ if(!recordV1(value,['version','link','artifact','origin','systemForm'])||!recordV1(value.systemForm,['definition','standard']))return bad();
+ const {version,link,artifact,origin,systemForm:{definition,standard}}=value;
+ const draft=checkDocumentDraftHistoryRows(projectId,ref,{version,link,artifact,origin});
+ const formRef=exactRef({id:version.form_definition_id,version:integer(version.form_version,1),contentHash:version.form_hash});
+ const standardRef=checkSystemFormDefinition(definition,formRef);
+ if(!recordV1(standard,standardProjection.columns.map(c=>c.slice(c.indexOf('.')+1)))||!same(rowRef(standard),standardRef))return bad();
+ stamp(standard.created_at);
+ return {...draft,formRef,formProjectionHash:hash(definition),standardRef,standardProjectionHash:hash(standard)};
 }
 
 /** 내부 metadata 조회 구현이며 공개 route/job/백업 형식에는 연결하지 않는다. */

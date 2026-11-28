@@ -14,7 +14,14 @@ const projectId=id(1),documentId=id(2),bodyId=id(3),actorId=id(4),clientId=id(5)
 const at='2026-11-28T00:00:00.000Z';
 const bytes=Buffer.from('공개 합성 문서');
 const bodyRef={artifactId:bodyId,bytes:bytes.length,contentHash:contentHash(bytes),mediaType:'text/plain'};
-const formRef={id:id(7),version:1,contentHash:'a'.repeat(64)};
+const standardRef=pinned(101);
+const definition={formCode:'AF02',name:'설계서',purpose:'공개 합성 양식',scope:'SYSTEM',authorRole:'작성자',reviewerRole:'검토자',confirmerRole:'사용자',
+ requiredInputs:[],items:[],authoringStandardRef:standardRef};
+const formRef={id:id(7),version:1,contentHash:hash(definition)};
+const systemForm={id:formRef.id,scope:'SYSTEM',owner_user_id:null,project_id:null,form_code:definition.formCode,version:formRef.version,
+ definition_json:definition,content_hash:formRef.contentHash,authoring_standard_id:standardRef.id,authoring_standard_version:standardRef.version,
+ authoring_standard_hash:standardRef.contentHash,authoring_standard_ref:standardRef,created_by:null,created_at:at};
+const standard={id:standardRef.id,version:standardRef.version,content_hash:standardRef.contentHash,created_at:at};
 const content={body:bodyRef,attachments:[],sections:[],sourceRefs:[]};
 const ref={id:documentId,version:1,contentHash:hash({title:'합성',formRef,stageNodeRef:null,content})};
 const original={project_id:projectId,document_id:documentId,version:1,form_definition_id:formRef.id,form_version:1,form_hash:formRef.contentHash,
@@ -60,8 +67,9 @@ function fixture(mode='valid'){
    if(sql.includes("'anvil.actor_id'")){assert.equal(scope,'RR');assert.deepEqual(params,[actorId,clientId]);trace.push('RR:rls');return {rows:[{actor_id:actorId,client_id:clientId}]};}
    if(sql.includes('FROM anvil.projects p')){assert.deepEqual(params,[projectId,actorId]);assert(scope==='RR'?liveRR:!liveRR);return {rows:[{id:projectId,archived_at:null,participation:scope==='RC2'&&mode==='revoked'?'VIEWER':'OWNER'}]};}
    if(sql.includes('FROM anvil.project_control')){assert.equal(params[0],projectId);return {rows:[{actor_id:actorId,client_id:clientId,generation:1,version:1,revoked_at:null}]};}
-   assert(sql.includes('FN16_D2_BODY')&&sql.includes('LIMIT 2')&&params[0]===projectId);
+   assert(sql.includes('FN16_D2_BODY')&&sql.includes('LIMIT 2'));
    const table=sql.match(/FROM anvil\.(\w+)/)?.[1];
+   if(!['form_definitions','authoring_standard_versions'].includes(table??''))assert.equal(params[0],projectId);
    trace.push(`${scope}:${table}`);
    let row;
    if(table==='document_versions'){assert.deepEqual(params.slice(1,-1),[documentId,1,ref.contentHash]);row=mode==='part'?{...original,stage_ref_json:{applicationId:id(86),nodeId:'PART'}}:original;}
@@ -84,6 +92,29 @@ function fixture(mode='valid'){
     if(mode==='correction-only')return {rows:[]};
     // 같은 command의 나중 정정은 original 범위 밖이다.
     row=(scope==='RC2'&&mode==='origin-drift')?{...audit,event_id:id(97)}:[audit,correction].find(event=>event.correction_of===null)!;
+   }
+   else if(table==='form_definitions'){
+    assert.deepEqual(params.slice(0,-1),[formRef.id,formRef.version,formRef.contentHash]);
+    assert.match(sql,/d\.scope='SYSTEM' AND d\.owner_user_id IS NULL AND d\.project_id IS NULL/);
+    assert.doesNotMatch(sql,/head_version|origin_ref_json|USER_COMMON/);
+    const other={...systemForm,scope:'USER_COMMON',owner_user_id:id(102)};
+    const head=scope==='RR'?1:2;
+    const forms=mode==='hidden-common'?[{...other,head_version:head}]:
+     [{...systemForm,head_version:head},{...systemForm,head_version:head,version:2,content_hash:'e'.repeat(64)}];
+    const pinned=forms.find(form=>form.scope==='SYSTEM'&&form.version===params[1]&&form.content_hash===params[2]);
+    if(!pinned)return {rows:[]};
+    const {head_version,...projection}=pinned;
+    assert.equal(head_version,head);
+    if(mode==='form-duplicate')return {rows:[envelope(systemForm),envelope(systemForm)]};
+    row=mode==='unbounded-source-row'?other:mode==='form-version'?{...systemForm,version:2}:
+     mode==='form-hash'?{...systemForm,definition_json:{...definition,name:'변조'}}:
+     scope==='RC2'&&mode==='form-projection-drift'?{...systemForm,created_at:'2026-11-28T00:00:01.000Z'}:projection;
+   }
+   else if(table==='authoring_standard_versions'){
+    assert.deepEqual(params.slice(0,-1),[standardRef.id,standardRef.version,standardRef.contentHash]);
+    assert.doesNotMatch(sql,/body_utf8|source_approval_json/);
+    if(scope==='RC2'&&mode==='standard-missing')return {rows:[]};
+    row=mode==='standard-mismatch'?{...standard,content_hash:'c'.repeat(64)}:standard;
    }
    else throw Error('잘못된 조회');
    return {rows:[envelope(row)]};
@@ -108,10 +139,11 @@ function fixture(mode='valid'){
   assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref});assert(!liveRR);
   trace.push(`RC${rc}:admission`);
   if(mode==='policy-denied'||mode==='policy-revoked'&&rc===2)return null;
-  return {purpose:mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2',
+  return {purpose:mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
    projectId,documentRef:ref,actorId,clientId,sessionId,credentialGeneration:1,controlGeneration:1,
    jobRef:pinned(10),reservationRef:pinned(11),policyRef:pinned(mode==='new-policy'&&rc===2?19:12),targetProtectedRef:pinned(13),
-   retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),expiresAt:'2026-11-28T00:00:09.000Z'};
+   retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),
+   formRef:mode==='foreign-admission-form'?pinned(103):formRef,expiresAt:'2026-11-28T00:00:09.000Z'};
  }};
  const run=()=>collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',input,mode==='unconfigured'?null:admission,reader,new AbortController().signal);
  return {run,trace};
@@ -119,11 +151,11 @@ function fixture(mode='valid'){
 
 test('한 RR의 보관 문서·BODY·원 명령 관계와 정확 바이트를 독립 재검산한다',async()=>{
  const f=fixture(),capture=await f.run();
- const tables=['document_versions','document_artifact_links','artifacts','commands','authorization_receipts','audit_events'];
+ const tables=['document_versions','document_artifact_links','artifacts','commands','authorization_receipts','audit_events','form_definitions','authoring_standard_versions'];
  assert.deepEqual(f.trace,['RC1:begin','RC1:admission','RC1:commit','RR:begin','RR:rls',...tables.map(v=>'RR:'+v),
   'RR:rollback','RR:release','body:open','body:close','RC2:begin','RC2:admission',...tables.map(v=>'RC2:'+v),'RC2:commit']);
  assert.deepEqual(capture.body,bytes);
- assert.equal(capture.coverage,'DOCUMENT_BODY_AND_DRAFT_ORIGIN');
+ assert.equal(capture.coverage,'DOCUMENT_BODY_DRAFT_ORIGIN_AND_SYSTEM_FORM');
  const expected={projectId,documentRef:ref,jobRef:pinned(10),snapshot:'4:14:',snapshotHash:capture.snapshotHash};
  const independent=()=>({snapshot:JSON.parse(JSON.stringify(capture.snapshot)),body:Buffer.from(capture.body)});
  const result=await verifyDocumentBodyHistory(expected,async()=>independent());
@@ -133,12 +165,18 @@ test('한 RR의 보관 문서·BODY·원 명령 관계와 정확 바이트를 �
  assert.equal(result.documentHistoryComplete,false);
  assert.equal(result.restorable,false);
  assert.equal(result.executionAuthorized,false);
- assert.equal(result.kind,'FN16_D2_DOCUMENT_DRAFT_VERIFICATION_V2');
- if(result.kind!=='FN16_D2_DOCUMENT_DRAFT_VERIFICATION_V2')throw Error('원 명령 검산 누락');
+ assert.equal(result.kind,'FN16_D2_DOCUMENT_SYSTEM_FORM_VERIFICATION_V3');
+ if(result.kind!=='FN16_D2_DOCUMENT_SYSTEM_FORM_VERIFICATION_V3')throw Error('양식 검산 누락');
  assert.deepEqual(result.commandProjectionRef,{id:original.command_id,version:1,contentHash:hash(command)});
  assert.deepEqual(result.receiptProjectionRef,{id:receipt.id,version:1,contentHash:hash(receipt)});
  assert.notEqual(result.receiptProjectionRef.contentHash,scopeDigest);
  assert.deepEqual(result.auditProjectionRef,{id:audit.event_id,version:1,contentHash:hash(audit)});
+ assert.deepEqual(result.formRef,formRef);
+ assert.equal(result.formProjectionHash,hash(systemForm));
+ assert.deepEqual(result.standardRef,standardRef);
+ assert.equal(result.standardProjectionHash,hash(standard));
+ assert.equal(result.standardBodyVerified,false);
+ assert.equal(result.formAuthorityVerified,false);
  await assert.rejects(()=>verifyDocumentBodyHistory(expected,async()=>{const restored=independent();restored.body[0]=restored.body[0]!^1;return restored;}),/HISTORY_INVALID/);
  await assert.rejects(()=>verifyDocumentBodyHistory(expected,async()=>{const restored=independent();restored.snapshot.observation.snapshot='4:15:';return restored;}),/HISTORY_INVALID/);
  await assert.rejects(()=>verifyDocumentBodyHistory(expected,async()=>{const restored=independent();restored.snapshot.rows.link.artifact_id=id(99);return restored;}),/HISTORY_INVALID/);
@@ -146,9 +184,12 @@ test('한 RR의 보관 문서·BODY·원 명령 관계와 정확 바이트를 �
  const stored=independent();
  stored.snapshot.rows.origin.receipt.scope_digest='c'.repeat(64);
  await assert.rejects(()=>verifyDocumentBodyHistory({...expected,snapshotHash:hash(stored.snapshot)},async()=>stored),/HISTORY_INVALID/);
+ const changedStandard=independent();
+ changedStandard.snapshot.rows.systemForm.definition.authoring_standard_ref=pinned(104);
+ await assert.rejects(()=>verifyDocumentBodyHistory({...expected,snapshotHash:hash(changedStandard.snapshot)},async()=>changedStandard),/HISTORY_INVALID/);
 });
 
-test('기존 BODY 전용 v1은 원 명령 검산을 주장하지 않고 읽힌다',async()=>{
+test('기존 BODY v1과 초안 원 명령 v2는 각각 이전 검산 범위로 읽힌다',async()=>{
  const capture=await fixture().run();
  const {version,link,artifact}=capture.snapshot.rows;
  const legacy={...capture.snapshot,kind:'FN16_D2_DOCUMENT_BODY_SNAPSHOT_V1',rows:{version,link,artifact}};
@@ -158,6 +199,24 @@ test('기존 BODY 전용 v1은 원 명령 검산을 주장하지 않고 읽힌�
  assert.equal(result.bodyVerified,true);
  assert(!Object.hasOwn(result,'receiptProjectionRef'));
  await assert.rejects(()=>verifyDocumentBodyHistory(expected,async()=>({snapshot:{...legacy,rows:capture.snapshot.rows},body:bytes})),/HISTORY_INVALID/);
+ const v2={...legacy,kind:'FN16_D2_DOCUMENT_DRAFT_SNAPSHOT_V2',rows:{...legacy.rows,origin:capture.snapshot.rows.origin}};
+ const draft=await verifyDocumentBodyHistory({...expected,snapshotHash:hash(v2)},async()=>({snapshot:v2,body:bytes}));
+ assert.equal(draft.kind,'FN16_D2_DOCUMENT_DRAFT_VERIFICATION_V2');
+ assert(Object.hasOwn(draft,'receiptProjectionRef')&&!Object.hasOwn(draft,'formProjectionHash'));
+});
+
+test('SYSTEM 양식이나 표준의 교차·변조·중복과 최신 RC 변경을 거절한다',async()=>{
+ for(const mode of ['hidden-common','unbounded-source-row','form-version','form-hash','form-duplicate','standard-mismatch','foreign-admission-form']){
+  const f=fixture(mode);
+  await assert.rejects(f.run,/DOCUMENT_INVENTORY_INTEGRITY_FAILED/);
+  assert(!f.trace.includes('body:open'),mode);
+  if(mode==='foreign-admission-form')assert(!f.trace.includes('RR:form_definitions'));
+ }
+ for(const mode of ['standard-missing','form-projection-drift']){
+  const f=fixture(mode);
+  await assert.rejects(f.run);
+  assert(f.trace.includes('RC2:form_definitions')&&!f.trace.includes('RC2:commit'),mode);
+ }
 });
 
 test('원 명령 참조·범위·인가·원 감사의 부적격은 BODY IO 전에 닫는다',async()=>{
@@ -173,11 +232,11 @@ test('원 명령 참조·범위·인가·원 감사의 부적격은 BODY IO 전�
 });
 
 test('원 승인 백업 입장이 없거나 최종 정책이 바뀌면 수집 권위를 만들지 않는다',async()=>{
- for(const mode of ['unconfigured','policy-denied','policy-revoked','new-policy','body-only-admission']){
+ for(const mode of ['unconfigured','policy-denied','policy-revoked','new-policy','body-only-admission','draft-only-admission']){
   const f=fixture(mode);
   await assert.rejects(f.run,/SNAPSHOT_(ADMISSION_|AUTH_CHANGED)/);
   assert(!f.trace.includes('RC2:document_versions'),mode);
-  if(['unconfigured','policy-denied','body-only-admission'].includes(mode))assert(!f.trace.includes('RR:begin'),mode);
+  if(['unconfigured','policy-denied','body-only-admission','draft-only-admission'].includes(mode))assert(!f.trace.includes('RR:begin'),mode);
  }
 });
 
