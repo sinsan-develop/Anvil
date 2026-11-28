@@ -3,9 +3,9 @@ import {AccessRepository,AuthFailure,type AuthenticatedIdentity} from '../access
 import {projectMember} from '../access/project-command.ts';
 import {notificationSessionDeadline} from '../notifications/notification-input.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {recordV1,uuidV1,hashV1,refV1,cloneV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {arrayV1,recordV1,uuidV1,hashV1,refV1,isoV1,cloneV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {readApplicationSnapshot} from '../methodologies/application-snapshot.ts';
-import {readStageNodeRef,nodeUsesForm} from '../documents/document-stage.ts';
+import {readStageNodeRef,nodeUsesForm,documentDraftReason} from '../documents/document-stage.ts';
 import {readDocumentSourceLinkHistory} from '../documents/document-source-link-history.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 import {isImportArtifact} from '../documents/project-imports.ts';
@@ -55,6 +55,14 @@ export interface DocumentBodyHistoryRows {
  readonly link: Row;
  readonly artifact: Row;
 }
+export interface DocumentDraftHistoryRows extends DocumentBodyHistoryRows {
+ readonly origin:{command:Row;receipt:Row;audit:Row};
+}
+const draftOriginColumns={
+ commands:cols('id project_id draft_id scope_kind scope_id actor_id client_id operation command_id request_hash operation_id state authorization_receipt_id approval_consumption_id expected_version control_generation policy_ref payload_ref result_ref received_at completed_at'),
+ authorization_receipts:cols('id scope_kind scope_id command_id subject_ref policy_ref scope_digest approval_decision_ref authorized_at'),
+ audit_events:cols('project_id server_sequence event_id actor_ref client_ref command_id operation_id target_ref policy_ref approval_ref outcome reason_code scope_digest recorded_at source_kind correction_of')
+};
 
 /** 원형과 BODY 관계만 검사한다. 현재 권한이나 전체 문서 역사의 완결을 표시하지 않는다. */
 export function checkDocumentBodyHistoryRows(projectId:string,ref:Ref,value:unknown){
@@ -80,14 +88,61 @@ export function checkDocumentBodyHistoryRows(projectId:string,ref:Ref,value:unkn
  return body;
 }
 
+/** 원 명령·인가·감사 관계만 검산한다. 원 요청 본문이나 현재 권위를 발급하지 않는다. */
+export function checkDocumentDraftHistoryRows(projectId:string,ref:Ref,value:unknown){
+ if(!recordV1(value,['version','link','artifact','origin'])||!recordV1(value.origin,['command','receipt','audit']))return bad();
+ const {version,link,artifact,origin:{command,receipt,audit}}=value;
+ const body=checkDocumentBodyHistoryRows(projectId,ref,{version,link,artifact});
+ if(!recordV1(command,draftOriginColumns.commands)||!recordV1(receipt,draftOriginColumns.authorization_receipts)
+  ||!recordV1(audit,draftOriginColumns.audit_events)||![command.id,command.command_id,command.actor_id,command.client_id,
+   command.operation_id,command.authorization_receipt_id,audit.event_id].every(uuidV1)||!hashV1(command.request_hash)
+  ||command.id!==version.command_id||command.client_id!==version.client_id||command.project_id!==projectId
+  ||!same(version.author_ref_json,{kind:'HUMAN',userId:command.actor_id})||version.stage_ref_json!==null
+  ||command.scope_kind!=='PROJECT'||command.scope_id!==projectId||command.draft_id!==null||command.operation!=='saveDocumentDraft'
+  ||command.state!=='APPLIED'||integer(command.expected_version)!==ref.version-1
+  ||command.approval_consumption_id!==null||command.payload_ref!==null||!refV1(command.policy_ref))return bad();
+ const scopeDigest=hash({projectId,actorId:command.actor_id,clientId:command.client_id,controlGeneration:integer(command.control_generation,1),
+  requestHash:command.request_hash,policyRef:command.policy_ref,targetRef:ref});
+ if(receipt.id!==command.authorization_receipt_id||receipt.command_id!==command.id||receipt.scope_kind!=='PROJECT'||receipt.scope_id!==projectId
+  ||receipt.approval_decision_ref!==null||!same(receipt.policy_ref,command.policy_ref)||receipt.scope_digest!==scopeDigest
+  ||!same(receipt.subject_ref,{kind:'HUMAN',userId:command.actor_id,clientId:command.client_id}))return bad();
+ const result=command.result_ref;
+ const validation=version.validation_json;
+ if(!recordV1(validation,['validForConfirmation','issues','formatOnly','contentReview','userAcceptance'])||validation.formatOnly!==true
+  ||validation.contentReview!=='NOT_PERFORMED'||validation.userAcceptance!=='NOT_PERFORMED'||!arrayV1(validation.issues,200)
+  ||validation.validForConfirmation!==(validation.issues.length===0)
+  ||validation.issues.some(issue=>!recordV1(issue,['code','location','severity','message'])||issue.code!=='REQUIRED_SECTION_MISSING'
+   ||typeof issue.location!=='string'||!issue.location.startsWith('sections.')||issue.severity!=='ERROR'||issue.message!=='양식의 필수 항목과 원문 위치를 연결하세요.'))return bad();
+ if(!recordV1(result,['operationId','commandId','projectId','status','targetId','version','data','evidenceRefs','warnings','serverReceivedAt'])
+  ||result.operationId!==command.operation_id||result.commandId!==command.command_id||result.projectId!==projectId||result.status!=='APPLIED'
+  ||result.targetId!==ref.id||result.version!==ref.version||!isoV1(result.serverReceivedAt)||result.serverReceivedAt!==stamp(command.received_at)
+  ||!same(result.evidenceRefs,[])||!same(result.warnings,[])
+  ||!same(result.data,{ref,status:'DRAFT',validation,stageNodeRef:null,stageBinding:null,importCandidateRef:null,proposalRef:null}))return bad();
+ if(audit.project_id!==projectId||audit.command_id!==command.id||audit.operation_id!==command.operation_id
+  ||!same(audit.actor_ref,version.author_ref_json)||audit.client_ref!==command.client_id
+  ||!same(audit.target_ref,ref)||!same(audit.policy_ref,command.policy_ref)||audit.approval_ref!==null
+  ||audit.outcome!=='APPLIED'||audit.reason_code!==documentDraftReason()||audit.source_kind!=='HUMAN_COMMAND'
+  ||audit.scope_digest!==scopeDigest||audit.correction_of!==null
+  ||![command.completed_at,receipt.authorized_at,audit.recorded_at,version.created_at].every(at=>at===command.received_at))return bad();
+ integer(audit.server_sequence,1);
+ safeMetadata(value.origin);
+ // 이 ref들은 비권한 역사 투영의 지문이다. 인가 scopeDigest는 원 관계 검산에만 사용한다.
+ return {body,commandProjectionRef:{id:command.id,version:1,contentHash:hash(command)},
+  receiptProjectionRef:{id:receipt.id,version:1,contentHash:hash(receipt)},auditProjectionRef:{id:audit.event_id,version:1,contentHash:hash(audit)}};
+}
+
 /** 호출자가 이미 보유한 보호 거래만 사용한다. 직접 인증, 연결, 거래 시작을 하지 않는다. */
-export async function readDocumentBodyHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,ref:Ref,metadataBytes:number):Promise<DocumentBodyHistoryRows>{
+export async function readDocumentDraftHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,ref:Ref,metadataBytes:number):Promise<DocumentDraftHistoryRows>{
  if(!uuidV1(projectId)||!refV1(ref)||!Number.isSafeInteger(metadataBytes)||metadataBytes<1)return bad();
  let remaining=metadataBytes;
- async function fixed(table:'document_versions'|'document_artifact_links'|'artifacts',predicate:string,args:unknown[]){
-  const spec=specs[table]!,cap=args.length+2;
+ async function fixed(table:'document_versions'|'document_artifact_links'|'artifacts'|keyof typeof draftOriginColumns,predicate:string,args:unknown[]){
+  const spec=Object.hasOwn(draftOriginColumns,table)
+   ?{from:`anvil.${table} t`,columns:draftOriginColumns[table as keyof typeof draftOriginColumns].map(c=>`t.${c}`)}
+   :specs[table]!;
+  const scope=table==='authorization_receipts'?'t.scope_id':'t.project_id';
+  const cap=args.length+2;
   const sql=`/*FN16_D2_BODY*/ WITH material AS (
-   SELECT ${spec.columns.join(',')} FROM ${spec.from} WHERE t.project_id=$1::uuid AND ${predicate} LIMIT 2
+   SELECT ${spec.columns.join(',')} FROM ${spec.from} WHERE ${scope}=$1::uuid AND ${predicate} LIMIT 2
   ) SELECT CASE WHEN octet_length(to_jsonb(material)::text)<=$${cap}::bigint THEN to_jsonb(material) END AS inventory_data,
    octet_length(to_jsonb(material)::text) AS row_bytes FROM material`;
   const {rows}=await db.query(sql,[projectId,...args,remaining]);
@@ -99,11 +154,16 @@ export async function readDocumentBodyHistoryRows(db:Pick<PoolClient,'query'>,pr
   return cloneV1(row);
  }
  const version=await fixed('document_versions','t.document_id=$2::uuid AND t.version=$3::bigint AND t.content_hash=$4::text',[ref.id,ref.version,ref.contentHash]);
- if(!uuidV1(version.body_artifact_id))return bad();
+ if(!uuidV1(version.body_artifact_id)||!uuidV1(version.command_id)||version.stage_ref_json!==null)return bad();
  const link=await fixed('document_artifact_links',"t.document_id=$2::uuid AND t.version=$3::bigint AND t.kind='BODY'",[ref.id,ref.version]);
  const artifact=await fixed('artifacts',"t.id=$2::uuid AND t.draft_id IS NULL AND t.storage_key='blobs/'||t.project_id::text||'/'||t.id::text",[version.body_artifact_id]);
- const rows={version,link,artifact};
- checkDocumentBodyHistoryRows(projectId,ref,rows);
+ checkDocumentBodyHistoryRows(projectId,ref,{version,link,artifact});
+ const command=await fixed('commands',"t.id=$2::uuid AND t.scope_kind='PROJECT' AND t.draft_id IS NULL AND t.operation='saveDocumentDraft' AND t.approval_consumption_id IS NULL AND t.payload_ref IS NULL",[version.command_id]);
+ if(!uuidV1(command.authorization_receipt_id))return bad();
+ const receipt=await fixed('authorization_receipts',"t.id=$2::uuid AND t.scope_kind='PROJECT' AND t.command_id=$3::uuid AND t.approval_decision_ref IS NULL",[command.authorization_receipt_id,version.command_id]);
+ const audit=await fixed('audit_events','t.command_id=$2::uuid AND t.correction_of IS NULL',[version.command_id]);
+ const rows={version,link,artifact,origin:{command,receipt,audit}};
+ checkDocumentDraftHistoryRows(projectId,ref,rows);
  return rows;
 }
 
