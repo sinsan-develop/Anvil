@@ -695,6 +695,76 @@ test('FRAME의 exact claim COMMIT/release 뒤 원 frame1·정상 EOF만 결과 o
  }finally{f.controller.abort();}
 });
 
+for(const mode of ['CONFIRMED','OTHER_FENCE','COMMIT_LOST','RELEASE_LOST'] as const)test('정상 EOF 뒤 signed CLOSE는 확정된 원 수신 기록만 닫는다 '+mode,async()=>{
+ const f=await normalFrameDispatchFixture('frame-valid',true),close=await phaseProofFixture('CLOSE');
+ const {default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts');
+ assert.deepEqual(close.window,f.window);assert.deepEqual(close.session,f.session);assert.equal(close.token,f.token);
+ const app=Fastify();registerNativeFirstReceiveRoutes(app,{enabled:true,service:f.service},{origin:'https://anvil.example'} as any);
+ const waitingOwner=new AbortController();
+ const query=f.db.query,release=f.db.release,order:string[]=[];
+ let closing=false,waiterFinished=false,closedState:Record<string,unknown>|undefined,replay=false;
+ try{
+  const cap=await f.prepare();await f.service.sendNormalStartPreparationFrame(cap,f.controller.signal);
+  if(!f.stream.closed)await new Promise<void>(resolve=>f.stream.once('close',resolve));
+  const waiting=f.service.waitNormalStartPreparationResult(cap,waitingOwner.signal).catch(error=>error).finally(()=>{waiterFinished=true;});
+  f.db.query=(async(sql:string,args:any[]=[])=>{
+   if(sql==='SELECT anvil.native_receive_phase_verification($1,$2,$3::jsonb,$4::jsonb) AS result'||sql==='SELECT anvil.native_receive_phase_entry($1,$2,$3::jsonb,$4::jsonb) AS result'){
+    assert.deepEqual(JSON.parse(args[2]),close.proof);assert.deepEqual(JSON.parse(args[3]),close.body);
+    const context={...f.current,challenge:close.challenge,publicKeySpki:close.publicKeySpki,transactionId:'456',...(replay?{phase:'CLOSED',revision:4}:{})};
+    return{rows:[{result:sql.includes('native_receive_phase_entry(')?{context,replay}:context}],rowCount:1};
+   }
+   if(sql==='SELECT anvil.native_receive_open_transaction($1) AS transaction_id')return{rows:[{transaction_id:'456'}],rowCount:1};
+   if(sql==='SELECT anvil.native_receive_close_consume($1,$2::jsonb,$3::jsonb) AS result'){
+    const material=JSON.parse(args[1]),proposed=JSON.parse(args[2]),observedAt=new Date(f.now()).toISOString();
+    assert.equal(args[0],f.session.ref.id);assert.equal(material.signature,close.signature);assert.equal(proposed.brokerInstanceId,f.streamIdentity.brokerInstanceId);
+    order.push('CLOSE_RPC');closing=true;
+    const snapshot={schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_TERMINAL',terminalId:proposed.terminalId,windowRef:f.window.ref,outcome:'CLOSED',nativeOutcomeRef:null,ackRef:null,commandRef:null,recordedAt:observedAt};
+    const terminal={ref:{id:proposed.terminalId,version:1,contentHash:receiveHash(snapshot)},snapshot};
+    const state={schemaVersion:1,purpose:'NATIVE_FIRST_RECEIVE_STATE',windowRef:f.window.ref,phase:'CLOSED',receiveSessionRef:f.session.ref,offerRef:null,armRef:null,bindingRef:null,deliveryRef:null,authorityRef:null,ackRef:null,
+     terminalRef:terminal.ref,current:{checkedAt:observedAt,usable:false,reason:'OWNER_UNAVAILABLE'},observedAt,expiresAt:f.session.snapshot.expiresAt,executionAuthorized:false};
+    closedState=state;
+    return{rows:[{result:{terminal,state,requestHash:material.requestHash,...f.streamIdentity,
+     operationFence:mode==='OTHER_FENCE'?id(3398):f.streamIdentity.operationFence}}],rowCount:1};
+   }
+   if(sql==='SELECT anvil.native_receive_phase_replay($1,$2::jsonb) AS result'){
+    const material=JSON.parse(args[1]);
+    assert.equal(replay,true);assert(closedState);assert.equal(args[0],f.session.ref.id);
+    assert.equal(material.signature,close.signature);assert.deepEqual(material.proof,close.proof);
+    order.push('CLOSE_REPLAY');
+    return{rows:[{result:{resultCanonical:receiveCanonical(closedState),requestHash:material.requestHash}}],rowCount:1};
+   }
+   if(sql==='COMMIT'&&replay){order.push('REPLAY_COMMIT');return{rows:[],rowCount:0,command:'COMMIT'};}
+   if(sql==='COMMIT'&&closing){assert.equal(waiterFinished,false);order.push('CLOSE_COMMIT');if(mode==='COMMIT_LOST')throw Error('RAM_CLOSE_COMMIT_LOST');return{rows:[],rowCount:0,command:'COMMIT'};}
+   return query(sql,args);
+  }) as any;
+  f.db.release=((destroy?:boolean)=>{
+   if(!replay)assert.equal(waiterFinished,false);
+   order.push(destroy?'DESTROY':'RELEASE');
+   if(mode==='RELEASE_LOST')throw Error('RAM_CLOSE_RELEASE_LOST');
+   Reflect.apply(release,f.db,[destroy]);
+  }) as any;
+  const postClose=()=>app.inject({method:'POST',url:close.proof.target.path,headers:{host:'anvil.example','content-type':'application/json',authorization:'AnvilReceive '+f.token,
+   'x-anvil-native-receive-proof':Buffer.from(receiveCanonical(close.proof)).toString('base64url'),'x-anvil-native-receive-signature':close.signature},payload:receiveCanonical(close.body)});
+  const out=await postClose();
+  assert.deepEqual(order,['CLOSE_RPC','CLOSE_COMMIT',mode==='COMMIT_LOST'?'DESTROY':'RELEASE']);
+  if(mode==='CONFIRMED'){
+   assert.equal(out.statusCode,200,out.body);assert.equal(out.json().phase,'CLOSED');assert.equal(out.json().executionAuthorized,false);
+   assert.equal((await waiting).message,'NATIVE_RECEIVE_OUTCOME_UNKNOWN');
+   const before=f.calls.length;await assert.rejects(f.run());assert.equal(f.calls.length,before);
+   replay=true;
+   const repeated=await postClose();assert.equal(repeated.statusCode,200,repeated.body);assert.deepEqual(repeated.json(),out.json());
+   assert.deepEqual(order,['CLOSE_RPC','CLOSE_COMMIT','RELEASE','CLOSE_REPLAY','REPLAY_COMMIT','RELEASE']);
+  }else{
+   assert.equal(out.statusCode,503,out.body);
+   await new Promise<void>(resolve=>setImmediate(resolve));
+   assert.equal(waiterFinished,false,'확인 못 한 CLOSE의 waiter는 조기 폐쇄하지 않는다');
+   waitingOwner.abort();
+   assert.equal((await waiting).message,'NATIVE_RECEIVE_OUTCOME_UNKNOWN');
+  }
+  assert.equal(f.frameState().claims,1);assert.equal(f.references.length,1);assert.equal(f.state().records,0);
+ }finally{waitingOwner.abort();f.controller.abort();await app.close();}
+});
+
 test('PREPARED exact FRAME EOF만 실제 adapter의 기존 SQL producer gate까지 도달하고 ACK는 없다',async()=>{
  for(const mode of ['same','request']){
   const f=await normalFrameDispatchFixture('frame-prepared',true),{default:Fastify}=await import('fastify'),{registerNativeFirstReceiveRoutes}=await import('../../../apps/server/modules/executions/native-first-receive-routes.ts'),app=Fastify();

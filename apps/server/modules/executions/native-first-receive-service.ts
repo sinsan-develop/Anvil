@@ -287,7 +287,28 @@ export class NativeFirstReceiveBroker{
   }catch(error){const waiter=this.#waiters.get(owned.windowRef.id);if(waiter?.phase==='WAITING')this.#unknown(waiter);if(!supplied){frame?.fill(0);entry.close();}throw error;}
  }
  finishClose(capability:unknown,observe:()=>number=this.#now){
-  const owned=NativeFirstReceiveStore.takeCloseOwnership(capability,this.instanceId,observe()),entry=this.#streams.get(owned.receiveSessionRef.id);if(owned.brokerInstanceId!==null){if(!entry||owned.brokerInstanceId!==this.instanceId||!receiveSame(entry.ownership.windowRef,owned.windowRef)||!receiveSame(entry.ownership.receiveSessionRef,owned.receiveSessionRef)||entry.ownership.operationFence!==owned.operationFence)denied();entry.close();}else if(entry)denied();return receiveCopy(owned.state);
+  const owned=NativeFirstReceiveStore.takeCloseOwnership(capability,this.instanceId,observe()),sid=owned.receiveSessionRef.id;
+  const entry=this.#streams.get(sid),terminal=this.#normalResults.get(sid);
+  if(owned.brokerInstanceId===null){
+   if(entry||terminal)return denied();
+  }else{
+   const original=terminal?.entry??entry;
+   if(!original||entry&&entry!==original||owned.brokerInstanceId!==this.instanceId
+    ||!receiveSame(original.ownership.windowRef,owned.windowRef)||!receiveSame(original.ownership.receiveSessionRef,owned.receiveSessionRef)
+    ||original.ownership.operationFence!==owned.operationFence)return denied();
+   if(terminal?.state==='EOF'){
+    const origin=original.ownership.preparationOrigin;
+    if(!original.normalFrameNegotiated||original.frameAttempt!=='EOF'||!origin
+     ||!receiveSame(terminal.request.windowRef,owned.windowRef)||!receiveSame(terminal.request.receiveSessionRef,owned.receiveSessionRef)
+     ||!receiveSame(terminal.request.registrationRef,origin.window.snapshot.registrationRef))return denied();
+    // 원 signed CLOSE 정착은 수신 대기만 무효화한다. 원 process의 회수·종료 관측은 별도다.
+    terminal.preparation.invalidate();
+   }else{
+    if(!entry)return denied();
+    entry.close();
+   }
+  }
+  return receiveCopy(owned.state);
  }
  begin(raw:unknown,signal:AbortSignal,check:()=>void,remainingMs:number){
   if(!receiveRecord(raw,['windowRef','receiveSessionRef','bindingRef','armRef','deliveryRef','authorityRef','commandHash','metadataHash','expiresAt','operationFence'])||!['windowRef','receiveSessionRef','bindingRef','armRef','deliveryRef','authorityRef'].every(k=>receiveRef(raw[k])&&raw[k].version===1)||!receiveUuid(raw.operationFence)||!['commandHash','metadataHash'].every(k=>typeof raw[k]==='string'&&/^[a-f0-9]{64}$/.test(raw[k]))||typeof raw.expiresAt!=='string'||!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(raw.expiresAt)||!Number.isSafeInteger(remainingMs)||remainingMs<1||remainingMs>10000||signal.aborted||this.#waiters.has(raw.windowRef.id))denied();
