@@ -151,7 +151,7 @@ export function checkDocumentDraftHistoryRows(projectId:string,ref:Ref,value:unk
 }
 
 /** 호출자가 이미 보유한 보호 거래만 사용한다. 직접 인증, 연결, 거래 시작을 하지 않는다. */
-type ProjectHistoryOperation='saveDocumentDraft'|'recordContentReview'|'confirmDocument'|'saveWorkPlanDraft'|'confirmWorkPlan';
+type ProjectHistoryOperation='saveDocumentDraft'|'recordContentReview'|'confirmDocument'|'saveWorkPlanDraft'|'confirmWorkPlan'|'indexDesignDocument';
 type OriginTable=keyof typeof projectHistoryOriginColumns;
 
 /** 내부 scope·예산이 이미 적용되는 reader에서 별도 승인 소비 없는 원행만 읽는다. */
@@ -271,11 +271,26 @@ function checkConfirmationRow(projectId:string,ref:Ref,confirmationId:string,for
  return row.review_refs as {id:string;targetRef:Ref;outcome:'ACCEPTED';criteriaVersion:1}[];
 }
 
-export function checkProjectHistoryOrigin(projectId:string,ref:Ref,origin:unknown,source:{
- operation:ProjectHistoryOperation;reasonCode:string;commandId:unknown;actorId:unknown;clientId:unknown;createdAt:unknown;
- payload:object;resultData:object;requestBinding?:{targetId:string|null;expectedVersion:number};
-}){
+type HistorySource={reasonCode:string;commandId:unknown;actorId:unknown;clientId:unknown;createdAt:unknown;resultData:object};
+type ProjectOriginSource=HistorySource&{
+ operation:Exclude<ProjectHistoryOperation,'indexDesignDocument'>;payload:object;requestBinding?:{targetId:string|null;expectedVersion:number};
+};
+
+export function checkProjectHistoryOrigin(projectId:string,ref:Ref,origin:unknown,source:ProjectOriginSource){
  const {targetId,expectedVersion}=source.requestBinding??{targetId:ref.id,expectedVersion:ref.version};
+ return checkHistoryOrigin(projectId,ref,origin,source,expectedVersion,(command,clientId,controlGeneration)=>
+  hash({schemaVersion:1,projectId,commandId:command.command_id,clientId,controlGeneration,operation:source.operation,
+   targetId,expectedVersion,baselineRefs:[],approvalRef:null,payload:source.payload}));
+}
+
+/** 색인 원 요청의 이유는 저장하지 않으므로, 이 목적만 저장 요청 해시와 원 범위를 대조한다. */
+export function checkDesignIndexHistoryOrigin(projectId:string,ref:Ref,origin:unknown,source:Omit<HistorySource,'reasonCode'>){
+ return checkHistoryOrigin(projectId,ref,origin,{...source,operation:'indexDesignDocument',reasonCode:'EXPLICIT_DESIGN_SOURCE_INDEX'},ref.version,
+  command=>command.request_hash);
+}
+
+function checkHistoryOrigin(projectId:string,ref:Ref,origin:unknown,source:HistorySource&{operation:ProjectHistoryOperation},expectedVersion:number,
+ readRequestHash:(command:Row,clientId:string,controlGeneration:number)=>unknown){
  if(!recordV1(origin,['command','receipt','audit']))return bad();
  const {command,receipt,audit}=origin;
  if(!recordV1(command,projectHistoryOriginColumns.commands)||!recordV1(receipt,projectHistoryOriginColumns.authorization_receipts)||!recordV1(audit,projectHistoryOriginColumns.audit_events)
@@ -286,10 +301,8 @@ export function checkProjectHistoryOrigin(projectId:string,ref:Ref,origin:unknow
   ||command.approval_consumption_id!==null||command.payload_ref!==null||!refV1(command.policy_ref))return bad();
  const {actor_id:actorId,client_id:clientId,policy_ref:policyRef}=command;
  const controlGeneration=integer(command.control_generation,1);
- // 일반 자료 명령의 baselineRefs는 빈 배열이고 이 보호 사본은 별도 승인 소비가 없는 원 요청만 포함한다.
- const requestHash=hash({schemaVersion:1,projectId,commandId:command.command_id,clientId,controlGeneration,
-  operation:source.operation,targetId,expectedVersion,baselineRefs:[],approvalRef:null,payload:source.payload});
- if(command.request_hash!==requestHash)return bad();
+ const requestHash=readRequestHash(command,clientId as string,controlGeneration);
+ if(!hashV1(requestHash)||command.request_hash!==requestHash)return bad();
  const scopeDigest=hash({projectId,actorId,clientId,controlGeneration,requestHash,policyRef,targetRef:ref});
  const human={kind:'HUMAN',userId:actorId};
  if(receipt.id!==command.authorization_receipt_id||receipt.command_id!==command.id||receipt.scope_kind!=='PROJECT'||receipt.scope_id!==projectId

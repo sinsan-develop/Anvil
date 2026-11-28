@@ -2,12 +2,13 @@ import type {PoolClient} from 'pg';
 import {AuthFailure,type AccessRepository,type AuthenticatedIdentity} from '../access/repository.ts';
 import {projectMember} from '../access/project-command.ts';
 import {notificationSessionDeadline} from '../notifications/notification-input.ts';
-import {planText} from '../traceability/work-plan-card.ts';
+import {analyzeWorkPlanCards,planText} from '../traceability/work-plan-card.ts';
 import {isVersionRef} from '../../../../contracts/references.ts';
 import {canonicalJson,contentHash} from '../../../../contracts/canonical.ts';
-import {uuidV1} from '../../../../contracts/runtime/validation-v1.ts';
+import {arrayV1,cloneV1,refV1,uuidV1,type RuntimeRefV1} from '../../../../contracts/runtime/validation-v1.ts';
 import {inspectArtifact} from '../../storage/sensitive-inspection.ts';
 import {readDocumentInventoryInput} from './document-inventory-input.ts';
+import {checkDesignIndexHistoryOrigin,projectHistoryOriginColumns,readProjectHistoryOrigin} from './document-inventory.ts';
 
 type Row=Record<string,any>;
 const columns={
@@ -37,6 +38,148 @@ function identitySnapshot(actor:AuthenticatedIdentity):AuthenticatedIdentity{
 }
 const identityKey=(a:AuthenticatedIdentity)=>[a.actorId,a.clientId,a.credentialGeneration,a.authSession!.id];
 function compare(a:(string|number)[],b:(string|number)[]){for(let i=0;i<a.length;i++){if(a[i]!==b[i])return a[i]!<b[i]!?-1:1;}return 0;}
+const anchor=(value:unknown)=>typeof value==='string'&&/^line:[1-9][0-9]{0,7}$/.test(value);
+function safe(value:unknown){
+ if(inspectArtifact(Buffer.from(canonicalJson(value))).state==='SUSPECTED')bad('DESIGN_TRACE_INVENTORY_SENSITIVE_METADATA',503);
+}
+function checkDesignItem(row:Row){
+ const i=object(row.item_json,['id','documentRef','localCode','title','anchor','itemHash']);
+ if(i.id!==row.id||!isVersionRef(i.documentRef)||!taskCode(i.localCode)||!planText(i.title,200)||!i.title.trim()||!anchor(i.anchor)||!digest(i.itemHash))return bad();
+ const body={documentRef:i.documentRef,localCode:i.localCode,title:i.title,anchor:i.anchor};
+ const ref={id:row.design_document_id,version:integer(row.document_version,1),contentHash:row.document_hash};
+ if(!isVersionRef(ref)||!same(i.documentRef,ref)||i.localCode!==row.local_code||i.title!==row.title||i.anchor!==row.anchor||i.itemHash!==row.item_hash||hash(body)!==i.itemHash)return bad();
+ safe(i);
+ return {item:i,ref};
+}
+function checkScreenRegion(row:Row,design:Row){
+ const s=object(row.region_json,['id','designItemId','screenCode','documentRef','artifactRef','anchor','regionHash']);
+ if(s.id!==row.id||s.designItemId!==row.design_item_id||!taskCode(s.screenCode)||!isVersionRef(s.documentRef)||!anchor(s.anchor))return bad();
+ const ar=object(s.artifactRef,['artifactId','bytes','contentHash','mediaType']);
+ if(!uuidV1(ar.artifactId)||typeof ar.bytes!=='number'||integer(ar.bytes,0,2*1024*1024)!==ar.bytes||!digest(ar.contentHash)||!['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(ar.mediaType))return bad();
+ const body={designItemId:s.designItemId,screenCode:s.screenCode,documentRef:s.documentRef,artifactRef:ar,anchor:s.anchor};
+ const ref={id:row.source_document_id,version:integer(row.source_version,1),contentHash:row.source_hash};
+ if(!same(s.documentRef,ref)||s.screenCode!==row.screen_code||ar.artifactId!==row.artifact_id||s.anchor!==row.anchor||s.regionHash!==row.region_hash||hash(body)!==s.regionHash||row.command_id!==design.command_id)return bad();
+ safe(s);
+ return s;
+}
+function equalSets(a:unknown,b:Row[]){
+ if(!Array.isArray(a)||a.length!==b.length)return false;
+ const ids=new Set<string>(),expected=new Map(b.map(row=>[row.id,row]));
+ for(const v of a){if(!v||typeof v!=='object'||!uuidV1(v.id)||ids.has(v.id)||!same(expected.get(v.id)??null,v))return false;ids.add(v.id);}
+ return true;
+}
+
+export interface DesignIndexHistoryRows{
+ items:Row[];regions:Row[];origin:Awaited<ReturnType<typeof readProjectHistoryOrigin>>;
+}
+const indexMax=200;
+function indexRows(value:unknown,table:'design_items'|'screen_regions',projectId:string){
+ if(!arrayV1(value,indexMax))return bad();
+ let last:string|undefined;
+ return value.map(input=>{
+  const row=object(input,columns[table]);
+  if(row.project_id!==projectId||!uuidV1(row.id)||(last!==undefined&&last>=row.id))return bad();
+  last=row.id;
+  return row;
+ });
+}
+function checkedIndexItems(items:Row[],designRef:RuntimeRefV1){
+ if(!items.length)return bad();
+ const root=items[0]!,codes=new Set<string>(),index=new Map<string,{row:Row;item:Row}>();
+ for(const row of items){
+  const {item,ref}=checkDesignItem(row);
+  if(!same(ref,designRef)||row.command_id!==root.command_id||row.created_by!==root.created_by
+   ||row.client_id!==root.client_id||row.created_at!==root.created_at||codes.has(item.localCode))return bad();
+  codes.add(item.localCode);
+  index.set(row.id,{row,item});
+ }
+ return {root,index};
+}
+
+function checkedIndexRegions(regions:Row[],root:Row,index:ReturnType<typeof checkedIndexItems>['index']){
+ const screens=new Map<string,Row>(),regionKeys=new Set<string>();
+ for(const row of regions){
+  const design=index.get(row.design_item_id);
+  if(!design||row.created_by!==root.created_by||row.client_id!==root.client_id||row.created_at!==root.created_at)return bad();
+  const s=checkScreenRegion(row,design.row),key=canonicalJson([s.designItemId,s.screenCode,s.anchor]);
+  if(regionKeys.has(key))return bad();
+  regionKeys.add(key);screens.set(s.id,s);
+ }
+ return screens;
+}
+
+/** 고정 AF02의 원 색인/업무 참조만 검산한다. AF03 원문과 화면 검토 권위는 포함하지 않는다. */
+export function checkDesignIndexHistoryRows(projectId:string,designRef:RuntimeRefV1,planVersionRow:unknown,planConfirmationSequence:unknown,value:unknown){
+ if(!uuidV1(projectId)||!refV1(designRef))return bad();
+ const plan=object(planVersionRow,['version_json'],false).version_json;
+ const {tasks,designRef:planDesignRef}=object(plan,['tasks','designRef'],false);
+ if(!same(planDesignRef,designRef))return bad();
+ const {items,regions,origin}=object(value,['items','regions','origin']);
+ const {root,index}=checkedIndexItems(indexRows(items,'design_items',projectId),designRef);
+ const screens=checkedIndexRegions(indexRows(regions,'screen_regions',projectId),root,index);
+ // 원 결과의 입력 순서와 조회의 PK 순서를 각각 보존한다. 전체 집합은 양방향으로 대조한다.
+ const {command}=object(origin,['command','receipt','audit']);
+ const result=object(command,['result_ref'],false).result_ref;
+ const {data}=object(result,['data'],false);
+ const {designItems,screenRegions}=object(data,['ref','status','designItems','screenRegions']);
+ if(!equalSets(designItems,[...index.values()].map(value=>value.item))||!equalSets(screenRegions,[...screens.values()]))return bad();
+ const {sequence}=checkDesignIndexHistoryOrigin(projectId,designRef,origin,{commandId:root.command_id,actorId:root.created_by,clientId:root.client_id,createdAt:root.created_at,
+  resultData:{status:'DESIGN_INDEXED',designItems,screenRegions}});
+ // 확정이 이미 소비한 색인만 같은 계획의 역사 근거가 된다.
+ if(sequence>=integer(planConfirmationSequence,1))return bad();
+ for(const task of analyzeWorkPlanCards(tasks).tasks)for(const r of [...task.designRefs,...task.screenRefs]){
+  const source=r.kind==='DESIGN_ITEM'?index.get(r.id)?.item:screens.get(r.id);
+  if(!source||!same(source.documentRef,r.versionRef)||(r.kind==='DESIGN_ITEM'?source.localCode:source.screenCode)!==r.localCode||source.anchor!==r.anchor)return bad();
+ }
+ safe(value);
+ return {designIndexProjectionHash:hash(value),designItemCount:index.size,screenRegionCount:screens.size,
+  designIndexRequestReconstructed:false as const,screenSourceBodiesVerified:false as const};
+}
+
+/** 정확 AF02만 조회하는 내부 reader. 거래·예약·독립 저장은 열지 않는다. */
+export async function readDesignIndexHistoryRows(db:Pick<PoolClient,'query'>,projectId:string,designRef:RuntimeRefV1,
+ planVersionRow:unknown,planConfirmationSequence:unknown,metadataBytes:number):Promise<DesignIndexHistoryRows>{
+ if(!uuidV1(projectId)||!refV1(designRef))return bad();
+ const confirmedAtSequence=integer(planConfirmationSequence,1);
+ let remaining=metadataBytes;
+ async function read(from:string,fields:readonly string[],where:string,args:unknown[],max:number){
+  if(!Number.isSafeInteger(remaining)||remaining<1)return bad('DESIGN_TRACE_INVENTORY_LIMIT',413);
+  const cap=args.length+1;
+  const order=max===indexMax?' ORDER BY t.id':'';
+  const {rows}=await db.query(`/*FN16_D2_DESIGN_INDEX*/ WITH material AS (
+   SELECT ${fields.map(c=>'t.'+c).join(',')} FROM ${from} WHERE ${where}${order} LIMIT ${max+1}
+  ), measured AS (
+   SELECT ${fields.join(',')},octet_length(to_jsonb(material)::text) AS row_bytes FROM material
+  ) SELECT CASE WHEN sum(row_bytes) OVER ()<=$${cap}::bigint THEN to_jsonb(measured)-'row_bytes' END AS inventory_data,
+   row_bytes FROM measured${max===indexMax?' ORDER BY id':''}`,[...args,remaining]);
+  if(!Array.isArray(rows)||rows.length>max)return bad();
+  return rows.map(raw=>{
+   const envelope=object(raw,['inventory_data','row_bytes']),size=integer(envelope.row_bytes,1);
+   if(size>remaining||envelope.inventory_data===null)return bad('DESIGN_TRACE_INVENTORY_LIMIT',413);
+   remaining-=size;
+   const row=object(envelope.inventory_data,[...fields]);
+   if(Buffer.byteLength(canonicalJson(row))>size)return bad();
+   return cloneV1(row);
+  });
+ }
+ const items=await read('anvil.design_items t',columns.design_items,
+  't.project_id=$1::uuid AND t.design_document_id=$2::uuid AND t.document_version=$3::bigint',
+  [projectId,designRef.id,designRef.version],indexMax);
+ const {root,index}=checkedIndexItems(indexRows(items,'design_items',projectId),designRef);
+ const regions=await read('anvil.screen_regions t',columns.screen_regions,'t.project_id=$1::uuid AND t.design_item_id=ANY($2::uuid[])',
+  [projectId,[...index.keys()]],indexMax);
+ checkedIndexRegions(indexRows(regions,'screen_regions',projectId),root,index);
+ const origin=await readProjectHistoryOrigin(async(table,predicate,args)=>{
+  const rows=await read(`anvil.${table} t`,projectHistoryOriginColumns[table],
+   `${table==='authorization_receipts'?'t.scope_id':'t.project_id'}=$1::uuid AND ${predicate}`,[projectId,...args],1);
+  if(rows.length!==1)return bad();
+  return rows[0]!;
+ },root.command_id,'indexDesignDocument');
+ const history={items,regions,origin};
+ checkDesignIndexHistoryRows(projectId,designRef,planVersionRow,confirmedAtSequence,history);
+ return history;
+}
+
 /** 원문 접근 없는 내부 설계·화면·추적 metadata 관측이다. archive/복원·명령 실행 권한을 발급하지 않는다. */
 export async function collectDesignTraceInventory(access:AccessRepository,token:string,value:unknown,signal:AbortSignal):Promise<Row>{
  const request=readDocumentInventoryInput(value),started=performance.now();let authDeadline=Infinity,identity:AuthenticatedIdentity|undefined,metadataUsed=0;
@@ -76,29 +219,25 @@ export async function collectDesignTraceInventory(access:AccessRepository,token:
    const itemRows=await pageRows(db,'design_items'),regionRows=await pageRows(db,'screen_regions'),edgeRows=await pageRows(db,'trace_edges');
    const commandRows=await selectedCommands(db,[...itemRows,...regionRows,...edgeRows].map(r=>r.command_id)),commands=new Map(commandRows.map(c=>[c.id,c]));
    const designItems:Row[]=[],screenRegions:Row[]=[],traceEdges:Row[]=[],issues:Row[]=[],externalDependencies:Row[]=[],items=new Map<string,Row>(),regions=new Map<string,Row>(),groups=new Map<string,Row>(),documentGroups=new Map<string,string>(),itemCodes=new Set<string>(),regionKeys=new Set<string>(),edgeKeys=new Set<string>(),usedEdgeCommands=new Set<string>(),externalKeys=new Set<string>();
-   const safe=(v:unknown)=>{if(inspectArtifact(Buffer.from(canonicalJson(v))).state==='SUSPECTED')bad('DESIGN_TRACE_INVENTORY_SENSITIVE_METADATA',503);},anchor=(v:unknown)=>typeof v==='string'&&/^line:[1-9][0-9]{0,7}$/.test(v);
    function external(v:Row){safe(v);const k=canonicalJson(v);if(!externalKeys.has(k)){externalKeys.add(k);externalDependencies.push(structuredClone(v));}}
    function command(row:Row,operation:string,ref:Row,expected:number){
     const c=commands.get(row.command_id);if(!c||!uuidV1(row.created_by)||!uuidV1(row.client_id)||c.state!=='APPLIED'||c.operation!==operation||c.actor_id!==row.created_by||c.client_id!==row.client_id||integer(c.expected_version)!==expected||!isVersionRef(c.policy_ref)||!uuidV1(c.authorization_receipt_id))return bad();integer(c.control_generation,1);
     const result=object(c.result_ref,['operationId','commandId','projectId','status','targetId','version','data','evidenceRefs','warnings','serverReceivedAt']);if(!uuidV1(result.operationId)||!uuidV1(result.commandId)||result.projectId!==request.projectId||result.status!=='APPLIED'||result.targetId!==ref.id||result.version!==ref.version||!same(result.data?.ref,ref)||!Array.isArray(result.evidenceRefs)||!Array.isArray(result.warnings)||stamp(result.serverReceivedAt)!==stamp(row.created_at))bad();return c;
    }
    for(const row of itemRows){
-    check();const i=object(row.item_json,['id','documentRef','localCode','title','anchor','itemHash']);if(i.id!==row.id||!isVersionRef(i.documentRef)||!taskCode(i.localCode)||!planText(i.title,200)||!i.title.trim()||!anchor(i.anchor)||!digest(i.itemHash))bad();
-    const body={documentRef:i.documentRef,localCode:i.localCode,title:i.title,anchor:i.anchor},ref={id:row.design_document_id,version:integer(row.document_version,1),contentHash:row.document_hash};if(!isVersionRef(ref)||!same(i.documentRef,ref)||i.localCode!==row.local_code||i.title!==row.title||i.anchor!==row.anchor||i.itemHash!==row.item_hash||hash(body)!==i.itemHash)bad();safe(i);
+    check();const {item:i,ref}=checkDesignItem(row);
     const key=canonicalJson([ref.id,ref.version,i.localCode]);if(itemCodes.has(key))bad();itemCodes.add(key);
     const c=command(row,'indexDesignDocument',ref,ref.version),documentKey=canonicalJson([ref.id,ref.version]),knownCommand=documentGroups.get(documentKey);if(knownCommand&&knownCommand!==row.command_id)bad();documentGroups.set(documentKey,row.command_id);
     const g=groups.get(row.command_id);if(g){if(!same(g.ref,ref)||g.actorId!==row.created_by||g.clientId!==row.client_id||g.recordedAt!==stamp(row.created_at))bad();g.items.push(i);}else groups.set(row.command_id,{ref,actorId:row.created_by,clientId:row.client_id,recordedAt:stamp(row.created_at),items:[i],screens:[],command:c});
     items.set(row.id,{row,item:i,designRef:ref});const projection={...i,recordedAt:stamp(row.created_at)};designItems.push({...projection,projectionHash:hash(projection)});external({kind:'DOCUMENT_VERSION',formCode:'AF02',ref,verification:'NOT_PERFORMED'});
    }
    for(const row of regionRows){
-    check();const s=object(row.region_json,['id','designItemId','screenCode','documentRef','artifactRef','anchor','regionHash']),item=items.get(row.design_item_id);if(!item||s.id!==row.id||s.designItemId!==row.design_item_id||!taskCode(s.screenCode)||!isVersionRef(s.documentRef)||!anchor(s.anchor)||!digest(s.regionHash))bad();
-    const ar=object(s.artifactRef,['artifactId','bytes','contentHash','mediaType']);if(!uuidV1(ar.artifactId)||typeof ar.bytes!=='number'||integer(ar.bytes,0,2*1024*1024)!==ar.bytes||!digest(ar.contentHash)||!['text/plain;charset=utf-8','text/markdown;charset=utf-8'].includes(ar.mediaType))bad();
-    const body={designItemId:s.designItemId,screenCode:s.screenCode,documentRef:s.documentRef,artifactRef:s.artifactRef,anchor:s.anchor},ref={id:row.source_document_id,version:integer(row.source_version,1),contentHash:row.source_hash};if(!isVersionRef(ref)||!same(s.documentRef,ref)||s.screenCode!==row.screen_code||ar.artifactId!==row.artifact_id||s.anchor!==row.anchor||s.regionHash!==row.region_hash||hash(body)!==s.regionHash||row.command_id!==item.row.command_id)bad();safe(s);
+    check();const item=items.get(row.design_item_id);if(!item)return bad();
+    const s=checkScreenRegion(row,item.row),ar=s.artifactRef;
     const unique=canonicalJson([s.designItemId,s.screenCode,s.anchor]);if(regionKeys.has(unique))bad();regionKeys.add(unique);command(row,'indexDesignDocument',item.designRef,item.designRef.version);
     const g=groups.get(row.command_id);if(!g||g.actorId!==row.created_by||g.clientId!==row.client_id||g.recordedAt!==stamp(row.created_at))bad();g.screens.push(s);regions.set(row.id,{row,region:s,designRef:item.designRef});
     const projection={...s,recordedAt:stamp(row.created_at)};screenRegions.push({...projection,projectionHash:hash(projection)});external({kind:'DOCUMENT_VERSION',formCode:'AF03',ref:s.documentRef,verification:'NOT_PERFORMED'});external({kind:'ARTIFACT',ref:ar,verification:'NOT_PERFORMED'});
    }
-   function equalSets(a:unknown,b:Row[]){if(!Array.isArray(a)||a.length!==b.length)return false;const ids=new Set<string>();for(const v of a){if(!v||typeof v!=='object'||!uuidV1(v.id)||ids.has(v.id)||!b.some(row=>row.id===v.id&&same(row,v)))return false;ids.add(v.id);}return true;}
    for(const g of groups.values()){const data=object(g.command.result_ref.data,['ref','status','designItems','screenRegions']);if(data.status!=='DESIGN_INDEXED'||!same(data.ref,g.ref)||g.items.length<1||g.items.length>200||g.screens.length>200||!equalSets(data.designItems,g.items)||!equalSets(data.screenRegions,g.screens))bad();}
    function endpoint(value:unknown):{ref:Row;designRef:Row|null;internal:boolean}{
     const common=object(value,['kind','id','versionRef'],false);if(!uuidV1(common.id)||!isVersionRef(common.versionRef))return bad();

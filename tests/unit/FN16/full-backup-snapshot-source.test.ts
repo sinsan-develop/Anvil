@@ -102,7 +102,8 @@ const confirmationOrigin=originFor(confirmation.command_id,'confirmDocument',{ve
 
 function fixture(mode='valid'){
  const confirmed=mode.startsWith('confirmed');
- const withDecision=mode.startsWith('plan-decision-');
+ const withIndex=mode.startsWith('design-index-');
+ const withDecision=mode.startsWith('plan-decision-')||withIndex;
  const withRelations=mode.startsWith('relations-')||withDecision;
  const withDesign=mode.startsWith('design-')||withRelations;
  const withPlan=mode.startsWith('plan-')||withDesign;
@@ -110,9 +111,12 @@ function fixture(mode='valid'){
  const designBody=mode==='design-shared'?bodyRef:designBodyRef;
  const {source:designPayload,ref:designVersionRef}=designSource(designBody);
  const expectedDesignRef=mode==='design-plan-mismatch'?{...designVersionRef,contentHash:'e'.repeat(64)}:designVersionRef;
+ const screenRef=pinned(510);
+ const screenSlot={kind:'SCREEN_REGION',id:id(514),versionRef:screenRef,localCode:'SCREEN-01',anchor:'line:1'};
+ const screenReviewRefs=withIndex?[{id:id(515),targetRef:screenRef,criteriaVersion:1,outcome:'ACCEPTED'}]:[];
  const task=(taskCode:string)=>({taskCode,type:'FUNCTION',title:taskCode,purpose:'합성 관계',
-  designRefs:withDecision?[{kind:'DESIGN_ITEM',id:id(406),versionRef:designVersionRef,localCode:'DESIGN-01',anchor:'line:1'}]:[],
-  screenRefs:[],ownerRole:'개발',
+  designRefs:withDecision?[{kind:'DESIGN_ITEM',id:id(mode==='design-index-unresolved-slot'?999:406),versionRef:designVersionRef,localCode:'DESIGN-01',anchor:mode==='design-index-wrong-anchor'?'line:2':'line:1'}]:[],
+  screenRefs:withIndex?[screenSlot]:[],ownerRole:'개발',
   inputs:['입력'],outputs:['출력'],included:['포함'],excluded:['제외'],allowedFileRefs:['one.ts'],startPrerequisites:[],acceptancePrerequisites:[],
   steps:['절차'],testCases:['NORMAL','IMPORTANT_FAILURE','DIRECT_IMPACT'].map(kind=>({id:kind,kind,steps:['절차'],expected:'기대',environment:'합성'})),
   acceptanceCriteria:['기준'],evidenceRequirements:['근거'],rollback:'되돌리기',recoveryNotes:'복구'});
@@ -124,13 +128,13 @@ function fixture(mode='valid'){
  ]:[];
  const analysis=analyzeWorkPlanCards(tasks);
  if(withDecision)assert.deepEqual(analysis.issues,[]);
- const designPlan={...workPlan,designRef:designVersionRef,...withRelations&&{tasks,dependencies,issues:analysis.issues,relationalProjection:issuesOnly?'ISSUES_ONLY':'STORED'}};
+ const designPlan={...workPlan,designRef:designVersionRef,screenReviewRefs,...withRelations&&{tasks,dependencies,issues:analysis.issues,relationalProjection:issuesOnly?'ISSUES_ONLY':'STORED'}};
  const rowScope={project_id:projectId,plan_id:workPlanRef.id,plan_version:(mode==='plan-decision-first-plan'||mode==='plan-decision-wrong-target')?1:workPlanRef.version};
  const taskRows=[...tasks].reverse().map(t=>({...rowScope,task_code:t.taskCode,task_type:t.type,card_json:t,card_hash:hash(t),owner_role:t.ownerRole}));
  const dependencyRows=[...dependencies].reverse().map(d=>({...rowScope,task_code:d.taskCode,dependency_task_code:d.dependencyTaskCode,phase:d.phase}));
  const expectedPlanRef=withDesign?{...workPlanRef,version:(mode==='plan-decision-first-plan'||mode==='plan-decision-wrong-target')?1:workPlanRef.version,contentHash:hash(designPlan)}:workPlanRef;
  const planConfirmationId=id(401);
- const planRow=withDesign?{...workPlanRow,version:expectedPlanRef.version,design_hash:designVersionRef.contentHash,content_hash:expectedPlanRef.contentHash,
+ const planRow=withDesign?{...workPlanRow,screen_review_refs:screenReviewRefs,version:expectedPlanRef.version,design_hash:designVersionRef.contentHash,content_hash:expectedPlanRef.contentHash,
   version_json:{ref:expectedPlanRef,status:'DRAFT',...designPlan}}:workPlanRow;
  function planProof(n:number,commandId:string,operation:string,reasonCode:string,payload:object,resultData:object,sequence:number,recordedAt:string,
   targetId:string|null=expectedPlanRef.id,expectedVersion=expectedPlanRef.version){
@@ -156,16 +160,40 @@ function fixture(mode='valid'){
    {status:'REVIEW_RECORDED',reviewRef:ref,review:view},11+index,reviewAt)};
  });
  const selected=mode==='plan-decision-not-selected'?[planReviews[0]!.ref]:[planReviews[1]!.ref,planReviews[0]!.ref];
- const planValidation={validForConfirmation:true,issues:[],sourceRefs:[ref,designVersionRef],screenReviewRefs:[]};
+ const planValidation={validForConfirmation:true,issues:[],sourceRefs:[ref,designVersionRef],screenReviewRefs};
  const planConfirmation={id:planConfirmationId,project_id:projectId,plan_id:expectedPlanRef.id,version:expectedPlanRef.version,target_hash:expectedPlanRef.contentHash,
   review_refs:selected,validation_json:planValidation,confirmed_by:actorId,client_id:clientId,command_id:id(402),created_at:confirmedAt};
  const planSave=planProof(430,planRow.command_id,'saveWorkPlanDraft','EXPLICIT_WORK_PLAN_DRAFT',
-  {documentRef:ref,designRef:designVersionRef,screenReviewRefs:[],tasks,reason:designPlan.reason},
+  {documentRef:ref,designRef:designVersionRef,screenReviewRefs,tasks,reason:designPlan.reason},
   {status:'WORK_PLAN_DRAFT_SAVED',workPlan:planRow.version_json},10,at,
   expectedPlanRef.version===1&&mode!=='plan-decision-wrong-target'?null:expectedPlanRef.id,expectedPlanRef.version-1);
  const planDecision=planProof(440,planConfirmation.command_id,'confirmWorkPlan','EXPLICIT_WORK_PLAN_CONFIRMATION',
   {planRef:expectedPlanRef,reviewRefs:selected},
   {status:'CONFIRMED',confirmationId:planConfirmationId,reviewRefs:selected,validation:planValidation,activatedAsBaseline:false},14,confirmedAt);
+ const indexOriginItems=[407,406].map(n=>{
+  const body={documentRef:designVersionRef,localCode:n===406?'DESIGN-01':'DESIGN-02',title:'합성 설계 색인',anchor:'line:1'};
+  return {id:id(n),...body,itemHash:hash(body)};
+ });
+ const regionData={designItemId:id(406),screenCode:screenSlot.localCode,documentRef:screenRef,
+  artifactRef:{artifactId:id(516),bytes:21,contentHash:'a'.repeat(64),mediaType:'text/plain;charset=utf-8'},anchor:screenSlot.anchor};
+ const region={id:screenSlot.id,...regionData,regionHash:hash(regionData)};
+ const indexProof=planProof(520,id(519),'indexDesignDocument','EXPLICIT_DESIGN_SOURCE_INDEX',
+  {documentRef:designVersionRef,items:indexOriginItems.map(({localCode,title,anchor})=>({localCode,title,anchor})),
+   screens:[{designLocalCode:'DESIGN-01',screenCode:region.screenCode,documentRef:screenRef,anchor:region.anchor}],reason:'저장되지 않는 원 색인 요청 사유'},
+  {status:'DESIGN_INDEXED',designItems:indexOriginItems,screenRegions:[region]},9,at,designVersionRef.id,designVersionRef.version);
+ const indexTarget={id:designVersionRef.id,version:designVersionRef.version};
+ const indexDigest=hash({projectId,actorId,clientId,controlGeneration:1,requestHash:indexProof.command.request_hash,policyRef,targetRef:designVersionRef});
+ const indexCommand={...indexProof.command,result_ref:{...indexProof.command.result_ref,targetId:indexTarget.id,version:indexTarget.version,
+  data:{...indexProof.command.result_ref.data,ref:designVersionRef}}};
+ const indexReceipt={...indexProof.receipt,scope_digest:indexDigest};
+ const indexAudit={...indexProof.audit,target_ref:designVersionRef,scope_digest:indexDigest,
+  server_sequence:mode==='design-index-same-sequence'?14:mode==='design-index-after-confirmation'?15:indexProof.audit.server_sequence};
+ const indexItems=[...indexOriginItems].reverse().map(item=>({id:item.id,project_id:projectId,design_document_id:designVersionRef.id,
+  document_version:designVersionRef.version,document_hash:designVersionRef.contentHash,local_code:item.localCode,title:item.title,anchor:item.anchor,
+  item_hash:item.itemHash,item_json:item,created_by:actorId,client_id:clientId,command_id:indexCommand.id,created_at:at}));
+ const indexRegion={id:region.id,project_id:projectId,design_item_id:region.designItemId,screen_code:region.screenCode,
+  source_document_id:screenRef.id,source_version:screenRef.version,source_hash:screenRef.contentHash,artifact_id:region.artifactRef.artifactId,
+  anchor:region.anchor,region_hash:region.regionHash,region_json:region,created_by:actorId,client_id:clientId,command_id:indexCommand.id,created_at:at};
  const designVersion={...original,document_id:designVersionRef.id,form_definition_id:designFormRef.id,form_hash:designFormRef.contentHash,
   body_artifact_id:designBody.artifactId,title:designPayload.title,content_json:designPayload.content,content_hash:designVersionRef.contentHash,command_id:id(316)};
  const designRequest={...request,commandId:id(317),
@@ -184,6 +212,7 @@ function fixture(mode='valid'){
  let rc=0,rr=0,obs=0;
  let liveRR=false;
  let metadataBudget=input.limits.metadataBytes;
+ const controller=new AbortController();
  function db(scope:string){
   return {async query(sql:string,params:unknown[]=[]){
    assert(!/\b(INSERT|UPDATE|DELETE|TRUNCATE|GRANT)\b/i.test(sql),'정상 운영 표 변경 0');
@@ -196,8 +225,8 @@ function fixture(mode='valid'){
    if(sql.includes("'anvil.actor_id'")){assert.equal(scope,'RR');assert.deepEqual(params,[actorId,clientId]);trace.push('RR:rls');return {rows:[{actor_id:actorId,client_id:clientId}]};}
    if(sql.includes('FROM anvil.projects p')){assert.deepEqual(params,[projectId,actorId]);assert(scope==='RR'?liveRR:!liveRR);return {rows:[{id:projectId,archived_at:null,participation:scope==='RC2'&&mode==='revoked'?'VIEWER':'OWNER'}]};}
    if(sql.includes('FROM anvil.project_control')){assert.equal(params[0],projectId);return {rows:[{actor_id:actorId,client_id:clientId,generation:1,version:1,revoked_at:null}]};}
-   assert((sql.includes('FN16_D2_BODY')||sql.includes('FN16_D2_WORK_PLAN'))
-    &&(sql.includes('LIMIT 2')||sql.includes('ORDER BY a.server_sequence DESC LIMIT 1')||sql.includes('LIMIT $4::integer')));
+   assert((sql.includes('FN16_D2_BODY')||sql.includes('FN16_D2_WORK_PLAN')||sql.includes('FN16_D2_DESIGN_INDEX'))
+    &&(sql.includes('LIMIT 2')||sql.includes('ORDER BY a.server_sequence DESC LIMIT 1')||sql.includes('LIMIT $4::integer')||sql.includes('LIMIT 201')));
    const table=sql.match(/FROM anvil\.(\w+)/)?.[1];
    if(!['form_definitions','authoring_standard_versions'].includes(table??''))assert.equal(params[0],projectId);
    trace.push(`${scope}:${table}`);
@@ -228,6 +257,43 @@ function fixture(mode='valid'){
     const charged=rows.reduce((sum,item)=>sum+item.row_bytes,0);
     rowCharges[scope]=(rowCharges[scope]??0)+charged;
     return {rows:charged>Number(params[4])?rows.map(row=>({...row,inventory_data:null})):rows};
+   }
+   if(withIndex&&sql.includes('FN16_D2_DESIGN_INDEX')){
+    trace.push(`${scope}:design-index:${table}`);
+    assert.match(sql,/sum\(row_bytes\) OVER \(\)/);
+    assert(scope==='RR'?liveRR:!liveRR);
+    let selected:object[];
+    if(table==='design_items'){
+     assert.deepEqual(params.slice(0,-1),[projectId,designVersionRef.id,designVersionRef.version]);
+     assert.match(sql,/ORDER BY t\.id LIMIT 201/);
+     selected=indexItems;
+     if(mode==='design-index-duplicate' )selected=[indexItems[0]!,{...indexItems[0],id:id(407),
+      item_json:{...indexItems[0]!.item_json,id:id(407)}}];
+     if(mode==='design-index-cross')selected=[{...indexItems[0],document_hash:'f'.repeat(64)},indexItems[1]!];
+     if(mode==='design-index-missing-row')selected=indexItems.slice(0,1);
+     if(mode==='design-index-count')selected=Array.from({length:201},(_,i)=>({...indexItems[0],id:id(600+i)}));
+    }else if(table==='screen_regions'){
+     assert.deepEqual(params.slice(0,-1),[projectId,mode==='design-index-missing-row'?[id(406)]:[id(406),id(407)]]);
+     assert.match(sql,/ORDER BY t\.id LIMIT 201/);
+     selected=mode==='design-index-unbound-region'?[{...indexRegion,design_item_id:id(999)}]:[indexRegion];
+     if(mode==='design-index-cancel')controller.abort();
+    }else if(table==='commands'){
+     assert.deepEqual(params.slice(0,-1),[projectId,indexCommand.id]);
+     assert.match(sql,/t\.operation='indexDesignDocument'/);
+     selected=[mode==='design-index-request-hash'?{...indexCommand,request_hash:'4'.repeat(64)}:indexCommand];
+    }else if(table==='authorization_receipts'){
+     assert.deepEqual(params.slice(0,-1),[projectId,indexReceipt.id,indexCommand.id]);
+     selected=[indexReceipt];
+    }else{
+     assert.equal(table,'audit_events');
+     assert.deepEqual(params.slice(0,-1),[projectId,indexCommand.id]);
+     assert.match(sql,/correction_of IS NULL/);
+     selected=[mode==='design-index-rc-drift'&&scope==='RC2'?{...indexAudit,event_id:id(535)}:indexAudit];
+    }
+    const rows=selected.map(envelope);
+    const used=rows.reduce((sum,row)=>sum+row.row_bytes,0);
+    rowCharges[scope]=(rowCharges[scope]??0)+used;
+    return {rows:used>Number(params.at(-1))?rows.map(row=>({...row,inventory_data:null})):rows};
    }
    if(withDecision&&sql.includes('FN16_D2_WORK_PLAN_CONFIRMATION')){
     trace.push(`${scope}:plan-proof:${table}`);
@@ -424,10 +490,10 @@ function fixture(mode='valid'){
    async close(){trace.push('body:close');if(mode==='close-unknown')throw Error('합성 close 불명');}};
  }};
  const admission={async readCurrent(_db:Pick<PoolClient,'query'>,actor:AuthenticatedIdentity,scope:{projectId:string;documentRef:typeof ref}){
-  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId}});assert(!liveRR);
+  assert.equal(actor,person);assert.deepEqual(scope,{projectId,documentRef:ref,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:expectedPlanRef},...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true}});assert(!liveRR);
   trace.push(`RC${rc}:admission`);
-  if(mode==='policy-denied'||(mode==='policy-revoked'||mode==='design-revoked')&&rc===2)return null;
-  return {purpose:withDecision&&mode!=='plan-decision-v7-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_ADMISSION_V8':withRelations&&mode!=='relations-v6-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
+  if(mode==='policy-denied'||(mode==='policy-revoked'||mode==='design-revoked'||mode==='design-index-revoked')&&rc===2)return null;
+  return {purpose:withIndex&&mode!=='design-index-v8-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_ADMISSION_V9':withDecision&&mode!=='plan-decision-v7-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_CONFIRMATION_ADMISSION_V8':withRelations&&mode!=='relations-v6-admission'?'FN16_D2_DOCUMENT_WORK_PLAN_RELATIONS_ADMISSION_V7':withDesign&&mode!=='design-v5-purpose'?'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_ADMISSION_V6':withPlan?'FN16_D2_DOCUMENT_WORK_PLAN_ADMISSION_V5':confirmed?'FN16_D2_DOCUMENT_CONFIRMATION_ADMISSION_V4':mode==='body-only-admission'?'FN16_D2_DOCUMENT_BODY_ADMISSION_V1':mode==='draft-only-admission'?'FN16_D2_DOCUMENT_DRAFT_ADMISSION_V2':'FN16_D2_DOCUMENT_SYSTEM_FORM_ADMISSION_V3',
    projectId,documentRef:ref,actorId,clientId,sessionId,credentialGeneration:1,controlGeneration:1,
    ...confirmed&&{confirmationId:mode==='confirmed-admission-mismatch'?id(207):confirmationId},
    ...withPlan&&mode!=='plan-admission-missing'&&{workPlanRef:mode==='plan-admission-mismatch'?pinned(312):expectedPlanRef},
@@ -435,6 +501,7 @@ function fixture(mode='valid'){
     designFormRef:mode==='design-form-mismatch'?formRef:designFormRef},
    ...withRelations&&mode!=='relations-v6-admission'&&{planRelations:true},
    ...withDecision&&mode!=='plan-decision-v7-admission'&&{planConfirmationId:mode==='plan-decision-bad-admission'?id(999):planConfirmationId},
+   ...withIndex&&mode!=='design-index-v8-admission'&&{designIndex:true},
    jobRef:pinned(10),reservationRef:pinned(11),policyRef:pinned(mode==='new-policy'&&rc===2?19:12),targetProtectedRef:pinned(13),
    retentionPolicyRef:pinned(14),encryptionKeyRef:pinned(15),verificationPolicyRef:pinned(16),
    formRef:mode==='foreign-admission-form'?pinned(103):formRef,expiresAt:'2026-11-28T00:00:09.000Z'};
@@ -443,11 +510,106 @@ function fixture(mode='valid'){
   metadataBudget=limits.metadataBytes;
   return collectDocumentBodySnapshot(access,'synthetic-token','synthetic-csrf',
   {...input,limits,...confirmed&&{confirmationId},...withPlan&&{workPlanRef:mode==='plan-raw-invalid'?null:expectedPlanRef},
-   ...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId}},
-  mode==='unconfigured'?null:admission,reader,new AbortController().signal);
+   ...withDesign&&{designDocumentRef:expectedDesignRef},...withRelations&&{planRelations:true},...withDecision&&{planConfirmationId},...withIndex&&{designIndex:true}},
+  mode==='unconfigured'?null:admission,reader,controller.signal);
  };
  return {run,trace,expectedPlanRef,designVersionRef,rowCharges};
 }
+
+test('설계 원 색인과 고정 업무 카드의 참조를 동일 스냅샷에서 검산한다',async()=>{
+ const f=fixture('design-index-valid'),limits={...input.limits,fileCount:2};
+ const capture=await f.run(limits),{snapshot}=capture;
+ assert.equal(snapshot.kind,'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9');
+ if(snapshot.kind!=='FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9')throw Error('설계 색인 원행 누락');
+ const rows=snapshot.rows.designIndexRows;
+ assert.deepEqual(rows.items.map(item=>item.id),[id(406),id(407)]);
+ assert.deepEqual(rows.regions.map(item=>item.id),[id(514)]);
+ assert.deepEqual(rows.origin.command.result_ref.data.designItems.map((item:{id:string})=>item.id),[id(407),id(406)]);
+ assert.deepEqual(f.trace.filter(item=>/design-index:(design_items|screen_regions)|RR:rollback|body:open|RC2:commit/.test(item)),
+  ['RR:design-index:design_items','RR:design-index:screen_regions','RR:rollback','body:open','design-body:open',
+   'RC2:design-index:design_items','RC2:design-index:screen_regions','RC2:commit']);
+ const expected={projectId,jobRef:snapshot.jobRef,documentRef:ref,workPlanRef:f.expectedPlanRef,designDocumentRef:f.designVersionRef,planRelations:true as const,
+  planConfirmationId:id(401),designIndex:true as const,snapshot:snapshot.observation.snapshot,snapshotHash:capture.snapshotHash};
+ const readback={snapshotBytes:Buffer.from(capture.snapshotBytes),body:Buffer.from(capture.body),designBody:Buffer.from(capture.designBody!)};
+ const result=await historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async scope=>{
+  assert.equal(scope.designIndex,true);
+  assert.deepEqual(scope.designDocumentRef,f.designVersionRef);
+  return readback;
+ });
+ assert.equal(result.kind,'FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_VERIFICATION_V9');
+ if(result.kind!=='FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_VERIFICATION_V9')throw Error('설계 색인 검산 누락');
+ assert.equal(result.designIndexProjectionHash,hash(rows));
+ assert.equal(result.designIndexRequestReconstructed,false);
+ assert.equal(result.screenSourceBodiesVerified,false);
+ assert.equal(result.designItemCount,2);
+ assert.equal(result.screenRegionCount,1);
+ assert.equal(result.workPlanHistoryComplete,false);
+ assert.equal(result.restorable,false);
+ const {designIndex:_,...oldExpectation}=expected;
+ await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback(oldExpectation,limits,async()=>readback),
+  /FN16_D2_DOCUMENT_HISTORY_INVALID/);
+ const changed=structuredClone(snapshot);
+ changed.rows.designIndexRows.origin.command.result_ref.data.designItems.pop();
+ const changedBytes=Buffer.from(canonicalJson(changed));
+ await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback({...expected,snapshotHash:contentHash(changedBytes)},limits,
+  async()=>({...readback,snapshotBytes:changedBytes})),/FN16_D2_DOCUMENT_HISTORY_INVALID/);
+});
+
+test('같은 순번 또는 이후 색인 감사는 보관된 계획 확정의 원 근거가 될 수 없다',async()=>{
+ const limits={...input.limits,fileCount:2};
+ const valid=fixture('design-index-valid'),capture=await valid.run(limits),{snapshot}=capture;
+ if(snapshot.kind!=='FN16_D2_DOCUMENT_WORK_PLAN_DESIGN_INDEX_SNAPSHOT_V9')throw Error('설계 색인 원행 누락');
+ const confirmationSequence=snapshot.rows.workPlanConfirmation.confirmation.origin.audit.server_sequence;
+ for(const [mode,sequence] of [['design-index-same-sequence',confirmationSequence],['design-index-after-confirmation',confirmationSequence+1]] as const){
+  const candidate=fixture(mode);
+  await assert.rejects(candidate.run(limits),/DESIGN_TRACE_INVENTORY_INTEGRITY_FAILED/,mode);
+  assert.equal(candidate.trace.includes('RR:design-index:audit_events'),true);
+  assert.equal(candidate.trace.includes('RR:rollback'),true);
+  assert.equal(candidate.trace.some(item=>item.endsWith('body:open')),false);
+  const changed=structuredClone(snapshot);
+  changed.rows.designIndexRows.origin.audit.server_sequence=sequence;
+  const snapshotBytes=Buffer.from(canonicalJson(changed));
+  const expected={projectId,jobRef:snapshot.jobRef,documentRef:ref,workPlanRef:valid.expectedPlanRef,designDocumentRef:valid.designVersionRef,
+   planRelations:true as const,planConfirmationId:id(401),designIndex:true as const,
+   snapshot:snapshot.observation.snapshot,snapshotHash:contentHash(snapshotBytes)};
+  await assert.rejects(historyVerification.verifyDocumentBodyHistoryReadback(expected,limits,async()=>({
+   snapshotBytes,body:Buffer.from(capture.body),designBody:Buffer.from(capture.designBody!),
+  })),/FN16_D2_DOCUMENT_HISTORY_INVALID/,mode);
+ }
+});
+
+test('설계 색인의 별도 입장·고정 참조·전체 원행·원 증빙 불일치는 원문 IO 앞에서 거절된다',async()=>{
+ const limits={...input.limits,fileCount:2};
+ for(const mode of ['design-index-v8-admission','design-index-duplicate','design-index-cross','design-index-missing-row','design-index-count',
+  'design-index-unbound-region','design-index-unresolved-slot','design-index-wrong-anchor','design-index-request-hash','design-index-cancel']){
+  const f=fixture(mode);
+  const cap=mode.endsWith('count')?{...limits,metadataBytes:512*1024}:limits;
+  await assert.rejects(f.run(cap),/FN16_D2_SNAPSHOT_ADMISSION_DENIED|FN16_D2_SNAPSHOT_CANCELLED|DESIGN_TRACE_INVENTORY_INTEGRITY_FAILED|DOCUMENT_INVENTORY_INTEGRITY_FAILED/,mode);
+  assert.equal(f.trace.some(item=>item.endsWith('body:open')),false,mode);
+  if(mode.endsWith('admission'))assert.equal(f.trace.includes('RR:begin'),false,mode);
+  else assert.equal(f.trace.includes('RR:rollback'),true,mode);
+  if(mode.endsWith('count'))assert.equal(f.trace.includes('RR:design-index:screen_regions'),false,mode);
+  if(mode.endsWith('cancel'))assert.equal(f.trace.includes('RR:design-index:commands'),false,mode);
+ }
+});
+
+test('설계 색인 합산 한도와 최종 입장 회수·원 감사 교체 시 부분 결과를 반환하지 않는다',async()=>{
+ const limits={...input.limits,fileCount:2};
+ const wide=fixture('design-index-valid');
+ await wide.run(limits);
+ const narrow=fixture('design-index-valid');
+ await assert.rejects(narrow.run({...limits,metadataBytes:wide.rowCharges.RR!-1}),/FN16_D2_SNAPSHOT_LIMIT|DESIGN_TRACE_INVENTORY_LIMIT/);
+ assert.equal(narrow.trace.includes('RR:design-index:audit_events'),true);
+ assert.equal(narrow.trace.some(item=>item.endsWith('body:open')),false);
+ for(const mode of ['design-index-rc-drift','design-index-revoked']){
+  const f=fixture(mode);
+  await assert.rejects(f.run(limits),/FN16_D2_SNAPSHOT_INVALID|FN16_D2_SNAPSHOT_ADMISSION_DENIED/);
+  assert.equal(f.trace.includes('body:close'),true,mode);
+  assert.equal(f.trace.includes('design-body:close'),true,mode);
+  assert.equal(f.trace.includes('RC2:design-index:design_items'),mode.endsWith('drift'),mode);
+  assert.equal(f.trace.includes('RC2:commit'),false,mode);
+ }
+});
 
 test('계획의 저장·선택 검토·확정을 한 스냅샷에서 검산한다',async()=>{
  const limits={...input.limits,fileCount:2};
