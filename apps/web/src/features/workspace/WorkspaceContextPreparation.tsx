@@ -18,15 +18,24 @@ import {editContextPreparationBuffer} from './context-preparation-edit.ts';
 import type { ContextSourceSelection } from '../../../../server/modules/context/context-input.ts';
 
 const labels = { PURPOSE_REASON: '목적과 이유', RULES_SCOPE: '헌법과 범위', LATEST_INSTRUCTIONS: '최신 관련 지시', DECISIONS_REASON: '결정과 이유', CURRENT_POSITION: '현재 위치', ACTUAL_GAPS: '실제 공백', NEXT_ACTION: '다음 행동' };
-export function WorkspaceContextPreparation({ client, confirmed, session, buffer, onChange, owner, busy, run }: { client: ApiClient; confirmed: ConfirmedAssignmentView; session: DocumentSession; buffer: ContextPreparationBuffer | null; onChange: Dispatch<SetStateAction<ContextPreparationBuffer | null>>; owner: boolean; busy: boolean; run: (action: () => Promise<void>) => void }) {
+export interface OpenedContextSelection { ref: PlanRef; isCurrent: () => boolean }
+
+export function WorkspaceContextPreparation({ client, confirmed, session, buffer, onChange, owner, busy, run, onOpenedContext }: { client: ApiClient; confirmed: ConfirmedAssignmentView; session: DocumentSession; buffer: ContextPreparationBuffer | null; onChange: Dispatch<SetStateAction<ContextPreparationBuffer | null>>; owner: boolean; busy: boolean; run: (action: () => Promise<void>) => void; onOpenedContext?: (selection: OpenedContextSelection | null) => void }) {
  const live=useRef({client,session,transport:client.transport,confirmed:ordered(confirmed.ref),binding:buffer?.bindingId,epoch:0});
  if(live.current.client!==client||live.current.session!==session||live.current.transport!==client.transport||live.current.confirmed!==ordered(confirmed.ref)||live.current.binding!==buffer?.bindingId)live.current={client,session,transport:client.transport,confirmed:ordered(confirmed.ref),binding:buffer?.bindingId,epoch:live.current.epoch+1};
  const epoch=live.current.epoch,transport=client.transport;
  const alive = useRef(true), sequence = useRef(0); useEffect(() => { alive.current = true; return () => { alive.current = false; sequence.current++; }; }, []);
+ const routeEpoch=useRef(0),renderedRoute=useRef(window.location.hash).current;
+ useEffect(()=>{
+  const routeChanged=()=>{routeEpoch.current++;};
+  window.addEventListener('hashchange',routeChanged);
+  return ()=>{window.removeEventListener('hashchange',routeChanged);routeEpoch.current++;};
+ },[]);
  const [original,setOriginal]=useState<{itemId:string;nonce:number;contextId:string;kind:ContextSourceSelection['kind']}|null>(null);
  const [selected, setSelected] = useState<keyof typeof labels>('PURPOSE_REASON');
  const [{ opened, page }, observe] = useReducer(contextObservation, { sequence: 0, opened: null, page: null });
- const begin = () => { const next = ++sequence.current; observe({ kind: 'BEGIN', sequence: next }); return next; };
+ const renderedSequence=sequence.current,renderedRouteEpoch=routeEpoch.current;
+ const begin = () => { const next = ++sequence.current; onOpenedContext?.(null); observe({ kind: 'BEGIN', sequence: next }); return next; };
  const current = (ticket: number) => alive.current && sequence.current === ticket && live.current.epoch===epoch && client.transport===transport;
  const bound = !buffer || buffer.projectId === confirmed.projectId && buffer.ownerUserId === session.user.id && buffer.ownerClientId === session.clientId;
  const sameTarget = !buffer || ordered(buffer.assignmentRef) === ordered(confirmed.ref);
@@ -58,10 +67,15 @@ export function WorkspaceContextPreparation({ client, confirmed, session, buffer
   }
  }
  async function read(ref: PlanRef) {
-  if (!bound || !sameTarget) return; const ticket = begin();
-  const value = await readContextPreparation(client, confirmed.projectId, ref); if (!current(ticket)) return;
-  if (ordered(value.manifest.assignmentRef) !== ordered(confirmed.ref)) throw new ApiError('CONTEXT_ASSIGNMENT_INVALID');
-  observe({ kind: 'OPENED', sequence: ticket, value });
+  if (!bound || !sameTarget || (onOpenedContext && (!current(renderedSequence)||routeEpoch.current!==renderedRouteEpoch||window.location.hash!==renderedRoute))) return;
+  const ticket=begin(),route=routeEpoch.current;
+  const isCurrent=()=>current(ticket)&&(!onOpenedContext||routeEpoch.current===route&&window.location.hash===renderedRoute);
+  try{
+   const value=await readContextPreparation(client,confirmed.projectId,ref);if(!isCurrent())return;
+   if(ordered(value.manifest.assignmentRef)!==ordered(confirmed.ref))throw new ApiError('CONTEXT_ASSIGNMENT_INVALID');
+   observe({kind:'OPENED',sequence:ticket,value});
+   onOpenedContext?.({ref:value.ref,isCurrent});
+  }catch(error){if(isCurrent())throw error;}
  }
  async function list() { const ticket = begin(); const value = await listContextPreparations(client, confirmed.projectId, confirmed.ref); if (current(ticket)) observe({ kind: 'LISTED', sequence: ticket, value }); }
  async function reuse(ref: PlanRef) {

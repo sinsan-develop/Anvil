@@ -30,7 +30,8 @@ const NativeChannel=globalThis.MessageChannel,channels:MessageChannel[]=[];class
 before(async()=>{
  const src=(s:string)=>JSON.stringify(fileURLToPath(new URL('../../../apps/web/src/'+s,import.meta.url)));
  const result:any=await build({configFile:false,envDir:false,logLevel:'silent',define:{'process.env.NODE_ENV':JSON.stringify('development')},build:{write:false,minify:false,lib:{entry:'virtual:saved-context',name:'SavedContextTest',formats:['iife']},rolldownOptions:{output:{codeSplitting:false}}},plugins:[{name:'saved-context-memory',resolveId(id){if(id.endsWith('virtual:saved-context'))return '\0saved-context';},load(id){if(id==='\0saved-context')return `export * as React from 'react';export {createRoot} from 'react-dom/client';export {AssignmentContentDecision} from ${src('features/workspace/AssignmentContentDecision.tsx')};export {ExecutionPreparationEditor} from ${src('features/workspace/ExecutionPreparationEditor.tsx')};export {ApiClient} from ${src('api/client.ts')};export {newContextPreparation} from ${src('features/workspace/context-api.ts')};export {newExecutionPreparation} from ${src('features/workspace/execution-preparation-api.ts')};export {normalInitialUnderstandingOwner} from ${src('features/session-detail/understanding-review-write.ts')};`;}}]});
- const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener(){},removeEventListener(){},getComputedStyle:()=>({}),location:{protocol:'https:'}};document.defaultView=window;
+ const events=new MemoryNode('window');
+ const window:any={document,HTMLElement:MemoryNode,HTMLIFrameElement:class{},Node:MemoryNode,addEventListener:events.addEventListener.bind(events),removeEventListener:events.removeEventListener.bind(events),dispatchEvent:events.dispatchEvent.bind(events),getComputedStyle:()=>({}),location:{protocol:'https:',hash:'#/workspace'}};document.defaultView=window;
  for(const [key,value]of Object.entries({window,document,HTMLElement:MemoryNode,Node:MemoryNode,IS_REACT_ACT_ENVIRONMENT:true,MessageChannel:OwnedChannel})){saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{value,writable:true,configurable:true});}
  uiCode=(Array.isArray(result)?result[0]:result).output.find((o:any)=>o.type==='chunk').code+';return SavedContextTest;';ui=new Function(uiCode)();
 });
@@ -98,6 +99,69 @@ test('부모 확정 임무 화면의 저장 맥락 버퍼가 자식 명시 선�
  const wait=async(check:()=>boolean)=>{for(let i=0;i<100&&!check();i++)await ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});assert(check(),container.textContent+' '+String(errors));};
  const click=async(name:string)=>{const b=nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===name);assert(b,name);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
  try{await ui.React.act(async()=>render());assert.equal(calls.length,0);await click('확정 임무 원본 재조회');await wait(()=>container.textContent.includes(label));assert.equal(calls.length,2);assert.equal(buffer.draft.contextBundleRef,null);await click(label);await wait(()=>!!buffer.draft.contextBundleRef);assert.deepEqual(buffer.draft.contextBundleRef,f.context.ref);assert.equal(calls.length,3);assert.deepEqual(errors,[]);}finally{await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
+});
+
+const openedLabel='열어 본 보관 맥락을 실행 준비에 선택';
+test('같은 확정 임무의 보호 맥락 원문을 명시 선택해 기존 초안에만 연결',async()=>{
+ const f=transferFixture(),session={user:{id:f.draft.projectId},clientId:f.draft.projectId,csrfToken:'c'.repeat(43)};
+ const calls:{path:string;method:string}[]=[],errors:unknown[]=[];
+ let buffer:ExecutionPreparationBuffer|null=ui.newExecutionPreparation(f.confirmed,session);
+ let hold:ReturnType<typeof deferred<Response>>|null=null;
+ const initial=buffer!;
+ const client=new ui.ApiClient(async(path:string,init?:RequestInit)=>{
+  calls.push({path,method:init?.method??'GET'});
+  const key=path.split('/projects/'+f.draft.projectId+'/')[1]!.split('?')[0]!;
+  if(key.startsWith('context/')&&hold){const pending=hold;hold=null;return pending.promise;}
+  assert(key in f.responses,key);return Response.json(f.responses[key]);
+ });
+ const container=document.createElement('div');document.body.appendChild(container);const root=ui.createRoot(container);
+ const nodes=(n:MemoryNode=container):MemoryNode[]=>[n,...n.childNodes.flatMap(c=>nodes(c))];
+ const button=(name:string)=>nodes().find(n=>n.tagName==='BUTTON'&&n.textContent===name);
+ function render(){root.render(ui.React.createElement(ui.AssignmentContentDecision,{client,session,draft:f.draft,buffer:null,onChange(){},contextBuffer:null,onContextChange(){},executionPreparationBuffer:buffer,onExecutionPreparationChange:(change:any)=>{buffer=change(buffer);render();},owner:true,busy:false,run:(fn:()=>Promise<void>)=>{void fn().catch(e=>errors.push(e));}}));}
+ const settle=()=>ui.React.act(async()=>{await new Promise(r=>setImmediate(r));});
+ const wait=async(check:()=>boolean)=>{for(let i=0;i<100&&!check();i++)await settle();assert(check(),container.textContent+' '+String(errors));};
+ const click=async(name:string)=>{const b=button(name);assert(b&&!b.disabled,name);await ui.React.act(async()=>b.dispatchEvent({type:'click',button:0,bubbles:true}));};
+ const open=async()=>{await click('확정 임무의 준비 후보 목록');await wait(()=>!!button('이 후보 정확 재조회'));await click('이 후보 정확 재조회');await wait(()=>container.textContent.includes('이번 조회 원문 대조:'));};
+ const savedRoute=window.location.hash;
+ try{
+  await ui.React.act(async()=>render());await click('확정 임무 원본 재조회');
+  await wait(()=>!!button('확정 임무의 준비 후보 목록'));assert(!button(openedLabel));await open();
+  const setBuffer=async(value:ExecutionPreparationBuffer|null)=>{buffer=value;await ui.React.act(async()=>render());};
+  await setBuffer(null);assert(!button(openedLabel));await setBuffer(initial);
+  const old=button(openedLabel)!;
+  const eventKey=Object.keys(old).find(k=>k.startsWith('__reactProps'))!;
+  const staleClick=(old as any)[eventKey].onClick;
+  await open();const afterReopen=calls.length;
+  await ui.React.act(async()=>staleClick());assert.equal(calls.length,afterReopen);assert.equal(buffer,initial);
+  window.location.hash='#/away';await click(openedLabel);assert.equal(calls.length,afterReopen);window.location.hash=savedRoute;
+  for(const kind of ['DRAFT_ABA','ROUTE_ABA','NEW_ORIGINAL','CLOSED'] as const){
+   for(const status of [200,401]){
+    const pending=deferred<Response>();hold=pending;const n=calls.length;
+    await click(openedLabel);assert.equal(calls.length,n+1);
+    if(kind==='DRAFT_ABA'){await setBuffer({...initial,draft:{...initial.draft,reason:'교체한 초안'}});await setBuffer(initial);}
+    if(kind==='ROUTE_ABA'){
+     window.location.hash='#/away';window.dispatchEvent({type:'hashchange'} as Event);
+     window.location.hash=savedRoute;window.dispatchEvent({type:'hashchange'} as Event);
+    }
+    if(kind==='NEW_ORIGINAL')await open();
+    if(kind==='CLOSED')await click('임무 판단 원문 닫기');
+    await ui.React.act(async()=>pending.resolve(status===200?Response.json(f.context):Response.json({code:'AUTH_REQUIRED'},{status})));
+    await settle();assert.equal(buffer,initial,kind+' '+status);assert.deepEqual(errors,[]);
+    if(kind==='CLOSED'){await click('확정 임무 원본 재조회');await wait(()=>!!button('확정 임무의 준비 후보 목록'));}
+    await open();await wait(()=>!!button(openedLabel)&&!button(openedLabel)!.disabled);
+   }
+  }
+  const unauthorized=deferred<Response>();hold=unauthorized;
+  await click(openedLabel);
+  await ui.React.act(async()=>unauthorized.resolve(Response.json({code:'AUTH_REQUIRED'},{status:401})));
+  await wait(()=>errors.length===1&&!button(openedLabel)!.disabled);assert.equal(buffer,initial);
+  const authFailure=errors.pop() as {status:number};assert.equal(authFailure.status,401);
+  assert.equal(buffer,initial);const before=calls.length;
+  await click(openedLabel);await wait(()=>!!buffer?.draft.contextBundleRef);
+  assert.deepEqual(buffer?.draft.contextBundleRef,f.context.ref);assert.equal(calls.length,before+1);
+  assert.match(calls.at(-1)!.path,new RegExp('/context/'+f.context.ref.id+'/versions/1$'));
+  assert(calls.every(c=>c.method==='GET'));assert.deepEqual(errors,[]);
+ }finally{window.location.hash=savedRoute;await ui.React.act(async()=>root.unmount());document.body.removeChild(container);}
 });
 
 async function workWithUnderstanding(q:Awaited<ReturnType<typeof fixture>>, sameContext:boolean):Promise<ExecutionPreparationBuffer>{

@@ -11,7 +11,7 @@ import { readAssignmentDraft, type AssignmentDraftView } from './assignment-api.
 import { contentCriteria, newAssignmentDecision, prepareAssignmentDecision, readAssignmentDecision, readConfirmedAssignment, sendAssignmentDecision, type AssignmentDecisionBuffer, type AssignmentDecisionView, type ConfirmedAssignmentView, type AssignmentReviewView } from './assignment-confirmation-api.ts';
 import { ordered } from '../knowledge/review-view.ts';
 import type { AssignmentContentReview, AssignmentReviewOutcome } from '../../../../server/modules/assignments/assignment-confirmation-input.ts';
-import { WorkspaceContextPreparation } from './WorkspaceContextPreparation.tsx';
+import { WorkspaceContextPreparation, type OpenedContextSelection } from './WorkspaceContextPreparation.tsx';
 import type { ContextPreparationBuffer } from './context-api.ts';
 import { WorkspaceResponsibleSessions } from './WorkspaceResponsibleSessions.tsx';
 import { sessionDetailHref } from '../../shell/routes.ts';
@@ -28,6 +28,7 @@ function StoredAssignmentReview({value}:{value:AssignmentReviewView}){
 export function AssignmentContentDecision({mobile=false,providedDefinitionReport=null,normalInitialReviews,stageStart,providedHumanReportRef,executionPreparationBuffer,onExecutionPreparationChange,client,session,draft,buffer,onChange,contextBuffer,onContextChange,responsibleBuffer,onResponsibleChange,owner,busy,run}:{mobile?:boolean;normalInitialReviews?:NormalInitialUnderstandingReviewStorage;stageStart?:WorkspaceStageStart;providedHumanReportRef?:Ref|null;providedDefinitionReport?:DefinitionReportSelection|null;executionPreparationBuffer?:ExecutionPreparationBuffer|null;onExecutionPreparationChange?:(change:ExecutionPreparationChange)=>void;client:ApiClient;session:DocumentSession;draft:AssignmentDraftView;buffer:AssignmentDecisionBuffer|null;onChange:Dispatch<SetStateAction<AssignmentDecisionBuffer|null>>;contextBuffer:ContextPreparationBuffer|null;onContextChange:Dispatch<SetStateAction<ContextPreparationBuffer|null>>;responsibleBuffer?:ResponsibleSessionBuffer|null;onResponsibleChange?:Dispatch<SetStateAction<ResponsibleSessionBuffer|null>>;owner:boolean;busy:boolean;run:(action:()=>Promise<void>)=>void}) {
   const workEpoch=normalInitialUnderstandingOwner(client,session);
   const [workReviews,setWorkReviews]=useState<{context:object;epoch:string;items:ExactWorkReviewCandidate[]}|null>(null);
+  const [openedContext,setOpenedContext]=useState<OpenedContextSelection|null>(null);
   const key=ordered({projectId:draft.projectId,ref:draft.ref,userId:session.user.id,clientId:session.clientId,csrf:session.csrfToken,owner,generation:buffer?.controlGeneration??null});
   const scope=useRef({key,client,transport:client.transport});
   if(scope.current.key!==key||scope.current.client!==client||scope.current.transport!==client.transport)scope.current={key,client,transport:client.transport};
@@ -36,6 +37,15 @@ export function AssignmentContentDecision({mobile=false,providedDefinitionReport
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;sequence.current++;};},[]);
   useEffect(()=>{sequence.current++;setDecision(null);setConfirmed(null);setHidden(false);setViewOwner(null);},[context]);
   const visible=!hidden&&viewOwner===context,child=draft.snapshot.definition.parentAssignmentRef!==null;
+  const confirmedSequence=sequence.current;
+  function selectOpenedContext(source:OpenedContextSelection|null){
+    const current=()=>alive.current&&scope.current===context&&client.transport===context.transport&&sequence.current===confirmedSequence;
+    if(!owner||!visible||!confirmed||!current()||source&&!source.isCurrent())return;
+    setOpenedContext(previous=>{
+      if(!current()||source&&!source.isCurrent())return previous;
+      return source?{ref:source.ref,isCurrent:()=>current()&&source.isCurrent()}:null;
+    });
+  }
   const stageKey=stageStart&&confirmed&&visible&&!child&&owner?ordered([confirmed.ref,confirmed.snapshot.definition.taskRef,stageStart.generation]):null;
   const stageOwner=useRef<{key:string|null;context:typeof context}|null>(null),stageSequence=sequence.current;
   useLayoutEffect(()=>{
@@ -96,8 +106,8 @@ export function AssignmentContentDecision({mobile=false,providedDefinitionReport
       {buffer.pending&&buffer.failure&&!buffer.uncertain?<button disabled={busy} onClick={()=>{if(confirm('거절된 원 판단 명령을 확인했습니다. 입력을 수정할까요?'))update(b=>({...b,pending:null,failure:null}));}}>거절 임무 판단 확인 후 수정</button>:null}
     </>:null}{hidden?<p>원문 조회 미확인 · 이전 판단·확정 원문은 숨깁니다. 보관 입력·미확인 명령은 유지합니다.</p>:null}
     {confirmed&&visible?<section aria-label="내용 확정 임무"><h6>내용 확정 임무</h6><p>{confirmed.ref.id} · v{confirmed.ref.version} · {confirmed.ref.contentHash}</p><p>원 초안 hash {confirmed.snapshot.draftRef.contentHash}</p><p>실행 허가 없음 · Agent 전달 없음 · READY 아님</p>{!child?<a href={sessionDetailHref(draft.projectId,draft.ref)}>책임자·실행 상세</a>:<p>고정 부모 {draft.snapshot.definition.parentAssignmentRef!.id} · v{draft.snapshot.definition.parentAssignmentRef!.version} · {draft.snapshot.definition.parentAssignmentRef!.contentHash} · 부모 현재성 재검사 전 · 실행 권한 아님</p>}<pre>{JSON.stringify(confirmed.snapshot,null,2)}</pre></section>:null}
-    {confirmed&&visible&&!child&&onExecutionPreparationChange?<ExecutionPreparationEditor mobile={mobile} exactWorkCandidates={workCandidates} normalInitialReviews={normalInitialReviews} savedContextBuffer={contextBuffer} client={client} confirmed={confirmed} session={session} providedDefinitionReport={providedDefinitionReport} providedHumanReportRef={providedHumanReportRef??null} buffer={executionPreparationBuffer??null} onChange={onExecutionPreparationChange} owner={owner} onAuthenticationLost={()=>run(async()=>{throw new ApiError('AUTH_REQUIRED',401);})}/>:null}
-    {confirmed&&visible&&!child?<WorkspaceContextPreparation key={ordered(confirmed.ref)} client={client} confirmed={confirmed} session={session} buffer={contextBuffer} onChange={onContextChange} owner={owner} busy={busy} run={run}/>:null}
+    {confirmed&&visible&&!child&&onExecutionPreparationChange?<ExecutionPreparationEditor mobile={mobile} exactWorkCandidates={workCandidates} normalInitialReviews={normalInitialReviews} savedContextBuffer={contextBuffer} openedContext={openedContext} client={client} confirmed={confirmed} session={session} providedDefinitionReport={providedDefinitionReport} providedHumanReportRef={providedHumanReportRef??null} buffer={executionPreparationBuffer??null} onChange={onExecutionPreparationChange} owner={owner} onAuthenticationLost={()=>run(async()=>{throw new ApiError('AUTH_REQUIRED',401);})}/>:null}
+    {confirmed&&visible&&!child?<WorkspaceContextPreparation key={ordered(confirmed.ref)} client={client} confirmed={confirmed} session={session} buffer={contextBuffer} onChange={onContextChange} owner={owner} busy={busy} run={run} onOpenedContext={onExecutionPreparationChange?selectOpenedContext:undefined}/>:null}
     {stageStart&&confirmed&&stageKey!==null?<StageStartPanel key={stageKey} client={client} assignment={confirmed} session={session} storage={stageStart.storage} continueHref={sessionDetailHref(draft.projectId,draft.ref)}
       isSourceCurrent={stageCurrent} expectedControlGeneration={stageStart.generation}
       onUnavailable={code=>{if(code==='AUTH_REQUIRED'&&stageCurrent())stageStart.onAuthenticationLost();}}/>:null}
