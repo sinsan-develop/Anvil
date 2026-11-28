@@ -21,6 +21,7 @@ internal sealed class DesktopTrustKeyHostSource {
  readonly Func<DesktopTrustKeyRootSource,Dictionary<string,object>,object> keyOperation;readonly Func<DesktopTrustKeyRootSource,Dictionary<string,object>,Func<int>,Func<DateTime>,Action,string> nativeOperation,firstReceiveOperation;
  // 원 protected producer만 native 객체를 공급한다. selector/JSON은 slot 또는 영수증을 생성하지 않는다.
  readonly Func<DesktopTrustKeyRootSource,string,Dictionary<string,object>,long,NormalStartPreparationResultSlot> normalStartResultSource;
+ string normalRejectedClaim,normalRejectedSlotBinding;
  // 실제 normal 물리 source가 존재할 때만 준비 전 소진을 연결한다. JS 입력/Boolean으로 공급하지 않는다.
  internal abstract class NormalStartPreparationProducer:IDisposable {
   // 원 producer가 이미 확정한 비효과 거절만 전달한다. 예외 문자열/지원 여부/임의 Boolean은 이 형식을 만들 수 없다.
@@ -454,6 +455,7 @@ internal sealed class DesktopTrustKeyHostSource {
    if(normalAttempt!=null&&normalAttempt!=attempt||workerAttempt!=null&&workerAttempt!=attempt)throw Invalid();normalAttempt=attempt;workerAttempt=attempt;
    var record=NormalRecord();workerRecord=Canonical(record,0);var window=Map(value["window"]);var session=Map(value["session"]);var request=Map(value["request"]);
    DateTime end=NormalStartRequest(record,window,session,request,budget.Now);var call=budget.Slice(end,2000);Check();string original=Canonical(new object[]{record,window,session,request,epoch},0);
+   if(normalRejectedClaim!=null&&normalRejectedClaim!=original)throw Invalid();
    var custodyBinding=normalPreparationCustody==null?null:new NormalStartPreparationCustodySource.Binding(request,epoch,end,peer.HelperHash);
    Func<NormalStartPreparationCustodySource.SignerIdentity> custodySigner=()=>new NormalStartPreparationCustodySource.SignerIdentity(root.UserSid,peer.HelperHash,peer.OriginalCreated);
    Action ready=()=>{Check();call.Check();if(original!=Canonical(new object[]{NormalRecord(),window,session,request,epoch},0))throw Invalid();if(custodyBinding!=null)normalPreparationCustody.CheckReady(custodyBinding,budget,custodySigner);else normalStartPreparationProducer.CheckReady(root,record,window,session,request,epoch);Check();call.Check();if(original!=Canonical(new object[]{NormalRecord(),window,session,request,epoch},0))throw Invalid();};ready();
@@ -471,7 +473,11 @@ internal sealed class DesktopTrustKeyHostSource {
      }
      var material=normalStartPreparationProducer.ConsumeClaim(claim.Capability,record,request,image,ready);ready();
      var rejected=normalStartPreparationProducer.ReadConfirmedRejected(root,record,window,session,request,epoch,material,ready);ready();
-     if(rejected!=null){spoolProfile.RecordConfirmedRejected(root,record,window,session,request,epoch,material,rejected,()=>call.Now,ready);return claim.Output;}
+     if(rejected!=null){
+      var selector=ReceiveRef(spoolProfile.RecordConfirmedRejected(root,record,window,session,request,epoch,material,rejected,()=>call.Now,ready),true);ready();
+      normalRejectedSlotBinding=Canonical(new object[]{attempt,epoch,material.RequestRef,selector},0);normalRejectedClaim=original;
+      return new Dictionary<string,object>(claim.Output){{"rejectedSlotRef",selector}};
+     }
      normalStartPreparationProducer.CreateOwned(material,retained,record,request,image,()=>call.Remaining(),ready,exact=>{var cleanupCall=budget.Slice(exact.ExpiresAt,2000);Action cleanupCurrent=()=>{Check();cleanupCall.Check();};spoolProfile.ReadNormalStartPreparationClaimCurrent(exact,()=>cleanupCall.Now,cleanupCurrent);});retained=null;
      normalStartPreparationProducer.RecheckOwned(material,()=>call.Remaining(),ready,
       exact=>spoolProfile.ReadNormalStartPreparationClaimCurrent(exact,()=>call.Now,ready),
@@ -482,15 +488,17 @@ internal sealed class DesktopTrustKeyHostSource {
   if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1"){
    if(resultFrame==null)throw Invalid();resultFrame.Check();
    Exact(value,"attemptId,slotRef,requestRef,contextEpoch");string attempt=Id(value,"attemptId");var selector=ReceiveRef(value["slotRef"],true);var requestRef=ReceiveRef(value["requestRef"],true);long epoch=Positive(value["contextEpoch"]);
+   if(normalRejectedSlotBinding!=null&&normalRejectedSlotBinding!=Canonical(new object[]{attempt,epoch,requestRef,selector},0))throw Invalid();
     if(normalStartResultSource==null&&spoolProfile==null)return new Dictionary<string,object>{{"state","SOURCE_UNAVAILABLE"}};
    if(normalAttempt!=null&&normalAttempt!=attempt)throw Invalid();normalAttempt=attempt;
    var record=NormalRecord();var credential=Map(record["credential"]);if(Text(credential,"storageState")!="STORED")throw Invalid();
    // existing-only lookup이다. 여기에서 준비 객체/실패 영수증/새 slot을 발급하지 않는다.
     string recordHash=Hash(Encoding.UTF8.GetBytes(Canonical(record,0)));DateTime resultEnd=new[]{Time(credential,"expiresAt"),Time(Map(record["registration"]),"registrationExpiresAt")}.Min();var call=resultFrame;call.Tighten(resultEnd,call.Remaining());Action resultCurrent=()=>{Check();call.Check();if(Hash(Encoding.UTF8.GetBytes(Canonical(NormalRecord(),0)))!=recordHash)throw Invalid();};
      NormalStartPreparationResultSlot slot=spoolProfile==null?null:spoolProfile.ReadConfirmedRejectedResultSlot(root,record,attempt,selector,epoch,()=>call.Now,resultCurrent);
-     if(slot==null&&normalStartResultSource!=null)slot=normalStartResultSource(root,attempt,selector,epoch);resultCurrent();
+     if(slot==null&&normalRejectedSlotBinding==null&&normalStartResultSource!=null)slot=normalStartResultSource(root,attempt,selector,epoch);resultCurrent();
    if(slot==null)return new Dictionary<string,object>{{"state","SOURCE_UNAVAILABLE"}};
    var permit=new NormalStartResultPermit(slot,root,record,requestRef,selector,epoch,()=>call.Now,resultCurrent);call.Tighten(permit.ExpiresAt,call.Remaining());call.Check();
+   if(normalRejectedSlotBinding!=null&&permit.IsPrepared)throw Invalid();
    if(normalPreparationCustody!=null&&permit.IsPrepared)throw Invalid(); // keeper 관측만으로 독립 OS/source/writer 근거를 발급하지 않는다.
    try{permit.ClaimOnce();string signature=ProtectedStore.SignNormalStartPreparationResultOwned(root,Id(record,"pendingKeyId"),permit,()=>call.Remaining(),resultCurrent);resultCurrent();return permit.Finish(signature);}catch{permit.PreserveUnknown();throw;}
   }

@@ -231,7 +231,9 @@ test('normal durable FIRST readback만 비직렬 단회 capability를 발급하�
  assert.match(peer,/internal DesktopTrustKeyBudget Slice\(DateTime end,int suppliedRemaining\)/);assert.match(peer,/DesktopTrustKeyBudget\(DesktopTrustKeyBudget parent\)[^{]*\{[^}]*deadline=parent\.deadline/);assert.match(peer,/new DesktopTrustKeyBudget\(this\)/);assert.doesNotMatch(peer.slice(peer.indexOf('internal DesktopTrustKeyBudget Slice'),peer.indexOf('// Check가 검산한')),/new DesktopTrustKeyBudget\(wall,mono\)/);
  assert.match(branch,/var call=budget\.Slice\(end,2000\)/);assert.doesNotMatch(branch,/budget\.Tighten\(end,2000\)/);assert.match(branch,/normalStartResultSource==null/);
  const resultBranch=host.slice(host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'),host.indexOf('if(operation=="SIGN_NATIVE_FIRST_RECEIVE_PROOF")'));
- assert.match(resultBranch,/var call=budget\.Slice\([^;]+,2000\)/);assert.doesNotMatch(resultBranch,/budget\.Tighten\(/);assert.match(resultBranch,/call\.Remaining\(\)/);
+ assert.match(host,/if\(String\.Equals\(operation,"SIGN_NORMAL_START_PREPARATION_RESULT_V1",StringComparison\.Ordinal\)\)\{if\(root==null\)throw Invalid\(\);resultFrame=budget\.Slice\(frameExpiry,Math\.Min\(2000,\(int\)remaining\)\);\}/);
+ assert.match(host,/resultFrame\?\.Check\(\);result=Dispatch\(operation,Map\(f\["payload"\]\),resultFrame\)/);
+ assert.match(resultBranch,/if\(resultFrame==null\)throw Invalid\(\);resultFrame\.Check\(\)/);assert.match(resultBranch,/var call=resultFrame;call\.Tighten\(resultEnd,call\.Remaining\(\)\)/);assert.doesNotMatch(resultBranch,/budget\.(Tighten|Slice)\(/);assert.match(resultBranch,/\(\)=>call\.Now/);
 });
 
 test('normal 확정 거절은 원 claim의 effect0 회수 증거만 durable slot으로 단회 승격한다',()=>{
@@ -262,6 +264,17 @@ test('normal 확정 거절은 원 claim의 effect0 회수 증거만 durable slot
  assert.match(durable,/Log\(false[\s\S]*J\(saved\["signedPacket"\]\)!=J\(packet\)/);
  const history=spool.slice(spool.indexOf('internal Row ReadConfirmedRejectedPacketHistory('),spool.indexOf('private sealed class DurableNormalStartPreparationResultSlot'));
  assert.match(history,/SignedConfirmed[\s\S]*signedPacket/);assert.doesNotMatch(history,/Append\(|SignNormal|Guid\.NewGuid|Id\(\)/);
+});
+
+test('확정 거절의 원 slot은 최초 claim의 보호 readback 뒤만 전달하고 원 SIGN에서 대체하지 않는다',()=>{
+ const spool=read('NormalExecutionSpoolProfileSource.cs'),host=read('DesktopTrustKeyHostSource.cs');
+ const recorder=spool.slice(spool.indexOf(' RecordConfirmedRejected('),spool.indexOf(' ReadConfirmedRejectedResultSlot('));
+ assert.match(recorder,/Append\(log,rows,available,[\s\S]*var back=Log\(false,[\s\S]*J\(exact\[0\]\)!=J\(available\)[\s\S]*observation\.CheckCurrent\(\);originalCurrent\(\);return EvidenceRef\(S\(back,"slotId"\),ResultSlotIdentity\(back\)\)/);
+ const claim=host.slice(host.indexOf('if(operation=="CLAIM_NORMAL_START_PREPARATION_REQUEST_V1")'),host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'));
+ assert.match(claim,/if\(claim\.Capability==null\)return claim\.Output;[\s\S]*if\(rejected!=null\)\{[\s\S]*RecordConfirmedRejected\([\s\S]*normalRejectedSlotBinding=Canonical\(new object\[\]\{attempt,epoch,material\.RequestRef,selector\},0\);[\s\S]*\{"rejectedSlotRef",selector\}/);
+ assert.equal(claim.match(/"rejectedSlotRef"/g)?.length,1);
+ const sign=host.slice(host.indexOf('if(operation=="SIGN_NORMAL_START_PREPARATION_RESULT_V1")'),host.indexOf('if(operation=="SIGN_NATIVE_FIRST_RECEIVE_PROOF")'));
+ assert.match(sign,/normalRejectedSlotBinding!=null&&normalRejectedSlotBinding!=Canonical\(new object\[\]\{attempt,epoch,requestRef,selector\},0\)[\s\S]*ReadConfirmedRejectedResultSlot[\s\S]*slot==null&&normalRejectedSlotBinding==null&&normalStartResultSource!=null[\s\S]*normalRejectedSlotBinding!=null&&permit\.IsPrepared[\s\S]*permit\.ClaimOnce\(\)/);
 });
 
 test('새 normal claim은 결과 3단계 최악 공간을 예약하고 각 durable append가 같은 예약을 소비한다',()=>{
